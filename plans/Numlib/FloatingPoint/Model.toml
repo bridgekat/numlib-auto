@@ -38,3 +38,6 @@ id = "abs_one_add_div_one_add_sub_one_le_gamma"
 
 [[node]]
 id = "gamma_mul_one_add_add_le"
+
+[[node]]
+id = "gamma_le_two_mul"

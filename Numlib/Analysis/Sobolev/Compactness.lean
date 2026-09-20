@@ -63,7 +63,9 @@ covered for `1 ≤ p < ∞` whenever `p < N` or `N ≥ 2`; for `p > N` it also f
 and the continuous extension by zero `C(Ω̄, ℝ) → L^p(Ω)` (`ContinuousMap.extendZeroToLpL`,
 `SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt`), which covers `N = 1 < p`, so that
 `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` / `isCompactEmbedding_fnL_of_ne_one`
-leave out only `N = 1 = p` (an interval, where the one-dimensional theory applies) and `p = ∞`.
+leave out only `N = 1 = p` (an interval, where the one-dimensional theory applies); the case
+`p = ∞`, `W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` on a bounded `W^{1,∞}`-extension domain, is Arzelà–Ascoli on
+the Lipschitz representatives (`SobolevEuclidean.isCompactEmbedding_fnL_top`).
 
 On `W_0^{1,p}(Ω)` the other clauses of Theorem 9.16 hold with no regularity of `Ω` (Remark 20):
 `W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for `N ≤ q < ∞`, `N ≥ 2`, through the inclusion
@@ -84,6 +86,19 @@ operators as variables) extracts one subsequence along which `u_n` and all `∂_
 `IsSobolevExtensionDomainAll.of_isContDiffChartDomain` (`EmbeddingDomain.lean`) records that
 Theorem 9.7 makes a bounded `C¹` chart domain an extension domain for every exponent, the
 hypothesis of Corollary 9.15.
+
+The last sections are **the Rellich–Kondrachov theorem at every order on an extension domain**:
+`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on any extension domain of finite measure, every `1 ≤ p < ∞`
+(`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain`,
+`…_toLowerOrderL_of_lt`), the compact embeddings of `W^{k,p}(Ω)` into `L^q(Ω)` and `C(K)`
+for `k < N/p`, `k = N/p`, `k > N/p` (`SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt`,
+`…_of_order_of_eq`, `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`),
+Atkinson–Han's Theorems 7.3.8 and 7.3.9 under the extension hypothesis, through the pull-back
+and composition lemmas `SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le`,
+`SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_comp` and the order lowering
+`SobolevEuclidean.exists_continuousLinearMap_orderOne` (`EmbeddingDomain.lean`); and their
+counterparts at `p = ∞`, `W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)` for `l < k`
+(`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt`).
 
 ## References
 
@@ -1282,3 +1297,537 @@ theorem isCompactEmbedding_toContinuousMapOnL (hp : N < p) {K : Set (EuclideanSp
 end SobolevEuclideanZero
 
 end RellichZero
+
+/-! ### `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on an extension domain of finite measure -/
+
+section CompactLower
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on an extension domain of finite measure**, for every
+`1 ≤ p < ∞` and every dimension `N` (`[han2009theoretical]` Theorem 7.3.9, the book's Lipschitz
+hypothesis replaced by the extension property): the inclusion `SobolevMultiIndex.toLowerOrderL`
+is a compact embedding. Induction on `k` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`
+(`SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain`, which needs no
+case distinction on `p` and `N`), the step being
+`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` exactly as in
+`SobolevEuclidean.isCompactEmbedding_toLower_of_lt`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain
+    (hΩ : IsSobolevExtensionDomain N p Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (k : ℕ) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω
+      volume (Nat.le_succ k)).toLinearMap := by
+  induction k with
+  | zero =>
+    have hc := SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain hΩ hμ
+    rw [toLpₗ_self] at hc
+    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
+      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1)) hc
+  | succ k ih =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
+      (weakDeriv_toLowerOrderL (Nat.le_succ k))
+      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis)
+        (p := p) (Ω := Ω) (μ := volume))
+      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
+      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+
+end CompactLower
+
+/-! ### Composition lemmas for the embeddings of `W^{k,p}(Ω)` -/
+
+section Composition
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)]
+  [Fact (1 ≤ q)] {Ω : Opens E} {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+
+/-- **`W^{k,p}(Ω) ↪ L^q(Ω)` for `q ≤ p` on a set of finite measure**, by Hölder's inequality
+`‖f‖_q ≤ μ(Ω)^{1/q − 1/p} ‖f‖_p`. -/
+theorem isContinuousEmbedding_toLpₗ_of_le (hΩ : μ Ω ≠ ⊤) (hqp : q ≤ p)
+    (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E))) :
+    IsContinuousEmbedding (toLpₗ F b k p Ω μ h) := by
+  have hfin : μ (Ω : Set E) ^ (1 / q.toReal - 1 / p.toReal) ≠ ⊤ :=
+    ENNReal.rpow_ne_top_of_nonneg (by
+      have hp0 : (0 : ℝ≥0∞) < p := zero_lt_one.trans_le Fact.out
+      rcases eq_or_ne p ⊤ with rfl | hp
+      · simp only [ENNReal.toReal_top, div_zero, sub_zero]
+        positivity
+      · have hq0 : 0 < q.toReal :=
+          ENNReal.toReal_pos (zero_lt_one.trans_le Fact.out).ne' (ne_top_of_le_ne_top hp hqp)
+        have := ENNReal.toReal_mono hp hqp
+        rw [sub_nonneg]
+        exact one_div_le_one_div_of_le hq0 this) hΩ
+  refine isContinuousEmbedding_toLpₗ_of_eLpNorm_le h
+    (C := (μ (Ω : Set E) ^ (1 / q.toReal - 1 / p.toReal)).toReal) fun u ↦ ?_
+  rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hfin, mul_comm]
+  calc eLpNorm (fn u) q (μ.restrict (Ω : Set E))
+      ≤ eLpNorm (fn u) p (μ.restrict (Ω : Set E))
+        * (μ.restrict (Ω : Set E)) Set.univ ^ (1 / q.toReal - 1 / p.toReal) :=
+        eLpNorm_le_eLpNorm_mul_rpow_measure_univ hqp (memLp u).aestronglyMeasurable
+    _ ≤ ENNReal.ofReal ‖u‖ * μ (Ω : Set E) ^ (1 / q.toReal - 1 / p.toReal) := by
+        rw [Measure.restrict_apply_univ]
+        exact mul_le_mul' (eLpNorm_fn_le_ofReal_norm u) le_rfl
+
+omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
+/-- **A compact embedding `W^{k',r}(Ω) ⊂⊂ L^q(Ω)` pulls back along a continuous embedding
+`T : W^{k,p}(Ω) → W^{k',r}(Ω)` preserving the function**: `W^{k,p}(Ω) ⊂⊂ L^q(Ω)`. -/
+theorem isCompactEmbedding_toLpₗ_of_comp {k' : ℕ} {r : ℝ≥0∞} [Fact (1 ≤ r)]
+    (T : SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k' r Ω μ)
+    (hT : IsContinuousEmbedding T.toLinearMap)
+    (hfn : ∀ u, fn (T u) =ᵐ[μ.restrict (Ω : Set E)] fn u)
+    {h' : ∀ v : SobolevMultiIndex F b k' r Ω μ, MemLp (fn v) q (μ.restrict (Ω : Set E))}
+    (hc : IsCompactEmbedding (toLpₗ F b k' r Ω μ h')) :
+    ∃ h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E)),
+      IsCompactEmbedding (toLpₗ F b k p Ω μ h) := by
+  refine ⟨fun u ↦ (memLp_congr_ae (hfn u)).1 (h' (T u)), ?_⟩
+  have := hT.comp_isCompactEmbedding hc
+  convert this using 1
+  refine LinearMap.ext fun u ↦ Lp.ext ((toLpₗ_coeFn _ u).trans ?_)
+  exact (hfn u).symm.trans (toLpₗ_coeFn h' (T u)).symm
+
+end SobolevMultiIndex
+
+end Composition
+
+/-! ### Rellich–Kondrachov at every order on an extension domain -/
+
+section HigherOrder
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{1,p}(Ω) ⊂⊂ L^q(Ω)` for `N ≤ p < ∞`, `N ≥ 2`, `1 ≤ q < ∞`, on an extension domain (for
+every exponent) of finite measure**: `W^{1,p}(Ω) ↪ W^{1,r}(Ω)` for an `r < N` with `r* > q`
+and the case `r < N` of the Rellich–Kondrachov theorem
+(`SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`); the generalization of
+`SobolevEuclidean.isCompactEmbedding_toLp_of_le` from `C¹` chart domains to extension
+domains. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll
+    {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll N Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hN : 2 ≤ N) (hp : (N : ℝ≥0) ≤ p) :
+    ∃ h : ∀ u : SobolevEuclidean N 1 p Ω,
+        MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      IsCompactEmbedding
+        (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume h) := by
+  obtain ⟨r, hr1, hrN, hr', hq2⟩ := NNReal.exists_lowerExponent hN
+    (q := max q (N : ℝ≥0)) (le_max_right _ _)
+  have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hr1⟩
+  have hqr : q < 2 * max q (N : ℝ≥0) := lt_of_le_of_lt (le_max_left _ _) hq2
+  have hc := SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top
+    (fun u ↦ (hΩ r).memLp_fn_of_le_sobolevConj hμ hrN hr' hqr.le ⟨u, Submodule.mem_top⟩)
+    (SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn (hΩ r) hμ hrN hr' hqr)
+  have hrp : (r : ℝ≥0∞) ≤ p := by exact_mod_cast hrN.le.trans hp
+  exact isCompactEmbedding_toLpₗ_of_comp (toLowerExponentL ℝ _ 1 p r volume hμ hrp)
+    (isContinuousEmbedding_toLowerExponentL hμ hrp) (fn_toLowerExponentL hμ hrp) hc
+
+/-- **`W^{1,p}(Ω) ⊂⊂ C(K)` for `N < p < ∞` and a compact `K ⊇ Ω`, on an extension domain**, along
+`SobolevEuclidean.toContinuousMapL`: the generalization of
+`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt` from `C¹` chart domains to
+extension domains (Arzelà–Ascoli, `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`). -/
+theorem SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain
+    {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω) (hp : (N : ℝ≥0) < p)
+    {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
+    (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
+    IsCompactEmbedding (SobolevEuclidean.toContinuousMapL hΩ hp K).toLinearMap := by
+  have hc := hΩ.isCompactEmbedding_toContinuousMapOnL hp hK
+  have hι : IsContinuousEmbedding ((LinearMap.id (R := ℝ)).codRestrict
+      (⊤ : Submodule ℝ (SobolevEuclidean N 1 p Ω)) fun _ ↦ Submodule.mem_top) :=
+    ⟨fun u v huv ↦ by simpa using congrArg Subtype.val huv, 1, fun u ↦ by simp⟩
+  exact hι.comp_isCompactEmbedding hc
+
+/-- **Rellich–Kondrachov at order `k + 1`, the case `k + 1 < N/p`**: on an extension domain (for
+every exponent) of finite measure, `1 ≤ p`, `k + 1 < N/p`, `1/p* = 1/p − (k+1)/N` and
+`1 ≤ q < p*`, the inclusion `W^{k+1,p}(Ω) ⊂ L^q(Ω)` is compact (Atkinson–Han, *Theoretical
+Numerical Analysis*, Theorem 7.3.8 (a), the case `k ≥ 1` on the book's Lipschitz domain being
+an extension domain): `W^{k+1,p}(Ω) ↪ W^{1,r}(Ω)` with `1/r = 1/p − k/N`, and `W^{1,r}(Ω) ⊂⊂ L^q(Ω)`
+for `q < r* = p*`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt (k : ℕ) {p q : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hk : ((k + 1 : ℕ) : ℝ) < N / p)
+    {p' : ℝ≥0} (hp' : (p' : ℝ)⁻¹ = (p : ℝ)⁻¹ - (k + 1 : ℕ) / N) (hq : q < p') :
+    ∃ h : ∀ u : SobolevEuclidean N (k + 1) p Ω,
+        MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      IsCompactEmbedding
+        (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (k + 1) p Ω volume h) := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hN0 : (0 : ℝ) < N :=
+    (div_pos_iff_of_pos_right hp0).1 (lt_of_le_of_lt (Nat.cast_nonneg _) hk)
+  push_cast at hk
+  have hk' : ((k : ℝ) + 1) / N < (p : ℝ)⁻¹ := by
+    rw [div_lt_iff₀ hN0, inv_mul_eq_div]
+    exact hk
+  -- the intermediate exponent `1/r = 1/p − k/N`
+  have hrinv_pos : (0 : ℝ) < (p : ℝ)⁻¹ - k / N := by
+    have : (k : ℝ) / N < ((k : ℝ) + 1) / N :=
+      div_lt_div_of_pos_right (by linarith) hN0
+    linarith
+  obtain ⟨r, hr⟩ : ∃ r : ℝ≥0, (r : ℝ) = ((p : ℝ)⁻¹ - k / N)⁻¹ :=
+    ⟨⟨_, inv_nonneg.2 hrinv_pos.le⟩, rfl⟩
+  have hrinv : (r : ℝ)⁻¹ = (p : ℝ)⁻¹ - k / N := by rw [hr, inv_inv]
+  have hr0 : (0 : ℝ) < r := by rw [hr]; exact inv_pos.2 hrinv_pos
+  have hpr : p ≤ r := by
+    rw [← NNReal.coe_le_coe, ← inv_le_inv₀ hr0 hp0, hrinv]
+    exact sub_le_self _ (by positivity)
+  have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hp1.trans hpr⟩
+  have hN : 2 ≤ N ∨ 1 < p := by
+    left
+    have h1 : (1 : ℝ) < N / p := lt_of_le_of_lt (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)]) hk
+    have h2 : (p : ℝ) < N := by rwa [lt_div_iff₀ hp0, one_mul] at h1
+    have h3 : (1 : ℝ) < N := lt_of_le_of_lt (by exact_mod_cast hp1) h2
+    exact_mod_cast h3
+  obtain ⟨T, hT⟩ := SobolevEuclidean.exists_continuousLinearMap_orderOne k hΩ hN hpr hrinv.ge
+  have hTemb : IsContinuousEmbedding T.toLinearMap :=
+    ⟨fun u v huv ↦ ext_of_fn_ae_eq ((hT u).symm.trans (huv ▸ hT v)), _, T.le_opNorm⟩
+  -- `r < N` and `r* = p*`
+  have hrN : r < N := by
+    rw [← NNReal.coe_lt_coe, NNReal.coe_natCast, ← inv_lt_inv₀ hN0 hr0, hrinv]
+    have : (k : ℝ) / N + (N : ℝ)⁻¹ = ((k : ℝ) + 1) / N := by
+      rw [add_div, one_div]
+    linarith
+  have hp'r : (p' : ℝ)⁻¹ = (r : ℝ)⁻¹ - (N : ℝ)⁻¹ := by
+    rw [hp', hrinv]
+    push_cast
+    ring
+  exact isCompactEmbedding_toLpₗ_of_comp T hTemb hT
+    (SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top
+      (fun u ↦ (hΩ r).memLp_fn_of_le_sobolevConj hμ hrN hp'r hq.le ⟨u, Submodule.mem_top⟩)
+      (SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn (hΩ r) hμ hrN hp'r hq))
+
+/-- **Rellich–Kondrachov at order `k + 1`, the case `k + 1 = N/p`**: on an extension domain (for
+every exponent) of finite measure with `N ≥ 2`, `1 ≤ p`, `k + 1 = N/p` and `1 ≤ q < ∞`, the
+inclusion `W^{k+1,p}(Ω) ⊂ L^q(Ω)` is compact (the compact form of Atkinson–Han, *Theoretical
+Numerical Analysis*, Theorem 7.3.8 (b)): `W^{k+1,p}(Ω) ↪ W^{1,N}(Ω)` and
+`SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq (k : ℕ) {p q : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hN : 2 ≤ N)
+    (hk : ((k + 1 : ℕ) : ℝ) = N / p) :
+    ∃ h : ∀ u : SobolevEuclidean N (k + 1) p Ω,
+        MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      IsCompactEmbedding
+        (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (k + 1) p Ω volume h) := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hN0 : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+  have : Fact (1 ≤ ((N : ℝ≥0) : ℝ≥0∞)) := ⟨by exact_mod_cast (by omega : 1 ≤ N)⟩
+  have hpinv : (p : ℝ)⁻¹ = ((k + 1 : ℕ) : ℝ) / N := by
+    rw [hk, div_div, mul_comm, ← div_div, div_self hN0.ne', one_div]
+  have hpN : p ≤ (N : ℝ≥0) := by
+    rw [← NNReal.coe_le_coe, NNReal.coe_natCast, ← inv_le_inv₀ hN0 hp0, hpinv, ← one_div]
+    exact div_le_div_of_nonneg_right (by exact_mod_cast Nat.succ_pos k) hN0.le
+  have hrinv : (p : ℝ)⁻¹ - k / N ≤ ((N : ℝ≥0) : ℝ)⁻¹ := by
+    rw [hpinv, NNReal.coe_natCast]
+    refine le_of_eq ?_
+    push_cast
+    ring
+  obtain ⟨T, hT⟩ := SobolevEuclidean.exists_continuousLinearMap_orderOne k hΩ (Or.inl hN) hpN
+    hrinv
+  have hTemb : IsContinuousEmbedding T.toLinearMap :=
+    ⟨fun u v huv ↦ ext_of_fn_ae_eq ((hT u).symm.trans (huv ▸ hT v)), _, T.le_opNorm⟩
+  obtain ⟨h', hc⟩ :=
+    SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll (q := q) hΩ hμ
+      hN le_rfl
+  exact isCompactEmbedding_toLpₗ_of_comp T hTemb hT hc
+
+end HigherOrder
+
+/-! ### `W^{k,p}(Ω) ⊂⊂ C(K)` at every order, and `W^{k,p}(Ω) ⊂⊂ W^{l,p}(Ω)` for `l < k` -/
+
+section HigherOrderContinuous
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{k+1,p}(Ω) ⊂⊂ C(K)` for `k + 1 > N/p` and a compact `K ⊇ Ω`, on an extension domain
+(for every exponent)**, `1 ≤ p < ∞` and `N ≥ 2` or `p > 1`: there is a bounded linear
+`ι : W^{k+1,p}(Ω) → C(K, ℝ)` sending `u` to the restriction of a continuous representative
+of `u`, which is a compact embedding (Atkinson–Han, *Theoretical Numerical Analysis*,
+Theorem 7.3.8 (c) with `β = 0` and `k − [N/p] − 1` replaced by `0`, and Example 7.4.2 at
+`p = 2`): `W^{k+1,p}(Ω) ↪ W^{1,r}(Ω)` for the `r > N` of `NNReal.exists_morrey_exponent`, then
+`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain`. -/
+theorem SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order (k : ℕ) {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
+    (hk : (N : ℝ) / p < (k + 1 : ℕ)) {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
+    (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
+    ∃ ι : SobolevEuclidean N (k + 1) p Ω →L[ℝ] C(K, ℝ),
+      (∀ u, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
+        fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ ∧ ∀ x : K, ι u x = ũ x) ∧
+      IsCompactEmbedding ι.toLinearMap := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ≥0) < p := zero_lt_one.trans_le hp1
+  obtain ⟨r, hpr, hNr, hr, -⟩ := NNReal.exists_morrey_exponent (N := N) k hp0 hk
+  have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hp1.trans hpr⟩
+  obtain ⟨T, hT⟩ := SobolevEuclidean.exists_continuousLinearMap_orderOne k hΩ hN hpr hr
+  have hTemb : IsContinuousEmbedding T.toLinearMap :=
+    ⟨fun u v huv ↦ ext_of_fn_ae_eq ((hT u).symm.trans (huv ▸ hT v)), _, T.le_opNorm⟩
+  refine ⟨(SobolevEuclidean.toContinuousMapL (hΩ r) hNr K).comp T, fun u ↦ ?_,
+    hTemb.comp_isCompactEmbedding
+      (SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain (hΩ r)
+        hNr hK)⟩
+  refine ⟨_, (SobolevEuclidean.contRep hNr _).continuous,
+    (hT u).symm.trans (SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ r) hNr K (T u)),
+    fun x ↦ rfl⟩
+
+/-- **`W^{k,p}(Ω) ⊂⊂ W^{l,p}(Ω)` for `l < k` on an extension domain of finite measure**
+(Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9, for `1 ≤ p < ∞`): the
+inclusion `SobolevMultiIndex.toLowerOrderL` is a compact embedding, being
+`W^{k,p}(Ω) ⊂⊂ W^{k−1,p}(Ω) ↪ W^{l,p}(Ω)`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {k l : ℕ} (hlk : l < k) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω
+      volume hlk.le).toLinearMap := by
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  have hc := SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain hΩ hμ k
+  have hl : l ≤ k := Nat.lt_succ_iff.1 hlk
+  have hι := isContinuousEmbedding_toLowerOrderL (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := (p : ℝ≥0∞)) (Ω := Ω) (μ := volume) hl
+  have := hc.comp_isContinuousEmbedding hι
+  convert this using 1
+  exact LinearMap.ext fun u ↦ rfl
+
+end HigherOrderContinuous
+
+/-! ### Rellich–Kondrachov at `p = ∞`: `W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` by Arzelà–Ascoli -/
+
+section RellichTop
+
+open SobolevMultiIndex
+
+/-- **The almost-everywhere bound from the `L^∞` norm**: if `‖f‖_{L^∞(μ)} ≤ L` then `‖f x‖ ≤ L`
+almost everywhere. -/
+theorem MeasureTheory.ae_norm_le_of_eLpNorm_top_le {α G : Type*} [MeasurableSpace α]
+    {μ : Measure α} [NormedAddCommGroup G] {f : α → G} (hf : AEStronglyMeasurable f μ) {L : ℝ}
+    (hL : 0 ≤ L) (h : eLpNorm f ⊤ μ ≤ ENNReal.ofReal L) : ∀ᵐ x ∂μ, ‖f x‖ ≤ L := by
+  filter_upwards [ae_le_eLpNormEssSup (f := f) (μ := μ)] with x hx
+  rw [← eLpNorm_exponent_top hf] at hx
+  rw [← ENNReal.ofReal_le_ofReal_iff hL, ofReal_norm]
+  exact hx.trans h
+
+/-- **The `L^∞` distance from a uniform bound on representatives**: if `g₁ = v₁` and `g₂ = v₂`
+almost everywhere and `‖v₁ x − v₂ x‖ ≤ D` almost everywhere, then `dist g₁ g₂ ≤ D` in `L^∞`. -/
+theorem MeasureTheory.Lp.dist_le_of_ae_eq_top {α : Type*} [MeasurableSpace α] {μ : Measure α}
+    (g₁ g₂ : Lp ℝ ⊤ μ) {v₁ v₂ : α → ℝ} (h₁ : g₁ =ᵐ[μ] v₁) (h₂ : g₂ =ᵐ[μ] v₂) {D : ℝ}
+    (hD : 0 ≤ D) (h : ∀ᵐ x ∂μ, ‖v₁ x - v₂ x‖ ≤ D) : dist g₁ g₂ ≤ D := by
+  rw [Lp.dist_def]
+  have hae : ∀ᵐ x ∂μ, ‖(⇑g₁ - ⇑g₂) x‖ ≤ D := by
+    filter_upwards [h₁, h₂, h] with x hx₁ hx₂ hx
+    rw [Pi.sub_apply, hx₁, hx₂]
+    exact hx
+  have := eLpNorm_le_of_ae_bound (p := ⊤)
+    ((Lp.aestronglyMeasurable g₁).sub (Lp.aestronglyMeasurable g₂)) hae
+  simp only [ENNReal.toReal_top, inv_zero, ENNReal.rpow_zero, one_mul] at this
+  calc (eLpNorm (⇑g₁ - ⇑g₂) ⊤ μ).toReal ≤ (ENNReal.ofReal D).toReal :=
+        ENNReal.toReal_mono ENNReal.ofReal_ne_top this
+    _ = D := ENNReal.toReal_ofReal hD
+
+/-- **Arzelà–Ascoli for a uniformly bounded, uniformly Lipschitz sequence**, in the form of a
+uniformly Cauchy subsequence on a compact set: if `‖v_n x‖ ≤ R` and every `v_n` is `L`-Lipschitz,
+then along a subsequence `v_{φ n}` is uniformly Cauchy on the compact `K`
+(`ContinuousMap.isCompact_closure_of_forall_norm_le` on the restrictions to `K`). -/
+theorem exists_strictMono_forall_dist_lt_of_lipschitzWith {E : Type*}
+    [PseudoMetricSpace E] {K : Set E} (hK : IsCompact K) (v : ℕ → E → ℝ) {L : ℝ≥0} {R : ℝ}
+    (hvl : ∀ n, LipschitzWith L (v n)) (hvb : ∀ n x, ‖v n x‖ ≤ R) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ ε > 0, ∃ n₀, ∀ m ≥ n₀, ∀ n ≥ n₀, ∀ x ∈ K,
+      dist (v (φ m) x) (v (φ n) x) < ε := by
+  have : CompactSpace K := isCompact_iff_compactSpace.1 hK
+  obtain ⟨f, hf⟩ : ∃ f : ℕ → C(K, ℝ), ∀ n x, f n x = v n x :=
+    ⟨fun n ↦ ⟨fun x ↦ v n x, (hvl n).continuous.comp continuous_subtype_val⟩, fun _ _ ↦ rfl⟩
+  have hcomp : IsCompact (closure (Set.range f)) := by
+    refine ContinuousMap.isCompact_closure_of_forall_norm_le (M := R) ?_ ?_
+    · rintro _ ⟨n, rfl⟩ x
+      rw [hf]
+      exact hvb n x
+    · refine Metric.equicontinuous_of_continuity_modulus (fun d ↦ (L : ℝ) * d) ?_ _ ?_
+      · have : Tendsto (fun d : ℝ ↦ (L : ℝ) * d) (𝓝 0) (𝓝 ((L : ℝ) * 0)) :=
+          (continuous_const.mul continuous_id).tendsto 0
+        rwa [mul_zero] at this
+      · rintro x y ⟨_, ⟨n, rfl⟩⟩
+        simp only [hf, Subtype.dist_eq]
+        exact (hvl n).dist_le_mul x y
+  obtain ⟨g, -, φ, hφ, hlim⟩ :=
+    hcomp.tendsto_subseq (x := f) fun n ↦ subset_closure (Set.mem_range_self n)
+  refine ⟨φ, hφ, fun ε hε ↦ ?_⟩
+  obtain ⟨n₀, hn₀⟩ := Metric.cauchySeq_iff.1 hlim.cauchySeq ε hε
+  refine ⟨n₀, fun m hm n hn x hx ↦ ?_⟩
+  have := ContinuousMap.dist_apply_le_dist (f := f (φ m)) (g := f (φ n)) ⟨x, hx⟩
+  rw [hf, hf] at this
+  exact this.trans_lt (hn₀ m hm n hn)
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **The Lipschitz representative of an element of `W^{1,∞}(ℝ^N)`**, with the constants read
+off the norm: for `U ∈ W^{1,∞}(ℝ^N)` with `‖U‖ ≤ R` there is `v` with `U = v` almost everywhere,
+`v` Lipschitz with constant `C_N R` (`C_N` the constant of
+`SobolevMultiIndex.exists_hasWeakFDerivOn_fn`, depending on `N` only) and `‖v x‖ ≤ R` everywhere.
+The Lipschitz representative is Brezis's Remark 7 on the convex set `ℝ^N`
+(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`); the bound holds almost everywhere
+by the `L^∞` norm and everywhere by continuity, Lebesgue measure being positive on open sets. -/
+theorem SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (R : ℝ), 0 ≤ R → ∀ U : SobolevEuclidean N 1 ⊤ ⊤, ‖U‖ ≤ R →
+      ∃ v : EuclideanSpace ℝ (Fin N) → ℝ, fn U =ᵐ[volume] v ∧
+        LipschitzWith (Real.toNNReal (C * R)) v ∧ ∀ x, ‖v x‖ ≤ R := by
+  obtain ⟨Cb, hCb⟩ : ∃ Cb : ℝ, Cb = Fintype.card (Fin N) •
+      ‖(EuclideanSpace.basisFun (Fin N) ℝ).toBasis.equivFunL.toContinuousLinearMap‖ := ⟨_, rfl⟩
+  have hCb0 : 0 ≤ Cb := by rw [hCb]; positivity
+  refine ⟨Cb * N, by positivity, fun R hR U hU ↦ ?_⟩
+  obtain ⟨w, hw, hwp, -, hwn⟩ := exists_hasWeakFDerivOn_fn U
+  -- the almost everywhere bound of the weak derivative
+  have hwae : ∀ᵐ x ∂volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+      Set (EuclideanSpace ℝ (Fin N))), ‖w x‖ ≤ Cb * N * R := by
+    have h1 : ∀ i : Fin N, eLpNorm (weakDeriv U (MultiIndexLE.single i)) ⊤
+        (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+          Set (EuclideanSpace ℝ (Fin N)))) ≤ ENNReal.ofReal R := fun i ↦ by
+      rw [← ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _), ← Lp.norm_def]
+      exact ENNReal.ofReal_le_ofReal ((norm_weakDeriv_le U _).trans hU)
+    have hwn' : eLpNorm w ⊤ (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+        Set (EuclideanSpace ℝ (Fin N)))) ≤ ENNReal.ofReal Cb *
+          ∑ i, eLpNorm (weakDeriv U (MultiIndexLE.single i)) ⊤
+            (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+              Set (EuclideanSpace ℝ (Fin N)))) := by
+      rw [hCb]; exact hwn
+    refine MeasureTheory.ae_norm_le_of_eLpNorm_top_le hwp.aestronglyMeasurable (by positivity)
+      (hwn'.trans ?_)
+    calc ENNReal.ofReal Cb * ∑ i, eLpNorm (weakDeriv U (MultiIndexLE.single i)) ⊤
+          (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+            Set (EuclideanSpace ℝ (Fin N))))
+        ≤ ENNReal.ofReal Cb * ∑ _i : Fin N, ENNReal.ofReal R := by
+          gcongr with i
+          exact h1 i
+      _ = ENNReal.ofReal (Cb * N * R) := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
+            ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_mul hCb0, ENNReal.ofReal_natCast]
+          ring
+  -- the Lipschitz representative
+  have hconv : Convex ℝ ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+      Set (EuclideanSpace ℝ (Fin N))) := by
+    rw [Opens.coe_top]; exact convex_univ
+  obtain ⟨v, hv, hvl⟩ := hw.exists_lipschitzOnWith_ae_eq_of_convex hconv (by positivity) hwae
+  rw [Opens.coe_top, lipschitzOnWith_univ] at hvl
+  rw [Opens.coe_top, Measure.restrict_univ] at hv
+  -- the bound, almost everywhere by the `L^∞` norm, everywhere by continuity
+  have hvae : ∀ᵐ x ∂volume, ‖v x‖ ≤ R := by
+    have h1 : ∀ᵐ x ∂volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) :
+        Set (EuclideanSpace ℝ (Fin N))), ‖fn U x‖ ≤
+          ‖fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 ⊤ ⊤ volume U‖ :=
+      MeasureTheory.Lp.ae_norm_le_norm_top
+        (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 ⊤ ⊤ volume U)
+    have h2 := (ae_restrict_iff' (⊤ : Opens (EuclideanSpace ℝ (Fin N))).isOpen.measurableSet).1 h1
+    filter_upwards [h2, hv] with x hx hvx
+    rw [← hvx]
+    exact (hx (by simp)).trans ((norm_fnL_apply_le U).trans hU)
+  have hcl : IsClosed {x | ‖v x‖ ≤ R} :=
+    isClosed_le (continuous_norm.comp hvl.continuous) continuous_const
+  have hset : {x | ‖v x‖ ≤ R} = univ :=
+    hcl.closure_eq.symm.trans (Measure.dense_of_ae hvae).closure_eq
+  exact ⟨v, hv, hvl, fun x ↦ eq_univ_iff_forall.1 hset x⟩
+
+/-- **`W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` on a bounded `W^{1,∞}`-extension domain**: the inclusion
+`SobolevMultiIndex.fnL` is a compact embedding. For a bounded sequence `u_n`, the extensions
+`P u_n ∈ W^{1,∞}(ℝ^N)` have Lipschitz representatives `v_n`, uniformly bounded and uniformly
+Lipschitz (`SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le`); on the compact
+`closure Ω` the Arzelà–Ascoli theorem gives a uniformly Cauchy subsequence
+(`exists_strictMono_forall_dist_lt_of_lipschitzWith`), which is Cauchy in
+`L^∞(Ω)` (`MeasureTheory.Lp.dist_le_of_ae_eq_top`), hence convergent. This is the case `p = ∞`
+left out of `Numlib/Analysis/Sobolev/Compactness.lean` (Atkinson–Han, *Theoretical Numerical
+Analysis*, Theorem 7.3.9 at `p = ∞`). -/
+theorem SobolevEuclidean.isCompactEmbedding_fnL_top (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) :
+    IsCompactEmbedding
+      (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 ⊤ Ω volume).toLinearMap := by
+  refine IsCompactEmbedding.of_forall_exists_subseq_tendsto isContinuousEmbedding_fnL
+    fun u hu ↦ ?_
+  obtain ⟨M, hM⟩ := hu
+  obtain ⟨P, hP⟩ := hΩ
+  obtain ⟨C, hC0, hC⟩ := SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le (N := N)
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
+  -- the extensions `P u_n`, bounded in `W^{1,∞}(ℝ^N)`, and their Lipschitz representatives
+  have hrep : ∀ n, ∃ v : EuclideanSpace ℝ (Fin N) → ℝ,
+      fn (u n) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v ∧
+      LipschitzWith (Real.toNNReal (C * (‖P‖ * M))) v ∧ ∀ x, ‖v x‖ ≤ ‖P‖ * M := fun n ↦ by
+    have hUn : ‖P ⟨u n, Submodule.mem_top⟩‖ ≤ ‖P‖ * M :=
+      (P.le_opNorm _).trans (mul_le_mul_of_nonneg_left (hM n) (norm_nonneg _))
+    obtain ⟨v, hv, hvl, hvb⟩ := hC (‖P‖ * M) (by positivity) _ hUn
+    exact ⟨v, (hP ⟨u n, Submodule.mem_top⟩).symm.trans (ae_restrict_of_ae hv), hvl, hvb⟩
+  choose v hv hvl hvb using hrep
+  -- Arzelà–Ascoli on the compact `closure Ω`
+  obtain ⟨φ, hφ, hφc⟩ := exists_strictMono_forall_dist_lt_of_lipschitzWith
+    hb.isCompact_closure v hvl hvb
+  -- the subsequence is Cauchy in `L^∞(Ω)`
+  have hcauchy : CauchySeq fun n ↦
+      fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 ⊤ Ω volume (u (φ n)) := by
+    refine Metric.cauchySeq_iff.2 fun ε hε ↦ ?_
+    obtain ⟨n₀, hn₀⟩ := hφc (ε / 2) (by positivity)
+    refine ⟨n₀, fun m hm n hn ↦ ?_⟩
+    refine (MeasureTheory.Lp.dist_le_of_ae_eq_top _ _ (hv (φ m)) (hv (φ n)) (D := ε / 2)
+      (by positivity) ?_).trans_lt (by linarith)
+    filter_upwards [self_mem_ae_restrict Ω.isOpen.measurableSet] with x hx
+    rw [← dist_eq_norm]
+    exact (hn₀ m hm n hn x (subset_closure hx)).le
+  obtain ⟨w, hw⟩ := cauchySeq_tendsto_of_complete hcauchy
+  exact ⟨φ, w, hφ, hw⟩
+
+end RellichTop
+
+/-! ### Rellich–Kondrachov at `p = ∞` and every order: `W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)`, `l < k` -/
+
+section RellichTopHigher
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{k+1,∞}(Ω) ⊂⊂ W^{k,∞}(Ω)` on a bounded `W^{1,∞}`-extension domain**: the inclusion
+`SobolevMultiIndex.toLowerOrderL` is a compact embedding. Induction on `k` from
+`W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` (`SobolevEuclidean.isCompactEmbedding_fnL_top`), the step being
+`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` exactly as in
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain` for `p < ∞`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top
+    (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (k : ℕ) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis ⊤ Ω
+      volume (Nat.le_succ k)).toLinearMap := by
+  induction k with
+  | zero =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
+      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1))
+      (SobolevEuclidean.isCompactEmbedding_fnL_top hΩ hb)
+  | succ k ih =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
+      (weakDeriv_toLowerOrderL (Nat.le_succ k))
+      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis)
+        (p := ⊤) (Ω := Ω) (μ := volume))
+      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
+      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+
+/-- **`W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)` for `l < k` on a bounded `W^{1,∞}`-extension domain**
+(Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9 at `p = ∞`): the inclusion
+`SobolevMultiIndex.toLowerOrderL` is a compact embedding, being
+`W^{k,∞}(Ω) ⊂⊂ W^{k−1,∞}(Ω) ↪ W^{l,∞}(Ω)`; the counterpart of
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt` for `p < ∞`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt
+    (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) {k l : ℕ} (hlk : l < k) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis ⊤ Ω
+      volume hlk.le).toLinearMap := by
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  have hc := SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top hΩ hb k
+  have hl : l ≤ k := Nat.lt_succ_iff.1 hlk
+  have hι := isContinuousEmbedding_toLowerOrderL (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := ⊤) (Ω := Ω) (μ := volume) hl
+  have := hc.comp_isContinuousEmbedding hι
+  convert this using 1
+  exact LinearMap.ext fun u ↦ rfl
+
+end RellichTopHigher

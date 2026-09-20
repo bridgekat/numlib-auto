@@ -79,8 +79,3 @@ id = "ContDiffMapIcc.ofContDiff_mem_periodicBoundary"
 [[node]]
 id = "ContDiffMapIcc.exists_periodic_contDiff"
 
-[[node]]
-id = "_root_.Function.Periodic.deriv"
-
-[[node]]
-id = "_root_.Function.Periodic.iteratedDeriv"

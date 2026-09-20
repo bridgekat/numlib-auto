@@ -1,3 +1,10 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: `Mathlib.Topology.Sion` (the weak-topology transfer of Sion's theorem) and
+`Mathlib.Analysis.Convex.Saddle` for the coercive existence theorems.
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
 import Mathlib.Topology.Sion
 import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
 import Numlib.Variational.WeakMinimization
@@ -37,10 +44,6 @@ kernel. `isSaddlePointOn_swap_neg_iff` exchanges the two variables.
 
 ## Main statements
 
-* `LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn`,
-  `UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn` — semicontinuity on a closed
-  set with convex level sets transfers to the weak topology; `QuasiconvexOn.comp_toWeakSpace_symm`
-  and `Convex.image_toWeakSpace` transport the convexity hypotheses.
 * `exists_isSaddlePointOn_of_isBounded` — **Sion's theorem in a reflexive space**: on bounded
   closed convex sets, a function lower semicontinuous and quasiconvex in its first variable, upper
   semicontinuous and quasiconcave in its second, has a saddle point.
@@ -57,8 +60,6 @@ kernel. `isSaddlePointOn_swap_neg_iff` exchanges the two variables.
 * `IsSaddlePointOn.fst_eq_of_strictConvexOn`, `IsSaddlePointOn.snd_eq_of_strictConcaveOn` — the
   first component of a saddle point is unique when `L (·, p)` is strictly convex, the second when
   `L (u, ·)` is strictly concave.
-* `exists_isMaxOn_of_concaveOn` — the direct method for a concave upper semicontinuous functional,
-  the mirror of `exists_isMinOn_of_convexOn`, used for the bounds in the coercive theorems.
 
 ## Implementation notes
 
@@ -70,15 +71,15 @@ function can have a local minimum in a ball that is not a minimum outside it).
 
 Reflexivity is `NormedSpace.IsReflexive ℝ V`; the sequential class `WeaklySeqCompactSpace` of
 `Numlib.Variational.WeakMinimization` is derived from it by instance search where
-`exists_isMinOn_of_convexOn` is used. That lemma is the only dependency of this module on a
-module that is not an upstreaming candidate.
+`exists_isMinOn_of_convexOn` and `exists_isMaxOn_of_concaveOn` are used. The transfer of
+semicontinuity and quasiconvexity on a closed set to the weak topology is
+`LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn` and its concave twin
+(`Numlib.Analysis.Normed.Module.WeakClosed`).
 
 ## References
 
-* I. Ekeland, R. Temam, *Convex Analysis and Variational Problems*, SIAM Classics in Applied
-  Mathematics 28, 1999, Chapter VI, Propositions 1.2 and 2.1–2.3.
-* M. Sion, "On general minimax theorems", Pacific J. Math. 8 (1958), 171–176; H. Komiya,
-  "Elementary proof for Sion's minimax theorem", Kodai Math. J. 11 (1988), 5–7.
+* [ekeland1999convex] Chapter VI, Propositions 1.2 and 2.1–2.3.
+* [sion1958general]; [komiya1988elementary].
 * [han2009theoretical] Theorem 8.6.3.
 -/
 
@@ -104,90 +105,6 @@ theorem isSaddlePointOn_swap_neg_iff :
 
 end Swap
 
-/-! ### Semicontinuity and convexity in the weak topology -/
-
-section Sublevel
-
-variable {α γ : Type*} [TopologicalSpace α] [LinearOrder γ] {s : Set α} {f : α → γ}
-
-/-- The sublevel sets of a function lower semicontinuous on a closed set are closed. -/
-theorem LowerSemicontinuousOn.isClosed_sep_le (hs : IsClosed s) (hf : LowerSemicontinuousOn f s)
-    (b : γ) : IsClosed {x ∈ s | f x ≤ b} := by
-  obtain ⟨v, hv, hsv⟩ := lowerSemicontinuousOn_iff_preimage_Iic.1 hf b
-  have : {x ∈ s | f x ≤ b} = s ∩ v := by
-    rw [← hsv]
-    ext x
-    simp
-  rw [this]
-  exact hs.inter hv
-
-/-- The superlevel sets of a function upper semicontinuous on a closed set are closed. -/
-theorem UpperSemicontinuousOn.isClosed_sep_ge (hs : IsClosed s) (hf : UpperSemicontinuousOn f s)
-    (b : γ) : IsClosed {x ∈ s | b ≤ f x} :=
-  LowerSemicontinuousOn.isClosed_sep_le (γ := γᵒᵈ) hs hf b
-
-end Sublevel
-
-section WeakTransfer
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {A : Set E}
-
-/-- The image under `toWeakSpace` of a subset of `A` cut out by a predicate is the subset of the
-image of `A` cut out by the transported predicate. -/
-theorem image_toWeakSpace_sep {p : E → Prop} :
-    toWeakSpace ℝ E '' {v ∈ A | p v} =
-      {x ∈ toWeakSpace ℝ E '' A | p ((toWeakSpace ℝ E).symm x)} := by
-  ext x
-  constructor
-  · rintro ⟨v, ⟨hvA, hvp⟩, rfl⟩
-    exact ⟨⟨v, hvA, rfl⟩, by simpa using hvp⟩
-  · rintro ⟨⟨v, hvA, rfl⟩, hp⟩
-    exact ⟨v, ⟨hvA, by simpa using hp⟩, rfl⟩
-
-/-- The image of a convex set in the weak space is convex. -/
-theorem Convex.image_toWeakSpace (hA : Convex ℝ A) : Convex ℝ (toWeakSpace ℝ E '' A) :=
-  hA.linear_image (toWeakSpace ℝ E : E →ₗ[ℝ] WeakSpace ℝ E)
-
-/-- A quasiconvex function on `A` is quasiconvex on the weak image of `A`. -/
-theorem QuasiconvexOn.comp_toWeakSpace_symm {γ : Type*} [LE γ] {f : E → γ}
-    (hf : QuasiconvexOn ℝ A f) :
-    QuasiconvexOn ℝ (toWeakSpace ℝ E '' A) (f ∘ (toWeakSpace ℝ E).symm) := by
-  intro b
-  convert (hf b).image_toWeakSpace using 1
-  exact (image_toWeakSpace_sep (p := fun v => f v ≤ b)).symm
-
-/-- A quasiconcave function on `A` is quasiconcave on the weak image of `A`. -/
-theorem QuasiconcaveOn.comp_toWeakSpace_symm {γ : Type*} [LE γ] {f : E → γ}
-    (hf : QuasiconcaveOn ℝ A f) :
-    QuasiconcaveOn ℝ (toWeakSpace ℝ E '' A) (f ∘ (toWeakSpace ℝ E).symm) := by
-  intro b
-  convert (hf b).image_toWeakSpace using 1
-  exact (image_toWeakSpace_sep (p := fun v => b ≤ f v)).symm
-
-/-- **A lower semicontinuous quasiconvex function on a closed set is weakly lower
-semicontinuous there**: its sublevel sets are closed and convex, hence weakly closed by Mazur's
-theorem. This is the relative version of `LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le`;
-closedness of `A` is what makes the sublevel sets closed in `E`. -/
-theorem LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn {γ : Type*} [LinearOrder γ]
-    {f : E → γ} (hA : IsClosed A) (hf : QuasiconvexOn ℝ A f) (hlsc : LowerSemicontinuousOn f A) :
-    LowerSemicontinuousOn (f ∘ (toWeakSpace ℝ E).symm) (toWeakSpace ℝ E '' A) := by
-  rw [← lowerSemicontinuous_restrict_iff, lowerSemicontinuous_iff_isClosed_preimage]
-  intro b
-  have hcl : IsClosed (toWeakSpace ℝ E '' {v ∈ A | f v ≤ b}) :=
-    (hf b).isClosed_image_toWeakSpace_iff.2 (hlsc.isClosed_sep_le hA b)
-  convert hcl.preimage continuous_subtype_val using 1
-  ext ⟨_, v, hv, rfl⟩
-  simp [(toWeakSpace ℝ E).injective.mem_set_image, hv]
-
-/-- **An upper semicontinuous quasiconcave function on a closed set is weakly upper semicontinuous
-there.** -/
-theorem UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn {γ : Type*} [LinearOrder γ]
-    {f : E → γ} (hA : IsClosed A) (hf : QuasiconcaveOn ℝ A f) (husc : UpperSemicontinuousOn f A) :
-    UpperSemicontinuousOn (f ∘ (toWeakSpace ℝ E).symm) (toWeakSpace ℝ E '' A) :=
-  LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn (γ := γᵒᵈ) hA hf husc
-
-end WeakTransfer
-
 /-! ### Sion's theorem in a reflexive space -/
 
 section Bounded
@@ -196,8 +113,8 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace.I
   [NormedAddCommGroup Q] [NormedSpace ℝ Q] [NormedSpace.IsReflexive ℝ Q]
   {A : Set V} {B : Set Q} {L : V → Q → ℝ}
 
-/-- **Sion's minimax theorem in reflexive spaces** (Ekeland–Temam, *Convex Analysis and
-Variational Problems*, Chapter VI, Proposition 2.1). Let `A ⊆ V` and `B ⊆ Q` be nonempty bounded
+/-- **Sion's minimax theorem in reflexive spaces** ([ekeland1999convex] Chapter VI,
+Proposition 2.1). Let `A ⊆ V` and `B ⊆ Q` be nonempty bounded
 closed convex subsets of reflexive real normed spaces, and let `L : V → Q → ℝ` be lower
 semicontinuous and quasiconvex in its first variable on `A` for every `q ∈ B`, upper semicontinuous
 and quasiconcave in its second variable on `B` for every `v ∈ A`. Then `L` has a saddle point
@@ -315,20 +232,8 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace.I
   [NormedAddCommGroup Q] [NormedSpace ℝ Q] [NormedSpace.IsReflexive ℝ Q]
   {A : Set V} {B : Set Q} {L : V → Q → ℝ}
 
-/-- **Existence of a maximizer of a concave functional**, the mirror of
-`exists_isMinOn_of_convexOn`: on a nonempty closed convex subset of a reflexive space, an upper
-semicontinuous concave functional attains its maximum as soon as the set is bounded or the
-negated functional is coercive. -/
-theorem exists_isMaxOn_of_concaveOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty) (hcl : IsClosed K)
-    (hconv : Convex ℝ K) (hf : ConcaveOn ℝ K f) (husc : UpperSemicontinuousOn f K)
-    (h : IsBounded K ∨ IsCoerciveFunctionalOn (-f) K) : ∃ u ∈ K, IsMaxOn f K u := by
-  have hlsc : LowerSemicontinuousOn (-f) K :=
-    continuous_neg.comp_upperSemicontinuousOn_antitone husc fun _ _ h => neg_le_neg h
-  obtain ⟨u, hu, hmin⟩ := exists_isMinOn_of_convexOn hne hcl hconv hf.neg hlsc h
-  exact ⟨u, hu, isMaxOn_iff.2 fun x hx => neg_le_neg_iff.1 (isMinOn_iff.1 hmin x hx)⟩
-
-/-- **Existence of a saddle point under coercivity** (Ekeland–Temam, *Convex Analysis and
-Variational Problems*, Chapter VI, Proposition 2.2; [han2009theoretical] Theorem 8.6.3). Let
+/-- **Existence of a saddle point under coercivity** ([ekeland1999convex] Chapter VI,
+Proposition 2.2; [han2009theoretical] Theorem 8.6.3). Let
 `A ⊆ V` and `B ⊆ Q` be closed convex subsets of reflexive real normed spaces, and let
 `L : V → Q → ℝ` be convex and lower semicontinuous in its first variable on `A` for every `q ∈ B`,
 concave and upper semicontinuous in its second variable on `B` for every `v ∈ A`. If some slice
@@ -398,7 +303,7 @@ theorem exists_isSaddlePointOn_of_isCoerciveFunctionalOn (hAcl : IsClosed A)
     h.of_inter_closedBall_right hBconv (hLq u hu) ⟨hu, hur⟩ hp (hpr'.trans hR₂r)
   exact h'.of_inter_closedBall_left hAconv (hLv p hp) hu hp (hur'.trans hR₁r)
 
-/-- **Existence of a saddle point, coercivity of the supremum** (Ekeland–Temam, Chapter VI,
+/-- **Existence of a saddle point, coercivity of the supremum** ([ekeland1999convex] Chapter VI,
 Remark after Proposition 2.3; [han2009theoretical] Theorem 8.6.3, condition (f)'). The pointwise
 coercivity of a slice `L (·, q₀)` on `A` may be replaced by the coercivity of
 `v ↦ sup_{q ∈ B} L (v, q)`, stated without a supremum as: for every `M` there is `R` such that

@@ -283,6 +283,34 @@ theorem addSingle_injective (i : ι) :
     Function.Injective (MultiIndexLE.addSingle i : MultiIndexLE ι k → MultiIndexLE ι (k + 1)) :=
   fun _ _ h ↦ Subtype.ext (add_right_cancel (Subtype.mk.inj h))
 
+/-- A nonzero multi-index of order at most `k + 1` is `β' + e_i` for some `i` and some `β'` of
+order at most `k`. -/
+theorem exists_eq_addSingle (β : MultiIndexLE ι (k + 1))
+    (hβ : β ≠ 0) : ∃ (i : ι) (β' : MultiIndexLE ι k), β = MultiIndexLE.addSingle i β' := by
+  have hex : ∃ i, β.1 i ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hβ (Subtype.ext (funext h))
+  obtain ⟨i, hi⟩ := hex
+  have hle : ∀ x, (Pi.single i 1 : ι → ℕ) x ≤ β.1 x := fun x ↦ by
+    by_cases hx : x = i
+    · subst hx
+      simp only [Pi.single_eq_same]
+      omega
+    · simp [Pi.single_eq_of_ne hx]
+  refine ⟨i, ⟨fun x ↦ β.1 x - (Pi.single i 1 : ι → ℕ) x, ?_⟩, Subtype.ext ?_⟩
+  · have hsum : ∑ x, (β.1 x - (Pi.single i 1 : ι → ℕ) x) + ∑ x, (Pi.single i 1 : ι → ℕ) x
+        = ∑ x, β.1 x := by
+      rw [← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun x _ ↦ tsub_add_cancel_of_le (hle x)
+    have h2 := β.2
+    simp only [Finset.sum_pi_single', Finset.mem_univ, ite_true] at hsum
+    change ∑ x, (β.1 x - (Pi.single i 1 : ι → ℕ) x) ≤ k
+    omega
+  · simp only [MultiIndexLE.coe_addSingle]
+    funext x
+    exact (tsub_add_cancel_of_le (hle x)).symm
+
 /-- The multi-index `e_i` of order at most `k + 1`. -/
 def singleLE (i : ι) : MultiIndexLE ι (k + 1) :=
   ⟨Pi.single i 1, by simp⟩
@@ -1641,6 +1669,62 @@ end Euclidean
 /-! ### The closed-graph lifts into `H^k(Ω)` -/
 
 section ClosedGraph
+
+section General
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F] [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι]
+  {b : Basis ι ℝ E} {k k' : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] {Ω Ω' : Opens E}
+  {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
+
+namespace SobolevMultiIndex
+
+/-- **The closed graph theorem for an operator between Sobolev spaces**: a linear map
+`T : W^{k,p}(Ω) → W^{k',q}(Ω')` whose function `u ↦ fn (T u) ∈ L^q(Ω')` is a continuous function
+of `u` is continuous. Both spaces are Banach, and the graph is closed because the inclusions
+`W^{k,p} → L^p` are continuous and injective. -/
+theorem continuous_of_fnL_comp_eq
+    (T : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] SobolevMultiIndex F b k' q Ω' μ)
+    {G : SobolevMultiIndex F b k p Ω μ → Lp F q (μ.restrict (Ω' : Set E))} (hG : Continuous G)
+    (hT : ∀ u, fnL F b k' q Ω' μ (T u) = G u) : Continuous T := by
+  refine T.continuous_of_seq_closed_graph fun u x y hu hTu ↦ ?_
+  have h1 : Tendsto (fun n ↦ fnL F b k' q Ω' μ (T (u n))) atTop (𝓝 (fnL F b k' q Ω' μ y)) :=
+    ((fnL F b k' q Ω' μ).continuous.tendsto y).comp hTu
+  have h2 : Tendsto (fun n ↦ fnL F b k' q Ω' μ (T (u n))) atTop
+      (𝓝 (fnL F b k' q Ω' μ (T x))) := by
+    simp only [hT]
+    exact (hG.tendsto x).comp hu
+  exact fnL_injective (tendsto_nhds_unique h1 h2)
+
+/-- **A bounded linear map into `L^q(Ω')` whose values lie in `W^{k',q}(Ω')` lifts to a bounded
+linear map into `W^{k',q}(Ω')`**: the lift is defined through
+`MemSobolevMultiIndex.exists_sobolevMultiIndex`, is linear by the uniqueness of the weak
+derivatives, and is continuous by the closed graph theorem
+(`SobolevMultiIndex.continuous_of_fnL_comp_eq`). -/
+theorem exists_continuousLinearMap_of_forall_memSobolevMultiIndex
+    (G : SobolevMultiIndex F b k p Ω μ →L[ℝ] Lp F q (μ.restrict (Ω' : Set E)))
+    (hG : ∀ u, MemSobolevMultiIndex b (G u) k' q Ω' μ) :
+    ∃ T : SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k' q Ω' μ,
+      ∀ u, fnL F b k' q Ω' μ (T u) = G u := by
+  choose T' hT' using fun u ↦ (hG u).exists_sobolevMultiIndex
+  have hfn : ∀ u, fnL F b k' q Ω' μ (T' u) = G u := fun u ↦ by
+    apply Lp.ext
+    rw [fnL_apply]
+    exact hT' u
+  have hadd : ∀ u v, T' (u + v) = T' u + T' v := fun u v ↦
+    fnL_injective (by rw [map_add, hfn, hfn, hfn, map_add])
+  have hsmul : ∀ (c : ℝ) u, T' (c • u) = c • T' u := fun c u ↦
+    fnL_injective (by rw [map_smul, hfn, hfn, map_smul])
+  obtain ⟨Tₗ, hTₗ⟩ : ∃ Tₗ : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] SobolevMultiIndex F b k' q Ω' μ,
+      ∀ u, Tₗ u = T' u := ⟨{ toFun := T', map_add' := hadd, map_smul' := hsmul }, fun _ ↦ rfl⟩
+  have hT : ∀ u, fnL F b k' q Ω' μ (Tₗ u) = G u := fun u ↦ by rw [hTₗ]; exact hfn u
+  have hcont : Continuous Tₗ := continuous_of_fnL_comp_eq Tₗ G.continuous hT
+  exact ⟨⟨Tₗ, hcont⟩, fun u ↦ hT u⟩
+
+end SobolevMultiIndex
+
+end General
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 

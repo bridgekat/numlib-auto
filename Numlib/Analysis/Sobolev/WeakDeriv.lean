@@ -321,7 +321,32 @@ theorem mulContDiff_coe (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ 
     (φ.mulContDiff hg : E → ℝ) = fun x ↦ φ x * g x :=
   rfl
 
+/-- `φ c` is `C^1` on the whole space for a test function `φ` on `Ω` and a `c` of class `C^1`
+on `Ω`: it is `C^1` on `Ω` and vanishes on the open complement of the support of `φ`. -/
+theorem contDiff_mul_of_contDiffOn (φ : 𝓓(Ω, ℝ)) {c : E → ℝ}
+    (hc : ContDiffOn ℝ 1 c Ω) : ContDiff ℝ 1 fun x ↦ φ x * c x := by
+  rw [contDiff_iff_contDiffAt]
+  intro x
+  by_cases hx : x ∈ (Ω : Set E)
+  · exact (φ.contDiff.of_le (by simp)).contDiffAt.mul (hc.contDiffAt (Ω.isOpen.mem_nhds hx))
+  · have hx' : x ∉ tsupport φ := fun h ↦ hx (φ.tsupport_subset h)
+    refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
+    filter_upwards [(isClosed_tsupport φ).isOpen_compl.mem_nhds hx'] with y hy
+    rw [image_eq_zero_of_notMem_tsupport hy, zero_mul]
+
 end TestFunction
+
+/-- A function continuous on `Ω` times a test function is integrable on `Ω`, for a locally
+finite measure. -/
+theorem integrable_mul_testFunction {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [MeasurableSpace E] [OpensMeasurableSpace E] {Ω : Opens E} {μ : Measure E}
+    [IsLocallyFiniteMeasure μ] {g : E → ℝ} (hg : ContinuousOn g Ω) (φ : 𝓓(Ω, ℝ)) :
+    Integrable (fun x ↦ g x * φ x) (μ.restrict (Ω : Set E)) := by
+  have := (hg.locallyIntegrableOn (μ := μ) Ω.isOpen.measurableSet)
+    |>.integrable_smul_left_of_tsupport_subset φ.contDiff.continuous φ.hasCompactSupport
+      φ.tsupport_subset
+  simp only [smul_eq_mul] at this
+  exact this.integrableOn.congr_fun (fun x _ ↦ mul_comm _ _) Ω.isOpen.measurableSet
 
 /-! ### The weak derivative -/
 

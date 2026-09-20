@@ -1,0 +1,7 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "linearIndependent_X_sub_C_pow"
+
+[[node]]
+id = "exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero"

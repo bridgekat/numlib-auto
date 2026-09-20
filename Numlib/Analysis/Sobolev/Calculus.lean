@@ -55,7 +55,7 @@ which is what Mathlib's Jacobian formula is stated for and what the charts of
 `Numlib/Analysis/Sobolev/Chart.lean` are. The hypothesis bundle `IsDiffeoOnWithBoundedJacobian`
 lives in `Chart.lean`; a chart restricted to `Q₊` is an instance.
 
-The typed operators follow the pattern of `Numlib/Analysis/Sobolev/Cutoff.lean`: membership and
+The typed operators follow the pattern of `Numlib/Analysis/Sobolev/Operators.lean`: membership and
 the bound at the predicate level, then `MemSobolevMultiIndex.exists_sobolevMultiIndex` and
 `SobolevMultiIndex.ext_of_fn_ae_eq`. The operator norm of a bundled map is free
 (`ContinuousLinearMap.le_opNorm`); only the `L^p` bound on the function is carried explicitly,
@@ -1647,6 +1647,49 @@ theorem isDiffeoOnWithBoundedJacobian_affine (T : E ≃L[ℝ] E) (c : E) (Ω : O
       T.symm.hasFDerivAt.comp x ((hasFDerivAt_id x).sub_const c)
     rw [h.fderiv, ContinuousLinearMap.comp_id]
     exact le_max_right _ _
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The affine map `y ↦ T⁻¹ y − T⁻¹ c` is the inverse of `x ↦ T x + c`: the preimage of the
+preimage is the set. -/
+theorem affine_symm_preimage_affine_preimage (T : E ≃L[ℝ] E) (c : E) (s : Set E) :
+    (fun y ↦ T.symm y + -T.symm c) ⁻¹' ((fun x ↦ T x + c) ⁻¹' s) = s := by
+  ext x
+  simp
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The image of a set under the affine bijection `x ↦ T x + c` is its preimage under the inverse
+`y ↦ T⁻¹ y − T⁻¹ c`. -/
+theorem affine_image_eq_affine_symm_preimage (T : E ≃L[ℝ] E) (c : E) (s : Set E) :
+    (fun x ↦ T x + c) '' s = (fun y ↦ T.symm y + -T.symm c) ⁻¹' s := by
+  ext y
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    simpa using hx
+  · intro hy
+    exact ⟨T.symm y + -T.symm c, hy, by simp⟩
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The affine map `x ↦ T x + c` is a diffeomorphism with bounded Jacobians of `ℝ^N` onto
+itself, with source and target the open set `⊤`. -/
+theorem isDiffeoOnWithBoundedJacobian_affine_top (T : E ≃L[ℝ] E) (c : E) :
+    IsDiffeoOnWithBoundedJacobian (fun x ↦ T x + c) (fun y ↦ T.symm (y - c))
+      ((⊤ : Opens E) : Set E) ((⊤ : Opens E) : Set E)
+      (max ‖(T : E →L[ℝ] E)‖ ‖(T.symm : E →L[ℝ] E)‖) := by
+  have h := isDiffeoOnWithBoundedJacobian_affine T c (⊤ : Opens E)
+  rwa [show (fun x ↦ T x + c) ⁻¹' ((⊤ : Opens E) : Set E) = ((⊤ : Opens E) : Set E) by simp]
+    at h
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The inverse affine map `y ↦ T⁻¹ y − T⁻¹ c` is a diffeomorphism with bounded Jacobians of `Ω`
+onto the preimage `Ω' = F⁻¹(Ω)` of `F x = T x + c`. -/
+theorem isDiffeoOnWithBoundedJacobian_affine_symm {Ω Ω' : Opens E} (T : E ≃L[ℝ] E) (c : E)
+    (hΩ' : (Ω' : Set E) = (fun x ↦ T x + c) ⁻¹' Ω) :
+    IsDiffeoOnWithBoundedJacobian (fun y ↦ T.symm y + -T.symm c)
+      (fun x ↦ T.symm.symm (x - -T.symm c)) (Ω : Set E) (Ω' : Set E)
+      (max ‖(T.symm : E →L[ℝ] E)‖ ‖(T.symm.symm : E →L[ℝ] E)‖) := by
+  have h := isDiffeoOnWithBoundedJacobian_affine T.symm (-T.symm c) Ω'
+  rwa [show (fun y ↦ T.symm y + -T.symm c) ⁻¹' (Ω' : Set E) = (Ω : Set E) by
+    rw [hΩ', affine_symm_preimage_affine_preimage]] at h
 
 /-- **The affine change of variables at every order**: for `T : E ≃L[ℝ] E`, `c : E` and
 `HasWeakIteratedFDerivOn n v w Ω μ`, the composite `x ↦ v (T x + c)` has, on the preimage

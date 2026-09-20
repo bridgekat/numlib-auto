@@ -402,3 +402,10 @@ id = "solutionOperator_isCompactOperator_of_isCompactOperator_fnL"
 
 [[node]]
 id = "generalForm_garding_restrict_isCoercive"
+
+[[node]]
+id = "norm_sq_le_dirichletForm_self"
+source = "Brezis, Functional Analysis, Corollary 9.19 (Poincaré's inequality), squared"
+
+[[node]]
+id = "dirichletForm_eq_integral_neg_laplacian_mul"

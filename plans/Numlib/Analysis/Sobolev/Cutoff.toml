@@ -22,16 +22,6 @@ id = "MemSobolevMultiIndex.indicator_mul"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
 
 [[node]]
-id = "SobolevMultiIndex.restrictL"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMulL"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
-
-[[node]]
-id = "SobolevMultiIndex.toLpₗ"
-
-[[node]]
 id = "MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
 
@@ -41,10 +31,6 @@ id = "HasWeakIteratedFDerivOn.contDiff_mul_one"
 [[node]]
 id = "SobolevMultiIndex.tendsto_cutoff_smul"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
-
-[[node]]
-id = "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.5"
 
 [[node]]
 id = "MemSobolevMultiIndexLoc"
@@ -59,10 +45,6 @@ id = "MemSobolevMultiIndex.indicator_smul_of_tsupport_subset"
 [[node]]
 id = "IsSobolevExtensionDomain"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.3.B, the standing hypothesis"
-
-[[node]]
-id = "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"
 
 [[node]]
 id = "IsSobolevCutoff.continuous"
@@ -113,118 +95,7 @@ id = "MeasureTheory.Lp.norm_monoMeasureL_apply_le"
 id = "MeasureTheory.Lp.norm_monoMeasureL_le"
 
 [[node]]
-id = "SobolevMultiIndex.weakDeriv_add"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_smul"
-
-[[node]]
-id = "SobolevMultiIndex.restrict_le_restrict_of_le"
-
-[[node]]
-id = "SobolevMultiIndex.restrictTuple"
-
-[[node]]
-id = "SobolevMultiIndex.restrictTuple_mem"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_restrictL"
-
-[[node]]
-id = "SobolevMultiIndex.fn_restrictL"
-
-[[node]]
-id = "SobolevMultiIndex.norm_restrictL_apply_le"
-
-[[node]]
-id = "SobolevMultiIndex.norm_restrictL_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLpₗ_coeFn"
-
-[[node]]
-id = "SobolevMultiIndex.toLpₗ_injective"
-
-[[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗ"
-
-[[node]]
-id = "SobolevMultiIndex.toLpₗ_self"
-
-[[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_fnL"
-
-[[node]]
-id = "MeasureTheory.eventuallyEq_restrict_coe_top_iff"
-
-[[node]]
-id = "MeasureTheory.eLpNorm_restrict_coe_top"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMul"
-
-[[node]]
-id = "SobolevMultiIndex.fn_extendZeroMul"
-
-[[node]]
-id = "SobolevMultiIndex.fn_extendZeroMul_restrict"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_extendZeroMul_single"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMul_add"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMul_smul"
-
-[[node]]
-id = "SobolevMultiIndex.eLpNorm_fn_extendZeroMul_le"
-
-[[node]]
-id = "SobolevMultiIndex.norm_extendZeroMul_le"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMulₗ"
-
-[[node]]
-id = "SobolevMultiIndex.extendZeroMulL_apply"
-
-[[node]]
-id = "SobolevMultiIndex.fn_extendZeroMulL"
-
-[[node]]
-id = "SobolevMultiIndex.fn_extendZeroMulL_restrict"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_extendZeroMulL_single"
-
-[[node]]
-id = "SobolevMultiIndex.eLpNorm_fn_extendZeroMulL_le"
-
-[[node]]
-id = "SobolevMultiIndex.norm_extendZeroMulL_apply_le"
-
-[[node]]
-id = "Continuous.memLp_restrict_of_isCompact_closure"
-
-[[node]]
-id = "MeasureTheory.eLpNorm_sub_le_of_norm"
-
-[[node]]
-id = "MeasureTheory.MemLp.sub_of_norm"
-
-[[node]]
 id = "SobolevMultiIndex.norm_le_sum_norm_weakDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq"
-
-[[node]]
-id = "SobolevMultiIndex.eLpNorm_weakDeriv_sub_le_of_fn_ae_eq"
-
-[[node]]
-id = "MeasureTheory.eLpNorm_smul_restrict_le_of_tsupport_subset"
 
 [[node]]
 id = "MemSobolevMultiIndex.mono_set"
@@ -291,75 +162,6 @@ id = "HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset"
 id = "HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple"
 
 [[node]]
-id = "SobolevMultiIndex.norm_le_card_mul_of_forall_norm_weakDeriv_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_toLowerOrder"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerOrder"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerOrder_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerOrderL_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL_injective"
-
-[[node]]
-id = "SobolevMultiIndex.norm_le_norm_of_injective"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_single"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_addSingle"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.fn_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_fn_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.norm_partialDeriv_le"
-
-[[node]]
-id = "SobolevMultiIndex.partialDerivL"
-
-[[node]]
-id = "SobolevMultiIndex.norm_partialDerivL_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder_add"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder_smul"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL_apply"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv_add"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv_smul"
-
-[[node]]
 id = "MeasureTheory.Lp.monoExponentL"
 
 [[node]]
@@ -370,42 +172,6 @@ id = "MeasureTheory.Lp.monoExponentL_injective"
 
 [[node]]
 id = "MeasureTheory.Lp.isContinuousEmbedding_monoExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.memSobolevMultiIndex_of_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.norm_weakDeriv_toLowerExponent_le"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerExponent_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponentL_injective"
-
-[[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.partialDerivL_apply"
-
-[[node]]
-id = "SobolevMultiIndex.fnL_comp_toLowerOrderL"
 
 [[node]]
 id = "MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact"
@@ -424,3 +190,50 @@ id = "MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact"
 
 [[node]]
 id = "IsSobolevCutoff.of_hasCompactSupport_sub"
+
+[[node]]
+id = "SobolevMultiIndex.ofReal_norm_le_sobolevNorm_of_order"
+
+[[node]]
+id = "SobolevEuclidean.exists_fn_ae_eq_of_contDiff"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.mul_contDiffOn_one"
+
+[[node]]
+id = "SobolevMultiIndex.norm_gradFn_le_sum"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_norm_gradFn"
+
+[[node]]
+id = "SobolevMultiIndex.inner_gradFn"
+
+[[node]]
+id = "SobolevMultiIndex.memLp_gradFn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.2"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn_add"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn_smul"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn_combo"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn_sub"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_eq_zero_of_gradFn_ae_eq_zero"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_rpow_le_integral"
+
+[[node]]
+id = "SobolevMultiIndex.integral_norm_gradFn_rpow_le"
+
+[[node]]
+id = "MeasureTheory.Lp.norm_rpow_eq_integral"
+

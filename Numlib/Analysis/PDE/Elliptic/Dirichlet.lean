@@ -285,6 +285,28 @@ theorem dirichletForm_isBoundedWith : (dirichletForm Ω).IsBoundedWith 1 := fun 
   · exact SobolevMultiIndex.gradNorm_le_norm u
   · exact SobolevMultiIndex.gradNorm_le_norm v
 
+section Poincare
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **Poincaré's inequality for the Dirichlet form**: `‖u‖²_{H¹} ≤ (1 + (2R)²) ∫_Ω |∇u|²` for
+`u ∈ H¹₀(Ω)` and `Ω ⊆ B(0, R)` (`SobolevEuclideanZero.norm_le_gradNorm` at `p = 2`); the
+coercivity of the Dirichlet form on `H¹₀(Ω)`, `Elliptic.dirichletForm_restrict_isCoerciveWith` of
+`Numlib/Analysis/PDE/Elliptic/Spectral.lean`, is its restatement. -/
+theorem norm_sq_le_dirichletForm_self {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
+    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    ‖u‖ ^ 2 ≤ (1 + (2 * R) ^ 2) * dirichletForm Ω u u := by
+  have hP := SobolevEuclideanZero.norm_le_gradNorm (p := 2) (by norm_num) hR hΩ ⟨u, hu⟩
+  simp only [ENNReal.toReal_ofNat, Real.rpow_two, ← Real.sqrt_eq_rpow] at hP
+  rw [dirichletForm_self_eq_gradNorm_sq]
+  have hK : (0 : ℝ) ≤ 1 + (2 * R) ^ 2 := by positivity
+  calc ‖u‖ ^ 2 ≤ (√(1 + (2 * R) ^ 2) * SobolevMultiIndex.gradNorm u) ^ 2 :=
+        pow_le_pow_left₀ (norm_nonneg _) hP 2
+    _ = (1 + (2 * R) ^ 2) * SobolevMultiIndex.gradNorm u ^ 2 := by rw [mul_pow, Real.sq_sqrt hK]
+
+end Poincare
+
 /-- **The form of `-Δ + 1`**: `a(u, v) = ∫_Ω ∇u · ∇v + ∫_Ω u v` on `H^1(Ω)`, the bilinear form of
 [brezis2011functional] Theorem 9.21, Proposition 9.22, Proposition 9.24, Theorem 9.25,
 Theorem 9.27 and Corollary 9.28. -/
@@ -1431,6 +1453,36 @@ theorem laplaceForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
   rw [laplaceForm_apply_inner, e2, e3, e4, e0]
   congr 1
   exact Finset.sum_congr rfl fun i _ ↦ by rw [e1, hibp]
+
+/-- **Integration by parts against a test function**: for `U ∈ H¹(Ω)` whose function is `C²` on
+`Ω` and `V ∈ H¹(Ω)` whose function is a test function `φ`, `∫_Ω ∇U · ∇V = ∫_Ω (−Δu) φ`.  The
+Dirichlet form is the form of `−Δ + 1` minus the `L²` product
+(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`). -/
+theorem dirichletForm_eq_integral_neg_laplacian_mul (hu : ContDiffOn ℝ 2 u Ω)
+    {U : SobolevEuclidean N 1 2 Ω}
+    (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
+    {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
+    (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
+    dirichletForm Ω U V
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), -Δ u x * φ x := by
+  have h1 := laplaceForm_eq_integral_of_contDiffOn Ω hu hU hV
+  have h2 := laplaceForm_apply_eq_dirichletForm_add_weakDeriv Ω U V
+  have h3 : ⟪SobolevMultiIndex.weakDeriv U 0, SobolevMultiIndex.weakDeriv V 0⟫_ℝ
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), u x * φ x := by
+    rw [L2.inner_eq_integral_mul]
+    exact integral_congr_ae (hU.mul hV)
+  have hI1 : Integrable (fun x ↦ -Δ u x * φ x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    integrable_mul_testFunction (continuousOn_laplacian Ω hu).neg φ
+  have hI2 : Integrable (fun x ↦ u x * φ x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    integrable_mul_testFunction (hu.of_le (by norm_num) : ContDiffOn ℝ 1 u Ω).continuousOn φ
+  have e : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-Δ u x + u x) * φ x
+      = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), -Δ u x * φ x)
+        + ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), u x * φ x := by
+    rw [← integral_add hI1 hI2]
+    exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
+  linarith
 
 /-- **The interior half of Step A of Example 1**: let `Ω ⊆ ℝ^N` be open and bounded,
 `u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`: `C²` on `Ω` with derivatives of order `≤ 2` extending

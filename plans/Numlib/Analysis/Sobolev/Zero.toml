@@ -489,3 +489,13 @@ id = "SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero"
 
 [[node]]
 id = "SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions"
+
+[[node]]
+id = "SobolevEuclideanZero.mem_of_nonneg_of_le"
+source = "Kinderlehrer and Stampacchia, An Introduction to Variational Inequalities and Their Applications, Chapter II, Appendix A (a function squeezed between 0 and an H^1_0 function lies in H^1_0)"
+
+[[node]]
+id = "SobolevEuclideanZero.exists_eq_sub_of_nonneg"
+
+[[node]]
+id = "SobolevEuclidean.norm_le_of_fn_ae_eq_posPart"

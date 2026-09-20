@@ -6,6 +6,7 @@ Natural home: `Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic` and
 `Mathlib.MeasureTheory.Function.LpSpace.Basic`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Function.AbsolutelyContinuous
 import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Function.L2Space
@@ -33,6 +34,15 @@ interval `(a, b)`, none of which is about any particular numerical method:
   against an `L²` function (`MeasureTheory.integrableOn_continuousOn_mul`), and determined on
   `[a, b]` by its class in `L²(a, b)` (`eqOn_Icc_of_ae_eq`); two norm bounds for `L²(a, b)`
   (`MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound`, `MeasureTheory.Lp.norm_le_of_abs_le`);
+* **Cauchy–Schwarz** for the integral of a product, `|∫ f g| ≤ √(∫ f²) √(∫ g²)` for any measure
+  (`MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`) and for interval integrals
+  (`intervalIntegral.integral_mul_le_sqrt_mul_sqrt`; the squared form for continuous functions is
+  `intervalIntegral.sq_integral_mul_le_of_continuousOn`), with the interval integrability of the
+  product of two square integrable functions (`intervalIntegrable_mul_of_sq`,
+  `intervalIntegrable_sub_sq`);
+* **Poincaré's inequality in classical form**, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²` for a `C¹`
+  function vanishing at the left endpoint
+  (`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`);
 * the primitive `x ↦ ∫_a^x w` of a function integrable on `(a, b)` is continuous on `[a, b]`
   (`intervalIntegral.continuousOn_integral_of_integrableOn_Ioo`) and, for `w` continuous, has right
   derivative `w` on `[a, b)` (`intervalIntegral.hasDerivWithinAt_integral_Ici`,
@@ -192,6 +202,160 @@ theorem MeasureTheory.Lp.norm_le_of_abs_le (f g h : Lp ℝ 2 (volume.restrict (I
         rw [norm_abs_eq_norm, norm_smul, norm_abs_eq_norm, Real.norm_eq_abs, abs_of_nonneg hd]
 
 end Lp
+
+/-! ### Cauchy–Schwarz for integrals of products -/
+
+section CauchySchwarz
+
+/-- **Cauchy–Schwarz for the integral of a product**: for square-integrable real `f` and `g`,
+`|∫ f g| ≤ √(∫ f²) √(∫ g²)`. This is Hölder's inequality at the conjugate pair `(2, 2)`. -/
+theorem MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt {X : Type*} [MeasurableSpace X]
+    {μ : Measure X} {f g : X → ℝ} (hf : MemLp f 2 μ) (hg : MemLp g 2 μ) :
+    |∫ y, f y * g y ∂μ| ≤ √(∫ y, f y ^ 2 ∂μ) * √(∫ y, g y ^ 2 ∂μ) := by
+  have hpq : (2 : ℝ).HolderConjugate 2 := by
+    rw [Real.holderConjugate_iff]; norm_num
+  have h2 : ENNReal.ofReal (2 : ℝ) = 2 := by
+    simp [ENNReal.ofReal_ofNat]
+  have key := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq (μ := μ) (f := f) (g := g) hpq
+    (by rwa [h2]) (by rwa [h2])
+  have hrw : ∀ h : X → ℝ, (∫ y, ‖h y‖ ^ (2 : ℝ) ∂μ) ^ (1 / 2 : ℝ) = √(∫ y, h y ^ 2 ∂μ) := by
+    intro h
+    rw [Real.sqrt_eq_rpow]
+    congr 1
+    refine integral_congr_ae (Eventually.of_forall fun y => ?_)
+    change ‖h y‖ ^ (2 : ℝ) = h y ^ 2
+    rw [show ((2 : ℝ)) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast, Real.norm_eq_abs, sq_abs]
+  rw [hrw f, hrw g] at key
+  refine le_trans (abs_integral_le_integral_abs) (le_trans (le_of_eq ?_) key)
+  refine integral_congr_ae (Eventually.of_forall fun y => ?_)
+  simp [abs_mul, Real.norm_eq_abs]
+
+variable {u v : ℝ} {f g : ℝ → ℝ}
+
+/-- **Cauchy–Schwarz for interval integrals** of square integrable functions:
+`∫_u^v f g ≤ √(∫_u^v f²) √(∫_u^v g²)`. Hölder's inequality at the conjugate pair `(2, 2)`. -/
+theorem intervalIntegral.integral_mul_le_sqrt_mul_sqrt (huv : u ≤ v)
+    (hf : IntervalIntegrable f volume u v) (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v)
+    (hg : IntervalIntegrable g volume u v)
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
+    ∫ s in u..v, f s * g s ≤ √(∫ s in u..v, f s ^ 2) * √(∫ s in u..v, g s ^ 2) := by
+  have hfm : MemLp f 2 (volume.restrict (Ioc u v)) :=
+    (memLp_two_iff_integrable_sq hf.1.aestronglyMeasurable).2 hf2.1
+  have hgm : MemLp g 2 (volume.restrict (Ioc u v)) :=
+    (memLp_two_iff_integrable_sq hg.1.aestronglyMeasurable).2 hg2.1
+  have key := MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt hfm hgm
+  rw [intervalIntegral.integral_of_le huv, intervalIntegral.integral_of_le huv,
+    intervalIntegral.integral_of_le huv]
+  exact (le_abs_self _).trans key
+
+/-- **Cauchy–Schwarz for interval integrals** of continuous functions:
+`(∫_a^b f g)² ≤ (∫_a^b f²)(∫_a^b g²)`, from the nonnegativity of `∫ (λ f + g)²` and the sign of
+its discriminant. -/
+theorem intervalIntegral.sq_integral_mul_le_of_continuousOn {a b : ℝ} (hab : a ≤ b)
+    (hf : ContinuousOn f (Icc a b)) (hg : ContinuousOn g (Icc a b)) :
+    (∫ t in a..b, f t * g t) ^ 2 ≤ (∫ t in a..b, f t ^ 2) * ∫ t in a..b, g t ^ 2 := by
+  have hff : IntervalIntegrable (fun t => f t ^ 2) volume a b :=
+    (hf.pow 2).intervalIntegrable_of_Icc hab
+  have hgg : IntervalIntegrable (fun t => g t ^ 2) volume a b :=
+    (hg.pow 2).intervalIntegrable_of_Icc hab
+  have hfg : IntervalIntegrable (fun t => f t * g t) volume a b :=
+    (hf.mul hg).intervalIntegrable_of_Icc hab
+  have hexp : ∀ l : ℝ, (∫ t in a..b, (l * f t + g t) ^ 2)
+      = (∫ t in a..b, f t ^ 2) * (l * l) + 2 * (∫ t in a..b, f t * g t) * l
+        + ∫ t in a..b, g t ^ 2 := by
+    intro l
+    have hcongr : ∀ t ∈ uIcc a b, (l * f t + g t) ^ 2
+        = l ^ 2 * f t ^ 2 + (2 * l) * (f t * g t) + g t ^ 2 := fun t _ => by ring
+    rw [integral_congr hcongr, integral_add ((hff.const_mul _).add (hfg.const_mul _)) hgg,
+      integral_add (hff.const_mul _) (hfg.const_mul _),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul]
+    ring
+  have hnn : ∀ l : ℝ, 0 ≤ (∫ t in a..b, f t ^ 2) * (l * l)
+      + 2 * (∫ t in a..b, f t * g t) * l + ∫ t in a..b, g t ^ 2 := by
+    intro l
+    rw [← hexp l]
+    exact integral_nonneg hab fun t _ => sq_nonneg _
+  have hd := discrim_le_zero hnn
+  rw [discrim] at hd
+  nlinarith [hd]
+
+/-- The product of two square integrable functions is interval integrable. -/
+theorem intervalIntegrable_mul_of_sq (hf : IntervalIntegrable f volume u v)
+    (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v) (hg : IntervalIntegrable g volume u v)
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
+    IntervalIntegrable (fun s => f s * g s) volume u v :=
+  ⟨((memLp_two_iff_integrable_sq hf.1.aestronglyMeasurable).2 hf2.1).integrable_mul
+      ((memLp_two_iff_integrable_sq hg.1.aestronglyMeasurable).2 hg2.1),
+    ((memLp_two_iff_integrable_sq hf.2.aestronglyMeasurable).2 hf2.2).integrable_mul
+      ((memLp_two_iff_integrable_sq hg.2.aestronglyMeasurable).2 hg2.2)⟩
+
+/-- The square of the difference of a square integrable function and a continuous one is
+interval integrable. -/
+theorem intervalIntegrable_sub_sq {p : ℝ → ℝ} (hg : IntervalIntegrable g volume u v)
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) (hp : ContinuousOn p [[u, v]]) :
+    IntervalIntegrable (fun s => (g s - p s) ^ 2) volume u v := by
+  have : (fun s => (g s - p s) ^ 2) = fun s => g s ^ 2 - 2 * (g s * p s) + p s ^ 2 := by
+    funext s; ring
+  rw [this]
+  exact (hg2.sub ((hg.mul_continuousOn hp).const_mul 2)).add (hp.pow 2).intervalIntegrable
+
+end CauchySchwarz
+
+/-! ### Poincaré's inequality on an interval, classical form -/
+
+/-- **Poincaré's inequality on an interval, classical form**: for a `C¹` function `v` on
+`[a, b]` vanishing at the left endpoint, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²`. Since
+`v(y) = ∫_a^y v'`, Cauchy–Schwarz against `1` gives `v(y)² ≤ (y - a) ∫_a^b (v')²`, and
+`∫_a^b (y - a) dy = (b - a)²/2`. The constant is the `C_P = (b - a)/√2` of
+[quarteroni2000numerical] (12.16). -/
+theorem intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero {a b : ℝ} (hab : a ≤ b)
+    {v vx : ℝ → ℝ} (hv : ContinuousOn v (Icc a b)) (hvx : ContinuousOn vx (Icc a b))
+    (hd : ∀ x ∈ Ioo a b, HasDerivAt v (vx x) x) (hva : v a = 0) :
+    (∫ x in a..b, v x ^ 2) ≤ (b - a) ^ 2 / 2 * ∫ x in a..b, vx x ^ 2 := by
+  set K := ∫ x in a..b, vx x ^ 2 with hK
+  have hvxint : ∀ y ∈ Icc a b, IntervalIntegrable vx volume a y := fun y hy =>
+    (hvx.mono (Icc_subset_Icc le_rfl hy.2)).intervalIntegrable_of_Icc hy.1
+  have hrep : ∀ y ∈ Icc a b, v y = ∫ x in a..y, vx x := by
+    intro y hy
+    have h := integral_eq_sub_of_hasDerivAt_of_le hy.1 (hv.mono (Icc_subset_Icc le_rfl hy.2))
+      (fun x hx => hd x ⟨hx.1, lt_of_lt_of_le hx.2 hy.2⟩) (hvxint y hy)
+    rw [h, hva, sub_zero]
+  have hbound : ∀ y ∈ Icc a b, v y ^ 2 ≤ (y - a) * K := by
+    intro y hy
+    have hcs := intervalIntegral.sq_integral_mul_le_of_continuousOn (g := vx)
+      (f := fun _ => (1 : ℝ)) hy.1 continuousOn_const (hvx.mono (Icc_subset_Icc le_rfl hy.2))
+    have h1 : (∫ x in a..y, (1 : ℝ) * vx x) = v y := by
+      rw [hrep y hy]
+      exact integral_congr fun x _ => one_mul _
+    have h2 : (∫ x in a..y, (1 : ℝ) ^ 2) = y - a := by
+      simp
+    rw [h1, h2] at hcs
+    have i1 : IntervalIntegrable (fun x => vx x ^ 2) volume a y :=
+      ((hvx.mono (Icc_subset_Icc le_rfl hy.2)).pow 2).intervalIntegrable_of_Icc hy.1
+    have i2 : IntervalIntegrable (fun x => vx x ^ 2) volume y b :=
+      ((hvx.mono (Icc_subset_Icc hy.1 le_rfl)).pow 2).intervalIntegrable_of_Icc hy.2
+    have h3 : (∫ x in a..y, vx x ^ 2) ≤ K := by
+      have hsp : (∫ x in a..b, vx x ^ 2)
+          = (∫ x in a..y, vx x ^ 2) + ∫ x in y..b, vx x ^ 2 :=
+        (integral_add_adjacent_intervals i1 i2).symm
+      have hnn : (0 : ℝ) ≤ ∫ x in y..b, vx x ^ 2 := integral_nonneg hy.2 fun x _ => sq_nonneg _
+      rw [hK, hsp]
+      linarith
+    have hya : 0 ≤ y - a := sub_nonneg.2 hy.1
+    nlinarith [hcs, h3, hya]
+  have hint1 : IntervalIntegrable (fun x => v x ^ 2) volume a b :=
+    (hv.pow 2).intervalIntegrable_of_Icc hab
+  have hint2 : IntervalIntegrable (fun x => (x - a) * K) volume a b :=
+    ((continuous_id.sub continuous_const).mul continuous_const).intervalIntegrable _ _
+  have hmono := integral_mono_on hab hint1 hint2 hbound
+  have hlin : (∫ x in a..b, (x - a) * K) = (b - a) ^ 2 / 2 * K := by
+    rw [intervalIntegral.integral_mul_const, intervalIntegral.integral_sub
+      (continuous_id'.intervalIntegrable _ _) intervalIntegrable_const, integral_id,
+      intervalIntegral.integral_const]
+    simp only [smul_eq_mul]
+    ring
+  rw [hlin] at hmono
+  exact hmono
 
 /-! ### Primitives, and the mean value theorems for integrals -/
 

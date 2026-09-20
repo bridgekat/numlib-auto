@@ -1,8 +1,4 @@
 [[node]]
-id = "SobolevEuclideanZero.mem_of_nonneg_of_le"
-source = "Kinderlehrer and Stampacchia, An Introduction to Variational Inequalities and Their Applications, Chapter II, Appendix A (a function squeezed between 0 and an H^1_0 function lies in H^1_0)"
-
-[[node]]
 id = "Elliptic.IsObstacleSolution"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (11.1.7) and Example 11.3.10"
 
@@ -62,16 +58,10 @@ id = "Elliptic.IsObstacleSolution.dirichletForm_le_load_sup"
 source = "Lewy and Stampacchia (1969), the upper bound -Delta u <= max (f, -Delta psi)"
 
 [[node]]
-id = "Elliptic.exists_inner_of_forall_abs_le"
-
-[[node]]
 id = "Elliptic.exists_load_eq_of_forall_abs_le"
 
 [[node]]
 id = "Elliptic.IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg"
-
-[[node]]
-id = "SobolevEuclideanZero.exists_eq_sub_of_nonneg"
 
 [[node]]
 id = "Elliptic.IsObstacleSolution.abs_dirichletForm_sub_load_le"
@@ -88,23 +78,10 @@ id = "Elliptic.regularity_obstacle"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 11.3.12 at p = 2 (Brezis and Stampacchia 1968)"
 
 [[node]]
-id = "Elliptic.dirichletForm_eq_load_neg_sobolevLaplacianL"
-
-[[node]]
-id = "Elliptic.norm_sobolevLaplacianL_le"
-
-[[node]]
-id = "SobolevEuclidean.norm_le_of_fn_ae_eq_posPart"
-
-[[node]]
 id = "Elliptic.norm_sup_sub_le"
 
 [[node]]
 id = "Elliptic.le_two_mul_of_sq_le"
-
-[[node]]
-id = "Elliptic.norm_sq_le_dirichletForm_self"
-source = "Brezis, Functional Analysis, Corollary 9.19 (Poincaré's inequality), squared"
 
 [[node]]
 id = "Elliptic.IsObstacleSolution.norm_le"

@@ -1,3 +1,4 @@
+import Numlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.PDE.DirichletLaplacian
 
 /-!
@@ -56,76 +57,6 @@ open Filter MeasureTheory Metric Module Set TopologicalSpace
 open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
-
-/-! ### A function squeezed between `0` and an `H¹₀` function lies in `H¹₀` -/
-
-section Sandwich
-
-variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-open SobolevMultiIndex
-
-/-- **A function squeezed between `0` and an element of `H¹₀(Ω)` lies in `H¹₀(Ω)`**, on a `C¹`
-chart domain with bounded boundary: for `v ∈ H¹(Ω)` and `w ∈ H¹₀(Ω)` with `0 ≤ v ≤ w` almost
-everywhere on `Ω`, `v ∈ H¹₀(Ω)`. The extension by zero of `v` is `min (ṽ⁺, w̄)`, where `ṽ` is a
-Sobolev extension of `v` to `ℝ^N` (Theorem 9.7, `SobolevEuclidean.exists_extensionL`) and `w̄` the
-extension by zero of `w` (`SobolevEuclideanZero.extendZeroL`), both in `H¹(ℝ^N)`, so it lies in
-`H¹(ℝ^N)` (`MemSobolevMultiIndex.posPart`), and Proposition 9.18 (iii) ⇒ (i)
-(`SobolevEuclideanZero.mem_of_indicator_memSobolev`) concludes. (Belongs beside
-`SobolevEuclideanZero.mem_of_indicator_memSobolev` in `Numlib/Analysis/Sobolev/Zero.lean`.) -/
-theorem SobolevEuclideanZero.mem_of_nonneg_of_le
-    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-    {v w : SobolevEuclidean (d + 1) 1 2 Ω} (hw : w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
-    (hv0 : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn v x)
-    (hvw : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
-      fn v x ≤ fn w x) :
-    v ∈ SobolevEuclideanZero (d + 1) 1 2 Ω := by
-  have hΩm := Ω.isOpen.measurableSet
-  -- a Sobolev extension `ṽ` of `v`, and the extension by zero `w̄` of `w`
-  obtain ⟨P, C, hP⟩ := SobolevEuclidean.exists_extensionL (p := 2) hΩ hΓ
-  obtain ⟨V, hV⟩ : ∃ V : SobolevEuclidean (d + 1) 1 2 ⊤, V = P v := ⟨_, rfl⟩
-  have hVv : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v := by
-    rw [hV]
-    exact (hP v).1
-  obtain ⟨W, hW⟩ : ∃ W : SobolevEuclidean (d + 1) 1 2 ⊤,
-      W = SobolevEuclideanZero.extendZeroL (d + 1) 2 Ω ⟨w, hw⟩ := ⟨_, rfl⟩
-  have hWw : fn W =ᵐ[volume] (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn w) := by
-    rw [hW]
-    exact SobolevEuclideanZero.fn_extendZeroL _
-  -- almost everywhere for `volume.restrict ⊤` is almost everywhere
-  have htop : ∀ {q : EuclideanSpace ℝ (Fin (d + 1)) → Prop},
-      (∀ᵐ x ∂((volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))).restrict
-        ((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))) : Set (EuclideanSpace ℝ (Fin (d + 1))))),
-        q x) ↔ ∀ᵐ x ∂(volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))), q x := by
-    intro q
-    rw [Opens.coe_top, Measure.restrict_univ]
-  -- `A = ṽ⁺` and `Q = (A − w̄)⁺`, in `H¹(ℝ^N)`
-  obtain ⟨A, hA⟩ := ((memSobolevMultiIndex V).posPart one_le_two).exists_sobolevMultiIndex
-  obtain ⟨Q, hQ⟩ := ((memSobolevMultiIndex (A - W)).posPart one_le_two).exists_sobolevMultiIndex
-  have hAW := Lp.coeFn_sub (weakDeriv A 0) (weakDeriv W 0)
-  have hAQ := Lp.coeFn_sub (weakDeriv A 0) (weakDeriv Q 0)
-  -- `A − Q = min (ṽ⁺, w̄)` is the extension by zero of `v`
-  have hind : ∀ᵐ x ∂(volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))),
-      fn (A - Q) x = (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn v) x := by
-    filter_upwards [htop.1 hAQ, htop.1 hA, htop.1 hQ, htop.1 hAW, hWw, (ae_restrict_iff' hΩm).1 hVv,
-      (ae_restrict_iff' hΩm).1 hv0, (ae_restrict_iff' hΩm).1 hvw] with x h1 h2 h3 h4 h5 h6 h7 h8
-    have e1 : fn (A - Q) x = fn A x - fn Q x := h1
-    have e4 : fn (A - W) x = fn A x - fn W x := h4
-    rw [e1, h3, e4, h2, h5]
-    by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
-    · rw [indicator_of_mem hx, indicator_of_mem hx, h6 hx, max_eq_left (h7 hx),
-        max_eq_right (by linarith [h8 hx]), sub_zero]
-    · rw [indicator_of_notMem hx, indicator_of_notMem hx, sub_zero,
-        max_eq_left (le_max_right _ _), sub_self]
-  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn v)) 1 2 ⊤ volume :=
-    (memSobolevMultiIndex (A - Q)).congr_ae (htop.2 hind)
-  obtain ⟨v', hv', hvv'⟩ := SobolevEuclideanZero.mem_of_indicator_memSobolev (p := 2)
-    (by norm_num) hΩ hmem
-  rwa [SobolevMultiIndex.ext_of_fn_ae_eq hvv'.symm]
-
-end Sandwich
 
 namespace Elliptic
 
@@ -620,40 +551,6 @@ end UpperLimit
 
 section Representation
 
-/-- **A functional dominated by an `L²`-type seminorm through an injective map into a Hilbert
-space is an inner product**: if `T : V → ℝ` is continuous linear with `|T v| ≤ C ‖ι v‖` for an
-injective `ι : V → H`, `H` a real Hilbert space, then `T v = ⟪h, ι v⟫` for some `h ∈ H` with
-`‖h‖ ≤ C` — the Hahn–Banach theorem on the range of `ι` and the Riesz representation. -/
-theorem exists_inner_of_forall_abs_le {V H : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
-    [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H] (ι : V →L[ℝ] H)
-    (hι : Function.Injective ι) (T : V →L[ℝ] ℝ) {C : ℝ} (hC : 0 ≤ C)
-    (hT : ∀ v, |T v| ≤ C * ‖ι v‖) :
-    ∃ h : H, ‖h‖ ≤ C ∧ ∀ v, T v = ⟪h, ι v⟫_ℝ := by
-  obtain ⟨S, hS⟩ : ∃ S : Submodule ℝ H, S = LinearMap.range (ι : V →ₗ[ℝ] H) := ⟨_, rfl⟩
-  obtain ⟨e, he⟩ : ∃ e : V ≃ₗ[ℝ] LinearMap.range (ι : V →ₗ[ℝ] H),
-      e = LinearEquiv.ofInjective (ι : V →ₗ[ℝ] H) hι := ⟨_, rfl⟩
-  have hev : ∀ v, ((e v : LinearMap.range (ι : V →ₗ[ℝ] H)) : H) = ι v := fun v ↦ by
-    rw [he]
-    exact LinearEquiv.ofInjective_apply _ _
-  obtain ⟨ℓ₀, hℓ₀⟩ : ∃ ℓ₀ : LinearMap.range (ι : V →ₗ[ℝ] H) →ₗ[ℝ] ℝ,
-      ℓ₀ = (T : V →ₗ[ℝ] ℝ).comp e.symm.toLinearMap := ⟨_, rfl⟩
-  have hℓ₀apply : ∀ y, ℓ₀ y = T (e.symm y) := fun y ↦ by rw [hℓ₀]; rfl
-  have hbound : ∀ y : LinearMap.range (ι : V →ₗ[ℝ] H), ‖ℓ₀ y‖ ≤ C * ‖y‖ := fun y ↦ by
-    have hy : ι (e.symm y) = (y : H) := by
-      rw [← hev (e.symm y), e.apply_symm_apply]
-    rw [hℓ₀apply, Real.norm_eq_abs, ← Submodule.norm_coe, ← hy]
-    exact hT _
-  obtain ⟨ℓ, hℓ⟩ : ∃ ℓ : StrongDual ℝ (LinearMap.range (ι : V →ₗ[ℝ] H)),
-      ℓ = LinearMap.mkContinuous ℓ₀ C hbound := ⟨_, rfl⟩
-  have hℓapply : ∀ y, ℓ y = ℓ₀ y := fun y ↦ by rw [hℓ]; rfl
-  have hℓnorm : ‖ℓ‖ ≤ C := by rw [hℓ]; exact LinearMap.mkContinuous_norm_le _ hC _
-  obtain ⟨g, hg, hnorm⟩ := exists_extension_norm_eq (LinearMap.range (ι : V →ₗ[ℝ] H)) ℓ
-  refine ⟨(InnerProductSpace.toDual ℝ H).symm g, ?_, fun v ↦ ?_⟩
-  · rw [LinearIsometryEquiv.norm_map, hnorm]
-    exact hℓnorm
-  · rw [InnerProductSpace.toDual_symm_apply, ← hev v, hg (e v), hℓapply, hℓ₀apply,
-      e.symm_apply_apply]
-
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
@@ -700,58 +597,6 @@ theorem IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg
   have h4 := abs_load_le Ω (f ⊔ q - f) Φ
   rw [abs_of_nonneg (by linarith)]
   linarith [le_abs_self (load Ω (f ⊔ q - f) Φ)]
-
-/-- **The decomposition `Φ = Φ⁺ − Φ⁻` in `H¹₀(Ω)`**, with `‖Φ^±‖₂ ≤ ‖Φ‖₂`. -/
-theorem _root_.SobolevEuclideanZero.exists_eq_sub_of_nonneg {Φ : SobolevEuclidean (d + 1) 1 2 Ω}
-    (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
-    ∃ P ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, ∃ Q ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
-      Φ = P - Q ∧
-      (∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn P x) ∧
-      (∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn Q x) ∧
-      ‖weakDeriv P 0‖ ≤ ‖weakDeriv Φ 0‖ ∧ ‖weakDeriv Q 0‖ ≤ ‖weakDeriv Φ 0‖ := by
-  obtain ⟨P, hP⟩ := ((memSobolevMultiIndex Φ).posPart one_le_two).exists_sobolevMultiIndex
-  obtain ⟨Q, hQ⟩ := ((memSobolevMultiIndex (-Φ)).posPart one_le_two).exists_sobolevMultiIndex
-  have hPmem : P ∈ SobolevEuclideanZero (d + 1) 1 2 Ω :=
-    SobolevEuclideanZero.posPart_mem (p := 2) (by norm_num) ⟨Φ, hΦ⟩ hP
-  have hQmem : Q ∈ SobolevEuclideanZero (d + 1) 1 2 Ω :=
-    SobolevEuclideanZero.posPart_mem (p := 2) (by norm_num) ⟨-Φ, neg_mem hΦ⟩ hQ
-  have hnegΦ : fn (-Φ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] -fn Φ := by
-    have h1 : weakDeriv (-Φ) 0 = -weakDeriv Φ 0 := by
-      rw [← weakDerivL_apply, map_neg, weakDerivL_apply]
-    rw [show fn (-Φ) = ⇑(weakDeriv (-Φ) 0) from rfl, h1]
-    exact Lp.coeFn_neg _
-  refine ⟨P, hPmem, Q, hQmem, ?_, ?_, ?_, ?_, ?_⟩
-  · refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
-    filter_upwards [Lp.coeFn_sub (weakDeriv P 0) (weakDeriv Q 0), hP, hQ, hnegΦ]
-      with x h1 h2 h3 h4
-    have e : fn (P - Q) x = fn P x - fn Q x := h1
-    rw [e, h2, h3, h4, Pi.neg_apply]
-    rcases le_total (fn Φ x) 0 with h | h
-    · rw [max_eq_right h, max_eq_left (neg_nonneg.2 h)]
-      ring
-    · rw [max_eq_left h, max_eq_right (neg_nonpos.2 h)]
-      ring
-  · filter_upwards [hP] with x hx
-    rw [hx]
-    exact le_max_right _ _
-  · filter_upwards [hQ] with x hx
-    rw [hx]
-    exact le_max_right _ _
-  · refine Lp.norm_le_norm_of_ae_le ?_
-    filter_upwards [hP] with x hx
-    have e : (weakDeriv P 0) x = max (fn Φ x) 0 := hx
-    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
-    change |max (fn Φ x) 0| ≤ |fn Φ x|
-    exact abs_le.2 ⟨by linarith [abs_nonneg (fn Φ x), le_max_right (fn Φ x) 0],
-      max_le (le_abs_self _) (abs_nonneg _)⟩
-  · refine Lp.norm_le_norm_of_ae_le ?_
-    filter_upwards [hQ, hnegΦ] with x hx hx'
-    have e : (weakDeriv Q 0) x = max (-fn Φ x) 0 := by
-      rw [show (weakDeriv Q 0) x = fn Q x from rfl, hx, hx', Pi.neg_apply]
-    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
-    change |max (-fn Φ x) 0| ≤ |fn Φ x|
-    exact abs_le.2 ⟨by linarith [abs_nonneg (fn Φ x), le_max_right (-fn Φ x) 0],
-      max_le (by linarith [neg_abs_le (fn Φ x), le_abs_self (fn Φ x)]) (abs_nonneg _)⟩
 
 /-- **The Lewy–Stampacchia functional is `L²`-bounded on all of `H¹₀(Ω)`**:
 `|∫_Ω ∇u · ∇Φ − ∫_Ω f Φ| ≤ 2 ‖max (f, q) − f‖₂ ‖Φ‖₂`, by splitting `Φ = Φ⁺ − Φ⁻`. -/
@@ -874,102 +719,6 @@ theorem regularity_obstacle
 
 end Regularity
 
-/-! ### Obstacles in `H²(Ω)`: `−Δψ ∈ L²(Ω)` -/
-
-section ObstacleH2
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-open SobolevMultiIndex
-
-/-- **The weak Laplacian of an `H²(Ω)` function is its distributional one**: if `w ∈ H²(Ω)` and
-`v ∈ H¹(Ω)` have the same function, then `∫_Ω ∇v · ∇Φ = ∫_Ω (−∑ᵢ ∂ᵢᵢw) Φ` for every `Φ ∈ H¹₀(Ω)`.
-For a test function `Φ`, `∫ ∂ᵢv ∂ᵢΦ = −∫ ∂ᵢᵢw Φ` is the weak-derivative identity of the `H²`
-element (the first derivatives of `w` and `v` agree by uniqueness of weak derivatives), and the
-identity extends from the test functions to `H¹₀(Ω)`
-(`Elliptic.dirichletForm_eq_load_of_forall_testFunctions`). This is the identity inside
-`mem_dirichletLaplacianDomain_of_sobolev_two` (`Numlib/Analysis/PDE/DirichletLaplacian.lean`),
-freed of the hypothesis `v ∈ H¹₀(Ω)`, which the obstacle needs since `ψ ∉ H¹₀(Ω)` in general. -/
-theorem dirichletForm_eq_load_neg_sobolevLaplacianL (w : SobolevEuclidean N 2 2 Ω)
-    {v : SobolevEuclidean N 1 2 Ω}
-    (hvw : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn w) :
-    ∀ Φ ∈ SobolevEuclideanZero N 1 2 Ω,
-      dirichletForm Ω v Φ = load Ω (-sobolevLaplacianL Ω w) Φ := by
-  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
-  -- the first derivatives of `v` are the functions of the `∂ᵢ w ∈ H¹(Ω)`
-  have hd : ∀ i, ⇑(weakDeriv v (MultiIndexLE.single i))
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w) := by
-    intro i
-    have h1 := (weakDeriv_hasWeakIteratedLineDerivOn_single v i).congr_ae hvw
-      (EventuallyEq.refl _ _)
-    have h2 := hasWeakIteratedLineDerivOn_fn_partialDeriv i w
-    rw [EuclideanSpace.basisFun_toBasis_apply] at h2
-    exact (ae_restrict_iff' hΩm).2 (h1.ae_eq h2)
-  -- the datum, as a function
-  have hg : ⇑(-sobolevLaplacianL Ω w) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      fun x ↦ -∑ i, weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) x := by
-    rw [sobolevLaplacianL_apply]
-    filter_upwards [Lp.coeFn_neg
-      (∑ i, weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i))),
-      Lp.coeFn_finsetSum Finset.univ
-        fun i ↦ weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i))] with x hx1 hx2
-    rw [hx1, Pi.neg_apply, hx2, Finset.sum_apply]
-  -- the equation against test functions
-  have heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
-      dirichletForm Ω v Φ = load Ω (-sobolevLaplacianL Ω w) Φ := by
-    intro Φ hΦ
-    obtain ⟨ψ, hψ⟩ := hΦ
-    rw [dirichletForm_apply_eq_of_ae_eq hd hψ, load_apply_eq_of_ae_eq hg hψ]
-    have hterm : ∀ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-        fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w) x
-          * fderiv ℝ ψ x (EuclideanSpace.single i 1)
-        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-          weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) x * ψ x := by
-      intro i
-      have key := (weakDeriv_hasWeakIteratedLineDerivOn_single
-        (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w) i)
-        |>.integral_fderiv_mul_eq_of_eqOn ψ (fun _ _ ↦ rfl)
-      rw [weakDeriv_partialDeriv] at key
-      calc ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-            fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w) x
-              * fderiv ℝ ψ x (EuclideanSpace.single i 1)
-          = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              fderiv ℝ ψ x (EuclideanSpace.single i 1)
-                * fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w)
-                  x :=
-            integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
-        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              ψ x * weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) x := key
-        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-              weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) x * ψ x := by
-            congr 1
-            exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
-    simp only [hterm, Finset.sum_neg_distrib]
-    have hI : ∀ i, Integrable
-        (fun x ↦ weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) x * ψ x)
-        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦ by
-      have := ((weakDeriv_hasWeakIteratedLineDerivOn_single
-        (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i w) i)
-        |>.integrable_smul_weakDeriv ψ).integrableOn (s := (Ω : Set (EuclideanSpace ℝ (Fin N))))
-      rw [weakDeriv_partialDeriv] at this
-      exact this.congr (Eventually.of_forall fun x ↦ by simp only [smul_eq_mul]; ring)
-    rw [← integral_finsetSum _ fun i _ ↦ hI i, ← integral_neg]
-    exact integral_congr_ae (Eventually.of_forall fun x ↦ by
-      simp only [Finset.sum_mul, neg_mul])
-  exact fun Φ hΦ ↦ dirichletForm_eq_load_of_forall_testFunctions heq hΦ
-
-/-- `‖∑ᵢ ∂ᵢᵢ w‖₂ ≤ N ‖w‖_{H²}`. -/
-theorem norm_sobolevLaplacianL_le (w : SobolevEuclidean N 2 2 Ω) :
-    ‖sobolevLaplacianL Ω w‖ ≤ N * ‖w‖ := by
-  rw [sobolevLaplacianL_apply]
-  calc ‖∑ i, weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i))‖
-      ≤ ∑ i, ‖weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i))‖ := norm_sum_le _ _
-    _ ≤ ∑ _i : Fin N, ‖w‖ := Finset.sum_le_sum fun i _ ↦ norm_weakDeriv_le w _
-    _ = N * ‖w‖ := by simp
-
-end ObstacleH2
-
 /-! ### Two norm estimates for the bound of Theorem 11.3.12 -/
 
 section Estimates
@@ -977,32 +726,6 @@ section Estimates
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
-
-/-- **The positive part is contractive in `H¹(Ω)`**: if `w ∈ H¹(Ω)` has function `ψ⁺` for
-`ψ ∈ H¹(Ω)`, then `‖w‖_{H¹} ≤ ‖ψ‖_{H¹}`, since `|ψ⁺| ≤ |ψ|` and `∂ᵢψ⁺ = 1_{ψ > 0} ∂ᵢψ`. -/
-theorem _root_.SobolevEuclidean.norm_le_of_fn_ae_eq_posPart {ψ w : SobolevEuclidean N 1 2 Ω}
-    (hw : fn w =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      fun x ↦ max (fn ψ x) 0) :
-    ‖w‖ ≤ ‖ψ‖ := by
-  have h0 : ‖weakDeriv w 0‖ ≤ ‖weakDeriv ψ 0‖ := by
-    refine Lp.norm_le_norm_of_ae_le ?_
-    filter_upwards [hw] with x hx
-    have e : (weakDeriv w 0) x = max (fn ψ x) 0 := hx
-    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
-    change |max (fn ψ x) 0| ≤ |fn ψ x|
-    exact abs_le.2 ⟨by linarith [abs_nonneg (fn ψ x), le_max_right (fn ψ x) 0],
-      max_le (le_abs_self _) (abs_nonneg _)⟩
-  have hi : ∀ i, ‖weakDeriv w (MultiIndexLE.single i)‖ ≤ ‖weakDeriv ψ (MultiIndexLE.single i)‖ :=
-    fun i ↦ by
-      refine Lp.norm_le_norm_of_ae_le ?_
-      filter_upwards [weakDeriv_single_ae_eq_of_fn_ae_eq_posPart hw i] with x hx
-      rw [hx]
-      exact norm_indicator_le_norm_self _ _
-  have hsq : ‖w‖ ^ 2 ≤ ‖ψ‖ ^ 2 := by
-    rw [norm_sq_eq, norm_sq_eq]
-    refine add_le_add (pow_le_pow_left₀ (norm_nonneg _) h0 2)
-      (Finset.sum_le_sum fun i _ ↦ pow_le_pow_left₀ (norm_nonneg _) (hi i) 2)
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
 
 /-- `‖max (f, q) − f‖₂ ≤ ‖q − f‖₂`, since `max (f, q) − f = (q − f)⁺`. -/
 theorem norm_sup_sub_le (f q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -1034,19 +757,6 @@ theorem le_two_mul_of_sq_le {K s t : ℝ} (hK : 1 ≤ K) (hs : 0 ≤ s) (ht : 0 
   have hKs : 0 ≤ K * s := mul_nonneg (by linarith) hs
   nlinarith [mul_lt_mul_of_pos_left hlt (show (0 : ℝ) < t by linarith), mul_nonneg hKs hs,
     mul_nonneg hKs ht]
-
-/-- **Poincaré's inequality for the Dirichlet form**: `‖u‖²_{H¹} ≤ (1 + (2R)²) ∫_Ω |∇u|²` for
-`u ∈ H¹₀(Ω)` and `Ω ⊆ B(0, R)` (`SobolevEuclideanZero.norm_le_gradNorm` at `p = 2`). -/
-theorem norm_sq_le_dirichletForm_self {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
-    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
-    ‖u‖ ^ 2 ≤ (1 + (2 * R) ^ 2) * dirichletForm Ω u u := by
-  have hP := SobolevEuclideanZero.norm_le_gradNorm (p := 2) (by norm_num) hR hΩ ⟨u, hu⟩
-  simp only [ENNReal.toReal_ofNat, Real.rpow_two, ← Real.sqrt_eq_rpow] at hP
-  rw [dirichletForm_self_eq_gradNorm_sq]
-  have hK : (0 : ℝ) ≤ 1 + (2 * R) ^ 2 := by positivity
-  calc ‖u‖ ^ 2 ≤ (√(1 + (2 * R) ^ 2) * gradNorm u) ^ 2 := pow_le_pow_left₀ (norm_nonneg _) hP 2
-    _ = (1 + (2 * R) ^ 2) * gradNorm u ^ 2 := by rw [mul_pow, Real.sq_sqrt hK]
 
 /-- **The a priori `H¹` bound for the obstacle problem**: for `Ω ⊆ B(0, R)`, an admissible
 `w ∈ H¹₀(Ω)` with `w ≥ ψ` and a solution `u` of the obstacle problem,

@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
+import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.Sobolev.WeakDeriv
 
 /-!
@@ -46,7 +47,11 @@ that makes it vanish in the limit. No mollification and no convolution theory is
   dimension. This covers every radial singularity milder than `‖x‖^{1-d}`, in particular every
   logarithmic one. Its ingredients `setIntegral_norm_rpow_ball_zero` and
   `integrableOn_norm_rpow_ball_zero` are the scaling law and the integrability of a power on a
-  ball, and are useful on their own.
+  ball, and are useful on their own; `tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne` asks for
+  the bound off the origin only.
+* `hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow`: on `ℝ^d`, for `λ > k − d`, every
+  classical derivative `D^n |·|^λ`, `n ≤ k`, is the weak derivative of `|x|^λ` on a ball about
+  the origin — the removable singularity at work on the radial powers.
 
 ## Implementation notes
 
@@ -583,4 +588,200 @@ theorem tendsto_inv_mul_setIntegral_norm_ball_zero (hd : 1 ≤ finrank ℝ E) {f
     rw [Real.zero_rpow (ne_of_gt hq)] at hc
     simpa using (hc.mono_left nhdsWithin_le_nhds).const_mul (C' * G)
 
+
+/-- The smallness criterion with the bound
+`‖f x‖ ≤ C ‖x‖^s` required off the origin only, where the value of `f` does not matter. -/
+theorem tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne (hd : 1 ≤ finrank ℝ E)
+    {f : E → F} {C s R : ℝ} (hR : 0 < R) (hs : 1 - (finrank ℝ E : ℝ) < s)
+    (hmeas : AEStronglyMeasurable f μ) (hle : ∀ x ∈ ball (0 : E) R, x ≠ 0 → ‖f x‖ ≤ C * ‖x‖ ^ s) :
+    Tendsto (fun δ : ℝ ↦ δ⁻¹ * ∫ x in ball (0 : E) δ, ‖f x‖ ∂μ) (𝓝[>] 0) (𝓝 0) := by
+  classical
+  have hnt : Nontrivial E := Module.nontrivial_of_finrank_pos (R := ℝ) (by omega)
+  have h0 : ∀ᵐ x ∂μ, x ≠ 0 := by
+    rw [ae_iff]
+    simp
+  set f' : E → F := fun x ↦ if x = 0 then 0 else f x with hf'
+  have hff' : f =ᵐ[μ] f' := h0.mono fun x hx ↦ by simp [hf', hx]
+  have hmeas' : AEStronglyMeasurable f' μ := hmeas.congr hff'
+  have hle' : ∀ x ∈ ball (0 : E) R, ‖f' x‖ ≤ max C 0 * ‖x‖ ^ s := fun x hx ↦ by
+    rcases eq_or_ne x 0 with rfl | hx0
+    · simp only [hf', ite_true, norm_zero]
+      positivity
+    · simp only [hf', hx0, ite_false]
+      exact (hle x hx hx0).trans (mul_le_mul_of_nonneg_right (le_max_left _ _)
+        (Real.rpow_nonneg (norm_nonneg _) _))
+  have h := tendsto_inv_mul_setIntegral_norm_ball_zero hd hR hs hmeas' hle'
+  refine h.congr fun δ ↦ ?_
+  congr 1
+  exact integral_congr_ae (ae_restrict_of_ae (hff'.symm.mono fun x hx ↦ by simp only [hx]))
+
 end Smallness
+
+/-! ### The radial powers `|x|^λ` on `ℝ^d`: all weak derivatives on a ball
+
+For `λ > k − d` the classical derivatives `D^n |·|^λ`, `n ≤ k`, which exist off the origin and are
+`O(|x|^{λ−n})`, are the weak derivatives of `|x|^λ` on every ball about the origin: the
+singularity at the origin is removable (`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`)
+because `λ − n > 1 − d`. This is the computation behind [han2009theoretical] Example 7.2.5. -/
+
+section RadialPower
+
+open Module
+
+variable {d : ℕ}
+
+local notation "𝔼" => EuclideanSpace ℝ (Fin d)
+
+/-- `|x|^q` is integrable on every ball about the origin as soon as `q > -d`. -/
+theorem integrableOn_normRpow (hd : 0 < d) {q : ℝ} (hq : -(d : ℝ) < q) (t : ℝ) :
+    IntegrableOn (fun x : EuclideanSpace ℝ (Fin d) ↦ ‖x‖ ^ q) (ball 0 t) volume := by
+  have hfr : finrank ℝ (EuclideanSpace ℝ (Fin d)) = d := finrank_euclideanSpace_fin
+  refine integrableOn_norm_rpow_ball_zero (by omega) ?_ t
+  rw [hfr]
+  exact hq
+
+/-- The evaluation of `D^n |·|^λ` at a fixed tuple of directions is measurable: it is continuous
+off the origin, a null set. -/
+theorem aestronglyMeasurable_iteratedFDeriv_normRpow_apply (hd : 0 < d) (lam : ℝ) (n : ℕ)
+    (y : Fin n → 𝔼) :
+    AEStronglyMeasurable (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) volume := by
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have hcont : ContinuousOn (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) {0}ᶜ :=
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y).continuous.comp_continuousOn
+      (ContinuousOn.continuousOn_iteratedFDeriv (contDiffOn_normRpow lam n)
+        isOpen_compl_singleton le_rfl)
+  have h := hcont.aestronglyMeasurable (μ := volume) isOpen_compl_singleton.measurableSet
+  rwa [Measure.restrict_eq_self_of_ae_mem] at h
+  rw [ae_iff]
+  simp
+
+/-- The bound `‖D^n |·|^λ (x) y‖ ≤ C ‖x‖^{λ-n}` for a fixed tuple `y`, with `C` depending on `y`. -/
+theorem exists_norm_iteratedFDeriv_normRpow_apply_le (lam : ℝ) (n : ℕ) (y : Fin n → 𝔼) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ x : 𝔼, x ≠ 0 →
+      ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y‖ ≤ C * ‖x‖ ^ (lam - n) := by
+  obtain ⟨C, hC0, hC⟩ := exists_norm_iteratedFDeriv_normRpow_le (E := 𝔼) lam n
+  refine ⟨C * ∏ i, ‖y i‖, by positivity, fun x hx ↦ ?_⟩
+  calc ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y‖
+      ≤ ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x‖ * ∏ i, ‖y i‖ :=
+        ContinuousMultilinearMap.le_opNorm _ _
+    _ ≤ C * ‖x‖ ^ (lam - n) * ∏ i, ‖y i‖ :=
+        mul_le_mul_of_nonneg_right (hC x hx) (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+    _ = C * (∏ i, ‖y i‖) * ‖x‖ ^ (lam - n) := by ring
+
+/-- `D^n |·|^λ (·) y` is integrable on every ball about the origin as soon as `λ - n > -d`. -/
+theorem integrableOn_iteratedFDeriv_normRpow_apply (hd : 0 < d) {lam : ℝ} {n : ℕ}
+    (hlam : (n : ℝ) - d < lam) (y : Fin n → 𝔼) (t : ℝ) :
+    IntegrableOn (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) (ball 0 t)
+      volume := by
+  obtain ⟨C, -, hC⟩ := exists_norm_iteratedFDeriv_normRpow_apply_le (d := d) lam n y
+  refine Integrable.mono' ((integrableOn_normRpow hd (q := lam - n) (by linarith) t).const_mul C)
+    (aestronglyMeasurable_iteratedFDeriv_normRpow_apply hd lam n y).restrict ?_
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have h0 : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+    rw [ae_iff]
+    simp
+  filter_upwards [ae_restrict_of_ae h0] with x hx
+  exact hC x hx
+
+/-- **The weak derivatives of `|x|^λ` of every order `n ≤ k` on a ball**, for `λ > k - d`: along
+any tuple `y` of `n` directions the classical `D^n |·|^λ (·) y`, which exists off the origin, is
+the weak derivative on the whole ball. By induction on `n` through the composition rule
+`HasWeakIteratedLineDerivOn.cons`: the derivative of order `n + 1` along `z :: y` is the
+first-order weak derivative in the direction `z` of the derivative of order `n` along `y`, and the
+latter's singularity at the origin is removable
+(`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`) because it is `O(|x|^{λ-n})` with
+`λ - n > 1 - d`. -/
+theorem hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow (hd : 0 < d) {lam : ℝ} {k : ℕ}
+    (hlam : (k : ℝ) - d < lam) (t : ℝ) :
+    ∀ n ≤ k, ∀ y : Fin n → 𝔼,
+      HasWeakIteratedLineDerivOn y (fun x : 𝔼 ↦ ‖x‖ ^ lam)
+        (fun x ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) ⟨ball 0 t, isOpen_ball⟩
+        volume := by
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have hnt : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have hd1 : (1 : ℝ) ≤ d := by exact_mod_cast hd
+  set v : 𝔼 → ℝ := fun z ↦ ‖z‖ ^ lam with hv
+  intro n hn
+  induction n with
+  | zero =>
+    intro y
+    have h0 : (fun x ↦ iteratedFDeriv ℝ 0 v x y) = v := by
+      funext x
+      simp [iteratedFDeriv_zero_apply]
+    rw [h0]
+    exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl y
+      (integrableOn_normRpow hd (q := lam) (by linarith) t).locallyIntegrableOn
+  | succ n ih =>
+    intro y
+    have hy : y = Fin.cons (y 0) (Fin.tail y) := (Fin.cons_self_tail y).symm
+    set z := y 0 with hz
+    set y' := Fin.tail y with hy'
+    rw [hy]
+    refine HasWeakIteratedLineDerivOn.cons (ih (by omega) y') ?_
+    -- the first-order weak derivative of `D^n v (·) y'` in the direction `z`
+    set w' : 𝔼 → ℝ := fun x ↦ iteratedFDeriv ℝ n v x y' with hw'
+    set W : 𝔼 → 𝔼 →L[ℝ] ℝ := fun x ↦
+      (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').comp
+        (fderiv ℝ (iteratedFDeriv ℝ n v) x) with hW
+    have hWz : ∀ x, W x z = iteratedFDeriv ℝ (n + 1) v x (Fin.cons z y') := fun x ↦ by
+      rw [iteratedFDeriv_succ_apply_left, Fin.cons_zero, Fin.tail_cons]
+      rfl
+    have hWnorm : ∀ x, ‖W x‖ ≤ ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) := fun x ↦ by
+      refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun h ↦ ?_
+      rw [hW]
+      simp only [ContinuousLinearMap.comp_apply, ContinuousMultilinearMap.apply_apply]
+      calc ‖fderiv ℝ (iteratedFDeriv ℝ n v) x h y'‖
+          ≤ ‖fderiv ℝ (iteratedFDeriv ℝ n v) x h‖ * (∏ i, ‖y' i‖) :=
+            ContinuousMultilinearMap.le_opNorm _ _
+        _ ≤ ‖fderiv ℝ (iteratedFDeriv ℝ n v) x‖ * ‖h‖ * (∏ i, ‖y' i‖) :=
+            mul_le_mul_of_nonneg_right (ContinuousLinearMap.le_opNorm _ _)
+              (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+        _ = ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) * ‖h‖ := by
+            rw [norm_fderiv_iteratedFDeriv]; ring
+    have hWcont : ContinuousOn W {0}ᶜ := by
+      have h1 : ContinuousOn (fderiv ℝ (iteratedFDeriv ℝ n v)) {0}ᶜ := by
+        rw [fderiv_iteratedFDeriv]
+        exact (continuousMultilinearCurryLeftEquiv ℝ (fun _ : Fin (n + 1) ↦ 𝔼) ℝ).continuous
+          |>.comp_continuousOn (ContinuousOn.continuousOn_iteratedFDeriv
+            (contDiffOn_normRpow lam (n + 1)) isOpen_compl_singleton le_rfl)
+      exact ((ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').compL ℝ 𝔼 _ ℝ
+        |>.continuous.comp_continuousOn h1)
+    have h0ae : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+      rw [ae_iff]
+      simp
+    have hWmeas : AEStronglyMeasurable W volume := by
+      have h := hWcont.aestronglyMeasurable (μ := volume) isOpen_compl_singleton.measurableSet
+      rwa [Measure.restrict_eq_self_of_ae_mem] at h
+    obtain ⟨C, hC0, hC⟩ := exists_norm_iteratedFDeriv_normRpow_le (E := 𝔼) lam (n + 1)
+    have hnk : ((n : ℝ) + 1) ≤ k := by exact_mod_cast hn
+    have hWint : IntegrableOn W (ball 0 t) volume := by
+      refine Integrable.mono' ((integrableOn_normRpow hd (q := lam - (n + 1)) (by linarith) t)
+        |>.const_mul (C * ∏ i, ‖y' i‖)) hWmeas.restrict ?_
+      filter_upwards [ae_restrict_of_ae h0ae] with x hx
+      calc ‖W x‖ ≤ ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) := hWnorm x
+        _ ≤ C * ‖x‖ ^ (lam - (n + 1 : ℕ)) * (∏ i, ‖y' i‖) :=
+            mul_le_mul_of_nonneg_right (hC x hx) (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+        _ = C * (∏ i, ‖y' i‖) * ‖x‖ ^ (lam - (n + 1)) := by push_cast; ring
+    have hfd : ∀ x ∈ ((⟨ball 0 t, isOpen_ball⟩ : Opens 𝔼) : Set 𝔼), x ≠ 0 →
+        HasFDerivAt w' (W x) x := fun x _ hx ↦ by
+      have hdiff : DifferentiableAt ℝ (iteratedFDeriv ℝ n v) x :=
+        ((contDiffOn_normRpow lam (n + 1)).contDiffAt
+          (isOpen_compl_singleton.mem_nhds hx)).differentiableAt_iteratedFDeriv
+          (by exact_mod_cast Nat.lt_succ_self n)
+      exact (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').hasFDerivAt.comp x
+        hdiff.hasFDerivAt
+    obtain ⟨C', -, hC'⟩ := exists_norm_iteratedFDeriv_normRpow_apply_le (d := d) lam n y'
+    have hlim : Tendsto (fun δ : ℝ ↦ δ⁻¹ * ∫ x in ball (0 : 𝔼) δ, ‖w' x‖) (𝓝[>] 0) (𝓝 0) :=
+      tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne (by omega) (R := 1) one_pos
+        (s := lam - n) (by rw [hfr]; linarith)
+        (aestronglyMeasurable_iteratedFDeriv_normRpow_apply hd lam n y')
+        fun x _ hx ↦ hC' x hx
+    have key := hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton (a := (0 : 𝔼))
+      (y := ![z]) (u := z) rfl (fun i ↦ by fin_cases i; rfl)
+      (ih (by omega) y').locallyIntegrableOn_weakDeriv hWint.locallyIntegrableOn hfd hlim
+    refine key.congr_ae (EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ ?_)
+    exact hWz x
+
+end RadialPower

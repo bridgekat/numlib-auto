@@ -75,3 +75,6 @@ id = "ContinuousLinearMap.isCoerciveWith_add_smul_one"
 
 [[node]]
 id = "Matrix.PosDef.isSymmetricCoercive_toEuclideanLin"
+
+[[node]]
+id = "ContinuousLinearMap.norm_le_of_isSymmetricBoundedBy"

@@ -27,3 +27,6 @@ id = "IsHermitian.l2_opNorm_pow_rpow"
 [[node]]
 id = "l2_opNorm_eq_complexSpectralRadius_of_isHermitian"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (4.5), symmetric case"
+
+[[node]]
+id = "norm_toEuclideanCLM_le_of_isSymmetricBoundedBy"

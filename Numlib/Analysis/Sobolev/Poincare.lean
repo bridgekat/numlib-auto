@@ -7,7 +7,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Analysis.Sobolev.Chart
-import Numlib.Analysis.Sobolev.Cutoff
+import Numlib.Analysis.Sobolev.Operators
 
 /-!
 # Poincaré's inequality on `W_0^{1,p}(Ω)`
@@ -227,6 +227,16 @@ end Slab
 
 /-! ### Poincaré's inequality on `W_0^{1,p}(Ω)` -/
 
+section FiniteMeasure
+
+/-- Lebesgue measure restricted to a bounded open set is finite. -/
+theorem isFiniteMeasure_restrict_of_subset_ball {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+    {R : ℝ} (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ ball 0 R) :
+    IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  isFiniteMeasure_restrict.2 ((measure_mono hΩ).trans_lt measure_ball_lt_top).ne
+
+end FiniteMeasure
+
 section Typed
 
 variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
@@ -402,6 +412,32 @@ theorem norm_le_gradNorm (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
           * SobolevMultiIndex.gradNorm (u : SobolevEuclidean (d + 1) 1 p Ω) := by
         rw [Real.mul_rpow (by positivity) (Real.rpow_nonneg hg0 _), ← Real.rpow_mul hg0,
           mul_one_div_cancel hP.ne', Real.rpow_one]
+
+
+/-- **Poincaré's inequality on `H¹₀(Ω)` in squared form**: for `Ω ⊆ B(0, R)` and
+`u ∈ H¹₀(Ω)`, `‖u‖²_{H¹} ≤ (1 + (2R)²) ∑ⱼ ‖∂_j u‖²₂` (`SobolevEuclideanZero.norm_le_gradNorm`
+at `p = 2`). -/
+theorem norm_sq_le_sum_norm_weakDeriv_single_sq {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
+    (u : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    ‖(u : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
+      ≤ (1 + (2 * R) ^ 2) * ∑ j, ‖SobolevMultiIndex.weakDeriv
+        (u : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single j)‖ ^ 2 := by
+  have hP := norm_le_gradNorm (p := 2) (by norm_num) hR hΩ u
+  simp only [ENNReal.toReal_ofNat, Real.rpow_two, ← Real.sqrt_eq_rpow] at hP
+  have hg : SobolevMultiIndex.gradNorm (u : SobolevEuclidean (d + 1) 1 2 Ω)
+      = √(∑ j, ‖SobolevMultiIndex.weakDeriv (u : SobolevEuclidean (d + 1) 1 2 Ω)
+        (MultiIndexLE.single j)‖ ^ 2) := by
+    rw [SobolevMultiIndex.gradNorm_eq_sum (p := 2) (by norm_num), Real.sqrt_eq_rpow]
+    simp only [ENNReal.toReal_ofNat, Real.rpow_two]
+  calc ‖(u : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
+      ≤ (√(1 + (2 * R) ^ 2)
+        * SobolevMultiIndex.gradNorm (u : SobolevEuclidean (d + 1) 1 2 Ω)) ^ 2 :=
+        pow_le_pow_left₀ (norm_nonneg _) hP 2
+    _ = (1 + (2 * R) ^ 2) * ∑ j, ‖SobolevMultiIndex.weakDeriv
+          (u : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single j)‖ ^ 2 := by
+        rw [mul_pow, Real.sq_sqrt (by positivity), hg,
+          Real.sq_sqrt (Finset.sum_nonneg fun j _ ↦ sq_nonneg _)]
 
 end SobolevEuclideanZero
 

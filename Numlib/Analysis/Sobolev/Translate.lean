@@ -1,4 +1,4 @@
-import Numlib.Analysis.Sobolev.Cutoff
+import Numlib.Analysis.Sobolev.Operators
 
 /-!
 # Translations of Sobolev functions on an invariant open set
@@ -25,7 +25,10 @@ problems of [brezis2011functional] §8.4.
   derivative**.
 * `MeasureTheory.Lp.translate F p hΩ : Lp F p (μ.restrict Ω) →ₗᵢ[ℝ] Lp F p (μ.restrict Ω)`, the
   translation `u ↦ u(· + h)` on `L^p(Ω)`, with `Lp.coeFn_translate`, `Lp.translate_neg_translate`
-  (`τ_{−h} ∘ τ_h = 1`) and the adjointness `Lp.inner_translate` in `L²(Ω)`.
+  (`τ_{−h} ∘ τ_h = 1`) and the adjointness `Lp.inner_translate` in `L²(Ω)`. Note the sign: the
+  whole-space translation `MeasureTheory.Lp.translateₗᵢ` of `Numlib.Analysis.Convolution.Bochner`
+  is `g ↦ g(· − y)`, the convention of harmonic analysis, so `Lp.translateₗᵢ 𝕜 F p (−h)` is this
+  `Lp.translate` on `Ω = ⊤`.
 * `SobolevMultiIndex.translateL F b k p μ hΩ : W^{k,p}(Ω) →ₗᵢ[ℝ] W^{k,p}(Ω)`, the translation on
   `W^{k,p}(Ω)`, with `weakDeriv_translateL` (the weak derivatives of the translate are the
   translates of the weak derivatives), `fn_translateL`, and `translateL_mem_zero`:

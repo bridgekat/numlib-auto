@@ -51,3 +51,6 @@ id = "SesqForm.convexOn_energy"
 
 [[node]]
 id = "SesqForm.hasFDerivAt_energy"
+
+[[node]]
+id = "SesqForm.strongConvexOn_energy"

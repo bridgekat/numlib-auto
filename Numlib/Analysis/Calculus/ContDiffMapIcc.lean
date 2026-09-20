@@ -5,6 +5,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Mathlib.Topology.ContinuousMap.Ordered
 import Mathlib.Topology.Instances.AddCircle.Defs
+import Numlib.Analysis.Calculus.Periodic
 
 /-!
 # `Cᵏ[a, b]`, the continuously differentiable functions on a compact interval
@@ -693,23 +694,6 @@ theorem deriv_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContD
 @[simp]
 theorem coe_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f) (t : Icc a b) :
     ofContDiff hab hf t = f t := rfl
-
-/-- The derivative of a periodic real function is periodic.  A general fact, and an upstreaming
-candidate: Mathlib has no periodicity lemma for `deriv`. -/
-theorem _root_.Function.Periodic.deriv {f : ℝ → ℝ} {T : ℝ} (h : Function.Periodic f T) :
-    Function.Periodic (_root_.deriv f) T := by
-  intro x
-  have hfun : (fun y => f (y + T)) = f := funext h
-  have := deriv_comp_add_const f T x
-  rw [hfun] at this
-  exact this.symm
-
-/-- Every iterated derivative of a periodic function is periodic. -/
-theorem _root_.Function.Periodic.iteratedDeriv {f : ℝ → ℝ} {T : ℝ}
-    (h : Function.Periodic f T) (n : ℕ) : Function.Periodic (iteratedDeriv n f) T := by
-  induction n with
-  | zero => simpa using h
-  | succ n ih => rw [iteratedDeriv_succ]; exact ih.deriv
 
 /-- **The restriction of a `(b - a)`-periodic `Cᵏ` function on `ℝ` satisfies the periodic boundary
 conditions.**  Together with `ContDiffMapIcc.exists_periodic_contDiff` this identifies

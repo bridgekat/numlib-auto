@@ -77,3 +77,6 @@ id = "_root_.Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le"
 
 [[node]]
 id = "_root_.iteratedDerivWithin_two"
+
+[[node]]
+id = "_root_.HasDerivWithinAt.codRestrict_submodule"

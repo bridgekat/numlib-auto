@@ -1,6 +1,9 @@
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff
+import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
+import Numlib.MeasureTheory.Function.LpSpace.Order
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
@@ -24,9 +27,10 @@ The setting is a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`, the space `V = H¹
 and a load `f ∈ L²(Ω)`:
 
 * `dirichletBilinForm Ω` is the bilinear form `a(u, v) = ∫_Ω ∇u · ∇v` of (11.1.3) on `H¹₀(Ω)`,
-  the operator `modelOperator Ω` of Example 8.2.6 (`Chapter08/Section02`) read as a form of §8.3:
-  bounded with `M = 1`, symmetric, and `V`-elliptic with `α = (1 + (2R)²)⁻¹` by Poincaré's
-  inequality (`dirichletBilinForm_isEllipticWith`);
+  the operator `modelOperator Ω` of Example 8.2.6 (`Chapter08/Section02`) read as a form of §8.3
+  (`dirichletBilinForm_apply` is its value, the backbone's `Elliptic.dirichletForm`): bounded
+  with `M = 1`, symmetric, and `V`-elliptic with `α = (1 + (2R)²)⁻¹` by Poincaré's inequality
+  (`dirichletBilinForm_isEllipticWith`);
 * `loadZero Ω f` is `ℓ(v) = ∫_Ω f v` on `H¹₀(Ω)`;
 * `obstacleEnergy Ω f` is the energy `E(v) = ∫_Ω (½ |∇v|² − f v)` of (11.1.5), the energy
   `½ a(v, v) − ℓ(v)` of Theorem 8.3.3 (`obstacleEnergy_apply` is the displayed formula);
@@ -50,11 +54,13 @@ and Example 11.3.10 (`Chapter11/Section03`).
 * The book's Lipschitz boundary is not needed; `Ω` is any bounded open set.
 * The pointwise complementarity form (11.1.9) under the regularity (11.1.8) is
   `example_11_1_1_pointwise`, stated through representatives `f̃`, `ψ̃` continuous on `Ω` and
-  `ũ` of class `C²` on `Ω`; the book's `u ∈ C(Ω̄)` is not needed for the relations in `Ω`.  The
-  two forms of the fundamental lemma of the calculus of variations it runs on — the inequality
-  form `nonneg_on_of_forall_integral_mul_testFunction_nonneg` and the localized form
+  `ũ` of class `C²` on `Ω`; the book's `u ∈ C(Ω̄)` is not needed for the relations in `Ω`.  It
+  runs on the two forms of the fundamental lemma of the calculus of variations of
+  `Numlib/Analysis/Distributions/TestFunctionOps.lean` — the inequality form
+  `nonneg_on_of_forall_integral_mul_testFunction_nonneg` and the localized form
   `eqOn_zero_of_forall_integral_mul_testFunction_eq_zero` — and the integration by parts
-  `dirichletForm_eq_integral_neg_laplacian_mul` are proved here and belong in the backbone.
+  `Elliptic.dirichletForm_eq_integral_neg_laplacian_mul` of
+  `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`.
 * The AH surface's own `H¹₀(Ω)` (`AtkinsonHan.Chapter07.definition_7_2_9`) is the same closure
   taken in the tensor formulation `Sobolev ℝ 1 2 Ω volume`; the backbone's Dirichlet form and
   Poincaré inequality are stated on the multi-index formulation, which is why the obstacle
@@ -72,12 +78,19 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
 /-- **The bilinear form `a(u, v) = ∫_Ω ∇u · ∇v` of (11.1.3)** on `H¹₀(Ω)`: the operator
 `modelOperator Ω` of Example 8.2.6 read as a bilinear form of §8.3. -/
-noncomputable abbrev dirichletBilinForm : BilinForm (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
+noncomputable def dirichletBilinForm : BilinForm (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   BilinForm.ofCLM (Chapter08.modelOperator Ω)
+
+/-- `a(u, v)` is the backbone's Dirichlet form `Elliptic.dirichletForm Ω u v = ∫_Ω ∇u · ∇v`
+(`Elliptic.dirichletForm_apply`). A `def` rather than an `abbrev`, so that rewriting at a value
+of the form never unfolds `modelOperator`. -/
+theorem dirichletBilinForm_apply (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    dirichletBilinForm Ω u v = Elliptic.dirichletForm Ω u v :=
+  rfl
 
 /-- The form (11.1.3) is bounded with constant `1` (`Elliptic.dirichletForm_isBoundedWith`). -/
 theorem dirichletBilinForm_isBoundedWith : (dirichletBilinForm Ω).IsBoundedWith 1 := fun u v ↦ by
-  rw [BilinForm.ofCLM_apply, Chapter08.modelOperator_apply, one_mul, ← Real.norm_eq_abs]
+  rw [dirichletBilinForm_apply, one_mul, ← Real.norm_eq_abs]
   have h := Elliptic.dirichletForm_isBoundedWith Ω u v
   rwa [one_mul] at h
 
@@ -86,11 +99,12 @@ theorem dirichletBilinForm_isBoundedWith : (dirichletBilinForm Ω).IsBoundedWith
 theorem dirichletBilinForm_isEllipticWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
     (dirichletBilinForm Ω).IsEllipticWith (1 + (2 * R) ^ 2)⁻¹ := fun v ↦ by
-  rw [BilinForm.ofCLM_apply, Chapter08.modelOperator_apply]
+  rw [dirichletBilinForm_apply]
   exact Elliptic.dirichletForm_restrict_isCoerciveWith Ω hR hΩ v
 
 /-- The form (11.1.3) is symmetric. -/
 theorem dirichletBilinForm_isSymm : LinearMap.BilinForm.IsSymm (dirichletBilinForm Ω) := by
+  unfold dirichletBilinForm
   rw [BilinForm.isSymm_ofCLM_iff]
   intro u v
   have h := Elliptic.dirichletForm_isHermitian Ω u v
@@ -177,7 +191,7 @@ theorem obstacleEnergy_apply
   have h1 : dirichletBilinForm Ω v v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
       ∑ i, SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
         (MultiIndexLE.single i) x ^ 2 := by
-    rw [BilinForm.ofCLM_apply, Chapter08.modelOperator_apply, Elliptic.dirichletForm_apply]
+    rw [dirichletBilinForm_apply, Elliptic.dirichletForm_apply]
     simp only [sq]
   rw [integral_sub ((integrable_sum_sq_weakDeriv Ω _).const_mul _) (integrable_mul_fn Ω f _),
     integral_const_mul]
@@ -185,25 +199,6 @@ theorem obstacleEnergy_apply
   rw [h1, loadZero_apply]
 
 /-! ### The admissible set `K` -/
-
-/-- In `L^p(μ)`, a lower bound of two functions is a lower bound of their convex combinations:
-`h ≤ f`, `h ≤ g`, `a, b ≥ 0`, `a + b = 1` give `h ≤ a • f + b • g`.  Belongs beside
-`MeasureTheory.Lp.coeFn_le` in `Mathlib/MeasureTheory/Function/LpOrder.lean`. -/
-theorem _root_.MeasureTheory.Lp.le_smul_add_smul_of_le {α : Type*} [MeasurableSpace α]
-    {μ : Measure α} {p : ℝ≥0∞} {h f g : Lp ℝ p μ} (hf : h ≤ f) (hg : h ≤ g) {a b : ℝ} (ha : 0 ≤ a)
-    (hb : 0 ≤ b) (hab : a + b = 1) : h ≤ a • f + b • g := by
-  rw [← Lp.coeFn_le] at hf hg ⊢
-  filter_upwards [Lp.coeFn_add (a • f) (b • g), Lp.coeFn_smul a f, Lp.coeFn_smul b g, hf, hg]
-    with x h1 h2 h3 hfx hgx
-  rw [h1, Pi.add_apply, h2, h3, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul]
-  calc h x = a * h x + b * h x := by rw [← add_mul, hab, one_mul]
-    _ ≤ _ := add_le_add (mul_le_mul_of_nonneg_left hfx ha) (mul_le_mul_of_nonneg_left hgx hb)
-
-/-- In `L^p(μ)` the order interval `Ici c = {f | c ≤ f}` is convex.  Belongs beside
-`MeasureTheory.Lp.coeFn_le` in `Mathlib/MeasureTheory/Function/LpOrder.lean`. -/
-theorem _root_.MeasureTheory.Lp.convex_Ici {α : Type*} [MeasurableSpace α] {μ : Measure α}
-    {p : ℝ≥0∞} (c : Lp ℝ p μ) : Convex ℝ (Ici c) :=
-  fun _ hf _ hg _ _ ha hb hab ↦ Lp.le_smul_add_smul_of_le hf hg ha hb hab
 
 /-- **The admissible set `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e. in Ω}`** of the obstacle problem
 (Example 11.1.1), for an obstacle `ψ ∈ H¹(Ω)`: the `v ∈ H¹₀(Ω)` whose function dominates that of
@@ -289,7 +284,7 @@ theorem example_11_1_1 {R : ℝ} (hR : 0 ≤ R)
           (MultiIndexLE.single i) x
           * SobolevMultiIndex.weakDeriv (w : SobolevEuclidean (d + 1) 1 2 Ω)
             (MultiIndexLE.single i) x := fun v w ↦
-    Elliptic.dirichletForm_apply Ω v w
+    (dirichletBilinForm_apply Ω v w).trans (Elliptic.dirichletForm_apply Ω v w)
   simp only [e, loadZero_apply] at key
   exact key
 
@@ -298,145 +293,6 @@ theorem example_11_1_1 {R : ℝ} (hR : 0 ≤ R)
 section Pointwise
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- Two functions continuous on an open set that are ordered almost everywhere are ordered
-everywhere on it. -/
-theorem le_on_of_ae_le {g h : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hle : g ≤ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] h)
-    (hg : ContinuousOn g Ω) (hh : ContinuousOn h Ω) : ∀ x ∈ Ω, g x ≤ h x := by
-  have hmin : (fun x ↦ min (g x) (h x))
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] g :=
-    hle.mono fun x hx ↦ min_eq_left hx
-  have heq := Measure.eqOn_open_of_ae_eq hmin Ω.isOpen (ContinuousOn.inf hg hh) hg
-  intro x hx
-  have := heq hx
-  exact min_eq_left_iff.1 this
-
-/-- A function continuous on `Ω` times a test function is integrable on `Ω`. -/
-theorem integrable_mul_testFunction {g : EuclideanSpace ℝ (Fin N) → ℝ} (hg : ContinuousOn g Ω)
-    (φ : 𝓓(Ω, ℝ)) :
-    Integrable (fun x ↦ g x * φ x) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-  have := (hg.locallyIntegrableOn (μ := volume) Ω.isOpen.measurableSet)
-    |>.integrable_smul_left_of_tsupport_subset φ.contDiff.continuous φ.hasCompactSupport
-      φ.tsupport_subset
-  simp only [smul_eq_mul] at this
-  exact this.integrableOn.congr_fun (fun x _ ↦ mul_comm _ _) Ω.isOpen.measurableSet
-
-/-- **The fundamental lemma of the calculus of variations, inequality form**: a function `g`
-continuous on an open `Ω ⊆ ℝ^N` with `∫_Ω g φ ≥ 0` for every nonnegative test function `φ` is
-nonnegative on `Ω`.  Where `g(x₀) < 0`, a bump at `x₀` supported in `{g < g(x₀)/2}` gives a
-negative integral. -/
-theorem nonneg_on_of_forall_integral_mul_testFunction_nonneg {g : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hg : ContinuousOn g Ω)
-    (h : ∀ φ : 𝓓(Ω, ℝ), (∀ x, 0 ≤ φ x) →
-      0 ≤ ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), g x * φ x) :
-    ∀ x ∈ Ω, 0 ≤ g x := by
-  intro x₀ hx₀
-  by_contra hneg
-  push Not at hneg
-  -- a ball around `x₀` inside `Ω` on which `g < g x₀ / 2`
-  have hat : ContinuousAt g x₀ := hg.continuousAt (Ω.isOpen.mem_nhds hx₀)
-  have hev : ∀ᶠ x in 𝓝 x₀, g x < g x₀ / 2 := hat.eventually (gt_mem_nhds (by linarith))
-  obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.1 (hev.and (Ω.isOpen.mem_nhds hx₀))
-  set r := ε / 2 with hr
-  have hr0 : 0 < r := by positivity
-  have hclosed : closedBall x₀ r ⊆ ball x₀ ε := closedBall_subset_ball (by linarith)
-  -- the bump
-  let β : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
-  let φ : 𝓓(Ω, ℝ) := ⟨β, β.contDiff, β.hasCompactSupport, by
-    rw [β.tsupport_eq]
-    exact fun x hx ↦ (hball (hclosed hx)).2⟩
-  have hφ : ∀ x, φ x = β x := fun _ ↦ rfl
-  have hφ0 : ∀ x, 0 ≤ φ x := fun x ↦ β.nonneg
-  have hint := integrable_mul_testFunction hg φ
-  -- the integrand is nonpositive everywhere and negative on the inner ball
-  have hnonneg : 0 ≤ fun x ↦ -(g x * φ x) := by
-    intro x
-    simp only [Pi.zero_apply]
-    by_cases hx : x ∈ ball x₀ ε
-    · have := (hball hx).1
-      rw [neg_nonneg]
-      exact mul_nonpos_of_nonpos_of_nonneg (by linarith) (hφ0 x)
-    · have hφx : φ x = 0 := by
-        rw [hφ]
-        exact β.zero_of_le_dist (by
-          rw [mem_ball] at hx
-          push Not at hx
-          linarith)
-      rw [hφx, mul_zero, neg_zero]
-  have hsupp : ball x₀ (r / 2) ⊆ Function.support fun x ↦ -(g x * φ x) := by
-    intro x hx
-    have h1 : φ x = 1 := by
-      rw [hφ]
-      exact β.one_of_mem_closedBall (ball_subset_closedBall hx)
-    have h2 : g x < g x₀ / 2 := (hball (ball_subset_ball (by linarith) hx)).1
-    simp only [Function.mem_support, h1, mul_one, neg_ne_zero]
-    exact (by linarith : g x < 0).ne
-  have hpos : 0 < (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
-      (Function.support fun x ↦ -(g x * φ x)) := by
-    refine lt_of_lt_of_le ?_ (measure_mono hsupp)
-    have hsub : ball x₀ (r / 2) ∩ (Ω : Set (EuclideanSpace ℝ (Fin N))) = ball x₀ (r / 2) :=
-      inter_eq_left.2 fun x hx ↦ (hball (ball_subset_ball (by linarith) hx)).2
-    rw [Measure.restrict_apply' Ω.isOpen.measurableSet, hsub]
-    exact measure_ball_pos _ _ (by positivity)
-  have hlt := (integral_pos_iff_support_of_nonneg hnonneg hint.neg).2 hpos
-  rw [integral_neg] at hlt
-  linarith [h φ hφ0]
-
-/-- **The fundamental lemma on an open subset**: a function `g` continuous on `Ω` with
-`∫_Ω g φ = 0` for every test function supported in an open `U ⊆ Ω` vanishes on `U`
-(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` and continuity). -/
-theorem eqOn_zero_of_forall_integral_mul_testFunction_eq_zero {g : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hg : ContinuousOn g Ω) {U : Set (EuclideanSpace ℝ (Fin N))} (hU : IsOpen U)
-    (hUΩ : U ⊆ Ω)
-    (h : ∀ φ : 𝓓(Ω, ℝ), tsupport φ ⊆ U →
-      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), g x * φ x = 0) :
-    ∀ x ∈ U, g x = 0 := by
-  have key := hU.ae_eq_zero_of_integral_contDiff_smul_eq_zero (μ := volume)
-    ((hg.mono hUΩ).locallyIntegrableOn hU.measurableSet) fun ψ hψ hψc hψs ↦ by
-    let φ : 𝓓(Ω, ℝ) := ⟨ψ, hψ, hψc, hψs.trans hUΩ⟩
-    have := h φ hψs
-    rw [← setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      rw [image_eq_zero_of_notMem_tsupport fun h ↦ hx (hUΩ (hψs h)), zero_smul]]
-    rw [← this]
-    exact integral_congr_ae (Eventually.of_forall fun x ↦ by
-      simp only [smul_eq_mul]
-      rw [mul_comm]
-      rfl)
-  have hae : g =ᵐ[volume.restrict U] 0 := (ae_restrict_iff' hU.measurableSet).2 key
-  exact Measure.eqOn_open_of_ae_eq hae hU (hg.mono hUΩ) continuousOn_const
-
-open Laplacian in
-/-- **Integration by parts against a test function**: for `U ∈ H¹(Ω)` whose function is `C²` on
-`Ω` and `V ∈ H¹(Ω)` whose function is a test function `φ`, `∫_Ω ∇U · ∇V = ∫_Ω (−Δu) φ`.  The
-Dirichlet form is the form of `−Δ + 1` minus the `L²` product
-(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`); belongs beside it in
-`Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`. -/
-theorem dirichletForm_eq_integral_neg_laplacian_mul {u : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hu : ContDiffOn ℝ 2 u Ω) {U : SobolevEuclidean N 1 2 Ω}
-    (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
-    {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
-    (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
-    Elliptic.dirichletForm Ω U V
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), -Δ u x * φ x := by
-  have h1 := Elliptic.laplaceForm_eq_integral_of_contDiffOn Ω hu hU hV
-  have h2 := Elliptic.laplaceForm_apply_eq_dirichletForm_add_weakDeriv Ω U V
-  have h3 : ⟪SobolevMultiIndex.weakDeriv U 0, SobolevMultiIndex.weakDeriv V 0⟫_ℝ
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), u x * φ x := by
-    rw [L2.inner_eq_integral_mul]
-    exact integral_congr_ae (hU.mul hV)
-  have hI1 : Integrable (fun x ↦ -Δ u x * φ x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    integrable_mul_testFunction (Elliptic.continuousOn_laplacian Ω hu).neg φ
-  have hI2 : Integrable (fun x ↦ u x * φ x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    integrable_mul_testFunction (hu.of_le (by norm_num) : ContDiffOn ℝ 1 u Ω).continuousOn φ
-  have e : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-Δ u x + u x) * φ x
-      = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), -Δ u x * φ x)
-        + ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), u x * φ x := by
-    rw [← integral_add hI1 hI2]
-    exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
-  linarith
 
 /-- The variational inequality at `v = u + w`: `ℓ(w) ≤ a(u, w)`; abstract. -/
 theorem le_of_forall_sub_le {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
@@ -499,7 +355,8 @@ theorem obstacle_testFunction_step (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
     exact integral_congr_ae (hf.mul hUφ)
   have ha : dirichletBilinForm Ω u (⟨Uφ, hUφ0⟩ : SobolevEuclideanZero (d + 1) 1 2 Ω)
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), -Δ u' x * φ x :=
-    dirichletForm_eq_integral_neg_laplacian_mul huc hu' hUφ
+    (dirichletBilinForm_apply Ω _ _).trans
+      (Elliptic.dirichletForm_eq_integral_neg_laplacian_mul Ω huc hu' hUφ)
   exact ((congrArg (fun z ↦ ε * z) hℓ).symm.trans_le h).trans_eq (congrArg (fun z ↦ ε * z) ha)
 
 open Laplacian in
@@ -546,7 +403,7 @@ theorem example_11_1_1_pointwise {R : ℝ} (hR : 0 ≤ R)
       (convex_obstacleSet Ω ψ) hu).1 hmin
   -- (i) `ψ̃ ≤ ũ` on `Ω`
   have h1 : ∀ x ∈ Ω, ψ' x ≤ u' x := by
-    refine le_on_of_ae_le ?_ hψc hu'c
+    refine le_on_of_ae_le (μ := volume) Ω.isOpen ?_ hψc hu'c
     filter_upwards [(mem_obstacleSet_iff Ω).1 hu, hψ, hu'] with x hx h2 h3
     rw [← h2, ← h3]
     exact hx

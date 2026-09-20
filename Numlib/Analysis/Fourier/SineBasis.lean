@@ -424,4 +424,53 @@ theorem coeFn_sinBasisUnit (n : ℕ) :
   rw [coe_sinBasisUnit]
   exact coeFn_sinUnitLp n
 
+/-! ### Sine polynomials on `[0, π]` -/
+
+section SinePolynomial
+
+open Submodule
+
+/-- **The sine polynomial** `∑_{j < n} c j sin ((j + 1) x)` on `[0, π]`, as a continuous map:
+the initial datum of the sine series `Heat.sineSeries ν n c`. -/
+noncomputable def sinePolynomial (n : ℕ) (c : ℕ → ℝ) : C(Icc (0 : ℝ) π, ℝ) :=
+  ∑ j ∈ Finset.range n, c j • sinMap j
+
+/-- The value of a sine polynomial at a point of `[0, π]`. -/
+theorem sinePolynomial_apply (n : ℕ) (c : ℕ → ℝ) (x : Icc (0 : ℝ) π) :
+    sinePolynomial n c x = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * (x : ℝ)) := by
+  simp [sinePolynomial, sinMap_apply]
+
+/-- A sine polynomial lies in the span of the sine system. -/
+theorem sinePolynomial_mem_span (n : ℕ) (c : ℕ → ℝ) :
+    sinePolynomial n c ∈ span ℝ (Set.range sinMap) :=
+  Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (subset_span ⟨j, rfl⟩)
+
+/-- The span of the sine system consists exactly of the sine polynomials. -/
+theorem mem_span_sinMap_iff {v : C(Icc (0 : ℝ) π, ℝ)} :
+    v ∈ span ℝ (Set.range sinMap) ↔ ∃ (n : ℕ) (c : ℕ → ℝ), v = sinePolynomial n c := by
+  constructor
+  · intro hv
+    obtain ⟨c, hc⟩ := Finsupp.mem_span_range_iff_exists_finsupp.1 hv
+    refine ⟨c.support.sup id + 1, c, ?_⟩
+    rw [← hc, sinePolynomial]
+    exact Finsupp.sum_of_support_subset c (s := Finset.range (c.support.sup id + 1))
+      (fun i hi => Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.le_sup (f := id) hi)))
+      _ (fun i _ => zero_smul ℝ _)
+  · rintro ⟨n, c, rfl⟩
+    exact sinePolynomial_mem_span n c
+
+/-- **The sine system is linearly independent** in `C(Icc 0 π, ℝ)`: its image in `L²(0, π)`
+is orthonormal. -/
+theorem linearIndependent_sinMap : LinearIndependent ℝ sinMap := by
+  have h : LinearIndependent ℝ sinLp := orthonormal_sinLp.linearIndependent
+  have e : sinLp = ⇑(√(2 / π) • (ContinuousMap.toLp (E := ℝ) 2 halfRangeMeasure ℝ :
+      C(Icc (0 : ℝ) π, ℝ) →ₗ[ℝ] MeasureTheory.Lp ℝ 2 halfRangeMeasure)) ∘ sinMap := by
+    funext k
+    rw [Function.comp_apply, LinearMap.smul_apply, sinLp_eq_smul]
+    rfl
+  rw [e] at h
+  exact LinearIndependent.of_comp _ h
+
+end SinePolynomial
+
 end

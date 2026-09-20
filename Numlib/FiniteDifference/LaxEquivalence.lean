@@ -58,6 +58,14 @@ to [lax1956survey], and Chapter 3 of Richtmyer and Morton is the standard accoun
 
 open Filter Set Topology
 
+/-- The powers of an operator of norm at most `1` have norm at most `1`. -/
+theorem ContinuousLinearMap.norm_pow_le_one {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {Q : E →L[ℝ] E} (hQ : ‖Q‖ ≤ 1) (m : ℕ) : ‖Q ^ m‖ ≤ 1 := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · rw [pow_zero]
+    exact ContinuousLinearMap.norm_id_le
+  · exact (norm_pow_le' Q hm).trans (pow_le_one₀ (norm_nonneg _) hQ)
+
 namespace FiniteDifference
 
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
@@ -123,6 +131,16 @@ private theorem isSolution_add {L : V →ₗ.[𝕜] V} {T : ℝ} {u₀ ū₀ : V
     exact L.map_add _ _
   rw [hL]
   exact HasDerivWithinAt.add hd1 hd2
+
+/-- The difference of two solutions is a solution, with the difference of the initial values:
+`L` is linear. -/
+theorem IsSolution.sub {L : V →ₗ.[𝕜] V} {T : ℝ} {u₀ ū₀ : V} {u ū : ℝ → V}
+    (hu : IsSolution L T u₀ u) (hū : IsSolution L T ū₀ ū) :
+    IsSolution L T (u₀ - ū₀) (u - ū) := by
+  refine ⟨by rw [Pi.sub_apply, hu.1, hū.1], fun t ht => ?_⟩
+  obtain ⟨h1, hd1⟩ := hu.2 t ht
+  obtain ⟨h2, hd2⟩ := hū.2 t ht
+  exact ⟨L.domain.sub_mem h1 h2, (hd1.sub hd2).congr_deriv (L.map_sub ⟨u t, h1⟩ ⟨ū t, h2⟩).symm⟩
 
 /-- **The semigroup property.** [han2009theoretical], Proposition 6.2.6: the solution operators
 satisfy `S (t₁ + t₀) = S t₁ ∘L S t₀` for `t₀, t₁ ≥ 0` with `t₁ + t₀ ≤ T`, by time-translation
@@ -291,13 +309,15 @@ theorem continuousOn_of_dense {D : Set V} (hD : Dense D) {S : ℝ → V →L[�
 
 /-- **Consistency** of the scheme `C` for the evolution family `S` on `Icc 0 T`, for step sizes in
 `Ioc 0 Δ₀`, tested on the dense set `D` of initial values: the local truncation error is `o(Δt)`
-uniformly in `t ∈ Icc 0 T`.
+uniformly in `t ∈ Icc 0 T` with `t + Δt ≤ T`.
 
 The division is cleared — the condition reads `‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε Δt` — so that no
-`Δt⁻¹` occurs anywhere. [han2009theoretical], Definition 6.2.7. -/
+`Δt⁻¹` occurs anywhere, and the family `S` is evaluated within the horizon only, at `t + Δt ≤ T`:
+an evolution family is known on `Icc 0 T` alone, and the Lax proof uses the truncation error at
+the grid points `k Δt`, `(k + 1) Δt ≤ m Δt ≤ T`, only. [han2009theoretical], Definition 6.2.7. -/
 def IsConsistent (S C : ℝ → V →L[𝕜] V) (T Δ₀ : ℝ) (D : Set V) : Prop :=
   Dense D ∧ ∀ u₀ ∈ D, ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, Δt < δ →
-    ∀ t ∈ Icc (0 : ℝ) T, ‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε * Δt
+    ∀ t ∈ Icc (0 : ℝ) T, t + Δt ≤ T → ‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε * Δt
 
 /-- **Stability** of the scheme `C` on `Icc 0 T` for step sizes in `Ioc 0 Δ₀`: the powers taken
 within the horizon are bounded in norm, uniformly in the step size. [han2009theoretical], Definition
@@ -318,6 +338,15 @@ def IsConvergent (S C : ℝ → V →L[𝕜] V) (T Δ₀ : ℝ) : Prop :=
     (∀ i, (m i : ℝ) * Δt i ≤ T) → Tendsto Δt atTop (𝓝 0) →
     Tendsto (fun i => (m i : ℝ) * Δt i) atTop (𝓝 t) →
     Tendsto (fun i => ‖(C (Δt i) ^ m i) u₀ - S t u₀‖) atTop (𝓝 0)
+
+/-- A family of operators of norm at most `1` is stable, with `M₀ = 1`, on every horizon. -/
+theorem isStable_of_forall_norm_le_one {C : ℝ → V →L[𝕜] V} {Δ₀ : ℝ}
+    (hC : ∀ Δt ∈ Set.Ioc (0 : ℝ) Δ₀, ‖C Δt‖ ≤ 1) (T : ℝ) : IsStable C T Δ₀ := by
+  refine ⟨1, fun Δt hΔt m _ => ?_⟩
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · rw [pow_zero]
+    exact ContinuousLinearMap.norm_id_le
+  · exact (norm_pow_le' _ hm).trans (pow_le_one₀ (norm_nonneg _) (hC Δt hΔt))
 
 /-! ### The telescoping estimate -/
 
@@ -485,10 +514,11 @@ theorem isStable_iff_isConvergent [CompleteSpace V] {S C : ℝ → V →L[𝕜] 
           (Δt i) v (m i) (fun k hk => ?_) fun k hk => ?_
         · refine hM (Δt i) (hΔt i) k ?_
           exact le_trans (mul_le_mul_of_nonneg_right (by exact_mod_cast hk) (hΔt i).1.le) (hmT i)
-        · refine hloc (Δt i) (hΔt i) hAi _
-            ⟨mul_nonneg (Nat.cast_nonneg _) (hΔt i).1.le, ?_⟩
-          refine le_trans (mul_le_mul_of_nonneg_right ?_ (hΔt i).1.le) (hmT i)
-          exact_mod_cast hk.le
+        · have hk1 : ((k : ℝ) + 1) * Δt i ≤ T :=
+            le_trans (mul_le_mul_of_nonneg_right (by exact_mod_cast hk) (hΔt i).1.le) (hmT i)
+          refine hloc (Δt i) (hΔt i) hAi _
+            ⟨mul_nonneg (Nat.cast_nonneg _) (hΔt i).1.le, ?_⟩ (by linarith)
+          exact le_trans (by nlinarith [(hΔt i).1.le]) hk1
       have hbound : m i * (max M₀ 0 * (ε' / (2 * (max M₀ 0 * T + 1)) * Δt i)) < ε' / 2 := by
         have hexp : (m i : ℝ) * (max M₀ 0 * (ε' / (2 * (max M₀ 0 * T + 1)) * Δt i))
             = (max M₀ 0 * ((m i : ℝ) * Δt i)) * (ε' / (2 * (max M₀ 0 * T + 1))) := by ring

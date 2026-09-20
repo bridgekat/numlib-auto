@@ -3,6 +3,7 @@ import Mathlib.Analysis.Convex.Function
 import Mathlib.Topology.Semicontinuity.Basic
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Normed.Module.Reflexive
+import Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Variational.Minimization
@@ -29,10 +30,12 @@ with reflexivity replaced by its characterization.
 Reflexivity itself is `NormedSpace.IsReflexive` of `Numlib.Analysis.Normed.Module.Reflexive`, and
 `WeaklySeqCompactSpace.of_isReflexive` below derives this class from it, so the direct method
 applies to **every reflexive real Banach space**: that instance is the easy half of the equivalence,
-`NormedSpace.exists_subseq_forall_dual_tendsto`, read through `WeakSeqTendsto`. In particular every
-Hilbert space is covered, by `NormedSpace.instIsReflexiveOfInnerProductSpace`, and that is where the
-applications in this library live; `Lᵖ` for `1 < p < ∞` and every uniformly convex Banach space are
-reflexive too, by theorems this library does not have. Mathlib has no reflexivity class of its own.
+`NormedSpace.exists_subseq_forall_dual_tendsto`, read through `WeakSeqTendsto`; the converse,
+`WeaklySeqCompactSpace.isReflexive`, is the Eberlein–Šmulian theorem of
+`Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian`, so the class is reflexivity itself. In
+particular every Hilbert space is covered, by `NormedSpace.instIsReflexiveOfInnerProductSpace`, and
+`Lᵖ` for `1 < p < ∞` (`MeasureTheory.Lp.instIsReflexive`) and every uniformly convex Banach space
+(`NormedSpace.isReflexive_of_uniformConvexSpace`, Milman–Pettis) are reflexive too.
 
 ## Main definitions
 
@@ -50,7 +53,8 @@ reflexive too, by theorems this library does not have. Mathlib has no reflexivit
 ## Main statements
 
 * `WeaklySeqCompactSpace.of_isReflexive` — every reflexive real normed space satisfies the standing
-  hypothesis, so every theorem below applies to it.
+  hypothesis, so every theorem below applies to it; `WeaklySeqCompactSpace.isReflexive` is the
+  converse (Eberlein–Šmulian).
 * `exists_seq_convexCombination_tendsto` — **Mazur's lemma**: from a weakly convergent sequence one
   can form convex combinations of its tails that converge in norm.
 * `Convex.isWeakSeqClosed`, `ConvexOn.weakSeqLowerSemicontinuousOn` — the two corollaries of Mazur's
@@ -106,8 +110,8 @@ equivalent to reflexivity by the theorems of Eberlein–Šmulian and Kakutani; i
 [han2009theoretical] Thm 2.7.5 states reflexivity.
 
 The class is the hypothesis of the theorems below rather than reflexivity itself because it is what
-their proofs use, and because only the easy half of the equivalence is available here; every
-reflexive space is an instance, by `WeaklySeqCompactSpace.of_isReflexive`. -/
+their proofs use; every reflexive space is an instance, by `WeaklySeqCompactSpace.of_isReflexive`,
+and conversely every instance is reflexive, by `WeaklySeqCompactSpace.isReflexive`. -/
 class WeaklySeqCompactSpace (V : Type*) [NormedAddCommGroup V] [NormedSpace ℝ V] : Prop where
   /-- Every norm-bounded sequence has a weakly convergent subsequence. -/
   exists_subseq_weakSeqTendsto : ∀ (u : ℕ → V) (C : ℝ), (∀ n, ‖u n‖ ≤ C) →
@@ -142,7 +146,7 @@ end Defs
 /-- **Every reflexive real normed space is weakly sequentially compact on bounded sets.** This is
 the easy half of the classical equivalence, `NormedSpace.exists_subseq_forall_dual_tendsto`, whose
 conclusion is `WeakSeqTendsto` with the quantifier over the dual moved outside; the converse, that
-weak sequential compactness forces reflexivity, is Kakutani's theorem and is not available here.
+weak sequential compactness forces reflexivity, is `WeaklySeqCompactSpace.isReflexive`.
 
 Through `NormedSpace.instIsReflexiveOfInnerProductSpace` this covers every Hilbert space, so it
 subsumes the direct route through the Riesz representation and `exists_subseq_weak_tendsto`. It is
@@ -153,6 +157,16 @@ instance WeaklySeqCompactSpace.of_isReflexive {V : Type*} [NormedAddCommGroup V]
   exists_subseq_weakSeqTendsto u C hC := by
     obtain ⟨w, σ, hσ, h⟩ := NormedSpace.exists_subseq_forall_dual_tendsto (𝕜 := ℝ) hC
     exact ⟨σ, w, hσ, h⟩
+
+/-- **A weakly sequentially compact real normed space is reflexive**: the converse of
+`WeaklySeqCompactSpace.of_isReflexive`, by the Eberlein–Šmulian theorem
+(`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`). Completeness is not
+assumed, being a consequence. -/
+theorem WeaklySeqCompactSpace.isReflexive (V : Type*) [NormedAddCommGroup V] [NormedSpace ℝ V]
+    [WeaklySeqCompactSpace V] : NormedSpace.IsReflexive ℝ V :=
+  NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto fun v C h ↦
+    let ⟨σ, w, hσ, hw⟩ := WeaklySeqCompactSpace.exists_subseq_weakSeqTendsto v C h
+    ⟨w, σ, hσ, hw⟩
 
 /-! ### Mazur's lemma -/
 
@@ -386,6 +400,18 @@ theorem exists_isMinOn_of_convexOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty
       (hf.weakSeqLowerSemicontinuousOn hlsc))
     (fun hcoer => exists_isMinOn_of_isCoerciveFunctionalOn hne (hconv.isWeakSeqClosed hcl)
       (hf.weakSeqLowerSemicontinuousOn hlsc) hcoer)
+
+/-- **Existence of a maximizer of a concave functional**, the mirror of
+`exists_isMinOn_of_convexOn`: on a nonempty closed convex subset of a reflexive space, an upper
+semicontinuous concave functional attains its maximum as soon as the set is bounded or the
+negated functional is coercive. -/
+theorem exists_isMaxOn_of_concaveOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty) (hcl : IsClosed K)
+    (hconv : Convex ℝ K) (hf : ConcaveOn ℝ K f) (husc : UpperSemicontinuousOn f K)
+    (h : IsBounded K ∨ IsCoerciveFunctionalOn (-f) K) : ∃ u ∈ K, IsMaxOn f K u := by
+  have hlsc : LowerSemicontinuousOn (-f) K :=
+    continuous_neg.comp_upperSemicontinuousOn_antitone husc fun _ _ h => neg_le_neg h
+  obtain ⟨u, hu, hmin⟩ := exists_isMinOn_of_convexOn hne hcl hconv hf.neg hlsc h
+  exact ⟨u, hu, isMaxOn_iff.2 fun x hx => neg_le_neg_iff.1 (isMinOn_iff.1 hmin x hx)⟩
 
 /-- **Existence of a best approximation from a closed convex set** ([han2009theoretical],
 Thm 3.3.14). The distance to `u` is convex, continuous and coercive, so this is the coercive case of

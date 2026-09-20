@@ -335,34 +335,16 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
 /-- **Poincaré's inequality as coercivity of the Dirichlet form on `H^1_0(Ω)`** for
 `Ω ⊆ B(0, R)`: `∫_Ω |∇v|² ≥ (1 + (2R)²)⁻¹ ‖v‖²_{H^1}`, from `SobolevEuclideanZero.norm_le_gradNorm`
-([brezis2011functional] Corollary 9.19). -/
+([brezis2011functional] Corollary 9.19) in the form `Elliptic.norm_sq_le_dirichletForm_self`. -/
 theorem dirichletForm_restrict_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
     ((dirichletForm Ω).restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoerciveWith
       (1 + (2 * R) ^ 2)⁻¹ := by
   intro v
-  rw [RCLike.re_to_real, SesqForm.restrict_apply, dirichletForm_self_eq, ← Submodule.norm_coe]
-  have hP := SobolevEuclideanZero.norm_le_gradNorm (p := 2) (by norm_num) hR hΩ v
-  simp only [ENNReal.toReal_ofNat, Real.rpow_two, ← Real.sqrt_eq_rpow] at hP
-  have hP2 : ‖(v : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
-      ≤ (1 + (2 * R) ^ 2) * ∑ i, ‖SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
-        (MultiIndexLE.single i)‖ ^ 2 := by
-    calc ‖(v : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
-        ≤ (√(1 + (2 * R) ^ 2)
-          * SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 2 Ω)) ^ 2 :=
-          pow_le_pow_left₀ (norm_nonneg _) hP 2
-      _ = (1 + (2 * R) ^ 2) * ∑ i, ‖SobolevMultiIndex.weakDeriv
-          (v : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single i)‖ ^ 2 := by
-          rw [mul_pow, Real.sq_sqrt (by positivity), gradNorm_eq_sqrt,
-            Real.sq_sqrt (Finset.sum_nonneg fun i _ ↦ sq_nonneg _)]
-  have hpos : 0 < 1 + (2 * R) ^ 2 := by positivity
-  calc (1 + (2 * R) ^ 2)⁻¹ * ‖(v : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
-      ≤ (1 + (2 * R) ^ 2)⁻¹ * ((1 + (2 * R) ^ 2) * ∑ i, ‖SobolevMultiIndex.weakDeriv
-          (v : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single i)‖ ^ 2) :=
-        mul_le_mul_of_nonneg_left hP2 (by positivity)
-    _ = ∑ i, ‖SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
-          (MultiIndexLE.single i)‖ ^ 2 := by
-        field_simp
+  rw [RCLike.re_to_real, SesqForm.restrict_apply, ← Submodule.norm_coe]
+  have hpos : (0 : ℝ) < 1 + (2 * R) ^ 2 := by positivity
+  rw [inv_mul_le_iff₀ hpos]
+  exact norm_sq_le_dirichletForm_self hR hΩ v.2
 
 /-- **The Dirichlet form is coercive on `H^1_0(Ω)` for a bounded `Ω`** (Poincaré's inequality):
 the hypothesis `ha` of the solution operator and of the eigenbasis for `a = dirichletForm Ω`. -/

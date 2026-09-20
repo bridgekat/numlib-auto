@@ -172,22 +172,11 @@ theorem transportForm_apply_self (ha : IntervalIntegrable a volume (x 0) (x (Fin
         + ∑ i, ∫ s in x i.castSucc..x i.succ, (a₀ s t - deriv a s / 2) * (v i).eval s ^ 2 :=
   Variational.transportForm_apply_self_of_continuous ha (ha₀ t) hd hd' hn hv
 
-omit hx in
-/-- The coefficient `a₀(·, t) - a'/2` of the energy identity is interval integrable on `[α, β]`. -/
-private theorem intervalIntegrable_reaction
-    (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
-    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) (hle : x 0 ≤ x (Fin.last n))
-    (t : ℝ) :
-    IntervalIntegrable (fun s => a₀ s t - deriv a s / 2) volume (x 0) (x (Fin.last n)) :=
-  (ha₀ t).sub
-    (((by rwa [uIcc_of_le hle] : ContinuousOn (deriv a) [[x 0, x (Fin.last n)]]).intervalIntegrable
-      ).div_const 2)
-
 /-- **The dissipativity of the transport form on `V_h^{in}`** ([quarteroni2000numerical]
 §13.10.1, the inequality behind (13.66) and (13.67)): if `c ≤ a₀(·, t) - a'/2` on `[α, β]` then
 `c ‖v‖²_{L²} + ½ a(β) v(β)² ≤ b_t(v, v)` for every `v ∈ V_h^{in}`, the inflow term of
 `transportForm_apply_self` vanishing. Taking `c = μ₀ > 0` gives (13.66) and `c = -μ*` gives
-(13.67). -/
+(13.67). The backbone's `Variational.le_transportForm_restrict` at the time `t`. -/
 theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -197,16 +186,8 @@ theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fi
     c * ‖v‖ ^ 2
         + a (x (Fin.last n))
           * BrokenPolynomial.traceLeft (v : BrokenPolynomial x r) (Fin.last n) ^ 2 / 2
-      ≤ (transportForm x r ha ha₀ t).restrict (inflowSpace x r hn) v v := by
-  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
-  have h0 : BrokenPolynomial.traceRight (v : BrokenPolynomial x r) ⟨0, hn⟩ = 0 := v.2.2
-  have key := transportForm_apply_self ha ha₀ hd hd' hn t v.2.1
-  have hlow := BrokenPolynomial.mul_norm_sq_le_sum_integral
-    (intervalIntegrable_reaction ha₀ hd' hle t) hc (v : BrokenPolynomial x r)
-  rw [SesqForm.restrict_apply, key, h0, ← Submodule.norm_coe]
-  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
-    sub_zero]
-  linarith
+      ≤ (transportForm x r ha ha₀ t).restrict (inflowSpace x r hn) v v :=
+  Variational.le_transportForm_restrict ha (ha₀ t) hd hd' hn hc (fun _ hv => hv) v
 
 /-- The outflow functional `t ↦ a(β) u_h(β, t)²` is continuous along a continuous curve. -/
 private theorem continuousOn_outflow {hn : 0 < n} {T : ℝ} {uh : ℝ → inflowSpace x r hn}
@@ -358,7 +339,8 @@ theorem dgUpwindForm_apply_self (ha : IntervalIntegrable a volume (x 0) (x (Fin.
 
 /-- **The dissipativity of the upwind form** ([quarteroni2000numerical] §13.10.1, the inequality
 behind (13.69)): if `c ≤ a₀(·, t) - a'/2` on `[α, β]` then
-`c ‖v‖²_{L²} + ½ a(β) v⁻(β)² + ½ ∑_j a(x_j) [v]_j² ≤ b^{DG}_t(v, v)` for every `v ∈ W_h`. -/
+`c ‖v‖²_{L²} + ½ a(β) v⁻(β)² + ½ ∑_j a(x_j) [v]_j² ≤ b^{DG}_t(v, v)` for every `v ∈ W_h`. The
+backbone's `Variational.le_dgUpwindForm` at the time `t`. -/
 theorem le_dgUpwindForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -367,12 +349,8 @@ theorem le_dgUpwindForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n))
     (v : BrokenPolynomial x r) :
     c * ‖v‖ ^ 2 + a (x (Fin.last n)) * BrokenPolynomial.traceLeft v (Fin.last n) ^ 2 / 2
         + ∑ i : Fin n, a (x i.castSucc) * BrokenPolynomial.jump v i ^ 2 / 2
-      ≤ Variational.dgUpwindForm x r ha (ha₀ t) v v := by
-  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
-  have hlow := BrokenPolynomial.mul_norm_sq_le_sum_integral
-    (intervalIntegrable_reaction ha₀ hd' hle t) hc v
-  rw [dgUpwindForm_apply_self ha ha₀ hd hd' t v]
-  linarith
+      ≤ Variational.dgUpwindForm x r ha (ha₀ t) v v :=
+  Variational.le_dgUpwindForm ha (ha₀ t) hd hd' hc v
 
 /-- **(13.69)** ([quarteroni2000numerical] (13.69)): under `0 < μ₀ ≤ a₀ - a'/2`, the
 discontinuous Galerkin solution satisfies, for `t ∈ [0, T]`,

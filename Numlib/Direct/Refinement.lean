@@ -306,13 +306,6 @@ theorem limsup_le_div_of_forall_le_mul_add {a : ℕ → ℝ} {ρ c : ℝ} (hρ0 
   rw [hv.limsup_eq] at hle
   simpa using hle
 
-/-- An entrywise bound on a matrix bounds its action on nonnegative vectors. -/
-theorem _root_.Matrix.EntrywiseLE.mulVec_le_of_nonneg {M N : Matrix (Fin n) (Fin n) ℝ}
-    (hMN : M ≤ₑ N) {w : Fin n → ℝ} (hw : 0 ≤ w) : M *ᵥ w ≤ N *ᵥ w := by
-  refine Pi.le_def.2 fun i => ?_
-  simp only [mulVec_apply_eq_sum]
-  exact Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_right (hMN i j) (hw j)
-
 /-- The residual error in the form of [higham2002accuracy] (12.2): a bound
 `|ξ| ≤ c (|A| |x̂| + |b|)` on the error of a computed residual of `A x = b` at `x̂` is the bound
 `|ξ| ≤ c |A| |x - x̂| + 2 c |A| |x|` in terms of the error `x - x̂` and the solution `x`. -/
@@ -706,13 +699,6 @@ theorem norm_sub_le_of_forall_roundsStepLU [NeZero n] {m : RoundingModel ℝ}
   refine ⟨hρ1, hrec, fun k =>
     le_pow_mul_add_div_of_forall_le_mul_add (a := fun k => ‖x - xs k‖) hρ0 hρ1 hφ0 hrec k, ?_⟩
   exact limsup_le_div_of_forall_le_mul_add hρ0 hρ1 hφ0 (fun k => norm_nonneg _) hrec
-
-/-- `γ_k ≤ 2 k u` when `2 k u ≤ 1`. -/
-theorem _root_.FloatingPoint.gamma_le_two_mul {u : ℝ} (hu : 0 ≤ u) {k : ℕ}
-    (h : 2 * ((k : ℝ) * u) ≤ 1) : gamma u k ≤ 2 * (k * u) := by
-  have hk0 : 0 ≤ (k : ℝ) * u := by positivity
-  rw [gamma_def, div_le_iff₀ (by linarith)]
-  nlinarith
 
 /-- **[higham2002accuracy] Theorem 12.1 (mixed precision iterative refinement)**, in rigorous
 form: as `norm_sub_le_of_forall_roundsStepLU`, with the residuals computed in a finer model `m'`

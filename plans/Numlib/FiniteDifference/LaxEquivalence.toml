@@ -39,3 +39,12 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 6.2.11"
 [[node]]
 id = "norm_iterate_sub_le"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 6.2.12"
+
+[[node]]
+id = "isStable_of_forall_norm_le_one"
+
+[[node]]
+id = "IsSolution.sub"
+
+[[node]]
+id = "_root_.ContinuousLinearMap.norm_pow_le_one"

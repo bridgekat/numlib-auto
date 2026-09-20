@@ -184,3 +184,57 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 [[node]]
 id = "SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (on an extension domain)"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_comp"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (a)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (b), compact form"
+
+[[node]]
+id = "SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (c) into C(Ω̄), Example 7.4.2"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9"
+
+[[node]]
+id = "exists_strictMono_forall_dist_lt_of_lipschitzWith"
+source = "Arzelà–Ascoli for a uniformly bounded, uniformly Lipschitz sequence on a compact set"
+
+[[node]]
+id = "SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7, on ℝ^N with the constants"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_fnL_top"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 at p = ∞; Atkinson–Han, Theorem 7.3.9 at p = ∞, k = 1"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 at p = ∞, one order"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 at p = ∞"

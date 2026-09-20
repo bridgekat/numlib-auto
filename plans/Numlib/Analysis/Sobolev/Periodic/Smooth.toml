@@ -1,10 +1,4 @@
 [[node]]
-id = "Function.Periodic.deriv'"
-
-[[node]]
-id = "Function.Periodic.iteratedDeriv'"
-
-[[node]]
 id = "fourierCoeff_lift_deriv"
 
 [[node]]

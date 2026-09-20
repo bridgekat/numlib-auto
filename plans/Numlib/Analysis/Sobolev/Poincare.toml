@@ -39,3 +39,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
 [[node]]
 id = "SobolevEuclideanZero.norm_le_gradNorm"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "SobolevEuclideanZero.norm_sq_le_sum_norm_weakDeriv_single_sq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "isFiniteMeasure_restrict_of_subset_ball"

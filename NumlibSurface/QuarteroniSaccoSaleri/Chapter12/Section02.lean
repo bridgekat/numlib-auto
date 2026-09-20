@@ -438,38 +438,13 @@ section Exercise125
 
 open intervalIntegral
 
--- TODO(backbone): Cauchy–Schwarz for interval integrals; Mathlib has Hölder only for
--- `lintegral` and for `MemLp` data. Natural home: beside `intervalIntegral.integral_mono` in
--- `Mathlib/MeasureTheory/Integral/IntervalIntegral`.
 /-- **Cauchy–Schwarz for interval integrals**: `(∫ f k)² ≤ (∫ f²)(∫ k²)` on `[p, q]`, by the
-nonnegativity of `∫ (λ f + k)²` and the discriminant. -/
+nonnegativity of `∫ (λ f + k)²` and the discriminant; the backbone's
+`intervalIntegral.sq_integral_mul_le_of_continuousOn`. -/
 theorem sq_integral_mul_le {f k : ℝ → ℝ} {p q : ℝ} (hpq : p ≤ q)
     (hf : ContinuousOn f (Icc p q)) (hk : ContinuousOn k (Icc p q)) :
-    (∫ t in p..q, f t * k t) ^ 2 ≤ (∫ t in p..q, f t ^ 2) * ∫ t in p..q, k t ^ 2 := by
-  have hff : IntervalIntegrable (fun t => f t ^ 2) volume p q :=
-    (hf.pow 2).intervalIntegrable_of_Icc hpq
-  have hkk : IntervalIntegrable (fun t => k t ^ 2) volume p q :=
-    (hk.pow 2).intervalIntegrable_of_Icc hpq
-  have hfk : IntervalIntegrable (fun t => f t * k t) volume p q :=
-    (hf.mul hk).intervalIntegrable_of_Icc hpq
-  have hexp : ∀ l : ℝ, (∫ t in p..q, (l * f t + k t) ^ 2)
-      = (∫ t in p..q, f t ^ 2) * (l * l) + 2 * (∫ t in p..q, f t * k t) * l
-        + ∫ t in p..q, k t ^ 2 := by
-    intro l
-    have hcongr : ∀ t ∈ uIcc p q, (l * f t + k t) ^ 2
-        = l ^ 2 * f t ^ 2 + (2 * l) * (f t * k t) + k t ^ 2 := fun t _ => by ring
-    rw [integral_congr hcongr, integral_add ((hff.const_mul _).add (hfk.const_mul _)) hkk,
-      integral_add (hff.const_mul _) (hfk.const_mul _),
-      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul]
-    ring
-  have hnn : ∀ l : ℝ, 0 ≤ (∫ t in p..q, f t ^ 2) * (l * l)
-      + 2 * (∫ t in p..q, f t * k t) * l + ∫ t in p..q, k t ^ 2 := by
-    intro l
-    rw [← hexp l]
-    exact integral_nonneg hpq fun t _ => sq_nonneg _
-  have hd := discrim_le_zero hnn
-  rw [discrim] at hd
-  nlinarith [hd]
+    (∫ t in p..q, f t * k t) ^ 2 ≤ (∫ t in p..q, f t ^ 2) * ∫ t in p..q, k t ^ 2 :=
+  intervalIntegral.sq_integral_mul_le_of_continuousOn hpq hf hk
 
 /-- **Taylor's formula with integral remainder, right end**:
 `∫_p^q u''(t)(q - t) dt = u(q) - u(p) - (q - p) u'(p)`, by the fundamental theorem of calculus

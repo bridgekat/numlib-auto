@@ -63,3 +63,21 @@ id = "integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg"
 
 [[node]]
 id = "integrableOn_Ioi_and_integral_le_of_forall_integral_le"
+
+[[node]]
+id = "intervalIntegral.integral_mul_le_sqrt_mul_sqrt"
+
+[[node]]
+id = "intervalIntegrable_mul_of_sq"
+
+[[node]]
+id = "intervalIntegrable_sub_sq"
+
+[[node]]
+id = "MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt"
+
+[[node]]
+id = "intervalIntegral.sq_integral_mul_le_of_continuousOn"
+
+[[node]]
+id = "intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero"

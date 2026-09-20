@@ -966,6 +966,12 @@ theorem dualEquiv_apply (hp : p ≠ ∞) (u : Lp 𝕜 q μ) (f : Lp 𝕜 p μ) :
 
 end Lp
 
+/-- The conjugate exponent of `p ≥ 1` is at least `1`, as a `Fact` for the `L^p`–`L^{p'}` pairing
+(a local instance where it is wanted). -/
+theorem _root_.ENNReal.fact_one_le_conjExponent [Fact (1 ≤ p)] :
+    Fact (1 ≤ ENNReal.conjExponent p) :=
+  ⟨ENNReal.HolderConjugate.one_le (ENNReal.conjExponent p) p⟩
+
 namespace Lp
 
 variable (𝕜) in
@@ -1032,14 +1038,63 @@ end Top
 
 namespace Lp
 
+/-- **A functional on
+`L^∞(μ)` that is the point evaluation at `x₀` on the smooth compactly supported functions is not
+`f ↦ ∫ u f` for any `u ∈ L¹(μ)`**, for an atomless σ-finite measure on a finite-dimensional real
+normed space: such a `u` would vanish
+almost everywhere off `x₀` (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence
+almost everywhere, while `φ` is `1` on a bump at `x₀`. -/
+theorem toDual_ne_of_forall_contDiff_apply_eq {G : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] {μ : Measure G}
+    [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (φ : StrongDual ℝ (Lp ℝ ∞ μ))
+    (hφ : ∀ (f : G → ℝ) (hf : MemLp f ∞ μ), ContDiff ℝ (⊤ : ℕ∞) f → HasCompactSupport f →
+      φ (hf.toLp f) = f x₀) (u : Lp ℝ 1 μ) : toDual ℝ ∞ 1 μ u ≠ φ := by
+  intro hu
+  have hmem : ∀ f : G → ℝ, Continuous f → HasCompactSupport f → MemLp f ∞ μ := fun f hf hs => by
+    obtain ⟨C, hC⟩ := hf.bounded_above_of_compact_support hs
+    exact memLp_top_of_bound hf.aestronglyMeasurable C (ae_of_all _ hC)
+  -- a bump at `x₀`, on which `φ` is `1`
+  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
+  have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
+  have hφψ : φ (hψ.toLp ψ) = 1 := by
+    rw [hφ ψ hψ ψ.contDiff ψ.hasCompactSupport]
+    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
+  -- `u = 0` a.e. off `x₀`
+  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
+    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
+    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
+      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
+    have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
+    have h1 : φ (hgL.toLp g) = 0 := by
+      rw [hφ g hgL hg hgs]
+      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
+    rw [← hu, toDual_apply] at h1
+    rw [← h1]
+    refine integral_congr_ae ?_
+    filter_upwards [hgL.coeFn_toLp] with x hx
+    rw [hx, smul_eq_mul, mul_comm]
+  -- hence `u = 0` and `φ = 0`, contradicting `φ ψ = 1`
+  have hu' : u = 0 := by
+    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
+      rw [ae_iff]
+      simp
+    have huμ : ∀ᵐ x ∂μ, u x = 0 := by
+      filter_upwards [hu0, hx₀'] with x hx hx'
+      exact hx hx'
+    apply Lp.ext
+    filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
+    rw [hx0, hx]
+    rfl
+  rw [hu', map_zero] at hu
+  rw [← hu] at hφψ
+  simp at hφψ
+
 /-- **The functional of [brezis2011functional] §4.3 (the study of `L^∞`), general form.** For a
 σ-finite measure `μ` without atoms on a finite-dimensional real normed space `G` and a point
 `x₀` all of whose neighbourhoods have positive measure, there is a functional `φ` on `L^∞(μ)`
 with `φ f = f x₀` for every continuous compactly supported `f` — a Hahn–Banach extension of the
 point evaluation at `x₀`, which is bounded by the `L^∞` norm on the classes of such functions —
-and `φ` is not `f ↦ ∫ u f` for any `u ∈ L^1(μ)`: such a `u` would vanish a.e. off `x₀`
-(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence a.e., while `φ` is `1` on a bump
-at `x₀`. -/
+and `φ` is not `f ↦ ∫ u f` for any `u ∈ L^1(μ)` (`toDual_ne_of_forall_contDiff_apply_eq`). -/
 theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (μ : Measure G)
     [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (hx₀ : ∀ U ∈ 𝓝 x₀, 0 < μ U) :
@@ -1082,51 +1137,13 @@ theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [Norme
     rw [← hx]
     exact hx'
   obtain ⟨φ, hφM, -⟩ := exists_extension_norm_eq M (δ.mkContinuous 1 hδ)
-  refine ⟨φ, fun f hf hfc hfs => ?_, fun u hu => ?_⟩
-  · have hfM : hf.toLp f ∈ M := ⟨f, hfc, hfs, hf.coeFn_toLp⟩
+  have hφeval : ∀ (f : G → ℝ) (hf : MemLp f ∞ μ), Continuous f → HasCompactSupport f →
+      φ (hf.toLp f) = f x₀ := fun f hf hfc hfs => by
+    have hfM : hf.toLp f ∈ M := ⟨f, hfc, hfs, hf.coeFn_toLp⟩
     rw [hφM ⟨_, hfM⟩]
     exact hFeq ⟨_, hfM⟩ f hfc hf.coeFn_toLp
-  -- a bump at `x₀`, on which `φ` is `1`
-  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
-  have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
-  let gψ : M := ⟨hψ.toLp ψ, ψ, ψ.continuous, ψ.hasCompactSupport, hψ.coeFn_toLp⟩
-  have hφψ : φ gψ = 1 := by
-    rw [hφM gψ]
-    change F gψ x₀ = 1
-    rw [hFeq gψ ψ ψ.continuous hψ.coeFn_toLp]
-    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
-  -- if `φ = ∫ u ·` then `u = 0` a.e. off `x₀`
-  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
-    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
-    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
-      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
-    have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
-    have hgM : hgL.toLp g ∈ M := ⟨g, hg.continuous, hgs, hgL.coeFn_toLp⟩
-    have h1 : φ (hgL.toLp g) = 0 := by
-      rw [hφM ⟨_, hgM⟩]
-      change F ⟨_, hgM⟩ x₀ = 0
-      rw [hFeq ⟨_, hgM⟩ g hg.continuous hgL.coeFn_toLp]
-      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
-    rw [← hu, toDual_apply] at h1
-    rw [← h1]
-    refine integral_congr_ae ?_
-    filter_upwards [hgL.coeFn_toLp] with x hx
-    rw [hx, smul_eq_mul, mul_comm]
-  -- hence `u = 0` and `φ = 0`, contradicting `φ gψ = 1`
-  have hu' : u = 0 := by
-    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
-      rw [ae_iff]
-      simp
-    have huμ : ∀ᵐ x ∂μ, u x = 0 := by
-      filter_upwards [hu0, hx₀'] with x hx hx'
-      exact hx hx'
-    apply Lp.ext
-    filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
-    rw [hx0, hx]
-    rfl
-  rw [hu', map_zero] at hu
-  rw [← hu] at hφψ
-  simp at hφψ
+  exact ⟨φ, hφeval, fun u => toDual_ne_of_forall_contDiff_apply_eq φ
+    (fun f hf hfc hfs => hφeval f hf hfc.continuous hfs) u⟩
 
 /-- **`(L^∞)^*` is strictly larger than `L^1`** ([brezis2011functional] §4.3, the study of
 `L^∞`): on a nonempty open subset `Ω` of a finite-dimensional real normed space `G`, for a

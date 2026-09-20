@@ -447,14 +447,6 @@ theorem frobenius_norm_psbUpdate_sub_lt {B B' : Matrix n n ℝ} (hB : B.IsSymm) 
   rw [hE]
   exact lt_of_pow_lt_pow_left₀ 2 (norm_nonneg _) (by nlinarith)
 
-/-- The operator norm of a matrix on `EuclideanSpace ℝ n` is at most its Frobenius norm. -/
-theorem norm_toEuclideanCLM_le_frobenius (A : Matrix n n ℝ) :
-    ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ ‖A‖ :=
-  ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => by
-    have h := frobenius_norm_mulVec_le A (ofLp v)
-    rw [← ofLp_toEuclideanCLM (𝕜 := ℝ)] at h
-    simpa only [toLp_ofLp] using h
-
 /-- The linear part of the PSB correction: the map
 `r ↦ (r sᵀ + s rᵀ) / (sᵀ s) - ((rᵀ s) / (sᵀ s)²) s sᵀ`, so that
 `psbUpdate B s y - B` is its value at `r = y - B s`. -/
@@ -569,7 +561,7 @@ theorem frobenius_norm_psbUpdate_sub_le_add {g : EuclideanSpace ℝ n → Euclid
   have hopL : ∀ z ∈ D, ‖toEuclideanCLM (𝕜 := ℝ) (H z) - toEuclideanCLM (𝕜 := ℝ) (H xp)‖
       ≤ L * ‖z - xp‖ := fun z hz => by
     rw [← map_sub]
-    exact (norm_toEuclideanCLM_le_frobenius _).trans (hL z hz xp hxs)
+    exact (norm_toEuclideanCLM_le_frobenius_norm _).trans (hL z hz xp hxs)
   have hmv : ‖toLp 2 w‖ ≤ L / 2 * ‖toLp 2 s‖ ^ 2 := by
     have h := Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le hD hg hxs hx hopL
     rw [show x - xp = -toLp 2 s from sub_add_cancel_left x (toLp 2 s), map_neg, norm_neg,

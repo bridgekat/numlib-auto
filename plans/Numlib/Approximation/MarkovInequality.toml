@@ -52,9 +52,6 @@ id = "integral_derivative_sq_le"
 id = "sqrt_integral_derivative_sq_le"
 
 [[node]]
-id = "_root_.intervalIntegral.sq_integral_mul_le_of_continuousOn"
-
-[[node]]
 id = "integral_legendre_mul_derivative_derivative"
 
 [[node]]

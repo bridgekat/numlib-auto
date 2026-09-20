@@ -15,7 +15,7 @@ space `W^{−1,p'}(Ω)` with the inclusions `H_0^1(Ω) ⊂ L^2(Ω) ⊂ H^{−1}(
 
 The backbone is `Numlib/Analysis/Sobolev/Zero` (the extension by zero, Theorem 9.17,
 Proposition 9.18, Remarks 17, 18, 20, 21, Proposition 9.20, the Gelfand triple),
-`Numlib/Analysis/Sobolev/Cutoff` (Lemma 9.5), `Numlib/Analysis/Sobolev/Poincare` (Corollary 9.19,
+`Numlib/Analysis/Sobolev/Operators` (Lemma 9.5), `Numlib/Analysis/Sobolev/Poincare` (Corollary 9.19,
 Remark 21's bounded-projection clause), `Numlib/Analysis/Sobolev/EmbeddingDomain` and
 `Numlib/Analysis/Sobolev/Compactness` (Remark 20) and, for the scalar product of `H_0^1(Ω)`,
 the Dirichlet form of `Numlib/Analysis/PDE/Elliptic/Dirichlet`.

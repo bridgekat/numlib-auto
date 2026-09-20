@@ -150,3 +150,9 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10"
 [[node]]
 id = "forall_of_ae_restrict_of_isOpen"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞"
+
+[[node]]
+id = "_root_.ENNReal.fact_one_le_conjExponent"
+
+[[node]]
+id = "Lp.toDual_ne_of_forall_contDiff_apply_eq"

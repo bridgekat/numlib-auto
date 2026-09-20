@@ -1130,3 +1130,104 @@ theorem fourier_weakDeriv_aeEq {n : ℕ} (m : Fin n → E)
   rw [h, Pi.smul_apply, h', smul_eq_mul]
 
 end FourierDeriv
+
+/-! ### The inverse Fourier integral of an `L²` function with integrable Fourier transform -/
+
+section FourierRepresentation
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E]
+
+/-- Two `L^p` functions (for possibly different exponents) defining the same tempered
+distribution agree almost everywhere: they have the same integrals against every compactly
+supported smooth function. -/
+theorem ae_eq_of_toTemperedDistribution_eq {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
+    (f : Lp ℂ p (volume : Measure E)) (g : Lp ℂ q (volume : Measure E))
+    (h : (f : 𝓢'(E, ℂ)) = (g : 𝓢'(E, ℂ))) : (f : E → ℂ) =ᵐ[volume] g := by
+  refine ae_eq_of_integral_contDiff_smul_eq ((Lp.memLp f).locallyIntegrable Fact.out)
+    ((Lp.memLp g).locallyIntegrable Fact.out) fun φ hφ hφc ↦ ?_
+  have hg₁ : HasCompactSupport (Complex.ofRealCLM ∘ φ) := hφc.comp_left rfl
+  have hg₂ : ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) (Complex.ofRealCLM ∘ φ) :=
+    Complex.ofRealCLM.contDiff.comp hφ
+  have := congrArg (fun T : 𝓢'(E, ℂ) ↦ T (hg₁.toSchwartzMap hg₂)) h
+  simp only [Lp.toTemperedDistribution_apply] at this
+  have hΦφ : ∀ x, (hg₁.toSchwartzMap hg₂) x = (φ x : ℂ) := fun x ↦ rfl
+  simp only [hΦφ, smul_eq_mul] at this
+  simp only [Complex.real_smul]
+  exact this
+
+/-- **The inverse Fourier integral of an integrable function representing the `L²` Fourier
+transform of `v` is `v`**: if `g ∈ L¹` and `g = ℱv` as tempered distributions, then the pointwise
+inverse Fourier integral `𝓕⁻ g` is almost everywhere equal to `v`. Against a Schwartz test
+function `Φ`, `∫ Φ 𝓕⁻g = ∫ (𝓕⁻Φ) g` (Fubini), which is `(ℱv)(𝓕⁻Φ) = (𝓕⁻ ℱ v)(Φ) = v(Φ)` in the
+sense of distributions. -/
+theorem fourierInv_ae_eq_of_toTemperedDistribution_eq (v : Lp ℂ 2 (volume : Measure E))
+    (g : Lp ℂ 1 (volume : Measure E))
+    (h : ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) = (g : 𝓢'(E, ℂ))) :
+    𝓕⁻ (g : E → ℂ) =ᵐ[volume] v := by
+  have hgint : Integrable (g : E → ℂ) := L1.integrable_coeFn g
+  have hcont : Continuous (𝓕⁻ (g : E → ℂ)) :=
+    (Real.Lp.fourierTransformInv g).continuous.congr fun x ↦ by simp
+  refine ae_eq_of_integral_contDiff_smul_eq (hcont.locallyIntegrable)
+    ((Lp.memLp v).locallyIntegrable one_le_two) fun φ hφ hφc ↦ ?_
+  have hg₁ : HasCompactSupport (Complex.ofRealCLM ∘ φ) := hφc.comp_left rfl
+  have hg₂ : ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) (Complex.ofRealCLM ∘ φ) :=
+    Complex.ofRealCLM.contDiff.comp hφ
+  set Φ : 𝓢(E, ℂ) := hg₁.toSchwartzMap hg₂ with hΦ
+  have hΦφ : ∀ x, Φ x = (φ x : ℂ) := fun x ↦ rfl
+  -- the distribution identity
+  have hdist : (g : 𝓢'(E, ℂ)) (𝓕⁻ Φ) = (v : 𝓢'(E, ℂ)) Φ := by
+    rw [← h, ← Lp.fourier_toTemperedDistribution_eq, ← fourierInv_apply,
+      FourierTransform.fourierInv_fourier_eq]
+  rw [Lp.toTemperedDistribution_apply, Lp.toTemperedDistribution_apply] at hdist
+  -- Fubini: `∫ (𝓕⁻ Φ) g = ∫ Φ 𝓕⁻ g`
+  have hflip : ∫ ξ, (𝓕⁻ Φ) ξ • (g : E → ℂ) ξ = ∫ x, Φ x • 𝓕⁻ (g : E → ℂ) x := by
+    have hL : Continuous fun p : E × E ↦ (-innerₗ E) p.1 p.2 := by
+      change Continuous fun p : E × E ↦ -(inner ℝ p.1 p.2)
+      exact continuous_inner.neg
+    have hflipL : (-innerₗ E).flip = -innerₗ E := by
+      ext x y
+      simp [real_inner_comm]
+    have := VectorFourier.integral_fourierIntegral_smul_eq_flip (e := Real.fourierChar)
+      (L := -innerₗ E) (μ := volume) (ν := volume) Real.continuous_fourierChar hL
+      Φ.integrable hgint
+    rw [hflipL] at this
+    rw [SchwartzMap.fourierInv_coe]
+    exact this
+  calc ∫ x, φ x • 𝓕⁻ (g : E → ℂ) x = ∫ x, Φ x • 𝓕⁻ (g : E → ℂ) x := by
+        refine integral_congr_ae (Filter.Eventually.of_forall fun x ↦ ?_)
+        change φ x • 𝓕⁻ (g : E → ℂ) x = Φ x • 𝓕⁻ (g : E → ℂ) x
+        rw [hΦφ, Complex.real_smul, smul_eq_mul]
+    _ = ∫ ξ, (𝓕⁻ Φ) ξ • (g : E → ℂ) ξ := hflip.symm
+    _ = ∫ x, Φ x • (v : E → ℂ) x := hdist
+    _ = ∫ x, φ x • (v : E → ℂ) x := by
+        refine integral_congr_ae (Filter.Eventually.of_forall fun x ↦ ?_)
+        change Φ x • (v : E → ℂ) x = φ x • (v : E → ℂ) x
+        rw [hΦφ, Complex.real_smul, smul_eq_mul]
+
+/-- **The continuous representative of an `L²` function with integrable Fourier transform**,
+bounded by `∫ |ℱv|`: the pointwise inverse Fourier integral of `ℱv`. This is Step 1 of
+[han2009theoretical] Examples 7.4.2 and 7.4.3, `|v(x)| ≤ c ∫ |ℱv(ξ)| dξ` (with `c = 1` for
+Mathlib's normalization of the Fourier transform). -/
+theorem exists_continuous_ae_eq_of_integrable_fourier (v : Lp ℂ 2 (volume : Measure E))
+    (hF : Integrable ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : E → ℂ)) :
+    ∃ v' : E → ℂ, Continuous v' ∧ (v : E → ℂ) =ᵐ[volume] v' ∧
+      ∀ x, ‖v' x‖ ≤ ∫ ξ, ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ := by
+  have hg₀ : MemLp ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : E → ℂ) 1 volume :=
+    memLp_one_iff_integrable.2 hF
+  obtain ⟨g, hg⟩ : ∃ g : Lp ℂ 1 (volume : Measure E), g = hg₀.toLp _ := ⟨_, rfl⟩
+  have hgae : (g : E → ℂ) =ᵐ[volume] (𝓕 v : Lp ℂ 2 (volume : Measure E)) := by
+    rw [hg]
+    exact hg₀.coeFn_toLp
+  have hdist : ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) = (g : 𝓢'(E, ℂ)) := by
+    ext φ
+    simp only [Lp.toTemperedDistribution_apply]
+    exact integral_congr_ae (hgae.symm.mono fun x hx ↦ by simp only [hx])
+  refine ⟨𝓕⁻ (g : E → ℂ), (Real.Lp.fourierTransformInv g).continuous.congr (fun x ↦ by simp),
+    (fourierInv_ae_eq_of_toTemperedDistribution_eq v g hdist).symm, fun x ↦ ?_⟩
+  calc ‖𝓕⁻ (g : E → ℂ) x‖ ≤ ∫ ξ, ‖(g : E → ℂ) ξ‖ :=
+        VectorFourier.norm_fourierIntegral_le_integral_norm _ _ _ _ _
+    _ = ∫ ξ, ‖(𝓕 v : Lp ℂ 2 (volume : Measure E)) ξ‖ :=
+        integral_congr_ae (hgae.mono fun x hx ↦ by simp only [hx])
+
+end FourierRepresentation

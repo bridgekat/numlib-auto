@@ -183,3 +183,21 @@ id = "hasWeakIteratedDerivOn_sum_choose_mul"
 
 [[node]]
 id = "SobolevIntervalLp.exists_contDiff_mul"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_sobolevPrimitive"
+
+[[node]]
+id = "SobolevIntervalLp.sobolevPrimitive"
+
+[[node]]
+id = "SobolevIntervalLp.shift_sobolevPrimitive"
+
+[[node]]
+id = "ContDiffMapIcc.shift_toSobolevIntervalLp"
+
+[[node]]
+id = "ContDiffMapIcc.not_surjective_toSobolevIntervalLp_zero"
+
+[[node]]
+id = "ContDiffMapIcc.not_surjective_toSobolevIntervalLp"

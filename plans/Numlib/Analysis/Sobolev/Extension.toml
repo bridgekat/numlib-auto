@@ -227,3 +227,9 @@ id = "norm_inv_smul_lt_iff"
 
 [[node]]
 id = "SobolevEuclidean.exists_contDiff_hasCompactSupport_norm_sub_lt"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_exists_extensionL"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_extension_step"

@@ -48,10 +48,6 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, section
 id = "SobolevEuclideanZeroVec.norm_sq_eq"
 
 [[node]]
-id = "SobolevEuclideanZero.norm_sq_le_sum_norm_weakDeriv_single_sq"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
-
-[[node]]
 id = "SobolevEuclideanZeroVec.norm_sq_le_sum_norm_partialL_sq"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
 

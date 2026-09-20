@@ -950,6 +950,32 @@ theorem mono_bound {M' : ℝ} (h : IsDiffeoOnWithBoundedJacobian H Hinv s t M) (
     norm_fderiv_le := fun y hy ↦ (h.norm_fderiv_le y hy).trans hM
     norm_fderiv_invFun_le := fun x hx ↦ (h.norm_fderiv_invFun_le x hx).trans hM }
 
+/-- A diffeomorphism with bounded Jacobians restricts to every open subset `A` of its source, as
+a diffeomorphism of `A` onto `H '' A`. -/
+theorem restrict (h : IsDiffeoOnWithBoundedJacobian H Hinv s t M)
+    {A : Set E'} (hA : IsOpen A) (hAs : A ⊆ s) :
+    IsDiffeoOnWithBoundedJacobian H Hinv A (H '' A) M where
+  isOpen_source := hA
+  isOpen_target := by
+    have e : H '' A = t ∩ Hinv ⁻¹' A := by
+      ext x
+      constructor
+      · rintro ⟨y, hy, rfl⟩
+        exact ⟨h.bijOn.mapsTo (hAs hy), by rw [mem_preimage, h.invOn.1 (hAs hy)]; exact hy⟩
+      · rintro ⟨hx, hx'⟩
+        exact ⟨Hinv x, hx', h.invOn.2 hx⟩
+    rw [e]
+    exact h.contDiffOn_invFun.continuousOn.isOpen_inter_preimage h.isOpen_target hA
+  bijOn := (h.bijOn.injOn.mono hAs).bijOn_image
+  invOn := ⟨h.invOn.1.mono hAs, fun x hx ↦ h.invOn.2 (h.bijOn.mapsTo.image_subset (by
+    exact (image_mono hAs) hx))⟩
+  contDiffOn := h.contDiffOn.mono hAs
+  contDiffOn_invFun := h.contDiffOn_invFun.mono (h.bijOn.mapsTo.image_subset.trans' (image_mono
+    hAs))
+  norm_fderiv_le := fun y hy ↦ h.norm_fderiv_le y (hAs hy)
+  norm_fderiv_invFun_le := fun x hx ↦
+    h.norm_fderiv_invFun_le x (h.bijOn.mapsTo.image_subset (image_mono hAs hx))
+
 end IsDiffeoOnWithBoundedJacobian
 
 end Diffeo

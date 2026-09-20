@@ -6,3 +6,37 @@ id = "norm_fderiv_norm_rpow_of_ne_zero"
 
 [[node]]
 id = "hasFDerivAt_norm_of_ne_zero"
+
+[[node]]
+id = "iteratedDeriv_one_add_sq_rpow_two_mul"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (the derivatives of `|x|^λ` orthogonal to `x`)'
+
+[[node]]
+id = "contDiffOn_normRpow"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_smul"
+
+[[node]]
+id = "exists_norm_iteratedFDeriv_normRpow_le"
+
+[[node]]
+id = "iteratedDeriv_const_add_rpow"
+
+[[node]]
+id = "iteratedFDeriv_apply_const_eq_iteratedDeriv"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_unit"
+
+[[node]]
+id = "iteratedDeriv_one_add_sq_rpow_succ_succ"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_perp"
+
+[[node]]
+id = "iteratedFDeriv_normRpow_apply_cons_perp"
+
+[[node]]
+id = "exists_norm_eq_one_inner_eq_zero"

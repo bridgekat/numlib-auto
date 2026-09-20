@@ -94,14 +94,15 @@ backbone modules below are all elementary functional analysis, the largest being
   uncited exercises. §3.7 Example 2's `L^p` clause is Theorem 4.10. Remarks 1, 8, 12, 14, 16, 18,
   19 and Comments 1, 3, 4 are discussion.
 
-* **Unblocked elsewhere.** `AtkinsonHan.Chapter02.theorem_2_7_5_mpr` and `theorem_2_7_5` become
-  provable from `NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto` and
+* **Unblocked elsewhere.** `AtkinsonHan.Chapter02.theorem_2_7_5_mpr` and `theorem_2_7_5` are
+  proved from `NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto` and
   `isReflexive_iff_forall_exists_subseq_forall_dual_tendsto` (no restatement needed).
-  `AtkinsonHan.Chapter08.theorem_8_6_3` (saddle points) gets the weak compactness its `Blocked`
-  note asks for, `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`, plus Corollary
-  3.9 for the semicontinuity; its proof (Ekeland–Temam's minimax) is still to be written.
-  `WeaklySeqCompactSpace V → NormedSpace.IsReflexive ℝ V` becomes provable in
-  `Numlib/Variational/WeakMinimization.lean` (a follow-up, not planned here). `notes/frontier.md`
+  `AtkinsonHan.Chapter08.theorem_8_6_3` (saddle points) is proved from the weak compactness
+  `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`, Corollary 3.9 for the
+  semicontinuity and Sion's theorem, in `Numlib/Variational/Minimax.lean`
+  ([ekeland1999convex] Chapter VI, Proposition 2.1). `WeaklySeqCompactSpace V →
+  NormedSpace.IsReflexive ℝ V` is `WeaklySeqCompactSpace.isReflexive` in
+  `Numlib/Variational/WeakMinimization.lean`. `notes/frontier.md`
   blocker 4 closes.
 
 **Order of attack** (backbone, dependency order, estimated Lean lines): `WeakDual.toml` appends

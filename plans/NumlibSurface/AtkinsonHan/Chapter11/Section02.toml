@@ -13,15 +13,6 @@ id = "exercise_11_2_1"
 id = "theorem_11_2_2_iff"
 
 [[node]]
-id = "_root_.SesqForm.strongConvexOn_energy"
-
-[[node]]
-id = "_root_.StrongConvexOn.isCoerciveFunctionalOn_of_continuous"
-
-[[node]]
-id = "_root_.StrongConvexOn.mono_of_univ"
-
-[[node]]
 id = "theorem_11_2_2_zero"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.2.2"
 

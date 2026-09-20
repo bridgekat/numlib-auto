@@ -10,6 +10,7 @@ import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
+import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Calculus.SpaceTime
@@ -154,6 +155,7 @@ import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.FourierIntegral
 import Numlib.Analysis.Fourier.LogSingleLayer
+import Numlib.Analysis.Fourier.OddExtension
 import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.Fourier.SineBasis
 import Numlib.Analysis.Fourier.TrigonometricBasis
@@ -167,6 +169,7 @@ import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Normal
 import Numlib.Analysis.InnerProductSpace.ConvexProjection
+import Numlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
@@ -182,6 +185,7 @@ import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Analysis.MeanInequalities
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Lp.PiLp
@@ -265,6 +269,7 @@ import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Analysis.Sobolev.Korn
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
+import Numlib.Analysis.Sobolev.Operators
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.Sobolev.Periodic.Smooth
 import Numlib.Analysis.Sobolev.Poincare
@@ -446,7 +451,9 @@ import Numlib.MeasureTheory.Function.LpSpace.Clarkson
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz
+import Numlib.MeasureTheory.Function.LpSpace.Order
 import Numlib.MeasureTheory.Integral.IntervalIntegral
+import Numlib.MeasureTheory.Integral.SetIntegralCLM
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.TwoGrid
@@ -491,6 +498,7 @@ import Numlib.RingTheory.Polynomial.Horner
 import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.RingTheory.Polynomial.RuleOfSigns
 import Numlib.RingTheory.Polynomial.SchurCohn
+import Numlib.RingTheory.Polynomial.ShiftedPowers
 import Numlib.Stationary.ADI
 import Numlib.Stationary.Basic
 import Numlib.Stationary.Block

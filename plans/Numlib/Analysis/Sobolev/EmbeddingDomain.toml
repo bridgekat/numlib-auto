@@ -158,9 +158,6 @@ id = "IsSobolevExtensionDomainAll"
 id = "IsSobolevExtensionDomainAll.isSobolevExtensionDomain"
 
 [[node]]
-id = "SobolevMultiIndex.eLpNorm_fn_le_ofReal_norm"
-
-[[node]]
 id = "SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le_of_hasSobolevExtension"
 
 [[node]]
@@ -350,3 +347,15 @@ id = "ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le"
 
 [[node]]
 id = "ContDiffOnClosure.memLp_of_isBounded"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, proof; the order-lowering map at every target order"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_orderOne"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 (the inclusion W^{m+1,p} ⊆ W^{1,r})"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_lower_of_order"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, as an operator W^{m+1+j,p}(Ω) → W^{j+1,r}(Ω)"

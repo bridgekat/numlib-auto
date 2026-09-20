@@ -76,10 +76,6 @@ id = "example_7_2_5"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1), corrected: `λ` not a nonnegative even integer'
 
 [[node]]
-id = "iteratedDeriv_one_add_sq_rpow_two_mul"
-source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (the derivatives of `|x|^λ` orthogonal to `x`)'
-
-[[node]]
 id = "example_7_2_5_mp_of_forall_exists"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1)"
 

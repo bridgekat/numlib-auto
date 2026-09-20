@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Sobolev.Periodic
 
@@ -38,30 +39,6 @@ open scoped Real
 
 /-! ### Derivatives of periodic functions -/
 
-namespace Function.Periodic
-
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-
-/-- The derivative of a periodic function is periodic. This generalizes the `ℝ → ℝ` statement
-`Function.Periodic.deriv` of `Numlib/Analysis/Calculus/ContDiffMapIcc` to any target, and should
-replace it. -/
-theorem deriv' {f : ℝ → F} {T : ℝ} (h : Periodic f T) : Periodic (deriv f) T := by
-  intro x
-  have hfun : (fun y => f (y + T)) = f := funext h
-  have := deriv_comp_add_const f T x
-  rw [hfun] at this
-  exact this.symm
-
-/-- Every iterated derivative of a periodic function is periodic (generalizing
-`Function.Periodic.iteratedDeriv` of `ContDiffMapIcc` to any target). -/
-theorem iteratedDeriv' {f : ℝ → F} {T : ℝ} (h : Periodic f T) (n : ℕ) :
-    Periodic (iteratedDeriv n f) T := by
-  induction n with
-  | zero => simpa using h
-  | succ n ih => rw [iteratedDeriv_succ]; exact ih.deriv'
-
-end Function.Periodic
-
 /-! ### The Fourier coefficients of the derivatives -/
 
 section Deriv
@@ -74,14 +51,14 @@ with the boundary term killed by `f(2π) = f(0)`; at `n = 0` it is the fundament
 calculus over one period. -/
 theorem fourierCoeff_lift_deriv (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ 1 f)
     (n : ℤ) :
-    fourierCoeff hf.deriv'.lift n = (I * n) * fourierCoeff hf.lift n := by
+    fourierCoeff hf.deriv.lift n = (I * n) * fourierCoeff hf.lift n := by
   have hcont : Continuous (deriv f) := hd.continuous_deriv le_rfl
   have hint : IntervalIntegrable (deriv f) volume 0 (0 + 2 * π) :=
     hcont.intervalIntegrable _ _
   rcases eq_or_ne n 0 with rfl | hn
   · rw [Int.cast_zero, mul_zero, zero_mul, fourierCoeff_eq_intervalIntegral _ 0 0]
     simp only [neg_zero, fourier_zero, one_smul]
-    have : ∫ x in (0 : ℝ)..0 + 2 * π, hf.deriv'.lift (x : AddCircle (2 * π))
+    have : ∫ x in (0 : ℝ)..0 + 2 * π, hf.deriv.lift (x : AddCircle (2 * π))
         = ∫ x in (0 : ℝ)..0 + 2 * π, deriv f x :=
       intervalIntegral.integral_congr fun x _ => Function.Periodic.lift_coe _ _
     rw [this, intervalIntegral.integral_deriv_eq_sub
@@ -100,7 +77,7 @@ theorem fourierCoeff_lift_deriv (hf : Function.Periodic f (2 * π)) (hd : ContDi
 /-- The `k`-th derivative multiplies the `n`-th Fourier coefficient by `(i n)^k`. -/
 theorem fourierCoeff_lift_iteratedDeriv (hf : Function.Periodic f (2 * π)) {s : ℕ}
     (hd : ContDiff ℝ s f) {k : ℕ} (hk : k ≤ s) (n : ℤ) :
-    fourierCoeff (hf.iteratedDeriv' k).lift n = (I * n) ^ k * fourierCoeff hf.lift n := by
+    fourierCoeff (hf.iteratedDeriv k).lift n = (I * n) ^ k * fourierCoeff hf.lift n := by
   induction k with
   | zero => simp only [pow_zero, one_mul]; rfl
   | succ k ih =>
@@ -108,9 +85,9 @@ theorem fourierCoeff_lift_iteratedDeriv (hf : Function.Periodic f (2 * π)) {s :
       rw [iteratedDeriv_eq_iterate]
       exact ContDiff.iterate_deriv' 1 k
         (hd.of_le (by exact_mod_cast (show 1 + k ≤ s by omega)))
-    have heq : (hf.iteratedDeriv' (k + 1)).lift = (hf.iteratedDeriv' k).deriv'.lift :=
+    have heq : (hf.iteratedDeriv (k + 1)).lift = (hf.iteratedDeriv k).deriv.lift :=
       Function.Periodic.lift_congr iteratedDeriv_succ _ _
-    rw [heq, fourierCoeff_lift_deriv (hf.iteratedDeriv' k) hd1 n, ih (by omega), pow_succ]
+    rw [heq, fourierCoeff_lift_deriv (hf.iteratedDeriv k) hd1 n, ih (by omega), pow_succ]
     ring
 
 end Deriv
@@ -150,8 +127,8 @@ theorem hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f (
       ((2 * π)⁻¹ * ∫ x in (0 : ℝ)..2 * π, ‖iteratedDeriv k f x‖ ^ 2) := by
   have hcont : Continuous (iteratedDeriv k f) :=
     hd.continuous_iteratedDeriv k (by exact_mod_cast hk)
-  have h := hasSum_sq_fourierCoeff_of_continuous' ((hf.iteratedDeriv' k).continuous_lift hcont)
-  have hint : ∫ x in (0 : ℝ)..2 * π, ‖(hf.iteratedDeriv' k).lift (x : AddCircle (2 * π))‖ ^ 2
+  have h := hasSum_sq_fourierCoeff_of_continuous' ((hf.iteratedDeriv k).continuous_lift hcont)
+  have hint : ∫ x in (0 : ℝ)..2 * π, ‖(hf.iteratedDeriv k).lift (x : AddCircle (2 * π))‖ ^ 2
       = ∫ x in (0 : ℝ)..2 * π, ‖iteratedDeriv k f x‖ ^ 2 :=
     intervalIntegral.integral_congr fun x _ => by rw [Function.Periodic.lift_coe]
   rw [hint] at h

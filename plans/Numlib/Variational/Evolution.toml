@@ -119,3 +119,11 @@ id = "dgUpwindForm_apply_self"
 
 [[node]]
 id = "transportForm_apply_self_of_continuous"
+
+[[node]]
+id = "le_transportForm_restrict"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity hypothesis of (13.66)"
+
+[[node]]
+id = "le_dgUpwindForm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity behind (13.69)"

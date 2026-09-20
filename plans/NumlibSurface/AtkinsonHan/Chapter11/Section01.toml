@@ -5,6 +5,9 @@ id = "dirichletBilinForm"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.3)"
 
 [[node]]
+id = "dirichletBilinForm_apply"
+
+[[node]]
 id = "dirichletBilinForm_isBoundedWith"
 
 [[node]]
@@ -37,12 +40,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.5)"
 id = "obstacleEnergy_apply"
 
 [[node]]
-id = "_root_.MeasureTheory.Lp.le_smul_add_smul_of_le"
-
-[[node]]
-id = "_root_.MeasureTheory.Lp.convex_Ici"
-
-[[node]]
 id = "obstacleSet"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1"
 
@@ -64,21 +61,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
 [[node]]
 id = "example_11_1_1"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1"
-
-[[node]]
-id = "le_on_of_ae_le"
-
-[[node]]
-id = "integrable_mul_testFunction"
-
-[[node]]
-id = "nonneg_on_of_forall_integral_mul_testFunction_nonneg"
-
-[[node]]
-id = "eqOn_zero_of_forall_integral_mul_testFunction_eq_zero"
-
-[[node]]
-id = "dirichletForm_eq_integral_neg_laplacian_mul"
 
 [[node]]
 id = "le_of_forall_sub_le"

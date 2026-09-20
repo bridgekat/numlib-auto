@@ -4432,3 +4432,157 @@ theorem SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero {N : ℕ} (hN : N ≠ 
   simp [hc0]
 
 end Footnote39
+
+/-! ### The positive part in the `H¹` norm, and functions squeezed between `0` and `H¹₀` -/
+
+section Sandwich
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex
+
+/-- **The positive part is contractive in `H¹(Ω)`**: if `w ∈ H¹(Ω)` has function `ψ⁺` for
+`ψ ∈ H¹(Ω)`, then `‖w‖_{H¹} ≤ ‖ψ‖_{H¹}`, since `|ψ⁺| ≤ |ψ|` and `∂ᵢψ⁺ = 1_{ψ > 0} ∂ᵢψ`. -/
+theorem SobolevEuclidean.norm_le_of_fn_ae_eq_posPart {N : ℕ}
+    {Ω : Opens (EuclideanSpace ℝ (Fin N))} {ψ w : SobolevEuclidean N 1 2 Ω}
+    (hw : fn w =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      fun x ↦ max (fn ψ x) 0) :
+    ‖w‖ ≤ ‖ψ‖ := by
+  have h0 : ‖weakDeriv w 0‖ ≤ ‖weakDeriv ψ 0‖ := by
+    refine Lp.norm_le_norm_of_ae_le ?_
+    filter_upwards [hw] with x hx
+    have e : (weakDeriv w 0) x = max (fn ψ x) 0 := hx
+    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
+    change |max (fn ψ x) 0| ≤ |fn ψ x|
+    exact abs_le.2 ⟨by linarith [abs_nonneg (fn ψ x), le_max_right (fn ψ x) 0],
+      max_le (le_abs_self _) (abs_nonneg _)⟩
+  have hi : ∀ i, ‖weakDeriv w (MultiIndexLE.single i)‖ ≤ ‖weakDeriv ψ (MultiIndexLE.single i)‖ :=
+    fun i ↦ by
+      refine Lp.norm_le_norm_of_ae_le ?_
+      filter_upwards [weakDeriv_single_ae_eq_of_fn_ae_eq_posPart hw i] with x hx
+      rw [hx]
+      exact norm_indicator_le_norm_self _ _
+  have hnsq : ∀ v : SobolevEuclidean N 1 2 Ω, ‖v‖ ^ 2
+      = ‖weakDeriv v 0‖ ^ 2 + ∑ i, ‖weakDeriv v (MultiIndexLE.single i)‖ ^ 2 := fun v ↦ by
+    rw [SobolevMultiIndex.norm_eq_sum (p := 2) (by norm_num)]
+    simp only [ENNReal.toReal_ofNat, Real.rpow_two]
+    rw [← Real.sqrt_eq_rpow, Real.sq_sqrt (Finset.sum_nonneg fun α _ ↦ sq_nonneg _),
+      MultiIndexLE.sum_univ_one]
+  have hsq : ‖w‖ ^ 2 ≤ ‖ψ‖ ^ 2 := by
+    rw [hnsq, hnsq]
+    refine add_le_add (pow_le_pow_left₀ (norm_nonneg _) h0 2)
+      (Finset.sum_le_sum fun i _ ↦ pow_le_pow_left₀ (norm_nonneg _) (hi i) 2)
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
+
+/-- **A function squeezed between `0` and an element of `H¹₀(Ω)` lies in `H¹₀(Ω)`**, on a `C¹`
+chart domain with bounded boundary: for `v ∈ H¹(Ω)` and `w ∈ H¹₀(Ω)` with `0 ≤ v ≤ w` almost
+everywhere on `Ω`, `v ∈ H¹₀(Ω)`. The extension by zero of `v` is `min (ṽ⁺, w̄)`, where `ṽ` is a
+Sobolev extension of `v` to `ℝ^N` (Theorem 9.7, `SobolevEuclidean.exists_extensionL`) and `w̄` the
+extension by zero of `w` (`SobolevEuclideanZero.extendZeroL`), both in `H¹(ℝ^N)`, so it lies in
+`H¹(ℝ^N)` (`MemSobolevMultiIndex.posPart`), and Proposition 9.18 (iii) ⇒ (i)
+(`SobolevEuclideanZero.mem_of_indicator_memSobolev`) concludes. -/
+theorem SobolevEuclideanZero.mem_of_nonneg_of_le
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {v w : SobolevEuclidean (d + 1) 1 2 Ω} (hw : w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    (hv0 : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn v x)
+    (hvw : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      fn v x ≤ fn w x) :
+    v ∈ SobolevEuclideanZero (d + 1) 1 2 Ω := by
+  have hΩm := Ω.isOpen.measurableSet
+  -- a Sobolev extension `ṽ` of `v`, and the extension by zero `w̄` of `w`
+  obtain ⟨P, C, hP⟩ := SobolevEuclidean.exists_extensionL (p := 2) hΩ hΓ
+  obtain ⟨V, hV⟩ : ∃ V : SobolevEuclidean (d + 1) 1 2 ⊤, V = P v := ⟨_, rfl⟩
+  have hVv : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v := by
+    rw [hV]
+    exact (hP v).1
+  obtain ⟨W, hW⟩ : ∃ W : SobolevEuclidean (d + 1) 1 2 ⊤,
+      W = SobolevEuclideanZero.extendZeroL (d + 1) 2 Ω ⟨w, hw⟩ := ⟨_, rfl⟩
+  have hWw : fn W =ᵐ[volume] (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn w) := by
+    rw [hW]
+    exact SobolevEuclideanZero.fn_extendZeroL _
+  -- almost everywhere for `volume.restrict ⊤` is almost everywhere
+  have htop : ∀ {q : EuclideanSpace ℝ (Fin (d + 1)) → Prop},
+      (∀ᵐ x ∂((volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))).restrict
+        ((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))) : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        q x) ↔ ∀ᵐ x ∂(volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))), q x := by
+    intro q
+    rw [Opens.coe_top, Measure.restrict_univ]
+  -- `A = ṽ⁺` and `Q = (A − w̄)⁺`, in `H¹(ℝ^N)`
+  obtain ⟨A, hA⟩ := ((memSobolevMultiIndex V).posPart one_le_two).exists_sobolevMultiIndex
+  obtain ⟨Q, hQ⟩ := ((memSobolevMultiIndex (A - W)).posPart one_le_two).exists_sobolevMultiIndex
+  have hAW := Lp.coeFn_sub (weakDeriv A 0) (weakDeriv W 0)
+  have hAQ := Lp.coeFn_sub (weakDeriv A 0) (weakDeriv Q 0)
+  -- `A − Q = min (ṽ⁺, w̄)` is the extension by zero of `v`
+  have hind : ∀ᵐ x ∂(volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))),
+      fn (A - Q) x = (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn v) x := by
+    filter_upwards [htop.1 hAQ, htop.1 hA, htop.1 hQ, htop.1 hAW, hWw, (ae_restrict_iff' hΩm).1 hVv,
+      (ae_restrict_iff' hΩm).1 hv0, (ae_restrict_iff' hΩm).1 hvw] with x h1 h2 h3 h4 h5 h6 h7 h8
+    have e1 : fn (A - Q) x = fn A x - fn Q x := h1
+    have e4 : fn (A - W) x = fn A x - fn W x := h4
+    rw [e1, h3, e4, h2, h5]
+    by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
+    · rw [indicator_of_mem hx, indicator_of_mem hx, h6 hx, max_eq_left (h7 hx),
+        max_eq_right (by linarith [h8 hx]), sub_zero]
+    · rw [indicator_of_notMem hx, indicator_of_notMem hx, sub_zero,
+        max_eq_left (le_max_right _ _), sub_self]
+  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (fn v)) 1 2 ⊤ volume :=
+    (memSobolevMultiIndex (A - Q)).congr_ae (htop.2 hind)
+  obtain ⟨v', hv', hvv'⟩ := SobolevEuclideanZero.mem_of_indicator_memSobolev (p := 2)
+    (by norm_num) hΩ hmem
+  rwa [SobolevMultiIndex.ext_of_fn_ae_eq hvv'.symm]
+
+/-- **The decomposition `Φ = Φ⁺ − Φ⁻` in `H¹₀(Ω)`**, with `‖Φ^±‖₂ ≤ ‖Φ‖₂`. -/
+theorem SobolevEuclideanZero.exists_eq_sub_of_nonneg {Φ : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    ∃ P ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, ∃ Q ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
+      Φ = P - Q ∧
+      (∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn P x) ∧
+      (∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))), 0 ≤ fn Q x) ∧
+      ‖weakDeriv P 0‖ ≤ ‖weakDeriv Φ 0‖ ∧ ‖weakDeriv Q 0‖ ≤ ‖weakDeriv Φ 0‖ := by
+  obtain ⟨P, hP⟩ := ((memSobolevMultiIndex Φ).posPart one_le_two).exists_sobolevMultiIndex
+  obtain ⟨Q, hQ⟩ := ((memSobolevMultiIndex (-Φ)).posPart one_le_two).exists_sobolevMultiIndex
+  have hPmem : P ∈ SobolevEuclideanZero (d + 1) 1 2 Ω :=
+    SobolevEuclideanZero.posPart_mem (p := 2) (by norm_num) ⟨Φ, hΦ⟩ hP
+  have hQmem : Q ∈ SobolevEuclideanZero (d + 1) 1 2 Ω :=
+    SobolevEuclideanZero.posPart_mem (p := 2) (by norm_num) ⟨-Φ, neg_mem hΦ⟩ hQ
+  have hnegΦ : fn (-Φ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] -fn Φ := by
+    have h1 : weakDeriv (-Φ) 0 = -weakDeriv Φ 0 := by
+      rw [← weakDerivL_apply, map_neg, weakDerivL_apply]
+    rw [show fn (-Φ) = ⇑(weakDeriv (-Φ) 0) from rfl, h1]
+    exact Lp.coeFn_neg _
+  refine ⟨P, hPmem, Q, hQmem, ?_, ?_, ?_, ?_, ?_⟩
+  · refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
+    filter_upwards [Lp.coeFn_sub (weakDeriv P 0) (weakDeriv Q 0), hP, hQ, hnegΦ]
+      with x h1 h2 h3 h4
+    have e : fn (P - Q) x = fn P x - fn Q x := h1
+    rw [e, h2, h3, h4, Pi.neg_apply]
+    rcases le_total (fn Φ x) 0 with h | h
+    · rw [max_eq_right h, max_eq_left (neg_nonneg.2 h)]
+      ring
+    · rw [max_eq_left h, max_eq_right (neg_nonpos.2 h)]
+      ring
+  · filter_upwards [hP] with x hx
+    rw [hx]
+    exact le_max_right _ _
+  · filter_upwards [hQ] with x hx
+    rw [hx]
+    exact le_max_right _ _
+  · refine Lp.norm_le_norm_of_ae_le ?_
+    filter_upwards [hP] with x hx
+    have e : (weakDeriv P 0) x = max (fn Φ x) 0 := hx
+    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
+    change |max (fn Φ x) 0| ≤ |fn Φ x|
+    exact abs_le.2 ⟨by linarith [abs_nonneg (fn Φ x), le_max_right (fn Φ x) 0],
+      max_le (le_abs_self _) (abs_nonneg _)⟩
+  · refine Lp.norm_le_norm_of_ae_le ?_
+    filter_upwards [hQ, hnegΦ] with x hx hx'
+    have e : (weakDeriv Q 0) x = max (-fn Φ x) 0 := by
+      rw [show (weakDeriv Q 0) x = fn Q x from rfl, hx, hx', Pi.neg_apply]
+    rw [e, Real.norm_eq_abs, Real.norm_eq_abs]
+    change |max (-fn Φ x) 0| ≤ |fn Φ x|
+    exact abs_le.2 ⟨by linarith [abs_nonneg (fn Φ x), le_max_right (-fn Φ x) 0],
+      max_le (by linarith [neg_abs_le (fn Φ x), le_abs_self (fn Φ x)]) (abs_nonneg _)⟩
+
+end Sandwich

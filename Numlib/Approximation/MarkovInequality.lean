@@ -1,4 +1,5 @@
 import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The `L²` Markov inequality on `[-1, 1]`
@@ -30,9 +31,9 @@ by parts: `∫ x L_N' L_N'' = (N(N+1)/2)² - N(N+1)/2` while `‖L_N'‖² = N(N
 values `L_n'(±1) = (±1)^{n+1} n(n+1)/2` (`Polynomial.eval_one_derivative_legendre`,
 `Polynomial.eval_neg_one_derivative_legendre`).
 
-`intervalIntegral.sq_integral_mul_le_of_continuousOn` is Cauchy–Schwarz for interval integrals of
-continuous functions (Mathlib has Hölder only for `lintegral` and `MemLp` data); it duplicates the
-surface's `QuarteroniSaccoSaleri.Chapter12.sq_integral_mul_le`, which should be repointed here.
+Cauchy–Schwarz for interval integrals of continuous functions is
+`intervalIntegral.sq_integral_mul_le_of_continuousOn` of
+`Numlib/MeasureTheory/Integral/IntervalIntegral`.
 
 ## References
 
@@ -334,37 +335,6 @@ theorem sqrt_integral_derivative_sq_le {N : ℕ} {p : ℝ[X]} (hp : p.natDegree 
         rw [Real.sqrt_mul (by positivity), Real.sqrt_sq (by positivity)]
 
 end Polynomial
-
-/-- **Cauchy–Schwarz for interval integrals** of continuous functions:
-`(∫_a^b f g)² ≤ (∫_a^b f²)(∫_a^b g²)`, from the nonnegativity of `∫ (λ f + g)²` and the sign of
-its discriminant. -/
-theorem intervalIntegral.sq_integral_mul_le_of_continuousOn {f g : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
-    (hf : ContinuousOn f (Icc a b)) (hg : ContinuousOn g (Icc a b)) :
-    (∫ t in a..b, f t * g t) ^ 2 ≤ (∫ t in a..b, f t ^ 2) * ∫ t in a..b, g t ^ 2 := by
-  have hff : IntervalIntegrable (fun t => f t ^ 2) volume a b :=
-    (hf.pow 2).intervalIntegrable_of_Icc hab
-  have hgg : IntervalIntegrable (fun t => g t ^ 2) volume a b :=
-    (hg.pow 2).intervalIntegrable_of_Icc hab
-  have hfg : IntervalIntegrable (fun t => f t * g t) volume a b :=
-    (hf.mul hg).intervalIntegrable_of_Icc hab
-  have hexp : ∀ l : ℝ, (∫ t in a..b, (l * f t + g t) ^ 2)
-      = (∫ t in a..b, f t ^ 2) * (l * l) + 2 * (∫ t in a..b, f t * g t) * l
-        + ∫ t in a..b, g t ^ 2 := by
-    intro l
-    have hcongr : ∀ t ∈ uIcc a b, (l * f t + g t) ^ 2
-        = l ^ 2 * f t ^ 2 + (2 * l) * (f t * g t) + g t ^ 2 := fun t _ => by ring
-    rw [integral_congr hcongr, integral_add ((hff.const_mul _).add (hfg.const_mul _)) hgg,
-      integral_add (hff.const_mul _) (hfg.const_mul _),
-      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul]
-    ring
-  have hnn : ∀ l : ℝ, 0 ≤ (∫ t in a..b, f t ^ 2) * (l * l)
-      + 2 * (∫ t in a..b, f t * g t) * l + ∫ t in a..b, g t ^ 2 := by
-    intro l
-    rw [← hexp l]
-    exact integral_nonneg hab fun t _ => sq_nonneg _
-  have hd := discrim_le_zero hnn
-  rw [discrim] at hd
-  nlinarith [hd]
 
 namespace Polynomial
 

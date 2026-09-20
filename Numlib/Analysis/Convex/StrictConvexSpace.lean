@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 import Mathlib.Analysis.Convex.StrictConvexSpace
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -19,6 +20,38 @@ a form of the parallelogram law.
 section Rpow
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+/-- **`‖·‖^p` is strictly convex on a strictly convex space** for `p > 1`: for `x ≠ y` either
+`‖x‖ ≠ ‖y‖` and the strict convexity of `t ↦ t^p` on `[0, ∞)` applies after the triangle
+inequality, or `‖x‖ = ‖y‖ = r` and `‖a x + b y‖ < r` by strict convexity of the space. -/
+theorem strictConvexOn_norm_rpow [StrictConvexSpace ℝ V] {p : ℝ} (hp : 1 < p) :
+    StrictConvexOn ℝ Set.univ fun x : V ↦ ‖x‖ ^ p := by
+  refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab ↦ ?_⟩
+  have hp0 : 0 < p := by linarith
+  have htri : ‖a • x + b • y‖ ≤ a * ‖x‖ + b * ‖y‖ := by
+    calc ‖a • x + b • y‖ ≤ ‖a • x‖ + ‖b • y‖ := norm_add_le _ _
+      _ = a * ‖x‖ + b * ‖y‖ := by
+        rw [norm_smul, norm_smul, Real.norm_of_nonneg ha.le, Real.norm_of_nonneg hb.le]
+  simp only [smul_eq_mul]
+  rcases eq_or_ne ‖x‖ ‖y‖ with hn | hn
+  · -- equal norms: the combination is strictly shorter
+    have hr : 0 < ‖x‖ := by
+      rcases (norm_nonneg x).lt_or_eq with h | h
+      · exact h
+      · exfalso
+        have hx0 : x = 0 := norm_eq_zero.1 h.symm
+        have hy0 : y = 0 := norm_eq_zero.1 (hn ▸ h.symm)
+        exact hxy (hx0.trans hy0.symm)
+    have hlt : ‖a • x + b • y‖ < ‖x‖ := norm_combo_lt_of_ne le_rfl hn.symm.le hxy ha hb hab
+    calc ‖a • x + b • y‖ ^ p < ‖x‖ ^ p := Real.rpow_lt_rpow (norm_nonneg _) hlt hp0
+      _ = a * ‖x‖ ^ p + b * ‖y‖ ^ p := by rw [← hn, ← add_mul, hab, one_mul]
+  · -- distinct norms: strict convexity of `t ↦ t^p`
+    have hstrict := (strictConvexOn_rpow hp).2 (Set.mem_Ici.2 (norm_nonneg x))
+      (Set.mem_Ici.2 (norm_nonneg y)) hn ha hb hab
+    simp only [smul_eq_mul] at hstrict
+    calc ‖a • x + b • y‖ ^ p ≤ (a * ‖x‖ + b * ‖y‖) ^ p :=
+          Real.rpow_le_rpow (norm_nonneg _) htri hp0.le
+      _ < a * ‖x‖ ^ p + b * ‖y‖ ^ p := hstrict
 
 /-- If `fun v => ‖v‖ ^ p` is strictly convex on all of `V` for some real `p ≥ 1`, then `V` is a
 strictly convex space.  Indeed for distinct unit vectors `x`, `y` strict convexity at the midpoint

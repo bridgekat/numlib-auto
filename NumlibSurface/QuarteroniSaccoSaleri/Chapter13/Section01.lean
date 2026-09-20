@@ -283,51 +283,15 @@ theorem heat_continuousOn (hT : 0 ≤ T) (h : IsHeatSolutionWith ν T f u₀ u u
 [quarteroni2000numerical] (12.16): `∫₀¹ v² ≤ ½ ∫₀¹ (v')²` for a `C¹` function vanishing at the left
 endpoint. `v(y) = ∫₀ʸ v'` by the fundamental theorem of calculus, Cauchy–Schwarz against `1` gives
 `v(y)² ≤ y ∫₀¹ (v')²`, and `∫₀¹ y dy = ½`. Chapter 12's `remark_12_1` is the same inequality in
-`H¹₀(a, b)`; this is the elementary form the classical solution of §13.1 needs. -/
+`H¹₀(a, b)`; this is the elementary form the classical solution of §13.1 needs, the backbone's
+`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero` on `(0, 1)`. -/
 theorem poincare_classical {v vx : ℝ → ℝ} (hv : ContinuousOn v (Icc 0 1))
     (hvx : ContinuousOn vx (Icc 0 1)) (hd : ∀ x ∈ Ioo (0 : ℝ) 1, HasDerivAt v (vx x) x)
     (hv0 : v 0 = 0) :
     (∫ x in (0 : ℝ)..1, v x ^ 2) ≤ 1 / 2 * ∫ x in (0 : ℝ)..1, vx x ^ 2 := by
-  set K := ∫ x in (0 : ℝ)..1, vx x ^ 2 with hK
-  have hvxint : ∀ y ∈ Icc (0 : ℝ) 1, IntervalIntegrable vx volume 0 y := fun y hy =>
-    (hvx.mono (Icc_subset_Icc le_rfl hy.2)).intervalIntegrable_of_Icc hy.1
-  have hrep : ∀ y ∈ Icc (0 : ℝ) 1, v y = ∫ x in (0 : ℝ)..y, vx x := by
-    intro y hy
-    have h := integral_eq_sub_of_hasDerivAt_of_le hy.1 (hv.mono (Icc_subset_Icc le_rfl hy.2))
-      (fun x hx => hd x ⟨hx.1, lt_of_lt_of_le hx.2 hy.2⟩) (hvxint y hy)
-    rw [h, hv0, sub_zero]
-  have hbound : ∀ y ∈ Icc (0 : ℝ) 1, v y ^ 2 ≤ y * K := by
-    intro y hy
-    have hcs := Chapter12.sq_integral_mul_le (k := vx) (f := fun _ => (1 : ℝ)) hy.1
-      continuousOn_const (hvx.mono (Icc_subset_Icc le_rfl hy.2))
-    have h1 : (∫ x in (0 : ℝ)..y, (1 : ℝ) * vx x) = v y := by
-      rw [hrep y hy]
-      exact integral_congr fun x _ => one_mul _
-    have h2 : (∫ x in (0 : ℝ)..y, (1 : ℝ) ^ 2) = y := by
-      simp
-    rw [h1, h2] at hcs
-    have i1 : IntervalIntegrable (fun x => vx x ^ 2) volume 0 y :=
-      ((hvx.mono (Icc_subset_Icc le_rfl hy.2)).pow 2).intervalIntegrable_of_Icc hy.1
-    have i2 : IntervalIntegrable (fun x => vx x ^ 2) volume y 1 :=
-      ((hvx.mono (Icc_subset_Icc hy.1 le_rfl)).pow 2).intervalIntegrable_of_Icc hy.2
-    have h3 : (∫ x in (0 : ℝ)..y, vx x ^ 2) ≤ K := by
-      have hsp : (∫ x in (0 : ℝ)..1, vx x ^ 2)
-          = (∫ x in (0 : ℝ)..y, vx x ^ 2) + ∫ x in y..1, vx x ^ 2 :=
-        (integral_add_adjacent_intervals i1 i2).symm
-      have hnn : (0 : ℝ) ≤ ∫ x in y..1, vx x ^ 2 := integral_nonneg hy.2 fun x _ => sq_nonneg _
-      rw [hK, hsp]
-      linarith
-    nlinarith [hcs, h3, hy.1]
-  have hint1 : IntervalIntegrable (fun x => v x ^ 2) volume 0 1 :=
-    (hv.pow 2).intervalIntegrable_of_Icc zero_le_one
-  have hint2 : IntervalIntegrable (fun x => x * K) volume 0 1 :=
-    (continuous_id.mul continuous_const).intervalIntegrable _ _
-  have hmono := integral_mono_on zero_le_one hint1 hint2 hbound
-  have hlin : (∫ x in (0 : ℝ)..1, x * K) = 1 / 2 * K := by
-    rw [intervalIntegral.integral_mul_const, _root_.integral_id]
-    norm_num
-  rw [hlin] at hmono
-  exact hmono
+  have := intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero zero_le_one hv hvx hd hv0
+  norm_num at this
+  exact this
 
 /-- **Integration by parts in `x`** for a classical solution, the step `∫₀¹ u_xx u = -∫₀¹ (u_x)²`
 of §13.1: `(u_x u)' = u_xx u + (u_x)²` and the boundary term vanishes by (13.2). -/

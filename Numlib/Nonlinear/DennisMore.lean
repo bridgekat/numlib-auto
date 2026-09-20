@@ -5,10 +5,8 @@ import Numlib.Nonlinear.QuasiNewton
 # Local convergence of Broyden's method: the Dennis–Moré theory
 
 The local superlinear convergence of Broyden's method ([quarteroni2000numerical] Property 7.2;
-Dennis–Moré, *A characterization of superlinear convergence and its application to quasi-Newton
-methods*, 1974; Dennis–Schnabel, *Numerical Methods for Unconstrained Optimization and Nonlinear
-Equations*, Theorem 8.2.2), on `EuclideanSpace ℝ n`, for the iteration `Broyden.iterate` of
-`Numlib/Nonlinear/QuasiNewton`. The proof has three layers.
+[dennis1974characterization]; [dennis1996numerical] Theorem 8.2.2), on `EuclideanSpace ℝ n`, for
+the iteration `Broyden.iterate` of `Numlib/Nonlinear/QuasiNewton`. The proof has three layers.
 
 * **The Frobenius geometry of the update.** With `P = s sᵀ / (sᵀ s)` the projector onto the step,
   Pythagoras `‖A (1 - P)‖_F² + ‖A P‖_F² = ‖A‖_F²`
@@ -19,7 +17,7 @@ Equations*, Theorem 8.2.2), on `EuclideanSpace ℝ n`, for the iteration `Broyde
   `‖E s‖² / ‖s‖² ≤ 2 ‖E‖_F (‖E‖_F - ‖E₊‖_F + ‖y - J s‖ / ‖s‖)`
   (`Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate`): the update cannot decrease the Frobenius
   error much without the error along the step being small.
-* **Bounded deterioration and linear convergence** (Dennis–Schnabel Theorem 8.2.2, the
+* **Bounded deterioration and linear convergence** ([dennis1996numerical] Theorem 8.2.2, the
   two-sequence induction). Under `Broyden.LipschitzJacobianRoot` — `F` differentiable on a convex
   `D` with Jacobian `J`, Lipschitz at the root `z` — and `‖J z⁻¹‖ ≤ β`, one step from a `Q`
   within `1 / (3β)` of `J z` is well defined and contracts,
@@ -57,53 +55,6 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
-private theorem frobenius_norm_sq_eq_trace_transpose' (A : Matrix n n ℝ) :
-    ‖A‖ ^ 2 = trace (Aᵀ * A) := by
-  have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
-  simpa [conjTranspose_eq_transpose_of_trivial] using h
-
-/-- **Pythagoras for the projector onto a line**: with `P = s sᵀ / (sᵀ s)`,
-`‖A (1 - P)‖_F² + ‖A P‖_F² = ‖A‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, since `P` is
-symmetric and idempotent. -/
-theorem frobenius_norm_sq_mul_one_sub_add_sq_mul (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
-    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ^ 2 + ‖A * ((1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ^ 2
-      = ‖A‖ ^ 2 := by
-  set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
-  have hss : s ⬝ᵥ s ≠ 0 := by
-    rw [dotProduct_self_eq_norm_sq]
-    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
-  have hPt : Pᵀ = P := by
-    rw [hPdef, transpose_smul, transpose_vecMulVec]
-  have hPP : P * P = P := by
-    rw [hPdef, Matrix.smul_mul, Matrix.mul_smul, vecMulVec_mul_vecMulVec, vecMulVec_smul,
-      smul_smul, smul_smul]
-    congr 1
-    field_simp
-  have hQt : (1 - P)ᵀ = 1 - P := by rw [transpose_sub, transpose_one, hPt]
-  have hQQ : (1 - P) * (1 - P) = 1 - P := by
-    rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
-      Matrix.mul_one, hPP]
-    abel
-  have h1 : ‖A * (1 - P)‖ ^ 2 = trace (Aᵀ * A * (1 - P)) := by
-    rw [frobenius_norm_sq_eq_trace_transpose', transpose_mul, hQt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hQQ, ← Matrix.mul_assoc]
-  have h2 : ‖A * P‖ ^ 2 = trace (Aᵀ * A * P) := by
-    rw [frobenius_norm_sq_eq_trace_transpose', transpose_mul, hPt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
-  have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose' A
-  rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
-
-omit [DecidableEq n] in
-/-- The projector `P = s sᵀ / (sᵀ s)` fixes `s`. -/
-theorem smul_vecMulVec_mulVec_self {s : n → ℝ} (hs : s ≠ 0) :
-    ((1 / (s ⬝ᵥ s)) • vecMulVec s s) *ᵥ s = s := by
-  have hss : s ⬝ᵥ s ≠ 0 := by
-    rw [dotProduct_self_eq_norm_sq]
-    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
-  rw [smul_mulVec, vecMulVec_mulVec, IsCentralScalar.op_smul_eq_smul, smul_smul, one_div,
-    inv_mul_cancel₀ hss, one_smul]
-
 /-- **The projected part of `A` sees `A s`**: `‖A s‖₂ ≤ ‖A P‖_F ‖s‖₂` for `P = s sᵀ / (sᵀ s)`,
 since `(A P) s = A s`. -/
 theorem norm_mulVec_le_frobenius_norm_mul_proj (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
@@ -117,8 +68,7 @@ theorem norm_mulVec_le_frobenius_norm_mul_proj (A : Matrix n n ℝ) {s : n → �
 = (‖A‖_F - ‖A (1 - P)‖_F)(‖A‖_F + ‖A (1 - P)‖_F)` and `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is the
 quantitative form of "the update cannot decrease the Frobenius error along `s` without paying
 for it" behind the superlinear convergence of
-Broyden's method (Dennis–Schnabel, *Numerical Methods for Unconstrained Optimization and
-Nonlinear Equations*, proof of Theorem 8.2.2). -/
+Broyden's method ([dennis1996numerical], proof of Theorem 8.2.2). -/
 theorem sq_norm_mulVec_div_le_frobenius (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
     ‖toLp 2 (A *ᵥ s)‖ ^ 2 / ‖toLp 2 s‖ ^ 2
       ≤ 2 * ‖A‖ * (‖A‖ - ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖) := by
@@ -138,7 +88,7 @@ theorem sq_norm_mulVec_div_le_frobenius (A : Matrix n n ℝ) {s : n → ℝ} (hs
   have hc0 : 0 ≤ c := norm_nonneg _
   nlinarith
 
-/-- **The Dennis–Moré inequality for Broyden's update** (Dennis–Schnabel, proof of Theorem
+/-- **The Dennis–Moré inequality for Broyden's update** ([dennis1996numerical], proof of Theorem
 8.2.2): for `s ≠ 0`, with `E = Q - J` the current error and `E₊ = Q₊ - J` the error after the
 update `Q₊ = broydenUpdate Q s y`,
 
@@ -178,26 +128,6 @@ theorem sq_norm_sub_mulVec_div_le_broydenUpdate (Q J : Matrix n n ℝ) {s y : n 
   rw [← hPdef]
   nlinarith
 
-/-- The Euclidean operator norm of a real matrix is at most its Frobenius norm. -/
-theorem norm_toEuclideanCLM_le_frobenius_norm (A : Matrix n n ℝ) :
-    ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ ‖A‖ := by
-  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
-  have h := frobenius_norm_mulVec_le A (ofLp x)
-  rwa [toLp_ofLp] at h
-
-/-- The Frobenius norm of a real matrix is at most `√n` times its Euclidean operator norm. -/
-theorem frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM (A : Matrix n n ℝ) :
-    ‖A‖ ≤ √(Fintype.card n : ℝ) * ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
-  have h1 := frobenius_norm_le_sqrt_rank_mul_l2_opNorm A
-  have h2 : lpOpNorm 2 A = ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
-    rw [lpOpNorm]
-    congr 1
-  have h3 : (A.rank : ℝ) ≤ Fintype.card n := by exact_mod_cast A.rank_le_card_width
-  calc ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A := h1
-    _ ≤ √(Fintype.card n : ℝ) * ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
-        rw [h2]
-        gcongr
-
 end Frobenius
 
 end Matrix
@@ -210,10 +140,10 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 local notation "E" => EuclideanSpace ℝ n
 
-/-- **The standing hypotheses of the local convergence theory** (Dennis–Schnabel Theorem 8.2.2,
-[quarteroni2000numerical] Theorem 7.1): `F` is differentiable on a convex set `D` with Jacobian
-matrix `J w` at `w ∈ D`, `z ∈ D` is a root, `F z = 0`, and the Jacobian is Lipschitz at `z` on
-`D` with constant `L`, `‖J w - J z‖ ≤ L ‖w - z‖`, in the Euclidean operator norm. -/
+/-- **The standing hypotheses of the local convergence theory** ([dennis1996numerical]
+Theorem 8.2.2, [quarteroni2000numerical] Theorem 7.1): `F` is differentiable on a convex set `D`
+with Jacobian matrix `J w` at `w ∈ D`, `z ∈ D` is a root, `F z = 0`, and the Jacobian is Lipschitz
+at `z` on `D` with constant `L`, `‖J w - J z‖ ≤ L ‖w - z‖`, in the Euclidean operator norm. -/
 structure LipschitzJacobianRoot (F : E → E) (J : E → Matrix n n ℝ) (D : Set E) (z : E)
     (L : ℝ) : Prop where
   /-- `D` is convex. -/
@@ -251,7 +181,7 @@ theorem LipschitzJacobianRoot.norm_sub_sub_apply_le (h : LipschitzJacobianRoot F
   Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add h.convex h.hasFDerivAt hx hy
     h.lipschitz
 
-/-- **One Broyden step near the root** (Dennis–Schnabel, proof of Theorem 8.2.2): if `Q` is
+/-- **One Broyden step near the root** ([dennis1996numerical], proof of Theorem 8.2.2): if `Q` is
 within `1 / (3β)` of `J z` in the operator norm, where `‖J z⁻¹‖ ≤ β`, then `Q` is invertible
 with `‖Q⁻¹‖ ≤ 3β / 2` (the perturbation theorem
 `ContinuousLinearEquiv.exists_symm_norm_le_of_add`) and the point `x₊ = x - Q⁻¹ F x` of
@@ -316,19 +246,13 @@ theorem symm_iterate_succ_Q (F : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k :
   rw [StarAlgEquiv.symm_apply_eq, toEuclideanCLM_broydenUpdate, StarAlgEquiv.apply_symm_apply,
     toLp_ofLp, toLp_ofLp, iterate_succ, step_Q]
 
-omit [DecidableEq n] in
-/-- Broyden's update with a zero step does not move: `broydenUpdate Q 0 y = Q`. -/
-theorem _root_.Matrix.broydenUpdate_zero_left (Q : Matrix n n ℝ) (y : n → ℝ) :
-    broydenUpdate Q 0 y = Q := by
-  simp [broydenUpdate]
-
 /-- The operator error of the iteration is the image of the matrix error. -/
 theorem iterate_Q_sub_eq (F : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k : ℕ) (M : Matrix n n ℝ) :
     (iterate F x₀ Q₀ k).Q - toEuclideanCLM (𝕜 := ℝ) M
       = toEuclideanCLM (𝕜 := ℝ) ((toEuclideanCLM (𝕜 := ℝ)).symm (iterate F x₀ Q₀ k).Q - M) := by
   rw [map_sub, StarAlgEquiv.apply_symm_apply]
 
-/-- **Bounded deterioration along Broyden's iteration** (Dennis–Schnabel Lemma 8.2.1 at every
+/-- **Bounded deterioration along Broyden's iteration** ([dennis1996numerical] Lemma 8.2.1 at every
 step): if `x_k, x_{k+1} ∈ D` then, in the Frobenius norm,
 `‖M_{k+1} - J z‖_F ≤ ‖M_k - J z‖_F + (L / 2) (‖x_{k+1} - z‖ + ‖x_k - z‖)`; a zero step leaves
 `M_k` unchanged. -/
@@ -353,8 +277,8 @@ theorem frobenius_norm_symm_iterate_succ_sub_le (h : LipschitzJacobianRoot F J D
     have := frobenius_norm_broydenUpdate_sub_le_add h.convex h.hasFDerivAt h.lipschitz hk hs hxs M
     simpa only [toLp_ofLp, add_sub_cancel] using this
 
-/-- **The two-sequence induction of Dennis–Schnabel Theorem 8.2.2** (local linear convergence of
-Broyden's method). With `‖J z⁻¹‖ ≤ β` and thresholds `ε`, `δ` such that `12 β δ ≤ 1`,
+/-- **The two-sequence induction of [dennis1996numerical] Theorem 8.2.2** (local linear
+convergence of Broyden's method). With `‖J z⁻¹‖ ≤ β` and thresholds `ε`, `δ` such that `12 β δ ≤ 1`,
 `3 L ε ≤ 2 δ` (so `3 β L ε ≤ 1 / 6`) and `closedBall z ε ⊆ D`, every start with `‖x₀ - z‖ ≤ ε` and
 `‖M₀ - J z‖_F ≤ δ` gives, for all `k`,
 
@@ -520,7 +444,7 @@ theorem norm_sub_apply_le_dennisMoreQuotient_mul (F : E → E) (J : E → Matrix
   · rw [hs, map_zero, norm_zero, div_zero, zero_mul]
   · rw [div_mul_cancel₀ _ (norm_ne_zero_iff.2 hs)]
 
-/-- **The Dennis–Moré condition holds along Broyden's iteration** (Dennis–Schnabel, proof of
+/-- **The Dennis–Moré condition holds along Broyden's iteration** ([dennis1996numerical], proof of
 Theorem 8.2.2): under the thresholds of `norm_iterate_sub_le_and_frobenius_norm_le`,
 `η_k = ‖(Q_k - J z) s_k‖ / ‖s_k‖ → 0`. Summing `sq_norm_iterate_sub_apply_div_le` telescopes
 the Frobenius errors, whose total variation is at most `‖M₀ - J z‖_F + (L / 2) ∑ (‖x_k - z‖ +
@@ -603,7 +527,7 @@ theorem tendsto_dennisMoreQuotient (h : LipschitzJacobianRoot F J D z L) (e : E 
   rw [Real.sqrt_zero] at h0
   exact h0.congr fun k => Real.sqrt_sq (dennisMoreQuotient_nonneg F J z x₀ Q₀ k)
 
-/-- **The superlinear step bound** (Dennis–Schnabel Lemma 8.2.3 / Theorem 8.2.4, the "if" half
+/-- **The superlinear step bound** ([dennis1996numerical] Lemma 8.2.3 / Theorem 8.2.4, the "if" half
 of the Dennis–Moré characterization, made quantitative): under the thresholds of
 `norm_iterate_sub_le_and_frobenius_norm_le`,
 
@@ -730,7 +654,7 @@ theorem tendsto_div_two_pow (ε : ℝ) : Tendsto (fun k : ℕ => ε / 2 ^ k) atT
   tendsto_const_nhds.div_atTop (tendsto_pow_atTop_atTop_of_one_lt one_lt_two)
 
 /-- **Local superlinear convergence of Broyden's method, quantitative form** (Dennis–Moré 1974;
-Dennis–Schnabel Theorem 8.2.2; [quarteroni2000numerical] Property 7.2). Let `F` have a
+[dennis1996numerical] Theorem 8.2.2; [quarteroni2000numerical] Property 7.2). Let `F` have a
 Lipschitz Jacobian at a root `z` on a convex `D` (`LipschitzJacobianRoot`), with
 `‖J z⁻¹‖ ≤ β`, and let `ε`, `δ` satisfy `12 β δ ≤ 1`, `3 L ε ≤ 2 δ` and `closedBall z ε ⊆ D`.
 Then for every start `x₀` with `‖x₀ - z‖ ≤ ε` and every `Q₀` whose matrix is within `δ` of
@@ -782,15 +706,15 @@ theorem superlinear_of_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ]
       (norm_nonneg _)
     exact add_le_add le_rfl (mul_le_mul_of_nonneg_left (hinv k).1 hL0)
 
-/-- **Local superlinear convergence of Broyden's method** (Dennis–Moré 1974; Dennis–Schnabel
-Theorem 8.2.2; [quarteroni2000numerical] Property 7.2), existential form. Let `F` have a
-Lipschitz Jacobian at a root `z` on a convex `D ⊇ ball z R` (`LipschitzJacobianRoot`), with
-`J z` invertible and `‖J z⁻¹‖ ≤ β`, `β > 0`, `R > 0`. Then there are `ε, γ > 0` such that for every
-`x₀` with `‖x₀ - z‖ ≤ ε` and every `Q₀` with `‖Q₀ - J z‖ ≤ γ` (operator norm), Broyden's
-iteration from `(x₀, Q₀)` is well defined, converges to `z` with `‖x_k - z‖ ≤ ε / 2ᵏ`, and
-converges superlinearly: `‖x_{k+1} - z‖ ≤ c_k ‖x_k - z‖` with `c_k → 0`. The thresholds are
-`δ = 1 / (12 β)`, `ε = min (R / 2) (2δ / (3 (L + 1)))`, `γ = δ / (√n + 1)`, the last converting
-the operator-norm hypothesis to the Frobenius one of `superlinear_of_le`. -/
+/-- **Local superlinear convergence of Broyden's method** ([dennis1974characterization];
+[dennis1996numerical] Theorem 8.2.2; [quarteroni2000numerical] Property 7.2), existential form.
+Let `F` have a Lipschitz Jacobian at a root `z` on a convex `D ⊇ ball z R`
+(`LipschitzJacobianRoot`), with `J z` invertible and `‖J z⁻¹‖ ≤ β`, `β > 0`, `R > 0`. Then there
+are `ε, γ > 0` such that for every `x₀` with `‖x₀ - z‖ ≤ ε` and every `Q₀` with `‖Q₀ - J z‖ ≤ γ`
+(operator norm), Broyden's iteration from `(x₀, Q₀)` is well defined, converges to `z` with
+`‖x_k - z‖ ≤ ε / 2ᵏ`, and converges superlinearly: `‖x_{k+1} - z‖ ≤ c_k ‖x_k - z‖` with `c_k → 0`.
+The thresholds are `δ = 1 / (12 β)`, `ε = min (R / 2) (2δ / (3 (L + 1)))`, `γ = δ / (√n + 1)`,
+the last converting the operator-norm hypothesis to the Frobenius one of `superlinear_of_le`. -/
 theorem exists_superlinear (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) (hβ0 : 0 < β) {R : ℝ} (hR : 0 < R)

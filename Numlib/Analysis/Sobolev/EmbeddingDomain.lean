@@ -834,18 +834,6 @@ theorem IsSobolevExtensionDomainAll.of_isContDiffChartDomain {d : ℕ}
     IsSobolevExtensionDomainAll (d + 1) Ω :=
   fun _ _ ↦ IsSobolevExtensionDomain.of_isContDiffChartDomain hΩ hΓ
 
-/-- The `L^p(Ω)` norm of the function of `u ∈ W^{k,p}(Ω)` is at most `‖u‖`. -/
-theorem SobolevMultiIndex.eLpNorm_fn_le_ofReal_norm {E F : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [NormedAddCommGroup F]
-    [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
-    {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} (u : SobolevMultiIndex F b k p Ω μ) :
-    eLpNorm (fn u) p (μ.restrict (Ω : Set E)) ≤ ENNReal.ofReal ‖u‖ := by
-  have h : ‖weakDeriv u 0‖ = (eLpNorm (fn u) p (μ.restrict (Ω : Set E))).toReal := by
-    rw [Lp.norm_def]
-    rfl
-  rw [← ENNReal.ofReal_toReal (SobolevMultiIndex.memLp u).eLpNorm_ne_top]
-  exact ENNReal.ofReal_le_ofReal (h ▸ norm_weakDeriv_le u 0)
-
 /-- **The first-order embeddings of Corollary 9.14 in one statement**: for an extension domain,
 `1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with
 `‖u‖_{L^q(Ω)} ≤ K ‖u‖` for every `u ∈ W^{1,p}(Ω)`: the whole-space statement
@@ -1232,6 +1220,160 @@ theorem SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt {m k : ℕ} {p : 
   exact ⟨ũ, hc, hk, hae, hG, G, hGc, hGeq, hGh⟩
 
 end HigherOrderDomain
+
+/-! ### Lowering the order: `W^{m+j+1,p}(Ω) → W^{j+1,q}(Ω)` as a bounded linear map -/
+
+section Lower
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **Lowering the order to `j + 1`**: if `W^{m,p}(Ω) ⊆ L^q(Ω)` with the bound
+`‖fn v‖_{L^q(Ω)} ≤ K ‖v‖`, there is a bounded linear map `W^{m+j+1,p}(Ω) → W^{j+1,q}(Ω)`
+preserving the function. By induction on `j`, the case `j = 0` being
+`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le` and the step
+`SobolevMultiIndex.exists_succ_of_partialDeriv` applied to `u` and its partial derivatives, all in
+`W^{m+j+1,p}(Ω)`; the map is unique (`SobolevMultiIndex.ext_of_fn_ae_eq`), hence linear.
+[brezis2011functional] Corollary 9.15, proof ("repeated application"). -/
+theorem SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le (j : ℕ) {m : ℕ}
+    {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] {K : ℝ≥0∞} (hK : K ≠ ⊤)
+    (h : ∀ v : SobolevEuclidean N m p Ω, eLpNorm (fn v) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≤ K * ENNReal.ofReal ‖v‖) :
+    ∃ T : SobolevEuclidean N (m + j + 1) p Ω →L[ℝ] SobolevEuclidean N (j + 1) q Ω,
+      ∀ u, fn (T u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u := by
+  induction j with
+  | zero =>
+    choose w hw hwn using fun u : SobolevEuclidean N (m + 0 + 1) p Ω ↦
+      SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le hK h u
+    refine ⟨LinearMap.mkContinuous
+      { toFun := w
+        map_add' := fun u v ↦ ext_of_fn_ae_eq ?_
+        map_smul' := fun c u ↦ ext_of_fn_ae_eq ?_ } ((N + 1) * K.toReal) fun u ↦ hwn u, hw⟩
+    · exact (hw _).trans ((fn_add u v).trans
+        (((hw u).symm.add (hw v).symm).trans (fn_add _ _).symm))
+    · exact (hw _).trans ((fn_smul c u).trans
+        (((hw u).symm.const_smul c).trans (fn_smul _ _).symm))
+  | succ j ih =>
+    obtain ⟨T, hT⟩ := ih
+    have hstep : ∀ u : SobolevEuclidean N (m + j + 1 + 1) p Ω,
+        ∃ z : SobolevEuclidean N (j + 1 + 1) q Ω,
+          fn z =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u ∧
+          ‖z‖ ≤ Fintype.card (MultiIndexLE (Fin N) (j + 1 + 1)) * ((N + 1) * ‖T‖) * ‖u‖ := by
+      intro u
+      obtain ⟨v₀, hv₀⟩ : ∃ v₀ : SobolevEuclidean N (m + j + 1) p Ω,
+          v₀ = toLowerOrder ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume
+            (Nat.le_succ _) u :=
+        ⟨_, rfl⟩
+      obtain ⟨v, hv⟩ : ∃ v : Fin N → SobolevEuclidean N (m + j + 1) p Ω,
+          v = fun i ↦ partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume i u :=
+        ⟨_, rfl⟩
+      have hv₀fn : fn v₀ = fn u := by rw [hv₀]; rfl
+      have hv₀n : ‖v₀‖ ≤ ‖u‖ := by rw [hv₀]; exact norm_toLowerOrder_le _ u
+      have hvn : ∀ i, ‖v i‖ ≤ ‖u‖ := fun i ↦ by rw [hv]; exact norm_partialDeriv_le i u
+      have hw₀ : fn (T v₀) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u :=
+        hv₀fn ▸ hT v₀
+      have hw : ∀ i, fn (T (v i)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+          fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume i u) :=
+        fun i ↦ by rw [hv] at *; exact hT _
+      obtain ⟨z, hz, hzn⟩ := exists_succ_of_partialDeriv u (T v₀) hw₀ (fun i ↦ T (v i)) hw
+      refine ⟨z, hz, hzn.trans ?_⟩
+      have hT₀ : ‖T v₀‖ ≤ ‖T‖ * ‖u‖ :=
+        (T.le_opNorm v₀).trans (mul_le_mul_of_nonneg_left hv₀n (norm_nonneg _))
+      have hTi : ∑ i, ‖T (v i)‖ ≤ N * (‖T‖ * ‖u‖) := by
+        calc ∑ i, ‖T (v i)‖ ≤ ∑ _i : Fin N, ‖T‖ * ‖u‖ := Finset.sum_le_sum fun i _ ↦
+              (T.le_opNorm _).trans (mul_le_mul_of_nonneg_left (hvn i) (norm_nonneg _))
+          _ = N * (‖T‖ * ‖u‖) := by simp
+      calc (Fintype.card (MultiIndexLE (Fin N) (j + 1 + 1)) : ℝ) * (‖T v₀‖ + ∑ i, ‖T (v i)‖)
+          ≤ Fintype.card (MultiIndexLE (Fin N) (j + 1 + 1)) * (‖T‖ * ‖u‖ + N * (‖T‖ * ‖u‖)) := by
+            gcongr
+        _ = Fintype.card (MultiIndexLE (Fin N) (j + 1 + 1)) * ((N + 1) * ‖T‖) * ‖u‖ := by ring
+    choose z hz hzn using hstep
+    refine ⟨LinearMap.mkContinuous
+      { toFun := z
+        map_add' := fun u v ↦ ext_of_fn_ae_eq ?_
+        map_smul' := fun c u ↦ ext_of_fn_ae_eq ?_ }
+      (Fintype.card (MultiIndexLE (Fin N) (j + 1 + 1)) * ((N + 1) * ‖T‖)) fun u ↦ hzn u, hz⟩
+    · exact (hz _).trans ((fn_add u v).trans
+        (((hz u).symm.add (hz v).symm).trans (fn_add _ _).symm))
+    · exact (hz _).trans ((fn_smul c u).trans
+        (((hz u).symm.const_smul c).trans (fn_smul _ _).symm))
+
+/-- **The inclusion `W^{m+1,p}(Ω) ⊆ W^{1,r}(Ω)` of an extension domain as a bounded linear
+map**, for `1 ≤ p ≤ r < ∞` with `1/p − m/N ≤ 1/r` (and `N ≥ 2` or `p > 1`): the case `j = 0` of
+`SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le` for the `L^r` bound of
+[brezis2011functional] Corollary 9.15 at order `m`
+(`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension`). This is the
+device by which the embeddings of `W^{m+1,p}(Ω)` are read off those of `W^{1,r}(Ω)`. -/
+theorem SobolevEuclidean.exists_continuousLinearMap_orderOne (m : ℕ) {p r : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (r : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
+    (hN : 2 ≤ N ∨ 1 < p) (hpr : p ≤ r) (hr : (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹) :
+    ∃ T : SobolevEuclidean N (m + 1) p Ω →L[ℝ] SobolevEuclidean N 1 r Ω,
+      ∀ u, fn (T u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u := by
+  obtain ⟨K, hK, hKu⟩ :=
+    SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension m hΩ hN hpr hr
+  exact SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le 0 hK hKu
+
+/-- **Membership in `W^{j+1,r}(Ω)` from `W^{m+1+j,p}(Ω)`**, given the order-one inclusion
+`W^{m+1,p}(Ω) ⊆ W^{1,r}(Ω)` on functions: induction on `j` through
+`memSobolevMultiIndex_succ_iff`, each partial derivative of `f ∈ W^{m+1+(j+1),p}` lying in
+`W^{m+1+j,p}`. -/
+theorem MemSobolevMultiIndex.of_forall_mem_one (m : ℕ) {p r : ℝ≥0∞}
+    (h1 : ∀ f : EuclideanSpace ℝ (Fin N) → ℝ,
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f (m + 1) p Ω volume →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f 1 r Ω volume)
+    (j : ℕ) : ∀ f : EuclideanSpace ℝ (Fin N) → ℝ,
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f (m + 1 + j) p Ω volume →
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f (j + 1) r Ω volume := by
+  induction j with
+  | zero => exact fun f hf ↦ h1 f hf
+  | succ j ih =>
+    intro f hf
+    obtain ⟨hf0, hfd⟩ := memSobolevMultiIndex_succ_iff.1 hf
+    refine memSobolevMultiIndex_succ_iff.2 ⟨ih f hf0, fun i ↦ ?_⟩
+    obtain ⟨g, hg, hgm⟩ := hfd i
+    exact ⟨g, hg, ih g hgm⟩
+
+/-- **The inclusion `W^{k,p}(Ω) ⊆ W^{j+1,r}(Ω)` of an extension domain as a bounded linear map**,
+for `k = m + 1 + j`, `1 ≤ p ≤ r < ∞` with `1/p − m/N ≤ 1/r` (and `N ≥ 2` or `p > 1`): the
+order-one inclusion `W^{m+1,p}(Ω) → W^{1,r}(Ω)` of Corollary 9.15
+(`SobolevEuclidean.exists_continuousLinearMap_orderOne`) applied to the derivatives of order
+`≤ j`, with the bound from the closed graph theorem
+(`SobolevMultiIndex.exists_continuousLinearMap_of_forall_memSobolevMultiIndex`). This is the
+device by which the embeddings of `W^{k,p}(Ω)` into the Hölder spaces `C^{j,β}` are read off
+those of `W^{j+1,r}(Ω)` for every large `r`, the integer case of the Sobolev embedding
+theorem. -/
+theorem SobolevEuclidean.exists_continuousLinearMap_lower_of_order (m j : ℕ) {p r : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (r : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
+    (hN : 2 ≤ N ∨ 1 < p) (hpr : p ≤ r) (hr : (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹) :
+    ∃ T : SobolevEuclidean N (m + 1 + j) p Ω →L[ℝ] SobolevEuclidean N (j + 1) r Ω,
+      ∀ u, fn (T u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u := by
+  obtain ⟨T₁, hT₁⟩ := SobolevEuclidean.exists_continuousLinearMap_orderOne m hΩ hN hpr hr
+  have h1 : ∀ f : EuclideanSpace ℝ (Fin N) → ℝ,
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f (m + 1) p Ω volume →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f 1 r Ω volume := by
+    intro f hf
+    obtain ⟨v, hv⟩ := hf.exists_sobolevMultiIndex
+    exact (memSobolevMultiIndex (T₁ v)).congr_ae ((hT₁ v).trans hv)
+  have hmem := MemSobolevMultiIndex.of_forall_mem_one m h1 j
+  obtain ⟨G, hG⟩ : ∃ G : SobolevEuclidean N (m + 1 + j) p Ω →L[ℝ]
+      Lp ℝ r (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      ∀ u, (G u : EuclideanSpace ℝ (Fin N) → ℝ)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u :=
+    ⟨(fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 r Ω volume).comp (T₁.comp
+      (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume
+        (Nat.le_add_right (m + 1) j))), fun u ↦ by
+      simp only [ContinuousLinearMap.comp_apply, fnL_apply]
+      exact hT₁ _⟩
+  obtain ⟨T, hT⟩ := SobolevMultiIndex.exists_continuousLinearMap_of_forall_memSobolevMultiIndex G
+    fun u ↦ (hmem (fn u) (memSobolevMultiIndex u)).congr_ae (hG u).symm
+  refine ⟨T, fun u ↦ ?_⟩
+  have := congrArg (fun w : Lp ℝ r (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ↦
+    (w : EuclideanSpace ℝ (Fin N) → ℝ)) (hT u)
+  rw [fnL_apply] at this
+  exact (Filter.EventuallyEq.of_eq this).trans (hG u)
+
+end Lower
 
 /-! ### Balls are domains of class `C^∞` -/
 

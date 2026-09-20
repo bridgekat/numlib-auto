@@ -79,9 +79,6 @@ id = "frobenius_norm_psbUpdate_sub_le"
 id = "frobenius_norm_psbUpdate_sub_lt"
 
 [[node]]
-id = "norm_toEuclideanCLM_le_frobenius"
-
-[[node]]
 id = "frobenius_norm_psbUpdate_sub_le_add"
 
 [[node]]

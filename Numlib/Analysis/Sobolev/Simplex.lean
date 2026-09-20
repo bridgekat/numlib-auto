@@ -32,7 +32,8 @@ Two reflections and one affine change of variables:
   `SobolevEuclidean.exists_extensionL_of_preimage_affine`): the transport `u ↦ u ∘ F⁻¹` to the
   square, the square's extension operator, and the transport `w ↦ w ∘ F` back are bounded linear
   maps (`SobolevEuclidean.compDiffeoL` for the affine diffeomorphisms of
-  `isDiffeoOnWithBoundedJacobian_affine`), and their composite is the identity on the preimage.
+  `isDiffeoOnWithBoundedJacobian_affine_top` and `isDiffeoOnWithBoundedJacobian_affine_symm`, in
+  `Calculus.lean`), and their composite is the identity on the preimage.
 
 The composites are assembled with the operators as variables
 (`SobolevEuclidean.fn_comp_affine_of_ops`, `SobolevEuclidean.exists_extensionL_of_step`), as in
@@ -54,8 +55,9 @@ The composites are assembled with the operators as variables
   `IsSobolevExtensionDomainAll.of_preimage_affine`, `IsSobolevExtensionDomainAll.of_image_affine`:
   extension domains are affine-invariant; `SobolevEuclidean.exists_extensionL_of_preimage_affine`
   is the same for the shape of Theorem 9.7 (with the `L^p` bound).
-* `IsSobolevExtensionDomain.of_extension_step`, `SobolevEuclidean.exists_extensionL_of_step`:
-  an extension operator into a larger extension domain makes the smaller one an extension domain.
+* `SobolevEuclidean.exists_extensionL_of_step` (with `IsSobolevExtensionDomain.of_extension_step`
+  of `Extension.lean`): an extension operator into a larger extension domain makes the smaller
+  one an extension domain.
 * `SobolevEuclidean.exists_extensionL_referenceTriangle`: the reference triangle has an extension
   operator in the shape of Theorem 9.7; `isSobolevExtensionDomainAll_referenceTriangle`,
   `isSobolevExtensionDomainAll_of_image_referenceTriangle` (every affine image) and
@@ -72,32 +74,6 @@ open Filter MeasureTheory Metric Set TopologicalSpace
 open scoped ENNReal Topology RealInnerProductSpace
 
 noncomputable section
-
-/-! ### Affine bijections and their preimages -/
-
-section AffineSets
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-/-- The affine map `y ↦ T⁻¹ y − T⁻¹ c` is the inverse of `x ↦ T x + c`: the preimage of the
-preimage is the set. -/
-theorem affine_symm_preimage_affine_preimage (T : E ≃L[ℝ] E) (c : E) (s : Set E) :
-    (fun y ↦ T.symm y + -T.symm c) ⁻¹' ((fun x ↦ T x + c) ⁻¹' s) = s := by
-  ext x
-  simp
-
-/-- The image of a set under the affine bijection `x ↦ T x + c` is its preimage under the inverse
-`y ↦ T⁻¹ y − T⁻¹ c`. -/
-theorem affine_image_eq_affine_symm_preimage (T : E ≃L[ℝ] E) (c : E) (s : Set E) :
-    (fun x ↦ T x + c) '' s = (fun y ↦ T.symm y + -T.symm c) ⁻¹' s := by
-  ext y
-  constructor
-  · rintro ⟨x, hx, rfl⟩
-    simpa using hx
-  · intro hy
-    exact ⟨T.symm y + -T.symm c, hy, by simp⟩
-
-end AffineSets
 
 /-! ### Extension domains are affine-invariant -/
 
@@ -174,27 +150,6 @@ theorem SobolevEuclidean.eLpNorm_comp_affine_of_ops {Ω Ω' : Opens 𝔼}
         gcongr; exact hA _
     _ = C₃ * C₂ * C₁ * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω' : Set 𝔼)) := by
         ring
-
-/-- The affine map `x ↦ T x + c` is a diffeomorphism with bounded Jacobians of `ℝ^N` onto
-itself, with source and target the open set `⊤`. -/
-theorem isDiffeoOnWithBoundedJacobian_affine_top (T : 𝔼 ≃L[ℝ] 𝔼) (c : 𝔼) :
-    IsDiffeoOnWithBoundedJacobian (fun x ↦ T x + c) (fun y ↦ T.symm (y - c))
-      ((⊤ : Opens 𝔼) : Set 𝔼) ((⊤ : Opens 𝔼) : Set 𝔼)
-      (max ‖(T : 𝔼 →L[ℝ] 𝔼)‖ ‖(T.symm : 𝔼 →L[ℝ] 𝔼)‖) := by
-  have h := isDiffeoOnWithBoundedJacobian_affine T c (⊤ : Opens 𝔼)
-  rwa [show (fun x ↦ T x + c) ⁻¹' ((⊤ : Opens 𝔼) : Set 𝔼) = ((⊤ : Opens 𝔼) : Set 𝔼) by simp]
-    at h
-
-/-- The inverse affine map `y ↦ T⁻¹ y − T⁻¹ c` is a diffeomorphism with bounded Jacobians of `Ω`
-onto the preimage `Ω' = F⁻¹(Ω)` of `F x = T x + c`. -/
-theorem isDiffeoOnWithBoundedJacobian_affine_symm {Ω Ω' : Opens 𝔼} (T : 𝔼 ≃L[ℝ] 𝔼) (c : 𝔼)
-    (hΩ' : (Ω' : Set 𝔼) = (fun x ↦ T x + c) ⁻¹' Ω) :
-    IsDiffeoOnWithBoundedJacobian (fun y ↦ T.symm y + -T.symm c)
-      (fun x ↦ T.symm.symm (x - -T.symm c)) (Ω : Set 𝔼) (Ω' : Set 𝔼)
-      (max ‖(T.symm : 𝔼 →L[ℝ] 𝔼)‖ ‖(T.symm.symm : 𝔼 →L[ℝ] 𝔼)‖) := by
-  have h := isDiffeoOnWithBoundedJacobian_affine T.symm (-T.symm c) Ω'
-  rwa [show (fun y ↦ T.symm y + -T.symm c) ⁻¹' (Ω' : Set 𝔼) = (Ω : Set 𝔼) by
-    rw [hΩ', affine_symm_preimage_affine_preimage]] at h
 
 /-- **An extension operator in the shape of Theorem 9.7 transports along an affine bijection**:
 if `Ω` has one, so does its preimage `Ω' = F⁻¹(Ω)` under `F x = T x + c`, namely
@@ -311,32 +266,6 @@ section Steps
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
-
-/-- An extension operator in the shape of Theorem 9.7 makes `Ω` a `W^{1,p}`-extension domain
-(the `L^p` bound is not part of the predicate). -/
-theorem IsSobolevExtensionDomain.of_exists_extensionL {Ω : Opens 𝔼}
-    (h : ∃ (P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤) (C : ℝ),
-      ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set 𝔼)] SobolevMultiIndex.fn u ∧
-        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
-          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set 𝔼)) ∧
-        ‖P u‖ ≤ C * ‖u‖) : IsSobolevExtensionDomain N p Ω := by
-  obtain ⟨P, C, hP⟩ := h
-  exact ⟨P.comp (Submodule.subtypeL ⊤), fun u ↦ (hP u.1).1⟩
-
-/-- **An extension step into an extension domain**: if `Ω ⊆ Ω₁`, `Ω₁` is a `W^{1,p}`-extension
-domain and `S : W^{1,p}(Ω) → W^{1,p}(Ω₁)` is a bounded linear map with `S u = u` on `Ω`, then `Ω`
-is a `W^{1,p}`-extension domain (`u ↦ P (S u)`). -/
-theorem IsSobolevExtensionDomain.of_extension_step {Ω Ω₁ : Opens 𝔼}
-    (hΩ₁ : IsSobolevExtensionDomain N p Ω₁) (hle : Ω ≤ Ω₁)
-    (S : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₁)
-    (hS : ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω : Set 𝔼)]
-      SobolevMultiIndex.fn u) : IsSobolevExtensionDomain N p Ω := by
-  obtain ⟨P, hP⟩ := hΩ₁
-  refine ⟨P ∘L (ContinuousLinearMap.id ℝ _).codRestrict ⊤ (fun _ ↦ Submodule.mem_top) ∘L S ∘L
-    Submodule.subtypeL ⊤, fun u ↦ ?_⟩
-  have h1 := hP ⟨S u.1, Submodule.mem_top⟩
-  exact (h1.filter_mono
-    (ae_mono (Measure.restrict_mono (SetLike.coe_subset_coe.2 hle) le_rfl))).trans (hS u.1)
 
 /-- **An extension step into a domain with an extension operator in the shape of Theorem 9.7**
 gives one on the smaller domain: for `Ω ⊆ Ω₁`, a bounded linear `S : W^{1,p}(Ω) → W^{1,p}(Ω₁)`

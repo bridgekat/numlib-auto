@@ -337,51 +337,15 @@ theorem equation_12_37_norm_equiv {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) �
 /-- **Poincaré's inequality (12.16) on `(-1, 1)` for a polynomial vanishing at `-1`**:
 `∫_{-1}^1 p² ≤ C_P² ∫_{-1}^1 (p')²` with `C_P² = (b - a)²/2 = 2`, the constant the stability
 estimate after (12.38) uses. As `Chapter13.poincare_classical` on `(0, 1)`: `p(y) = ∫_{-1}^y p'`,
-Cauchy–Schwarz against `1` gives `p(y)² ≤ (y + 1) ∫ (p')²`, and `∫_{-1}^1 (y + 1) dy = 2`. -/
+Cauchy–Schwarz against `1` gives `p(y)² ≤ (y + 1) ∫ (p')²`, and `∫_{-1}^1 (y + 1) dy = 2`; the
+backbone's `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero` on `(-1, 1)`. -/
 theorem poincare_poly {p : ℝ[X]} (hm1 : p.eval (-1) = 0) :
     (∫ t in (-1 : ℝ)..1, p.eval t ^ 2) ≤ 2 * ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 := by
-  set K := ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 with hK
-  have hcont : ∀ q : ℝ[X], ∀ s : Set ℝ, ContinuousOn (fun t => q.eval t) s := fun q s =>
-    (Polynomial.continuous q).continuousOn
-  have hrep : ∀ y, p.eval y = ∫ t in (-1 : ℝ)..y, (derivative p).eval t := by
-    intro y
-    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ => p.hasDerivAt t)
-      ((Polynomial.continuous _).intervalIntegrable _ _), hm1, sub_zero]
-  have hbound : ∀ y ∈ Icc (-1 : ℝ) 1, p.eval y ^ 2 ≤ (y + 1) * K := by
-    intro y hy
-    have hcs := sq_integral_mul_le (p := -1) (q := y) (k := fun t => (derivative p).eval t)
-      (f := fun _ => (1 : ℝ)) (by linarith [hy.1]) continuousOn_const (hcont _ _)
-    have h1 : (∫ t in (-1 : ℝ)..y, (1 : ℝ) * (derivative p).eval t) = p.eval y := by
-      rw [hrep y]
-      exact intervalIntegral.integral_congr fun t _ => one_mul _
-    have h2 : (∫ t in (-1 : ℝ)..y, (1 : ℝ) ^ 2) = y + 1 := by
-      simp
-    rw [h1, h2] at hcs
-    have i1 : IntervalIntegrable (fun t => (derivative p).eval t ^ 2) volume (-1) y :=
-      ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
-    have i2 : IntervalIntegrable (fun t => (derivative p).eval t ^ 2) volume y 1 :=
-      ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
-    have h3 : (∫ t in (-1 : ℝ)..y, (derivative p).eval t ^ 2) ≤ K := by
-      have hsp : K = (∫ t in (-1 : ℝ)..y, (derivative p).eval t ^ 2)
-          + ∫ t in y..1, (derivative p).eval t ^ 2 :=
-        (intervalIntegral.integral_add_adjacent_intervals i1 i2).symm
-      have hnn : (0 : ℝ) ≤ ∫ t in y..1, (derivative p).eval t ^ 2 :=
-        intervalIntegral.integral_nonneg hy.2 fun t _ => sq_nonneg _
-      linarith
-    have hy1 : 0 ≤ y + 1 := by linarith [hy.1]
-    nlinarith [hcs, h3, hy1]
-  have hint1 : IntervalIntegrable (fun t => p.eval t ^ 2) volume (-1) 1 :=
-    ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
-  have hint2 : IntervalIntegrable (fun t => (t + 1) * K) volume (-1) 1 :=
-    ((continuous_id.add continuous_const).mul continuous_const).intervalIntegrable _ _
-  have hmono := intervalIntegral.integral_mono_on (by norm_num) hint1 hint2 hbound
-  have hlin : (∫ t in (-1 : ℝ)..1, (t + 1) * K) = 2 * K := by
-    rw [intervalIntegral.integral_mul_const, intervalIntegral.integral_add
-      (continuous_id'.intervalIntegrable _ _) intervalIntegrable_const, integral_id,
-      intervalIntegral.integral_const]
-    norm_num
-  rw [hlin] at hmono
-  exact hmono
+  have := intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero
+    (by norm_num : (-1 : ℝ) ≤ 1) p.continuous.continuousOn (derivative p).continuous.continuousOn
+    (fun t _ => p.hasDerivAt t) hm1
+  norm_num at this
+  exact this
 
 /-- **The stability estimate after (12.38)**: a solution `u_n ∈ ℙ_n^0` of the collocation problem
 (12.36) with `|f(x_j)| ≤ M` at the nodes (`M = ‖f‖_∞` in the book) satisfies

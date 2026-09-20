@@ -9,3 +9,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.3.8"
 [[node]]
 id = "strictConvexOn_norm_rpow_two"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.3.8"
+
+[[node]]
+id = "strictConvexOn_norm_rpow"

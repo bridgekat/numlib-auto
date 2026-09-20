@@ -663,7 +663,7 @@ theorem isObstacleSolution_of_example_11_3_10 {ψ : SobolevEuclidean (d + 1) 1 2
   ae_le := (mem_obstacleSet_iff Ω).1 hu.1
   ineq v hv hψv := by
     have h := hu.2 ⟨v, hv⟩ ((mem_obstacleSet_iff Ω).2 hψv)
-    rw [ge_iff_le, BilinForm.ofCLM_apply, Chapter08.modelOperator_apply] at h
+    rw [ge_iff_le, dirichletBilinForm_apply] at h
     exact h
 
 /-- **The a priori `H¹` bound for the obstacle problem**: for `Ω ⊆ B(0, R)`, an admissible `w ∈ K`

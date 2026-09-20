@@ -1,9 +1,6 @@
 namespace = "BrokenPolynomial"
 
 [[node]]
-id = "_root_.intervalIntegrable_mul_of_sq"
-
-[[node]]
 id = "uIcc_panel_subset"
 
 [[node]]
@@ -89,9 +86,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.26) with m = 0"
 [[node]]
 id = "sum_integral_sq_deriv_sub_interp_le_seminorm"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.26) with m = 1"
-
-[[node]]
-id = "_root_.intervalIntegrable_sub_sq"
 
 [[node]]
 id = "pairing_congr"

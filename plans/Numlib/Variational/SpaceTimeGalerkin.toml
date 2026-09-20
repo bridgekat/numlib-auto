@@ -8,20 +8,7 @@ id = "Variational.hasDerivWithinAt_ofValuesₗ"
 id = "Variational.hasDerivWithinAt_interp"
 
 [[node]]
-id = "Transport.HasPartialsOn.hasDerivWithinAt_fst"
-
-[[node]]
-id = "Transport.HasPartialsOn.hasDerivWithinAt_snd"
-
-[[node]]
 id = "SobolevInterval.ae_eq_deriv_one_of_hasDerivAt"
-
-[[node]]
-id = "HasDerivWithinAt.codRestrict_submodule"
-
-[[node]]
-id = "Variational.le_transportForm_restrict"
-source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity hypothesis of (13.66)"
 
 [[node]]
 id = "Variational.abs_transport_defect_le"
@@ -52,10 +39,6 @@ id = "Variational.hasDerivWithinAt_proj"
 [[node]]
 id = "Variational.dg_defect_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the consistency error of the upwind discontinuous Galerkin form"
-
-[[node]]
-id = "Variational.le_dgUpwindForm"
-source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity behind (13.69)"
 
 [[node]]
 id = "Variational.sum_mul_sq_sub_proj_le"

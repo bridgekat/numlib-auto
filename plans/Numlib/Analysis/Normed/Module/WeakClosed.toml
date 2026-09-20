@@ -101,3 +101,27 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 9"
 [[node]]
 id = "Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 9"
+
+[[node]]
+id = "LowerSemicontinuousOn.isClosed_sep_le"
+
+[[node]]
+id = "UpperSemicontinuousOn.isClosed_sep_ge"
+
+[[node]]
+id = "image_toWeakSpace_sep"
+
+[[node]]
+id = "Convex.image_toWeakSpace"
+
+[[node]]
+id = "QuasiconvexOn.comp_toWeakSpace_symm"
+
+[[node]]
+id = "QuasiconcaveOn.comp_toWeakSpace_symm"
+
+[[node]]
+id = "LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn"
+
+[[node]]
+id = "UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn"

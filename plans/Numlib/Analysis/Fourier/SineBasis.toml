@@ -34,3 +34,13 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
 
 [[node]]
 id = "coeFn_sinBasisUnit"
+
+[[node]]
+id = "sinePolynomial"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (6.2.5)"
+
+[[node]]
+id = "mem_span_sinMap_iff"
+
+[[node]]
+id = "linearIndependent_sinMap"

@@ -226,6 +226,13 @@ theorem EntrywiseNonneg.mulVec_nonneg [Fintype n] {A : Matrix m n α} {x : n →
   simpa only [Pi.zero_apply, Matrix.mulVec_apply_eq_sum] using
     Finset.sum_nonneg fun k _ => mul_nonneg (hA.apply i k) (Pi.le_def.mp hx k)
 
+/-- An entrywise bound on a matrix bounds its action on nonnegative vectors. -/
+theorem EntrywiseLE.mulVec_le_of_nonneg [Fintype n] {M N : Matrix m n α} (hMN : M ≤ₑ N)
+    {w : n → α} (hw : 0 ≤ w) : M *ᵥ w ≤ N *ᵥ w := by
+  refine Pi.le_def.2 fun i => ?_
+  simp only [Matrix.mulVec_apply_eq_sum]
+  exact Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_right (hMN i j) (Pi.le_def.mp hw j)
+
 /-- An entrywise nonnegative matrix acts monotonically on vectors. -/
 theorem EntrywiseNonneg.mulVec_mono [Fintype n] {A : Matrix m n α} {x y : n → α}
     (hA : A.EntrywiseNonneg) (hxy : x ≤ y) : A *ᵥ x ≤ A *ᵥ y := by

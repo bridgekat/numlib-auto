@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+import Numlib.Analysis.InnerProductSpace.Ascent
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Riesz
@@ -632,31 +633,15 @@ theorem theorem_2_8_15_eigenvalue_real {K : V →L[𝕜] V} (hK : IsSelfAdjoint 
 /-- **Theorem 2.8.15**, the index clause: every eigenvalue of a compact self-adjoint operator has
 index one, `N((λ - K)²) = N(λ - K)`. The general ascent–descent theory of Theorem 2.8.12 (3) is not
 needed for it: with `λ` real — which `theorem_2_8_15_eigenvalue_real` supplies — the operator
-`λ - K` is self-adjoint, so `(λ - K)² v = 0` gives `‖(λ - K) v‖² = ⟪(λ - K)² v, v⟫ = 0`.
+`λ - K` is self-adjoint, so `(λ - K)² v = 0` gives `‖(λ - K) v‖² = ⟪(λ - K)² v, v⟫ = 0`; this is
+the backbone's `IsSelfAdjoint.ker_sq_smul_sub_eq_ker` (`Numlib/Analysis/InnerProductSpace/Ascent`).
 
 Compactness plays no part, so no compactness hypothesis is imposed. -/
 theorem theorem_2_8_15_index {K : V →L[𝕜] V} (hK : IsSelfAdjoint K) {l : 𝕜}
     (hl : (starRingEnd 𝕜) l = l) :
     LinearMap.ker (((l • (1 : V →L[𝕜] V) - K) ^ 2 : V →L[𝕜] V) : V →ₗ[𝕜] V) =
-      LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V) := by
-  have hlsa : IsSelfAdjoint l := hl
-  have hAsa : IsSelfAdjoint (l • (1 : V →L[𝕜] V) - K) :=
-    (hlsa.smul (IsSelfAdjoint.one (V →L[𝕜] V))).sub hK
-  have hadj : ContinuousLinearMap.adjoint (l • (1 : V →L[𝕜] V) - K) = l • 1 - K := by
-    rw [← ContinuousLinearMap.star_eq_adjoint]; exact hAsa
-  refine le_antisymm (fun v hv => ?_) (fun v hv => ?_)
-  · simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
-    have hsq : ((l • (1 : V →L[𝕜] V) - K) ^ 2) v
-        = (l • (1 : V →L[𝕜] V) - K) ((l • (1 : V →L[𝕜] V) - K) v) := by
-      rw [pow_two]; rfl
-    rw [hsq] at hv
-    have hinner : ⟪(l • (1 : V →L[𝕜] V) - K) v, (l • (1 : V →L[𝕜] V) - K) v⟫_𝕜 = 0 := by
-      rw [← ContinuousLinearMap.adjoint_inner_left, hadj, hv, inner_zero_left]
-    exact inner_self_eq_zero.1 hinner
-  · simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
-    rw [pow_two]
-    change (l • (1 : V →L[𝕜] V) - K) ((l • (1 : V →L[𝕜] V) - K) v) = 0
-    rw [hv, map_zero]
+      LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V) :=
+  hK.ker_sq_smul_sub_eq_ker hl
 
 /-- The clause of Theorem 2.8.15 that locates the basis: for a self-adjoint operator the
 orthogonal complement of the null space is the closure of the range, which is where the

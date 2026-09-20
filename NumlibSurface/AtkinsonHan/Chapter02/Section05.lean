@@ -339,58 +339,6 @@ theorem norm_evalCoset (c : Icc (0 : ℝ) 1) : ‖evalCoset c‖ = 1 := by
   simp only [norm_cosetLinfty, norm_one, mul_one] at h1
   exact h1
 
-/-- (General; belongs beside `MeasureTheory.Lp.exists_strongDual_top_apply_eq` in
-`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`, whose proof it factors.) **A functional on
-`L^∞(μ)` that is the point evaluation at `x₀` on the smooth compactly supported functions is not
-`f ↦ ∫ u f` for any `u ∈ L¹(μ)`**, for an atomless σ-finite measure on a finite-dimensional real
-normed space: such a `u` would vanish
-almost everywhere off `x₀` (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence
-almost everywhere, while `φ` is `1` on a bump at `x₀`. -/
-theorem toDual_ne_of_forall_contDiff_apply_eq {G : Type*} [NormedAddCommGroup G]
-    [NormedSpace ℝ G] [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] {μ : Measure G}
-    [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (φ : StrongDual ℝ (Lp ℝ ∞ μ))
-    (hφ : ∀ (f : G → ℝ) (hf : MemLp f ∞ μ), ContDiff ℝ (⊤ : ℕ∞) f → HasCompactSupport f →
-      φ (hf.toLp f) = f x₀) (u : Lp ℝ 1 μ) : Lp.toDual ℝ ∞ 1 μ u ≠ φ := by
-  intro hu
-  have hmem : ∀ f : G → ℝ, Continuous f → HasCompactSupport f → MemLp f ∞ μ := fun f hf hs => by
-    obtain ⟨C, hC⟩ := hf.bounded_above_of_compact_support hs
-    exact memLp_top_of_bound hf.aestronglyMeasurable C (ae_of_all _ hC)
-  -- a bump at `x₀`, on which `φ` is `1`
-  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
-  have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
-  have hφψ : φ (hψ.toLp ψ) = 1 := by
-    rw [hφ ψ hψ ψ.contDiff ψ.hasCompactSupport]
-    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
-  -- `u = 0` a.e. off `x₀`
-  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
-    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
-    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
-      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
-    have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
-    have h1 : φ (hgL.toLp g) = 0 := by
-      rw [hφ g hgL hg hgs]
-      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
-    rw [← hu, Lp.toDual_apply] at h1
-    rw [← h1]
-    refine integral_congr_ae ?_
-    filter_upwards [hgL.coeFn_toLp] with x hx
-    rw [hx, smul_eq_mul, mul_comm]
-  -- hence `u = 0` and `φ = 0`, contradicting `φ ψ = 1`
-  have hu' : u = 0 := by
-    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
-      rw [ae_iff]
-      simp
-    have huμ : ∀ᵐ x ∂μ, u x = 0 := by
-      filter_upwards [hu0, hx₀'] with x hx hx'
-      exact hx hx'
-    apply Lp.ext
-    filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
-    rw [hx0, hx]
-    rfl
-  rw [hu', map_zero] at hu
-  rw [← hu] at hφψ
-  simp at hφψ
-
 /-- A functional on `L^∞(0, 1)` extending `ℓ_c` is the point evaluation at `c` on the continuous
 functions of the line. -/
 theorem apply_toLp_eq_of_forall_cosetLinfty (c : Icc (0 : ℝ) 1)
@@ -431,7 +379,7 @@ theorem example_2_5_3 (c : Icc (0 : ℝ) 1) :
     refine ⟨ℓhat, fun v ↦ ?_, hnorm.trans (norm_evalCoset c)⟩
     rw [← evalCoset_apply c v]
     exact hext ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩
-  · have h := toDual_ne_of_forall_contDiff_apply_eq (x₀ := (c : ℝ)) ℓhat
+  · have h := Lp.toDual_ne_of_forall_contDiff_apply_eq (x₀ := (c : ℝ)) ℓhat
       (fun f hf hfc _ ↦ apply_toLp_eq_of_forall_cosetLinfty c ℓhat hℓ f hf hfc.continuous) u
     by_contra hcon
     push Not at hcon

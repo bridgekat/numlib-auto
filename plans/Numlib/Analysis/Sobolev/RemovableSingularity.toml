@@ -53,3 +53,12 @@ id = "integrableOn_norm_rpow_ball_zero"
 
 [[node]]
 id = "tendsto_inv_mul_setIntegral_norm_ball_zero"
+
+[[node]]
+id = "tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne"
+
+[[node]]
+id = "integrableOn_normRpow"
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow"

@@ -21,7 +21,9 @@ on `Ω̄`):
   of a proper space (`ContinuousOn.memLp_top_restrict_of_isCompact_closure`,
   `ContinuousOn.memLp_top_restrict_of_isBounded`);
 * a bound `|g| ≤ C` holding almost everywhere on an open `s`, for a measure positive on open
-  sets, holds everywhere on `closure s` (`ContinuousOn.abs_le_on_closure_of_ae_abs_le`).
+  sets, holds everywhere on `closure s` (`ContinuousOn.abs_le_on_closure_of_ae_abs_le`), and
+  two functions continuous on `s` and ordered almost everywhere on it are ordered everywhere on
+  it (`le_on_of_ae_le`).
 -/
 
 open MeasureTheory Set
@@ -70,3 +72,14 @@ theorem ContinuousOn.abs_le_on_closure_of_ae_abs_le [μ.IsOpenPosMeasure] {s : S
   intro x hx
   have h2 := h1.of_subset_closure hc continuousOn_const subset_closure le_rfl hx
   exact sub_nonpos.1 (max_eq_right_iff.1 h2)
+
+omit [OpensMeasurableSpace X] in
+/-- Two functions continuous on an open set that are ordered almost everywhere on it, for a
+measure positive on open sets, are ordered everywhere on it. -/
+theorem le_on_of_ae_le [μ.IsOpenPosMeasure] {s : Set X} (hs : IsOpen s) {g h : X → ℝ}
+    (hle : g ≤ᵐ[μ.restrict s] h) (hg : ContinuousOn g s) (hh : ContinuousOn h s) :
+    ∀ x ∈ s, g x ≤ h x := by
+  have hmin : (fun x ↦ min (g x) (h x)) =ᵐ[μ.restrict s] g := hle.mono fun x hx ↦ min_eq_left hx
+  have heq := Measure.eqOn_open_of_ae_eq hmin hs (ContinuousOn.inf hg hh) hg
+  intro x hx
+  exact min_eq_left_iff.1 (heq hx)

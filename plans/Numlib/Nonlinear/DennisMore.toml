@@ -1,10 +1,4 @@
 [[node]]
-id = "Matrix.frobenius_norm_sq_mul_one_sub_add_sq_mul"
-
-[[node]]
-id = "Matrix.smul_vecMulVec_mulVec_self"
-
-[[node]]
 id = "Matrix.norm_mulVec_le_frobenius_norm_mul_proj"
 
 [[node]]
@@ -14,12 +8,6 @@ source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization an
 [[node]]
 id = "Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate"
 source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
-
-[[node]]
-id = "Matrix.norm_toEuclideanCLM_le_frobenius_norm"
-
-[[node]]
-id = "Matrix.frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM"
 
 [[node]]
 id = "Broyden.LipschitzJacobianRoot"
@@ -37,9 +25,6 @@ source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization an
 
 [[node]]
 id = "Broyden.symm_iterate_succ_Q"
-
-[[node]]
-id = "Matrix.broydenUpdate_zero_left"
 
 [[node]]
 id = "Broyden.iterate_Q_sub_eq"

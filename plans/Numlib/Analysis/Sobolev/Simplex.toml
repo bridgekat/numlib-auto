@@ -1,22 +1,10 @@
 # Numlib/Analysis/Sobolev/Simplex.lean has the module doc comment; the plan desc is superseded.
 
 [[node]]
-id = "affine_symm_preimage_affine_preimage"
-
-[[node]]
-id = "affine_image_eq_affine_symm_preimage"
-
-[[node]]
 id = "SobolevEuclidean.fn_comp_affine_of_ops"
 
 [[node]]
 id = "SobolevEuclidean.eLpNorm_comp_affine_of_ops"
-
-[[node]]
-id = "isDiffeoOnWithBoundedJacobian_affine_top"
-
-[[node]]
-id = "isDiffeoOnWithBoundedJacobian_affine_symm"
 
 [[node]]
 id = "SobolevEuclidean.exists_extensionL_of_preimage_affine"
@@ -39,12 +27,6 @@ id = "IsSobolevExtensionDomainAll.of_image_affine"
 
 [[node]]
 id = "IsSobolevExtensionDomainAll.affinePreimage"
-
-[[node]]
-id = "IsSobolevExtensionDomain.of_exists_extensionL"
-
-[[node]]
-id = "IsSobolevExtensionDomain.of_extension_step"
 
 [[node]]
 id = "SobolevEuclidean.exists_extensionL_of_step"

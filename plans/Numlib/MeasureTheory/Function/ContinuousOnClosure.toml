@@ -6,3 +6,6 @@ id = "ContinuousOn.memLp_top_restrict_of_isBounded"
 
 [[node]]
 id = "ContinuousOn.abs_le_on_closure_of_ae_abs_le"
+
+[[node]]
+id = "le_on_of_ae_le"

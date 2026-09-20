@@ -83,6 +83,13 @@ theorem gamma_zero (u : K) : gamma u 0 = 0 := by simp [gamma]
 theorem gamma_nonneg {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u < 1) : 0 ≤ gamma u n :=
   div_nonneg (mul_nonneg (by positivity) hu) (by linarith)
 
+/-- `γ_k ≤ 2 k u` when `2 k u ≤ 1`. -/
+theorem gamma_le_two_mul {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) ≤ 1) :
+    gamma u k ≤ 2 * (k * u) := by
+  have hk0 : 0 ≤ (k : K) * u := by positivity
+  rw [gamma_def, div_le_iff₀ (by linarith)]
+  nlinarith
+
 /-- `1 + γ_n = (1 - n u)⁻¹`, the identity behind the whole calculus of the constants. -/
 theorem one_add_gamma {u : K} {n : ℕ} (h : (n : K) * u < 1) :
     1 + gamma u n = (1 - (n : K) * u)⁻¹ := by

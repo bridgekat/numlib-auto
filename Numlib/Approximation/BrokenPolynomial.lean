@@ -42,8 +42,9 @@ continuous piecewise polynomials `X_h^r` of §12.4.5 as the subspace of zero int
 * `sq_le_of_sub_eq_integral`: the trace inequality on a panel,
   `v(t)² ≤ 2 h⁻¹ ‖v‖²_{L²(u,w)} + 2 h ‖v'‖²_{L²(u,w)}` for an absolutely continuous `v` with
   `v' ∈ L²`, the origin of the half power in the `h^{r+1/2}` estimate of the discontinuous
-  Galerkin method; `intervalIntegral.integral_mul_le_sqrt_mul_sqrt` is Cauchy–Schwarz for
-  interval integrals of square integrable functions.
+  Galerkin method (Cauchy–Schwarz for interval integrals is
+  `intervalIntegral.integral_mul_le_sqrt_mul_sqrt` of
+  `Numlib/MeasureTheory/Integral/IntervalIntegral`).
 * `toLpₗᵢ`: the isometric embedding of `BrokenPolynomial x r` into `L²(x 0, x n)`, the class of
   the step function `stepFun v` equal to `v_i` on the half-open panel `[x i, x (i+1))`. The
   `r = 1` image is the discontinuous piecewise linear space of
@@ -772,36 +773,7 @@ end ToLp
 
 end BrokenPolynomial
 
-/-! ### Cauchy–Schwarz for interval integrals, and the trace inequality on a panel -/
-
-/-- **Cauchy–Schwarz for interval integrals** of square integrable functions:
-`∫_u^v f g ≤ √(∫_u^v f²) √(∫_u^v g²)`. Hölder's inequality at the conjugate pair `(2, 2)`. -/
-theorem intervalIntegral.integral_mul_le_sqrt_mul_sqrt {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
-    (hf : IntervalIntegrable f volume u v) (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v)
-    (hg : IntervalIntegrable g volume u v)
-    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
-    ∫ s in u..v, f s * g s ≤ √(∫ s in u..v, f s ^ 2) * √(∫ s in u..v, g s ^ 2) := by
-  have hfm : MemLp f 2 (volume.restrict (Ioc u v)) :=
-    (memLp_two_iff_integrable_sq hf.1.aestronglyMeasurable).2 hf2.1
-  have hgm : MemLp g 2 (volume.restrict (Ioc u v)) :=
-    (memLp_two_iff_integrable_sq hg.1.aestronglyMeasurable).2 hg2.1
-  have key := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq (μ := volume.restrict (Ioc u v))
-    (f := f) (g := g) Real.HolderConjugate.two_two (by rwa [ENNReal.ofReal_ofNat])
-    (by rwa [ENNReal.ofReal_ofNat])
-  have hrw : ∀ h : ℝ → ℝ, (∫ y in Ioc u v, ‖h y‖ ^ (2 : ℝ)) ^ (1 / 2 : ℝ)
-      = √(∫ y in u..v, h y ^ 2) := by
-    intro h
-    rw [Real.sqrt_eq_rpow, intervalIntegral.integral_of_le huv]
-    congr 1
-    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
-    change ‖h y‖ ^ (2 : ℝ) = h y ^ 2
-    rw [Real.rpow_two, Real.norm_eq_abs, sq_abs]
-  rw [hrw f, hrw g] at key
-  refine le_trans (le_abs_self _) (le_trans (abs_integral_le_integral_abs huv) ?_)
-  rw [intervalIntegral.integral_of_le huv]
-  refine le_trans (le_of_eq ?_) key
-  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
-  simp [abs_mul, Real.norm_eq_abs]
+/-! ### The trace inequality on a panel -/
 
 /-- **The trace inequality on a panel** `[u, w]`: for `v` continuous on `[u, w]` with
 `v t - v s = ∫_s^t g` on `[u, w]` and `g` square integrable (the absolutely continuous

@@ -1,55 +1,6 @@
 namespace = "AtkinsonHan.Chapter08"
 
 [[node]]
-id = "gradFn"
-
-[[node]]
-id = "gradFn_apply"
-
-[[node]]
-id = "gradFn_eq_sum"
-
-[[node]]
-id = "aestronglyMeasurable_gradFn"
-
-[[node]]
-id = "norm_gradFn_le_sum"
-
-[[node]]
-id = "norm_le_norm_gradFn"
-
-[[node]]
-id = "inner_gradFn"
-
-[[node]]
-id = "memLp_gradFn"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.2"
-
-[[node]]
-id = "gradFn_add"
-
-[[node]]
-id = "gradFn_smul"
-
-[[node]]
-id = "gradFn_combo"
-
-[[node]]
-id = "gradFn_sub"
-
-[[node]]
-id = "gradNorm_eq_zero_of_gradFn_ae_eq_zero"
-
-[[node]]
-id = "_root_.MeasureTheory.Lp.norm_rpow_eq_integral"
-
-[[node]]
-id = "gradNorm_rpow_le_integral"
-
-[[node]]
-id = "integral_norm_gradFn_rpow_le"
-
-[[node]]
 id = "normV"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.5)"
 
@@ -74,9 +25,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.1"
 [[node]]
 id = "norm_le_normV"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.1"
-
-[[node]]
-id = "isFiniteMeasure_restrict_of_subset_ball"
 
 [[node]]
 id = "eq_of_gradFn_ae_eq"
@@ -104,9 +52,6 @@ id = "energyFunctional_le"
 [[node]]
 id = "lemma_8_8_2"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.2"
-
-[[node]]
-id = "fact_one_le_conjExponent"
 
 [[node]]
 id = "weightedDeriv"

@@ -54,26 +54,6 @@ open scoped Interval RealInnerProductSpace
 
 noncomputable section
 
-/-- The product of two square integrable functions is interval integrable. -/
-theorem intervalIntegrable_mul_of_sq {u v : ℝ} {f g : ℝ → ℝ} (hf : IntervalIntegrable f volume u v)
-    (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v) (hg : IntervalIntegrable g volume u v)
-    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
-    IntervalIntegrable (fun s => f s * g s) volume u v :=
-  ⟨((memLp_two_iff_integrable_sq hf.1.aestronglyMeasurable).2 hf2.1).integrable_mul
-      ((memLp_two_iff_integrable_sq hg.1.aestronglyMeasurable).2 hg2.1),
-    ((memLp_two_iff_integrable_sq hf.2.aestronglyMeasurable).2 hf2.2).integrable_mul
-      ((memLp_two_iff_integrable_sq hg.2.aestronglyMeasurable).2 hg2.2)⟩
-
-/-- The square of the difference of a square integrable function and a continuous one is
-interval integrable. -/
-theorem intervalIntegrable_sub_sq {u v : ℝ} {g p : ℝ → ℝ} (hg : IntervalIntegrable g volume u v)
-    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) (hp : ContinuousOn p [[u, v]]) :
-    IntervalIntegrable (fun s => (g s - p s) ^ 2) volume u v := by
-  have : (fun s => (g s - p s) ^ 2) = fun s => g s ^ 2 - 2 * (g s * p s) + p s ^ 2 := by
-    funext s; ring
-  rw [this]
-  exact (hg2.sub ((hg.mul_continuousOn hp).const_mul 2)).add (hp.pow 2).intervalIntegrable
-
 namespace BrokenPolynomial
 
 variable {n : ℕ} {x : Fin (n + 1) → ℝ} {r : ℕ}

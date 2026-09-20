@@ -5,7 +5,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/Mollification.lean` and `Numlib/Analysis/Sobolev/Density.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.Sobolev.Cutoff
+import Numlib.Analysis.Sobolev.Operators
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 
 /-!

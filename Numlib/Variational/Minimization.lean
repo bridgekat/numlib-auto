@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Convex.Function
 import Mathlib.Analysis.Convex.Strong
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Topology.Semicontinuity.Basic
 
 /-!
@@ -48,6 +49,34 @@ theorem IsCoerciveFunctionalOn.of_isBounded {f : V → ℝ} {K : Set V} (hK : Is
 theorem IsCoerciveFunctionalOn.mono {f : V → ℝ} {K K' : Set V} (h : IsCoerciveFunctionalOn f K)
     (hKK : K' ⊆ K) : IsCoerciveFunctionalOn f K' :=
   fun M => (h M).imp fun _ hR x hx => hR x (hKK hx)
+
+/-- **A functional bounded below by `c ‖x‖^p − C ‖x‖` with `c > 0`, `p > 1`, is coercive**
+(`IsCoerciveFunctionalOn`, [han2009theoretical] Definition 3.3.9): the power beats the linear
+term. -/
+theorem isCoerciveFunctionalOn_of_rpow_sub_mul_le {f : V → ℝ} {K : Set V} {c C r : ℝ}
+    (hc : 0 < c) (hr : 1 < r)
+    (hf : ∀ x ∈ K, c * ‖x‖ ^ r - C * ‖x‖ ≤ f x) : IsCoerciveFunctionalOn f K := by
+  intro M
+  have hr1 : 0 < r - 1 := by linarith
+  refine ⟨max 1 (max M ((max (C + 1) 0 / c) ^ (1 / (r - 1)))), fun x hx hxR ↦ ?_⟩
+  have h1 : 1 ≤ ‖x‖ := (le_max_left _ _).trans hxR
+  have hM : M ≤ ‖x‖ := ((le_max_left _ _).trans (le_max_right _ _)).trans hxR
+  have hA : (max (C + 1) 0 / c) ^ (1 / (r - 1)) ≤ ‖x‖ :=
+    ((le_max_right _ _).trans (le_max_right _ _)).trans hxR
+  -- `c ‖x‖^{r−1} ≥ C + 1`
+  have hpow : max (C + 1) 0 / c ≤ ‖x‖ ^ (r - 1) := by
+    have := Real.rpow_le_rpow (Real.rpow_nonneg (by positivity) _) hA hr1.le
+    rwa [← Real.rpow_mul (by positivity), one_div_mul_cancel hr1.ne', Real.rpow_one] at this
+  have hkey : C + 1 ≤ c * ‖x‖ ^ (r - 1) := by
+    rw [div_le_iff₀ hc] at hpow
+    linarith [le_max_left (C + 1) 0]
+  have hsplit : ‖x‖ ^ r = ‖x‖ ^ (r - 1) * ‖x‖ := by
+    rw [← Real.rpow_add_one (by positivity : ‖x‖ ≠ 0)]
+    ring_nf
+  calc M ≤ ‖x‖ := hM
+    _ ≤ (c * ‖x‖ ^ (r - 1) - C) * ‖x‖ := by nlinarith
+    _ = c * ‖x‖ ^ r - C * ‖x‖ := by rw [hsplit]; ring
+    _ ≤ f x := hf x hx
 
 end Coercive
 
@@ -210,6 +239,25 @@ theorem StrongConvexOn.isCoerciveFunctionalOn {K : Set V} {f : V → ℝ} {m : �
     rw [hid] at hmul
     linarith
   nlinarith [mul_le_mul_of_nonneg_left hlin hspos.le, le_abs_self M, abs_nonneg M]
+
+/-- Strong convexity on the whole space restricts to any convex set. -/
+theorem StrongConvexOn.mono_of_univ {K : Set V} {f : V → ℝ} {m : ℝ}
+    (hf : StrongConvexOn Set.univ m f) (hK : Convex ℝ K) : StrongConvexOn K m f :=
+  ⟨hK, fun x _ y _ _ _ hs ht hst ↦ hf.2 (Set.mem_univ x) (Set.mem_univ y) hs ht hst⟩
+
+/-- A strongly convex continuous functional is coercive on any nonempty set: the local lower
+bound that `StrongConvexOn.isCoerciveFunctionalOn` asks for comes from continuity at a point. -/
+theorem StrongConvexOn.isCoerciveFunctionalOn_of_continuous {K : Set V} {f : V → ℝ} {m : ℝ}
+    (hf : StrongConvexOn K m f) (hm : 0 < m) (hne : K.Nonempty) (hc : Continuous f) :
+    IsCoerciveFunctionalOn f K := by
+  obtain ⟨x₀, hx₀⟩ := hne
+  obtain ⟨r, hr, hball⟩ : ∃ r > 0, ∀ x ∈ Metric.ball x₀ r, f x₀ - 1 < f x := by
+    have h := (hc.tendsto x₀).eventually (lt_mem_nhds (show f x₀ - 1 < f x₀ by linarith))
+    rw [Metric.eventually_nhds_iff_ball] at h
+    exact h
+  refine hf.isCoerciveFunctionalOn hm hx₀ hr ⟨f x₀ - 1, ?_⟩
+  rintro _ ⟨x, ⟨-, hxb⟩, rfl⟩
+  exact (hball x hxb).le
 
 variable [FiniteDimensional ℝ V]
 

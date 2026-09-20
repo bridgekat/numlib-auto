@@ -107,3 +107,9 @@ id = "dotProduct_mulVec_tridiagonalToeplitz_pos"
 
 [[node]]
 id = "isMMatrix_smul_tridiagonalToeplitz"
+
+[[node]]
+id = "symmTridiagonalToeplitz_mulVec_apply"
+
+[[node]]
+id = "symmTridiagonalToeplitz_mulVec_apply'"

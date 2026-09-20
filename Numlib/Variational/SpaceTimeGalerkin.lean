@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.PDE.Transport
 import Numlib.Approximation.BrokenInterpolation
 import Numlib.Variational.Evolution
@@ -85,36 +86,6 @@ theorem hasDerivWithinAt_interp (hnode : BrokenPolynomial.IsNodes x r node) {u u
 
 end Variational
 
-/-! ### The partial derivatives of a classical solution along the coordinate lines -/
-
-namespace Transport
-
-/-- On a product region, the first partial derivative is the derivative of the horizontal
-slice `y ↦ u y τ` within the first factor. -/
-theorem HasPartialsOn.hasDerivWithinAt_fst {s t : Set ℝ} {u ux ut : ℝ → ℝ → ℝ}
-    (h : HasPartialsOn (s ×ˢ t) u ux ut) {y τ : ℝ} (hy : y ∈ s) (hτ : τ ∈ t) :
-    HasDerivWithinAt (fun y => u y τ) (ux y τ) s y := by
-  have h0 := h (y, τ) ⟨hy, hτ⟩
-  have hline : HasDerivWithinAt (fun y : ℝ => (y, τ)) (1, 0) s y :=
-    ((hasDerivAt_id y).prodMk (hasDerivAt_const y τ)).hasDerivWithinAt
-  have h2 := h0.comp_hasDerivWithinAt y hline (fun z hz => Set.mk_mem_prod hz hτ)
-  simp only [partialsCLM_apply, mul_one, mul_zero, add_zero, Function.comp_def] at h2
-  exact h2
-
-/-- On a product region, the second partial derivative is the derivative of the vertical
-slice `τ ↦ u y τ` within the second factor. -/
-theorem HasPartialsOn.hasDerivWithinAt_snd {s t : Set ℝ} {u ux ut : ℝ → ℝ → ℝ}
-    (h : HasPartialsOn (s ×ˢ t) u ux ut) {y τ : ℝ} (hy : y ∈ s) (hτ : τ ∈ t) :
-    HasDerivWithinAt (fun τ => u y τ) (ut y τ) t τ := by
-  have h0 := h (y, τ) ⟨hy, hτ⟩
-  have hline : HasDerivWithinAt (fun τ : ℝ => (y, τ)) (0, 1) t τ :=
-    ((hasDerivAt_const τ y).prodMk (hasDerivAt_id τ)).hasDerivWithinAt
-  have h2 := h0.comp_hasDerivWithinAt τ hline (fun z hz => Set.mk_mem_prod hy hz)
-  simp only [partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
-  exact h2
-
-end Transport
-
 /-! ### The classical derivative of an `H¹` function is its weak derivative -/
 
 open SobolevInterval in
@@ -146,17 +117,6 @@ theorem SobolevInterval.ae_eq_deriv_one_of_hasDerivAt {a b : ℝ} (hab : a < b) 
     ring
   exact (hf' y hyI).unique (h1.congr_of_eventuallyEq hev)
 
-/-- A curve with values in a submodule that is differentiable in the ambient space, with a
-derivative in the submodule, is differentiable as a curve in the submodule. -/
-theorem HasDerivWithinAt.codRestrict_submodule {K : Type*} [NormedAddCommGroup K]
-    [NormedSpace ℝ K] (V : Submodule ℝ K) {W : ℝ → K} {W' : K} {s : Set ℝ} {t : ℝ}
-    (h : HasDerivWithinAt W W' s t) (hW : ∀ t, W t ∈ V) (hW' : W' ∈ V) :
-    HasDerivWithinAt (fun t => (⟨W t, hW t⟩ : V)) ⟨W', hW'⟩ s t := by
-  rw [hasDerivWithinAt_iff_tendsto_slope] at h ⊢
-  rw [tendsto_subtype_rng]
-  refine h.congr' (Filter.Eventually.of_forall fun b => ?_)
-  simp [slope]
-
 namespace Variational
 
 open BrokenPolynomial
@@ -166,30 +126,6 @@ variable {n : ℕ} {x : Fin (n + 1) → ℝ} {r : ℕ} [hx : Fact (StrictMono x)
 section FixedTime
 
 variable {a₀ : ℝ → ℝ}
-
-/-- **The dissipativity of the transport form on a subspace of `V_h^{in}`**: if
-`c ≤ a₀ - a'/2` on `[x 0, x n]` and every `v ∈ V` is continuous with `v(x 0) = 0`, then
-`c ‖v‖² + ½ a(x n) v(x n)² ≤ b(v, v)` for `v ∈ V`; the inflow term of
-`transportForm_apply_self_of_continuous` vanishes. -/
-theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
-    (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
-    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
-    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) (hn : 0 < n) {c : ℝ}
-    (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ a₀ s - deriv a s / 2)
-    {V : Submodule ℝ (BrokenPolynomial x r)}
-    (hV : ∀ v ∈ V, v ∈ continuous x r ∧ traceRight v ⟨0, hn⟩ = 0) (v : V) :
-    c * ‖v‖ ^ 2 + a (x (Fin.last n)) * traceLeft (v : BrokenPolynomial x r) (Fin.last n) ^ 2 / 2
-      ≤ (transportForm x r ha ha₀).restrict V v v := by
-  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
-  have hreac : IntervalIntegrable (fun s => a₀ s - deriv a s / 2) volume (x 0) (x (Fin.last n)) :=
-    ha₀.sub (((by rwa [uIcc_of_le hle] :
-      ContinuousOn (deriv a) [[x 0, x (Fin.last n)]]).intervalIntegrable).div_const 2)
-  have key := transportForm_apply_self_of_continuous ha ha₀ hd hd' hn (hV v v.2).1
-  have hlow := mul_norm_sq_le_sum_integral hreac hc (v : BrokenPolynomial x r)
-  rw [SesqForm.restrict_apply, key, (hV v v.2).2, ← Submodule.norm_coe]
-  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
-    sub_zero]
-  linarith
 
 /-- **The consistency error of the transport form at a fixed time.** For the exact solution
 `u` of `ut + a ux + a₀ u = f` (pointwise on `[x 0, x n]`), with `ux` almost everywhere equal to
@@ -1249,25 +1185,6 @@ theorem dg_defect_le (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fi
   have hsum : (A₀ + A' + A' * h * (2 * r * (r + 1) / hmin)) * Eu * ‖v‖
       = A₀ * Eu * ‖v‖ + A' * Eu * ‖v‖ + A' * h * (2 * r * (r + 1) / hmin) * Eu * ‖v‖ := by ring
   rw [hsum]
-  linarith
-
-/-- **The dissipativity of the upwind form** ([quarteroni2000numerical] §13.10.1): if
-`c ≤ a₀ - a'/2` on `[x 0, x n]` then
-`c ‖v‖² + ½ a(x n) v⁻(x n)² + ½ ∑ᵢ a(xᵢ) [v]ᵢ² ≤ b^{DG}(v, v)` for every broken polynomial `v`. -/
-theorem le_dgUpwindForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
-    (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
-    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
-    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) {c : ℝ}
-    (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ a₀ s - deriv a s / 2) (v : BrokenPolynomial x r) :
-    c * ‖v‖ ^ 2 + a (x (Fin.last n)) * traceLeft v (Fin.last n) ^ 2 / 2
-        + ∑ i : Fin n, a (x i.castSucc) * jump v i ^ 2 / 2
-      ≤ dgUpwindForm x r ha ha₀ v v := by
-  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
-  have hreac : IntervalIntegrable (fun s => a₀ s - deriv a s / 2) volume (x 0) (x (Fin.last n)) :=
-    ha₀.sub (((by rwa [uIcc_of_le hle] :
-      ContinuousOn (deriv a) [[x 0, x (Fin.last n)]]).intervalIntegrable).div_const 2)
-  have hlow := mul_norm_sq_le_sum_integral hreac hc v
-  rw [dgUpwindForm_apply_self ha ha₀ hd hd' v]
   linarith
 
 /-- **The traces of the projection error at the nodes**, for `U ∈ H^{r+1}(x 0, x n)` with

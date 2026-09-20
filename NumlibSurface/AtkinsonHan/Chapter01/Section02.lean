@@ -901,109 +901,6 @@ open Set TopologicalSpace
 
 variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) The primitive
-`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` lies in `L^p(a, b)`, being continuous on `[a, b]`. -/
-theorem memLp_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
-    MemLp (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t) p
-      (volume.restrict (Ioo a b)) := by
-  have hint : IntegrableOn (SobolevIntervalLp.deriv u 0) (Icc a b) :=
-    (SobolevIntervalLp.integrableOn_deriv_Ioo u 0).integrableOn_Icc_of_Ioo
-  have hy₀ : (a + b) / 2 ∈ Icc a b := ⟨by linarith, by linarith⟩
-  have hF : ContinuousOn (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t)
-      (Icc a b) :=
-    continuousOn_integral_of_intervalIntegrable hy₀
-      (fun x hx y hy ↦ (hint.mono_set (uIcc_subset_Icc hx hy)).intervalIntegrable) 0
-  exact hF.memLp_top_restrict_Ioo.mono_exponent le_top
-
-/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) **The primitive
-`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` as an element of `W^{m+1,p}(a, b)`**: its components
-are the primitive followed by the components of `u`. A right inverse of the shift
-`SobolevIntervalLp.shift` (`shift_sobolevPrimitive`). -/
-def sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
-    SobolevIntervalLp (m + 1) p (Opens.Ioo a b) :=
-  SobolevIntervalLp.mk
-    (Fin.cons ((memLp_sobolevPrimitive hlt u).toLp _) fun j ↦ SobolevIntervalLp.deriv u j)
-    (by
-      have hy₀ : (a + b) / 2 ∈ Opens.Ioo a b := ⟨by linarith, by linarith⟩
-      have hw : HasWeakDerivOn (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t)
-          (SobolevIntervalLp.deriv u 0) (Opens.Ioo a b) :=
-        (SobolevIntervalLp.locallyIntegrableOn_deriv u 0).hasWeakDerivOn_integral
-          (SobolevIntervalLp.ordConnected_coe_Ioo a b) hy₀ 0
-      intro j
-      refine Fin.cases ?_ (fun i ↦ ?_) j
-      · simp only [Fin.val_zero]
-        exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _
-          ((Lp.memLp _).locallyIntegrableOn Fact.out)
-      · simp only [Fin.val_succ]
-        refine (hw.hasWeakIteratedDerivOn_succ
-          (SobolevIntervalLp.hasWeakIteratedDerivOn_deriv u i)).congr_ae ?_ (EventuallyEq.refl _ _)
-        exact (memLp_sobolevPrimitive hlt u).coeFn_toLp.symm)
-
-/-- The shift of the primitive of `u` is `u`. -/
-theorem shift_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
-    SobolevIntervalLp.shift (sobolevPrimitive hlt u) = u :=
-  SobolevIntervalLp.ext fun _ ↦ rfl
-
-/-- The inclusion `C^{m+1}[a, b] → W^{m+1,p}(a, b)` intertwines the two shifts `u ↦ u'`. -/
-theorem shift_toSobolevIntervalLp (hlt : a < b) (v : ContDiffMapIcc hlt.le (m + 1)) :
-    SobolevIntervalLp.shift (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt (m + 1) v)
-      = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m v.shift :=
-  SobolevIntervalLp.ext fun j ↦ by
-    rw [SobolevIntervalLp.deriv_shift, ContDiffMapIcc.deriv_toSobolevIntervalLp,
-      ContDiffMapIcc.deriv_toSobolevIntervalLp]
-    exact (MemLp.toLp_eq_toLp_iff _ _).2 (by rw [ContDiffMapIcc.deriv_shift])
-
-/-- (General.) **The inclusion `C[a, b] → L^p(a, b)` is not surjective**: the step function
-`x ↦ 1` for `x > (a + b)/2`, `-1` otherwise, has no continuous representative on `[a, b]`. -/
-theorem not_surjective_toSobolevIntervalLp_zero (hlt : a < b) :
-    ¬ Function.Surjective (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt 0) := by
-  obtain ⟨c, hc⟩ : ∃ c, c = (a + b) / 2 := ⟨_, rfl⟩
-  have hac : a < c := by rw [hc]; linarith
-  have hcb : c < b := by rw [hc]; linarith
-  have hsm : MemLp (fun x : ℝ ↦ if c < x then (1 : ℝ) else -1) p (volume.restrict (Ioo a b)) := by
-    refine MemLp.of_bound ?_ 1 (Eventually.of_forall fun x ↦ ?_)
-    · exact (Measurable.ite measurableSet_Ioi measurable_const
-        measurable_const).aestronglyMeasurable
-    · split_ifs <;> simp
-  obtain ⟨u, hu⟩ :=
-    ((memSobolevIntervalLp_zero_iff (I := Opens.Ioo a b)).2 hsm).exists_sobolevIntervalLp
-  rintro hsurj
-  obtain ⟨v, hv⟩ := hsurj u
-  have h2 : SobolevIntervalLp.fn u =ᵐ[volume.restrict (Ioo a b)] v.extend := by
-    rw [← hv]
-    exact ContDiffMapIcc.fn_toSobolevIntervalLp_ae_eq hlt.le hlt v
-  have hae : (fun x : ℝ ↦ if c < x then (1 : ℝ) else -1) =ᵐ[volume.restrict (Ioo a b)]
-      v.extend := hu.symm.trans h2
-  have hpos : EqOn (fun _ ↦ (1 : ℝ)) v.extend (Icc c b) := by
-    refine eqOn_Icc_of_ae_eq hcb continuousOn_const v.extend.continuous.continuousOn ?_
-    filter_upwards [ae_restrict_of_ae_restrict_of_subset (Ioo_subset_Ioo hac.le le_rfl) hae,
-      ae_restrict_mem measurableSet_Ioo] with t ht htI
-    rw [← ht, ite_eq_left htI.1]
-  have hneg : EqOn (fun _ ↦ (-1 : ℝ)) v.extend (Icc a c) := by
-    refine eqOn_Icc_of_ae_eq hac continuousOn_const v.extend.continuous.continuousOn ?_
-    filter_upwards [ae_restrict_of_ae_restrict_of_subset (Ioo_subset_Ioo le_rfl hcb.le) hae,
-      ae_restrict_mem measurableSet_Ioo] with t ht htI
-    rw [← ht, ite_eq_right (not_lt.2 htI.2.le)]
-  have h1 := hpos (left_mem_Icc.2 hcb.le)
-  have h2 := hneg (right_mem_Icc.2 hac.le)
-  simp only at h1 h2
-  linarith
-
-/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) **The inclusion
-`C^m[a, b] → W^{m,p}(a, b)` is not surjective, for every `m` and every `1 ≤ p ≤ ∞`**: by
-induction on `m`, the primitive `sobolevPrimitive` lifting an element of `W^{m,p}(a, b)` outside
-the range of `C^m[a, b]` to one of `W^{m+1,p}(a, b)` outside the range of `C^{m+1}[a, b]`. -/
-theorem not_surjective_toSobolevIntervalLp (hlt : a < b) (m : ℕ) :
-    ¬ Function.Surjective (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m) := by
-  induction m with
-  | zero => exact not_surjective_toSobolevIntervalLp_zero hlt
-  | succ m ih =>
-    intro hsurj
-    refine ih fun u ↦ ?_
-    obtain ⟨v, hv⟩ := hsurj (sobolevPrimitive hlt u)
-    exact ⟨v.shift, by rw [← shift_toSobolevIntervalLp, hv, shift_sobolevPrimitive]⟩
-
-
 /-! #### `Cᵐ[a, b]` with the Sobolev norm -/
 
 /-- **Example 1.2.28 (b), the space**: `Cᵐ[a, b]` carrying the alternative norm
@@ -1079,9 +976,10 @@ theorem denseRange_toSobolevₗᵢ (hp : p ≠ ⊤) : DenseRange (toSobolevₗ�
   (ContDiffMapIcc.denseRange_toSobolevIntervalLp hlt.le hlt hp m).comp
     (equiv hlt m p).surjective.denseRange (ContDiffMapIcc.toSobolevIntervalLp p _ hlt m).continuous
 
-/-- The inclusion is not surjective (`not_surjective_toSobolevIntervalLp`), for every `p`. -/
+/-- The inclusion is not surjective (`ContDiffMapIcc.not_surjective_toSobolevIntervalLp`), for
+every `p`. -/
 theorem not_surjective_toSobolevₗᵢ : ¬ Function.Surjective (toSobolevₗᵢ hlt m p) := fun h ↦
-  not_surjective_toSobolevIntervalLp (p := p) hlt m fun u ↦ by
+  ContDiffMapIcc.not_surjective_toSobolevIntervalLp (p := p) hlt m fun u ↦ by
     obtain ⟨f, hf⟩ := h u
     exact ⟨equiv hlt m p f, hf⟩
 

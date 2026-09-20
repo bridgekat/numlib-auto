@@ -17,16 +17,10 @@ id = "continuous_kernel"
 id = "norm_rpow_le_kernel"
 
 [[node]]
-id = "one_add_rpow_le"
-
-[[node]]
 id = "kernel_le"
 
 [[node]]
 id = "kernel_eq_norm_rpow"
-
-[[node]]
-id = "strictConvexOn_norm_rpow"
 
 [[node]]
 id = "strictConvexOn_kernel"

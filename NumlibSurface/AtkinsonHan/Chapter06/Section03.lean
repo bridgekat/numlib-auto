@@ -301,16 +301,6 @@ def gridValues (N : ℕ) (u : ℝ × ℝ → ℝ) (hx ht : ℝ) (m : ℕ) : Fin 
 theorem gridValues_apply (N : ℕ) (u : ℝ × ℝ → ℝ) (hx ht : ℝ) (m : ℕ) (j : Fin (N + 1)) :
     gridValues N u hx ht m j = u (((j : ℕ) + 1) * hx, m * ht) := rfl
 
-/-- The three-term row of `tridiag(a, b, a)` on `Fin (N + 1)`, the boundary terms absent in the
-first and last rows: `Matrix.tridiagonalOf_mulVec` for the constant bands. -/
-private theorem symmTridiagonalToeplitz_mulVec_apply' {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
-    (i : Fin (N + 1)) :
-    (symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i
-      = (if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0) + b * v i
-        + (if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0) := by
-  rw [symmTridiagonalToeplitz_eq_tridiagonalToeplitz, tridiagonalToeplitz_eq_tridiagonalOf,
-    tridiagonalOf_mulVec]
-
 /-- On the grid values of a function vanishing at `x = 0` and `x = π = (N + 2) h_x`, the row of
 `tridiag(a, b, a)` reads uniformly `a u (x_j - h_x) + b u (x_j) + a u (x_j + h_x)`. -/
 private theorem symmTridiagonalToeplitz_mulVec_gridValues {N : ℕ} {u : ℝ × ℝ → ℝ} {hx ht : ℝ}
@@ -366,32 +356,6 @@ private noncomputable def toLinfty {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N +
 private theorem toLinfty_apply {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ)
     (v : Fin (N + 1) → ℝ) : toLinfty A v = A *ᵥ v := by
   rw [toLinfty, LinearMap.coe_toContinuousLinearMap', Matrix.toLin'_apply]
-
-/-- The powers of an operator of norm at most `1` have norm at most `1`. -/
-private theorem norm_pow_le_one {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    {Q : E →L[ℝ] E} (hQ : ‖Q‖ ≤ 1) (m : ℕ) : ‖Q ^ m‖ ≤ 1 := by
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · rw [pow_zero]
-    exact ContinuousLinearMap.norm_id_le
-  · exact (norm_pow_le' Q hm).trans (pow_le_one₀ (norm_nonneg _) hQ)
-
-/-- The `ℓ²` operator norm of a symmetric matrix whose quadratic form is enclosed in `[-M, M]` is
-at most `M`: one half of `Matrix.IsHermitian.l2_opNorm_eq`, through Rayleigh quotients. -/
-private theorem norm_toEuclideanCLM_le {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {M : ℝ}
-    (hM : 0 ≤ M) (hb : (toEuclideanLin A).IsSymmetricBoundedBy (-M) M) :
-    ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ M := by
-  set Tc : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n) :=
-    LinearMap.toContinuousLinearMap (toEuclideanLin A) with hTc
-  have hTsymm : (Tc : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric :=
-    hb.isSymmetric
-  rw [l2_opNorm_toEuclideanCLM, l2_opNorm_eq_norm_toEuclideanLin, ← hTc,
-    ContinuousLinearMap.norm_eq_iSup_rayleighQuotient Tc hTsymm]
-  refine ciSup_le fun x => ?_
-  rcases eq_or_ne x 0 with rfl | hx
-  · simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using hM
-  · have h := hb.rayleigh_mem_Icc hx
-    rw [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf, abs_le]
-    exact ⟨h.1, h.2⟩
 
 /-- The Euclidean norm of a vector of `ℝ^{N+1}` is at most `√(N + 1)` times its maximum norm. -/
 private theorem norm_toLp_le {N : ℕ} (v : Fin (N + 1) → ℝ) {δ : ℝ} (hδ : 0 ≤ δ)
@@ -564,7 +528,7 @@ theorem example_6_3_3 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {h
     (N := Nt) hht0.le hδ (le_of_eq (by rw [hht]; field_simp))
     (fun k _ => by rw [hv k, hQ, toLinfty_apply])
     (fun k _ => by rw [gridValues_succ_forward hT hNt hht u f k, hQ, toLinfty_apply])
-    hv0.symm (fun k _ => norm_pow_le_one hQ1 k)
+    hv0.symm (fun k _ => ContinuousLinearMap.norm_pow_le_one hQ1 k)
     (fun k hk => (pi_norm_le_iff_of_nonneg hδ).2 fun j => by
       rw [Real.norm_eq_abs]
       exact abs_forwardTrunc_le hν hT hNt hhx hht hr hu hk j) hm
@@ -624,7 +588,9 @@ theorem example_6_3_3_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     (left_mem_Icc.2 Real.pi_pos.le) 0 (left_mem_Icc.2 hT.le))
   set Q : EuclideanSpace ℝ (Fin (N + 1)) →L[ℝ] EuclideanSpace ℝ (Fin (N + 1)) :=
     toEuclideanCLM (𝕜 := ℝ) (symmTridiagonalToeplitz (N + 1) r (1 - 2 * r)) with hQ
-  have hQ1 : ‖Q‖ ≤ 1 := norm_toEuclideanCLM_le zero_le_one (isSymmetricBoundedBy_forward hr0 hr2)
+  have hQ1 : ‖Q‖ ≤ 1 :=
+    norm_toEuclideanCLM_le_of_isSymmetricBoundedBy zero_le_one
+      (isSymmetricBoundedBy_forward hr0 hr2)
   set c := (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) with hc
   have hc0 : 0 ≤ c := by positivity
   have hδ : 0 ≤ Real.sqrt ((N : ℝ) + 1) * c := by positivity
@@ -637,7 +603,7 @@ theorem example_6_3_3_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     (fun k _ => by
       rw [gridValues_succ_forward hT hNt hht u f k, WithLp.toLp_add, WithLp.toLp_add,
         WithLp.toLp_smul, WithLp.toLp_smul, hQ, toEuclideanCLM_toLp])
-    (by rw [hv0]) (fun k _ => norm_pow_le_one hQ1 k)
+    (by rw [hv0]) (fun k _ => ContinuousLinearMap.norm_pow_le_one hQ1 k)
     (fun k hk => norm_toLp_le _ hc0 fun j => abs_forwardTrunc_le hν hT hNt hhx hht hr hu hk j) hm
   rw [← WithLp.toLp_sub, one_mul, ← mul_assoc] at h
   have key := sqrt_mul_sum_sq_le hhx (gridValues N u hx ht m - v m) (C := T * c) (by positivity)
@@ -879,7 +845,7 @@ theorem example_6_3_4 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {h
     (fun k _ => by
       rw [hQ, toLinfty_apply, ← Matrix.mulVec_smul, ← Matrix.mulVec_smul, ← Matrix.mulVec_add,
         ← Matrix.mulVec_add, ← mulVec_gridValues_succ_backward hT hNt hht u f k, hinv])
-    hv0.symm (fun k _ => norm_pow_le_one hQ1 k)
+    hv0.symm (fun k _ => ContinuousLinearMap.norm_pow_le_one hQ1 k)
     (fun k hk => (norm_mulVec_inv_backward_le hr0 _).trans
       ((pi_norm_le_iff_of_nonneg hc0).2 fun j => by
         rw [Real.norm_eq_abs]
@@ -932,7 +898,7 @@ theorem example_6_3_4_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
       rw [hQ, toEuclideanCLM_toLp, ← WithLp.toLp_smul, ← WithLp.toLp_smul, ← WithLp.toLp_add,
         ← WithLp.toLp_add, ← Matrix.mulVec_smul, ← Matrix.mulVec_smul, ← Matrix.mulVec_add,
         ← Matrix.mulVec_add, ← mulVec_gridValues_succ_backward hT hNt hht u f k, hinv])
-    (by rw [hv0]) (fun k _ => norm_pow_le_one hQ1 k)
+    (by rw [hv0]) (fun k _ => ContinuousLinearMap.norm_pow_le_one hQ1 k)
     (fun k hk => by
       have h1 : ‖(WithLp.toLp 2 (Q₁⁻¹ *ᵥ backwardTrunc N u f hx ht r k) :
           EuclideanSpace ℝ (Fin (N + 1)))‖

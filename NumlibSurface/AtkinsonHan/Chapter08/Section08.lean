@@ -25,7 +25,9 @@ The section studies the boundary value problem `−div [(1 + |∇u|²)^{p/2 − 
   `C_0^∞(Ω)` in the `W^{1,p}(Ω)` of the multi-index formulation of Definition 7.2.2, carrying the
   `W^{1,p}` norm `‖·‖_{1,p}`; the AH surface's `AtkinsonHan.Chapter07.definition_7_2_9 1 p Ω` is
   the same closure in the tensor formulation, whose norm is equivalent but not equal;
-* `gradFn v = ∇v : Ω → ℝ^{d+1}` is the gradient as a vector-valued function, `x ↦ (∂ᵢv(x))ᵢ`;
+* `∇v : Ω → ℝ^{d+1}`, the gradient as a vector-valued function `x ↦ (∂ᵢv(x))ᵢ`, is the
+  backbone's `SobolevMultiIndex.gradFn v`, with its `L^p` membership and the comparison of the
+  Euclidean and `ℓ^p` gradient norms in `Numlib/Analysis/Sobolev/Cutoff.lean`;
 * `normV v = ‖v‖_V = (∫_Ω |∇v|^p)^{1/p}` is the norm (8.8.5), and `energyFunctional f`,
   `formA` are `E` and the form `a(w; u, v) = ∫_Ω (1 + |∇w|²)^{p/2 − 1} ∇u · ∇v` of (8.8.7);
 * `f ∈ V'` is any element of the dual `StrongDual ℝ V` — the book's `V' = W^{-1,p*}(Ω)`, and its
@@ -68,196 +70,7 @@ open scoped ENNReal InnerProductSpace
 
 namespace AtkinsonHan.Chapter08
 
-/-! ### The gradient as a vector-valued function -/
-
-section GradFn
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0∞}
-
-/-- **The gradient `∇v : Ω → ℝ^N`** of `v ∈ W^{1,p}(Ω)` as a vector-valued function,
-`x ↦ (∂ᵢv(x))ᵢ` (a fixed representative). -/
-noncomputable def gradFn (v : SobolevEuclidean N 1 p Ω) (x : EuclideanSpace ℝ (Fin N)) :
-    EuclideanSpace ℝ (Fin N) :=
-  WithLp.toLp 2 fun i ↦ SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
-
-/-- The `i`-th component of `∇v` is `∂ᵢv`. -/
-@[simp]
-theorem gradFn_apply (v : SobolevEuclidean N 1 p Ω) (x : EuclideanSpace ℝ (Fin N)) (i : Fin N) :
-    gradFn v x i = SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x :=
-  rfl
-
-/-- `∇v = ∑ᵢ (∂ᵢv) eᵢ`. -/
-theorem gradFn_eq_sum (v : SobolevEuclidean N 1 p Ω) :
-    gradFn v = fun x ↦ ∑ i, SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
-      • EuclideanSpace.single i (1 : ℝ) := by
-  funext x
-  ext j
-  simp [gradFn, Pi.single_apply]
-
-/-- `∇v` is measurable. -/
-theorem aestronglyMeasurable_gradFn (v : SobolevEuclidean N 1 p Ω) :
-    AEStronglyMeasurable (gradFn v) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-  rw [gradFn_eq_sum]
-  exact Finset.aestronglyMeasurable_fun_sum
-    (μ := volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
-    (f := fun i x ↦ SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
-      • EuclideanSpace.single i (1 : ℝ)) Finset.univ fun i _ ↦
-    (Lp.aestronglyMeasurable _).smul_const _
-
-/-- `|∇v(x)| ≤ ∑ᵢ |∂ᵢv(x)|`. -/
-theorem norm_gradFn_le_sum (v : SobolevEuclidean N 1 p Ω) (x : EuclideanSpace ℝ (Fin N)) :
-    ‖gradFn v x‖ ≤ ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ := by
-  rw [gradFn_eq_sum]
-  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun i _ ↦ ?_)
-  rw [norm_smul, PiLp.norm_single, norm_one, mul_one]
-
-/-- `|∂ᵢv(x)| ≤ |∇v(x)|`. -/
-theorem norm_le_norm_gradFn (v : SobolevEuclidean N 1 p Ω) (x : EuclideanSpace ℝ (Fin N))
-    (i : Fin N) : ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ ≤ ‖gradFn v x‖ := by
-  have := PiLp.norm_apply_le (gradFn v x) i
-  rwa [gradFn_apply] at this
-
-/-- `∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv`. -/
-theorem inner_gradFn (u v : SobolevEuclidean N 1 p Ω) (x : EuclideanSpace ℝ (Fin N)) :
-    ⟪gradFn u x, gradFn v x⟫_ℝ = ∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
-      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x := by
-  simp [PiLp.inner_apply, mul_comm]
-
-/-- `∇v ∈ L^p(Ω; ℝ^N)` (the book's Exercise 8.8.2). -/
-theorem memLp_gradFn [Fact (1 ≤ p)] (v : SobolevEuclidean N 1 p Ω) :
-    MemLp (gradFn v) p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-  have hsum : MemLp (fun x ↦ ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖) p
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    memLp_finsetSum (Finset.univ : Finset (Fin N)) fun i _ ↦
-      (Lp.memLp (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i))).norm
-  exact hsum.of_le (aestronglyMeasurable_gradFn v) (Eventually.of_forall fun x ↦ by
-    rw [Real.norm_of_nonneg (Finset.sum_nonneg fun i _ ↦ norm_nonneg _)]
-    exact norm_gradFn_le_sum v x)
-
-/-- `∇(u + v) = ∇u + ∇v` almost everywhere. -/
-theorem gradFn_add (u v : SobolevEuclidean N 1 p Ω) :
-    gradFn (u + v) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      gradFn u + gradFn v := by
-  have h : ∀ i, (SobolevMultiIndex.weakDeriv (u + v) (MultiIndexLE.single i) :
-      EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)
-        + SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) := fun i ↦
-    Lp.coeFn_add _ _
-  filter_upwards [ae_all_iff.2 h] with x hx
-  ext i
-  simp [gradFn, hx i]
-
-/-- `∇(c v) = c ∇v` almost everywhere. -/
-theorem gradFn_smul (c : ℝ) (v : SobolevEuclidean N 1 p Ω) :
-    gradFn (c • v) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] c • gradFn v := by
-  have h : ∀ i, (SobolevMultiIndex.weakDeriv (c • v) (MultiIndexLE.single i) :
-      EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      c • (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) :=
-    fun i ↦ Lp.coeFn_smul _ _
-  filter_upwards [ae_all_iff.2 h] with x hx
-  ext i
-  simp [gradFn, hx i]
-
-/-- `∇(a u + b v) = a ∇u + b ∇v` almost everywhere. -/
-theorem gradFn_combo (a b : ℝ) (u v : SobolevEuclidean N 1 p Ω) :
-    gradFn (a • u + b • v) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      a • gradFn u + b • gradFn v := by
-  filter_upwards [gradFn_add (a • u) (b • v), gradFn_smul a u, gradFn_smul b v] with x h1 h2 h3
-  rw [h1, Pi.add_apply, h2, h3]
-  rfl
-
-/-- If `∇v = 0` almost everywhere then every `∂ᵢv = 0` in `L^p(Ω)`, so `‖∇v‖_{L^p} = 0`. -/
-theorem gradNorm_eq_zero_of_gradFn_ae_eq_zero [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
-    {v : SobolevEuclidean N 1 p Ω}
-    (h : gradFn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] 0) :
-    SobolevMultiIndex.gradNorm v = 0 := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  have hpr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp'
-  have hi : ∀ i, SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) = 0 := fun i ↦ by
-    refine Lp.ext ?_
-    filter_upwards [h, Lp.coeFn_zero ℝ p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))]
-      with x hx hx0
-    rw [hx0, Pi.zero_apply]
-    have := congrArg (fun z : EuclideanSpace ℝ (Fin N) ↦ z i) hx
-    simpa using this
-  rw [SobolevMultiIndex.gradNorm_eq_sum hp']
-  simp only [hi, norm_zero, Real.zero_rpow hpr.ne', Finset.sum_const_zero]
-  exact Real.zero_rpow (by positivity)
-
-/-- `‖g‖_{L^p}^p = ∫ ‖g‖^p` for `g ∈ L^p`, `0 < p < ∞`.  Belongs beside `MeasureTheory.Lp.norm_def`
-in Mathlib. -/
-theorem _root_.MeasureTheory.Lp.norm_rpow_eq_integral {X : Type*} [MeasurableSpace X]
-    {μ : Measure X} {p : ℝ≥0∞} (hp0 : p ≠ 0) (hp' : p ≠ ⊤) (g : Lp ℝ p μ) :
-    ‖g‖ ^ p.toReal = ∫ x, ‖g x‖ ^ p.toReal ∂μ := by
-  have hpr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp'
-  rw [Lp.norm_def, (Lp.memLp g).eLpNorm_eq_integral_rpow_norm hp0 hp',
-    ENNReal.toReal_ofReal (Real.rpow_nonneg (integral_nonneg fun _ ↦ by positivity) _),
-    ← Real.rpow_mul (integral_nonneg fun _ ↦ by positivity), inv_mul_cancel₀ hpr.ne',
-    Real.rpow_one]
-
-/-- **The `ℓ^p` gradient norm against the Euclidean one**:
-`‖∇v‖_{L^p}^p = ∑ᵢ ∫ |∂ᵢv|^p ≤ N ∫ |∇v|^p`. -/
-theorem gradNorm_rpow_le_integral [Fact (1 ≤ p)] (hp' : p ≠ ⊤) (v : SobolevEuclidean N 1 p Ω) :
-    SobolevMultiIndex.gradNorm v ^ p.toReal
-      ≤ N * ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ‖gradFn v x‖ ^ p.toReal := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  have hpr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp'
-  have hint : Integrable (fun x ↦ ‖gradFn v x‖ ^ p.toReal)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (memLp_gradFn v).integrable_norm_rpow hp0 hp'
-  rw [SobolevMultiIndex.gradNorm_eq_sum hp', ← Real.rpow_mul
-    (Finset.sum_nonneg fun i _ ↦ Real.rpow_nonneg (norm_nonneg _) _), one_div_mul_cancel hpr.ne',
-    Real.rpow_one]
-  calc ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ p.toReal
-      = ∑ i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-          ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ ^ p.toReal :=
-        Finset.sum_congr rfl fun i _ ↦ Lp.norm_rpow_eq_integral hp0 hp' _
-    _ ≤ ∑ _i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ‖gradFn v x‖ ^ p.toReal := by
-        refine Finset.sum_le_sum fun i _ ↦ integral_mono
-          ((Lp.memLp _).integrable_norm_rpow hp0 hp') hint fun x ↦ ?_
-        exact Real.rpow_le_rpow (norm_nonneg _) (norm_le_norm_gradFn v x i) hpr.le
-    _ = N * ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ‖gradFn v x‖ ^ p.toReal := by
-        simp
-
-/-- **The Euclidean gradient norm against the `ℓ^p` one**:
-`∫ |∇v|^p ≤ N^p ∑ᵢ ∫ |∂ᵢv|^p = N^p ‖∇v‖_{L^p}^p`. -/
-theorem integral_norm_gradFn_rpow_le [Fact (1 ≤ p)] (hp' : p ≠ ⊤) (v : SobolevEuclidean N 1 p Ω) :
-    ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ‖gradFn v x‖ ^ p.toReal
-      ≤ (N : ℝ) ^ p.toReal * SobolevMultiIndex.gradNorm v ^ p.toReal := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  have hpr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp'
-  have hr1 : 1 ≤ p.toReal := by
-    rw [← ENNReal.toReal_one]
-    exact ENNReal.toReal_mono hp' Fact.out
-  have hint : ∀ i, Integrable
-      (fun x ↦ ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ ^ p.toReal)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦
-    (Lp.memLp _).integrable_norm_rpow hp0 hp'
-  rw [SobolevMultiIndex.gradNorm_eq_sum hp', ← Real.rpow_mul
-    (Finset.sum_nonneg fun i _ ↦ Real.rpow_nonneg (norm_nonneg _) _), one_div_mul_cancel hpr.ne',
-    Real.rpow_one]
-  calc ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ‖gradFn v x‖ ^ p.toReal
-      ≤ ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (N : ℝ) ^ p.toReal
-          * ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ ^ p.toReal := by
-        refine integral_mono ((memLp_gradFn v).integrable_norm_rpow hp0 hp')
-          ((integrable_finsetSum _ fun i _ ↦ hint i).const_mul _) fun x ↦ ?_
-        calc ‖gradFn v x‖ ^ p.toReal
-            ≤ (∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖) ^ p.toReal :=
-              Real.rpow_le_rpow (norm_nonneg _) (norm_gradFn_le_sum v x) hpr.le
-          _ ≤ (N : ℝ) ^ p.toReal
-              * ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖ ^ p.toReal := by
-              have := PLaplacian.sum_rpow_le_card_rpow_mul_sum Finset.univ
-                (a := fun i ↦ ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x‖)
-                (fun i _ ↦ norm_nonneg _) hr1
-              simpa using this
-    _ = (N : ℝ) ^ p.toReal
-          * ∑ i, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ p.toReal := by
-        rw [integral_const_mul, integral_finsetSum _ fun i _ ↦ hint i]
-        congr 1
-        exact Finset.sum_congr rfl fun i _ ↦ (Lp.norm_rpow_eq_integral hp0 hp' _).symm
-
-end GradFn
+open SobolevMultiIndex
 
 /-! ### The space `V`, its norm (8.8.5), the energy (8.8.10) and the form (8.8.7) -/
 
@@ -306,6 +119,7 @@ theorem normV_le (hp' : p ≠ ⊤) (v : SobolevEuclideanZero (d + 1) 1 p Ω) :
   have hpr : 0 < p.toReal :=
     ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp'
   have h1 := integral_norm_gradFn_rpow_le hp' (v : SobolevEuclidean (d + 1) 1 p Ω)
+  simp only [Fintype.card_fin] at h1
   have h2 : SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 p Ω) ≤ ‖v‖ :=
     SobolevMultiIndex.gradNorm_le_norm _
   rw [← normV_rpow hp'] at h1
@@ -328,6 +142,7 @@ theorem norm_le_normV (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp'
   have hP := SobolevEuclideanZero.norm_le_gradNorm hp' hR hΩ v
   have h1 := gradNorm_rpow_le_integral hp' (v : SobolevEuclidean (d + 1) 1 p Ω)
+  simp only [Fintype.card_fin] at h1
   rw [← normV_rpow hp'] at h1
   have h2 : SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 p Ω)
       ≤ (d + 1 : ℝ) ^ (1 / p.toReal) * normV Ω v := by
@@ -351,21 +166,6 @@ end Energy
 section Lemmas
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} {p : ℝ≥0∞} [Fact (1 ≤ p)]
-
-omit [Fact (1 ≤ p)] in
-/-- `∇(u − v) = ∇u − ∇v` almost everywhere. -/
-theorem gradFn_sub {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u v : SobolevEuclidean N 1 p Ω) :
-    gradFn (u - v) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      gradFn u - gradFn v := by
-  rw [sub_eq_add_neg, ← neg_one_smul ℝ v]
-  filter_upwards [gradFn_add u ((-1 : ℝ) • v), gradFn_smul (-1) v] with x h1 h2
-  rw [h1, Pi.add_apply, h2, Pi.smul_apply, neg_one_smul, Pi.sub_apply, sub_eq_add_neg]
-
-/-- Lebesgue measure restricted to a bounded open set is finite. -/
-theorem isFiniteMeasure_restrict_of_subset_ball {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-    {R : ℝ} (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ ball 0 R) :
-    IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-  isFiniteMeasure_restrict.2 ((measure_mono hΩ).trans_lt measure_ball_lt_top).ne
 
 /-- **Poincaré's inequality as injectivity of the gradient**: `u, v ∈ W_0^{1,p}(Ω)` with
 `∇u = ∇v` almost everywhere are equal, `Ω` being bounded. -/
@@ -542,6 +342,7 @@ theorem energyFunctional_le (hp' : p ≠ ⊤) {R : ℝ}
   have h1 := PLaplacian.energy_le (p := p) Fact.out hp'
     (memLp_gradFn (v : SobolevEuclidean _ 1 p Ω))
   have h2 := integral_norm_gradFn_rpow_le hp' (v : SobolevEuclidean (d + 1) 1 p Ω)
+  simp only [Fintype.card_fin] at h2
   have h3 : SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 p Ω) ^ p.toReal
       ≤ ‖v‖ ^ p.toReal :=
     Real.rpow_le_rpow (SobolevMultiIndex.gradNorm_nonneg _)
@@ -593,12 +394,7 @@ section Gateaux
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The conjugate exponent of `p ≥ 1` is at least `1` (as a `Fact`, for the `L^p`–`L^{p'}`
-pairing). -/
-theorem fact_one_le_conjExponent : Fact (1 ≤ ENNReal.conjExponent p) :=
-  ⟨ENNReal.HolderConjugate.one_le (ENNReal.conjExponent p) p⟩
-
-attribute [local instance] fact_one_le_conjExponent
+attribute [local instance] ENNReal.fact_one_le_conjExponent
 
 /-- The weight `(1 + |∇u|²)^{p/2 − 1} ∂ᵢu ∈ L^{p'}(Ω)` of the derivative (8.8.11), as an element
 of `L^{p'}(Ω)` (`PLaplacian.memLp_derivWeight_mul`). -/
@@ -660,7 +456,7 @@ theorem energyDeriv_apply (hp : 1 < p) (hp' : p ≠ ⊤) {R : ℝ}
   congr 1
   refine integral_congr_ae ?_
   filter_upwards [ae_all_iff.2 fun i ↦ coeFn_weightedDeriv hp hp' hΩ u i] with x hx
-  simp only [hx, inner_gradFn, Finset.mul_sum]
+  simp only [hx, inner_gradFn, Finset.mul_sum, RCLike.inner_apply, conj_trivial]
   exact Finset.sum_congr rfl fun i _ ↦ by ring
 
 /-- `(1/c) ∫ c a b − r = ∫ a b − r` for `c ≠ 0`; stated abstractly so that the typed Sobolev

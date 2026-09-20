@@ -50,10 +50,10 @@ route of the backbone's `existsUnique_isMinOn_energy_add`.  The statement is the
   `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` is nonempty, closed and convex, the energy
   `∫_Ω (½ |∇v|² − f v)` is strictly convex, coercive and continuous, and Theorem 11.2.2 gives the
   minimization problem (11.1.6) and the variational inequality (11.1.7) exactly one solution.
-  The strong convexity of the quadratic energy of a `V`-elliptic symmetric form,
-  `SesqForm.strongConvexOn_energy`, and the coercivity of a continuous strongly convex functional,
-  `StrongConvexOn.isCoerciveFunctionalOn_of_continuous`, are proved here on the way and belong in
-  the backbone (`Numlib/Variational/LaxMilgram.lean`, `Numlib/Variational/Minimization.lean`);
+  The strong convexity of the quadratic energy of a `V`-elliptic symmetric form is the
+  backbone's `SesqForm.strongConvexOn_energy` (`Numlib/Variational/LaxMilgram.lean`) and the
+  coercivity of a continuous strongly convex functional its
+  `StrongConvexOn.isCoerciveFunctionalOn_of_continuous` (`Numlib/Variational/Minimization.lean`);
   `theorem_11_2_2_zero` is Theorem 11.2.2 at `j = 0`.
 
 Not formalized: Example 11.2.4, the simplified friction problem, whose functional
@@ -209,47 +209,8 @@ end Complex
 
 section Obstacle
 
-variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
-
-/-- The energy `E(v) = ½ a(v, v) − ℓ(v)` of a symmetric form coercive with constant `c` is
-`c`-strongly convex: `E(s x + t y) = s E(x) + t E(y) − (s t / 2) a(x − y, x − y)`.  Belongs beside
-`SesqForm.convexOn_energy` in `Numlib/Variational/LaxMilgram.lean`. -/
-theorem _root_.SesqForm.strongConvexOn_energy {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ}
-    (hc : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) : StrongConvexOn univ c (a.energy ℓ) := by
-  refine ⟨convex_univ, fun x _ y _ s t hs ht hst ↦ ?_⟩
-  have hsym : a y x = a x y := by simpa using ha y x
-  have hcoer := hc (x - y)
-  have hsub : a (x - y) (x - y) = a x x - (a x y + a y x) + a y y := by
-    simp only [map_sub, sub_apply]
-    ring
-  rw [RCLike.re_to_real, hsub, hsym] at hcoer
-  simp only [SesqForm.energy, RCLike.re_to_real, map_smulₛₗ, map_add, add_apply, smul_apply,
-    smul_eq_mul, RingHom.id_apply, starRingEnd_apply, star_trivial, hsym]
-  obtain rfl : t = 1 - s := by linarith
-  nlinarith [mul_le_mul_of_nonneg_left hcoer (mul_nonneg hs ht)]
-
-/-- A strongly convex continuous functional is coercive on any nonempty set: the local lower
-bound that `StrongConvexOn.isCoerciveFunctionalOn` asks for comes from continuity at a point.
-Belongs beside it in `Numlib/Variational/Minimization.lean`. -/
-theorem _root_.StrongConvexOn.isCoerciveFunctionalOn_of_continuous {K : Set V} {f : V → ℝ} {m : ℝ}
-    (hf : StrongConvexOn K m f) (hm : 0 < m) (hne : K.Nonempty) (hc : Continuous f) :
-    IsCoerciveFunctionalOn f K := by
-  obtain ⟨x₀, hx₀⟩ := hne
-  obtain ⟨r, hr, hball⟩ : ∃ r > 0, ∀ x ∈ Metric.ball x₀ r, f x₀ - 1 < f x := by
-    have h := (hc.tendsto x₀).eventually (lt_mem_nhds (show f x₀ - 1 < f x₀ by linarith))
-    rw [Metric.eventually_nhds_iff_ball] at h
-    exact h
-  refine hf.isCoerciveFunctionalOn hm hx₀ hr ⟨f x₀ - 1, ?_⟩
-  rintro _ ⟨x, ⟨-, hxb⟩, rfl⟩
-  exact (hball x hxb).le
-
-/-- Strong convexity on the whole space restricts to any convex set.  Belongs in
-`Mathlib/Analysis/Convex/Strong.lean`. -/
-theorem _root_.StrongConvexOn.mono_of_univ {K : Set V} {f : V → ℝ} {m : ℝ}
-    (hf : StrongConvexOn univ m f) (hK : Convex ℝ K) : StrongConvexOn K m f :=
-  ⟨hK, fun x _ y _ _ _ hs ht hst ↦ hf.2 (mem_univ x) (mem_univ y) hs ht hst⟩
-
-variable [CompleteSpace V] {a : BilinForm V} {M α : ℝ}
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
+  {a : BilinForm V} {M α : ℝ}
 
 /-- **Theorem 11.2.2 with `j = 0`**: the energy of a bounded symmetric `V`-elliptic form has
 exactly one minimizer on a nonempty closed convex set, and that minimizer is the unique solution
@@ -339,7 +300,7 @@ theorem example_11_2_3 {R : ℝ} (hR : 0 ≤ R)
           (MultiIndexLE.single i) x
           * SobolevMultiIndex.weakDeriv (w : SobolevEuclidean (d + 1) 1 2 Ω)
             (MultiIndexLE.single i) x := fun v w ↦
-    Elliptic.dirichletForm_apply Ω v w
+    (dirichletBilinForm_apply Ω v w).trans (Elliptic.dirichletForm_apply Ω v w)
   simp only [e, loadZero_apply, ge_iff_le] at hvi
   exact hvi
 

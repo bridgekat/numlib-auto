@@ -166,7 +166,7 @@ private theorem sum_ite_val_succ_eq (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
 
 /-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniformly across the first, the
 last and the interior rows. -/
-private theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
+theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
     (symmTridiagonalToeplitz n a b *ᵥ v) i
       = a * padZero v (i : ℕ) + b * padZero v ((i : ℕ) + 1) + a * padZero v ((i : ℕ) + 2) := by
   have hsplit : ∀ j : Fin n, symmTridiagonalToeplitz n a b i j * v j
@@ -935,6 +935,16 @@ theorem tridiagonalToeplitz_eq_tridiagonalOf (N : ℕ) (β δ γ : ℝ) :
   ext i j
   simp only [tridiagonalToeplitz_apply, tridiagonalOf, of_apply]
   split_ifs <;> first | rfl | omega
+
+/-- The three-term row of `tridiag(a, b, a)` on `Fin (N + 1)`, the boundary terms absent in the
+first and last rows: `Matrix.tridiagonalOf_mulVec` for the constant bands. -/
+theorem symmTridiagonalToeplitz_mulVec_apply' {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
+    (i : Fin (N + 1)) :
+    (symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i
+      = (if h : 0 < (i : ℕ) then a * v ⟨i - 1, by omega⟩ else 0) + b * v i
+        + (if h : (i : ℕ) < N then a * v ⟨i + 1, by omega⟩ else 0) := by
+  rw [symmTridiagonalToeplitz_eq_tridiagonalToeplitz, tridiagonalToeplitz_eq_tridiagonalOf,
+    tridiagonalOf_mulVec]
 
 /-- Transposition exchanges the two off-diagonals. -/
 theorem tridiagonalToeplitz_transpose (n : ℕ) (a b c : ℝ) :

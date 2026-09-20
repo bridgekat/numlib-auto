@@ -64,3 +64,9 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.12"
 [[node]]
 id = "exists_isBestApprox_of_convex"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.14"
+
+[[node]]
+id = "WeaklySeqCompactSpace.isReflexive"
+
+[[node]]
+id = "exists_isMaxOn_of_concaveOn"

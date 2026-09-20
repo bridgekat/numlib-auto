@@ -143,6 +143,229 @@ theorem coe_posHalf_unitChartCubeOpens :
 
 end Cylinder
 
+/-- The image of a set under an involution which preserves membership is the set. -/
+theorem Function.Involutive.image_eq_of_forall_mem_iff {α : Type*} {σ : α → α}
+    (hσ : Function.Involutive σ) {s : Set α} (h : ∀ x, σ x ∈ s ↔ x ∈ s) : σ '' s = s := by
+  ext x
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    exact (h y).2 hy
+  · intro hx
+    exact ⟨σ x, (h x).2 hx, hσ x⟩
+
+/-! ### Scaling the last coordinate, and the cylinders `Q_r` -/
+
+section ScaleLast
+
+variable {d : ℕ}
+
+/-- `scaleLast l : (x', x_N) ↦ (x', l x_N)`, the linear map of `ℝ^{d+1}` scaling the last
+coordinate by `l`. For `l < 0` it sends the lower half space into the upper one; the higher-order
+reflection is a linear combination of the composites with `scaleLast (l j)`. -/
+def scaleLast (l : ℝ) : EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] EuclideanSpace ℝ (Fin (d + 1)) :=
+  ContinuousLinearMap.id ℝ _ +
+    (l - 1) • (EuclideanSpace.proj (Fin.last d)).smulRight (single (Fin.last d) (1 : ℝ))
+
+/-- The coordinates of `scaleLast l x`. -/
+theorem scaleLast_apply (l : ℝ) (x : EuclideanSpace ℝ (Fin (d + 1))) (i : Fin (d + 1)) :
+    scaleLast l x i = if i = Fin.last d then l * x (Fin.last d) else x i := by
+  simp only [scaleLast, add_apply, ContinuousLinearMap.id_apply, smul_apply,
+    ContinuousLinearMap.smulRight_apply, PiLp.proj_apply, PiLp.add_apply, PiLp.smul_apply,
+    PiLp.single_apply, smul_eq_mul]
+  split_ifs with h
+  · subst h; ring
+  · ring
+
+/-- The last coordinate of `scaleLast l x` is `l x_N`. -/
+@[simp]
+theorem scaleLast_apply_last (l : ℝ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    scaleLast l x (Fin.last d) = l * x (Fin.last d) := by
+  simp [scaleLast_apply]
+
+/-- `scaleLast l` keeps the first `d` coordinates. -/
+@[simp]
+theorem init_scaleLast (l : ℝ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    init (scaleLast l x) = init x := by
+  ext i
+  simp [scaleLast_apply, Fin.castSucc_ne_last]
+
+/-- `scaleLast l ∘ scaleLast l' = scaleLast (l l')`. -/
+theorem scaleLast_scaleLast (l l' : ℝ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    scaleLast l (scaleLast l' x) = scaleLast (l * l') x := by
+  ext i
+  simp only [scaleLast_apply]
+  split_ifs with h
+  · subst h; simp [mul_assoc]
+  · rfl
+
+/-- `scaleLast 1` is the identity. -/
+theorem scaleLast_one (x : EuclideanSpace ℝ (Fin (d + 1))) : scaleLast 1 x = x := by
+  ext i
+  simp only [scaleLast_apply]
+  split_ifs with h
+  · subst h; ring
+  · rfl
+
+/-- `scaleLast l` fixes the hyperplane `x_N = 0`. -/
+theorem scaleLast_of_apply_last_eq_zero (l : ℝ) {x : EuclideanSpace ℝ (Fin (d + 1))}
+    (hx : x (Fin.last d) = 0) : scaleLast l x = x := by
+  ext i
+  simp only [scaleLast_apply]
+  split_ifs with h
+  · subst h; rw [hx, mul_zero]
+  · rfl
+
+/-- `scaleLast l` as a continuous linear equivalence, `l ≠ 0`, with inverse `scaleLast l⁻¹`. -/
+def scaleLastEquiv {l : ℝ} (hl : l ≠ 0) :
+    EuclideanSpace ℝ (Fin (d + 1)) ≃L[ℝ] EuclideanSpace ℝ (Fin (d + 1)) :=
+  ContinuousLinearEquiv.equivOfInverse (scaleLast l) (scaleLast l⁻¹)
+    (fun x ↦ by rw [scaleLast_scaleLast, inv_mul_cancel₀ hl, scaleLast_one])
+    (fun x ↦ by rw [scaleLast_scaleLast, mul_inv_cancel₀ hl, scaleLast_one])
+
+/-- `scaleLastEquiv hl` is `scaleLast l`. -/
+@[simp]
+theorem scaleLastEquiv_apply {l : ℝ} (hl : l ≠ 0) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    scaleLastEquiv hl x = scaleLast l x :=
+  rfl
+
+/-- The inverse of `scaleLastEquiv hl` is `scaleLast l⁻¹`. -/
+@[simp]
+theorem scaleLastEquiv_symm_apply {l : ℝ} (hl : l ≠ 0) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    (scaleLastEquiv hl).symm x = scaleLast l⁻¹ x :=
+  rfl
+
+/-- The linear map `scaleLast l`, for `l ≠ 0`, is a `C^1` diffeomorphism of `scaleLast l ⁻¹' Ω`
+onto `Ω` with bounded Jacobians, for every open `Ω`. -/
+theorem scaleLast_isDiffeoOnWithBoundedJacobian {l : ℝ} (hl : l ≠ 0)
+    (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+    ∃ M, IsDiffeoOnWithBoundedJacobian (scaleLast l) (scaleLast l⁻¹)
+      (scaleLast l ⁻¹' (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+      (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) M := by
+  have h := isDiffeoOnWithBoundedJacobian_affine (scaleLastEquiv hl) 0 Ω
+  simp only [scaleLastEquiv_apply, add_zero, scaleLastEquiv_symm_apply, sub_zero] at h
+  exact ⟨_, h⟩
+
+end ScaleLast
+
+section CylinderR
+
+variable {d : ℕ}
+
+/-- **The cylinder `Q_r = {(x', x_N) : ‖x'‖ < r, |x_N| < r}`** of radius `r`, an open subset of
+the unit cylinder `Q` for `r ≤ 1`, with compact closure inside `Q` for `r < 1`. The chart-local
+extensions of the higher-order theorem live on these: a chart is `C^k` on the closure of `Q` only,
+and the transport of `W^{k,p}` along it needs `C^k` on an open neighbourhood of the closure of the
+source, which `Q_r`, `r < 1`, has. -/
+def cylinder (d : ℕ) (r : ℝ) : Opens (EuclideanSpace ℝ (Fin (d + 1))) :=
+  ⟨{x | ‖init x‖ < r ∧ |x (Fin.last d)| < r},
+    (isOpen_lt continuous_init.norm continuous_const).inter
+      (isOpen_lt continuous_abs_apply_last continuous_const)⟩
+
+/-- Membership of the cylinder `Q_r`. -/
+theorem mem_cylinder {r : ℝ} {x : EuclideanSpace ℝ (Fin (d + 1))} :
+    x ∈ cylinder d r ↔ ‖init x‖ < r ∧ |x (Fin.last d)| < r :=
+  Iff.rfl
+
+/-- The cylinder `Q_r`, `r ≤ 1`, lies in the unit cylinder. -/
+theorem cylinder_subset_unitChartCube {r : ℝ} (hr : r ≤ 1) :
+    (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ unitChartCube d :=
+  fun _ hx ↦ ⟨hx.1.trans_le hr, hx.2.trans_le hr⟩
+
+/-- The closure of `Q_r` lies in the closed cylinder of radius `r`. -/
+theorem closure_cylinder_subset (r : ℝ) :
+    closure (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1))))
+      ⊆ {x | ‖init x‖ ≤ r ∧ |x (Fin.last d)| ≤ r} :=
+  closure_minimal (fun _ hx ↦ ⟨hx.1.le, hx.2.le⟩)
+    ((isClosed_le continuous_init.norm continuous_const).inter
+      (isClosed_le continuous_abs_apply_last continuous_const))
+
+/-- The closure of `Q_r`, `r < 1`, lies in the open unit cylinder `Q`. -/
+theorem closure_cylinder_subset_unitChartCube {r : ℝ} (hr : r < 1) :
+    closure (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ unitChartCube d :=
+  fun _ hx ↦ ⟨(closure_cylinder_subset r hx).1.trans_lt hr,
+    (closure_cylinder_subset r hx).2.trans_lt hr⟩
+
+/-- The cylinder `Q_r` is bounded. -/
+theorem isBounded_cylinder (r : ℝ) :
+    Bornology.IsBounded (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) := by
+  refine (isBounded_iff_forall_norm_le.2 ⟨2 * |r|, fun x hx ↦ ?_⟩)
+  have h1 : ‖x‖ ^ 2 ≤ (2 * |r|) ^ 2 := by
+    rw [norm_sq_eq_init_add_last]
+    have hr : 0 ≤ |r| := abs_nonneg r
+    have hi : ‖init x‖ ≤ |r| := hx.1.le.trans (le_abs_self r)
+    have hl : |x (Fin.last d)| ≤ |r| := hx.2.le.trans (le_abs_self r)
+    nlinarith [sq_abs (x (Fin.last d)), abs_nonneg (x (Fin.last d)), norm_nonneg (init x)]
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h1
+
+/-- The closure of `Q_r` is compact. -/
+theorem isCompact_closure_cylinder (r : ℝ) :
+    IsCompact (closure (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+  (isBounded_cylinder r).isCompact_closure
+
+/-- The cylinder has finite volume. -/
+theorem volume_cylinder_lt_top (r : ℝ) :
+    volume (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) < ⊤ :=
+  (isBounded_cylinder r).measure_lt_top
+
+/-- The cylinder is convex. -/
+theorem convex_cylinder (r : ℝ) :
+    Convex ℝ (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) := by
+  have e1 : {x : EuclideanSpace ℝ (Fin (d + 1)) | ‖init x‖ < r}
+      = initL.toLinearMap ⁻¹' ball (0 : EuclideanSpace ℝ (Fin d)) r := by
+    ext x; simp [initL_apply, mem_ball, dist_zero_right]
+  have e2 : {x : EuclideanSpace ℝ (Fin (d + 1)) | |x (Fin.last d)| < r}
+      = (EuclideanSpace.proj (Fin.last d)).toLinearMap ⁻¹' ball (0 : ℝ) r := by
+    ext x; simp [mem_ball]
+  have h1 : Convex ℝ {x : EuclideanSpace ℝ (Fin (d + 1)) | ‖init x‖ < r} := by
+    rw [e1]; exact (convex_ball _ _).linear_preimage _
+  have h2 : Convex ℝ {x : EuclideanSpace ℝ (Fin (d + 1)) | |x (Fin.last d)| < r} := by
+    rw [e2]; exact (convex_ball _ _).linear_preimage _
+  exact h1.inter h2
+
+/-- The cylinder is symmetric under the reflection across `x_N = 0`. -/
+theorem hyperplaneReflection_image_cylinder (r : ℝ) :
+    hyperplaneReflection (single (Fin.last d) (1 : ℝ)) '' (cylinder d r : Set _) = cylinder d r :=
+      by
+  refine Function.Involutive.image_eq_of_forall_mem_iff (hyperplaneReflection_hyperplaneReflection
+    _)
+    fun x ↦ ?_
+  simp [mem_cylinder, init_hyperplaneReflection_single_last,
+    hyperplaneReflection_single_last_apply_last]
+
+/-- `scaleLast l`, `|l| ≤ 1`, maps the cylinder into itself. -/
+theorem scaleLast_mem_cylinder {l r : ℝ} (hl : |l| ≤ 1) {x : EuclideanSpace ℝ (Fin (d + 1))}
+    (hx : x ∈ cylinder d r) : scaleLast l x ∈ cylinder d r := by
+  refine ⟨by rw [init_scaleLast]; exact hx.1, ?_⟩
+  rw [scaleLast_apply_last, abs_mul]
+  calc |l| * |x (Fin.last d)| ≤ 1 * |x (Fin.last d)| :=
+        mul_le_mul_of_nonneg_right hl (abs_nonneg _)
+    _ = |x (Fin.last d)| := one_mul _
+    _ < r := hx.2
+
+/-- The positive half of the cylinder for `v = e_N` is `Q_r ∩ {x_N > 0}`. -/
+theorem coe_posHalf_cylinder (r : ℝ) :
+    (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) : Set (EuclideanSpace ℝ (Fin (d + 1))))
+      = (cylinder d r : Set _) ∩ {x | 0 < x (Fin.last d)} := by
+  rw [coe_posHalf]
+  ext x
+  simp [EuclideanSpace.inner_single_last_one]
+
+/-- A compact subset of the unit cylinder lies in a cylinder `Q_r` with `r < 1`. -/
+theorem exists_lt_one_subset_cylinder {K : Set (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hK : IsCompact K) (hKQ : K ⊆ unitChartCube d) : ∃ r, r < 1 ∧ K ⊆ cylinder d r := by
+  rcases K.eq_empty_or_nonempty with rfl | hne
+  · exact ⟨0, zero_lt_one, empty_subset _⟩
+  obtain ⟨x₀, hx₀, hmax⟩ := hK.exists_isMaxOn hne
+    (continuous_init.norm.max continuous_abs_apply_last).continuousOn
+  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = max ‖init x₀‖ |x₀ (Fin.last d)| := ⟨_, rfl⟩
+  have hm1 : m < 1 := by rw [hm]; exact max_lt (hKQ hx₀).1 (hKQ hx₀).2
+  refine ⟨(m + 1) / 2, by linarith, fun x hx ↦ ?_⟩
+  have h : max ‖init x‖ |x (Fin.last d)| ≤ m := by rw [hm]; exact hmax hx
+  exact ⟨by linarith [le_max_left ‖init x‖ |x (Fin.last d)|],
+    by linarith [le_max_right ‖init x‖ |x (Fin.last d)|]⟩
+
+end CylinderR
+
 /-! ### The chart-local extension -/
 
 section ChartLocal
@@ -1106,16 +1329,6 @@ theorem hyperplaneReflection_neg {E : Type*} [NormedAddCommGroup E] [InnerProduc
   unfold hyperplaneReflection
   simp only [h]
 
-/-- The image of a set under an involution which preserves membership is the set. -/
-theorem Function.Involutive.image_eq_of_forall_mem_iff {α : Type*} {σ : α → α}
-    (hσ : Function.Involutive σ) {s : Set α} (h : ∀ x, σ x ∈ s ↔ x ∈ s) : σ '' s = s := by
-  ext x
-  constructor
-  · rintro ⟨y, hy, rfl⟩
-    exact (h y).2 hy
-  · intro hx
-    exact ⟨σ x, (h x).2 hx, hσ x⟩
-
 /-- The open rectangle `(a₁, b₁) × (a₂, b₂)` of `ℝ²`. -/
 def EuclideanSpace.rect (a₁ b₁ a₂ b₂ : ℝ) : Opens (EuclideanSpace ℝ (Fin 2)) :=
   ⟨{x | a₁ < x 0 ∧ x 0 < b₁ ∧ a₂ < x 1 ∧ x 1 < b₂}, by
@@ -1419,3 +1632,39 @@ theorem SobolevEuclidean.exists_extensionL_unitSquare :
     exact ⟨by linarith [hx.1], hx.2.1, by linarith [hx.2.2.1], by linarith [hx.2.2.2]⟩
 
 end Square
+
+/-! ### Extension domains from extension operators and extension steps -/
+
+section Steps
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- An extension operator in the shape of Theorem 9.7 makes `Ω` a `W^{1,p}`-extension domain
+(the `L^p` bound is not part of the predicate). -/
+theorem IsSobolevExtensionDomain.of_exists_extensionL {Ω : Opens 𝔼}
+    (h : ∃ (P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤) (C : ℝ),
+      ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set 𝔼)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
+          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set 𝔼)) ∧
+        ‖P u‖ ≤ C * ‖u‖) : IsSobolevExtensionDomain N p Ω := by
+  obtain ⟨P, C, hP⟩ := h
+  exact ⟨P.comp (Submodule.subtypeL ⊤), fun u ↦ (hP u.1).1⟩
+
+/-- **An extension step into an extension domain**: if `Ω ⊆ Ω₁`, `Ω₁` is a `W^{1,p}`-extension
+domain and `S : W^{1,p}(Ω) → W^{1,p}(Ω₁)` is a bounded linear map with `S u = u` on `Ω`, then `Ω`
+is a `W^{1,p}`-extension domain (`u ↦ P (S u)`). -/
+theorem IsSobolevExtensionDomain.of_extension_step {Ω Ω₁ : Opens 𝔼}
+    (hΩ₁ : IsSobolevExtensionDomain N p Ω₁) (hle : Ω ≤ Ω₁)
+    (S : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₁)
+    (hS : ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω : Set 𝔼)]
+      SobolevMultiIndex.fn u) : IsSobolevExtensionDomain N p Ω := by
+  obtain ⟨P, hP⟩ := hΩ₁
+  refine ⟨P ∘L (ContinuousLinearMap.id ℝ _).codRestrict ⊤ (fun _ ↦ Submodule.mem_top) ∘L S ∘L
+    Submodule.subtypeL ⊤, fun u ↦ ?_⟩
+  have h1 := hP ⟨S u.1, Submodule.mem_top⟩
+  exact (h1.filter_mono
+    (ae_mono (Measure.restrict_mono (SetLike.coe_subset_coe.2 hle) le_rfl))).trans (hS u.1)
+
+end Steps

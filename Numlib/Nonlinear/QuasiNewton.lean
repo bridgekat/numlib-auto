@@ -171,6 +171,12 @@ open WithLp
 noncomputable def broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) : Matrix n n ℝ :=
   Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s
 
+omit [DecidableEq n] in
+/-- Broyden's update with a zero step does not move: `broydenUpdate Q 0 y = Q`. -/
+theorem broydenUpdate_zero_left (Q : Matrix n n ℝ) (y : n → ℝ) :
+    broydenUpdate Q 0 y = Q := by
+  simp [broydenUpdate]
+
 /-- The matrix update is the operator update: `toEuclideanCLM (broydenUpdate Q s y)` is
 `Broyden.update` of `toEuclideanCLM Q` with the secant pair read in `EuclideanSpace ℝ n`. -/
 theorem toEuclideanCLM_broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) :

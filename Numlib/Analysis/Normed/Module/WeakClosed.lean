@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.LocallyConvex.WeakSpace` and
 `Mathlib.Analysis.Normed.Module.WeakDual`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Convex.Quasiconvex
 import Mathlib.Analysis.LocallyConvex.WeakDual
 import Mathlib.Analysis.LocallyConvex.WeakSpace
 import Mathlib.Analysis.Normed.Module.DoubleDual
@@ -156,6 +157,90 @@ theorem ConvexOn.lowerSemicontinuous_comp_toWeakSpace_symm {f : E → ℝ}
   hlsc.comp_toWeakSpace_symm_of_convex_le fun b => by simpa using hf.convex_le b
 
 end Mazur
+
+/-! ### Semicontinuity and quasiconvexity on a closed set, in the weak topology -/
+
+section Sublevel
+
+variable {α γ : Type*} [TopologicalSpace α] [LinearOrder γ] {s : Set α} {f : α → γ}
+
+/-- The sublevel sets of a function lower semicontinuous on a closed set are closed. -/
+theorem LowerSemicontinuousOn.isClosed_sep_le (hs : IsClosed s) (hf : LowerSemicontinuousOn f s)
+    (b : γ) : IsClosed {x ∈ s | f x ≤ b} := by
+  obtain ⟨v, hv, hsv⟩ := lowerSemicontinuousOn_iff_preimage_Iic.1 hf b
+  have : {x ∈ s | f x ≤ b} = s ∩ v := by
+    rw [← hsv]
+    ext x
+    simp
+  rw [this]
+  exact hs.inter hv
+
+/-- The superlevel sets of a function upper semicontinuous on a closed set are closed. -/
+theorem UpperSemicontinuousOn.isClosed_sep_ge (hs : IsClosed s) (hf : UpperSemicontinuousOn f s)
+    (b : γ) : IsClosed {x ∈ s | b ≤ f x} :=
+  LowerSemicontinuousOn.isClosed_sep_le (γ := γᵒᵈ) hs hf b
+
+end Sublevel
+
+section WeakTransfer
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {A : Set E}
+
+/-- The image under `toWeakSpace` of a subset of `A` cut out by a predicate is the subset of the
+image of `A` cut out by the transported predicate. -/
+theorem image_toWeakSpace_sep {p : E → Prop} :
+    toWeakSpace ℝ E '' {v ∈ A | p v} =
+      {x ∈ toWeakSpace ℝ E '' A | p ((toWeakSpace ℝ E).symm x)} := by
+  ext x
+  constructor
+  · rintro ⟨v, ⟨hvA, hvp⟩, rfl⟩
+    exact ⟨⟨v, hvA, rfl⟩, by simpa using hvp⟩
+  · rintro ⟨⟨v, hvA, rfl⟩, hp⟩
+    exact ⟨v, ⟨hvA, by simpa using hp⟩, rfl⟩
+
+/-- The image of a convex set in the weak space is convex. -/
+theorem Convex.image_toWeakSpace (hA : Convex ℝ A) : Convex ℝ (toWeakSpace ℝ E '' A) :=
+  hA.linear_image (toWeakSpace ℝ E : E →ₗ[ℝ] WeakSpace ℝ E)
+
+/-- A quasiconvex function on `A` is quasiconvex on the weak image of `A`. -/
+theorem QuasiconvexOn.comp_toWeakSpace_symm {γ : Type*} [LE γ] {f : E → γ}
+    (hf : QuasiconvexOn ℝ A f) :
+    QuasiconvexOn ℝ (toWeakSpace ℝ E '' A) (f ∘ (toWeakSpace ℝ E).symm) := by
+  intro b
+  convert (hf b).image_toWeakSpace using 1
+  exact (image_toWeakSpace_sep (p := fun v => f v ≤ b)).symm
+
+/-- A quasiconcave function on `A` is quasiconcave on the weak image of `A`. -/
+theorem QuasiconcaveOn.comp_toWeakSpace_symm {γ : Type*} [LE γ] {f : E → γ}
+    (hf : QuasiconcaveOn ℝ A f) :
+    QuasiconcaveOn ℝ (toWeakSpace ℝ E '' A) (f ∘ (toWeakSpace ℝ E).symm) := by
+  intro b
+  convert (hf b).image_toWeakSpace using 1
+  exact (image_toWeakSpace_sep (p := fun v => b ≤ f v)).symm
+
+/-- **A lower semicontinuous quasiconvex function on a closed set is weakly lower
+semicontinuous there**: its sublevel sets are closed and convex, hence weakly closed by Mazur's
+theorem. This is the relative version of `LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le`;
+closedness of `A` is what makes the sublevel sets closed in `E`. -/
+theorem LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn {γ : Type*} [LinearOrder γ]
+    {f : E → γ} (hA : IsClosed A) (hf : QuasiconvexOn ℝ A f) (hlsc : LowerSemicontinuousOn f A) :
+    LowerSemicontinuousOn (f ∘ (toWeakSpace ℝ E).symm) (toWeakSpace ℝ E '' A) := by
+  rw [← lowerSemicontinuous_restrict_iff, lowerSemicontinuous_iff_isClosed_preimage]
+  intro b
+  have hcl : IsClosed (toWeakSpace ℝ E '' {v ∈ A | f v ≤ b}) :=
+    (hf b).isClosed_image_toWeakSpace_iff.2 (hlsc.isClosed_sep_le hA b)
+  convert hcl.preimage continuous_subtype_val using 1
+  ext ⟨_, v, hv, rfl⟩
+  simp [(toWeakSpace ℝ E).injective.mem_set_image, hv]
+
+/-- **An upper semicontinuous quasiconcave function on a closed set is weakly upper semicontinuous
+there.** -/
+theorem UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn {γ : Type*} [LinearOrder γ]
+    {f : E → γ} (hA : IsClosed A) (hf : QuasiconcaveOn ℝ A f) (husc : UpperSemicontinuousOn f A) :
+    UpperSemicontinuousOn (f ∘ (toWeakSpace ℝ E).symm) (toWeakSpace ℝ E '' A) :=
+  LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn (γ := γᵒᵈ) hA hf husc
+
+end WeakTransfer
 
 section NormLsc
 

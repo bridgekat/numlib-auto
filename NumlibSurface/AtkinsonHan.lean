@@ -33,6 +33,10 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section06
 import NumlibSurface.AtkinsonHan.Chapter06.Section01
 import NumlibSurface.AtkinsonHan.Chapter06.Section02
 import NumlibSurface.AtkinsonHan.Chapter06.Section03
+import NumlibSurface.AtkinsonHan.Chapter07.Section01
+import NumlibSurface.AtkinsonHan.Chapter07.Section02
+import NumlibSurface.AtkinsonHan.Chapter07.Section03
+import NumlibSurface.AtkinsonHan.Chapter07.Section04
 import NumlibSurface.AtkinsonHan.Chapter07.Section05
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
@@ -140,6 +144,10 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 6.2 | `Chapter06.Section02` | The Lax equivalence theorem for `u' = L u`, `L` a `LinearPMap` |
 | 6.3 | `Chapter06.Section03` | Two-level schemes: consistency, stability and convergence |
 | **7** | | *Sobolev Spaces* |
+| 7.1 | `Chapter07.Section01` | Weak derivatives, in the bundled and the multi-index reading |
+| 7.2 | `Chapter07.Section02` | The spaces `W^{k,p}(Ω)`, `W_0^{k,p}(Ω)`, and their norms |
+| 7.3 | `Chapter07.Section03` | Density, extension, the Sobolev embeddings, Deny–Lions |
+| 7.4 | `Chapter07.Section04` | The Fourier characterization of `H^k(ℝ^d)` |
 | 7.5 | `Chapter07.Section05` | Periodic Sobolev spaces; the trapezoidal rule on periodic data |
 | **8** | | *Weak Formulations of Elliptic Boundary Value Problems* |
 | 8.2 | `Chapter08.Section02` | Existence and uniqueness for operator equations |
@@ -148,6 +156,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 8.5 | `Chapter08.Section05` | Linearized elasticity: Korn's inequality, Theorem 8.5.1 |
 | 8.6 | `Chapter08.Section06` | Saddle points, the primal and dual problems, the minimax equality |
 | 8.7 | `Chapter08.Section07` | The generalized (Nečas) Lax–Milgram lemma |
+| 8.8 | `Chapter08.Section08` | The `p`-Laplacian problem: existence, uniqueness, the energy |
 | **9** | | *The Galerkin Method and Its Variants* |
 | 9.1 | `Chapter09.Section01` | The Galerkin method, the Ritz formulation, Céa's inequality |
 | 9.2 | `Chapter09.Section02` | The Petrov–Galerkin method, Babuška and Xu–Zikatanov |
@@ -159,6 +168,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 10.3 | `Chapter10.Section03` | Interpolation error estimates on triangles and on a triangulation |
 | 10.4 | `Chapter10.Section04` | The Aubin–Nitsche lemma |
 | **11** | | *Elliptic Variational Inequalities and Their Numerical Approximations* |
+| 11.1 | `Chapter11.Section01` | The obstacle problem as a minimization over a convex set |
 | 11.2 | `Chapter11.Section02` | Convex minimization and the inequality equivalent to it |
 | 11.3 | `Chapter11.Section03` | Existence, uniqueness and stability for elliptic inequalities |
 | 11.4 | `Chapter11.Section04` | The discrete inequality and Falk's error estimate |
@@ -167,11 +177,13 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 12.2 | `Chapter12.Section02` | Piecewise linear collocation and its `h²` error bound |
 | 12.3 | `Chapter12.Section03` | Iterated projection methods and Sloan's superconvergence |
 | 12.4 | `Chapter12.Section04` | The Nyström method and collectively compact approximation |
+| 12.5 | `Chapter12.Section05` | Product integration for weakly singular kernels |
 | 12.6 | `Chapter12.Section06` | Two-grid iteration for the discretized equations |
 | 12.7 | `Chapter12.Section07` | Projection methods for nonlinear equations |
 | **13** | | *Boundary Integral Equations* |
 | 13.1 | `Chapter13.Section01` | The parametrized double layer kernel and its compactness |
 | 13.2 | `Chapter13.Section02` | The Nyström method for the second-kind boundary integral equation |
+| 13.3 | `Chapter13.Section03` | The Fourier–Galerkin method for a first kind equation |
 | **14** | | *Multivariable Polynomial Approximations* |
 | 14.1 | `Chapter14.Section01` | `Π_n^d`, its dimension, and the minimax error `E_n(f)` |
 | 14.2 | `Chapter14.Section02` | Orthogonal polynomials in several variables on a ball |
@@ -251,23 +263,22 @@ from §3.3, which needed it first for Example 3.3.5, and §11.3 takes strong mon
 Three bodies of material are missing for want of infrastructure rather than for difficulty, and
 each section module names the results it leaves out.
 
-* **Sobolev spaces.** §8.1, §8.4, §8.5 and §8.8 are the book's Sobolev-space theory and its
-  application to elliptic boundary value problems; §8.6's model-problem computations
-  (8.6.1)–(8.6.20) are the same material.  So is the *core* of Chapter 10, but only the core: the
-  results of that chapter which need a Sobolev space are Theorems 10.3.3, 10.3.4, 10.3.5, Corollary
-  10.3.7, Theorem 10.3.9, Theorem 10.4.1 and (10.4.11) — the interpolation error estimates, which
-  rest on the Bramble–Hilbert lemma of Chapter 7, and the convergence orders that combine them with
-  elliptic regularity — together with the concrete finite element spaces of §10.1 and §10.2, which
-  live in `H¹(0,1)` and `H¹(Ω)`.  Everything else in the chapter is Sobolev-free and is stated:
-  Lemma 10.2.2, Theorem 10.3.1, Definition 10.3.6, Example 10.3.2, the Aubin–Nitsche lemma and the
-  §10.1 algebra.
-  Neither is Example 2.4.2 (the derivative extended to `H¹`), nor Example 2.5.9, nor the concrete
-  PDE instances of Chapter 9. What survives is the abstract skeleton — §8.2, §8.3, §8.6, §8.7,
-  Chapter 9 and §10.4 — which is where the functional analysis lives; the missing part is the
-  verification that a particular boundary value problem satisfies its hypotheses. The same
-  boundary cuts Chapter 11 in two: its abstract spine is formalized — §11.2–11.4 on elliptic
-  variational inequalities — while its applications live in `H¹₀(Ω)` and are out of scope. So is
-  Chapter 7, which is the Sobolev theory itself. Chapter 12 is *not* cut by this boundary: its
+* **The trace, and surface measure on a boundary.** The Sobolev spaces themselves are no longer
+  the boundary: Chapter 7 is formalized section by section (below), on the backbone of
+  `Numlib/Analysis/Sobolev`, and on it stand Lemma 8.4.1 (`Chapter08.Section04`), the
+  pure-displacement elasticity problem of §8.5 with Korn's first inequality
+  (`Chapter08.Section05`), the `p`-Laplacian problem of §8.8 (`Chapter08.Section08`), the obstacle
+  problem of Chapter 11 (`Chapter11.Section01`–`Section03`) and the interpolation estimates of
+  §10.3 on extension-domain reference elements (`Chapter10.Section03`). What is missing is the
+  *trace* `γ : H¹(Ω) → H^{1/2}(Γ)` of Theorem 7.3.10 and the surface measure on a Lipschitz
+  boundary that it needs, neither in Mathlib (blocker 2 of `notes/frontier.md`). Everything that
+  quantifies over boundary values other than zero is out of reach for that reason: the weak
+  formulations (8.4.1)–(8.4.22) with a Neumann, mixed or non-homogeneous Dirichlet condition,
+  the traction problem of §8.5 (`Γ_N ≠ ∅`), the friction problem of Example 11.1.2, §7.6
+  (integration by parts on a Lipschitz domain) and the fractional spaces `W^{s,p}(Γ)` of
+  Definition 7.2.13. The concrete problems of Chapter 9 and §10.1 are posed on `H¹₀(0, 1)`
+  (`Numlib/Analysis/Sobolev/Interval`) where the book poses them there, and each section module
+  says which of its examples wait on the trace. Chapter 12 is *not* cut by this boundary: its
   concrete half names a kernel and a quadrature rule, not a Sobolev space, and §12.2.1 and §12.4
   are formalized on `C(D)` in full.
 * **Potential theory on a curve, for Chapter 13.** The obstruction there is not a Sobolev space, as
@@ -277,25 +288,25 @@ each section module names the results it leaves out.
   parametrized double-layer kernel is reachable. §13.2's second-kind analysis needs no Sobolev
   space at all — it is Theorem 12.4.4 on `C_p(L) = C(AddCircle L, ℝ)`, with the invertibility of
   `-π + K` a hypothesis the book itself only quotes — and `Chapter13.Section02` states it; its
-  §13.2.2, the exterior Neumann problem, does need `H¹(2π)`. §13.3 needs the periodic Sobolev scale
-  `H^q(2π)`, which is a weighted `ℓ²` over the Fourier basis of `AddCircle` and is reachable, but
-  does not exist yet; its convergence proof, once that scale is there, is Theorem 12.1.2 and
-  Lemma 12.1.4 unchanged.
-  boundary cuts Chapters 11 and 12 in two: their abstract spines are formalized — §11.2–11.4 on
-  elliptic variational inequalities, §12.1, §12.3, §12.4, §12.6 and §12.7 on projection and
-  collectively compact methods for Fredholm equations of the second kind — while their
-  applications live in `H¹₀(Ω)` and on a concrete kernel, and are out of scope. So is Chapter 13,
-  which is boundary integral equations on a Sobolev space over a boundary.
-* **Chapter 7, section by section.** The chapter is the Sobolev theory itself, and is excluded
-  except for §7.5. §7.1 (weak derivatives on an open `Ω`) and §7.2 (the spaces `W^{k,p}(Ω)`) are
-  writable but have no consumer, because everything downstream of them is blocked by §7.3; §7.3
-  is the obstruction itself — density of `C^∞(Ω̄)`, the extension operator, the Sobolev
-  embeddings, the trace, Rellich–Kondrachov and the Deny–Lions equivalences, none of which
-  Mathlib has for a domain; §7.4 (the Fourier characterization of `H^k(ℝ^d)`) is reachable
-  through Mathlib's Bessel potential spaces on `ℝ^d` but is not yet written; §7.6 (integration by
-  parts on a Lipschitz domain) needs surface measure on a Lipschitz boundary. **§7.5 is the
-  exception and is formalized**: the periodic spaces are defined by decay of Fourier coefficients,
-  so no domain, boundary or weak derivative enters them, and `Chapter07.Section05` carries
+  §13.2.2, the exterior Neumann problem, does need `H¹(2π)`. §13.3, the Fourier–Galerkin method
+  for the first-kind equation with the logarithmic kernel, is `Chapter13.Section03` on the periodic
+  Sobolev scale `H^q(2π)` of §7.5, its convergence proof being Theorem 12.1.2 and Lemma 12.1.4
+  unchanged.
+* **Chapter 7, section by section.** The chapter is the Sobolev theory itself, and is formalized
+  on the backbone of `Numlib/Analysis/Sobolev`. §7.1 (weak derivatives on an open `Ω`) and §7.2
+  (the spaces `W^{k,p}(Ω)`, `W_0^{k,p}(Ω)` and the two readings of Definition 7.2.2) are
+  `Chapter07.Section01` and `Section02`. §7.3 is `Chapter07.Section03`: the Meyers–Serrin theorem,
+  the density of `C_0^∞(ℝ^d)`, the density of `C^∞(Ω̄)` and the extension operator at every
+  order, the Sobolev embeddings, Rellich–Kondrachov, the Deny–Lions equivalences and the
+  Bramble–Hilbert lemma, all under the backbone's hypothesis of an *extension domain* — which the
+  `C¹` domains of Definition 7.2.1 are — where the book assumes a Lipschitz domain. Its open
+  nodes are the trace theorems 7.3.10 and 7.3.11, which wait on the surface measure above, and
+  Stein's universal extension operator `theorem_7_3_5_universal`.
+  §7.4 (the Fourier characterization of `H^k(ℝ^d)`) is `Chapter07.Section04`, through Mathlib's
+  Bessel potential spaces on `ℝ^d`, with (7.4.1) and Exercise 7.4.2 proved. §7.6 (integration by
+  parts on a Lipschitz domain) needs surface measure on a Lipschitz boundary and has no module.
+  **§7.5** is `Chapter07.Section05`: the periodic spaces are defined by decay of Fourier
+  coefficients, so no domain, boundary or weak derivative enters them, and the module carries
   Definition 7.5.1, Theorem 7.5.2, Propositions 7.5.4–7.5.6 and Exercises 7.5.1–7.5.4. Left out
   within §7.5 are Example 7.5.3 (distributions on the circle), Theorem 7.5.7 (the project has no
   trigonometric interpolation operator), §7.5.4 (the logarithmic-kernel symbol, which the book
@@ -307,11 +318,12 @@ each section module names the results it leaves out.
   bounded sequence in a reflexive space has a weakly convergent subsequence — is
   `Chapter02.theorem_2_7_5_mp`. On it stand Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
-  Banach space, all proved. What is missing is the converse of Theorem 2.7.5 — that weak
-  sequential compactness of the bounded sets forces reflexivity, which needs Goldstine's theorem
-  and the hard half of Eberlein–Šmulian, neither in Mathlib — and Theorem 8.6.3 (Ekeland–Temam,
-  the existence of a saddle point for a convex–concave functional), whose proof consumes the
-  *topological* weak compactness of a closed bounded convex set rather than the sequential one.
+  Banach space, all proved. The converse of Theorem 2.7.5 — that weak sequential compactness of
+  the bounded sets forces reflexivity — is `Chapter02.theorem_2_7_5_mpr`, from the backbone's
+  Eberlein–Šmulian theorem (`Numlib/Analysis/Normed/Module/Reflexive/EberleinSmulian`), and
+  Theorem 8.6.3 ([ekeland1999convex], the existence of a saddle point for a convex–concave
+  functional) is `Chapter08.theorem_8_6_3`, from the *topological* weak compactness of a closed
+  bounded convex set and Sion's theorem (`Numlib/Variational/Minimax`).
 * **The `C[a, b]` integral-operator toolkit.** `Numlib/IntegralEquations/Basic` has the Fredholm,
   Urysohn and Volterra operators with their norms and Lipschitz constants, which is what §5.2's
   applications and the norm formula (2.2.8) need, and now their *compactness*
@@ -341,8 +353,8 @@ Smaller omissions all have the same shape — an object the backbone or Mathlib 
 and each is listed, with its reason, in the module it belongs to. Chapter 2 carries most of them,
 and they are mainly spaces: `C¹[a, b]` as a normed space, which Examples 2.1.4, 2.1.5 and 2.4.2
 all want, and the duals of `Lᵖ(Ω)` and of `L^∞(0, 1)` in Examples 2.5.1, 2.5.3 and 2.5.9.
-Reflexivity is no longer one of them: Definition 2.7.4 and the forward half of Theorem 2.7.5 are
-proved (see the weak-compactness item above), and only the converse of Theorem 2.7.5 is open. Of
+Reflexivity is no longer one of them: Definition 2.7.4 and both halves of Theorem 2.7.5 are
+proved (see the weak-compactness item above). Of
 Chapter 3 nothing numbered remains — Müntz's theorem (Theorem 3.1.5) is proved — and of Chapters
 4 and 6 what is left is the Gibbs constant `(2/π) Si(π)`
 that the book asserts without proof beside Example 4.1.3, and the heat-equation instances of

@@ -63,16 +63,6 @@ reflection construction gives for free.'''
 deps = ["example_7_4_3_whole_space", "theorem_7_3_5_universal"]
 
 [[node]]
-id = "ae_eq_of_toTemperedDistribution_eq"
-
-[[node]]
-id = "fourierInv_ae_eq_of_toTemperedDistribution_eq"
-
-[[node]]
-id = "exists_continuous_ae_eq_of_integrable_fourier"
-source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.2, Step 1 (the bound |v(x)| ≤ c ∫ |ℱv|)"
-
-[[node]]
 id = "sq_lintegral_enorm_le_mul"
 
 [[node]]

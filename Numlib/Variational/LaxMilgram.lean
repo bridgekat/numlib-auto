@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Convex.Strong
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Topology.Algebra.Module.LinearPMap
 import Numlib.Nonlinear.FixedPoint
@@ -240,6 +241,23 @@ theorem convexOn_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace �
     RingHom.id_apply, starRingEnd_apply, star_trivial]
   obtain rfl : t = 1 - s := by linarith
   nlinarith [mul_nonneg (mul_nonneg hs ht) h]
+
+/-- The energy `E(v) = ½ a(v, v) − ℓ(v)` of a symmetric form coercive with constant `c` is
+`c`-strongly convex: `E(s x + t y) = s E(x) + t E(y) − (s t / 2) a(x − y, x − y)`. -/
+theorem strongConvexOn_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+    {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ}
+    (hc : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) : StrongConvexOn Set.univ c (a.energy ℓ) := by
+  refine ⟨convex_univ, fun x _ y _ s t hs ht hst ↦ ?_⟩
+  have hsym : a y x = a x y := by simpa using ha y x
+  have hcoer := hc (x - y)
+  have hsub : a (x - y) (x - y) = a x x - (a x y + a y x) + a y y := by
+    simp only [map_sub, sub_apply]
+    ring
+  rw [RCLike.re_to_real, hsub, hsym] at hcoer
+  simp only [SesqForm.energy, RCLike.re_to_real, map_smulₛₗ, map_add, add_apply, smul_apply,
+    smul_eq_mul, RingHom.id_apply, starRingEnd_apply, star_trivial, hsym]
+  obtain rfl : t = 1 - s := by linarith
+  nlinarith [mul_le_mul_of_nonneg_left hcoer (mul_nonneg hs ht)]
 
 /-- **The Fréchet derivative of the energy of a symmetric form** ([brezis2011functional]
 Chapter 5, Remark 7): for a Hermitian (real: symmetric) form `a` and a functional `ℓ`, the energy

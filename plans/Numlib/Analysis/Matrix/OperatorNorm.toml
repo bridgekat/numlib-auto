@@ -332,3 +332,15 @@ id = "norm_abs_eq"
 
 [[node]]
 id = "norm_mulVec_one_of_entrywiseNonneg"
+
+[[node]]
+id = "frobenius_norm_sq_mul_one_sub_add_sq_mul"
+
+[[node]]
+id = "smul_vecMulVec_mulVec_self"
+
+[[node]]
+id = "norm_toEuclideanCLM_le_frobenius_norm"
+
+[[node]]
+id = "frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM"

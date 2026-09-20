@@ -189,4 +189,13 @@ theorem l2_opNorm_eq_complexSpectralRadius_of_isHermitian {A : Matrix n n ℝ}
   exact (IsSelfAdjoint.toReal_spectralRadius_complex_eq_norm
     ((isHermitian_complexify_iff A).mpr hA).isSelfAdjoint).symm
 
+/-- The `ℓ²` operator norm of a symmetric matrix whose quadratic form is enclosed in `[-M, M]` is
+at most `M`: one half of `Matrix.IsHermitian.l2_opNorm_eq`, through Rayleigh quotients
+(`ContinuousLinearMap.norm_le_of_isSymmetricBoundedBy`). -/
+theorem norm_toEuclideanCLM_le_of_isSymmetricBoundedBy {A : Matrix n n ℝ} {M : ℝ} (hM : 0 ≤ M)
+    (hb : (toEuclideanLin A).IsSymmetricBoundedBy (-M) M) :
+    ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ M := by
+  rw [l2_opNorm_toEuclideanCLM, l2_opNorm_eq_norm_toEuclideanLin]
+  exact ContinuousLinearMap.norm_le_of_isSymmetricBoundedBy hM hb
+
 end Matrix

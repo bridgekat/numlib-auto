@@ -87,12 +87,10 @@ derivative by `heatOperator_apply_eq_laplacian`).
   the forward scheme is stable if and only if `r ≤ 1/2`: it is *conditionally* stable.
 
 **The consistency horizon.** Definition 6.2.7 evaluates `S (t + Δt) u₀` for `t ∈ [0, T]`, and the
-solution operators of Definition 6.2.3 are determined only on their own horizon. The consistency
-and convergence statements therefore take the solution operators on a horizon `T' ≥ T + Δ₀` (on
-`[0, T]` the same family, by uniqueness), and the equivalence theorem is applied in its backbone
-form `FiniteDifference.isStable_iff_isConvergent`, which takes an arbitrary strongly continuous
-family; the surface `theorem_6_2_11` fixes one horizon for both and is not directly applicable to
-a solution-operator family.
+solution operators of Definition 6.2.3 are determined only on their own horizon; the book's
+definition is read with the restriction `t + Δt ≤ T`, which is all the proof of Theorem 6.2.11
+uses, so that the consistency and convergence statements take the solution operators on `[0, T]`
+itself and `theorem_6_2_11` applies to them directly.
 
 Not formalized: the book's Exercise 6.2.2 (Crank–Nicolson).
 -/
@@ -259,13 +257,16 @@ evolution family `S` on `[0, T]`, for step sizes in `(0, Δ₀]` and initial val
   `(C(Δt) u(t) - u(t + Δt)) / Δt`
 
 tends to `0` as `Δt → 0`, uniformly in `t ∈ [0, T]`.  Here `u(t) = S(t) u₀`, so the condition is
-tested on the trajectories of the family.
+tested on the trajectories of the family, and only where the family is known: at the `t` with
+`t + Δt ≤ T` (the solution operators of Definition 6.2.3 exist on their horizon `[0, T]` alone,
+and the proof of Theorem 6.2.11 uses the truncation error at the grid points `k Δt` with
+`(k + 1) Δt ≤ m Δt ≤ T` only).
 
 The division is written out, as the book writes it; the backbone clears it, and
 `isConsistent_iff` is that identification. -/
 def IsConsistent (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) (D : Set V) : Prop :=
   Dense D ∧ ∀ u₀ ∈ D, ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, Δt < δ →
-    ∀ t ∈ Icc (0 : ℝ) T, ‖(Δt)⁻¹ • (C Δt (S t u₀) - S (t + Δt) u₀)‖ ≤ ε
+    ∀ t ∈ Icc (0 : ℝ) T, t + Δt ≤ T → ‖(Δt)⁻¹ • (C Δt (S t u₀) - S (t + Δt) u₀)‖ ≤ ε
 
 /-- Clearing the division in Definition 6.2.7. -/
 private theorem norm_inv_smul_le_iff {x : V} {Δt ε : ℝ} (hΔt : 0 < Δt) :
@@ -279,11 +280,13 @@ theorem isConsistent_iff (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) (D : Set 
   · rintro ⟨hD, h⟩
     refine ⟨hD, fun u₀ hu₀ ε hε => ?_⟩
     obtain ⟨δ, hδ, hb⟩ := h u₀ hu₀ ε hε
-    exact ⟨δ, hδ, fun Δt hΔt hlt t ht => (norm_inv_smul_le_iff hΔt.1).1 (hb Δt hΔt hlt t ht)⟩
+    exact ⟨δ, hδ, fun Δt hΔt hlt t ht htΔ =>
+      (norm_inv_smul_le_iff hΔt.1).1 (hb Δt hΔt hlt t ht htΔ)⟩
   · rintro ⟨hD, h⟩
     refine ⟨hD, fun u₀ hu₀ ε hε => ?_⟩
     obtain ⟨δ, hδ, hb⟩ := h u₀ hu₀ ε hε
-    exact ⟨δ, hδ, fun Δt hΔt hlt t ht => (norm_inv_smul_le_iff hΔt.1).2 (hb Δt hΔt hlt t ht)⟩
+    exact ⟨δ, hδ, fun Δt hΔt hlt t ht htΔ =>
+      (norm_inv_smul_le_iff hΔt.1).2 (hb Δt hΔt hlt t ht htΔ)⟩
 
 /-- **Definition 6.2.9, convergence.**  The method converges to the evolution family when
 `‖(C(Δt_i)^{m_i} - S(t)) u₀‖ → 0` for every `t ∈ [0, T]`, every `u₀ ∈ V` and every refinement:
@@ -565,16 +568,6 @@ theorem isSolution_sineSolution (T : ℝ) (n : ℕ) (b : ℕ → ℝ) :
 
 /-! #### The maximum principle and well-posedness -/
 
-/-- The difference of two solutions is a solution, with the difference of the initial values:
-`L` is linear. -/
-private theorem isSolution_sub {L : V →ₗ.[ℝ] V} {T : ℝ} {u₀ ū₀ : V} {u ū : ℝ → V}
-    (hu : FiniteDifference.IsSolution L T u₀ u) (hū : FiniteDifference.IsSolution L T ū₀ ū) :
-    FiniteDifference.IsSolution L T (u₀ - ū₀) (u - ū) := by
-  refine ⟨by rw [Pi.sub_apply, hu.1, hū.1], fun t ht => ?_⟩
-  obtain ⟨h1, hd1⟩ := hu.2 t ht
-  obtain ⟨h2, hd2⟩ := hū.2 t ht
-  exact ⟨L.domain.sub_mem h1 h2, (hd1.sub hd2).congr_deriv (L.map_sub ⟨u t, h1⟩ ⟨ū t, h2⟩).symm⟩
-
 /-- A solution of the abstract problem read as a function of `(x, t)`: `U (x, t) = u (t) (x)`,
 the space variable clamped to `[0, π]`. -/
 private noncomputable def spaceTime (u : ℝ → C₀) (p : ℝ × ℝ) : ℝ :=
@@ -692,7 +685,7 @@ theorem example_6_2_4 (hν : 0 < ν) (T : ℝ) : IsWellPosed (heatOperator ν) T
   refine ⟨fun u₀ hu₀ => ?_, fun u₀ ū₀ u ū hu hū t ht => ?_⟩
   · obtain ⟨n, c, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
     exact ⟨sineSolution ν n c, (isSolution_iff _ _ _ _).1 (isSolution_sineSolution T n c)⟩
-  · have h := norm_le_of_isSolution hν ((isSolution_iff _ _ _ _).2 (isSolution_sub hu hū)) t ht
+  · have h := norm_le_of_isSolution hν ((isSolution_iff _ _ _ _).2 (hu.sub hū)) t ht
     rwa [one_mul]
 
 /-- **Example 6.2.4, the density of `V₀` in `V`** (the book's Exercise 6.2.1): the finite sine
@@ -917,22 +910,19 @@ initial value the local truncation error satisfies `‖[C (Δt) u (t) - u (t + �
 so the forward family is consistent (Definition 6.2.7) with the solution operators of the heat
 equation on `[0, T]`, for step sizes in `(0, Δ₀]`.
 
-The solution operators of Definition 6.2.3 are known only on their horizon, and Definition 6.2.7
-evaluates `S (t + Δt)` for `t ≤ T`, so the family used is the one on the longer horizon
-`T' ≥ T + Δ₀` — on `[0, T]` it is the same family, by uniqueness of the solution. -/
-theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ} (hΔ₀ : 0 < Δ₀)
-    (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
-    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-      (example_6_2_4 hν T')) (forwardScheme ν r) T Δ₀ sinePolynomials := by
+The family is the solution operators of Definition 6.2.3 on the horizon `[0, T]` itself:
+Definition 6.2.7 evaluates `S (t + Δt)` for `t + Δt ≤ T` only. -/
+theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
+    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+      (example_6_2_4 hν T)) (forwardScheme ν r) T Δ₀ sinePolynomials := by
   refine ⟨example_6_2_4_dense, fun u₀ hu₀ ε hε => ?_⟩
   obtain ⟨n, b, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
   set c := forwardConsistencyConst ν r n b with hc
   have hc0 : 0 ≤ c := forwardConsistencyConst_nonneg hr.le n b
-  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht => ?_⟩
-  have htT' : t ∈ Icc (0 : ℝ) T' := ⟨ht.1, by linarith [ht.2, hΔt.2]⟩
-  have htΔT' : t + Δt ∈ Icc (0 : ℝ) T' := ⟨by linarith [ht.1, hΔt.1], by linarith [ht.2, hΔt.2]⟩
-  rw [example_6_2_4_solutionOperator_apply hν hT' htT', example_6_2_4_solutionOperator_apply hν hT'
-    htΔT', norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
+  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht htΔ => ?_⟩
+  have htΔT : t + Δt ∈ Icc (0 : ℝ) T := ⟨by linarith [ht.1, hΔt.1], htΔ⟩
+  rw [example_6_2_4_solutionOperator_apply hν hT ht, example_6_2_4_solutionOperator_apply hν hT
+    htΔT, norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
     div_le_iff₀ hΔt.1]
   calc ‖forwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
       ≤ c * Δt ^ 2 := norm_forwardScheme_sineSolution_sub_le hν hr n b ht.1 hΔt.1.le
@@ -1097,19 +1087,17 @@ theorem norm_backwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0
 /-- **Example 6.2.8, consistency of the backward scheme** with `V_c = V₀` — the clause the book
 says is "more involved" and leaves to the reader: the same statement as `example_6_2_8` for
 `backwardScheme`, from `norm_backwardScheme_sineSolution_sub_le`. -/
-theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ}
-    (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
-    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-      (example_6_2_4 hν T')) (backwardScheme ν r) T Δ₀ sinePolynomials := by
+theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
+    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+      (example_6_2_4 hν T)) (backwardScheme ν r) T Δ₀ sinePolynomials := by
   refine ⟨example_6_2_4_dense, fun u₀ hu₀ ε hε => ?_⟩
   obtain ⟨n, b, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
   set c := forwardConsistencyConst ν r n b with hc
   have hc0 : 0 ≤ c := forwardConsistencyConst_nonneg hr.le n b
-  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht => ?_⟩
-  have htT' : t ∈ Icc (0 : ℝ) T' := ⟨ht.1, by linarith [ht.2, hΔt.2]⟩
-  have htΔT' : t + Δt ∈ Icc (0 : ℝ) T' := ⟨by linarith [ht.1, hΔt.1], by linarith [ht.2, hΔt.2]⟩
-  rw [example_6_2_4_solutionOperator_apply hν hT' htT', example_6_2_4_solutionOperator_apply hν hT'
-    htΔT', norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
+  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht htΔ => ?_⟩
+  have htΔT : t + Δt ∈ Icc (0 : ℝ) T := ⟨by linarith [ht.1, hΔt.1], htΔ⟩
+  rw [example_6_2_4_solutionOperator_apply hν hT ht, example_6_2_4_solutionOperator_apply hν hT
+    htΔT, norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
     div_le_iff₀ hΔt.1]
   calc ‖backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
       ≤ c * Δt ^ 2 := norm_backwardScheme_sineSolution_sub_le hν hr n b ht.1 hΔt.1.le
@@ -1123,58 +1111,36 @@ theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T'
 
 /-! #### Example 6.2.13: the Lax equivalence theorem applied -/
 
-/-- A family of operators of norm at most `1` is stable, with `M₀ = 1`, on every horizon. -/
-theorem isStable_of_forall_norm_le_one {C : ℝ → C₀ →L[ℝ] C₀} {Δ₀ : ℝ}
-    (hC : ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖C Δt‖ ≤ 1) (T : ℝ) : IsStable C T Δ₀ := by
-  refine ⟨1, fun Δt hΔt m _ => ?_⟩
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · rw [pow_zero]
-    exact ContinuousLinearMap.norm_id_le
-  · exact (norm_pow_le' _ hm).trans (pow_le_one₀ (norm_nonneg _) (hC Δt hΔt))
-
 /-- **Example 6.2.13, the forward scheme**: for `r ≤ 1/2`, `‖C (Δt)‖ ≤ 1` by (6.2.8), hence
 `‖C (Δt)^m‖ ≤ 1` for all `m` — the scheme is stable — and, being consistent, it is convergent
 (6.2.11) by the Lax equivalence theorem: `‖u_{Δt} (·, m_i Δt_i) - u (·, t)‖ → 0` whenever
 `m_i Δt_i → t`, for every initial value in `C₀[0, π]`.
 
-The evolution family is that of `example_6_2_8`, the solution operators on the horizon
-`T' ≥ T + Δ₀`; the equivalence theorem is applied in the backbone form
-`FiniteDifference.isStable_iff_isConvergent`, since the surface `theorem_6_2_11` takes the family
-and the consistency on one and the same horizon. -/
-theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2) {T Δ₀ T' : ℝ}
-    (hT : 0 ≤ T) (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+The evolution family is that of `example_6_2_8`, the solution operators on `[0, T]`, and the
+equivalence theorem is the surface `theorem_6_2_11`. -/
+theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2) {T Δ₀ : ℝ}
+    (hT : 0 ≤ T) :
     IsStable (forwardScheme ν r) T Δ₀ ∧
-      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-        (example_6_2_4 hν T')) (forwardScheme ν r) T Δ₀ := by
+      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+        (example_6_2_4 hν T)) (forwardScheme ν r) T Δ₀ := by
   have hC : ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖forwardScheme ν r Δt‖ ≤ 1 := fun Δt hΔt => by
     refine (norm_forwardScheme_le hr.le ν Δt).trans ?_
     rw [abs_of_nonneg (by linarith)]
     linarith
-  have hstab := isStable_of_forall_norm_le_one hC T
-  refine ⟨hstab, ?_⟩
-  rw [isConvergent_iff]
-  rw [isStable_iff] at hstab
-  refine (FiniteDifference.isStable_iff_isConvergent hT (solutionOperator_zero _ _ _ _ _)
-    (fun u₀ => (proposition_6_2_5 (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-      (example_6_2_4 hν T') u₀).mono (Icc_subset_Icc le_rfl (by linarith)))
-    hC ((isConsistent_iff _ _ _ _ _).1 (example_6_2_8 hν hr hΔ₀ hT' hTT'))).1 hstab
+  have hstab := (isStable_iff _ _ _).2 (FiniteDifference.isStable_of_forall_norm_le_one hC T)
+  exact ⟨hstab, (theorem_6_2_11 (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+    (example_6_2_4 hν T) hC (example_6_2_8 hν hr hT)).1 hstab⟩
 
 /-- **Example 6.2.13, the backward scheme**: `‖C (Δt)‖ ≤ 1` for every `r`, so the scheme is
 unconditionally stable, and, being consistent, unconditionally convergent. -/
-theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ} (hT : 0 ≤ T)
-    (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsStable (backwardScheme ν r) T Δ₀ ∧
-      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-        (example_6_2_4 hν T')) (backwardScheme ν r) T Δ₀ := by
+      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+        (example_6_2_4 hν T)) (backwardScheme ν r) T Δ₀ := by
   have hC := forall_norm_backwardScheme_le hr.le ν Δ₀
-  have hstab := isStable_of_forall_norm_le_one hC T
-  refine ⟨hstab, ?_⟩
-  rw [isConvergent_iff]
-  rw [isStable_iff] at hstab
-  refine (FiniteDifference.isStable_iff_isConvergent hT (solutionOperator_zero _ _ _ _ _)
-    (fun u₀ => (proposition_6_2_5 (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
-      (example_6_2_4 hν T') u₀).mono (Icc_subset_Icc le_rfl (by linarith)))
-    hC ((isConsistent_iff _ _ _ _ _).1 (example_6_2_8_backward hν hr hΔ₀ hT' hTT'))).1 hstab
+  have hstab := (isStable_iff _ _ _).2 (FiniteDifference.isStable_of_forall_norm_le_one hC T)
+  exact ⟨hstab, (theorem_6_2_11 (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+    (example_6_2_4 hν T) hC (example_6_2_8_backward hν hr hT)).1 hstab⟩
 
 /-! #### Exercise 6.2.3: the exact norm of the forward scheme -/
 

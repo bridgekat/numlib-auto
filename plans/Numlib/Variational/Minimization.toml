@@ -20,3 +20,12 @@ id = "StrongConvexOn.isCoerciveFunctionalOn"
 [[node]]
 id = "existsUnique_isMinOn_of_strongConvexOn"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10"
+
+[[node]]
+id = "StrongConvexOn.isCoerciveFunctionalOn_of_continuous"
+
+[[node]]
+id = "StrongConvexOn.mono_of_univ"
+
+[[node]]
+id = "isCoerciveFunctionalOn_of_rpow_sub_mul_le"

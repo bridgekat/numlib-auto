@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Measure.SeparableMeasure
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # Integral operators with a square-integrable kernel
@@ -29,8 +30,9 @@ kernel, which is a different object: its bound is the row `L¹` norm, not the `L
   measure be separable, so that `L²(μ)` has a countable dense subset; that holds automatically
   when the space is countably generated, in particular for `L²(a, b)`.
 
-Along the way, `IntegralOperator.abs_integral_mul_le_sqrt_mul_sqrt` is the Cauchy–Schwarz
-inequality for a product of two square-integrable real functions, and
+Along the way, `MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`
+(`Numlib/MeasureTheory/Integral/IntervalIntegral`) is the Cauchy–Schwarz inequality for a
+product of two square-integrable real functions, and
 `IntegralOperator.norm_lp_eq_sqrt_integral_sq` and `IntegralOperator.real_inner_lp_eq` read the
 norm and the inner product of `Lp ℝ 2 μ` as ordinary integrals, which is what makes the
 statements below quantifier-free integral inequalities rather than `eLpNorm` manipulations.
@@ -41,30 +43,6 @@ open Filter MeasureTheory Real
 namespace IntegralOperator
 
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X}
-
-/-! ### Cauchy–Schwarz -/
-
-/-- **Cauchy–Schwarz for the integral of a product**: for square-integrable real `f` and `g`,
-`|∫ f g| ≤ √(∫ f²) √(∫ g²)`. This is Hölder's inequality at the conjugate pair `(2, 2)`. -/
-theorem abs_integral_mul_le_sqrt_mul_sqrt {f g : X → ℝ} (hf : MemLp f 2 μ) (hg : MemLp g 2 μ) :
-    |∫ y, f y * g y ∂μ| ≤ √(∫ y, f y ^ 2 ∂μ) * √(∫ y, g y ^ 2 ∂μ) := by
-  have hpq : (2 : ℝ).HolderConjugate 2 := by
-    rw [Real.holderConjugate_iff]; norm_num
-  have h2 : ENNReal.ofReal (2 : ℝ) = 2 := by
-    simp [ENNReal.ofReal_ofNat]
-  have key := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq (μ := μ) (f := f) (g := g) hpq
-    (by rwa [h2]) (by rwa [h2])
-  have hrw : ∀ h : X → ℝ, (∫ y, ‖h y‖ ^ (2 : ℝ) ∂μ) ^ (1 / 2 : ℝ) = √(∫ y, h y ^ 2 ∂μ) := by
-    intro h
-    rw [Real.sqrt_eq_rpow]
-    congr 1
-    refine integral_congr_ae (Eventually.of_forall fun y => ?_)
-    change ‖h y‖ ^ (2 : ℝ) = h y ^ 2
-    rw [show ((2 : ℝ)) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast, Real.norm_eq_abs, sq_abs]
-  rw [hrw f, hrw g] at key
-  refine le_trans (abs_integral_le_integral_abs) (le_trans (le_of_eq ?_) key)
-  refine integral_congr_ae (Eventually.of_forall fun y => ?_)
-  simp [abs_mul, Real.norm_eq_abs]
 
 /-- The norm of an element of `L²(μ)` as an ordinary integral, `‖f‖ = √(∫ f²)`. -/
 theorem norm_lp_eq_sqrt_integral_sq (f : Lp ℝ 2 μ) : ‖f‖ = √(∫ x, f x ^ 2 ∂μ) := by
@@ -130,7 +108,7 @@ theorem aestronglyMeasurable_l2Kernel (hk : MemLp k 2 (μ.prod μ)) {v : X → �
 theorem abs_integral_row_mul_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     ∀ᵐ x ∂μ, |∫ y, k (x, y) * v y ∂μ| ≤ √(∫ y, k (x, y) ^ 2 ∂μ) * √(∫ y, v y ^ 2 ∂μ) := by
   filter_upwards [ae_memLp_row hk] with x hx
-  exact abs_integral_mul_le_sqrt_mul_sqrt hx hv
+  exact MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt hx hv
 
 /-- The squared form of the row bound, which is what integrates in `x`. -/
 theorem ae_sq_l2Kernel_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :

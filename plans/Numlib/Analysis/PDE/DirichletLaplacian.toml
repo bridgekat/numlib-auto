@@ -209,3 +209,9 @@ id = "dirichletLaplacian_exists_sobolev_add_two_of_apply"
 
 [[node]]
 id = "dirichletLaplacian_exists_sobolev_of_powDomain_of_last"
+
+[[node]]
+id = "Elliptic.dirichletForm_eq_load_neg_sobolevLaplacianL"
+
+[[node]]
+id = "Elliptic.norm_sobolevLaplacianL_le"

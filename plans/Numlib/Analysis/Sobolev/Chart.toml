@@ -140,3 +140,6 @@ id = "ContDiffChart.isDiffeoOnWithBoundedJacobian"
 [[node]]
 id = "ContDiffChart.isDiffeoOnWithBoundedJacobian_pos"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, proof of Theorem 9.7, step (b)"
+
+[[node]]
+id = "IsDiffeoOnWithBoundedJacobian.restrict"

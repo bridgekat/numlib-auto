@@ -26,7 +26,9 @@ derivative of a curve (`Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le`), s
 additive homogeneous map with a norm bound, the form in which the evaluation at a point of a
 canonical `C^k(Ω̄)` representative enters the space–time bridge of
 `Numlib/Analysis/PDE/Bochner/SpaceTime`, and the second iterated derivative within a set as a
-twice-iterated `derivWithin` (`iteratedDerivWithin_two`).
+twice-iterated `derivWithin` (`iteratedDerivWithin_two`), and a curve with values in a submodule
+whose ambient derivative lies in the submodule is differentiable as a curve in the submodule
+(`HasDerivWithinAt.codRestrict_submodule`).
 
 ## References
 
@@ -327,3 +329,16 @@ end Bochner
 theorem iteratedDerivWithin_two {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     (f : ℝ → F) (s : Set ℝ) : iteratedDerivWithin 2 f s = derivWithin (derivWithin f s) s :=
   iteratedDerivWithin_succ.trans (congrArg (fun g ↦ derivWithin g s) iteratedDerivWithin_one)
+
+/-! ### A curve in a submodule -/
+
+/-- A curve with values in a submodule that is differentiable in the ambient space, with a
+derivative in the submodule, is differentiable as a curve in the submodule. -/
+theorem HasDerivWithinAt.codRestrict_submodule {K : Type*} [NormedAddCommGroup K]
+    [NormedSpace ℝ K] (V : Submodule ℝ K) {W : ℝ → K} {W' : K} {s : Set ℝ} {t : ℝ}
+    (h : HasDerivWithinAt W W' s t) (hW : ∀ t, W t ∈ V) (hW' : W' ∈ V) :
+    HasDerivWithinAt (fun t => (⟨W t, hW t⟩ : V)) ⟨W', hW'⟩ s t := by
+  rw [hasDerivWithinAt_iff_tendsto_slope] at h ⊢
+  rw [tendsto_subtype_rng]
+  refine h.congr' (Filter.Eventually.of_forall fun b => ?_)
+  simp [slope]

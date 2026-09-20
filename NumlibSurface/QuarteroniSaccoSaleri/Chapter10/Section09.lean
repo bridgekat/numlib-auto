@@ -183,10 +183,10 @@ theorem equation_10_49_conj {f : AddCircle (2 * π) → ℂ} (hf : ∀ x, (f x).
 
 /-- **The truncation of order `N` (10.50)**: for even `N`,
 `f_N^*(x) = ∑_{k=-N/2}^{N/2-1} f̂_k e^{ikx}`, the partial sum of the Fourier series over the window
-of `N` frequencies starting at `−N/2`, as an element of `L²(0, 2π)`. -/
+`DFT.window N` of `N` frequencies starting at `−N/2`, as an element of `L²(0, 2π)`. -/
 noncomputable def trigTruncation (N : ℕ) (f : Lp ℂ 2 (@haarAddCircle (2 * π) _)) :
     Lp ℂ 2 (@haarAddCircle (2 * π) _) :=
-  ∑ k ∈ Finset.Ico (-((N / 2 : ℕ) : ℤ)) (-((N / 2 : ℕ) : ℤ) + N), fourierCoeff f k • fourierLp 2 k
+  ∑ k ∈ DFT.window N, fourierCoeff f k • fourierLp 2 k
 
 /-- **The least-squares optimality of the truncation** (the unnumbered statement after (10.50)):
 with `S_N = span {e^{ikx} : −N/2 ≤ k ≤ N/2 − 1}`, `‖f − f_N^*‖_{L²} = min_{g ∈ S_N} ‖f − g‖_{L²}`.
@@ -195,9 +195,9 @@ The truncation is the orthogonal projection of `f` onto `S_N`: `f − f_N^*` is 
 `fourierBasis_repr`), and Pythagoras' theorem does the rest. -/
 theorem trigTruncation_isBestApprox (N : ℕ) (f : Lp ℂ 2 (@haarAddCircle (2 * π) _)) :
     IsBestApprox (SetLike.coe (Submodule.span ℂ (fourierLp 2 ''
-        (Finset.Ico (-((N / 2 : ℕ) : ℤ)) (-((N / 2 : ℕ) : ℤ) + N) : Set ℤ))))
+        (DFT.window N : Set ℤ))))
       f (trigTruncation N f) := by
-  set W : Finset ℤ := Finset.Ico (-((N / 2 : ℕ) : ℤ)) (-((N / 2 : ℕ) : ℤ) + N) with hW
+  set W : Finset ℤ := DFT.window N with hW
   set K : Submodule ℂ (Lp ℂ 2 (@haarAddCircle (2 * π) _)) :=
     Submodule.span ℂ (fourierLp 2 '' (W : Set ℤ)) with hK
   have hmem : trigTruncation N f ∈ K := by

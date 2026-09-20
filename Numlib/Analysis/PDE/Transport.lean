@@ -521,4 +521,30 @@ theorem hasPartialDerivSnd_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
   simp only [partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
   exact h2
 
+/-! ### The partial derivatives of a classical solution along the coordinate lines -/
+
+/-- On a product region, the first partial derivative is the derivative of the horizontal
+slice `y ↦ u y τ` within the first factor. -/
+theorem HasPartialsOn.hasDerivWithinAt_fst {s t : Set ℝ} {u ux ut : ℝ → ℝ → ℝ}
+    (h : HasPartialsOn (s ×ˢ t) u ux ut) {y τ : ℝ} (hy : y ∈ s) (hτ : τ ∈ t) :
+    HasDerivWithinAt (fun y => u y τ) (ux y τ) s y := by
+  have h0 := h (y, τ) ⟨hy, hτ⟩
+  have hline : HasDerivWithinAt (fun y : ℝ => (y, τ)) (1, 0) s y :=
+    ((hasDerivAt_id y).prodMk (hasDerivAt_const y τ)).hasDerivWithinAt
+  have h2 := h0.comp_hasDerivWithinAt y hline (fun z hz => Set.mk_mem_prod hz hτ)
+  simp only [partialsCLM_apply, mul_one, mul_zero, add_zero, Function.comp_def] at h2
+  exact h2
+
+/-- On a product region, the second partial derivative is the derivative of the vertical
+slice `τ ↦ u y τ` within the second factor. -/
+theorem HasPartialsOn.hasDerivWithinAt_snd {s t : Set ℝ} {u ux ut : ℝ → ℝ → ℝ}
+    (h : HasPartialsOn (s ×ˢ t) u ux ut) {y τ : ℝ} (hy : y ∈ s) (hτ : τ ∈ t) :
+    HasDerivWithinAt (fun τ => u y τ) (ut y τ) t τ := by
+  have h0 := h (y, τ) ⟨hy, hτ⟩
+  have hline : HasDerivWithinAt (fun τ : ℝ => (y, τ)) (0, 1) t τ :=
+    ((hasDerivAt_const τ y).prodMk (hasDerivAt_id τ)).hasDerivWithinAt
+  have h2 := h0.comp_hasDerivWithinAt τ hline (fun z hz => Set.mk_mem_prod hy hz)
+  simp only [partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
+  exact h2
+
 end Transport

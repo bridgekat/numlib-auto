@@ -359,6 +359,19 @@ end Richardson
 
 namespace ContinuousLinearMap
 
+/-- **A symmetric operator whose quadratic form is enclosed in `[-M, M]` has norm at most `M`**:
+its norm is the supremum of the absolute Rayleigh quotients
+(`ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`), each of which lies in `[-M, M]`. -/
+theorem norm_le_of_isSymmetricBoundedBy {T : E →L[𝕜] E} {M : ℝ} (hM : 0 ≤ M)
+    (hb : (T : E →ₗ[𝕜] E).IsSymmetricBoundedBy (-M) M) : ‖T‖ ≤ M := by
+  rw [ContinuousLinearMap.norm_eq_iSup_rayleighQuotient T hb.isSymmetric]
+  refine ciSup_le fun x => ?_
+  rcases eq_or_ne x 0 with rfl | hx
+  · simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using hM
+  · have h := hb.rayleigh_mem_Icc hx
+    rw [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf, abs_le]
+    exact ⟨h.1, h.2⟩
+
 variable [CompleteSpace E]
 
 /-- A bounded coercive operator on a Hilbert space is invertible with `‖A⁻¹‖ ≤ 1 / c`. This is

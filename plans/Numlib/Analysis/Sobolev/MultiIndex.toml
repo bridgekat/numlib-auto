@@ -428,3 +428,12 @@ id = "SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev"
 
 [[node]]
 id = "EuclideanSpace.basisFun_toBasis_apply"
+
+[[node]]
+id = "MultiIndexLE.exists_eq_addSingle"
+
+[[node]]
+id = "SobolevMultiIndex.continuous_of_fnL_comp_eq"
+
+[[node]]
+id = "SobolevMultiIndex.exists_continuousLinearMap_of_forall_memSobolevMultiIndex"

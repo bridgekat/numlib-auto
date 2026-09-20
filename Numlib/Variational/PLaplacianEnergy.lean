@@ -10,6 +10,8 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 import Mathlib.MeasureTheory.Function.LpSpace.Basic
 import Mathlib.MeasureTheory.Function.StronglyMeasurable.Inner
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Numlib.Analysis.Convex.StrictConvexSpace
+import Numlib.Analysis.MeanInequalities
 import Numlib.Variational.Minimization
 
 /-!
@@ -35,7 +37,8 @@ bounded, injective) map `v ↦ ∇v`:
   near every point is continuous, `ConvexOn.continuousOn_tfae`);
 * `PLaplacian.strictConvexOn_kernel`: `ρ_p` is strictly convex for `p > 1` (Exercise 5.3.13 of
   the book), since `ρ_p(ξ) = ‖(1, ξ)‖^p` for the `ℓ²` norm on `ℝ × F`, and `‖·‖^p` is strictly
-  convex on a strictly convex space (`PLaplacian.strictConvexOn_norm_rpow`); hence
+  convex on a strictly convex space (`strictConvexOn_norm_rpow` of
+  `Numlib/Analysis/Convex/StrictConvexSpace.lean`); hence
   `PLaplacian.energy_convexOn` and the strict inequality `PLaplacian.energy_combo_lt` when the
   two functions differ on a set of positive measure — Lemma 8.8.3;
 * `PLaplacian.hasDerivAt_energy_line`: the Gâteaux derivative of Lemma 8.8.4,
@@ -93,23 +96,6 @@ theorem norm_rpow_le_kernel {p : ℝ} (hp : 0 ≤ p) (ξ : F) : ‖ξ‖ ^ p ≤
   rw [h, kernel]
   exact Real.rpow_le_rpow (by positivity) (by linarith [sq_nonneg ‖ξ‖]) (by positivity)
 
-/-- The elementary bound `(1 + t)^p ≤ 2^p (1 + t^p)` for `t ≥ 0`, `p ≥ 0`. -/
-theorem one_add_rpow_le {t p : ℝ} (ht : 0 ≤ t) (hp : 0 ≤ p) :
-    (1 + t) ^ p ≤ 2 ^ p * (1 + t ^ p) := by
-  have h1 : 1 + t ≤ 2 * max 1 t := by
-    have := le_max_left 1 t
-    have := le_max_right 1 t
-    linarith
-  calc (1 + t) ^ p ≤ (2 * max 1 t) ^ p := Real.rpow_le_rpow (by positivity) h1 hp
-    _ = 2 ^ p * (max 1 t) ^ p := Real.mul_rpow (by norm_num) (by positivity)
-    _ ≤ 2 ^ p * (1 + t ^ p) := by
-      gcongr
-      rcases le_total 1 t with h | h
-      · rw [max_eq_right h]
-        linarith [Real.rpow_nonneg (by norm_num : (0 : ℝ) ≤ 1) p]
-      · rw [max_eq_left h, Real.one_rpow]
-        linarith [Real.rpow_nonneg ht p]
-
 /-- `ρ_p(ξ) ≤ 2^p (1 + ‖ξ‖^p)` for `p ≥ 0`: `1 + ‖ξ‖² ≤ (1 + ‖ξ‖)²`. -/
 theorem kernel_le {p : ℝ} (hp : 0 ≤ p) (ξ : F) : kernel p ξ ≤ 2 ^ p * (1 + ‖ξ‖ ^ p) := by
   have h1 : kernel p ξ ≤ (1 + ‖ξ‖) ^ p := by
@@ -120,7 +106,7 @@ theorem kernel_le {p : ℝ} (hp : 0 ≤ p) (ξ : F) : kernel p ξ ≤ 2 ^ p * (1
       ring
     rw [e, kernel]
     exact Real.rpow_le_rpow (by positivity) (by nlinarith [norm_nonneg ξ]) (by positivity)
-  exact h1.trans (one_add_rpow_le (norm_nonneg ξ) hp)
+  exact h1.trans (Real.one_add_rpow_le (norm_nonneg ξ) hp)
 
 /-- The kernel is `‖(1, ξ)‖^p` for the `ℓ²` norm on `ℝ × F`. -/
 theorem kernel_eq_norm_rpow (p : ℝ) (ξ : F) :
@@ -135,46 +121,13 @@ theorem kernel_eq_norm_rpow (p : ℝ) (ξ : F) :
 
 variable [InnerProductSpace ℝ F]
 
-/-- **`‖·‖^p` is strictly convex on a strictly convex space** for `p > 1`: for `x ≠ y` either
-`‖x‖ ≠ ‖y‖` and the strict convexity of `t ↦ t^p` on `[0, ∞)` applies after the triangle
-inequality, or `‖x‖ = ‖y‖ = r` and `‖a x + b y‖ < r` by strict convexity of the space. -/
-theorem strictConvexOn_norm_rpow {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    [StrictConvexSpace ℝ G] {p : ℝ} (hp : 1 < p) :
-    StrictConvexOn ℝ univ fun x : G ↦ ‖x‖ ^ p := by
-  refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab ↦ ?_⟩
-  have hp0 : 0 < p := by linarith
-  have htri : ‖a • x + b • y‖ ≤ a * ‖x‖ + b * ‖y‖ := by
-    calc ‖a • x + b • y‖ ≤ ‖a • x‖ + ‖b • y‖ := norm_add_le _ _
-      _ = a * ‖x‖ + b * ‖y‖ := by
-        rw [norm_smul, norm_smul, Real.norm_of_nonneg ha.le, Real.norm_of_nonneg hb.le]
-  simp only [smul_eq_mul]
-  rcases eq_or_ne ‖x‖ ‖y‖ with hn | hn
-  · -- equal norms: the combination is strictly shorter
-    have hr : 0 < ‖x‖ := by
-      rcases (norm_nonneg x).lt_or_eq with h | h
-      · exact h
-      · exfalso
-        have hx0 : x = 0 := norm_eq_zero.1 h.symm
-        have hy0 : y = 0 := norm_eq_zero.1 (hn ▸ h.symm)
-        exact hxy (hx0.trans hy0.symm)
-    have hlt : ‖a • x + b • y‖ < ‖x‖ := norm_combo_lt_of_ne le_rfl hn.symm.le hxy ha hb hab
-    calc ‖a • x + b • y‖ ^ p < ‖x‖ ^ p := Real.rpow_lt_rpow (norm_nonneg _) hlt hp0
-      _ = a * ‖x‖ ^ p + b * ‖y‖ ^ p := by rw [← hn, ← add_mul, hab, one_mul]
-  · -- distinct norms: strict convexity of `t ↦ t^p`
-    have hstrict := (strictConvexOn_rpow hp).2 (mem_Ici.2 (norm_nonneg x))
-      (mem_Ici.2 (norm_nonneg y)) hn ha hb hab
-    simp only [smul_eq_mul] at hstrict
-    calc ‖a • x + b • y‖ ^ p ≤ (a * ‖x‖ + b * ‖y‖) ^ p :=
-          Real.rpow_le_rpow (norm_nonneg _) htri hp0.le
-      _ < a * ‖x‖ ^ p + b * ‖y‖ ^ p := hstrict
-
 /-- **The kernel is strictly convex for `p > 1`** (the finite-dimensional ingredient of Lemma
 8.8.3, the book's Exercise 5.3.13): `ρ_p(ξ) = ‖(1, ξ)‖^p` on the strictly convex space
 `ℝ × F` with the `ℓ²` norm, and `ξ ↦ (1, ξ)` is injective and affine. -/
 theorem strictConvexOn_kernel {p : ℝ} (hp : 1 < p) :
     StrictConvexOn ℝ univ (kernel p : F → ℝ) := by
   refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab ↦ ?_⟩
-  have h := (strictConvexOn_norm_rpow (G := WithLp 2 (ℝ × F)) hp).2
+  have h := (strictConvexOn_norm_rpow (V := WithLp 2 (ℝ × F)) hp).2
     (mem_univ (WithLp.toLp 2 (1, x)))
     (mem_univ (WithLp.toLp 2 (1, y))) (fun h ↦ hxy (by simpa using congrArg (fun z ↦ z.snd) h))
     ha hb hab
@@ -574,63 +527,6 @@ variable {X : Type*} [MeasurableSpace X] {μ : Measure X} {F : Type*} [NormedAdd
 /-- The energy only sees the function up to a null set. -/
 theorem energy_congr_ae (p : ℝ≥0∞) (h : G =ᵐ[μ] H) : energy p μ G = energy p μ H :=
   integral_congr_ae (h.mono fun _ hx ↦ by simp only [hx])
-
-/-- `(∑ᵢ aᵢ)^p ≤ n^p ∑ᵢ aᵢ^p` for nonnegative `aᵢ`, `n = card s` and `p ≥ 1` (the convexity of
-`t ↦ t^p`, `Real.rpow_arith_mean_le_arith_mean_rpow`, with the uniform weights). -/
-theorem sum_rpow_le_card_rpow_mul_sum {ι : Type*} (s : Finset ι) {a : ι → ℝ}
-    (ha : ∀ i ∈ s, 0 ≤ a i) {r : ℝ} (hr : 1 ≤ r) :
-    (∑ i ∈ s, a i) ^ r ≤ (s.card : ℝ) ^ r * ∑ i ∈ s, a i ^ r := by
-  rcases s.eq_empty_or_nonempty with hs | hs
-  · subst hs
-    simp [Real.zero_rpow (zero_lt_one.trans_le hr).ne']
-  have hn : (0 : ℝ) < s.card := by exact_mod_cast hs.card_pos
-  have hmean := Real.rpow_arith_mean_le_arith_mean_rpow (s := s) (fun _ ↦ (s.card : ℝ)⁻¹) a
-    (fun _ _ ↦ by positivity) (by simp [Finset.sum_const, hn.ne']) ha hr
-  have hsum : ∑ i ∈ s, (s.card : ℝ)⁻¹ * a i = (s.card : ℝ)⁻¹ * ∑ i ∈ s, a i := by
-    rw [Finset.mul_sum]
-  have hsum' : ∑ i ∈ s, (s.card : ℝ)⁻¹ * a i ^ r = (s.card : ℝ)⁻¹ * ∑ i ∈ s, a i ^ r := by
-    rw [Finset.mul_sum]
-  rw [hsum, hsum', Real.mul_rpow (by positivity) (Finset.sum_nonneg ha),
-    Real.inv_rpow hn.le] at hmean
-  have hpos : 0 < (s.card : ℝ) ^ r := by positivity
-  have hle : (s.card : ℝ)⁻¹ * ∑ i ∈ s, a i ^ r ≤ ∑ i ∈ s, a i ^ r := by
-    have h1 : (s.card : ℝ)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (by exact_mod_cast hs.card_pos)
-    have h2 : 0 ≤ ∑ i ∈ s, a i ^ r := Finset.sum_nonneg fun i hi ↦ Real.rpow_nonneg (ha i hi) r
-    nlinarith
-  calc (∑ i ∈ s, a i) ^ r
-      = (s.card : ℝ) ^ r * (((s.card : ℝ) ^ r)⁻¹ * (∑ i ∈ s, a i) ^ r) := by
-        field_simp
-    _ ≤ (s.card : ℝ) ^ r * ∑ i ∈ s, a i ^ r := by
-        gcongr
-        exact hmean.trans hle
-
-/-- **A functional bounded below by `c ‖x‖^p − C ‖x‖` with `c > 0`, `p > 1`, is coercive**
-(`IsCoerciveFunctionalOn`, [han2009theoretical] Definition 3.3.9): the power beats the linear
-term.  Belongs beside `IsCoerciveFunctionalOn` in `Numlib/Variational/Minimization.lean`. -/
-theorem _root_.isCoerciveFunctionalOn_of_rpow_sub_mul_le {V : Type*} [NormedAddCommGroup V]
-    {f : V → ℝ} {K : Set V} {c C r : ℝ} (hc : 0 < c) (hr : 1 < r)
-    (hf : ∀ x ∈ K, c * ‖x‖ ^ r - C * ‖x‖ ≤ f x) : IsCoerciveFunctionalOn f K := by
-  intro M
-  have hr1 : 0 < r - 1 := by linarith
-  refine ⟨max 1 (max M ((max (C + 1) 0 / c) ^ (1 / (r - 1)))), fun x hx hxR ↦ ?_⟩
-  have h1 : 1 ≤ ‖x‖ := (le_max_left _ _).trans hxR
-  have hM : M ≤ ‖x‖ := ((le_max_left _ _).trans (le_max_right _ _)).trans hxR
-  have hA : (max (C + 1) 0 / c) ^ (1 / (r - 1)) ≤ ‖x‖ :=
-    ((le_max_right _ _).trans (le_max_right _ _)).trans hxR
-  -- `c ‖x‖^{r−1} ≥ C + 1`
-  have hpow : max (C + 1) 0 / c ≤ ‖x‖ ^ (r - 1) := by
-    have := Real.rpow_le_rpow (Real.rpow_nonneg (by positivity) _) hA hr1.le
-    rwa [← Real.rpow_mul (by positivity), one_div_mul_cancel hr1.ne', Real.rpow_one] at this
-  have hkey : C + 1 ≤ c * ‖x‖ ^ (r - 1) := by
-    rw [div_le_iff₀ hc] at hpow
-    linarith [le_max_left (C + 1) 0]
-  have hsplit : ‖x‖ ^ r = ‖x‖ ^ (r - 1) * ‖x‖ := by
-    rw [← Real.rpow_add_one (by positivity : ‖x‖ ≠ 0)]
-    ring_nf
-  calc M ≤ ‖x‖ := hM
-    _ ≤ (c * ‖x‖ ^ (r - 1) - C) * ‖x‖ := by nlinarith
-    _ = c * ‖x‖ ^ r - C * ‖x‖ := by rw [hsplit]; ring
-    _ ≤ f x := hf x hx
 
 end Auxiliary
 

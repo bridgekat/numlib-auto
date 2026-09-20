@@ -70,3 +70,6 @@ source = "Dennis–Schnabel, Numerical Methods for Unconstrained Optimization an
 [[node]]
 id = "Matrix.frobenius_norm_broydenUpdate_sub_le_add"
 source = "Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Lemma 8.2.1"
+
+[[node]]
+id = "Matrix.broydenUpdate_zero_left"

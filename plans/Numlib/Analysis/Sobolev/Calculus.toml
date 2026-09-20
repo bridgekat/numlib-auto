@@ -285,3 +285,15 @@ id = "isStampacchiaTruncation_stampacchiaTruncationSqrt"
 [[node]]
 id = "exists_stampacchiaTruncation"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.7, proof of Theorem 9.27, conditions (i)–(iii)"
+
+[[node]]
+id = "affine_symm_preimage_affine_preimage"
+
+[[node]]
+id = "affine_image_eq_affine_symm_preimage"
+
+[[node]]
+id = "isDiffeoOnWithBoundedJacobian_affine_top"
+
+[[node]]
+id = "isDiffeoOnWithBoundedJacobian_affine_symm"

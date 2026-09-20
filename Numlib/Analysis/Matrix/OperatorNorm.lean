@@ -1281,6 +1281,67 @@ theorem frobenius_norm_mul_one_sub_le (A : Matrix n n ℝ) {s : n → ℝ} (hs :
   have hle : ‖A * (1 - P)‖ ^ 2 ≤ ‖A‖ ^ 2 := by nlinarith [sq_nonneg ‖A * P‖]
   exact le_of_sq_le_sq hle (norm_nonneg _)
 
+/-- **Pythagoras for the projector onto a line**: with `P = s sᵀ / (sᵀ s)`,
+`‖A (1 - P)‖_F² + ‖A P‖_F² = ‖A‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, since `P` is
+symmetric and idempotent. -/
+theorem frobenius_norm_sq_mul_one_sub_add_sq_mul (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
+    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ^ 2 + ‖A * ((1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ^ 2
+      = ‖A‖ ^ 2 := by
+  set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
+  have hss : s ⬝ᵥ s ≠ 0 := by
+    rw [dotProduct_self_eq_norm_sq]
+    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
+  have hPt : Pᵀ = P := by
+    rw [hPdef, transpose_smul, transpose_vecMulVec]
+  have hPP : P * P = P := by
+    rw [hPdef, Matrix.smul_mul, Matrix.mul_smul, vecMulVec_mul_vecMulVec, vecMulVec_smul,
+      smul_smul, smul_smul]
+    congr 1
+    field_simp
+  have hQt : (1 - P)ᵀ = 1 - P := by rw [transpose_sub, transpose_one, hPt]
+  have hQQ : (1 - P) * (1 - P) = 1 - P := by
+    rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
+      Matrix.mul_one, hPP]
+    abel
+  have h1 : ‖A * (1 - P)‖ ^ 2 = trace (Aᵀ * A * (1 - P)) := by
+    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hQt, Matrix.mul_assoc,
+      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hQQ, ← Matrix.mul_assoc]
+  have h2 : ‖A * P‖ ^ 2 = trace (Aᵀ * A * P) := by
+    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hPt, Matrix.mul_assoc,
+      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
+  have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose A
+  rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
+
+omit [DecidableEq n] in
+/-- The projector `P = s sᵀ / (sᵀ s)` fixes `s`. -/
+theorem smul_vecMulVec_mulVec_self {s : n → ℝ} (hs : s ≠ 0) :
+    ((1 / (s ⬝ᵥ s)) • vecMulVec s s) *ᵥ s = s := by
+  have hss : s ⬝ᵥ s ≠ 0 := by
+    rw [dotProduct_self_eq_norm_sq]
+    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
+  rw [smul_mulVec, vecMulVec_mulVec, IsCentralScalar.op_smul_eq_smul, smul_smul, one_div,
+    inv_mul_cancel₀ hss, one_smul]
+
+/-- The Euclidean operator norm of a real matrix is at most its Frobenius norm. -/
+theorem norm_toEuclideanCLM_le_frobenius_norm (A : Matrix n n ℝ) :
+    ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ ‖A‖ := by
+  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
+  have h := frobenius_norm_mulVec_le A (ofLp x)
+  rwa [toLp_ofLp] at h
+
+/-- The Frobenius norm of a real matrix is at most `√n` times its Euclidean operator norm. -/
+theorem frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM (A : Matrix n n ℝ) :
+    ‖A‖ ≤ √(Fintype.card n : ℝ) * ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
+  have h1 := frobenius_norm_le_sqrt_rank_mul_l2_opNorm A
+  have h2 : lpOpNorm 2 A = ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
+    rw [lpOpNorm]
+    congr 1
+  have h3 : (A.rank : ℝ) ≤ Fintype.card n := by exact_mod_cast A.rank_le_card_width
+  calc ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A := h1
+    _ ≤ √(Fintype.card n : ℝ) * ‖toEuclideanCLM (𝕜 := ℝ) A‖ := by
+        rw [h2]
+        gcongr
+
 end Real
 
 end Frobenius

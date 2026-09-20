@@ -26,10 +26,6 @@ id = "MultiIndexLE.sum_univ_succ"
 id = "SobolevMultiIndex.norm_rpow_eq_norm_toLowerOrder_rpow_add"
 
 [[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (on an extension domain)"
-
-[[node]]
 id = "MvPolynomial.contDiff_eval"
 
 [[node]]
@@ -116,40 +112,6 @@ id = "SobolevEuclidean.exists_norm_le_lp_topSeminorm_sum_of_forall_eq_zero"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.13, the norm (7.3.4)"
 
 [[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le"
-
-[[node]]
-id = "SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_comp"
-
-[[node]]
-id = "SobolevEuclidean.exists_continuousLinearMap_orderOne"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 (the inclusion W^{m+1,p} ⊆ W^{1,r})"
-
-[[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
-
-[[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
-
-[[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (a)"
-
-[[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (b), compact form"
-
-[[node]]
-id = "SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (c) into C(Ω̄), Example 7.4.2"
-
-[[node]]
-id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9"
-
-[[node]]
 id = "MultiIndexLE.single_bijective"
 
 [[node]]
@@ -209,9 +171,6 @@ id = "MvPolynomial.iteratedFDeriv_evalBasis_eq_zero_of_le"
 
 [[node]]
 id = "SobolevMultiIndex.topSeminorm_eq_zero_of_fn_ae_eq_evalBasis"
-
-[[node]]
-id = "SobolevEuclidean.exists_fn_ae_eq_of_contDiff"
 
 [[node]]
 id = "SobolevEuclidean.exists_fn_ae_eq_eval"

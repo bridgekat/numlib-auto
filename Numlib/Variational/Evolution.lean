@@ -970,6 +970,49 @@ theorem transportForm_apply_self_of_continuous
   rw [h2] at h
   linarith
 
+/-- **The dissipativity of the transport form on a subspace of `V_h^{in}`**: if
+`c ≤ a₀ - a'/2` on `[x 0, x n]` and every `v ∈ V` is continuous with `v(x 0) = 0`, then
+`c ‖v‖² + ½ a(x n) v(x n)² ≤ b(v, v)` for `v ∈ V`; the inflow term of
+`transportForm_apply_self_of_continuous` vanishes. -/
+theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
+    (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
+    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
+    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) (hn : 0 < n) {c : ℝ}
+    (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ a₀ s - deriv a s / 2)
+    {V : Submodule ℝ (BrokenPolynomial x r)}
+    (hV : ∀ v ∈ V, v ∈ continuous x r ∧ traceRight v ⟨0, hn⟩ = 0) (v : V) :
+    c * ‖v‖ ^ 2 + a (x (Fin.last n)) * traceLeft (v : BrokenPolynomial x r) (Fin.last n) ^ 2 / 2
+      ≤ (transportForm x r ha ha₀).restrict V v v := by
+  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
+  have hreac : IntervalIntegrable (fun s => a₀ s - deriv a s / 2) volume (x 0) (x (Fin.last n)) :=
+    ha₀.sub (((by rwa [uIcc_of_le hle] :
+      ContinuousOn (deriv a) [[x 0, x (Fin.last n)]]).intervalIntegrable).div_const 2)
+  have key := transportForm_apply_self_of_continuous ha ha₀ hd hd' hn (hV v v.2).1
+  have hlow := mul_norm_sq_le_sum_integral hreac hc (v : BrokenPolynomial x r)
+  rw [SesqForm.restrict_apply, key, (hV v v.2).2, ← Submodule.norm_coe]
+  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
+    sub_zero]
+  linarith
+
+/-- **The dissipativity of the upwind form** ([quarteroni2000numerical] §13.10.1): if
+`c ≤ a₀ - a'/2` on `[x 0, x n]` then
+`c ‖v‖² + ½ a(x n) v⁻(x n)² + ½ ∑ᵢ a(xᵢ) [v]ᵢ² ≤ b^{DG}(v, v)` for every broken polynomial `v`. -/
+theorem le_dgUpwindForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
+    (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
+    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
+    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) {c : ℝ}
+    (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ a₀ s - deriv a s / 2) (v : BrokenPolynomial x r) :
+    c * ‖v‖ ^ 2 + a (x (Fin.last n)) * traceLeft v (Fin.last n) ^ 2 / 2
+        + ∑ i : Fin n, a (x i.castSucc) * jump v i ^ 2 / 2
+      ≤ dgUpwindForm x r ha ha₀ v v := by
+  have hle : x 0 ≤ x (Fin.last n) := hx.out.monotone (Fin.zero_le _)
+  have hreac : IntervalIntegrable (fun s => a₀ s - deriv a s / 2) volume (x 0) (x (Fin.last n)) :=
+    ha₀.sub (((by rwa [uIcc_of_le hle] :
+      ContinuousOn (deriv a) [[x 0, x (Fin.last n)]]).intervalIntegrable).div_const 2)
+  have hlow := mul_norm_sq_le_sum_integral hreac hc v
+  rw [dgUpwindForm_apply_self ha ha₀ hd hd' v]
+  linarith
+
 end Transport
 
 end Variational

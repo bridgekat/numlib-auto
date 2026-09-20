@@ -1,15 +1,4 @@
 [[node]]
-id = "MultiIndexLE.exists_eq_addSingle"
-
-[[node]]
-id = "SobolevMultiIndex.exists_succ_of_partialDeriv"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, proof (repeated application)"
-
-[[node]]
-id = "SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, proof; the order-lowering map at every target order"
-
-[[node]]
 id = "SobolevEuclidean.eqOn_closure_of_ae_eq"
 
 [[node]]

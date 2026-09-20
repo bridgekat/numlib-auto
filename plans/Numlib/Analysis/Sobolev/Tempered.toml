@@ -120,3 +120,13 @@ id = "fourier_iteratedLineDerivOp_eq"
 
 [[node]]
 id = "fourier_weakDeriv_aeEq"
+
+[[node]]
+id = "ae_eq_of_toTemperedDistribution_eq"
+
+[[node]]
+id = "fourierInv_ae_eq_of_toTemperedDistribution_eq"
+
+[[node]]
+id = "exists_continuous_ae_eq_of_integrable_fourier"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.2, Step 1 (the bound |v(x)| ≤ c ∫ |ℱv|)"

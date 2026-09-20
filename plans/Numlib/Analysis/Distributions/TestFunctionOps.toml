@@ -15,3 +15,9 @@ id = "TestFunction.ofLE"
 
 [[node]]
 id = "TestFunction.ofLE_coe"
+
+[[node]]
+id = "nonneg_on_of_forall_integral_mul_testFunction_nonneg"
+
+[[node]]
+id = "eqOn_zero_of_forall_integral_mul_testFunction_eq_zero"

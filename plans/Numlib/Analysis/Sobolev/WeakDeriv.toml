@@ -176,3 +176,9 @@ id = "ContinuousOn.locallyMemLpOn"
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.finset_sum"
+
+[[node]]
+id = "integrable_mul_testFunction"
+
+[[node]]
+id = "TestFunction.contDiff_mul_of_contDiffOn"

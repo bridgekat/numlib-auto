@@ -289,26 +289,6 @@ namespace SobolevEuclideanZeroVec
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **Poincaré's inequality on `H¹₀(Ω)` in squared form**: for `Ω ⊆ B(0, R)` and
-`u ∈ H¹₀(Ω)`, `‖u‖²_{H¹} ≤ (1 + (2R)²) ∑ⱼ ‖∂_j u‖²₂` (`SobolevEuclideanZero.norm_le_gradNorm`
-at `p = 2`). -/
-theorem _root_.SobolevEuclideanZero.norm_sq_le_sum_norm_weakDeriv_single_sq {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
-    (u : SobolevEuclideanZero (d + 1) 1 2 Ω) :
-    ‖(u : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
-      ≤ (1 + (2 * R) ^ 2) * ∑ j, ‖SobolevMultiIndex.weakDeriv
-        (u : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single j)‖ ^ 2 := by
-  have hP := SobolevEuclideanZero.norm_le_gradNorm (p := 2) (by norm_num) hR hΩ u
-  simp only [ENNReal.toReal_ofNat, Real.rpow_two, ← Real.sqrt_eq_rpow] at hP
-  calc ‖(u : SobolevEuclidean (d + 1) 1 2 Ω)‖ ^ 2
-      ≤ (√(1 + (2 * R) ^ 2)
-        * SobolevMultiIndex.gradNorm (u : SobolevEuclidean (d + 1) 1 2 Ω)) ^ 2 :=
-        pow_le_pow_left₀ (norm_nonneg _) hP 2
-    _ = (1 + (2 * R) ^ 2) * ∑ j, ‖SobolevMultiIndex.weakDeriv
-          (u : SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single j)‖ ^ 2 := by
-        rw [mul_pow, Real.sq_sqrt (by positivity), Elliptic.gradNorm_eq_sqrt,
-          Real.sq_sqrt (Finset.sum_nonneg fun j _ ↦ sq_nonneg _)]
-
 /-- **Poincaré's inequality on `[H¹₀(Ω)]^N`**: for `Ω ⊆ B(0, R)`,
 `‖v‖² ≤ (1 + (2R)²) ∑ᵢⱼ ‖∂_j v_i‖²`, from `SobolevEuclideanZero.norm_le_gradNorm` on each
 component. -/
