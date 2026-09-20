@@ -37,6 +37,7 @@ import NumlibSurface.AtkinsonHan.Chapter07.Section05
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section04
+import NumlibSurface.AtkinsonHan.Chapter08.Section05
 import NumlibSurface.AtkinsonHan.Chapter08.Section06
 import NumlibSurface.AtkinsonHan.Chapter08.Section07
 import NumlibSurface.AtkinsonHan.Chapter08.Section08
@@ -144,6 +145,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 8.2 | `Chapter08.Section02` | Existence and uniqueness for operator equations |
 | 8.3 | `Chapter08.Section03` | Bilinear forms and the Lax–Milgram lemma |
 | 8.4 | `Chapter08.Section04` | Lemma 8.4.1, the quotient norm of `H¹(Ω)/ℝ` |
+| 8.5 | `Chapter08.Section05` | Linearized elasticity: Korn's inequality, Theorem 8.5.1 |
 | 8.6 | `Chapter08.Section06` | Saddle points, the primal and dual problems, the minimax equality |
 | 8.7 | `Chapter08.Section07` | The generalized (Nečas) Lax–Milgram lemma |
 | **9** | | *The Galerkin Method and Its Variants* |

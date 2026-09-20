@@ -1,0 +1,60 @@
+[[node]]
+id = "TestFunction.setIntegral_fderiv_mul_fderiv_comm"
+
+[[node]]
+id = "SobolevEuclideanZero.inner_weakDeriv_single_comm_of_testFunction"
+
+[[node]]
+id = "SobolevEuclideanZero.inner_weakDeriv_single_comm"
+
+[[node]]
+id = "SobolevEuclideanZeroVec"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, section 8.5, the space [H^1(Omega)]^d with u = 0 on Gamma"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.partialL"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.partialL_apply"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_partialL_apply_le"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.strainL"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (8.5.2)"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.strainL_apply"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.strainL_symm"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_strainL_apply_le"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_strainL_le"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.sum_norm_strainL_sq_eq"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, section 8.5 (Korn's inequality, the identity behind it on H^1_0)"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.korn_first"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, section 8.5 (Korn's inequality on the pure displacement space)"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_sq_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.norm_sq_le_sum_norm_weakDeriv_single_sq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_sq_le_sum_norm_partialL_sq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, section 8.5 (Korn's inequality on the pure displacement space)"

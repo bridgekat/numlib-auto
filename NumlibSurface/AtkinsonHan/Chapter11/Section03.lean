@@ -1,3 +1,4 @@
+import Numlib.Analysis.PDE.Elliptic.Obstacle
 import Numlib.Variational.Inequality.Basic
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
@@ -641,5 +642,90 @@ theorem example_11_3_10 {R : ℝ} (hR : 0 ≤ R)
     (mul_le_mul_of_nonneg_left (norm_loadZero_sub_le Ω f₁ f₂) (by positivity))
 
 end Obstacle
+
+/-! ### Theorem 11.3.12 at `p = 2`: `H²` regularity for the obstacle problem -/
+
+section Regularity
+
+open MeasureTheory SobolevMultiIndex Metric
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+
+/-- The solution of the obstacle problem of Example 11.3.10 is a solution in the sense of the
+backbone's `Elliptic.IsObstacleSolution`. -/
+theorem isObstacleSolution_of_example_11_3_10 {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
+    {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    {u : SobolevEuclideanZero (d + 1) 1 2 Ω}
+    (hu : u ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+      dirichletBilinForm Ω u (v - u) ≥ loadZero Ω f (v - u)) :
+    Elliptic.IsObstacleSolution Ω ψ f (u : SobolevEuclidean (d + 1) 1 2 Ω) where
+  mem_zero := u.2
+  ae_le := (mem_obstacleSet_iff Ω).1 hu.1
+  ineq v hv hψv := by
+    have h := hu.2 ⟨v, hv⟩ ((mem_obstacleSet_iff Ω).2 hψv)
+    rw [ge_iff_le, BilinForm.ofCLM_apply, Chapter08.modelOperator_apply] at h
+    exact h
+
+/-- **The a priori `H¹` bound for the obstacle problem**: for `Ω ⊆ B(0, R)`, an admissible `w ∈ K`
+and a solution `u` of the variational inequality of Example 11.3.10,
+`‖u‖_{H¹} ≤ 2 (1 + (2R)²) (‖w‖_{H¹} + ‖f‖₂)` (`Elliptic.IsObstacleSolution.norm_le`: testing with
+`v = w` gives `a(u, u) ≤ a(u, w) − ℓ(w) + ℓ(u)`, and `a(u, u) ≥ (1 + (2R)²)⁻¹ ‖u‖²` by Poincaré's
+inequality). -/
+theorem norm_le_of_obstacle_solution {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
+    {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
+    {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    {w : SobolevEuclideanZero (d + 1) 1 2 Ω} (hwK : w ∈ obstacleSet Ω ψ)
+    {u : SobolevEuclideanZero (d + 1) 1 2 Ω}
+    (hu : u ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+      dirichletBilinForm Ω u (v - u) ≥ loadZero Ω f (v - u)) :
+    ‖u‖ ≤ 2 * (1 + (2 * R) ^ 2) * (‖w‖ + ‖f‖) :=
+  (isObstacleSolution_of_example_11_3_10 Ω hu).norm_le hR hΩ w.2 ((mem_obstacleSet_iff Ω).1 hwK)
+
+/-- The obstacle `ψ ∈ H²(Ω)` of Theorem 11.3.12, read in `H¹(Ω)`. -/
+noncomputable abbrev obstacleOfH2 (Ψ : SobolevEuclidean (d + 1) 2 2 Ω) :
+    SobolevEuclidean (d + 1) 1 2 Ω :=
+  toLowerOrder ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 2 Ω volume (by norm_num) Ψ
+
+/-- **Theorem 11.3.12 at `p = 2`, for the Laplacian (`a_ij = δ_ij`) on a `C²` domain**
+(Brezis–Stampacchia). Let `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}` be a bounded open set of class `C²`. There is
+a constant `C` such that for every obstacle `ψ ∈ H²(Ω)` with `ψ ≤ 0` on `Γ` — read, as in
+Examples 11.1.1 and 11.3.10, as "`max (ψ, 0)` is the function of an element of `H¹₀(Ω)`" —
+every `f ∈ L²(Ω)` and every solution `u ∈ K = {v ∈ H¹₀(Ω) : v ≥ ψ}` of the obstacle problem
+(11.1.7) (`example_11_3_10` gives existence and uniqueness), `u ∈ H²(Ω)` and every `U ∈ H²(Ω)`
+with function `u` satisfies
+
+`‖U‖_{H²(Ω)} ≤ C (‖f‖_{L²(Ω)} + ‖ψ‖_{H²(Ω)})`.
+
+The book quotes the theorem (for `1 < p < ∞`, `C^{1,1}` domains and general uniformly elliptic
+`a_ij ∈ C(Ω̄)`) from Brezis–Stampacchia and Gilbarg–Trudinger without proof; the `p = 2`
+Laplacian case is proved in the backbone through the Lewy–Stampacchia inequality
+`f ≤ −Δu ≤ max (f, −Δψ)` (`Elliptic.regularity_obstacle_sobolev_two`,
+`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`). The `C^{1,1}` hypothesis of the book is replaced
+by the backbone's `C²` chart domain, and `p ≠ 2` stays open (`theorem_11_3_12`). -/
+theorem theorem_11_3_12_two {R : ℝ} (hR : 0 ≤ R)
+    (hΩb : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
+    (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (Ψ : SobolevEuclidean (d + 1) 2 2 Ω)
+        (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))),
+        (∃ w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, fn w
+          =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+            fun x ↦ max (fn (obstacleOfH2 Ω Ψ) x) 0) →
+        ∀ u : SobolevEuclideanZero (d + 1) 1 2 Ω,
+          (u ∈ obstacleSet Ω (obstacleOfH2 Ω Ψ) ∧ ∀ v ∈ obstacleSet Ω (obstacleOfH2 Ω Ψ),
+            dirichletBilinForm Ω u (v - u) ≥ loadZero Ω f (v - u)) →
+          MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+            (fn (u : SobolevEuclidean (d + 1) 1 2 Ω)) 2 2 Ω volume ∧
+          ∀ U : SobolevEuclidean (d + 1) 2 2 Ω,
+            fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+              fn (u : SobolevEuclidean (d + 1) 1 2 Ω) →
+            ‖U‖ ≤ C * (‖f‖ + ‖Ψ‖) := by
+  obtain ⟨C, hC, h⟩ := Elliptic.regularity_obstacle_sobolev_two hR hΩb hΩ
+  exact ⟨C, hC, fun Ψ f hψ u hu ↦
+    h Ψ (obstacleOfH2 Ω Ψ) (Filter.EventuallyEq.refl _ _) hψ f u
+      (isObstacleSolution_of_example_11_3_10 Ω hu)⟩
+
+end Regularity
 
 end AtkinsonHan.Chapter11

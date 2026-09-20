@@ -227,6 +227,7 @@ import Numlib.Analysis.PDE.Bochner.SpaceTime
 import Numlib.Analysis.PDE.DirichletLaplacian
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
+import Numlib.Analysis.PDE.Elliptic.Obstacle
 import Numlib.Analysis.PDE.Elliptic.Regularity
 import Numlib.Analysis.PDE.Elliptic.Spectral
 import Numlib.Analysis.PDE.Heat
@@ -256,6 +257,7 @@ import Numlib.Analysis.Sobolev.Interval.Embedding
 import Numlib.Analysis.Sobolev.Interval.Extension
 import Numlib.Analysis.Sobolev.Interval.Higher
 import Numlib.Analysis.Sobolev.Interval.Zero
+import Numlib.Analysis.Sobolev.Korn
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic

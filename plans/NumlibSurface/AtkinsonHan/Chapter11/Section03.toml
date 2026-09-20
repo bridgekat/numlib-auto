@@ -82,19 +82,30 @@ Not formalized: it needs `W^{2,p}(Ω)` and `L^p(Ω)` on a `C^{1,1}` domain and t
 theory behind them, and the book gives no proof, citing Brezis–Stampacchia and Gilbarg–Trudinger
 Theorem 9.14; the chapter's group description records the same.
 
-Blocked: rechecked 2026-09-20 after the Brezis backbone. The obstacle problem it speaks of is now
-`example_11_3_10` on `obstacleSet Ω ψ` (`Chapter11/Section01`), and linear elliptic regularity
-exists for `p = 2` on `C²` domains: `Elliptic.regularity_dirichlet` of
-`Numlib/Analysis/PDE/Elliptic/Regularity.lean` (`H²` with `‖u‖_{H²} ≤ C ‖f‖_{L²}` for the Dirichlet
-problem of `−Δ + 1`, Brezis's Theorem 9.25). What is still missing, even for the `p = 2` clause
-with `a_ij = δ_ij`: the Brezis–Stampacchia argument itself — the Lewy–Stampacchia inequality
-`f ≤ −Δu ≤ max (f, −Δψ)` a.e. (by penalization or by the dual estimate), which shows `−Δu ∈ L²(Ω)`
-and reduces the obstacle problem to the linear one — is in no library, and it is the whole
-content of the theorem; `W^{2,p}` regularity for `p ≠ 2` (Gilbarg–Trudinger Theorem 9.14,
-Calderón–Zygmund) and the `C^{1,1}` class are further away (blocker 18 of `notes/frontier.md`).
-The `p = 2` clause on a `C²` domain is a bounded task once the Lewy–Stampacchia inequality is
-proved: estimate 300–500 lines of backbone (`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`: the
-penalized problems `−Δu_ε + β_ε(u_ε − ψ) = f`, their `L²` bounds, the passage to the limit) and
-then one application of `Elliptic.regularity_dirichlet`. The book quotes the theorem without proof.
+Blocked: rechecked 2026-09-21 (closing round, ah6). The `p = 2` clause with `a_ij = δ_ij` on a
+`C²` domain is now proved as `theorem_11_3_12_two` below: the Lewy–Stampacchia inequality
+`f ≤ −Δu ≤ max (f, −Δψ)` is `Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load` of
+`Numlib/Analysis/PDE/Elliptic/Obstacle.lean` (by the truncation `min (εΦ, u − ψ)` and Hahn–Banach,
+not by penalization), which gives `−Δu ∈ L²(Ω)` and reduces the obstacle problem to
+`Elliptic.regularity_dirichlet`; `Elliptic.regularity_obstacle_sobolev_two` is the backbone form
+of the theorem, with the a priori bound `Elliptic.IsObstacleSolution.norm_le` and
+`‖ψ⁺‖_{H¹} ≤ ‖ψ‖_{H¹} ≤ ‖ψ‖_{H²}`. What remains is exactly the book's generality: `W^{2,p}(Ω)` and
+`L^p(Ω)` regularity for `p ≠ 2` (Gilbarg–Trudinger Theorem 9.14, Calderón–Zygmund), general
+uniformly elliptic `a_ij ∈ C(Ω̄)` (the linear regularity theory `Elliptic.regularity_dirichlet`
+is for `−Δ + 1` only) and the `C^{1,1}` class in place of `C²` — blocker 18 of `notes/frontier.md`.
+The book quotes the theorem without proof.
 '''
 deps = ["example_11_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
+
+[[node]]
+id = "isObstacleSolution_of_example_11_3_10"
+
+[[node]]
+id = "norm_le_of_obstacle_solution"
+
+[[node]]
+id = "obstacleOfH2"
+
+[[node]]
+id = "theorem_11_3_12_two"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.12 (p = 2, a_ij = δ_ij, C² domain)"

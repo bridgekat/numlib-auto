@@ -73,35 +73,23 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 
 [[node]]
 id = "example_7_2_5"
-kind = "theorem"
-desc = '''Example 7.2.5, the `W^{k,p}` half (7.2.1), corrected: on the unit ball of `ℝ^d`, for a
-real `λ` that is **not** a nonnegative even integer, `|x|^λ ∈ W^{k,p}(Ω) ↔ λ > k - d/p`. The book
-prints (7.2.1) with no restriction on `λ` and leaves it to Exercise 7.2.7; as printed it is false.
-For `λ` a nonnegative even integer `|x|^λ = (x·x)^{λ/2}` is a polynomial, hence lies in
-`W^{k,p}(Ω)` for every `k` and every `p` on the bounded `Ω`, while `λ > k - d/p` fails as soon as
-`k ≥ λ + d/p`; the smallest counterexample is `λ = 0`, `k = 1`, `d = p = 2`, where `v ≡ 1` lies in
-`W^{1,2}(Ω)` but `0 > 1 - 1` is false. The membership at `λ = 0` is proved, for every `k` and `p`
-and every ball, as `example_7_2_5_const`. The book's own displayed first-order equivalence
-`v ∈ W^{1,p}(Ω) ↔ λ > 1 - d/p` fails at the same point: it reads `|∇v| = |λ| |x|^{λ-1}` off as
-lying in `L^p(Ω)` exactly when `(λ-1)p + d > 0`, which needs the factor `|λ|` to be nonzero. The
-corrected case `k = 1` is proved, as `example_7_2_5_memW1p`; the removable-singularity step the
-book passes over is `hasWeakIteratedLineDerivOn_normRpow`.
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1), corrected: `λ` not a nonnegative even integer'
 
-Blocked: rechecked 2026-09-20, and most of it is now proved under split ids. `example_7_2_5_mpr`
-is the sufficiency half for every real `λ` and every `k`; `example_7_2_5_of_forall_ne` (with its
-necessity half `example_7_2_5_mp`) is the equivalence for every `λ ∉ {0, 1, …, k - 1}`. The
-composition rule (`HasWeakIteratedLineDerivOn.cons`, backbone) and the homogeneity bound
-`‖D^n |x|^λ‖ ≤ C_n |x|^{λ-n}` (`exists_norm_iteratedFDeriv_normRpow_le`, here) exist; the
-necessity reads `|x|^{λ-k}` off the radial derivative
-`D^k |·|^λ (x)(x/|x|, …) = λ(λ-1)⋯(λ-k+1) |x|^{λ-k}` (`iteratedFDeriv_normRpow_apply_unit`). What
-remains for this node as stated — `λ` any real that is not a nonnegative even integer — is the
-necessity half for `λ` an *odd* positive integer below `k`, where the radial component vanishes
-identically: for `d ≥ 2` one must use a non-radial direction (`∂_1^{λ+1} |x|^λ` is `≍ |x|^{-1}`
-on a cone), and for `d = 1` the jump of `D^λ |x|^λ` at the origin. Estimate 150–250 lines; a
-bounded task.
-'''
-deps = ["definition_7_2_2_multiIndex", "example_7_2_5_memLp"]
-source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1)'
+[[node]]
+id = "iteratedDeriv_one_add_sq_rpow_two_mul"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (the derivatives of `|x|^λ` orthogonal to `x`)'
+
+[[node]]
+id = "example_7_2_5_mp_of_forall_exists"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1)"
+
+[[node]]
+id = "example_7_2_5_mp_of_two_le"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1)"
+
+[[node]]
+id = "example_7_2_5_mp_dimOne"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1), the case d = 1"
 
 [[node]]
 id = "example_7_2_5_mpr"
