@@ -42,34 +42,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
 [[node]]
 id = "equation_5_53_quadratic"
-kind = "theorem"
-desc = '''The quadratic convergence of the single-shift QR iteration (5.52)–(5.53), in the rigorous form
-the book's `O(η_k²)` stands for (re-planned 2026-09-20 from the printed "if
-`|t_{n,n-1}^{(k)}| / ‖T⁽⁰⁾‖₂ = η_k < 1` then `|t_{n,n-1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ = O(η_k²)`", which
-names a single `k` and no constant; the reading follows the source the book cites, [Dem97]
-pp. 161–163): for `T⁽⁰⁾ = equation_5_53 A 0` unreduced upper Hessenberg with `λ_n` a simple real
-eigenvalue, there are `c, ε₀ > 0` such that for every `k`, if `|t_{n,n-1}^{(k)}| ≤ ε₀ ‖T⁽⁰⁾‖₂`
-then `|t_{n,n-1}^{(k+1)}| ≤ c |t_{n,n-1}^{(k)}|² / ‖T⁽⁰⁾‖₂`, where `T⁽ᵏ⁾ = equation_5_53 A k`.
-The hypotheses (unreduced Hessenberg, simple eigenvalue) are the ones the book leaves implicit and
-[Dem97] uses; for a defective `λ_n` (a nontrivial Jordan block) the convergence is only linear.
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
-Blocked (re-examined 2026-09-20, agent qss1; blocker 13 of `notes/frontier.md`): checked in
-`Numlib/`: the single-shift iteration itself is `equation_5_53` with `shiftedQrStep`
-(`equation_5_53_eq`, `equation_5_53_eq_conj`, similarity preserved), the QR factorization of a
-Hessenberg matrix by Givens rotations is `Matrix.hessenbergGivensQR_spec`
-(`Numlib/LinearAlgebra/Matrix/QR`), and `Numlib/Eigen/PowerMethod` carries the power and inverse
-iterations with a fixed shift and records Rayleigh quotient iteration as not formalized. The proof
-([Dem97] pp. 161–163) identifies the last row of one shifted QR step with a step of Rayleigh
-quotient iteration on `Tᵀ` from `e_n` (the shifted inverse `(T - μI)⁻¹` applied to `e_n`, with
-`μ = t_{nn}` the Rayleigh quotient of `e_n`) and then quotes the local quadratic convergence of
-that iteration for a simple eigenvalue. Missing: (i) the identification `(T - μI) = Q R` ⟹ the
-last column of `Q` is proportional to `(T - μI)⁻ᵀ e_n`, and the bookkeeping expressing
-`t_{n,n-1}^{(k+1)}` through it (~200 lines); (ii) the local quadratic convergence of Rayleigh
-quotient iteration for a *nonsymmetric* matrix and a simple eigenvalue — a perturbation argument
-on the angle to the eigenvector with the gap `min_{i<n} |λ_i - λ_n|` (~400 lines, an
-`Eigen/RayleighQuotient` module); (iii) the translation to the book's normalization by `‖T⁽⁰⁾‖₂`
-(small). Estimate: 600–800 lines; nothing downstream depends on it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_53"]
+[[node]]
+id = "equation_5_53_quadratic_iterate"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
 [[node]]
@@ -104,6 +80,22 @@ proved — quadratic convergence of `t_{n-1,n-2}^{(k)}` to `0` once the trailing
 close to an invariant block with a simple pair of eigenvalues — is the single-shift argument of
 `equation_5_53_quadratic` in `2 × 2` block form and is blocked on the same missing Rayleigh
 quotient theory (subspace version). Estimate: `equation_5_53_quadratic` plus ~300 lines for the
-block form.'''
+block form.
+
+Blocked (re-examined 2026-09-21, agent qss8): `equation_5_53_quadratic` is now proved, on the
+backbone `Numlib/Eigen/RayleighQuotientIteration` (the local quadratic convergence of Rayleigh
+quotient iteration at a simple eigenvalue of a nonsymmetric operator,
+`Krylov.norm_sub_inner_smul_le_sq_mul_norm`, and the last-row identification
+`Matrix.abs_shiftedQrStep_last_le`), under the hypotheses that `t_{nn}^{(k)}` is close to the
+simple eigenvalue and that no shift is exactly an eigenvalue. What the double-shift claim would
+need beyond that is the same argument for the trailing `2 × 2` block: `t_{n-1,n-2}^{(k+1)}`
+controlled by the sine of the angle between `span {e_{n-1}, e_n}` and the two-dimensional left
+invariant subspace of the complex pair, i.e. a *subspace* Rayleigh quotient iteration (the last
+two columns of `Q` for the double step `equation_5_55` are `(T - λ)⁻ᵀ (T - λ̄)⁻ᵀ [e_{n-1}, e_n]`
+orthonormalized), with the gap `Submodule.gap` of
+`Numlib/Analysis/InnerProductSpace/Projection/Angle` in place of the complementary component and
+a resolvent bound on the complement of the invariant pair. The genericity hypothesis the book calls
+an open problem is still not supplied by any cited source, so the node stays open under its printed
+id. Estimate: ~400 lines for the block form of `Numlib/Eigen/RayleighQuotientIteration`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_55"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.2'

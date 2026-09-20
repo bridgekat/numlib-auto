@@ -95,8 +95,10 @@ spectral correspondence is proved by hand and needs no spectral mapping theorem:
 (`Krylov.maxGenEigenspace_le_maxGenEigenspace_inverse`, from the factorization `(A - σ)⁻¹ - (μ -
 σ)⁻¹ = -(μ - σ)⁻¹ (A - σ)⁻¹ (A - μ)` and the commutation of the two factors), and every eigenvalue
 of the shifted inverse arises this way (`Krylov.hasEigenvalue_of_hasEigenvalue_inverse`). Rayleigh
-quotient iteration, which updates the shift at every step, is described by the book without a
-theorem and is not formalized.
+quotient iteration, which updates the shift at every step to the Rayleigh quotient of the current
+vector, is described by the book without a theorem; it is `Krylov.rayleighQuotientIterate` of
+`Numlib/Eigen/RayleighQuotientIteration`, with its local quadratic convergence at a simple
+eigenvalue of a nonsymmetric operator (`Krylov.norm_rayleighQuotientIterate_sub_le`).
 
 ## Subspace iteration
 

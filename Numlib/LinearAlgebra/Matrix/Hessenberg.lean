@@ -701,6 +701,32 @@ theorem IsUpperHessenberg.mul_isUpperTriangular {H T : Matrix n n R} (hH : H.IsU
 
 end BandwidthAlgebra
 
+section Shift
+
+variable [DecidableEq n]
+
+/-- Adding a multiple of the identity preserves upper Hessenberg form (the `+ μ I` of a shifted
+QR step, [quarteroni2000numerical] (5.52)). -/
+theorem IsUpperHessenberg.add_smul_one [NonAssocSemiring R] {H : Matrix n n R}
+    (hH : H.IsUpperHessenberg) (μ : R) : (H + μ • 1).IsUpperHessenberg := by
+  intro i j h
+  obtain ⟨k, hjk, hki⟩ := h
+  have hij : i ≠ j := ne_of_gt (lt_trans hjk hki)
+  rw [Matrix.add_apply, Matrix.smul_apply, one_apply_ne hij, smul_zero, add_zero]
+  exact hH i j ⟨k, hjk, hki⟩
+
+/-- Subtracting a multiple of the identity preserves upper Hessenberg form (the `- μ I` of a
+shifted QR step, [quarteroni2000numerical] (5.52)). -/
+theorem IsUpperHessenberg.sub_smul_one [NonAssocRing R] {H : Matrix n n R}
+    (hH : H.IsUpperHessenberg) (μ : R) : (H - μ • 1).IsUpperHessenberg := by
+  intro i j h
+  obtain ⟨k, hjk, hki⟩ := h
+  have hij : i ≠ j := ne_of_gt (lt_trans hjk hki)
+  rw [Matrix.sub_apply, Matrix.smul_apply, one_apply_ne hij, smul_zero, sub_zero]
+  exact hH i j ⟨k, hjk, hki⟩
+
+end Shift
+
 section TridiagonalOf
 
 open Finset

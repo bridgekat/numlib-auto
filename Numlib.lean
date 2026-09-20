@@ -351,6 +351,7 @@ import Numlib.Eigen.Pencil
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.QRAlgorithm
+import Numlib.Eigen.RayleighQuotientIteration
 import Numlib.Eigen.RayleighRitz
 import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm

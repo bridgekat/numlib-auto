@@ -1,0 +1,109 @@
+namespace = "Krylov"
+
+[[node]]
+id = "inner_sub_inner_smul"
+
+[[node]]
+id = "map_sub_inner_smul"
+
+[[node]]
+id = "map_sub_inner_smul_sub_smul"
+
+[[node]]
+id = "inner_map_sub_mul_inner_self"
+
+[[node]]
+id = "norm_inner_map_sub_le"
+
+[[node]]
+id = "norm_sub_inner_smul_le"
+
+[[node]]
+id = "norm_le_two_mul_norm_map_sub_smul"
+
+[[node]]
+id = "norm_sub_inner_smul_le_norm_map_sub_smul"
+
+[[node]]
+id = "exists_norm_le_mul_norm_map_sub"
+
+[[node]]
+id = "norm_sub_inner_smul_le_sq_mul_norm"
+
+[[node]]
+id = "sinAngle_span_singleton_le"
+
+[[node]]
+id = "norm_sub_inner_smul_le_sinAngle_mul"
+
+[[node]]
+id = "rqiStep"
+
+[[node]]
+id = "rayleighQuotientIterate"
+
+[[node]]
+id = "rayleighQuotientIterate_zero"
+
+[[node]]
+id = "rayleighQuotientIterate_succ"
+
+[[node]]
+id = "eq_zero_of_map_sub_smul_eq_zero"
+
+[[node]]
+id = "isUnit_sub_smul_one"
+
+[[node]]
+id = "rqiStep_spec"
+
+[[node]]
+id = "norm_rayleighQuotientIterate_sub_le"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_euclideanCol"
+
+[[node]]
+id = "_root_.Matrix.transpose_mul_mul_apply"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_transpose_single_last_sub_of_isUpperHessenberg"
+
+[[node]]
+id = "_root_.Matrix.abs_shiftedQrStep_last_le"
+
+[[node]]
+id = "_root_.Matrix.mul_transpose_of_mem_orthogonalGroup"
+
+[[node]]
+id = "_root_.Matrix.transpose_mul_of_mem_orthogonalGroup"
+
+[[node]]
+id = "_root_.Matrix.transpose_mem_orthogonalGroup"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_toEuclideanLin_transpose_apply"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_transpose_toEuclideanLin_apply"
+
+[[node]]
+id = "_root_.Matrix.inner_toEuclideanLin_transpose_left"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_transpose_mul_mul_apply_transpose"
+
+[[node]]
+id = "_root_.Matrix.abs_shiftedQrStep_last_le_of_conj"
+
+[[node]]
+id = "_root_.Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one"
+
+[[node]]
+id = "_root_.Matrix.isUpperHessenberg_shiftedQrStep"
+
+[[node]]
+id = "_root_.Matrix.isUpperHessenberg_rayleighShiftQrIterate"
