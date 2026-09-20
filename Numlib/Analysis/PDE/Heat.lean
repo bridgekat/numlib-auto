@@ -1,3 +1,4 @@
+import Numlib.Analysis.PDE.Bochner.SpaceTime
 import Numlib.Analysis.PDE.DirichletLaplacian
 import Numlib.Analysis.PDE.Elliptic.Spectral
 
@@ -2008,3 +2009,114 @@ end IsSolution
 end Heat
 
 end SobolevThree
+
+/-! ### The space–time reading: `u ∈ C^∞(Ω̄ × [ε, ∞))`, `u ∈ C^∞(Ω̄ × [0, ∞))` -/
+
+section SpaceTime
+
+namespace Heat
+
+open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+namespace IsSolution
+
+variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+  {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+
+/-- **`u ∈ C^∞((0, ∞); H^m(Ω))` for every `m` on a `C^∞` domain with bounded boundary**: the
+`H^{2ℓ}` clauses `contDiffOnThrough_sobolev` for every `ℓ`, lowered to every order `m ≤ 2ℓ`
+(`Bochner.ContDiffOnThrough.sobolev_of_le`). -/
+theorem contDiffOnThrough_sobolev_forall (h : IsSolution Ω u₀ u)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) (m : ℕ) :
+    Bochner.ContDiffOnThrough (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω
+      volume) ∞ u (Ioi 0) :=
+  (h.contDiffOnThrough_sobolev (ℓ := m) (hΩ.of_le (WithTop.coe_le_coe.2 le_top)) hΓ).sobolev_of_le
+    (by omega)
+
+/-- **(5): `u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`** ([brezis2011functional] Theorem 10.1), on a
+`C^∞` domain with bounded boundary: there is `U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` almost
+everywhere on `Ω` for every `t > 0`, such that for every `ε > 0`, `U` is `C^∞` on `Ω × (ε, ∞)`
+with every derivative extending continuously to `closure Ω × [ε, ∞)` (`ContDiffOnClosure`). The
+conclusion cannot be strengthened to `Ω̄ × [0, ∞)`: with `L²` data the solution is not smooth
+up to `t = 0`. Proof: `u ∈ C^∞((0, ∞); H^m(Ω))` for every `m` (`contDiffOnThrough_sobolev_forall`,
+Theorem 9.25 through `D(A^ℓ) ↪ H^{2ℓ}`) and the space–time bridge
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi` on the extension domain
+`Ω` (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`). The book invokes Corollary 9.15
+for `H^{2ℓ} ⊆ C^k(Ω̄)`, whose hypothesis "`m − N/p` not an integer" fails at `p = 2` for even
+`N`; the bridge uses the integer-safe form `k + N/2 < m`. -/
+theorem contDiffOnClosure_spaceTime (h : IsSolution Ω u₀ u)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    ∃ U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      (∀ t ∈ Ioi (0 : ℝ),
+        (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t) ∧
+      ∀ ε > (0 : ℝ),
+        ContDiffOnClosure ℝ ∞ U ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ioi ε) :=
+  Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi
+    (IsSobolevExtensionDomainAll.of_isContDiffChartDomain (hΩ.of_le (by simp)) hΓ)
+    (h.contDiffOnThrough_sobolev_forall hΩ hΓ)
+
+/-- **`u ∈ C^∞([0, ∞); H^{2ℓ}(Ω))` for `u₀ ∈ D(A^k)` for every `k`**: one lift for all orders.
+The lifts of `contDiffOnThrough_sobolev_Ici_of_powDomain` at the orders `n` agree on `[0, ∞)`
+(`SobolevMultiIndex.fnL_injective`), so the lift at order `0` is `C^n` on `[0, ∞)` for every
+`n`. -/
+theorem contDiffOnThrough_sobolev_Ici_of_forall_powDomain (h : IsSolution Ω u₀ u)
+    (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
+    {ℓ : ℕ}
+    (hΩ : IsContDiffChartDomain (2 * ℓ) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    Bochner.ContDiffOnThrough (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ) 2 Ω
+      volume) ∞ u (Ici 0) := by
+  have hn : ∀ n : ℕ, Bochner.ContDiffOnThrough
+      (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ) 2 Ω volume) n u (Ici 0) := by
+    intro n
+    obtain ⟨x, hx⟩ := hu₀ (ℓ + n)
+    have := h.contDiffOnThrough_sobolev_Ici_of_powDomain x hx (ℓ := ℓ) (by omega) hΩ hΓ
+    rwa [show ℓ + n - ℓ = n by omega] at this
+  obtain ⟨v, hv0, huv⟩ := hn 0
+  refine ⟨v, ?_, huv⟩
+  rw [contDiffOn_infty]
+  intro n
+  obtain ⟨w, hw, huw⟩ := hn n
+  refine hw.congr fun t ht ↦ ?_
+  exact fnL_injective ((huv t ht).symm.trans (huw t ht))
+
+/-- **`u ∈ C^∞([0, ∞); H^m(Ω))` for every `m`** when `u₀ ∈ D(A^k)` for every `k`, on a `C^∞`
+domain with bounded boundary. -/
+theorem contDiffOnThrough_sobolev_Ici_forall (h : IsSolution Ω u₀ u)
+    (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) (m : ℕ) :
+    Bochner.ContDiffOnThrough (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω
+      volume) ∞ u (Ici 0) :=
+  (h.contDiffOnThrough_sobolev_Ici_of_forall_powDomain hu₀ (ℓ := m)
+    (hΩ.of_le (WithTop.coe_le_coe.2 le_top)) hΓ).sobolev_of_le (by omega)
+
+/-- **Theorem 10.2 (c)** ([brezis2011functional]): on a `C^∞` domain with bounded boundary, if
+`u₀ ∈ D(A^k)` for every `k` — the book's `u₀ ∈ H^{2k}(Ω)` with the compatibility conditions (8)
+`Δ^j u₀ = 0` on `Γ`, by `dirichletLaplacian_mem_powDomain_iff` — then `u ∈ C^∞(Ω̄ × [0, ∞))`:
+there is `U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` almost everywhere on `Ω` for every `t ≥ 0`,
+`C^∞` on `Ω × (0, ∞)` with every derivative extending continuously to `closure Ω × [0, ∞)`
+(`ContDiffOnClosure`). Proof: `u ∈ C^∞([0, ∞); H^m(Ω))` for every `m`
+(`contDiffOnThrough_sobolev_Ici_forall`) and the space–time bridge on `[0, ∞)`
+(`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
+theorem contDiffOnClosure_spaceTime_Ici (h : IsSolution Ω u₀ u)
+    (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    ∃ U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      (∀ t ∈ Ici (0 : ℝ),
+        (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t) ∧
+      ContDiffOnClosure ℝ ∞ U ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ioi 0) :=
+  Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici
+    (IsSobolevExtensionDomainAll.of_isContDiffChartDomain (hΩ.of_le (by simp)) hΓ)
+    (h.contDiffOnThrough_sobolev_Ici_forall hu₀ hΩ hΓ)
+
+end IsSolution
+
+end Heat
+
+end SpaceTime

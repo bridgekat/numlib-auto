@@ -133,37 +133,35 @@ id = "IsSolution.eLpNorm_top_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (ii)"
 
 [[node]]
+id = "exists_isCompact_subset_abs_lt"
+
+[[node]]
+id = "continuous_indicator_mul_of_tsupport_subset"
+
+[[node]]
+id = "exists_testFunction_abs_sub_le_of_hasCompactSupport"
+
+[[node]]
+id = "exists_testFunction_abs_sub_le"
+
+[[node]]
 id = "exists_testFunction_tendsto_of_continuousOn"
-kind = "theorem"
-desc = '''The approximation the book calls "easily established" (line 12468): if `u₀ : ℝ^N → ℝ` is
-continuous on `closure Ω`, square integrable on `Ω`, vanishes on `frontier Ω`, and (when `Ω` is
-unbounded) tends to `0` at infinity along `Ω` (`Tendsto u₀ (cocompact _ ⊓ 𝓟 Ω) (𝓝 0)`, footnote
-6), then there are test functions `φ n : 𝓓(Ω, ℝ)` with `φ n → u₀` uniformly on `Ω` and in
-`L²(Ω)`. Proof: `u₀` is uniformly continuous on the compact `closure Ω ∩ closedBall 0 R` and
-small outside a compact, so a cutoff `θ_ε u₀` with `θ_ε ∈ C_c^∞(Ω)` equal to `1` where
-`dist (·, Γ) ≥ ε` and `‖x‖ ≤ 1/ε` is uniformly close (`exists_contDiff_one_on_of_isCompact_of_isOpen`
-of `Numlib/Analysis/Normed/Lp/SmoothApprox`), and mollifying `θ_ε u₀` (a compactly supported
-continuous function; `ContDiffBump.convolution_tendsto_right`,
-`HasCompactSupport.contDiff_convolution_left`) gives test functions uniformly close; `L²`
-closeness follows from uniform closeness on a set of finite measure plus the tail. ★★, ~200
-lines.'''
-deps = ["MeasureTheory.Lp.dense_contDiff_tsupport_subset"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Corollary 10.5"
 
 [[node]]
+id = "abs_le_on_closure_of_ae_abs_le"
+
+[[node]]
+id = "IsSolution.abs_sub_le_of_abs_sub_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, (19)"
+
+[[node]]
+id = "IsSolution.exists_continuousOn_spaceTime_of_testFunction"
+
+[[node]]
+id = "IsSolution.continuousOn_spaceTime_of_isContDiffChartDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
+
+[[node]]
 id = "IsSolution.continuousOn_spaceTime"
-kind = "theorem"
-desc = '''**Corollary 10.5**: on a `C^∞` domain with bounded boundary, if `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with
-`u₀ = 0` on `Γ` (and `u₀ → 0` at infinity if `Ω` is unbounded), then the solution is continuous on
-`Q̄`: there is `U : ℝ^N × ℝ → ℝ` continuous on `closure Ω ×ˢ Ici 0` with `U(·,t) =ᵐ u t` for every
-`t ≥ 0` (and `U(·,0) = u₀` on `closure Ω`). Book, lines 12466–12478: approximants
-`u_{0n} ∈ C_c^∞(Ω)` (`exists_testFunction_tendsto_of_continuousOn`) lie in every `D(A^k)`
-(`testFunction_mem_dirichletLaplacianDomain`), so their solutions `uₙ` are continuous on
-`Ω̄ × [0,∞)` (`IsSolution.contDiffOnPowDomain_Ici_of_powDomain` at `ℓ` with `N/2 < 2ℓ`,
-`powDomainToSobolevL`, and `Bochner.continuousOn_spaceTime_of_contDiffOnThrough`); by (19)
-`‖uₙ - uₘ‖_{L^∞(Q)} ≤ ‖u_{0n} - u_{0m}‖_∞` (`eLpNorm_top_solution_sub_le`), so the `Uₙ` are
-uniformly Cauchy on `Ω̄ × [0,∞)` and converge uniformly to a continuous `U`, which represents
-`u t` because `uₙ(t) → u(t)` in `L²` (`norm_solution_le` on the differences). ★★★ (~300 lines
-on top of Theorem 10.2 (c)'s Bochner clause).'''
-deps = ["exists_testFunction_tendsto_of_continuousOn", "testFunction_mem_dirichletLaplacianDomain", "IsSolution.contDiffOnPowDomain_Ici_of_powDomain", "Bochner.continuousOn_spaceTime_of_contDiffOnThrough", "IsSolution.eLpNorm_top_le", "solution"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"

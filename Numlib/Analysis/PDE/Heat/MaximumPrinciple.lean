@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Calculus.BumpFunction.Convolution
+import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat
 
@@ -27,17 +29,28 @@ because `K ≥ 0`. With (a)–(c): `φ(t) = Φ(u(t))` is continuous on `[0, ∞)
 so `φ ≡ 0`, i.e. `u(t) ≤ K` a.e. The theorem is stated for every admissible bound `K ≥ 0`; the
 book's `K = max{0, sup u₀}` is the least such `K`, and the surface recovers the `essSup` form.
 
-Corollary 10.5 (`u ∈ C(Q̄)` for continuous data vanishing on `Γ`) is planned here
-(`Heat.exists_testFunction_tendsto_of_continuousOn`, `Heat.IsSolution.continuousOn_spaceTime`)
-and not yet proved.
+## Corollary 10.5
+
+`u ∈ C(Q̄)` for a datum `u₀ ∈ C(Ω̄) ∩ L²(Ω)` vanishing on `Γ` (and at infinity when `Ω` is
+unbounded), on a `C^{2ℓ}` domain with bounded boundary and `N/2 < 2ℓ`
+(`Heat.IsSolution.continuousOn_spaceTime`, `…_of_isContDiffChartDomain`): the datum is
+approximated uniformly on `Ω` by test functions (`Heat.exists_testFunction_tendsto_of_continuousOn`,
+a cut-off to a compact subset of `Ω` followed by a mollification), whose solutions are continuous
+on `Ω̄ × [0, ∞)` by Theorem 10.2 and the space–time bridge of
+`Numlib/Analysis/PDE/Bochner/SpaceTime` (`Bochner.continuousOn_spaceTime_of_contDiffOnThrough`);
+the `L^∞` contraction (19), in the form
+`Heat.IsSolution.abs_sub_le_of_abs_sub_le`, makes their representatives uniformly Cauchy on
+`Ω̄ × [0, ∞)`. The book's `L²` convergence of the approximants is not needed: the semigroup is
+an `L^∞`-contraction, so `uₙ(t) → u(t)` almost everywhere.
 
 ## References
 
-[brezis2011functional], §10.2: Theorem 10.3, Corollary 10.4, and the proof of Theorem 9.27.
+[brezis2011functional], §10.2: Theorem 10.3, Corollaries 10.4 and 10.5, and the proof of
+Theorem 9.27.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
-open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
+open scoped ContDiff Convolution Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
 
@@ -536,6 +549,424 @@ theorem eLpNorm_top_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 ≤ t) :
         exact ⟨hx2, hx1⟩
     _ = eLpNormEssSup u₀ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
         ENNReal.ofReal_toReal hne
+
+end IsSolution
+
+/-! ### Uniform approximation of continuous data vanishing on the boundary by test functions -/
+
+section Approximation
+
+variable {E : Type*} [NormedAddCommGroup E]
+
+/-- **A continuous function on `closure Ω` vanishing on `frontier Ω` and at infinity is small off
+a compact subset of `Ω`**: for every `ε > 0` there is a compact `K ⊆ Ω` with `|f| < ε` on
+`Ω \ K`. The tail is the hypothesis at infinity; near the boundary, `{|f| < ε}` is relatively
+open in `closure Ω` and contains `frontier Ω`, so its complement in a compact set is a compact
+subset of `Ω`. -/
+theorem exists_isCompact_subset_abs_lt {Ω : Set E} (hΩ : IsOpen Ω) {f : E → ℝ}
+    (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
+    (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : Set E, IsCompact K ∧ K ⊆ Ω ∧ ∀ x ∈ Ω \ K, |f x| < ε := by
+  -- the tail
+  have htail := (Metric.tendsto_nhds.1 hft) ε hε
+  rw [eventually_inf_principal, hasBasis_cocompact.eventually_iff] at htail
+  obtain ⟨C, hC, hCf⟩ := htail
+  -- the relatively open set `{|f| < ε}`
+  obtain ⟨V, hV, hVf⟩ := continuousOn_iff'.1 hf (ball 0 ε) isOpen_ball
+  refine ⟨(C ∩ closure Ω) \ V, (hC.inter_right isClosed_closure).diff hV, fun x hx ↦ ?_,
+    fun x hx ↦ ?_⟩
+  · -- `K ⊆ Ω`: a point of `closure Ω` outside `V` is not on the frontier
+    obtain ⟨⟨-, hxc⟩, hxV⟩ := hx
+    by_contra hxΩ
+    have hxΓ : x ∈ frontier Ω := by
+      rw [frontier, hΩ.interior_eq]
+      exact ⟨hxc, hxΩ⟩
+    have : x ∈ f ⁻¹' ball 0 ε ∩ closure Ω := by
+      refine ⟨?_, hxc⟩
+      simp [hf0 x hxΓ, hε]
+    rw [hVf] at this
+    exact hxV this.1
+  · obtain ⟨hxΩ, hxK⟩ := hx
+    by_cases hxC : x ∈ C
+    · have hxV : x ∈ V := by
+        by_contra hxV
+        exact hxK ⟨⟨hxC, subset_closure hxΩ⟩, hxV⟩
+      have : x ∈ V ∩ closure Ω := ⟨hxV, subset_closure hxΩ⟩
+      rw [← hVf] at this
+      simpa [dist_eq_norm] using this.1
+    · simpa [dist_eq_norm] using hCf hxC hxΩ
+
+/-- **The cut-off of `f` to a compact subset of `Ω` is continuous**: for `η` continuous with
+`tsupport η ⊆ Ω` and `f` continuous on `Ω`, the function equal to `η f` on `Ω` and to `0`
+outside is continuous on the whole space. -/
+theorem continuous_indicator_mul_of_tsupport_subset {Ω : Set E} (hΩ : IsOpen Ω) {f η : E → ℝ}
+    (hf : ContinuousOn f Ω) (hη : Continuous η) (hηΩ : tsupport η ⊆ Ω) :
+    Continuous (Ω.indicator fun x ↦ η x * f x) := by
+  refine continuous_of_cover_nhds (s := fun b : Bool ↦ if b then Ω else (tsupport η)ᶜ)
+    (fun x ↦ ?_) (fun b ↦ ?_)
+  · by_cases hx : x ∈ Ω
+    · exact ⟨true, by simpa using hΩ.mem_nhds hx⟩
+    · refine ⟨false, by simpa using (isClosed_tsupport η).isOpen_compl.mem_nhds fun h ↦ hx (hηΩ h)⟩
+  · cases b with
+    | true =>
+      change ContinuousOn _ Ω
+      exact (hη.continuousOn.mul hf).congr fun x hx ↦ by simp [indicator_of_mem hx]
+    | false =>
+      change ContinuousOn _ (tsupport η)ᶜ
+      refine (continuousOn_const (c := (0 : ℝ))).congr fun x hx ↦ ?_
+      by_cases hxΩ : x ∈ Ω
+      · simp [indicator_of_mem hxΩ, image_eq_zero_of_notMem_tsupport hx]
+      · simp [indicator_of_notMem hxΩ]
+
+variable [NormedSpace ℝ E] [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+
+/-- **Mollification approximates a continuous compactly supported function uniformly** by test
+functions of `Ω`: for `g` continuous with `tsupport g ⊆ Ω` compact and `ε > 0` there is
+`φ ∈ 𝓓(Ω, ℝ)` with `|φ − g| ≤ ε` everywhere. The mollification `ρ_δ ⋆ g` at a scale `δ` below
+the distance from `tsupport g` to `Ωᶜ` and below the modulus of uniform continuity of `g` at
+`ε` does it (`ContDiffBump.dist_normed_convolution_le`). -/
+theorem exists_testFunction_abs_sub_le_of_hasCompactSupport {Ω : Opens E} {g : E → ℝ}
+    (hg : Continuous g) (hgc : HasCompactSupport g) (hgΩ : tsupport g ⊆ Ω) {ε : ℝ}
+    (hε : 0 < ε) : ∃ φ : 𝓓(Ω, ℝ), ∀ x, |φ x - g x| ≤ ε := by
+  obtain ⟨δ₁, hδ₁, hδ₁Ω⟩ := hgc.exists_cthickening_subset_open Ω.isOpen hgΩ
+  obtain ⟨δ₂, hδ₂, hδ₂g⟩ :=
+    Metric.uniformContinuous_iff.1 (hgc.uniformContinuous_of_continuous hg) ε hε
+  set δ : ℝ := min δ₁ δ₂ with hδ
+  have hδ0 : 0 < δ := lt_min hδ₁ hδ₂
+  let ρ : ContDiffBump (0 : E) := ⟨δ / 2, δ, by positivity, by linarith⟩
+  let μ : Measure E := Measure.addHaar
+  set ψ : E → ℝ := ρ.normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] g with hψ
+  have hψs : ContDiff ℝ ∞ ψ :=
+    ρ.hasCompactSupport_normed.contDiff_convolution_left (n := ⊤) _ ρ.contDiff_normed
+      hg.locallyIntegrable
+  have hψc : HasCompactSupport ψ := ρ.hasCompactSupport_normed.convolution _ hgc
+  have hψΩ : tsupport ψ ⊆ Ω := by
+    refine (closure_mono (support_convolution_subset _)).trans ?_
+    refine (closure_minimal ?_ isClosed_cthickening).trans hδ₁Ω
+    rintro _ ⟨y, hy, z, hz, rfl⟩
+    rw [ρ.support_normed_eq] at hy
+    refine mem_cthickening_of_dist_le (y + z) z δ₁ _ (subset_closure hz) ?_
+    rw [dist_eq_norm, add_sub_cancel_right]
+    exact (mem_ball_zero_iff.1 hy).le.trans (min_le_left _ _)
+  refine ⟨⟨ψ, hψs, hψc, hψΩ⟩, fun x ↦ ?_⟩
+  rw [← Real.dist_eq]
+  refine ρ.dist_normed_convolution_le hg.aestronglyMeasurable fun y hy ↦ (hδ₂g ?_).le
+  exact (mem_ball.1 hy).trans_le (min_le_right _ _)
+
+/-- **Uniform approximation of continuous data vanishing on the boundary by test functions**
+(the approximation [brezis2011functional] calls "easily established" in the proof of
+Corollary 10.5): if `f` is continuous on `closure Ω`, vanishes on `frontier Ω` and tends to `0`
+at infinity along `Ω` (automatic for bounded `Ω`), then for every `ε > 0` there is a test
+function `φ ∈ 𝓓(Ω, ℝ)` with `|φ − f| ≤ ε` on `Ω`. Proof: `|f| ≤ ε/2` off a compact `K ⊆ Ω`
+(`exists_isCompact_subset_abs_lt`); a smooth cut-off `η`, equal to `1` on `K` and supported in
+`Ω`, makes `η f` (extended by `0`) continuous with compact support in `Ω` and `ε/2`-close to `f`
+on `Ω`; a mollification of it is `ε/2`-close uniformly
+(`exists_testFunction_abs_sub_le_of_hasCompactSupport`). -/
+theorem exists_testFunction_abs_sub_le {Ω : Opens E} {f : E → ℝ}
+    (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
+    (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
+    ∃ φ : 𝓓(Ω, ℝ), ∀ x ∈ Ω, |φ x - f x| ≤ ε := by
+  obtain ⟨K, hK, hKΩ, hKf⟩ := exists_isCompact_subset_abs_lt Ω.isOpen hf hf0 hft (half_pos hε)
+  obtain ⟨η, hη, hηc, hηΩ, hη1, hη01⟩ :=
+    exists_contDiff_one_on_of_isCompact_of_isOpen hK Ω.isOpen hKΩ
+  set g : E → ℝ := (Ω : Set E).indicator fun x ↦ η x * f x with hg
+  have hsupp : Function.support g ⊆ Function.support η := by
+    intro x hx
+    rw [Function.mem_support] at hx ⊢
+    intro h
+    apply hx
+    by_cases hxΩ : x ∈ (Ω : Set E)
+    · simp [hg, indicator_of_mem hxΩ, h]
+    · simp [hg, indicator_of_notMem hxΩ]
+  have hgc : Continuous g :=
+    continuous_indicator_mul_of_tsupport_subset Ω.isOpen (hf.mono subset_closure) hη.continuous
+      hηΩ
+  have hgs : HasCompactSupport g := hηc.mono hsupp
+  have hgΩ : tsupport g ⊆ Ω := (closure_mono hsupp).trans hηΩ
+  obtain ⟨φ, hφ⟩ := exists_testFunction_abs_sub_le_of_hasCompactSupport hgc hgs hgΩ (half_pos hε)
+  refine ⟨φ, fun x hx ↦ ?_⟩
+  have hgf : |g x - f x| ≤ ε / 2 := by
+    simp only [hg, indicator_of_mem hx]
+    by_cases hxK : x ∈ K
+    · simp [hη1 x hxK, (half_pos hε).le]
+    · have h2 := hKf x ⟨hx, hxK⟩
+      rw [show η x * f x - f x = (η x - 1) * f x by ring, abs_mul]
+      have h1 : |η x - 1| ≤ 1 := by
+        rw [abs_le]
+        constructor <;> linarith [(hη01 x).1, (hη01 x).2]
+      calc |η x - 1| * |f x| ≤ 1 * (ε / 2) := mul_le_mul h1 h2.le (abs_nonneg _) zero_le_one
+        _ = ε / 2 := one_mul _
+  calc |φ x - f x| = |(φ x - g x) + (g x - f x)| := by ring_nf
+    _ ≤ |φ x - g x| + |g x - f x| := abs_add_le _ _
+    _ ≤ ε / 2 + ε / 2 := add_le_add (hφ x) hgf
+    _ = ε := add_halves ε
+
+/-- **A sequence of test functions converging uniformly on `Ω` to continuous data vanishing on
+the boundary** ([brezis2011functional], proof of Corollary 10.5, the approximants `u_{0n}`): if
+`f` is continuous on `closure Ω`, vanishes on `frontier Ω` and tends to `0` at infinity along `Ω`
+(footnote 6; automatic for bounded `Ω`), there are `φ n ∈ 𝓓(Ω, ℝ)` with `φ n → f` uniformly on
+`Ω` (`exists_testFunction_abs_sub_le` at `ε = 1/(n+1)`). The book also asks `φ n → f` in
+`L²(Ω)`; Corollary 10.5 does not need it, the semigroup being an `L^∞`-contraction
+(`Heat.IsSolution.eLpNorm_top_le`). -/
+theorem exists_testFunction_tendsto_of_continuousOn {Ω : Opens E} {f : E → ℝ}
+    (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
+    (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) :
+    ∃ φ : ℕ → 𝓓(Ω, ℝ), TendstoUniformlyOn (fun n x ↦ φ n x) f atTop Ω := by
+  have h : ∀ n : ℕ, ∃ φ : 𝓓(Ω, ℝ), ∀ x ∈ Ω, |φ x - f x| ≤ 1 / (n + 1) := fun n ↦
+    exists_testFunction_abs_sub_le hf hf0 hft (by positivity)
+  choose φ hφ using h
+  refine ⟨φ, Metric.tendstoUniformlyOn_iff.2 fun ε hε ↦ ?_⟩
+  obtain ⟨n₀, hn₀⟩ := exists_nat_one_div_lt hε
+  filter_upwards [eventually_ge_atTop n₀] with n hn x hx
+  rw [Real.dist_eq, abs_sub_comm]
+  refine (hφ n x hx).trans_lt (lt_of_le_of_lt ?_ hn₀)
+  gcongr
+
+end Approximation
+
+/-! ### Corollary 10.5: continuity on `Ω̄ × [0, ∞)` for continuous data vanishing on `Γ` -/
+
+/-- **A bound almost everywhere on an open set passes to the closure by continuity**: if `g` is
+continuous on `closure Ω` and `|g| ≤ C` almost everywhere on the open set `Ω` (for a measure
+positive on open sets), then `|g| ≤ C` on `closure Ω`. -/
+theorem abs_le_on_closure_of_ae_abs_le {X : Type*} [TopologicalSpace X] [MeasurableSpace X]
+    {μ : Measure X} [μ.IsOpenPosMeasure] {Ω : Set X} (hΩ : IsOpen Ω) {g : X → ℝ}
+    (hg : ContinuousOn g (closure Ω)) {C : ℝ} (hb : ∀ᵐ x ∂(μ.restrict Ω), |g x| ≤ C) :
+    ∀ x ∈ closure Ω, |g x| ≤ C := by
+  have hc : ContinuousOn (fun x ↦ max (|g x| - C) 0) (closure Ω) :=
+    ContinuousOn.sup ((continuous_abs.comp_continuousOn hg).sub continuousOn_const)
+      continuousOn_const
+  have h1 : EqOn (fun x ↦ max (|g x| - C) 0) (fun _ ↦ (0 : ℝ)) Ω := by
+    refine Measure.eqOn_open_of_ae_eq (μ := μ) ?_ hΩ (hc.mono subset_closure) continuousOn_const
+    filter_upwards [hb] with x hx
+    simp [max_eq_right (sub_nonpos.2 hx)]
+  intro x hx
+  have h2 := h1.of_subset_closure hc continuousOn_const subset_closure le_rfl hx
+  exact sub_nonpos.1 (max_eq_right_iff.1 h2)
+
+namespace IsSolution
+
+variable {u₀ v₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+  {u v : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+
+/-- **The `L^∞` contraction between two solutions** ([brezis2011functional] (19), in the form
+used in the proof of Corollary 10.5): if `|u₀ − v₀| ≤ C` almost everywhere on `Ω`, `C ≥ 0`, then
+`|u(t) − v(t)| ≤ C` almost everywhere on `Ω` for every `t ≥ 0` — Theorem 10.3 for the solution
+`u − v` with datum `u₀ − v₀` (linearity of the semigroup). Any open `Ω`. -/
+theorem abs_sub_le_of_abs_sub_le (h : IsSolution Ω u₀ u) (h' : IsSolution Ω v₀ v) {C : ℝ}
+    (hC : 0 ≤ C)
+    (hb : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), |u₀ x - v₀ x| ≤ C)
+    {t : ℝ} (ht : 0 ≤ t) :
+    ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), |u t x - v t x| ≤ C := by
+  have hs := isSolution_solution (Ω := Ω) (u₀ - v₀)
+  have hb' : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      |(u₀ - v₀) x| ≤ C := by
+    filter_upwards [hb, Lp.coeFn_sub u₀ v₀] with x hx hx'
+    rw [hx', Pi.sub_apply]
+    exact hx
+  have h1 := hs.le_of_le hC (hb'.mono fun x hx ↦ (abs_le.1 hx).2) ht
+  have h2 := hs.ge_of_ge hC (hb'.mono fun x hx ↦ (abs_le.1 hx).1) ht
+  rw [solution_sub] at h1 h2
+  rw [h.eqOn_solution ht, h'.eqOn_solution ht]
+  filter_upwards [h1, h2, Lp.coeFn_sub (solution Ω u₀ t) (solution Ω v₀ t)] with x hx1 hx2 hx3
+  rw [hx3, Pi.sub_apply] at hx1 hx2
+  rw [abs_le]
+  exact ⟨hx2, hx1⟩
+
+end IsSolution
+
+end Heat
+
+namespace Heat
+
+open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+namespace IsSolution
+
+variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+  {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+
+/-- **The solution with a test-function datum is continuous on `Ω̄ × [0, ∞)`**: on a `C^{2ℓ}`
+domain with bounded boundary, `N/2 < 2ℓ`, the solution with datum `φ ∈ 𝓓(Ω, ℝ)` — which lies in
+`D(A^ℓ)` (`testFunction_exists_powDomain`), so that `u ∈ C([0, ∞); H^{2ℓ}(Ω))`
+(`contDiffOnThrough_sobolev_Ici_of_powDomain`) — has a space–time representative continuous on
+`closure Ω × [0, ∞)` (`Bochner.continuousOn_spaceTime_of_contDiffOnThrough`). -/
+theorem exists_continuousOn_spaceTime_of_testFunction {ℓ : ℕ} (hℓ : ((d : ℝ) + 1) / 2 < 2 * ℓ)
+    (hΩ : IsContDiffChartDomain (2 * ℓ) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (hext : IsSobolevExtensionDomainAll (d + 1) Ω) (φ : 𝓓(Ω, ℝ)) :
+    ∃ V : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      ContinuousOn V (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ici 0) ∧
+      ∀ t ∈ Ici (0 : ℝ), (fun x ↦ V (x, t)) =ᵐ[volume.restrict
+        (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] solution Ω φ.toL2 t := by
+  obtain ⟨x, hx⟩ := testFunction_exists_powDomain φ ℓ
+  have hx0 : applyL (dirichletLaplacian Ω) ℓ 0 x = φ.toL2 := by simpa using hx 0
+  have hc := (isSolution_solution (Ω := Ω) φ.toL2).contDiffOnThrough_sobolev_Ici_of_powDomain x
+    hx0 le_rfl hΩ hΓ
+  exact Bochner.continuousOn_spaceTime_of_contDiffOnThrough hext (by push_cast; exact hℓ)
+    (hc.of_le (by simp))
+
+/-- **Corollary 10.5** ([brezis2011functional]), the general form: on a `C^{2ℓ}` domain with
+bounded boundary, `N/2 < 2ℓ`, let the datum `u₀ ∈ L²(Ω)` agree almost everywhere with a
+function `f` continuous on `closure Ω`, vanishing on `frontier Ω` and tending to `0` at infinity
+along `Ω` (footnote 6; automatic for bounded `Ω`). Then the solution is continuous on
+`Q̄ = Ω̄ × [0, ∞)`: there is `U : ℝ^N × ℝ → ℝ`, continuous on `closure Ω × [0, ∞)`, with
+`U(·, t) = u(t)` almost everywhere on `Ω` for every `t ≥ 0` and `U(·, 0) = f` on `closure Ω`.
+
+Proof (the book's): test functions `φ n → f` uniformly on `Ω`
+(`exists_testFunction_tendsto_of_continuousOn`); the solutions `uₙ` with data `φ n` have
+continuous space–time representatives `Vₙ` (`exists_continuousOn_spaceTime_of_testFunction`,
+Theorem 10.2); by the maximum principle `|uₙ(t) − uₘ(t)| ≤ sup_Ω |φ n − φ m|` almost everywhere
+(`abs_sub_le_of_abs_sub_le`), hence everywhere on `closure Ω` by continuity
+(`abs_le_on_closure_of_ae_abs_le`), so the `Vₙ` are uniformly Cauchy on `closure Ω × [0, ∞)`
+and converge uniformly to a continuous `U`. For `t ≥ 0`, `|uₙ(t) − u(t)| ≤ sup_Ω |φ n − f| → 0`
+almost everywhere, so `U(·, t) = u(t)` almost everywhere — the book's `L²` convergence
+`uₙ(t) → u(t)` is not needed, the semigroup being an `L^∞`-contraction. -/
+theorem continuousOn_spaceTime_of_isContDiffChartDomain (h : IsSolution Ω u₀ u) {ℓ : ℕ}
+    (hℓ : ((d : ℝ) + 1) / 2 < 2 * ℓ)
+    (hΩ : IsContDiffChartDomain (2 * ℓ) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hf : ContinuousOn f (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (hf0 : ∀ x ∈ frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), f x = 0)
+    (hft : Tendsto f (cocompact (EuclideanSpace ℝ (Fin (d + 1))) ⊓
+      𝓟 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (𝓝 0))
+    (hu₀ : u₀ =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] f) :
+    ∃ U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      ContinuousOn U (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ici 0) ∧
+      (∀ t ∈ Ici (0 : ℝ),
+        (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t) ∧
+      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := by
+  set S : Set (EuclideanSpace ℝ (Fin (d + 1)) × ℝ) :=
+    closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ici 0 with hS
+  -- the extension-domain hypothesis
+  have h2ℓ : 0 < 2 * ℓ := by
+    have : (0 : ℝ) < 2 * ℓ := lt_of_le_of_lt (by positivity) hℓ
+    exact_mod_cast this
+  have hΩ1 : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+    hΩ.of_le (by exact_mod_cast h2ℓ)
+  have hext : IsSobolevExtensionDomainAll (d + 1) Ω :=
+    IsSobolevExtensionDomainAll.of_isContDiffChartDomain hΩ1 hΓ
+  -- the approximants and their continuous solutions
+  obtain ⟨φ, hφ⟩ := exists_testFunction_tendsto_of_continuousOn hf hf0 hft
+  choose V hVc hVae using fun n ↦
+    exists_continuousOn_spaceTime_of_testFunction hℓ hΩ hΓ hext (φ n)
+  -- uniformly Cauchy on `closure Ω × [0, ∞)`
+  have hcauchy : UniformCauchySeqOn V atTop S := by
+    rw [Metric.uniformCauchySeqOn_iff]
+    intro ε hε
+    obtain ⟨n₀, hn₀⟩ := eventually_atTop.1
+      (Metric.tendstoUniformlyOn_iff.1 hφ (ε / 3) (by positivity))
+    refine ⟨n₀, fun m hm n hn q hq ↦ ?_⟩
+    obtain ⟨x, t⟩ := q
+    obtain ⟨hx, ht⟩ : x ∈ closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∧ t ∈ Ici (0 : ℝ) :=
+      hq
+    have hb : ∀ᵐ y ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        |(φ m).toL2 y - (φ n).toL2 y| ≤ 2 * ε / 3 := by
+      filter_upwards [(φ m).coeFn_toL2, (φ n).coeFn_toL2,
+        ae_restrict_mem Ω.isOpen.measurableSet] with y hym hyn hyΩ
+      rw [hym, hyn]
+      have h1 := hn₀ m hm y hyΩ
+      have h2 := hn₀ n hn y hyΩ
+      rw [Real.dist_eq] at h1 h2
+      calc |φ m y - φ n y| = |(f y - φ n y) - (f y - φ m y)| := by ring_nf
+        _ ≤ |f y - φ n y| + |f y - φ m y| := abs_sub _ _
+        _ ≤ 2 * ε / 3 := by linarith
+    have hae := (isSolution_solution (Ω := Ω) (φ m).toL2).abs_sub_le_of_abs_sub_le
+      (isSolution_solution (Ω := Ω) (φ n).toL2) (by positivity) hb ht
+    have hVt : ∀ y ∈ closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        |V m (y, t) - V n (y, t)| ≤ 2 * ε / 3 := by
+      refine abs_le_on_closure_of_ae_abs_le (μ := volume) Ω.isOpen ?_ ?_
+      · exact ((hVc m).comp (continuousOn_id.prodMk continuousOn_const) fun y hy ↦ ⟨hy, ht⟩).sub
+          ((hVc n).comp (continuousOn_id.prodMk continuousOn_const) fun y hy ↦ ⟨hy, ht⟩)
+      · filter_upwards [hae, hVae m t ht, hVae n t ht] with y hy hym hyn
+        rw [hym, hyn]
+        exact hy
+    rw [Real.dist_eq]
+    exact (hVt x hx).trans_lt (by linarith)
+  -- the uniform limit
+  set U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ := fun q ↦ limUnder atTop fun n ↦ V n q with hU
+  have hUlim : ∀ q ∈ S, Tendsto (fun n ↦ V n q) atTop (𝓝 (U q)) := fun q hq ↦
+    (hcauchy.cauchySeq hq).tendsto_limUnder
+  have hUnif : TendstoUniformlyOn V U atTop S := hcauchy.tendstoUniformlyOn_of_tendsto hUlim
+  have hUc : ContinuousOn U S := hUnif.continuousOn (Eventually.of_forall hVc).frequently
+  -- the representative property
+  have hUrep : ∀ t ∈ Ici (0 : ℝ),
+      (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t := by
+    intro t ht
+    have hrate : ∀ k : ℕ, ∃ M : ℕ, ∀ n, M ≤ n →
+        ∀ᵐ y ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+          |solution Ω (φ n).toL2 t y - solution Ω u₀ t y| ≤ 1 / (k + 1) := by
+      intro k
+      obtain ⟨M, hM⟩ := eventually_atTop.1
+        (Metric.tendstoUniformlyOn_iff.1 hφ (1 / (k + 1)) (by positivity))
+      refine ⟨M, fun n hn ↦ ?_⟩
+      refine (isSolution_solution (Ω := Ω) (φ n).toL2).abs_sub_le_of_abs_sub_le
+        (isSolution_solution (Ω := Ω) u₀) (by positivity) ?_ ht
+      filter_upwards [(φ n).coeFn_toL2, hu₀, ae_restrict_mem Ω.isOpen.measurableSet]
+        with y hy hy' hyΩ
+      rw [hy, hy', abs_sub_comm, ← Real.dist_eq]
+      exact (hM n hn y hyΩ).le
+    choose M hM using hrate
+    have hae : ∀ᵐ y ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        y ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∧
+        (∀ n, V n (y, t) = solution Ω (φ n).toL2 t y) ∧
+        ∀ k n, M k ≤ n → |solution Ω (φ n).toL2 t y - solution Ω u₀ t y| ≤ 1 / (k + 1) := by
+      refine (ae_restrict_mem Ω.isOpen.measurableSet).and
+        ((ae_all_iff.2 fun n ↦ hVae n t ht).and (ae_all_iff.2 fun k ↦ ae_all_iff.2 fun n ↦ ?_))
+      by_cases hn : M k ≤ n
+      · exact (hM k n hn).mono fun y hy _ ↦ hy
+      · exact Eventually.of_forall fun y hn' ↦ absurd hn' hn
+    rw [h.eqOn_solution ht]
+    filter_upwards [hae] with y hy
+    obtain ⟨hyΩ, hyV, hyb⟩ := hy
+    have h1 : Tendsto (fun n ↦ V n (y, t)) atTop (𝓝 (U (y, t))) :=
+      hUlim (y, t) ⟨subset_closure hyΩ, ht⟩
+    have h2 : Tendsto (fun n ↦ V n (y, t)) atTop (𝓝 (solution Ω u₀ t y)) := by
+      rw [Metric.tendsto_atTop]
+      intro ε hε
+      obtain ⟨k, hk⟩ := exists_nat_one_div_lt hε
+      exact ⟨M k, fun n hn ↦ by rw [hyV n, Real.dist_eq]; exact (hyb k n hn).trans_lt hk⟩
+    exact tendsto_nhds_unique h1 h2
+  refine ⟨U, hUc, hUrep, ?_⟩
+  -- the initial slice
+  have hU0 : ContinuousOn (fun x ↦ U (x, 0))
+      (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    hUc.comp (continuousOn_id.prodMk continuousOn_const) fun x hx ↦ ⟨hx, self_mem_Ici⟩
+  have hae0 : (fun x ↦ U (x, 0)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      f := by
+    have := hUrep 0 self_mem_Ici
+    rw [h.apply_zero] at this
+    exact this.trans hu₀
+  exact (Measure.eqOn_open_of_ae_eq hae0 Ω.isOpen (hU0.mono subset_closure)
+    (hf.mono subset_closure)).of_subset_closure hU0 hf subset_closure le_rfl
+
+/-- **Corollary 10.5** ([brezis2011functional]): on a `C^∞` domain with bounded boundary, if
+`u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0` on `Γ` (and `u₀(x) → 0` as `|x| → ∞` when `Ω` is unbounded,
+footnote 6) — the datum `u₀ ∈ L²(Ω)` agrees almost everywhere with such a function `f` — then
+the solution belongs to `C(Q̄)`: there is `U : ℝ^N × ℝ → ℝ`, continuous on
+`closure Ω × [0, ∞)`, with `U(·, t) = u(t)` almost everywhere on `Ω` for every `t ≥ 0` and
+`U(·, 0) = f` on `closure Ω`. The general form, on a `C^{2ℓ}` domain with `N/2 < 2ℓ`, is
+`continuousOn_spaceTime_of_isContDiffChartDomain`. -/
+theorem continuousOn_spaceTime (h : IsSolution Ω u₀ u)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hf : ContinuousOn f (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (hf0 : ∀ x ∈ frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), f x = 0)
+    (hft : Tendsto f (cocompact (EuclideanSpace ℝ (Fin (d + 1))) ⊓
+      𝓟 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (𝓝 0))
+    (hu₀ : u₀ =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] f) :
+    ∃ U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      ContinuousOn U (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ici 0) ∧
+      (∀ t ∈ Ici (0 : ℝ),
+        (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t) ∧
+      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+  h.continuousOn_spaceTime_of_isContDiffChartDomain (ℓ := d + 1)
+    (by push_cast; linarith [(Nat.cast_nonneg d : (0 : ℝ) ≤ d)])
+    (hΩ.of_le (WithTop.coe_le_coe.2 le_top)) hΓ hf hf0 hft hu₀
 
 end IsSolution
 

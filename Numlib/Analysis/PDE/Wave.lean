@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Numlib.Analysis.PDE.Heat
+import Numlib.Analysis.PDE.Heat.Classical
 
 /-!
 # The wave equation
@@ -18,6 +19,25 @@ gives Theorem 10.7, and Theorem 7.5 with the description of `D(A^k)` gives Theor
 Everything except the `H^{k+1} × H^k` reading of `D(A^k)` and the space–time smoothness holds
 on an arbitrary open set, for the same reason as in `Numlib/Analysis/PDE/Heat`.
 `Ω : Opens (EuclideanSpace ℝ (Fin N))`.
+
+## Theorem 10.8
+
+`D(A^k)` is described on every open set through the domains `D_m` of the Dirichlet Laplacian
+(`Wave.MemLaplacianDomain`: `D_0 = L²`, `D_1 = H¹₀`, `D_{m+2} = {f ∈ D(−Δ) : −Δf ∈ D_m}`, the
+book's "`w ∈ H^m`, `Δ^j w = 0` on `Γ` for `2j < m`" before Sobolev spaces are read in):
+`D(A^k) = D_{k+1} × D_k` (`Wave.mem_operator_powGraph_iff`). On a `C^m` domain with bounded
+boundary `D_m ⊆ H^m(Ω)` (`MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at even and at odd
+orders), whence the continuous injection `D(A^k) → H^{k+1}(Ω) × H^k(Ω)`
+(`Wave.operator.powDomainToSobolevL`, closed graph). Theorem 7.5 is stated for the maximal
+monotone `A + I`; the transport `D((A + I)^j) ≃ D(A^j)` of
+`Numlib/Analysis/InnerProductSpace/MaximalMonotone` (`LinearPMap.IsAddSmulId.transport`) and
+the shift `e^t` give `U ∈ C^{k−j}([0, ∞); D(A^j))`
+(`IsSolution.contDiffOnPowDomain_of_powDomain`), hence `u ∈ C^{k−j}([0, ∞); H^{j+1}(Ω))`
+(`IsSolution.contDiffOnThrough_of_powDomain`) and, through the space–time bridge of
+`Numlib/Analysis/PDE/Bochner/SpaceTime`, `u ∈ C^∞(Ω̄ × [0, ∞))`
+(`IsSolution.contDiffOnClosure_spaceTime`). Remark 10, the necessity of the compatibility
+conditions, is `Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`, on the pattern of
+the heat equation's Remark 4 (`Numlib/Analysis/PDE/Heat/Classical`).
 
 ## Types
 
@@ -1935,5 +1955,739 @@ theorem neg_operator'_isMaximalMonotone : (-operator' Ω hΩ).IsMaximalMonotone 
   ⟨neg_operator'_isMonotone, neg_operator'_exists_add_apply_eq⟩
 
 end DirichletOperator
+
+end Wave
+
+namespace Wave
+
+/-! ### Remark 10: the compatibility conditions are necessary -/
+
+section Classical
+
+open Heat Laplacian
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  {Ω : Set E} {T : ℝ} {u : E × ℝ → ℝ}
+
+/-- **A classical solution of the wave equation** `∂ₜₜ u = Δ u` on the open cylinder
+`Ω × (0, T)`, for a function `u : E × ℝ → ℝ` of space and time: the equation holds pointwise
+there, written with the operators `Heat.timeDeriv` (`∂ₜ`) and `Heat.spaceLaplacian` (`Δ_x`) of
+`Numlib/Analysis/PDE/Heat/Classical`. No regularity, boundary or initial condition is bundled;
+Remark 10 of [brezis2011functional] chapter 10 assumes `u` smooth on `E × ℝ` beside it. -/
+structure IsClassicalSolution (Ω : Set E) (T : ℝ) (u : E × ℝ → ℝ) : Prop where
+  /-- The wave equation `∂ₜₜ u = Δ_x u` on the open cylinder. -/
+  eqn : EqOn (timeDeriv (timeDeriv u)) (spaceLaplacian u) (Ω ×ˢ Ioo 0 T)
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- **The iterated time derivatives of a smooth function vanishing on `{x} × (0, T)` vanish at
+`(x, 0)`**: they vanish on `{x} × (0, T)` (`Heat.iterate_deriv_eq_zero_of_eqOn`) and are
+continuous. -/
+theorem timeDeriv_iterate_apply_zero_eq_zero [NormedSpace ℝ E] (hT : 0 < T)
+    (hsmooth : ContDiff ℝ ∞ u) {x : E} (hx : ∀ t ∈ Ioo 0 T, u (x, t) = 0) (n : ℕ) :
+    timeDeriv^[n] u (x, 0) = 0 := by
+  have h1 : EqOn (fun s ↦ timeDeriv^[n] u (x, s)) 0 (Ioo 0 T) := by
+    rw [timeDeriv_iterate_slice]
+    exact iterate_deriv_eq_zero_of_eqOn isOpen_Ioo (fun t ht ↦ hx t ht) n
+  have h2 : EqOn (fun s ↦ timeDeriv^[n] u (x, s)) 0 (Icc 0 T) := by
+    rw [← closure_Ioo hT.ne]
+    exact h1.of_subset_closure ((contDiff_timeDeriv_iterate hsmooth n).continuous.comp
+      (continuous_const.prodMk continuous_id)).continuousOn continuousOn_const subset_closure
+      subset_rfl
+  exact h2 (left_mem_Icc.2 hT.le)
+
+/-- **The iterated wave equation**: a smooth classical solution of `∂ₜₜ u = Δ_x u` on
+`Ω × (0, T)` satisfies `∂ₜ^{2j} u = Δ_x^j u` and `∂ₜ^{2j+1} u = Δ_x^j ∂ₜ u` there, for every `j`:
+by induction, using the commutation `∂ₜ Δ_x^j = Δ_x^j ∂ₜ` of smooth functions
+(`Heat.timeDeriv_spaceLaplacian_iterate`) and the locality of both operators on the open
+cylinder. -/
+theorem IsClassicalSolution.timeDeriv_iterate_eqOn (hΩ : IsOpen Ω)
+    (hu : IsClassicalSolution Ω T u) (hsmooth : ContDiff ℝ ∞ u) (j : ℕ) :
+    EqOn (timeDeriv^[2 * j] u) (spaceLaplacian^[j] u) (Ω ×ˢ Ioo 0 T) ∧
+      EqOn (timeDeriv^[2 * j + 1] u) (spaceLaplacian^[j] (timeDeriv u)) (Ω ×ˢ Ioo 0 T) := by
+  have hV : IsOpen (Ω ×ˢ Ioo 0 T) := hΩ.prod isOpen_Ioo
+  induction j with
+  | zero => exact ⟨fun _ _ ↦ rfl, fun _ _ ↦ rfl⟩
+  | succ j ih =>
+    obtain ⟨h0, h1⟩ := ih
+    have h2 : EqOn (timeDeriv^[2 * (j + 1)] u) (spaceLaplacian^[j + 1] u) (Ω ×ˢ Ioo 0 T) := by
+      intro p hp
+      rw [show 2 * (j + 1) = 2 * j + 1 + 1 by ring, Function.iterate_succ_apply',
+        timeDeriv_eqOn hV h1 hp, timeDeriv_spaceLaplacian_iterate (contDiff_timeDeriv hsmooth) j,
+        spaceLaplacian_iterate_eqOn hV hu.eqn j hp, Function.iterate_succ_apply]
+    refine ⟨h2, fun p hp ↦ ?_⟩
+    rw [Function.iterate_succ_apply', timeDeriv_eqOn hV h2 hp,
+      timeDeriv_spaceLaplacian_iterate hsmooth (j + 1)]
+
+/-- **Remark 10: the compatibility conditions of Theorem 10.8 are necessary**
+([brezis2011functional] chapter 10, Remark 10). Let `u` be a classical solution of the wave
+equation `∂ₜₜ u = Δ u` on the cylinder `Ω × (0, T)` (`T > 0`, `Ω` open) which is `C^∞` on
+`E × ℝ` and vanishes on the lateral boundary `frontier Ω × (0, T)`. Then the data
+`u₀ = u(·, 0)` and `v₀ = ∂ₜu(·, 0)` satisfy `Δ^j u₀ = 0` and `Δ^j v₀ = 0` on `frontier Ω` for
+every `j`.
+
+Proof, as for the heat equation (`Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`,
+Remark 4): `∂ₜ^{2j} u = Δ_x^j u` and `∂ₜ^{2j+1} u = Δ_x^j ∂ₜ u` on `Ω × (0, T)`
+(`IsClassicalSolution.timeDeriv_iterate_eqOn`); all time derivatives of `u` vanish on
+`frontier Ω × (0, T)`, hence at `(x, 0)` for `x ∈ frontier Ω` by continuity
+(`timeDeriv_iterate_apply_zero_eq_zero`); both sides of the identities are continuous on
+`E × ℝ`, so they pass to `closure Ω × [0, T]`, and comparing them at `(x, 0)` gives the
+conditions through `Heat.spaceLaplacian_iterate_slice`.
+
+The book states the remark for `u ∈ C^∞(Ω̄ × [0, ∞))` in the sense of chapter 9's footnote 16,
+where `Δ^j u₀` on the boundary refers to continuous extensions; the smoothness of `u` on all of
+`E × ℝ` assumed here makes the statement meaningful as written. -/
+theorem IsClassicalSolution.iteratedLaplacian_eq_zero_frontier (hΩ : IsOpen Ω) (hT : 0 < T)
+    (hu : IsClassicalSolution Ω T u) (hsmooth : ContDiff ℝ ∞ u)
+    (hΓ : ∀ x ∈ frontier Ω, ∀ t ∈ Ioo 0 T, u (x, t) = 0) (j : ℕ) :
+    ∀ x ∈ frontier Ω, (Laplacian.laplacian^[j] fun y ↦ u (y, 0)) x = 0 ∧
+      (Laplacian.laplacian^[j] fun y ↦ timeDeriv u (y, 0)) x = 0 := by
+  intro x hx
+  obtain ⟨h0, h1⟩ := hu.timeDeriv_iterate_eqOn hΩ hsmooth j
+  have hcl : closure Ω ×ˢ Icc 0 T ⊆ closure (Ω ×ˢ Ioo 0 T) := by
+    rw [closure_prod_eq, closure_Ioo hT.ne]
+  have hsub : Ω ×ˢ Ioo 0 T ⊆ closure Ω ×ˢ Icc 0 T := prod_mono subset_closure Ioo_subset_Icc_self
+  have hx0 : (x, (0 : ℝ)) ∈ closure Ω ×ˢ Icc 0 T :=
+    ⟨frontier_subset_closure hx, left_mem_Icc.2 hT.le⟩
+  constructor
+  · -- `Δ^j u (x, 0) = ∂ₜ^{2j} u (x, 0) = 0`
+    have h := h0.of_subset_closure (contDiff_timeDeriv_iterate hsmooth _).continuous.continuousOn
+      (contDiff_spaceLaplacian_iterate hsmooth j).continuous.continuousOn hsub hcl hx0
+    rw [← spaceLaplacian_iterate_slice]
+    exact h.symm.trans (timeDeriv_iterate_apply_zero_eq_zero hT hsmooth (hΓ x hx) _)
+  · -- `Δ^j ∂ₜ u (x, 0) = ∂ₜ^{2j+1} u (x, 0) = 0`
+    have h := h1.of_subset_closure (contDiff_timeDeriv_iterate hsmooth _).continuous.continuousOn
+      (contDiff_spaceLaplacian_iterate (contDiff_timeDeriv hsmooth) j).continuous.continuousOn
+      hsub hcl hx0
+    rw [← spaceLaplacian_iterate_slice]
+    exact h.symm.trans (timeDeriv_iterate_apply_zero_eq_zero hT hsmooth (hΓ x hx) _)
+
+end Classical
+
+end Wave
+
+namespace Wave
+
+open LinearPMap.PowDomain SobolevMultiIndex Elliptic
+
+section LaplacianDomain
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-! ### The domains `D_m` of the Dirichlet Laplacian, and `D(A^k)` -/
+
+variable (Ω) in
+/-- **The `m`-th domain `D_m` of the Dirichlet Laplacian**, the space the book's display in the
+proof of Theorem 10.8 calls `{w ∈ H^m(Ω) : Δ^j w = 0 on Γ for 2j < m}` before the Sobolev
+spaces are read in ([brezis2011functional] §10.3): `D_0 = L²(Ω)`, `D_1 = H¹₀(Ω)` (the range of
+`fnL`), and `D_{m+2} = {f ∈ D(−Δ) : −Δ f ∈ D_m}`, so that `D_{2ℓ} = D((−Δ)^ℓ)` and
+`D_{2ℓ+1} = {f ∈ D((−Δ)^ℓ) : (−Δ)^ℓ f ∈ H¹₀(Ω)}` (`memLaplacianDomain_two_mul_iff`,
+`memLaplacianDomain_two_mul_add_one_iff`). The domain of the `k`-th power of the wave operator
+is `D_{k+1} × D_k` (`mem_operator_powGraph_iff`). -/
+def MemLaplacianDomain :
+    ℕ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) → Prop
+  | 0, _ => True
+  | 1, f => ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = f
+  | m + 2, f => f ∈ dirichletLaplacianDomain Ω ∧
+      MemLaplacianDomain m (dirichletLaplacianApply Ω f)
+
+variable {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+
+/-- `D_0 = L²(Ω)`. -/
+theorem memLaplacianDomain_zero : MemLaplacianDomain Ω 0 f := trivial
+
+/-- `D_1 = H¹₀(Ω)`. -/
+theorem memLaplacianDomain_one_iff :
+    MemLaplacianDomain Ω 1 f ↔ ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
+        = f :=
+  Iff.rfl
+
+/-- `D_{m+2} = {f ∈ D(−Δ) : −Δ f ∈ D_m}`. -/
+theorem memLaplacianDomain_add_two_iff {m : ℕ} :
+    MemLaplacianDomain Ω (m + 2) f ↔ f ∈ dirichletLaplacianDomain Ω ∧
+      MemLaplacianDomain Ω m (dirichletLaplacianApply Ω f) :=
+  Iff.rfl
+
+/-- `D_m` is closed under scalar multiplication. -/
+theorem MemLaplacianDomain.smul {m : ℕ} (c : ℝ) :
+    ∀ {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))},
+      MemLaplacianDomain Ω m f → MemLaplacianDomain Ω m (c • f) := by
+  induction m using Nat.twoStepInduction with
+  | zero => intro f _; trivial
+  | one =>
+    rintro f ⟨w, hw⟩
+    exact ⟨c • w, by rw [_root_.map_smul, hw]⟩
+  | more m ih _ =>
+    rintro f ⟨hf, hf'⟩
+    refine ⟨Submodule.smul_mem _ c hf, ?_⟩
+    rw [dirichletLaplacianApply_smul c hf]
+    exact ih hf'
+
+/-- `D_m` is closed under negation. -/
+theorem MemLaplacianDomain.neg {m : ℕ} (h : MemLaplacianDomain Ω m f) :
+    MemLaplacianDomain Ω m (-f) := by
+  simpa using h.smul (-1)
+
+/-- `−f ∈ D_m` iff `f ∈ D_m`. -/
+theorem memLaplacianDomain_neg_iff {m : ℕ} :
+    MemLaplacianDomain Ω m (-f) ↔ MemLaplacianDomain Ω m f :=
+  ⟨fun h ↦ by simpa using h.neg, fun h ↦ h.neg⟩
+
+/-- `D_{m+1} ⊆ H¹₀(Ω)`. -/
+theorem MemLaplacianDomain.exists_fnL_eq {m : ℕ} :
+    ∀ {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))},
+      MemLaplacianDomain Ω (m + 1) f → ∃ w : SobolevEuclideanZero N 1 2 Ω,
+        SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
+          = f := by
+  cases m with
+  | zero => intro f h; exact h
+  | succ m => rintro f ⟨hf, -⟩; exact dirichletLaplacian_exists_sobolevZero_lift ⟨f, hf⟩
+
+/-- `f ∈ D_{m+1}` iff `f ∈ H¹₀(Ω)` and `−f ∈ D_{m+1}` (the form met in the induction of
+`mem_operator_powGraph_iff`). -/
+theorem memLaplacianDomain_succ_iff_neg {m : ℕ} :
+    MemLaplacianDomain Ω (m + 1) f ↔ (∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
+        = f) ∧ MemLaplacianDomain Ω (m + 1) (-f) :=
+  ⟨fun h ↦ ⟨h.exists_fnL_eq, h.neg⟩, fun h ↦ memLaplacianDomain_neg_iff.1 h.2⟩
+
+/-- The conditions `D_{k+1} × D_k` on `A U = (−v, −Δu)` are the conditions `v ∈ D_{k+1}`,
+`−Δ u ∈ D_k` on `U = (u, v)`. -/
+theorem memLaplacianDomain_operator_apply_iff (k : ℕ) (U : (operator Ω).domain) :
+    (MemLaplacianDomain Ω (k + 1) (SobolevMultiIndexZero.fnL ℝ
+        (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume (operator Ω U).fst) ∧
+      MemLaplacianDomain Ω k (operator Ω U).snd) ↔
+    (MemLaplacianDomain Ω (k + 1) (U : phaseSpace Ω).snd ∧
+      MemLaplacianDomain Ω k (dirichletLaplacianApply Ω (SobolevMultiIndexZero.fnL ℝ
+        (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume (U : phaseSpace Ω).fst))) := by
+  rw [fnL_operator_apply_fst, memLaplacianDomain_neg_iff]
+  exact Iff.rfl
+
+/-- **`D(A^k) = D_{k+1} × D_k`** ([brezis2011functional] §10.3, the display in the proof of
+Theorem 10.8 read on the weak domains): `(u, v)` is the base point of an element of
+`D(A^k)` (`LinearPMap.PowDomain`) iff `fnL u ∈ D_{k+1}` and `v ∈ D_k`. Induction on `k`
+through `D(A^{k+1}) = {U ∈ D(A) : A U ∈ D(A^k)}`
+(`LinearPMap.PowDomain.exists_applyL_zero_eq_succ_iff`) and `A(u, v) = (−v, −Δu)`. -/
+theorem mem_operator_powGraph_iff (k : ℕ) (U : phaseSpace Ω) :
+    (∃ x : (operator Ω).PowDomain k, applyL (operator Ω) k 0 x = U) ↔
+      MemLaplacianDomain Ω (k + 1) (SobolevMultiIndexZero.fnL ℝ
+        (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U.fst) ∧
+      MemLaplacianDomain Ω k U.snd := by
+  induction k generalizing U with
+  | zero =>
+    refine ⟨fun _ ↦ ⟨⟨U.fst, rfl⟩, trivial⟩, fun _ ↦ ?_⟩
+    exact ⟨LinearPMap.PowDomain.mk (operator Ω) (fun _ ↦ U) fun i ↦ i.elim0, rfl⟩
+  | succ k ih =>
+    rw [exists_applyL_zero_eq_succ_iff]
+    constructor
+    · rintro ⟨hU, y, hy⟩
+      have h1 := (memLaplacianDomain_operator_apply_iff k ⟨U, hU⟩).1 ((ih _).1 ⟨y, hy⟩)
+      obtain ⟨hU1, -⟩ := mem_operator_domain_iff.1 hU
+      exact ⟨⟨hU1, h1.2⟩, h1.1⟩
+    · rintro ⟨⟨hU1, hU2⟩, hv⟩
+      have hU : U ∈ (operator Ω).domain := mem_operator_domain_iff.2 ⟨hU1, hv.exists_fnL_eq⟩
+      exact ⟨hU, (ih _).2 ((memLaplacianDomain_operator_apply_iff k ⟨U, hU⟩).2 ⟨hv, hU2⟩)⟩
+
+/-- The inductive step of `D_{2ℓ} = D((−Δ)^ℓ)`, forward: `f ∈ D(−Δ)` with `−Δ f ∈ D((−Δ)^ℓ)`
+gives `f ∈ D((−Δ)^{ℓ+1})` (`LinearPMap.PowDomain.cons`). -/
+theorem exists_powDomain_succ_of_apply {ℓ : ℕ} (hf : f ∈ dirichletLaplacianDomain Ω)
+    (y : (dirichletLaplacian Ω).PowDomain ℓ)
+    (hy : applyL (dirichletLaplacian Ω) ℓ 0 y = dirichletLaplacianApply Ω f) :
+    ∃ x : (dirichletLaplacian Ω).PowDomain (ℓ + 1),
+      applyL (dirichletLaplacian Ω) (ℓ + 1) 0 x = f :=
+  ⟨cons ⟨f, hf⟩ y ((dirichletLaplacian_apply ⟨f, hf⟩).trans hy.symm), applyL_cons_zero _ _ _⟩
+
+/-- The inductive step of `D_{2ℓ} = D((−Δ)^ℓ)`, backward: `f ∈ D((−Δ)^{ℓ+1})` lies in `D(−Δ)`
+with `−Δ f ∈ D((−Δ)^ℓ)` (`LinearPMap.PowDomain.shiftL`). -/
+theorem mem_and_exists_powDomain_of_powDomain_succ {ℓ : ℕ}
+    (x : (dirichletLaplacian Ω).PowDomain (ℓ + 1))
+    (hx : applyL (dirichletLaplacian Ω) (ℓ + 1) 0 x = f) :
+    f ∈ dirichletLaplacianDomain Ω ∧ ∃ y : (dirichletLaplacian Ω).PowDomain ℓ,
+      applyL (dirichletLaplacian Ω) ℓ 0 y = dirichletLaplacianApply Ω f := by
+  have hf : f ∈ dirichletLaplacianDomain Ω := by
+    rw [← hx]
+    exact applyL_mem_domain x 0
+  exact ⟨hf, shiftL (dirichletLaplacian Ω) ℓ x, (applyL_zero_shiftL x).trans
+    ((dirichletLaplacian_apply _).trans (congrArg (dirichletLaplacianApply Ω) hx))⟩
+
+/-- **`D_{2ℓ} = D((−Δ)^ℓ)`**: `f ∈ D_{2ℓ}` iff `f` is the base point of an element of
+`(dirichletLaplacian Ω).PowDomain ℓ`. -/
+theorem memLaplacianDomain_two_mul_iff (ℓ : ℕ) :
+    ∀ {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))},
+      MemLaplacianDomain Ω (2 * ℓ) f ↔
+        ∃ x : (dirichletLaplacian Ω).PowDomain ℓ, applyL (dirichletLaplacian Ω) ℓ 0 x = f := by
+  induction ℓ with
+  | zero =>
+    intro f
+    exact ⟨fun _ ↦ ⟨LinearPMap.PowDomain.mk (dirichletLaplacian Ω) (fun _ ↦ f) fun i ↦ i.elim0,
+      applyL_mk _ _ 0⟩, fun _ ↦ trivial⟩
+  | succ ℓ ih =>
+    intro f
+    change MemLaplacianDomain Ω (2 * ℓ + 2) f ↔ _
+    refine memLaplacianDomain_add_two_iff.trans ((and_congr_right fun _ ↦ ih).trans ?_)
+    constructor
+    · rintro ⟨hf, y, hy⟩
+      exact exists_powDomain_succ_of_apply hf y hy
+    · rintro ⟨x, hx⟩
+      exact mem_and_exists_powDomain_of_powDomain_succ x hx
+
+/-- **`D_{2ℓ+1} = {f ∈ D((−Δ)^ℓ) : (−Δ)^ℓ f ∈ H¹₀(Ω)}`**: `f ∈ D_{2ℓ+1}` iff `f` is the base
+point of an element `x` of `(dirichletLaplacian Ω).PowDomain ℓ` whose last coordinate lies in
+`H¹₀(Ω)`. -/
+theorem memLaplacianDomain_two_mul_add_one_iff (ℓ : ℕ) :
+    ∀ {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))},
+      MemLaplacianDomain Ω (2 * ℓ + 1) f ↔
+        ∃ x : (dirichletLaplacian Ω).PowDomain ℓ, applyL (dirichletLaplacian Ω) ℓ 0 x = f ∧
+          ∃ w : SobolevEuclideanZero N 1 2 Ω,
+            SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
+              w = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) x := by
+  induction ℓ with
+  | zero =>
+    intro f
+    constructor
+    · rintro ⟨w, hw⟩
+      exact ⟨LinearPMap.PowDomain.mk (dirichletLaplacian Ω) (fun _ ↦ f) fun i ↦ i.elim0,
+        applyL_mk _ _ 0, w, hw.trans (applyL_mk (A := dirichletLaplacian Ω) (fun _ ↦ f)
+          (fun i ↦ i.elim0) (Fin.last 0)).symm⟩
+    · rintro ⟨x, hx, w, hw⟩
+      exact ⟨w, hw.trans ((congrArg (fun i ↦ applyL (dirichletLaplacian Ω) 0 i x)
+        (by simp : Fin.last 0 = 0)).trans hx)⟩
+  | succ ℓ ih =>
+    intro f
+    change MemLaplacianDomain Ω (2 * ℓ + 1 + 2) f ↔ _
+    refine memLaplacianDomain_add_two_iff.trans ((and_congr_right fun _ ↦ ih).trans ?_)
+    constructor
+    · rintro ⟨hf, y, hy, w, hw⟩
+      refine ⟨cons ⟨f, hf⟩ y ((dirichletLaplacian_apply ⟨f, hf⟩).trans hy.symm),
+        applyL_cons_zero _ _ _, w, ?_⟩
+      exact hw.trans ((applyL_cons_succ _ _ _ (Fin.last ℓ)).symm.trans
+        (congrArg (fun i ↦ applyL (dirichletLaplacian Ω) (ℓ + 1) i _) (Fin.succ_last ℓ)))
+    · rintro ⟨x, hx, w, hw⟩
+      refine ⟨(mem_and_exists_powDomain_of_powDomain_succ x hx).1,
+        shiftL (dirichletLaplacian Ω) ℓ x, ?_, w, ?_⟩
+      · exact (applyL_zero_shiftL x).trans ((dirichletLaplacian_apply _).trans
+          (congrArg (dirichletLaplacianApply Ω) hx))
+      · exact hw.trans ((congrArg (fun i ↦ applyL (dirichletLaplacian Ω) (ℓ + 1) i x)
+          (Fin.succ_last ℓ).symm).trans (applyL_shiftL (Fin.last ℓ) x).symm)
+
+end LaplacianDomain
+
+end Wave
+
+/-- **One lift for all orders**: a curve of class `C^n(s; V)` for every `n : ℕ`, through an
+injective `J`, is of class `C^∞(s; V)`: the lifts at the various orders agree on `s`. -/
+theorem Bochner.ContDiffOnThrough.infty_of_forall_nat {V W : Type*} [NormedAddCommGroup V]
+    [NormedSpace ℝ V] [NormedAddCommGroup W] [NormedSpace ℝ W] {J : V →L[ℝ] W}
+    (hJ : Function.Injective J) {u : ℝ → W} {s : Set ℝ}
+    (h : ∀ n : ℕ, Bochner.ContDiffOnThrough J n u s) : Bochner.ContDiffOnThrough J ∞ u s := by
+  obtain ⟨v, -, huv⟩ := h 0
+  refine ⟨v, ?_, huv⟩
+  rw [contDiffOn_infty]
+  intro n
+  obtain ⟨w, hw, huw⟩ := h n
+  exact hw.congr fun t ht ↦ hJ ((huv t ht).symm.trans (huw t ht))
+
+namespace Wave
+
+open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
+
+/-! ### Theorem 10.8: `D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)` and the regularity of the solution -/
+
+section Regularity
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+  {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+
+/-- **The elliptic step at every order**: on a `C^{m+2}` domain with bounded boundary, if
+`f ∈ D(−Δ)` and `−Δ f` is the function of an element of `H^m(Ω)`, then `f` is the function of an
+element of `H^{m+2}(Ω)` (`dirichletLaplacian_exists_sobolev_of_apply` for every `m`, not only
+the even ones): the `H¹₀`-lift of `f` solves `−Δv = −Δ f` weakly, and
+`Elliptic.regularity_dirichlet_higher_mem` applies. -/
+theorem dirichletLaplacian_exists_sobolev_add_two_of_apply (m k : ℕ) (hk : k = m + 2)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {f : (dirichletLaplacian Ω).domain} (w' : SobolevEuclidean (d + 1) m 2 Ω)
+    (hw' : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω volume w'
+      = dirichletLaplacian Ω f) :
+    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w = f := by
+  subst hk
+  obtain ⟨v, hv, hvf⟩ := dirichletLaplacian_exists_lift f
+  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑(dirichletLaplacian Ω f)) m 2 Ω volume := by
+    refine (memSobolevMultiIndex w').congr_ae ?_
+    rw [← hw']
+    rfl
+  have heq : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
+      dirichletForm Ω v Φ = load Ω (dirichletLaplacian Ω f) Φ := fun Φ hΦ ↦
+    (dirichletLaplacian_inner_eq_dirichletForm f hv hvf hΦ).symm
+  obtain ⟨w, hw⟩ :=
+    (regularity_dirichlet_higher_mem m hΩ hΓ hv hg heq).exists_sobolevMultiIndex
+  refine ⟨w, Lp.ext (hw.trans ?_)⟩
+  rw [← hvf]
+  rfl
+
+/-- **`D_{2ℓ+1} ⊆ H^{2ℓ+1}(Ω)` on a `C^{2ℓ+1}` domain with bounded boundary**, in the form of an
+induction on `ℓ` (`k = 2ℓ + 1` kept as a variable): if `x ∈ D((−Δ)^ℓ)` has its last coordinate
+`(−Δ)^ℓ x` in `H¹₀(Ω)`, then `x` is the function of an element of `H^{2ℓ+1}(Ω)`. The step is
+`dirichletLaplacian_exists_sobolev_add_two_of_apply` applied to `−Δ x ∈ H^{2ℓ+1}` — the odd-order
+companion of `dirichletLaplacian_exists_sobolev_of_powDomain`. -/
+theorem dirichletLaplacian_exists_sobolev_of_powDomain_of_last (ℓ : ℕ) :
+    ∀ k : ℕ, k = 2 * ℓ + 1 →
+    IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) →
+    Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+    ∀ x : (dirichletLaplacian Ω).PowDomain ℓ,
+    (∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume w
+        = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) x) →
+    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w
+        = applyL (dirichletLaplacian Ω) ℓ 0 x := by
+  induction ℓ with
+  | zero =>
+    intro k hk _ _ x hx
+    subst hk
+    obtain ⟨w, hw⟩ := hx
+    exact ⟨(w : SobolevEuclidean (d + 1) 1 2 Ω), hw.trans (congrArg
+      (fun i ↦ applyL (dirichletLaplacian Ω) 0 i x) (by simp : Fin.last 0 = 0))⟩
+  | succ ℓ ih =>
+    intro k hk hΩ hΓ x hx
+    have hΩ' : IsContDiffChartDomain (2 * ℓ + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+      hΩ.of_le (by exact_mod_cast (by omega : 2 * ℓ + 1 ≤ k))
+    have hlast : ∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
+        SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+          w = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) (shiftL (dirichletLaplacian Ω) ℓ x) := by
+      obtain ⟨w, hw⟩ := hx
+      exact ⟨w, hw.trans ((congrArg (fun i ↦ applyL (dirichletLaplacian Ω) (ℓ + 1) i x)
+        (Fin.succ_last ℓ).symm).trans (applyL_shiftL (Fin.last ℓ) x).symm)⟩
+    obtain ⟨w', hw'⟩ := ih (2 * ℓ + 1) rfl hΩ' hΓ (shiftL (dirichletLaplacian Ω) ℓ x) hlast
+    have := dirichletLaplacian_exists_sobolev_add_two_of_apply (2 * ℓ + 1) k (by omega) hΩ hΓ
+      (f := ⟨applyL (dirichletLaplacian Ω) (ℓ + 1) 0 x, applyL_mem_domain x 0⟩) w'
+      (hw'.trans (applyL_zero_shiftL x))
+    exact this
+
+/-- `D_{2ℓ} ⊆ H^{2ℓ}(Ω)` on a `C^{2ℓ}` domain with bounded boundary (Theorem 9.25 through
+`dirichletLaplacian_exists_sobolev_of_powDomain`). -/
+theorem MemLaplacianDomain.exists_sobolev_two_mul (ℓ : ℕ)
+    (hΩ : IsContDiffChartDomain (2 * ℓ) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (h : MemLaplacianDomain Ω (2 * ℓ) f) :
+    ∃ w : SobolevEuclidean (d + 1) (2 * ℓ) 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ) 2 Ω volume w = f := by
+  obtain ⟨x, hx⟩ := (memLaplacianDomain_two_mul_iff ℓ).1 h
+  obtain ⟨w, hw⟩ := dirichletLaplacian_exists_sobolev_of_powDomain ℓ hΩ hΓ x
+  exact ⟨w, hw.trans hx⟩
+
+/-- `D_{2ℓ+1} ⊆ H^{2ℓ+1}(Ω)` on a `C^{2ℓ+1}` domain with bounded boundary
+(`dirichletLaplacian_exists_sobolev_of_powDomain_of_last`). -/
+theorem MemLaplacianDomain.exists_sobolev_two_mul_add_one (ℓ : ℕ)
+    (hΩ : IsContDiffChartDomain (2 * ℓ + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (h : MemLaplacianDomain Ω (2 * ℓ + 1) f) :
+    ∃ w : SobolevEuclidean (d + 1) (2 * ℓ + 1) 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ + 1) 2 Ω volume w = f := by
+  obtain ⟨x, hx, hlast⟩ := (memLaplacianDomain_two_mul_add_one_iff ℓ).1 h
+  obtain ⟨w, hw⟩ :=
+    dirichletLaplacian_exists_sobolev_of_powDomain_of_last ℓ (2 * ℓ + 1) rfl hΩ hΓ x hlast
+  exact ⟨w, hw.trans hx⟩
+
+/-- **`D_m ⊆ H^m(Ω)` on a `C^m` domain with bounded boundary** ([brezis2011functional] §10.3,
+the reading of the display in the proof of Theorem 10.8 in Sobolev spaces): every `f ∈ D_m` is
+the function of an element of `H^m(Ω)`. Even `m` is `D((−Δ)^ℓ) ⊆ H^{2ℓ}`
+(`dirichletLaplacian_exists_sobolev_of_powDomain`, Theorem 9.25), odd `m` its companion
+`dirichletLaplacian_exists_sobolev_of_powDomain_of_last`. -/
+theorem MemLaplacianDomain.exists_sobolev (m : ℕ)
+    (hΩ : IsContDiffChartDomain m (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (h : MemLaplacianDomain Ω m f) :
+    ∃ w : SobolevEuclidean (d + 1) m 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω volume w = f := by
+  obtain ⟨ℓ, hℓ | hℓ⟩ := Nat.even_or_odd' m
+  · subst hℓ
+    exact MemLaplacianDomain.exists_sobolev_two_mul ℓ hΩ hΓ h
+  · subst hℓ
+    exact MemLaplacianDomain.exists_sobolev_two_mul_add_one ℓ hΩ hΓ h
+
+end Regularity
+
+section Coord
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **The wave operator is closed**: `A + I` is maximal monotone, hence closed, and closedness
+is unchanged by the shift (`LinearPMap.IsAddSmulId.isClosed`). -/
+theorem operator_isClosed : (operator Ω).IsClosed :=
+  (isAddSmulId_id_vadd (operator Ω)).isClosed operator_add_id_isMaximalMonotone.isClosed
+
+variable (Ω) in
+/-- The `L²` function of the first component of the base point of `x ∈ D(A^k)`,
+`x ↦ fnL (x_0).fst`, as a bounded linear map. -/
+def fstCoordL (k : ℕ) :
+    (operator Ω).PowDomain k →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume).comp
+    ((phaseSpace.fstL Ω).comp (applyL (operator Ω) k 0))
+
+/-- `fstCoordL x = fnL (x_0).fst`. -/
+theorem fstCoordL_apply {k : ℕ} (x : (operator Ω).PowDomain k) :
+    fstCoordL Ω k x = SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
+      volume (applyL (operator Ω) k 0 x).fst :=
+  rfl
+
+variable (Ω) in
+/-- The second component of the base point of `x ∈ D(A^k)`, `x ↦ (x_0).snd`, as a bounded
+linear map. -/
+def sndCoordL (k : ℕ) :
+    (operator Ω).PowDomain k →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  (phaseSpace.sndL Ω).comp (applyL (operator Ω) k 0)
+
+/-- `sndCoordL x = (x_0).snd`. -/
+theorem sndCoordL_apply {k : ℕ} (x : (operator Ω).PowDomain k) :
+    sndCoordL Ω k x = (applyL (operator Ω) k 0 x).snd :=
+  rfl
+
+/-- The first component of an element of `D(A^k)` lies in `D_{k+1}`. -/
+theorem memLaplacianDomain_fstCoordL (k : ℕ) (x : (operator Ω).PowDomain k) :
+    MemLaplacianDomain Ω (k + 1) (fstCoordL Ω k x) :=
+  ((mem_operator_powGraph_iff k _).1 ⟨x, rfl⟩).1
+
+/-- The second component of an element of `D(A^k)` lies in `D_k`. -/
+theorem memLaplacianDomain_sndCoordL (k : ℕ) (x : (operator Ω).PowDomain k) :
+    MemLaplacianDomain Ω k (sndCoordL Ω k x) :=
+  ((mem_operator_powGraph_iff k _).1 ⟨x, rfl⟩).2
+
+end Coord
+
+section PowDomainToSobolev
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- `fnL (x_0).fst` is the function of an element of `H^{k+1}(Ω)` for `x ∈ D(A^k)`, on a
+`C^{k+1}` domain with bounded boundary. -/
+theorem exists_sobolev_fstCoordL (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    ∃ w : SobolevEuclidean (d + 1) (k + 1) 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (k + 1) 2 Ω volume w
+        = fstCoordL Ω k x :=
+  (memLaplacianDomain_fstCoordL k x).exists_sobolev (k + 1) hΩ hΓ
+
+/-- `(x_0).snd` is the function of an element of `H^k(Ω)` for `x ∈ D(A^k)`, on a `C^k` domain
+with bounded boundary. -/
+theorem exists_sobolev_sndCoordL (k : ℕ)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    ∃ z : SobolevEuclidean (d + 1) k 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume z = sndCoordL Ω k x :=
+  (memLaplacianDomain_sndCoordL k x).exists_sobolev k hΩ hΓ
+
+/-- **The continuous injection `D(A^k) → H^{k+1}(Ω)`, first component**: the bounded linear map
+`x ↦ w` with `fnL w = fnL (x_0).fst`, continuous by the closed graph theorem
+(`SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq`, `D(A^k)` being complete
+since `A` is closed). -/
+def operator.powDomainToSobolevFstL (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (operator Ω).PowDomain k →L[ℝ] SobolevEuclidean (d + 1) (k + 1) 2 Ω :=
+  haveI : CompleteSpace ((operator Ω).PowDomain k) := operator_isClosed.completeSpace_powDomain k
+  Classical.choose (SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq
+    (S := fstCoordL Ω k) (exists_sobolev_fstCoordL k hΩ hΓ))
+
+/-- `fnL (powDomainToSobolevFstL x) = fnL (x_0).fst`. -/
+theorem fnL_powDomainToSobolevFstL (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (k + 1) 2 Ω volume
+      (operator.powDomainToSobolevFstL k hΩ hΓ x) = fstCoordL Ω k x :=
+  haveI : CompleteSpace ((operator Ω).PowDomain k) := operator_isClosed.completeSpace_powDomain k
+  Classical.choose_spec (SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq
+    (S := fstCoordL Ω k) (exists_sobolev_fstCoordL k hΩ hΓ)) x
+
+/-- **The continuous injection `D(A^k) → H^k(Ω)`, second component**. -/
+def operator.powDomainToSobolevSndL (k : ℕ)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (operator Ω).PowDomain k →L[ℝ] SobolevEuclidean (d + 1) k 2 Ω :=
+  haveI : CompleteSpace ((operator Ω).PowDomain k) := operator_isClosed.completeSpace_powDomain k
+  Classical.choose (SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq
+    (S := sndCoordL Ω k) (exists_sobolev_sndCoordL k hΩ hΓ))
+
+/-- `fnL (powDomainToSobolevSndL x) = (x_0).snd`. -/
+theorem fnL_powDomainToSobolevSndL (k : ℕ)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume
+      (operator.powDomainToSobolevSndL k hΩ hΓ x) = sndCoordL Ω k x :=
+  haveI : CompleteSpace ((operator Ω).PowDomain k) := operator_isClosed.completeSpace_powDomain k
+  Classical.choose_spec (SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq
+    (S := sndCoordL Ω k) (exists_sobolev_sndCoordL k hΩ hΓ)) x
+
+/-- **`D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)` with continuous injection** ([brezis2011functional]
+§10.3, the "in particular" of the proof of Theorem 10.8), on a `C^{k+1}` domain with bounded
+boundary: the bounded linear map `x ↦ (w, z)` on `D(A^k)` with `fnL w = fnL u`, `fnL z = v` for
+the base point `(u, v)` of `x` (`fnL_powDomainToSobolevL_fst`, `fnL_powDomainToSobolevL_snd`);
+`‖w‖_{H^{k+1}} + ‖z‖_{H^k} ≤ C ‖x‖_{D(A^k)}` is its boundedness. The memberships come from
+`D(A^k) = D_{k+1} × D_k` (`mem_operator_powGraph_iff`) and `D_m ⊆ H^m(Ω)`
+(`MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at every order), the continuity from the
+closed graph theorem. -/
+def operator.powDomainToSobolevL (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (operator Ω).PowDomain k →L[ℝ]
+      SobolevEuclidean (d + 1) (k + 1) 2 Ω × SobolevEuclidean (d + 1) k 2 Ω :=
+  (operator.powDomainToSobolevFstL k hΩ hΓ).prod
+    (operator.powDomainToSobolevSndL k (hΩ.of_le (by exact_mod_cast Nat.le_succ k)) hΓ)
+
+/-- The first component of `powDomainToSobolevL x` has the function `fnL (x_0).fst`. -/
+theorem fnL_powDomainToSobolevL_fst (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (k + 1) 2 Ω volume
+      (operator.powDomainToSobolevL k hΩ hΓ x).1 = fstCoordL Ω k x :=
+  fnL_powDomainToSobolevFstL k hΩ hΓ x
+
+/-- The second component of `powDomainToSobolevL x` has the function `(x_0).snd`. -/
+theorem fnL_powDomainToSobolevL_snd (k : ℕ)
+    (hΩ : IsContDiffChartDomain (k + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (operator Ω).PowDomain k) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume
+      (operator.powDomainToSobolevL k hΩ hΓ x).2 = sndCoordL Ω k x :=
+  fnL_powDomainToSobolevSndL k _ hΓ x
+
+end PowDomainToSobolev
+
+/-! ### Theorem 10.8 -/
+
+section Regularity10_8
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+  {u₀ : SobolevEuclideanZero N 1 2 Ω}
+  {v₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+  {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+
+/-- The shifted semigroup curve of Theorem 7.5 for `A + I`, at `c = 1`, is the phase-space
+solution `e^t S_{A+I}(t) (u₀, v₀)`. -/
+theorem exp_smul_semigroup_eq_phaseSolution {k : ℕ} (x : (operator Ω).PowDomain k)
+    (hx : applyL (operator Ω) k 0 x = phaseSpace.mk Ω u₀ v₀) (t : ℝ) :
+    Real.exp (1 * t) • ((LinearMap.id : phaseSpace Ω →ₗ[ℝ] phaseSpace Ω)
+      +ᵥ operator Ω).semigroup t (applyL (operator Ω) k 0 x) = phaseSolution Ω u₀ v₀ t := by
+  rw [one_mul, hx]
+  rfl
+
+/-- **The phase-space solution is `(ũ, u')`**: for a solution `u` of the wave equation and
+`t ≥ 0`, `phaseSolution Ω u₀ v₀ t = (toSobolevZero (u t), u'(t))` (uniqueness for
+`U' + A U = 0`, `operator_eqOn_of_isSolutionOn`). -/
+theorem IsSolution.phaseSolution_eq (h : IsSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t) :
+    phaseSolution Ω u₀ v₀ t
+      = phaseSpace.mk Ω (toSobolevZero Ω (u t)) (derivWithin u (Ici 0) t) :=
+  operator_eqOn_of_isSolutionOn (isSolutionOn_phaseSolution h.memOperatorDomain_mk)
+    h.isSolutionOn ht
+
+/-- **`U = (ũ, u') ∈ C^{k−j}([0, ∞); D(A^j))` for data in `D(A^k)`** ([brezis2011functional],
+proof of Theorem 10.8, "by Theorem 7.5"): Theorem 7.5 for the maximal monotone `A + I`, shifted
+back by `e^t` (`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup`, with the
+transport of `D((A + I)^j)` to `D(A^j)`), applied to `U = e^t S_{A+I}(t) (u₀, v₀)`. Any open
+`Ω`. -/
+theorem IsSolution.contDiffOnPowDomain_of_powDomain (h : IsSolution Ω u₀ v₀ u) {k : ℕ}
+    (x : (operator Ω).PowDomain k)
+    (hx : applyL (operator Ω) k 0 x = phaseSpace.mk Ω u₀ v₀) {j : ℕ} (hj : j ≤ k) :
+    (operator Ω).ContDiffOnPowDomain (k - j : ℕ) j
+      (fun t ↦ phaseSpace.mk Ω (toSobolevZero Ω (u t)) (derivWithin u (Ici 0) t)) (Ici 0) := by
+  have h1 := operator_add_id_isMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup
+    (isAddSmulId_id_vadd (operator Ω)) x hj
+  exact h1.congr fun t ht ↦ (exp_smul_semigroup_eq_phaseSolution x hx t).trans
+    (h.phaseSolution_eq ht)
+
+end Regularity10_8
+
+section Regularity10_8'
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+  {u₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
+  {v₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+  {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+
+/-- **Theorem 10.8, the Bochner form** ([brezis2011functional] Theorem 10.8, the lines
+"`U ∈ C^{k−j}([0, ∞); D(A^j))`, hence `u ∈ C^{k−j}([0, ∞); H^{j+1}(Ω))`"): if the data
+`(u₀, v₀)` are the base point of an element of `D(A^k)`, then on a `C^{j+1}` domain with bounded
+boundary, `j ≤ k`, the solution `u` is of class `C^{k−j}([0, ∞); H^{j+1}(Ω))` through the
+inclusion `H^{j+1}(Ω) → L²(Ω)`: the lift is `t ↦ (powDomainToSobolevL (V t)).1` for the
+`D(A^j)`-lift `V` of `U = (ũ, u')` (`IsSolution.contDiffOnPowDomain_of_powDomain`). -/
+theorem IsSolution.contDiffOnThrough_of_powDomain (h : IsSolution Ω u₀ v₀ u) {k : ℕ}
+    (x : (operator Ω).PowDomain k)
+    (hx : applyL (operator Ω) k 0 x = phaseSpace.mk Ω u₀ v₀) {j : ℕ} (hj : j ≤ k)
+    (hΩ : IsContDiffChartDomain (j + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    Bochner.ContDiffOnThrough (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (j + 1) 2
+      Ω volume) (k - j : ℕ) u (Ici 0) := by
+  obtain ⟨V, hV0, hV⟩ := h.contDiffOnPowDomain_of_powDomain x hx hj
+  refine ⟨operator.powDomainToSobolevFstL j hΩ hΓ ∘ V,
+    (operator.powDomainToSobolevFstL j hΩ hΓ).contDiff.comp_contDiffOn hV, fun t ht ↦ ?_⟩
+  have e1 : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (j + 1) 2 Ω volume
+      ((operator.powDomainToSobolevFstL j hΩ hΓ ∘ V) t) = fstCoordL Ω j (V t) :=
+    fnL_powDomainToSobolevFstL j hΩ hΓ (V t)
+  have e2 : fstCoordL Ω j (V t) = SobolevMultiIndexZero.fnL ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume (toSobolevZero Ω (u t)) :=
+    (congrArg (fun U : phaseSpace Ω ↦ SobolevMultiIndexZero.fnL ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume U.fst) (hV0 t ht)).trans
+      (congrArg (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2
+        Ω volume) (phaseSpace.mk_fst _ _))
+  rw [e1, e2, h.fnL_toSobolevZero_apply ht]
+
+/-- **`u ∈ C^∞([0, ∞); H^m(Ω))` for every `m`** when the data lie in every `D(A^k)`, on a `C^∞`
+domain with bounded boundary: one lift for all orders
+(`Bochner.ContDiffOnThrough.infty_of_forall_nat`) from `contDiffOnThrough_of_powDomain` at
+`j = m`, `k = m + n`, lowered from `H^{m+1}` to `H^m`
+(`Bochner.ContDiffOnThrough.sobolev_of_le`). -/
+theorem IsSolution.contDiffOnThrough_sobolev_forall (h : IsSolution Ω u₀ v₀ u)
+    (hU₀ : ∀ k, ∃ x : (operator Ω).PowDomain k,
+      applyL (operator Ω) k 0 x = phaseSpace.mk Ω u₀ v₀)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) (m : ℕ) :
+    Bochner.ContDiffOnThrough (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω
+      volume) ∞ u (Ici 0) := by
+  have hm : IsContDiffChartDomain (m + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+    hΩ.of_le (WithTop.coe_le_coe.2 le_top)
+  have key : ∀ n : ℕ, Bochner.ContDiffOnThrough
+      (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (m + 1) 2 Ω volume) n u (Ici 0) := by
+    intro n
+    obtain ⟨x, hx⟩ := hU₀ (m + n)
+    have := h.contDiffOnThrough_of_powDomain x hx (j := m) (by omega) hm hΓ
+    rwa [show m + n - m = n by omega] at this
+  have hJ : Function.Injective
+      (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (m + 1) 2 Ω volume) :=
+    fnL_injective
+  exact (Bochner.ContDiffOnThrough.infty_of_forall_nat hJ key).sobolev_of_le (Nat.le_succ m)
+
+/-- **Theorem 10.8** ([brezis2011functional]): on a `C^∞` domain with bounded boundary, if the
+data `(u₀, v₀)` lie in `D(A^k)` for every `k` — the book's `u₀, v₀ ∈ H^k(Ω)` for all `k` with
+the compatibility conditions `Δ^j u₀ = Δ^j v₀ = 0` on `Γ`, read through
+`mem_operator_powGraph_iff` and `MemLaplacianDomain` — then the solution `u` of the wave
+equation belongs to `C^∞(Ω̄ × [0, ∞))`: there is `U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` almost
+everywhere on `Ω` for every `t ≥ 0`, `C^∞` on `Ω × (0, ∞)` with every derivative extending
+continuously to `closure Ω × [0, ∞)` (`ContDiffOnClosure`). Proof:
+`u ∈ C^∞([0, ∞); H^m(Ω))` for every `m` (`contDiffOnThrough_sobolev_forall`) and the
+space–time bridge on `[0, ∞)`
+(`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
+theorem IsSolution.contDiffOnClosure_spaceTime (h : IsSolution Ω u₀ v₀ u)
+    (hU₀ : ∀ k, ∃ x : (operator Ω).PowDomain k,
+      applyL (operator Ω) k 0 x = phaseSpace.mk Ω u₀ v₀)
+    (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    ∃ U : EuclideanSpace ℝ (Fin (d + 1)) × ℝ → ℝ,
+      (∀ t ∈ Ici (0 : ℝ),
+        (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u t) ∧
+      ContDiffOnClosure ℝ ∞ U ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ×ˢ Ioi 0) :=
+  Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici
+    (IsSobolevExtensionDomainAll.of_isContDiffChartDomain (hΩ.of_le (by simp)) hΓ)
+    (h.contDiffOnThrough_sobolev_forall hU₀ hΩ hΓ)
+
+end Regularity10_8'
 
 end Wave

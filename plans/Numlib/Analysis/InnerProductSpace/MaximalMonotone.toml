@@ -287,3 +287,69 @@ source = "[brezis2011functional] Lemma 7.2"
 [[node]]
 id = "IsMaximalMonotone.isSelfAdjoint_yosida"
 source = "[brezis2011functional] Theorem 7.7, proof, Step 1"
+
+[[node]]
+id = "PowDomain.cons"
+
+[[node]]
+id = "PowDomain.applyL_cons_zero"
+
+[[node]]
+id = "PowDomain.applyL_cons_succ"
+
+[[node]]
+id = "PowDomain.shiftL_cons"
+
+[[node]]
+id = "PowDomain.norm_cons_sq"
+
+[[node]]
+id = "PowDomain.norm_cons_le"
+
+[[node]]
+id = "PowDomain.exists_applyL_zero_eq_succ_iff"
+
+[[node]]
+id = "IsAddSmulId"
+
+[[node]]
+id = "isAddSmulId_smul_id_vadd"
+
+[[node]]
+id = "isAddSmulId_id_vadd"
+
+[[node]]
+id = "IsAddSmulId.symm"
+
+[[node]]
+id = "IsAddSmulId.isClosed"
+
+[[node]]
+id = "IsAddSmulId.transportZero"
+
+[[node]]
+id = "IsAddSmulId.applyL_zero_transportZero"
+
+[[node]]
+id = "IsAddSmulId.applyL_zero_mem_domain"
+
+[[node]]
+id = "IsAddSmulId.apply_eq_applyL_zero_sub"
+
+[[node]]
+id = "IsAddSmulId.transportStep"
+
+[[node]]
+id = "IsAddSmulId.applyL_zero_transportStep"
+
+[[node]]
+id = "IsAddSmulId.transportAux"
+
+[[node]]
+id = "IsAddSmulId.transport"
+
+[[node]]
+id = "IsAddSmulId.applyL_zero_transport"
+
+[[node]]
+id = "IsAddSmulId.exists_applyL_zero_eq_iff"

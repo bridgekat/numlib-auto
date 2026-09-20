@@ -68,6 +68,13 @@ Symmetric operators are Mathlib's `A.IsFormalAdjoint A`; self-adjoint ones are M
   `D(A^k)` ([brezis2011functional] Lemma 7.2 at `k = 1`).
 * `IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint` — a symmetric maximal monotone operator
   is self-adjoint ([brezis2011functional] Proposition 7.6).
+* `LinearPMap.IsAddSmulId B A c` (`B = A + c I`: same domain, `B u = A u + c u`) with
+  `IsAddSmulId.transport : B.PowDomain k →L[𝕜] A.PowDomain k`, the bijection between the
+  Hilbert spaces `D((A + cI)^k)` and `D(A^k)` preserving the base point
+  (`applyL_zero_transport`, `exists_applyL_zero_eq_iff`: the two domains coincide as subspaces
+  of `H`), built by recursion on `k` with the prepending constructor `PowDomain.cons`; and
+  `IsAddSmulId.isClosed`. This is what lets Theorem 7.5 for `A + I` (the wave operator of
+  chapter 10) speak about `D(A^k)`.
 
 ## References
 
@@ -1316,5 +1323,250 @@ theorem adjoint_adjoint (hcl : A.IsClosed) (hd : Dense (A.domain : Set H))
     rw [← inner_conj_symm b, ← inner_conj_symm a, ← _root_.map_sub, h2, _root_.map_zero]
 
 end Adjoint
+
+section Shift
+
+variable {B : H →ₗ.[𝕜] H}
+
+/-! ### Prepending a coordinate, and the shift `A + c I` -/
+
+namespace PowDomain
+
+variable {k : ℕ}
+
+/-- The **prepending constructor**: for `u ∈ D(A)` and `y ∈ D(A^k)` with `A u` the `0`-th
+coordinate of `y`, the element `(u, A u, …, A^{k+1} u)` of `D(A^{k+1})` whose coordinates are `u`
+followed by those of `y`; `snoc` appends a coordinate at the other end. -/
+def cons (u : A.domain) (y : A.PowDomain k) (h : A u = applyL A k 0 y) : A.PowDomain (k + 1) :=
+  mk A (Fin.cons (u : H) fun i => applyL A k i y) fun i => by
+    induction i using Fin.cases with
+    | zero => exact exists_apply_eq_of_eq u.2 h (by simp) (by simp)
+    | succ i =>
+      exact exists_apply_eq_of_eq (applyL_mem_domain y i) (apply_applyL y i)
+        (by rw [← Fin.succ_castSucc, Fin.cons_succ]) (by rw [Fin.cons_succ])
+
+/-- The `0`-th coordinate of `cons u y h` is `u`. -/
+@[simp]
+theorem applyL_cons_zero (u : A.domain) (y : A.PowDomain k) (h) :
+    applyL A (k + 1) 0 (cons u y h) = u := by
+  unfold cons
+  rw [applyL_mk, Fin.cons_zero]
+
+/-- The coordinates `1, …, k + 1` of `cons u y h` are those of `y`. -/
+@[simp]
+theorem applyL_cons_succ (u : A.domain) (y : A.PowDomain k) (h) (i : Fin (k + 1)) :
+    applyL A (k + 1) i.succ (cons u y h) = applyL A k i y := by
+  unfold cons
+  rw [applyL_mk, Fin.cons_succ]
+
+/-- `shiftL` is a left inverse of `cons`. -/
+@[simp]
+theorem shiftL_cons (u : A.domain) (y : A.PowDomain k) (h) : shiftL A k (cons u y h) = y :=
+  PowDomain.ext fun i => by rw [applyL_shiftL, applyL_cons_succ]
+
+/-- `‖cons u y h‖² = ‖u‖² + ‖y‖²`. -/
+theorem norm_cons_sq (u : A.domain) (y : A.PowDomain k) (h) :
+    ‖cons u y h‖ ^ 2 = ‖(u : H)‖ ^ 2 + ‖y‖ ^ 2 := by
+  rw [norm_sq_eq, norm_sq_eq, Fin.sum_univ_succ, applyL_cons_zero]
+  simp only [applyL_cons_succ]
+
+/-- `‖cons u y h‖ ≤ ‖u‖ + ‖y‖`. -/
+theorem norm_cons_le (u : A.domain) (y : A.PowDomain k) (h) :
+    ‖cons u y h‖ ≤ ‖(u : H)‖ + ‖y‖ := by
+  refine (sq_le_sq₀ (norm_nonneg _) (by positivity)).1 ?_
+  rw [norm_cons_sq]
+  nlinarith [norm_nonneg (u : H), norm_nonneg y]
+
+/-- **`u ∈ D(A^{k+1})` iff `u ∈ D(A)` and `A u ∈ D(A^k)`**: the recursive description of the
+domains of the powers, by `shiftL` and `cons`. -/
+theorem exists_applyL_zero_eq_succ_iff {u : H} :
+    (∃ x : A.PowDomain (k + 1), applyL A (k + 1) 0 x = u) ↔
+      ∃ hu : u ∈ A.domain, ∃ y : A.PowDomain k, applyL A k 0 y = A ⟨u, hu⟩ := by
+  constructor
+  · rintro ⟨x, rfl⟩
+    exact ⟨applyL_mem_domain x 0, shiftL A k x, applyL_zero_shiftL x⟩
+  · rintro ⟨hu, y, hy⟩
+    exact ⟨cons ⟨u, hu⟩ y hy.symm, applyL_cons_zero _ _ _⟩
+
+end PowDomain
+
+open PowDomain
+
+/-- **`B = A + c I`**: the operators have the same domain and `B u = A u + c u` on it. The
+spelling `(c • LinearMap.id) +ᵥ A` of the shifted operator satisfies it
+(`isAddSmulId_smul_id_vadd`), and so does `LinearMap.id +ᵥ A` with `c = 1`
+(`isAddSmulId_id_vadd`). The relation is symmetric with `c ↦ -c` (`IsAddSmulId.symm`). -/
+structure IsAddSmulId (B A : H →ₗ.[𝕜] H) (c : 𝕜) : Prop where
+  /-- `D(B) = D(A)`. -/
+  mem_domain_iff : ∀ u, u ∈ B.domain ↔ u ∈ A.domain
+  /-- `B u = A u + c u`. -/
+  apply_eq : ∀ (u : H) (hB : u ∈ B.domain) (hA : u ∈ A.domain), B ⟨u, hB⟩ = A ⟨u, hA⟩ + c • u
+
+variable (A) in
+/-- `(c • I) +ᵥ A = A + c I`. -/
+theorem isAddSmulId_smul_id_vadd (c : 𝕜) :
+    IsAddSmulId ((c • LinearMap.id : H →ₗ[𝕜] H) +ᵥ A) A c :=
+  ⟨fun _ => Iff.rfl, fun u hB hA => by
+    rw [vadd_apply, LinearMap.smul_apply, LinearMap.id_apply, add_comm]⟩
+
+variable (A) in
+/-- `I +ᵥ A = A + I`. -/
+theorem isAddSmulId_id_vadd : IsAddSmulId ((LinearMap.id : H →ₗ[𝕜] H) +ᵥ A) A 1 :=
+  ⟨fun _ => Iff.rfl, fun u hB hA => by
+    rw [vadd_apply, LinearMap.id_apply, add_comm, one_smul]⟩
+
+/-- If `B = A + c I` then `A = B + (-c) I`. -/
+theorem IsAddSmulId.symm {c : 𝕜} (h : IsAddSmulId B A c) : IsAddSmulId A B (-c) :=
+  ⟨fun u => (h.mem_domain_iff u).symm, fun u hA hB => by
+    rw [h.apply_eq u hB hA, neg_smul, add_neg_cancel_right]⟩
+
+/-- **Closedness is unchanged by a shift**: if `B = A + c I` is closed, so is `A`, its graph
+being the preimage of the graph of `B` under the homeomorphism `(x, y) ↦ (x, y + c x)`. -/
+theorem IsAddSmulId.isClosed {c : 𝕜} (h : IsAddSmulId B A c) (hB : B.IsClosed) : A.IsClosed := by
+  have hΦ : Continuous fun p : H × H => (p.1, p.2 + c • p.1) := by fun_prop
+  have hgraph : (A.graph : Set (H × H)) =
+      (fun p : H × H => (p.1, p.2 + c • p.1)) ⁻¹' (B.graph : Set (H × H)) := by
+    ext ⟨x, y⟩
+    simp only [SetLike.mem_coe, mem_graph_iff, Set.mem_preimage]
+    constructor
+    · rintro ⟨z, rfl, hz2⟩
+      refine ⟨⟨z, (h.mem_domain_iff _).2 z.2⟩, rfl, ?_⟩
+      have e := h.apply_eq (z : H) ((h.mem_domain_iff _).2 z.2) z.2
+      have e' : A ⟨(z : H), z.2⟩ = y := hz2
+      rw [e, e']
+    · rintro ⟨z, rfl, hz2⟩
+      refine ⟨⟨z, (h.mem_domain_iff _).1 z.2⟩, rfl, ?_⟩
+      have e := h.apply_eq (z : H) z.2 ((h.mem_domain_iff _).1 z.2)
+      have e2 : B ⟨(z : H), z.2⟩ = y + c • (z : H) := hz2
+      rw [e2] at e
+      exact (add_right_cancel e).symm
+  change _root_.IsClosed (A.graph : Set (H × H))
+  rw [hgraph]
+  exact hB.preimage hΦ
+
+namespace IsAddSmulId
+
+variable {c : 𝕜}
+
+variable (A B) in
+/-- The transport `D(B^0) → D(A^0)` (both are `H`). -/
+noncomputable def transportZero : B.PowDomain 0 →L[𝕜] A.PowDomain 0 :=
+  LinearMap.mkContinuous
+    { toFun := fun x => PowDomain.mk A (fun _ => applyL B 0 0 x) fun i => i.elim0
+      map_add' := fun x y => PowDomain.ext fun i => by simp
+      map_smul' := fun a x => PowDomain.ext fun i => by simp }
+    1 fun x => by
+      rw [one_mul]
+      change ‖PowDomain.mk A (fun _ => applyL B 0 0 x) fun i => i.elim0‖ ≤ ‖x‖
+      refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
+      rw [norm_sq_eq, Fin.sum_univ_one, applyL_mk]
+      exact pow_le_pow_left₀ (norm_nonneg _) (norm_applyL_apply_le _ _) 2
+
+/-- The transport of `D(B^0)` preserves the base point. -/
+theorem applyL_zero_transportZero (x : B.PowDomain 0) :
+    applyL A 0 0 (transportZero A B x) = applyL B 0 0 x :=
+  rfl
+
+/-- The `0`-th coordinate of an element of `D(B^{k+1})` lies in `D(A)`. -/
+theorem applyL_zero_mem_domain (h : IsAddSmulId B A c) {k : ℕ} (x : B.PowDomain (k + 1)) :
+    applyL B (k + 1) 0 x ∈ A.domain :=
+  (h.mem_domain_iff _).1 (applyL_mem_domain x 0)
+
+/-- The coordinate identity behind the transport step: for `Φ : D(B^k) → D(A^k)` preserving the
+base point, `A u = (Φ (B u, …) − c Φ (u, …))_0` for `x = (u, B u, …) ∈ D(B^{k+1})`. -/
+theorem apply_eq_applyL_zero_sub (h : IsAddSmulId B A c) {k : ℕ}
+    (Φ : B.PowDomain k →L[𝕜] A.PowDomain k) (hΦ : ∀ y, applyL A k 0 (Φ y) = applyL B k 0 y)
+    (x : B.PowDomain (k + 1)) :
+    A ⟨applyL B (k + 1) 0 x, h.applyL_zero_mem_domain x⟩ =
+      applyL A k 0 (Φ (shiftL B k x) - c • Φ (castL B k x)) := by
+  have e1 : applyL A k 0 (Φ (shiftL B k x) - c • Φ (castL B k x))
+      = applyL B k 0 (shiftL B k x) - c • applyL B k 0 (castL B k x) := by
+    rw [_root_.map_sub, _root_.map_smul, hΦ, hΦ]
+  have e2 : applyL B k 0 (shiftL B k x) = B ⟨applyL B (k + 1) 0 x, applyL_mem_domain x 0⟩ :=
+    applyL_zero_shiftL x
+  have e3 : applyL B k 0 (castL B k x) = applyL B (k + 1) 0 x := rfl
+  have e4 := h.apply_eq (applyL B (k + 1) 0 x) (applyL_mem_domain x 0)
+    (h.applyL_zero_mem_domain x)
+  rw [e1, e2, e3, e4, add_sub_cancel_right]
+
+/-- **One step of the transport**: from `Φ : D(B^k) →L D(A^k)` preserving the base point, the map
+`D(B^{k+1}) →L D(A^{k+1})`, `(u, B u, …) ↦ cons u (Φ (B u, …) − c Φ (u, …))`, whose coordinates
+are `u` followed by those of `Φ (B u, …) − c Φ (u, …)` — the element over `A u = B u − c u`. -/
+noncomputable def transportStep (h : IsAddSmulId B A c) {k : ℕ}
+    (Φ : B.PowDomain k →L[𝕜] A.PowDomain k) (hΦ : ∀ y, applyL A k 0 (Φ y) = applyL B k 0 y) :
+    B.PowDomain (k + 1) →L[𝕜] A.PowDomain (k + 1) :=
+  LinearMap.mkContinuous
+    { toFun := fun x => cons ⟨applyL B (k + 1) 0 x, h.applyL_zero_mem_domain x⟩
+        (Φ (shiftL B k x) - c • Φ (castL B k x)) (h.apply_eq_applyL_zero_sub Φ hΦ x)
+      map_add' := fun x y => PowDomain.ext fun i => by
+        induction i using Fin.cases with
+        | zero => simp
+        | succ i =>
+          simp only [_root_.map_add, applyL_cons_succ, _root_.map_sub, _root_.map_smul, smul_add]
+          abel
+      map_smul' := fun a x => PowDomain.ext fun i => by
+        induction i using Fin.cases with
+        | zero => simp
+        | succ i =>
+          simp only [_root_.map_smul, applyL_cons_succ, _root_.map_sub, RingHom.id_apply, smul_sub,
+            smul_comm a c] }
+    (1 + (1 + ‖c‖) * ‖Φ‖) fun x => by
+      refine (norm_cons_le ⟨applyL B (k + 1) 0 x, h.applyL_zero_mem_domain x⟩
+        (Φ (shiftL B k x) - c • Φ (castL B k x)) (h.apply_eq_applyL_zero_sub Φ hΦ x)).trans ?_
+      have h1 : ‖applyL B (k + 1) 0 x‖ ≤ ‖x‖ := norm_applyL_apply_le _ _
+      have h2 : ‖Φ (shiftL B k x) - c • Φ (castL B k x)‖ ≤ (1 + ‖c‖) * ‖Φ‖ * ‖x‖ := by
+        calc ‖Φ (shiftL B k x) - c • Φ (castL B k x)‖
+            ≤ ‖Φ (shiftL B k x)‖ + ‖c • Φ (castL B k x)‖ := norm_sub_le _ _
+          _ ≤ ‖Φ‖ * ‖x‖ + ‖c‖ * (‖Φ‖ * ‖x‖) := by
+            rw [norm_smul]
+            gcongr
+            · exact (Φ.le_opNorm _).trans (by gcongr; exact norm_shiftL_apply_le x)
+            · exact (Φ.le_opNorm _).trans (by gcongr; exact norm_castL_apply_le x)
+          _ = (1 + ‖c‖) * ‖Φ‖ * ‖x‖ := by ring
+      calc ‖((⟨applyL B (k + 1) 0 x, h.applyL_zero_mem_domain x⟩ : A.domain) : H)‖
+            + ‖Φ (shiftL B k x) - c • Φ (castL B k x)‖
+          ≤ ‖x‖ + (1 + ‖c‖) * ‖Φ‖ * ‖x‖ := add_le_add h1 h2
+        _ = (1 + (1 + ‖c‖) * ‖Φ‖) * ‖x‖ := by ring
+
+/-- The transport step preserves the base point. -/
+theorem applyL_zero_transportStep (h : IsAddSmulId B A c) {k : ℕ}
+    (Φ : B.PowDomain k →L[𝕜] A.PowDomain k) (hΦ : ∀ y, applyL A k 0 (Φ y) = applyL B k 0 y)
+    (x : B.PowDomain (k + 1)) :
+    applyL A (k + 1) 0 (h.transportStep Φ hΦ x) = applyL B (k + 1) 0 x :=
+  applyL_cons_zero ⟨applyL B (k + 1) 0 x, h.applyL_zero_mem_domain x⟩
+    (Φ (shiftL B k x) - c • Φ (castL B k x)) (h.apply_eq_applyL_zero_sub Φ hΦ x)
+
+/-- The transports `D(B^k) →L D(A^k)` for every `k`, with their base-point property, by recursion
+on `k`. -/
+noncomputable def transportAux (h : IsAddSmulId B A c) :
+    ∀ k : ℕ, {Φ : B.PowDomain k →L[𝕜] A.PowDomain k // ∀ y, applyL A k 0 (Φ y) = applyL B k 0 y}
+  | 0 => ⟨transportZero A B, applyL_zero_transportZero⟩
+  | k + 1 => ⟨h.transportStep (h.transportAux k).1 (h.transportAux k).2,
+      h.applyL_zero_transportStep _ _⟩
+
+/-- **The transport `D(B^k) →L D(A^k)` for `B = A + c I`**: the bounded linear map sending
+`(u, B u, …, B^k u)` to `(u, A u, …, A^k u)`; the domains `D(B^k)` and `D(A^k)` coincide as
+subspaces of `H`, but their Hilbert-space structures (the graph norms) differ, and this is the
+bijection between them. Built by recursion on `k` (`transportStep`): `A u = B u − c u`, so the
+tuple over `u` is `cons u (Φ_k (B u, …) − c Φ_k (u, …))`. -/
+noncomputable def transport (h : IsAddSmulId B A c) (k : ℕ) : B.PowDomain k →L[𝕜] A.PowDomain k :=
+  (h.transportAux k).1
+
+/-- The transport preserves the base point: `(transport x)_0 = x_0`. -/
+@[simp]
+theorem applyL_zero_transport (h : IsAddSmulId B A c) {k : ℕ} (x : B.PowDomain k) :
+    applyL A k 0 (h.transport k x) = applyL B k 0 x :=
+  (h.transportAux k).2 x
+
+/-- **`D(B^k) = D(A^k)` as subspaces of `H`** for `B = A + c I`: `u` is the base point of an
+element of `D(B^k)` iff it is the base point of an element of `D(A^k)`. -/
+theorem exists_applyL_zero_eq_iff (h : IsAddSmulId B A c) {k : ℕ} {u : H} :
+    (∃ x : B.PowDomain k, applyL B k 0 x = u) ↔ ∃ x : A.PowDomain k, applyL A k 0 x = u :=
+  ⟨fun ⟨x, hx⟩ => ⟨h.transport k x, by rw [applyL_zero_transport, hx]⟩,
+    fun ⟨x, hx⟩ => ⟨h.symm.transport k x, by rw [applyL_zero_transport, hx]⟩⟩
+
+end IsAddSmulId
+
+end Shift
 
 end LinearPMap

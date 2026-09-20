@@ -259,3 +259,13 @@ source = "[brezis2011functional] Theorem 7.5"
 [[node]]
 id = "powPart_castLE"
 source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "IsAddSmulId.contDiffOnPowDomain"
+
+[[node]]
+id = "ContDiffOnPowDomain.smul"
+
+[[node]]
+id = "IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup"
+source = "[brezis2011functional] Theorem 7.5 and chapter 7, Remark 6"

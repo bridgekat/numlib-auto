@@ -77,68 +77,138 @@ id = "IsSolution.energy"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (32) and Remark 6"
 
 [[node]]
+id = "MemLaplacianDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8, the display for `D(A^k)`"
+
+[[node]]
+id = "memLaplacianDomain_zero"
+
+[[node]]
+id = "memLaplacianDomain_one_iff"
+
+[[node]]
+id = "memLaplacianDomain_add_two_iff"
+
+[[node]]
+id = "MemLaplacianDomain.smul"
+
+[[node]]
+id = "MemLaplacianDomain.neg"
+
+[[node]]
+id = "memLaplacianDomain_neg_iff"
+
+[[node]]
+id = "MemLaplacianDomain.exists_fnL_eq"
+
+[[node]]
+id = "memLaplacianDomain_succ_iff_neg"
+
+[[node]]
+id = "memLaplacianDomain_operator_apply_iff"
+
+[[node]]
 id = "mem_operator_powGraph_iff"
-kind = "theorem"
-desc = '''`D(A^k)` on any open set, in terms of the Dirichlet Laplacian: with `A² (u, v) = (Δu, Δv)`
-(`operator_apply_operator`), `(u, v) ∈ D(A^k)` (i.e. `∃ x : (operator Ω).PowDomain k, applyL _ k 0 x = (u,v)`,
-`LinearPMap.powGraph`) iff `fnL u ∈ D((-Δ)^{⌈k/2⌉})` with `(-Δ)^j (fnL u) ∈ range fnL` for
-`j ≤ ⌊k/2⌋`, and `v ∈ D((-Δ)^{⌊k/2⌋})` with `(-Δ)^j v ∈ range fnL` for `j ≤ ⌈k/2⌉ - 1` (the
-`D((-Δ)^m)` memberships through `(dirichletLaplacian Ω).PowDomain m`). Induction on `k` from
-`mem_operator_domain_iff`, `A(u,v) = (-v, -Δu)`. This is the book's display at line 12736 before
-the Sobolev spaces are read in: the conditions "`Δ^j u = 0` on `Γ`" are the `range fnL`
-memberships. ★★ Not attempted by pde5 (time): expect the `PowDomain` contexts of `operator Ω` to
-need the heartbeat discipline of `Numlib/Analysis/PDE/Heat` (one projection per lemma, no `rw`).'''
-deps = ["operator", "LinearPMap.powGraph", "LinearPMap.PowDomain", "LinearPMap.PowDomain.applyL"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8, `D(A^k)`"
 
 [[node]]
+id = "exists_powDomain_succ_of_apply"
+
+[[node]]
+id = "mem_and_exists_powDomain_of_powDomain_succ"
+
+[[node]]
+id = "memLaplacianDomain_two_mul_iff"
+
+[[node]]
+id = "memLaplacianDomain_two_mul_add_one_iff"
+
+[[node]]
+id = "_root_.Bochner.ContDiffOnThrough.infty_of_forall_nat"
+
+[[node]]
+id = "dirichletLaplacian_exists_sobolev_add_two_of_apply"
+
+[[node]]
+id = "dirichletLaplacian_exists_sobolev_of_powDomain_of_last"
+
+[[node]]
+id = "MemLaplacianDomain.exists_sobolev_two_mul"
+
+[[node]]
+id = "MemLaplacianDomain.exists_sobolev_two_mul_add_one"
+
+[[node]]
+id = "MemLaplacianDomain.exists_sobolev"
+
+[[node]]
+id = "operator_isClosed"
+
+[[node]]
+id = "fstCoordL"
+
+[[node]]
+id = "fstCoordL_apply"
+
+[[node]]
+id = "sndCoordL"
+
+[[node]]
+id = "sndCoordL_apply"
+
+[[node]]
+id = "memLaplacianDomain_fstCoordL"
+
+[[node]]
+id = "memLaplacianDomain_sndCoordL"
+
+[[node]]
+id = "exists_sobolev_fstCoordL"
+
+[[node]]
+id = "exists_sobolev_sndCoordL"
+
+[[node]]
+id = "operator.powDomainToSobolevFstL"
+
+[[node]]
+id = "fnL_powDomainToSobolevFstL"
+
+[[node]]
+id = "operator.powDomainToSobolevSndL"
+
+[[node]]
+id = "fnL_powDomainToSobolevSndL"
+
+[[node]]
 id = "operator.powDomainToSobolevL"
-kind = "definition"
-desc = '''**`D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)` with continuous injection**, on a `C^{k+1}` domain with
-bounded boundary: `Wave.operator.powDomainToSobolevL (hΩ) (k) : (operator Ω).PowDomain k →L[ℝ]
-SobolevEuclidean N (k+1) 2 Ω × SobolevEuclidean N k 2 Ω`, `x ↦ (w, z)` with
-`SobolevMultiIndex.fnL w = SobolevMultiIndexZero.fnL u`, `SobolevMultiIndex.fnL z = v`, and
-`‖w‖_{H^{k+1}} + ‖z‖_{H^k} ≤ C ∑_{j ≤ k} ‖A^j (u,v)‖ ≤ C' ‖x‖`. The book's line 12738 ("in
-particular"), from `mem_operator_powGraph_iff` and `dirichletLaplacian_mem_powDomain_iff` (with
-the odd-order clause of Theorem 9.25, `Elliptic.regularity_dirichlet_higher`: `u ∈ H¹₀`,
-`u - Δu ∈ H^{m}` ⇒ `u ∈ H^{m+2}`, at `m = k - 1`). ★★★ bookkeeping on top of Theorem 9.25. Not
-attempted by pde5.'''
-deps = ["mem_operator_powGraph_iff", "dirichletLaplacian_mem_powDomain_iff", "dirichletLaplacian.powDomainToSobolevL", "Elliptic.regularity_dirichlet_higher", "IsContDiffChartDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8"
 
 [[node]]
+id = "fnL_powDomainToSobolevL_fst"
+
+[[node]]
+id = "fnL_powDomainToSobolevL_snd"
+
+[[node]]
+id = "exp_smul_semigroup_eq_phaseSolution"
+
+[[node]]
+id = "IsSolution.phaseSolution_eq"
+
+[[node]]
+id = "IsSolution.contDiffOnPowDomain_of_powDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8, proof"
+
+[[node]]
 id = "IsSolution.contDiffOnThrough_of_powDomain"
-kind = "theorem"
-desc = '''**Theorem 10.8, Bochner form**: if `U₀ = (u₀, ṽ₀) ∈ D(A^k)` then
-`(operator Ω).ContDiffOnPowDomain (k - j) j U (Ici 0)` for `j ≤ k` (Theorem 7.5,
-`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup` for `A + I`; the shift `e^t` preserves
-the classes) and hence, on a `C^k` domain with bounded boundary,
-`Bochner.ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N (j+1) 2 Ω →L[ℝ] L²(Ω)) (k - j) u (Ici 0)` for `j ≤ k` —
-`u ∈ C^{k-j}([0,∞); H^{j+1}(Ω))`, lines 12740–12750, via `operator.powDomainToSobolevL`. ★★
-Not attempted by pde5. Note for the prover: Theorem 7.5 is stated for the semigroup of `A + I`,
-whose graph `D((A+I)^k)` (`LinearPMap.powGraph`) differs from `D(A^k)` as a subspace of
-`PiLp 2 (Fin (k+1) → H)` (the coordinates are `(A+I)^i x` instead of `A^i x`); the transport
-between the two `PowDomain` types (a linear isomorphism with a triangular matrix of binomial
-coefficients) is the missing generic lemma, and belongs in `Numlib/Analysis/ODE/HilleYosida`.'''
-deps = ["IsSolution", "existsUnique_isSolution", "operator.powDomainToSobolevL", "LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup", "Bochner.ContDiffOnThrough.comp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8"
 
 [[node]]
+id = "IsSolution.contDiffOnThrough_sobolev_forall"
+
+[[node]]
 id = "IsSolution.contDiffOnClosure_spaceTime"
-kind = "theorem"
-desc = '''**Theorem 10.8**: on a `C^∞` domain with bounded boundary, if `(u₀, ṽ₀) ∈ D(A^k)` for every
-`k` (the book's `u₀, v₀ ∈ H^k(Ω)` for all `k` with the compatibility conditions `Δ^j u₀ = Δ^j v₀ = 0`
-on `Γ`, read through `mem_operator_powGraph_iff` and `dirichletLaplacian_mem_powDomain_iff`),
-then `u ∈ C^∞(Ω̄ × [0,∞))`: `∃ U, (∀ t ≥ 0, U(·,t) =ᵐ u t) ∧ ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi 0)`
-with the derivatives extending continuously to `closure Ω ×ˢ Ici 0` (`∞ : ℕ∞`, not `⊤`; the
-space–time bridge's `Ici 0` form, `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`,
-with the hypotheses `IsSobolevExtensionDomainAll N Ω`, `UniqueDiffOn ℝ (Ici 0)` and
-`∀ m : ℕ, ContDiffOnThrough (fnL … m 2 Ω volume) ∞ u (Ici 0)`, the latter from
-`contDiffOnThrough_of_powDomain` for all `k` with `ContDiffOnThrough.sobolev_of_le`). ★★★ through
-the bridge. Blocked: waits on `IsSolution.contDiffOnThrough_of_powDomain` and on pde4's
-`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici` (`Numlib/Analysis/PDE/Bochner/SpaceTime`,
-merged to main after this worktree was cut).'''
-deps = ["IsSolution.contDiffOnThrough_of_powDomain", "Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough", "IsContDiffChartDomain", "IsSobolevExtensionDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8"
 
 [[node]]
@@ -186,7 +256,22 @@ formula (`IsSolution.eq_dAlembert`). Proof: translation `τ_t f = f(· + t)` is 
 functions), and `x ↦ ∫_{x-t}^{x+t} v₀` is `v₀(x+t) - v₀(x-t)`-differentiable in `t` with
 `v₀ ∈ H¹`; the computation `∂ₜₜ = ∂ₓₓ` termwise, weak derivatives read through the `H²` element.
 ★★★, ~400 lines, most of it the translation calculus in `L²`. Not attempted by pde5 (time);
-sob15's `Numlib/Analysis/Sobolev/Translate` may now supply the translation calculus.'''
+sob15's `Numlib/Analysis/Sobolev/Translate` may now supply the translation calculus.
+
+Blocked (pde6, 2026-09-20, not attempted after the Theorem 10.8 chain): the ingredients are in
+place — `MeasureTheory.Lp.translate` (`Sobolev/Translate`, an isometry of `L²(ℝ)` with
+`weakDeriv_translateL`, `translateL_mem_zero`), the translation estimate
+`MemSobolev.eLpNorm_sub_translate_le` / `SobolevEuclidean.eLpNorm_fn_sub_translate_le`
+(`Sobolev/Friedrichs`, `p = 2`), the density `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`
+(`Sobolev/Density`), and `IsSolution`'s fields — but the curve calculus is missing: (a) the
+strong continuity and differentiability of `t ↦ τ_t f` in `L²(ℝ)` for `f ∈ H¹(ℝ)` with
+derivative `τ_t f'` (by the estimate and density, first at `t = 0`, then by the group law),
+iterated once more for `f ∈ H²`; (b) the primitive term `x ↦ ∫_{x−t}^{x+t} v₀` as the curve
+`t ↦ V(· + t) − V(· − t)` of a primitive `V ∈ H²_loc` with the same calculus; (c)
+`u(t) ∈ D(−Δ)` with `−Δ u(t)` the `L²` combination of the translates of `u₀''` and `v₀'`
+(weak derivatives of translates through `weakDeriv_translateL`; `H¹₀(ℝ) = H¹(ℝ)` through the
+whole-space density); (d) the `H¹`-lift (`ContDiffOnThrough fnL 1`). Estimate 500 lines in
+the `SobolevEuclidean`/`Lp` contexts; each of (a)–(c) is a tracked node on its own.'''
 deps = ["dAlembert", "IsSolution", "existsUnique_isSolution", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "HasWeakFDerivOn.eLpNorm_sub_translate_le_top"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
 
@@ -206,28 +291,14 @@ id = "IsSolution.hasSum_eigenfunction"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 9"
 
 [[node]]
+id = "IsClassicalSolution"
+
+[[node]]
+id = "timeDeriv_iterate_apply_zero_eq_zero"
+
+[[node]]
+id = "IsClassicalSolution.timeDeriv_iterate_eqOn"
+
+[[node]]
 id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
-kind = "theorem"
-desc = '''**Remark 10, necessity of the compatibility conditions** (re-planned 2026-09-20, agent pde4,
-after the heat version). Let `Ω` be open, `T > 0`, and let `u : E × ℝ → ℝ` be `C^∞` on all of
-`E × ℝ` (`ContDiff ℝ ∞ u`; the book's `C^∞(Ω̄ × [0, ∞))` in the footnote-16 sense does not make
-`Δ^j (u(·, 0))` meaningful on `∂Ω`, see `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`),
-satisfy `∂ₜₜ u = Δ_x u` on `Ω ×ˢ Ioo 0 T` — as
-`∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x`, or with
-`Heat.timeDeriv`/`Heat.spaceLaplacian`, `EqOn (Heat.timeDeriv (Heat.timeDeriv u)) (Heat.spaceLaplacian u) (Ω ×ˢ Ioo 0 T)`
-— and vanish on `frontier Ω ×ˢ Ioo 0 T`. Then for every `j` and every `x ∈ frontier Ω`,
-`(Laplacian.laplacian^[j] fun y ↦ u (y, 0)) x = 0` and
-`(Laplacian.laplacian^[j] fun y ↦ Heat.timeDeriv u (y, 0)) x = 0` (the conditions
-`Δ^j u₀ = Δ^j v₀ = 0` on `Γ` of Theorem 10.8). Proof, as the heat version: by induction
-`EqOn (Heat.timeDeriv^[2 j] u) (Heat.spaceLaplacian^[j] u)` and
-`EqOn (Heat.timeDeriv^[2 j + 1] u) (Heat.spaceLaplacian^[j] (Heat.timeDeriv u))` on the open cylinder
-(`Heat.timeDeriv_spaceLaplacian_iterate` for the commutation `∂ₜ Δ_x^j = Δ_x^j ∂ₜ` of smooth
-functions, `Heat.timeDeriv_eqOn` and `Heat.spaceLaplacian_iterate_eqOn` for the locality of the
-operators on the open set); all `t`-derivatives vanish on `frontier Ω ×ˢ Ioo 0 T`
-(`Heat.timeDeriv_iterate_slice`, `Heat.iterate_deriv_eq_zero_of_eqOn`); both sides are continuous
-on `E × ℝ` (`Heat.contDiff_timeDeriv_iterate`, `Heat.contDiff_spaceLaplacian_iterate`), so the
-identities pass to `closure Ω ×ˢ Icc 0 T` and `frontier Ω ×ˢ Icc 0 T`, and comparing them at
-`(x, 0)` gives the conditions through `Heat.spaceLaplacian_iterate_slice`. ★★ (~120 lines on top of
-the heat module's lemmas).'''
-deps = ["Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier", "Heat.timeDeriv", "Heat.spaceLaplacian", "Heat.timeDeriv_spaceLaplacian_iterate", "Heat.timeDeriv_eqOn", "Heat.spaceLaplacian_iterate_eqOn", "Heat.timeDeriv_iterate_slice", "Heat.iterate_deriv_eq_zero_of_eqOn", "Heat.contDiff_timeDeriv_iterate", "Heat.contDiff_spaceLaplacian_iterate", "Heat.spaceLaplacian_iterate_slice"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 10"

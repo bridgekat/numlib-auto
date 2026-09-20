@@ -57,6 +57,15 @@ inductions over the level `j` applying the theory to the part `A.powPart j` on t
 space. Theorem 7.7's smoothing estimate `‖A S(t) u₀‖ ≤ ‖u₀‖ / t` comes from a Lyapunov function
 (`norm_exp_neg_smul_apply_le_div`), the book's integrations by parts replaced by one derivative.
 
+## The shift `A ↦ A + c I`
+
+Remark 6 of chapter 7 (`isSolutionOn_smul_id_vadd_iff`: `u` solves `u' + A u + c u = 0` iff
+`e^{ct} u` solves `u' + A u = 0`) extends to the regularity classes: `C^n(s; D((A + cI)^j))`
+is `C^n(s; D(A^j))` (`IsAddSmulId.contDiffOnPowDomain`, through the transport of
+`Numlib/Analysis/InnerProductSpace/MaximalMonotone`), and Theorem 7.5 for a maximal monotone
+`A + cI` reads on `A` (`IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup`): the wave
+operator of [brezis2011functional] §10.3, whose `A + I` is maximal monotone, needs exactly this.
+
 ## References
 
 [brezis2011functional], Chapter 7, §7.2–§7.4.
@@ -1355,5 +1364,49 @@ theorem exists_isSolutionOn_Ioi_of_isSelfAdjoint (hA : A.IsMaximalMonotone)
   exact ⟨fun t => A.semigroup t u₀, h1, h2, h3, h4,
     fun t ht => (semigroup_apply_mem_domain_of_isFormalAdjoint hA hs u₀ ht).snd,
     fun k l => contDiffOnPowDomain_semigroup_Ioi hA hs u₀ k l⟩
+
+section Shift
+
+variable {B : H →ₗ.[ℝ] H}
+
+/-! ### The regularity classes under the shift `A ↦ A + c I` -/
+
+omit [CompleteSpace H] in
+/-- **The class `C^n(s; D(A^j))` is unchanged by a shift of the operator**: for `B = A + c I`
+(`IsAddSmulId B A c`), a curve of class `C^n(s; D(B^j))` is of class `C^n(s; D(A^j))`, its lift
+being transported by `IsAddSmulId.transport`. -/
+theorem IsAddSmulId.contDiffOnPowDomain {c : ℝ} (h : B.IsAddSmulId A c) {n : WithTop ℕ∞}
+    {j : ℕ} {u : ℝ → H} {s : Set ℝ} (hu : B.ContDiffOnPowDomain n j u s) :
+    A.ContDiffOnPowDomain n j u s :=
+  let ⟨v, hv0, hv⟩ := hu
+  ⟨fun t => h.transport j (v t), fun t ht => by rw [h.applyL_zero_transport, hv0 t ht],
+    (h.transport j).contDiff.comp_contDiffOn hv⟩
+
+omit [CompleteSpace H] in
+/-- Multiplying a curve of class `C^n(s; D(A^j))` by a scalar function of class `C^n` keeps it
+in the class. -/
+theorem ContDiffOnPowDomain.smul {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s : Set ℝ} {f : ℝ → ℝ}
+    (hf : ContDiffOn ℝ n f s) (hu : A.ContDiffOnPowDomain n j u s) :
+    A.ContDiffOnPowDomain n j (fun t => f t • u t) s :=
+  let ⟨v, hv0, hv⟩ := hu
+  ⟨fun t => f t • v t, fun t ht => by rw [_root_.map_smul, hv0 t ht], hf.smul hv⟩
+
+/-- **Theorem 7.5 for the shifted semigroup** ([brezis2011functional] Theorem 7.5 with
+Remark 6 of chapter 7): if `B = A + c I` is maximal monotone and `x ∈ D(A^k)` with base point
+`u₀`, then `t ↦ e^{ct} S_B(t) u₀` — the solution of `u' + A u = 0` — lies in
+`C^{k-j}([0, ∞); D(A^j))` for `j ≤ k`. The datum is transported to `D(B^k)`, Theorem 7.5 for `B`
+gives the class `C^{k-j}([0, ∞); D(B^j))`, which is `C^{k-j}([0, ∞); D(A^j))`
+(`IsAddSmulId.contDiffOnPowDomain`), and the factor `e^{ct}` is smooth. -/
+theorem IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup {c : ℝ}
+    (hB : B.IsMaximalMonotone) (h : B.IsAddSmulId A c) {k : ℕ} (x : A.PowDomain k) {j : ℕ}
+    (hj : j ≤ k) :
+    A.ContDiffOnPowDomain (k - j : ℕ) j
+      (fun t => Real.exp (c * t) • B.semigroup t (applyL A k 0 x)) (Ici 0) := by
+  have h1 := hB.contDiffOnPowDomain_semigroup (h.symm.transport k x) hj
+  rw [h.symm.applyL_zero_transport] at h1
+  exact (h.contDiffOnPowDomain h1).smul
+    (Real.contDiff_exp.comp (contDiff_const.mul contDiff_id)).contDiffOn
+
+end Shift
 
 end LinearPMap

@@ -250,29 +250,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (b),
 
 [[node]]
 id = "IsSolution.contDiffOnClosure_spaceTime"
-kind = "theorem"
-desc = '''**(5): `u ∈ C^∞(Ω̄ × [ε,∞))` for every `ε > 0`**, on a `C^∞` domain with bounded boundary
-(`hΩ : IsContDiffChartDomain ∞ Ω`, `hΓ : Bornology.IsBounded (frontier Ω)`, hence
-`IsSobolevExtensionDomainAll N Ω` by `IsSobolevExtensionDomainAll.of_isContDiffChartDomain`):
-there is `U : ℝ^N × ℝ → ℝ` with `(fun x ↦ U (x, t)) =ᵐ[volume.restrict Ω] u t` for every `t > 0`
-and `∀ ε > 0, ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi ε)` — the derivatives of every order extend
-continuously to `closure Ω ×ˢ Ici ε`. (The former conclusion `ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi 0)`
-is false for `L²` data: `closure (Ω ×ˢ Ioi 0) = closure Ω ×ˢ Ici 0` and the solution is not
-smooth up to `t = 0`; restated 2026-09-20 per pde4's bridge.) Proof: `contDiffOnThrough_sobolev`
-gives `u ∈ C^∞((0,∞); H^{2ℓ}(Ω))` for every `ℓ` (`IsContDiffChartDomain.of_le` from `∞`), hence
-`C^∞((0,∞); H^m(Ω))` for every `m` by pde4's `Bochner.ContDiffOnThrough.sobolev_of_le`, and the
-bridge `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi` (hypotheses
-`IsSobolevExtensionDomainAll N Ω`, `∀ m : ℕ, ContDiffOnThrough (fnL … m 2 Ω volume) ∞ u (Ioi 0)`)
-delivers `U`. Errata note: the book invokes Corollary 9.15 for `H^{2ℓ} ⊆ C^k(Ω̄)`, whose stated
-hypothesis "`m - N/p` not an integer" fails for every even `N` at `p = 2`; the embedding holds
-under `k + N/2 < 2ℓ`, which is the form the bridge uses. ★ on top of the bridge.
-
-Blocked: the bridge `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi` and
-`Bochner.ContDiffOnThrough.sobolev_of_le` (agent pde4, `Bochner/SpaceTime`) are absent from
-this worktree (written in parallel). Everything else is proved: `contDiffOnThrough_sobolev`
-(`∞` order, every `ℓ`), `IsSobolevExtensionDomainAll.of_isContDiffChartDomain`. ~25 lines.'''
-deps = ["IsSolution.contDiffOnThrough_sobolev", "Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough", "ContDiffOnClosure.mono", "IsContDiffChartDomain", "IsSobolevExtensionDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1 (5)"
+
+[[node]]
+id = "IsSolution.contDiffOnThrough_sobolev_forall"
 
 [[node]]
 id = "IsSolution.memLpThrough_sobolevZero_of_isBounded"
@@ -397,25 +378,13 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (b),
 
 [[node]]
 id = "IsSolution.contDiffOnClosure_spaceTime_Ici"
-kind = "theorem"
-desc = '''**Theorem 10.2 (c)**: on a `C^∞` domain with bounded boundary, if `u₀ ∈ D(A^k)` for every
-`k` (the book's `u₀ ∈ H^k(Ω)` for all `k` with the compatibility conditions (8)
-`Δ^j u₀ = 0` on `Γ`, by `dirichletLaplacian_mem_powDomain_iff` / `IsDirichletLaplacianChain`;
-hypothesis shape `∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL _ k 0 x = u₀`), then
-`u ∈ C^∞(Ω̄ × [0,∞))`: there is `U : ℝ^N × ℝ → ℝ` with `(fun x ↦ U (x, t)) =ᵐ[volume.restrict Ω] u t`
-for every `t ≥ 0` and `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi 0)` — the derivatives of every order
-extend continuously to `closure Ω ×ˢ Ici 0` (restated 2026-09-20 per pde4's bridge). Proof:
-`contDiffOnThrough_sobolev_Ici_of_powDomain` at `k := ℓ + n`, `ℓ` gives
-`u ∈ C^n([0,∞); H^{2ℓ}(Ω))` for all `n, ℓ`, whence `C^∞([0,∞); H^{2ℓ})` (one lift for all `n`:
-the lifts agree on `Ici 0` by `SobolevMultiIndex.fnL_injective`), then every `m` by pde4's
-`Bochner.ContDiffOnThrough.sobolev_of_le`, and the `Ici` bridge
-`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici` (`UniqueDiffOn ℝ (Ici 0)`,
-`IsSobolevExtensionDomainAll N Ω`). ★★ on top of the bridge (~60 lines).
-
-Blocked: the bridge (agent pde4, `Bochner/SpaceTime`) is absent from this worktree; the
-Bochner clauses at every finite order are proved (`contDiffOnThrough_sobolev_Ici_of_powDomain`).'''
-deps = ["IsSolution.contDiffOnPowDomain_Ici_of_powDomain", "IsSolution.contDiffOnThrough_sobolev_Ici_of_powDomain", "Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (c)"
+
+[[node]]
+id = "IsSolution.contDiffOnThrough_sobolev_Ici_of_forall_powDomain"
+
+[[node]]
+id = "IsSolution.contDiffOnThrough_sobolev_Ici_forall"
 
 [[node]]
 id = "IsBackwardSolution"
