@@ -247,6 +247,7 @@ import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Embedding
 import Numlib.Analysis.Sobolev.EmbeddingDomain
 import Numlib.Analysis.Sobolev.Extension
+import Numlib.Analysis.Sobolev.ExtensionHigher
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Basic

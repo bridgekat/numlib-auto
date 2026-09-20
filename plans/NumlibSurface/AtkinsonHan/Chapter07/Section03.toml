@@ -11,25 +11,12 @@ id = "theorem_7_3_2"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.2 (at order k = 1, on an extension domain)"
 
 [[node]]
-id = "theorem_7_3_2_higher"
-kind = "theorem"
-desc = '''Theorem 7.3.2 at every order: on a Lipschitz domain (here: an extension domain), for
-`k ≥ 2` and `1 ≤ p < ∞`, `C^∞(closure Ω)` is dense in `W^{k,p}(Ω)`. The order `k = 1` is
-`theorem_7_3_2`, from Brezis's Corollary 9.8.
+id = "isSobolevExtensionDomainOfOrder_of_definition_7_2_1"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.1 with Theorem 7.3.5 (the C^k case, at order k)"
 
-Blocked: 2026-09-20. The backbone's density up to the boundary
-(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`,
-`Numlib/Analysis/Sobolev/Cutoff.lean`) goes through the extension operator of Brezis's
-Theorem 9.7, which exists at order one only (`SobolevEuclidean.exists_extensionL`,
-`Extension.lean`: an even reflection across the `C¹` charts, which is not `C²`). A `W^{k,p}`
-extension operator for a `C^k` domain needs the higher-order reflection
-`u(x', -x_N) ↦ ∑_j c_j u(x', -2^j x_N)` of the book's Exercise 7.3.2 in a chart, plus the
-`C^k` chart transport of `Numlib/Analysis/Sobolev/Calculus.lean`
-(`memSobolevMultiIndex_comp_chart_of_order` exists in `PDE/Elliptic/Regularity.lean`): estimated
-600–900 lines, after which this node and `theorem_7_3_5` at every order follow as at `k = 1`.
-Alternatively the translation-and-mollify argument of Evans §5.3.3 in each chart, of similar
-size.'''
-deps = ["theorem_7_3_2"]
+[[node]]
+id = "theorem_7_3_2_higher"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.2 (at every order k, on a W^{k,p}-extension domain)"
 
 [[node]]
 id = "theorem_7_3_3"
@@ -42,24 +29,31 @@ id = "theorem_7_3_5"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k = 1, for a bounded C¹ domain)"
 
 [[node]]
+id = "theorem_7_3_5_order"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k, one operator per k and p, for a bounded C^k domain)"
+
+[[node]]
 id = "theorem_7_3_5_universal"
 kind = "theorem"
 desc = '''Theorem 7.3.5 (universal extension theorem, Stein): for `Ω` an open half-space or a
 Lipschitz domain there is one linear operator `E` that is continuous
 `W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for every `k ≥ 0` and every `p ∈ [1,∞]`, with `Ev = v` on `Ω`, `Ev`
 smooth off `closure Ω`, and `‖Ev‖_{W^{k,p}(ℝ^d)} ≤ c ‖v‖_{W^{k,p}(Ω)}`. The order-one operator,
-one per `p`, on a bounded `C¹` domain is `theorem_7_3_5`.
+one per `p`, on a bounded `C¹` domain is `theorem_7_3_5`; the order-`k` operator, one per `k`
+and `p`, on a bounded `C^k` domain is `theorem_7_3_5_order`.
 
-Blocked: 2026-09-20. What exists is Brezis's Theorem 9.7 (`SobolevEuclidean.exists_extensionL`,
-`Numlib/Analysis/Sobolev/Extension.lean`; the half-space `IsSobolevExtensionDomain.upperHalfSpace`
-in `Reflection.lean`): one bounded operator `W^{1,p}(Ω) → W^{1,p}(ℝ^d)` for each `p`, built by
-even reflection, which is neither `W^{k,p}`-bounded for `k ≥ 2` nor smooth off `closure Ω`, and
-whose partition of unity does not depend on `p` — so "one operator for all `p`" is in reach
-(the construction is uniform in `p`; only the `∃ P` statement is per `p`) while "all `k`" is
-not. Stein's universal operator on a Lipschitz domain is a Calderón-kernel regularization of the
-reflection (Stein, *Singular Integrals*, VI.3), research-scale here. A per-`k` operator for a
-`C^k` domain is the route of `theorem_7_3_2_higher` (600–900 lines).'''
-deps = ["theorem_7_3_5"]
+Blocked: 2026-09-21. What exists is Brezis's Theorem 9.7 at every order
+(`SobolevEuclidean.exists_extensionL_of_order`, `Numlib/Analysis/Sobolev/ExtensionHigher.lean`:
+the higher-order reflection of Exercise 7.3.2 with Vandermonde coefficients of order `k`, in the
+`C^k` charts, with the bound from the closed graph theorem): one bounded operator
+`W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for each `k ≥ 1` and each `p`, on a `C^k` domain, which is neither
+smooth off `closure Ω` nor independent of `k` (the reflection coefficients depend on `k`), and
+whose construction is uniform in `p` (only the `∃ P` statement is per `p`). Stein's universal
+operator on a Lipschitz domain is a Calderón-kernel regularization of the reflection (Stein,
+*Singular Integrals*, VI.3), research-scale here; "one operator for all `p`" at a fixed `k` is
+in reach (~150 lines: state `exists_extensionL_of_order` with the operator built before `p`),
+"all `k`" is not.'''
+deps = ["theorem_7_3_5", "theorem_7_3_5_order"]
 
 [[node]]
 id = "definition_7_3_6"
@@ -84,24 +78,7 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 
 [[node]]
 id = "theorem_7_3_7_c_integer"
-kind = "theorem"
-desc = '''Theorem 7.3.7 (c), the case `(d+1)/p` an integer: if `k > (d+1)/p = ℓ ∈ ℕ` then
-`W^{k,p}(Ω) ↪ C^{k−ℓ−1,β}(closure Ω)` for every `0 < β < 1`, on a bounded extension domain
-(the book's Lipschitz domain); read on representatives as in `theorem_7_3_7_c`. The non-integer
-case, with the sharp `β = [(d+1)/p] + 1 − (d+1)/p`, is `theorem_7_3_7_c`.
-
-Blocked: 2026-09-20. The backbone's `C^j(closure Ω)` representative
-(`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`,
-`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`) produces *one* Hölder exponent `θ ∈ (0, 1]`,
-sharp only when `k − (d+1)/p − j < 1`; in the integer case `θ = 1` is not what it returns. The
-route to every `β < 1` is `W^{k,p}(Ω) ↪ W^{j+1,q}(Ω)` for every `q < ∞` (the critical case of
-Corollary 9.15) followed by Morrey at exponent `q > d + 1`, which needs the order-lowering map
-`W^{k,p}(Ω) → W^{j+1,q}(Ω)`; the backbone lowers only to order one
-(`SobolevEuclidean.exists_continuousLinearMap_orderOne`, `DenyLions.lean`). Generalizing that
-map to a target order `j + 1` by the same induction: ~150 lines; then this node is ~60 lines.
-For `j = 0` (`k = ℓ + 1`) it is provable today from `exists_continuousLinearMap_orderOne` and
-`SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq`.'''
-deps = ["theorem_7_3_7_c"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (c), the integer case"
 
 [[node]]
 id = "theorem_7_3_7"
@@ -130,13 +107,19 @@ desc = '''Theorem 7.3.8 (c), the Hölder target: if `k > (d+1)/p` then
 `W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(closure Ω)` for every `0 ≤ β < [(d+1)/p] + 1 − (d+1)/p`, on
 a bounded extension domain. The case `β = 0` with the target `C(closure Ω)` is `theorem_7_3_8_c`.
 
-Blocked: 2026-09-20. There is no Hölder space `C^{j,β}(closure Ω)` as a normed type in the
-project or in Mathlib (`HolderWith` is a predicate; `Mathlib/Topology/MetricSpace/Holder.lean`
-carries no space), so the compact embedding cannot be stated as a `definition_7_3_6_compact`
-into it. Once such a type exists (a `C^j` space with Hölder-seminormed top derivative, in the
-style of `ContDiffMapIcc`), the compactness is the Arzelà–Ascoli argument of
-`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL` applied to the derivatives, with
-the strict `β` giving equicontinuity by `theorem_7_3_7_c`: ~300 lines after the type.'''
+Blocked: 2026-09-21 (re-checked; the closing round closed `theorem_7_3_7_c_integer` and
+`theorem_7_3_9_top` beside it, which do not change the estimate). There is no Hölder space
+`C^{j,β}(closure Ω)` as a normed type in the project at main `854d8c75` or in Mathlib
+(`HolderWith` is a predicate; `Mathlib/Topology/MetricSpace/Holder.lean` carries no space), so
+the compact embedding cannot be stated as a `definition_7_3_6_compact` into it; a Hölder-space
+type is in preparation in the closing round (the Hölder-spaces agent), not yet on main. Once
+such a type exists (a `C^j` space with Hölder-seminormed top derivative, in the style of
+`ContDiffMapIcc`), the compactness is the Arzelà–Ascoli argument of
+`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL` applied to the derivatives (the
+form `ExtensionHigher.exists_strictMono_forall_dist_lt_of_lipschitzWith` of
+`Numlib/Analysis/Sobolev/ExtensionHigher.lean` is the Lipschitz special case), with the strict
+`β` giving equicontinuity by `theorem_7_3_7_c` and `theorem_7_3_7_c_integer`: ~300 lines after
+the type.'''
 deps = ["theorem_7_3_8_c", "theorem_7_3_7_c"]
 
 [[node]]
@@ -149,19 +132,7 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 
 [[node]]
 id = "theorem_7_3_9_top"
-kind = "theorem"
-desc = '''Theorem 7.3.9 at `p = ∞`: for integers `k > l ≥ 0` and a bounded extension domain (the
-book's bounded Lipschitz domain), `W^{k,∞}(Ω) ↪↪ W^{l,∞}(Ω)`. The case `1 ≤ p < ∞` is
-`theorem_7_3_9`.
-
-Blocked: 2026-09-20. The backbone's Rellich–Kondrachov theorem
-(`Numlib/Analysis/Sobolev/Compactness.lean`) is for `p < ∞`: at `p = ∞` the compactness of
-`W^{1,∞}(Ω) ⊂ L^∞(Ω)` is Arzelà–Ascoli for the Lipschitz representatives
-(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex` in `Friedrichs.lean` gives them on
-convex sets; on an extension domain through `P u`), which is not written; ~200 lines, then the
-induction on `k` of `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain`
-applies unchanged.'''
-deps = ["theorem_7_3_9"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.9, the case p = ∞"
 
 [[node]]
 id = "theorem_7_3_10"
@@ -173,8 +144,8 @@ its range is `W^{1-1/p,p}(Γ)`, and `H^{1/2}(Γ) = γ(H^1(Ω))` with the quotien
 formalized: Mathlib has no surface measure on a Lipschitz boundary, so `L^p(Γ)` is not available,
 and no trace operator (`traceMap` is unused); the book states the theorem without proof.
 
-Blocked: 2026-09-20 (blocker 2 of `notes/frontier.md`). Checked: the Brezis round left the trace
-untouched — `Numlib/Analysis/Sobolev/` has no boundary measure, no `trace`, no Gauss–Green on a
+Blocked: 2026-09-21 (blocker 2 of `notes/frontier.md`; re-checked at main `854d8c75`, unchanged
+by the closing round). Checked: the Brezis round left the trace untouched — `Numlib/Analysis/Sobolev/` has no boundary measure, no `trace`, no Gauss–Green on a
 domain (grep `trace`, `hausdorffMeasure`, `divergence`, `frontier` in `Numlib/`: only the
 `IsContDiffChartDomain` charts of `Chart.lean` and the `frontier`-of-`Ω` bookkeeping of
 `Extension.lean`). `L^p(Γ)` is nameable as
@@ -197,7 +168,8 @@ desc = '''Theorem 7.3.11: on a bounded open set with `C^{k,1}` boundary `Γ`, fo
 problems. Not formalized: it needs everything Theorem 7.3.10 needs, plus the fractional Sobolev
 spaces over the boundary of Definition 7.2.13; the book quotes it from [98] without proof.
 
-Blocked: 2026-09-20 (blocker 2). Downstream of `theorem_7_3_10` and of `definition_7_2_13`
+Blocked: 2026-09-21 (blocker 2; re-checked, unchanged by the closing round). Downstream of
+`theorem_7_3_10` and of `definition_7_2_13`
 (fractional spaces on `Γ`), both waiting on the boundary measure; nothing of the Brezis round
 touches it. After the trace, the surjectivity onto the fractional spaces is a further
 Gagliardo-type theorem (1000+ lines).'''
@@ -234,8 +206,8 @@ constant `c > 0` with `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ)})` fo
 `H_0^1` clause (7.3.10) that the book derives from it is `example_7_3_15`, proved directly by
 Poincaré's inequality.
 
-Blocked: 2026-09-20 (blocker 2 of `notes/frontier.md`): `f_1` is the boundary integral of the
-trace, which needs `theorem_7_3_10`. Everything else is in place: with a trace
+Blocked: 2026-09-21 (blocker 2 of `notes/frontier.md`; re-checked, unchanged by the closing
+round): `f_1` is the boundary integral of the trace, which needs `theorem_7_3_10`. Everything else is in place: with a trace
 `γ : W^{1,2}(Ω) → L^1(Γ)` bounded (`(H1)`), the seminorm `f_1 = ‖γ ·‖_{L^1(Γ)}` satisfies (H2)′
 because a constant with zero trace is zero (`Γ` has positive surface measure), and
 `theorem_7_3_13` gives the inequality in ten lines.'''
@@ -250,7 +222,8 @@ desc = '''Example 7.3.16: with `Γ_0 ⊆ Γ` open and nonempty and `f_1(v) = ∫
 Poincare-Friedrichs inequality under a mixed boundary condition. Not formalized: as Example 7.3.15,
 it needs the trace of Theorem 7.3.10.
 
-Blocked: 2026-09-20 (blocker 2). `theorem_7_3_12` is proved; what is missing is only the trace
+Blocked: 2026-09-21 (blocker 2; re-checked, unchanged by the closing round). `theorem_7_3_12`
+is proved; what is missing is only the trace
 `γ` of `theorem_7_3_10` (the seminorm `f_1(v) = ‖γ v‖_{L^1(Γ_0)}` and the fact that a constant
 vanishing on `Γ_0` of positive surface measure is zero), and "`v = 0` a.e. on `Γ_0`" is not
 statable before the boundary measure exists. Ten lines after `theorem_7_3_10`.'''
