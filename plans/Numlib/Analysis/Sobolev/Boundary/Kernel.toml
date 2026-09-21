@@ -1,0 +1,58 @@
+desc = '''
+The kernel of the trace is `W_0^{1,p}(Ω)` (Brezis, Comments on chapter 9, 7 (ii); Evans, *PDE*
+§5.5, Theorem 2; Atkinson–Han's `H^1_0 = {v : γv = 0}` behind Definition 7.2.9's remark), on a
+bounded `C¹` domain, `1 ≤ p < ∞`. The inclusion `W_0^{1,p} ⊆ ker T` is
+`BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero` (`Data.lean`, any trace family); the
+converse is chart-local and is the content of this module: in a graph chart, for `u ∈ W^{1,p}(Ω)`
+with `Tu = 0`, the smooth approximants `uₘ → u` satisfy, by the one-dimensional FTC on the
+vertical lines, `∫_{x_N > g}` of `|uₘ|^p` over a strip of height `t` `≤ C (t^p ∫ |∇uₘ|^p + t^{p−1}·(…)∫_{∂Ω} |uₘ|^p dσ)`
+— so in the limit `∫ over the strip of |u|^p ≤ C t^p ∫ |∇u|^p` (Evans (17)); the cut-offs
+`ζ_m u` with `ζ_m = 0` in the strip of height `1/m` then converge to `u` in `W^{1,p}` (the
+gradient term `u ∇ζ_m` is controlled by the strip estimate, Evans (18)), and each `ζ_m u` has
+compact support in `Ω` hence lies in `W_0^{1,p}(Ω)` (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`,
+Brezis Lemma 9.5). Wave C, ★★★, ~600 lines. Imports `Boundary/ContDiffDomain.lean`,
+`Numlib/Analysis/Sobolev/Zero.lean`. Not needed by the surface nodes of this round; it is the
+statement AH 7.3.10 leaves implicit ("essential boundary conditions"), Brezis 7 (ii), and what
+identifies `H^1_0(Ω)` with `{v ∈ H^1 : γ v = 0}` in the mixed problems of AH §8.5 and §11.4
+(`theorem_8_5_1`, `theorem_11_4_5`).
+'''
+
+[[node]]
+id = "IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero"
+kind = "theorem"
+desc = '''**The strip estimate** (Evans §5.5 Theorem 2, (17)): for `hΩ : IsContDiffDomain 1 Ω`, `hb`,
+`1 ≤ p < ∞`, a graph chart `(T, g)` at `(x₀, r)` and `u : SobolevEuclidean (d + 1) 1 p Ω` with
+`hΩ.traceL hb p hp u = 0`, there is `C` such that for all small `t > 0`,
+`∫ x in Ω ∩ ball x₀ (r/2) ∩ {x | (T x)_N < g (init (T x)) + t}, |fn u x| ^ p.toReal ≤ C * t ^ p.toReal * ∫ x in Ω ∩ ball x₀ r, ‖∇u x‖ ^ p.toReal`
+(with `‖∇u x‖` the norm of the tuple of weak derivatives). For a smooth approximant `v` (from
+`hΩ.hasSmoothDensity`, with `traceL v = v|_{∂Ω} → 0` in `L^p(σ)`): on the vertical line through
+`x'`, `|v (x', g x' + s)| ≤ |v (x', g x')| + ∫_0^s |∂_N v (x', g x' + τ)| dτ`, so by Hölder and
+integration in `s ∈ (0, t)` and `x'` (Fubini `EuclideanSpace.integral_epigraph_eq`, the shear
+`t = g x' + s` as in `Divergence.lean`),
+`∫_{strip} |v|^p ≤ 2^{p−1} (t ∫_{graphDomain} |v (x', g x')|^p dx' + t^p ∫_{strip} |∂_N v|^p)`,
+and `∫ |v(x', g x')|^p dx' ≤ ∫ |v|^p dσ` (the graph density is `≥ 1`,
+`boundaryMeasure_restrict_ball`); let `v → u`: the boundary term tends to `∫ |Tu|^p dσ = 0`. ★★★,
+~300 lines.'''
+deps = ["IsContDiffDomain.traceFamily", "IsContDiffDomain.boundaryMeasure_restrict_ball", "EuclideanSpace.integral_epigraph_eq", "HasSegmentProperty.hasSmoothDensity"]
+
+[[node]]
+id = "IsContDiffDomain.mem_zero_of_traceL_eq_zero"
+kind = "theorem"
+desc = '''**`ker T ⊆ W_0^{1,p}(Ω)`** (Evans §5.5 Theorem 2; Brezis Comments 7 (ii)): for
+`hΩ : IsContDiffDomain 1 Ω`, `hb`, `1 ≤ p < ∞` and `u : SobolevEuclidean (d + 1) 1 p Ω` with
+`hΩ.traceL hb p hp u = 0`, `u ∈ SobolevEuclideanZero (d + 1) 1 p Ω`. With the atlas
+`a := hΩ.graphAtlas hb` and its partition of unity, it suffices to treat `θᵢ u` for each chart
+(the interior piece `θ₀ u` has compact support in `Ω`, `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`;
+`SobolevEuclideanZero` is a submodule). In the chart `(Tᵢ, gᵢ)` let `ζₘ` be smooth cut-offs with
+`ζₘ = 0` on the strip `{(T x)_N < g + 1/m}`, `ζₘ = 1` above height `2/m`, `|∇ζₘ| ≤ C m`
+(compose a fixed smooth step with the `C¹` height function `x ↦ (T x)_N − g (init (T x))`);
+`wₘ := ζₘ θᵢ u` has support in a compact subset of `Ω` so `wₘ ∈ W_0^{1,p}(Ω)`, and
+`‖wₘ − θᵢ u‖_{W^{1,p}} → 0`: the `L^p` term and `(1 − ζₘ) ∇(θᵢu)` tend to `0` by dominated
+convergence (the strips shrink to the null graph), and the term `(θᵢ u) ∇ζₘ` is bounded by
+`C m ‖θᵢ u‖_{L^p(strip of height 2/m)} ≤ C m · (2/m) (∫ |∇(θᵢu)|^p over the strip)^{1/p} → 0` by
+`integral_strip_rpow_le_of_traceL_eq_zero` (with `T (θᵢ u) = θᵢ|_{∂Ω} T u = 0`, the trace of a
+product with a smooth function — state `IsContDiffDomain.traceL_smooth_mul` (★), by density).
+`SobolevEuclideanZero` is closed, so `θᵢ u ∈ W_0^{1,p}`. ★★★, ~300 lines given the strip
+estimate. With `IsContDiffDomain.traceL_eq_zero_iff_mem_zero` (★), the converse being
+`BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero`.'''
+deps = ["IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero", "BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "SobolevEuclideanZero", "GraphAtlas"]

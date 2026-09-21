@@ -1,0 +1,130 @@
+desc = '''
+The Gram determinant of a linear map `L : ℝ^d → ℝ^N`, `gramDet L = det (Lᵀ L)`, and its square
+root `gram L`, the `d`-dimensional volume scaling of `L`. It is the density with which a `C¹`
+parametrization `Φ : ℝ^d ⊇ D → ℝ^N` transports Lebesgue measure to a surface measure,
+`∫ f dσ = ∫_D f (Φ x') gram (DΦ x') dx'`, and the three identities proved here are what make that
+transport independent of the parametrization: `gram (L ∘ A) = gram L · |det A|` for a square `A`
+(so two parametrizations related by a `C¹` transition give the same measure, through Mathlib's
+change of variables `MeasureTheory.Measure.map_withDensity_abs_det_fderiv_eq_addHaar`),
+`gram (U ∘ L) = gram L` for an isometry `U` (rigid motions do not change it), and
+`gram (v ↦ (v, ℓ v)) = √(1 + ‖ℓ‖²)` for the graph map of a linear form `ℓ`, the classical
+`√(1 + |∇g|²)`. Kept apart from `GraphMeasure.lean` so that a later chart-based (Brezis-style)
+surface measure can reuse it (decision B2 of `notes/boundary/planning-brief.md`).
+
+Matrices are taken with respect to the standard orthonormal bases
+`(EuclideanSpace.basisFun (Fin d) ℝ).toBasis` and `(EuclideanSpace.basisFun (Fin N) ℝ).toBasis`
+through `LinearMap.toMatrix`, so that `Lᵀ L` is the matrix of inner products `⟪L eᵢ, L eⱼ⟫`.
+Pure linear algebra, ~200 lines, all ★. Imports `Numlib.Analysis.Sobolev.Chart` (for `snocLast`,
+`lastInitL`) and Mathlib's `LinearAlgebra/Matrix/SchurComplement` (the matrix determinant lemma).
+'''
+
+[[node]]
+id = "EuclideanSpace.gramDet"
+kind = "definition"
+desc = '''`EuclideanSpace.gramDet (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) : ℝ`,
+the determinant of the Gram matrix `Mᵀ * M` where
+`M := LinearMap.toMatrix (EuclideanSpace.basisFun (Fin d) ℝ).toBasis (EuclideanSpace.basisFun (Fin N) ℝ).toBasis L`
+(a `Matrix (Fin N) (Fin d) ℝ`): `gramDet L := (Mᵀ * M).det`. State beside it the unfolding
+`EuclideanSpace.gramDet_eq_det_of_inner : gramDet L = (Matrix.of fun i j ↦ ⟪L (EuclideanSpace.single i 1), L (EuclideanSpace.single j 1)⟫_ℝ).det`
+(the entries of `Mᵀ M` are the inner products of the columns; `LinearMap.toMatrix_apply` and
+`EuclideanSpace.inner_eq_star_dotProduct` / `PiLp.inner_apply`). ★'''
+deps = []
+
+[[node]]
+id = "EuclideanSpace.gramDet_nonneg"
+kind = "theorem"
+desc = '''`0 ≤ gramDet L` for every `L : ℝ^d →L[ℝ] ℝ^N`: `Mᵀ * M` is positive semidefinite
+(`Matrix.posSemidef_transpose_mul_self` / `Matrix.PosSemidef.conjTranspose_mul_self` over `ℝ`,
+where `conjTranspose = transpose`), and a positive semidefinite real matrix has nonnegative
+determinant (`Matrix.PosSemidef.det_nonneg`). ★'''
+deps = ["EuclideanSpace.gramDet"]
+
+[[node]]
+id = "EuclideanSpace.gramDet_comp"
+kind = "theorem"
+desc = '''For `L : ℝ^d →L[ℝ] ℝ^N` and `A : ℝ^d →L[ℝ] ℝ^d`,
+`gramDet (L ∘L A) = gramDet L * (LinearMap.det (A : ℝ^d →ₗ[ℝ] ℝ^d)) ^ 2`. The matrix of the
+composite is the product (`LinearMap.toMatrix_comp`), so the Gram matrix is `Aᵀ (Mᵀ M) A` and
+`Matrix.det_mul`, `Matrix.det_transpose` give `det A ^ 2 · det (Mᵀ M)`;
+`LinearMap.det_toMatrix` identifies the determinant of the matrix of `A` in the standard basis
+with `LinearMap.det A`. ★'''
+deps = ["EuclideanSpace.gramDet"]
+
+[[node]]
+id = "EuclideanSpace.gramDet_isometry_comp"
+kind = "theorem"
+desc = '''For `U : EuclideanSpace ℝ (Fin N) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin N)` and
+`L : ℝ^d →L[ℝ] ℝ^N`, `gramDet (U.toContinuousLinearEquiv.toContinuousLinearMap ∘L L) = gramDet L`.
+Cleanest through `gramDet_eq_det_of_inner`: the entries `⟪U (L eᵢ), U (L eⱼ)⟫` are the
+`⟪L eᵢ, L eⱼ⟫` (`LinearIsometryEquiv.inner_map_map`), so the two Gram matrices are equal.
+(Alternatively the matrix `Q` of `U` satisfies `Qᵀ * Q = 1`,
+`OrthonormalBasis.toMatrix_orthonormalBasis_mem_unitary`.) ★'''
+deps = ["EuclideanSpace.gramDet"]
+
+[[node]]
+id = "EuclideanSpace.snocLastL"
+kind = "definition"
+desc = '''`EuclideanSpace.snocLastL (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin (d + 1))`,
+the graph map `v ↦ snocLast v (ℓ v)` of a linear form as a continuous linear map, that is
+`(EuclideanSpace.lastInitL d).symm.toContinuousLinearMap ∘L (ℓ.prod (ContinuousLinearMap.id ℝ _))`
+(`lastInitL d : ℝ^{d+1} ≃L[ℝ] ℝ × ℝ^d` is `x ↦ (x_N, x')` in `Numlib/Analysis/Sobolev/Chart.lean`,
+its inverse `(t, x') ↦ snocLast x' t`). With `snocLastL_apply : snocLastL ℓ v = snocLast v (ℓ v)`
+(`rfl` up to `lastInitL_symm_apply`). It is the derivative of the graph parametrization
+`x' ↦ snocLast x' (g x')` at a point where `g` has derivative `ℓ`
+(`EuclideanSpace.hasFDerivAt_graphParam` in `GraphMeasure.lean`). ★'''
+deps = ["EuclideanSpace.snocLast"]
+
+[[node]]
+id = "EuclideanSpace.gramDet_snocLastL"
+kind = "theorem"
+desc = '''`gramDet (snocLastL ℓ) = 1 + ∑ i, (ℓ (EuclideanSpace.single i 1)) ^ 2` for every
+`ℓ : ℝ^d →L[ℝ] ℝ`. Through `gramDet_eq_det_of_inner`: the Gram entries are
+`⟪snocLast eᵢ (ℓ eᵢ), snocLast eⱼ (ℓ eⱼ)⟫ = δᵢⱼ + ℓ eᵢ · ℓ eⱼ` (`EuclideanSpace.inner_eq_star_dotProduct`
+with `snocLast_apply_castSucc`, `snocLast_apply_last`, `Fin.sum_univ_castSucc`), so the Gram
+matrix is `1 + replicateCol u * replicateRow u` with `u i = ℓ eᵢ`, and Mathlib's matrix
+determinant lemma `Matrix.det_one_add_replicateCol_mul_replicateRow` (`det (1 + replicateCol u * replicateRow v) = 1 + v ⬝ᵥ u`,
+`Mathlib/LinearAlgebra/Matrix/SchurComplement.lean`) finishes. ★'''
+deps = ["EuclideanSpace.gramDet", "EuclideanSpace.snocLastL"]
+
+[[node]]
+id = "EuclideanSpace.gramDet_snocLastL_eq_one_add_norm_sq"
+kind = "theorem"
+desc = '''`gramDet (snocLastL ℓ) = 1 + ‖ℓ‖ ^ 2` for `ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ`: the
+sum of `gramDet_snocLastL` is `‖(InnerProductSpace.toDual ℝ _).symm ℓ‖ ^ 2` by
+`EuclideanSpace.real_norm_sq_eq` and `InnerProductSpace.toDual_symm_apply`
+(`ℓ v = ⟪(toDual ℝ _).symm ℓ, v⟫`, so `ℓ (single i 1)` is the `i`-th coordinate of the dual
+vector), and `LinearIsometryEquiv.norm_map` gives `‖(toDual ℝ _).symm ℓ‖ = ‖ℓ‖`. Equivalently
+`= 1 + ‖gradient g x‖ ^ 2` when `ℓ = fderiv ℝ g x` (`gradient` of
+`Mathlib/Analysis/Calculus/Gradient/Basic.lean` is `(toDual ℝ _).symm (fderiv ℝ g x)`). ★'''
+deps = ["EuclideanSpace.gramDet_snocLastL"]
+
+[[node]]
+id = "EuclideanSpace.gram"
+kind = "definition"
+desc = '''`EuclideanSpace.gram L := Real.sqrt (gramDet L)` for `L : ℝ^d →L[ℝ] ℝ^N`, the
+`d`-dimensional volume scaling factor of `L`; with `gram_nonneg` and
+`gram_sq : gram L ^ 2 = gramDet L` (by `gramDet_nonneg` and `Real.sq_sqrt`). ★'''
+deps = ["EuclideanSpace.gramDet", "EuclideanSpace.gramDet_nonneg"]
+
+[[node]]
+id = "EuclideanSpace.gram_comp"
+kind = "theorem"
+desc = '''`gram (L ∘L A) = gram L * |LinearMap.det (A : ℝ^d →ₗ[ℝ] ℝ^d)|`: take square roots in
+`gramDet_comp` (`Real.sqrt_mul` with `gramDet_nonneg`, `Real.sqrt_sq_eq_abs`). This is the
+identity `gram (Φ ∘ ψ) = (gram Φ ∘ ψ) · |det Dψ|` of decision B2 at a single point, applied in
+`EuclideanSpace.graphDensity_transition`. ★'''
+deps = ["EuclideanSpace.gram", "EuclideanSpace.gramDet_comp"]
+
+[[node]]
+id = "EuclideanSpace.gram_isometry_comp"
+kind = "theorem"
+desc = '''`gram (U.toContinuousLinearEquiv.toContinuousLinearMap ∘L L) = gram L` for a linear
+isometry equivalence `U` of `ℝ^N`: `gramDet_isometry_comp` under the square root. ★'''
+deps = ["EuclideanSpace.gram", "EuclideanSpace.gramDet_isometry_comp"]
+
+[[node]]
+id = "EuclideanSpace.gram_snocLastL"
+kind = "theorem"
+desc = '''`gram (snocLastL ℓ) = Real.sqrt (1 + ‖ℓ‖ ^ 2)` — the classical surface element
+`√(1 + |∇g|²)` of a graph, from `gramDet_snocLastL_eq_one_add_norm_sq`. ★'''
+deps = ["EuclideanSpace.gram", "EuclideanSpace.gramDet_snocLastL_eq_one_add_norm_sq"]

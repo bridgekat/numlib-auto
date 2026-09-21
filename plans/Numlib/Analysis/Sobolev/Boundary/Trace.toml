@@ -1,0 +1,226 @@
+desc = '''
+The trace theorem from a transversal field — Nečas's proof, decision B7 of
+`notes/boundary/planning-brief.md` — over the abstract `BoundaryData Ω` of `Boundary/Data.lean`
+and the density predicates of `Boundary/Density.lean`; the two concrete instances are the bounded
+`C¹` domains (`Boundary/ContDiffDomain.lean`) and the triangles (`Boundary/PolygonTrace.lean`).
+
+A **transversal field** is a `C¹` compactly supported `w : ℝ^N → ℝ^N` with `⟪w, ν⟫ ≥ 1` `σ`-a.e.
+(`BoundaryData.HasTransversalField`). For `u ∈ C¹_c(ℝ^N)` and `1 ≤ p < ∞` the divergence
+theorem applied to `φ_ε(u) w`, `φ_ε(t) = (t² + ε²)^{p/2} − ε^p`, gives **Nečas's inequality**
+`∫_{∂Ω} |u|^p dσ ≤ C (∫_Ω |u|^p + ∫_Ω |u|^{p−1} |∇u|)` with `C` depending on `w` and `p` only
+(the regularization `φ_ε` is what makes `p = 1` work, `|t|^p` not being `C¹` there), hence
+`‖u|_{∂Ω}‖_{L^p(σ)} ≤ C' ‖u‖_{W^{1,p}(Ω)}`. Restriction to `∂Ω` is therefore a bounded linear map
+on the subspace `SobolevEuclidean.smoothRestrictions` of smooth-representable elements, dense
+under `HasSmoothDensity` (Brezis Corollary 9.8 on `C¹` domains, the segment property elsewhere),
+and `BoundaryData.traceL` is its unique continuous extension (`ContinuousLinearMap.extend`).
+Then: `Tu = ũ|_{∂Ω}` for `ũ` continuous up to the boundary (under `HasUniformSmoothDensity`),
+Green's formula `∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ Tu Tv νᵢ dσ` at conjugate exponents by density from
+`BoundaryData.integral_fderiv_mul_add_eq`, the sharper inequality for all `u ∈ W^{1,p}` and with
+it the **compactness** of the trace from Rellich–Kondrachov (Atkinson–Han 7.3.10 (c)), and the
+assembly `BoundaryData.traceFamily : B.TraceFamily`.
+
+The kernel characterization `ker T = W_0^{1,p}(Ω)` (the hard half) is chart-local and lives in
+`Boundary/Kernel.lean`; the fractional range `W^{1−1/p,p}(∂Ω)` is out of scope. Wave A,
+~900 lines. Imports `Boundary/Data.lean`, `Boundary/Density.lean`,
+`Numlib/Analysis/Sobolev/Compactness.lean` (for `IsCompactEmbedding`),
+`Numlib/Analysis/Normed/Operator/Embedding.lean`.
+Notation: `E := EuclideanSpace ℝ (Fin N)`, `B : BoundaryData Ω`, `σ := B.σ`, `ν := B.ν`.
+'''
+
+[[node]]
+id = "BoundaryData.HasTransversalField"
+kind = "definition"
+desc = '''`BoundaryData.HasTransversalField (B : BoundaryData Ω) : Prop := ∃ w : E → E, ContDiff ℝ 1 w ∧ HasCompactSupport w ∧ ∀ᵐ x ∂B.σ, 1 ≤ ⟪w x, B.ν x⟫_ℝ`
+— a `C¹` compactly supported vector field pointing strictly outward along `∂Ω` (Nečas; the
+normalization `≥ 1` rather than `> 0` costs nothing on a compact boundary and saves a
+compactness argument). Instances: `IsContDiffDomain.hasTransversalField` (`ContDiffDomain.lean`:
+`w = c ∑ θᵢ Tᵢ⁻¹(−e_N)` on the graph charts), `EuclideanSpace.triangle_hasTransversalField`
+and `Triangulation.hasTransversalField_of_convex` (`PolygonTrace.lean`: `w = c (x − x₀)` for an
+interior point `x₀`). A pinched polygon (two triangles meeting at a vertex) has none, which is
+why this is a hypothesis of the construction and not a field of `BoundaryData`. ★'''
+deps = ["BoundaryData"]
+
+[[node]]
+id = "BoundaryData.integral_abs_rpow_le_of_contDiff"
+kind = "theorem"
+desc = '''**Nečas's inequality for smooth functions** ([Nečas, *Direct Methods*, Ch. 2 §4], Evans §5.5
+Theorem 1 step 1 in the transversal-field form): for `B : BoundaryData Ω`, a transversal field
+`w` (`ContDiff ℝ 1 w`, `HasCompactSupport w`, `∀ᵐ x ∂B.σ, 1 ≤ ⟪w x, B.ν x⟫`) and a real `p ≥ 1`,
+there is `C : ℝ` (explicitly `C = max (N * M₁) (p * M₀)` with `M₀ ≥ ‖w‖`, `M₁ ≥ ‖fderiv ℝ w‖`
+everywhere, which exist by compact support) such that for every `u : E → ℝ` with
+`ContDiff ℝ 1 u` and `HasCompactSupport u`,
+`∫ x, |u x| ^ p ∂B.σ ≤ C * (∫ x in (Ω : Set E), |u x| ^ p + ∫ x in (Ω : Set E), |u x| ^ (p - 1) * ‖fderiv ℝ u x‖)`.
+Proof: for `0 < ε ≤ 1` let `φ_ε t := (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p` (smooth in `t`,
+`φ_ε 0 = 0`, `φ_ε ≥ 0`, `|φ_ε' t| = |p t (t² + ε²)^{p/2 − 1}| ≤ p (t² + ε²)^{(p−1)/2} ≤ p (|t| + ε) ^ (p − 1)`,
+and `φ_ε t ≤ (|t| + ε) ^ p`). The field `F_ε x := φ_ε (u x) • w x` is `C¹` with compact
+support, so `BoundaryData.integral_div_eq_of_contDiff` gives
+`∫ φ_ε (u x) ⟪w x, ν x⟫ ∂σ = ∫_Ω div F_ε = ∫_Ω (φ_ε' (u x) ⟪∇u x, w x⟫ + φ_ε (u x) div w x)`
+(`EuclideanSpace.div_smul_fun`, chain rule for `φ_ε ∘ u`); the left side dominates
+`∫ φ_ε (u x) ∂σ` (`⟪w, ν⟫ ≥ 1` a.e., `φ_ε ≥ 0`), the right side is at most
+`p M₀ ∫_Ω (|u| + ε)^{p−1} ‖∇u‖ + N M₁ ∫_Ω (|u| + ε)^p` (`|div w| ≤ N ‖fderiv w‖`,
+`|⟪∇u, w⟫| ≤ ‖fderiv u‖ ‖w‖`). Let `ε → 0`: on the left `φ_ε (u x) → |u x|^p` dominated by
+`(|u x| + 1)^p` (`σ` finite, `u` bounded), on the right the integrands converge dominated by
+`(|u| + 1)^{p−1} ‖∇u‖` and `(|u| + 1)^p` on the bounded `Ω` (`B.isBounded`)
+(`MeasureTheory.tendsto_integral_of_dominated_convergence` along `ε = 1/(n+1)`). ★★★, ~300
+lines; the calculus of `φ_ε` (`Real.rpow` derivatives, `HasDerivAt.rpow`) is the tedious part —
+prototype it (`notes/boundary/proto/`).'''
+deps = ["BoundaryData.integral_div_eq_of_contDiff", "EuclideanSpace.div_smul_fun", "BoundaryData.HasTransversalField"]
+
+[[node]]
+id = "BoundaryData.eLpNorm_le_of_contDiff"
+kind = "theorem"
+desc = '''**The trace inequality on the smooth subspace, in the Sobolev norm**: for `B`, a transversal
+field `w` as above, `1 ≤ p < ∞` (`p : ℝ≥0∞`, `[Fact (1 ≤ p)]`, `hp : p ≠ ⊤`), there is `C : ℝ`
+such that for every `U : SobolevEuclidean N 1 p Ω` and `u : E → ℝ` with `ContDiff ℝ 1 u`,
+`HasCompactSupport u` and `fn U =ᵐ[volume.restrict Ω] u`,
+`eLpNorm u p B.σ ≤ ENNReal.ofReal (C * ‖U‖)`. From `integral_abs_rpow_le_of_contDiff` at
+`p.toReal`: `∫_Ω |u|^p = ‖fn U‖_{L^p}^p ≤ ‖U‖^p` (`SobolevMultiIndex.norm_eq_gradNorm`,
+`MultiIndex.lean`), and `∫_Ω |u|^{p−1} ‖∇u‖ ≤ ‖u‖_p^{p−1} ‖∇u‖_p` by Hölder
+(`MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg` with exponents `p/(p−1)` and `p`; for
+`p = 1` it is an equality) with `‖∇u‖_{L^p(Ω)} ≤ c_N · gradNorm U ≤ c_N ‖U‖`
+(`‖fderiv ℝ u x‖ ≤ ∑ᵢ |∂ᵢu x|` on Euclidean space, `fderiv ℝ u x =ᵐ` the tuple of
+`weakDeriv U (single i)` by `SobolevMultiIndex.weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq`,
+`SobolevMultiIndex.gradNorm_le_norm`), so `∫ |u|^p dσ ≤ C (1 + c_N) ‖U‖^p` and taking `p`-th
+roots (`eLpNorm_eq_lintegral_rpow_enorm`, `ENNReal.ofReal_rpow_of_nonneg`). ★★, ~150 lines.'''
+deps = ["BoundaryData.integral_abs_rpow_le_of_contDiff", "SobolevMultiIndex.grad", "SobolevMultiIndex.fn"]
+
+[[node]]
+id = "BoundaryData.traceL"
+kind = "definition"
+desc = '''**The trace operator of a domain with a transversal field**:
+`BoundaryData.traceL (B : BoundaryData Ω) (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hd : SobolevEuclidean.HasSmoothDensity N p Ω) : SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ`.
+Construction: on `S := SobolevEuclidean.smoothRestrictions N p Ω` define
+`traceSmooth : S →ₗ[ℝ] Lp ℝ p B.σ`, `u ↦ MemLp.toLp v (hv)` for the chosen smooth representative
+`v` of `u` (`SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions`; `MemLp v p σ` since `v`
+is bounded and `σ` finite) — well defined and linear because two continuous representatives
+agree on `closure Ω ⊇ frontier Ω` (`SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn`) and
+`σ` is carried by `frontier Ω` (`B.measure_compl_frontier`), so the `L^p(σ)` classes agree
+(`MemLp.toLp_congr`, `ae_restrict`-free since it is a global a.e. statement on `σ`). It is bounded
+by `eLpNorm_le_of_contDiff` (`LinearMap.mkContinuous` with the constant `C`), and
+`ContinuousLinearMap.extendOfNorm traceSmooth S.subtype` (`Mathlib/Analysis/Normed/Operator/Extend.lean`:
+`extendOfNorm_eq` with `hd.dense_smoothRestrictions.denseRange_val` and the bound
+`‖traceSmooth u‖ ≤ C ‖u‖`, `opNorm_extendOfNorm_le`; or `ContinuousLinearMap.extend` with
+`isUniformEmbedding_subtype_val.isUniformInducing`; `Lp ℝ p σ` is complete) is the trace. Choose the
+argument order so that `B.traceL hw p hp hd` reads naturally; `hd` last because it is the
+hypothesis that varies between instances. ★★'''
+deps = ["BoundaryData.eLpNorm_le_of_contDiff", "SobolevEuclidean.smoothRestrictions", "SobolevEuclidean.HasSmoothDensity", "BoundaryData.HasTransversalField"]
+
+[[node]]
+id = "BoundaryData.traceL_ae_eq_of_contDiff"
+kind = "theorem"
+desc = '''The trace of a smooth-representable element is its restriction: for `u : SobolevEuclidean N 1 p Ω`
+and `v : E → ℝ` with `ContDiff ℝ ∞ v`, `HasCompactSupport v`, `fn u =ᵐ[volume.restrict Ω] v`,
+`(B.traceL hw p hp hd u : E → ℝ) =ᵐ[B.σ] v`. `ContinuousLinearMap.extendOfNorm_eq` on the element
+`⟨u, ⟨v, …⟩⟩ : S` and `MemLp.coeFn_toLp`. With the norm bound
+`BoundaryData.norm_traceL_le : ‖B.traceL hw p hp hd‖ ≤ C` for the constant of
+`eLpNorm_le_of_contDiff` (`ContinuousLinearMap.opNorm_extendOfNorm_le`), and the pointwise form
+`BoundaryData.norm_traceL_apply_le : ‖B.traceL hw p hp hd u‖ ≤ C * ‖u‖` — Atkinson–Han
+Theorem 7.3.10 (b). ★'''
+deps = ["BoundaryData.traceL"]
+
+[[node]]
+id = "BoundaryData.traceL_ae_eq_of_continuousOn"
+kind = "theorem"
+desc = '''**The trace of a function continuous up to the boundary is its restriction** (Evans §5.5
+Theorem 1 (ii), Atkinson–Han 7.3.10 (a)): if moreover `SobolevEuclidean.HasUniformSmoothDensity N p Ω`,
+then for `u : SobolevEuclidean N 1 p Ω` and `ũ : E → ℝ` with `fn u =ᵐ[volume.restrict Ω] ũ` and
+`ContinuousOn ũ (closure Ω)`, `(B.traceL hw p hp hd u : E → ℝ) =ᵐ[B.σ] ũ`. Take the approximants
+`vₙ`, `wₙ` of the uniform density predicate: `traceL wₙ =ᵐ[σ] vₙ` (`traceL_ae_eq_of_contDiff`),
+`traceL wₙ → traceL u` in `L^p(σ)` (continuity), and `vₙ → ũ` uniformly on `closure Ω ⊇ frontier Ω`,
+hence in `L^p(σ)` (`σ` finite, carried by the frontier: `eLpNorm` bounded by `σ(univ)^{1/p}` times
+the sup-distance, `eLpNorm_le_of_ae_bound`); limits in `L^p(σ)` are unique
+(`tendsto_nhds_unique`), and `Lp` convergence identifies the a.e. class. ★'''
+deps = ["BoundaryData.traceL_ae_eq_of_contDiff", "SobolevEuclidean.HasUniformSmoothDensity"]
+
+[[node]]
+id = "BoundaryData.traceL_unique"
+kind = "theorem"
+desc = '''**Uniqueness of the trace**: any bounded linear `T' : SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ`
+with `T' u =ᵐ[σ] v` whenever `fn u =ᵐ v` for a smooth compactly supported `v` equals
+`B.traceL hw p hp hd`: they agree on the dense subspace `smoothRestrictions` and are continuous
+(`ContinuousLinearMap.ext_on hd.dense_smoothRestrictions.denseRange_val`-style, or
+`DenseRange.equalizer`). Consequently `BoundaryData.TraceFamily.traceL_eq_of_hasSmoothDensity`:
+two `TraceFamily`s over the same `B` agree at every `p` with `HasSmoothDensity N p Ω`
+(their `traceL_ae_eq` fields restrict smooth representatives), so the trace family of a domain is
+unique wherever smooth functions are dense — in particular the two routes to the trace of a
+convex polygon (`Triangulation.traceFamily` and `Triangulation.traceFamily_of_convex`) agree. ★'''
+deps = ["BoundaryData.traceL_ae_eq_of_contDiff", "BoundaryData.TraceFamily", "SobolevEuclidean.smoothRestrictions"]
+
+[[node]]
+id = "BoundaryData.green_of_hasSmoothDensity"
+kind = "theorem"
+desc = '''**Green's formula by density** (Atkinson–Han Proposition 7.6.1, (7.6.3); Grisvard Theorem
+1.5.3.1): for `B`, `hw`, exponents `p q` with `[Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q]`,
+`hp : p ≠ ⊤`, `hq : q ≠ ⊤`, densities `hd : HasSmoothDensity N p Ω`, `hd' : HasSmoothDensity N q Ω`,
+`u : SobolevEuclidean N 1 p Ω`, `v : SobolevEuclidean N 1 q Ω` and `i : Fin N`,
+`∫ x in Ω, (weakDeriv u (single i) : E → ℝ) x * fn v x + ∫ x in Ω, fn u x * (weakDeriv v (single i) : E → ℝ) x = ∫ x, (B.traceL hw p hp hd u : E → ℝ) x * (B.traceL hw q hq hd' v : E → ℝ) x * B.ν x i ∂B.σ`.
+Take smooth approximants `uₙ → u` in `W^{1,p}`, `vₙ → v` in `W^{1,q}` with smooth
+representatives `ũₙ`, `ṽₙ`. For them the identity is `BoundaryData.integral_fderiv_mul_add_eq`
+(`Data.lean`; `weakDeriv uₙ (single i) =ᵐ fderiv ℝ ũₙ · (single i 1)` by
+`SobolevMultiIndex.weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq`, and `traceL uₙ =ᵐ ũₙ` by
+`traceL_ae_eq_of_contDiff`). Pass to the limit: each product of an `L^p` and an `L^q` factor is
+continuous into `L¹` (`|∫ f g − ∫ f' g'| ≤ ‖f − f'‖_p ‖g‖_q + ‖f'‖_p ‖g − g'‖_q`, Hölder
+`MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg`/`eLpNorm_mul_le_...`; the surface factor
+`|ν x i| ≤ 1` a.e.), and `fn`, `weakDeriv`, `traceL` are continuous in `u`. ★★, ~200 lines.'''
+deps = ["BoundaryData.traceL_ae_eq_of_contDiff", "BoundaryData.integral_fderiv_mul_add_eq", "SobolevEuclidean.HasSmoothDensity"]
+
+[[node]]
+id = "BoundaryData.green_contDiff_of_hasSmoothDensity"
+kind = "theorem"
+desc = '''**Green's formula against a fixed smooth test function, at every `1 ≤ p < ∞`**: for `B`, `hw`,
+`hp : p ≠ ⊤`, `hd : HasSmoothDensity N p Ω`, `u : SobolevEuclidean N 1 p Ω`, `φ : E → ℝ` with
+`ContDiff ℝ 1 φ` and `HasCompactSupport φ`, and `i : Fin N`,
+`∫ x in Ω, (weakDeriv u (single i) : E → ℝ) x * φ x + ∫ x in Ω, fn u x * fderiv ℝ φ x (single i 1) = ∫ x, (B.traceL hw p hp hd u : E → ℝ) x * φ x * B.ν x i ∂B.σ`.
+The same density argument as `green_of_hasSmoothDensity` with only `u` approximated: for a smooth
+representative `ũₙ` of `uₙ` the identity is `BoundaryData.integral_fderiv_mul_add_eq`; the products
+with the fixed bounded `φ`, `∂ᵢφ`, `φ νᵢ` are continuous in `uₙ` in `L^p` (`σ` and `Ω` have finite
+measure, `L^p ⊆ L¹` there). This is the form valid at `p = 1`, where the conjugate exponent is
+`∞`. ★★'''
+deps = ["BoundaryData.traceL_ae_eq_of_contDiff", "BoundaryData.integral_fderiv_mul_add_eq", "SobolevEuclidean.HasSmoothDensity"]
+
+[[node]]
+id = "BoundaryData.traceFamily"
+kind = "definition"
+desc = '''**The trace family of a domain with a transversal field and smooth density at every exponent**:
+`BoundaryData.traceFamily (B : BoundaryData Ω) (hw : B.HasTransversalField) (hd : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → SobolevEuclidean.HasSmoothDensity N p Ω) (hdu : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → SobolevEuclidean.HasUniformSmoothDensity N p Ω) : B.TraceFamily`
+with `traceL p hp := B.traceL hw p hp (hd p hp)`, `traceL_ae_eq` from
+`traceL_ae_eq_of_continuousOn` (with `hdu`), `green` from `green_of_hasSmoothDensity` and
+`green_contDiff` from `green_contDiff_of_hasSmoothDensity`. With the simp lemma
+`traceFamily_traceL`. The instances `IsContDiffDomain.traceFamily` and
+`EuclideanSpace.triangleTraceFamily` are this constructor with the density theorems of
+`Density.lean`. ★'''
+deps = ["BoundaryData.TraceFamily", "BoundaryData.traceL", "BoundaryData.traceL_ae_eq_of_continuousOn", "BoundaryData.green_of_hasSmoothDensity", "BoundaryData.green_contDiff_of_hasSmoothDensity"]
+
+[[node]]
+id = "BoundaryData.integral_abs_traceL_rpow_le"
+kind = "theorem"
+desc = '''**Nečas's inequality for every `W^{1,p}` function**: with `C` the constant of
+`integral_abs_rpow_le_of_contDiff` at `p.toReal`, for every `u : SobolevEuclidean N 1 p Ω`,
+`∫ x, |(B.traceL hw p hp hd u : E → ℝ) x| ^ p.toReal ∂B.σ ≤ C * (‖SobolevMultiIndex.fnL … u‖ ^ p.toReal + ‖fnL … u‖ ^ (p.toReal - 1) * SobolevMultiIndex.gradNorm u)`
+(with `fnL` the inclusion `W^{1,p}(Ω) → L^p(Ω)` of `MultiIndex.lean`, `gradNorm u = ‖grad u‖`).
+For smooth-representable `u` it is `integral_abs_rpow_le_of_contDiff` after Hölder on the mixed
+term (as in `eLpNorm_le_of_contDiff`); both sides are continuous in `u` (the left through
+`traceL` and the `L^p(σ)` norm, the right through `fnL`, `gradNorm` and `Real.rpow`), and the
+smooth-representable elements are dense (`hd`), so it extends
+(`DenseRange.induction_on`/`closure` argument with `isClosed_le`). ★★'''
+deps = ["BoundaryData.traceL_ae_eq_of_contDiff", "BoundaryData.integral_abs_rpow_le_of_contDiff", "SobolevMultiIndex.fnL", "SobolevMultiIndex.grad"]
+
+[[node]]
+id = "BoundaryData.isCompactOperator_traceL"
+kind = "theorem"
+desc = '''**Compactness of the trace** (Atkinson–Han Theorem 7.3.10 (c)): if the embedding
+`W^{1,p}(Ω) → L^p(Ω)` is compact,
+`hR : IsCompactEmbedding (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume).toLinearMap`
+(Rellich–Kondrachov, `Numlib/Analysis/Sobolev/Compactness.lean`:
+`SobolevEuclidean.isCompactEmbedding_fnL` on bounded `C¹` chart domains), then
+`IsCompactOperator (B.traceL hw p hp hd)`. Given a bounded sequence `uₙ`,
+`IsCompactEmbedding.exists_subseq_forall_tendsto` extracts `φ` with `fnL (u (φ n))` convergent
+in `L^p(Ω)`; `integral_abs_traceL_rpow_le` applied to `u (φ n) − u (φ m)` bounds
+`‖traceL (u (φ n)) − traceL (u (φ m))‖^p` by `C (‖fn‖_p^p + ‖fn‖_p^{p−1} · 2M)` of the difference,
+which tends to `0` — so `traceL (u (φ n))` is Cauchy in the complete `Lp ℝ p σ`. Conclude with the
+sequential characterization of compact operators between normed spaces
+(`isCompactOperator_iff_isCompact_closure_image_closedBall` and
+`IsSeqCompact`/`Metric.isCompact_iff_isSeqCompact`, or build on
+`IsCompactEmbedding.of_forall_exists_subseq_tendsto` if the trace is injective — it is not, so use
+the operator form directly). ★★'''
+deps = ["BoundaryData.integral_abs_traceL_rpow_le", "SobolevEuclidean.isCompactEmbedding_fnL"]

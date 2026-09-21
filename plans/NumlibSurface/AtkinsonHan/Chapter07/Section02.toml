@@ -114,41 +114,51 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 [[node]]
 id = "example_7_2_7"
 kind = "theorem"
-desc = '''Example 7.2.7: if a bounded Lipschitz `Ω` is partitioned into Lipschitz sub-domains
-`Ω_n`, `v|_{Ω_n} ∈ W^{k+1,p}(Ω_n)` for each `n` and `v ∈ C^k(closure Ω)`, then `v ∈ W^{k+1,p}(Ω)`
--- the global regularity of a conforming finite element function from its element-wise regularity.
-Not formalized: the proof integrates by parts on each `Ω_n` and cancels the interface integrals
-`∫_{∂Ω_n} v φ ν_i`, so it needs surface measure on a Lipschitz boundary and the integration by
-parts formula of §7.6, which rests on the trace of Theorem 7.3.10. The Lipschitz hypothesis itself
-is now available, as `definition_7_2_1_lipschitzDomain`.
-
-Blocked: rechecked 2026-09-20 (blocker 2 of `notes/frontier.md`); the reason stands. The Brezis round (2026-09-17–20) left blocker 2 untouched: `Numlib/` has no surface measure on a
-boundary (`hausdorffMeasure`, `Gauss`, `divergence`, `perimeter` occur only in the quadrature and
-Fourier modules, for unrelated reasons), no trace operator (`theorem_7_3_10` is still open) and no
-integration by parts on a domain; Mathlib on this pin still has the divergence theorem for boxes
-only (`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) and the new
-`CurveIntegral/Poincare` for plane curves, nothing for a Lipschitz or `C¹` hypersurface. The
-Brezis surface's own boundary nodes (`example_9_4_stepA/D`, Theorem 9.26's Neumann clause,
-`regularity_neumann`) are deferred on the same gap. `notes/fem-roadmap.md` Decision C stands.
-A `C¹`-domain version would need at least the divergence theorem on a `C¹` domain; estimate one to
-two thousand lines for the boundary measure and Gauss–Green on `C¹` chart domains, after which
-this node and `example_7_1_9` are ~200 lines each.
-'''
-deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "proposition_7_6_1"]
+desc = '''Example 7.2.7, on a triangulated polygon (the book's "bounded Lipschitz `Ω` partitioned into
+Lipschitz sub-domains", restated with `𝒯 : Triangulation Ω`; scope note: Lipschitz domains in
+general stay out of scope, cf. `notes/boundary/planning-brief.md` §1): for `k : ℕ`,
+`1 ≤ p ≤ ∞`, and `v : ℝ² → ℝ` with `v ∈ C^k(closure Ω)` (`ContDiffOn ℝ k v` on a neighbourhood
+of `closure Ω`, or, for `k = 0`, `ContinuousOn v (closure Ω)`) and
+`v|_{K T} ∈ W^{k+1,p}(K T)` for every element (`definition_7_2_2_multiIndex (k + 1) p (𝒯.Kopens T) v`),
+one has `definition_7_2_2_multiIndex (k + 1) p Ω v`, i.e. `v ∈ W^{k+1,p}(Ω)`. Restated 2026-09-21
+(boundary round). The case `k = 0` is the backbone's
+`Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall` (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`):
+the book's proof — integrate by parts on each element against a test function `φ ∈ C_0^∞(Ω)`,
+`∫_{Ω_n} v ∂ᵢφ = −∫_{Ω_n} ∂ᵢv φ + ∫_{∂Ω_n} v φ νᵢ ds`, and cancel the interface integrals — with
+Green's formula on a triangle against a fixed smooth test function
+(`BoundaryData.TraceFamily.green_contDiff` of `EuclideanSpace.triangleTraceFamily`), the trace
+of the continuous `v` on `∂K T` being its restriction (`traceL_ae_eq`), the boundary edges carrying
+`φ = 0` (`Triangulation.segment_subset_frontier_of_isBoundaryEdge`) and the interior edges
+cancelling in partner pairs (`Triangulation.partner_unique`, `edgeNormal_partner`). No slit
+hypothesis is needed for this direction. General `k` by applying the `k = 0` case to the
+derivatives `∂^β v`, `|β| = k` (`Triangulation.memSobolevMultiIndex_succ_of_contDiffOn_of_forall`
+in the same module, and `memSobolevMultiIndex_succ_iff`). ★★, ~80 lines over the backbone nodes.'''
+deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall"]
 
 [[node]]
 id = "example_7_2_8"
 kind = "theorem"
-desc = '''Example 7.2.8: the converse of Example 7.2.7 -- if `v ∈ W^{k+1,p}(Ω)` and
-`v ∈ C^k(closure Ω_n)` for each sub-domain, then `v ∈ C^k(closure Ω)`; together the two give
-`v ∈ C^k(closure Ω) ↔ v ∈ W^{k+1,p}(Ω)` under element-wise regularity. Not formalized: the
-argument produces a nonzero interface integral `∫_γ (v|_{Ω_{n₁}} - v|_{Ω_{n₂}}) φ ν_i`, so it
-needs surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.
-
-Blocked: rechecked 2026-09-20 (blocker 2); the same obstruction as `example_7_2_7`, of which this is
-the converse, and downstream of it.
-'''
-deps = ["example_7_2_7", "proposition_7_6_1"]
+desc = '''Example 7.2.8, the converse of Example 7.2.7 on a triangulated polygon without slits: for
+`𝒯 : Triangulation Ω` with `𝒯.InteriorEdgesSubset` (the relative interior of every interior
+edge lies in `Ω`; `Numlib/Analysis/Sobolev/Boundary/Polygon.lean`), `1 ≤ p < ∞`,
+`v ∈ W^{1,p}(Ω)` (an element `u : SobolevEuclidean 2 1 p Ω`) and continuous representatives on
+the closed elements — `w : 𝒯.elems → ℝ² → ℝ` with `ContinuousOn (w T) (𝒯.closedK T)` and
+`fn u =ᵐ w T` on `K T` — the pieces agree along every interior edge: for every partner pair
+`𝒯.IsPartner T a T' a'`, `EqOn (w T) (w T') (segment ℝ (T.1 a) (T.1 (a + 1)))`; hence, for the
+book's `k`, `∂^β v` (`|β| ≤ k`) glue continuously across the edges. Restated 2026-09-21
+(boundary round): the book's argument — a nonzero interface integral
+`∫_γ (v|_{Ω_{n₁}} − v|_{Ω_{n₂}}) φ νᵢ` would contradict `v ∈ W^{1,p}(Ω)` — is exactly the
+backbone's `Triangulation.traceL_partner_ae_eq` (the one-sided traces of a `W^{1,p}(Ω)` function
+agree on an interior edge whose relative interior lies in `Ω`), packaged as
+`Triangulation.eqOn_partner_of_memSobolev_of_continuousOn` (`PolygonTrace.lean`). Caveat recorded as
+an erratum (`notes/boundary/plan-report.md`): the book's conclusion "`v ∈ C^k(closure Ω)`" as a
+single continuous function on the closure also needs the elements around each vertex to be connected
+through shared edges; at a pinch vertex (two elements meeting only at a point, allowed by the axioms
+of `Triangulation` but not by the book's Lipschitz hypothesis) a `W^{1,p}` function may take two
+different limits. On a polygon in the book's sense the edge-wise agreement gives continuity on
+`closure Ω` minus the vertices and, by the fan argument, everywhere; that last step is not
+planned. ★★, ~60 lines over the backbone node for the edge-wise statement.'''
+deps = ["example_7_2_7", "Triangulation.eqOn_partner_of_memSobolev_of_continuousOn", "Triangulation.InteriorEdgesSubset"]
 
 [[node]]
 id = "definition_7_2_9"
@@ -183,25 +193,39 @@ id = "definition_7_2_12_hMinusOne"
 [[node]]
 id = "definition_7_2_13"
 kind = "definition"
-desc = '''Definition 7.2.13: given a patch system `∂Ω ∩ B(x_i,r_i) = {x_d = g_i(x_1,…,x_{d-1})}`
-with `g_i ∈ C^{k,α}(D_i)` covering `∂Ω`, and `s ≤ k + α`, `W^{s,p}(∂Ω) = {v ∈ L^2(∂Ω) : v ∘ g_i ∈
-W^{s,p}(D_i)}` with `‖v‖ = max_i ‖v ∘ g_i‖_{W^{s,p}(D_i)}`; `H^s(∂Ω) ≡ W^{s,2}(∂Ω)`, and
-`H^{1/2}(∂Ω)` is the one used later. Not formalized: this needs surface measure on a Lipschitz
-boundary before `L^2(∂Ω)` is even definable. The patch system itself is now available --
-`definition_7_2_1_finite_cover` produces exactly the `(x_i, r_i)` and the `g_i` -- and so are the
-`W^{s,p}(D_i)` of the patches, `SobolevSlobodeckij`; what is missing is the measure on `∂Ω`, and
-with it the independence of the norm from the choice of patches.
+desc = '''Definition 7.2.13, the Sobolev spaces on the boundary of a `C¹` domain, relative to a patch
+system: for `hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω` (the book's `C^{k,α}`
+patches restated as `C¹`, `k = 1`, `α = 0`, so `0 ≤ s ≤ 1`), the atlas
+`a := hΩ.graphAtlas hb : GraphAtlas Ω` (`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean` —
+the finite patch system `∂Ω ∩ B(xᵢ, rᵢ) = {x_d = gᵢ(x')}` of `definition_7_2_1_finite_cover`
+with the graph functions `gᵢ` and the parameter domains `Dᵢ := a.graphDomain i`), `s ∈ [0, 1]`,
+`1 ≤ p < ∞`: `W^{s,p}(∂Ω) := {v ∈ L^p(σ) : ∀ i, v ∘ graphParam (a.T i) (a.g i) ∈ W^{s,p}(Dᵢ)}`
+with the norm `‖v‖ := max_i ‖v ∘ graphParam …‖_{W^{s,p}(Dᵢ)}`, where `L^p(∂Ω) = Lp ℝ p (hΩ.boundaryMeasure hb)`
+(the surface measure of the boundary round) and `W^{s,p}(Dᵢ)` is `definition_7_2_10` on the open
+bounded `Dᵢ ⊆ ℝ^{d-1}` (`SobolevSlobodeckij`), the composition `v ∘ graphParam` being the book's
+`v ∘ gᵢ` read as `x' ↦ v (x', gᵢ x')`. `H^s(∂Ω) := W^{s,2}(∂Ω)`. Restated 2026-09-21 (boundary
+round): definable now — a Submodule of `Lp ℝ p σ` (closed under the operations since each patch
+space is), with the book's norm as a function; the book's `L²(∂Ω)` in the definition is read as
+`L^p(∂Ω)` (an inconsistency of the printed definition, `v ∈ L²(∂Ω)` for a `W^{s,p}` space with
+`p ≠ 2`). ★★, ~120 lines. What is not in scope is the independence of the space and (up to
+equivalence) of the norm from the patch system, split off as `definition_7_2_13_indep`.'''
+deps = ["definition_7_2_1_finite_cover", "definition_7_2_10", "IsContDiffDomain.graphAtlas", "IsContDiffDomain.boundaryMeasure"]
 
-Blocked: rechecked 2026-09-20 (blocker 2); the reason above stands unchanged. The Brezis round (2026-09-17–20) left blocker 2 untouched: `Numlib/` has no surface measure on a
-boundary (`hausdorffMeasure`, `Gauss`, `divergence`, `perimeter` occur only in the quadrature and
-Fourier modules, for unrelated reasons), no trace operator (`theorem_7_3_10` is still open) and no
-integration by parts on a domain; Mathlib on this pin still has the divergence theorem for boxes
-only (`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) and the new
-`CurveIntegral/Poincare` for plane curves, nothing for a Lipschitz or `C¹` hypersurface. The
-Brezis surface's own boundary nodes (`example_9_4_stepA/D`, Theorem 9.26's Neumann clause,
-`regularity_neumann`) are deferred on the same gap. `notes/fem-roadmap.md` Decision C stands.
-What the Brezis round did add is the trace-free part of the fractional theory: the interior
-Slobodeckij spaces `SobolevSlobodeckij` (`Numlib/Analysis/Sobolev/Slobodeckij.lean`) on the
-patches `D_i` are proved, so only the boundary measure and the area formula are missing.
-'''
-deps = ["definition_7_2_1_finite_cover", "definition_7_2_10"]
+[[node]]
+id = "definition_7_2_13_indep"
+kind = "theorem"
+desc = '''Definition 7.2.13, the clause the book leaves implicit: the space `W^{s,p}(∂Ω)` of
+`definition_7_2_13` does not depend on the patch system, and two patch systems give equivalent
+norms. For `s = 0` this is `boundaryMeasure_restrict_ball` (the surface measure is
+chart-independent) and needs nothing more; for `0 < s ≤ 1` it needs the invariance of the
+Slobodeckij seminorm of `definition_7_2_10` under the `C¹` transition maps
+`EuclideanSpace.graphTransition` between patches (a bi-Lipschitz change of variables in the double
+integral `∬ |v(x) − v(y)|^p / |x − y|^{d−1+sp}`), which `Numlib/Analysis/Sobolev/Slobodeckij.lean`
+does not have.
+
+Blocked (2026-09-21, boundary round): the invariance of fractional Sobolev norms under `C¹`
+(bi-Lipschitz) diffeomorphisms — ~400 lines on top of `Slobodeckij.lean` (the double-integral
+change of variables with the Jacobian bounds of `EuclideanSpace.graphDensity_graphTransition`);
+not needed by any consumer of this round (`H^{1/2}(Γ)` is used only through `theorem_7_3_10_range`
+and `theorem_7_3_11_fractional`, both blocked).'''
+deps = ["definition_7_2_13", "IsContDiffDomain.boundaryMeasure_restrict_ball"]

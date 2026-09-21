@@ -1,0 +1,240 @@
+desc = '''
+The trace and Green's formula on a triangulated plane domain, assembled from its triangles
+(decision B7 of `notes/boundary/planning-brief.md`, the polygon branch). A polygon is not known to
+be an extension domain and a pinched one has no transversal field, so the abstract construction of
+`Boundary/Trace.lean` is applied to each *element* — a triangle is a bounded convex open set, hence
+has the segment property and smooth density (`Boundary/Density.lean`), and the field `x − x₀` from
+its centroid is transversal — and the traces are glued along the boundary edges:
+`Triangulation.traceL u := ∑_{boundary edges (T, a)} 1_{(T a, T (a+1))} · T_T (u|_{K T})`, bounded
+by the triangles' bounds and the additivity of the norm over the elements.
+
+The one hypothesis beyond the axioms of `Triangulation` is `Triangulation.InteriorEdgesSubset`
+(no slit): on an interior edge shared by `T` and `T'` whose relative interior lies in `Ω`, the
+one-sided traces of `u ∈ W^{1,p}(Ω)` agree (`Triangulation.traceL_partner_ae_eq`) — the two
+triangles' Green formulas against a test function supported near the edge sum to the defining
+identity of the weak derivative on `Ω`, which is `0`, so `∫_e φ (T_T u − T_{T'} u) = 0` for all
+such `φ`, and `ae_eq_zero_of_integral_contDiff_smul_eq_zero` on the edge measure finishes. With
+that, Green's formula on `Ω` is the sum of the triangles' formulas, the interior edges cancelling
+as in `Triangulation.integral_div_eq`, and `Triangulation.traceFamily : 𝒯.boundaryData.TraceFamily`
+is the consumer-facing object of Atkinson–Han §11.4 and §13. Compactness of the trace comes from
+Rellich on each triangle. A convex polygon also admits the direct route (`x − x₀` transversal,
+convex density), `Triangulation.traceFamily_of_convex`, which agrees with the glued one by
+uniqueness.
+
+The same machinery proves the two piecewise theorems of Atkinson–Han §7.2 on a triangulation:
+a function continuous on `Ω̄` and `W^{1,p}` on each element is `W^{1,p}(Ω)` (Example 7.2.7, no
+slit hypothesis needed — the test function vanishes on `∂Ω` and the interior edges cancel), and a
+`W^{1,p}(Ω)` function continuous on each closed element has matching values along every interior
+edge (Example 7.2.8, under `InteriorEdgesSubset`; the book's conclusion "continuous on `Ω̄`" can
+fail at a pinch vertex, where two elements meet only at a point).
+
+Wave B, ~1100 lines. Imports `Boundary/Polygon.lean`, `Boundary/Trace.lean`, `Boundary/Density.lean`,
+`Numlib/Analysis/Sobolev/Triangulation.lean`. Notation as in `Polygon.toml`; for `T : 𝒯.elems`,
+`𝒯.Kopens T = openTriangleOpens (T.1 0) (T.1 1) (T.1 2) (𝒯.li T)` definitionally, `B_T := EuclideanSpace.triangleBoundaryData (T.1 0) (T.1 1) (T.1 2) (𝒯.li T)`,
+`𝒯_T := EuclideanSpace.triangleTraceFamily … (𝒯.li T)`, `u|_T := SobolevMultiIndex.restrictL ℝ (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis 1 p volume (𝒯.Kopens_le T) u`.
+'''
+
+[[node]]
+id = "EuclideanSpace.triangle_hasTransversalField"
+kind = "theorem"
+desc = '''**A triangle has a transversal field**: for `A B C : 𝔼₂` non-collinear
+(`h : LinearIndependent ℝ ![B - A, C - A]`), `(triangleBoundaryData A B C h).HasTransversalField`.
+Let `G := (1/3) • (A + B + C)` be the centroid and `δ := min` over the three edges `[P, Q]` (third
+vertex `R`) of `⟪P - G, edgeNormal P Q R⟫`, which is positive: `⟪x − G, edgeNormal P Q R⟫` is
+constant along the edge (`inner_edgeNormal_lineMap_sub`) and equals the distance from `G` to the
+line, positive since `G` is strictly inside (`⟪G − P, edgeNormal P Q R⟫ = (1/3) ⟪R − P, edgeNormal⟫ < 0`
+by `inner_edgeNormal_third_neg` and `inner_edgeNormal_sub`). Take `w x := δ⁻¹ * χ x • (x - G)`
+with `χ` smooth, `χ = 1` on the compact `closedTriangle A B C` and compactly supported
+(`IsCompact.exists_contDiff_eqOn_one`-type, as in `Zero.lean`); on each open edge
+`⟪w x, triangleNormal x⟫ = δ⁻¹ ⟪x − G, edgeNormal⟫ ≥ 1`, and the vertices are null
+(`ae_norm_triangleNormal`'s bookkeeping). ★★'''
+deps = ["EuclideanSpace.triangleBoundaryData", "BoundaryData.HasTransversalField", "EuclideanSpace.edgeNormal"]
+
+[[node]]
+id = "EuclideanSpace.triangleTraceFamily"
+kind = "definition"
+desc = '''`EuclideanSpace.triangleTraceFamily (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) : (triangleBoundaryData A B C h).TraceFamily :=
+BoundaryData.traceFamily _ (triangle_hasTransversalField A B C h) (fun p _ hp ↦ Convex.hasSmoothDensity … hp) (fun p _ hp ↦ Convex.hasUniformSmoothDensity … hp)`
+— the trace theorem on a triangle, from the abstract construction with the density theorems for
+bounded convex open sets (`convex_openTriangle`, `isOpen_openTriangle`, `isBounded_openTriangle`,
+nonempty). With `EuclideanSpace.isCompactOperator_triangleTraceL : IsCompactOperator ((triangleTraceFamily A B C h).traceL p hp)`
+from `BoundaryData.isCompactOperator_traceL` and Rellich on the extension domain
+`openTriangleOpens` (`SobolevEuclidean.isCompactEmbedding_toLp_self`/`isCompactEmbedding_fnL`
+for `IsSobolevExtensionDomain`, `isSobolevExtensionDomainAll_openTriangleOpens`). ★'''
+deps = ["BoundaryData.traceFamily", "EuclideanSpace.triangle_hasTransversalField", "HasSegmentProperty.hasSmoothDensity", "BoundaryData.isCompactOperator_traceL", "isSobolevExtensionDomainAll_openTriangleOpens"]
+
+[[node]]
+id = "Triangulation.traceFun"
+kind = "definition"
+desc = '''The glued boundary values of `u ∈ W^{1,p}(Ω)` on a triangulated domain, as a function:
+`Triangulation.traceFun (𝒯 : Triangulation Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean 2 1 p Ω) : 𝔼₂ → ℝ := fun x ↦ ∑ e ∈ 𝒯.boundaryEdges, (openSegment ℝ (e.1.1 e.2) (e.1.1 (e.2 + 1))).indicator (fun y ↦ ((𝒯_{e.1}).traceL p hp (u|_{e.1}) : 𝔼₂ → ℝ) y) x`
+— on the relative interior of each boundary edge, the trace of the restriction of `u` to the
+element owning it. `Triangulation.memLp_traceFun : MemLp (𝒯.traceFun p hp u) p 𝒯.boundaryMeasure`
+and the bound `eLpNorm (𝒯.traceFun p hp u) p 𝒯.boundaryMeasure ≤ ENNReal.ofReal (C * ‖u‖)`
+with `C := (3 * ∑ over elements of the trace constants^p)^{1/p}`-type: on the edge measure of
+`(T, a)` the function is the trace of `u|_T` (the other indicators vanish a.e., by
+`openSegment_disjoint_of_isBoundaryEdge` and `edgeMeasure_compl_openSegment`), so
+`∫ |traceFun|^p dσ = ∑_e ∫_{e} |T_T (u|_T)|^p dσ_e ≤ ∑_T ∫ |T_T (u|_T)|^p dσ_T ≤ ∑_T C_T^p ‖u|_T‖^p ≤ (max C_T)^p · 3 ‖u‖^p`
+(`SobolevMultiIndex.norm_restrictL_apply_le`; `integral_finset_sum_measure`; the edge measure
+`σ_e ≤ σ_T` as a summand of `triangleBoundaryMeasure`). Also `traceFun_add`, `traceFun_smul` a.e.
+(`Lp.coeFn_add`, `map_add` of the triangles' traces and of `restrictL`). ★★'''
+deps = ["EuclideanSpace.triangleTraceFamily", "Triangulation.boundaryMeasure", "SobolevMultiIndex.restrictL", "Triangulation.openSegment_disjoint_of_isBoundaryEdge", "Triangulation.Kopens"]
+
+[[node]]
+id = "Triangulation.traceL"
+kind = "definition"
+desc = '''**The trace operator of a triangulated domain**:
+`Triangulation.traceL (𝒯 : Triangulation Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) : SobolevEuclidean 2 1 p Ω →L[ℝ] Lp ℝ p 𝒯.boundaryMeasure`,
+`u ↦ (memLp_traceFun u).toLp`, linear by `traceFun_add`/`traceFun_smul` (`MemLp.toLp_add`,
+`toLp_congr`) and bounded by the estimate of `memLp_traceFun` (`LinearMap.mkContinuous`). With
+`Triangulation.coeFn_traceL : (𝒯.traceL p hp u : 𝔼₂ → ℝ) =ᵐ[𝒯.boundaryMeasure] 𝒯.traceFun p hp u`
+and `Triangulation.traceL_ae_eq_triangle : 𝒯.IsBoundaryEdge T a → (𝒯.traceL p hp u : 𝔼₂ → ℝ) =ᵐ[edgeMeasure (T.1 a) (T.1 (a + 1))] ((𝒯_T).traceL p hp (u|_T) : 𝔼₂ → ℝ)`.
+No hypothesis on `𝒯` beyond the axioms: the operator exists on every triangulation; it is the
+*properties* (`traceL_ae_eq_of_continuousOn`, `green`) that need `InteriorEdgesSubset`, and only
+`green` does. ★★'''
+deps = ["Triangulation.traceFun"]
+
+[[node]]
+id = "Triangulation.traceL_ae_eq_of_continuousOn"
+kind = "theorem"
+desc = '''**The trace of a function continuous up to the boundary is its restriction, on a polygon**: for
+`u : SobolevEuclidean 2 1 p Ω` and `ũ : 𝔼₂ → ℝ` with `fn u =ᵐ[volume.restrict Ω] ũ` and
+`ContinuousOn ũ (closure Ω)`, `(𝒯.traceL p hp u : 𝔼₂ → ℝ) =ᵐ[𝒯.boundaryMeasure] ũ`. On the edge
+measure of a boundary edge `(T, a)`, `traceL u` is the triangle trace of `u|_T`
+(`traceL_ae_eq_triangle`), which is `ũ` a.e. by the triangle's `traceL_ae_eq` field
+(`ũ` is continuous on `closure (K T) = closedK T ⊆ closure Ω`, and `fn (u|_T) =ᵐ fn u =ᵐ ũ` on `K T`
+by `SobolevMultiIndex.fn_restrictL`); `Measure.ae_sum_iff`/`ae_finset_sum` over the boundary
+edges. ★'''
+deps = ["Triangulation.traceL", "EuclideanSpace.triangleTraceFamily"]
+
+[[node]]
+id = "Triangulation.traceL_partner_ae_eq"
+kind = "theorem"
+desc = '''**The one-sided traces agree across an interior edge without a slit**: for `𝒯` with
+`hI : 𝒯.InteriorEdgesSubset`, `hP : 𝒯.IsPartner T a T' a'`, `1 ≤ p < ∞` and `u : SobolevEuclidean 2 1 p Ω`,
+`((𝒯_T).traceL p hp (u|_T) : 𝔼₂ → ℝ) =ᵐ[edgeMeasure (T.1 a) (T.1 (a + 1))] ((𝒯_{T'}).traceL p hp (u|_{T'}) : 𝔼₂ → ℝ)`.
+Proof (the characterization of the trace by Green's formula). Let `e := openSegment ℝ (T.1 a) (T.1 (a + 1))`
+and `V := Ω \\ (⋃ T'' ∉ {T, T'}, closedK T'') \\ (the four other closed edges of T and T')`, an
+open set containing `e` (`hI` gives `e ⊆ Ω`; a third element meeting `e` would share the edge, so
+it is `T'` by `partner_unique`; the other edges of `T`, `T'` meet `e` only at vertices). For
+`φ : 𝔼₂ → ℝ` smooth with `tsupport φ ⊆ V` and each `i : Fin 2`:
+`0 = ∫_Ω (∂ᵢu) φ + u ∂ᵢφ` (the defining identity of the weak derivative on `Ω`, `φ` being a test
+function of `Ω`: `SobolevMultiIndex.hasWeakIteratedLineDerivOn` at the multi-index `single i`),
+`= ∑ T'' ∫_{K T''} (…)` (`ae_eq_iUnion_K`), and on each element the triangle's `green_contDiff`
+gives `∫ (T_{T''} (u|_{T''})) φ ν_i dσ_{T''}`, which vanishes for `T'' ∉ {T, T'}` (`φ = 0` on
+`closedK T''`) and for `T'' ∈ {T, T'}` reduces to the edge `e` (`φ = 0` on the other edges), so
+`0 = ν_{T,a,i} ∫_e φ (T_T (u|_T) − T_{T'} (u|_{T'})) dσ_e` (`edgeNormal_partner`,
+`edgeMeasure_partner`). Choose `i` with `ν_{T,a,i} ≠ 0` (a unit vector has a nonzero coordinate);
+then `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (`Mathlib/Analysis/Distribution/AEEqOfIntegralContDiff.lean`,
+with `μ := edgeMeasure …`, `U := V`, the difference being in `L^p(σ_e) ⊆ L¹_loc`) gives the
+difference `= 0` `σ_e`-a.e. on `V ⊇ e`, and `σ_e` is carried by `e`
+(`edgeMeasure_compl_openSegment`). ★★★, ~250 lines.'''
+deps = ["Triangulation.InteriorEdgesSubset", "Triangulation.partner_unique", "EuclideanSpace.triangleTraceFamily", "Triangulation.ae_eq_iUnion_K", "SobolevMultiIndex.restrictL"]
+
+[[node]]
+id = "Triangulation.green"
+kind = "theorem"
+desc = '''**Green's formula on a triangulated domain without slits** (Atkinson–Han Example 11.4.4's
+integration by parts; Grisvard §1.5.2): for `hI : 𝒯.InteriorEdgesSubset`, exponents
+`p q` with `[Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q]`, `hp : p ≠ ⊤`,
+`hq : q ≠ ⊤`, `u : SobolevEuclidean 2 1 p Ω`, `v : SobolevEuclidean 2 1 q Ω`, `i : Fin 2`,
+`∫ x in Ω, (weakDeriv u (single i) : 𝔼₂ → ℝ) x * fn v x + ∫ x in Ω, fn u x * (weakDeriv v (single i) : 𝔼₂ → ℝ) x = ∫ x, (𝒯.traceL p hp u : 𝔼₂ → ℝ) x * (𝒯.traceL q hq v : 𝔼₂ → ℝ) x * 𝒯.outwardNormal x i ∂𝒯.boundaryMeasure`;
+and `Triangulation.green_contDiff` for a fixed `C¹` compactly supported `φ` at every
+`1 ≤ p < ∞`. Proof: split `∫_Ω` over the elements (`ae_eq_iUnion_K`, `pairwise_disjoint_K`),
+apply the triangle's `green` (resp. `green_contDiff`) to `u|_T`, `v|_T` (weak derivatives
+restrict: `SobolevMultiIndex.weakDeriv_restrictL`), expand each `∫ … d(triangleBoundaryMeasure)`
+into the three edges (`integral_triangleBoundaryMeasure`, `triangleNormal_eq_of_mem_openSegment`),
+and sum over `(T, a)`: on a boundary edge the triangle traces are `𝒯.traceL` (`traceL_ae_eq_triangle`)
+and the normal is `outwardNormal` (`outwardNormal_eq_edgeNormal`); on an interior edge the two
+partner terms cancel — same measure (`edgeMeasure_partner`), opposite normals
+(`edgeNormal_partner`), and *equal traces* on both sides by `traceL_partner_ae_eq` (for `u` and
+for `v`) — through `Finset.sum_involution` exactly as in `Triangulation.integral_div_eq`. ★★★,
+~250 lines.'''
+deps = ["Triangulation.traceL_partner_ae_eq", "Triangulation.traceL", "Triangulation.integral_div_eq", "Triangulation.outwardNormal", "EuclideanSpace.triangleTraceFamily"]
+
+[[node]]
+id = "Triangulation.traceFamily"
+kind = "definition"
+desc = '''**The trace family of a triangulated domain without slits**:
+`Triangulation.traceFamily (𝒯 : Triangulation Ω) (hI : 𝒯.InteriorEdgesSubset) : 𝒯.boundaryData.TraceFamily`
+with `traceL := 𝒯.traceL`, `traceL_ae_eq := Triangulation.traceL_ae_eq_of_continuousOn`,
+`green := Triangulation.green hI`, `green_contDiff := Triangulation.green_contDiff hI`. This is
+the object the polygon consumers take (Atkinson–Han Examples 11.1.2, 11.2.4, 11.3.11 and 11.4.4
+on a polygon, Theorem 11.4.5, Proposition 7.6.1 on a polygon). With
+`Triangulation.isCompactOperator_traceL (hI) : IsCompactOperator (𝒯.traceL p hp)` (★★): a
+bounded sequence `uₙ` in `W^{1,p}(Ω)` has, by Rellich on each of the finitely many elements
+(`IsCompactEmbedding.exists_subseq_forall_tendsto` for the family `T ↦ fnL (uₙ|_T)`), a
+subsequence along which every `fn (uₙ|_T)` converges in `L^p(K T)`; the triangles' sharp Nečas
+inequalities (`BoundaryData.integral_abs_traceL_rpow_le`) make each triangle trace Cauchy, hence
+`𝒯.traceL uₙ` Cauchy in `L^p(σ)` (`memLp_traceFun`'s estimate is a sum over the boundary
+edges). ★'''
+deps = ["BoundaryData.TraceFamily", "Triangulation.boundaryData", "Triangulation.traceL_ae_eq_of_continuousOn", "Triangulation.green", "BoundaryData.integral_abs_traceL_rpow_le"]
+
+[[node]]
+id = "Triangulation.traceFamily_of_convex"
+kind = "definition"
+desc = '''**The direct route for a convex polygon**: for `𝒯 : Triangulation Ω` with `Convex ℝ (Ω : Set 𝔼₂)`
+and `(Ω : Set 𝔼₂).Nonempty`, `Triangulation.hasTransversalField_of_convex : 𝒯.boundaryData.HasTransversalField`
+(★★: `w x := δ⁻¹ * χ x • (x − x₀)` for an interior point `x₀`; on a boundary edge `(T, a)` the
+supporting-line property of a convex set — `Ω` lies on the side of `K T`, the line through a
+boundary edge does not meet the open convex `Ω` (a point of `Ω` on the line would put points of
+`Ω` on both sides of the edge near it, against `segment_subset_frontier_of_isBoundaryEdge`) — gives
+`⟪x − x₀, edgeNormal⟫ = ⟪T a − x₀, edgeNormal⟫ > 0`, constant along the edge, and `δ` is the
+minimum over the finitely many boundary edges), and then
+`Triangulation.traceFamily_of_convex : 𝒯.boundaryData.TraceFamily := BoundaryData.traceFamily _ (hasTransversalField_of_convex …) (Convex.hasSmoothDensity …) (Convex.hasUniformSmoothDensity …)`.
+By `BoundaryData.TraceFamily.traceL_eq_of_hasSmoothDensity` its trace agrees with
+`Triangulation.traceFamily hI` (a convex polygon satisfies `InteriorEdgesSubset`: an interior edge's
+relative interior lies in `interior (closure Ω) = Ω`, `Convex.interior_closure`, since the two
+partner triangles cover a neighbourhood of it — state this as
+`Triangulation.interiorEdgesSubset_of_convex`, ★★, using `exists_ball_inter_subset_openTriangle`
+on both sides). ★'''
+deps = ["BoundaryData.traceFamily", "Triangulation.boundaryData", "HasSegmentProperty.hasSmoothDensity", "Triangulation.segment_subset_frontier_of_isBoundaryEdge", "BoundaryData.traceL_unique", "Triangulation.InteriorEdgesSubset"]
+
+[[node]]
+id = "Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall"
+kind = "theorem"
+desc = '''**A function continuous on `Ω̄` and `W^{1,p}` on each element is `W^{1,p}(Ω)`** — the
+backbone form of Atkinson–Han Example 7.2.7 on a triangulation (the piecewise-`C¹` case is
+`Triangulation.memSobolev_of_piecewise` of `Sobolev/Triangulation.lean`, proved through lines): for
+`𝒯 : Triangulation Ω`, `1 ≤ p ≤ ∞`, `u : 𝔼₂ → ℝ` with `ContinuousOn u (closure Ω)` and
+`∀ T, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis u 1 p (𝒯.Kopens T) volume`,
+one has `MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis u 1 p Ω volume`, with
+weak derivative `∂ᵢu` the function equal a.e. on each `K T` to the weak derivative of `u|_{K T}`
+(glue the chosen `weakDeriv`s of the elements by indicators). No slit hypothesis. Proof: `u ∈ L^p(Ω)`
+(bounded on the compact closure); for a test function `φ ∈ 𝓓(Ω)` and `i`,
+`∫_Ω u ∂ᵢφ = ∑_T ∫_{K T} u ∂ᵢφ = ∑_T (−∫_{K T} (∂ᵢu) φ + ∫ (T_T u) φ ν_i dσ_T)` by the
+triangle's `green_contDiff` at the exponent `p` (for `p = ∞` use `p = 2` on the bounded
+elements, `SobolevMultiIndex.toLowerExponentL`, and recover the `L^∞` bound of the glued
+derivative separately), `T_T u = u|_{∂K T}` by the triangle's `traceL_ae_eq` (`u` is continuous
+on `closedK T`), and the edge sum vanishes: on boundary edges `φ = 0`
+(`segment_subset_frontier_of_isBoundaryEdge`, `tsupport φ ⊆ Ω`), and the interior edges cancel in
+partner pairs (equal values of the continuous `u φ`, opposite normals, `Finset.sum_involution`).
+Hence `∫_Ω u ∂ᵢφ = −∫_Ω (glued ∂ᵢu) φ`, the defining identity of `HasWeakIteratedLineDerivOn`
+at `single i`; the glued derivative is in `L^p(Ω)` by additivity over the elements. ★★★,
+~250 lines. Higher orders (`v ∈ C^k(Ω̄)`, `v|_{K} ∈ W^{k+1,p}`) follow by applying this to the
+derivatives `∂^β v`, `|β| = k`, and composing weak derivatives (`memSobolevMultiIndex_succ_iff` of
+`MultiIndex.lean`); state that as `Triangulation.memSobolevMultiIndex_succ_of_contDiffOn_of_forall`
+(★★) for the surface's `example_7_2_7`.'''
+deps = ["EuclideanSpace.triangleTraceFamily", "Triangulation.partner_unique", "Triangulation.segment_subset_frontier_of_isBoundaryEdge", "Triangulation.ae_eq_iUnion_K", "Triangulation.memSobolev_of_piecewise"]
+
+[[node]]
+id = "Triangulation.eqOn_partner_of_memSobolev_of_continuousOn"
+kind = "theorem"
+desc = '''**A `W^{1,p}(Ω)` function continuous on each closed element takes the same values on both sides
+of every interior edge** — the backbone form of Atkinson–Han Example 7.2.8 on a triangulation
+without slits: for `hI : 𝒯.InteriorEdgesSubset`, `1 ≤ p < ∞`, `u : SobolevEuclidean 2 1 p Ω`,
+and continuous pieces `v : 𝒯.elems → 𝔼₂ → ℝ` with `∀ T, ContinuousOn (v T) (closedK T)` and
+`∀ T, fn u =ᵐ[volume.restrict (K T)] v T`, every partner pair `𝒯.IsPartner T a T' a'` satisfies
+`EqOn (v T) (v T') (segment ℝ (T.1 a) (T.1 (a + 1)))`. By `traceL_partner_ae_eq` and the
+triangles' `traceL_ae_eq` (`v T` is a continuous representative of `u|_T` on the closed
+element), `v T = v T'` `σ_e`-a.e. on the open segment; both are continuous on the closed segment
+(contained in both closed elements), and `edgeMeasure` charges every relatively open piece of the
+open segment (`edgeMeasure_pos_of_isOpen`), so they agree on the open segment
+(two continuous functions agreeing a.e. for a measure of full support agree everywhere:
+`Measure.eqOn_of_ae_eq` with `IsOpenPosMeasure` on the subtype, or directly by contradiction),
+hence on its closure. The book's further conclusion `v ∈ C(Ω̄)` (a single continuous function on
+the closure) needs, in addition, that the elements around each vertex be connected through shared
+edges — false at a pinch vertex (two triangles meeting only at a point, where `u ∈ W^{1,p}` may
+take two limits); on a polygon in the book's sense (Lipschitz) it holds, and the surface node
+`example_7_2_8` records the caveat. ★★'''
+deps = ["Triangulation.traceL_partner_ae_eq", "EuclideanSpace.triangleTraceFamily", "EuclideanSpace.edgeMeasure"]

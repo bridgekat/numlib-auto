@@ -61,56 +61,81 @@ desc = '''
 Theorem 13.1.1 (§13.1): for `f` continuous on a boundary `S` that admits a twice continuously
 differentiable parametrization, the interior Dirichlet problem has a unique solution, and the
 interior Neumann problem has a solution, unique up to an additive constant, exactly when
-`∫_S f dS = 0`.
+`∫_S f dS = 0`. The classical existence theory for the planar Laplace equation, quoted from the
+book's Chapter 8 rather than proved here.
 
-Not formalized: it is the classical existence theory for the planar Laplace equation, which the
-book quotes from its own Chapter 8 rather than proving here. Either route is out of reach: the
-variational one needs `H^1_0` of a planar region and a trace theorem, and the potential-theoretic
-one is the layer-potential machinery the rest of §13.1 is skipped for -- Green's identities on a
-piecewise smooth region and the jump relations, neither of which Mathlib supports, since it has no
-surface measure and no normal field on a curve. The chapter group's desc records the same.
-
-Blocked: rechecked 2026-09-20 (blocker 2 of `notes/frontier.md`); the reason stands. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
-convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
-principle for harmonic functions continuous up to the boundary
-(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
-a region bounded by a smooth closed curve (the divergence theorem remains
-`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
-a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
-the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2.
-The variational route has moved: `H^1_0` of a planar region and the Dirichlet problem now exist
-(`Numlib/Analysis/PDE/Elliptic/Dirichlet`, Brezis Theorem 9.25 on `C²` domains), so the interior
-Dirichlet problem with `H^{1/2}` boundary data would be within reach once a trace theorem on a
-`C¹` boundary exists (`theorem_7_3_10`, blocker 2 again); the Neumann problem and the potential
-route are not. Estimate: as for `theorem_13_1_2`.
+Blocked: rechecked 2026-09-21 (boundary round). What the round supplies: the surface measure
+`dS`, the normal, the trace and Green's formula on bounded `C¹` plane domains
+(`IsContDiffDomain.traceFamily`), so the *weak* Neumann problem is now statable and solvable —
+split off as `theorem_13_1_1_neumann_weak`. What remains blocked are the classical clauses: the
+Dirichlet problem with merely continuous boundary data `f ∈ C(S)` (the variational route needs
+an `H¹` extension of `f`, i.e. `f ∈ H^{1/2}(S)`, `theorem_7_3_10_range`; the potential route
+needs the layer potentials and jump relations the rest of §13.1 is skipped for), and the
+classical (rather than weak) Neumann solution with `∂u/∂n = f` pointwise, which needs boundary
+regularity of the weak solution (`Elliptic.regularity_neumann` and its `C²` version). The
+maximum principle for the uniqueness of the Dirichlet problem is Mathlib's `HarmonicContOnCl`.
+Estimate as before for the classical clauses; the weak Neumann clause is ~300 lines.
 '''
-deps = ["theorem_13_1_2"]
+deps = ["theorem_13_1_2", "theorem_13_1_1_neumann_weak"]
+
+[[node]]
+id = "theorem_13_1_1_neumann_weak"
+kind = "theorem"
+desc = '''
+Theorem 13.1.1, the Neumann clause in weak form: on a bounded connected `C¹` domain
+`Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))` (`hΩ`, `hb`, `IsPreconnected Ω`), with
+`σ := hΩ.boundaryMeasure hb` and `γ := (hΩ.traceFamily hb).traceL 2 _`, for `f ∈ L²(σ)`: the
+weak Neumann problem `−Δu = 0` in `Ω`, `∂u/∂ν = f` on `Γ` — find `u ∈ H¹(Ω)` with
+`∫_Ω ∇u · ∇v = ∫ f · γ v dσ` for all `v ∈ H¹(Ω)` (`Elliptic.dirichletForm Ω u v = ∫ f γ v dσ`) —
+has a solution if and only if `∫ f dσ = 0`, and the solution is unique up to an additive
+constant. Restated 2026-09-21 (boundary round), the part of Theorem 13.1.1 that Green's
+identities carry. Route: necessity by `v = 1` (the constant function, in `H¹(Ω)` on the bounded
+`Ω`, with `γ 1 = 1` σ-a.e. by `traceL_ae_eq` and `∇1 = 0`); existence by Lax–Milgram on the
+closed subspace `V₀ := {v ∈ H¹(Ω) : ∫_Ω v = 0}` (or on the quotient by the constants), where the
+Dirichlet form is coercive by the Poincaré–Wirtinger inequality `‖v − v̄‖_{L²} ≤ C ‖∇v‖_{L²}`
+on the connected extension domain (`Numlib/Analysis/Sobolev/DenyLions.lean`, the Deny–Lions
+norm equivalence at order 1 / `theorem_7_3_13`-type with `f₁ v = |∫ v|`), and the right side
+`v ↦ ∫ f γ v dσ` is bounded (`‖f‖_{L²(σ)} ‖γ‖ ‖v‖`) and vanishes on the constants when
+`∫ f dσ = 0`, so the solution on `V₀` solves the problem on all of `H¹` (`v = v₀ + c`);
+uniqueness up to constants: `∇(u − u') = 0` on the connected `Ω` forces a constant (Deny–Lions,
+`|w|_{1,2} = 0 ⇒ w` polynomial of degree `0`). ★★★, ~300 lines.
+'''
+deps = ["IsContDiffDomain.traceFamily", "AtkinsonHan.Chapter07.theorem_7_3_13", "Elliptic.existsUnique_isGalerkinSolution_laplace"]
 
 [[node]]
 id = "theorem_13_1_2"
 kind = "theorem"
 desc = '''
-Theorem 13.1.2 (§13.1), the divergence theorem: for `F` on the closure of a planar region with
-both components in `C^1`, `∫_Ω ∇ · F dΩ = -∫_Γ F · n dΓ`, with `n` the *inner* normal, the sign
-convention the chapter keeps throughout.
-
-Not formalized: Mathlib's divergence theorem
-(`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) is for boxes. A piecewise smooth
-multiply connected planar region needs the arclength measure on the boundary curve and a unit
-normal field along it, and Mathlib has neither. This is the result Green's identities
-(13.1.5)-(13.1.6) and the representation formula (13.1.23) are derived from, so it carries the
-whole skipped half of §13.1 with it, exactly as the chapter group's desc records.
-
-Blocked: rechecked 2026-09-20 (blocker 2); the reason stands. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
-convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
-principle for harmonic functions continuous up to the boundary
-(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
-a region bounded by a smooth closed curve (the divergence theorem remains
-`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
-a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
-the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2.
-The planar case is the most tractable instance of blocker 2 — Green's theorem for a region bounded
-by a `C²` Jordan curve, from Mathlib's box divergence theorem by a change of variables in a collar
-of the boundary — estimate 800–1200 lines including the arclength measure, and it would carry
-(13.1.5)–(13.1.6), (13.1.23) and the jump relations behind it.
+Theorem 13.1.2 (§13.1), the divergence theorem in the plane with the chapter's *inner* normal:
+for a bounded `C¹` plane domain `Ω : Opens ℝ²` (`hΩ : IsContDiffDomain 1 Ω`, `hb`, so
+`d + 1 = 2`) or a triangulated polygon (`𝒯 : Triangulation Ω`), with the boundary data
+`B := hΩ.boundaryData hb`, resp. `B := 𝒯.boundaryData` (`Numlib/Analysis/Sobolev/Boundary/`),
+and `F : ℝ² → ℝ²` with both components in `C¹(closure Ω)` — `ContinuousOn F (closure Ω)`,
+`ContDiffOnClosure ℝ 1 F Ω` — one has `∫ x in Ω, div F x = −∫ x, ⟪F x, n x⟫ ∂B.σ` with
+`n := −B.ν` the inner unit normal and `dΓ := B.σ` the arclength measure. Restated 2026-09-21
+(boundary round): the field `B.integral_div_eq` with the sign convention of the chapter
+(`inner_neg_right`); two theorems, `theorem_13_1_2` (`C¹`) and `theorem_13_1_2_polygon`, ~15
+lines each. The chapter's "not simply connected, boundary need not be smooth" generality is
+`theorem_13_1_2_piecewise`. Green's identities (13.1.5)–(13.1.6) follow with
+`F = v ∇u` (`BoundaryData.integral_laplacian_mul_add_eq`), as the chapter derives them; the
+representation formula (13.1.23) additionally needs the fundamental solution and a limiting
+argument on a small disc and is not planned.
 '''
+deps = ["IsContDiffDomain.boundaryData", "Triangulation.boundaryData", "BoundaryData.integral_laplacian_mul_add_eq"]
+
+[[node]]
+id = "theorem_13_1_2_piecewise"
+kind = "theorem"
+desc = '''
+Theorem 13.1.2 in the chapter's generality: a multiply connected planar region whose boundary is a
+finite union of piecewise `C²` (or merely `C¹`) Jordan curves with corners.
+
+Blocked (2026-09-21, boundary round; the `C¹` and polygonal cases are `theorem_13_1_2`): a
+region bounded by curves with corners that are neither straight (polygon) nor `C¹` — a curved
+polygon — is a Lipschitz domain and falls under the Lipschitz theory left out of scope; an
+arclength measure on a parametrized `C¹` curve as a `BoundaryData` (the plane case of a
+chart-based, Brezis-style definition through `EuclideanSpace.gram`) would cover the smooth
+multiply connected case at ~600 lines, and the curved-corner case needs the piecewise gluing of
+`Polygon.lean` for curved edges. Nothing in the chapter's proved part depends on it.
+'''
+deps = ["theorem_13_1_2"]

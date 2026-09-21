@@ -18,4 +18,13 @@ chapter that names a domain (11.3.4–11.3.9, 11.3.11, 11.3.12, 11.4.1, 11.4.4, 
 The surface works over a real Hilbert space `V` throughout, with a real bilinear form
 `a : BilinForm V` where the book uses one, reusing the vocabulary of `Chapter08/Section03`
 (`IsBoundedWith`, `IsEllipticWith`, `IsSymm`) and its bridges to `SesqForm ℝ V`.
+
+**Boundary round (2026-09-21).** The friction problem's boundary functional `j(v) = g ∫_Γ |v| ds`
+is now stated over the trace interface `BoundaryData.TraceFamily` of
+`Numlib/Analysis/Sobolev/Boundary/Data.lean` (instances: bounded `C¹` domains, polygons without
+slits): `example_11_1_2` (with the pointwise form `example_11_1_2_pointwise` on `C¹` domains),
+`example_11_2_4`, `example_11_3_11`, `example_11_4_4` (on a triangulated polygon, with the `H²`
+regularity as explicit hypotheses) and `theorem_11_4_5` — the last through Hahn–Banach on
+`L¹(Γ)` and `(L¹)' = L^∞` rather than through `H^{1/2}(Γ)`, so it no longer waits on the
+fractional trace space.
 '''

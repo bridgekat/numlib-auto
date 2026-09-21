@@ -44,38 +44,24 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.94)'
 id = "exercise_12_15"
 kind = "theorem"
 desc = '''Green's formula (12.95), Exercise 12.15: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u, v`
-smooth on a bounded plane domain `Ω`.
-
-Blocked: the *rectangle* case is now proved, as `exercise_12_15_rectangle`, by the exercise's own
-hint (`div (v ∇u) = v Δu + ∇u · ∇v`) over Mathlib's
-`MeasureTheory.integral_divergence_prod_Icc_of_hasFDerivAt_off_countable_of_le`, with the boundary
-integral written as the four sides each carrying its outward normal. What a *general* bounded plane
-domain needs, and the library does not have, is exactly two objects and one theorem: the surface
-measure `dγ` on `∂Ω` (`Measure.hausdorffMeasure 1` restricted to `frontier Ω` is definable today,
-but nothing relates it to a parametrization of the boundary, so no `∫_∂Ω` can be computed or
-integrated by parts), the outward unit normal `n` (no normal field for a `C¹` or Lipschitz boundary
-exists), and the divergence theorem on `Ω` itself — Mathlib's divergence theorems are for boxes
-(`MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable` and the plane corollary
-used here) and for nothing else. `Numlib/Analysis/Calculus/CurvilinearLaplacian` carries the
-Laplacian in polar and spherical coordinates and no integration theorem, so it does not help. This
-is `notes/frontier.md` blocker 2 in its integration form. Estimate: a Mathlib-scale project.
-
-Refreshed 2026-09-20 (agent qss5): the verdict stands. Checked in `Numlib/`: the Brezis round added
-no boundary measure, no outward normal and no divergence theorem on a domain; Green's formula
-remains blocker 2 in its integration form, and the Brezis nodes deferred on it
-(`example_9_4_stepA/D`, Theorem 9.26's Neumann clause) are still open for the same reason.
-`Numlib/Analysis/Sobolev/Zero` (Theorem 9.17) and `Numlib/Analysis/PDE/Elliptic/Regularity` (Theorem
-9.25) work on `C¹`/`C²` domains through charts without ever integrating over the boundary, so they
-do not help. Mathlib's divergence theorems are still box-only. Estimate: unchanged, a Mathlib-scale
-project (surface measure on a `C¹` boundary via the charts, the normal field, the divergence theorem
-by partition of unity).
-
-Refreshed 2026-09-21 (agent fem2): the verdict stands. The finite element nodes of this section that
-the book proves through (12.95) — `equation_12_94` (its membership in `H¹`) and `property_12_2` —
-are now proved without it, through the characterization of `H¹` by absolutely continuous
-restrictions to lines (`Triangulation.memSobolev_of_piecewise`) and Brezis's Theorem 9.17 for the
-boundary condition; nothing in `Numlib/` integrates over `∂Ω` (checked: `Numlib/Geometry/Triangulation.lean`
-reads the boundary of a polygon only as a union of edges, `Triangulation.FrontierSubsetEdges`).'''
+smooth on a bounded plane domain `Ω` — restated on a bounded `C¹` plane domain
+(`hΩ : IsContDiffDomain 1 Ω`, `hb`, `Ω : Opens (EuclideanSpace ℝ (Fin 2))`) and on a triangulated
+polygon (`𝒯 : Triangulation Ω`), with the boundary data `B := hΩ.boundaryData hb`, resp.
+`𝒯.boundaryData` (`Numlib/Analysis/Sobolev/Boundary/`): for `u : ℝ² → ℝ` with
+`ContinuousOn u (closure Ω)`, `ContDiffOnClosure ℝ 2 u Ω` and `v` with `ContinuousOn v (closure Ω)`,
+`ContDiffOnClosure ℝ 1 v Ω` (the exercise's "smooth" read as `C²(Ω̄)`, `C¹(Ω̄)`),
+`∫ x in Ω, −Δ u x * v x = ∫ x in Ω, ⟪gradient u x, gradient v x⟫ − ∫ x, ⟪gradient u x, B.ν x⟫ * v x ∂B.σ`
+with `n := B.ν` the outward unit normal and `dγ := B.σ` the arclength measure. Restated
+2026-09-21 (boundary round): it is `BoundaryData.integral_laplacian_mul_add_eq` (`Data.lean`),
+whose proof is the exercise's own hint `div (v ∇u) = v Δu + ∇u · ∇v` over the divergence theorem
+`B.integral_div_eq` — on a `C¹` domain `IsContDiffDomain.integral_div_eq` (`ContDiffDomain.lean`:
+Fubini and the fundamental theorem of calculus on graph charts, glued by a partition of unity),
+on a polygon `Triangulation.integral_div_eq` (`Polygon.lean`: the sum over the elements, interior
+edges cancelling). The rectangle case remains `exercise_12_15_rectangle`, by Mathlib's box
+theorem; two theorems `exercise_12_15` (`C¹`) and `exercise_12_15_polygon`, ~15 lines each
+(rearrange the signs). Equations (12.94) and Property 12.2 were proved earlier without this
+formula and are not touched.'''
+deps = ["exercise_12_15_rectangle", "BoundaryData.integral_laplacian_mul_add_eq", "IsContDiffDomain.boundaryData", "Triangulation.boundaryData"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15'
 
 [[node]]

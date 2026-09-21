@@ -75,31 +75,28 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 [[node]]
 id = "theorem_8_5_1"
 kind = "theorem"
-desc = '''Theorem 8.5.1: under the symmetry, boundedness and pointwise ellipticity conditions
-(8.5.6)-(8.5.8) on the elasticity tensor `C`, the regularity (8.5.14) of the data and
-`meas(Γ_D) > 0`, the weak problem (8.5.15) — `u ∈ V`, `∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫_{Γ_N}
-g · v` for all `v ∈ V` — has a unique solution, equivalent to minimizing the energy (8.5.17).
-The book leaves the proof to Exercise 8.5.3 (apply Lax-Milgram), and the `V`-ellipticity step
-needs Korn's inequality on a Lipschitz domain, alongside the trace on `Γ_D` and surface measure
-on `Γ_N`.
+desc = '''Theorem 8.5.1, the mixed displacement–traction problem: on a bounded connected `C¹` domain
+`Ω ⊆ ℝ^{d+1}` (`hΩ : IsContDiffDomain 1 Ω`, `hb`; the book's "Lipschitz" restated), with
+`σ := hΩ.boundaryMeasure hb`, `ν := hΩ.outwardNormal hb`, the componentwise trace
+`γ` of `(hΩ.traceFamily hb)` (`SobolevEuclideanVec.traceL`, decision B8), a measurable
+`Γ_D ⊆ frontier Ω` with `0 < σ Γ_D` (the book's `meas(Γ_D) > 0`) and `Γ_N := frontier Ω \ Γ_D`,
+the space `V := SobolevEuclideanVec.dirichletOn (hΩ.traceFamily hb) Γ_D = {v ∈ [H¹(Ω)]^{d+1} : γ v = 0 σ-a.e. on Γ_D}`
+(a closed subspace, `Numlib/Analysis/Sobolev/Boundary/KornSecond.lean`), an elasticity tensor `C`
+satisfying (8.5.6)–(8.5.8) (`IsElasticityTensor`), `f ∈ [L²(Ω)]^{d+1}` and a traction
+`g ∈ [L²(σ.restrict Γ_N)]^{d+1}` (8.5.14): the weak problem (8.5.15) — `u ∈ V`,
+`∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫ x in Γ_N, g x · γ v x ∂σ` for all `v ∈ V` — has a unique
+solution, equal to the minimizer of the energy (8.5.17) over `V`. Restated 2026-09-21 (boundary
+round): every object is now statable — the form is `elasticityForm Ω C` restricted to `V`, the
+load is `elasticityLoad Ω f` plus the traction functional `v ↦ ∫_{Γ_N} g · γ v dσ`, bounded by
+`‖g‖_{L²(σ)} ‖γ‖ ‖v‖` — and the proof is Lax–Milgram (`theorem_8_3_4`, `existsUnique_and_isMinOn_iff`)
+exactly as in the pure displacement case `theorem_8_5_1_dirichlet`, once the `V`-ellipticity
+`elasticityForm_isCoerciveWith` on `V` is known, i.e. Korn's inequality on the mixed space
+`SobolevEuclideanVec.norm_le_strain_of_dirichletOn`.
 
-Blocked: rechecked 2026-09-20 (agent ah6). **The pure displacement case `Γ_D = Γ`, `g` absent,
-is proved as `theorem_8_5_1_dirichlet`** in this module, on a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`:
-the space is `[H¹₀(Ω)]^{d+1} = SobolevEuclideanZeroVec (d + 1) Ω`, the form `elasticityForm Ω C`,
-the load `elasticityLoad Ω f`, and the `V`-ellipticity is Korn's *first* inequality
-`½ ∫ |∇v|² ≤ ∫ |ε(v)|²` on `[H¹₀(Ω)]^{d+1}` (`SobolevEuclideanZeroVec.korn_first`,
-`Numlib/Analysis/Sobolev/Korn.lean`: the identity `∫ |ε(v)|² = ½ ∫ |∇v|² + ½ ∫ (div v)²` by two
-integrations by parts against test functions and density) with Poincaré's inequality
-(`SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`), then `theorem_8_3_4` and
-Theorem 8.3.3 (`existsUnique_and_isMinOn_iff`). What is still missing for the mixed case of the
-book's statement, `meas(Γ_D) > 0` with a traction `g ∈ [L²(Γ_N)]^d`: (1) blocker 2 of
-`notes/frontier.md` — the trace `H¹(Ω) → L²(Γ)` and the surface measure on `Γ_N`, which define
-the space `V = {v ∈ [H¹(Ω)]^d : v = 0 on Γ_D}` and the load term `∫_{Γ_N} g · v`; neither exists
-in `Numlib/` or Mathlib (grep `trace`, `hausdorffMeasure`, `surfaceMeasure`); (2) Korn's *second*
-inequality `‖v‖_{H¹} ≤ C (‖v‖_{L²} + ‖ε(v)‖_{L²})` on `H¹(Ω)` of a Lipschitz (or `C¹`) domain and
-its consequence `‖v‖_{H¹} ≤ C ‖ε(v)‖_{L²}` on `V` for `meas(Γ_D) > 0` (a compactness argument
-through Rellich–Kondrachov, `Numlib/Analysis/Sobolev/Compactness.lean`, plus the characterization
-of the kernel of `ε` as the rigid motions), which is what fails on `H¹(Ω)` since the boundary terms
-of the two integrations by parts no longer vanish. Estimate after the trace: 400–700 lines for
-Korn's second inequality on a `C¹` domain, then one application as in the Dirichlet case.'''
-deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
+Blocked (2026-09-21, boundary round; replaces the 2026-09-20 note, whose item (1) — the trace and
+the surface measure — is now provided): on `SobolevEuclideanVec.korn_second`, Korn's second
+inequality `‖v‖_{H¹} ≤ C (‖v‖_{L²} + ‖ε(v)‖_{L²})` on `[H¹(Ω)]^{d+1}`, whose proof needs Lions's
+lemma (`f, ∇f ∈ H^{−1} ⇒ f ∈ L²`; Bogovskiĭ's operator), a research-scale formalization
+(2000+ lines) recorded with its route in `KornSecond.toml`. After it: ~200 lines here (the
+compactness argument and the rigid motions are `norm_le_strain_of_dirichletOn`).'''
+deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex", "SobolevEuclideanVec.norm_le_strain_of_dirichletOn", "SobolevEuclideanVec"]

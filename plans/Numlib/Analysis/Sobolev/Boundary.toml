@@ -1,0 +1,83 @@
+desc = '''
+The boundary theory of Sobolev spaces on bounded `C¹` domains and on plane polygons, at the level
+that closes blocker 2 of `notes/frontier.md` without geometric measure theory: the surface
+measure `σ` and the outward unit normal `ν` on `∂Ω`, the divergence theorem
+`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` for fields of class `C¹(Ω̄)`, the trace `W^{1,p}(Ω) → L^p(σ)` and
+Green's formula for Sobolev functions. Design record: `notes/boundary/planning-brief.md`
+(decisions B1–B9), plan report `notes/boundary/plan-report.md`.
+
+Two concrete boundary classes, one abstract interface (B1):
+
+* **bounded `C¹` domains** in the *graph* form `IsContDiffDomain 1 Ω` of
+  `Numlib/Analysis/Sobolev/Domain.lean` — after a rigid motion `T`, `Ω ∩ B(x₀, r)` is the region
+  *above* the graph of a `C¹` function `g` (`IsBoundaryGraphAt`); the surface measure is the
+  pushforward of `√(1 + |∇g|²) dx'` under the graph parametrization, the normal is
+  `T.linear⁻¹ (∇g, −1) / √(1 + |∇g|²)` (the sign that points out of the region above the graph;
+  Grisvard's `(−∇g, 1)` is for a region *below* the graph), and the divergence theorem is Fubini,
+  the fundamental theorem of calculus in the vertical variable and differentiation under the
+  integral in the horizontal ones — no Piola identity, no area formula;
+* **plane polygons** as triangulations (`Triangulation Ω` of `Numlib/Geometry/Triangulation.lean`):
+  the edge measure is one-dimensional Lebesgue measure transported along each boundary edge, the
+  normal is the outward edge normal of the element, and the divergence theorem is the sum over the
+  elements of the theorem on a triangle, the shared edges cancelling. The trace on a polygon is
+  assembled from the traces on its triangles (each triangle is a convex extension domain with a
+  transversal field), under the no-slit hypothesis `Triangulation.InteriorEdgesSubset`;
+
+and the abstract interface `BoundaryData Ω` (`Boundary/Data.lean`: `σ`, `ν`, the divergence
+identity for `C¹(Ω̄)` fields) with `BoundaryData.TraceFamily` (a bounded trace at every
+`1 ≤ p < ∞` restricting continuous representatives, with Green's formula at conjugate exponents),
+over which every consumer of the two surfaces is stated once. No transversal field is part of
+`BoundaryData` (a polygon pinched at a vertex has none); the Nečas construction of the trace from a
+transversal field lives in `Boundary/Trace.lean` and is what the `C¹` instance and the triangles
+use.
+
+Modules (dependency order; sizes are estimates of Lean lines):
+
+* `Gram` (~200): the Gram determinant `gramDet L = det (Lᵀ L)` of a linear map `ℝ^d → ℝ^N` and
+  its behaviour under composition with a square map and with an isometry; `1 + |∇g|²` for a graph.
+* `Data` (~250): `EuclideanSpace.div`, the structure `BoundaryData`, its consequences for classical
+  Green's formulas, `BoundaryData.TraceFamily` and its consequences (`W_0 ⊆ ker`, the `H²` Green
+  formula with the normal trace, the Neumann boundary condition).
+* `GraphMeasure` (~1200): `graphParam`, `graphDomain`, `graphDensity`, `graphMeasure`,
+  `graphNormal`; their independence of the chart (Gram + `map_withDensity_abs_det_fderiv_eq_addHaar`;
+  tangency, outwardness); the atlas-and-partition definitions `IsContDiffDomain.boundaryMeasure` and
+  `IsContDiffDomain.outwardNormal` with their chart characterizations.
+* `Divergence` (~900): the divergence theorem on the epigraph of a `C¹` function for fields of class
+  `C¹(Ω̄)` with compact support, its rotated form on a graph chart, the whole-space identity
+  `∫ div G = 0`.
+* `Density` (~700): the predicates `HasSmoothDensity` / `HasUniformSmoothDensity` (density of
+  `C_c^∞(ℝ^N)` restrictions in `W^{1,p}(Ω)`, with uniform convergence on `Ω̄` for functions
+  continuous up to the boundary), the segment property, and the density theorem for domains with the
+  segment property — bounded `C¹` and Lipschitz graph domains, bounded convex sets.
+* `Trace` (~900): Nečas's inequality from a transversal field, the trace by extension from the dense
+  subspace, Green's formula by density, compactness of the trace from Rellich; the constructor
+  `BoundaryData.traceFamily`.
+* `Polygon` (~1400): edge measures and edge normals, the divergence theorem on the reference
+  triangle (Fubini + FTC) and on every triangle (affine transport), boundary edges of a triangulation,
+  the shared-edge geometry, the divergence theorem on a triangulated domain, `Triangulation.boundaryData`.
+* `ChartGraph` (~500): the chart ⇒ graph bridge `IsContDiffChartDomain.isContDiffDomain` by the
+  implicit function theorem (decision B5, D9).
+* `ContDiffDomain` (~600, wave B): the assembly on a bounded `C¹` domain — `IsContDiffDomain.boundaryData`,
+  the transversal field, `IsContDiffDomain.traceFamily`, compactness of the trace.
+* `PolygonTrace` (~1100, wave B): the trace on a triangulated polygon glued from the triangles,
+  the agreement of one-sided traces on interior edges, Green's formula, `Triangulation.traceFamily`,
+  the piecewise-Sobolev membership and continuity theorems (Atkinson–Han Examples 7.2.7–7.2.8).
+* `Kernel` (~600, wave C): `ker traceL = W_0^{1,p}(Ω)` on a bounded `C¹` domain (Evans §5.5,
+  Theorem 2).
+* `KornSecond` (blocked): Korn's second inequality and the mixed elasticity problem, planned with
+  the route (Lions's lemma) and no proof.
+
+Order of attack: wave A in parallel — `Gram` + `GraphMeasure` (one agent), `Data` (first, tiny),
+`Divergence`, `Density`, `Trace`, `Polygon`, `ChartGraph`; wave B — `ContDiffDomain`,
+`PolygonTrace`; wave C — `Kernel`, the surface consumers.
+
+Conventions: `E := EuclideanSpace ℝ (Fin N)` (or `Fin (d + 1)` when a graph over `ℝ^d` is in
+play), `Ω : Opens E`, integrals over `Ω` are `∫ x in (Ω : Set E), … ∂volume`, `W^{1,p}(Ω)` is
+`SobolevEuclidean N 1 p Ω`, `fn u` is `SobolevMultiIndex.fn u`, `∂ᵢ u` is
+`SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`, an element of `Lp ℝ p (volume.restrict Ω)`.
+"`F ∈ C¹(Ω̄)`" is the pair `ContinuousOn F (closure Ω)`, `ContDiffOnClosure ℝ 1 F Ω`
+(`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`); it is the primary regularity of the divergence
+theorem because the books state Green's formulas for `C¹(Ω̄)` functions, the graph-piece proof
+handles it at no extra cost, and deriving it from the `C¹_c(ℝ^N)` case would need a
+`C¹(Ω̄) → C¹(ℝ^N)` extension theorem that the library does not have.
+'''

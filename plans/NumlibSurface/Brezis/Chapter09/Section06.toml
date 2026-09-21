@@ -36,9 +36,31 @@ the same conclusions for `u ∈ H^1(Ω)` with `∫ ∇u·∇φ + ∫ uφ = ∫ f
 for `f ∈ H^m(Ω)` on a `C^{m+2}` domain (`Elliptic.regularity_neumann_higher`). The book says
 "the proof of Theorem 9.26 is entirely analogous" and gives none; the backbone node records the
 route (the same translation estimates with the test space of functions vanishing near the
-lateral boundary of the chart cylinder) and its cost, and it is the long tail of the plan. ★'''
+lateral boundary of the chart cylinder) and its cost, and it is the long tail of the plan. ★
+The boundary condition `∂u/∂n = 0` that the `H²` solution satisfies, which the 2026-09-17 note
+called meaningless without a trace, is now `theorem_9_26_normalDeriv` (boundary round,
+2026-09-21).'''
 deps = ["IsOfClassC", "IsWeakSolutionNeumann", "Elliptic.regularity_neumann"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.26"
+
+[[node]]
+id = "theorem_9_26_normalDeriv"
+kind = "theorem"
+desc = '''Theorem 9.26, the boundary condition: on a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`,
+`hb`; the `C²` hypothesis of Theorem 9.26 is needed only for the `H²` regularity, which is here
+a hypothesis), if `U₂ ∈ H²(Ω)` (`SobolevEuclidean N 2 2 Ω`) is such that its `H¹` shadow
+`toLowerOrderL U₂` is a weak solution of the Neumann problem (49),
+`IsWeakSolutionNeumann Ω f (toLowerOrderL … U₂)`, then its normal derivative in the trace sense
+vanishes: `(hΩ.traceFamily hb).normalTrace U₂ =ᵐ[hΩ.boundaryMeasure hb] 0`, where
+`normalTrace U₂ = ∑ᵢ νᵢ · γ(∂ᵢU₂)` (`BoundaryData.TraceFamily.normalTrace`, the `∂u/∂n` of
+the Comments on chapter 9, 7 (iii)). This is the sense in which the Neumann condition
+`∂u/∂n = 0` on `Γ` of (44) holds for the `H²` solution of Theorem 9.26. Restated 2026-09-21
+(boundary round): `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq`
+(`Numlib/Analysis/Sobolev/Boundary/Data.lean`) through `isWeakSolutionNeumann_iff`. ★, ~20
+lines. Together with `Elliptic.regularity_neumann` (deferred) it is the full Theorem 9.26 with
+its boundary condition.'''
+deps = ["IsWeakSolutionNeumann", "isWeakSolutionNeumann_iff", "BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq", "IsContDiffDomain.traceFamily"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.26 and Comments on chapter 9, 7 (iii)"
 
 [[node]]
 id = "remark_9_24"
@@ -48,9 +70,29 @@ second-order elliptic operator — if `u ∈ H^1_0(Ω)` solves (50) with `f ∈ 
 elliptic and `a_i ∈ C(Ω̄)` then `u ∈ H²(Ω)`, and for `m ≥ 1`, `f ∈ H^m`, `a_ij ∈ C^{m+1}(Ω̄)`,
 `a_i ∈ C^m(Ω̄)` give `u ∈ H^{m+2}(Ω)` (with bounded derivatives of the coefficients when `Ω` is
 unbounded, footnote 26). `Elliptic.regularity_dirichlet_general`, planned with a route and no
-proof in the book; the Neumann half of the remark ("or Neumann") is not stated separately, being
-`theorem_9_26` with the same replacement. ★'''
+proof in the book; the Neumann half of the remark ("or Neumann") is `remark_9_24_neumann`
+(boundary round, 2026-09-21). ★'''
 deps = ["IsWeakSolutionGeneralElliptic", "Elliptic.regularity_dirichlet_general"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 24"
+
+[[node]]
+id = "remark_9_24_neumann"
+kind = "theorem"
+desc = '''Remark 24, the Neumann half ("or Neumann"): the conclusions of Theorem 9.26 for the Neumann
+problem of the general operator `−∑ ∂ⱼ(aᵢⱼ ∂ᵢu) + ∑ aᵢ ∂ᵢu + a₀ u = f` — the weak solution
+`u ∈ H¹(Ω)` with `generalForm Ω A a₁ a₀ u φ = ⟪f, fn φ⟫` for all `φ ∈ H¹(Ω)` lies in `H²(Ω)`
+(and in `H^{m+2}` for smoother data) — together with the conormal boundary condition
+`∑ᵢⱼ aᵢⱼ νⱼ γ(∂ᵢu) = 0` σ-a.e. on `Γ` in the trace sense, which the boundary round makes
+statable (`BoundaryData.TraceFamily.normalTrace`'s pattern with the matrix `A`; the argument of
+`normalTrace_eq_zero_of_forall_laplaceForm_eq` with Green's formula for the conormal derivative).
+
+Blocked (2026-09-21, boundary round): the `H²` regularity for the Neumann problem of the general
+operator, `Elliptic.regularity_neumann` with variable coefficients, is planned nowhere
+(`regularity_neumann` is deferred even for the Laplacian, `regularity_dirichlet_general` is
+deferred for the Dirichlet problem); the boundary-condition clause alone is ~150 lines once
+`H²` is a hypothesis, as in `theorem_9_26_normalDeriv`, and would need `generalForm`'s Green
+formula. The book gives no proof.'''
+deps = ["remark_9_24", "theorem_9_26_normalDeriv", "Elliptic.regularity_neumann"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 24"
 
 [[node]]

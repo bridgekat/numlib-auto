@@ -160,19 +160,22 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition
 [[node]]
 id = "example_9_4_stepA"
 kind = "theorem"
-desc = '''Example 4, Step A: for `Ω` bounded of class `C¹`, every classical solution of the Neumann
-problem (44) (`IsClassicalSolutionNeumann Ω n f u`, for the outward unit normal `n`) is the
-function of a weak solution (`IsWeakSolutionNeumann Ω f U`). The proof is Green's formula
-`∫_Ω (Δu) v = ∫_Γ (∂u/∂n) v dσ - ∫_Ω ∇u·∇v` for `u ∈ C²(Ω̄)`, `v ∈ C¹(Ω̄)`, followed by the
-density of `C¹(Ω̄)` in `H^1(Ω)` (Corollary 9.8).
-
-Blocked: Green's formula with a boundary term needs the surface measure `dσ` on `Γ` and the
-divergence theorem on a `C¹` domain, neither of which Mathlib has
-(`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable` is for boxes; `notes/frontier.md`
-blocker 2, `notes/fem-roadmap.md` Decision C). The statement itself is meaningful, since the
-classical solution's normal derivative is a pointwise object; only the proof is missing.
-Estimate: the whole boundary-measure programme.'''
-deps = ["IsClassicalSolutionNeumann", "IsWeakSolutionNeumann", "corollary_9_8"]
+desc = '''Example 4, Step A: for `Ω` bounded of class `C¹` — `hΩ : IsContDiffDomain 1 Ω`,
+`hb : Bornology.IsBounded Ω` (the graph form, equivalent to `IsClassC1` by
+`isContDiffDomain_of_isClassC1`), with the outward unit normal `n := hΩ.outwardNormal hb`
+(`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`, defined at every point of `Γ`) — every
+classical solution of the Neumann problem (44) (`IsClassicalSolutionNeumann Ω n f u`: `u ∈ C²(Ω̄)`,
+`−Δu + u = f` on `Ω`, `∂u/∂n = 0` on `Γ`) is the function of a weak solution
+(`IsWeakSolutionNeumann Ω f U` with `fn U =ᵐ u`, `f ∈ L²(Ω)` with `u`'s datum as
+representative). Restated 2026-09-21 (boundary round). The proof is the book's: Green's formula
+`∫_Ω (Δu) v = ∫_Γ (∂u/∂n) v dσ − ∫_Ω ∇u·∇v` for `u ∈ C²(Ω̄)`, `v ∈ C¹(Ω̄)` is
+`BoundaryData.integral_laplacian_mul_add_eq` for `B := hΩ.boundaryData hb` (`Data.lean`; the
+divergence theorem `IsContDiffDomain.integral_div_eq` on `F = v ∇u`), the boundary term vanishes
+by the boundary condition, so `∫ ∇u·∇v + ∫ u v = ∫ f v` for every `v ∈ C_c^∞(ℝ^N)` restricted to
+`Ω`, and the density of these in `H¹(Ω)` (`corollary_9_8`, or `SobolevEuclidean.HasSmoothDensity`)
+with the continuity of both sides in `v` extends it to all `v ∈ H¹(Ω)`; `u ∈ H¹(Ω)` by
+`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`. ★★, ~120 lines.'''
+deps = ["IsClassicalSolutionNeumann", "IsWeakSolutionNeumann", "corollary_9_8", "BoundaryData.integral_laplacian_mul_add_eq", "IsContDiffDomain.boundaryData"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
 
 [[node]]
@@ -190,15 +193,18 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Exampl
 [[node]]
 id = "example_9_4_stepD"
 kind = "theorem"
-desc = '''Example 4, Step D, boundary clause: if a weak solution of (44) is `C²(Ω̄)` on a bounded
-`C¹` domain then, beyond `-Δu + u = f`, `∂u/∂n = 0` on `Γ`, so `u` is a classical solution
-(`IsClassicalSolutionNeumann`). The proof returns to (47) with `v ∈ C¹(Ω̄)` and reads
-`∫_Γ (∂u/∂n) v dσ = 0` for all such `v`.
-
-Blocked: as `example_9_4_stepA`, Green's formula with its boundary term and the surface measure
-on `Γ` are not available (`notes/frontier.md` blocker 2); the interior clause is
-`example_9_4_stepD_interior` and is not blocked.'''
-deps = ["example_9_4_stepD_interior", "example_9_4_stepA", "IsClassicalSolutionNeumann"]
+desc = '''Example 4, Step D, boundary clause: if a weak solution `U` of (44) on a bounded `C¹` domain
+(`hΩ`, `hb`, `n := hΩ.outwardNormal hb`) has a representative `u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`,
+`ContinuousOn u (closure Ω)`, with `∇u` extending continuously to `Γ`), then beyond
+`−Δu + u = f` (`example_9_4_stepD_interior`) one has `∂u/∂n = 0` at every point of `Γ`, so `u` is
+a classical solution (`IsClassicalSolutionNeumann Ω n f u`). Restated 2026-09-21 (boundary
+round): return to (47) with `v ∈ C_c^∞(ℝ^N)`: Green's formula `BoundaryData.integral_laplacian_mul_add_eq`
+and the interior equation give `∫_Γ (∂u/∂n) v dσ = 0` for all such `v`, so `∂u/∂n = 0` σ-a.e.
+(`ae_eq_zero_of_integral_contDiff_smul_eq_zero` on `σ := hΩ.boundaryMeasure hb`, any measure),
+and a function continuous on `Γ` vanishing σ-a.e. vanishes everywhere on `Γ` because every
+relatively open piece of `Γ` has positive surface measure
+(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`). ★★, ~100 lines.'''
+deps = ["example_9_4_stepD_interior", "example_9_4_stepA", "IsClassicalSolutionNeumann", "BoundaryData.integral_laplacian_mul_add_eq", "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
 
 [[node]]

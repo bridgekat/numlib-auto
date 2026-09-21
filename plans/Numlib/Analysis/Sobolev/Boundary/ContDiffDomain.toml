@@ -1,0 +1,118 @@
+desc = '''
+The assembly on a bounded `C¹` domain (decisions B1–B4, B7 of
+`notes/boundary/planning-brief.md`): from the local divergence theorem on a graph chart
+(`Boundary/Divergence.lean`), the surface measure and normal with their chart characterizations
+(`Boundary/GraphMeasure.lean`) and the partition of unity of the chosen atlas, the divergence
+theorem `∫_Ω div F = ∫ ⟪F, ν⟫ dσ` for `F ∈ C¹(Ω̄)`, hence `IsContDiffDomain.boundaryData`; the
+transversal field `w = c ∑ θᵢ Tᵢ⁻¹(−e_N)` (each chart's downward direction has
+`⟪Tᵢ⁻¹(−e_N), νᵢ⟫ = 1/√(1 + |∇gᵢ|²) > 0`); with the density theorems of `Boundary/Density.lean`
+(a bounded `C¹` graph domain has the segment property) the abstract trace of `Boundary/Trace.lean`
+gives `IsContDiffDomain.traceFamily`, and Rellich–Kondrachov (`Compactness.lean`) its
+compactness. This is the module the `C¹`-domain consumers of the Atkinson–Han and Brezis surfaces
+import: Theorem 7.3.10, Proposition 7.6.1, Examples 11.1.2–11.3.11 on a `C¹` domain, Brezis
+Example 4 of §9.5 and the Neumann boundary condition of Theorem 9.26.
+
+Wave B, ~600 lines. Imports `Boundary/GraphMeasure.lean`, `Boundary/Divergence.lean`,
+`Boundary/Trace.lean`, `Boundary/Density.lean`, `Numlib/Analysis/Sobolev/Compactness.lean`.
+Notation: `E := EuclideanSpace ℝ (Fin (d + 1))`, `Ω : Opens E`,
+`hΩ : IsContDiffDomain 1 (Ω : Set E)`, `hb : Bornology.IsBounded (Ω : Set E)`,
+`a := hΩ.graphAtlas hb`.
+'''
+
+[[node]]
+id = "IsBoundaryGraphAt.integral_div_eq_graphMeasure"
+kind = "theorem"
+desc = '''**The divergence theorem on a graph chart, in surface-measure form**: for an open `Ω ⊆ E`, a
+graph chart `(T, g)` at `(x₀, r)` and `F : E → E` with `tsupport F ⊆ Metric.ball x₀ r`,
+`ContinuousOn F (closure Ω)`, `ContDiffOnClosure ℝ 1 F Ω`,
+`∫ y in Ω, div F y = ∫ x, ⟪F x, graphNormal T g x⟫_ℝ ∂(graphMeasure T g (graphDomain T g x₀ r))`.
+`IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset` (`Divergence.lean`) gives the right side
+as `∫ x', ⟪F (graphParam T g x'), T.linear⁻¹ (snocLast (gradient g x') (−1))⟫`, whose integrand
+vanishes off `graphDomain T g x₀ r` (`F = 0` off the ball); `integral_graphMeasure` writes the
+surface integral as `∫ x' in graphDomain, graphDensity g x' • ⟪F (graphParam x'), graphNormal T g (graphParam x')⟫`,
+and `graphNormal T g (graphParam T g x') = (graphDensity g x')⁻¹ • T.linear⁻¹ (snocLast (gradient g x') (−1))`
+(`init_apply_graphParam`), so the densities cancel (`graphDensity_pos`). ★'''
+deps = ["IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset", "EuclideanSpace.integral_graphMeasure", "EuclideanSpace.graphNormal", "EuclideanSpace.graphDomain"]
+
+[[node]]
+id = "IsContDiffDomain.integral_div_eq"
+kind = "theorem"
+desc = '''**The divergence theorem on a bounded `C¹` domain** (Atkinson–Han §7.6 "Gauss's formula",
+Grisvard Theorem 1.5.3.1 for classical fields; decision B4): for `hΩ : IsContDiffDomain 1 Ω`,
+`hb : Bornology.IsBounded Ω` and `F : E → E` with `ContinuousOn F (closure Ω)` and
+`ContDiffOnClosure ℝ 1 F Ω`,
+`∫ x in (Ω : Set E), div F x = ∫ x, ⟪F x, hΩ.outwardNormal hb x⟫_ℝ ∂(hΩ.boundaryMeasure hb)`.
+Proof with the chosen atlas `a` and its partition `θ₀ + ∑ θᵢ = 1`: `F = θ₀ • F + ∑ᵢ θᵢ • F`
+pointwise, each piece of class `C¹(Ω̄)` (`ContDiffOnClosure.mul`), and `div` and the integral are
+additive. (i) `∫_Ω div (θ₀ • F) = 0`: `K := tsupport θ₀ ∩ closure Ω` is a compact subset of `Ω`
+(`inter_closure_subset_of_disjoint_frontier`, `IsClosed.isCompact_inter_closure_of_isBounded` of
+`Chart.lean`, with `a.disjoint_tsupport_θ₀`); take `χ` smooth with `χ = 1` on `K` and
+`tsupport χ ⊆ Ω` (`IsCompact.exists_contDiff_eqOn_one`); `H := (χ * θ₀) • F` is `C¹` on all of
+`E` (on `Ω` as a product, and zero on a neighbourhood of every point off `tsupport χ ⊆ Ω`) with
+compact support, `H = θ₀ • F` on `Ω` and `div H = 0` off `Ω`, so
+`∫_Ω div (θ₀ • F) = ∫ div H = 0` (`EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport`).
+(ii) `∫_Ω div (θᵢ • F) = ∫ ⟪θᵢ • F, graphNormal (a.T i) (a.g i)⟫ d(graphMeasure … (a.graphDomain i))`
+by `IsBoundaryGraphAt.integral_div_eq_graphMeasure` (`tsupport (θᵢ • F) ⊆ tsupport θᵢ ⊆ ball (a.x i) (a.r i)`),
+`= ∫ θᵢ x * ⟪F x, hΩ.outwardNormal hb x⟫ d(graphMeasure …)` since the graph measure is carried by
+`frontier Ω ∩ ball (a.x i) (a.r i)` (`graphMeasure_compl_image`, `IsBoundaryGraphAt.graphParam_image_graphDomain`)
+where `outwardNormal = graphNormal (a.T i) (a.g i)` (`outwardNormal_eq_graphNormal_atlas`).
+(iii) Sum: `∑ᵢ ∫ θᵢ ⟪F, ν⟫ dσᵢ = ∫ ⟪F, ν⟫ dσ` is `integral_boundaryMeasure`
+(`integral_withDensity_eq_integral_smul`, `integral_finset_sum_measure`). Integrability throughout:
+`div F` is bounded on the bounded `Ω` (`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`-type
+bound on the compact closure), `⟪F, ν⟫` is bounded (`F` continuous on the compact `closure Ω`,
+`‖ν‖ = 1` a.e.) and `σ` finite. ★★★, ~300 lines.'''
+deps = ["IsBoundaryGraphAt.integral_div_eq_graphMeasure", "IsContDiffDomain.boundaryMeasure", "IsContDiffDomain.outwardNormal", "GraphAtlas", "integral_fderiv_apply_eq_zero_of_hasCompactSupport", "ContDiffOnClosure.mul", "inter_closure_subset_of_disjoint_frontier", "IsClosed.isCompact_inter_closure_of_isBounded"]
+
+[[node]]
+id = "IsContDiffDomain.boundaryData"
+kind = "definition"
+desc = '''**A bounded `C¹` domain is a `BoundaryData`**:
+`IsContDiffDomain.boundaryData (hΩ : IsContDiffDomain 1 (Ω : Set E)) (hb : Bornology.IsBounded (Ω : Set E)) : BoundaryData Ω`
+with `σ := hΩ.boundaryMeasure hb`, `ν := hΩ.outwardNormal hb`, and the fields `hb`,
+`isFiniteMeasure_boundaryMeasure`, `boundaryMeasure_compl_frontier`,
+`aestronglyMeasurable_outwardNormal`, `ae_norm_outwardNormal`, `IsContDiffDomain.integral_div_eq`.
+Simp lemmas `boundaryData_σ`, `boundaryData_ν`. The surface nodes on `C¹` domains take
+`(hΩ.boundaryData hb)`; the chart characterizations `boundaryMeasure_restrict_ball` and
+`outwardNormal_eq_graphNormal` are how they compute with it. ★'''
+deps = ["BoundaryData", "IsContDiffDomain.integral_div_eq"]
+
+[[node]]
+id = "IsContDiffDomain.hasTransversalField"
+kind = "theorem"
+desc = '''**A bounded `C¹` domain has a transversal field**: `(hΩ.boundaryData hb).HasTransversalField`.
+For the chosen atlas `a` let `Mᵢ` bound `‖gradient (a.g i)‖` on the compact
+`closure (a.graphDomain i)` (`isBounded_graphDomain`, `continuous_graphDensity`), let
+`c := max over i of √(1 + Mᵢ²)` (`≥ 1`), and set
+`w x := c • ∑ i, a.θ i x • a.T i |>.linearIsometryEquiv.symm (-(EuclideanSpace.single (Fin.last d) 1))`
+— smooth (`a.contDiff_θ`), compactly supported (`a.hasCompactSupport_θ`). For `x ∈ frontier Ω`
+and `i` with `θᵢ x ≠ 0`, `x ∈ ball (a.x i) (a.r i)`, so `outwardNormal x = graphNormal (a.T i) (a.g i) x`
+and `⟪Tᵢ⁻¹(−e_N), graphNormal x⟫ = ⟪−e_N, snocLast (∇gᵢ x') (−1)⟫ / graphDensity (a.g i) x' = 1 / √(1 + ‖∇gᵢ x'‖²) ≥ 1/c`
+(`LinearIsometryEquiv.inner_map_map`, `snocLast_apply_last`, `x' = init (Tᵢ x) ∈ a.graphDomain i`);
+hence `⟪w x, ν x⟫ = c ∑ θᵢ x ⟪Tᵢ⁻¹(−e_N), ν x⟫ ≥ ∑ θᵢ x = 1` (`a.sum_θ`, `a.θ_mem_Icc`).
+`σ`-a.e. since `σ` is carried by `frontier Ω`. ★★, ~150 lines.'''
+deps = ["IsContDiffDomain.boundaryData", "BoundaryData.HasTransversalField", "IsContDiffDomain.outwardNormal", "GraphAtlas", "EuclideanSpace.graphNormal"]
+
+[[node]]
+id = "IsContDiffDomain.traceFamily"
+kind = "definition"
+desc = '''**The trace theorem on a bounded `C¹` domain** (Atkinson–Han Theorem 7.3.10 (a), (b) with
+`Lipschitz` restated as `C¹`; Grisvard Theorem 1.5.1.3 into `L^p(Γ)`; Brezis Comments on
+chapter 9, 7):
+`IsContDiffDomain.traceFamily (hΩ : IsContDiffDomain 1 (Ω : Set E)) (hb : Bornology.IsBounded (Ω : Set E)) : (hΩ.boundaryData hb).TraceFamily := BoundaryData.traceFamily _ (hΩ.hasTransversalField hb) (fun p _ hp ↦ (hΩ.hasSegmentProperty).hasSmoothDensity hb hp) (fun p _ hp ↦ (hΩ.hasSegmentProperty).hasUniformSmoothDensity hb hp)`
+(`Density.lean`; equivalently `IsContDiffChartDomain.hasSmoothDensity` through
+`IsContDiffDomain.isContDiffChartDomain` for the first argument). With the abbreviation
+`IsContDiffDomain.traceL hΩ hb p hp := (hΩ.traceFamily hb).traceL p hp : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] Lp ℝ p (hΩ.boundaryMeasure hb)`
+and the restatements `IsContDiffDomain.traceL_ae_eq_of_continuousOn`, `IsContDiffDomain.green`,
+`IsContDiffDomain.traceL_eq_zero_of_mem_zero` for the surface. ★'''
+deps = ["BoundaryData.traceFamily", "IsContDiffDomain.hasTransversalField", "HasSegmentProperty.hasSmoothDensity", "IsBoundaryOfClass.hasSegmentProperty"]
+
+[[node]]
+id = "IsContDiffDomain.isCompactOperator_traceL"
+kind = "theorem"
+desc = '''**Compactness of the trace on a bounded `C¹` domain** (Atkinson–Han Theorem 7.3.10 (c)): for
+`p : ℝ≥0` with `1 ≤ p` and `hd : p < d + 1 ∨ 1 ≤ d` (the hypothesis of
+`SobolevEuclidean.isCompactEmbedding_fnL`, which excludes only the line `d = 0` at large `p`),
+`IsCompactOperator (hΩ.traceL hb p hp)`. `BoundaryData.isCompactOperator_traceL` with Rellich's
+theorem `SobolevEuclidean.isCompactEmbedding_fnL (hΩ.isContDiffChartDomain) hb hd`
+(`Compactness.lean`). ★'''
+deps = ["BoundaryData.isCompactOperator_traceL", "IsContDiffDomain.traceFamily", "SobolevEuclidean.isCompactEmbedding_fnL", "IsContDiffDomain.isContDiffChartDomain"]

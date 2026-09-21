@@ -51,20 +51,17 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.9"
 id = "example_11_3_11"
 kind = "theorem"
 desc = '''
-Example 11.3.11: Theorem 11.3.9 applied to the variational inequality of Example 11.1.2 — the
-simplified friction problem — shows it has a unique solution. Not formalized: it is
-`theorem_11_3_9` instantiated on `H¹(Ω)` with `j v = g ∫_Γ |v| ds`, so it needs a Sobolev space and
-a trace on `Γ`; §11.3's module doc lists it beside Example 11.3.10 for that reason.
-
-Blocked: rechecked 2026-09-20 after the Brezis backbone. Example 11.3.10 beside it is now proved
-(`example_11_3_10`, through `theorem_11_3_9_zero_existsUnique`); this one still needs blocker 2 of
-`notes/frontier.md`, the trace operator `H¹(Ω) → L¹(Γ)` and the surface measure on `∂Ω`, which
-exist nowhere in `Numlib/` (see `example_11_1_2`). With a bounded trace `T`, it is `theorem_11_3_9`
-on `V = H¹(Ω)`, `K = V`, `a = Elliptic.laplaceForm Ω` (`Elliptic.laplaceForm_isCoerciveWith_one`,
-`laplaceForm_isBoundedWith_one`) and `j = g ‖T ·‖_{L¹(Γ)}`, convex and continuous; estimate 40
-lines after the trace.
+Example 11.3.11: Theorem 11.3.9 applied to the variational inequality of Example 11.1.2 — for
+`B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (bounded `C¹` domains, polygons without slits),
+`g > 0`, `f ∈ L²(Ω)`, the problem `u ∈ V = H¹(Ω)`, `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for
+all `v ∈ V`, with `a = Elliptic.laplaceForm Ω`, `ℓ = Elliptic.load Ω f` and
+`j v = g * ∫ |𝒯.traceL 2 _ v| ∂B.σ`, has a unique solution
+(`IsVariationalInequalitySolution`). Restated 2026-09-21 (boundary round): `theorem_11_3_9` on
+`V`, `K = V`, `a` bounded and `V`-elliptic (`Elliptic.laplaceForm_isCoerciveWith_one`,
+`laplaceForm_isBoundedWith_one`), `j` convex, l.s.c. (continuous) and proper; the same conclusion
+as `example_11_2_4` by the other route. ★, ~40 lines.
 '''
-deps = ["theorem_11_3_9", "example_11_2_4"]
+deps = ["theorem_11_3_9", "example_11_2_4", "BoundaryData.TraceFamily"]
 
 [[node]]
 id = "example_11_3_10"

@@ -60,33 +60,30 @@ desc = '''
 Section 13.2.1, (13.2.19): with `u_n` the double layer potential of the Nystrom density `rho_n`,
 `max_{closure D_i} abs (u - u_n) <= (pi + norm K) * norm (rho - rho_n)_infinity`.
 
-**Obstruction (sharpened; the earlier note here described the wrong argument).** The book''s
+**Obstruction (sharpened; the earlier note here described the wrong argument).** The book's
 derivation is (13.2.16) plus (13.2.17): `u - u_n` is harmonic on `D_i` and continuous on its
 closure, so by the maximum principle its sup is attained on `S`; and on `S` its value is given by
 the **jump relation** `u(P) - u_n(P) = -pi (rho - rho_n)(P) + int_S (rho - rho_n)(Q) d/dn_Q log
 norm (P - Q) dS_Q`. The jump relations (13.1.7)-(13.1.8) are exactly the potential theory the rest
-of Section 13.1 is skipped for, and the statement also needs the double layer potential as a
-function on the *region* -- an integral over the boundary with surface measure and normal field --
-which Chapter13/Section01 already records as out of reach. The maximum principle alone is within
-range of Mathlib''s `HarmonicContOnCl`; the jump relation is not.
+of Section 13.1 is skipped for. The maximum principle alone is within range of Mathlib's
+`HarmonicContOnCl`; the jump relation is not.
 
 There is no singularity subtraction in Atkinson-Han Section 13.2.1; the earlier note here described
-a scheme from Atkinson''s own monograph instead. This node belongs on the skip list beside the rest
+a scheme from Atkinson's own monograph instead. This node belongs on the skip list beside the rest
 of the potential theory.
 
-Blocked: rechecked 2026-09-20 (blocker 2); the reason stands — the jump relations of the double
-layer potential and the potential as a function on the region. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
-convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
-principle for harmonic functions continuous up to the boundary
-(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
-a region bounded by a smooth closed curve (the divergence theorem remains
-`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
-a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
-the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2. The maximum-principle half
-is now Mathlib's `HarmonicContOnCl` machinery; the jump relation is not, and waits for
-`theorem_13_1_2`.
+Blocked: rechecked 2026-09-21 (boundary round). What changed: the double layer potential as a
+function on the region, `u(P) = ∫_S ρ(Q) ∂/∂n_Q log |P − Q| dS_Q`, is now *definable* on a
+bounded `C¹` plane domain — the arclength measure `dS` is `IsContDiffDomain.boundaryMeasure`
+and the normal `n_Q` is `IsContDiffDomain.outwardNormal` (up to the chapter's inner-normal sign),
+`Numlib/Analysis/Sobolev/Boundary/`; and Green's identities are `theorem_13_1_2`. What remains
+is the jump relation of the double layer potential across `S` (the limit of the potential at a
+boundary point from inside equals `−π ρ(P) + ∫_S …`), a singular-integral argument (the principal
+value of the kernel at the boundary, `theorem_13_1_1`'s potential route) that neither Mathlib nor
+`Numlib/` has; estimate 800+ lines on the `C²` boundary. The maximum-principle half is Mathlib's
+`HarmonicContOnCl` machinery.
 '''
-deps = ["equation_13_2_7"]
+deps = ["equation_13_2_7", "AtkinsonHan.Chapter13.theorem_13_1_2"]
 
 [[node]]
 id = "equation_13_2_32"

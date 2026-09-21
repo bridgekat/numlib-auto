@@ -1,0 +1,349 @@
+desc = '''
+The surface measure and the outward unit normal of a bounded `C¹` domain in the graph form
+`IsContDiffDomain 1 Ω` of `Numlib/Analysis/Sobolev/Domain.lean` (decisions B2, B3 of
+`notes/boundary/planning-brief.md`).
+
+**Local objects.** A graph chart is a rigid motion `T : ℝ^{d+1} ≃ᵃⁱ ℝ^{d+1}` and a `C¹` function
+`g : ℝ^d → ℝ` with `Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`. Its parametrization of the
+boundary is `graphParam T g x' = T⁻¹ (x', g x')`, defined on the open bounded
+`graphDomain T g x₀ r = graphParam ⁻¹' B(x₀, r)` and mapping it onto `∂Ω ∩ B(x₀, r)`; the local
+surface measure is the pushforward `graphMeasure T g s` of `√(1 + |∇g|²) dx'` on `s ⊆ ℝ^d`
+(`graphDensity g`), and the local outward normal is
+`graphNormal T g x = T.linear⁻¹ (∇g x', −1) / √(1 + |∇g x'|²)`, `x' = (T x)'` — the sign is
+the one pointing *out of* the region above the graph (`(∇g, −1)` is the gradient of
+`y ↦ g y' − y_N`, which is negative on `Ω`); Grisvard's `(−∇φ, 1)` (§1.5.1) is for a region
+*below* the graph.
+
+**Chart independence.** On the overlap of two charts the transition
+`ψ = (T₂ ·)' ∘ graphParam T₁ g₁` is a `C¹` injection between open subsets of `ℝ^d` with
+`graphParam T₁ g₁ = graphParam T₂ g₂ ∘ ψ`, the densities transform by `|det Dψ|` (the Gram
+identity `gram (L ∘ A) = gram L · |det A|` of `Gram.lean` with `graphDensity g x' = gram (D graphParam x')`),
+and Mathlib's change of variables `MeasureTheory.Measure.map_withDensity_abs_det_fderiv_eq_addHaar`
+gives `graphMeasure T₁ g₁ = graphMeasure T₂ g₂` on the overlap. The normals agree pointwise:
+both are unit vectors orthogonal to the common tangent space `range (D graphParam)`, and both point
+outward (`x − t ν ∈ Ω`, `x + t ν ∉ Ω` for small `t > 0`), so they are equal.
+
+**Global objects.** `IsContDiffDomain.boundaryMeasure hΩ hb` and
+`IsContDiffDomain.outwardNormal hΩ hb`, for `hΩ : IsContDiffDomain 1 Ω` and
+`hb : Bornology.IsBounded Ω`, are built from a chosen finite atlas
+(`IsBoundaryOfClass.exists_finite_cover`) and a smooth partition of unity on `∂Ω`
+(`IsCompact.exists_contDiff_partitionOfUnity`), packaged as `GraphAtlas Ω`: `σ = ∑ᵢ θᵢ · σᵢ`,
+`ν = νᵢ` on the `i`-th ball. Their chart characterizations `boundaryMeasure_restrict_ball` and
+`outwardNormal_eq_graphNormal` — for *every* graph chart of `Ω`, not only the chosen ones — are
+what pin them down and what the consumers compute with. No Hausdorff measure enters; the identity
+`σ = μH[d]⌊∂Ω` is a future node (area formula).
+
+~1200 lines. Imports `Boundary/Gram.lean`, `Boundary/Data.lean` (for `epigraph`,
+`AffineIsometryEquiv.measurePreserving`), `Numlib/Analysis/Sobolev/Chart.lean`, Mathlib's
+`MeasureTheory/Function/Jacobian.lean` and `Analysis/Calculus/Gradient/Basic.lean`.
+Notation below: `E := EuclideanSpace ℝ (Fin (d + 1))`, `E' := EuclideanSpace ℝ (Fin d)`,
+`T : E ≃ᵃⁱ[ℝ] E`, `g : E' → ℝ`, `x₀ : E`, `r : ℝ`; "`(T, g)` is a graph chart of `Ω` at `(x₀, r)`"
+means `0 < r`, `ContDiff ℝ 1 g` and `Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g`.
+'''
+
+[[node]]
+id = "EuclideanSpace.graphParam"
+kind = "definition"
+desc = '''`EuclideanSpace.graphParam (T : E ≃ᵃⁱ[ℝ] E) (g : E' → ℝ) : E' → E := fun x' ↦ T.symm (snocLast x' (g x'))`,
+the parametrization of the graph of `g` seen through the rigid motion `T` (it is
+`graphUnstraighten T g` of `Chart.lean` restricted to the hyperplane `y_N = 0`, but is kept as its
+own definition). Simp lemmas: `init_apply_graphParam : init (T (graphParam T g x')) = x'`,
+`apply_graphParam_last : T (graphParam T g x') (Fin.last d) = g x'`,
+`graphParam_injective` (from the first), `graphParam_mem_frontier_epigraph : graphParam T g x' ∈ frontier (T ⁻¹' epigraph g)`
+(for continuous `g`, by `frontier_epigraph`), `continuous_graphParam` (continuous `g`),
+`contDiff_graphParam` (`ContDiff ℝ n g`). ★'''
+deps = ["EuclideanSpace.snocLast", "EuclideanSpace.epigraph"]
+
+[[node]]
+id = "EuclideanSpace.hasFDerivAt_graphParam"
+kind = "theorem"
+desc = '''If `g` has derivative `ℓ` at `x'` (`HasFDerivAt g ℓ x'`) then
+`HasFDerivAt (graphParam T g) (T.linearIsometryEquiv.symm.toContinuousLinearEquiv.toContinuousLinearMap ∘L snocLastL ℓ) x'`;
+hence `fderiv ℝ (graphParam T g) x' = T.linear⁻¹ ∘L snocLastL (fderiv ℝ g x')` for `g`
+differentiable at `x'`. Chain rule: `T.symm` is an affine map with linear part
+`T.linearIsometryEquiv.symm` (`AffineIsometryEquiv.symm`, `AffineMap.hasFDerivAt`-type lemma
+`ContinuousAffineMap.hasFDerivAt`), composed with `x' ↦ snocLast x' (g x')`, which is
+`(lastInitL d).symm ∘ (g, id)` (`HasFDerivAt.prodMk`). Consequence
+`EuclideanSpace.injective_fderiv_graphParam : Function.Injective (fderiv ℝ (graphParam T g) x')`
+(`init ∘ T.linear ∘ D graphParam = id`), so `range (fderiv ℝ (graphParam T g) x')` has dimension
+`d` (`LinearMap.finrank_range_of_inj`). ★'''
+deps = ["EuclideanSpace.graphParam", "EuclideanSpace.snocLastL"]
+
+[[node]]
+id = "EuclideanSpace.graphDomain"
+kind = "definition"
+desc = '''`EuclideanSpace.graphDomain T g x₀ r : Set E' := graphParam T g ⁻¹' Metric.ball x₀ r`, the
+part of the parameter space that the chart ball sees. `isOpen_graphDomain` (continuous `g`),
+`isBounded_graphDomain` (★: for `x' ∈ graphDomain`, `‖x'‖ = ‖init (T (graphParam x'))‖ ≤ ‖T (graphParam x')‖ < ‖T x₀‖ + r`
+by `EuclideanSpace.norm_init_le` of `Chart.lean` and the isometry), `measurableSet_graphDomain`,
+and `graphParam_image_graphDomain : graphParam T g '' graphDomain T g x₀ r = frontier (T ⁻¹' epigraph g) ∩ Metric.ball x₀ r`
+(`frontier_epigraph`: a point of the frontier in the ball is `graphParam` of its first coordinates
+`init (T x)`), so that, when `(T, g)` is a graph chart of `Ω` at `(x₀, r)`,
+`graphParam T g '' graphDomain T g x₀ r = frontier Ω ∩ Metric.ball x₀ r`
+(`IsBoundaryGraphAt.graphParam_image_graphDomain`, with `frontier_epigraph`'s ball clause). ★'''
+deps = ["EuclideanSpace.graphParam", "EuclideanSpace.frontier_epigraph"]
+
+[[node]]
+id = "EuclideanSpace.graphDensity"
+kind = "definition"
+desc = '''`EuclideanSpace.graphDensity (g : E' → ℝ) (x' : E') : ℝ := Real.sqrt (1 + ‖gradient g x'‖ ^ 2)`,
+the surface element `√(1 + |∇g|²)` (Mathlib's `gradient` of
+`Mathlib/Analysis/Calculus/Gradient/Basic.lean`). With `one_le_graphDensity`,
+`graphDensity_pos`, `continuous_graphDensity` (for `ContDiff ℝ 1 g`: `gradient g = (toDual ℝ E').symm ∘ fderiv ℝ g`
+is continuous by `ContDiff.continuous_fderiv`), and the intrinsic reading
+`graphDensity_eq_gram : graphDensity g x' = gram (fderiv ℝ (graphParam T g) x')` for `g`
+differentiable at `x'` (`hasFDerivAt_graphParam`, `gram_isometry_comp`, `gram_snocLastL`, and
+`‖fderiv ℝ g x'‖ = ‖gradient g x'‖` by `LinearIsometryEquiv.norm_map` of `toDual.symm`) — this is
+what makes the density chart independent (`graphDensity_transition`) and what a chart-based
+definition would reuse. ★'''
+deps = ["EuclideanSpace.gram", "EuclideanSpace.gram_snocLastL", "EuclideanSpace.gram_isometry_comp", "EuclideanSpace.hasFDerivAt_graphParam"]
+
+[[node]]
+id = "EuclideanSpace.graphMeasure"
+kind = "definition"
+desc = '''`EuclideanSpace.graphMeasure (T : E ≃ᵃⁱ[ℝ] E) (g : E' → ℝ) (s : Set E') : Measure E := Measure.map (graphParam T g) ((volume.restrict s).withDensity fun x' ↦ ENNReal.ofReal (graphDensity g x'))`
+— the surface measure of the graph piece over `s`: the pushforward of `√(1 + |∇g|²) dx'` on `s`
+under the parametrization (decision B2). Basic lemmas, all ★ for `ContDiff ℝ 1 g` and measurable `s`:
+* `graphMeasure_apply : graphMeasure T g s A = ∫⁻ x' in s ∩ graphParam T g ⁻¹' A, ENNReal.ofReal (graphDensity g x')`
+  for measurable `A` (`Measure.map_apply` with `continuous_graphParam.measurable`,
+  `withDensity_apply`, `Measure.restrict_restrict`);
+* `graphMeasure_compl_image : graphMeasure T g s (graphParam T g '' s)ᶜ = 0`;
+* `isFiniteMeasure_graphMeasure : IsFiniteMeasure (graphMeasure T g s)` when `s` is bounded (the
+  density is continuous, hence bounded on the compact `closure s`; Lebesgue measure of a bounded
+  set is finite);
+* `graphMeasure_restrict_image : (graphMeasure T g s).restrict (graphParam T g '' t) = graphMeasure T g (s ∩ t)`
+  for measurable `t` (injectivity of `graphParam`, `Measure.restrict_map` with the measurable
+  embedding `continuous_graphParam.measurableEmbedding`-type: `graphParam` is a closed embedding
+  — continuous, injective, with continuous left inverse `init ∘ T` — so `MeasurableEmbedding`);
+* `graphMeasure_mono_set`. ★'''
+deps = ["EuclideanSpace.graphParam", "EuclideanSpace.graphDensity", "EuclideanSpace.graphDomain"]
+
+[[node]]
+id = "EuclideanSpace.integral_graphMeasure"
+kind = "theorem"
+desc = '''The integral against the local surface measure is the weighted integral over the parameter
+domain: for `ContDiff ℝ 1 g`, measurable `s` and `f : E → G` (`G` a real Banach space) with
+`AEStronglyMeasurable f (graphMeasure T g s)`,
+`∫ x, f x ∂(graphMeasure T g s) = ∫ x' in s, graphDensity g x' • f (graphParam T g x')`.
+`MeasureTheory.integral_map` (with `continuous_graphParam.aemeasurable`) and
+`MeasureTheory.integral_withDensity_eq_integral_smul` (the density's `toNNReal` is measurable and
+finite) — the `ENNReal.ofReal` of a positive real density has `toReal` the density itself.
+Also `lintegral_graphMeasure` for `ℝ≥0∞`-valued integrands and
+`integrable_graphMeasure_iff`/`IntegrableOn`-style transfer. ★'''
+deps = ["EuclideanSpace.graphMeasure"]
+
+[[node]]
+id = "EuclideanSpace.graphNormal"
+kind = "definition"
+desc = '''`EuclideanSpace.graphNormal (T : E ≃ᵃⁱ[ℝ] E) (g : E' → ℝ) : E → E := fun x ↦ (graphDensity g (init (T x)))⁻¹ • T.linearIsometryEquiv.symm (snocLast (gradient g (init (T x))) (-1))`
+— the outward unit normal of the region *above* the graph of `g` in the frame `T`, at a point `x`
+read as lying on the graph (decision B3, sign checked against `IsBoundaryGraphAt`: `Ω` is
+`{(T x)_N > g ((T x)')}`, the function `φ(y) = g y' − y_N` is negative on it and its gradient
+`(∇g, −1)` points where `φ` grows, i.e. out of `Ω`; Grisvard's `(−∇φ, 1)` in §1.5.1 is for the
+region *below* the graph). Lemmas, ★ each, for `ContDiff ℝ 1 g`:
+* `norm_graphNormal : ‖graphNormal T g x‖ = 1` (`‖snocLast v (-1)‖² = ‖v‖² + 1`, from
+  `EuclideanSpace.norm_sq_eq_init_add_last`, the isometry, and the density);
+* `continuous_graphNormal`;
+* `inner_graphNormal_fderiv_graphParam : ⟪graphNormal T g (graphParam T g x'), fderiv ℝ (graphParam T g) x' v⟫ = 0`
+  (tangency: `⟪T⁻¹(∇g, −1), T⁻¹(v, Dg v)⟫ = ⟪∇g, v⟫ − Dg v = 0`, `hasFDerivAt_graphParam`);
+* `graphNormal_eq_of_init_eq` (it depends on `x` only through `init (T x)`). ★'''
+deps = ["EuclideanSpace.graphDensity", "EuclideanSpace.hasFDerivAt_graphParam", "EuclideanSpace.norm_sq_eq_init_add_last"]
+
+[[node]]
+id = "EuclideanSpace.graphNormal_outward"
+kind = "theorem"
+desc = '''**The normal points out**: for `ContDiff ℝ 1 g` and `x = graphParam T g x'`,
+`∀ᶠ t in 𝓝[>] (0 : ℝ), x + t • graphNormal T g x ∉ T ⁻¹' epigraph g` and
+`∀ᶠ t in 𝓝[>] (0 : ℝ), x - t • graphNormal T g x ∈ T ⁻¹' epigraph g`. In the frame `T`, with
+`c := graphDensity g x'` and `a := ∇g x'`, the point `x + tν` has coordinates
+`(x' + (t/c) a, g x' − t/c)`, so it lies in the epigraph iff `h(t) := g (x' + (t/c) a) − g x' + t/c > 0`
+fails; `h(0) = 0` and `h'(0) = (‖a‖² + 1)/c > 0` (`HasFDerivAt.comp` along the line, chain rule),
+so `h(t) > 0` for small `t > 0` and `h(t) < 0` for small `t < 0` (positivity of the derivative at
+a point gives the sign of the difference quotient: `hasDerivAt_iff_tendsto_slope` and
+`Filter.Tendsto.eventually_gt_atTop`-style arguments, or `HasDerivAt.eventually_...`; write the
+one-variable lemma `eventually_pos_of_hasDerivAt_pos : HasDerivAt h h' 0 → 0 < h' → h 0 = 0 → ∀ᶠ t in 𝓝[>] 0, 0 < h t`
+and its mirror). This is the sign that distinguishes `ν` from `−ν` in `graphNormal_eq_of_eq`. ★★'''
+deps = ["EuclideanSpace.graphNormal", "EuclideanSpace.epigraph"]
+
+[[node]]
+id = "EuclideanSpace.graphTransition"
+kind = "definition"
+desc = '''The transition between two graph charts:
+`EuclideanSpace.graphTransition T₁ g₁ T₂ : E' → E' := fun x' ↦ init (T₂ (graphParam T₁ g₁ x'))`.
+Under the hypothesis `hV : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂` for an open `V`
+(both charts describe the same set in `V`) and `ContDiff ℝ 1 g₁`, `ContDiff ℝ 1 g₂`, with
+`D₁ := graphParam T₁ g₁ ⁻¹' V` and `D₂ := graphParam T₂ g₂ ⁻¹' V` (open):
+* `graphParam_graphTransition : ∀ x' ∈ D₁, graphParam T₂ g₂ (graphTransition T₁ g₁ T₂ x') = graphParam T₁ g₁ x'`
+  — `y := graphParam T₁ g₁ x'` lies in `frontier (T₁⁻¹' epigraph g₁) ∩ V = frontier (T₂⁻¹' epigraph g₂) ∩ V`
+  (`frontier_inter_open_inter` and `hV`), so `(T₂ y)_N = g₂ ((T₂ y)')` by `frontier_epigraph`, and
+  `graphParam T₂ g₂ ((T₂ y)') = T₂⁻¹ (snocLast (init (T₂ y)) ((T₂ y)_N)) = y`
+  (`snocLast_init_last`); ★★
+* `graphTransition_mapsTo : MapsTo (graphTransition …) D₁ D₂`, `graphTransition_injOn : InjOn … D₁`
+  (from the previous identity and `graphParam_injective`), `graphTransition_image : graphTransition '' D₁ = D₂`
+  (surjectivity: the inverse is `graphTransition T₂ g₂ T₁`), ★;
+* `contDiffOn_graphTransition : ContDiffOn ℝ 1 (graphTransition T₁ g₁ T₂) D₁` (a composite of
+  `C¹` maps, globally `C¹` in fact), ★;
+* `hasFDerivAt_graphParam_comp` : on `D₁`, `fderiv ℝ (graphParam T₁ g₁) x' = fderiv ℝ (graphParam T₂ g₂) (ψ x') ∘L fderiv ℝ ψ x'`
+  (chain rule on the open `D₁` where `graphParam₁ = graphParam₂ ∘ ψ`, `Filter.EventuallyEq.fderiv_eq`), ★.'''
+deps = ["EuclideanSpace.graphParam", "EuclideanSpace.frontier_epigraph", "EuclideanSpace.graphDomain"]
+
+[[node]]
+id = "EuclideanSpace.graphDensity_graphTransition"
+kind = "theorem"
+desc = '''**The Gram identity of decision B2**: under the hypotheses of `graphTransition`, for `x' ∈ D₁`,
+`graphDensity g₁ x' = graphDensity g₂ (graphTransition T₁ g₁ T₂ x') * |LinearMap.det (fderiv ℝ (graphTransition T₁ g₁ T₂) x' : E' →ₗ[ℝ] E')|`.
+From `graphDensity_eq_gram` on both sides, `hasFDerivAt_graphParam_comp` and `gram_comp`. ★'''
+deps = ["EuclideanSpace.graphTransition", "EuclideanSpace.graphDensity", "EuclideanSpace.gram_comp"]
+
+[[node]]
+id = "EuclideanSpace.graphMeasure_eq_of_eq"
+kind = "theorem"
+desc = '''**Chart independence of the surface measure**: under the hypotheses of `graphTransition`
+(`V` open, `V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂`, `g₁ g₂` of class `C¹`),
+`graphMeasure T₁ g₁ (graphParam T₁ g₁ ⁻¹' V) = graphMeasure T₂ g₂ (graphParam T₂ g₂ ⁻¹' V)`.
+Route: with `ψ := graphTransition T₁ g₁ T₂`, `D₁`, `D₂` as above and `ρᵢ := ENNReal.ofReal ∘ graphDensity gᵢ`,
+Mathlib's change of variables in measure form,
+`MeasureTheory.Measure.map_withDensity_abs_det_fderiv_eq_addHaar (μ := volume) (hs : NullMeasurableSet D₁) (hf' : ∀ x ∈ D₁, HasFDerivWithinAt ψ (fderiv ℝ ψ x) D₁ x) (hf : InjOn ψ D₁) : Measure.map ψ ((volume.restrict D₁).withDensity fun x ↦ ENNReal.ofReal |(fderiv ℝ ψ x).det|) = volume.restrict (ψ '' D₁)`
+(`Mathlib/MeasureTheory/Function/Jacobian.lean`), with `ψ '' D₁ = D₂` (`graphTransition_image`).
+Then `(volume.restrict D₂).withDensity ρ₂ = map ψ ((volume.restrict D₁).withDensity (|det Dψ| · ρ₂ ∘ ψ))`
+(`MeasureTheory.withDensity_map`-type lemma: `(map ψ μ).withDensity f = map ψ (μ.withDensity (f ∘ ψ))`
+for a measurable embedding — `ψ` is injective and continuous on the open `D₁`, so
+`measurableEmbedding_of_fderivWithin` of the same file applies; then `withDensity_mul`/`withDensity_smul`),
+and `|det Dψ| · ρ₂ ∘ ψ = ρ₁` on `D₁` by `graphDensity_graphTransition`, so
+`graphMeasure T₂ g₂ D₂ = map (graphParam T₂ g₂) (map ψ ((volume.restrict D₁).withDensity ρ₁)) = map (graphParam T₂ g₂ ∘ ψ) (…) = map (graphParam T₁ g₁) (…)`
+(`Measure.map_map`, and `graphParam_graphTransition` on `D₁`, the measure being carried by `D₁`:
+`Measure.map_congr` with `ae_restrict`). ★★★, ~200 lines.'''
+deps = ["EuclideanSpace.graphMeasure", "EuclideanSpace.graphDensity_graphTransition", "EuclideanSpace.graphTransition"]
+
+[[node]]
+id = "EuclideanSpace.graphNormal_eq_of_eq"
+kind = "theorem"
+desc = '''**Chart independence of the normal**: under the hypotheses of `graphTransition`, for every
+`x ∈ frontier (T₁ ⁻¹' epigraph g₁) ∩ V`, `graphNormal T₁ g₁ x = graphNormal T₂ g₂ x`. Write
+`x = graphParam T₁ g₁ x'₁ = graphParam T₂ g₂ x'₂` with `x'₂ = ψ x'₁`. The tangent spaces agree:
+`range (fderiv (graphParam T₁ g₁) x'₁) = range (fderiv (graphParam T₂ g₂) x'₂)` because
+`D graphParam₁ = D graphParam₂ ∘ Dψ` with `Dψ` bijective (`hasFDerivAt_graphParam_comp`; `Dψ` is
+injective since `D graphParam₁` is, `injective_fderiv_graphParam`, hence bijective on `E'`). Both
+normals are unit vectors orthogonal to this `d`-dimensional subspace `W` of `ℝ^{d+1}`
+(`inner_graphNormal_fderiv_graphParam`), and `Wᗮ` has dimension `1`
+(`Submodule.finrank_orthogonal_span`-style: `finrank Wᗮ = (d + 1) − finrank W`,
+`Submodule.finrank_add_finrank_orthogonal`), so `graphNormal T₂ g₂ x = c • graphNormal T₁ g₁ x`
+with `|c| = 1` (`norm_graphNormal`), i.e. `c = ±1`. The sign: if `c = −1`, then
+`x − t • graphNormal T₂ g₂ x = x + t • graphNormal T₁ g₁ x` lies in `T₂ ⁻¹' epigraph g₂ ∩ V = T₁ ⁻¹' epigraph g₁ ∩ V`
+for small `t > 0` by `graphNormal_outward` for chart 2, and outside it by `graphNormal_outward`
+for chart 1 — contradiction (both events hold for `t` small enough that the point stays in the open
+`V`). ★★, ~200 lines.'''
+deps = ["EuclideanSpace.graphNormal", "EuclideanSpace.graphNormal_outward", "EuclideanSpace.graphTransition", "EuclideanSpace.hasFDerivAt_graphParam"]
+
+[[node]]
+id = "GraphAtlas"
+kind = "definition"
+desc = '''A finite graph atlas of a bounded `C¹` domain with a subordinate partition of unity — the
+data from which the global surface measure and normal are built:
+
+`structure GraphAtlas {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) where`
+`k : ℕ`, `x : Fin k → E`, `r : Fin k → ℝ`, `T : Fin k → (E ≃ᵃⁱ[ℝ] E)`, `g : Fin k → (E' → ℝ)`,
+`θ : Fin k → (E → ℝ)`, `r_pos : ∀ i, 0 < r i`, `contDiff_g : ∀ i, ContDiff ℝ 1 (g i)`,
+`inter_ball_eq : ∀ i, Ω ∩ Metric.ball (x i) (r i) = Metric.ball (x i) (r i) ∩ (T i) ⁻¹' epigraph (g i)`,
+`frontier_subset : frontier Ω ⊆ ⋃ i, Metric.ball (x i) (r i)`,
+`θ₀ : E → ℝ`, `contDiff_θ₀ : ContDiff ℝ ∞ θ₀`, `contDiff_θ : ∀ i, ContDiff ℝ ∞ (θ i)`,
+`hasCompactSupport_θ : ∀ i, HasCompactSupport (θ i)`,
+`tsupport_θ_subset : ∀ i, tsupport (θ i) ⊆ Metric.ball (x i) (r i)`,
+`θ_mem_Icc : ∀ i x, θ i x ∈ Set.Icc (0 : ℝ) 1`, `θ₀_add_sum_θ : ∀ x, θ₀ x + ∑ i, θ i x = 1`,
+`disjoint_tsupport_θ₀ : Disjoint (tsupport θ₀) (frontier Ω)` — the partition of unity of Brezis
+Lemma 9.3 with its interior piece `θ₀`, which vanishes on a *neighbourhood* of `∂Ω` (needed by
+the assembly of the divergence theorem: `θ₀ F` has compact support inside `Ω`). Derived:
+`GraphAtlas.sum_θ : ∀ x ∈ frontier Ω, ∑ i, θ i x = 1`, `GraphAtlas.graphDomain a i := graphDomain (a.T i) (a.g i) (a.x i) (a.r i)`,
+and the existence theorem `IsContDiffDomain.exists_graphAtlas (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : Nonempty (GraphAtlas Ω)`:
+`IsBoundaryOfClass.exists_finite_cover` gives the balls and charts (enumerate the `Finset` by
+`Finset.equivFin`), `IsCompact.exists_contDiff_partitionOfUnity` on the compact `frontier Ω` with
+the balls gives exactly `θ₀, θᵢ`. ★'''
+deps = ["EuclideanSpace.epigraph", "IsBoundaryOfClass.exists_finite_cover", "IsCompact.exists_contDiff_partitionOfUnity", "EuclideanSpace.graphDomain", "IsContDiffDomain"]
+
+[[node]]
+id = "IsContDiffDomain.graphAtlas"
+kind = "definition"
+desc = '''`IsContDiffDomain.graphAtlas (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : GraphAtlas Ω := Classical.choice (hΩ.exists_graphAtlas hb)`,
+the chosen atlas. Everything defined from it is characterized chart-independently by the theorems
+below, so the choice never leaks. ★'''
+deps = ["GraphAtlas"]
+
+[[node]]
+id = "IsContDiffDomain.boundaryMeasure"
+kind = "definition"
+desc = '''**The surface measure of a bounded `C¹` domain**:
+`IsContDiffDomain.boundaryMeasure (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : Measure E := ∑ i, (graphMeasure (a.T i) (a.g i) (a.graphDomain i)).withDensity fun x ↦ ENNReal.ofReal (a.θ i x)`
+for `a := hΩ.graphAtlas hb` — the local graph measures glued by the partition of unity
+(decision B2). Immediate properties, ★ each: `isFiniteMeasure_boundaryMeasure` (each summand is
+finite, `isFiniteMeasure_graphMeasure` on the bounded `graphDomain`, density `≤ 1`);
+`boundaryMeasure_compl_frontier : boundaryMeasure hΩ hb (frontier Ω)ᶜ = 0`
+(`graphMeasure_compl_image` and `IsBoundaryGraphAt.graphParam_image_graphDomain`);
+`integral_boundaryMeasure : ∫ f ∂(boundaryMeasure hΩ hb) = ∑ i, ∫ x' in a.graphDomain i, graphDensity (a.g i) x' * a.θ i (graphParam … x') • f (graphParam (a.T i) (a.g i) x')`
+(`integral_finset_sum_measure`, `integral_withDensity_eq_integral_smul`, `integral_graphMeasure`).
+Register `IsFiniteMeasure` as an instance. ★'''
+deps = ["IsContDiffDomain.graphAtlas", "EuclideanSpace.graphMeasure", "EuclideanSpace.integral_graphMeasure"]
+
+[[node]]
+id = "IsContDiffDomain.boundaryMeasure_restrict_ball"
+kind = "theorem"
+desc = '''**The chart characterization of the surface measure**: for `hΩ : IsContDiffDomain 1 Ω`,
+`hb : Bornology.IsBounded Ω`, and *any* graph chart `(T, g)` of `Ω` at `(x₀, r)` (`0 < r`,
+`ContDiff ℝ 1 g`, `Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g`),
+`(boundaryMeasure hΩ hb).restrict (Metric.ball x₀ r) = graphMeasure T g (graphDomain T g x₀ r)`.
+Proof: restrict each summand; on `V := Metric.ball x₀ r ∩ Metric.ball (a.x i) (a.r i)` both
+`(a.T i, a.g i)` and `(T, g)` describe `Ω`, so `graphMeasure_eq_of_eq` gives
+`(graphMeasure (a.T i) (a.g i) (a.graphDomain i)).restrict (ball x₀ r) = (graphMeasure T g (graphDomain T g x₀ r)).restrict (ball (a.x i) (a.r i))`
+(through `graphMeasure_restrict_image` on both sides, the restriction to `V` being the graph
+measure over the preimage of `V`); summing with the densities `θ i` and using `∑ θ i = 1` on
+`frontier Ω` (`GraphAtlas.sum_θ`; off the frontier all measures vanish) and
+`tsupport (θ i) ⊆ ball (a.x i) (a.r i)` gives the claim (`Measure.ext` on measurable sets with
+`withDensity_apply`, `lintegral_finset_sum`, `lintegral_congr_ae` for `∑ θ i = 1` a.e.). This
+theorem makes `boundaryMeasure` independent of the chosen atlas and partition: two choices agree on
+every chart ball, hence (finite cover of `frontier Ω`, inclusion–exclusion or
+`Measure.ext_of_generateFrom`-free: `μ A = ∑ᵢ μ (A ∩ Bᵢ \ ⋃_{j<i} Bⱼ)`) everywhere. ★★★, ~250 lines.'''
+deps = ["IsContDiffDomain.boundaryMeasure", "EuclideanSpace.graphMeasure_eq_of_eq", "GraphAtlas"]
+
+[[node]]
+id = "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"
+kind = "theorem"
+desc = '''**The surface measure has full support on `∂Ω`**: for `hΩ`, `hb` as above and an open
+`U ⊆ E` with `(U ∩ frontier Ω).Nonempty`, `0 < boundaryMeasure hΩ hb U`. Take
+`x ∈ U ∩ frontier Ω`, a graph chart at `(x, r)` (`hΩ.isBoundaryOfClass x hx`), shrink to
+`ball x r' ⊆ U`; `boundaryMeasure_restrict_ball` and `graphMeasure_apply` give
+`σ (ball x r') = ∫⁻ x' in graphDomain T g x r', ofReal (graphDensity g x') ≥ volume (graphDomain T g x r') > 0`
+since `graphDomain T g x r'` is a nonempty (it contains `init (T x)`) open subset of `E'`
+(`Measure.measure_pos_of_nonempty_interior`/`IsOpen.measure_pos`) and the density is `≥ 1`. In
+particular `boundaryMeasure hΩ hb Set.univ > 0` for a bounded `C¹` domain with nonempty frontier
+(`IsContDiffDomain.boundaryMeasure_univ_pos`, for `Ω` nonempty: a nonempty bounded open subset of
+`ℝ^{d+1}` has nonempty frontier, `IsBounded.frontier_nonempty`-type: `Ω ≠ univ` and
+`Ω` nonempty and `E` connected ⇒ `frontier Ω ≠ ∅`, `IsPreconnected.frontier_nonempty`-style; state
+it with hypothesis `(Ω : Set E).Nonempty`). ★★'''
+deps = ["IsContDiffDomain.boundaryMeasure_restrict_ball", "EuclideanSpace.graphMeasure"]
+
+[[node]]
+id = "IsContDiffDomain.outwardNormal"
+kind = "definition"
+desc = '''**The outward unit normal of a bounded `C¹` domain**, as a function on the ambient space:
+`IsContDiffDomain.outwardNormal (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : E → E := fun x ↦ if h : ∃ i, x ∈ Metric.ball (a.x i) (a.r i) then graphNormal (a.T (Classical.choose h)) (a.g (Classical.choose h)) x else 0`
+for `a := hΩ.graphAtlas hb` — on each chart ball the chart's `graphNormal`, and `0` off the atlas.
+Properties, ★ each: `outwardNormal_eq_graphNormal_atlas : x ∈ frontier Ω → x ∈ ball (a.x i) (a.r i) → outwardNormal hΩ hb x = graphNormal (a.T i) (a.g i) x`
+(two charts containing `x` give the same normal by `graphNormal_eq_of_eq` on the intersection of
+their balls); `norm_outwardNormal : x ∈ frontier Ω → ‖outwardNormal hΩ hb x‖ = 1`
+(`norm_graphNormal`; every boundary point lies in some ball); `ae_norm_outwardNormal : ∀ᵐ x ∂(boundaryMeasure hΩ hb), ‖outwardNormal hΩ hb x‖ = 1`
+(`boundaryMeasure_compl_frontier`); `aestronglyMeasurable_outwardNormal : AEStronglyMeasurable (outwardNormal hΩ hb) (boundaryMeasure hΩ hb)`
+(measurable: it is a finite case split over the measurable balls with continuous branches — use
+`Measurable.piecewise`/`measurable_of_measurable_on_...` or, simpler, `AEStronglyMeasurable` of a
+function that is `σ`-a.e. equal to `∑ᵢ 1_{Aᵢ} graphNormal_i` for a measurable partition `Aᵢ` of the
+atlas' union, refined from the balls). ★'''
+deps = ["IsContDiffDomain.graphAtlas", "EuclideanSpace.graphNormal", "EuclideanSpace.graphNormal_eq_of_eq", "IsContDiffDomain.boundaryMeasure"]
+
+[[node]]
+id = "IsContDiffDomain.outwardNormal_eq_graphNormal"
+kind = "theorem"
+desc = '''**The chart characterization of the normal**: for *any* graph chart `(T, g)` of `Ω` at
+`(x₀, r)` and every `x ∈ frontier Ω ∩ Metric.ball x₀ r`,
+`outwardNormal hΩ hb x = graphNormal T g x`. By `outwardNormal_eq_graphNormal_atlas` for an atlas
+ball containing `x` and `graphNormal_eq_of_eq` on `V := ball x₀ r ∩ ball (a.x i) (a.r i)`. Together
+with `boundaryMeasure_restrict_ball` this is all a consumer needs to compute `σ` and `ν` on a
+concrete domain (a ball, a half-space piece, an ellipsoid). ★'''
+deps = ["IsContDiffDomain.outwardNormal", "EuclideanSpace.graphNormal_eq_of_eq"]

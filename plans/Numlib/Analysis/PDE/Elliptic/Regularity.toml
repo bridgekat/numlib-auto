@@ -147,10 +147,15 @@ to the space `V` of functions of `H^1(Q₊)` vanishing near the lateral and top 
 closed subspace containing `𝓓(Q₊)` and invariant under small tangential translations of functions
 supported in `{|x'| < 1 - δ, x_N < 1 - δ}`; `tangential_estimate_cylinder` applies with this `V`,
 (67) follows as before, and (68) uses the equation tested against `ψ / a_{NN}` for `ψ ∈ 𝓓(Q₊)`,
-which is in `V`. What is *not* recovered is the boundary condition `∂u/∂n = 0`, which has no
-meaning without a trace. ★★★ (~600 lines given the Dirichlet case, most of it the two variants of
-`transfer_chart` and of the assembly with the new test space). Not needed by any consumer in this
-round; planned so that the estimate's parametrization by `V` is fixed now.'''
+which is in `V`. The boundary condition `∂u/∂n = 0` is *not* part of this node: it is recovered,
+for the `H²` solution, as the vanishing of the normal trace
+`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq`
+(`Numlib/Analysis/Sobolev/Boundary/Data.lean`, boundary round 2026-09-21; surface node
+`Brezis.Chapter09.theorem_9_26_normalDeriv`), which takes the `H²` membership as a hypothesis and
+needs no regularity theory — so this node stays what it is, the `H²` estimate, deferred and judged
+unchanged by the boundary round: ★★★ (~600 lines given the Dirichlet case, most of it the two
+variants of `transfer_chart` and of the assembly with the new test space). Not needed by any
+consumer; planned so that the estimate's parametrization by `V` is fixed now.'''
 deps = ["regularity_top", "regularity_upperHalfSpace", "gradNorm_diffQuotL_le_of_invariant", "transfer_chart", "regularity_dirichlet"]
 
 [[node]]

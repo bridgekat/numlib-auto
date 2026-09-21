@@ -24,19 +24,14 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
 id = "example_11_2_4"
 kind = "theorem"
 desc = '''
-Example 11.2.4: the same argument applied to the simplified friction problem of §11.1 gives the
-variational inequality (11.1.13) on `V = H¹(Ω)`, with the boundary functional `j v = g ∫_Γ |v| ds`,
-exactly one solution. Not formalized: it is `theorem_11_2_2` on a domain, and its `j` needs the
-trace of an `H¹(Ω)` function and the surface measure on `Γ`; §11.2's module doc records the same.
-
-Blocked: rechecked 2026-09-20 after the Brezis backbone. The obstacle problem beside it is now
-`example_11_2_3`, so the abstract part (`theorem_11_2_2` at `j ≠ 0`, `theorem_11_3_7`) is the
-only thing this example needs beyond `example_11_1_2` — and that one is blocked on blocker 2 of
-`notes/frontier.md`: no trace operator `H¹(Ω) → L²(Γ)` and no surface measure on `∂Ω` exist in
-`Numlib/`, so `j(v) = g ∫_Γ |v| ds` is not statable. Once a bounded trace `T : H¹(Ω) → L¹(Γ)` on
-a `C¹` domain exists, `j = g ‖T ·‖_{L¹(Γ)}` is convex and continuous and the example is one
-application of `theorem_11_2_2` with `a = Elliptic.laplaceForm Ω` (bounded, symmetric, elliptic
-with `α = 1` on all of `H¹(Ω)`, `Elliptic.laplaceForm_isCoerciveWith_one`); estimate 60 lines
-after the trace.
+Example 11.2.4: the variational inequality (11.1.13) of the simplified friction problem has
+exactly one solution — over the boundary interface, for `B : BoundaryData Ω`, `𝒯 : B.TraceFamily`
+(instances: bounded `C¹` domains, polygons without slits), `g > 0`, `f ∈ L²(Ω)`:
+`∃! u : H¹(Ω), ∀ v, Elliptic.laplaceForm Ω u (v − u) + j v − j u ≥ Elliptic.load Ω f (v − u)`
+with `j v := g * ∫ |𝒯.traceL 2 _ v| ∂B.σ`. Restated 2026-09-21 (boundary round): it is
+`theorem_11_2_2` on `V = H¹(Ω)`, `K = V`, with `a = Elliptic.laplaceForm Ω` (bounded, symmetric,
+elliptic with `α = 1`: `Elliptic.laplaceForm_isCoerciveWith_one`, `laplaceForm_isBoundedWith_one`,
+`laplaceForm_isHermitian`), `ℓ = Elliptic.load Ω f`, and `j` convex and continuous (as in
+`example_11_1_2`). ★, ~40 lines.
 '''
-deps = ["theorem_11_2_2", "example_11_1_2"]
+deps = ["theorem_11_2_2", "example_11_1_2", "BoundaryData.TraceFamily"]

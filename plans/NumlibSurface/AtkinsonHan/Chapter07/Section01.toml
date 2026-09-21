@@ -59,24 +59,26 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 [[node]]
 id = "example_7_1_9"
 kind = "theorem"
-desc = '''Example 7.1.9: on a polygonal `Ω ⊆ ℝ^2` partitioned as `closure Ω = ⋃_{n≤N} closure Ω_n`,
-if `v ∈ C^k(closure Ω)` with `v|_{Ω_n} ∈ C^{k+1}(closure Ω_n)` then the weak derivatives of order
-`k + 1` exist and are the piecewise classical ones -- the regularity statement behind conforming
-finite elements. Not formalized: unlike the rest of §7.1 this one really is blocked, since the
-verification integrates by parts on each sub-domain and cancels the interface terms, which needs
-surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.
-
-Blocked: rechecked 2026-09-20 (blocker 2); the reason stands — the interface integrals
-`∫_{∂Ω_n} v φ ν_i` need a boundary measure and Gauss–Green on the sub-domains. The Brezis round (2026-09-17–20) left blocker 2 untouched: `Numlib/` has no surface measure on a
-boundary (`hausdorffMeasure`, `Gauss`, `divergence`, `perimeter` occur only in the quadrature and
-Fourier modules, for unrelated reasons), no trace operator (`theorem_7_3_10` is still open) and no
-integration by parts on a domain; Mathlib on this pin still has the divergence theorem for boxes
-only (`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) and the new
-`CurveIntegral/Poincare` for plane curves, nothing for a Lipschitz or `C¹` hypersurface. The
-Brezis surface's own boundary nodes (`example_9_4_stepA/D`, Theorem 9.26's Neumann clause,
-`regularity_neumann`) are deferred on the same gap. `notes/fem-roadmap.md` Decision C stands.
-'''
-deps = ["definition_7_1_3", "theorem_7_3_10", "proposition_7_6_1"]
+desc = '''Example 7.1.9, on a triangulated polygon: for `𝒯 : Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`,
+the book's partition `closure Ω = ⋃ closure Ω_n` into triangles; a partition into quadrilaterals
+refines to one), `k : ℕ`, and `v : ℝ² → ℝ` with `ContDiffOn ℝ k v` on a neighbourhood of
+`closure Ω` (the book's `v ∈ C^k(closure Ω)`) and `v|_{K T}` of class `C^{k+1}` up to the
+boundary of each element (`ContDiffOn ℝ (k + 1) v (closedK T)`, or `ContDiffOnClosure`), the weak
+partial derivatives of `v` of order `k + 1` on `Ω` exist (`definition_7_1_3` at every multi-index
+`α` with `|α| = k + 1`) and are the piecewise classical ones: a.e. on each `K T` they equal
+`∂^α v` computed on that element. Restated 2026-09-21 (boundary round): the proof is *not*
+through Green's formula. The case `k = 0` is the backbone's
+`Triangulation.hasWeakFDerivOn_of_piecewise` / `Triangulation.memSobolev_of_piecewise`
+(`Numlib/Analysis/Sobolev/Triangulation.lean`: a function continuous on `closure Ω` and `C¹` on each
+open element has the piecewise derivative as weak derivative — Fubini and the fundamental theorem
+of calculus on almost every line, `integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments`,
+the skeleton being a finite union of segments), and the general `k` follows by applying it to the
+derivatives `∂^β v`, `|β| = k`, which are continuous on `closure Ω` and piecewise `C¹`, then
+composing weak derivatives (the `HasWeakIteratedLineDerivOn` composition lemmas of
+`MultiIndex.lean`, `memSobolevMultiIndex_succ_iff`). ★★, ~150 lines; no boundary measure
+enters. The version with element-wise `W^{k+1,p}` regularity instead of `C^{k+1}` is
+`example_7_2_7`.'''
+deps = ["definition_7_1_3", "Triangulation.hasWeakFDerivOn_of_piecewise", "Triangulation.memSobolev_of_piecewise"]
 
 [[node]]
 id = "proposition_7_1_10"

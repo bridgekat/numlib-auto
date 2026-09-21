@@ -119,43 +119,105 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 [[node]]
 id = "theorem_7_3_10"
 kind = "theorem"
-desc = '''Theorem 7.3.10 (trace theorem): on a Lipschitz domain with boundary `Γ` and
-`1 ≤ p < ∞` there is a continuous linear `γ : W^{1,p}(Ω) → L^p(Γ)` with (a) `γ v = v|_Γ` for
-`v ∈ W^{1,p}(Ω) ∩ C(closure Ω)`, (b) `‖γ v‖_{L^p(Γ)} ≤ c ‖v‖_{W^{1,p}(Ω)}`, and (c) `γ` compact;
-its range is `W^{1-1/p,p}(Γ)`, and `H^{1/2}(Γ) = γ(H^1(Ω))` with the quotient norm (7.3.2). Not
-formalized: Mathlib has no surface measure on a Lipschitz boundary, so `L^p(Γ)` is not available,
-and no trace operator (`traceMap` is unused); the book states the theorem without proof.
+desc = '''Theorem 7.3.10 (trace theorem), restated on bounded `C¹` domains and on triangulated polygons
+without slits (the book's "Lipschitz" is out of scope; scope note of the previous rounds): for
+`1 ≤ p < ∞` and either (i) `hΩ : IsContDiffDomain 1 Ω` with `hb : Bornology.IsBounded Ω`
+(`definition_7_2_1_contDiffDomain`), `Γ := frontier Ω` with the surface measure
+`σ := hΩ.boundaryMeasure hb` and `L^p(Γ) := Lp ℝ p σ`, or (ii) `Ω ⊆ ℝ²` with
+`𝒯 : Triangulation Ω`, `hI : 𝒯.InteriorEdgesSubset` and `σ := 𝒯.boundaryMeasure`, there is a
+continuous linear `γ : W^{1,p}(Ω) →L[ℝ] L^p(Γ)` — `(hΩ.traceFamily hb).traceL p hp`, resp.
+`(𝒯.traceFamily hI).traceL p hp` — with (a) `γ v =ᵐ[σ] ṽ` whenever `v ∈ W^{1,p}(Ω)` has a
+representative `ṽ` continuous on `closure Ω` (`BoundaryData.TraceFamily.traceL_ae_eq`), and
+(b) `‖γ v‖_{L^p(Γ)} ≤ c ‖v‖_{W^{1,p}(Ω)}` (`ContinuousLinearMap.le_opNorm`). Clause (c),
+compactness, is `theorem_7_3_10_compact`; the range clause `γ(W^{1,p}) = W^{1−1/p,p}(Γ)` and
+`H^{1/2}(Γ) = γ(H^1(Ω))` with the quotient norm (7.3.2) are `theorem_7_3_10_range`. Restated
+2026-09-21 (boundary round): the backbone is `Numlib/Analysis/Sobolev/Boundary/` — Nečas's
+proof from a transversal field (`BoundaryData.traceL`, `Trace.lean`), the `C¹` instance
+`IsContDiffDomain.traceFamily` (`ContDiffDomain.lean`) and the polygon instance glued from the
+triangles (`Triangulation.traceFamily`, `PolygonTrace.lean`). The surface node states (a)–(b) for
+both instances as two theorems `theorem_7_3_10` (the `C¹` case) and `theorem_7_3_10_polygon`;
+~40 lines each. The book states the theorem without proof.'''
+deps = ["definition_7_2_1_contDiffDomain", "theorem_7_3_2", "IsContDiffDomain.traceFamily", "BoundaryData.TraceFamily"]
 
-Blocked: 2026-09-21 (blocker 2 of `notes/frontier.md`; re-checked at main `854d8c75`, unchanged
-by the closing round). Checked: the Brezis round left the trace untouched — `Numlib/Analysis/Sobolev/` has no boundary measure, no `trace`, no Gauss–Green on a
-domain (grep `trace`, `hausdorffMeasure`, `divergence`, `frontier` in `Numlib/`: only the
-`IsContDiffChartDomain` charts of `Chart.lean` and the `frontier`-of-`Ω` bookkeeping of
-`Extension.lean`). `L^p(Γ)` is nameable as
-`Lp F p ((μH[d] : Measure (EuclideanSpace ℝ (Fin (d+1)))).restrict (frontier Ω))`, and what is
-missing is the area formula relating `μH[d]` on a `C¹` graph piece to Lebesgue measure on the
-chart (Mathlib has `MeasureTheory.Measure.hausdorffMeasure` and
-`LipschitzWith.hausdorffMeasure_image_le`, no equality on graphs), after which the trace
-inequality on a chart is the one-dimensional `|u(x', g(x'))|^p ≤ ∫ |∂_N u| + |u|^p` argument
-(Evans §5.5) glued by the partition of unity of `Extension.lean`: estimated 1500–2500 lines, the
-`C¹` case first. Nothing else in the corpus provides it.'''
-deps = ["definition_7_2_1", "theorem_7_3_2", "definition_7_2_13"]
+[[node]]
+id = "theorem_7_3_10_polygon"
+kind = "theorem"
+desc = '''Theorem 7.3.10 (a)–(b) on a triangulated polygon without slits: for `Ω : Opens ℝ²`,
+`𝒯 : Triangulation Ω`, `hI : 𝒯.InteriorEdgesSubset` and `1 ≤ p < ∞`, the operator
+`γ := (𝒯.traceFamily hI).traceL p hp : SobolevEuclidean 2 1 p Ω →L[ℝ] Lp ℝ p 𝒯.boundaryMeasure`
+satisfies `γ v =ᵐ[𝒯.boundaryMeasure] ṽ` for every representative `ṽ` of `v` continuous on
+`closure Ω`, and `‖γ v‖ ≤ ‖γ‖ * ‖v‖`. The polygon instance of `theorem_7_3_10`; `𝒯.boundaryMeasure`
+is the arclength measure on the boundary edges (`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`).
+★, ~30 lines. (2026-09-21, boundary round.)'''
+deps = ["Triangulation.traceFamily", "Triangulation.InteriorEdgesSubset"]
+
+[[node]]
+id = "theorem_7_3_10_compact"
+kind = "theorem"
+desc = '''Theorem 7.3.10 (c): the trace `γ : W^{1,p}(Ω) → L^p(Γ)` of `theorem_7_3_10` is compact —
+every bounded sequence `vₙ` in `W^{1,p}(Ω)` has a subsequence with `γ vₙ'` convergent in
+`L^p(Γ)` — on a bounded `C¹` domain (`IsContDiffDomain.isCompactOperator_traceL`, for `p < d + 1`
+or `d ≥ 1`, the hypothesis of Rellich's theorem `SobolevEuclidean.isCompactEmbedding_fnL`) and on
+a triangulated polygon without slits (`Triangulation.isCompactOperator_traceL`, part of the
+`Triangulation.traceFamily` node). Restated 2026-09-21 (boundary round): the proof is Nečas's
+inequality in its sharp form `∫_Γ |γv|^p ≤ C (‖v‖_p^p + ‖v‖_p^{p−1} ‖∇v‖_p)`
+(`BoundaryData.integral_abs_traceL_rpow_le`) applied to differences of a sequence whose
+`L^p(Ω)` parts converge by Rellich–Kondrachov, so that the traces are Cauchy; `IsCompactOperator`
+in Mathlib's sense, with the book's sequential form as `isCompactOperator_iff_isCompact_closure_image_closedBall`
+plus `IsCompact.tendsto_subseq`. ★, ~40 lines.'''
+deps = ["theorem_7_3_10", "IsContDiffDomain.isCompactOperator_traceL", "Triangulation.traceFamily"]
+
+[[node]]
+id = "theorem_7_3_10_range"
+kind = "theorem"
+desc = '''Theorem 7.3.10, the range clause: the trace `γ` of `theorem_7_3_10` maps `W^{1,p}(Ω)` onto
+`W^{1−1/p,p}(Γ)` (`definition_7_2_13` at `s = 1 − 1/p`), so that `H^{1/2}(Γ) = γ(H^1(Ω))` and
+the quotient norm (7.3.2) is equivalent to the norm of `definition_7_2_13`.
+
+Blocked (2026-09-21, boundary round; the trace itself is now `theorem_7_3_10`): this is
+Gagliardo's theorem — the boundedness `‖γ v‖_{W^{1−1/p,p}(Γ)} ≤ C ‖v‖_{W^{1,p}}` (a fractional
+estimate on the graph pieces, ~600 lines on `Slobodeckij.lean` with the chart transport of
+`definition_7_2_13_indep`) and the right inverse (Gagliardo's extension of a `W^{1−1/p,p}`
+boundary function, by averaging over balls, 1000+ lines). Not needed by any consumer of this
+round: `theorem_11_4_5` is restated through the density of traces in `L¹(Γ)` instead of
+`H^{1/2}(Γ)`, and `theorem_13_1_1`'s Dirichlet clause stays blocked for other reasons.'''
+deps = ["theorem_7_3_10", "definition_7_2_13"]
 
 [[node]]
 id = "theorem_7_3_11"
 kind = "theorem"
-desc = '''Theorem 7.3.11: on a bounded open set with `C^{k,1}` boundary `Γ`, for `1 ≤ p ≤ ∞`,
-`s - 1/p > 1` non-integer and `k ≥ s - 1`, there are unique bounded linear surjections
-`γ_0 : W^{s,p}(Ω) → W^{s-1/p,p}(Γ)` and `γ_1 : W^{s,p}(Ω) → W^{s-1-1/p,p}(Γ)` extending
-`v ↦ v|_Γ` and `v ↦ (∂v/∂ν)|_Γ` -- the generalized normal derivative needed for fourth-order
-problems. Not formalized: it needs everything Theorem 7.3.10 needs, plus the fractional Sobolev
-spaces over the boundary of Definition 7.2.13; the book quotes it from [98] without proof.
+desc = '''Theorem 7.3.11, the `L^p` clause: on a bounded `C¹` domain (the book's `C^{k,1}` boundary
+restated as `C¹`; `hΩ : IsContDiffDomain 1 Ω`, `hb`) with `1 ≤ p < ∞` and `s = 2` (the book's
+`s − 1/p > 1`, integer `s` here), the maps `γ₀ v = v|_Γ` and `γ₁ v = (∂v/∂ν)|_Γ`, defined for
+`v ∈ C¹(closure Ω)` (resp. `C²`), extend uniquely to bounded linear maps
+`γ₀ : W^{2,p}(Ω) →L L^p(Γ)` and `γ₁ : W^{2,p}(Ω) →L L^p(Γ)`: `γ₀ := (hΩ.traceFamily hb).traceL p hp ∘L toLowerOrderL`
+and `γ₁ v := ∑ᵢ νᵢ · traceL (∂ᵢ v)` — for `p = 2` exactly `BoundaryData.TraceFamily.normalTrace`
+(`Numlib/Analysis/Sobolev/Boundary/Data.lean`), and for general `p` the same formula with
+`SobolevMultiIndex.partialDerivL` (state `normalTrace` at every `p < ∞` if the `p = 2`
+definition is not generalized in the backbone: ★, ~40 lines). Properties: `γ₀ v =ᵐ[σ] ṽ` and
+`γ₁ v =ᵐ[σ] ⟪∇ṽ, ν⟫` for `ṽ ∈ C¹(closure Ω)` with `∇ṽ` continuous on the closure
+(`traceL_ae_eq` applied to `v` and to each `∂ᵢ v`, whose continuous representative is `∂ᵢ ṽ`),
+boundedness from `traceL`'s, uniqueness from the density of `C¹(closure Ω)` restrictions
+(`BoundaryData.traceL_unique`). Restated 2026-09-21 (boundary round); the fractional targets
+`W^{s−1/p,p}(Γ)`, `W^{s−1−1/p,p}(Γ)`, the surjectivity and the general `s`, `k` are
+`theorem_7_3_11_fractional`. ★★, ~120 lines. The book quotes the theorem from [98] without
+proof.'''
+deps = ["theorem_7_3_10", "IsContDiffDomain.traceFamily", "BoundaryData.TraceFamily.normalTrace"]
 
-Blocked: 2026-09-21 (blocker 2; re-checked, unchanged by the closing round). Downstream of
-`theorem_7_3_10` and of `definition_7_2_13`
-(fractional spaces on `Γ`), both waiting on the boundary measure; nothing of the Brezis round
-touches it. After the trace, the surjectivity onto the fractional spaces is a further
-Gagliardo-type theorem (1000+ lines).'''
-deps = ["theorem_7_3_10", "definition_7_2_13"]
+[[node]]
+id = "theorem_7_3_11_fractional"
+kind = "theorem"
+desc = '''Theorem 7.3.11 as printed: on a bounded open set with `C^{k,1}` boundary, `1 ≤ p ≤ ∞`,
+`s − 1/p > 1` not an integer, `k ≥ s − 1`, the maps `γ₀ : W^{s,p}(Ω) → W^{s−1/p,p}(Γ)` and
+`γ₁ : W^{s,p}(Ω) → W^{s−1−1/p,p}(Γ)` are bounded, linear and *surjective*.
+
+Blocked (2026-09-21, boundary round): the `L^p(Γ)` clause is `theorem_7_3_11`; what remains is
+everything fractional — the spaces `W^{σ,p}(Γ)` on the boundary with their chart independence
+(`definition_7_2_13_indep`), the fractional boundedness and the surjectivity (Gagliardo /
+Lions–Magenes), the `C^{k,1}` boundaries (Lipschitz derivatives of the charts; the library has
+`C^n` graphs only), and `W^{s,p}` of non-integer `s` on `Ω` itself. A Gagliardo-type theorem
+(1000+ lines) after `theorem_7_3_10_range`. The book quotes it from [98] without proof.'''
+deps = ["theorem_7_3_11", "theorem_7_3_10_range", "definition_7_2_13"]
 
 [[node]]
 id = "equation_7_3_3"
@@ -182,34 +244,34 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 [[node]]
 id = "example_7_3_15_boundary"
 kind = "theorem"
-desc = '''Example 7.3.15, the boundary clause: on an open bounded `Ω ⊆ ℝ^d` with Lipschitz
-boundary, Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` and `f_1(v) = ∫_Γ |v| ds` gives a
-constant `c > 0` with `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ)})` for all `v ∈ H^1(Ω)`. The
-`H_0^1` clause (7.3.10) that the book derives from it is `example_7_3_15`, proved directly by
-Poincaré's inequality.
-
-Blocked: 2026-09-21 (blocker 2 of `notes/frontier.md`; re-checked, unchanged by the closing
-round): `f_1` is the boundary integral of the trace, which needs `theorem_7_3_10`. Everything else is in place: with a trace
-`γ : W^{1,2}(Ω) → L^1(Γ)` bounded (`(H1)`), the seminorm `f_1 = ‖γ ·‖_{L^1(Γ)}` satisfies (H2)′
-because a constant with zero trace is zero (`Γ` has positive surface measure), and
-`theorem_7_3_13` gives the inequality in ten lines.'''
-deps = ["theorem_7_3_13", "theorem_7_3_10"]
+desc = '''Example 7.3.15, the boundary clause, on a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`,
+`hb : Bornology.IsBounded Ω`, `Ω` connected as in `theorem_7_3_13`; the book's "Lipschitz"
+restated as `C¹`): with `γ := (hΩ.traceFamily hb).traceL 2 _ : H¹(Ω) →L L²(Γ)` and
+`f₁ v := ∫ |γ v| dσ` (`σ := hΩ.boundaryMeasure hb`, finite, so `L²(σ) ⊆ L¹(σ)` and `f₁` is a
+seminorm bounded by `√(σ Γ) ‖γ‖ ‖v‖`), Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` gives a
+constant `c > 0` with `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ∫_Γ |γ v| dσ)` for all `v ∈ H¹(Ω)`. Restated
+2026-09-21 (boundary round): (H1) is the boundedness of the trace; (H2)′ — a constant `v` with
+`f₁ v = 0` is `0` — holds because the trace of the constant `c` is the constant `c` on `Γ`
+(`traceL_ae_eq` for the continuous representative) and `σ Γ > 0`
+(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen` with `U = univ`, `Ω` nonempty). The `H¹₀` clause
+(7.3.10) is `example_7_3_15`, proved directly. ★, ~40 lines after `theorem_7_3_13`.'''
+deps = ["theorem_7_3_13", "theorem_7_3_10", "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"]
 
 [[node]]
 id = "example_7_3_16"
 kind = "theorem"
-desc = '''Example 7.3.16: with `Γ_0 ⊆ Γ` open and nonempty and `f_1(v) = ∫_{Γ_0} |v| ds`, Theorem
-7.3.12 gives `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ_0)})` on `H^1(Ω)` and hence
-`‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` on `H^1_{Γ_0}(Ω) = {v ∈ H^1(Ω) : v = 0 a.e. on Γ_0}` -- the
-Poincare-Friedrichs inequality under a mixed boundary condition. Not formalized: as Example 7.3.15,
-it needs the trace of Theorem 7.3.10.
-
-Blocked: 2026-09-21 (blocker 2; re-checked, unchanged by the closing round). `theorem_7_3_12`
-is proved; what is missing is only the trace
-`γ` of `theorem_7_3_10` (the seminorm `f_1(v) = ‖γ v‖_{L^1(Γ_0)}` and the fact that a constant
-vanishing on `Γ_0` of positive surface measure is zero), and "`v = 0` a.e. on `Γ_0`" is not
-statable before the boundary measure exists. Ten lines after `theorem_7_3_10`.'''
-deps = ["theorem_7_3_12", "theorem_7_3_10"]
+desc = '''Example 7.3.16 on a bounded `C¹` domain (`hΩ`, `hb`, `Ω` connected; "Lipschitz" restated as
+`C¹`): for an open `U ⊆ ℝ^d` meeting `∂Ω` — the book's "open non-empty `Γ₀ ⊆ Γ`" is
+`Γ₀ := U ∩ frontier Ω` — and `f₁ v := ∫ x in U, |γ v x| ∂σ` (`γ := (hΩ.traceFamily hb).traceL 2 _`,
+`σ := hΩ.boundaryMeasure hb`), Theorem 7.3.12 with `k = 1`, `p = 2`, `J = 1` gives `c > 0` with
+`‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + f₁ v)` on `H¹(Ω)`, hence `‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` on
+`H¹_{Γ₀}(Ω) := {v ∈ H¹(Ω) : γ v = 0 σ-a.e. on U}` — the Poincaré–Friedrichs inequality under a
+mixed boundary condition. Restated 2026-09-21 (boundary round): "`v = 0` a.e. on `Γ₀`" is
+`(γ v : E → ℝ) =ᵐ[σ.restrict U] 0`; (H2) for `theorem_7_3_12` — a polynomial of degree `≤ 0`
+(a constant) with `f₁ = 0` is zero — uses `σ U > 0`
+(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`) and the trace of a constant. ★, ~40 lines
+after `theorem_7_3_12`.'''
+deps = ["theorem_7_3_12", "theorem_7_3_10", "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"]
 
 [[node]]
 id = "fact_one_le_two_coe"

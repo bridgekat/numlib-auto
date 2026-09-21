@@ -81,30 +81,9 @@ id = "IsBoundaryGraphAt.exists_contDiffChart"
 [[node]]
 id = "IsContDiffDomain.isContDiffChartDomain"
 
-[[node]]
-id = "IsContDiffChartDomain.isContDiffDomain"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **Chart ⇒ graph** (decision D9, the implicit-function-theorem direction): for `1 ≤ n`,
-`IsContDiffChartDomain n Ω → IsContDiffDomain n Ω`. Given a chart `H` at `x₀ = H 0`, the boundary
-near `x₀` is the zero set of `Φ := (H⁻¹ ·) (Fin.last d)`, which is `C^n` near `x₀` with
-`dΦ(x₀) ≠ 0` (the differential of `H⁻¹` at `x₀` is invertible, its inverse being `dH(0)`), and
-`Ω ∩ U = {Φ > 0}`. Choose a rotation `T` with `T (∇Φ(x₀)) ∈ ℝ_{>0} e_N` (a rigid motion of the
-coordinates); Mathlib's implicit function theorem for `C^n` maps,
-`ContDiffAt.implicitFunction` with `ContDiffAt.contDiffAt_implicitFunction`
-(`Mathlib/Analysis/Calculus/ImplicitContDiff.lean`), applied to `Φ ∘ T⁻¹` split as
-`(x', x_N) ↦ …` with `∂_N (Φ ∘ T⁻¹) > 0`, gives `g` of class `C^n` near `x₀'` with
-`Φ ∘ T⁻¹ (x', x_N) = 0 ↔ x_N = g x'` locally, and the sign of `∂_N` makes `{Φ > 0}` the region
-above the graph in a small ball, which is `IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r` after
-extending `g` from a neighbourhood to a global `C^n` function (multiply by a bump and add a
-constant, or use `ContDiffOn.exists_contDiff_extension`-type lemmas — check
-`Mathlib/Analysis/Calculus/ContDiff/…` for an extension lemma; if none, restrict the class to
-`ContDiffOn` on a ball, which `IsBoundaryOfClass` does not allow, so a global extension is
-required; a bump-function patch does it in ~60 lines). ★★★, 400–600 lines: the implicit
-function theorem in Mathlib is stated on `E₁ × E₂`, and `EuclideanSpace ℝ (Fin (d + 1))` must be
-split as `EuclideanSpace ℝ (Fin d) × ℝ` through the rotation, plus the orientation and
-locality bookkeeping. No consumer in this project; recorded so that the two definitions of a
-`C^1` domain are provably the same, as decision D9 asks.'''
-deps = ["IsContDiffChartDomain", "IsContDiffDomain", "ContDiffChart"]
+# The chart ⇒ graph bridge `IsContDiffChartDomain.isContDiffDomain` moved to
+# `plans/Numlib/Analysis/Sobolev/Boundary/ChartGraph.toml` (boundary round, 2026-09-21), with its route
+# through `ContDiffAt.implicitFunction` made concrete; `Chart.lean` stays read-only.
 
 [[node]]
 id = "isContDiffChartDomain_upperHalfSpace"

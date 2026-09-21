@@ -28,30 +28,39 @@ id = "theorem_11_4_7"
 id = "example_11_4_4"
 kind = "theorem"
 desc = '''
-Example 11.4.4: Theorem 11.4.2 applied to the friction problem (11.1.13) on a polygonal
-`Ω ⊆ ℝ²` with `Γ = ⋃ᵢ Γᵢ` a union of segments and `V_h` a piecewise linear finite element space on
-a regular partition. An integration by parts turns the residual into
-`R(v_h, u) = ∫_Γ [(∂u/∂ν)(v_h - u) + g (|v_h| - |u|)] ds + ∫_Ω (-Δu + u - f)(v_h - u) dx`, whence
-`|R(v_h, u)| ≤ (‖∂u/∂ν‖_{L²(Γ)} + g √(meas Γ)) ‖v_h - u‖_{L²(Γ)}`, and with the regularity
-`u ∈ H²(Ω)`, `u|_{Γᵢ} ∈ H²(Γᵢ)` the error estimate has order `h` in `H¹(Ω)`.
-
-Blocked (2026-09-21, agent fem2; replaces the 2026-09-15 note). What now exists: the
-triangulation scaffold with the linear element and its finite element space `V_h`
-(`Triangulation.polySpace`, `Numlib/Analysis/Sobolev/Triangulation.lean`), Falk's lemma in its
-pointwise form (`norm_sub_le_of_isVariationalInequalitySolution`), the interpolation estimates
-of Theorem 10.3.9 for the linear element (`Chapter10.theorem_10_3_9_linear`), and the obstacle
-analogue `example_11_4_3` proved with the same tools. What is missing is everything that lives
-on `Γ`: the friction problem itself (`example_11_3_11`, the functional `j(v) = g ∫_Γ |v| ds`)
-needs the trace `v ↦ v|_Γ` and the surface measure `ds` on the polygon's boundary, the
-integration by parts of the residual needs the normal derivative `∂u/∂ν ∈ L²(Γ)` and Green's
-formula on a polygon, and the estimate needs the trace inequality `‖v_h − u‖_{L²(Γ)} ≤ c
-‖v_h − u‖_{H¹(Ω)}` and the one-dimensional interpolation estimate on each side `Γᵢ` — all of
-`notes/frontier.md` blocker 2 (no boundary measure, trace or Green formula on a domain in
-`Numlib/`, checked: `Numlib/Analysis/Sobolev/Zero.lean` reads boundary values only through
-continuous representatives, and Mathlib's divergence theorems are box-only). Estimate: after
-blocker 2, ~300 lines on the model of `example_11_4_3`.
+Example 11.4.4, the error estimate for the linear finite element solution of the friction problem
+(11.1.13) on a polygon, with the hypotheses made explicit: `Ω : Opens ℝ²`, `𝒯 : Triangulation Ω`
+(the book's regular partition; the shape-regularity constant enters through
+`Chapter10.theorem_10_3_9_linear`), `hI : 𝒯.InteriorEdgesSubset`, `hF : 𝒯.FrontierSubsetEdges`,
+`σ := 𝒯.boundaryMeasure`, `γ := (𝒯.traceFamily hI).traceL 2 _`, `g > 0`, `f ∈ L²(Ω)`, `u` the
+solution of (11.4.10) (`example_11_3_11` for `Triangulation.traceFamily`), `u_h ∈ V_h := 𝒯.polySpace 2 1`
+its finite element solution (the discrete inequality over `V_h`, `theorem_11_4_1`), and the
+regularity assumed by the book: `u ∈ H²(Ω)` (an element `U₂ : SobolevEuclidean 2 2 2 Ω` with
+`toLowerOrderL U₂ = u`) with a representative `ũ` continuous on `closure Ω`, and
+`u|_{Γᵢ} ∈ H²(Γᵢ)` on every boundary edge — for each boundary edge `(T, a)` with ends `P, Q`,
+`t ↦ ũ (AffineMap.lineMap P Q t)` lies in `SobolevInterval 2 0 1` (`Numlib/Analysis/Sobolev/Interval.lean`).
+Then `‖u − u_h‖_{H¹(Ω)} ≤ c(u) * 𝒯.meshSize` with `c(u)` depending on `‖∂_ν u‖_{L²(σ)}` (the
+normal trace `BoundaryData.TraceFamily.normalTrace U₂`), `g √(σ Γ)`, `‖−Δu + u − f‖_{L²(Ω)}`,
+`|u|_{H²(Ω)}`, the `H²(0,1)` seminorms of the edge restrictions and the shape regularity.
+Restated 2026-09-21 (boundary round, replacing the fem2 note of the same day). Route, the
+book's: Falk's lemma `theorem_11_4_2` bounds `‖u − u_h‖²` by
+`c inf_{v_h ∈ V_h} (‖u − v_h‖² + |R(v_h, u)|)`; the residual
+`R(v_h, u) = a(u, v_h − u) + j(v_h) − j(u) − ℓ(v_h − u)` is integrated by parts with Green's
+formula for `u ∈ H²`, `v ∈ H¹` on the polygon (`BoundaryData.TraceFamily.green_laplacian` for
+`Triangulation.traceFamily hI`): `R = ∫ [∂_ν u (γ v_h − γ u) + g (|γ v_h| − |γ u|)] dσ + ∫_Ω (−Δu + u − f)(v_h − u)`,
+so `|R| ≤ (‖∂_ν u‖_{L²(σ)} + g √(σ Γ)) ‖γ v_h − γ u‖_{L²(σ)} + ‖−Δu + u − f‖ ‖v_h − u‖_{L²(Ω)}`;
+take `v_h := Π_h ũ` (`𝒯.globalInterp` for the linear element, in `V_h` by
+`Triangulation.exists_mem_polySpace`), with `‖u − Π_h u‖_{H¹} ≤ C h |u|_{H²}` and
+`‖u − Π_h u‖_{L²} ≤ C h² |u|_{H²}` (`Chapter10.theorem_10_3_9_linear`), and on the boundary
+`γ (u − Π_h u) = ũ − Π_h ũ` on `Γ` (`traceL_ae_eq`, both continuous on the closure) so
+`‖γ(u − Π_h u)‖²_{L²(σ)} = ∑_{boundary edges} ‖(ũ − Π_h ũ) ∘ lineMap‖²_{L²(0,1)} · |e|`
+(`integral_edgeMeasure`), each term `≤ C h⁴ |ũ ∘ lineMap|²_{H²(0,1)}` by the one-dimensional
+interpolation estimate `integral_sq_sub_piecewiseLinearInterpCLM_le` (`Numlib/Approximation/SobolevInterpolation.lean`)
+since the restriction of the linear interpolant to an edge is the linear interpolant of the edge
+restriction (`Triangulation.localInterp_lineMap`). Altogether `‖u − u_h‖² ≤ C h²`. ★★★,
+~600 lines, on the model of `example_11_4_3`; the edge bookkeeping is the new part.
 '''
-deps = ["theorem_11_4_2", "example_11_3_11", "AtkinsonHan.Chapter10.theorem_10_3_9"]
+deps = ["theorem_11_4_2", "example_11_3_11", "AtkinsonHan.Chapter10.theorem_10_3_9_linear", "Triangulation.traceFamily", "BoundaryData.TraceFamily.green_laplacian", "integral_sq_sub_piecewiseLinearInterpCLM_le", "Triangulation.FrontierSubsetEdges"]
 
 [[node]]
 id = "example_11_4_3"
@@ -108,20 +117,28 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the bo
 id = "theorem_11_4_5"
 kind = "theorem"
 desc = '''
-Theorem 11.4.5: with `Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1 a.e. on Γ}`, the simplified friction problem
-(11.4.10) is equivalent to finding `u ∈ V` and `λ ∈ Λ` with (11.4.21)
-`∫_Ω (∇u · ∇v + u v) dx + g ∫_Γ λ v ds = ∫_Ω f v dx` for all `v ∈ V` and (11.4.22) `λ u = |u|` a.e.
-on `Γ`; the Lagrange multiplier `λ` is unique.
-
-Blocked (2026-09-21, agent fem2; replaces the 2026-09-15 note, whose verdict stands). The
-statement lives on the boundary: the space `L^∞(Γ)` and the integrals `∫_Γ λ v ds` need the
-surface measure on `Γ = ∂Ω` and the trace `v ↦ v|_Γ` (Theorem 7.3.10, `theorem_7_3_10`, itself
-open on blocker 2), and the proof runs on the trace space `H^{1/2}(Γ)`, its density in `L²(Γ)`, a
-Hahn–Banach extension into `(L¹(Γ))'` and the duality `(L¹(Γ))' = L^∞(Γ)` (the last exists,
-`MeasureTheory.Lp.toDual_surjective` for `p = 1` on a σ-finite measure). Checked in `Numlib/`
-(2026-09-21): no boundary measure, no trace and no `H^{1/2}(Γ)` — `notes/frontier.md` blocker 2;
-`Numlib/Analysis/Sobolev/Slobodeckij.lean` has the fractional spaces on open sets of `ℝ^N`, not on
-a boundary. Exercise 11.4.4 is a second proof through the regularization (11.4.14), on the same
-objects. Estimate: after blocker 2 (trace, `L^p(Γ)`), ~250 lines.
+Theorem 11.4.5, the Lagrange multiplier of the friction problem, over the boundary interface:
+for `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (bounded `C¹` domains, polygons without slits),
+`σ := B.σ`, `γ := 𝒯.traceL 2 _ : H¹(Ω) →L L²(σ)`, `g > 0`, `f ∈ L²(Ω)`, and
+`Λ := {μ : Lp ℝ ⊤ σ | |μ| ≤ 1 σ-a.e.}`: `u ∈ V = H¹(Ω)` solves the friction problem (11.4.10)
+(`a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v`, `j v = g ∫ |γ v| dσ`) if and only if there
+is `λ ∈ Λ` with (11.4.21) `a(u, v) + g ∫ λ · γ v dσ = ℓ(v)` for all `v ∈ V` and (11.4.22)
+`λ · γ u = |γ u|` σ-a.e.; and `λ` is unique. Restated 2026-09-21 (boundary round; the
+2026-09-21 fem2 note's route through `H^{1/2}(Γ)` is replaced by one that needs no fractional
+space). (⇐): `λ γ v ≤ |γ v|` and `λ γ u = |γ u|` give (11.4.10) from (11.4.21) at `v − u`. (⇒):
+from (11.4.10) with `v = u ± w`, the functional `F w := ℓ w − a(u, w)` satisfies
+`|F w| ≤ g ∫ |γ w| dσ`, so it factors through the trace as a linear functional on the subspace
+`range γ ⊆ L¹(σ)` (`L²(σ) ⊆ L¹(σ)`, `σ` finite) of norm `≤ g`; Hahn–Banach
+(`Real.exists_extension_norm_eq` / `exists_extension_norm_eq` on the subspace of `Lp ℝ 1 σ`)
+extends it to `L¹(σ)` with norm `≤ g`, and the duality `(L¹(σ))' = L^∞(σ)`
+(`MeasureTheory.Lp.toDual_surjective`-type / `L1.toDual` on the finite `σ`) represents it by
+`λ̄ ∈ L^∞(σ)` with `‖λ̄‖_∞ ≤ g`; `λ := λ̄ / g ∈ Λ` gives (11.4.21). (11.4.22): `v = u` in
+(11.4.21) together with `a(u, u) + j(u) = ℓ(u)` (from (11.4.10) at `v = 0` and `v = 2u`) gives
+`∫ λ γ u dσ = ∫ |γ u| dσ` while `λ γ u ≤ |γ u|` pointwise, so equality a.e. Uniqueness: two
+multipliers satisfy `∫ (λ − λ') γ v dσ = 0` for all `v ∈ H¹(Ω)`; the traces of `H¹(Ω)` contain
+the restrictions of all `C_c^∞(ℝ^N)` functions (`traceL_ae_eq`, `ContDiff.memSobolev_of_isBounded`),
+and `ae_eq_zero_of_integral_contDiff_smul_eq_zero` (`Mathlib/Analysis/Distribution/AEEqOfIntegralContDiff.lean`,
+any measure) gives `λ = λ'` σ-a.e. — no density of `H^{1/2}(Γ)` in `L²(Γ)` is needed. Exercise
+11.4.4's proof through the regularization (11.4.14) is not planned. ★★★, ~350 lines.
 '''
-deps = ["example_11_3_11", "AtkinsonHan.Chapter07.theorem_7_3_10"]
+deps = ["example_11_3_11", "AtkinsonHan.Chapter07.theorem_7_3_10", "BoundaryData.TraceFamily", "ContDiff.memSobolev_of_isBounded"]

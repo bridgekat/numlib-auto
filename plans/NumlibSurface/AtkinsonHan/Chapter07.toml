@@ -96,4 +96,16 @@ carrying the book's statement and, where it is open, the reason.
 * **§7.6, integration by parts on a Lipschitz domain.** Green's and divergence formulas
   `∫_Ω u_{x_i} v = ∫_Γ u v ν_i − ∫_Ω u v_{x_i}` need surface measure on a Lipschitz boundary and
   the trace; Mathlib's divergence theorem is for boxes.
+
+**Boundary round (2026-09-21, `notes/boundary/planning-brief.md`).** The trace, the surface measure
+and Green's formula are now planned in `Numlib/Analysis/Sobolev/Boundary/` on bounded `C¹` graph
+domains (`IsContDiffDomain 1`) and on triangulated polygons, and the nodes above that waited on
+them are restated with "Lipschitz" read as `C¹` or polygonal: `example_7_1_9` (through lines, no
+boundary theory), `example_7_2_7`, `example_7_2_8` (through the triangles' traces),
+`definition_7_2_13` (definable over a graph atlas; its atlas independence `definition_7_2_13_indep`
+is split off and blocked), `theorem_7_3_10` (a)–(b) with `theorem_7_3_10_polygon` and
+`theorem_7_3_10_compact` (the range clause `theorem_7_3_10_range` is split off and blocked),
+`theorem_7_3_11` (the `L^p` targets; `theorem_7_3_11_fractional` blocked),
+`example_7_3_15_boundary`, `example_7_3_16`, and §7.6 (`proposition_7_6_1`, `_conj`, `_polygon`).
+Lipschitz boundaries in general remain out of scope.
 '''

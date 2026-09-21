@@ -193,4 +193,16 @@ corpus proves elliptic regularity" becomes false for `p = 2` on `C²` domains.
 `Elliptic/Regularity` cases B and C₂ (≈ 3 900; Theorem 9.26 and Remark 24 a further 1 200).
 Chapter 10 consumes `Dirichlet`, `Regularity` (Remark 25 and `regularity_dirichlet`) and
 `Spectral.dirichletEigenbasis`.
+
+**Boundary round (2026-09-21, `notes/boundary/planning-brief.md`).** Blocker 2 is planned:
+`Numlib/Analysis/Sobolev/Boundary/` provides the surface measure, the outward normal, the
+divergence theorem and Green's formula on bounded `C¹` graph domains, the chart ⇒ graph bridge
+`IsContDiffChartDomain.isContDiffDomain` (`ChartGraph.lean`, the implicit function theorem), and
+the trace `W^{1,p}(Ω) → L^p(Γ)` of Comment 7 with `W_0^{1,p} ⊆ ker` (`Data.lean`) and
+`ker ⊆ W_0^{1,p}` (`Kernel.lean`). Restated here: `isContDiffDomain_of_isClassC1`,
+`example_9_4_stepA`, `example_9_4_stepD` (through the classical Green formula
+`BoundaryData.integral_laplacian_mul_add_eq` and the full support of the surface measure), and
+the boundary condition of Theorem 9.26 as `theorem_9_26_normalDeriv` (the `H²` regularity itself
+stays deferred); `remark_9_24_neumann` is split off and blocked. Comment 7 (i) and (iv), the
+fractional spaces on `Γ`, remain out of scope.
 '''

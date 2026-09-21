@@ -1,0 +1,89 @@
+desc = '''
+Korn's second inequality on `[H¹(Ω)]^N` of a bounded `C¹` domain and its consequence for the
+mixed displacement–traction problem of linear elasticity (Atkinson–Han §8.5, Theorem 8.5.1 with
+`meas Γ_D > 0`): `‖v‖_{H¹} ≤ C (‖v‖_{L²} + ‖ε(v)‖_{L²})`, and `‖v‖_{H¹} ≤ C ‖ε(v)‖_{L²}` on
+`V = {v ∈ [H¹]^N : Tv = 0 on Γ_D}` when `σ(Γ_D) > 0`. Planned with the route and no proof (the
+brief's follow-up wave): the first inequality is the deep one. Its standard proof
+(Duvaut–Lions, Nečas) writes `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` in `H^{−1}(Ω)` and invokes
+**Lions's lemma**: on a bounded Lipschitz (a fortiori `C¹`) domain, a distribution `f` with
+`f ∈ H^{−1}(Ω)` and `∇f ∈ H^{−1}(Ω)^N` lies in `L²(Ω)`, with `‖f‖_{L²} ≤ C (‖f‖_{H^{−1}} + ‖∇f‖_{H^{−1}})`
+— itself proved through a right inverse of the divergence (Bogovskiĭ) or through the Nečas
+inequality `‖f‖_{L²} ≤ C ‖∇f‖_{H^{−1}}` on `L²_0`, none of which the library has; alternatives
+(Kondratiev–Oleĭnik's integral representation for star-shaped domains, or the Fourier proof on
+`ℝ^N` combined with a `C¹` extension operator that commutes with `ε`, which does not exist) are no
+cheaper. The consequence on `V` is then the standard compactness argument (Rellich on the
+extension domain, `Compactness.lean`; the kernel of `ε` on a connected domain is the rigid
+motions `a + Wx`, `W` skew, a Sobolev-regularity computation; a rigid motion vanishing on a
+boundary piece of positive surface measure is zero).
+
+Blocked: not on the trace — with `IsContDiffDomain.traceFamily` every statement below is
+statable — but on Lions's lemma / the Nečas inequality in `H^{−1}`, a research-scale
+formalization (2000+ lines, needs `H^{−1}(Ω)` as the dual of `H^1_0` with its norm, already
+`SobolevEuclideanZero.exists_dual_repr` of `Zero.lean`, and the Bogovskiĭ operator or an
+equivalent). Imports `Boundary/ContDiffDomain.lean`, `Numlib/Analysis/Sobolev/Korn.lean`.
+'''
+
+[[node]]
+id = "SobolevEuclideanVec"
+kind = "definition"
+desc = '''`SobolevEuclideanVec (N : ℕ) (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type := PiLp 2 fun _ : Fin N ↦ SobolevEuclidean N 1 2 Ω`,
+the space `[H¹(Ω)]^N` of vector fields with components in `H¹(Ω)`, the `ℓ²` product of `N` copies
+(a Hilbert space with `‖v‖² = ∑ᵢ ‖vᵢ‖²`), the analogue of `SobolevEuclideanZeroVec` of
+`Korn.lean` without the boundary condition; with `SobolevEuclideanVec.partialL (i j) : [H¹]^N →L L²(Ω)`,
+`v ↦ ∂ⱼvᵢ`, and `SobolevEuclideanVec.strainL (i j) : [H¹]^N →L L²(Ω)`, `v ↦ ½ (∂ⱼvᵢ + ∂ᵢvⱼ)`,
+copied from `SobolevEuclideanZeroVec.partialL`, `strainL` (which are their restrictions to the
+subspace `[H¹₀]^N`). Also the trace componentwise (decision B8):
+`SobolevEuclideanVec.traceL (𝒯 : B.TraceFamily) (v) : Fin N → Lp ℝ 2 B.σ := fun i ↦ 𝒯.traceL 2 _ (v i)`,
+and the mixed space `SobolevEuclideanVec.dirichletOn (𝒯) (Γ_D : Set E) : Submodule ℝ (SobolevEuclideanVec N Ω) := {v | ∀ i, (𝒯.traceL 2 _ (v i) : E → ℝ) =ᵐ[B.σ.restrict Γ_D] 0}`
+— `V = {v ∈ [H¹]^N : v = 0 on Γ_D}` of Atkinson–Han (8.5.13), closed by continuity of the trace.
+★'''
+deps = ["SobolevEuclidean", "SobolevEuclideanZeroVec", "BoundaryData.TraceFamily"]
+
+[[node]]
+id = "SobolevEuclideanVec.korn_second"
+kind = "theorem"
+desc = '''**Korn's second inequality** ([Nečas–Hlaváček], Duvaut–Lions; Atkinson–Han §8.5, the
+`V`-ellipticity remark after (8.5.15)): for a bounded `C¹` domain `hΩ : IsContDiffDomain 1 Ω`,
+`hb : Bornology.IsBounded Ω`, there is `C` with
+`‖v‖ ^ 2 ≤ C * (∑ i, ‖(SobolevMultiIndex.fnL … (v i))‖ ^ 2 + ∑ i, ∑ j, ‖strainL i j v‖ ^ 2)`
+for every `v : SobolevEuclideanVec N Ω`, i.e. `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})`. On
+`[H¹₀]^N` the sharper `SobolevEuclideanZeroVec.korn_first` holds without the `L²` term
+(`Korn.lean`); on `[H¹]^N` the boundary terms of the two integrations by parts do not vanish and
+the inequality needs Lions's lemma, as the group description records.
+
+Blocked: Lions's lemma (`f ∈ H^{−1}`, `∇f ∈ H^{−1}` ⇒ `f ∈ L²` on a bounded Lipschitz/`C¹`
+domain) is not available and is research-scale (Bogovskiĭ's right inverse of the divergence or
+the `H^{−1}` Nečas inequality; 2000+ lines). Not attempted in the boundary round; the trace is not
+what is missing.'''
+deps = ["SobolevEuclideanVec", "IsContDiffDomain.traceFamily", "SobolevEuclideanZeroVec.korn_first"]
+
+[[node]]
+id = "SobolevEuclideanVec.norm_le_strain_of_dirichletOn"
+kind = "theorem"
+desc = '''**Korn's inequality on the mixed space**: for `hΩ : IsContDiffDomain 1 Ω`, `hb`, `Ω`
+connected (`IsPreconnected (Ω : Set E)`), a measurable `Γ_D ⊆ frontier Ω` with
+`0 < (hΩ.boundaryMeasure hb) Γ_D`, there is `C` with `‖v‖ ^ 2 ≤ C * ∑ i, ∑ j, ‖strainL i j v‖ ^ 2`
+for every `v ∈ SobolevEuclideanVec.dirichletOn (hΩ.traceFamily hb) Γ_D` — the `V`-ellipticity of
+the elasticity form on `V = {v ∈ [H¹]^N : v = 0 on Γ_D}`, Atkinson–Han Theorem 8.5.1's missing
+step. Route from `korn_second` by contradiction and compactness: a sequence `vₙ ∈ V` with
+`‖vₙ‖ = 1` and `ε(vₙ) → 0` has, by Rellich (`SobolevEuclidean.isCompactEmbedding_fnL` on the
+extension domain), a subsequence converging in `L²`, hence by `korn_second` in `H¹`, to some
+`v ∈ V` with `‖v‖ = 1` and `ε(v) = 0`; the kernel of `ε` on a connected domain consists of the
+rigid motions `x ↦ a + W x` with `W` skew (`∂ⱼ∂ₖ vᵢ = 0` in the distributional sense from the
+identity `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ`, so `v` is affine on the connected `Ω` —
+`Numlib/Analysis/Sobolev/DenyLions.lean`'s "`|u|_{2,p} = 0` forces a polynomial of degree `≤ 1`"),
+and a rigid motion whose trace vanishes on a set of positive surface measure is zero (an affine
+map vanishing on `Γ_D`, `σ(Γ_D) > 0` — `Γ_D` is then not contained in a hyperplane… this last
+step needs care: a rigid motion `a + Wx` vanishes on the zero set of an affine map, of dimension
+`≤ N − 1`, which can contain a piece of `∂Ω` of positive measure (a flat face); the correct
+statement uses that `W` is skew: `a + Wx = 0` on a set not contained in an affine subspace of
+dimension `≤ N − 2`… for `N = 2, 3` the classical argument is that the zero set of a nonzero
+infinitesimal rigid motion is a point (`N = 2`) or a line (`N = 3`), of surface measure zero;
+in general dimension the zero set of `a + Wx` is an affine subspace of even codimension `≥ 2`,
+hence `σ`-null on a `C¹` hypersurface — this needs `σ` of a `(N−2)`-dimensional affine subspace
+to vanish, which follows from `boundaryMeasure_restrict_ball` and the Lebesgue-nullity of an
+affine subspace's preimage in each chart, `~100 lines`).
+
+Blocked: on `SobolevEuclideanVec.korn_second` (Lions's lemma); the compactness and rigid-motion
+steps are ~400 lines once it exists.'''
+deps = ["SobolevEuclideanVec.korn_second", "SobolevEuclidean.isCompactEmbedding_fnL", "IsContDiffDomain.boundaryMeasure_restrict_ball"]
