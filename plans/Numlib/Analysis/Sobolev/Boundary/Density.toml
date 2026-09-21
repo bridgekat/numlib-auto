@@ -1,189 +1,125 @@
-desc = '''
-Density of smooth functions up to the boundary, in the two forms the trace theory consumes
-(decision B7 of `notes/boundary/planning-brief.md`, and Evans, *PDE* §5.5 Theorem 1 (ii)):
-
-* `SobolevEuclidean.HasSmoothDensity N p Ω`: every `u ∈ W^{1,p}(Ω)` is the limit of restrictions
-  of `C_c^∞(ℝ^N)` functions — the conclusion of Brezis's Corollary 9.8
-  (`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto`) as a predicate, so that
-  `Boundary/Trace.lean` can extend the trace from the smooth functions by continuity;
-* `SobolevEuclidean.HasUniformSmoothDensity N p Ω`: when moreover `u` has a representative `ũ`
-  continuous on `closure Ω`, the approximants can be taken to converge to `ũ` *uniformly on
-  `closure Ω`* as well — this is what identifies the trace of `u` with `ũ|_{∂Ω}` (Evans's proof of
-  Theorem 1 (ii): "the functions constructed in §5.3.3 converge uniformly").
-
-The extension theorem gives the first on `C¹` chart domains (`IsSobolevExtensionDomain.hasSmoothDensity`),
-but not the second, whose approximants must be built with an eye on continuity. Both are proved here
-for every bounded open set with the **segment property** of Adams, *Sobolev Spaces*, 3.21–3.22
-(`HasSegmentProperty Ω`: each boundary point has a neighbourhood `U` and a direction `y` with
-`closure Ω ∩ U + t y ⊆ Ω` for `0 < t < 1`), by the classical construction: a smooth partition of
-unity `θ₀ + ∑ θᵢ = 1` on `closure Ω` subordinate to the `U_i` (Brezis Lemma 9.3,
-`IsCompact.exists_contDiff_partitionOfUnity`), the translates `(θᵢ u)(· + t yᵢ)`, which are
-`W^{1,p}` (and continuous, for continuous `u`) on an open neighbourhood of `closure Ω`, and
-mollification (`MemSobolev.tendsto_sobolevNorm_convolution_sub`); translation is continuous in
-`L^p` (`MeasureTheory.Lp.continuous_translateCurve` of `TranslationCurve.lean`). Instances of the
-segment property: every bounded graph domain with continuous graphs — `IsContDiffDomain n`,
-`IsLipschitzDomain` — and every bounded convex open set (direction `x₀ − x` towards an interior
-point, `Convex.openSegment_closure_interior_subset_interior`), hence every triangle. By-products
-beyond this round: density of `C_c^∞(ℝ^N)` in `W^{1,p}(Ω)` on bounded *Lipschitz* graph domains
-(the Lipschitz case of Atkinson–Han Theorem 7.3.2) and on convex polygons.
-
-Wave A, ~700 lines (the construction is ~500). Imports `Numlib/Analysis/Sobolev/Extension.lean`,
-`Cutoff.lean`, `Translate.lean`, `Density.lean`, `TranslationCurve.lean`, `Chart.lean`,
-`Boundary/Data.lean` (for `epigraph`). Notation: `E := EuclideanSpace ℝ (Fin N)`, `Ω : Opens E`.
-'''
-
 [[node]]
 id = "SobolevEuclidean.HasSmoothDensity"
-kind = "definition"
-desc = '''`SobolevEuclidean.HasSmoothDensity (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Prop :=
-∀ u : SobolevEuclidean N 1 p Ω, ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧ ∃ w : ℕ → SobolevEuclidean N 1 p Ω, (∀ n, SobolevMultiIndex.fn (w n) =ᵐ[volume.restrict (Ω : Set _)] v n) ∧ Tendsto w atTop (𝓝 u)`
-— the conclusion of `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto` (Brezis
-Corollary 9.8) verbatim, as a predicate on `Ω`. Consequences (★ each):
-`HasSmoothDensity.dense_smooth : Dense {u | ∃ v, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧ fn u =ᵐ v}`
-(as a `Submodule` of `SobolevEuclidean N 1 p Ω`: `SobolevEuclidean.smoothRestrictions N p Ω`,
-define it), and `HasSmoothDensity.exists_seq_contDiff_one` with `ContDiff ℝ 1` in place of
-`ContDiff ℝ ∞` (weakening). ★'''
-deps = ["SobolevEuclidean", "SobolevMultiIndex.fn"]
 
 [[node]]
 id = "SobolevEuclidean.HasUniformSmoothDensity"
-kind = "definition"
-desc = '''`SobolevEuclidean.HasUniformSmoothDensity (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Prop :=
-∀ (u : SobolevEuclidean N 1 p Ω) (ũ : EuclideanSpace ℝ (Fin N) → ℝ), SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set _)] ũ → ContinuousOn ũ (closure (Ω : Set _)) → ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧ (∃ w : ℕ → SobolevEuclidean N 1 p Ω, (∀ n, SobolevMultiIndex.fn (w n) =ᵐ[volume.restrict (Ω : Set _)] v n) ∧ Tendsto w atTop (𝓝 u)) ∧ TendstoUniformlyOn v ũ atTop (closure (Ω : Set _))`
-— smooth approximation in `W^{1,p}(Ω)` *and* uniformly on `closure Ω` of a Sobolev function
-continuous up to the boundary. It is the hypothesis under which the trace of `u` is `ũ|_{∂Ω}`
-(`BoundaryData.traceL_ae_eq_of_continuousOn` in `Trace.lean`). ★'''
-deps = ["SobolevEuclidean", "SobolevMultiIndex.fn"]
-
-[[node]]
-id = "IsSobolevExtensionDomain.hasSmoothDensity"
-kind = "theorem"
-desc = '''`IsSobolevExtensionDomain N p Ω → p ≠ ⊤ → SobolevEuclidean.HasSmoothDensity N p Ω`:
-`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` on
-`⊤` (`Numlib/Analysis/Sobolev/Operators.lean`), unfolding `IsSobolevExtensionDomain = HasSobolevExtensionOn ⊤`.
-With the corollaries `IsContDiffChartDomain.hasSmoothDensity` (no boundedness, by
-`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto` of `Extension.lean` directly),
-`IsContDiffDomain.hasSmoothDensity` (through `IsContDiffDomain.isContDiffChartDomain`), and
-`EuclideanSpace.hasSmoothDensity_openTriangleOpens` (`isSobolevExtensionDomainAll_openTriangleOpens`
-of `Simplex.lean`). ★'''
-deps = ["SobolevEuclidean.HasSmoothDensity", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn", "IsSobolevExtensionDomain", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto", "isSobolevExtensionDomainAll_openTriangleOpens"]
-
-[[node]]
-id = "HasSegmentProperty"
-kind = "definition"
-desc = '''**The segment property** (Adams, *Sobolev Spaces*, 3.21): for `Ω : Set E`, `E` a real normed
-space, `HasSegmentProperty Ω : Prop := ∀ x ∈ frontier Ω, ∃ U ∈ 𝓝 x, ∃ y : E, ∀ z ∈ closure Ω ∩ U, ∀ t ∈ Set.Ioo (0 : ℝ) 1, z + t • y ∈ Ω`
-— near each boundary point a fixed direction `y` pushes the closure of `Ω` into `Ω`. It excludes
-sets lying on both sides of a piece of their boundary (a slit) and cusps that point inward; it is
-what the translation construction of `HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto`
-needs, and it holds for every graph domain with continuous graphs and for every bounded convex open
-set. ★'''
-deps = []
-
-[[node]]
-id = "IsBoundaryOfClass.hasSegmentProperty"
-kind = "theorem"
-desc = '''A domain whose boundary is locally the graph of a *continuous* function has the segment
-property: for `Ω ⊆ EuclideanSpace ℝ (Fin (d + 1))` open with `IsBoundaryOfClass V Ω` and
-`V ⊆ {g | Continuous g}`, `HasSegmentProperty Ω`. At `x₀ ∈ frontier Ω` take the graph chart
-`(T, g)` at `(x₀, r)`, `U := Metric.ball x₀ (r / 2)` and `y := (r / 4) • T.linearIsometryEquiv.symm (EuclideanSpace.single (Fin.last d) 1)`.
-For `z ∈ closure Ω ∩ U` and `0 < t < 1`: `z + t • y ∈ Metric.ball x₀ r`; `T (z + t • y) = T z + (t r / 4) • single (Fin.last d) 1`
-(the linear part of the affine isometry), so `init (T (z + t y)) = init (T z)` and the last
-coordinate grows by `t r / 4 > 0`; and `z ∈ closure Ω ∩ ball x₀ r ⊆ closure (Ω ∩ ball x₀ r) = closure (ball x₀ r ∩ T ⁻¹' epigraph g) ⊆ T ⁻¹' closure (epigraph g)`
-(an open set meets a closure inside the closure of the intersection; `closure_epigraph`) gives
-`g (init (T z)) ≤ (T z)_N`, hence `g (init (T (z + t y))) < (T (z + t y))_N`, i.e.
-`z + t y ∈ ball x₀ r ∩ T ⁻¹' epigraph g = Ω ∩ ball x₀ r ⊆ Ω`. Corollaries:
-`IsContDiffDomain.hasSegmentProperty (hΩ : IsContDiffDomain n Ω) : HasSegmentProperty Ω`
-(`ContDiff.continuous`) and `IsLipschitzDomain.hasSegmentProperty` (`LipschitzWith.continuous`). ★★'''
-deps = ["HasSegmentProperty", "IsBoundaryOfClass", "EuclideanSpace.closure_epigraph", "IsContDiffDomain", "IsLipschitzDomain"]
-
-[[node]]
-id = "Convex.hasSegmentProperty"
-kind = "theorem"
-desc = '''A bounded convex open set with nonempty interior has the segment property: for
-`Ω : Set E` (`E` a real normed space) with `IsOpen Ω`, `Convex ℝ Ω`, `Ω.Nonempty`,
-`HasSegmentProperty Ω`. Pick `x₀ ∈ Ω` and `δ > 0` with `Metric.ball x₀ δ ⊆ Ω`; at `x ∈ frontier Ω`
-take `U := Metric.ball x (δ / 2)` and `y := x₀ - x`. For `z ∈ closure Ω ∩ U` and `0 < t < 1`,
-`z + t • (x₀ - x) = (1 - t) • z + t • (x₀ + (z - x))` with `x₀ + (z - x) ∈ Metric.ball x₀ (δ / 2) ⊆ interior Ω`
-and `z ∈ closure Ω`, so it lies in `interior Ω = Ω` by
-`Convex.openSegment_closure_interior_subset_interior` (Mathlib, `Mathlib/Analysis/Convex/Topology.lean`).
-Boundedness is not used (kept in the statement's name only as the standing hypothesis of its
-consumers, drop it). Instances: the open triangles (`EuclideanSpace.convex_openTriangle`,
-`isOpen_openTriangle`), balls, convex polygons. ★★'''
-deps = ["HasSegmentProperty"]
-
-[[node]]
-id = "HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto"
-kind = "theorem"
-desc = '''**Density of `C_c^∞(ℝ^N)` up to the boundary on a bounded domain with the segment property, with
-uniform convergence for continuous functions** (Adams, *Sobolev Spaces*, Theorem 3.22 at order
-one, with Evans's remark on uniform convergence): for `Ω : Opens E` with
-`Bornology.IsBounded (Ω : Set E)`, `HasSegmentProperty (Ω : Set E)`, `1 ≤ p < ∞` and
-`u : SobolevEuclidean N 1 p Ω`, there are `v : ℕ → E → ℝ` smooth with compact support and
-`w : ℕ → SobolevEuclidean N 1 p Ω` with `fn (w n) =ᵐ[volume.restrict Ω] v n` and
-`Tendsto w atTop (𝓝 u)`, such that moreover, for every `ũ` with `fn u =ᵐ[volume.restrict Ω] ũ`
-and `ContinuousOn ũ (closure Ω)`, `TendstoUniformlyOn v ũ atTop (closure Ω)`. (State the uniform
-clause as `∀ ũ, fn u =ᵐ ũ → ContinuousOn ũ (closure Ω) → TendstoUniformlyOn v ũ atTop (closure Ω)`
-inside the existential, so that one construction serves both predicates.)
-
-Construction. (0) `frontier Ω` is compact (`hb`), so finitely many `U_i ∈ 𝓝 xᵢ` (shrunk to open
-sets) with directions `yᵢ` cover it; `IsCompact.exists_contDiff_partitionOfUnity` on `frontier Ω`
-with the `U_i` gives `θ₀ + ∑ θᵢ = 1` on `E`, `tsupport θᵢ ⊆ U_i` compact, `tsupport θ₀` disjoint
-from `frontier Ω`. (1) The interior piece: `θ₀ u` extended by zero lies in `W^{1,p}(ℝ^N)`
-(`SobolevMultiIndex.extendZeroMulL` with the cut-off `IsSobolevCutoff.mul_of_partition` of
-`Extension.lean`, exactly step (a) of Theorem 9.7), its mollifications converge in `W^{1,p}(ℝ^N)`
-(`MemSobolev.tendsto_sobolevNorm_convolution_sub`) hence in `W^{1,p}(Ω)` after restriction
-(`SobolevMultiIndex.restrictL`), and uniformly when `ũ` is continuous (`θ₀ ũ` extended by zero is
-continuous with compact support; `ContDiffBump.dist_normed_convolution_le` with uniform continuity).
-(2) A boundary piece: choose `tᵢ > 0` so small that `tsupport θᵢ − t yᵢ ⊆ U_i` for `0 < t ≤ tᵢ`
-(`Metric.exists_pos_forall_...` on the compact support inside the open `U_i`), and set
-`fₜ x := if x + t • yᵢ ∈ Ω then θᵢ (x + t yᵢ) * fn u (x + t yᵢ) else 0` — the translate of the zero
-extension `(θᵢ u)^0`. On the open `Vₜ := (Ω − t yᵢ) ∪ (tsupport θᵢ − t yᵢ)ᶜ`, which contains
-`closure Ω` (for `z ∈ closure Ω` with `z + t yᵢ ∈ tsupport θᵢ ⊆ U_i` the segment property gives
-`z + t yᵢ ∈ Ω`), `fₜ` is `W^{1,p}` with gradient the translate of `∇(θᵢ u)` — on `Ω − t yᵢ` by
-`HasWeakIteratedLineDerivOn.comp_add_right` (`Translate.lean`), on the other piece it vanishes, and
-weak derivatives are local (`Cutoff.lean`'s locality lemmas) — and continuous when `ũ` is (on
-`Ω − t yᵢ` it is `θᵢ ũ (· + t yᵢ)`, elsewhere `0`). Cut off with a smooth `χ`, `χ = 1` on a
-neighbourhood of `closure Ω`, `tsupport χ ⊆ Vₜ` (`exists_contDiff_one_nhds_of_...`/`IsCompact.exists_contDiff_eqOn_one`
-as in `Zero.lean`): `χ fₜ ∈ W^{1,p}(ℝ^N)` with compact support; mollify as in (1).
-(3) Convergence in `W^{1,p}(Ω)` as `t → 0`: `‖fₜ − θᵢ u‖_{L^p(Ω)} ≤ ‖τ_{t yᵢ} (θᵢ u)^0 − (θᵢ u)^0‖_{L^p(ℝ^N)} → 0`
-(`MeasureTheory.Lp.continuous_translateCurve` of `TranslationCurve.lean`), likewise for the
-gradient. Uniform convergence on `closure Ω` when `ũ` is continuous: at `z ∈ closure Ω` with
-`z + t yᵢ ∈ tsupport θᵢ` both `fₜ z` and `θᵢ ũ z` are values of the uniformly continuous `θᵢ ũ`
-on the compact `closure Ω` at points `t ‖yᵢ‖` apart; otherwise `fₜ z = 0` and
-`|θᵢ z ũ z| = |θᵢ z − θᵢ (z + t yᵢ)| |ũ z| ≤ ω_{θᵢ}(t ‖yᵢ‖) · sup |ũ|`. (4) Diagonal choice
-`tₙ → 0` then `εₙ → 0` for the mollifier radius; sum the pieces. ★★★, ~500 lines: the longest
-node of the module, but every ingredient exists; prototype the `Vₜ` locality argument first.'''
-deps = ["HasSegmentProperty", "IsCompact.exists_contDiff_partitionOfUnity", "SobolevMultiIndex.extendZeroMulL", "IsSobolevCutoff", "SobolevMultiIndex.restrictL", "MemSobolev.tendsto_sobolevNorm_convolution_sub", "MeasureTheory.Lp.continuous_translateCurve", "SobolevEuclidean"]
-
-[[node]]
-id = "HasSegmentProperty.hasSmoothDensity"
-kind = "theorem"
-desc = '''`Bornology.IsBounded Ω → HasSegmentProperty Ω → p ≠ ⊤ → SobolevEuclidean.HasSmoothDensity N p Ω`,
-the first clause of `HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto`; and
-`HasSegmentProperty.hasUniformSmoothDensity : … → SobolevEuclidean.HasUniformSmoothDensity N p Ω`,
-its uniform clause. Instances (★ each, state all): `IsContDiffDomain.hasUniformSmoothDensity`
-(bounded, `IsContDiffDomain 1`), `IsLipschitzDomain.hasSmoothDensity` and
-`IsLipschitzDomain.hasUniformSmoothDensity` (bounded; the Lipschitz case of Atkinson–Han
-Theorem 7.3.2, which the extension route does not reach), `Convex.hasSmoothDensity` and
-`Convex.hasUniformSmoothDensity` (bounded convex open nonempty `Ω`), and
-`EuclideanSpace.hasUniformSmoothDensity_openTriangleOpens` for a triangle with non-collinear
-vertices. ★'''
-deps = ["HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto", "SobolevEuclidean.HasSmoothDensity", "SobolevEuclidean.HasUniformSmoothDensity", "IsBoundaryOfClass.hasSegmentProperty", "Convex.hasSegmentProperty", "EuclideanSpace.openTriangleOpens"]
 
 [[node]]
 id = "SobolevEuclidean.smoothRestrictions"
-kind = "definition"
-desc = '''`SobolevEuclidean.smoothRestrictions (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Submodule ℝ (SobolevEuclidean N 1 p Ω)`
-with carrier `{u | ∃ v : E → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧ SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set E)] v}`
-— the elements of `W^{1,p}(Ω)` that are restrictions of smooth compactly supported functions on
-`ℝ^N` (closed under `+` and `•` through `SobolevMultiIndex.fn_add`, `fn_smul`). With
-`HasSmoothDensity.dense_smoothRestrictions : HasSmoothDensity N p Ω → Dense (smoothRestrictions N p Ω : Set _)`
-(`Metric.dense_iff`/`mem_closure_iff_seq_limit` from the sequence of the predicate) and
-`SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions`, the chosen representative
-(`Classical.choose`), together with the uniqueness of continuous representatives on `closure Ω`:
-`SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn : fn u =ᵐ v₁ → fn u =ᵐ v₂ → ContinuousOn v₁ (closure Ω) → ContinuousOn v₂ (closure Ω) → EqOn v₁ v₂ (closure Ω)`
-(two continuous functions a.e. equal on the open `Ω` agree on `Ω`, `Measure.eqOn_open_of_ae_eq`,
-hence on its closure by continuity, `Set.EqOn.of_subset_closure`). This is the dense subspace from
-which `BoundaryData.traceL` is extended by continuity. ★'''
-deps = ["SobolevEuclidean.HasSmoothDensity", "SobolevEuclidean"]
+
+[[node]]
+id = "SobolevEuclidean.mem_smoothRestrictions"
+
+[[node]]
+id = "SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions"
+
+[[node]]
+id = "SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions"
+
+[[node]]
+id = "SobolevEuclidean.HasSmoothDensity.exists_seq_contDiff_one"
+
+[[node]]
+id = "SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn"
+
+[[node]]
+id = "IsSobolevExtensionDomain.hasSmoothDensity"
+
+[[node]]
+id = "IsContDiffChartDomain.hasSmoothDensity"
+
+[[node]]
+id = "IsContDiffDomain.hasSmoothDensity"
+
+[[node]]
+id = "EuclideanSpace.hasSmoothDensity_openTriangleOpens"
+
+[[node]]
+id = "HasSegmentProperty"
+
+[[node]]
+id = "Convex.hasSegmentProperty"
+
+[[node]]
+id = "IsBoundaryOfClass.hasSegmentProperty"
+
+[[node]]
+id = "IsContDiffDomain.hasSegmentProperty"
+
+[[node]]
+id = "IsLipschitzDomain.hasSegmentProperty"
+
+[[node]]
+id = "TestFunction.compSubRightOfPreimage"
+
+[[node]]
+id = "LocallyIntegrableOn.comp_add_right_of_preimage"
+
+[[node]]
+id = "measurePreserving_add_right_restrict_of_preimage"
+
+[[node]]
+id = "MeasureTheory.MemLp.comp_add_right_of_preimage"
+
+[[node]]
+id = "integral_smul_comp_add_right_of_preimage"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.comp_add_right_of_preimage"
+
+[[node]]
+id = "SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single"
+
+[[node]]
+id = "SobolevEuclidean.memSobolevMultiIndex_one_of_forall"
+
+[[node]]
+id = "SobolevEuclidean.weakDeriv_single_ae_eq"
+
+[[node]]
+id = "SobolevEuclidean.exists_translatePiece"
+
+[[node]]
+id = "MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt"
+
+[[node]]
+id = "SobolevEuclidean.norm_le_sum_norm_translateCurve_sub"
+
+[[node]]
+id = "fderiv_add_sum_eq_zero_of_partition"
+
+[[node]]
+id = "HasSegmentProperty.exists_translateApprox"
+
+[[node]]
+id = "HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt"
+
+[[node]]
+id = "HasSegmentProperty.exists_contDiff_hasCompactSupport_norm_sub_lt"
+
+[[node]]
+id = "HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto"
+
+[[node]]
+id = "HasSegmentProperty.hasSmoothDensity"
+
+[[node]]
+id = "HasSegmentProperty.hasUniformSmoothDensity"
+
+[[node]]
+id = "Convex.hasSmoothDensity"
+
+[[node]]
+id = "Convex.hasUniformSmoothDensity"
+
+[[node]]
+id = "EuclideanSpace.hasUniformSmoothDensity_openTriangleOpens"
+
+[[node]]
+id = "IsContDiffDomain.hasUniformSmoothDensity"
+
+[[node]]
+id = "IsLipschitzDomain.hasSmoothDensity"
+
+[[node]]
+id = "IsLipschitzDomain.hasUniformSmoothDensity"
