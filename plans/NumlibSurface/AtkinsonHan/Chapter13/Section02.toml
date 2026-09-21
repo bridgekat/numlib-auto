@@ -72,16 +72,19 @@ There is no singularity subtraction in Atkinson-Han Section 13.2.1; the earlier 
 a scheme from Atkinson's own monograph instead. This node belongs on the skip list beside the rest
 of the potential theory.
 
-Blocked: rechecked 2026-09-21 (boundary round). What changed: the double layer potential as a
-function on the region, `u(P) = ∫_S ρ(Q) ∂/∂n_Q log |P − Q| dS_Q`, is now *definable* on a
-bounded `C¹` plane domain — the arclength measure `dS` is `IsContDiffDomain.boundaryMeasure`
-and the normal `n_Q` is `IsContDiffDomain.outwardNormal` (up to the chapter's inner-normal sign),
-`Numlib/Analysis/Sobolev/Boundary/`; and Green's identities are `theorem_13_1_2`. What remains
-is the jump relation of the double layer potential across `S` (the limit of the potential at a
-boundary point from inside equals `−π ρ(P) + ∫_S …`), a singular-integral argument (the principal
-value of the kernel at the boundary, `theorem_13_1_1`'s potential route) that neither Mathlib nor
-`Numlib/` has; estimate 800+ lines on the `C²` boundary. The maximum-principle half is Mathlib's
-`HarmonicContOnCl` machinery.
+Blocked: rechecked 2026-09-21 (boundary round, agent bsurf11). What changed: the double layer
+potential as a function on the region, `u(P) = ∫_S ρ(Q) ∂/∂n_Q log |P − Q| dS_Q`, is now
+*definable* on a bounded `C¹` plane domain — the arclength measure `dS` is
+`IsContDiffDomain.boundaryMeasure` and the normal `n_Q` is `IsContDiffDomain.outwardNormal` (up
+to the chapter's inner-normal sign; `−ν` is continuous on `S`,
+`IsContDiffDomain.continuousOn_outwardNormal`), `Numlib/Analysis/Sobolev/Boundary/`; Green's
+theorem is `theorem_13_1_2` (proved, on `C¹` domains and polygons) and Green's identities are
+`BoundaryData.integral_laplacian_mul_add_eq`. Nothing of (13.2.19) follows from Green's formula
+alone: its derivation is the maximum principle for `u − u_n` (Mathlib's `HarmonicContOnCl`) plus
+the jump relation (13.2.17) of the double layer potential across `S` (the limit of the potential
+at a boundary point from inside equals `−π ρ(P) + ∫_S …`), a singular-integral argument (the
+principal value of the kernel at the boundary, `theorem_13_1_1`'s potential route) that neither
+Mathlib nor `Numlib/` has; estimate 800+ lines on the `C²` boundary.
 '''
 deps = ["equation_13_2_7", "AtkinsonHan.Chapter13.theorem_13_1_2"]
 

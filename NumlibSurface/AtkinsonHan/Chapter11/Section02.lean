@@ -56,12 +56,15 @@ route of the backbone's `existsUnique_isMinOn_energy_add`.  The statement is the
   `StrongConvexOn.isCoerciveFunctionalOn_of_continuous` (`Numlib/Variational/Minimization.lean`);
   `theorem_11_2_2_zero` is Theorem 11.2.2 at `j = 0`.
 
-Not formalized: Example 11.2.4, the simplified friction problem, whose functional
-`g ∫_Γ |v| ds` needs the trace of an `H¹(Ω)` function and the surface measure on `Γ`.
+* `example_11_2_4` — the simplified friction problem of §11.1 (`Chapter11/Section01`): over the
+  boundary interface `BoundaryData Ω`, `BoundaryData.TraceFamily` (a bounded `C¹` domain or a
+  polygon, the book's Lipschitz domain), the variational inequality (11.1.13) has exactly one
+  solution, by Theorem 11.2.2 on `V = H¹(Ω)` with the convex continuous friction functional
+  `g ∫_Γ |v| ds` (`Chapter11.frictionFunctional`).
 -/
 
-open Filter Set TopologicalSpace Topology
-open scoped InnerProductSpace
+open Filter MeasureTheory Set TopologicalSpace Topology
+open scoped ENNReal InnerProductSpace
 
 namespace AtkinsonHan.Chapter11
 
@@ -305,5 +308,51 @@ theorem example_11_2_3 {R : ℝ} (hR : 0 ≤ R)
   exact hvi
 
 end Obstacle
+
+/-! ### Example 11.2.4: the simplified friction problem -/
+
+section Friction
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
+
+/-- `ℝ^N`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- **Example 11.2.4 (the simplified friction problem, continued)**: over the boundary interface
+`B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of `Numlib/Analysis/Sobolev/Boundary/Data.lean` — a
+bounded `C¹` domain (`IsContDiffDomain.traceFamily`) or a polygon without slits
+(`Triangulation.traceFamily`), the book's Lipschitz domain — for `g > 0` and `f ∈ L²(Ω)`, the
+variational inequality (11.1.13)
+
+  `u ∈ V = H¹(Ω)`, `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`
+  for all `v ∈ V`
+
+has a unique solution. Theorem 11.2.2 on `V` with `K = V`, the form `a(u, v) = ∫_Ω (∇u·∇v + u v)`
+(`Chapter11.frictionBilinForm`: bounded, symmetric and `V`-elliptic with constant `1`, being the
+inner product of `H¹(Ω)`), the load `ℓ(v) = ∫_Ω f v` and the friction functional
+`j(v) = g ∫_Γ |v| ds`, convex and continuous (`Chapter11.convexOn_frictionFunctional`,
+`Chapter11.continuous_frictionFunctional`); the minimizer of the energy (11.1.12) is the
+solution of (11.1.13) by Example 11.1.2 (`Chapter11.example_11_1_2`). -/
+theorem example_11_2_4 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
+    ∃! u : SobolevEuclidean N 1 2 Ω, ∀ v : SobolevEuclidean N 1 2 Ω,
+      ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+        ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+            * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+            + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+          + g * ∫ x, (|(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+            - |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|) ∂B.σ := by
+  have hmin := theorem_11_2_2 frictionBilinForm_isBoundedWith one_pos
+    frictionBilinForm_isEllipticWith frictionBilinForm_isSymm (Elliptic.load Ω f)
+    (j := frictionFunctional B 𝒯 g) univ_nonempty isClosed_univ convex_univ
+    (convexOn_frictionFunctional B 𝒯 hg.le)
+    ((continuous_frictionFunctional B 𝒯 g).lowerSemicontinuous.lowerSemicontinuousOn univ)
+  have e : (frictionBilinForm (Ω := Ω)).energy (Elliptic.load Ω f) + frictionFunctional B 𝒯 g
+      = frictionEnergy B 𝒯 g f := rfl
+  rw [e] at hmin
+  obtain ⟨u, ⟨-, hu⟩, huniq⟩ := hmin
+  refine ⟨u, (example_11_1_2 B 𝒯 hg f u).1 hu, fun y hy ↦ huniq y ⟨mem_univ _, ?_⟩⟩
+  exact (example_11_1_2 B 𝒯 hg f y).2 hy
+
+end Friction
 
 end AtkinsonHan.Chapter11

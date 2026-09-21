@@ -1,4 +1,6 @@
+import Mathlib.Analysis.Normed.Module.HahnBanach
 import Numlib.Analysis.Convex.Continuity
+import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.Variational.Inequality.Approximation
 import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
@@ -60,12 +62,26 @@ two arguments kept separate so that the same definition serves the `R_h` of (11.
   element edges), and the discrete admissible set asks `v_h ≥ ψ` at every vertex (the boundary
   vertices included, where it holds automatically as `v_h = 0 ≥ ψ`).
 
+## The Lagrange multiplier of the friction problem
+
+* `theorem_11_4_5` — the simplified friction problem (11.4.10) is equivalent to the system
+  (11.4.21)–(11.4.22) with a multiplier `λ ∈ Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1}`, and
+  `theorem_11_4_5_unique` — the multiplier is unique; over the boundary interface
+  `BoundaryData Ω`, `BoundaryData.TraceFamily` of `Numlib/Analysis/Sobolev/Boundary/Data.lean`
+  (a bounded `C¹` domain or a polygon, the book's Lipschitz domain).  The book extends the
+  functional `ℓ − a(u, ·)` from `H^{1/2}(Γ)` to `L¹(Γ)` by Hahn–Banach and uses the density of
+  `H^{1/2}(Γ)` in `L²(Γ)` for the uniqueness; here the functional is extended from the subspace of
+  traces of `L¹(σ)` (`exists_multiplier_of_forall_abs_le`, with the Riesz representation
+  `(L¹)' = L^∞` of `Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) and the uniqueness rests
+  on the traces of the smooth compactly supported functions
+  (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`); no fractional space enters.
+
 ## Not formalized
 
-Theorem 11.4.5 and Exercise 11.4.4 (the Lagrange-multiplier form of the simplified friction
-problem) live on `H^{1/2}(Γ)`; Example 11.4.4 and the analysis of (11.4.29) need the trace, the
-surface measure on `Γ` and Green's formula on a polygon (`notes/frontier.md` blocker 2);
-Exercises 11.4.1 and 11.4.5 name a domain as well.
+Exercise 11.4.4 (the proof of Theorem 11.4.5 through the regularization (11.4.14)); Example
+11.4.4 and the analysis of (11.4.29), which need Green's formula and the trace on a polygon
+(`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`); Exercises 11.4.1 and 11.4.5, which name a
+domain as well.
 -/
 
 open Filter Set Topology
@@ -810,5 +826,345 @@ theorem example_11_4_3 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 :
 
 
 end Example1143
+
+/-! ### Theorem 11.4.5: the Lagrange multiplier of the simplified friction problem -/
+
+section LagrangeMultiplier
+
+open MeasureTheory TopologicalSpace
+open scoped ContDiff ENNReal
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
+
+/-- `ℝ^N`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- An element of `L^∞(μ)` of norm at most `g` is bounded by `g` almost everywhere. Helper;
+Mathlib-facing (`MeasureTheory.Lp`). -/
+theorem ae_abs_le_of_norm_le {μ : Measure 𝔼} {k : Lp ℝ ⊤ μ} {g : ℝ} (hk : ‖k‖ ≤ g) :
+    ∀ᵐ x ∂μ, |k x| ≤ g := by
+  have h1 : eLpNormEssSup k μ ≠ ⊤ := by
+    have := Lp.eLpNorm_ne_top k
+    rwa [eLpNorm_exponent_top (Lp.aestronglyMeasurable k)] at this
+  have h2 : (eLpNormEssSup k μ).toReal ≤ g := by
+    rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable k)] at hk
+    exact hk
+  filter_upwards [ae_le_eLpNormEssSup (f := k) (μ := μ)] with x hx
+  rw [← Real.norm_eq_abs]
+  refine le_trans ?_ h2
+  rw [← ofReal_norm] at hx
+  exact (ENNReal.ofReal_le_iff_le_toReal h1).1 hx
+
+/-- **The Lagrange multiplier by Hahn–Banach and `(L¹)' = L^∞`**: a bounded functional `L` on
+`H¹(Ω)` with `|L(w)| ≤ g ∫_Γ |γ w| dσ` — so that `L(w)` depends on the trace `γ w` only, as a
+functional bounded in the `L¹(σ)` norm on the subspace `γ(H¹(Ω)) ⊆ L¹(σ)` — extends by the
+Hahn–Banach theorem (`exists_extension_norm_eq`) to a functional on `L¹(σ)` of norm at most `g`,
+which the Riesz representation `(L¹(σ))' = L^∞(σ)` (`MeasureTheory.Lp.toDual_surjective`,
+`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) makes `h ↦ ∫ λ̄ h dσ` for some
+`λ̄ ∈ L^∞(σ)` with `‖λ̄‖_∞ ≤ g`. The book's route through `H^{1/2}(Γ)` is not needed: the
+subspace of `L¹(σ)` is the range of the trace, and the functional is transported to it through
+the quotient `H¹(Ω)/ker` (`LinearMap.quotKerEquivRange`). -/
+theorem exists_multiplier_of_forall_abs_le {g : ℝ} (hg : 0 ≤ g)
+    (F : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ)
+    (hF : ∀ w, |F w| ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ) :
+    ∃ l : Lp ℝ ⊤ B.σ, ‖l‖ ≤ g ∧
+      ∀ w, F w = ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x ∂B.σ := by
+  -- the trace into `L¹(σ)`
+  let ι : Lp ℝ 2 B.σ →ₗ[ℝ] Lp ℝ 1 B.σ :=
+    { toFun := fun k ↦ ⟨(k : 𝔼 →ₘ[B.σ] ℝ), Lp.antitone one_le_two k.2⟩
+      map_add' := fun _ _ ↦ rfl
+      map_smul' := fun _ _ ↦ rfl }
+  let T : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] Lp ℝ 1 B.σ :=
+    ι ∘ₗ (𝒯.traceL 2 ENNReal.ofNat_ne_top).toLinearMap
+  have hT : ∀ w, (T w : 𝔼 → ℝ) = (𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) := fun w ↦ rfl
+  have hTnorm : ∀ w, ‖T w‖ = ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
+    intro w
+    rw [L1.norm_eq_integral_norm, hT]
+    simp only [Real.norm_eq_abs]
+  -- `F` vanishes on the kernel of `T`
+  have hker : LinearMap.ker T ≤ LinearMap.ker (F : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] ℝ) := by
+    intro w hw
+    rw [LinearMap.mem_ker] at hw ⊢
+    have h := hF w
+    rw [← hTnorm, hw, norm_zero, mul_zero] at h
+    exact abs_nonpos_iff.1 h
+  -- the functional on the range of `T`
+  let Fq := (LinearMap.ker T).liftQ (F : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] ℝ) hker
+  let F' : LinearMap.range T →ₗ[ℝ] ℝ := Fq ∘ₗ T.quotKerEquivRange.symm.toLinearMap
+  have hF' : ∀ w, F' ⟨T w, LinearMap.mem_range_self T w⟩ = F w := fun w ↦ by
+    simp only [F', LinearMap.comp_apply, LinearEquiv.coe_coe,
+      LinearMap.quotKerEquivRange_symm_apply_image, Fq]
+    rfl
+  have hbound : ∀ s : LinearMap.range T, ‖F' s‖ ≤ g * ‖s‖ := by
+    rintro ⟨_, w, rfl⟩
+    rw [hF' w, Real.norm_eq_abs]
+    change |F w| ≤ g * ‖T w‖
+    rw [hTnorm]
+    exact hF w
+  let F'' : LinearMap.range T →L[ℝ] ℝ := F'.mkContinuous g hbound
+  have hF''norm : ‖F''‖ ≤ g := LinearMap.mkContinuous_norm_le _ hg _
+  -- Hahn–Banach
+  obtain ⟨G, hGext, hGnorm⟩ := exists_extension_norm_eq (LinearMap.range T) F''
+  -- Riesz: `G = ∫ l ·` with `l ∈ L^∞`
+  obtain ⟨l, hl⟩ := Lp.toDual_surjective (𝕜 := ℝ) (p := 1) (q := ⊤) (μ := B.σ)
+    ENNReal.one_ne_top G
+  refine ⟨l, ?_, fun w ↦ ?_⟩
+  · rw [← (Lp.toDual ℝ 1 ⊤ B.σ).norm_map l, hl, hGnorm]
+    exact hF''norm
+  · have h1 := hGext ⟨T w, LinearMap.mem_range_self T w⟩
+    rw [← hl, Lp.toDual_apply] at h1
+    have h2 : F'' ⟨T w, LinearMap.mem_range_self T w⟩ = F w := by
+      rw [LinearMap.mkContinuous_apply, hF']
+    exact h2.symm.trans h1.symm
+
+/-- `j(−w) = j(w)`. -/
+theorem frictionFunctional_neg (g : ℝ) (w : SobolevEuclidean N 1 2 Ω) :
+    frictionFunctional B 𝒯 g (-w) = frictionFunctional B 𝒯 g w := by
+  simp only [frictionFunctional, map_neg]
+  congr 1
+  refine integral_congr_ae ?_
+  filter_upwards [Lp.coeFn_neg (𝒯.traceL 2 ENNReal.ofNat_ne_top w)] with x hx
+  rw [hx, Pi.neg_apply, abs_neg]
+
+/-- **(11.4.23) and the inequality of Exercise 11.3.10 for the friction problem**: a solution
+`u` of (11.4.10) satisfies `a(u, u) + j(u) = ℓ(u)` (test with `v = 0` and `v = 2u`) and
+`a(u, w) + j(w) ≥ ℓ(w)` for all `w` (test with `v = u + w`, `j` being subadditive). -/
+theorem friction_eq_and_le_of_forall {g : ℝ} (hg : 0 ≤ g)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {u : SobolevEuclidean N 1 2 Ω}
+    (hu : ∀ v, Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
+      + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u) :
+    Elliptic.laplaceForm Ω u u + frictionFunctional B 𝒯 g u = Elliptic.load Ω f u ∧
+      ∀ w, Elliptic.load Ω f w ≤ Elliptic.laplaceForm Ω u w + frictionFunctional B 𝒯 g w := by
+  have h0 := hu 0
+  have h2 := hu ((2 : ℝ) • u)
+  have e0 : (0 : SobolevEuclidean N 1 2 Ω) - u = -u := zero_sub u
+  have e2 : (2 : ℝ) • u - u = u := by rw [two_smul, add_sub_cancel_right]
+  simp only [e0, frictionFunctional_zero] at h0
+  simp only [e2, frictionFunctional_two_smul] at h2
+  have h3 : Elliptic.load Ω f (-u) = -Elliptic.load Ω f u := map_neg _ _
+  have h4 : Elliptic.laplaceForm Ω u (-u) = -Elliptic.laplaceForm Ω u u := map_neg _ _
+  refine ⟨by linarith, fun w ↦ ?_⟩
+  have h5 := hu (u + w)
+  have e5 : u + w - u = w := add_sub_cancel_left u w
+  simp only [e5] at h5
+  have h6 := frictionFunctional_add_sub_le B 𝒯 hg u w
+  rw [← frictionFunctional_apply] at h6
+  linarith
+
+/-- **Theorem 11.4.5 in the backbone's vocabulary**: `u ∈ H¹(Ω)` solves the friction problem
+`a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v` if and only if there is `λ ∈ L^∞(σ)` with
+`|λ| ≤ 1` `σ`-a.e., `a(u, v) + g ∫_Γ λ γv dσ = ℓ(v)` for all `v` and `λ γu = |γu|` `σ`-a.e.
+The book's proof: from the inequality, `a(u, u) + j(u) = ℓ(u)` and `|ℓ(v) − a(u, v)| ≤ j(v)`
+(`friction_eq_and_le_of_forall`), so `ℓ − a(u, ·)` is represented on the traces by an
+`L^∞(σ)` function of norm at most `g` (`exists_multiplier_of_forall_abs_le`), `λ` is its
+quotient by `g`, and (11.4.22) follows from (11.4.21) at `v = u` and (11.4.23), the integrand
+`|γu| − λ γu` being nonnegative with zero integral. Conversely (11.4.21) at `v − u`, with
+`λ γv ≤ |γv|` and `λ γu = |γu|`, is the inequality. -/
+theorem friction_multiplier_iff {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (u : SobolevEuclidean N 1 2 Ω) :
+    (∀ v, Elliptic.laplaceForm Ω u (v - u) + frictionFunctional B 𝒯 g v
+        - frictionFunctional B 𝒯 g u ≥ Elliptic.load Ω f (v - u)) ↔
+      ∃ l : Lp ℝ ⊤ B.σ, (∀ᵐ x ∂B.σ, |l x| ≤ 1) ∧
+        (∀ v, Elliptic.laplaceForm Ω u v
+          + g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+          = Elliptic.load Ω f v) ∧
+        ∀ᵐ x ∂B.σ, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
+          = |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
+  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
+    ((Lp.memLp k).integrable one_le_two).abs
+  have hIl : ∀ (l : Lp ℝ ⊤ B.σ) (k : Lp ℝ 2 B.σ), Integrable (fun x ↦ l x * k x) B.σ :=
+    fun l k ↦ (Lp.memLp l).integrable_mul ((Lp.memLp k).mono_exponent one_le_two)
+  constructor
+  · intro hu
+    replace hu : ∀ v, Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u := fun v ↦ hu v
+    obtain ⟨h23, h24⟩ := friction_eq_and_le_of_forall B 𝒯 hg.le f hu
+    -- the functional `L(w) = ℓ(w) − a(u, w)` is bounded by `j(w)`
+    obtain ⟨F, hFdef⟩ : ∃ F : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ,
+        F = Elliptic.load Ω f - Elliptic.laplaceForm Ω u := ⟨_, rfl⟩
+    have hFapply : ∀ w, F w = Elliptic.load Ω f w - Elliptic.laplaceForm Ω u w := fun w ↦ by
+      rw [hFdef]; rfl
+    have hF : ∀ w, |F w| ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
+      intro w
+      have h1 := h24 w
+      have h2 := h24 (-w)
+      have h3 : Elliptic.load Ω f (-w) = -Elliptic.load Ω f w := map_neg _ _
+      have h4 : Elliptic.laplaceForm Ω u (-w) = -Elliptic.laplaceForm Ω u w := map_neg _ _
+      rw [frictionFunctional_neg] at h2
+      rw [← frictionFunctional_apply, hFapply, abs_le]
+      constructor <;> linarith
+    obtain ⟨l, hl, hFl⟩ := exists_multiplier_of_forall_abs_le B 𝒯 hg.le F hF
+    have hlg := ae_abs_le_of_norm_le hl
+    refine ⟨g⁻¹ • l, ?_, fun v ↦ ?_, ?_⟩
+    · filter_upwards [hlg, Lp.coeFn_smul g⁻¹ l] with x hx hx'
+      rw [hx', Pi.smul_apply, smul_eq_mul, abs_mul, abs_of_pos (inv_pos.2 hg)]
+      calc g⁻¹ * |l x| ≤ g⁻¹ * g := by gcongr
+        _ = 1 := inv_mul_cancel₀ hg.ne'
+    · have e : ∫ x, (g⁻¹ • l : Lp ℝ ⊤ B.σ) x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+          ∂B.σ = g⁻¹ * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ := by
+        rw [← integral_const_mul]
+        refine integral_congr_ae ?_
+        filter_upwards [Lp.coeFn_smul g⁻¹ l] with x hx
+        rw [hx, Pi.smul_apply, smul_eq_mul, mul_assoc]
+      rw [e, ← mul_assoc, mul_inv_cancel₀ hg.ne', one_mul, ← hFl, hFapply]
+      ring
+    · -- (11.4.22)
+      have h21 := hFl u
+      rw [hFapply] at h21
+      have hgu : ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x ∂B.σ
+          = g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| ∂B.σ := by
+        rw [← frictionFunctional_apply]; linarith
+      have hnn : 0 ≤ᵐ[B.σ] fun x ↦ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|
+          - l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x := by
+        filter_upwards [hlg] with x hx
+        have : l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
+            ≤ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
+          calc l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
+              ≤ |l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := le_abs_self _
+            _ = |l x| * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := abs_mul _ _
+            _ ≤ g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by gcongr
+        simp only [Pi.zero_apply]
+        linarith
+      have hzero : ∫ x, (g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|
+          - l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x) ∂B.σ = 0 := by
+        rw [integral_sub ((hI _).const_mul g) (hIl l _), integral_const_mul, hgu, sub_self]
+      have hae := (integral_eq_zero_iff_of_nonneg_ae hnn
+        (((hI _).const_mul g).sub (hIl l _))).1 hzero
+      filter_upwards [hae, Lp.coeFn_smul g⁻¹ l] with x hx hx'
+      simp only [Pi.zero_apply] at hx
+      rw [hx', Pi.smul_apply, smul_eq_mul, mul_assoc]
+      have : l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
+          = g * |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by linarith
+      rw [this, ← mul_assoc, inv_mul_cancel₀ hg.ne', one_mul]
+  · rintro ⟨l, hl1, h21, h22⟩ v
+    have hv := h21 v
+    have hu := h21 u
+    have hjv : g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+        ≤ frictionFunctional B 𝒯 g v := by
+      rw [frictionFunctional_apply]
+      refine mul_le_mul_of_nonneg_left (integral_mono_ae (hIl l _) (hI _) ?_) hg.le
+      filter_upwards [hl1] with x hx
+      calc l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+          ≤ |l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := le_abs_self _
+        _ = |l x| * |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := abs_mul _ _
+        _ ≤ 1 * |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| := by gcongr
+        _ = _ := one_mul _
+    have hju : g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x ∂B.σ
+        = frictionFunctional B 𝒯 g u := by
+      rw [frictionFunctional_apply]
+      congr 1
+      refine integral_congr_ae ?_
+      filter_upwards [h22] with x hx
+      rw [hx]
+    have e1 : Elliptic.laplaceForm Ω u (v - u)
+        = Elliptic.laplaceForm Ω u v - Elliptic.laplaceForm Ω u u := map_sub _ _ _
+    have e2 : Elliptic.load Ω f (v - u) = Elliptic.load Ω f v - Elliptic.load Ω f u :=
+      map_sub _ _ _
+    rw [ge_iff_le, e1, e2]
+    linarith
+
+/-- **Theorem 11.4.5 (the Lagrange multiplier of the simplified friction problem)**, over the
+boundary interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of
+`Numlib/Analysis/Sobolev/Boundary/Data.lean` (a bounded `C¹` domain, `IsContDiffDomain.traceFamily`,
+or a polygon without slits, `Triangulation.traceFamily` — the book's Lipschitz domain), with
+`Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1 a.e. on Γ}`: for `g > 0` and `f ∈ L²(Ω)`, `u ∈ V = H¹(Ω)` solves the
+simplified friction problem (11.4.10) = (11.1.13),
+
+  `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`  for all `v ∈ V`,
+
+if and only if there is `λ ∈ Λ` such that
+
+  `∫_Ω (∇u·∇v + u v) dx + g ∫_Γ λ v ds = ∫_Ω f v dx`  for all `v ∈ V`  (11.4.21),
+  `λ u = |u|`  a.e. on `Γ`  (11.4.22);
+
+the multiplier is unique (`theorem_11_4_5_unique`). The proof is the book's, except that the
+extension of `L(v) = ℓ(v) − a(u, v)` from the traces to `L¹(Γ)` by Hahn–Banach and the duality
+`(L¹(Γ))' = L^∞(Γ)` need no fractional space `H^{1/2}(Γ)` (`friction_multiplier_iff`,
+`exists_multiplier_of_forall_abs_le`). -/
+theorem theorem_11_4_5 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (u : SobolevEuclidean N 1 2 Ω) :
+    (∀ v : SobolevEuclidean N 1 2 Ω,
+      ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+        ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+            * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+            + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+          + g * ∫ x, (|(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+            - |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|) ∂B.σ) ↔
+      ∃ l : Lp ℝ ⊤ B.σ, (∀ᵐ x ∂B.σ, |l x| ≤ 1) ∧
+        (∀ v : SobolevEuclidean N 1 2 Ω,
+          (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+              * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x)
+              + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x))
+            + g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+            = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn v x) ∧
+        ∀ᵐ x ∂B.σ, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x
+          = |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x| := by
+  have h := friction_multiplier_iff B 𝒯 hg f u
+  simp only [ge_iff_le, Elliptic.laplaceForm_apply, Elliptic.load_apply] at h
+  refine (forall_congr' fun v ↦ (friction_ineq_iff B 𝒯 g f u v).trans ?_).trans h
+  rw [Elliptic.laplaceForm_apply, Elliptic.load_apply]
+
+/-- **Theorem 11.4.5, uniqueness of the Lagrange multiplier**: two elements of `L^∞(Γ)` both
+satisfying (11.4.21) for the same `u` agree. Their difference `μ` satisfies
+`∫_Γ μ γv ds = 0` for all `v ∈ H¹(Ω)`, in particular against the restrictions of all smooth
+compactly supported functions (whose traces they are, `TraceFamily.traceL_ae_eq`), so `μ = 0`
+`σ`-a.e. by `ae_eq_zero_of_integral_contDiff_smul_eq_zero` — no density of `H^{1/2}(Γ)` in
+`L²(Γ)` is needed. -/
+theorem theorem_11_4_5_unique {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (u : SobolevEuclidean N 1 2 Ω) {l l' : Lp ℝ ⊤ B.σ}
+    (hl : ∀ v : SobolevEuclidean N 1 2 Ω,
+      (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x)
+          + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x))
+        + g * ∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+        = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn v x)
+    (hl' : ∀ v : SobolevEuclidean N 1 2 Ω,
+      (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x)
+          + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x))
+        + g * ∫ x, l' x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+        = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn v x) :
+    l = l' := by
+  have hIl : ∀ (l : Lp ℝ ⊤ B.σ) (k : Lp ℝ 2 B.σ), Integrable (fun x ↦ l x * k x) B.σ :=
+    fun l k ↦ (Lp.memLp l).integrable_mul ((Lp.memLp k).mono_exponent one_le_two)
+  -- `∫ (l − l') γ v dσ = 0` for all `v`
+  have hdiff : ∀ v : SobolevEuclidean N 1 2 Ω,
+      ∫ x, (l - l' : Lp ℝ ⊤ B.σ) x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ = 0 := by
+    intro v
+    have h1 := hl v
+    have h2 := hl' v
+    have e : ∫ x, (l - l' : Lp ℝ ⊤ B.σ) x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ
+        = (∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ)
+          - ∫ x, l' x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ := by
+      rw [← integral_sub (hIl l _) (hIl l' _)]
+      refine integral_congr_ae ?_
+      filter_upwards [Lp.coeFn_sub l l'] with x hx
+      rw [hx, Pi.sub_apply, sub_mul]
+    rw [e]
+    have : g * ((∫ x, l x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ)
+        - ∫ x, l' x * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂B.σ) = 0 := by linarith
+    exact (mul_eq_zero.1 this).resolve_left hg.ne'
+  -- hence against every smooth compactly supported function
+  have hsm : ∀ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ →
+      ∫ x, ψ x • (l - l' : Lp ℝ ⊤ B.σ) x ∂B.σ = 0 := by
+    intro ψ hψ hψc
+    have hψ1 : ContDiff ℝ 1 ψ := hψ.of_le (by simp)
+    obtain ⟨W, hW⟩ : ∃ W : SobolevEuclidean N 1 2 Ω,
+        SobolevMultiIndex.fn W =ᵐ[volume.restrict (Ω : Set 𝔼)] ψ :=
+      hψ1.exists_sobolevMultiIndex_of_hasCompactSupport' hψc
+    have hγW := 𝒯.traceL_ae_eq 2 ENNReal.ofNat_ne_top W ψ hW hψ.continuous.continuousOn
+    rw [← hdiff W]
+    refine integral_congr_ae ?_
+    filter_upwards [hγW] with x hx
+    rw [hx, smul_eq_mul, mul_comm]
+  have hloc : LocallyIntegrable (l - l' : Lp ℝ ⊤ B.σ) B.σ :=
+    ((Lp.memLp (l - l')).integrable le_top).locallyIntegrable
+  have hae := ae_eq_zero_of_integral_contDiff_smul_eq_zero hloc hsm
+  rw [← sub_eq_zero]
+  refine Lp.eq_zero_iff_ae_eq_zero.2 ?_
+  filter_upwards [hae] with x hx
+  exact hx
+
+end LagrangeMultiplier
 
 end AtkinsonHan.Chapter11

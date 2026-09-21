@@ -49,20 +49,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.9"
 
 [[node]]
 id = "example_11_3_11"
-kind = "theorem"
-desc = '''
-Example 11.3.11: Theorem 11.3.9 applied to the variational inequality of Example 11.1.2 — for
-`B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (bounded `C¹` domains, polygons without slits),
-`g > 0`, `f ∈ L²(Ω)`, the problem `u ∈ V = H¹(Ω)`, `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for
-all `v ∈ V`, with `a = Elliptic.laplaceForm Ω`, `ℓ = Elliptic.load Ω f` and
-`j v = g * ∫ |𝒯.traceL 2 _ v| ∂B.σ`, has a unique solution
-(`IsVariationalInequalitySolution`). Restated 2026-09-21 (boundary round): `theorem_11_3_9` on
-`V`, `K = V`, `a` bounded and `V`-elliptic (`Elliptic.laplaceForm_isCoerciveWith_one`,
-`laplaceForm_isBoundedWith_one`), `j` convex, l.s.c. (continuous) and proper; the same conclusion
-as `example_11_2_4` by the other route. ★, ~40 lines.
-'''
-deps = ["theorem_11_3_9", "example_11_2_4", "BoundaryData.TraceFamily"]
-
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.3.11"
 [[node]]
 id = "example_11_3_10"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.3.10"

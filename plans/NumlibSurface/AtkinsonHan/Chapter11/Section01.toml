@@ -76,53 +76,92 @@ id = "example_11_1_1_pointwise"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1, (11.1.9)"
 
 [[node]]
+id = "integral_abs_le_mul_norm"
+
+[[node]]
+id = "lipschitzWith_integral_abs"
+
+[[node]]
+id = "frictionFunctional"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2"
+
+[[node]]
+id = "frictionFunctional_apply"
+
+[[node]]
+id = "frictionFunctional_eq_of_traceL_eq"
+
+[[node]]
+id = "frictionFunctional_zero"
+
+[[node]]
+id = "frictionFunctional_two_smul"
+
+[[node]]
+id = "frictionFunctional_add_sub_le"
+
+[[node]]
+id = "continuous_frictionFunctional"
+
+[[node]]
+id = "convexOn_frictionFunctional"
+
+[[node]]
+id = "frictionEnergy"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.12)"
+
+[[node]]
+id = "frictionEnergy_apply"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.12)"
+
+[[node]]
+id = "frictionBilinForm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2"
+
+[[node]]
+id = "frictionBilinForm_apply"
+
+[[node]]
+id = "frictionBilinForm_isBoundedWith"
+
+[[node]]
+id = "frictionBilinForm_isEllipticWith"
+
+[[node]]
+id = "frictionBilinForm_isSymm"
+
+[[node]]
+id = "friction_ineq_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.13)"
+
+[[node]]
 id = "example_11_1_2"
-kind = "theorem"
-desc = '''
-Example 11.1.2, the simplified friction problem, stated once over the boundary interface of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean`: for `Ω : Opens (EuclideanSpace ℝ (Fin N))`,
-`B : BoundaryData Ω` (surface measure `σ := B.σ`, normal `ν := B.ν`), a trace family
-`𝒯 : B.TraceFamily` with `γ := 𝒯.traceL 2 _ : H¹(Ω) →L L²(σ)` — the instances are
-`IsContDiffDomain.traceFamily` (bounded `C¹` domains) and `Triangulation.traceFamily` (polygons
-without slits) — `g > 0` and `f ∈ L²(Ω)`: on `V = H¹(Ω) = SobolevEuclidean N 1 2 Ω`,
-`E v := ∫_Ω (½ (|∇v|² + v²) − f v) + g ∫ |γ v| dσ` (11.1.12), i.e.
-`E = (Elliptic.laplaceForm Ω).energy (Elliptic.load Ω f) + j` with `j v := g * ∫ x, |γ v x| ∂σ`,
-and `u` minimizes `E` over `V` if and only if it satisfies the variational inequality (11.1.13)
-`∫_Ω [∇u · ∇(v − u) + u (v − u)] + g ∫ (|γ v| − |γ u|) dσ ≥ ∫_Ω f (v − u)` for all `v ∈ V`,
-that is `Elliptic.laplaceForm Ω u (v − u) + j v − j u ≥ Elliptic.load Ω f (v − u)`. Restated
-2026-09-21 (boundary round): `j` is convex and continuous (`|·|` and the `L¹(σ)` norm are
-convex, `σ` is finite so `L²(σ) ⊆ L¹(σ)` continuously, `γ` is bounded), so this is
-`theorem_11_2_1` with `K = V`, `f := energy` (Gâteaux differentiable with derivative
-`v ↦ laplaceForm u v − load v`), and `j`. The pointwise formulation (11.1.14)–(11.1.15) is
-`example_11_1_2_pointwise`. ★, ~60 lines. This is the model of an EVI of the second kind that
-§11.3 (`example_11_3_11`) and §11.4 (`example_11_4_4`, `theorem_11_4_5`) return to.
-'''
-deps = ["theorem_11_2_1", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex", "BoundaryData.TraceFamily", "IsContDiffDomain.traceFamily"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2"
+
+[[node]]
+id = "memLp_top_of_continuousOn_frontier"
+
+[[node]]
+id = "exists_bump_lt_integral_mul"
+
+[[node]]
+id = "inner_gradient_eq_sum"
+
+[[node]]
+id = "laplaceForm_eq_integral_add_of_contDiffOnClosure"
+
+[[node]]
+id = "abs_integral_mul_le_of_forall_le"
+
+[[node]]
+id = "abs_le_of_forall_le"
+
+[[node]]
+id = "mul_add_abs_eq_zero_of_forall_le"
+
+[[node]]
+id = "laplaceForm_sub_load_eq_integral"
 
 [[node]]
 id = "example_11_1_2_pointwise"
-kind = "theorem"
-desc = '''
-Example 11.1.2, the pointwise form (11.1.14)–(11.1.15) of a smooth solution, on a bounded `C¹`
-domain: for `hΩ : IsContDiffDomain 1 Ω`, `hb`, `B := hΩ.boundaryData hb`, `𝒯 := hΩ.traceFamily hb`,
-`g > 0`, `f ∈ L²(Ω)`, if `u ∈ H¹(Ω)` solves (11.1.13) and has a representative `ũ` with
-`ContinuousOn ũ (closure Ω)` and `ContDiffOnClosure ℝ 2 ũ Ω` (the book's "smooth solution",
-Exercise 11.1.3), then `−Δ ũ + ũ = f` a.e. on `Ω` (11.1.14), and on `Γ`, `σ`-a.e.,
-`|∂ũ/∂ν| ≤ g` and `(∂ũ/∂ν) ũ + g |ũ| = 0` (11.1.15), with `∂ũ/∂ν x := ⟪gradient ũ x, ν x⟫`.
-Route: (11.1.14) from `v = u ± φ`, `φ ∈ 𝓓(Ω)` (the boundary term vanishes, `𝓓(Ω) ⊆ W_0`,
-`traceL_eq_zero_of_mem_zero`), giving the weak equation, then
-`Elliptic.laplacian_ae_eq_of_forall_testFunction`. For (11.1.15), Green's formula for the
-classical `ũ` against `v ∈ H¹` (`BoundaryData.integral_laplacian_mul_add_eq` for smooth `v` and
-density, or the `H²` form `BoundaryData.TraceFamily.green_laplacian` after
-`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded` at order 2) turns (11.1.13) into
-`∫ (∂_ν ũ)(γ v − γ u) dσ + g ∫ (|γ v| − |γ u|) dσ ≥ 0` for all `v ∈ H¹(Ω)`. With `v = u ± φ`,
-`φ ∈ C_c^∞(ℝ^N)` (so `γ v = ũ ± φ` on `Γ`): `|∫ (∂_ν ũ) φ dσ| ≤ g ∫ |φ| dσ`, hence
-`|∂_ν ũ| ≤ g` `σ`-a.e. (a bounded functional on the smooth functions with `L¹(σ)` bound `g` is
-given by an `L^∞(σ)` function of norm `≤ g`: apply `ae_eq_zero_of_integral_contDiff_smul_eq_zero`-style
-reasoning to `(|∂_ν ũ| − g)⁺` against approximations of `sign(∂_ν ũ) 1_{|∂_ν ũ| > g}`, or use
-Mathlib's `MeasureTheory.Lp.norm_toDual`/`L1` duality on the dense smooth functions, ~100 lines);
-with `v = 0` and `v = 2u`: `∫ (∂_ν ũ) ũ + g |ũ| dσ = 0`, and pointwise `(∂_ν ũ) ũ + g |ũ| ≥ 0`
-from `|∂_ν ũ| ≤ g`, so the integrand vanishes `σ`-a.e. ★★★, ~300 lines. (2026-09-21, boundary
-round.)
-'''
-deps = ["example_11_1_2", "IsContDiffDomain.traceFamily", "BoundaryData.integral_laplacian_mul_add_eq", "BoundaryData.TraceFamily.green_laplacian", "Elliptic.laplacian_ae_eq_of_forall_testFunction", "BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.2, (11.1.14)–(11.1.15)"

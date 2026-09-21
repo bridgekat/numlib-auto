@@ -114,31 +114,24 @@ id = "eLpNorm_max_sub_le"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the bound on inf_K ‖v − u_h‖₀)"
 
 [[node]]
+id = "ae_abs_le_of_norm_le"
+
+[[node]]
+id = "exists_multiplier_of_forall_abs_le"
+
+[[node]]
+id = "frictionFunctional_neg"
+
+[[node]]
+id = "friction_eq_and_le_of_forall"
+
+[[node]]
+id = "friction_multiplier_iff"
+
+[[node]]
 id = "theorem_11_4_5"
-kind = "theorem"
-desc = '''
-Theorem 11.4.5, the Lagrange multiplier of the friction problem, over the boundary interface:
-for `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (bounded `C¹` domains, polygons without slits),
-`σ := B.σ`, `γ := 𝒯.traceL 2 _ : H¹(Ω) →L L²(σ)`, `g > 0`, `f ∈ L²(Ω)`, and
-`Λ := {μ : Lp ℝ ⊤ σ | |μ| ≤ 1 σ-a.e.}`: `u ∈ V = H¹(Ω)` solves the friction problem (11.4.10)
-(`a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v`, `j v = g ∫ |γ v| dσ`) if and only if there
-is `λ ∈ Λ` with (11.4.21) `a(u, v) + g ∫ λ · γ v dσ = ℓ(v)` for all `v ∈ V` and (11.4.22)
-`λ · γ u = |γ u|` σ-a.e.; and `λ` is unique. Restated 2026-09-21 (boundary round; the
-2026-09-21 fem2 note's route through `H^{1/2}(Γ)` is replaced by one that needs no fractional
-space). (⇐): `λ γ v ≤ |γ v|` and `λ γ u = |γ u|` give (11.4.10) from (11.4.21) at `v − u`. (⇒):
-from (11.4.10) with `v = u ± w`, the functional `F w := ℓ w − a(u, w)` satisfies
-`|F w| ≤ g ∫ |γ w| dσ`, so it factors through the trace as a linear functional on the subspace
-`range γ ⊆ L¹(σ)` (`L²(σ) ⊆ L¹(σ)`, `σ` finite) of norm `≤ g`; Hahn–Banach
-(`Real.exists_extension_norm_eq` / `exists_extension_norm_eq` on the subspace of `Lp ℝ 1 σ`)
-extends it to `L¹(σ)` with norm `≤ g`, and the duality `(L¹(σ))' = L^∞(σ)`
-(`MeasureTheory.Lp.toDual_surjective`-type / `L1.toDual` on the finite `σ`) represents it by
-`λ̄ ∈ L^∞(σ)` with `‖λ̄‖_∞ ≤ g`; `λ := λ̄ / g ∈ Λ` gives (11.4.21). (11.4.22): `v = u` in
-(11.4.21) together with `a(u, u) + j(u) = ℓ(u)` (from (11.4.10) at `v = 0` and `v = 2u`) gives
-`∫ λ γ u dσ = ∫ |γ u| dσ` while `λ γ u ≤ |γ u|` pointwise, so equality a.e. Uniqueness: two
-multipliers satisfy `∫ (λ − λ') γ v dσ = 0` for all `v ∈ H¹(Ω)`; the traces of `H¹(Ω)` contain
-the restrictions of all `C_c^∞(ℝ^N)` functions (`traceL_ae_eq`, `ContDiff.memSobolev_of_isBounded`),
-and `ae_eq_zero_of_integral_contDiff_smul_eq_zero` (`Mathlib/Analysis/Distribution/AEEqOfIntegralContDiff.lean`,
-any measure) gives `λ = λ'` σ-a.e. — no density of `H^{1/2}(Γ)` in `L²(Γ)` is needed. Exercise
-11.4.4's proof through the regularization (11.4.14) is not planned. ★★★, ~350 lines.
-'''
-deps = ["example_11_3_11", "AtkinsonHan.Chapter07.theorem_7_3_10", "BoundaryData.TraceFamily", "ContDiff.memSobolev_of_isBounded"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"
+
+[[node]]
+id = "theorem_11_4_5_unique"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"

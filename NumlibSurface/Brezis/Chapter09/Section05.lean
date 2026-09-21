@@ -1,4 +1,5 @@
 import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
+import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
 import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import NumlibSurface.Brezis.Chapter09.Section04
 
@@ -15,8 +16,12 @@ Proposition 9.24) and unbounded domains (Example 5).
 The backbone is `Numlib/Analysis/PDE/Elliptic/Dirichlet` (the forms `Elliptic.laplaceForm`,
 `Elliptic.generalForm`, the load `Elliptic.load`, the weak problems as `IsGalerkinSolution`,
 Theorem 9.21, Proposition 9.22, Example 3, Gårding's inequality and the Fredholm alternative,
-Proposition 9.24, Steps A and D of Example 1) and, for Remark 23's maximum principle,
-`Numlib/Analysis/PDE/Elliptic/MaximumPrinciple`.
+Proposition 9.24, Steps A and D of Example 1), for Remark 23's maximum principle
+`Numlib/Analysis/PDE/Elliptic/MaximumPrinciple`, and for Steps A and D of Example 4 the boundary
+theory of `Numlib/Analysis/Sobolev/Boundary/` (the surface measure
+`IsContDiffDomain.boundaryMeasure`, the outward normal `IsContDiffDomain.outwardNormal`, Green's
+formula `BoundaryData.integral_laplacian_mul_add_eq` and the density theorem
+`IsContDiffDomain.hasSmoothDensity` on a bounded `C¹` domain).
 
 ## Conventions
 
@@ -42,8 +47,7 @@ Proposition 9.24, Steps A and D of Example 1) and, for Remark 23's maximum princ
 
 * `IsClassicalSolutionDirichlet`, `IsWeakSolutionDirichlet`, `isWeakSolutionDirichlet_iff`,
   `example_9_1_stepA`, `example_9_1_stepA_of_contDiffOn`, `theorem_9_21`, `theorem_9_21_isMinOn`,
-  `example_9_1_stepD`, `example_9_1_stepD_of_continuous`. Not yet restated: Example 4's Steps A
-  and D (Green's formula and the surface measure on `Γ`).
+  `example_9_1_stepD`, `example_9_1_stepD_of_continuous`.
 * `admissibleSetInhomogeneous`, `example_9_2`, `IsClassicalSolutionInhomogeneous`,
   `IsWeakSolutionInhomogeneous`, `example_9_2_stepA`, `proposition_9_22`, `proposition_9_22_iff`,
   `proposition_9_22_isMinOn`.
@@ -52,12 +56,14 @@ Proposition 9.24, Steps A and D of Example 1) and, for Remark 23's maximum princ
   `theorem_9_23`,
   `remark_9_23`, `remark_9_23_zero_drift`.
 * `IsClassicalSolutionNeumann`, `IsWeakSolutionNeumann`, `proposition_9_24`,
-  `proposition_9_24_isMinOn`, `example_9_4_stepD_interior`, `example_9_5_a`, `example_9_5_b`,
-  `example_9_5_c`.
+  `proposition_9_24_isMinOn`, `example_9_4_stepD_interior`, `example_9_4_stepA`,
+  `example_9_4_stepD` (on a bounded `C¹` domain, through the surface measure, the outward
+  normal and Green's formula of `Numlib/Analysis/Sobolev/Boundary/`), `example_9_5_a`,
+  `example_9_5_b`, `example_9_5_c`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
-open scoped ContDiff Distributions ENNReal NNReal
+open scoped ContDiff Distributions ENNReal InnerProductSpace NNReal
 
 namespace Brezis.Chapter09
 
@@ -820,6 +826,316 @@ theorem example_9_5_a (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens 𝔼) : Set �
   proposition_9_24 f
 
 end Example4
+
+/-! ### Example 4 on a bounded `C¹` domain: Steps A and D through the boundary theory -/
+
+section BoundaryTools
+
+variable {N : ℕ}
+
+/-- The book's `ℝ^N`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- The inner product of two gradients is the sum of the products of the partial derivatives,
+`∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv` (the reading of the book's integrand). Helper; belongs beside
+`EuclideanSpace.gradient_apply` in `Numlib/Analysis/Sobolev/Boundary/Divergence.lean`. -/
+theorem inner_gradient_eq_sum (u v : 𝔼 → ℝ) (x : 𝔼) :
+    ⟪_root_.gradient u x, _root_.gradient v x⟫_ℝ
+      = ∑ i, fderiv ℝ u x (EuclideanSpace.single i 1)
+        * fderiv ℝ v x (EuclideanSpace.single i 1) := by
+  rw [PiLp.inner_apply]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [EuclideanSpace.gradient_apply, EuclideanSpace.gradient_apply, RCLike.inner_apply,
+    conj_trivial, mul_comm]
+
+/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure of a
+`BoundaryData`. Helper; belongs beside `BoundaryData.memLp_of_continuousOn` in
+`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
+theorem memLp_top_of_continuousOn_frontier (B : BoundaryData Ω) {h : 𝔼 → ℝ}
+    (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
+  have hm : AEStronglyMeasurable h B.σ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem B.ae_mem_frontier]
+    exact hc.aestronglyMeasurable isClosed_frontier.measurableSet
+  have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
+    B.isBounded.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure
+  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hc
+  exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
+
+/-- **A bump test against a function continuous on the boundary**: for a `BoundaryData` whose
+surface measure charges every open set meeting `∂Ω` (a bounded `C¹` domain,
+`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), a function `h` continuous on `∂Ω` and a
+boundary point `x₀` with `h x₀ > c`, some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1`
+satisfies `c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
+`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure.
+Helper; belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
+theorem exists_bump_lt_integral_mul (B : BoundaryData Ω)
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
+    (hx₀ : x₀ ∈ frontier (Ω : Set 𝔼)) {c : ℝ} (hlt : c < h x₀) :
+    ∃ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ ∧ HasCompactSupport ψ ∧ (∀ x, 0 ≤ ψ x) ∧ (∀ x, ψ x ≤ 1) ∧
+      c * ∫ x, ψ x ∂B.σ < ∫ x, h x * ψ x ∂B.σ := by
+  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = (c + h x₀) / 2 := ⟨_, rfl⟩
+  have hcm : c < m := by rw [hm]; linarith
+  have hmx : m < h x₀ := by rw [hm]; linarith
+  -- a ball on which `h > m`, relative to `∂Ω`
+  have hev : ∀ᶠ x in 𝓝[frontier (Ω : Set 𝔼)] x₀, m < h x :=
+    (hc x₀ hx₀).eventually (lt_mem_nhds hmx)
+  obtain ⟨r, hr, hball⟩ := Metric.mem_nhdsWithin_iff.1 hev
+  -- the bump
+  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
+  refine ⟨ψ, ψ.contDiff, ψ.hasCompactSupport, fun x ↦ ψ.nonneg, fun x ↦ ψ.le_one, ?_⟩
+  have hψc : Continuous ψ := ψ.continuous
+  have hIψ : Integrable (fun x ↦ ψ x) B.σ := B.integrable_of_continuous hψc
+  have hIhψ : Integrable (fun x ↦ h x * ψ x) B.σ :=
+    (memLp_top_of_continuousOn_frontier B hc).integrable_mul (B.memLp_of_continuous hψc 1)
+  -- `∫ ψ dσ > 0`
+  have hpsi : 0 < ∫ x, ψ x ∂B.σ := by
+    have h1 : B.σ.real (ball x₀ (r / 2)) ≤ ∫ x, ψ x ∂B.σ := by
+      rw [← integral_indicator_one measurableSet_ball]
+      refine integral_mono ((integrable_const (1 : ℝ)).indicator measurableSet_ball) hIψ
+        fun x ↦ ?_
+      by_cases hx : x ∈ ball x₀ (r / 2)
+      · rw [indicator_of_mem hx]
+        exact (ψ.one_of_mem_closedBall (ball_subset_closedBall hx)).ge
+      · rw [indicator_of_notMem hx]
+        exact ψ.nonneg
+    refine lt_of_lt_of_le ?_ h1
+    rw [measureReal_def]
+    exact ENNReal.toReal_pos (hpos _ isOpen_ball ⟨x₀, mem_ball_self (by positivity), hx₀⟩).ne'
+      (measure_ne_top _ _)
+  -- `∫ h ψ ≥ m ∫ ψ`
+  have hle : m * ∫ x, ψ x ∂B.σ ≤ ∫ x, h x * ψ x ∂B.σ := by
+    rw [← integral_const_mul]
+    refine integral_mono_ae (hIψ.const_mul m) hIhψ ?_
+    filter_upwards [B.ae_mem_frontier] with x hx
+    by_cases hxb : x ∈ ball x₀ r
+    · exact mul_le_mul_of_nonneg_right (hball ⟨hxb, hx⟩).le ψ.nonneg
+    · rw [ψ.zero_of_le_dist (not_lt.1 fun h' ↦ hxb (mem_ball.2 h')), mul_zero, mul_zero]
+  calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
+    _ ≤ _ := hle
+
+/-- **A function continuous on `∂Ω` whose integrals against all smooth compactly supported
+functions vanish is zero on `∂Ω`**, when the surface measure charges every open set meeting
+`∂Ω`: the sign of `h` at a boundary point survives on a small ball, against whose bump the
+integral would not vanish (`exists_bump_lt_integral_mul`). Helper; belongs in
+`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
+theorem eqOn_zero_frontier_of_forall_integral_mul_eq_zero (B : BoundaryData Ω)
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
+    (hint : ∀ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ → ∫ x, h x * ψ x ∂B.σ = 0) :
+    EqOn h 0 (frontier (Ω : Set 𝔼)) := by
+  intro x₀ hx₀
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with hlt | hgt
+  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc.neg hx₀
+      (c := 0) (by simpa using hlt)
+    have := hint ψ hψ hψc
+    simp only [Pi.neg_apply, neg_mul, integral_neg, zero_mul] at hψi
+    linarith
+  · obtain ⟨ψ, hψ, hψc, -, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc hx₀ (c := 0) hgt
+    have := hint ψ hψ hψc
+    rw [zero_mul] at hψi
+    linarith
+
+end BoundaryTools
+
+section Example4Boundary
+
+variable {d : ℕ}
+
+/-- The book's `ℝ^N`, with `N = d + 1`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **Example 4, Step A: every classical solution of the Neumann problem is a weak solution.**
+Let `Ω` be a bounded open set of class `C¹` — in the graph form `IsContDiffDomain 1 Ω` of the
+backbone, equivalent to `IsClassC1` by `isContDiffDomain_of_isClassC1` — with the outward unit
+normal `n := hΩ.outwardNormal hb` of `Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`, and
+let `u` be a classical solution of (44) (`IsClassicalSolutionNeumann Ω n f u`: `u ∈ C²(Ω̄)`,
+`−Δu + u = f` on `Ω`, `∂u/∂n = 0` on `Γ`) with `f ∈ L²(Ω)`. Then `u` is the function of some
+`U ∈ H¹(Ω)`, and `U` is a weak solution of (44).
+
+The proof is the book's: `u ∈ H¹(Ω)` (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`);
+Green's formula `∫_Ω (Δu) v = ∫_Γ (∂u/∂n) v dσ − ∫_Ω ∇u·∇v` for `u ∈ C²(Ω̄)`, `v ∈ C¹(Ω̄)` is
+`BoundaryData.integral_laplacian_mul_add_eq` for the boundary data `hΩ.boundaryData hb` (the
+divergence theorem `IsContDiffDomain.integral_div_eq` on `F = v ∇u`), its boundary term vanishes
+by the boundary condition, so `∫_Ω ∇u·∇v + ∫_Ω u v = ∫_Ω f v` for every `v ∈ C_c^∞(ℝ^N)`
+restricted to `Ω`; these are dense in `H¹(Ω)` (Corollary 9.8,
+`IsContDiffDomain.hasSmoothDensity`) and both sides are continuous in `v`. -/
+theorem example_9_4_stepA (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f u : 𝔼 → ℝ}
+    (hu : IsClassicalSolutionNeumann Ω (hΩ.outwardNormal hb) f u)
+    (hf : MemLp f 2 (volume.restrict (Ω : Set 𝔼))) :
+    ∃ U : hSpace (d + 1) Ω, SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
+      IsWeakSolutionNeumann Ω (hf.toLp f) U := by
+  obtain ⟨hu2, -, heq, g, hg, hge, hg0⟩ := hu
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hu1 : ContDiffOnClosure ℝ 1 u Ω := hu2.of_le (by norm_num)
+  obtain ⟨U, hU⟩ := (hu1.memSobolevMultiIndex_of_isBounded Ω hb 2).exists_sobolevMultiIndex
+  refine ⟨U, hU, (isWeakSolutionNeumann_iff _ _).2 ⟨Submodule.mem_top, fun V _ ↦ ?_⟩⟩
+  -- the identity on the smooth restrictions
+  have key : ∀ V ∈ SobolevEuclidean.smoothRestrictions (d + 1) 2 Ω,
+      Elliptic.laplaceForm Ω U V = Elliptic.load Ω (hf.toLp f) V := by
+    rintro V ⟨v, hv, -, hV⟩
+    have hv1 : ContDiff ℝ 1 v := hv.of_le (by simp)
+    -- Green's formula for the classical `u` against `v`
+    have hgreen := (hΩ.boundaryData hb).integral_laplacian_mul_add_eq hu2 hg hge
+      hv.continuous.continuousOn (hv1.contDiffOn.contDiffOnClosure hΩo)
+    -- the boundary term vanishes
+    have hbd : ∫ x, g x ((hΩ.boundaryData hb).ν x) * v x ∂(hΩ.boundaryData hb).σ = 0 := by
+      rw [← integral_zero 𝔼 ℝ (μ := (hΩ.boundaryData hb).σ)]
+      refine integral_congr_ae ?_
+      filter_upwards [(hΩ.boundaryData hb).ae_mem_frontier] with x hx
+      rw [IsContDiffDomain.boundaryData_ν, hg0 x hx, zero_mul]
+    rw [hbd] at hgreen
+    -- the weak derivatives are the classical ones
+    have hdU := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hu1.contDiffOn hU i
+    have hdV := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω
+      hv1.contDiffOn hV i
+    rw [Elliptic.laplaceForm_apply, Elliptic.load_apply]
+    -- integrability of the pieces
+    have hI₁ : IntegrableOn (fun x ↦ ⟪_root_.gradient u x, _root_.gradient v x⟫_ℝ)
+        (Ω : Set 𝔼) := by
+      have hc : ContinuousOn (fun x ↦ ⟪(InnerProductSpace.toDualReal 𝔼).symm (g x),
+          _root_.gradient v x⟫_ℝ) (closure (Ω : Set 𝔼)) :=
+        ((InnerProductSpace.toDualReal 𝔼).symm.continuous.comp_continuousOn hg).inner
+          (EuclideanSpace.continuous_gradient hv1).continuousOn
+      refine ((hΩ.boundaryData hb).integrableOn_of_continuousOn hc).congr_fun
+        (fun x hx ↦ ?_) hΩm
+      simp only [gradient_eq_toDualReal_symm, hge hx]
+    have hI₂ : Integrable (fun x ↦ u x * v x) (volume.restrict (Ω : Set 𝔼)) :=
+      ((Lp.memLp (SobolevMultiIndex.weakDeriv U 0)).integrable_mul
+        (Lp.memLp (SobolevMultiIndex.weakDeriv V 0))).congr (hU.mul hV)
+    have hI₃ : Integrable (fun x ↦ Δ u x * v x) (volume.restrict (Ω : Set 𝔼)) := by
+      refine (((Lp.memLp (SobolevMultiIndex.weakDeriv U 0)).sub hf).integrable_mul
+        (Lp.memLp (SobolevMultiIndex.weakDeriv V 0))).congr ?_
+      filter_upwards [ae_restrict_mem hΩm, hU, hV] with x hx hUx hVx
+      change (SobolevMultiIndex.fn U x - f x) * SobolevMultiIndex.fn V x = _
+      rw [hUx, hVx]
+      linear_combination (v x) * heq x hx
+    -- the left side is `∫ ⟪∇u, ∇v⟫ + ∫ u v`
+    have hL : ∫ x in (Ω : Set 𝔼),
+        ((∑ i, (SobolevMultiIndex.weakDeriv U (MultiIndexLE.single i) : 𝔼 → ℝ) x
+          * (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single i) : 𝔼 → ℝ) x)
+          + SobolevMultiIndex.fn U x * SobolevMultiIndex.fn V x)
+        = (∫ x in (Ω : Set 𝔼), ⟪_root_.gradient u x, _root_.gradient v x⟫_ℝ)
+          + ∫ x in (Ω : Set 𝔼), u x * v x := by
+      rw [← integral_add hI₁ hI₂]
+      refine integral_congr_ae ?_
+      filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdV, hU, hV] with x hxU hxV hUx hVx
+      simp only [hxU, hxV, hUx, hVx, inner_gradient_eq_sum]
+    -- the right side is `∫ f v = ∫ (−Δu) v + ∫ u v`
+    have hR : ∫ x in (Ω : Set 𝔼), (hf.toLp f) x * SobolevMultiIndex.fn V x
+        = ∫ x in (Ω : Set 𝔼), f x * v x :=
+      integral_congr_ae (hf.coeFn_toLp.mul hV)
+    have hF : ∫ x in (Ω : Set 𝔼), f x * v x
+        = (∫ x in (Ω : Set 𝔼), -(Δ u x * v x)) + ∫ x in (Ω : Set 𝔼), u x * v x := by
+      have hI₃' : Integrable (fun x ↦ -(Δ u x * v x)) (volume.restrict (Ω : Set 𝔼)) := hI₃.neg
+      rw [← integral_add hI₃' hI₂]
+      refine setIntegral_congr_fun hΩm fun x hx ↦ ?_
+      rw [← heq x hx]
+      ring
+    rw [hL, hR, hF, integral_neg]
+    linarith
+  -- extend by density
+  have h := Continuous.ext_on
+    (hΩ.hasSmoothDensity (p := 2) ENNReal.ofNat_ne_top).dense_smoothRestrictions
+    (Elliptic.laplaceForm Ω U).continuous (Elliptic.load Ω (hf.toLp f)).continuous key
+  exact congrFun h V
+
+/-- **Example 4, Step D, the boundary clause: a `C²(Ω̄)` weak solution has vanishing normal
+derivative on `Γ`.** On a bounded `C¹` domain (`hΩ`, `hb`, `n := hΩ.outwardNormal hb`), let the
+weak solution `U ∈ H¹(Ω)` of (44) have a representative `u ∈ C²(Ω̄)` whose derivative extends
+continuously to `Ω̄` as `g` (the boundary values of `∇u`, which `ContDiffOnClosure` alone does not
+fix). Then `∂u/∂n = g(n) = 0` at every point of `Γ`, and with a datum continuous on `Ω`, `u` is a
+classical solution of (44) (`IsClassicalSolutionNeumann Ω n f' u`).
+
+The book's argument, (47) with `v ∈ C_c^∞(ℝ^N)`: Green's formula
+`BoundaryData.integral_laplacian_mul_add_eq` and the interior equation `−Δu + u = f`
+(`example_9_4_stepD_interior`) leave `∫_Γ (∂u/∂n) v dσ = 0` for every such `v`; `∂u/∂n` is
+continuous on `Γ` (`IsContDiffDomain.continuousOn_outwardNormal`), and every open set meeting
+`Γ` has positive surface measure (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), so it
+vanishes everywhere on `Γ` (`eqOn_zero_frontier_of_forall_integral_mul_eq_zero`). -/
+theorem example_9_4_stepD (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
+    {U : hSpace (d + 1) Ω} (hU : IsWeakSolutionNeumann Ω f U) {u : 𝔼 → ℝ}
+    (hUu : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u)
+    (hu : ContDiffOnClosure ℝ 2 u Ω) (huc : ContinuousOn u (closure (Ω : Set 𝔼)))
+    {g : 𝔼 → 𝔼 →L[ℝ] ℝ} (hg : ContinuousOn g (closure (Ω : Set 𝔼)))
+    (hge : EqOn g (fderiv ℝ u) Ω) :
+    (∀ x ∈ frontier (Ω : Set 𝔼), g x (hΩ.outwardNormal hb x) = 0) ∧
+      ∀ f' : 𝔼 → ℝ, ContinuousOn f' Ω → (f : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)] f' →
+        IsClassicalSolutionNeumann Ω (hΩ.outwardNormal hb) f' u := by
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hu1 : ContDiffOnClosure ℝ 1 u Ω := hu.of_le (by norm_num)
+  obtain ⟨hint, hint'⟩ := example_9_4_stepD_interior hU hUu hu.contDiffOn
+  -- `∂u/∂n` is continuous on `Γ`
+  have hc : ContinuousOn (fun x ↦ g x (hΩ.outwardNormal hb x)) (frontier (Ω : Set 𝔼)) :=
+    (hg.mono frontier_subset_closure).clm_apply (hΩ.continuousOn_outwardNormal hb)
+  have hbd : ∀ x ∈ frontier (Ω : Set 𝔼), g x (hΩ.outwardNormal hb x) = 0 := by
+    refine eqOn_zero_frontier_of_forall_integral_mul_eq_zero (hΩ.boundaryData hb)
+      (fun U hU hne ↦ hΩ.boundaryMeasure_pos_of_isOpen hb hU hne) hc fun ψ hψ hψc ↦ ?_
+    have hψ1 : ContDiff ℝ 1 ψ := hψ.of_le (by simp)
+    obtain ⟨W, hW⟩ := hψ1.exists_sobolevMultiIndex_of_hasCompactSupport'
+      (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (p := 2) (Ω := Ω) (μ := volume)
+      hψc
+    -- Green's formula for the classical `u` against `ψ`
+    have hgreen := (hΩ.boundaryData hb).integral_laplacian_mul_add_eq hu hg hge
+      hψ.continuous.continuousOn (hψ1.contDiffOn.contDiffOnClosure hΩo)
+    -- the weak equation at `W`
+    have hweak := hU W
+    have hdU := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hu1.contDiffOn
+      hUu i
+    have hdW := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hψ1.contDiffOn
+      hW i
+    have hI₁ : IntegrableOn (fun x ↦ ⟪_root_.gradient u x, _root_.gradient ψ x⟫_ℝ)
+        (Ω : Set 𝔼) := by
+      have hc : ContinuousOn (fun x ↦ ⟪(InnerProductSpace.toDualReal 𝔼).symm (g x),
+          _root_.gradient ψ x⟫_ℝ) (closure (Ω : Set 𝔼)) :=
+        ((InnerProductSpace.toDualReal 𝔼).symm.continuous.comp_continuousOn hg).inner
+          (EuclideanSpace.continuous_gradient hψ1).continuousOn
+      refine ((hΩ.boundaryData hb).integrableOn_of_continuousOn hc).congr_fun
+        (fun x hx ↦ ?_) hΩm
+      simp only [gradient_eq_toDualReal_symm, hge hx]
+    have hI₂ : Integrable (fun x ↦ u x * ψ x) (volume.restrict (Ω : Set 𝔼)) :=
+      ((Lp.memLp (SobolevMultiIndex.weakDeriv U 0)).integrable_mul
+        (Lp.memLp (SobolevMultiIndex.weakDeriv W 0))).congr (hUu.mul hW)
+    have hI₃ : Integrable (fun x ↦ Δ u x * ψ x) (volume.restrict (Ω : Set 𝔼)) := by
+      refine (((Lp.memLp (SobolevMultiIndex.weakDeriv U 0)).sub (Lp.memLp f)).integrable_mul
+        (Lp.memLp (SobolevMultiIndex.weakDeriv W 0))).congr ?_
+      filter_upwards [hint, hUu, hW] with x hx hUx hWx
+      change (SobolevMultiIndex.fn U x - f x) * SobolevMultiIndex.fn W x = _
+      rw [hUx, hWx]
+      change -Δ u x + u x = f x at hx
+      linear_combination (ψ x) * hx
+    have hL : (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv U i x * partialDeriv W i x)
+        = ∫ x in (Ω : Set 𝔼), ⟪_root_.gradient u x, _root_.gradient ψ x⟫_ℝ := by
+      refine integral_congr_ae ?_
+      filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdW] with x hxU hxW
+      simp only [partialDeriv, hxU, hxW, inner_gradient_eq_sum]
+    have hM : ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn U x * SobolevMultiIndex.fn W x
+        = ∫ x in (Ω : Set 𝔼), u x * ψ x := integral_congr_ae (hUu.mul hW)
+    have hR : ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn W x
+        = (∫ x in (Ω : Set 𝔼), -(Δ u x * ψ x)) + ∫ x in (Ω : Set 𝔼), u x * ψ x := by
+      have hI₃' : Integrable (fun x ↦ -(Δ u x * ψ x)) (volume.restrict (Ω : Set 𝔼)) := hI₃.neg
+      rw [← integral_add hI₃' hI₂]
+      refine integral_congr_ae ?_
+      filter_upwards [hint, hW] with x hx hWx
+      change -Δ u x + u x = f x at hx
+      rw [hWx, ← hx]
+      ring
+    rw [hL, hM, hR, integral_neg] at hweak
+    have hbd : ∫ x, g x ((hΩ.boundaryData hb).ν x) * ψ x ∂(hΩ.boundaryData hb).σ = 0 := by
+      linarith
+    exact hbd
+  exact ⟨hbd, fun f' hf' hff' ↦ ⟨hu, huc, hint' f' hf' hff', g, hg, hge, hbd⟩⟩
+
+end Example4Boundary
 
 section Example5
 

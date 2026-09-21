@@ -22,16 +22,4 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
 
 [[node]]
 id = "example_11_2_4"
-kind = "theorem"
-desc = '''
-Example 11.2.4: the variational inequality (11.1.13) of the simplified friction problem has
-exactly one solution — over the boundary interface, for `B : BoundaryData Ω`, `𝒯 : B.TraceFamily`
-(instances: bounded `C¹` domains, polygons without slits), `g > 0`, `f ∈ L²(Ω)`:
-`∃! u : H¹(Ω), ∀ v, Elliptic.laplaceForm Ω u (v − u) + j v − j u ≥ Elliptic.load Ω f (v − u)`
-with `j v := g * ∫ |𝒯.traceL 2 _ v| ∂B.σ`. Restated 2026-09-21 (boundary round): it is
-`theorem_11_2_2` on `V = H¹(Ω)`, `K = V`, with `a = Elliptic.laplaceForm Ω` (bounded, symmetric,
-elliptic with `α = 1`: `Elliptic.laplaceForm_isCoerciveWith_one`, `laplaceForm_isBoundedWith_one`,
-`laplaceForm_isHermitian`), `ℓ = Elliptic.load Ω f`, and `j` convex and continuous (as in
-`example_11_1_2`). ★, ~40 lines.
-'''
-deps = ["theorem_11_2_2", "example_11_1_2", "BoundaryData.TraceFamily"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.4"

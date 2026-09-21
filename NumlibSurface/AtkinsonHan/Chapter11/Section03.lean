@@ -66,11 +66,16 @@ without proof and which the fixed point argument gives for nothing: every iterat
   on `f`, from Theorem 11.3.9 at `j = 0` (`theorem_11_3_9_zero_existsUnique`,
   `theorem_11_3_9_zero_lipschitz`).
 
-Not formalized: Theorem 11.3.12 (`W^{2,p}` regularity of the obstacle problem, quoted from
-Brezis–Stampacchia), Example 11.3.11 (the simplified friction problem, which needs the trace of
-an `H¹(Ω)` function and the surface measure on `Γ`) and the one-dimensional solution formula
-following them, and Exercises 11.3.4–11.3.9, 11.3.11 and 11.3.12, all of which name a domain and
-hence a Sobolev space.
+* `example_11_3_11` — the simplified friction problem of §11.1 (`Chapter11/Section01`) as an
+  inequality of the second kind on `H¹(Ω)`, over the boundary interface `BoundaryData Ω`,
+  `BoundaryData.TraceFamily` (a bounded `C¹` domain or a polygon, the book's Lipschitz domain):
+  unique solvability for every `f ∈ L²(Ω)` and Lipschitz dependence on `f`, from Theorem 11.3.9
+  with the convex continuous friction functional `g ∫_Γ |v| ds` (`Chapter11.frictionFunctional`).
+
+Not formalized: Theorem 11.3.12 in the book's generality (`W^{2,p}` regularity of the obstacle
+problem, quoted from Brezis–Stampacchia; the `p = 2` Laplacian case is `theorem_11_3_12_two`),
+the one-dimensional solution formula following Example 11.3.11, and Exercises 11.3.4–11.3.9,
+11.3.11 and 11.3.12, all of which name a domain and hence a Sobolev space.
 -/
 
 open Filter Set TopologicalSpace Topology
@@ -727,5 +732,63 @@ theorem theorem_11_3_12_two {R : ℝ} (hR : 0 ≤ R)
       (isObstacleSolution_of_example_11_3_10 Ω hu)⟩
 
 end Regularity
+
+/-! ### Example 11.3.11: the simplified friction problem -/
+
+section Friction
+
+open MeasureTheory
+open scoped ENNReal
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
+
+/-- `ℝ^N`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- **Example 11.3.11 (the simplified friction problem as an EVI of the second kind)**: Theorem
+11.3.9 applied to the variational inequality (11.1.13) of Example 11.1.2 — over the boundary
+interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (a bounded `C¹` domain or a polygon, the
+book's Lipschitz domain), for `g > 0`, the problem
+
+  `u ∈ V = H¹(Ω)`, `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v ∈ V`,
+
+with `a(u, v) = ∫_Ω (∇u·∇v + u v)`, `ℓ(v) = ∫_Ω f v` and `j(v) = g ∫_Γ |v| ds`, has a unique
+solution for every `f ∈ L²(Ω)`, and the solution depends Lipschitz continuously on `f`:
+`‖u₁ − u₂‖_{H¹} ≤ ‖f₁ − f₂‖_{L²}`. Theorem 11.3.9 on `V` with `K = V`, the form
+`Chapter11.frictionBilinForm` (bounded and `V`-elliptic with constant `1`) and the convex
+continuous `j` (`Chapter11.convexOn_frictionFunctional`, `Chapter11.continuous_frictionFunctional`),
+with `‖ℓ₁ − ℓ₂‖ ≤ ‖f₁ − f₂‖_{L²}` (`Elliptic.norm_load_le`) for the Lipschitz constant `1/α = 1`;
+the same conclusion as Example 11.2.4 by the other route. -/
+theorem example_11_3_11 {g : ℝ} (hg : 0 < g) :
+    (∀ f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)), ∃! u : SobolevEuclidean N 1 2 Ω,
+      ∀ v : SobolevEuclidean N 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+          ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+              * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+              + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+            + g * ∫ x, (|(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+              - |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|) ∂B.σ) ∧
+    ∀ (f₁ f₂ : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) (u₁ u₂ : SobolevEuclidean N 1 2 Ω),
+      (∀ v, Elliptic.load Ω f₁ (v - u₁) ≤ Elliptic.laplaceForm Ω u₁ (v - u₁)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u₁) →
+      (∀ v, Elliptic.load Ω f₂ (v - u₂) ≤ Elliptic.laplaceForm Ω u₂ (v - u₂)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u₂) →
+      ‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ := by
+  have key := theorem_11_3_9 frictionBilinForm_isBoundedWith one_pos
+    frictionBilinForm_isEllipticWith univ_nonempty isClosed_univ convex_univ
+    (j := frictionFunctional B 𝒯 g) (convexOn_frictionFunctional B 𝒯 hg.le)
+    ((continuous_frictionFunctional B 𝒯 g).lowerSemicontinuous.lowerSemicontinuousOn univ)
+  refine ⟨fun f ↦ ?_, fun f₁ f₂ u₁ u₂ h₁ h₂ ↦ ?_⟩
+  · obtain ⟨u, ⟨-, hu⟩, huniq⟩ := key.1 (Elliptic.load Ω f)
+    refine ⟨u, fun v ↦ (friction_ineq_iff B 𝒯 g f u v).2 (hu v (mem_univ _)), fun y hy ↦
+      huniq y ⟨mem_univ _, fun v _ ↦ (friction_ineq_iff B 𝒯 g f y v).1 (hy v)⟩⟩
+  · have h := key.2 (Elliptic.load Ω f₁) (Elliptic.load Ω f₂) u₁ u₂
+      ⟨mem_univ _, fun v _ ↦ h₁ v⟩ ⟨mem_univ _, fun v _ ↦ h₂ v⟩
+    have e : Elliptic.load Ω f₁ - Elliptic.load Ω f₂ = Elliptic.load Ω (f₁ - f₂) :=
+      ContinuousLinearMap.ext fun v ↦ (Elliptic.load_sub Ω f₁ f₂ v).symm
+    rw [one_div_one, one_mul, e] at h
+    exact h.trans (Elliptic.norm_load_le Ω _)
+
+end Friction
 
 end AtkinsonHan.Chapter11

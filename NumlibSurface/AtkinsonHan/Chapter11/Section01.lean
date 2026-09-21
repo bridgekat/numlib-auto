@@ -2,8 +2,10 @@ import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff
 import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
 import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import Numlib.MeasureTheory.Function.LpSpace.Order
+import Numlib.Variational.Inequality.Basic
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
@@ -16,9 +18,11 @@ Analysis Framework*, 3rd edition, Springer, 2009, §11.1.
 The section motivates the chapter with two problems: the obstacle problem (Example 11.1.1), a
 minimization of the Dirichlet energy over a convex set that is not a subspace, and the simplified
 friction problem (Example 11.1.2), a minimization over a space of an energy with a
-non-differentiable boundary term.  The obstacle problem is here; the friction problem, whose
-functional `g ∫_Γ |v| ds` needs the trace of an `H¹(Ω)` function and the surface measure on `Γ`,
-is not (see `example_11_1_2` in the plan).
+non-differentiable boundary term.  Both are here: the friction problem, whose functional
+`g ∫_Γ |v| ds` needs the trace of an `H¹(Ω)` function and the surface measure on `Γ`, is stated
+over the boundary interface `BoundaryData Ω`, `BoundaryData.TraceFamily` of
+`Numlib/Analysis/Sobolev/Boundary/Data.lean` (instances: bounded `C¹` domains,
+`IsContDiffDomain.traceFamily`; polygons without slits, `Triangulation.traceFamily`).
 
 ## The obstacle problem
 
@@ -43,6 +47,28 @@ which is Theorem 8.3.3's (8.3.3) on the convex set `K`; `example_11_1_1_pointwis
 pointwise form (11.1.9).  Existence and uniqueness are Example 11.2.3 (`Chapter11/Section02`)
 and Example 11.3.10 (`Chapter11/Section03`).
 
+## The simplified friction problem
+
+For `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (surface measure `σ = B.σ` on `Γ`, trace
+`γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)`), `g > 0` and `f ∈ L²(Ω)`:
+
+* `frictionFunctional B 𝒯 g` is `j(v) = g ∫_Γ |v| ds`, convex (`convexOn_frictionFunctional`)
+  and continuous (`continuous_frictionFunctional`), positively homogeneous and subadditive;
+* `frictionEnergy B 𝒯 g f` is the energy (11.1.12), `E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + j(v)`
+  (`frictionEnergy_apply`), the energy of the form `a(u, v) = ∫_Ω (∇u·∇v + u v)` — the
+  backbone's `Elliptic.laplaceForm Ω` — plus `j`;
+* `example_11_1_2` is the equivalence of the minimization problem (11.1.12) with the variational
+  inequality (11.1.13), `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v ∈ H¹(Ω)` (Exercise
+  11.1.2; the backbone's `isMinOn_energy_add_iff`, which is Theorem 11.2.1 with `K = V`);
+* `example_11_1_2_pointwise` is the pointwise form (11.1.14)–(11.1.15) of a smooth solution on
+  a bounded `C¹` domain: `−Δu + u = f` a.e. in `Ω`, and `|∂u/∂ν| ≤ g`, `(∂u/∂ν) u + g |u| = 0` at
+  every point of `Γ`, the normal derivative being read through the continuous extension of
+  `∇u` to `Ω̄`.  It rests on Green's formula `BoundaryData.integral_laplacian_mul_add_eq`, the
+  density of smooth functions (`IsContDiffDomain.hasSmoothDensity`), the continuity of the
+  outward normal (`IsContDiffDomain.continuousOn_outwardNormal`) and the positivity of the surface
+  measure on open sets meeting `Γ` (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), through
+  bump tests on the boundary (`exists_bump_lt_integral_mul`).
+
 ## Deviations from the book
 
 * The book's "`ψ ≤ 0` on `Γ`", a statement about the trace, enters as the hypothesis that the
@@ -51,7 +77,9 @@ and Example 11.3.10 (`Chapter11/Section03`).
   `closure Ω` that is `≤ 0` on `∂Ω`, this hypothesis follows from the backbone's Theorem 9.17
   (`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`) applied to `max (ψ, 0)`,
   which lies in `H¹(Ω)` by `MemSobolevMultiIndex.posPart`.
-* The book's Lipschitz boundary is not needed; `Ω` is any bounded open set.
+* The book's Lipschitz boundary is not needed for the obstacle problem; `Ω` is any bounded open
+  set.  For the friction problem it is the `C¹` (or polygonal) hypothesis behind the boundary
+  interface, and the pointwise form is proved on a bounded `C¹` domain.
 * The pointwise complementarity form (11.1.9) under the regularity (11.1.8) is
   `example_11_1_1_pointwise`, stated through representatives `f̃`, `ψ̃` continuous on `Ω` and
   `ũ` of class `C²` on `Ω`; the book's `u ∈ C(Ω̄)` is not needed for the relations in `Ω`.  It
@@ -476,5 +504,720 @@ theorem example_11_1_1_pointwise {R : ℝ} (hR : 0 ≤ R)
   · rw [heq, sub_self, zero_mul]
 
 end PointwiseMain
+
+/-! ### Example 11.1.2: the simplified friction problem -/
+
+section Friction
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
+
+/-- `ℝ^N`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- The `L¹(σ)` norm is bounded by the `L²(σ)` norm on the finite surface measure `σ`:
+`∫ |k| dσ ≤ ‖1‖_{L²(σ)} ‖k‖_{L²(σ)}` (Hölder,
+`MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le` at `p = 2`). -/
+theorem integral_abs_le_mul_norm (k : Lp ℝ 2 B.σ) :
+    ∫ x, |k x| ∂B.σ ≤ (eLpNorm (fun _ : 𝔼 ↦ (1 : ℝ)) 2 B.σ).toReal * ‖k‖ := by
+  have h := MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le (p := 2) ENNReal.ofNat_ne_top
+    (Lp.memLp k) (memLp_const (μ := B.σ) (1 : ℝ))
+  have h2 : ((2 : ℝ≥0∞).toReal - 1) = 1 := by norm_num
+  simp only [h2, Real.rpow_one, norm_one, mul_one, Real.norm_eq_abs] at h
+  rw [Lp.norm_def, mul_comm]
+  exact h
+
+/-- `k ↦ ∫ |k| dσ` is Lipschitz on `L²(σ)`, with constant `‖1‖_{L²(σ)}`. -/
+theorem lipschitzWith_integral_abs :
+    LipschitzWith (Real.toNNReal (eLpNorm (fun _ : 𝔼 ↦ (1 : ℝ)) 2 B.σ).toReal)
+      (fun k : Lp ℝ 2 B.σ ↦ ∫ x, |k x| ∂B.σ) := by
+  refine LipschitzWith.of_dist_le_mul fun k k' ↦ ?_
+  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
+    ((Lp.memLp k).integrable one_le_two).abs
+  rw [Real.dist_eq, dist_eq_norm, Real.coe_toNNReal _ ENNReal.toReal_nonneg,
+    ← integral_sub (hI k) (hI k')]
+  calc |∫ x, (|k x| - |k' x|) ∂B.σ| ≤ ∫ x, |(|k x| - |k' x|)| ∂B.σ :=
+        abs_integral_le_integral_abs
+    _ ≤ ∫ x, |(k - k') x| ∂B.σ := by
+        refine integral_mono_ae ((hI k).sub (hI k')).abs (hI (k - k')) ?_
+        filter_upwards [Lp.coeFn_sub k k'] with x hx
+        rw [hx, Pi.sub_apply]
+        exact abs_abs_sub_abs_le_abs_sub _ _
+    _ ≤ _ := integral_abs_le_mul_norm B (k - k')
+
+/-- **The friction functional `j(v) = g ∫_Γ |v| ds`** of Example 11.1.2 on `V = H¹(Ω)`, through
+the trace `γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)` of the boundary interface
+`Numlib/Analysis/Sobolev/Boundary/Data.lean` (instances: `IsContDiffDomain.traceFamily` on a
+bounded `C¹` domain, `Triangulation.traceFamily` on a polygon). -/
+noncomputable def frictionFunctional (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) : ℝ :=
+  g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ
+
+/-- `j(v) = g ∫ |γ v| dσ`. -/
+theorem frictionFunctional_apply (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) :
+    frictionFunctional B 𝒯 g v = g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ :=
+  rfl
+
+/-- The friction functional depends on the trace only. -/
+theorem frictionFunctional_eq_of_traceL_eq (g : ℝ) {v w : SobolevEuclidean N 1 2 Ω}
+    (h : 𝒯.traceL 2 ENNReal.ofNat_ne_top v = 𝒯.traceL 2 ENNReal.ofNat_ne_top w) :
+    frictionFunctional B 𝒯 g v = frictionFunctional B 𝒯 g w := by
+  simp only [frictionFunctional, h]
+
+/-- `j(0) = 0`. -/
+theorem frictionFunctional_zero (g : ℝ) : frictionFunctional B 𝒯 g 0 = 0 := by
+  simp only [frictionFunctional, map_zero]
+  rw [integral_congr_ae ((Lp.coeFn_zero ℝ 2 B.σ).mono fun x hx ↦ by rw [hx, Pi.zero_apply,
+    abs_zero]), integral_zero, mul_zero]
+
+/-- `j(2u) = 2 j(u)`: the friction functional is positively homogeneous. -/
+theorem frictionFunctional_two_smul (g : ℝ) (u : SobolevEuclidean N 1 2 Ω) :
+    frictionFunctional B 𝒯 g ((2 : ℝ) • u) = 2 * frictionFunctional B 𝒯 g u := by
+  simp only [frictionFunctional, map_smul]
+  rw [integral_congr_ae ((Lp.coeFn_smul (2 : ℝ) (𝒯.traceL 2 ENNReal.ofNat_ne_top u)).mono
+    fun x hx ↦ by rw [hx, Pi.smul_apply, smul_eq_mul, abs_mul, abs_two]), integral_const_mul]
+  ring
+
+/-- `j(u + w) − j(u) ≤ g ∫ |γ w| dσ`: the friction functional is subadditive. -/
+theorem frictionFunctional_add_sub_le {g : ℝ} (hg : 0 ≤ g) (u w : SobolevEuclidean N 1 2 Ω) :
+    frictionFunctional B 𝒯 g (u + w) - frictionFunctional B 𝒯 g u
+      ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
+  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
+    ((Lp.memLp k).integrable one_le_two).abs
+  simp only [frictionFunctional, map_add]
+  rw [← mul_sub, ← integral_sub (hI _) (hI _)]
+  refine mul_le_mul_of_nonneg_left (integral_mono_ae ((hI _).sub (hI _)) (hI _) ?_) hg
+  filter_upwards [Lp.coeFn_add (𝒯.traceL 2 ENNReal.ofNat_ne_top u)
+    (𝒯.traceL 2 ENNReal.ofNat_ne_top w)] with x hx
+  rw [hx, Pi.add_apply]
+  linarith [abs_add_le ((𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x)
+    ((𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x)]
+
+/-- **The friction functional is continuous** on `H¹(Ω)`: `k ↦ ∫ |k| dσ` is Lipschitz on
+`L²(σ)` and the trace is bounded. -/
+theorem continuous_frictionFunctional (g : ℝ) : Continuous (frictionFunctional B 𝒯 g) :=
+  continuous_const.mul
+    ((lipschitzWith_integral_abs B).continuous.comp (𝒯.traceL 2 ENNReal.ofNat_ne_top).continuous)
+
+/-- **The friction functional is convex** for `g ≥ 0`: `|·|` is convex and the trace is linear. -/
+theorem convexOn_frictionFunctional {g : ℝ} (hg : 0 ≤ g) :
+    ConvexOn ℝ univ (frictionFunctional B 𝒯 g) := by
+  refine ⟨convex_univ, fun v _ w _ a b ha hb _ ↦ ?_⟩
+  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
+    ((Lp.memLp k).integrable one_le_two).abs
+  simp only [frictionFunctional, smul_eq_mul]
+  have key : ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top (a • v + b • w) : 𝔼 → ℝ) x| ∂B.σ
+      ≤ a * (∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ)
+        + b * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
+    rw [← integral_const_mul, ← integral_const_mul, ← integral_add ((hI _).const_mul a)
+      ((hI _).const_mul b)]
+    refine integral_mono_ae (hI _) (((hI _).const_mul a).add ((hI _).const_mul b)) ?_
+    rw [map_add, map_smul, map_smul]
+    filter_upwards [Lp.coeFn_add (a • 𝒯.traceL 2 ENNReal.ofNat_ne_top v)
+      (b • 𝒯.traceL 2 ENNReal.ofNat_ne_top w), Lp.coeFn_smul a (𝒯.traceL 2 ENNReal.ofNat_ne_top v),
+      Lp.coeFn_smul b (𝒯.traceL 2 ENNReal.ofNat_ne_top w)] with x h1 h2 h3
+    rw [h1, Pi.add_apply, h2, h3, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul]
+    calc |a * _ + b * _| ≤ |a * _| + |b * _| := abs_add_le _ _
+      _ = _ := by rw [abs_mul, abs_mul, abs_of_nonneg ha, abs_of_nonneg hb]
+  calc g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top (a • v + b • w) : 𝔼 → ℝ) x| ∂B.σ
+      ≤ g * (a * (∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ)
+        + b * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ) :=
+        mul_le_mul_of_nonneg_left key hg
+    _ = _ := by ring
+
+/-- **The energy (11.1.12)** of the simplified friction problem on `V = H¹(Ω)`,
+`E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + g ∫_Γ |v| ds`: the energy `½ a(v, v) − ℓ(v)` of the form
+`a(u, v) = ∫_Ω (∇u·∇v + u v)` (the backbone's `Elliptic.laplaceForm Ω`) and the load
+`ℓ(v) = ∫_Ω f v`, plus the friction functional `j`. -/
+noncomputable def frictionEnergy (g : ℝ)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : SobolevEuclidean N 1 2 Ω → ℝ :=
+  (Elliptic.laplaceForm Ω).energy (Elliptic.load Ω f) + frictionFunctional B 𝒯 g
+
+/-- **The energy (11.1.12) is the displayed formula**:
+`E(v) = ∫_Ω (½ (∑ᵢ (∂ᵢv)² + v²) − f v) + g ∫ |γ v| dσ`. -/
+theorem frictionEnergy_apply (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (v : SobolevEuclidean N 1 2 Ω) :
+    frictionEnergy B 𝒯 g f v
+      = (∫ x in (Ω : Set 𝔼), ((1 / 2 : ℝ) * (∑ i, SobolevMultiIndex.weakDeriv v
+          (MultiIndexLE.single i) x ^ 2 + SobolevMultiIndex.fn v x ^ 2)
+          - f x * SobolevMultiIndex.fn v x))
+        + g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ := by
+  change (Elliptic.laplaceForm Ω).energy (Elliptic.load Ω f) v + frictionFunctional B 𝒯 g v = _
+  rw [Elliptic.energy_laplace_apply, frictionFunctional_apply]
+  congr 1
+  have h1 : Integrable (fun x ↦ ∑ i, SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+      + SobolevMultiIndex.fn v x * SobolevMultiIndex.fn v x) (volume.restrict (Ω : Set 𝔼)) :=
+    (integrable_finsetSum _ fun i _ ↦ (Lp.memLp (SobolevMultiIndex.weakDeriv v
+      (MultiIndexLE.single i))).integrable_mul (Lp.memLp _)).add
+      ((Lp.memLp (SobolevMultiIndex.weakDeriv v 0)).integrable_mul
+        (Lp.memLp (SobolevMultiIndex.weakDeriv v 0)))
+  have h2 : Integrable (fun x ↦ f x * SobolevMultiIndex.fn v x) (volume.restrict (Ω : Set 𝔼)) :=
+    (Lp.memLp f).integrable_mul (Lp.memLp (SobolevMultiIndex.weakDeriv v 0))
+  rw [← integral_const_mul, ← integral_sub (h1.const_mul _) h2]
+  refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+  simp only [sq]
+
+/-- **The form `a(u, v) = ∫_Ω (∇u·∇v + u v)` of Example 11.1.2 as a bilinear form of §8.3**:
+the backbone's `Elliptic.laplaceForm Ω` read through `BilinForm.ofCLM`, so that Theorems 11.2.2
+and 11.3.9 apply to the friction problem. -/
+noncomputable def frictionBilinForm : BilinForm (SobolevEuclidean N 1 2 Ω) :=
+  BilinForm.ofCLM (Elliptic.laplaceForm Ω)
+
+/-- `a(u, v) = Elliptic.laplaceForm Ω u v`. -/
+theorem frictionBilinForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
+    frictionBilinForm (Ω := Ω) u v = Elliptic.laplaceForm Ω u v := rfl
+
+/-- The form of Example 11.1.2 is bounded with constant `1`
+(`Elliptic.laplaceForm_isBoundedWith_one`). -/
+theorem frictionBilinForm_isBoundedWith : (frictionBilinForm (Ω := Ω)).IsBoundedWith 1 :=
+  fun u v ↦ by
+    rw [frictionBilinForm_apply, ← Real.norm_eq_abs]
+    exact Elliptic.laplaceForm_isBoundedWith_one Ω u v
+
+/-- The form of Example 11.1.2 is `V`-elliptic with constant `1`: it is the inner product of
+`H¹(Ω)` (`Elliptic.laplaceForm_isCoerciveWith_one`). -/
+theorem frictionBilinForm_isEllipticWith : (frictionBilinForm (Ω := Ω)).IsEllipticWith 1 :=
+  fun v ↦ Elliptic.laplaceForm_isCoerciveWith_one Ω v
+
+/-- The form of Example 11.1.2 is symmetric. -/
+theorem frictionBilinForm_isSymm : LinearMap.BilinForm.IsSymm (frictionBilinForm (Ω := Ω)) := by
+  unfold frictionBilinForm
+  rw [BilinForm.isSymm_ofCLM_iff]
+  intro u v
+  have h := Elliptic.laplaceForm_isHermitian Ω u v
+  rw [conj_trivial] at h
+  exact h
+
+/-- **The variational inequality (11.1.13) at one test element `v`, in the book's display and
+in the backbone's vocabulary**:
+`∫_Ω f (v − u) ≤ ∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds` is
+`ℓ(v − u) ≤ a(u, v − u) + j(v) − j(u)`. -/
+theorem friction_ineq_iff (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (u v : SobolevEuclidean N 1 2 Ω) :
+    (∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+      ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+          + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+        + g * ∫ x, (|(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+          - |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|) ∂B.σ) ↔
+      Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u := by
+  have hI : ∀ k : Lp ℝ 2 B.σ, Integrable (fun x ↦ |k x|) B.σ := fun k ↦
+    ((Lp.memLp k).integrable one_le_two).abs
+  rw [Elliptic.laplaceForm_apply, Elliptic.load_apply, frictionFunctional_apply,
+    frictionFunctional_apply, add_sub_assoc, ← mul_sub, ← integral_sub (hI _) (hI _)]
+
+/-- **Example 11.1.2 (the simplified friction problem)**, the variational inequality (11.1.13):
+on `V = H¹(Ω)`, over the boundary interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of
+`Numlib/Analysis/Sobolev/Boundary/Data.lean` — the surface measure `σ = B.σ` on `Γ = ∂Ω`, the
+trace `γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)`; the instances are `IsContDiffDomain.traceFamily` on a
+bounded `C¹` domain and `Triangulation.traceFamily` on a polygon without slits — for `g > 0` and
+`f ∈ L²(Ω)`, `u` minimizes the energy (11.1.12)
+`E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + g ∫_Γ |v| ds` over `V` (the minimization problem (11.1.12))
+if and only if it satisfies
+
+  `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`  for every `v ∈ V`.
+
+The book leaves this to Exercise 11.1.2; it is Theorem 11.2.1 (the backbone's
+`isMinOn_energy_add_iff`) with `K = V`, the Gâteaux differentiable convex part `½ a(v, v) − ℓ(v)`
+of the energy and the convex continuous friction functional `j` (`convexOn_frictionFunctional`,
+`continuous_frictionFunctional`). The book's Lipschitz boundary is the `C¹` or polygonal
+hypothesis behind the two instances. The pointwise formulation (11.1.14)–(11.1.15) on a bounded
+`C¹` domain is `example_11_1_2_pointwise`. -/
+theorem example_11_1_2 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
+    (u : SobolevEuclidean N 1 2 Ω) :
+    IsMinOn (frictionEnergy B 𝒯 g f) univ u ↔
+      ∀ v : SobolevEuclidean N 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+          ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+              * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+              + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+            + g * ∫ x, (|(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+              - |(𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|) ∂B.σ := by
+  rw [frictionEnergy, isMinOn_energy_add_iff (Elliptic.laplaceForm_isHermitian Ω) zero_le_one
+    (Elliptic.laplaceForm_isCoerciveWith_one Ω) (Elliptic.load Ω f) convex_univ
+    (convexOn_frictionFunctional B 𝒯 hg.le) (mem_univ u)]
+  simp only [_root_.IsVariationalInequalitySolution, mem_univ, true_and, true_implies,
+    SesqForm.inner_rieszRep, SesqForm.inner_toOperator]
+  exact forall_congr' fun v ↦ (friction_ineq_iff B 𝒯 g f u v).symm
+
+/-! ### Tools for the pointwise form: bump tests on the boundary -/
+
+/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure of a
+`BoundaryData`. Helper; belongs beside `BoundaryData.memLp_of_continuousOn` in
+`Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
+theorem memLp_top_of_continuousOn_frontier {h : 𝔼 → ℝ}
+    (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
+  have hm : AEStronglyMeasurable h B.σ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem B.ae_mem_frontier]
+    exact hc.aestronglyMeasurable isClosed_frontier.measurableSet
+  have hK : IsCompact (frontier (Ω : Set 𝔼)) :=
+    B.isBounded.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure
+  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hc
+  exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
+
+/-- **A bump test against a function continuous on the boundary**: for a `BoundaryData` whose
+surface measure charges every open set meeting `∂Ω` (a bounded `C¹` domain,
+`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), a function `h` continuous on `∂Ω` and a
+boundary point `x₀` with `h x₀ > c`, some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1`
+satisfies `c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
+`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure.
+Helper; belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`. -/
+theorem exists_bump_lt_integral_mul
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
+    (hx₀ : x₀ ∈ frontier (Ω : Set 𝔼)) {c : ℝ} (hlt : c < h x₀) :
+    ∃ ψ : 𝔼 → ℝ, ContDiff ℝ ∞ ψ ∧ HasCompactSupport ψ ∧ (∀ x, 0 ≤ ψ x) ∧ (∀ x, ψ x ≤ 1) ∧
+      c * ∫ x, ψ x ∂B.σ < ∫ x, h x * ψ x ∂B.σ := by
+  obtain ⟨m, hm⟩ : ∃ m : ℝ, m = (c + h x₀) / 2 := ⟨_, rfl⟩
+  have hcm : c < m := by rw [hm]; linarith
+  have hmx : m < h x₀ := by rw [hm]; linarith
+  -- a ball on which `h > m`, relative to `∂Ω`
+  have hev : ∀ᶠ x in 𝓝[frontier (Ω : Set 𝔼)] x₀, m < h x :=
+    (hc x₀ hx₀).eventually (lt_mem_nhds hmx)
+  obtain ⟨r, hr, hball⟩ := Metric.mem_nhdsWithin_iff.1 hev
+  -- the bump
+  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
+  refine ⟨ψ, ψ.contDiff, ψ.hasCompactSupport, fun x ↦ ψ.nonneg, fun x ↦ ψ.le_one, ?_⟩
+  have hψc : Continuous ψ := ψ.continuous
+  have hIψ : Integrable (fun x ↦ ψ x) B.σ := B.integrable_of_continuous hψc
+  have hIhψ : Integrable (fun x ↦ h x * ψ x) B.σ :=
+    (memLp_top_of_continuousOn_frontier B hc).integrable_mul (B.memLp_of_continuous hψc 1)
+  -- `∫ ψ dσ > 0`
+  have hpsi : 0 < ∫ x, ψ x ∂B.σ := by
+    have h1 : B.σ.real (ball x₀ (r / 2)) ≤ ∫ x, ψ x ∂B.σ := by
+      rw [← integral_indicator_one measurableSet_ball]
+      refine integral_mono ((integrable_const (1 : ℝ)).indicator measurableSet_ball) hIψ
+        fun x ↦ ?_
+      by_cases hx : x ∈ ball x₀ (r / 2)
+      · rw [indicator_of_mem hx]
+        exact (ψ.one_of_mem_closedBall (ball_subset_closedBall hx)).ge
+      · rw [indicator_of_notMem hx]
+        exact ψ.nonneg
+    refine lt_of_lt_of_le ?_ h1
+    rw [measureReal_def]
+    exact ENNReal.toReal_pos (hpos _ isOpen_ball ⟨x₀, mem_ball_self (by positivity), hx₀⟩).ne'
+      (measure_ne_top _ _)
+  -- `∫ h ψ ≥ m ∫ ψ`
+  have hle : m * ∫ x, ψ x ∂B.σ ≤ ∫ x, h x * ψ x ∂B.σ := by
+    rw [← integral_const_mul]
+    refine integral_mono_ae (hIψ.const_mul m) hIhψ ?_
+    filter_upwards [B.ae_mem_frontier] with x hx
+    by_cases hxb : x ∈ ball x₀ r
+    · exact mul_le_mul_of_nonneg_right (hball ⟨hxb, hx⟩).le ψ.nonneg
+    · rw [ψ.zero_of_le_dist (not_lt.1 fun h' ↦ hxb (mem_ball.2 h')), mul_zero, mul_zero]
+  calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
+    _ ≤ _ := hle
+
+/-- The inner product of two gradients is the sum of the products of the partial derivatives,
+`∇u · ∇v = ∑ᵢ ∂ᵢu ∂ᵢv`. Helper; belongs beside `EuclideanSpace.gradient_apply` in
+`Numlib/Analysis/Sobolev/Boundary/Divergence.lean`. -/
+theorem inner_gradient_eq_sum (u v : 𝔼 → ℝ) (x : 𝔼) :
+    ⟪gradient u x, gradient v x⟫_ℝ
+      = ∑ i, fderiv ℝ u x (EuclideanSpace.single i 1)
+        * fderiv ℝ v x (EuclideanSpace.single i 1) := by
+  rw [PiLp.inner_apply]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [EuclideanSpace.gradient_apply, EuclideanSpace.gradient_apply, RCLike.inner_apply,
+    conj_trivial, mul_comm]
+
+open Laplacian in
+/-- **The form `a(u, W) = ∫_Ω (∇u·∇W + u W)` of a `C²(Ω̄)` function against a smooth test
+function, with its boundary term**: for `u ∈ H¹(Ω)` with a representative `ũ ∈ C²(Ω̄)` whose
+derivative extends continuously to `Ω̄` as `G` (the boundary values of `∇ũ`), and `W ∈ H¹(Ω)`
+with a `C¹` representative `ψ`, `a(u, W) = ∫_Γ G(ν) ψ dσ + ∫_Ω (−Δũ + ũ) ψ`: Green's formula
+`BoundaryData.integral_laplacian_mul_add_eq`. -/
+theorem laplaceForm_eq_integral_add_of_contDiffOnClosure {u : SobolevEuclidean N 1 2 Ω}
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hũ2 : ContDiffOnClosure ℝ 2 ũ Ω) {G : 𝔼 → 𝔼 →L[ℝ] ℝ}
+    (hG : ContinuousOn G (closure (Ω : Set 𝔼))) (hGe : EqOn G (fderiv ℝ ũ) Ω)
+    {W : SobolevEuclidean N 1 2 Ω} {ψ : 𝔼 → ℝ} (hψ : ContDiff ℝ 1 ψ)
+    (hW : SobolevMultiIndex.fn W =ᵐ[volume.restrict (Ω : Set 𝔼)] ψ) :
+    Elliptic.laplaceForm Ω u W
+      = (∫ x, G x (B.ν x) * ψ x ∂B.σ) + ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * ψ x := by
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hũ1 : ContDiffOnClosure ℝ 1 ũ Ω := hũ2.of_le (by norm_num)
+  have hgreen := B.integral_laplacian_mul_add_eq hũ2 hG hGe hψ.continuous.continuousOn
+    (hψ.contDiffOn.contDiffOnClosure hΩo)
+  have hdU := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hũ1.contDiffOn hũ i
+  have hdW := fun i ↦ Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hψ.contDiffOn hW i
+  have hI₁ : IntegrableOn (fun x ↦ ⟪gradient ũ x, gradient ψ x⟫_ℝ) (Ω : Set 𝔼) := by
+    have hc : ContinuousOn (fun x ↦ ⟪(InnerProductSpace.toDualReal 𝔼).symm (G x),
+        gradient ψ x⟫_ℝ) (closure (Ω : Set 𝔼)) :=
+      ((InnerProductSpace.toDualReal 𝔼).symm.continuous.comp_continuousOn hG).inner
+        (EuclideanSpace.continuous_gradient hψ).continuousOn
+    refine (B.integrableOn_of_continuousOn hc).congr_fun (fun x hx ↦ ?_) hΩm
+    simp only [gradient_eq_toDualReal_symm, hGe hx]
+  have hI₂ : Integrable (fun x ↦ ũ x * ψ x) (volume.restrict (Ω : Set 𝔼)) :=
+    ((Lp.memLp (SobolevMultiIndex.weakDeriv u 0)).integrable_mul
+      (Lp.memLp (SobolevMultiIndex.weakDeriv W 0))).congr (hũ.mul hW)
+  have hI₃ : Integrable (fun x ↦ Δ ũ x * ψ x) (volume.restrict (Ω : Set 𝔼)) := by
+    obtain ⟨G₂, hG₂c, hG₂e⟩ := hũ2.exists_continuousOn_fderiv_fderiv
+    have hc : ContinuousOn (fun x ↦ (∑ i, G₂ x (EuclideanSpace.single i 1)
+        (EuclideanSpace.single i 1)) * ψ x) (closure (Ω : Set 𝔼)) :=
+      (continuousOn_finsetSum _ fun i _ ↦
+        (hG₂c.clm_apply continuousOn_const).clm_apply continuousOn_const).mul
+        hψ.continuous.continuousOn
+    refine (B.integrableOn_of_continuousOn hc).congr_fun (fun x hx ↦ ?_) hΩm
+    simp only [EuclideanSpace.laplacian_eq_sum_fderiv_fderiv_single, hG₂e hx]
+  have hL : Elliptic.laplaceForm Ω u W
+      = (∫ x in (Ω : Set 𝔼), ⟪gradient ũ x, gradient ψ x⟫_ℝ)
+        + ∫ x in (Ω : Set 𝔼), ũ x * ψ x := by
+    rw [Elliptic.laplaceForm_apply, ← integral_add hI₁ hI₂]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_all_iff.2 hdU, ae_all_iff.2 hdW, hũ, hW] with x hxU hxW hUx hWx
+    simp only [hxU, hxW, hUx, hWx, inner_gradient_eq_sum]
+  have hR : ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * ψ x
+      = (∫ x in (Ω : Set 𝔼), -(Δ ũ x * ψ x)) + ∫ x in (Ω : Set 𝔼), ũ x * ψ x := by
+    have hI₃' : Integrable (fun x ↦ -(Δ ũ x * ψ x)) (volume.restrict (Ω : Set 𝔼)) := hI₃.neg
+    rw [← integral_add hI₃' hI₂]
+    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+    ring
+  rw [hL, hR, integral_neg]
+  linarith
+
+/-- **The test-function bound of the friction inequality**: if `u` satisfies
+`0 ≤ ∫_Γ h γ(v − u) dσ + j(v) − j(u)` for all `v ∈ H¹(Ω)`, then `|∫_Γ h ψ dσ| ≤ g ∫_Γ ψ dσ`
+for every smooth compactly supported `ψ ≥ 0` — test with `v = u ± W`, `W` the element with
+function `ψ`, whose trace is `ψ` (`TraceFamily.traceL_ae_eq`), and use the subadditivity of
+`j`. -/
+theorem abs_integral_mul_le_of_forall_le {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ}
+    {u : SobolevEuclidean N 1 2 Ω}
+    (hvi : ∀ v : SobolevEuclidean N 1 2 Ω,
+      0 ≤ (∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (v - u) : 𝔼 → ℝ) x ∂B.σ)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u)
+    {ψ : 𝔼 → ℝ} (hψ : ContDiff ℝ ∞ ψ) (hψc : HasCompactSupport ψ) (hψ0 : ∀ x, 0 ≤ ψ x) :
+    |∫ x, h x * ψ x ∂B.σ| ≤ g * ∫ x, ψ x ∂B.σ := by
+  have hψ1 : ContDiff ℝ 1 ψ := hψ.of_le (by simp)
+  obtain ⟨W, hW⟩ : ∃ W : SobolevEuclidean N 1 2 Ω,
+      SobolevMultiIndex.fn W =ᵐ[volume.restrict (Ω : Set 𝔼)] ψ :=
+    hψ1.exists_sobolevMultiIndex_of_hasCompactSupport' hψc
+  have hγW := 𝒯.traceL_ae_eq 2 ENNReal.ofNat_ne_top W ψ hW hψ.continuous.continuousOn
+  have hγneg : 𝒯.traceL 2 ENNReal.ofNat_ne_top (-W) = -𝒯.traceL 2 ENNReal.ofNat_ne_top W :=
+    (𝒯.traceL 2 ENNReal.ofNat_ne_top).map_neg W
+  have hIψ : ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x| ∂B.σ = ∫ x, ψ x ∂B.σ := by
+    refine integral_congr_ae ?_
+    filter_upwards [hγW] with x hx
+    rw [hx, abs_of_nonneg (hψ0 x)]
+  have hIψ' : ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top (-W) : 𝔼 → ℝ) x| ∂B.σ
+      = ∫ x, ψ x ∂B.σ := by
+    refine integral_congr_ae ?_
+    rw [hγneg]
+    filter_upwards [Lp.coeFn_neg (𝒯.traceL 2 ENNReal.ofNat_ne_top W), hγW] with x hx hx'
+    rw [hx, Pi.neg_apply, hx', abs_neg, abs_of_nonneg (hψ0 x)]
+  have hhψ : ∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x ∂B.σ
+      = ∫ x, h x * ψ x ∂B.σ := by
+    refine integral_congr_ae ?_
+    filter_upwards [hγW] with x hx
+    rw [hx]
+  have hhψ' : ∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (-W) : 𝔼 → ℝ) x ∂B.σ
+      = -∫ x, h x * ψ x ∂B.σ := by
+    have e : (fun x ↦ h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (-W) : 𝔼 → ℝ) x) =ᵐ[B.σ]
+        fun x ↦ -(h x * ψ x) := by
+      rw [hγneg]
+      filter_upwards [Lp.coeFn_neg (𝒯.traceL 2 ENNReal.ofNat_ne_top W), hγW] with x hx hx'
+      rw [hx, Pi.neg_apply, hx', mul_neg]
+    exact (integral_congr_ae e).trans (integral_neg _)
+  have e1 : u + W - u = W := add_sub_cancel_left u W
+  have e2 : u - W - u = -W := sub_sub_cancel_left u W
+  have e3 : u + -W = u - W := (sub_eq_add_neg u W).symm
+  have hp := hvi (u + W)
+  have hm := hvi (u - W)
+  simp only [e1, hhψ] at hp
+  simp only [e2, hhψ'] at hm
+  have hjp := frictionFunctional_add_sub_le B 𝒯 hg u W
+  have hjm := frictionFunctional_add_sub_le B 𝒯 hg u (-W)
+  rw [hIψ] at hjp
+  rw [hIψ'] at hjm
+  simp only [e3] at hjm
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- **`|h| ≤ g` on `Γ` from the friction inequality**, for `h` continuous on `Γ` and a surface
+measure charging every open set meeting `Γ`: where `|h x₀| > g` a bump test
+(`exists_bump_lt_integral_mul`) contradicts `abs_integral_mul_le_of_forall_le`. -/
+theorem abs_le_of_forall_le
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
+    {u : SobolevEuclidean N 1 2 Ω}
+    (hvi : ∀ v : SobolevEuclidean N 1 2 Ω,
+      0 ≤ (∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (v - u) : 𝔼 → ℝ) x ∂B.σ)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u) :
+    ∀ x ∈ frontier (Ω : Set 𝔼), |h x| ≤ g := by
+  intro x₀ hx₀
+  rw [abs_le]
+  constructor
+  · by_contra hlt
+    push Not at hlt
+    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc.neg hx₀ (c := g)
+      (by simp only [Pi.neg_apply]; linarith)
+    have := abs_integral_mul_le_of_forall_le B 𝒯 hg hvi hψ hψc hψ0
+    simp only [Pi.neg_apply, neg_mul, integral_neg] at hψi
+    rw [abs_le] at this
+    linarith [this.1]
+  · by_contra hlt
+    push Not at hlt
+    obtain ⟨ψ, hψ, hψc, hψ0, -, hψi⟩ := exists_bump_lt_integral_mul B hpos hc hx₀ (c := g) hlt
+    have := abs_integral_mul_le_of_forall_le B 𝒯 hg hvi hψ hψc hψ0
+    rw [abs_le] at this
+    linarith [this.2]
+
+/-- **The complementarity clause `h ũ + g |ũ| = 0` on `Γ`** from the friction inequality, for
+`u` with trace `ũ` continuous on `Γ`, `h` continuous on `Γ` with `|h| ≤ g` there, and a surface
+measure charging every open set meeting `Γ`: `v = 0` and `v = 2u` give
+`∫_Γ (h ũ + g |ũ|) dσ = 0`, the integrand is nonnegative (`|h| ≤ g`) and continuous, so it
+vanishes where a bump test would otherwise see it. -/
+theorem mul_add_abs_eq_zero_of_forall_le
+    (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
+    {g : ℝ} {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
+    (hle : ∀ x ∈ frontier (Ω : Set 𝔼), |h x| ≤ g) {u : SobolevEuclidean N 1 2 Ω}
+    {ũ : 𝔼 → ℝ} (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼)))
+    (hγu : (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) =ᵐ[B.σ] ũ)
+    (hvi : ∀ v : SobolevEuclidean N 1 2 Ω,
+      0 ≤ (∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (v - u) : 𝔼 → ℝ) x ∂B.σ)
+        + frictionFunctional B 𝒯 g v - frictionFunctional B 𝒯 g u) :
+    ∀ x ∈ frontier (Ω : Set 𝔼), h x * ũ x + g * |ũ x| = 0 := by
+  have hh : MemLp h 2 B.σ := (memLp_top_of_continuousOn_frontier B hc).mono_exponent le_top
+  -- the integral of `h ũ + g |ũ|` vanishes: test with `v = 0` and `v = 2u`
+  have hzero : ∫ x, (h x * ũ x + g * |ũ x|) ∂B.σ = 0 := by
+    have h0 := hvi 0
+    have h2 := hvi ((2 : ℝ) • u)
+    have e0 : (0 : SobolevEuclidean N 1 2 Ω) - u = -u := zero_sub u
+    have e2 : (2 : ℝ) • u - u = u := by rw [two_smul, add_sub_cancel_right]
+    simp only [e0, frictionFunctional_zero] at h0
+    simp only [e2, frictionFunctional_two_smul] at h2
+    have hγneg : 𝒯.traceL 2 ENNReal.ofNat_ne_top (-u) = -𝒯.traceL 2 ENNReal.ofNat_ne_top u :=
+      (𝒯.traceL 2 ENNReal.ofNat_ne_top).map_neg u
+    have hIhu : Integrable (fun x ↦ h x * ũ x) B.σ :=
+      hh.integrable_mul (B.memLp_of_continuousOn hũc 2)
+    have hIu : Integrable (fun x ↦ |ũ x|) B.σ :=
+      ((B.memLp_of_continuousOn hũc 1).integrable le_rfl).abs
+    have e1 : ∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (-u) : 𝔼 → ℝ) x ∂B.σ
+        = -∫ x, h x * ũ x ∂B.σ := by
+      have e : (fun x ↦ h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top (-u) : 𝔼 → ℝ) x) =ᵐ[B.σ]
+          fun x ↦ -(h x * ũ x) := by
+        rw [hγneg]
+        filter_upwards [Lp.coeFn_neg (𝒯.traceL 2 ENNReal.ofNat_ne_top u), hγu] with x hx hx'
+        rw [hx, Pi.neg_apply, hx', mul_neg]
+      exact (integral_congr_ae e).trans (integral_neg _)
+    have e2' : ∫ x, h x * (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x ∂B.σ
+        = ∫ x, h x * ũ x ∂B.σ := by
+      refine integral_congr_ae ?_
+      filter_upwards [hγu] with x hx
+      rw [hx]
+    have e3 : frictionFunctional B 𝒯 g u = g * ∫ x, |ũ x| ∂B.σ := by
+      rw [frictionFunctional_apply]
+      congr 1
+      refine integral_congr_ae ?_
+      filter_upwards [hγu] with x hx
+      rw [hx]
+    rw [e1] at h0
+    rw [e2'] at h2
+    rw [integral_add hIhu (hIu.const_mul g), integral_const_mul, ← e3]
+    linarith
+  -- the integrand is nonnegative and continuous on `Γ`
+  have hk : ContinuousOn (fun x ↦ h x * ũ x + g * |ũ x|) (frontier (Ω : Set 𝔼)) :=
+    (hc.mul (hũc.mono frontier_subset_closure)).add
+      (continuousOn_const.mul (hũc.mono frontier_subset_closure).abs)
+  have hk0 : ∀ x ∈ frontier (Ω : Set 𝔼), 0 ≤ h x * ũ x + g * |ũ x| := fun x hx ↦ by
+    have h1 := hle x hx
+    have h2 : -(|h x| * |ũ x|) ≤ h x * ũ x := by rw [← abs_mul]; exact neg_abs_le _
+    nlinarith [abs_nonneg (ũ x)]
+  intro x₀ hx₀
+  by_contra hne
+  have hgt : 0 < h x₀ * ũ x₀ + g * |ũ x₀| := lt_of_le_of_ne (hk0 x₀ hx₀) (Ne.symm hne)
+  obtain ⟨ψ, hψ, -, -, hψ1, hψi⟩ := exists_bump_lt_integral_mul B hpos hk hx₀ (c := 0) hgt
+  rw [zero_mul] at hψi
+  have hIk : Integrable (fun x ↦ h x * ũ x + g * |ũ x|) B.σ :=
+    (memLp_top_of_continuousOn_frontier B hk).integrable le_top
+  have hIkψ : Integrable (fun x ↦ (h x * ũ x + g * |ũ x|) * ψ x) B.σ :=
+    (memLp_top_of_continuousOn_frontier B hk).integrable_mul
+      (B.memLp_of_continuous hψ.continuous 1)
+  have hmono : ∫ x, (h x * ũ x + g * |ũ x|) * ψ x ∂B.σ
+      ≤ ∫ x, (h x * ũ x + g * |ũ x|) ∂B.σ := by
+    refine integral_mono_ae hIkψ hIk ?_
+    filter_upwards [B.ae_mem_frontier] with x hx
+    exact mul_le_of_le_one_right (hk0 x hx) (hψ1 x)
+  linarith
+
+end Friction
+
+/-! ### Example 11.1.2: the pointwise form (11.1.14)–(11.1.15) on a bounded `C¹` domain -/
+
+section FrictionPointwise
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- `ℝ^{d+1}`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
+
+open Laplacian in
+/-- **The key identity behind (11.1.15)**: for a `C²(Ω̄)` representative `ũ` of `u ∈ H¹(Ω)`
+satisfying `−Δũ + ũ = f` a.e. on `Ω`, with `∇ũ` extending continuously to `Ω̄` as `G`,
+`a(u, W) − ℓ(W) = ∫_Γ (∂ũ/∂ν) γW dσ` for every `W ∈ H¹(Ω)`, on a bounded `C¹` domain:
+Green's formula (`laplaceForm_eq_integral_add_of_contDiffOnClosure`) on the smooth restrictions,
+both sides being continuous in `W` and the smooth restrictions dense
+(`IsContDiffDomain.hasSmoothDensity`). -/
+theorem laplaceForm_sub_load_eq_integral (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : SobolevEuclidean (d + 1) 1 2 Ω}
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hũ2 : ContDiffOnClosure ℝ 2 ũ Ω) {G : 𝔼 → 𝔼 →L[ℝ] ℝ}
+    (hG : ContinuousOn G (closure (Ω : Set 𝔼))) (hGe : EqOn G (fderiv ℝ ũ) Ω)
+    {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
+    (hint : (fun x ↦ -Δ ũ x + ũ x) =ᵐ[volume.restrict (Ω : Set 𝔼)] f)
+    (W : SobolevEuclidean (d + 1) 1 2 Ω) :
+    Elliptic.laplaceForm Ω u W - Elliptic.load Ω f W
+      = ∫ x, G x (hΩ.outwardNormal hb x)
+          * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x
+          ∂(hΩ.boundaryData hb).σ := by
+  have hc : ContinuousOn (fun x ↦ G x (hΩ.outwardNormal hb x)) (frontier (Ω : Set 𝔼)) :=
+    (hG.mono frontier_subset_closure).clm_apply (hΩ.continuousOn_outwardNormal hb)
+  have hhL : MemLp (fun x ↦ G x (hΩ.outwardNormal hb x)) 2 (hΩ.boundaryData hb).σ :=
+    (memLp_top_of_continuousOn_frontier (hΩ.boundaryData hb) hc).mono_exponent le_top
+  have hfL : ∀ W : SobolevEuclidean (d + 1) 1 2 Ω, Elliptic.load Ω f W
+      = ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * SobolevMultiIndex.fn W x := fun W ↦ by
+    rw [Elliptic.load_apply]
+    exact integral_congr_ae (hint.symm.mul (EventuallyEq.refl _ _))
+  -- the right side is continuous in `W`
+  have hcont : Continuous fun W : SobolevEuclidean (d + 1) 1 2 Ω ↦
+      ∫ x, G x (hΩ.outwardNormal hb x)
+        * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x
+        ∂(hΩ.boundaryData hb).σ := by
+    have e : (fun W : SobolevEuclidean (d + 1) 1 2 Ω ↦
+        ∫ x, G x (hΩ.outwardNormal hb x)
+          * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x
+          ∂(hΩ.boundaryData hb).σ)
+        = fun W ↦ ⟪hhL.toLp _, (hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W⟫_ℝ := by
+      funext W
+      rw [L2.inner_eq_integral_mul]
+      exact integral_congr_ae (hhL.coeFn_toLp.symm.mul (EventuallyEq.refl _ _))
+    rw [e]
+    exact (innerSL ℝ (hhL.toLp _)).continuous.comp
+      ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top).continuous
+  -- the identity on the smooth restrictions
+  have hsm : ∀ W ∈ SobolevEuclidean.smoothRestrictions (d + 1) 2 Ω,
+      Elliptic.laplaceForm Ω u W - Elliptic.load Ω f W
+        = ∫ x, G x (hΩ.outwardNormal hb x)
+            * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x
+            ∂(hΩ.boundaryData hb).σ := by
+    intro W hWm
+    obtain ⟨ψ, hψ, -, hW⟩ := SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions hWm
+    have hψ1 : ContDiff ℝ 1 ψ := hψ.of_le (by simp)
+    have e1 := laplaceForm_eq_integral_add_of_contDiffOnClosure (hΩ.boundaryData hb) hũ hũ2 hG
+      hGe hψ1 hW
+    have e2 : Elliptic.load Ω f W = ∫ x in (Ω : Set 𝔼), (-Δ ũ x + ũ x) * ψ x := by
+      rw [hfL W]
+      exact integral_congr_ae ((EventuallyEq.refl _ _).mul hW)
+    have e3 : ∫ x, G x ((hΩ.boundaryData hb).ν x) * ψ x ∂(hΩ.boundaryData hb).σ
+        = ∫ x, G x (hΩ.outwardNormal hb x)
+            * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top W : 𝔼 → ℝ) x
+            ∂(hΩ.boundaryData hb).σ := by
+      refine integral_congr_ae ?_
+      filter_upwards [(hΩ.traceFamily hb).traceL_ae_eq 2 ENNReal.ofNat_ne_top W ψ hW
+        hψ.continuous.continuousOn] with x hx
+      simp only [hx, IsContDiffDomain.boundaryData_ν]
+    simp only [e1, e2, e3, add_sub_cancel_right]
+  exact congrFun (Continuous.ext_on
+    (hΩ.hasSmoothDensity (p := 2) ENNReal.ofNat_ne_top).dense_smoothRestrictions
+    ((Elliptic.laplaceForm Ω u).continuous.sub (Elliptic.load Ω f).continuous) hcont hsm) W
+
+open Laplacian in
+/-- **Example 11.1.2, the pointwise form (11.1.14)–(11.1.15) of a smooth solution**, on a
+bounded `C¹` domain `Ω ⊆ ℝ^{d+1}` (the book's Lipschitz boundary is restated as `C¹`, the
+hypothesis under which the backbone's surface measure `σ = hΩ.boundaryMeasure hb`, outward
+normal `ν = hΩ.outwardNormal hb` — defined at every point of `Γ` and continuous there — and
+trace exist): for `g > 0`, `f ∈ L²(Ω)`, let `u ∈ H¹(Ω)` solve the variational inequality
+(11.1.13) and have a representative `ũ ∈ C²(Ω̄)` continuous on `Ω̄` whose derivative extends
+continuously to `Ω̄` as `G` (the boundary values of `∇ũ`, so that `∂ũ/∂ν = G(ν)` is meaningful
+on `Γ`; Exercise 11.1.3's "smooth solution"). Then
+
+  `−Δũ + ũ = f`  a.e. in `Ω`  (11.1.14),
+
+and at every point of `Γ`
+
+  `|∂ũ/∂ν| ≤ g`  and  `(∂ũ/∂ν) ũ + g |ũ| = 0`  (11.1.15).
+
+The book's argument: `v = u ± φ` with `φ ∈ C_c^∞(Ω)` (whose trace vanishes,
+`TraceFamily.traceL_eq_zero_of_mem_zero`) gives the weak equation, hence (11.1.14)
+(`Elliptic.laplacian_ae_eq_of_forall_testFunction`); Green's formula turns (11.1.13) into
+`∫_Γ (∂ũ/∂ν)(γv − γu) dσ + g ∫_Γ (|γv| − |γu|) dσ ≥ 0` for all `v ∈ H¹(Ω)`
+(`laplaceForm_sub_load_eq_integral`); with `v = u ± W`, `W` the element of a smooth compactly
+supported `ψ ≥ 0`, `|∫_Γ (∂ũ/∂ν) ψ dσ| ≤ g ∫_Γ ψ dσ`, and since `∂ũ/∂ν` is continuous on `Γ` and
+every open set meeting `Γ` has positive surface measure, `|∂ũ/∂ν| ≤ g` everywhere on `Γ`
+(`abs_le_of_forall_le`); `v = 0` and `v = 2u` give `∫_Γ ((∂ũ/∂ν) ũ + g |ũ|) dσ = 0`, whose
+integrand is nonnegative and continuous on `Γ`, hence zero (`mul_add_abs_eq_zero_of_forall_le`).
+The book's "at those boundary points where the outward normal vector is defined" is every point
+of `Γ` on a `C¹` domain. -/
+theorem example_11_1_2_pointwise (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {g : ℝ} (hg : 0 < g)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {u : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hu : ∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+      ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
+        ≤ (∫ x in (Ω : Set 𝔼), ((∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+            * SobolevMultiIndex.weakDeriv (v - u) (MultiIndexLE.single i) x)
+            + SobolevMultiIndex.fn u x * SobolevMultiIndex.fn (v - u) x))
+          + g * ∫ x, (|((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x|
+            - |((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x|)
+            ∂(hΩ.boundaryMeasure hb))
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hũc : ContinuousOn ũ (closure (Ω : Set 𝔼))) (hũ2 : ContDiffOnClosure ℝ 2 ũ Ω)
+    {G : 𝔼 → 𝔼 →L[ℝ] ℝ} (hG : ContinuousOn G (closure (Ω : Set 𝔼)))
+    (hGe : EqOn G (fderiv ℝ ũ) Ω) :
+    (fun x ↦ -Δ ũ x + ũ x) =ᵐ[volume.restrict (Ω : Set 𝔼)] f ∧
+      ∀ x ∈ frontier (Ω : Set 𝔼), |G x (hΩ.outwardNormal hb x)| ≤ g ∧
+        G x (hΩ.outwardNormal hb x) * ũ x + g * |ũ x| = 0 := by
+  -- the inequality in the backbone's vocabulary
+  replace hu : ∀ v, Elliptic.load Ω f (v - u) ≤ Elliptic.laplaceForm Ω u (v - u)
+      + frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g v
+      - frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g u := fun v ↦
+    (friction_ineq_iff (hΩ.boundaryData hb) (hΩ.traceFamily hb) g f u v).1 (hu v)
+  have hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty →
+      0 < (hΩ.boundaryData hb).σ U := fun U hU hne ↦ hΩ.boundaryMeasure_pos_of_isOpen hb hU hne
+  have hc : ContinuousOn (fun x ↦ G x (hΩ.outwardNormal hb x)) (frontier (Ω : Set 𝔼)) :=
+    (hG.mono frontier_subset_closure).clm_apply (hΩ.continuousOn_outwardNormal hb)
+  -- (11.1.14): the interior equation
+  have hUw : ∀ V ∈ SobolevMultiIndex.testFunctions ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+      Elliptic.laplaceForm Ω u V = Elliptic.load Ω f V := by
+    intro V hV
+    have hV0 : (hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top V = 0 :=
+      (hΩ.traceFamily hb).traceL_eq_zero_of_mem_zero _ (SobolevMultiIndexZero.testFunctions_le hV)
+    have hjV₁ : frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g (u + V)
+        = frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g u := by
+      refine frictionFunctional_eq_of_traceL_eq _ _ g ?_
+      rw [map_add, hV0, add_zero]
+    have hjV₂ : frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g (u - V)
+        = frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g u := by
+      refine frictionFunctional_eq_of_traceL_eq _ _ g ?_
+      rw [map_sub, hV0, sub_zero]
+    have e1 : u + V - u = V := add_sub_cancel_left u V
+    have e2 : u - V - u = -V := sub_sub_cancel_left u V
+    have h1 := hu (u + V)
+    have h2 := hu (u - V)
+    simp only [e1, hjV₁] at h1
+    simp only [e2, hjV₂] at h2
+    have h3 : Elliptic.load Ω f (-V) = -Elliptic.load Ω f V := map_neg _ _
+    have h4 : Elliptic.laplaceForm Ω u (-V) = -Elliptic.laplaceForm Ω u V := map_neg _ _
+    linarith
+  have hint := Elliptic.laplacian_ae_eq_of_forall_testFunction Ω hUw hũ2.contDiffOn hũ
+  refine ⟨hint, ?_⟩
+  -- the variational inequality in boundary form
+  have hvi : ∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+      0 ≤ (∫ x, G x (hΩ.outwardNormal hb x)
+          * ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top (v - u) : 𝔼 → ℝ) x
+          ∂(hΩ.boundaryData hb).σ)
+        + frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g v
+        - frictionFunctional (hΩ.boundaryData hb) (hΩ.traceFamily hb) g u := fun v ↦ by
+    have h1 := hu v
+    have h2 := laplaceForm_sub_load_eq_integral hΩ hb hũ hũ2 hG hGe hint (v - u)
+    linarith
+  have hle := abs_le_of_forall_le (hΩ.boundaryData hb) (hΩ.traceFamily hb) hpos hg.le hc hvi
+  have hγu : ((hΩ.traceFamily hb).traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ)
+      =ᵐ[(hΩ.boundaryData hb).σ] ũ := (hΩ.traceFamily hb).traceL_ae_eq 2 _ u ũ hũ hũc
+  have hzero := mul_add_abs_eq_zero_of_forall_le (hΩ.boundaryData hb) (hΩ.traceFamily hb) hpos hc
+    hle hũc hγu hvi
+  exact fun x hx ↦ ⟨hle x hx, hzero x hx⟩
+
+end FrictionPointwise
 
 end AtkinsonHan.Chapter11

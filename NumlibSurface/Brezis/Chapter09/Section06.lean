@@ -34,8 +34,13 @@ by case (A: `ℝ^N`; B: `ℝ^N_+`; C₁: interior; C₂: near the boundary, thro
 * Remark 25 is stated with the book's global hypotheses `u ∈ H^1(Ω)`, `f ∈ H^m(Ω)`; the backbone
   needs only the local ones. The hypoellipticity clause is stated for any open `ω ⊆ Ω` (the
   book's `ω ⊂⊂ Ω` is not needed).
-* Theorem 9.26 (Neumann) and Remark 24 (general operators) are stated by the book without proof
-  and are not restated here (their backbone nodes are deferred).
+* Theorem 9.26 (Neumann) and Remark 24 (general operators) are stated by the book without proof;
+  their `H²` clauses are not restated here (the backbone nodes `Elliptic.regularity_neumann`,
+  `Elliptic.regularity_dirichlet_general` are deferred). The boundary condition `∂u/∂n = 0` that
+  the `H²` solution of the Neumann problem satisfies — meaningful once the trace exists — is
+  `theorem_9_26_normalDeriv`, on a bounded `C¹` domain in the graph form `IsContDiffDomain 1 Ω`
+  of `Numlib/Analysis/Sobolev/Boundary/`, with the normal derivative
+  `BoundaryData.TraceFamily.normalTrace`.
 
 ## Main results
 
@@ -43,6 +48,7 @@ by case (A: `ℝ^N`; B: `ℝ^N_+`; C₁: interior; C₂: near the boundary, thro
   `theorem_9_25_contDiffOn`, `theorem_9_25_smooth`, `theorem_9_25_smooth_of_forall_mem`.
 * `lemma_9_6`, `lemma_9_7`, `lemma_9_8`.
 * `remark_9_25`, `remark_9_25_smooth`, `remark_9_25_local`.
+* `theorem_9_26_normalDeriv`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -526,6 +532,29 @@ theorem lemma_9_8 (c : ContDiffChart 2 (Ω : Set 𝔼)) {Ω₁ Qp : Opens 𝔼}
     dsimp only
     rw [hy]
     rfl
+
+/-! ### Theorem 9.26: the Neumann boundary condition of the `H²` solution -/
+
+/-- **Theorem 9.26, the boundary condition.** On a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`,
+`hb`; the `C²` hypothesis of Theorem 9.26 is needed only for the `H²` regularity, which is here a
+hypothesis), if `U₂ ∈ H²(Ω)` is such that its `H¹` shadow `toLowerOrderL U₂` is a weak solution of
+the Neumann problem (49), then its normal derivative in the trace sense vanishes:
+`∂U₂/∂n = ∑ᵢ nᵢ γ(∂ᵢU₂) = 0` `σ`-a.e. on `Γ`, with `γ` the trace `IsContDiffDomain.traceL`,
+`σ = hΩ.boundaryMeasure hb` and `n = hΩ.outwardNormal hb` (`BoundaryData.TraceFamily.normalTrace`,
+the `∂u/∂n` of the Comments on chapter 9, 7 (iii)). This is the sense in which the Neumann
+condition `∂u/∂n = 0` on `Γ` of (44) holds for the `H²` solution of Theorem 9.26; together with
+the `H²` regularity `Elliptic.regularity_neumann` (deferred, the book gives no proof) it is the
+full Theorem 9.26. The backbone's
+`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` through
+`isWeakSolutionNeumann_iff`. -/
+theorem theorem_9_26_normalDeriv (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
+    (U₂ : SobolevEuclidean (d + 1) 2 2 Ω)
+    (hU : IsWeakSolutionNeumann Ω f
+      (SobolevMultiIndex.toLowerOrderL ℝ 𝔟 2 Ω volume (by norm_num) U₂)) :
+    (hΩ.traceFamily hb).normalTrace U₂ =ᵐ[hΩ.boundaryMeasure hb] 0 :=
+  (hΩ.traceFamily hb).normalTrace_eq_zero_of_forall_laplaceForm_eq U₂ f fun φ ↦
+    ((isWeakSolutionNeumann_iff f _).1 hU).2 φ Submodule.mem_top
 
 end Regularity
 

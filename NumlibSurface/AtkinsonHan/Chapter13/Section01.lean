@@ -1,6 +1,9 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Mathlib.Topology.Instances.AddCircle.Real
 import Numlib.Analysis.Complex.Harmonic
+import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
+import Numlib.Analysis.Sobolev.Boundary.Polygon
+import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.Approximation.DividedDifference
 import Numlib.IntegralEquations.Basic
 
@@ -75,14 +78,34 @@ definition.
   `InnerProductSpace.HarmonicAt.comp_conj` and `.comp_analyticAt` of
   `Numlib/Analysis/Complex/Harmonic`, because `T z = conj (z⁻¹)`.
 
+## Green's theorem and the weak Neumann problem (boundary round, 2026-09-21)
+
+The surface measure `IsContDiffDomain.boundaryMeasure`, the outward normal
+`IsContDiffDomain.outwardNormal`, the divergence theorem and the trace of
+`Numlib/Analysis/Sobolev/Boundary/` close the two numbered results of the section as far as
+Green's identities carry them:
+
+* `theorem_13_1_2` — the divergence theorem (13.1.4) on a bounded `C¹` plane domain, with the
+  chapter's *inner* normal `n = −ν`; `theorem_13_1_2_polygon` on a triangulated polygon
+  (`Triangulation.boundaryData`).  The chapter's piecewise smooth multiply connected region is
+  `theorem_13_1_2_piecewise`, open.
+* `theorem_13_1_1_neumann_weak` — the Neumann clause of Theorem 13.1.1 in weak form, on a bounded
+  connected `C¹` domain: `∫_Ω ∇u·∇v = ∫_Γ f γv dσ` for all `v ∈ H¹(Ω)` is solvable if and only
+  if `∫_Γ f dσ = 0`, uniquely up to a constant — Lax–Milgram on the mean-zero subspace, where the
+  Dirichlet form is coercive by the Poincaré–Wirtinger inequality
+  (`exists_norm_le_gradNorm_of_integral_eq_zero`, Deny–Lions), and the constants are the kernel
+  of the Dirichlet form on a connected domain (`exists_fn_ae_eq_const_of_gradNorm_eq_zero`).
+
 ## Not formalized here
 
-* The identification of this operator with the boundary integral
-  `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, which needs a surface measure and a normal field on `S`.
-* Everything the Kelvin transform is used *for*: the exterior Dirichlet and Neumann problems
-  (13.1.14)–(13.1.23) rest on Theorem 13.1.1, quoted by the book from Chapter 8, and on the
-  removable singularity statement for a bounded harmonic function on a punctured neighbourhood of
-  the origin.
+* The identification of the double layer operator with the boundary integral
+  `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`: the surface measure and the normal now exist, but the
+  identification needs the jump relations of the layer potentials.
+* The classical clauses of Theorem 13.1.1 (the Dirichlet problem with continuous data, the
+  pointwise Neumann condition) and everything the Kelvin transform is used *for*: the exterior
+  Dirichlet and Neumann problems (13.1.14)–(13.1.23) rest on Theorem 13.1.1, quoted by the book
+  from Chapter 8, and on the removable singularity statement for a bounded harmonic function on
+  a punctured neighbourhood of the origin.
 -/
 
 open Set
@@ -512,5 +535,343 @@ theorem kelvin_harmonic {u : ℂ → ℝ} {x : ℂ} (hx : x ≠ 0)
   exact hcomp
 
 end Kelvin
+
+/-! ### Theorem 13.1.2: the divergence theorem with the chapter's inner normal -/
+
+section Divergence
+
+open MeasureTheory TopologicalSpace
+open scoped InnerProductSpace
+
+/-- **Theorem 13.1.2 (the divergence theorem)** on a bounded `C¹` plane domain `Ω ⊆ ℝ²`
+(`hΩ : IsContDiffDomain 1 Ω`, `hb`; the chapter's piecewise smooth multiply connected region is
+`theorem_13_1_2_piecewise`), with the chapter's *inner* unit normal `n = −ν` — `ν` being the
+outward normal `IsContDiffDomain.outwardNormal` of `Numlib/Analysis/Sobolev/Boundary/` — and the
+arclength measure `dΓ = σ` (`IsContDiffDomain.boundaryMeasure`), for `F : ℝ² → ℝ²` with both
+components in `C¹(Ω̄)` (`ContinuousOn F (closure Ω)`, `ContDiffOnClosure ℝ 1 F Ω`):
+
+  `∫_Ω ∇·F dΩ = −∫_Γ F·n dΓ`  (13.1.4).
+
+The field `BoundaryData.integral_div_eq` of the boundary data `hΩ.boundaryData hb`, read with
+the sign convention of the chapter (`inner_neg_right`). Green's identities (13.1.5)–(13.1.6)
+follow with `F = u ∇w` (`BoundaryData.integral_laplacian_mul_add_eq`), as the chapter derives
+them. -/
+theorem theorem_13_1_2 {Ω : Opens (EuclideanSpace ℝ (Fin 2))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin 2))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin 2))))
+    {F : EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)}
+    (hF₀ : ContinuousOn F (closure (Ω : Set (EuclideanSpace ℝ (Fin 2)))))
+    (hF₁ : ContDiffOnClosure ℝ 1 F Ω) :
+    ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin 2))), EuclideanSpace.div F x
+      = -∫ x, ⟪F x, -(hΩ.boundaryData hb).ν x⟫_ℝ ∂(hΩ.boundaryData hb).σ := by
+  simp only [inner_neg_right, integral_neg, neg_neg]
+  exact (hΩ.boundaryData hb).integral_div_eq F hF₀ hF₁
+
+/-- **Theorem 13.1.2 on a triangulated polygon** `Ω ⊆ ℝ²` (`𝒯 : Triangulation Ω`): with the
+inner normal `n = −ν` and the arclength measure `dΓ = σ` of the polygon
+(`Triangulation.boundaryData`, `Numlib/Analysis/Sobolev/Boundary/Polygon.lean`), for `F` with
+both components in `C¹(Ω̄)`, `∫_Ω ∇·F dΩ = −∫_Γ F·n dΓ`. The polygonal case of the chapter's
+"boundaries need not be smooth". -/
+theorem theorem_13_1_2_polygon {Ω : Opens (EuclideanSpace ℝ (Fin 2))} (𝒯 : Triangulation Ω)
+    {F : EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)}
+    (hF₀ : ContinuousOn F (closure (Ω : Set (EuclideanSpace ℝ (Fin 2)))))
+    (hF₁ : ContDiffOnClosure ℝ 1 F Ω) :
+    ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin 2))), EuclideanSpace.div F x
+      = -∫ x, ⟪F x, -𝒯.boundaryData.ν x⟫_ℝ ∂𝒯.boundaryData.σ := by
+  simp only [inner_neg_right, integral_neg, neg_neg]
+  exact 𝒯.boundaryData.integral_div_eq F hF₀ hF₁
+
+end Divergence
+
+/-! ### Theorem 13.1.1: the weak Neumann problem -/
+
+section Neumann
+
+open MeasureTheory TopologicalSpace
+open scoped ContDiff ENNReal InnerProductSpace NNReal
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- `ℝ^{d+1}`, locally. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
+
+/-- The constant function `1` as an element of `H¹(Ω)` on a bounded open set, with vanishing
+weak derivatives. -/
+theorem exists_one (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
+    ∃ one : SobolevEuclidean (d + 1) 1 2 Ω,
+      SobolevMultiIndex.fn one =ᵐ[volume.restrict (Ω : Set 𝔼)] (fun _ ↦ (1 : ℝ)) ∧
+      ∀ i, (SobolevMultiIndex.weakDeriv one (MultiIndexLE.single i) : 𝔼 → ℝ)
+        =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ 0 := by
+  obtain ⟨one, hone⟩ : ∃ one : SobolevEuclidean (d + 1) 1 2 Ω,
+      SobolevMultiIndex.fn one =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ (1 : ℝ) :=
+    ((contDiffOn_const (c := (1 : ℝ))).contDiffOnClosure Ω.isOpen).memSobolevMultiIndex_of_isBounded
+      Ω hb 2 |>.exists_sobolevMultiIndex
+  refine ⟨one, hone, fun i ↦ ?_⟩
+  have h := Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω
+    (contDiffOn_const (c := (1 : ℝ))) hone i
+  filter_upwards [h] with x hx
+  simp only [hx, fderiv_fun_const, Pi.zero_apply, zero_apply]
+
+/-- **The Poincaré–Wirtinger inequality on a bounded connected `C¹` domain**: there is `C > 0`
+with `‖v‖_{H¹} ≤ C ‖∇v‖_{L²}` for every `v ∈ H¹(Ω)` of mean zero. The Deny–Lions inequality
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected` (Theorem 7.3.12 with
+the one seminorm `|∫_Ω v|`) on the extension domain `Ω`
+(`IsSobolevExtensionDomain.of_isContDiffDomain`): a constant of mean zero on a set of positive
+measure is zero. -/
+theorem exists_norm_le_gradNorm_of_integral_eq_zero (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hc : IsConnected (Ω : Set 𝔼)) :
+    ∃ C : ℝ, 0 < C ∧ ∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+      ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn v x = 0 →
+        ‖v‖ ≤ C * SobolevMultiIndex.gradNorm v := by
+  have hΩo := Ω.isOpen
+  have hvol : volume (Ω : Set 𝔼) ≠ ⊤ := hb.measure_lt_top.ne
+  have hvolpos : 0 < (volume (Ω : Set 𝔼)).toReal :=
+    ENNReal.toReal_pos (hΩo.measure_pos volume hc.nonempty).ne' hvol
+  obtain ⟨one, hone, -⟩ := exists_one hb
+  -- the mean functional
+  obtain ⟨ℓ₀, hℓ₀⟩ : ∃ ℓ₀ : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ,
+      ∀ v, ℓ₀ v = ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn v x :=
+    ⟨Elliptic.load Ω (SobolevMultiIndex.weakDeriv one 0), fun v ↦ by
+      rw [Elliptic.load_apply]
+      refine integral_congr_ae ?_
+      filter_upwards [hone] with x hx
+      change SobolevMultiIndex.fn one x * _ = _
+      rw [hx, one_mul]⟩
+  have hext : IsSobolevExtensionDomain (d + 1) 2 Ω :=
+    IsSobolevExtensionDomain.of_isContDiffDomain hΩ
+      (hb.isCompact_closure.of_isClosed_subset isClosed_frontier frontier_subset_closure).isBounded
+  -- (H2): a constant of mean zero is zero
+  have h2 : ∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+      (∃ q ∈ MvPolynomial.restrictTotalDegree (Fin (d + 1)) ℝ 0,
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)]
+          fun x ↦ MvPolynomial.eval (fun i ↦ x i) q) → ℓ₀ v = 0 → v = 0 := by
+    rintro v ⟨q, hq, hvq⟩ hℓv
+    rw [MvPolynomial.mem_restrictTotalDegree, Nat.le_zero,
+      MvPolynomial.totalDegree_eq_zero_iff_eq_C] at hq
+    have hvc : SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ q.coeff 0 := by
+      filter_upwards [hvq] with x hx
+      rw [hx]
+      conv_lhs => rw [hq]
+      rw [MvPolynomial.eval_C]
+    rw [hℓ₀, integral_congr_ae hvc, setIntegral_const, smul_eq_mul] at hℓv
+    have hc0 : q.coeff 0 = 0 :=
+      (mul_eq_zero.1 hℓv).resolve_left (by rw [measureReal_def]; exact hvolpos.ne')
+    refine SobolevMultiIndex.ext_of_fn_ae_eq (hvc.trans ?_)
+    rw [hc0]
+    exact SobolevMultiIndex.fn_zero.symm
+  have : Fact ((1 : ℝ≥0∞) ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+  obtain ⟨C, hC, hle⟩ := SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected
+    (k := 0) (p := 2) hext hvol hc.isPreconnected ℓ₀ fun v hv h0 ↦ h2 v hv h0
+  refine ⟨C, hC, fun v hv ↦ ?_⟩
+  have h := hle v
+  have e : SobolevMultiIndex.topSeminorm ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (0 + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω volume v = SobolevMultiIndex.gradNorm v :=
+    SobolevMultiIndex.topSeminorm_one_eq_gradNorm v
+  have e2 : ℓ₀ v = 0 := by rw [hℓ₀]; exact hv
+  rw [e] at h
+  have h' : ‖v‖ ≤ C * (SobolevMultiIndex.gradNorm v + |ℓ₀ v|) := h
+  rw [e2, abs_zero, add_zero] at h'
+  exact h'
+
+/-- **An `H¹` function with vanishing gradient on a connected open set is a constant** almost
+everywhere: Deny–Lions at order one
+(`SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero`, the
+polynomials of degree `0`). -/
+theorem exists_fn_ae_eq_const_of_gradNorm_eq_zero (hc : IsPreconnected (Ω : Set 𝔼))
+    {w : SobolevEuclidean (d + 1) 1 2 Ω} (hw : SobolevMultiIndex.gradNorm w = 0) :
+    ∃ c : ℝ, SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ c := by
+  have : Fact ((1 : ℝ≥0∞) ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+  have htop : SobolevMultiIndex.topSeminorm ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (0 + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω volume w = 0 := by
+    have e : SobolevMultiIndex.topSeminorm ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (0 + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω volume w = SobolevMultiIndex.gradNorm w :=
+      SobolevMultiIndex.topSeminorm_one_eq_gradNorm w
+    rw [e]
+    exact hw
+  obtain ⟨q, hq, hwq⟩ :=
+    SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero (k := 0) (p := 2)
+      hc htop
+  rw [MvPolynomial.mem_restrictTotalDegree, Nat.le_zero,
+    MvPolynomial.totalDegree_eq_zero_iff_eq_C] at hq
+  have hwq' : SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼)]
+      fun x ↦ MvPolynomial.eval (fun i ↦ x i) q := hwq
+  refine ⟨q.coeff 0, ?_⟩
+  filter_upwards [hwq'] with x hx
+  rw [hx]
+  conv_lhs => rw [hq]
+  rw [MvPolynomial.eval_C]
+
+/-- **Lax–Milgram on the mean-zero subspace**: if `‖v‖ ≤ C ‖∇v‖` on the kernel of a bounded
+functional `ℓ₀`, the Dirichlet form is coercive there and every bounded functional `F` is
+represented on the kernel: `∃ u₀, ∀ v, ℓ₀ v = 0 → ∫_Ω ∇u₀·∇v = F(v)`
+(`IsGalerkinSolution.existsUnique_of_restrict`). -/
+theorem exists_forall_dirichletForm_eq_of_ker {ℓ₀ : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ}
+    {C : ℝ} (hC : 0 < C)
+    (hle : ∀ v : SobolevEuclidean (d + 1) 1 2 Ω, ℓ₀ v = 0 → ‖v‖ ≤ C * SobolevMultiIndex.gradNorm v)
+    (F : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ) :
+    ∃ u₀ : SobolevEuclidean (d + 1) 1 2 Ω, ∀ v, ℓ₀ v = 0 → Elliptic.dirichletForm Ω u₀ v = F v := by
+  have hcoer : ((Elliptic.dirichletForm Ω).restrict
+      (LinearMap.ker (ℓ₀ : SobolevEuclidean (d + 1) 1 2 Ω →ₗ[ℝ] ℝ))).IsCoerciveWith
+      (C⁻¹ ^ 2) := by
+    rintro ⟨v, hv⟩
+    rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv
+    have h1 := hle v hv
+    have h2 : C⁻¹ * ‖v‖ ≤ SobolevMultiIndex.gradNorm v := by
+      rw [inv_mul_le_iff₀ hC]
+      exact h1
+    simp only [SesqForm.restrict_apply, RCLike.re_to_real,
+      Elliptic.dirichletForm_self_eq_gradNorm_sq]
+    calc C⁻¹ ^ 2 * ‖v‖ ^ 2 = (C⁻¹ * ‖v‖) ^ 2 := by ring
+      _ ≤ SobolevMultiIndex.gradNorm v ^ 2 := by gcongr
+  have : CompleteSpace (LinearMap.ker (ℓ₀ : SobolevEuclidean (d + 1) 1 2 Ω →ₗ[ℝ] ℝ)) :=
+    ℓ₀.isClosed_ker.completeSpace_coe
+  obtain ⟨u₀, ⟨-, hu₀⟩, -⟩ := IsGalerkinSolution.existsUnique_of_restrict (ℓ := F)
+    (by positivity) hcoer
+  exact ⟨u₀, fun v hv ↦ hu₀ v (by rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe]; exact hv)⟩
+
+/-- **Lax–Milgram for the weak Neumann problem** on a bounded connected `C¹` domain: for a
+bounded functional `F` on `H¹(Ω)` vanishing on the constant function `1`, there is `u₀ ∈ H¹(Ω)`
+with `∫_Ω ∇u₀·∇v = F(v)` for all `v ∈ H¹(Ω)`. Lax–Milgram on the closed subspace of mean-zero
+functions, where the Dirichlet form is coercive by the Poincaré–Wirtinger inequality
+(`exists_norm_le_gradNorm_of_integral_eq_zero`, `exists_forall_dirichletForm_eq_of_ker`), and
+the decomposition `v = v₀ + c·1` with `c = (∫_Ω v)/|Ω|`. -/
+theorem exists_forall_dirichletForm_eq (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hc : IsConnected (Ω : Set 𝔼))
+    {one : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hone : SobolevMultiIndex.fn one =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ (1 : ℝ))
+    (hd1 : ∀ u : SobolevEuclidean (d + 1) 1 2 Ω, Elliptic.dirichletForm Ω u one = 0)
+    (F : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ) (hF1 : F one = 0) :
+    ∃ u₀ : SobolevEuclidean (d + 1) 1 2 Ω, ∀ v, Elliptic.dirichletForm Ω u₀ v = F v := by
+  have hΩo := Ω.isOpen
+  have hvol : volume (Ω : Set 𝔼) ≠ ⊤ := hb.measure_lt_top.ne
+  have hvolpos : 0 < (volume (Ω : Set 𝔼)).toReal :=
+    ENNReal.toReal_pos (hΩo.measure_pos volume hc.nonempty).ne' hvol
+  -- the mean functional
+  obtain ⟨ℓ₀, hℓ₀⟩ : ∃ ℓ₀ : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ,
+      ∀ v, ℓ₀ v = ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn v x :=
+    ⟨Elliptic.load Ω (SobolevMultiIndex.weakDeriv one 0), fun v ↦ by
+      rw [Elliptic.load_apply]
+      refine integral_congr_ae ?_
+      filter_upwards [hone] with x hx
+      change SobolevMultiIndex.fn one x * _ = _
+      rw [hx, one_mul]⟩
+  have hℓ₀one : ℓ₀ one = (volume (Ω : Set 𝔼)).toReal := by
+    rw [hℓ₀, integral_congr_ae hone, setIntegral_const, smul_eq_mul, mul_one]
+    rfl
+  obtain ⟨C, hC, hle⟩ := exists_norm_le_gradNorm_of_integral_eq_zero hΩ hb hc
+  obtain ⟨u₀, hu₀⟩ := exists_forall_dirichletForm_eq_of_ker hC
+    (fun v hv ↦ hle v (by rw [← hℓ₀]; exact hv)) F
+  refine ⟨u₀, fun v ↦ ?_⟩
+  -- `v = v₀ + c 1` with `v₀` of mean zero
+  obtain ⟨c, hcdef⟩ : ∃ c : ℝ, c = ℓ₀ v / ℓ₀ one := ⟨_, rfl⟩
+  have hℓ₀one' : ℓ₀ one ≠ 0 := by rw [hℓ₀one]; exact hvolpos.ne'
+  have hv₀ : ℓ₀ (v - c • one) = 0 := by
+    simp only [ℓ₀.map_sub v (c • one), ℓ₀.map_smul c one, smul_eq_mul]
+    rw [hcdef, div_mul_cancel₀ _ hℓ₀one', sub_self]
+  have e1 : Elliptic.dirichletForm Ω u₀ (v - c • one)
+      = Elliptic.dirichletForm Ω u₀ v - c * Elliptic.dirichletForm Ω u₀ one := by
+    simp only [(Elliptic.dirichletForm Ω u₀).map_sub v (c • one),
+      (Elliptic.dirichletForm Ω u₀).map_smul c one, smul_eq_mul]
+  have e2 : F (v - c • one) = F v - c * F one := by
+    simp only [F.map_sub v (c • one), F.map_smul c one, smul_eq_mul]
+  have e3 := hu₀ _ hv₀
+  rw [e1, e2, hd1, hF1] at e3
+  linarith
+
+/-- **Theorem 13.1.1, the Neumann clause in weak form**, on a bounded connected `C¹` domain
+`Ω ⊆ ℝ^{d+1}` (`hΩ : IsContDiffDomain 1 Ω`, `hb`, `hc : IsConnected Ω`; the chapter's region
+with a `C²` boundary curve is the plane case), with the arclength measure
+`σ = hΩ.boundaryMeasure hb` and the trace `γ = hΩ.traceL hb 2 : H¹(Ω) →L L²(σ)` of
+`Numlib/Analysis/Sobolev/Boundary/`,
+for `f ∈ L²(σ)`: the weak Neumann problem (13.1.2), `Δu = 0` in `Ω`, `∂u/∂n = f` on `Γ` —
+find `u ∈ H¹(Ω)` with
+
+  `∫_Ω ∇u·∇v dx = ∫_Γ f γv dσ`  for all `v ∈ H¹(Ω)`
+
+— has a solution if and only if `∫_Γ f dσ = 0` (13.1.3), and the solution is unique up to the
+addition of an arbitrary constant. This is the part of Theorem 13.1.1 that Green's identities
+carry; the book quotes it from its Chapter 8. Necessity: test with `v = 1` (`∇1 = 0`, `γ1 = 1`).
+Existence: Lax–Milgram on the mean-zero subspace, where the Dirichlet form is coercive by the
+Poincaré–Wirtinger inequality (`exists_forall_dirichletForm_eq`), and `v ↦ ∫_Γ f γv dσ` is
+bounded and vanishes on the constants when `∫_Γ f dσ = 0`. Uniqueness: two solutions differ by
+`w` with `∫_Ω |∇w|² = 0`, a constant on the connected `Ω`
+(`exists_fn_ae_eq_const_of_gradNorm_eq_zero`). The classical clauses of Theorem 13.1.1 — the
+Dirichlet problem with continuous data and the pointwise Neumann condition — stay open
+(`theorem_13_1_1`). -/
+theorem theorem_13_1_1_neumann_weak (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hc : IsConnected (Ω : Set 𝔼))
+    (f : Lp ℝ 2 (hΩ.boundaryMeasure hb)) :
+    ((∃ u : SobolevEuclidean (d + 1) 1 2 Ω, ∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), ∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+        = ∫ x, f x * (hΩ.traceL hb 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x ∂(hΩ.boundaryMeasure hb))
+      ↔ ∫ x, f x ∂(hΩ.boundaryMeasure hb) = 0) ∧
+    ∀ u u' : SobolevEuclidean (d + 1) 1 2 Ω,
+      (∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), ∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+        = ∫ x, f x * (hΩ.traceL hb 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+            ∂(hΩ.boundaryMeasure hb)) →
+      (∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), ∑ i, SobolevMultiIndex.weakDeriv u' (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+        = ∫ x, f x * (hΩ.traceL hb 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+            ∂(hΩ.boundaryMeasure hb)) →
+      ∃ c : ℝ, SobolevMultiIndex.fn u' =ᵐ[volume.restrict (Ω : Set 𝔼)]
+        fun x ↦ SobolevMultiIndex.fn u x + c := by
+  obtain ⟨one, hone, hdone⟩ := exists_one hb
+  have hγone : (hΩ.traceL hb 2 ENNReal.ofNat_ne_top one : 𝔼 → ℝ) =ᵐ[hΩ.boundaryMeasure hb]
+      fun _ ↦ (1 : ℝ) :=
+    hΩ.traceL_ae_eq_of_continuousOn hb 2 ENNReal.ofNat_ne_top one hone continuousOn_const
+  -- the Dirichlet form vanishes against `1`
+  have hd1 : ∀ u : SobolevEuclidean (d + 1) 1 2 Ω, Elliptic.dirichletForm Ω u one = 0 := by
+    intro u
+    rw [Elliptic.dirichletForm_apply]
+    rw [← integral_zero 𝔼 ℝ (μ := volume.restrict (Ω : Set 𝔼))]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_all_iff.2 hdone] with x hx
+    simp only [hx, mul_zero, Finset.sum_const_zero]
+  -- the boundary functional `v ↦ ∫ f γv dσ`
+  obtain ⟨Fσ, hFσ⟩ : ∃ Fσ : SobolevEuclidean (d + 1) 1 2 Ω →L[ℝ] ℝ,
+      ∀ v, Fσ v = ∫ x, f x * (hΩ.traceL hb 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+        ∂(hΩ.boundaryMeasure hb) :=
+    ⟨(innerSL ℝ f).comp (hΩ.traceL hb 2 ENNReal.ofNat_ne_top), fun v ↦ by
+      rw [ContinuousLinearMap.comp_apply, innerSL_apply_apply, L2.inner_eq_integral_mul]⟩
+  have hFσone : Fσ one = ∫ x, f x ∂(hΩ.boundaryMeasure hb) := by
+    rw [hFσ]
+    refine integral_congr_ae ?_
+    filter_upwards [hγone] with x hx
+    rw [hx, mul_one]
+  -- the problem in the backbone's vocabulary
+  have hsol : ∀ u : SobolevEuclidean (d + 1) 1 2 Ω,
+      (∀ v : SobolevEuclidean (d + 1) 1 2 Ω,
+        ∫ x in (Ω : Set 𝔼), ∑ i, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x
+        = ∫ x, f x * (hΩ.traceL hb 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x
+            ∂(hΩ.boundaryMeasure hb)) ↔
+      ∀ v, Elliptic.dirichletForm Ω u v = Fσ v := fun u ↦ by
+    simp only [Elliptic.dirichletForm_apply, hFσ]
+  simp only [hsol]
+  refine ⟨⟨fun ⟨u, hu⟩ ↦ ?_, fun hf ↦ ?_⟩, fun u u' hu hu' ↦ ?_⟩
+  · -- necessity: test with `v = 1`
+    rw [← hFσone, ← hu one, hd1]
+  · -- existence
+    exact exists_forall_dirichletForm_eq hΩ hb hc hone hd1 Fσ (hFσone.trans hf)
+  · -- uniqueness up to a constant
+    obtain ⟨w, hwdef⟩ : ∃ w : SobolevEuclidean (d + 1) 1 2 Ω, w = u' - u := ⟨_, rfl⟩
+    have hw : ∀ v, Elliptic.dirichletForm Ω w v = 0 := fun v ↦ by
+      rw [hwdef, map_sub, sub_apply, hu v, hu' v, sub_self]
+    have hgrad : SobolevMultiIndex.gradNorm w = 0 := by
+      have h := hw w
+      rw [Elliptic.dirichletForm_self_eq_gradNorm_sq] at h
+      exact pow_eq_zero_iff two_ne_zero |>.1 h
+    obtain ⟨c, hwc⟩ := exists_fn_ae_eq_const_of_gradNorm_eq_zero hc.isPreconnected hgrad
+    refine ⟨c, ?_⟩
+    have e : u' = u + w := by rw [hwdef, add_sub_cancel]
+    rw [e]
+    filter_upwards [SobolevMultiIndex.fn_add u w, hwc] with x hx hx'
+    rw [hx, Pi.add_apply, hx']
+
+end Neumann
 
 end AtkinsonHan.Chapter13
