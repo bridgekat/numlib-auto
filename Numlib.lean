@@ -252,6 +252,7 @@ import Numlib.Analysis.Sobolev.Boundary.Divergence
 import Numlib.Analysis.Sobolev.Boundary.Gram
 import Numlib.Analysis.Sobolev.Boundary.GraphMeasure
 import Numlib.Analysis.Sobolev.Boundary.Polygon
+import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import Numlib.Analysis.Sobolev.Boundary.Trace
 import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Analysis.Sobolev.Chart
