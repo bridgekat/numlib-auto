@@ -1,198 +1,93 @@
-desc = '''
-The divergence theorem on the region above the graph of a `C¹` function — the analytic heart of
-the boundary round (decision B4 of `notes/boundary/planning-brief.md`) — and its transport to a
-graph chart of a domain. No Piola identity, no area formula, no Hausdorff measure: for a field `F`
-of class `C¹(Ω̄)` with compact support on the epigraph `{y : y_N > g y'}`,
-
-* the vertical component is the fundamental theorem of calculus on each vertical line
-  (`∫_{y_N > g} ∂_N F_N = −∫ F_N(x', g x') dx'`, Fubini along `EuclideanSpace.integral_lastInit`),
-* a horizontal component is differentiation under the integral sign
-  (`H(x') = ∫_0^∞ F_i(x', g x' + s) ds` is differentiable with compact support, so
-  `∫ ∂_i H = 0`, and `∂_i H = ∫_{y_N > g} ∂_i F_i (…) − F_i(x', g x') ∂_i g(x')` by
-  `hasFDerivAt_integral_of_dominated_of_fderiv_le` and the FTC again),
-
-and summing gives `∫_{epigraph g} div F = ∫ ⟪F (x', g x'), (∇g x', −1)⟫ dx'`, exactly the density
-`√(1 + |∇g|²)` of `GraphMeasure.lean` times the normal `(∇g, −1)/√(1 + |∇g|²)`. The rotated form
-on a chart `(T, g)` follows from the measure preservation of `T` and the rotation invariance of the
-divergence (`EuclideanSpace.div_comp_affineIsometryEquiv`), and the localized form for a field
-supported in the chart ball is the input of the assembly in `Boundary/ContDiffDomain.lean`.
-
-Regularity: the primary hypotheses are `HasCompactSupport F`, `ContinuousOn F (closure (epigraph g))`
-and `ContDiffOnClosure ℝ 1 F (epigraph g)` (`F ∈ C¹(Ω̄)` in the library's sense), which the
-one-dimensional FTC (`intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`: continuity on
-`Icc`, derivative on `Ioo`) and the dominated differentiation (derivative bounded on the support)
-absorb at no cost; `ContDiff ℝ 1 F` is a special case. This is why the books' `C¹(Ω̄)` Green
-formulas are reachable without a `C¹(Ω̄) → C¹(ℝ^N)` extension theorem.
-
-Wave A, independent of `GraphMeasure.lean`: the right-hand sides here are explicit integrals over
-`ℝ^d`; `Boundary/ContDiffDomain.lean` rewrites them as `∫ ⟪F, graphNormal⟫ d(graphMeasure)`.
-~900 lines. Imports `Boundary/Data.lean` (`epigraph`, `div`, `AffineIsometryEquiv.measurePreserving`),
-`Numlib/Analysis/Sobolev/Chart.lean` (`integral_lastInit`, `snocLast`), Mathlib's
-`Analysis/Calculus/ParametricIntegral.lean`, `MeasureTheory/Integral/IntervalIntegral/FundThmCalculus.lean`,
-`Analysis/Calculus/LineDeriv/IntegrationByParts.lean`.
-Notation: `E := EuclideanSpace ℝ (Fin (d + 1))`, `E' := EuclideanSpace ℝ (Fin d)`, `g : E' → ℝ`
-with `ContDiff ℝ 1 g` throughout; `eN := EuclideanSpace.single (Fin.last d) 1`,
-`e i := EuclideanSpace.single i.castSucc 1` for `i : Fin d`.
-'''
+# The divergence theorem on the region above the graph of a `C¹` function (decision B4 of
+# `notes/boundary/planning-brief.md`) and its transport to a graph chart of a domain. The module
+# exists with a doc comment and every node is proved and documented, so only the ids remain.
 
 [[node]]
 id = "integral_fderiv_apply_eq_zero_of_hasCompactSupport"
-kind = "theorem"
-desc = '''**The integral of a derivative of a compactly supported function vanishes**: for a
-finite-dimensional real normed space `E` with an additive Haar measure `μ`, `f : E → ℝ`
-differentiable everywhere (`Differentiable ℝ f`) with `HasCompactSupport f` and `fderiv ℝ f (·) v`
-integrable, `∫ x, fderiv ℝ f x v ∂μ = 0` for every direction `v`. Mathlib's
-`integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` (`Mathlib/Analysis/Calculus/LineDeriv/IntegrationByParts.lean`)
-with the constant function `1` in the other slot: `∫ 1 · ∂_v f = −∫ 0 · f = 0` (its
-hypotheses: integrability of `1 · ∂_v f`, `0 · f`, `1 · f` — the last since `f` is compactly
-supported and continuous — and differentiability of `f` on `tsupport 1 = univ`, of `1`
-everywhere). Continuity of `fderiv ℝ f` is *not* needed, only integrability, which is what the
-Leibniz step below uses. State also the `ContDiff ℝ 1 f` special case, where integrability is
-automatic (`Continuous.integrable_of_hasCompactSupport`), and the vector-valued
-`EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport : ∫ x, div F x = 0` for
-`F : E → E` differentiable with compact support and integrable derivative (sum over the
-coordinates). ★'''
-deps = ["EuclideanSpace.div"]
+
+[[node]]
+id = "integral_fderiv_apply_eq_zero_of_contDiff"
+
+[[node]]
+id = "EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport"
+
+[[node]]
+id = "integrableOn_of_forall_norm_le_of_eq_zero"
+
+[[node]]
+id = "integral_Ioi_comp_add_left"
+
+[[node]]
+id = "fderiv_eq_zero_of_notMem_tsupport"
 
 [[node]]
 id = "ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport"
-kind = "theorem"
-desc = '''A function of class `C¹(s̄)` with compact support has a bounded derivative on `s`: for an
-open `s`, `ContDiffOnClosure ℝ 1 f s` and `HasCompactSupport f` give `∃ M, ∀ x ∈ s, ‖fderiv ℝ f x‖ ≤ M`.
-The `m = 1` clause provides `G` continuous on `closure s` with `G = iteratedFDeriv ℝ 1 f` on `s`
-(`iteratedFDeriv_one_apply` identifies it with `fderiv`); `G` is bounded on the compact
-`closure s ∩ tsupport f` (`IsCompact.exists_bound_of_continuousOn`), and `fderiv ℝ f = 0` on the
-open `s \ tsupport f` (`f` vanishes on a neighbourhood: `fderiv` of a locally zero function). Also
-the vector-valued form for `F : E → E`. Compare `ContDiffOn.exists_norm_fderiv_le_of_isCompact` of
-`Chart.lean`, which bounds the derivative on the interior of a compact set. ★'''
-deps = ["ContDiffOnClosure"]
+
+[[node]]
+id = "ContDiffOnClosure.continuousLinearMap_comp"
+
+[[node]]
+id = "ContinuousOn.eq_zero_of_notMem_of_forall"
+
+[[node]]
+id = "ContinuousOn.indicator_tsupport_of_inter_eq"
 
 [[node]]
 id = "ContDiffOnClosure.congr_set_of_tsupport_subset"
-kind = "theorem"
-desc = '''**The class `C¹(Ω̄)` is local on the support**: for open sets `s s' V` with
-`s ∩ V = s' ∩ V`, and `F` with `tsupport F ⊆ V`, `ContinuousOn F (closure s)` and
-`ContDiffOnClosure ℝ 1 F s`, one has `ContinuousOn F (closure s')` and `ContDiffOnClosure ℝ 1 F s'`.
-The interior clause is local (`contDiffOn_of_locally_contDiffOn`: near a point of `s' ∩ V` use
-`s ∩ V`, near a point of `s' \ tsupport F` the function vanishes on a neighbourhood). For the
-extension clauses: the given continuous extension `G` of `DF` (resp. `F`) to `closure s` vanishes
-on `closure s \ tsupport F` (it vanishes on the dense subset `s \ tsupport F` of that relatively
-open set), and `closure s' ∩ V ⊆ closure (s' ∩ V) = closure (s ∩ V) ⊆ closure s` (an open set
-meets the closure of `A` inside the closure of `A ∩ V`), so `G` on `closure s' ∩ V` and `0` off
-`tsupport F` glue to a continuous extension on `closure s'` (`ContinuousOn.congr` on an open cover,
-`continuousOn_of_locally_continuousOn`-style). Used to move a field supported in a chart ball from
-`Ω` to the global epigraph `T ⁻¹' epigraph g`. ★★, ~100 lines.'''
-deps = ["ContDiffOnClosure"]
+
+[[node]]
+id = "AffineIsometryEquiv.hasFDerivAt"
+
+[[node]]
+id = "ContDiffOnClosure.comp_affineIsometryEquiv"
 
 [[node]]
 id = "EuclideanSpace.integral_epigraph_eq"
-kind = "theorem"
-desc = '''**Fubini on the epigraph**: for continuous `g : E' → ℝ`, `G` a real Banach space and
-`h : E → G` with `IntegrableOn h (epigraph g)`,
-`∫ y in epigraph g, h y = ∫ x', ∫ t in Set.Ioi (g x'), h (snocLast x' t)`. Apply
-`EuclideanSpace.integral_lastInit` (`Chart.lean`: `∫ f = ∫ x', ∫ t, f (snocLast x' t)`) to the
-indicator `(epigraph g).indicator h` (integrable on `E`), and `epigraph_preimage_snocLast`
-(`snocLast x' t ∈ epigraph g ↔ g x' < t`) turns the inner indicator integral into the integral over
-`Ioi (g x')` (`integral_indicator`, `Measure.restrict` of `Ioi`). Also the `ℝ≥0∞` version
-`lintegral_epigraph_eq` via `lintegral_lastInit`. ★★'''
-deps = ["EuclideanSpace.epigraph", "EuclideanSpace.integral_lastInit"]
+
+[[node]]
+id = "EuclideanSpace.lintegral_epigraph_eq"
+
+[[node]]
+id = "EuclideanSpace.snocLast_mem_closure_epigraph"
+
+[[node]]
+id = "EuclideanSpace.norm_snocLast_le"
+
+[[node]]
+id = "EuclideanSpace.gradient_apply"
+
+[[node]]
+id = "EuclideanSpace.continuous_snocLast_graph"
+
+[[node]]
+id = "EuclideanSpace.integrableOn_fderiv_apply_epigraph"
+
+[[node]]
+id = "EuclideanSpace.hasCompactSupport_comp_snocLast_graph"
+
+[[node]]
+id = "EuclideanSpace.integral_Ioi_fderiv_last_eq"
 
 [[node]]
 id = "EuclideanSpace.integral_fderiv_last_epigraph"
-kind = "theorem"
-desc = '''**The vertical component**: for `ContDiff ℝ 1 g` and `f : E → ℝ` with `HasCompactSupport f`,
-`ContinuousOn f (closure (epigraph g))`, `ContDiffOnClosure ℝ 1 f (epigraph g)`,
-`∫ y in epigraph g, fderiv ℝ f y eN = - ∫ x', f (snocLast x' (g x'))`.
-Proof: the integrand is integrable on the epigraph (bounded by
-`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`, supported in a compact set,
-measurable — `fderiv` of a function `C¹` on the open epigraph is continuous there). Fubini
-(`integral_epigraph_eq`) reduces to the vertical lines: for each `x'`, with `φ t := f (snocLast x' t)`,
-`φ` is continuous on `Icc (g x') R` (`closure_epigraph`: the closed half-line lies in the closure),
-has derivative `fderiv ℝ f (snocLast x' t) eN` on `Ioo (g x') R` (chain rule inside the open
-epigraph, `HasFDerivAt.comp_hasDerivAt` with `hasDerivAt_snocLast`), and `φ R = 0` for `R`
-beyond the support; `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le` gives
-`∫ t in g x'..R, φ' t = φ R − φ (g x') = −f (snocLast x' (g x'))`, and the integral over
-`Ioi (g x')` equals the one over `Ioc (g x') R` since the integrand vanishes above `R`. ★★,
-~150 lines.'''
-deps = ["EuclideanSpace.integral_epigraph_eq", "ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport", "EuclideanSpace.closure_epigraph"]
+
+[[node]]
+id = "EuclideanSpace.hasFDerivAt_snocLast_add"
+
+[[node]]
+id = "EuclideanSpace.snocLast_add_fderiv_apply_single"
 
 [[node]]
 id = "EuclideanSpace.integral_fderiv_castSucc_epigraph"
-kind = "theorem"
-desc = '''**A horizontal component — Leibniz's rule with a moving lower limit**: for `ContDiff ℝ 1 g`,
-`i : Fin d`, and `f` as in `integral_fderiv_last_epigraph`,
-`∫ y in epigraph g, fderiv ℝ f y (e i) = ∫ x', f (snocLast x' (g x')) * fderiv ℝ g x' (EuclideanSpace.single i 1)`
-(the factor is `gradient g x' i`). Proof, decision B4: let
-`H x' := ∫ s in Set.Ioi (0 : ℝ), f (snocLast x' (g x' + s))` (the substitution `t = g x' + s`
-straightens the lower limit: `∫ t in Ioi (g x'), φ t = ∫ s in Ioi 0, φ (g x' + s)` by translation
-invariance, `MeasureTheory.integral_comp_add_left`-type on `Ioi` / `Measure.map_add_left_eq_self`).
-(1) `H` has compact support (`f` does, `g` continuous) and, by Mathlib's
-`hasFDerivAt_integral_of_dominated_of_fderiv_le` (`Mathlib/Analysis/Calculus/ParametricIntegral.lean`,
-with `μ = volume.restrict (Ioi 0)`, integrand `F x' s := f (snocLast x' (g x' + s))`, derivative
-`F' x' s := fderiv ℝ f (snocLast x' (g x' + s)) ∘L (D(x' ↦ snocLast x' (g x' + s)))`, bound
-`M · (Icc 0 R).indicator 1` with `M` from `exists_norm_fderiv_le_of_hasCompactSupport` and the
-bound on `Dg` on a ball, valid on a ball around `x'` for every `s > 0` since `snocLast x' (g x' + s)`
-is then an interior point of the epigraph), `HasFDerivAt H (∫ s in Ioi 0, F' x' s) x'`, so
-`∂ᵢ H x' = ∫ s in Ioi 0, fderiv ℝ f (…) (e i) + fderiv ℝ f (…) eN * fderiv ℝ g x' (single i 1)`
-(`snocLast` is linear in `x'` and in the last slot: `D(x' ↦ snocLast x' (g x' + s)) v = snocLast v (Dg x' v) = e-part + (Dg v) eN`).
-(2) `∫ x', ∂ᵢ H x' = 0` by `integral_fderiv_apply_eq_zero_of_hasCompactSupport` (only
-differentiability and integrability of `∂ᵢ H` are needed; the latter from the dominated bound).
-(3) The first summand integrates, by the substitution back and `integral_epigraph_eq`, to
-`∫ y in epigraph g, fderiv ℝ f y (e i)`; the second, by the FTC on the line as in
-`integral_fderiv_last_epigraph`, to `−∫ x', f (snocLast x' (g x')) * fderiv ℝ g x' (single i 1)`.
-★★★, ~300 lines — the delicate node of the module; prototype the `hasFDerivAt_integral_of_dominated_of_fderiv_le`
-call first (`notes/boundary/proto/`).'''
-deps = ["EuclideanSpace.integral_epigraph_eq", "EuclideanSpace.integral_fderiv_last_epigraph", "integral_fderiv_apply_eq_zero_of_hasCompactSupport", "ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport"]
+
+[[node]]
+id = "EuclideanSpace.inner_snocLast_neg_one"
 
 [[node]]
 id = "EuclideanSpace.integral_div_epigraph"
-kind = "theorem"
-desc = '''**The divergence theorem on an epigraph**: for `ContDiff ℝ 1 g` and `F : E → E` with
-`HasCompactSupport F`, `ContinuousOn F (closure (epigraph g))`, `ContDiffOnClosure ℝ 1 F (epigraph g)`,
-`∫ y in epigraph g, div F y = ∫ x', ⟪F (snocLast x' (g x')), snocLast (gradient g x') (-1)⟫_ℝ`.
-Expand `div F = ∑ i, fderiv ℝ F y (single i 1) i` over `Fin (d + 1)` as `Fin.sum_univ_castSucc`,
-apply `integral_fderiv_castSucc_epigraph` to the coordinate functions `Fᵢ := fun y ↦ F y i.castSucc`
-(each of class `C¹(Ω̄)` with compact support — `ContDiffOnClosure` composes with the coordinate
-projection, a continuous linear map) and `integral_fderiv_last_epigraph` to `F_N`, and read the
-sum `∑ i, F_i(x', g x') ∂ᵢg(x') − F_N(x', g x')` as the inner product with `snocLast (∇g) (−1)`
-(`EuclideanSpace.inner_eq_star_dotProduct`, `Fin.sum_univ_castSucc`, `snocLast_apply_castSucc`,
-`snocLast_apply_last`; `gradient g x' i = fderiv ℝ g x' (single i 1)`). The right-hand side is
-`∫ ⟪F, ν⟫ dσ` for the graph measure with density `√(1 + |∇g|²)` and the normal
-`(∇g, −1)/√(1 + |∇g|²)` of `GraphMeasure.lean`: the two square roots cancel. ★★'''
-deps = ["EuclideanSpace.integral_fderiv_castSucc_epigraph", "EuclideanSpace.integral_fderiv_last_epigraph", "EuclideanSpace.div"]
 
 [[node]]
 id = "EuclideanSpace.integral_div_graphEpigraph"
-kind = "theorem"
-desc = '''**The divergence theorem on a rotated epigraph**: for `T : E ≃ᵃⁱ[ℝ] E`, `ContDiff ℝ 1 g`, and
-`F : E → E` with `HasCompactSupport F`, `ContinuousOn F (closure (T ⁻¹' epigraph g))`,
-`ContDiffOnClosure ℝ 1 F (T ⁻¹' epigraph g)`,
-`∫ y in T ⁻¹' epigraph g, div F y = ∫ x', ⟪F (T.symm (snocLast x' (g x'))), T.linearIsometryEquiv.symm (snocLast (gradient g x') (-1))⟫_ℝ`.
-Conjugate: `G z := T.linearIsometryEquiv (F (T.symm z))` is of class `C¹(closure (epigraph g))`
-with compact support (`T.symm` is an affine isometry; `closure (T ⁻¹' s) = T ⁻¹' closure s`,
-`Homeomorph.preimage_closure`), `div G (T y) = div F y` (`div_comp_affineIsometryEquiv`), and
-`∫ y in T ⁻¹' epigraph g, div F y = ∫ z in epigraph g, div G z` by
-`AffineIsometryEquiv.measurePreserving` (`setIntegral_comp_affineIsometryEquiv`); apply
-`integral_div_epigraph` to `G` and undo the isometry in the inner product
-(`LinearIsometryEquiv.inner_map_map`). ★★'''
-deps = ["EuclideanSpace.integral_div_epigraph", "EuclideanSpace.div_comp_affineIsometryEquiv", "AffineIsometryEquiv.measurePreserving"]
 
 [[node]]
 id = "IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset"
-kind = "theorem"
-desc = '''**The divergence theorem on a graph chart of a domain**: for an open `Ω ⊆ E`, a graph chart
-`(T, g)` at `(x₀, r)` — `0 < r`, `ContDiff ℝ 1 g`, `Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g` —
-and `F : E → E` with `tsupport F ⊆ Metric.ball x₀ r`, `ContinuousOn F (closure Ω)` and
-`ContDiffOnClosure ℝ 1 F Ω`,
-`∫ y in Ω, div F y = ∫ x', ⟪F (T.symm (snocLast x' (g x'))), T.linearIsometryEquiv.symm (snocLast (gradient g x') (-1))⟫_ℝ`.
-The integrand `div F` vanishes off `Ω ∩ ball x₀ r = (T ⁻¹' epigraph g) ∩ ball x₀ r` (the support is
-in the ball, and `div F = 0` where `F` vanishes on a neighbourhood), so the left side is
-`∫ y in T ⁻¹' epigraph g, div F y` (`setIntegral_congr_set`/`setIntegral_eq_of_subset`-type with the
-support); `F` is of class `C¹` on the closure of the global epigraph by
-`ContDiffOnClosure.congr_set_of_tsupport_subset` (`V := ball x₀ r`) and compactly supported
-(`tsupport F` is a closed subset of the bounded ball's closure: `HasCompactSupport` from
-`isCompact_closedBall` and `tsupport F ⊆ closedBall`), and `integral_div_graphEpigraph` applies.
-The right-hand side vanishes off `graphDomain T g x₀ r` (where `F` is zero), which is how
-`Boundary/ContDiffDomain.lean` reads it as `∫ ⟪F, graphNormal T g⟫ d(graphMeasure T g (graphDomain T g x₀ r))`.
-★★'''
-deps = ["EuclideanSpace.integral_div_graphEpigraph", "ContDiffOnClosure.congr_set_of_tsupport_subset", "IsBoundaryGraphAt"]
