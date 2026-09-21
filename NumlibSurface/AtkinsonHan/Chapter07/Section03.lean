@@ -1,5 +1,7 @@
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
+import Numlib.Analysis.Sobolev.Boundary.Kernel
+import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.Analysis.Sobolev.ExtensionHigher
@@ -68,14 +70,27 @@ Corollary 7.3.18 (§7.3.6, the Sobolev quotient space `W^{k+1,p}(Ω)/ℙ_k(Ω)`)
 infimum over it: the book's Hahn–Banach proof through Theorem 7.3.12.
 
 §7.3.4, the traces, is here on the bounded `C¹` domains of Definition 7.2.1, where the book has
-Lipschitz domains (out of scope, as everywhere in this chapter): the surface measure
+Lipschitz domains (out of scope, as everywhere in this chapter), and on the triangulated plane
+domains — polygons — of the finite element chapters: the surface measure
 `IsContDiffDomain.boundaryMeasure` on `∂Ω` and the trace operator `IsContDiffDomain.traceL`
 of `Numlib/Analysis/Sobolev/Boundary/` — Nečas's construction from the divergence theorem with a
 transversal vector field, extended by the density of `C^∞(Ω̄)` — give Theorem 7.3.10 in its
 clauses (a)–(b) (`theorem_7_3_10`) and (c) (`theorem_7_3_10_compact`, for `1 < p`: the book's
-`1 ≤ p` is an erratum, the trace `W^{1,1} → L¹(Γ)` being onto). The range clause
-`γ(W^{1,p}(Ω)) = W^{1−1/p,p}(Γ)` (`theorem_7_3_10_range`) and Theorem 7.3.11 with its
-fractional targets are open: the project has no Sobolev spaces of fractional order on `Γ`.
+`1 ≤ p` is an erratum, the trace `W^{1,1} → L¹(Γ)` being onto); on a polygon the trace is glued
+along the boundary edges from the traces on the triangles (`Triangulation.traceL` of
+`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`; `theorem_7_3_10_polygon`,
+`theorem_7_3_10_polygon_compact`). The kernel of the trace is `W_0^{1,p}(Ω)`
+(`theorem_7_3_10_kernel`, from `Numlib/Analysis/Sobolev/Boundary/Kernel.lean`), the meaning the
+book promises for Definition 7.2.9 "after the trace theorems are presented". Theorem 7.3.11 is
+here in its `L^p` clause at `s = 2`: the trace `γ₀ v = v|_Γ` and the normal-derivative trace
+`γ₁ v = (∂v/∂ν)|_Γ = ∑ᵢ νᵢ γ(∂ᵢ v)` on `W^{2,p}(Ω)` (`theorem_7_3_11_trace₀`,
+`theorem_7_3_11_trace₁`, with their values on smooth representatives), which are the unique such
+operators on a bounded `C²` domain (`theorem_7_3_11`; the book's boundary is `C^{1,1}`, and the
+density of smooth functions in `W^{2,p}(Ω)` that the uniqueness rests on is available through the
+order-two extension operator of `C²` domains). The range clause `γ(W^{1,p}(Ω)) = W^{1−1/p,p}(Γ)`
+(`theorem_7_3_10_range`) and the fractional targets of Theorem 7.3.11
+(`theorem_7_3_11_fractional`) are open: the project has no Sobolev spaces of fractional order
+on `Γ`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -862,6 +877,31 @@ theorem theorem_7_3_10 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
         ‖hΩ.traceL hb p hp v‖ ≤ c * ‖v‖ :=
   ⟨fun v _ hv hc ↦ hΩ.traceL_ae_eq_of_continuousOn hb p hp v hv hc, (hΩ.traceL hb p hp).bound⟩
 
+/-- **The meaning of Definition 7.2.9 through the trace, at `k = 1`** (the remark after
+Definition 7.2.9: `W_0^{k,p}(Ω)` is "the space of all the functions `v` in `W^{k,p}(Ω)` with the
+property that `∂^α v = 0` on `∂Ω` for `|α| ≤ k − 1`, the meaning of this statement being made
+clear later after the trace theorems are presented"): on a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`, for
+`1 ≤ p < ∞`, `W_0^{1,p}(Ω)` is the kernel of the trace `γ` of Theorem 7.3.10 —
+`γ v = 0 ↔ v ∈ W_0^{1,p}(Ω)`.
+
+Here `W_0^{1,p}(Ω)` is `SobolevEuclideanZero (d + 1) 1 p Ω`, the closure of the test functions in
+the multi-index reading `SobolevEuclidean` of `W^{1,p}(Ω)`, on which the trace lives; the
+identification with `definition_7_2_9 1 p Ω` (the closure in the bundled reading `Sobolev`) is
+the unformalized comparison of the two readings already noted at `definition_7_2_9`. The backbone
+is `IsContDiffDomain.traceL_eq_zero_iff_mem_zero` (`Numlib/Analysis/Sobolev/Boundary/Kernel.lean`):
+`W_0^{1,p}(Ω) ⊆ ker γ` because test functions vanish on `∂Ω` and `γ` is continuous, and
+`ker γ ⊆ W_0^{1,p}(Ω)` because, by Green's formula against a test function of `ℝ^{d+1}`
+(`IsContDiffDomain.green_contDiff`), the extension of `v` by zero has the extensions by zero of
+`∂ᵢ v` as weak derivatives, so lies in `W^{1,p}(ℝ^{d+1})`, which characterizes `W_0^{1,p}(Ω)` on a
+`C¹` domain (Brezis, Proposition 9.18). The book's Lipschitz domain is out of scope and restated
+as `C¹` (see `theorem_7_3_10`). -/
+theorem theorem_7_3_10_kernel {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 p Ω volume) :
+    hΩ.traceL hb p hp v = 0 ↔ v ∈ SobolevEuclideanZero (d + 1) 1 p Ω :=
+  hΩ.traceL_eq_zero_iff_mem_zero hb p hp v
+
 /-- **Theorem 7.3.10 (c)**: the trace operator `γ : W^{1,p}(Ω) → L^p(Γ)` of `theorem_7_3_10` is
 compact — `IsCompactOperator` in Mathlib's sense, and in the book's sequential form: for every
 bounded sequence `{v_n}` in `W^{1,p}(Ω)` there is a subsequence `{v_{n'}}` with `{γ v_{n'}}`
@@ -890,7 +930,310 @@ theorem theorem_7_3_10_compact {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤
       fun n ↦ subset_closure ⟨v n, mem_closedBall_zero_iff.2 (hM n), rfl⟩
   exact ⟨φ, w, hφ, hwφ⟩
 
+/-! #### Theorem 7.3.10 on a triangulated polygon
+
+The finite element chapters apply the trace theorem to polygonal domains, which are Lipschitz
+but not `C¹`. The formalization's second reading of the book's Lipschitz domain is a plane domain
+`Ω ⊆ ℝ²` with a triangulation `𝒯 : Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`); the
+boundary `Γ` then carries the arclength measure `σ = 𝒯.boundaryMeasure` of its boundary edges
+and the outward normal `ν = 𝒯.outwardNormal` (`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`),
+and the trace `𝒯.traceL p hp : W^{1,p}(Ω) →L L^p(Γ)` is glued along the boundary edges from the
+traces of Theorem 7.3.10 on the open triangles, each a bounded convex set with a transversal
+field (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`). -/
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **Theorem 7.3.10 (a), (b) on a triangulated polygon**: for a plane domain `Ω ⊆ ℝ²`
+triangulated by `𝒯 : Triangulation Ω` and `1 ≤ p < ∞`, the trace operator
+`γ = 𝒯.traceL p hp : W^{1,p}(Ω) →L[ℝ] L^p(Γ)` — continuous and linear by its type, with `L^p(Γ)`
+the space `Lp ℝ p σ` of the arclength measure `σ = 𝒯.boundaryMeasure` on the boundary edges —
+satisfies (a) `γ v = v|_Γ`, that is `γ v = ṽ` `σ`-almost everywhere, for every representative
+`ṽ` of `v ∈ W^{1,p}(Ω)` continuous on `closure Ω`, and (b) `‖γ v‖_{L^p(Γ)} ≤ c ‖v‖_{W^{1,p}(Ω)}`
+for a constant `c > 0`. Clause (c) is `theorem_7_3_10_polygon_compact`. The book's Lipschitz
+domain is out of scope; a triangulated polygon is the finite element chapters' instance of it
+(`theorem_7_3_10` is the `C¹` instance).
+
+The operator is the sum over the boundary edges of the triangle's trace on the owning element,
+extended by zero off the edge (`Triangulation.traceL`), and (a) is
+`Triangulation.traceL_ae_eq_of_continuousOn`: on each boundary edge, Theorem 7.3.10 (a) on the
+triangle. It is the trace of the trace family `𝒯.traceFamily hI` of a polygon without slits —
+`hI : 𝒯.InteriorEdgesSubset`, the relative interior of every interior edge lying in `Ω` —
+definitionally (`Triangulation.traceFamily_traceL`), the object the polygon consumers of §7.6,
+§11 and §13 take; the no-slit hypothesis is what Green's formula needs
+(`proposition_7_6_1_polygon`), while the clauses (a)–(c) hold for every triangulation. -/
+theorem theorem_7_3_10_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
+    (∀ (v : SobolevMultiIndex ℝ (stdBasis 2) 1 p Ω volume) (v' : 𝔼₂ → ℝ),
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v' →
+        ContinuousOn v' (closure (Ω : Set 𝔼₂)) →
+        (𝒯.traceL p hp v : 𝔼₂ → ℝ) =ᵐ[𝒯.boundaryMeasure] v') ∧
+      ∃ c : ℝ, 0 < c ∧ ∀ v : SobolevMultiIndex ℝ (stdBasis 2) 1 p Ω volume,
+        ‖𝒯.traceL p hp v‖ ≤ c * ‖v‖ :=
+  ⟨fun v _ hv hc ↦ Triangulation.traceL_ae_eq_of_continuousOn hp v hv hc, (𝒯.traceL p hp).bound⟩
+
+/-- **Theorem 7.3.10 (c) on a triangulated polygon**: the trace `γ = 𝒯.traceL p hp` of
+`theorem_7_3_10_polygon` is compact for `1 < p < ∞` — `IsCompactOperator`, and in the book's
+sequential form: every bounded sequence `{v_n}` of `W^{1,p}(Ω)` has a subsequence `{v_{n'}}` with
+`{γ v_{n'}}` convergent in `L^p(Γ)`. As in `theorem_7_3_10_compact`, `1 < p` where the book has
+`1 ≤ p` (an erratum: at `p = 1` the trace is onto `L¹(Γ)`). Each boundary edge's contribution is
+compact because the triangle's trace is (`EuclideanSpace.isCompactOperator_triangleTraceL`,
+Nečas's inequality with Rellich–Kondrachov on the triangle), and a finite sum of compact operators
+is compact (`Triangulation.isCompactOperator_traceL`). -/
+theorem theorem_7_3_10_polygon_compact {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hp1 : 1 < p) :
+    IsCompactOperator (𝒯.traceL p hp) ∧
+      ∀ v : ℕ → SobolevMultiIndex ℝ (stdBasis 2) 1 p Ω volume, (∃ M : ℝ, ∀ n, ‖v n‖ ≤ M) →
+        ∃ (φ : ℕ → ℕ) (w : Lp ℝ p 𝒯.boundaryMeasure), StrictMono φ ∧
+          Tendsto (fun n ↦ 𝒯.traceL p hp (v (φ n))) atTop (𝓝 w) := by
+  have hK := 𝒯.isCompactOperator_traceL hp hp1
+  refine ⟨hK, fun v ⟨M, hM⟩ ↦ ?_⟩
+  obtain ⟨w, -, φ, hφ, hwφ⟩ :=
+    (hK.isCompact_closure_image_closedBall M).tendsto_subseq
+      (x := fun n ↦ 𝒯.traceL p hp (v n))
+      fun n ↦ subset_closure ⟨v n, mem_closedBall_zero_iff.2 (hM n), rfl⟩
+  exact ⟨φ, w, hφ, hwφ⟩
+
 end Trace
+
+/-! ### Theorem 7.3.11: the traces of `W^{2,p}(Ω)` and the normal derivative -/
+
+section NormalTrace
+
+open SobolevMultiIndex
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- A `C^n` domain is a `C^m` domain for `m ≤ n`: the monotonicity of `IsContDiffDomain` in its
+order. Private here; it belongs in `Numlib/Analysis/Sobolev/Domain.lean` beside
+`IsBoundaryOfClass.mono` (request in `notes/boundary/bsurf7b-report.md` §4). It is how a
+consumer holding only the `C²` structure of `theorem_7_3_11` obtains the `C¹` structure `hΩ₁`
+its surface measure is stated on; nothing in this file calls it. -/
+private theorem _root_.IsContDiffDomain.of_le {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
+    {m n : WithTop ℕ∞} (hmn : m ≤ n) (h : IsContDiffDomain n Ω) : IsContDiffDomain m Ω :=
+  ⟨h.isOpen, h.isBoundaryOfClass.mono fun _ hg ↦ ContDiff.of_le hg hmn⟩
+
+/-- The first weak derivative of `v ∈ W^{2,p}(Ω)` with a `C¹` representative `v'` is the
+classical `∂ᵢ v'`, almost everywhere on `Ω` — the order-two form of
+`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`, the multi-index `e_i` of `W^{2,p}` being
+`MultiIndexLE.singleLE i`. Private here; it belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`
+beside the order-one form, or in `Operators.lean` (request in `notes/boundary/bsurf7b-report.md`
+§4). -/
+private theorem weakDeriv_singleLE_ae_eq_fderiv {p : ℝ≥0∞} [Fact (1 ≤ p)]
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+    {v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v')
+    (hv' : ContDiff ℝ 1 v') (i : Fin (d + 1)) :
+    (weakDeriv v (MultiIndexLE.singleLE i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        fun x ↦ fderiv ℝ v' x (EuclideanSpace.single i 1) := by
+  have h1 : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i (1 : ℝ)] (fn v)
+      (weakDeriv v (MultiIndexLE.singleLE i)) Ω volume := by
+    have := (hasWeakIteratedLineDerivOn v (MultiIndexLE.singleLE i)).of_perm
+      (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis :
+        Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1))) i)
+    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+  have h2 := hv'.contDiffOn.hasWeakIteratedLineDerivOn_single Ω i
+  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
+    ((h1.congr_ae hv (EventuallyEq.refl _ _)).ae_eq h2)
+
+/-- **The trace `γ₀` of Theorem 7.3.11 at `s = 2`**, `γ₀ : W^{2,p}(Ω) →L[ℝ] L^p(Γ)` on a bounded
+`C¹` domain, `1 ≤ p < ∞`: the trace `γ` of Theorem 7.3.10 applied after forgetting the
+second-order derivatives (`SobolevMultiIndex.toLowerOrderL`), so that `γ₀ v = v|_Γ` for `v` with
+a representative continuous on `closure Ω` (`theorem_7_3_11_trace₀_ae_eq`). Its target is
+`L^p(Γ)` where the book has `W^{s−1/p,p}(Γ)` (`theorem_7_3_11`). -/
+noncomputable def theorem_7_3_11_trace₀ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ] Lp ℝ p (hΩ₁.boundaryMeasure hb) :=
+  hΩ₁.traceL hb p hp ∘L toLowerOrderL ℝ (stdBasis (d + 1)) p Ω volume one_le_two
+
+/-- The partial derivative `∂ᵢ : W^{2,p}(Ω) →L[ℝ] W^{1,p}(Ω)` of Theorem 7.3.11's normal
+derivative, with its orders written `2` and `1`: `SobolevMultiIndex.partialDerivL` writes them
+`k + 1` and `k`, and a sum of operators whose types agree only up to that arithmetic cannot be
+rewritten with `ContinuousLinearMap.sum_apply`. -/
+noncomputable def theorem_7_3_11_partialDerivL (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) (i : Fin (d + 1)) :
+    SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ]
+      SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 p Ω volume :=
+  partialDerivL ℝ (stdBasis (d + 1)) p Ω volume i
+
+/-- Multiplication by the component `νᵢ` of the outward unit normal on `L^p(Γ)`, the operator
+`BoundaryData.mulNormalL` of the boundary data of a bounded `C¹` domain, with the surface measure
+written `hΩ₁.boundaryMeasure hb` (the backbone writes it `(hΩ₁.boundaryData hb).σ`, the same
+measure by `IsContDiffDomain.boundaryData_σ`). -/
+noncomputable def theorem_7_3_11_mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (i : Fin (d + 1)) :
+    Lp ℝ p (hΩ₁.boundaryMeasure hb) →L[ℝ] Lp ℝ p (hΩ₁.boundaryMeasure hb) :=
+  (hΩ₁.boundaryData hb).mulNormalL p i
+
+/-- **The normal-derivative trace `γ₁` of Theorem 7.3.11 at `s = 2`**,
+`γ₁ : W^{2,p}(Ω) →L[ℝ] L^p(Γ)` on a bounded `C¹` domain, `1 ≤ p < ∞`: the book's
+`∂v/∂ν = ∑ᵢ (∂v/∂xᵢ) νᵢ` read through the trace of Theorem 7.3.10 on each first derivative,
+`γ₁ v = ∑ᵢ νᵢ · γ(∂ᵢ v)` (`theorem_7_3_11_partialDerivL`, `theorem_7_3_11_mulNormalL`), so that
+`γ₁ v = (∂v/∂ν)|_Γ` for `v` with a `C¹` representative (`theorem_7_3_11_trace₁_ae_eq`). At
+`p = 2` it is the backbone's `BoundaryData.TraceFamily.normalTrace`
+(`Numlib/Analysis/Sobolev/Boundary/Data.lean`), the same formula. Its target is `L^p(Γ)` where
+the book has `W^{s−1−1/p,p}(Γ)` (`theorem_7_3_11`). -/
+noncomputable def theorem_7_3_11_trace₁ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ] Lp ℝ p (hΩ₁.boundaryMeasure hb) :=
+  ∑ i, theorem_7_3_11_mulNormalL p hΩ₁ hb i ∘L hΩ₁.traceL hb p hp ∘L
+    theorem_7_3_11_partialDerivL p Ω i
+
+/-- **`γ₀ v = v|_Γ`** (Theorem 7.3.11, the defining property of `γ₀`): on a bounded `C¹` domain,
+for `v ∈ W^{2,p}(Ω)` with a representative `ṽ` continuous on `closure Ω`, `γ₀ v = ṽ`
+`σ`-almost everywhere on `Γ` — Theorem 7.3.10 (a) for the underlying `W^{1,p}` element. The
+book asks `v ∈ C¹(Ω̄)`; continuity up to the boundary is what the trace sees. -/
+theorem theorem_7_3_11_trace₀_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+    {v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v')
+    (hc : ContinuousOn v' (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (theorem_7_3_11_trace₀ hp hΩ₁ hb v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[hΩ₁.boundaryMeasure hb] v' :=
+  hΩ₁.traceL_ae_eq_of_continuousOn hb p hp _ hv hc
+
+/-- **The trace of a first derivative**: on a bounded `C¹` domain, for `v ∈ W^{2,p}(Ω)` with a
+`C¹` representative `ṽ` of the plane, the trace of `∂ᵢ v ∈ W^{1,p}(Ω)` is `∂ᵢ ṽ` on `Γ` —
+Theorem 7.3.10 (a) for `∂ᵢ v`, whose continuous representative is `∂ᵢ ṽ`
+(`weakDeriv_singleLE_ae_eq_fderiv`). -/
+theorem theorem_7_3_11_traceL_partialDerivL_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+    {v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v')
+    (hv' : ContDiff ℝ 1 v') (i : Fin (d + 1)) :
+    (hΩ₁.traceL hb p hp (theorem_7_3_11_partialDerivL p Ω i v) :
+        EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb]
+      fun x ↦ fderiv ℝ v' x (EuclideanSpace.single i 1) := by
+  refine hΩ₁.traceL_ae_eq_of_continuousOn hb p hp _ ?_
+    ((hv'.continuous_fderiv one_ne_zero).clm_apply continuous_const).continuousOn
+  rw [theorem_7_3_11_partialDerivL, partialDerivL_apply, fn_partialDeriv]
+  exact weakDeriv_singleLE_ae_eq_fderiv v hv hv' i
+
+/-- **`γ₁ v = (∂v/∂ν)|_Γ`** (Theorem 7.3.11, the defining property of `γ₁`): on a bounded `C¹`
+domain, for `v ∈ W^{2,p}(Ω)` with a `C¹` representative `ṽ` of the plane,
+`γ₁ v = ∑ᵢ νᵢ ∂ᵢ ṽ` `σ`-almost everywhere on `Γ`, the classical normal derivative
+`∂ṽ/∂ν = ∑ᵢ (∂ṽ/∂xᵢ) νᵢ` displayed before the theorem — termwise, the trace of `∂ᵢ v` is
+`∂ᵢ ṽ` (`theorem_7_3_11_traceL_partialDerivL_ae_eq`) and multiplication by `νᵢ` acts pointwise
+(`BoundaryData.coeFn_mulNormalL`). The book's `v ∈ W^{s,p}(Ω) ∩ C¹(Ω̄)` is read as a
+representative `C¹` on `ℝ^{d+1}`, whose derivative is then continuous up to the boundary. -/
+theorem theorem_7_3_11_trace₁_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+    {v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v')
+    (hv' : ContDiff ℝ 1 v') :
+    (theorem_7_3_11_trace₁ hp hΩ₁ hb v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[hΩ₁.boundaryMeasure hb]
+        fun x ↦ ∑ i, hΩ₁.outwardNormal hb x i * fderiv ℝ v' x (EuclideanSpace.single i 1) := by
+  rw [theorem_7_3_11_trace₁, sum_apply]
+  have h2 := Lp.coeFn_finsetSum (μ := hΩ₁.boundaryMeasure hb) Finset.univ fun i ↦
+    (theorem_7_3_11_mulNormalL p hΩ₁ hb i ∘L hΩ₁.traceL hb p hp ∘L
+      theorem_7_3_11_partialDerivL p Ω i) v
+  have h3 : ∀ i : Fin (d + 1), (theorem_7_3_11_mulNormalL p hΩ₁ hb i
+      (hΩ₁.traceL hb p hp (theorem_7_3_11_partialDerivL p Ω i v)) :
+        EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb]
+      fun x ↦ hΩ₁.outwardNormal hb x i * (hΩ₁.traceL hb p hp
+        (theorem_7_3_11_partialDerivL p Ω i v) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x :=
+    fun i ↦ (hΩ₁.boundaryData hb).coeFn_mulNormalL p i
+      (hΩ₁.traceL hb p hp (theorem_7_3_11_partialDerivL p Ω i v))
+  have hi := ae_all_iff.2 fun i ↦ theorem_7_3_11_traceL_partialDerivL_ae_eq hp hΩ₁ hb v hv hv' i
+  filter_upwards [h2, ae_all_iff.2 h3, hi] with x hx2 hx3 hxi
+  rw [hx2, Finset.sum_apply]
+  exact Finset.sum_congr rfl fun i _ ↦ by
+    change (theorem_7_3_11_mulNormalL p hΩ₁ hb i (hΩ₁.traceL hb p hp
+      (theorem_7_3_11_partialDerivL p Ω i v)) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x = _
+    rw [hx3 i, hxi i]
+
+/-- **Theorem 7.3.11, the `L^p` clause at `s = 2`**: on a bounded `C²` domain `Ω ⊆ ℝ^{d+1}` with
+boundary `Γ`, for `1 ≤ p < ∞`, there are unique bounded linear maps
+`γ₀ : W^{2,p}(Ω) →L[ℝ] L^p(Γ)` and `γ₁ : W^{2,p}(Ω) →L[ℝ] L^p(Γ)` such that `γ₀ v = v|_Γ` for
+every `v` with a representative continuous on `closure Ω`, and `γ₁ v = (∂v/∂ν)|_Γ = ∑ᵢ νᵢ ∂ᵢ v`
+for every `v` with a `C¹` representative — the book's `v ∈ W^{s,p}(Ω) ∩ C¹(Ω̄)`. The operators
+are `theorem_7_3_11_trace₀` and `theorem_7_3_11_trace₁`; the four clauses are their two defining
+properties (`theorem_7_3_11_trace₀_ae_eq`, `theorem_7_3_11_trace₁_ae_eq`) and the uniqueness of
+each.
+
+The hypotheses of the book are a bounded open set with a `C^{k,1}` boundary, `k ≥ s − 1 = 1`,
+i.e. `C^{1,1}`, and targets `W^{s−1/p,p}(Γ)`, `W^{s−1−1/p,p}(Γ)` onto which `γ₀`, `γ₁` are
+surjective; the formalization has the `L^p(Γ)` targets (the fractional spaces on `Γ`, the
+surjectivity and the general `s`, `k` are the open `theorem_7_3_11_fractional`) and a `C²`
+boundary. The existence and the two formulas hold on a bounded `C¹` domain (`hΩ₁`, on which the
+surface measure `σ = hΩ₁.boundaryMeasure hb`, the normal `ν` and the trace of Theorem 7.3.10
+live); the `C²` structure `hΩ : IsContDiffDomain 2 Ω` enters the uniqueness only, which rests on
+the density in `W^{2,p}(Ω)` of the restrictions of `C_c^∞(ℝ^{d+1})` (Theorem 7.3.2 at order 2,
+`theorem_7_3_2_higher`), available through the order-two extension operator of `C²` chart domains
+(`IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`); on such a `v` both `γ₀` and `γ₁`
+are prescribed, and two continuous linear maps agreeing on a dense subspace agree. The `C¹`
+structure is a separate hypothesis (it follows from the `C²` one, `IsContDiffDomain n Ω` being
+monotone in `n`) so that the surface measure is stated on it. -/
+theorem theorem_7_3_11 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΩ : IsContDiffDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ γ₀ γ₁ : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ]
+        Lp ℝ p (hΩ₁.boundaryMeasure hb),
+      (∀ (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+          (v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ),
+        fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' →
+        ContinuousOn v' (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+        (γ₀ v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb] v')
+      ∧ (∀ (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+          (v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ),
+        fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' →
+        ContDiff ℝ 1 v' →
+        (γ₁ v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb]
+          fun x ↦ ∑ i, hΩ₁.outwardNormal hb x i * fderiv ℝ v' x (EuclideanSpace.single i 1))
+      ∧ (∀ γ₀' : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ]
+            Lp ℝ p (hΩ₁.boundaryMeasure hb),
+        (∀ (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+            (v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ),
+          fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' →
+          ContinuousOn v' (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+          (γ₀' v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb] v') →
+        γ₀' = γ₀)
+      ∧ (∀ γ₁' : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume →L[ℝ]
+            Lp ℝ p (hΩ₁.boundaryMeasure hb),
+        (∀ (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
+            (v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ),
+          fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' →
+          ContDiff ℝ 1 v' →
+          (γ₁' v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) =ᵐ[hΩ₁.boundaryMeasure hb]
+            fun x ↦ ∑ i, hΩ₁.outwardNormal hb x i * fderiv ℝ v' x (EuclideanSpace.single i 1)) →
+        γ₁' = γ₁) := by
+  -- density of the elements with a smooth compactly supported representative in `W^{2,p}(Ω)`
+  have hext : IsSobolevExtensionDomainOfOrder (d + 1) 2 p Ω :=
+    IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain one_le_two hΩ.isContDiffChartDomain
+      (hb.closure.subset frontier_subset_closure)
+  have hdense : Dense {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume |
+      ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, ContDiff ℝ ∞ v' ∧ HasCompactSupport v' ∧
+        fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v'} := by
+    intro v
+    have h := SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order hp hext v
+    obtain ⟨φ, hφ, hφc, w, hw, hwv⟩ := h
+    exact mem_closure_iff_seq_limit.2 ⟨w, fun n ↦ ⟨φ n, hφ n, hφc n, hw n⟩, hwv⟩
+  have hspan := hdense.mono (Submodule.subset_span (R := ℝ))
+  refine ⟨theorem_7_3_11_trace₀ hp hΩ₁ hb, theorem_7_3_11_trace₁ hp hΩ₁ hb,
+    fun v v' hv hc ↦ theorem_7_3_11_trace₀_ae_eq hp hΩ₁ hb v hv hc,
+    fun v v' hv hv' ↦ theorem_7_3_11_trace₁_ae_eq hp hΩ₁ hb v hv hv', fun γ₀' h ↦ ?_,
+    fun γ₁' h ↦ ?_⟩
+  · refine ContinuousLinearMap.ext_on hspan ?_
+    rintro v ⟨v', hv', -, hv⟩
+    exact Lp.ext ((h v v' hv hv'.continuous.continuousOn).trans
+      (theorem_7_3_11_trace₀_ae_eq hp hΩ₁ hb v hv hv'.continuous.continuousOn).symm)
+  · refine ContinuousLinearMap.ext_on hspan ?_
+    rintro v ⟨v', hv', -, hv⟩
+    exact Lp.ext ((h v v' hv (hv'.of_le (by simp))).trans
+      (theorem_7_3_11_trace₁_ae_eq hp hΩ₁ hb v hv (hv'.of_le (by simp))).symm)
+
+end NormalTrace
 
 /-! ### §7.3.5: equivalent norms (Deny–Lions) -/
 
@@ -1153,17 +1496,6 @@ private theorem eq_zero_of_traceL_integral_abs_eq_zero
   rw [hc0]
   exact SobolevMultiIndex.fn_zero.symm
 
-/-- The weak gradient of an element with vanishing top seminorm vanishes. -/
-private theorem weakDeriv_single_ae_eq_zero_of_topSeminorm_eq_zero
-    {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
-    (hv : SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume v = 0) (i : Fin (d + 1)) :
-    (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] 0 := by
-  have h := (SobolevMultiIndex.topSeminorm_eq_zero_iff v).1 hv
-    ⟨MultiIndexLE.single i, by simp [MultiIndexLE.coe_single]⟩
-  rw [h]
-  exact Lp.coeFn_zero _ _ _
-
 /-- The trace vanishes when the integral of its absolute value does. -/
 private theorem traceL_ae_eq_zero_of_integral_abs_eq_zero
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1181,91 +1513,11 @@ private theorem traceL_ae_eq_zero_of_integral_abs_eq_zero
   rw [Pi.zero_apply] at hx ⊢
   exact abs_eq_zero.1 hx
 
-/-- Green's formula with vanishing gradient and vanishing trace: `∫_Ω v ∂ᵢφ = 0` for every
-compactly supported `C¹` function `φ`. -/
-private theorem setIntegral_fderiv_mul_fn_eq_zero
-    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
-    (hv : SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume v = 0)
-    (h0 : ∫ x, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
-      ∂(hΩ.boundaryMeasure hb) = 0)
-    {φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hφ : ContDiff ℝ 1 φ) (hφc : HasCompactSupport φ)
-    (i : Fin (d + 1)) :
-    ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
-      fderiv ℝ φ x (EuclideanSpace.single i 1) * SobolevMultiIndex.fn v x = 0 := by
-  have h := hΩ.green_contDiff hb 𝟚 ENNReal.coe_ne_top v hφ hφc i
-  have h1 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
-      (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x * φ x = 0 := by
-    refine integral_eq_zero_of_ae ?_
-    filter_upwards [weakDeriv_single_ae_eq_zero_of_topSeminorm_eq_zero hv i] with x hx
-    rw [hx, Pi.zero_apply, zero_mul]
-  have h2 : ∫ x, (hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
-      * φ x * hΩ.outwardNormal hb x i ∂(hΩ.boundaryMeasure hb) = 0 := by
-    refine integral_eq_zero_of_ae ?_
-    filter_upwards [traceL_ae_eq_zero_of_integral_abs_eq_zero hΩ hb h0] with x hx
-    rw [hx, Pi.zero_apply, zero_mul, zero_mul]
-  rw [h1, zero_add, h2] at h
-  rw [← h]
-  exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
-
-/-- The zero extension of an `H¹` element with vanishing gradient and vanishing trace has
-vanishing weak gradient on the whole space. -/
-private theorem hasWeakFDerivOn_indicator_fn
-    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
-    (hv : SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume v = 0)
-    (h0 : ∫ x, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
-      ∂(hΩ.boundaryMeasure hb) = 0) :
-    HasWeakFDerivOn ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (SobolevMultiIndex.fn v))
-      0 ⊤ volume := by
-  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
-    isFiniteMeasure_restrict.2 (hb.measure_lt_top (μ := volume)).ne
-  have hint : Integrable
-      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (SobolevMultiIndex.fn v)) volume :=
-    IntegrableOn.integrable_indicator ((SobolevMultiIndex.memLp v).integrable Fact.out)
-      Ω.isOpen.measurableSet
-  rw [hasWeakFDerivOn_iff]
-  refine ⟨hint.locallyIntegrable.locallyIntegrableOn _,
-    locallyIntegrable_zero.locallyIntegrableOn _, fun φ z ↦ ?_⟩
-  simp only [Opens.coe_top, Measure.restrict_univ, Pi.zero_apply, zero_apply, smul_eq_mul,
-    mul_zero, integral_zero, neg_zero]
-  have hz : ∑ i, z i • EuclideanSpace.single i (1 : ℝ) = z := by
-    simpa using (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).sum_repr z
-  have hfd : ∀ x, fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x z
-      = ∑ i, z i * fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
-        (EuclideanSpace.single i 1) := fun x ↦ by
-    conv_lhs => rw [← hz]
-    rw [map_sum]
-    simp only [map_smul, smul_eq_mul]
-  have hφi : ∀ i, Integrable (fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
-      (EuclideanSpace.single i 1)
-        * (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (SobolevMultiIndex.fn v) x)
-      volume := fun i ↦ by
-    obtain ⟨C, hC⟩ := Continuous.bounded_above_of_compact_support
-      (φ.fderivApply (EuclideanSpace.single i 1)).continuous (φ.fderivApply _).hasCompactSupport
-    exact hint.bdd_mul (φ.fderivApply _).continuous.aestronglyMeasurable
-      (Eventually.of_forall hC)
-  simp_rw [hfd, Finset.sum_mul, mul_assoc]
-  rw [integral_finsetSum _ fun i _ ↦ (hφi i).const_mul (z i)]
-  refine Finset.sum_eq_zero fun i _ ↦ ?_
-  rw [integral_const_mul]
-  have hind : (fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
-      (EuclideanSpace.single i 1)
-        * (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator (SobolevMultiIndex.fn v) x)
-      = (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator
-        fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
-          (EuclideanSpace.single i 1) * SobolevMultiIndex.fn v x := by
-    ext x
-    rw [Set.indicator_mul_right]
-  rw [hind, integral_indicator Ω.isOpen.measurableSet,
-    setIntegral_fderiv_mul_fn_eq_zero hΩ hb hv h0 (φ.contDiff.of_le (by simp))
-      φ.hasCompactSupport i, mul_zero]
-
 /-- **(H2)′ of Theorem 7.3.13 for the seminorm `∫_Γ |γ v| dσ`, without connectedness**: an
-element of `H¹(Ω)` with `|v|_{1,Ω} = 0` and `∫_Γ |γ v| dσ = 0` is zero. -/
+element of `H¹(Ω)` with `|v|_{1,Ω} = 0` and `∫_Γ |γ v| dσ = 0` is zero — its trace vanishes, so
+it lies in `H_0^1(Ω)` by the kernel theorem (`theorem_7_3_10_kernel`,
+`IsContDiffDomain.mem_zero_of_traceL_eq_zero`), where Poincaré's inequality
+`SobolevEuclideanZero.norm_le_gradNorm` bounds its norm by its vanishing gradient norm. -/
 private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1273,36 +1525,17 @@ private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
     (hv : SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume v = 0)
     (h0 : ∫ x, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
       ∂(hΩ.boundaryMeasure hb) = 0) : v = 0 := by
-  obtain ⟨c, hc⟩ := (hasWeakFDerivOn_indicator_fn hΩ hb hv h0).ae_eq_const_of_isPreconnected
-    (Filter.EventuallyEq.refl _ _) (by rw [Opens.coe_top]; exact isPreconnected_univ)
-  rw [Opens.coe_top, Measure.restrict_univ] at hc
-  -- the constant is zero: the extension vanishes on a ball outside `Ω`
+  -- the trace vanishes, so `v ∈ H¹₀(Ω)`
+  have hγ : hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v = 0 :=
+    Lp.ext ((traceL_ae_eq_zero_of_integral_abs_eq_zero hΩ hb h0).trans
+      (Lp.coeFn_zero _ _ _).symm)
+  have hmem := hΩ.mem_zero_of_traceL_eq_zero hb 𝟚 ENNReal.coe_ne_top hγ
+  -- Poincaré's inequality with a vanishing gradient
   obtain ⟨R, hR0, hR⟩ := hb.subset_ball_lt 0 0
-  obtain ⟨x₀, hx₀⟩ : ∃ x₀ : EuclideanSpace ℝ (Fin (d + 1)), ‖x₀‖ = R + 1 :=
-    ⟨EuclideanSpace.single 0 (R + 1), by rw [PiLp.norm_single, Real.norm_eq_abs,
-      abs_of_pos (by linarith)]⟩
-  have hdisj : ∀ y ∈ Metric.ball x₀ 1, y ∉ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := by
-    intro y hy hyΩ
-    have h1 : ‖y‖ < R := by simpa using hR hyΩ
-    have h2 : ‖y - x₀‖ < 1 := by simpa [dist_eq_norm] using hy
-    have := norm_sub_norm_le x₀ y
-    rw [norm_sub_rev] at this
-    linarith
-  have hc0 : c = 0 := by
-    have hne : (volume.restrict (Metric.ball x₀ 1)) ≠ 0 := fun h ↦
-      (Metric.measure_ball_pos volume x₀ one_pos).ne' (Measure.restrict_eq_zero.1 h)
-    have : (ae (volume.restrict (Metric.ball x₀ 1))).NeBot := ae_neBot.2 hne
-    refine (Filter.eventually_const (f := ae (volume.restrict (Metric.ball x₀ 1)))).1 ?_
-    filter_upwards [ae_restrict_of_ae hc, ae_restrict_mem measurableSet_ball] with y hy hyB
-    rw [indicator_of_notMem (hdisj y hyB)] at hy
-    exact hy.symm
-  refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
-  filter_upwards [ae_restrict_of_ae hc, ae_restrict_mem Ω.isOpen.measurableSet,
-    SobolevMultiIndex.fn_zero (F := ℝ) (b := stdBasis (d + 1)) (k := 1) (p := 𝟚) (Ω := Ω)
-      (μ := volume)]
-    with x hx hxΩ h0x
-  rw [indicator_of_mem hxΩ] at hx
-  rw [hx, h0x, hc0, Pi.zero_apply]
+  have hP := SobolevEuclideanZero.norm_le_gradNorm ENNReal.coe_ne_top hR0.le hR ⟨v, hmem⟩
+  change ‖v‖ ≤ _ * SobolevMultiIndex.gradNorm v at hP
+  rw [← SobolevMultiIndex.topSeminorm_one_eq_gradNorm, hv, mul_zero] at hP
+  exact norm_le_zero_iff.1 hP
 
 /-- **(H2) of Theorem 7.3.12 for the seminorm `f_1(v) = ∫_U |γ v| dσ`** on a boundary piece `U` of
 positive surface measure: an element of `H¹(Ω)` which is almost everywhere a polynomial of degree
@@ -1330,13 +1563,12 @@ a constant `c > 0`, depending only on `Ω`, such that
 `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L¹(Γ)})` for all `v ∈ H¹(Ω)`, where `‖v‖_{L¹(Γ)} = ∫_Γ |γ v| dσ`.
 This is Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` and `f_1(v) = ∫_Γ |v| ds`: (H1) is the
 boundedness of the trace, and (H2)′ — `|v|_{1,Ω} = 0` and `∫_Γ |γ v| dσ = 0` force `v = 0` —
-holds without any connectedness of `Ω`: Green's formula against a test function `φ ∈ C_c^1(ℝ^{d+1})`
-(`IsContDiffDomain.green_contDiff`) reads `∫_Ω v ∂_i φ = ∫_Γ (γ v) φ ν_i dσ − ∫_Ω (∂_i v) φ = 0`
-when the weak gradient and the trace vanish, so the extension of `v` by zero has weak gradient
-zero on the connected `ℝ^{d+1}` and is a.e. constant
-(`HasWeakFDerivOn.ae_eq_const_of_isPreconnected`), the constant being zero off the bounded `Ω`.
-The `H_0^1` clause (7.3.10), the Poincaré–Friedrichs inequality itself, is `example_7_3_15`,
-proved directly.
+holds without any connectedness of `Ω`: a vanishing `∫_Γ |γ v| dσ` means `γ v = 0`, so
+`v ∈ H_0^1(Ω)` by the kernel theorem (`theorem_7_3_10_kernel`,
+`IsContDiffDomain.mem_zero_of_traceL_eq_zero`), and Poincaré's inequality on `H_0^1(Ω)`
+(`SobolevEuclideanZero.norm_le_gradNorm`, the inequality (7.3.10) of `example_7_3_15`) with
+`|v|_{1,Ω} = 0` gives `v = 0`. The `H_0^1` clause (7.3.10), the Poincaré–Friedrichs inequality
+itself, is `example_7_3_15`, proved directly.
 
 The book's hypothesis is a bounded Lipschitz domain, which is out of scope; the formalization has
 the bounded `C¹` domains of Definition 7.2.1, on which the trace exists. -/

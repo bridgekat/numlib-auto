@@ -1,4 +1,5 @@
 import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
+import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
 
 /-!
@@ -29,8 +30,22 @@ Sobolev formula is the field `green` of the trace family `IsContDiffDomain.trace
 for the smooth approximants of Theorem 7.3.2, the continuity of the trace (Theorem 7.3.10 (b)) for
 the boundary term, and Hölder's inequality for the interior terms. The boundary term is written
 with the traces, `∫_Γ (γ u)(γ v) ν_i dσ`, since `u` and `v` are defined only almost everywhere
-in `Ω`. The polygon case, on a triangulated plane domain without slits, is the open
-`proposition_7_6_1_polygon`.
+in `Ω`.
+
+The finite element chapters use the formula on polygons, which are Lipschitz but not `C¹`; the
+formalization's second reading of the book's Lipschitz domain is a plane domain `Ω ⊆ ℝ²` with a
+triangulation `𝒯 : Triangulation Ω` *without slits* (`hI : 𝒯.InteriorEdgesSubset`, the relative
+interior of every interior edge lying in `Ω`), with the arclength measure `σ = 𝒯.boundaryMeasure`
+of the boundary edges, the outward normal `ν = 𝒯.outwardNormal`
+(`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`) and the trace `𝒯.traceL p hp` glued from the
+triangles (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`, `theorem_7_3_10_polygon`).
+Proposition 7.6.1 and (7.6.3) on such a polygon are `proposition_7_6_1_polygon` and
+`proposition_7_6_1_polygon_conj`, the field `green` of the trace family `Triangulation.traceFamily`:
+not by density on the polygon (which is not known to be an extension domain) but as the sum over
+the elements of the formula on the triangles, the contributions of the interior edges cancelling
+because the one-sided traces agree across an edge lying in `Ω`
+(`Triangulation.traceL_partner_ae_eq`) — which is where the no-slit hypothesis enters: across a
+slit the two one-sided traces differ and the formula with a single trace is false.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace SobolevMultiIndex
@@ -116,5 +131,50 @@ theorem proposition_7_6_1_conj {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ 
         - ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), fn u x
           * (weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x :=
   eq_sub_of_add_eq (hΩ.green hb p q hp hq u v i)
+
+/-! ### Proposition 7.6.1 on a triangulated polygon -/
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **The formula (7.6.3) on a triangulated polygon**, the extension of Proposition 7.6.1 to
+conjugate exponents: for a plane domain `Ω ⊆ ℝ²` triangulated by `𝒯 : Triangulation Ω` without
+slits (`hI : 𝒯.InteriorEdgesSubset`), with the arclength measure `σ = 𝒯.boundaryMeasure` on
+`Γ = ∂Ω`, the outward normal `ν = 𝒯.outwardNormal` and the traces
+`γ_p = 𝒯.traceL p hp : W^{1,p}(Ω) → L^p(Γ)`, `γ_{p^*} : W^{1,p^*}(Ω) → L^{p^*}(Γ)` of
+`theorem_7_3_10_polygon`, `∫_Ω u_{x_i} v dx = ∫_Γ (γ_p u)(γ_{p^*} v) ν_i dσ − ∫_Ω u v_{x_i} dx`
+for all `u ∈ W^{1,p}(Ω)` and `v ∈ W^{1,p^*}(Ω)`, where `1/p + 1/p^* = 1` is
+`ENNReal.HolderConjugate p q` with `p, q ≠ ∞` (as in `proposition_7_6_1_conj`). The book's
+Lipschitz domain is out of scope; a triangulated polygon is the finite element chapters' instance
+of it, and the formula is the field `green` of `Triangulation.traceFamily` (`Triangulation.green`),
+proved by summing the formula on the triangles rather than by density on the polygon (see the
+module documentation). -/
+theorem proposition_7_6_1_polygon_conj {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    (hI : 𝒯.InteriorEdgesSubset) {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
+    [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (hq : q ≠ ⊤)
+    (u : SobolevMultiIndex ℝ (stdBasis 2) 1 p Ω volume)
+    (v : SobolevMultiIndex ℝ (stdBasis 2) 1 q Ω volume) (i : Fin 2) :
+    ∫ x in (Ω : Set 𝔼₂), (weakDeriv u (MultiIndexLE.single i) : 𝔼₂ → ℝ) x * fn v x
+      = (∫ x, (𝒯.traceL p hp u : 𝔼₂ → ℝ) x * (𝒯.traceL q hq v : 𝔼₂ → ℝ) x
+          * 𝒯.outwardNormal x i ∂𝒯.boundaryMeasure)
+        - ∫ x in (Ω : Set 𝔼₂), fn u x * (weakDeriv v (MultiIndexLE.single i) : 𝔼₂ → ℝ) x :=
+  eq_sub_of_add_eq (𝒯.green hI q hp hq u v i)
+
+/-- **Proposition 7.6.1 on a triangulated polygon**, the formula (7.6.1): for a plane domain
+`Ω ⊆ ℝ²` triangulated by `𝒯 : Triangulation Ω` without slits (`hI : 𝒯.InteriorEdgesSubset`),
+with the arclength measure `σ = 𝒯.boundaryMeasure` on `Γ = ∂Ω`, the outward normal
+`ν = 𝒯.outwardNormal` and the trace `γ = 𝒯.traceL 2 _ : H¹(Ω) → L²(Γ)` of
+`theorem_7_3_10_polygon`, `∫_Ω u_{x_i} v dx = ∫_Γ (γ u)(γ v) ν_i dσ − ∫_Ω u v_{x_i} dx` for all
+`u, v ∈ H¹(Ω)` — the case `p = p^* = 2` of `proposition_7_6_1_polygon_conj`. The book's
+Lipschitz domain is out of scope; a triangulated polygon is the finite element chapters'
+instance of it (`proposition_7_6_1` is the `C¹` instance). -/
+theorem proposition_7_6_1_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    (hI : 𝒯.InteriorEdgesSubset)
+    (u v : SobolevMultiIndex ℝ (stdBasis 2) 1 2 Ω volume) (i : Fin 2) :
+    ∫ x in (Ω : Set 𝔼₂), (weakDeriv u (MultiIndexLE.single i) : 𝔼₂ → ℝ) x * fn v x
+      = (∫ x, (𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼₂ → ℝ) x
+          * (𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼₂ → ℝ) x
+          * 𝒯.outwardNormal x i ∂𝒯.boundaryMeasure)
+        - ∫ x in (Ω : Set 𝔼₂), fn u x * (weakDeriv v (MultiIndexLE.single i) : 𝔼₂ → ℝ) x :=
+  proposition_7_6_1_polygon_conj 𝒯 hI ENNReal.ofNat_ne_top ENNReal.ofNat_ne_top u v i
 
 end AtkinsonHan.Chapter07

@@ -13,13 +13,9 @@ id = "proposition_7_6_1_conj"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, the formula (7.6.3)'
 
 [[node]]
+id = "proposition_7_6_1_polygon_conj"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, the formula (7.6.3), on a triangulated polygon without slits'
+
+[[node]]
 id = "proposition_7_6_1_polygon"
-kind = "theorem"
-desc = '''Proposition 7.6.1 and (7.6.3) on a triangulated polygon without slits: for `Ω : Opens ℝ²`,
-`𝒯 : Triangulation Ω`, `hI : 𝒯.InteriorEdgesSubset`, `σ := 𝒯.boundaryMeasure`,
-`ν := 𝒯.outwardNormal`, the traces `γ_p := (𝒯.traceFamily hI).traceL p _`, and conjugate
-`1 < p, p* < ∞` (in particular `p = p* = 2`): `∫_Ω ∂ᵢu v = ∫ γ_p u · γ_{p*} v · νᵢ dσ − ∫_Ω u ∂ᵢv`.
-The field `green` of `Triangulation.traceFamily` (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`),
-proved there by summing Green's formula over the triangles rather than by density on the polygon.
-(2026-09-21, boundary round.) ★, ~20 lines.'''
-deps = ["Triangulation.traceFamily", "Triangulation.InteriorEdgesSubset"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.6.1, on a triangulated polygon without slits'

@@ -121,20 +121,20 @@ id = "theorem_7_3_10"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clauses (a) and (b)'
 
 [[node]]
-id = "theorem_7_3_10_polygon"
-kind = "theorem"
-desc = '''Theorem 7.3.10 (a)–(b) on a triangulated polygon without slits: for `Ω : Opens ℝ²`,
-`𝒯 : Triangulation Ω`, `hI : 𝒯.InteriorEdgesSubset` and `1 ≤ p < ∞`, the operator
-`γ := (𝒯.traceFamily hI).traceL p hp : SobolevEuclidean 2 1 p Ω →L[ℝ] Lp ℝ p 𝒯.boundaryMeasure`
-satisfies `γ v =ᵐ[𝒯.boundaryMeasure] ṽ` for every representative `ṽ` of `v` continuous on
-`closure Ω`, and `‖γ v‖ ≤ ‖γ‖ * ‖v‖`. The polygon instance of `theorem_7_3_10`; `𝒯.boundaryMeasure`
-is the arclength measure on the boundary edges (`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`).
-★, ~30 lines. (2026-09-21, boundary round.)'''
-deps = ["Triangulation.traceFamily", "Triangulation.InteriorEdgesSubset"]
+id = "theorem_7_3_10_kernel"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, the remark after Definition 7.2.9 read through Theorem 7.3.10: W_0^{1,p}(Ω) is the kernel of the trace'
 
 [[node]]
 id = "theorem_7_3_10_compact"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clause (c)'
+
+[[node]]
+id = "theorem_7_3_10_polygon"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clauses (a) and (b), on a triangulated polygon'
+
+[[node]]
+id = "theorem_7_3_10_polygon_compact"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clause (c), on a triangulated polygon'
 
 [[node]]
 id = "theorem_7_3_10_range"
@@ -153,25 +153,36 @@ round: `theorem_11_4_5` is restated through the density of traces in `L¹(Γ)` i
 deps = ["theorem_7_3_10", "definition_7_2_13"]
 
 [[node]]
+id = "theorem_7_3_11_trace₀"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the trace γ₀ at s = 2, into L^p(Γ)'
+
+[[node]]
+id = "theorem_7_3_11_partialDerivL"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11 (auxiliary: ∂ᵢ : W^{2,p}(Ω) → W^{1,p}(Ω) with its orders written 2 and 1)'
+
+[[node]]
+id = "theorem_7_3_11_mulNormalL"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11 (auxiliary: multiplication by νᵢ on L^p(Γ), the surface measure written boundaryMeasure)'
+
+[[node]]
+id = "theorem_7_3_11_trace₁"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the normal-derivative trace γ₁ at s = 2, into L^p(Γ)'
+
+[[node]]
+id = "theorem_7_3_11_trace₀_ae_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the property γ₀ v = v|_Γ'
+
+[[node]]
+id = "theorem_7_3_11_traceL_partialDerivL_ae_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11 (the trace of ∂ᵢ v is ∂ᵢ ṽ for a C¹ representative ṽ)'
+
+[[node]]
+id = "theorem_7_3_11_trace₁_ae_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the property γ₁ v = (∂v/∂ν)|_Γ'
+
+[[node]]
 id = "theorem_7_3_11"
-kind = "theorem"
-desc = '''Theorem 7.3.11, the `L^p` clause: on a bounded `C¹` domain (the book's `C^{k,1}` boundary
-restated as `C¹`; `hΩ : IsContDiffDomain 1 Ω`, `hb`) with `1 ≤ p < ∞` and `s = 2` (the book's
-`s − 1/p > 1`, integer `s` here), the maps `γ₀ v = v|_Γ` and `γ₁ v = (∂v/∂ν)|_Γ`, defined for
-`v ∈ C¹(closure Ω)` (resp. `C²`), extend uniquely to bounded linear maps
-`γ₀ : W^{2,p}(Ω) →L L^p(Γ)` and `γ₁ : W^{2,p}(Ω) →L L^p(Γ)`: `γ₀ := (hΩ.traceFamily hb).traceL p hp ∘L toLowerOrderL`
-and `γ₁ v := ∑ᵢ νᵢ · traceL (∂ᵢ v)` — for `p = 2` exactly `BoundaryData.TraceFamily.normalTrace`
-(`Numlib/Analysis/Sobolev/Boundary/Data.lean`), and for general `p` the same formula with
-`SobolevMultiIndex.partialDerivL` (state `normalTrace` at every `p < ∞` if the `p = 2`
-definition is not generalized in the backbone: ★, ~40 lines). Properties: `γ₀ v =ᵐ[σ] ṽ` and
-`γ₁ v =ᵐ[σ] ⟪∇ṽ, ν⟫` for `ṽ ∈ C¹(closure Ω)` with `∇ṽ` continuous on the closure
-(`traceL_ae_eq` applied to `v` and to each `∂ᵢ v`, whose continuous representative is `∂ᵢ ṽ`),
-boundedness from `traceL`'s, uniqueness from the density of `C¹(closure Ω)` restrictions
-(`BoundaryData.traceL_unique`). Restated 2026-09-21 (boundary round); the fractional targets
-`W^{s−1/p,p}(Γ)`, `W^{s−1−1/p,p}(Γ)`, the surjectivity and the general `s`, `k` are
-`theorem_7_3_11_fractional`. ★★, ~120 lines. The book quotes the theorem from [98] without
-proof.'''
-deps = ["theorem_7_3_10", "IsContDiffDomain.traceFamily", "BoundaryData.TraceFamily.normalTrace"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the L^p clause at s = 2 (existence and the two formulas on a bounded C¹ domain, uniqueness on a bounded C² domain)'
 
 [[node]]
 id = "theorem_7_3_11_fractional"
@@ -180,12 +191,15 @@ desc = '''Theorem 7.3.11 as printed: on a bounded open set with `C^{k,1}` bounda
 `s − 1/p > 1` not an integer, `k ≥ s − 1`, the maps `γ₀ : W^{s,p}(Ω) → W^{s−1/p,p}(Γ)` and
 `γ₁ : W^{s,p}(Ω) → W^{s−1−1/p,p}(Γ)` are bounded, linear and *surjective*.
 
-Blocked (2026-09-21, boundary round): the `L^p(Γ)` clause is `theorem_7_3_11`; what remains is
-everything fractional — the spaces `W^{σ,p}(Γ)` on the boundary with their chart independence
-(`definition_7_2_13_indep`), the fractional boundedness and the surjectivity (Gagliardo /
-Lions–Magenes), the `C^{k,1}` boundaries (Lipschitz derivatives of the charts; the library has
-`C^n` graphs only), and `W^{s,p}` of non-integer `s` on `Ω` itself. A Gagliardo-type theorem
-(1000+ lines) after `theorem_7_3_10_range`. The book quotes it from [98] without proof.'''
+Blocked (2026-09-21, boundary round): the `L^p(Γ)` clause at `s = 2` is `theorem_7_3_11`
+(proved: `theorem_7_3_11_trace₀`, `theorem_7_3_11_trace₁` with their formulas on a bounded `C¹`
+domain, uniqueness on a bounded `C²` domain through the order-two extension operator); what
+remains is everything fractional — the spaces `W^{σ,p}(Γ)` on the boundary with their chart
+independence (`definition_7_2_13_indep`), the fractional boundedness and the surjectivity
+(Gagliardo / Lions–Magenes), the `C^{k,1}` boundaries (Lipschitz derivatives of the charts; the
+library has `C^n` graphs only), and `W^{s,p}` of non-integer `s` on `Ω` itself. A Gagliardo-type
+theorem (1000+ lines) after `theorem_7_3_10_range`. The book quotes it from [98] without
+proof.'''
 deps = ["theorem_7_3_11", "theorem_7_3_10_range", "definition_7_2_13"]
 
 [[node]]
