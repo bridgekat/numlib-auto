@@ -1,4 +1,6 @@
 import Mathlib.MeasureTheory.Integral.DivergenceTheorem
+import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
+import Numlib.Analysis.Sobolev.Boundary.Polygon
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import NumlibSurface.AtkinsonHan.Chapter10.Section04
@@ -36,9 +38,19 @@ the one module of the other book this file imports, for its `ℙ_k` Lagrange ele
 * `exercise_12_14` — `fivePointMatrix` is symmetric positive definite and an M-matrix, so the
   discrete maximum principle holds.
 
-* `exercise_12_15_rectangle` — Green's formula (12.95) on a rectangle, with the boundary integral
-  written as its four sides: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²`,
-  `v ∈ C¹`, by the exercise's own hint over Mathlib's divergence theorem for a rectangle.
+* `exercise_12_15`, `exercise_12_15_polygon` — Green's formula (12.95) of Exercise 12.15,
+  `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to
+  the boundary and `v ∈ C¹(Ω̄)`, on a bounded `C¹` plane domain and on a triangulated polygon,
+  with the arclength measure `dγ` and the outward unit normal `n` of the boundary theory of
+  `Numlib/Analysis/Sobolev/Boundary/` (`IsContDiffDomain.boundaryMeasure`/`outwardNormal`,
+  `Triangulation.boundaryMeasure`/`outwardNormal`); both are `exercise_12_15_of_boundaryData`,
+  the formula for any `BoundaryData`, which is the exercise's own hint over the divergence
+  theorem (`BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv`). The book's
+  general plane domain is restated as one of these two; Lipschitz domains in general are out of
+  scope.
+* `exercise_12_15_rectangle` — the same formula on a rectangle, with the boundary integral
+  written as its four sides, by the exercise's own hint over Mathlib's divergence theorem for a
+  rectangle.
 * `equation_12_94` — the finite element space `V_h ⊆ H¹₀(Ω)` of continuous piecewise polynomials
   of degree `≤ k` vanishing on `∂Ω` on a triangulation `𝒯_h` (`Triangulation.polySpaceZero`);
   `exists_mem_equation_12_94` says the book's functions are its elements (no trace theorem: a
@@ -52,13 +64,14 @@ the one module of the other book this file imports, for its `ℙ_k` Lagrange ele
 
 ## Not formalized here
 
-Green's formula (12.95) of Exercise 15 on a *general* plane domain and the `L²` estimate (12.97)
-of Property 12.2 (`property_12_2_l2`) are left as open nodes with their reasons: a boundary
-measure `dγ` and an outward normal for the divergence theorem (`notes/frontier.md` blocker 2), and
-the `H²` regularity of the Dirichlet problem on a convex polygon behind the Aubin–Nitsche argument
-(blocker 18; the abstract duality argument is `AtkinsonHan.Chapter10.theorem_10_4_3`). The
-rectangle is the case the divergence theorem *is* available for, and it is the domain §12.6's own
-finite difference discretization uses, so it is proved here. The book proves neither estimate of
+The `L²` estimate (12.97) of Property 12.2 (`property_12_2_l2`) is left as an open node with its
+reason: the `H²` regularity of the Dirichlet problem on a convex polygon behind the Aubin–Nitsche
+argument (`notes/frontier.md` blocker 18; the abstract duality argument is
+`AtkinsonHan.Chapter10.theorem_10_4_3`). Green's formula (12.95) on a *Lipschitz* plane domain in
+general is out of scope: it is proved on bounded `C¹` domains and on triangulated polygons (the
+boundary round of 2026-09-21, `notes/boundary/planning-brief.md` §1), and on the rectangle, the
+domain §12.6's own finite difference discretization uses, directly from Mathlib's divergence
+theorem. The book proves neither estimate of
 Property 12.2 (both are quoted from [QV94]); (12.96) is proved here on the triangulation
 scaffold of `Numlib/Geometry/Triangulation.lean`, with the polygon entering through the
 hypothesis that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`), the
@@ -253,6 +266,88 @@ theorem exercise_12_15_rectangle {u v : ℝ × ℝ → ℝ} (hu : ContDiff ℝ 2
   rw [hI] at hdiv
   simp only [hf, hg] at hdiv
   linarith
+
+/-! #### Green's formula (12.95) on a bounded `C¹` domain and on a triangulated polygon
+
+The general plane domain of (12.95), through the boundary theory of
+`Numlib/Analysis/Sobolev/Boundary/`: a domain `Ω` with boundary data `B : BoundaryData Ω` — a
+surface measure `B.σ` on `∂Ω` (the arclength `dγ`), an outward unit normal `B.ν` (the book's
+`n`) and the divergence theorem `∫_Ω div F = ∫_∂Ω F · ν dσ` for `F ∈ C¹(Ω̄)`
+(`Numlib/Analysis/Sobolev/Boundary/Data.lean`). The two instances are the bounded `C¹` domain
+(`IsContDiffDomain.boundaryData`, `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`: the
+divergence theorem by Fubini and the fundamental theorem of calculus on graph charts, glued by a
+partition of unity) and the triangulated polygon (`Triangulation.boundaryData`,
+`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`: the sum over the elements, the interior edges
+cancelling in partner pairs). The book's "`Ω` smooth enough" is restated as one of these two;
+Lipschitz domains in general are out of scope (`notes/boundary/planning-brief.md` §1). -/
+
+open TopologicalSpace
+
+open scoped InnerProductSpace Laplacian
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **Green's formula (12.95) for boundary data**, Exercise 12.15 on a plane domain `Ω` with
+boundary data `B` (surface measure `B.σ = dγ`, outward unit normal `B.ν = n`):
+`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
+boundary and `v ∈ C¹(Ω̄)`. The book's "`u, v` smooth enough" is read as
+`ContDiffOnClosure ℝ 2 u Ω`, `ContinuousOn (fderiv ℝ u) (closure Ω)` — the continuity of `∇u` on
+`Ω̄` is what gives the boundary term `∇u · n` on `∂Ω` its meaning: the class `C²(Ω̄)` of
+`ContDiffOnClosure` says that the derivatives *extend* continuously to `Ω̄`, not that
+`fderiv ℝ u` itself is that extension on `∂Ω` — and `ContinuousOn v (closure Ω)`,
+`ContDiffOnClosure ℝ 1 v Ω`. The proof is the exercise's own hint,
+`div (v ∇u) = v Δu + ∇u · ∇v` over the divergence theorem `B.integral_div_eq`, which is the
+backbone's `BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv`; here the signs
+are rearranged. The two instances are `exercise_12_15` (a bounded `C¹` domain) and
+`exercise_12_15_polygon` (a triangulated polygon); the rectangle is `exercise_12_15_rectangle`. -/
+theorem exercise_12_15_of_boundaryData {Ω : Opens 𝔼₂} (B : BoundaryData Ω) {u v : 𝔼₂ → ℝ}
+    (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContDiffOnClosure ℝ 1 v Ω) :
+    ∫ x in (Ω : Set 𝔼₂), -Δ u x * v x
+      = (∫ x in (Ω : Set 𝔼₂), ⟪gradient u x, gradient v x⟫_ℝ)
+        - ∫ x, ⟪gradient u x, B.ν x⟫_ℝ * v x ∂B.σ := by
+  have h := B.integral_laplacian_mul_add_eq_of_continuousOn_fderiv hu' hu hv hv'
+  simp only [neg_mul, integral_neg]
+  linarith
+
+/-- **Green's formula (12.95) on a bounded `C¹` plane domain**, Exercise 12.15:
+`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
+boundary and `v ∈ C¹(Ω̄)`, with `n = hΩ.outwardNormal hb` the outward unit normal and
+`dγ = hΩ.boundaryMeasure hb` the arclength measure on `∂Ω` of
+`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`. The book's general plane domain is restated
+as a bounded `C¹` domain (`IsContDiffDomain 1 Ω`: `∂Ω` is locally the graph of a `C¹` function
+after a rigid motion); the polygonal case is `exercise_12_15_polygon`, and Lipschitz domains in
+general are out of scope. This is `exercise_12_15_of_boundaryData` for
+`IsContDiffDomain.boundaryData`, whose divergence theorem is
+`IsContDiffDomain.integral_div_eq` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, equation
+(12.95) and Exercise 12.15). -/
+theorem exercise_12_15 {Ω : Opens 𝔼₂} (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼₂))
+    (hb : Bornology.IsBounded (Ω : Set 𝔼₂)) {u v : 𝔼₂ → ℝ}
+    (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContDiffOnClosure ℝ 1 v Ω) :
+    ∫ x in (Ω : Set 𝔼₂), -Δ u x * v x
+      = (∫ x in (Ω : Set 𝔼₂), ⟪gradient u x, gradient v x⟫_ℝ)
+        - ∫ x, ⟪gradient u x, hΩ.outwardNormal hb x⟫_ℝ * v x ∂(hΩ.boundaryMeasure hb) :=
+  exercise_12_15_of_boundaryData (hΩ.boundaryData hb) hu hu' hv hv'
+
+/-- **Green's formula (12.95) on a triangulated polygon**, Exercise 12.15:
+`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
+boundary and `v ∈ C¹(Ω̄)`, on a plane domain `Ω` triangulated by `𝒯 : Triangulation Ω`
+(`Numlib/Geometry/Triangulation.lean`), with `n = 𝒯.outwardNormal` the outward unit normal of the
+boundary edges and `dγ = 𝒯.boundaryMeasure` the arclength measure on them, of
+`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`. No hypothesis beyond the axioms of
+`Triangulation` is needed (the divergence theorem `Triangulation.integral_div_eq` holds for every
+triangulation: a field continuous across an interior edge does not see it). This is
+`exercise_12_15_of_boundaryData` for `Triangulation.boundaryData`; the `C¹` case is
+`exercise_12_15` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, equation (12.95) and
+Exercise 12.15). -/
+theorem exercise_12_15_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {u v : 𝔼₂ → ℝ}
+    (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContDiffOnClosure ℝ 1 v Ω) :
+    ∫ x in (Ω : Set 𝔼₂), -Δ u x * v x
+      = (∫ x in (Ω : Set 𝔼₂), ⟪gradient u x, gradient v x⟫_ℝ)
+        - ∫ x, ⟪gradient u x, 𝒯.outwardNormal x⟫_ℝ * v x ∂𝒯.boundaryMeasure :=
+  exercise_12_15_of_boundaryData 𝒯.boundaryData hu hu' hv hv'
 
 end Green
 

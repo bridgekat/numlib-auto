@@ -112,53 +112,16 @@ id = "example_7_2_6"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.6'
 
 [[node]]
+id = "example_7_2_7_continuous"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.7, the case k = 0 (restated on a triangulated plane domain)'
+
+[[node]]
 id = "example_7_2_7"
-kind = "theorem"
-desc = '''Example 7.2.7, on a triangulated polygon (the book's "bounded Lipschitz `Ω` partitioned into
-Lipschitz sub-domains", restated with `𝒯 : Triangulation Ω`; scope note: Lipschitz domains in
-general stay out of scope, cf. `notes/boundary/planning-brief.md` §1): for `k : ℕ`,
-`1 ≤ p ≤ ∞`, and `v : ℝ² → ℝ` with `v ∈ C^k(closure Ω)` (`ContDiffOn ℝ k v` on a neighbourhood
-of `closure Ω`, or, for `k = 0`, `ContinuousOn v (closure Ω)`) and
-`v|_{K T} ∈ W^{k+1,p}(K T)` for every element (`definition_7_2_2_multiIndex (k + 1) p (𝒯.Kopens T) v`),
-one has `definition_7_2_2_multiIndex (k + 1) p Ω v`, i.e. `v ∈ W^{k+1,p}(Ω)`. Restated 2026-09-21
-(boundary round). The case `k = 0` is the backbone's
-`Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall` (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`):
-the book's proof — integrate by parts on each element against a test function `φ ∈ C_0^∞(Ω)`,
-`∫_{Ω_n} v ∂ᵢφ = −∫_{Ω_n} ∂ᵢv φ + ∫_{∂Ω_n} v φ νᵢ ds`, and cancel the interface integrals — with
-Green's formula on a triangle against a fixed smooth test function
-(`BoundaryData.TraceFamily.green_contDiff` of `EuclideanSpace.triangleTraceFamily`), the trace
-of the continuous `v` on `∂K T` being its restriction (`traceL_ae_eq`), the boundary edges carrying
-`φ = 0` (`Triangulation.segment_subset_frontier_of_isBoundaryEdge`) and the interior edges
-cancelling in partner pairs (`Triangulation.partner_unique`, `edgeNormal_partner`). No slit
-hypothesis is needed for this direction. General `k` by applying the `k = 0` case to the
-derivatives `∂^β v`, `|β| = k` (`Triangulation.memSobolevMultiIndex_succ_of_contDiffOn_of_forall`
-in the same module, and `memSobolevMultiIndex_succ_iff`). ★★, ~80 lines over the backbone nodes.'''
-deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.7 (restated on a triangulated plane domain)'
 
 [[node]]
 id = "example_7_2_8"
-kind = "theorem"
-desc = '''Example 7.2.8, the converse of Example 7.2.7 on a triangulated polygon without slits: for
-`𝒯 : Triangulation Ω` with `𝒯.InteriorEdgesSubset` (the relative interior of every interior
-edge lies in `Ω`; `Numlib/Analysis/Sobolev/Boundary/Polygon.lean`), `1 ≤ p < ∞`,
-`v ∈ W^{1,p}(Ω)` (an element `u : SobolevEuclidean 2 1 p Ω`) and continuous representatives on
-the closed elements — `w : 𝒯.elems → ℝ² → ℝ` with `ContinuousOn (w T) (𝒯.closedK T)` and
-`fn u =ᵐ w T` on `K T` — the pieces agree along every interior edge: for every partner pair
-`𝒯.IsPartner T a T' a'`, `EqOn (w T) (w T') (segment ℝ (T.1 a) (T.1 (a + 1)))`; hence, for the
-book's `k`, `∂^β v` (`|β| ≤ k`) glue continuously across the edges. Restated 2026-09-21
-(boundary round): the book's argument — a nonzero interface integral
-`∫_γ (v|_{Ω_{n₁}} − v|_{Ω_{n₂}}) φ νᵢ` would contradict `v ∈ W^{1,p}(Ω)` — is exactly the
-backbone's `Triangulation.traceL_partner_ae_eq` (the one-sided traces of a `W^{1,p}(Ω)` function
-agree on an interior edge whose relative interior lies in `Ω`), packaged as
-`Triangulation.eqOn_partner_of_memSobolev_of_continuousOn` (`PolygonTrace.lean`). Caveat recorded as
-an erratum (`notes/boundary/plan-report.md`): the book's conclusion "`v ∈ C^k(closure Ω)`" as a
-single continuous function on the closure also needs the elements around each vertex to be connected
-through shared edges; at a pinch vertex (two elements meeting only at a point, allowed by the axioms
-of `Triangulation` but not by the book's Lipschitz hypothesis) a `W^{1,p}` function may take two
-different limits. On a polygon in the book's sense the edge-wise agreement gives continuity on
-`closure Ω` minus the vertices and, by the fan argument, everywhere; that last step is not
-planned. ★★, ~60 lines over the backbone node for the edge-wise statement.'''
-deps = ["example_7_2_7", "Triangulation.eqOn_partner_of_memSobolev_of_continuousOn", "Triangulation.InteriorEdgesSubset"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.8 (restated on a triangulated plane domain without slits; edge-wise agreement, erratum E3 of notes/boundary/plan-report.md)'
 
 [[node]]
 id = "definition_7_2_9"
@@ -191,41 +154,62 @@ id = "definition_7_2_12_integerOrder"
 id = "definition_7_2_12_hMinusOne"
 
 [[node]]
+id = "definition_7_2_13_domain"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, the parameter domains D_i of the patch system'
+
+[[node]]
+id = "ae_eq_comp_graphParam"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13 (the composition v ∘ g_i is well defined on classes in L^p(∂Ω))'
+
+[[node]]
+id = "definition_7_2_13_atlas"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13 (relative to a patch system; C¹ patches, L^p(∂Ω) for the printed L²(∂Ω))'
+
+[[node]]
+id = "mem_definition_7_2_13_atlas_iff"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13'
+
+[[node]]
 id = "definition_7_2_13"
-kind = "definition"
-desc = '''Definition 7.2.13, the Sobolev spaces on the boundary of a `C¹` domain, relative to a patch
-system: for `hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω` (the book's `C^{k,α}`
-patches restated as `C¹`, `k = 1`, `α = 0`, so `0 ≤ s ≤ 1`), the atlas
-`a := hΩ.graphAtlas hb : GraphAtlas Ω` (`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean` —
-the finite patch system `∂Ω ∩ B(xᵢ, rᵢ) = {x_d = gᵢ(x')}` of `definition_7_2_1_finite_cover`
-with the graph functions `gᵢ` and the parameter domains `Dᵢ := a.graphDomain i`), `s ∈ [0, 1]`,
-`1 ≤ p < ∞`: `W^{s,p}(∂Ω) := {v ∈ L^p(σ) : ∀ i, v ∘ graphParam (a.T i) (a.g i) ∈ W^{s,p}(Dᵢ)}`
-with the norm `‖v‖ := max_i ‖v ∘ graphParam …‖_{W^{s,p}(Dᵢ)}`, where `L^p(∂Ω) = Lp ℝ p (hΩ.boundaryMeasure hb)`
-(the surface measure of the boundary round) and `W^{s,p}(Dᵢ)` is `definition_7_2_10` on the open
-bounded `Dᵢ ⊆ ℝ^{d-1}` (`SobolevSlobodeckij`), the composition `v ∘ graphParam` being the book's
-`v ∘ gᵢ` read as `x' ↦ v (x', gᵢ x')`. `H^s(∂Ω) := W^{s,2}(∂Ω)`. Restated 2026-09-21 (boundary
-round): definable now — a Submodule of `Lp ℝ p σ` (closed under the operations since each patch
-space is), with the book's norm as a function; the book's `L²(∂Ω)` in the definition is read as
-`L^p(∂Ω)` (an inconsistency of the printed definition, `v ∈ L²(∂Ω)` for a `W^{s,p}` space with
-`p ≠ 2`). ★★, ~120 lines. What is not in scope is the independence of the space and (up to
-equivalence) of the norm from the patch system, split off as `definition_7_2_13_indep`.'''
-deps = ["definition_7_2_1_finite_cover", "definition_7_2_10", "IsContDiffDomain.graphAtlas", "IsContDiffDomain.boundaryMeasure"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13 (on a bounded C¹ domain, for the chosen graph atlas)'
+
+[[node]]
+id = "definition_7_2_13_hs"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, H^s(∂Ω) ≡ W^{s,2}(∂Ω)'
+
+[[node]]
+id = "definition_7_2_13_norm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, the norm max_i ‖v ∘ g_i‖_{W^{s,p}(D_i)}'
+
+[[node]]
+id = "definition_7_2_13_norm_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, the norm'
 
 [[node]]
 id = "definition_7_2_13_indep"
 kind = "theorem"
 desc = '''Definition 7.2.13, the clause the book leaves implicit: the space `W^{s,p}(∂Ω)` of
 `definition_7_2_13` does not depend on the patch system, and two patch systems give equivalent
-norms. For `s = 0` this is `boundaryMeasure_restrict_ball` (the surface measure is
-chart-independent) and needs nothing more; for `0 < s ≤ 1` it needs the invariance of the
-Slobodeckij seminorm of `definition_7_2_10` under the `C¹` transition maps
-`EuclideanSpace.graphTransition` between patches (a bi-Lipschitz change of variables in the double
-integral `∬ |v(x) − v(y)|^p / |x − y|^{d−1+sp}`), which `Numlib/Analysis/Sobolev/Slobodeckij.lean`
+norms. With the definition of 2026-09-21 (agent bsurfpoly) this is a statement: for
+`hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω` and two graph atlases
+`a a' : GraphAtlas Ω`, `definition_7_2_13_atlas hΩ hb a k σ p = definition_7_2_13_atlas hΩ hb a' k σ p`
+(both are submodules of the same `Lp ℝ p (hΩ.boundaryMeasure hb)`, the surface measure being
+atlas-independent by `GraphAtlas.measure_eq`), and there is a `C > 0` with
+`definition_7_2_13_norm v ≤ C * definition_7_2_13_norm v'` for the corresponding elements
+`v`, `v'` of the two submodules (the norms computed by `definition_7_2_13_norm_eq` from
+representatives `Uᵢ ∈ SobolevSlobodeckij … (definition_7_2_13_domain a i)`), and symmetrically.
+For `s = 0` the space is `L^p(∂Ω)` for every atlas and needs nothing more
+(`boundaryMeasure_restrict_ball`); for `0 < s ≤ 1` it needs the invariance of the Slobodeckij
+seminorm of `definition_7_2_10` under the `C¹` transition maps `EuclideanSpace.graphTransition`
+between patches (a bi-Lipschitz change of variables in the double integral
+`∬ |v(x) − v(y)|^p / |x − y|^{d−1+sp}`, on the overlaps `a.graphDomain i ∩ graphTransition ⁻¹' a'.graphDomain j`,
+then a finite partition of each `Dᵢ` by the overlaps), which `Numlib/Analysis/Sobolev/Slobodeckij.lean`
 does not have.
 
-Blocked (2026-09-21, boundary round): the invariance of fractional Sobolev norms under `C¹`
-(bi-Lipschitz) diffeomorphisms — ~400 lines on top of `Slobodeckij.lean` (the double-integral
-change of variables with the Jacobian bounds of `EuclideanSpace.graphDensity_graphTransition`);
-not needed by any consumer of this round (`H^{1/2}(Γ)` is used only through `theorem_7_3_10_range`
-and `theorem_7_3_11_fractional`, both blocked).'''
-deps = ["definition_7_2_13", "IsContDiffDomain.boundaryMeasure_restrict_ball"]
+Blocked (2026-09-21, boundary round, refreshed by agent bsurfpoly after `definition_7_2_13` was
+written): the invariance of fractional Sobolev norms under `C¹` (bi-Lipschitz) diffeomorphisms —
+~400 lines on top of `Slobodeckij.lean` (the double-integral change of variables with the
+Jacobian bounds of `EuclideanSpace.graphDensity_graphTransition`, and the localization to the
+overlaps of two patches); not needed by any consumer of this round (`H^{1/2}(Γ)` is used only
+through `theorem_7_3_10_range` and `theorem_7_3_11_fractional`, both blocked).'''
+deps = ["definition_7_2_13", "definition_7_2_13_atlas", "definition_7_2_13_norm", "definition_7_2_13_norm_eq", "IsContDiffDomain.boundaryMeasure_restrict_ball", "GraphAtlas.measure_eq"]

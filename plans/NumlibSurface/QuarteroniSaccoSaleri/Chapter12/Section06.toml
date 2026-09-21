@@ -41,28 +41,16 @@ id = "finiteDimensional_equation_12_94"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.94)'
 
 [[node]]
+id = "exercise_12_15_of_boundaryData"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15, for any boundary data (surface measure, outward normal, divergence theorem)'
+
+[[node]]
 id = "exercise_12_15"
-kind = "theorem"
-desc = '''Green's formula (12.95), Exercise 12.15: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u, v`
-smooth on a bounded plane domain `Ω` — restated on a bounded `C¹` plane domain
-(`hΩ : IsContDiffDomain 1 Ω`, `hb`, `Ω : Opens (EuclideanSpace ℝ (Fin 2))`) and on a triangulated
-polygon (`𝒯 : Triangulation Ω`), with the boundary data `B := hΩ.boundaryData hb`, resp.
-`𝒯.boundaryData` (`Numlib/Analysis/Sobolev/Boundary/`): for `u : ℝ² → ℝ` with
-`ContinuousOn u (closure Ω)`, `ContDiffOnClosure ℝ 2 u Ω` and `v` with `ContinuousOn v (closure Ω)`,
-`ContDiffOnClosure ℝ 1 v Ω` (the exercise's "smooth" read as `C²(Ω̄)`, `C¹(Ω̄)`),
-`∫ x in Ω, −Δ u x * v x = ∫ x in Ω, ⟪gradient u x, gradient v x⟫ − ∫ x, ⟪gradient u x, B.ν x⟫ * v x ∂B.σ`
-with `n := B.ν` the outward unit normal and `dγ := B.σ` the arclength measure. Restated
-2026-09-21 (boundary round): it is `BoundaryData.integral_laplacian_mul_add_eq` (`Data.lean`),
-whose proof is the exercise's own hint `div (v ∇u) = v Δu + ∇u · ∇v` over the divergence theorem
-`B.integral_div_eq` — on a `C¹` domain `IsContDiffDomain.integral_div_eq` (`ContDiffDomain.lean`:
-Fubini and the fundamental theorem of calculus on graph charts, glued by a partition of unity),
-on a polygon `Triangulation.integral_div_eq` (`Polygon.lean`: the sum over the elements, interior
-edges cancelling). The rectangle case remains `exercise_12_15_rectangle`, by Mathlib's box
-theorem; two theorems `exercise_12_15` (`C¹`) and `exercise_12_15_polygon`, ~15 lines each
-(rearrange the signs). Equations (12.94) and Property 12.2 were proved earlier without this
-formula and are not touched.'''
-deps = ["exercise_12_15_rectangle", "BoundaryData.integral_laplacian_mul_add_eq", "IsContDiffDomain.boundaryData", "Triangulation.boundaryData"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15'
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15, on a bounded C¹ plane domain (the general plane domain of the book restated; Lipschitz domains out of scope)"
+
+[[node]]
+id = "exercise_12_15_polygon"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15, on a triangulated polygon'
 
 [[node]]
 id = "exercise_12_15_rectangle"

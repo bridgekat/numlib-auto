@@ -1,6 +1,8 @@
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 import Mathlib.MeasureTheory.Measure.Lebesgue.VolumeOfBalls
 import Numlib.Analysis.InnerProductSpace.NormPow
+import Numlib.Analysis.Sobolev.Boundary.GraphMeasure
+import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import Numlib.Analysis.Sobolev.EmbeddingDomain
 import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.Slobodeckij
@@ -101,8 +103,22 @@ as `hasWeakIteratedLineDerivOn_logLogNorm`; the value of the gradient integral i
 its antiderivative `-1/log r` extends continuously by `0` — which is exactly the value Lean's
 `Real.log 0 = 0` gives it.
 
-Examples 7.2.7 and 7.2.8 and Definition 7.2.13 need surface measure on a Lipschitz boundary, which
-exists nowhere.
+Examples 7.2.7 and 7.2.8, the piecewise theorems of finite element analysis, are here on a plane
+domain triangulated by `𝒯 : Triangulation Ω` (the book's Lipschitz sub-domains restated as the
+open triangles; Lipschitz domains in general are out of scope): a function continuous on `Ω̄`
+and `W^{1,p}` on every element is `W^{1,p}(Ω)` (`example_7_2_7_continuous`, for every
+`1 ≤ p ≤ ∞`; `example_7_2_7` for `C^k(Ω̄)` and `W^{k+1,p}`), and a `W^{1,p}(Ω)` function
+continuous on each closed element takes the same values on both sides of every interior edge
+(`example_7_2_8`, on a triangulation without slits — the book's "`v ∈ C(Ω̄)`" needs in addition
+the fan of elements around each vertex to be edge-connected, erratum E3 of
+`notes/boundary/plan-report.md`). Both rest on Green's formula on a triangle of
+`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`. Definition 7.2.13, the Sobolev spaces
+`W^{s,p}(∂Ω)` over the boundary of a bounded `C¹` domain, is `definition_7_2_13`: a submodule of
+`L^p(∂Ω)` for the surface measure `IsContDiffDomain.boundaryMeasure` of
+`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`, defined through the patch system of a graph
+atlas, with the book's norm `max_i ‖v ∘ gᵢ‖_{W^{s,p}(Dᵢ)}` as `definition_7_2_13_norm`; its
+independence of the patch system, which the book leaves implicit, is not proved
+(`definition_7_2_13_indep`).
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -1408,6 +1424,111 @@ theorem example_7_2_6 {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) :
     rw [h2, mul_one] at h1
     exact h1
 
+/-! ### Piecewise Sobolev functions on a triangulated polygon
+
+The book's Examples 7.2.7 and 7.2.8, on a "bounded Lipschitz domain partitioned into Lipschitz
+sub-domains", are stated here on a plane domain triangulated by `𝒯 : Triangulation Ω`
+(`Numlib/Geometry/Triangulation.lean`): the sub-domains are the open triangles `𝒯.Kopens T`, the
+interfaces are the edges, and the integration by parts on each sub-domain that the book defers to
+§7.4 is Green's formula on a triangle of `Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`.
+Lipschitz domains in general stay out of scope (`notes/boundary/planning-brief.md` §1). -/
+
+section Piecewise
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **Example 7.2.7, the case `k = 0`** (the case the book reduces to): on a triangulated plane
+domain `Ω`, a function `v` continuous on `Ω̄` with `v|_{K} ∈ W^{1,p}(K)` on every element `K` lies
+in `W^{1,p}(Ω)`, for every `p ∈ [1, ∞]`. The book's argument — integrate by parts on each element
+against a test function `φ ∈ C_0^∞(Ω)`, the boundary terms cancelling in pairs on the interior
+edges and vanishing on `∂Ω` — is the backbone's
+`Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall`. No hypothesis beyond the axioms
+of `Triangulation` is needed (a slit is invisible to a function continuous across it).
+
+The book's "bounded Lipschitz domain partitioned into Lipschitz sub-domains" is restated as a
+triangulated plane domain; Lipschitz domains in general are out of scope. -/
+theorem example_7_2_7_continuous {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    {v : 𝔼₂ → ℝ} (hv : ContinuousOn v (closure (Ω : Set 𝔼₂)))
+    (hT : ∀ T : 𝒯.elems, definition_7_2_2_multiIndex 1 p (𝒯.Kopens T) v) :
+    definition_7_2_2_multiIndex 1 p Ω v :=
+  𝒯.memSobolevMultiIndex_of_continuousOn_of_forall hv hT
+
+/-- **Example 7.2.7**: on a triangulated plane domain `Ω`, for `k ≥ 0` and `p ∈ [1, ∞]`, a
+function `v ∈ C^k(Ω̄)` with `v|_{K} ∈ W^{k+1,p}(K)` on every element `K` lies in `W^{k+1,p}(Ω)`.
+The class `C^k(Ω̄)` is read as `ContDiffOn ℝ k v U` on an open `U ⊇ Ω̄` — `v` is `C^k` on a
+neighbourhood of the closure — so that the partial derivatives of `v` up to order `k` are
+again of that class and the book's reduction to `k = 0` is an induction: `v ∈ W^{k+2,p}(Ω)`
+exactly when `v ∈ W^{k+1,p}(Ω)` and each `∂ᵢ v ∈ W^{k+1,p}(Ω)` (`memSobolevMultiIndex_succ_iff`),
+the classical `∂ᵢ v` being the weak one on `Ω` and, on each element, the `L^p` weak derivative
+that `v|_K ∈ W^{k+2,p}(K)` provides. The case `k = 0` is `example_7_2_7_continuous`, which needs
+only `v ∈ C(Ω̄)`.
+
+The book's "bounded Lipschitz domain partitioned into Lipschitz sub-domains" is restated as a
+triangulated plane domain (`𝒯 : Triangulation Ω`, the sub-domains being the open triangles);
+Lipschitz domains in general are out of scope. -/
+theorem example_7_2_7 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    {U : Set 𝔼₂} (hU : IsOpen U) (hΩU : closure (Ω : Set 𝔼₂) ⊆ U) {v : 𝔼₂ → ℝ}
+    (hv : ContDiffOn ℝ k v U)
+    (hT : ∀ T : 𝒯.elems, definition_7_2_2_multiIndex (k + 1) p (𝒯.Kopens T) v) :
+    definition_7_2_2_multiIndex (k + 1) p Ω v := by
+  induction k generalizing v with
+  | zero =>
+    exact 𝒯.memSobolevMultiIndex_of_continuousOn_of_forall (hv.continuousOn.mono hΩU) hT
+  | succ k ih =>
+    refine memSobolevMultiIndex_succ_iff.2
+      ⟨ih (hv.of_le (by exact_mod_cast Nat.le_succ k))
+        (fun T ↦ (hT T).mono_order (Nat.le_succ _)), fun i ↦ ?_⟩
+    have hv1 : ContDiffOn ℝ 1 v Ω := (hv.of_le (by exact_mod_cast Nat.succ_pos k)).mono
+      (subset_closure.trans hΩU)
+    -- the classical `∂ᵢ v` is the weak one on `Ω`
+    have hw : HasWeakIteratedLineDerivOn ![stdBasis 2 i] v
+        (fun x ↦ iteratedFDeriv ℝ 1 v x ![stdBasis 2 i]) Ω volume :=
+      (hv1.hasWeakIteratedFDerivOn (m := 1) le_rfl).lineDeriv _
+    refine ⟨_, hw, ih ?_ fun T ↦ ?_⟩
+    · -- `∂ᵢ v ∈ C^k(U)`
+      have h1 : ContDiffOn ℝ k (fun x ↦ fderiv ℝ v x (stdBasis 2 i)) U :=
+        (hv.fderiv_of_isOpen hU (by exact_mod_cast le_rfl)).clm_apply contDiffOn_const
+      refine h1.congr fun x _ ↦ ?_
+      simp [iteratedFDeriv_one_apply]
+    · -- on each element, `∂ᵢ v` is the `W^{k+1,p}(K)` weak derivative that `v ∈ W^{k+2,p}(K)` has
+      obtain ⟨g, hg, hgk⟩ := (memSobolevMultiIndex_succ_iff.1 (hT T)).2 i
+      refine hgk.congr_ae ?_
+      have hw' : HasWeakIteratedLineDerivOn ![stdBasis 2 i] v
+          (fun x ↦ iteratedFDeriv ℝ 1 v x ![stdBasis 2 i]) (𝒯.Kopens T) volume :=
+        ((hv1.mono (𝒯.Kopens_le T)).hasWeakIteratedFDerivOn (m := 1) le_rfl).lineDeriv _
+      exact (ae_restrict_iff' (𝒯.Kopens T).isOpen.measurableSet).2 (hg.ae_eq hw')
+
+/-- **Example 7.2.8**, the converse of Example 7.2.7 on a triangulated plane domain without
+slits: if `v ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, agrees on each open element `K` with a function `w_K`
+continuous on the closed element (the book's "`v ∈ C(Ω̄_n)` for each `n`"), then the pieces agree
+along every interior edge — for every partner pair `𝒯.IsPartner T a T' a'` (the edge `a` of `T`
+is the edge `a'` of `T'`), `w_T = w_{T'}` on the closed common edge. The book's argument — a
+nonzero interface integral `∫_γ (v|_{Ω_{n₁}} − v|_{Ω_{n₂}}) φ νᵢ ds` would contradict the definition
+of the weak derivative — is the backbone's `Triangulation.traceL_partner_ae_eq`, packaged as
+`Triangulation.eqOn_partner_of_memSobolev_of_continuousOn`.
+
+Two departures from the printed example. The hypothesis `𝒯.InteriorEdgesSubset` (the relative
+interior of every interior edge lies in `Ω`, "no slit") is what the book's Lipschitz hypothesis
+provides here: across a slit the one-sided limits of a `W^{1,p}` function are unrelated. And the
+book's conclusion "`v ∈ C^k(Ω̄)`", a single continuous function on the closure, needs in addition
+that the elements around each vertex be connected through shared edges, which fails at a pinch
+vertex (two elements meeting only at a point, allowed by the axioms of `Triangulation` but not by
+a Lipschitz boundary; `notes/boundary/plan-report.md`, erratum E3): the edge-wise agreement gives
+continuity on `Ω̄` minus the vertices, and the step from there to the vertices is not formalized.
+The book's `k` is the case `k = 0` applied to the derivatives `∂^β v`, `|β| ≤ k`, as in
+Example 7.2.7. -/
+theorem example_7_2_8 {Ω : Opens 𝔼₂} {𝒯 : Triangulation Ω} (hI : 𝒯.InteriorEdgesSubset)
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) {v : 𝔼₂ → ℝ}
+    (hv : definition_7_2_2_multiIndex 1 p Ω v) {w : 𝒯.elems → 𝔼₂ → ℝ}
+    (hwc : ∀ T, ContinuousOn (w T) (𝒯.closedK T))
+    (hw : ∀ T, v =ᵐ[volume.restrict (𝒯.K T)] w T) {T T' : 𝒯.elems} {a a' : Fin 3}
+    (h : 𝒯.IsPartner T a T' a') : EqOn (w T) (w T') (segment ℝ (T.1 a) (T.1 (a + 1))) := by
+  obtain ⟨u, hu⟩ := (definition_7_2_2_multiIndex_iff_exists 1 p Ω v).1 hv
+  refine 𝒯.eqOn_partner_of_memSobolev_of_continuousOn hI hp u hwc (fun T ↦ ?_) h
+  exact (hu.filter_mono (ae_mono (Measure.restrict_mono (𝒯.K_subset T) le_rfl))).trans (hw T)
+
+end Piecewise
+
 /-- **Definition 7.2.9**: `W_0^{k,p}(Ω)` is the closure of `C_0^∞(Ω)` in `W^{k,p}(Ω)`; when
 `p = 2` one writes `H_0^k(Ω) ≡ W_0^{k,2}(Ω)`.
 
@@ -1595,5 +1716,179 @@ variable (d) in
 This is the case the book singles out and the one later chapters use. -/
 noncomputable abbrev definition_7_2_12_hMinusOne (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Type _ :=
   definition_7_2_12_integerOrder d 1 2 Ω
+
+
+/-! ### Sobolev spaces over boundaries
+
+The book's §7.2.3, Definition 7.2.13, on a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`. The patch system
+is a graph atlas `a : GraphAtlas Ω` of `Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean` —
+finitely many balls `B(xᵢ, rᵢ)` covering `∂Ω`, each with a rigid motion `Tᵢ` and a `C¹` function
+`gᵢ` for which `Ω ∩ B(xᵢ, rᵢ)` is the region above the graph of `gᵢ` in the coordinates `Tᵢ`,
+exactly the finite cover of `definition_7_2_1_finite_cover` — with the parameter domains
+`Dᵢ := a.graphDomain i ⊆ ℝ^d` and the parametrizations `Φᵢ := graphParam (a.T i) (a.g i)`,
+`x' ↦ Tᵢ⁻¹ (x', gᵢ x')`, which are the book's `gᵢ : Dᵢ → ∂Ω`. The surface measure `σ` on `∂Ω`
+is `IsContDiffDomain.boundaryMeasure` of the same module, the pushforward of `√(1 + |∇gᵢ|²) dx'`
+on every chart; `L^p(∂Ω) := Lp ℝ p σ`. The space is defined relative to an atlas
+(`definition_7_2_13_atlas`) and then for the chosen atlas `hΩ.graphAtlas hb`
+(`definition_7_2_13`), so that its independence of the patch system, which the book leaves
+implicit, is a statement (`definition_7_2_13_indep`, not proved).
+
+The book's `C^{k,α}` patches are restated as `C¹` (the case `k = 0`, `α = 1` of the book's
+range, a `C¹` function being Lipschitz), so the book's range of orders is `0 ≤ s ≤ 1`; as for
+Definition 7.2.10 the order `s = k + σ` is a parameter and no constraint on it is imposed. -/
+
+section Boundary
+
+/-- Two elements of `W^{s,p}(Ω)` with the same function (off a null set of `Ω`) are equal: the
+first family is determined by its function (`SobolevMultiIndex.ext_of_fn_ae_eq`) and the second
+family consists of the difference quotients of the first. Belongs beside
+`SobolevMultiIndex.ext_of_fn_ae_eq` in `Numlib/Analysis/Sobolev/Slobodeckij.lean`. -/
+theorem _root_.SobolevSlobodeckij.ext_of_fn_ae_eq {k : ℕ} {σ : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+    {Ω : Opens (EuclideanSpace ℝ (Fin d))}
+    {U V : SobolevSlobodeckij ℝ (stdBasis d) k σ p Ω volume}
+    (h : SobolevSlobodeckij.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))]
+      SobolevSlobodeckij.fn V) : U = V := by
+  have h1 : SobolevSlobodeckij.toSobolevMultiIndex U = SobolevSlobodeckij.toSobolevMultiIndex V :=
+    SobolevMultiIndex.ext_of_fn_ae_eq h
+  have h1' : (U : SobolevSlobodeckijTuple ℝ (Fin d) k p Ω volume).fst
+      = (V : SobolevSlobodeckijTuple ℝ (Fin d) k p Ω volume).fst := congrArg Subtype.val h1
+  refine Subtype.ext ((WithLp.ext_iff _).2 (Prod.ext h1' ?_))
+  ext α
+  have e := SobolevSlobodeckij.snd_ae V α
+  rw [← h1'] at e
+  exact (SobolevSlobodeckij.snd_ae U α).trans e.symm
+
+/-- **The parameter domain `Dᵢ` of the `i`-th patch** of a graph atlas, as an open subset of
+`ℝ^d`: the part of `ℝ^d` that the chart ball `B(xᵢ, rᵢ)` sees through the parametrization. -/
+def definition_7_2_13_domain {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (a : GraphAtlas Ω)
+    (i : Fin a.k) : Opens (EuclideanSpace ℝ (Fin d)) :=
+  ⟨a.graphDomain i, EuclideanSpace.isOpen_graphDomain (a.contDiff_g i).continuous _ _⟩
+
+/-- **Composition with a patch respects equality almost everywhere on `∂Ω`**: two functions equal
+`σ`-almost everywhere on `∂Ω` pull back to functions equal almost everywhere on `Dᵢ`, since on the
+chart ball `σ` is the pushforward under `Φᵢ` of a measure with a positive density with respect to
+Lebesgue measure on `Dᵢ` (`IsContDiffDomain.boundaryMeasure_restrict_ball`). This is what makes
+Definition 7.2.13 a condition on the class of `v` in `L^p(∂Ω)`. -/
+theorem ae_eq_comp_graphParam {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (i : Fin a.k)
+    {f g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (h : f =ᵐ[hΩ.boundaryMeasure hb] g) :
+    f ∘ EuclideanSpace.graphParam (a.T i) (a.g i)
+      =ᵐ[volume.restrict (a.graphDomain i)] g ∘ EuclideanSpace.graphParam (a.T i) (a.g i) := by
+  have h1 : f =ᵐ[(hΩ.boundaryMeasure hb).restrict (ball (a.x i) (a.r i))] g :=
+    ae_restrict_of_ae h
+  rw [hΩ.boundaryMeasure_restrict_ball hb (a.contDiff_g i) (a.inter_ball_eq i),
+    EuclideanSpace.graphMeasure] at h1
+  have h2 := h1.comp_tendsto (Measure.tendsto_ae_map
+    (EuclideanSpace.continuous_graphParam (a.contDiff_g i).continuous).aemeasurable)
+  rw [Filter.EventuallyEq, ae_withDensity_iff
+    (EuclideanSpace.measurable_ofReal_graphDensity (a.contDiff_g i))] at h2
+  exact h2.mono fun x hx ↦ hx (ENNReal.ofReal_pos.2 (EuclideanSpace.graphDensity_pos _)).ne'
+
+/-- **Definition 7.2.13, relative to a patch system**: for a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`
+with the graph atlas `a` (the patch system: `∂Ω ∩ B(xᵢ, rᵢ) = {x_{d+1} = gᵢ(x')}` in the
+coordinates `Tᵢ`, `i = 1, …, I`, with parameter domains `Dᵢ ⊆ ℝ^d`), `s = k + σ` and
+`p ∈ [1, ∞)`, the Sobolev space over the boundary is
+
+  `W^{s,p}(∂Ω) = {v ∈ L^p(∂Ω) : v ∘ gᵢ ∈ W^{s,p}(Dᵢ), i = 1, …, I}`,
+
+a subspace of `L^p(∂Ω) = Lp ℝ p σ` for the surface measure `σ = hΩ.boundaryMeasure hb`; the
+composition `v ∘ gᵢ` is `v ∘ Φᵢ`, `x' ↦ v (Tᵢ⁻¹ (x', gᵢ x'))`, read on the representative `⇑v` of
+the class `v` (a choice that does not matter, by `ae_eq_comp_graphParam`), and `W^{s,p}(Dᵢ)` is
+Definition 7.2.10 on the open bounded `Dᵢ`. It is a submodule because each `W^{s,p}(Dᵢ)` is
+closed under the operations (`definition_7_2_10_iff_exists` and the module structure of
+`SobolevSlobodeckij`). The norm of the definition is `definition_7_2_13_norm`.
+
+The printed definition asks `v ∈ L²(∂Ω)` for every `p`; this is read as `v ∈ L^p(∂Ω)`, the
+space in which `W^{s,p}` sits and the one the norm `max_i ‖v ∘ gᵢ‖_{W^{s,p}(Dᵢ)}` controls
+(`notes/boundary/plan-report.md`, erratum E4). The book's `C^{k,α}` patches are `C¹` here. -/
+noncomputable def definition_7_2_13_atlas {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ) (p : ℝ≥0∞)
+    [Fact (1 ≤ p)] : Submodule ℝ (Lp ℝ p (hΩ.boundaryMeasure hb)) where
+  carrier := {v | ∀ i, definition_7_2_10 d k σ p (definition_7_2_13_domain a i)
+    (v ∘ EuclideanSpace.graphParam (a.T i) (a.g i))}
+  zero_mem' i := by
+    rw [definition_7_2_10_iff_exists]
+    refine ⟨0, SobolevSlobodeckij.fn_zero.trans ?_⟩
+    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_zero ℝ p _)).symm
+  add_mem' {v w} hv hw i := by
+    obtain ⟨U, hU⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hv i)
+    obtain ⟨V, hV⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hw i)
+    refine (definition_7_2_10_iff_exists k σ p _ _).2 ⟨U + V, ?_⟩
+    refine (SobolevSlobodeckij.fn_add U V).trans ((hU.add hV).trans ?_)
+    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_add v w)).symm
+  smul_mem' c {v} hv i := by
+    obtain ⟨U, hU⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hv i)
+    refine (definition_7_2_10_iff_exists k σ p _ _).2 ⟨c • U, ?_⟩
+    refine (SobolevSlobodeckij.fn_smul c U).trans ((hU.const_smul c).trans ?_)
+    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_smul c v)).symm
+
+/-- Definition 7.2.13 unfolded: `v ∈ W^{s,p}(∂Ω)` exactly when, for every patch `i`, the
+pull-back `v ∘ Φᵢ` lies in `W^{s,p}(Dᵢ)` in the sense of Definition 7.2.10. -/
+theorem mem_definition_7_2_13_atlas_iff {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ) (p : ℝ≥0∞)
+    [Fact (1 ≤ p)] (v : Lp ℝ p (hΩ.boundaryMeasure hb)) :
+    v ∈ definition_7_2_13_atlas hΩ hb a k σ p ↔ ∀ i, definition_7_2_10 d k σ p
+      (definition_7_2_13_domain a i) (v ∘ EuclideanSpace.graphParam (a.T i) (a.g i)) :=
+  Iff.rfl
+
+/-- **Definition 7.2.13**: the Sobolev space `W^{s,p}(∂Ω)`, `s = k + σ`, `p ∈ [1, ∞)`, over the
+boundary of a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`, for the patch system given by the chosen graph
+atlas `hΩ.graphAtlas hb` of `Ω` (`definition_7_2_13_atlas` for an arbitrary patch system). When
+`p = 2` one writes `H^s(∂Ω) ≡ W^{s,2}(∂Ω)`, `definition_7_2_13_hs`.
+
+The book states without proof that the space does not depend on the patch system and that the
+norms of two patch systems are equivalent; that is `definition_7_2_13_indep`, not proved. The
+book's Lipschitz (`C^{k,α}`) patches are restated as `C¹`. -/
+noncomputable def definition_7_2_13 {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ)
+    (p : ℝ≥0∞) [Fact (1 ≤ p)] : Submodule ℝ (Lp ℝ p (hΩ.boundaryMeasure hb)) :=
+  definition_7_2_13_atlas hΩ hb (hΩ.graphAtlas hb) k σ p
+
+/-- **The space `H^s(∂Ω) ≡ W^{s,2}(∂Ω)`** of Definition 7.2.13, `s = k + σ`, the case `p = 2`;
+the book's `H^{1/2}(∂Ω)` is `k = 0`, `σ = 1/2`. -/
+noncomputable abbrev definition_7_2_13_hs {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ) :
+    Submodule ℝ (Lp ℝ 2 (hΩ.boundaryMeasure hb)) :=
+  definition_7_2_13 hΩ hb k σ 2
+
+/-- **The norm of Definition 7.2.13**, `‖v‖_{W^{s,p}(∂Ω)} = max_i ‖v ∘ gᵢ‖_{W^{s,p}(Dᵢ)}`, as a
+function on `W^{s,p}(∂Ω)`: the supremum over the patches of the norm of the element of
+`SobolevSlobodeckij ℝ (stdBasis d) k σ p Dᵢ volume` whose function is `v ∘ Φᵢ` (unique by
+`SobolevSlobodeckij.ext_of_fn_ae_eq`; `definition_7_2_13_norm_eq` computes it from any family of
+such elements). The patches being finitely many, the supremum is the book's maximum
+(`Finset.sup'_univ_eq_ciSup`), and it is `0` when `∂Ω` is empty. -/
+noncomputable def definition_7_2_13_norm {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    {hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
+    {hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
+    {a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))} {k : ℕ} {σ : ℝ} {p : ℝ≥0∞}
+    [Fact (1 ≤ p)] (v : definition_7_2_13_atlas hΩ hb a k σ p) : ℝ :=
+  ⨆ i, ‖((definition_7_2_10_iff_exists k σ p _ _).1 (v.2 i)).choose‖
+
+/-- The norm of Definition 7.2.13 computed from any family of elements `Uᵢ ∈ W^{s,p}(Dᵢ)` whose
+functions are the pull-backs `v ∘ Φᵢ`: `‖v‖_{W^{s,p}(∂Ω)} = sup_i ‖Uᵢ‖`. -/
+theorem definition_7_2_13_norm_eq {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    {hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
+    {hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
+    {a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))} {k : ℕ} {σ : ℝ} {p : ℝ≥0∞}
+    [Fact (1 ≤ p)] (v : definition_7_2_13_atlas hΩ hb a k σ p)
+    (U : ∀ i, SobolevSlobodeckij ℝ (stdBasis d) k σ p (definition_7_2_13_domain a i) volume)
+    (hU : ∀ i, SobolevSlobodeckij.fn (U i) =ᵐ[volume.restrict (a.graphDomain i)]
+      (v : Lp ℝ p (hΩ.boundaryMeasure hb)) ∘ EuclideanSpace.graphParam (a.T i) (a.g i)) :
+    definition_7_2_13_norm v = ⨆ i, ‖U i‖ := by
+  unfold definition_7_2_13_norm
+  refine iSup_congr fun i ↦ ?_
+  congr 1
+  exact SobolevSlobodeckij.ext_of_fn_ae_eq
+    (((definition_7_2_10_iff_exists k σ p _ _).1 (v.2 i)).choose_spec.trans (hU i).symm)
+
+end Boundary
 
 end AtkinsonHan.Chapter07
