@@ -22,17 +22,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition
 
 [[node]]
 id = "isContDiffDomain_of_isClassC1"
-kind = "theorem"
-desc = '''The two readings of "`C^1` domain" agree, the other way: an open set of class `C^1` in
-Brezis's sense (`IsClassC1 Ω`, by local charts) is a `C^1` domain in Atkinson–Han's sense
-(`IsContDiffDomain 1 Ω`, Definition 7.2.1, the graph definition of
-`Numlib/Analysis/Sobolev/Domain`). One line from the backbone's chart ⇒ graph bridge
-`IsContDiffChartDomain.isContDiffDomain` (`Numlib/Analysis/Sobolev/Boundary/ChartGraph.lean`,
-planned in the boundary round of 2026-09-21: the implicit function theorem
-`ContDiffAt.implicitFunction` applied to the last coordinate of the inverse chart, whose
-derivative is invertible, after a rigid motion sending its gradient to `e_N`). With
-`isClassC1_iff_isContDiffDomain`, the `iff` with `isClassC1_of_isContDiffDomain`. ★'''
-deps = ["IsClassC1", "IsContDiffChartDomain.isContDiffDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition; Atkinson–Han, Definition 7.2.1"
+
+[[node]]
+id = "isClassC1_iff_isContDiffDomain"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition; Atkinson–Han, Definition 7.2.1"
 
 [[node]]

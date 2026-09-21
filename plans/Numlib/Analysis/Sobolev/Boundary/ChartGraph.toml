@@ -1,119 +1,50 @@
-desc = '''
-The chart ⇒ graph bridge (decision B5 of `notes/boundary/planning-brief.md`, decision D9 of the
-Brezis round): an open set of class `C^n` by local charts in Brezis's sense
-(`IsContDiffChartDomain n Ω`, `Numlib/Analysis/Sobolev/Chart.lean`) is a `C^n` domain in the graph
-sense of Atkinson–Han (`IsContDiffDomain n Ω`, `Domain.lean`), for `1 ≤ n`. With
-`IsContDiffDomain.isContDiffChartDomain` (proved in `Chart.lean`) the two definitions of a `C¹`
-domain are equivalent, and every chart domain inherits the boundary data of
-`Boundary/ContDiffDomain.lean`; the Brezis surface node `isContDiffDomain_of_isClassC1` is its
-instance.
-
-The proof is the implicit function theorem. At a boundary point `x₀` with chart `(U, H, H⁻¹)`,
-`x₀ = H y₀` with `y₀ ∈ Q₀`, the function `Φ := (H⁻¹ ·) (Fin.last d)` is `C^n` near `x₀`
-(`H⁻¹ ∈ C^n(Ū)`, `x₀` interior to `U`), `Ω ∩ U = {Φ > 0}` and `∂Ω ∩ U = {Φ = 0}`
-(`ContDiffChart.invFun_mem_pos_iff`, `invFun_mem_zero_iff`), and `DΦ(x₀) ≠ 0` because
-`DH⁻¹(x₀)` is invertible (inverse `DH(y₀)`, chain rule on the open sets). A rigid motion `T`
-sends the unit vector `∇Φ(x₀)/‖∇Φ(x₀)‖` to `e_N`; Mathlib's `ContDiffAt.implicitFunction`
-(`Mathlib/Analysis/Calculus/ImplicitContDiff.lean`) applied to `f (x', t) := Φ (T⁻¹ (x', t))` at
-`(x₀', t₀)`, whose `t`-derivative is `∂_N (Φ ∘ T⁻¹) = ‖∇Φ(x₀)‖ > 0`, gives a `C^n` function `g`
-with `f (x', t) = 0 ↔ t = g x'` near `(x₀', t₀)` (`ContDiffAt.eventually_apply_eq_iff_implicitFunction`,
-`ContDiffAt.contDiffAt_implicitFunction`); the sign of `∂_t f > 0` makes `{f > 0}` the region
-above the graph in a small box, and a bump-function extension makes `g` globally `C^n`. Hence
-`IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r` for a small `r`.
-
-Kept in its own module so that `Chart.lean` stays read-only. Wave A, ~500 lines. Imports
-`Numlib/Analysis/Sobolev/Chart.lean`, `Boundary/Data.lean` (for `epigraph`), Mathlib's
-`Analysis/Calculus/ImplicitContDiff.lean`, `Analysis/Calculus/ImplicitFunction/ProdDomain.lean`,
-`Analysis/Calculus/BumpFunction/FiniteDimension.lean`. Notation:
-`E := EuclideanSpace ℝ (Fin (d + 1))`, `E' := EuclideanSpace ℝ (Fin d)`, `n : WithTop ℕ∞` with
-`1 ≤ n`, `c : ContDiffChart n Ω`.
-'''
+[[node]]
+id = "ContinuousLinearMap.isInvertible_of_apply_one_ne_zero"
 
 [[node]]
-id = "ContDiffChart.contDiffAt_invFun"
-kind = "theorem"
-desc = '''For `c : ContDiffChart n Ω` and `x ∈ c.U`, `ContDiffAt ℝ n c.invFun x`, and for `y ∈ unitChartCube d`,
-`ContDiffAt ℝ n c.toFun y`: `c.contDiffOn_invFun : ContDiffOn ℝ n c.invFun (closure c.U)` at an
-interior point of `closure c.U` (`c.isOpen_U`, `ContDiffOn.contDiffAt` with
-`IsOpen.mem_nhds`, `subset_closure`), and likewise `c.contDiffOn` on `closure (unitChartCube d)`
-(`isOpen_unitChartCube`). ★'''
-deps = ["ContDiffChart"]
+id = "ContinuousLinearMap.exists_norm_eq_one_and_pos_of_ne_zero"
 
 [[node]]
-id = "ContDiffChart.isInvertible_fderiv_invFun"
-kind = "theorem"
-desc = '''**The derivative of the inverse chart is invertible**: for `1 ≤ n`, `c : ContDiffChart n Ω`
-and `x ∈ c.U`, `(fderiv ℝ c.invFun x).IsInvertible` (`ContinuousLinearMap.IsInvertible`), with
-inverse `fderiv ℝ c.toFun (c.invFun x)`: `c.toFun ∘ c.invFun = id` on the open `c.U`
-(`c.toFun_invFun`) and `c.invFun ∘ c.toFun = id` on the open `unitChartCube d` (`c.invFun_toFun`),
-so the chain rule at `x` and at `c.invFun x ∈ unitChartCube d` (`c.mapsTo_invFun`,
-`Filter.EventuallyEq.fderiv_eq` on the open sets, `fderiv_comp`, `contDiffAt_invFun`) gives
-`fderiv toFun (invFun x) ∘L fderiv invFun x = id` and the other composite `= id`
-(`ContinuousLinearEquiv.ofBijective`-free: build the `ContinuousLinearEquiv` from the two
-identities, `ContinuousLinearMap.IsInvertible` of `Mathlib/Analysis/Calculus/ImplicitFunction/ProdDomain.lean`'s
-prerequisites). Consequently `fderiv ℝ c.invFun x` is surjective, and its last coordinate
-`fun v ↦ fderiv ℝ c.invFun x v (Fin.last d)` is a nonzero linear form
-(`ContDiffChart.fderiv_invFun_last_ne_zero`). ★★'''
-deps = ["ContDiffChart.contDiffAt_invFun"]
+id = "EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last"
 
 [[node]]
 id = "EuclideanSpace.exists_affineIsometryEquiv_map_eq_single_last"
-kind = "theorem"
-desc = '''**A rigid motion sending a given unit vector to `e_N`**: for `v : E` with `‖v‖ = 1`,
-`∃ T : E ≃ᵃⁱ[ℝ] E, T.linearIsometryEquiv v = EuclideanSpace.single (Fin.last d) 1` (and `T 0 = 0`,
-`T` linear). Extend `v` and `e_N` to orthonormal bases (`Orthonormal.exists_orthonormalBasis_extension`
-of `Mathlib/Analysis/InnerProductSpace/PiL2.lean`, indexed so that `v` and `e_N` sit at the same
-index — reindex by an `Equiv` fixing that index) and take the linear isometry equivalence
-`b₁.repr.trans b₂.repr.symm` (`OrthonormalBasis.repr`), then `LinearIsometryEquiv.toAffineIsometryEquiv`.
-Alternatively the reflection across the bisector: for `v ≠ e_N`, `reflection (ℝ ∙ (v − e_N))ᗮ`
-(`Mathlib/Analysis/InnerProductSpace/Projection/Reflection.lean`, `reflection_sub`) swaps `v`
-and `e_N`; for `v = e_N` take the identity. ★'''
-deps = []
+
+[[node]]
+id = "EuclideanSpace.initLastL"
+
+[[node]]
+id = "EuclideanSpace.hasDerivAt_snocLast"
+
+[[node]]
+id = "EuclideanSpace.lt_of_fderiv_single_last_pos"
+
+[[node]]
+id = "EuclideanSpace.exists_contDiff_forall_pos_iff_of_fderiv_single_last_pos"
 
 [[node]]
 id = "IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero"
-kind = "theorem"
-desc = '''**A regular level set is locally a graph** (the implicit function theorem in the shape of
-`IsBoundaryGraphAt`): for `1 ≤ n`, an open `Ω ⊆ E`, `x₀ ∈ E`, `V ∈ 𝓝 x₀`, and `Φ : E → ℝ` with
-`ContDiffAt ℝ n Φ x₀`, `Φ x₀ = 0`, `fderiv ℝ Φ x₀ ≠ 0` and `Ω ∩ V = {x ∈ V | 0 < Φ x}`, there is
-`r > 0` with `IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r`.
-Proof. Let `v := gradient Φ x₀ / ‖gradient Φ x₀‖` and `T` a rigid motion with `T.linear v = e_N`
-(`exists_affineIsometryEquiv_map_eq_single_last`); set `Ψ := Φ ∘ T.symm` (so `Ω ∩ V = T ⁻¹' {Ψ > 0}`
-on `V`) and `f : E' × ℝ → ℝ`, `f (x', t) := Ψ (snocLast x' t)`, `u₀ := (init (T x₀), (T x₀) (Fin.last d))`.
-Then `ContDiffAt ℝ n f u₀`, `f u₀ = 0`, and `fderiv ℝ f u₀ ∘L ContinuousLinearMap.inr ℝ E' ℝ`
-is `t ↦ t · ∂_N Ψ (T x₀)` with `∂_N Ψ (T x₀) = ⟪gradient Φ x₀, T.linear⁻¹ e_N⟫ = ‖gradient Φ x₀‖ > 0`,
-an invertible map `ℝ →L ℝ` (`ContinuousLinearMap.IsInvertible` of a nonzero scalar map). Mathlib's
-`ContDiffAt.implicitFunction (cdf) (pn : n ≠ 0) (if₂)` (`Mathlib/Analysis/Calculus/ImplicitContDiff.lean`)
-gives `g₀ : E' → ℝ` with `g₀ u₀.1 = u₀.2` (`implicitFunction_apply_self`),
-`∀ᶠ w in 𝓝 u₀, f w = 0 ↔ g₀ w.1 = w.2` (`eventually_apply_eq_iff_implicitFunction`) and
-`ContDiffAt ℝ n g₀ u₀.1` (`contDiffAt_implicitFunction`). Region above the graph: on a small box
-`ball u₀.1 ρ ×ˢ Ioo (u₀.2 − ρ) (u₀.2 + ρ)` inside the neighbourhood of the `∀ᶠ` and where
-`∂_t f > 0` (continuity of `fderiv` for `n ≥ 1`), `t ↦ f (x', t)` is strictly increasing
-(`strictMonoOn_of_deriv_pos` on the interval) and vanishes exactly at `t = g₀ x'`, so
-`f (x', t) > 0 ↔ t > g₀ x'`. Globalize: `g := fun x' ↦ χ x' * g₀ x' + (1 − χ x') * u₀.2` with a
-smooth bump `χ = 1` on `ball u₀.1 (ρ/2)`, `tsupport χ ⊆ ball u₀.1 ρ` on which `g₀` is `C^n`
-(`ContDiffAt.contDiffOn` gives a neighbourhood; `IsCompact.exists_contDiff_eqOn_one`), so
-`ContDiff ℝ n g` (`contDiffOn_of_locally_contDiffOn`-type gluing: `C^n` on the ball, constant off
-the support of `χ`). Finally `r := ρ/2` shrunk so that `ball x₀ r ⊆ V` and `T '' ball x₀ r`
-lies in the box (`T` is an isometry): for `x ∈ ball x₀ r`, `x ∈ Ω ↔ Ψ (T x) > 0 ↔ (T x)_N > g (init (T x))`,
-which is `IsBoundaryGraphAt` with the chart `(T, g)` (`isBoundaryGraphAt_iff`, `Data.lean`).
-★★★, ~350 lines: the implicit function theorem is on `E' × ℝ`, and the bookkeeping between
-`E = ℝ^{d+1}`, `E' × ℝ` (`lastInitL`, `snocLast`) and the rigid motion is most of the work.'''
-deps = ["IsBoundaryGraphAt", "EuclideanSpace.exists_affineIsometryEquiv_map_eq_single_last", "EuclideanSpace.epigraph", "EuclideanSpace.snocLast"]
+
+[[node]]
+id = "ContDiffChart.contDiffAt_invFun"
+
+[[node]]
+id = "ContDiffChart.contDiffAt_toFun"
+
+[[node]]
+id = "ContDiffChart.fderiv_toFun_comp_fderiv_invFun"
+
+[[node]]
+id = "ContDiffChart.fderiv_invFun_comp_fderiv_toFun"
+
+[[node]]
+id = "ContDiffChart.isInvertible_fderiv_invFun"
+
+[[node]]
+id = "ContDiffChart.fderiv_invFun_last_ne_zero"
 
 [[node]]
 id = "IsContDiffChartDomain.isContDiffDomain"
-kind = "theorem"
-desc = '''**Chart ⇒ graph** (decision D9 of `notes/brezis/planning-brief.md`, decision B5 of
-`notes/boundary/planning-brief.md`): for `1 ≤ n`, `IsContDiffChartDomain n Ω → IsContDiffDomain n Ω`.
-`Ω` is open (`IsContDiffChartDomain.isOpen`); at `x₀ ∈ frontier Ω` take the chart `c` with
-`x₀ ∈ c.U` (`exists_chart`), `Φ := fun x ↦ c.invFun x (Fin.last d)`, `V := c.U`:
-`ContDiffAt ℝ n Φ x₀` (`contDiffAt_invFun` composed with the coordinate projection),
-`Φ x₀ = 0` (`c.invFun_mem_zero_iff`: `x₀ ∈ c.U ∩ frontier Ω` so `c.invFun x₀ ∈ unitChartCubeZero d`),
-`fderiv ℝ Φ x₀ ≠ 0` (`fderiv_invFun_last_ne_zero`), and `Ω ∩ c.U = {x ∈ c.U | 0 < Φ x}`
-(`c.invFun_mem_pos_iff`, `mem_unitChartCubePos`). `IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero`
-gives the graph chart. Together with `IsContDiffDomain.isContDiffChartDomain` (`Chart.lean`):
-`isContDiffChartDomain_iff_isContDiffDomain` for `1 ≤ n`. Previously planned in `Chart.toml` as
-the lowest-priority node of the Brezis round; moved here with the route made concrete. ★★,
-~100 lines given the previous node.'''
-deps = ["IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero", "ContDiffChart.isInvertible_fderiv_invFun", "IsContDiffChartDomain", "IsContDiffDomain", "ContDiffChart"]
+
+[[node]]
+id = "isContDiffChartDomain_iff_isContDiffDomain"

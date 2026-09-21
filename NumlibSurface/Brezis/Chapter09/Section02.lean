@@ -1,3 +1,4 @@
+import Numlib.Analysis.Sobolev.Boundary.ChartGraph
 import Numlib.Analysis.Sobolev.Extension
 import NumlibSurface.Brezis.Chapter09.Section01
 
@@ -16,14 +17,17 @@ and `Q_+` is `posHalf e_N Q`, `e_N` the last basis vector, whose carrier is `uni
 (`coe_posHalf_unitChartCubeOpens`). "Ω of class `C^1`" is `IsClassC1 Ω`, the book's definition
 by local charts `H : Q → U` (`IsOfClassC`, `isOfClassC_iff`), which is the backbone's
 `IsContDiffChartDomain 1 Ω` (decision D9 of the planning brief); Atkinson–Han's definition by
-local graphs, `IsContDiffDomain 1 Ω`, implies it (`isClassC1_of_isContDiffDomain`), and the
-converse — the implicit function theorem — is planned but waits on its backbone lemma. The
+local graphs, `IsContDiffDomain 1 Ω`, is equivalent to it (`isClassC1_of_isContDiffDomain`,
+and the converse `isContDiffDomain_of_isClassC1` by the implicit function theorem,
+`IsContDiffChartDomain.isContDiffDomain` of `Numlib/Analysis/Sobolev/Boundary/ChartGraph`). The
 extension by reflection `u^⋆` of Lemma 9.2 is the backbone's `evenReflection e_N u`, the odd
 reflection `f^□` of its proof is `oddReflection e_N f`.
 
 ## Main results
 
-* `IsOfClassC`, `isOfClassC_iff`, `IsClassC1`, `isClassC1_of_isContDiffDomain` — the Definition.
+* `IsOfClassC`, `isOfClassC_iff`, `IsClassC1`, `isClassC1_of_isContDiffDomain`,
+  `isContDiffDomain_of_isClassC1`, `isClassC1_iff_isContDiffDomain` — the Definition, and its
+  equivalence with Atkinson–Han's.
 * `theorem_9_7`, `theorem_9_7_halfSpace` — the extension operator
   `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)` for `Ω` of class `C^1` with bounded boundary, and for the half
   space.
@@ -106,6 +110,21 @@ local chart by straightening (`IsContDiffDomain.isContDiffChartDomain`). The con
 `isContDiffDomain_of_isClassC1`, is the implicit function theorem. -/
 theorem isClassC1_of_isContDiffDomain {Ω : Set 𝔼} (h : IsContDiffDomain 1 Ω) : IsClassC1 Ω :=
   h.isContDiffChartDomain
+
+/-- **The two readings of "`C^1` domain" agree, the other way**: an open set of class `C^1` in
+Brezis's sense (`IsClassC1 Ω`, by local charts) is a `C^1` domain in Atkinson–Han's sense
+(`IsContDiffDomain 1 Ω`, Definition 7.2.1, by local graphs). This is the backbone's chart ⇒
+graph bridge `IsContDiffChartDomain.isContDiffDomain`
+(`Numlib/Analysis/Sobolev/Boundary/ChartGraph`): the implicit function theorem applied to the
+last coordinate of the inverse chart, whose derivative is invertible, after a rigid motion
+sending its gradient to `e_N`. -/
+theorem isContDiffDomain_of_isClassC1 {Ω : Set 𝔼} (h : IsClassC1 Ω) : IsContDiffDomain 1 Ω :=
+  h.isContDiffDomain le_rfl WithTop.coe_ne_top
+
+/-- **The two readings of "`C^1` domain" agree**: Brezis's `IsClassC1 Ω` (local charts) is
+Atkinson–Han's `IsContDiffDomain 1 Ω` (local graphs). -/
+theorem isClassC1_iff_isContDiffDomain {Ω : Set 𝔼} : IsClassC1 Ω ↔ IsContDiffDomain 1 Ω :=
+  ⟨isContDiffDomain_of_isClassC1, isClassC1_of_isContDiffDomain⟩
 
 /-! ### Theorem 9.7 -/
 
