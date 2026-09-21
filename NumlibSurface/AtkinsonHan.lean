@@ -38,6 +38,7 @@ import NumlibSurface.AtkinsonHan.Chapter07.Section02
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
 import NumlibSurface.AtkinsonHan.Chapter07.Section04
 import NumlibSurface.AtkinsonHan.Chapter07.Section05
+import NumlibSurface.AtkinsonHan.Chapter07.Section06
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section04
@@ -149,6 +150,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 7.3 | `Chapter07.Section03` | Density, extension, the Sobolev embeddings, Deny–Lions |
 | 7.4 | `Chapter07.Section04` | The Fourier characterization of `H^k(ℝ^d)` |
 | 7.5 | `Chapter07.Section05` | Periodic Sobolev spaces; the trapezoidal rule on periodic data |
+| 7.6 | `Chapter07.Section06` | Integration by parts on a `C¹` domain: Proposition 7.6.1, (7.6.3) |
 | **8** | | *Weak Formulations of Elliptic Boundary Value Problems* |
 | 8.2 | `Chapter08.Section02` | Existence and uniqueness for operator equations |
 | 8.3 | `Chapter08.Section03` | Bilinear forms and the Lax–Milgram lemma |
@@ -299,12 +301,14 @@ each section module names the results it leaves out.
   the density of `C_0^∞(ℝ^d)`, the density of `C^∞(Ω̄)` and the extension operator at every
   order, the Sobolev embeddings, Rellich–Kondrachov, the Deny–Lions equivalences and the
   Bramble–Hilbert lemma, all under the backbone's hypothesis of an *extension domain* — which the
-  `C¹` domains of Definition 7.2.1 are — where the book assumes a Lipschitz domain. Its open
-  nodes are the trace theorems 7.3.10 and 7.3.11, which wait on the surface measure above, and
-  Stein's universal extension operator `theorem_7_3_5_universal`.
+  `C¹` domains of Definition 7.2.1 are — where the book assumes a Lipschitz domain. The trace
+  theorem 7.3.10 is there on the bounded `C¹` domains, with the surface measure and the trace of
+  `Numlib/Analysis/Sobolev/Boundary/`; its open nodes are the fractional clauses of Theorems
+  7.3.10–7.3.11 and Stein's universal extension operator `theorem_7_3_5_universal`.
   §7.4 (the Fourier characterization of `H^k(ℝ^d)`) is `Chapter07.Section04`, through Mathlib's
   Bessel potential spaces on `ℝ^d`, with (7.4.1) and Exercise 7.4.2 proved. §7.6 (integration by
-  parts on a Lipschitz domain) needs surface measure on a Lipschitz boundary and has no module.
+  parts) is `Chapter07.Section06`, on the bounded `C¹` domains: Green's formula for `H¹(Ω)` and
+  for conjugate `W^{1,p} × W^{1,p*}` pairs, from the divergence theorem and the trace.
   **§7.5** is `Chapter07.Section05`: the periodic spaces are defined by decay of Fourier
   coefficients, so no domain, boundary or weak derivative enters them, and the module carries
   Definition 7.5.1, Theorem 7.5.2, Propositions 7.5.4–7.5.6 and Exercises 7.5.1–7.5.4. Left out

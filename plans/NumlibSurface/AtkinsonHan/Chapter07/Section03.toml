@@ -118,26 +118,7 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 
 [[node]]
 id = "theorem_7_3_10"
-kind = "theorem"
-desc = '''Theorem 7.3.10 (trace theorem), restated on bounded `C¹` domains and on triangulated polygons
-without slits (the book's "Lipschitz" is out of scope; scope note of the previous rounds): for
-`1 ≤ p < ∞` and either (i) `hΩ : IsContDiffDomain 1 Ω` with `hb : Bornology.IsBounded Ω`
-(`definition_7_2_1_contDiffDomain`), `Γ := frontier Ω` with the surface measure
-`σ := hΩ.boundaryMeasure hb` and `L^p(Γ) := Lp ℝ p σ`, or (ii) `Ω ⊆ ℝ²` with
-`𝒯 : Triangulation Ω`, `hI : 𝒯.InteriorEdgesSubset` and `σ := 𝒯.boundaryMeasure`, there is a
-continuous linear `γ : W^{1,p}(Ω) →L[ℝ] L^p(Γ)` — `(hΩ.traceFamily hb).traceL p hp`, resp.
-`(𝒯.traceFamily hI).traceL p hp` — with (a) `γ v =ᵐ[σ] ṽ` whenever `v ∈ W^{1,p}(Ω)` has a
-representative `ṽ` continuous on `closure Ω` (`BoundaryData.TraceFamily.traceL_ae_eq`), and
-(b) `‖γ v‖_{L^p(Γ)} ≤ c ‖v‖_{W^{1,p}(Ω)}` (`ContinuousLinearMap.le_opNorm`). Clause (c),
-compactness, is `theorem_7_3_10_compact`; the range clause `γ(W^{1,p}) = W^{1−1/p,p}(Γ)` and
-`H^{1/2}(Γ) = γ(H^1(Ω))` with the quotient norm (7.3.2) are `theorem_7_3_10_range`. Restated
-2026-09-21 (boundary round): the backbone is `Numlib/Analysis/Sobolev/Boundary/` — Nečas's
-proof from a transversal field (`BoundaryData.traceL`, `Trace.lean`), the `C¹` instance
-`IsContDiffDomain.traceFamily` (`ContDiffDomain.lean`) and the polygon instance glued from the
-triangles (`Triangulation.traceFamily`, `PolygonTrace.lean`). The surface node states (a)–(b) for
-both instances as two theorems `theorem_7_3_10` (the `C¹` case) and `theorem_7_3_10_polygon`;
-~40 lines each. The book states the theorem without proof.'''
-deps = ["definition_7_2_1_contDiffDomain", "theorem_7_3_2", "IsContDiffDomain.traceFamily", "BoundaryData.TraceFamily"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clauses (a) and (b)'
 
 [[node]]
 id = "theorem_7_3_10_polygon"
@@ -153,19 +134,7 @@ deps = ["Triangulation.traceFamily", "Triangulation.InteriorEdgesSubset"]
 
 [[node]]
 id = "theorem_7_3_10_compact"
-kind = "theorem"
-desc = '''Theorem 7.3.10 (c): the trace `γ : W^{1,p}(Ω) → L^p(Γ)` of `theorem_7_3_10` is compact —
-every bounded sequence `vₙ` in `W^{1,p}(Ω)` has a subsequence with `γ vₙ'` convergent in
-`L^p(Γ)` — on a bounded `C¹` domain (`IsContDiffDomain.isCompactOperator_traceL`, for `p < d + 1`
-or `d ≥ 1`, the hypothesis of Rellich's theorem `SobolevEuclidean.isCompactEmbedding_fnL`) and on
-a triangulated polygon without slits (`Triangulation.isCompactOperator_traceL`, part of the
-`Triangulation.traceFamily` node). Restated 2026-09-21 (boundary round): the proof is Nečas's
-inequality in its sharp form `∫_Γ |γv|^p ≤ C (‖v‖_p^p + ‖v‖_p^{p−1} ‖∇v‖_p)`
-(`BoundaryData.integral_abs_traceL_rpow_le`) applied to differences of a sequence whose
-`L^p(Ω)` parts converge by Rellich–Kondrachov, so that the traces are Cauchy; `IsCompactOperator`
-in Mathlib's sense, with the book's sequential form as `isCompactOperator_iff_isCompact_closure_image_closedBall`
-plus `IsCompact.tendsto_subseq`. ★, ~40 lines.'''
-deps = ["theorem_7_3_10", "IsContDiffDomain.isCompactOperator_traceL", "Triangulation.traceFamily"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clause (c)'
 
 [[node]]
 id = "theorem_7_3_10_range"
@@ -243,35 +212,11 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 
 [[node]]
 id = "example_7_3_15_boundary"
-kind = "theorem"
-desc = '''Example 7.3.15, the boundary clause, on a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`,
-`hb : Bornology.IsBounded Ω`, `Ω` connected as in `theorem_7_3_13`; the book's "Lipschitz"
-restated as `C¹`): with `γ := (hΩ.traceFamily hb).traceL 2 _ : H¹(Ω) →L L²(Γ)` and
-`f₁ v := ∫ |γ v| dσ` (`σ := hΩ.boundaryMeasure hb`, finite, so `L²(σ) ⊆ L¹(σ)` and `f₁` is a
-seminorm bounded by `√(σ Γ) ‖γ‖ ‖v‖`), Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` gives a
-constant `c > 0` with `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ∫_Γ |γ v| dσ)` for all `v ∈ H¹(Ω)`. Restated
-2026-09-21 (boundary round): (H1) is the boundedness of the trace; (H2)′ — a constant `v` with
-`f₁ v = 0` is `0` — holds because the trace of the constant `c` is the constant `c` on `Γ`
-(`traceL_ae_eq` for the continuous representative) and `σ Γ > 0`
-(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen` with `U = univ`, `Ω` nonempty). The `H¹₀` clause
-(7.3.10) is `example_7_3_15`, proved directly. ★, ~40 lines after `theorem_7_3_13`.'''
-deps = ["theorem_7_3_13", "theorem_7_3_10", "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.3.15, the inequality through the trace'
 
 [[node]]
 id = "example_7_3_16"
-kind = "theorem"
-desc = '''Example 7.3.16 on a bounded `C¹` domain (`hΩ`, `hb`, `Ω` connected; "Lipschitz" restated as
-`C¹`): for an open `U ⊆ ℝ^d` meeting `∂Ω` — the book's "open non-empty `Γ₀ ⊆ Γ`" is
-`Γ₀ := U ∩ frontier Ω` — and `f₁ v := ∫ x in U, |γ v x| ∂σ` (`γ := (hΩ.traceFamily hb).traceL 2 _`,
-`σ := hΩ.boundaryMeasure hb`), Theorem 7.3.12 with `k = 1`, `p = 2`, `J = 1` gives `c > 0` with
-`‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + f₁ v)` on `H¹(Ω)`, hence `‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` on
-`H¹_{Γ₀}(Ω) := {v ∈ H¹(Ω) : γ v = 0 σ-a.e. on U}` — the Poincaré–Friedrichs inequality under a
-mixed boundary condition. Restated 2026-09-21 (boundary round): "`v = 0` a.e. on `Γ₀`" is
-`(γ v : E → ℝ) =ᵐ[σ.restrict U] 0`; (H2) for `theorem_7_3_12` — a polynomial of degree `≤ 0`
-(a constant) with `f₁ = 0` is zero — uses `σ U > 0`
-(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`) and the trace of a constant. ★, ~40 lines
-after `theorem_7_3_12`.'''
-deps = ["theorem_7_3_12", "theorem_7_3_10", "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.3.16'
 
 [[node]]
 id = "fact_one_le_two_coe"

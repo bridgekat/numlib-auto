@@ -1,48 +1,16 @@
 namespace = "AtkinsonHan.Chapter07"
-desc = '''
-Atkinson-Han §7.6, integration by parts on a domain: the classical Gauss/Green formula
-`∫_Ω u_{x_i} v = ∫_Γ u v ν_i - ∫_Ω u v_{x_i}` for `u, v ∈ C^1(closure Ω)`, extended by a density
-argument to `H^1(Ω)` (Proposition 7.6.1) and further to conjugate pairs `W^{1,p} × W^{1,p'}`
-(7.6.3), from which the book derives its Green's identities.
 
-Restated 2026-09-21 (boundary round) on bounded `C¹` domains and on triangulated polygons without
-slits, the book's "Lipschitz" being out of scope: the boundary measure `σ`, the outward normal
-`ν` and the divergence theorem for `C¹(closure Ω)` fields are `Numlib/Analysis/Sobolev/Boundary/`
-(`BoundaryData`, instances `IsContDiffDomain.boundaryData` and `Triangulation.boundaryData`), the
-classical formula is `BoundaryData.integral_fderiv_mul_add_eq`, and the density argument is the
-`green` field of `BoundaryData.TraceFamily` (`IsContDiffDomain.traceFamily`,
-`Triangulation.traceFamily`), so each node here is an instance of a backbone field.
-'''
+[[node]]
+id = "proposition_7_6_1_classical"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, the classical Gauss formula displayed before Proposition 7.6.1'
 
 [[node]]
 id = "proposition_7_6_1"
-kind = "theorem"
-desc = '''Proposition 7.6.1 on a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω`;
-"Lipschitz" restated as `C¹`): with `Γ := frontier Ω`, `σ := hΩ.boundaryMeasure hb`,
-`ν := hΩ.outwardNormal hb` (defined everywhere on `Γ`, not only a.e.) and the trace
-`γ := (hΩ.traceFamily hb).traceL 2 _ : H¹(Ω) →L L²(Γ)`, for all `u v ∈ H¹(Ω)` and `i`,
-`∫ x in Ω, ∂ᵢu x * v x = ∫ x, γ u x * γ v x * ν x i ∂σ − ∫ x in Ω, u x * ∂ᵢv x` (7.6.1),
-where `∂ᵢu := SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`. Restated 2026-09-21
-(boundary round): it is the field `green` of `BoundaryData.TraceFamily` at `p = q = 2`
-(`(hΩ.traceFamily hb).green 2 2 …`, `Numlib/Analysis/Sobolev/Boundary/Data.lean`), whose backbone
-proof is the book's density argument (`BoundaryData.green_of_hasSmoothDensity`, `Trace.lean`:
-the classical formula `BoundaryData.integral_fderiv_mul_add_eq` for smooth representatives, the
-density `SobolevEuclidean.HasSmoothDensity` — Theorem 7.3.2 / Brezis Corollary 9.8 — and the
-continuity of the trace). The classical formula for `u, v ∈ C¹(closure Ω)` displayed before the
-proposition is `BoundaryData.integral_fderiv_mul_add_eq` itself (state it as
-`proposition_7_6_1_classical`, ★). (7.6.3) is `proposition_7_6_1_conj`, the polygon case
-`proposition_7_6_1_polygon`. ★, ~20 lines.'''
-deps = ["theorem_7_3_2", "theorem_7_3_10", "IsContDiffDomain.traceFamily"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.6.1'
 
 [[node]]
 id = "proposition_7_6_1_conj"
-kind = "theorem"
-desc = '''(7.6.3): under the hypotheses of `proposition_7_6_1`, for `1 < p < ∞` and `p*` with
-`1/p + 1/p* = 1` (`[ENNReal.HolderConjugate p q]`, both `≠ ⊤`), `u ∈ W^{1,p}(Ω)`,
-`v ∈ W^{1,p*}(Ω)`: `∫_Ω ∂ᵢu v = ∫_Γ γ_p u · γ_{p*} v · νᵢ dσ − ∫_Ω u ∂ᵢv`, with the traces
-`γ_p := (hΩ.traceFamily hb).traceL p _` at the two exponents. The field `green` of
-`BoundaryData.TraceFamily` at `(p, p*)`. (2026-09-21, boundary round.) ★, ~20 lines.'''
-deps = ["proposition_7_6_1", "IsContDiffDomain.traceFamily"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, the formula (7.6.3)'
 
 [[node]]
 id = "proposition_7_6_1_polygon"

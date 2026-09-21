@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.Deriv.Abs
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
+import Numlib.Analysis.Sobolev.Triangulation
 
 /-!
 # Atkinson–Han §7.1: weak derivatives
@@ -45,8 +46,16 @@ conjugate exponents, as `proposition_7_1_11`. The second rests on
 `Numlib/Analysis/Sobolev/Mollification.lean`, which supplies the commutation of the weak derivative
 with mollification and the resulting local approximation in `W^{1,p}`. Proposition 7.1.12, the
 chain rule, rests on the same module, with a dominated-convergence passage along an
-almost-everywhere convergent subsequence on top. Example 7.1.9 needs the trace of §7.3 and is the
-one item of §7.1 not here.
+almost-everywhere convergent subsequence on top.
+
+Example 7.1.9, the piecewise smooth functions of the finite element method, is here on a
+triangulated plane domain `𝒯 : Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`): a function
+of class `C^k` on `Ω` and `C^{k+1}` on each element has weak derivatives of order `k + 1`, the
+piecewise classical ones. It is proved without Green's formula, from the backbone's
+`Triangulation.hasWeakFDerivOn_of_piecewise` (`Numlib/Analysis/Sobolev/Triangulation.lean`) — the
+fundamental theorem of calculus on almost every line, the skeleton being a finite union of segments
+— applied to the derivatives of order `k`, and the composition rule
+`HasWeakIteratedLineDerivOn.cons`.
 -/
 
 open MeasureTheory Module TopologicalSpace Set intervalIntegral
@@ -989,5 +998,159 @@ theorem example_7_1_8_second_order (hx : StrictMono x)
 end SecondOrder
 
 end OneDimensional
+
+/-! ### Example 7.1.9: piecewise smooth functions on a triangulated polygon -/
+
+section Triangulated
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- On an open element the piecewise derivative of order `n` — the sum over the elements of the
+indicator of `K_T` times `∂^n (g T)` — is the derivative of the piece there. -/
+private theorem sum_indicator_iteratedFDeriv_of_mem {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) (T : 𝒯.elems) {x : 𝔼₂} (hx : x ∈ 𝒯.K T) :
+    ∑ T', (𝒯.K T').indicator (iteratedFDeriv ℝ n (g T')) x = iteratedFDeriv ℝ n (g T) x := by
+  rw [Finset.sum_eq_single T]
+  · rw [indicator_of_mem hx]
+  · intro T' _ hT'
+    refine indicator_of_notMem (fun hx' ↦ ?_) _
+    exact Set.disjoint_left.1 (𝒯.pairwise_disjoint_K hT') hx' hx
+  · exact fun h ↦ absurd (Finset.mem_univ T) h
+
+/-- Off the open elements the piecewise derivative vanishes. -/
+private theorem sum_indicator_iteratedFDeriv_of_notMem {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) {x : 𝔼₂} (hx : x ∉ ⋃ T, 𝒯.K T) :
+    ∑ T', (𝒯.K T').indicator (iteratedFDeriv ℝ n (g T')) x = 0 :=
+  Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _
+
+/-- On an open element, where `v` agrees with the piece `g T`, the classical derivatives of `v`
+are those of the piece. -/
+private theorem iteratedFDeriv_eq_of_mem_K {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {v : 𝔼₂ → ℝ}
+    {g : 𝒯.elems → 𝔼₂ → ℝ} (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) (n : ℕ) (T : 𝒯.elems)
+    {x : 𝔼₂} (hx : x ∈ 𝒯.K T) : iteratedFDeriv ℝ n v x = iteratedFDeriv ℝ n (g T) x := by
+  have h : v =ᶠ[nhds x] g T := by
+    filter_upwards [(𝒯.isOpen_K T).mem_nhds hx] with y hy
+    exact hvg T y hy
+  exact (h.iteratedFDeriv (𝕜 := ℝ) n).self_of_nhds
+
+/-- The piecewise derivative of order `n` of `C^n` pieces is bounded: each `∂^n (g T)` is
+continuous on the compact closed element. -/
+private theorem exists_norm_sum_indicator_iteratedFDeriv_le {Ω : Opens 𝔼₂}
+    (𝒯 : Triangulation Ω) {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ n (g T)) :
+    ∃ M : ℝ, ∀ x, ‖∑ T, (𝒯.K T).indicator (iteratedFDeriv ℝ n (g T)) x‖ ≤ M := by
+  have hb : ∀ T : 𝒯.elems, ∃ C : ℝ, ∀ x ∈ 𝒯.K T, ‖iteratedFDeriv ℝ n (g T) x‖ ≤ C := fun T ↦ by
+    obtain ⟨C, hC⟩ := (𝒯.isCompact_closedK T).exists_bound_of_continuousOn
+      ((hg T).continuous_iteratedFDeriv le_rfl).continuousOn
+    exact ⟨C, fun x hx ↦ hC x (𝒯.K_subset_closedK T hx)⟩
+  choose C hC using hb
+  refine ⟨∑ T, max (C T) 0, fun x ↦ ?_⟩
+  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun T _ ↦ ?_)
+  by_cases hx : x ∈ 𝒯.K T
+  · rw [indicator_of_mem hx]
+    exact (hC T x hx).trans (le_max_left _ _)
+  · rw [indicator_of_notMem hx, norm_zero]
+    exact le_max_right _ _
+
+/-- **The weak derivative of order `k + 1` along a tuple of directions**, for `v ∈ C^k(Ω)`
+piecewise `C^{k+1}` on a triangulation: the piecewise classical derivative evaluated at the tuple.
+The tuple `y` is `y 0 :: tail y`; the classical derivative of order `k` along `tail y` is a weak
+one (Lemma 7.1.5), it is continuous on `Ω` and piecewise `C¹`, so its first-order weak derivative
+in the direction `y 0` is the elementwise one (`Triangulation.hasWeakFDerivOn_of_piecewise`), and
+`HasWeakIteratedLineDerivOn.cons` composes the two. -/
+private theorem hasWeakIteratedLineDerivOn_of_piecewise {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    {k : ℕ} {v : 𝔼₂ → ℝ} (hv : ContDiffOn ℝ k v Ω) {g : 𝒯.elems → 𝔼₂ → ℝ}
+    (hg : ∀ T, ContDiff ℝ (k + 1) (g T)) (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x)
+    (y : Fin (k + 1) → 𝔼₂) :
+    HasWeakIteratedLineDerivOn y v
+      (fun x ↦ (∑ T, (𝒯.K T).indicator (iteratedFDeriv ℝ (k + 1) (g T)) x) y) Ω volume := by
+  -- the classical derivative of order `k` along `tail y` is a weak derivative
+  have h₁ : HasWeakIteratedLineDerivOn (Fin.tail y) v
+      (fun x ↦ iteratedFDeriv ℝ k v x (Fin.tail y)) Ω volume :=
+    (hv.hasWeakIteratedFDerivOn le_rfl).lineDeriv (Fin.tail y)
+  -- it is continuous on `Ω` and piecewise `C¹`
+  have hu : ContinuousOn (fun x ↦ iteratedFDeriv ℝ k v x (Fin.tail y)) Ω :=
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin k ↦ 𝔼₂) ℝ
+      (Fin.tail y)).continuous.comp_continuousOn (hv.continuousOn_iteratedFDeriv le_rfl)
+  have hg' : ∀ T, ContDiff ℝ 1 fun x ↦ iteratedFDeriv ℝ k (g T) x (Fin.tail y) := fun T ↦
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin k ↦ 𝔼₂) ℝ (Fin.tail y)).contDiff.comp
+      ((hg T).iteratedFDeriv_right (m := 1) (by norm_cast; omega))
+  have hug : ∀ T, ∀ x ∈ 𝒯.K T, iteratedFDeriv ℝ k v x (Fin.tail y)
+      = iteratedFDeriv ℝ k (g T) x (Fin.tail y) := fun T x hx ↦ by
+    rw [iteratedFDeriv_eq_of_mem_K 𝒯 hvg k T hx]
+  -- its first-order weak derivative in the direction `y 0` is the elementwise one
+  have h₂ := (𝒯.hasWeakFDerivOn_of_piecewise hu hg' hug).lineDeriv ![y 0]
+  simp only [continuousMultilinearCurryFin1_symm_apply, Matrix.cons_val_zero] at h₂
+  have h₃ := h₁.cons h₂
+  rw [Fin.cons_self_tail] at h₃
+  -- the elementwise derivative of `∂^k (g T) (tail y)` in the direction `y 0` is `∂^{k+1} (g T) y`
+  refine h₃.congr_ae (Filter.EventuallyEq.refl _ _) (Filter.Eventually.of_forall fun x ↦ ?_)
+  dsimp only
+  by_cases hx : x ∈ ⋃ T, 𝒯.K T
+  · obtain ⟨T, hT⟩ := mem_iUnion.1 hx
+    rw [𝒯.pieceFDeriv_of_mem _ T hT, sum_indicator_iteratedFDeriv_of_mem 𝒯 g T hT,
+      iteratedFDeriv_succ_apply_left, fderiv_continuousMultilinear_apply_const_apply
+        ((hg T).differentiable_iteratedFDeriv (by norm_cast; omega) x)]
+  · rw [sum_indicator_iteratedFDeriv_of_notMem 𝒯 g hx]
+    unfold Triangulation.pieceFDeriv
+    rw [Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _]
+    simp
+
+/-- **Example 7.1.9**, on a triangulated polygon: let `𝒯 : Triangulation Ω` partition the plane
+domain `Ω ⊆ ℝ²` into triangles (the book's `closure Ω = ⋃ₙ closure Ω_n`; a partition into
+quadrilaterals refines to one), let `k ≥ 0`, and let `v ∈ C^k(Ω)` with `v|_{Ω_n} ∈ C^{k+1}(Ω̄_n)`
+for every element — read as: on each open element `K_T`, `v` agrees with a `C^{k+1}` function
+`g T` of the plane. Then the weak partial derivatives of `v` of order `k + 1` exist on `Ω`
+(`definition_7_1_3 (k + 1)`, all the multi-indices of length `k + 1` at once), and the `α`-th
+weak derivative is `∂^α v` computed on the elements, for `x ∈ ⋃ₙ Ω_n`, and arbitrary otherwise:
+every `w` agreeing with `iteratedFDeriv ℝ (k + 1) v` on the open elements is a weak derivative
+of order `k + 1`.
+
+The book's hypothesis `v ∈ C^k(Ω̄)` is only used on `Ω` (the weak derivatives on `Ω` do not see the
+boundary), so `ContDiffOn ℝ k v Ω` is assumed; at `k = 0` it is the continuity of `v` on `Ω`. The
+proof is not through Green's formula, and no boundary measure enters: for `k = 0` it is the
+backbone's `Triangulation.hasWeakFDerivOn_of_piecewise` — Fubini and the fundamental theorem of
+calculus on almost every line, the skeleton of the triangulation being a finite union of segments —
+and for general `k` the same theorem is applied to the classical derivatives of order `k` of `v`,
+which are continuous on `Ω` and piecewise `C¹`, and composed with them through
+`HasWeakIteratedLineDerivOn.cons`. The version with elementwise `W^{k+1,p}` regularity in place
+of `C^{k+1}` is `example_7_2_7`. -/
+theorem example_7_1_9 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ} {v : 𝔼₂ → ℝ}
+    (hv : ContDiffOn ℝ k v Ω) {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ (k + 1) (g T))
+    (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) {w : 𝔼₂ → 𝔼₂ [×(k + 1)]→L[ℝ] ℝ}
+    (hw : ∀ T, ∀ x ∈ 𝒯.K T, w x = iteratedFDeriv ℝ (k + 1) v x) :
+    definition_7_1_3 (k + 1) v w Ω := by
+  -- the piecewise classical derivative of order `k + 1`
+  obtain ⟨w₀, hw₀⟩ : ∃ w₀ : 𝔼₂ → 𝔼₂ [×(k + 1)]→L[ℝ] ℝ,
+      w₀ = fun x ↦ ∑ T, (𝒯.K T).indicator (iteratedFDeriv ℝ (k + 1) (g T)) x := ⟨_, rfl⟩
+  have hloc : LocallyIntegrableOn w₀ (Ω : Set 𝔼₂) volume := by
+    obtain ⟨M, hM⟩ := exists_norm_sum_indicator_iteratedFDeriv_le 𝒯 hg
+    have hm : AEStronglyMeasurable w₀ (volume.restrict (Ω : Set 𝔼₂)) := by
+      rw [hw₀]
+      exact (Finset.stronglyMeasurable_fun_sum _ fun T _ ↦
+        ((hg T).continuous_iteratedFDeriv le_rfl).stronglyMeasurable.indicator
+          (𝒯.isOpen_K T).measurableSet).aestronglyMeasurable
+    refine (memLp_top_of_bound hm M ?_).locallyIntegrableOn le_top
+    rw [hw₀]
+    exact Filter.Eventually.of_forall hM
+  have h₀ : HasWeakIteratedFDerivOn (k + 1) v w₀ Ω volume := by
+    refine ⟨hv.continuousOn.locallyIntegrableOn Ω.isOpen.measurableSet, hloc, fun φ y ↦ ?_⟩
+    have := (hasWeakIteratedLineDerivOn_of_piecewise 𝒯 hv hg hvg y).integral_smul_eq φ
+    rw [hw₀]
+    exact this
+  -- `w` agrees with it almost everywhere on `Ω`: off the skeleton, a null set
+  refine h₀.congr_ae (Filter.EventuallyEq.refl _ _) ?_
+  have hae : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼₂)), x ∈ ⋃ T, 𝒯.K T := by
+    rw [ae_restrict_iff' Ω.isOpen.measurableSet]
+    filter_upwards [measure_eq_zero_iff_ae_notMem.1 𝒯.volume_diff_iUnion_K] with x hx hxΩ
+    by_contra h
+    exact hx ⟨hxΩ, h⟩
+  filter_upwards [hae] with x hx
+  obtain ⟨T, hT⟩ := mem_iUnion.1 hx
+  rw [hw₀]
+  dsimp only
+  rw [hw T x hT, sum_indicator_iteratedFDeriv_of_mem 𝒯 g T hT,
+    iteratedFDeriv_eq_of_mem_K 𝒯 hvg (k + 1) T hT]
+
+end Triangulated
 
 end AtkinsonHan.Chapter07
