@@ -245,6 +245,7 @@ import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.Boundary.ChartGraph
+import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
 import Numlib.Analysis.Sobolev.Boundary.Data
 import Numlib.Analysis.Sobolev.Boundary.Density
 import Numlib.Analysis.Sobolev.Boundary.Divergence
