@@ -104,4 +104,7 @@ id = "IsBoundaryGraphAt.frontier_inter_ball"
 id = "AffineIsometryEquiv.measurePreserving"
 
 [[node]]
+id = "AffineIsometryEquiv.hasFDerivAt"
+
+[[node]]
 id = "AffineIsometryEquiv.setIntegral_comp"

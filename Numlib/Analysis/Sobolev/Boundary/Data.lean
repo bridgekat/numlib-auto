@@ -1253,6 +1253,17 @@ theorem AffineIsometryEquiv.setIntegral_comp {G : Type*} [NormedAddCommGroup G] 
     ∫ x in T ⁻¹' s, f (T x) = ∫ y in s, f y :=
   T.measurePreserving.setIntegral_preimage_emb T.toHomeomorph.measurableEmbedding f s
 
+/-- A rigid motion `T x = T.linear x + T 0` has derivative its linear part. -/
+theorem AffineIsometryEquiv.hasFDerivAt {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E']
+    {F' : Type*} [NormedAddCommGroup F'] [NormedSpace ℝ F'] (T : E' ≃ᵃⁱ[ℝ] F') (z : E') :
+    HasFDerivAt T (T.linearIsometryEquiv.toContinuousLinearEquiv : E' →L[ℝ] F') z := by
+  have h : (T : E' → F') = fun z ↦ T.linearIsometryEquiv z + T 0 := by
+    funext z
+    have := T.map_vadd (0 : E') z
+    rwa [vadd_eq_add, add_zero, vadd_eq_add] at this
+  rw [h]
+  exact T.linearIsometryEquiv.toContinuousLinearEquiv.hasFDerivAt.add_const (T 0)
+
 end AffineIsometryEquiv
 
 end

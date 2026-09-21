@@ -289,16 +289,6 @@ section AffineIsometryEquiv
 variable {E E' F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup E']
   [NormedSpace ℝ E'] [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- A rigid motion `T x = T.linear x + T 0` has derivative its linear part. -/
-theorem AffineIsometryEquiv.hasFDerivAt (T : E' ≃ᵃⁱ[ℝ] E) (z : E') :
-    HasFDerivAt T (T.linearIsometryEquiv.toContinuousLinearEquiv : E' →L[ℝ] E) z := by
-  have h : (T : E' → E) = fun z ↦ T.linearIsometryEquiv z + T 0 := by
-    funext z
-    have := T.map_vadd (0 : E') z
-    rwa [vadd_eq_add, add_zero, vadd_eq_add] at this
-  rw [h]
-  exact T.linearIsometryEquiv.toContinuousLinearEquiv.hasFDerivAt.add_const (T 0)
-
 /-- **`C¹(s̄)` is stable under a rigid motion on the right**: `f ∘ T ∈ C¹(T⁻¹(s)‾)` for
 `f ∈ C¹(s̄)`, `s` open. The extensions compose with `T`, the derivative with `T`'s linear part. -/
 theorem ContDiffOnClosure.comp_affineIsometryEquiv {f : E → F} {s : Set E} (hs : IsOpen s)

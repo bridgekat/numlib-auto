@@ -36,9 +36,6 @@ id = "ContinuousOn.indicator_tsupport_of_inter_eq"
 id = "ContDiffOnClosure.congr_set_of_tsupport_subset"
 
 [[node]]
-id = "AffineIsometryEquiv.hasFDerivAt"
-
-[[node]]
 id = "ContDiffOnClosure.comp_affineIsometryEquiv"
 
 [[node]]
