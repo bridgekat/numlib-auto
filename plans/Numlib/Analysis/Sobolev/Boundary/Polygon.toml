@@ -1,350 +1,140 @@
-desc = '''
-The boundary of a plane polygon through its triangles (decision B6 of
-`notes/boundary/planning-brief.md`): the edge measure and the outward edge normal of a segment,
-the divergence theorem on the reference triangle (Fubini and the one-dimensional fundamental
-theorem of calculus in each coordinate) and on every nondegenerate triangle (affine transport,
-with the linear Piola identity `EuclideanSpace.div_comp_continuousLinearEquiv` and the `2 × 2`
-identity `⟪perp (M v), M w⟫ = det M ⟪perp v, w⟫`), and for a triangulation `𝒯 : Triangulation Ω`
-of `Numlib/Geometry/Triangulation.lean`: the **boundary edges** (`Triangulation.IsBoundaryEdge`,
-an edge of an element that no other element has), which lie in `∂Ω` by the four axioms alone; the
-**partner** of an interior edge (the unique other element having the same edge, which lies on the
-other side of it — two triangles on the same side of a common edge overlap), with the opposite
-edge normal; the surface measure `Triangulation.boundaryMeasure = ∑ edgeMeasure` over the
-boundary edges and the normal `Triangulation.outwardNormal`; and the **divergence theorem on a
-triangulated domain** as the sum of the triangles' theorems, the interior edges cancelling in
-pairs (`Finset.sum_involution`). Hence `Triangulation.boundaryData : BoundaryData Ω` for *every*
-triangulation: no polygonal-domain hypothesis is needed for the divergence theorem itself.
-
-What "polygonal domain" must mean for the *trace* is recorded here as the hypothesis
-`Triangulation.InteriorEdgesSubset` — the relative interior of every interior edge lies in `Ω`, no
-slit: the existing `Triangulation.FrontierSubsetEdges` (every point of `∂Ω` lies on an edge
-contained in `∂Ω`) does not exclude a slit along a full interior edge (the open square minus a
-closed edge of its triangulation satisfies the four axioms and `FrontierSubsetEdges`), while on such
-a domain `W^{1,p}` functions jump across the slit and the one-sided traces differ. Neither
-hypothesis implies the other (a disc punctured at a vertex satisfies `InteriorEdgesSubset` and not
-`FrontierSubsetEdges`), and the polygon consumers carry both.
-
-Wave A, ~1400 lines. Imports `Boundary/Data.lean`, `Numlib/Geometry/Triangulation.lean`,
-`Numlib/Analysis/Sobolev/Simplex.lean`, Mathlib's `Analysis/Convex/Segment.lean`,
-`MeasureTheory/Constructions/Prod`. Notation: `𝔼₂ := EuclideanSpace ℝ (Fin 2)`, `!₂[a, b]` the
-point with coordinates `a, b`, `Ω : Opens 𝔼₂`, `𝒯 : Triangulation Ω`, `T : 𝒯.elems`, and the
-edge `a : Fin 3` of `T` is the segment from `T.1 a` to `T.1 (a + 1)` (as in
-`Triangulation.skeleton_subset_iUnion_segment`), its third vertex `T.1 (a + 2)`.
-'''
-
 [[node]]
 id = "EuclideanSpace.perp"
-kind = "definition"
-desc = '''`EuclideanSpace.perp (v : 𝔼₂) : 𝔼₂ := !₂[v 1, -v 0]`, the clockwise rotation of `v` by a
-right angle, the normal direction of an edge. Lemmas (★): `inner_perp_self : ⟪perp v, v⟫_ℝ = 0`,
-`norm_perp : ‖perp v‖ = ‖v‖`, `perp_neg`, `perp_sub`, `inner_perp_eq : ⟪perp v, w⟫_ℝ = v 1 * w 0 - v 0 * w 1`
-(the negative of the determinant of `[v, w]`; `EuclideanSpace.inner_eq_star_dotProduct`,
-`Fin.sum_univ_two`), and the transformation rule `inner_perp_map : ⟪perp (M v), M w⟫_ℝ = LinearMap.det (M : 𝔼₂ →ₗ[ℝ] 𝔼₂) * ⟪perp v, w⟫_ℝ`
-for `M : 𝔼₂ →L[ℝ] 𝔼₂` (`LinearMap.det_toMatrix` in the standard basis, `Matrix.det_fin_two`,
-`ext; simp; ring`). Also `perp` as a linear isometry equivalence `EuclideanSpace.perpₗᵢ` if
-convenient. ★'''
-deps = []
+
+[[node]]
+id = "EuclideanSpace.inner_perp_map"
+
+[[node]]
+id = "EuclideanSpace.linearIndependent_pair_iff_inner_perp_ne_zero"
+
+[[node]]
+id = "EuclideanSpace.openTriangle_rotate"
+
+[[node]]
+id = "EuclideanSpace.eq_of_affine_eq"
+
+[[node]]
+id = "EuclideanSpace.eq_edge_of_mem_openSegment_of_mem_segment"
+
+[[node]]
+id = "EuclideanSpace.segment_subset_frontier_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.vertex_injective"
 
 [[node]]
 id = "EuclideanSpace.edgeMeasure"
-kind = "definition"
-desc = '''`EuclideanSpace.edgeMeasure (P Q : 𝔼₂) : Measure 𝔼₂ := (‖Q - P‖).toNNReal • Measure.map (AffineMap.lineMap P Q) (volume.restrict (Set.Icc (0 : ℝ) 1))`
-— arclength measure on the segment `[P, Q]`: one-dimensional Lebesgue measure transported by the
-parametrization `t ↦ P + t (Q − P)` and scaled by the length. Lemmas, ★ each:
-* `integral_edgeMeasure : ∫ x, f x ∂edgeMeasure P Q = ‖Q - P‖ * ∫ t in (0 : ℝ)..1, f (AffineMap.lineMap P Q t)`
-  for `f` with `AEStronglyMeasurable f (edgeMeasure P Q)` (`integral_smul_measure`,
-  `integral_map` with the continuous `lineMap`, `intervalIntegral.integral_of_le`,
-  `integral_Icc_eq_integral_Ioc`); and the `lintegral` version;
-* `edgeMeasure_symm : edgeMeasure Q P = edgeMeasure P Q` (`lineMap Q P t = lineMap P Q (1 − t)`,
-  `AffineMap.lineMap_apply_one_sub`, and `t ↦ 1 − t` preserves `volume.restrict (Icc 0 1)`);
-* `edgeMeasure_compl_segment : edgeMeasure P Q (segment ℝ P Q)ᶜ = 0` (`segment_eq_image_lineMap`);
-* `isFiniteMeasure_edgeMeasure`; `edgeMeasure_self : edgeMeasure P P = 0`;
-* `edgeMeasure_singleton : P ≠ Q → edgeMeasure P Q {x} = 0` (`lineMap` injective, a point has
-  Lebesgue measure zero) and hence `edgeMeasure_compl_openSegment : P ≠ Q → edgeMeasure P Q (openSegment ℝ P Q)ᶜ = 0`;
-* `edgeMeasure_pos_of_isOpen : P ≠ Q → IsOpen U → (U ∩ openSegment ℝ P Q).Nonempty → 0 < edgeMeasure P Q U`
-  (the preimage of `U` under `lineMap` is a nonempty open subset of `(0, 1)`). ★'''
-deps = []
+
+[[node]]
+id = "EuclideanSpace.edgeMeasure_symm"
+
+[[node]]
+id = "EuclideanSpace.integral_edgeMeasure"
 
 [[node]]
 id = "EuclideanSpace.edgeNormal"
-kind = "definition"
-desc = '''`EuclideanSpace.edgeNormal (P Q R : 𝔼₂) : 𝔼₂ := if ⟪perp (Q - P), R - P⟫_ℝ < 0 then ‖Q - P‖⁻¹ • perp (Q - P) else -(‖Q - P‖⁻¹ • perp (Q - P))`
-— the unit normal of the edge `[P, Q]` pointing *away from* the third vertex `R`, the outward
-normal of the triangle `P Q R` on that edge (the sign is fixed by `⟪edgeNormal, R − P⟫ < 0`, an
-affine-invariant condition). Lemmas, ★ each, for `P ≠ Q` and `R` off the line `PQ`
-(`LinearIndependent ℝ ![Q - P, R - P]`, equivalently `⟪perp (Q − P), R − P⟫ ≠ 0` by `inner_perp_eq`):
-`norm_edgeNormal : ‖edgeNormal P Q R‖ = 1`; `inner_edgeNormal_sub : ⟪edgeNormal P Q R, Q - P⟫_ℝ = 0`,
-hence `inner_edgeNormal_lineMap_sub : ⟪edgeNormal P Q R, lineMap P Q t - x₀⟫ = ⟪edgeNormal P Q R, P - x₀⟫`
-(constant along the edge, the fact behind the transversal field `x − x₀`);
-`inner_edgeNormal_third_neg : ⟪edgeNormal P Q R, R - P⟫_ℝ < 0`; `edgeNormal_symm : edgeNormal Q P R = edgeNormal P Q R`
-(`perp (P − Q) = −perp (Q − P)` and `⟪perp (Q − P), R − Q⟫ = ⟪perp (Q − P), R − P⟫`);
-`edgeNormal_eq_neg_of_mul_neg : ⟪perp (Q - P), R - P⟫ * ⟪perp (Q - P), R' - P⟫ < 0 → edgeNormal P Q R' = -edgeNormal P Q R`
-(third vertices on opposite sides give opposite normals), and `edgeNormal_eq_of_mul_pos` (same side,
-same normal). ★'''
-deps = ["EuclideanSpace.perp"]
 
 [[node]]
-id = "EuclideanSpace.triangleBoundaryMeasure"
-kind = "definition"
-desc = '''`EuclideanSpace.triangleBoundaryMeasure (A B C : 𝔼₂) : Measure 𝔼₂ := edgeMeasure A B + edgeMeasure B C + edgeMeasure C A`,
-the arclength measure of the boundary of the triangle `A B C`, and
-`EuclideanSpace.triangleNormal (A B C : 𝔼₂) : 𝔼₂ → 𝔼₂ := fun x ↦ if x ∈ openSegment ℝ A B then edgeNormal A B C else if x ∈ openSegment ℝ B C then edgeNormal B C A else if x ∈ openSegment ℝ C A then edgeNormal C A B else 0`,
-its outward unit normal (defined off the vertices, which are null). For non-collinear vertices
-(★ each): `triangleNormal_eq_of_mem_openSegment` for each of the three edges (the three open
-segments are pairwise disjoint, `openSegment` of two edges of a nondegenerate triangle meet
-only if … they do not, by barycentric coordinates), `ae_norm_triangleNormal : ∀ᵐ x ∂(triangleBoundaryMeasure A B C), ‖triangleNormal A B C x‖ = 1`
-(`edgeMeasure_compl_openSegment`, `norm_edgeNormal`), `triangleBoundaryMeasure_compl_frontier : triangleBoundaryMeasure A B C (frontier (openTriangle A B C))ᶜ = 0`
-(each edge lies in the frontier: `segment_subset_closedK`-type — the segment lies in the closed
-triangle `closure_openTriangle` and misses the open one), `isFiniteMeasure_triangleBoundaryMeasure`,
-`aestronglyMeasurable_triangleNormal` (piecewise constant on measurable pieces), and
-`integral_triangleBoundaryMeasure : ∫ f ∂(triangleBoundaryMeasure A B C) = ∫ f ∂edgeMeasure A B + ∫ f ∂edgeMeasure B C + ∫ f ∂edgeMeasure C A`
-(`integral_add_measure`, integrability from `MemLp` on finite measures). ★'''
-deps = ["EuclideanSpace.edgeMeasure", "EuclideanSpace.edgeNormal", "EuclideanSpace.frontier_openTriangle_subset", "EuclideanSpace.closure_openTriangle"]
+id = "EuclideanSpace.integral_inner_edgeNormal_of_neg"
 
 [[node]]
-id = "EuclideanSpace.integral_div_referenceTriangle"
-kind = "theorem"
-desc = '''**The divergence theorem on the reference triangle, in parametrized form**: for
-`F : 𝔼₂ → 𝔼₂` with `ContinuousOn F closedReferenceTriangle` and
-`ContDiffOnClosure ℝ 1 F referenceTriangle`,
-`∫ x in referenceTriangle, div F x = ∫ t in (0 : ℝ)..1, (F !₂[t, 1 - t] 0 + F !₂[t, 1 - t] 1) - ∫ t in (0 : ℝ)..1, F !₂[t, 0] 1 - ∫ t in (0 : ℝ)..1, F !₂[0, t] 0`
-— the three edge terms `∫_e ⟪F, ν⟫ ds` of the hypotenuse (`ν = (1, 1)/√2`, `ds = √2 dt`), the
-bottom (`ν = (0, −1)`) and the left side (`ν = (−1, 0)`). Proof: Fubini on the triangle,
-`∫ x in referenceTriangle, h x = ∫ x in (0 : ℝ)..1, ∫ y in (0 : ℝ)..(1 - x), h !₂[x, y]` for
-integrable `h` (`PiLp.volume_preserving_ofLp` to `Fin 2 → ℝ`,
-`MeasureTheory.volume_preserving_finTwoArrow` to `ℝ × ℝ`, `MeasureTheory.integral_prod` on the
-indicator of the triangle, `mem_referenceTriangle`), and the same with the roles of `x` and `y`
-exchanged; then `∫_0^{1−x} ∂_y F₂ (x, y) dy = F₂(x, 1 − x) − F₂(x, 0)` by
-`intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le` (continuity of `y ↦ F !₂[x, y]` on
-`Icc 0 (1 − x)` from `ContinuousOn F closedReferenceTriangle`, the derivative on `Ioo` from
-`ContDiffOnClosure`, the chain rule with the affine `y ↦ !₂[x, y]`), and
-`∫_0^{1−y} ∂_x F₁ (x, y) dx = F₁(1 − y, y) − F₁(0, y)`; finally
-`∫_0^1 F₁(1 − y, y) dy = ∫_0^1 F₁(t, 1 − t) dt` (`intervalIntegral.integral_comp_sub_left`).
-Integrability of `div F` on the triangle: bounded on the bounded set
-(`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`-style bound: the derivative
-extends continuously to the compact closed triangle). ★★★, ~250 lines.'''
-deps = ["EuclideanSpace.referenceTriangle", "EuclideanSpace.closure_referenceTriangle", "EuclideanSpace.div", "ContDiffOnClosure"]
+id = "EuclideanSpace.inner_symm_edgeNormal"
 
 [[node]]
-id = "EuclideanSpace.integral_div_referenceTriangle_eq_integral_inner"
-kind = "theorem"
-desc = '''The reference theorem in measure form: with the vertices `v₀ = !₂[0, 0]`, `v₁ = !₂[1, 0]`,
-`v₂ = !₂[0, 1]` (`EuclideanSpace.referenceTriangleVertex`), for `F` as in
-`integral_div_referenceTriangle`,
-`∫ x in referenceTriangle, div F x = ∫ x, ⟪F x, triangleNormal v₀ v₁ v₂ x⟫_ℝ ∂(triangleBoundaryMeasure v₀ v₁ v₂)`.
-`integral_triangleBoundaryMeasure`, `integral_edgeMeasure` on each edge with
-`triangleNormal_eq_of_mem_openSegment`, and the explicit normals
-`edgeNormal v₀ v₁ v₂ = !₂[0, -1]`, `edgeNormal v₁ v₂ v₀ = (√2)⁻¹ • !₂[1, 1]`,
-`edgeNormal v₂ v₀ v₁ = !₂[-1, 0]` (evaluate the `if` by `inner_perp_eq`, `norm_num`); the length
-`‖v₂ − v₁‖ = √2` of the hypotenuse cancels its normalization. ★★'''
-deps = ["EuclideanSpace.integral_div_referenceTriangle", "EuclideanSpace.triangleBoundaryMeasure"]
-
-[[node]]
-id = "EuclideanSpace.integral_div_openTriangle"
-kind = "theorem"
-desc = '''**The divergence theorem on a triangle**: for `A B C : 𝔼₂` with
-`h : LinearIndependent ℝ ![B - A, C - A]` and `F : 𝔼₂ → 𝔼₂` with
-`ContinuousOn F (closedTriangle A B C)` and `ContDiffOnClosure ℝ 1 F (openTriangle A B C)`,
-`∫ x in openTriangle A B C, div F x = ∫ x, ⟪F x, triangleNormal A B C x⟫_ℝ ∂(triangleBoundaryMeasure A B C)`.
-Affine transport from the reference triangle (decision B6): with `M := triangleEquiv A B C h`
-and the affine map `Φ x̂ = M x̂ + A` (`openTriangle_eq_image`, `triangleAffine_eq` of
-`Geometry/Triangulation.lean`),
-`∫_{K} div F = |det M| ∫_{T̂} div F (Φ x̂) = |det M| ∫_{T̂} div (M⁻¹ ∘ F ∘ Φ) x̂`
-(`MeasureTheory.Measure.addHaar_image_continuousLinearEquiv`/`map_affine_addHaar` of `Affine.lean`
-for the change of variables, `EuclideanSpace.div_comp_continuousLinearEquiv` for the integrand);
-the field `G := M⁻¹ ∘ F ∘ Φ` is of class `C¹` on the closed reference triangle
-(`ContinuousOn.comp`, `ContDiffOnClosure` composed with an affine map — a lemma
-`ContDiffOnClosure.comp_affine`, ★, ~40 lines), so `integral_div_referenceTriangle_eq_integral_inner`
-applies; its edge terms are `∫_0^1 ⟪G (lineMap P̂ Q̂ t), n̂⟫ ‖Q̂ − P̂‖ dt` with `n̂ = ±perp (Q̂ − P̂)/‖Q̂ − P̂‖`,
-and since `Φ (lineMap P̂ Q̂ t) = lineMap P Q t` (`AffineMap.apply_lineMap`) and
-`⟪M⁻¹ F, perp v⟫ = ⟪F, M⁻ᵀ perp v⟫ = (det M)⁻¹ ⟪F, perp (M v)⟫` (`inner_perp_map` with
-`M⁻¹`, `LinearMap.det` of the inverse), each becomes `sign (det M) · ∫_0^1 ⟪F (lineMap P Q t), perp (Q − P)⟫ dt`,
-and the sign condition defining `edgeNormal` transports by the same identity
-(`⟪perp (M v), M w⟫ = det M ⟪perp v, w⟫`), so `|det M| · sign (det M) · (…)` is exactly
-`∫ ⟪F, edgeNormal P Q R⟫ d(edgeMeasure P Q)` (`integral_edgeMeasure`). ★★★, ~300 lines.'''
-deps = ["EuclideanSpace.integral_div_referenceTriangle_eq_integral_inner", "EuclideanSpace.div_comp_continuousLinearEquiv", "EuclideanSpace.triangleEquiv", "EuclideanSpace.openTriangle", "EuclideanSpace.perp", "EuclideanSpace.closedTriangle"]
-
-[[node]]
-id = "EuclideanSpace.triangleBoundaryData"
-kind = "definition"
-desc = '''**A triangle is a `BoundaryData`**:
-`EuclideanSpace.triangleBoundaryData (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) : BoundaryData (openTriangleOpens A B C h)`
-with `σ := triangleBoundaryMeasure A B C`, `ν := triangleNormal A B C`; the fields are
-`isBounded_openTriangle`, `isFiniteMeasure_triangleBoundaryMeasure`,
-`triangleBoundaryMeasure_compl_frontier` (`frontier (openTriangle) = closedTriangle \\ openTriangle`
-is the union of the three edges, `frontier_openTriangle_subset` and the converse inclusion),
-`aestronglyMeasurable_triangleNormal`, `ae_norm_triangleNormal`, and
-`integral_div_openTriangle` (with `closure (openTriangle A B C) = closedTriangle A B C`,
-`closure_openTriangle`). With the simp lemmas `triangleBoundaryData_σ`, `triangleBoundaryData_ν`.
-★★'''
-deps = ["BoundaryData", "EuclideanSpace.integral_div_openTriangle", "EuclideanSpace.triangleBoundaryMeasure", "EuclideanSpace.openTriangleOpens"]
+id = "EuclideanSpace.integral_inner_edgeNormal_affine"
 
 [[node]]
 id = "EuclideanSpace.exists_ball_inter_subset_openTriangle"
-kind = "theorem"
-desc = '''**A triangle contains a half-disc around the midpoint of each edge, on its own side**: for
-`P Q R` with `LinearIndependent ℝ ![Q - P, R - P]`, let `m := midpoint ℝ P Q` and
-`s := ⟪perp (Q - P), R - P⟫` (nonzero); then
-`∃ δ > 0, ∀ v : 𝔼₂, ‖v‖ < δ → 0 < s * ⟪perp (Q - P), v⟫ → m + v ∈ openTriangle P Q R`. In
-barycentric coordinates, `m + v = P + a (Q − P) + b (R − P)` with
-`b = ⟪perp (Q − P), v⟫ / s` (apply `⟪perp (Q − P), ·⟫`, which kills `Q − P`) and
-`a = 1/2 + (⟪v, Q − P⟫ − b ⟪R − P, Q − P⟫)/‖Q − P‖²`; for `‖v‖` small, `b > 0` by hypothesis and
-`a ∈ (1/4, 3/4)`, `a + b < 1`, so `mem_openTriangle` holds. Consequences (★★):
-`EuclideanSpace.openTriangle_inter_nonempty_of_same_side : 0 < ⟪perp (Q - P), R - P⟫ * ⟪perp (Q - P), R' - P⟫ → (openTriangle P Q R ∩ openTriangle P Q R').Nonempty`
-(both contain `m + v` for a small `v` on the common side) and its form for reversed edges
-(`openTriangle Q P R'`, using `openTriangle` is symmetric in its vertices up to the barycentric
-description — state `openTriangle_perm` lemmas as needed). ★★, ~120 lines.'''
-deps = ["EuclideanSpace.openTriangle", "EuclideanSpace.perp"]
+
+[[node]]
+id = "EuclideanSpace.openTriangle_inter_nonempty_of_same_side"
+
+[[node]]
+id = "EuclideanSpace.triangleBoundaryMeasure"
+
+[[node]]
+id = "EuclideanSpace.integral_inner_triangleNormal"
+
+[[node]]
+id = "EuclideanSpace.integral_referenceTriangle_eq"
+
+[[node]]
+id = "ContDiffOnClosure.exists_norm_fderiv_le"
+
+[[node]]
+id = "EuclideanSpace.integrableOn_div"
+
+[[node]]
+id = "EuclideanSpace.integral_fderiv_snd"
+
+[[node]]
+id = "EuclideanSpace.integral_div_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.integral_div_referenceTriangle_eq_integral_inner"
+
+[[node]]
+id = "ContDiffOnClosure.clm_comp_comp_affine"
+
+[[node]]
+id = "EuclideanSpace.integral_div_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.triangleBoundaryData"
 
 [[node]]
 id = "Triangulation.IsBoundaryEdge"
-kind = "definition"
-desc = '''`Triangulation.IsBoundaryEdge (𝒯 : Triangulation Ω) (T : 𝒯.elems) (a : Fin 3) : Prop := ∀ T' : 𝒯.elems, T' ≠ T → ∀ i j : Fin 3, ¬ (T.1 a = T'.1 i ∧ T.1 (a + 1) = T'.1 j)`
-— the edge `[T a, T (a+1)]` of the element `T` is a **boundary edge** when no other element has
-both its endpoints as vertices. `Triangulation.boundaryEdges : Finset (𝒯.elems × Fin 3) := Finset.univ.filter fun e ↦ 𝒯.IsBoundaryEdge e.1 e.2`
-(decidable by classical choice). With `Triangulation.IsPartner (T : 𝒯.elems) (a : Fin 3) (T' : 𝒯.elems) (a' : Fin 3) : Prop := T' ≠ T ∧ ((T.1 a = T'.1 a' ∧ T.1 (a + 1) = T'.1 (a' + 1)) ∨ (T.1 a = T'.1 (a' + 1) ∧ T.1 (a + 1) = T'.1 a'))`
-— the edge `a'` of `T'` is the same segment, in the same or the reversed orientation — and
-`Triangulation.not_isBoundaryEdge_iff_exists_partner : ¬ 𝒯.IsBoundaryEdge T a ↔ ∃ T' a', 𝒯.IsPartner T a T' a'`
-(★: given `T a = T' i`, `T (a+1) = T' j`, the indices `i ≠ j` — else `T a = T (a+1)`, against
-`𝒯.li T` — and any two distinct indices of `Fin 3` are `a', a'+1` or `a'+1, a'` for a unique `a'`,
-`Fin 3` case analysis by `decide`/`fin_cases`). ★'''
-deps = ["Triangulation", "Triangulation.li"]
 
 [[node]]
-id = "Triangulation.segment_subset_frontier_of_isBoundaryEdge"
-kind = "theorem"
-desc = '''**A boundary edge lies in `∂Ω`** — from the four axioms of `Triangulation` alone (the derived
-form of the polygonal hypothesis that fem2's report §4 judged ~80 lines): for `𝒯 : Triangulation Ω`,
-`𝒯.IsBoundaryEdge T a → segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ frontier (Ω : Set 𝔼₂)`.
-The segment lies in `closedK T ⊆ closure Ω` (`Triangulation.segment_subset_closedK`,
-`closedK_subset_closure`), so it suffices that it misses `Ω`, and by closedness of `frontier Ω`
-that its relative interior does. Let `x ∈ openSegment ℝ (T a) (T (a+1))` with `x ∈ Ω`; `x ∉ K T`
-(it is on the frontier of the open triangle, `frontier_openTriangle_subset` and the barycentric
-description) and `x ∈ Ω` open; the closed set `C := ⋃ T' ≠ T, closedK T'` (a finite union)
-either contains `x` or not. If not, a neighbourhood `V` of `x` misses `C` and `V ∩ Ω ⊆ closedK T`
-(`subset_iUnion_closedK`), so `x ∈ interior (closedK T) = K T` (`Convex.interior_closure` for
-the convex open triangle, `closure_K`) — contradiction. If `x ∈ closedK T'`, `T' ≠ T`, then
-`Triangulation.conforming'` says `x` is a common vertex (impossible: a point of the open segment is
-not a vertex of `T`, by `𝒯.li T`) or lies on a segment `[T c, T d]`, `c ≠ d`, whose ends are
-vertices of `T'`; a point of the open edge `a` of a nondegenerate triangle lies on no other closed
-edge (barycentric coordinates), so `{c, d} = {a, a + 1}` and `(T, a)` has a partner —
-contradicting `IsBoundaryEdge`. Consequence: `Triangulation.boundaryMeasure_compl_frontier`. ★★, ~150 lines.'''
-deps = ["Triangulation.IsBoundaryEdge", "Triangulation.conforming'", "Triangulation.closedK", "Triangulation.closure_K", "Triangulation.K", "EuclideanSpace.frontier_openTriangle_subset"]
+id = "Triangulation.not_isBoundaryEdge_iff_exists_partner"
+
+[[node]]
+id = "Triangulation.IsPartner.inner_perp_mul_neg"
 
 [[node]]
 id = "Triangulation.partner_unique"
-kind = "theorem"
-desc = '''**The partner of an interior edge is unique and lies on the other side**: for
-`𝒯 : Triangulation Ω`, if `𝒯.IsPartner T a T' a'` then (i) the third vertices `T.1 (a + 2)` and
-`T'.1 (a' + 2)` lie strictly on opposite sides of the line through the edge:
-`⟪perp (T.1 (a+1) - T.1 a), T.1 (a+2) - T.1 a⟫ * ⟪perp (T.1 (a+1) - T.1 a), T'.1 (a'+2) - T.1 a⟫ < 0`
-(`Triangulation.partner_opposite_side`); (ii) if also `𝒯.IsPartner T a T'' a''` then `T'' = T'`
-and `a'' = a'` (`Triangulation.partner_unique`). Both from
-`EuclideanSpace.openTriangle_inter_nonempty_of_same_side`: two elements sharing the edge `[P, Q]`
-with third vertices on the same side have intersecting open triangles, against
-`Triangulation.pairwise_disjoint_K` (the products of inner products are nonzero by nondegeneracy,
-`𝒯.li`); in (ii) `T'` and `T''` are both on the far side of `T`, hence on the same side, hence
-equal, and then `a'' = a'` because the vertex triple of `T'` is injective (`𝒯.li T'`). Consequently
-`Triangulation.edgeNormal_partner : 𝒯.IsPartner T a T' a' → edgeNormal (T'.1 a') (T'.1 (a' + 1)) (T'.1 (a' + 2)) = -edgeNormal (T.1 a) (T.1 (a + 1)) (T.1 (a + 2))`
-(`edgeNormal_symm` for the reversed orientation, `edgeNormal_eq_neg_of_mul_neg` with (i)), and
-`Triangulation.edgeMeasure_partner : edgeMeasure (T'.1 a') (T'.1 (a' + 1)) = edgeMeasure (T.1 a) (T.1 (a + 1))`
-(`edgeMeasure_symm`). ★★★, ~250 lines including the involution bookkeeping below.'''
-deps = ["Triangulation.IsBoundaryEdge", "EuclideanSpace.exists_ball_inter_subset_openTriangle", "Triangulation.pairwise_disjoint_K", "EuclideanSpace.edgeNormal", "EuclideanSpace.edgeMeasure"]
+
+[[node]]
+id = "Triangulation.IsPartner.edgeMeasure_eq"
+
+[[node]]
+id = "Triangulation.IsPartner.edgeNormal_eq"
+
+[[node]]
+id = "Triangulation.exists_eq_vertex_of_mem_closedK"
+
+[[node]]
+id = "Triangulation.segment_subset_frontier_of_isBoundaryEdge"
 
 [[node]]
 id = "Triangulation.openSegment_disjoint_of_isBoundaryEdge"
-kind = "theorem"
-desc = '''**Distinct boundary edges have disjoint relative interiors**: for boundary edges `(T, a) ≠ (T', a')`
-of `𝒯`, `Disjoint (openSegment ℝ (T.1 a) (T.1 (a + 1))) (openSegment ℝ (T'.1 a') (T'.1 (a' + 1)))`.
-If `T = T'`, two distinct open edges of a nondegenerate triangle are disjoint (barycentric
-coordinates). If `T ≠ T'` and `x` lies in both, `x ∈ closedK T ∩ closedK T'` and
-`Triangulation.conforming'` gives a common vertex (impossible for a point of an open edge) or a
-common closed edge `[T c, T d]` containing `x`, which must be the edge `a` of `T` (a point of the
-open edge `a` lies on no other closed edge), so `T a, T (a+1)` are vertices of `T'` and `(T, a)`
-is not a boundary edge. Hence `Triangulation.outwardNormal` below is unambiguous off the vertices.
-★★'''
-deps = ["Triangulation.IsBoundaryEdge", "Triangulation.conforming'"]
 
 [[node]]
 id = "Triangulation.boundaryMeasure"
-kind = "definition"
-desc = '''**The surface (arclength) measure of a triangulated domain**:
-`Triangulation.boundaryMeasure (𝒯 : Triangulation Ω) : Measure 𝔼₂ := ∑ e ∈ 𝒯.boundaryEdges, edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1))`
-— the sum of the arclength measures of the boundary edges. With (★ each)
-`isFiniteMeasure_boundaryMeasure` (instance), `boundaryMeasure_compl_frontier : 𝒯.boundaryMeasure (frontier (Ω : Set 𝔼₂))ᶜ = 0`
-(`segment_subset_frontier_of_isBoundaryEdge`, `edgeMeasure_compl_segment`, `Measure.finset_sum_apply`),
-`integral_boundaryMeasure : ∫ f ∂𝒯.boundaryMeasure = ∑ e ∈ 𝒯.boundaryEdges, ∫ f ∂edgeMeasure …`
-(`MeasureTheory.integral_finset_sum_measure`), and `boundaryMeasure_pos_of_isOpen : IsOpen U → (∃ e ∈ 𝒯.boundaryEdges, (U ∩ openSegment ℝ (e.1.1 e.2) (e.1.1 (e.2 + 1))).Nonempty) → 0 < 𝒯.boundaryMeasure U`
-(`edgeMeasure_pos_of_isOpen`; unlike the `C¹` case, an open set meeting `∂Ω` only at a vertex —
-the puncture of a punctured disc — may have measure zero, so the hypothesis names an edge). ★'''
-deps = ["Triangulation.IsBoundaryEdge", "EuclideanSpace.edgeMeasure", "Triangulation.segment_subset_frontier_of_isBoundaryEdge"]
+
+[[node]]
+id = "Triangulation.boundaryMeasure_pos_of_isOpen"
 
 [[node]]
 id = "Triangulation.outwardNormal"
-kind = "definition"
-desc = '''**The outward unit normal of a triangulated domain**:
-`Triangulation.outwardNormal (𝒯 : Triangulation Ω) : 𝔼₂ → 𝔼₂ := fun x ↦ if h : ∃ e ∈ 𝒯.boundaryEdges, x ∈ openSegment ℝ (e.1.1 e.2) (e.1.1 (e.2 + 1)) then edgeNormal ((Classical.choose h).1.1 (Classical.choose h).2) ((Classical.choose h).1.1 ((Classical.choose h).2 + 1)) ((Classical.choose h).1.1 ((Classical.choose h).2 + 2)) else 0`
-— on the relative interior of a boundary edge, the outward edge normal of its element; `0`
-elsewhere (at the vertices and off `∂Ω`). With (★ each)
-`outwardNormal_eq_edgeNormal : 𝒯.IsBoundaryEdge T a → x ∈ openSegment ℝ (T.1 a) (T.1 (a + 1)) → 𝒯.outwardNormal x = edgeNormal (T.1 a) (T.1 (a + 1)) (T.1 (a + 2))`
-(`openSegment_disjoint_of_isBoundaryEdge` identifies the chosen edge),
-`ae_norm_outwardNormal : ∀ᵐ x ∂𝒯.boundaryMeasure, ‖𝒯.outwardNormal x‖ = 1`
-(`edgeMeasure_compl_openSegment`, `norm_edgeNormal`, `Measure.ae_sum_iff`/`ae_finset_sum`), and
-`aestronglyMeasurable_outwardNormal` (piecewise constant on the measurable open segments and their
-complement). ★'''
-deps = ["Triangulation.boundaryMeasure", "Triangulation.openSegment_disjoint_of_isBoundaryEdge", "EuclideanSpace.edgeNormal"]
+
+[[node]]
+id = "Triangulation.outwardNormal_eq_edgeNormal"
+
+[[node]]
+id = "MeasureTheory.aestronglyMeasurable_finsetSum_measure"
+
+[[node]]
+id = "Triangulation.sum_edgeTerm_interior_eq_zero"
 
 [[node]]
 id = "Triangulation.integral_div_eq"
-kind = "theorem"
-desc = '''**The divergence theorem on a triangulated domain** (decision B6): for `𝒯 : Triangulation Ω`
-and `F : 𝔼₂ → 𝔼₂` with `ContinuousOn F (closure (Ω : Set 𝔼₂))` and
-`ContDiffOnClosure ℝ 1 F (Ω : Set 𝔼₂)`,
-`∫ x in (Ω : Set 𝔼₂), div F x = ∫ x, ⟪F x, 𝒯.outwardNormal x⟫_ℝ ∂𝒯.boundaryMeasure`.
-Proof: (1) `∫_Ω div F = ∑ T, ∫_{K T} div F` — the open elements are pairwise disjoint and cover
-`Ω` up to a null set (`Triangulation.pairwise_disjoint_K`, `Triangulation.ae_eq_iUnion_K`,
-`MeasureTheory.integral_finset_biUnion`/`integral_iUnion` with `setIntegral_congr_set`);
-(2) on each element, `integral_div_openTriangle` (the class `C¹(closure (K T))` of `F` restricts
-from `C¹(Ω̄)`: `ContDiffOnClosure.mono` with `K_subset` and `ContinuousOn.mono` with
-`closedK_subset_closure`); (3) `∫ ⟪F, triangleNormal⟫ d(triangleBoundaryMeasure) = ∑ a : Fin 3, ∫ ⟪F, n_{T,a}⟫ d(edgeMeasure (T a) (T (a+1)))`
-with `n_{T,a} := edgeNormal (T.1 a) (T.1 (a+1)) (T.1 (a+2))` (`integral_triangleBoundaryMeasure`,
-`triangleNormal_eq_of_mem_openSegment` a.e.); (4) the double sum over `(T, a) ∈ univ` splits into
-the boundary edges and the interior edges (`Finset.sum_filter_add_sum_filter_not`); on the
-interior edges the map `(T, a) ↦ partner` is an involution without fixed points
-(`not_isBoundaryEdge_iff_exists_partner`, `partner_unique`) under which each summand changes sign
-(`edgeMeasure_partner`, `edgeNormal_partner`), so `Finset.sum_involution` gives `0`; (5) the
-boundary sum is `∫ ⟪F, outwardNormal⟫ d(boundaryMeasure)` by `integral_boundaryMeasure` and
-`outwardNormal_eq_edgeNormal` (a.e. on each edge, `edgeMeasure_compl_openSegment`). No hypothesis
-beyond the four axioms of `Triangulation`: a slit along an interior edge is invisible to a field
-continuous across it. ★★★, ~300 lines.'''
-deps = ["EuclideanSpace.integral_div_openTriangle", "Triangulation.partner_unique", "Triangulation.outwardNormal", "Triangulation.boundaryMeasure", "Triangulation.ae_eq_iUnion_K", "Triangulation.pairwise_disjoint_K", "Triangulation.Kopens"]
 
 [[node]]
 id = "Triangulation.boundaryData"
-kind = "definition"
-desc = '''**A triangulated domain is a `BoundaryData`**:
-`Triangulation.boundaryData (𝒯 : Triangulation Ω) : BoundaryData Ω` with `σ := 𝒯.boundaryMeasure`,
-`ν := 𝒯.outwardNormal`, and the fields `Triangulation.isBounded`, `isFiniteMeasure_boundaryMeasure`,
-`boundaryMeasure_compl_frontier`, `aestronglyMeasurable_outwardNormal`, `ae_norm_outwardNormal`,
-`Triangulation.integral_div_eq`. With the simp lemmas `boundaryData_σ`, `boundaryData_ν`. This is
-the instance the polygon consumers of Atkinson–Han §11.4 and §13.1 and QSS (12.95) take;
-its trace family is `Triangulation.traceFamily` of `Boundary/PolygonTrace.lean`. ★'''
-deps = ["BoundaryData", "Triangulation.integral_div_eq", "Triangulation.isBounded"]
 
 [[node]]
 id = "Triangulation.InteriorEdgesSubset"
-kind = "definition"
-desc = '''**The no-slit hypothesis of a polygonal domain**:
-`Triangulation.InteriorEdgesSubset (𝒯 : Triangulation Ω) : Prop := ∀ (T : 𝒯.elems) (a : Fin 3), ¬ 𝒯.IsBoundaryEdge T a → openSegment ℝ (T.1 a) (T.1 (a + 1)) ⊆ Ω`
-— the relative interior of every interior edge lies in `Ω`. It is what the trace theory on a
-polygon needs (the one-sided traces of a `W^{1,p}(Ω)` function agree across an interior edge only
-when `Ω` is on both sides of it, `Triangulation.traceL_partner_ae_eq`) and what
-`FrontierSubsetEdges` does not give: the open square minus a closed interior edge of its
-triangulation satisfies the four axioms and `FrontierSubsetEdges` but not this; conversely a disc
-punctured at a vertex satisfies this and not `FrontierSubsetEdges`. Both hold for a polygon in the
-book's sense, and the polygon consumers carry both. With the consequence (★★)
-`Triangulation.mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier : 𝒯.InteriorEdgesSubset → x ∈ frontier (Ω : Set 𝔼₂) → x ∈ 𝒯.vertices ∨ ∃ T a, 𝒯.IsBoundaryEdge T a ∧ x ∈ openSegment ℝ (T.1 a) (T.1 (a + 1))`
-(`x ∈ closure Ω = ⋃ closedK`, `x ∉ K T` since `x ∉ Ω`, so `x` is on an edge of `T`; if that edge
-is interior its open segment lies in `Ω`, so `x` is an endpoint, a vertex): the surface measure
-sees all of `∂Ω` but finitely many points. ★'''
-deps = ["Triangulation.IsBoundaryEdge", "Triangulation.vertices", "Triangulation.closure_eq_iUnion_closedK"]
+
+[[node]]
+id = "Triangulation.mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier"
