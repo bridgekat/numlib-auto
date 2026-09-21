@@ -1,322 +1,107 @@
-desc = '''
-The abstract interface of the boundary round (decision B1 of `notes/boundary/planning-brief.md`):
-the divergence `EuclideanSpace.div`, the structure `BoundaryData Ω` — a finite measure `σ` carried
-by `∂Ω`, a unit vector field `ν` defined `σ`-a.e., and the divergence theorem
-`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` for every field `F` of class `C¹(Ω̄)` — and the structure
-`BoundaryData.TraceFamily`: a bounded linear trace `W^{1,p}(Ω) → L^p(σ)` for every
-`1 ≤ p < ∞` which restricts continuous representatives, together with Green's formula
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ (Tu)(Tv) νᵢ dσ` at conjugate exponents. Every consumer of the
-Atkinson–Han, QSS and Brezis surfaces that mentions `∂Ω` is stated once over these two structures;
-the instances are `IsContDiffDomain.boundaryData` / `IsContDiffDomain.traceFamily`
-(`Boundary/ContDiffDomain.lean`) and `Triangulation.boundaryData` / `Triangulation.traceFamily`
-(`Boundary/Polygon.lean`, `Boundary/PolygonTrace.lean`).
-
-What the structures do *not* contain: a transversal field (a pinched polygon has none; the Nečas
-construction that uses one is `Boundary/Trace.lean`), density of smooth functions
-(`Boundary/Density.lean`), and any Hausdorff measure (`σ = μH[N−1]⌊∂Ω` is a future node needing
-the area formula). Boundedness of `Ω` is a field: every instance of this round is bounded, and it
-spares the divergence field a support hypothesis.
-
-Shared vocabulary of the graph modules, placed here so that `GraphMeasure` and `Divergence` can be
-written in parallel: the epigraph `EuclideanSpace.epigraph g = {y : g y' < y_N}` of a function of
-`d` variables with its closure and frontier for continuous `g` (so that `IsBoundaryGraphAt` reads
-`Ω ∩ B(x₀, r) = T ⁻¹' epigraph g ∩ B(x₀, r)`), and the measure preservation of a rigid motion.
-
-Consequences proved here, all from the fields: the classical Green formulas for `C¹(Ω̄)` and
-`C²(Ω̄)` functions (Atkinson–Han §7.6 before the density argument, Brezis Example 4 Step A),
-`W_0^{1,p}(Ω) ⊆ ker T`, the `H²` Green formula with the normal trace
-`∂_ν u = ∑ νᵢ T(∂ᵢu)` (Brezis, Comments on chapter 9, 7 (iii)), and the Neumann boundary
-condition of an `H²` weak solution (the half of Brezis Theorem 9.26 that the trace gives a
-meaning to). ~250 lines. Imports `Numlib.Analysis.Sobolev.Operators`, `Numlib.Analysis.Sobolev.Zero`,
-`Numlib.Analysis.PDE.Elliptic.Dirichlet` (for `laplaceForm`, `load` in the Neumann node),
-`Numlib.Analysis.Calculus.ContDiffOnClosure`.
-
-Conventions of `Boundary.toml` apply: `E := EuclideanSpace ℝ (Fin N)`, `Ω : Opens E`,
-`W^{1,p}(Ω) := SobolevEuclidean N 1 p Ω`, `fn := SobolevMultiIndex.fn`,
-`∂ᵢ u := SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`.
-'''
+[[node]]
+id = "InnerProductSpace.toDualReal"
 
 [[node]]
 id = "EuclideanSpace.div"
-kind = "definition"
-desc = '''`EuclideanSpace.div (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) (x) : ℝ := ∑ i, fderiv ℝ F x (EuclideanSpace.single i 1) i`,
-the divergence `∑ᵢ ∂ᵢFᵢ`, in the shape Mathlib's box divergence theorem
-`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable` writes it (`∑ i, f' x (e i) i`).
-With the simp lemmas `div_add`, `div_neg`, `div_smul` (constant scalar) for differentiable `F`, and
-`div_eq_trace : div F x = LinearMap.trace ℝ _ (fderiv ℝ F x : E →ₗ[ℝ] E)` (★, `LinearMap.trace_eq_matrix_trace`
-in the standard orthonormal basis), which is what makes the divergence rotation invariant. ★'''
-deps = []
 
 [[node]]
 id = "EuclideanSpace.div_smul_fun"
-kind = "theorem"
-desc = '''The product rule `div (fun x ↦ φ x • F x) x = ⟪gradient φ x, F x⟫_ℝ + φ x * div F x` at a
-point where `φ : E → ℝ` and `F : E → E` are differentiable (`fderiv_smul`, `fderiv` of a scalar
-function applied to `single i 1` is the `i`-th coordinate of `gradient φ x` by
-`InnerProductSpace.toDual_symm_apply`). With `EuclideanSpace.div_const_smul_single`:
-`div (fun x ↦ u x • single i 1) x = fderiv ℝ u x (single i 1)` for a scalar `u`, the form the
-classical Green formula uses. ★'''
-deps = ["EuclideanSpace.div"]
+
+[[node]]
+id = "EuclideanSpace.div_const_smul_single"
 
 [[node]]
 id = "EuclideanSpace.div_comp_continuousLinearEquiv"
-kind = "theorem"
-desc = '''**Affine invariance of the divergence** (the linear Piola identity): for `M : E ≃L[ℝ] E`,
-`b : E` and `F : E → E` differentiable at `M x + b`,
-`div (fun z ↦ M.symm (F (M z + b))) x = div F (M x + b)`. Through `div_eq_trace`: the derivative
-of the conjugate at `x` is `M⁻¹ ∘L fderiv ℝ F (M x + b) ∘L M` (`fderiv_comp`,
-`ContinuousLinearEquiv.comp_fderiv`, `fderiv` of `z ↦ M z + b`), and `LinearMap.trace_conj'`
-(`trace (g⁻¹ ∘ f ∘ g) = trace f`). It is what transports the divergence theorem from the reference
-triangle to every triangle (`EuclideanSpace.integral_div_openTriangle`, `Polygon.lean`). ★★'''
-deps = ["EuclideanSpace.div"]
 
 [[node]]
 id = "EuclideanSpace.div_comp_affineIsometryEquiv"
-kind = "theorem"
-desc = '''Rotation invariance of the divergence: for `T : E ≃ᵃⁱ[ℝ] E`, `F : E → E` differentiable at
-`T.symm y`, `div (fun z ↦ T.linearIsometryEquiv (F (T.symm z))) y = div F (T.symm y)`. The case
-`M := T.linearIsometryEquiv.symm.toContinuousLinearEquiv`, `b := T.symm 0` of
-`div_comp_continuousLinearEquiv` (`T.symm z = T.linearIsometryEquiv.symm z + T.symm 0`;
-`AffineIsometryEquiv` is `C^∞` with `fderiv` its linear part,
-`EuclideanSpace.contDiff_affineIsometryEquiv` of `Chart.lean`). This is the change of frame of the
-divergence theorem on a graph chart (`EuclideanSpace.integral_div_graphEpigraph` in
-`Divergence.lean`). ★'''
-deps = ["EuclideanSpace.div_comp_continuousLinearEquiv"]
+
+[[node]]
+id = "EuclideanSpace.div_gradient_eq_laplacian"
+
+[[node]]
+id = "contDiffOnClosure_one_iff"
+
+[[node]]
+id = "ContDiffOnClosure.smul"
 
 [[node]]
 id = "ContDiffOnClosure.mul"
-kind = "theorem"
-desc = '''The class `C¹(Ω̄)` is closed under products: for an open `s ⊆ E`, if `u v : E → ℝ` (or
-`u : E → ℝ`, `F : E → G` with `smul`) satisfy `ContDiffOnClosure ℝ 1 · s`, then so does
-`u * v` (resp. `fun x ↦ u x • F x`), with `ContDiffOnClosure.smul_const : ContDiffOnClosure ℝ 1 u s → ContDiffOnClosure ℝ 1 (fun x ↦ u x • c) s`
-for a fixed vector `c`. Route: `ContDiffOn.mul` for the interior clause; for the extension clause of
-`iteratedFDeriv ℝ 1` (which is `fderiv` up to `iteratedFDeriv_one_apply`), the product rule
-`fderiv_mul` expresses `D(uv) = u Dv + v Du` on `s`, and the continuous extensions of `u, v, Du, Dv`
-to `closure s` (the `m = 0` and `m = 1` clauses of the hypotheses, continuous on `closure s`)
-combine into a continuous extension of `D(uv)`. Placed here rather than in
-`Numlib/Analysis/Calculus/ContDiffOnClosure.lean` (read-only for this round). ★'''
-deps = ["ContDiffOnClosure"]
+
+[[node]]
+id = "ContDiffOnClosure.smul_const"
+
+[[node]]
+id = "ContDiffOnClosure.exists_continuousOn_fderiv_fderiv"
+
+[[node]]
+id = "ContDiffOnClosure.toDual_symm_of_eqOn_fderiv"
 
 [[node]]
 id = "BoundaryData"
-kind = "definition"
-desc = '''The boundary data of an open set: the surface measure, the outward unit normal and the
-divergence theorem, as one structure over which the boundary theory is stated once.
 
-`structure BoundaryData {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) where`
-* `σ : Measure (EuclideanSpace ℝ (Fin N))` — the surface measure, a measure on the ambient space
-  (decision B8: no subtype, `L^p(∂Ω)` is `Lp ℝ p σ`);
-* `ν : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)` — the outward unit normal, a function
-  on the ambient space meaningful `σ`-a.e.;
-* `isBounded : Bornology.IsBounded (Ω : Set E)`;
-* `isFiniteMeasure : IsFiniteMeasure σ` (register it as an instance `BoundaryData.instIsFiniteMeasure`);
-* `measure_compl_frontier : σ (frontier (Ω : Set E))ᶜ = 0` — `σ` is carried by `∂Ω`;
-* `aestronglyMeasurable_ν : AEStronglyMeasurable ν σ`;
-* `ae_norm_ν : ∀ᵐ x ∂σ, ‖ν x‖ = 1`;
-* `integral_div_eq : ∀ F : E → E, ContinuousOn F (closure (Ω : Set E)) → ContDiffOnClosure ℝ 1 F (Ω : Set E) → ∫ x in (Ω : Set E), EuclideanSpace.div F x = ∫ x, ⟪F x, ν x⟫_ℝ ∂σ`
-  — the divergence theorem (Gauss–Green) for fields of class `C¹(Ω̄)`
-  (`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`: `C¹` on `Ω` with the derivative extending
-  continuously to `Ω̄`, plus continuity of `F` itself on `Ω̄`). This is the primary regularity, the
-  one the books state (Atkinson–Han §7.6, QSS (12.95), Brezis Example 4); `C¹` fields on `ℝ^N` are
-  the corollary `BoundaryData.integral_div_eq_of_contDiff`.
-
-Instances: `IsContDiffDomain.boundaryData` (bounded `C¹` graph domains, `Boundary/ContDiffDomain.lean`),
-`Triangulation.boundaryData` (triangulated plane domains, `Boundary/Polygon.lean`),
-`EuclideanSpace.triangleBoundaryData` (a single triangle). Not a class: a domain may carry several
-descriptions and the consumers take the data explicitly. ★'''
-deps = ["EuclideanSpace.div", "ContDiffOnClosure"]
+[[node]]
+id = "BoundaryData.memLp_ν_apply_mul"
 
 [[node]]
 id = "BoundaryData.integral_div_eq_of_contDiff"
-kind = "theorem"
-desc = '''For `B : BoundaryData Ω` and `F : E → E` with `ContDiff ℝ 1 F`,
-`∫ x in (Ω : Set E), div F x = ∫ x, ⟪F x, B.ν x⟫ ∂B.σ`: the field `integral_div_eq` with
-`ContDiff.continuous.continuousOn` and `ContDiffOn.contDiffOnClosure Ω.isOpen (hF.contDiffOn)`
-(`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`). ★'''
-deps = ["BoundaryData"]
 
 [[node]]
 id = "BoundaryData.integral_fderiv_mul_add_eq"
-kind = "theorem"
-desc = '''**The classical Green formula** (Atkinson–Han §7.6, the display before Proposition 7.6.1,
-for `C¹(Ω̄)` functions): for `B : BoundaryData Ω`, `u v : E → ℝ` continuous on `closure Ω` and
-`ContDiffOnClosure ℝ 1` on `Ω`, and `i : Fin N`,
-`∫ x in Ω, fderiv ℝ u x (single i 1) * v x + ∫ x in Ω, u x * fderiv ℝ v x (single i 1) = ∫ x, u x * v x * B.ν x i ∂B.σ`.
-Apply `integral_div_eq` to `F x := (u x * v x) • EuclideanSpace.single i 1` (of class `C¹(Ω̄)` by
-`ContDiffOnClosure.mul` and `ContDiffOnClosure.smul_const`): `div F x = fderiv ℝ (u * v) x (single i 1)`
-(`div_const_smul_single`) `= ∂ᵢu v + u ∂ᵢv` (`fderiv_mul`) and `⟪F x, ν x⟫ = u x v x · ν x i`
-(`EuclideanSpace.inner_single_left`). The two integrals on the left are split by
-`integral_add` (both integrands continuous on the compact `closure Ω`, hence integrable on the
-bounded `Ω`: `ContinuousOn.integrableOn_compact`). ★'''
-deps = ["BoundaryData", "ContDiffOnClosure.mul", "EuclideanSpace.div_smul_fun"]
 
 [[node]]
 id = "BoundaryData.integral_laplacian_mul_add_eq"
-kind = "theorem"
-desc = '''**Green's second-order formula for classical functions**: for `B : BoundaryData Ω`,
-`u : E → ℝ` with `ContinuousOn u (closure Ω)` and `ContDiffOnClosure ℝ 2 u Ω`, and `v : E → ℝ`
-with `ContinuousOn v (closure Ω)` and `ContDiffOnClosure ℝ 1 v Ω`,
-`∫ x in Ω, Δ u x * v x + ∫ x in Ω, ⟪gradient u x, gradient v x⟫_ℝ = ∫ x, ⟪gradient u x, B.ν x⟫_ℝ * v x ∂B.σ`,
-with Mathlib's Laplacian `Δ` (`InnerProductSpace.instLaplacian`, `Mathlib/Analysis/InnerProductSpace/Laplacian.lean`;
-`laplacian_eq_iteratedFDeriv_orthonormalBasis` computes it as `∑ᵢ D²u(eᵢ, eᵢ)`) and Mathlib's
-`gradient`. This is the formula of Brezis §9.5 Example 4 Step A
-(`∫_Ω Δu v = ∫_Γ (∂u/∂n) v dσ − ∫_Ω ∇u·∇v`, `u ∈ C²(Ω̄)`, `v ∈ C¹(Ω̄)`) and of QSS (12.95).
-Route: `integral_div_eq` for `F x := v x • gradient u x`; `div F = ⟪∇v, ∇u⟫ + v Δu` by
-`div_smul_fun` and `div (gradient u) x = Δ u x` (`gradient = (toDual ℝ E).symm ∘ fderiv ℝ u`, so
-`fderiv ℝ (gradient u) x w = (toDual).symm (fderiv ℝ (fderiv ℝ u) x w)` by
-`ContinuousLinearEquiv.comp_fderiv`, and `iteratedFDeriv_two_apply`); the class `C¹(Ω̄)` of
-`gradient u` comes from the `m = 1, 2` clauses of `ContDiffOnClosure ℝ 2 u Ω` transported through
-the linear isometry `(toDual).symm` (state this as `ContDiffOnClosure.gradient`, ★, ~40 lines), and
-of `v • ∇u` from `ContDiffOnClosure.mul`. ★★, ~180 lines.'''
-deps = ["BoundaryData", "ContDiffOnClosure.mul", "EuclideanSpace.div_smul_fun"]
+
+[[node]]
+id = "BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv"
+
+[[node]]
+id = "Elliptic.laplaceForm_toLowerOrderL_eq_integral"
+
+[[node]]
+id = "Elliptic.neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq"
 
 [[node]]
 id = "BoundaryData.TraceFamily"
-kind = "definition"
-desc = '''The trace theorem and Green's formula on `Ω`, as a structure over `B : BoundaryData Ω`
-(the shape every consumer of a trace uses; the two instances are `IsContDiffDomain.traceFamily` and
-`Triangulation.traceFamily`):
-
-`structure BoundaryData.TraceFamily (B : BoundaryData Ω) where`
-* `traceL : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → (SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ)`
-  — the trace operator at every finite exponent (Atkinson–Han Theorem 7.3.10 (b),
-  Grisvard Theorem 1.5.1.3 with target `L^p(Γ)`);
-* `traceL_ae_eq : ∀ (p) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω) (ũ : E → ℝ), fn u =ᵐ[volume.restrict (Ω : Set E)] ũ → ContinuousOn ũ (closure (Ω : Set E)) → (traceL p hp u : E → ℝ) =ᵐ[B.σ] ũ`
-  — the trace of a function continuous up to the boundary is its restriction (7.3.10 (a));
-* `green : ∀ (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (hq : q ≠ ⊤) (u : SobolevEuclidean N 1 p Ω) (v : SobolevEuclidean N 1 q Ω) (i : Fin N), ∫ x in (Ω : Set E), (SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) : E → ℝ) x * fn v x + ∫ x in (Ω : Set E), fn u x * (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : E → ℝ) x = ∫ x, (traceL p hp u : E → ℝ) x * (traceL q hq v : E → ℝ) x * B.ν x i ∂B.σ`
-  — Green's formula for Sobolev functions at conjugate exponents (Grisvard Theorem 1.5.3.1,
-  Atkinson–Han (7.6.1) at `p = q = 2` and (7.6.3), Brezis Comments on chapter 9, 7 (iii)). The
-  exponents `1` and `∞` are excluded: `traceL` at `p = ∞` is not defined by density;
-* `green_contDiff : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω) (φ : E → ℝ), ContDiff ℝ 1 φ → HasCompactSupport φ → ∀ i : Fin N, ∫ x in (Ω : Set E), (SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) : E → ℝ) x * φ x + ∫ x in (Ω : Set E), fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1) = ∫ x, (traceL p hp u : E → ℝ) x * φ x * B.ν x i ∂B.σ`
-  — Green's formula against a fixed `C¹` compactly supported test function, valid at `p = 1` too
-  (for `1 < p < ∞` it follows from `green` with `v := φ|_Ω ∈ W^{1,q}(Ω)`, but at `p = 1` the
-  conjugate exponent is `∞` and `green` does not apply); it is the form the piecewise-Sobolev
-  membership theorem (Atkinson–Han Example 7.2.7, `Triangulation.memSobolevMultiIndex_of_continuousOn_of_forall`)
-  uses.
-
-Green's formula is a field rather than a theorem because on a polygon it is proved by summing
-over the triangles (`Triangulation.green`), not by density on `Ω`. ★'''
-deps = ["BoundaryData", "SobolevEuclidean", "SobolevMultiIndex.weakDeriv", "SobolevMultiIndex.fn"]
 
 [[node]]
 id = "BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero"
-kind = "theorem"
-desc = '''`W_0^{1,p}(Ω) ⊆ ker T`: for `𝒯 : B.TraceFamily`, `1 ≤ p < ∞` and
-`u ∈ SobolevEuclideanZero N 1 p Ω`, `𝒯.traceL p hp u = 0`. A test function `φ ∈ 𝓓(Ω)`
-(`SobolevMultiIndex.testFunctions`) has `fn = φ` a.e., is continuous on `closure Ω` and vanishes on
-`∂Ω` (its support is a compact subset of the open `Ω`, `tsupport φ ⊆ Ω`, so `φ = 0` off `Ω`), hence
-`traceL φ =ᵐ[σ] φ = 0` on `frontier Ω` by `traceL_ae_eq` and `B.measure_compl_frontier`; the
-map `u ↦ traceL u` is continuous and `SobolevEuclideanZero` is the closure of the test functions,
-so `SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions` (`Numlib/Analysis/Sobolev/Zero.lean`) with
-`g = 0` finishes. The easy half of Brezis Comments 7 (ii); the converse is `Boundary/Kernel.lean`.
-★★'''
-deps = ["BoundaryData.TraceFamily", "SobolevEuclideanZero", "SobolevMultiIndex.testFunctions"]
 
 [[node]]
 id = "BoundaryData.TraceFamily.normalTrace"
-kind = "definition"
-desc = '''**The normal derivative of an `H²` function on the boundary**, Brezis Comments on chapter 9,
-7 (iii): for `𝒯 : B.TraceFamily` and `u : SobolevEuclidean N 2 2 Ω`,
-`𝒯.normalTrace u : E → ℝ := fun x ↦ ∑ i, B.ν x i * (𝒯.traceL 2 ENNReal.ofNat_ne_top (SobolevMultiIndex.partialDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i u) : E → ℝ) x`
-— `∂u/∂n := (∇u)|_Γ · n` with `∂ᵢu ∈ H¹(Ω)` the typed partial derivative
-`SobolevMultiIndex.partialDerivL` of `Numlib/Analysis/Sobolev/Operators.lean` (the `Fact (1 ≤ 2)`
-instance is Mathlib's `fact_one_le_two_ennreal`). With `memLp_normalTrace : MemLp (𝒯.normalTrace u) 2 B.σ`
-(`|ν x i| ≤ ‖ν x‖ = 1` a.e., `MemLp.const_mul`-type bounds and `MemLp.add`) and
-`normalTrace_add`, `normalTrace_smul` a.e. ★'''
-deps = ["BoundaryData.TraceFamily", "SobolevMultiIndex.partialDerivL"]
+
+[[node]]
+id = "BoundaryData.TraceFamily.memLp_normalTrace"
 
 [[node]]
 id = "BoundaryData.TraceFamily.green_laplacian"
-kind = "theorem"
-desc = '''**Green's formula for `u ∈ H²(Ω)`, `v ∈ H¹(Ω)`** (Brezis Comments on chapter 9, 7 (iii);
-Atkinson–Han (7.6.4)): for `𝒯 : B.TraceFamily`, `u : SobolevEuclidean N 2 2 Ω` and
-`v : SobolevEuclidean N 1 2 Ω`, writing `∂ᵢu := partialDerivL … i u : SobolevEuclidean N 1 2 Ω`,
-`∫ x in Ω, (∑ i, (weakDeriv (∂ᵢu) (MultiIndexLE.single i) : E → ℝ) x) * fn v x + ∫ x in Ω, ∑ i, (weakDeriv u (MultiIndexLE.single i) : E → ℝ) x * (weakDeriv v (MultiIndexLE.single i) : E → ℝ) x = ∫ x, 𝒯.normalTrace u x * (𝒯.traceL 2 _ v : E → ℝ) x ∂B.σ`
-(the first integrand is the weak Laplacian `∑ᵢ ∂ᵢ∂ᵢu`). Proof: `𝒯.green` at `p = q = 2`
-(`ENNReal.HolderConjugate 2 2` is an instance) applied to `∂ᵢu` and `v` for each `i`, with
-`fn (∂ᵢu) =ᵐ weakDeriv u (single i)` (`SobolevMultiIndex.fn_partialDeriv`), summed over `i`
-(`integral_finset_sum` on both sides; integrability from `MemLp` at `p = 2` and Hölder). ★★'''
-deps = ["BoundaryData.TraceFamily", "BoundaryData.TraceFamily.normalTrace"]
 
 [[node]]
 id = "BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq"
-kind = "theorem"
-desc = '''**The Neumann boundary condition of an `H²` weak solution** — the clause of Brezis Theorem 9.26
-that has no meaning without a trace (`Elliptic.regularity_neumann`'s note): for `𝒯 : B.TraceFamily`,
-`u : SobolevEuclidean N 2 2 Ω`, `f : Lp ℝ 2 (volume.restrict Ω)` with
-`∀ φ : SobolevEuclidean N 1 2 Ω, Elliptic.laplaceForm Ω (SobolevMultiIndex.toLowerOrderL ℝ _ 2 Ω volume (by norm_num : 1 ≤ 2) u) φ = Elliptic.load Ω f φ`
-(`u` is a weak solution of the Neumann problem `−Δu + u = f`, (49) of Brezis §9.6, read on its
-`H¹` shadow), one has `𝒯.normalTrace u =ᵐ[B.σ] 0`.
-Proof: (1) for a test function `φ ∈ 𝓓(Ω)` the defining identity of the weak derivative
-(`HasWeakIteratedLineDerivOn`, `SobolevMultiIndex.hasWeakIteratedLineDerivOn`) gives
-`∫ ∂ᵢu ∂ᵢφ = −∫ (∂ᵢ∂ᵢu) φ`, so the weak equation says `∫ (−Δ_w u + u − f) φ = 0` for all `φ ∈ 𝓓(Ω)`,
-hence `−Δ_w u + u = f` a.e. on `Ω` (`ae_eq_zero_of_integral_contDiff_smul_eq_zero` on
-`volume.restrict Ω`, as in `Elliptic.laplacian_ae_eq_of_forall_testFunction`); (2) for
-`φ : E → ℝ` smooth with compact support, `φ|_Ω ∈ H¹(Ω)` (`ContDiff.memSobolev_of_isBounded` and
-`MemSobolevMultiIndex.exists_sobolevMultiIndex`, `B.isBounded`), and `green_laplacian` turns the
-weak equation into `∫ (𝒯.normalTrace u) · φ ∂σ = ∫_Ω (−Δ_w u + u − f) φ = 0`, using
-`traceL_ae_eq` for `φ`; (3) `ae_eq_zero_of_integral_contDiff_smul_eq_zero` (`Mathlib/Analysis/Distribution/AEEqOfIntegralContDiff.lean`,
-any measure; `normalTrace u ∈ L²(σ) ⊆ L¹(σ)` is locally integrable, `σ` finite) gives
-`normalTrace u = 0` `σ`-a.e. ★★, ~150 lines.'''
-deps = ["BoundaryData.TraceFamily.green_laplacian", "Elliptic.laplaceForm", "Elliptic.load", "ContDiff.memSobolev_of_isBounded"]
 
 [[node]]
 id = "EuclideanSpace.epigraph"
-kind = "definition"
-desc = '''`EuclideanSpace.epigraph (g : EuclideanSpace ℝ (Fin d) → ℝ) : Set (EuclideanSpace ℝ (Fin (d + 1))) := {y | g (init y) < y (Fin.last d)}`,
-the open region strictly above the graph of `g`, in the coordinate convention of
-`IsBoundaryGraphAt`: `IsBoundaryGraphAt V Ω x₀ r` unfolds to
-`∃ T g, g ∈ V ∧ Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g` (state this as
-`isBoundaryGraphAt_iff`, `rfl` up to `Set.sep_mem_eq`/`Set.inter_comm`), and
-`EuclideanSpace.upperHalfSpace d = epigraph 0`. With `mem_epigraph` (`Iff.rfl`) and
-`EuclideanSpace.epigraph_preimage_snocLast : snocLast x' t ∈ epigraph g ↔ g x' < t`. ★'''
-deps = ["EuclideanSpace.init", "IsBoundaryGraphAt"]
+
+[[node]]
+id = "EuclideanSpace.isBoundaryGraphAt_iff"
 
 [[node]]
 id = "EuclideanSpace.isOpen_epigraph"
-kind = "theorem"
-desc = '''For continuous `g`, `IsOpen (epigraph g)` (`isOpen_lt` of the continuous maps
-`g ∘ init` and `· (Fin.last d)`, `EuclideanSpace.continuous_init` of `Chart.lean`). ★'''
-deps = ["EuclideanSpace.epigraph"]
 
 [[node]]
 id = "EuclideanSpace.closure_epigraph"
-kind = "theorem"
-desc = '''For continuous `g`, `closure (epigraph g) = {y | g (init y) ≤ y (Fin.last d)}`: `⊆` by
-`closure_lt_subset_le` (both sides continuous), `⊇` since a point on or above the graph is the
-limit of the points `snocLast (init y) (y_N + 1/(n+1))` of the epigraph
-(`mem_closure_of_tendsto`, `snocLast_init_last`). Consequently, for a rigid motion `T` and an open
-`B`, `closure Ω ∩ B ⊆ T ⁻¹' {y | g (init y) ≤ y_N}` whenever `Ω ∩ B = B ∩ T ⁻¹' epigraph g`
-(an open set meets `closure Ω` inside `closure (Ω ∩ B)`; `Homeomorph.preimage_closure`), the
-inequality that every "push into `Ω`" argument (`IsBoundaryOfClass.hasSegmentProperty`,
-`graphNormal_outward`) starts from. ★'''
-deps = ["EuclideanSpace.isOpen_epigraph"]
+
+[[node]]
+id = "EuclideanSpace.closure_inter_subset_of_inter_eq"
 
 [[node]]
 id = "EuclideanSpace.frontier_epigraph"
-kind = "theorem"
-desc = '''For continuous `g`, `frontier (epigraph g) = {y | y (Fin.last d) = g (init y)}`, the graph
-of `g`: `frontier = closure \ interior` with `closure_epigraph` and `isOpen_epigraph.interior_eq`.
-Consequently, for `T : E ≃ᵃⁱ[ℝ] E`, `frontier (T ⁻¹' epigraph g) = T ⁻¹' {y | y_N = g y'}`
-(`Homeomorph.preimage_frontier`), and if `Ω ∩ B = B ∩ T ⁻¹' epigraph g` for an open ball `B`
-then `frontier Ω ∩ B = B ∩ T ⁻¹' {y | y_N = g y'}` (`frontier_inter_open_inter`
-with `B` open; this is `IsBoundaryGraphAt.frontier_inter_ball`, the statement
-`IsBoundaryGraphAt.last_eq_of_mem_frontier` of `Chart.lean` is its `⊆` direction pointwise).
-State both. ★'''
-deps = ["EuclideanSpace.closure_epigraph", "IsBoundaryGraphAt.last_eq_of_mem_frontier"]
+
+[[node]]
+id = "IsBoundaryGraphAt.frontier_inter_ball"
 
 [[node]]
 id = "AffineIsometryEquiv.measurePreserving"
-kind = "theorem"
-desc = '''A rigid motion `T : EuclideanSpace ℝ (Fin N) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin N)` preserves
-Lebesgue measure: `MeasurePreserving T volume volume`. `T x = T.linearIsometryEquiv x + T 0`
-(`AffineIsometryEquiv.linearIsometryEquiv`, `AffineMap.decomp`-style: `T x = T.linear (x -ᵥ 0) +ᵥ T 0`),
-so it is `LinearIsometryEquiv.measurePreserving` (`Mathlib/MeasureTheory/Measure/Haar/InnerProductSpace.lean`)
-composed with the translation `measurePreserving_add_right volume (T 0)`. With the consequences
-`integral_comp_affineIsometryEquiv : ∫ x, f (T x) = ∫ x, f x` (`MeasurePreserving.integral_comp'`)
-and `setIntegral_comp_affineIsometryEquiv : ∫ x in T ⁻¹' s, f (T x) = ∫ y in s, f y`
-(`MeasurePreserving.setIntegral_preimage_emb` with `T.toHomeomorph.measurableEmbedding`). Check
-first whether Mathlib's pin already has this under `AffineIsometryEquiv.measurePreserving` or
-`Isometry.measurePreserving`-type names (grep `measurePreserving` in
-`Mathlib/MeasureTheory/Measure/Haar/`); if so the node is a surface alias. ★'''
-deps = []
+
+[[node]]
+id = "AffineIsometryEquiv.setIntegral_comp"

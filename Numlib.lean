@@ -245,6 +245,7 @@ import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.Boundary.ChartGraph
+import Numlib.Analysis.Sobolev.Boundary.Data
 import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Compactness
