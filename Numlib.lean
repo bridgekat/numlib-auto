@@ -251,6 +251,7 @@ import Numlib.Analysis.Sobolev.Boundary.Density
 import Numlib.Analysis.Sobolev.Boundary.Divergence
 import Numlib.Analysis.Sobolev.Boundary.Gram
 import Numlib.Analysis.Sobolev.Boundary.GraphMeasure
+import Numlib.Analysis.Sobolev.Boundary.Kernel
 import Numlib.Analysis.Sobolev.Boundary.Polygon
 import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import Numlib.Analysis.Sobolev.Boundary.Trace
