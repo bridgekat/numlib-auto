@@ -122,3 +122,6 @@ id = "MeasureTheory.enorm_integral_smul_le_eLpNorm_mul_eLpNorm"
 [[node]]
 id = "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"
+
+[[node]]
+id = "MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt"

@@ -3157,14 +3157,11 @@ variable {N : ℕ} {Ω Ω' : Opens (EuclideanSpace ℝ (Fin N))}
 open SobolevMultiIndex
 
 /-- The partial derivative `∂ᵢu` of an element of `H^1(Ω)` is a weak derivative of its function
-along `eᵢ`. -/
+along `eᵢ` (the case `p = 2` of `SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single`). -/
 theorem weakDeriv_hasWeakIteratedLineDerivOn_single (u : SobolevEuclidean N 1 2 Ω) (i : Fin N) :
     HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u)
-      (weakDeriv u (MultiIndexLE.single i)) Ω volume := by
-  have := (hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis :
-      Fin N → EuclideanSpace ℝ (Fin N)) i)
-  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+      (weakDeriv u (MultiIndexLE.single i)) Ω volume :=
+  SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u i
 
 /-- A smooth function `θ` with `tsupport θ ∩ Ω ⊆ Ω'` times a test function on `Ω` is a test
 function on `Ω'`. -/

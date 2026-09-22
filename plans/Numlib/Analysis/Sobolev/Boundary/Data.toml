@@ -1,7 +1,4 @@
 [[node]]
-id = "InnerProductSpace.toDualReal"
-
-[[node]]
 id = "EuclideanSpace.div"
 
 [[node]]
@@ -18,21 +15,6 @@ id = "EuclideanSpace.div_comp_affineIsometryEquiv"
 
 [[node]]
 id = "EuclideanSpace.div_gradient_eq_laplacian"
-
-[[node]]
-id = "contDiffOnClosure_one_iff"
-
-[[node]]
-id = "ContDiffOnClosure.smul"
-
-[[node]]
-id = "ContDiffOnClosure.mul"
-
-[[node]]
-id = "ContDiffOnClosure.smul_const"
-
-[[node]]
-id = "ContDiffOnClosure.exists_continuousOn_fderiv_fderiv"
 
 [[node]]
 id = "ContDiffOnClosure.toDual_symm_of_eqOn_fderiv"
@@ -54,12 +36,6 @@ id = "BoundaryData.integral_laplacian_mul_add_eq"
 
 [[node]]
 id = "BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv"
-
-[[node]]
-id = "Elliptic.laplaceForm_toLowerOrderL_eq_integral"
-
-[[node]]
-id = "Elliptic.neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq"
 
 [[node]]
 id = "BoundaryData.TraceFamily"
@@ -101,10 +77,52 @@ id = "EuclideanSpace.frontier_epigraph"
 id = "IsBoundaryGraphAt.frontier_inter_ball"
 
 [[node]]
-id = "AffineIsometryEquiv.measurePreserving"
+id = "EuclideanSpace.div_finset_sum"
 
 [[node]]
-id = "AffineIsometryEquiv.hasFDerivAt"
+id = "EuclideanSpace.measurable_fderiv_apply_apply"
 
 [[node]]
-id = "AffineIsometryEquiv.setIntegral_comp"
+id = "EuclideanSpace.measurable_div"
+
+[[node]]
+id = "EuclideanSpace.norm_fderiv_apply_apply_le"
+
+[[node]]
+id = "EuclideanSpace.abs_div_le"
+
+[[node]]
+id = "EuclideanSpace.integrableOn_fderiv_apply_apply"
+
+[[node]]
+id = "EuclideanSpace.integrableOn_div"
+
+[[node]]
+id = "ContDiffOnClosure.integrableOn_div"
+
+[[node]]
+id = "BoundaryData.integrable_mul_ν_apply"
+
+[[node]]
+id = "BoundaryData.mulNormalL"
+
+[[node]]
+id = "BoundaryData.coeFn_mulNormalL"
+
+[[node]]
+id = "EuclideanSpace.snocLast_mem_closure_epigraph"
+
+[[node]]
+id = "EuclideanSpace.inter_inter_preimage_epigraph_eq"
+
+[[node]]
+id = "EuclideanSpace.mem_frontier_preimage_epigraph_of_mem_frontier"
+
+[[node]]
+id = "EuclideanSpace.graphStrip"
+
+[[node]]
+id = "EuclideanSpace.isOpen_graphStrip"
+
+[[node]]
+id = "EuclideanSpace.snocLast_mem_graphStrip"

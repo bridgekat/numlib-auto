@@ -60,10 +60,11 @@ every `x ∈ ∂Ω = Γ` there are a neighbourhood `U` of `x` in `ℝ^N` and a b
 
 The book defines "of class `C^∞`" as "of class `C^m` for every `m`"; `IsOfClassC ⊤ Ω` asks for
 one chart of class `C^∞` at each boundary point, which is a priori stronger and is what the
-regularity theorems of §9.6 and chapter 10 use. The two readings agree through the implicit
-function theorem (`IsContDiffChartDomain.isContDiffDomain`, the deferred converse of
-`isClassC1_of_isContDiffDomain`): a boundary that is locally a `C^m` graph for every `m` is a
-`C^∞` graph. -/
+regularity theorems of §9.6 and chapter 10 use. The implicit function theorem
+(`IsContDiffChartDomain.isContDiffDomain`, for `1 ≤ n ≠ ω`) turns a chart of class `C^m` into a
+graph, so `IsOfClassC m Ω` for every `m` gives `IsContDiffDomain m Ω` for every `m`; the uniform
+statement — one `C^∞` graph function serving every order — needs the graph function to be the
+same for all `m`, which is not proved here. -/
 def IsOfClassC (m : ℕ∞) (Ω : Set 𝔼) : Prop :=
   IsContDiffChartDomain m Ω
 

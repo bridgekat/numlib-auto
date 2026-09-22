@@ -1,0 +1,26 @@
+[[node]]
+id = "Real.rpowReg"
+
+[[node]]
+id = "Real.sq_add_sq_pos"
+
+[[node]]
+id = "Real.rpowReg_zero"
+
+[[node]]
+id = "Real.rpowReg_nonneg"
+
+[[node]]
+id = "Real.rpowReg_le"
+
+[[node]]
+id = "Real.hasDerivAt_rpowReg"
+
+[[node]]
+id = "Real.contDiff_rpowReg"
+
+[[node]]
+id = "Real.abs_deriv_rpowReg_le"
+
+[[node]]
+id = "Real.tendsto_rpowReg"

@@ -217,3 +217,12 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, |v|_{k
 [[node]]
 id = "SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, the inequality (7.3.13)"
+
+[[node]]
+id = "absIntegralSeminorm"
+
+[[node]]
+id = "absIntegralSeminorm_apply"
+
+[[node]]
+id = "exists_absIntegralSeminorm_le"

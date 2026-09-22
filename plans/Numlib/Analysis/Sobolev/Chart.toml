@@ -122,3 +122,48 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, proof of T
 
 [[node]]
 id = "IsDiffeoOnWithBoundedJacobian.restrict"
+
+[[node]]
+id = "EuclideanSpace.initLastL"
+
+[[node]]
+id = "EuclideanSpace.initLastL_apply"
+
+[[node]]
+id = "EuclideanSpace.initLastL_symm_apply"
+
+[[node]]
+id = "EuclideanSpace.snocLast_zero_one"
+
+[[node]]
+id = "EuclideanSpace.hasDerivAt_snocLast"
+
+[[node]]
+id = "EuclideanSpace.snocLast_eq_lineMap"
+
+[[node]]
+id = "EuclideanSpace.dist_init_le"
+
+[[node]]
+id = "EuclideanSpace.norm_snocLast_le"
+
+[[node]]
+id = "EuclideanSpace.norm_snocLast_neg_one"
+
+[[node]]
+id = "EuclideanSpace.norm_snocLast_sub_snocLast"
+
+[[node]]
+id = "EuclideanSpace.inner_snocLast"
+
+[[node]]
+id = "EuclideanSpace.continuous_snocLast_graph"
+
+[[node]]
+id = "EuclideanSpace.hasFDerivAt_snocLast_add"
+
+[[node]]
+id = "EuclideanSpace.snocLast_add_fderiv_apply_single"
+
+[[node]]
+id = "fderiv_add_sum_eq_zero_of_partition"

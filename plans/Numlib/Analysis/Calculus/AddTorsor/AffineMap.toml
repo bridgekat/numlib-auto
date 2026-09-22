@@ -1,0 +1,8 @@
+[[node]]
+id = "AffineIsometryEquiv.linearIsometryEquiv_symm"
+
+[[node]]
+id = "AffineIsometryEquiv.apply_eq_linearIsometryEquiv_add"
+
+[[node]]
+id = "AffineIsometryEquiv.hasFDerivAt"

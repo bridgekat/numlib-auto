@@ -1,0 +1,6 @@
+desc = '''
+Measures, in Mathlib's own layout (natural home: `Mathlib.MeasureTheory.Measure.*`).
+Directory-only group; the subdirectory is
+
+* `Haar/` -- Haar measure, and the volume of a finite-dimensional inner product space.
+'''

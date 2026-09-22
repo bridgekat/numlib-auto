@@ -50,43 +50,10 @@ id = "IsContDiffDomain.hasSegmentProperty"
 id = "IsLipschitzDomain.hasSegmentProperty"
 
 [[node]]
-id = "TestFunction.compSubRightOfPreimage"
-
-[[node]]
-id = "LocallyIntegrableOn.comp_add_right_of_preimage"
-
-[[node]]
-id = "measurePreserving_add_right_restrict_of_preimage"
-
-[[node]]
-id = "MeasureTheory.MemLp.comp_add_right_of_preimage"
-
-[[node]]
-id = "integral_smul_comp_add_right_of_preimage"
-
-[[node]]
-id = "HasWeakIteratedLineDerivOn.comp_add_right_of_preimage"
-
-[[node]]
-id = "SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single"
-
-[[node]]
-id = "SobolevEuclidean.memSobolevMultiIndex_one_of_forall"
-
-[[node]]
-id = "SobolevEuclidean.weakDeriv_single_ae_eq"
-
-[[node]]
 id = "SobolevEuclidean.exists_translatePiece"
 
 [[node]]
-id = "MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt"
-
-[[node]]
 id = "SobolevEuclidean.norm_le_sum_norm_translateCurve_sub"
-
-[[node]]
-id = "fderiv_add_sum_eq_zero_of_partition"
 
 [[node]]
 id = "HasSegmentProperty.exists_translateApprox"
@@ -123,3 +90,15 @@ id = "IsLipschitzDomain.hasSmoothDensity"
 
 [[node]]
 id = "IsLipschitzDomain.hasUniformSmoothDensity"
+
+[[node]]
+id = "SobolevEuclidean.smoothRep"
+
+[[node]]
+id = "SobolevEuclidean.contDiff_smoothRep"
+
+[[node]]
+id = "SobolevEuclidean.hasCompactSupport_smoothRep"
+
+[[node]]
+id = "SobolevEuclidean.fn_ae_eq_smoothRep"

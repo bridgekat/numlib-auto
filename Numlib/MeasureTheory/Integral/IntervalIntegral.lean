@@ -59,7 +59,7 @@ interval `(a, b)`, none of which is about any particular numerical method:
 -/
 
 open Filter MeasureTheory Set Topology intervalIntegral
-open scoped Interval
+open scoped ENNReal Interval
 
 /-! ### Integrability on `(a, b)` and on `[a, b]` -/
 
@@ -665,3 +665,87 @@ theorem integrableOn_Ioi_and_integral_le_of_forall_integral_le {g : ℝ → ℝ}
     exact setIntegral_congr_fun measurableSet_Ioc fun t ht ↦ Real.norm_of_nonneg (hg0 t ht.1)
   refine ⟨hgi, le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hgi hb)
     (Eventually.of_forall fun n ↦ hle ((n : ℝ) + 1) (by positivity))⟩
+
+/-- The reparametrization `t ↦ 1 − t` of `[0, 1]`. -/
+theorem _root_.intervalIntegral.integral_comp_one_sub (g : ℝ → ℝ) :
+    ∫ t in (0 : ℝ)..1, g (1 - t) = ∫ t in (0 : ℝ)..1, g t := by
+  have := intervalIntegral.integral_comp_sub_left g (a := 0) (b := 1) 1
+  simp only [sub_zero, sub_self] at this
+  exact this
+
+/-- Translation of a half-line integral: `∫_0^∞ φ(a + s) ds = ∫_a^∞ φ(t) dt`. -/
+theorem integral_Ioi_comp_add_left {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    (φ : ℝ → G) (a : ℝ) : ∫ s in Ioi (0 : ℝ), φ (a + s) = ∫ t in Ioi a, φ t := by
+  have h := integral_add_left_eq_self (μ := volume) (fun t ↦ (Ioi a).indicator φ t) a
+  rw [← MeasureTheory.integral_indicator measurableSet_Ioi,
+    ← MeasureTheory.integral_indicator measurableSet_Ioi, ← h]
+  congr 1
+  funext s
+  rw [← Set.indicator_comp_right (fun s ↦ a + s) (g := φ) (s := Ioi a),
+    Set.preimage_const_add_Ioi, sub_self]
+  rfl
+
+/-- **The one-variable core of the strip estimate**: for `f` with `f a = 0` and continuous
+derivative `f'`, and sets `I`, `J` of the interval `(a, a + t)` with `(a, s] ⊆ J` for every
+`s ∈ I`, `∫_I |f|^P ≤ t^P ∫_J |f'|^P` for `1 ≤ P`. On `I`, `f s = ∫_a^s f'` is bounded by
+`∫_J |f'|`, which Hölder bounds by `(vol J)^{1 − 1/P} (∫_J |f'|^P)^{1/P}`
+(`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`), and `vol I, vol J ≤ t`. -/
+theorem lintegral_enorm_rpow_le_of_hasDerivAt {f f' : ℝ → ℝ} (hf : ∀ s, HasDerivAt f (f' s) s)
+    (hf' : Continuous f') {a t : ℝ} (ht : 0 < t) (hfa : f a = 0) {I J : Set ℝ}
+    (hI : I ⊆ Ioo a (a + t)) (hJ : J ⊆ Ioo a (a + t)) (hIJ : ∀ s ∈ I, Ioc a s ⊆ J)
+    {P : ℝ} (hP : 1 ≤ P) :
+    ∫⁻ s in I, ‖f s‖ₑ ^ P ≤ ENNReal.ofReal t ^ P * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
+  have hP0 : 0 < P := zero_lt_one.trans_le hP
+  have ht0 : ENNReal.ofReal t ≠ 0 := (ENNReal.ofReal_pos.2 ht).ne'
+  have hvol : volume (Ioo a (a + t)) = ENNReal.ofReal t := by
+    rw [Real.volume_Ioo, add_sub_cancel_left]
+  have hm : AEStronglyMeasurable f' (volume.restrict J) := hf'.aestronglyMeasurable
+  -- Hölder on `J`
+  have hH : ∫⁻ τ in J, ‖f' τ‖ₑ
+      ≤ (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) ^ (1 / P) * ENNReal.ofReal t ^ (1 - 1 / P) := by
+    have h1P : (1 : ℝ≥0∞) ≤ ENNReal.ofReal P := by
+      rw [← ENNReal.ofReal_one]
+      exact ENNReal.ofReal_le_ofReal hP
+    have h := eLpNorm_le_eLpNorm_mul_rpow_measure_univ (μ := volume.restrict J) (f := f')
+      (p := 1) (q := ENNReal.ofReal P) h1P hm
+    rw [eLpNorm_one_eq_lintegral_enorm hm, eLpNorm_eq_lintegral_rpow_enorm_toReal
+      (by simpa using hP0) ENNReal.ofReal_ne_top hm, ENNReal.toReal_ofReal hP0.le,
+      ENNReal.toReal_one, div_one, Measure.restrict_apply_univ] at h
+    refine h.trans ?_
+    gcongr
+    · rw [sub_nonneg, div_le_one hP0]
+      exact hP
+    · exact (measure_mono hJ).trans hvol.le
+  -- the pointwise bound on `I`
+  have hpt : ∀ s ∈ I, ‖f s‖ₑ ^ P
+      ≤ ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
+    intro s hs
+    have has : a ≤ s := (hI hs).1.le
+    have e : f s = ∫ τ in a..s, f' τ := by
+      rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (fun τ _ ↦ hf τ)
+        (hf'.intervalIntegrable _ _), hfa, sub_zero]
+    have h1 : ‖f s‖ₑ ≤ ∫⁻ τ in J, ‖f' τ‖ₑ := by
+      rw [e, intervalIntegral.integral_of_le has]
+      exact (enorm_integral_le_lintegral_enorm _).trans (lintegral_mono_set (hIJ s hs))
+    calc ‖f s‖ₑ ^ P
+        ≤ ((∫⁻ τ in J, ‖f' τ‖ₑ ^ P) ^ (1 / P) * ENNReal.ofReal t ^ (1 - 1 / P)) ^ P :=
+          ENNReal.rpow_le_rpow (h1.trans hH) hP0.le
+      _ = ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
+          rw [ENNReal.mul_rpow_of_nonneg _ _ hP0.le, ← ENNReal.rpow_mul, ← ENNReal.rpow_mul,
+            one_div_mul_cancel hP0.ne', ENNReal.rpow_one, mul_comm]
+          congr 2
+          field_simp
+  calc ∫⁻ s in I, ‖f s‖ₑ ^ P
+      ≤ ∫⁻ _ in I, ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P :=
+        setLIntegral_mono measurable_const hpt
+    _ = ENNReal.ofReal t ^ (P - 1) * (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) * volume I :=
+        setLIntegral_const _ _
+    _ ≤ ENNReal.ofReal t ^ (P - 1) * (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) * ENNReal.ofReal t := by
+        gcongr
+        exact (measure_mono hI).trans hvol.le
+    _ = ENNReal.ofReal t ^ P * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
+        have e : ENNReal.ofReal t ^ P = ENNReal.ofReal t * ENNReal.ofReal t ^ (P - 1) := by
+          conv_lhs => rw [show P = 1 + (P - 1) by ring]
+          rw [ENNReal.rpow_add _ _ ht0 ENNReal.ofReal_ne_top, ENNReal.rpow_one]
+        rw [e]
+        ring

@@ -32,3 +32,6 @@ id = "norm_toLp_two_le_sqrt_card_mul_norm_toLp_top"
 
 [[node]]
 id = "norm_toLp_one_le_card_mul_norm_toLp_top"
+
+[[node]]
+id = "_root_.EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one"

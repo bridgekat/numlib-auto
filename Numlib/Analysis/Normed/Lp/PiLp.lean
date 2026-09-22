@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.MeanInequalitiesPow
+import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 
@@ -184,3 +185,11 @@ theorem norm_toLp_one_le_card_mul_norm_toLp_top (x : ∀ i, β i) :
   simpa using h
 
 end PiLp
+
+/-- A unit vector of `ℝ^n` has a nonzero coordinate. -/
+theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
+    {v : EuclideanSpace ℝ (Fin n)} (hv : ‖v‖ = 1) : ∃ i : Fin n, v i ≠ 0 := by
+  by_contra hcon
+  have : v = 0 := PiLp.ext fun i ↦ by_contra fun h ↦ hcon ⟨i, h⟩
+  rw [this, norm_zero] at hv
+  exact zero_ne_one hv

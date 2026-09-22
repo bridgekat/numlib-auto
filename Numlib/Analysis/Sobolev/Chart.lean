@@ -79,7 +79,7 @@ Proposition 9.6.
 
 open Filter MeasureTheory Set TopologicalSpace
 
-open scoped ContDiff ENNReal Manifold Topology
+open scoped ContDiff ENNReal InnerProductSpace Manifold Topology
 
 noncomputable section
 
@@ -408,6 +408,122 @@ theorem integral_lastInit {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
         integral_prod_symm _ (h.integrable_comp_of_integrable hf)
     _ = ∫ x', ∫ t, f (snocLast x' t) := rfl
 
+/-! #### The splitting `x ↦ (x', x_N)`, and the vertical lines of `ℝ^{d+1}`
+
+The splitting in the order the implicit function theorem wants (`initLastL`, the factors of
+`lastInitL` swapped), the derivative of a vertical line `t ↦ (x', t)`, and the norms and inner
+products of `snocLast`. -/
+
+/-- The splitting `x ↦ (x', x_N)` of `ℝ^{d+1}` as `ℝ^d × ℝ`, as a continuous linear equivalence;
+`(lastInitL d).symm` with the factors swapped, the order that Mathlib's implicit function theorem
+on a product `E₁ × E₂` solves for the second factor. -/
+def initLastL (d : ℕ) :
+    EuclideanSpace ℝ (Fin (d + 1)) ≃L[ℝ] EuclideanSpace ℝ (Fin d) × ℝ :=
+  (lastInitL d).trans (ContinuousLinearEquiv.prodComm ℝ ℝ (EuclideanSpace ℝ (Fin d)))
+
+/-- The splitting sends `x` to `(x', x_N)`. -/
+@[simp]
+theorem initLastL_apply (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    initLastL d x = (init x, x (Fin.last d)) :=
+  rfl
+
+/-- The inverse splitting sends `(x', t)` to `(x', t)` read in `ℝ^{d+1}`. -/
+@[simp]
+theorem initLastL_symm_apply (p : EuclideanSpace ℝ (Fin d) × ℝ) :
+    (initLastL d).symm p = snocLast p.1 p.2 :=
+  rfl
+
+/-- The point `(0, 1)` of `ℝ^{d+1}` is the last basis vector. -/
+theorem snocLast_zero_one :
+    snocLast (0 : EuclideanSpace ℝ (Fin d)) 1 = single (Fin.last d) 1 := by
+  ext i
+  induction i using Fin.lastCases <;> simp [Fin.castSucc_ne_last]
+
+/-- The vertical line `t ↦ (x', t)` has derivative `e_N`. -/
+theorem hasDerivAt_snocLast (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
+    HasDerivAt (fun t ↦ snocLast x' t) (single (Fin.last d) 1) t := by
+  have h : HasDerivAt (fun t : ℝ ↦ (x', t)) ((0 : EuclideanSpace ℝ (Fin d)), (1 : ℝ)) t :=
+    (hasDerivAt_const t x').prodMk (hasDerivAt_id t)
+  have := (initLastL d).symm.hasFDerivAt.comp_hasDerivAt t h
+  simpa [Function.comp_def, snocLast_zero_one] using this
+
+/-- The vertical line `t ↦ (x', t)` is the affine line through `(x', 0)` and `(x', 1)`. -/
+theorem snocLast_eq_lineMap (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
+    snocLast x' t = AffineMap.lineMap (snocLast x' 0) (snocLast x' 1) t := by
+  rw [AffineMap.lineMap_apply_module]
+  ext i
+  induction i using Fin.lastCases
+  · simp
+  · simp only [PiLp.add_apply, PiLp.smul_apply, snocLast_apply_castSucc, smul_eq_mul]
+    ring
+
+/-- The first coordinates do not increase distances. -/
+theorem dist_init_le (x y : EuclideanSpace ℝ (Fin (d + 1))) :
+    dist (init x) (init y) ≤ dist x y := by
+  rw [dist_eq_norm, dist_eq_norm, ← init_sub]
+  exact norm_init_le _
+
+/-- `‖(x', t)‖ ≤ ‖x'‖ + |t|`. -/
+theorem norm_snocLast_le (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
+    ‖snocLast x' t‖ ≤ ‖x'‖ + |t| := by
+  have h := norm_sq_eq_init_add_last (snocLast x' t)
+  rw [init_snocLast, snocLast_apply_last] at h
+  have h2 : ‖snocLast x' t‖ ^ 2 ≤ (‖x'‖ + |t|) ^ 2 := by
+    rw [h]; nlinarith [norm_nonneg x', abs_nonneg t, sq_abs t]
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h2
+
+/-- `‖(v, −1)‖ = √(1 + ‖v‖²)`. -/
+theorem norm_snocLast_neg_one (v : EuclideanSpace ℝ (Fin d)) :
+    ‖snocLast v (-1)‖ = Real.sqrt (1 + ‖v‖ ^ 2) := by
+  rw [← Real.sqrt_sq (norm_nonneg (snocLast v (-1))), norm_sq_eq_init_add_last]
+  simp [add_comm]
+
+/-- Two points of a vertical line: `‖(x', s) − (x', t)‖ = |s − t|`. -/
+theorem norm_snocLast_sub_snocLast (x' : EuclideanSpace ℝ (Fin d)) (s t : ℝ) :
+    ‖snocLast x' s - snocLast x' t‖ = |s - t| := by
+  have h := norm_sq_eq_init_add_last (snocLast x' s - snocLast x' t)
+  simp only [init_sub, init_snocLast, sub_self, norm_zero, PiLp.sub_apply, snocLast_apply_last,
+    zero_pow two_ne_zero, zero_add] at h
+  rw [← Real.sqrt_sq (norm_nonneg _), h, Real.sqrt_sq_eq_abs]
+
+/-- The inner product of two points of `ℝ^{d+1}` split along the last coordinate:
+`⟪(x, s), (y, t)⟫ = ⟪x, y⟫ + s t`. -/
+theorem inner_snocLast (x y : EuclideanSpace ℝ (Fin d)) (s t : ℝ) :
+    ⟪snocLast x s, snocLast y t⟫_ℝ = ⟪x, y⟫_ℝ + s * t := by
+  simp only [PiLp.inner_apply, Fin.sum_univ_castSucc, snocLast_apply_castSucc, snocLast_apply_last,
+    RCLike.inner_apply, conj_trivial]
+  ring
+
+section Graph
+
+variable {g : EuclideanSpace ℝ (Fin d) → ℝ}
+
+/-- The graph map `x' ↦ (x', g x')` is continuous. -/
+theorem continuous_snocLast_graph (hg : Continuous g) :
+    Continuous fun x' ↦ snocLast x' (g x') :=
+  continuous_snocLast.comp (continuous_id.prodMk hg)
+
+/-- The derivative of the map `x' ↦ (x', g x' + s)`. -/
+theorem hasFDerivAt_snocLast_add (hg : ContDiff ℝ 1 g) (x' : EuclideanSpace ℝ (Fin d)) (s : ℝ) :
+    HasFDerivAt (fun x' ↦ snocLast x' (g x' + s))
+      (((initLastL d).symm : EuclideanSpace ℝ (Fin d) × ℝ →L[ℝ] _).comp
+        ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x'))) x' := by
+  have h1 : HasFDerivAt (fun x' ↦ (x', g x' + s))
+      ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x')) x' :=
+    (hasFDerivAt_id x').prodMk ((hg.differentiable one_ne_zero x').hasFDerivAt.add_const s)
+  exact (initLastL d).symm.hasFDerivAt.comp x' h1
+
+/-- The derivative of `x' ↦ (x', g x' + s)` in the direction `eᵢ` is `eᵢ + ∂ᵢg(x') e_N`. -/
+theorem snocLast_add_fderiv_apply_single (x' : EuclideanSpace ℝ (Fin d)) (i : Fin d) :
+    ((initLastL d).symm : EuclideanSpace ℝ (Fin d) × ℝ →L[ℝ] _).comp
+        ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x')) (EuclideanSpace.single i 1)
+      = EuclideanSpace.single i.castSucc 1
+        + fderiv ℝ g x' (EuclideanSpace.single i 1)
+          • EuclideanSpace.single (Fin.last d) (1 : ℝ) := by
+  ext j
+  induction j using Fin.lastCases <;> simp [Fin.castSucc_ne_last, Fin.castSucc_inj]
+
+end Graph
 end EuclideanSpace
 
 
@@ -833,6 +949,22 @@ theorem IsCompact.exists_contDiff_partitionOfUnity [FiniteDimensional ℝ E] {Γ
     rwa [finsum_eq_sum_of_fintype, Fintype.sum_option] at this
   · exact Metric.isCompact_of_isClosed_isBounded (isClosed_tsupport _)
       (Metric.isBounded_ball.subset ((hf (some i)).trans inter_subset_right))
+
+/-- The derivatives of a partition of unity `θ₀ + ∑ θ_i = 1` sum to zero. -/
+theorem fderiv_add_sum_eq_zero_of_partition {ι : Type*} [Fintype ι] {θ₀ : E → ℝ}
+    {θ : ι → E → ℝ} (hθ₀ : ContDiff ℝ ∞ θ₀) (hθ : ∀ i, ContDiff ℝ ∞ (θ i))
+    (hsum : ∀ x, θ₀ x + ∑ i, θ i x = 1) (z v : E) :
+    fderiv ℝ θ₀ z v + ∑ i, fderiv ℝ (θ i) z v = 0 := by
+  have h1 : HasFDerivAt (fun x ↦ θ₀ x + ∑ i, θ i x)
+      (fderiv ℝ θ₀ z + ∑ i, fderiv ℝ (θ i) z) z :=
+    (hθ₀.differentiable (by simp) z).hasFDerivAt.add
+      (HasFDerivAt.fun_sum fun i _ ↦ ((hθ i).differentiable (by simp) z).hasFDerivAt)
+  have h2 : HasFDerivAt (fun x ↦ θ₀ x + ∑ i, θ i x) (0 : E →L[ℝ] ℝ) z := by
+    have : (fun x ↦ θ₀ x + ∑ i, θ i x) = fun _ ↦ (1 : ℝ) := funext hsum
+    rw [this]
+    exact hasFDerivAt_const 1 z
+  have := congrArg (fun L : E →L[ℝ] ℝ ↦ L v) (h1.unique h2)
+  simpa using this
 
 end PartitionOfUnity
 

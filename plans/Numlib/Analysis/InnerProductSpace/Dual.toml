@@ -1,2 +1,11 @@
 [[node]]
 id = "exists_inner_of_forall_abs_le"
+
+[[node]]
+id = "InnerProductSpace.toDualReal"
+
+[[node]]
+id = "InnerProductSpace.toDualReal_apply"
+
+[[node]]
+id = "InnerProductSpace.toDualReal_symm_apply"

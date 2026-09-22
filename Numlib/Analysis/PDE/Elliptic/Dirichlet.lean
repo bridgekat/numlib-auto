@@ -1329,6 +1329,18 @@ open Laplacian
 
 variable {u : EuclideanSpace ℝ (Fin N) → ℝ}
 
+/-- The Laplacian is the sum of the second derivatives `D²u(eᵢ, eᵢ)` in the standard basis, at
+every point (no differentiability assumed: both sides are `0` where `u` is not twice
+differentiable). This is `Elliptic.laplacian_eq_sum_fderiv_fderiv` without the `C²` hypothesis
+and with the inner derivative left uncurried. -/
+theorem _root_.EuclideanSpace.laplacian_eq_sum_fderiv_fderiv_single
+    (u : EuclideanSpace ℝ (Fin N) → ℝ) (x : EuclideanSpace ℝ (Fin N)) :
+    Δ u x
+      = ∑ i, fderiv ℝ (fderiv ℝ u) x (EuclideanSpace.single i 1) (EuclideanSpace.single i 1) := by
+  rw [InnerProductSpace.laplacian_eq_iteratedFDeriv_orthonormalBasis u
+    (EuclideanSpace.basisFun (Fin N) ℝ)]
+  simp [iteratedFDeriv_two_apply]
+
 /-- **The Laplacian of a `C²` function on an open set, in coordinates**: at `x ∈ Ω`,
 `Δ u x = ∑ᵢ ∂ᵢ(∂ᵢu)(x)`, with `∂ᵢu = fderiv u · e_i`
 (`laplacian_eq_iteratedFDeriv_orthonormalBasis` and `fderiv_clm_apply`). -/
@@ -1877,7 +1889,173 @@ theorem isGalerkinSolution_general_of_classical
 
 end Classical
 
+/-! ### The weak Laplacian of an `H²` weak solution -/
 
+section WeakLaplacian
+
+variable {Ω}
+
+/-- The standard basis of `ℝ^N`, locally. -/
+local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
+
+/-- **The form of `−Δ + 1` on an `H²` function against a test function is the integral of
+`(−Δ_w u + u) φ`**, where `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)` is the weak Laplacian (the twin of
+`Elliptic.laplaceForm_eq_integral_of_contDiffOn` for `u ∈ H²(Ω)` rather than `u ∈ C²(Ω)`):
+integration by parts of `∂ᵢu ∈ H¹(Ω)` against `φ`. -/
+theorem laplaceForm_toLowerOrderL_eq_integral (u : SobolevEuclidean N 2 2 Ω)
+    {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
+    (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
+    laplaceForm Ω (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num) u) V
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, (SobolevMultiIndex.weakDeriv
+          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+            EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x := by
+  have hUi : ∀ i : Fin N, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) u)
+        (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
+      = SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) := fun i ↦ rfl
+  have hU0 : (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) u) 0 :
+        EuclideanSpace ℝ (Fin N) → ℝ) = SobolevMultiIndex.fn u := rfl
+  rw [laplaceForm_apply_inner]
+  simp only [L2.inner_eq_integral_mul, hUi, hU0]
+  -- `∂ᵢV = ∂ᵢφ` a.e., and integration by parts of `∂ᵢu ∈ H¹` against `φ`
+  have hVd : ∀ i : Fin N, (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single i) :
+      EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+        fun x ↦ fderiv ℝ φ x (EuclideanSpace.single i 1) := fun i ↦ by
+    have := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hV i
+    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+  have hibp : ∀ i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      (SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) : EuclideanSpace ℝ (Fin N) → ℝ) x
+        * (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x
+      = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * (SobolevMultiIndex.weakDeriv
+          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+            EuclideanSpace ℝ (Fin N) → ℝ) x := fun i ↦ by
+    have h := (SobolevMultiIndex.hasWeakIteratedLineDerivOn_single
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) i).integral_smul_eq φ
+    rw [SobolevMultiIndex.partialDerivL_apply, SobolevMultiIndex.fn_partialDeriv] at h
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, smul_eq_mul, pow_one,
+      neg_one_mul, EuclideanSpace.basisFun_toBasis_apply] at h
+    rw [← SobolevMultiIndex.partialDerivL_apply] at h
+    have h' : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), fderiv ℝ φ x (EuclideanSpace.single i 1)
+        * (SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) :
+            EuclideanSpace ℝ (Fin N) → ℝ) x
+        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * (SobolevMultiIndex.weakDeriv
+            (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+              EuclideanSpace ℝ (Fin N) → ℝ) x := h
+    rw [← h']
+    refine integral_congr_ae ?_
+    filter_upwards [hVd i] with x hx
+    rw [hx, mul_comm]
+  -- integrability of the pieces
+  have hφ2 : MemLp (φ : EuclideanSpace ℝ (Fin N) → ℝ) 2
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport).restrict _
+  have hI1 : ∀ i : Fin N, Integrable (fun x ↦ φ x * (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦
+    hφ2.integrable_mul (Lp.memLp _)
+  have hI2 : Integrable (fun x ↦ φ x * SobolevMultiIndex.fn u x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    hφ2.integrable_mul (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))
+  have hIneg : Integrable (fun x ↦ -(∑ i, φ x * (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x))
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (integrable_finsetSum _ fun i _ ↦ hI1 i).neg
+  -- assemble
+  have e2 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), SobolevMultiIndex.fn u x
+      * (SobolevMultiIndex.weakDeriv V 0 : EuclideanSpace ℝ (Fin N) → ℝ) x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * SobolevMultiIndex.fn u x := by
+    refine integral_congr_ae ?_
+    filter_upwards [hV] with x hx
+    rw [SobolevMultiIndex.weakDeriv_zero, hx, mul_comm]
+  have e3 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, (SobolevMultiIndex.weakDeriv
+        (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+          EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, φ x * (SobolevMultiIndex.weakDeriv
+          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+            EuclideanSpace ℝ (Fin N) → ℝ) x) + φ x * SobolevMultiIndex.fn u x) := by
+    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+    beta_reduce
+    rw [add_mul, neg_mul, Finset.sum_mul]
+    simp only [mul_comm _ (φ x)]
+  simp_rw [hibp]
+  rw [e2, e3, integral_add hIneg hI2, integral_neg, integral_finsetSum _ fun i _ ↦ hI1 i]
+  simp only [Finset.sum_neg_distrib]
+
+/-- **An `H²` weak solution of `−Δu + u = f` satisfies the equation almost everywhere**, with the
+weak Laplacian `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)`: if `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for every test
+function `φ`, then `−Δ_w u + u = f` a.e. on `Ω` (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`
+on the residual, which lies in `L²(Ω)`). -/
+theorem neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq (u : SobolevEuclidean N 2 2 Ω)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (hu : ∀ φ ∈ SobolevMultiIndex.testFunctions ℝ 𝔅 1 2 Ω volume, laplaceForm Ω
+      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num) u) φ = load Ω f φ) :
+    (fun x ↦ -(∑ i, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] f := by
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hLw : MemLp (fun x ↦ ∑ i, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x) 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    memLp_finsetSum _ fun i _ ↦ Lp.memLp _
+  have hres : MemLp (fun x ↦ -(∑ i, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x - f x) 2
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (hLw.neg.add (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))).sub (Lp.memLp f)
+  have hloc := hres.locallyIntegrableOn (by norm_num)
+  have key := hΩo.ae_eq_zero_of_integral_contDiff_smul_eq_zero (μ := volume) hloc
+    fun g hg hgc hgs ↦ ?_
+  · have h := (ae_restrict_iff' hΩm).2 key
+    filter_upwards [h] with x hx
+    exact sub_eq_zero.1 hx
+  obtain ⟨φ, hφg⟩ : ∃ φ : 𝓓(Ω, ℝ), (φ : EuclideanSpace ℝ (Fin N) → ℝ) = g :=
+    ⟨⟨g, hg, hgc, hgs⟩, rfl⟩
+  obtain ⟨V, hVT, hV⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
+    (b := 𝔅) (k := 1) (p := 2) (μ := volume)
+  have h1 := hu V hVT
+  rw [laplaceForm_toLowerOrderL_eq_integral u hV, load_apply] at h1
+  have hg0 : ∀ x, x ∉ (Ω : Set (EuclideanSpace ℝ (Fin N))) → g x = 0 := fun x hx ↦ by
+    rw [← hφg]
+    exact φ.eq_zero_of_notMem hx
+  have e4 := setIntegral_eq_integral_of_forall_compl_eq_zero (μ := volume)
+    (s := (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (f := fun x ↦ g x • (-(∑ i, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x - f x))
+    (fun x hx ↦ by simp only [hg0 x hx, zero_smul])
+  have hφ2 : MemLp (φ : EuclideanSpace ℝ (Fin N) → ℝ) 2
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport).restrict _
+  have hI1 : Integrable (fun x ↦ (-(∑ i, (SobolevMultiIndex.weakDeriv
+      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (hLw.neg.add (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))).integrable_mul hφ2
+  have hI2 : Integrable (fun x ↦ f x * φ x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (Lp.memLp f).integrable_mul hφ2
+  have e5 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), g x • (-(∑ i,
+      (SobolevMultiIndex.weakDeriv (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u)
+        (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x)
+        + SobolevMultiIndex.fn u x - f x)
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ((-(∑ i, (SobolevMultiIndex.weakDeriv
+          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
+            EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x - f x * φ x) := by
+    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+    simp only [smul_eq_mul, ← hφg]
+    ring
+  have e6 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * SobolevMultiIndex.fn V x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * φ x :=
+    integral_congr_ae (hV.mono fun x hx ↦ by simp only [hx])
+  rw [e6] at h1
+  rw [← e4, e5, integral_sub hI1 hI2, h1, sub_self]
+
+end WeakLaplacian
 
 /-! ### The Fredholm alternative for a second-kind equation, abstractly -/
 

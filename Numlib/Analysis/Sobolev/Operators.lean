@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/MultiIndex.lean` and `Numlib/Analysis/Sobolev/Cutoff.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.Sobolev.Cutoff
 
 /-!
@@ -41,7 +42,15 @@ coordinatewise (`PiLp.norm_le_norm_of_forall_norm_le`):
   operator
   (`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`),
   the abstract form of Corollary 9.8, which is the one consumer of `restrictL` in the cut-off
-  theory.
+  theory;
+* **the partial derivatives on `ℝ^N`**: `∂ᵢu` as the weak derivative of `fn u` along `eᵢ`
+  (`SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single`), membership of `W^{1,p}(Ω)` from the
+  `N` partial derivatives and their uniqueness
+  (`SobolevEuclidean.memSobolevMultiIndex_one_of_forall`,
+  `SobolevEuclidean.weakDeriv_single_ae_eq`), their identification with the classical ones for a
+  `C¹` representative (`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`), and the restricted
+  pointwise gradient `u ↦ ∇u|_S` as a bounded linear map `W^{1,p}(Ω) → L^p(S; ℝ^N)`
+  (`SobolevEuclidean.gradFnL`).
 
 The predicate-level cut-off theory — locality, `C_c^1` test functions, cut-off functions and the
 zero extension of `α u`, the multipliers, the cut-off sequence, the local spaces and the extension
@@ -1175,6 +1184,233 @@ end SobolevMultiIndex
 
 end OrderLifting
 
+/-! ### The partial derivatives of `W^{k,p}(Ω)` on `ℝ^N`
+
+The weak partial derivatives `∂ᵢu = weakDeriv u (single i)` of `u ∈ W^{1,p}(Ω)`, `Ω ⊆ ℝ^N` open,
+as weak derivatives of the function `fn u` along `e_i`; membership of `W^{1,p}(Ω)` from the `N`
+partial derivatives and their uniqueness; the identification of `∂ᵢu` with the classical partial
+derivative of a `C¹` representative, at orders one and `k + 1`; the pointwise gradient
+`gradFn u` against `Du` for such a representative, `∫_Ω |u|^p = ‖fnL u‖^p` and
+`∫_Ω ‖Du‖^p ≤ N^p ‖u‖^p`; and the restricted pointwise gradient `u ↦ ∇u|_S` as a bounded linear
+map `W^{1,p}(Ω) → L^p(S; ℝ^N)` (`SobolevEuclidean.gradFnL`). -/
+
+section EuclideanPartials
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+open SobolevMultiIndex
+
+omit [Fact (1 ≤ p)] in
+/-- The partial derivative `∂_j u` of `u ∈ W^{1,p}(Ω)` is a weak derivative of `fn u` along
+`e_j`. -/
+theorem SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single (u : SobolevEuclidean N 1 p Ω)
+    (j : Fin N) :
+    HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] (fn u)
+      (weakDeriv u (MultiIndexLE.single j)) Ω volume := by
+  have := (hasWeakIteratedLineDerivOn u (MultiIndexLE.single j)).of_perm
+    (multiIndexTuple_single_perm
+      ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) j)
+  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+
+omit [Fact (1 ≤ p)] in
+/-- A function of `W^{1,p}` (as `MemSobolevMultiIndex`, over the standard basis) has a weak
+derivative along each `eⱼ` in `L^p`. -/
+theorem MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn_single
+    {Ω' : Opens (EuclideanSpace ℝ (Fin N))} {f : EuclideanSpace ℝ (Fin N) → ℝ} {q : ℝ≥0∞}
+    (h : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f 1 q Ω' volume)
+    (i : Fin N) :
+    ∃ w : EuclideanSpace ℝ (Fin N) → ℝ,
+      HasWeakIteratedLineDerivOn ![EuclideanSpace.single i (1 : ℝ)] f w Ω' volume ∧
+        MemLp w q (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))) := by
+  obtain ⟨w, hw, hwp⟩ := h.2 (Pi.single i 1) (by simp)
+  refine ⟨w, ?_, hwp⟩
+  have := hw.of_perm (multiIndexTuple_single_perm
+    ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i)
+  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+
+/-- **Membership of `W^{1,p}(Ω)` from the partial derivatives**: a function of `L^p(Ω)` with a
+weak derivative in `L^p(Ω)` along each `e_j` lies in `W^{1,p}(Ω)`. -/
+theorem SobolevEuclidean.memSobolevMultiIndex_one_of_forall {F : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hF : MemLp F p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    {G : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    (hG : ∀ j, MemLp (G j) p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (hFG : ∀ j, HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] F (G j) Ω volume) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis F 1 p Ω volume := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  refine ⟨hF, fun β hβ ↦ ?_⟩
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0 | ⟨i, hi⟩
+  · obtain rfl : β = 0 := congrArg Subtype.val h0
+    exact ⟨_, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
+      (hF.locallyIntegrableOn hp), hF⟩
+  · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
+    refine ⟨G i, ?_, hG i⟩
+    have h' : HasWeakIteratedLineDerivOn
+        ![((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i]
+        F (G i) Ω volume := by
+      rw [EuclideanSpace.basisFun_toBasis_apply]
+      exact hFG i
+    exact h'.of_perm (multiIndexTuple_single_perm
+      ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i).symm
+
+omit [Fact (1 ≤ p)] in
+/-- **Uniqueness of the partial derivatives**: if `fn u` is almost everywhere `F` on `Ω` and
+`G` is a weak derivative of `F` along `e_j` on `Ω`, then `∂_j u` is almost everywhere `G`. -/
+theorem SobolevEuclidean.weakDeriv_single_ae_eq (u : SobolevEuclidean N 1 p Ω)
+    {F G : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hF : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] F) {j : Fin N}
+    (hG : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] F G Ω volume) :
+    weakDeriv u (MultiIndexLE.single j) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      G :=
+  (ae_restrict_iff' Ω.isOpen.measurableSet).2
+    (((SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u j).congr_ae hF
+      (EventuallyEq.refl _ _)).ae_eq hG)
+
+omit [Fact (1 ≤ p)] in
+/-- The partial derivatives of an element `U` of `W^{1,p}(Ω)` whose function is a `C¹` function
+`u` are the classical ones, almost everywhere on `Ω` (at every `p`; the `H¹` case is
+`Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn` of
+`Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`). -/
+theorem SobolevEuclidean.weakDeriv_single_ae_eq_fderiv (U : SobolevEuclidean N 1 p Ω)
+    {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : ContDiff ℝ 1 u)
+    (hU : fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u) (i : Fin N) :
+    (weakDeriv U (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+        fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :=
+  SobolevEuclidean.weakDeriv_single_ae_eq U hU (hu.contDiffOn.hasWeakIteratedLineDerivOn_single Ω i)
+
+omit [Fact (1 ≤ p)] in
+/-- The first-order weak derivative of `v ∈ W^{k+1,p}(Ω)` with a `C¹` representative `v'` is the
+classical `∂ᵢ v'`, almost everywhere on `Ω` — the higher-order form of
+`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`, the multi-index `e_i` of `W^{k+1,p}` being
+`MultiIndexLE.singleLE i`. -/
+theorem SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv {k : ℕ}
+    (v : SobolevEuclidean N (k + 1) p Ω) {v' : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v')
+    (hv' : ContDiff ℝ 1 v') (i : Fin N) :
+    (weakDeriv v (MultiIndexLE.singleLE i) : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+        fun x ↦ fderiv ℝ v' x (EuclideanSpace.single i 1) := by
+  have h1 : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i (1 : ℝ)] (fn v)
+      (weakDeriv v (MultiIndexLE.singleLE i)) Ω volume := by
+    have := (hasWeakIteratedLineDerivOn v (MultiIndexLE.singleLE i)).of_perm
+      (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis :
+        Fin N → EuclideanSpace ℝ (Fin N)) i)
+    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+  have h2 := hv'.contDiffOn.hasWeakIteratedLineDerivOn_single Ω i
+  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
+    ((h1.congr_ae hv (EventuallyEq.refl _ _)).ae_eq h2)
+
+omit [Fact (1 ≤ p)] in
+/-- The pointwise gradient of an element of `W^{1,p}(Ω)` with a `C¹` function `u` has the norm
+of `Du`, almost everywhere on `Ω`. -/
+theorem SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn (U : SobolevEuclidean N 1 p Ω)
+    {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : ContDiff ℝ 1 u)
+    (hU : fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u) :
+    (fun x ↦ ‖fderiv ℝ u x‖) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      fun x ↦ ‖gradFn U x‖ := by
+  have h := ae_all_iff.2 fun i : Fin N ↦ SobolevEuclidean.weakDeriv_single_ae_eq_fderiv U hu hU i
+  filter_upwards [h] with x hx
+  rw [EuclideanSpace.norm_fderiv_eq]
+  congr 1
+  ext i
+  rw [PiLp.toLp_apply, gradFn_apply, hx i]
+
+/-- `∫_Ω |u|^p = ‖fnL U‖^p` for a representative `u` of `U ∈ W^{1,p}(Ω)`. -/
+theorem SobolevEuclidean.integral_abs_rpow_eq_norm_fnL (hp : p ≠ ⊤) (U : SobolevEuclidean N 1 p Ω)
+    {u : 𝔼 → ℝ} (hU : fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) :
+    ∫ x in (Ω : Set 𝔼), |u x| ^ p.toReal
+      = ‖fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume U‖ ^ p.toReal := by
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
+  rw [Lp.norm_rpow_eq_integral hp0 hp, fnL_apply]
+  refine integral_congr_ae (hU.mono fun x hx ↦ ?_)
+  simp only [hx, Real.norm_eq_abs]
+
+/-- `∫_Ω ‖Du‖^p ≤ N^p ‖U‖^p` for a `C¹` representative `u` of `U ∈ W^{1,p}(Ω)`. -/
+theorem SobolevEuclidean.integral_norm_fderiv_rpow_le (hp : p ≠ ⊤) (U : SobolevEuclidean N 1 p Ω)
+    {u : 𝔼 → ℝ} (hu : ContDiff ℝ 1 u) (hU : fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) :
+    ∫ x in (Ω : Set 𝔼), ‖fderiv ℝ u x‖ ^ p.toReal ≤ (N : ℝ) ^ p.toReal * ‖U‖ ^ p.toReal := by
+  have h := integral_norm_gradFn_rpow_le hp U
+  rw [Fintype.card_fin] at h
+  calc ∫ x in (Ω : Set 𝔼), ‖fderiv ℝ u x‖ ^ p.toReal
+      = ∫ x in (Ω : Set 𝔼), ‖gradFn U x‖ ^ p.toReal :=
+        integral_congr_ae ((SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn U hu hU).mono
+          fun x hx ↦ by simp only at hx ⊢; rw [hx])
+    _ ≤ (N : ℝ) ^ p.toReal * gradNorm U ^ p.toReal := h
+    _ ≤ (N : ℝ) ^ p.toReal * ‖U‖ ^ p.toReal :=
+        mul_le_mul_of_nonneg_left (Real.rpow_le_rpow (gradNorm_nonneg U) (gradNorm_le_norm U)
+          ENNReal.toReal_nonneg) (by positivity)
+
+/-- The gradient norm is continuous on `W^{1,p}(Ω)`. -/
+theorem SobolevEuclidean.continuous_gradNorm :
+    Continuous fun u : SobolevEuclidean N 1 p Ω ↦ gradNorm u := by
+  refine continuous_norm.comp ((PiLp.continuous_toLp p _).comp (continuous_pi fun i ↦ ?_))
+  exact (weakDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+    (MultiIndexLE.single i)).continuous
+
+/-- `‖∇u‖_{L^p(Ω)} ≤ N ‖∇u‖` for the Euclidean pointwise gradient (`gradFn`) and the `ℓ^p`
+gradient norm (`gradNorm`). -/
+theorem SobolevEuclidean.toReal_eLpNorm_gradFn_le (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω) :
+    (eLpNorm (gradFn u) p (volume.restrict (Ω : Set 𝔼))).toReal ≤ N * gradNorm u := by
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
+  have hP0 : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
+  have h := integral_norm_gradFn_rpow_le hp u
+  rw [Fintype.card_fin] at h
+  rw [(memLp_gradFn u).eLpNorm_eq_integral_rpow_norm hp0 hp,
+    ENNReal.toReal_ofReal (Real.rpow_nonneg (integral_nonneg fun x ↦ by positivity) _)]
+  calc (∫ x in (Ω : Set 𝔼), ‖gradFn u x‖ ^ p.toReal) ^ p.toReal⁻¹
+      ≤ ((N : ℝ) ^ p.toReal * gradNorm u ^ p.toReal) ^ p.toReal⁻¹ :=
+        Real.rpow_le_rpow (integral_nonneg fun x ↦ by positivity) h (by positivity)
+    _ = N * gradNorm u := by
+        rw [← Real.mul_rpow (by positivity) (gradNorm_nonneg u), ← Real.rpow_mul
+          (mul_nonneg N.cast_nonneg (gradNorm_nonneg u)), mul_inv_cancel₀ hP0.ne', Real.rpow_one]
+
+variable (p Ω) in
+/-- **The pointwise gradient restricted to `S ⊆ Ω`, as a bounded linear map**
+`W^{1,p}(Ω) → L^p(S; ℝ^N)`, `u ↦ ∇u|_S = (∂ᵢu|_S)ᵢ`: the sum over `i` of the partial
+derivatives (`weakDerivL`), restricted to `S` (`Lp.monoMeasureL`) and placed on the `i`-th axis
+(`ContinuousLinearMap.compLpL` with `toSpanSingleton`). Its function is `gradFn u` on `S`
+(`SobolevEuclidean.coeFn_gradFnL`), so `∫_S |∇u|^p = ‖gradFnL u‖^p` is continuous in `u`. -/
+def SobolevEuclidean.gradFnL {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω) :
+    SobolevEuclidean N 1 p Ω →L[ℝ] Lp (EuclideanSpace ℝ (Fin N)) p (volume.restrict S) :=
+  ∑ i, (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).compLpL p
+    (volume.restrict S) ∘L Lp.monoMeasureL (Measure.restrict_mono hS le_rfl) ∘L
+      weakDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume (MultiIndexLE.single i)
+
+/-- The function of `gradFnL u` is the pointwise gradient `gradFn u`, almost everywhere on `S`. -/
+theorem SobolevEuclidean.coeFn_gradFnL {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω)
+    (u : SobolevEuclidean N 1 p Ω) :
+    ⇑(SobolevEuclidean.gradFnL p Ω hS u) =ᵐ[volume.restrict S] gradFn u := by
+  rw [SobolevEuclidean.gradFnL, sum_apply]
+  have h1 := Lp.coeFn_finsetSum (μ := volume.restrict S) Finset.univ fun i ↦
+    (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).compLpL p
+      (volume.restrict S) (Lp.monoMeasureL (Measure.restrict_mono hS le_rfl)
+        (weakDeriv u (MultiIndexLE.single i)))
+  have h2 := ae_all_iff.2 fun i : Fin N ↦
+    (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).coeFn_compLpL
+      (p := p) (μ := volume.restrict S)
+      (Lp.monoMeasureL (Measure.restrict_mono hS le_rfl) (weakDeriv u (MultiIndexLE.single i)))
+  have h3 := ae_all_iff.2 fun i : Fin N ↦ Lp.coeFn_monoMeasureL
+    (Measure.restrict_mono hS le_rfl) (weakDeriv u (MultiIndexLE.single i))
+  filter_upwards [h1, h2, h3] with x hx1 hx2 hx3
+  simp only [ContinuousLinearMap.comp_apply, weakDerivL_apply] at hx1 ⊢
+  rw [hx1, Finset.sum_apply]
+  simp only [hx2, hx3, ContinuousLinearMap.toSpanSingleton_apply]
+  ext j
+  simp [gradFn, Pi.single_apply]
+
+/-- `∫_S |∇u|^p = ‖gradFnL u‖^p` for `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, `S ⊆ Ω`. -/
+theorem SobolevEuclidean.integral_norm_gradFn_rpow_eq (hp : p ≠ ⊤)
+    {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω) (u : SobolevEuclidean N 1 p Ω) :
+    ∫ x in S, ‖gradFn u x‖ ^ p.toReal = ‖SobolevEuclidean.gradFnL p Ω hS u‖ ^ p.toReal := by
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
+  rw [Lp.norm_rpow_eq_integral hp0 hp]
+  refine integral_congr_ae ?_
+  filter_upwards [SobolevEuclidean.coeFn_gradFnL hS u] with x hx
+  rw [hx]
+
+end EuclideanPartials
 /-! ### Density of `C_c^∞(ℝ^N)` on an extension domain -/
 
 section DensityExtension

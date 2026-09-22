@@ -66,3 +66,19 @@ theorem one_add_rpow_le {t p : ℝ} (ht : 0 ≤ t) (hp : 0 ≤ p) :
         linarith [Real.rpow_nonneg ht p]
 
 end Real
+
+/-- `a^{p−1} b ≤ a^p + b^p` for `a, b ≥ 0` and `p ≥ 1` (the crude Young inequality). -/
+theorem Real.rpow_sub_one_mul_le_add {a b p : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 ≤ p) :
+    a ^ (p - 1) * b ≤ a ^ p + b ^ p := by
+  have hp0 : 0 < p := zero_lt_one.trans_le hp
+  rcases le_total a b with hab | hab
+  · calc a ^ (p - 1) * b ≤ b ^ (p - 1) * b :=
+          mul_le_mul_of_nonneg_right (Real.rpow_le_rpow ha hab (by linarith)) hb
+      _ = b ^ p := by
+          rw [← Real.rpow_add_one' hb (by linarith), sub_add_cancel]
+      _ ≤ a ^ p + b ^ p := le_add_of_nonneg_left (Real.rpow_nonneg ha _)
+  · calc a ^ (p - 1) * b ≤ a ^ (p - 1) * a :=
+          mul_le_mul_of_nonneg_left hab (Real.rpow_nonneg ha _)
+      _ = a ^ p := by
+          rw [← Real.rpow_add_one' ha (by linarith), sub_add_cancel]
+      _ ≤ a ^ p + b ^ p := le_add_of_nonneg_right (Real.rpow_nonneg hb _)

@@ -59,3 +59,6 @@ id = "SobolevSlobodeckij.testFunctions"
 [[node]]
 id = "SobolevSlobodeckijZero"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.11'
+
+[[node]]
+id = "SobolevSlobodeckij.ext_of_fn_ae_eq"

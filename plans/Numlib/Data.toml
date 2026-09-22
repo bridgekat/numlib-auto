@@ -1,0 +1,6 @@
+desc = '''
+Basic data types, in Mathlib's own layout (natural home: `Mathlib.Data.*`, `Mathlib.Basic.*`).
+Directory-only group; the subdirectory is
+
+* `ENNReal/` -- the extended nonnegative reals as exponents of the `L^p` theory.
+'''

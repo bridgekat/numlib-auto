@@ -686,6 +686,48 @@ theorem MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm (hp : 1 ≤ 
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
     ENNReal.tendsto_inv_nat_nhds_zero (fun _ ↦ zero_le) (fun i ↦ hV3 _ (hne i))
 
+/-! #### Mollification of a compactly supported `W^{1,p}` function, with a uniform clause -/
+
+section Mollify
+
+/-- **Mollification of a compactly supported `W^{1,p}(ℝ^N)` function**: for `G ∈ W^{1,p}(ℝ^N)`
+with compact support, `1 ≤ p < ∞`, `η > 0` and `ε > 0`, there is a smooth compactly supported
+`v` with `‖v − G‖_{W^{1,p}(ℝ^N)} < η` and, if `G` is continuous, `|v − G| < ε` everywhere: a
+mollification `ρ_δ ⋆ G` for `δ` small
+(`MemSobolev.tendsto_sobolevNorm_convolution_sub`, `ContDiffBump.dist_normed_convolution_le` with
+the uniform continuity of `G`). -/
+theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt {G : E → ℝ}
+    (hG : MemSobolev G 1 p ⊤ μ) (hGc : HasCompactSupport G) (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {η : ℝ≥0∞} (hη : 0 < η) {ε : ℝ} (hε : 0 < ε) :
+    ∃ v : E → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧ sobolevNorm (v - G) 1 p ⊤ μ < η ∧
+      (Continuous G → ∀ x, dist (v x) (G x) < ε) := by
+  obtain ⟨φ, hφ⟩ := exists_seq_contDiffBump_tendsto_rOut_zero E
+  have h1 : ∀ᶠ k in atTop,
+      sobolevNorm ((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G - G) 1 p ⊤ μ < η :=
+    (hG.tendsto_sobolevNorm_convolution_sub hφ hp hp').eventually_lt_const hη
+  have h2 : Continuous G → ∀ᶠ k in atTop,
+      ∀ x, dist (((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G) x) (G x) < ε := by
+    intro hGc'
+    obtain ⟨δ, hδ, hδε⟩ := Metric.uniformContinuous_iff.1
+      (hGc.uniformContinuous_of_continuous hGc') (ε / 2) (half_pos hε)
+    filter_upwards [hφ.eventually_lt_const hδ] with k hk x
+    refine lt_of_le_of_lt ((φ k).dist_normed_convolution_le hGc'.aestronglyMeasurable
+      fun y hy ↦ ?_) (half_lt_self hε)
+    exact (hδε (lt_trans (mem_ball.1 hy) hk)).le
+  have h3 : ∀ᶠ k in atTop,
+      sobolevNorm ((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G - G) 1 p ⊤ μ < η ∧
+      (Continuous G →
+        ∀ x, dist (((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G) x) (G x) < ε) := by
+    by_cases hGc' : Continuous G
+    · exact (h1.and (h2 hGc')).mono fun k hk ↦ ⟨hk.1, fun _ ↦ hk.2⟩
+    · exact h1.mono fun k hk ↦ ⟨hk, fun h ↦ absurd h hGc'⟩
+  obtain ⟨k, hk1, hk2⟩ := h3.exists
+  have hloc : LocallyIntegrable G μ := hG.memLp_top.locallyIntegrable hp
+  exact ⟨_, hloc.contDiff_convolution_normed (φ k),
+    (φ k).hasCompactSupport_normed.convolution (ContinuousLinearMap.lsmul ℝ ℝ) hGc, hk1, hk2⟩
+
+end Mollify
+
 end Density
 
 /-! ### The weak derivative is closed under `L^1` limits

@@ -1,22 +1,4 @@
 [[node]]
-id = "MeasureTheory.memLp_finsetSum_measure"
-
-[[node]]
-id = "MeasureTheory.eLpNorm_finsetSum_measure_of_ae_eq_zero"
-
-[[node]]
-id = "EuclideanSpace.measurableSet_openSegment"
-
-[[node]]
-id = "EuclideanSpace.edgeMeasure_le_triangleBoundaryMeasure"
-
-[[node]]
-id = "EuclideanSpace.triangleNormal_eq_of_mem_openSegment_rot"
-
-[[node]]
-id = "EuclideanSpace.segment_subset_closedTriangle_rot"
-
-[[node]]
 id = "EuclideanSpace.inner_edgeNormal_sub_centroid_pos"
 
 [[node]]
@@ -48,12 +30,6 @@ id = "Triangulation.fn_restrictL_ae_eq"
 
 [[node]]
 id = "Triangulation.elemTraceL_ae_eq_of_continuousOn"
-
-[[node]]
-id = "Triangulation.ae_boundaryMeasure_iff"
-
-[[node]]
-id = "Triangulation.edgeMeasure_le_boundaryMeasure"
 
 [[node]]
 id = "Triangulation.indicator_ae_eq_zero_of_ne"
@@ -104,12 +80,6 @@ id = "Triangulation.traceL_ae_eq_of_continuousOn"
 id = "Triangulation.isCompactOperator_traceL"
 
 [[node]]
-id = "BoundaryData.integrable_mul_ν_apply"
-
-[[node]]
-id = "EuclideanSpace.integral_mul_triangleNormal_apply"
-
-[[node]]
 id = "Triangulation.edgeIntegral"
 
 [[node]]
@@ -129,12 +99,6 @@ id = "Triangulation.sum_boundaryEdges_edgeIntegral_eq"
 
 [[node]]
 id = "Triangulation.sum_integral_mul_triangleNormal_eq"
-
-[[node]]
-id = "Triangulation.setIntegral_eq_sum_K"
-
-[[node]]
-id = "Triangulation.integrableOn_mul_of_memLp_of_continuousOn"
 
 [[node]]
 id = "Triangulation.integral_add_integral_eq_sum_elem"
@@ -173,9 +137,6 @@ id = "Triangulation.eqOn_zero_of_tsupport_subset_edgeNhd"
 id = "Triangulation.edgeIntegral_eq_zero_of_eqOn_zero"
 
 [[node]]
-id = "EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one"
-
-[[node]]
 id = "Triangulation.traceL_partner_ae_eq"
 
 [[node]]
@@ -189,9 +150,6 @@ id = "Triangulation.traceFamily"
 
 [[node]]
 id = "Triangulation.traceFamily_traceL"
-
-[[node]]
-id = "MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn_single"
 
 [[node]]
 id = "Triangulation.glueDeriv"

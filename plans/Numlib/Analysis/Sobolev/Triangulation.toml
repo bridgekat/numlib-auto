@@ -138,3 +138,27 @@ id = "Triangulation.exists_mem_polySpaceZero_globalInterp"
 
 [[node]]
 id = "Triangulation.finiteDimensional_polySpaceZero"
+
+[[node]]
+id = "Triangulation.pieceIteratedFDeriv"
+
+[[node]]
+id = "Triangulation.pieceIteratedFDeriv_of_mem"
+
+[[node]]
+id = "Triangulation.pieceIteratedFDeriv_of_notMem"
+
+[[node]]
+id = "Triangulation.iteratedFDeriv_eq_of_mem_K"
+
+[[node]]
+id = "Triangulation.exists_norm_pieceIteratedFDeriv_le"
+
+[[node]]
+id = "Triangulation.stronglyMeasurable_pieceIteratedFDeriv"
+
+[[node]]
+id = "Triangulation.locallyIntegrableOn_pieceIteratedFDeriv"
+
+[[node]]
+id = "Triangulation.hasWeakIteratedLineDerivOn_of_piecewise"

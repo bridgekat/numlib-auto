@@ -51,6 +51,9 @@ consequences are the Poincaré–Friedrichs inequalities and the Bramble–Hilbe
   hypothesis, seminorms satisfying (H1) and (H2)′ — `|v|_{k+1,p} = 0` and all `f_j(v) = 0`
   force `v = 0` — give `‖v‖ ≤ c (|v|_{k+1,p} + ∑_j f_j(v))`; the book's compactness
   contradiction.
+* `absIntegralSeminorm L s`, the seminorm `v ↦ ∫_s |L v| dσ` of a bounded map `L` into the `L^q`
+  space of a finite measure, with its bound `exists_absIntegralSeminorm_le` — the boundary
+  seminorms `∫_Γ |γ v| ds` to which the theorem below is applied.
 * `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`,
   `…_of_isPreconnected`, `…_of_iSup`: the theorem on a bounded extension domain of `ℝ^N` under
   (H2)′ (`[han2009theoretical]` Theorem 7.3.13), under (H2) on a connected domain (Theorem
@@ -852,6 +855,70 @@ end SobolevMultiIndex
 
 end Abstract
 
+/-! ### The seminorm `v ↦ ∫_s |L v| dσ` of a bounded map into `L^q` of a finite measure -/
+
+section AbsIntegralSeminorm
+
+variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] {X : Type*} [MeasurableSpace X]
+  {σ : Measure X} [IsFiniteMeasure σ] {q : ℝ≥0∞} [Fact (1 ≤ q)]
+
+/-- **The seminorm `v ↦ ∫_s |L v| dσ`** on `W`, for a bounded linear `L : W → L^q(σ)` into the
+`L^q` space of a finite measure (so that `L^q(σ) ⊆ L¹(σ)`). With `L` a trace operator it is the
+boundary seminorm `f(v) = ∫_Γ |γ v| ds` that the Deny–Lions norm equivalences are applied to
+([han2009theoretical] Examples 7.3.15 and 7.3.16). -/
+def absIntegralSeminorm (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) : Seminorm ℝ W where
+  toFun v := ∫ x in s, |(L v : X → ℝ) x| ∂σ
+  map_zero' := by
+    rw [map_zero]
+    refine integral_eq_zero_of_ae ?_
+    filter_upwards [ae_restrict_of_ae (Lp.coeFn_zero ℝ q σ)] with x hx
+    rw [hx, Pi.zero_apply, abs_zero]
+  add_le' v w := by
+    have hi : ∀ u : W, Integrable (fun x ↦ |(L u : X → ℝ) x|) (σ.restrict s) := fun u ↦
+      ((Lp.memLp (L u)).integrable Fact.out).abs.integrableOn
+    rw [← integral_add (hi v) (hi w)]
+    refine integral_mono_ae (hi (v + w)) ((hi v).add (hi w)) ?_
+    rw [map_add]
+    filter_upwards [ae_restrict_of_ae (Lp.coeFn_add (L v) (L w))] with x hx
+    rw [hx, Pi.add_apply]
+    exact abs_add_le _ _
+  neg' v := by
+    rw [map_neg]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_restrict_of_ae (Lp.coeFn_neg (L v))] with x hx
+    rw [hx, Pi.neg_apply, abs_neg]
+  smul' c v := by
+    rw [map_smul, Real.norm_eq_abs, ← integral_const_mul]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_restrict_of_ae (Lp.coeFn_smul c (L v))] with x hx
+    rw [hx, Pi.smul_apply, smul_eq_mul, abs_mul]
+
+/-- The seminorm `absIntegralSeminorm L s` is `v ↦ ∫_s |L v| dσ`. -/
+theorem absIntegralSeminorm_apply (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) (v : W) :
+    absIntegralSeminorm L s v = ∫ x in s, |(L v : X → ℝ) x| ∂σ :=
+  rfl
+
+/-- **The hypothesis (H1) for the seminorm `∫_s |L v| dσ`**: it is bounded by a multiple of `‖v‖`,
+through the inclusion `L^q(σ) ⊆ L¹(σ)` of the finite measure (`MeasureTheory.Lp.monoExponentL`).
+With `Seminorm.continuous_of_forall_le_mul_norm` it is therefore continuous. -/
+theorem exists_absIntegralSeminorm_le (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) :
+    ∃ c : ℝ, ∀ v, absIntegralSeminorm L s v ≤ c * ‖v‖ := by
+  refine ⟨‖(Lp.monoExponentL ℝ σ q 1 Fact.out).comp L‖, fun v ↦ ?_⟩
+  rw [absIntegralSeminorm_apply]
+  have hi : Integrable (fun x ↦ |(L v : X → ℝ) x|) σ :=
+    ((Lp.memLp (L v)).integrable Fact.out).abs
+  calc ∫ x in s, |(L v : X → ℝ) x| ∂σ
+      ≤ ∫ x, |(L v : X → ℝ) x| ∂σ :=
+        setIntegral_le_integral hi (Eventually.of_forall fun x ↦ abs_nonneg _)
+    _ = ‖((Lp.monoExponentL ℝ σ q 1 Fact.out).comp L) v‖ := by
+        rw [ContinuousLinearMap.comp_apply, L1.norm_eq_integral_norm]
+        refine integral_congr_ae ?_
+        filter_upwards [Lp.coeFn_monoExponentL (G := ℝ) (μ := σ) (p := q) (q := 1) Fact.out
+          (L v)] with x hx
+        rw [hx, Real.norm_eq_abs]
+    _ ≤ _ := ContinuousLinearMap.le_opNorm _ v
+
+end AbsIntegralSeminorm
 /-! ### The two norms (7.3.3) and (7.3.4) -/
 
 section TwoNorms

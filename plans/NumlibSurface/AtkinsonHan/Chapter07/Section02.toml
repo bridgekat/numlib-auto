@@ -158,10 +158,6 @@ id = "definition_7_2_13_domain"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, the parameter domains D_i of the patch system'
 
 [[node]]
-id = "ae_eq_comp_graphParam"
-source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13 (the composition v ∘ g_i is well defined on classes in L^p(∂Ω))'
-
-[[node]]
 id = "definition_7_2_13_atlas"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13 (relative to a patch system; C¹ patches, L^p(∂Ω) for the printed L²(∂Ω))'
 

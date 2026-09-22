@@ -235,6 +235,21 @@ theorem snd_ae (U : SobolevSlobodeckij F b k σ p Ω μ) (α : MultiIndexEq ι k
     ((U : SobolevSlobodeckijTuple F ι k p Ω μ).snd α : E × E → F) =ᵐ[prodRestrict Ω μ]
       slobodeckijQuotient σ p ((U : SobolevSlobodeckijTuple F ι k p Ω μ).fst α.1) := U.2.2 α
 
+
+/-- **Two elements of `W^{s,p}(Ω)` with the same function (off a null set of `Ω`) are equal**: the
+first family is determined by its function (`SobolevMultiIndex.ext_of_fn_ae_eq`) and the second
+family consists of the difference quotients of the first (`snd_ae`). -/
+theorem ext_of_fn_ae_eq [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+    {U V : SobolevSlobodeckij F b k σ p Ω μ} (h : fn U =ᵐ[μ.restrict (Ω : Set E)] fn V) :
+    U = V := by
+  have h1 : toSobolevMultiIndex U = toSobolevMultiIndex V := SobolevMultiIndex.ext_of_fn_ae_eq h
+  have h1' : (U : SobolevSlobodeckijTuple F ι k p Ω μ).fst
+      = (V : SobolevSlobodeckijTuple F ι k p Ω μ).fst := congrArg Subtype.val h1
+  refine Subtype.ext ((WithLp.ext_iff _).2 (Prod.ext h1' ?_))
+  ext α
+  have e := snd_ae V α
+  rw [← h1'] at e
+  exact (snd_ae U α).trans e.symm
 /-- The function of the zero element of `W^{s,p}(Ω)` vanishes off a null set of `Ω`. -/
 theorem fn_zero : fn (0 : SobolevSlobodeckij F b k σ p Ω μ) =ᵐ[μ.restrict (Ω : Set E)] 0 :=
   SobolevMultiIndexTuple.fn_zero

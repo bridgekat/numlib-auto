@@ -1,5 +1,7 @@
 import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
 import Numlib.Analysis.Sobolev.Zero
+import Numlib.MeasureTheory.Integral.Bochner.Basic
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The kernel of the trace is `W_0^{1,p}(Ω)`
@@ -74,144 +76,7 @@ listed for relocation in the report. -/
 
 section General
 
-/-- `∫ ‖f‖^P = (∫⁻ ‖f‖ₑ^P).toReal` for `0 ≤ P` and `f` almost everywhere strongly measurable. -/
-theorem MeasureTheory.integral_norm_rpow_eq_toReal_lintegral {α G : Type*} [MeasurableSpace α]
-    {μ : Measure α} [NormedAddCommGroup G] {f : α → G} (hf : AEStronglyMeasurable f μ) {P : ℝ}
-    (hP : 0 ≤ P) : ∫ x, ‖f x‖ ^ P ∂μ = (∫⁻ x, ‖f x‖ₑ ^ P ∂μ).toReal := by
-  rw [integral_eq_lintegral_of_nonneg_ae (Eventually.of_forall fun x ↦ by positivity)
-    (hf.norm.aemeasurable.pow_const P).aestronglyMeasurable]
-  congr 1
-  refine lintegral_congr fun x ↦ ?_
-  rw [← ofReal_norm, ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) hP]
-
-/-- **The one-variable core of the strip estimate**: for `f` with `f a = 0` and continuous
-derivative `f'`, and sets `I`, `J` of the interval `(a, a + t)` with `(a, s] ⊆ J` for every
-`s ∈ I`, `∫_I |f|^P ≤ t^P ∫_J |f'|^P` for `1 ≤ P`. On `I`, `f s = ∫_a^s f'` is bounded by
-`∫_J |f'|`, which Hölder bounds by `(vol J)^{1 − 1/P} (∫_J |f'|^P)^{1/P}`
-(`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`), and `vol I, vol J ≤ t`. -/
-theorem lintegral_enorm_rpow_le_of_hasDerivAt {f f' : ℝ → ℝ} (hf : ∀ s, HasDerivAt f (f' s) s)
-    (hf' : Continuous f') {a t : ℝ} (ht : 0 < t) (hfa : f a = 0) {I J : Set ℝ}
-    (hI : I ⊆ Ioo a (a + t)) (hJ : J ⊆ Ioo a (a + t)) (hIJ : ∀ s ∈ I, Ioc a s ⊆ J)
-    {P : ℝ} (hP : 1 ≤ P) :
-    ∫⁻ s in I, ‖f s‖ₑ ^ P ≤ ENNReal.ofReal t ^ P * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
-  have hP0 : 0 < P := zero_lt_one.trans_le hP
-  have ht0 : ENNReal.ofReal t ≠ 0 := (ENNReal.ofReal_pos.2 ht).ne'
-  have hvol : volume (Ioo a (a + t)) = ENNReal.ofReal t := by
-    rw [Real.volume_Ioo, add_sub_cancel_left]
-  have hm : AEStronglyMeasurable f' (volume.restrict J) := hf'.aestronglyMeasurable
-  -- Hölder on `J`
-  have hH : ∫⁻ τ in J, ‖f' τ‖ₑ
-      ≤ (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) ^ (1 / P) * ENNReal.ofReal t ^ (1 - 1 / P) := by
-    have h1P : (1 : ℝ≥0∞) ≤ ENNReal.ofReal P := by
-      rw [← ENNReal.ofReal_one]
-      exact ENNReal.ofReal_le_ofReal hP
-    have h := eLpNorm_le_eLpNorm_mul_rpow_measure_univ (μ := volume.restrict J) (f := f')
-      (p := 1) (q := ENNReal.ofReal P) h1P hm
-    rw [eLpNorm_one_eq_lintegral_enorm hm, eLpNorm_eq_lintegral_rpow_enorm_toReal
-      (by simpa using hP0) ENNReal.ofReal_ne_top hm, ENNReal.toReal_ofReal hP0.le,
-      ENNReal.toReal_one, div_one, Measure.restrict_apply_univ] at h
-    refine h.trans ?_
-    gcongr
-    · rw [sub_nonneg, div_le_one hP0]
-      exact hP
-    · exact (measure_mono hJ).trans hvol.le
-  -- the pointwise bound on `I`
-  have hpt : ∀ s ∈ I, ‖f s‖ₑ ^ P
-      ≤ ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
-    intro s hs
-    have has : a ≤ s := (hI hs).1.le
-    have e : f s = ∫ τ in a..s, f' τ := by
-      rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (fun τ _ ↦ hf τ)
-        (hf'.intervalIntegrable _ _), hfa, sub_zero]
-    have h1 : ‖f s‖ₑ ≤ ∫⁻ τ in J, ‖f' τ‖ₑ := by
-      rw [e, intervalIntegral.integral_of_le has]
-      exact (enorm_integral_le_lintegral_enorm _).trans (lintegral_mono_set (hIJ s hs))
-    calc ‖f s‖ₑ ^ P
-        ≤ ((∫⁻ τ in J, ‖f' τ‖ₑ ^ P) ^ (1 / P) * ENNReal.ofReal t ^ (1 - 1 / P)) ^ P :=
-          ENNReal.rpow_le_rpow (h1.trans hH) hP0.le
-      _ = ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
-          rw [ENNReal.mul_rpow_of_nonneg _ _ hP0.le, ← ENNReal.rpow_mul, ← ENNReal.rpow_mul,
-            one_div_mul_cancel hP0.ne', ENNReal.rpow_one, mul_comm]
-          congr 2
-          field_simp
-  calc ∫⁻ s in I, ‖f s‖ₑ ^ P
-      ≤ ∫⁻ _ in I, ENNReal.ofReal t ^ (P - 1) * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P :=
-        setLIntegral_mono measurable_const hpt
-    _ = ENNReal.ofReal t ^ (P - 1) * (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) * volume I :=
-        setLIntegral_const _ _
-    _ ≤ ENNReal.ofReal t ^ (P - 1) * (∫⁻ τ in J, ‖f' τ‖ₑ ^ P) * ENNReal.ofReal t := by
-        gcongr
-        exact (measure_mono hI).trans hvol.le
-    _ = ENNReal.ofReal t ^ P * ∫⁻ τ in J, ‖f' τ‖ₑ ^ P := by
-        have e : ENNReal.ofReal t ^ P = ENNReal.ofReal t * ENNReal.ofReal t ^ (P - 1) := by
-          conv_lhs => rw [show P = 1 + (P - 1) by ring]
-          rw [ENNReal.rpow_add _ _ ht0 ENNReal.ofReal_ne_top, ENNReal.rpow_one]
-        rw [e]
-        ring
-
-/-- Two points of a vertical line: `‖(x', s) − (x', t)‖ = |s − t|`. -/
-theorem EuclideanSpace.norm_snocLast_sub_snocLast {d : ℕ} (x' : EuclideanSpace ℝ (Fin d))
-    (s t : ℝ) : ‖EuclideanSpace.snocLast x' s - EuclideanSpace.snocLast x' t‖ = |s - t| := by
-  have h := EuclideanSpace.norm_sq_eq_init_add_last
-    (EuclideanSpace.snocLast x' s - EuclideanSpace.snocLast x' t)
-  simp only [EuclideanSpace.init_sub, EuclideanSpace.init_snocLast, sub_self, norm_zero,
-    PiLp.sub_apply, EuclideanSpace.snocLast_apply_last, zero_pow two_ne_zero, zero_add] at h
-  rw [← Real.sqrt_sq (norm_nonneg _), h, Real.sqrt_sq_eq_abs]
-
 end General
-
-/-! ### The restricted pointwise gradient as a bounded linear map -/
-
-section GradFnL
-
-variable {N : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens (EuclideanSpace ℝ (Fin N)))
-
-/-- **The pointwise gradient restricted to `S ⊆ Ω`, as a bounded linear map**
-`W^{1,p}(Ω) → L^p(S; ℝ^N)`, `u ↦ ∇u|_S = (∂ᵢu|_S)ᵢ`: the sum over `i` of the partial
-derivatives (`weakDerivL`), restricted to `S` (`Lp.monoMeasureL`) and placed on the `i`-th axis
-(`ContinuousLinearMap.compLpL` with `toSpanSingleton`). Its function is `gradFn u` on `S`
-(`SobolevEuclidean.coeFn_gradFnL`), so `∫_S |∇u|^p = ‖gradFnL u‖^p` is continuous in `u`. -/
-def SobolevEuclidean.gradFnL {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω) :
-    SobolevEuclidean N 1 p Ω →L[ℝ] Lp (EuclideanSpace ℝ (Fin N)) p (volume.restrict S) :=
-  ∑ i, (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).compLpL p
-    (volume.restrict S) ∘L Lp.monoMeasureL (Measure.restrict_mono hS le_rfl) ∘L
-      weakDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume (MultiIndexLE.single i)
-
-variable {p Ω}
-
-/-- The function of `gradFnL u` is the pointwise gradient `gradFn u`, almost everywhere on `S`. -/
-theorem SobolevEuclidean.coeFn_gradFnL {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω)
-    (u : SobolevEuclidean N 1 p Ω) :
-    ⇑(SobolevEuclidean.gradFnL p Ω hS u) =ᵐ[volume.restrict S] gradFn u := by
-  rw [SobolevEuclidean.gradFnL, sum_apply]
-  have h1 := Lp.coeFn_finsetSum (μ := volume.restrict S) Finset.univ fun i ↦
-    (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).compLpL p
-      (volume.restrict S) (Lp.monoMeasureL (Measure.restrict_mono hS le_rfl)
-        (weakDeriv u (MultiIndexLE.single i)))
-  have h2 := ae_all_iff.2 fun i : Fin N ↦
-    (ContinuousLinearMap.toSpanSingleton ℝ (EuclideanSpace.single i (1 : ℝ))).coeFn_compLpL
-      (p := p) (μ := volume.restrict S)
-      (Lp.monoMeasureL (Measure.restrict_mono hS le_rfl) (weakDeriv u (MultiIndexLE.single i)))
-  have h3 := ae_all_iff.2 fun i : Fin N ↦ Lp.coeFn_monoMeasureL
-    (Measure.restrict_mono hS le_rfl) (weakDeriv u (MultiIndexLE.single i))
-  filter_upwards [h1, h2, h3] with x hx1 hx2 hx3
-  simp only [ContinuousLinearMap.comp_apply, weakDerivL_apply] at hx1 ⊢
-  rw [hx1, Finset.sum_apply]
-  simp only [hx2, hx3, ContinuousLinearMap.toSpanSingleton_apply]
-  ext j
-  simp [gradFn, Pi.single_apply]
-
-/-- `∫_S |∇u|^p = ‖gradFnL u‖^p` for `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, `S ⊆ Ω`. -/
-theorem SobolevEuclidean.integral_norm_gradFn_rpow_eq (hp : p ≠ ⊤)
-    {S : Set (EuclideanSpace ℝ (Fin N))} (hS : S ⊆ Ω) (u : SobolevEuclidean N 1 p Ω) :
-    ∫ x in S, ‖gradFn u x‖ ^ p.toReal = ‖SobolevEuclidean.gradFnL p Ω hS u‖ ^ p.toReal := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  rw [Lp.norm_rpow_eq_integral hp0 hp]
-  refine integral_congr_ae ?_
-  filter_upwards [SobolevEuclidean.coeFn_gradFnL hS u] with x hx
-  rw [hx]
-
-end GradFnL
 
 variable {d : ℕ}
 
@@ -316,21 +181,6 @@ end IsContDiffDomain
 /-! ### The strip estimate in the frame of a graph -/
 
 namespace EuclideanSpace
-
-/-- **The strip of height `t` above the graph of `g`**, `{y | g y' < y_N < g y' + t}`, in the
-frame of the graph. -/
-def graphStrip (g : 𝔼' → ℝ) (t : ℝ) : Set 𝔼 :=
-  {y | g (init y) < y (Fin.last d) ∧ y (Fin.last d) < g (init y) + t}
-
-/-- The strip above the graph of a continuous function is open. -/
-theorem isOpen_graphStrip {g : 𝔼' → ℝ} (hg : Continuous g) (t : ℝ) : IsOpen (graphStrip g t) :=
-  (isOpen_lt (hg.comp continuous_init) continuous_apply_last).inter
-    (isOpen_lt continuous_apply_last ((hg.comp continuous_init).add continuous_const))
-
-/-- The point `(x', s)` lies in the strip iff `g x' < s < g x' + t`. -/
-theorem snocLast_mem_graphStrip {g : 𝔼' → ℝ} {t : ℝ} (x' : 𝔼') (s : ℝ) :
-    snocLast x' s ∈ graphStrip g t ↔ g x' < s ∧ s < g x' + t := by
-  simp [graphStrip]
 
 /-- **The strip estimate in the frame of the graph**, for a `C¹` function `ψ` vanishing on the
 graph of the continuous `g` inside `B(c, r)`: for `0 < t` and `ρ + t ≤ r`,
@@ -655,5 +505,69 @@ theorem IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero
           ‖gradFn u x‖ ^ p.toReal :=
   SobolevEuclideanZero.integral_strip_rpow_le hp (hΩ.mem_zero_of_traceL_eq_zero hb p hp hu) T hg
     h ht hρt
+
+/-! ### Consequences for the boundary seminorm `v ↦ ∫_U |γ v| dσ` -/
+
+namespace IsContDiffDomain
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+  (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+  (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+  (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+
+/-- **An element of `W^{1,p}(Ω)` almost everywhere equal to a constant `c` whose trace has
+vanishing `∫_U |γ v| dσ` on a boundary piece `U` of positive surface measure is zero**: the trace
+of the constant is the constant (`traceL_ae_eq_of_continuousOn`), so `∫_U |γ v| dσ = |c| σ(U)`
+forces `c = 0`. -/
+theorem eq_zero_of_traceL_integral_abs_eq_zero
+    {U : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hU : 0 < hΩ.boundaryMeasure hb U)
+    {v : SobolevEuclidean (d + 1) 1 p Ω} {c : ℝ}
+    (hvc : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fun _ ↦ c)
+    (h0 : ∫ x in U, |(hΩ.traceL hb p hp v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
+      ∂(hΩ.boundaryMeasure hb) = 0) : v = 0 := by
+  have htr := hΩ.traceL_ae_eq_of_continuousOn hb p hp v hvc continuousOn_const
+  have hint : ∫ x in U, |(hΩ.traceL hb p hp v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
+      ∂(hΩ.boundaryMeasure hb) = (hΩ.boundaryMeasure hb).real U * |c| := by
+    rw [integral_congr_ae ((ae_restrict_of_ae htr).mono fun x hx ↦ by rw [hx]), setIntegral_const,
+      smul_eq_mul]
+  have hpos : 0 < (hΩ.boundaryMeasure hb).real U := by
+    rw [measureReal_def]
+    exact ENNReal.toReal_pos hU.ne' (measure_ne_top _ _)
+  rw [hint] at h0
+  have hc0 : c = 0 := abs_eq_zero.1 ((mul_eq_zero.1 h0).resolve_left hpos.ne')
+  refine SobolevMultiIndex.ext_of_fn_ae_eq (hvc.trans ?_)
+  rw [hc0]
+  exact SobolevMultiIndex.fn_zero.symm
+
+/-- The trace vanishes when the integral of its absolute value does. -/
+theorem traceL_ae_eq_zero_of_integral_abs_eq_zero {v : SobolevEuclidean (d + 1) 1 p Ω}
+    (h0 : ∫ x, |(hΩ.traceL hb p hp v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
+      ∂(hΩ.boundaryMeasure hb) = 0) :
+    (hΩ.traceL hb p hp v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[hΩ.boundaryMeasure hb] 0 := by
+  have hi : Integrable (fun x ↦ |(hΩ.traceL hb p hp v :
+      EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|) (hΩ.boundaryMeasure hb) :=
+    ((Lp.memLp _).integrable Fact.out).abs
+  have := (integral_eq_zero_iff_of_nonneg (fun x ↦ abs_nonneg _) hi).1 h0
+  filter_upwards [this] with x hx
+  rw [Pi.zero_apply] at hx ⊢
+  exact abs_eq_zero.1 hx
+
+/-- **An element of `W^{1,p}(Ω)` with vanishing gradient and vanishing trace is zero**, on a
+bounded `C¹` domain and without any connectedness: its trace vanishes, so it lies in
+`W_0^{1,p}(Ω)` by `mem_zero_of_traceL_eq_zero`, where Poincaré's inequality
+`SobolevEuclideanZero.norm_le_gradNorm` bounds its norm by its vanishing gradient norm. This is
+the hypothesis (H2)′ of the Deny–Lions theorem for the boundary seminorm
+([han2009theoretical] Example 7.3.15). -/
+theorem eq_zero_of_gradNorm_eq_zero_of_traceL_eq_zero {v : SobolevEuclidean (d + 1) 1 p Ω}
+    (hv : gradNorm v = 0) (hγ : hΩ.traceL hb p hp v = 0) : v = 0 := by
+  have hmem := hΩ.mem_zero_of_traceL_eq_zero hb p hp hγ
+  obtain ⟨R, hR0, hR⟩ := hb.subset_ball_lt 0 0
+  have hP := SobolevEuclideanZero.norm_le_gradNorm hp hR0.le hR ⟨v, hmem⟩
+  change ‖v‖ ≤ _ * gradNorm v at hP
+  rw [hv, mul_zero] at hP
+  exact norm_le_zero_iff.1 hP
+
+end IsContDiffDomain
 
 end

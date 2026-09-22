@@ -1,55 +1,4 @@
 [[node]]
-id = "Real.rpowReg"
-
-[[node]]
-id = "Real.rpowReg_zero"
-
-[[node]]
-id = "Real.rpowReg_nonneg"
-
-[[node]]
-id = "Real.rpowReg_le"
-
-[[node]]
-id = "Real.hasDerivAt_rpowReg"
-
-[[node]]
-id = "Real.contDiff_rpowReg"
-
-[[node]]
-id = "Real.abs_deriv_rpowReg_le"
-
-[[node]]
-id = "Real.tendsto_rpowReg"
-
-[[node]]
-id = "EuclideanSpace.norm_fderiv_eq"
-
-[[node]]
-id = "EuclideanSpace.abs_div_le"
-
-[[node]]
-id = "Real.rpow_sub_one_mul_le_add"
-
-[[node]]
-id = "SobolevEuclidean.weakDeriv_single_ae_eq_fderiv"
-
-[[node]]
-id = "SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn"
-
-[[node]]
-id = "SobolevEuclidean.smoothRep"
-
-[[node]]
-id = "SobolevEuclidean.contDiff_smoothRep"
-
-[[node]]
-id = "SobolevEuclidean.hasCompactSupport_smoothRep"
-
-[[node]]
-id = "SobolevEuclidean.fn_ae_eq_smoothRep"
-
-[[node]]
 id = "BoundaryData.HasTransversalField"
 
 [[node]]
@@ -60,12 +9,6 @@ id = "BoundaryData.integral_rpowReg_le"
 
 [[node]]
 id = "BoundaryData.integral_abs_rpow_le_of_contDiff"
-
-[[node]]
-id = "SobolevEuclidean.integral_abs_rpow_eq_norm_fnL"
-
-[[node]]
-id = "SobolevEuclidean.integral_norm_fderiv_rpow_le"
 
 [[node]]
 id = "BoundaryData.eLpNorm_le_of_contDiff"
@@ -110,12 +53,6 @@ id = "BoundaryData.TraceFamily.traceL_eq_of_hasSmoothDensity"
 id = "BoundaryData.traceL_ae_eq_of_continuousOn"
 
 [[node]]
-id = "MeasureTheory.continuous_integral_mul_prod"
-
-[[node]]
-id = "BoundaryData.mulNormalL"
-
-[[node]]
 id = "BoundaryData.green_of_mem_smoothRestrictions"
 
 [[node]]
@@ -129,15 +66,6 @@ id = "BoundaryData.traceFamily"
 
 [[node]]
 id = "BoundaryData.traceFamily_traceL"
-
-[[node]]
-id = "MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le"
-
-[[node]]
-id = "SobolevEuclidean.continuous_gradNorm"
-
-[[node]]
-id = "SobolevEuclidean.toReal_eLpNorm_gradFn_le"
 
 [[node]]
 id = "BoundaryData.integral_abs_traceL_rpow_le"

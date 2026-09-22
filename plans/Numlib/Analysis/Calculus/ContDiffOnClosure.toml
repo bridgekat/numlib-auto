@@ -16,3 +16,51 @@ id = "ContDiffOnClosure.continuousOn_closure"
 
 [[node]]
 id = "ContDiffOn.contDiffOnClosure"
+
+[[node]]
+id = "iteratedFDeriv_one_eq_symm_fderiv'"
+
+[[node]]
+id = "contDiffOnClosure_one_iff"
+
+[[node]]
+id = "ContDiffOnClosure.exists_continuousOn_fderiv_fderiv"
+
+[[node]]
+id = "ContDiffOnClosure.smul"
+
+[[node]]
+id = "ContDiffOnClosure.mul"
+
+[[node]]
+id = "ContDiffOnClosure.const"
+
+[[node]]
+id = "ContDiffOnClosure.smul_const"
+
+[[node]]
+id = "ContDiffOnClosure.exists_norm_fderiv_le"
+
+[[node]]
+id = "ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport"
+
+[[node]]
+id = "ContDiffOnClosure.continuousLinearMap_comp"
+
+[[node]]
+id = "ContinuousOn.eq_zero_of_notMem_of_forall"
+
+[[node]]
+id = "ContinuousOn.indicator_tsupport_of_inter_eq"
+
+[[node]]
+id = "ContDiffOnClosure.congr_set_of_tsupport_subset"
+
+[[node]]
+id = "ContDiffOnClosure.clm_comp_comp_affine"
+
+[[node]]
+id = "ContDiffOnClosure.exists_norm_fderiv_le_of_isBounded"
+
+[[node]]
+id = "ContDiffOnClosure.comp_affineIsometryEquiv"

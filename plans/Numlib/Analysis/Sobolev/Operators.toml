@@ -241,3 +241,45 @@ id = "SobolevMultiIndex.exists_continuousLinearMap_of_order"
 
 [[node]]
 id = "SobolevMultiIndex.eLpNorm_fn_le_ofReal_norm"
+
+[[node]]
+id = "SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single"
+
+[[node]]
+id = "MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn_single"
+
+[[node]]
+id = "SobolevEuclidean.memSobolevMultiIndex_one_of_forall"
+
+[[node]]
+id = "SobolevEuclidean.weakDeriv_single_ae_eq"
+
+[[node]]
+id = "SobolevEuclidean.weakDeriv_single_ae_eq_fderiv"
+
+[[node]]
+id = "SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv"
+
+[[node]]
+id = "SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn"
+
+[[node]]
+id = "SobolevEuclidean.integral_abs_rpow_eq_norm_fnL"
+
+[[node]]
+id = "SobolevEuclidean.integral_norm_fderiv_rpow_le"
+
+[[node]]
+id = "SobolevEuclidean.continuous_gradNorm"
+
+[[node]]
+id = "SobolevEuclidean.toReal_eLpNorm_gradFn_le"
+
+[[node]]
+id = "SobolevEuclidean.gradFnL"
+
+[[node]]
+id = "SobolevEuclidean.coeFn_gradFnL"
+
+[[node]]
+id = "SobolevEuclidean.integral_norm_gradFn_rpow_eq"

@@ -1,0 +1,7 @@
+desc = '''
+Haar measure, in Mathlib's own layout (natural home: `Mathlib.MeasureTheory.Measure.Haar.*`).
+Directory-only group; the module is
+
+* `InnerProductSpace` -- a rigid motion of finite-dimensional real inner product spaces preserves
+  the volume, so integrals and set integrals are invariant under it.
+'''

@@ -1,0 +1,7 @@
+desc = '''
+Derivatives of functions of one real variable, in Mathlib's own layout (natural home:
+`Mathlib.Analysis.Calculus.Deriv.*`). Directory-only group; the module is
+
+* `Slope` -- the sign of a function near a point where its derivative is positive, read off the
+  slope.
+'''

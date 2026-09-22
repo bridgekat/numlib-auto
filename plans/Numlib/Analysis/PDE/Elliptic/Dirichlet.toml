@@ -409,3 +409,12 @@ source = "Brezis, Functional Analysis, Corollary 9.19 (Poincaré's inequality), 
 
 [[node]]
 id = "dirichletForm_eq_integral_neg_laplacian_mul"
+
+[[node]]
+id = "_root_.EuclideanSpace.laplacian_eq_sum_fderiv_fderiv_single"
+
+[[node]]
+id = "laplaceForm_toLowerOrderL_eq_integral"
+
+[[node]]
+id = "neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq"

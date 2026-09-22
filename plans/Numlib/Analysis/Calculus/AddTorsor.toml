@@ -1,0 +1,7 @@
+desc = '''
+Calculus on an affine space, in Mathlib's own layout (natural home:
+`Mathlib.Analysis.Calculus.AddTorsor.*`). Directory-only group; the module is
+
+* `AffineMap` -- the derivative of a rigid motion `T : E ≃ᵃⁱ[ℝ] F`: it is its linear part, `T`
+  being that part followed by the translation by `T 0`.
+'''

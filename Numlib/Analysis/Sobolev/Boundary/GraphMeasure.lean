@@ -1,6 +1,8 @@
 import Mathlib.MeasureTheory.Function.Jacobian
+import Numlib.Analysis.Calculus.Deriv.Slope
 import Numlib.Analysis.Sobolev.Boundary.Data
 import Numlib.Analysis.Sobolev.Boundary.Gram
+import Numlib.Topology.MetricSpace.Bounded
 
 /-!
 # The surface measure and the outward normal of a bounded `C¹` domain
@@ -81,38 +83,6 @@ variable {d : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 local notation "𝔼'" => EuclideanSpace ℝ (Fin d)
-
-/-! ### Rigid motions: linear part and derivative -/
-
-/-- The linear part of the inverse of a rigid motion is the inverse of its linear part. -/
-theorem AffineIsometryEquiv.linearIsometryEquiv_symm (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) :
-    T.symm.linearIsometryEquiv = T.linearIsometryEquiv.symm := rfl
-
-/-- A rigid motion is its linear part followed by a translation. -/
-theorem AffineIsometryEquiv.apply_eq_linearIsometryEquiv_add (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) (x : 𝔼) :
-    T x = T.linearIsometryEquiv x + T 0 := by
-  have := T.map_vadd (0 : 𝔼) x
-  rwa [vadd_eq_add, add_zero, vadd_eq_add] at this
-
-/-! ### A one-variable sign lemma -/
-
-/-- **The sign of a function near a point where its derivative is positive**: if `h 0 = 0` and
-`h' (0) > 0`, then `h t > 0` and `h (−t) < 0` for all small `t > 0`. -/
-theorem eventually_pos_and_neg_of_hasDerivAt_pos {h : ℝ → ℝ} {h' : ℝ} (hh : HasDerivAt h h' 0)
-    (hh' : 0 < h') (h0 : h 0 = 0) : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 < h t ∧ h (-t) < 0 := by
-  have hev : ∀ᶠ t in 𝓝[≠] (0 : ℝ), 0 < slope h 0 t :=
-    (hasDerivAt_iff_tendsto_slope.1 hh).eventually (lt_mem_nhds hh')
-  rw [Metric.nhdsWithin_basis_ball.eventually_iff] at hev
-  obtain ⟨ε, hε, hev⟩ := hev
-  rw [Metric.nhdsWithin_basis_ball.eventually_iff]
-  refine ⟨ε, hε, fun t ⟨ht, (ht0 : 0 < t)⟩ ↦ ?_⟩
-  have h1 := hev ⟨ht, ht0.ne'⟩
-  have h2 := hev (x := -t) ⟨by simpa using ht, by simpa using ht0.ne'⟩
-  rw [slope_def_field, h0, sub_zero, sub_zero] at h1 h2
-  refine ⟨(div_pos_iff_of_pos_right ht0).1 h1, ?_⟩
-  rcases div_pos_iff.1 h2 with ⟨_, h3⟩ | ⟨h3, _⟩
-  · linarith
-  · exact h3
 
 namespace EuclideanSpace
 
@@ -236,30 +206,6 @@ theorem graphParam_image_graphDomain (hg : Continuous g) (x₀ : 𝔼) (r : ℝ)
     change graphParam T g (init (T x)) ∈ Metric.ball x₀ r
     rwa [graphParam_eq_of_mem_frontier hg hx]
 
-/-- Two graph charts of the same set describe it identically on the intersection of their
-balls. -/
-theorem inter_inter_preimage_epigraph_eq {Ω : Set 𝔼}
-    {T₁ T₂ : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g₁ g₂ : 𝔼' → ℝ} {x₁ x₂ : 𝔼} {r₁ r₂ : ℝ}
-    (h₁ : Ω ∩ Metric.ball x₁ r₁ = Metric.ball x₁ r₁ ∩ T₁ ⁻¹' epigraph g₁)
-    (h₂ : Ω ∩ Metric.ball x₂ r₂ = Metric.ball x₂ r₂ ∩ T₂ ⁻¹' epigraph g₂) :
-    Metric.ball x₁ r₁ ∩ Metric.ball x₂ r₂ ∩ T₁ ⁻¹' epigraph g₁
-      = Metric.ball x₁ r₁ ∩ Metric.ball x₂ r₂ ∩ T₂ ⁻¹' epigraph g₂ := by
-  ext y
-  have e₁ := Set.ext_iff.1 h₁ y
-  have e₂ := Set.ext_iff.1 h₂ y
-  simp only [mem_inter_iff] at e₁ e₂ ⊢
-  tauto
-
-/-- A boundary point of `Ω` inside a chart ball lies on the chart's graph. -/
-theorem mem_frontier_preimage_epigraph_of_mem_frontier {Ω : Set 𝔼} {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ}
-    (hg : Continuous g) {x₀ : 𝔼} {r : ℝ}
-    (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g) {y : 𝔼}
-    (hy : y ∈ frontier Ω) (hyB : y ∈ Metric.ball x₀ r) : y ∈ frontier (T ⁻¹' epigraph g) := by
-  have h2 : y ∈ frontier Ω ∩ Metric.ball x₀ r := ⟨hy, hyB⟩
-  rw [IsBoundaryGraphAt.frontier_inter_ball hg h] at h2
-  rw [frontier_preimage_epigraph hg]
-  exact h2.2
-
 end EuclideanSpace
 
 /-- **The parametrization of a graph chart of `Ω` covers `∂Ω ∩ B(x₀, r)`**: if
@@ -297,22 +243,10 @@ theorem graphDensity_pos (x' : 𝔼') : 0 < graphDensity g x' :=
 theorem graphDensity_ne_zero (x' : 𝔼') : graphDensity g x' ≠ 0 :=
   (graphDensity_pos x').ne'
 
-/-- The gradient of a `C¹` function is continuous. -/
-theorem continuous_gradient (hg : ContDiff ℝ 1 g) : Continuous (gradient g) := by
-  change Continuous fun x' ↦ (InnerProductSpace.toDual ℝ 𝔼').symm (fderiv ℝ g x')
-  exact (InnerProductSpace.toDual ℝ 𝔼').symm.continuous.comp (hg.continuous_fderiv one_ne_zero)
-
 theorem continuous_graphDensity (hg : ContDiff ℝ 1 g) : Continuous (graphDensity g) := by
   have h := continuous_gradient hg
   unfold graphDensity
   fun_prop
-
-theorem norm_gradient_eq (x' : 𝔼') : ‖gradient g x'‖ = ‖fderiv ℝ g x'‖ :=
-  LinearIsometryEquiv.norm_map _ _
-
-/-- The pairing of the gradient with a vector is the derivative in that direction. -/
-theorem inner_gradient_eq_fderiv (x' v : 𝔼') : ⟪gradient g x', v⟫_ℝ = fderiv ℝ g x' v :=
-  InnerProductSpace.toDual_symm_apply
 
 /-- **The surface element is intrinsic**: `graphDensity g x' = gram (D (graphParam T g) x')`
 for every frame `T`, by `gram_isometry_comp` and `gram_snocLastL`. -/
@@ -438,10 +372,6 @@ graph. -/
 def graphNormal (x : 𝔼) : 𝔼 :=
   (graphDensity g (init (T x)))⁻¹ •
     T.linearIsometryEquiv.symm (snocLast (gradient g (init (T x))) (-1))
-
-theorem norm_snocLast_neg_one (v : 𝔼') : ‖snocLast v (-1)‖ = Real.sqrt (1 + ‖v‖ ^ 2) := by
-  rw [← Real.sqrt_sq (norm_nonneg (snocLast v (-1))), norm_sq_eq_init_add_last]
-  simp [add_comm]
 
 /-- The normal is a unit vector. -/
 theorem norm_graphNormal (x : 𝔼) : ‖graphNormal T g x‖ = 1 := by
@@ -1254,6 +1184,27 @@ theorem boundaryMeasure_restrict_ball {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' 
       = EuclideanSpace.graphMeasure T g (EuclideanSpace.graphDomain T g x₀ r) :=
   GraphAtlas.measure_restrict_ball _ hg h
 
+/-- **Composition with a patch respects equality almost everywhere on `∂Ω`**: two functions equal
+`σ`-almost everywhere on `∂Ω` pull back to functions equal almost everywhere on the parameter
+domain `Dᵢ` of a chart, since on the chart ball `σ` is the pushforward under `Φᵢ` of a measure
+with a positive density with respect to Lebesgue measure on `Dᵢ`
+(`boundaryMeasure_restrict_ball`, `EuclideanSpace.graphDensity_pos`). This is what makes a
+condition on `v ∘ Φᵢ` a condition on the class of `v` in `L^p(∂Ω)`
+([han2009theoretical] Definition 7.2.13). -/
+theorem ae_eq_comp_graphParam (a : GraphAtlas Ω) (i : Fin a.k) {f g : 𝔼 → ℝ}
+    (h : f =ᵐ[hΩ.boundaryMeasure hb] g) :
+    f ∘ EuclideanSpace.graphParam (a.T i) (a.g i)
+      =ᵐ[volume.restrict (a.graphDomain i)] g ∘ EuclideanSpace.graphParam (a.T i) (a.g i) := by
+  have h1 : f =ᵐ[(hΩ.boundaryMeasure hb).restrict (Metric.ball (a.x i) (a.r i))] g :=
+    ae_restrict_of_ae h
+  rw [hΩ.boundaryMeasure_restrict_ball hb (a.contDiff_g i) (a.inter_ball_eq i),
+    EuclideanSpace.graphMeasure] at h1
+  have h2 := h1.comp_tendsto (Measure.tendsto_ae_map
+    (EuclideanSpace.continuous_graphParam (a.contDiff_g i).continuous).aemeasurable)
+  rw [Filter.EventuallyEq, ae_withDensity_iff
+    (EuclideanSpace.measurable_ofReal_graphDensity (a.contDiff_g i))] at h2
+  exact h2.mono fun x hx ↦ hx (ENNReal.ofReal_pos.2 (EuclideanSpace.graphDensity_pos _)).ne'
+
 /-- The surface measure of a chart ball is the weighted Lebesgue measure of the parameter
 domain. -/
 theorem boundaryMeasure_ball_eq_lintegral {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g)
@@ -1306,16 +1257,6 @@ theorem boundaryMeasure_pos_of_isOpen {U : Set 𝔼} (hU : IsOpen U)
     _ = hΩ.boundaryMeasure hb (Metric.ball x ρ) :=
         (boundaryMeasure_ball_eq_lintegral hΩ hb hg h').symm
     _ ≤ hΩ.boundaryMeasure hb U := measure_mono hρU
-
-/-- A nonempty bounded subset of `ℝ^{d+1}` has nonempty frontier (the space is connected and
-unbounded). -/
-theorem _root_.Bornology.IsBounded.frontier_nonempty (hb : Bornology.IsBounded Ω)
-    (hne : Ω.Nonempty) : (frontier Ω).Nonempty := by
-  by_contra h
-  rw [not_nonempty_iff_eq_empty, ← isClopen_iff_frontier_eq_empty, isClopen_iff] at h
-  rcases h with h | h
-  · exact hne.ne_empty h
-  · exact NormedSpace.unbounded_univ ℝ 𝔼 (h ▸ hb)
 
 /-- The surface measure of a nonempty bounded `C¹` domain is positive. -/
 theorem boundaryMeasure_univ_pos (hne : Ω.Nonempty) : 0 < hΩ.boundaryMeasure hb univ :=

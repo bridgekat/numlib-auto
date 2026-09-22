@@ -1,0 +1,7 @@
+desc = '''
+Real powers, in Mathlib's own layout (natural home: `Mathlib.Analysis.SpecialFunctions.Pow.*`).
+Directory-only group; the module is
+
+* `Deriv` -- the smooth regularization `(t² + ε²)^{p/2} − ε^p` of `|t|^p`, with its bounds and
+  its limit as `ε → 0⁺`: what makes Nečas's proof of the trace inequality work at `p = 1`.
+'''

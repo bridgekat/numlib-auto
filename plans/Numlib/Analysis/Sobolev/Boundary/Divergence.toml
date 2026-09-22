@@ -3,58 +3,13 @@
 # exists with a doc comment and every node is proved and documented, so only the ids remain.
 
 [[node]]
-id = "integral_fderiv_apply_eq_zero_of_hasCompactSupport"
-
-[[node]]
-id = "integral_fderiv_apply_eq_zero_of_contDiff"
-
-[[node]]
 id = "EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport"
-
-[[node]]
-id = "integrableOn_of_forall_norm_le_of_eq_zero"
-
-[[node]]
-id = "integral_Ioi_comp_add_left"
-
-[[node]]
-id = "fderiv_eq_zero_of_notMem_tsupport"
-
-[[node]]
-id = "ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport"
-
-[[node]]
-id = "ContDiffOnClosure.continuousLinearMap_comp"
-
-[[node]]
-id = "ContinuousOn.eq_zero_of_notMem_of_forall"
-
-[[node]]
-id = "ContinuousOn.indicator_tsupport_of_inter_eq"
-
-[[node]]
-id = "ContDiffOnClosure.congr_set_of_tsupport_subset"
-
-[[node]]
-id = "ContDiffOnClosure.comp_affineIsometryEquiv"
 
 [[node]]
 id = "EuclideanSpace.integral_epigraph_eq"
 
 [[node]]
 id = "EuclideanSpace.lintegral_epigraph_eq"
-
-[[node]]
-id = "EuclideanSpace.snocLast_mem_closure_epigraph"
-
-[[node]]
-id = "EuclideanSpace.norm_snocLast_le"
-
-[[node]]
-id = "EuclideanSpace.gradient_apply"
-
-[[node]]
-id = "EuclideanSpace.continuous_snocLast_graph"
 
 [[node]]
 id = "EuclideanSpace.integrableOn_fderiv_apply_epigraph"
@@ -67,12 +22,6 @@ id = "EuclideanSpace.integral_Ioi_fderiv_last_eq"
 
 [[node]]
 id = "EuclideanSpace.integral_fderiv_last_epigraph"
-
-[[node]]
-id = "EuclideanSpace.hasFDerivAt_snocLast_add"
-
-[[node]]
-id = "EuclideanSpace.snocLast_add_fderiv_apply_single"
 
 [[node]]
 id = "EuclideanSpace.integral_fderiv_castSucc_epigraph"

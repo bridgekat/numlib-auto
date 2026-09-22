@@ -1739,52 +1739,11 @@ Definition 7.2.10 the order `s = k + σ` is a parameter and no constraint on it 
 
 section Boundary
 
-/-- Two elements of `W^{s,p}(Ω)` with the same function (off a null set of `Ω`) are equal: the
-first family is determined by its function (`SobolevMultiIndex.ext_of_fn_ae_eq`) and the second
-family consists of the difference quotients of the first. Belongs beside
-`SobolevMultiIndex.ext_of_fn_ae_eq` in `Numlib/Analysis/Sobolev/Slobodeckij.lean`. -/
-theorem _root_.SobolevSlobodeckij.ext_of_fn_ae_eq {k : ℕ} {σ : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
-    {Ω : Opens (EuclideanSpace ℝ (Fin d))}
-    {U V : SobolevSlobodeckij ℝ (stdBasis d) k σ p Ω volume}
-    (h : SobolevSlobodeckij.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))]
-      SobolevSlobodeckij.fn V) : U = V := by
-  have h1 : SobolevSlobodeckij.toSobolevMultiIndex U = SobolevSlobodeckij.toSobolevMultiIndex V :=
-    SobolevMultiIndex.ext_of_fn_ae_eq h
-  have h1' : (U : SobolevSlobodeckijTuple ℝ (Fin d) k p Ω volume).fst
-      = (V : SobolevSlobodeckijTuple ℝ (Fin d) k p Ω volume).fst := congrArg Subtype.val h1
-  refine Subtype.ext ((WithLp.ext_iff _).2 (Prod.ext h1' ?_))
-  ext α
-  have e := SobolevSlobodeckij.snd_ae V α
-  rw [← h1'] at e
-  exact (SobolevSlobodeckij.snd_ae U α).trans e.symm
-
 /-- **The parameter domain `Dᵢ` of the `i`-th patch** of a graph atlas, as an open subset of
 `ℝ^d`: the part of `ℝ^d` that the chart ball `B(xᵢ, rᵢ)` sees through the parametrization. -/
 def definition_7_2_13_domain {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (a : GraphAtlas Ω)
     (i : Fin a.k) : Opens (EuclideanSpace ℝ (Fin d)) :=
   ⟨a.graphDomain i, EuclideanSpace.isOpen_graphDomain (a.contDiff_g i).continuous _ _⟩
-
-/-- **Composition with a patch respects equality almost everywhere on `∂Ω`**: two functions equal
-`σ`-almost everywhere on `∂Ω` pull back to functions equal almost everywhere on `Dᵢ`, since on the
-chart ball `σ` is the pushforward under `Φᵢ` of a measure with a positive density with respect to
-Lebesgue measure on `Dᵢ` (`IsContDiffDomain.boundaryMeasure_restrict_ball`). This is what makes
-Definition 7.2.13 a condition on the class of `v` in `L^p(∂Ω)`. -/
-theorem ae_eq_comp_graphParam {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (a : GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (i : Fin a.k)
-    {f g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (h : f =ᵐ[hΩ.boundaryMeasure hb] g) :
-    f ∘ EuclideanSpace.graphParam (a.T i) (a.g i)
-      =ᵐ[volume.restrict (a.graphDomain i)] g ∘ EuclideanSpace.graphParam (a.T i) (a.g i) := by
-  have h1 : f =ᵐ[(hΩ.boundaryMeasure hb).restrict (ball (a.x i) (a.r i))] g :=
-    ae_restrict_of_ae h
-  rw [hΩ.boundaryMeasure_restrict_ball hb (a.contDiff_g i) (a.inter_ball_eq i),
-    EuclideanSpace.graphMeasure] at h1
-  have h2 := h1.comp_tendsto (Measure.tendsto_ae_map
-    (EuclideanSpace.continuous_graphParam (a.contDiff_g i).continuous).aemeasurable)
-  rw [Filter.EventuallyEq, ae_withDensity_iff
-    (EuclideanSpace.measurable_ofReal_graphDensity (a.contDiff_g i))] at h2
-  exact h2.mono fun x hx ↦ hx (ENNReal.ofReal_pos.2 (EuclideanSpace.graphDensity_pos _)).ne'
 
 /-- **Definition 7.2.13, relative to a patch system**: for a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`
 with the graph atlas `a` (the patch system: `∂Ω ∩ B(xᵢ, rᵢ) = {x_{d+1} = gᵢ(x')}` in the
@@ -1813,18 +1772,18 @@ noncomputable def definition_7_2_13_atlas {Ω : Opens (EuclideanSpace ℝ (Fin (
   zero_mem' i := by
     rw [definition_7_2_10_iff_exists]
     refine ⟨0, SobolevSlobodeckij.fn_zero.trans ?_⟩
-    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_zero ℝ p _)).symm
+    exact (hΩ.ae_eq_comp_graphParam hb a i (Lp.coeFn_zero ℝ p _)).symm
   add_mem' {v w} hv hw i := by
     obtain ⟨U, hU⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hv i)
     obtain ⟨V, hV⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hw i)
     refine (definition_7_2_10_iff_exists k σ p _ _).2 ⟨U + V, ?_⟩
     refine (SobolevSlobodeckij.fn_add U V).trans ((hU.add hV).trans ?_)
-    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_add v w)).symm
+    exact (hΩ.ae_eq_comp_graphParam hb a i (Lp.coeFn_add v w)).symm
   smul_mem' c {v} hv i := by
     obtain ⟨U, hU⟩ := (definition_7_2_10_iff_exists k σ p _ _).1 (hv i)
     refine (definition_7_2_10_iff_exists k σ p _ _).2 ⟨c • U, ?_⟩
     refine (SobolevSlobodeckij.fn_smul c U).trans ((hU.const_smul c).trans ?_)
-    exact (ae_eq_comp_graphParam hΩ hb a i (Lp.coeFn_smul c v)).symm
+    exact (hΩ.ae_eq_comp_graphParam hb a i (Lp.coeFn_smul c v)).symm
 
 /-- Definition 7.2.13 unfolded: `v ∈ W^{s,p}(∂Ω)` exactly when, for every patch `i`, the
 pull-back `v ∘ Φᵢ` lies in `W^{s,p}(Dᵢ)` in the sense of Definition 7.2.10. -/

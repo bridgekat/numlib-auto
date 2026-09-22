@@ -125,57 +125,11 @@ theorem exists_affineIsometryEquiv_map_eq_single_last {v : EuclideanSpace ℝ (F
   obtain ⟨L, hL⟩ := exists_linearIsometryEquiv_apply_eq_single_last hv
   exact ⟨L.toAffineIsometryEquiv, by simp, by simpa using hL⟩
 
-/-! ### The vertical lines of `ℝ^{d+1}`
+/-! ### Monotonicity along the vertical lines of `ℝ^{d+1}`
 
-The splitting `ℝ^{d+1} ≃ ℝ^d × ℝ`, `x ↦ (x', x_N)`, in the order the implicit function theorem
-wants, and the derivative of a vertical line `t ↦ (x', t)`. -/
-
-/-- The splitting `x ↦ (x', x_N)` of `ℝ^{d+1}` as `ℝ^d × ℝ`, as a continuous linear equivalence;
-`(lastInitL d).symm` with the factors swapped, the order that Mathlib's implicit function theorem
-on a product `E₁ × E₂` solves for the second factor. -/
-def initLastL (d : ℕ) :
-    EuclideanSpace ℝ (Fin (d + 1)) ≃L[ℝ] EuclideanSpace ℝ (Fin d) × ℝ :=
-  (lastInitL d).trans (ContinuousLinearEquiv.prodComm ℝ ℝ (EuclideanSpace ℝ (Fin d)))
-
-@[simp]
-theorem initLastL_apply (x : EuclideanSpace ℝ (Fin (d + 1))) :
-    initLastL d x = (init x, x (Fin.last d)) :=
-  rfl
-
-@[simp]
-theorem initLastL_symm_apply (p : EuclideanSpace ℝ (Fin d) × ℝ) :
-    (initLastL d).symm p = snocLast p.1 p.2 :=
-  rfl
-
-/-- The point `(0, 1)` of `ℝ^{d+1}` is the last basis vector. -/
-theorem snocLast_zero_one :
-    snocLast (0 : EuclideanSpace ℝ (Fin d)) 1 = single (Fin.last d) 1 := by
-  ext i
-  induction i using Fin.lastCases <;> simp [Fin.castSucc_ne_last]
-
-/-- The vertical line `t ↦ (x', t)` has derivative `e_N`. -/
-theorem hasDerivAt_snocLast (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
-    HasDerivAt (fun t ↦ snocLast x' t) (single (Fin.last d) 1) t := by
-  have h : HasDerivAt (fun t : ℝ ↦ (x', t)) ((0 : EuclideanSpace ℝ (Fin d)), (1 : ℝ)) t :=
-    (hasDerivAt_const t x').prodMk (hasDerivAt_id t)
-  have := (initLastL d).symm.hasFDerivAt.comp_hasDerivAt t h
-  simpa [Function.comp_def, snocLast_zero_one] using this
-
-/-- The vertical line `t ↦ (x', t)` is the affine line through `(x', 0)` and `(x', 1)`. -/
-theorem snocLast_eq_lineMap (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
-    snocLast x' t = AffineMap.lineMap (snocLast x' 0) (snocLast x' 1) t := by
-  rw [AffineMap.lineMap_apply_module]
-  ext i
-  induction i using Fin.lastCases
-  · simp
-  · simp only [PiLp.add_apply, PiLp.smul_apply, snocLast_apply_castSucc, smul_eq_mul]
-    ring
-
-/-- The first coordinates do not increase distances. -/
-theorem dist_init_le (x y : EuclideanSpace ℝ (Fin (d + 1))) :
-    dist (init x) (init y) ≤ dist x y := by
-  rw [dist_eq_norm, dist_eq_norm, ← init_sub]
-  exact norm_init_le _
+The splitting `ℝ^{d+1} ≃ ℝ^d × ℝ` in the order the implicit function theorem wants
+(`EuclideanSpace.initLastL`) and the vertical lines `t ↦ (x', t)` are in
+`Numlib/Analysis/Sobolev/Chart.lean`. -/
 
 /-- **Monotonicity along vertical lines**: on a convex set where `Ψ` is differentiable with
 `∂_N Ψ > 0`, `Ψ` is strictly increasing along every vertical line `t ↦ (x', t)`. This is what

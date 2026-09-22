@@ -246,6 +246,118 @@ theorem memSobolev_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u (clos
         (Filter.Eventually.of_forall fun x hx ↦ hC x (subset_closure hx)))
   · exact (𝒯.memLp_top_pieceFDeriv hg).mono_exponent le_top
 
+
+/-! #### The elementwise derivative of order `n`, and the weak derivative of order `k + 1` -/
+
+/-- **The elementwise derivative of order `n`** of a family `g` of functions, one per element:
+`∂^n (g T)` on the open element `K_T`, and `0` on the skeleton and outside the domain. At `n = 1`
+it is `pieceFDeriv` read as a multilinear map. -/
+def pieceIteratedFDeriv (n : ℕ) (g : 𝒯.elems → 𝔼₂ → ℝ) : 𝔼₂ → 𝔼₂ [×n]→L[ℝ] ℝ := fun x ↦
+  ∑ T, (𝒯.K T).indicator (iteratedFDeriv ℝ n (g T)) x
+
+/-- On an open element the elementwise derivative of order `n` is the derivative of the piece
+there. -/
+theorem pieceIteratedFDeriv_of_mem {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) (T : 𝒯.elems) {x : 𝔼₂}
+    (hx : x ∈ 𝒯.K T) : 𝒯.pieceIteratedFDeriv n g x = iteratedFDeriv ℝ n (g T) x := by
+  unfold pieceIteratedFDeriv
+  rw [Finset.sum_eq_single T]
+  · rw [indicator_of_mem hx]
+  · intro T' _ hT'
+    refine indicator_of_notMem (fun hx' ↦ ?_) _
+    exact Set.disjoint_left.1 (𝒯.pairwise_disjoint_K hT') hx' hx
+  · exact fun h ↦ absurd (Finset.mem_univ T) h
+
+/-- Off the open elements the elementwise derivative of order `n` vanishes. -/
+theorem pieceIteratedFDeriv_of_notMem {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) {x : 𝔼₂}
+    (hx : x ∉ ⋃ T, 𝒯.K T) : 𝒯.pieceIteratedFDeriv n g x = 0 :=
+  Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _
+
+/-- On an open element, where `v` agrees with the piece `g T`, the classical derivatives of `v`
+are those of the piece. -/
+theorem iteratedFDeriv_eq_of_mem_K {v : 𝔼₂ → ℝ} {g : 𝒯.elems → 𝔼₂ → ℝ}
+    (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) (n : ℕ) (T : 𝒯.elems) {x : 𝔼₂} (hx : x ∈ 𝒯.K T) :
+    iteratedFDeriv ℝ n v x = iteratedFDeriv ℝ n (g T) x := by
+  have h : v =ᶠ[nhds x] g T := by
+    filter_upwards [(𝒯.isOpen_K T).mem_nhds hx] with y hy
+    exact hvg T y hy
+  exact (h.iteratedFDeriv (𝕜 := ℝ) n).self_of_nhds
+
+/-- The elementwise derivative of order `n` of `C^n` pieces is bounded: each `∂^n (g T)` is
+continuous on the compact closed element. -/
+theorem exists_norm_pieceIteratedFDeriv_le {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
+    (hg : ∀ T, ContDiff ℝ n (g T)) : ∃ M : ℝ, ∀ x, ‖𝒯.pieceIteratedFDeriv n g x‖ ≤ M := by
+  have hb : ∀ T : 𝒯.elems, ∃ C : ℝ, ∀ x ∈ 𝒯.K T, ‖iteratedFDeriv ℝ n (g T) x‖ ≤ C := fun T ↦ by
+    obtain ⟨C, hC⟩ := (𝒯.isCompact_closedK T).exists_bound_of_continuousOn
+      ((hg T).continuous_iteratedFDeriv le_rfl).continuousOn
+    exact ⟨C, fun x hx ↦ hC x (𝒯.K_subset_closedK T hx)⟩
+  choose C hC using hb
+  refine ⟨∑ T, max (C T) 0, fun x ↦ ?_⟩
+  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun T _ ↦ ?_)
+  by_cases hx : x ∈ 𝒯.K T
+  · rw [indicator_of_mem hx]
+    exact (hC T x hx).trans (le_max_left _ _)
+  · rw [indicator_of_notMem hx, norm_zero]
+    exact le_max_right _ _
+
+/-- The elementwise derivative of order `n` of `C^n` pieces is strongly measurable. -/
+theorem stronglyMeasurable_pieceIteratedFDeriv {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
+    (hg : ∀ T, ContDiff ℝ n (g T)) : StronglyMeasurable (𝒯.pieceIteratedFDeriv n g) :=
+  Finset.stronglyMeasurable_fun_sum _ fun T _ ↦
+    ((hg T).continuous_iteratedFDeriv le_rfl).stronglyMeasurable.indicator
+      (𝒯.isOpen_K T).measurableSet
+
+/-- The elementwise derivative of order `n` of `C^n` pieces is locally integrable on `Ω`: it is
+strongly measurable and bounded. -/
+theorem locallyIntegrableOn_pieceIteratedFDeriv {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
+    (hg : ∀ T, ContDiff ℝ n (g T)) :
+    LocallyIntegrableOn (𝒯.pieceIteratedFDeriv n g) (Ω : Set 𝔼₂) volume := by
+  obtain ⟨M, hM⟩ := 𝒯.exists_norm_pieceIteratedFDeriv_le hg
+  exact (memLp_top_of_bound (𝒯.stronglyMeasurable_pieceIteratedFDeriv hg).aestronglyMeasurable M
+    (Filter.Eventually.of_forall hM)).locallyIntegrableOn le_top
+
+/-- **The weak derivative of order `k + 1` along a tuple of directions** of a `C^k` function that
+is piecewise `C^{k+1}` on a triangulation: the elementwise classical derivative of order `k + 1`
+evaluated at the tuple. This is the order-`k+1` form of `hasWeakFDerivOn_of_piecewise`.
+
+The tuple `y` is `y 0 :: tail y`; the classical derivative of order `k` along `tail y` is a weak
+one, it is continuous on `Ω` and piecewise `C¹`, so its first-order weak derivative in the
+direction `y 0` is the elementwise one (`hasWeakFDerivOn_of_piecewise`), and
+`HasWeakIteratedLineDerivOn.cons` composes the two ([han2009theoretical] Example 7.1.9). -/
+theorem hasWeakIteratedLineDerivOn_of_piecewise {k : ℕ} {v : 𝔼₂ → ℝ} (hv : ContDiffOn ℝ k v Ω)
+    {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ (k + 1) (g T))
+    (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) (y : Fin (k + 1) → 𝔼₂) :
+    HasWeakIteratedLineDerivOn y v (fun x ↦ 𝒯.pieceIteratedFDeriv (k + 1) g x y) Ω volume := by
+  -- the classical derivative of order `k` along `tail y` is a weak derivative
+  have h₁ : HasWeakIteratedLineDerivOn (Fin.tail y) v
+      (fun x ↦ iteratedFDeriv ℝ k v x (Fin.tail y)) Ω volume :=
+    (hv.hasWeakIteratedFDerivOn le_rfl).lineDeriv (Fin.tail y)
+  -- it is continuous on `Ω` and piecewise `C¹`
+  have hu : ContinuousOn (fun x ↦ iteratedFDeriv ℝ k v x (Fin.tail y)) Ω :=
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin k ↦ 𝔼₂) ℝ
+      (Fin.tail y)).continuous.comp_continuousOn (hv.continuousOn_iteratedFDeriv le_rfl)
+  have hg' : ∀ T, ContDiff ℝ 1 fun x ↦ iteratedFDeriv ℝ k (g T) x (Fin.tail y) := fun T ↦
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin k ↦ 𝔼₂) ℝ (Fin.tail y)).contDiff.comp
+      ((hg T).iteratedFDeriv_right (m := 1) (by norm_cast; omega))
+  have hug : ∀ T, ∀ x ∈ 𝒯.K T, iteratedFDeriv ℝ k v x (Fin.tail y)
+      = iteratedFDeriv ℝ k (g T) x (Fin.tail y) := fun T x hx ↦ by
+    rw [𝒯.iteratedFDeriv_eq_of_mem_K hvg k T hx]
+  -- its first-order weak derivative in the direction `y 0` is the elementwise one
+  have h₂ := (𝒯.hasWeakFDerivOn_of_piecewise hu hg' hug).lineDeriv ![y 0]
+  simp only [continuousMultilinearCurryFin1_symm_apply, Matrix.cons_val_zero] at h₂
+  have h₃ := h₁.cons h₂
+  rw [Fin.cons_self_tail] at h₃
+  -- the elementwise derivative of `∂^k (g T) (tail y)` in the direction `y 0` is `∂^{k+1}(g T) y`
+  refine h₃.congr_ae (Filter.EventuallyEq.refl _ _) (Filter.Eventually.of_forall fun x ↦ ?_)
+  dsimp only
+  by_cases hx : x ∈ ⋃ T, 𝒯.K T
+  · obtain ⟨T, hT⟩ := mem_iUnion.1 hx
+    rw [𝒯.pieceFDeriv_of_mem _ T hT, 𝒯.pieceIteratedFDeriv_of_mem g T hT,
+      iteratedFDeriv_succ_apply_left, fderiv_continuousMultilinear_apply_const_apply
+        ((hg T).differentiable_iteratedFDeriv (by norm_cast; omega) x)]
+  · rw [𝒯.pieceIteratedFDeriv_of_notMem g hx]
+    unfold Triangulation.pieceFDeriv
+    rw [Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _]
+    simp
 /-! #### The glued function -/
 
 /-- **The function glued from compatible `C¹` pieces lies in `W^{1,p}(Ω)`** for every

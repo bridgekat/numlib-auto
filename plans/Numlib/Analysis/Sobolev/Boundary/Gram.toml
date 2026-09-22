@@ -20,9 +20,6 @@ id = "EuclideanSpace.gramDet_isometry_comp"
 id = "EuclideanSpace.snocLastL"
 
 [[node]]
-id = "EuclideanSpace.inner_snocLast"
-
-[[node]]
 id = "EuclideanSpace.gramDet_snocLastL"
 
 [[node]]

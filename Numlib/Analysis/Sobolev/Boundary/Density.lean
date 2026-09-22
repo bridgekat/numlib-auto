@@ -213,6 +213,48 @@ theorem EuclideanSpace.hasSmoothDensity_openTriangleOpens (A B C : EuclideanSpac
 
 end Predicates
 
+/-! ### The chosen smooth representative -/
+
+section SmoothRep
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+open SobolevMultiIndex
+
+/-- **The chosen smooth representative** of an element of `smoothRestrictions`: a `C^∞`
+compactly supported function on `ℝ^N` equal to `fn u` almost everywhere on `Ω`. -/
+def SobolevEuclidean.smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
+    EuclideanSpace ℝ (Fin N) → ℝ :=
+  Classical.choose (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)
+
+omit [Fact (1 ≤ p)] in
+/-- The smooth representative is smooth. -/
+theorem SobolevEuclidean.contDiff_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
+    ContDiff ℝ ∞ (SobolevEuclidean.smoothRep u) :=
+  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).1
+
+omit [Fact (1 ≤ p)] in
+/-- The smooth representative is continuous. -/
+theorem SobolevEuclidean.continuous_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
+    Continuous (SobolevEuclidean.smoothRep u) :=
+  (SobolevEuclidean.contDiff_smoothRep u).continuous
+
+omit [Fact (1 ≤ p)] in
+/-- The smooth representative has compact support. -/
+theorem SobolevEuclidean.hasCompactSupport_smoothRep
+    (u : SobolevEuclidean.smoothRestrictions N p Ω) :
+    HasCompactSupport (SobolevEuclidean.smoothRep u) :=
+  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).2.1
+
+omit [Fact (1 ≤ p)] in
+/-- The smooth representative represents `u` on `Ω`. -/
+theorem SobolevEuclidean.fn_ae_eq_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
+    fn (u : SobolevEuclidean N 1 p Ω)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevEuclidean.smoothRep u :=
+  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).2.2
+
+end SmoothRep
+
 /-! ### The segment property -/
 
 section Segment
@@ -343,180 +385,6 @@ theorem IsLipschitzDomain.hasSegmentProperty (hΩ : IsLipschitzDomain Ω) :
   hΩ.isBoundaryOfClass.hasSegmentProperty fun _ hg ↦ hg.choose_spec.continuous
 
 end Graph
-
-/-! ### Translation to a translated domain
-
-The translation `u ↦ u(· + h)` carries `W^{1,p}(Ω)` to `W^{1,p}(Ω − h)`, with the weak
-derivatives translated. `Numlib/Analysis/Sobolev/Translate.lean` treats the case of an open set
-invariant under the translation; the version here, for `Ω' = (· + h) ⁻¹' Ω`, belongs beside it. -/
-
-section TranslatePreimage
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
-  {Ω Ω' : Opens E} {h : E}
-
-/-- The translate `x ↦ φ (x - h)` of a test function on `Ω' = Ω − h`, as a test function on
-`Ω`. -/
-def TestFunction.compSubRightOfPreimage (φ : 𝓓(Ω', F))
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) : 𝓓(Ω, F) where
-  toFun x := φ (x - h)
-  contDiff' := φ.contDiff.comp (contDiff_id.sub contDiff_const)
-  hasCompactSupport' := φ.hasCompactSupport.comp_homeomorph (Homeomorph.subRight h)
-  tsupport_subset' := by
-    have : tsupport (fun x ↦ φ (x - h)) = (Homeomorph.subRight h) ⁻¹' tsupport φ := by
-      rw [tsupport, tsupport, (Homeomorph.subRight h).preimage_closure]
-      rfl
-    rw [this]
-    intro x hx
-    have := φ.tsupport_subset hx
-    rw [hΩ'] at this
-    simpa using this
-
-omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- The translate of a function locally integrable on `Ω` is locally integrable on `Ω − h`. -/
-theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] [ProperSpace E]
-    {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
-    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω' μ := by
-  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu
-  rw [locallyIntegrableOn_iff Ω'.isOpen.isLocallyClosed]
-  intro k hk hkc
-  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
-    rintro _ ⟨x, hx, rfl⟩
-    have := hk hx
-    rw [hΩ'] at this
-    exact this
-  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
-  exact ((measurePreserving_add_right μ h).integrableOn_image
-    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
-
-omit [NormedSpace ℝ E] in
-/-- The translation `x ↦ x + h` carries `μ.restrict (Ω − h)` to `μ.restrict Ω`. -/
-theorem measurePreserving_add_right_restrict_of_preimage [μ.IsAddRightInvariant]
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
-    MeasurePreserving (· + h) (μ.restrict (Ω' : Set E)) (μ.restrict (Ω : Set E)) := by
-  have := (measurePreserving_add_right μ h).restrict_preimage Ω.isOpen.measurableSet
-  rwa [← hΩ'] at this
-
-omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- The translate of an `L^p(Ω)` function lies in `L^p(Ω − h)`. -/
-theorem MeasureTheory.MemLp.comp_add_right_of_preimage [μ.IsAddRightInvariant] {u : E → F}
-    {p : ℝ≥0∞} (hu : MemLp u p (μ.restrict (Ω : Set E)))
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
-    MemLp (fun x ↦ u (x + h)) p (μ.restrict (Ω' : Set E)) :=
-  hu.comp_measurePreserving (measurePreserving_add_right_restrict_of_preimage hΩ')
-
-/-- The change of variables `x ↦ x + h` from `Ω − h` to `Ω`, against a test function on `Ω − h`:
-`∫_{Ω − h} ψ(x) u(x + h) dx = ∫_Ω ψ(x − h) u(x) dx`. -/
-theorem integral_smul_comp_add_right_of_preimage [μ.IsAddRightInvariant] (u : E → F)
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) (ψ : 𝓓(Ω', ℝ)) :
-    ∫ x in (Ω' : Set E), ψ x • u (x + h) ∂μ = ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ := by
-  have e1 : ∫ x in (Ω' : Set E), ψ x • u (x + h) ∂μ = ∫ x, ψ x • u (x + h) ∂μ :=
-    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      rw [ψ.eq_zero_of_notMem hx, zero_smul]
-  have e2 : ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ = ∫ x, ψ (x - h) • u x ∂μ :=
-    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      have := (ψ.compSubRightOfPreimage hΩ').eq_zero_of_notMem hx
-      exact by rw [show ψ (x - h) = 0 from this, zero_smul]
-  rw [e1, e2, ← integral_add_right_eq_self (fun x ↦ ψ (x - h) • u x) h]
-  simp only [add_sub_cancel_right]
-
-/-- **Translation commutes with the weak derivative, from `Ω` to `Ω − h`**: if `w` is a weak
-derivative of `u` along the tuple `y` on `Ω`, then `w(· + h)` is one of `u(· + h)` on `Ω − h`.
-The test function `φ` on `Ω − h` is traded for its translate `φ(· − h)`, a test function on
-`Ω`. -/
-theorem HasWeakIteratedLineDerivOn.comp_add_right_of_preimage [μ.IsAddRightInvariant]
-    [ProperSpace E] {n : ℕ} {y : Fin n → E} {u w : E → F}
-    (hu : HasWeakIteratedLineDerivOn y u w Ω μ)
-    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
-    HasWeakIteratedLineDerivOn y (fun x ↦ u (x + h)) (fun x ↦ w (x + h)) Ω' μ where
-  locallyIntegrableOn := LocallyIntegrableOn.comp_add_right_of_preimage hu.locallyIntegrableOn hΩ'
-  locallyIntegrableOn_weakDeriv :=
-    LocallyIntegrableOn.comp_add_right_of_preimage hu.locallyIntegrableOn_weakDeriv hΩ'
-  integral_smul_eq φ := by
-    obtain ⟨ψ, hψ⟩ : ∃ ψ : 𝓓(Ω, ℝ), (ψ : E → ℝ) = fun x ↦ φ (x - h) :=
-      ⟨φ.compSubRightOfPreimage hΩ', rfl⟩
-    have hψd : ∀ x, iteratedFDeriv ℝ n (ψ : E → ℝ) x y
-        = iteratedFDeriv ℝ n (φ : E → ℝ) (x - h) y := fun x ↦ by
-      rw [hψ, iteratedFDeriv_comp_sub']
-    have e1 : ∫ x in (Ω' : Set E), iteratedFDeriv ℝ n φ x y • u (x + h) ∂μ
-        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n ψ x y • u x ∂μ := by
-      have := integral_smul_comp_add_right_of_preimage (μ := μ) u hΩ' (φ.iteratedFDerivApply n y)
-      simp only [TestFunction.iteratedFDerivApply_apply] at this
-      rw [this]
-      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψd])
-    have e2 : ∫ x in (Ω' : Set E), φ x • w (x + h) ∂μ = ∫ x in (Ω : Set E), ψ x • w x ∂μ := by
-      rw [integral_smul_comp_add_right_of_preimage (μ := μ) w hΩ' φ]
-      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψ])
-    rw [e1, e2, hu.integral_smul_eq ψ]
-
-end TranslatePreimage
-
-/-! ### Small general lemmas -/
-
-section General
-
-variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-open SobolevMultiIndex
-
-omit [Fact (1 ≤ p)] in
-/-- The partial derivative `∂_j u` of `u ∈ W^{1,p}(Ω)` is a weak derivative of `fn u` along
-`e_j`. (Also `ExtensionHigher.weakDeriv_hasWeakIteratedLineDerivOn_single`.) -/
-theorem SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single (u : SobolevEuclidean N 1 p Ω)
-    (j : Fin N) :
-    HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] (fn u)
-      (weakDeriv u (MultiIndexLE.single j)) Ω volume := by
-  have := (hasWeakIteratedLineDerivOn u (MultiIndexLE.single j)).of_perm
-    (multiIndexTuple_single_perm
-      ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) j)
-  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
-
-/-- **Membership of `W^{1,p}(Ω)` from the partial derivatives**: a function of `L^p(Ω)` with a
-weak derivative in `L^p(Ω)` along each `e_j` lies in `W^{1,p}(Ω)`. -/
-theorem SobolevEuclidean.memSobolevMultiIndex_one_of_forall {F : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hF : MemLp F p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    {G : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
-    (hG : ∀ j, MemLp (G j) p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (hFG : ∀ j, HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] F (G j) Ω volume) :
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis F 1 p Ω volume := by
-  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
-  refine ⟨hF, fun β hβ ↦ ?_⟩
-  rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0 | ⟨i, hi⟩
-  · obtain rfl : β = 0 := congrArg Subtype.val h0
-    exact ⟨_, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
-      (hF.locallyIntegrableOn hp), hF⟩
-  · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
-    refine ⟨G i, ?_, hG i⟩
-    have h' : HasWeakIteratedLineDerivOn
-        ![((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i]
-        F (G i) Ω volume := by
-      rw [EuclideanSpace.basisFun_toBasis_apply]
-      exact hFG i
-    exact h'.of_perm (multiIndexTuple_single_perm
-      ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i).symm
-
-omit [Fact (1 ≤ p)] in
-/-- **Uniqueness of the partial derivatives**: if `fn u` is almost everywhere `F` on `Ω` and
-`G` is a weak derivative of `F` along `e_j` on `Ω`, then `∂_j u` is almost everywhere `G`. -/
-theorem SobolevEuclidean.weakDeriv_single_ae_eq (u : SobolevEuclidean N 1 p Ω)
-    {F G : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hF : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] F) {j : Fin N}
-    (hG : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] F G Ω volume) :
-    weakDeriv u (MultiIndexLE.single j) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      G :=
-  (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    (((SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u j).congr_ae hF
-      (EventuallyEq.refl _ _)).ae_eq hG)
-
-/-- The support of `x ↦ θ (x + h)` lies in the translate of the support of `θ`. -/
-theorem tsupport_comp_add_right_subset {E : Type*} [NormedAddCommGroup E] {θ : E → ℝ} (h : E) :
-    tsupport (fun x ↦ θ (x + h)) ⊆ (fun x ↦ x + h) ⁻¹' tsupport θ :=
-  closure_minimal (fun y hy ↦ subset_closure (by simpa [Function.support] using hy))
-    ((isClosed_tsupport θ).preimage (continuous_add_const h))
-
-end General
 
 /-! ### One piece of the construction -/
 
@@ -691,51 +559,6 @@ theorem SobolevEuclidean.exists_translatePiece (hb : Bornology.IsBounded (Ω : S
 
 end Piece
 
-/-! ### Mollification of a compactly supported `W^{1,p}(ℝ^N)` function -/
-
-section Mollify
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure] {p : ℝ≥0∞}
-
-/-- **Mollification of a compactly supported `W^{1,p}(ℝ^N)` function**: for `G ∈ W^{1,p}(ℝ^N)`
-with compact support, `1 ≤ p < ∞`, `η > 0` and `ε > 0`, there is a smooth compactly supported
-`v` with `‖v − G‖_{W^{1,p}(ℝ^N)} < η` and, if `G` is continuous, `|v − G| < ε` everywhere: a
-mollification `ρ_δ ⋆ G` for `δ` small
-(`MemSobolev.tendsto_sobolevNorm_convolution_sub`, `ContDiffBump.dist_normed_convolution_le` with
-the uniform continuity of `G`). -/
-theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt {G : E → ℝ}
-    (hG : MemSobolev G 1 p ⊤ μ) (hGc : HasCompactSupport G) (hp : 1 ≤ p) (hp' : p ≠ ⊤)
-    {η : ℝ≥0∞} (hη : 0 < η) {ε : ℝ} (hε : 0 < ε) :
-    ∃ v : E → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧ sobolevNorm (v - G) 1 p ⊤ μ < η ∧
-      (Continuous G → ∀ x, dist (v x) (G x) < ε) := by
-  obtain ⟨φ, hφ⟩ := exists_seq_contDiffBump_tendsto_rOut_zero E
-  have h1 : ∀ᶠ k in atTop,
-      sobolevNorm ((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G - G) 1 p ⊤ μ < η :=
-    (hG.tendsto_sobolevNorm_convolution_sub hφ hp hp').eventually_lt_const hη
-  have h2 : Continuous G → ∀ᶠ k in atTop,
-      ∀ x, dist (((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G) x) (G x) < ε := by
-    intro hGc'
-    obtain ⟨δ, hδ, hδε⟩ := Metric.uniformContinuous_iff.1
-      (hGc.uniformContinuous_of_continuous hGc') (ε / 2) (half_pos hε)
-    filter_upwards [hφ.eventually_lt_const hδ] with k hk x
-    refine lt_of_le_of_lt ((φ k).dist_normed_convolution_le hGc'.aestronglyMeasurable
-      fun y hy ↦ ?_) (half_lt_self hε)
-    exact (hδε (lt_trans (mem_ball.1 hy) hk)).le
-  have h3 : ∀ᶠ k in atTop,
-      sobolevNorm ((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G - G) 1 p ⊤ μ < η ∧
-      (Continuous G →
-        ∀ x, dist (((φ k).normed μ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] G) x) (G x) < ε) := by
-    by_cases hGc' : Continuous G
-    · exact (h1.and (h2 hGc')).mono fun k hk ↦ ⟨hk.1, fun _ ↦ hk.2⟩
-    · exact h1.mono fun k hk ↦ ⟨hk, fun h ↦ absurd h hGc'⟩
-  obtain ⟨k, hk1, hk2⟩ := h3.exists
-  have hloc : LocallyIntegrable G μ := hG.memLp_top.locallyIntegrable hp
-  exact ⟨_, hloc.contDiff_convolution_normed (φ k),
-    (φ k).hasCompactSupport_normed.convolution (ContinuousLinearMap.lsmul ℝ ℝ) hGc, hk1, hk2⟩
-
-end Mollify
-
 /-! ### The translation estimate -/
 
 section Estimate
@@ -794,22 +617,6 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 open SobolevMultiIndex
-
-/-- The derivatives of a partition of unity `θ₀ + ∑ θ_i = 1` sum to zero. -/
-theorem fderiv_add_sum_eq_zero_of_partition {ι : Type*} [Fintype ι] {θ₀ : 𝔼 → ℝ}
-    {θ : ι → 𝔼 → ℝ} (hθ₀ : ContDiff ℝ ∞ θ₀) (hθ : ∀ i, ContDiff ℝ ∞ (θ i))
-    (hsum : ∀ x, θ₀ x + ∑ i, θ i x = 1) (z v : 𝔼) :
-    fderiv ℝ θ₀ z v + ∑ i, fderiv ℝ (θ i) z v = 0 := by
-  have h1 : HasFDerivAt (fun x ↦ θ₀ x + ∑ i, θ i x)
-      (fderiv ℝ θ₀ z + ∑ i, fderiv ℝ (θ i) z) z :=
-    (hθ₀.differentiable (by simp) z).hasFDerivAt.add
-      (HasFDerivAt.fun_sum fun i _ ↦ ((hθ i).differentiable (by simp) z).hasFDerivAt)
-  have h2 : HasFDerivAt (fun x ↦ θ₀ x + ∑ i, θ i x) (0 : 𝔼 →L[ℝ] ℝ) z := by
-    have : (fun x ↦ θ₀ x + ∑ i, θ i x) = fun _ ↦ (1 : ℝ) := funext hsum
-    rw [this]
-    exact hasFDerivAt_const 1 z
-  have := congrArg (fun L : 𝔼 →L[ℝ] ℝ ↦ L v) (h1.unique h2)
-  simpa using this
 
 /-- **The translate approximation, at the level of functions.** For a bounded `Ω` with the
 segment property, `ũ ∈ W^{1,p}(Ω)` with partial derivatives `w j`, and `ε > 0`, there is a

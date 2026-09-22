@@ -1,0 +1,7 @@
+desc = '''
+Directional derivatives and integration by parts along a line, in Mathlib's own layout (natural
+home: `Mathlib.Analysis.Calculus.LineDeriv.*`). Directory-only group; the module is
+
+* `IntegrationByParts` -- the integral of a directional derivative of a compactly supported
+  function vanishes, for any additive Haar measure.
+'''

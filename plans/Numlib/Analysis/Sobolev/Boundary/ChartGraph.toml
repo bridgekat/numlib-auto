@@ -11,12 +11,6 @@ id = "EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last"
 id = "EuclideanSpace.exists_affineIsometryEquiv_map_eq_single_last"
 
 [[node]]
-id = "EuclideanSpace.initLastL"
-
-[[node]]
-id = "EuclideanSpace.hasDerivAt_snocLast"
-
-[[node]]
 id = "EuclideanSpace.lt_of_fderiv_single_last_pos"
 
 [[node]]

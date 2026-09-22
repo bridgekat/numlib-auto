@@ -1,13 +1,17 @@
 import Numlib.Algebra.LinearRecurrence
+import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
+import Numlib.Analysis.Calculus.Deriv.Slope
 import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
 import Numlib.Analysis.Calculus.IteratedFDeriv
+import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
@@ -117,6 +121,7 @@ import Numlib.Analysis.Convex.Saddle.Monotone
 import Numlib.Analysis.Convex.Saddle.Rademacher
 import Numlib.Analysis.Convex.Saddle.Real
 import Numlib.Analysis.Convex.Saddle.Subdifferential
+import Numlib.Analysis.Convex.Segment
 import Numlib.Analysis.Convex.Separation
 import Numlib.Analysis.Convex.Simplicial
 import Numlib.Analysis.Convex.StrictConvexSpace
@@ -301,6 +306,7 @@ import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
 import Numlib.Analysis.SpecialFunctions.Log
+import Numlib.Analysis.SpecialFunctions.Pow.Deriv
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.Wavelet.ContinuousTransform
@@ -354,6 +360,7 @@ import Numlib.Conditioning.LinearSystem
 import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
+import Numlib.Data.ENNReal.Real
 import Numlib.Direct.Refinement
 import Numlib.Direct.Substitution
 import Numlib.DomainDecomposition.Schur
@@ -458,13 +465,17 @@ import Numlib.MeasureTheory.Constructions.Pi
 import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import Numlib.MeasureTheory.Function.EssSupport
 import Numlib.MeasureTheory.Function.LpInterpolation
+import Numlib.MeasureTheory.Function.LpSeminorm.Basic
 import Numlib.MeasureTheory.Function.LpSpace.Clarkson
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz
 import Numlib.MeasureTheory.Function.LpSpace.Order
+import Numlib.MeasureTheory.Integral.Bochner.Basic
+import Numlib.MeasureTheory.Integral.IntegrableOn
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 import Numlib.MeasureTheory.Integral.SetIntegralCLM
+import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.TwoGrid
@@ -522,6 +533,7 @@ import Numlib.Stationary.Splitting
 import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
+import Numlib.Topology.MetricSpace.Bounded
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.AdvectionDiffusion
 import Numlib.Variational.EllipticInterval

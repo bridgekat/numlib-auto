@@ -136,17 +136,6 @@ theorem ExtensionHigher.clm_apply_eq_sum_single (L : EuclideanSpace ℝ (Fin N) 
   conv_lhs => rw [ExtensionHigher.eq_sum_single_smul z, map_sum]
   simp only [map_smul, smul_eq_mul]
 
-omit [Fact (1 ≤ p)] in
-/-- The partial derivative `∂ᵢ u` of `u ∈ W^{1,p}(Ω)` is its weak derivative along `eᵢ`. -/
-theorem ExtensionHigher.weakDeriv_hasWeakIteratedLineDerivOn_single
-    {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u : SobolevEuclidean N 1 p Ω) (i : Fin N) :
-    HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u)
-      (weakDeriv u (MultiIndexLE.single i)) Ω volume := by
-  have := (hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
-    (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis :
-      Fin N → EuclideanSpace ℝ (Fin N)) i)
-  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
-
 /-- **`W^{k,p}` is preserved by a `C^k` diffeomorphism, at every order and exponent**: for a `C¹`
 diffeomorphism `H : Ω' → Ω` with bounded Jacobians and inverse `J`, with `J` of class `C^k` on an
 open set `V` containing a compact `K ⊇ Ω`, and `w ∈ W^{k,p}(Ω')`, the composite
@@ -208,7 +197,7 @@ theorem MemSobolevMultiIndex.comp_diffeoOn_of_order (k : ℕ) :
     have hDwg : ∀ l, (fun y ↦ Dw y (EuclideanSpace.single l 1))
         =ᵐ[volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))] g l := by
       intro l
-      have h1 := (ExtensionHigher.weakDeriv_hasWeakIteratedLineDerivOn_single u l).congr_ae hu
+      have h1 := (SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u l).congr_ae hu
         (EventuallyEq.refl _ _)
       have h2 := (ae_restrict_iff' Ω'.isOpen.measurableSet).2 (h1.ae_eq (hg l))
       have h3 := hDwi l

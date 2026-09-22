@@ -1,0 +1,8 @@
+[[node]]
+id = "AffineIsometryEquiv.measurePreserving"
+
+[[node]]
+id = "AffineIsometryEquiv.integral_comp"
+
+[[node]]
+id = "AffineIsometryEquiv.setIntegral_comp"

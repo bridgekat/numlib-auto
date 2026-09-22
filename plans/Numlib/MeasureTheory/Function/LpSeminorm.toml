@@ -1,0 +1,8 @@
+desc = '''
+The `L^p` seminorm, in Mathlib's own layout (natural home:
+`Mathlib.MeasureTheory.Function.LpSeminorm.*`). Directory-only group; the module is
+
+* `Basic` -- `L^p` for a finite sum of measures: measurability, membership, and the seminorm of a
+  function vanishing almost everywhere for all but one summand. This is what the boundary measure
+  of a polygon -- a sum of arclength measures, one per boundary edge -- needs.
+'''

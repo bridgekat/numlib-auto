@@ -356,4 +356,121 @@ theorem translateL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
 
 end SobolevMultiIndex
 
+/-! ### Translation to a translated domain
+
+The translation `u ↦ u(· + h)` carries `W^{1,p}(Ω)` to `W^{1,p}(Ω − h)`, with the weak
+derivatives translated. The sections above treat an open set invariant under the translation;
+this one is the version for `Ω' = (· + h) ⁻¹' Ω`, the translated domain, which the density of
+smooth functions on a segment-property domain needs. -/
+
+section TranslatePreimage
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
+  {Ω Ω' : Opens E} {h : E}
+
+/-- The translate `x ↦ φ (x - h)` of a test function on `Ω' = Ω − h`, as a test function on
+`Ω`. -/
+def TestFunction.compSubRightOfPreimage (φ : 𝓓(Ω', F))
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) : 𝓓(Ω, F) where
+  toFun x := φ (x - h)
+  contDiff' := φ.contDiff.comp (contDiff_id.sub contDiff_const)
+  hasCompactSupport' := φ.hasCompactSupport.comp_homeomorph (Homeomorph.subRight h)
+  tsupport_subset' := by
+    have : tsupport (fun x ↦ φ (x - h)) = (Homeomorph.subRight h) ⁻¹' tsupport φ := by
+      rw [tsupport, tsupport, (Homeomorph.subRight h).preimage_closure]
+      rfl
+    rw [this]
+    intro x hx
+    have := φ.tsupport_subset hx
+    rw [hΩ'] at this
+    simpa using this
+
+omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
+/-- The translate of a function locally integrable on `Ω` is locally integrable on `Ω − h`. -/
+theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] [ProperSpace E]
+    {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
+    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω' μ := by
+  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu
+  rw [locallyIntegrableOn_iff Ω'.isOpen.isLocallyClosed]
+  intro k hk hkc
+  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
+    rintro _ ⟨x, hx, rfl⟩
+    have := hk hx
+    rw [hΩ'] at this
+    exact this
+  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
+  exact ((measurePreserving_add_right μ h).integrableOn_image
+    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
+
+omit [NormedSpace ℝ E] in
+/-- The translation `x ↦ x + h` carries `μ.restrict (Ω − h)` to `μ.restrict Ω`. -/
+theorem measurePreserving_add_right_restrict_of_preimage [μ.IsAddRightInvariant]
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
+    MeasurePreserving (· + h) (μ.restrict (Ω' : Set E)) (μ.restrict (Ω : Set E)) := by
+  have := (measurePreserving_add_right μ h).restrict_preimage Ω.isOpen.measurableSet
+  rwa [← hΩ'] at this
+
+omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
+/-- The translate of an `L^p(Ω)` function lies in `L^p(Ω − h)`. -/
+theorem MeasureTheory.MemLp.comp_add_right_of_preimage [μ.IsAddRightInvariant] {u : E → F}
+    {p : ℝ≥0∞} (hu : MemLp u p (μ.restrict (Ω : Set E)))
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
+    MemLp (fun x ↦ u (x + h)) p (μ.restrict (Ω' : Set E)) :=
+  hu.comp_measurePreserving (measurePreserving_add_right_restrict_of_preimage hΩ')
+
+/-- The change of variables `x ↦ x + h` from `Ω − h` to `Ω`, against a test function on `Ω − h`:
+`∫_{Ω − h} ψ(x) u(x + h) dx = ∫_Ω ψ(x − h) u(x) dx`. -/
+theorem integral_smul_comp_add_right_of_preimage [μ.IsAddRightInvariant] (u : E → F)
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) (ψ : 𝓓(Ω', ℝ)) :
+    ∫ x in (Ω' : Set E), ψ x • u (x + h) ∂μ = ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ := by
+  have e1 : ∫ x in (Ω' : Set E), ψ x • u (x + h) ∂μ = ∫ x, ψ x • u (x + h) ∂μ :=
+    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+      rw [ψ.eq_zero_of_notMem hx, zero_smul]
+  have e2 : ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ = ∫ x, ψ (x - h) • u x ∂μ :=
+    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+      have := (ψ.compSubRightOfPreimage hΩ').eq_zero_of_notMem hx
+      exact by rw [show ψ (x - h) = 0 from this, zero_smul]
+  rw [e1, e2, ← integral_add_right_eq_self (fun x ↦ ψ (x - h) • u x) h]
+  simp only [add_sub_cancel_right]
+
+/-- **Translation commutes with the weak derivative, from `Ω` to `Ω − h`**: if `w` is a weak
+derivative of `u` along the tuple `y` on `Ω`, then `w(· + h)` is one of `u(· + h)` on `Ω − h`.
+The test function `φ` on `Ω − h` is traded for its translate `φ(· − h)`, a test function on
+`Ω`. -/
+theorem HasWeakIteratedLineDerivOn.comp_add_right_of_preimage [μ.IsAddRightInvariant]
+    [ProperSpace E] {n : ℕ} {y : Fin n → E} {u w : E → F}
+    (hu : HasWeakIteratedLineDerivOn y u w Ω μ)
+    (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
+    HasWeakIteratedLineDerivOn y (fun x ↦ u (x + h)) (fun x ↦ w (x + h)) Ω' μ where
+  locallyIntegrableOn := LocallyIntegrableOn.comp_add_right_of_preimage hu.locallyIntegrableOn hΩ'
+  locallyIntegrableOn_weakDeriv :=
+    LocallyIntegrableOn.comp_add_right_of_preimage hu.locallyIntegrableOn_weakDeriv hΩ'
+  integral_smul_eq φ := by
+    obtain ⟨ψ, hψ⟩ : ∃ ψ : 𝓓(Ω, ℝ), (ψ : E → ℝ) = fun x ↦ φ (x - h) :=
+      ⟨φ.compSubRightOfPreimage hΩ', rfl⟩
+    have hψd : ∀ x, iteratedFDeriv ℝ n (ψ : E → ℝ) x y
+        = iteratedFDeriv ℝ n (φ : E → ℝ) (x - h) y := fun x ↦ by
+      rw [hψ, iteratedFDeriv_comp_sub']
+    have e1 : ∫ x in (Ω' : Set E), iteratedFDeriv ℝ n φ x y • u (x + h) ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n ψ x y • u x ∂μ := by
+      have := integral_smul_comp_add_right_of_preimage (μ := μ) u hΩ' (φ.iteratedFDerivApply n y)
+      simp only [TestFunction.iteratedFDerivApply_apply] at this
+      rw [this]
+      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψd])
+    have e2 : ∫ x in (Ω' : Set E), φ x • w (x + h) ∂μ = ∫ x in (Ω : Set E), ψ x • w x ∂μ := by
+      rw [integral_smul_comp_add_right_of_preimage (μ := μ) w hΩ' φ]
+      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψ])
+    rw [e1, e2, hu.integral_smul_eq ψ]
+
+end TranslatePreimage
+
+
+/-- The support of `x ↦ θ (x + h)` lies in the translate of the support of `θ`. -/
+theorem tsupport_comp_add_right_subset {E : Type*} [NormedAddCommGroup E] {θ : E → ℝ} (h : E) :
+    tsupport (fun x ↦ θ (x + h)) ⊆ (fun x ↦ x + h) ⁻¹' tsupport θ :=
+  closure_minimal (fun y hy ↦ subset_closure (by simpa [Function.support] using hy))
+    ((isClosed_tsupport θ).preimage (continuous_add_const h))
+
 end

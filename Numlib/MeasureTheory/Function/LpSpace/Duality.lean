@@ -1163,4 +1163,58 @@ theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpac
 
 end Lp
 
+/-- **The pairing `(f, g) ↦ ∫ f g` of `L^p × L^q` at conjugate exponents is jointly continuous**
+(Hölder's inequality, through Mathlib's `ContinuousLinearMap.lpPairing` in the form
+`MeasureTheory.Lp.toDualCLM`). -/
+theorem continuous_integral_mul_prod {X : Type*} [MeasurableSpace X]
+    {μ : Measure X} (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] :
+    Continuous fun x : Lp ℝ p μ × Lp ℝ q μ ↦ ∫ y, x.1 y * x.2 y ∂μ :=
+  (Lp.toDualCLM ℝ q p μ).continuous₂.congr fun x ↦ Lp.toDualCLM_apply x.1 x.2
+
+/-- **Hölder's inequality in the form `∫ ‖f‖^{p−1} ‖g‖ ≤ ‖f‖_p^{p−1} ‖g‖_p`** for `1 ≤ p < ∞`
+(an equality of integrals at `p = 1`). -/
+theorem integral_norm_rpow_sub_one_mul_norm_le {X G G' : Type*}
+    [MeasurableSpace X] {μ : Measure X} [NormedAddCommGroup G] [NormedAddCommGroup G']
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) {f : X → G} {g : X → G'} (hf : MemLp f p μ)
+    (hg : MemLp g p μ) :
+    ∫ x, ‖f x‖ ^ (p.toReal - 1) * ‖g x‖ ∂μ
+      ≤ (eLpNorm f p μ).toReal ^ (p.toReal - 1) * (eLpNorm g p μ).toReal := by
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
+  have hP0 : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
+  have hfP := hf.eLpNorm_eq_integral_rpow_norm hp0 hp
+  have hgP := hg.eLpNorm_eq_integral_rpow_norm hp0 hp
+  rw [hfP, hgP, ENNReal.toReal_ofReal (by positivity), ENNReal.toReal_ofReal (by positivity)]
+  rcases (Fact.out : (1 : ℝ≥0∞) ≤ p).eq_or_lt with h1 | h1
+  · -- `p = 1`: both sides are `∫ ‖g‖`
+    subst h1
+    simp only [ENNReal.toReal_one, sub_self, Real.rpow_zero, one_mul, inv_one, Real.rpow_one]
+    exact le_rfl
+  · -- `1 < p`: Hölder with the exponents `p/(p−1)` and `p`
+    have hP1 : 1 < p.toReal := by
+      rw [← ENNReal.toReal_one]
+      exact (ENNReal.toReal_lt_toReal ENNReal.one_ne_top hp).2 h1
+    have hP1' : 0 < p.toReal - 1 := by linarith
+    have hconj : (Real.conjExponent p.toReal).HolderConjugate p.toReal :=
+      (Real.HolderConjugate.conjExponent hP1).symm
+    have hq : Real.conjExponent p.toReal = p.toReal / (p.toReal - 1) := rfl
+    have hfq : MemLp (fun x ↦ ‖f x‖ ^ (p.toReal - 1))
+        (ENNReal.ofReal (Real.conjExponent p.toReal)) μ := by
+      have h := hf.norm_rpow_div (ENNReal.ofReal (p.toReal - 1))
+      rw [ENNReal.toReal_ofReal hP1'.le] at h
+      convert h using 1
+      rw [hq, ENNReal.ofReal_div_of_pos hP1', ENNReal.ofReal_toReal hp]
+    have hgq : MemLp (fun x ↦ ‖g x‖) (ENNReal.ofReal p.toReal) μ := by
+      rw [ENNReal.ofReal_toReal hp]
+      exact hg.norm
+    have hH := integral_mul_le_Lp_mul_Lq_of_nonneg hconj
+      (.of_forall fun x ↦ Real.rpow_nonneg (norm_nonneg _) _) (.of_forall fun x ↦ norm_nonneg _)
+      hfq hgq
+    refine hH.trans (le_of_eq ?_)
+    have e1 : ∀ x, (‖f x‖ ^ (p.toReal - 1)) ^ Real.conjExponent p.toReal = ‖f x‖ ^ p.toReal := by
+      intro x
+      rw [← Real.rpow_mul (norm_nonneg _), hq, mul_div_cancel₀ _ hP1'.ne']
+    simp_rw [e1]
+    rw [← Real.rpow_mul (integral_nonneg fun x ↦ by positivity), one_div, one_div, hq, inv_div,
+      inv_mul_eq_div]
+
 end MeasureTheory

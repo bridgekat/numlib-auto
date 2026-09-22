@@ -1,0 +1,6 @@
+desc = '''
+Metric spaces, in Mathlib's own layout (natural home: `Mathlib.Topology.MetricSpace.*`).
+Directory-only group; the module is
+
+* `Bounded` -- a nonempty bounded subset of a nontrivial real normed space has nonempty frontier.
+'''

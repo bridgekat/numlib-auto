@@ -59,12 +59,6 @@ id = "EuclideanSpace.integral_inner_triangleNormal"
 id = "EuclideanSpace.integral_referenceTriangle_eq"
 
 [[node]]
-id = "ContDiffOnClosure.exists_norm_fderiv_le"
-
-[[node]]
-id = "EuclideanSpace.integrableOn_div"
-
-[[node]]
 id = "EuclideanSpace.integral_fderiv_snd"
 
 [[node]]
@@ -72,9 +66,6 @@ id = "EuclideanSpace.integral_div_referenceTriangle"
 
 [[node]]
 id = "EuclideanSpace.integral_div_referenceTriangle_eq_integral_inner"
-
-[[node]]
-id = "ContDiffOnClosure.clm_comp_comp_affine"
 
 [[node]]
 id = "EuclideanSpace.integral_div_openTriangle"
@@ -122,9 +113,6 @@ id = "Triangulation.outwardNormal"
 id = "Triangulation.outwardNormal_eq_edgeNormal"
 
 [[node]]
-id = "MeasureTheory.aestronglyMeasurable_finsetSum_measure"
-
-[[node]]
 id = "Triangulation.sum_edgeTerm_interior_eq_zero"
 
 [[node]]
@@ -138,3 +126,27 @@ id = "Triangulation.InteriorEdgesSubset"
 
 [[node]]
 id = "Triangulation.mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier"
+
+[[node]]
+id = "EuclideanSpace.edgeMeasure_le_triangleBoundaryMeasure"
+
+[[node]]
+id = "EuclideanSpace.triangleNormal_eq_of_mem_openSegment_rot"
+
+[[node]]
+id = "EuclideanSpace.segment_subset_closedTriangle_rot"
+
+[[node]]
+id = "EuclideanSpace.integral_mul_triangleNormal_apply"
+
+[[node]]
+id = "Triangulation.ae_boundaryMeasure_iff"
+
+[[node]]
+id = "Triangulation.edgeMeasure_le_boundaryMeasure"
+
+[[node]]
+id = "Triangulation.setIntegral_eq_sum_K"
+
+[[node]]
+id = "Triangulation.integrableOn_mul_of_memLp_of_continuousOn"

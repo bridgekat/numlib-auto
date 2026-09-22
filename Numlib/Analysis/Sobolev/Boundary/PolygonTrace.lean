@@ -1,3 +1,4 @@
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Analysis.Sobolev.Boundary.Polygon
 import Numlib.Analysis.Sobolev.Boundary.Trace
 import Numlib.Analysis.Sobolev.Compactness
@@ -98,92 +99,9 @@ section General
 variable {α : Type*} [MeasurableSpace α] {ι : Type*} {s : Finset ι} {μ : ι → Measure α}
   {p : ℝ≥0∞} {f : α → ℝ}
 
-/-- A function in `L^p` of each of finitely many measures is in `L^p` of their sum,
-`0 < p < ∞`. -/
-theorem MeasureTheory.memLp_finsetSum_measure (hp0 : p ≠ 0) (hp : p ≠ ⊤)
-    (h : ∀ i ∈ s, MemLp f p (μ i)) : MemLp f p (∑ i ∈ s, μ i) := by
-  have hm : AEStronglyMeasurable f (∑ i ∈ s, μ i) :=
-    aestronglyMeasurable_finsetSum_measure fun i hi ↦ (h i hi).aestronglyMeasurable
-  rw [memLp_iff, eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp hm, lintegral_finsetSum_measure]
-  refine ENNReal.rpow_lt_top_of_nonneg (by positivity) (ENNReal.sum_lt_top.2 fun i hi ↦ ?_).ne
-  exact lintegral_rpow_enorm_lt_top_of_eLpNorm_lt_top hp0 hp (h i hi).eLpNorm_lt_top
-
-/-- The `L^p` seminorm for a finite sum of measures of a function vanishing almost everywhere
-for all but one of them is the seminorm for that one, `0 < p < ∞`. -/
-theorem MeasureTheory.eLpNorm_finsetSum_measure_of_ae_eq_zero (hp0 : p ≠ 0) (hp : p ≠ ⊤)
-    {e : ι} (he : e ∈ s) (hm : AEStronglyMeasurable f (μ e))
-    (h : ∀ i ∈ s, i ≠ e → f =ᵐ[μ i] 0) : eLpNorm f p (∑ i ∈ s, μ i) = eLpNorm f p (μ e) := by
-  have hm' : AEStronglyMeasurable f (∑ i ∈ s, μ i) :=
-    aestronglyMeasurable_finsetSum_measure fun i hi ↦ by
-      by_cases hie : i = e
-      · exact hie ▸ hm
-      · exact (aestronglyMeasurable_const (b := (0 : ℝ))).congr (h i hi hie).symm
-  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp hm',
-    eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp hm, lintegral_finsetSum_measure,
-    Finset.sum_eq_single_of_mem e he]
-  intro i hi hie
-  rw [lintegral_congr_ae ((h i hi hie).mono fun x hx ↦ ?_), lintegral_zero]
-  rw [hx, Pi.zero_apply, enorm_zero, ENNReal.zero_rpow_of_pos]
-  exact ENNReal.toReal_pos hp0 hp
-
 end General
 
 namespace EuclideanSpace
-
-/-! ### Segments and edges of a triangle, rotated -/
-
-/-- An open segment is measurable. -/
-theorem measurableSet_openSegment (P Q : 𝔼₂) : MeasurableSet (openSegment ℝ P Q) := by
-  by_cases hPQ : P = Q
-  · subst hPQ
-    rw [openSegment_same]
-    exact measurableSet_singleton P
-  · have : openSegment ℝ P Q = segment ℝ P Q \ {P, Q} := by
-      ext x
-      simp only [Set.mem_sdiff, mem_insert_iff, mem_singleton_iff, not_or]
-      constructor
-      · intro hx
-        refine ⟨openSegment_subset_segment ℝ _ _ hx, ?_, ?_⟩
-        · rintro rfl
-          exact hPQ (left_mem_openSegment_iff.1 hx)
-        · rintro rfl
-          exact hPQ (right_mem_openSegment_iff.1 hx)
-      · rintro ⟨hx, hxP, hxQ⟩
-        rw [← insert_endpoints_openSegment] at hx
-        rcases hx with rfl | rfl | hx
-        · exact absurd rfl hxP
-        · exact absurd rfl hxQ
-        · exact hx
-    rw [this]
-    exact (measurableSet_segment P Q).diff (by simp)
-
-/-- The arclength measure of the edge `a` of the triangle `T` is dominated by the boundary
-measure of the triangle. -/
-theorem edgeMeasure_le_triangleBoundaryMeasure (T : Fin 3 → 𝔼₂) (a : Fin 3) :
-    edgeMeasure (T a) (T (a + 1)) ≤ triangleBoundaryMeasure (T 0) (T 1) (T 2) := by
-  unfold triangleBoundaryMeasure
-  fin_cases a
-  · exact Measure.le_add_right (Measure.le_add_right le_rfl)
-  · exact Measure.le_add_right (Measure.le_add_left le_rfl)
-  · exact Measure.le_add_left le_rfl
-
-/-- On the open edge `a` of the triangle `T`, the normal of the triangle is the edge normal. -/
-theorem triangleNormal_eq_of_mem_openSegment_rot {T : Fin 3 → 𝔼₂}
-    (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) (a : Fin 3) {x : 𝔼₂}
-    (hx : x ∈ openSegment ℝ (T a) (T (a + 1))) :
-    triangleNormal (T 0) (T 1) (T 2) x = edgeNormal (T a) (T (a + 1)) (T (a + 2)) := by
-  fin_cases a
-  · exact triangleNormal_eq_of_mem_openSegment₀₁ hx
-  · exact triangleNormal_eq_of_mem_openSegment₁₂ h hx
-  · exact triangleNormal_eq_of_mem_openSegment₂₀ h hx
-
-/-- The edge `a` of the triangle `T` lies in the closed triangle. -/
-theorem segment_subset_closedTriangle_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
-    segment ℝ (T a) (T (a + 1)) ⊆ closedTriangle (T 0) (T 1) (T 2) := by
-  fin_cases a
-  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 0 1
-  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 1 2
-  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 2 0
 
 /-! ### The transversal field of a triangle -/
 
@@ -342,22 +260,6 @@ theorem elemTraceL_ae_eq_of_continuousOn (hp : p ≠ ⊤) (T : 𝒯.elems) (u : 
     exact hc.mono (𝒯.closedK_subset_closure T)
 
 /-! #### Extension by zero from a boundary edge -/
-
-/-- Almost everywhere for the boundary measure means almost everywhere for the arclength measure
-of every boundary edge. -/
-theorem ae_boundaryMeasure_iff {P : 𝔼₂ → Prop} :
-    (∀ᵐ x ∂𝒯.boundaryMeasure, P x) ↔
-      ∀ e ∈ 𝒯.boundaryEdges, ∀ᵐ x ∂edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)), P x := by
-  rw [boundaryMeasure, ae_finsetSum_measure_iff]
-
-/-- The arclength measure of a boundary edge is dominated by the boundary measure. -/
-theorem edgeMeasure_le_boundaryMeasure {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.IsBoundaryEdge T a) :
-    edgeMeasure (T.1 a) (T.1 (a + 1)) ≤ 𝒯.boundaryMeasure := by
-  have h2 := Finset.single_le_sum
-    (f := fun e : 𝒯.elems × Fin 3 ↦ edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)))
-    (fun _ _ ↦ Measure.zero_le _) ((mem_boundaryEdges (e := (T, a))).2 h)
-  rw [boundaryMeasure]
-  exact h2
 
 /-- The indicator of the open boundary edge `(T, a)` vanishes a.e. on every other boundary
 edge. -/
@@ -559,42 +461,6 @@ theorem isCompactOperator_traceL (hp : p ≠ ⊤) (hp1 : 1 < p) :
   exact Finset.sum_induction _ IsCompactOperator (fun _ _ hf hg ↦ hf.add hg) isCompactOperator_zero
     fun e _ ↦ key e
 
-/-! ### Edge bookkeeping for the boundary integrals -/
-
-section EdgeIntegral
-
-variable {N : ℕ} {Ω' : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- An integrable function times a coordinate of the normal is integrable for `σ`. -/
-theorem _root_.BoundaryData.integrable_mul_ν_apply (B : BoundaryData Ω')
-    {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Integrable f B.σ) (i : Fin N) :
-    Integrable (fun x ↦ f x * B.ν x i) B.σ :=
-  hf.mul_bdd (B.aestronglyMeasurable_ν_apply i)
-    ((B.ae_abs_ν_apply_le i).mono fun x hx ↦ by rwa [Real.norm_eq_abs])
-
-end EdgeIntegral
-
-/-- **The boundary integral of `f νᵢ` on a triangle is the sum of the three edge integrals**
-with the constant edge normals, for `f` integrable on the boundary of the triangle. -/
-theorem _root_.EuclideanSpace.integral_mul_triangleNormal_apply {T : Fin 3 → 𝔼₂}
-    (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) {f : 𝔼₂ → ℝ}
-    (hf : Integrable f (triangleBoundaryMeasure (T 0) (T 1) (T 2))) (i : Fin 2) :
-    ∫ x, f x * triangleNormal (T 0) (T 1) (T 2) x i ∂triangleBoundaryMeasure (T 0) (T 1) (T 2)
-      = ∑ a : Fin 3, ∫ x, f x * edgeNormal (T a) (T (a + 1)) (T (a + 2)) i
-          ∂edgeMeasure (T a) (T (a + 1)) := by
-  have hfν := (triangleBoundaryData (T 0) (T 1) (T 2) h).integrable_mul_ν_apply hf i
-  have key : ∀ a : Fin 3, ∫ x, f x * triangleNormal (T 0) (T 1) (T 2) x i
-      ∂edgeMeasure (T a) (T (a + 1))
-      = ∫ x, f x * edgeNormal (T a) (T (a + 1)) (T (a + 2)) i ∂edgeMeasure (T a) (T (a + 1)) :=
-    fun a ↦ integral_congr_ae ((ae_mem_openSegment
-      ((EuclideanSpace.vertex_injective h).ne (fin3_ne_add_one a))).mono fun x hx ↦ by
-        dsimp only; rw [triangleNormal_eq_of_mem_openSegment_rot h a hx])
-  rw [Fin.sum_univ_three, ← key 0, ← key 1, ← key 2]
-  exact integral_triangleBoundaryMeasure
-    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 0))
-    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 1))
-    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 2))
-
 variable (𝒯) in
 /-- **The edge integral**: for a family `f` of functions indexed by the elements, the integral
 of `f_T νᵢ` over the edge `a` of `T`, with the constant outward edge normal. -/
@@ -696,28 +562,6 @@ theorem sum_integral_mul_triangleNormal_eq {f : 𝒯.elems → 𝔼₂ → ℝ}
       = ∫ x, g x * 𝒯.outwardNormal x i ∂𝒯.boundaryMeasure := by
   rw [Finset.sum_congr rfl fun T _ ↦ integral_mul_triangleNormal_eq_sum_edgeIntegral (hf T) i,
     sum_sum_edgeIntegral_eq_sum_boundaryEdges f i hpart, sum_boundaryEdges_edgeIntegral_eq hg hgi i]
-
-/-! ### The interior integrals over the elements -/
-
-/-- The integral over the domain is the sum of the integrals over the open elements. -/
-theorem setIntegral_eq_sum_K {A : 𝔼₂ → ℝ} (hA : IntegrableOn A (Ω : Set 𝔼₂)) :
-    ∫ x in (Ω : Set 𝔼₂), A x = ∑ T, ∫ x in 𝒯.K T, A x := by
-  rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
-  exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
-    fun T ↦ hA.mono_set (𝒯.K_subset T)
-
-include 𝒯 in
-/-- An `L^p(Ω)` function times a function continuous on `closure Ω` is integrable on `Ω`. -/
-theorem integrableOn_mul_of_memLp_of_continuousOn {f g : 𝔼₂ → ℝ}
-    (hf : MemLp f p (volume.restrict (Ω : Set 𝔼₂))) (hg : ContinuousOn g (closure (Ω : Set 𝔼₂))) :
-    IntegrableOn (fun x ↦ f x * g x) (Ω : Set 𝔼₂) := by
-  have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
-    isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
-  obtain ⟨C, hC⟩ := 𝒯.isCompact_closure.exists_bound_of_continuousOn hg
-  refine (hf.integrable Fact.out).mul_bdd (c := C)
-    ((hg.mono subset_closure).aestronglyMeasurable Ω.isOpen.measurableSet) ?_
-  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
-  exact hC x (subset_closure hx)
 
 /-- **The interior integrals of Green's formula, summed over the elements**: for
 `u ∈ W^{1,p}(Ω)` and a `C¹` compactly supported `φ`,
@@ -866,14 +710,6 @@ theorem edgeIntegral_eq_zero_of_eqOn_zero {f : 𝒯.elems → 𝔼₂ → ℝ} {
   rw [integral_congr_ae ((ae_mem_segment _ _).mono fun x hx ↦ ?_), integral_zero]
   dsimp only
   rw [hf hx, Pi.zero_apply, zero_mul]
-
-/-- A unit vector of the plane has a nonzero coordinate. -/
-theorem _root_.EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {v : 𝔼₂} (hv : ‖v‖ = 1) :
-    ∃ i : Fin 2, v i ≠ 0 := by
-  by_contra hcon
-  have : v = 0 := PiLp.ext fun i ↦ by_contra fun h ↦ hcon ⟨i, h⟩
-  rw [this, norm_zero] at hv
-  exact zero_ne_one hv
 
 /-- **The one-sided traces agree across an interior edge without a slit** (the characterization
 of the trace by Green's formula): for `hI : 𝒯.InteriorEdgesSubset` and a partner pair
@@ -1083,21 +919,6 @@ theorem traceFamily_traceL (hI : 𝒯.InteriorEdgesSubset) (hp : p ≠ ⊤) :
   rfl
 
 /-! ### Piecewise Sobolev functions: Atkinson–Han Examples 7.2.7 and 7.2.8 -/
-
-/-- A function of `W^{1,p}` (as `MemSobolevMultiIndex`, over the standard basis) has a weak
-derivative along each `eⱼ` in `L^p`. -/
-theorem _root_.MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn_single {N : ℕ}
-    {Ω' : Opens (EuclideanSpace ℝ (Fin N))} {f : EuclideanSpace ℝ (Fin N) → ℝ} {q : ℝ≥0∞}
-    (h : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f 1 q Ω' volume)
-    (i : Fin N) :
-    ∃ w : EuclideanSpace ℝ (Fin N) → ℝ,
-      HasWeakIteratedLineDerivOn ![EuclideanSpace.single i (1 : ℝ)] f w Ω' volume ∧
-        MemLp w q (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))) := by
-  obtain ⟨w, hw, hwp⟩ := h.2 (Pi.single i 1) (by simp)
-  refine ⟨w, ?_, hwp⟩
-  have := hw.of_perm (multiIndexTuple_single_perm
-    ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i)
-  rwa [EuclideanSpace.basisFun_toBasis_apply] at this
 
 variable (𝒯) in
 /-- **The glued derivative**: for elements `v_T ∈ W^{1,1}(K_T)`, the function equal on each open

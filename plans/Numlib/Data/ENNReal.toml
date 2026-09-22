@@ -1,0 +1,6 @@
+desc = '''
+The extended nonnegative reals, in Mathlib's own layout (natural home:
+`Mathlib.Basic.ENNReal.*`). Directory-only group; the module is
+
+* `Real` -- the exponent bookkeeping `1 ≤ p.toReal` for `1 ≤ p < ∞`.
+'''

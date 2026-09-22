@@ -57,3 +57,40 @@ theorem exists_inner_of_forall_abs_le {V H : Type*} [NormedAddCommGroup V] [Norm
     exact hℓnorm
   · rw [InnerProductSpace.toDual_symm_apply, ← hev v, hg (e v), hℓapply, hℓ₀apply,
       e.symm_apply_apply]
+
+/-! ### The Riesz map of a real Hilbert space, real-linearly -/
+
+section ToDualReal
+
+variable (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+
+/-- **The Riesz isometry of a real Hilbert space as a real-linear isometry equivalence**:
+`InnerProductSpace.toDual ℝ E` is typed as conjugate-linear (`≃ₗᵢ⋆[ℝ]`), which over `ℝ` is the
+same map; this is that map with the linear type, so that the calculus lemmas stated for
+`≃ₗᵢ[𝕜]` (`LinearIsometryEquiv.comp_fderiv`, `contDiff`, `differentiableAt`) apply. Its inverse
+is `(toDual ℝ E).symm`, so `gradient f x = (toDualReal E).symm (fderiv ℝ f x)` definitionally
+(`gradient_eq_toDualReal_symm` of `Numlib/Analysis/Calculus/Gradient.lean`). -/
+noncomputable def InnerProductSpace.toDualReal : E ≃ₗᵢ[ℝ] StrongDual ℝ E where
+  toFun := InnerProductSpace.toDual ℝ E
+  invFun := (InnerProductSpace.toDual ℝ E).symm
+  map_add' := map_add _
+  map_smul' c x := by
+    rw [LinearIsometryEquiv.map_smulₛₗ]
+    rfl
+  left_inv := (InnerProductSpace.toDual ℝ E).symm_apply_apply
+  right_inv := (InnerProductSpace.toDual ℝ E).apply_symm_apply
+  norm_map' := (InnerProductSpace.toDual ℝ E).norm_map
+
+variable {E}
+
+/-- `toDualReal` is `toDual`. -/
+@[simp]
+theorem InnerProductSpace.toDualReal_apply (x : E) :
+    InnerProductSpace.toDualReal E x = InnerProductSpace.toDual ℝ E x := rfl
+
+/-- The inverse of `toDualReal` is the inverse of `toDual`. -/
+@[simp]
+theorem InnerProductSpace.toDualReal_symm_apply (φ : StrongDual ℝ E) :
+    (InnerProductSpace.toDualReal E).symm φ = (InnerProductSpace.toDual ℝ E).symm φ := rfl
+
+end ToDualReal

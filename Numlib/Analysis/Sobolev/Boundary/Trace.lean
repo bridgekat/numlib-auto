@@ -1,6 +1,9 @@
+import Numlib.Analysis.MeanInequalities
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Boundary.Data
 import Numlib.Analysis.Sobolev.Boundary.Density
+import Numlib.Analysis.SpecialFunctions.Pow.Deriv
+import Numlib.Data.ENNReal.Real
 
 /-!
 # The trace theorem from a transversal field
@@ -46,175 +49,12 @@ open scoped ContDiff ENNReal InnerProductSpace Topology
 
 noncomputable section
 
-/-! ### The regularization `φ_ε t = (t² + ε²)^{p/2} − ε^p` of `|t|^p` -/
-
-namespace Real
-
-/-- **The regularization `(t² + ε²)^{p/2} − ε^p` of `|t|^p`**, smooth in `t` for `ε > 0`, with
-`φ_ε 0 = 0`, `0 ≤ φ_ε t ≤ (|t| + ε)^p`, `|φ_ε' t| ≤ p (|t| + ε)^{p−1}` and `φ_ε t → |t|^p` as
-`ε → 0`. It is what makes Nečas's proof of the trace inequality work at `p = 1`, where `|t|^p` is
-not `C¹`. -/
-def rpowReg (p ε t : ℝ) : ℝ := (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p
-
-variable {p ε : ℝ}
-
-/-- `t² + ε² > 0` for `ε > 0`. -/
-theorem sq_add_sq_pos (hε : 0 < ε) (t : ℝ) : 0 < t ^ 2 + ε ^ 2 := by positivity
-
-/-- `φ_ε 0 = 0`. -/
-theorem rpowReg_zero (hε : 0 < ε) : rpowReg p ε 0 = 0 := by
-  have h : (0 : ℝ) ^ 2 + ε ^ 2 = ε ^ 2 := by ring
-  unfold rpowReg
-  rw [sub_eq_zero, h, ← Real.rpow_natCast, ← Real.rpow_mul hε.le]
-  congr 1
-  push_cast
-  ring
-
-/-- `φ_ε ≥ 0`. -/
-theorem rpowReg_nonneg (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : 0 ≤ rpowReg p ε t := by
-  unfold rpowReg
-  rw [sub_nonneg]
-  calc ε ^ p = (ε ^ 2) ^ (p / 2) := by
-        rw [← Real.rpow_natCast, ← Real.rpow_mul hε.le]
-        congr 1
-        push_cast
-        ring
-    _ ≤ (t ^ 2 + ε ^ 2) ^ (p / 2) :=
-        Real.rpow_le_rpow (by positivity) (le_add_of_nonneg_left (by positivity))
-          (by positivity)
-
-/-- `φ_ε t ≤ (|t| + ε)^p`. -/
-theorem rpowReg_le (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : rpowReg p ε t ≤ (|t| + ε) ^ p := by
-  unfold rpowReg
-  calc (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p ≤ (t ^ 2 + ε ^ 2) ^ (p / 2) :=
-        sub_le_self _ (Real.rpow_nonneg hε.le _)
-    _ ≤ ((|t| + ε) ^ 2) ^ (p / 2) := by
-        refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
-        nlinarith [abs_nonneg t, sq_abs t]
-    _ = (|t| + ε) ^ p := by
-        rw [← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
-        congr 1
-        push_cast
-        ring
-
-/-- The derivative of `φ_ε`: `φ_ε' t = p t (t² + ε²)^{p/2 − 1}`. -/
-theorem hasDerivAt_rpowReg (hε : 0 < ε) (t : ℝ) :
-    HasDerivAt (rpowReg p ε) (p * t * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)) t := by
-  have h1 : HasDerivAt (fun t : ℝ ↦ t ^ 2 + ε ^ 2) (2 * t) t := by
-    simpa using ((hasDerivAt_pow 2 t).add_const (ε ^ 2))
-  have h2 := h1.rpow_const (p := p / 2) (Or.inl (sq_add_sq_pos hε t).ne')
-  have h3 : HasDerivAt (fun t : ℝ ↦ (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p)
-      (2 * t * (p / 2) * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)) t := h2.sub_const (ε ^ p)
-  exact h3.congr_deriv (by ring)
-
-/-- `φ_ε` is `C¹` (indeed smooth). -/
-theorem contDiff_rpowReg (hε : 0 < ε) {n : WithTop ℕ∞} : ContDiff ℝ n (rpowReg p ε) := by
-  unfold rpowReg
-  refine ContDiff.sub ?_ contDiff_const
-  exact ((contDiff_id.pow 2).add contDiff_const).rpow_const_of_ne fun t ↦ (sq_add_sq_pos hε t).ne'
-
-/-- `|φ_ε' t| ≤ p (|t| + ε)^{p−1}` for `p ≥ 1`. -/
-theorem abs_deriv_rpowReg_le (hε : 0 < ε) (hp : 1 ≤ p) (t : ℝ) :
-    |p * t * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)| ≤ p * (|t| + ε) ^ (p - 1) := by
-  have hpos := sq_add_sq_pos hε t
-  have hp0 : 0 ≤ p := zero_le_one.trans hp
-  rw [abs_mul, abs_mul, abs_of_nonneg hp0, abs_of_nonneg (Real.rpow_nonneg hpos.le _), mul_assoc]
-  refine mul_le_mul_of_nonneg_left ?_ hp0
-  have h1 : |t| ≤ (t ^ 2 + ε ^ 2) ^ (1 / 2 : ℝ) := by
-    rw [← Real.sqrt_eq_rpow, ← Real.sqrt_sq_eq_abs]
-    exact Real.sqrt_le_sqrt (le_add_of_nonneg_right (by positivity))
-  calc |t| * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)
-      ≤ (t ^ 2 + ε ^ 2) ^ (1 / 2 : ℝ) * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1) :=
-        mul_le_mul_of_nonneg_right h1 (Real.rpow_nonneg hpos.le _)
-    _ = (t ^ 2 + ε ^ 2) ^ ((p - 1) / 2) := by
-        rw [← Real.rpow_add hpos]
-        ring_nf
-    _ ≤ ((|t| + ε) ^ 2) ^ ((p - 1) / 2) := by
-        refine Real.rpow_le_rpow (by positivity) ?_ (by linarith)
-        nlinarith [abs_nonneg t, sq_abs t]
-    _ = (|t| + ε) ^ (p - 1) := by
-        rw [← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
-        congr 1
-        push_cast
-        ring
-
-/-- `φ_ε t → |t|^p` as `ε → 0⁺`. -/
-theorem tendsto_rpowReg (hp : 0 < p) (t : ℝ) :
-    Tendsto (fun ε ↦ rpowReg p ε t) (𝓝[>] 0) (𝓝 (|t| ^ p)) := by
-  have h1 : Tendsto (fun ε : ℝ ↦ (t ^ 2 + ε ^ 2) ^ (p / 2)) (𝓝[>] 0) (𝓝 ((t ^ 2) ^ (p / 2))) := by
-    have hc : ContinuousAt (fun x : ℝ ↦ x ^ (p / 2)) (t ^ 2) :=
-      Real.continuousAt_rpow_const _ _ (Or.inr (by positivity))
-    have h : Tendsto (fun ε : ℝ ↦ t ^ 2 + ε ^ 2) (𝓝[>] 0) (𝓝 (t ^ 2)) := by
-      have hc' : Continuous (fun ε : ℝ ↦ t ^ 2 + ε ^ 2) := by fun_prop
-      have := (hc'.tendsto (0 : ℝ)).mono_left (nhdsWithin_le_nhds (s := Set.Ioi 0))
-      simpa using this
-    exact hc.tendsto.comp h
-  have h2 : Tendsto (fun ε : ℝ ↦ ε ^ p) (𝓝[>] 0) (𝓝 0) := by
-    have := (Real.continuousAt_rpow_const (0 : ℝ) p (Or.inr hp.le)).tendsto.mono_left
-      (nhdsWithin_le_nhds (s := Set.Ioi 0))
-    simpa [Real.zero_rpow hp.ne'] using this
-  have h3 : (t ^ 2 : ℝ) ^ (p / 2) = |t| ^ p := by
-    rw [← sq_abs, ← Real.rpow_natCast, ← Real.rpow_mul (abs_nonneg t)]
-    congr 1
-    push_cast
-    ring
-  have := h1.sub h2
-  rw [sub_zero, h3] at this
-  exact this
-
-end Real
 
 /-! ### Small general lemmas -/
 
 section General
 
 variable {N : ℕ}
-
-/-- The operator norm of the derivative of `u : ℝ^N → ℝ` is the Euclidean norm of the tuple of
-partial derivatives `(∂ᵢu x)ᵢ`. -/
-theorem EuclideanSpace.norm_fderiv_eq (u : EuclideanSpace ℝ (Fin N) → ℝ)
-    (x : EuclideanSpace ℝ (Fin N)) :
-    ‖fderiv ℝ u x‖
-      = ‖(WithLp.toLp 2 fun i ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :
-          PiLp 2 fun _ : Fin N ↦ ℝ)‖ := by
-  have h : gradient u x
-      = (WithLp.toLp 2 fun i ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :
-          PiLp 2 fun _ : Fin N ↦ ℝ) := by
-    ext i
-    rw [gradient, PiLp.toLp_apply]
-    have h2 : ∀ w : EuclideanSpace ℝ (Fin N), w i = ⟪w, EuclideanSpace.single i 1⟫_ℝ := fun w ↦ by
-      rw [EuclideanSpace.inner_single_right, conj_trivial, one_mul]
-    rw [h2, InnerProductSpace.toDual_symm_apply]
-  rw [← h, gradient, LinearIsometryEquiv.norm_map]
-
-/-- `|div w x| ≤ N ‖Dw(x)‖`. -/
-theorem EuclideanSpace.abs_div_le (w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
-    (x : EuclideanSpace ℝ (Fin N)) : |EuclideanSpace.div w x| ≤ N * ‖fderiv ℝ w x‖ := by
-  unfold EuclideanSpace.div
-  refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
-  have h : ∀ i : Fin N, |fderiv ℝ w x (EuclideanSpace.single i 1) i| ≤ ‖fderiv ℝ w x‖ := fun i ↦ by
-    rw [← Real.norm_eq_abs]
-    refine (PiLp.norm_apply_le _ i).trans ?_
-    refine ((fderiv ℝ w x).le_opNorm _).trans ?_
-    simp
-  refine (Finset.sum_le_sum fun i _ ↦ h i).trans ?_
-  simp
-
-/-- `a^{p−1} b ≤ a^p + b^p` for `a, b ≥ 0` and `p ≥ 1` (the crude Young inequality). -/
-theorem Real.rpow_sub_one_mul_le_add {a b p : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 ≤ p) :
-    a ^ (p - 1) * b ≤ a ^ p + b ^ p := by
-  have hp0 : 0 < p := zero_lt_one.trans_le hp
-  rcases le_total a b with hab | hab
-  · calc a ^ (p - 1) * b ≤ b ^ (p - 1) * b :=
-          mul_le_mul_of_nonneg_right (Real.rpow_le_rpow ha hab (by linarith)) hb
-      _ = b ^ p := by
-          rw [← Real.rpow_add_one' hb (by linarith), sub_add_cancel]
-      _ ≤ a ^ p + b ^ p := le_add_of_nonneg_left (Real.rpow_nonneg ha _)
-  · calc a ^ (p - 1) * b ≤ a ^ (p - 1) * a :=
-          mul_le_mul_of_nonneg_left hab (Real.rpow_nonneg ha _)
-      _ = a ^ p := by
-          rw [← Real.rpow_add_one' ha (by linarith), sub_add_cancel]
-      _ ≤ a ^ p + b ^ p := le_add_of_nonneg_right (Real.rpow_nonneg hb _)
 
 end General
 
@@ -223,59 +63,6 @@ section Sobolev
 variable {N : ℕ} {p : ℝ≥0∞} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
-
-/-- The partial derivatives of an element `U` of `W^{1,p}(Ω)` whose function is a `C¹` function
-`u` are the classical ones, almost everywhere on `Ω` (at every `p`; the `H¹` case is
-`Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn`). -/
-theorem SobolevEuclidean.weakDeriv_single_ae_eq_fderiv (U : SobolevEuclidean N 1 p Ω)
-    {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : ContDiff ℝ 1 u)
-    (hU : fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u) (i : Fin N) :
-    (weakDeriv U (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :=
-  SobolevEuclidean.weakDeriv_single_ae_eq U hU (hu.contDiffOn.hasWeakIteratedLineDerivOn_single Ω i)
-
-/-- The pointwise gradient of an element of `W^{1,p}(Ω)` with a `C¹` function `u` has the norm
-of `Du`, almost everywhere on `Ω`. -/
-theorem SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn (U : SobolevEuclidean N 1 p Ω)
-    {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : ContDiff ℝ 1 u)
-    (hU : fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u) :
-    (fun x ↦ ‖fderiv ℝ u x‖) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-      fun x ↦ ‖gradFn U x‖ := by
-  have h := ae_all_iff.2 fun i : Fin N ↦ SobolevEuclidean.weakDeriv_single_ae_eq_fderiv U hu hU i
-  filter_upwards [h] with x hx
-  rw [EuclideanSpace.norm_fderiv_eq]
-  congr 1
-  ext i
-  rw [PiLp.toLp_apply, gradFn_apply, hx i]
-
-/-- **The chosen smooth representative** of an element of `smoothRestrictions`: a `C^∞`
-compactly supported function on `ℝ^N` equal to `fn u` almost everywhere on `Ω`. -/
-def SobolevEuclidean.smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
-    EuclideanSpace ℝ (Fin N) → ℝ :=
-  Classical.choose (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)
-
-/-- The smooth representative is smooth. -/
-theorem SobolevEuclidean.contDiff_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
-    ContDiff ℝ ∞ (SobolevEuclidean.smoothRep u) :=
-  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).1
-
-/-- The smooth representative is continuous. -/
-theorem SobolevEuclidean.continuous_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
-    Continuous (SobolevEuclidean.smoothRep u) :=
-  (SobolevEuclidean.contDiff_smoothRep u).continuous
-
-/-- The smooth representative has compact support. -/
-theorem SobolevEuclidean.hasCompactSupport_smoothRep
-    (u : SobolevEuclidean.smoothRestrictions N p Ω) :
-    HasCompactSupport (SobolevEuclidean.smoothRep u) :=
-  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).2.1
-
-/-- The smooth representative represents `u` on `Ω`. -/
-theorem SobolevEuclidean.fn_ae_eq_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
-    fn (u : SobolevEuclidean N 1 p Ω)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevEuclidean.smoothRep u :=
-  (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).2.2
 
 end Sobolev
 
@@ -525,39 +312,6 @@ theorem integral_abs_rpow_le_of_contDiff {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 
 /-! ### The trace inequality in the Sobolev norm -/
 
 open SobolevMultiIndex
-
-/-- `1 ≤ p.toReal` for `1 ≤ p < ∞`. -/
-theorem _root_.ENNReal.one_le_toReal_of_ne_top {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
-    1 ≤ p.toReal := by
-  rw [← ENNReal.toReal_one]
-  exact ENNReal.toReal_mono hp Fact.out
-
-/-- `∫_Ω |u|^p = ‖fnL U‖^p` for a representative `u` of `U ∈ W^{1,p}(Ω)`. -/
-theorem _root_.SobolevEuclidean.integral_abs_rpow_eq_norm_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)]
-    (hp : p ≠ ⊤) (U : SobolevEuclidean N 1 p Ω) {u : 𝔼 → ℝ}
-    (hU : fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) :
-    ∫ x in (Ω : Set 𝔼), |u x| ^ p.toReal
-      = ‖fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume U‖ ^ p.toReal := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  rw [Lp.norm_rpow_eq_integral hp0 hp, fnL_apply]
-  refine integral_congr_ae (hU.mono fun x hx ↦ ?_)
-  simp only [hx, Real.norm_eq_abs]
-
-/-- `∫_Ω ‖Du‖^p ≤ N^p ‖U‖^p` for a `C¹` representative `u` of `U ∈ W^{1,p}(Ω)`. -/
-theorem _root_.SobolevEuclidean.integral_norm_fderiv_rpow_le {p : ℝ≥0∞} [Fact (1 ≤ p)]
-    (hp : p ≠ ⊤) (U : SobolevEuclidean N 1 p Ω) {u : 𝔼 → ℝ} (hu : ContDiff ℝ 1 u)
-    (hU : fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) :
-    ∫ x in (Ω : Set 𝔼), ‖fderiv ℝ u x‖ ^ p.toReal ≤ (N : ℝ) ^ p.toReal * ‖U‖ ^ p.toReal := by
-  have h := integral_norm_gradFn_rpow_le hp U
-  rw [Fintype.card_fin] at h
-  calc ∫ x in (Ω : Set 𝔼), ‖fderiv ℝ u x‖ ^ p.toReal
-      = ∫ x in (Ω : Set 𝔼), ‖gradFn U x‖ ^ p.toReal :=
-        integral_congr_ae ((SobolevEuclidean.norm_fderiv_ae_eq_norm_gradFn U hu hU).mono
-          fun x hx ↦ by simp only at hx ⊢; rw [hx])
-    _ ≤ (N : ℝ) ^ p.toReal * gradNorm U ^ p.toReal := h
-    _ ≤ (N : ℝ) ^ p.toReal * ‖U‖ ^ p.toReal :=
-        mul_le_mul_of_nonneg_left (Real.rpow_le_rpow (gradNorm_nonneg U) (gradNorm_le_norm U)
-          ENNReal.toReal_nonneg) (by positivity)
 
 /-- **The trace inequality on the smooth functions, in the Sobolev norm** (Atkinson–Han Theorem
 7.3.10 (b) on the smooth subspace): for a transversal field and `1 ≤ p < ∞` there is `C` such
@@ -855,46 +609,6 @@ end TraceL
 
 section Green
 
-/-- **The pairing `(f, g) ↦ ∫ f g` of `L^p × L^q` at conjugate exponents is jointly continuous**
-(Hölder's inequality, through Mathlib's `ContinuousLinearMap.lpPairing` in the form
-`MeasureTheory.Lp.toDualCLM`). -/
-theorem _root_.MeasureTheory.continuous_integral_mul_prod {X : Type*} [MeasurableSpace X]
-    {μ : Measure X} (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] :
-    Continuous fun x : Lp ℝ p μ × Lp ℝ q μ ↦ ∫ y, x.1 y * x.2 y ∂μ :=
-  (Lp.toDualCLM ℝ q p μ).continuous₂.congr fun x ↦ Lp.toDualCLM_apply x.1 x.2
-
-/-- **Multiplication by the coordinate `νᵢ` of the normal**, as a bounded operator on `L^p(σ)`
-of norm at most one (`|νᵢ| ≤ 1` `σ`-a.e.). -/
-def mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) : Lp ℝ p B.σ →L[ℝ] Lp ℝ p B.σ :=
-  LinearMap.mkContinuous
-    { toFun := fun f ↦ (B.memLp_ν_apply_mul (Lp.memLp f) i).toLp _
-      map_add' := fun f g ↦ by
-        rw [← MemLp.toLp_add]
-        refine MemLp.toLp_congr (B.memLp_ν_apply_mul (Lp.memLp (f + g)) i)
-          ((B.memLp_ν_apply_mul (Lp.memLp f) i).add (B.memLp_ν_apply_mul (Lp.memLp g) i)) ?_
-        filter_upwards [Lp.coeFn_add f g] with x hx
-        simp only [hx, Pi.add_apply, mul_add]
-      map_smul' := fun c f ↦ by
-        rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
-        refine MemLp.toLp_congr (B.memLp_ν_apply_mul (Lp.memLp (c • f)) i)
-          ((B.memLp_ν_apply_mul (Lp.memLp f) i).const_smul c) ?_
-        filter_upwards [Lp.coeFn_smul c f] with x hx
-        simp only [hx, Pi.smul_apply, smul_eq_mul]
-        ring }
-    1 fun f ↦ by
-      change ‖(B.memLp_ν_apply_mul (Lp.memLp f) i).toLp _‖ ≤ _
-      rw [Lp.norm_toLp, one_mul, Lp.norm_def]
-      refine ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_ae
-        ((B.aestronglyMeasurable_ν_apply i).mul (Lp.aestronglyMeasurable f)) ?_)
-      filter_upwards [B.ae_abs_ν_apply_le i] with x hx
-      rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
-      exact mul_le_of_le_one_left (abs_nonneg _) hx
-
-/-- `mulNormalL f` is the class of `νᵢ f`. -/
-theorem coeFn_mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) (f : Lp ℝ p B.σ) :
-    (B.mulNormalL p i f : 𝔼 → ℝ) =ᵐ[B.σ] fun x ↦ B.ν x i * f x :=
-  MemLp.coeFn_toLp (B.memLp_ν_apply_mul (Lp.memLp f) i)
-
 /-- **Green's formula for smooth-representable elements**: the classical Green formula
 `BoundaryData.integral_fderiv_mul_add_eq` read through the smooth representatives, at any two
 exponents. -/
@@ -1104,77 +818,6 @@ theorem traceFamily_traceL (hw : B.HasTransversalField)
 /-! ### Nečas's inequality for every `W^{1,p}` function, and compactness of the trace -/
 
 section Compact
-
-/-- **Hölder's inequality in the form `∫ ‖f‖^{p−1} ‖g‖ ≤ ‖f‖_p^{p−1} ‖g‖_p`** for `1 ≤ p < ∞`
-(an equality of integrals at `p = 1`). -/
-theorem _root_.MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le {X G G' : Type*}
-    [MeasurableSpace X] {μ : Measure X} [NormedAddCommGroup G] [NormedAddCommGroup G']
-    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) {f : X → G} {g : X → G'} (hf : MemLp f p μ)
-    (hg : MemLp g p μ) :
-    ∫ x, ‖f x‖ ^ (p.toReal - 1) * ‖g x‖ ∂μ
-      ≤ (eLpNorm f p μ).toReal ^ (p.toReal - 1) * (eLpNorm g p μ).toReal := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  have hP0 : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
-  have hfP := hf.eLpNorm_eq_integral_rpow_norm hp0 hp
-  have hgP := hg.eLpNorm_eq_integral_rpow_norm hp0 hp
-  rw [hfP, hgP, ENNReal.toReal_ofReal (by positivity), ENNReal.toReal_ofReal (by positivity)]
-  rcases (Fact.out : (1 : ℝ≥0∞) ≤ p).eq_or_lt with h1 | h1
-  · -- `p = 1`: both sides are `∫ ‖g‖`
-    subst h1
-    simp only [ENNReal.toReal_one, sub_self, Real.rpow_zero, one_mul, inv_one, Real.rpow_one]
-    exact le_rfl
-  · -- `1 < p`: Hölder with the exponents `p/(p−1)` and `p`
-    have hP1 : 1 < p.toReal := by
-      rw [← ENNReal.toReal_one]
-      exact (ENNReal.toReal_lt_toReal ENNReal.one_ne_top hp).2 h1
-    have hP1' : 0 < p.toReal - 1 := by linarith
-    have hconj : (Real.conjExponent p.toReal).HolderConjugate p.toReal :=
-      (Real.HolderConjugate.conjExponent hP1).symm
-    have hq : Real.conjExponent p.toReal = p.toReal / (p.toReal - 1) := rfl
-    have hfq : MemLp (fun x ↦ ‖f x‖ ^ (p.toReal - 1))
-        (ENNReal.ofReal (Real.conjExponent p.toReal)) μ := by
-      have h := hf.norm_rpow_div (ENNReal.ofReal (p.toReal - 1))
-      rw [ENNReal.toReal_ofReal hP1'.le] at h
-      convert h using 1
-      rw [hq, ENNReal.ofReal_div_of_pos hP1', ENNReal.ofReal_toReal hp]
-    have hgq : MemLp (fun x ↦ ‖g x‖) (ENNReal.ofReal p.toReal) μ := by
-      rw [ENNReal.ofReal_toReal hp]
-      exact hg.norm
-    have hH := integral_mul_le_Lp_mul_Lq_of_nonneg hconj
-      (.of_forall fun x ↦ Real.rpow_nonneg (norm_nonneg _) _) (.of_forall fun x ↦ norm_nonneg _)
-      hfq hgq
-    refine hH.trans (le_of_eq ?_)
-    have e1 : ∀ x, (‖f x‖ ^ (p.toReal - 1)) ^ Real.conjExponent p.toReal = ‖f x‖ ^ p.toReal := by
-      intro x
-      rw [← Real.rpow_mul (norm_nonneg _), hq, mul_div_cancel₀ _ hP1'.ne']
-    simp_rw [e1]
-    rw [← Real.rpow_mul (integral_nonneg fun x ↦ by positivity), one_div, one_div, hq, inv_div,
-      inv_mul_eq_div]
-
-/-- The gradient norm is continuous on `W^{1,p}(Ω)`. -/
-theorem _root_.SobolevEuclidean.continuous_gradNorm {p : ℝ≥0∞} [Fact (1 ≤ p)] :
-    Continuous fun u : SobolevEuclidean N 1 p Ω ↦ gradNorm u := by
-  refine continuous_norm.comp ((PiLp.continuous_toLp p _).comp (continuous_pi fun i ↦ ?_))
-  exact (weakDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
-    (MultiIndexLE.single i)).continuous
-
-/-- `‖∇u‖_{L^p(Ω)} ≤ N ‖∇u‖` for the Euclidean pointwise gradient (`gradFn`) and the `ℓ^p`
-gradient norm (`gradNorm`). -/
-theorem _root_.SobolevEuclidean.toReal_eLpNorm_gradFn_le {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
-    (u : SobolevEuclidean N 1 p Ω) :
-    (eLpNorm (gradFn u) p (volume.restrict (Ω : Set 𝔼))).toReal ≤ N * gradNorm u := by
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
-  have hP0 : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
-  have h := integral_norm_gradFn_rpow_le hp u
-  rw [Fintype.card_fin] at h
-  rw [(memLp_gradFn u).eLpNorm_eq_integral_rpow_norm hp0 hp,
-    ENNReal.toReal_ofReal (Real.rpow_nonneg (integral_nonneg fun x ↦ by positivity) _)]
-  calc (∫ x in (Ω : Set 𝔼), ‖gradFn u x‖ ^ p.toReal) ^ p.toReal⁻¹
-      ≤ ((N : ℝ) ^ p.toReal * gradNorm u ^ p.toReal) ^ p.toReal⁻¹ :=
-        Real.rpow_le_rpow (integral_nonneg fun x ↦ by positivity) h (by positivity)
-    _ = N * gradNorm u := by
-        rw [← Real.mul_rpow (by positivity) (gradNorm_nonneg u), ← Real.rpow_mul
-          (mul_nonneg N.cast_nonneg (gradNorm_nonneg u)), mul_inv_cancel₀ hP0.ne', Real.rpow_one]
 
 /-- **Nečas's inequality for every `W^{1,p}` function** (Atkinson–Han Theorem 7.3.10 (c), the
 estimate behind compactness): there is `C` such that for every `u ∈ W^{1,p}(Ω)`,

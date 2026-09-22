@@ -1003,39 +1003,6 @@ open SobolevMultiIndex
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- A `C^n` domain is a `C^m` domain for `m ≤ n`: the monotonicity of `IsContDiffDomain` in its
-order. Private here; it belongs in `Numlib/Analysis/Sobolev/Domain.lean` beside
-`IsBoundaryOfClass.mono` (request in `notes/boundary/bsurf7b-report.md` §4). It is how a
-consumer holding only the `C²` structure of `theorem_7_3_11` obtains the `C¹` structure `hΩ₁`
-its surface measure is stated on; nothing in this file calls it. -/
-private theorem _root_.IsContDiffDomain.of_le {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
-    {m n : WithTop ℕ∞} (hmn : m ≤ n) (h : IsContDiffDomain n Ω) : IsContDiffDomain m Ω :=
-  ⟨h.isOpen, h.isBoundaryOfClass.mono fun _ hg ↦ ContDiff.of_le hg hmn⟩
-
-/-- The first weak derivative of `v ∈ W^{2,p}(Ω)` with a `C¹` representative `v'` is the
-classical `∂ᵢ v'`, almost everywhere on `Ω` — the order-two form of
-`SobolevEuclidean.weakDeriv_single_ae_eq_fderiv`, the multi-index `e_i` of `W^{2,p}` being
-`MultiIndexLE.singleLE i`. Private here; it belongs in `Numlib/Analysis/Sobolev/Boundary/Trace.lean`
-beside the order-one form, or in `Operators.lean` (request in `notes/boundary/bsurf7b-report.md`
-§4). -/
-private theorem weakDeriv_singleLE_ae_eq_fderiv {p : ℝ≥0∞} [Fact (1 ≤ p)]
-    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 2 p Ω volume)
-    {v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
-    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v')
-    (hv' : ContDiff ℝ 1 v') (i : Fin (d + 1)) :
-    (weakDeriv v (MultiIndexLE.singleLE i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
-        fun x ↦ fderiv ℝ v' x (EuclideanSpace.single i 1) := by
-  have h1 : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i (1 : ℝ)] (fn v)
-      (weakDeriv v (MultiIndexLE.singleLE i)) Ω volume := by
-    have := (hasWeakIteratedLineDerivOn v (MultiIndexLE.singleLE i)).of_perm
-      (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis :
-        Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1))) i)
-    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
-  have h2 := hv'.contDiffOn.hasWeakIteratedLineDerivOn_single Ω i
-  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    ((h1.congr_ae hv (EventuallyEq.refl _ _)).ae_eq h2)
-
 /-- **The trace `γ₀` of Theorem 7.3.11 at `s = 2`**, `γ₀ : W^{2,p}(Ω) →L[ℝ] L^p(Γ)` on a bounded
 `C¹` domain, `1 ≤ p < ∞`: the trace `γ` of Theorem 7.3.10 applied after forgetting the
 second-order derivatives (`SobolevMultiIndex.toLowerOrderL`), so that `γ₀ v = v|_Γ` for `v` with
@@ -1100,7 +1067,7 @@ theorem theorem_7_3_11_trace₀_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p 
 /-- **The trace of a first derivative**: on a bounded `C¹` domain, for `v ∈ W^{2,p}(Ω)` with a
 `C¹` representative `ṽ` of the plane, the trace of `∂ᵢ v ∈ W^{1,p}(Ω)` is `∂ᵢ ṽ` on `Γ` —
 Theorem 7.3.10 (a) for `∂ᵢ v`, whose continuous representative is `∂ᵢ ṽ`
-(`weakDeriv_singleLE_ae_eq_fderiv`). -/
+(`SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv`). -/
 theorem theorem_7_3_11_traceL_partialDerivL_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1114,7 +1081,7 @@ theorem theorem_7_3_11_traceL_partialDerivL_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ 
   refine hΩ₁.traceL_ae_eq_of_continuousOn hb p hp _ ?_
     ((hv'.continuous_fderiv one_ne_zero).clm_apply continuous_const).continuousOn
   rw [theorem_7_3_11_partialDerivL, partialDerivL_apply, fn_partialDeriv]
-  exact weakDeriv_singleLE_ae_eq_fderiv v hv hv' i
+  exact SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv v hv hv' i
 
 /-- **`γ₁ v = (∂v/∂ν)|_Γ`** (Theorem 7.3.11, the defining property of `γ₁`): on a bounded `C¹`
 domain, for `v ∈ W^{2,p}(Ω)` with a `C¹` representative `ṽ` of the plane,
@@ -1382,67 +1349,6 @@ theorem example_7_3_15 (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (
 
 /-! ### Examples 7.3.15 (boundary clause) and 7.3.16: Poincaré–Friedrichs through the trace -/
 
-section AbsIntegralSeminorm
-
-variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] {X : Type*} [MeasurableSpace X]
-  {σ : Measure X} [IsFiniteMeasure σ] {q : ℝ≥0∞} [Fact (1 ≤ q)]
-
-/-- The seminorm `v ↦ ∫_s |L v| dσ` on `W`, for a bounded linear `L : W → L^q(σ)` into the
-`L^q` space of a finite measure (so that `L^q(σ) ⊆ L¹(σ)`): the seminorms `f_1(v) = ∫_Γ |v| ds`
-and `f_1(v) = ∫_{Γ_0} |v| ds` of Examples 7.3.15 and 7.3.16, with `L` the trace. -/
-private noncomputable def absIntegralSeminorm (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) :
-    Seminorm ℝ W where
-  toFun v := ∫ x in s, |(L v : X → ℝ) x| ∂σ
-  map_zero' := by
-    rw [map_zero]
-    refine integral_eq_zero_of_ae ?_
-    filter_upwards [ae_restrict_of_ae (Lp.coeFn_zero ℝ q σ)] with x hx
-    rw [hx, Pi.zero_apply, abs_zero]
-  add_le' v w := by
-    have hi : ∀ u : W, Integrable (fun x ↦ |(L u : X → ℝ) x|) (σ.restrict s) := fun u ↦
-      ((Lp.memLp (L u)).integrable Fact.out).abs.integrableOn
-    rw [← integral_add (hi v) (hi w)]
-    refine integral_mono_ae (hi (v + w)) ((hi v).add (hi w)) ?_
-    rw [map_add]
-    filter_upwards [ae_restrict_of_ae (Lp.coeFn_add (L v) (L w))] with x hx
-    rw [hx, Pi.add_apply]
-    exact abs_add_le _ _
-  neg' v := by
-    rw [map_neg]
-    refine integral_congr_ae ?_
-    filter_upwards [ae_restrict_of_ae (Lp.coeFn_neg (L v))] with x hx
-    rw [hx, Pi.neg_apply, abs_neg]
-  smul' c v := by
-    rw [map_smul, Real.norm_eq_abs, ← integral_const_mul]
-    refine integral_congr_ae ?_
-    filter_upwards [ae_restrict_of_ae (Lp.coeFn_smul c (L v))] with x hx
-    rw [hx, Pi.smul_apply, smul_eq_mul, abs_mul]
-
-private theorem absIntegralSeminorm_apply (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) (v : W) :
-    absIntegralSeminorm L s v = ∫ x in s, |(L v : X → ℝ) x| ∂σ :=
-  rfl
-
-/-- **(H1) for the seminorm `∫_s |L v| dσ`**: it is bounded by a multiple of `‖v‖`, through the
-inclusion `L^q(σ) ⊆ L¹(σ)` of the finite measure. -/
-private theorem exists_absIntegralSeminorm_le (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) :
-    ∃ c : ℝ, ∀ v, absIntegralSeminorm L s v ≤ c * ‖v‖ := by
-  refine ⟨‖(Lp.monoExponentL ℝ σ q 1 Fact.out).comp L‖, fun v ↦ ?_⟩
-  rw [absIntegralSeminorm_apply]
-  have hi : Integrable (fun x ↦ |(L v : X → ℝ) x|) σ :=
-    ((Lp.memLp (L v)).integrable Fact.out).abs
-  calc ∫ x in s, |(L v : X → ℝ) x| ∂σ
-      ≤ ∫ x, |(L v : X → ℝ) x| ∂σ :=
-        setIntegral_le_integral hi (Eventually.of_forall fun x ↦ abs_nonneg _)
-    _ = ‖((Lp.monoExponentL ℝ σ q 1 Fact.out).comp L) v‖ := by
-        rw [ContinuousLinearMap.comp_apply, L1.norm_eq_integral_norm]
-        refine integral_congr_ae ?_
-        filter_upwards [Lp.coeFn_monoExponentL (G := ℝ) (μ := σ) (p := q) (q := 1) Fact.out
-          (L v)] with x hx
-        rw [hx, Real.norm_eq_abs]
-    _ ≤ _ := ContinuousLinearMap.le_opNorm _ v
-
-end AbsIntegralSeminorm
-
 section PoincareFriedrichs
 
 /-- `1 ≤ 2` for the exponent `p = 2` written in the backbone's form `((2 : ℝ≥0) : ℝ≥0∞)`, the
@@ -1469,55 +1375,11 @@ private theorem fn_ae_eq_const_of_degree_zero
   conv_lhs => rw [hq]
   rw [MvPolynomial.eval_C]
 
-/-- An element of `H¹(Ω)` which is almost everywhere a constant `c` and whose trace has vanishing
-integral of `|·|` over a boundary piece `U` of positive surface measure is zero: the trace of the
-constant is the constant (Theorem 7.3.10 (a)), so `∫_U |γ v| dσ = |c| σ(U)` forces `c = 0`. -/
-private theorem eq_zero_of_traceL_integral_abs_eq_zero
-    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    {U : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hU : 0 < hΩ.boundaryMeasure hb U)
-    {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume} {c : ℝ}
-    (hvc : SobolevMultiIndex.fn v
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fun _ ↦ c)
-    (h0 : ∫ x in U, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
-      ∂(hΩ.boundaryMeasure hb) = 0) : v = 0 := by
-  have htr := hΩ.traceL_ae_eq_of_continuousOn hb 𝟚 ENNReal.coe_ne_top v hvc continuousOn_const
-  have hint : ∫ x in U,
-      |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
-        ∂(hΩ.boundaryMeasure hb) = (hΩ.boundaryMeasure hb).real U * |c| := by
-    rw [integral_congr_ae ((ae_restrict_of_ae htr).mono fun x hx ↦ by rw [hx]), setIntegral_const,
-      smul_eq_mul]
-  have hpos : 0 < (hΩ.boundaryMeasure hb).real U := by
-    rw [measureReal_def]
-    exact ENNReal.toReal_pos hU.ne' (measure_ne_top _ _)
-  rw [hint] at h0
-  have hc0 : c = 0 := abs_eq_zero.1 ((mul_eq_zero.1 h0).resolve_left hpos.ne')
-  refine SobolevMultiIndex.ext_of_fn_ae_eq (hvc.trans ?_)
-  rw [hc0]
-  exact SobolevMultiIndex.fn_zero.symm
-
-/-- The trace vanishes when the integral of its absolute value does. -/
-private theorem traceL_ae_eq_zero_of_integral_abs_eq_zero
-    (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    {v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
-    (h0 : ∫ x, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
-      ∂(hΩ.boundaryMeasure hb) = 0) :
-    (hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
-      =ᵐ[hΩ.boundaryMeasure hb] 0 := by
-  have hi : Integrable (fun x ↦ |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v :
-      EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|) (hΩ.boundaryMeasure hb) :=
-    ((Lp.memLp _).integrable Fact.out).abs
-  have := (integral_eq_zero_iff_of_nonneg (fun x ↦ abs_nonneg _) hi).1 h0
-  filter_upwards [this] with x hx
-  rw [Pi.zero_apply] at hx ⊢
-  exact abs_eq_zero.1 hx
-
 /-- **(H2)′ of Theorem 7.3.13 for the seminorm `∫_Γ |γ v| dσ`, without connectedness**: an
-element of `H¹(Ω)` with `|v|_{1,Ω} = 0` and `∫_Γ |γ v| dσ = 0` is zero — its trace vanishes, so
-it lies in `H_0^1(Ω)` by the kernel theorem (`theorem_7_3_10_kernel`,
-`IsContDiffDomain.mem_zero_of_traceL_eq_zero`), where Poincaré's inequality
-`SobolevEuclideanZero.norm_le_gradNorm` bounds its norm by its vanishing gradient norm. -/
+element of `H¹(Ω)` with `|v|_{1,Ω} = 0` and `∫_Γ |γ v| dσ = 0` is zero — its trace vanishes
+(`IsContDiffDomain.traceL_ae_eq_zero_of_integral_abs_eq_zero`), so it lies in `H_0^1(Ω)` by the
+kernel theorem and Poincaré's inequality applies
+(`IsContDiffDomain.eq_zero_of_gradNorm_eq_zero_of_traceL_eq_zero`). -/
 private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1525,17 +1387,11 @@ private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
     (hv : SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume v = 0)
     (h0 : ∫ x, |(hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
       ∂(hΩ.boundaryMeasure hb) = 0) : v = 0 := by
-  -- the trace vanishes, so `v ∈ H¹₀(Ω)`
   have hγ : hΩ.traceL hb 𝟚 ENNReal.coe_ne_top v = 0 :=
-    Lp.ext ((traceL_ae_eq_zero_of_integral_abs_eq_zero hΩ hb h0).trans
+    Lp.ext ((hΩ.traceL_ae_eq_zero_of_integral_abs_eq_zero hb 𝟚 ENNReal.coe_ne_top h0).trans
       (Lp.coeFn_zero _ _ _).symm)
-  have hmem := hΩ.mem_zero_of_traceL_eq_zero hb 𝟚 ENNReal.coe_ne_top hγ
-  -- Poincaré's inequality with a vanishing gradient
-  obtain ⟨R, hR0, hR⟩ := hb.subset_ball_lt 0 0
-  have hP := SobolevEuclideanZero.norm_le_gradNorm ENNReal.coe_ne_top hR0.le hR ⟨v, hmem⟩
-  change ‖v‖ ≤ _ * SobolevMultiIndex.gradNorm v at hP
-  rw [← SobolevMultiIndex.topSeminorm_one_eq_gradNorm, hv, mul_zero] at hP
-  exact norm_le_zero_iff.1 hP
+  refine hΩ.eq_zero_of_gradNorm_eq_zero_of_traceL_eq_zero hb 𝟚 ENNReal.coe_ne_top ?_ hγ
+  rwa [← SobolevMultiIndex.topSeminorm_one_eq_gradNorm]
 
 /-- **(H2) of Theorem 7.3.12 for the seminorm `f_1(v) = ∫_U |γ v| dσ`** on a boundary piece `U` of
 positive surface measure: an element of `H¹(Ω)` which is almost everywhere a polynomial of degree
@@ -1553,7 +1409,7 @@ private theorem eq_zero_of_degree_zero_of_setIntegral_abs_traceL_eq_zero
           fun x ↦ MvPolynomial.eval (fun i ↦ x i) q)
     (hfv : ∀ _ : Unit, f v = 0) : v = 0 := by
   obtain ⟨c, hvc⟩ := fn_ae_eq_const_of_degree_zero hv
-  refine eq_zero_of_traceL_integral_abs_eq_zero hΩ hb hU hvc ?_
+  refine hΩ.eq_zero_of_traceL_integral_abs_eq_zero hb 𝟚 ENNReal.coe_ne_top hU hvc ?_
   rw [← hf]
   exact hfv ()
 

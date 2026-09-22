@@ -1,7 +1,10 @@
 import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Mathlib.Analysis.Calculus.ParametricIntegral
+import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Sobolev.Boundary.ChartGraph
 import Numlib.Analysis.Sobolev.Boundary.Data
+import Numlib.MeasureTheory.Integral.IntegrableOn
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The divergence theorem on the region above a graph
@@ -76,28 +79,6 @@ section Integrability
 
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X} {G : Type*} [NormedAddCommGroup G]
 
-/-- A function bounded on a measurable set `s`, strongly measurable there, and vanishing on `s`
-outside a set `K` of finite measure is integrable on `s`. -/
-theorem integrableOn_of_forall_norm_le_of_eq_zero {φ : X → G} {s K : Set X}
-    (hs : MeasurableSet s) (hK : μ K ≠ ⊤) (hφ : AEStronglyMeasurable φ (μ.restrict s)) {M : ℝ}
-    (hM : ∀ y ∈ s, ‖φ y‖ ≤ M) (h0 : ∀ y ∈ s, y ∉ K → φ y = 0) : IntegrableOn φ s μ := by
-  have h1 : IntegrableOn φ (s ∩ K) μ := by
-    refine IntegrableOn.of_bound ((measure_mono inter_subset_right).trans_lt hK.lt_top)
-      (hφ.mono_measure (Measure.restrict_mono inter_subset_left le_rfl)) M ?_
-    exact ae_restrict_of_ae_restrict_of_subset inter_subset_left (ae_restrict_of_forall_mem hs hM)
-  exact h1.of_forall_sdiff_eq_zero hs fun y hy ↦ h0 y hy.1 fun hK' ↦ hy.2 ⟨hy.1, hK'⟩
-
-/-- Translation of a half-line integral: `∫_0^∞ φ(a + s) ds = ∫_a^∞ φ(t) dt`. -/
-theorem integral_Ioi_comp_add_left {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    (φ : ℝ → G) (a : ℝ) : ∫ s in Ioi (0 : ℝ), φ (a + s) = ∫ t in Ioi a, φ t := by
-  have h := integral_add_left_eq_self (μ := volume) (fun t ↦ (Ioi a).indicator φ t) a
-  rw [← integral_indicator measurableSet_Ioi, ← integral_indicator measurableSet_Ioi, ← h]
-  congr 1
-  funext s
-  rw [← Set.indicator_comp_right (fun s ↦ a + s) (g := φ) (s := Ioi a),
-    Set.preimage_const_add_Ioi, sub_self]
-  rfl
-
 end Integrability
 
 /-! ### The integral of a derivative of a compactly supported function vanishes -/
@@ -106,28 +87,6 @@ section IntegralFDeriv
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure]
-
-/-- **The integral of a derivative of a compactly supported function vanishes**: for `f : E → ℝ`
-differentiable with compact support and `∂_v f` integrable, `∫ ∂_v f dμ = 0` for every additive
-Haar measure `μ`. Mathlib's integration by parts
-`integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` against the constant `1`. Continuity of
-`fderiv ℝ f` is not needed, only its integrability — which is what the Leibniz step
-`EuclideanSpace.integral_fderiv_castSucc_epigraph` has. -/
-theorem integral_fderiv_apply_eq_zero_of_hasCompactSupport {f : E → ℝ} (hf : Differentiable ℝ f)
-    (hfc : HasCompactSupport f) {v : E} (hf' : Integrable (fun x ↦ fderiv ℝ f x v) μ) :
-    ∫ x, fderiv ℝ f x v ∂μ = 0 := by
-  have h := integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable (μ := μ) (f := fun _ ↦ (1 : ℝ))
-    (g := f) (v := v) (by simp) (by simpa using hf')
-    (by simpa using hf.continuous.integrable_of_hasCompactSupport hfc)
-    (fun x _ ↦ differentiableAt_const _) (fun x _ ↦ hf x)
-  simpa using h
-
-/-- The integral of a derivative of a compactly supported `C¹` function vanishes. -/
-theorem integral_fderiv_apply_eq_zero_of_contDiff {f : E → ℝ} (hf : ContDiff ℝ 1 f)
-    (hfc : HasCompactSupport f) (v : E) : ∫ x, fderiv ℝ f x v ∂μ = 0 :=
-  integral_fderiv_apply_eq_zero_of_hasCompactSupport (hf.differentiable one_ne_zero) hfc
-    (((hf.continuous_fderiv one_ne_zero).clm_apply continuous_const).integrable_of_hasCompactSupport
-      (HasCompactSupport.fderiv_apply ℝ hfc v))
 
 end IntegralFDeriv
 
@@ -155,163 +114,6 @@ theorem EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport {N : ℕ}
   exact integral_fderiv_apply_eq_zero_of_hasCompactSupport
     (fun x ↦ (EuclideanSpace.proj i).differentiableAt.comp x (hF x))
     (hFc.comp_left (g := fun v ↦ v i) rfl) (hint i)
-
-/-! ### The class `C¹(s̄)`: bounded derivatives, compositions, locality on the support -/
-
-section ContDiffOnClosure
-
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {X F G : Type*} [NormedAddCommGroup X]
-  [NormedSpace 𝕜 X] [NormedAddCommGroup F] [NormedSpace 𝕜 F] [NormedAddCommGroup G]
-  [NormedSpace 𝕜 G] {f : X → F} {s : Set X}
-
-/-- The derivative of a function vanishes off its closed support. -/
-theorem fderiv_eq_zero_of_notMem_tsupport {x : X} (hx : x ∉ tsupport f) : fderiv 𝕜 f x = 0 :=
-  Function.notMem_support.1 fun h ↦ hx (support_fderiv_subset 𝕜 h)
-
-/-- **A function of class `C¹(s̄)` with compact support has a bounded derivative on `s`**: the
-continuous extension of `fderiv 𝕜 f` is bounded on the compact `closure s ∩ tsupport f`, and
-`fderiv 𝕜 f = 0` off `tsupport f`. Compare `ContDiffOn.exists_norm_fderiv_le_of_isCompact` of
-`Chart.lean`, which bounds the derivative on the interior of a compact set. -/
-theorem ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport
-    (hf : ContDiffOnClosure 𝕜 1 f s) (hfc : HasCompactSupport f) :
-    ∃ M, ∀ x ∈ s, ‖fderiv 𝕜 f x‖ ≤ M := by
-  obtain ⟨-, -, G, hGc, hGe⟩ := contDiffOnClosure_one_iff.1 hf
-  obtain ⟨C, hC⟩ := (hfc.inter_left isClosed_closure).exists_bound_of_continuousOn
-    (hGc.mono inter_subset_left)
-  refine ⟨max C 0, fun x hx ↦ ?_⟩
-  by_cases hxs : x ∈ tsupport f
-  · rw [← hGe hx]
-    exact (hC x ⟨subset_closure hx, hxs⟩).trans (le_max_left _ _)
-  · rw [fderiv_eq_zero_of_notMem_tsupport hxs, norm_zero]
-    exact le_max_right _ _
-
-/-- **`C¹(s̄)` is stable under a continuous linear map on the left**, on an open set `s`: the
-extensions of `f` and `Df` compose with `L`. -/
-theorem ContDiffOnClosure.continuousLinearMap_comp (hs : IsOpen s)
-    (hf : ContDiffOnClosure 𝕜 1 f s) (L : F →L[𝕜] G) :
-    ContDiffOnClosure 𝕜 1 (fun x ↦ L (f x)) s := by
-  rw [contDiffOnClosure_one_iff] at hf ⊢
-  obtain ⟨hf, ⟨g₀, hg₀c, hg₀e⟩, ⟨g₁, hg₁c, hg₁e⟩⟩ := hf
-  refine ⟨hf.continuousLinearMap_comp L, ⟨fun x ↦ L (g₀ x), L.continuous.comp_continuousOn hg₀c,
-    fun x hx ↦ by simp only [hg₀e hx]⟩, ⟨fun x ↦ L.comp (g₁ x), continuousOn_const.clm_comp hg₁c,
-    fun x hx ↦ ?_⟩⟩
-  have hx' : DifferentiableAt 𝕜 f x :=
-    (hf.differentiableOn one_ne_zero).differentiableAt (hs.mem_nhds hx)
-  simp only [hg₁e hx]
-  exact (L.hasFDerivAt.comp x hx'.hasFDerivAt).fderiv.symm
-
-/-- A function continuous on `closure s` and vanishing on `s` outside a closed set `K` vanishes
-on `closure s` outside `K`: `closure s \ K` lies in the closure of `s \ K`. -/
-theorem ContinuousOn.eq_zero_of_notMem_of_forall {Y : Type*} [TopologicalSpace Y] {φ : Y → G}
-    {s K : Set Y} (hφ : ContinuousOn φ (closure s)) (hK : IsClosed K)
-    (h : ∀ y ∈ s, y ∉ K → φ y = 0) {y : Y} (hy : y ∈ closure s) (hyK : y ∉ K) : φ y = 0 := by
-  have hsub : closure s ∩ Kᶜ ⊆ closure (s ∩ Kᶜ) := fun z hz ↦ by
-    have := hK.isOpen_compl.inter_closure ⟨hz.2, hz.1⟩
-    rwa [inter_comm] at this
-  exact Set.EqOn.of_subset_closure (s := s ∩ Kᶜ) (t := closure s ∩ Kᶜ) (f := φ) (g := 0)
-    (fun z hz ↦ h z hz.1 hz.2) (hφ.mono inter_subset_left) continuousOn_const
-    (inter_subset_inter_left _ subset_closure) hsub ⟨hy, hyK⟩
-
-/-- The indicator on `tsupport f` of a function `φ` continuous on `closure s` and vanishing on
-`s \ tsupport f` is continuous on `closure s'`, when `s ∩ V = s' ∩ V` for an open `V ⊇ tsupport f`:
-near a point of `V`, `closure s' ∩ V ⊆ closure s` and `φ` serves; away from `V` the indicator
-vanishes on a neighbourhood. The continuity clauses of
-`ContDiffOnClosure.congr_set_of_tsupport_subset`. -/
-theorem ContinuousOn.indicator_tsupport_of_inter_eq {Y : Type*} [TopologicalSpace Y]
-    {f : Y → F} {s s' V : Set Y} (hV : IsOpen V) (hsV : s ∩ V = s' ∩ V) (hsupp : tsupport f ⊆ V)
-    {φ : Y → G} (hφ : ContinuousOn φ (closure s)) (hφ0 : ∀ x ∈ s, x ∉ tsupport f → φ x = 0) :
-    ContinuousOn ((tsupport f).indicator φ) (closure s') := by
-  -- `closure s' ∩ V ⊆ closure s`, and `closure s` is a neighbourhood within `closure s'` there
-  have hcl : closure s' ∩ V ⊆ closure s := fun x hx ↦ by
-    have h1 : x ∈ closure (s' ∩ V) := by
-      have := hV.inter_closure ⟨hx.2, hx.1⟩
-      rwa [inter_comm] at this
-    rw [← hsV] at h1
-    exact closure_mono inter_subset_left h1
-  have hnhds : ∀ x ∈ closure s', x ∈ V → closure s ∈ 𝓝[closure s'] x := fun x hx hxV ↦
-    mem_nhdsWithin.2 ⟨V, hV, hxV, fun z hz ↦ hcl ⟨hz.2, hz.1⟩⟩
-  intro x hx
-  have heq : ∀ z ∈ closure s, (tsupport f).indicator φ z = φ z := fun z hz ↦ by
-    by_cases hzK : z ∈ tsupport f
-    · exact indicator_of_mem hzK _
-    · rw [indicator_of_notMem hzK,
-        hφ.eq_zero_of_notMem_of_forall (isClosed_tsupport f) hφ0 hz hzK]
-  by_cases hxV : x ∈ V
-  · have h1 : ContinuousWithinAt φ (closure s') x :=
-      (hφ x (hcl ⟨hx, hxV⟩)).mono_of_mem_nhdsWithin (hnhds x hx hxV)
-    refine h1.congr_of_eventuallyEq ?_ (heq x (hcl ⟨hx, hxV⟩))
-    filter_upwards [hnhds x hx hxV] with z hz using heq z hz
-  · have hxs : x ∉ tsupport f := fun h ↦ hxV (hsupp h)
-    have hev : (tsupport f).indicator φ =ᶠ[𝓝 x] fun _ ↦ 0 := by
-      filter_upwards [(isClosed_tsupport f).isOpen_compl.mem_nhds hxs] with z hz
-      exact indicator_of_notMem hz _
-    exact (continuousAt_const.congr hev.symm).continuousWithinAt
-
-/-- **The class `C¹(Ω̄)` is local on the support**: for open sets `s`, `V` and a set `s'` with
-`s ∩ V = s' ∩ V`, a function `f ∈ C¹(s̄)` with `tsupport f ⊆ V` is in `C¹(s̄')`. Near a point of
-`V`, `closure s' ∩ V ⊆ closure (s ∩ V)` and the data of `f` on `closure s` serve; away from `V`
-the function vanishes on a neighbourhood. The extension of `Df` to `closure s'` is
-`(tsupport f).indicator` of the given extension, which vanishes on `closure s \ tsupport f`
-(`ContinuousOn.eq_zero_of_notMem_of_forall`, `ContinuousOn.indicator_tsupport_of_inter_eq`).
-Used to move a field supported in a chart ball from `Ω` to the global rotated epigraph. -/
-theorem ContDiffOnClosure.congr_set_of_tsupport_subset {s' V : Set X} (hs : IsOpen s)
-    (hV : IsOpen V) (hsV : s ∩ V = s' ∩ V) (hsupp : tsupport f ⊆ V)
-    (hf₀ : ContinuousOn f (closure s)) (hf₁ : ContDiffOnClosure 𝕜 1 f s) :
-    ContinuousOn f (closure s') ∧ ContDiffOnClosure 𝕜 1 f s' := by
-  have hmem : ∀ x ∈ s', x ∈ V → x ∈ s := fun x hx hxV ↦ by
-    have : x ∈ s' ∩ V := ⟨hx, hxV⟩
-    rw [← hsV] at this
-    exact this.1
-  have hcontf : ContinuousOn f (closure s') := by
-    have := hf₀.indicator_tsupport_of_inter_eq hV hsV hsupp
-      fun x _ hx ↦ image_eq_zero_of_notMem_tsupport (f := f) hx
-    rwa [Set.indicator_eq_self.2 (subset_tsupport f)] at this
-  refine ⟨hcontf, ?_⟩
-  rw [contDiffOnClosure_one_iff] at hf₁ ⊢
-  obtain ⟨hf, -, ⟨g₁, hg₁c, hg₁e⟩⟩ := hf₁
-  refine ⟨fun x hx ↦ ?_, ⟨f, hcontf, fun _ _ ↦ rfl⟩, ⟨(tsupport f).indicator g₁,
-    hg₁c.indicator_tsupport_of_inter_eq hV hsV hsupp fun x hx hxK ↦ ?_, fun x hx ↦ ?_⟩⟩
-  · by_cases hxV : x ∈ V
-    · exact (hf.contDiffAt (hs.mem_nhds (hmem x hx hxV))).contDiffWithinAt
-    · have hxs : x ∉ tsupport f := fun h ↦ hxV (hsupp h)
-      exact (contDiffAt_const.congr_of_eventuallyEq
-        (notMem_tsupport_iff_eventuallyEq.1 hxs)).contDiffWithinAt
-  · rw [hg₁e hx]
-    exact fderiv_eq_zero_of_notMem_tsupport hxK
-  · by_cases hxK : x ∈ tsupport f
-    · rw [indicator_of_mem hxK, hg₁e (hmem x hx (hsupp hxK))]
-    · rw [indicator_of_notMem hxK, fderiv_eq_zero_of_notMem_tsupport hxK]
-
-end ContDiffOnClosure
-
-section AffineIsometryEquiv
-
-variable {E E' F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup E']
-  [NormedSpace ℝ E'] [NormedAddCommGroup F] [NormedSpace ℝ F]
-
-/-- **`C¹(s̄)` is stable under a rigid motion on the right**: `f ∘ T ∈ C¹(T⁻¹(s)‾)` for
-`f ∈ C¹(s̄)`, `s` open. The extensions compose with `T`, the derivative with `T`'s linear part. -/
-theorem ContDiffOnClosure.comp_affineIsometryEquiv {f : E → F} {s : Set E} (hs : IsOpen s)
-    (hf : ContDiffOnClosure ℝ 1 f s) (T : E' ≃ᵃⁱ[ℝ] E) :
-    ContDiffOnClosure ℝ 1 (fun z ↦ f (T z)) (T ⁻¹' s) := by
-  rw [contDiffOnClosure_one_iff] at hf ⊢
-  obtain ⟨hf, ⟨g₀, hg₀c, hg₀e⟩, ⟨g₁, hg₁c, hg₁e⟩⟩ := hf
-  have hcl : closure (T ⁻¹' s) = T ⁻¹' closure s := by
-    have := T.toHomeomorph.preimage_closure s
-    rwa [AffineIsometryEquiv.coe_toHomeomorph, eq_comm] at this
-  have hTc : ContinuousOn T (closure (T ⁻¹' s)) := T.continuous.continuousOn
-  have hmaps : MapsTo T (closure (T ⁻¹' s)) (closure s) := fun z hz ↦ by rwa [hcl] at hz
-  have hT : ContDiff ℝ 1 T := T.toAffineIsometry.toContinuousAffineMap.contDiff
-  refine ⟨hf.comp hT.contDiffOn (mapsTo_preimage T s), ⟨fun z ↦ g₀ (T z), hg₀c.comp hTc hmaps,
-    fun z hz ↦ hg₀e hz⟩, ⟨fun z ↦ (g₁ (T z)).comp
-      (T.linearIsometryEquiv.toContinuousLinearEquiv : E' →L[ℝ] E),
-    (hg₁c.comp hTc hmaps).clm_comp continuousOn_const, fun z hz ↦ ?_⟩⟩
-  have hd : DifferentiableAt ℝ f (T z) :=
-    (hf.differentiableOn one_ne_zero).differentiableAt (hs.mem_nhds hz)
-  simp only [hg₁e hz]
-  exact (hd.hasFDerivAt.comp z (T.hasFDerivAt z)).fderiv.symm
-
-end AffineIsometryEquiv
 
 namespace EuclideanSpace
 
@@ -347,33 +149,6 @@ theorem lintegral_epigraph_eq (hg : Continuous g) {h : EuclideanSpace ℝ (Fin (
   rw [← epigraph_preimage_snocLast x']
   exact (Set.indicator_comp_right (fun t ↦ snocLast x' t) (g := h)).symm
 
-/-- The point `(x', t)` lies in the closure of the epigraph iff `g x' ≤ t`. -/
-theorem snocLast_mem_closure_epigraph (hg : Continuous g) (x' : EuclideanSpace ℝ (Fin d))
-    (t : ℝ) : snocLast x' t ∈ closure (epigraph g) ↔ g x' ≤ t := by
-  rw [closure_epigraph hg]
-  simp
-
-/-- `‖(x', t)‖ ≤ ‖x'‖ + |t|`. -/
-theorem norm_snocLast_le (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
-    ‖snocLast x' t‖ ≤ ‖x'‖ + |t| := by
-  have h := norm_sq_eq_init_add_last (snocLast x' t)
-  rw [init_snocLast, snocLast_apply_last] at h
-  have h2 : ‖snocLast x' t‖ ^ 2 ≤ (‖x'‖ + |t|) ^ 2 := by
-    rw [h]; nlinarith [norm_nonneg x', abs_nonneg t, sq_abs t]
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h2
-
-/-- The coordinates of the gradient are the partial derivatives. -/
-theorem gradient_apply (g : EuclideanSpace ℝ (Fin d) → ℝ) (x : EuclideanSpace ℝ (Fin d))
-    (i : Fin d) : gradient g x i = fderiv ℝ g x (EuclideanSpace.single i 1) := by
-  have h : gradient g x i = ⟪gradient g x, EuclideanSpace.single i 1⟫_ℝ := by
-    rw [EuclideanSpace.inner_single_right, conj_trivial, one_mul]
-  rw [h, gradient, InnerProductSpace.toDual_symm_apply]
-
-/-- The graph map `x' ↦ (x', g x')` is continuous. -/
-theorem continuous_snocLast_graph (hg : Continuous g) :
-    Continuous fun x' ↦ snocLast x' (g x') :=
-  continuous_snocLast.comp (continuous_id.prodMk hg)
-
 variable {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
 
 /-- A directional derivative of a compactly supported function of class `C¹(Ω̄)` is integrable on
@@ -388,7 +163,7 @@ theorem integrableOn_fderiv_apply_epigraph (hg : Continuous g) (hfc : HasCompact
   · exact ((hf₁.1.continuousOn_fderiv_of_isOpen (isOpen_epigraph hg) le_rfl).clm_apply
       continuousOn_const).aestronglyMeasurable (isOpen_epigraph hg).measurableSet
   · exact (ContinuousLinearMap.le_opNorm _ _).trans (by gcongr; exact hM y hy)
-  · rw [fderiv_eq_zero_of_notMem_tsupport hy]; rfl
+  · rw [fderiv_of_notMem_tsupport ℝ hy]; rfl
 
 /-- The composition of a compactly supported function on `ℝ^{d+1}` with the graph map
 `x' ↦ (x', g x')` has compact support. -/
@@ -447,7 +222,7 @@ theorem integral_Ioi_fderiv_last_eq (hg : Continuous g) (hfc : HasCompactSupport
         rcases ht with ⟨ht1, ht2⟩
         by_contra h
         exact ht2 ⟨ht1, (not_le.1 h).le⟩
-      rw [fderiv_eq_zero_of_notMem_tsupport (hout t ht')]
+      rw [fderiv_of_notMem_tsupport ℝ (hout t ht')]
       rfl),
     ← intervalIntegral.integral_of_le hgR]
   have hcont : ContinuousOn (fun t ↦ f (snocLast x' t)) (Icc (g x') R) :=
@@ -485,27 +260,6 @@ theorem integral_fderiv_last_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasCompactS
     integral_Ioi_fderiv_last_eq hg.continuous hfc hf₀ hf₁ hM x')
 
 /-! ### The horizontal components: Leibniz's rule with the moving lower limit -/
-
-/-- The derivative of the map `x' ↦ (x', g x' + s)`. -/
-theorem hasFDerivAt_snocLast_add (hg : ContDiff ℝ 1 g) (x' : EuclideanSpace ℝ (Fin d)) (s : ℝ) :
-    HasFDerivAt (fun x' ↦ snocLast x' (g x' + s))
-      (((initLastL d).symm : EuclideanSpace ℝ (Fin d) × ℝ →L[ℝ] _).comp
-        ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x'))) x' := by
-  have h1 : HasFDerivAt (fun x' ↦ (x', g x' + s))
-      ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x')) x' :=
-    (hasFDerivAt_id x').prodMk ((hg.differentiable one_ne_zero x').hasFDerivAt.add_const s)
-  exact (initLastL d).symm.hasFDerivAt.comp x' h1
-
-/-- The derivative of `x' ↦ (x', g x' + s)` in the direction `eᵢ` is `eᵢ + ∂ᵢg(x') e_N`. -/
-theorem snocLast_add_fderiv_apply_single (x' : EuclideanSpace ℝ (Fin d)) (i : Fin d) :
-    ((initLastL d).symm : EuclideanSpace ℝ (Fin d) × ℝ →L[ℝ] _).comp
-        ((ContinuousLinearMap.id ℝ _).prod (fderiv ℝ g x')) (EuclideanSpace.single i 1)
-      = EuclideanSpace.single i.castSucc 1
-        + fderiv ℝ g x' (EuclideanSpace.single i 1)
-          • EuclideanSpace.single (Fin.last d) (1 : ℝ) := by
-  ext j
-  induction j using Fin.lastCases <;> simp [Fin.castSucc_ne_last, Fin.castSucc_inj]
-
 /-- **A horizontal component of the divergence theorem — Leibniz's rule with the moving lower
 limit**: for `ContDiff ℝ 1 g`, `i : Fin d`, and `f` of class `C¹(Ω̄)` with compact support on the
 epigraph, `∫_{y_N > g y'} ∂ᵢ f = ∫ f (x', g x') ∂ᵢg (x') dx'`.
@@ -605,7 +359,7 @@ theorem integral_fderiv_castSucc_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasComp
     · have hs' : s ∈ Icc (0 : ℝ) R := ⟨hs.le, (hΦsupp x' s hsupp).2⟩
       rw [hbound₀def, indicator_of_mem hs']
       exact hM _ (hΦmem x' s hs)
-    · rw [fderiv_eq_zero_of_notMem_tsupport hsupp, norm_zero]
+    · rw [fderiv_of_notMem_tsupport ℝ hsupp, norm_zero]
       exact hbound₀_nonneg s
   set bound : ℝ → ℝ := fun s ↦ bound₀ s * (1 + Cg) with hbounddef
   have hbound_int : Integrable bound (volume.restrict (Ioi 0)) := hbound₀_int.mul_const _
@@ -615,7 +369,7 @@ theorem integral_fderiv_castSucc_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasComp
       exact mul_le_mul (hbound₀ x' s hs) (hDΦnorm x' (hΦsupp x' s hsupp).1) (norm_nonneg _)
         (hbound₀_nonneg s)
     · have : F' x' s = 0 := by
-        rw [hF'def]; simp only; rw [fderiv_eq_zero_of_notMem_tsupport hsupp]; rfl
+        rw [hF'def]; simp only; rw [fderiv_of_notMem_tsupport ℝ hsupp]; rfl
       rw [this, norm_zero, hbounddef]
       exact mul_nonneg (hbound₀_nonneg s) (by linarith)
   -- measurability and integrability of the integrand and of its derivative
@@ -890,7 +644,7 @@ theorem IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset {d : ℕ}
     rw [h, inter_comm]
   obtain ⟨hF₀', hF₁'⟩ := hF₁.congr_set_of_tsupport_subset hΩ Metric.isOpen_ball hsV hFs hF₀
   have hdiv0 : ∀ y, y ∉ Metric.ball x₀ r → EuclideanSpace.div F y = 0 := fun y hy ↦ by
-    have : fderiv ℝ F y = 0 := fderiv_eq_zero_of_notMem_tsupport fun h ↦ hy (hFs h)
+    have : fderiv ℝ F y = 0 := fderiv_of_notMem_tsupport ℝ fun h ↦ hy (hFs h)
     simp [EuclideanSpace.div, this]
   have e1 : ∫ y in Ω, EuclideanSpace.div F y
       = ∫ y in Ω ∩ Metric.ball x₀ r, EuclideanSpace.div F y :=

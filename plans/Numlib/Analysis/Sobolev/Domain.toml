@@ -102,6 +102,9 @@ id = "IsBoundaryGraphAt.mono"
 id = "IsBoundaryOfClass.mono"
 
 [[node]]
+id = "IsContDiffDomain.of_le"
+
+[[node]]
 id = "IsBoundaryOfClass.exists_finite_cover"
 
 [[node]]

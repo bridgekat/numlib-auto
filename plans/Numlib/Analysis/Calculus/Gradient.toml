@@ -1,0 +1,17 @@
+[[node]]
+id = "gradient_eq_toDualReal_symm"
+
+[[node]]
+id = "EuclideanSpace.continuous_gradient"
+
+[[node]]
+id = "EuclideanSpace.norm_gradient_eq"
+
+[[node]]
+id = "EuclideanSpace.inner_gradient_eq_fderiv"
+
+[[node]]
+id = "EuclideanSpace.gradient_apply"
+
+[[node]]
+id = "EuclideanSpace.norm_fderiv_eq"

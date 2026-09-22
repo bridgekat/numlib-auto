@@ -156,3 +156,9 @@ id = "_root_.ENNReal.fact_one_le_conjExponent"
 
 [[node]]
 id = "Lp.toDual_ne_of_forall_contDiff_apply_eq"
+
+[[node]]
+id = "continuous_integral_mul_prod"
+
+[[node]]
+id = "integral_norm_rpow_sub_one_mul_norm_le"

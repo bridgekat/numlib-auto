@@ -344,6 +344,13 @@ theorem IsBoundaryOfClass.mono {V' : Set (EuclideanSpace ℝ (Fin d) → ℝ)} (
     (h : IsBoundaryOfClass V Ω) : IsBoundaryOfClass V' Ω :=
   fun x₀ hx₀ ↦ let ⟨r, hr, hgraph⟩ := h x₀ hx₀; ⟨r, hr, hgraph.mono hV⟩
 
+/-- A `C^n` domain is a `C^m` domain for `m ≤ n`: the monotonicity of `IsContDiffDomain` in its
+order. It is how a consumer holding only the `C²` structure of a domain obtains the `C¹`
+structure that its surface measure is stated on. -/
+theorem IsContDiffDomain.of_le {m n : WithTop ℕ∞} (hmn : m ≤ n) (h : IsContDiffDomain n Ω) :
+    IsContDiffDomain m Ω :=
+  ⟨h.isOpen, h.isBoundaryOfClass.mono fun _ hg ↦ ContDiff.of_le hg hmn⟩
+
 /-- **A bounded set whose boundary is of class `V` has its boundary covered by finitely many balls
 in which it is a graph**: there are finitely many points `x_i` of `∂Ω` and radii `r_i > 0` with
 `∂Ω ⊆ ⋃ i, B(x_i, r_i)` and with `Ω ∩ B(x_i, r_i)` the region above the graph of some `g_i ∈ V`.

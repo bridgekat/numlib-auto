@@ -1,7 +1,4 @@
 [[node]]
-id = "eventually_pos_and_neg_of_hasDerivAt_pos"
-
-[[node]]
 id = "EuclideanSpace.graphParam"
 
 [[node]]
@@ -15,9 +12,6 @@ id = "EuclideanSpace.graphDomain"
 
 [[node]]
 id = "IsBoundaryGraphAt.graphParam_image_graphDomain"
-
-[[node]]
-id = "EuclideanSpace.inter_inter_preimage_epigraph_eq"
 
 [[node]]
 id = "EuclideanSpace.graphDensity"
@@ -119,9 +113,6 @@ id = "IsContDiffDomain.boundaryMeasure_restrict_ball"
 id = "IsContDiffDomain.boundaryMeasure_pos_of_isOpen"
 
 [[node]]
-id = "Bornology.IsBounded.frontier_nonempty"
-
-[[node]]
 id = "IsContDiffDomain.boundaryMeasure_univ_pos"
 
 [[node]]
@@ -132,3 +123,6 @@ id = "IsContDiffDomain.outwardNormal_eq_graphNormal_atlas"
 
 [[node]]
 id = "IsContDiffDomain.outwardNormal_eq_graphNormal"
+
+[[node]]
+id = "IsContDiffDomain.ae_eq_comp_graphParam"

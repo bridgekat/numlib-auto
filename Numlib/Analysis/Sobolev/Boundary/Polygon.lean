@@ -1,5 +1,8 @@
+import Numlib.Analysis.Convex.Segment
 import Numlib.Analysis.Sobolev.Boundary.Data
 import Numlib.Geometry.Triangulation
+import Numlib.MeasureTheory.Function.LpSeminorm.Basic
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The boundary of a plane polygon through its triangles
@@ -78,7 +81,7 @@ in Nonsmooth Domains*, §1.5.2 (polygons); `notes/boundary/planning-brief.md` B6
 -/
 
 open Filter MeasureTheory Set Function TopologicalSpace
-open scoped InnerProductSpace
+open scoped ENNReal InnerProductSpace
 
 noncomputable section
 
@@ -258,22 +261,6 @@ theorem eq_of_affine_eq {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C 
   have := LinearIndependent.pair_iff.1 h _ _ e'
   exact ⟨sub_eq_zero.1 this.1, sub_eq_zero.1 this.2⟩
 
-/-- Membership of the open segment, as `x = P + s (Q − P)` with `0 < s < 1`. -/
-theorem mem_openSegment_iff' {P Q x : 𝔼₂} :
-    x ∈ openSegment ℝ P Q ↔ ∃ s : ℝ, 0 < s ∧ s < 1 ∧ x = P + s • (Q - P) := by
-  rw [openSegment_eq_image']
-  constructor
-  · rintro ⟨s, hs, rfl⟩; exact ⟨s, hs.1, hs.2, rfl⟩
-  · rintro ⟨s, h1, h2, rfl⟩; exact ⟨s, ⟨h1, h2⟩, rfl⟩
-
-/-- Membership of the segment, as `x = P + s (Q − P)` with `0 ≤ s ≤ 1`. -/
-theorem mem_segment_iff' {P Q x : 𝔼₂} :
-    x ∈ segment ℝ P Q ↔ ∃ s : ℝ, 0 ≤ s ∧ s ≤ 1 ∧ x = P + s • (Q - P) := by
-  rw [segment_eq_image']
-  constructor
-  · rintro ⟨s, hs, rfl⟩; exact ⟨s, hs.1, hs.2, rfl⟩
-  · rintro ⟨s, h1, h2, rfl⟩; exact ⟨s, ⟨h1, h2⟩, rfl⟩
-
 section EdgeGeometry
 
 variable {P Q R x : 𝔼₂} (h : LinearIndependent ℝ ![Q - P, R - P])
@@ -437,23 +424,6 @@ theorem exists_fin3_of_ne {i j : Fin 3} (hij : i ≠ j) :
   revert i j; decide
 
 /-! ### Segments and the edge measure -/
-
-/-- `lineMap P Q t = P + t (Q − P)`. -/
-theorem lineMap_eq (P Q : 𝔼₂) (t : ℝ) : AffineMap.lineMap P Q t = P + t • (Q - P) := by
-  rw [AffineMap.lineMap_apply_module']; abel
-
-/-- The parametrization of a segment is continuous. -/
-theorem continuous_lineMap (P Q : 𝔼₂) : Continuous (AffineMap.lineMap P Q : ℝ → 𝔼₂) :=
-  AffineMap.lineMap_continuous
-
-/-- A segment of the plane is compact. -/
-theorem isCompact_segment (P Q : 𝔼₂) : IsCompact (segment ℝ P Q) := by
-  rw [segment_eq_image_lineMap]
-  exact isCompact_Icc.image (continuous_lineMap P Q)
-
-/-- A segment of the plane is measurable. -/
-theorem measurableSet_segment (P Q : 𝔼₂) : MeasurableSet (segment ℝ P Q) :=
-  (isCompact_segment P Q).isClosed.measurableSet
 
 /-- The parametrization maps `[0, 1]` into the segment. -/
 theorem lineMap_mem_segment' (P Q : 𝔼₂) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
@@ -1152,56 +1122,6 @@ theorem hasDerivAt_toLp_fst (x y : ℝ) :
   simpa using ((hasDerivAt_id x).smul_const (EuclideanSpace.single (0 : Fin 2) (1 : ℝ))).const_add
     (!₂[0, y] : 𝔼₂)
 
-/-- The derivative of a function of class `C¹(s̄)` is bounded on a bounded set `s` (it extends
-continuously to the compact closure). General lemma; belongs in
-`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`. -/
-theorem _root_.ContDiffOnClosure.exists_norm_fderiv_le {𝕜 X F : Type*} [NontriviallyNormedField 𝕜]
-    [NormedAddCommGroup X] [NormedSpace 𝕜 X] [ProperSpace X] [NormedAddCommGroup F]
-    [NormedSpace 𝕜 F] {f : X → F} {s : Set X}
-    (hf : ContDiffOnClosure 𝕜 1 f s) (hs : Bornology.IsBounded s) :
-    ∃ C, ∀ x ∈ s, ‖fderiv 𝕜 f x‖ ≤ C := by
-  obtain ⟨-, -, g', hg'c, hg'e⟩ := contDiffOnClosure_one_iff.1 hf
-  obtain ⟨C, hC⟩ := hs.isCompact_closure.exists_bound_of_continuousOn hg'c
-  exact ⟨C, fun x hx ↦ by rw [← hg'e hx]; exact hC x (subset_closure hx)⟩
-
-/-- The partial derivatives `z ↦ ∂ⱼFᵢ(z)` are measurable (no differentiability assumed). -/
-theorem measurable_fderiv_apply_apply {N : ℕ}
-    (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
-    (v : EuclideanSpace ℝ (Fin N)) (i : Fin N) :
-    Measurable fun z ↦ fderiv ℝ F z v i :=
-  (EuclideanSpace.proj i).continuous.measurable.comp
-    ((measurable_fderiv ℝ F).apply_continuousLinearMap v)
-
-/-- A partial derivative is bounded by the operator norm of the derivative. -/
-theorem norm_fderiv_apply_apply_le {N : ℕ}
-    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
-    {z : EuclideanSpace ℝ (Fin N)} {C : ℝ} (hC : ‖fderiv ℝ F z‖ ≤ C) (i j : Fin N) :
-    ‖fderiv ℝ F z (EuclideanSpace.single i 1) j‖ ≤ C :=
-  calc ‖fderiv ℝ F z (EuclideanSpace.single i 1) j‖
-      ≤ ‖fderiv ℝ F z (EuclideanSpace.single i 1)‖ := PiLp.norm_apply_le _ _
-    _ ≤ ‖fderiv ℝ F z‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ := ContinuousLinearMap.le_opNorm _ _
-    _ ≤ C := by simpa using hC
-
-/-- The partial derivatives of a `C¹(s̄)` field are integrable on a bounded measurable `s`. -/
-theorem integrableOn_fderiv_apply_apply {N : ℕ}
-    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {s : Set (EuclideanSpace ℝ (Fin N))}
-    (hF : ContDiffOnClosure ℝ 1 F s) (hs : Bornology.IsBounded s) (hsm : MeasurableSet s)
-    (i j : Fin N) : IntegrableOn (fun z ↦ fderiv ℝ F z (EuclideanSpace.single i 1) j) s := by
-  obtain ⟨C, hC⟩ := hF.exists_norm_fderiv_le hs
-  refine Measure.integrableOn_of_bounded (M := C) hs.measure_lt_top.ne
-    (measurable_fderiv_apply_apply F _ j).aestronglyMeasurable ?_
-  rw [ae_restrict_iff' hsm]
-  exact Filter.Eventually.of_forall fun z hz ↦ norm_fderiv_apply_apply_le (hC z hz) i j
-
-/-- The divergence of a `C¹(s̄)` field is integrable on a bounded measurable `s`. -/
-theorem integrableOn_div {N : ℕ}
-    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {s : Set (EuclideanSpace ℝ (Fin N))}
-    (hF : ContDiffOnClosure ℝ 1 F s) (hs : Bornology.IsBounded s) (hsm : MeasurableSet s) :
-    IntegrableOn (div F) s := by
-  have : div F = fun z ↦ ∑ i, fderiv ℝ F z (EuclideanSpace.single i 1) i := rfl
-  rw [this]
-  exact integrable_finsetSum _ fun i _ ↦ integrableOn_fderiv_apply_apply hF hs hsm i i
-
 /-- The divergence in the plane: `div F = ∂₀F₀ + ∂₁F₁`. -/
 theorem div_eq_two (F : 𝔼₂ → 𝔼₂) (z : 𝔼₂) :
     div F z = fderiv ℝ F z (EuclideanSpace.single 0 1) 0
@@ -1288,13 +1208,6 @@ theorem intervalIntegrable_comp_toLp {F : 𝔼₂ → 𝔼₂} (hF : ContinuousO
     (hF.comp (continuous_toLp₂ hf hg).continuousOn fun t ht ↦
       mem_closedReferenceTriangle_toLp.2 (h t ht))
 
-/-- The reparametrization `t ↦ 1 − t` of `[0, 1]`. -/
-theorem integral_comp_one_sub (g : ℝ → ℝ) :
-    ∫ t in (0 : ℝ)..1, g (1 - t) = ∫ t in (0 : ℝ)..1, g t := by
-  have := intervalIntegral.integral_comp_sub_left g (a := 0) (b := 1) 1
-  simp only [sub_zero, sub_self] at this
-  exact this
-
 /-- **The divergence theorem on the reference triangle, in parametrized form**: for `F` continuous
 on the closed reference triangle and of class `C¹` up to the boundary inside,
 `∫_T̂ div F = ∫_0^1 (F₀ + F₁)(t, 1 − t) dt − ∫_0^1 F₁(t, 0) dt − ∫_0^1 F₀(0, t) dt` — the edge
@@ -1340,7 +1253,7 @@ theorem integral_div_referenceTriangle {F : 𝔼₂ → 𝔼₂}
     intervalIntegrable_comp_toLp hF continuous_id (by fun_prop)
       (fun t ht ↦ ⟨ht.1, by linarith [ht.2], by simp⟩) 0
   have e2 : ∫ y in (0 : ℝ)..1, F !₂[1 - y, y] 0 = ∫ t in (0 : ℝ)..1, F !₂[t, 1 - t] 0 := by
-    rw [← integral_comp_one_sub (fun t ↦ F !₂[t, 1 - t] 0)]
+    rw [← intervalIntegral.integral_comp_one_sub (fun t ↦ F !₂[t, 1 - t] 0)]
     simp only [sub_sub_cancel]
   rw [e0, e1, intervalIntegral.integral_sub c1 c2, intervalIntegral.integral_sub c3 c4, e2,
     intervalIntegral.integral_add c5 c3]
@@ -1429,45 +1342,15 @@ theorem integral_div_referenceTriangle_eq_integral_inner {F : 𝔼₂ → 𝔼�
     zero_mul, one_mul, neg_mul, sub_neg_eq_add, sub_self]
   have e1 : ∫ t in (0 : ℝ)..1, (F !₂[1 - t, t] 0 + F !₂[1 - t, t] 1)
       = ∫ t in (0 : ℝ)..1, (F !₂[t, 1 - t] 0 + F !₂[t, 1 - t] 1) := by
-    rw [← integral_comp_one_sub (fun t ↦ F !₂[t, 1 - t] 0 + F !₂[t, 1 - t] 1)]
+    rw [← intervalIntegral.integral_comp_one_sub (fun t ↦ F !₂[t, 1 - t] 0 + F !₂[t, 1 - t] 1)]
     simp only [sub_sub_cancel]
   have e2 : ∫ t in (0 : ℝ)..1, -F !₂[0, 1 - t] 0 = -∫ t in (0 : ℝ)..1, F !₂[0, t] 0 := by
-    rw [intervalIntegral.integral_neg, ← integral_comp_one_sub (fun t ↦ F !₂[0, t] 0)]
+    rw [intervalIntegral.integral_neg,
+      ← intervalIntegral.integral_comp_one_sub (fun t ↦ F !₂[0, t] 0)]
   rw [e1, e2, intervalIntegral.integral_neg]
   ring
 
 /-! ### The divergence theorem on a triangle -/
-
-/-- **`C¹(s̄)` is stable under conjugation by an affine bijection and a linear map**: for `s` open
-and `f ∈ C¹(s̄)`, the field `x ↦ L (f (M x + b))` is of class `C¹` up to the boundary on the
-preimage of `s` under `x ↦ M x + b`. General lemma; belongs in
-`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`. -/
-theorem _root_.ContDiffOnClosure.clm_comp_comp_affine {𝕜 X Y F G : Type*}
-    [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X] [NormedAddCommGroup Y]
-    [NormedSpace 𝕜 Y] [NormedAddCommGroup F] [NormedSpace 𝕜 F] [NormedAddCommGroup G]
-    [NormedSpace 𝕜 G] {f : X → F} {s : Set X} (hs : IsOpen s) (hf : ContDiffOnClosure 𝕜 1 f s)
-    (L : F →L[𝕜] G) (M : Y ≃L[𝕜] X) (b : X) :
-    ContDiffOnClosure 𝕜 1 (fun y ↦ L (f (M y + b))) ((fun y ↦ M y + b) ⁻¹' s) := by
-  obtain ⟨hcd, ⟨g, hgc, hge⟩, ⟨g', hg'c, hg'e⟩⟩ := contDiffOnClosure_one_iff.1 hf
-  have hΦ : Continuous fun y ↦ M y + b := M.continuous.add continuous_const
-  have hΦh : (fun y ↦ M y + b) = M.toHomeomorph.trans (Homeomorph.addRight b) := by
-    funext y; rfl
-  have hcl : closure ((fun y ↦ M y + b) ⁻¹' s) = (fun y ↦ M y + b) ⁻¹' closure s := by
-    rw [hΦh, Homeomorph.preimage_closure]
-  refine contDiffOnClosure_one_iff.2 ⟨?_, ⟨fun y ↦ L (g (M y + b)), ?_, fun y hy ↦ ?_⟩,
-    ⟨fun y ↦ (L.comp (g' (M y + b))).comp (M : Y →L[𝕜] X), ?_, fun y hy ↦ ?_⟩⟩
-  · exact L.contDiff.comp_contDiffOn
-      (hcd.comp (M.contDiff.add contDiff_const).contDiffOn (mapsTo_preimage _ _))
-  · rw [hcl]
-    exact L.continuous.comp_continuousOn (hgc.comp hΦ.continuousOn (mapsTo_preimage _ _))
-  · simp only [hge hy]
-  · rw [hcl]
-    exact (continuousOn_const.clm_comp (hg'c.comp hΦ.continuousOn
-      (mapsTo_preimage _ _))).clm_comp continuousOn_const
-  · have hd : DifferentiableAt 𝕜 f (M y + b) :=
-      (hcd.differentiableOn one_ne_zero).differentiableAt (hs.mem_nhds hy)
-    simp only [hg'e hy]
-    exact (L.hasFDerivAt.comp y (hd.hasFDerivAt.comp y (M.hasFDerivAt.add_const b))).fderiv.symm
 
 /-- **The divergence theorem on a triangle**: for non-collinear `A, B, C` and a field `F`
 continuous on the closed triangle and of class `C¹` up to the boundary on the open one,
@@ -1557,6 +1440,57 @@ def triangleBoundaryData (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C
 
 @[simp] theorem triangleBoundaryData_ν (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) :
     (triangleBoundaryData A B C h).ν = triangleNormal A B C := rfl
+
+/-! ### Segments and edges of a triangle, rotated -/
+
+/-- The arclength measure of the edge `a` of the triangle `T` is dominated by the boundary
+measure of the triangle. -/
+theorem edgeMeasure_le_triangleBoundaryMeasure (T : Fin 3 → 𝔼₂) (a : Fin 3) :
+    edgeMeasure (T a) (T (a + 1)) ≤ triangleBoundaryMeasure (T 0) (T 1) (T 2) := by
+  unfold triangleBoundaryMeasure
+  fin_cases a
+  · exact Measure.le_add_right (Measure.le_add_right le_rfl)
+  · exact Measure.le_add_right (Measure.le_add_left le_rfl)
+  · exact Measure.le_add_left le_rfl
+
+/-- On the open edge `a` of the triangle `T`, the normal of the triangle is the edge normal. -/
+theorem triangleNormal_eq_of_mem_openSegment_rot {T : Fin 3 → 𝔼₂}
+    (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) (a : Fin 3) {x : 𝔼₂}
+    (hx : x ∈ openSegment ℝ (T a) (T (a + 1))) :
+    triangleNormal (T 0) (T 1) (T 2) x = edgeNormal (T a) (T (a + 1)) (T (a + 2)) := by
+  fin_cases a
+  · exact triangleNormal_eq_of_mem_openSegment₀₁ hx
+  · exact triangleNormal_eq_of_mem_openSegment₁₂ h hx
+  · exact triangleNormal_eq_of_mem_openSegment₂₀ h hx
+
+/-- The edge `a` of the triangle `T` lies in the closed triangle. -/
+theorem segment_subset_closedTriangle_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
+    segment ℝ (T a) (T (a + 1)) ⊆ closedTriangle (T 0) (T 1) (T 2) := by
+  fin_cases a
+  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 0 1
+  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 1 2
+  · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 2 0
+
+/-- **The boundary integral of `f νᵢ` on a triangle is the sum of the three edge integrals**
+with the constant edge normals, for `f` integrable on the boundary of the triangle. -/
+theorem integral_mul_triangleNormal_apply {T : Fin 3 → 𝔼₂}
+    (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) {f : 𝔼₂ → ℝ}
+    (hf : Integrable f (triangleBoundaryMeasure (T 0) (T 1) (T 2))) (i : Fin 2) :
+    ∫ x, f x * triangleNormal (T 0) (T 1) (T 2) x i ∂triangleBoundaryMeasure (T 0) (T 1) (T 2)
+      = ∑ a : Fin 3, ∫ x, f x * edgeNormal (T a) (T (a + 1)) (T (a + 2)) i
+          ∂edgeMeasure (T a) (T (a + 1)) := by
+  have hfν := (triangleBoundaryData (T 0) (T 1) (T 2) h).integrable_mul_ν_apply hf i
+  have key : ∀ a : Fin 3, ∫ x, f x * triangleNormal (T 0) (T 1) (T 2) x i
+      ∂edgeMeasure (T a) (T (a + 1))
+      = ∫ x, f x * edgeNormal (T a) (T (a + 1)) (T (a + 2)) i ∂edgeMeasure (T a) (T (a + 1)) :=
+    fun a ↦ integral_congr_ae ((ae_mem_openSegment
+      ((EuclideanSpace.vertex_injective h).ne (fin3_ne_add_one a))).mono fun x hx ↦ by
+        dsimp only; rw [triangleNormal_eq_of_mem_openSegment_rot h a hx])
+  rw [Fin.sum_univ_three, ← key 0, ← key 1, ← key 2]
+  exact integral_triangleBoundaryMeasure
+    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 0))
+    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 1))
+    (hfν.mono_measure (edgeMeasure_le_triangleBoundaryMeasure T 2))
 
 end EuclideanSpace
 
@@ -1929,20 +1863,6 @@ theorem ae_norm_outwardNormal : ∀ᵐ x ∂𝒯.boundaryMeasure, ‖𝒯.outwar
   rw [outwardNormal_eq_edgeNormal (mem_boundaryEdges.1 he) hx]
   exact norm_edgeNormal ((linearIndependent_pair_iff_inner_perp_ne_zero _ _).1 (𝒯.li_rot e.1 e.2))
 
-/-- A function almost everywhere equal to a constant for each of finitely many measures is
-measurable for their sum. -/
-theorem _root_.MeasureTheory.aestronglyMeasurable_finsetSum_measure {α β ι : Type*}
-    [MeasurableSpace α] [TopologicalSpace β] [PseudoMetrizableSpace β] {f : α → β}
-    {s : Finset ι} {μ : ι → Measure α} (h : ∀ i ∈ s, AEStronglyMeasurable f (μ i)) :
-    AEStronglyMeasurable f (∑ i ∈ s, μ i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert a s ha ih =>
-    rw [Finset.sum_insert ha]
-    exact (h a (Finset.mem_insert_self a s)).add_measure
-      (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
-
 /-- The outward normal is measurable for the surface measure. -/
 theorem aestronglyMeasurable_outwardNormal :
     AEStronglyMeasurable 𝒯.outwardNormal 𝒯.boundaryMeasure := by
@@ -2100,6 +2020,52 @@ theorem mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier (h : 𝒯.Interior
   · by_cases hb : 𝒯.IsBoundaryEdge T a
     · exact Or.inr ⟨T, a, hb, ha⟩
     · exact absurd (h T a hb ha) hxΩ
+
+/-! ### Boundary and interior integrals over the elements -/
+
+section Integrals
+
+variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+/-- Almost everywhere for the boundary measure means almost everywhere for the arclength measure
+of every boundary edge. -/
+theorem ae_boundaryMeasure_iff {P : 𝔼₂ → Prop} :
+    (∀ᵐ x ∂𝒯.boundaryMeasure, P x) ↔
+      ∀ e ∈ 𝒯.boundaryEdges, ∀ᵐ x ∂edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)), P x := by
+  rw [boundaryMeasure, ae_finsetSum_measure_iff]
+
+/-- The arclength measure of a boundary edge is dominated by the boundary measure. -/
+theorem edgeMeasure_le_boundaryMeasure {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.IsBoundaryEdge T a) :
+    edgeMeasure (T.1 a) (T.1 (a + 1)) ≤ 𝒯.boundaryMeasure := by
+  have h2 := Finset.single_le_sum
+    (f := fun e : 𝒯.elems × Fin 3 ↦ edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)))
+    (fun _ _ ↦ Measure.zero_le _) ((mem_boundaryEdges (e := (T, a))).2 h)
+  rw [boundaryMeasure]
+  exact h2
+
+/-! ### The interior integrals over the elements -/
+
+/-- The integral over the domain is the sum of the integrals over the open elements. -/
+theorem setIntegral_eq_sum_K {A : 𝔼₂ → ℝ} (hA : IntegrableOn A (Ω : Set 𝔼₂)) :
+    ∫ x in (Ω : Set 𝔼₂), A x = ∑ T, ∫ x in 𝒯.K T, A x := by
+  rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
+  exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
+    fun T ↦ hA.mono_set (𝒯.K_subset T)
+
+include 𝒯 in
+/-- An `L^p(Ω)` function times a function continuous on `closure Ω` is integrable on `Ω`. -/
+theorem integrableOn_mul_of_memLp_of_continuousOn {f g : 𝔼₂ → ℝ}
+    (hf : MemLp f p (volume.restrict (Ω : Set 𝔼₂))) (hg : ContinuousOn g (closure (Ω : Set 𝔼₂))) :
+    IntegrableOn (fun x ↦ f x * g x) (Ω : Set 𝔼₂) := by
+  have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
+    isFiniteMeasure_restrict.2 𝒯.isBounded.measure_lt_top.ne
+  obtain ⟨C, hC⟩ := 𝒯.isCompact_closure.exists_bound_of_continuousOn hg
+  refine (hf.integrable Fact.out).mul_bdd (c := C)
+    ((hg.mono subset_closure).aestronglyMeasurable Ω.isOpen.measurableSet) ?_
+  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
+  exact hC x (subset_closure hx)
+
+end Integrals
 
 end Triangulation
 

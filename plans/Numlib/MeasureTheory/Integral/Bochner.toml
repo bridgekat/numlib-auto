@@ -1,0 +1,7 @@
+desc = '''
+The Bochner integral, in Mathlib's own layout (natural home:
+`Mathlib.MeasureTheory.Integral.Bochner.*`). Directory-only group; the module is
+
+* `Basic` -- the integral of a power of a norm as the `toReal` of a lower Lebesgue integral, the
+  bridge by which an `ℝ≥0∞`-valued estimate is read back as an inequality of Bochner integrals.
+'''

@@ -82,53 +82,6 @@ noncomputable section
 
 /-! ### The divergence of a sum, its measurability and integrability -/
 
-namespace EuclideanSpace
-
-variable {N : ℕ}
-
-/-- The divergence of a finite sum of fields differentiable at `x` is the sum of the
-divergences. -/
-theorem div_finset_sum {ι : Type*} (s : Finset ι)
-    {G : ι → EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {x : EuclideanSpace ℝ (Fin N)}
-    (hG : ∀ i ∈ s, DifferentiableAt ℝ (G i) x) :
-    div (fun y ↦ ∑ i ∈ s, G i y) x = ∑ i ∈ s, div (G i) x := by
-  simp only [div, fderiv_fun_sum hG, sum_apply, WithLp.ofLp_sum, Finset.sum_apply]
-  exact Finset.sum_comm
-
-/-- The divergence of any field is measurable (`fderiv` is measurable with no hypothesis). -/
-theorem measurable_div (G : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) :
-    Measurable (div G) :=
-  Finset.measurable_sum _ fun i _ ↦
-    (EuclideanSpace.proj (𝕜 := ℝ) i).continuous.measurable.comp
-      (measurable_fderiv_apply_const ℝ G (EuclideanSpace.single i 1))
-
-end EuclideanSpace
-
-/-- **A function of class `C¹(s̄)` on a bounded set has a bounded derivative on `s`**: the
-continuous extension of `fderiv ℝ f` is bounded on the compact `closure s`. Compare
-`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport` of `Boundary/Divergence.lean`,
-which bounds it under compact support instead. -/
-theorem ContDiffOnClosure.exists_norm_fderiv_le_of_isBounded {X F : Type*}
-    [NormedAddCommGroup X] [NormedSpace ℝ X] [ProperSpace X] [NormedAddCommGroup F]
-    [NormedSpace ℝ F] {f : X → F} {s : Set X} (hf : ContDiffOnClosure ℝ 1 f s)
-    (hs : Bornology.IsBounded s) : ∃ M, ∀ x ∈ s, ‖fderiv ℝ f x‖ ≤ M := by
-  obtain ⟨-, -, G, hGc, hGe⟩ := contDiffOnClosure_one_iff.1 hf
-  obtain ⟨C, hC⟩ := hs.isCompact_closure.exists_bound_of_continuousOn hGc
-  exact ⟨C, fun x hx ↦ by rw [← hGe hx]; exact hC x (subset_closure hx)⟩
-
-/-- **The divergence of a `C¹(Ω̄)` field is integrable on a bounded open `Ω`**: it is measurable,
-and bounded by `N ‖DF‖` (`EuclideanSpace.abs_div_le`) with `DF` bounded on `Ω`. -/
-theorem ContDiffOnClosure.integrableOn_div {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
-    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
-    (hF : ContDiffOnClosure ℝ 1 F Ω) (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω) :
-    IntegrableOn (EuclideanSpace.div F) Ω := by
-  obtain ⟨M, hM⟩ := hF.exists_norm_fderiv_le_of_isBounded hb
-  refine Measure.integrableOn_of_bounded hb.measure_lt_top.ne
-    (EuclideanSpace.measurable_div F).aestronglyMeasurable (M := N * M) ?_
-  refine ae_restrict_of_forall_mem hΩ.measurableSet fun x hx ↦ ?_
-  rw [Real.norm_eq_abs]
-  exact (EuclideanSpace.abs_div_le F x).trans (by gcongr; exact hM x hx)
-
 /-! ### The compactly supported piece: `∫_Ω div (θ F) = 0` for `θ` vanishing near `∂Ω` -/
 
 /-- **The interior piece of the divergence theorem**: for `θ` of class `C¹` with
@@ -172,7 +125,7 @@ theorem EuclideanSpace.integral_div_smul_eq_zero_of_disjoint_tsupport_frontier {
       ((subset_tsupport H).trans (hHs.trans (hχs.trans subset_closure)))
   have hdiv0 : ∀ y, y ∉ Ω → EuclideanSpace.div H y = 0 := fun y hy ↦ by
     have : fderiv ℝ H y = 0 :=
-      fderiv_eq_zero_of_notMem_tsupport fun h ↦ hy (hχs (hHs h))
+      fderiv_of_notMem_tsupport ℝ fun h ↦ hy (hχs (hHs h))
     simp [EuclideanSpace.div, this]
   calc ∫ y in Ω, EuclideanSpace.div (fun y ↦ θ y • F y) y
       = ∫ y in Ω, EuclideanSpace.div H y := by

@@ -1,16 +1,4 @@
 [[node]]
-id = "EuclideanSpace.div_finset_sum"
-
-[[node]]
-id = "EuclideanSpace.measurable_div"
-
-[[node]]
-id = "ContDiffOnClosure.exists_norm_fderiv_le_of_isBounded"
-
-[[node]]
-id = "ContDiffOnClosure.integrableOn_div"
-
-[[node]]
 id = "EuclideanSpace.integral_div_smul_eq_zero_of_disjoint_tsupport_frontier"
 
 [[node]]

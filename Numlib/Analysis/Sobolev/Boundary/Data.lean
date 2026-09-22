@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Trace
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace
 
 /-!
 # Boundary data: the surface measure, the outward normal and the divergence theorem, abstractly
@@ -75,44 +76,6 @@ open Filter MeasureTheory Set TopologicalSpace
 open scoped Distributions ENNReal InnerProductSpace Laplacian Topology
 
 noncomputable section
-
-/-! ### The Riesz map of a real Hilbert space, real-linearly -/
-
-section ToDualReal
-
-variable (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
-
-/-- **The Riesz isometry of a real Hilbert space as a real-linear isometry equivalence**:
-`InnerProductSpace.toDual ℝ E` is typed as conjugate-linear (`≃ₗᵢ⋆[ℝ]`), which over `ℝ` is the
-same map; this is that map with the linear type, so that the calculus lemmas stated for
-`≃ₗᵢ[𝕜]` (`LinearIsometryEquiv.comp_fderiv`, `contDiff`, `differentiableAt`) apply. Its inverse
-is `(toDual ℝ E).symm`, so `gradient f x = (toDualReal E).symm (fderiv ℝ f x)` definitionally. -/
-def InnerProductSpace.toDualReal : E ≃ₗᵢ[ℝ] StrongDual ℝ E where
-  toFun := InnerProductSpace.toDual ℝ E
-  invFun := (InnerProductSpace.toDual ℝ E).symm
-  map_add' := map_add _
-  map_smul' c x := by
-    rw [LinearIsometryEquiv.map_smulₛₗ]
-    rfl
-  left_inv := (InnerProductSpace.toDual ℝ E).symm_apply_apply
-  right_inv := (InnerProductSpace.toDual ℝ E).apply_symm_apply
-  norm_map' := (InnerProductSpace.toDual ℝ E).norm_map
-
-variable {E}
-
-@[simp]
-theorem InnerProductSpace.toDualReal_apply (x : E) :
-    InnerProductSpace.toDualReal E x = InnerProductSpace.toDual ℝ E x := rfl
-
-@[simp]
-theorem InnerProductSpace.toDualReal_symm_apply (φ : StrongDual ℝ E) :
-    (InnerProductSpace.toDualReal E).symm φ = (InnerProductSpace.toDual ℝ E).symm φ := rfl
-
-/-- The gradient through `toDualReal`. -/
-theorem gradient_eq_toDualReal_symm (f : E → ℝ) :
-    gradient f = fun x ↦ (InnerProductSpace.toDualReal E).symm (fderiv ℝ f x) := rfl
-
-end ToDualReal
 
 /-! ### The divergence and its calculus -/
 
@@ -221,17 +184,6 @@ theorem div_comp_affineIsometryEquiv
   simp only [hs, hLs] at key
   exact key
 
-/-- The Laplacian is the sum of the second derivatives `D²u(eᵢ, eᵢ)` in the standard basis, at
-every point (no differentiability assumed: both sides are `0` where `u` is not twice
-differentiable). -/
-theorem laplacian_eq_sum_fderiv_fderiv_single (u : EuclideanSpace ℝ (Fin N) → ℝ)
-    (x : EuclideanSpace ℝ (Fin N)) :
-    Δ u x
-      = ∑ i, fderiv ℝ (fderiv ℝ u) x (EuclideanSpace.single i 1) (EuclideanSpace.single i 1) := by
-  rw [InnerProductSpace.laplacian_eq_iteratedFDeriv_orthonormalBasis u
-    (EuclideanSpace.basisFun (Fin N) ℝ)]
-  simp [iteratedFDeriv_two_apply]
-
 /-- **The divergence of the gradient is the Laplacian**, at every point. -/
 theorem div_gradient_eq_laplacian (u : EuclideanSpace ℝ (Fin N) → ℝ)
     (x : EuclideanSpace ℝ (Fin N)) : div (gradient u) x = Δ u x := by
@@ -245,114 +197,80 @@ theorem div_gradient_eq_laplacian (u : EuclideanSpace ℝ (Fin N) → ℝ)
   rw [h2, LinearIsometryEquiv.coe_coe'', InnerProductSpace.toDualReal_symm_apply,
     InnerProductSpace.toDual_symm_apply]
 
+/-- The divergence of a finite sum of fields differentiable at `x` is the sum of the
+divergences. -/
+theorem div_finset_sum {ι : Type*} (s : Finset ι)
+    {G : ι → EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {x : EuclideanSpace ℝ (Fin N)}
+    (hG : ∀ i ∈ s, DifferentiableAt ℝ (G i) x) :
+    div (fun y ↦ ∑ i ∈ s, G i y) x = ∑ i ∈ s, div (G i) x := by
+  simp only [div, fderiv_fun_sum hG, sum_apply, WithLp.ofLp_sum, Finset.sum_apply]
+  exact Finset.sum_comm
+
+/-- The partial derivatives `z ↦ ∂ⱼFᵢ(z)` are measurable (no differentiability assumed). -/
+theorem measurable_fderiv_apply_apply (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
+    (v : EuclideanSpace ℝ (Fin N)) (i : Fin N) :
+    Measurable fun z ↦ fderiv ℝ F z v i :=
+  (EuclideanSpace.proj i).continuous.measurable.comp
+    ((measurable_fderiv ℝ F).apply_continuousLinearMap v)
+
+/-- The divergence of any field is measurable (`fderiv` is measurable with no hypothesis). -/
+theorem measurable_div (G : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) :
+    Measurable (div G) :=
+  Finset.measurable_sum _ fun i _ ↦
+    (EuclideanSpace.proj (𝕜 := ℝ) i).continuous.measurable.comp
+      (measurable_fderiv_apply_const ℝ G (EuclideanSpace.single i 1))
+
+/-- A partial derivative is bounded by the operator norm of the derivative. -/
+theorem norm_fderiv_apply_apply_le {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
+    {z : EuclideanSpace ℝ (Fin N)} {C : ℝ} (hC : ‖fderiv ℝ F z‖ ≤ C) (i j : Fin N) :
+    ‖fderiv ℝ F z (EuclideanSpace.single i 1) j‖ ≤ C :=
+  calc ‖fderiv ℝ F z (EuclideanSpace.single i 1) j‖
+      ≤ ‖fderiv ℝ F z (EuclideanSpace.single i 1)‖ := PiLp.norm_apply_le _ _
+    _ ≤ ‖fderiv ℝ F z‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ := ContinuousLinearMap.le_opNorm _ _
+    _ ≤ C := by simpa using hC
+
+/-- `|div w x| ≤ N ‖Dw(x)‖`. -/
+theorem abs_div_le (w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
+    (x : EuclideanSpace ℝ (Fin N)) : |EuclideanSpace.div w x| ≤ N * ‖fderiv ℝ w x‖ := by
+  unfold EuclideanSpace.div
+  refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+  have h : ∀ i : Fin N, |fderiv ℝ w x (EuclideanSpace.single i 1) i| ≤ ‖fderiv ℝ w x‖ := fun i ↦ by
+    rw [← Real.norm_eq_abs]
+    refine (PiLp.norm_apply_le _ i).trans ?_
+    refine ((fderiv ℝ w x).le_opNorm _).trans ?_
+    simp
+  refine (Finset.sum_le_sum fun i _ ↦ h i).trans ?_
+  simp
+
+/-- The partial derivatives of a `C¹(s̄)` field are integrable on a bounded measurable `s`. -/
+theorem integrableOn_fderiv_apply_apply
+    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {s : Set (EuclideanSpace ℝ (Fin N))}
+    (hF : ContDiffOnClosure ℝ 1 F s) (hs : Bornology.IsBounded s) (hsm : MeasurableSet s)
+    (i j : Fin N) : IntegrableOn (fun z ↦ fderiv ℝ F z (EuclideanSpace.single i 1) j) s := by
+  obtain ⟨C, hC⟩ := hF.exists_norm_fderiv_le hs
+  refine Measure.integrableOn_of_bounded (M := C) hs.measure_lt_top.ne
+    (measurable_fderiv_apply_apply F _ j).aestronglyMeasurable ?_
+  rw [ae_restrict_iff' hsm]
+  exact Filter.Eventually.of_forall fun z hz ↦ norm_fderiv_apply_apply_le (hC z hz) i j
+
+/-- The divergence of a `C¹(s̄)` field is integrable on a bounded measurable `s`. -/
+theorem integrableOn_div {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
+    {s : Set (EuclideanSpace ℝ (Fin N))} (hF : ContDiffOnClosure ℝ 1 F s)
+    (hs : Bornology.IsBounded s) (hsm : MeasurableSet s) : IntegrableOn (div F) s := by
+  have : div F = fun z ↦ ∑ i, fderiv ℝ F z (EuclideanSpace.single i 1) i := rfl
+  rw [this]
+  exact integrable_finsetSum _ fun i _ ↦ integrableOn_fderiv_apply_apply hF hs hsm i i
 end EuclideanSpace
 
-/-! ### The class `C¹(s̄)` under products -/
+/-- **The divergence of a `C¹(Ω̄)` field is integrable on a bounded open `Ω`**: the case of an
+open set of `EuclideanSpace.integrableOn_div`. -/
+theorem ContDiffOnClosure.integrableOn_div {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
+    {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
+    (hF : ContDiffOnClosure ℝ 1 F Ω) (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω) :
+    IntegrableOn (EuclideanSpace.div F) Ω :=
+  EuclideanSpace.integrableOn_div hF hb hΩ.measurableSet
 
-section ContDiffOnClosure
-
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {X F : Type*} [NormedAddCommGroup X]
-  [NormedSpace 𝕜 X] [NormedAddCommGroup F] [NormedSpace 𝕜 F] {f : X → F} {s : Set X}
-
-/-- The first derivative tensor is the derivative, read through `continuousMultilinearCurryFin1`
-(the real case is `iteratedFDeriv_one_eq_symm_fderiv` of
-`Numlib/Analysis/Sobolev/Friedrichs.lean`). -/
-theorem iteratedFDeriv_one_eq_symm_fderiv' (f : X → F) (x : X) :
-    iteratedFDeriv 𝕜 1 f x = (continuousMultilinearCurryFin1 𝕜 X F).symm (fderiv 𝕜 f x) :=
-  ContinuousMultilinearMap.ext fun m ↦ by simp
-
-/-- **The class `C¹(s̄)` through the derivative**: `f ∈ C¹(s̄)` iff `f` is `C¹` on `s` and both `f`
-and `fderiv 𝕜 f` extend continuously to `closure s`. -/
-theorem contDiffOnClosure_one_iff :
-    ContDiffOnClosure 𝕜 1 f s ↔ ContDiffOn 𝕜 1 f s ∧
-      (∃ g : X → F, ContinuousOn g (closure s) ∧ EqOn g f s) ∧
-      ∃ g' : X → X →L[𝕜] F, ContinuousOn g' (closure s) ∧ EqOn g' (fderiv 𝕜 f) s := by
-  constructor
-  · intro h
-    refine ⟨h.1, h.continuousOn_closure, ?_⟩
-    obtain ⟨g, hgc, hge⟩ := h.2 1 le_rfl
-    refine ⟨fun x ↦ continuousMultilinearCurryFin1 𝕜 X F (g x),
-      (continuousMultilinearCurryFin1 𝕜 X F).continuous.comp_continuousOn hgc, fun x hx ↦ ?_⟩
-    change continuousMultilinearCurryFin1 𝕜 X F (g x) = fderiv 𝕜 f x
-    rw [hge hx, iteratedFDeriv_one_eq_symm_fderiv', LinearIsometryEquiv.apply_symm_apply]
-  · rintro ⟨h, ⟨g, hgc, hge⟩, ⟨g', hgc', hge'⟩⟩
-    refine ⟨h, fun m hm ↦ ?_⟩
-    have hm' : m ≤ 1 := by exact_mod_cast hm
-    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 hm' with rfl | rfl
-    · refine ⟨fun x ↦ (continuousMultilinearCurryFin0 𝕜 X F).symm (g x),
-        (continuousMultilinearCurryFin0 𝕜 X F).symm.continuous.comp_continuousOn hgc,
-        fun x hx ↦ ?_⟩
-      change (continuousMultilinearCurryFin0 𝕜 X F).symm (g x) = iteratedFDeriv 𝕜 0 f x
-      rw [hge hx, iteratedFDeriv_zero_eq_comp, Function.comp_apply]
-    · refine ⟨fun x ↦ (continuousMultilinearCurryFin1 𝕜 X F).symm (g' x),
-        (continuousMultilinearCurryFin1 𝕜 X F).symm.continuous.comp_continuousOn hgc',
-        fun x hx ↦ ?_⟩
-      change (continuousMultilinearCurryFin1 𝕜 X F).symm (g' x) = iteratedFDeriv 𝕜 1 f x
-      rw [hge' hx, iteratedFDeriv_one_eq_symm_fderiv']
-
-/-- The second derivative of a function of class `C²(s̄)` extends continuously to `closure s`. -/
-theorem ContDiffOnClosure.exists_continuousOn_fderiv_fderiv (h : ContDiffOnClosure 𝕜 2 f s) :
-    ∃ G : X → X →L[𝕜] X →L[𝕜] F, ContinuousOn G (closure s) ∧
-      EqOn G (fderiv 𝕜 (fderiv 𝕜 f)) s := by
-  obtain ⟨g₂, hc, he⟩ := h.2 2 le_rfl
-  let C : (X [×1]→L[𝕜] F) →L[𝕜] (X →L[𝕜] F) :=
-    (continuousMultilinearCurryFin1 𝕜 X F : (X [×1]→L[𝕜] F) →L[𝕜] (X →L[𝕜] F))
-  let L : (X [×2]→L[𝕜] F) →L[𝕜] (X →L[𝕜] X [×1]→L[𝕜] F) :=
-    (continuousMultilinearCurryLeftEquiv 𝕜 (fun _ : Fin 2 ↦ X) F :
-      (X [×2]→L[𝕜] F) →L[𝕜] (X →L[𝕜] X [×1]→L[𝕜] F))
-  refine ⟨fun x ↦ ContinuousLinearMap.compL 𝕜 X (X [×1]→L[𝕜] F) (X →L[𝕜] F) C (L (g₂ x)), ?_,
-    fun x hx ↦ ?_⟩
-  · exact ((ContinuousLinearMap.compL 𝕜 X (X [×1]→L[𝕜] F) (X →L[𝕜] F) C).continuous.comp
-      L.continuous).comp_continuousOn hc
-  · ext w v
-    simp only [ContinuousLinearMap.compL_apply, ContinuousLinearMap.comp_apply, he hx]
-    change continuousMultilinearCurryFin1 𝕜 X F
-      (continuousMultilinearCurryLeftEquiv 𝕜 (fun _ : Fin 2 ↦ X) F (iteratedFDeriv 𝕜 2 f x) w) v
-      = _
-    rw [continuousMultilinearCurryFin1_apply, continuousMultilinearCurryLeftEquiv_apply,
-      iteratedFDeriv_two_apply]
-    simp
-
-namespace ContDiffOnClosure
-
-/-- **`C¹(s̄)` is closed under the product of a scalar function with a vector function**, on an
-open set `s`: `D(u v) = u Dv + (Du) v` on `s`, and the continuous extensions of `u, v, Du, Dv`
-to `closure s` combine into one of `D(u v)`. -/
-theorem smul (hs : IsOpen s) {u : X → 𝕜} {v : X → F} (hu : ContDiffOnClosure 𝕜 1 u s)
-    (hv : ContDiffOnClosure 𝕜 1 v s) : ContDiffOnClosure 𝕜 1 (fun x ↦ u x • v x) s := by
-  rw [contDiffOnClosure_one_iff] at hu hv ⊢
-  obtain ⟨hu, ⟨u₁, hu₁c, hu₁e⟩, ⟨u₁', hu₁c', hu₁e'⟩⟩ := hu
-  obtain ⟨hv, ⟨v₁, hv₁c, hv₁e⟩, ⟨v₁', hv₁c', hv₁e'⟩⟩ := hv
-  refine ⟨hu.smul hv, ⟨fun x ↦ u₁ x • v₁ x, hu₁c.smul hv₁c, fun x hx ↦ by
-    simp only [hu₁e hx, hv₁e hx]⟩,
-    ⟨fun x ↦ u₁ x • v₁' x + (u₁' x).smulRight (v₁ x), ?_, fun x hx ↦ ?_⟩⟩
-  · refine (hu₁c.smul hv₁c').add ?_
-    exact (ContinuousLinearMap.smulRightL 𝕜 X F).continuous₂.comp_continuousOn
-      (hu₁c'.prodMk hv₁c)
-  · have hux : DifferentiableAt 𝕜 u x :=
-      (hu.differentiableOn one_ne_zero).differentiableAt (hs.mem_nhds hx)
-    have hvx : DifferentiableAt 𝕜 v x :=
-      (hv.differentiableOn one_ne_zero).differentiableAt (hs.mem_nhds hx)
-    simp only [hu₁e hx, hv₁e hx, hu₁e' hx, hv₁e' hx]
-    exact (fderiv_fun_smul hux hvx).symm
-
-/-- **`C¹(s̄)` is closed under products of scalar functions**, on an open set `s`. -/
-theorem mul (hs : IsOpen s) {u v : X → 𝕜} (hu : ContDiffOnClosure 𝕜 1 u s)
-    (hv : ContDiffOnClosure 𝕜 1 v s) : ContDiffOnClosure 𝕜 1 (fun x ↦ u x * v x) s :=
-  hu.smul hs hv
-
-/-- A constant function is of class `C¹(s̄)`. -/
-theorem const (c : F) : ContDiffOnClosure 𝕜 1 (fun _ : X ↦ c) s := by
-  rw [contDiffOnClosure_one_iff]
-  exact ⟨contDiffOn_const, ⟨fun _ ↦ c, continuousOn_const, fun _ _ ↦ rfl⟩,
-    ⟨fun _ ↦ 0, continuousOn_const, fun x _ ↦ (fderiv_const_apply c).symm⟩⟩
-
-/-- **`C¹(s̄)` is closed under multiplication by a fixed vector**, on an open set `s`. -/
-theorem smul_const (hs : IsOpen s) {u : X → 𝕜} (hu : ContDiffOnClosure 𝕜 1 u s) (c : F) :
-    ContDiffOnClosure 𝕜 1 (fun x ↦ u x • c) s :=
-  hu.smul hs (const c)
-
-end ContDiffOnClosure
+/-! ### The gradient of a `C²(s̄)` function -/
 
 section Gradient
 
@@ -390,8 +308,6 @@ theorem ContDiffOnClosure.toDual_symm_of_eqOn_fderiv {u : EuclideanSpace ℝ (Fi
     exact (𝓡⁻¹.comp_fderiv).symm
 
 end Gradient
-
-end ContDiffOnClosure
 
 /-! ### The boundary data of an open set -/
 
@@ -460,6 +376,44 @@ theorem memLp_ν_apply_mul {p : ℝ≥0∞} {f : EuclideanSpace ℝ (Fin N) → 
     (B.ae_abs_ν_apply_le i).mono fun x hx ↦ by
       rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
       exact mul_le_of_le_one_left (abs_nonneg _) hx
+
+/-- An integrable function times a coordinate of the normal is integrable for `σ`. -/
+theorem integrable_mul_ν_apply {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Integrable f B.σ)
+    (i : Fin N) : Integrable (fun x ↦ f x * B.ν x i) B.σ :=
+  hf.mul_bdd (B.aestronglyMeasurable_ν_apply i)
+    ((B.ae_abs_ν_apply_le i).mono fun x hx ↦ by rwa [Real.norm_eq_abs])
+
+/-- **Multiplication by the coordinate `νᵢ` of the normal**, as a bounded operator on `L^p(σ)`
+of norm at most one (`|νᵢ| ≤ 1` `σ`-a.e.). -/
+def mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) : Lp ℝ p B.σ →L[ℝ] Lp ℝ p B.σ :=
+  LinearMap.mkContinuous
+    { toFun := fun f ↦ (B.memLp_ν_apply_mul (Lp.memLp f) i).toLp _
+      map_add' := fun f g ↦ by
+        rw [← MemLp.toLp_add]
+        refine MemLp.toLp_congr (B.memLp_ν_apply_mul (Lp.memLp (f + g)) i)
+          ((B.memLp_ν_apply_mul (Lp.memLp f) i).add (B.memLp_ν_apply_mul (Lp.memLp g) i)) ?_
+        filter_upwards [Lp.coeFn_add f g] with x hx
+        simp only [hx, Pi.add_apply, mul_add]
+      map_smul' := fun c f ↦ by
+        rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+        refine MemLp.toLp_congr (B.memLp_ν_apply_mul (Lp.memLp (c • f)) i)
+          ((B.memLp_ν_apply_mul (Lp.memLp f) i).const_smul c) ?_
+        filter_upwards [Lp.coeFn_smul c f] with x hx
+        simp only [hx, Pi.smul_apply, smul_eq_mul]
+        ring }
+    1 fun f ↦ by
+      change ‖(B.memLp_ν_apply_mul (Lp.memLp f) i).toLp _‖ ≤ _
+      rw [Lp.norm_toLp, one_mul, Lp.norm_def]
+      refine ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_ae
+        ((B.aestronglyMeasurable_ν_apply i).mul (Lp.aestronglyMeasurable f)) ?_)
+      filter_upwards [B.ae_abs_ν_apply_le i] with x hx
+      rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
+      exact mul_le_of_le_one_left (abs_nonneg _) hx
+
+/-- `mulNormalL f` is the class of `νᵢ f`. -/
+theorem coeFn_mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) (f : Lp ℝ p B.σ) :
+    (B.mulNormalL p i f : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[B.σ] fun x ↦ B.ν x i * f x :=
+  MemLp.coeFn_toLp (B.memLp_ν_apply_mul (Lp.memLp f) i)
 
 /-- **The divergence theorem for `C¹` fields on `ℝ^N`**: `∫_Ω div F = ∫ ⟪F, ν⟫ dσ`. -/
 theorem integral_div_eq_of_contDiff {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
@@ -634,174 +588,6 @@ theorem integral_laplacian_mul_add_eq_of_continuousOn_fderiv {u v : EuclideanSpa
   rw [gradient, InnerProductSpace.toDual_symm_apply]
 
 end BoundaryData
-
-/-! ### The weak Laplacian of an `H²` weak solution -/
-
-namespace Elliptic
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- The standard basis of `ℝ^N`, locally. -/
-local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
-
-/-- **The form of `−Δ + 1` on an `H²` function against a test function is the integral of
-`(−Δ_w u + u) φ`**, where `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)` is the weak Laplacian (the twin of
-`Elliptic.laplaceForm_eq_integral_of_contDiffOn` for `u ∈ H²(Ω)` rather than `u ∈ C²(Ω)`):
-integration by parts of `∂ᵢu ∈ H¹(Ω)` against `φ`. -/
-theorem laplaceForm_toLowerOrderL_eq_integral (u : SobolevEuclidean N 2 2 Ω)
-    {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
-    (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
-    laplaceForm Ω (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num) u) V
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, (SobolevMultiIndex.weakDeriv
-          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-            EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x := by
-  have hUi : ∀ i : Fin N, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) u)
-        (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
-      = SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) := fun i ↦ rfl
-  have hU0 : (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) u) 0 :
-        EuclideanSpace ℝ (Fin N) → ℝ) = SobolevMultiIndex.fn u := rfl
-  rw [laplaceForm_apply_inner]
-  simp only [L2.inner_eq_integral_mul, hUi, hU0]
-  -- `∂ᵢV = ∂ᵢφ` a.e., and integration by parts of `∂ᵢu ∈ H¹` against `φ`
-  have hVd : ∀ i : Fin N, (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single i) :
-      EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
-        fun x ↦ fderiv ℝ φ x (EuclideanSpace.single i 1) := fun i ↦ by
-    have := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hV i
-    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
-  have hibp : ∀ i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
-      (SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) : EuclideanSpace ℝ (Fin N) → ℝ) x
-        * (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x
-      = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * (SobolevMultiIndex.weakDeriv
-          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-            EuclideanSpace ℝ (Fin N) → ℝ) x := fun i ↦ by
-    have h := (SobolevMultiIndex.hasWeakIteratedLineDerivOn_single
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) i).integral_smul_eq φ
-    rw [SobolevMultiIndex.partialDerivL_apply, SobolevMultiIndex.fn_partialDeriv] at h
-    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, smul_eq_mul, pow_one,
-      neg_one_mul, EuclideanSpace.basisFun_toBasis_apply] at h
-    rw [← SobolevMultiIndex.partialDerivL_apply] at h
-    have h' : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), fderiv ℝ φ x (EuclideanSpace.single i 1)
-        * (SobolevMultiIndex.weakDeriv u (MultiIndexLE.singleLE i) :
-            EuclideanSpace ℝ (Fin N) → ℝ) x
-        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * (SobolevMultiIndex.weakDeriv
-            (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-              EuclideanSpace ℝ (Fin N) → ℝ) x := h
-    rw [← h']
-    refine integral_congr_ae ?_
-    filter_upwards [hVd i] with x hx
-    rw [hx, mul_comm]
-  -- integrability of the pieces
-  have hφ2 : MemLp (φ : EuclideanSpace ℝ (Fin N) → ℝ) 2
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport).restrict _
-  have hI1 : ∀ i : Fin N, Integrable (fun x ↦ φ x * (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦
-    hφ2.integrable_mul (Lp.memLp _)
-  have hI2 : Integrable (fun x ↦ φ x * SobolevMultiIndex.fn u x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    hφ2.integrable_mul (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))
-  have hIneg : Integrable (fun x ↦ -(∑ i, φ x * (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x))
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (integrable_finsetSum _ fun i _ ↦ hI1 i).neg
-  -- assemble
-  have e2 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), SobolevMultiIndex.fn u x
-      * (SobolevMultiIndex.weakDeriv V 0 : EuclideanSpace ℝ (Fin N) → ℝ) x
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * SobolevMultiIndex.fn u x := by
-    refine integral_congr_ae ?_
-    filter_upwards [hV] with x hx
-    rw [SobolevMultiIndex.weakDeriv_zero, hx, mul_comm]
-  have e3 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, (SobolevMultiIndex.weakDeriv
-        (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-          EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (-(∑ i, φ x * (SobolevMultiIndex.weakDeriv
-          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-            EuclideanSpace ℝ (Fin N) → ℝ) x) + φ x * SobolevMultiIndex.fn u x) := by
-    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
-    beta_reduce
-    rw [add_mul, neg_mul, Finset.sum_mul]
-    simp only [mul_comm _ (φ x)]
-  simp_rw [hibp]
-  rw [e2, e3, integral_add hIneg hI2, integral_neg, integral_finsetSum _ fun i _ ↦ hI1 i]
-  simp only [Finset.sum_neg_distrib]
-
-/-- **An `H²` weak solution of `−Δu + u = f` satisfies the equation almost everywhere**, with the
-weak Laplacian `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)`: if `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for every test
-function `φ`, then `−Δ_w u + u = f` a.e. on `Ω` (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`
-on the residual, which lies in `L²(Ω)`). -/
-theorem neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq (u : SobolevEuclidean N 2 2 Ω)
-    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (hu : ∀ φ ∈ SobolevMultiIndex.testFunctions ℝ 𝔅 1 2 Ω volume, laplaceForm Ω
-      (SobolevMultiIndex.toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num) u) φ = load Ω f φ) :
-    (fun x ↦ -(∑ i, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x)
-      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] f := by
-  have hΩo := Ω.isOpen
-  have hΩm := hΩo.measurableSet
-  have hLw : MemLp (fun x ↦ ∑ i, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x) 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    memLp_finsetSum _ fun i _ ↦ Lp.memLp _
-  have hres : MemLp (fun x ↦ -(∑ i, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x - f x) 2
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (hLw.neg.add (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))).sub (Lp.memLp f)
-  have hloc := hres.locallyIntegrableOn (by norm_num)
-  have key := hΩo.ae_eq_zero_of_integral_contDiff_smul_eq_zero (μ := volume) hloc
-    fun g hg hgc hgs ↦ ?_
-  · have h := (ae_restrict_iff' hΩm).2 key
-    filter_upwards [h] with x hx
-    exact sub_eq_zero.1 hx
-  obtain ⟨φ, hφg⟩ : ∃ φ : 𝓓(Ω, ℝ), (φ : EuclideanSpace ℝ (Fin N) → ℝ) = g :=
-    ⟨⟨g, hg, hgc, hgs⟩, rfl⟩
-  obtain ⟨V, hVT, hV⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
-    (b := 𝔅) (k := 1) (p := 2) (μ := volume)
-  have h1 := hu V hVT
-  rw [laplaceForm_toLowerOrderL_eq_integral u hV, load_apply] at h1
-  have hg0 : ∀ x, x ∉ (Ω : Set (EuclideanSpace ℝ (Fin N))) → g x = 0 := fun x hx ↦ by
-    rw [← hφg]
-    exact φ.eq_zero_of_notMem hx
-  have e4 := setIntegral_eq_integral_of_forall_compl_eq_zero (μ := volume)
-    (s := (Ω : Set (EuclideanSpace ℝ (Fin N))))
-    (f := fun x ↦ g x • (-(∑ i, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x - f x))
-    (fun x hx ↦ by simp only [hg0 x hx, zero_smul])
-  have hφ2 : MemLp (φ : EuclideanSpace ℝ (Fin N) → ℝ) 2
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport).restrict _
-  have hI1 : Integrable (fun x ↦ (-(∑ i, (SobolevMultiIndex.weakDeriv
-      (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-        EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (hLw.neg.add (Lp.memLp (SobolevMultiIndex.weakDeriv u 0))).integrable_mul hφ2
-  have hI2 : Integrable (fun x ↦ f x * φ x)
-      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (Lp.memLp f).integrable_mul hφ2
-  have e5 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), g x • (-(∑ i,
-      (SobolevMultiIndex.weakDeriv (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u)
-        (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x)
-        + SobolevMultiIndex.fn u x - f x)
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ((-(∑ i, (SobolevMultiIndex.weakDeriv
-          (SobolevMultiIndex.partialDerivL ℝ 𝔅 2 Ω volume i u) (MultiIndexLE.single i) :
-            EuclideanSpace ℝ (Fin N) → ℝ) x) + SobolevMultiIndex.fn u x) * φ x - f x * φ x) := by
-    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
-    simp only [smul_eq_mul, ← hφg]
-    ring
-  have e6 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * SobolevMultiIndex.fn V x
-      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * φ x :=
-    integral_congr_ae (hV.mono fun x hx ↦ by simp only [hx])
-  rw [e6] at h1
-  rw [← e4, e5, integral_sub hI1 hI2, h1, sub_self]
-
-end Elliptic
 
 /-! ### The trace and Green's formula, as a structure -/
 
@@ -1099,7 +885,6 @@ theorem normalTrace_eq_zero_of_forall_laplaceForm_eq (u : SobolevEuclidean N 2 2
     ((𝒯.memLp_normalTrace u).integrable (by norm_num)).locallyIntegrable
   exact ae_eq_zero_of_integral_contDiff_smul_eq_zero hloc hgreen
 
-
 end TraceFamily
 
 end BoundaryData
@@ -1207,6 +992,26 @@ theorem frontier_preimage_epigraph (hg : Continuous g)
   rw [AffineIsometryEquiv.coe_toHomeomorph] at h
   rw [← h, frontier_epigraph hg]
 
+/-- The point `(x', t)` lies in the closure of the epigraph iff `g x' ≤ t`. -/
+theorem snocLast_mem_closure_epigraph (hg : Continuous g) (x' : EuclideanSpace ℝ (Fin d))
+    (t : ℝ) : snocLast x' t ∈ closure (epigraph g) ↔ g x' ≤ t := by
+  rw [closure_epigraph hg]
+  simp
+
+/-- **The chart condition is intrinsic inside the overlap of two chart balls**: two graph charts
+of the same `Ω` describe the same set there. -/
+theorem inter_inter_preimage_epigraph_eq {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
+    {T₁ T₂ : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
+    {g₁ g₂ : EuclideanSpace ℝ (Fin d) → ℝ} {x₁ x₂ : EuclideanSpace ℝ (Fin (d + 1))} {r₁ r₂ : ℝ}
+    (h₁ : Ω ∩ Metric.ball x₁ r₁ = Metric.ball x₁ r₁ ∩ T₁ ⁻¹' epigraph g₁)
+    (h₂ : Ω ∩ Metric.ball x₂ r₂ = Metric.ball x₂ r₂ ∩ T₂ ⁻¹' epigraph g₂) :
+    Metric.ball x₁ r₁ ∩ Metric.ball x₂ r₂ ∩ T₁ ⁻¹' epigraph g₁
+      = Metric.ball x₁ r₁ ∩ Metric.ball x₂ r₂ ∩ T₂ ⁻¹' epigraph g₂ := by
+  ext y
+  have e₁ := Set.ext_iff.1 h₁ y
+  have e₂ := Set.ext_iff.1 h₂ y
+  simp only [mem_inter_iff] at e₁ e₂ ⊢
+  tauto
 end EuclideanSpace
 
 /-- **The boundary of a locally graphical set is the graph, inside the ball**: if
@@ -1223,47 +1028,39 @@ theorem IsBoundaryGraphAt.frontier_inter_ball {d : ℕ} {g : EuclideanSpace ℝ 
     frontier_inter_open_inter Metric.isOpen_ball, EuclideanSpace.frontier_preimage_epigraph hg,
     inter_comm]
 
-/-! ### Rigid motions preserve Lebesgue measure -/
+namespace EuclideanSpace
 
-section AffineIsometryEquiv
+variable {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
 
-variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
-  [FiniteDimensional ℝ F] [MeasurableSpace F] [BorelSpace F]
+/-- A boundary point of `Ω` inside a chart ball lies on the chart's graph. -/
+theorem mem_frontier_preimage_epigraph_of_mem_frontier
+    {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
+    {T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
+    (hg : Continuous g) {x₀ : EuclideanSpace ℝ (Fin (d + 1))} {r : ℝ}
+    (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' epigraph g)
+    {y : EuclideanSpace ℝ (Fin (d + 1))} (hy : y ∈ frontier Ω) (hyB : y ∈ Metric.ball x₀ r) :
+    y ∈ frontier (T ⁻¹' epigraph g) := by
+  have h2 : y ∈ frontier Ω ∩ Metric.ball x₀ r := ⟨hy, hyB⟩
+  rw [IsBoundaryGraphAt.frontier_inter_ball hg h] at h2
+  rw [frontier_preimage_epigraph hg]
+  exact h2.2
 
-/-- **A rigid motion preserves Lebesgue measure**: `T x = T.linear x + T 0` is a linear isometry
-followed by a translation. -/
-theorem AffineIsometryEquiv.measurePreserving (T : E ≃ᵃⁱ[ℝ] F) :
-    MeasurePreserving T volume volume := by
-  have h : (T : E → F) = fun x ↦ T.linearIsometryEquiv x + T 0 := by
-    funext x
-    have := T.map_vadd (0 : E) x
-    rwa [vadd_eq_add, add_zero, vadd_eq_add] at this
-  rw [h]
-  exact (measurePreserving_add_right volume (T 0)).comp T.linearIsometryEquiv.measurePreserving
+/-- **The strip of height `t` above the graph of `g`**, `{y | g y' < y_N < g y' + t}`, in the
+frame of the graph. -/
+def graphStrip (g : EuclideanSpace ℝ (Fin d) → ℝ) (t : ℝ) :
+    Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+  {y | g (init y) < y (Fin.last d) ∧ y (Fin.last d) < g (init y) + t}
 
-/-- Integrals are invariant under a rigid motion: `∫ f (T x) = ∫ f`. -/
-theorem AffineIsometryEquiv.integral_comp {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    (T : E ≃ᵃⁱ[ℝ] F) (f : F → G) : ∫ x, f (T x) = ∫ y, f y :=
-  T.measurePreserving.integral_comp T.toHomeomorph.measurableEmbedding f
+/-- The strip above the graph of a continuous function is open. -/
+theorem isOpen_graphStrip (hg : Continuous g) (t : ℝ) : IsOpen (graphStrip g t) :=
+  (isOpen_lt (hg.comp continuous_init) continuous_apply_last).inter
+    (isOpen_lt continuous_apply_last ((hg.comp continuous_init).add continuous_const))
 
-/-- Set integrals are invariant under a rigid motion: `∫_{T ⁻¹' s} f (T x) = ∫_s f`. -/
-theorem AffineIsometryEquiv.setIntegral_comp {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    (T : E ≃ᵃⁱ[ℝ] F) (f : F → G) (s : Set F) :
-    ∫ x in T ⁻¹' s, f (T x) = ∫ y in s, f y :=
-  T.measurePreserving.setIntegral_preimage_emb T.toHomeomorph.measurableEmbedding f s
+/-- The point `(x', s)` lies in the strip iff `g x' < s < g x' + t`. -/
+theorem snocLast_mem_graphStrip {t : ℝ} (x' : EuclideanSpace ℝ (Fin d)) (s : ℝ) :
+    snocLast x' s ∈ graphStrip g t ↔ g x' < s ∧ s < g x' + t := by
+  simp [graphStrip]
 
-/-- A rigid motion `T x = T.linear x + T 0` has derivative its linear part. -/
-theorem AffineIsometryEquiv.hasFDerivAt {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E']
-    {F' : Type*} [NormedAddCommGroup F'] [NormedSpace ℝ F'] (T : E' ≃ᵃⁱ[ℝ] F') (z : E') :
-    HasFDerivAt T (T.linearIsometryEquiv.toContinuousLinearEquiv : E' →L[ℝ] F') z := by
-  have h : (T : E' → F') = fun z ↦ T.linearIsometryEquiv z + T 0 := by
-    funext z
-    have := T.map_vadd (0 : E') z
-    rwa [vadd_eq_add, add_zero, vadd_eq_add] at this
-  rw [h]
-  exact T.linearIsometryEquiv.toContinuousLinearEquiv.hasFDerivAt.add_const (T 0)
-
-end AffineIsometryEquiv
+end EuclideanSpace
 
 end

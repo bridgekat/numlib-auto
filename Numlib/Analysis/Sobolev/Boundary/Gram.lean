@@ -152,14 +152,6 @@ theorem snocLastL_apply (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) (v : Eu
     snocLastL ℓ v = snocLast v (ℓ v) :=
   rfl
 
-/-- The inner product of two points of `ℝ^{d+1}` split along the last coordinate:
-`⟪(x, s), (y, t)⟫ = ⟪x, y⟫ + s t`. -/
-theorem inner_snocLast (x y : EuclideanSpace ℝ (Fin d)) (s t : ℝ) :
-    ⟪snocLast x s, snocLast y t⟫_ℝ = ⟪x, y⟫_ℝ + s * t := by
-  simp only [PiLp.inner_apply, Fin.sum_univ_castSucc, snocLast_apply_castSucc, snocLast_apply_last,
-    RCLike.inner_apply, conj_trivial]
-  ring
-
 /-- **The Gram determinant of a graph map**: `gramDet (snocLastL ℓ) = 1 + ∑ i, (ℓ eᵢ)²`. The
 Gram matrix is `1 + u uᵀ` with `u i = ℓ eᵢ`, and the matrix determinant lemma
 `Matrix.det_one_add_replicateCol_mul_replicateRow` gives `1 + u ⬝ᵥ u`. -/
