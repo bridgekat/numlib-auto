@@ -26,41 +26,7 @@ id = "theorem_11_4_7"
 
 [[node]]
 id = "example_11_4_4"
-kind = "theorem"
-desc = '''
-Example 11.4.4, the error estimate for the linear finite element solution of the friction problem
-(11.1.13) on a polygon, with the hypotheses made explicit: `Ω : Opens ℝ²`, `𝒯 : Triangulation Ω`
-(the book's regular partition; the shape-regularity constant enters through
-`Chapter10.theorem_10_3_9_linear`), `hI : 𝒯.InteriorEdgesSubset`, `hF : 𝒯.FrontierSubsetEdges`,
-`σ := 𝒯.boundaryMeasure`, `γ := (𝒯.traceFamily hI).traceL 2 _`, `g > 0`, `f ∈ L²(Ω)`, `u` the
-solution of (11.4.10) (`example_11_3_11` for `Triangulation.traceFamily`), `u_h ∈ V_h := 𝒯.polySpace 2 1`
-its finite element solution (the discrete inequality over `V_h`, `theorem_11_4_1`), and the
-regularity assumed by the book: `u ∈ H²(Ω)` (an element `U₂ : SobolevEuclidean 2 2 2 Ω` with
-`toLowerOrderL U₂ = u`) with a representative `ũ` continuous on `closure Ω`, and
-`u|_{Γᵢ} ∈ H²(Γᵢ)` on every boundary edge — for each boundary edge `(T, a)` with ends `P, Q`,
-`t ↦ ũ (AffineMap.lineMap P Q t)` lies in `SobolevInterval 2 0 1` (`Numlib/Analysis/Sobolev/Interval.lean`).
-Then `‖u − u_h‖_{H¹(Ω)} ≤ c(u) * 𝒯.meshSize` with `c(u)` depending on `‖∂_ν u‖_{L²(σ)}` (the
-normal trace `BoundaryData.TraceFamily.normalTrace U₂`), `g √(σ Γ)`, `‖−Δu + u − f‖_{L²(Ω)}`,
-`|u|_{H²(Ω)}`, the `H²(0,1)` seminorms of the edge restrictions and the shape regularity.
-Restated 2026-09-21 (boundary round, replacing the fem2 note of the same day). Route, the
-book's: Falk's lemma `theorem_11_4_2` bounds `‖u − u_h‖²` by
-`c inf_{v_h ∈ V_h} (‖u − v_h‖² + |R(v_h, u)|)`; the residual
-`R(v_h, u) = a(u, v_h − u) + j(v_h) − j(u) − ℓ(v_h − u)` is integrated by parts with Green's
-formula for `u ∈ H²`, `v ∈ H¹` on the polygon (`BoundaryData.TraceFamily.green_laplacian` for
-`Triangulation.traceFamily hI`): `R = ∫ [∂_ν u (γ v_h − γ u) + g (|γ v_h| − |γ u|)] dσ + ∫_Ω (−Δu + u − f)(v_h − u)`,
-so `|R| ≤ (‖∂_ν u‖_{L²(σ)} + g √(σ Γ)) ‖γ v_h − γ u‖_{L²(σ)} + ‖−Δu + u − f‖ ‖v_h − u‖_{L²(Ω)}`;
-take `v_h := Π_h ũ` (`𝒯.globalInterp` for the linear element, in `V_h` by
-`Triangulation.exists_mem_polySpace`), with `‖u − Π_h u‖_{H¹} ≤ C h |u|_{H²}` and
-`‖u − Π_h u‖_{L²} ≤ C h² |u|_{H²}` (`Chapter10.theorem_10_3_9_linear`), and on the boundary
-`γ (u − Π_h u) = ũ − Π_h ũ` on `Γ` (`traceL_ae_eq`, both continuous on the closure) so
-`‖γ(u − Π_h u)‖²_{L²(σ)} = ∑_{boundary edges} ‖(ũ − Π_h ũ) ∘ lineMap‖²_{L²(0,1)} · |e|`
-(`integral_edgeMeasure`), each term `≤ C h⁴ |ũ ∘ lineMap|²_{H²(0,1)}` by the one-dimensional
-interpolation estimate `integral_sq_sub_piecewiseLinearInterpCLM_le` (`Numlib/Approximation/SobolevInterpolation.lean`)
-since the restriction of the linear interpolant to an edge is the linear interpolant of the edge
-restriction (`Triangulation.localInterp_lineMap`). Altogether `‖u − u_h‖² ≤ C h²`. ★★★,
-~600 lines, on the model of `example_11_4_3`; the edge bookkeeping is the new part.
-'''
-deps = ["theorem_11_4_2", "example_11_3_11", "AtkinsonHan.Chapter10.theorem_10_3_9_linear", "Triangulation.traceFamily", "BoundaryData.TraceFamily.green_laplacian", "integral_sq_sub_piecewiseLinearInterpCLM_le", "Triangulation.FrontierSubsetEdges"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.4"
 
 [[node]]
 id = "example_11_4_3"
@@ -135,3 +101,57 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"
 [[node]]
 id = "theorem_11_4_5_unique"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.5"
+
+[[node]]
+id = "norm_sq_eq_integral_sq"
+
+[[node]]
+id = "weakLaplacian"
+
+[[node]]
+id = "frictionResidualData"
+
+[[node]]
+id = "laplaceForm_sub_load_eq_normalTrace_add"
+
+[[node]]
+id = "normalTraceL"
+
+[[node]]
+id = "abs_residual_le"
+
+[[node]]
+id = "sum_setIntegral_le_of_pairwiseDisjoint"
+
+[[node]]
+id = "integral_sq_sub_affine_le"
+
+[[node]]
+id = "integral_edgeMeasure_lineMap"
+
+[[node]]
+id = "norm_vertex_sub_le_meshSize"
+
+[[node]]
+id = "exists_param_of_segment_subset"
+
+[[node]]
+id = "lineMap_mem_openSegment_of_mem_Ioo"
+
+[[node]]
+id = "norm_lineMap_sub_lineMap"
+
+[[node]]
+id = "globalInterp_lineMap_side"
+
+[[node]]
+id = "integral_sq_sub_globalInterp_edge_le"
+
+[[node]]
+id = "exists_param_integral_sq_sub_globalInterp_le"
+
+[[node]]
+id = "integral_sq_sub_globalInterp_boundaryMeasure_le"
+
+[[node]]
+id = "norm_traceL_sub_globalInterp_le"
