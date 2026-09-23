@@ -1,12 +1,15 @@
+import Mathlib.Topology.ContinuousMap.StoneWeierstrass
 import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.Sobolev.Periodic.Smooth
+import Numlib.Approximation.MvPolynomial
 
 /-!
 # Atkinson–Han §7.5: periodic Sobolev spaces
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §7.5.1–§7.5.3.
+Analysis Framework*, 3rd edition, Springer, 2009, §7.5.1–§7.5.3, together with
+Definition 7.5.8 and the minimax error (7.5.30) of §7.5.5.
 
 §7.5 is the one section of chapter 7 that needs no theory of Sobolev spaces on a domain.  The book
 defines `H^s(2π)` by the decay of the Fourier coefficients: a formal series `φ = ∑_m a_m ψ_m` with
@@ -52,19 +55,73 @@ book's with the book's constants.
 * `exercise_7_5_4` — every element of `H^{-t}(2π)` is a bounded linear functional on `H^t(2π)`
   under the pairing (7.5.6), with `‖ℓ‖ ≤ ‖η‖_{*,-t}`.
 
+* `definition_7_5_8` — §7.5.5's **spherical polynomials** `𝕊_N`, the restrictions to the unit
+  sphere `U ⊆ ℝ³` of the polynomials in `(x, y, z)` of degree `≤ N`, with `equation_7_5_30`, the
+  minimax error `ρ_N(g)`, and `equation_7_5_30_tendsto_zero`, the book's remark that `ρ_N(g) → 0`
+  by Stone–Weierstraß. Nothing else of §7.5.5 is formalized; see below.
+
 ## Not formalized here
 
 * **(7.5.3)–(7.5.5), the distributional derivative `𝒟`.**  Its coefficient description `𝒟 φ =
   i ∑ m a_m ψ_m` is what `theorem_7_5_2_norm_equiv` uses, in the form of the classical norm written
   on the Fourier side; the operator itself, its norm `1` and its unique extension from `𝕋` are not
   built, because nothing else here consumes them.
-* **Example 7.5.3**, the square wave and its Dirac comb: this needs distributions on the circle,
-  and Mathlib's `TemperedDistribution` lives on `ℝ^d` only.
+
+* **Example 7.5.3, the square wave and its Dirac comb.**  The `2π`-periodic square wave `φ`, equal
+  to `0` on `((2k − 1)π, 2kπ)` and to `1` on `(2kπ, (2k + 1)π)`, has the Fourier series
+  `1/2 − (i/π) ∑_{k ≥ 0} (2k + 1)^{-1} [e^{(2k+1)it} − e^{-(2k+1)it}]`, and its distributional
+  derivative is the Dirac comb `∑_j (−1)^j δ(t − πj)`, where `δ` acts on `H^s(2π)` for `s > 1/2` by
+  `δ[φ] = φ(0)`.  Half of the vocabulary is here: `PeriodicSobolev.dualPairing` reads `H^{-t}(2π)`
+  as functionals on `H^t(2π)` (Exercise 7.5.4 above) and `PeriodicSobolev.eval` gives the point
+  evaluation for `s > 1/2`, so `δ` is representable as the element of `H^{-t}(2π)` all of whose
+  coefficients are `(2π)^{-1/2}`, and the square wave's coefficients come from `fourierCoeffOn` of
+  a step function.  What is missing is the operator `𝒟 : H^s(2π) → H^{s-1}(2π)` of the bullet
+  above and then the identity `𝒟 φ = ∑_j (−1)^j δ(· − πj)` in `H^{-t}(2π)`.  A coefficient-level
+  statement — that `(i m) a_m` is the coefficient sequence of the comb — would be 150–250 lines
+  once `𝒟` exists; the example is illustrative and nothing in the corpus depends on it.  Mathlib's
+  `TemperedDistribution` lives on `ℝ^d` and gives no distributions on the circle.
+
 * **§7.5.4**, the logarithmic-kernel operator `𝒜` of (7.5.16): the book obtains its symbol
   `a_m/|m|` from complex function theory that it does not reproduce.
-* **§7.5.5**, spherical polynomials, spherical harmonics and the Laplace expansion (7.5.8)–(7.5.10)
-  and (7.5.19)–(7.5.34): Mathlib has no spherical harmonics, and Theorem 7.5.10 is quoted from
-  Ragozin without proof.
+
+* **Definition 7.5.9, the spherical harmonics, and (7.5.20)–(7.5.22).**  A spherical harmonic of
+  degree `n` is the restriction to `U` of a polynomial in `(x, y, z)` that is harmonic and
+  homogeneous of degree `n`; there are `2n + 1` linearly independent ones, the span `𝕊̂_N` of those
+  of degree `n ≤ N` equals the `𝕊_N` of `definition_7_5_8` (7.5.20), `dim 𝕊_N = (N + 1)²`
+  (7.5.21), and the standard `L²(U)`-orthonormal basis (7.5.22) is `S_n^1 = c_n L_n(cos θ)`,
+  `S_n^{2m} = c_{n,m} L_n^m(cos θ) cos(m φ)` and `S_n^{2m+1} = c_{n,m} L_n^m(cos θ) sin(m φ)`, in
+  terms of the Legendre polynomials `L_n` and the associated Legendre functions `L_n^m`.  The book
+  quotes (7.5.20) and (7.5.21) from MacRobert [161, Chap. 7] without proof.  A faithful statement
+  needs the space of homogeneous harmonic polynomials of degree `n` restricted to the sphere
+  together with its dimension count `2n + 1`, the associated Legendre functions, and a surface
+  measure on `S²` for the `L²(U)` orthonormality.  What exists:
+  `Numlib/Analysis/HarmonicPolynomial` for the harmonic polynomials themselves, and
+  `Numlib/Approximation/OrthogonalPolynomial` with the Legendre polynomials on `[−1, 1]` but no
+  associated Legendre functions; `sphericalHarmonic` has zero occurrences in Mathlib and in
+  `Numlib/`, and there is no surface measure on `S²` anywhere in the corpus — the boundary round's
+  `Numlib/Analysis/Sobolev/Boundary/` builds one on `C¹` graph domains of `ℝ^d` and on polygons,
+  not on a sphere.  That measure with its integration formula, the spherical harmonics and a
+  convolution on the sphere are one shared harmonic-analysis project, two to three thousand lines,
+  which `AtkinsonHan.Chapter14`'s Theorem 14.1.1 waits on as well.
+
+* **Theorem 7.5.10, Ragozin's rate, and (7.5.32)–(7.5.33).**  For `g ∈ C^{k,γ}(U)` there are
+  spherical polynomials `p_N` with `‖g − p_N‖_∞ = ρ_N(g)` and
+  `ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}` for `N ≥ 1` (7.5.31), the constant `c_k` depending only on
+  `k`; here `H_{k,γ}(g)` is the Hölder constant, uniform over the `k`-th order derivatives of `g`
+  in local surface coordinates.  The `L²(U)` rate (7.5.32) and the uniform rate
+  `‖g − P_N g‖_∞ ≤ c N^{-(k+γ-1/2)}` (7.5.33) follow at once, the latter through the projection
+  norm `‖P_N‖ = (√(8/π) + δ_N) √N` of (7.5.29).  The book states all of this without proof, citing
+  Gronwall [100] for `k = 0` and Ragozin [190, Theorem 3.3] in general.  Beyond Definition 7.5.9 it
+  needs the Hölder spaces `C^{k,γ}(U)` on a sphere, which the corpus does not have either
+  (`Numlib/Analysis/Sobolev/Slobodeckij` is on domains of `ℝ^d`; the local-coordinate setup the
+  book itself declines to write out is Definition 7.2.13's atlas), and then Ragozin's Jackson-type
+  argument, several pages of convolution on the sphere.  What *is* here is the book's own
+  qualitative remark after (7.5.30), `equation_7_5_30_tendsto_zero`: `ρ_N(g) → 0` for every
+  `g ∈ C(U)`, by Stone–Weierstraß.
+
+* **The rest of §7.5.5** — the Laplace expansion (7.5.23)–(7.5.28), its orthogonal projection
+  `P_N : L²(U) → 𝕊_N` and the norm (7.5.29), and the Sobolev spaces `H^r(U)` that close the
+  subsection — rests on the same missing surface measure and spherical harmonics.
 
 ## References
 
@@ -461,5 +518,224 @@ theorem exercise_7_5_4 (t : ℝ) (η : PeriodicSobolev (-t)) :
         PeriodicSobolev.dualPairing t η φ = ∑' m : ℤ, φ.coeff m * conj (η.coeff m)) ∧
       ‖PeriodicSobolev.dualPairing t η‖ ≤ ‖η‖ :=
   ⟨fun _ => rfl, PeriodicSobolev.norm_dualPairing_le t η⟩
+
+/-! ### §7.5.5: spherical polynomials
+
+Definition 7.5.8 and the minimax error (7.5.30), and nothing else of §7.5.5.  What follows them in
+the book — the spherical harmonics of Definition 7.5.9, the identity `𝕊̂_N = 𝕊_N` (7.5.20), the
+dimension count `dim 𝕊_N = (N + 1)²` (7.5.21), the orthonormal basis (7.5.22) and Ragozin's rate
+(7.5.31) — is **not** formalized; the module doc says what each would need.  What *is* here is the
+definition as the book writes it and the one thing the book proves about it, that `ρ_N(g) → 0` by
+Stone–Weierstraß.
+
+The machinery of that convergence is general — the polynomial functions on a compact `D ⊆ ℝ^ι`
+form a subalgebra of `C(D, ℝ)` separating points — and belongs in
+`Numlib/Approximation/MvPolynomial` beside `Approximation.mvPolyLE`; it is private here because
+§7.5.5 is its only consumer so far.
+-/
+
+section StoneWeierstrass
+
+variable {ι : Type*} (D : Set (ι → ℝ))
+
+/-- Restriction to `D` is multiplicative.  `Approximation.toContinuousMapOn` is packaged as a
+linear map, so this is the one algebra fact the subalgebra below needs. -/
+private theorem toContinuousMapOn_mul (p q : MvPolynomial ι ℝ) :
+    Approximation.toContinuousMapOn D (p * q) =
+      Approximation.toContinuousMapOn D p * Approximation.toContinuousMapOn D q := by
+  ext x; simp
+
+/-- The polynomial functions on `D` as a subalgebra of `C(D, ℝ)`: the union of the subspaces
+`Approximation.mvPolyLE D N`, which is a subspace because the family is monotone and closed under
+multiplication because `totalDegree (p q) ≤ totalDegree p + totalDegree q`. -/
+private noncomputable def polyAlgebra : Subalgebra ℝ C(D, ℝ) where
+  carrier := {f | ∃ N, f ∈ Approximation.mvPolyLE D N}
+  mul_mem' := by
+    rintro f g ⟨N, hf⟩ ⟨M, hg⟩
+    rw [Approximation.mem_mvPolyLE_iff] at hf hg
+    obtain ⟨p, hp, rfl⟩ := hf
+    obtain ⟨q, hq, rfl⟩ := hg
+    refine ⟨N + M, Approximation.mem_mvPolyLE_iff.2
+      ⟨p * q, ?_, toContinuousMapOn_mul D p q⟩⟩
+    exact (MvPolynomial.totalDegree_mul p q).trans (Nat.add_le_add hp hq)
+  add_mem' := by
+    rintro f g ⟨N, hf⟩ ⟨M, hg⟩
+    exact ⟨max N M, Submodule.add_mem _ (Approximation.mvPolyLE_mono (le_max_left N M) hf)
+      (Approximation.mvPolyLE_mono (le_max_right N M) hg)⟩
+  algebraMap_mem' r := ⟨0, Approximation.mem_mvPolyLE_iff.2
+    ⟨MvPolynomial.C r, by simp, by ext x; simp⟩⟩
+
+/-- The polynomial functions separate the points of `D`: two distinct points differ in some
+coordinate, and the coordinate is a polynomial of degree one. -/
+private theorem polyAlgebra_separatesPoints : (polyAlgebra D).SeparatesPoints := by
+  rintro x y hxy
+  have hne : (x : ι → ℝ) ≠ (y : ι → ℝ) := fun h => hxy (Subtype.ext h)
+  obtain ⟨i, hi⟩ := Function.ne_iff.1 hne
+  refine ⟨_, ⟨Approximation.toContinuousMapOn D (MvPolynomial.X i), ⟨1, ?_⟩, rfl⟩, ?_⟩
+  · exact Approximation.mem_mvPolyLE_iff.2 ⟨MvPolynomial.X i, by simp, rfl⟩
+  · simpa using hi
+
+/-- **Stone–Weierstraß on a compact `D ⊆ ℝ^ι`**: every continuous function on `D` is uniformly
+within `ε` of a polynomial of some degree. -/
+private theorem exists_mem_mvPolyLE_near [CompactSpace D] (g : C(D, ℝ)) {ε : ℝ} (hε : 0 < ε) :
+    ∃ N, ∃ f ∈ Approximation.mvPolyLE D N, ‖f - g‖ < ε := by
+  obtain ⟨f, hf⟩ := ContinuousMap.exists_mem_subalgebra_near_continuousMap_of_separatesPoints
+    (polyAlgebra D) (polyAlgebra_separatesPoints D) g ε hε
+  obtain ⟨N, hN⟩ := f.2
+  exact ⟨N, f, hN, hf⟩
+
+end StoneWeierstrass
+
+/-- The book's unit sphere `U = {(x, y, z) : x² + y² + z² = 1} ⊆ ℝ³` of §7.5.5, written as a set of
+coordinate vectors so that `MvPolynomial.eval` applies to its points directly.  The sup norm of
+`Fin 3 → ℝ` induces the same topology as the Euclidean one, so `C(U, ℝ)` is the book's `C(U)`. -/
+def unitSphere : Set (Fin 3 → ℝ) := {x | ∑ i, x i ^ 2 = 1}
+
+theorem mem_unitSphere_iff {x : Fin 3 → ℝ} : x ∈ unitSphere ↔ ∑ i, x i ^ 2 = 1 := Iff.rfl
+
+theorem isClosed_unitSphere : IsClosed unitSphere :=
+  isClosed_eq (by fun_prop) continuous_const
+
+theorem unitSphere_subset_closedBall : unitSphere ⊆ closedBall 0 1 := by
+  intro x hx
+  have hx' : ∑ j, x j ^ 2 = 1 := hx
+  rw [mem_closedBall, dist_zero_right, pi_norm_le_iff_of_nonneg zero_le_one]
+  intro i
+  have hle : x i ^ 2 ≤ ∑ j, x j ^ 2 :=
+    Finset.single_le_sum (f := fun j => x j ^ 2) (fun j _ => sq_nonneg (x j)) (Finset.mem_univ i)
+  rw [hx'] at hle
+  rw [Real.norm_eq_abs]
+  nlinarith [abs_nonneg (x i), sq_abs (x i)]
+
+/-- `U` is compact: it is closed, and contained in the unit cube. -/
+theorem isCompact_unitSphere : IsCompact unitSphere :=
+  Metric.isCompact_of_isClosed_isBounded isClosed_unitSphere
+    (Metric.isBounded_closedBall.subset unitSphere_subset_closedBall)
+
+instance compactSpace_unitSphere : CompactSpace unitSphere :=
+  isCompact_iff_compactSpace.1 isCompact_unitSphere
+
+/-- **Definition 7.5.8**: `𝕊_N`, the **spherical polynomials of degree `≤ N`** — the restrictions
+to the unit sphere `U ⊆ ℝ³` of the polynomials (7.5.19) in `(x, y, z)` of total degree at most `N`.
+It is a subspace of `C(U, ℝ)` because restriction is linear, and this is
+`Approximation.mvPolyLE` at `D = U`, the same construction that gives `Π_n^d ⊆ C(D, ℝ)` in
+chapter 14.
+
+Only the definition and the minimax error (7.5.30) below are formalized.  The rest of §7.5.5 is
+not: **Definition 7.5.9** (the spherical harmonics, the span `𝕊̂_N` of those of degree `≤ N`, the
+identity `𝕊̂_N = 𝕊_N` of (7.5.20) and the count `dim 𝕊_N = (N + 1)²` of (7.5.21), which the book
+quotes from MacRobert without proof) and **Theorem 7.5.10** (Ragozin's rate
+`ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}`, also quoted without proof).  `finrank_definition_7_5_8_le`
+is therefore an inequality where the book has the equality (7.5.21): the bound is the dimension of
+the polynomials upstairs, and the gap between the two is exactly the harmonic decomposition that
+is missing.  See the module doc. -/
+noncomputable def definition_7_5_8 (N : ℕ) : Submodule ℝ C(unitSphere, ℝ) :=
+  Approximation.mvPolyLE unitSphere N
+
+/-- Definition 7.5.8 read out: `f ∈ 𝕊_N` exactly when `f` is the restriction to `U` of a polynomial
+in `(x, y, z)` of total degree at most `N`. -/
+theorem mem_definition_7_5_8 {N : ℕ} {f : C(unitSphere, ℝ)} :
+    f ∈ definition_7_5_8 N ↔ ∃ p : MvPolynomial (Fin 3) ℝ, p.totalDegree ≤ N ∧
+      ∀ x : unitSphere, f x = MvPolynomial.eval (x : Fin 3 → ℝ) p := by
+  rw [definition_7_5_8, Approximation.mem_mvPolyLE_iff]
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact ⟨p, hp, fun _ => rfl⟩
+  · rintro ⟨p, hp, hf⟩
+    exact ⟨p, hp, by ext x; exact (hf x).symm⟩
+
+/-- `𝕊_N ⊆ 𝕊_M` for `N ≤ M`. -/
+theorem definition_7_5_8_mono : Monotone definition_7_5_8 := fun _ _ h =>
+  Approximation.mvPolyLE_mono h
+
+/-- The constants belong to every `𝕊_N`, `𝕊_0` being exactly the constants. -/
+theorem const_mem_definition_7_5_8 (c : ℝ) (N : ℕ) :
+    ContinuousMap.const unitSphere c ∈ definition_7_5_8 N :=
+  mem_definition_7_5_8.2 ⟨MvPolynomial.C c, by simp, by simp⟩
+
+instance finiteDimensional_definition_7_5_8 (N : ℕ) :
+    FiniteDimensional ℝ (definition_7_5_8 N) :=
+  inferInstanceAs (Module.Finite ℝ ((MvPolynomial.restrictTotalDegree (Fin 3) ℝ N).map
+    (Approximation.toContinuousMapOn unitSphere)))
+
+/-- `dim 𝕊_N ≤ C(N + 3, 3)`, the dimension of the polynomials of degree `≤ N` in three variables,
+because `𝕊_N` is their image under restriction.  The book's (7.5.21) is the *equality*
+`dim 𝕊_N = (N + 1)²`, which is smaller — restriction to `U` has a large kernel, by
+`not_injective_toContinuousMapOn_unitSphere` — and is not formalized: it needs the decomposition
+into spherical harmonics of Definition 7.5.9. -/
+theorem finrank_definition_7_5_8_le (N : ℕ) :
+    Module.finrank ℝ (definition_7_5_8 N) ≤ (N + 3).choose 3 := by
+  have h := Submodule.finrank_map_le (Approximation.toContinuousMapOn unitSphere)
+    (MvPolynomial.restrictTotalDegree (Fin 3) ℝ N)
+  have he := MvPolynomial.finrank_restrictTotalDegree (Fin 3) N ℝ
+  simp only [Fintype.card_fin] at he
+  rw [he] at h
+  exact h
+
+/-- The book's remark after Definition 7.5.8: `x² + y² + z²` reduces to `1` on `U`, so a polynomial
+of degree `N` may restrict to a spherical polynomial of lower degree. -/
+theorem toContinuousMapOn_normSq_unitSphere :
+    Approximation.toContinuousMapOn unitSphere
+      (MvPolynomial.X 0 ^ 2 + MvPolynomial.X 1 ^ 2 + MvPolynomial.X 2 ^ 2) = 1 := by
+  ext x
+  have hx : ∑ i, (x : Fin 3 → ℝ) i ^ 2 = 1 := x.2
+  rw [Fin.sum_univ_three] at hx
+  change MvPolynomial.eval (x : Fin 3 → ℝ)
+      (MvPolynomial.X 0 ^ 2 + MvPolynomial.X 1 ^ 2 + MvPolynomial.X 2 ^ 2) = 1
+  simp only [map_add, map_pow, MvPolynomial.eval_X]
+  linarith
+
+/-- The same remark as a statement about the map: restriction to `U` is **not** injective, since
+`x² + y² + z² − 1` is a nonzero polynomial that restricts to `0`.  This is why
+`Approximation.finrank_mvPolyLE`, which needs `D` to have nonempty interior, does not apply to `U`
+and why `finrank_definition_7_5_8_le` is an inequality. -/
+theorem not_injective_toContinuousMapOn_unitSphere :
+    ¬ Function.Injective (Approximation.toContinuousMapOn unitSphere) := by
+  intro h
+  have key : (MvPolynomial.X 0 ^ 2 + MvPolynomial.X 1 ^ 2 + MvPolynomial.X 2 ^ 2
+      : MvPolynomial (Fin 3) ℝ) = MvPolynomial.C 1 := by
+    apply h
+    rw [toContinuousMapOn_normSq_unitSphere]
+    ext x
+    simp
+  have h0 := congrArg (MvPolynomial.eval (fun _ => (0 : ℝ))) key
+  simp at h0
+
+/-- **(7.5.30)**: the **minimax error** `ρ_N(g) = inf_{p ∈ 𝕊_N} ‖g − p‖_∞` of the approximation of
+`g ∈ C(U)` by spherical polynomials of degree `≤ N`, as the distance from `g` to `𝕊_N` in
+`C(U, ℝ)`. -/
+noncomputable def equation_7_5_30 (N : ℕ) (g : C(unitSphere, ℝ)) : ℝ :=
+  Metric.infDist g (definition_7_5_8 N : Set C(unitSphere, ℝ))
+
+theorem equation_7_5_30_nonneg (N : ℕ) (g : C(unitSphere, ℝ)) : 0 ≤ equation_7_5_30 N g :=
+  Metric.infDist_nonneg
+
+/-- `ρ_N(g)` decreases in `N`, the spaces `𝕊_N` increasing. -/
+theorem equation_7_5_30_antitone (g : C(unitSphere, ℝ)) :
+    Antitone fun N => equation_7_5_30 N g := fun _ _ h =>
+  Metric.infDist_le_infDist_of_subset (definition_7_5_8_mono h) ⟨0, Submodule.zero_mem _⟩
+
+/-- **The convergence the book records after (7.5.30)**: `ρ_N(g) → 0` as `N → ∞` for every
+`g ∈ C(U)`, "using the Stone-Weierstraß theorem, Theorem 3.1.2".  The polynomial functions on `U`
+form a subalgebra of `C(U, ℝ)` that contains the constants and separates points, so it is dense;
+each of its elements lies in some `𝕊_N`, and `ρ_N(g)` is antitone.
+
+This is the qualitative half of **Theorem 7.5.10**, whose rate `ρ_N(g) ≤ c_k H_{k,γ}(g)
+N^{-(k+γ)}` for `g ∈ C^{k,γ}(U)` is *not* formalized: the book quotes it from Gronwall and Ragozin
+without proof, and it needs both the Hölder spaces `C^{k,γ}(U)` on a sphere and the spherical
+harmonics of Definition 7.5.9.  See the module doc. -/
+theorem equation_7_5_30_tendsto_zero (g : C(unitSphere, ℝ)) :
+    Tendsto (fun N => equation_7_5_30 N g) atTop (𝓝 0) := by
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨N, f, hfN, hf⟩ := exists_mem_mvPolyLE_near unitSphere g hε
+  refine ⟨N, fun n hn => ?_⟩
+  have h1 : equation_7_5_30 N g ≤ ‖f - g‖ := by
+    have hmem : f ∈ (definition_7_5_8 N : Set C(unitSphere, ℝ)) := hfN
+    have := Metric.infDist_le_dist_of_mem (x := g) hmem
+    rwa [dist_eq_norm, norm_sub_rev] at this
+  have h2 : equation_7_5_30 n g ≤ equation_7_5_30 N g := equation_7_5_30_antitone g hn
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (equation_7_5_30_nonneg n g)]
+  linarith
 
 end AtkinsonHan.Chapter07

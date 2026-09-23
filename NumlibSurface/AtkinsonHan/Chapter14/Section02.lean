@@ -54,11 +54,35 @@ and exhausts `V_n^2` because `dim V_n^2 = n + 1`.
 
 ## Not formalized here
 
-* **(14.2.14)–(14.2.15)**, the closed form of the reproducing kernel `G_n` as an integral of a
-  Jacobi polynomial `P_n^{(3/2,1/2)}`. Mathlib has neither Jacobi nor Gegenbauer polynomials.
-* **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)`, and **Theorem 14.2.5**, which is (14.2.13)
-  combined with 14.2.4 and Theorem 14.1.1. The book quotes 14.2.4 from Xu; the estimate is on the
-  Jacobi polynomials above, and 14.1.1 is quoted from Ragozin and needs spherical harmonics.
+* **(14.2.14)–(14.2.15), the closed form of the reproducing kernel.** The book writes `P_n` as the
+  integral operator `P_n f(x) = ∫_{𝔹₂} G_n(x, y) f(y) dy` with
+  `G_n(x, y) = c_n ∫_0^π P_n^{(3/2,1/2)}(x · y + √(1 − ‖x‖²) √(1 − ‖y‖²) cos ψ) dψ` and
+  `c_n = √π Γ(n + 3) / (4 Γ(n + 3/2))`, `P_n^{(3/2,1/2)}` the Jacobi polynomial for the weight
+  `(1 − t)^{3/2} (1 + t)^{1/2}`. The kernel itself, as the sum `∑ φ_{m,ℓ}(x) φ_{m,ℓ}(y)` over an
+  orthonormal basis, exists as soon as `Π_n^2` is finite-dimensional, which it is here; it is the
+  closed form that is out of reach, because Mathlib has neither Jacobi nor Gegenbauer polynomials
+  and `Numlib/Approximation/OrthogonalPolynomial` carries only the general Sturm–Liouville
+  families of one variable with the Legendre and Chebyshev normalizations. The book proves neither
+  (14.2.15) nor (14.2.16), calling both a special case of results of Yuan Xu [238].
+
+* **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)` (14.2.16), for `P_n` read as an operator from
+  `C(𝔹₂)` onto `Π_n^2 ⊆ C(𝔹₂)`. Quoted from Yuan Xu without proof. The reduction the book itself
+  performs — `‖P_n‖ = sup_x ∫_{𝔹₂} |G_n(x, y)| dy`, its own (2.2.8) — *is* available here, as
+  `IntegralOperator.norm_kernelCLM`; what is missing is the `O(n)` bound on that row integral,
+  which is an asymptotic estimate on the Jacobi polynomials through the closed form
+  (14.2.14)–(14.2.15) above. Estimate 600–1000 lines for the Jacobi polynomials and the kernel
+  asymptotics.
+
+* **Theorem 14.2.5**: for `f ∈ C^k(𝔹₂)` with `k ≥ 1`,
+  `‖f − P_n f‖_∞ ≤ (c₁(k) / n^{k-1}) [ ‖f‖_{*,k} / n + ω_k(f, 1/n) ]` (14.2.17), so `P_n f → f`
+  uniformly for `f ∈ C¹(𝔹₂)`; and, from (14.2.16) with Banach–Steinhaus, there is some
+  `f ∈ C(𝔹₂)` for which `P_n f` does *not* converge uniformly, although it always converges in
+  `L²(𝔹₂)`. Nothing is missing but its two inputs: it is `equation_14_2_13` above — the
+  quasi-optimality `‖f − P_n f‖_∞ ≤ (1 + ‖P_n‖) E_n(f)`, proved — combined with Theorem 14.2.4 and
+  with Theorem 14.1.1 of `Chapter14/Section01`, and the combination is one line. It becomes
+  available the moment those two do, and not before. (Mathlib's `banach_steinhaus` supplies the
+  corollary's half likewise, once 14.2.4 gives the unbounded family.)
+
 * **Exercise 14.2.4**, the sphere–disk integral identity, which needs the surface measure on `S²`.
 -/
 

@@ -87,11 +87,25 @@ carrying the book's statement and, where it is open, the reason.
 
 * **§7.5.1–§7.5.3, periodic Sobolev spaces — formalized**, in `Chapter07/Section05`. These are
   defined by the decay of Fourier coefficients, so no domain, boundary or weak derivative enters
-  them, and they need no §7.3. Three numbered results of §7.5 are outside that: Example 7.5.3, the
-  square wave and its Dirac comb, needs distributions on the circle; Theorem 7.5.7 needs a
-  trigonometric interpolation operator the project does not have; and §7.5.5 — Definitions
-  7.5.8–7.5.9 and Theorem 7.5.10, spherical polynomials, spherical harmonics and the Ragozin
-  approximation rate on the unit sphere — is a separate gap, Mathlib having no spherical harmonics.
+  them, and they need no §7.3. Of §7.5.5 the module carries Definition 7.5.8 — the spherical
+  polynomials `𝕊_N` on the unit sphere `U ⊆ ℝ³`, the restrictions to `U` of the polynomials in
+  `(x, y, z)` of degree `≤ N`, which is `Approximation.mvPolyLE` at `D = U` — together with the
+  minimax error `ρ_N(g)` of (7.5.30) and the book's own Stone–Weierstraß remark that
+  `ρ_N(g) → 0`.
+
+  Not formalized in §7.5, each recorded at length in that module's `## Not formalized here`:
+  Example 7.5.3, the square wave whose distributional derivative is the Dirac comb, for want of
+  the operator `𝒟 : H^s(2π) → H^{s-1}(2π)` of (7.5.3) and of distributions on the circle;
+  §7.5.4's logarithmic-kernel operator `𝒜`, whose symbol the book takes from complex function
+  theory it does not reproduce; Definition 7.5.9 with (7.5.20)–(7.5.22), the spherical harmonics,
+  their count `2n + 1`, `dim 𝕊_N = (N + 1)²` and the `L²(U)`-orthonormal basis, which need
+  homogeneous harmonic polynomials restricted to the sphere, the associated Legendre functions and
+  a surface measure on `S²`, and which the book quotes from MacRobert without proof; and Theorem
+  7.5.10 with (7.5.32)–(7.5.33), Ragozin's rate `ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}`, which needs
+  those and the Hölder spaces `C^{k,γ}(U)` on a sphere and is quoted from Gronwall and Ragozin
+  without proof. The sphere theory the last two want — surface measure with an integration
+  formula, spherical harmonics, convolution on `S^d` — is one shared project of two to three
+  thousand lines, also what `AtkinsonHan.Chapter14`'s Theorem 14.1.1 waits on.
 
 * **§7.6, integration by parts on a Lipschitz domain.** Green's and divergence formulas
   `∫_Ω u_{x_i} v = ∫_Γ u v ν_i − ∫_Ω u v_{x_i}` need surface measure on a Lipschitz boundary and

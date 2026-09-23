@@ -32,14 +32,32 @@ introducing a notion. What is new is the dimension count.
 
 ## Not formalized here
 
-* **Theorem 14.1.1**, Ragozin's multivariate Jackson theorem. The book quotes it from D. L.
-  Ragozin, *Constructive polynomial approximation on spheres and projective spaces*, Trans. Amer.
-  Math. Soc. **162** (1971), and says "the proof is quite complicated and we only reference it".
-  Its proof runs through approximation on the sphere `S^d` and needs spherical harmonics, a surface
-  measure on `S^d` and a convolution structure on it, none of which Mathlib has.
-* The **moduli of continuity** `ω(f, h)`, `ω_n(f, h)` and the norm `‖f‖_{*, n}` that Theorem 14.1.1
-  is stated with. Nothing in Mathlib or in `Numlib` defines a modulus of continuity yet; it belongs
-  in the backbone, where §12.2 and §12.5 also want it, and not here.
+* **Theorem 14.1.1, Ragozin's multivariate Jackson theorem.** For `f ∈ C^k(𝔹_d)` there are
+  polynomials `p_n ∈ Π_n^d` with
+
+  `‖f − p_n‖_∞ ≤ (c(k, d) / n^k) [ ‖f‖_{*,k} / n + ω_k(f, 1/n) ]`  (14.1.2),
+
+  the constant depending only on `k` and `d`. It is the multivariate form of Jackson's Theorem
+  3.7.2, and the book quotes it from D. L. Ragozin, *Constructive polynomial approximation on
+  spheres and projective spaces*, Trans. Amer. Math. Soc. **162** (1971), Thm. 3.4, saying "the
+  proof is quite complicated and we only reference it". Ragozin's proof runs through approximation
+  on the sphere `S^d`: it needs spherical harmonics, a surface measure on `S^d` with an
+  integration formula, and a convolution structure on the sphere. Mathlib has none of the three —
+  `SphericalHarmonic` and `Gegenbauer` have zero occurrences on this pin, and the surface measure
+  the boundary round built (`Numlib/Analysis/Sobolev/Boundary/`) is on `C¹` graph domains of `ℝ^d`
+  and on polygons, not on a sphere. That sphere theory is a self-contained harmonic-analysis
+  project of two to three thousand lines, shared with Atkinson–Han §7.5.5 (the spherical harmonics
+  of Definition 7.5.9 and Ragozin's other theorem 7.5.10) and with Example 2.8.16, and it would
+  have to be built before Ragozin's own proof could start. Nothing in the corpus consumes the
+  theorem except Theorem 14.2.5, which is skipped with it. Beware the numbering: `exercise_14_1_1`
+  below is Exercise 14.1.1, the affine change of variables, an unrelated result with a colliding
+  number.
+
+* The **moduli of continuity** `ω(f, h) = sup_{|x − y| ≤ h} |f(x) − f(y)|` and
+  `ω_n(f, h) = ∑_{|α| = n} ω(∂^α f, h)`, and the norm `‖f‖_{*,n} = max_{|α| ≤ n} ‖∂^α f‖_∞`, which
+  Theorem 14.1.1 is stated with. Nothing in Mathlib or in `Numlib` defines a modulus of continuity
+  yet. It belongs in a backbone module of its own — §12.2 and §12.5 want it too — and is not
+  written here, because with Theorem 14.1.1 out of reach chapter 14 has no consumer for it.
 -/
 
 open Module

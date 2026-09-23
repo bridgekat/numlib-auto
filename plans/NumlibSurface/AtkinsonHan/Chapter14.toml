@@ -20,9 +20,12 @@ Section 14.4. The general content sits in the backbone —
 
 What is skipped, and what each would need:
 
-* **Theorem 14.1.1**, Ragozin's multivariate Jackson theorem, quoted by the book without proof.
-  Its proof runs through approximation on the sphere `S^d` and needs spherical harmonics, a surface
-  measure on `S^d` and a convolution structure on it. Mathlib has none of the three.
+* **Theorem 14.1.1**, Ragozin's multivariate Jackson theorem
+  `‖f − p_n‖_∞ ≤ (c(k, d) / n^k) [‖f‖_{*,k} / n + ω_k(f, 1/n)]` for `f ∈ C^k(𝔹_d)` (14.1.2),
+  quoted by the book without proof. Its proof runs through approximation on the sphere `S^d` and
+  needs spherical harmonics, a surface measure on `S^d` and a convolution structure on it. Mathlib
+  has none of the three; that sphere theory is two to three thousand lines, shared with §7.5.5's
+  Definition 7.5.9 and Theorem 7.5.10. The module doc of `Chapter14/Section01` is the record.
 * The **moduli of continuity** `ω(f, h)`, `ω_n(f, h)` and the norm `‖f‖_{*,n}` that Theorem 14.1.1
   is stated with. Nothing in Mathlib or in this library defines a modulus of continuity. It belongs
   in a backbone module of its own — Sections 12.2 and 12.5 want it too — and is not planned here,
@@ -31,12 +34,14 @@ What is skipped, and what each would need:
   Jacobi polynomial `P_n^{(3/2,1/2)}`. Mathlib has neither Jacobi nor Gegenbauer polynomials. The
   kernel itself, as the sum `Σ φ_{m,ℓ}(x) φ_{m,ℓ}(y)`, exists as soon as `Π_n^2` is
   finite-dimensional; it is the closed form that is out of reach.
-* **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)`, quoted from Xu. The reduction
-  `‖P_n‖ = sup_x ∫ |G_n(x, y)| dy` is available (`IntegralOperator.norm_kernelCLM`); the `O(n)`
-  asymptotics is an estimate on Jacobi polynomials.
-* **Theorem 14.2.5** and its Banach–Steinhaus corollary: literally (14.2.13) combined with 14.2.4
-  and 14.1.1, both of which are skipped. The combination is one line and becomes available the
-  moment they do.
+* **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)` (14.2.16), quoted from Xu without proof. The
+  reduction `‖P_n‖ = sup_x ∫ |G_n(x, y)| dy` is available (`IntegralOperator.norm_kernelCLM`, the
+  book's own (2.2.8)); the `O(n)` asymptotics is an estimate on Jacobi polynomials, 600–1000 lines
+  with the kernel's closed form. The module doc of `Chapter14/Section02` is the record.
+* **Theorem 14.2.5**, `‖f − P_n f‖_∞ ≤ (c₁(k) / n^{k-1}) [‖f‖_{*,k} / n + ω_k(f, 1/n)]` for
+  `f ∈ C^k(𝔹₂)`, `k ≥ 1` (14.2.17), and its Banach–Steinhaus corollary: literally the proved
+  `equation_14_2_13` combined with 14.2.4 and 14.1.1, both of which are skipped. Nothing else is
+  missing; the combination is one line and becomes available the moment they do.
 * **Exercise 14.2.4**, the sphere–disk integral identity. Needs the surface measure on `S²`.
 * **Section 14.3.1, (14.3.6)–(14.3.7)**, `‖L_n‖ = O(n log n)`: the same Jacobi estimate as 14.2.4
   with a discretization on top.
