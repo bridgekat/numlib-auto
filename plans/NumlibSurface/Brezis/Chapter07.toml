@@ -82,9 +82,10 @@ new backbone modules, and **nothing in this chapter is blocked**.
 * **Frontier.** `notes/frontier.md` blocker 9 ("Bochner-space" half): this chapter introduces
   the vocabulary `ℝ → H` with `ContDiffOn` on `Ici 0`/`Ioi 0` and `ContDiffOnPowDomain`, and
   proves the parabolic smoothing `‖u'(t)‖ ≤ ‖u₀‖/t` abstractly (Theorem 7.7); the heat-equation
-  instances are chapter 10's, and QSS's `thetaMethod_convergence`, `equation_13_25`,
-  `cG_convergence`, `dG_convergence` still need `L²(0,T;V)` and Lions' theorem (Comments 10.9),
-  which nothing here provides. No Atkinson–Han or QSS node is closed by this chapter's backbone
+  instances are chapter 10's. QSS's `cG_convergence` and `dG_convergence` are since proved; the
+  θ-method and (13.25) estimates of QSS §13.3–13.4 still need `L²(0,T;V)` and Lions' theorem
+  (Comments 10.9), which nothing here provides, and are recorded as not formalized in
+  `NumlibSurface/QuarteroniSaccoSaleri/Chapter13/Section03.lean`. No Atkinson–Han or QSS node is closed by this chapter's backbone
   alone.
 
 * **Order of attack** (backbone modules in dependency order, estimated size):

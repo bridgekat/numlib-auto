@@ -304,9 +304,11 @@ each section module names the results it leaves out.
   `C¹` domains of Definition 7.2.1 are — where the book assumes a Lipschitz domain. The trace
   theorem 7.3.10 is there on the bounded `C¹` domains and on triangulated polygons, with the
   surface measure and the trace of `Numlib/Analysis/Sobolev/Boundary/`, the kernel
-  `W_0^{1,p}(Ω) = ker γ` and the `L^p` clause of Theorem 7.3.11; its open nodes are the
-  fractional clauses of Theorems 7.3.10–7.3.11 and Stein's universal extension operator
-  `theorem_7_3_5_universal`.
+  `W_0^{1,p}(Ω) = ker γ` and the `L^p` clause of Theorem 7.3.11, and the extension
+  operator at order `k` bounded on `L^p` as well (`theorem_7_3_5_order_lp`) and uniform in the
+  exponent (`theorem_7_3_5_order_uniform`). The fractional clauses of Theorems 7.3.10–7.3.11 and
+  Stein's universal operator are not formalized; `Chapter07.Section03`'s module doc says what
+  each would need.
   §7.4 (the Fourier characterization of `H^k(ℝ^d)`) is `Chapter07.Section04`, through Mathlib's
   Bessel potential spaces on `ℝ^d`, with (7.4.1) and Exercise 7.4.2 proved. §7.6 (integration by
   parts) is `Chapter07.Section06`, on the bounded `C¹` domains and on triangulated polygons

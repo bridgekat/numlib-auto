@@ -90,11 +90,11 @@ elliptic regularity of chapter 9. The chapter has no exercises, and no Problem c
   (`Bochner.ContDiffOnThrough`, `MemLpThrough`), the parabolic smoothing `‖∂ₜu(t)‖ ≤ ‖u₀‖/t` and
   its iterates `‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖` (`Heat.IsSolution.norm_iteratedDeriv_le`) and the
   time regularity `u ∈ C^∞((0,∞); L²)`, `C^k([0,∞); L²)` for compatible data are theorems in
-  Bochner form — the ingredients (ii) and (iii) that `QuarteroniSaccoSaleri.Chapter13.thetaMethod_convergence`
-  names — but that node, `equation_13_25`, `cG_convergence` and `dG_convergence` stay open: (13.25)
-  and the general-`f` statements need Lions' theorem (not planned), the transport nodes need a
-  time-dependent projection commuting with `∂ₜ` for the *transport* equation, and none of the
-  numerical-analysis proofs is written. `AtkinsonHan.Chapter08.example_8_2_3` (the Laplacian as a
+  Bochner form — the ingredients (ii) and (iii) that QSS §13.3's θ-method estimate names.
+  `cG_convergence` and `dG_convergence` are since proved; the θ-method estimate and (13.25) are
+  not formalized (`NumlibSurface/QuarteroniSaccoSaleri/Chapter13/Section03.lean`), because the
+  general-`f` statements need Lions' theorem, which is not planned, and the transport nodes need
+  a time-dependent projection commuting with `∂ₜ` for the *transport* equation. `AtkinsonHan.Chapter08.example_8_2_3` (the Laplacian as a
   closed operator on `L²(Ω)`) has the maximal domain `{v : Δv ∈ L²}`; the Dirichlet restriction
   is closed by `dirichletLaplacian_isMaximalMonotone` (Proposition 7.1 (b)), the node as stated is
   not closed.
