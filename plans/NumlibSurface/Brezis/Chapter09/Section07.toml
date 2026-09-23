@@ -12,6 +12,10 @@ id = "forall_generalForm_zero_drift_eq_load_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.7, (78)"
 
 [[node]]
+id = "forall_generalForm_eq_load_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.7, (78)"
+
+[[node]]
 id = "theorem_9_27"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.27"
 
@@ -53,19 +57,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]
 id = "proposition_9_29"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Proposition 9.29, (79), as stated — with `a_i ∈ L^∞(Ω)` arbitrary: under the hypotheses
-of `proposition_9_29_zero_drift` with the drift term `∫ ∑ a_i ∂ᵢu φ` in the equation (78), if
-`u ≥ 0` on `Γ` and `f ≥ 0` in `Ω` then `u ≥ 0` in `Ω`. The book proves only the case `a_i ≡ 0` and
-refers to Gilbarg–Trudinger, Theorem 8.1, for the general one; the backbone node
-`Elliptic.nonneg_of_nonneg_frontier_general` records that route (the truncation `(u - l)^+` and
-the Sobolev inequality of Remark 20 on `W^{1,2}_0(Ω)`), ~600 lines, and is the lowest priority of
-the section. ★
-
-Blocked (2026-09-20, surf10): the dependency `Elliptic.nonneg_of_nonneg_frontier_general` is
-deferred by policy and open; the drift-free case is `proposition_9_29_zero_drift`. Five lines
-(the (78) bridge `generalForm_apply_three` is in `Section05`) once it lands.'''
-deps = ["proposition_9_29_zero_drift", "Elliptic.nonneg_of_nonneg_frontier_general", "remark_9_20"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]
@@ -74,19 +65,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]
 id = "proposition_9_29_inf"
-kind = "theorem"
-desc = '''Proposition 9.29, (80): if moreover `a₀ ≡ 0` and `Ω` is bounded, then `f ≥ 0` in `Ω`
-implies `u ≥ inf_Γ u` in `Ω` (stated as: `u ≥ K` on `Γ` gives `u ≥ K` on `Ω`).
-`Elliptic.ge_iInf_frontier_of_nonneg`, from (79) applied to `u - K`, which satisfies (78) because
-`a₀ = 0` and the constant `K` is in `H^1(Ω)` for bounded `Ω`; stated for general `a_i` on
-`proposition_9_29` and, as `proposition_9_29_inf_zero_drift`, for `a_i ≡ 0` on the proved case.
-★
-
-Blocked (2026-09-20, surf10): the general-drift form depends on the deferred
-`Elliptic.nonneg_of_nonneg_frontier_general` through the open `Elliptic.ge_iInf_frontier_of_nonneg`;
-the drift-free form `proposition_9_29_inf_zero_drift` is proved
-(`Elliptic.ge_of_ge_frontier_general_zero_drift`).'''
-deps = ["proposition_9_29", "proposition_9_29_zero_drift", "Elliptic.ge_iInf_frontier_of_nonneg"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]
@@ -95,15 +73,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]
 id = "proposition_9_29_sup_inf"
-kind = "theorem"
-desc = '''Proposition 9.29, (81): if `a₀ ≡ 0`, `Ω` is bounded and `f = 0` in `Ω`, then
-`inf_Γ u ≤ u ≤ sup_Γ u` in `Ω`: (80) for `u` and for `-u`. `Elliptic.le_iSup_frontier_of_zero`
-with `proposition_9_29_inf`. ★
-
-Blocked (2026-09-20, surf10): as `proposition_9_29_inf`, the general-drift form waits for the
-deferred `Elliptic.nonneg_of_nonneg_frontier_general`; the drift-free form
-`proposition_9_29_sup_inf_zero_drift` is proved (`Elliptic.mem_Icc_of_frontier_general_zero_drift`).'''
-deps = ["proposition_9_29_inf", "Elliptic.ge_iInf_frontier_of_nonneg"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.29"
 
 [[node]]

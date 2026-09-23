@@ -26,8 +26,11 @@ Proposition 9.29 (general second-order elliptic operators with `a₀ ≥ 0`) and
   and `forall_generalForm_zero_drift_eq_load_iff`.
 * Proposition 9.29 is proved by the book only for `a_i ≡ 0`; the drift-free case is
   `proposition_9_29_zero_drift` (with `_inf_zero_drift`, `_sup_inf_zero_drift` for (80), (81)),
-  and the general statement waits for the backbone's Gilbarg–Trudinger route. The constancy
-  argument of footnote 39 needs `N ≥ 1`, which is carried as `N ≠ 0`.
+  valid for every `N ≥ 1` — the constancy argument of footnote 39 needs `N ≥ 1`, which is carried
+  as `N ≠ 0`. The statements as printed, with an arbitrary drift `a_i ∈ L^∞(Ω)`, are
+  `proposition_9_29`, `proposition_9_29_inf` and `proposition_9_29_sup_inf`; they follow the
+  backbone's Gilbarg–Trudinger route and carry the hypothesis `N ≥ 3` that the Sobolev inequality
+  of Remark 20 on `W_0^{1,2}(Ω)` imposes (see `## Not formalized here` below).
 
 ## Main results
 
@@ -36,8 +39,19 @@ Proposition 9.29 (general second-order elliptic operators with `a₀ ≥ 0`) and
 * `remark_9_27` (the Laplacian), `remark_9_27_general` (the general elliptic operator).
 * `proposition_9_29_zero_drift`, `proposition_9_29_zero_drift_of_mem_zero`,
   `proposition_9_29_inf_zero_drift`, `proposition_9_29_sup_inf_zero_drift`; the general-drift
-  `proposition_9_29`, `proposition_9_29_inf`, `proposition_9_29_sup_inf` wait for the backbone.
+  `proposition_9_29`, `proposition_9_29_inf`, `proposition_9_29_sup_inf`, for `N ≥ 3`.
 * `proposition_9_30`.
+
+## Not formalized here
+
+* **Proposition 9.29, (79), (80), (81) with a drift term in dimension `N ≤ 2`.** The three
+  general-drift theorems above assume `N ≥ 3`. The obstruction is the Sobolev inequality
+  `‖v‖_{L^{2^*}(Ω)} ≤ C(2, N) ‖∇v‖_{L²(Ω)}` on `W_0^{1,2}(Ω)` of Remark 20 (`remark_9_20_sobolev`
+  of §9.4), which needs `2 < N`; the proof consumes it only through
+  `‖v‖_{L²(Ω)} ≤ C_N ‖∇v‖_{L²(Ω)} |{v ≠ 0}|^{1/N}`, which is true in every dimension but is not in
+  the library for `N ≤ 2`. The backbone module `Numlib/Analysis/PDE/Elliptic/MaximumPrinciple.lean`
+  records what each of `N = 2` and `N = 1` would need. The book itself gives no proof of the
+  general case, and Gilbarg–Trudinger state their Theorem 8.1 for a bounded domain.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -317,6 +331,87 @@ theorem proposition_9_29_sup_inf_zero_drift (hN : N ≠ 0) (hA : Elliptic.IsUnif
     ∀ x ∈ Ω, K₁ ≤ ũ x ∧ ũ x ≤ K₂ :=
   Elliptic.mem_Icc_of_frontier_general_zero_drift hN hA hb.measure_lt_top.ne
     ((forall_generalForm_zero_drift_eq_load_iff A 0 u 0).1 hu) hũ hc hΓ
+
+/-! ### Proposition 9.29 with a drift term, for `N ≥ 3` -/
+
+variable {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+
+/-- **The weak equation (78) in the backbone's terms**:
+`∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼφ + ∫_Ω ∑ᵢ a_i ∂ᵢu φ + ∫_Ω a₀ u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)` if and
+only if `generalForm Ω A a₁ a₀ u φ = load Ω f φ` for all `φ ∈ H^1_0(Ω)` (the backbone's
+`Elliptic.generalForm_apply_three`). -/
+theorem forall_generalForm_eq_load_iff
+    (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼)))
+    (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼)))
+    (a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) (u : hSpace N Ω)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
+    (∀ φ ∈ hZeroSpace N Ω,
+        (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv φ j x)
+          + (∫ x in (Ω : Set 𝔼), ∑ i, a₁ i x * partialDeriv u i x * SobolevMultiIndex.fn φ x)
+          + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn φ x
+          = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn φ x) ↔
+      ∀ φ ∈ hZeroSpace N Ω, Elliptic.generalForm Ω A a₁ a₀ u φ = Elliptic.load Ω f φ := by
+  simp only [generalForm_apply_three, Elliptic.load_apply]
+
+/-- **Proposition 9.29, (79), as stated**, for `N ≥ 3`. Suppose that the functions
+`a_ij ∈ L^∞(Ω)` satisfy the ellipticity condition (36) and that `a_i, a₀ ∈ L^∞(Ω)` with `a₀ ≥ 0`
+in `Ω`. Let `f ∈ L²(Ω)` and `u ∈ H^1(Ω) ∩ C(Ω̄)` satisfy (78). Then
+`[u ≥ 0 on Γ and f ≥ 0 in Ω] ⇒ [u ≥ 0 in Ω]`. The book proves only the case `a_i ≡ 0`
+(`proposition_9_29_zero_drift`) and refers to Gilbarg–Trudinger, Theorem 8.1, for the general
+one; the backbone's `Elliptic.nonneg_of_nonneg_frontier_general` carries that proof, which tests
+(78) with the truncation `(u − l)⁺` and uses the Sobolev inequality of Remark 20 on
+`W^{1,2}_0(Ω)` — whence the hypothesis `N ≥ 3`. -/
+theorem proposition_9_29 (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
+    (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ a₀ x)
+    {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
+    (hu : ∀ φ ∈ hZeroSpace N Ω,
+      (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv φ j x)
+        + (∫ x in (Ω : Set 𝔼), ∑ i, a₁ i x * partialDeriv u i x * SobolevMultiIndex.fn φ x)
+        + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn φ x
+        = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn φ x)
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hc : ContinuousOn ũ (closure (Ω : Set 𝔼))) (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), 0 ≤ ũ x)
+    (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ f x) : ∀ x ∈ Ω, 0 ≤ ũ x :=
+  Elliptic.nonneg_of_nonneg_frontier_general hN hA ha₀
+    ((forall_generalForm_eq_load_iff A a₁ a₀ u f).1 hu) hũ hc hΓ hf
+
+/-- **Proposition 9.29, (80), as stated**, for `N ≥ 3`. Suppose moreover that `a₀ ≡ 0` and that
+`Ω` is bounded. Then `[f ≥ 0 in Ω] ⇒ [u ≥ inf_Γ u in Ω]`: `u ≥ K` on `Γ` gives `u ≥ K` in `Ω`.
+The backbone's `Elliptic.ge_iInf_frontier_of_nonneg`, from (79) applied to `u − K`, which
+satisfies (78) because `a₀ = 0` and the constant `K` is in `H^1(Ω)` for bounded `Ω`. -/
+theorem proposition_9_29_inf (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
+    {u : hSpace N Ω}
+    (hu : ∀ φ ∈ hZeroSpace N Ω,
+      (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv φ j x)
+        + (∫ x in (Ω : Set 𝔼), ∑ i, a₁ i x * partialDeriv u i x * SobolevMultiIndex.fn φ x)
+        + ∫ x in (Ω : Set 𝔼), (0 : Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) x
+          * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn φ x
+        = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn φ x)
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hc : ContinuousOn ũ (closure (Ω : Set 𝔼))) {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), K ≤ ũ x)
+    (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ f x) : ∀ x ∈ Ω, K ≤ ũ x :=
+  Elliptic.ge_iInf_frontier_of_nonneg hN hA hb.measure_lt_top.ne
+    ((forall_generalForm_eq_load_iff A a₁ 0 u f).1 hu) hũ hc hΓ hf
+
+/-- **Proposition 9.29, (81), as stated**, for `N ≥ 3`. If `a₀ ≡ 0`, `Ω` is bounded and `f = 0`
+in `Ω`, then `inf_Γ u ≤ u ≤ sup_Γ u` in `Ω`: `K₁ ≤ u ≤ K₂` on `Γ` gives `K₁ ≤ u ≤ K₂` in `Ω` —
+(80) for `u` and for `−u`. The backbone's `Elliptic.mem_Icc_of_frontier_general`. -/
+theorem proposition_9_29_sup_inf (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
+    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : hSpace N Ω}
+    (hu : ∀ φ ∈ hZeroSpace N Ω,
+      (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv φ j x)
+        + (∫ x in (Ω : Set 𝔼), ∑ i, a₁ i x * partialDeriv u i x * SobolevMultiIndex.fn φ x)
+        + ∫ x in (Ω : Set 𝔼), (0 : Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) x
+          * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn φ x
+        = ∫ x in (Ω : Set 𝔼), (0 : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) x
+          * SobolevMultiIndex.fn φ x)
+    {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
+    (hc : ContinuousOn ũ (closure (Ω : Set 𝔼))) {K₁ K₂ : ℝ}
+    (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), K₁ ≤ ũ x ∧ ũ x ≤ K₂) :
+    ∀ x ∈ Ω, K₁ ≤ ũ x ∧ ũ x ≤ K₂ :=
+  Elliptic.mem_Icc_of_frontier_general hN hA hb.measure_lt_top.ne
+    ((forall_generalForm_eq_load_iff A a₁ 0 u 0).1 hu) hũ hc hΓ
 
 /-! ### Proposition 9.30 -/
 

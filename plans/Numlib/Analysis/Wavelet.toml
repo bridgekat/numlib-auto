@@ -31,6 +31,6 @@ Daubechies, and they do need the harmonic analysis of the symbol `m₀` — the 
 `|φ̂|²`, and the convergence of `∏_{j≥1} m₀(2^{-j}ξ)` — which is a project of its own. Of that
 theory the backbone has only the periodisation identity,
 `Numlib/Analysis/Fourier/Periodisation`. Note that the condition above is *not* sufficient for the
-general statement: see the `scaling_exists` node of
-`NumlibSurface/AtkinsonHan/Chapter04/Section05`.
+general statement, and the counterexample is in the `## Not formalized here` section of
+`NumlibSurface/AtkinsonHan/Chapter04/Section05.lean`.
 '''

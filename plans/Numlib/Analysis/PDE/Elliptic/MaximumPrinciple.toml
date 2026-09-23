@@ -26,44 +26,9 @@ id = "nonneg_of_nonneg_frontier_general_zero_drift"
 
 [[node]]
 id = "nonneg_of_nonneg_frontier_general"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **[brezis2011functional] Proposition 9.29, (79), as stated: with a drift term
-`a_i ∈ L^∞(Ω)`.** Same hypotheses as `nonneg_of_nonneg_frontier_general_zero_drift` with
-`generalForm Ω A a₁ a₀`, `a₁ ∈ L^∞`, and the same conclusion. The book proves only `a_i = 0`
-and cites D. Gilbarg and N. Trudinger, *Elliptic Partial Differential Equations of Second Order*,
-Theorem 8.1, for the general case. Route (Gilbarg–Trudinger's proof, one page): test with
-`v = (u - l)^+` for `sup_Γ u ≤ l < sup_Ω u` (so that `v ∈ H^1_0(Ω)`); the equation gives `α ∫ |∇v|² ≤ ∫ ∑ a_i ∂_i u v ≤ ‖a‖_∞ ‖∇v‖₂ ‖v‖_{L²(supp ∇v)}`,
-and the Sobolev inequality `‖v‖_{2^*} ≤ C ‖∇v‖₂` on `W^{1,2}_0(Ω)` (Remark 20 of chapter 9a,
-`‖u‖_{p^*} ≤ C(p,N) ‖∇u‖_p` on an arbitrary open set, for `N ≥ 3`; for `N = 2` any `q < ∞`)
-with Hölder on `supp ∇v` gives `|supp ∇v| ≥ c > 0` independent of `l`, which contradicts
-`|supp ∇v| → 0` as `l ↑ sup u`; the truncation `(u - l)^+` needs the `W^{1,2}` chain rule for the
-Lipschitz `t ↦ t^+` (Proposition 9.5 with a `C¹` approximation, or Comment 4 of the chapter).
-★★★ (~600 lines, and a genuinely different argument from the section's). Planned so that
-Remark 23's second clause and the book's statement are on the record; lowest priority in this
-file.'''
-deps = [
-  "generalForm", "IsUniformlyElliptic",
-  "SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq",  # ch9a, Zero.toml: Remark 20, the Sobolev inequality on W_0^{1,p}(Ω) for an arbitrary open Ω
-  "MemSobolevMultiIndex.contDiff_comp",  # ch9a, Calculus.toml: Proposition 9.5
-]
 
 [[node]]
 id = "ge_iInf_frontier_of_nonneg"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 9.29, (80) and (81)**, for `a₀ = 0` and `Ω` bounded:
-under the hypotheses of `nonneg_of_nonneg_frontier_general` with `a₀ = 0`, if `f ≥ 0` a.e. then
-`ũ x ≥ K` on `Ω` whenever `ũ ≥ K` on `frontier Ω` (the book's `u ≥ inf_Γ u`, (80)), and if `f = 0`
-then `ũ` lies between any lower and upper bound of `ũ` on `frontier Ω` (`inf_Γ u ≤ u ≤ sup_Γ u`,
-(81), `le_iSup_frontier_of_zero`). Proof (p. 11651): `u - K` satisfies the same equation, because
-the form has no zeroth-order term and the constant `K` lies in `H^1(Ω)` when `Ω` is bounded
-(`SobolevMultiIndex` element with zero gradient, `MemSobolevMultiIndex` of a constant on a set of
-finite measure); apply (79) to `u - K` for the lower bound and to `K - u` for the upper one.
-Stated with the general-drift (79) as dependency, and separately for `a₁ = 0` on the drift-free
-one (`ge_iInf_frontier_of_nonneg_zero_drift`), so that the drift-free case is available when the
-general one is not. ★★ (~150 lines).
-
-Blocked: depends on the deferred general-drift `nonneg_of_nonneg_frontier_general` (sob12, 2026-09-19); the drift-free forms are proved as `Elliptic.ge_of_ge_frontier_general_zero_drift` ((80), with an explicit bound `K` in place of `inf_Γ u` and `volume Ω ≠ ⊤` in place of boundedness), `Elliptic.le_of_le_frontier_general_zero_drift` ((80')) and `Elliptic.mem_Icc_of_frontier_general_zero_drift` ((81)).'''
-deps = ["nonneg_of_nonneg_frontier_general", "nonneg_of_nonneg_frontier_general_zero_drift"]
 
 [[node]]
 id = "le_of_neumann"
@@ -142,3 +107,63 @@ id = "mem_Icc_of_frontier_general_zero_drift"
 
 [[node]]
 id = "le_of_classical_laplacian"
+
+[[node]]
+id = "_root_.HasWeakIteratedLineDerivOn.sub_const"
+
+[[node]]
+id = "_root_.HasWeakIteratedLineDerivOn.const_sub"
+
+[[node]]
+id = "_root_.HasWeakIteratedLineDerivOn.posPart_sub_const"
+
+[[node]]
+id = "_root_.HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const"
+
+[[node]]
+id = "_root_.MemSobolevMultiIndex.posPart_sub_const"
+
+[[node]]
+id = "_root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart_sub_const"
+
+[[node]]
+id = "_root_.SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq"
+
+[[node]]
+id = "exists_norm_indicator_bound"
+
+[[node]]
+id = "levelGradSet"
+
+[[node]]
+id = "measurableSet_levelGradSet"
+
+[[node]]
+id = "mem_levelGradSet_iff"
+
+[[node]]
+id = "gradNorm_sq_le_of_posPart"
+
+[[node]]
+id = "exists_posPart_mem_zero"
+
+[[node]]
+id = "exists_measure_levelGradSet_ge"
+
+[[node]]
+id = "measure_lt_fn_ne_top"
+
+[[node]]
+id = "nonpos_ae_of_forall_le_measure_levelGradSet"
+
+[[node]]
+id = "nonpos_of_nonpos_frontier_general"
+
+[[node]]
+id = "generalForm_zero_sub_apply"
+
+[[node]]
+id = "le_iSup_frontier_of_nonpos"
+
+[[node]]
+id = "mem_Icc_of_frontier_general"
