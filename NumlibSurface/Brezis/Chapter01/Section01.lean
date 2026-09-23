@@ -3,6 +3,8 @@ import Mathlib.Analysis.Convex.StrictConvexSpace
 import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Order.Zorn
+import Numlib.Analysis.Normed.Module.Reflexive
+import Numlib.Analysis.Normed.Module.WeakDual
 
 /-!
 # Brezis §1.1: the analytic form of the Hahn–Banach theorem
@@ -13,10 +15,12 @@ Equations*, Universitext, Springer, 2011, §1.1: the analytic form of the Hahn�
 dual `E* = StrongDual ℝ E` — the norm-preserving extension of a functional (Corollary 1.2), the
 norming functional of a vector (Corollary 1.3, with the duality map of Remark 2 and its
 uniqueness clause when `E*` is strictly convex) and the dual description of the norm
-(Corollary 1.4). Everything is Mathlib's, restated in the book's words: Theorem 1.1 is
-`exists_extension_of_le_sublinear`, Corollary 1.2 is `exists_extension_norm_eq`, Corollary 1.3
-is `exists_dual_vector` rescaled, Corollary 1.4 is the isometry `inclusionInDoubleDualLi` read
-through `ContinuousLinearMap.sSup_unitClosedBall_eq_norm`.
+(Corollary 1.4). Everything up to Corollary 1.4 is Mathlib's, restated in the book's words:
+Theorem 1.1 is `exists_extension_of_le_sublinear`, Corollary 1.2 is `exists_extension_norm_eq`,
+Corollary 1.3 is `exists_dual_vector` rescaled, Corollary 1.4 is the isometry
+`inclusionInDoubleDualLi` read through `ContinuousLinearMap.sSup_unitClosedBall_eq_norm`. Remark 3
+is proved from the backbone's reflexivity module (`Numlib/Analysis/Normed/Module/Reflexive`,
+`…/WeakDual`) rather than from chapter 3, so that §1.1 stays self-contained.
 
 ## Main results
 
@@ -27,12 +31,15 @@ through `ContinuousLinearMap.sSup_unitClosedBall_eq_norm`.
 * `corollary_1_2`, `corollary_1_3`, `corollary_1_4` — the three corollaries.
 * `dualityMap`, `dualityMap_nonempty`, `remark_1_2` — the duality map `F x₀` of Remark 2 and its
   uniqueness clause.
+* `remark_1_3` — in a reflexive Banach space the supremum in (5) is attained.
 
-Remark 1 (on Zorn's lemma) is discussion; Remark 3 (the dual norm is attained in a reflexive
-space, and R. C. James' converse) is stated by the book without proof and is not formalized.
+Remark 1 (on Zorn's lemma) is discussion. Of Remark 3 only the direct clause is formalized, as
+`remark_1_3`: the supremum in (5) is attained when `E` is a reflexive Banach space. Its converse,
+R. C. James' theorem — a Banach space in which every `f ∈ E*` attains its norm is reflexive — is
+quoted by the book from Diestel and Holmes without proof and is not formalized.
 -/
 
-open Metric NormedSpace
+open Filter Metric NormedSpace Topology
 
 namespace Brezis.Chapter01
 
@@ -146,5 +153,39 @@ theorem corollary_1_4 (x : E) :
     rfl
   · obtain ⟨f, hf, hfx⟩ := exists_dual_vector'' ℝ x
     exact ⟨f, hf, by rw [hfx, RCLike.ofReal_real_eq_id, id, abs_norm]⟩
+
+/-- **Remark 3.** In a reflexive Banach space the supremum in (5) is attained: for every
+`f ∈ E*` there is `x` with `‖x‖ ≤ 1` and `⟨f, x⟩ = ‖f‖`.
+
+A maximizing sequence `xₙ` in the closed unit ball, supplied by `dualNorm_eq` and
+`exists_seq_tendsto_sSup`, is bounded, so reflexivity gives a weakly convergent subsequence
+`x_{φ k} ⇀ x` (`NormedSpace.exists_subseq_forall_dual_tendsto`). Then `f x = lim f (x_{φ k}) = ‖f‖`
+because `f` is weakly continuous, and `‖x‖ ≤ liminf ‖x_{φ k}‖ ≤ 1` because the norm is weakly
+sequentially lower semicontinuous (`norm_le_liminf_norm_of_weak_tendsto`).
+
+The converse — R. C. James' theorem, that a Banach space in which every functional attains its
+norm is reflexive — is quoted by the book without proof and is not formalized. -/
+theorem remark_1_3 [CompleteSpace E] [NormedSpace.IsReflexive ℝ E] (f : StrongDual ℝ E) :
+    ∃ x : E, ‖x‖ ≤ 1 ∧ f x = ‖f‖ := by
+  have hne : ((fun x : E => f x) '' closedBall 0 1).Nonempty :=
+    (nonempty_closedBall.2 zero_le_one).image _
+  have hbdd : BddAbove ((fun x : E => f x) '' closedBall 0 1) := by
+    refine ⟨‖f‖, ?_⟩
+    rintro _ ⟨x, hx, rfl⟩
+    exact (le_abs_self _).trans (f.unit_le_opNorm x (mem_closedBall_zero_iff.1 hx))
+  obtain ⟨u, -, hu, humem⟩ := exists_seq_tendsto_sSup hne hbdd
+  simp only [Set.mem_image] at humem
+  choose x hx hfx using humem
+  have hxle : ∀ n, ‖x n‖ ≤ 1 := fun n => mem_closedBall_zero_iff.1 (hx n)
+  obtain ⟨y, φ, hφ, hlim⟩ := NormedSpace.exists_subseq_forall_dual_tendsto (𝕜 := ℝ) hxle
+  have hsup : Tendsto (fun n => f (x n)) atTop (𝓝 ‖f‖) := by
+    rw [(dualNorm_eq f).2]
+    simpa only [hfx] using hu
+  refine ⟨y, ?_, tendsto_nhds_unique (hlim f) (hsup.comp hφ.tendsto_atTop)⟩
+  have hweak : Tendsto (fun k => toWeakSpace ℝ E (x (φ k))) atTop (𝓝 (toWeakSpace ℝ E y)) :=
+    tendsto_toWeakSpace_iff.2 fun ℓ => hlim ℓ
+  refine (norm_le_liminf_norm_of_weak_tendsto hweak).trans ?_
+  exact liminf_le_of_frequently_le (Frequently.of_forall fun k => hxle (φ k))
+    (isBoundedUnder_of ⟨0, fun k => norm_nonneg _⟩)
 
 end Brezis.Chapter01

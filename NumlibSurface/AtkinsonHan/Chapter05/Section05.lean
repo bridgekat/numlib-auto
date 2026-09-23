@@ -38,10 +38,29 @@ Proposition 5.5.5, which later chapters use, and the counterexample of Example 5
 
 ## Not formalized here
 
-Theorem 5.5.1 (Brouwer), Theorem 5.5.4 (Schauder) and §5.5.1 in its entirety — the rotation of a
-completely continuous vector field and its properties P1–P5.  The obstruction is the same for all
-three and is a missing theory, not a missing proof: Mathlib has no Brouwer fixed-point theorem and
-no degree theory of any kind, and the book quotes each of them without proof.
+The obstruction below is a missing theory, not a missing proof: the book quotes each of these
+without proof, referring the reader elsewhere for one.
+
+* **Theorem 5.5.1**, Brouwer's fixed-point theorem: a continuous `T : K → K` on a bounded, closed
+  and convex `K ⊆ ℝ^d` has at least one fixed point in `K`. Mathlib on this pin has no Brouwer
+  fixed-point theorem — `brouwer` and `Brouwer` match only unrelated order-theoretic files — and
+  none of the machinery a proof of it needs: no simplicial approximation, no Sperner's lemma, no
+  topological degree, no no-retraction theorem. `Numlib/` has none either, as
+  `Numlib/Nonlinear/CompletelyContinuous` records. Proving it from Sperner's lemma, or from the
+  no-retraction theorem through Stokes' theorem, is a project of its own; estimate 1500–3000 lines.
+* **Theorem 5.5.4**, Schauder's fixed-point theorem: for `V` a Banach space and `K ⊆ V` bounded,
+  closed and convex, a completely continuous `T : K → K` has at least one fixed point in `K`. Its
+  only obstruction is Theorem 5.5.1. The other half of the standard proof already exists:
+  `Brezis.Chapter06.remark_6_1_nonlinear` (`NumlibSurface/Brezis/Chapter06/Section01.lean`)
+  approximates a continuous map with relatively compact range, to within any `ε`, by a continuous
+  map with finite-dimensional range — the Schauder projection onto the convex hull of a finite
+  `ε`-net — so Schauder's theorem follows from Brouwer's on the finite-dimensional convex set
+  `conv {x₁, …, xₙ}` by the usual limiting argument; estimate 150–250 lines once Brouwer's theorem
+  exists, at which point the projection lemma should move to `Numlib/Nonlinear/CompletelyContinuous`
+  or to a `Nonlinear/SchauderProjection` module of its own. That the hypotheses of Theorem 5.5.4
+  cannot be relaxed to a Lipschitz condition is `example_5_5_2` below, which *is* formalized.
+* **§5.5.1** in its entirety — the rotation of a completely continuous vector field and its
+  properties P1–P5 — which is degree theory, of which Mathlib has none.
 -/
 
 namespace AtkinsonHan.Chapter05

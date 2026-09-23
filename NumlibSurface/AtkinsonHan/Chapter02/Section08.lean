@@ -80,6 +80,31 @@ Definitions 2.8.3 and 2.8.11 ask nothing of the spaces but that they be linear, 
 over a bare `Module`, as Chapter 1 states the definitions they lean on.
 
 The continuous-kernel case, which is what Chapters 12 and 13 use, is `example_2_8_8`.
+
+## Not formalized here
+
+* **Example 2.8.16**, the single-layer operator of the unit sphere. On `D = {x ∈ ℝ³ | ‖x‖ = 1}`
+  and `V = L²(D)`, the operator `K v(x) = ∫_D v(y) / ‖x - y‖ dS_y` (2.8.33) is compact; its
+  eigenfunctions are the spherical harmonics, of which there are `2k + 1` independent ones of each
+  degree `k ≥ 0`, with `K φ_k = 4π/(2k + 1) φ_k` (2.8.34), so that `N(μ_k - K)` has dimension
+  `2k + 1` for `μ_k = 4π/(2k + 1)`; and the spherical harmonics form a basis of `L²(D)`, which is
+  what Theorem 2.8.15 predicts. The book states all of this without proof, citing Mikhlin for the
+  compactness.
+
+  Three things are missing, and none of them is in Mathlib on this pin. First, the surface measure
+  of `S²` as an *integration theory*: Mathlib has `Measure.toSphere`, but no integration formula in
+  the shape `∫_D f dS`, so `L²(D)` itself is not available. Second, the spherical harmonics:
+  `SphericalHarmonic`, `sphericalHarmonic` and `Gegenbauer` have zero occurrences in Mathlib (its
+  `Legendre` is `legendreSym`, the quadratic-residue symbol), and `Numlib/` has only the
+  one-dimensional Legendre polynomials of `Numlib/Approximation/OrthogonalPolynomial` and the
+  planar single-layer kernel of `Numlib/Analysis/Fourier/LogSingleLayer`; they are needed as a
+  Hilbert basis of `L²(S²)` with the dimension count `2k + 1`. Third, the Funk–Hecke computation
+  that gives the eigenvalue `4π/(2k + 1)`. The compactness alone would follow from
+  `isCompactOperator_of_isAdmissibleKernel` above the moment `L²(S²)` exists.
+
+  This is one node of a self-contained harmonic-analysis project shared with §7.5's
+  `definition_7_5_8`, `definition_7_5_9` and `theorem_7_5_10` and with Chapter 14's
+  `theorem_14_1_1` (Ragozin) and `theorem_14_2_5`; estimate two to three thousand lines.
 -/
 
 open Filter Topology Metric Module.End

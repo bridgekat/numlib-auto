@@ -55,12 +55,34 @@ is the bridge to `IsUnit`.
 
 * §2.9's classification of the spectrum into point, continuous and residual parts — a definition
   with no theorem attached in the book.
-* Theorems 2.9.3 and 2.9.4, the multiplicativity of the holomorphic functional calculus and the
-  Riesz spectral projection `E(λ₀, L) = (2πi)⁻¹ ∮ (λ - L)⁻¹ dλ`. Both are stated in the book
-  without proof, both need contour integrals of operator-valued functions, and Theorem 2.9.4 needs
-  the Riesz ascent–descent theory as well. `equation_2_9_3` above is the *displayed formula*
-  (2.9.3), the Neumann expansion of the resolvent, and is not Theorem 2.9.3; the book uses the two
-  numbers for different results, and no declaration here states the Theorem.
+* **Theorem 2.9.3**, the Riesz–Dunford calculus. For `f` analytic on a neighbourhood of `σ(L)`
+  the book defines `f_Γ(L) = (2πi)⁻¹ ∮_Γ f(λ) (λ - L)⁻¹ dλ` (2.9.4), over a contour `Γ` winding
+  once around `σ(L)` inside the domain of analyticity, and states that the assignment is
+  multiplicative, `f_Γ(L) g_Γ(L) = (f g)_Γ(L)`, and that it agrees with the obvious meaning of a
+  convergent power series: if `f(λ) = ∑ aₙ λⁿ` on a disc containing `σ(L)` then `f_Γ(L) = ∑ aₙ Lⁿ`.
+  The book gives no proof, citing Dunford–Schwartz. What it needs is a contour integral of
+  `𝓛(V)`-valued functions, which `notes/backbone.md` §1.7 keeps out of scope and Mathlib does not
+  have: Mathlib's Cauchy integral formula is for `ℂ`-valued functions of one variable, and there is
+  no holomorphic functional calculus on this pin. Nothing in `Numlib/` approaches the spectrum
+  through contour integrals — the spectral theory there
+  (`Numlib/Analysis/Normed/Operator/{Riesz,Compact/Banach}`, `…/InnerProductSpace/CompactSpectral`)
+  is for compact and self-adjoint operators and is entirely algebraic. A minimal version —
+  operator-valued circle integrals of the resolvent, with multiplicativity from the resolvent
+  identity — is a project of its own, estimate 800–1200 lines.
+* **Theorem 2.9.4**, the Riesz spectral projection. For a compact `L` and a nonzero eigenvalue
+  `λ₀`, the operator `E(λ₀, L) = (2πi)⁻¹ ∮_{|λ - λ₀| = ε} (λ - L)⁻¹ dλ` (2.9.5), with `ε` smaller
+  than the distance from `λ₀` to the rest of `σ(L)`, is a projection on `V` whose range is the
+  space `N((λ₀ - L)^{ν(λ₀)})` of ordinary and generalized eigenvectors at the Riesz index `ν(λ₀)`.
+  The book again gives no proof, and the obstruction is exactly Theorem 2.9.3's: the
+  operator-valued contour integral. Everything on the algebraic side is in place — the Riesz index
+  and the generalized eigenspaces of `Numlib/Analysis/Normed/Operator/Riesz`, with §2.8's
+  `theorem_2_8_12_3` proved — so what is missing is only the integral definition (2.9.5) itself and
+  the identification of its range; estimate 300–500 lines once the calculus of Theorem 2.9.3
+  exists.
+
+`equation_2_9_3` above is the *displayed formula* (2.9.3), the Neumann expansion of the resolvent,
+and is not Theorem 2.9.3: the book uses the two numbers for different results, and no declaration
+here states the Theorem.
 -/
 
 namespace AtkinsonHan.Chapter02

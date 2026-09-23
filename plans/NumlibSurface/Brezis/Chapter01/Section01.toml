@@ -34,17 +34,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 1.4"
 
 [[node]]
 id = "remark_1_3"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 3, the provable clause: in a reflexive Banach space the supremum in (5) is
-achieved — for `[CompleteSpace E] [NormedSpace.IsReflexive ℝ E]` and every `f : StrongDual ℝ E`
-there is `x` with `‖x‖ ≤ 1` and `f x = ‖f‖`. Proof from the backbone, without chapter 3: pick
-`xₙ` in the closed unit ball with `f xₙ → ‖f‖` (`dualNorm_eq`, `exists_seq_tendsto_sSup`);
-`NormedSpace.exists_subseq_forall_dual_tendsto` (`Numlib/Analysis/Normed/Module/Reflexive`)
-extracts a weakly convergent subsequence `x_{φ n} ⇀ x`; then `f x = lim f x_{φ n} = ‖f‖` and
-`‖x‖ ≤ liminf ‖x_{φ n}‖ ≤ 1` by `norm_le_liminf_norm_of_weak_tendsto`
-(`Numlib/Analysis/Normed/Module/WeakDual`, through `tendsto_toWeakSpace_iff`). ★★, ~40 lines.
-The converse (R. C. James) is quoted without proof and is not planned.'''
-deps = ["dualNorm_eq", "NormedSpace.exists_subseq_forall_dual_tendsto", "norm_le_liminf_norm_of_weak_tendsto", "tendsto_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 3"
 
 [[node]]

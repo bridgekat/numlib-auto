@@ -1,3 +1,17 @@
 desc = '''
 Atkinson–Han, Chapter 2: linear operators on normed spaces (§2.3–2.5).
+
+Not formalized, each quoted by the book without proof and recorded in full in the "Not formalized
+here" section of its section module:
+
+* **Example 2.8.16**, the single-layer operator of the unit sphere with the spherical harmonics as
+  its eigenfunctions — needs a surface measure on `S²` as an integration theory and spherical
+  harmonics, of which Mathlib has neither.
+* **Theorem 2.9.3**, the multiplicativity of the Riesz–Dunford calculus, and **Theorem 2.9.4**, the
+  Riesz spectral projection `E(λ₀, L) = (2πi)⁻¹ ∮ (λ - L)⁻¹ dλ` — both need contour integrals of
+  operator-valued functions, which `notes/backbone.md` §1.7 keeps out of scope. The displayed
+  formula (2.9.3), the Neumann expansion of the resolvent, is a different result and is proved as
+  `equation_2_9_3`.
+* §2.9's classification of the spectrum into point, continuous and residual parts — a definition
+  with no theorem attached in the book.
 '''
