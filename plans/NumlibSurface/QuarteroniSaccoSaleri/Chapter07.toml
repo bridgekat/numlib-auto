@@ -19,10 +19,15 @@ Backbone: `Numlib/Nonlinear/{Newton,FixedPoint,DifferenceJacobian,QuasiNewton}`,
 `Numlib/Optimization/*`, `Numlib/Projection/{OneDimensional,ConjugateDirection}`,
 `Numlib/Krylov/CG`, `Numlib/Variational/Minimization`, `Numlib/Analysis/Convex/Gateaux`.
 
-Two results are not formalized, with the reason in their nodes: Property 7.2 (Dennis–Moré
-superlinear convergence of Broyden's method) and Property 7.17 (the uniform local analysis of
-the augmented Lagrangian). Corrections to the book's statements are recorded in the nodes that
-carry them: Property 7.4 (c) needs `∇f(x*) = 0`; Property 7.10 needs lower semicontinuity;
+Two results are not formalized: Property 7.2 (Dennis–Moré superlinear convergence of Broyden's
+method), with the reason in its node, and the uniform clause of Property 7.17 (the existence,
+uniqueness and Lipschitz dependence of the minimizer `x(λ, α)` of the augmented Lagrangian,
+uniformly in `α ≥ ᾱ`) — quoted by the book from Bertsekas' Proposition 2.4 without proof, and
+needing the implicit function theorem in the compactified parameters `(λ − λ*)/α`, `1/α`. Its
+Debreu clause is proved as `property_7_17_debreu`, and the full record — including the
+counterexample showing that the uniqueness on the ball is not a convexity statement — is in the
+`## Not formalized here` section of §7.3's module doc. Corrections to the book's statements are
+recorded in the nodes that carry them: Property 7.4 (c) needs `∇f(x*) = 0`; Property 7.10 needs lower semicontinuity;
 Property 7.11's first part needs regularity; Property 7.16 gives cluster points, not convergence;
 Remark 7.1's Richardson identity has `J_F(x^{(k)})` in place of `I - J_{G_N}(x^{(k)})`; Example
 7.7's augmented Lagrangian has no global minimizer (it does have a strict local one at `0`).

@@ -37,16 +37,45 @@ positive definite `B` is `Matrix.PosDef`.
   first for a nonsingular `B` (the book's QZ route), then for every real pair.
 * `theorem_5_7`, `theorem_5_7_eigenvectors` — symmetric-definite pencils.
 
-## Not formalized
+## Not formalized here
 
-The rounding-error statement after the QR–Cholesky algorithm (`qrCholesky_stability`), a
-floating-point claim the book quotes without proof and with a `≃`, stays an open node of the
-plan with the reason: the computed Cholesky factor (`FloatingPoint.RoundsCholesky`) and the
-computed two-sided solve `Ĉ = fl(Ĥ⁻ᵀ A Ĥ⁻¹)` (`FloatingPoint.RoundsTwoSidedSolve`,
-`FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`, whose bound carries the condition
-number of `Ĥ` that the book's `u ‖A‖₂ ‖B⁻¹‖₂` omits) are in the backbone, the backward
-stability of the symmetric QR iteration is not. The QZ iteration and the QR–Cholesky algorithm
-are described without a theorem and are not nodes.
+The QZ iteration and the QR–Cholesky algorithm of §5.9.1–5.9.2 are described without a theorem
+and are not nodes. The one claim of §5.9.2 that is a statement is the rounding-error estimate,
+and it is not formalized:
+
+* **§5.9.2, the stability of the QR–Cholesky algorithm.** After `B = Hᵀ H` (Cholesky) and
+  `C = H⁻ᵀ A H⁻¹`, the symmetric QR iteration applied to `C` returns approximate eigenvalues `λ̂`
+  of the symmetric-definite pencil `(A, B)`; the book's claim, cited from [GL89] p. 464 without
+  proof, is that each computed `λ̂` is an exact eigenvalue of a perturbed matrix,
+  `λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` with `‖E‖₂ ≃ u ‖A‖₂ ‖B⁻¹‖₂`. As printed it is a `≃`, not a `≤`, so it
+  is not a statement that can be formalized without first being re-planned.
+
+  **The printed bound is, moreover, wrong, and correcting it is the substance of this entry.**
+  Two of the three floating-point analyses a rigorous form needs are in the backbone: the
+  computed Cholesky factor `Ĥ` (`FloatingPoint.RoundsCholesky`,
+  `FloatingPoint.exists_roundsCholesky_eq_add` in `Numlib/FloatingPoint/LU`) and the computed
+  two-sided triangular solve `Ĉ = fl(Ĥ⁻ᵀ A Ĥ⁻¹)` (`FloatingPoint.RoundsTwoSidedSolve`,
+  `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve` in
+  `Numlib/FloatingPoint/Householder`). The second of these carries the bound
+  `‖Ĉ − Ĥ⁻ᵀ A Ĥ⁻¹‖_F ≤ (2θ/(1 − θ)²) ‖Ĥ⁻¹‖_F² ‖A‖_F` with `θ = γ_n ‖Ĥ⁻¹‖_F ‖Ĥ‖_F`, and `θ` is
+  where the difficulty sits: the forward error of a triangular solve is the *condition number*
+  times the backward error, so the solves contribute a factor `κ(Ĥ) = κ(B)^{1/2}` on top of the
+  `‖B⁻¹‖₂ = ‖Ĥ⁻¹‖₂²` the book records. A faithful statement must therefore carry `κ(Ĥ)` — or
+  assume `‖B‖₂ ≈ 1`, which is the normalization under which the printed bound is right. Nothing
+  in `[GL89]`'s formulation as the book quotes it says so.
+
+  The third analysis is still missing: the backward stability of the symmetric QR iteration on
+  `Ĉ`, `λ̂ ∈ σ(Ĉ + E₂)` with `‖E₂‖ ≤ c₂(n, s) u ‖Ĉ‖` for `s` computed shifted QR steps with
+  deflation. It needs the Givens rounding model ([higham2002accuracy] Lemmas 19.7–19.9, a
+  `RoundsGivens` predicate on the pattern of `FloatingPoint.RoundsHouseholderApply`, which does
+  not exist), the computed shifted step `T̂' = fl(R̂ Q̂) + μ I` as a two-sided perturbed similarity
+  (the accumulation `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd` is already general
+  enough for it), and the deflation criterion as an explicit perturbation; the Householder
+  tridiagonalization it starts from is done (`FloatingPoint.exists_roundsHessenbergReduce_eq`).
+  Estimate: 400–600 lines for the Givens model and the computed QR step, then about 100 for the
+  assembly under the corrected bound. The exact-arithmetic Cholesky factor of `B` is
+  `Matrix.exists_isCholesky` of `Numlib/LinearAlgebra/Matrix/Cholesky`, and the exact
+  simultaneous reduction is `theorem_5_7` above.
 -/
 
 open Finset Matrix Polynomial

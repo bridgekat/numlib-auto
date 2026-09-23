@@ -73,62 +73,6 @@ id = "property_8_1_bestApprox"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1'
 
 [[node]]
-id = "erdos_lebesgueConstant"
-kind = "theorem"
-desc = '''The Erdős lower bound quoted in §8.1.2: for every interpolation matrix `X` on `[a, b]` there
-is `C > 0` with `lebesgueConstant X n > (2/π) * Real.log (n + 1) - C` for all `n`. Not formalized:
-this is Erdős's theorem (*Problems and results on the theory of interpolation II*, Acta Math.
-Acad. Sci. Hungar. 12, 1961), several pages of hard analysis on the Lebesgue function, which the
-book quotes without proof; neither Mathlib nor the backbone has any lower bound on algebraic
-Lebesgue constants (the backbone's `PeriodicCont.log_le_lebesgueConstant` is the *trigonometric*
-one, whose proof is an explicit Dirichlet-kernel integral with no algebraic analogue). Even the
-weaker `¬ BddAbove (range (lebesgueConstant X))`, which is all Faber's theorem needs, is Bernstein's
-or Faber's theorem and is not elementary.
-Re-examined 2026-09-16 against the new `SineSum.sum_term_le` of
-`Numlib/Approximation/Interpolation` (a logarithmic *upper* bound for Lebesgue-type sums of
-reciprocal sines, which is what `Lagrange.norm_interpolateCLM_chebyshev_le` now runs on): it is of
-no help here, since every step of it is an upper estimate and what is wanted is a lower one. The
-cheapest true lower bound in sight is still the equispaced one — evaluate the Lebesgue function at
-the midpoint of the first panel, where the basis product telescopes into a ratio of factorials and
-gives `Λ_n ≥ 2^{n-3}/n²` — which bounds one interpolation matrix, not all of them, and so refutes
-nothing about `erdos_lebesgueConstant` or `faber` as they are stated.
-
-Blocked (2026-09-20, refreshed; blocker 17 of `notes/frontier.md`, quoted without proof — not in
-this round's scope). Checked: `Numlib/Approximation/Interpolation.lean` has the *upper* bounds
-`Lagrange.norm_interpolateCLM`, `Lagrange.norm_interpolateCLM_chebyshev_le` and
-`SineSum.sum_term_le`, and `Numlib/Approximation/RungePhenomenon.lean` (this round) has a lower
-bound on one *error* at one point for one node scheme (`Runge.one_le_abs_sub_interpolate`), not on
-a Lebesgue constant; no lower bound on an algebraic Lebesgue constant exists in `Numlib/` or
-Mathlib. What is missing is Erdős's argument itself (or Bernstein's `Λ_n ≥ c log n` for arbitrary
-nodes through the Lebesgue function at the Chebyshev-like points), several pages of hard analysis;
-estimate a week. The equispaced one-scheme bound `Λ_n ≥ 2^{n-3}/n²` remains the cheap partial
-result and would take about 200 lines.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2 (Erdős 1961)'
-
-[[node]]
-id = "faber"
-kind = "theorem"
-desc = '''Faber's theorem quoted in §8.1.2: for every interpolation matrix `X` on `[a, b]` (`a < b`)
-there is `f : C(Icc a b, ℝ)` such that `¬ Tendsto (fun n => interpRow X n f) atTop (𝓝 f)` —
-polynomial interpolation on any fixed node scheme fails to converge uniformly for some continuous
-function. Not formalized: given the unboundedness of the Lebesgue constants it is five lines —
-`ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` of
-`Numlib/Analysis/Normed/Operator/BanachSteinhaus` with `L = 1` and `lebesgueConstant_eq_norm` —
-but the unboundedness is `erdos_lebesgueConstant` (or Bernstein's weaker bound), which is out of
-reach; the book quotes both without proof.
-
-Blocked (2026-09-20, refreshed; blocker 17): unchanged. Checked:
-`ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` exists in
-`Numlib/Analysis/Normed/Operator/BanachSteinhaus.lean` and `lebesgueConstant_eq_norm` is proved, so
-the node reduces in five lines to `¬ BddAbove (Set.range (lebesgueConstant X))` for every
-interpolation matrix, which is the open `erdos_lebesgueConstant` (or Bernstein's bound). Note that
-Runge's counterexample (`example_8_1`, proved this round) is the special case of one node scheme
-and one explicit function, and does not give Faber's statement for arbitrary `X`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.erdos_lebesgueConstant", "QuarteroniSaccoSaleri.Chapter08.interpRow", "QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_eq_norm", "ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2 (Faber 1914)'
-
-[[node]]
 id = "example_8_1_nodes"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
 
@@ -145,24 +89,18 @@ id = "interpRow_sub_le_lebesgueConstant"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3'
 
 [[node]]
-id = "lebesgueConstant_equispaced"
-kind = "theorem"
-desc = '''The equispaced asymptotics of §8.1.3: for the equispaced interpolation matrix
-`X n j = a + j (b - a)/n`, `lebesgueConstant X n · (e n log n) / 2^{n+1} → 1` — the book's
-`Λ_n(X) ≃ 2^{n+1}/(e n log n)`, which is Turetskii's theorem (1940; Natanson, *Constructive
-Function Theory*). Not formalized: the asymptotic equivalence needs the precise evaluation of the
-Lebesgue function near the ends of the interval and the book states it without proof. A rigorous
-one-sided bound `lebesgueConstant X n ≥ 2^{n-3}/n²` (Schönhage) is provable by evaluating the
-Lebesgue function at the midpoint of the first panel, and would suffice to show that equispaced
-interpolation is unstable; it is not stated by the book and is not planned.
+id = "equispacedMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3'
 
-Blocked (2026-09-20, refreshed; blocker 17): unchanged, the book quotes Turetskii's asymptotics
-without proof and the round did not take it up. Checked: no asymptotics of Lebesgue constants
-exist in `Numlib/` or Mathlib; the Chebyshev upper bound `Lagrange.norm_interpolateCLM_chebyshev_le`
-and the equispaced machinery of `Numlib/Approximation/RungePhenomenon.lean` (products of
-`|t - x_j|` over equispaced nodes, `Runge.abs_sub_interpolate_eq`) are the nearest material. The
-one-sided `Λ_n ≥ 2^{n-3}/n²` is about 200 lines (evaluate the Lebesgue function at the midpoint of
-the first panel, where the basis product telescopes into factorials); the two-sided asymptotics
-are a few pages of Natanson and are not bounded work.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3 (Natanson; Turetskii 1940)'
+[[node]]
+id = "coe_equispacedMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3'
+
+[[node]]
+id = "isInterpMatrix_equispacedMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3'
+
+[[node]]
+id = "lebesgueConstant_equispaced_lower"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3 (the one-sided half of
+Turetskii's asymptotics; Schönhage)'''

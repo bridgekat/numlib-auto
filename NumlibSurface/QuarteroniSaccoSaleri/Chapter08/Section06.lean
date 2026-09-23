@@ -54,11 +54,41 @@ by divided differences, the B-spline basis).
   B-splines; `bSpline_minimalSupport`, `bSpline_minimalSupport_eq_zero` — Schoenberg's
   characterization of `B_{i,k+1}` as the unique non null spline of minimum support.
 
-## Not formalized
+## Not formalized here
 
-Property 8.3 with the sharp Hall–Meyer constants (`property_8_3`) is stated in the plan and left
-open there; see the plan for the reasons. `property_8_3_weak` is Property 8.3 with non-sharp
-constants.
+* **Property 8.3, the sharp constants and the clause `r = 3`.** For `f` of class `C⁴` on
+  `[a, b]`, a partition with `h = max h_i` and `β = h / min h_i`, and `s₃` the interpolating cubic
+  spline, (8.50) asserts
+  `‖f^{(r)} − s₃^{(r)}‖_∞ ≤ C_r h^{4−r} ‖f^{(4)}‖_∞` for `r = 0, 1, 2, 3` with the *sharp*
+  constants `C₀ = 5/384`, `C₁ = 1/24`, `C₂ = 3/8`, `C₃ = (β + β⁻¹)/2`. The book gives neither a
+  proof nor a citation for it — there is no Hall–Meyer entry in its bibliography — but these are
+  the constants of Hall and Meyer, *Optimal error bounds for cubic spline interpolation*,
+  J. Approx. Theory 16 (1976), and that is the only source for them.
+
+  **How the statement has to be read.** The Hall–Meyer constants are for the **clamped**
+  (complete) spline, `s₃'(a) = f'(a)` and `s₃'(b) = f'(b)`. The book does not say which end
+  conditions it means, and the reading matters: for the *natural* spline the statement is simply
+  false unless `f''(a) = f''(b) = 0`. The natural cubic spline of `f(t) = t²` is not `t²` — a
+  natural spline has vanishing second derivative at the ends, `t²` does not — so with
+  `f^{(4)} = 0` the right-hand side is `0` while the left-hand side is not, and near the ends the
+  error of the natural spline is only `O(h²)`. Everything below, and `property_8_3_weak` above,
+  is therefore about the clamped spline.
+
+  **What is proved.** `property_8_3_weak` states the `O(h^{4−r})` bounds with non-sharp
+  constants — `7/8` for `r = 0` and `7/4` for `r = 1` on all of `[a, b]`, and `3/4` for `r = 2`
+  at the nodes — over the backbone `Spline.norm_sub_clampedInterp_le`,
+  `Spline.norm_deriv_sub_clampedInterp_le` and `Spline.norm_deriv2_sub_clampedInterp_le` of
+  `Numlib/Approximation/Spline`. So the *order* in `h` is settled for `r = 0, 1, 2`; what is open
+  is exactly the sharp constants and the clause `r = 3`.
+
+  **What the sharp constants would need.** Hall–Meyer's own proof: write the error `e = f − s₃`
+  on each panel through the Hermite interpolant of `f` at the two nodes with the slopes
+  `s₃'(x_i)`; bound the slope errors through the inverse of the tridiagonal moment system, with
+  `‖A⁻¹‖_∞ ≤ 1/2` from diagonal dominance; and use the sharp Hermite constant `1/384`. Nothing in
+  the backbone or in Mathlib bounds the clamped-spline error by the sharp constants, and the
+  `r = 3` clause — the only one where the mesh ratio `β` enters, since `s₃'''` jumps at the
+  nodes — has no counterpart at all. A separate development of 400–600 lines. No other node
+  needs it.
 
 ## Conventions
 

@@ -35,34 +35,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.3, the
 [[node]]
 id = "golubKahan_svd"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.3'
-
-[[node]]
-id = "golubKahan_svd_stability"
-kind = "theorem"
-desc = '''§5.8.3, the stability clause of the Golub–Kahan–Reinsch algorithm: the computed singular
-values are those of `A + δA` with `‖δA‖₂ ≤ C_{mn} u ‖A‖₂`, for a constant `C_{mn}` depending on
-`m`, `n` (and, as printed, on `u`). The book quotes it without proof and without naming `C_{mn}`;
-the limit clause of the same paragraph is `golubKahan_svd` (split 2026-09-20).
-
-Blocked (re-examined 2026-09-20, agent qss7; blocker 12 of `notes/frontier.md`, now half open):
-the floating-point model of Householder transformations exists, `Numlib/FloatingPoint/Householder`
-— `FloatingPoint.RoundsHouseholderVector` / `RoundsHouseholderApply` with [higham2002accuracy]
-Lemmas 19.1–19.2 (`RoundsHouseholderVector.isRelPert`, `norm_sub_le_of_roundsHouseholderApply`,
-constant `3 γ_{13n+27}`), and the accumulation Lemma 19.3 in vector, columnwise and two-sided
-Frobenius forms (`exists_eq_prodRev_mulVec_add`, `exists_eq_prodRev_mul_add`,
-`exists_eq_prodRev_mul_add_mul_prodFwd`, the last for arbitrary orthogonal `L_k`, `R_k`, which is
-what the alternating left/right reflectors of the bidiagonalization need); the Householder
-reduction to Hessenberg form is done end to end (`exists_roundsHessenbergReduce_eq`, the
-surface `Chapter05.equation_5_46`). Still missing for this node: (i) the computed
-bidiagonalization as a `RoundsBidiagonalStep`-style relation (rectangular `m × n`, left reflector
-on column `k`, right reflector on row `k` — the same shape as `FloatingPoint.RoundsHessenbergStep`
-with the two sweeps on different index types, ~250 lines by copying it), which with the two-sided
-accumulation gives `B̂ = Uᵀ (A + δA₁) V`, `‖δA₁‖_F ≤ γ_{n+m−3}(3 γ_{13 max(m,n)+27}) ‖A‖_F`;
-(ii) the Givens rounding model ([higham2002accuracy] Lemmas 19.7–19.9, no `RoundsGivens` yet)
-and the computed implicit-shift QR step on a bidiagonal matrix (Demmel–Kahan), whose sweep count
-is unbounded — the statement must be for a fixed number `s` of sweeps, `‖δA‖ ≤ (c₁ + c₂ s) u ‖A‖`,
-or for the exact limit; (iii) the deflation criterion as an explicit perturbation. Estimate: (i)
-250 lines, (ii) 400–600, (iii) 100; the node then needs a re-planned statement naming `s`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.golubKahan_svd"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.3'
-

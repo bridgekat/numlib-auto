@@ -48,8 +48,41 @@ than `μ`" (for `n = 1`, `μ = d_1`, the sequence `1, 0` has one sign change and
 Gershgorin interval `[α, β]`: when `α` is itself the smallest eigenvalue the bracket `(a_r, b_r]`
 degenerates to `a_r = α` for every `r`, so the eigenvalue is enclosed by the *closed* interval
 `[a_r, b_r]`, which is what `givensBisection_error` states and what the error bound needs. The
-quadratic convergence of the cyclic Jacobi method (Wilkinson) is not formalized
-(`cyclicJacobi_quadratic`, an open node with the reason); Examples 5.15–5.17 are numerical.
+quadratic convergence of the cyclic Jacobi method (Wilkinson) is not formalized; the record is
+below. Examples 5.15–5.17 are numerical.
+
+## Not formalized here
+
+* **§5.10.1, Wilkinson's quadratic convergence of the cyclic Jacobi method.** The claim, stated
+  by the book without proof and attributed to [Wil62], [Wil65]: if the eigenvalues of the
+  symmetric `A` are separated, `|λ_i − λ_j| ≥ δ` for `i ≠ j`, then one full sweep of `N = n(n−1)/2`
+  row-cyclic rotations squares the off-diagonal mass,
+  `Ψ(A^{(k+N)}) ≤ Ψ(A^{(k)})² / (δ √2)`, with `Ψ` the Frobenius norm of the off-diagonal part
+  (5.63). Two findings from examining it are worth keeping.
+
+  (a) **The inequality needs no smallness hypothesis, and that is not a simplification but the
+  location of the content.** `Ψ` is non-increasing along any sequence of Jacobi rotations
+  (`equation_5_64` here, the backbone's `Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero`:
+  one rotation removes `2 a_pq²` from `Ψ²`), so whenever `Ψ(A^{(k)}) ≥ δ √2` the right-hand side
+  `Ψ(A^{(k)})²/(δ √2)` already exceeds `Ψ(A^{(k)})` and the inequality is free. All of the content
+  is the regime `Ψ < δ √2`, and a proof that starts by assuming smallness has assumed the theorem's
+  hypothesis-free form away.
+
+  (b) **That regime is an induction over the sweep, not an estimate on one rotation.** Each
+  rotation angle is `O(Ψ/δ)` by Gershgorin — the diagonal entries are within `Ψ` of the
+  eigenvalues — and a pair annihilated earlier in the sweep is refilled only to second order; so
+  the argument is an induction over the `n(n−1)/2` rotations of a sweep carrying a second-order
+  bound on *every* off-diagonal entry, and the sharp constant `1/(δ √2)` is obtained by Wilkinson
+  only with the ordering of the sweep taken into account. The library has no counterpart: a
+  sweep-indexed invariant of this kind does not exist anywhere in `Numlib/`.
+
+  What exists here and in `Numlib/Eigen/Jacobi`: the sweep and the iteration themselves
+  (`cyclicPairs`, `cyclicJacobiSweep`, `cyclicJacobiIterate`, `cyclicJacobiSweep_spec`), the
+  off-diagonal mass `equation_5_63` with `equation_5_63_eq` and the one-rotation decrease
+  `equation_5_64` (the book's (5.64)), and the convergence of the *classical* method,
+  `Matrix.tendsto_classicalJacobiIterate`. Nothing near a diagonal matrix, and nothing about a
+  whole sweep. Estimate: comfortably over a thousand lines, most of it the sweep-indexed
+  invariant. Nothing downstream depends on it.
 -/
 
 open Filter Finset Matrix Polynomial Topology

@@ -51,10 +51,42 @@ the rigorous local statement that reading stands for — constants `c, ε₀` un
 simple real eigenvalue `λ`, with the two hypotheses the book leaves implicit: `t_{nn}^{(k)}` is
 close to `λ` (which eigenvalue the last row is converging to) and no shift is exactly an
 eigenvalue (the QR factorizations are unique and Hessenberg form is preserved); the book's
-"unreduced" is not needed. The claim for the Francis double shift of §5.7.2 is not formalized
-(`doubleShiftQr_quadratic`, which the book itself says cannot hold for all matrices); the
-stopping test (5.54) is part of a program. "Remark 5.13", cited in §5.7.2, does not exist
-(Exercise 14 is meant). Examples 5.10–5.13 are numerical and Programs 36–37 are not nodes.
+"unreduced" is not needed. The corresponding claim for the Francis double shift of §5.7.2 is not
+formalized; the record is below. The stopping test (5.54) is part of a program. "Remark 5.13",
+cited in §5.7.2, does not exist (Exercise 14 is meant). Examples 5.10–5.13 are numerical and
+Programs 36–37 are not nodes.
+
+## Not formalized here
+
+* **§5.7.2, the quadratic convergence of the QR iteration with the Francis double shift.** The
+  claim is that, when the two shifts of a double step are the eigenvalues of the trailing `2 × 2`
+  block of `T⁽ᵏ⁾`, the iterates converge to the real Schur form *quadratically*: the subdiagonal
+  entry `t_{n−1,n−2}^{(k+1)}` below the trailing block is of the order of the square of
+  `t_{n−1,n−2}^{(k)}`. The book itself says why this cannot be stated as printed. It cites
+  [Fra61], [GL89] §7.5 and [Dem97] §4.4.5 without proof; it notes that special matrices defeat the
+  strategy — the cyclic permutation matrix of Exercise 14, proved as `property_5_9_counterexample`
+  in §5.5, is left fixed by the iteration, so nothing converges at all; and it calls a shift
+  strategy that provably converges for *every* matrix an **open problem**. Any faithful statement
+  therefore carries a genericity hypothesis that none of the cited sources supplies (Golub–Van
+  Loan and Demmel give the heuristic and the exceptional-shift remedy, not a theorem), so there is
+  no rigorous form of the printed claim to prove in its place.
+
+  What *is* proved, and what the block form would need. The single-shift case is
+  `equation_5_53_quadratic` with `equation_5_53_quadratic_iterate` above: local quadratic
+  convergence of `t_{n,n−1}^{(k)}` to `0` at a simple real eigenvalue, over the backbone
+  `Numlib/Eigen/RayleighQuotientIteration` (`Krylov.norm_sub_inner_smul_le_sq_mul_norm` and the
+  last-row identification `Matrix.abs_shiftedQrStep_last_le`), under the two hypotheses the book
+  leaves implicit — `t_{nn}^{(k)}` close to the eigenvalue, and no shift exactly an eigenvalue.
+  The double step itself is `equation_5_55`, `equation_5_55_eq`, `equation_5_55_eq_conj`: one real
+  double step is two complex single steps. What is missing is that argument in *block* form, that
+  is, a **subspace** Rayleigh quotient iteration. The last two columns of `Q` for the double step
+  are `(T − λ)⁻ᵀ (T − λ̄)⁻ᵀ [e_{n−1}, e_n]` orthonormalized, so `t_{n−1,n−2}^{(k+1)}` has to be
+  controlled by the sine of the angle between `span {e_{n−1}, e_n}` and the two-dimensional left
+  invariant subspace of the complex pair, with the gap `Submodule.gap` of
+  `Numlib/Analysis/InnerProductSpace/Projection/Angle` in place of the complementary component and
+  a resolvent bound on the complement of the invariant pair. Estimate: about 400 lines for the
+  block form of `Numlib/Eigen/RayleighQuotientIteration`, after which the genericity hypothesis
+  would still have to be invented.
 -/
 
 open Filter Finset Matrix Topology

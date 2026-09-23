@@ -173,47 +173,5 @@ id = "example_7_7_isLocalMin"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.7'
 
 [[node]]
-id = "property_7_17"
-kind = "theorem"
-desc = '''Property 7.17 (Bertsekas, *Constrained Optimization and Lagrange Multiplier Methods*, Prop.
-2.4): let `xstar` be a regular strict local minimizer of (7.50) with `f`, `h_i` of class `C²`
-near it, `λstar` its multiplier, `zᵀ H_{𝒢_0}(xstar, λstar) z > 0` for all `z ≠ 0` with
-`J_h(xstar)ᵀ z = 0`, and `H_{𝒢_ᾱ}(xstar, λstar)` positive definite for some `ᾱ > 0`. Then there are
-`δ, γ, M > 0` such that for every `(λ, α)` with `‖λ - λstar‖ < δ α` and `α ≥ ᾱ`, the problem
-`min 𝒢_α(x, λ)` over `B(xstar; γ)` has a unique solution `x(λ, α)`, differentiable in `(λ, α)`,
-with `‖x(λ, α) - xstar‖ ≤ M ‖λ - λstar‖`. Not formalized: for each fixed `α` the existence,
-uniqueness and differentiability of `x(λ, α)` near `λstar` is Mathlib's implicit function theorem
-applied to `∇_x 𝒢_α(x, λ) = 0`, but the uniformity of `δ`, `γ`, `M` over all `α ≥ ᾱ`, which is the
-content of the statement, comes from applying the implicit function theorem in the compactified
-variables `(x, λ̃, 1/α)` at `1/α = 0` (Bertsekas' proof), together with the Debreu–Finsler lemma
-(condition 3 follows from condition 2 for `ᾱ` large) — a page of careful analysis whose only
-consumer is the convergence-rate discussion that follows, which the book itself only quotes. The
-book states it without proof. ★★★
-
-Blocked (2026-09-20, agent qss3; replaces the note of 2026-09-16): clause (b) is done — the
-Debreu–Finsler lemma is `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker`, the Hessian
-identity `H_{𝒢_α}(x*, λ*) = H_{𝒢_0}(x*, λ*) + α J_h(x*)ᵀ J_h(x*)` at a feasible point is
-`Constrained.fderiv_fderiv_augmented_apply`, and "condition 3 follows from condition 2" is the
-surface node `property_7_17_debreu` (all in `Numlib/Optimization/Constrained`). What remains is
-clause (a), the uniform statement: (i) the implicit function theorem for the system
-`Φ(x, μ; λ̃, t) = (∇f(x) + J_h(x)ᵀ μ, h(x) - t (μ - λ*) + λ̃)` at `(x*, λ*; 0, 0)` in the compactified
-parameters `λ̃ = (λ - λ*)/α`, `t = 1/α` — its `(x, μ)`-Jacobian `[[H_ℒ, J_hᵀ], [J_h, 0]]` is
-nonsingular by condition 2 and regularity — giving `x(λ̃, t)`, `μ(λ̃, t)` jointly `C¹` with the
-Lipschitz bound `‖x(λ̃, t) - x*‖ ≤ M ‖λ̃‖` (from `x(0, t) = x*`), which Mathlib's
-`HasStrictFDerivAt.implicitFunction` does not deliver in this parametrized-with-derivative form
-(the project's `Constrained.exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top` is a curve
-version only); (ii) the strict local minimality of `x(λ, α)` for `𝒢_α(·, λ)` from the positive
-definiteness of `H_ℒ(x(λ,α), μ(λ,α)) + α J_hᵀ J_h` (Debreu with continuity in `(x, μ)`); (iii) the
-uniqueness of the minimizer on the whole ball `B(x*; γ)`, which is *not* a convexity statement:
-`𝒢_α(·, λ)` is not convex on a fixed ball uniformly in `α` (for `h(x, y) = y - x²` the Hessian of
-`½ ‖h‖²` at `(0, y)` is `diag(-2y, 1)`), so the argument must show that every minimizer on the
-compact ball is interior and stationary and then compare values through the penalty term; the
-exact route is Bertsekas' (his Proposition 2.4 is not in `references/`). Estimate: (i) 300–400
-lines, (ii) 100, (iii) 150–250 once the route is fixed; two to three days. Nothing in the project
-depends on it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_55", "QuarteroniSaccoSaleri.Chapter07.property_7_11", "QuarteroniSaccoSaleri.Chapter07.definition_7_2"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'
-
-[[node]]
 id = "property_7_17_debreu"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'

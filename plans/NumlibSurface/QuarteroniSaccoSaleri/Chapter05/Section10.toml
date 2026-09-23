@@ -33,32 +33,6 @@ id = "cyclicJacobiSweep"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 
 [[node]]
-id = "cyclicJacobi_quadratic"
-kind = "theorem"
-desc = '''The quadratic convergence of the cyclic Jacobi method: if `|λ_i - λ_j| ≥ δ` for `i ≠ j` then
-`Ψ(A^{(k+N)}) ≤ Ψ(A^{(k)})² / (δ √2)`. Wilkinson's theorem ([Wil62], [Wil65]), stated by the book
-without proof.
-
-Blocked (re-examined 2026-09-20, agent qss1; blocker 13 of `notes/frontier.md`): a real theorem
-rather than an asymptotic gesture, and still the hardest unproved item of chapter 5. Checked in
-`Numlib/`: `cyclicJacobiSweep`, `cyclicJacobiIterate` and `cyclicJacobiSweep_spec` are here,
-`Matrix.offDiagNormSq` with `offDiagNormSq_conj_planeRotation_of_apply_eq_zero` (the book's
-(5.64), one rotation removes `2 a_pq²` from `Ψ`) is in `Numlib/Eigen/Jacobi`, and the classical
-Jacobi convergence `Matrix.tendsto_classicalJacobiIterate` is proved; nothing about a whole sweep
-near a diagonal matrix. Two findings stand. (a) The inequality needs no smallness hypothesis: `Ψ`
-is non-increasing along any sequence of Jacobi rotations, so for `Ψ(A^{(k)}) ≥ δ √2` the
-right-hand side `Ψ(A^{(k)})²/(δ √2)` already exceeds `Ψ(A^{(k)})`; all the content is the regime
-`Ψ < δ √2`. (b) That regime is Wilkinson's analysis of one full sweep: each rotation angle is
-`O(Ψ/δ)` by Gershgorin (the diagonal entries are within `Ψ` of the eigenvalues), and a pair
-annihilated earlier in the sweep is refilled only to second order — an induction over the
-`n(n-1)/2` rotations of a sweep carrying a second-order bound on every off-diagonal entry, with no
-counterpart anywhere in the library, plus the sharp constant `1/(δ √2)`, which Wilkinson obtains
-only with the ordering of the sweep taken into account. Estimate: comfortably over a thousand lines
-and a sweep-indexed invariant that does not exist yet; nothing downstream depends on it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.cyclicJacobiSweep"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
-
-[[node]]
 id = "sturmSeq"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.65)'
 

@@ -16,10 +16,19 @@ of §8.3), `Numlib/Approximation/DividedDifference` and the new `Numlib/Approxim
 (§8.5), and the new `Numlib/Approximation/{Spline, BSpline, Bezier}` (§8.6–8.7). Mathlib supplies
 `Lagrange.interpolate`, `Lagrange.nodal`, `Matrix.det_vandermonde` and `bernsteinPolynomial`.
 
-Not formalized, each on its node: the Erdős lower bound on Lebesgue constants and Faber's theorem
-(§8.1.2), the equispaced asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)` (§8.1.3), the two-dimensional
-error estimates (8.39)–(8.40), and the sharp constants of Property 8.3 (Hall–Meyer). Runge's
-counterexample (Example 8.1) is stated with a real-variable proof route and left open.
+Not formalized, all quoted by the book without proof, with the full record in the
+`## Not formalized here` section of the section module named: the Erdős lower bound
+`Λ_n(X) > (2/π) log(n+1) − C` on Lebesgue constants and Faber's theorem (§8.1.2, `Section01` —
+Faber is five lines from Banach–Steinhaus once the Lebesgue constants are known unbounded, so it
+is blocked on Erdős's bound alone, and Runge's Example 8.1 does not give it); the equispaced
+asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)` (§8.1.3, `Section01` — Turetskii; its one-sided half,
+Schönhage's `Λ_n ≥ 2^{n−3}/n²`, is proved as `lebesgueConstant_equispaced_lower`, but bounds only
+that one interpolation matrix); the two-dimensional error estimates (8.39)–(8.40)
+(§8.5); and the sharp Hall–Meyer constants `5/384`, `1/24`, `3/8`, `(β+β⁻¹)/2` of Property 8.3
+together with its `r = 3` clause (§8.6, `Section06` — the constants are for the *clamped* spline,
+and for the natural spline the statement is false unless `f''(a) = f''(b) = 0`; the `O(h^{4−r})`
+bounds with non-sharp constants are proved as `property_8_3_weak`). Runge's counterexample
+(Example 8.1) is proved.
 
 Skipped (numerical tables, plots, software): Examples 8.2, 8.3, 8.4, 8.5, 8.7, 8.8, Remark 8.2,
 Programs 65–70, the CG experiment of §8.8.1 and the tomography of §8.8.2.

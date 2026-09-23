@@ -19,4 +19,15 @@ follows it: complex `Matrix n n ℂ` (or `EuclideanSpace ℂ n`) where the book 
 `Matrix (Fin N) (Fin N) ℝ` where it says `ℝ^{n×n}`. Programs 26–45 are not nodes; the method each
 implements is the backbone `iterate` that the corresponding theorem is about. Numerical examples
 (5.1–5.13, 5.15–5.18) are skipped; Example 5.14 (three pencils) is a node.
+
+Not formalized, each with the full record in the `## Not formalized here` section of its section
+module: §5.7.2, the quadratic convergence of the Francis double shift — the book calls a provably
+convergent shift strategy an open problem, so no faithful statement exists; §5.8.3, the backward
+stability of the Golub–Kahan–Reinsch algorithm — its printed constant `C_{mn}` is allowed to
+depend on the roundoff unit, which makes the bound empty as stated, and the Givens rounding model
+and the computed bidiagonalization are missing; §5.9.2, the stability of the QR–Cholesky
+algorithm — printed with `≃`, and the backbone shows the printed bound omits a factor `κ(B)^{1/2}`
+from the triangular solves; §5.10.1, Wilkinson's quadratic convergence of the cyclic Jacobi
+method — a sweep-indexed second-order invariant the library does not have. All four are quoted by
+the book without proof.
 '''

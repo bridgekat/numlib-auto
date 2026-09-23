@@ -61,36 +61,6 @@ id = "clampedSpline_bestApprox_deriv2"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1 (after Property 8.2)'
 
 [[node]]
-id = "property_8_3"
-kind = "theorem"
-desc = '''Property 8.3: for `f` of class `C⁴` on `[a, b]`, a partition with `h = max h_i`,
-`β = h / min h_i`, and `s_3` the cubic spline interpolating `f`,
-`‖f^{(r)} - s_3^{(r)}‖_∞ ≤ C_r h^{4-r} ‖f^{(4)}‖_∞` for `r = 0, 1, 2, 3` with `C_0 = 5/384`,
-`C_1 = 1/24`, `C_2 = 3/8`, `C_3 = (β + β⁻¹)/2`. Reading: the constants are those of Hall and Meyer
-(*Optimal error bounds for cubic spline interpolation*, J. Approx. Theory 16, 1976) for the
-**clamped** (complete) spline `s_3'(a) = f'(a)`, `s_3'(b) = f'(b)`; the book does not say which
-end conditions it means, and for the natural spline the statement is false unless
-`f''(a) = f''(b) = 0` (the natural spline of `f(t) = t²` is not `t²`, and its error is `O(h²)`
-near the ends). Not formalized: the sharp constants are the Hall–Meyer theorem, quoted by the
-book without proof; the `O(h⁴)` bound with non-sharp constants for `r = 0, 1, 2` is planned as
-`Spline.norm_sub_clampedInterp_le` (`★★★`) and the surface can state that version as
-`property_8_3_weak` once it exists.
-
-Blocked (2026-09-20, refreshed; blocker 17 of `notes/frontier.md`): the backbone bounds with
-non-sharp constants are proved (`Spline.norm_sub_clampedInterp_le`,
-`Spline.norm_deriv_sub_clampedInterp_le`, `Spline.norm_deriv2_sub_clampedInterp_le`, checked in
-`Numlib/Approximation/Spline.lean`) and the surface states them as `property_8_3_weak`; what stays
-open is only the *sharp* Hall–Meyer constants `5/384`, `1/24`, `3/8` and the clause `r = 3`, which
-the book quotes without proof and no other node needs. Nothing in the backbone or Mathlib bounds
-the clamped-spline error by the sharp constants; Hall–Meyer's proof (the error `e = f - s₃` on
-each panel through the Hermite interpolant of `f` at the nodes with the slopes `s₃'(x_i)`, the
-slope errors bounded through the tridiagonal system's inverse with `‖A⁻¹‖_∞ ≤ 1/2` by diagonal
-dominance, and the sharp Hermite constant `1/384`) is a separate 400–600-line development. Not
-attempted this round (out of the round's scope: quoted without proof).'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.norm_sub_clampedInterp_le"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3'
-
-[[node]]
 id = "property_8_3_weak"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3 (with non-sharp
 constants)'''

@@ -37,12 +37,45 @@ leading block `T₁₁ = T.submatrix (Fin.castLE _) (Fin.castLE _)` of order `k`
 
 The iterative phase of the Golub–Kahan–Reinsch algorithm (§5.8.3) is described only by its limit,
 whose existence is the SVD itself (`golubKahan_svd`, from the backbone `Matrix.exists_svd`); its
-rounding-error bound `‖δA‖₂ ≤ C_{mn} u ‖A‖₂` is quoted without proof; the floating-point model of
-Householder transformations now exists (`Numlib/FloatingPoint/Householder`, Higham's Lemmas
-19.1–19.3 and the Hessenberg reduction), the models of the bidiagonalization and of the
-implicit-shift QR sweep (Givens rotations) do not, so the node `golubKahan_svd_stability` stays
-open with the reason. Inverse iteration needs `λ ∉ σ(A)` for its linear systems to be
-solvable, which `inverseIterate_conj` assumes, as (5.28) does.
+rounding-error bound is quoted without proof and is not formalized (the record is below). Inverse
+iteration needs `λ ∉ σ(A)` for its linear systems to be solvable, which `inverseIterate_conj`
+assumes, as (5.28) does.
+
+## Not formalized here
+
+* **§5.8.3, the backward stability of the Golub–Kahan–Reinsch algorithm.** The claim of the
+  closing paragraph of §5.8.3: the singular values computed in floating-point arithmetic with
+  roundoff unit `u` are the exact singular values of a perturbed matrix `A + δA`, with
+  `‖δA‖₂ ≤ C_{mn} u ‖A‖₂`. The book quotes it without proof and does not name `C_{mn}`; worse,
+  it says that `C_{mn}` depends on `m`, `n` **and on `u`**, and a "constant" that may depend on
+  the roundoff unit makes the inequality empty — every `δA` satisfies it for a large enough
+  `C_{mn}(u)`. So what has to be formalized is not the printed line but a re-planned statement in
+  which the constant is explicit and `u`-free, and choosing it is part of the work. The limit
+  clause of the same paragraph — that the algorithm's iterative phase produces the SVD — is
+  `golubKahan_svd` above, and the exact bidiagonalization is `equation_5_57`.
+
+  The floating-point backbone carries the first half of the analysis and is missing the second.
+  What exists, in `Numlib/FloatingPoint/Householder`: the rounding model of a Householder
+  transformation, `FloatingPoint.RoundsHouseholderVector` and `RoundsHouseholderApply`, with
+  [higham2002accuracy] Lemmas 19.1–19.2 (`RoundsHouseholderVector.isRelPert`,
+  `norm_sub_le_of_roundsHouseholderApply`, constant `3 γ_{13n+27}`); the accumulation Lemma 19.3
+  in vector, columnwise and two-sided Frobenius forms (`exists_eq_prodRev_mulVec_add`,
+  `exists_eq_prodRev_mul_add`, `exists_eq_prodRev_mul_add_mul_prodFwd` — the last for arbitrary
+  orthogonal `L_k`, `R_k`, which is exactly what the alternating left/right reflectors of a
+  bidiagonalization need); and the Householder reduction to Hessenberg form end to end
+  (`exists_roundsHessenbergReduce_eq`, the surface `Chapter05.equation_5_46` of §5.6). What is
+  missing: (i) the *computed* bidiagonalization as a `RoundsBidiagonalStep`-style relation —
+  rectangular `m × n`, a left reflector on column `k` and a right reflector on row `k`, the same
+  shape as `FloatingPoint.RoundsHessenbergStep` with the two sweeps on different index types,
+  about 250 lines by copying it — which with the two-sided accumulation would give
+  `B̂ = Uᵀ (A + δA₁) V` with `‖δA₁‖_F ≤ γ_{n+m−3} (3 γ_{13 max(m,n)+27}) ‖A‖_F`; (ii) the **Givens
+  rounding model**, [higham2002accuracy] Lemmas 19.7–19.9, for which there is no `RoundsGivens`
+  predicate at all, and the computed implicit-shift QR step on a bidiagonal matrix
+  (Demmel–Kahan), 400–600 lines; (iii) the deflation criterion as an explicit perturbation, about
+  100 lines. Note that the sweep count of the iterative phase is *unbounded*, so a faithful
+  statement cannot be about the algorithm as printed: it must fix a number `s` of sweeps and read
+  `‖δA‖ ≤ (c₁ + c₂ s) u ‖A‖`, or else be about the exact limit. Re-planning the statement is part
+  of the work, not a preliminary to it.
 -/
 
 open Matrix

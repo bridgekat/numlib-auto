@@ -40,9 +40,53 @@ Local minimizers on a set are `IsLocalMinOn`.
 * Property 7.17 (Bertsekas' uniform local analysis of the augmented Lagrangian): its
   condition 3 is a consequence of condition 2 by Debreu's lemma (`property_7_17_debreu`, with the
   Hessian identity `H_{𝒢_α}(x*, λ*) = H_{𝒢_0}(x*, λ*) + α J_h(x*)ᵀ J_h(x*)` at the feasible `x*`);
-  the uniform existence, uniqueness and Lipschitz dependence of the minimizer `x(λ, α)` (the
-  implicit function theorem in the compactified parameters `(λ - λ*)/α`, `1/α`) is not
-  formalized.
+  the uniform clause of the property is not formalized, and the record is below.
+
+## Not formalized here
+
+* **Property 7.17, the uniform clause.** Let `x*` be a regular strict local minimizer of (7.50)
+  with `f`, `h_i` of class `C²` near it and `λ*` its multiplier; assume condition 2,
+  `zᵀ H_{𝒢_0}(x*, λ*) z > 0` for every `z ≠ 0` with `J_h(x*)ᵀ z = 0`, and condition 3,
+  `H_{𝒢_ᾱ}(x*, λ*)` positive definite for some `ᾱ > 0`. The property asserts that there are
+  `δ, γ, M > 0` such that for **every** pair `(λ, α)` with `‖λ − λ*‖ < δ α` and `α ≥ ᾱ`, the
+  problem `min 𝒢_α(x, λ)` over the ball `B(x*; γ)` has a unique solution `x(λ, α)`, that
+  `x(λ, α)` is differentiable in `(λ, α)`, and that `‖x(λ, α) − x*‖ ≤ M ‖λ − λ*‖`. The book states
+  it without proof and, for the property itself, without a citation: only the convergence
+  discussion that follows it cites [Ber82], Proposition 2.7. The property is Bertsekas,
+  *Constrained Optimization and Lagrange Multiplier Methods*, Proposition 2.4, which is not in
+  `references/`, so his route is not available here either.
+
+  Clause (b) is done and is above: `property_7_17_debreu` derives condition 3 from condition 2
+  through the Debreu–Finsler lemma
+  `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker` and the Hessian identity
+  `Constrained.fderiv_fderiv_augmented_apply` (both in `Numlib/Optimization/Constrained`). What
+  remains is clause (a), the uniform statement, in three pieces.
+
+  (i) The implicit function theorem for the system
+  `Φ(x, μ; λ̃, t) = (∇f(x) + J_h(x)ᵀ μ, h(x) − t (μ − λ*) + λ̃)` at `(x*, λ*; 0, 0)`, in the
+  *compactified* parameters `λ̃ = (λ − λ*)/α` and `t = 1/α` — its `(x, μ)`-Jacobian
+  `[[H_ℒ, J_hᵀ], [J_h, 0]]` is nonsingular by condition 2 and regularity — giving `x(λ̃, t)`,
+  `μ(λ̃, t)` jointly `C¹` with the Lipschitz bound `‖x(λ̃, t) − x*‖ ≤ M ‖λ̃‖` from `x(0, t) = x*`.
+  Compactification is the whole point: it is what makes `δ, γ, M` uniform in `α ≥ ᾱ` rather than
+  `α`-dependent. Mathlib's `HasStrictFDerivAt.implicitFunction` does not deliver this
+  parametrized-with-derivative form, and the project's
+  `Constrained.exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top` is a curve version only.
+  300–400 lines.
+
+  (ii) The strict local minimality of `x(λ, α)` for `𝒢_α(·, λ)`, from the positive definiteness of
+  `H_ℒ(x(λ,α), μ(λ,α)) + α J_hᵀ J_h` — Debreu again, now with continuity in `(x, μ)`. About 100
+  lines.
+
+  (iii) The uniqueness of the minimizer **on the whole ball** `B(x*; γ)`. This is *not* a
+  convexity statement, and reading it as one is the trap: `𝒢_α(·, λ)` is not convex on a fixed
+  ball uniformly in `α`. For the single constraint `h(x, y) = y − x²` the Hessian of the penalty
+  term `½ ‖h‖²` at the point `(0, y)` is `diag(−2y, 1)`, which is indefinite for every `y > 0`
+  however large `α` is; so the penalty does not convexify a fixed neighbourhood. The argument must
+  instead show that every minimizer on the compact ball is interior and stationary, and then
+  compare values through the penalty term. 150–250 lines once the route is fixed.
+
+  Two to three days in all. Nothing in the project depends on it: the convergence-rate discussion
+  that follows Property 7.17 in the book is itself only quoted.
 -/
 
 open Filter Matrix Metric Set Topology WithLp
