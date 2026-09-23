@@ -117,8 +117,33 @@ the fan of elements around each vertex to be edge-connected, erratum E3 of
 `L^p(∂Ω)` for the surface measure `IsContDiffDomain.boundaryMeasure` of
 `Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`, defined through the patch system of a graph
 atlas, with the book's norm `max_i ‖v ∘ gᵢ‖_{W^{s,p}(Dᵢ)}` as `definition_7_2_13_norm`; its
-independence of the patch system, which the book leaves implicit, is not proved
-(`definition_7_2_13_indep`).
+independence of the patch system, which the book leaves implicit, is not proved, and the
+`## Not formalized here` section below says what it would need.
+
+## Not formalized here
+
+* **Definition 7.2.13, the independence of the patch system.** The book states, without proof, that
+  the space `W^{s,p}(∂Ω)` does not depend on the patch system and that two patch systems give
+  equivalent norms. With the definition here that is a statement: for `hΩ : IsContDiffDomain 1 Ω`,
+  `hb : Bornology.IsBounded Ω` and two graph atlases `a a' : GraphAtlas Ω`,
+  `definition_7_2_13_atlas hΩ hb a k σ p = definition_7_2_13_atlas hΩ hb a' k σ p` (both are
+  submodules of the same `Lp ℝ p (hΩ.boundaryMeasure hb)`, the surface measure being
+  atlas-independent by `GraphAtlas.measure_eq`), together with a `C > 0` bounding each atlas's
+  `definition_7_2_13_norm` by `C` times the other's, the norms being computed from patch
+  representatives by `definition_7_2_13_norm_eq`. It is not proved. At `s = 0` the space is
+  `L^p(∂Ω)` for every atlas and nothing is needed (`boundaryMeasure_restrict_ball`); for
+  `0 < s ≤ 1` it needs the invariance of the Slobodeckij seminorm of Definition 7.2.10 under the
+  `C¹` transition maps `EuclideanSpace.graphTransition` — a bi-Lipschitz change of variables in the
+  double integral `∬ |v(x) − v(y)|^p / |x − y|^{d−1+sp}`, localized to the overlaps
+  `a.graphDomain i ∩ graphTransition ⁻¹' a'.graphDomain j` and then summed over a finite partition
+  of each `Dᵢ` by those overlaps. `Numlib/Analysis/Sobolev/Slobodeckij.lean` has the spaces and
+  their norms but no change of variables at all, so this is about 400 lines there; the Jacobian
+  bounds it would use are `EuclideanSpace.graphDensity_graphTransition`. This is the *same*
+  obstruction that keeps the fractional clauses of §7.3 out — Theorem 7.3.10's range clause and
+  Theorem 7.3.11 as printed — and the `## Not formalized here` section of
+  `NumlibSurface/AtkinsonHan/Chapter07/Section03.lean` discusses it once, in full, for all three.
+  Nothing in the corpus consumes `W^{s,p}(∂Ω)` for non-integer `s`: `H^{1/2}(Γ)` was wanted only
+  through those two clauses of §7.3.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -1731,7 +1756,8 @@ is `IsContDiffDomain.boundaryMeasure` of the same module, the pushforward of `�
 on every chart; `L^p(∂Ω) := Lp ℝ p σ`. The space is defined relative to an atlas
 (`definition_7_2_13_atlas`) and then for the chosen atlas `hΩ.graphAtlas hb`
 (`definition_7_2_13`), so that its independence of the patch system, which the book leaves
-implicit, is a statement (`definition_7_2_13_indep`, not proved).
+implicit, is a statement — not proved; the module doc’s `## Not formalized here` section says
+what it would need.
 
 The book's `C^{k,α}` patches are restated as `C¹` (the case `k = 0`, `α = 1` of the book's
 range, a `C¹` function being Lipschitz), so the book's range of orders is `0 ≤ s ≤ 1`; as for
@@ -1802,8 +1828,10 @@ atlas `hΩ.graphAtlas hb` of `Ω` (`definition_7_2_13_atlas` for an arbitrary pa
 `p = 2` one writes `H^s(∂Ω) ≡ W^{s,2}(∂Ω)`, `definition_7_2_13_hs`.
 
 The book states without proof that the space does not depend on the patch system and that the
-norms of two patch systems are equivalent; that is `definition_7_2_13_indep`, not proved. The
-book's Lipschitz (`C^{k,α}`) patches are restated as `C¹`. -/
+norms of two patch systems are equivalent. That is not proved here: it needs the invariance of
+the Slobodeckij seminorm under the `C¹` chart transitions, and the module doc’s
+`## Not formalized here` section is the record. The book's Lipschitz (`C^{k,α}`) patches are
+restated as `C¹`. -/
 noncomputable def definition_7_2_13 {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ)

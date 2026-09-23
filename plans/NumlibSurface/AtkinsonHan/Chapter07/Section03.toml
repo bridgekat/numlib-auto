@@ -33,27 +33,12 @@ id = "theorem_7_3_5_order"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k, one operator per k and p, for a bounded C^k domain)"
 
 [[node]]
-id = "theorem_7_3_5_universal"
-kind = "theorem"
-desc = '''Theorem 7.3.5 (universal extension theorem, Stein): for `Ω` an open half-space or a
-Lipschitz domain there is one linear operator `E` that is continuous
-`W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for every `k ≥ 0` and every `p ∈ [1,∞]`, with `Ev = v` on `Ω`, `Ev`
-smooth off `closure Ω`, and `‖Ev‖_{W^{k,p}(ℝ^d)} ≤ c ‖v‖_{W^{k,p}(Ω)}`. The order-one operator,
-one per `p`, on a bounded `C¹` domain is `theorem_7_3_5`; the order-`k` operator, one per `k`
-and `p`, on a bounded `C^k` domain is `theorem_7_3_5_order`.
+id = "theorem_7_3_5_order_lp"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k, with the L^p bound: one operator bounded at the orders 0 and k at once, for a bounded C^k domain)"
 
-Blocked: 2026-09-21. What exists is Brezis's Theorem 9.7 at every order
-(`SobolevEuclidean.exists_extensionL_of_order`, `Numlib/Analysis/Sobolev/ExtensionHigher.lean`:
-the higher-order reflection of Exercise 7.3.2 with Vandermonde coefficients of order `k`, in the
-`C^k` charts, with the bound from the closed graph theorem): one bounded operator
-`W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for each `k ≥ 1` and each `p`, on a `C^k` domain, which is neither
-smooth off `closure Ω` nor independent of `k` (the reflection coefficients depend on `k`), and
-whose construction is uniform in `p` (only the `∃ P` statement is per `p`). Stein's universal
-operator on a Lipschitz domain is a Calderón-kernel regularization of the reflection (Stein,
-*Singular Integrals*, VI.3), research-scale here; "one operator for all `p`" at a fixed `k` is
-in reach (~150 lines: state `exists_extensionL_of_order` with the operator built before `p`),
-"all `k`" is not.'''
-deps = ["theorem_7_3_5", "theorem_7_3_5_order"]
+[[node]]
+id = "theorem_7_3_5_order_uniform"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k, one operator for every exponent p, for a bounded C^k domain)"
 
 [[node]]
 id = "definition_7_3_6"
@@ -137,22 +122,6 @@ id = "theorem_7_3_10_polygon_compact"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.10, clause (c), on a triangulated polygon'
 
 [[node]]
-id = "theorem_7_3_10_range"
-kind = "theorem"
-desc = '''Theorem 7.3.10, the range clause: the trace `γ` of `theorem_7_3_10` maps `W^{1,p}(Ω)` onto
-`W^{1−1/p,p}(Γ)` (`definition_7_2_13` at `s = 1 − 1/p`), so that `H^{1/2}(Γ) = γ(H^1(Ω))` and
-the quotient norm (7.3.2) is equivalent to the norm of `definition_7_2_13`.
-
-Blocked (2026-09-21, boundary round; the trace itself is now `theorem_7_3_10`): this is
-Gagliardo's theorem — the boundedness `‖γ v‖_{W^{1−1/p,p}(Γ)} ≤ C ‖v‖_{W^{1,p}}` (a fractional
-estimate on the graph pieces, ~600 lines on `Slobodeckij.lean` with the chart transport of
-`definition_7_2_13_indep`) and the right inverse (Gagliardo's extension of a `W^{1−1/p,p}`
-boundary function, by averaging over balls, 1000+ lines). Not needed by any consumer of this
-round: `theorem_11_4_5` is restated through the density of traces in `L¹(Γ)` instead of
-`H^{1/2}(Γ)`, and `theorem_13_1_1`'s Dirichlet clause stays blocked for other reasons.'''
-deps = ["theorem_7_3_10", "definition_7_2_13"]
-
-[[node]]
 id = "theorem_7_3_11_trace₀"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the trace γ₀ at s = 2, into L^p(Γ)'
 
@@ -183,24 +152,6 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 [[node]]
 id = "theorem_7_3_11"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.11, the L^p clause at s = 2 (existence and the two formulas on a bounded C¹ domain, uniqueness on a bounded C² domain)'
-
-[[node]]
-id = "theorem_7_3_11_fractional"
-kind = "theorem"
-desc = '''Theorem 7.3.11 as printed: on a bounded open set with `C^{k,1}` boundary, `1 ≤ p ≤ ∞`,
-`s − 1/p > 1` not an integer, `k ≥ s − 1`, the maps `γ₀ : W^{s,p}(Ω) → W^{s−1/p,p}(Γ)` and
-`γ₁ : W^{s,p}(Ω) → W^{s−1−1/p,p}(Γ)` are bounded, linear and *surjective*.
-
-Blocked (2026-09-21, boundary round): the `L^p(Γ)` clause at `s = 2` is `theorem_7_3_11`
-(proved: `theorem_7_3_11_trace₀`, `theorem_7_3_11_trace₁` with their formulas on a bounded `C¹`
-domain, uniqueness on a bounded `C²` domain through the order-two extension operator); what
-remains is everything fractional — the spaces `W^{σ,p}(Γ)` on the boundary with their chart
-independence (`definition_7_2_13_indep`), the fractional boundedness and the surjectivity
-(Gagliardo / Lions–Magenes), the `C^{k,1}` boundaries (Lipschitz derivatives of the charts; the
-library has `C^n` graphs only), and `W^{s,p}` of non-integer `s` on `Ω` itself. A Gagliardo-type
-theorem (1000+ lines) after `theorem_7_3_10_range`. The book quotes it from [98] without
-proof.'''
-deps = ["theorem_7_3_11", "theorem_7_3_10_range", "definition_7_2_13"]
 
 [[node]]
 id = "equation_7_3_3"

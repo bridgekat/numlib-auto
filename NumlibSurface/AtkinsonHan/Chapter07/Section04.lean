@@ -55,8 +55,11 @@ domain (the book's Lipschitz domain, the `C¹` domains of Definition 7.2.1 inclu
 proves it by the Fourier characterization on `ℝ^d` (Step 1), the density of Theorem 7.3.4
 (Step 2) and the extension operator (Step 3); here it is the Sobolev embedding of Theorem 7.3.8 (c)
 — Morrey's theorem on `ℝ^d` through the order-one extension operator, in
-`Numlib/Analysis/Sobolev/DenyLions.lean` — since the backbone's extension operator exists at
-order one only and Step 3 at order `k` is the open `theorem_7_3_5_universal`.
+`Numlib/Analysis/Sobolev/DenyLions.lean` — which is the shorter route and needs the extension
+operator at order one only. The book's Step 3 at order `k` is available as
+`theorem_7_3_5_order` of §7.3; Stein's universal operator, one for all `k` and `p` on a
+Lipschitz domain, is not formalized (the `## Not formalized here` section of
+`NumlibSurface/AtkinsonHan/Chapter07/Section03.lean`).
 
 Example 7.4.3, the interpolation inequality `‖v‖_{C(Ω̄)} ≤ c ‖v‖_{H^d}^{1/2} ‖v‖_{L^2}^{1/2}`
 (7.4.4), is here in its whole-space form `example_7_4_3_whole_space` (and
@@ -67,10 +70,18 @@ integral of `ℱv ∈ L¹` (`exists_continuous_ae_eq_of_integrable_fourier`, wit
 of an `L¹` function with the `L²` inverse through the tempered distributions), so
 `|v(x)| ≤ ∫ |ℱv|`; the Cauchy–Schwarz inequality against the scaled weight `(1 + λ|ξ|²)^{±d/2}`
 (`sq_lintegral_enorm_le_mul`, `sq_toReal_lintegral_enorm_fourier_le`) with (7.4.1) on the Fourier
-side; and the choice `λ = (‖v‖_{L²}/‖v‖_{H^d})^{2/d}` (`exists_rpow_neg_half_mul_add_eq`). The
-domain form on a Lipschitz `Ω` (`example_7_4_3`) stays open: its Step 3 needs the extension
-operator at order `d`, which is the open `theorem_7_3_5_universal`. So do Exercises 7.4.3 and
-7.4.4.
+side; and the choice `λ = (‖v‖_{L²}/‖v‖_{H^d})^{2/d}` (`exists_rpow_neg_half_mul_add_eq`).
+
+The domain form is `example_7_4_3`, on a bounded `C^{d+1}` domain where the book has a Lipschitz
+domain — the chapter's standing restriction. Its Step 3, the transfer to `Ω`, needs an
+extension `Ev ∈ H^{d+1}(ℝ^{d+1})` bounded by `‖v‖_{H^{d+1}(Ω)}` *and simultaneously* by
+`‖v‖_{L²(Ω)}` in `L²(ℝ^{d+1})`; the book takes it from Stein's universal operator, and here it is
+`theorem_7_3_5_order_lp` of §7.3, the order-`(d+1)` reflection operator with its `L^p` bound — the
+reflection being a finite sum of dilations, it is bounded on `L^p` as well as on `W^{k,p}`. Two
+private helpers do the plumbing: `exists_lp_data_of_top` moves an element of the typed
+`W^{d+1,2}(ℝ^{d+1})` to the `L²(ℝ^{d+1})` data that `example_7_4_3_whole_space` consumes, and
+`example_7_4_3_whole_space_typed` is the whole-space inequality restated over that type.
+Exercises 7.4.3 and 7.4.4 are not nodes (exercises are not formalized in this round).
 -/
 
 open FourierTransform LineDeriv MeasureTheory TemperedDistribution TopologicalSpace
@@ -780,8 +791,9 @@ against `∫ (1 + |ξ|²)^{−k} dξ < ∞`), the density of Theorem 7.3.4 (Step
 operator of Theorem 7.3.5 at order `k` (Step 3). The formalization is the Sobolev embedding
 `theorem_7_3_8_c` instead — `W^{k,2}(Ω) ↪ W^{1,r}(Ω)` for an `r > d + 1` and Morrey's theorem
 through the order-one extension operator
-(`SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`) — because the
-backbone's extension operator exists at order one only (`theorem_7_3_5_universal` is open).
+(`SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`) — the shorter
+route, and it also gives the compactness of `ι`, which the book's route does not. Step 3 at
+order `k` is `theorem_7_3_5_order`; Stein's universal operator is not formalized.
 `H^k(Ω) = W^{k,2}(Ω)` is the space of Definition 7.2.2 in the book's own indexing. -/
 theorem example_7_4_2 {k : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
@@ -1186,6 +1198,157 @@ theorem example_7_4_3_whole_space (hd : 1 ≤ d) :
   · calc |(v' x).re| ≤ ‖v' x‖ := Complex.abs_re_le_norm _
       _ ≤ _ := hv'b x
       _ = _ := by simp only [norm_ofRealCLM_compLp]
+
+/-! ### Example 7.4.3 on a domain -/
+
+/-- **The `L²(ℝ^N)` data of an element of `W^{N,2}(ℝ^N)`**: the function and the weak derivatives
+`∂^α`, `|α| ≤ N`, of `u ∈ W^{N,2}(ℝ^N)` as elements of `L²(ℝ^N)` for the unrestricted measure,
+with the weak-derivative relations of Definition 7.1.3 and the two norms —
+`(∑_{|α| ≤ N} ‖∂^α u‖²)^{1/2} = ‖u‖_{H^N}` (Definition 7.2.2) and `‖u‖_{L²}`. The whole point is
+the passage from `volume.restrict ↑(⊤ : Opens _)`, the measure the typed space carries on `ℝ^N`,
+to `volume`, the measure `example_7_4_3_whole_space` is stated for. -/
+private theorem exists_lp_data_of_top {N k : ℕ}
+    (u : SobolevMultiIndex ℝ (stdBasis N) k 2 (⊤ : Opens (EuclideanSpace ℝ (Fin N))) volume) :
+    ∃ (V : Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin N))))
+      (W : MultiIndexLE (Fin N) k → Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin N)))),
+      (V : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume] SobolevMultiIndex.fn u ∧
+      (∀ α : MultiIndexLE (Fin N) k, definition_7_1_3_multiIndex α.1
+        (V : EuclideanSpace ℝ (Fin N) → ℝ) (W α : EuclideanSpace ℝ (Fin N) → ℝ) ⊤) ∧
+      (∑ α, ‖W α‖ ^ 2) ^ ((1 : ℝ) / 2) = ‖u‖ ∧
+      ‖V‖ = (eLpNorm (SobolevMultiIndex.fn u) 2 volume).toReal := by
+  have hres : ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N)))
+      = Set.univ := rfl
+  have hμ : (volume : Measure (EuclideanSpace ℝ (Fin N))).restrict
+      ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N))) = volume := by
+    rw [hres, Measure.restrict_univ]
+  -- the weak derivatives, as functions: naming them frees the rewrite `hμ` from the dependence
+  -- of the type of `SobolevMultiIndex.weakDeriv u α` on the measure
+  obtain ⟨g, hg⟩ : ∃ g : MultiIndexLE (Fin N) k → EuclideanSpace ℝ (Fin N) → ℝ,
+      ∀ α, g α = (SobolevMultiIndex.weakDeriv u α : EuclideanSpace ℝ (Fin N) → ℝ) :=
+    ⟨_, fun _ ↦ rfl⟩
+  have hmemV : MemLp (SobolevMultiIndex.fn u) 2 (volume : Measure (EuclideanSpace ℝ (Fin N))) := by
+    have h := SobolevMultiIndex.memLp u
+    rwa [hμ] at h
+  have hmemW : ∀ α : MultiIndexLE (Fin N) k,
+      MemLp (g α) 2 (volume : Measure (EuclideanSpace ℝ (Fin N))) := fun α ↦ by
+    have h : MemLp (g α) 2 ((volume : Measure (EuclideanSpace ℝ (Fin N))).restrict
+        ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N)))) := by
+      rw [hg α]; exact Lp.memLp _
+    rwa [hμ] at h
+  refine ⟨hmemV.toLp _, fun α ↦ (hmemW α).toLp _, hmemV.coeFn_toLp, fun α ↦ ?_, ?_, ?_⟩
+  · refine (SobolevMultiIndex.hasWeakIteratedLineDerivOn u α).congr_ae
+      (hmemV.coeFn_toLp.symm.filter_mono (ae_mono Measure.restrict_le_self)) ?_
+    refine Filter.EventuallyEq.filter_mono ?_ (ae_mono Measure.restrict_le_self)
+    rw [← hg α]
+    exact (hmemW α).coeFn_toLp.symm
+  · rw [SobolevMultiIndex.norm_eq_sum (by simp) u]
+    have h2 : ((2 : ℝ≥0∞)).toReal = 2 := by simp
+    rw [h2]
+    congr 1
+    refine Finset.sum_congr rfl fun α _ ↦ ?_
+    rw [Real.rpow_two, Lp.norm_def, Lp.norm_def, eLpNorm_congr_ae (hmemW α).coeFn_toLp, ← hg α, hμ]
+  · rw [Lp.norm_def, eLpNorm_congr_ae hmemV.coeFn_toLp]
+
+/-- **Example 7.4.3 on the whole space, in the typed Sobolev space**: `example_7_4_3_whole_space`
+restated for `u ∈ W^{N,2}(ℝ^N) = H^N(ℝ^N)` of `definition_7_2_2_multiIndex`, with `‖u‖` the norm
+of Definition 7.2.2 and `‖u‖_{L²}` read as `(eLpNorm (fn u) 2 volume).toReal`. -/
+private theorem example_7_4_3_whole_space_typed {N : ℕ} (hN : 1 ≤ N) :
+    ∃ c : ℝ, 0 ≤ c ∧
+      ∀ u : SobolevMultiIndex ℝ (stdBasis N) N 2 (⊤ : Opens (EuclideanSpace ℝ (Fin N))) volume,
+        ∃ u' : EuclideanSpace ℝ (Fin N) → ℝ, Continuous u' ∧
+          SobolevMultiIndex.fn u =ᵐ[volume] u' ∧
+          ∀ x, |u' x| ≤ c * ‖u‖ ^ ((1 : ℝ) / 2)
+            * (eLpNorm (SobolevMultiIndex.fn u) 2 volume).toReal ^ ((1 : ℝ) / 2) := by
+  obtain ⟨c₀, hc₀, hws⟩ := example_7_4_3_whole_space hN
+  refine ⟨c₀, hc₀, fun u ↦ ?_⟩
+  obtain ⟨V, W, hVfn, hW, hWnorm, hVnorm⟩ := exists_lp_data_of_top u
+  obtain ⟨u', hu'c, hu'ae, hu'b⟩ := hws V W hW
+  refine ⟨u', hu'c, hVfn.symm.trans hu'ae, fun x ↦ ?_⟩
+  have h := hu'b x
+  rwa [hWnorm, hVnorm] at h
+
+/-- **Example 7.4.3**: on a bounded `C^{d+1}` domain `Ω ⊆ ℝ^{d+1}` there is a `c ≥ 0` such that
+every `v ∈ H^{d+1}(Ω)` has a representative `v'` continuous on all of `ℝ^{d+1}` with
+
+`‖v‖_{C(Ω̄)} ≤ c ‖v‖_{H^{d+1}(Ω)}^{1/2} ‖v‖_{L²(Ω)}^{1/2}` (7.4.4),
+
+in fact `|v'(x)| ≤ c ‖v‖^{1/2} ‖v‖_{L²(Ω)}^{1/2}` at every `x ∈ ℝ^{d+1}`. The `H^{d+1}(Ω)` norm
+is the norm of Definition 7.2.2 that the type carries and the `L²(Ω)` norm is
+`(eLpNorm (fn v) 2 (volume.restrict Ω)).toReal`; the ambient dimension is written `d + 1`, as in
+Definition 7.2.1, so that the book's `d` is `d + 1` here and the order of the Sobolev space is
+the dimension.
+
+The book's `Ω` is a Lipschitz domain and its `E` is the universal extension operator of
+Theorem 7.3.5, bounded on `H^k` for every `k` at once; here `Ω` is a bounded `C^{d+1}` domain, as
+everywhere in this chapter, and `E` is the order-`(d+1)` operator of `theorem_7_3_5_order_lp`,
+which is bounded on `H^{d+1}(Ω)` *and* on `L²(Ω)` — the two bounds the argument needs, and no
+more. Step 3 of the book's proof is then exactly the calculation here:
+`‖v'‖_∞ ≤ c₀ ‖Ev‖_{H^{d+1}}^{1/2} ‖Ev‖_{L²}^{1/2}` and then
+`≤ c₀ c_E ‖v‖_{H^{d+1}(Ω)}^{1/2} ‖v‖_{L²(Ω)}^{1/2}`, the first inequality being
+`example_7_4_3_whole_space` (Steps 1 and 2, the Fourier route). -/
+theorem example_7_4_3 {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : definition_7_2_1 {g | ContDiff ℝ (d + 1 : ℕ) g} Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ c : ℝ, 0 ≤ c ∧
+      ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (d + 1) 2 Ω volume,
+        ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous v' ∧
+          SobolevMultiIndex.fn v
+            =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' ∧
+          ∀ x, |v' x| ≤ c * ‖v‖ ^ ((1 : ℝ) / 2)
+            * (eLpNorm (SobolevMultiIndex.fn v) 2
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal
+              ^ ((1 : ℝ) / 2) := by
+  obtain ⟨c₀, hc₀, hws⟩ := example_7_4_3_whole_space_typed (N := d + 1) (Nat.le_add_left 1 d)
+  have hEx := theorem_7_3_5_order_lp (k := d + 1) (p := 2) (Nat.le_add_left 1 d) hΩ hb
+  obtain ⟨E, hEae, cE, hEnorm, hElp⟩ := hEx
+  have hcE : (0 : ℝ) ≤ max cE 0 := le_max_right _ _
+  refine ⟨c₀ * max cE 0, by positivity, fun v ↦ ?_⟩
+  have hwv := hws (E v)
+  obtain ⟨v', hv'c, hv'ae, hv'b⟩ := hwv
+  refine ⟨v', hv'c, (hEae v).symm.trans
+    (hv'ae.filter_mono (ae_mono Measure.restrict_le_self)), fun x ↦ ?_⟩
+  have hv0 : (0 : ℝ) ≤ ‖v‖ := norm_nonneg v
+  have hL0 : (0 : ℝ) ≤ (eLpNorm (SobolevMultiIndex.fn v) 2
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal :=
+    ENNReal.toReal_nonneg
+  have h1 : ‖E v‖ ≤ max cE 0 * ‖v‖ :=
+    (hEnorm v).trans (by gcongr; exact le_max_left _ _)
+  have h2 : (eLpNorm (SobolevMultiIndex.fn (E v)) 2 volume).toReal
+      ≤ max cE 0 * (eLpNorm (SobolevMultiIndex.fn v) 2
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal := by
+    have hne : ENNReal.ofReal cE * eLpNorm (SobolevMultiIndex.fn v) 2
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ≠ ⊤ :=
+      ENNReal.mul_ne_top ENNReal.ofReal_ne_top (SobolevMultiIndex.memLp v).eLpNorm_ne_top
+    refine (ENNReal.toReal_mono hne (hElp v)).trans_eq ?_
+    rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal']
+  have hA : (max cE 0) ^ ((1 : ℝ) / 2) * (max cE 0) ^ ((1 : ℝ) / 2) = max cE 0 := by
+    rw [← Real.rpow_add' hcE (by norm_num)]
+    norm_num
+  calc |v' x| ≤ c₀ * ‖E v‖ ^ ((1 : ℝ) / 2)
+        * (eLpNorm (SobolevMultiIndex.fn (E v)) 2 volume).toReal ^ ((1 : ℝ) / 2) := hv'b x
+    _ ≤ c₀ * (max cE 0 * ‖v‖) ^ ((1 : ℝ) / 2)
+        * (max cE 0 * (eLpNorm (SobolevMultiIndex.fn v) 2
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal)
+          ^ ((1 : ℝ) / 2) := by
+        gcongr
+    _ = c₀ * max cE 0 * ‖v‖ ^ ((1 : ℝ) / 2)
+        * (eLpNorm (SobolevMultiIndex.fn v) 2
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal
+          ^ ((1 : ℝ) / 2) := by
+        rw [Real.mul_rpow hcE hv0, Real.mul_rpow hcE hL0]
+        calc c₀ * ((max cE 0) ^ ((1 : ℝ) / 2) * ‖v‖ ^ ((1 : ℝ) / 2))
+              * ((max cE 0) ^ ((1 : ℝ) / 2) * (eLpNorm (SobolevMultiIndex.fn v) 2
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal
+                ^ ((1 : ℝ) / 2))
+            = c₀ * ((max cE 0) ^ ((1 : ℝ) / 2) * (max cE 0) ^ ((1 : ℝ) / 2))
+              * (‖v‖ ^ ((1 : ℝ) / 2) * (eLpNorm (SobolevMultiIndex.fn v) 2
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal
+                ^ ((1 : ℝ) / 2)) := by ring
+          _ = c₀ * max cE 0 * ‖v‖ ^ ((1 : ℝ) / 2)
+              * (eLpNorm (SobolevMultiIndex.fn v) 2
+                (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))).toReal
+                ^ ((1 : ℝ) / 2) := by rw [hA]; ring
+
 
 end Interpolation
 

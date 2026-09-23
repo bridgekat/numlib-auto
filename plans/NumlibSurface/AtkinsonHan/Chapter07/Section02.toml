@@ -180,32 +180,3 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definit
 [[node]]
 id = "definition_7_2_13_norm_eq"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.13, the norm'
-
-[[node]]
-id = "definition_7_2_13_indep"
-kind = "theorem"
-desc = '''Definition 7.2.13, the clause the book leaves implicit: the space `W^{s,p}(∂Ω)` of
-`definition_7_2_13` does not depend on the patch system, and two patch systems give equivalent
-norms. With the definition of 2026-09-21 (agent bsurfpoly) this is a statement: for
-`hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω` and two graph atlases
-`a a' : GraphAtlas Ω`, `definition_7_2_13_atlas hΩ hb a k σ p = definition_7_2_13_atlas hΩ hb a' k σ p`
-(both are submodules of the same `Lp ℝ p (hΩ.boundaryMeasure hb)`, the surface measure being
-atlas-independent by `GraphAtlas.measure_eq`), and there is a `C > 0` with
-`definition_7_2_13_norm v ≤ C * definition_7_2_13_norm v'` for the corresponding elements
-`v`, `v'` of the two submodules (the norms computed by `definition_7_2_13_norm_eq` from
-representatives `Uᵢ ∈ SobolevSlobodeckij … (definition_7_2_13_domain a i)`), and symmetrically.
-For `s = 0` the space is `L^p(∂Ω)` for every atlas and needs nothing more
-(`boundaryMeasure_restrict_ball`); for `0 < s ≤ 1` it needs the invariance of the Slobodeckij
-seminorm of `definition_7_2_10` under the `C¹` transition maps `EuclideanSpace.graphTransition`
-between patches (a bi-Lipschitz change of variables in the double integral
-`∬ |v(x) − v(y)|^p / |x − y|^{d−1+sp}`, on the overlaps `a.graphDomain i ∩ graphTransition ⁻¹' a'.graphDomain j`,
-then a finite partition of each `Dᵢ` by the overlaps), which `Numlib/Analysis/Sobolev/Slobodeckij.lean`
-does not have.
-
-Blocked (2026-09-21, boundary round, refreshed by agent bsurfpoly after `definition_7_2_13` was
-written): the invariance of fractional Sobolev norms under `C¹` (bi-Lipschitz) diffeomorphisms —
-~400 lines on top of `Slobodeckij.lean` (the double-integral change of variables with the
-Jacobian bounds of `EuclideanSpace.graphDensity_graphTransition`, and the localization to the
-overlaps of two patches); not needed by any consumer of this round (`H^{1/2}(Γ)` is used only
-through `theorem_7_3_10_range` and `theorem_7_3_11_fractional`, both blocked).'''
-deps = ["definition_7_2_13", "definition_7_2_13_atlas", "definition_7_2_13_norm", "definition_7_2_13_norm_eq", "IsContDiffDomain.boundaryMeasure_restrict_ball", "GraphAtlas.measure_eq"]

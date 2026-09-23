@@ -42,25 +42,7 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 
 [[node]]
 id = "example_7_4_3"
-kind = "theorem"
-desc = '''Example 7.4.3: on a Lipschitz domain `Ω ⊆ ℝ^d`,
-`‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^d(Ω)}^{1/2} ‖v‖_{L^2(Ω)}^{1/2}` for `v ∈ H^d(Ω)` (7.4.4), by the
-argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and the optimal
-`λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`.
-
-Blocked: 2026-09-21. The whole-space case `Ω = ℝ^d`, which the book's proof reduces to, is now
-`example_7_4_3_whole_space` (and `example_7_4_3_whole_space_complex`): the continuous
-representative as the inverse Fourier integral of `ℱv ∈ L¹`, the scaled Cauchy–Schwarz
-inequality and the optimization in `λ` are all proved. What remains is Step 3, the transfer to
-`Ω`: `v ∈ H^d(Ω)` must be extended to `Ev ∈ H^d(ℝ^d)` with `‖Ev‖_{H^d} ≤ c ‖v‖_{H^d(Ω)}` *and*
-`‖Ev‖_{L²(ℝ^d)} ≤ c ‖v‖_{L²(Ω)}` (the book's `E` is the universal extension operator of
-Theorem 7.3.5, bounded on every `H^k` at once), after which (7.4.4) on `Ω` is
-`example_7_4_3_whole_space` applied to `Ev`, ten lines. The backbone's extension operator
-(`SobolevEuclidean.exists_extensionL`, `Numlib/Analysis/Sobolev/Extension.lean`) is at order one
-only, so this needs the order-`d` operator of `theorem_7_3_5_universal` / `theorem_7_3_2_higher`
-(estimated 600–900 lines there), with the additional `L²` bound of the even reflection, which the
-reflection construction gives for free.'''
-deps = ["example_7_4_3_whole_space", "theorem_7_3_5_universal"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.3, the inequality (7.4.4) on a bounded C^{d+1} domain"
 
 [[node]]
 id = "sq_lintegral_enorm_le_mul"

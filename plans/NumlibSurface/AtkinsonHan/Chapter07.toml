@@ -116,10 +116,39 @@ and Green's formula are now planned in `Numlib/Analysis/Sobolev/Boundary/` on bo
 domains (`IsContDiffDomain 1`) and on triangulated polygons, and the nodes above that waited on
 them are restated with "Lipschitz" read as `C¹` or polygonal: `example_7_1_9` (through lines, no
 boundary theory), `example_7_2_7`, `example_7_2_8` (through the triangles' traces),
-`definition_7_2_13` (definable over a graph atlas; its atlas independence `definition_7_2_13_indep`
-is split off and blocked), `theorem_7_3_10` (a)–(b) with `theorem_7_3_10_polygon` and
-`theorem_7_3_10_compact` (the range clause `theorem_7_3_10_range` is split off and blocked),
-`theorem_7_3_11` (the `L^p` targets; `theorem_7_3_11_fractional` blocked),
+`definition_7_2_13` (definable over a graph atlas; its atlas independence was split off and is
+now removed, see below), `theorem_7_3_10` (a)–(b) with `theorem_7_3_10_polygon` and
+`theorem_7_3_10_compact` (the range clause was split off and is now removed),
+`theorem_7_3_11` (the `L^p` targets; the fractional form is now removed),
 `example_7_3_15_boundary`, `example_7_3_16`, and §7.6 (`proposition_7_6_1`, `_conj`, `_polygon`).
 Lipschitz boundaries in general remain out of scope.
+
+**Closing round (2026-09-23, `notes/close/brief.md`).** §7.4's Example 7.4.3 is now proved on a
+bounded `C^{d+1}` domain (`example_7_4_3`), its Step 3 running through the new
+`theorem_7_3_5_order_lp` — Theorem 7.3.5 at order `k` with the `L^p` bound of the extension, one
+operator bounded at the orders `0` and `k` at once. Its companion `theorem_7_3_5_order_uniform`
+is the other clause of Stein's universal theorem that the reflection construction does give: at a
+fixed `k`, one operator for *every* exponent `p`, exhibited as an explicit map on functions.
+Four statements were removed from the plan and written up in the `## Not formalized here`
+sections of `Chapter07/Section02.lean` and `Chapter07/Section03.lean` instead:
+
+  * **Theorem 7.3.5** as printed, Stein's universal extension theorem, one operator for every `k`
+    and every `p` on a Lipschitz domain: a Calderón-kernel regularization of the reflection,
+    research scale; the reflection's coefficients solve a Vandermonde system of order `k`, so the
+    operator changes with `k` and `Ev` is smooth off `closure Ω` for no `k`, and the library's
+    charts are `C^n` graphs. The two weaker clauses — one operator at the orders `0` and `k` at
+    once, and one operator for every `p` at a fixed `k` — are proved, as `theorem_7_3_5_order_lp`
+    and `theorem_7_3_5_order_uniform`.
+  * **Theorem 7.3.10, the range clause** `γ(W^{1,p}(Ω)) = W^{1−1/p,p}(Γ)`: Gagliardo's theorem, both
+    halves (fractional boundedness, and extension by averaging over balls) on top of boundary
+    Sobolev spaces that do not depend on the patch system; no consumer in the corpus.
+  * **Theorem 7.3.11 as printed**, `γ₀` and `γ₁` bounded and surjective into `W^{s−1/p,p}(Γ)` and
+    `W^{s−1−1/p,p}(Γ)` on a `C^{k,1}` boundary: everything fractional, plus `C^{k,1}` boundaries
+    and `W^{s,p}(Ω)` of non-integer `s`; the book quotes it from [98] without proof.
+  * **Definition 7.2.13, the independence of the patch system**, which the book leaves implicit:
+    the invariance of the Slobodeckij seminorm under the `C¹` chart transitions, ~400 lines on
+    `Numlib/Analysis/Sobolev/Slobodeckij.lean`, which carries no change of variables at all.
+
+The last three share that one missing change of variables, and the Section03 write-up states it
+once for all three.
 '''
