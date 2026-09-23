@@ -44,9 +44,9 @@ is within a factor of two of the corresponding sublevel set of the conjugate.
   ([rockafellar1970convex] Theorem 15.1). `isNorm_iff` identifies the norms among the gauges.
 * `polarFn_polarFn`, `polarFnEquiv` — `f°° = cl f`, so `f ↦ f°` is an involution on the nonnegative
   closed convex functions vanishing at the origin ([rockafellar1970convex] Theorem 15.4).
-* `obverse_obverse`, `conj_eq_obverse_polarFn`, `polarFn_eq_obverse_conj` — the obverse is an
-  involution, and `f°` and `f*` are obverses of each other ([rockafellar1970convex] Theorem 15.5);
-  `polarFn_conj_eq_conj_polarFn` is `f*° = f°*`, and `setOf_polarFn_le` is
+* `obverse_obverse`, `convexConj_eq_obverse_polarFn`, `polarFn_eq_obverse_convexConj` — the obverse
+  is an involution, and `f°` and `f*` are obverses of each other ([rockafellar1970convex] Theorem
+  15.5); `polarFn_convexConj_eq_convexConj_polarFn` is `f*° = f°*`, and `setOf_polarFn_le` is
   `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
 
 ## Implementation notes
@@ -471,14 +471,15 @@ theorem lowerSemicontinuous_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc
 
 variable [IsTopologicalAddGroup E]
 
-theorem closedFn_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) :
-    ClosedFn (gaugeFn C) :=
-  (closedFn_iff_lowerSemicontinuous (gaugeFn_ne_bot C)).2 (lowerSemicontinuous_gaugeFn hC h0 hcl)
+theorem closedConvex_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) :
+    ClosedConvex (gaugeFn C) :=
+  (closedConvex_iff_lowerSemicontinuous (gaugeFn_ne_bot C)).2
+      (lowerSemicontinuous_gaugeFn hC h0 hcl)
 
 omit [Module ℝ E] [ContinuousSMul ℝ E] in
-theorem isClosed_setOf_le_one {k : E → EReal} (hc : ClosedFn k) :
+theorem isClosed_setOf_le_one {k : E → EReal} (hc : ClosedConvex k) :
     IsClosed {x : E | k x ≤ 1} :=
-  ClosedFn.lowerSemicontinuous hc |>.isClosed_preimage 1
+  ClosedConvex.lowerSemicontinuous hc |>.isClosed_preimage 1
 
 /-- **The gauge correspondence**: the closed gauges on `E` are in bijection with the closed convex
 subsets of `E` containing the origin, by `C ↦ γ(· | C)` and `k ↦ {x | k x ≤ 1}`.
@@ -487,9 +488,9 @@ This is the gauge analogue of `supportEquiv` (`Duality/Support.lean`). -/
 noncomputable def gaugeEquiv (E : Type*) [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
     [ContinuousSMul ℝ E] [IsTopologicalAddGroup E] :
     {C : Set E // Convex ℝ C ∧ IsClosed C ∧ (0 : E) ∈ C} ≃
-      {k : E → EReal // IsGauge k ∧ ClosedFn k} where
+      {k : E → EReal // IsGauge k ∧ ClosedConvex k} where
   toFun C := ⟨gaugeFn C.1, isGauge_gaugeFn C.2.1 ⟨0, C.2.2.2⟩,
-    closedFn_gaugeFn C.2.1 C.2.2.2 C.2.2.1⟩
+    closedConvex_gaugeFn C.2.1 C.2.2.2 C.2.2.1⟩
   invFun k := ⟨{x | k.1 x ≤ 1}, k.2.1.convex_level_one, isClosed_setOf_le_one k.2.2,
     k.2.1.zero_mem_level_one⟩
   left_inv C := Subtype.ext (setOf_gaugeFn_le_one C.2.1 C.2.2.2 C.2.2.1)
@@ -540,6 +541,15 @@ theorem gaugeFn_polarSet (h0 : (0 : E) ∈ C) : gaugeFn (polarSet B C) = support
     calc a * B x w ≤ a * 1 := by
           exact mul_le_mul_of_nonneg_left (hw x hx) ha0
       _ = a := mul_one a
+
+/-- **The support function of the polar set is the gauge**: `δ*(· | C°) = γ(· | C)` for a closed
+convex `C ∋ 0`, the dual of `gaugeFn_polarSet`. It is that lemma applied to `C°` (which always
+contains `0`), read through the bipolar theorem `C°° = C`. -/
+theorem supportFn_polarSet [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
+    [LocallyConvexSpace ℝ E] [IsCompatiblePairing B] (hconv : Convex ℝ C) (hcl : IsClosed C)
+    (h0 : (0 : E) ∈ C) : supportFn B.flip (polarSet B C) = gaugeFn C := by
+  conv_rhs => rw [← polarSet_polarSet (B := B) hconv hcl h0]
+  exact (gaugeFn_polarSet (zero_mem_polarSet B C)).symm
 
 end GaugePolar
 
@@ -774,17 +784,17 @@ theorem ConvexFn.smul_le_coe (hconv : ConvexFn f) (h0 : f 0 ≤ 0) {t r : ℝ} (
   simpa using h
 
 /-- The conjugate of a function that is nonpositive at the origin is nonnegative. -/
-theorem zero_le_conj (h0 : f 0 ≤ 0) (y : F) : 0 ≤ conj B f y := by
-  refine le_trans ?_ (sub_le_conj B f 0 y)
+theorem zero_le_convexConj (h0 : f 0 ≤ 0) (y : F) : 0 ≤ convexConj B f y := by
+  refine le_trans ?_ (sub_le_convexConj B f 0 y)
   rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_sub, EReal.le_neg,
     neg_zero]
   exact h0
 
 /-- The conjugate of a nonnegative function vanishing at the origin again vanishes at the
 origin. -/
-theorem conj_zero_eq_zero (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : conj B f 0 = 0 := by
-  refine le_antisymm ?_ (zero_le_conj h0 0)
-  rw [conj_apply]
+theorem convexConj_zero_eq_zero (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : convexConj B f 0 = 0 := by
+  refine le_antisymm ?_ (zero_le_convexConj h0 0)
+  rw [convexConj_apply]
   refine iSup_le fun x => ?_
   rw [map_zero, EReal.coe_zero, zero_sub, EReal.neg_le, neg_zero]
   exact hnn x
@@ -796,10 +806,10 @@ argument is shorter: for `f x > α` the point `(α / f x) • x` lies in the sub
 the inequality it satisfies gives `⟨x, y⟩ ≤ f x`. -/
 theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0)
     (hα : 0 < α) :
-    α • polarSet B {x : E | f x ≤ (α : EReal)} ⊆ {y : F | conj B f y ≤ (α : EReal)} := by
+    α • polarSet B {x : E | f x ≤ (α : EReal)} ⊆ {y : F | convexConj B f y ≤ (α : EReal)} := by
   rintro _ ⟨w, hw, rfl⟩
-  change conj B f (α • w) ≤ (α : EReal)
-  rw [conj_apply]
+  change convexConj B f (α • w) ≤ (α : EReal)
+  rw [convexConj_apply]
   refine iSup_le fun x => ?_
   have hBx : B x (α • w) = α * B x w := by rw [map_smul, smul_eq_mul]
   by_cases hfx : f x ≤ (α : EReal)
@@ -836,10 +846,11 @@ theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f
 
 /-- **The second inclusion** (in scaled form): `{f* ≤ α} ⊆ (2α) • {f ≤ α}°`. This half is
 Fenchel's inequality and nothing else. -/
-theorem setOf_conj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα : 0 < α) :
-    {y : F | conj B f y ≤ (α : EReal)} ⊆ (2 * α) • polarSet B {x : E | f x ≤ (α : EReal)} := by
+theorem setOf_convexConj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα : 0 < α) :
+    {y : F | convexConj B f y ≤ (α : EReal)} ⊆ (2 * α) • polarSet B
+        {x : E | f x ≤ (α : EReal)} := by
   intro y hy
-  have hy' : conj B f y ≤ (α : EReal) := hy
+  have hy' : convexConj B f y ≤ (α : EReal) := hy
   have h2α : (2 * α) ≠ 0 := by positivity
   rw [mem_smul_set_iff_inv_smul_mem₀ h2α]
   intro x hx
@@ -850,27 +861,27 @@ theorem setOf_conj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα : 0 < �
   have hr0 : (0 : ℝ) ≤ r := by
     have := hnn x; rw [hr] at this; exact EReal.coe_nonneg.1 this
   have hrα : r ≤ α := by rw [hr] at hx'; exact EReal.coe_le_coe_iff.1 hx'
-  have hsub := le_trans (sub_le_conj B f x y) hy'
+  have hsub := le_trans (sub_le_convexConj B f x y) hy'
   rw [hr, ← EReal.coe_sub, EReal.coe_le_coe_iff] at hsub
   linarith
 
 /-- **The two inclusions together**: `{f ≤ α}° ⊆ α⁻¹ • {f* ≤ α} ⊆ 2 • {f ≤ α}°`. -/
 theorem polarSet_setOf_le_subset_and_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x)
     (h0 : f 0 ≤ 0) (hα : 0 < α) :
-    polarSet B {x : E | f x ≤ (α : EReal)} ⊆ α⁻¹ • {y : F | conj B f y ≤ (α : EReal)} ∧
-      α⁻¹ • {y : F | conj B f y ≤ (α : EReal)} ⊆
+    polarSet B {x : E | f x ≤ (α : EReal)} ⊆ α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} ∧
+      α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} ⊆
         (2 : ℝ) • polarSet B {x : E | f x ≤ (α : EReal)} := by
   constructor
   · intro y hy
     have h : α⁻¹ • (α • polarSet B {x : E | f x ≤ (α : EReal)}) ⊆
-        α⁻¹ • {y : F | conj B f y ≤ (α : EReal)} :=
+        α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} :=
       smul_set_mono (smul_polarSet_setOf_le_subset hconv hnn h0 hα)
     rw [smul_smul, inv_mul_cancel₀ hα.ne', one_smul] at h
     exact h hy
   · intro y hy
-    have h : α⁻¹ • {y : F | conj B f y ≤ (α : EReal)} ⊆
+    have h : α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} ⊆
         α⁻¹ • ((2 * α) • polarSet B {x : E | f x ≤ (α : EReal)}) :=
-      smul_set_mono (setOf_conj_le_subset_smul_polarSet (B := B) hnn hα)
+      smul_set_mono (setOf_convexConj_le_subset_smul_polarSet (B := B) hnn hα)
     rw [smul_smul] at h
     have hcalc : α⁻¹ * (2 * α) = 2 := by field_simp
     rw [hcalc] at h
@@ -983,11 +994,11 @@ theorem isGauge_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0
   rwa [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
 /-- The polar of a gauge is a **closed** gauge. -/
-theorem closedFn_polarGauge [TopologicalSpace F] [IsTopologicalAddGroup F]
+theorem closedConvex_polarGauge [TopologicalSpace F] [IsTopologicalAddGroup F]
     [IsContinuousPairing B.flip] (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
-    ClosedFn (polarGauge B k) := by
+    ClosedConvex (polarGauge B k) := by
   rw [polarGauge_eq_supportFn hnn hph h0]
-  exact closedFn_supportFn
+  exact closedConvex_supportFn
 
 theorem polarSet_setOf_gaugeFn_le_one (C : Set E) :
     polarSet B {x : E | gaugeFn C x ≤ 1} = polarSet B C := by
@@ -1234,7 +1245,7 @@ end PolarFn
 /-! ### Closures of nonnegative functions
 
 A nonnegative function has a nonnegative lower semicontinuous hull, so the exceptional `⊥` branch
-of `clFn` never fires and `cl f` is computed by the closure of the epigraph. -/
+of `convexCl` never fires and `cl f` is computed by the closure of the epigraph. -/
 
 section NonnegClosure
 
@@ -1253,20 +1264,21 @@ theorem lscHull_nonneg (hnn : ∀ x, 0 ≤ f x) (x : E) : 0 ≤ lscHull f x := b
   exact_mod_cast h
 
 /-- For a nonnegative function the closure is the lower semicontinuous hull: the exceptional
-branch of `clFn` cannot fire. -/
-theorem clFn_eq_lscHull_of_nonneg (hnn : ∀ x, 0 ≤ f x) : clFn f = lscHull f :=
-  clFn_of_forall_ne_bot fun x h => by
+branch of `convexCl` cannot fire. -/
+theorem convexCl_eq_lscHull_of_nonneg (hnn : ∀ x, 0 ≤ f x) : convexCl f = lscHull f :=
+  convexCl_of_forall_ne_bot fun x h => by
     have h0 := lscHull_nonneg hnn x
     rw [h, le_bot_iff] at h0
     exact absurd h0 (by simp)
 
-theorem clFn_nonneg (hnn : ∀ x, 0 ≤ f x) (x : E) : 0 ≤ clFn f x := by
-  rw [clFn_eq_lscHull_of_nonneg hnn]
+theorem convexCl_nonneg (hnn : ∀ x, 0 ≤ f x) (x : E) : 0 ≤ convexCl f x := by
+  rw [convexCl_eq_lscHull_of_nonneg hnn]
   exact lscHull_nonneg hnn x
 
 /-- A nonnegative function with a closed epigraph is closed. -/
-theorem closedFn_of_isClosed_epi (hnn : ∀ x, 0 ≤ f x) (hcl : IsClosed (epi f)) : ClosedFn f := by
-  rw [ClosedFn, clFn_eq_lscHull_of_nonneg hnn]
+theorem closedConvex_of_isClosed_epi (hnn : ∀ x, 0 ≤ f x)
+    (hcl : IsClosed (epi f)) : ClosedConvex f := by
+  rw [ClosedConvex, convexCl_eq_lscHull_of_nonneg hnn]
   exact le_antisymm (lscHull_le f)
     (le_lscHull_of_le (lowerSemicontinuous_iff_isClosed_epi.2 hcl) le_rfl)
 
@@ -1278,18 +1290,19 @@ variable {E : Type*} [TopologicalSpace E] [AddCommGroup E] [IsTopologicalAddGrou
   {f : E → EReal}
 
 /-- For a nonnegative function the epigraph of the closure is the closure of the epigraph. -/
-theorem epi_clFn_of_nonneg (hnn : ∀ x, 0 ≤ f x) : epi (clFn f) = closure (epi f) := by
-  rw [clFn_eq_lscHull_of_nonneg hnn, epi_lscHull]
+theorem epi_convexCl_of_nonneg (hnn : ∀ x, 0 ≤ f x) : epi (convexCl f) = closure (epi f) := by
+  rw [convexCl_eq_lscHull_of_nonneg hnn, epi_lscHull]
 
 /-- A nonnegative closed function has a closed epigraph. -/
-theorem isClosed_epi_of_closedFn (hnn : ∀ x, 0 ≤ f x) (hcl : ClosedFn f) : IsClosed (epi f) := by
-  have h : epi f = closure (epi f) := by rw [← epi_clFn_of_nonneg hnn, hcl]
+theorem isClosed_epi_of_closedConvex (hnn : ∀ x, 0 ≤ f x)
+    (hcl : ClosedConvex f) : IsClosed (epi f) := by
+  have h : epi f = closure (epi f) := by rw [← epi_convexCl_of_nonneg hnn, hcl]
   rw [h]
   exact isClosed_closure
 
 /-- Closedness of a nonnegative function, as a statement about its epigraph. -/
-theorem closedFn_iff_isClosed_epi (hnn : ∀ x, 0 ≤ f x) : ClosedFn f ↔ IsClosed (epi f) :=
-  ⟨isClosed_epi_of_closedFn hnn, closedFn_of_isClosed_epi hnn⟩
+theorem closedConvex_iff_isClosed_epi (hnn : ∀ x, 0 ≤ f x) : ClosedConvex f ↔ IsClosed (epi f) :=
+  ⟨isClosed_epi_of_closedConvex hnn, closedConvex_of_isClosed_epi hnn⟩
 
 end NonnegClosureGroup
 
@@ -1335,11 +1348,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 /-- The polar of a nonnegative function vanishing at the origin is closed, because polar sets are
 closed. -/
-theorem closedFn_polarFn (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : ClosedFn (polarFn B f) := by
+theorem closedConvex_polarFn (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : ClosedConvex (polarFn B f) := by
   have : IsContinuousPairing (epiPairing B).flip := by
     rw [epiPairing_flip]
     infer_instance
-  refine closedFn_of_isClosed_epi (fun y => polarFn_nonneg h0 y) ?_
+  refine closedConvex_of_isClosed_epi (fun y => polarFn_nonneg h0 y) ?_
   rw [epi_polarFn hnn, image_vNeg_eq_preimage]
   have hc : Continuous fun p : F × ℝ => ((p.1, -p.2) : F × ℝ) :=
     continuous_fst.prodMk continuous_snd.neg
@@ -1358,7 +1371,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
 
 The outer polar is taken with respect to `B.flip`, since `f°` lives on `F`. -/
 theorem polarFn_polarFn (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) :
-    polarFn B.flip (polarFn B f) = clFn f := by
+    polarFn B.flip (polarFn B f) = convexCl f := by
   have hnn' : ∀ y, 0 ≤ polarFn B f y := fun y => polarFn_nonneg h0 y
   have hmem : (0 : E × ℝ) ∈ closure (epi f) := by
     refine subset_closure ?_
@@ -1369,7 +1382,7 @@ theorem polarFn_polarFn (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 
       ← epiPairing_flip B, ← polarSet_closure (B := epiPairing B) (epi f)]
     exact polarSet_polarSet hconv.convex_epi.closure isClosed_closure hmem
   have hof := congrArg ofEpi hepi
-  rwa [ofEpi_epi, ← epi_clFn_of_nonneg hnn, ofEpi_epi] at hof
+  rwa [ofEpi_epi, ← epi_convexCl_of_nonneg hnn, ofEpi_epi] at hof
 
 end BipolarFn
 
@@ -1392,12 +1405,12 @@ structure IsPolarFn (f : E → EReal) : Prop where
   /-- A polar is convex. -/
   convexFn : ConvexFn f
   /-- A polar is closed. -/
-  closedFn : ClosedFn f
+  closedConvex : ClosedConvex f
 
 theorem IsPolarFn.map_zero_le (h : IsPolarFn f) : f 0 ≤ 0 := le_of_eq h.map_zero
 
 /-- A closed gauge is an `IsPolarFn`. -/
-theorem IsGauge.isPolarFn (h : IsGauge f) (hcl : ClosedFn f) : IsPolarFn f :=
+theorem IsGauge.isPolarFn (h : IsGauge f) (hcl : ClosedConvex f) : IsPolarFn f :=
   ⟨h.nonneg, h.map_zero, h.convexFn, hcl⟩
 
 end PolarClass
@@ -1413,7 +1426,7 @@ theorem isPolarFn_polarFn (h : IsPolarFn f) : IsPolarFn (polarFn B f) where
   nonneg y := polarFn_nonneg h.map_zero_le y
   map_zero := polarFn_zero B f h.map_zero_le
   convexFn := convexFn_polarFn h.nonneg
-  closedFn := closedFn_polarFn h.nonneg h.map_zero_le
+  closedConvex := closedConvex_polarFn h.nonneg h.map_zero_le
 
 end
 
@@ -1433,13 +1446,13 @@ noncomputable def polarFnEquiv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatib
   left_inv f := Subtype.ext <| by
     change polarFn B.flip (polarFn B f.1) = f.1
     rw [polarFn_polarFn f.2.convexFn f.2.nonneg f.2.map_zero_le]
-    exact f.2.closedFn
+    exact f.2.closedConvex
   right_inv g := Subtype.ext <| by
     change polarFn B (polarFn B.flip g.1) = g.1
     have h := polarFn_polarFn (B := B.flip) g.2.convexFn g.2.nonneg g.2.map_zero_le
     rw [LinearMap.flip_flip] at h
     rw [h]
-    exact g.2.closedFn
+    exact g.2.closedConvex
 
 end PolarInvolution
 
@@ -1511,7 +1524,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
 
 /-- **`k°° = cl k`** for a gauge `k`. -/
 theorem polarGauge_polarGauge (hk : IsGauge k) :
-    polarGauge B.flip (polarGauge B k) = clFn k := by
+    polarGauge B.flip (polarGauge B k) = convexCl k := by
   have hpk : IsGauge (polarGauge B k) := isGauge_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
   rw [← polarFn_eq_polarGauge hpk.nonneg hpk.posHomogeneous hpk.map_zero,
     ← polarFn_eq_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero]
@@ -1530,13 +1543,14 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
 /-- **`k ↦ k°` is a symmetric one-to-one correspondence on the closed gauges.** -/
 noncomputable def polarGaugeEquiv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] :
-    {k : E → EReal // IsGauge k ∧ ClosedFn k} ≃ {j : F → EReal // IsGauge j ∧ ClosedFn j} where
+    {k : E → EReal // IsGauge k ∧ ClosedConvex k} ≃
+        {j : F → EReal // IsGauge j ∧ ClosedConvex j} where
   toFun k := ⟨polarGauge B k.1,
     isGauge_polarGauge k.2.1.nonneg k.2.1.posHomogeneous k.2.1.map_zero,
-    closedFn_polarGauge k.2.1.nonneg k.2.1.posHomogeneous k.2.1.map_zero⟩
+    closedConvex_polarGauge k.2.1.nonneg k.2.1.posHomogeneous k.2.1.map_zero⟩
   invFun j := ⟨polarGauge B.flip j.1,
     isGauge_polarGauge j.2.1.nonneg j.2.1.posHomogeneous j.2.1.map_zero,
-    closedFn_polarGauge j.2.1.nonneg j.2.1.posHomogeneous j.2.1.map_zero⟩
+    closedConvex_polarGauge j.2.1.nonneg j.2.1.posHomogeneous j.2.1.map_zero⟩
   left_inv k := Subtype.ext <| by
     change polarGauge B.flip (polarGauge B k.1) = k.1
     rw [polarGauge_polarGauge k.2.1]
@@ -1685,7 +1699,7 @@ omit [ContinuousSMul ℝ E] in
 the closed gauge theory. -/
 theorem IsPolarFn.epi_closed_convex_zero (h : IsPolarFn f) :
     Convex ℝ (epi f) ∧ IsClosed (epi f) ∧ (0 : E × ℝ) ∈ epi f :=
-  ⟨h.convexFn.convex_epi, isClosed_epi_of_closedFn h.nonneg h.closedFn, by
+  ⟨h.convexFn.convex_epi, isClosed_epi_of_closedConvex h.nonneg h.closedConvex, by
     rw [mem_epi]; simpa using h.map_zero.le⟩
 
 /-- **The defining inequality of the obverse**, for an `IsPolarFn`: `g(x) ≤ ν` exactly when
@@ -1715,12 +1729,12 @@ theorem convexFn_obverse (h : IsPolarFn f) : ConvexFn (obverse f) := by
   rw [hkey] at hcomb
   exact hcomb
 
-theorem closedFn_obverse (h : IsPolarFn f) : ClosedFn (obverse f) := by
+theorem closedConvex_obverse (h : IsPolarFn f) : ClosedConvex (obverse f) := by
   obtain ⟨hC, hCcl, hC0⟩ := h.epi_closed_convex_zero
-  refine closedFn_of_isClosed_epi (obverse_nonneg f) ?_
+  refine closedConvex_of_isClosed_epi (obverse_nonneg f) ?_
   rw [epi_obverse]
   refine IsClosed.preimage ?_
-    (isClosed_epi_of_closedFn (gaugeFn_nonneg _) (closedFn_gaugeFn hC hC0 hCcl))
+    (isClosed_epi_of_closedConvex (gaugeFn_nonneg _) (closedConvex_gaugeFn hC hC0 hCcl))
   exact (continuous_fst.prodMk continuous_const).prodMk continuous_snd
 
 /-- The obverse of a nonnegative closed convex function vanishing at the origin is another one. -/
@@ -1728,7 +1742,7 @@ theorem isPolarFn_obverse (h : IsPolarFn f) : IsPolarFn (obverse f) where
   nonneg := obverse_nonneg f
   map_zero := obverse_zero h
   convexFn := convexFn_obverse h
-  closedFn := closedFn_obverse h
+  closedConvex := closedConvex_obverse h
 
 /-- **The obverse is an involution**: `f` is the obverse of its obverse. -/
 theorem obverse_obverse (h : IsPolarFn f) : obverse (obverse f) = f := by
@@ -1761,9 +1775,9 @@ end ObverseClosed
 /-! ### The polar, the conjugate and the obverse
 
 The book obtains these from the symmetry of a closed convex cone in `R^(n+2)` under exchanging two
-coordinates. Here the single computation `f* = (f°)ᵒ` (`conj_eq_obverse_polarFn`) does the work: it
-is a level-set comparison, and everything else follows from it together with `obverse_obverse` and
-`polarFn_polarFn`. -/
+coordinates. Here the single computation `f* = (f°)ᵒ` (`convexConj_eq_obverse_polarFn`) does the
+work: it is a level-set comparison, and everything else follows from it together with
+`obverse_obverse` and `polarFn_polarFn`. -/
 
 section ConjEpi
 
@@ -1771,9 +1785,9 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {y : F}
 
 /-- `f*(y) ≤ ν` read off the epigraph of `f`: the `⊤` value of `f` imposes no condition. -/
-theorem conj_le_coe_iff_epi (hnn : ∀ x, 0 ≤ f x) {ν : ℝ} :
-    conj B f y ≤ (ν : EReal) ↔ ∀ (x : E) (α : ℝ), f x ≤ (α : EReal) → B x y - α ≤ ν := by
-  rw [conj_apply, iSup_le_iff]
+theorem convexConj_le_coe_iff_epi (hnn : ∀ x, 0 ≤ f x) {ν : ℝ} :
+    convexConj B f y ≤ (ν : EReal) ↔ ∀ (x : E) (α : ℝ), f x ≤ (α : EReal) → B x y - α ≤ ν := by
+  rw [convexConj_apply, iSup_le_iff]
   constructor
   · intro h x α hα
     have h2 : ((B x y : ℝ) : EReal) - (α : EReal) ≤ ((B x y : ℝ) : EReal) - f x :=
@@ -1800,11 +1814,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
 
 /-- The conjugate of an `IsPolarFn` is again one: nonnegativity, vanishing at the origin,
 convexity and closedness are all apparent from the definition of `f*`. -/
-theorem isPolarFn_conj (h : IsPolarFn f) : IsPolarFn (conj B f) where
-  nonneg := zero_le_conj h.map_zero.le
-  map_zero := conj_zero_eq_zero h.nonneg h.map_zero.le
-  convexFn := convexFn_conj B f
-  closedFn := closedFn_conj
+theorem isPolarFn_convexConj (h : IsPolarFn f) : IsPolarFn (convexConj B f) where
+  nonneg := zero_le_convexConj h.map_zero.le
+  map_zero := convexConj_zero_eq_zero h.nonneg h.map_zero.le
+  convexFn := convexFn_convexConj B f
+  closedConvex := closedConvex_convexConj
 
 end ConjPolarClass
 
@@ -1818,20 +1832,23 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
 
 Both sides are nonnegative, so it suffices to compare them against the positive reals, and there
 the statement unwinds to `⟨x, y⟩ - α ≤ ν` for every `(x, α) ∈ epi f`. -/
-theorem conj_eq_obverse_polarFn (h : IsPolarFn f) : conj B f = obverse (polarFn B f) := by
+theorem convexConj_eq_obverse_polarFn
+    (h : IsPolarFn f) : convexConj B f = obverse (polarFn B f) := by
   funext y
-  refine eq_of_forall_pos_le_iff (zero_le_conj h.map_zero.le y) (obverse_nonneg _ y) fun ν hν => ?_
+  refine eq_of_forall_pos_le_iff (zero_le_convexConj h.map_zero.le y) (obverse_nonneg _ y)
+      fun ν hν => ?_
   rw [obverse_le_coe_iff (isPolarFn_polarFn h) hν, polarFn_le_coe_iff h.nonneg,
-    conj_le_coe_iff_epi h.nonneg]
+    convexConj_le_coe_iff_epi h.nonneg]
   refine forall_congr' fun x => forall_congr' fun α => imp_congr_right fun _ => ?_
   rw [map_smul, smul_eq_mul]
   have hrw : ν⁻¹ * B x y - α * ν⁻¹ = ν⁻¹ * (B x y - α) := by ring
   rw [hrw, inv_mul_le_iff₀ hν, mul_one]
 
 /-- **The polar is the obverse of the conjugate**: `f° = (f*)ᵒ`. Together with
-`conj_eq_obverse_polarFn`, `f°` and `f*` are the obverses of each other. -/
-theorem polarFn_eq_obverse_conj (h : IsPolarFn f) : polarFn B f = obverse (conj B f) := by
-  rw [conj_eq_obverse_polarFn h, obverse_obverse (isPolarFn_polarFn h)]
+`convexConj_eq_obverse_polarFn`, `f°` and `f*` are the obverses of each other. -/
+theorem polarFn_eq_obverse_convexConj
+    (h : IsPolarFn f) : polarFn B f = obverse (convexConj B f) := by
+  rw [convexConj_eq_obverse_polarFn h, obverse_obverse (isPolarFn_polarFn h)]
 
 end ObverseFormula
 
@@ -1845,36 +1862,36 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
 omit [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] in
 /-- **The obverse of `f` is `f*°`**, the expression from which the book derives the formula
 `g(x) = inf {λ > 0 | (fλ)(x) ≤ 1}`. -/
-theorem obverse_eq_polarFn_conj (h : IsPolarFn f) :
-    obverse f = polarFn B.flip (conj B f) := by
-  rw [polarFn_eq_obverse_conj (B := B.flip) (isPolarFn_conj (B := B) h)]
-  have h2 : conj B.flip (conj B f) = f := by
-    change biconj B f = f
-    rw [biconj_eq_clFn h.convexFn]
-    exact h.closedFn
+theorem obverse_eq_polarFn_convexConj (h : IsPolarFn f) :
+    obverse f = polarFn B.flip (convexConj B f) := by
+  rw [polarFn_eq_obverse_convexConj (B := B.flip) (isPolarFn_convexConj (B := B) h)]
+  have h2 : convexConj B.flip (convexConj B f) = f := by
+    change convexBiconj B f = f
+    rw [convexBiconj_eq_convexCl h.convexFn]
+    exact h.closedConvex
   rw [h2]
 
 /-- `g° = f*`, where `g` is the obverse of `f`. -/
-theorem polarFn_obverse (h : IsPolarFn f) : polarFn B (obverse f) = conj B f := by
-  have hc : IsPolarFn (conj B f) := isPolarFn_conj (B := B) h
-  rw [obverse_eq_polarFn_conj (B := B) h]
+theorem polarFn_obverse (h : IsPolarFn f) : polarFn B (obverse f) = convexConj B f := by
+  have hc : IsPolarFn (convexConj B f) := isPolarFn_convexConj (B := B) h
+  rw [obverse_eq_polarFn_convexConj (B := B) h]
   have h3 := polarFn_polarFn (B := B.flip) hc.convexFn hc.nonneg hc.map_zero_le
   rw [LinearMap.flip_flip] at h3
   rw [h3]
-  exact hc.closedFn
+  exact hc.closedConvex
 
 /-- `f° = g*`, where `g` is the obverse of `f`. -/
-theorem conj_obverse (h : IsPolarFn f) : conj B (obverse f) = polarFn B f := by
-  rw [conj_eq_obverse_polarFn (isPolarFn_obverse h), polarFn_obverse (B := B) h,
-    ← polarFn_eq_obverse_conj (B := B) h]
+theorem convexConj_obverse (h : IsPolarFn f) : convexConj B (obverse f) = polarFn B f := by
+  rw [convexConj_eq_obverse_polarFn (isPolarFn_obverse h), polarFn_obverse (B := B) h,
+    ← polarFn_eq_obverse_convexConj (B := B) h]
 
 omit [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] in
 /-- **The polar and the conjugate commute**: `f*° = f°*`. -/
-theorem polarFn_conj_eq_conj_polarFn (h : IsPolarFn f) :
-    polarFn B.flip (conj B f) = conj B.flip (polarFn B f) := by
-  rw [← obverse_eq_polarFn_conj (B := B) h,
-    conj_eq_obverse_polarFn (B := B.flip) (isPolarFn_polarFn (B := B) h),
-    polarFn_polarFn h.convexFn h.nonneg h.map_zero_le, h.closedFn]
+theorem polarFn_convexConj_eq_convexConj_polarFn (h : IsPolarFn f) :
+    polarFn B.flip (convexConj B f) = convexConj B.flip (polarFn B f) := by
+  rw [← obverse_eq_polarFn_convexConj (B := B) h,
+    convexConj_eq_obverse_polarFn (B := B.flip) (isPolarFn_polarFn (B := B) h),
+    polarFn_polarFn h.convexFn h.nonneg h.map_zero_le, h.closedConvex]
 
 omit [LocallyConvexSpace ℝ E] in
 /-- **The level sets of the obverse**: `{g ≤ α} = α {f ≤ α⁻¹}` for `α > 0`. -/
@@ -1890,9 +1907,9 @@ omit [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
 `α > 0`. This is the middle set of `polarSet_setOf_le_subset_and_subset`. -/
 theorem setOf_polarFn_le (h : IsPolarFn f) {α : ℝ} (hα : 0 < α) :
     {y : F | polarFn B f y ≤ ((α⁻¹ : ℝ) : EReal)}
-      = α⁻¹ • {y : F | conj B f y ≤ (α : EReal)} := by
-  rw [polarFn_eq_obverse_conj (B := B) h,
-    setOf_obverse_le (isPolarFn_conj (B := B) h) (inv_pos.2 hα), inv_inv]
+      = α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} := by
+  rw [polarFn_eq_obverse_convexConj (B := B) h,
+    setOf_obverse_le (isPolarFn_convexConj (B := B) h) (inv_pos.2 hα), inv_inv]
 
 end PolarConjObverse
 

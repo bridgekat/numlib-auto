@@ -4,40 +4,28 @@ namespace = 'ConvexAnalysis'
 id = 'Normal'
 
 [[node]]
-id = 'supBifun'
-
-[[node]]
-id = 'domConcaveBifun'
-
-[[node]]
-id = 'ConcaveConsistent'
-
-[[node]]
 id = 'ConcaveNormal'
 
 [[node]]
-id = 'ConcaveStronglyConsistent'
+id = 'convexCl_infBifun_zero_eq_iSup_convexAdjointBifun'
 
 [[node]]
-id = 'clFn_infBifun_zero_eq_iSup_adjointBifun'
+id = 'normal_iff_iSup_convexAdjointBifun_eq'
 
 [[node]]
-id = 'normal_iff_iSup_adjointBifun_eq'
+id = 'concaveCl_supBifun_convexAdjointBifun_zero_eq'
 
 [[node]]
-id = 'clConcave_supBifun_adjointBifun_zero_eq'
+id = 'concaveNormal_convexAdjointBifun_iff'
 
 [[node]]
-id = 'concaveNormal_adjointBifun_iff'
-
-[[node]]
-id = 'normal_iff_concaveNormal_adjointBifun'
+id = 'normal_iff_concaveNormal_convexAdjointBifun'
 
 [[node]]
 id = 'normal_of_kuhnTucker_nonempty'
 
 [[node]]
-id = 'mem_kuhnTucker_iff_adjointBifun_zero_eq_iSup'
+id = 'mem_kuhnTucker_iff_convexAdjointBifun_zero_eq_iSup'
 
 [[node]]
 id = 'kuhnTucker_eq_setOf_isMax'
@@ -46,19 +34,16 @@ id = 'kuhnTucker_eq_setOf_isMax'
 id = 'StronglyConsistent.normal'
 
 [[node]]
-id = 'normal_of_concaveStronglyConsistent_adjointBifun'
+id = 'normal_of_concaveStronglyConsistent_convexAdjointBifun'
 
 [[node]]
 id = 'normal_of_exists_setOf_le'
 
 [[node]]
-id = 'ConcaveKuhnTucker'
+id = 'liminf_infBifun_eq_iSup_convexAdjointBifun'
 
 [[node]]
-id = 'liminf_infBifun_eq_iSup_adjointBifun'
-
-[[node]]
-id = 'mem_concaveKuhnTucker_adjointBifun_iff_mem_argmin'
+id = 'mem_concaveKuhnTucker_convexAdjointBifun_iff_mem_argmin'
 
 [[node]]
 id = 'exists_infBifun_eq_of_concaveStronglyConsistent'

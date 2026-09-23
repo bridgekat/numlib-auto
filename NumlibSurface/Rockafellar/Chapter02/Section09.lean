@@ -234,20 +234,20 @@ function.
 The hypothesis is transported by `mk_zero_mem_linealitySpace_epi_iff`: "`(h0⁺)(z) ≤ 0` and
 `(h0⁺)(-z) > 0` force `Az ≠ 0`" is the contrapositive of "`(h0⁺)(z) ≤ 0` and `Az = 0` force
 `z ∈ constancySpace h`". -/
-theorem theorem_9_2 {f : Rn n → EReal} (hconv : ConvexFn f) (hp : Proper f)
+theorem theorem_9_2 {f : Rn n → EReal} (hconv : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (A : Rn n →ₗ[ℝ] Rn m)
     (hrec : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f) :
     ClosedProperConvexFn (mapLin A f) :=
-  (closedProperConvexFn_mapLin hconv hp hc A hrec).2
+  (closedProperConvexFn_mapLin (.of_isClosed_epi hconv hc hp) A hrec).2.1
 
 /-- **Theorem 9.2**, last sentence: for each `y` with `(Ah)(y) ≠ +∞` the infimum defining
 `(Ah)(y)` is attained. -/
-theorem theorem_9_2_attained {f : Rn n → EReal} (hconv : ConvexFn f) (hp : Proper f)
+theorem theorem_9_2_attained {f : Rn n → EReal} (hconv : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (A : Rn n →ₗ[ℝ] Rn m)
     (hrec : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f)
     {y : Rn m} {μ : ℝ} (hμ : mapLin A f y ≤ (μ : EReal)) :
     ∃ x : Rn n, A x = y ∧ f x ≤ (μ : EReal) :=
-  exists_mapLin_eq hconv hp hc A hrec hμ
+  exists_mapLin_eq (.of_isClosed_epi hconv hc hp) A hrec hμ
 
 /-- Rockafellar's hypothesis in Corollary 9.2.1, at `m = 2`, in the shape the backbone takes it:
 the directions `z` with `(f₁0⁺)(z) + (f₂0⁺)(-z) ≤ 0` form a symmetric set. The two are equivalent,
@@ -335,23 +335,24 @@ theorem corollary_9_2_2_attained {f g : Rn n → EReal} (hf : ClosedProperConvex
 /-- **Theorem 9.3** for `m = 2`, closed case. If `f₁` and `f₂` are closed proper
 convex and `f₁ + f₂` is not identically `+∞`, then `f₁ + f₂` is a closed proper convex function. -/
 theorem theorem_9_3_closed {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    (hg : ClosedProperConvexFn g) (hne : (dom (f + g)).Nonempty) :
+    (hg : ClosedProperConvexFn g) (hne : (convexDom (f + g)).Nonempty) :
     ClosedProperConvexFn (f + g) :=
   hf.add hg hne
 
 /-- **Theorem 9.3** for `m = 2`, recession formula: `(f₁ + f₂)0⁺ = f₁0⁺ + f₂0⁺`. -/
 theorem theorem_9_3_recession {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    (hg : ClosedProperConvexFn g) (hne : (dom (f + g)).Nonempty) :
+    (hg : ClosedProperConvexFn g) (hne : (convexDom (f + g)).Nonempty) :
     recessionFn (f + g) = recessionFn f + recessionFn g :=
   recessionFn_add hf hg hne
 
 /-- **Theorem 9.3** for `m = 2`, second half: if the `fᵢ` are not all closed but
 their effective domains have a common relative interior point, then
 `cl (f₁ + f₂) = cl f₁ + cl f₂`. -/
-theorem theorem_9_3_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConvexFn g) (hpg : Proper g) {x : Rn n} (hxf : x ∈ ri (dom f)) (hxg : x ∈ ri (dom g)) :
-    clFn (f + g) = clFn f + clFn g :=
-  clFn_add hf hpf hg hpg hxf hxg
+theorem theorem_9_3_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) {x : Rn n} (hxf : x ∈ ri (convexDom f))
+        (hxg : x ∈ ri (convexDom g)) :
+    convexCl (f + g) = convexCl f + convexCl g :=
+  convexCl_add hf hpf hg hpg hxf hxg
 
 /-! ### Theorem 9.4: pointwise suprema -/
 
@@ -367,15 +368,15 @@ theorem theorem_9_4_closed {ι : Type*} {f : ι → Rn n → EReal} (hc : ∀ i,
 "Finite somewhere" is spelled out as both `≠ ⊥` and `≠ ⊤` at one point; the `≠ ⊥` half is what
 forces the book's index set `I` to be non-empty, since a supremum over an empty family is `-∞`
 everywhere. -/
-theorem theorem_9_4_proper {ι : Type*} {f : ι → Rn n → EReal} (hp : ∀ i, Proper (f i))
+theorem theorem_9_4_proper {ι : Type*} {f : ι → Rn n → EReal} (hp : ∀ i, ProperConvex (f i))
     {x : Rn n} (hbot : (⨆ i, f i x) ≠ ⊥) (htop : (⨆ i, f i x) ≠ ⊤) :
-    Proper (fun z => ⨆ i, f i z) := by
+    ProperConvex (fun z => ⨆ i, f i z) := by
   have hι : Nonempty ι := by
     by_contra hne
     rw [not_nonempty_iff] at hne
     exact hbot (by simp)
   obtain ⟨i₀⟩ := hι
-  refine ⟨⟨x, mem_dom.2 (lt_top_iff_ne_top.2 htop)⟩, fun z => ?_⟩
+  refine ⟨⟨x, mem_convexDom.2 (lt_top_iff_ne_top.2 htop)⟩, fun z => ?_⟩
   exact fun hz => (hp i₀).ne_bot z (le_bot_iff.1 (hz ▸ le_iSup (fun i => f i z) i₀))
 
 /-- **Theorem 9.4**, recession formula: `f0⁺ = sup {fᵢ0⁺ | i ∈ I}`. This is Corollary 8.3.3 read
@@ -388,7 +389,7 @@ theorem theorem_9_4_recession {ι : Type*} {f : ι → Rn n → EReal} (hconv : 
 /-- **Theorem 9.4**, second half: if the `fᵢ` are not all closed but some `x̄` lies in every
 `ri (dom fᵢ)` and `f x̄` is finite, then `cl f = sup {cl fᵢ | i ∈ I}`. -/
 theorem theorem_9_4_closure {ι : Type*} {f : ι → Rn n → EReal} (hconv : ∀ i, ConvexFn (f i))
-    {x : Rn n} (hx : ∀ i, x ∈ ri (dom (f i))) (hfin : (⨆ i, f i x) < ⊤) :
+    {x : Rn n} (hx : ∀ i, x ∈ ri (convexDom (f i))) (hfin : (⨆ i, f i x) < ⊤) :
     lscHull (fun z => ⨆ i, f i z) = fun z => ⨆ i, lscHull (f i) z :=
   lscHull_iSup hconv hx hfin
 
@@ -403,16 +404,16 @@ theorem theorem_9_5_closed {g : Rn m → EReal} (hc : IsClosed (epi g)) (A : Rn 
 /-- **Theorem 9.5**, recession formula: `(gA)0⁺ = (g0⁺)A`. This is Corollary 8.3.4 read through
 `epi_recessionFn`. -/
 theorem theorem_9_5_recession {g : Rn m → EReal} (hg : ConvexFn g) (hc : IsClosed (epi g))
-    (A : Rn n →ₗ[ℝ] Rn m) (hne : (dom (compLin g A)).Nonempty) :
+    (A : Rn n →ₗ[ℝ] Rn m) (hne : (convexDom (compLin g A)).Nonempty) :
     recessionFn (compLin g A) = compLin (recessionFn g) A :=
   recessionFn_compLin hg hc A hne
 
 /-- **Theorem 9.5**, second half: if `g` is not closed but `Ax ∈ ri (dom g)` for some `x`, then
 `cl (gA) = (cl g)A`. -/
-theorem theorem_9_5_closure {g : Rn m → EReal} (hg : ConvexFn g) (hp : Proper g)
-    (A : Rn n →ₗ[ℝ] Rn m) {x : Rn n} (hx : A x ∈ ri (dom g)) :
-    clFn (compLin g A) = compLin (clFn g) A :=
-  clFn_compLin hg hp A hx
+theorem theorem_9_5_closure {g : Rn m → EReal} (hg : ConvexFn g) (hp : ProperConvex g)
+    (A : Rn n →ₗ[ℝ] Rn m) {x : Rn n} (hx : A x ∈ ri (convexDom g)) :
+    convexCl (compLin g A) = compLin (convexCl g) A :=
+  convexCl_compLin hg hp A hx
 
 /-! ### Theorem 9.6: the convex cone generated by a set -/
 
@@ -453,14 +454,15 @@ theorem corollary_9_6_1 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) 
 
 /-- **Theorem 9.7.** For closed proper convex `f` with `f 0 > 0`, the positively homogeneous
 convex function `k` generated by `f` — the backbone's `posHomGen` — is proper. -/
-theorem theorem_9_7_proper {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_9_7_proper {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (h0 : 0 < f 0) :
-    Proper (posHomGen f) :=
-  proper_posHomGen hf hp hc h0
+    ProperConvex (posHomGen f) :=
+  properConvex_posHomGen hf hp hc h0
 
 /-- **Theorem 9.7**: `(cl k)(x) = inf {(fλ)(x) | λ > 0 or λ = 0⁺}`, in the `λ ≥ 0⁺` convention,
 with `ExtCoeff.smulFn` putting the `λ > 0` and `λ = 0⁺` parts under one index. -/
-theorem theorem_9_7 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) (hc : IsClosed (epi f))
+theorem theorem_9_7 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hc : IsClosed (epi f))
     (h0 : 0 < f 0) :
     lscHull (posHomGen f) = ⨅ l : ExtCoeff, ⨅ _ : l.Pos, l.smulFn f := by
   rw [lscHull_posHomGen hf hp hc h0]
@@ -474,7 +476,7 @@ theorem theorem_9_7 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) (hc :
 /-- **Theorem 9.7**, attainment: the infimum `inf {(fλ)(x) | λ > 0 or λ = 0⁺}` is attained for
 each `x`. Stated at each real bound `μ`, since the assertion is that the right-hand side is a
 *union of epigraphs* and not merely the epigraph of the infimum. -/
-theorem theorem_9_7_attained {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_9_7_attained {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (h0 : 0 < f 0) {x : Rn n} {μ : ℝ}
     (hμ : lscHull (posHomGen f) x ≤ (μ : EReal)) :
     ∃ l : ExtCoeff, l.Pos ∧ l.smulFn f x ≤ (μ : EReal) := by
@@ -483,14 +485,14 @@ theorem theorem_9_7_attained {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper
   · exact ⟨ExtCoeff.zeroPlus, trivial, hle⟩
 
 /-- **Theorem 9.7**, last sentence: if `0 ∈ dom f` then `k` is itself closed. -/
-theorem theorem_9_7_closed {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_9_7_closed {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (h0 : 0 < f 0) (hdom : f 0 ≠ ⊤) :
     lscHull (posHomGen f) = posHomGen f :=
   lscHull_posHomGen_eq hf hp hc h0 hdom
 
 /-- **Theorem 9.7**, last sentence: if `0 ∈ dom f` then `λ = 0⁺` may be omitted from
 the infimum — though the infimum then need not be attained. -/
-theorem theorem_9_7_iInf_pos {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_9_7_iInf_pos {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (h0 : 0 < f 0) (hdom : f 0 ≠ ⊤) :
     posHomGen f = ⨅ t : ℝ, ⨅ _ : (0 : ℝ) < t, smulRight f t :=
   posHomGen_eq_iInf_smulRight hf hp hc h0 hdom
@@ -500,8 +502,8 @@ closed. `gaugeFn` is defined by the computed formula `inf {λ ≥ 0 | x ∈ λC}
 `γ` as the positively homogeneous convex function generated by `δ(· | C) + 1`. -/
 theorem corollary_9_7_1_closed {C : Set (Rn n)} (hC : Convex ℝ C) (h0 : (0 : Rn n) ∈ C)
     (hcl : IsClosed C) :
-    ClosedFn (gaugeFn C) :=
-  closedFn_gaugeFn hC h0 hcl
+    ClosedConvex (gaugeFn C) :=
+  closedConvex_gaugeFn hC h0 hcl
 
 /-- **Corollary 9.7.1**, first formula: `{x | γ(x | C) ≤ λ} = λC` for `λ > 0`. -/
 theorem corollary_9_7_1_level {C : Set (Rn n)} (hC : Convex ℝ C) (h0 : (0 : Rn n) ∈ C)

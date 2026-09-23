@@ -20,20 +20,20 @@ converse passage needs `x` interior to `dom f` and is in `Subdifferential/Unique
 
 ## Main results
 
-* `subdifferential_eq_singleton_of_dirDeriv_eq`, `clFn_dirDeriv_eq_of_subdifferential_eq_singleton`
-  — if `f'(x; ·)` is `⟨·, y₀⟩` then `∂f x = {y₀}`, and conversely a single-valued `∂f x` makes
-  `cl f'(x; ·)` linear.
+* `subdifferential_eq_singleton_of_dirDeriv_eq`,
+  `convexCl_dirDeriv_eq_of_subdifferential_eq_singleton` — if `f'(x; ·)` is `⟨·, y₀⟩` then
+  `∂f x = {y₀}`, and conversely a single-valued `∂f x` makes `cl f'(x; ·)` linear.
 * `le_hasFDerivAt`, `subdifferential_eq_singleton_of_hasFDerivAt` — the gradient inequality
   `f z ≥ f x + ⟨z - x, ∇f x⟩`, and `∂f x = {∇f x}` ([rockafellar1970convex] Theorem 25.1). The
   uniqueness half alone, `eq_of_mem_subdifferential_of_hasFDerivAt`, needs no convexity.
 * `differentiableAtFn_iff_exists_dirDeriv_eq`, `differentiableAtFn_of_forall_basis_dirDeriv_eq` —
   differentiability is linearity of `f'(x; ·)`, already along a basis
   ([rockafellar1970convex] Theorem 25.2).
-* `mem_exposedPoints_epi_conj_iff`, `mem_exposedPoints_supportSet_iff` — exposed points as unique
-  subgradients.
+* `mem_exposedPoints_epi_convexConj_iff`, `mem_exposedPoints_supportSet_iff` — exposed points as
+  unique subgradients.
 * `HasGradientAtFn`, `DifferentiableAtFn` — `∇f x = f'` for an `EReal`-valued `f`, with the results
-  above repackaged as `.le`, `.subdifferential_eq`, `.dirDeriv_eq`, `.mem_interior_dom`, `.proper`
-  and `.unique`. This is the interface the Legendre theory uses.
+  above repackaged as `.le`, `.subdifferential_eq`, `.dirDeriv_eq`, `.mem_interior_convexDom`,
+  `.proper` and `.unique`. This is the interface the Legendre theory uses.
 
 ## Implementation notes
 
@@ -94,11 +94,12 @@ theorem subdifferential_eq_singleton_of_dirDeriv_eq (hsep : Function.Injective B
 /-- The converse at the level of closures: if `∂f x` is a single point `y₀`, then `cl f'(x; ·)` is
 the linear function `⟨·, y₀⟩`. It is `cl f'(x; ·) = δ*(· | ∂f x)`, the support function of a
 singleton being linear. -/
-theorem clFn_dirDeriv_eq_of_subdifferential_eq_singleton [TopologicalSpace E] [ContinuousSMul ℝ E]
+theorem convexCl_dirDeriv_eq_of_subdifferential_eq_singleton [TopologicalSpace E]
+    [ContinuousSMul ℝ E]
     [IsTopologicalAddGroup E] [LocallyConvexSpace ℝ E] [IsCompatiblePairing B] (hf : ConvexFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) {y₀ : F} (h : subdifferential B f x = {y₀}) :
-    clFn (dirDeriv f x) = fun v => ((B v y₀ : ℝ) : EReal) := by
-  rw [clFn_dirDeriv (B := B) hf ht hb, h, supportFn_singleton]
+    convexCl (dirDeriv f x) = fun v => ((B v y₀ : ℝ) : EReal) := by
+  rw [convexCl_dirDeriv (B := B) hf ht hb, h, supportFn_singleton]
   rfl
 
 end Linear
@@ -136,19 +137,19 @@ omit [NormedSpace ℝ E] in
 /-- A function that agrees with a real-valued function near `x` has `x` in the interior of its
 effective domain. Neither convexity nor differentiability plays any role — only local
 finiteness. -/
-theorem mem_interior_dom_of_eventuallyEq_coe
-    (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : x ∈ interior (dom f) :=
+theorem mem_interior_convexDom_of_eventuallyEq_coe
+    (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : x ∈ interior (convexDom f) :=
   mem_interior_iff_mem_nhds.2
-    (hfg.mono fun z hz => mem_dom.2 (by rw [hz]; exact EReal.coe_lt_top _))
+    (hfg.mono fun z hz => mem_convexDom.2 (by rw [hz]; exact EReal.coe_lt_top _))
 
 /-- A convex function that is finite near a point is proper. Unlike the general statement that a
 convex function taking `−∞` takes it throughout the relative interior of its domain, this holds in
 any topological vector space: if `f u = ⊥` then `f` is `⊥` on the half-open segment `[u, x)`,
 whose points approach `x`, where `f` is finite. -/
-theorem proper_of_eventuallyEq_coe (hf : ConvexFn f)
-    (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : Proper f := by
+theorem properConvex_of_eventuallyEq_coe (hf : ConvexFn f)
+    (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : ProperConvex f := by
   have hx : f x = ((g x : ℝ) : EReal) := hfg.self_of_nhds
-  have hxdom : x ∈ dom f := mem_dom.2 (by rw [hx]; exact EReal.coe_lt_top _)
+  have hxdom : x ∈ convexDom f := mem_convexDom.2 (by rw [hx]; exact EReal.coe_lt_top _)
   refine ⟨⟨x, hxdom⟩, fun u hu => ?_⟩
   have hray : Tendsto (fun a : ℝ => (1 - a) • u + a • x) (𝓝[<] (1 : ℝ)) (𝓝 x) := by
     have hc : Continuous fun a : ℝ => (1 - a) • u + a • x := by fun_prop
@@ -167,7 +168,7 @@ theorem proper_of_eventuallyEq_coe (hf : ConvexFn f)
 
 /-- **The gradient inequality**: a convex function lies above its tangent affine function at every
 point of differentiability. -/
-theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
+theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) (z : E) :
     f x + ((f' (z - x) : ℝ) : EReal) ≤ f z := by
   have hx : f x = ((g x : ℝ) : EReal) := hfg.self_of_nhds
@@ -220,7 +221,7 @@ theorem eq_of_mem_subdifferential_of_hasFDerivAt (hfg : f =ᶠ[𝓝 x] fun z => 
 
 /-- At a point where a convex function is differentiable, the gradient is the unique
 subgradient. -/
-theorem subdifferential_eq_singleton_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
+theorem subdifferential_eq_singleton_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) :
     subdifferential (topDualPairing ℝ E).flip f x = {f'} := by
   refine Set.eq_singleton_iff_unique_mem.2 ⟨fun z => ?_, fun _ hy =>
@@ -233,7 +234,7 @@ theorem subdifferential_eq_singleton_of_hasFDerivAt (hf : ConvexFn f) (hp : Prop
 function `v ↦ ⟨v, ∇f x⟩`. Both halves come from the defining infimum: the lower bound is the
 gradient inequality at `x + a • v`, the upper bound the limit `a ↓ 0`, extracted through
 `EReal.lt_iff_exists_real_btwn` so that no `EReal` division has to be computed. -/
-theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
+theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) (v : E) :
     dirDeriv f x v = ((f' v : ℝ) : EReal) := by
   have hx : f x = ((g x : ℝ) : EReal) := hfg.self_of_nhds
@@ -279,26 +280,28 @@ theorem hasGradientAtFn_coe (hd : HasFDerivAt g f' x) :
   ⟨g, EventuallyEq.rfl, hd⟩
 
 /-- Packaged: a gradient at `x` puts `x` in the interior of `dom f`. -/
-theorem HasGradientAtFn.mem_interior_dom (h : HasGradientAtFn f f' x) : x ∈ interior (dom f) := by
+theorem HasGradientAtFn.mem_interior_convexDom
+    (h : HasGradientAtFn f f' x) : x ∈ interior (convexDom f) := by
   obtain ⟨g, hfg, -⟩ := h
-  exact mem_interior_dom_of_eventuallyEq_coe hfg
+  exact mem_interior_convexDom_of_eventuallyEq_coe hfg
 
 /-- Packaged: a convex function with a gradient somewhere is proper. -/
-theorem HasGradientAtFn.proper (hf : ConvexFn f) (h : HasGradientAtFn f f' x) : Proper f := by
+theorem HasGradientAtFn.proper (hf : ConvexFn f) (h : HasGradientAtFn f f' x) : ProperConvex f := by
   obtain ⟨g, hfg, -⟩ := h
-  exact proper_of_eventuallyEq_coe hf hfg
+  exact properConvex_of_eventuallyEq_coe hf hfg
 
 /-- The gradient inequality, packaged. -/
 theorem HasGradientAtFn.le (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (z : E) :
     f x + ((f' (z - x) : ℝ) : EReal) ≤ f z := by
   obtain ⟨g, hfg, hd⟩ := h
-  exact le_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd z
+  exact le_of_hasFDerivAt hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd z
 
 /-- Packaged: the gradient is the only subgradient. -/
 theorem HasGradientAtFn.subdifferential_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     subdifferential (topDualPairing ℝ E).flip f x = {f'} := by
   obtain ⟨g, hfg, hd⟩ := h
-  exact subdifferential_eq_singleton_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd
+  exact subdifferential_eq_singleton_of_hasFDerivAt
+      hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd
 
 theorem HasGradientAtFn.mem_subdifferential (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     f' ∈ subdifferential (topDualPairing ℝ E).flip f x := by
@@ -309,7 +312,7 @@ theorem HasGradientAtFn.mem_subdifferential (hf : ConvexFn f) (h : HasGradientAt
 theorem HasGradientAtFn.dirDeriv_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (v : E) :
     dirDeriv f x v = ((f' v : ℝ) : EReal) := by
   obtain ⟨g, hfg, hd⟩ := h
-  exact dirDeriv_eq_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd v
+  exact dirDeriv_eq_of_hasFDerivAt hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd v
 
 /-- The gradient is unique where it exists. This is the
 uniqueness of `HasFDerivAt` for the local real representative, and it needs no convexity. -/
@@ -711,11 +714,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 /-- A subgradient pins down the value: if `y ∈ ∂f x` and `f* y = μ` is finite, then
 `f x = ⟨x, y⟩ - μ`. This is Fenchel's equality solved for `f x`, and in particular `f x` is
 finite. -/
-theorem Proper.eq_sub_of_mem_subdifferential (hp : Proper f) {x : E} {y : F} {μ : ℝ}
-    (hy : y ∈ subdifferential B f x) (hμ : conj B f y = (μ : EReal)) :
+theorem ProperConvex.eq_sub_of_mem_subdifferential (hp : ProperConvex f) {x : E} {y : F} {μ : ℝ}
+    (hy : y ∈ subdifferential B f x) (hμ : convexConj B f y = (μ : EReal)) :
     f x = ((B x y - μ : ℝ) : EReal) := by
-  have hfx : f x + conj B f y = ((B x y : ℝ) : EReal) :=
-    hp.mem_subdifferential_iff_add_conj_eq.1 hy
+  have hfx : f x + convexConj B f y = ((B x y : ℝ) : EReal) :=
+    hp.mem_subdifferential_iff_add_convexConj_eq.1 hy
   rw [hμ] at hfx
   have hxb : f x ≠ ⊥ := hp.ne_bot x
   have hxt : f x ≠ ⊤ := by
@@ -739,14 +742,14 @@ Geometrically, a supporting hyperplane to `epi f*` touching it in a single point
 non-vertical, hence the graph of an affine function `⟨x, ·⟩ - α`; supporting `epi f*` at `(y, μ)`
 says `x ∈ ∂f*(y)`, i.e. `y ∈ ∂f x`, and touching nowhere else says `∂f x` is no larger than `{y}`.
 Only the forward direction uses closedness, through `∂f* = (∂f)⁻¹`. -/
-theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (hf : ConvexFn f) (hp : Proper f) (hc : ClosedFn f) {y : F} {μ : ℝ} :
-    (y, μ) ∈ (epi (conj B f)).exposedPoints ℝ ↔
-      conj B f y = (μ : EReal) ∧ ∃ x : E, subdifferential B f x = {y} := by
-  have hbot : ∀ z : F, conj B f z ≠ ⊥ := conj_ne_bot hp.dom_nonempty
+theorem mem_exposedPoints_epi_convexConj_iff [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hf : ConvexFn f) (hp : ProperConvex f) (hc : ClosedConvex f) {y : F} {μ : ℝ} :
+    (y, μ) ∈ (epi (convexConj B f)).exposedPoints ℝ ↔
+      convexConj B f y = (μ : EReal) ∧ ∃ x : E, subdifferential B f x = {y} := by
+  have hbot : ∀ z : F, convexConj B f z ≠ ⊥ := convexConj_ne_bot hp.convexDom_nonempty
   constructor
   · rintro ⟨hmem, L, hL⟩
-    have hmem' : conj B f y ≤ (μ : EReal) := hmem
+    have hmem' : convexConj B f y ≤ (μ : EReal) := hmem
     -- Split `L` into a functional on `F` and a coefficient of the vertical direction.
     obtain ⟨x₀, hx₀⟩ := exists_pairing_eq B.flip (L.comp (ContinuousLinearMap.inl ℝ F ℝ))
     set c : ℝ := L (0, 1) with hcdef
@@ -760,7 +763,7 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
         simpa [LinearMap.flip_apply] using hx₀ z
       rw [h1, map_add, h3, h2, map_smul, smul_eq_mul, ← hcdef, mul_comm]
     -- The vertical direction is a direction of recession of the epigraph.
-    have hup : ∀ t : ℝ, 0 ≤ t → (y, μ + t) ∈ epi (conj B f) := fun t ht =>
+    have hup : ∀ t : ℝ, 0 ≤ t → (y, μ + t) ∈ epi (convexConj B f) := fun t ht =>
       hmem'.trans (by exact_mod_cast le_add_of_nonneg_right ht)
     have hcneg : c < 0 := by
       have hle : c ≤ 0 := by
@@ -779,7 +782,7 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
     have hBx : ∀ z : F, B x z = (-c)⁻¹ * B x₀ z := by
       intro z
       rw [hxdef, map_smul, LinearMap.smul_apply, smul_eq_mul]
-    have hmax : ∀ (z : F) (β : ℝ), conj B f z ≤ (β : EReal) → B x z - β ≤ B x y - μ := by
+    have hmax : ∀ (z : F) (β : ℝ), convexConj B f z ≤ (β : EReal) → B x z - β ≤ B x y - μ := by
       intro z β hzβ
       have h := (hL (z, β) hzβ).1
       rw [hsplit, hsplit] at h
@@ -790,7 +793,7 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       rw [mul_add, mul_add, e1, e2] at h'
       rw [hBx, hBx]
       linarith
-    have huniq : ∀ (z : F) (β : ℝ), conj B f z ≤ (β : EReal) →
+    have huniq : ∀ (z : F) (β : ℝ), convexConj B f z ≤ (β : EReal) →
         B x y - μ ≤ B x z - β → (z, β) = (y, μ) := by
       intro z β hzβ hge
       refine (hL (z, β) hzβ).2 ?_
@@ -803,26 +806,27 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       rw [hsplit, hsplit]
       nlinarith
     -- The value at `y` is `μ`.
-    have hyt : conj B f y ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top μ) hmem'
-    have hyc : conj B f y = (((conj B f y).toReal : ℝ) : EReal) :=
+    have hyt : convexConj B f y ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top μ) hmem'
+    have hyc : convexConj B f y = (((convexConj B f y).toReal : ℝ) : EReal) :=
       (EReal.coe_toReal hyt (hbot y)).symm
-    have hνμ : (conj B f y).toReal ≤ μ := by
+    have hνμ : (convexConj B f y).toReal ≤ μ := by
       rw [hyc, EReal.coe_le_coe_iff] at hmem'
       exact hmem'
-    have hμν : μ ≤ (conj B f y).toReal := by
+    have hμν : μ ≤ (convexConj B f y).toReal := by
       have := hmax y _ (le_of_eq hyc)
       linarith
-    have hμeq : conj B f y = (μ : EReal) := by
+    have hμeq : convexConj B f y = (μ : EReal) := by
       rw [hyc, EReal.coe_eq_coe_iff]
       linarith
     -- `y` is a subgradient at `x`, and the only one.
     have hysub : y ∈ subdifferential B f x := by
-      rw [← mem_subdifferential_conj_iff_of_closedFn hf hc, mem_subdifferential_iff_forall_sub_le]
+      rw [← mem_subdifferential_convexConj_iff_of_closedConvex hf hc,
+          mem_subdifferential_iff_forall_sub_le]
       intro z
-      rcases eq_or_ne (conj B f z) ⊤ with hz | hz
+      rcases eq_or_ne (convexConj B f z) ⊤ with hz | hz
       · rw [hz]
         simp
-      · have hzc : conj B f z = (((conj B f z).toReal : ℝ) : EReal) :=
+      · have hzc : convexConj B f z = (((convexConj B f z).toReal : ℝ) : EReal) :=
           (EReal.coe_toReal hz (hbot z)).symm
         have h := hmax z _ (le_of_eq hzc)
         rw [LinearMap.flip_apply, LinearMap.flip_apply, hzc, hμeq, ← EReal.coe_sub,
@@ -830,7 +834,8 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
         exact h
     refine ⟨hμeq, x, Set.eq_singleton_iff_unique_mem.2 ⟨hysub, fun z hz => ?_⟩⟩
     have hfx : f x = ((B x y - μ : ℝ) : EReal) := hp.eq_sub_of_mem_subdifferential hysub hμeq
-    have hzc : conj B f z = ((B x z : ℝ) : EReal) - f x := mem_subdifferential_iff_conj_eq.1 hz
+    have hzc : convexConj B f z = ((B x z : ℝ) : EReal) - f x :=
+        mem_subdifferential_iff_convexConj_eq.1 hz
     rw [hfx, ← EReal.coe_sub] at hzc
     have := huniq z (B x z - (B x y - μ)) (le_of_eq hzc) (by simp)
     exact congrArg Prod.fst this
@@ -845,22 +850,22 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       intro w γ
       simp [LinearMap.flip_apply]
     rintro ⟨z, β⟩ hzβ
-    have hzβ' : conj B f z ≤ (β : EReal) := hzβ
-    have hzt : conj B f z ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top β) hzβ'
-    have hzc : conj B f z = (((conj B f z).toReal : ℝ) : EReal) :=
+    have hzβ' : convexConj B f z ≤ (β : EReal) := hzβ
+    have hzt : convexConj B f z ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top β) hzβ'
+    have hzc : convexConj B f z = (((convexConj B f z).toReal : ℝ) : EReal) :=
       (EReal.coe_toReal hzt (hbot z)).symm
-    have hrβ : (conj B f z).toReal ≤ β := by
+    have hrβ : (convexConj B f z).toReal ≤ β := by
       rw [hzc, EReal.coe_le_coe_iff] at hzβ'
       exact hzβ'
-    have hfen := hp.le_add_conj (B := B) x z
+    have hfen := hp.le_add_convexConj (B := B) x z
     rw [hfx, hzc, ← EReal.coe_add, EReal.coe_le_coe_iff] at hfen
     refine ⟨?_, fun hge => ?_⟩
     · rw [hval, hval]
       linarith
     · rw [hval, hval] at hge
-      have hβr : β = (conj B f z).toReal := by linarith
+      have hβr : β = (convexConj B f z).toReal := by linarith
       have hzsub : z ∈ subdifferential B f x := by
-        refine mem_subdifferential_iff_conj_eq.2 ?_
+        refine mem_subdifferential_iff_convexConj_eq.2 ?_
         rw [hzc, hfx, ← EReal.coe_sub, EReal.coe_eq_coe_iff]
         linarith
       have hzy : z = y := by rw [hx] at hzsub; exact hzsub
@@ -882,36 +887,36 @@ homogeneous and `C = {x | ⟨x, y⟩ ≤ g y for all y}` — for instance `g` th
 `y`. The conjugate of `g` is the indicator of `C`, so `epi g*` is the half-cylinder `C ×ˢ [0, ∞)`
 and this is the previous result read at height `0`. -/
 theorem mem_exposedPoints_supportSet_iff [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    {g : F → EReal} (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : Proper g)
-    (hgcl : ClosedFn g) {z : E} :
+    {g : F → EReal} (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
+    (hgcl : ClosedConvex g) {z : E} :
     z ∈ (supportSet B.flip g).exposedPoints ℝ ↔ ∃ y : F, subdifferential B.flip g y = {z} := by
   have hne : ∃ w, g w ≠ ⊤ := by
-    obtain ⟨w, hw⟩ := hgp.dom_nonempty
+    obtain ⟨w, hw⟩ := hgp.convexDom_nonempty
     exact ⟨w, hw.ne⟩
-  have hind : conj B.flip g = indicatorFn (supportSet B.flip g) :=
-    conj_eq_indicatorFn_of_posHomogeneous hgh hne
-  have hepi : epi (conj B.flip g) = supportSet B.flip g ×ˢ Ici (0 : ℝ) := by
+  have hind : convexConj B.flip g = indicatorFn (supportSet B.flip g) :=
+    convexConj_eq_indicatorFn_of_posHomogeneous hgh hne
+  have hepi : epi (convexConj B.flip g) = supportSet B.flip g ×ˢ Ici (0 : ℝ) := by
     rw [hind, epi_indicatorFn]
   constructor
   · intro hz
-    have h1 : ((z, (0 : ℝ)) : E × ℝ) ∈ (epi (conj B.flip g)).exposedPoints ℝ := by
+    have h1 : ((z, (0 : ℝ)) : E × ℝ) ∈ (epi (convexConj B.flip g)).exposedPoints ℝ := by
       rw [hepi]
       exact mem_exposedPoints_prod_Ici_iff.2 ⟨rfl, hz⟩
-    exact ((mem_exposedPoints_epi_conj_iff (B := B.flip) hgc hgp hgcl).1 h1).2
+    exact ((mem_exposedPoints_epi_convexConj_iff (B := B.flip) hgc hgp hgcl).1 h1).2
   · rintro ⟨y, hy⟩
     have hzsub : z ∈ subdifferential B.flip g y := by rw [hy]; rfl
-    have hzt : conj B.flip g z ≠ ⊤ := by
+    have hzt : convexConj B.flip g z ≠ ⊤ := by
       intro htop
-      have heq := hgp.mem_subdifferential_iff_add_conj_eq.1 hzsub
+      have heq := hgp.mem_subdifferential_iff_add_convexConj_eq.1 hzsub
       rw [htop, add_comm, EReal.top_add_of_ne_bot (hgp.ne_bot y)] at heq
       exact absurd heq (EReal.top_ne_coe _)
     have hzC : z ∈ supportSet B.flip g := by
       by_contra hzn
       rw [hind, indicatorFn_of_notMem hzn] at hzt
       exact hzt rfl
-    have hz0 : conj B.flip g z = ((0 : ℝ) : EReal) := by
+    have hz0 : convexConj B.flip g z = ((0 : ℝ) : EReal) := by
       rw [hind, indicatorFn_of_mem hzC, EReal.coe_zero]
-    have h1 := (mem_exposedPoints_epi_conj_iff (B := B.flip) hgc hgp hgcl
+    have h1 := (mem_exposedPoints_epi_convexConj_iff (B := B.flip) hgc hgp hgcl
       (y := z) (μ := (0 : ℝ))).2 ⟨hz0, y, hy⟩
     rw [hepi] at h1
     exact (mem_exposedPoints_prod_Ici_iff.1 h1).2

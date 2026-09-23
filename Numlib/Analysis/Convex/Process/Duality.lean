@@ -16,21 +16,23 @@ closedness of `A` enters — and those needing relative interiors.
 
 ## Main results
 
-* `ConvexProcess.closedBifun_indicatorBifun_iff` — `A` is a closed convex process exactly when its
-  indicator bifunction is closed. `domConcaveBifun_adjointBifun_indicatorBifun`: `dom F* = dom A*`.
-* `ConvexProcess.partialCl₂_concaveBracket_adjointBifun_indicatorBifun` —
+* `ConvexProcess.closedConvexBifun_indicatorBifun_iff` — `A` is a closed convex process exactly when
+  its indicator bifunction is closed. `concaveDomBifun_convexAdjointBifun_indicatorBifun`:
+  `dom F* = dom A*`.
+* `ConvexProcess.partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun` —
   `⟨Au, x*⟩ = cl_{x*} ⟨u, A* x*⟩` for a closed convex process.
 * `ConvexProcess.bracket_eq_concaveBracket_of_mem_relint_dom` and `…_of_mem_relint_dom_adjoint` —
   `⟨Au, x*⟩ = ⟨u, A* x*⟩` whenever `u ∈ ri (dom A)` or `x* ∈ ri (dom A*)`
   ([rockafellar1970convex] Theorem 39.3);
-  `bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun` is the dual half of that,
-  for a general closed convex bifunction.
+  the bifunction statements they specialize,
+  `bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` and
+  `…_of_mem_relint_concaveDomBifun`, are in `Saddle/Kernel.lean`.
 * `exists_unique_convexProcess_bracket_indicatorBifun_eq` — a lower closed concave-convex `K` with
   `K (0, 0) = 0` that is positively homogeneous in each variable separately is `⟨Au, x*⟩` for
   exactly one closed convex process `A` ([rockafellar1970convex] Theorem 39.4).
   `ConvexProcess.isClosed_eval` and the `…_bracket_indicatorBifun` results beside it are the four
   properties it inverts.
-* `ConvexProcess.closedFn_imageBifun_indicatorBifun` and the results beside it — for a closed
+* `ConvexProcess.closedConvex_imageBifun_indicatorBifun` and the results beside it — for a closed
   convex process `A` and a closed proper convex `f`, the image `Af` is closed, the infimum defining
   `(Af)(x)` is attained, and `(Af)* = cl (A*⁻¹ f*)`. The open half is in `Process/Basic.lean`.
 
@@ -66,14 +68,14 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [TopologicalSpace U]
 namespace ConvexProcess
 
 /-- A convex process is closed exactly when its indicator bifunction is a closed convex bifunction:
-`ClosedBifun` for an indicator bifunction *is* `closure (graph A) = graph A`. -/
-theorem closedBifun_indicatorBifun_iff (A : ConvexProcess U X) :
-    ClosedBifun A.indicatorBifun ↔ IsClosed (A.graph : Set (U × X)) := by
-  have hgr : ClosedBifun A.indicatorBifun
-      ↔ clFn (indicatorFn (A.graph : Set (U × X))) = indicatorFn (A.graph : Set (U × X)) := by
-    rw [ClosedBifun, graphFn_indicatorBifun]
+`ClosedConvexBifun` for an indicator bifunction *is* `closure (graph A) = graph A`. -/
+theorem closedConvexBifun_indicatorBifun_iff (A : ConvexProcess U X) :
+    ClosedConvexBifun A.indicatorBifun ↔ IsClosed (A.graph : Set (U × X)) := by
+  have hgr : ClosedConvexBifun A.indicatorBifun
+      ↔ convexCl (indicatorFn (A.graph : Set (U × X))) = indicatorFn (A.graph : Set (U × X)) := by
+    rw [ClosedConvexBifun, graphFn_indicatorBifun]
     exact Iff.rfl
-  rw [hgr, clFn_indicatorFn, ← closure_eq_iff_isClosed]
+  rw [hgr, convexCl_indicatorFn, ← closure_eq_iff_isClosed]
   constructor
   · intro h
     refine Subset.antisymm (fun p hp => ?_) subset_closure
@@ -103,20 +105,20 @@ namespace ConvexProcess
 
 /-- The concave effective domain of the adjoint of an indicator bifunction is the effective domain
 of the adjoint process: `⟨u, A* x*⟩` is `+∞` exactly where `A* x*` is empty. -/
-@[simp] theorem domConcaveBifun_adjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+@[simp] theorem concaveDomBifun_convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
-    domConcaveBifun (adjointBifun Bu Bx A.indicatorBifun) = (adjointProcess Bu Bx A).dom := by
+    concaveDomBifun (convexAdjointBifun Bu Bx A.indicatorBifun) = (adjointProcess Bu Bx A).dom := by
   ext y
-  simp only [mem_domConcaveBifun, mem_dom, Set.Nonempty]
+  simp only [mem_concaveDomBifun, mem_dom, Set.Nonempty]
   constructor
   · rintro ⟨v, hv⟩
     refine ⟨v, ?_⟩
     by_contra hc
     exact hv (by
-      simp [adjointBifun_indicatorBifun, indicatorBifun_apply, indicatorFn_of_notMem hc])
+      simp [convexAdjointBifun_indicatorBifun, indicatorBifun_apply, indicatorFn_of_notMem hc])
   · rintro ⟨v, hv⟩
     exact ⟨v, by
-      simp [adjointBifun_indicatorBifun, indicatorBifun_apply, indicatorFn_of_mem hv]⟩
+      simp [convexAdjointBifun_indicatorBifun, indicatorBifun_apply, indicatorFn_of_mem hv]⟩
 
 end ConvexProcess
 
@@ -140,50 +142,19 @@ namespace ConvexProcess
 
 This is the closure in `x*`, which is where closedness enters: it runs through `F** = cl F = F`,
 whereas the closure in `u`, `⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`
-(`concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁`), holds for every convex process. -/
-theorem partialCl₂_concaveBracket_adjointBifun_indicatorBifun (A : ConvexProcess U X)
+(`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`), holds for every convex
+process. -/
+theorem partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun (A : ConvexProcess U X)
     (hA : IsClosed (A.graph : Set (U × X))) :
     partialCl₂ (fun p : U × Y =>
-        concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) p.1 p.2)
+        concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) p.1 p.2)
       = fun p : U × Y => bracket Bx A.indicatorBifun p.1 p.2 :=
   partialCl₂_concaveBracket_adjoint Bu Bx A.convexBifun_indicatorBifun
-    ((closedBifun_indicatorBifun_iff A).2 hA)
+    ((closedConvexBifun_indicatorBifun_iff A).2 hA)
 
 end ConvexProcess
 
 end BracketClosed
-
-/-! ### Where the two brackets of a bifunction agree, on the dual side -/
-
-section BracketAgreeDual
-
-variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
-  [AddCommGroup X] [Module ℝ X]
-  [NormedAddCommGroup Y] [NormedSpace ℝ Y] [FiniteDimensional ℝ Y]
-  [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
-  [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X]
-  {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
-  [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] {F : Bifun U X}
-
-/-- **For a closed convex bifunction the two brackets `⟨Fu, y⟩` and `⟨u, F* y⟩` already agree at
-every relative interior point of `dom F*`.**
-
-The two differ by the convex closure in `y`; `⟨u, F*·⟩` is convex with effective domain `dom F*`,
-and a convex function agrees with its closure on the relative interior of its effective domain. It
-is `Y`, not `U`, that must be finite-dimensional. -/
-theorem bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun
-    (hF : ConvexBifun F) (hcl : ClosedBifun F) (u : U)
-    {y : Y} (hy : y ∈ ri (domConcaveBifun (adjointBifun Bu Bx F))) :
-    bracket Bx F u y = concaveBracket Bu (adjointBifun Bu Bx F) u y := by
-  have hcl2 : clFn (fun w => concaveBracket Bu (adjointBifun Bu Bx F) u w) y
-      = bracket Bx F u y :=
-    congrFun (partialCl₂_concaveBracket_adjoint Bu Bx hF hcl) (u, y)
-  rw [← hcl2]
-  exact ConvexFn.clFn_eq_of_mem_relint_dom
-    (convexFn_concaveBracket (concaveBifun_adjointBifun Bu Bx F) Bu u)
-    (by rw [dom_concaveBracket]; exact hy)
-
-end BracketAgreeDual
 
 /-! ### Where the two inner products agree -/
 
@@ -198,14 +169,14 @@ namespace ConvexProcess
 /-- **`⟨Au, x*⟩ = ⟨u, A* x*⟩` at every relative interior point of `dom A`.**
 
 Rockafellar prefixes the assertion with "if `A` is closed"; **no closedness is needed here**, the
-statement being `bracket_eq_concaveBracket_adjointBifun_of_mem_relint` for the indicator
+statement being `bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` for the indicator
 bifunction. -/
 theorem bracket_eq_concaveBracket_of_mem_relint_dom (A : ConvexProcess U X) {u : U}
     (hu : u ∈ ri A.dom) (y : Y) :
     bracket Bx A.indicatorBifun u y
-      = concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) u y :=
-  bracket_eq_concaveBracket_adjointBifun_of_mem_relint Bu Bx A.convexBifun_indicatorBifun
-    (by rw [domBifun_indicatorBifun]; exact hu) y
+      = concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y :=
+  bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint Bu Bx A.convexBifun_indicatorBifun
+    (by rw [convexDomBifun_indicatorBifun]; exact hu) y
 
 end ConvexProcess
 
@@ -231,10 +202,10 @@ theorem bracket_eq_concaveBracket_of_mem_relint_dom_adjoint (A : ConvexProcess U
     (hA : IsClosed (A.graph : Set (U × X))) (u : U)
     {y : Y} (hy : y ∈ ri (adjointProcess Bu Bx A).dom) :
     bracket Bx A.indicatorBifun u y
-      = concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) u y :=
-  bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun
-    A.convexBifun_indicatorBifun ((closedBifun_indicatorBifun_iff A).2 hA) u
-    (by rw [domConcaveBifun_adjointBifun_indicatorBifun]; exact hy)
+      = concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y :=
+  bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBifun
+    A.convexBifun_indicatorBifun ((closedConvexBifun_indicatorBifun_iff A).2 hA) u
+    (by rw [concaveDomBifun_convexAdjointBifun_indicatorBifun]; exact hy)
 
 end ConvexProcess
 
@@ -273,7 +244,7 @@ theorem lowerClosedFn_bracket_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     (A : ConvexProcess U X) (hA : IsClosed (A.graph : Set (U × X))) :
     LowerClosedFn fun p : U × Y => bracket Bx A.indicatorBifun p.1 p.2 :=
   lowerClosedFn_bracket Bu Bx A.convexBifun_indicatorBifun
-    ((closedBifun_indicatorBifun_iff A).2 hA)
+    ((closedConvexBifun_indicatorBifun_iff A).2 hA)
 
 omit [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
@@ -313,13 +284,13 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     ∃! A : ConvexProcess U X, IsClosed (A.graph : Set (U × X)) ∧
       (fun p : U × Y => bracket Bx A.indicatorBifun p.1 p.2) = K := by
   obtain ⟨F, ⟨hFconv, hFcl, hFbr⟩, huniq⟩ := exists_unique_convexBifun_bracket_eq Bu Bx hK hlc
-  have hbr0 : ∀ (u : U) (y : Y), conj Bx (F u) y = K (u, y) := fun u y => congrFun hFbr (u, y)
+  have hbr0 : ∀ (u : U) (y : Y), convexConj Bx (F u) y = K (u, y) := fun u y => congrFun hFbr (u, y)
   -- `K (0, 0) = 0` bounds `F 0` below and makes it finite somewhere.
   have hzero : ∀ x : X, (0 : EReal) ≤ F 0 x := by
     intro x
     have h1 : ((Bx x (0 : Y) : ℝ) : EReal) - F 0 x ≤ K (0, 0) := by
       rw [← hbr0 0 0]
-      exact sub_le_conj Bx (F 0) x 0
+      exact sub_le_convexConj Bx (F 0) x 0
     rw [hK₀, map_zero, EReal.coe_zero] at h1
     have hz : (0 : EReal) - F 0 x = -(F 0 x) := zero_add _
     rw [hz] at h1
@@ -328,7 +299,7 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
   have hex0 : ∃ x : X, F 0 x ≠ ⊤ := by
     by_contra hc
     push Not at hc
-    have hbot : conj Bx (F 0) (0 : Y) = ⊥ := conj_eq_bot_iff.2 hc
+    have hbot : convexConj Bx (F 0) (0 : Y) = ⊥ := convexConj_eq_bot_iff.2 hc
     rw [hbr0 0 0, hK₀] at hbot
     exact absurd hbot (by simp)
   -- Hence `graphFn F` never takes `-∞`: a closed convex function that does is nowhere finite.
@@ -336,9 +307,9 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     intro u x hux
     obtain ⟨x₀, hx₀⟩ := hex0
     have hgc : ConvexFn (graphFn F) := hFconv
-    have hcl' : ClosedFn (graphFn F) := hFcl
+    have hcl' : ClosedConvex (graphFn F) := hFcl
     have hgbot : graphFn F (u, x) = ⊥ := hux
-    rcases hgc.eq_bot_or_eq_top (ClosedFn.lowerSemicontinuous hcl') ⟨(u, x), hgbot⟩ (0, x₀) with
+    rcases hgc.eq_bot_or_eq_top (ClosedConvex.lowerSemicontinuous hcl') ⟨(u, x), hgbot⟩ (0, x₀) with
       h | h
     · have h' : F 0 x₀ = ⊥ := h
       have hle := hzero x₀
@@ -346,10 +317,11 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
       exact absurd hle (by simp)
     · exact hx₀ h
   -- `F u` is the conjugate of `K (u, ·)`, because a closed bifunction is image-closed.
-  have hFconj : ∀ u : U, F u = conj Bx.flip (fun y : Y => K (u, y)) := by
+  have hFconj : ∀ u : U, F u = convexConj Bx.flip (fun y : Y => K (u, y)) := by
     intro u
-    have hcl : clFn (F u) = F u := ClosedBifun.imageClosedBifun hFcl u
-    have h1 : clFn (F u) = conj Bx.flip (bracket Bx F u) := clFn_eq_conj_bracket hFconv u
+    have hcl : convexCl (F u) = F u := ClosedConvexBifun.imageClosedBifun hFcl u
+    have h1 : convexCl (F u) = convexConj Bx.flip (bracket Bx F u) :=
+        convexCl_eq_convexConj_bracket hFconv u
     have h2 : bracket Bx F u = fun y : Y => K (u, y) := funext fun y => hbr0 u y
     rw [hcl, h2] at h1
     exact h1
@@ -357,14 +329,14 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     intro u
     by_contra hc
     push Not at hc
-    have hbot : conj Bx.flip (fun y : Y => K (u, y)) (0 : X) = ⊥ := conj_eq_bot_iff.2 hc
+    have hbot : convexConj Bx.flip (fun y : Y => K (u, y)) (0 : X) = ⊥ := convexConj_eq_bot_iff.2 hc
     rw [← hFconj u] at hbot
     exact hFnb u 0 hbot
   have hK0nb : ∀ y : Y, K (0, y) ≠ ⊥ := by
     intro y
     obtain ⟨x₀, hx₀⟩ := hex0
     rw [← hbr0 0 y]
-    exact conj_ne_bot ⟨x₀, lt_top_iff_ne_top.2 hx₀⟩ y
+    exact convexConj_ne_bot ⟨x₀, lt_top_iff_ne_top.2 hx₀⟩ y
   have hK0nn : ∀ y : Y, (0 : EReal) ≤ K (0, y) := by
     intro y
     have htri : K (0, y) = 0 ∨ K (0, y) = ⊤ ∨ K (0, y) = ⊥ :=
@@ -379,7 +351,7 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     intro u
     have hset : supportSet Bx.flip (fun y : Y => K (u, y))
         = {x : X | ∀ y : Y, ((Bx x y : ℝ) : EReal) ≤ K (u, y)} := rfl
-    rw [hFconj u, conj_eq_indicatorFn_of_posHomogeneous (B := Bx.flip) (hhy u) (hKne u), hset]
+    rw [hFconj u, convexConj_eq_indicatorFn_of_posHomogeneous (B := Bx.flip) (hhy u) (hKne u), hset]
   -- The graph of the process to come.
   obtain ⟨G, hG⟩ : ∃ S : Set (U × X),
       S = {p : U × X | ∀ y : Y, ((Bx p.2 y : ℝ) : EReal) ≤ K (p.1, y)} := ⟨_, rfl⟩
@@ -437,13 +409,14 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
       exact hmem (u, z)
     rw [ConvexProcess.indicatorBifun_apply, heval, hFind u]
   refine ⟨A, ⟨?_, ?_⟩, ?_⟩
-  · exact (ConvexProcess.closedBifun_indicatorBifun_iff A).1 (by rw [hAind]; exact hFcl)
+  · exact (ConvexProcess.closedConvexBifun_indicatorBifun_iff A).1 (by rw [hAind]; exact hFcl)
   · rw [hAind]; exact hFbr
   · rintro A' ⟨hA'cl, hA'br⟩
     refine ConvexProcess.indicatorBifun_injective ?_
     rw [hAind]
     exact huniq A'.indicatorBifun
-      ⟨A'.convexBifun_indicatorBifun, (ConvexProcess.closedBifun_indicatorBifun_iff A').2 hA'cl,
+      ⟨A'.convexBifun_indicatorBifun, (ConvexProcess.closedConvexBifun_indicatorBifun_iff
+          A').2 hA'cl,
         hA'br⟩
 
 end SaddleCorrespondence
@@ -463,28 +436,28 @@ namespace ConvexProcess
 
 /-- **For a closed convex process `A` and a closed proper convex `f`, the image `Af` is closed.**
 
-This is `closedFn_imageBifun` at the indicator bifunction of `A`, the closedness hypothesis passing
-through `closedBifun_indicatorBifun_iff` and the "finite somewhere" side condition being
-`0 ∈ A 0`. Rockafellar's hypothesis `ri (dom f*) ∩ ri (dom A*⁻¹) ≠ ∅` is the `IsExactSum` there,
-one instance per `x`; `dom A*⁻¹` is `range A*`. -/
-theorem closedFn_imageBifun_indicatorBifun (hA : IsClosed (A.graph : Set (U × X)))
+This is `closedConvex_imageBifun` at the indicator bifunction of `A`, the closedness hypothesis
+passing through `closedConvexBifun_indicatorBifun_iff` and the "finite somewhere" side condition
+being `0 ∈ A 0`. Rockafellar's hypothesis `ri (dom f*) ∩ ri (dom A*⁻¹) ≠ ∅` is the `IsExactSum`
+there, one instance per `x`; `dom A*⁻¹` is `range A*`. -/
+theorem closedConvex_imageBifun_indicatorBifun (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f)
-    (hex : ∀ x : X, IsExactSum Bu.flip (conj Bu f)
+    (hex : ∀ x : X, IsExactSum Bu.flip (convexConj Bu f)
       (fun v => -(bracket Bx.flip (adjointProcess Bu Bx A).inv.indicatorBifun v x))) :
-    ClosedFn (imageBifun A.indicatorBifun f) := by
-  refine closedFn_imageBifun (Bu := Bu) (Bx := Bx) A.convexBifun_indicatorBifun
-    ((closedBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
+    ClosedConvex (imageBifun A.indicatorBifun f) := by
+  refine closedConvex_imageBifun (Bu := Bu) (Bx := Bx) A.convexBifun_indicatorBifun
+    ((closedConvexBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
   simpa only [lowerAdjointBifun_indicatorBifun] using hex
 
 /-- **The infimum defining `(Af)(x)` is attained**, in the raw form
 `∃ u, f u + δ(x | A u) = (Af)(x)`. -/
 theorem exists_imageBifun_indicatorBifun_eq (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f) {x : X}
-    (hex : IsExactSum Bu.flip (conj Bu f)
+    (hex : IsExactSum Bu.flip (convexConj Bu f)
       (fun v => -(bracket Bx.flip (adjointProcess Bu Bx A).inv.indicatorBifun v x))) :
     ∃ u : U, f u + A.indicatorBifun u x = imageBifun A.indicatorBifun f x := by
   refine exists_imageBifun_eq (Bu := Bu) (Bx := Bx) A.convexBifun_indicatorBifun
-    ((closedBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
+    ((closedConvexBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
   simpa only [lowerAdjointBifun_indicatorBifun] using hex
 
 /-- **Wherever `Af` is finite, the infimum `inf {f u | x ∈ A u}` is attained** at an actual `u`
@@ -495,7 +468,7 @@ The raw form `exists_imageBifun_indicatorBifun_eq` produces a `u` with
 would then force `(Af)(x) = ⊤`. -/
 theorem exists_mem_eval_and_eq_imageBifun (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f) {x : X}
-    (hex : IsExactSum Bu.flip (conj Bu f)
+    (hex : IsExactSum Bu.flip (convexConj Bu f)
       (fun v => -(bracket Bx.flip (adjointProcess Bu Bx A).inv.indicatorBifun v x)))
     (hne : imageBifun A.indicatorBifun f x ≠ ⊤) :
     ∃ u : U, x ∈ A.eval u ∧ f u = imageBifun A.indicatorBifun f x := by
@@ -512,15 +485,15 @@ variable [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] [IsCompatiblePairing Bx.flip]
 
 /-- **`(Af)* = cl (A*⁻¹ f*)`**, for a closed convex process and a closed proper convex `f`. -/
-theorem conj_imageBifun_indicatorBifun_eq_clFn (hA : IsClosed (A.graph : Set (U × X)))
+theorem convexConj_imageBifun_indicatorBifun_eq_convexCl (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f)
-    (hex : ∀ x : X, IsExactSum Bu.flip (conj Bu f)
+    (hex : ∀ x : X, IsExactSum Bu.flip (convexConj Bu f)
       (fun v => -(bracket Bx.flip (adjointProcess Bu Bx A).inv.indicatorBifun v x))) :
-    conj Bx (imageBifun A.indicatorBifun f)
-      = clFn (imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (conj Bu f)) := by
+    convexConj Bx (imageBifun A.indicatorBifun f)
+      = convexCl (imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (convexConj Bu f)) := by
   rw [← lowerAdjointBifun_indicatorBifun (Bu := Bu) (Bx := Bx)]
-  refine conj_imageBifun_eq_clFn A.convexBifun_indicatorBifun
-    ((closedBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
+  refine convexConj_imageBifun_eq_convexCl A.convexBifun_indicatorBifun
+    ((closedConvexBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
   simpa only [lowerAdjointBifun_indicatorBifun] using hex
 
 end ConvexProcess

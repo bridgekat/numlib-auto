@@ -10,7 +10,7 @@ id = 'iInter_epsSubdifferential'
 id = 'shiftFn'
 
 [[node]]
-id = 'epsSubdifferential_eq_setOf_conj_le'
+id = 'epsSubdifferential_eq_setOf_convexConj_le'
 
 [[node]]
 id = 'posHomGen_shiftFn'

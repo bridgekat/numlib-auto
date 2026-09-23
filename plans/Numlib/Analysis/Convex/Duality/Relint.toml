@@ -7,19 +7,19 @@ id = 'IsExactImage.of_relint_closed'
 id = 'IsExactSum.of_relint_closed'
 
 [[node]]
-id = 'TendstoClFnAlongSegment'
+id = 'TendstoConvexClAlongSegment'
 
 [[node]]
-id = 'proper_conj_of_proper'
+id = 'properConvex_convexConj_of_properConvex'
 
 [[node]]
-id = 'conj_add_eq_conj_clFn_add_clFn'
+id = 'convexConj_add_eq_convexConj_convexCl_add_convexCl'
 
 [[node]]
 id = 'IsExactSum.of_relint'
 
 [[node]]
-id = 'conj_compLin_eq_conj_compLin_clFn'
+id = 'convexConj_compLin_eq_convexConj_compLin_convexCl'
 
 [[node]]
 id = 'IsExactImage.of_relint'

@@ -10,4 +10,7 @@ id = 'lagrangian_eq_concaveConj'
 id = 'iInf_lagrangian'
 
 [[node]]
+id = 'iSup_lagrangian'
+
+[[node]]
 id = 'mem_kuhnTucker_iff_iInf_lagrangian'

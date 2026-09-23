@@ -306,12 +306,13 @@ the infimum over *all* representations, and genuinely an infimum — it need not
 `convFn_apply` proves the same theorem for an arbitrary family and needs only the `≠ ⊥` half of
 properness. Here `dom f, dom g ≠ ∅` is used as well, to make the epigraphs non-empty and so turn
 the convex hull of their union into a convex join. -/
-theorem convFn₂_apply (hf : ConvexFn f) (hg : ConvexFn g) (hf' : Proper f) (hg' : Proper g)
+theorem convFn₂_apply (hf : ConvexFn f) (hg : ConvexFn g) (hf' : ProperConvex f)
+    (hg' : ProperConvex g)
     (x : E) :
     convFn₂ f g x = sInf {z : EReal | ∃ (a b : ℝ) (u v : E), 0 ≤ a ∧ 0 ≤ b ∧ a + b = 1 ∧
       a • u + b • v = x ∧ z = (a : EReal) * f u + (b : EReal) * g v} := by
-  have hfe : (epi f).Nonempty := ((dom_eq_fst_image_epi f) ▸ hf'.dom_nonempty).of_image
-  have hge : (epi g).Nonempty := ((dom_eq_fst_image_epi g) ▸ hg'.dom_nonempty).of_image
+  have hfe : (epi f).Nonempty := ((convexDom_eq_fst_image_epi f) ▸ hf'.convexDom_nonempty).of_image
+  have hge : (epi g).Nonempty := ((convexDom_eq_fst_image_epi g) ▸ hg'.convexDom_nonempty).of_image
   refine le_antisymm (le_sInf ?_) ?_
   · rintro z ⟨a, b, u, v, ha, hb, hab, hx, rfl⟩
     exact convFn₂_le_combo hf'.ne_bot hg'.ne_bot ha hb hab hx

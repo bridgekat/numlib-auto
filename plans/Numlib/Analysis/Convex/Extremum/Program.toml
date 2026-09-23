@@ -19,7 +19,7 @@ id = 'exists_isKuhnTuckerVector_of_slater'
 id = 'exists_isKuhnTuckerVector_of_affine'
 
 [[node]]
-id = 'exists_isKuhnTuckerVector_of_mem_dom'
+id = 'exists_isKuhnTuckerVector_of_mem_convexDom'
 
 [[node]]
 id = 'exists_multipliers_of_slater_eq'

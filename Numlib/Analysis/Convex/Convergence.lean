@@ -42,8 +42,8 @@ The functions are real-valued rather than `EReal`-valued: these theorems are abo
 *finite* on a relatively open convex set, and every conclusion — a supremum, a Lipschitz constant,
 a uniform bound, a limit — is a statement about real numbers. So the family is `f : ι → E → ℝ` with
 `∀ i, ConvexOn ℝ C (f i)`, which composes directly with Mathlib; a caller holding an
-`EReal`-valued `ConvexFn` converts with `ConvexFn.convexOn_toReal_dom`. The upper-bound hypothesis
-actually needs only `C ⊆ conv (cl C')`, which is what
+`EReal`-valued `ConvexFn` converts with `ConvexFn.convexOn_toReal_convexDom`. The upper-bound
+hypothesis actually needs only `C ⊆ conv (cl C')`, which is what
 `bddAbove_range_of_subset_convexHull_closure` proves; the theorems are stated with `cl C'` because
 the step from a bound to *uniform* convergence needs points of `C'` metrically near `S`, which a
 convex hull does not supply. The subsequence theorem avoids a diagonal argument: the values on a

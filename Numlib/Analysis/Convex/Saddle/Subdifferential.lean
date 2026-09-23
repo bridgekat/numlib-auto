@@ -15,9 +15,6 @@ saddle-points of `K`, so one exists whenever the origin lies in `ri (dom K*)`.
 
 ## Main definitions
 
-* `concaveSubdifferential B g x` — the superdifferential of a concave `g`: the `y` with
-  `g z ≤ g x + ⟨z - x, y⟩` for all `z`. The sign dictionary to `subdifferential` is
-  `mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg`.
 * `saddleSubdifferential Bu Bx K p` — `∂K (u, x) = ∂₁K (u, x) × ∂₂K (u, x) ⊆ V × Y`, the concave
   variable being paired against `V` and the convex one against `Y`; `domSaddleSubdifferential` is
   where it is nonempty, and `saddleTilt Bu Bx K q` is `K - ⟨·, u*⟩ - ⟨·, x*⟩`.
@@ -26,9 +23,6 @@ saddle-points of `K`, so one exists whenever the origin lies in `ri (dom K*)`.
 
 ## Main results
 
-* `mem_concaveSubdifferential_iff_concaveConj_eq`,
-  `concaveSubdifferential_nonempty_of_mem_relint_domConcave` — the conjugate criterion for a
-  supergradient, and existence of one at a relative interior point.
 * `mem_saddleSubdifferential_iff_isSaddlePoint` — subgradients are saddle-points of the tilt, with
   no hypotheses at all ([rockafellar1970convex] Theorem 37.4);
   `kernelSet_subset_domSaddleSubdifferential_subset_domSaddle` — `ri (dom K) ⊆ dom ∂K ⊆ dom K`.
@@ -45,7 +39,7 @@ In `Rᵐ × Rⁿ` the four spaces coincide; keeping them apart is what makes `�
 The variant `(-v, y) ∈ ∂f (u, x)` for the graph function `f` of `F` is *not* equivalent to
 `IsBifunSubgradientPair` without properness: where `F u x = (F* y) v = ⊤`, the latter reads
 `⊤ - r = ⊤ - s` and holds while the former fails. The customary statements do not record the
-restriction; the form used in `Saddle/Monotone.lean` assumes `Proper (graphFn F)`.
+restriction; the form used in `Saddle/Monotone.lean` assumes `ProperConvex (graphFn F)`.
 
 ## References
 
@@ -184,96 +178,6 @@ theorem sub_coe_eq_sub_coe_iff_neg {z w : EReal} {r s : ℝ} :
 
 end ERealSub
 
-/-! ### Supergradients: the subdifferential of a concave function -/
-
-section ConcaveSubdifferential
-
-variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
-
-/-- The **superdifferential** of a concave `g` at `x` for the pairing `B`: the set of `y : F` with
-`g z ≤ g x + ⟨z - x, y⟩` for every `z`. This is `subdifferential` with the inequality turned around,
-and it is what Rockafellar writes `∂` for a concave function. -/
-def concaveSubdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal) (x : E) : Set F :=
-  {y | ∀ z, g z ≤ g x + ((B (z - x) y : ℝ) : EReal)}
-
-variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g : E → EReal} {x : E} {y : F}
-
-@[simp] theorem mem_concaveSubdifferential :
-    y ∈ concaveSubdifferential B g x ↔ ∀ z, g z ≤ g x + ((B (z - x) y : ℝ) : EReal) := Iff.rfl
-
-/-- **The sign dictionary**: `y` is a supergradient of `g` at `x` exactly when `-y` is a
-subgradient of `-g` there. -/
-theorem mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg :
-    y ∈ concaveSubdifferential B g x ↔ -y ∈ subdifferential B (fun z => -(g z)) x := by
-  refine forall_congr' fun z => ?_
-  have hcoe : ((B (z - x) (-y) : ℝ) : EReal) = -((B (z - x) y : ℝ) : EReal) := by
-    rw [map_neg, EReal.coe_neg]
-  have hsum : -(g x) + -((B (z - x) y : ℝ) : EReal)
-      = -(g x + ((B (z - x) y : ℝ) : EReal)) := by
-    have h : -(g x + ((B (z - x) y : ℝ) : EReal)) = -(g x) + -((B (z - x) y : ℝ) : EReal) :=
-      EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _))
-    exact h.symm
-  change _ ↔ -(g x) + ((B (z - x) (-y) : ℝ) : EReal) ≤ -(g z)
-  rw [hcoe, hsum, EReal.neg_le_neg_iff]
-
-theorem neg_mem_concaveSubdifferential_iff :
-    -y ∈ concaveSubdifferential B g x ↔ y ∈ subdifferential B (fun z => -(g z)) x := by
-  rw [mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg, neg_neg]
-
-/-- `y ∈ ∂g x` exactly when the infimum of `⟨·, y⟩ - g` over the space is attained at `x`.
-Unconditional. -/
-theorem mem_concaveSubdifferential_iff_forall_le_sub :
-    y ∈ concaveSubdifferential B g x ↔
-      ∀ z, ((B x y : ℝ) : EReal) - g x ≤ ((B z y : ℝ) : EReal) - g z := by
-  refine forall_congr' fun z => ?_
-  rw [EReal.le_coe_sub_comm, EReal.coe_sub_coe_sub, map_sub, LinearMap.sub_apply,
-    add_comm (g x)]
-
-/-- That infimum *is* the concave conjugate `g* y`. Unconditional. -/
-theorem mem_concaveSubdifferential_iff_le_concaveConj :
-    y ∈ concaveSubdifferential B g x ↔ ((B x y : ℝ) : EReal) - g x ≤ concaveConj B g y := by
-  rw [mem_concaveSubdifferential_iff_forall_le_sub, concaveConj_apply, le_iInf_iff]
-
-/-- The same as an equation: `y ∈ ∂g x` exactly when `g* y = ⟨x, y⟩ - g x`. Unconditional. -/
-theorem mem_concaveSubdifferential_iff_concaveConj_eq :
-    y ∈ concaveSubdifferential B g x ↔ concaveConj B g y = ((B x y : ℝ) : EReal) - g x :=
-  ⟨fun h => le_antisymm (concaveConj_le_sub B g x y)
-      (mem_concaveSubdifferential_iff_le_concaveConj.1 h),
-    fun h => mem_concaveSubdifferential_iff_le_concaveConj.2 h.ge⟩
-
-/-- The superdifferential is convex, with no hypothesis on `g`. -/
-theorem convex_concaveSubdifferential : Convex ℝ (concaveSubdifferential B g x) := by
-  have h : Convex ℝ (subdifferential B (fun z => -(g z)) x) :=
-    convex_subdifferential B (fun z => -(g z)) x
-  intro y₁ h₁ y₂ h₂ a b ha hb hab
-  rw [mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg] at h₁ h₂ ⊢
-  have hneg : -(a • y₁ + b • y₂) = a • (-y₁) + b • (-y₂) := by
-    rw [neg_add, smul_neg, smul_neg]
-  rw [hneg]
-  exact h h₁ h₂ ha hb hab
-
-end ConcaveSubdifferential
-
-/-! ### Existence of a supergradient -/
-
-section ConcaveExistence
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-  [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g : E → EReal} {x : E}
-
-/-- A proper concave function has a supergradient at every relative interior point of its
-effective domain. -/
-theorem concaveSubdifferential_nonempty_of_mem_relint_domConcave [IsCompatiblePairing B]
-    (hg : ConcaveFn g) (hp : Proper fun z => -(g z)) (hx : x ∈ ri (domConcave g)) :
-    (concaveSubdifferential B g x).Nonempty := by
-  have hconv : ConvexFn fun z => -(g z) := concaveFn_iff_convexFn_neg.1 hg
-  have hdom : dom (fun z => -(g z)) = domConcave g := (domConcave_eq_dom_neg g).symm
-  have hx' : x ∈ ri (dom fun z => -(g z)) := by rw [hdom]; exact hx
-  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hconv hp hx'
-  exact ⟨-y, neg_mem_concaveSubdifferential_iff.2 hy⟩
-
-end ConcaveExistence
-
 /-! ### The subdifferential of a saddle-function -/
 
 section SaddleSubdifferential
@@ -286,7 +190,7 @@ supergradients of the concave slice through `x` paired with the subgradients of 
 through `u`. -/
 def saddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × X → EReal)
     (p : U × X) : Set (V × Y) :=
-  concaveSubdifferential Bu (fun u => K (u, p.2)) p.1
+  superdifferential Bu (fun u => K (u, p.2)) p.1
     ×ˢ subdifferential Bx (fun x => K (p.1, x)) p.2
 
 variable {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {K : U × X → EReal} {p : U × X}
@@ -294,13 +198,13 @@ variable {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ
 
 @[simp] theorem mem_saddleSubdifferential :
     q ∈ saddleSubdifferential Bu Bx K p ↔
-      q.1 ∈ concaveSubdifferential Bu (fun u => K (u, p.2)) p.1 ∧
+      q.1 ∈ superdifferential Bu (fun u => K (u, p.2)) p.1 ∧
         q.2 ∈ subdifferential Bx (fun x => K (p.1, x)) p.2 := Iff.rfl
 
 /-- `∂K (u, x)` is convex with no hypothesis on `K`; being a product it is even a convex *product*
 set, which is what makes the set of saddle-points a convex product set. -/
 theorem convex_saddleSubdifferential : Convex ℝ (saddleSubdifferential Bu Bx K p) :=
-  Convex.prod convex_concaveSubdifferential (convex_subdifferential Bx (fun x => K (p.1, x)) p.2)
+  Convex.prod convex_superdifferential (convex_subdifferential Bx (fun x => K (p.1, x)) p.2)
 
 /-- The set where the subdifferential of a saddle-function is nonempty, `dom ∂K`. -/
 def domSaddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
@@ -435,23 +339,23 @@ theorem kernelSet_subset_domSaddleSubdifferential [IsCompatiblePairing Bu] [IsCo
   rintro ⟨u, x⟩ ⟨hu, hx⟩
   have hudom : u ∈ dom₁ K := intrinsicInterior_subset hu
   have hxdom : x ∈ dom₂ K := intrinsicInterior_subset hx
-  have hxr : x ∈ ri (dom fun x' => K (u, x')) := by
-    rw [hs.1.dom_slice u hu]
+  have hxr : x ∈ ri (convexDom fun x' => K (u, x')) := by
+    rw [hs.1.convexDom_slice u hu]
     exact hx
-  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := Bx) (hK.convex_snd u)
-    (hs.1.proper_slice u hudom) hxr
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := Bx) (hK.convex_snd u)
+    (hs.1.properConvex_slice u hudom) hxr
   have hswapdom : x ∈ dom₁ (saddleSwap K) := by rw [dom₁_saddleSwap]; exact hxdom
   have hswapri : x ∈ ri (dom₁ (saddleSwap K)) := by rw [dom₁_saddleSwap]; exact hx
-  have hdomeq : (dom fun u' => -(K (u', x))) = dom₁ K := by
-    have h := hs.2.dom_slice x hswapri
+  have hdomeq : (convexDom fun u' => -(K (u', x))) = dom₁ K := by
+    have h := hs.2.convexDom_slice x hswapri
     rw [dom₂_saddleSwap] at h
     exact h
-  have hur : u ∈ ri (domConcave fun u' => K (u', x)) := by
-    rw [domConcave_eq_dom_neg, hdomeq]
+  have hur : u ∈ ri (concaveDom fun u' => K (u', x)) := by
+    rw [concaveDom_eq_convexDom_neg, hdomeq]
     exact hu
-  have hpr : Proper fun u' => -(K (u', x)) := hs.2.proper_slice x hswapdom
-  obtain ⟨v, hv⟩ := concaveSubdifferential_nonempty_of_mem_relint_domConcave (B := Bu)
-    (hK.concave_fst x) hpr hur
+  have hpr : ProperConvex fun u' => -(K (u', x)) := hs.2.properConvex_slice x hswapdom
+  obtain ⟨v, hv⟩ := superdifferential_nonempty_of_mem_relint_concaveDom (B := Bu)
+    (hK.concave_fst x) (properConcave_iff_properConvex_neg.2 hpr) hur
   exact ⟨(v, y), hv, hy⟩
 
 /-- `ri (dom K) ⊆ dom ∂K ⊆ dom K` for a closed proper saddle-function. -/
@@ -484,7 +388,7 @@ membership in `∂K` for *every* `K` in the class `Ω (F)`. -/
 def IsBifunSubgradientPair (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) (p : U × Y) (q : V × X) : Prop :=
   F p.1 q.2 - ((Bx q.2 p.2 : ℝ) : EReal)
-    = adjointBifun Bu Bx F p.2 q.1 - ((Bu p.1 q.1 : ℝ) : EReal)
+    = convexAdjointBifun Bu Bx F p.2 q.1 - ((Bu p.1 q.1 : ℝ) : EReal)
 
 /-- The relation read through the reflection `z ↦ r - z`: both differences are then the common
 value of the squeezed chain, namely `K (u, y)`. -/
@@ -492,14 +396,14 @@ theorem isBifunSubgradientPair_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : 
     (F : Bifun U X) (p : U × Y) (q : V × X) :
     IsBifunSubgradientPair Bu Bx F p q ↔
       ((Bx q.2 p.2 : ℝ) : EReal) - F p.1 q.2
-        = ((Bu p.1 q.1 : ℝ) : EReal) - adjointBifun Bu Bx F p.2 q.1 :=
+        = ((Bu p.1 q.1 : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 q.1 :=
   sub_coe_eq_sub_coe_comm
 
 theorem isBifunSubgradientPair_def (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) (p : U × Y) (q : V × X) :
     IsBifunSubgradientPair Bu Bx F p q ↔
       F p.1 q.2 - ((Bx q.2 p.2 : ℝ) : EReal)
-        = adjointBifun Bu Bx F p.2 q.1 - ((Bu p.1 q.1 : ℝ) : EReal) := Iff.rfl
+        = convexAdjointBifun Bu Bx F p.2 q.1 - ((Bu p.1 q.1 : ℝ) : EReal) := Iff.rfl
 
 end BifunPair
 
@@ -523,34 +427,34 @@ they say the two differences are equal. Conversely the relation squeezes the cha
 theorem mem_saddleSubdifferential_iff_isBifunSubgradientPair (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) (q : V × X) :
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) (q : V × X) :
     q ∈ saddleSubdifferential Bu Bx.flip K p ↔ IsBifunSubgradientPair Bu Bx F p q := by
-  have hA : conj Bx.flip (fun y => K (p.1, y)) = F p.1 :=
+  have hA : convexConj Bx.flip (fun y => K (p.1, y)) = F p.1 :=
     congrFun (bifunOfSaddle_eq_of_mem_bifunSaddleClass Bu Bx hF hcl hK) p.1
-  have hB : concaveConj Bu (fun u => K (u, p.2)) = adjointBifun Bu Bx F p.2 :=
-    concaveConj_slice_eq_adjointBifun Bu Bx hF hK p.2
-  have h1 : q.1 ∈ concaveSubdifferential Bu (fun u => K (u, p.2)) p.1 ↔
-      ((Bu p.1 q.1 : ℝ) : EReal) - adjointBifun Bu Bx F p.2 q.1 = K p := by
-    rw [mem_concaveSubdifferential_iff_concaveConj_eq, hB, eq_coe_sub_iff_coe_sub_eq]
+  have hB : concaveConj Bu (fun u => K (u, p.2)) = convexAdjointBifun Bu Bx F p.2 :=
+    concaveConj_slice_eq_convexAdjointBifun Bu Bx hF hK p.2
+  have h1 : q.1 ∈ superdifferential Bu (fun u => K (u, p.2)) p.1 ↔
+      ((Bu p.1 q.1 : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 q.1 = K p := by
+    rw [mem_superdifferential_iff_concaveConj_eq, hB, eq_coe_sub_iff_coe_sub_eq]
   have h2 : q.2 ∈ subdifferential Bx.flip (fun y => K (p.1, y)) p.2 ↔
       ((Bx q.2 p.2 : ℝ) : EReal) - F p.1 q.2 = K p := by
-    rw [mem_subdifferential_iff_conj_eq, hA, LinearMap.flip_apply, eq_coe_sub_iff_coe_sub_eq]
+    rw [mem_subdifferential_iff_convexConj_eq, hA, LinearMap.flip_apply, eq_coe_sub_iff_coe_sub_eq]
   rw [isBifunSubgradientPair_iff, mem_saddleSubdifferential, h1, h2]
   constructor
   · rintro ⟨ha, hb⟩
     rw [ha, hb]
   · intro hd
     have hle1 : ((Bx q.2 p.2 : ℝ) : EReal) - F p.1 q.2 ≤ K p :=
-      le_trans (sub_le_conj Bx (F p.1) q.2 p.2) (hK.1 p)
-    have hiinf : concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2
-        ≤ ((Bu p.1 q.1 : ℝ) : EReal) - adjointBifun Bu Bx F p.2 q.1 := by
+      le_trans (sub_le_convexConj Bx (F p.1) q.2 p.2) (hK.1 p)
+    have hiinf : concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2
+        ≤ ((Bu p.1 q.1 : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 q.1 := by
       rw [concaveBracket_apply]
-      exact iInf_le (fun v => ((Bu p.1 v : ℝ) : EReal) - adjointBifun Bu Bx F p.2 v) q.1
-    have hle2 : K p ≤ ((Bu p.1 q.1 : ℝ) : EReal) - adjointBifun Bu Bx F p.2 q.1 :=
+      exact iInf_le (fun v => ((Bu p.1 v : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 v) q.1
+    have hle2 : K p ≤ ((Bu p.1 q.1 : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 q.1 :=
       le_trans (hK.2 p) hiinf
     have hle2' : K p ≤ ((Bx q.2 p.2 : ℝ) : EReal) - F p.1 q.2 := by rw [hd]; exact hle2
     have heq1 : ((Bx q.2 p.2 : ℝ) : EReal) - F p.1 q.2 = K p := le_antisymm hle1 hle2'
-    have heq2 : ((Bu p.1 q.1 : ℝ) : EReal) - adjointBifun Bu Bx F p.2 q.1 = K p := by
+    have heq2 : ((Bu p.1 q.1 : ℝ) : EReal) - convexAdjointBifun Bu Bx F p.2 q.1 = K p := by
       rw [← hd]; exact heq1
     exact ⟨heq2, heq1⟩
 
@@ -561,22 +465,21 @@ the relation reflected by `sub_coe_eq_sub_coe_iff_neg`. -/
 theorem mem_saddleSubdifferential_upperConjSaddle_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) (q : V × X) :
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) (q : V × X) :
     p ∈ saddleSubdifferential Bu.flip Bx (upperConjSaddle Bu Bx K) q ↔
       IsBifunSubgradientPair Bu Bx F p q := by
-  have hGconv : ConvexBifun (inverseBifun (adjointBifun Bu Bx F)) :=
-    convexBifun_inverseBifun_adjointBifun Bu Bx F
-  have hGcl : ClosedBifun (inverseBifun (adjointBifun Bu Bx F)) :=
-    closedBifun_inverseBifun_adjointBifun Bu Bx F
+  have hGconv : ConvexBifun (lowerAdjointBifun Bu Bx F) := convexBifun_lowerAdjointBifun Bu Bx F
+  have := isContinuousPairing_prodPairing_flip Bu Bx
+  have hGcl : ClosedConvexBifun (lowerAdjointBifun Bu Bx F) := closedConvexBifun_lowerAdjointBifun
   have hKstar : upperConjSaddle Bu Bx K
-      ∈ bifunSaddleClass Bu.flip Bx.flip (inverseBifun (adjointBifun Bu Bx F)) := by
+      ∈ bifunSaddleClass Bu.flip Bx.flip (lowerAdjointBifun Bu Bx F) := by
     rw [saddleClass_conjSaddle Bu Bx hF hcl hK]
     exact mem_saddleClass_right (partialCl₂_upperConjSaddle Bu Bx hF hcl hK)
   have hmain := mem_saddleSubdifferential_iff_isBifunSubgradientPair Bu.flip Bx.flip hGconv hGcl
     hKstar q p
   rw [LinearMap.flip_flip] at hmain
   rw [hmain, isBifunSubgradientPair_def, isBifunSubgradientPair_def,
-    adjointBifun_flip_inverseBifun_adjointBifun Bu Bx hF hcl]
+    convexAdjointBifun_flip_lowerAdjointBifun (Bu := Bu) (Bx := Bx) hF hcl]
   simp only [inverseBifun_apply, LinearMap.flip_apply]
   exact sub_coe_eq_sub_coe_iff_neg.symm
 
@@ -585,7 +488,7 @@ the direct reading at `q = 0`, which is the saddle-point property for the untilt
 theorem mem_saddleSubdifferential_upperConjSaddle_zero_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) :
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (p : U × Y) :
     p ∈ saddleSubdifferential Bu.flip Bx (upperConjSaddle Bu Bx K) 0 ↔ IsSaddlePoint K p := by
   rw [mem_saddleSubdifferential_upperConjSaddle_iff Bu Bx hF hcl hK p 0,
     ← mem_saddleSubdifferential_iff_isBifunSubgradientPair Bu Bx hF hcl hK p 0,
@@ -594,7 +497,7 @@ theorem mem_saddleSubdifferential_upperConjSaddle_zero_iff (Bu : U →ₗ[ℝ] V
 /-- The saddle-points of `K` form a convex product set. -/
 theorem convex_setOf_isSaddlePoint (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
-    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ bifunSaddleClass Bu Bx F) : Convex ℝ {p : U × Y | IsSaddlePoint K p} := by
   have hset : {p : U × Y | IsSaddlePoint K p}
       = saddleSubdifferential Bu.flip Bx (upperConjSaddle Bu Bx K) 0 := by
@@ -607,7 +510,7 @@ theorem convex_setOf_isSaddlePoint (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCom
 theorem exists_isSaddlePoint_iff_zero_mem_domSaddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
     (∃ p, IsSaddlePoint K p) ↔
       (0 : V × X) ∈ domSaddleSubdifferential Bu.flip Bx (upperConjSaddle Bu Bx K) := by
   constructor
@@ -636,7 +539,7 @@ set is the set of saddle-points. -/
 theorem exists_isSaddlePoint_of_zero_mem_kernelSet_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hpr : Proper (graphFn F)) (hK : K ∈ bifunSaddleClass Bu Bx F)
+    (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F)) (hK : K ∈ bifunSaddleClass Bu Bx F)
     (h0 : (0 : V × X) ∈ kernelSet (upperConjSaddle Bu Bx K)) : ∃ p, IsSaddlePoint K p := by
   have hcc : ConcaveConvexFn (upperConjSaddle Bu Bx K) :=
     concaveConvexFn_upperConjSaddle Bu Bx hF hcl hK
@@ -656,7 +559,7 @@ omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ Y] in
 theorem exists_isSaddlePoint_of_zero_mem_interior_dom_upperConjSaddle
     (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
-    (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (graphFn F))
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F))
     (hK : K ∈ bifunSaddleClass Bu Bx F)
     (h₁ : (0 : V) ∈ interior (dom₁ (upperConjSaddle Bu Bx K)))
     (h₂ : (0 : X) ∈ interior (dom₂ (upperConjSaddle Bu Bx K))) : ∃ p, IsSaddlePoint K p :=
@@ -680,7 +583,7 @@ solution to `(P)`. The subgradient condition says "`(v, x)` is a saddle-point of
 Lagrangian characterisation reads off. The pairing `Bx` is arbitrary data: the subgradient tested
 there is `0`, so no property of it is used. -/
 theorem zero_mem_saddleSubdifferential_saddleLagrangian_iff (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
-    (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (graphFn F)) :
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F)) :
     (0 : U × Y) ∈ saddleSubdifferential Bu.flip Bx (saddleLagrangian Bu F) (v, x)
       ↔ v ∈ KuhnTucker Bu F ∧ x ∈ argmin (F 0) := by
   rw [mem_saddleSubdifferential_iff_isSaddlePoint, saddleTilt_zero]

@@ -4,10 +4,10 @@ namespace = 'ConvexAnalysis'
 id = 'forall_tendsto_norm_atTop_iff_isBounded'
 
 [[node]]
-id = 'isBounded_setOf_norm_gradient_le_of_dom_conj_eq_univ'
+id = 'isBounded_setOf_norm_gradient_le_of_convexDom_convexConj_eq_univ'
 
 [[node]]
-id = 'dom_conj_eq_univ_of_isBounded'
+id = 'convexDom_convexConj_eq_univ_of_isBounded'
 
 [[node]]
 id = 'cofinite_iff_forall_tendsto_norm_gradient_atTop'

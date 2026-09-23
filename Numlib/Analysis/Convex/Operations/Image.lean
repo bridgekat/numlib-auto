@@ -29,6 +29,8 @@ attainment.
   convex: the projection case, and the form the perturbation function of a convex program takes.
 * `ConvexFn.comp_affine`, `ConvexFn.slice_left`, `ConvexFn.slice_right` — precomposition with an
   affine map, and fixing one variable of a function of two.
+* `reflectFst`, `epi_comp_neg`, `convexDom_comp_neg`, `ProperConvex.comp_neg` — the reflection
+  `x ↦ -x` of the argument, the linear map of the most frequent inverse image.
 
 ## References
 
@@ -117,13 +119,14 @@ noncomputable def gci_compLin_mapLin (hA : Function.Surjective A) :
 
 /-! ### Effective domains -/
 
-theorem dom_compLin (g : G → EReal) (A : E →ₗ[ℝ] G) : dom (compLin g A) = A ⁻¹' dom g := rfl
+theorem convexDom_compLin (g : G → EReal)
+    (A : E →ₗ[ℝ] G) : convexDom (compLin g A) = A ⁻¹' convexDom g := rfl
 
 /-- **Properness survives a surjective substitution, both ways.** Surjectivity is needed for both
 halves: `g A` can be proper while `g` is `⊥` off the range, and `g` proper while `A` misses all of
 its finite values. -/
-theorem proper_compLin_of_surjective (hA : Function.Surjective A) :
-    Proper (compLin g A) ↔ Proper g := by
+theorem properConvex_compLin_of_surjective (hA : Function.Surjective A) :
+    ProperConvex (compLin g A) ↔ ProperConvex g := by
   constructor
   · rintro ⟨⟨x, hx⟩, hb⟩
     refine ⟨⟨A x, hx⟩, fun z => ?_⟩
@@ -134,7 +137,8 @@ theorem proper_compLin_of_surjective (hA : Function.Surjective A) :
     exact ⟨⟨w, hz⟩, fun x => hb (A x)⟩
 
 /-- The effective domain of an image is the image of the effective domain; no convexity needed. -/
-theorem dom_mapLin (A : E →ₗ[ℝ] G) (f : E → EReal) : dom (mapLin A f) = A '' dom f := by
+theorem convexDom_mapLin (A : E →ₗ[ℝ] G)
+    (f : E → EReal) : convexDom (mapLin A f) = A '' convexDom f := by
   ext y
   constructor
   · intro hy
@@ -223,18 +227,18 @@ attained: `(0, 0)` belongs to `epi (A f)` but not to the image of `epi f`, which
 theorem exists_epi_mapLin_ne_image :
     ∃ (f : ℝ → EReal) (A : ℝ →ₗ[ℝ] ℝ), ConvexFn f ∧
       epi (mapLin A f) ≠ A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) '' epi f := by
-  refine ⟨ConvexAnalysis.restrictFn (Ioi 0) (fun x => (x : EReal)), 0, ?_, ?_⟩
+  refine ⟨ConvexAnalysis.convexRestrict (Ioi 0) (fun x => (x : EReal)), 0, ?_, ?_⟩
   · refine convexFn_of_epi_combo fun u v μ ν hu hv a b ha hb hab => ?_
     have hu0 : u ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [ConvexAnalysis.restrictFn_of_notMem h] at hu
+      rw [ConvexAnalysis.convexRestrict_of_notMem h] at hu
       exact absurd hu (not_le.2 (EReal.coe_lt_top μ))
     have hv0 : v ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [ConvexAnalysis.restrictFn_of_notMem h] at hv
+      rw [ConvexAnalysis.convexRestrict_of_notMem h] at hv
       exact absurd hv (not_le.2 (EReal.coe_lt_top ν))
-    rw [ConvexAnalysis.restrictFn_of_mem hu0] at hu
-    rw [ConvexAnalysis.restrictFn_of_mem hv0] at hv
+    rw [ConvexAnalysis.convexRestrict_of_mem hu0] at hu
+    rw [ConvexAnalysis.convexRestrict_of_mem hv0] at hv
     have hu0' : (0 : ℝ) < u := hu0
     have hv0' : (0 : ℝ) < v := hv0
     have huμ : u ≤ μ := by exact_mod_cast hu
@@ -246,19 +250,19 @@ theorem exists_epi_mapLin_ne_image :
       · have hb1 : b = 1 := by linarith
         rw [hb1]; linarith
       · nlinarith
-    rw [ConvexAnalysis.restrictFn_of_mem hpos]
+    rw [ConvexAnalysis.convexRestrict_of_mem hpos]
     have hle : a • u + b • v ≤ a * μ + b * ν := by
       simp only [smul_eq_mul]
       nlinarith
     exact_mod_cast hle
   · intro hcontra
-    set f : ℝ → EReal := ConvexAnalysis.restrictFn (Ioi 0) (fun x => (x : EReal)) with hf
+    set f : ℝ → EReal := ConvexAnalysis.convexRestrict (Ioi 0) (fun x => (x : EReal)) with hf
     have hmem : ((0 : ℝ), (0 : ℝ)) ∈ epi (mapLin (0 : ℝ →ₗ[ℝ] ℝ) f) := by
       refine mk_mem_epi.2 (EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_)
       replace hq := EReal.coe_lt_coe_iff.1 hq
       refine lt_of_le_of_lt (mapLin_le (x := q / 2) (by simp)) ?_
       have hq2 : q / 2 ∈ Ioi (0 : ℝ) := by change (0 : ℝ) < q / 2; linarith
-      rw [hf, ConvexAnalysis.restrictFn_of_mem hq2]
+      rw [hf, ConvexAnalysis.convexRestrict_of_mem hq2]
       exact_mod_cast (by linarith : q / 2 < q)
     rw [hcontra] at hmem
     obtain ⟨⟨u, μ⟩, hu, huv⟩ := hmem
@@ -267,12 +271,59 @@ theorem exists_epi_mapLin_ne_image :
     rw [h2] at hu'
     have hu0 : u ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [hf, ConvexAnalysis.restrictFn_of_notMem h] at hu'
+      rw [hf, ConvexAnalysis.convexRestrict_of_notMem h] at hu'
       exact absurd hu' (not_le.2 (EReal.coe_lt_top 0))
-    rw [hf, ConvexAnalysis.restrictFn_of_mem hu0] at hu'
+    rw [hf, ConvexAnalysis.convexRestrict_of_mem hu0] at hu'
     exact absurd (by exact_mod_cast hu' : u ≤ (0 : ℝ)) (not_le.2 hu0)
 
 end Module
+
+/-! ### Reflecting the argument
+
+`x ↦ f (-x)` is `compLin f (-LinearMap.id)`; these are the forms in which the reflection is used. -/
+
+section Reflection
+
+variable {E : Type*} [AddCommGroup E] [Module ℝ E]
+
+variable (E) in
+/-- The reflection `(x, μ) ↦ (-x, μ)` of `E × ℝ`, as a linear map; the horizontal counterpart of
+`scaleSnd` (`Numlib/Analysis/Convex/Epigraph.lean`). It carries `epi f` to `epi (f ∘ -·)`. -/
+noncomputable def reflectFst : (E × ℝ) →ₗ[ℝ] E × ℝ :=
+  LinearMap.prodMap (-LinearMap.id) LinearMap.id
+
+@[simp] theorem reflectFst_apply (p : E × ℝ) : reflectFst E p = (-p.1, p.2) := rfl
+
+/-- The epigraph of `x ↦ f (-x)` is the reflection of the epigraph of `f`. -/
+theorem epi_comp_neg (f : E → EReal) :
+    epi (fun x => f (-x)) = reflectFst E '' epi f := by
+  ext p
+  constructor
+  · intro hp
+    exact ⟨(-p.1, p.2), mk_mem_epi.2 (mem_epi.1 hp), by simp⟩
+  · rintro ⟨q, hq, rfl⟩
+    rw [mem_epi]
+    simpa using mk_mem_epi.1 hq
+
+omit [Module ℝ E] in
+open Pointwise in
+/-- The effective domain of `x ↦ f (-x)` is `-dom f`. -/
+theorem convexDom_comp_neg (f : E → EReal) : convexDom (fun x => f (-x)) = -convexDom f := by
+  ext x
+  rw [Set.mem_neg, mem_convexDom, mem_convexDom]
+
+omit [Module ℝ E] in
+/-- A function proper at `-x` is proper. -/
+theorem ProperConvex.comp_neg {f : E → EReal}
+    (hf : ProperConvex f) : ProperConvex (fun x => f (-x)) := by
+  obtain ⟨⟨x, hx⟩, hb⟩ := hf
+  exact ⟨⟨-x, by simpa using hx⟩, fun x => hb (-x)⟩
+
+/-- The reflection `x ↦ f (-x)` of a convex function is convex. -/
+theorem ConvexFn.comp_neg {f : E → EReal} (hf : ConvexFn f) : ConvexFn fun x => f (-x) :=
+  convexFn_compLin (-LinearMap.id) hf
+
+end Reflection
 
 /-! ### Partial minimisation: the projection case -/
 
@@ -315,9 +366,9 @@ theorem convexFn_iInf_right (hh : ConvexFn h) : ConvexFn (fun y => ⨅ z, h (y, 
   rw [← mapLin_fst h]
   exact convexFn_mapLin _ hh
 
-theorem dom_iInf_right (h : Y × Z → EReal) :
-    dom (fun y => ⨅ z, h (y, z)) = Prod.fst '' dom h := by
-  rw [← mapLin_fst h, dom_mapLin]
+theorem convexDom_iInf_right (h : Y × Z → EReal) :
+    convexDom (fun y => ⨅ z, h (y, z)) = Prod.fst '' convexDom h := by
+  rw [← mapLin_fst h, convexDom_mapLin]
   rfl
 
 end Projection

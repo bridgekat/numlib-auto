@@ -22,22 +22,26 @@ first.
 * `ConcaveConvexFn`, `ConvexConcaveFn`, `SaddleFn` — the three predicates.
 * `dom₁ K = {u | ∀ x, K (u, x) > -∞}` and `dom₂ K = {x | ∀ u, K (u, x) < +∞}` — the effective
   domains: *intersections* of one-variable domains, not unions.
-* `partialCl₁`, `partialCl₂` — Rockafellar's `cl₁` and `cl₂`, with fixed points `ConcaveClosedFn`
-  and `ConvexClosedFn`.
+* `partialCl₁`, `partialCl₂` — Rockafellar's `cl₁` and `cl₂`, with fixed points `PartialClosed₁`
+  and `PartialClosed₂`.
 * `bracket Bx F`, `concaveBracket Bu G` — `⟨Fu, y⟩` and its concave counterpart `⟨u, G y⟩`;
   `partialConj₂ Bx f` is the uncurried reading of the first.
 * `bifunOfSaddle Bx K` — the convex bifunction `F u = K (u, ·)*` attached to a saddle-function.
+* `saddleSwap K = fun (x, u) => -K (u, x)` — the involution exchanging the two variables and the
+  roles of `cl₁` and `cl₂`, bundled as the order isomorphism `saddleSwapOrderIso` onto the order
+  dual.
 
 ## Main results
 
-* `concaveConvexFn_bracket`, `closedFn_bracket`, `clFn_eq_conj_bracket` — the bracket of a convex
-  bifunction is concave-convex and closed in `y`, and inverts as `cl (F u) = ⟨F u, ·⟩*`.
+* `concaveConvexFn_bracket`, `closedConvex_bracket`, `convexCl_eq_convexConj_bracket` — the bracket
+  of a convex bifunction is concave-convex and closed in `y`, and inverts as `cl (F u) = ⟨F u, ·⟩*`.
 * `convexBifun_bifunOfSaddle`, `bracket_bifunOfSaddle` — conversely, the bifunction attached to a
   concave-convex `K` is convex and its bracket is `cl₂ K`.
-* `convexFn_partialCl₂`, `concaveConvexFn_partialCl₂`, `concaveFn_partialCl₁` — the partial
-  closures preserve concave-convexity.
-* `concaveBracket_adjointBifun_eq_partialCl₁`, `partialCl₂_concaveBracket_adjointBifun` — the two
-  equations `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` and `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`
+* `convexFn_partialCl₂`, `concaveFn_partialCl₁`, `concaveConvexFn_partialCl₂`,
+  `concaveConvexFn_partialCl₁` — the partial closures preserve concave-convexity; the first-variable
+  statement is the second-variable one read at `saddleSwap`.
+* `concaveBracket_convexAdjointBifun_eq_partialCl₁`, `partialCl₂_concaveBracket_convexAdjointBifun`
+  — the two equations `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` and `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`
   ([rockafellar1970convex] Theorem 33.2). One theorem in opposite variables, so the pairing
   hypotheses differ: `U` for the first, `Y` for the second.
 
@@ -82,13 +86,13 @@ def dom₂ (K : U × X → EReal) : Set X := {x | ∀ u, K (u, x) < ⊤}
 @[simp] theorem mem_dom₂ {x : X} : x ∈ dom₂ K ↔ ∀ u, K (u, x) < ⊤ := Iff.rfl
 
 theorem dom₁_eq_iInter (K : U × X → EReal) :
-    dom₁ K = ⋂ x, domConcave fun u => K (u, x) := by
+    dom₁ K = ⋂ x, concaveDom fun u => K (u, x) := by
   ext u
-  simp [dom₁, domConcave]
+  simp [dom₁, concaveDom]
 
-theorem dom₂_eq_iInter (K : U × X → EReal) : dom₂ K = ⋂ u, dom fun x => K (u, x) := by
+theorem dom₂_eq_iInter (K : U × X → EReal) : dom₂ K = ⋂ u, convexDom fun x => K (u, x) := by
   ext x
-  simp [dom₂, dom]
+  simp [dom₂, convexDom]
 
 end SaddleDom
 
@@ -131,12 +135,12 @@ theorem ConvexConcaveFn.saddleFn (h : ConvexConcaveFn K) : SaddleFn K := Or.inr 
 /-- `dom₁` of a concave-convex function is convex: it is an intersection of concave domains. -/
 theorem ConcaveConvexFn.convex_dom₁ (h : ConcaveConvexFn K) : Convex ℝ (dom₁ K) := by
   rw [dom₁_eq_iInter]
-  exact convex_iInter fun x => (h.concave_fst x).convex_domConcave
+  exact convex_iInter fun x => (h.concave_fst x).convex_concaveDom
 
 /-- `dom₂` of a concave-convex function is convex. -/
 theorem ConcaveConvexFn.convex_dom₂ (h : ConcaveConvexFn K) : Convex ℝ (dom₂ K) := by
   rw [dom₂_eq_iInter]
-  exact convex_iInter fun u => (h.convex_snd u).convex_dom
+  exact convex_iInter fun u => (h.convex_snd u).convex_convexDom
 
 end SaddleDefs
 
@@ -149,10 +153,10 @@ variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Modul
 /-- The conjugate of `f` **in the second variable only**: the uncurried reading of `bracket`,
 which is what `partialConj₂_graphFn` makes precise. Downstream code uses the curried form. -/
 noncomputable def partialConj₂ (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (f : U × X → EReal) : U × Y → EReal :=
-  fun p => conj Bx (fun x => f (p.1, x)) p.2
+  fun p => convexConj Bx (fun x => f (p.1, x)) p.2
 
 theorem partialConj₂_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (f : U × X → EReal) (p : U × Y) :
-    partialConj₂ Bx f p = conj Bx (fun x => f (p.1, x)) p.2 := rfl
+    partialConj₂ Bx f p = convexConj Bx (fun x => f (p.1, x)) p.2 := rfl
 
 end PartialConj
 
@@ -164,46 +168,46 @@ variable {U X : Type*}
 
 /-- Rockafellar's `cl₂`: close in the second variable, **convexly**. -/
 noncomputable def partialCl₂ [TopologicalSpace X] (K : U × X → EReal) : U × X → EReal :=
-  fun p => clFn (fun x => K (p.1, x)) p.2
+  fun p => convexCl (fun x => K (p.1, x)) p.2
 
 /-- Rockafellar's `cl₁`: close in the first variable, **concavely**. -/
 noncomputable def partialCl₁ [TopologicalSpace U] (K : U × X → EReal) : U × X → EReal :=
-  fun p => clConcave (fun u => K (u, p.2)) p.1
+  fun p => concaveCl (fun u => K (u, p.2)) p.1
 
 theorem partialCl₂_apply [TopologicalSpace X] (K : U × X → EReal) (p : U × X) :
-    partialCl₂ K p = clFn (fun x => K (p.1, x)) p.2 := rfl
+    partialCl₂ K p = convexCl (fun x => K (p.1, x)) p.2 := rfl
 
 theorem partialCl₁_apply [TopologicalSpace U] (K : U × X → EReal) (p : U × X) :
-    partialCl₁ K p = clConcave (fun u => K (u, p.2)) p.1 := rfl
+    partialCl₁ K p = concaveCl (fun u => K (u, p.2)) p.1 := rfl
 
 theorem partialCl₂_slice [TopologicalSpace X] (K : U × X → EReal) (u : U) :
-    (fun x => partialCl₂ K (u, x)) = clFn fun x => K (u, x) := rfl
+    (fun x => partialCl₂ K (u, x)) = convexCl fun x => K (u, x) := rfl
 
 theorem partialCl₁_slice [TopologicalSpace U] (K : U × X → EReal) (x : X) :
-    (fun u => partialCl₁ K (u, x)) = clConcave fun u => K (u, x) := rfl
+    (fun u => partialCl₁ K (u, x)) = concaveCl fun u => K (u, x) := rfl
 
 theorem partialCl₂_le [TopologicalSpace X] (K : U × X → EReal) : partialCl₂ K ≤ K :=
-  fun p => clFn_le (fun x => K (p.1, x)) p.2
+  fun p => convexCl_le (fun x => K (p.1, x)) p.2
 
 theorem partialCl₂_mono [TopologicalSpace X] {K L : U × X → EReal} (h : K ≤ L) :
     partialCl₂ K ≤ partialCl₂ L :=
-  fun p => clFn_mono (fun x => h (p.1, x)) p.2
+  fun p => convexCl_mono (fun x => h (p.1, x)) p.2
 
 theorem le_partialCl₁ [TopologicalSpace U] (K : U × X → EReal) : K ≤ partialCl₁ K :=
-  fun p => le_clConcave (fun u => K (u, p.2)) p.1
+  fun p => le_concaveCl (fun u => K (u, p.2)) p.1
 
 theorem partialCl₁_mono [TopologicalSpace U] {K L : U × X → EReal} (h : K ≤ L) :
     partialCl₁ K ≤ partialCl₁ L :=
-  fun p => clConcave_mono (fun u => h (u, p.2)) p.1
+  fun p => concaveCl_mono (fun u => h (u, p.2)) p.1
 
 /-- `K` is **convex-closed** when it is unchanged by `cl₂`. -/
-def ConvexClosedFn [TopologicalSpace X] (K : U × X → EReal) : Prop := partialCl₂ K = K
+def PartialClosed₂ [TopologicalSpace X] (K : U × X → EReal) : Prop := partialCl₂ K = K
 
 /-- `K` is **concave-closed** when it is unchanged by `cl₁`. -/
-def ConcaveClosedFn [TopologicalSpace U] (K : U × X → EReal) : Prop := partialCl₁ K = K
+def PartialClosed₁ [TopologicalSpace U] (K : U × X → EReal) : Prop := partialCl₁ K = K
 
-theorem convexClosedFn_iff [TopologicalSpace X] {K : U × X → EReal} :
-    ConvexClosedFn K ↔ ∀ u, ClosedFn fun x => K (u, x) := by
+theorem partialClosed₂_iff [TopologicalSpace X] {K : U × X → EReal} :
+    PartialClosed₂ K ↔ ∀ u, ClosedConvex fun x => K (u, x) := by
   constructor
   · intro h u
     funext x
@@ -212,8 +216,8 @@ theorem convexClosedFn_iff [TopologicalSpace X] {K : U × X → EReal} :
     funext p
     exact congrFun (h p.1) p.2
 
-theorem concaveClosedFn_iff [TopologicalSpace U] {K : U × X → EReal} :
-    ConcaveClosedFn K ↔ ∀ x, ClosedConcaveFn fun u => K (u, x) := by
+theorem partialClosed₁_iff [TopologicalSpace U] {K : U × X → EReal} :
+    PartialClosed₁ K ↔ ∀ x, ClosedConcave fun u => K (u, x) := by
   constructor
   · intro h x
     funext u
@@ -224,6 +228,100 @@ theorem concaveClosedFn_iff [TopologicalSpace U] {K : U × X → EReal} :
 
 end PartialCl
 
+/-! ### The swap involution
+
+`saddleSwap K (x, u) = -K (u, x)` exchanges the two variables and the two partial closures, so
+every statement about the first variable is a statement about the second read at `saddleSwap K`. -/
+
+section Swap
+
+variable {U X : Type*} {K : U × X → EReal}
+
+/-- Negate a saddle-function and exchange its arguments: an involution of saddle-functions that
+exchanges `cl₁` with `cl₂`. -/
+noncomputable def saddleSwap (K : U × X → EReal) : X × U → EReal := fun q => -(K (q.2, q.1))
+
+theorem saddleSwap_apply (K : U × X → EReal) (q : X × U) :
+    saddleSwap K q = -(K (q.2, q.1)) := rfl
+
+@[simp] theorem saddleSwap_saddleSwap (K : U × X → EReal) : saddleSwap (saddleSwap K) = K :=
+  funext fun p => neg_neg (K p)
+
+theorem saddleSwap_le_saddleSwap {K L : U × X → EReal} (h : K ≤ L) :
+    saddleSwap L ≤ saddleSwap K :=
+  fun q => EReal.neg_le_neg_iff.2 (h (q.2, q.1))
+
+/-- `saddleSwap` bundled as an order isomorphism onto the order dual. It is not an endomorphism —
+the two factors are exchanged — so its two-sided inverse has to be recorded as an `Equiv`. -/
+noncomputable def saddleSwapOrderIso : (U × X → EReal) ≃o (X × U → EReal)ᵒᵈ where
+  toFun K := OrderDual.toDual (saddleSwap K)
+  invFun K := saddleSwap (OrderDual.ofDual K)
+  left_inv := saddleSwap_saddleSwap
+  right_inv := saddleSwap_saddleSwap
+  map_rel_iff' {K L} := by
+    change saddleSwap L ≤ saddleSwap K ↔ K ≤ L
+    exact ⟨fun h => by simpa using saddleSwap_le_saddleSwap h, saddleSwap_le_saddleSwap⟩
+
+@[simp] theorem saddleSwapOrderIso_apply (K : U × X → EReal) :
+    saddleSwapOrderIso K = saddleSwap K := rfl
+
+theorem saddleSwap_injective :
+    Function.Injective (saddleSwap : (U × X → EReal) → X × U → EReal) :=
+  (saddleSwapOrderIso (U := U) (X := X)).injective
+
+/-- The real-valued companion of `saddleSwap`: negate and exchange the two arguments. Note that
+`swapReal (swapReal K) = K` is **not** `rfl`, because the negation is on `ℝ` values. -/
+def swapReal (K : U × X → ℝ) : X × U → ℝ := fun q => -K (q.2, q.1)
+
+@[simp] theorem swapReal_swapReal (K : U × X → ℝ) : swapReal (swapReal K) = K := by
+  funext q
+  simp [swapReal]
+
+theorem swapReal_apply (K : U × X → ℝ) (q : X × U) : swapReal K q = -K (q.2, q.1) := rfl
+
+@[simp] theorem dom₁_saddleSwap (K : U × X → EReal) : dom₁ (saddleSwap K) = dom₂ K := by
+  ext x
+  refine forall_congr' fun u => ?_
+  change ⊥ < -(K (u, x)) ↔ K (u, x) < ⊤
+  rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
+
+@[simp] theorem dom₂_saddleSwap (K : U × X → EReal) : dom₂ (saddleSwap K) = dom₁ K := by
+  ext u
+  refine forall_congr' fun x => ?_
+  change -(K (u, x)) < ⊤ ↔ ⊥ < K (u, x)
+  rw [← EReal.neg_bot, EReal.neg_lt_neg_iff]
+
+end Swap
+
+section SwapConvex
+
+variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
+  {K : U × X → EReal}
+
+/-- `saddleSwap` preserves concave-convexity: negation exchanges concave and convex, and the swap
+exchanges the two variables. -/
+theorem ConcaveConvexFn.saddleSwap (hK : ConcaveConvexFn K) :
+    ConcaveConvexFn (ConvexAnalysis.saddleSwap K) :=
+  ⟨fun u => (hK.convex_snd u).concaveFn_neg, fun x => (hK.concave_fst x).convexFn_neg⟩
+
+end SwapConvex
+
+section SwapClosure
+
+variable {U X : Type*} [TopologicalSpace U] [TopologicalSpace X] {K : U × X → EReal}
+
+omit [TopologicalSpace U] in
+theorem partialCl₁_saddleSwap (K : U × X → EReal) :
+    partialCl₁ (saddleSwap K) = saddleSwap (partialCl₂ K) :=
+  funext fun q => concaveCl_neg (fun x => K (q.2, x)) q.1
+
+omit [TopologicalSpace X] in
+theorem partialCl₂_saddleSwap (K : U × X → EReal) :
+    partialCl₂ (saddleSwap K) = saddleSwap (partialCl₁ K) :=
+  funext fun q => (neg_concaveCl (fun u => K (u, q.1)) q.2).symm
+
+end SwapClosure
+
 /-! ### The bracket of a convex bifunction -/
 
 section Bracket
@@ -232,13 +330,13 @@ variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Modul
 
 /-- Rockafellar's **bracket** `⟨Fu, y⟩ = (F u)*(y)`, read as a function of `(u, y)`. -/
 noncomputable def bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) : U → Y → EReal :=
-  fun u y => conj Bx (F u) y
+  fun u y => convexConj Bx (F u) y
 
 theorem bracket_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) (y : Y) :
     bracket Bx F u y = ⨆ x, ((Bx x y : ℝ) : EReal) - F u x := rfl
 
-theorem bracket_eq_conj (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) :
-    bracket Bx F u = conj Bx (F u) := rfl
+theorem bracket_eq_convexConj (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) :
+    bracket Bx F u = convexConj Bx (F u) := rfl
 
 /-- The bracket **is** the partial conjugate of the graph function. -/
 theorem partialConj₂_graphFn (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (p : U × Y) :
@@ -247,7 +345,7 @@ theorem partialConj₂_graphFn (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun
 /-- `⟨Fu, ·⟩` is convex, with no hypothesis on `F`. -/
 theorem convexFn_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) :
     ConvexFn (bracket Bx F u) :=
-  convexFn_conj Bx (F u)
+  convexFn_convexConj Bx (F u)
 
 end Bracket
 
@@ -258,7 +356,7 @@ variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Modul
   [IsContinuousPairing Bx.flip] {F : Bifun U X}
 
 /-- `⟨Fu, ·⟩` is closed as well as convex. -/
-theorem closedFn_bracket (u : U) : ClosedFn (bracket Bx F u) := closedFn_conj
+theorem closedConvex_bracket (u : U) : ClosedConvex (bracket Bx F u) := closedConvex_convexConj
 
 end BracketClosed
 
@@ -306,9 +404,9 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 /-- The inversion formula: `cl (F u)` is recovered from the bracket by conjugating back. This is
 the Fenchel–Moreau theorem, uniformly in `u`. -/
-theorem clFn_eq_conj_bracket (hF : ConvexBifun F) (u : U) :
-    clFn (F u) = conj Bx.flip (bracket Bx F u) :=
-  (biconj_eq_clFn (B := Bx) (hF.convexFn_apply u)).symm
+theorem convexCl_eq_convexConj_bracket (hF : ConvexBifun F) (u : U) :
+    convexCl (F u) = convexConj Bx.flip (bracket Bx F u) :=
+  (convexBiconj_eq_convexCl (B := Bx) (hF.convexFn_apply u)).symm
 
 end BracketInversion
 
@@ -321,7 +419,7 @@ variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Modul
 /-- The convex bifunction attached to a saddle-function: `F u = K (u, ·)*`, the conjugate taken
 over the flipped pairing. -/
 noncomputable def bifunOfSaddle (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) : Bifun U X :=
-  fun u x => conj Bx.flip (fun y => K (u, y)) x
+  fun u x => convexConj Bx.flip (fun y => K (u, y)) x
 
 theorem bifunOfSaddle_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) (u : U) (x : X) :
     bifunOfSaddle Bx K u x = ⨆ y, ((Bx x y : ℝ) : EReal) - K (u, y) := rfl
@@ -368,7 +466,7 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 /-- The bracket of that bifunction is `cl₂ K`. -/
 theorem bracket_bifunOfSaddle (hK : ConcaveConvexFn K) (p : U × Y) :
     bracket Bx (bifunOfSaddle Bx K) p.1 p.2 = partialCl₂ K p :=
-  congrFun (biconj_eq_clFn (B := Bx.flip) (hK.convex_snd p.1)) p.2
+  congrFun (convexBiconj_eq_convexCl (B := Bx.flip) (hK.convex_snd p.1)) p.2
 
 end OfSaddleBracket
 
@@ -379,14 +477,14 @@ section CorClosed
 variable {U X : Type*}
 
 /-- `cl₂ K` is convex-closed. -/
-theorem convexClosedFn_partialCl₂ [TopologicalSpace X] [AddCommGroup X]
-    [IsTopologicalAddGroup X] (K : U × X → EReal) : ConvexClosedFn (partialCl₂ K) :=
-  convexClosedFn_iff.2 fun u => closedFn_clFn fun x => K (u, x)
+theorem partialClosed₂_partialCl₂ [TopologicalSpace X] [AddCommGroup X]
+    [IsTopologicalAddGroup X] (K : U × X → EReal) : PartialClosed₂ (partialCl₂ K) :=
+  partialClosed₂_iff.2 fun u => closedConvex_convexCl fun x => K (u, x)
 
 /-- `cl₁ K` is concave-closed. -/
-theorem concaveClosedFn_partialCl₁ [TopologicalSpace U] [AddCommGroup U]
-    [IsTopologicalAddGroup U] (K : U × X → EReal) : ConcaveClosedFn (partialCl₁ K) :=
-  concaveClosedFn_iff.2 fun x => closedConcaveFn_clConcave fun u => K (u, x)
+theorem partialClosed₁_partialCl₁ [TopologicalSpace U] [AddCommGroup U]
+    [IsTopologicalAddGroup U] (K : U × X → EReal) : PartialClosed₁ (partialCl₁ K) :=
+  partialClosed₁_iff.2 fun x => closedConcave_concaveCl fun u => K (u, x)
 
 end CorClosed
 
@@ -399,13 +497,13 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module 
 theorem convexFn_partialCl₂ [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
     (hK : ConcaveConvexFn K) (u : U) : ConvexFn fun x => partialCl₂ K (u, x) := by
   rw [partialCl₂_slice]
-  exact convexFn_clFn (hK.convex_snd u)
+  exact convexFn_convexCl (hK.convex_snd u)
 
 /-- `cl₁` preserves concavity in the first variable. -/
 theorem concaveFn_partialCl₁ [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
     (hK : ConcaveConvexFn K) (x : X) : ConcaveFn fun u => partialCl₁ K (u, x) := by
   rw [partialCl₁_slice]
-  exact concaveFn_clConcave (hK.concave_fst x)
+  exact concaveFn_concaveCl (hK.concave_fst x)
 
 end Cor
 
@@ -434,11 +532,11 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
 /-- The concave adjoint is the conjugate of the concave bracket — the mirror of
-`adjointBifun_eq_concaveConj_bracket`, with the two conjugations in the opposite order. -/
-theorem concaveAdjointBifun_eq_conj_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+`convexAdjointBifun_eq_concaveConj_bracket`, with the two conjugations in the opposite order. -/
+theorem concaveAdjointBifun_eq_convexConj_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (G : Bifun Y V) (u : U) (x : X) :
-    concaveAdjointBifun Bu Bx G u x = conj Bx.flip (fun y => concaveBracket Bu G u y) x := by
-  rw [concaveAdjointBifun_apply, conj_apply, iSup_prod]
+    concaveAdjointBifun Bu Bx G u x = convexConj Bx.flip (fun y => concaveBracket Bu G u y) x := by
+  rw [concaveAdjointBifun_apply, convexConj_apply, iSup_prod]
   refine iSup_congr fun y => ?_
   have hflip : (Bx.flip y x : ℝ) = Bx x y := rfl
   rw [hflip, concaveBracket_apply, coe_sub_eq_neg_add, EReal.neg_iInf,
@@ -493,10 +591,10 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 /-- **The adjoint is the concave conjugate of the bracket.** `⟨Fu, y⟩` and `F*` are the two halves
 of one conjugation of the graph function: first convexly in `x`, then concavely in `u`. This is
 what makes `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` a case of concave Fenchel–Moreau. -/
-theorem adjointBifun_eq_concaveConj_bracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+theorem convexAdjointBifun_eq_concaveConj_bracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (y : Y) (v : V) :
-    adjointBifun Bu Bx F y v = concaveConj Bu (fun u => bracket Bx F u y) v := by
-  rw [adjointBifun_apply, concaveConj_apply, iInf_prod]
+    convexAdjointBifun Bu Bx F y v = concaveConj Bu (fun u => bracket Bx F u y) v := by
+  rw [convexAdjointBifun_apply, concaveConj_apply, iInf_prod]
   refine iInf_congr fun u => ?_
   have hneg : ((Bu u v : ℝ) : EReal) - bracket Bx F u y
       = ⨅ x, ((((-(Bx x y) : ℝ) : EReal) + F u x) + ((Bu u v : ℝ) : EReal)) := by
@@ -519,22 +617,23 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {F : Bifun U X}
 
-/-- `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩`. Once `adjointBifun_eq_concaveConj_bracket` identifies `F* y` with
-`concaveConj Bu ⟨F·, y⟩`, this is concave Fenchel–Moreau applied to the concavity of `⟨F·, y⟩`. -/
-theorem concaveConj_adjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
-    concaveConj Bu.flip (fun v => adjointBifun Bu Bx F y v)
+/-- `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩`. Once `convexAdjointBifun_eq_concaveConj_bracket` identifies `F* y`
+with `concaveConj Bu ⟨F·, y⟩`, this is concave Fenchel–Moreau applied to the concavity of
+`⟨F·, y⟩`. -/
+theorem concaveConj_convexAdjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
+    concaveConj Bu.flip (fun v => convexAdjointBifun Bu Bx F y v)
       = fun u => partialCl₁ (fun p : U × Y => bracket Bx F p.1 p.2) (u, y) := by
-  have hbr : (fun v => adjointBifun Bu Bx F y v)
+  have hbr : (fun v => convexAdjointBifun Bu Bx F y v)
       = concaveConj Bu (fun u => bracket Bx F u y) :=
-    funext fun v => adjointBifun_eq_concaveConj_bracket Bu Bx F y v
+    funext fun v => convexAdjointBifun_eq_concaveConj_bracket Bu Bx F y v
   rw [hbr]
-  exact biconcaveConj_eq_clConcave (concaveFn_bracket hF Bx y)
+  exact concaveBiconj_eq_concaveCl (concaveFn_bracket hF Bx y)
 
 /-- `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩`, in bracket notation. -/
-theorem concaveBracket_adjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
-    (fun u => concaveBracket Bu (adjointBifun Bu Bx F) u y)
+theorem concaveBracket_convexAdjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
+    (fun u => concaveBracket Bu (convexAdjointBifun Bu Bx F) u y)
       = fun u => partialCl₁ (fun p : U × Y => bracket Bx F p.1 p.2) (u, y) :=
-  concaveConj_adjointBifun_eq_partialCl₁ hF y
+  concaveConj_convexAdjointBifun_eq_partialCl₁ hF y
 
 end AdjointClosureFst
 
@@ -553,10 +652,10 @@ theorem bracket_concaveAdjointBifun_eq_partialCl₂ (hG : ConcaveBifun G) (u : U
     bracket Bx (concaveAdjointBifun Bu Bx G) u
       = fun y => partialCl₂ (fun p : U × Y => concaveBracket Bu G p.1 p.2) (u, y) := by
   have hconj : concaveAdjointBifun Bu Bx G u
-      = conj Bx.flip (fun y => concaveBracket Bu G u y) :=
-    funext fun x => concaveAdjointBifun_eq_conj_concaveBracket Bu Bx G u x
-  rw [bracket_eq_conj, hconj, partialCl₂_slice]
-  exact biconj_eq_clFn (B := Bx.flip) (convexFn_concaveBracket hG Bu u)
+      = convexConj Bx.flip (fun y => concaveBracket Bu G u y) :=
+    funext fun x => concaveAdjointBifun_eq_convexConj_concaveBracket Bu Bx G u x
+  rw [bracket_eq_convexConj, hconj, partialCl₂_slice]
+  exact convexBiconj_eq_convexCl (B := Bx.flip) (convexFn_concaveBracket hG Bu u)
 
 end AdjointClosureConcave
 
@@ -572,12 +671,12 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 /-- `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`. The adjoint of `F` is concave with no hypothesis on `F`, so
 this is the concave form at `F*` followed by the biconjugation identity `F** = cl F`. -/
-theorem partialCl₂_concaveBracket_adjointBifun (hF : ConvexBifun F) (u : U) :
+theorem partialCl₂_concaveBracket_convexAdjointBifun (hF : ConvexBifun F) (u : U) :
     (fun y => partialCl₂
-        (fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2) (u, y))
-      = bracket Bx (clBifun F) u := by
-  rw [← concaveAdjointBifun_adjointBifun_eq_clBifun (Bu := Bu) (Bx := Bx) hF]
-  exact (bracket_concaveAdjointBifun_eq_partialCl₂ (concaveBifun_adjointBifun Bu Bx F) u).symm
+        (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2) (u, y))
+      = bracket Bx (convexClBifun F) u := by
+  rw [← concaveAdjointBifun_convexAdjointBifun_eq_convexClBifun (Bu := Bu) (Bx := Bx) hF]
+  exact (bracket_concaveAdjointBifun_eq_partialCl₂ (concaveBifun_convexAdjointBifun Bu Bx F) u).symm
 
 end AdjointClosureSnd
 
@@ -600,5 +699,22 @@ theorem concaveConvexFn_partialCl₂ (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsC
   exact concaveConvexFn_bracket (convexBifun_bifunOfSaddle hK Bx) Bx
 
 end CorFull
+
+section CorFullFst
+
+variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
+  [AddCommGroup X] [Module ℝ X] [TopologicalSpace U] [IsTopologicalAddGroup U]
+  [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] {K : U × X → EReal}
+
+/-- Mirroring `concaveConvexFn_partialCl₂`: `cl₁ K` is again concave-convex. The pairing needed
+is the one on the concave variable. -/
+theorem concaveConvexFn_partialCl₁ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
+    (hK : ConcaveConvexFn K) : ConcaveConvexFn (partialCl₁ K) := by
+  have h : partialCl₁ K = saddleSwap (partialCl₂ (saddleSwap K)) := by
+    rw [partialCl₂_saddleSwap, saddleSwap_saddleSwap]
+  rw [h]
+  exact (concaveConvexFn_partialCl₂ Bu.flip hK.saddleSwap).saddleSwap
+
+end CorFullFst
 
 end ConvexAnalysis

@@ -48,12 +48,12 @@ modules `Closure.lean` and `Separation.lean` can state only in dimension-free fo
   from the projection and the slice; `Convex.relint_cone_prodMk_one` applies it to the cone over
   `C`, and `Convex.relint_convexHull_union` to the convex hull of a union.
 * `ConvexFn.relint_epi` — the relative interior of an epigraph, whence
-  `ConvexFn.exists_mem_relint_dom_lt` and `ConvexFn.le_of_mem_closure`.
-* `ConvexFn.eq_bot_of_mem_relint_dom` — an improper convex function is `−∞` on `ri (dom f)`.
-* `ConvexFn.proper_clFn`, `ConvexFn.clFn_eq_of_mem_relint_dom` — the closure of a proper convex
-  function is proper and agrees with it on `ri (dom f)`; with `ConvexFn.relint_dom_clFn` and
-  `ConvexFn.interior_dom_clFn`, `dom (cl f)` has the same relative interior *and* the same
-  interior as `dom f`.
+  `ConvexFn.exists_mem_relint_convexDom_lt` and `ConvexFn.le_of_mem_closure`.
+* `ConvexFn.eq_bot_of_mem_relint_convexDom` — an improper convex function is `−∞` on `ri (dom f)`.
+* `ConvexFn.properConvex_convexCl`, `ConvexFn.convexCl_eq_of_mem_relint_convexDom` — the closure of
+  a proper convex function is proper and agrees with it on `ri (dom f)`; with
+  `ConvexFn.relint_convexDom_convexCl` and `ConvexFn.interior_convexDom_convexCl`, `dom (cl f)` has
+  the same relative interior *and* the same interior as `dom f`.
 * `ConvexFn.tendsto_lscHull_along_segment_relint` — the closure of `f` at `y` as a limit of `f`
   along a segment towards `y` from a relative interior point of `dom f`.
 * `ConvexFn.relint_setOf_le`, `ConvexFn.closure_setOf_le` — the relative interior and the closure
@@ -182,6 +182,20 @@ theorem _root_.AffineSubspace.intrinsicInterior_coe (M : AffineSubspace ℝ E) :
 @[simp]
 theorem intrinsicInterior_univ : ri (univ : Set E) = univ := by
   simpa using AffineSubspace.intrinsicInterior_coe (⊤ : AffineSubspace ℝ E)
+
+/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
+theorem intrinsicInterior_Ici (α : ℝ) : ri (Ici α) = Ioi α := by
+  have hspan : affineSpan ℝ (Ici α) = ⊤ := by
+    rw [← (convex_Ici α).interior_nonempty_iff_affineSpan_eq_top, interior_Ici]
+    exact ⟨α + 1, by simp⟩
+  rw [intrinsicInterior_eq_interior hspan, interior_Ici]
+
+/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
+theorem intrinsicInterior_Iic (α : ℝ) : ri (Iic α) = Iio α := by
+  have hspan : affineSpan ℝ (Iic α) = ⊤ := by
+    rw [← (convex_Iic α).interior_nonempty_iff_affineSpan_eq_top, interior_Iic]
+    exact ⟨α - 1, by simp⟩
+  rw [intrinsicInterior_eq_interior hspan, interior_Iic]
 
 /-- An affine combination of two points of an affine subspace lies in it. -/
 theorem _root_.AffineSubspace.combo_mem {M : AffineSubspace ℝ E} {p q : E} (hp : p ∈ M) (hq : q ∈ M)
@@ -426,6 +440,13 @@ theorem _root_.Convex.closure_eq_of_relint_subset_of_subset_closure (h₁ : Conv
     (hsub : ri C₁ ⊆ C₂) (hsup : C₂ ⊆ closure C₁) : closure C₂ = closure C₁ :=
   Subset.antisymm (closure_minimal hsup isClosed_closure)
     (Convex.closure_relint h₁ ▸ closure_mono hsub)
+
+/-- A convex set squeezed between `C` and `cl C` has the same relative interior as `C`. -/
+theorem _root_.Convex.relint_eq_of_subset_of_subset_closure (h₁ : Convex ℝ C₁)
+    (h₂ : Convex ℝ C₂) (hsub : C₁ ⊆ C₂) (hsup : C₂ ⊆ closure C₁) : ri C₂ = ri C₁ :=
+  (Convex.closure_eq_iff_relint_eq h₂ h₁).1
+    (Convex.closure_eq_of_relint_subset_of_subset_closure h₁
+      (intrinsicInterior_subset.trans hsub) hsup)
 
 /-- An open set meeting `cl C` already meets `ri C`. -/
 theorem _root_.Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : Set E} (hU : IsOpen U)
@@ -854,14 +875,6 @@ explicit set `insert 0 {p | 0 < p.1 ∧ p.2 ∈ p.1 • C}`; `coe_hull_prodMk_on
 
 section Cone
 
-omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
-theorem intrinsicInterior_Ici (α : ℝ) : ri (Ici α) = Ioi α := by
-  have hspan : affineSpan ℝ (Ici α) = ⊤ := by
-    rw [← (convex_Ici α).interior_nonempty_iff_affineSpan_eq_top, interior_Ici]
-    exact ⟨α + 1, by simp⟩
-  rw [intrinsicInterior_eq_interior hspan, interior_Ici]
-
 omit [FiniteDimensional ℝ E] in
 /-- The cone `{(λ, x) | λ > 0, x ∈ λC} ∪ {0}` over a convex set is convex. The convex combination is
 checked directly, `Convex.add_smul` (`(s + t) • C = s • C + t • C`) carrying the only interesting
@@ -1072,10 +1085,7 @@ theorem intrinsicInterior_setOf_le (z : EReal) :
   | coe r =>
     have h1 : {ν : ℝ | (r : EReal) ≤ (ν : EReal)} = Ici r := by ext ν; simp
     have h2 : {ν : ℝ | (r : EReal) < (ν : EReal)} = Ioi r := by ext ν; simp
-    have hspan : affineSpan ℝ (Ici r) = ⊤ := by
-      rw [← (convex_Ici r).interior_nonempty_iff_affineSpan_eq_top, interior_Ici]
-      exact ⟨r + 1, by simp⟩
-    rw [h1, h2, intrinsicInterior_eq_interior hspan, interior_Ici]
+    rw [h1, h2, intrinsicInterior_Ici]
   | top =>
     have h1 : {ν : ℝ | (⊤ : EReal) ≤ (ν : EReal)} = ∅ := by
       ext ν; simp
@@ -1086,11 +1096,11 @@ theorem intrinsicInterior_setOf_le (z : EReal) :
 /-- The relative interior of an epigraph consists of the pairs `(x, μ)` with `x ∈ ri (dom f)` and
 `f x < μ < ∞`. This is the product criterion in which the second factor is `ℝ`. -/
 theorem ConvexFn.relint_epi (hf : ConvexFn f) :
-    ri (epi f) = {p : E × ℝ | p.1 ∈ ri (dom f) ∧ f p.1 < (p.2 : EReal)} := by
+    ri (epi f) = {p : E × ℝ | p.1 ∈ ri (convexDom f) ∧ f p.1 < (p.2 : EReal)} := by
   ext p
   obtain ⟨x, μ⟩ := p
   have hsec : {w : ℝ | (x, w) ∈ epi f} = {ν : ℝ | f x ≤ (ν : EReal)} := rfl
-  rw [Convex.mem_relint_prod_iff hf.convex_epi, ← dom_eq_fst_image_epi, hsec,
+  rw [Convex.mem_relint_prod_iff hf.convex_epi, ← convexDom_eq_fst_image_epi, hsec,
     intrinsicInterior_setOf_le]
   exact Iff.rfl
 
@@ -1102,17 +1112,17 @@ effective domain — so it is infinite except perhaps at relative boundary point
 `ConvexFn.eq_bot_or_eq_top` in `Numlib/Analysis/Convex/Closure.lean` is the dimension-free
 replacement, valid in any topological vector space; this is the finite-dimensional statement, which
 needs no hypothesis on `dom f` and locates the `⊥` values precisely. -/
-theorem ConvexFn.eq_bot_of_mem_relint_dom (hf : ConvexFn f) (hp : ¬ Proper f) {x : E}
-    (hx : x ∈ ri (dom f)) : f x = ⊥ := by
-  have hxd : x ∈ dom f := intrinsicInterior_subset hx
+theorem ConvexFn.eq_bot_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ¬ ProperConvex f) {x : E}
+    (hx : x ∈ ri (convexDom f)) : f x = ⊥ := by
+  have hxd : x ∈ convexDom f := intrinsicInterior_subset hx
   have hbot : ∃ u, f u = ⊥ := by
     by_contra hcon
     push Not at hcon
     exact hp ⟨⟨x, hxd⟩, hcon⟩
   obtain ⟨u, hu⟩ := hbot
-  have hud : u ∈ dom f := mem_dom.2 (by rw [hu]; exact bot_lt_top)
+  have hud : u ∈ convexDom f := mem_convexDom.2 (by rw [hu]; exact bot_lt_top)
   obtain ⟨μ, hμ, hy⟩ :=
-    exists_one_lt_smul_mem_of_mem_relint hx (subset_affineSpan ℝ (dom f) hud)
+    exists_one_lt_smul_mem_of_mem_relint hx (subset_affineSpan ℝ (convexDom f) hud)
   have hμ0 : μ ≠ 0 := ne_of_gt (by linarith)
   have hkey := hf.eq_bot_of_lt_one hu hy (inv_nonneg.2 (by linarith))
     (by rw [inv_lt_one_iff₀]; exact Or.inr hμ)
@@ -1120,34 +1130,35 @@ theorem ConvexFn.eq_bot_of_mem_relint_dom (hf : ConvexFn f) (hp : ¬ Proper f) {
 
 /-- A lower semicontinuous improper convex function is `−∞` on the whole closure of its effective
 domain — the finite-dimensional sharpening of the preceding statement. -/
-theorem ConvexFn.eq_bot_of_mem_closure_dom (hf : ConvexFn f) (hl : LowerSemicontinuous f)
-    (hp : ¬ Proper f) {x : E} (hx : x ∈ closure (dom f)) : f x = ⊥ := by
+theorem ConvexFn.eq_bot_of_mem_closure_convexDom (hf : ConvexFn f) (hl : LowerSemicontinuous f)
+    (hp : ¬ ProperConvex f) {x : E} (hx : x ∈ closure (convexDom f)) : f x = ⊥ := by
   by_contra hne
   obtain ⟨U, hU, hxU, hUlt⟩ : ∃ U, IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U, (⊥ : EReal) < f y := by
     obtain ⟨U, hUmem, hU, hxU⟩ := mem_nhds_iff.1 (hl x ⊥ (bot_lt_iff_ne_bot.2 hne))
     exact ⟨U, hU, hxU, fun y hy => hUmem hy⟩
-  obtain ⟨y, hyU, hy⟩ := Convex.relint_inter_nonempty_of_isOpen hf.convex_dom hU ⟨x, hxU, hx⟩
-  exact absurd (hf.eq_bot_of_mem_relint_dom hp hy) (hUlt y hyU).ne'
+  obtain ⟨y, hyU, hy⟩ := Convex.relint_inter_nonempty_of_isOpen hf.convex_convexDom hU ⟨x, hxU, hx⟩
+  exact absurd (hf.eq_bot_of_mem_relint_convexDom hp hy) (hUlt y hyU).ne'
 
 omit [FiniteDimensional ℝ E] in
 /-- A convex function whose effective domain is relatively open is either nowhere `−∞`, or
 everywhere infinite. -/
-theorem ConvexFn.forall_ne_bot_or_forall_infinite (hf : ConvexFn f) (hopen : ri (dom f) = dom f) :
+theorem ConvexFn.forall_ne_bot_or_forall_infinite (hf : ConvexFn f)
+    (hopen : ri (convexDom f) = convexDom f) :
     (∀ x, f x ≠ ⊥) ∨ ∀ x, f x = ⊥ ∨ f x = ⊤ := by
-  by_cases hp : Proper f
+  by_cases hp : ProperConvex f
   · exact Or.inl hp.ne_bot
   · refine Or.inr fun x => ?_
     rcases eq_top_or_lt_top (f x) with h | h
     · exact Or.inr h
-    · exact Or.inl (hf.eq_bot_of_mem_relint_dom hp (by rw [hopen]; exact h))
+    · exact Or.inl (hf.eq_bot_of_mem_relint_convexDom hp (by rw [hopen]; exact h))
 
 /-! ### The closure of a proper convex function -/
 
 /-- The key step: the lower semicontinuous hull agrees with `f` at every relative interior point of
 `dom f`. The vertical line over `x` meets `ri (epi f)`, so intersecting with an affine set lets the
 closure be computed inside that line, where the epigraph section is already closed. -/
-theorem ConvexFn.lscHull_eq_of_mem_relint_dom (hf : ConvexFn f) {x : E}
-    (hx : x ∈ ri (dom f)) : lscHull f x = f x := by
+theorem ConvexFn.lscHull_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
+    (hx : x ∈ ri (convexDom f)) : lscHull f x = f x := by
   have hVconv : Convex ℝ (({x} : Set E) ×ˢ (univ : Set ℝ)) := (convex_singleton x).prod convex_univ
   have hVri : ri (({x} : Set E) ×ˢ (univ : Set ℝ)) = ({x} : Set E) ×ˢ (univ : Set ℝ) := by
     rw [intrinsicInterior_prod_eq, intrinsicInterior_singleton, intrinsicInterior_univ]
@@ -1161,8 +1172,8 @@ theorem ConvexFn.lscHull_eq_of_mem_relint_dom (hf : ConvexFn f) {x : E}
     constructor
     · rintro ⟨rfl, hmem⟩; exact ⟨rfl, hmem⟩
     · rintro ⟨rfl, hmem⟩; exact ⟨rfl, hmem⟩
-  have hxd : x ∈ dom f := intrinsicInterior_subset hx
-  obtain ⟨μ₀, hμ₀, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hxd)
+  have hxd : x ∈ convexDom f := intrinsicInterior_subset hx
+  obtain ⟨μ₀, hμ₀, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 hxd)
   have hne : (ri (({x} : Set E) ×ˢ (univ : Set ℝ)) ∩ ri (epi f)).Nonempty :=
     ⟨(x, μ₀), by rw [hVri]; exact ⟨rfl, mem_univ _⟩, by rw [hf.relint_epi]; exact ⟨hx, hμ₀⟩⟩
   have hkey := Convex.closure_inter hVconv hf.convex_epi hne
@@ -1176,93 +1187,118 @@ theorem ConvexFn.lscHull_eq_of_mem_relint_dom (hf : ConvexFn f) {x : E}
   exact hmem.2
 
 /-- The lower semicontinuous hull of a *proper* convex function is nowhere `−∞`. This is what makes
-`clFn f` the hull rather than the constant `⊥`, and it is finite-dimensional. -/
-theorem ConvexFn.lscHull_ne_bot (hf : ConvexFn f) (hp : Proper f) (x : E) : lscHull f x ≠ ⊥ := by
+`convexCl f` the hull rather than the constant `⊥`, and it is finite-dimensional. -/
+theorem ConvexFn.lscHull_ne_bot (hf : ConvexFn f) (hp : ProperConvex f)
+    (x : E) : lscHull f x ≠ ⊥ := by
   intro hbot
-  have hgp : ¬ Proper (lscHull f) := fun hpr => hpr.ne_bot x hbot
-  have hcl : closure (dom (lscHull f)) = closure (dom f) :=
-    Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_dom
-      (intrinsicInterior_subset.trans (dom_subset_dom_lscHull f))
-      (dom_lscHull_subset_closure_dom f)
-  have hdom : ri (dom (lscHull f)) = ri (dom f) :=
-    (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_dom hf.convex_dom).1 hcl
-  obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_dom hp.dom_nonempty
+  have hgp : ¬ ProperConvex (lscHull f) := fun hpr => hpr.ne_bot x hbot
+  have hcl : closure (convexDom (lscHull f)) = closure (convexDom f) :=
+    Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_convexDom
+      (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
+      (convexDom_lscHull_subset_closure_convexDom f)
+  have hdom : ri (convexDom (lscHull f)) = ri (convexDom f) :=
+    (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
+        hf.convex_convexDom).1 hcl
+  obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_convexDom hp.convexDom_nonempty
   have h1 : lscHull f z = ⊥ :=
-    (convexFn_lscHull hf).eq_bot_of_mem_relint_dom hgp (by rw [hdom]; exact hz)
-  exact hp.ne_bot z (hf.lscHull_eq_of_mem_relint_dom hz ▸ h1)
+    (convexFn_lscHull hf).eq_bot_of_mem_relint_convexDom hgp (by rw [hdom]; exact hz)
+  exact hp.ne_bot z (hf.lscHull_eq_of_mem_relint_convexDom hz ▸ h1)
 
 /-- For a proper convex function the closure *is* the lower semicontinuous hull; the exceptional
-branch of `clFn` is never taken. -/
-theorem ConvexFn.clFn_eq_lscHull (hf : ConvexFn f) (hp : Proper f) : clFn f = lscHull f :=
-  clFn_of_forall_ne_bot (hf.lscHull_ne_bot hp)
+branch of `convexCl` is never taken. -/
+theorem ConvexFn.convexCl_eq_lscHull (hf : ConvexFn f)
+    (hp : ProperConvex f) : convexCl f = lscHull f :=
+  convexCl_of_forall_ne_bot (hf.lscHull_ne_bot hp)
 
-/-- The closure of a proper convex function is proper (and hence, by `closedFn_clFn`, a closed
-proper convex function). -/
-theorem ConvexFn.proper_clFn (hf : ConvexFn f) (hp : Proper f) : Proper (clFn f) := by
-  rw [hf.clFn_eq_lscHull hp]
-  exact ⟨hp.dom_nonempty.mono (dom_subset_dom_lscHull f), hf.lscHull_ne_bot hp⟩
+/-- The closure of a proper convex function is proper (and hence, by `closedConvex_convexCl`, a
+closed proper convex function). -/
+theorem ConvexFn.properConvex_convexCl (hf : ConvexFn f)
+    (hp : ProperConvex f) : ProperConvex (convexCl f) := by
+  rw [hf.convexCl_eq_lscHull hp]
+  exact ⟨hp.convexDom_nonempty.mono (convexDom_subset_convexDom_lscHull f), hf.lscHull_ne_bot hp⟩
 
 /-- `cl f` agrees with `f` at every relative interior point of `dom f`, whether or not `f` is
 proper. -/
-theorem ConvexFn.clFn_eq_of_mem_relint_dom (hf : ConvexFn f) {x : E} (hx : x ∈ ri (dom f)) :
-    clFn f x = f x := by
-  by_cases hp : Proper f
-  · rw [hf.clFn_eq_lscHull hp]
-    exact hf.lscHull_eq_of_mem_relint_dom hx
-  · have hbot : f x = ⊥ := hf.eq_bot_of_mem_relint_dom hp hx
+theorem ConvexFn.convexCl_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
+    (hx : x ∈ ri (convexDom f)) :
+    convexCl f x = f x := by
+  by_cases hp : ProperConvex f
+  · rw [hf.convexCl_eq_lscHull hp]
+    exact hf.lscHull_eq_of_mem_relint_convexDom hx
+  · have hbot : f x = ⊥ := hf.eq_bot_of_mem_relint_convexDom hp hx
     have hl : lscHull f x = ⊥ := le_bot_iff.1 (hbot ▸ lscHull_le f x)
-    rw [clFn_of_exists_eq_bot ⟨x, hl⟩, hbot]
+    rw [convexCl_of_exists_eq_bot ⟨x, hl⟩, hbot]
+
+/-- The concave counterpart of `ConvexFn.convexCl_eq_of_mem_relint_convexDom`: `cl g` agrees with
+`g` at every relative interior point of `concaveDom g`. -/
+theorem ConcaveFn.concaveCl_eq_of_mem_relint_concaveDom {g : E → EReal} (hg : ConcaveFn g) {x : E}
+    (hx : x ∈ ri (concaveDom g)) : concaveCl g x = g x := by
+  rw [concaveDom_eq_convexDom_neg] at hx
+  rw [concaveCl_apply, hg.convexFn_neg.convexCl_eq_of_mem_relint_convexDom hx]
+  exact neg_neg _
 
 /-- `cl f` also agrees with `f` off the closure of `dom f`, where both are `+∞`. Together with
-`ConvexFn.clFn_eq_of_mem_relint_dom` this is the assertion that `cl f` differs from `f` at most at
-relative boundary points of `dom f`. -/
-theorem ConvexFn.clFn_eq_of_notMem_closure_dom (hf : ConvexFn f) (hp : Proper f) {x : E}
-    (hx : x ∉ closure (dom f)) : clFn f x = f x := by
-  rw [hf.clFn_eq_lscHull hp]
+`ConvexFn.convexCl_eq_of_mem_relint_convexDom` this is the assertion that `cl f` differs from `f` at
+most at relative boundary points of `dom f`. -/
+theorem ConvexFn.convexCl_eq_of_notMem_closure_convexDom (hf : ConvexFn f)
+    (hp : ProperConvex f) {x : E}
+    (hx : x ∉ closure (convexDom f)) : convexCl f x = f x := by
+  rw [hf.convexCl_eq_lscHull hp]
   have h1 : lscHull f x = ⊤ := by
     by_contra h
-    exact hx (dom_lscHull_subset_closure_dom f (mem_dom.2 (lt_of_le_of_ne le_top h)))
+    exact hx
+        (convexDom_lscHull_subset_closure_convexDom f (mem_convexDom.2 (lt_of_le_of_ne le_top h)))
   have h2 : f x = ⊤ := by
     by_contra h
-    exact hx (subset_closure (mem_dom.2 (lt_of_le_of_ne le_top h)))
+    exact hx (subset_closure (mem_convexDom.2 (lt_of_le_of_ne le_top h)))
   rw [h1, h2]
+
+/-- The concave counterpart of `ConvexFn.convexCl_eq_of_notMem_closure_convexDom`: `cl g` agrees
+with `g` off the closure of `concaveDom g`, where both are `-∞`. -/
+theorem ConcaveFn.concaveCl_eq_of_notMem_closure_concaveDom {g : E → EReal} (hg : ConcaveFn g)
+    (hp : ProperConcave g) {x : E} (hx : x ∉ closure (concaveDom g)) : concaveCl g x = g x := by
+  rw [concaveDom_eq_convexDom_neg] at hx
+  rw [concaveCl_apply,
+      hg.convexFn_neg.convexCl_eq_of_notMem_closure_convexDom hp.properConvex_neg hx]
+  exact neg_neg _
 
 /-- `dom (cl f)` is squeezed between `dom f` and its closure, so the two domains have the same
 closure and the same relative interior. -/
-theorem ConvexFn.relint_dom_clFn (hf : ConvexFn f) (hp : Proper f) :
-    ri (dom (clFn f)) = ri (dom f) := by
-  rw [hf.clFn_eq_lscHull hp]
-  exact (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_dom hf.convex_dom).1
-    (Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_dom
-      (intrinsicInterior_subset.trans (dom_subset_dom_lscHull f))
-      (dom_lscHull_subset_closure_dom f))
+theorem ConvexFn.relint_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConvex f) :
+    ri (convexDom (convexCl f)) = ri (convexDom f) := by
+  rw [hf.convexCl_eq_lscHull hp]
+  exact (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
+      hf.convex_convexDom).1
+    (Convex.closure_eq_of_relint_subset_of_subset_closure hf.convex_convexDom
+      (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
+      (convexDom_lscHull_subset_closure_convexDom f))
 
 /-- The companion statement for *interiors*: `dom (cl f)` has the same plain interior as `dom f`,
 not only the same relative interior. The inclusion `⊇` is `cl f ≤ f`; for `⊆`,
 `interior (dom (cl f))` is an *open* set inside `ri (dom (cl f)) = ri (dom f) ⊆ dom f`, and an open
 subset of a set is inside its interior. -/
-theorem ConvexFn.interior_dom_clFn (hf : ConvexFn f) (hp : Proper f) :
-    interior (dom (clFn f)) = interior (dom f) := by
+theorem ConvexFn.interior_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConvex f) :
+    interior (convexDom (convexCl f)) = interior (convexDom f) := by
   refine Set.Subset.antisymm ?_ (interior_mono fun z hz =>
-    mem_dom.2 (lt_of_le_of_lt (clFn_le f z) (mem_dom.1 hz)))
-  rcases Set.eq_empty_or_nonempty (interior (dom (clFn f))) with hemp | hne
+    mem_convexDom.2 (lt_of_le_of_lt (convexCl_le f z) (mem_convexDom.1 hz)))
+  rcases Set.eq_empty_or_nonempty (interior (convexDom (convexCl f))) with hemp | hne
   · rw [hemp]
     exact Set.empty_subset _
   refine interior_maximal ?_ isOpen_interior
-  refine (Convex.interior_subset_relint (convexFn_clFn hf).convex_dom hne).trans ?_
-  rw [hf.relint_dom_clFn hp]
+  refine (Convex.interior_subset_relint (convexFn_convexCl hf).convex_convexDom hne).trans ?_
+  rw [hf.relint_convexDom_convexCl hp]
   exact intrinsicInterior_subset
 
 /-- A proper convex function whose effective domain is an affine set — in particular one that is
 finite everywhere — is closed. -/
-theorem ConvexFn.closedFn_of_dom_eq_coe (hf : ConvexFn f) (hp : Proper f)
-    {M : AffineSubspace ℝ E} (hdom : dom f = (M : Set E)) : ClosedFn f := by
+theorem ConvexFn.closedConvex_of_convexDom_eq_coe (hf : ConvexFn f) (hp : ProperConvex f)
+    {M : AffineSubspace ℝ E} (hdom : convexDom f = (M : Set E)) : ClosedConvex f := by
   refine funext fun x => ?_
-  by_cases hx : x ∈ dom f
-  · refine hf.clFn_eq_of_mem_relint_dom ?_
+  by_cases hx : x ∈ convexDom f
+  · refine hf.convexCl_eq_of_mem_relint_convexDom ?_
     rw [hdom, AffineSubspace.intrinsicInterior_coe]
     rwa [hdom] at hx
-  · refine hf.clFn_eq_of_notMem_closure_dom hp ?_
+  · refine hf.convexCl_eq_of_notMem_closure_convexDom hp ?_
     rw [hdom, M.closed_of_finiteDimensional.closure_eq]
     rwa [hdom] at hx
 
@@ -1309,7 +1345,7 @@ a *relative interior* point of `dom f` towards `y`. `Numlib/Analysis/Convex/Clos
 the description of `ri (epi f)` supplies a relative interior point instead, and the line segment
 principle replaces Mathlib's `Convex.combo_interior_closure_mem_interior`. -/
 theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
-    (hx : x ∈ ri (dom f)) (y : E) :
+    (hx : x ∈ ri (convexDom f)) (y : E) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (lscHull f y)) := by
   rw [tendsto_order]
   refine ⟨fun b hb => ?_, fun b hb => ?_⟩
@@ -1322,7 +1358,7 @@ theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
     have hyβ : ((y, β) : E × ℝ) ∈ closure (epi f) := by
       rw [← epi_lscHull]; exact hβ1.le
     obtain ⟨α, hα, -⟩ :=
-      EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
+      EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (intrinsicInterior_subset hx))
     have hxα : ((x, α) : E × ℝ) ∈ ri (epi f) := by rw [hf.relint_epi]; exact ⟨hx, hα⟩
     filter_upwards [(tendsto_affine_nhdsLT_one α β).eventually_lt_const hβγ,
       eventually_mem_Ico_nhdsLT_one] with a hlt ha
@@ -1335,13 +1371,72 @@ theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
       mk_mem_epi.1 (intrinsicInterior_subset hcombo)
     exact lt_of_le_of_lt hle (lt_trans (by exact_mod_cast hlt) hγ2)
 
-/-- The same limit for `clFn`. Properness is what rules out the exceptional branch of `clFn`;
-compare `clFn_eq_limit_along_segment`, which has to assume it directly. -/
-theorem ConvexFn.tendsto_clFn_along_segment_relint (hf : ConvexFn f) (hp : Proper f) {x : E}
-    (hx : x ∈ ri (dom f)) (y : E) :
-    Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (clFn f y)) := by
-  rw [hf.clFn_eq_lscHull hp]
+/-- The same limit for `convexCl`. Properness is what rules out the exceptional branch of
+`convexCl`; compare `convexCl_eq_limit_along_segment`, which has to assume it directly. -/
+theorem ConvexFn.tendsto_convexCl_along_segment_relint (hf : ConvexFn f)
+    (hp : ProperConvex f) {x : E}
+    (hx : x ∈ ri (convexDom f)) (y : E) :
+    Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (convexCl f y)) := by
+  rw [hf.convexCl_eq_lscHull hp]
   exact hf.tendsto_lscHull_along_segment_relint hx y
+
+/-- **Two convex functions that agree on the relative interior of a common effective domain have the
+same lower semicontinuous hull** — the sharp form of "a closed convex function is determined by its
+values on the relative interior of its effective domain". From a relative interior point the
+half-open segment towards `y` stays in the relative interior, where the two agree; off
+`cl (dom f)` both hulls are `⊤`. -/
+theorem lscHull_eq_of_eqOn_relint_convexDom {g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
+    (hdom : ri (convexDom f) = ri (convexDom g)) (heq : Set.EqOn f g (ri (convexDom f))) :
+    lscHull f = lscHull g := by
+  rcases Set.eq_empty_or_nonempty (ri (convexDom f)) with hem | ⟨x, hx⟩
+  · have hempty : ∀ {h : E → EReal}, ConvexFn h → ri (convexDom h) = ∅ → h = fun _ => ⊤ := by
+      intro h hh hri
+      have hd : convexDom h = ∅ := by
+        rw [← Set.not_nonempty_iff_eq_empty]
+        intro hne
+        exact (Set.nonempty_iff_ne_empty.1 (Convex.relint_nonempty hh.convex_convexDom hne)) hri
+      funext y
+      have hy : y ∉ convexDom h := by rw [hd]; exact Set.notMem_empty y
+      exact top_le_iff.1 (not_lt.1 hy)
+    rw [hempty hf hem, hempty hg (hdom ▸ hem)]
+  · have hx' : x ∈ ri (convexDom g) := hdom ▸ hx
+    have hcl : closure (convexDom f) = closure (convexDom g) :=
+      (Convex.closure_eq_iff_relint_eq hf.convex_convexDom hg.convex_convexDom).2 hdom
+    funext y
+    by_cases hy : y ∈ closure (convexDom f)
+    · have hyg : y ∈ closure (convexDom g) := hcl ▸ hy
+      have t1 := hf.tendsto_lscHull_along_segment_relint hx y
+      have t2 := hg.tendsto_lscHull_along_segment_relint hx' y
+      refine tendsto_nhds_unique t1 (t2.congr' ?_)
+      filter_upwards [eventually_mem_Ico_nhdsLT_one] with a ha
+      exact (heq (Convex.segment_mem_relint hf.convex_convexDom hx hy ha.1 ha.2)).symm
+    · have hyg : y ∉ closure (convexDom g) := fun h => hy (hcl ▸ h)
+      have h1 : lscHull f y = ⊤ :=
+        top_le_iff.1 (not_lt.1 fun hmem => hy (convexDom_lscHull_subset_closure_convexDom f hmem))
+      have h2 : lscHull g y = ⊤ :=
+        top_le_iff.1 (not_lt.1 fun hmem => hyg (convexDom_lscHull_subset_closure_convexDom g hmem))
+      rw [h1, h2]
+
+/-- The `convexCl` form of `lscHull_eq_of_eqOn_relint_convexDom`. -/
+theorem convexCl_eq_of_eqOn_relint_convexDom {g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
+    (hdom : ri (convexDom f) = ri (convexDom g)) (heq : Set.EqOn f g (ri (convexDom f))) :
+    convexCl f = convexCl g := by
+  unfold convexCl
+  rw [lscHull_eq_of_eqOn_relint_convexDom hf hg hdom heq]
+
+/-- The concave counterpart of `convexCl_eq_of_eqOn_relint_convexDom`: two concave functions that
+agree on the relative interior of a common effective domain have the same concave closure. -/
+theorem concaveCl_eq_of_eqOn_relint_concaveDom {g : E → EReal} (hf : ConcaveFn f)
+    (hg : ConcaveFn g) (hdom : ri (concaveDom f) = ri (concaveDom g))
+    (heq : Set.EqOn f g (ri (concaveDom f))) : concaveCl f = concaveCl g := by
+  have hdn : convexDom (fun z => -(f z)) = concaveDom f := (concaveDom_eq_convexDom_neg f).symm
+  have hgn : convexDom (fun z => -(g z)) = concaveDom g := (concaveDom_eq_convexDom_neg g).symm
+  have h : convexCl (fun z => -(f z)) = convexCl fun z => -(g z) := by
+    refine convexCl_eq_of_eqOn_relint_convexDom hf.convexFn_neg hg.convexFn_neg ?_ ?_
+    · rw [hdn, hgn]; exact hdom
+    · rw [hdn]; exact fun z hz => congrArg Neg.neg (heq hz)
+  funext z
+  rw [concaveCl_apply, concaveCl_apply, congrFun h z]
 
 end SegmentLimits
 
@@ -1351,20 +1446,12 @@ section LevelSets
 
 variable {f : E → EReal}
 
-omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
-theorem intrinsicInterior_Iic (α : ℝ) : ri (Iic α) = Iio α := by
-  have hspan : affineSpan ℝ (Iic α) = ⊤ := by
-    rw [← (convex_Iic α).interior_nonempty_iff_affineSpan_eq_top, interior_Iic]
-    exact ⟨α - 1, by simp⟩
-  rw [intrinsicInterior_eq_interior hspan, interior_Iic]
-
 /-- If a convex function is anywhere below a real level, then it is already below that level at
 some *relative interior* point of its effective domain. The open half-space `{(x, μ) | μ < α}`
 meets `epi f`, hence meets `ri (epi f)`, and the description of `ri (epi f)` reads off the
 point. -/
-theorem ConvexFn.exists_mem_relint_dom_lt (hf : ConvexFn f) {α : ℝ}
-    (hα : ∃ x, f x < (α : EReal)) : ∃ x ∈ ri (dom f), f x < (α : EReal) := by
+theorem ConvexFn.exists_mem_relint_convexDom_lt (hf : ConvexFn f) {α : ℝ}
+    (hα : ∃ x, f x < (α : EReal)) : ∃ x ∈ ri (convexDom f), f x < (α : EReal) := by
   obtain ⟨x, hx⟩ := hα
   obtain ⟨μ, hxμ, hμα⟩ := EReal.lt_iff_exists_real_btwn.1 hx
   have hU : IsOpen {p : E × ℝ | p.2 < α} := isOpen_lt continuous_snd continuous_const
@@ -1380,8 +1467,8 @@ theorem ConvexFn.exists_mem_relint_dom_lt (hf : ConvexFn f) {α : ℝ}
 replaced by the *slab* `E × (-∞, α]`, whose relative interior is `E × (-∞, α)`. Properness is not
 needed. -/
 theorem ConvexFn.relint_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
-    ri {x | f x ≤ (α : EReal)} = {x ∈ ri (dom f) | f x < (α : EReal)} := by
-  obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_dom_lt (iInf_lt_iff.1 hα)
+    ri {x | f x ≤ (α : EReal)} = {x ∈ ri (convexDom f) | f x < (α : EReal)} := by
+  obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_convexDom_lt (iInf_lt_iff.1 hα)
   set T : Set (E × ℝ) := (univ : Set E) ×ˢ Iic α with hT
   have hTconv : Convex ℝ T := convex_univ.prod (convex_Iic α)
   have hTri : ri T = (univ : Set E) ×ˢ Iio α := by
@@ -1416,7 +1503,7 @@ inside `ri (epi f)`. -/
 theorem ConvexFn.closure_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x ≤ (α : EReal)} = {x | lscHull f x ≤ (α : EReal)} := by
   refine subset_antisymm (closure_le_subset_lscHull_le f α) fun x hx => ?_
-  obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_dom_lt (iInf_lt_iff.1 hα)
+  obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_convexDom_lt (iInf_lt_iff.1 hα)
   have hyri : ((y, α) : E × ℝ) ∈ ri (epi f) := by rw [hf.relint_epi]; exact ⟨hy, hyα⟩
   have hxcl : ((x, α) : E × ℝ) ∈ closure (epi f) := by
     rw [← epi_lscHull]; exact mk_mem_epi.2 hx
@@ -1446,7 +1533,7 @@ theorem ConvexFn.relint_setOf_lt_eq (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f
 
 /-- The relative interior of the strict level set `{f < α}`. -/
 theorem ConvexFn.relint_setOf_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
-    ri {x | f x < (α : EReal)} = {x ∈ ri (dom f) | f x < (α : EReal)} :=
+    ri {x | f x < (α : EReal)} = {x ∈ ri (convexDom f) | f x < (α : EReal)} :=
   (hf.relint_setOf_lt_eq hα).trans (hf.relint_setOf_le hα)
 
 /-- The closure of the strict level set `{f < α}`, in terms of the lower semicontinuous hull. -/
@@ -1455,28 +1542,30 @@ theorem ConvexFn.closure_setOf_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x
   (hf.closure_setOf_lt_eq hα).trans (hf.closure_setOf_le hα)
 
 /-- The closure formula for a *proper* convex function, where the hull is the closure `cl f`. -/
-theorem ConvexFn.closure_setOf_le_clFn (hf : ConvexFn f) (hp : Proper f) {α : ℝ}
+theorem ConvexFn.closure_setOf_le_convexCl (hf : ConvexFn f) (hp : ProperConvex f) {α : ℝ}
     (hα : ⨅ x, f x < (α : EReal)) :
-    closure {x | f x ≤ (α : EReal)} = {x | clFn f x ≤ (α : EReal)} := by
-  rw [hf.closure_setOf_le hα, hf.clFn_eq_lscHull hp]
+    closure {x | f x ≤ (α : EReal)} = {x | convexCl f x ≤ (α : EReal)} := by
+  rw [hf.closure_setOf_le hα, hf.convexCl_eq_lscHull hp]
 
 /-- For a convex function whose effective domain is relatively open, the relative interior of a
 level set is the corresponding strict level set. Rockafellar assumes `f` closed as well; closedness
 is not used. -/
-theorem ConvexFn.relint_setOf_le_of_relint_dom_eq (hf : ConvexFn f) (hopen : ri (dom f) = dom f)
+theorem ConvexFn.relint_setOf_le_of_relint_convexDom_eq (hf : ConvexFn f)
+    (hopen : ri (convexDom f) = convexDom f)
     {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     ri {x | f x ≤ (α : EReal)} = {x | f x < (α : EReal)} := by
   rw [hf.relint_setOf_le hα, hopen]
   exact Set.ext fun z =>
-    ⟨fun hz => hz.2, fun hz => ⟨mem_dom.2 (hz.trans (EReal.coe_lt_top α)), hz⟩⟩
+    ⟨fun hz => hz.2, fun hz => ⟨mem_convexDom.2 (hz.trans (EReal.coe_lt_top α)), hz⟩⟩
 
 /-- For a closed proper convex function the closure of a strict level set is the corresponding
 level set. Rockafellar assumes in addition that `dom f` is relatively open; that hypothesis is
 needed only for the companion formula above. -/
-theorem ConvexFn.closure_setOf_lt_of_closedFn (hf : ConvexFn f) (hp : Proper f) (hc : ClosedFn f)
+theorem ConvexFn.closure_setOf_lt_of_closedConvex (hf : ConvexFn f) (hp : ProperConvex f)
+    (hc : ClosedConvex f)
     {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x < (α : EReal)} = {x | f x ≤ (α : EReal)} := by
-  rw [hf.closure_setOf_lt hα, ← hf.clFn_eq_lscHull hp, hc]
+  rw [hf.closure_setOf_lt hα, ← hf.convexCl_eq_lscHull hp, hc]
 
 end LevelSets
 

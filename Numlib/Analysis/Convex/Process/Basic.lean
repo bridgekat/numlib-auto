@@ -14,7 +14,8 @@ process into the latter — and carry the adjoint, sum, product and inverse of t
 
 The adjoint `A*` is the polar of the graph with a sign flip on one factor: `(y, v) ∈ graph A*` iff
 `(-v, y) ∈ (graph A)°` (`mem_graph_adjointProcess_iff_mem_polarCone`), the sign convention
-`adjointBifun` uses, so everything topological about `A*` comes from the theory of polar cones.
+`convexAdjointBifun` uses, so everything topological about `A*` comes from the theory of polar
+cones.
 
 Rockafellar carries "supremum oriented" and "infimum oriented" as extra data on a convex set and
 defines the adjoint of an infimum-oriented process by reversing the inequality. Here the two are two
@@ -327,10 +328,10 @@ theorem convexBifun_indicatorBifun (A : ConvexProcess U X) : ConvexBifun A.indic
   exact convexFn_indicatorFn.2 A.convex_graph
 
 /-- The effective domain of the indicator bifunction is the effective domain of the process. -/
-@[simp] theorem domBifun_indicatorBifun (A : ConvexProcess U X) :
-    domBifun A.indicatorBifun = A.dom := by
+@[simp] theorem convexDomBifun_indicatorBifun (A : ConvexProcess U X) :
+    convexDomBifun A.indicatorBifun = A.dom := by
   ext u
-  simp only [mem_domBifun, mem_dom, Set.Nonempty, indicatorBifun_apply]
+  simp only [mem_convexDomBifun, mem_dom, Set.Nonempty, indicatorBifun_apply]
   constructor
   · rintro ⟨x, hx⟩
     refine ⟨x, ?_⟩
@@ -382,26 +383,6 @@ section Algebra
 
 variable {U X Z : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   [AddCommGroup Z] [Module ℝ Z]
-
-omit [Module ℝ X] in
-/-- The infimal convolute of two indicator functions is the indicator function of the sum of the
-sets. `Operations/InfConv.lean` has only the special case of a singleton, so it is proved here. -/
-theorem infConv_indicatorFn (S T : Set X) :
-    infConv (indicatorFn S) (indicatorFn T) = indicatorFn (S + T) := by
-  have hepi : epi (indicatorFn S) + epi (indicatorFn T) = epi (indicatorFn (S + T)) := by
-    rw [epi_indicatorFn, epi_indicatorFn, epi_indicatorFn]
-    ext p
-    constructor
-    · rintro ⟨q, ⟨hq, hq0⟩, r, ⟨hr, hr0⟩, rfl⟩
-      exact ⟨⟨q.1, hq, r.1, hr, rfl⟩,
-        Set.mem_Ici.2 (add_nonneg (Set.mem_Ici.1 hq0) (Set.mem_Ici.1 hr0))⟩
-    · rintro ⟨hw, hc⟩
-      obtain ⟨a, ha, b, hb, hab⟩ := hw
-      refine ⟨(a, p.2), ⟨ha, hc⟩, (b, 0), ⟨hb, Set.mem_Ici.2 (le_refl 0)⟩, ?_⟩
-      have hab2 : a + b = p.1 := hab
-      change ((a, p.2) : X × ℝ) + (b, 0) = p
-      rw [Prod.mk_add_mk, hab2, add_zero]
-  rw [infConv_def, hepi, ofEpi_epi]
 
 namespace ConvexProcess
 
@@ -611,6 +592,15 @@ def coadjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] 
     q ∈ (coadjointProcess Bu Bx A).graph ↔ ∀ p : U × X, p ∈ A.graph → Bu p.1 q.2 ≤ Bx p.2 q.1 :=
   Iff.rfl
 
+/-- **The infimum-oriented adjoint is the supremum-oriented one for the negated pairings**:
+negating both pairings reverses the defining inequality. Every `co*` identity that is purely
+algebraic in the pairings is read off its plain twin through this. -/
+theorem coadjointProcess_eq_adjointProcess_neg :
+    coadjointProcess Bu Bx A = adjointProcess (-Bu) (-Bx) A := by
+  refine ConvexProcess.ext (SetLike.ext fun q => ?_)
+  simp only [mem_graph_coadjointProcess, mem_graph_adjointProcess, LinearMap.neg_apply,
+    neg_le_neg_iff]
+
 @[simp] theorem mem_eval_adjointProcess {y : Y} {v : V} :
     v ∈ (adjointProcess Bu Bx A).eval y ↔ ∀ p : U × X, p ∈ A.graph → Bx p.2 y ≤ Bu p.1 v :=
   Iff.rfl
@@ -633,11 +623,12 @@ theorem mem_graph_adjointProcess_iff_mem_polarCone {q : Y × V} :
 /-- **The adjoint of the indicator bifunction of `A` is the indicator bifunction of `A*`.** `A*`
 carries the opposite orientation, which is why the indicator appears negated: an infimum-oriented
 set is identified with `-δ(· | ·)`. -/
-theorem adjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+theorem convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) (y : Y) (v : V) :
-    adjointBifun Bu Bx A.indicatorBifun y v = -((adjointProcess Bu Bx A).indicatorBifun y v) := by
-  rw [adjointBifun_eq_neg_conj_graphFn, graphFn_indicatorBifun,
-    conj_indicatorFn_eq_indicatorFn_polarCone (fun a ha => A.smul_graph ha)
+    convexAdjointBifun Bu Bx A.indicatorBifun y v =
+        -((adjointProcess Bu Bx A).indicatorBifun y v) := by
+  rw [convexAdjointBifun_eq_neg_convexConj_graphFn, graphFn_indicatorBifun,
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun a ha => A.smul_graph ha)
       ⟨0, A.zero_mem_graph⟩]
   congr 1
   by_cases h : ((-v, y) : V × Y) ∈ polarCone (prodPairing Bu Bx) (A.graph : Set (U × X))
@@ -681,16 +672,6 @@ private theorem mul_le_iff_le_inv_mul {a : ℝ} (ha : 0 < a) (r s : ℝ) :
     have h' := mul_le_mul_of_nonneg_left h ha.le
     rwa [← mul_assoc, mul_inv_cancel₀ ha.ne', one_mul] at h'
 
-private theorem le_mul_iff_inv_mul_le {a : ℝ} (ha : 0 < a) (r s : ℝ) :
-    s ≤ a * r ↔ a⁻¹ * s ≤ r := by
-  constructor
-  · intro h
-    have h' := mul_le_mul_of_nonneg_left h (inv_nonneg.2 ha.le)
-    rwa [← mul_assoc, inv_mul_cancel₀ ha.ne', one_mul] at h'
-  · intro h
-    have h' := mul_le_mul_of_nonneg_left h ha.le
-    rwa [← mul_assoc, mul_inv_cancel₀ ha.ne', one_mul] at h'
-
 /-- **The adjoint of a scalar multiple**: `(λ A)* = λ (A*)` for `λ > 0`.
 
 Rockafellar deduces this from the adjoint formula for `Fλ`. It is cheaper here as a direct
@@ -719,28 +700,12 @@ theorem adjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →�
     exact mul_le_mul_of_nonneg_left hle ha.le
 
 /-- **The adjoint of a scalar multiple, for an infimum-oriented process**: `(λ A)* = λ (A*)`, with
-the adjoint taken in the reversed sense. The proof is `adjointProcess_smul` with both inequalities
-turned round. -/
+the adjoint taken in the reversed sense: `adjointProcess_smul` at the negated pairings. -/
 theorem coadjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {a : ℝ}
     (ha : 0 < a) (A : ConvexProcess U X) :
     coadjointProcess Bu Bx (a • A) = a • coadjointProcess Bu Bx A := by
-  refine ConvexProcess.ext (SetLike.ext fun q => ?_)
-  simp only [mem_graph_coadjointProcess, mem_graph_smul]
-  constructor
-  · intro h
-    refine ⟨a⁻¹ • q.2, fun p hp => ?_, ?_⟩
-    · have hmem : ((p.1, a • p.2) : U × X) ∈ (a • A).graph := ⟨p.2, hp, rfl⟩
-      have h' := h (p.1, a • p.2) hmem
-      simp only [map_smul, LinearMap.smul_apply, smul_eq_mul] at h' ⊢
-      exact (le_mul_iff_inv_mul_le ha _ _).1 h'
-    · rw [smul_smul, mul_inv_cancel₀ ha.ne', one_smul]
-  · rintro ⟨w, hw, hv⟩ p ⟨x, hx, hz⟩
-    have hz' : p.2 = a • x := hz
-    have hv' : q.2 = a • w := hv
-    have hle := hw (p.1, x) hx
-    rw [hz', hv']
-    simp only [map_smul, LinearMap.smul_apply, smul_eq_mul]
-    exact mul_le_mul_of_nonneg_left hle ha.le
+  rw [coadjointProcess_eq_adjointProcess_neg, coadjointProcess_eq_adjointProcess_neg,
+    adjointProcess_smul (-Bu) (-Bx) ha]
 
 end ConvexProcess
 
@@ -826,11 +791,11 @@ namespace ConvexProcess
 
 /-- **The inner product `⟨Au, x*⟩` is the support function of the convex set `A u`.** Every clause
 about the `x*` variable below is then a property of support functions; the identity itself is
-`supportFn_eq_conj_indicatorFn` read backwards, since `⟨Fu, ·⟩` is by definition the conjugate of
-`F u = δ(· | A u)`. -/
+`supportFn_eq_convexConj_indicatorFn` read backwards, since `⟨Fu, ·⟩` is by definition the conjugate
+of `F u = δ(· | A u)`. -/
 theorem bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     bracket Bx A.indicatorBifun u = supportFn Bx (A.eval u) :=
-  (supportFn_eq_conj_indicatorFn Bx (A.eval u)).symm
+  (supportFn_eq_convexConj_indicatorFn Bx (A.eval u)).symm
 
 /-- The first of Rockafellar's two extremum problems: `⟨Au, x*⟩ = sup {⟨x, x*⟩ | x ∈ A u}`. -/
 theorem bracket_indicatorBifun_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U)
@@ -885,9 +850,9 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 namespace ConvexProcess
 
 /-- **`⟨Au, ·⟩` is closed** as well as convex and positively homogeneous. -/
-theorem closedFn_bracket_indicatorBifun (A : ConvexProcess U X) (u : U) :
-    ClosedFn (bracket Bx A.indicatorBifun u) :=
-  closedFn_bracket (F := A.indicatorBifun) u
+theorem closedConvex_bracket_indicatorBifun (A : ConvexProcess U X) (u : U) :
+    ClosedConvex (bracket Bx A.indicatorBifun u) :=
+  closedConvex_bracket (F := A.indicatorBifun) u
 
 end ConvexProcess
 
@@ -903,16 +868,16 @@ namespace ConvexProcess
 /-- The second of Rockafellar's two extremum problems: `⟨u, A* x*⟩ = inf {⟨u, u*⟩ | u* ∈ A* x*}`.
 
 Together with `bracket_indicatorBifun_apply` this is a dual pair of linear programs; the two values
-differ only by a closure in `u` (`concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁`). The
-proof is the definition of the concave bracket plus `adjointBifun_indicatorBifun`: the indicator of
-`A* x*` turns the unrestricted infimum into a restricted one. -/
-theorem concaveBracket_adjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+differ only by a closure in `u` (`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`).
+The proof is the definition of the concave bracket plus `convexAdjointBifun_indicatorBifun`: the
+indicator of `A* x*` turns the unrestricted infimum into a restricted one. -/
+theorem concaveBracket_convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
-    concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) u y
+    concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y
       = ⨅ v ∈ (adjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal) := by
   rw [concaveBracket_apply]
   refine iInf_congr fun v => ?_
-  rw [adjointBifun_indicatorBifun]
+  rw [convexAdjointBifun_indicatorBifun]
   by_cases hv : v ∈ (adjointProcess Bu Bx A).eval y
   · rw [indicatorBifun_apply, indicatorFn_of_mem hv, neg_zero, sub_zero, iInf_pos hv]
   · rw [indicatorBifun_apply, indicatorFn_of_notMem hv, iInf_neg hv]
@@ -934,39 +899,19 @@ namespace ConvexProcess
 /-- **`⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`**: the two inner products differ by a closure in `u`.
 
 The concave closure in the first variable is the *only* difference between them, for every convex
-process — closedness of `A` plays no part. This is `concaveBracket_adjointBifun_eq_partialCl₁`
+process — closedness of `A` plays no part. This is `concaveBracket_convexAdjointBifun_eq_partialCl₁`
 applied to the indicator bifunction. -/
-theorem concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁ (A : ConvexProcess U X) (y : Y) :
-    (fun u => concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) u y)
+theorem concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁ (A : ConvexProcess U X)
+    (y : Y) :
+    (fun u => concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y)
       = fun u => partialCl₁ (fun p : U × Y => bracket Bx A.indicatorBifun p.1 p.2) (u, y) :=
-  concaveBracket_adjointBifun_eq_partialCl₁ A.convexBifun_indicatorBifun y
+  concaveBracket_convexAdjointBifun_eq_partialCl₁ A.convexBifun_indicatorBifun y
 
 end ConvexProcess
 
 end ConcaveBracketClosure
 
 /-! ### The adjoint of a sum of processes -/
-
-section SupConvIndicator
-
-variable {X : Type*} [AddCommGroup X]
-
-/-- The concave mirror of `infConv_indicatorFn`: the supremal convolute of two *negated* indicator
-functions is the negated indicator function of the sum of the sets. Infimum-oriented convex sets
-are carried by `-δ(· | ·)` (see `ConvexProcess.adjointBifun_indicatorBifun`), so this is the form
-in which the adjoint of an infimal convolute speaks about processes.
-
-Proof idea: `supConv` is `infConv` conjugated by negation, so the two negations inside cancel and
-`infConv_indicatorFn` applies verbatim. -/
-theorem supConv_neg_indicatorFn (S T : Set X) :
-    supConv (fun x => -(indicatorFn S x)) (fun x => -(indicatorFn T x))
-      = fun x => -(indicatorFn (S + T) x) := by
-  funext x
-  change -(infConv (fun w => -(-(indicatorFn S w))) (fun w => -(-(indicatorFn T w))) x) = _
-  simp only [neg_neg]
-  rw [infConv_indicatorFn]
-
-end SupConvIndicator
 
 section AdjointAdd
 
@@ -1000,19 +945,19 @@ theorem adjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ
       = (adjointProcess Bu Bx A₁ + adjointProcess Bu Bx A₂).eval y := by
     intro y
     have hL : (fun v => -(indicatorFn ((adjointProcess Bu Bx (A₁ + A₂)).eval y) v))
-        = adjointBifun Bu Bx (A₁ + A₂).indicatorBifun y :=
-      funext fun v => (adjointBifun_indicatorBifun Bu Bx (A₁ + A₂) y v).symm
+        = convexAdjointBifun Bu Bx (A₁ + A₂).indicatorBifun y :=
+      funext fun v => (convexAdjointBifun_indicatorBifun Bu Bx (A₁ + A₂) y v).symm
     have hR₁ : (fun v => -(indicatorFn ((adjointProcess Bu Bx A₁).eval y) v))
-        = adjointBifun Bu Bx A₁.indicatorBifun y :=
-      funext fun v => (adjointBifun_indicatorBifun Bu Bx A₁ y v).symm
+        = convexAdjointBifun Bu Bx A₁.indicatorBifun y :=
+      funext fun v => (convexAdjointBifun_indicatorBifun Bu Bx A₁ y v).symm
     have hR₂ : (fun v => -(indicatorFn ((adjointProcess Bu Bx A₂).eval y) v))
-        = adjointBifun Bu Bx A₂.indicatorBifun y :=
-      funext fun v => (adjointBifun_indicatorBifun Bu Bx A₂ y v).symm
+        = convexAdjointBifun Bu Bx A₂.indicatorBifun y :=
+      funext fun v => (convexAdjointBifun_indicatorBifun Bu Bx A₂ y v).symm
     have heq : (fun v => -(indicatorFn ((adjointProcess Bu Bx (A₁ + A₂)).eval y) v))
         = fun v => -(indicatorFn ((adjointProcess Bu Bx A₁).eval y
             + (adjointProcess Bu Bx A₂).eval y) v) := by
       rw [hL, ← supConv_neg_indicatorFn, hR₁, hR₂, indicatorBifun_add]
-      exact adjointBifun_infConvBifun Bu Bx _ _ (hex' y)
+      exact convexAdjointBifun_infConvBifun Bu Bx _ _ (hex' y)
     have hsets : (adjointProcess Bu Bx (A₁ + A₂)).eval y
         = (adjointProcess Bu Bx A₁).eval y + (adjointProcess Bu Bx A₂).eval y :=
       indicatorFn_injective (funext fun v => neg_injective (congrFun heq v))
@@ -1043,13 +988,13 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
     (hp0 : (0 : EReal) ≤ p 0) (hq0 : q 0 ≤ 0) :
     ∃ y : F, (∀ x, p x ≤ ((B x y : ℝ) : EReal)) ∧ ∀ x, ((B x y : ℝ) : EReal) ≤ q x := by
   have hex' : IsExactSum B q (-p) := hex
-  have hqnb : ∀ x, q x ≠ ⊥ := hex'.proper_left.ne_bot
-  have hpnt : ∀ x, p x ≠ ⊤ := fun x hx => hex'.proper_right.ne_bot x (by simp [hx])
+  have hqnb : ∀ x, q x ≠ ⊥ := hex'.properConvex_left.ne_bot
+  have hpnt : ∀ x, p x ≠ ⊤ := fun x hx => hex'.properConvex_right.ne_bot x (by simp [hx])
   have hinf : (0 : EReal) ≤ ⨅ x, q x - p x := by
     refine le_iInf fun x => ?_
     rw [EReal.le_sub_iff_add_le (.inr (hqnb x)) (.inl (hpnt x)), zero_add]
     exact hle x
-  obtain ⟨y, hy⟩ := exists_concaveConj_sub_conj_eq (B := B) hex'
+  obtain ⟨y, hy⟩ := exists_concaveConj_sub_convexConj_eq (B := B) hex'
   have hcc_le : concaveConj B p y ≤ 0 := by
     have h := concaveConj_le_sub B p 0 y
     simp only [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
@@ -1057,14 +1002,14 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
     have hz : (0 : EReal) - p 0 = -(p 0) := zero_add _
     rw [hz]
     exact EReal.neg_le.2 (by rw [neg_zero]; exact hp0)
-  have hconj_ge : (0 : EReal) ≤ conj B q y := by
-    have h := sub_le_conj B q 0 y
+  have hconj_ge : (0 : EReal) ≤ convexConj B q y := by
+    have h := sub_le_convexConj B q 0 y
     simp only [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
     refine le_trans ?_ h
     have hz : (0 : EReal) - q 0 = -(q 0) := zero_add _
     rw [hz]
     exact EReal.le_neg.2 (by rw [neg_zero]; exact hq0)
-  have hbne : conj B q y ≠ ⊥ := by
+  have hbne : convexConj B q y ≠ ⊥ := by
     intro h
     rw [h] at hconj_ge
     exact absurd hconj_ge (by simp)
@@ -1072,8 +1017,8 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
     intro h
     rw [h] at hcc_le
     exact absurd hcc_le (by simp)
-  have hkey : conj B q y ≤ concaveConj B p y := by
-    have h0 : (0 : EReal) ≤ concaveConj B p y - conj B q y := by rw [hy]; exact hinf
+  have hkey : convexConj B q y ≤ concaveConj B p y := by
+    have h0 : (0 : EReal) ≤ concaveConj B p y - convexConj B q y := by rw [hy]; exact hinf
     rwa [EReal.le_sub_iff_add_le (.inl hbne) (.inr hcne), zero_add] at h0
   refine ⟨y, fun x => ?_, fun x => ?_⟩
   · have hmem : ((0 : ℝ) : EReal) ≤ concaveConj B p y := by
@@ -1081,10 +1026,10 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
       exact hconj_ge.trans hkey
     have h3 := coe_le_concaveConj_iff.1 hmem x
     rwa [affineFn_apply, EReal.coe_zero, sub_zero] at h3
-  · have hmem : conj B q y ≤ ((0 : ℝ) : EReal) := by
+  · have hmem : convexConj B q y ≤ ((0 : ℝ) : EReal) := by
       rw [EReal.coe_zero]
       exact hkey.trans hcc_le
-    have h3 := conj_le_coe_iff.1 hmem x
+    have h3 := convexConj_le_coe_iff.1 hmem x
     rwa [affineFn_apply, EReal.coe_zero, sub_zero] at h3
 
 end Sandwich
@@ -1184,14 +1129,14 @@ theorem coadjointProcess_inv (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →�
 /-- **The `F⁎*` entry of the process/bifunction dictionary**: the lower adjoint of the indicator
 bifunction of `A` is the indicator bifunction of `A*⁻¹`.
 
-This is `adjointBifun_indicatorBifun` with the two negations of `lowerAdjointBifun` cancelling
+This is `convexAdjointBifun_indicatorBifun` with the two negations of `lowerAdjointBifun` cancelling
 against the negation the opposite orientation of `A*` puts on its indicator, and the reversal
 `indicatorBifun_inv` absorbing the transposition. It is the last thing `(Af)* = A*⁻¹ f*` needs. -/
 theorem lowerAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) :
     lowerAdjointBifun Bu Bx A.indicatorBifun = (adjointProcess Bu Bx A).inv.indicatorBifun := by
   funext v y
-  rw [lowerAdjointBifun_apply, adjointBifun_indicatorBifun, neg_neg, indicatorBifun_inv]
+  rw [lowerAdjointBifun_apply, convexAdjointBifun_indicatorBifun, neg_neg, indicatorBifun_inv]
 
 /-- The indicator bifunction of a convex process is finite at the origin, `0` being in `A 0`.
 This is the "finite somewhere" side condition the closed-image results ask of `F`. -/
@@ -1205,25 +1150,27 @@ of `A`, i.e. `(Af)(x) = inf {f u | x ∈ A u}`.
 
 This specialises the conjugate of an image under a bifunction; the only work is the dictionary
 `lowerAdjointBifun_indicatorBifun`. Rockafellar's `ri (dom f) ∩ ri (dom A) ≠ ∅` becomes the
-`IsExactSum` of `conj_imageBifun`, `dom F` being `dom A`. -/
-theorem conj_imageBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
-    (A : ConvexProcess U X) {f : U → EReal} (hf : Proper f) {y : Y}
+`IsExactSum` of `convexConj_imageBifun`, `dom F` being `dom A`. -/
+theorem convexConj_imageBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+    (A : ConvexProcess U X) {f : U → EReal} (hf : ProperConvex f) {y : Y}
     (hex : IsExactSum Bu f (fun u => -(bracket Bx A.indicatorBifun u y))) :
-    conj Bx (imageBifun A.indicatorBifun f) y
-      = imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (conj Bu f) y := by
+    convexConj Bx (imageBifun A.indicatorBifun f) y
+      = imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (convexConj Bu f) y := by
   rw [← lowerAdjointBifun_indicatorBifun]
-  exact conj_imageBifun_eq_imageBifun A.indicatorBifun_ne_bot hf hex
+  exact convexConj_imageBifun_eq_imageBifun A.indicatorBifun_ne_bot hf hex
 
-/-- **The infimum defining `(A*⁻¹ f*)(x*)` is attained.** This is `exists_conj_imageBifun_eq` read
-through the same dictionary. -/
+/-- **The infimum defining `(A*⁻¹ f*)(x*)` is attained.** This is `exists_convexConj_imageBifun_eq`
+read through the same dictionary. -/
 theorem exists_imageBifun_indicatorBifun_adjointProcess_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
-    (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) {f : U → EReal} (hf : Proper f) {y : Y}
+    (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) {f : U → EReal} (hf : ProperConvex f) {y : Y}
     (hex : IsExactSum Bu f (fun u => -(bracket Bx A.indicatorBifun u y))) :
-    ∃ v : V, conj Bu f v + (adjointProcess Bu Bx A).inv.indicatorBifun v y
-      = imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (conj Bu f) y := by
-  obtain ⟨v, hv⟩ := exists_conj_imageBifun_eq (Bu := Bu) (Bx := Bx) A.indicatorBifun_ne_bot hf hex
+    ∃ v : V, convexConj Bu f v + (adjointProcess Bu Bx A).inv.indicatorBifun v y
+      = imageBifun (adjointProcess Bu Bx A).inv.indicatorBifun (convexConj Bu f) y := by
+  obtain ⟨v, hv⟩ :=
+      exists_convexConj_imageBifun_eq (Bu := Bu) (Bx := Bx) A.indicatorBifun_ne_bot hf hex
   refine ⟨v, ?_⟩
-  rw [← conj_imageBifun_indicatorBifun Bu Bx A hf hex, ← hv, ← lowerAdjointBifun_indicatorBifun]
+  rw [← convexConj_imageBifun_indicatorBifun Bu Bx A hf hex, ← hv,
+      ← lowerAdjointBifun_indicatorBifun]
   rfl
 
 end ConvexProcess
@@ -1910,10 +1857,10 @@ namespace ConvexProcess
 
 /-- **`⟨Au, ·⟩` is a closed concave function** in the infimum-oriented mirror, the reflection
 `x* ↦ -x*` being a homeomorphism. -/
-theorem closedConcaveFn_coBracket (A : ConvexProcess U X) (u : U) :
-    ClosedConcaveFn (coBracket Bx A u) := by
-  rw [closedConcaveFn_iff, neg_coBracket_eq_compLin]
-  exact closedFn_compLin (closedFn_bracket_indicatorBifun A u) (continuous_neg (G := Y))
+theorem closedConcave_coBracket (A : ConvexProcess U X) (u : U) :
+    ClosedConcave (coBracket Bx A u) := by
+  rw [closedConcave_iff_closedConvex_neg, neg_coBracket_eq_compLin]
+  exact closedConvex_compLin (closedConvex_bracket_indicatorBifun A u) (continuous_neg (G := Y))
 
 end ConvexProcess
 
@@ -1943,8 +1890,8 @@ private theorem iSup_mem_neg (s : Set V) (f : V → EReal) :
 theorem iSup_coadjointProcess_eq_neg_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
     ⨆ v ∈ (coadjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal)
-      = -(concaveBracket Bu (adjointBifun Bu Bx A.indicatorBifun) u (-y)) := by
-  rw [concaveBracket_adjointBifun_indicatorBifun, coadjointProcess_eq_reflect_adjointProcess,
+      = -(concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u (-y)) := by
+  rw [concaveBracket_convexAdjointBifun_indicatorBifun, coadjointProcess_eq_reflect_adjointProcess,
     eval_reflect, iSup_mem_neg, EReal.neg_iInf]
   refine iSup_congr fun v => ?_
   rw [EReal.neg_iInf]
@@ -1966,17 +1913,17 @@ namespace ConvexProcess
 
 /-- **`⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`**, the infimum-oriented mirror.
 
-The closure is now the ordinary convex closure `clFn`, because `⟨A ·, x*⟩` is convex rather than
+The closure is now the ordinary convex closure `convexCl`, because `⟨A ·, x*⟩` is convex rather than
 concave (`convexFn_coBracket_arg`); in the supremum-oriented statement
-`concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁` it is the concave closure `clConcave`
-packaged as `partialCl₁`. As there, closedness of `A` plays no part. -/
-theorem iSup_coadjointProcess_eq_clFn (A : ConvexProcess U X) (y : Y) :
+`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁` it is the concave closure
+`concaveCl` packaged as `partialCl₁`. As there, closedness of `A` plays no part. -/
+theorem iSup_coadjointProcess_eq_convexCl (A : ConvexProcess U X) (y : Y) :
     (fun u => ⨆ v ∈ (coadjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal))
-      = fun u => clFn (fun u' => coBracket Bx A u' y) u := by
+      = fun u => convexCl (fun u' => coBracket Bx A u' y) u := by
   funext u
-  have h := congrFun (concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁
+  have h := congrFun (concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁
     (Bu := Bu) (Bx := Bx) A (-y)) u
-  simp only [partialCl₁_apply, clConcave_apply] at h
+  simp only [partialCl₁_apply, concaveCl_apply] at h
   rw [iSup_coadjointProcess_eq_neg_concaveBracket Bu Bx, h, coBracket_eq_neg_bracket_fun,
     _root_.neg_neg]
 

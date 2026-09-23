@@ -10,18 +10,22 @@ import Numlib.Analysis.Convex.Separation
 # Closures of convex functions
 
 Two operations on functions `f : E → EReal` over a real topological vector space: the lower
-semicontinuous hull `lscHull f`, whose epigraph is `closure (epi f)`, and the *closure* `clFn f` of
-a convex function, which is that hull except that it is flattened to the constant `⊥` when the hull
-takes the value `⊥` anywhere.
+semicontinuous hull `lscHull f`, whose epigraph is `closure (epi f)`, and the *closure* `convexCl f`
+of a convex function, which is that hull except that it is flattened to the constant `⊥` when the
+hull takes the value `⊥` anywhere.
 
 ## Main definitions
 
-* `lscHull f` — the lower semicontinuous hull, `ofEpi (closure (epi f))`.
-* `clFn f` — the closure of a convex function.
-* `ClosedFn f` — `f` is closed, i.e. `clFn f = f`.
+* `lscHull f` — the lower semicontinuous hull, `ofEpi (closure (epi f))`; `uscHull g`, the upper
+  semicontinuous hull `-(lscHull (-g))`.
+* `convexCl f` — the closure of a convex function.
+* `ClosedConvex f` — `f` is closed, i.e. `convexCl f = f`.
+* `concaveCl g`, `ClosedConcave g` — the **concave closure** `-(cl (-g))`, which Rockafellar also
+  writes `cl g`, and the functions fixed by it; it is `uscHull g` outside the exceptional branch.
 * `ClosedProperConvexFn f` — closed, proper *and* convex, bundled; the standing hypothesis of the
-  duality theory, and the class `conjEquiv` and `supportEquiv` are bijections between.
-* `lscHullClosure`, `clFnClosure` — both operations as `ClosureOperator`s on `(E → EReal)ᵒᵈ`.
+  duality theory, and the class `convexConjEquiv` and `supportEquiv` are bijections between.
+  `ClosedProperConcaveFn g` is its concave twin.
+* `lscHullClosure`, `convexClClosure` — both operations as `ClosureOperator`s on `(E → EReal)ᵒᵈ`.
 
 ## Main results
 
@@ -29,9 +33,9 @@ takes the value `⊥` anywhere.
   lower semicontinuity, closed sublevel sets and a closed epigraph coincide.
 * `epi_lscHull` — `epi (lscHull f) = closure (epi f)`, unconditionally; the workhorse of the file.
 * `isGreatest_lscHull` — `lscHull f` is the greatest lower semicontinuous minorant of `f`.
-* `closedFn_iff` — `f` is closed exactly when it is the constant `⊥`, or lower semicontinuous and
-  never `⊥`.
-* `iInf_clFn_eq_iInf` — `f` and `cl f` have the same infimum.
+* `closedConvex_iff` — `f` is closed exactly when it is the constant `⊥`, or lower semicontinuous
+  and never `⊥`.
+* `iInf_convexCl_eq_iInf` — `f` and `cl f` have the same infimum.
 * `ConvexFn.eq_bot_or_eq_top` — a lower semicontinuous improper convex function has no finite
   values. This replaces the relative-interior dichotomy outside finite dimensions.
 * `exists_affine_le_of_closed_proper` — a closed proper convex function on a locally convex space
@@ -40,20 +44,20 @@ takes the value `⊥` anywhere.
   limit along a segment, with `interior (epi f)` in place of `ri (epi f)`.
 * `lscHull_le_setOf` — `{x | (cl f) x ≤ α} = ⋂_{μ > α} cl {f ≤ μ}`, the level sets of the closure,
   in the part that does not need relative interiors.
-* `lscHull_eq_liminf`, `clFn_eq_liminf_or` — the hull and the closure as `liminf f (𝓝 x)`.
-* `posHomogeneous_lscHull`, `posHomogeneous_clFn` — both hulls preserve positive homogeneity.
+* `lscHull_eq_liminf`, `convexCl_eq_liminf_or` — the hull and the closure as `liminf f (𝓝 x)`.
+* `posHomogeneous_lscHull`, `posHomogeneous_convexCl` — both hulls preserve positive homogeneity.
 * `closedProperConvexFn_coe_affineMap` — a *continuous* affine function is closed proper convex.
 
 ## Implementation notes
 
-`clFn` branches on `lscHull f`, not on `f` as Rockafellar does. The two agree for convex `f` on
+`convexCl` branches on `lscHull f`, not on `f` as Rockafellar does. The two agree for convex `f` on
 `ℝⁿ` but not in general, and branching on `f` would make Fenchel–Moreau
 false: a discontinuous linear functional `g` on an infinite-dimensional space is convex, finite and
 proper, yet its kernel is dense, so `lscHull g ≡ ⊥` and `g` has no continuous affine minorant at
-all. Branching on the hull is the standard Γ-regularization and makes `f** = clFn f`
-unconditional; the price is that `Proper f → Proper (clFn f)` is finite-dimensional and appears as
-`ConvexFn.proper_clFn` in `Numlib/Analysis/Convex/RelativeInterior.lean`, together with the
-relative-interior dichotomy itself.
+all. Branching on the hull is the standard Γ-regularization and makes `f** = convexCl f`
+unconditional; the price is that `ProperConvex f → ProperConvex (convexCl f)` is finite-dimensional
+and appears as `ConvexFn.properConvex_convexCl` in `Numlib/Analysis/Convex/RelativeInterior.lean`,
+together with the relative-interior dichotomy itself.
 
 ## References
 
@@ -118,25 +122,81 @@ variable {E : Type*} [TopologicalSpace E] {f g : E → EReal}
 epigraph of `f`: the greatest lower semicontinuous minorant of `f`. -/
 noncomputable def lscHull (f : E → EReal) : E → EReal := ofEpi (closure (epi f))
 
+/-- The **upper semicontinuous hull** of `g`, the least upper semicontinuous majorant of `g`: the
+counterpart of `lscHull` obtained by conjugating it with negation (`uscHull_apply`). -/
+noncomputable def uscHull (g : E → EReal) : E → EReal := fun x => -(lscHull (fun z => -(g z)) x)
+
 open Classical in
 /-- The **closure** of a convex function: its lower semicontinuous hull, except that if the hull
 takes the value `⊥` anywhere then the closure is the constant function `⊥`. Rockafellar branches
 on whether `f` itself takes `⊥`, which is equivalent for convex `f` on `ℝⁿ` but not in general; see
 the module docstring. -/
-noncomputable def clFn (f : E → EReal) : E → EReal :=
+noncomputable def convexCl (f : E → EReal) : E → EReal :=
   if ∃ x, lscHull f x = ⊥ then (fun _ => ⊥) else lscHull f
 
 /-- A function is **closed** when it equals its own closure. -/
-def ClosedFn (f : E → EReal) : Prop := clFn f = f
+def ClosedConvex (f : E → EReal) : Prop := convexCl f = f
 
-/-- The defining equation of `clFn` in the regular branch. -/
-theorem clFn_of_forall_ne_bot (h : ∀ x, lscHull f x ≠ ⊥) : clFn f = lscHull f := by
+/-- The **concave closure**: the counterpart of `convexCl` obtained by conjugating it with negation.
+Rockafellar writes `cl g` for it too; here it needs a name of its own. -/
+noncomputable def concaveCl (g : E → EReal) : E → EReal := fun x => -(convexCl (fun z => -(g z)) x)
+
+/-- `g` is **concave-closed** when it equals its concave closure. -/
+def ClosedConcave (g : E → EReal) : Prop := concaveCl g = g
+
+/-! #### The sign dictionary -/
+
+theorem uscHull_apply (g : E → EReal) (x : E) :
+    uscHull g x = -(lscHull (fun z => -(g z)) x) := rfl
+
+@[simp] theorem neg_uscHull (g : E → EReal) (x : E) :
+    -(uscHull g x) = lscHull (fun z => -(g z)) x := neg_neg _
+
+theorem concaveCl_apply (g : E → EReal) (x : E) :
+    concaveCl g x = -(convexCl (fun z => -(g z)) x) := rfl
+
+@[simp] theorem neg_concaveCl (g : E → EReal) (x : E) :
+    -(concaveCl g x) = convexCl (fun z => -(g z)) x := neg_neg _
+
+theorem concaveCl_neg (f : E → EReal)
+    (x : E) : concaveCl (fun z => -(f z)) x = -(convexCl f x) := by
+  rw [concaveCl_apply]
+  simp only [neg_neg]
+
+/-- `g` is concave-closed exactly when `-g` is closed. -/
+theorem closedConcave_iff_closedConvex_neg : ClosedConcave g ↔ ClosedConvex (fun z => -(g z)) := by
+  constructor
+  · intro h
+    funext x
+    rw [← neg_concaveCl g x, h]
+  · intro h
+    funext x
+    rw [concaveCl_apply, congrFun h x, neg_neg]
+
+/-! #### Basic properties of the hulls -/
+
+/-- The defining equation of `convexCl` in the regular branch. -/
+theorem convexCl_of_forall_ne_bot (h : ∀ x, lscHull f x ≠ ⊥) : convexCl f = lscHull f := by
   have hc : ¬ ∃ x, lscHull f x = ⊥ := by push Not; exact h
-  simp [clFn, hc]
+  simp [convexCl, hc]
 
-/-- The defining equation of `clFn` in the exceptional branch. -/
-theorem clFn_of_exists_eq_bot (h : ∃ x, lscHull f x = ⊥) : clFn f = fun _ => ⊥ := by
-  simp [clFn, h]
+/-- The defining equation of `convexCl` in the exceptional branch. -/
+theorem convexCl_of_exists_eq_bot (h : ∃ x, lscHull f x = ⊥) : convexCl f = fun _ => ⊥ := by
+  simp [convexCl, h]
+
+/-- The defining equation of `concaveCl` in the regular branch. -/
+theorem concaveCl_of_forall_ne_top (h : ∀ x, uscHull g x ≠ ⊤) : concaveCl g = uscHull g := by
+  have h' : ∀ x, lscHull (fun z => -(g z)) x ≠ ⊥ := fun x hx =>
+    h x (by rw [uscHull_apply, hx, EReal.neg_bot])
+  funext x
+  rw [concaveCl_apply, convexCl_of_forall_ne_bot h', uscHull_apply]
+
+/-- The defining equation of `concaveCl` in the exceptional branch. -/
+theorem concaveCl_of_exists_eq_top (h : ∃ x, uscHull g x = ⊤) : concaveCl g = fun _ => ⊤ := by
+  obtain ⟨x₀, hx₀⟩ := h
+  have h' : ∃ x, lscHull (fun z => -(g z)) x = ⊥ := ⟨x₀, by rw [← neg_uscHull, hx₀, EReal.neg_top]⟩
+  funext x
+  rw [concaveCl_apply, convexCl_of_exists_eq_bot h', EReal.neg_bot]
 
 theorem lscHull_le (f : E → EReal) : lscHull f ≤ f := by
   have h := ofEpi_mono (subset_closure (s := epi f))
@@ -158,22 +218,44 @@ theorem le_lscHull_iff (hg : LowerSemicontinuous g) : g ≤ lscHull f ↔ g ≤ 
 
 /-- The closure of `f` is a minorant of its lower semicontinuous hull; the two differ only in the
 exceptional branch. -/
-theorem clFn_le_lscHull (f : E → EReal) : clFn f ≤ lscHull f := by
+theorem convexCl_le_lscHull (f : E → EReal) : convexCl f ≤ lscHull f := by
   by_cases h : ∃ x, lscHull f x = ⊥
-  · rw [clFn_of_exists_eq_bot h]
+  · rw [convexCl_of_exists_eq_bot h]
     exact fun _ => bot_le
-  · rw [clFn_of_forall_ne_bot (by push Not at h; exact h)]
+  · rw [convexCl_of_forall_ne_bot (by push Not at h; exact h)]
 
-theorem clFn_le (f : E → EReal) : clFn f ≤ f := (clFn_le_lscHull f).trans (lscHull_le f)
+theorem convexCl_le (f : E → EReal) : convexCl f ≤ f := (convexCl_le_lscHull f).trans (lscHull_le f)
 
-theorem clFn_mono (h : f ≤ g) : clFn f ≤ clFn g := by
+theorem le_concaveCl (g : E → EReal) : g ≤ concaveCl g := by
+  intro x
+  rw [← EReal.neg_le_neg_iff, neg_concaveCl]
+  exact convexCl_le _ x
+
+/-- A convex closure that reaches `-∞` anywhere is the constant `-∞`. -/
+theorem convexCl_eq_bot_of_eq_bot {x₀ : E} (h : f x₀ = ⊥) : convexCl f = fun _ => (⊥ : EReal) := by
+  refine convexCl_of_exists_eq_bot ⟨x₀, le_bot_iff.1 ?_⟩
+  calc lscHull f x₀ ≤ f x₀ := lscHull_le f x₀
+    _ = ⊥ := h
+
+/-- A concave closure that reaches `+∞` anywhere is the constant `+∞`. -/
+theorem concaveCl_eq_top_of_eq_top {x₀ : E} (h : g x₀ = ⊤) :
+    concaveCl g = fun _ => (⊤ : EReal) := by
+  funext x
+  rw [concaveCl_apply, convexCl_eq_bot_of_eq_bot (x₀ := x₀) (by simp [h]), EReal.neg_bot]
+
+theorem convexCl_mono (h : f ≤ g) : convexCl f ≤ convexCl g := by
   by_cases hg : ∃ x, lscHull g x = ⊥
   · obtain ⟨x, hx⟩ := hg
     have hf : ∃ z, lscHull f z = ⊥ := ⟨x, le_bot_iff.1 (by rw [← hx]; exact lscHull_mono h x)⟩
-    rw [clFn_of_exists_eq_bot hf, clFn_of_exists_eq_bot ⟨x, hx⟩]
+    rw [convexCl_of_exists_eq_bot hf, convexCl_of_exists_eq_bot ⟨x, hx⟩]
   · have hg' : ∀ x, lscHull g x ≠ ⊥ := by push Not at hg; exact hg
-    rw [clFn_of_forall_ne_bot (f := g) hg']
-    exact (clFn_le_lscHull f).trans (lscHull_mono h)
+    rw [convexCl_of_forall_ne_bot (f := g) hg']
+    exact (convexCl_le_lscHull f).trans (lscHull_mono h)
+
+theorem concaveCl_mono (h : f ≤ g) : concaveCl f ≤ concaveCl g := by
+  intro x
+  rw [concaveCl_apply, concaveCl_apply, EReal.neg_le_neg_iff]
+  exact convexCl_mono (fun z => EReal.neg_le_neg_iff.2 (h z)) x
 
 end Defs
 
@@ -216,63 +298,79 @@ omit [AddCommGroup E] [IsTopologicalAddGroup E] in
   rfl
 
 omit [IsTopologicalAddGroup E] in
-@[simp] theorem clFn_const_bot : clFn (fun _ : E => (⊥ : EReal)) = fun _ => ⊥ :=
-  clFn_of_exists_eq_bot ⟨0, by rw [lscHull_const_bot]⟩
+@[simp] theorem convexCl_const_bot : convexCl (fun _ : E => (⊥ : EReal)) = fun _ => ⊥ :=
+  convexCl_of_exists_eq_bot ⟨0, by rw [lscHull_const_bot]⟩
 
-theorem clFn_idem (f : E → EReal) : clFn (clFn f) = clFn f := by
+theorem convexCl_idem (f : E → EReal) : convexCl (convexCl f) = convexCl f := by
   by_cases h : ∃ x, lscHull f x = ⊥
-  · rw [clFn_of_exists_eq_bot h, clFn_const_bot]
+  · rw [convexCl_of_exists_eq_bot h, convexCl_const_bot]
   · have h' : ∀ x, lscHull f x ≠ ⊥ := by push Not at h; exact h
     have h'' : ∀ x, lscHull (lscHull f) x ≠ ⊥ := by rw [lscHull_idem]; exact h'
-    rw [clFn_of_forall_ne_bot h', clFn_of_forall_ne_bot h'', lscHull_idem]
+    rw [convexCl_of_forall_ne_bot h', convexCl_of_forall_ne_bot h'', lscHull_idem]
 
-theorem closedFn_clFn (f : E → EReal) : ClosedFn (clFn f) := clFn_idem f
+theorem closedConvex_convexCl (f : E → EReal) : ClosedConvex (convexCl f) := convexCl_idem f
+
+theorem closedConcave_concaveCl (g : E → EReal) : ClosedConcave (concaveCl g) := by
+  rw [closedConcave_iff_closedConvex_neg]
+  simpa only [neg_concaveCl] using closedConvex_convexCl (fun z => -(g z))
+
+theorem concaveCl_idem (g : E → EReal) : concaveCl (concaveCl g) = concaveCl g :=
+  closedConcave_concaveCl g
 
 /-- **What closedness means.** A function is closed exactly when it is the constant `⊥`, or is
 lower semicontinuous and never takes the value `⊥`. -/
-theorem closedFn_iff :
-    ClosedFn f ↔ f = (fun _ => ⊥) ∨ (LowerSemicontinuous f ∧ ∀ x, f x ≠ ⊥) := by
+theorem closedConvex_iff :
+    ClosedConvex f ↔ f = (fun _ => ⊥) ∨ (LowerSemicontinuous f ∧ ∀ x, f x ≠ ⊥) := by
   constructor
   · intro hc
     by_cases h : ∃ x, lscHull f x = ⊥
-    · exact Or.inl (by rw [← hc, clFn_of_exists_eq_bot h])
+    · exact Or.inl (by rw [← hc, convexCl_of_exists_eq_bot h])
     · have h' : ∀ x, lscHull f x ≠ ⊥ := by push Not at h; exact h
-      have hs : lscHull f = f := by rw [← clFn_of_forall_ne_bot h']; exact hc
+      have hs : lscHull f = f := by rw [← convexCl_of_forall_ne_bot h']; exact hc
       exact Or.inr ⟨lscHull_eq_self_iff.1 hs, fun x => by rw [← hs]; exact h' x⟩
   · rintro (rfl | ⟨hlsc, hne⟩)
-    · exact clFn_const_bot
+    · exact convexCl_const_bot
     · have hs : lscHull f = f := lscHull_eq_self_iff.2 hlsc
       have h' : ∀ x, lscHull f x ≠ ⊥ := fun x => by rw [hs]; exact hne x
-      exact (clFn_of_forall_ne_bot h').trans hs
+      exact (convexCl_of_forall_ne_bot h').trans hs
 
 /-- For a function that never takes the value `⊥` — in particular for a proper convex function —
 **closedness is exactly lower semicontinuity**. -/
-theorem closedFn_iff_lowerSemicontinuous (h : ∀ x, f x ≠ ⊥) :
-    ClosedFn f ↔ LowerSemicontinuous f := by
-  rw [closedFn_iff]
+theorem closedConvex_iff_lowerSemicontinuous (h : ∀ x, f x ≠ ⊥) :
+    ClosedConvex f ↔ LowerSemicontinuous f := by
+  rw [closedConvex_iff]
   refine ⟨?_, fun hl => Or.inr ⟨hl, h⟩⟩
   rintro (rfl | ⟨hl, -⟩)
   · exact absurd rfl (h 0)
   · exact hl
 
-theorem ClosedFn.lowerSemicontinuous (hc : ClosedFn f) : LowerSemicontinuous f := by
-  rcases closedFn_iff.1 hc with rfl | ⟨hl, -⟩
+theorem ClosedConvex.lowerSemicontinuous (hc : ClosedConvex f) : LowerSemicontinuous f := by
+  rcases closedConvex_iff.1 hc with rfl | ⟨hl, -⟩
   · exact lowerSemicontinuous_const
   · exact hl
 
 /-- **The only closed improper convex functions are the constant functions `+∞` and `−∞`.**
 Convexity is not needed for this direction. -/
-theorem eq_const_of_closedFn_of_not_proper (hc : ClosedFn f) (hp : ¬ Proper f) :
+theorem eq_const_of_closedConvex_of_not_properConvex (hc : ClosedConvex f) (hp : ¬ ProperConvex f) :
     f = (fun _ => ⊥) ∨ f = fun _ => ⊤ := by
-  rcases closedFn_iff.1 hc with h | ⟨-, hne⟩
+  rcases closedConvex_iff.1 hc with h | ⟨-, hne⟩
   · exact Or.inl h
   · exact Or.inr (funext fun x => top_le_iff.1 (not_lt.1 fun hx => hp ⟨⟨x, hx⟩, hne⟩))
 
-theorem closedFn_const_top : ClosedFn (fun _ : E => (⊤ : EReal)) :=
-  closedFn_iff.2 (Or.inr ⟨lowerSemicontinuous_const, fun _ => by simp⟩)
+theorem closedConvex_const_top : ClosedConvex (fun _ : E => (⊤ : EReal)) :=
+  closedConvex_iff.2 (Or.inr ⟨lowerSemicontinuous_const, fun _ => by simp⟩)
 
 omit [IsTopologicalAddGroup E] in
-theorem closedFn_const_bot : ClosedFn (fun _ : E => (⊥ : EReal)) := clFn_const_bot
+theorem closedConvex_const_bot : ClosedConvex (fun _ : E => (⊥ : EReal)) := convexCl_const_bot
+
+/-- The constant `+∞` is its own closure. -/
+@[simp] theorem convexCl_const_top : convexCl (fun _ : E => (⊤ : EReal)) = fun _ => ⊤ :=
+  closedConvex_const_top
+
+/-- The constant `-∞` is its own concave closure. -/
+@[simp] theorem concaveCl_const_bot : concaveCl (fun _ : E => (⊥ : EReal)) = fun _ => ⊥ := by
+  funext x
+  simp [concaveCl_apply]
 
 /-! ### Infima, effective domains and level sets -/
 
@@ -286,46 +384,57 @@ theorem iInf_lscHull_eq_iInf (f : E → EReal) : ⨅ x, lscHull f x = ⨅ x, f x
 
 omit [IsTopologicalAddGroup E] in
 /-- **`f` and `cl f` have the same infimum.** -/
-theorem iInf_clFn_eq_iInf (f : E → EReal) : ⨅ x, clFn f x = ⨅ x, f x := by
+theorem iInf_convexCl_eq_iInf (f : E → EReal) : ⨅ x, convexCl f x = ⨅ x, f x := by
   have : Nonempty E := ⟨0⟩
   by_cases h : ∃ x, lscHull f x = ⊥
   · obtain ⟨x₀, hx₀⟩ := h
     have hb : ⨅ x, f x = ⊥ := by
       rw [← iInf_lscHull_eq_iInf]
       exact le_bot_iff.1 (by rw [← hx₀]; exact iInf_le (fun x => lscHull f x) x₀)
-    rw [hb, clFn_of_exists_eq_bot ⟨x₀, hx₀⟩]
+    rw [hb, convexCl_of_exists_eq_bot ⟨x₀, hx₀⟩]
     simp
-  · rw [clFn_of_forall_ne_bot (by push Not at h; exact h)]
+  · rw [convexCl_of_forall_ne_bot (by push Not at h; exact h)]
     exact iInf_lscHull_eq_iInf f
 
+omit [IsTopologicalAddGroup E] in
+/-- The concave mirror of `iInf_convexCl_eq_iInf`: `g` and its concave closure have the same
+supremum. Like its convex original it needs no concavity. -/
+theorem iSup_concaveCl_eq_iSup (g : E → EReal) : (⨆ x, concaveCl g x) = ⨆ x, g x := by
+  have h : (⨆ x, concaveCl g x) = -⨅ x, convexCl (fun z => -(g z)) x := by
+    rw [EReal.neg_iInf]
+    exact iSup_congr fun x => rfl
+  rw [h, iInf_convexCl_eq_iInf, EReal.neg_iInf]
+  exact iSup_congr fun x => neg_neg _
+
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
-theorem dom_subset_dom_lscHull (f : E → EReal) : dom f ⊆ dom (lscHull f) :=
+theorem convexDom_subset_convexDom_lscHull (f : E → EReal) : convexDom f ⊆ convexDom (lscHull f) :=
   fun _ hx => lt_of_le_of_lt (lscHull_le f _) hx
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
 /-- `dom f ⊆ dom (cl f) ⊆ cl (dom f)`; this is the second inclusion, which
-holds for the hull with no hypothesis on `f`. It is `dom_eq_fst_image_epi` pushed through the
+holds for the hull with no hypothesis on `f`. It is `convexDom_eq_fst_image_epi` pushed through the
 continuous projection `Prod.fst`. -/
-theorem dom_lscHull_subset_closure_dom (f : E → EReal) : dom (lscHull f) ⊆ closure (dom f) := by
+theorem convexDom_lscHull_subset_closure_convexDom
+    (f : E → EReal) : convexDom (lscHull f) ⊆ closure (convexDom f) := by
   intro x hx
   obtain ⟨μ, hμ, -⟩ := ofEpi_lt_iff.1 (hx : lscHull f x < ⊤)
   have h2 := image_closure_subset_closure_image (f := (Prod.fst : E × ℝ → E)) continuous_fst
     (mem_image_of_mem _ hμ)
-  rwa [← dom_eq_fst_image_epi] at h2
+  rwa [← convexDom_eq_fst_image_epi] at h2
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
 /-- **The closure of an improper function is improper.** Neither convexity nor finite dimension is
-used. The converse — properness is preserved — needs both, and is `ConvexFn.proper_clFn` in
-`Numlib/Analysis/Convex/RelativeInterior.lean`. -/
-theorem not_proper_clFn (himp : ¬ Proper f) : ¬ Proper (clFn f) := by
+used. The converse — properness is preserved — needs both, and is `ConvexFn.properConvex_convexCl`
+in `Numlib/Analysis/Convex/RelativeInterior.lean`. -/
+theorem not_properConvex_convexCl (himp : ¬ ProperConvex f) : ¬ ProperConvex (convexCl f) := by
   intro hpr
-  refine himp ⟨?_, fun z hz => hpr.ne_bot z (le_bot_iff.1 (by rw [← hz]; exact clFn_le f z))⟩
-  obtain ⟨y, hy⟩ := hpr.dom_nonempty
+  refine himp ⟨?_, fun z hz => hpr.ne_bot z (le_bot_iff.1 (by rw [← hz]; exact convexCl_le f z))⟩
+  obtain ⟨y, hy⟩ := hpr.convexDom_nonempty
   have hb : ∀ x, lscHull f x ≠ ⊥ := fun x hx =>
-    hpr.ne_bot x (le_bot_iff.1 (by rw [← hx]; exact clFn_le_lscHull f x))
-  rw [clFn_of_forall_ne_bot hb] at hy
-  have hyd : y ∈ closure (dom f) := dom_lscHull_subset_closure_dom f hy
-  rcases Set.eq_empty_or_nonempty (dom f) with h | h
+    hpr.ne_bot x (le_bot_iff.1 (by rw [← hx]; exact convexCl_le_lscHull f x))
+  rw [convexCl_of_forall_ne_bot hb] at hy
+  have hyd : y ∈ closure (convexDom f) := convexDom_lscHull_subset_closure_convexDom f hy
+  rcases Set.eq_empty_or_nonempty (convexDom f) with h | h
   · rw [h, closure_empty] at hyd
     exact absurd hyd (Set.notMem_empty y)
   · exact h
@@ -374,12 +483,12 @@ theorem lscHull_le_setOf (f : E → EReal) (α : ℝ) :
       (closure_le_subset_lscHull_le f μ (mem_iInter₂.1 hx μ hαμ)) (by exact_mod_cast hμq)
 
 
-/-! ### `lscHull` and `clFn` as closure operators
+/-! ### `lscHull` and `convexCl` as closure operators
 
 Both operations are monotone, idempotent and **de**creasing, so each is a closure operator on the
 *order dual* of `E → EReal`. Recording that makes Mathlib's `ClosureOperator` API available and
-identifies `LowerSemicontinuous` and `ClosedFn` as the two closedness predicates; the constructor's
-hypotheses are literally the universal property. -/
+identifies `LowerSemicontinuous` and `ClosedConvex` as the two closedness predicates; the
+constructor's hypotheses are literally the universal property. -/
 
 open OrderDual in
 /-- `lscHull`, as a closure operator on `(E → EReal)ᵒᵈ`. Its closed elements are the lower
@@ -398,26 +507,26 @@ theorem lowerSemicontinuous_iff_lscHullClosure_isClosed :
     LowerSemicontinuous f ↔ lscHullClosure.IsClosed (OrderDual.toDual f) := Iff.rfl
 
 open OrderDual in
-/-- `clFn`, as a closure operator on `(E → EReal)ᵒᵈ`. Its closed elements are exactly the closed
-functions, so `ClosedFn` is the closedness predicate of a genuine closure operator. -/
-noncomputable def clFnClosure : ClosureOperator (E → EReal)ᵒᵈ :=
-  ClosureOperator.ofPred (fun g => toDual (clFn (ofDual g)))
-    (fun g => ClosedFn (ofDual g))
-    (fun g => clFn_le (ofDual g))
-    (fun g => clFn_idem (ofDual g))
-    (fun _ _ hgh hh => hh.symm.trans_le (clFn_mono hgh))
+/-- `convexCl`, as a closure operator on `(E → EReal)ᵒᵈ`. Its closed elements are exactly the closed
+functions, so `ClosedConvex` is the closedness predicate of a genuine closure operator. -/
+noncomputable def convexClClosure : ClosureOperator (E → EReal)ᵒᵈ :=
+  ClosureOperator.ofPred (fun g => toDual (convexCl (ofDual g)))
+    (fun g => ClosedConvex (ofDual g))
+    (fun g => convexCl_le (ofDual g))
+    (fun g => convexCl_idem (ofDual g))
+    (fun _ _ hgh hh => hh.symm.trans_le (convexCl_mono hgh))
 
-@[simp] theorem clFnClosure_apply (f : E → EReal) :
-    clFnClosure (OrderDual.toDual f) = OrderDual.toDual (clFn f) := rfl
+@[simp] theorem convexClClosure_apply (f : E → EReal) :
+    convexClClosure (OrderDual.toDual f) = OrderDual.toDual (convexCl f) := rfl
 
-theorem closedFn_iff_clFnClosure_isClosed :
-    ClosedFn f ↔ clFnClosure.IsClosed (OrderDual.toDual f) := Iff.rfl
+theorem closedConvex_iff_convexClClosure_isClosed :
+    ClosedConvex f ↔ convexClClosure.IsClosed (OrderDual.toDual f) := Iff.rfl
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
-/-- **The universal property of the closure.** `clFn f` is the greatest closed minorant of `f`;
-this is the `hmin` field of `clFnClosure`, restated without the `OrderDual` wrapping. -/
-theorem le_clFn_of_le (hg : ClosedFn g) (hgf : g ≤ f) : g ≤ clFn f :=
-  hg.symm.trans_le (clFn_mono hgf)
+/-- **The universal property of the closure.** `convexCl f` is the greatest closed minorant of `f`;
+this is the `hmin` field of `convexClClosure`, restated without the `OrderDual` wrapping. -/
+theorem le_convexCl_of_le (hg : ClosedConvex g) (hgf : g ≤ f) : g ≤ convexCl f :=
+  hg.symm.trans_le (convexCl_mono hgf)
 
 
 /-! ### Indicator functions -/
@@ -432,15 +541,47 @@ omit [AddCommGroup E] [IsTopologicalAddGroup E] in
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
 /-- **`cl δ(· | s) = δ(· | cl s)`**: closing an indicator function closes its set. -/
-@[simp] theorem clFn_indicatorFn (s : Set E) :
-    clFn (indicatorFn s) = indicatorFn (closure s) := by
-  rw [clFn_of_forall_ne_bot fun x => by
+@[simp] theorem convexCl_indicatorFn (s : Set E) :
+    convexCl (indicatorFn s) = indicatorFn (closure s) := by
+  rw [convexCl_of_forall_ne_bot fun x => by
     rw [lscHull_indicatorFn]; exact indicatorFn_ne_bot _ _, lscHull_indicatorFn]
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
-theorem closedFn_indicatorFn {s : Set E} (hs : IsClosed s) : ClosedFn (indicatorFn s) := by
-  change clFn (indicatorFn s) = indicatorFn s
-  rw [clFn_indicatorFn, hs.closure_eq]
+theorem closedConvex_indicatorFn {s : Set E} (hs : IsClosed s) : ClosedConvex (indicatorFn s) := by
+  change convexCl (indicatorFn s) = indicatorFn s
+  rw [convexCl_indicatorFn, hs.closure_eq]
+
+/-! ### Finite continuous functions on closed sets -/
+
+omit [AddCommGroup E] [IsTopologicalAddGroup E] in
+/-- The epigraph of a finite continuous function on a closed set, extended by `⊤`, is closed. -/
+theorem isClosed_epi_convexRestrict_coe {s : Set E} {g : E → ℝ} (hs : IsClosed s)
+    (hg : ContinuousOn g s) : IsClosed (epi (convexRestrict s fun x => (g x : EReal))) := by
+  rw [epi_convexRestrict_coe]
+  have hcont : ContinuousOn (fun p : E × ℝ => g p.1 - p.2) (s ×ˢ (Set.univ : Set ℝ)) :=
+    (hg.comp continuousOn_fst fun p hp => hp.1).sub continuousOn_snd
+  have h := hcont.preimage_isClosed_of_isClosed (hs.prod isClosed_univ)
+    (isClosed_Iic (a := (0 : ℝ)))
+  convert h using 1
+  ext p
+  simp [Set.mem_prod]
+
+/-- A finite continuous function on a closed set, extended by `⊤`, is a closed function. -/
+theorem closedConvex_convexRestrict_coe {s : Set E} {g : E → ℝ} (hs : IsClosed s)
+    (hg : ContinuousOn g s) : ClosedConvex (convexRestrict s fun x => (g x : EReal)) := by
+  have hne : ∀ x, (convexRestrict s fun x => (g x : EReal)) x ≠ ⊥ := by
+    intro x
+    by_cases hx : x ∈ s <;> simp [hx]
+  exact (closedConvex_iff_lowerSemicontinuous hne).2
+    (lowerSemicontinuous_iff_isClosed_epi.2 (isClosed_epi_convexRestrict_coe hs hg))
+
+/-- The concave mirror: a finite continuous function on a closed set, extended by `-∞`, is a closed
+concave function. -/
+theorem closedConcave_concaveRestrict_coe {s : Set E} {g : E → ℝ} (hs : IsClosed s)
+    (hg : ContinuousOn g s) : ClosedConcave (concaveRestrict s fun x => (g x : EReal)) := by
+  rw [closedConcave_iff_closedConvex_neg, neg_concaveRestrict]
+  simp only [← EReal.coe_neg]
+  exact closedConvex_convexRestrict_coe hs hg.neg
 
 end Hull
 
@@ -491,12 +632,16 @@ theorem convexFn_lscHull (hf : ConvexFn f) : ConvexFn (lscHull f) :=
   convexFn_ofEpi hf.convex_epi.closure
 
 /-- **The closure of a convex function is again convex**, in either branch. -/
-theorem convexFn_clFn (hf : ConvexFn f) : ConvexFn (clFn f) := by
+theorem convexFn_convexCl (hf : ConvexFn f) : ConvexFn (convexCl f) := by
   by_cases h : ∃ x, lscHull f x = ⊥
-  · rw [clFn_of_exists_eq_bot h]
+  · rw [convexCl_of_exists_eq_bot h]
     exact ⟨by rw [epi_const_bot]; exact convex_univ⟩
-  · rw [clFn_of_forall_ne_bot (by push Not at h; exact h)]
+  · rw [convexCl_of_forall_ne_bot (by push Not at h; exact h)]
     exact convexFn_lscHull hf
+
+theorem concaveFn_concaveCl (hg : ConcaveFn g) : ConcaveFn (concaveCl g) := by
+  rw [concaveFn_iff_convexFn_neg]
+  simpa only [neg_concaveCl] using convexFn_convexCl hg.convexFn_neg
 
 /-! ### The dichotomy for improper convex functions
 
@@ -508,9 +653,10 @@ anywhere is identically `⊥`" is **false**; see `eq_bot_of_lsc_of_eq_bot`. -/
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
 /-- The algebraic engine of the dichotomy, valid in any real vector space: if `f` is convex,
 `f x₀ = ⊥` and `y` is in the effective domain, then `f` is `⊥` on the half-open segment `[x₀, y)`.
-The hypothesis `y ∈ dom f` is needed: for `f = restrictFn {x₀} (fun _ => ⊥)` the segment meets
+The hypothesis `y ∈ dom f` is needed: for `f = convexRestrict {x₀} (fun _ => ⊥)` the segment meets
 `dom f` only at `x₀`. -/
-theorem ConvexFn.eq_bot_of_lt_one (hf : ConvexFn f) {x₀ y : E} (h₀ : f x₀ = ⊥) (hy : y ∈ dom f)
+theorem ConvexFn.eq_bot_of_lt_one (hf : ConvexFn f) {x₀ y : E} (h₀ : f x₀ = ⊥)
+    (hy : y ∈ convexDom f)
     {a : ℝ} (ha : 0 ≤ a) (ha1 : a < 1) : f ((1 - a) • x₀ + a • y) = ⊥ := by
   rcases eq_or_lt_of_le ha with rfl | ha'
   · simpa using h₀
@@ -529,8 +675,8 @@ theorem ConvexFn.eq_bot_of_lt_one (hf : ConvexFn f) {x₀ y : E} (h₀ : f x₀ 
 /-- **A lower semicontinuous convex function that takes the value `⊥` somewhere takes it at every
 point of its effective domain.** Only lower
 semicontinuity at `y` is used, through the limit `λ ↑ 1` along the segment from `x₀` to `y`. -/
-theorem ConvexFn.eq_bot_of_mem_dom (hf : ConvexFn f) (hl : LowerSemicontinuous f) {x₀ : E}
-    (h₀ : f x₀ = ⊥) {y : E} (hy : y ∈ dom f) : f y = ⊥ := by
+theorem ConvexFn.eq_bot_of_mem_convexDom (hf : ConvexFn f) (hl : LowerSemicontinuous f) {x₀ : E}
+    (h₀ : f x₀ = ⊥) {y : E} (hy : y ∈ convexDom f) : f y = ⊥ := by
   by_contra hne
   have h1 : ∀ᶠ a in 𝓝[<] (1 : ℝ), (⊥ : EReal) < f ((1 - a) • x₀ + a • y) :=
     (tendsto_segment x₀ y).eventually (hl y ⊥ (bot_lt_iff_ne_bot.2 hne))
@@ -548,18 +694,18 @@ theorem ConvexFn.eq_bot_or_eq_top (hf : ConvexFn f) (hl : LowerSemicontinuous f)
   obtain ⟨x₀, h₀⟩ := h
   rcases eq_top_or_lt_top (f x) with hx | hx
   · exact Or.inr hx
-  · exact Or.inl (hf.eq_bot_of_mem_dom hl h₀ hx)
+  · exact Or.inl (hf.eq_bot_of_mem_convexDom hl h₀ hx)
 
 /-- A lower semicontinuous convex function taking the value `⊥` is `⊥` exactly on its effective
 domain, which is therefore closed. -/
-theorem ConvexFn.dom_eq_setOf_eq_bot (hf : ConvexFn f) (hl : LowerSemicontinuous f)
-    (h : ∃ x₀, f x₀ = ⊥) : dom f = {x | f x = ⊥} := by
+theorem ConvexFn.convexDom_eq_setOf_eq_bot (hf : ConvexFn f) (hl : LowerSemicontinuous f)
+    (h : ∃ x₀, f x₀ = ⊥) : convexDom f = {x | f x = ⊥} := by
   ext x
   refine ⟨fun hx => ?_, fun hx => ?_⟩
   · obtain ⟨x₀, h₀⟩ := h
-    exact hf.eq_bot_of_mem_dom hl h₀ hx
+    exact hf.eq_bot_of_mem_convexDom hl h₀ hx
   · have hx' : f x = ⊥ := hx
-    exact mem_dom.2 (lt_of_le_of_lt (le_of_eq hx') bot_lt_top)
+    exact mem_convexDom.2 (lt_of_le_of_lt (le_of_eq hx') bot_lt_top)
 
 /-- **The dichotomy, in the form that is actually true.** A lower semicontinuous convex function
 that takes the value `⊥` somewhere and is nowhere `⊤` is identically `⊥`. The hypothesis `hdom` is
@@ -568,7 +714,7 @@ not removable — see the `example` at the end of this file — and the sharp un
 theorem eq_bot_of_lsc_of_eq_bot (hf : ConvexFn f) (hl : LowerSemicontinuous f)
     (hdom : ∀ x, f x < ⊤) (h : ∃ x₀, f x₀ = ⊥) : f = fun _ => ⊥ := by
   obtain ⟨x₀, h₀⟩ := h
-  exact funext fun x => hf.eq_bot_of_mem_dom hl h₀ (hdom x)
+  exact funext fun x => hf.eq_bot_of_mem_convexDom hl h₀ (hdom x)
 
 end Convex
 
@@ -592,11 +738,11 @@ theorem posHomogeneous_lscHull (hf : PosHomogeneous f) : PosHomogeneous (lscHull
 branch is a case rather than an exclusion: there `cl f` is the constant `⊥`, and `a * ⊥ = ⊥` for
 `a > 0`. The same conclusion for *convex* `f` follows from writing `cl f` as a support function;
 neither the pairing that needs, nor convexity, is required here. -/
-theorem posHomogeneous_clFn (hf : PosHomogeneous f) : PosHomogeneous (clFn f) := by
+theorem posHomogeneous_convexCl (hf : PosHomogeneous f) : PosHomogeneous (convexCl f) := by
   by_cases h : ∃ x, lscHull f x = ⊥
-  · rw [clFn_of_exists_eq_bot h]
+  · rw [convexCl_of_exists_eq_bot h]
     exact fun a ha _ => (EReal.coe_mul_bot_of_pos ha).symm
-  · rw [clFn_of_forall_ne_bot (by push Not at h; exact h)]
+  · rw [convexCl_of_forall_ne_bot (by push Not at h; exact h)]
     exact posHomogeneous_lscHull hf
 
 end PosHomogeneous
@@ -620,10 +766,10 @@ theorem continuous_scaleSnd (c : ℝ) : Continuous (scaleSnd (E := E) c) := by
 `⊥`. The `⊥`-freedom is what makes closedness of `cf` equivalent to lower semicontinuity of `cf`;
 given it, `epi (cf)` is `epi f` pulled back along the continuous `scaleSnd c⁻¹`, and at `c = 0` the
 product is the constant `0`. -/
-theorem closedFn_coe_mul {c : ℝ} (hc : 0 ≤ c) (hf : ClosedFn f) (hb : ∀ x, f x ≠ ⊥) :
-    ClosedFn (fun x => (c : EReal) * f x) := by
+theorem closedConvex_coe_mul {c : ℝ} (hc : 0 ≤ c) (hf : ClosedConvex f) (hb : ∀ x, f x ≠ ⊥) :
+    ClosedConvex (fun x => (c : EReal) * f x) := by
   have hb' : ∀ x, (c : EReal) * f x ≠ ⊥ := fun x => EReal.coe_mul_ne_bot hc (hb x)
-  rw [closedFn_iff_lowerSemicontinuous hb', lowerSemicontinuous_iff_isClosed_epi]
+  rw [closedConvex_iff_lowerSemicontinuous hb', lowerSemicontinuous_iff_isClosed_epi]
   rcases eq_or_lt_of_le hc with h | h
   · have hz : (fun x => (c : EReal) * f x) = fun _ : E => (0 : EReal) := by
       funext x; rw [← h]; simp
@@ -632,7 +778,7 @@ theorem closedFn_coe_mul {c : ℝ} (hc : 0 ≤ c) (hf : ClosedFn f) (hb : ∀ x,
   · rw [epi_coe_mul h f]
     refine IsClosed.preimage (continuous_scaleSnd _) ?_
     rw [← lowerSemicontinuous_iff_isClosed_epi]
-    exact (closedFn_iff_lowerSemicontinuous hb).1 hf
+    exact (closedConvex_iff_lowerSemicontinuous hb).1 hf
 
 end ScalarMultiple
 
@@ -644,15 +790,41 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] {f : E → EReal}
 
 /-- A **closed proper convex function**: the standing hypothesis of the duality theory, and the
-class `conjEquiv` and `supportEquiv` are bijections between. The three conditions travel
+class `convexConjEquiv` and `supportEquiv` are bijections between. The three conditions travel
 together throughout the duality theory, so they are bundled rather than repeated. -/
 structure ClosedProperConvexFn (f : E → EReal) : Prop where
   /-- The epigraph is convex. -/
   convex : ConvexFn f
   /-- `f` equals its own closure. -/
-  closed : ClosedFn f
+  closed : ClosedConvex f
   /-- `f` is finite somewhere and never `-∞`. -/
-  proper : Proper f
+  proper : ProperConvex f
+
+/-- A **closed proper concave function**, the concave twin of `ClosedProperConvexFn` and the
+standing hypothesis on the concave side of Fenchel's duality theorem. -/
+structure ClosedProperConcaveFn (g : E → EReal) : Prop where
+  /-- The hypograph is convex. -/
+  concave : ConcaveFn g
+  /-- `g` equals its own concave closure. -/
+  closed : ClosedConcave g
+  /-- `g` is finite somewhere and never `+∞`. -/
+  proper : ProperConcave g
+
+omit [IsTopologicalAddGroup E] in
+/-- **The sign dictionary**: `g` is closed proper concave exactly when `-g` is closed proper
+convex, clause by clause. -/
+theorem closedProperConcaveFn_iff_closedProperConvexFn_neg {g : E → EReal} :
+    ClosedProperConcaveFn g ↔ ClosedProperConvexFn fun x => -(g x) :=
+  ⟨fun h => ⟨h.concave.convexFn_neg, closedConcave_iff_closedConvex_neg.1 h.closed,
+      h.proper.properConvex_neg⟩,
+    fun h => ⟨concaveFn_iff_convexFn_neg.2 h.convex, closedConcave_iff_closedConvex_neg.2 h.closed,
+      properConcave_iff_properConvex_neg.2 h.proper⟩⟩
+
+omit [IsTopologicalAddGroup E] in
+/-- The forward direction of `closedProperConcaveFn_iff_closedProperConvexFn_neg`. -/
+theorem ClosedProperConcaveFn.closedProperConvexFn_neg {g : E → EReal}
+    (hg : ClosedProperConcaveFn g) : ClosedProperConvexFn fun x => -(g x) :=
+  closedProperConcaveFn_iff_closedProperConvexFn_neg.1 hg
 
 theorem ClosedProperConvexFn.lowerSemicontinuous (hf : ClosedProperConvexFn f) :
     LowerSemicontinuous f :=
@@ -664,11 +836,11 @@ theorem ClosedProperConvexFn.isClosed_epi (hf : ClosedProperConvexFn f) : IsClos
 /-- For a proper function, closedness of the epigraph is closedness of the function, so this is the
 form of the constructor the recession theory uses. -/
 theorem ClosedProperConvexFn.of_isClosed_epi (hconv : ConvexFn f) (hc : IsClosed (epi f))
-    (hp : Proper f) : ClosedProperConvexFn f :=
-  ⟨hconv, (closedFn_iff_lowerSemicontinuous hp.ne_bot).2
+    (hp : ProperConvex f) : ClosedProperConvexFn f :=
+  ⟨hconv, (closedConvex_iff_lowerSemicontinuous hp.ne_bot).2
     (lowerSemicontinuous_iff_isClosed_epi.2 hc), hp⟩
 
-theorem closedProperConvexFn_iff_isClosed_epi (hp : Proper f) :
+theorem closedProperConvexFn_iff_isClosed_epi (hp : ProperConvex f) :
     ClosedProperConvexFn f ↔ ConvexFn f ∧ IsClosed (epi f) :=
   ⟨fun hf => ⟨hf.convex, hf.isClosed_epi⟩,
     fun ⟨hconv, hc⟩ => ClosedProperConvexFn.of_isClosed_epi hconv hc hp⟩
@@ -682,14 +854,14 @@ discharges it. -/
 theorem closedProperConvexFn_coe_affineMap {g : E →ᵃ[ℝ] ℝ} (hg : Continuous g) :
     ClosedProperConvexFn (fun x => ((g x : ℝ) : EReal)) := by
   have hcont : Continuous fun x : E => ((g x : ℝ) : EReal) := EReal.continuous_coe_iff.2 hg
-  refine ⟨?_, ?_, ⟨⟨0, mem_dom.2 (EReal.coe_lt_top _)⟩,
+  refine ⟨?_, ?_, ⟨⟨0, mem_convexDom.2 (EReal.coe_lt_top _)⟩,
     fun _ => EReal.coe_ne_bot _⟩⟩
   · refine convexFn_of_epi_combo fun x y p q hx hy s t hs ht hst => ?_
     rw [EReal.coe_le_coe_iff] at hx hy ⊢
     rw [Convex.combo_affine_apply hst]
     simp only [smul_eq_mul]
     nlinarith
-  · exact (closedFn_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
+  · exact (closedConvex_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
       hcont.lowerSemicontinuous
 
 end ClosedProperConvex
@@ -702,11 +874,11 @@ so it is convex and lower semicontinuous, takes the value `⊥`, and is not the 
 
 example : ∃ f : ℝ → EReal,
     ConvexFn f ∧ LowerSemicontinuous f ∧ (∃ x, f x = ⊥) ∧ f ≠ fun _ => ⊥ := by
-  have hepi : epi (ConvexAnalysis.restrictFn ({0} : Set ℝ) fun _ => (⊥ : EReal))
+  have hepi : epi (ConvexAnalysis.convexRestrict ({0} : Set ℝ) fun _ => (⊥ : EReal))
       = (Prod.fst : ℝ × ℝ → ℝ) ⁻¹' {0} := by
     ext p
     by_cases h : p.1 ∈ ({0} : Set ℝ) <;> simp [epi, h]
-  refine ⟨ConvexAnalysis.restrictFn ({0} : Set ℝ) fun _ => ⊥, ⟨?_⟩, ?_, ⟨0, by simp⟩, ?_⟩
+  refine ⟨ConvexAnalysis.convexRestrict ({0} : Set ℝ) fun _ => ⊥, ⟨?_⟩, ?_, ⟨0, by simp⟩, ?_⟩
   · rw [hepi]
     exact (convex_singleton (0 : ℝ)).linear_preimage (LinearMap.fst ℝ ℝ ℝ)
   · refine lowerSemicontinuous_iff_isClosed_epi.2 ?_
@@ -714,7 +886,7 @@ example : ∃ f : ℝ → EReal,
     exact isClosed_singleton.preimage continuous_fst
   · intro hcontra
     have h1 := congrFun hcontra 1
-    rw [ConvexAnalysis.restrictFn_of_notMem (by norm_num : (1 : ℝ) ∉ ({0} : Set ℝ))] at h1
+    rw [ConvexAnalysis.convexRestrict_of_notMem (by norm_num : (1 : ℝ) ∉ ({0} : Set ℝ))] at h1
     exact absurd h1 (by simp)
 
 
@@ -733,7 +905,7 @@ while `g` is convex, finite everywhere and proper. The proof separates the close
 functional `(y, 0)` agrees at `(x₀, f x₀ - 1)` and at `(x₀, f x₀) ∈ epi f`. -/
 theorem exists_affine_le_of_closed_proper (hf : ClosedProperConvexFn f) :
     ∃ (y : E →L[ℝ] ℝ) (c : ℝ), ∀ x, ((y x : ℝ) : EReal) - c ≤ f x := by
-  obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
   obtain ⟨t, ht⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x₀) hx₀
   obtain ⟨y, b, hy, _⟩ :=
     exists_affine_le_of_isClosed_epi hf.convex hf.isClosed_epi (ν := t) (μ := t - 1) (le_of_eq ht)
@@ -782,14 +954,15 @@ theorem tendsto_lscHull_along_segment (hf : ConvexFn f) {x : E} {α : ℝ}
       mk_mem_epi.1 (interior_subset hcombo)
     exact lt_of_le_of_lt hle (lt_trans (by exact_mod_cast hlt) hγ2)
 
-/-- The same limit formula for `clFn`. The exceptional branch has to be ruled out by hand, and it
-genuinely can occur: for the function that is `⊥` on a closed ball and `⊤` outside it, `clFn f ≡ ⊥`
-while the limit along a segment ending outside the ball is `⊤`. The classical statement carries the
-matching restriction `y ∈ cl (dom f)` in the improper case. -/
-theorem clFn_eq_limit_along_segment (hf : ConvexFn f) (hne : ∀ z, lscHull f z ≠ ⊥) {x : E} {α : ℝ}
+/-- The same limit formula for `convexCl`. The exceptional branch has to be ruled out by hand, and
+it genuinely can occur: for the function that is `⊥` on a closed ball and `⊤` outside it,
+`convexCl f ≡ ⊥` while the limit along a segment ending outside the ball is `⊤`. The classical
+statement carries the matching restriction `y ∈ cl (dom f)` in the improper case. -/
+theorem convexCl_eq_limit_along_segment (hf : ConvexFn f) (hne : ∀ z, lscHull f z ≠ ⊥)
+    {x : E} {α : ℝ}
     (hx : (x, α) ∈ interior (epi f)) (y : E) :
-    Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (clFn f y)) := by
-  rw [clFn_of_forall_ne_bot hne]
+    Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (convexCl f y)) := by
+  rw [convexCl_of_forall_ne_bot hne]
   exact tendsto_lscHull_along_segment hf hx y
 
 /-- **For a closed proper convex `f`, every `x ∈ dom f` and every `y`,
@@ -797,7 +970,7 @@ theorem clFn_eq_limit_along_segment (hf : ConvexFn f) (hne : ∀ z, lscHull f z 
 semicontinuity gives the `liminf` half for every `y`, including `f y = ⊤`, and convexity applied to
 the finite values `f x` and `f y` gives the `limsup` half. -/
 theorem tendsto_along_segment_of_closed_proper (hf : ClosedProperConvexFn f)
-    {x : E} (hx : x ∈ dom f) (y : E) :
+    {x : E} (hx : x ∈ convexDom f) (y : E) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (f y)) := by
   have hlsc : LowerSemicontinuous f := hf.lowerSemicontinuous
   rw [tendsto_order]
@@ -829,6 +1002,13 @@ neighbourhood filter contains the point itself. -/
 theorem liminf_nhds_le (f : E → EReal) (x : E) : liminf f (𝓝 x) ≤ f x := by
   rw [liminf_eq_iSup_iInf]
   exact iSup₂_le fun s hs => iInf₂_le x (mem_of_mem_nhds hs)
+
+/-- The mirror of `liminf_nhds_le`: a function is at most its own `limsup` along the neighbourhood
+filter. -/
+theorem le_limsup_nhds (g : E → EReal) (x : E) : g x ≤ limsup g (𝓝 x) := by
+  have h := liminf_nhds_le (-g) x
+  rw [EReal.liminf_neg, Pi.neg_apply] at h
+  exact EReal.neg_le_neg_iff.1 h
 
 /-- `x ↦ liminf_{y → x} f(y)` is lower semicontinuous: a neighbourhood witnessing the bound at `x`
 witnesses it, through its interior, at every nearby point. -/
@@ -866,8 +1046,8 @@ theorem lscHull_eq_liminf (f : E → EReal) (x : E) : lscHull f x = liminf f (�
 
 /-- **Rockafellar's `cl f = liminf f`**, in the regular branch: as soon as the lower semicontinuous
 hull is nowhere `-∞`, the closure of `f` at `x` is the `liminf` of `f` at `x`. -/
-theorem clFn_eq_liminf (h : ∀ z, lscHull f z ≠ ⊥) (x : E) : clFn f x = liminf f (𝓝 x) := by
-  rw [clFn_of_forall_ne_bot h, lscHull_eq_liminf]
+theorem convexCl_eq_liminf (h : ∀ z, lscHull f z ≠ ⊥) (x : E) : convexCl f x = liminf f (𝓝 x) := by
+  rw [convexCl_of_forall_ne_bot h, lscHull_eq_liminf]
 
 end LiminfHull
 
@@ -878,18 +1058,29 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 
 /-- **Rockafellar's `cl f = liminf f`, in full.** For a *convex* `f` the closure at `x` is the
 `liminf` of `f` at `x`, except in the single degenerate case where the left side is `-∞` and the
-right side is `+∞`; that case can only arise in the exceptional branch of `clFn`, where the
+right side is `+∞`; that case can only arise in the exceptional branch of `convexCl`, where the
 dichotomy leaves `lscHull f` with only the values `-∞` and `+∞`. -/
-theorem clFn_eq_liminf_or (hf : ConvexFn f) (x : E) :
-    clFn f x = liminf f (𝓝 x) ∨ (clFn f x = ⊥ ∧ liminf f (𝓝 x) = ⊤) := by
+theorem convexCl_eq_liminf_or (hf : ConvexFn f) (x : E) :
+    convexCl f x = liminf f (𝓝 x) ∨ (convexCl f x = ⊥ ∧ liminf f (𝓝 x) = ⊤) := by
   by_cases h : ∃ z, lscHull f z = ⊥
-  · have hcl : clFn f x = ⊥ := by rw [clFn_of_exists_eq_bot h]
+  · have hcl : convexCl f x = ⊥ := by rw [convexCl_of_exists_eq_bot h]
     rcases ConvexFn.eq_bot_or_eq_top (convexFn_lscHull hf) (lowerSemicontinuous_lscHull f) h x with
       hb | ht
     · exact Or.inl (by rw [hcl, ← lscHull_eq_liminf, hb])
     · exact Or.inr ⟨hcl, by rw [← lscHull_eq_liminf]; exact ht⟩
   · push Not at h
-    exact Or.inl (by rw [clFn_of_forall_ne_bot h, lscHull_eq_liminf])
+    exact Or.inl (by rw [convexCl_of_forall_ne_bot h, lscHull_eq_liminf])
+
+/-- The concave mirror of `convexCl_eq_liminf_or`: for concave `g` the concave closure at `x` is the
+`limsup` of `g` at `x`, except when the left side is `+∞` and the right `-∞`. -/
+theorem concaveCl_eq_limsup_or {g : E → EReal} (hg : ConcaveFn g) (x : E) :
+    concaveCl g x = limsup g (𝓝 x) ∨ (concaveCl g x = ⊤ ∧ limsup g (𝓝 x) = ⊥) := by
+  have hkey : liminf (fun z => -(g z)) (𝓝 x) = -(limsup g (𝓝 x)) := EReal.liminf_neg
+  rcases convexCl_eq_liminf_or hg.convexFn_neg x with heq | ⟨hbot, htop⟩
+  · exact Or.inl (by rw [concaveCl_apply, heq, hkey, neg_neg])
+  · refine Or.inr ⟨by rw [concaveCl_apply, hbot, EReal.neg_bot], ?_⟩
+    rw [hkey] at htop
+    exact EReal.neg_eq_top_iff.1 htop
 
 end LiminfConvex
 

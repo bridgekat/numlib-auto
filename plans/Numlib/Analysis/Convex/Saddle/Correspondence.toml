@@ -31,7 +31,7 @@ id = 'polyhedralFn_neg_bracket'
 id = 'imageClosedBifun_of_polyhedralBifun'
 
 [[node]]
-id = 'eq_conj_bracket_of_polyhedralBifun'
+id = 'eq_convexConj_bracket_of_polyhedralBifun'
 
 [[node]]
 id = 'lowerUpperClosedEquiv'

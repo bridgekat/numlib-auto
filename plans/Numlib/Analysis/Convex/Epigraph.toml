@@ -4,22 +4,52 @@ namespace = 'ConvexAnalysis'
 id = 'epi'
 
 [[node]]
-id = 'dom'
+id = 'hypo'
 
 [[node]]
-id = 'Proper'
+id = 'convexDom'
 
 [[node]]
-id = 'restrictFn'
+id = 'concaveDom'
 
 [[node]]
-id = 'dom_coe_mul'
+id = 'ProperConvex'
 
 [[node]]
-id = 'proper_coe_mul'
+id = 'ProperConcave'
+
+[[node]]
+id = 'convexRestrict'
+
+[[node]]
+id = 'concaveRestrict'
+
+[[node]]
+id = 'hypo_neg'
+
+[[node]]
+id = 'epi_neg'
+
+[[node]]
+id = 'concaveDom_eq_convexDom_neg'
+
+[[node]]
+id = 'properConcave_iff_properConvex_neg'
+
+[[node]]
+id = 'convexDom_coe_mul'
+
+[[node]]
+id = 'properConvex_coe_mul'
 
 [[node]]
 id = 'ConvexFn'
+
+[[node]]
+id = 'ConcaveFn'
+
+[[node]]
+id = 'concaveFn_iff_convexFn_neg'
 
 [[node]]
 id = 'convexFn_add_coe'
@@ -37,37 +67,73 @@ id = 'convexFn_coe_mul'
 id = 'convexFn_iff_forall_lt'
 
 [[node]]
+id = 'concaveFn_iff_forall_gt'
+
+[[node]]
 id = 'convexFn_iff_le'
+
+[[node]]
+id = 'concaveFn_iff_le'
 
 [[node]]
 id = 'ConvexFn.convex_lt'
 
 [[node]]
+id = 'ConcaveFn.convex_gt'
+
+[[node]]
 id = 'ConvexFn.convex_le'
 
 [[node]]
-id = 'ConvexFn.convex_dom'
+id = 'ConcaveFn.convex_ge'
+
+[[node]]
+id = 'ConvexFn.convex_convexDom'
+
+[[node]]
+id = 'ConcaveFn.convex_concaveDom'
 
 [[node]]
 id = 'convexOn_iff_convexFn'
 
 [[node]]
-id = 'dom_coe'
+id = 'concaveOn_iff_concaveFn'
 
 [[node]]
-id = 'proper_coe'
+id = 'convexDom_coe'
 
 [[node]]
-id = 'dom_restrictFn_coe'
+id = 'concaveDom_coe'
 
 [[node]]
-id = 'proper_restrictFn_coe'
+id = 'properConvex_coe'
 
 [[node]]
-id = '_root_.ConvexOn.convexFn_restrictFn_coe'
+id = 'properConcave_coe'
+
+[[node]]
+id = 'convexDom_convexRestrict_coe'
+
+[[node]]
+id = 'concaveDom_concaveRestrict_coe'
+
+[[node]]
+id = 'properConvex_convexRestrict_coe'
+
+[[node]]
+id = 'properConcave_concaveRestrict_coe'
+
+[[node]]
+id = '_root_.ConvexOn.convexFn_convexRestrict_coe'
+
+[[node]]
+id = '_root_.ConcaveOn.concaveFn_concaveRestrict_coe'
 
 [[node]]
 id = '_root_.ConvexOn.convexFn_coe'
+
+[[node]]
+id = '_root_.ConcaveOn.concaveFn_coe'
 
 [[node]]
 id = 'ConvexFn.sum_le'

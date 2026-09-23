@@ -63,8 +63,9 @@ theorem dist_le_of_subdifferential_subset {p q : E → EReal} {u v : E} {a b : S
 /-- The gradients of convex functions converging pointwise on an open convex set converge at every
 point of it — upper semicontinuity of the subdifferential at the constant sequence `xᵢ = x`. -/
 theorem tendsto_of_hasGradientAtFn (hU : IsOpen U) (hUc : Convex ℝ U) (hf : ∀ i, ConvexFn (f i))
-    (hfp : ∀ i, Proper (f i)) (hfU : ∀ i, U ⊆ dom (f i)) (hg : ConvexFn g) (hgp : Proper g)
-    (hgU : U ⊆ dom g) (hconv : ∀ z ∈ U, Tendsto (fun i => f i z) atTop (𝓝 (g z))) (hx : x ∈ U)
+    (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i)) (hg : ConvexFn g)
+        (hgp : ProperConvex g)
+    (hgU : U ⊆ convexDom g) (hconv : ∀ z ∈ U, Tendsto (fun i => f i z) atTop (𝓝 (g z))) (hx : x ∈ U)
     {G : ℕ → StrongDual ℝ E} {G' : StrongDual ℝ E} (hG : ∀ i, HasGradientAtFn (f i) (G i) x)
     (hG' : HasGradientAtFn g G' x) : Tendsto G atTop (𝓝 G') := by
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
@@ -78,8 +79,8 @@ A failure gives points `zₙ` of the compact set with `‖∇f zₙ - ∇f_{φ n
 subsequence `zₙ → w` turns the subdifferential inclusion along the subsequence and the upper
 semicontinuity of `∂g` at `w` into two `ε/3` bounds that contradict it. -/
 theorem tendstoUniformlyOn_fderiv_toReal (hU : IsOpen U) (hUc : Convex ℝ U)
-    (hf : ∀ i, ConvexFn (f i)) (hfp : ∀ i, Proper (f i)) (hfU : ∀ i, U ⊆ dom (f i))
-    (hg : ConvexFn g) (hgp : Proper g) (hgU : U ⊆ dom g)
+    (hf : ∀ i, ConvexFn (f i)) (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i))
+    (hg : ConvexFn g) (hgp : ProperConvex g) (hgU : U ⊆ convexDom g)
     (hconv : ∀ z ∈ U, Tendsto (fun i => f i z) atTop (𝓝 (g z)))
     (hfd : ∀ i, ∀ z ∈ U, DifferentiableAtFn (f i) z) (hgd : ∀ z ∈ U, DifferentiableAtFn g z)
     {S : Set E} (hS : IsCompact S) (hSU : S ⊆ U) :
@@ -108,7 +109,7 @@ theorem tendstoUniformlyOn_fderiv_toReal (hU : IsOpen U) (hUc : Convex ℝ U)
   have h1 := eventually_subdifferential_subset_add_closedBall hU hUc (fun n => hf (φ (ψ n)))
     (fun n => hfp (φ (ψ n))) (fun n => hfU (φ (ψ n))) hg hgp hgU hsub hwU hlim
     (by positivity : (0 : ℝ) < ε / 3)
-  have hwint : w ∈ interior (dom g) := interior_maximal hgU hU hwU
+  have hwint : w ∈ interior (convexDom g) := interior_maximal hgU hU hwU
   have h2 : ∀ᶠ n in atTop, subdifferential (innerₗ E) g (zs (ψ n))
       ⊆ subdifferential (innerₗ E) g w + closedBall (0 : E) (ε / 3) :=
     hlim.eventually (eventually_nhds_subdifferential_subset_add_closedBall hg hgp hwint

@@ -28,7 +28,7 @@ uniquely to a continuous finite convex function on a locally simplicial convex `
 * `ConvexFn.upperSemicontinuousOn_of_locallySimplicial` — the same, relative to any locally
   simplicial subset of `dom f`.
 * `ConvexFn.continuousOn_of_locallySimplicial` — continuity there, for a closed `f`.
-* `exists_closedFn_continuousOn_of_locallySimplicial`, `eqOn_of_continuousOn_of_eqOn_relint` —
+* `exists_closedConvex_continuousOn_of_locallySimplicial`, `eqOn_of_continuousOn_of_eqOn_relint` —
   the extension theorem, existence and uniqueness.
 
 ## Implementation notes
@@ -146,14 +146,14 @@ variable {ι : Type*} [Finite ι] {E : Type*} [AddCommGroup E] [Module ℝ E] [T
 /-- **A convex function whose value at each vertex of a simplex is `< ⊤` is upper semicontinuous
 relative to that simplex**, at every point of it. -/
 theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) {v : ι → E}
-    (hv : AffineIndependent ℝ v) (hdom : ∀ i, v i ∈ dom f) {x : E}
+    (hv : AffineIndependent ℝ v) (hdom : ∀ i, v i ∈ convexDom f) {x : E}
     (hx : x ∈ convexHull ℝ (Set.range v)) :
     UpperSemicontinuousWithinAt f (convexHull ℝ (Set.range v)) x := by
   classical
   obtain ⟨hι⟩ := nonempty_fintype ι
   -- a real bound for `f` on the whole simplex
   have hbdd : ∀ i, ∃ c : ℝ, f (v i) ≤ (c : EReal) := fun i => by
-    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hdom i))
+    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (hdom i))
     exact ⟨c, hc.le⟩
   choose c hc using hbdd
   obtain ⟨ν, hν⟩ := (Set.finite_range c).bddAbove
@@ -250,7 +250,7 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 /-- **A convex function is upper semicontinuous relative to any locally simplicial subset of its
 effective domain.** -/
 theorem ConvexFn.upperSemicontinuousOn_of_locallySimplicial (hf : ConvexFn f)
-    (hS : LocallySimplicial S) (hSdom : S ⊆ dom f) : UpperSemicontinuousOn f S := by
+    (hS : LocallySimplicial S) (hSdom : S ⊆ convexDom f) : UpperSemicontinuousOn f S := by
   intro x hxS b hb
   obtain ⟨n, P, hPsimp, hPsub, U, hU, hUeq⟩ := hS x hxS
   -- the pieces that stay away from `x` can be discarded
@@ -285,7 +285,7 @@ theorem ConvexFn.upperSemicontinuousOn_of_locallySimplicial (hf : ConvexFn f)
 effective domain.** Lower semicontinuity supplies one half of `tendsto_order` and upper
 semicontinuity the other. -/
 theorem ConvexFn.continuousOn_of_locallySimplicial (hf : ConvexFn f)
-    (hlsc : LowerSemicontinuous f) (hS : LocallySimplicial S) (hSdom : S ⊆ dom f) :
+    (hlsc : LowerSemicontinuous f) (hS : LocallySimplicial S) (hSdom : S ⊆ convexDom f) :
     ContinuousOn f S := by
   intro x hx
   rw [ContinuousWithinAt, tendsto_order]
@@ -320,17 +320,17 @@ theorem eqOn_of_continuousOn_of_eqOn_relint (hC : Convex ℝ C) {g₁ g₂ : E �
 above on every bounded subset of `ri C` has a closure that is finite and continuous on the
 whole of a locally simplicial convex `C`, and still agrees with `f` on `ri C`. Uniqueness is
 `eqOn_of_continuousOn_of_eqOn_relint`. -/
-theorem exists_closedFn_continuousOn_of_locallySimplicial (hC : Convex ℝ C)
+theorem exists_closedConvex_continuousOn_of_locallySimplicial (hC : Convex ℝ C)
     (hCls : LocallySimplicial C) (hne : C.Nonempty) (hf : ConvexFn f) (hbot : ∀ x, f x ≠ ⊥)
-    (hdom : dom f = ri C)
+    (hdom : convexDom f = ri C)
     (hbdd : ∀ S ⊆ ri C, Bornology.IsBounded S → ∃ c : ℝ, ∀ x ∈ S, f x ≤ (c : EReal)) :
-    ∃ g : E → EReal, ConvexFn g ∧ ClosedFn g ∧ Proper g ∧ Set.EqOn g f (ri C) ∧
-      C ⊆ dom g ∧ ContinuousOn g C := by
+    ∃ g : E → EReal, ConvexFn g ∧ ClosedConvex g ∧ ProperConvex g ∧ Set.EqOn g f (ri C) ∧
+      C ⊆ convexDom g ∧ ContinuousOn g C := by
   have hriC : (ri C).Nonempty := Convex.relint_nonempty hC hne
-  have hp : Proper f := ⟨by rw [hdom]; exact hriC, hbot⟩
-  have hridom : ri (dom f) = ri C := by rw [hdom, Convex.relint_relint hC]
+  have hp : ProperConvex f := ⟨by rw [hdom]; exact hriC, hbot⟩
+  have hridom : ri (convexDom f) = ri C := by rw [hdom, Convex.relint_relint hC]
   obtain ⟨x₀, hx₀⟩ := hriC
-  have hCdom : C ⊆ dom (clFn f) := by
+  have hCdom : C ⊆ convexDom (convexCl f) := by
     intro x hx
     have hseg : (fun a : ℝ => (1 - a) • x₀ + a • x) '' Set.Ico 0 1 ⊆ ri C := by
       rintro _ ⟨a, ha, rfl⟩
@@ -342,17 +342,18 @@ theorem exists_closedFn_continuousOn_of_locallySimplicial (hC : Convex ℝ C)
       (isCompact_Icc.image hcont).isBounded.subset
         (Set.image_mono Set.Ico_subset_Icc_self)
     obtain ⟨c, hc⟩ := hbdd _ hseg hbnd
-    have htend := hf.tendsto_clFn_along_segment_relint hp (hridom ▸ hx₀) x
-    have hle : clFn f x ≤ (c : EReal) := by
+    have htend := hf.tendsto_convexCl_along_segment_relint hp (hridom ▸ hx₀) x
+    have hle : convexCl f x ≤ (c : EReal) := by
       refine le_of_tendsto htend ?_
       filter_upwards [eventually_mem_Ico_nhdsLT_one] with a ha
       exact hc _ ⟨a, ha, rfl⟩
-    exact mem_dom.2 (lt_of_le_of_lt hle (EReal.coe_lt_top c))
-  refine ⟨clFn f, convexFn_clFn hf, closedFn_clFn f, hf.proper_clFn hp, ?_, hCdom, ?_⟩
+    exact mem_convexDom.2 (lt_of_le_of_lt hle (EReal.coe_lt_top c))
+  refine ⟨convexCl f, convexFn_convexCl hf, closedConvex_convexCl f, hf.properConvex_convexCl hp,
+      ?_, hCdom, ?_⟩
   · intro x hx
-    exact hf.clFn_eq_of_mem_relint_dom (hridom ▸ hx)
-  · exact (convexFn_clFn hf).continuousOn_of_locallySimplicial
-      (closedFn_clFn f).lowerSemicontinuous hCls hCdom
+    exact hf.convexCl_eq_of_mem_relint_convexDom (hridom ▸ hx)
+  · exact (convexFn_convexCl hf).continuousOn_of_locallySimplicial
+      (closedConvex_convexCl f).lowerSemicontinuous hCls hCdom
 
 end Extension
 

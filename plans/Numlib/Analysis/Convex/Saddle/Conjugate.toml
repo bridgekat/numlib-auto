@@ -1,12 +1,6 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'adjointBifun_flip_inverseBifun'
-
-[[node]]
-id = 'adjointBifun_flip_inverseBifun_adjointBifun'
-
-[[node]]
 id = 'saddleLagrangian_eq_concaveBracket'
 
 [[node]]
@@ -28,22 +22,19 @@ id = 'domSaddle_conjSaddle_eq'
 id = 'lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁'
 
 [[node]]
+id = 'lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₂'
+
+[[node]]
 id = 'hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle'
+
+[[node]]
+id = 'hasSaddleValue_of_mem_relint_dom₂_lowerConjSaddle'
 
 [[node]]
 id = 'exists_maximin_eq_coe_of_mem_relint_domSaddle'
 
 [[node]]
-id = 'dom₁_eq_domBifun_of_mem_bifunSaddleClass'
+id = 'dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass'
 
 [[node]]
 id = 'supportFn_dom₂_upperConjSaddle'
-
-[[node]]
-id = 'zero_mem_interior_dom₂_upperConjSaddle_iff'
-
-[[node]]
-id = 'hasSaddleValue_of_no_common_direction_of_recession'
-
-[[node]]
-id = 'hasSaddleValue_of_isBounded_dom₂'

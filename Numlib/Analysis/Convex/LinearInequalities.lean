@@ -286,8 +286,8 @@ theorem alternative_linear_system_strict [IsCompatiblePairing B.flip]
     rcases alternative_of_convex_system_affine (C := (Set.univ : Set E))
         (f := fun i => affineFn B (a i) (α i))
         (a := fun j => affineMapOfPairing B (b j) (β j))
-        convex_univ (fun i => convexFn_affineFn _ _) (fun i => proper_affineFn _ _)
-        (fun _ _ _ => mem_dom.2 (lt_top_iff_ne_top.2 (affineFn_ne_top _ _ _)))
+        convex_univ (fun i => convexFn_affineFn _ _) (fun i => properConvex_affineFn _ _)
+        (fun _ _ _ => mem_convexDom.2 (lt_top_iff_ne_top.2 (affineFn_ne_top _ _ _)))
         hfeas with hgood | ⟨l, μ, hl0, hμ0, hlne, hineq⟩
     · exfalso
       obtain ⟨x, -, hs, hw⟩ := hgood

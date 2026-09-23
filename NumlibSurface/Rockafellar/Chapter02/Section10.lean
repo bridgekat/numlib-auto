@@ -150,37 +150,37 @@ theorem uniformlyBoundedOn_iff {n : ℕ} {ι : Type*} {f : ι → Rn n → ℝ} 
 relatively open convex set `C` in its effective domain — in particular relative to `ri (dom f)`,
 which is `corollary_10_1_1`'s and Theorem 10.4's form. The improper case is not excluded. -/
 theorem theorem_10_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) {C : Set (Rn n)}
-    (hC : Convex ℝ C) (hCro : ri C = C) (hCdom : C ⊆ dom f) : ContinuousOn f C := by
-  have hg : ConvexFn (restrictFn C f) := hf.restrictFn hC
-  have hdom : dom (restrictFn C f) = C := by
+    (hC : Convex ℝ C) (hCro : ri C = C) (hCdom : C ⊆ convexDom f) : ContinuousOn f C := by
+  have hg : ConvexFn (convexRestrict C f) := hf.convexRestrict hC
+  have hdom : convexDom (convexRestrict C f) = C := by
     ext x
     constructor
     · intro hx
       by_contra hxC
-      rw [mem_dom, restrictFn_of_notMem hxC] at hx
+      rw [mem_convexDom, convexRestrict_of_notMem hxC] at hx
       exact absurd hx (lt_irrefl _)
     · intro hx
-      rw [mem_dom, restrictFn_of_mem hx]
-      exact mem_dom.1 (hCdom hx)
-  have hri : ri (dom (restrictFn C f)) = C := by rw [hdom, hCro]
-  by_cases hp : Proper (restrictFn C f)
-  · have hcont : ContinuousOn (restrictFn C f) C := by
-      have h := hg.continuousOn_relint_dom hp
+      rw [mem_convexDom, convexRestrict_of_mem hx]
+      exact mem_convexDom.1 (hCdom hx)
+  have hri : ri (convexDom (convexRestrict C f)) = C := by rw [hdom, hCro]
+  by_cases hp : ProperConvex (convexRestrict C f)
+  · have hcont : ContinuousOn (convexRestrict C f) C := by
+      have h := hg.continuousOn_relint_convexDom hp
       rwa [hri] at h
-    exact hcont.congr fun x hx => (restrictFn_of_mem hx).symm
+    exact hcont.congr fun x hx => (convexRestrict_of_mem hx).symm
   · have hconst : ContinuousOn (fun _ : Rn n => (⊥ : EReal)) C := continuousOn_const
     refine hconst.congr fun x hx => ?_
-    have hx' : x ∈ ri (dom (restrictFn C f)) := by rw [hri]; exact hx
-    have hbot := hg.eq_bot_of_mem_relint_dom hp hx'
-    rwa [restrictFn_of_mem hx] at hbot
+    have hx' : x ∈ ri (convexDom (convexRestrict C f)) := by rw [hri]; exact hx
+    have hbot := hg.eq_bot_of_mem_relint_convexDom hp hx'
+    rwa [convexRestrict_of_mem hx] at hbot
 
 /-! ### Corollary 10.1.1 -/
 
 /-- **Corollary 10.1.1.** A convex function finite on all of `ℝⁿ` is necessarily continuous. "finite
 on all of `ℝⁿ`" is `dom f = univ` together with properness, which is the `≠ -∞` half. -/
-theorem corollary_10_1_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    (hdom : dom f = Set.univ) : Continuous f :=
-  hf.continuous_of_dom_eq_univ hp hdom
+theorem corollary_10_1_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hdom : convexDom f = Set.univ) : Continuous f :=
+  hf.continuous_of_convexDom_eq_univ hp hdom
 
 /-! ### Theorem 10.2 -/
 
@@ -188,14 +188,14 @@ theorem corollary_10_1_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : 
 simplicial subset of `dom f`. Then `f` is upper semicontinuous relative to `S`. Improperness is
 not excluded; see the module docstring on the triangulation step the book leaves unproved. -/
 theorem theorem_10_2 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) {S : Set (Rn n)}
-    (hS : LocallySimplicial S) (hSdom : S ⊆ dom f) : UpperSemicontinuousOn f S :=
+    (hS : LocallySimplicial S) (hSdom : S ⊆ convexDom f) : UpperSemicontinuousOn f S :=
   hf.upperSemicontinuousOn_of_locallySimplicial hS hSdom
 
 /-- **Theorem 10.2**, second assertion: if `f` is closed then `f` is continuous relative to
 `S`. -/
-theorem theorem_10_2_closed {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hcl : ClosedFn f)
-    {S : Set (Rn n)} (hS : LocallySimplicial S) (hSdom : S ⊆ dom f) : ContinuousOn f S :=
-  hf.continuousOn_of_locallySimplicial (ClosedFn.lowerSemicontinuous hcl) hS hSdom
+theorem theorem_10_2_closed {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hcl : ClosedConvex f)
+    {S : Set (Rn n)} (hS : LocallySimplicial S) (hSdom : S ⊆ convexDom f) : ContinuousOn f S :=
+  hf.continuousOn_of_locallySimplicial (ClosedConvex.lowerSemicontinuous hcl) hS hSdom
 
 /-! ### Theorem 10.3 -/
 
@@ -207,11 +207,11 @@ can be extended to a continuous finite convex function on the whole of `C`.
 how §4 reads a function given only on a set. The extension produced is `cl f`. -/
 theorem theorem_10_3 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) (hCls : LocallySimplicial C)
     (hne : C.Nonempty) {f : Rn n → EReal} (hf : ConvexFn f) (hbot : ∀ x, f x ≠ ⊥)
-    (hdom : dom f = ri C)
+    (hdom : convexDom f = ri C)
     (hbdd : ∀ S ⊆ ri C, Bornology.IsBounded S → ∃ c : ℝ, ∀ x ∈ S, f x ≤ (c : EReal)) :
-    ∃ g : Rn n → EReal, ConvexFn g ∧ ClosedFn g ∧ Proper g ∧ Set.EqOn g f (ri C) ∧
-      C ⊆ dom g ∧ ContinuousOn g C :=
-  exists_closedFn_continuousOn_of_locallySimplicial hC hCls hne hf hbot hdom hbdd
+    ∃ g : Rn n → EReal, ConvexFn g ∧ ClosedConvex g ∧ ProperConvex g ∧ Set.EqOn g f (ri C) ∧
+      C ⊆ convexDom g ∧ ContinuousOn g C :=
+  exists_closedConvex_continuousOn_of_locallySimplicial hC hCls hne hf hbot hdom hbdd
 
 /-- **Theorem 10.3**, uniqueness: there can be only one such extension, since `C ⊆ cl (ri C)`.
 Neither local simpliciality of `C` nor convexity of the two functions is needed. -/
@@ -226,8 +226,9 @@ theorem theorem_10_3_unique {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {g₁
 bounded subset of `ri (dom f)`. Then `f` is Lipschitzian relative to `S`. The Lipschitz condition
 is about real values, so the statement is about `(f ·).toReal`, faithful on `dom f` by
 properness. -/
-theorem theorem_10_4 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    {S : Set (Rn n)} (hScl : IsClosed S) (hSb : Bornology.IsBounded S) (hSri : S ⊆ ri (dom f)) :
+theorem theorem_10_4 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    {S : Set (Rn n)} (hScl : IsClosed S) (hSb : Bornology.IsBounded S)
+        (hSri : S ⊆ ri (convexDom f)) :
     LipschitzianOn (fun x => (f x).toReal) S :=
   lipschitzianOn_iff.2
     (hf.exists_lipschitzOnWith_of_isCompact hp (Metric.isCompact_of_isClosed_isBounded hScl hSb)
@@ -239,15 +240,15 @@ theorem theorem_10_4 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Prop
 be uniformly continuous relative to `ℝⁿ`, it is necessary and sufficient that the recession
 function `f0⁺` be finite everywhere. "Finite everywhere" is spelled `≠ ⊤`; the other half,
 `f0⁺ ≠ -∞`, is automatic from properness of `f`. -/
-theorem theorem_10_5 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    (hdom : dom f = Set.univ) :
+theorem theorem_10_5 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hdom : convexDom f = Set.univ) :
     (UniformContinuous fun x => (f x).toReal) ↔ ∀ y, recessionFn f y ≠ ⊤ :=
   hf.uniformContinuous_toReal_iff hp hdom
 
 /-- **Theorem 10.5**, second assertion: in that event `f` is Lipschitzian relative to `ℝⁿ`, with
 Rockafellar's constant `α = sup {(f0⁺) z | ‖z‖ = 1}`. -/
-theorem theorem_10_5_lipschitzian {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    (hdom : dom f = Set.univ) (hrec : ∀ y, recessionFn f y ≠ ⊤) :
+theorem theorem_10_5_lipschitzian {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hdom : convexDom f = Set.univ) (hrec : ∀ y, recessionFn f y ≠ ⊤) :
     LipschitzianOn (fun x => (f x).toReal) Set.univ := by
   obtain ⟨K, hK⟩ := hf.exists_lipschitzWith_of_recessionFn_ne_top hp hdom hrec
   exact lipschitzianOn_iff.2 ⟨K, hK.lipschitzOnWith⟩
@@ -258,8 +259,8 @@ theorem theorem_10_5_lipschitzian {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn 
 `ℝⁿ` if `liminf_{λ → ∞} f (λ y) / λ < ∞` for every `y`. The `liminf` is spelled "for some `c`,
 `f (a y) ≤ c a` for arbitrarily large `a`", avoiding the `EReal` quotient; the two agree because
 the quotient is nondecreasing in `λ` (Theorem 8.5). -/
-theorem corollary_10_5_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    (hdom : dom f = Set.univ)
+theorem corollary_10_5_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hdom : convexDom f = Set.univ)
     (h : ∀ y : Rn n, ∃ c : ℝ, ∃ᶠ a : ℝ in atTop, f (a • y) ≤ ((c * a : ℝ) : EReal)) :
     LipschitzianOn (fun x => (f x).toReal) Set.univ := by
   obtain ⟨K, hK⟩ := hf.exists_lipschitzWith_of_frequently_le hp hdom h
@@ -270,14 +271,15 @@ theorem corollary_10_5_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) (hp : 
 /-- **Corollary 10.5.2.** Every finite convex `f` below a finite convex `g` that is Lipschitzian
 relative to `ℝⁿ` is itself Lipschitzian relative to `ℝⁿ`. Convexity of `g` is carried so that the
 statement is the book's; the estimate needs only that `g` is Lipschitz. -/
-theorem corollary_10_5_2 {n : ℕ} {f g : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    (hdom : dom f = Set.univ) (_hg : ConvexFn g) (hgp : Proper g) (hgdom : dom g = Set.univ)
+theorem corollary_10_5_2 {n : ℕ} {f g : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    (hdom : convexDom f = Set.univ) (_hg : ConvexFn g) (hgp : ProperConvex g)
+        (hgdom : convexDom g = Set.univ)
     (hglip : LipschitzianOn (fun x => (g x).toReal) Set.univ) (hle : ∀ x, f x ≤ g x) :
     LipschitzianOn (fun x => (f x).toReal) Set.univ := by
   obtain ⟨K, hK⟩ := lipschitzianOn_iff.1 hglip
   rw [lipschitzOnWith_univ] at hK
   obtain ⟨K', hK'⟩ := hf.exists_lipschitzWith_of_le_lipschitz hp hdom hK fun x => by
-    rw [coe_toReal_of_dom_eq_univ hgp hgdom x]; exact hle x
+    rw [coe_toReal_of_convexDom_eq_univ hgp hgdom x]; exact hle x
   exact lipschitzianOn_iff.2 ⟨K', hK'.lipschitzOnWith⟩
 
 /-! ### Theorem 10.6 -/

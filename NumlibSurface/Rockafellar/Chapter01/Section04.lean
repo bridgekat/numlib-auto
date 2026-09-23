@@ -44,8 +44,8 @@ The conventions §4 lays down are content, not boilerplate.
 * **`0 · ∞ = 0`** holds on the nose for Mathlib's `EReal`, and `theorem_4_3` depends on it: the
   book's `λ₁ f x₁ + ⋯ + λₘ f xₘ` is well defined at an index with `λᵢ = 0` and `f xᵢ = +∞` only
   because that term is `0`.
-* **`inf ∅ = +∞`** is what the backbone's `restrictFn`, `⨅ _ : x ∈ s, f x`, computes off `s` — the
-  book's own device for extending a function given on a convex set by `+∞`. `theorem_4_1` is
+* **`inf ∅ = +∞`** is what the backbone's `convexRestrict`, `⨅ _ : x ∈ s, f x`, computes off `s` —
+  the book's own device for extending a function given on a convex set by `+∞`. `theorem_4_1` is
   stated through it.
 * **`∞ − ∞` is undefined** in the book, whereas Mathlib's `EReal` totalises it as `⊥`. Nothing
   here relies on that totalisation: every statement whose right-hand side could produce the
@@ -67,14 +67,14 @@ open ConvexAnalysis
 /-- **Theorem 4.1.** For `f : C → (-∞, +∞]` with `C` convex, `f` is convex on `C` iff
 `f ((1 − λ) x + λ y) ≤ (1 − λ) f x + λ f y` for all `x, y ∈ C` and `0 < λ < 1`.
 
-"Convex on `C`" is `ConvexFn (restrictFn C f)`, the book's own convention that a function given on
-`C` is extended to `ℝⁿ` by `+∞`. The hypothesis `∀ x, f x ≠ ⊥` is "values in `(-∞, +∞]`", which
+"Convex on `C`" is `ConvexFn (convexRestrict C f)`, the book's own convention that a function given
+on `C` is extended to `ℝⁿ` by `+∞`. The hypothesis `∀ x, f x ≠ ⊥` is "values in `(-∞, +∞]`", which
 keeps the right-hand side from being the forbidden `∞ − ∞`. -/
 theorem theorem_4_1 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {f : Rn n → EReal}
     (hbot : ∀ x, f x ≠ ⊥) :
-    ConvexFn (restrictFn C f) ↔ ∀ x ∈ C, ∀ y ∈ C, ∀ a b : ℝ, 0 < a → 0 < b → a + b = 1 →
+    ConvexFn (convexRestrict C f) ↔ ∀ x ∈ C, ∀ y ∈ C, ∀ a b : ℝ, 0 < a → 0 < b → a + b = 1 →
       f (a • x + b • y) ≤ (a : EReal) * f x + (b : EReal) * f y := by
-  have hrb : ∀ x, restrictFn C f x ≠ ⊥ := by
+  have hrb : ∀ x, convexRestrict C f x ≠ ⊥ := by
     intro x
     by_cases hx : x ∈ C <;> simp [hx, hbot x]
   rw [convexFn_iff_le hrb]
@@ -82,17 +82,17 @@ theorem theorem_4_1 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {f : Rn n →
   · intro h x hx y hy a b ha hb hab
     have hmem : a • x + b • y ∈ C := hC hx hy ha.le hb.le hab
     have hkey := h x y a b ha hb hab
-    rwa [restrictFn_of_mem hx, restrictFn_of_mem hy, restrictFn_of_mem hmem] at hkey
+    rwa [convexRestrict_of_mem hx, convexRestrict_of_mem hy, convexRestrict_of_mem hmem] at hkey
   · intro h x y a b ha hb hab
     by_cases hx : x ∈ C
     · by_cases hy : y ∈ C
       · have hmem : a • x + b • y ∈ C := hC hx hy ha.le hb.le hab
-        rw [restrictFn_of_mem hx, restrictFn_of_mem hy, restrictFn_of_mem hmem]
+        rw [convexRestrict_of_mem hx, convexRestrict_of_mem hy, convexRestrict_of_mem hmem]
         exact h x hx y hy a b ha hb hab
-      · rw [restrictFn_of_notMem hy, EReal.coe_mul_top_of_pos hb,
+      · rw [convexRestrict_of_notMem hy, EReal.coe_mul_top_of_pos hb,
           EReal.add_top_of_ne_bot (EReal.coe_mul_ne_bot ha.le (hrb x))]
         exact le_top
-    · rw [restrictFn_of_notMem hx, EReal.coe_mul_top_of_pos ha,
+    · rw [convexRestrict_of_notMem hx, EReal.coe_mul_top_of_pos ha,
         EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (hrb y))]
       exact le_top
 
@@ -289,13 +289,13 @@ The index range must be non-empty, which the book's `λ₁, …, λₘ` implies:
 assert `f 0 ≤ 0`, and such an `f` may have `f 0 = +∞` — take `δ(·|C)` for a convex cone `C`
 missing the origin. -/
 theorem corollary_4_7_1 {n : ℕ} {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : ConvexFn f)
-    (hproper : Proper f) {m : ℕ} (hm : 0 < m) {l : Fin m → ℝ} (hl : ∀ i, 0 < l i)
+    (hproper : ProperConvex f) {m : ℕ} (hm : 0 < m) {l : Fin m → ℝ} (hl : ∀ i, 0 < l i)
     (x : Fin m → Rn n) : f (∑ i, l i • x i) ≤ ∑ i, (l i : EReal) * f (x i) :=
   hf.sum_le hconv hproper.ne_bot ⟨⟨0, hm⟩, Finset.mem_univ _⟩ (fun i _ => hl i) x
 
 /-- **Corollary 4.7.2.** For positively homogeneous proper convex `f`, `f (-x) ≥ -f x`. -/
 theorem corollary_4_7_2 {n : ℕ} {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : ConvexFn f)
-    (hproper : Proper f) (x : Rn n) : -(f x) ≤ f (-x) :=
+    (hproper : ProperConvex f) (x : Rn n) : -(f x) ≤ f (-x) :=
   hf.neg_le hconv hproper.ne_bot x
 
 /-! ### Theorem 4.8 -/
@@ -305,7 +305,7 @@ theorem corollary_4_7_2 {n : ℕ} {f : Rn n → EReal} (hf : PosHomogeneous f) (
 `L →ₗ[ℝ] ℝ` agreeing with `f` there; extracting one is part of the content, since a function odd
 at `x` is automatically finite there. -/
 theorem theorem_4_8 {n : ℕ} {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : ConvexFn f)
-    (hproper : Proper f) (L : Submodule ℝ (Rn n)) :
+    (hproper : ProperConvex f) (L : Submodule ℝ (Rn n)) :
     (∃ g : L →ₗ[ℝ] ℝ, ∀ x : L, f x = ((g x : ℝ) : EReal)) ↔ ∀ x ∈ L, f (-x) = -(f x) :=
   hf.exists_linearMap_iff hconv hproper.ne_bot L
 
@@ -315,7 +315,7 @@ decoration: the book's argument uses `f 0 = 0`, which is available only once som
 to be odd, so for `L = {0}` with an empty basis the statement fails as printed — a positively
 homogeneous proper convex `f` may have `f 0 = +∞`. -/
 theorem theorem_4_8_basis {n : ℕ} {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : ConvexFn f)
-    (hproper : Proper f) {L : Submodule ℝ (Rn n)} {b : Set (Rn n)} (hb : b.Nonempty)
+    (hproper : ProperConvex f) {L : Submodule ℝ (Rn n)} {b : Set (Rn n)} (hb : b.Nonempty)
     (hspan : Submodule.span ℝ b = L) (hodd : ∀ v ∈ b, f (-v) = -(f v)) :
     ∀ x ∈ L, f (-x) = -(f x) := by
   subst hspan

@@ -2,12 +2,9 @@ import Numlib.Analysis.Convex.Bifunction.Algebra
 import Numlib.Analysis.Convex.Bifunction.Cofinite
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Closure
-import Numlib.Analysis.Convex.Concave
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Convergence
 import Numlib.Analysis.Convex.Duality.Barrier
-import Numlib.Analysis.Convex.Duality.ConcaveConj
-import Numlib.Analysis.Convex.Duality.ConcaveOps
 import Numlib.Analysis.Convex.Duality.Conjugate
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.Exact
@@ -176,7 +173,7 @@ functional is some `⟨·, y⟩` — and results ask for them only where they ar
 ## The modules
 
 **The basics.** `Epigraph` introduces `ConvexFn` through the convexity of `epi f`, with `dom f` and
-`Proper f`; `Concave` mirrors it. `Closure` builds the closure of a convex function and
+`ProperConvex f`; `Concave` mirrors it. `Closure` builds the closure of a convex function and
 `RelativeInterior` the relative interior `ri`. `Continuity` and `Convergence` give continuity on
 `ri (dom f)` and the equi-Lipschitz behaviour of convergent families. `Separation` proves the
 separation theorems the duality layer runs on. `Face`, `Exposed`, `Representation` and `Tangent`
@@ -253,7 +250,7 @@ and `ae_differentiableAtFn` in `Subdifferential.Rademacher`.
   improper. This makes the functional operations total and the lattice complete, at the cost of
   carrying properness as a hypothesis wherever `⊥` would spoil an identity.
 * `ri` is scoped notation for `intrinsicInterior ℝ`.
-* `f*` is `conj B f`, against an explicit pairing `B`; there is no ambient dual.
+* `f*` is `convexConj B f`, against an explicit pairing `B`; there is no ambient dual.
 * Concave counterparts are separate definitions rather than `-f` rewrites, so that a statement about
   concave functions reads as one.
 

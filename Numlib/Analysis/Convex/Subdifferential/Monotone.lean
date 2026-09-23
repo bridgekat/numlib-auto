@@ -215,14 +215,14 @@ theorem le_of_chain_mem_subgradientRel :
 
 /-- The graph of `∂f` is cyclically monotone. Convexity of `f` is not used; properness is, and
 only to know that `f` is finite at the base point of the cycle. -/
-theorem isCyclicallyMonotone_subgradientRel (hp : Proper f) :
+theorem isCyclicallyMonotone_subgradientRel (hp : ProperConvex f) :
     IsCyclicallyMonotone B (subgradientRel B f) := by
   intro s hs l hl
   have hkey := le_of_chain_mem_subgradientRel l s hs hl s.1
-  have hdom : s.1 ∈ dom f := by
+  have hdom : s.1 ∈ convexDom f := by
     by_contra hcon
     have hmem : s.2 ∈ subdifferential B f s.1 := hs
-    rw [subdifferential_eq_empty_of_notMem_dom hp hcon] at hmem
+    rw [subdifferential_eq_empty_of_notMem_convexDom hp hcon] at hmem
     exact hmem
   have hcoe : (((f s.1).toReal : ℝ) : EReal) = f s.1 :=
     EReal.coe_toReal (ne_of_lt hdom) (hp.ne_bot s.1)
@@ -231,7 +231,7 @@ theorem isCyclicallyMonotone_subgradientRel (hp : Proper f) :
 
 /-- **The subdifferential is monotone**, the classical inequality
 `⟨x₁ - x₂, y₁ - y₂⟩ ≥ 0`. -/
-theorem isMonotoneRel_subgradientRel (hp : Proper f) :
+theorem isMonotoneRel_subgradientRel (hp : ProperConvex f) :
     IsMonotoneRel B (subgradientRel B f) :=
   (isCyclicallyMonotone_subgradientRel hp).isMonotoneRel
 
@@ -292,8 +292,8 @@ theorem cyclicPotential_eq_zero (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ
     simpa using hle
 
 /-- The potential is proper. -/
-theorem proper_cyclicPotential (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ) :
-    Proper (cyclicPotential B ρ s) := by
+theorem properConvex_cyclicPotential (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ) :
+    ProperConvex (cyclicPotential B ρ s) := by
   refine ⟨⟨s.1, ?_⟩, cyclicPotential_ne_bot B ρ s⟩
   change cyclicPotential B ρ s s.1 < ⊤
   rw [cyclicPotential_eq_zero hρ hs, ← EReal.coe_zero]
@@ -337,11 +337,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 closed proper convex function. -/
 theorem exists_convexFn_subgradientRel_of_isCyclicallyMonotone [IsContinuousPairing B]
     (hρ : IsCyclicallyMonotone B ρ) (hne : ρ.Nonempty) :
-    ∃ f : E → EReal, ConvexFn f ∧ ClosedFn f ∧ Proper f ∧ ρ ⊆ subgradientRel B f := by
+    ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ ⊆ subgradientRel B f := by
   obtain ⟨s, hs⟩ := hne
   refine ⟨cyclicPotential B ρ s, convexFn_cyclicPotential B ρ s, ?_,
-    proper_cyclicPotential hρ hs, fun p hp => mem_subdifferential_cyclicPotential hp⟩
-  refine (closedFn_iff_lowerSemicontinuous (cyclicPotential_ne_bot B ρ s)).2 ?_
+    properConvex_cyclicPotential hρ hs, fun p hp => mem_subdifferential_cyclicPotential hp⟩
+  refine (closedConvex_iff_lowerSemicontinuous (cyclicPotential_ne_bot B ρ s)).2 ?_
   refine lowerSemicontinuous_biSup fun l _ => ?_
   obtain ⟨y, c, h⟩ := exists_chainVal_eq (B := B) l s
   have hfun : (fun x => ((chainVal B s l x : ℝ) : EReal)) = affineFn B y c := by
@@ -354,7 +354,7 @@ theorem exists_convexFn_subgradientRel_of_isCyclicallyMonotone [IsContinuousPair
 cyclically monotone are the same thing. -/
 theorem isCyclicallyMonotone_iff_exists_convexFn [IsContinuousPairing B] (hne : ρ.Nonempty) :
     IsCyclicallyMonotone B ρ ↔
-      ∃ f : E → EReal, ConvexFn f ∧ ClosedFn f ∧ Proper f ∧ ρ ⊆ subgradientRel B f :=
+      ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ ⊆ subgradientRel B f :=
   ⟨fun h => exists_convexFn_subgradientRel_of_isCyclicallyMonotone h hne,
     fun ⟨_, _, _, hp, hsub⟩ => (isCyclicallyMonotone_subgradientRel hp).mono hsub⟩
 
@@ -362,7 +362,7 @@ theorem isCyclicallyMonotone_iff_exists_convexFn [IsContinuousPairing B] (hne : 
 *is* the subdifferential of a closed proper convex function. -/
 theorem exists_eq_subgradientRel_of_isMaximalCyclicallyMonotone [IsContinuousPairing B]
     (h : IsMaximalCyclicallyMonotone B ρ) :
-    ∃ f : E → EReal, ConvexFn f ∧ ClosedFn f ∧ Proper f ∧ ρ = subgradientRel B f := by
+    ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ = subgradientRel B f := by
   obtain ⟨f, hconv, hclosed, hproper, hsub⟩ :=
     exists_convexFn_subgradientRel_of_isCyclicallyMonotone h.1 h.nonempty
   exact ⟨f, hconv, hclosed, hproper,
@@ -382,7 +382,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
 and so is joint continuity of the pairing: the subgradient inequality at `xᵢ` involves
 `⟨z - xᵢ, xᵢ*⟩`, where both arguments move. -/
 theorem isClosed_subgradientRel [IsTopologicalAddGroup E]
-    (hB : Continuous fun p : E × F => B p.1 p.2) (hp : Proper f)
+    (hB : Continuous fun p : E × F => B p.1 p.2) (hp : ProperConvex f)
     (hlsc : LowerSemicontinuous f) : IsClosed (subgradientRel B f) := by
   have hepi : IsClosed (epi f) := lowerSemicontinuous_iff_isClosed_epi.1 hlsc
   have hrw : subgradientRel B f
@@ -494,10 +494,10 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 one piece of conjugacy the rigidity argument needs beyond Fenchel–Moreau: `∂f ⊆ ∂g` pins `g` to
 `f + α` only after the same relation on the conjugate side has been turned back into an inequality
 on `E`. -/
-theorem conj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) :
-    conj B (fun x => f x + (α : EReal)) = fun y => conj B f y + ((-α : ℝ) : EReal) := by
+theorem convexConj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) :
+    convexConj B (fun x => f x + (α : EReal)) = fun y => convexConj B f y + ((-α : ℝ) : EReal) := by
   funext y
-  rw [conj_apply, conj_apply, EReal.iSup_add_coe]
+  rw [convexConj_apply, convexConj_apply, EReal.iSup_add_coe]
   exact iSup_congr fun x => EReal.coe_sub_add_coe' _ _ _
 
 end AddConst
@@ -511,11 +511,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 
 omit [FiniteDimensional ℝ E] in
 /-- A point at which a proper function is subdifferentiable is a point where it is finite. -/
-theorem exists_coe_of_subdifferential_nonempty (hpg : Proper g) {x : E}
+theorem exists_coe_of_subdifferential_nonempty (hpg : ProperConvex g) {x : E}
     (h : (subdifferential B g x).Nonempty) : ∃ c : ℝ, g x = (c : EReal) := by
-  have hxdom : x ∈ dom g := by
+  have hxdom : x ∈ convexDom g := by
     by_contra hc
-    rw [subdifferential_eq_empty_of_notMem_dom hpg hc] at h
+    rw [subdifferential_eq_empty_of_notMem_convexDom hpg hc] at h
     exact absurd h Set.not_nonempty_empty
   exact EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x) hxdom
 
@@ -526,14 +526,14 @@ the segment, through the one-dimensional theory; the argument here needs none of
 traps both increments in `[⟨d, v i⟩, ⟨d, v (i+1)⟩]`, so the two differ by at most the telescoping
 total `N⁻¹ ⟨x₂ - x₁, v N - v 0⟩`, which tends to `0`. -/
 theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
-    (hf : ConvexFn f) (hpf : Proper f) (hpg : Proper g)
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hpg : ProperConvex g)
     (hsub : subgradientRel B f ⊆ subgradientRel B g)
-    {x₁ x₂ : E} {a₁ a₂ b₁ b₂ : ℝ} (h₁ : x₁ ∈ ri (dom f)) (h₂ : x₂ ∈ ri (dom f))
+    {x₁ x₂ : E} {a₁ a₂ b₁ b₂ : ℝ} (h₁ : x₁ ∈ ri (convexDom f)) (h₂ : x₂ ∈ ri (convexDom f))
     (hfa₁ : f x₁ = (a₁ : EReal)) (hfa₂ : f x₂ = (a₂ : EReal))
     (hgb₁ : g x₁ = (b₁ : EReal)) (hgb₂ : g x₂ = (b₂ : EReal)) :
     a₂ - a₁ = b₂ - b₁ := by
-  obtain ⟨u₀, hu₀⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf hpf h₁
-  obtain ⟨u₁, hu₁⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf hpf h₂
+  obtain ⟨u₀, hu₀⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf hpf h₁
+  obtain ⟨u₁, hu₁⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf hpf h₂
   set C : ℝ := B (x₂ - x₁) (u₁ - u₀) with hC
   have key : ∀ N : ℕ, 0 < N → |(a₂ - a₁) - (b₂ - b₁)| ≤ (N : ℝ)⁻¹ * C := by
     intro N hN
@@ -551,7 +551,7 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
       push_cast
       rw [add_smul, one_smul]
       abel
-    have hxmem : ∀ i ≤ N, x i ∈ ri (dom f) := by
+    have hxmem : ∀ i ≤ N, x i ∈ ri (convexDom f) := by
       intro i hi
       have ht0 : (0 : ℝ) ≤ (i : ℝ) / (N : ℝ) := by positivity
       have ht1 : (i : ℝ) / (N : ℝ) ≤ 1 := by
@@ -563,11 +563,12 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
         rw [hxi]
         module
       rw [heq]
-      exact Convex.relint hf.convex_dom h₁ h₂ (by linarith) ht0 (by ring)
+      exact Convex.relint hf.convex_convexDom h₁ h₂ (by linarith) ht0 (by ring)
     have hex : ∀ i, ∃ u : F, i ≤ N → u ∈ subdifferential B f (x i) := by
       intro i
       by_cases hi : i ≤ N
-      · obtain ⟨u, hu⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf hpf (hxmem i hi)
+      · obtain ⟨u, hu⟩ :=
+          subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf hpf (hxmem i hi)
         exact ⟨u, fun _ => hu⟩
       · exact ⟨0, fun hc => absurd hc hi⟩
     choose u hu using hex
@@ -589,7 +590,7 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
     have hfa : ∀ i ≤ N, f (x i) = (((f (x i)).toReal : ℝ) : EReal) := by
       intro i hi
       refine (EReal.coe_toReal ?_ (hpf.ne_bot _)).symm
-      exact (mem_dom.1 (intrinsicInterior_subset (hxmem i hi))).ne
+      exact (mem_convexDom.1 (intrinsicInterior_subset (hxmem i hi))).ne
     have hgb : ∀ i ≤ N, g (x i) = (((g (x i)).toReal : ℝ) : EReal) := by
       intro i hi
       obtain ⟨c, hc⟩ := exists_coe_of_subdifferential_nonempty hpg
@@ -622,37 +623,37 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
 is the limit of its values along a segment running into a boundary point, which carries the
 identity out to `cl (dom f)`. Off `cl (dom f)` the right-hand side is `⊤`. -/
 theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B]
-    (hf : ConvexFn f) (hpf : Proper f) (hcf : ClosedFn f)
-    (hg : ConvexFn g) (hpg : Proper g) (hlg : LowerSemicontinuous g)
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hcf : ClosedConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) (hlg : LowerSemicontinuous g)
     (hsub : subgradientRel B f ⊆ subgradientRel B g) :
     ∃ α : ℝ, (∀ y, g y ≤ f y + (α : EReal)) ∧
-      ∀ y ∈ closure (dom f), g y = f y + (α : EReal) := by
-  obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_dom hpf.dom_nonempty
-  have hfinf : ∀ x ∈ ri (dom f), f x = (((f x).toReal : ℝ) : EReal) := fun x hx =>
-    (EReal.coe_toReal (mem_dom.1 (intrinsicInterior_subset hx)).ne (hpf.ne_bot x)).symm
-  have hfing : ∀ x ∈ ri (dom f), g x = (((g x).toReal : ℝ) : EReal) := by
+      ∀ y ∈ closure (convexDom f), g y = f y + (α : EReal) := by
+  obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_convexDom hpf.convexDom_nonempty
+  have hfinf : ∀ x ∈ ri (convexDom f), f x = (((f x).toReal : ℝ) : EReal) := fun x hx =>
+    (EReal.coe_toReal (mem_convexDom.1 (intrinsicInterior_subset hx)).ne (hpf.ne_bot x)).symm
+  have hfing : ∀ x ∈ ri (convexDom f), g x = (((g x).toReal : ℝ) : EReal) := by
     intro x hx
-    obtain ⟨u, hu⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf hpf hx
+    obtain ⟨u, hu⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf hpf hx
     obtain ⟨c, hc⟩ := exists_coe_of_subdifferential_nonempty hpg
       ⟨u, hsub (show ((x, u) : E × F) ∈ subgradientRel B f from hu)⟩
     rw [hc]
     simp
   set α : ℝ := (g z).toReal - (f z).toReal with hα
-  have claim1 : ∀ x ∈ ri (dom f), g x = f x + (α : EReal) := by
+  have claim1 : ∀ x ∈ ri (convexDom f), g x = f x + (α : EReal) := by
     intro x hx
     have h := increment_eq_of_subgradientRel_subset hf hpf hpg hsub hz hx
       (hfinf z hz) (hfinf x hx) (hfing z hz) (hfing x hx)
     rw [hfinf x hx, hfing x hx, ← EReal.coe_add, EReal.coe_eq_coe_iff, hα]
     linarith
-  have hcf' : clFn f = f := hcf
-  have claim2 : ∀ y ∈ closure (dom f), g y = f y + (α : EReal) := by
+  have hcf' : convexCl f = f := hcf
+  have claim2 : ∀ y ∈ closure (convexDom f), g y = f y + (α : EReal) := by
     intro y hy
     have hseg : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ),
         g ((1 - a) • z + a • y) = f ((1 - a) • z + a • y) + (α : EReal) := by
       filter_upwards [eventually_mem_Ico_nhdsLT_one] with a ha
-      exact claim1 _ (Convex.segment_mem_relint hf.convex_dom hz hy ha.1 ha.2)
+      exact claim1 _ (Convex.segment_mem_relint hf.convex_convexDom hz hy ha.1 ha.2)
     have hftend : Tendsto (fun a : ℝ => f ((1 - a) • z + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (f y)) := by
-      have h := hf.tendsto_clFn_along_segment_relint hpf hz y
+      have h := hf.tendsto_convexCl_along_segment_relint hpf hz y
       rwa [hcf'] at h
     refine le_antisymm ?_ ?_
     · by_contra hcon
@@ -707,12 +708,12 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
         lt_of_le_of_lt ha2 (by exact_mod_cast ha3)
       exact absurd (hlt1.trans hlt2) (lt_irrefl _)
   refine ⟨α, fun y => ?_, claim2⟩
-  by_cases hy : y ∈ closure (dom f)
+  by_cases hy : y ∈ closure (convexDom f)
   · exact le_of_eq (claim2 y hy)
-  · have hyd : y ∉ dom f := fun hc => hy (subset_closure hc)
+  · have hyd : y ∉ convexDom f := fun hc => hy (subset_closure hc)
     have htop : f y = ⊤ := by
       by_contra hc
-      exact hyd (mem_dom.2 (lt_top_iff_ne_top.2 hc))
+      exact hyd (mem_convexDom.2 (lt_top_iff_ne_top.2 hc))
     rw [htop, EReal.top_add_coe]
     exact le_top
 
@@ -761,55 +762,57 @@ theorem eq_add_coe_of_subgradientRel_subset [IsCompatiblePairing B] [IsCompatibl
     ∃ α : ℝ, ∀ x, g x = f x + (α : EReal) := by
   obtain ⟨α, hle, heq⟩ := exists_forall_le_add_coe_of_subgradientRel_subset hf.convex hf.proper
     hf.closed hg.convex hg.proper hg.lowerSemicontinuous hsub
-  have hfstar : ClosedProperConvexFn (conj B f) :=
-    ⟨convexFn_conj B f, closedFn_conj, proper_conj hf⟩
-  have hgstar : ClosedProperConvexFn (conj B g) :=
-    ⟨convexFn_conj B g, closedFn_conj, proper_conj hg⟩
-  have hsub' : subgradientRel B.flip (conj B f) ⊆ subgradientRel B.flip (conj B g) := by
-    rw [subgradientRel_conj_eq_inv hf.convex hf.closed,
-      subgradientRel_conj_eq_inv hg.convex hg.closed]
+  have hfstar : ClosedProperConvexFn (convexConj B f) :=
+    ⟨convexFn_convexConj B f, closedConvex_convexConj, properConvex_convexConj hf⟩
+  have hgstar : ClosedProperConvexFn (convexConj B g) :=
+    ⟨convexFn_convexConj B g, closedConvex_convexConj, properConvex_convexConj hg⟩
+  have hsub' : subgradientRel B.flip (convexConj B f) ⊆ subgradientRel B.flip (convexConj B g) := by
+    rw [subgradientRel_convexConj_eq_inv hf.convex hf.closed,
+      subgradientRel_convexConj_eq_inv hg.convex hg.closed]
     exact fun p hp => hsub hp
   obtain ⟨β, hleβ, heqβ⟩ := exists_forall_le_add_coe_of_subgradientRel_subset hfstar.convex
     hfstar.proper hfstar.closed hgstar.convex hgstar.proper hgstar.lowerSemicontinuous hsub'
   -- The two constants are opposite: use equality in Fenchel's inequality on the graph of `∂f`.
-  obtain ⟨x, hx⟩ := Convex.relint_nonempty hf.convex.convex_dom hf.proper.dom_nonempty
-  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf.convex hf.proper hx
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
-  have hfx : f x + conj B f y = ((B x y : ℝ) : EReal) :=
-    (Proper.mem_subdifferential_iff_add_conj_eq hf.proper).1 hy
-  have hgx : g x + conj B g y = ((B x y : ℝ) : EReal) :=
-    (Proper.mem_subdifferential_iff_add_conj_eq hg.proper).1
+  obtain ⟨x, hx⟩ := Convex.relint_nonempty hf.convex.convex_convexDom hf.proper.convexDom_nonempty
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf.convex hf.proper hx
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
+  have hfx : f x + convexConj B f y = ((B x y : ℝ) : EReal) :=
+    (ProperConvex.mem_subdifferential_iff_add_convexConj_eq hf.proper).1 hy
+  have hgx : g x + convexConj B g y = ((B x y : ℝ) : EReal) :=
+    (ProperConvex.mem_subdifferential_iff_add_convexConj_eq hg.proper).1
       (hsub (show ((x, y) : E × F) ∈ subgradientRel B f from hy))
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hxdom
-  have hqbot : conj B f y ≠ ⊥ := conj_ne_bot (B := B) hf.proper.dom_nonempty y
-  have hqtop : conj B f y ≠ ⊤ := by
+  have hqbot : convexConj B f y ≠ ⊥ := convexConj_ne_bot (B := B) hf.proper.convexDom_nonempty y
+  have hqtop : convexConj B f y ≠ ⊤ := by
     intro hc
     rw [hp, hc, EReal.coe_add_top] at hfx
     exact absurd hfx.symm (EReal.coe_ne_top _)
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hqbot (lt_top_iff_ne_top.2 hqtop)
-  have hydom : y ∈ dom (conj B f) := mem_dom.2 (lt_top_iff_ne_top.2 hqtop)
+  have hydom : y ∈ convexDom (convexConj B f) := mem_convexDom.2 (lt_top_iff_ne_top.2 hqtop)
   have hgxval : g x = ((p + α : ℝ) : EReal) := by
     rw [heq x (subset_closure hxdom), hp, ← EReal.coe_add]
-  have hgyval : conj B g y = ((q + β : ℝ) : EReal) := by
+  have hgyval : convexConj B g y = ((q + β : ℝ) : EReal) := by
     rw [heqβ y (subset_closure hydom), hq, ← EReal.coe_add]
   rw [hp, hq, ← EReal.coe_add, EReal.coe_eq_coe_iff] at hfx
   rw [hgxval, hgyval, ← EReal.coe_add, EReal.coe_eq_coe_iff] at hgx
   have hβ : β = -α := by linarith
   -- Conjugating `g* ≤ (f + α)*` back to `E`.
-  have hstar : conj B (fun x => f x + (α : EReal)) = fun y => conj B f y + ((-α : ℝ) : EReal) :=
-    conj_add_coe B f α
-  have hgle : conj B g ≤ conj B (fun x => f x + (α : EReal)) := by
+  have hstar : convexConj B (fun x => f x + (α : EReal)) = fun y => convexConj B f y
+      + ((-α : ℝ) : EReal) :=
+    convexConj_add_coe B f α
+  have hgle : convexConj B g ≤ convexConj B (fun x => f x + (α : EReal)) := by
     rw [hstar]
     intro y
     rw [← hβ]
     exact hleβ y
-  have hbcf : conj B.flip (conj B f) = f := biconj_eq_self hf.convex hf.closed
-  have hbcg : conj B.flip (conj B g) = g := biconj_eq_self hg.convex hg.closed
-  have hbih : conj B.flip (conj B (fun x => f x + (α : EReal))) = fun x => f x + (α : EReal) := by
-    rw [hstar, conj_add_coe B.flip (conj B f) (-α), neg_neg]
+  have hbcf : convexConj B.flip (convexConj B f) = f := convexBiconj_eq_self hf.convex hf.closed
+  have hbcg : convexConj B.flip (convexConj B g) = g := convexBiconj_eq_self hg.convex hg.closed
+  have hbih : convexConj B.flip (convexConj B (fun x => f x + (α : EReal))) = fun x => f x +
+      (α : EReal) := by
+    rw [hstar, convexConj_add_coe B.flip (convexConj B f) (-α), neg_neg]
     funext x
     rw [congrFun hbcf x]
-  have hge := conj_antitone B.flip hgle
+  have hge := convexConj_antitone B.flip hgle
   rw [hbih, hbcg] at hge
   exact ⟨α, fun x => le_antisymm (hle x) (Pi.le_def.1 hge x)⟩
 
@@ -821,8 +824,8 @@ theorem isMaximalCyclicallyMonotone_subgradientRel [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ClosedProperConvexFn f) :
     IsMaximalCyclicallyMonotone B (subgradientRel B f) := by
   refine ⟨isCyclicallyMonotone_subgradientRel hf.proper, fun σ hσ hsub => ?_⟩
-  obtain ⟨x, hx⟩ := Convex.relint_nonempty hf.convex.convex_dom hf.proper.dom_nonempty
-  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := B) hf.convex hf.proper hx
+  obtain ⟨x, hx⟩ := Convex.relint_nonempty hf.convex.convex_convexDom hf.proper.convexDom_nonempty
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf.convex hf.proper hx
   obtain ⟨g, hgconv, hgclosed, hgproper, hgsub⟩ :=
     exists_convexFn_subgradientRel_of_isCyclicallyMonotone hσ
       ⟨(x, y), hsub (show ((x, y) : E × F) ∈ subgradientRel B f from hy)⟩

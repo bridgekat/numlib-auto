@@ -35,9 +35,6 @@ Theorem 31.2's properness clause needs no relative-interior hypothesis; and Coro
 
 ## Main definitions
 
-* `ClosedProperConcaveFn g` — the concave mirror of `ClosedProperConvexFn`, the standing hypothesis
-  on `g` from Corollary 31.2.1 onwards; `closedProperConcaveFn_iff_neg` is the bridge to the
-  backbone's `ClosedProperConvexFn fun x => -(g x)`.
 * `fenchelBifun A f g` — the bifunction `(F u)(x) = f x - g (A x + u)` of Theorem 31.2: the Fenchel
   problem perturbed by translating the concave function.
 
@@ -70,7 +67,7 @@ pairing-parametrised backbone asks for.
   `theorem_31_5_argmin_iff`, `theorem_31_5_argmin_eq`, `theorem_31_5_gradient`,
   `theorem_31_5_gradient_conj` — Moreau's theorem `(f □ w) + (f* □ w) = w` with `w = ½|·|²`, and
   the proximation as the gradient of the Moreau envelope.
-* `prox_eq_iff_sub_mem_subdifferential`, `prox_add_prox_conj_eq`, `prox_conj_eq_sub`,
+* `prox_eq_iff_sub_mem_subdifferential`, `prox_add_prox_convexConj_eq`, `prox_convexConj_eq_sub`,
   `prox_continuous`, `prox_contraction`, `prox_lipschitzWith_one`, `corollary_31_5_1` — Moreau's
   decomposition `z = prox (z | f) + prox (z | f*)` and the homeomorphism it defines.
 * `corollary_31_5_2` — `∂f` is a maximal monotone mapping.
@@ -89,33 +86,6 @@ open ConvexAnalysis
 
 variable {m n : ℕ}
 
-/-! ### Concave functions in the book's vocabulary -/
-
-/-- Rockafellar's **closed proper concave function** on `ℝⁿ`, the standing hypothesis on `g` from
-Corollary 31.2.1 onwards. The backbone spells this as `ClosedProperConvexFn fun x => -(g x)`; the
-bridge is `closedProperConcaveFn_iff_neg`. -/
-structure ClosedProperConcaveFn (g : Rn n → EReal) : Prop where
-  /-- The hypograph is convex. -/
-  concave : ConcaveFn g
-  /-- `g` equals its own concave closure. -/
-  closed : ClosedConcaveFn g
-  /-- `g` is finite somewhere and never `+∞`. -/
-  proper : ProperConcave g
-
-/-- **The bridge to the backbone**: `g` is closed proper concave exactly when `-g` is closed proper
-convex, clause by clause. -/
-theorem closedProperConcaveFn_iff_neg {g : Rn n → EReal} :
-    ClosedProperConcaveFn g ↔ ClosedProperConvexFn fun x => -(g x) :=
-  ⟨fun h => ⟨concaveFn_iff_convexFn_neg.1 h.concave, closedConcaveFn_iff.1 h.closed,
-      properConcave_iff_proper_neg.1 h.proper⟩,
-    fun h => ⟨concaveFn_iff_convexFn_neg.2 h.convex, closedConcaveFn_iff.2 h.closed,
-      properConcave_iff_proper_neg.2 h.proper⟩⟩
-
-/-- The bridge, in the direction every proof below uses. -/
-theorem ClosedProperConcaveFn.neg {g : Rn n → EReal} (hg : ClosedProperConcaveFn g) :
-    ClosedProperConvexFn fun x => -(g x) :=
-  closedProperConcaveFn_iff_neg.1 hg
-
 /-! ### Theorem 31.1: Fenchel's duality theorem
 
 Rockafellar's two conditions (a) and (b) are two sufficient conditions for one interface, the
@@ -125,76 +95,80 @@ one line each after them. -/
 
 /-- Rockafellar's condition **(a)** of Theorem 31.1: `ri (dom f) ∩ ri (dom g) ≠ ∅` makes `f` and
 `-g` add exactly (Theorem 16.4). -/
-private theorem isExactSum_neg_of_relint {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (domConcave g)) : IsExactSum (pairing n) f fun x => -(g x) :=
+private theorem isExactSum_neg_of_relint {f g : Rn n → EReal} (hf : ConvexFn f)
+    (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (concaveDom g)) : IsExactSum (pairing n) f fun x => -(g x) :=
   IsExactSum.of_relint hf hpf (concaveFn_iff_convexFn_neg.1 hg)
-    (properConcave_iff_proper_neg.1 hpg) hxf (by rwa [← domConcave_eq_dom_neg])
+    (properConcave_iff_properConvex_neg.1 hpg) hxf (by rwa [← concaveDom_eq_convexDom_neg])
 
 /-- Rockafellar's condition **(b)** of Theorem 31.1, on the dual pair: `ri (dom g*) ∩ ri (dom f*)`
 non-empty makes `f*` and `-g*` add exactly. -/
-private theorem isExactSum_conj_of_relint {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
+private theorem isExactSum_convexConj_of_relint {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConcaveFn g) {y₀ : Rn n}
-    (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
-    (hyg : y₀ ∈ ri (domConcave (concaveConj (pairing n) g))) :
-    IsExactSum (pairing n).flip (conj (pairing n) f)
+    (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
+    (hyg : y₀ ∈ ri (concaveDom (concaveConj (pairing n) g))) :
+    IsExactSum (pairing n).flip (convexConj (pairing n) f)
       fun y => -(concaveConj (pairing n) g y) := by
-  refine IsExactSum.of_relint (convexFn_conj (pairing n) f) (proper_conj (B := pairing n) hf)
+  refine IsExactSum.of_relint (convexFn_convexConj (pairing n) f)
+      (properConvex_convexConj (B := pairing n) hf)
     (concaveFn_iff_convexFn_neg.1 (concaveFn_concaveConj (pairing n) g))
-    (properConcave_iff_proper_neg.1 ⟨⟨y₀, intrinsicInterior_subset hyg⟩,
-      fun y => concaveConj_ne_top hg.proper.domConcave_nonempty y⟩)
+    (properConcave_iff_properConvex_neg.1 ⟨⟨y₀, intrinsicInterior_subset hyg⟩,
+      fun y => concaveConj_ne_top hg.proper.concaveDom_nonempty y⟩)
     hyf ?_
-  rwa [← domConcave_eq_dom_neg]
+  rwa [← concaveDom_eq_convexDom_neg]
 
 /-- **Theorem 31.1**, the inequality the proof opens with: every dual value `g*(x*) - f*(x*)` is
 below every primal value `f(x) - g(x)`. Fenchel's inequality used twice, and carrying **no
 hypothesis at all** — both `∞ - ∞` collisions are absorbed on the correct side. -/
 theorem theorem_31_1_weak (f g : Rn n → EReal) (x y : Rn n) :
-    concaveConj (pairing n) g y - conj (pairing n) f y ≤ f x - g x :=
-  concaveConj_sub_conj_le_sub (pairing n) f g x y
+    concaveConj (pairing n) g y - convexConj (pairing n) f y ≤ f x - g x :=
+  concaveConj_sub_convexConj_le_sub (pairing n) f g x y
 
 /-- **Theorem 31.1** under condition **(a)**: for a proper convex `f` and a proper concave `g` whose
 effective domains have relative interiors meeting, `inf {f(x) - g(x)} = sup {g*(x*) - f*(x*)}`.
 Condition (a) enters only through Theorem 16.4. -/
-theorem theorem_31_1_a {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (domConcave g)) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y :=
+theorem theorem_31_1_a {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (concaveDom g)) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y :=
   fenchel_duality (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**: under condition (a) the supremum is attained at some `x*`. Specialises
-`exists_concaveConj_sub_conj_eq`. -/
-theorem theorem_31_1_a_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (domConcave g)) :
-    ∃ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y = ⨅ x, f x - g x :=
-  exists_concaveConj_sub_conj_eq (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg)
+`exists_concaveConj_sub_convexConj_eq`. -/
+theorem theorem_31_1_a_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (concaveDom g)) :
+    ∃ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y = ⨅ x, f x - g x :=
+  exists_concaveConj_sub_convexConj_eq (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**, the attainment clause packaged: under condition (a) the common value is the
-*greatest* dual value. Specialises `isGreatest_concaveConj_sub_conj`. -/
-theorem theorem_31_1_a_isGreatest {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (domConcave g)) :
+*greatest* dual value. Specialises `isGreatest_concaveConj_sub_convexConj`. -/
+theorem theorem_31_1_a_isGreatest {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (concaveDom g)) :
     IsGreatest (Set.range fun y : Rn n =>
-      concaveConj (pairing n) g y - conj (pairing n) f y) (⨅ x, f x - g x) :=
-  isGreatest_concaveConj_sub_conj (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg)
+      concaveConj (pairing n) g y - convexConj (pairing n) f y) (⨅ x, f x - g x) :=
+  isGreatest_concaveConj_sub_convexConj (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1** under condition **(b)**: `f` and `g` closed, with `ri (dom g*)` meeting
 `ri (dom f*)`. The equality is the same one — condition (a) read on the dual pair together with
 Fenchel–Moreau. -/
 theorem theorem_31_1_b {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    (hg : ClosedProperConcaveFn g) {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
-    (hyg : y₀ ∈ ri (domConcave (concaveConj (pairing n) g))) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y :=
-  fenchel_duality_of_closed hf hg.neg (isExactSum_conj_of_relint hf hg hyf hyg)
+    (hg : ClosedProperConcaveFn g) {y₀ : Rn n}
+        (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
+    (hyg : y₀ ∈ ri (concaveDom (concaveConj (pairing n) g))) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y :=
+  fenchel_duality_of_closed hf hg (isExactSum_convexConj_of_relint hf hg hyf hyg)
 
 /-- **Theorem 31.1**: under condition (b) the *infimum* `inf {f(x) - g(x)}` is attained at some
 `x`. Specialises `exists_sub_eq_iInf`. -/
 theorem theorem_31_1_b_attained {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    (hg : ClosedProperConcaveFn g) {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
-    (hyg : y₀ ∈ ri (domConcave (concaveConj (pairing n) g))) :
+    (hg : ClosedProperConcaveFn g) {y₀ : Rn n}
+        (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
+    (hyg : y₀ ∈ ri (concaveDom (concaveConj (pairing n) g))) :
     ∃ x : Rn n, f x - g x = ⨅ z, f z - g z :=
-  exists_sub_eq_iInf hf hg.neg (isExactSum_conj_of_relint hf hg hyf hyg)
+  exists_sub_eq_iInf hf hg (isExactSum_convexConj_of_relint hf hg hyf hyg)
 
 /-! ### Theorem 31.1: the polyhedral strengthening
 
@@ -206,18 +180,19 @@ convex function is closed (Corollary 19.1.2). -/
 
 /-- Condition (a) with `f` polyhedral: `dom f` in place of `ri (dom f)`. -/
 private theorem isExactSum_neg_of_polyhedral_left {f g : Rn n → EReal} (hf : PolyhedralFn f)
-    (hpf : Proper f) (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : x₀ ∈ ri (domConcave g)) : IsExactSum (pairing n) f fun x => -(g x) :=
+    (hpf : ProperConvex f) (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n}
+        (hxf : x₀ ∈ convexDom f)
+    (hxg : x₀ ∈ ri (concaveDom g)) : IsExactSum (pairing n) f fun x => -(g x) :=
   IsExactSum.of_polyhedral hf hpf (concaveFn_iff_convexFn_neg.1 hg)
-    (properConcave_iff_proper_neg.1 hpg) hxf (by rwa [← domConcave_eq_dom_neg])
+    (properConcave_iff_properConvex_neg.1 hpg) hxf (by rwa [← concaveDom_eq_convexDom_neg])
 
 /-- Condition (a) with `g` polyhedral: `dom g` in place of `ri (dom g)`. -/
 private theorem isExactSum_neg_of_polyhedral_right {f g : Rn n → EReal} (hf : ConvexFn f)
-    (hpf : Proper f) (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : x₀ ∈ domConcave g) :
+    (hpf : ProperConvex f) (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : x₀ ∈ concaveDom g) :
     IsExactSum (pairing n) f fun x => -(g x) :=
-  (IsExactSum.of_polyhedral hg (properConcave_iff_proper_neg.1 hpg) hf hpf
-    (by rwa [← domConcave_eq_dom_neg]) hxf).symm
+  (IsExactSum.of_polyhedral hg (properConcave_iff_properConvex_neg.1 hpg) hf hpf
+    (by rwa [← concaveDom_eq_convexDom_neg]) hxf).symm
 
 /-- **`-g*` is polyhedral when `-g` is.** The concave conjugate is the convex conjugate of `-g` read
 at `-y` (`neg_concaveConj`), the conjugate of a polyhedral function is polyhedral (**Theorem
@@ -227,99 +202,104 @@ private theorem polyhedralFn_neg_concaveConj {g : Rn n → EReal}
     (hg : PolyhedralFn fun x => -(g x)) :
     PolyhedralFn fun y : Rn n => -(concaveConj (pairing n) g y) := by
   have hfun : (fun y : Rn n => -(concaveConj (pairing n) g y))
-      = compLin (conj (pairing n) fun x => -(g x)) (-LinearMap.id) := by
+      = compLin (convexConj (pairing n) fun x => -(g x)) (-LinearMap.id) := by
     funext y
     rw [neg_concaveConj, compLin_apply]
     rfl
   rw [hfun]
   change Polyhedral (epi _)
   rw [epi_compLin]
-  exact Polyhedral.comap (PolyhedralFn.conj (B := pairing n) hg) _
+  exact Polyhedral.comap (PolyhedralFn.convexConj (B := pairing n) hg) _
 
 /-- A polyhedral proper concave function is closed (**Corollary 19.1.2** on the concave side), so
 the closure assumption of Theorem 31.1(b) really is superfluous for it. -/
 private theorem closedProperConcaveFn_of_polyhedral {g : Rn n → EReal}
     (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) : ClosedProperConcaveFn g := by
-  have hp : Proper fun x => -(g x) := properConcave_iff_proper_neg.1 hpg
-  exact closedProperConcaveFn_iff_neg.2 ⟨hg.convexFn, hg.closedFn hp.ne_bot, hp⟩
+  have hp : ProperConvex fun x => -(g x) := hpg.properConvex_neg
+  exact closedProperConcaveFn_iff_closedProperConvexFn_neg.2
+    ⟨hg.convexFn, hg.closedConvex hp.ne_bot, hp⟩
 
 /-- **Theorem 31.1**, the polyhedral strengthening of condition (a) with `f` polyhedral:
 `ri (dom f)` may be replaced by `dom f`. -/
-theorem theorem_31_1_a_polyhedral_left {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : x₀ ∈ ri (domConcave g)) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y :=
+theorem theorem_31_1_a_polyhedral_left {f g : Rn n → EReal} (hf : PolyhedralFn f)
+    (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+    (hxg : x₀ ∈ ri (concaveDom g)) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y :=
   fenchel_duality (isExactSum_neg_of_polyhedral_left hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**: under the polyhedral form of (a) with `f` polyhedral, the supremum is still
 attained. -/
 theorem theorem_31_1_a_polyhedral_left_attained {f g : Rn n → EReal} (hf : PolyhedralFn f)
-    (hpf : Proper f) (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : x₀ ∈ ri (domConcave g)) :
-    ∃ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y = ⨅ x, f x - g x :=
-  exists_concaveConj_sub_conj_eq (isExactSum_neg_of_polyhedral_left hf hpf hg hpg hxf hxg)
+    (hpf : ProperConvex f) (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n}
+        (hxf : x₀ ∈ convexDom f)
+    (hxg : x₀ ∈ ri (concaveDom g)) :
+    ∃ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y = ⨅ x, f x - g x :=
+  exists_concaveConj_sub_convexConj_eq (isExactSum_neg_of_polyhedral_left hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**, the polyhedral strengthening of condition (a) with `g` polyhedral:
 `ri (dom g)` may be replaced by `dom g`. -/
-theorem theorem_31_1_a_polyhedral_right {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
+theorem theorem_31_1_a_polyhedral_right {f g : Rn n → EReal} (hf : ConvexFn f)
+    (hpf : ProperConvex f)
     (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : x₀ ∈ domConcave g) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y :=
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : x₀ ∈ concaveDom g) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y :=
   fenchel_duality (isExactSum_neg_of_polyhedral_right hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**: under the polyhedral form of (a) with `g` polyhedral, the supremum is still
 attained. -/
 theorem theorem_31_1_a_polyhedral_right_attained {f g : Rn n → EReal} (hf : ConvexFn f)
-    (hpf : Proper f) (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : x₀ ∈ domConcave g) :
-    ∃ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y = ⨅ x, f x - g x :=
-  exists_concaveConj_sub_conj_eq (isExactSum_neg_of_polyhedral_right hf hpf hg hpg hxf hxg)
+    (hpf : ProperConvex f) (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : x₀ ∈ concaveDom g) :
+    ∃ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y = ⨅ x, f x - g x :=
+  exists_concaveConj_sub_convexConj_eq (isExactSum_neg_of_polyhedral_right hf hpf hg hpg hxf hxg)
 
 /-- **Theorem 31.1**, the polyhedral strengthening of condition (b) with `f` polyhedral:
 `ri (dom f*)` may be replaced by `dom f*`, and `f` is not assumed closed — a proper polyhedral
 convex function is closed automatically. -/
-theorem theorem_31_1_b_polyhedral_left {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : ClosedProperConcaveFn g) {y₀ : Rn n} (hyf : y₀ ∈ dom (conj (pairing n) f))
-    (hyg : y₀ ∈ ri (domConcave (concaveConj (pairing n) g))) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y := by
-  have hfc : ClosedProperConvexFn f := ⟨hf.convexFn, hf.closedFn hpf.ne_bot, hpf⟩
-  refine fenchel_duality_of_closed hfc hg.neg (IsExactSum.of_polyhedral
-    (PolyhedralFn.conj (B := pairing n) hf) (proper_conj (B := pairing n) hfc)
+theorem theorem_31_1_b_polyhedral_left {f g : Rn n → EReal} (hf : PolyhedralFn f)
+    (hpf : ProperConvex f)
+    (hg : ClosedProperConcaveFn g) {y₀ : Rn n} (hyf : y₀ ∈ convexDom (convexConj (pairing n) f))
+    (hyg : y₀ ∈ ri (concaveDom (concaveConj (pairing n) g))) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y := by
+  have hfc : ClosedProperConvexFn f := ⟨hf.convexFn, hf.closedConvex hpf.ne_bot, hpf⟩
+  refine fenchel_duality_of_closed hfc hg (IsExactSum.of_polyhedral
+    (PolyhedralFn.convexConj (B := pairing n) hf) (properConvex_convexConj (B := pairing n) hfc)
     (concaveFn_iff_convexFn_neg.1 (concaveFn_concaveConj (pairing n) g))
-    (properConcave_iff_proper_neg.1 ⟨⟨y₀, intrinsicInterior_subset hyg⟩,
-      fun y => concaveConj_ne_top hg.proper.domConcave_nonempty y⟩) hyf ?_)
-  change y₀ ∈ ri (dom fun y => -(concaveConj (pairing n) g y))
-  rwa [← domConcave_eq_dom_neg]
+    (properConcave_iff_properConvex_neg.1 ⟨⟨y₀, intrinsicInterior_subset hyg⟩,
+      fun y => concaveConj_ne_top hg.proper.concaveDom_nonempty y⟩) hyf ?_)
+  change y₀ ∈ ri (convexDom fun y => -(concaveConj (pairing n) g y))
+  rwa [← concaveDom_eq_convexDom_neg]
 
 /-- **Theorem 31.1**, the polyhedral strengthening of condition (b) with `g` polyhedral:
 `ri (dom g*)` may be replaced by `dom g*`, and `g` is not assumed closed. -/
 theorem theorem_31_1_b_polyhedral_right {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : PolyhedralFn fun x => -(g x)) (hpg : ProperConcave g) {y₀ : Rn n}
-    (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
-    (hyg : y₀ ∈ domConcave (concaveConj (pairing n) g)) :
-    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y := by
-  refine fenchel_duality_of_closed hf (closedProperConcaveFn_of_polyhedral hg hpg).neg
+    (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
+    (hyg : y₀ ∈ concaveDom (concaveConj (pairing n) g)) :
+    (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - convexConj (pairing n) f y := by
+  refine fenchel_duality_of_closed hf (closedProperConcaveFn_of_polyhedral hg hpg)
     (IsExactSum.of_polyhedral (polyhedralFn_neg_concaveConj hg)
-      (properConcave_iff_proper_neg.1 ⟨⟨y₀, hyg⟩,
-        fun y => concaveConj_ne_top hpg.domConcave_nonempty y⟩)
-      (convexFn_conj (pairing n) f) (proper_conj (B := pairing n) hf) ?_ hyf).symm
-  rwa [← domConcave_eq_dom_neg]
+      (properConcave_iff_properConvex_neg.1 ⟨⟨y₀, hyg⟩,
+        fun y => concaveConj_ne_top hpg.concaveDom_nonempty y⟩)
+      (convexFn_convexConj (pairing n) f) (properConvex_convexConj (B := pairing n) hf) ?_ hyf).symm
+  rwa [← concaveDom_eq_convexDom_neg]
 
 /-- **Theorem 31.1**: "if (a) and (b) both hold, the infimum and supremum are necessarily finite".
 Only the *closures* of the two conditions are used — a point of `dom f ∩ dom g` bounds the infimum
 above, and one of `dom g* ∩ dom f*` bounds it below through weak duality — so the hypotheses here
 are weaker than the book's, and (a) and (b) imply them. -/
-theorem theorem_31_1_finite {f g : Rn n → EReal} (hpf : Proper f) (hpg : ProperConcave g)
-    {x₀ : Rn n} (hxf : x₀ ∈ dom f) (hxg : x₀ ∈ domConcave g) {y₀ : Rn n}
-    (hyf : y₀ ∈ dom (conj (pairing n) f))
-    (hyg : y₀ ∈ domConcave (concaveConj (pairing n) g)) :
+theorem theorem_31_1_finite {f g : Rn n → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g)
+    {x₀ : Rn n} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ concaveDom g) {y₀ : Rn n}
+    (hyf : y₀ ∈ convexDom (convexConj (pairing n) f))
+    (hyg : y₀ ∈ concaveDom (concaveConj (pairing n) g)) :
     ∃ r : ℝ, (⨅ x, f x - g x) = (r : EReal) := by
   have hgy : (⊥ : EReal) < concaveConj (pairing n) g y₀ := hyg
-  have hfy : conj (pairing n) f y₀ < ⊤ := hyf
+  have hfy : convexConj (pairing n) f y₀ < ⊤ := hyf
   obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hgy.ne'
-    (lt_top_iff_ne_top.2 (concaveConj_ne_top hpg.domConcave_nonempty y₀))
+    (lt_top_iff_ne_top.2 (concaveConj_ne_top hpg.concaveDom_nonempty y₀))
   obtain ⟨d, hd⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
-    (conj_ne_bot hpf.dom_nonempty y₀) hfy
+    (convexConj_ne_bot hpf.convexDom_nonempty y₀) hfy
   have hlow : ((c - d : ℝ) : EReal) ≤ ⨅ x, f x - g x := by
     refine le_iInf fun x => ?_
     have h := theorem_31_1_weak f g x y₀
@@ -345,26 +325,27 @@ once, and the backbone separates them: it makes `f` and `-(g A)` add exactly (Th
 
 /-- Condition (a) of Corollary 31.2.1, the exact-pullback half: **Theorem 16.3**. -/
 private theorem isExactImage_neg_of_relint {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
-    (hg : ClosedProperConcaveFn g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (domConcave g)) :
+    (hg : ClosedProperConcaveFn g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (concaveDom g)) :
     IsExactImage (pairing n) (pairing m) A (LinearMap.adjoint A) (isAdjointPair_adjoint A)
       fun w => -(g w) :=
-  IsExactImage.of_relint_closed (isAdjointPair_adjoint A) hg.neg (by rwa [← domConcave_eq_dom_neg])
+  IsExactImage.of_relint_closed (isAdjointPair_adjoint A) hg.closedProperConvexFn_neg
+    (by rwa [← concaveDom_eq_convexDom_neg])
 
 /-- Condition (a) of Corollary 31.2.1, the exact-sum half: **Theorem 16.4**, with the relative
 interior of `dom (-(g A)) = A⁻¹ (dom (-g))` computed by **Theorem 6.7**. -/
 private theorem isExactSum_neg_comp_of_relint {f : Rn n → EReal} {g : Rn m → EReal}
-    (A : Rn n →ₗ[ℝ] Rn m) (hf : ConvexFn f) (hpf : Proper f) (hg : ConcaveFn g)
-    (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : A x₀ ∈ ri (domConcave g)) : IsExactSum (pairing n) f fun x => -(g (A x)) := by
+    (A : Rn n →ₗ[ℝ] Rn m) (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConcaveFn g)
+    (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : A x₀ ∈ ri (concaveDom g)) : IsExactSum (pairing n) f fun x => -(g (A x)) := by
   have hgn : ConvexFn fun w => -(g w) := concaveFn_iff_convexFn_neg.1 hg
-  have hpgn : Proper fun w => -(g w) := properConcave_iff_proper_neg.1 hpg
-  have hxg' : A x₀ ∈ ri (dom fun w => -(g w)) := by rwa [← domConcave_eq_dom_neg]
+  have hpgn : ProperConvex fun w => -(g w) := properConcave_iff_properConvex_neg.1 hpg
+  have hxg' : A x₀ ∈ ri (convexDom fun w => -(g w)) := by rwa [← concaveDom_eq_convexDom_neg]
   have hcomp : ConvexFn (compLin (fun w => -(g w)) A) := convexFn_compLin A hgn
-  have hpcomp : Proper (compLin (fun w => -(g w)) A) :=
-    ⟨⟨x₀, by rw [dom_compLin]; exact Set.mem_preimage.2 (intrinsicInterior_subset hxg')⟩,
+  have hpcomp : ProperConvex (compLin (fun w => -(g w)) A) :=
+    ⟨⟨x₀, by rw [convexDom_compLin]; exact Set.mem_preimage.2 (intrinsicInterior_subset hxg')⟩,
       fun x => hpgn.ne_bot (A x)⟩
-  have hri : x₀ ∈ ri (dom (compLin (fun w => -(g w)) A)) := by
-    rw [dom_compLin, Convex.relint_preimage hgn.convex_dom A ⟨x₀, hxg'⟩]
+  have hri : x₀ ∈ ri (convexDom (compLin (fun w => -(g w)) A)) := by
+    rw [convexDom_compLin, Convex.relint_preimage hgn.convex_convexDom A ⟨x₀, hxg'⟩]
     exact hxg'
   exact IsExactSum.of_relint hf hpf hcomp hpcomp hxf hri
 
@@ -373,23 +354,23 @@ concave `g` on `ℝᵐ` and a linear `A : ℝⁿ → ℝᵐ`, `inf {f(x) - g(Ax)
 soon as some `x ∈ ri (dom f)` has `Ax ∈ ri (dom g)`. Closedness of `f`, which the book assumes, is
 not used under (a). -/
 theorem corollary_31_2_1_a {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
-    (hf : ConvexFn f) (hpf : Proper f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : A x₀ ∈ ri (domConcave g)) :
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : A x₀ ∈ ri (concaveDom g)) :
     (⨅ x, f x - g (A x))
       = ⨆ z : Rn m, concaveConj (pairing m) g z
-          - conj (pairing n) f (LinearMap.adjoint A z) :=
+          - convexConj (pairing n) f (LinearMap.adjoint A z) :=
   fenchel_duality_comp (isAdjointPair_adjoint A)
     (isExactSum_neg_comp_of_relint A hf hpf hg.concave hg.proper hxf hxg)
     (isExactImage_neg_of_relint A hg hxg)
 
 /-- **Corollary 31.2.1**: under (a) the supremum is attained at some `u*`. Specialises
-`exists_concaveConj_sub_conj_comp_eq`. -/
+`exists_concaveConj_sub_convexConj_comp_eq`. -/
 theorem corollary_31_2_1_a_attained {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
-    (hf : ConvexFn f) (hpf : Proper f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : A x₀ ∈ ri (domConcave g)) :
-    ∃ z : Rn m, concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z)
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : A x₀ ∈ ri (concaveDom g)) :
+    ∃ z : Rn m, concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z)
       = ⨅ x, f x - g (A x) :=
-  exists_concaveConj_sub_conj_comp_eq (isAdjointPair_adjoint A)
+  exists_concaveConj_sub_convexConj_comp_eq (isAdjointPair_adjoint A)
     (isExactSum_neg_comp_of_relint A hf hpf hg.concave hg.proper hxf hxg)
     (isExactImage_neg_of_relint A hg hxg)
 
@@ -403,16 +384,16 @@ Both of condition (a)'s jobs have polyhedral constructors: `-(g A)` is polyhedra
 place of Theorem 16.3 — replaces the pullback. Neither needs a relative interior on the `g` side,
 and closedness of `g` is automatic. -/
 theorem corollary_31_2_1_a_polyhedral_right {f : Rn n → EReal} {g : Rn m → EReal}
-    (A : Rn n →ₗ[ℝ] Rn m) (hf : ConvexFn f) (hpf : Proper f)
+    (A : Rn n →ₗ[ℝ] Rn m) (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : PolyhedralFn fun w => -(g w)) (hpg : ProperConcave g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : A x₀ ∈ domConcave g) :
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : A x₀ ∈ concaveDom g) :
     (⨅ x, f x - g (A x))
       = ⨆ z : Rn m, concaveConj (pairing m) g z
-          - conj (pairing n) f (LinearMap.adjoint A z) := by
-  have hpgn : Proper fun w => -(g w) := properConcave_iff_proper_neg.1 hpg
-  have hxg' : A x₀ ∈ dom fun w => -(g w) := by rwa [← domConcave_eq_dom_neg]
+          - convexConj (pairing n) f (LinearMap.adjoint A z) := by
+  have hpgn : ProperConvex fun w => -(g w) := properConcave_iff_properConvex_neg.1 hpg
+  have hxg' : A x₀ ∈ convexDom fun w => -(g w) := by rwa [← concaveDom_eq_convexDom_neg]
   refine fenchel_duality_comp (isAdjointPair_adjoint A)
-    ((IsExactSum.of_polyhedral (polyhedralFn_compLin hg A)
+    ((IsExactSum.of_polyhedral (PolyhedralFn.compLin hg A)
       ⟨⟨x₀, hxg'⟩, fun x => hpgn.ne_bot (A x)⟩ hf hpf hxg' hxf).symm)
     (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hpgn hxg')
 
@@ -420,20 +401,20 @@ theorem corollary_31_2_1_a_polyhedral_right {f : Rn n → EReal} {g : Rn m → E
 clause the book leaves unproved: `ri (dom f)` may be replaced by `dom f`. Only the sum half changes,
 because the pullback is a statement about `g` alone. -/
 theorem corollary_31_2_1_a_polyhedral_left {f : Rn n → EReal} {g : Rn m → EReal}
-    (A : Rn n →ₗ[ℝ] Rn m) (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : ClosedProperConcaveFn g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : A x₀ ∈ ri (domConcave g)) :
+    (A : Rn n →ₗ[ℝ] Rn m) (hf : PolyhedralFn f) (hpf : ProperConvex f)
+    (hg : ClosedProperConcaveFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+    (hxg : A x₀ ∈ ri (concaveDom g)) :
     (⨅ x, f x - g (A x))
       = ⨆ z : Rn m, concaveConj (pairing m) g z
-          - conj (pairing n) f (LinearMap.adjoint A z) := by
+          - convexConj (pairing n) f (LinearMap.adjoint A z) := by
   have hgn : ConvexFn fun w => -(g w) := concaveFn_iff_convexFn_neg.1 hg.concave
-  have hpgn : Proper fun w => -(g w) := properConcave_iff_proper_neg.1 hg.proper
-  have hxg' : A x₀ ∈ ri (dom fun w => -(g w)) := by rwa [← domConcave_eq_dom_neg]
-  have hpcomp : Proper (compLin (fun w => -(g w)) A) :=
-    ⟨⟨x₀, by rw [dom_compLin]; exact Set.mem_preimage.2 (intrinsicInterior_subset hxg')⟩,
+  have hpgn : ProperConvex fun w => -(g w) := properConcave_iff_properConvex_neg.1 hg.proper
+  have hxg' : A x₀ ∈ ri (convexDom fun w => -(g w)) := by rwa [← concaveDom_eq_convexDom_neg]
+  have hpcomp : ProperConvex (compLin (fun w => -(g w)) A) :=
+    ⟨⟨x₀, by rw [convexDom_compLin]; exact Set.mem_preimage.2 (intrinsicInterior_subset hxg')⟩,
       fun x => hpgn.ne_bot (A x)⟩
-  have hri : x₀ ∈ ri (dom (compLin (fun w => -(g w)) A)) := by
-    rw [dom_compLin, Convex.relint_preimage hgn.convex_dom A ⟨x₀, hxg'⟩]
+  have hri : x₀ ∈ ri (convexDom (compLin (fun w => -(g w)) A)) := by
+    rw [convexDom_compLin, Convex.relint_preimage hgn.convex_convexDom A ⟨x₀, hxg'⟩]
     exact hxg'
   exact fenchel_duality_comp (isAdjointPair_adjoint A)
     (IsExactSum.of_polyhedral hf hpf (convexFn_compLin A hgn) hpcomp hxf hri)
@@ -445,8 +426,9 @@ theorem corollary_31_2_1_a_polyhedral_left {f : Rn n → EReal} {g : Rn m → ER
 inequality": every value of `g* - f*A*` is below every value of `f - gA`. No hypothesis at all. -/
 theorem theorem_31_3_weak {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
     (x : Rn n) (z : Rn m) :
-    concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z) ≤ f x - g (A x) :=
-  concaveConj_sub_conj_comp_le_sub (isAdjointPair_adjoint A) x z
+    concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z) ≤ f x
+        - g (A x) :=
+  concaveConj_sub_convexConj_comp_le_sub (isAdjointPair_adjoint A) x z
 
 /-- **Theorem 31.3**. For `f` proper convex on `ℝⁿ`, `g` proper concave on `ℝᵐ` and `A` linear, the
 primal and dual values agree at `(x, u*)` if and only if `x` and `u*` satisfy the **Kuhn–Tucker
@@ -456,13 +438,13 @@ The book's second condition uses the *super*differential of the concave `g*`, wh
 it is spelled `-u* ∈ ∂(-g)(Ax)` here; `theorem_31_3_kuhnTucker_concave` is the dictionary back to
 the book's Fenchel-equality form. Closedness of `f` and `g` is assumed by the book and not used. -/
 theorem theorem_31_3 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
-    (hpf : Proper f) (hpg : ProperConcave g) {x : Rn n} {z : Rn m} :
+    (hpf : ProperConvex f) (hpg : ProperConcave g) {x : Rn n} {z : Rn m} :
     f x - g (A x)
-        = concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z) ↔
+        = concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z) ↔
       LinearMap.adjoint A z ∈ subdifferential (pairing n) f x ∧
         -z ∈ subdifferential (pairing m) (fun w => -(g w)) (A x) :=
-  sub_comp_eq_concaveConj_sub_conj_iff (isAdjointPair_adjoint A) hpf
-    (properConcave_iff_proper_neg.1 hpg)
+  sub_comp_eq_concaveConj_sub_convexConj_iff (isAdjointPair_adjoint A) hpf
+    (properConcave_iff_properConvex_neg.1 hpg)
 
 /-- **Theorem 31.3**, the book's own reading of the second Kuhn–Tucker
 condition: `Ax ∈ ∂g*(u*)` says that Fenchel's inequality for the concave pair holds with equality,
@@ -472,14 +454,14 @@ Specialises `neg_mem_subdifferential_neg_iff_add_concaveConj_eq`. -/
 theorem theorem_31_3_kuhnTucker_concave {g : Rn m → EReal} (hpg : ProperConcave g) (w z : Rn m) :
     -z ∈ subdifferential (pairing m) (fun v => -(g v)) w ↔
       g w + concaveConj (pairing m) g z = ((pairing m w z : ℝ) : EReal) :=
-  neg_mem_subdifferential_neg_iff_add_concaveConj_eq (properConcave_iff_proper_neg.1 hpg)
+  neg_mem_subdifferential_neg_iff_add_concaveConj_eq (properConcave_iff_properConvex_neg.1 hpg)
 
 /-- **Theorem 31.3**, first consequence: a pair at which the two values agree already minimises
 `f - gA`. Only weak duality is used. -/
 theorem theorem_31_3_iInf {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
     {x : Rn n} {z : Rn m}
     (h : f x - g (A x)
-      = concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z)) :
+      = concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z)) :
     (⨅ w, f w - g (A w)) = f x - g (A x) :=
   iInf_sub_comp_eq_of_sub_eq (isAdjointPair_adjoint A) h
 
@@ -487,28 +469,28 @@ theorem theorem_31_3_iInf {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n �
 theorem theorem_31_3_iSup {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
     {x : Rn n} {z : Rn m}
     (h : f x - g (A x)
-      = concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z)) :
-    (⨆ w : Rn m, concaveConj (pairing m) g w - conj (pairing n) f (LinearMap.adjoint A w))
-      = concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z) :=
+      = concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z)) :
+    (⨆ w : Rn m, concaveConj (pairing m) g w - convexConj (pairing n) f (LinearMap.adjoint A w))
+      = concaveConj (pairing m) g z - convexConj (pairing n) f (LinearMap.adjoint A z) :=
   iSup_sub_comp_eq_of_sub_eq (isAdjointPair_adjoint A) h
 
 /-- **Theorem 31.3**, the case of Fenchel's duality theorem itself: with `A`
 the identity the Kuhn–Tucker conditions reduce to `x* ∈ ∂f(x)` and `x ∈ ∂g*(x*)`.
 
-Specialises `sub_eq_concaveConj_sub_conj_iff`. -/
-theorem theorem_31_3_id {f g : Rn n → EReal} (hpf : Proper f) (hpg : ProperConcave g)
+Specialises `sub_eq_concaveConj_sub_convexConj_iff`. -/
+theorem theorem_31_3_id {f g : Rn n → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g)
     {x y : Rn n} :
-    f x - g x = concaveConj (pairing n) g y - conj (pairing n) f y ↔
+    f x - g x = concaveConj (pairing n) g y - convexConj (pairing n) f y ↔
       y ∈ subdifferential (pairing n) f x ∧ -y ∈ subdifferential (pairing n) (fun z => -(g z)) x :=
-  sub_eq_concaveConj_sub_conj_iff hpf (properConcave_iff_proper_neg.1 hpg)
+  sub_eq_concaveConj_sub_convexConj_iff hpf (properConcave_iff_properConvex_neg.1 hpg)
 
 /-- **Corollary 31.3.1**: in the notation of Theorem 31.3, and with `A (ri (dom f))` meeting
 `ri (dom g)`, `x` minimises `f - gA` if and only if some `u*` makes `(x, u*)` a Kuhn–Tucker pair.
 The book's one-line proof is "Apply Corollary 31.2.1", and that is what happens: the forward
 direction consumes its attainment clause, the backward direction only weak duality. -/
 theorem corollary_31_3_1 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
-    (hf : ConvexFn f) (hpf : Proper f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxg : A x₀ ∈ ri (domConcave g)) (x : Rn n) :
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hxg : A x₀ ∈ ri (concaveDom g)) (x : Rn n) :
     (⨅ w, f w - g (A w)) = f x - g (A x) ↔
       ∃ z : Rn m, LinearMap.adjoint A z ∈ subdifferential (pairing n) f x ∧
         -z ∈ subdifferential (pairing m) (fun w => -(g w)) (A x) :=
@@ -520,9 +502,9 @@ theorem corollary_31_3_1 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →
 duality theorem itself carries: `x` minimises `f - g` exactly when it carries a Kuhn–Tucker pair.
 
 Specialises `iInf_sub_eq_iff_exists_kuhnTucker`. -/
-theorem corollary_31_3_1_id {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (domConcave g)) (x : Rn n) :
+theorem corollary_31_3_1_id {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (concaveDom g)) (x : Rn n) :
     (⨅ z, f z - g z) = f x - g x ↔
       ∃ y : Rn n, y ∈ subdifferential (pairing n) f x ∧
         -y ∈ subdifferential (pairing n) (fun z => -(g z)) x :=
@@ -542,20 +524,22 @@ theorem theorem_31_4_dualCone {K : Set (Rn n)} {y : Rn n} :
 /-- Rockafellar's condition (a) of Theorem 31.4 makes `f` and `δ(· | K)` add exactly. -/
 private theorem isExactSum_indicatorFn_of_relint {B : Rn n →ₗ[ℝ] Rn n →ₗ[ℝ] ℝ}
     [IsCompatiblePairing B] [IsCompatiblePairing B.flip] {f : Rn n → EReal} {K : Set (Rn n)}
-    (hf : ConvexFn f) (hpf : Proper f) (hK : Convex ℝ K) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hK : Convex ℝ K) {x₀ : Rn n}
+        (hxf : x₀ ∈ ri (convexDom f))
     (hxK : x₀ ∈ ri K) : IsExactSum B f (indicatorFn K) :=
   IsExactSum.of_relint hf hpf (convexFn_indicatorFn.2 hK)
-    ⟨⟨x₀, by rw [dom_indicatorFn]; exact intrinsicInterior_subset hxK⟩, indicatorFn_ne_bot K⟩
-    hxf (by rwa [dom_indicatorFn])
+    ⟨⟨x₀, by rw [convexDom_indicatorFn]; exact intrinsicInterior_subset hxK⟩, indicatorFn_ne_bot K⟩
+    hxf (by rwa [convexDom_indicatorFn])
 
 /-- Rockafellar's condition (a) of Theorem 31.4 for a **polyhedral** `K`: `ri K` becomes `K`. -/
 private theorem isExactSum_indicatorFn_of_polyhedral {B : Rn n →ₗ[ℝ] Rn n →ₗ[ℝ] ℝ}
     [IsCompatiblePairing B] [IsCompatiblePairing B.flip] {f : Rn n → EReal} {K : Set (Rn n)}
-    (hf : ConvexFn f) (hpf : Proper f) (hK : Polyhedral K) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hK : Polyhedral K) {x₀ : Rn n}
+        (hxf : x₀ ∈ ri (convexDom f))
     (hxK : x₀ ∈ K) : IsExactSum B f (indicatorFn K) :=
   (IsExactSum.of_polyhedral (polyhedralFn_indicatorFn hK)
-    ⟨⟨x₀, by rwa [dom_indicatorFn]⟩, indicatorFn_ne_bot K⟩ hf hpf
-    (by rwa [dom_indicatorFn]) hxf).symm
+    ⟨⟨x₀, by rwa [convexDom_indicatorFn]⟩, indicatorFn_ne_bot K⟩ hf hpf
+    (by rwa [convexDom_indicatorFn]) hxf).symm
 
 /-- The negative of a polyhedral set is polyhedral: `-S` is `S` pulled back along `-id`. -/
 private theorem polyhedral_neg_set {S : Set (Rn n)} (hS : Polyhedral S) : Polyhedral (-S) := by
@@ -578,39 +562,41 @@ convex `f` and a nonempty convex cone `K` whose relative interior meets `ri (dom
 
 Closedness of `f` and of `K` are not used here; they belong to condition (b). Specialises
 `iInf_mem_eq_neg_iInf_mem_neg_polarCone`. -/
-theorem theorem_31_4_a {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f) (hpf : Proper f)
+theorem theorem_31_4_a {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f) (hpf : ProperConvex f)
     (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hxK : x₀ ∈ ri K) :
-    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w) :=
+    (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ ri K) :
+    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) :=
   iInf_mem_eq_neg_iInf_mem_neg_polarCone
     (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK) hcone hne
 
 /-- **Theorem 31.4**: under (a) the infimum of `f*` over `K*` is attained. Specialises
-`exists_mem_neg_polarCone_conj_eq_iInf`. -/
+`exists_mem_neg_polarCone_convexConj_eq_iInf`. -/
 theorem theorem_31_4_a_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
-    (hpf : Proper f) (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
-    {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hxK : x₀ ∈ ri K) :
-    ∃ y ∈ -(polarCone (pairing n) K), conj (pairing n) f y
-      = ⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w :=
-  exists_mem_neg_polarCone_conj_eq_iInf
+    (hpf : ProperConvex f) (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
+    {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ ri K) :
+    ∃ y ∈ -(polarCone (pairing n) K), convexConj (pairing n) f y
+      = ⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w :=
+  exists_mem_neg_polarCone_convexConj_eq_iInf
     (isExactSum_indicatorFn_of_relint (B := pairing n) hf hpf hK hxf hxK) hcone hne
 
 /-- **Theorem 31.4**, the polyhedral strengthening of (a): "if `K` is polyhedral, `ri K` and `ri K*`
 can be replaced by `K` and `K*` in (a) and (b)". -/
 theorem theorem_31_4_a_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
-    (hpf : Proper f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
-    {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hxK : x₀ ∈ K) :
-    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w) :=
+    (hpf : ProperConvex f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
+        (hne : K.Nonempty)
+    {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ K) :
+    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) :=
   iInf_mem_eq_neg_iInf_mem_neg_polarCone
     (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK) hcone hne
 
 /-- **Theorem 31.4**: under the polyhedral form of (a) the dual infimum is still attained. -/
 theorem theorem_31_4_a_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
-    (hpf : Proper f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
-    {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hxK : x₀ ∈ K) :
-    ∃ y ∈ -(polarCone (pairing n) K), conj (pairing n) f y
-      = ⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w :=
-  exists_mem_neg_polarCone_conj_eq_iInf
+    (hpf : ProperConvex f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
+        (hne : K.Nonempty)
+    {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ K) :
+    ∃ y ∈ -(polarCone (pairing n) K), convexConj (pairing n) f y
+      = ⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w :=
+  exists_mem_neg_polarCone_convexConj_eq_iInf
     (isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf hK hxf hxK) hcone hne
 
 /-- **Theorem 31.4** under condition **(b)**: the same equality, with
@@ -621,30 +607,31 @@ This is condition (a) read on the dual pair: Theorem 31.4 applied to `f*` and `K
 are where `f` closed and `K` closed are used. -/
 theorem theorem_31_4_b {f : Rn n → EReal} {K : Set (Rn n)} (hf : ClosedProperConvexFn f)
     (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K)
-    {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
+    {y₀ : Rn n} (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
     (hyK : y₀ ∈ ri (-(polarCone (pairing n) K))) :
-    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w) := by
-  have hex : IsExactSum (pairing n).flip (conj (pairing n) f)
+    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) := by
+  have hex : IsExactSum (pairing n).flip (convexConj (pairing n) f)
       (indicatorFn (-(polarCone (pairing n) K))) :=
-    isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_conj (pairing n) f)
-      (proper_conj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK
+    isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
+      (properConvex_convexConj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK
   have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex
     (fun a ha => smul_neg_polarCone (pairing n) K a ha) (neg_polarCone_nonempty (pairing n) K)
   rw [neg_polarCone_neg_polarCone hK hcone hne hcl,
-    show conj (pairing n).flip (conj (pairing n) f) = f from biconj_eq_self hf.convex hf.closed]
+    show convexConj (pairing n).flip (convexConj (pairing n) f)
+        = f from convexBiconj_eq_self hf.convex hf.closed]
     at h
   rw [h, neg_neg]
 
 /-- **Theorem 31.4**: under (b) the infimum of `f` over `K` is attained. Specialises
-`exists_mem_eq_iInf_of_isExactSum_conj`. -/
+`exists_mem_eq_iInf_of_isExactSum_convexConj`. -/
 theorem theorem_31_4_b_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ClosedProperConvexFn f)
     (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K)
-    {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
+    {y₀ : Rn n} (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
     (hyK : y₀ ∈ ri (-(polarCone (pairing n) K))) :
     ∃ x ∈ K, f x = ⨅ z ∈ K, f z :=
-  exists_mem_eq_iInf_of_isExactSum_conj (biconj_eq_self hf.convex hf.closed)
-    (isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_conj (pairing n) f)
-      (proper_conj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK)
+  exists_mem_eq_iInf_of_isExactSum_convexConj (convexBiconj_eq_self hf.convex hf.closed)
+    (isExactSum_indicatorFn_of_relint (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
+      (properConvex_convexConj (B := pairing n) hf) (convex_neg_polarCone (pairing n) K) hyf hyK)
     hK hcone hne hcl
 
 /-- **Theorem 31.4**, the polyhedral strengthening of (b): `ri K*` becomes `K*`. Polyhedrality of
@@ -652,28 +639,30 @@ theorem theorem_31_4_b_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : Clos
 the closedness hypothesis is free. -/
 theorem theorem_31_4_b_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : ClosedProperConvexFn f)
     (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) {y₀ : Rn n}
-    (hyf : y₀ ∈ ri (dom (conj (pairing n) f))) (hyK : y₀ ∈ -(polarCone (pairing n) K)) :
-    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), conj (pairing n) f w) := by
-  have hex : IsExactSum (pairing n).flip (conj (pairing n) f)
+    (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f))) (hyK : y₀ ∈ -(polarCone (pairing n) K)) :
+    (⨅ z ∈ K, f z) = -(⨅ w ∈ -(polarCone (pairing n) K), convexConj (pairing n) f w) := by
+  have hex : IsExactSum (pairing n).flip (convexConj (pairing n) f)
       (indicatorFn (-(polarCone (pairing n) K))) :=
-    isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip) (convexFn_conj (pairing n) f)
-      (proper_conj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK
+    isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip) (convexFn_convexConj (pairing n) f)
+      (properConvex_convexConj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK
   have h := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex
     (fun a ha => smul_neg_polarCone (pairing n) K a ha) (neg_polarCone_nonempty (pairing n) K)
   rw [neg_polarCone_neg_polarCone hK.convex hcone hne (Polyhedral.isClosed hK),
-    show conj (pairing n).flip (conj (pairing n) f) = f from biconj_eq_self hf.convex hf.closed]
+    show convexConj (pairing n).flip (convexConj (pairing n) f)
+        = f from convexBiconj_eq_self hf.convex hf.closed]
     at h
   rw [h, neg_neg]
 
 /-- **Theorem 31.4**: under the polyhedral form of (b) the primal infimum is still attained. -/
 theorem theorem_31_4_b_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)}
     (hf : ClosedProperConvexFn f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
-    (hne : K.Nonempty) {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
+    (hne : K.Nonempty) {y₀ : Rn n} (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
     (hyK : y₀ ∈ -(polarCone (pairing n) K)) :
     ∃ x ∈ K, f x = ⨅ z ∈ K, f z :=
-  exists_mem_eq_iInf_of_isExactSum_conj (biconj_eq_self hf.convex hf.closed)
-    (isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip) (convexFn_conj (pairing n) f)
-      (proper_conj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK)
+  exists_mem_eq_iInf_of_isExactSum_convexConj (convexBiconj_eq_self hf.convex hf.closed)
+    (isExactSum_indicatorFn_of_polyhedral (B := (pairing n).flip)
+        (convexFn_convexConj (pairing n) f)
+      (properConvex_convexConj (B := pairing n) hf) (polyhedral_neg_polarCone hK hcone) hyf hyK)
     hK.convex hcone hne (Polyhedral.isClosed hK)
 
 /-- **Theorem 31.4**, the optimality conditions: for `x ∈ K` and `x* ∈ K*`,
@@ -682,12 +671,13 @@ the primal and dual values agree — `f(x) = -f*(x*)` — exactly when `x* ∈ �
 
 Rockafellar reads this off Theorem 31.3's Kuhn–Tucker conditions at `g = -δ(· | K)`, where
 `x ∈ ∂g*(x*)` unfolds into the three conditions `x ∈ K`, `x* ∈ K*`, `⟨x, x*⟩ = 0`. Specialises
-`add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero`. -/
-theorem theorem_31_4_optimality {f : Rn n → EReal} {K : Set (Rn n)} (hpf : Proper f) {x y : Rn n}
+`add_convexConj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero`. -/
+theorem theorem_31_4_optimality {f : Rn n → EReal} {K : Set (Rn n)} (hpf : ProperConvex f)
+    {x y : Rn n}
     (hxK : x ∈ K) (hyK : y ∈ -(polarCone (pairing n) K)) :
-    f x + conj (pairing n) f y = 0 ↔
+    f x + convexConj (pairing n) f y = 0 ↔
       y ∈ subdifferential (pairing n) f x ∧ (pairing n x y : ℝ) = 0 :=
-  add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero hpf hxK hyK
+  add_convexConj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero hpf hxK hyK
 
 /-- **Theorem 31.4**: the optimality conditions make `x` optimal for the primal cone program. -/
 theorem theorem_31_4_optimality_primal {f : Rn n → EReal} {K : Set (Rn n)} {x y : Rn n}
@@ -696,17 +686,17 @@ theorem theorem_31_4_optimality_primal {f : Rn n → EReal} {K : Set (Rn n)} {x 
   forall_le_of_mem_subdifferential_of_pairing_eq_zero hyK hy hxy hz
 
 /-- **Theorem 31.4**: the optimality conditions make `x*` optimal for the dual cone program. -/
-theorem theorem_31_4_optimality_dual {f : Rn n → EReal} {K : Set (Rn n)} (hpf : Proper f)
+theorem theorem_31_4_optimality_dual {f : Rn n → EReal} {K : Set (Rn n)} (hpf : ProperConvex f)
     {x y : Rn n} (hxK : x ∈ K) (hy : y ∈ subdifferential (pairing n) f x)
     (hxy : (pairing n x y : ℝ) = 0) {w : Rn n} (hwK : w ∈ -(polarCone (pairing n) K)) :
-    conj (pairing n) f y ≤ conj (pairing n) f w :=
-  conj_le_conj_of_mem_subdifferential_of_pairing_eq_zero hpf hxK hy hxy hwK
+    convexConj (pairing n) f y ≤ convexConj (pairing n) f w :=
+  convexConj_le_convexConj_of_mem_subdifferential_of_pairing_eq_zero hpf hxK hy hxy hwK
 
 /-- **Theorem 31.4**, weak duality: every dual value is below every primal value. No hypothesis
 beyond `x ∈ K` and `x* ∈ K*`. -/
 theorem theorem_31_4_weak {f : Rn n → EReal} {K : Set (Rn n)} {x : Rn n} (hxK : x ∈ K) {w : Rn n}
-    (hwK : w ∈ -(polarCone (pairing n) K)) : -(conj (pairing n) f w) ≤ f x :=
-  neg_conj_le_of_mem_neg_polarCone hxK hwK
+    (hwK : w ∈ -(polarCone (pairing n) K)) : -(convexConj (pairing n) f w) ≤ f x :=
+  neg_convexConj_le_of_mem_neg_polarCone hxK hwK
 
 /-! ### Corollary 31.4.1: the non-negative orthant
 
@@ -775,19 +765,19 @@ convex `f` on `ℝⁿ` with some `x ∈ ri (dom f)` satisfying `x ≥ 0`,
 This is Theorem 31.4 at the non-negative orthant, whose dual cone is itself
 (`neg_polarCone_nonnegOrthant`). Rockafellar's condition asks only `x ≥ 0`, not `x ∈ ri K`, which
 is the *polyhedral* form of Theorem 31.4 — the orthant is polyhedral. -/
-theorem corollary_31_4_1_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f) {x₀ : Rn n}
-    (hxf : x₀ ∈ ri (dom f)) (hx₀ : x₀ ∈ nonnegOrthant n) :
+theorem corollary_31_4_1_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f) {x₀ : Rn n}
+    (hxf : x₀ ∈ ri (convexDom f)) (hx₀ : x₀ ∈ nonnegOrthant n) :
     (⨅ z ∈ nonnegOrthant n, f z)
-      = -(⨅ w ∈ nonnegOrthant n, conj (pairing n) f w) := by
+      = -(⨅ w ∈ nonnegOrthant n, convexConj (pairing n) f w) := by
   have h := theorem_31_4_a_polyhedral hf hpf (polyhedral_nonnegOrthant n)
     (fun a ha => smul_nonnegOrthant n ha) ⟨0, zero_mem_nonnegOrthant n⟩ hxf hx₀
   rwa [neg_polarCone_nonnegOrthant] at h
 
 /-- **Corollary 31.4.1**: under (a) the second infimum is attained. -/
-theorem corollary_31_4_1_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hx₀ : x₀ ∈ nonnegOrthant n) :
-    ∃ y ∈ nonnegOrthant n, conj (pairing n) f y
-      = ⨅ w ∈ nonnegOrthant n, conj (pairing n) f w := by
+theorem corollary_31_4_1_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hx₀ : x₀ ∈ nonnegOrthant n) :
+    ∃ y ∈ nonnegOrthant n, convexConj (pairing n) f y
+      = ⨅ w ∈ nonnegOrthant n, convexConj (pairing n) f w := by
   have h := theorem_31_4_a_polyhedral_attained hf hpf (polyhedral_nonnegOrthant n)
     (fun a ha => smul_nonnegOrthant n ha) ⟨0, zero_mem_nonnegOrthant n⟩ hxf hx₀
   rwa [neg_polarCone_nonnegOrthant] at h
@@ -795,9 +785,9 @@ theorem corollary_31_4_1_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf 
 /-- **Corollary 31.4.1** under condition **(b)**: the same equality from a point `x* ∈ ri (dom f*)`
 with `x* ≥ 0`. -/
 theorem corollary_31_4_1_b {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {y₀ : Rn n}
-    (hyf : y₀ ∈ ri (dom (conj (pairing n) f))) (hy₀ : y₀ ∈ nonnegOrthant n) :
+    (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f))) (hy₀ : y₀ ∈ nonnegOrthant n) :
     (⨅ z ∈ nonnegOrthant n, f z)
-      = -(⨅ w ∈ nonnegOrthant n, conj (pairing n) f w) := by
+      = -(⨅ w ∈ nonnegOrthant n, convexConj (pairing n) f w) := by
   have h := theorem_31_4_b_polyhedral hf (polyhedral_nonnegOrthant n)
     (fun a ha => smul_nonnegOrthant n ha) ⟨0, zero_mem_nonnegOrthant n⟩ hyf
     (by rw [neg_polarCone_nonnegOrthant]; exact hy₀)
@@ -805,7 +795,7 @@ theorem corollary_31_4_1_b {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {y
 
 /-- **Corollary 31.4.1**: under (b) the *first* infimum is attained. -/
 theorem corollary_31_4_1_b_attained {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {y₀ : Rn n}
-    (hyf : y₀ ∈ ri (dom (conj (pairing n) f))) (hy₀ : y₀ ∈ nonnegOrthant n) :
+    (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f))) (hy₀ : y₀ ∈ nonnegOrthant n) :
     ∃ x ∈ nonnegOrthant n, f x = ⨅ z ∈ nonnegOrthant n, f z := by
   refine theorem_31_4_b_polyhedral_attained hf (polyhedral_nonnegOrthant n)
     (fun a ha => smul_nonnegOrthant n ha) ⟨0, zero_mem_nonnegOrthant n⟩ (y₀ := y₀) hyf ?_
@@ -818,9 +808,9 @@ infima are the negatives of each other and attained at `x` and `x*` exactly when
 
 Theorem 31.4's `⟨x, x*⟩ = 0` becomes the coordinatewise condition because both vectors are
 non-negative (`pairing_eq_zero_iff_of_mem_nonnegOrthant`). -/
-theorem corollary_31_4_1_optimality {f : Rn n → EReal} (hpf : Proper f) {x y : Rn n}
+theorem corollary_31_4_1_optimality {f : Rn n → EReal} (hpf : ProperConvex f) {x y : Rn n}
     (hx : x ∈ nonnegOrthant n) (hy : y ∈ nonnegOrthant n) :
-    f x + conj (pairing n) f y = 0 ↔
+    f x + convexConj (pairing n) f y = 0 ↔
       y ∈ subdifferential (pairing n) f x ∧ ∀ j, x j * y j = 0 := by
   have hyK : y ∈ -(polarCone (pairing n) (nonnegOrthant n)) := by
     rw [neg_polarCone_nonnegOrthant]; exact hy
@@ -842,27 +832,27 @@ convex `f` and a subspace `L` meeting `ri (dom f)`,
 
 This is Theorem 31.4 with `K = L`, where the dual cone `K* = -K°` collapses to `L⊥`. A subspace is
 polyhedral, which is why Rockafellar's condition needs no relative interior on the `L` side. -/
-theorem corollary_31_4_2_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    {M : Submodule ℝ (Rn n)} {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hxM : x₀ ∈ M) :
+theorem corollary_31_4_2_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    {M : Submodule ℝ (Rn n)} {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxM : x₀ ∈ M) :
     (⨅ z ∈ (M : Set (Rn n)), f z)
-      = -(⨅ w ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), conj (pairing n) f w) := by
+      = -(⨅ w ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), convexConj (pairing n) f w) := by
   have hex := isExactSum_indicatorFn_of_polyhedral (B := pairing n) hf hpf
     (polyhedral_coe_submodule M) hxf hxM
   have h := iInf_mem_submodule_eq_neg_iInf_mem_polarCone hex
   rwa [polarCone_coe_submodule_eq_orthogonal] at h
 
 /-- **Corollary 31.4.2**: under (a) the infimum of `f*` on `L⊥` is attained. -/
-theorem corollary_31_4_2_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    {M : Submodule ℝ (Rn n)} {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f)) (hxM : x₀ ∈ M) :
-    ∃ y ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), conj (pairing n) f y
-      = ⨅ w ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), conj (pairing n) f w := by
+theorem corollary_31_4_2_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    {M : Submodule ℝ (Rn n)} {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxM : x₀ ∈ M) :
+    ∃ y ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), convexConj (pairing n) f y
+      = ⨅ w ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), convexConj (pairing n) f w := by
   have h := theorem_31_4_a_polyhedral_attained hf hpf (polyhedral_coe_submodule M)
     (fun a ha => smul_coe_submodule M ha) ⟨0, M.zero_mem⟩ hxf hxM
   rwa [neg_polarCone_coe_submodule, polarCone_coe_submodule_eq_orthogonal] at h
 
 /-- **Corollary 31.4.2**: under condition **(b)** the infimum of `f` on `L` is attained. -/
 theorem corollary_31_4_2_b_attained {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    {M : Submodule ℝ (Rn n)} {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
+    {M : Submodule ℝ (Rn n)} {y₀ : Rn n} (hyf : y₀ ∈ ri (convexDom (convexConj (pairing n) f)))
     (hyM : y₀ ∈ Mᗮ) :
     ∃ x ∈ (M : Set (Rn n)), f x = ⨅ z ∈ (M : Set (Rn n)), f z := by
   refine theorem_31_4_b_polyhedral_attained hf (polyhedral_coe_submodule M)
@@ -873,10 +863,10 @@ theorem corollary_31_4_2_b_attained {f : Rn n → EReal} (hf : ClosedProperConve
 /-- **Corollary 31.4.2**, the optimality conditions: over a subspace the orthogonality `⟨x, x*⟩ = 0`
 of Theorem 31.4 is automatic, so `x` and `x*` are jointly optimal exactly when `x ∈ L`, `x* ∈ L⊥`
 and `x* ∈ ∂f(x)`. -/
-theorem corollary_31_4_2_optimality {f : Rn n → EReal} (hpf : Proper f)
+theorem corollary_31_4_2_optimality {f : Rn n → EReal} (hpf : ProperConvex f)
     {M : Submodule ℝ (Rn n)} {x y : Rn n} (hxM : x ∈ M) (hyM : y ∈ Mᗮ) :
-    f x + conj (pairing n) f y = 0 ↔ y ∈ subdifferential (pairing n) f x := by
-  refine add_conj_eq_zero_iff_mem_subdifferential_of_mem_submodule hpf hxM ?_
+    f x + convexConj (pairing n) f y = 0 ↔ y ∈ subdifferential (pairing n) f x := by
+  refine add_convexConj_eq_zero_iff_mem_subdifferential_of_mem_submodule hpf hxM ?_
   rw [polarCone_coe_submodule_eq_orthogonal]
   exact hyM
 
@@ -890,17 +880,18 @@ The proof is **Theorem 12.3** followed by Theorem 31.4: `f = h(z + ·) - ⟨·, 
 and `dom f* = ℝⁿ`, so both of Rockafellar's conditions hold in their strongest form. Closedness of
 `K`, which the book assumes throughout the corollary, is needed only for the attainment of the
 *first* infimum. -/
-theorem corollary_31_4_3 {h : Rn n → EReal} (hcof : Cofinite h) (hdom : dom h = univ)
+theorem corollary_31_4_3 {h : Rn n → EReal} (hcof : Cofinite h) (hdom : convexDom h = univ)
     {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
     (z z' : Rn n) :
     (⨅ x ∈ K, (h (z + x) - ((pairing n x z' : ℝ) : EReal)))
         + (⨅ w ∈ -(polarCone (pairing n) K),
-            (conj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)))
+            (convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)))
       = ((pairing n z z' : ℝ) : EReal) :=
   iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing hcof hdom hconv hcone hne z z'
 
 /-- **Corollary 31.4.3**: the first infimum is finite. -/
-theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h) (hdom : dom h = univ)
+theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
+    (hdom : convexDom h = univ)
     {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
     (z z' : Rn n) :
     ∃ s : ℝ, (⨅ x ∈ K, (h (z + x) - ((pairing n x z' : ℝ) : EReal))) = (s : EReal) :=
@@ -908,15 +899,15 @@ theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h) (h
 
 /-- **Corollary 31.4.3**: the second infimum is finite. -/
 theorem corollary_31_4_3_iInf_dual_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
-    (hdom : dom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
+    (hdom : convexDom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z z' : Rn n) :
     ∃ r : ℝ, (⨅ w ∈ -(polarCone (pairing n) K),
-      (conj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal))) = (r : EReal) :=
+      (convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal))) = (r : EReal) :=
   exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite hcof hdom hconv hcone hne z z'
 
 /-- **Corollary 31.4.3**: the first infimum is attained. This is the clause that needs `K`
 closed. -/
-theorem corollary_31_4_3_attained {h : Rn n → EReal} (hcof : Cofinite h) (hdom : dom h = univ)
+theorem corollary_31_4_3_attained {h : Rn n → EReal} (hcof : Cofinite h) (hdom : convexDom h = univ)
     {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
     (hcl : IsClosed K) (z z' : Rn n) :
     ∃ x ∈ K, h (z + x) - ((pairing n x z' : ℝ) : EReal)
@@ -926,12 +917,12 @@ theorem corollary_31_4_3_attained {h : Rn n → EReal} (hcof : Cofinite h) (hdom
 /-- **Corollary 31.4.3**: the second infimum is attained. Co-finiteness is not needed for this half,
 nor is closedness of `K`. -/
 theorem corollary_31_4_3_dual_attained {h : Rn n → EReal} (hcof : Cofinite h)
-    (hdom : dom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
+    (hdom : convexDom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z z' : Rn n) :
     ∃ w ∈ -(polarCone (pairing n) K),
-      conj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)
+      convexConj (pairing n) h (z' + w) - ((pairing n z w : ℝ) : EReal)
         = ⨅ v ∈ -(polarCone (pairing n) K),
-            (conj (pairing n) h (z' + v) - ((pairing n z v : ℝ) : EReal)) :=
+            (convexConj (pairing n) h (z' + v) - ((pairing n z v : ℝ) : EReal)) :=
   exists_iInf_mem_neg_polarCone_eq_of_cofinite hcof hdom hconv hcone hne z z'
 
 /-! ### Theorem 31.5 (Moreau), proximations, and the two corollaries
@@ -947,10 +938,10 @@ theorem theorem_31_5_quadFn (z : Rn n) : quadFn (pairing n) z = ((‖z‖ ^ 2 / 
 
 /-- **Theorem 31.5 (Moreau)**, the identity `(f □ w) + (f* □ w) = w` as an equation between
 functions. The backbone's proof is Theorem 27.1(a) applied to `f + w(z - ·)`, with
-`IsExactSum.conj_add_apply` splitting the conjugate of that sum at the origin — no separation and no
-`ri`. -/
+`IsExactSum.convexConj_add_apply` splitting the conjugate of that sum at the origin — no separation
+and no `ri`. -/
 theorem theorem_31_5 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    infConv f (quadFn (pairing n)) + infConv (conj (pairing n) f) (quadFn (pairing n))
+    infConv f (quadFn (pairing n)) + infConv (convexConj (pairing n) f) (quadFn (pairing n))
       = quadFn (pairing n) :=
   funext fun z => moreau_add hf z
 
@@ -958,10 +949,10 @@ theorem theorem_31_5 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
 `inf_x {f(x) + w(z - x)} + inf_{x*} {f*(x*) + w(z - x*)} = w(z)`. -/
 theorem theorem_31_5_apply {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
     (⨅ x, (f x + quadFn (pairing n) (z - x)))
-        + (⨅ y, (conj (pairing n) f y + quadFn (pairing n) (z - y)))
+        + (⨅ y, (convexConj (pairing n) f y + quadFn (pairing n) (z - y)))
       = quadFn (pairing n) z := by
   rw [← infConv_quadFn_apply hf.proper.ne_bot z,
-    ← infConv_quadFn_apply (conj_ne_bot hf.proper.dom_nonempty) z]
+    ← infConv_quadFn_apply (convexConj_ne_bot hf.proper.convexDom_nonempty) z]
   exact moreau_add hf z
 
 /-- **Theorem 31.5**: "both infima are finite". Specialises `infConv_quadFn_ne_bot` and
@@ -973,9 +964,9 @@ theorem theorem_31_5_finite {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (
 
 /-- **Theorem 31.5**: the dual infimum is finite too. -/
 theorem theorem_31_5_finite_conj {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
-    ∃ r : ℝ, infConv (conj (pairing n) f) (quadFn (pairing n)) z = (r : EReal) :=
-  EReal.exists_coe_of_ne_bot_of_lt_top (infConv_conj_quadFn_ne_bot hf z)
-    (lt_top_iff_ne_top.2 (infConv_conj_quadFn_ne_top hf z))
+    ∃ r : ℝ, infConv (convexConj (pairing n) f) (quadFn (pairing n)) z = (r : EReal) :=
+  EReal.exists_coe_of_ne_bot_of_lt_top (infConv_convexConj_quadFn_ne_bot hf z)
+    (lt_top_iff_ne_top.2 (infConv_convexConj_quadFn_ne_top hf z))
 
 /-- **Theorem 31.5**: the two infima are *uniquely* attained, and the unique
 minimisers are the unique pair with `z = x + x*` and `x* ∈ ∂f(x)`.
@@ -1014,14 +1005,14 @@ theorem prox_eq_iff_sub_mem_subdifferential {f : Rn n → EReal} (hf : ClosedPro
   prox_eq_iff hf z x
 
 /-- **§31**: the decomposition `z = prox (z ∣ f) + prox (z ∣ f*)`. -/
-theorem prox_add_prox_conj_eq {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
-    prox (pairing n) f z + prox (pairing n) (conj (pairing n) f) z = z :=
-  prox_add_prox_conj hf z
+theorem prox_add_prox_convexConj_eq {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
+    prox (pairing n) f z + prox (pairing n) (convexConj (pairing n) f) z = z :=
+  prox_add_prox_convexConj hf z
 
-/-- **§31**: `prox (z ∣ f*) = z - prox (z ∣ f)`. Specialises `prox_conj_eq`. -/
-theorem prox_conj_eq_sub {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
-    prox (pairing n) (conj (pairing n) f) z = z - prox (pairing n) f z :=
-  prox_conj_eq hf z
+/-- **§31**: `prox (z ∣ f*) = z - prox (z ∣ f)`. Specialises `prox_convexConj_eq`. -/
+theorem prox_convexConj_eq_sub {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
+    prox (pairing n) (convexConj (pairing n) f) z = z - prox (pairing n) f z :=
+  prox_convexConj_eq hf z
 
 /-- **Theorem 31.5**: `x* = ∇(f □ w)(z)`, the gradient formula for the Moreau envelope of `f`. The
 subdifferential of `f □ w` is the single point `prox (z ∣ f*)`, so Theorem 25.1's converse upgrades
@@ -1031,11 +1022,11 @@ theorem theorem_31_5_gradient {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
       = z - prox (pairing n) f z :=
   gradient_infConv_quadFn hf z
 
-/-- **Theorem 31.5**: `x = ∇(f* □ w)(z)`. Specialises `gradient_infConv_conj_quadFn`. -/
+/-- **Theorem 31.5**: `x = ∇(f* □ w)(z)`. Specialises `gradient_infConv_convexConj_quadFn`. -/
 theorem theorem_31_5_gradient_conj {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
-    gradient (fun u => (infConv (conj (pairing n) f) (quadFn (pairing n)) u).toReal) z
+    gradient (fun u => (infConv (convexConj (pairing n) f) (quadFn (pairing n)) u).toReal) z
       = prox (pairing n) f z :=
-  gradient_infConv_conj_quadFn hf z
+  gradient_infConv_convexConj_quadFn hf z
 
 /-- **§31**: `prox (· ∣ f)` is the gradient mapping of the differentiable convex function `f* □ w`,
 hence continuous (Corollary 25.5.1). Specialises `continuous_prox`. -/
@@ -1131,7 +1122,7 @@ private theorem graphFn_fenchelBifun (A : Rn n →ₗ[ℝ] Rn m) (f : Rn n → E
 
 /-- **Theorem 31.2**, first assertion: `F` is a convex bifunction. -/
 theorem theorem_31_2_convex (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hf : ConvexFn f) (hpf : Proper f) (hg : ConcaveFn g) (hpg : ProperConcave g) :
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConcaveFn g) (hpg : ProperConcave g) :
     ConvexBifun (fenchelBifun A f g) := by
   rw [convexBifun_iff, graphFn_fenchelBifun]
   refine ConvexFn.add (convexFn_compLin _ hf)
@@ -1139,12 +1130,13 @@ theorem theorem_31_2_convex (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g 
   simpa using hpg.ne_top (shiftLin A p)
 
 /-- **Theorem 31.2**, second assertion: `F` is proper. Properness is automatic — it needs no
-relative-interior hypothesis, only a point of `dom f` and a point of `dom g`, which `Proper` and
-`ProperConcave` supply. -/
+relative-interior hypothesis, only a point of `dom f` and a point of `dom g`, which `ProperConvex`
+and `ProperConcave` supply. -/
 theorem theorem_31_2_proper (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hpf : Proper f) (hpg : ProperConcave g) : Proper (graphFn (fenchelBifun A f g)) := by
-  obtain ⟨x₀, hx₀⟩ := hpf.dom_nonempty
-  obtain ⟨w₀, hw₀⟩ := hpg.domConcave_nonempty
+    (hpf : ProperConvex f)
+        (hpg : ProperConcave g) : ProperConvex (graphFn (fenchelBifun A f g)) := by
+  obtain ⟨x₀, hx₀⟩ := hpf.convexDom_nonempty
+  obtain ⟨w₀, hw₀⟩ := hpg.concaveDom_nonempty
   refine ⟨⟨(w₀ - A x₀, x₀), ?_⟩, fun p => ?_⟩
   · obtain ⟨a, ha⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x₀) hx₀
     obtain ⟨b, hb⟩ :=
@@ -1162,21 +1154,21 @@ theorem theorem_31_2_proper (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g 
 /-- **Theorem 31.2**, third assertion: `F` is closed when `f` and `g` are. -/
 theorem theorem_31_2_closed (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
     (hf : ClosedProperConvexFn f) (hg : ClosedProperConcaveFn g) :
-    ClosedBifun (fenchelBifun A f g) := by
-  have hgn : ClosedProperConvexFn fun w => -(g w) := hg.neg
-  rw [closedBifun_iff, graphFn_fenchelBifun]
+    ClosedConvexBifun (fenchelBifun A f g) := by
+  have hgn : ClosedProperConvexFn fun w => -(g w) := hg.closedProperConvexFn_neg
+  rw [closedConvexBifun_iff, graphFn_fenchelBifun]
   refine (ClosedProperConvexFn.add
     ⟨convexFn_compLin _ hf.convex,
-      closedFn_compLin hf.closed (LinearMap.continuous_of_finiteDimensional _),
+      closedConvex_compLin hf.closed (LinearMap.continuous_of_finiteDimensional _),
       ⟨?_, fun p => hf.proper.ne_bot _⟩⟩
     ⟨convexFn_compLin _ hgn.convex,
-      closedFn_compLin hgn.closed (LinearMap.continuous_of_finiteDimensional _),
+      closedConvex_compLin hgn.closed (LinearMap.continuous_of_finiteDimensional _),
       ⟨?_, fun p => hgn.proper.ne_bot _⟩⟩ ?_).closed
-  · obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
+  · obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
     exact ⟨(0, x₀), hx₀⟩
-  · obtain ⟨w₀, hw₀⟩ := hgn.proper.dom_nonempty
+  · obtain ⟨w₀, hw₀⟩ := hgn.proper.convexDom_nonempty
     exact ⟨(w₀, 0), by simpa [shiftLin_apply] using hw₀⟩
-  · obtain ⟨p, hp⟩ := (theorem_31_2_proper A hf.proper hg.proper).dom_nonempty
+  · obtain ⟨p, hp⟩ := (theorem_31_2_proper A hf.proper hg.proper).convexDom_nonempty
     exact ⟨p, hp⟩
 
 /-- The linear map `(w, x) ↦ w - A x`, whose image of `dom g ×ˢ dom f` is `dom F`. Writing the
@@ -1206,9 +1198,9 @@ private theorem relint_sub_image (A : Rn n →ₗ[ℝ] Rn m) {S : Set (Rn m)} {T
     Convex.relint_image (hS.prod hT) (subLin A), intrinsicInterior_prod_eq]
 
 /-- `F u` is `+∞` at `x` unless `x ∈ dom f` and `A x + u ∈ dom g`. -/
-private theorem fenchelBifun_ne_top_iff {f : Rn n → EReal} {g : Rn m → EReal} (hpf : Proper f)
+private theorem fenchelBifun_ne_top_iff {f : Rn n → EReal} {g : Rn m → EReal} (hpf : ProperConvex f)
     (hpg : ProperConcave g) (A : Rn n →ₗ[ℝ] Rn m) (u : Rn m) (x : Rn n) :
-    fenchelBifun A f g u x ≠ ⊤ ↔ x ∈ dom f ∧ A x + u ∈ domConcave g := by
+    fenchelBifun A f g u x ≠ ⊤ ↔ x ∈ convexDom f ∧ A x + u ∈ concaveDom g := by
   have hb : -(g (A x + u)) ≠ ⊥ := by simpa using hpg.ne_top (A x + u)
   constructor
   · intro h
@@ -1228,8 +1220,8 @@ theorem theorem_31_2_infBifun (A : Rn n →ₗ[ℝ] Rn m) (f : Rn n → EReal) (
 
 /-- **Theorem 31.2**: `dom F = dom g - A (dom f)`. -/
 theorem theorem_31_2_domBifun (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hpf : Proper f) (hpg : ProperConcave g) :
-    domBifun (fenchelBifun A f g) = domConcave g - A '' dom f := by
+    (hpf : ProperConvex f) (hpg : ProperConcave g) :
+    convexDomBifun (fenchelBifun A f g) = concaveDom g - A '' convexDom f := by
   rw [sub_image_eq_subLin_image]
   ext u
   constructor
@@ -1246,23 +1238,23 @@ theorem theorem_31_2_domBifun (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {
 /-- **Theorem 31.2**: `ri (dom F) = ri (dom g) - A (ri (dom f))`, by Theorem 6.6 and Corollary 6.6.2
 (`relint_sub_image`). -/
 theorem theorem_31_2_relint_domBifun (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hf : ConvexFn f) (hpf : Proper f) (hg : ConcaveFn g) (hpg : ProperConcave g) :
-    ri (domBifun (fenchelBifun A f g)) = ri (domConcave g) - A '' ri (dom f) := by
+    (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConcaveFn g) (hpg : ProperConcave g) :
+    ri (convexDomBifun (fenchelBifun A f g)) = ri (concaveDom g) - A '' ri (convexDom f) := by
   rw [theorem_31_2_domBifun A hpf hpg,
-    relint_sub_image A hg.convex_domConcave hf.convex_dom]
+    relint_sub_image A hg.convex_concaveDom hf.convex_convexDom]
 
 /-- **Theorem 31.2**: the primal program is strongly consistent exactly when `A (ri (dom f))` meets
 `ri (dom g)` — condition (a) of Theorem 31.1, in program form. -/
 theorem theorem_31_2_stronglyConsistent_iff (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
-    {g : Rn m → EReal} (hf : ConvexFn f) (hpf : Proper f) (hg : ConcaveFn g)
+    {g : Rn m → EReal} (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConcaveFn g)
     (hpg : ProperConcave g) :
-    StronglyConsistent (fenchelBifun A f g) ↔ ∃ x ∈ ri (dom f), A x ∈ ri (domConcave g) := by
-  have key : ri (domBifun (fenchelBifun A f g))
-      = subLin A '' (ri (domConcave g) ×ˢ ri (dom f)) := by
+    StronglyConsistent (fenchelBifun A f g) ↔ ∃ x ∈ ri (convexDom f), A x ∈ ri (concaveDom g) := by
+  have key : ri (convexDomBifun (fenchelBifun A f g))
+      = subLin A '' (ri (concaveDom g) ×ˢ ri (convexDom f)) := by
     rw [theorem_31_2_relint_domBifun A hf hpf hg hpg, sub_image_eq_subLin_image]
   have h0 : StronglyConsistent (fenchelBifun A f g)
-      ↔ (0 : Rn m) ∈ subLin A '' (ri (domConcave g) ×ˢ ri (dom f)) := by
-    change (0 : Rn m) ∈ ri (domBifun (fenchelBifun A f g)) ↔ _
+      ↔ (0 : Rn m) ∈ subLin A '' (ri (concaveDom g) ×ˢ ri (convexDom f)) := by
+    change (0 : Rn m) ∈ ri (convexDomBifun (fenchelBifun A f g)) ↔ _
     rw [key]
   rw [h0]
   constructor
@@ -1292,11 +1284,11 @@ private def shiftEquiv (A : Rn n →ₗ[ℝ] Rn m) : (Rn m × Rn n) ≃ (Rn m ×
 /-- **Theorem 31.2**: the adjoint of the Fenchel bifunction is
 `(F* x*)(u*) = g*(u*) - f*(A* u* + x*)`. -/
 theorem theorem_31_2_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hpf : Proper f) (hpg : ProperConcave g) (y : Rn n) (v : Rn m) :
-    adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v
-      = concaveConj (pairing m) g v - conj (pairing n) f (LinearMap.adjoint A v + y) := by
-  obtain ⟨x₀, hx₀⟩ := hpf.dom_nonempty
-  obtain ⟨w₀, hw₀⟩ := hpg.domConcave_nonempty
+    (hpf : ProperConvex f) (hpg : ProperConcave g) (y : Rn n) (v : Rn m) :
+    convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v
+      = concaveConj (pairing m) g v - convexConj (pairing n) f (LinearMap.adjoint A v + y) := by
+  obtain ⟨x₀, hx₀⟩ := hpf.convexDom_nonempty
+  obtain ⟨w₀, hw₀⟩ := hpg.concaveDom_nonempty
   obtain ⟨fa, hfa⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x₀) hx₀
   obtain ⟨gb, hgb⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (ne_of_gt hw₀) (lt_top_iff_ne_top.2 (hpg.ne_top w₀))
@@ -1308,11 +1300,11 @@ theorem theorem_31_2_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g
       isAdjointPair_adjoint A x v
     simp only [map_sub, LinearMap.sub_apply, map_add, hA]
     ring
-  have hsplit : adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v
+  have hsplit : convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v
       = ⨅ q : Rn m × Rn n,
           ((((pairing m q.1 v : ℝ) : EReal) - g q.1)
             + (f q.2 - ((pairing n q.2 (LinearMap.adjoint A v + y) : ℝ) : EReal))) := by
-    rw [adjointBifun_apply, ← (shiftEquiv A).iInf_comp]
+    rw [convexAdjointBifun_apply, ← (shiftEquiv A).iInf_comp]
     refine iInf_congr fun q => ?_
     obtain ⟨w, x⟩ := q
     have hAx : A x + (w - A x) = w := by abel
@@ -1341,30 +1333,30 @@ theorem theorem_31_2_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g
   have hc1 : (⨅ w : Rn m, (((pairing m w v : ℝ) : EReal) - g w))
       = concaveConj (pairing m) g v := rfl
   have hc2 : (⨅ x : Rn n, (f x - ((pairing n x (LinearMap.adjoint A v + y) : ℝ) : EReal)))
-      = -(conj (pairing n) f (LinearMap.adjoint A v + y)) := by
-    rw [conj_apply, EReal.neg_iSup]
+      = -(convexConj (pairing n) f (LinearMap.adjoint A v + y)) := by
+    rw [convexConj_apply, EReal.neg_iSup]
     exact (iInf_congr fun x => EReal.neg_coe_sub _ _).symm
   rw [hsplit, hsp, hc1, hc2, ← sub_eq_add_neg]
 
 /-- **Theorem 31.2**: the optimal value of the dual concave program is `sup {g*(u*) - f*(A*
 u*)}`. -/
 theorem theorem_31_2_supBifun_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
-    (hpf : Proper f) (hpg : ProperConcave g) :
-    supBifun (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) 0
-      = ⨆ v, concaveConj (pairing m) g v - conj (pairing n) f (LinearMap.adjoint A v) :=
+    (hpf : ProperConvex f) (hpg : ProperConcave g) :
+    supBifun (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) 0
+      = ⨆ v, concaveConj (pairing m) g v - convexConj (pairing n) f (LinearMap.adjoint A v) :=
   iSup_congr fun v => by rw [theorem_31_2_adjoint A hpf hpg 0 v, add_zero]
 
 /-- `F* y` is identically `-∞` unless some `u*` has both `g* u*` and `f* (A* u* + y)` finite. -/
-private theorem adjointBifun_fenchelBifun_ne_bot_iff (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
-    {g : Rn m → EReal} (hpf : Proper f) (hpg : ProperConcave g) (y : Rn n) (v : Rn m) :
-    adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v ≠ ⊥
-      ↔ v ∈ domConcave (concaveConj (pairing m) g)
-        ∧ LinearMap.adjoint A v + y ∈ dom (conj (pairing n) f) := by
+private theorem convexAdjointBifun_fenchelBifun_ne_bot_iff (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
+    {g : Rn m → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g) (y : Rn n) (v : Rn m) :
+    convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) y v ≠ ⊥
+      ↔ v ∈ concaveDom (concaveConj (pairing m) g)
+        ∧ LinearMap.adjoint A v + y ∈ convexDom (convexConj (pairing n) f) := by
   rw [theorem_31_2_adjoint A hpf hpg y v, sub_eq_add_neg]
   constructor
   · intro h
     obtain ⟨h1, h2⟩ := EReal.add_ne_bot_iff.1 h
-    have h2' : conj (pairing n) f (LinearMap.adjoint A v + y) ≠ ⊤ := by simpa using h2
+    have h2' : convexConj (pairing n) f (LinearMap.adjoint A v + y) ≠ ⊤ := by simpa using h2
     exact ⟨bot_lt_iff_ne_bot.2 h1, lt_top_iff_ne_top.2 h2'⟩
   · rintro ⟨h1, h2⟩
     refine EReal.add_ne_bot_iff.2 ⟨ne_of_gt h1, ?_⟩
@@ -1373,20 +1365,20 @@ private theorem adjointBifun_fenchelBifun_ne_bot_iff (A : Rn n →ₗ[ℝ] Rn m)
 /-- **Theorem 31.2**: the concave effective domain of `F*` is `dom f* - A* (dom g*)`, the mirror
 of `theorem_31_2_domBifun`. -/
 theorem theorem_31_2_domConcaveBifun_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
-    {g : Rn m → EReal} (hpf : Proper f) (hpg : ProperConcave g) :
-    domConcaveBifun (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
-      = dom (conj (pairing n) f)
-        - LinearMap.adjoint A '' domConcave (concaveConj (pairing m) g) := by
+    {g : Rn m → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g) :
+    concaveDomBifun (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
+      = convexDom (convexConj (pairing n) f)
+        - LinearMap.adjoint A '' concaveDom (concaveConj (pairing m) g) := by
   rw [sub_image_eq_subLin_image]
   ext y
   constructor
   · rintro ⟨v, hv⟩
-    obtain ⟨h1, h2⟩ := (adjointBifun_fenchelBifun_ne_bot_iff A hpf hpg y v).1 hv
+    obtain ⟨h1, h2⟩ := (convexAdjointBifun_fenchelBifun_ne_bot_iff A hpf hpg y v).1 hv
     refine ⟨(LinearMap.adjoint A v + y, v), ⟨h2, h1⟩, ?_⟩
     change LinearMap.adjoint A v + y - LinearMap.adjoint A v = y
     abel
   · rintro ⟨⟨w, v⟩, ⟨hw, hv⟩, rfl⟩
-    refine ⟨v, (adjointBifun_fenchelBifun_ne_bot_iff A hpf hpg _ v).2 ⟨hv, ?_⟩⟩
+    refine ⟨v, (convexAdjointBifun_fenchelBifun_ne_bot_iff A hpf hpg _ v).2 ⟨hv, ?_⟩⟩
     have hz : LinearMap.adjoint A v + subLin (LinearMap.adjoint A) (w, v) = w := by
       change LinearMap.adjoint A v + (w - LinearMap.adjoint A v) = w
       abel
@@ -1395,25 +1387,27 @@ theorem theorem_31_2_domConcaveBifun_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn
 /-- **Theorem 31.2**: the dual program is strongly consistent exactly when `A* (ri (dom g*))` meets
 `ri (dom f*)` — condition (b) of Corollary 31.2.1, in program form. -/
 theorem theorem_31_2_concaveStronglyConsistent_iff (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
-    {g : Rn m → EReal} (hpf : Proper f) (hpg : ProperConcave g) :
-    ConcaveStronglyConsistent (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
-      ↔ ∃ v ∈ ri (domConcave (concaveConj (pairing m) g)),
-          LinearMap.adjoint A v ∈ ri (dom (conj (pairing n) f)) := by
-  have hcf : Convex ℝ (dom (conj (pairing n) f)) := (convexFn_conj (pairing n) f).convex_dom
-  have hcg : Convex ℝ (domConcave (concaveConj (pairing m) g)) :=
-    (concaveFn_concaveConj (pairing m) g).convex_domConcave
-  have key : ri (domConcaveBifun (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g)))
+    {g : Rn m → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g) :
+    ConcaveStronglyConsistent (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
+      ↔ ∃ v ∈ ri (concaveDom (concaveConj (pairing m) g)),
+          LinearMap.adjoint A v ∈ ri (convexDom (convexConj (pairing n) f)) := by
+  have hcf : Convex ℝ (convexDom (convexConj (pairing n) f)) :=
+      (convexFn_convexConj (pairing n) f).convex_convexDom
+  have hcg : Convex ℝ (concaveDom (concaveConj (pairing m) g)) :=
+    (concaveFn_concaveConj (pairing m) g).convex_concaveDom
+  have key : ri (concaveDomBifun (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g)))
       = subLin (LinearMap.adjoint A)
-          '' (ri (dom (conj (pairing n) f))
-            ×ˢ ri (domConcave (concaveConj (pairing m) g))) := by
+          '' (ri (convexDom (convexConj (pairing n) f))
+            ×ˢ ri (concaveDom (concaveConj (pairing m) g))) := by
     rw [theorem_31_2_domConcaveBifun_adjoint A hpf hpg,
       relint_sub_image (LinearMap.adjoint A) hcf hcg, sub_image_eq_subLin_image]
-  have h0 : ConcaveStronglyConsistent (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
+  have h0 :
+      ConcaveStronglyConsistent (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g))
       ↔ (0 : Rn n) ∈ subLin (LinearMap.adjoint A)
-          '' (ri (dom (conj (pairing n) f))
-            ×ˢ ri (domConcave (concaveConj (pairing m) g))) := by
+          '' (ri (convexDom (convexConj (pairing n) f))
+            ×ˢ ri (concaveDom (concaveConj (pairing m) g))) := by
     change (0 : Rn n)
-      ∈ ri (domConcaveBifun (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g))) ↔ _
+      ∈ ri (concaveDomBifun (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g))) ↔ _
     rw [key]
   rw [h0]
   constructor
@@ -1430,19 +1424,20 @@ theorem theorem_31_2_concaveStronglyConsistent_iff (A : Rn n →ₗ[ℝ] Rn m) {
 Theorem 30.4(b) and Theorem 30.3. -/
 theorem corollary_31_2_1_b (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
     (hf : ClosedProperConvexFn f) (hg : ClosedProperConcaveFn g) {v₀ : Rn m}
-    (hv : v₀ ∈ ri (domConcave (concaveConj (pairing m) g)))
-    (hAv : LinearMap.adjoint A v₀ ∈ ri (dom (conj (pairing n) f))) :
+    (hv : v₀ ∈ ri (concaveDom (concaveConj (pairing m) g)))
+    (hAv : LinearMap.adjoint A v₀ ∈ ri (convexDom (convexConj (pairing n) f))) :
     (⨅ x, f x - g (A x))
-      = ⨆ v : Rn m, concaveConj (pairing m) g v - conj (pairing n) f (LinearMap.adjoint A v) := by
+      = ⨆ v : Rn m,
+          concaveConj (pairing m) g v - convexConj (pairing n) f (LinearMap.adjoint A v) := by
   have hF : ConvexBifun (fenchelBifun A f g) :=
     theorem_31_2_convex A hf.convex hf.proper hg.concave hg.proper
-  have hcl : ClosedBifun (fenchelBifun A f g) := theorem_31_2_closed A hf hg
+  have hcl : ClosedConvexBifun (fenchelBifun A f g) := theorem_31_2_closed A hf hg
   have hs : ConcaveStronglyConsistent
-      (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) :=
+      (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) :=
     (theorem_31_2_concaveStronglyConsistent_iff A hf.proper hg.proper).2 ⟨v₀, hv, hAv⟩
   have hnorm : Normal (fenchelBifun A f g) :=
-    normal_of_concaveStronglyConsistent_adjointBifun hF hcl hs
-  have hgap := (normal_iff_iSup_adjointBifun_eq (Bu := pairing m) (pairing n) hF).1 hnorm
+    normal_of_concaveStronglyConsistent_convexAdjointBifun hF hcl hs
+  have hgap := (normal_iff_iSup_convexAdjointBifun_eq (Bu := pairing m) (pairing n) hF).1 hnorm
   rw [← theorem_31_2_infBifun A f g, ← hgap]
   exact theorem_31_2_supBifun_adjoint A hf.proper hg.proper
 
@@ -1450,25 +1445,25 @@ theorem corollary_31_2_1_b (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g :
 `x`. -/
 theorem corollary_31_2_1_b_attained (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
     (hf : ClosedProperConvexFn f) (hg : ClosedProperConcaveFn g) {v₀ : Rn m}
-    (hv : v₀ ∈ ri (domConcave (concaveConj (pairing m) g)))
-    (hAv : LinearMap.adjoint A v₀ ∈ ri (dom (conj (pairing n) f))) :
+    (hv : v₀ ∈ ri (concaveDom (concaveConj (pairing m) g)))
+    (hAv : LinearMap.adjoint A v₀ ∈ ri (convexDom (convexConj (pairing n) f))) :
     ∃ x, f x - g (A x) = ⨅ z, f z - g (A z) := by
   have hF : ConvexBifun (fenchelBifun A f g) :=
     theorem_31_2_convex A hf.convex hf.proper hg.concave hg.proper
-  have hcl : ClosedBifun (fenchelBifun A f g) := theorem_31_2_closed A hf hg
+  have hcl : ClosedConvexBifun (fenchelBifun A f g) := theorem_31_2_closed A hf hg
   have hs : ConcaveStronglyConsistent
-      (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) :=
+      (convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g)) :=
     (theorem_31_2_concaveStronglyConsistent_iff A hf.proper hg.proper).2 ⟨v₀, hv, hAv⟩
   have hinf : infBifun (fenchelBifun A f g) 0 = ⨅ x, f x - g (A x) :=
     theorem_31_2_infBifun A f g
   by_cases hc : Consistent (fenchelBifun A f g)
   · have hnorm : Normal (fenchelBifun A f g) :=
-      normal_of_concaveStronglyConsistent_adjointBifun hF hcl hs
-    have hgap : (⨆ v, adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v)
+      normal_of_concaveStronglyConsistent_convexAdjointBifun hF hcl hs
+    have hgap : (⨆ v, convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v)
         = infBifun (fenchelBifun A f g) 0 :=
-      (normal_iff_iSup_adjointBifun_eq (Bu := pairing m) (pairing n) hF).1 hnorm
-    have hv0 : adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v₀ ≠ ⊥ := by
-      refine (adjointBifun_fenchelBifun_ne_bot_iff A hf.proper hg.proper 0 v₀).2
+      (normal_iff_iSup_convexAdjointBifun_eq (Bu := pairing m) (pairing n) hF).1 hnorm
+    have hv0 : convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v₀ ≠ ⊥ := by
+      refine (convexAdjointBifun_fenchelBifun_ne_bot_iff A hf.proper hg.proper 0 v₀).2
         ⟨intrinsicInterior_subset hv, ?_⟩
       rw [add_zero]
       exact intrinsicInterior_subset hAv
@@ -1476,7 +1471,7 @@ theorem corollary_31_2_1_b_attained (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → ER
       rw [← hgap]
       intro h
       exact hv0 (le_bot_iff.1 (h ▸ le_iSup
-        (fun v => adjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v) v₀))
+        (fun v => convexAdjointBifun (pairing m) (pairing n) (fenchelBifun A f g) 0 v) v₀))
     obtain ⟨x, hx⟩ := exists_infBifun_eq_of_concaveStronglyConsistent (Bu := pairing m)
       (Bx := pairing n) hF hcl hc hbot hs
     refine ⟨x, ?_⟩

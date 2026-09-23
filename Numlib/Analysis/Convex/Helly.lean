@@ -19,7 +19,7 @@ otherwise, `f₂ x = x`, `C = ℝ`; neither alternative holds.
 
 The refinements that weaken the recession hypothesis of the infinite-system alternative are in
 `Numlib/Analysis/Convex/HellyRefined.lean`; they share this file's tail, since
-`exists_multipliers_of_posHomGen_convFn_conj_eq_bot` is the half of it that does not mention
+`exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot` is the half of it that does not mention
 recession at all.
 
 ## Main results
@@ -36,8 +36,8 @@ recession at all.
   indices.
 * `alternative_infinite_system_univ`, `alternative_infinite_system` — the alternative for *weak*
   inequalities over an arbitrary index set ([rockafellar1970convex] Theorem 21.3).
-* `exists_multipliers_of_posHomGen_convFn_conj_eq_bot` — its multiplier half, with `k(0) = -∞` as a
-  hypothesis rather than a consequence of the recession assumption.
+* `exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot` — its multiplier half, with `k(0) = -∞`
+  as a hypothesis rather than a consequence of the recession assumption.
 * `exists_forall_le_zero_of_forall_subsystem` — the solvability criterion for an infinite system,
   where the subsystems need only be solvable to within an arbitrary tolerance.
 * `helly_of_no_common_recession` — **Helly's theorem** for an infinite family of closed convex sets
@@ -124,7 +124,7 @@ functions finite on `ri C`, exactly one of the two alternatives holds: either th
 non-negative throughout `C`. This is the half with content; exclusivity is
 `not_exists_forall_neg_of_forall_zero_le_weighted`. -/
 theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) (hdom : ∀ i, ri C ⊆ dom (f i)) :
+    (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
       ∃ l : ι → ℝ, (∀ i, 0 ≤ l i) ∧ l ≠ 0 ∧
         ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x := by
@@ -143,7 +143,7 @@ theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀
     have hone := congrFun hzero (Classical.arbitrary ι)
     norm_num at hone
   obtain ⟨y₀, hy₀⟩ := Convex.relint_nonempty hC hCne
-  have hfinri : ∀ i, ∀ z ∈ ri C, f i z ≠ ⊤ := fun i z hz => (mem_dom.1 (hdom i hz)).ne
+  have hfinri : ∀ i, ∀ z ∈ ri C, f i z ≠ ⊤ := fun i z hz => (mem_convexDom.1 (hdom i hz)).ne
   -- the two convex sets of Rockafellar's proof, in `ι → ℝ`
   set C₁ : Set (ι → ℝ) := {z | ∃ x ∈ C, ∀ i, f i x < ((z i : ℝ) : EReal)} with hC₁def
   set C₂ : Set (ι → ℝ) := {z | ∀ i, z i ≤ 0} with hC₂def
@@ -308,7 +308,7 @@ theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀
   -- `ConvexFn.le_of_mem_closure` carries the bound from `ri C` to `C`
   refine ⟨l, hlnonneg, hlne, fun x hx => ?_⟩
   have hgconv : ConvexFn (fun x => ∑ i, (l i : EReal) * f i x) :=
-    ConvexFn.sum (fun i _ => (hf i).smul (l i) (hlnonneg i))
+    ConvexFn.sum (fun i _ => convexFn_coe_mul (hlnonneg i) (hf i))
       (fun i _ x => EReal.coe_mul_ne_bot (hlnonneg i) ((hp i).ne_bot x))
   have hgbot : ∀ z, (∑ i, (l i : EReal) * f i z) ≠ ⊥ := fun z =>
     EReal.sum_ne_bot fun i _ => EReal.coe_mul_ne_bot (hlnonneg i) ((hp i).ne_bot z)
@@ -403,7 +403,7 @@ combined function non-negative on `C`. The unrefined alternative is the case `κ
 affine constraints buy is the sharper conclusion `l ≠ 0`, at the price of needing polyhedral
 separation rather than proper separation. -/
 theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) (hdom : ∀ i, ri C ⊆ dom (f i))
+    (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i))
     (hfeas : ∃ x ∈ ri C, ∀ j, a j x ≤ 0) :
     (∃ x ∈ C, (∀ i, f i x < 0) ∧ ∀ j, a j x ≤ 0) ∨
       ∃ (l : ι → ℝ) (μ : κ → ℝ), (∀ i, 0 ≤ l i) ∧ (∀ j, 0 ≤ μ j) ∧ l ≠ 0 ∧
@@ -415,7 +415,7 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
   refine Or.inr ?_
   obtain ⟨y₀, hy₀, hy₀a⟩ := hfeas
   have hy₀C : y₀ ∈ C := intrinsicInterior_subset hy₀
-  have hfinri : ∀ i, ∀ z ∈ ri C, f i z ≠ ⊤ := fun i z hz => (mem_dom.1 (hdom i hz)).ne
+  have hfinri : ∀ i, ∀ z ∈ ri C, f i z ≠ ⊤ := fun i z hz => (mem_convexDom.1 (hdom i hz)).ne
   -- Rockafellar's two sets, in `(ι ⊕ κ) → ℝ`
   set D₁ : Set (ι ⊕ κ → ℝ) :=
     {z | ∃ x ∈ C, (∀ i, f i x < ((z (Sum.inl i) : ℝ) : EReal)) ∧ ∀ j, a j x = z (Sum.inr j)}
@@ -558,7 +558,7 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
     linarith
   -- `ConvexFn.le_of_mem_closure` carries the bound from `ri C` to `C`
   have hAconv : ConvexFn (fun x => ∑ i, (w (Sum.inl i) : EReal) * f i x) :=
-    ConvexFn.sum (fun i _ => (hf i).smul _ (hwnonneg _))
+    ConvexFn.sum (fun i _ => convexFn_coe_mul (hwnonneg _) (hf i))
       (fun i _ x => EReal.coe_mul_ne_bot (hwnonneg _) ((hp i).ne_bot x))
   have hAbot : ∀ x, (∑ i, (w (Sum.inl i) : EReal) * f i x) ≠ ⊥ := fun x =>
     EReal.sum_ne_bot fun i _ => EReal.coe_mul_ne_bot (hwnonneg _) ((hp i).ne_bot x)
@@ -728,7 +728,7 @@ fails, it already fails for a subsystem of at most `n + 1` inequalities, and the
 alternative produces for that subsystem extend by zero — harmless in `EReal` because
 `0 · (+∞) = 0`. -/
 theorem sparse_alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C)
-    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i)) (hdom : ∀ i, ri C ⊆ dom (f i)) :
+    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
       ∃ (S : Finset ι) (l : ι → ℝ), S.card ≤ Module.finrank ℝ E + 1 ∧ (∀ i ∉ S, l i = 0) ∧
         (∀ i, 0 ≤ l i) ∧ l ≠ 0 ∧ ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x := by
@@ -800,7 +800,7 @@ end Finite
 
 /-! ### Weak inequalities over an arbitrary index set
 
-The proof runs on two prerequisites: `clFn_posHomGen` identifies the conjugate of the positively
+The proof runs on two prerequisites: `convexCl_posHomGen` identifies the conjugate of the positively
 homogeneous convex function `k` generated by `h = conv {fᵢ* | i ∈ I}`, and
 `exists_affineIndependent_of_convFn_lt` extracts finitely many multipliers from `h(0) < 0`. -/
 
@@ -837,27 +837,28 @@ Once the positively homogeneous convex function `k` generated by `conv {fᵢ*}` 
 multipliers come out directly. `alternative_infinite_system` gets `k(0) = -∞` from a recession
 hypothesis; the refinement in `HellyRefined.lean` gets it from a polyhedral subfamily instead
 (`apply_zero_eq_bot_of_le_of_le`), and that is the *only* difference between the two. -/
-theorem exists_multipliers_of_posHomGen_convFn_conj_eq_bot [IsCompatiblePairing B]
+theorem exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ∀ i, ClosedProperConvexFn (f i))
-    (hk0 : posHomGen (convFn fun i => conj B (f i)) (0 : F) = ⊥) :
+    (hk0 : posHomGen (convFn fun i => convexConj B (f i)) (0 : F) = ⊥) :
     ∃ (t : Finset ι) (l : ι → ℝ) (ε : ℝ), (∀ i, 0 ≤ l i) ∧ (∀ i ∉ t, l i = 0) ∧ 0 < ε ∧
       t.card ≤ Module.finrank ℝ E + 1 ∧
       ∀ x : E, (ε : EReal) ≤ ∑ i ∈ t, (l i : EReal) * f i x := by
   classical
-  have hconvg : ∀ i, ConvexFn ((fun j => conj B (f j)) i) := fun i => convexFn_conj B (f i)
-  have hgbot : ∀ (i : ι) (y : F), (fun j => conj B (f j)) i y ≠ ⊥ :=
-    fun i y => conj_ne_bot (hf i).proper.dom_nonempty y
-  have hh0 : (convFn fun i => conj B (f i)) (0 : F) < ((0 : ℝ) : EReal) := by
+  have hconvg : ∀ i, ConvexFn ((fun j => convexConj B (f j)) i) :=
+      fun i => convexFn_convexConj B (f i)
+  have hgbot : ∀ (i : ι) (y : F), (fun j => convexConj B (f j)) i y ≠ ⊥ :=
+    fun i y => convexConj_ne_bot (hf i).proper.convexDom_nonempty y
+  have hh0 : (convFn fun i => convexConj B (f i)) (0 : F) < ((0 : ℝ) : EReal) := by
     have hbot := (posHomGen_apply_zero_eq_bot_iff (convexFn_convFn _)).1 hk0
     rwa [EReal.coe_zero]
   -- finitely many multipliers, at most `n + 1` of them
   obtain ⟨t, w, q, hwpos, hwsum, hcard, -, hqtop, hq0, hqval⟩ :=
     exists_affineIndependent_of_convFn_lt hconvg hgbot hh0
-  obtain ⟨c, hc⟩ : ∃ c : ι → ℝ, ∀ i ∈ t, conj B (f i) (q i) = (c i : EReal) := by
-    refine ⟨fun i => (conj B (f i) (q i)).toReal, fun i hi => ?_⟩
+  obtain ⟨c, hc⟩ : ∃ c : ι → ℝ, ∀ i ∈ t, convexConj B (f i) (q i) = (c i : EReal) := by
+    refine ⟨fun i => (convexConj B (f i) (q i)).toReal, fun i hi => ?_⟩
     exact (EReal.coe_toReal (hqtop i hi) (hgbot i (q i))).symm
   have hcsum : ∑ i ∈ t, w i * c i < 0 := by
-    have heq : ∑ i ∈ t, (w i : EReal) * conj B (f i) (q i)
+    have heq : ∑ i ∈ t, (w i : EReal) * convexConj B (f i) (q i)
         = ((∑ i ∈ t, w i * c i : ℝ) : EReal) := by
       rw [EReal.coe_sum]
       exact Finset.sum_congr rfl fun i hi => by rw [hc i hi, ← EReal.coe_mul]
@@ -888,8 +889,8 @@ theorem exists_multipliers_of_posHomGen_convFn_conj_eq_bot [IsCompatiblePairing 
     have hterm : ∀ i ∈ t,
         ((w i * (B x (q i) - c i) : ℝ) : EReal) ≤ (w i : EReal) * f i x := by
       intro i hi
-      have hfen : ((B x (q i) : ℝ) : EReal) - f i x ≤ conj B (f i) (q i) :=
-        sub_le_conj B (f i) x (q i)
+      have hfen : ((B x (q i) : ℝ) : EReal) - f i x ≤ convexConj B (f i) (q i) :=
+        sub_le_convexConj B (f i) x (q i)
       rw [hc i hi] at hfen
       have hstep : ((B x (q i) : ℝ) : EReal) - ((c i : ℝ) : EReal) ≤ f i x :=
         EReal.coe_sub_le_comm.1 hfen
@@ -937,44 +938,48 @@ theorem alternative_infinite_system_univ [IsCompatiblePairing B] [IsCompatiblePa
   classical
   by_cases halt : ∃ x : E, ∀ i, f i x ≤ 0
   · exact Or.inl halt
-  refine Or.inr (exists_multipliers_of_posHomGen_convFn_conj_eq_bot (B := B) hf ?_)
+  refine Or.inr (exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot (B := B) hf ?_)
   -- the conjugate of the convex hull is the pointwise supremum of the `fᵢ`.
-  have hconj : conj B.flip (convFn fun i => conj B (f i)) = ⨆ i, f i := by
-    rw [conj_convFn]
-    exact iSup_congr fun i => biconj_eq_self (hf i).convex (hf i).closed
+  have hconj : convexConj B.flip (convFn fun i => convexConj B (f i)) = ⨆ i, f i := by
+    rw [convexConj_convFn]
+    exact iSup_congr fun i => convexBiconj_eq_self (hf i).convex (hf i).closed
   -- alternative (a) fails, so the level set of the conjugate is empty
-  have hD : {x : E | conj B.flip (convFn fun i => conj B (f i)) x ≤ 0} = (∅ : Set E) := by
+  have hD :
+      {x : E | convexConj B.flip (convFn fun i => convexConj B (f i)) x ≤ 0} = (∅ : Set E) := by
     rw [Set.eq_empty_iff_forall_notMem]
     intro x hx
     have hx' : (⨆ i, f i) x ≤ 0 := by rw [← hconj]; exact hx
     rw [iSup_apply] at hx'
     exact halt ⟨x, fun i => le_trans (le_iSup (fun j => f j x) i) hx'⟩
   -- `cl k` is the support function of that level set, hence `-∞` everywhere
-  have hclk : clFn (posHomGen (convFn fun i => conj B (f i))) (0 : F) = ⊥ := by
-    rw [clFn_posHomGen (B := B), hD]
+  have hclk : convexCl (posHomGen (convFn fun i => convexConj B (f i))) (0 : F) = ⊥ := by
+    rw [convexCl_posHomGen (B := B), hD]
     simp
-  have hdomsub : ∀ i, dom (conj B (f i)) ⊆ dom (posHomGen (convFn fun j => conj B (f j))) := by
+  have hdomsub : ∀ i,
+      convexDom (convexConj B (f i))
+          ⊆ convexDom (posHomGen (convFn fun j => convexConj B (f j))) := by
     intro i y hy
     exact lt_of_le_of_lt (le_trans (posHomGen_le _ y) (convFn_le _ i y)) hy
-  have hzeromem : (0 : F) ∈ dom (posHomGen (convFn fun i => conj B (f i))) :=
-    mem_dom.2 (lt_of_le_of_ne le_top (posHomGen_apply_zero_ne_top _))
+  have hzeromem : (0 : F) ∈ convexDom (posHomGen (convFn fun i => convexConj B (f i))) :=
+    mem_convexDom.2 (lt_of_le_of_ne le_top (posHomGen_apply_zero_ne_top _))
   -- the recession hypothesis puts the origin in the relative interior of `dom k`
-  have hri : (0 : F) ∈ ri (dom (posHomGen (convFn fun i => conj B (f i)))) := by
+  have hri : (0 : F) ∈ ri (convexDom (posHomGen (convFn fun i => convexConj B (f i)))) := by
     by_contra hnot
     obtain ⟨ψ, hψle, y₁, hy₁, hy₁lt⟩ :=
-      exists_lt_of_notMem_relint (convexFn_posHomGen _).convex_dom ⟨0, hzeromem⟩ hnot
+      exists_lt_of_notMem_relint (convexFn_posHomGen _).convex_convexDom ⟨0, hzeromem⟩ hnot
     obtain ⟨v, hv⟩ := exists_pairing_eq B.flip ψ
     have hψ0 : ψ (0 : F) = 0 := map_zero ψ
     have hrecv : ∀ i, recessionFn (f i) v ≤ 0 := by
       intro i
-      have hpi : Proper (conj B (f i)) := proper_conj (hf i)
-      have hbi : conj B.flip (conj B (f i)) = f i := biconj_eq_self (hf i).convex (hf i).closed
-      have h13 : recessionFn (f i) = supportFn B.flip (dom (conj B (f i))) := by
-        have hstep := recessionFn_conj (B := B.flip) (f := conj B (f i)) hpi
+      have hpi : ProperConvex (convexConj B (f i)) := properConvex_convexConj (hf i)
+      have hbi : convexConj B.flip (convexConj B (f i)) = f i :=
+          convexBiconj_eq_self (hf i).convex (hf i).closed
+      have h13 : recessionFn (f i) = supportFn B.flip (convexDom (convexConj B (f i))) := by
+        have hstep := recessionFn_convexConj (B := B.flip) (f := convexConj B (f i)) hpi
           (by rw [hbi]; exact (hf i).proper)
         rwa [hbi] at hstep
       rw [h13]
-      have hle : supportFn B.flip (dom (conj B (f i))) v ≤ ((0 : ℝ) : EReal) := by
+      have hle : supportFn B.flip (convexDom (convexConj B (f i))) v ≤ ((0 : ℝ) : EReal) := by
         rw [supportFn_le_coe_iff]
         intro y hy
         have h1 := hψle y (hdomsub i hy)
@@ -985,7 +990,7 @@ theorem alternative_infinite_system_univ [IsCompatiblePairing B] [IsCompatiblePa
     rw [hψ1, hψ0] at hy₁lt
     exact lt_irrefl (0 : ℝ) hy₁lt
   -- `k` agrees with `cl k` there, so `k(0) = -∞` and `h(0) < 0`
-  rw [← (convexFn_posHomGen _).clFn_eq_of_mem_relint_dom hri]
+  rw [← (convexFn_posHomGen _).convexCl_eq_of_mem_relint_convexDom hri]
   exact hclk
 
 /-- **The alternative for an infinite system of weak convex inequalities.** For a collection of
@@ -1008,8 +1013,8 @@ theorem alternative_infinite_system [IsCompatiblePairing B] [IsCompatiblePairing
   have hg : ∀ o : Option ι, ClosedProperConvexFn (Option.elim o (indicatorFn C) f) := by
     rintro (_ | i)
     · have hind : ClosedProperConvexFn (indicatorFn C) :=
-        ⟨convexFn_indicatorFn.2 hC, closedFn_indicatorFn hCc,
-          ⟨by rw [dom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩⟩
+        ⟨convexFn_indicatorFn.2 hC, closedConvex_indicatorFn hCc,
+          ⟨by rw [convexDom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩⟩
       exact hind
     · exact hf i
   have hgrec : ∀ y : E,
@@ -1126,8 +1131,8 @@ theorem helly_of_no_common_recession [IsCompatiblePairing B] [IsCompatiblePairin
     (hinter : ∀ S : Finset ι, S.card ≤ Module.finrank ℝ E + 1 → (⋂ i ∈ S, K i).Nonempty) :
     (⋂ i, K i).Nonempty := by
   have hfi : ∀ i, ClosedProperConvexFn (indicatorFn (K i)) := fun i =>
-    ⟨convexFn_indicatorFn.2 (hconv i), closedFn_indicatorFn (hcl i),
-      ⟨by rw [dom_indicatorFn]; exact hne i, indicatorFn_ne_bot (K i)⟩⟩
+    ⟨convexFn_indicatorFn.2 (hconv i), closedConvex_indicatorFn (hcl i),
+      ⟨by rw [convexDom_indicatorFn]; exact hne i, indicatorFn_ne_bot (K i)⟩⟩
   have hrec' : ∀ y : E, (∀ i, recessionFn (indicatorFn (K i)) y ≤ 0) →
       y ∈ recessionCone (Set.univ : Set E) → y = 0 := by
     intro y hy _

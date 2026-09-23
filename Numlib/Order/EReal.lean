@@ -322,7 +322,7 @@ theorem coe_le_sub_div_iff {r m a : ℝ} (ha : 0 < a) (u : EReal) :
 
 /-- **Negation exchanges suprema and infima.** Unlike addition, negation *is* an order-reversing
 involution of `EReal` with no exceptional values, so this needs no hypothesis. It is what turns
-every statement about `conj` into one about `concaveConj`. -/
+every statement about `convexConj` into one about `concaveConj`. -/
 theorem neg_iSup {ι : Sort*} (u : ι → EReal) : -(⨆ i, u i) = ⨅ i, -(u i) :=
   eq_of_forall_le_iff fun z => by
     simp only [le_iInf_iff, EReal.le_neg, iSup_le_iff]
@@ -348,6 +348,11 @@ satisfies both at once. -/
 theorem neg_sub_comm {a b : EReal} (h₁ : a ≠ ⊥ ∨ b ≠ ⊥) (h₂ : a ≠ ⊤ ∨ b ≠ ⊤) :
     -(a - b) = b - a := by
   rw [EReal.neg_sub h₁ h₂, sub_eq_add_neg, add_comm]
+
+/-- Negation distributes over an `EReal` sum as soon as neither summand is `⊥`: the symmetric
+special case of Mathlib's `EReal.neg_add`. -/
+theorem neg_add_of_ne_bot {u v : EReal} (hu : u ≠ ⊥) (hv : v ≠ ⊥) : -(u + v) = -u + -v :=
+  (EReal.neg_add (.inl hu) (.inr hv)).trans (sub_eq_add_neg _ _)
 
 /-- A positive real scalar commutes with a supremum. -/
 theorem coe_mul_iSup {a : ℝ} (ha : 0 < a) {ι : Sort*} (u : ι → EReal) :

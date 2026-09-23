@@ -24,9 +24,9 @@ function or the gauge and are proved in `Recession/Conjugate.lean`, `Duality/Hom
 ## Main results
 
 * `isClosed_polarCone`, `polarPointedCone`, `polarCone_polarCone`,
-  `conj_indicatorFn_eq_indicatorFn_polarCone` — the three assertions of the **bipolar theorem**
-  ([rockafellar1970convex] Theorem 14.1): `K°` is a nonempty closed convex cone for *any* `K`;
-  `K°° = cl K` for a nonempty convex cone; and the indicator functions of `K` and `K°` are
+  `convexConj_indicatorFn_eq_indicatorFn_polarCone` — the three assertions of the **bipolar
+  theorem** ([rockafellar1970convex] Theorem 14.1): `K°` is a nonempty closed convex cone for *any*
+  `K`; `K°° = cl K` for a nonempty convex cone; and the indicator functions of `K` and `K°` are
   conjugate. `neg_polarCone_neg_polarCone` is `K** = K` for the *dual* cone `K* = -K°`.
 * `polarSet_polarSet` — `C°° = C` for a closed convex `C` containing the origin
   ([rockafellar1970convex] Theorem 14.5).
@@ -40,7 +40,7 @@ function or the gauge and are proved in `Recession/Conjugate.lean`, `Duality/Hom
   `polarCone_nonnegOrthant` — the standard examples: the polar of a subspace is its annihilator,
   the polar of a generated cone is the solution set of the corresponding homogeneous inequalities
   and conversely, and the polar of the nonnegative orthant is the nonpositive orthant.
-* `conj_partialAffineFn` — the conjugate of a partial affine function,
+* `convexConj_partialAffineFn` — the conjugate of a partial affine function,
   `(δ(· ∣ L + a) + ⟨·, a*⟩ + α)* = δ(· ∣ L^⊥ + a*) + ⟨a, ·⟩ + α*`.
 
 ## Implementation notes
@@ -402,7 +402,7 @@ end Defs
 
 This computation needs no topology: the indicator of a
 cone is positively homogeneous, so its conjugate is again an indicator
-(`conj_eq_indicatorFn_of_posHomogeneous`), and the set it indicates is the polar. -/
+(`convexConj_eq_indicatorFn_of_posHomogeneous`), and the set it indicates is the polar. -/
 
 section Indicator
 
@@ -426,18 +426,18 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 /-- **The indicator functions of a nonempty convex cone and of its polar are conjugate** to each
 other. -/
-theorem conj_indicatorFn_eq_indicatorFn_polarCone (hK : ∀ a : ℝ, 0 < a → a • K = K)
-    (hne : K.Nonempty) : conj B (indicatorFn K) = indicatorFn (polarCone B K) := by
+theorem convexConj_indicatorFn_eq_indicatorFn_polarCone (hK : ∀ a : ℝ, 0 < a → a • K = K)
+    (hne : K.Nonempty) : convexConj B (indicatorFn K) = indicatorFn (polarCone B K) := by
   obtain ⟨x₀, hx₀⟩ := hne
   rw [← supportSet_indicatorFn]
-  exact conj_eq_indicatorFn_of_posHomogeneous (posHomogeneous_indicatorFn.2 hK)
+  exact convexConj_eq_indicatorFn_of_posHomogeneous (posHomogeneous_indicatorFn.2 hK)
     ⟨x₀, by rw [indicatorFn_of_mem hx₀]; simp⟩
 
 /-- **The support function of a nonempty convex cone is the indicator of its polar.** -/
 theorem supportFn_eq_indicatorFn_polarCone (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
     supportFn B K = indicatorFn (polarCone B K) := by
-  rw [supportFn_eq_conj_indicatorFn]
-  exact conj_indicatorFn_eq_indicatorFn_polarCone hK hne
+  rw [supportFn_eq_convexConj_indicatorFn]
+  exact convexConj_indicatorFn_eq_indicatorFn_polarCone hK hne
 
 /-- **The polar is the zero sublevel set of the support function**: `⟨x, y⟩ ≤ 0` for every `x ∈ K`
 says exactly that `δ*(y | K) ≤ 0`. Holds for an arbitrary set `K`, and is what turns a theorem
@@ -559,17 +559,17 @@ theorem neg_polarCone_neg_polarCone_pointedCone (K : PointedCone ℝ E)
 
 /-- The conjugacy of indicators in the remaining direction: for a nonempty closed convex cone the
 indicator of `K°` conjugates back to the indicator of `K`. -/
-theorem conj_indicatorFn_polarCone (hconv : Convex ℝ K)
+theorem convexConj_indicatorFn_polarCone (hconv : Convex ℝ K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (hcl : IsClosed K) :
-    conj B.flip (indicatorFn (polarCone B K)) = indicatorFn K := by
-  rw [conj_indicatorFn_eq_indicatorFn_polarCone (B := B.flip) (smul_polarCone B K)
+    convexConj B.flip (indicatorFn (polarCone B K)) = indicatorFn K := by
+  rw [convexConj_indicatorFn_eq_indicatorFn_polarCone (B := B.flip) (smul_polarCone B K)
       (polarCone_nonempty B K),
     polarCone_polarCone_of_isClosed hconv hcone hne hcl]
 
-theorem conj_indicatorFn_polarCone_pointedCone (K : PointedCone ℝ E)
+theorem convexConj_indicatorFn_polarCone_pointedCone (K : PointedCone ℝ E)
     (hcl : IsClosed (K : Set E)) :
-    conj B.flip (indicatorFn (polarCone B (K : Set E))) = indicatorFn (K : Set E) :=
-  conj_indicatorFn_polarCone (K : ConvexCone ℝ E).convex (smul_coe_pointedCone K)
+    convexConj B.flip (indicatorFn (polarCone B (K : Set E))) = indicatorFn (K : Set E) :=
+  convexConj_indicatorFn_polarCone (K : ConvexCone ℝ E).convex (smul_coe_pointedCone K)
     ⟨0, K.zero_mem⟩ hcl
 
 end BipolarCone
@@ -667,7 +667,7 @@ A *partial affine function* is a proper convex function whose effective domain i
 which is affine on it; every such function is `δ(· | L + a) + ⟨·, a*⟩ + α` for a subspace `L`.
 Conjugacy exchanges `L` with its polar, `a` with `a*`, and `α` with `-α - ⟨a, a*⟩`, so partial
 affine functions, like subspaces, come in dual pairs. The formula is the conjugacy rule for
-`h(Ax) + ⟨x, b⟩ + α` at `h = δ(· | L)`, fed by `conj_indicatorFn_eq_indicatorFn_polarCone`. -/
+`h(Ax) + ⟨x, b⟩ + α` at `h = δ(· | L)`, fed by `convexConj_indicatorFn_eq_indicatorFn_polarCone`. -/
 
 section PartialAffine
 
@@ -685,22 +685,23 @@ theorem partialAffineFn_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (L : Submodu
 
 /-- **The conjugate of a partial affine function**:
 `(δ(· | L + a) + ⟨·, a*⟩ + α)* = δ(· | L^⊥ + a*) + ⟨a, ·⟩ + α*`, where `α*` is `-α - ⟨a, a*⟩`. -/
-theorem conj_partialAffineFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (L : Submodule ℝ E) (a : E) (b : F) (α : ℝ) :
-    conj B (partialAffineFn B L a b α)
+theorem convexConj_partialAffineFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (L : Submodule ℝ E) (a : E) (b : F)
+    (α : ℝ) :
+    convexConj B (partialAffineFn B L a b α)
       = partialAffineFn B.flip (polarSubmodule B L) b a (-α - B a b) := by
-  have hcone : conj B (indicatorFn (L : Set E)) = indicatorFn (polarCone B (L : Set E)) :=
-    conj_indicatorFn_eq_indicatorFn_polarCone (fun _ hc => smul_coe_submodule L hc)
+  have hcone : convexConj B (indicatorFn (L : Set E)) = indicatorFn (polarCone B (L : Set E)) :=
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ hc => smul_coe_submodule L hc)
       ⟨0, L.zero_mem⟩
   have hfun : partialAffineFn B L a b α
       = fun x : E => indicatorFn (L : Set E) (x - a) + ((B x b : ℝ) : EReal) + (α : EReal) := by
     funext x
     rw [partialAffineFn_apply, indicatorFn_vadd]
   funext y
-  have e : conj B (fun x : E => indicatorFn (L : Set E) (x - a) + ((B x b : ℝ) : EReal)
+  have e : convexConj B (fun x : E => indicatorFn (L : Set E) (x - a) + ((B x b : ℝ) : EReal)
         + (α : EReal)) y
-      = conj B (indicatorFn (L : Set E)) (y - b) + ((B a y : ℝ) : EReal)
+      = convexConj B (indicatorFn (L : Set E)) (y - b) + ((B a y : ℝ) : EReal)
         + ((-α - B a b : ℝ) : EReal) :=
-    conj_comp_affine (B := B) (B' := B) (LinearEquiv.refl ℝ E) (LinearEquiv.refl ℝ F)
+    convexConj_comp_affine (B := B) (B' := B) (LinearEquiv.refl ℝ E) (LinearEquiv.refl ℝ F)
       (fun _ _ => rfl) (indicatorFn (L : Set E)) a b α y
   rw [hfun, e, hcone, partialAffineFn_apply, indicatorFn_vadd, coe_polarSubmodule,
     LinearMap.flip_apply]

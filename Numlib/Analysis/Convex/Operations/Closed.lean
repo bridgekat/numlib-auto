@@ -9,8 +9,8 @@ counterpart of `convexFn_compLin`, which is the convexity statement. The support
 `lowerSemicontinuous_comp` precomposes a lower semicontinuous `g` with a continuous `φ`; Mathlib's
 `Continuous.comp_lowerSemicontinuous` composes on the other side.
 
-Closedness is not lower semicontinuity — `ClosedFn` also admits the constant `⊥` — and that branch
-survives precomposition because `(fun _ => ⊥) ∘ A` is again constant.
+Closedness is not lower semicontinuity — `ClosedConvex` also admits the constant `⊥` — and that
+branch survives precomposition because `(fun _ => ⊥) ∘ A` is again constant.
 
 ## References
 
@@ -44,10 +44,18 @@ theorem lowerSemicontinuous_compLin (hg : LowerSemicontinuous g) (hA : Continuou
   lowerSemicontinuous_comp hg hA
 
 /-- The inverse image of a closed function under a continuous linear map is closed. -/
-theorem closedFn_compLin (hg : ClosedFn g) (hA : Continuous A) : ClosedFn (compLin g A) := by
-  rcases closedFn_iff.1 hg with rfl | ⟨hlsc, hne⟩
-  · exact closedFn_iff.2 (Or.inl rfl)
-  · exact closedFn_iff.2 (Or.inr ⟨lowerSemicontinuous_compLin hlsc hA, fun x => hne (A x)⟩)
+theorem closedConvex_compLin (hg : ClosedConvex g)
+    (hA : Continuous A) : ClosedConvex (compLin g A) := by
+  rcases closedConvex_iff.1 hg with rfl | ⟨hlsc, hne⟩
+  · exact closedConvex_iff.2 (Or.inl rfl)
+  · exact closedConvex_iff.2 (Or.inr ⟨lowerSemicontinuous_compLin hlsc hA, fun x => hne (A x)⟩)
+
+omit [TopologicalSpace G] [IsTopologicalAddGroup G] in
+/-- The reflection `x ↦ f (-x)` of a closed proper convex function is closed proper convex. -/
+theorem ClosedProperConvexFn.comp_neg {f : E → EReal} (hf : ClosedProperConvexFn f) :
+    ClosedProperConvexFn fun x => f (-x) :=
+  ⟨hf.convex.comp_neg, closedConvex_compLin (A := -LinearMap.id) hf.closed continuous_neg,
+    hf.proper.comp_neg⟩
 
 end CompLin
 

@@ -80,6 +80,14 @@ theorem ConcaveConvexOn.convexOn_neg_fst (hK : ConcaveConvexOn C D K) {x : X} (h
     ConvexOn ℝ C fun u => -K (u, x) :=
   (hK.concave_fst x hx).neg
 
+/-- Negating a concave-convex function and swapping its arguments gives a concave-convex function
+of the swapped pair: `swapReal K = fun (x, w) => -K (w, x)` is concave-convex on `D × C`. Every
+statement about the concave variable is the corresponding statement about the convex variable,
+read at `swapReal K`. -/
+theorem ConcaveConvexOn.swapReal (hK : ConcaveConvexOn C D K) :
+    ConcaveConvexOn D C (ConvexAnalysis.swapReal K) :=
+  ⟨fun w hw => (hK.convex_snd w hw).neg, fun y hy => (hK.concave_fst y hy).neg⟩
+
 end Defs
 
 /-! ### Negation

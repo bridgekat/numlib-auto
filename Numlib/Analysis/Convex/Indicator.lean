@@ -10,8 +10,8 @@ which every statement about convex *sets* becomes an instance of a statement abo
 ## Main results
 
 * `convexFn_indicatorFn` — `δ(· | s)` is convex iff `s` is convex.
-* `dom_indicatorFn`, `proper_indicatorFn` — the effective domain is `s`, and `δ(· | s)` is proper
-  exactly when `s` is non-empty.
+* `convexDom_indicatorFn`, `properConvex_indicatorFn` — the effective domain is `s`, and `δ(· | s)`
+  is proper exactly when `s` is non-empty.
 * `indicatorFn_add`, `indicatorFn_finsetSum` — adding indicators intersects the sets.
 * `epi_indicatorFn` — the epigraph is the half-cylinder `s ×ˢ Ici 0`.
 
@@ -29,24 +29,24 @@ section Basic
 variable {E : Type*}
 
 /-- The indicator function `δ(· | s)` of a set `s`: `0` on `s`, `⊤` off it. -/
-noncomputable def indicatorFn (s : Set E) : E → EReal := restrictFn s (fun _ => 0)
+noncomputable def indicatorFn (s : Set E) : E → EReal := convexRestrict s (fun _ => 0)
 
 @[simp] theorem indicatorFn_of_mem {s : Set E} {x : E} (hx : x ∈ s) : indicatorFn s x = 0 :=
-  restrictFn_of_mem hx
+  convexRestrict_of_mem hx
 
 @[simp] theorem indicatorFn_of_notMem {s : Set E} {x : E} (hx : x ∉ s) : indicatorFn s x = ⊤ :=
-  restrictFn_of_notMem hx
+  convexRestrict_of_notMem hx
 
 theorem indicatorFn_ne_bot (s : Set E) (x : E) : indicatorFn s x ≠ ⊥ := by
   by_cases hx : x ∈ s <;> simp [hx]
 
-@[simp] theorem dom_indicatorFn (s : Set E) : dom (indicatorFn s) = s := by
+@[simp] theorem convexDom_indicatorFn (s : Set E) : convexDom (indicatorFn s) = s := by
   ext x; by_cases hx : x ∈ s <;> simp [hx]
 
 /-- **`δ(· | s)` is proper exactly when `s` is non-empty.** In particular a constrained problem
 `h + δ(· | C)` has a proper constraint term without `C` being closed. -/
-@[simp] theorem proper_indicatorFn {s : Set E} : Proper (indicatorFn s) ↔ s.Nonempty :=
-  ⟨fun h => by simpa using h.dom_nonempty,
+@[simp] theorem properConvex_indicatorFn {s : Set E} : ProperConvex (indicatorFn s) ↔ s.Nonempty :=
+  ⟨fun h => by simpa using h.convexDom_nonempty,
     fun h => ⟨by simpa using h, indicatorFn_ne_bot s⟩⟩
 
 /-- **Adding indicators intersects the sets.** `0 + 0 = 0`, and `⊤` absorbs everything an indicator
@@ -86,7 +86,7 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 @[simp] theorem convexFn_indicatorFn {s : Set E} : ConvexFn (indicatorFn s) ↔ Convex ℝ s := by
   constructor
   · intro h
-    simpa using h.convex_dom
+    simpa using h.convex_convexDom
   · intro h
     refine ⟨?_⟩
     rw [epi_indicatorFn]
@@ -104,12 +104,12 @@ omit [Module ℝ E] in
 
 omit [AddCommGroup E] [Module ℝ E] in
 /-- Adding an indicator function restricts the effective domain. -/
-theorem restrictFn_eq_add_indicatorFn {s : Set E} {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
-    restrictFn s f = f + indicatorFn s := by
+theorem convexRestrict_eq_add_indicatorFn {s : Set E} {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
+    convexRestrict s f = f + indicatorFn s := by
   funext x
   by_cases hx : x ∈ s
   · simp [hx]
-  · simp only [restrictFn_of_notMem hx, Pi.add_apply, indicatorFn_of_notMem hx]
+  · simp only [convexRestrict_of_notMem hx, Pi.add_apply, indicatorFn_of_notMem hx]
     exact (EReal.add_top_of_ne_bot (hf x)).symm
 
 end Module

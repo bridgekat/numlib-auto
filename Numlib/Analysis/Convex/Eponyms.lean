@@ -9,9 +9,10 @@ import Numlib.Analysis.Convex.Subdifferential.Gradient
 # Eponyms
 
 Named theorems of convex analysis, under the names people search for. Every declaration here is an
-`alias`: the library's primary names are descriptive (`biconj_eq_clFn`, `convexHull_extremePoints`),
-which is right for a library organised by subject but is not what a reader looks up first. Where the
-eponym is already the primary name — `fenchel_duality`, `farkas`, `helly_finite` — no alias appears.
+`alias`: the library's primary names are descriptive (`convexBiconj_eq_convexCl`,
+`convexHull_extremePoints`), which is right for a library organised by subject but is not what a
+reader looks up first. Where the eponym is already the primary name — `fenchel_duality`, `farkas`,
+`helly_finite` — no alias appears.
 
 `perspective` aliases a definition rather than a theorem: `smulRight f a` is Rockafellar's `fa`, the
 perspective function under its other name.
@@ -24,10 +25,10 @@ perspective function under its other name.
 namespace ConvexAnalysis
 
 /-- **Fenchel–Moreau**: a convex function's biconjugate is its closure. -/
-alias fenchel_moreau := biconj_eq_clFn
+alias fenchel_moreau := convexBiconj_eq_convexCl
 
 /-- **Fenchel's inequality**: `⟨x, y⟩ ≤ f x + f* y`, for proper `f`. -/
-alias fenchel_inequality := Proper.le_add_conj
+alias fenchel_inequality := ProperConvex.le_add_convexConj
 
 /-- **Jensen's inequality** for a finite convex combination. -/
 alias jensen := ConvexFn.sum_le

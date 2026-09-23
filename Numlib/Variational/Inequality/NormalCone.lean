@@ -46,7 +46,7 @@ Two neighbouring translations live here as well:
   *Convex Analysis*, Theorem 27.4, in the vocabulary of the variational layer.
 
 The glue reading a real-valued convex function as a proper `ConvexFn` is `ConvexOn.convexFn_coe`
-and `ConvexAnalysis.proper_coe` of `Numlib/Analysis/Convex/Epigraph`.
+and `ConvexAnalysis.properConvex_coe` of `Numlib/Analysis/Convex/Epigraph`.
 
 Sources: Atkinson–Han, *Theoretical Numerical Analysis*, §11.3 for the inequalities; Rockafellar,
 *Convex Analysis*, §23 for the sum rule and Theorem 27.4 for the optimality condition.
@@ -107,9 +107,9 @@ theorem ConvexOn.isExactSum_coe_indicatorFn [CompleteSpace V] (hj : ConvexOn ℝ
     (hlsc : LowerSemicontinuous j) (hK : Convex ℝ K) (hne : K.Nonempty) :
     IsExactSum (innerₗ V) (fun v => (j v : EReal)) (indicatorFn K) := by
   obtain ⟨x₀, hx₀⟩ := hne
-  refine IsExactSum.of_continuousAt (ConvexOn.convexFn_coe hj) (proper_coe j)
-    (convexFn_indicatorFn.2 hK) (proper_indicatorFn.2 ⟨x₀, hx₀⟩) (x₀ := x₀)
-    (mem_dom.2 (EReal.coe_lt_top _)) (by rwa [dom_indicatorFn]) ?_
+  refine IsExactSum.of_continuousAt (ConvexOn.convexFn_coe hj) (properConvex_coe j)
+    (convexFn_indicatorFn.2 hK) (properConvex_indicatorFn.2 ⟨x₀, hx₀⟩) (x₀ := x₀)
+    (mem_convexDom.2 (EReal.coe_lt_top _)) (by rwa [convexDom_indicatorFn]) ?_
   exact (continuous_coe_real_ereal.comp (hj.continuous_of_lowerSemicontinuous hlsc)).continuousAt
 
 /-- **The inequality of the second kind, split.** In a real Hilbert space, for `j` convex and

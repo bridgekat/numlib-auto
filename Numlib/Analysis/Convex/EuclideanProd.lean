@@ -10,14 +10,14 @@ import Numlib.Analysis.InnerProductSpace.EuclideanProd
 different types, and a text written in `ℝⁿ` moves between them without comment. The move itself —
 the concatenation `euclideanProdEquiv`, its coordinates and its inner product — is
 `Numlib/Analysis/InnerProductSpace/EuclideanProd`, which knows nothing of convexity. This module is
-what a convexity statement needs on top of it: the transport along the concatenation of `conj`,
-`subdifferential` and `ri`.
+what a convexity statement needs on top of it: the transport along the concatenation of
+`convexConj`, `subdifferential` and `ri`.
 
 Everything turns on `inner_euclideanProdEquiv`: concatenation adds the two inner products, so the
 form `prodPairing` that a product is paired with *is* the inner product of `ℝᵐ⁺ⁿ` read through the
 concatenation. `isAdjointPair_euclideanProdEquiv` packages that as an adjointness datum, and each
 transport lemma is one application of a general substitution rule to it —
-`conj_comp_linearEquiv` of `Duality/Conjugate`, `subdifferential_comp_linearEquiv` of
+`convexConj_comp_linearEquiv` of `Duality/Conjugate`, `subdifferential_comp_linearEquiv` of
 `Subdifferential/Calculus`, `Convex.relint_image` of `RelativeInterior`. The two rules a statement
 about *cones* needs, `polarCone_image_of_pairing_eq` and `coe_hull_image`, are in `Duality/Polar`
 with the rest of the polarity calculus.
@@ -26,7 +26,7 @@ with the rest of the polarity calculus.
 
 * `prodPairing_euclideanProdEquiv_symm`, `isAdjointPair_euclideanProdEquiv` — the pairing pulled
   back along the concatenation, and the adjointness datum every transport below consumes.
-* `conj_comp_euclideanProdEquiv`, `subdifferential_comp_euclideanProdEquiv`,
+* `convexConj_comp_euclideanProdEquiv`, `subdifferential_comp_euclideanProdEquiv`,
   `relint_image_euclideanProdEquiv`, `relint_image_euclideanProdEquiv_symm` — conjugate,
   subdifferential and relative interior transport.
 
@@ -56,8 +56,8 @@ theorem prodPairing_euclideanProdEquiv_symm (z : EuclideanSpace ℝ (Fin (m + n)
   exact h.symm
 
 /-- **Concatenation is an adjoint pair for the two pairings.** This is the hypothesis
-`conj_comp_linearEquiv` and `subdifferential_comp_linearEquiv` take, and the only mathematical input
-the transport has. -/
+`convexConj_comp_linearEquiv` and `subdifferential_comp_linearEquiv` take, and the only mathematical
+input the transport has. -/
 theorem isAdjointPair_euclideanProdEquiv :
     IsAdjointPair (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
       (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m))) (innerₗ (EuclideanSpace ℝ (Fin n))))
@@ -79,13 +79,13 @@ variable {m n : ℕ}
 /-- **The conjugate transports along the concatenation.** A function `f` on `ℝᵐ × ℝⁿ` read as a
 function on `ℝᵐ⁺ⁿ` has, as its conjugate for the inner product of `ℝᵐ⁺ⁿ`, the conjugate of `f` for
 `prodPairing` read the same way. -/
-theorem conj_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)
+theorem convexConj_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)
     → EReal) (z : EuclideanSpace ℝ (Fin (m + n))) :
-    conj (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
+    convexConj (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
         (fun w => f ((euclideanProdEquiv m n).symm w)) z
-      = conj (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m)))
+      = convexConj (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m)))
           (innerₗ (EuclideanSpace ℝ (Fin n)))) f ((euclideanProdEquiv m n).symm z) :=
-  conj_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
+  convexConj_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
     (euclideanProdEquiv m n).toLinearEquiv isAdjointPair_euclideanProdEquiv f z
 
 /-- **The subdifferential transports along the concatenation.** -/

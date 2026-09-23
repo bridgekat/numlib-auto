@@ -27,14 +27,14 @@ Sums of sets, images and sums and infimal convolutions of functions, and pointwi
 * `Convex.isClosed_add`, `Convex.closure_add_eq`, `Convex.recessionCone_add` — the same three
   conclusions for a sum `C + D`, with the no-cancellation, bounded and conic cases following.
 * `closedProperConvexFn_mapLin` — a linear image of a closed proper convex function is closed
-  proper convex, and the infimum defining it is attained.
+  proper convex, the infimum defining it is attained, and `(A f)0⁺ = A (f0⁺)`.
 * `closedProperConvexFn_infConv_of_recessionFn_symm`, `closedProperConvexFn_infConv` — the same
   for infimal convolution, under a symmetry and under a positivity hypothesis.
-* `ClosedProperConvexFn.add`, `closedProperConvexFn_finsetSum`, `recessionFn_add`, `clFn_add` —
+* `ClosedProperConvexFn.add`, `closedProperConvexFn_finsetSum`, `recessionFn_add`, `convexCl_add` —
   a sum of closed proper convex functions whose effective domains share a point is closed proper
   convex, its recession function is the sum, and `cl (f + g) = cl f + cl g`.
 * `isClosed_epi_iSup`, `recessionFn_iSup`, `lscHull_iSup` — pointwise suprema;
-  `isClosed_epi_compLin`, `recessionFn_compLin`, `clFn_compLin` — composition with a linear map.
+  `isClosed_epi_compLin`, `recessionFn_compLin`, `convexCl_compLin` — composition with a linear map.
 
 ## Implementation notes
 
@@ -432,7 +432,7 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {z : E}
 /-- The hypothesis at the level of the epigraph: `(z, 0)` is a direction of recession of `epi f`
 exactly when `f` recedes in the direction `z`, and it lies in the lineality space exactly when `f`
 is *constant* along `z`. -/
-theorem mk_zero_mem_linealitySpace_epi_iff (hp : Proper f) :
+theorem mk_zero_mem_linealitySpace_epi_iff (hp : ProperConvex f) :
     ((z, (0 : ℝ)) : E × ℝ) ∈ linealitySpace (epi f) ↔ z ∈ constancySpace f := by
   rw [mk_mem_linealitySpace_epi_iff hp, mem_constancySpace]
   constructor
@@ -458,22 +458,24 @@ variable {E G : Type*}
   {f : E → EReal} {A : E →ₗ[ℝ] G}
 
 /-- **The image of a function under a linear map**: the image of a closed proper convex function
-is again closed proper convex, and the infimum defining it is attained, provided `f` is *constant*
-along every direction of recession that `A` kills.
+is again closed proper convex, the infimum defining it is attained, and
+`(A f)0⁺ = A (f0⁺)`, provided `f` is *constant* along every direction of recession that `A` kills.
 
-The three conclusions are packaged together because they come from one application of the image
+The conclusions are packaged together because they come from one application of the image
 theorem to `epi f`: the epigraph identity is the statement that the infimum is attained, and
-closedness and properness are read off it. -/
-theorem closedProperConvexFn_mapLin (hf : ConvexFn f) (hp : Proper f) (hc : IsClosed (epi f))
-    (A : E →ₗ[ℝ] G)
+closedness, properness and the recession function are read off it. This is the twin of
+`closedProperConvexFn_infConv`. -/
+theorem closedProperConvexFn_mapLin (hf : ClosedProperConvexFn f) (A : E →ₗ[ℝ] G)
     (h : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f) :
     epi (mapLin A f) = A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) '' epi f ∧
-      ClosedProperConvexFn (mapLin A f) := by
+      ClosedProperConvexFn (mapLin A f) ∧
+      recessionFn (mapLin A f) = mapLin A (recessionFn f) := by
   set Aid : E × ℝ →ₗ[ℝ] G × ℝ := A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) with hAid
-  have hconv : Convex ℝ (epi f) := hf.convex_epi
-  have hclosure : closure (epi f) = epi f := hc.closure_eq
+  have hp : ProperConvex f := hf.proper
+  have hconv : Convex ℝ (epi f) := hf.convex.convex_epi
+  have hclosure : closure (epi f) = epi f := hf.isClosed_epi.closure_eq
   have hne : (epi f).Nonempty := by
-    obtain ⟨x, hx⟩ := hp.dom_nonempty
+    obtain ⟨x, hx⟩ := hp.convexDom_nonempty
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
     exact ⟨(x, r), mk_mem_epi.2 hr.le⟩
   -- the hypothesis, transported to the epigraph
@@ -503,7 +505,6 @@ theorem closedProperConvexFn_mapLin (hf : ConvexFn f) (hp : Proper f) (hc : IsCl
       rfl
   have hepi : epi (mapLin A f) = Aid '' epi f :=
     epi_mapLin (IsEpiLike.of_isClosed hmono hclosed)
-  refine ⟨hepi, ?_⟩
   -- properness: a vertical line in the image would be a direction of recession `A` kills
   have hnebot : ∀ y : G, mapLin A f y ≠ ⊥ := by
     intro y hbot
@@ -528,19 +529,25 @@ theorem closedProperConvexFn_mapLin (hf : ConvexFn f) (hp : Proper f) (hc : IsCl
       ((mk_mem_linealitySpace_epi_iff hp).1 ((mk_zero_mem_linealitySpace_epi_iff hp).2 hconst)).1
     rw [hzero, EReal.coe_le_coe_iff] at hle
     linarith
-  have hdomne : (dom (mapLin A f)).Nonempty := by
-    rw [dom_mapLin]
-    exact hp.dom_nonempty.image A
-  exact ClosedProperConvexFn.of_isClosed_epi (convexFn_mapLin A hf)
-    (by rw [hepi]; exact hclosed) ⟨hdomne, hnebot⟩
+  have hdomne : (convexDom (mapLin A f)).Nonempty := by
+    rw [convexDom_mapLin]
+    exact hp.convexDom_nonempty.image A
+  refine ⟨hepi, ClosedProperConvexFn.of_isClosed_epi (convexFn_mapLin A hf.convex)
+    (by rw [hepi]; exact hclosed) ⟨hdomne, hnebot⟩, ?_⟩
+  -- the recession function of an image
+  have hepilike : IsEpiLike (Aid '' epi (recessionFn f)) := by
+    rw [epi_recessionFn, ← hrec, ← hepi]
+    exact isEpiLike_recessionCone_epi _
+  refine epi_injective ?_
+  rw [epi_recessionFn, hepi, hrec, epi_mapLin hepilike, epi_recessionFn]
 
 /-- **Attainment on its own**: under the same hypothesis the infimum defining `(A f) y` is
 attained whenever it is bounded above by a real. -/
-theorem exists_mapLin_eq (hf : ConvexFn f) (hp : Proper f) (hc : IsClosed (epi f))
-    (A : E →ₗ[ℝ] G) (h : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f)
+theorem exists_mapLin_eq (hf : ClosedProperConvexFn f) (A : E →ₗ[ℝ] G)
+    (h : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f)
     {y : G} {μ : ℝ} (hμ : mapLin A f y ≤ (μ : EReal)) :
     ∃ x : E, A x = y ∧ f x ≤ (μ : EReal) := by
-  obtain ⟨hepi, -⟩ := closedProperConvexFn_mapLin hf hp hc A h
+  obtain ⟨hepi, -, -⟩ := closedProperConvexFn_mapLin hf A h
   obtain ⟨⟨x, ρ⟩, hxρ, hxy⟩ : ((y, μ) : G × ℝ) ∈ _ := hepi ▸ mk_mem_epi.2 hμ
   refine ⟨x, congrArg Prod.fst hxy, ?_⟩
   have h₂ : ρ = μ := congrArg Prod.snd hxy
@@ -561,7 +568,7 @@ whose opposite recedes from `epi g` has to be zero.
 
 The vertical coordinate is what makes this more than a restatement: at `z = 0` the hypothesis says
 nothing, and it is properness — `f0⁺ 0 = g0⁺ 0 = 0` — that pins the vertical coordinate to `0`. -/
-theorem forall_eq_zero_of_recessionFn_add_pos (hpf : Proper f) (hpg : Proper g)
+theorem forall_eq_zero_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : ProperConvex g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) :
     ∀ q ∈ recessionCone (epi f), -q ∈ recessionCone (epi g) → q = 0 := by
   rintro ⟨z, ν⟩ hq hnq
@@ -592,7 +599,8 @@ hypothesis of `Convex.isClosed_add`.
 The vertical coordinates are what make this more than a restatement: the hypothesis speaks only
 about directions in `E`, and it is properness — through `le_recessionFn_of_neg_le` — that pins the
 two vertical coordinates against each other. -/
-theorem forall_mem_linealitySpace_epi_of_recessionFn_symm (hpf : Proper f) (hpg : Proper g)
+theorem forall_mem_linealitySpace_epi_of_recessionFn_symm (hpf : ProperConvex f)
+    (hpg : ProperConvex g)
     (h : ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
       recessionFn f (-z) + recessionFn g z ≤ 0) :
     ∀ q ∈ recessionCone (epi f), ∀ r ∈ recessionCone (epi g), q + r = 0 →
@@ -646,8 +654,8 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
       recessionFn f (-z) + recessionFn g z ≤ 0) :
     epi (infConv f g) = epi f + epi g ∧ ClosedProperConvexFn (infConv f g) ∧
       recessionFn (infConv f g) = infConv (recessionFn f) (recessionFn g) := by
-  have hfne : (epi f).Nonempty := (epi_nonempty_iff f).2 hf.proper.dom_nonempty
-  have hgne : (epi g).Nonempty := (epi_nonempty_iff g).2 hg.proper.dom_nonempty
+  have hfne : (epi f).Nonempty := (epi_nonempty_iff f).2 hf.proper.convexDom_nonempty
+  have hgne : (epi g).Nonempty := (epi_nonempty_iff g).2 hg.proper.convexDom_nonempty
   have hfcl : closure (epi f) = epi f := hf.isClosed_epi.closure_eq
   have hgcl : closure (epi g) = epi g := hg.isClosed_epi.closure_eq
   have hkey := forall_mem_linealitySpace_epi_of_recessionFn_symm hf.proper hg.proper h
@@ -704,10 +712,10 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
     have hval : -q.2 + -r.2 = (1 : ℝ) := by rw [← neg_add, hν]; norm_num
     rw [hval, ← EReal.coe_zero, EReal.coe_le_coe_iff] at hcontra
     linarith
-  have hproper : Proper (infConv f g) := by
+  have hproper : ProperConvex (infConv f g) := by
     refine ⟨?_, hnebot⟩
-    rw [dom_infConv]
-    exact hf.proper.dom_nonempty.add hg.proper.dom_nonempty
+    rw [convexDom_infConv]
+    exact hf.proper.convexDom_nonempty.add hg.proper.convexDom_nonempty
   refine ⟨hepi, ClosedProperConvexFn.of_isClosed_epi (convexFn_infConv hf.convex hg.convex)
     (by rw [hepi]; exact hclosed) hproper, ?_⟩
   -- the recession function of an infimal convolute
@@ -725,7 +733,7 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
 omit [FiniteDimensional ℝ E] in
 /-- The positivity hypothesis implies the symmetry one: if the only direction of joint recession
 is `0`, the set of them is trivially symmetric. -/
-theorem recessionFn_symm_of_recessionFn_add_pos (hpf : Proper f) (hpg : Proper g)
+theorem recessionFn_symm_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : ProperConvex g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) :
     ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
       recessionFn f (-z) + recessionFn g z ≤ 0 := by
@@ -800,8 +808,9 @@ theorem add_ne_bot (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E) :
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- Properness of a sum: properness of the summands plus one common domain point. -/
-theorem Proper.add (hf : Proper f) (hg : Proper g) (hne : (dom (f + g)).Nonempty) :
-    Proper (f + g) := ⟨hne, add_ne_bot hf.ne_bot hg.ne_bot⟩
+theorem ProperConvex.add (hf : ProperConvex f) (hg : ProperConvex g)
+    (hne : (convexDom (f + g)).Nonempty) :
+    ProperConvex (f + g) := ⟨hne, add_ne_bot hf.ne_bot hg.ne_bot⟩
 
 omit [FiniteDimensional ℝ E] in
 /-- **A sum of two closed proper convex functions** is again closed proper convex, as soon as it
@@ -811,10 +820,10 @@ Lower semicontinuity of the sum is Mathlib's `LowerSemicontinuous.add'`, whose e
 hypothesis is exactly what properness supplies: neither summand is `⊥`, so `EReal` addition is
 continuous at every pair of values. -/
 theorem ClosedProperConvexFn.add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
-    (hne : (dom (f + g)).Nonempty) : ClosedProperConvexFn (f + g) := by
+    (hne : (convexDom (f + g)).Nonempty) : ClosedProperConvexFn (f + g) := by
   have hbot : ∀ x, (f + g) x ≠ ⊥ := add_ne_bot hf.proper.ne_bot hg.proper.ne_bot
   refine ⟨hf.convex.add hg.convex hf.proper.ne_bot hg.proper.ne_bot, ?_, ⟨hne, hbot⟩⟩
-  rw [closedFn_iff_lowerSemicontinuous hbot]
+  rw [closedConvex_iff_lowerSemicontinuous hbot]
   exact LowerSemicontinuous.add' hf.lowerSemicontinuous hg.lowerSemicontinuous fun x =>
     EReal.continuousAt_add (Or.inr (hg.proper.ne_bot x)) (Or.inl (hf.proper.ne_bot x))
 
@@ -825,10 +834,11 @@ effective domains share a point.
 The binary rule needs a point of the domain at every step, so the induction carries one: what is
 proved is the conjunction of the conclusion with `x₀ ∈ dom (∑ i ∈ s, gᵢ)`. -/
 theorem closedProperConvexFn_finsetSum {ι : Type*} {s : Finset ι} {g : ι → E → EReal}
-    (hg : ∀ i ∈ s, ClosedProperConvexFn (g i)) {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ dom (g i)) :
+    (hg : ∀ i ∈ s, ClosedProperConvexFn (g i)) {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (g i)) :
     ClosedProperConvexFn (∑ i ∈ s, g i) := by
-  have key : ∀ t : Finset ι, (∀ i ∈ t, ClosedProperConvexFn (g i)) → (∀ i ∈ t, x₀ ∈ dom (g i)) →
-      ClosedProperConvexFn (∑ i ∈ t, g i) ∧ x₀ ∈ dom (∑ i ∈ t, g i) := by
+  have key : ∀ t : Finset ι,
+      (∀ i ∈ t, ClosedProperConvexFn (g i)) → (∀ i ∈ t, x₀ ∈ convexDom (g i)) →
+      ClosedProperConvexFn (∑ i ∈ t, g i) ∧ x₀ ∈ convexDom (∑ i ∈ t, g i) := by
     intro t
     induction t using Finset.cons_induction with
     | empty =>
@@ -837,18 +847,18 @@ theorem closedProperConvexFn_finsetSum {ι : Type*} {s : Finset ι} {g : ι → 
         funext x; simp
       rw [h0]
       refine ⟨⟨convexFn_const 0, ?_, ⟨⟨0, ?_⟩, fun _ => by simp⟩⟩, ?_⟩
-      · exact (closedFn_iff_lowerSemicontinuous (f := fun _ : E => (0 : EReal))
+      · exact (closedConvex_iff_lowerSemicontinuous (f := fun _ : E => (0 : EReal))
           fun _ => by simp).2 lowerSemicontinuous_const
-      · rw [mem_dom]; exact lt_of_le_of_ne le_top (by simp)
-      · rw [mem_dom]; exact lt_of_le_of_ne le_top (by simp)
+      · rw [mem_convexDom]; exact lt_of_le_of_ne le_top (by simp)
+      · rw [mem_convexDom]; exact lt_of_le_of_ne le_top (by simp)
     | cons i t hi ih =>
       intro hc hd
       obtain ⟨hall, hdomt⟩ := ih (fun j hj => hc j (Finset.mem_cons_of_mem hj))
         (fun j hj => hd j (Finset.mem_cons_of_mem hj))
-      have hi₀ : x₀ ∈ dom (g i) := hd i (Finset.mem_cons_self i t)
-      have hmem : x₀ ∈ dom (g i + ∑ j ∈ t, g j) := by
-        rw [mem_dom, Pi.add_apply]
-        exact EReal.add_lt_top (mem_dom.1 hi₀).ne (mem_dom.1 hdomt).ne
+      have hi₀ : x₀ ∈ convexDom (g i) := hd i (Finset.mem_cons_self i t)
+      have hmem : x₀ ∈ convexDom (g i + ∑ j ∈ t, g j) := by
+        rw [mem_convexDom, Pi.add_apply]
+        exact EReal.add_lt_top (mem_convexDom.1 hi₀).ne (mem_convexDom.1 hdomt).ne
       rw [Finset.sum_cons]
       exact ⟨ClosedProperConvexFn.add (hc i (Finset.mem_cons_self i t)) hall ⟨x₀, hmem⟩, hmem⟩
   exact (key s hg hx₀).1
@@ -860,12 +870,13 @@ Both sides are limits of difference quotients based at one common point of `dom 
 `EReal.coe_mul_sub_add_coe_mul_sub` says the quotients themselves add up. Uniqueness of
 limits finishes; closedness is what makes a single base point enough. -/
 theorem recessionFn_add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
-    (hne : (dom (f + g)).Nonempty) :
+    (hne : (convexDom (f + g)).Nonempty) :
     recessionFn (f + g) = recessionFn f + recessionFn g := by
   obtain ⟨x, hx⟩ := hne
   have hsum : ClosedProperConvexFn (f + g) := hf.add hg ⟨x, hx⟩
-  have hdom : dom (f + g) = dom f ∩ dom g := dom_add hf.proper.ne_bot hg.proper.ne_bot
-  have hxfg : x ∈ dom f ∩ dom g := hdom ▸ hx
+  have hdom : convexDom (f + g) = convexDom f ∩ convexDom g :=
+      convexDom_add hf.proper.ne_bot hg.proper.ne_bot
+  have hxfg : x ∈ convexDom f ∩ convexDom g := hdom ▸ hx
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hxfg.1
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hg.proper.ne_bot x) hxfg.2
   funext y
@@ -896,13 +907,14 @@ interior point, the hull of a sum is the sum of the hulls.
 Each of the three hulls at `y` is a limit along one and the same segment based at the common
 point, which lies in `ri (dom (f + g))` because the relative interior of an intersection of convex
 sets with a common relative interior point is the intersection of the relative interiors. -/
-theorem lscHull_add (hf : ConvexFn f) (hpf : Proper f) (hg : ConvexFn g) (hpg : Proper g)
-    {x : E} (hxf : x ∈ ri (dom f)) (hxg : x ∈ ri (dom g)) :
+theorem lscHull_add (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
+    (hpg : ProperConvex g)
+    {x : E} (hxf : x ∈ ri (convexDom f)) (hxg : x ∈ ri (convexDom g)) :
     lscHull (f + g) = lscHull f + lscHull g := by
   have hsum : ConvexFn (f + g) := hf.add hg hpf.ne_bot hpg.ne_bot
-  have hx : x ∈ ri (dom (f + g)) := by
-    rw [dom_add hpf.ne_bot hpg.ne_bot,
-      Convex.relint_inter hf.convex_dom hg.convex_dom ⟨x, hxf, hxg⟩]
+  have hx : x ∈ ri (convexDom (f + g)) := by
+    rw [convexDom_add hpf.ne_bot hpg.ne_bot,
+      Convex.relint_inter hf.convex_convexDom hg.convex_convexDom ⟨x, hxf, hxg⟩]
     exact ⟨hxf, hxg⟩
   funext y
   have h1 := hf.tendsto_lscHull_along_segment_relint hxf y
@@ -915,18 +927,19 @@ theorem lscHull_add (hf : ConvexFn f) (hpf : Proper f) (hg : ConvexFn g) (hpg : 
 
 /-- **The closure of a sum**: `cl (f + g) = cl f + cl g` when the effective domains share a
 relative interior point. -/
-theorem clFn_add (hf : ConvexFn f) (hpf : Proper f) (hg : ConvexFn g) (hpg : Proper g)
-    {x : E} (hxf : x ∈ ri (dom f)) (hxg : x ∈ ri (dom g)) :
-    clFn (f + g) = clFn f + clFn g := by
-  have hxfd : x ∈ dom f := intrinsicInterior_subset hxf
-  have hxgd : x ∈ dom g := intrinsicInterior_subset hxg
-  have hne : (dom (f + g)).Nonempty := by
+theorem convexCl_add (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
+    (hpg : ProperConvex g)
+    {x : E} (hxf : x ∈ ri (convexDom f)) (hxg : x ∈ ri (convexDom g)) :
+    convexCl (f + g) = convexCl f + convexCl g := by
+  have hxfd : x ∈ convexDom f := intrinsicInterior_subset hxf
+  have hxgd : x ∈ convexDom g := intrinsicInterior_subset hxg
+  have hne : (convexDom (f + g)).Nonempty := by
     refine ⟨x, ?_⟩
-    rw [dom_add hpf.ne_bot hpg.ne_bot]
+    rw [convexDom_add hpf.ne_bot hpg.ne_bot]
     exact ⟨hxfd, hxgd⟩
   have hsum : ConvexFn (f + g) := hf.add hg hpf.ne_bot hpg.ne_bot
-  rw [hsum.clFn_eq_lscHull (Proper.add hpf hpg hne), hf.clFn_eq_lscHull hpf,
-    hg.clFn_eq_lscHull hpg]
+  rw [hsum.convexCl_eq_lscHull (ProperConvex.add hpf hpg hne), hf.convexCl_eq_lscHull hpf,
+    hg.convexCl_eq_lscHull hpg]
   exact lscHull_add hf hpf hg hpg hxf hxg
 
 end AddFn
@@ -963,7 +976,7 @@ theorem recessionFn_iSup (hconv : ∀ i, ConvexFn (f i)) (hc : ∀ i, IsClosed (
 A point `x` lying in every `ri (dom fᵢ)` at which the supremum is finite supplies a common
 relative interior point of the epigraphs: `(x, μ)` lies in every `ri (epi fᵢ)` for any real `μ`
 above the supremum, which is what lets the closure pass inside the intersection. -/
-theorem lscHull_iSup (hconv : ∀ i, ConvexFn (f i)) {x : E} (hx : ∀ i, x ∈ ri (dom (f i)))
+theorem lscHull_iSup (hconv : ∀ i, ConvexFn (f i)) {x : E} (hx : ∀ i, x ∈ ri (convexDom (f i)))
     (hfin : (⨆ i, f i x) < ⊤) :
     lscHull (fun z => ⨆ i, f i z) = fun z => ⨆ i, lscHull (f i) z := by
   obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 hfin
@@ -996,22 +1009,22 @@ omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ G] in
 /-- **The recession function of a composition**: `(gA)0⁺ = (g0⁺)A`. It is the recession cone of a
 preimage, read through `epi_recessionFn`. -/
 theorem recessionFn_compLin (hg : ConvexFn g) (hc : IsClosed (epi g)) (A : E →ₗ[ℝ] G)
-    (hne : (dom (compLin g A)).Nonempty) :
+    (hne : (convexDom (compLin g A)).Nonempty) :
     recessionFn (compLin g A) = compLin (recessionFn g) A := by
   refine epi_injective ?_
   rw [epi_recessionFn, epi_compLin, epi_compLin, epi_recessionFn]
   refine recessionCone_preimage (prodMapId A) hg.convex_epi hc ?_
   obtain ⟨x, hx⟩ := hne
-  obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hx)
+  obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 hx)
   exact ⟨(x, μ), mk_mem_epi.2 hμ.le⟩
 
 omit [FiniteDimensional ℝ E] in
 /-- The relative interior hypothesis, transported to epigraphs: if `A x` is a relative interior
 point of `dom g`, some `(x, μ)` is carried into `ri (epi g)`. -/
 theorem preimage_relint_epi_nonempty (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E}
-    (hx : A x ∈ ri (dom g)) : ((prodMapId A) ⁻¹' ri (epi g)).Nonempty := by
+    (hx : A x ∈ ri (convexDom g)) : ((prodMapId A) ⁻¹' ri (epi g)).Nonempty := by
   obtain ⟨μ, hμ, -⟩ :=
-    EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
+    EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (intrinsicInterior_subset hx))
   refine ⟨(x, μ), ?_⟩
   rw [Set.mem_preimage, hg.relint_epi]
   exact ⟨hx, hμ⟩
@@ -1019,21 +1032,21 @@ theorem preimage_relint_epi_nonempty (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x 
 /-- **The lower semicontinuous hull of a composition**: `cl (g A) = (cl g) A` as soon as some
 `A x` is a relative interior point of `dom g`. It is the rule for the closure of a preimage,
 applied to `epi g`. -/
-theorem lscHull_compLin (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E} (hx : A x ∈ ri (dom g)) :
+theorem lscHull_compLin (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E} (hx : A x ∈ ri (convexDom g)) :
     lscHull (compLin g A) = compLin (lscHull g) A := by
   refine epi_injective ?_
   rw [epi_lscHull, epi_compLin, epi_compLin, epi_lscHull]
   exact Convex.closure_preimage hg.convex_epi (prodMapId A)
     (preimage_relint_epi_nonempty hg A hx)
 
-/-- The same for `clFn`: `cl (g A) = (cl g) A` for proper `g`. -/
-theorem clFn_compLin (hg : ConvexFn g) (hp : Proper g) (A : E →ₗ[ℝ] G) {x : E}
-    (hx : A x ∈ ri (dom g)) : clFn (compLin g A) = compLin (clFn g) A := by
+/-- The same for `convexCl`: `cl (g A) = (cl g) A` for proper `g`. -/
+theorem convexCl_compLin (hg : ConvexFn g) (hp : ProperConvex g) (A : E →ₗ[ℝ] G) {x : E}
+    (hx : A x ∈ ri (convexDom g)) : convexCl (compLin g A) = compLin (convexCl g) A := by
   have hcomp : ConvexFn (compLin g A) := convexFn_compLin A hg
-  have hpc : Proper (compLin g A) :=
-    ⟨⟨x, by rw [dom_compLin, Set.mem_preimage]; exact intrinsicInterior_subset hx⟩,
+  have hpc : ProperConvex (compLin g A) :=
+    ⟨⟨x, by rw [convexDom_compLin, Set.mem_preimage]; exact intrinsicInterior_subset hx⟩,
       fun z => by rw [compLin_apply]; exact hp.ne_bot _⟩
-  rw [hcomp.clFn_eq_lscHull hpc, hg.clFn_eq_lscHull hp]
+  rw [hcomp.convexCl_eq_lscHull hpc, hg.convexCl_eq_lscHull hp]
   exact lscHull_compLin hg A hx
 
 end CompLinFn

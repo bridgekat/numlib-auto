@@ -11,7 +11,7 @@ desc = 'An affine function of the pairing is convex.'
 id = 'affineFn_le_iff'
 
 [[node]]
-id = 'closedFn_affineFn'
+id = 'closedConvex_affineFn'
 
 [[node]]
 id = 'IsAdjointPair'

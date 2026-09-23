@@ -40,7 +40,7 @@ id = 'closedProperConvexFn_finsetSum'
 id = 'recessionFn_add'
 
 [[node]]
-id = 'clFn_add'
+id = 'convexCl_add'
 
 [[node]]
 id = 'isClosed_epi_iSup'
@@ -58,4 +58,4 @@ id = 'isClosed_epi_compLin'
 id = 'recessionFn_compLin'
 
 [[node]]
-id = 'clFn_compLin'
+id = 'convexCl_compLin'

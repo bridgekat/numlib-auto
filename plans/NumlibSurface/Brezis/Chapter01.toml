@@ -27,12 +27,12 @@ almost all by delegation.
   reflexive clause, the density criterion of Corollary 1.8/Remark 5, and — placed there by the
   planning brief — chapter 2's Proposition 2.14, Corollary 2.15 and Theorem 2.16). §1.4 is the
   backbone's convex library over the pairing `dualPairing E := (topDualPairing ℝ E).flip`:
-  `ConvexAnalysis.conj`, `biconj`, `biconj_eq_clFn_topDual` (Theorem 1.11), `proper_conj_iff`
+  `ConvexAnalysis.convexConj`, `convexBiconj`, `convexBiconj_eq_convexCl_topDual` (Theorem 1.11), `properConvex_convexConj_iff`
   and `exists_affine_le_of_closed_proper` (Proposition 1.10), and — the point that makes this
   chapter cheap — `IsExactSum.of_continuousAt` of `Numlib/Analysis/Convex/Duality/Continuity`,
   which *is* Theorem 1.12's constraint qualification "`φ` continuous at a point where `ψ` is
-  finite", so that Theorem 1.12 and Examples 3–4 are instances of `IsExactSum.conj_add`,
-  `IsExactSum.exists_conj_add_eq` and `iInf_mem_submodule_eq_neg_iInf_mem_polarCone`. The
+  finite", so that Theorem 1.12 and Examples 3–4 are instances of `IsExactSum.convexConj_add`,
+  `IsExactSum.exists_convexConj_add_eq` and `iInf_mem_submodule_eq_neg_iInf_mem_polarCone`. The
   planning brief's proposed module `Numlib/Analysis/Convex/Extremum/FenchelRockafellar.lean` is
   therefore **not needed**: its three intended contents exist (`IsExactSum.of_continuousAt`;
   Lemma 1.4 is Mathlib's `Convex.closure_interior_eq_closure_of_nonempty_interior`; Proposition

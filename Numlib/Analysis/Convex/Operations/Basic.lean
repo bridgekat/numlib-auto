@@ -11,10 +11,12 @@ linear maps — live elsewhere.
 
 * `convexFn_iSup`, `ConvexFn.sup` — pointwise suprema, via `epi_iSup`.
 * `ConvexFn.add`, `ConvexFn.sum`, `dom_add` — sums, and the effective domain of a sum.
-* `ConvexFn.smul` — multiplication by a nonnegative real.
+* `convexFn_coe_mul` (in `Numlib/Analysis/Convex/Epigraph.lean`) — multiplication by a
+  nonnegative real.
 * `ConvexFn.comp`, `ConvexFn.comp_extendTop` — composition with a nondecreasing convex function of
   one real variable.
-* `ConvexFn.restrictFn`, `ConvexFn.add_indicatorFn` — restriction to a convex set, the same
+* `convexFn_const`, `concaveFn_const` — constants.
+* `ConvexFn.convexRestrict`, `ConvexFn.add_indicatorFn` — restriction to a convex set, the same
   operation as adding an indicator function.
 
 ## Implementation notes
@@ -56,13 +58,14 @@ theorem epi_sup (f g : E → EReal) : epi (f ⊔ g) = epi f ∩ epi g := by
 
 /-- The effective domain of a sum is the intersection of the effective domains. Both `≠ ⊥`
 hypotheses are needed: for `f x = ⊥` and `g x = ⊤`, `x` lies in `dom (f + g)` but not in `dom g`. -/
-theorem dom_add {f g : E → EReal} (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) :
-    dom (f + g) = dom f ∩ dom g := by
+theorem convexDom_add {f g : E → EReal} (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) :
+    convexDom (f + g) = convexDom f ∩ convexDom g := by
   ext x
-  simp only [mem_dom, Pi.add_apply, Set.mem_inter_iff, lt_top_iff_ne_top]
+  simp only [mem_convexDom, Pi.add_apply, Set.mem_inter_iff, lt_top_iff_ne_top]
   exact EReal.add_ne_top_iff_ne_top₂ (hf x) (hg x)
 
-theorem epi_restrictFn (s : Set E) (f : E → EReal) : epi (restrictFn s f) = epi f ∩ s ×ˢ univ := by
+theorem epi_convexRestrict (s : Set E)
+    (f : E → EReal) : epi (convexRestrict s f) = epi f ∩ s ×ˢ univ := by
   ext p
   by_cases hp : p.1 ∈ s <;> simp [epi, hp]
 
@@ -88,6 +91,10 @@ theorem convexFn_const (c : EReal) : ConvexFn (fun _ : E => c) := by
   have h4 : a * r ≤ a * μ := mul_le_mul_of_nonneg_left h1 ha
   have h5 : b * r ≤ b * ν := mul_le_mul_of_nonneg_left h2 hb
   exact_mod_cast (by linarith : r ≤ a * μ + b * ν)
+
+/-- Constant functions are concave; the mirror of `convexFn_const`. -/
+theorem concaveFn_const (c : EReal) : ConcaveFn (fun _ : E => c) :=
+  concaveFn_iff_convexFn_neg.2 (convexFn_const (-c))
 
 /-- Its negative is convex too, which is why the functions both convex and concave are exactly the
 affine ones. The pairing-presented form is `convexFn_affineFn`. -/
@@ -173,22 +180,6 @@ theorem ConvexFn.sum {ι : Type*} {s : Finset ι} {f : ι → E → EReal}
     rw [hfun]
     exact key
 
-/-! #### Multiplication by a nonnegative scalar -/
-
-/-- The case `a = 0` is covered: `EReal` obeys the convention `0 · ∞ = 0`, so `(0 : EReal) * f` is
-the zero function. -/
-theorem ConvexFn.smul {f : E → EReal} (a : ℝ) (ha : 0 ≤ a) (hf : ConvexFn f) :
-    ConvexFn (fun x => (a : EReal) * f x) := by
-  rcases eq_or_lt_of_le ha with rfl | ha'
-  · simpa using convexFn_const (E := E) 0
-  refine convexFn_of_epi_combo (fun x y μ ν hx hy c d hc hd hcd => ?_)
-  have hx' : f x ≤ ((μ / a : ℝ) : EReal) := (EReal.coe_mul_le_coe_iff ha').1 hx
-  have hy' : f y ≤ ((ν / a : ℝ) : EReal) := (EReal.coe_mul_le_coe_iff ha').1 hy
-  refine (EReal.coe_mul_le_coe_iff ha').2 ?_
-  have hcombo := hf.epi_combo hx' hy' hc hd hcd
-  have harith : c * (μ / a) + d * (ν / a) = (c * μ + d * ν) / a := by ring
-  rwa [harith] at hcombo
-
 /-! #### Composition with a nondecreasing convex function -/
 
 /-- `φ : ℝ → EReal` extended to `EReal → EReal` by `φ (+∞) = +∞` and `φ (-∞) = -∞`, the choice that
@@ -256,18 +247,26 @@ theorem ConvexFn.comp_extendTop {f : E → EReal} {φ : ℝ → EReal} (hf : Con
 
 /-! #### Restriction to a convex set -/
 
-theorem ConvexFn.restrictFn {f : E → EReal} {s : Set E} (hf : ConvexFn f) (hs : Convex ℝ s) :
-    ConvexFn (ConvexAnalysis.restrictFn s f) := by
+theorem ConvexFn.convexRestrict {f : E → EReal} {s : Set E} (hf : ConvexFn f) (hs : Convex ℝ s) :
+    ConvexFn (ConvexAnalysis.convexRestrict s f) := by
   refine ⟨?_⟩
-  rw [epi_restrictFn]
+  rw [epi_convexRestrict]
   exact hf.convex_epi.inter (hs.prod convex_univ)
+
+/-- Restricting a concave function to a convex set — extending by `⊥` off it — gives a concave
+function; the mirror of `ConvexFn.convexRestrict`. -/
+theorem ConcaveFn.concaveRestrict {g : E → EReal} {s : Set E} (hg : ConcaveFn g)
+    (hs : Convex ℝ s) : ConcaveFn (ConvexAnalysis.concaveRestrict s g) := by
+  refine concaveFn_iff_convexFn_neg.2 ?_
+  rw [neg_concaveRestrict]
+  exact hg.convexFn_neg.convexRestrict hs
 
 /-- Adding the indicator function of a convex set is restriction to that set, and preserves
 convexity. -/
 theorem ConvexFn.add_indicatorFn {f : E → EReal} {s : Set E} (hf : ConvexFn f)
     (hf' : ∀ x, f x ≠ ⊥) (hs : Convex ℝ s) : ConvexFn (f + indicatorFn s) := by
-  rw [← restrictFn_eq_add_indicatorFn hf']
-  exact hf.restrictFn hs
+  rw [← convexRestrict_eq_add_indicatorFn hf']
+  exact hf.convexRestrict hs
 
 end Module
 

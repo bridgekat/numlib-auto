@@ -1,38 +1,41 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'conj_ofEpi'
+id = 'convexConj_ofEpi'
 
 [[node]]
-id = 'conj_smul'
+id = 'convexConj_smul'
 
 [[node]]
-id = 'conj_smulRight'
+id = 'convexConj_smulRight'
 
 [[node]]
-id = 'conj_mapLin'
+id = 'convexConj_mapLin'
 
 [[node]]
-id = 'conj_infConv'
+id = 'convexConj_infConv'
 
 [[node]]
-id = 'conj_sum_toInfConvFn'
+id = 'concaveConj_supConv'
 
 [[node]]
-id = 'conj_convFn'
+id = 'convexConj_sum_toInfConvFn'
 
 [[node]]
-id = 'conj_convHullFn'
+id = 'convexConj_convFn'
 
 [[node]]
-id = 'conj_convFn₂'
+id = 'convexConj_convHullFn'
+
+[[node]]
+id = 'convexConj_convFn₂'
 desc = 'The conjugate of the convex hull of two functions is the supremum of their conjugates.'
 
 [[node]]
-id = 'conj_add_eq_clFn_infConv'
+id = 'convexConj_add_eq_convexCl_infConv'
 
 [[node]]
-id = 'conj_iSup_eq_clFn_convFn'
+id = 'convexConj_iSup_eq_convexCl_convFn'
 
 [[node]]
-id = 'conj_compLin_eq_clFn_mapLin'
+id = 'convexConj_compLin_eq_convexCl_mapLin'

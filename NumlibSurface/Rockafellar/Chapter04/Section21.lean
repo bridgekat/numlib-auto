@@ -101,11 +101,11 @@ theorem convex_solutions (S : ConvexSystem n ι κ) (hw : ∀ i, ConvexFn (S.wea
 
 /-- A level set `{x | f x ≤ α}` of a closed function is closed, for an *extended-real* level `α`;
 `lowerSemicontinuous_iff_isClosed_le` covers only the finite levels. -/
-theorem isClosed_setOf_le {f : Rn n → EReal} (hf : ClosedFn f) (a : EReal) :
+theorem isClosed_setOf_le {f : Rn n → EReal} (hf : ClosedConvex f) (a : EReal) :
     IsClosed {x : Rn n | f x ≤ a} := by
   induction a using EReal.rec with
   | bot =>
-    rcases closedFn_iff.1 hf with rfl | ⟨-, hne⟩
+    rcases closedConvex_iff.1 hf with rfl | ⟨-, hne⟩
     · simp
     · have hempty : {x : Rn n | f x ≤ ⊥} = (∅ : Set (Rn n)) := by
         ext x
@@ -118,7 +118,7 @@ theorem isClosed_setOf_le {f : Rn n → EReal} (hf : ClosedFn f) (a : EReal) :
 /-- **§21 (p. 185).** With no strict inequalities and every `fᵢ` closed, the solution set is
 closed. -/
 theorem isClosed_solutions [IsEmpty κ] (S : ConvexSystem n ι κ)
-    (hw : ∀ i, ClosedFn (S.weakFn i)) : IsClosed S.solutions := by
+    (hw : ∀ i, ClosedConvex (S.weakFn i)) : IsClosed S.solutions := by
   rw [solutions_eq_iInter]
   have hstrict : (⋂ j, {x : Rn n | S.strictFn j x < S.strictBound j}) = (univ : Set (Rn n)) := by
     simp
@@ -164,8 +164,9 @@ only one of the following holds:
 This is the disjunction; `theorem_21_1_exclusive` is the exclusivity. The hypothesis is `ri C` and
 not `C`, and the weighted sum is read in `EReal`, where `0 · (+∞) = 0`. -/
 theorem theorem_21_1 {ι : Type*} [Fintype ι] [Nonempty ι] {C : Set (Rn n)}
-    {f : ι → Rn n → EReal} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i))
-    (hdom : ∀ i, ri C ⊆ dom (f i)) :
+    {f : ι → Rn n → EReal} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
+        (hp : ∀ i, ProperConvex (f i))
+    (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
       ∃ l : ι → ℝ, (∀ i, 0 ≤ l i) ∧ l ≠ 0 ∧
         ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x :=
@@ -196,7 +197,7 @@ Theorem 21.1 is the case `κ = Empty` but is not derived from this one: 21.1 nee
 11.3, while 21.2 needs the polyhedral separation of Theorem 20.2. -/
 theorem theorem_21_2 {ι κ : Type*} [Fintype ι] [Fintype κ] {C : Set (Rn n)}
     {f : ι → Rn n → EReal} {a : κ → (Rn n →ᵃ[ℝ] ℝ)} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) (hdom : ∀ i, ri C ⊆ dom (f i))
+    (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i))
     (hfeas : ∃ x ∈ ri C, ∀ j, a j x ≤ 0) :
     (∃ x ∈ C, (∀ i, f i x < 0) ∧ ∀ j, a j x ≤ 0) ∨
       ∃ (l : ι → ℝ) (μ : κ → ℝ), (∀ i, 0 ≤ l i) ∧ (∀ j, 0 ≤ μ j) ∧ l ≠ 0 ∧
@@ -405,8 +406,9 @@ outside which every `λᵢ` vanishes, which avoids deciding `λᵢ ≠ 0`; exten
 vector by zeros is harmless precisely because `0 · (+∞) = 0` in `EReal`. The book states this for
 Theorem 21.2 as well — that half is `corollary_21_6_2_affine`. -/
 theorem corollary_21_6_2 {ι : Type*} [Fintype ι] [Nonempty ι] {C : Set (Rn n)}
-    {f : ι → Rn n → EReal} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i))
-    (hdom : ∀ i, ri C ⊆ dom (f i)) :
+    {f : ι → Rn n → EReal} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
+        (hp : ∀ i, ProperConvex (f i))
+    (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
       ∃ (S : Finset ι) (l : ι → ℝ), S.card ≤ n + 1 ∧ (∀ i ∉ S, l i = 0) ∧
         (∀ i, 0 ≤ l i) ∧ l ≠ 0 ∧ ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x := by
@@ -429,7 +431,7 @@ already fails for a subsystem of at most `n + 1` inequalities, and Theorem 21.2 
 subsystem produces multipliers which extend by zero. -/
 theorem corollary_21_6_2_affine {ι κ : Type*} [Fintype ι] [Fintype κ] {C : Set (Rn n)}
     {f : ι → Rn n → EReal} {a : κ → (Rn n →ᵃ[ℝ] ℝ)} (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) (hdom : ∀ i, ri C ⊆ dom (f i))
+    (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i))
     (hfeas : ∃ x ∈ ri C, ∀ j, a j x ≤ 0) :
     (∃ x ∈ C, (∀ i, f i x < 0) ∧ ∀ j, a j x ≤ 0) ∨
       ∃ (S : Finset ι) (T : Finset κ) (l : ι → ℝ) (μ : κ → ℝ),

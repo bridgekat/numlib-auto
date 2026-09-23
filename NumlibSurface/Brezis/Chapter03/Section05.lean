@@ -182,27 +182,27 @@ theorem corollary_3_22 [CompleteSpace E] (hE : IsReflexive E) {K : Set E} (hb : 
 convex, and `φ : A → (−∞, +∞]` convex, l.s.c., `φ ≢ +∞`, and coercive on `A` — `φ x → +∞` as
 `‖x‖ → ∞`, `x ∈ A` (no assumption if `A` is bounded). Then `φ` achieves its minimum on `A`.
 The function on `A` is given as `φ : E → EReal` with the convexity and semicontinuity
-hypotheses on its restriction `ψ = restrictFn A φ` (which is `φ` on `A` and `+∞` off it);
+hypotheses on its restriction `ψ = convexRestrict A φ` (which is `φ` on `A` and `+∞` off it);
 the book's closedness and convexity of `A` are carried but not used (the sublevel sets of `ψ`
 are closed and convex by themselves), and neither is its requirement that `φ` never take the
 value `−∞`. -/
 theorem corollary_3_23 [CompleteSpace E] (hE : IsReflexive E) {A : Set E} (_hAc : IsClosed A)
     (_hAconv : Convex ℝ A) {φ : E → EReal}
-    (hconv : ConvexAnalysis.ConvexFn (ConvexAnalysis.restrictFn A φ))
-    (hlsc : LowerSemicontinuous (ConvexAnalysis.restrictFn A φ)) (hne : ∃ a ∈ A, φ a < ⊤)
+    (hconv : ConvexAnalysis.ConvexFn (ConvexAnalysis.convexRestrict A φ))
+    (hlsc : LowerSemicontinuous (ConvexAnalysis.convexRestrict A φ)) (hne : ∃ a ∈ A, φ a < ⊤)
     (hcoer : IsBounded A ∨ ∀ M : ℝ, ∃ R : ℝ, ∀ x ∈ A, R < ‖x‖ → (M : EReal) < φ x) :
     ∃ x₀ ∈ A, ∀ x ∈ A, φ x₀ ≤ φ x := by
   obtain ⟨a, haA, ha⟩ := hne
-  set ψ := ConvexAnalysis.restrictFn A φ with hψ
+  set ψ := ConvexAnalysis.convexRestrict A φ with hψ
   -- the sublevel set `Ã = {x ∈ A | φ x ≤ φ a}`, which is `{x | ψ x ≤ φ a}`
   set S : Set E := {x | ψ x ≤ φ a} with hS
   have hSA : S ⊆ A := fun x hx => by
     by_contra hxA
-    have : ψ x = ⊤ := ConvexAnalysis.restrictFn_of_notMem hxA
+    have : ψ x = ⊤ := ConvexAnalysis.convexRestrict_of_notMem hxA
     rw [hS, mem_ofPred_eq, this, top_le_iff] at hx
     exact ha.ne hx
   have hSmem : ∀ x ∈ A, x ∈ S ↔ φ x ≤ φ a := fun x hx => by
-    rw [hS, mem_ofPred_eq, hψ, ConvexAnalysis.restrictFn_of_mem hx]
+    rw [hS, mem_ofPred_eq, hψ, ConvexAnalysis.convexRestrict_of_mem hx]
   have haS : a ∈ S := (hSmem a haA).2 le_rfl
   have hSc : IsClosed S := hlsc.isClosed_preimage (φ a)
   have hSconv : Convex ℝ S := hconv.convex_le (φ a)
@@ -231,7 +231,8 @@ theorem corollary_3_23 [CompleteSpace E] (hE : IsReflexive E) {A : Set E} (_hAc 
   have hx₀a : φ x₀ ≤ φ a := (hSmem x₀ (hSA hx₀S)).1 hx₀S
   by_cases hxS : x ∈ S
   · have := hmin ⟨x, hxS, rfl⟩
-    simpa [hψ, ConvexAnalysis.restrictFn_of_mem hx, ConvexAnalysis.restrictFn_of_mem (hSA hx₀S)]
+    simpa [hψ, ConvexAnalysis.convexRestrict_of_mem hx,
+        ConvexAnalysis.convexRestrict_of_mem (hSA hx₀S)]
       using this
   · have : φ a < φ x := lt_of_not_ge fun h => hxS ((hSmem x hx).2 h)
     exact hx₀a.trans this.le

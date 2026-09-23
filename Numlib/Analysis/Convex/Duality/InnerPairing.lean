@@ -8,7 +8,7 @@ product in every way the theory needs, without carrying a `NormedAddCommGroup` s
 own. That matters because Moreau's theorem gets applied on `U × X`, which carries the *supremum*
 norm and so has no `InnerProductSpace ℝ` instance, even though `prodPairing (innerₗ U) (innerₗ X)`
 is a perfectly good inner product on it. Moving to `WithLp 2 (U × X)` instead would replace the
-topology *instance*, so `ClosedFn`, `Continuous` and `IsClosed` would stop transferring
+topology *instance*, so `ClosedConvex`, `Continuous` and `IsClosed` would stop transferring
 definitionally; generalising the pairing costs one class and leaves the topology alone.
 
 ## Main definitions
@@ -75,8 +75,8 @@ theorem pairing_comm (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] (x
 theorem self_pairing_nonneg (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] (x : E) : 0 ≤ B x x :=
   IsInnerPairing.self_nonneg B x
 
-/-- A symmetric pairing is its own flip. This is what lets `closedFn_conj` — which asks for
-`IsContinuousPairing B.flip` — be applied to an inner pairing without a detour. -/
+/-- A symmetric pairing is its own flip. This is what lets `closedConvex_convexConj` — which asks
+for `IsContinuousPairing B.flip` — be applied to an inner pairing without a detour. -/
 @[simp] theorem flip_eq_self (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] : B.flip = B :=
   LinearMap.ext fun x => LinearMap.ext fun y => pairing_comm B y x
 

@@ -1,12 +1,6 @@
 namespace = 'Rockafellar'
 
 [[node]]
-id = 'ClosedProperConcaveFn'
-
-[[node]]
-id = 'closedProperConcaveFn_iff_neg'
-
-[[node]]
 id = 'theorem_31_1_weak'
 source = 'Rockafellar 1970, Theorem 31.1'
 

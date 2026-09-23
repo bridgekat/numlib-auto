@@ -7,6 +7,9 @@ id = 'rightDeriv'
 id = 'leftDeriv'
 
 [[node]]
+id = 'leftDeriv_eq_neg_rightDeriv_comp_neg'
+
+[[node]]
 id = 'mem_subdifferential_iff_le_rightDeriv'
 
 [[node]]

@@ -25,13 +25,13 @@ polyhedral.
 ## Main results
 
 * `mem_argmin_iff_zero_mem_subdifferential` — `x` minimises `f` exactly when `0 ∈ ∂f x`.
-* `conj_apply_zero` (of `Duality/Level`), `argmin_eq_subdifferential_conj_zero`,
+* `convexConj_apply_zero` (of `Duality/Level`), `argmin_eq_subdifferential_convexConj_zero`,
   `iInf_ne_bot_and_argmin_eq_empty_iff`,
-  `argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj`, `supportFn_setOf_le`,
-  `argmin_eq_singleton_iff_hasGradientAtFn_conj_zero`, `supportFn_argmin`,
-  `recessionCone_setOf_le_eq_polarCone_dom_conj`, `iInf_supportFn_setOf_le` — the minimum set and
-  the optimal value read off the conjugate at the origin ([rockafellar1970convex] Theorem 27.1,
-  clauses (a)–(h)).
+  `argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj`, `supportFn_setOf_le`,
+  `argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero`, `supportFn_argmin`,
+  `recessionCone_setOf_le_eq_polarCone_convexDom_convexConj`, `iInf_supportFn_setOf_le` — the
+  minimum set and the optimal value read off the conjugate at the origin ([rockafellar1970convex]
+  Theorem 27.1, clauses (a)–(h)).
 * `isCompact_setOf_le` — a level set of a closed proper convex function with no direction of
   recession is compact; `argmin_nonempty_of_recessionConeFn_eq_zero`,
   `isCompact_argmin_of_recessionConeFn_eq_zero`, `exists_pos_forall_exists_mem_argmin_dist_lt` —
@@ -44,8 +44,8 @@ polyhedral.
   `argmin_nonempty_of_polyhedralFn` for a polyhedral objective.
 * `le_of_mem_subdifferential_of_neg_mem_normalCone`, `exists_mem_subdifferential_neg_mem_normalCone`
   — the optimality condition for minimising over a convex set, sufficiency and necessity.
-* `argmin_sepSum`, `dom_sepSum` — a **separable** objective `x ↦ ∑ᵢ hᵢ(xᵢ)` on a dependent finite
-  product is minimised coordinatewise: the *decomposition principle*.
+* `argmin_sepSum`, `convexDom_sepSum` — a **separable** objective `x ↦ ∑ᵢ hᵢ(xᵢ)` on a dependent
+  finite product is minimised coordinatewise: the *decomposition principle*.
 
 ## Implementation notes
 
@@ -140,14 +140,14 @@ theorem mem_argmin_iff_zero_mem_subdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ]
   · intro h z; simpa using h z
 
 /-- The same the other way round: `inf f = -f*(0)`. -/
-theorem iInf_eq_neg_conj_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
-    (⨅ x, f x) = -(conj B f 0) := by
-  rw [conj_apply_zero, neg_neg]
+theorem iInf_eq_neg_convexConj_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
+    (⨅ x, f x) = -(convexConj B f 0) := by
+  rw [convexConj_apply_zero, neg_neg]
 
 /-- `f` is bounded below exactly when `f*` is finite at the origin. -/
-theorem zero_mem_dom_conj_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
-    (0 : F) ∈ dom (conj B f) ↔ (⊥ : EReal) < ⨅ x, f x := by
-  rw [mem_dom, conj_apply_zero, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
+theorem zero_mem_convexDom_convexConj_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
+    (0 : F) ∈ convexDom (convexConj B f) ↔ (⊥ : EReal) < ⨅ x, f x := by
+  rw [mem_convexDom, convexConj_apply_zero, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
     EReal.neg_eq_top_iff]
 
 /-- The minimum set is convex. -/
@@ -178,7 +178,7 @@ set and its effective domain given coordinatewise. This is the content of the *d
 principle*: once a Kuhn–Tucker vector has reduced a program to minimising `h₁ + ⋯ + h_s`
 over `C¹ × ⋯ × C^s`, the problem splits into `s` independent problems. Both statements are about
 the dependent product itself; no isometry with `ℝⁿ`, no relative interior and no linear structure
-enter, since `argmin` and `dom` are order-theoretic. -/
+enter, since `argmin` and `convexDom` are order-theoretic. -/
 
 section Pi
 
@@ -187,8 +187,8 @@ variable {ι : Type*} [Fintype ι] {E : ι → Type*} {h : ∀ i, E i → EReal}
 /-- **The effective domain of a separable sum is the product of the effective domains**. The only
 hypothesis is that no summand takes `⊥`, and it cannot be dropped: since `⊥ + ⊤ = ⊥`, a sum can be
 finite while a summand is `+∞`, which breaks `⊆`. The `⊇` direction is unconditional. -/
-theorem dom_sepSum (hb : ∀ i (z : E i), h i z ≠ ⊥) :
-    dom (fun x : ∀ i, E i => ∑ i, h i (x i)) = univ.pi fun i => dom (h i) := by
+theorem convexDom_sepSum (hb : ∀ i (z : E i), h i z ≠ ⊥) :
+    convexDom (fun x : ∀ i, E i => ∑ i, h i (x i)) = univ.pi fun i => convexDom (h i) := by
   ext x
   constructor
   · intro hx i _
@@ -213,21 +213,21 @@ weight: a common domain point makes every `hⱼ(xⱼ)` finite, and finiteness is
 `j ≠ i` part of the sum to be cancelled off both sides, `EReal` not being cancellative. Without the
 domain point the statement is false — for `ι = Fin 2` with `h 0 ≡ ⊤` and `h 1 = id` on `ℝ`, the
 left side is everything and the right side is empty. -/
-theorem argmin_sepSum (hp : ∀ i, Proper (h i)) :
+theorem argmin_sepSum (hp : ∀ i, ProperConvex (h i)) :
     argmin (fun x : ∀ i, E i => ∑ i, h i (x i)) = univ.pi fun i => argmin (h i) := by
   classical
   ext x
   refine ⟨fun hx i _ z => ?_, fun hx z => Finset.sum_le_sum fun i _ => hx i (mem_univ i) (z i)⟩
   -- a common domain point certifies that the value at `x` is finite
-  choose y hy using fun j => (hp j).dom_nonempty
+  choose y hy using fun j => (hp j).convexDom_nonempty
   choose r hr using fun j =>
     EReal.exists_coe_of_ne_bot_of_lt_top ((hp j).ne_bot (y j)) (hy j)
   have hxle : ∑ j, h j (x j) ≤ ((∑ j, r j : ℝ) : EReal) := by
     rw [EReal.coe_sum]
     exact (hx y).trans (le_of_eq (Finset.sum_congr rfl fun j _ => hr j))
-  have hxdom : x ∈ dom fun w : ∀ i, E i => ∑ j, h j (w j) :=
+  have hxdom : x ∈ convexDom fun w : ∀ i, E i => ∑ j, h j (w j) :=
     lt_of_le_of_lt hxle (EReal.coe_lt_top _)
-  have hxpi := (dom_sepSum fun j z => (hp j).ne_bot z).subset hxdom
+  have hxpi := (convexDom_sepSum fun j z => (hp j).ne_bot z).subset hxdom
   choose c hc using fun j =>
     EReal.exists_coe_of_ne_bot_of_lt_top ((hp j).ne_bot (x j)) (hxpi j (mem_univ j))
   -- off the `i`-th coordinate the sum is a real, so it cancels
@@ -259,30 +259,33 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 /-- **The minimum set of a closed convex function is `∂f*(0)`**; in particular the infimum is
 attained exactly when `f*` is subdifferentiable at the origin. This is the subgradient inequality
 for `f*` at the origin, where Fenchel–Moreau turns `f**` back into `f`. -/
-theorem argmin_eq_subdifferential_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) :
-    argmin f = subdifferential B.flip (conj B f) 0 := by
+theorem argmin_eq_subdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex f) :
+    argmin f = subdifferential B.flip (convexConj B f) 0 := by
   ext x
-  have hbi : conj B.flip (conj B f) x = f x := congrFun (biconj_eq_self hf hc) x
+  have hbi : convexConj B.flip (convexConj B f) x = f x := congrFun (convexBiconj_eq_self hf hc) x
   have hpair : ((B.flip 0 x : ℝ) : EReal) = 0 := by simp
-  rw [mem_argmin_iff_le_iInf, iInf_eq_neg_conj_zero B, mem_subdifferential_iff_add_conj_le, hbi,
+  rw [mem_argmin_iff_le_iInf, iInf_eq_neg_convexConj_zero B,
+      mem_subdifferential_iff_add_convexConj_le, hbi,
     hpair, ← EReal.le_sub_iff_add_le (.inr (by simp)) (.inr (by simp)), zero_sub,
     EReal.le_neg]
 
 /-- Every nonempty level set of a closed proper convex function has the same recession cone, the
 polar of `dom f*`. -/
-theorem recessionCone_setOf_le_eq_polarCone_dom_conj (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) {α : ℝ} (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
-    recessionCone {z : E | f z ≤ (α : EReal)} = polarCone B.flip (dom (conj B f)) := by
+theorem recessionCone_setOf_le_eq_polarCone_convexDom_convexConj (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (hp : ProperConvex f) {α : ℝ} (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
+    recessionCone {z : E | f z ≤ (α : EReal)} = polarCone B.flip (convexDom (convexConj B f)) := by
   rw [recessionCone_setOf_le hf (ClosedProperConvexFn.isClosed_epi ⟨hf, hc, hp⟩) hne,
-    recessionConeFn_eq_polarCone_dom_conj (B := B) hf hc hp]
+    recessionConeFn_eq_polarCone_convexDom_convexConj (B := B) ⟨hf, hc, hp⟩]
 
 /-- The same for the minimum set: when the infimum is attained the minimum set is a level set, so
 it too has the polar of `dom f*` as its recession cone. -/
-theorem recessionCone_argmin_eq_polarCone_dom_conj (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) {a : E} (ha : a ∈ argmin f) {μ : ℝ} (hμ : f a = (μ : EReal)) :
-    recessionCone (argmin f) = polarCone B.flip (dom (conj B f)) := by
+theorem recessionCone_argmin_eq_polarCone_convexDom_convexConj (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (hp : ProperConvex f) {a : E} (ha : a ∈ argmin f) {μ : ℝ} (hμ : f a = (μ : EReal)) :
+    recessionCone (argmin f) = polarCone B.flip (convexDom (convexConj B f)) := by
   rw [argmin_eq_setOf_le ha hμ]
-  exact recessionCone_setOf_le_eq_polarCone_dom_conj hf hc hp ⟨a, le_of_eq hμ⟩
+  exact recessionCone_setOf_le_eq_polarCone_convexDom_convexConj hf hc hp ⟨a, le_of_eq hμ⟩
 
 end FenchelMoreau
 
@@ -306,7 +309,7 @@ theorem le_of_mem_subdifferential_of_neg_mem_normalCone (hy : y ∈ subdifferent
 
 omit [AddCommGroup E] [Module ℝ E] in
 /-- Minimising `h` over `C` is minimising `h + δ(· | C)` over the whole space. -/
-theorem mem_argmin_add_indicatorFn_of_forall (hp : Proper h) (hx : x ∈ C)
+theorem mem_argmin_add_indicatorFn_of_forall (hp : ProperConvex h) (hx : x ∈ C)
     (hmin : ∀ z ∈ C, h x ≤ h z) : x ∈ argmin (h + indicatorFn C) := by
   intro z
   by_cases hzC : z ∈ C
@@ -334,7 +337,7 @@ theorem exists_mem_subdifferential_neg_mem_normalCone (hex : IsExactSum B h (ind
     ∃ y ∈ subdifferential B h x, -y ∈ normalCone B C x := by
   have hzero : (0 : F) ∈ subdifferential B (h + indicatorFn C) x :=
     (mem_argmin_iff_zero_mem_subdifferential B _ x).1
-      (mem_argmin_add_indicatorFn_of_forall hex.proper_left hx hmin)
+      (mem_argmin_add_indicatorFn_of_forall hex.properConvex_left hx hmin)
   rw [hex.subdifferential_add x, subdifferential_indicatorFn hx] at hzero
   obtain ⟨y, hy, n, hn, hsum⟩ := hzero
   have hs : y + n = 0 := hsum
@@ -354,10 +357,10 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 /-- **The level set that carries the existence argument**: nonempty, closed, convex, and — when `f`
 has no direction of recession — compact. Only the `⇒` direction is packaged here. -/
-theorem isCompact_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem isCompact_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {α : ℝ} (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
     IsCompact {z : E | f z ≤ (α : EReal)} := by
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
   have hepi : IsClosed (epi f) := lowerSemicontinuous_iff_isClosed_epi.1 hlsc
   refine (isCompact_iff_recessionCone_eq_zero (hf.convex_le _)
     (lowerSemicontinuous_iff_isClosed_le.1 hlsc α) hne).2 ?_
@@ -367,11 +370,11 @@ theorem isCompact_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
 /-- A closed proper convex function with no direction of recession attains its infimum. Any level
 set of `f` is nonempty, closed, convex and compact, so lower semicontinuity attains a minimum on
 it, and off that level set `f` is larger. -/
-theorem argmin_nonempty_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) (hrec : recessionConeFn f = {0}) : (argmin f).Nonempty := by
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
-  obtain ⟨α, hα⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x₀) (mem_dom.1 hx₀)
+theorem argmin_nonempty_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) : (argmin f).Nonempty := by
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
+  obtain ⟨α, hα⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x₀) (mem_convexDom.1 hx₀)
   set L : Set E := {z : E | f z ≤ (α : EReal)} with hL
   have hLne : L.Nonempty := ⟨x₀, le_of_eq hα⟩
   obtain ⟨a, haL, hamin⟩ := LowerSemicontinuousOn.exists_isMinOn hLne
@@ -382,11 +385,11 @@ theorem argmin_nonempty_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : Close
   · exact le_trans haL (le_of_lt (not_le.1 hzL))
 
 /-- The minimum set is then a nonempty compact convex set. -/
-theorem isCompact_argmin_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) (hrec : recessionConeFn f = {0}) : IsCompact (argmin f) := by
+theorem isCompact_argmin_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) : IsCompact (argmin f) := by
   obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-    (lt_of_le_of_lt (ha _) (mem_dom.1 hp.dom_nonempty.choose_spec))
+    (lt_of_le_of_lt (ha _) (mem_convexDom.1 hp.convexDom_nonempty.choose_spec))
   have hset : argmin f = {z : E | f z ≤ (μ : EReal)} := by
     ext z
     constructor
@@ -396,26 +399,26 @@ theorem isCompact_argmin_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : Clos
   exact isCompact_setOf_le hf hc hp hrec ⟨a, le_of_eq hμ⟩
 
 /-- With no direction of recession, the infimum of a closed proper convex function is real. -/
-theorem exists_iInf_eq_coe (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem exists_iInf_eq_coe (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) : ∃ μ : ℝ, (⨅ z, f z) = (μ : EReal) := by
   obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-    (lt_of_le_of_lt (ha x₀) (mem_dom.1 hx₀))
+    (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
   exact ⟨μ, by rw [iInf_eq_of_mem_argmin ha, hμ]⟩
 
 /-- The minimum is then *well posed*: for every `ε > 0` there is a `δ > 0` with the level set
 `{x | f x ≤ inf f + δ}` lying within `ε` of the minimum set. One application of the extreme value
 theorem to the compact `{f ≤ inf f + 1} \ (M + ε·int B)` gives `δ` directly, in place of the
 book's nested-compactness argument. -/
-theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) (hrec : recessionConeFn f = {0}) {ε : ℝ} (hε : 0 < ε) :
+theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) {ε : ℝ} (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ x, f x ≤ (⨅ z, f z) + (δ : EReal) → ∃ z ∈ argmin f, dist x z < ε := by
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
   obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-    (lt_of_le_of_lt (ha x₀) (mem_dom.1 hx₀))
+    (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
   have hinf : (⨅ z, f z) = (μ : EReal) := by rw [iInf_eq_of_mem_argmin ha, hμ]
   set U : Set E := ⋃ w ∈ argmin f, Metric.ball w ε with hUdef
   have hUopen : IsOpen U := isOpen_biUnion fun w _ => Metric.isOpen_ball
@@ -468,7 +471,7 @@ theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : Clos
 
 /-- **Minimising nets approach the minimum set**: along any such net the distance to it tends to
 `0`. Stated for an arbitrary filter — `atTop` on `ℕ` is the sequential case. -/
-theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) :
     Filter.Tendsto (fun i => Metric.infDist (u i) (argmin f)) l (nhds 0) := by
@@ -484,7 +487,7 @@ theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper 
   exact lt_of_le_of_lt (Metric.infDist_le_dist_of_mem hz) hdz
 
 /-- Every cluster point of a minimising net belongs to the minimum set. -/
-theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) {x : E}
     (hx : MapClusterPt x l u) : x ∈ argmin f := by
@@ -514,7 +517,8 @@ theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedFn f) (hp : Pro
   · exact le_antisymm hnonpos Metric.infDist_nonneg
 
 /-- A minimising sequence is bounded. -/
-theorem isBounded_range_of_tendsto_iInf (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem isBounded_range_of_tendsto_iInf (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {u : ℕ → E}
     (hu : Filter.Tendsto (fun i => f (u i)) Filter.atTop (nhds (⨅ z, f z))) :
     Bornology.IsBounded (Set.range u) := by
@@ -545,15 +549,15 @@ theorem isBounded_range_of_tendsto_iInf (hf : ConvexFn f) (hc : ClosedFn f) (hp 
 /-- If a closed proper convex function attains its infimum at a unique point, every minimising net
 converges to that point. No recession hypothesis is needed: a one-point minimum set is a level set,
 and a bounded level set forces the recession cone to be `{0}`. -/
-theorem tendsto_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem tendsto_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     {a : E} (hM : argmin f = {a}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) :
     Filter.Tendsto u l (nhds a) := by
   have haM : a ∈ argmin f := by rw [hM]; exact Set.mem_singleton a
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-    (lt_of_le_of_lt (haM x₀) (mem_dom.1 hx₀))
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
+    (lt_of_le_of_lt (haM x₀) (mem_convexDom.1 hx₀))
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
   have hne : {z : E | f z ≤ (μ : EReal)}.Nonempty := ⟨a, le_of_eq hμ⟩
   have hrec : recessionConeFn f = {0} := by
     rw [← recessionCone_setOf_le hf (lowerSemicontinuous_iff_isClosed_epi.1 hlsc) hne,
@@ -576,15 +580,15 @@ omit [FiniteDimensional ℝ E] in
 /-- The indicator of a nonempty closed convex set is a closed proper convex function. -/
 theorem closedProperConvexFn_indicatorFn (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty) :
     ClosedProperConvexFn (indicatorFn C) :=
-  ⟨convexFn_indicatorFn.2 hC, closedFn_indicatorFn hCc,
-    ⟨by rw [dom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩⟩
+  ⟨convexFn_indicatorFn.2 hC, closedConvex_indicatorFn hCc,
+    ⟨by rw [convexDom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩⟩
 
 omit [FiniteDimensional ℝ E] in
 /-- The directions of recession of `h + δ(· | C)` are exactly the directions of recession common to
 `h` and to `C`. This is the recession formula for a sum read against an indicator: `δ(· | C)0⁺` is
 `δ(· | 0⁺C)`, which is `0` on `0⁺C` and `⊤` off it. -/
 theorem recessionConeFn_add_indicatorFn (hh : ClosedProperConvexFn h) (hC : Convex ℝ C)
-    (hCc : IsClosed C) (hCne : C.Nonempty) (hne : (dom (h + indicatorFn C)).Nonempty) :
+    (hCc : IsClosed C) (hCne : C.Nonempty) (hne : (convexDom (h + indicatorFn C)).Nonempty) :
     recessionConeFn (h + indicatorFn C) = recessionConeFn h ∩ recessionCone C := by
   have hsum := recessionFn_add hh (closedProperConvexFn_indicatorFn hC hCc hCne) hne
   ext y
@@ -605,24 +609,25 @@ theorem exists_forall_le_of_recessionConeFn_inter_eq_zero (hh : ClosedProperConv
     (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C = {0}) :
     ∃ x ∈ C, ∀ z ∈ C, h x ≤ h z := by
-  by_cases hne : (dom (h + indicatorFn C)).Nonempty
+  by_cases hne : (convexDom (h + indicatorFn C)).Nonempty
   · have hsum : ClosedProperConvexFn (h + indicatorFn C) :=
       hh.add (closedProperConvexFn_indicatorFn hC hCc hCne) hne
     obtain ⟨x, hx⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hsum.convex hsum.closed
       hsum.proper (by rw [recessionConeFn_add_indicatorFn hh hC hCc hCne hne]; exact hrec)
     obtain ⟨w, hw⟩ := hne
-    have hxdom : x ∈ dom (h + indicatorFn C) := mem_dom.2 (lt_of_le_of_lt (hx w) (mem_dom.1 hw))
-    rw [dom_add hh.proper.ne_bot (indicatorFn_ne_bot C), dom_indicatorFn] at hxdom
+    have hxdom : x ∈ convexDom (h + indicatorFn C) :=
+        mem_convexDom.2 (lt_of_le_of_lt (hx w) (mem_convexDom.1 hw))
+    rw [convexDom_add hh.proper.ne_bot (indicatorFn_ne_bot C), convexDom_indicatorFn] at hxdom
     exact ⟨x, hxdom.2, fun z hz => forall_le_of_mem_argmin_add_indicatorFn hx hxdom.2 hz⟩
   · obtain ⟨x, hx⟩ := hCne
     refine ⟨x, hx, fun z hz => ?_⟩
-    have hempty : dom h ∩ C = ∅ := by
-      rw [← dom_indicatorFn C, ← dom_add hh.proper.ne_bot (indicatorFn_ne_bot C)]
+    have hempty : convexDom h ∩ C = ∅ := by
+      rw [← convexDom_indicatorFn C, ← convexDom_add hh.proper.ne_bot (indicatorFn_ne_bot C)]
       exact Set.not_nonempty_iff_eq_empty.1 hne
     have hz' : h z = ⊤ := by
       by_contra hcon
       exact Set.eq_empty_iff_forall_notMem.1 hempty z
-        ⟨mem_dom.2 (lt_top_iff_ne_top.2 hcon), hz⟩
+        ⟨mem_convexDom.2 (lt_top_iff_ne_top.2 hcon), hz⟩
     rw [hz']
     exact le_top
 
@@ -811,7 +816,7 @@ theorem exists_forall_le_of_polyhedral_of_recessionConeFn_subset_linealitySpaceF
     (hh : ClosedProperConvexFn h) (hC : Polyhedral C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ⊆ linealitySpaceFn h) {β : ℝ}
     (hbdd : ∀ x ∈ C, (β : EReal) ≤ h x) : ∃ x ∈ C, ∀ z ∈ C, h x ≤ h z := by
-  rcases Set.eq_empty_or_nonempty (C ∩ dom h) with hemp | ⟨x₀, hx₀C, hx₀⟩
+  rcases Set.eq_empty_or_nonempty (C ∩ convexDom h) with hemp | ⟨x₀, hx₀C, hx₀⟩
   · obtain ⟨x, hx⟩ := hCne
     have htop : ∀ z ∈ C, h z = ⊤ := fun z hz => by
       by_contra hcon
@@ -1002,21 +1007,23 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 omit [FiniteDimensional ℝ E] in
 /-- The origin is interior to `dom f*` exactly when `f` has no direction of recession: the
 recession cone is the polar of `dom f*`, which is trivial exactly then. -/
-theorem zero_mem_interior_dom_conj_iff_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) :
-    (0 : F) ∈ interior (dom (conj B f)) ↔ recessionConeFn f = {(0 : E)} := by
-  rw [zero_mem_interior_iff_polarCone_eq_zero (B := B) (convexFn_conj B f).convex_dom
-      (proper_conj ⟨hf, hc, hp⟩).dom_nonempty,
-    ← recessionConeFn_eq_polarCone_dom_conj (B := B) hf hc hp]
+theorem zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (hp : ProperConvex f) :
+    (0 : F) ∈ interior (convexDom (convexConj B f)) ↔ recessionConeFn f = {(0 : E)} := by
+  rw [zero_mem_interior_iff_polarCone_eq_zero (B := B) (convexFn_convexConj B f).convex_convexDom
+      (properConvex_convexConj ⟨hf, hc, hp⟩).convexDom_nonempty,
+    ← recessionConeFn_eq_polarCone_convexDom_convexConj (B := B) ⟨hf, hc, hp⟩]
 
 omit [FiniteDimensional ℝ E] in
 /-- The origin is in the *relative* interior of `dom f*` exactly when every direction of recession
 of `f` is one in which `f` is constant. The relative-interior criterion for `dom f*`, read at the
 origin, collapses to `0⁺f ⊆ constancy space`. -/
-theorem zero_mem_relint_dom_conj_iff_recessionConeFn_subset_constancySpace (hf : ConvexFn f)
-    (hc : ClosedFn f) (hp : Proper f) :
-    (0 : F) ∈ ri (dom (conj B f)) ↔ recessionConeFn f ⊆ constancySpace f := by
-  rw [mem_relint_dom_conj_iff (B := B) ⟨hf, hc, hp⟩ 0]
+theorem zero_mem_relint_convexDom_convexConj_iff_recessionConeFn_subset_constancySpace
+    (hf : ConvexFn f)
+    (hc : ClosedConvex f) (hp : ProperConvex f) :
+    (0 : F) ∈ ri (convexDom (convexConj B f)) ↔ recessionConeFn f ⊆ constancySpace f := by
+  rw [mem_relint_convexDom_convexConj_iff (B := B) ⟨hf, hc, hp⟩ 0]
   simp only [map_zero, EReal.coe_zero]
   constructor
   · rintro ⟨h1, h2⟩ y hy
@@ -1047,17 +1054,17 @@ theorem zero_mem_relint_dom_conj_iff_recessionConeFn_subset_constancySpace (hf :
 /-- The minimum set of a closed proper convex function is non-empty and bounded exactly when the
 origin is interior to `dom f*`. Both directions pass through "no direction of recession": a bounded
 level set has trivial recession cone one way, and existence of a minimiser the other. -/
-theorem argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (hf : ConvexFn f)
-    (hc : ClosedFn f) (hp : Proper f) :
+theorem argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (hf : ConvexFn f)
+    (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ Bornology.IsBounded (argmin f))
-      ↔ (0 : F) ∈ interior (dom (conj B f)) := by
-  rw [zero_mem_interior_dom_conj_iff_recessionConeFn_eq_zero (B := B) hf hc hp]
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
+      ↔ (0 : F) ∈ interior (convexDom (convexConj B f)) := by
+  rw [zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (B := B) hf hc hp]
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
   constructor
   · rintro ⟨⟨a, ha⟩, hbd⟩
-    obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
+    obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
     obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-      (lt_of_le_of_lt (ha x₀) (mem_dom.1 hx₀))
+      (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
     have hset : argmin f = {z : E | f z ≤ (μ : EReal)} := argmin_eq_setOf_le ha hμ
     have hne : {z : E | f z ≤ (μ : EReal)}.Nonempty := ⟨a, le_of_eq hμ⟩
     have hbd' : Bornology.IsBounded {z : E | f z ≤ (μ : EReal)} := by rw [← hset]; exact hbd
@@ -1071,13 +1078,14 @@ theorem argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (hf : Conve
 /-- The same in level-set form: *some* level set of `f` is non-empty and bounded exactly when the
 origin is interior to `dom f*`. Here "some" is as good as "every", since all non-empty level sets
 share the recession cone of `f`. -/
-theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (hf : ConvexFn f)
-    (hc : ClosedFn f) (hp : Proper f) :
+theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj
+    (hf : ConvexFn f)
+    (hc : ClosedConvex f) (hp : ProperConvex f) :
     (∃ α : ℝ, {x : E | f x ≤ (α : EReal)}.Nonempty ∧
         Bornology.IsBounded {x : E | f x ≤ (α : EReal)})
-      ↔ (0 : F) ∈ interior (dom (conj B f)) := by
-  rw [zero_mem_interior_dom_conj_iff_recessionConeFn_eq_zero (B := B) hf hc hp]
-  have hlsc : LowerSemicontinuous f := (closedFn_iff_lowerSemicontinuous hp.ne_bot).1 hc
+      ↔ (0 : F) ∈ interior (convexDom (convexConj B f)) := by
+  rw [zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (B := B) hf hc hp]
+  have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
   constructor
   · rintro ⟨α, hne, hbd⟩
     have hrec := (isBounded_iff_recessionCone_eq_zero (hf.convex_le _)
@@ -1085,9 +1093,9 @@ theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (h
     rwa [recessionCone_setOf_le hf (lowerSemicontinuous_iff_isClosed_epi.1 hlsc) hne] at hrec
   · intro hrec
     obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
-    obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
+    obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
     obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot a)
-      (lt_of_le_of_lt (ha x₀) (mem_dom.1 hx₀))
+      (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
     refine ⟨μ, ⟨a, le_of_eq hμ⟩, ?_⟩
     rw [← argmin_eq_setOf_le ha hμ]
     exact (isCompact_argmin_of_recessionConeFn_eq_zero hf hc hp hrec).isBounded
@@ -1095,109 +1103,116 @@ theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (h
 include B in
 /-- For the objective function of a convex program: the minimum set is non-empty and bounded
 exactly when some level set is. Both say `0 ∈ int (dom f*)`. -/
-theorem argmin_nonempty_and_isBounded_iff_exists_setOf_le (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) :
+theorem argmin_nonempty_and_isBounded_iff_exists_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ Bornology.IsBounded (argmin f))
       ↔ ∃ α : ℝ, {x : E | f x ≤ (α : EReal)}.Nonempty ∧
           Bornology.IsBounded {x : E | f x ≤ (α : EReal)} :=
-  (argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (B := B) hf hc hp).trans
-    (exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (B := B) hf hc hp).symm
+  (argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (B := B) hf hc hp).trans
+    (exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (B := B) hf
+        hc hp).symm
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] [IsCompatiblePairing B]
   [IsCompatiblePairing B.flip] in
 /-- Raising the conjugate by a real constant lowers the biconjugate by the same constant. This is
-`conj_add_const` read on the dual pair. -/
-theorem conj_flip_conj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) (x : E) :
-    conj B.flip (fun y => conj B f y + (α : EReal)) x = biconj B f x - (α : EReal) :=
-  conj_add_const B.flip (conj B f) α x
+`convexConj_add_const` read on the dual pair. -/
+theorem convexConj_flip_convexConj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) (x : E) :
+    convexConj B.flip (fun y => convexConj B f y + (α : EReal)) x = convexBiconj B f x -
+        (α : EReal) :=
+  convexConj_add_const B.flip (convexConj B f) α x
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 /-- For each real `α` the support function of the level set `{f ≤ α}` is the closure of the
 positively homogeneous convex function generated by `f* + α`. -/
-theorem supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (α : ℝ) :
+theorem supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (α : ℝ) :
     supportFn B {x : E | f x ≤ (α : EReal)}
-      = clFn (posHomGen fun y => conj B f y + (α : EReal)) := by
-  rw [clFn_posHomGen (B := B) fun y => conj B f y + (α : EReal)]
+      = convexCl (posHomGen fun y => convexConj B f y + (α : EReal)) := by
+  rw [convexCl_posHomGen (B := B) fun y => convexConj B f y + (α : EReal)]
   congr 1
   ext x
-  rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, conj_flip_conj_add_coe,
-    show biconj B f x = f x from congrFun (biconj_eq_self hf hc) x,
+  rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, convexConj_flip_convexConj_add_coe,
+    show convexBiconj B f x = f x from congrFun (convexBiconj_eq_self hf hc) x,
     EReal.sub_le_iff_le_add (.inl (EReal.coe_ne_bot α))
       (.inl (EReal.coe_ne_top α)), zero_add]
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 /-- When `f` is bounded below, the support function of its minimum set is the closure of the
 directional derivative of `f*` at the origin. -/
-theorem supportFn_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
-    (hbdd : conj B f 0 ≠ ⊤) :
-    supportFn B (argmin f) = clFn (dirDeriv (conj B f) 0) := by
-  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc,
-    clFn_dirDeriv (B := B.flip) (convexFn_conj B f) hbdd (conj_ne_bot hp.dom_nonempty 0),
+theorem supportFn_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
+    (hbdd : convexConj B f 0 ≠ ⊤) :
+    supportFn B (argmin f) = convexCl (dirDeriv (convexConj B f) 0) := by
+  rw [argmin_eq_subdifferential_convexConj_zero (B := B) hf hc,
+    convexCl_dirDeriv (B := B.flip) (convexFn_convexConj B f)
+        hbdd (convexConj_ne_bot hp.convexDom_nonempty 0),
     LinearMap.flip_flip]
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
 /-- The level sets of `f` above its infimum are exactly the ε-subdifferentials of `f*` at the
 origin. Fenchel–Moreau plus `f*(0) = -inf f`: `z ∈ ∂_ε f*(0)` says `⟨z, y⟩ - f*(y) ≤ inf f + ε` for
 every `y`, whose supremum on the left is `f**(z) = f(z)`. -/
-theorem epsSubdifferential_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem epsSubdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
-    epsSubdifferential B.flip ε (conj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
-  have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_apply_zero, hμ, EReal.coe_neg]
+    epsSubdifferential B.flip ε (convexConj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
+  have hc0 : convexConj B f 0 = ((-μ : ℝ) : EReal) := by
+    rw [convexConj_apply_zero, hμ, EReal.coe_neg]
   ext z
   rw [Set.mem_ofPred_eq, mem_epsSubdifferential]
-  have hstep : ∀ y : F, (conj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
-        ≤ conj B f y + (ε : EReal))
-      ↔ (((B.flip y z : ℝ) : EReal) - conj B f y ≤ ((μ + ε : ℝ) : EReal)) := fun y => by
+  have hstep : ∀ y : F, (convexConj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
+        ≤ convexConj B f y + (ε : EReal))
+      ↔ (((B.flip y z : ℝ) : EReal) - convexConj B f y ≤ ((μ + ε : ℝ) : EReal)) := fun y => by
     rw [sub_zero, hc0, coe_add_le_add_coe_iff,
-      EReal.sub_le_iff_le_add (.inl (conj_ne_bot hp.dom_nonempty y))
+      EReal.sub_le_iff_le_add (.inl (convexConj_ne_bot hp.convexDom_nonempty y))
         (.inr (EReal.coe_ne_bot _)),
-      add_comm (((μ + ε : ℝ) : EReal)) (conj B f y), show ε - -μ = μ + ε from by ring]
+      add_comm (((μ + ε : ℝ) : EReal)) (convexConj B f y), show ε - -μ = μ + ε from by ring]
   simp only [hstep]
-  have hbi : (⨆ y : F, ((B.flip y z : ℝ) : EReal) - conj B f y) = f z := by
-    rw [← conj_apply]
-    exact congrFun (biconj_eq_self hf hc) z
+  have hbi : (⨆ y : F, ((B.flip y z : ℝ) : EReal) - convexConj B f y) = f z := by
+    rw [← convexConj_apply]
+    exact congrFun (convexBiconj_eq_self hf hc) z
   rw [← iSup_le_iff, hbi]
 
 omit [FiniteDimensional ℝ E] in
 /-- As the level shrinks to the infimum, the support functions of the level sets of `f` converge to
 the directional derivative of `f*` at the origin. The ε-subdifferentials of `f*` at the origin are
 exactly those level sets; the limit is an infimum because `ε ↦ ∂_ε f*(0)` is monotone. -/
-theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (y : F) :
     (⨅ ε ∈ Set.Ioi (0 : ℝ), supportFn B {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} y)
-      = dirDeriv (conj B f) 0 y := by
-  have hcp : Proper (conj B f) := proper_conj ⟨hf, hc, hp⟩
-  have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_apply_zero, hμ, EReal.coe_neg]
-  have hepi : IsClosed (epi (conj B f)) :=
-    ClosedProperConvexFn.isClosed_epi ⟨convexFn_conj B f, closedFn_conj, hcp⟩
-  rw [← dirDeriv_eq_iInf_supportFn_epsSubdifferential (B := B.flip) (convexFn_conj B f) hcp hepi
+      = dirDeriv (convexConj B f) 0 y := by
+  have hcp : ProperConvex (convexConj B f) := properConvex_convexConj ⟨hf, hc, hp⟩
+  have hc0 : convexConj B f 0 = ((-μ : ℝ) : EReal) := by
+    rw [convexConj_apply_zero, hμ, EReal.coe_neg]
+  have hepi : IsClosed (epi (convexConj B f)) :=
+    ClosedProperConvexFn.isClosed_epi ⟨convexFn_convexConj B f, closedConvex_convexConj, hcp⟩
+  rw [← dirDeriv_eq_iInf_supportFn_epsSubdifferential
+      (B := B.flip) (convexFn_convexConj B f) hcp hepi
     hc0 y]
   refine iInf_congr fun ε => iInf_congr fun hε => ?_
-  rw [epsSubdifferential_conj_zero hf hc hp hμ ε, LinearMap.flip_flip]
+  rw [epsSubdifferential_convexConj_zero hf hc hp hμ ε, LinearMap.flip_flip]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 /-- A proper function takes a value below `⊤` somewhere, so its infimum is never `⊤`. Together
-with `conj_ne_bot` this is why "finite" costs only one inequality on each side below. -/
-theorem iInf_ne_top (hp : Proper f) : (⨅ x, f x) ≠ ⊤ := by
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
-  exact (lt_of_le_of_lt (iInf_le _ x₀) (mem_dom.1 hx₀)).ne
+with `convexConj_ne_bot` this is why "finite" costs only one inequality on each side below. -/
+theorem iInf_ne_top (hp : ProperConvex f) : (⨅ x, f x) ≠ ⊤ := by
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
+  exact (lt_of_le_of_lt (iInf_le _ x₀) (mem_convexDom.1 hx₀)).ne
 
 omit [FiniteDimensional ℝ E] in
 /-- The infimum of a closed proper convex function is finite but *unattained* exactly when `f*(0)`
 is finite and `f*'(0; ·)` takes `−∞` somewhere. Only one bound appears on each side, because
 `f*(0) ≠ ⊥` and `⨅ f ≠ ⊤` hold for every proper `f`. -/
-theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
+theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) :
     ((⨅ x, f x) ≠ ⊥ ∧ argmin f = ∅)
-      ↔ (conj B f 0 ≠ ⊤ ∧ ∃ y : F, dirDeriv (conj B f) 0 y = ⊥) := by
-  have hb : conj B f 0 ≠ ⊥ := conj_ne_bot hp.dom_nonempty 0
-  have hiff : (⨅ x, f x) ≠ ⊥ ↔ conj B f 0 ≠ ⊤ := by
-    rw [conj_apply_zero, ne_eq, ne_eq, EReal.neg_eq_top_iff]
+      ↔ (convexConj B f 0 ≠ ⊤ ∧ ∃ y : F, dirDeriv (convexConj B f) 0 y = ⊥) := by
+  have hb : convexConj B f 0 ≠ ⊥ := convexConj_ne_bot hp.convexDom_nonempty 0
+  have hiff : (⨅ x, f x) ≠ ⊥ ↔ convexConj B f 0 ≠ ⊤ := by
+    rw [convexConj_apply_zero, ne_eq, ne_eq, EReal.neg_eq_top_iff]
   rw [hiff, and_congr_right_iff]
   intro ht
-  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc,
-    subdifferential_eq_empty_iff_exists_dirDeriv_eq_bot (B := B.flip) (convexFn_conj B f) ht hb]
+  rw [argmin_eq_subdifferential_convexConj_zero (B := B) hf hc,
+    subdifferential_eq_empty_iff_exists_dirDeriv_eq_bot (B := B.flip)
+        (convexFn_convexConj B f) ht hb]
 
 end ConjugateAtZero
 
@@ -1205,7 +1220,7 @@ end ConjugateAtZero
 
 The minimum set *is* `∂f*(0)`, and a subdifferential is a singleton exactly at a point of
 differentiability; what follows is the two composed. No reflexivity is needed: the subdifferential
-in question is `subdifferential B.flip (conj B f) 0`, a subset of `E`. -/
+in question is `subdifferential B.flip (convexConj B f) 0`, a subset of `E`. -/
 
 section UniqueMinimiser
 
@@ -1217,12 +1232,13 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- **Necessity**: if the minimum set of `f` is the single vector `x`, then `f*` is differentiable
 at the origin with `∇f*(0) = ⟨·, x⟩`. The finite-dimensionality is `F`'s, not `E`'s — it is the
 space `f*` lives on. -/
-theorem hasGradientAtFn_conj_zero_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) (h : argmin f = {x}) :
-    HasGradientAtFn (conj B f) (evalCLM B.flip x) 0 :=
-  hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton (B := B.flip) (convexFn_conj B f)
-    (proper_conj ⟨hf, hc, hp⟩)
-    (by rw [← argmin_eq_subdifferential_conj_zero (B := B) hf hc]; exact h)
+theorem hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (hp : ProperConvex f) (h : argmin f = {x}) :
+    HasGradientAtFn (convexConj B f) (evalCLM B.flip x) 0 :=
+  hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton (B := B.flip) (convexFn_convexConj B f)
+    (properConvex_convexConj ⟨hf, hc, hp⟩)
+    (by rw [← argmin_eq_subdifferential_convexConj_zero (B := B) hf hc]; exact h)
 
 omit [FiniteDimensional ℝ F] in
 /-- **Sufficiency**: if `f*` is differentiable at the origin with `∇f*(0) = ⟨·, x⟩`, then `x` is
@@ -1233,37 +1249,41 @@ hence `f*(0)` finite, which is all the uniqueness argument consumes. The separat
 needs is free from `IsCompatiblePairing B`, and it is not an artefact — if `B x = 0` for some
 `x ≠ 0` then every level set of `f = f**` is invariant under translation by `x` and no minimum set
 is ever a singleton. Finite-dimensionality of `F` is not used on this side. -/
-theorem argmin_eq_singleton_of_hasGradientAtFn_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (h : HasGradientAtFn (conj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
-  have hcf : ConvexFn (conj B f) := convexFn_conj B f
-  have hprop : Proper (conj B f) := HasGradientAtFn.proper hcf h
-  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc]
+theorem argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (h : HasGradientAtFn (convexConj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
+  have hcf : ConvexFn (convexConj B f) := convexFn_convexConj B f
+  have hprop : ProperConvex (convexConj B f) := HasGradientAtFn.proper hcf h
+  rw [argmin_eq_subdifferential_convexConj_zero (B := B) hf hc]
   refine subdifferential_eq_singleton_of_dirDeriv_eq (B := B.flip)
     (injective_of_separatingDual B)
-    ((mem_dom.1 (interior_subset (HasGradientAtFn.mem_interior_dom h))).ne) (hprop.ne_bot 0)
+    ((mem_convexDom.1 (interior_subset (HasGradientAtFn.mem_interior_convexDom h))).ne)
+        (hprop.ne_bot 0)
     fun v => ?_
   rw [HasGradientAtFn.dirDeriv_eq hcf h v]
   rfl
 
 /-- The minimum set of a closed proper convex `f` is the single vector `x` exactly when `f*` is
 differentiable at the origin with `∇f*(0) = ⟨·, x⟩`. -/
-theorem argmin_eq_singleton_iff_hasGradientAtFn_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) : argmin f = {x} ↔ HasGradientAtFn (conj B f) (evalCLM B.flip x) 0 :=
-  ⟨hasGradientAtFn_conj_zero_of_argmin_eq_singleton hf hc hp,
-    argmin_eq_singleton_of_hasGradientAtFn_conj_zero hf hc⟩
+theorem argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero (hf : ConvexFn f)
+    (hc : ClosedConvex f)
+    (hp : ProperConvex f) : argmin f = {x}
+        ↔ HasGradientAtFn (convexConj B f) (evalCLM B.flip x) 0 :=
+  ⟨hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton hf hc hp,
+    argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero hf hc⟩
 
 /-- The existential form: the infimum of `f` is attained at a *unique* point exactly when `f*` is
 differentiable at the origin. Passing from the functional `∇f*(0)` to the vector `x : E`
 representing it is the surjectivity half of `IsCompatiblePairing B.flip`. -/
-theorem exists_argmin_eq_singleton_iff_differentiableAtFn_conj_zero (hf : ConvexFn f)
-    (hc : ClosedFn f) (hp : Proper f) :
-    (∃ x : E, argmin f = {x}) ↔ DifferentiableAtFn (conj B f) 0 := by
+theorem exists_argmin_eq_singleton_iff_differentiableAtFn_convexConj_zero (hf : ConvexFn f)
+    (hc : ClosedConvex f) (hp : ProperConvex f) :
+    (∃ x : E, argmin f = {x}) ↔ DifferentiableAtFn (convexConj B f) 0 := by
   constructor
   · rintro ⟨x, hx⟩
-    exact ⟨_, hasGradientAtFn_conj_zero_of_argmin_eq_singleton hf hc hp hx⟩
+    exact ⟨_, hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton hf hc hp hx⟩
   · rintro ⟨g, hg⟩
     obtain ⟨x, hx⟩ := IsCompatiblePairing.surjective_eval B.flip g
-    exact ⟨x, argmin_eq_singleton_of_hasGradientAtFn_conj_zero hf hc (by rw [hx]; exact hg)⟩
+    exact ⟨x, argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero hf hc (by rw [hx]; exact hg)⟩
 
 end UniqueMinimiser
 

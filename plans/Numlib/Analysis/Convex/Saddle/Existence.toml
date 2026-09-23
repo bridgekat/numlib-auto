@@ -4,25 +4,28 @@ namespace = 'ConvexAnalysis'
 id = 'swapAdjointBifun'
 
 [[node]]
-id = 'adjointBifun_swapAdjointBifun'
+id = 'convexAdjointBifun_swapAdjointBifun'
 
 [[node]]
 id = 'saddleSwap_mem_bifunSaddleClass'
 
 [[node]]
-id = 'upperConjSaddle_saddleSwap'
+id = 'properConvex_graphFn_of_properSaddleFn'
 
 [[node]]
-id = 'lowerConjSaddle_saddleSwap'
+id = 'zero_mem_interior_dom₂_upperConjSaddle_iff'
 
 [[node]]
-id = 'proper_graphFn_of_properSaddleFn'
+id = 'zero_mem_interior_dom₁_upperConjSaddle_iff'
 
 [[node]]
-id = 'zero_mem_interior_dom₁_lowerConjSaddle_iff'
+id = 'hasSaddleValue_of_no_common_direction_of_recession_snd'
 
 [[node]]
-id = 'hasSaddleValue_of_no_common_direction_of_recession_neg'
+id = 'hasSaddleValue_of_no_common_direction_of_recession_fst'
+
+[[node]]
+id = 'hasSaddleValue_of_isBounded_dom₂'
 
 [[node]]
 id = 'hasSaddleValue_of_isBounded_dom₁'
@@ -40,10 +43,16 @@ id = 'saddleStructure_lowerSimpleExt'
 id = 'maximin_lowerSimpleExt'
 
 [[node]]
+id = 'minimax_lowerSimpleExt'
+
+[[node]]
 id = 'exists_bifunSaddleClass_lowerSimpleExt'
 
 [[node]]
 id = 'biSup_biInf_eq_biInf_biSup_of_isBounded_right'
+
+[[node]]
+id = 'biSup_biInf_eq_biInf_biSup_of_isBounded_left'
 
 [[node]]
 id = 'exists_saddlePoint_of_isBounded'

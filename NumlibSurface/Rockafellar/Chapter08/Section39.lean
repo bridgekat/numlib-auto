@@ -512,9 +512,9 @@ supremum-oriented convex process `A` is the indicator bifunction of `A*`. The in
 negated because `A*` carries the opposite orientation, and an infimum-oriented set is identified
 with `-δ(· | ·)`. The infimum-oriented mirror is not formalized. -/
 theorem theorem_39_2_indicatorBifun (A : ConvexProcess (Rn m) (Rn n)) (y : Rn n) (v : Rn m) :
-    adjointBifun (pairing m) (pairing n) A.indicatorBifun y v
+    convexAdjointBifun (pairing m) (pairing n) A.indicatorBifun y v
       = -((OrientedProcess.mk A Orientation.sup).adjoint.process.indicatorBifun y v) :=
-  ConvexProcess.adjointBifun_indicatorBifun (pairing m) (pairing n) A y v
+  ConvexProcess.convexAdjointBifun_indicatorBifun (pairing m) (pairing n) A y v
 
 /-! ### Theorem 39.3 -/
 
@@ -523,8 +523,8 @@ theorem theorem_39_2_indicatorBifun (A : ConvexProcess (Rn m) (Rn n)) (y : Rn n)
 private theorem bracket_adjoint_sup (A : ConvexProcess (Rn m) (Rn n)) (u : Rn m) (y : Rn n) :
     (OrientedProcess.mk A Orientation.sup).adjoint.bracket y u
       = concaveBracket (pairing m)
-          (adjointBifun (pairing m) (pairing n) A.indicatorBifun) u y := by
-  rw [ConvexProcess.concaveBracket_adjointBifun_indicatorBifun]
+          (convexAdjointBifun (pairing m) (pairing n) A.indicatorBifun) u y := by
+  rw [ConvexProcess.concaveBracket_convexAdjointBifun_indicatorBifun]
   change (⨅ v ∈ (ConvexProcess.adjointProcess (pairing m) (pairing n) A).eval y,
       ((pairing m v u : ℝ) : EReal)) = _
   exact iInf_congr fun v => iInf_congr fun _ => by rw [pairing_comm]
@@ -559,9 +559,9 @@ theorem theorem_39_3_convexFn (A : ConvexProcess (Rn m) (Rn n)) (u : Rn m) :
 /-- **Theorem 39.3**, first assertion: for a supremum-oriented `A`, `⟨Au, x*⟩` is **closed** in
 `x*`. -/
 theorem theorem_39_3_closedFn (A : ConvexProcess (Rn m) (Rn n)) (u : Rn m) :
-    ClosedFn ((OrientedProcess.mk A Orientation.sup).bracket u) := by
+    ClosedConvex ((OrientedProcess.mk A Orientation.sup).bracket u) := by
   rw [OrientedProcess.bracket_sup_fn]
-  exact ConvexProcess.closedFn_bracket_indicatorBifun (Bx := pairing n) A u
+  exact ConvexProcess.closedConvex_bracket_indicatorBifun (Bx := pairing n) A u
 
 /-- **Theorem 39.3**, "likewise when `A` is infimum oriented, except that then convexity and
 concavity are reversed": `⟨Au, x*⟩` is **concave** in `x*`. -/
@@ -572,9 +572,9 @@ theorem theorem_39_3_concaveFn (A : ConvexProcess (Rn m) (Rn n)) (u : Rn m) :
 
 /-- **Theorem 39.3**, infimum-oriented mirror: `⟨Au, x*⟩` is **closed concave** in `x*`. -/
 theorem theorem_39_3_closedConcaveFn (A : ConvexProcess (Rn m) (Rn n)) (u : Rn m) :
-    ClosedConcaveFn ((OrientedProcess.mk A Orientation.inf).bracket u) := by
+    ClosedConcave ((OrientedProcess.mk A Orientation.inf).bracket u) := by
   rw [OrientedProcess.bracket_inf_fn]
-  exact ConvexProcess.closedConcaveFn_coBracket (Bx := pairing n) A u
+  exact ConvexProcess.closedConcave_coBracket (Bx := pairing n) A u
 
 /-- **Theorem 39.3**, first assertion: `⟨Au, x*⟩` is **positively homogeneous** in `u` for each
 `x*`, in either orientation. This is the one clause that uses the definition of a convex process
@@ -610,23 +610,23 @@ theorem theorem_39_3_cl (A : ConvexProcess (Rn m) (Rn n)) (y : Rn n) :
           (u, y) := by
   have hL : (fun u => (OrientedProcess.mk A Orientation.sup).adjoint.bracket y u)
       = fun u => concaveBracket (pairing m)
-          (adjointBifun (pairing m) (pairing n) A.indicatorBifun) u y :=
+          (convexAdjointBifun (pairing m) (pairing n) A.indicatorBifun) u y :=
     funext fun u => bracket_adjoint_sup A u y
   rw [hL, OrientedProcess.bracket_sup_prod]
-  exact ConvexProcess.concaveBracket_adjointBifun_indicatorBifun_eq_partialCl₁
+  exact ConvexProcess.concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁
     (Bu := pairing m) (Bx := pairing n) A y
 
 /-- **Theorem 39.3**, third assertion, infimum-oriented mirror: the closure is now the ordinary
 **convex** one, because `⟨A ·, x*⟩` is convex. -/
 theorem theorem_39_3_cl_inf (A : ConvexProcess (Rn m) (Rn n)) (y : Rn n) :
     (fun u => (OrientedProcess.mk A Orientation.inf).adjoint.bracket y u)
-      = fun u => clFn (fun u' => (OrientedProcess.mk A Orientation.inf).bracket u' y) u := by
+      = fun u => convexCl (fun u' => (OrientedProcess.mk A Orientation.inf).bracket u' y) u := by
   have hL : (fun u => (OrientedProcess.mk A Orientation.inf).adjoint.bracket y u)
       = fun u => ⨆ v ∈ (ConvexProcess.coadjointProcess (pairing m) (pairing n) A).eval y,
           ((pairing m u v : ℝ) : EReal) :=
     funext fun u => bracket_adjoint_inf A u y
   rw [hL]
-  exact ConvexProcess.iSup_coadjointProcess_eq_clFn (Bu := pairing m) (Bx := pairing n) A y
+  exact ConvexProcess.iSup_coadjointProcess_eq_convexCl (Bu := pairing m) (Bx := pairing n) A y
 
 /-- **Theorem 39.3**, fourth assertion: if `A` is closed then `⟨Au, x*⟩ = cl_{x*} ⟨u, A* x*⟩`, the
 closure in the dual variable being the ordinary convex one. Closedness is genuinely needed here: it
@@ -639,10 +639,10 @@ theorem theorem_39_3_cl_adjoint (A : ConvexProcess (Rn m) (Rn n))
   have hL : (fun q : Rn m × Rn n =>
         (OrientedProcess.mk A Orientation.sup).adjoint.bracket q.2 q.1)
       = fun q : Rn m × Rn n => concaveBracket (pairing m)
-          (adjointBifun (pairing m) (pairing n) A.indicatorBifun) q.1 q.2 :=
+          (convexAdjointBifun (pairing m) (pairing n) A.indicatorBifun) q.1 q.2 :=
     funext fun q => bracket_adjoint_sup A q.1 q.2
   rw [hL, OrientedProcess.bracket_sup_prod]
-  exact ConvexProcess.partialCl₂_concaveBracket_adjointBifun_indicatorBifun
+  exact ConvexProcess.partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun
     (Bu := pairing m) (Bx := pairing n) A hA
 
 /-- **Theorem 39.3**, last assertion: `⟨Au, x*⟩ = ⟨u, A* x*⟩` whenever `u ∈ ri (dom A)`. The book
@@ -770,25 +770,26 @@ theorem theorem_39_6 (A : OrientedProcess m n) {a : ℝ} (ha : 0 < a) :
 /-- **Theorem 39.7**, first assertion: for a supremum-oriented convex process `A` and a proper
 convex `f` on `ℝᵐ`, `(Af)* = A*⁻¹ f*`. Where the book asks for `ri (dom f) ∩ ri (dom A) ≠ ∅`, the
 hypothesis here is the exactness of `f + (-⟨A ·, x*⟩)`; see the module docstring. -/
-theorem theorem_39_7 (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal} (hf : Proper f)
+theorem theorem_39_7 (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal} (hf : ProperConvex f)
     {y : Rn n}
     (hex : IsExactSum (pairing m) f
       (fun u => -((OrientedProcess.mk A Orientation.sup).bracket u y))) :
-    conj (pairing n) (imageFn A f) y
+    convexConj (pairing n) (imageFn A f) y
       = imageFn (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
-          (conj (pairing m) f) y := by
-  refine ConvexProcess.conj_imageBifun_indicatorBifun (pairing m) (pairing n) A hf ?_
+          (convexConj (pairing m) f) y := by
+  refine ConvexProcess.convexConj_imageBifun_indicatorBifun (pairing m) (pairing n) A hf ?_
   simpa only [OrientedProcess.bracket_sup] using hex
 
 /-- **Theorem 39.7**, second assertion: the infimum defining `(A*⁻¹ f*)(x*)` is attained. -/
-theorem theorem_39_7_attained (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal} (hf : Proper f)
+theorem theorem_39_7_attained (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal}
+    (hf : ProperConvex f)
     {y : Rn n}
     (hex : IsExactSum (pairing m) f
       (fun u => -((OrientedProcess.mk A Orientation.sup).bracket u y))) :
-    ∃ v : Rn m, conj (pairing m) f v
+    ∃ v : Rn m, convexConj (pairing m) f v
         + (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv.indicatorBifun v y
       = imageFn (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
-          (conj (pairing m) f) y := by
+          (convexConj (pairing m) f) y := by
   refine ConvexProcess.exists_imageBifun_indicatorBifun_adjointProcess_eq
     (pairing m) (pairing n) A hf ?_
   simpa only [OrientedProcess.bracket_sup] using hex
@@ -797,12 +798,12 @@ theorem theorem_39_7_attained (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → ER
 that `ri (dom f*)` meet `ri (dom A*⁻¹)`, the hypothesis here is again an `IsExactSum`. -/
 theorem theorem_39_7_closedFn {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f)
-    (hex : ∀ x : Rn n, IsExactSum (pairing m) (conj (pairing m) f)
+    (hex : ∀ x : Rn n, IsExactSum (pairing m) (convexConj (pairing m) f)
       (fun v => -((OrientedProcess.mk
         (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
           Orientation.sup).bracket v x))) :
-    ClosedFn (imageFn A f) := by
-  refine ConvexProcess.closedFn_imageBifun_indicatorBifun (Bu := pairing m) (Bx := pairing n)
+    ClosedConvex (imageFn A f) := by
+  refine ConvexProcess.closedConvex_imageBifun_indicatorBifun (Bu := pairing m) (Bx := pairing n)
     hA hf ?_
   simpa only [OrientedProcess.bracket_sup, flip_pairing] using hex
 
@@ -810,7 +811,7 @@ theorem theorem_39_7_closedFn {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → ER
 `u` with `x ∈ Au` and `f u = (Af)(x)`. -/
 theorem theorem_39_7_attained_image {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f) {x : Rn n}
-    (hex : IsExactSum (pairing m) (conj (pairing m) f)
+    (hex : IsExactSum (pairing m) (convexConj (pairing m) f)
       (fun v => -((OrientedProcess.mk
         (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
           Orientation.sup).bracket v x)))
@@ -823,14 +824,15 @@ theorem theorem_39_7_attained_image {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m 
 /-- **Theorem 39.7**, last assertion: `(Af)*` is the **closure** of `A*⁻¹ f*`. -/
 theorem theorem_39_7_closure {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f)
-    (hex : ∀ x : Rn n, IsExactSum (pairing m) (conj (pairing m) f)
+    (hex : ∀ x : Rn n, IsExactSum (pairing m) (convexConj (pairing m) f)
       (fun v => -((OrientedProcess.mk
         (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
           Orientation.sup).bracket v x))) :
-    conj (pairing n) (imageFn A f)
-      = clFn (imageFn (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
-          (conj (pairing m) f)) := by
-  refine ConvexProcess.conj_imageBifun_indicatorBifun_eq_clFn (Bu := pairing m) (Bx := pairing n)
+    convexConj (pairing n) (imageFn A f)
+      = convexCl (imageFn (ConvexProcess.adjointProcess (pairing m) (pairing n) A).inv
+          (convexConj (pairing m) f)) := by
+  refine ConvexProcess.convexConj_imageBifun_indicatorBifun_eq_convexCl (Bu := pairing m)
+      (Bx := pairing n)
     hA hf ?_
   simpa only [OrientedProcess.bracket_sup, flip_pairing] using hex
 

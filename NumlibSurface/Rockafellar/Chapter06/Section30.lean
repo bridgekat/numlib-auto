@@ -19,10 +19,10 @@ two objective functions that §36 takes up; and the section's two unnumbered cou
 `abnormalBifun` and `noDualSolutionBifun`, placed at the end of the file because each cites a
 theorem stated further on.
 
-`dualProgram F` is an `abbrev` for the backbone's `adjointBifun (pairing m) (pairing n) F`, so
-every backbone theorem about `adjointBifun` applies to it verbatim. `Normal`, `ConcaveNormal`,
+`dualProgram F` is an `abbrev` for the backbone's `convexAdjointBifun (pairing m) (pairing n) F`, so
+every backbone theorem about `convexAdjointBifun` applies to it verbatim. `Normal`, `ConcaveNormal`,
 `ConcaveConsistent`, `ConcaveKuhnTucker`, `ConcavePolyhedralBifun`, `supBifun`,
-`concaveAdjointBifun` and `clBifun` are the backbone's under the book's own definitions.
+`concaveAdjointBifun` and `convexClBifun` are the backbone's under the book's own definitions.
 
 Four statements drop closedness that the book assumes — Corollary 30.2.1's first half, the first
 formulas of Corollaries 30.2.2 and 30.2.3, and Theorem 30.3's (a) ⟺ (c). Each runs on
@@ -56,8 +56,9 @@ Fenchel–Moreau for `inf F`, and the adjoint cannot tell `F` from `cl F`.
 **Theorem 30.4(i) and (j) are false as the book states them.** Rockafellar disposes of them in six
 words — "Of course, (i) and (j) are contained in (g) and (h)" — and the containment needs the
 objective to be proper. With `F0 ≡ +∞` every point is an optimal solution, so that set is non-empty
-and bounded while no sublevel set of `F0` is. `theorem_30_4_i` therefore assumes `Proper (F 0)` and
-`theorem_30_4_j` assumes `Proper fun v => -(F* 0) v`; with those the containment is right.
+and bounded while no sublevel set of `F0` is. `theorem_30_4_i` therefore assumes
+`ProperConvex (F 0)` and `theorem_30_4_j` assumes `ProperConvex fun v => -(F* 0) v`; with those the
+containment is right.
 -/
 
 open Filter Set Topology
@@ -70,9 +71,10 @@ open ConvexAnalysis
 
 /-- **Rockafellar's adjoint bifunction `F*`**: the bifunction from `ℝⁿ` to `ℝᵐ` given by
 `(F*x*)(u*) = inf_{u,x} {(Fu)(x) - ⟨x, x*⟩ + ⟨u, u*⟩}`, which is the bifunction of the **dual
-program** `(P*)`. An `abbrev` for the backbone's `adjointBifun` at the two Euclidean pairings. -/
+program** `(P*)`. An `abbrev` for the backbone's `convexAdjointBifun` at the two Euclidean
+pairings. -/
 noncomputable abbrev dualProgram {m n : ℕ} (F : Bifun (Rn m) (Rn n)) : Bifun (Rn n) (Rn m) :=
-  adjointBifun (pairing m) (pairing n) F
+  convexAdjointBifun (pairing m) (pairing n) F
 
 variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
@@ -87,86 +89,73 @@ theorem dualProgram_apply (F : Bifun (Rn m) (Rn n)) (y : Rn n) (v : Rn m) :
 /-- **The objective function of `(P*)`**: `(F*0)(u*) = inf_u {⟨u, u*⟩ + inf Fu}`. -/
 theorem dualProgram_zero_apply (F : Bifun (Rn m) (Rn n)) (v : Rn m) :
     dualProgram F 0 v = ⨅ u : Rn m, (((pairing m u v : ℝ) : EReal) + infBifun F u) :=
-  adjointBifun_zero_apply (pairing m) (pairing n) F v
+  convexAdjointBifun_zero_apply (pairing m) (pairing n) F v
 
 /-- **Rockafellar's definition of a normal convex program**: `(P)` is *normal* when its perturbation
 function `inf F` is closed at `u = 0`. This is the backbone's `Normal`, unfolded. -/
-theorem normal_iff_clFn_infBifun_zero (F : Bifun (Rn m) (Rn n)) :
-    Normal F ↔ clFn (infBifun F) 0 = infBifun F 0 := Iff.rfl
+theorem normal_iff_convexCl_infBifun_zero (F : Bifun (Rn m) (Rn n)) :
+    Normal F ↔ convexCl (infBifun F) 0 = infBifun F 0 := Iff.rfl
 
 /-- **Normality of the dual program**: `(P*)` is normal when `cl (sup F*)` agrees with `sup F*` at
 `x* = 0`. -/
-theorem concaveNormal_iff_clConcave_supBifun_zero (G : Bifun (Rn n) (Rn m)) :
-    ConcaveNormal G ↔ clConcave (supBifun G) 0 = supBifun G 0 := Iff.rfl
+theorem concaveNormal_iff_concaveCl_supBifun_zero (G : Bifun (Rn n) (Rn m)) :
+    ConcaveNormal G ↔ concaveCl (supBifun G) 0 = supBifun G 0 := Iff.rfl
 
 /-! ### Theorem 30.1 -/
 
 /-- **Theorem 30.1**, the concavity clause: the adjoint of *any* bifunction from `ℝᵐ` to `ℝⁿ` is a
 concave bifunction from `ℝⁿ` to `ℝᵐ`. No hypothesis on `F` is used. -/
 theorem theorem_30_1_concave (F : Bifun (Rn m) (Rn n)) : ConcaveBifun (dualProgram F) :=
-  concaveBifun_adjointBifun (pairing m) (pairing n) F
+  concaveBifun_convexAdjointBifun (pairing m) (pairing n) F
 
 /-- **Theorem 30.1**, the closedness clause: `F*` is a *closed* concave bifunction, again with no
 hypothesis on `F`. -/
 theorem theorem_30_1_closed (F : Bifun (Rn m) (Rn n)) :
-    ClosedConcaveFn (graphFn (dualProgram F)) :=
-  closedConcaveFn_graphFn_adjointBifun (Bu := pairing m) (Bx := pairing n) (F := F)
+    ClosedConcave (graphFn (dualProgram F)) :=
+  closedConcave_graphFn_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) (F := F)
 
 /-- **Theorem 30.1**, the properness clause: `F*` is proper if and only if `F` is, for a closed
 convex `F`. -/
-theorem theorem_30_1_proper (hF : ConvexBifun F) (hcl : ClosedBifun F) :
-    ProperConcave (graphFn (dualProgram F)) ↔ Proper (graphFn F) :=
-  properConcave_graphFn_adjointBifun_iff (Bu := pairing m) (Bx := pairing n) hF hcl
+theorem theorem_30_1_proper (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
+    ProperConcave (graphFn (dualProgram F)) ↔ ProperConvex (graphFn F) :=
+  properConcave_graphFn_convexAdjointBifun_iff (Bu := pairing m) (Bx := pairing n) hF hcl
 
 /-- **Theorem 30.1**: `F** = cl F` for a convex bifunction. -/
 theorem theorem_30_1_biadjoint (hF : ConvexBifun F) :
-    concaveAdjointBifun (pairing m) (pairing n) (dualProgram F) = clBifun F :=
-  concaveAdjointBifun_adjointBifun_eq_clBifun hF
+    concaveAdjointBifun (pairing m) (pairing n) (dualProgram F) = convexClBifun F :=
+  concaveAdjointBifun_convexAdjointBifun_eq_convexClBifun hF
 
 /-- **Theorem 30.1**: `F** = F` when `F` is closed — which is why the program dual to `(P*)` is
 `(P)` again. -/
-theorem theorem_30_1_biadjoint_closed (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_30_1_biadjoint_closed (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     concaveAdjointBifun (pairing m) (pairing n) (dualProgram F) = F :=
-  concaveAdjointBifun_adjointBifun_eq_self hF hcl
+  concaveAdjointBifun_convexAdjointBifun_eq_self hF hcl
 
 /-- **Theorem 30.1**, the injectivity half of "the adjoint operation establishes a one-to-one
 correspondence": two closed convex bifunctions with the same adjoint are equal. The
 surjectivity half is `theorem_30_1_surjective`. -/
 theorem theorem_30_1_injective {F₁ F₂ : Bifun (Rn m) (Rn n)} (hF₁ : ConvexBifun F₁)
-    (hcl₁ : ClosedBifun F₁) (hF₂ : ConvexBifun F₂) (hcl₂ : ClosedBifun F₂)
+    (hcl₁ : ClosedConvexBifun F₁) (hF₂ : ConvexBifun F₂) (hcl₂ : ClosedConvexBifun F₂)
     (h : dualProgram F₁ = dualProgram F₂) : F₁ = F₂ := by
   rw [← theorem_30_1_biadjoint_closed hF₁ hcl₁, ← theorem_30_1_biadjoint_closed hF₂ hcl₂, h]
 
 /-- **Theorem 30.1**, the surjectivity half: every closed proper *concave* bifunction `G` from `ℝⁿ`
 to `ℝᵐ` is the adjoint of a closed proper convex bifunction — namely of `G`'s own lower adjoint. -/
 theorem theorem_30_1_surjective {G : Bifun (Rn n) (Rn m)} (hG : ConcaveBifun G)
-    (hclG : ClosedConcaveFn (graphFn G)) (hpG : ProperConcave (graphFn G)) :
+    (hclG : ClosedConcave (graphFn G)) (hpG : ProperConcave (graphFn G)) :
     ∃ F : Bifun (Rn m) (Rn n),
-      ConvexBifun F ∧ ClosedBifun F ∧ Proper (graphFn F) ∧ dualProgram F = G := by
-  have hgraph : graphFn (inverseBifun G)
-      = compLin (fun q => -(graphFn G q)) (swapLin (Rn m) (Rn n)) := rfl
-  have hconv : ConvexBifun (inverseBifun G) := by
-    rw [convexBifun_iff, hgraph]
-    exact convexFn_compLin _ (concaveFn_iff_convexFn_neg.1 hG)
-  have hclosed : ClosedBifun (inverseBifun G) := by
-    have hcont : Continuous (swapLin (Rn m) (Rn n)) := by
-      change Continuous fun p : Rn m × Rn n => ((p.2, p.1) : Rn n × Rn m)
-      exact continuous_snd.prodMk continuous_fst
-    rw [closedBifun_iff, hgraph]
-    exact closedFn_compLin (closedConcaveFn_iff.1 hclG) hcont
+      ConvexBifun F ∧ ClosedConvexBifun F ∧ ProperConvex (graphFn F) ∧ dualProgram F = G := by
+  have hconv : ConvexBifun (inverseBifun G) := convexBifun_inverseBifun hG
+  have hclosed : ClosedConvexBifun (inverseBifun G) := closedConvexBifun_inverseBifun hclG
   have hdual : dualProgram (lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G)) = G := by
-    have hbi := lowerAdjointBifun_lowerAdjointBifun_eq_clBifun
-      (Bu := pairing m) (Bx := pairing n) (F := inverseBifun G) hconv
-    simp only [flip_pairing] at hbi
-    rw [hclosed.clBifun_eq] at hbi
-    funext y v
-    have hval := congrFun (congrFun hbi v) y
-    rw [lowerAdjointBifun_apply, inverseBifun_apply] at hval
-    exact neg_inj.1 hval
+    have h :=
+        convexAdjointBifun_flip_lowerAdjointBifun (Bu := pairing m) (Bx := pairing n) hconv hclosed
+    simp only [flip_pairing, inverseBifun_inverseBifun] at h
+    exact h
   have hconvF : ConvexBifun (lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G)) :=
     convexBifun_lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G)
-  have hclF : ClosedBifun (lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G)) :=
-    closedBifun_lowerAdjointBifun
+  have hclF : ClosedConvexBifun (lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G)) :=
+    closedConvexBifun_lowerAdjointBifun
   refine ⟨lowerAdjointBifun (pairing m) (pairing n) (inverseBifun G), hconvF, hclF, ?_, hdual⟩
   exact (theorem_30_1_proper hconvF hclF).1 (by rw [hdual]; exact hpG)
 
@@ -174,7 +163,7 @@ theorem theorem_30_1_surjective {G : Bifun (Rn n) (Rn m)} (hG : ConcaveBifun G)
 Theorem 19.2. Neither properness nor closedness is needed. -/
 theorem theorem_30_1_polyhedral (hF : PolyhedralBifun F) :
     ConcavePolyhedralBifun (dualProgram F) :=
-  polyhedralFn_neg_graphFn_adjointBifun (pairing m) (pairing n) hF
+  polyhedralFn_neg_graphFn_convexAdjointBifun (pairing m) (pairing n) hF
 
 /-! ### The adjoint of an indicator bifunction
 
@@ -238,49 +227,51 @@ theorem dualProgram_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) (y : Rn n) 
 /-! ### Theorem 30.2 -/
 
 /-- **Theorem 30.2**, first formula: `(-inf F)* = F*0`. The objective of the dual program is the
-*concave* conjugate of the concave function `-inf F` — and not a statement about `conj`, since
+*concave* conjugate of the concave function `-inf F` — and not a statement about `convexConj`, since
 `g* ≠ -(-g)*`. -/
 theorem theorem_30_2_first (F : Bifun (Rn m) (Rn n)) :
     concaveConj (pairing m) (fun u => -(infBifun F u)) = dualProgram F 0 :=
-  (adjointBifun_zero_eq_concaveConj (pairing m) (pairing n) F).symm
+  (convexAdjointBifun_zero_eq_concaveConj (pairing m) (pairing n) F).symm
 
 /-- **Theorem 30.2**, second formula: `(F*0)* = -cl (inf F)`. -/
 theorem theorem_30_2_second (hF : ConvexBifun F) :
-    concaveConj (pairing m) (dualProgram F 0) = fun u => -(clFn (infBifun F) u) := by
+    concaveConj (pairing m) (dualProgram F 0) = fun u => -(convexCl (infBifun F) u) := by
   have hconc : ConcaveFn (fun u => -(infBifun F u)) :=
     concaveFn_iff_convexFn_neg.2 (by simpa using convexFn_infBifun hF)
-  have hbi := biconcaveConj_eq_clConcave (B := pairing m) hconc
+  have hbi := concaveBiconj_eq_concaveCl (B := pairing m) hconc
   rw [← theorem_30_2_first F]
   have hflip : concaveConj (pairing m) (concaveConj (pairing m) (fun u => -(infBifun F u)))
-      = biconcaveConj (pairing m) (fun u => -(infBifun F u)) := by
-    rw [biconcaveConj, flip_pairing]
+      = concaveBiconj (pairing m) (fun u => -(infBifun F u)) := by
+    rw [concaveBiconj, flip_pairing]
   rw [hflip, hbi]
   funext u
-  rw [clConcave_apply]
+  rw [concaveCl_apply]
   simp only [neg_neg]
 
 /-- **Theorem 30.2**, third formula: `(-sup F*)* = F0`. For a closed convex `F` the objective of
 `(P)` is the conjugate of the convex function `-sup F*`. -/
-theorem theorem_30_2_third (hF : ConvexBifun F) (hcl : ClosedBifun F) :
-    conj (pairing n) (fun y => -(supBifun (dualProgram F) y)) = F 0 := by
-  have h := concaveAdjointBifun_adjointBifun_eq_self (Bu := pairing m) (Bx := pairing n) hF hcl
-  have h2 := concaveAdjointBifun_zero_eq_conj (pairing m) (pairing n) (dualProgram F)
+theorem theorem_30_2_third (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
+    convexConj (pairing n) (fun y => -(supBifun (dualProgram F) y)) = F 0 := by
+  have h :=
+      concaveAdjointBifun_convexAdjointBifun_eq_self (Bu := pairing m) (Bx := pairing n) hF hcl
+  have h2 := concaveAdjointBifun_zero_eq_convexConj (pairing m) (pairing n) (dualProgram F)
   rw [flip_pairing] at h2
   rw [← h2, h]
 
 /-- **Theorem 30.2**, fourth formula: `(F0)* = -cl (sup F*)`. -/
-theorem theorem_30_2_fourth (hF : ConvexBifun F) (hcl : ClosedBifun F) :
-    conj (pairing n) (F 0) = fun y => -(clConcave (supBifun (dualProgram F)) y) := by
+theorem theorem_30_2_fourth (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
+    convexConj (pairing n) (F 0) = fun y => -(concaveCl (supBifun (dualProgram F)) y) := by
   have hconv : ConvexFn (fun y => -(supBifun (dualProgram F) y)) :=
-    convexFn_neg_supBifun (concaveBifun_adjointBifun (pairing m) (pairing n) F)
-  have hbi := biconj_eq_clFn (B := (pairing n).flip) hconv
+    convexFn_neg_supBifun (concaveBifun_convexAdjointBifun (pairing m) (pairing n) F)
+  have hbi := convexBiconj_eq_convexCl (B := (pairing n).flip) hconv
   rw [← theorem_30_2_third hF hcl]
-  have hflip : conj (pairing n) (conj (pairing n) (fun y => -(supBifun (dualProgram F) y)))
-      = biconj (pairing n).flip (fun y => -(supBifun (dualProgram F) y)) := by
-    rw [biconj, flip_pairing, flip_pairing]
+  have hflip :
+      convexConj (pairing n) (convexConj (pairing n) (fun y => -(supBifun (dualProgram F) y)))
+      = convexBiconj (pairing n).flip (fun y => -(supBifun (dualProgram F) y)) := by
+    rw [convexBiconj, flip_pairing, flip_pairing]
   rw [hflip, hbi]
   funext y
-  rw [clConcave_apply]
+  rw [concaveCl_apply]
   simp only [neg_neg]
 
 /-! ### The Lagrangian form of the two objectives -/
@@ -289,11 +280,11 @@ theorem theorem_30_2_fourth (hF : ConvexBifun F) (hcl : ClosedBifun F) :
 Lagrangian of `(P)` over the primal variable, `(F*0)(u*) = inf_x L(u*, x)`. -/
 theorem dualProgram_zero_eq_iInf_lagrangian (F : Bifun (Rn m) (Rn n)) (v : Rn m) :
     dualProgram F 0 v = ⨅ x : Rn n, lagrangian (pairing m) F v x :=
-  (iInf_lagrangian_eq_adjointBifun_zero (Bu := pairing m) (pairing n)).symm
+  (iInf_lagrangian_eq_convexAdjointBifun_zero (Bu := pairing m) (pairing n)).symm
 
 /-- **§30**: for a closed convex `F` the objective function of `(P)` is the supremum of the
 Lagrangian over the price variable, `(F0)(x) = sup_{u*} L(u*, x)`. -/
-theorem objective_eq_iSup_lagrangian (hF : ConvexBifun F) (hcl : ClosedBifun F) (x : Rn n) :
+theorem objective_eq_iSup_lagrangian (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (x : Rn n) :
     F 0 x = ⨆ v : Rn m, lagrangian (pairing m) F v x :=
   (iSup_lagrangian_eq (Bu := pairing m) hF hcl).symm
 
@@ -306,7 +297,7 @@ theorem supBifun_dualProgram_eq_maximin (F : Bifun (Rn m) (Rn n)) :
 /-- **§30**: for a closed convex `F` the optimal value of `(P)` is `inf_x sup_{u*} L(u*, x)`.
 Together with `supBifun_dualProgram_eq_maximin` this is why normality is the existence of a
 saddle-value, the reading §36 takes up. -/
-theorem infBifun_eq_minimax (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem infBifun_eq_minimax (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     infBifun F 0 = minimax (saddleLagrangian (pairing m) F) := by
   rw [infBifun_apply, minimax_apply]
   exact iInf_congr fun x => objective_eq_iSup_lagrangian hF hcl x
@@ -318,22 +309,22 @@ has no lower bound. Stated for an arbitrary convex `F`, although the book assume
 whole corollary: the adjoint never sees the difference between `F` and `cl F`. -/
 theorem corollary_30_2_1_dual (hF : ConvexBifun F) :
     ¬ ConcaveConsistent (dualProgram F) ↔ ∃ u : Rn m, infBifun F u = ⊥ :=
-  not_concaveConsistent_adjointBifun_iff (Bu := pairing m) (pairing n) hF
+  not_concaveConsistent_convexAdjointBifun_iff (Bu := pairing m) (pairing n) hF
 
 /-- **Corollary 30.2.1**, first half, positively. -/
 theorem corollary_30_2_1_dual' (hF : ConvexBifun F) :
     ConcaveConsistent (dualProgram F) ↔ ∀ u : Rn m, infBifun F u ≠ ⊥ :=
-  concaveConsistent_adjointBifun_iff (Bu := pairing m) (pairing n) hF
+  concaveConsistent_convexAdjointBifun_iff (Bu := pairing m) (pairing n) hF
 
 /-- **Corollary 30.2.1**, second half: `(P)` is inconsistent exactly when some perturbation of
 `(P*)` has no upper bound. This half really does need `F` closed — it is the first half read for the
 dual pair, and `F** = F` is what identifies the objective of `(P)`. -/
-theorem corollary_30_2_1_primal (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem corollary_30_2_1_primal (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     ¬ Consistent F ↔ ∃ y : Rn n, supBifun (dualProgram F) y = ⊤ :=
   not_consistent_iff_exists_supBifun_eq_top (Bu := pairing m) (Bx := pairing n) hF hcl
 
 /-- **Corollary 30.2.1**, second half, positively. -/
-theorem corollary_30_2_1_primal' (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem corollary_30_2_1_primal' (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     Consistent F ↔ ∀ y : Rn n, supBifun (dualProgram F) y ≠ ⊤ :=
   consistent_iff_forall_supBifun_ne_top (Bu := pairing m) (Bx := pairing n) hF hcl
 
@@ -342,22 +333,22 @@ theorem corollary_30_2_1_primal' (hF : ConvexBifun F) (hcl : ClosedBifun F) :
 /-- **Corollary 30.2.2**, first formula: `(cl (inf F))(0) = sup F*0`. Closedness of `F` is not used:
 the formula is Fenchel–Moreau for `inf F`, and `F*` does not distinguish `F` from `cl F`. -/
 theorem corollary_30_2_2_first (hF : ConvexBifun F) :
-    clFn (infBifun F) 0 = supBifun (dualProgram F) 0 := by
+    convexCl (infBifun F) 0 = supBifun (dualProgram F) 0 := by
   rw [supBifun_apply]
-  exact clFn_infBifun_zero_eq_iSup_adjointBifun (Bu := pairing m) (pairing n) hF
+  exact convexCl_infBifun_zero_eq_iSup_convexAdjointBifun (Bu := pairing m) (pairing n) hF
 
 /-- **Corollary 30.2.2**, second formula: `(cl (sup F*))(0) = inf F0`. Here closedness of `F` is
 what turns `F**` back into `F`. -/
-theorem corollary_30_2_2_second (hF : ConvexBifun F) (hcl : ClosedBifun F) :
-    clConcave (supBifun (dualProgram F)) 0 = infBifun F 0 :=
-  clConcave_supBifun_adjointBifun_zero_eq (Bu := pairing m) (Bx := pairing n) hF hcl
+theorem corollary_30_2_2_second (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
+    concaveCl (supBifun (dualProgram F)) 0 = infBifun F 0 :=
+  concaveCl_supBifun_convexAdjointBifun_zero_eq (Bu := pairing m) (Bx := pairing n) hF hcl
 
 /-- **Corollary 30.2.2**, weak duality: `inf F0 ≥ sup F*0`, always. No hypothesis at all — it is
 `⟨u, u*⟩ + inf Fu` evaluated at `u = 0`. -/
 theorem corollary_30_2_2_weak (F : Bifun (Rn m) (Rn n)) :
     supBifun (dualProgram F) 0 ≤ infBifun F 0 := by
   rw [supBifun_apply]
-  exact iSup_adjointBifun_zero_le (pairing m) (pairing n) F
+  exact iSup_convexAdjointBifun_zero_le (pairing m) (pairing n) F
 
 /-! ### Corollary 30.2.3 -/
 
@@ -368,14 +359,14 @@ theorem corollary_30_2_3_first (hF : ConvexBifun F)
     (h : Consistent F ∨ ConcaveConsistent (dualProgram F)) :
     Filter.liminf (infBifun F) (𝓝 (0 : Rn m)) = supBifun (dualProgram F) 0 := by
   rw [supBifun_apply]
-  exact liminf_infBifun_eq_iSup_adjointBifun (Bu := pairing m) (pairing n) hF h
+  exact liminf_infBifun_eq_iSup_convexAdjointBifun (Bu := pairing m) (pairing n) hF h
 
 /-- **Corollary 30.2.3**, second formula: unless both programs are inconsistent,
 `limsup_{x* → 0} (sup F*x*) = inf F0`. -/
-theorem corollary_30_2_3_second (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem corollary_30_2_3_second (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (h : Consistent F ∨ ConcaveConsistent (dualProgram F)) :
     Filter.limsup (supBifun (dualProgram F)) (𝓝 (0 : Rn n)) = infBifun F 0 :=
-  limsup_supBifun_adjointBifun_eq (Bu := pairing m) (Bx := pairing n) hF hcl h
+  limsup_supBifun_convexAdjointBifun_eq (Bu := pairing m) (Bx := pairing n) hF hcl h
 
 /-! ### Theorem 30.3 -/
 
@@ -384,23 +375,24 @@ Closedness of `F` is *not* needed, although the theorem carries it: only Corolla
 formula is used. -/
 theorem theorem_30_3_a_iff_c (hF : ConvexBifun F) :
     Normal F ↔ infBifun F 0 = supBifun (dualProgram F) 0 := by
-  rw [normal_iff_iSup_adjointBifun_eq (Bu := pairing m) (pairing n) hF, supBifun_apply]
+  rw [normal_iff_iSup_convexAdjointBifun_eq (Bu := pairing m) (pairing n) hF, supBifun_apply]
   exact eq_comm
 
 /-- **Theorem 30.3(b) ⟺ (c)**. -/
-theorem theorem_30_3_b_iff_c (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_30_3_b_iff_c (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     ConcaveNormal (dualProgram F) ↔ infBifun F 0 = supBifun (dualProgram F) 0 := by
-  rw [concaveNormal_adjointBifun_iff (Bu := pairing m) (Bx := pairing n) hF hcl, supBifun_apply]
+  rw [concaveNormal_convexAdjointBifun_iff (Bu := pairing m) (Bx := pairing n) hF hcl,
+      supBifun_apply]
   exact eq_comm
 
 /-- **Theorem 30.3(a) ⟺ (b)**: a convex program is normal exactly when its dual is. -/
-theorem theorem_30_3_a_iff_b (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_30_3_a_iff_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     Normal F ↔ ConcaveNormal (dualProgram F) :=
-  normal_iff_concaveNormal_adjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl
+  normal_iff_concaveNormal_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl
 
 /-- **Theorem 30.3**, the three clauses as the book states them: for a closed convex bifunction `F`,
 `(P)` is normal, `(P*)` is normal, and the two optimal values agree, are equivalent. -/
-theorem theorem_30_3 (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_30_3 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     [Normal F, ConcaveNormal (dualProgram F),
       infBifun F 0 = supBifun (dualProgram F) 0].TFAE := by
   tfae_have 1 ↔ 2 := theorem_30_3_a_iff_b hF hcl
@@ -426,9 +418,10 @@ theorem theorem_30_4_a' (hs : StrictlyConsistent F) (hF : ConvexBifun F) : Norma
 /-- **Theorem 30.4(b)**: if the *dual* program is strongly consistent then normality holds for the
 pair. **The book does not argue this clause** — "Dually, (b), (d) and (f) imply that normality
 holds". The route here is the dual of (a) composed with Theorem 30.3(a) ⟺ (b). -/
-theorem theorem_30_4_b (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_30_4_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hs : ConcaveStronglyConsistent (dualProgram F)) : Normal F :=
-  normal_of_concaveStronglyConsistent_adjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl hs
+  normal_of_concaveStronglyConsistent_convexAdjointBifun (Bu := pairing m)
+      (Bx := pairing n) hF hcl hs
 
 /-- **Theorem 30.4(c)**: if `(P)` has a Kuhn–Tucker vector — its optimal value being finite, which
 is part of the definition — then `(P)` is normal. **The book proves this clause**, from Theorem 29.1
@@ -439,9 +432,9 @@ theorem theorem_30_4_c (hF : ConvexBifun F) (h : (KuhnTucker (pairing m) F).None
 
 /-- **Theorem 30.4(d)**: if the *dual* program has a Kuhn–Tucker vector then normality holds for the
 pair. **The book does not argue this clause.** -/
-theorem theorem_30_4_d (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_30_4_d (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (h : (ConcaveKuhnTucker (pairing n) (dualProgram F)).Nonempty) : Normal F := by
-  refine normal_of_concaveKuhnTucker_adjointBifun_nonempty (Bu := pairing m) (Bx := pairing n)
+  refine normal_of_concaveKuhnTucker_convexAdjointBifun_nonempty (Bu := pairing m) (Bx := pairing n)
     hF hcl ?_
   rwa [flip_pairing]
 
@@ -454,10 +447,10 @@ theorem theorem_30_4_e (hF : PolyhedralBifun F) (hc : Consistent F) : Normal F :
 /-- **Theorem 30.4(f)**: if `(P*)` is polyhedral and consistent then normality holds for the pair.
 **The book does not argue this clause.** By `theorem_30_1_polyhedral` the hypothesis follows from
 polyhedrality of `F`, which is how the Gale–Kuhn–Tucker theorem below uses it. -/
-theorem theorem_30_4_f (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_30_4_f (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hG : ConcavePolyhedralBifun (dualProgram F)) (hc : ConcaveConsistent (dualProgram F)) :
     Normal F :=
-  normal_of_concavePolyhedral_adjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl hG hc
+  normal_of_concavePolyhedral_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl hG hc
 
 /-- **Theorem 30.4(g)**: if some sublevel set of the objective `F0` is non-empty and bounded, then
 normality holds.
@@ -468,7 +461,7 @@ strict consistency of `(P*)` is an interior condition on an intersection over *a
 and what closes it is that all slices of a closed convex bifunction have the same recession
 function, so the two sets are in fact equal. No properness is assumed: an improper closed convex
 bifunction has `inf F0 = -∞` and is normal automatically. -/
-theorem theorem_30_4_g (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_30_4_g (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (h : ∃ α : ℝ, {x : Rn n | F 0 x ≤ (α : EReal)}.Nonempty ∧
       Bornology.IsBounded {x : Rn n | F 0 x ≤ (α : EReal)}) : Normal F :=
   normal_of_exists_setOf_le (Bu := pairing m) (Bx := pairing n) hF hcl h
@@ -477,29 +470,30 @@ theorem theorem_30_4_g (hF : ConvexBifun F) (hcl : ClosedBifun F)
 bounded, then normality holds. **The book does not argue this clause.** The route here is not the
 book's: `-F*` is a closed convex bifunction with no hypothesis on `F`, so clause (g) applies to it
 and Theorem 30.3 transports the conclusion back. -/
-theorem theorem_30_4_h (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_30_4_h (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (h : ∃ α : ℝ, {v : Rn m | (α : EReal) ≤ dualProgram F 0 v}.Nonempty ∧
       Bornology.IsBounded {v : Rn m | (α : EReal) ≤ dualProgram F 0 v}) : Normal F :=
-  normal_of_exists_setOf_ge_adjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl h
+  normal_of_exists_setOf_ge_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) hF hcl h
 
 /-- **Theorem 30.4(i)**: if the optimal solutions to `(P)` form a non-empty bounded set — in
 particular if there is exactly one — then normality holds.
 
 **As the book states it the clause is false**: the asserted containment in (g) needs `F0` proper,
 since with `F0 ≡ +∞` the set of optimal solutions is non-empty and bounded while no sublevel set is.
-With `Proper (F 0)`, `argmin (F0)` is a level set of `F0` at its minimum value and (g) applies. -/
-theorem theorem_30_4_i (hF : ConvexBifun F) (hcl : ClosedBifun F) (hp : Proper (F 0))
+With `ProperConvex (F 0)`, `argmin (F0)` is a level set of `F0` at its minimum value and (g)
+applies. -/
+theorem theorem_30_4_i (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hp : ProperConvex (F 0))
     (hne : (argmin (F 0)).Nonempty) (hbd : Bornology.IsBounded (argmin (F 0))) : Normal F :=
   normal_of_argmin_nonempty_and_isBounded (Bu := pairing m) (Bx := pairing n) hF hcl hp hne hbd
 
 /-- **Theorem 30.4(j)**: if the optimal solutions to `(P*)` form a non-empty bounded set then
 normality holds. As in (i), the containment the book asserts needs properness of the dual
 objective. -/
-theorem theorem_30_4_j (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hp : Proper fun v => -(dualProgram F 0 v))
+theorem theorem_30_4_j (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hp : ProperConvex fun v => -(dualProgram F 0 v))
     (hne : (argmax (dualProgram F 0)).Nonempty)
     (hbd : Bornology.IsBounded (argmax (dualProgram F 0))) : Normal F :=
-  normal_of_argmax_adjointBifun_nonempty_and_isBounded (Bu := pairing m) (Bx := pairing n)
+  normal_of_argmax_convexAdjointBifun_nonempty_and_isBounded (Bu := pairing m) (Bx := pairing n)
     hF hcl hp hne hbd
 
 /-- **The Gale–Kuhn–Tucker Duality Theorem**, which Rockafellar names in running text with no
@@ -510,7 +504,7 @@ Stated at the generality the argument actually has — the book applies it to a 
 of linear programs, saying "these are polyhedral convex programs, so it follows". Clause (e) covers
 consistent `(P)` and clause (f), fed by `theorem_30_1_polyhedral`, consistent `(P*)`. Closedness is
 free in the intended application: a proper polyhedral convex bifunction is closed. -/
-theorem gale_kuhn_tucker_duality (hF : PolyhedralBifun F) (hcl : ClosedBifun F)
+theorem gale_kuhn_tucker_duality (hF : PolyhedralBifun F) (hcl : ClosedConvexBifun F)
     (h : Consistent F ∨ ConcaveConsistent (dualProgram F)) :
     infBifun F 0 = supBifun (dualProgram F) 0 := by
   refine (theorem_30_3_a_iff_c hF.convexBifun).1 ?_
@@ -525,16 +519,17 @@ and only if `u*` is an optimal solution to `(P*)`. -/
 theorem theorem_30_5 (hF : ConvexBifun F) (hn : Normal F) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) (v : Rn m) :
     v ∈ KuhnTucker (pairing m) F ↔ v ∈ argmax (dualProgram F 0) := by
-  rw [mem_kuhnTucker_iff_adjointBifun_zero_eq_iSup (Bu := pairing m) (pairing n) hF hn ht hb,
+  rw [mem_kuhnTucker_iff_convexAdjointBifun_zero_eq_iSup (Bu := pairing m) (pairing n) hF hn ht hb,
     mem_argmax_iff_eq_iSup]
 
 /-- **Theorem 30.5**, second assertion: under normality, `x` is a Kuhn–Tucker vector for `(P*)` if
 and only if `x` is an optimal solution to `(P)`. The book says only "the proof of the dual assertion
 of the theorem is parallel" and does not carry it out. -/
-theorem theorem_30_5_dual (hF : ConvexBifun F) (hcl : ClosedBifun F) (hn : Normal F)
+theorem theorem_30_5_dual (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hn : Normal F)
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) (x : Rn n) :
     x ∈ ConcaveKuhnTucker (pairing n) (dualProgram F) ↔ x ∈ argmin (F 0) := by
-  have h := mem_concaveKuhnTucker_adjointBifun_iff_mem_argmin (Bu := pairing m) (Bx := pairing n)
+  have h :=
+      mem_concaveKuhnTucker_convexAdjointBifun_iff_mem_argmin (Bu := pairing m) (Bx := pairing n)
     (x := x) hF hcl hn ht hb
   rw [flip_pairing] at h
   exact h
@@ -543,29 +538,31 @@ theorem theorem_30_5_dual (hF : ConvexBifun F) (hcl : ClosedBifun F) (hn : Norma
 
 /-- **Corollary 30.5.1**, (b) ⟺ (c): `(ū*, x̄)` is a saddle-point of the Lagrangian exactly when
 `(F0)(x̄) ≤ (F*0)(ū*)` — in which case weak duality forces equality. -/
-theorem corollary_30_5_1_b_iff_c (hF : ConvexBifun F) (hcl : ClosedBifun F) (v : Rn m) (x : Rn n) :
+theorem corollary_30_5_1_b_iff_c (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (v : Rn m)
+    (x : Rn n) :
     IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x) ↔ F 0 x ≤ dualProgram F 0 v :=
-  isSaddlePoint_lagrangian_iff_le_adjointBifun (Bu := pairing m) (pairing n) hF hcl
+  isSaddlePoint_lagrangian_iff_le_convexAdjointBifun (Bu := pairing m) (pairing n) hF hcl
 
 /-- **Corollary 30.5.1**, (a) ⟺ (b): `(ū*, x̄)` is a saddle-point of the Lagrangian exactly when
 normality holds and `x̄`, `ū*` are optimal solutions to `(P)` and `(P*)`. The book's proof is
 "immediate from Theorem 29.3", the existence of a Kuhn–Tucker vector implying normality. -/
-theorem corollary_30_5_1_a_iff_b (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (v : Rn m) (x : Rn n) :
+theorem corollary_30_5_1_a_iff_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (v : Rn m) (x : Rn n) :
     IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x)
       ↔ Normal F ∧ x ∈ argmin (F 0) ∧ v ∈ argmax (dualProgram F 0) := by
   rw [isSaddlePoint_lagrangian_iff_normal_and_optimal (Bu := pairing m) (pairing n) hF hcl hpr,
     mem_argmax_iff_eq_iSup]
 
 /-- **Corollary 30.5.1**, (a) ⟺ (c). -/
-theorem corollary_30_5_1_a_iff_c (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (v : Rn m) (x : Rn n) :
+theorem corollary_30_5_1_a_iff_c (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (v : Rn m) (x : Rn n) :
     (Normal F ∧ x ∈ argmin (F 0) ∧ v ∈ argmax (dualProgram F 0))
       ↔ F 0 x ≤ dualProgram F 0 v :=
   (corollary_30_5_1_a_iff_b hF hcl hpr v x).symm.trans (corollary_30_5_1_b_iff_c hF hcl v x)
 
 /-- **Corollary 30.5.1**, the three clauses as the book states them. -/
-theorem corollary_30_5_1 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (graphFn F))
+theorem corollary_30_5_1 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F))
     (v : Rn m) (x : Rn n) :
     [Normal F ∧ x ∈ argmin (F 0) ∧ v ∈ argmax (dualProgram F 0),
       IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x),
@@ -578,7 +575,7 @@ theorem corollary_30_5_1 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Prope
 weak duality (Corollary 30.2.2) in the other direction. -/
 theorem corollary_30_5_1_eq (F : Bifun (Rn m) (Rn n)) (v : Rn m) (x : Rn n)
     (h : F 0 x ≤ dualProgram F 0 v) : F 0 x = dualProgram F 0 v :=
-  le_antisymm h ((adjointBifun_zero_le (pairing m) (pairing n) F v).trans
+  le_antisymm h ((convexAdjointBifun_zero_le (pairing m) (pairing n) F v).trans
     (iInf_le (fun z => F 0 z) x))
 
 /-! ### Corollary 30.5.2 -/
@@ -607,13 +604,13 @@ theorem corollary_30_5_2_dual (hF : ConvexBifun F) (hs : StronglyConsistent F)
   have ht : infBifun F 0 ≠ ⊤ := infBifun_zero_ne_top hs.consistent
   have hb : infBifun F 0 ≠ ⊥ := infBifun_zero_ne_bot hF hn hc
   obtain ⟨v, hv⟩ := kuhnTucker_nonempty_of_stronglyConsistent (B := pairing m) hF
-    (proper_infBifun_of_stronglyConsistent hF hs hb) hs ht
+    (properConvex_infBifun_of_stronglyConsistent hF hs hb) hs ht
   exact ⟨v, (theorem_30_5 hF hn ht hb v).1 hv⟩
 
 /-- **Corollary 30.5.2**, first assertion: if `(P)` is consistent and `(P*)` is strongly consistent
 then `(P)` has an optimal solution. This is the assertion the book proves, through the *concave*
 Corollary 29.1.4; the route here runs the convex one on `-F*` instead. -/
-theorem corollary_30_5_2 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hc : Consistent F)
+theorem corollary_30_5_2 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hc : Consistent F)
     (hs : ConcaveStronglyConsistent (dualProgram F)) : (argmin (F 0)).Nonempty := by
   have hn : Normal F := theorem_30_4_b hF hcl hs
   have hb : infBifun F 0 ≠ ⊥ := infBifun_zero_ne_bot hF hn hs.concaveConsistent
@@ -767,9 +764,9 @@ directly from the perturbation function with no appeal to convexity of `F`: the 
 lower semicontinuous hull, and `inf F` vanishes along `u_k = 1/(k+1) → 0`. -/
 theorem not_normal_abnormalBifun : ¬ Normal abnormalBifun := by
   intro hn
-  rw [normal_iff_clFn_infBifun_zero, infBifun_abnormalBifun_zero] at hn
-  have hle : clFn (infBifun abnormalBifun) 0 ≤ 0 := by
-    refine le_trans (clFn_le_lscHull _ 0) ?_
+  rw [normal_iff_convexCl_infBifun_zero, infBifun_abnormalBifun_zero] at hn
+  have hle : convexCl (infBifun abnormalBifun) 0 ≤ 0 := by
+    refine le_trans (convexCl_le_lscHull _ 0) ?_
     rw [lscHull_eq_liminf, Filter.liminf_eq]
     refine sSup_le fun a ha => ?_
     obtain ⟨k, hk⟩ := (tendsto_coord1.eventually ha).exists
@@ -885,10 +882,10 @@ theorem convexBifun_noDualSolutionBifun : ConvexBifun noDualSolutionBifun := by
     (convexFn_indicatorFn.2 convex_noDualSolutionSet) fun _ _ _ _ _ => rfl
 
 /-- The example is a closed bifunction: its epigraph is cut out by two continuous inequalities. -/
-theorem closedBifun_noDualSolutionBifun : ClosedBifun noDualSolutionBifun := by
+theorem closedConvexBifun_noDualSolutionBifun : ClosedConvexBifun noDualSolutionBifun := by
   have hne : ∀ p : Rn 1 × Rn 1, graphFn noDualSolutionBifun p ≠ ⊥ := fun p =>
     noDualSolutionBifun_ne_bot p.1 p.2
-  rw [closedBifun_iff, closedFn_iff_lowerSemicontinuous hne,
+  rw [closedConvexBifun_iff, closedConvex_iff_lowerSemicontinuous hne,
     lowerSemicontinuous_iff_isClosed_epi]
   have hc1 : Continuous fun q : (Rn 1 × Rn 1) × ℝ => q.1.2 0 :=
     (continuous_coord 0).comp (continuous_snd.comp continuous_fst)
@@ -921,16 +918,16 @@ theorem closedBifun_noDualSolutionBifun : ClosedBifun noDualSolutionBifun := by
   exact (isClosed_le (hc1.pow 2) hc2).inter (isClosed_le hc1 continuous_snd)
 
 /-- The objective of `(P)` is a proper convex function. -/
-theorem proper_noDualSolutionBifun_zero : Proper (noDualSolutionBifun 0) :=
-  ⟨⟨0, by rw [mem_dom, noDualSolutionBifun_zero_zero]; simp⟩,
+theorem properConvex_noDualSolutionBifun_zero : ProperConvex (noDualSolutionBifun 0) :=
+  ⟨⟨0, by rw [mem_convexDom, noDualSolutionBifun_zero_zero]; simp⟩,
     fun x => noDualSolutionBifun_ne_bot 0 x⟩
 
 /-- **§30**: the example *is* normal. Rockafellar reads this off the lower semicontinuity of
 `inf Fu = -√u` at `u = 0`; here it is Theorem 30.4(i), since the set of optimal solutions is the
 single point `0`. -/
 theorem normal_noDualSolutionBifun : Normal noDualSolutionBifun :=
-  theorem_30_4_i convexBifun_noDualSolutionBifun closedBifun_noDualSolutionBifun
-    proper_noDualSolutionBifun_zero
+  theorem_30_4_i convexBifun_noDualSolutionBifun closedConvexBifun_noDualSolutionBifun
+    properConvex_noDualSolutionBifun_zero
     (by rw [argmin_noDualSolutionBifun]; exact Set.singleton_nonempty _)
     (by rw [argmin_noDualSolutionBifun]; exact Bornology.isBounded_singleton)
 

@@ -22,10 +22,11 @@ set together with the annihilator of `L`.
   strictly smaller somewhere.
 * `submodule_inter_relint_nonempty_iff`, `submodule_inter_relint_nonempty_iff_supportFn` — the
   subspace case, pointwise and through the support function.
-* `submodule_inter_relint_dom_nonempty_iff` — the effective-domain case, with the support function
-  of `dom f` rewritten as the recession function of `f*` ([rockafellar1970convex] Lemma 16.2).
-* `exists_apply_mem_relint_dom_iff` — the same for the range of a linear map, whose annihilator on
-  the other side of the pairing is the kernel of the adjoint
+* `submodule_inter_relint_convexDom_nonempty_iff` — the effective-domain case, with the support
+  function of `dom f` rewritten as the recession function of `f*` ([rockafellar1970convex] Lemma
+  16.2).
+* `exists_apply_mem_relint_convexDom_iff` — the same for the range of a linear map, whose
+  annihilator on the other side of the pairing is the kernel of the adjoint
   ([rockafellar1970convex] Corollary 16.2.1).
 
 ## Implementation notes
@@ -35,9 +36,9 @@ The general statement is written with pointwise inequalities `⟨x₁, y⟩ ≤ 
 four extrema of the proper-separation criterion become `0`.
 
 Only `E` is topologised: proper separation happens there and needs finite dimension, while `F`
-enters through `IsCompatiblePairing` alone and is a bare module. `Proper (conj B f)` is a
-hypothesis rather than a conclusion, following `recessionFn_conj`; a caller in finite dimensions
-discharges it with `proper_conj_of_proper`.
+enters through `IsCompatiblePairing` alone and is a bare module. `ProperConvex (convexConj B f)` is
+a hypothesis rather than a conclusion, following `recessionFn_convexConj`; a caller in finite
+dimensions discharges it with `properConvex_convexConj_of_properConvex`.
 
 ## References
 
@@ -201,14 +202,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 
 /-- A subspace `L` meets `ri (dom f)` exactly when there is no `y` annihilating `L` with
 `(f*) 0⁺ y ≤ 0 < (f*) 0⁺ (-y)`. The support function of `dom f` is the recession function of `f*`
-(`recessionFn_conj`), so this is the previous statement at `C = dom f`. -/
-theorem submodule_inter_relint_dom_nonempty_iff (L : Submodule ℝ E) (hf : ConvexFn f)
-    (hp : Proper f) (hc : Proper (conj B f)) :
-    ((L : Set E) ∩ ri (dom f)).Nonempty ↔
-      ¬ ∃ y : F, (∀ x ∈ L, B x y = 0) ∧ recessionFn (conj B f) y ≤ 0 ∧
-        0 < recessionFn (conj B f) (-y) := by
-  rw [recessionFn_conj hp hc]
-  exact submodule_inter_relint_nonempty_iff_supportFn L hf.convex_dom hp.dom_nonempty
+(`recessionFn_convexConj`), so this is the previous statement at `C = dom f`. -/
+theorem submodule_inter_relint_convexDom_nonempty_iff (L : Submodule ℝ E) (hf : ConvexFn f)
+    (hp : ProperConvex f) (hc : ProperConvex (convexConj B f)) :
+    ((L : Set E) ∩ ri (convexDom f)).Nonempty ↔
+      ¬ ∃ y : F, (∀ x ∈ L, B x y = 0) ∧ recessionFn (convexConj B f) y ≤ 0 ∧
+        0 < recessionFn (convexConj B f) (-y) := by
+  rw [recessionFn_convexConj hp hc]
+  exact submodule_inter_relint_nonempty_iff_supportFn L hf.convex_convexDom hp.convexDom_nonempty
 
 end Function
 
@@ -239,19 +240,22 @@ theorem forall_mem_range_eq_zero_iff (hB : B.SeparatingRight) (hA : IsAdjointPai
 /-- For a linear transformation `A` with adjoint `A'` and a proper convex `g`, some `A x` lies in
 `ri (dom g)` exactly when no `y` in the kernel of `A'` has `(g*) 0⁺ y ≤ 0 < (g*) 0⁺ (-y)`: the
 subspace criterion above for `L = range A`. -/
-theorem exists_apply_mem_relint_dom_iff (hB : B.SeparatingRight) (hA : IsAdjointPair B B' A A')
-    (hg : ConvexFn g) (hp : Proper g) (hc : Proper (conj B' g)) :
-    (∃ x, A x ∈ ri (dom g)) ↔
-      ¬ ∃ y : H, A' y = 0 ∧ recessionFn (conj B' g) y ≤ 0 ∧ 0 < recessionFn (conj B' g) (-y) := by
-  have hmem : (∃ x, A x ∈ ri (dom g)) ↔
-      ((LinearMap.range A : Set G) ∩ ri (dom g)).Nonempty := by
+theorem exists_apply_mem_relint_convexDom_iff (hB : B.SeparatingRight)
+    (hA : IsAdjointPair B B' A A')
+    (hg : ConvexFn g) (hp : ProperConvex g) (hc : ProperConvex (convexConj B' g)) :
+    (∃ x, A x ∈ ri (convexDom g)) ↔
+      ¬ ∃ y : H,
+          A' y = 0 ∧ recessionFn (convexConj B' g) y ≤ 0 ∧ 0
+              < recessionFn (convexConj B' g) (-y) := by
+  have hmem : (∃ x, A x ∈ ri (convexDom g)) ↔
+      ((LinearMap.range A : Set G) ∩ ri (convexDom g)).Nonempty := by
     constructor
     · rintro ⟨x, hx⟩
       exact ⟨A x, LinearMap.mem_range_self A x, hx⟩
     · rintro ⟨z, hzL, hz⟩
       obtain ⟨x, rfl⟩ := LinearMap.mem_range.1 hzL
       exact ⟨x, hz⟩
-  rw [hmem, submodule_inter_relint_dom_nonempty_iff (LinearMap.range A) hg hp hc]
+  rw [hmem, submodule_inter_relint_convexDom_nonempty_iff (LinearMap.range A) hg hp hc]
   exact not_congr (exists_congr fun y =>
     and_congr (forall_mem_range_eq_zero_iff hB hA y) Iff.rfl)
 

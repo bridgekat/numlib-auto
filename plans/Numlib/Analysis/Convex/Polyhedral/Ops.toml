@@ -13,6 +13,12 @@ id = 'polyhedral_iInter'
 id = 'Polyhedral.comap'
 
 [[node]]
+id = 'FinitelyGenerated.image'
+
+[[node]]
+id = 'FinitelyGenerated.add'
+
+[[node]]
 id = 'Polyhedral.image'
 
 [[node]]
@@ -23,12 +29,6 @@ id = 'finitelyGeneratedCone_hull_of_zero_mem'
 
 [[node]]
 id = 'separatesStrongly_of_polyhedral'
-
-[[node]]
-id = 'recessionCone_polyhedral_system'
-
-[[node]]
-id = 'Polyhedral.polyhedralCone_recessionCone'
 
 [[node]]
 id = 'finitelyGenerated_closure_convexHull_union'

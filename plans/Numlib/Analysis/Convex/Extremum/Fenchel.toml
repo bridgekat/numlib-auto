@@ -1,19 +1,19 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'concaveConj_sub_conj_le_sub'
+id = 'concaveConj_sub_convexConj_le_sub'
 
 [[node]]
 id = 'fenchel_duality'
 
 [[node]]
-id = 'exists_concaveConj_sub_conj_eq'
+id = 'exists_concaveConj_sub_convexConj_eq'
 
 [[node]]
 id = 'fenchel_duality_comp'
 
 [[node]]
-id = 'exists_concaveConj_sub_conj_comp_eq'
+id = 'exists_concaveConj_sub_convexConj_comp_eq'
 
 [[node]]
 id = 'fenchel_duality_of_closed'
@@ -22,13 +22,13 @@ id = 'fenchel_duality_of_closed'
 id = 'exists_sub_eq_iInf'
 
 [[node]]
-id = 'sub_eq_concaveConj_sub_conj_iff'
+id = 'sub_eq_concaveConj_sub_convexConj_iff'
 
 [[node]]
 id = 'iInf_sub_eq_iff_exists_kuhnTucker'
 
 [[node]]
-id = 'sub_comp_eq_concaveConj_sub_conj_iff'
+id = 'sub_comp_eq_concaveConj_sub_convexConj_iff'
 
 [[node]]
 id = 'iInf_sub_comp_eq_iff_exists_kuhnTucker'
@@ -37,10 +37,10 @@ id = 'iInf_sub_comp_eq_iff_exists_kuhnTucker'
 id = 'iInf_mem_eq_neg_iInf_mem_neg_polarCone'
 
 [[node]]
-id = 'exists_mem_neg_polarCone_conj_eq_iInf'
+id = 'exists_mem_neg_polarCone_convexConj_eq_iInf'
 
 [[node]]
 id = 'iInf_mem_submodule_eq_neg_iInf_mem_polarCone'
 
 [[node]]
-id = 'exists_mem_eq_iInf_of_isExactSum_conj'
+id = 'exists_mem_eq_iInf_of_isExactSum_convexConj'

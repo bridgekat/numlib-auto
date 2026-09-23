@@ -23,10 +23,10 @@ variable above; reading a polyhedral system for `epi f` off in the two groups is
 
 * `polyhedralFn_maxAffineFn`, `polyhedralFn_maxAffineFn_add_indicatorFn` — a normal form is always
   polyhedral, with no hypothesis: the degenerate `s = ∅` gives `⊥`, whose epigraph is everything.
-* `PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom` — every polyhedral convex function that
-  nowhere takes `⊥` is in normal form, with `dom f` itself as the set. The vertical inequalities
-  cut out a polyhedral set that may be strictly larger than `dom f`, but off `dom f` the function
-  is `⊤` anyway.
+* `PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom` — every polyhedral convex function
+  that nowhere takes `⊥` is in normal form, with `dom f` itself as the set. The vertical
+  inequalities cut out a polyhedral set that may be strictly larger than `dom f`, but off `dom f`
+  the function is `⊤` anyway.
 * `polyhedralFn_iff_maxAffineFn_add_indicatorFn` — the two together, as an iff.
 
 ## Implementation notes
@@ -169,11 +169,11 @@ a polyhedral convex set, and the set may be taken to be `dom f`.
 The affine pieces come from the *non-vertical* inequalities of a polyhedral system for `epi f`,
 each rescaled by minus its (negative) coefficient on the vertical variable. The *vertical*
 inequalities constrain `x` alone and hold throughout `dom f`, which is why `dom f` itself serves as
-the set; it is polyhedral by `PolyhedralFn.polyhedral_dom`. No inequality can have a *positive*
-vertical coefficient, since `epi f` is upward closed. -/
-theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom (hf : PolyhedralFn f)
+the set; it is polyhedral by `PolyhedralFn.polyhedral_convexDom`. No inequality can have a
+*positive* vertical coefficient, since `epi f` is upward closed. -/
+theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom (hf : PolyhedralFn f)
     (hb : ∀ x, f x ≠ ⊥) :
-    ∃ s : Finset ((E →ₗ[ℝ] ℝ) × ℝ), f = maxAffineFn s + indicatorFn (dom f) := by
+    ∃ s : Finset ((E →ₗ[ℝ] ℝ) × ℝ), f = maxAffineFn s + indicatorFn (convexDom f) := by
   classical
   obtain ⟨t, ht⟩ : ∃ t : Finset (((E × ℝ) →ₗ[ℝ] ℝ) × ℝ),
       epi f = {p : E × ℝ | ∀ q ∈ t, q.1 p ≤ q.2} := hf
@@ -192,13 +192,13 @@ theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom (hf : PolyhedralFn f
       have hmem : ((x, r) : E × ℝ) ∈ epi f := le_of_eq hr
       rw [hemp] at hmem
       exact hmem
-    have hdom : dom f = (∅ : Set E) := by
+    have hdom : convexDom f = (∅ : Set E) := by
       ext x
       simp [htop x]
     refine ⟨{(0, 0)}, funext fun x => ?_⟩
     have hmax : maxAffineFn ({((0 : E →ₗ[ℝ] ℝ), (0 : ℝ))} : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) x = 0 := by
       simp [maxAffineFn]
-    change f x = maxAffineFn _ x + indicatorFn (dom f) x
+    change f x = maxAffineFn _ x + indicatorFn (convexDom f) x
     rw [htop x, hmax, hdom, indicatorFn_of_notMem (Set.notMem_empty x), zero_add]
   obtain ⟨⟨x₀, r₀⟩, hp₀⟩ := hne
   have hp₀' : f x₀ ≤ ((r₀ : ℝ) : EReal) := hp₀
@@ -277,8 +277,8 @@ theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom (hf : PolyhedralFn f
       rw [← affine_le_iff_of_neg hlt]
       exact h q hqt hlt
   refine ⟨s, funext fun x => ?_⟩
-  change f x = maxAffineFn s x + indicatorFn (dom f) x
-  by_cases hx : x ∈ dom f
+  change f x = maxAffineFn s x + indicatorFn (convexDom f) x
+  by_cases hx : x ∈ convexDom f
   · rw [indicatorFn_of_mem hx, add_zero]
     refine EReal.eq_of_forall_le_coe_iff fun μ => ?_
     rw [hmaxle x μ]
@@ -315,8 +315,8 @@ theorem polyhedralFn_iff_maxAffineFn_add_indicatorFn (hb : ∀ x, f x ≠ ⊥) :
       f = maxAffineFn s + indicatorFn C := by
   constructor
   · intro hf
-    obtain ⟨s, hs⟩ := hf.exists_maxAffineFn_add_indicatorFn_dom hb
-    exact ⟨s, dom f, hf.polyhedral_dom, hs⟩
+    obtain ⟨s, hs⟩ := hf.exists_maxAffineFn_add_indicatorFn_convexDom hb
+    exact ⟨s, convexDom f, hf.polyhedral_convexDom, hs⟩
   · rintro ⟨s, C, hC, rfl⟩
     exact polyhedralFn_maxAffineFn_add_indicatorFn s hC
 

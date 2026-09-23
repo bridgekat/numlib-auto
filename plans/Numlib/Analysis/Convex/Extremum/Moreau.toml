@@ -4,10 +4,10 @@ namespace = 'ConvexAnalysis'
 id = 'quadFn'
 
 [[node]]
-id = 'conj_quadFn'
+id = 'convexConj_quadFn'
 
 [[node]]
-id = 'conj_quadFn_sub'
+id = 'convexConj_quadFn_sub'
 
 [[node]]
 id = 'moreau_add'

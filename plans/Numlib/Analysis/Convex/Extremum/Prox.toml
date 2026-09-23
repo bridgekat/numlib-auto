@@ -25,7 +25,7 @@ id = 'existsUnique_sub_mem_subdifferential'
 id = 'prox_eq_iff'
 
 [[node]]
-id = 'prox_add_prox_conj'
+id = 'prox_add_prox_convexConj'
 
 [[node]]
 id = 'pairingNorm_prox_sub_le'

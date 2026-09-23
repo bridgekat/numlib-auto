@@ -14,10 +14,15 @@ id = 'FinitelyGenerated'
 
 [[node]]
 id = 'Polyhedral.convex'
-desc = 'A polyhedral set is convex.'
+
+[[node]]
+id = 'FinitelyGenerated.convex'
 
 [[node]]
 id = 'polyhedral_iff_finitelyGenerated'
 
 [[node]]
 id = 'Polyhedral.isClosed'
+
+[[node]]
+id = 'FinitelyGenerated.isClosed'

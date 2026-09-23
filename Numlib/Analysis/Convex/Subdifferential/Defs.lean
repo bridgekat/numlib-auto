@@ -23,20 +23,22 @@ develops the elementary theory of all three.
 
 ## Main results
 
-* `Proper.mem_subdifferential_tfae` — `y ∈ ∂f x`, attainment of the supremum of `⟨·, y⟩ - f` at `x`,
-  and equality in Fenchel's inequality at `(x, y)` say the same thing
+* `ProperConvex.mem_subdifferential_tfae` — `y ∈ ∂f x`, attainment of the supremum of `⟨·, y⟩ - f`
+  at `x`, and equality in Fenchel's inequality at `(x, y)` say the same thing
   ([rockafellar1970convex] Theorem 23.5). All the individual implications but the last are
   unconditional.
-* `subgradientRel_conj_eq_inv` — for closed proper convex `f`, the graph of `∂f*` is the flip of
-  the graph of `∂f`; `subdifferential_clFn` — `∂(cl f) x = ∂f x` wherever `f` is subdifferentiable.
+* `subgradientRel_convexConj_eq_inv` — for closed proper convex `f`, the graph of `∂f*` is the flip
+  of the graph of `∂f`; `subdifferential_convexCl` — `∂(cl f) x = ∂f x` wherever `f` is
+  subdifferentiable.
 * `subdifferential_indicatorFn` — `∂δ(· | C) x = N_C(x)` for `x ∈ C`; `subdifferential_supportFn` —
   the subgradients of `δ*(· | C)` at `y` are the maximizers of `⟨·, y⟩` over `C`.
 * `monotoneOn_sub_div`, `posHomogeneous_dirDeriv`, `convexFn_dirDeriv` — the difference quotient is
   nondecreasing in the step; `f'(x; ·)` is positively homogeneous and convex.
-* `mem_subdifferential_iff_le_dirDeriv`, `conj_dirDeriv`, `clFn_dirDeriv` — `∂f x` is where
-  `⟨·, y⟩ ≤ f'(x; ·)`, and `cl f'(x; ·)` is the support function of `∂f x`
+* `mem_subdifferential_iff_le_dirDeriv`, `convexConj_dirDeriv`, `convexCl_dirDeriv` — `∂f x` is
+  where `⟨·, y⟩ ≤ f'(x; ·)`, and `cl f'(x; ·)` is the support function of `∂f x`
   ([rockafellar1970convex] Theorem 23.2).
-* `proper_of_mem_subdifferential` — subdifferentiability at a point of finiteness forces properness.
+* `properConvex_of_mem_subdifferential` — subdifferentiability at a point of finiteness forces
+  properness.
 
 ## Implementation notes
 
@@ -132,13 +134,14 @@ theorem convex_subdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → 
 
 /-- A point with a subgradient lies in the effective domain: were `f x = ⊤`, the subgradient
 inequality would read `⊤ ≤ f z` for every `z` and force `f ≡ ⊤`, which properness forbids. -/
-theorem mem_dom_of_mem_subdifferential (hp : Proper f) (hy : y ∈ subdifferential B f x) :
-    x ∈ dom f := by
-  obtain ⟨z₀, hz₀⟩ := hp.dom_nonempty
-  refine mem_dom.2 (lt_top_iff_ne_top.2 fun htop => ?_)
+theorem mem_convexDom_of_mem_subdifferential (hp : ProperConvex f)
+    (hy : y ∈ subdifferential B f x) :
+    x ∈ convexDom f := by
+  obtain ⟨z₀, hz₀⟩ := hp.convexDom_nonempty
+  refine mem_convexDom.2 (lt_top_iff_ne_top.2 fun htop => ?_)
   have hle := hy z₀
   rw [htop, EReal.top_add_coe] at hle
-  exact absurd (top_le_iff.1 hle) (mem_dom.1 hz₀).ne
+  exact absurd (top_le_iff.1 hle) (mem_convexDom.1 hz₀).ne
 
 /-- `dom ∂f`: the set of points at which `f` has at least one subgradient. -/
 def domSubdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) : Set E :=
@@ -148,9 +151,10 @@ def domSubdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     x ∈ domSubdifferential B f ↔ (subdifferential B f x).Nonempty := Iff.rfl
 
 /-- `dom ∂f ⊆ dom f`: a subgradient at `x` forces `f x < ⊤`. -/
-theorem domSubdifferential_subset_dom (hp : Proper f) : domSubdifferential B f ⊆ dom f := by
+theorem domSubdifferential_subset_convexDom
+    (hp : ProperConvex f) : domSubdifferential B f ⊆ convexDom f := by
   rintro z ⟨y, hy⟩
-  exact mem_dom_of_mem_subdifferential hp hy
+  exact mem_convexDom_of_mem_subdifferential hp hy
 
 end Defs
 
@@ -168,31 +172,97 @@ theorem mem_subdifferential_iff_forall_sub_le :
   rw [EReal.coe_sub_le_comm, EReal.coe_sub_coe_sub, map_sub, LinearMap.sub_apply, add_comm]
 
 /-- That supremum *is* `f* y`, so `y ∈ ∂f x` is the inequality `f* y ≤ ⟨x, y⟩ - f x`. -/
-theorem mem_subdifferential_iff_conj_le :
-    y ∈ subdifferential B f x ↔ conj B f y ≤ ((B x y : ℝ) : EReal) - f x := by
-  rw [mem_subdifferential_iff_forall_sub_le, conj_apply, iSup_le_iff]
+theorem mem_subdifferential_iff_convexConj_le :
+    y ∈ subdifferential B f x ↔ convexConj B f y ≤ ((B x y : ℝ) : EReal) - f x := by
+  rw [mem_subdifferential_iff_forall_sub_le, convexConj_apply, iSup_le_iff]
 
 /-- Attainment written as an equation: `y ∈ ∂f x` exactly when `f* y = ⟨x, y⟩ - f x`. This is the
 `∞ - ∞`-free reading of equality in Fenchel's inequality. -/
-theorem mem_subdifferential_iff_conj_eq :
-    y ∈ subdifferential B f x ↔ conj B f y = ((B x y : ℝ) : EReal) - f x :=
-  ⟨fun h => le_antisymm (mem_subdifferential_iff_conj_le.1 h) (sub_le_conj B f x y),
-    fun h => mem_subdifferential_iff_conj_le.2 h.le⟩
+theorem mem_subdifferential_iff_convexConj_eq :
+    y ∈ subdifferential B f x ↔ convexConj B f y = ((B x y : ℝ) : EReal) - f x :=
+  ⟨fun h => le_antisymm (mem_subdifferential_iff_convexConj_le.1 h) (sub_le_convexConj B f x y),
+    fun h => mem_subdifferential_iff_convexConj_le.2 h.le⟩
+
+/-! #### Supergradients: the subdifferential of a concave function -/
+
+/-- The **superdifferential** of a concave `g` at `x` for the pairing `B`: the set of `y : F` with
+`g z ≤ g x + ⟨z - x, y⟩` for every `z`. This is `subdifferential` with the inequality turned around,
+and it is what Rockafellar writes `∂` for a concave function. -/
+def superdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal) (x : E) : Set F :=
+  {y | ∀ z, g z ≤ g x + ((B (z - x) y : ℝ) : EReal)}
+
+variable {g : E → EReal}
+
+@[simp] theorem mem_superdifferential :
+    y ∈ superdifferential B g x ↔ ∀ z, g z ≤ g x + ((B (z - x) y : ℝ) : EReal) := Iff.rfl
+
+/-- **The sign dictionary**: `y` is a supergradient of `g` at `x` exactly when `-y` is a
+subgradient of `-g` there. -/
+theorem mem_superdifferential_iff_neg_mem_subdifferential_neg :
+    y ∈ superdifferential B g x ↔ -y ∈ subdifferential B (fun z => -(g z)) x := by
+  refine forall_congr' fun z => ?_
+  have hcoe : ((B (z - x) (-y) : ℝ) : EReal) = -((B (z - x) y : ℝ) : EReal) := by
+    rw [map_neg, EReal.coe_neg]
+  have hsum : -(g x) + -((B (z - x) y : ℝ) : EReal)
+      = -(g x + ((B (z - x) y : ℝ) : EReal)) := by
+    have h : -(g x + ((B (z - x) y : ℝ) : EReal)) = -(g x) + -((B (z - x) y : ℝ) : EReal) :=
+      EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _))
+    exact h.symm
+  change _ ↔ -(g x) + ((B (z - x) (-y) : ℝ) : EReal) ≤ -(g z)
+  rw [hcoe, hsum, EReal.neg_le_neg_iff]
+
+theorem neg_mem_superdifferential_iff :
+    -y ∈ superdifferential B g x ↔ y ∈ subdifferential B (fun z => -(g z)) x := by
+  rw [mem_superdifferential_iff_neg_mem_subdifferential_neg, neg_neg]
+
+/-- `y ∈ ∂g x` exactly when the infimum of `⟨·, y⟩ - g` over the space is attained at `x`.
+Unconditional. -/
+theorem mem_superdifferential_iff_forall_le_sub :
+    y ∈ superdifferential B g x ↔
+      ∀ z, ((B x y : ℝ) : EReal) - g x ≤ ((B z y : ℝ) : EReal) - g z := by
+  refine forall_congr' fun z => ?_
+  rw [EReal.le_coe_sub_comm, EReal.coe_sub_coe_sub, map_sub, LinearMap.sub_apply,
+    add_comm (g x)]
+
+/-- That infimum *is* the concave conjugate `g* y`. Unconditional. -/
+theorem mem_superdifferential_iff_le_concaveConj :
+    y ∈ superdifferential B g x ↔ ((B x y : ℝ) : EReal) - g x ≤ concaveConj B g y := by
+  rw [mem_superdifferential_iff_forall_le_sub, concaveConj_apply, le_iInf_iff]
+
+/-- The same as an equation: `y ∈ ∂g x` exactly when `g* y = ⟨x, y⟩ - g x`. Unconditional. -/
+theorem mem_superdifferential_iff_concaveConj_eq :
+    y ∈ superdifferential B g x ↔ concaveConj B g y = ((B x y : ℝ) : EReal) - g x :=
+  ⟨fun h => le_antisymm (concaveConj_le_sub B g x y)
+      (mem_superdifferential_iff_le_concaveConj.1 h),
+    fun h => mem_superdifferential_iff_le_concaveConj.2 h.ge⟩
+
+/-- The superdifferential is convex, with no hypothesis on `g`. -/
+theorem convex_superdifferential : Convex ℝ (superdifferential B g x) := by
+  have h : Convex ℝ (subdifferential B (fun z => -(g z)) x) :=
+    convex_subdifferential B (fun z => -(g z)) x
+  intro y₁ h₁ y₂ h₂ a b ha hb hab
+  rw [mem_superdifferential_iff_neg_mem_subdifferential_neg] at h₁ h₂ ⊢
+  have hneg : -(a • y₁ + b • y₂) = a • (-y₁) + b • (-y₂) := by
+    rw [neg_add, smul_neg, smul_neg]
+  rw [hneg]
+  exact h h₁ h₂ ha hb hab
+
+/-! #### Further conjugate criteria for subgradients -/
 
 /-- The same in the additive form `f x + f* y ≤ ⟨x, y⟩`. Unconditional: adding a *real* number is
 an order isomorphism of `EReal`, so no `∞ - ∞` arises. -/
-theorem mem_subdifferential_iff_add_conj_le :
-    y ∈ subdifferential B f x ↔ f x + conj B f y ≤ ((B x y : ℝ) : EReal) := by
-  rw [mem_subdifferential_iff_conj_le, EReal.le_sub_iff_add_le
+theorem mem_subdifferential_iff_add_convexConj_le :
+    y ∈ subdifferential B f x ↔ f x + convexConj B f y ≤ ((B x y : ℝ) : EReal) := by
+  rw [mem_subdifferential_iff_convexConj_le, EReal.le_sub_iff_add_le
     (.inr (EReal.coe_ne_bot _)) (.inr (EReal.coe_ne_top _)), add_comm]
 
 /-- `y ∈ ∂f x` exactly when **Fenchel's inequality** holds with equality at `(x, y)`. Properness is
 not decorative: for `f ≡ ⊤` every `y` is a subgradient at every `x`, while `f* ≡ ⊥` and so
 `f x + f* y = ⊤ + ⊥ = ⊥ ≠ ⟨x, y⟩`. -/
-theorem Proper.mem_subdifferential_iff_add_conj_eq (hp : Proper f) :
-    y ∈ subdifferential B f x ↔ f x + conj B f y = ((B x y : ℝ) : EReal) := by
-  rw [mem_subdifferential_iff_add_conj_le]
-  exact ⟨fun h => le_antisymm h (hp.le_add_conj x y), fun h => h.le⟩
+theorem ProperConvex.mem_subdifferential_iff_add_convexConj_eq (hp : ProperConvex f) :
+    y ∈ subdifferential B f x ↔ f x + convexConj B f y = ((B x y : ℝ) : EReal) := by
+  rw [mem_subdifferential_iff_add_convexConj_le]
+  exact ⟨fun h => le_antisymm h (hp.le_add_convexConj x y), fun h => h.le⟩
 
 /-- **The four equivalent forms of subgradient membership**: for a proper `f` the conditions
 
@@ -203,36 +273,38 @@ theorem Proper.mem_subdifferential_iff_add_conj_eq (hp : Proper f) :
 
 are equivalent. Convexity of `f` is nowhere used; properness is needed only to close the loop back
 from (d). -/
-theorem Proper.mem_subdifferential_tfae (hp : Proper f) (x : E) (y : F) :
+theorem ProperConvex.mem_subdifferential_tfae (hp : ProperConvex f) (x : E) (y : F) :
     List.TFAE [y ∈ subdifferential B f x,
       ∀ z, ((B z y : ℝ) : EReal) - f z ≤ ((B x y : ℝ) : EReal) - f x,
-      f x + conj B f y ≤ ((B x y : ℝ) : EReal),
-      f x + conj B f y = ((B x y : ℝ) : EReal)] := by
+      f x + convexConj B f y ≤ ((B x y : ℝ) : EReal),
+      f x + convexConj B f y = ((B x y : ℝ) : EReal)] := by
   tfae_have 1 ↔ 2 := mem_subdifferential_iff_forall_sub_le
-  tfae_have 1 ↔ 3 := mem_subdifferential_iff_add_conj_le
-  tfae_have 1 ↔ 4 := hp.mem_subdifferential_iff_add_conj_eq
+  tfae_have 1 ↔ 3 := mem_subdifferential_iff_add_convexConj_le
+  tfae_have 1 ↔ 4 := hp.mem_subdifferential_iff_add_convexConj_eq
   tfae_finish
 
 /-- `x ∈ ∂f* y` and `y ∈ ∂f x` agree at every `x` where `f` coincides with its biconjugate — for a
 closed proper convex `f`, everywhere. -/
-theorem mem_subdifferential_conj_iff (h : biconj B f x = f x) :
-    x ∈ subdifferential B.flip (conj B f) y ↔ y ∈ subdifferential B f x := by
-  have h' : conj B.flip (conj B f) x = f x := h
-  rw [mem_subdifferential_iff_add_conj_le, mem_subdifferential_iff_add_conj_le,
+theorem mem_subdifferential_convexConj_iff (h : convexBiconj B f x = f x) :
+    x ∈ subdifferential B.flip (convexConj B f) y ↔ y ∈ subdifferential B f x := by
+  have h' : convexConj B.flip (convexConj B f) x = f x := h
+  rw [mem_subdifferential_iff_add_convexConj_le, mem_subdifferential_iff_add_convexConj_le,
     LinearMap.flip_apply, h', add_comm]
 
 /-- At a point where `f` is subdifferentiable it agrees with its biconjugate. No topology and no
 convexity are needed. -/
-theorem biconj_eq_of_mem_subdifferential (hy : y ∈ subdifferential B f x) : biconj B f x = f x := by
-  refine le_antisymm (biconj_le B f x) ?_
-  have h := sub_le_conj B.flip (conj B f) y x
-  rwa [LinearMap.flip_apply, mem_subdifferential_iff_conj_eq.1 hy, EReal.coe_sub_coe_sub, sub_self,
+theorem convexBiconj_eq_of_mem_subdifferential
+    (hy : y ∈ subdifferential B f x) : convexBiconj B f x = f x := by
+  refine le_antisymm (convexBiconj_le B f x) ?_
+  have h := sub_le_convexConj B.flip (convexConj B f) y x
+  rwa [LinearMap.flip_apply, mem_subdifferential_iff_convexConj_eq.1 hy, EReal.coe_sub_coe_sub,
+      sub_self,
     EReal.coe_zero, zero_add] at h
 
 /-- A function subdifferentiable at a point where it is finite is proper. The subgradient
 inequality exhibits a finite affine minorant, ruling out the value `⊥`. -/
-theorem proper_of_mem_subdifferential (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
-    (hy : y ∈ subdifferential B f x) : Proper f := by
+theorem properConvex_of_mem_subdifferential (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
+    (hy : y ∈ subdifferential B f x) : ProperConvex f := by
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (lt_top_iff_ne_top.2 ht)
   refine ⟨⟨x, lt_top_iff_ne_top.2 ht⟩, fun z hz => ?_⟩
   have h := hy z
@@ -240,15 +312,15 @@ theorem proper_of_mem_subdifferential (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
   exact EReal.coe_ne_bot _ (le_bot_iff.1 h)
 
 /-- The same in the "subdifferentiable" phrasing. -/
-theorem proper_of_subdifferential_nonempty (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
-    (h : (subdifferential B f x).Nonempty) : Proper f :=
-  h.elim fun _ hy => proper_of_mem_subdifferential ht hb hy
+theorem properConvex_of_subdifferential_nonempty (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
+    (h : (subdifferential B f x).Nonempty) : ProperConvex f :=
+  h.elim fun _ hy => properConvex_of_mem_subdifferential ht hb hy
 
 /-- A proper function has no subgradients off its effective domain. Unlike the finer statements
 about where `∂f` is non-empty, this involves no relative interiors. -/
-theorem subdifferential_eq_empty_of_notMem_dom (hp : Proper f) (hx : x ∉ dom f) :
+theorem subdifferential_eq_empty_of_notMem_convexDom (hp : ProperConvex f) (hx : x ∉ convexDom f) :
     subdifferential B f x = ∅ := by
-  obtain ⟨z, hz⟩ := hp.dom_nonempty
+  obtain ⟨z, hz⟩ := hp.convexDom_nonempty
   have hfx : f x = ⊤ := by
     by_contra hc
     exact hx (lt_top_iff_ne_top.2 hc)
@@ -283,8 +355,9 @@ theorem subdifferential_indicatorFn (hx : x ∈ C) :
 /-- Off `C` there are no subgradients of `δ(· | C)`, provided `C` is nonempty. -/
 theorem subdifferential_indicatorFn_of_notMem (hC : C.Nonempty) (hx : x ∉ C) :
     subdifferential B (indicatorFn C) x = ∅ :=
-  subdifferential_eq_empty_of_notMem_dom ⟨by rwa [dom_indicatorFn], indicatorFn_ne_bot C⟩
-    (by rwa [dom_indicatorFn])
+  subdifferential_eq_empty_of_notMem_convexDom ⟨by rwa [convexDom_indicatorFn],
+      indicatorFn_ne_bot C⟩
+    (by rwa [convexDom_indicatorFn])
 
 /-- Membership in `∂δ(· | C)` in full, for nonempty `C`. -/
 theorem mem_subdifferential_indicatorFn_iff (hC : C.Nonempty) :
@@ -340,7 +413,7 @@ theorem continuous_add_coe (u : EReal) : Continuous fun t : ℝ => u + (t : ERea
   | top => simpa only [EReal.top_add_coe] using continuous_const
 
 /-- The subdifferential is closed once every `⟨z, ·⟩ : F → ℝ` is continuous — automatic in `ℝⁿ`,
-and here the instance `closedFn_conj` also asks for. -/
+and here the instance `closedConvex_convexConj` also asks for. -/
 theorem isClosed_subdifferential [IsContinuousPairing B.flip] (f : E → EReal) (x : E) :
     IsClosed (subdifferential B f x) := by
   rw [show subdifferential B f x = ⋂ z : E, {y | f x + ((B (z - x) y : ℝ) : EReal) ≤ f z} from
@@ -550,9 +623,9 @@ theorem supportSet_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
 
 /-- Dually, the conjugate of `f'(x; ·)` is the *indicator* of `∂f x`. Neither convexity of `f` nor
 any topology is needed. -/
-theorem conj_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
-    conj B (dirDeriv f x) = indicatorFn (subdifferential B f x) := by
-  rw [conj_eq_indicatorFn_of_posHomogeneous (posHomogeneous_dirDeriv f x)
+theorem convexConj_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
+    convexConj B (dirDeriv f x) = indicatorFn (subdifferential B f x) := by
+  rw [convexConj_eq_indicatorFn_of_posHomogeneous (posHomogeneous_dirDeriv f x)
       ⟨0, by rw [dirDeriv_zero ht hb]; simp⟩,
     supportSet_dirDeriv ht hb]
 
@@ -561,7 +634,7 @@ end DirDerivSubdifferential
 /-! ### Conjugate subdifferentials, and the closure of the directional derivative
 
 Everything here consumes Fenchel–Moreau, so it carries the pairing hypotheses of
-`biconj_eq_clFn`. -/
+`convexBiconj_eq_convexCl`. -/
 
 section FenchelMoreau
 
@@ -570,49 +643,52 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   {x : E} {y : F}
 
 /-- `∂(cl f) x = ∂f x` wherever `(cl f) x = f x`. Only continuity of the pairing is needed,
-through `conj_clFn`. -/
-theorem mem_subdifferential_clFn_iff [IsContinuousPairing B] (hx : clFn f x = f x) :
-    y ∈ subdifferential B (clFn f) x ↔ y ∈ subdifferential B f x := by
-  rw [mem_subdifferential_iff_conj_le, mem_subdifferential_iff_conj_le, conj_clFn, hx]
+through `convexConj_convexCl`. -/
+theorem mem_subdifferential_convexCl_iff [IsContinuousPairing B] (hx : convexCl f x = f x) :
+    y ∈ subdifferential B (convexCl f) x ↔ y ∈ subdifferential B f x := by
+  rw [mem_subdifferential_iff_convexConj_le, mem_subdifferential_iff_convexConj_le,
+      convexConj_convexCl, hx]
 
 variable [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
 
 /-- Pointwise inversion: for a closed proper convex `f`, `x ∈ ∂f* y` and `y ∈ ∂f x` say the same
 thing. -/
-theorem mem_subdifferential_conj_iff_of_closedFn [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hc : ClosedFn f) :
-    x ∈ subdifferential B.flip (conj B f) y ↔ y ∈ subdifferential B f x :=
-  mem_subdifferential_conj_iff (congrFun (biconj_eq_self hf hc) x)
+theorem mem_subdifferential_convexConj_iff_of_closedConvex [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hc : ClosedConvex f) :
+    x ∈ subdifferential B.flip (convexConj B f) y ↔ y ∈ subdifferential B f x :=
+  mem_subdifferential_convexConj_iff (congrFun (convexBiconj_eq_self hf hc) x)
 
 /-- For a closed proper convex `f`, `∂f*` is the inverse of `∂f` as a multivalued mapping — the
 graph of `∂f*` is the flip of the graph of `∂f`. -/
-theorem subgradientRel_conj_eq_inv [IsCompatiblePairing B] (hf : ConvexFn f) (hc : ClosedFn f) :
-    subgradientRel B.flip (conj B f) = (subgradientRel B f).inv := by
+theorem subgradientRel_convexConj_eq_inv [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hc : ClosedConvex f) :
+    subgradientRel B.flip (convexConj B f) = (subgradientRel B f).inv := by
   ext ⟨y, x⟩
   simp only [SetRel.mem_inv, mem_subgradientRel]
-  exact mem_subdifferential_conj_iff_of_closedFn hf hc
+  exact mem_subdifferential_convexConj_iff_of_closedConvex hf hc
 
 /-- At a point where a convex `f` is subdifferentiable, `(cl f) x = f x`. -/
-theorem clFn_eq_of_mem_subdifferential [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hy : y ∈ subdifferential B f x) : clFn f x = f x := by
-  rw [← congrFun (biconj_eq_clFn (B := B) hf) x]
-  exact biconj_eq_of_mem_subdifferential hy
+theorem convexCl_eq_of_mem_subdifferential [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hy : y ∈ subdifferential B f x) : convexCl f x = f x := by
+  rw [← congrFun (convexBiconj_eq_convexCl (B := B) hf) x]
+  exact convexBiconj_eq_of_mem_subdifferential hy
 
 /-- And then `∂(cl f) x = ∂f x`. -/
-theorem subdifferential_clFn [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hy : y ∈ subdifferential B f x) : subdifferential B (clFn f) x = subdifferential B f x :=
-  Set.ext fun _ => mem_subdifferential_clFn_iff (clFn_eq_of_mem_subdifferential hf hy)
+theorem subdifferential_convexCl [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hy : y ∈ subdifferential B f x) : subdifferential B (convexCl f) x = subdifferential B f x :=
+  Set.ext fun _ => mem_subdifferential_convexCl_iff (convexCl_eq_of_mem_subdifferential hf hy)
 
 /-- For a nonempty closed convex set `C`, the subgradients at `y` of the support function
 `δ*(· | C) = δ(· | C)*` are exactly the points of `C` at which `⟨·, y⟩` attains its maximum over
 `C`. -/
-theorem subdifferential_conj_indicatorFn [IsCompatiblePairing B] {C : Set E} (hC : IsClosed C)
+theorem subdifferential_convexConj_indicatorFn [IsCompatiblePairing B] {C : Set E} (hC : IsClosed C)
     (hCc : Convex ℝ C) (hCne : C.Nonempty) (y : F) :
-    subdifferential B.flip (conj B (indicatorFn C)) y = {x ∈ C | ∀ z ∈ C, B z y ≤ B x y} := by
+    subdifferential B.flip (convexConj B (indicatorFn C)) y = {x ∈ C | ∀ z ∈ C, B z y ≤ B x y} := by
   ext x
-  have hbi := congrFun (biconj_eq_self (B := B) (convexFn_indicatorFn.2 hCc)
-    (closedFn_indicatorFn hC)) x
-  rw [mem_subdifferential_conj_iff hbi, mem_subdifferential_indicatorFn_iff hCne, Set.mem_sep_iff]
+  have hbi := congrFun (convexBiconj_eq_self (B := B) (convexFn_indicatorFn.2 hCc)
+    (closedConvex_indicatorFn hC)) x
+  rw [mem_subdifferential_convexConj_iff hbi, mem_subdifferential_indicatorFn_iff hCne,
+      Set.mem_sep_iff]
   refine and_congr_right fun _ => ?_
   simp only [mem_normalCone]
   exact forall₂_congr fun z _ => by rw [map_sub, LinearMap.sub_apply, sub_nonpos]
@@ -622,15 +698,15 @@ maximized. -/
 theorem subdifferential_supportFn [IsCompatiblePairing B] {C : Set E} (hC : IsClosed C)
     (hCc : Convex ℝ C) (hCne : C.Nonempty) (y : F) :
     subdifferential B.flip (supportFn B C) y = {x ∈ C | ∀ z ∈ C, B z y ≤ B x y} := by
-  rw [supportFn_eq_conj_indicatorFn]
-  exact subdifferential_conj_indicatorFn hC hCc hCne y
+  rw [supportFn_eq_convexConj_indicatorFn]
+  exact subdifferential_convexConj_indicatorFn hC hCc hCne y
 
 /-- The closure of `f'(x; ·)` is the support function of `∂f x`, the conjugate of `f'(x; ·)`
 being the indicator of that set. -/
-theorem clFn_dirDeriv [IsCompatiblePairing B] (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
-    clFn (dirDeriv f x) = supportFn B.flip (subdifferential B f x) := by
-  rw [supportFn_eq_conj_indicatorFn, ← conj_dirDeriv ht hb]
-  exact (biconj_eq_clFn (convexFn_dirDeriv hf ht hb)).symm
+theorem convexCl_dirDeriv [IsCompatiblePairing B] (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
+    convexCl (dirDeriv f x) = supportFn B.flip (subdifferential B f x) := by
+  rw [supportFn_eq_convexConj_indicatorFn, ← convexConj_dirDeriv ht hb]
+  exact (convexBiconj_eq_convexCl (convexFn_dirDeriv hf ht hb)).symm
 
 end FenchelMoreau
 

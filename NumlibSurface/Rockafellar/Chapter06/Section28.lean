@@ -78,17 +78,17 @@ structure OrdinaryConvexProgram (n m : ℕ) where
   /-- `f₀` is convex. -/
   convexFn_f₀ : ConvexFn f₀
   /-- `f₀` is proper. -/
-  proper_f₀ : Proper f₀
+  properConvex_f₀ : ProperConvex f₀
   /-- Rockafellar's extension convention (a): `dom f₀ = C`. -/
-  dom_f₀ : dom f₀ = C
+  convexDom_f₀ : convexDom f₀ = C
   /-- The inequality constraints are convex. -/
   convexFn_f : ∀ i : Fin m, (i : ℕ) < r → ConvexFn (f i)
   /-- The inequality constraints are proper. -/
-  proper_f : ∀ i : Fin m, (i : ℕ) < r → Proper (f i)
+  properConvex_f : ∀ i : Fin m, (i : ℕ) < r → ProperConvex (f i)
   /-- Rockafellar's extension convention (b), first half: `dom fᵢ ⊇ C`. -/
-  subset_dom_f : ∀ i : Fin m, (i : ℕ) < r → C ⊆ dom (f i)
+  subset_convexDom_f : ∀ i : Fin m, (i : ℕ) < r → C ⊆ convexDom (f i)
   /-- Rockafellar's extension convention (b), second half: `ri (dom fᵢ) ⊇ ri C`. -/
-  relint_subset : ∀ i : Fin m, (i : ℕ) < r → ri C ⊆ ri (dom (f i))
+  relint_subset : ∀ i : Fin m, (i : ℕ) < r → ri C ⊆ ri (convexDom (f i))
   /-- Rockafellar's extension convention (c): the equality constraints are affine on all of `ℝⁿ`. -/
   exists_affine :
     ∀ i : Fin m, r ≤ (i : ℕ) → ∃ a : Rn n →ᵃ[ℝ] ℝ, ∀ x, f i x = ((a x : ℝ) : EReal)
@@ -99,18 +99,18 @@ variable (P : OrdinaryConvexProgram n m)
 
 /-- `C` is convex: it is the effective domain of a convex function. -/
 theorem convex_C : Convex ℝ P.C := by
-  rw [← P.dom_f₀]; exact P.convexFn_f₀.convex_dom
+  rw [← P.convexDom_f₀]; exact P.convexFn_f₀.convex_convexDom
 
 /-- `C` is non-empty: it is the effective domain of a proper function. -/
 theorem nonempty_C : P.C.Nonempty := by
-  rw [← P.dom_f₀]; exact P.proper_f₀.dom_nonempty
+  rw [← P.convexDom_f₀]; exact P.properConvex_f₀.convexDom_nonempty
 
 /-- A non-empty convex set in `ℝⁿ` has a non-empty relative interior (Theorem 6.2). -/
 theorem relint_C_nonempty : (ri P.C).Nonempty :=
   Convex.relint_nonempty P.convex_C P.nonempty_C
 
 @[simp] theorem mem_C_iff {x : Rn n} : x ∈ P.C ↔ P.f₀ x < ⊤ := by
-  rw [← P.dom_f₀]; exact mem_dom
+  rw [← P.convexDom_f₀]; exact mem_convexDom
 
 theorem f₀_eq_top_of_notMem {x : Rn n} (hx : x ∉ P.C) : P.f₀ x = ⊤ := by
   by_contra hc
@@ -120,7 +120,7 @@ theorem f₀_eq_top_of_notMem {x : Rn n} (hx : x ∉ P.C) : P.f₀ x = ⊤ := by
 `i > r` are real-valued. -/
 theorem f_ne_bot (i : Fin m) (x : Rn n) : P.f i x ≠ ⊥ := by
   rcases lt_or_ge (i : ℕ) P.r with hi | hi
-  · exact (P.proper_f i hi).ne_bot x
+  · exact (P.properConvex_f i hi).ne_bot x
   · obtain ⟨a, ha⟩ := P.exists_affine i hi
     rw [ha x]; exact EReal.coe_ne_bot _
 
@@ -128,8 +128,8 @@ theorem f_ne_bot (i : Fin m) (x : Rn n) : P.f i x ≠ ⊥ := by
 the Lagrangian an inequality between real numbers. -/
 theorem exists_coe_f {x : Rn n} (hx : x ∈ P.C) (i : Fin m) : ∃ c : ℝ, P.f i x = (c : EReal) := by
   rcases lt_or_ge (i : ℕ) P.r with hi | hi
-  · exact EReal.exists_coe_of_ne_bot_of_lt_top ((P.proper_f i hi).ne_bot x)
-      (mem_dom.1 (P.subset_dom_f i hi hx))
+  · exact EReal.exists_coe_of_ne_bot_of_lt_top ((P.properConvex_f i hi).ne_bot x)
+      (mem_convexDom.1 (P.subset_convexDom_f i hi hx))
   · obtain ⟨a, ha⟩ := P.exists_affine i hi
     exact ⟨a x, ha x⟩
 
@@ -178,28 +178,28 @@ noncomputable def objective : Rn n → EReal := fun x => P.f₀ x + indicatorFn 
 
 @[simp] theorem objective_of_notMem {x : Rn n} (hx : x ∉ P.feasibleSet) : P.objective x = ⊤ := by
   rw [objective, indicatorFn_of_notMem hx,
-    EReal.add_top_of_ne_bot (P.proper_f₀.ne_bot x)]
+    EReal.add_top_of_ne_bot (P.properConvex_f₀.ne_bot x)]
 
 /-- The objective function is `f₀` restricted to `C₁ ∩ ⋯ ∩ C_m`: the constraint `x ∈ C` is
 automatic, because `f₀` is already `+∞` off `C`. This is the form in which convexity and closedness
 of the objective are read off. -/
-theorem objective_eq_restrictFn :
-    P.objective = ConvexAnalysis.restrictFn P.constraintSet P.f₀ := by
+theorem objective_eq_convexRestrict :
+    P.objective = ConvexAnalysis.convexRestrict P.constraintSet P.f₀ := by
   funext x
   by_cases hx : x ∈ P.constraintSet
   · by_cases hC : x ∈ P.C
-    · rw [P.objective_of_mem ⟨hC, hx⟩, restrictFn_of_mem hx]
-    · rw [P.objective_of_notMem (fun h => hC h.1), restrictFn_of_mem hx,
+    · rw [P.objective_of_mem ⟨hC, hx⟩, convexRestrict_of_mem hx]
+    · rw [P.objective_of_notMem (fun h => hC h.1), convexRestrict_of_mem hx,
         P.f₀_eq_top_of_notMem hC]
-  · rw [P.objective_of_notMem (fun h => hx h.2), restrictFn_of_notMem hx]
+  · rw [P.objective_of_notMem (fun h => hx h.2), convexRestrict_of_notMem hx]
 
 theorem convexFn_objective : ConvexFn P.objective := by
-  rw [P.objective_eq_restrictFn]
-  exact P.convexFn_f₀.restrictFn P.convex_constraintSet
+  rw [P.objective_eq_convexRestrict]
+  exact P.convexFn_f₀.convexRestrict P.convex_constraintSet
 
 /-- **§28**: the objective function is closed when `f₀, f₁, …, f_r` are. -/
-theorem closedFn_objective (hcl₀ : ClosedFn P.f₀)
-    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedFn (P.f i)) : ClosedFn P.objective := by
+theorem closedConvex_objective (hcl₀ : ClosedConvex P.f₀)
+    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedConvex (P.f i)) : ClosedConvex P.objective := by
   have hclosed : IsClosed P.constraintSet := by
     have h₁ : P.constraintSet = (⋂ i : Fin m, ⋂ _ : (i : ℕ) < P.r, {x | P.f i x ≤ 0})
         ∩ ⋂ i : Fin m, ⋂ _ : P.r ≤ (i : ℕ), {x | P.f i x = 0} := by
@@ -208,7 +208,7 @@ theorem closedFn_objective (hcl₀ : ClosedFn P.f₀)
     refine IsClosed.inter (isClosed_iInter fun i => isClosed_iInter fun hi => ?_)
       (isClosed_iInter fun i => isClosed_iInter fun hi => ?_)
     · exact lowerSemicontinuous_iff_isClosed_le.1
-        ((closedFn_iff_lowerSemicontinuous (P.proper_f i hi).ne_bot).1 (hcl i hi)) 0
+        ((closedConvex_iff_lowerSemicontinuous (P.properConvex_f i hi).ne_bot).1 (hcl i hi)) 0
     · obtain ⟨g, hg⟩ := P.exists_affine i hi
       have hset : {x : Rn n | P.f i x = 0} = g ⁻¹' {0} := by
         ext x
@@ -216,12 +216,12 @@ theorem closedFn_objective (hcl₀ : ClosedFn P.f₀)
         exact ⟨fun h => by exact_mod_cast h, fun h => by rw [h]; rfl⟩
       rw [hset]
       exact IsClosed.preimage g.continuous_of_finiteDimensional isClosed_singleton
-  rw [P.objective_eq_restrictFn]
-  exact ClosedFn.restrictFn hcl₀ P.proper_f₀.ne_bot hclosed
+  rw [P.objective_eq_convexRestrict]
+  exact ClosedConvex.convexRestrict hcl₀ P.properConvex_f₀.ne_bot hclosed
 
 theorem objective_ne_bot (x : Rn n) : P.objective x ≠ ⊥ := by
   by_cases hx : x ∈ P.feasibleSet
-  · rw [P.objective_of_mem hx]; exact P.proper_f₀.ne_bot x
+  · rw [P.objective_of_mem hx]; exact P.properConvex_f₀.ne_bot x
   · rw [P.objective_of_notMem hx]; exact top_ne_bot
 
 /-- **§28**: the **optimal value** in `(P)` is the infimum of the objective function. -/
@@ -319,13 +319,13 @@ theorem convexFn_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).convex
 
-theorem proper_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i)
-    (i : Option (Fin m)) : Proper (P.lagrangeSummand u i) := by
+theorem properConvex_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i)
+    (i : Option (Fin m)) : ProperConvex (P.lagrangeSummand u i) := by
   cases i with
-  | none => exact P.proper_f₀
+  | none => exact P.properConvex_f₀
   | some j =>
     rcases lt_or_ge (j : ℕ) P.r with hj | hj
-    · exact proper_coe_mul (hu j hj) (P.proper_f j hj)
+    · exact properConvex_coe_mul (hu j hj) (P.properConvex_f j hj)
     · obtain ⟨g, hg⟩ := P.exists_affine j hj
       have hrw : P.lagrangeSummand u (some j) = fun x => (((u j • g) x : ℝ) : EReal) := by
         funext x
@@ -335,15 +335,15 @@ theorem proper_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r �
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).proper
 
-theorem closedFn_lagrangeSummand (hcl₀ : ClosedFn P.f₀)
-    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedFn (P.f i)) {u : Rn m}
+theorem closedConvex_lagrangeSummand (hcl₀ : ClosedConvex P.f₀)
+    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedConvex (P.f i)) {u : Rn m}
     (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) (i : Option (Fin m)) :
-    ClosedFn (P.lagrangeSummand u i) := by
+    ClosedConvex (P.lagrangeSummand u i) := by
   cases i with
   | none => exact hcl₀
   | some j =>
     rcases lt_or_ge (j : ℕ) P.r with hj | hj
-    · exact closedFn_coe_mul (hu j hj) (hcl j hj) (P.proper_f j hj).ne_bot
+    · exact closedConvex_coe_mul (hu j hj) (hcl j hj) (P.properConvex_f j hj).ne_bot
     · obtain ⟨g, hg⟩ := P.exists_affine j hj
       have hrw : P.lagrangeSummand u (some j) = fun x => (((u j • g) x : ℝ) : EReal) := by
         funext x
@@ -353,13 +353,13 @@ theorem closedFn_lagrangeSummand (hcl₀ : ClosedFn P.f₀)
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).closed
 
-theorem mem_dom_lagrangeSummand (u : Rn m) {x : Rn n} (hx : x ∈ P.C) (i : Option (Fin m)) :
-    x ∈ dom (P.lagrangeSummand u i) := by
+theorem mem_convexDom_lagrangeSummand (u : Rn m) {x : Rn n} (hx : x ∈ P.C) (i : Option (Fin m)) :
+    x ∈ convexDom (P.lagrangeSummand u i) := by
   cases i with
-  | none => rw [lagrangeSummand_none, P.dom_f₀]; exact hx
+  | none => rw [lagrangeSummand_none, P.convexDom_f₀]; exact hx
   | some j =>
     obtain ⟨c, hc⟩ := P.exists_coe_f hx j
-    rw [mem_dom]
+    rw [mem_convexDom]
     simp only [lagrangeSummand_some]
     rw [hc, ← EReal.coe_mul]
     exact EReal.coe_lt_top _
@@ -369,27 +369,27 @@ theorem convexFn_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 
   obtain ⟨x₀, hx₀⟩ := P.nonempty_C
   rw [P.lagrangeFn_eq_finsetSum u]
   exact (properConvexFn_finsetSum (fun i _ => P.convexFn_lagrangeSummand hu i)
-    (fun i _ => P.proper_lagrangeSummand hu i)
-    (fun i _ => P.mem_dom_lagrangeSummand u hx₀ i)).1
+    (fun i _ => P.properConvex_lagrangeSummand hu i)
+    (fun i _ => P.mem_convexDom_lagrangeSummand u hx₀ i)).1
 
-theorem proper_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) :
-    Proper (P.lagrangeFn u) := by
+theorem properConvex_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) :
+    ProperConvex (P.lagrangeFn u) := by
   obtain ⟨x₀, hx₀⟩ := P.nonempty_C
   rw [P.lagrangeFn_eq_finsetSum u]
   exact (properConvexFn_finsetSum (fun i _ => P.convexFn_lagrangeSummand hu i)
-    (fun i _ => P.proper_lagrangeSummand hu i)
-    (fun i _ => P.mem_dom_lagrangeSummand u hx₀ i)).2.1
+    (fun i _ => P.properConvex_lagrangeSummand hu i)
+    (fun i _ => P.mem_convexDom_lagrangeSummand u hx₀ i)).2.1
 
 /-- **Corollary 28.1.1**, first step: `h` is closed when `f₀, f₁, …, f_r` are. -/
-theorem closedProperConvexFn_lagrangeFn (hcl₀ : ClosedFn P.f₀)
-    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedFn (P.f i)) {u : Rn m}
+theorem closedProperConvexFn_lagrangeFn (hcl₀ : ClosedConvex P.f₀)
+    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedConvex (P.f i)) {u : Rn m}
     (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) : ClosedProperConvexFn (P.lagrangeFn u) := by
   obtain ⟨x₀, hx₀⟩ := P.nonempty_C
   rw [P.lagrangeFn_eq_finsetSum u]
   exact closedProperConvexFn_finsetSum
-    (fun i _ => ⟨P.convexFn_lagrangeSummand hu i, P.closedFn_lagrangeSummand hcl₀ hcl hu i,
-      P.proper_lagrangeSummand hu i⟩)
-    (fun i _ => P.mem_dom_lagrangeSummand u hx₀ i)
+    (fun i _ => ⟨P.convexFn_lagrangeSummand hu i, P.closedConvex_lagrangeSummand hcl₀ hcl hu i,
+      P.properConvex_lagrangeSummand hu i⟩)
+    (fun i _ => P.mem_convexDom_lagrangeSummand u hx₀ i)
 
 /-! ### Elementary properties of `h` -/
 
@@ -404,7 +404,7 @@ theorem sum_coe_mul_f_ne_bot {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r →
 
 theorem lagrangeFn_ne_bot {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) (x : Rn n) :
     P.lagrangeFn u x ≠ ⊥ :=
-  EReal.add_ne_bot_iff.2 ⟨P.proper_f₀.ne_bot x, P.sum_coe_mul_f_ne_bot hu x⟩
+  EReal.add_ne_bot_iff.2 ⟨P.properConvex_f₀.ne_bot x, P.sum_coe_mul_f_ne_bot hu x⟩
 
 theorem lagrangeFn_eq_top_of_notMem_C {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i)
     {x : Rn n} (hx : x ∉ P.C) : P.lagrangeFn u x = ⊤ := by
@@ -507,7 +507,7 @@ theorem theorem_28_1 {u : Rn m} (hu : P.IsKuhnTuckerVector u) :
       rw [hf₀, ← hu.iInf_eq]
       exact iInf_le _ x
     -- read the identity `h x = f₀ x` as an identity between real numbers
-    obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.proper_f₀.ne_bot x)
+    obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.properConvex_f₀.ne_bot x)
       (P.mem_C_iff.1 hfeas.1)
     choose c hc using P.exists_coe_f hfeas.1
     have hzero : ∑ i, u i * c i = 0 := by
@@ -540,8 +540,8 @@ theorem theorem_28_1 {u : Rn m} (hu : P.IsKuhnTuckerVector u) :
 point `w`, then `w` is the unique optimal solution to `(P)`. Uniqueness is Theorem 28.1; the content
 is *existence*, which follows because `epi f ⊆ epi h` gives the objective no direction of recession
 either, so Theorem 27.2 applies. -/
-theorem corollary_28_1_1 (hcl₀ : ClosedFn P.f₀)
-    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedFn (P.f i)) {u : Rn m}
+theorem corollary_28_1_1 (hcl₀ : ClosedConvex P.f₀)
+    (hcl : ∀ i : Fin m, (i : ℕ) < P.r → ClosedConvex (P.f i)) {u : Rn m}
     (hu : P.IsKuhnTuckerVector u) {w : Rn n} (hmin : argmin (P.lagrangeFn u) = {w}) :
     P.optimalSolutions = {w} := by
   have hh : ClosedProperConvexFn (P.lagrangeFn u) :=
@@ -562,8 +562,8 @@ theorem corollary_28_1_1 (hcl₀ : ClosedFn P.f₀)
     rw [← hwval, hμ, EReal.coe_lt_coe_iff]; linarith
   obtain ⟨z₀, hz₀⟩ : ∃ z, P.objective z < ((μ + 1 : ℝ) : EReal) := iInf_lt_iff.1 hlt
   have hfobj : ClosedProperConvexFn P.objective :=
-    ⟨P.convexFn_objective, P.closedFn_objective hcl₀ hcl,
-      ⟨⟨z₀, mem_dom.2 (hz₀.trans (EReal.coe_lt_top _))⟩, P.objective_ne_bot⟩⟩
+    ⟨P.convexFn_objective, P.closedConvex_objective hcl₀ hcl,
+      ⟨⟨z₀, mem_convexDom.2 (hz₀.trans (EReal.coe_lt_top _))⟩, P.objective_ne_bot⟩⟩
   have hneβ : {z : Rn n | P.objective z ≤ ((μ + 1 : ℝ) : EReal)}.Nonempty := ⟨z₀, hz₀.le⟩
   have hneβh : {z : Rn n | P.lagrangeFn u z ≤ ((μ + 1 : ℝ) : EReal)}.Nonempty :=
     ⟨z₀, (P.lagrangeFn_le_objective hu.nonneg z₀).trans hz₀.le⟩
@@ -594,19 +594,19 @@ convex program in the sense of §29: `F u x` is `f₀ x` when `x` satisfies the 
 perturbed program `(P_u)` — `fᵢ x ≤ vᵢ` for `i ≤ r` and `fᵢ x = vᵢ` for `i > r` — and `+∞`
 otherwise. The constraint `x ∈ C` is not imposed: `f₀` is already `+∞` off `C`. -/
 noncomputable def ineqBifun : Bifun (Rn m) (Rn n) := fun u =>
-  ConvexAnalysis.restrictFn
+  ConvexAnalysis.convexRestrict
     {y | (∀ i : Fin m, (i : ℕ) < P.r → P.f i y ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i y = (u i : EReal)} P.f₀
 
 theorem ineqBifun_of_mem {u : Rn m} {x : Rn n}
     (h : (∀ i : Fin m, (i : ℕ) < P.r → P.f i x ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = (u i : EReal)) :
-    P.ineqBifun u x = P.f₀ x := restrictFn_of_mem h
+    P.ineqBifun u x = P.f₀ x := convexRestrict_of_mem h
 
 theorem ineqBifun_of_notMem {u : Rn m} {x : Rn n}
     (h : ¬((∀ i : Fin m, (i : ℕ) < P.r → P.f i x ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = (u i : EReal))) :
-    P.ineqBifun u x = ⊤ := restrictFn_of_notMem h
+    P.ineqBifun u x = ⊤ := convexRestrict_of_notMem h
 
 theorem ineqBifun_eq_top_of_notMem_C {x : Rn n} (hx : x ∉ P.C) (u : Rn m) :
     P.ineqBifun u x = ⊤ := by
@@ -618,13 +618,13 @@ theorem ineqBifun_eq_top_of_notMem_C {x : Rn n} (hx : x ∉ P.C) (u : Rn m) :
 /-- At the unperturbed parameter the bifunction is the objective function of `(P)`. -/
 @[simp] theorem ineqBifun_zero : P.ineqBifun 0 = P.objective := by
   have hz : ∀ i : Fin m, ((0 : Rn m) i : EReal) = 0 := fun i => by norm_num
-  rw [P.objective_eq_restrictFn]
+  rw [P.objective_eq_convexRestrict]
   funext x
   by_cases hx : x ∈ P.constraintSet
   · rw [P.ineqBifun_of_mem ⟨fun i hi => by rw [hz i]; exact hx.1 i hi,
-      fun i hi => by rw [hz i]; exact hx.2 i hi⟩, restrictFn_of_mem hx]
+      fun i hi => by rw [hz i]; exact hx.2 i hi⟩, convexRestrict_of_mem hx]
   · refine (P.ineqBifun_of_notMem fun hc => hx ⟨fun i hi => ?_, fun i hi => ?_⟩).trans
-      (restrictFn_of_notMem hx).symm
+      (convexRestrict_of_notMem hx).symm
     · have := hc.1 i hi; rwa [hz i] at this
     · have := hc.2 i hi; rwa [hz i] at this
 
@@ -649,7 +649,7 @@ namespace OrdinaryConvexProgram
 theorem optimalValue_eq_biInf_constraintSet :
     P.optimalValue = ⨅ x ∈ P.constraintSet, P.f₀ x := by
   have h : P.optimalValue = ⨅ x, P.objective x := rfl
-  rw [h, P.objective_eq_restrictFn]
+  rw [h, P.objective_eq_convexRestrict]
   rfl
 
 end OrdinaryConvexProgram
@@ -744,11 +744,11 @@ theorem theorem_28_2 {I : Finset (Fin m)}
   obtain ⟨x₀, hx₀ri, hx₀I, hx₀C⟩ := hslater
   have hx₀feas : x₀ ∈ ConvexAnalysis.feasibleSet g b := by rw [hfeas]; exact hx₀C
   obtain ⟨l, μ, hkt⟩ := exists_isKuhnTuckerVector_of_slater (f₀ := P.f₀) (f := g) (b := b)
-    P.convexFn_f₀ P.proper_f₀ (fun i => P.convexFn_f (i : Fin m) (hIlt i i.2))
-    (fun i => P.proper_f (i : Fin m) (hIlt i i.2))
-    (fun i => by rw [P.dom_f₀]; exact P.subset_dom_f (i : Fin m) (hIlt i i.2))
+    P.convexFn_f₀ P.properConvex_f₀ (fun i => P.convexFn_f (i : Fin m) (hIlt i i.2))
+    (fun i => P.properConvex_f (i : Fin m) (hIlt i i.2))
+    (fun i => by rw [P.convexDom_f₀]; exact P.subset_convexDom_f (i : Fin m) (hIlt i i.2))
     (by rw [hoval]; exact hbot)
-    ⟨x₀, by rw [P.dom_f₀]; exact hx₀ri, fun i => hx₀I (i : Fin m) i.2, hx₀feas.2⟩
+    ⟨x₀, by rw [P.convexDom_f₀]; exact hx₀ri, fun i => hx₀I (i : Fin m) i.2, hx₀feas.2⟩
   -- assemble the Kuhn–Tucker vector of `(P)`
   set uv : Fin m → ℝ := fun i =>
     if h : i ∈ I then l ⟨i, h⟩
@@ -770,7 +770,7 @@ theorem theorem_28_2 {I : Finset (Fin m)}
       = ConvexAnalysis.programLagrangian P.f₀ g b l μ := by
     funext x
     by_cases hxC : x ∈ P.C
-    · obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.proper_f₀.ne_bot x)
+    · obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.properConvex_f₀.ne_bot x)
         (P.mem_C_iff.1 hxC)
       choose c hc using P.exists_coe_f hxC
       have hac : ∀ i : Fin m, i ∉ I → a i x = c i := by
@@ -840,12 +840,13 @@ theorem corollary_28_2_1 (hrm : P.r = m) (hbot : P.optimalValue ≠ ⊥)
         = ⨅ x ∈ ConvexAnalysis.feasibleSet P.f b, P.f₀ x := rfl
     rw [h, hfeas, P.optimalValue_eq_biInf_constraintSet]
   obtain ⟨x₀, hx₀C, hx₀⟩ := hslater
-  obtain ⟨l, μ, hkt⟩ := exists_isKuhnTuckerVector_of_mem_dom (f₀ := P.f₀) (f := P.f) (b := b)
-    P.convexFn_f₀ P.proper_f₀ (fun i => P.convexFn_f i (hlt i)) (fun i => P.proper_f i (hlt i))
-    (fun i => by rw [P.dom_f₀]; exact P.subset_dom_f i (hlt i))
-    (fun i => by rw [P.dom_f₀]; exact P.relint_subset i (hlt i))
+  obtain ⟨l, μ, hkt⟩ := exists_isKuhnTuckerVector_of_mem_convexDom (f₀ := P.f₀) (f := P.f) (b := b)
+    P.convexFn_f₀ P.properConvex_f₀ (fun i => P.convexFn_f i (hlt i))
+        (fun i => P.properConvex_f i (hlt i))
+    (fun i => by rw [P.convexDom_f₀]; exact P.subset_convexDom_f i (hlt i))
+    (fun i => by rw [P.convexDom_f₀]; exact P.relint_subset i (hlt i))
     (by rw [hoval]; exact hbot)
-    ⟨x₀, by rw [P.dom_f₀]; exact hx₀C, hx₀, fun j => j.elim⟩
+    ⟨x₀, by rw [P.convexDom_f₀]; exact hx₀C, hx₀, fun j => j.elim⟩
   have hlag : P.lagrangeFn (WithLp.toLp 2 l)
       = ConvexAnalysis.programLagrangian P.f₀ P.f b l μ := by
     funext x
@@ -904,7 +905,7 @@ theorem unitVec_mem_multiplierCone (i : Fin m) : unitVec m i ∈ P.multiplierCon
 
 /-- `f₀` is finite on `C`. -/
 theorem exists_coe_f₀ {x : Rn n} (hx : x ∈ P.C) : ∃ c : ℝ, P.f₀ x = (c : EReal) :=
-  EReal.exists_coe_of_ne_bot_of_lt_top (P.proper_f₀.ne_bot x) (P.mem_C_iff.1 hx)
+  EReal.exists_coe_of_ne_bot_of_lt_top (P.properConvex_f₀.ne_bot x) (P.mem_C_iff.1 hx)
 
 /-- `h = f₀ + λ₁f₁ + ⋯ + λ_m f_m` is finite at every point of `C`, whatever the multipliers. -/
 theorem exists_coe_lagrangeFn (u : Rn m) {x : Rn n} (hx : x ∈ P.C) :
@@ -1352,7 +1353,7 @@ theorem theorem_28_3 {u : Rn m} {x : Rn n} :
       le_antisymm hle (by rw [heq]; exact hge)
     have hkt : P.IsKuhnTuckerVector u :=
       { nonneg := hu
-        ne_bot := by rw [heq]; exact P.proper_f₀.ne_bot x
+        ne_bot := by rw [heq]; exact P.properConvex_f₀.ne_bot x
         ne_top := P.iInf_lagrangeFn_ne_top u
         iInf_eq := h1 }
     refine ⟨hkt, P.mem_optimalSolutions_iff.2 ?_⟩
@@ -1368,7 +1369,7 @@ Fréchet–Riesz. -/
 theorem isLagrangeSummand {u : Rn m} (hu : u ∈ P.multiplierCone) {x₀ : Rn n}
     (hx₀ : x₀ ∈ ri P.C) (i : Fin m) : IsLagrangeSummand (pairing n) x₀ (u i) (P.f i) := by
   rcases lt_or_ge (i : ℕ) P.r with hi | hi
-  · exact Or.inl ⟨hu i hi, P.convexFn_f i hi, P.proper_f i hi, P.relint_subset i hi hx₀⟩
+  · exact Or.inl ⟨hu i hi, P.convexFn_f i hi, P.properConvex_f i hi, P.relint_subset i hi hx₀⟩
   · obtain ⟨a, ha⟩ := P.exists_affine i hi
     obtain ⟨b, hb⟩ := exists_linFn (LinearMap.toContinuousLinearMap a.linear)
     exact Or.inr ⟨a, b, ha, fun w => by rw [← linFn_apply b w, hb]; rfl⟩
@@ -1389,7 +1390,7 @@ theorem subdifferential_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x :
   have hfn : P.lagrangeFn u = fun y => P.f₀ y + ∑ i, (u i : EReal) * P.f i y :=
     funext fun y => P.lagrangeFn_apply u y
   rw [hactive, hfn]
-  exact subdifferential_add_sum_coe_mul hsep P.convexFn_f₀ P.proper_f₀ (P.dom_f₀ ▸ hx₀)
+  exact subdifferential_add_sum_coe_mul hsep P.convexFn_f₀ P.properConvex_f₀ (P.convexDom_f₀ ▸ hx₀)
     (fun i _ => P.isLagrangeSummand hu hx₀ i) x
 
 /-- **Theorem 28.3**, second half: the saddle-point condition holds if
@@ -1442,8 +1443,8 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
     -- `x̄ ∈ C`, because `∂f₀(x̄)` is non-empty
     obtain ⟨v₀, hv₀, -, -, -⟩ := Set.mem_add.1 hcond
     have hxC : x ∈ P.C := by
-      rw [← P.dom_f₀]
-      exact mem_dom_of_mem_subdifferential P.proper_f₀ hv₀
+      rw [← P.convexDom_f₀]
+      exact mem_convexDom_of_mem_subdifferential P.properConvex_f₀ hv₀
     have hu : u ∈ P.multiplierCone := fun i hi => (ha i hi).1
     have hF : x ∈ P.feasibleSet := ⟨hxC, fun i hi => (ha i hi).2.1, hb⟩
     have hhx : P.lagrangeFn u x = P.f₀ x := by
@@ -1576,9 +1577,9 @@ theorem concaveFn_dualFn : ConcaveFn P.dualFn := by
   exact concaveFn_concaveConj (pairing m) _
 
 /-- **§28**: `g(u*) = -p*(-u*)`, where `p` is the perturbation function of `(P)`. -/
-theorem dualFn_eq_neg_conj_perturbFn (u : Rn m) :
-    P.dualFn u = -(conj (pairing m) P.perturbFn (-u)) := by
-  rw [P.dualFn_eq_concaveConj, concaveConj_eq_neg_conj_neg]
+theorem dualFn_eq_neg_convexConj_perturbFn (u : Rn m) :
+    P.dualFn u = -(convexConj (pairing m) P.perturbFn (-u)) := by
+  rw [P.dualFn_eq_concaveConj, concaveConj_eq_neg_convexConj_neg]
   simp only [neg_neg]
 
 /-- **Corollary 28.4.1**. For a program with at least one Kuhn–Tucker vector, the Kuhn–Tucker
@@ -1641,13 +1642,13 @@ variable {s : ℕ} {nk : Fin s → ℕ}
 Off `C` it is `+∞` because `f₀` is and the multipliers of the inequality constraints are
 non-negative; on `C` it is a real number, because Rockafellar's convention (b) makes every `fᵢ`
 finite there. This is the sense in which "minimise `h` over `C`" is an unconstrained problem. -/
-theorem dom_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) :
-    dom (P.lagrangeFn u) = P.C := by
+theorem convexDom_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) :
+    convexDom (P.lagrangeFn u) = P.C := by
   ext x
-  refine ⟨fun hx => ?_, fun hx => mem_dom.2 ?_⟩
+  refine ⟨fun hx => ?_, fun hx => mem_convexDom.2 ?_⟩
   · by_contra hc
-    exact absurd (P.lagrangeFn_eq_top_of_notMem_C hu hc) (mem_dom.1 hx).ne
-  · obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.proper_f₀.ne_bot x)
+    exact absurd (P.lagrangeFn_eq_top_of_notMem_C hu hc) (mem_convexDom.1 hx).ne
+  · obtain ⟨c₀, hc₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (P.properConvex_f₀.ne_bot x)
       (P.mem_C_iff.1 hx)
     choose c hc using fun i => P.exists_coe_f hx i
     rw [P.lagrangeFn_eq_coe hc₀ hc]
@@ -1656,16 +1657,16 @@ theorem dom_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤
 /-- **§28**: in the coordinates `x = (x₁, …, x_s)` the set `C` is the
 product of the sets `C^k = dom h_k`.
 
-This is `dom_sepSum` read through `e`, on the strength of `dom_lagrangeFn`. Properness of the
-`h_k` is not needed — only that none of them takes the value `−∞`, which is automatic for the
+This is `convexDom_sepSum` read through `e`, on the strength of `convexDom_lagrangeFn`. Properness
+of the `h_k` is not needed — only that none of them takes the value `−∞`, which is automatic for the
 `h_k` the principle produces. -/
 theorem decomposition_C (e : (∀ k, Rn (nk k)) ≃ₗ[ℝ] Rn n) {u : Rn m}
     (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) {h : ∀ k, Rn (nk k) → EReal}
     (hb : ∀ k (z : Rn (nk k)), h k z ≠ ⊥)
     (hsep : ∀ x, P.lagrangeFn u (e x) = ∑ k, h k (x k)) :
-    ⇑e ⁻¹' P.C = univ.pi fun k => dom (h k) := by
-  rw [← P.dom_lagrangeFn hu, ← dom_sepSum hb]
-  exact congrArg dom (funext hsep)
+    ⇑e ⁻¹' P.C = univ.pi fun k => convexDom (h k) := by
+  rw [← P.convexDom_lagrangeFn hu, ← convexDom_sepSum hb]
+  exact congrArg convexDom (funext hsep)
 
 /-- **§28**, the decomposition principle itself: minimising `h` over `C`
 is the `s` independent problems "minimise `h_k` over `C^k`".
@@ -1675,7 +1676,7 @@ points of `argmin h` that satisfy complementary slackness, and `argmin h` is now
 factor is a problem in `ℝ^{n_k}`, while by Corollary 28.4.1 finding `u` is a problem in `ℝᵐ` —
 which is the reduction in dimensionality the passage is about. -/
 theorem decomposition_argmin_lagrangeFn (e : (∀ k, Rn (nk k)) ≃ₗ[ℝ] Rn n) {u : Rn m}
-    {h : ∀ k, Rn (nk k) → EReal} (hp : ∀ k, Proper (h k))
+    {h : ∀ k, Rn (nk k) → EReal} (hp : ∀ k, ProperConvex (h k))
     (hsep : ∀ x, P.lagrangeFn u (e x) = ∑ k, h k (x k)) :
     ⇑e ⁻¹' argmin (P.lagrangeFn u) = univ.pi fun k => argmin (h k) := by
   rw [← argmin_comp_of_surjective (g := P.lagrangeFn u) e.surjective, ← argmin_sepSum hp]
@@ -1718,11 +1719,11 @@ noncomputable def ex1Constraint₁ : Rn 2 → EReal := fun x => ((x 1 : ℝ) : E
 /-- The constraint `f₂(ξ₁, ξ₂) = ξ₁² - ξ₂` of the counterexample. -/
 noncomputable def ex1Constraint₂ : Rn 2 → EReal := fun x => ((x 0 ^ 2 - x 1 : ℝ) : EReal)
 
-private theorem ex1_dom_f (i : Fin 2) :
-    dom (![ex1Constraint₁, ex1Constraint₂] i) = Set.univ := by
+private theorem ex1_convexDom_f (i : Fin 2) :
+    convexDom (![ex1Constraint₁, ex1Constraint₂] i) = Set.univ := by
   rcases fin_two_cases i with rfl | rfl
-  · exact dom_coe (fun x : Rn 2 => x 1)
-  · exact dom_coe (fun x : Rn 2 => x 0 ^ 2 - x 1)
+  · exact convexDom_coe (fun x : Rn 2 => x 1)
+  · exact convexDom_coe (fun x : Rn 2 => x 0 ^ 2 - x 1)
 
 /-- **§28**, first counterexample: the program with `C = ℝ²`, `f₀(ξ₁, ξ₂) = ξ₁`, `f₁(ξ₁, ξ₂) = ξ₂`,
 `f₂(ξ₁, ξ₂) = ξ₁² - ξ₂` and `r = 2`. Its only feasible solution, hence its unique optimal solution,
@@ -1737,21 +1738,21 @@ noncomputable def ex1 : OrdinaryConvexProgram 2 2 where
   convexFn_f₀ :=
     (closedProperConvexFn_coe_affineMap
       (coordAffine 2 0).continuous_of_finiteDimensional).convex
-  proper_f₀ := proper_coe _
-  dom_f₀ := dom_coe _
+  properConvex_f₀ := properConvex_coe _
+  convexDom_f₀ := convexDom_coe _
   convexFn_f := by
     intro i _
     rcases fin_two_cases i with rfl | rfl
     · exact (closedProperConvexFn_coe_affineMap
         (coordAffine 2 1).continuous_of_finiteDimensional).convex
     · exact convexOn_sqSub.convexFn_coe
-  proper_f := by
+  properConvex_f := by
     intro i _
     rcases fin_two_cases i with rfl | rfl
-    · exact proper_coe (fun x : Rn 2 => x 1)
-    · exact proper_coe (fun x : Rn 2 => x 0 ^ 2 - x 1)
-  subset_dom_f := fun i _ => (ex1_dom_f i).ge
-  relint_subset := fun i _ => by rw [ex1_dom_f i]
+    · exact properConvex_coe (fun x : Rn 2 => x 1)
+    · exact properConvex_coe (fun x : Rn 2 => x 0 ^ 2 - x 1)
+  subset_convexDom_f := fun i _ => (ex1_convexDom_f i).ge
+  relint_subset := fun i _ => by rw [ex1_convexDom_f i]
   exists_affine := by intro i hi; exact absurd i.isLt (by omega)
 
 @[simp] theorem ex1_C : ex1.C = Set.univ := rfl
@@ -1880,17 +1881,17 @@ optimal solution, `0` is the optimal value, and there is **no Kuhn–Tucker vect
 28.2 and Corollary 28.2.2 cannot be dropped. -/
 noncomputable def ex2 : OrdinaryConvexProgram 2 1 where
   C := ex2Set
-  f₀ := ConvexAnalysis.restrictFn ex2Set fun x => ((x 0 : ℝ) : EReal)
+  f₀ := ConvexAnalysis.convexRestrict ex2Set fun x => ((x 0 : ℝ) : EReal)
   f := fun _ x => ((x 1 : ℝ) : EReal)
   r := 0
   r_le := Nat.zero_le 1
   convexFn_f₀ := (convexOn_iff_convexFn ex2Set _).1
     ⟨convex_ex2Set, fun _ _ _ _ _ _ _ _ _ => le_of_eq rfl⟩
-  proper_f₀ := proper_restrictFn_coe ⟨0, by rw [mem_ex2Set]; norm_num⟩ _
-  dom_f₀ := dom_restrictFn_coe _ _
+  properConvex_f₀ := properConvex_convexRestrict_coe ⟨0, by rw [mem_ex2Set]; norm_num⟩ _
+  convexDom_f₀ := convexDom_convexRestrict_coe _ _
   convexFn_f := fun _ hi => absurd hi (by omega)
-  proper_f := fun _ hi => absurd hi (by omega)
-  subset_dom_f := fun _ hi => absurd hi (by omega)
+  properConvex_f := fun _ hi => absurd hi (by omega)
+  subset_convexDom_f := fun _ hi => absurd hi (by omega)
   relint_subset := fun _ hi => absurd hi (by omega)
   exists_affine := fun _ _ => ⟨coordAffine 2 1, fun _ => rfl⟩
 
@@ -1901,7 +1902,7 @@ noncomputable def ex2 : OrdinaryConvexProgram 2 1 where
 @[simp] theorem ex2_f (i : Fin 1) (x : Rn 2) : ex2.f i x = ((x 1 : ℝ) : EReal) := rfl
 
 theorem ex2_f₀_of_mem {x : Rn 2} (hx : x ∈ ex2Set) : ex2.f₀ x = ((x 0 : ℝ) : EReal) :=
-  restrictFn_of_mem (f := fun y : Rn 2 => ((y 0 : ℝ) : EReal)) hx
+  convexRestrict_of_mem (f := fun y : Rn 2 => ((y 0 : ℝ) : EReal)) hx
 
 /-- The only point of `C` with `ξ₂ = 0` is the origin. -/
 theorem ex2_feasibleSet : ex2.feasibleSet = {0} := by

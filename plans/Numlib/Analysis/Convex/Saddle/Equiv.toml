@@ -13,6 +13,9 @@ id = 'saddleClass'
 id = 'partialCl₂_eq_of_mem_saddleClass'
 
 [[node]]
+id = 'partialCl₁_eq_of_mem_saddleClass'
+
+[[node]]
 id = 'closedSaddleFn_of_mem_saddleClass'
 
 [[node]]

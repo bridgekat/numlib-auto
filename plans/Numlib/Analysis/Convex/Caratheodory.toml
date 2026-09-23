@@ -10,7 +10,7 @@ id = '_root_.IsCompact.convexHull'
 id = '_root_.Bornology.IsBounded.closure_convexHull'
 
 [[node]]
-id = 'closedProperConvexFn_convHullFn_restrictFn'
+id = 'closedProperConvexFn_convHullFn_convexRestrict'
 
 [[node]]
 id = 'exists_linearIndepOn_of_mem_coneHull'

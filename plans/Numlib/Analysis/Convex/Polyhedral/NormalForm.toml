@@ -10,7 +10,7 @@ id = 'polyhedralFn_maxAffineFn'
 id = 'polyhedralFn_maxAffineFn_add_indicatorFn'
 
 [[node]]
-id = 'PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom'
+id = 'PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom'
 
 [[node]]
 id = 'polyhedralFn_iff_maxAffineFn_add_indicatorFn'

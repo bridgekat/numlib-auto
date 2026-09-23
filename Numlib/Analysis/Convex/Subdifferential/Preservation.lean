@@ -50,16 +50,17 @@ variable {E G : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup G] [Module 
 the strict inequality for `f` is vacuous where `f x = ⊤`, while the one being proved for `f + g`
 is not. -/
 theorem StrictConvexOnFn.add_convexFn (hC : Convex ℝ C) (hsc : StrictConvexOnFn f C)
-    (hg : ConvexFn g) (hpf : Proper f) (hpg : Proper g) (hCf : C ⊆ dom f) (hCg : C ⊆ dom g) :
+    (hg : ConvexFn g) (hpf : ProperConvex f) (hpg : ProperConvex g) (hCf : C ⊆ convexDom f)
+        (hCg : C ⊆ convexDom g) :
     StrictConvexOnFn (f + g) C := by
   intro x hx y hy hne a b ha hb hab
   have hz : a • x + b • y ∈ C := hC hx hy ha.le hb.le hab
   have hstrict := hsc hx hy hne ha hb hab
   have hconv := (convexFn_iff_le hpg.ne_bot).1 hg x y a b ha hb hab
   have hcf : ∀ ⦃z : E⦄, z ∈ C → f z = ((f z).toReal : EReal) := fun z hzC =>
-    (EReal.coe_toReal (mem_dom.1 (hCf hzC)).ne (hpf.ne_bot z)).symm
+    (EReal.coe_toReal (mem_convexDom.1 (hCf hzC)).ne (hpf.ne_bot z)).symm
   have hcg : ∀ ⦃z : E⦄, z ∈ C → g z = ((g z).toReal : EReal) := fun z hzC =>
-    (EReal.coe_toReal (mem_dom.1 (hCg hzC)).ne (hpg.ne_bot z)).symm
+    (EReal.coe_toReal (mem_convexDom.1 (hCg hzC)).ne (hpg.ne_bot z)).symm
   rw [hcf hx, hcf hy, hcf hz] at hstrict
   rw [hcg hx, hcg hy, hcg hz] at hconv
   rw [Pi.add_apply, Pi.add_apply, Pi.add_apply, hcf hx, hcf hy, hcf hz, hcg hx, hcg hy, hcg hz]
@@ -69,8 +70,9 @@ theorem StrictConvexOnFn.add_convexFn (hC : Convex ℝ C) (hsc : StrictConvexOnF
 
 /-- The same with the summands the other way round. -/
 theorem ConvexFn.add_strictConvexOnFn (hC : Convex ℝ C) (hf : ConvexFn f)
-    (hsc : StrictConvexOnFn g C) (hpf : Proper f) (hpg : Proper g) (hCf : C ⊆ dom f)
-    (hCg : C ⊆ dom g) : StrictConvexOnFn (f + g) C := by
+    (hsc : StrictConvexOnFn g C) (hpf : ProperConvex f) (hpg : ProperConvex g)
+        (hCf : C ⊆ convexDom f)
+    (hCg : C ⊆ convexDom g) : StrictConvexOnFn (f + g) C := by
   rw [add_comm]
   exact StrictConvexOnFn.add_convexFn hC hsc hf hpg hpf hCg hCf
 
@@ -99,10 +101,11 @@ theorem IsExactSum.essentiallyStrictlyConvex_add {g₁ g₂ : E → EReal}
     (hesc : EssentiallyStrictlyConvex (B := innerₗ E) g₁) :
     EssentiallyStrictlyConvex (B := innerₗ E) (g₁ + g₂) := by
   intro C hC hCsub
-  have hCdom : C ⊆ dom (g₁ + g₂) := hCsub.trans (domSubdifferential_subset_dom h.proper_add)
-  rw [dom_add h.proper_left.ne_bot h.proper_right.ne_bot] at hCdom
-  refine StrictConvexOnFn.add_convexFn hC (hesc hC fun z hz => ?_) hg₂ h.proper_left
-    h.proper_right (fun z hz => (hCdom hz).1) fun z hz => (hCdom hz).2
+  have hCdom : C ⊆ convexDom (g₁ + g₂) :=
+      hCsub.trans (domSubdifferential_subset_convexDom h.properConvex_add)
+  rw [convexDom_add h.properConvex_left.ne_bot h.properConvex_right.ne_bot] at hCdom
+  refine StrictConvexOnFn.add_convexFn hC (hesc hC fun z hz => ?_) hg₂ h.properConvex_left
+    h.properConvex_right (fun z hz => (hCdom hz).1) fun z hz => (hCdom hz).2
   obtain ⟨v, hv⟩ := hCsub hz
   rw [h.subdifferential_add z] at hv
   obtain ⟨v₁, hv₁, -, -, -⟩ := hv
@@ -111,28 +114,35 @@ theorem IsExactSum.essentiallyStrictlyConvex_add {g₁ g₂ : E → EReal}
 /-- If `f₁` is essentially smooth and the conjugates `f₁*` and `f₂*` add exactly, then `f₁ □ f₂` is
 essentially smooth: it is the conjugate of `f₁* + f₂*`. -/
 theorem IsExactSum.essentiallySmooth_infConv
-    (h : IsExactSum (innerₗ E) (conj (innerₗ E) f₁) (conj (innerₗ E) f₂))
+    (h : IsExactSum (innerₗ E) (convexConj (innerₗ E) f₁) (convexConj (innerₗ E) f₂))
     (h₁ : ClosedProperConvexFn f₁) (h₂ : ClosedProperConvexFn f₂)
     (hes : EssentiallySmooth f₁) : EssentiallySmooth (infConv f₁ f₂) := by
-  have hsum : ClosedProperConvexFn (conj (innerₗ E) f₁ + conj (innerₗ E) f₂) :=
-    ClosedProperConvexFn.add ⟨convexFn_conj _ f₁, closedFn_conj, proper_conj h₁⟩
-      ⟨convexFn_conj _ f₂, closedFn_conj, proper_conj h₂⟩ h.proper_add.dom_nonempty
-  have hinf : conj (innerₗ E) (conj (innerₗ E) f₁ + conj (innerₗ E) f₂) = infConv f₁ f₂ := by
-    rw [h.conj_add, conj_conj_innerL h₁.convex h₁.closed, conj_conj_innerL h₂.convex h₂.closed]
+  have hsum : ClosedProperConvexFn (convexConj (innerₗ E) f₁ + convexConj (innerₗ E) f₂) :=
+    ClosedProperConvexFn.add ⟨convexFn_convexConj _ f₁, closedConvex_convexConj,
+        properConvex_convexConj h₁⟩
+      ⟨convexFn_convexConj _ f₂, closedConvex_convexConj, properConvex_convexConj h₂⟩
+          h.properConvex_add.convexDom_nonempty
+  have hinf : convexConj (innerₗ E) (convexConj (innerₗ E) f₁ + convexConj (innerₗ E) f₂)
+      = infConv f₁ f₂ := by
+    rw [h.convexConj_add, convexConj_convexConj_innerL h₁.convex h₁.closed,
+        convexConj_convexConj_innerL h₂.convex h₂.closed]
   rw [← hinf]
-  refine (essentiallySmooth_conj_iff_essentiallyStrictlyConvex hsum.convex hsum.proper
-    hsum.closed).2 (h.essentiallyStrictlyConvex_add (convexFn_conj _ f₂) ?_)
-  exact (essentiallyStrictlyConvex_conj_iff_essentiallySmooth h₁.convex h₁.proper h₁.closed).2 hes
+  refine (essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex hsum.convex hsum.proper
+    hsum.closed).2 (h.essentiallyStrictlyConvex_add (convexFn_convexConj _ f₂) ?_)
+  exact (essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth h₁.convex h₁.proper
+      h₁.closed).2 hes
 
 /-- The same under the classical hypothesis: a common relative interior point of `dom f₁*` and
 `dom f₂*` supplies the exactness. -/
 theorem essentiallySmooth_infConv_of_relint (h₁ : ClosedProperConvexFn f₁)
     (h₂ : ClosedProperConvexFn f₂) (hes : EssentiallySmooth f₁) {y₀ : E}
-    (hy₁ : y₀ ∈ ri (dom (conj (innerₗ E) f₁))) (hy₂ : y₀ ∈ ri (dom (conj (innerₗ E) f₂))) :
+    (hy₁ : y₀ ∈ ri (convexDom (convexConj (innerₗ E) f₁)))
+        (hy₂ : y₀ ∈ ri (convexDom (convexConj (innerₗ E) f₂))) :
     EssentiallySmooth (infConv f₁ f₂) :=
   IsExactSum.essentiallySmooth_infConv
-    (IsExactSum.of_relint (convexFn_conj _ f₁) (proper_conj h₁) (convexFn_conj _ f₂)
-      (proper_conj h₂) hy₁ hy₂) h₁ h₂ hes
+    (IsExactSum.of_relint (convexFn_convexConj _ f₁) (properConvex_convexConj h₁)
+        (convexFn_convexConj _ f₂)
+      (properConvex_convexConj h₂) hy₁ hy₂) h₁ h₂ hes
 
 end InfConv
 
@@ -176,27 +186,31 @@ theorem IsExactImage.essentiallyStrictlyConvex_compLin {g : E → EReal}
 /-- If `f` is essentially smooth, `A'` is injective, and `f*` pulls back exactly along `A'`, then
 the image `A f` is essentially smooth: it is the conjugate of `f* A'`. -/
 theorem IsExactImage.essentiallySmooth_mapLin {hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A}
-    (h : IsExactImage (innerₗ G) (innerₗ E) A' A hA (conj (innerₗ E) f))
+    (h : IsExactImage (innerₗ G) (innerₗ E) A' A hA (convexConj (innerₗ E) f))
     (hf : ClosedProperConvexFn f) (hes : EssentiallySmooth f) (hinj : Function.Injective A') :
     EssentiallySmooth (mapLin A f) := by
-  have hk : ClosedProperConvexFn (compLin (conj (innerₗ E) f) A') :=
-    ⟨convexFn_compLin A' (convexFn_conj _ f),
-      closedFn_compLin closedFn_conj A'.continuous_of_finiteDimensional, h.proper_compLin⟩
-  have himg : conj (innerₗ G) (compLin (conj (innerₗ E) f) A') = mapLin A f := by
-    rw [h.conj_compLin, conj_conj_innerL hf.convex hf.closed]
+  have hk : ClosedProperConvexFn (compLin (convexConj (innerₗ E) f) A') :=
+    ⟨convexFn_compLin A' (convexFn_convexConj _ f),
+      closedConvex_compLin closedConvex_convexConj A'.continuous_of_finiteDimensional,
+          h.properConvex_compLin⟩
+  have himg : convexConj (innerₗ G) (compLin (convexConj (innerₗ E) f) A') = mapLin A f := by
+    rw [h.convexConj_compLin, convexConj_convexConj_innerL hf.convex hf.closed]
   rw [← himg]
-  refine (essentiallySmooth_conj_iff_essentiallyStrictlyConvex hk.convex hk.proper hk.closed).2
+  refine (essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex hk.convex hk.proper
+      hk.closed).2
     (h.essentiallyStrictlyConvex_compLin hinj ?_)
-  exact (essentiallyStrictlyConvex_conj_iff_essentiallySmooth hf.convex hf.proper hf.closed).2 hes
+  exact (essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth hf.convex hf.proper
+      hf.closed).2 hes
 
 /-- The same under the classical hypotheses: `A` onto and some `y₀` with `A' y₀ ∈ ri (dom f*)`.
 The first gives injectivity of the transpose, the second the exactness. -/
 theorem essentiallySmooth_mapLin_of_relint (hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A)
     (hf : ClosedProperConvexFn f) (hes : EssentiallySmooth f) (hsurj : Function.Surjective A)
-    {y₀ : G} (hy₀ : A' y₀ ∈ ri (dom (conj (innerₗ E) f))) :
+    {y₀ : G} (hy₀ : A' y₀ ∈ ri (convexDom (convexConj (innerₗ E) f))) :
     EssentiallySmooth (mapLin A f) :=
   IsExactImage.essentiallySmooth_mapLin
-    (IsExactImage.of_relint_closed hA ⟨convexFn_conj _ f, closedFn_conj, proper_conj hf⟩ hy₀) hf hes
+    (IsExactImage.of_relint_closed hA
+        ⟨convexFn_convexConj _ f, closedConvex_convexConj, properConvex_convexConj hf⟩ hy₀) hf hes
     (injective_of_isAdjointPair_of_surjective hA hsurj)
 
 end Image

@@ -15,8 +15,8 @@ exists exactly where `x ↦ f'(x; y)` is continuous, and that happens on a dense
 
 ## Main results
 
-* `continuousAt_rightDeriv_iff` — a continuity criterion: `f'₊` is continuous at `x` exactly when
-  `f'₋(x) = f'₊(x)`.
+* `continuousAt_rightDeriv_iff`, `continuousAt_leftDeriv_iff` — a continuity criterion: `f'₊` (or
+  `f'₋`) is continuous at `x` exactly when `f'₋(x) = f'₊(x)`.
 * `countable_leftDeriv_ne_rightDeriv` — the jump set of `f'₊` is countable.
 * `differentiableAtFn_iff_leftDeriv_eq_rightDeriv` — on the line, differentiability at an interior
   point of `dom f` *is* the equality of the two one-sided derivatives.
@@ -57,10 +57,11 @@ variable {f : ℝ → EReal} {x : ℝ}
 /-- Continuity of `f'₊` at `x` forces the two-sided derivative: monotonicity gives
 `f'₊(z) → ⨆ {f'₊(z) | z < x}` as `z ↑ x`, continuity identifies that supremum with `f'₊(x)`, and
 every `f'₊(z)` with `z < x` lies below `f'₋(x)`. Unlike the converse this needs no closedness. -/
-theorem leftDeriv_eq_rightDeriv_of_continuousAt (hf : ConvexFn f) (hp : Proper f)
+theorem leftDeriv_eq_rightDeriv_of_continuousAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : ContinuousAt (rightDeriv f) x) : leftDeriv f x = rightDeriv f x := by
   have hsup : ⨆ z ∈ Iio x, rightDeriv f z = rightDeriv f x :=
-    tendsto_nhds_unique (tendsto_nhdsWithin_Iio_of_monotone (monotone_rightDeriv hf hp) x)
+    tendsto_nhds_unique
+      (by simpa only [sSup_image] using (monotone_rightDeriv hf hp).tendsto_nhdsLT x)
       (Filter.Tendsto.mono_left hc nhdsWithin_le_nhds)
   refine le_antisymm (leftDeriv_le_rightDeriv hf hp x) ?_
   rw [← hsup]
@@ -82,9 +83,23 @@ theorem continuousAt_rightDeriv_iff (hf : ClosedProperConvexFn f) (x : ℝ) :
     exact (h1.sup h2).sup h3
   rwa [nhdsNE_sup_pure] at hsup
 
+/-- The reflection of `continuousAt_rightDeriv_iff`: `f'₋` is continuous at `x` exactly when it
+agrees with `f'₊` there. -/
+theorem continuousAt_leftDeriv_iff (hf : ClosedProperConvexFn f) (x : ℝ) :
+    ContinuousAt (leftDeriv f) x ↔ leftDeriv f x = rightDeriv f x := by
+  have key : ContinuousAt (leftDeriv f) x ↔ ContinuousAt (rightDeriv fun t => f (-t)) (-x) := by
+    rw [show leftDeriv f = fun z => -rightDeriv (fun t => f (-t)) (-z) from
+      funext (leftDeriv_eq_neg_rightDeriv_comp_neg f)]
+    refine ⟨fun h => ?_, fun h => ?_⟩
+    · simpa [Function.comp_def] using ((continuous_neg (G := EReal)).continuousAt.comp
+        h).comp_of_eq continuous_neg.continuousAt (neg_neg x)
+    · exact (continuous_neg (G := EReal)).continuousAt.comp (h.comp continuous_neg.continuousAt)
+  rw [key, continuousAt_rightDeriv_iff hf.comp_neg, leftDeriv_eq_neg_rightDeriv_comp_neg f,
+    rightDeriv_eq_neg_leftDeriv_comp_neg f, neg_inj, eq_comm]
+
 /-- The jump set of `f'₊` is countable: `f'₊` is nondecreasing into the second-countable order
 topology of `EReal`, and its discontinuity set contains the set where `f'₋ ≠ f'₊`. -/
-theorem countable_leftDeriv_ne_rightDeriv (hf : ConvexFn f) (hp : Proper f) :
+theorem countable_leftDeriv_ne_rightDeriv (hf : ConvexFn f) (hp : ProperConvex f) :
     {x : ℝ | leftDeriv f x ≠ rightDeriv f x}.Countable := by
   refine Set.Countable.mono ?_ (monotone_rightDeriv hf hp).countable_not_continuousAt
   intro z hz
@@ -95,13 +110,13 @@ theorem countable_leftDeriv_ne_rightDeriv (hf : ConvexFn f) (hp : Proper f) :
 
 /-- On the line a two-sided derivative makes `f'(x; ·)` linear: positive homogeneity reduces
 `f'(x; v)` to the directions `±1`, where the values are `f'₊(x)` and `-f'₋(x)`. -/
-theorem dirDeriv_eq_of_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) (h : leftDeriv f x = rightDeriv f x) (v : ℝ) :
+theorem dirDeriv_eq_of_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) (h : leftDeriv f x = rightDeriv f x) (v : ℝ) :
     dirDeriv f x v = (((rightDeriv f x).toReal * v : ℝ) : EReal) := by
-  obtain ⟨hbot, htop⟩ := rightDeriv_finite_of_mem_interior_dom hf hp hx
+  obtain ⟨hbot, htop⟩ := rightDeriv_finite_of_mem_interior_convexDom hf hp hx
   set c : ℝ := (rightDeriv f x).toReal with hcdef
   have hrc : rightDeriv f x = (c : EReal) := (EReal.coe_toReal htop hbot).symm
-  have hfx : f x < ⊤ := mem_dom.1 (interior_subset hx)
+  have hfx : f x < ⊤ := mem_convexDom.1 (interior_subset hx)
   have hfb : f x ≠ ⊥ := hp.ne_bot x
   have h1 : dirDeriv f x 1 = (c : EReal) := by rw [← rightDeriv_eq_dirDeriv hfx hfb, hrc]
   have hm1 : dirDeriv f x (-1) = ((-c : ℝ) : EReal) := by
@@ -122,10 +137,10 @@ theorem dirDeriv_eq_of_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : Proper f)
 
 /-- On the line, a convex function is differentiable at an interior point of its effective domain
 exactly when its two one-sided derivatives agree there. -/
-theorem differentiableAtFn_iff_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) :
+theorem differentiableAtFn_iff_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) :
     DifferentiableAtFn f x ↔ leftDeriv f x = rightDeriv f x := by
-  have hfx : f x < ⊤ := mem_dom.1 (interior_subset hx)
+  have hfx : f x < ⊤ := mem_convexDom.1 (interior_subset hx)
   have hfb : f x ≠ ⊥ := hp.ne_bot x
   constructor
   · rintro ⟨y₀, hy₀⟩
@@ -146,8 +161,8 @@ theorem differentiableAtFn_iff_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : P
 /-- **First assertion**: a convex function on the line is differentiable at all but countably many
 points of the interior of its effective domain. No closedness is needed, so the usual preliminary
 extension of `f` to a closed proper convex function on `ℝ` is not made. -/
-theorem countable_not_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    {x ∈ interior (dom f) | ¬DifferentiableAtFn f x}.Countable := by
+theorem countable_not_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
+    {x ∈ interior (convexDom f) | ¬DifferentiableAtFn f x}.Countable := by
   refine Set.Countable.mono ?_ (countable_leftDeriv_ne_rightDeriv hf hp)
   rintro z ⟨hz, hzd⟩
   exact fun hcon => hzd ((differentiableAtFn_iff_leftDeriv_eq_rightDeriv hf hp hz).2 hcon)
@@ -155,15 +170,22 @@ theorem countable_not_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
 /-- **Second assertion**: the derivative is continuous where it exists. Stronger than "continuous
 relative to `D`": `rightDeriv f` is continuous at `x` on the whole line. -/
 theorem continuousAt_rightDeriv_of_differentiableAtFn (hf : ClosedProperConvexFn f)
-    (hx : x ∈ interior (dom f)) (hd : DifferentiableAtFn f x) :
+    (hx : x ∈ interior (convexDom f)) (hd : DifferentiableAtFn f x) :
     ContinuousAt (rightDeriv f) x :=
   (continuousAt_rightDeriv_iff hf x).2
     ((differentiableAtFn_iff_leftDeriv_eq_rightDeriv hf.convex hf.proper hx).1 hd)
 
+/-- The left derivative is likewise continuous where the derivative exists. -/
+theorem continuousAt_leftDeriv_of_differentiableAtFn (hf : ClosedProperConvexFn f)
+    (hx : x ∈ interior (convexDom f)) (hd : DifferentiableAtFn f x) :
+    ContinuousAt (leftDeriv f) x :=
+  (continuousAt_leftDeriv_iff hf x).2
+    ((differentiableAtFn_iff_leftDeriv_eq_rightDeriv hf.convex hf.proper hx).1 hd)
+
 /-- **Third assertion**: the points of differentiability are dense in the interior of the effective
 domain, a countable subset of `ℝ` having dense complement. -/
-theorem subset_closure_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    interior (dom f) ⊆ closure {z : ℝ | DifferentiableAtFn f z} := by
+theorem subset_closure_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
+    interior (convexDom f) ⊆ closure {z : ℝ | DifferentiableAtFn f z} := by
   intro z hz
   rw [mem_closure_iff]
   intro U hU hzU
@@ -192,8 +214,8 @@ theorem convexFn_lineRestrict (hf : ConvexFn f) (x y : E) :
   exact hf.epi_combo h₁ h₂ ha hb hab
 
 /-- The restriction of `f` to a line through a point of `dom f` is proper. -/
-theorem proper_lineRestrict (hp : Proper f) (hx : x ∈ dom f) (y : E) :
-    Proper fun t : ℝ => f (x + t • y) :=
+theorem properConvex_lineRestrict (hp : ProperConvex f) (hx : x ∈ convexDom f) (y : E) :
+    ProperConvex fun t : ℝ => f (x + t • y) :=
   ⟨⟨0, by simpa using hx⟩, fun t => hp.ne_bot _⟩
 
 /-- The one-dimensional restriction computes the directional derivative along the line. This is
@@ -215,9 +237,10 @@ section TwoSided
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal} {x : E}
 
 /-- For a fixed direction `y`, the function `z ↦ f'(z; y)` is upper semicontinuous at every
-interior point of `dom f`. -/
-theorem upperSemicontinuousAt_dirDeriv_left [FiniteDimensional ℝ E] (hf : ConvexFn f)
-    (hp : Proper f) (hx : x ∈ interior (dom f)) (y : E) :
+interior point of `dom f`: the joint `upperSemicontinuousAt_dirDeriv` restricted to the first
+(base-point) variable. -/
+theorem upperSemicontinuousAt_dirDeriv_fst [FiniteDimensional ℝ E] (hf : ConvexFn f)
+    (hp : ProperConvex f) (hx : x ∈ interior (convexDom f)) (y : E) :
     UpperSemicontinuousAt (fun z => dirDeriv f z y) x := by
   intro c hc
   have hcont : Continuous fun z : E => (z, y) := by fun_prop
@@ -227,7 +250,7 @@ theorem upperSemicontinuousAt_dirDeriv_left [FiniteDimensional ℝ E] (hf : Conv
 inequality is the term of the defining infimum at `x - λ y` with step `λ`, which lands exactly on
 `x`, and the second is the corresponding term at `x` in the direction `-y`, negated. No convexity
 and no interiority are used, only properness. -/
-theorem dirDeriv_sub_smul_le (hp : Proper f) (hfx : f x < ⊤) (y : E) {l : ℝ} (hl : 0 < l) :
+theorem dirDeriv_sub_smul_le (hp : ProperConvex f) (hfx : f x < ⊤) (y : E) {l : ℝ} (hl : 0 < l) :
     dirDeriv f (x - l • y) y ≤ -dirDeriv f x (-y) := by
   rcases eq_or_lt_of_le (le_top : f (x - l • y) ≤ ⊤) with hu | hu
   · rw [dirDeriv_eq_bot_of_eq_top hu]
@@ -249,10 +272,10 @@ theorem dirDeriv_sub_smul_le (hp : Proper f) (hfx : f x < ⊤) (y : E) {l : ℝ}
 /-- **First assertion**: on the interior of `dom f`, the set where the two-sided directional
 derivative in the direction `y` exists is exactly the set where `x ↦ f'(x; y)` is continuous. The
 usual `y ≠ 0` is not needed — at `y = 0` both sides hold. -/
-theorem continuousAt_dirDeriv_iff [FiniteDimensional ℝ E] (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) (y : E) :
+theorem continuousAt_dirDeriv_iff [FiniteDimensional ℝ E] (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) (y : E) :
     ContinuousAt (fun z => dirDeriv f z y) x ↔ dirDeriv f x y = -dirDeriv f x (-y) := by
-  have hfx : f x < ⊤ := mem_dom.1 (interior_subset hx)
+  have hfx : f x < ⊤ := mem_convexDom.1 (interior_subset hx)
   constructor
   · intro hc
     refine le_antisymm ?_ (neg_dirDeriv_neg_le hf hfx.ne (hp.ne_bot x) y)
@@ -269,38 +292,38 @@ theorem continuousAt_dirDeriv_iff [FiniteDimensional ℝ E] (hf : ConvexFn f) (h
     refine tendsto_order.2 ⟨fun a ha => ?_, fun c hc => ?_⟩
     · have ha' : a < dirDeriv f x y := ha
       rw [h] at ha'
-      have hev := upperSemicontinuousAt_dirDeriv_left hf hp hx (-y) (-a)
+      have hev := upperSemicontinuousAt_dirDeriv_fst hf hp hx (-y) (-a)
         (EReal.lt_neg_of_lt_neg ha')
       filter_upwards [hev, isOpen_interior.mem_nhds hx] with z hz hzi
       have hz' : dirDeriv f z (-y) < -a := hz
-      have hzt : f z < ⊤ := mem_dom.1 (interior_subset hzi)
+      have hzt : f z < ⊤ := mem_convexDom.1 (interior_subset hzi)
       exact lt_of_lt_of_le (EReal.lt_neg_of_lt_neg hz')
         (neg_dirDeriv_neg_le hf hzt.ne (hp.ne_bot z) y)
     · have hc' : dirDeriv f x y < c := hc
-      exact upperSemicontinuousAt_dirDeriv_left hf hp hx y c hc'
+      exact upperSemicontinuousAt_dirDeriv_fst hf hp hx y c hc'
 
 /-- **Density**: the points of `int (dom f)` at which the two-sided directional
 derivative in the direction `y` exists are dense in `int (dom f)`. Proved on a line rather than
 through Lebesgue measure: `t ↦ f (x + t • y)` is a proper convex function of one variable whose
 one-sided derivatives at `t` are `f'(x + t y; ±y)`, and its jump set is countable. -/
-theorem subset_closure_twoSided_dirDeriv (hf : ConvexFn f) (hp : Proper f) (y : E) :
-    interior (dom f) ⊆
-      closure {z ∈ interior (dom f) | dirDeriv f z y = -dirDeriv f z (-y)} := by
+theorem subset_closure_twoSided_dirDeriv (hf : ConvexFn f) (hp : ProperConvex f) (y : E) :
+    interior (convexDom f) ⊆
+      closure {z ∈ interior (convexDom f) | dirDeriv f z y = -dirDeriv f z (-y)} := by
   intro x hx
   rw [mem_closure_iff]
   intro U hU hxU
   have hgc : ConvexFn fun t : ℝ => f (x + t • y) := convexFn_lineRestrict hf x y
-  have hgp : Proper fun t : ℝ => f (x + t • y) :=
-    proper_lineRestrict hp (interior_subset hx) y
-  have hVopen : IsOpen {t : ℝ | x + t • y ∈ U ∩ interior (dom f)} := by
+  have hgp : ProperConvex fun t : ℝ => f (x + t • y) :=
+    properConvex_lineRestrict hp (interior_subset hx) y
+  have hVopen : IsOpen {t : ℝ | x + t • y ∈ U ∩ interior (convexDom f)} := by
     have hcont : Continuous fun t : ℝ => x + t • y := by fun_prop
     exact hcont.isOpen_preimage _ (hU.inter isOpen_interior)
-  have hV0 : (0 : ℝ) ∈ {t : ℝ | x + t • y ∈ U ∩ interior (dom f)} := by
+  have hV0 : (0 : ℝ) ∈ {t : ℝ | x + t • y ∈ U ∩ interior (convexDom f)} := by
     simpa using And.intro hxU hx
   obtain ⟨t, ht, htV⟩ :=
     (Set.Countable.dense_compl ℝ (countable_leftDeriv_ne_rightDeriv hgc hgp)).exists_mem_open
       hVopen ⟨0, hV0⟩
-  have hgt : f (x + t • y) < ⊤ := mem_dom.1 (interior_subset htV.2)
+  have hgt : f (x + t • y) < ⊤ := mem_convexDom.1 (interior_subset htV.2)
   have hgb : f (x + t • y) ≠ ⊥ := hp.ne_bot _
   have heq : leftDeriv (fun s : ℝ => f (x + s • y)) t
       = rightDeriv (fun s : ℝ => f (x + s • y)) t := not_not.1 ht

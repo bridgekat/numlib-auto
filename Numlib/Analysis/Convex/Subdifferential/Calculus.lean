@@ -20,9 +20,9 @@ corresponding conjugacy rule exact. Both are therefore stated against the `IsExa
 * `subdifferential_coe_mul`, `subdifferential_coe_affineMap` — `∂(cf) = c ∂f` for `c > 0`, and for
   *arbitrary* `c` when `f` is affine.
 * `IsExactSum.normalCone_inter` — the normal cone to an intersection, as a sum of normal cones.
-* `subdifferential_add_normalCone_dom_subset`,
-  `normalCone_dom_eq_zero_of_subdifferential_eq_singleton` — the normal cone to `dom f`, and what a
-  *unique* subgradient does to it.
+* `subdifferential_add_normalCone_convexDom_subset`,
+  `normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton` — the normal cone to `dom f`, and
+  what a *unique* subgradient does to it.
 
 ## Implementation notes
 
@@ -66,24 +66,24 @@ theorem IsExactSum.subdifferential_add (h : IsExactSum B f g) (x : E) :
     subdifferential B (f + g) x = subdifferential B f x + subdifferential B g x := by
   refine Set.Subset.antisymm (fun y hy => ?_) (subdifferential_add_subset B f g x)
   obtain ⟨y₁, y₂, rfl, hle⟩ := h.exact_le y
-  have hy' := mem_subdifferential_iff_add_conj_le.1 hy
+  have hy' := mem_subdifferential_iff_add_convexConj_le.1 hy
   rw [Pi.add_apply] at hy'
-  have hkey : (f x + conj B f y₁) + (g x + conj B g y₂)
+  have hkey : (f x + convexConj B f y₁) + (g x + convexConj B g y₂)
       ≤ ((B x y₁ + B x y₂ : ℝ) : EReal) := by
-    calc (f x + conj B f y₁) + (g x + conj B g y₂)
-        = (f x + g x) + (conj B f y₁ + conj B g y₂) := (add_add_add_comm _ _ _ _).symm
-      _ ≤ (f x + g x) + conj B (f + g) (y₁ + y₂) := add_le_add le_rfl hle
+    calc (f x + convexConj B f y₁) + (g x + convexConj B g y₂)
+        = (f x + g x) + (convexConj B f y₁ + convexConj B g y₂) := (add_add_add_comm _ _ _ _).symm
+      _ ≤ (f x + g x) + convexConj B (f + g) (y₁ + y₂) := add_le_add le_rfl hle
       _ ≤ ((B x (y₁ + y₂) : ℝ) : EReal) := hy'
       _ = ((B x y₁ + B x y₂ : ℝ) : EReal) := by rw [map_add]
-  have hkey' : (g x + conj B g y₂) + (f x + conj B f y₁)
+  have hkey' : (g x + convexConj B g y₂) + (f x + convexConj B f y₁)
       ≤ ((B x y₂ + B x y₁ : ℝ) : EReal) := by
-    rw [add_comm (g x + conj B g y₂), add_comm (B x y₂)]
+    rw [add_comm (g x + convexConj B g y₂), add_comm (B x y₂)]
     exact hkey
-  have hf := h.proper_left.le_add_conj (B := B) x y₁
-  have hg := h.proper_right.le_add_conj (B := B) x y₂
-  exact ⟨y₁, mem_subdifferential_iff_add_conj_le.2
+  have hf := h.properConvex_left.le_add_convexConj (B := B) x y₁
+  have hg := h.properConvex_right.le_add_convexConj (B := B) x y₂
+  exact ⟨y₁, mem_subdifferential_iff_add_convexConj_le.2
       (EReal.le_coe_of_add_le_coe_add hf hg hkey),
-    y₂, mem_subdifferential_iff_add_conj_le.2
+    y₂, mem_subdifferential_iff_add_convexConj_le.2
       (EReal.le_coe_of_add_le_coe_add hg hf hkey'), rfl⟩
 
 end Add
@@ -119,20 +119,20 @@ theorem IsExactFinsetSum.subdifferential_finsetSum (h : IsExactFinsetSum B s f) 
     subdifferential B (∑ i ∈ s, f i) x = ∑ i ∈ s, subdifferential B (f i) x := by
   refine Set.Subset.antisymm (fun y hy => ?_) (subdifferential_finsetSum_subset B s f x)
   obtain ⟨y', hy', hle⟩ := h.exact_le y
-  have hfen : ∀ i ∈ s, ((B x (y' i) : ℝ) : EReal) ≤ f i x + conj B (f i) (y' i) :=
-    fun i hi => (h.proper i hi).le_add_conj x (y' i)
-  have hsum : ∑ i ∈ s, (f i x + conj B (f i) (y' i))
+  have hfen : ∀ i ∈ s, ((B x (y' i) : ℝ) : EReal) ≤ f i x + convexConj B (f i) (y' i) :=
+    fun i hi => (h.proper i hi).le_add_convexConj x (y' i)
+  have hsum : ∑ i ∈ s, (f i x + convexConj B (f i) (y' i))
       ≤ ((∑ i ∈ s, B x (y' i) : ℝ) : EReal) := by
-    calc ∑ i ∈ s, (f i x + conj B (f i) (y' i))
-        = (∑ i ∈ s, f i) x + ∑ i ∈ s, conj B (f i) (y' i) := by
+    calc ∑ i ∈ s, (f i x + convexConj B (f i) (y' i))
+        = (∑ i ∈ s, f i) x + ∑ i ∈ s, convexConj B (f i) (y' i) := by
           rw [Finset.sum_add_distrib, Finset.sum_apply]
-      _ ≤ (∑ i ∈ s, f i) x + conj B (∑ i ∈ s, f i) y := add_le_add le_rfl hle
-      _ ≤ ((B x y : ℝ) : EReal) := mem_subdifferential_iff_add_conj_le.1 hy
+      _ ≤ (∑ i ∈ s, f i) x + convexConj B (∑ i ∈ s, f i) y := add_le_add le_rfl hle
+      _ ≤ ((B x y : ℝ) : EReal) := mem_subdifferential_iff_add_convexConj_le.1 hy
       _ = ((∑ i ∈ s, B x (y' i) : ℝ) : EReal) := by rw [← hy', map_sum]
   have hmem : ∀ i ∈ s, y' i ∈ subdifferential B (f i) x := fun i hi =>
-    mem_subdifferential_iff_add_conj_le.2
+    mem_subdifferential_iff_add_convexConj_le.2
       (EReal.le_coe_of_sum_le_coe_sum (c := fun i => B x (y' i))
-        (u := fun i => f i x + conj B (f i) (y' i)) hfen hsum hi)
+        (u := fun i => f i x + convexConj B (f i) (y' i)) hfen hsum hi)
   have hgoal := Set.finsetSum_mem_finsetSum s (fun i => subdifferential B (f i) x) y' hmem
   rwa [hy'] at hgoal
 
@@ -165,18 +165,18 @@ theorem IsExactImage.subdifferential_compLin {hA : IsAdjointPair B B' A A'}
     subdifferential B (compLin g A) x = A' '' subdifferential B' g (A x) := by
   refine Set.Subset.antisymm (fun y hy => ?_) (image_subdifferential_subset hA g x)
   have hne : compLin g A x ≠ ⊥ := by rw [compLin_apply]; exact h.proper.ne_bot (A x)
-  have hfin : conj B (compLin g A) y < ⊤ := by
+  have hfin : convexConj B (compLin g A) y < ⊤ := by
     by_contra htop
     rw [not_lt, top_le_iff] at htop
-    have hsub := mem_subdifferential_iff_add_conj_le.1 hy
+    have hsub := mem_subdifferential_iff_add_convexConj_le.1 hy
     rw [htop, EReal.add_top_of_ne_bot hne, top_le_iff] at hsub
     exact absurd hsub (EReal.coe_ne_top _)
   obtain ⟨z, rfl, hle⟩ := h.exact_le y hfin
-  refine ⟨z, mem_subdifferential_iff_add_conj_le.2 ?_, rfl⟩
-  calc g (A x) + conj B' g z
-      ≤ g (A x) + conj B (compLin g A) (A' z) := add_le_add le_rfl hle
-    _ = compLin g A x + conj B (compLin g A) (A' z) := by rw [compLin_apply]
-    _ ≤ ((B x (A' z) : ℝ) : EReal) := mem_subdifferential_iff_add_conj_le.1 hy
+  refine ⟨z, mem_subdifferential_iff_add_convexConj_le.2 ?_, rfl⟩
+  calc g (A x) + convexConj B' g z
+      ≤ g (A x) + convexConj B (compLin g A) (A' z) := add_le_add le_rfl hle
+    _ = compLin g A x + convexConj B (compLin g A) (A' z) := by rw [compLin_apply]
+    _ ≤ ((B x (A' z) : ℝ) : EReal) := mem_subdifferential_iff_add_convexConj_le.1 hy
     _ = ((B' (A x) z : ℝ) : EReal) := by rw [hA x z]
 
 end Image
@@ -338,25 +338,26 @@ variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E}
 
 /-- A normal to the effective domain may be added to a subgradient — the elementary inclusion
 behind `∂f x + N_{dom f}(x) = ∂f x`. Neither convexity nor a topology is needed. -/
-theorem subdifferential_add_normalCone_dom_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
-    subdifferential B f x + normalCone B (dom f) x ⊆ subdifferential B f x := by
+theorem subdifferential_add_normalCone_convexDom_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal)
+    (x : E) :
+    subdifferential B f x + normalCone B (convexDom f) x ⊆ subdifferential B f x := by
   rintro _ ⟨y, hy, n, hn, rfl⟩ z
-  by_cases hz : z ∈ dom f
+  by_cases hz : z ∈ convexDom f
   · have hle : ((B (z - x) (y + n) : ℝ) : EReal) ≤ ((B (z - x) y : ℝ) : EReal) := by
       rw [map_add, EReal.coe_le_coe_iff]
       linarith [hn z hz]
     exact (add_le_add (le_refl (f x)) hle).trans (hy z)
-  · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_dom.2 h))]
+  · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_convexDom.2 h))]
     exact le_top
 
 /-- A lone subgradient leaves no room for a normal direction: if `∂f x = {y₀}` then `y₀ + n` is
 again a subgradient for every `n` normal to `dom f` at `x`, so `n = 0`. With
 `mem_interior_of_normalCone_eq_zero` this turns uniqueness into an interiority statement. -/
-theorem normalCone_dom_eq_zero_of_subdifferential_eq_singleton {y₀ : F}
-    (h : subdifferential B f x = {y₀}) : normalCone B (dom f) x = {0} := by
+theorem normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton {y₀ : F}
+    (h : subdifferential B f x = {y₀}) : normalCone B (convexDom f) x = {0} := by
   refine Set.eq_singleton_iff_unique_mem.2 ⟨fun z _ => by simp, fun n hn => ?_⟩
   have hy₀ : y₀ ∈ subdifferential B f x := by rw [h]; rfl
-  have hmem := subdifferential_add_normalCone_dom_subset B f x (Set.add_mem_add hy₀ hn)
+  have hmem := subdifferential_add_normalCone_convexDom_subset B f x (Set.add_mem_add hy₀ hn)
   rw [h, Set.mem_singleton_iff] at hmem
   simpa using hmem
 
@@ -364,7 +365,7 @@ end NormalConeDom
 
 /-! ### Transport along a linear isomorphism
 
-`conj_comp_linearEquiv` of `Duality/Conjugate` is the substitution rule for the conjugate. The
+`convexConj_comp_linearEquiv` of `Duality/Conjugate` is the substitution rule for the conjugate. The
 subdifferential obeys the same rule, in the generality of an arbitrary adjoint pair of
 isomorphisms. -/
 
@@ -375,8 +376,8 @@ variable [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable [AddCommGroup G] [Module ℝ G] [AddCommGroup H] [Module ℝ H]
 
 /-- **Precomposing with a linear isomorphism moves the subdifferential along the transpose.**
-The companion of `conj_comp_linearEquiv` for `∂f`: if `A` and `A'` are adjoint isomorphisms, then
-`∂(g ∘ A)(x) = A' (∂g (A x))`. -/
+The companion of `convexConj_comp_linearEquiv` for `∂f`: if `A` and `A'` are adjoint isomorphisms,
+then `∂(g ∘ A)(x) = A' (∂g (A x))`. -/
 theorem subdifferential_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
     (A : E ≃ₗ[ℝ] G) (A' : H ≃ₗ[ℝ] F)
     (hA : IsAdjointPair B B' (A : E →ₗ[ℝ] G) (A' : H →ₗ[ℝ] F)) (g : G → EReal) (x : E) :

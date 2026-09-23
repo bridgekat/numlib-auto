@@ -314,9 +314,9 @@ theorem exists_monotone_ne_bot_ne_top_monotoneCurve_eq {f : ℝ → EReal}
     (hf : ClosedProperConvexFn f) :
     ∃ φ : ℝ → EReal, Monotone φ ∧ (∃ a, φ a ≠ ⊥ ∧ φ a ≠ ⊤) ∧
       subgradientRel (innerₗ ℝ) f = monotoneCurve φ := by
-  obtain ⟨a, ha⟩ := Convex.relint_nonempty hf.convex.convex_dom hf.proper.dom_nonempty
+  obtain ⟨a, ha⟩ := Convex.relint_nonempty hf.convex.convex_convexDom hf.proper.convexDom_nonempty
   obtain ⟨y₀, hy₀⟩ :=
-    subdifferential_nonempty_of_mem_relint_dom (B := innerₗ ℝ) hf.convex hf.proper ha
+    subdifferential_nonempty_of_mem_relint_convexDom (B := innerₗ ℝ) hf.convex hf.proper ha
   have hmem : ((a, y₀) : ℝ × ℝ) ∈ monotoneCurve (rightDeriv f) := by
     rw [← subgradientRel_eq_monotoneCurve_rightDeriv hf]
     exact hy₀

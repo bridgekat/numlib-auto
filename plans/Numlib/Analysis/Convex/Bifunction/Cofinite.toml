@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'CofiniteBifun'
 
 [[node]]
-id = 'CofiniteBifun.domBifun_eq_univ'
+id = 'CofiniteBifun.convexDomBifun_eq_univ'
 
 [[node]]
 id = 'CofiniteBifun.proper'
@@ -23,10 +23,10 @@ id = 'cofinite_infConv'
 id = 'cofiniteBifun_infConvBifun'
 
 [[node]]
-id = 'adjointBifun_infConvBifun_of_cofinite'
+id = 'convexAdjointBifun_infConvBifun_of_cofinite'
 
 [[node]]
-id = 'CofiniteBifun.bracket_eq_concaveBracket_adjointBifun'
+id = 'CofiniteBifun.bracket_eq_concaveBracket_convexAdjointBifun'
 
 [[node]]
 id = 'cofinite_smulRight'
@@ -35,7 +35,7 @@ id = 'cofinite_smulRight'
 id = 'cofiniteBifun_smulRightBifun'
 
 [[node]]
-id = 'cofiniteBifun_iff_domBifun_eq_univ'
+id = 'cofiniteBifun_iff_convexDomBifun_eq_univ'
 
 [[node]]
 id = 'bracket_compBifun_eq_concaveBracket_concaveCompBifun'

@@ -1,7 +1,7 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'mem_interior_dom_of_subdifferential_eq_singleton'
+id = 'mem_interior_convexDom_of_subdifferential_eq_singleton'
 
 [[node]]
 id = 'hasGradientAtFn_iff_subdifferential_eq_singleton'
@@ -10,10 +10,10 @@ id = 'hasGradientAtFn_iff_subdifferential_eq_singleton'
 id = 'differentiableAtFn_iff_exists_subdifferential_eq_singleton'
 
 [[node]]
-id = 'hasGradientAtFn_clFn_iff'
+id = 'hasGradientAtFn_convexCl_iff'
 
 [[node]]
-id = 'mem_exposedPoints_epi_conj_iff_hasGradientAtFn'
+id = 'mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn'
 
 [[node]]
 id = 'mem_exposedPoints_supportSet_iff_hasGradientAtFn'

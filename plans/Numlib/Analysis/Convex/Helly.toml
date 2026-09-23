@@ -25,7 +25,7 @@ id = 'sparse_alternative_of_convex_system'
 id = 'finrank_eq_of_isCompatiblePairing'
 
 [[node]]
-id = 'exists_multipliers_of_posHomGen_convFn_conj_eq_bot'
+id = 'exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot'
 
 [[node]]
 id = 'alternative_infinite_system_univ'

@@ -59,16 +59,16 @@ simultaneously a Lipschitz constant for `f`, a bound `⟨z, y⟩ ≤ K ‖z‖` 
 every point of `S`, and a bound `f'(x; z) ≤ K ‖z‖` for the directional derivatives. `K` is taken to
 be a Lipschitz constant on a compact collar `cthickening δ S ⊆ int (dom f)`, and the other two
 bounds are read off it at the point `x + (δ / ‖z‖) • z`, which stays in the collar. -/
-theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : Proper f)
-    {S : Set E} (hS : IsCompact S) (hSD : S ⊆ interior (dom f)) :
+theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f)
+    {S : Set E} (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     ∃ K : ℝ≥0, LipschitzOnWith K (fun x => (f x).toReal) S ∧
       (∀ x ∈ S, ∀ y ∈ subdifferential B f x, ∀ z : E, B z y ≤ (K : ℝ) * ‖z‖) ∧
       ∀ x ∈ S, ∀ z : E, dirDeriv f x z ≤ (((K : ℝ) * ‖z‖ : ℝ) : EReal) := by
   obtain ⟨δ, hδ, hδsub⟩ := hS.exists_cthickening_subset_open isOpen_interior hSD
   have hTc : IsCompact (Metric.cthickening δ S) := hS.cthickening
-  have hTdom : Metric.cthickening δ S ⊆ dom f := hδsub.trans interior_subset
-  have hTri : Metric.cthickening δ S ⊆ ri (dom f) := fun w hw =>
-    Convex.interior_subset_relint hf.convex_dom ⟨w, hδsub hw⟩ (hδsub hw)
+  have hTdom : Metric.cthickening δ S ⊆ convexDom f := hδsub.trans interior_subset
+  have hTri : Metric.cthickening δ S ⊆ ri (convexDom f) := fun w hw =>
+    Convex.interior_subset_relint hf.convex_convexDom ⟨w, hδsub hw⟩ (hδsub hw)
   obtain ⟨K, hK⟩ := hf.exists_lipschitzOnWith_of_isCompact hp hTc hTri
   -- The single estimate both halves consume.
   have hkey : ∀ x ∈ S, ∀ z : E, z ≠ 0 → ∀ a b : ℝ, f x = (a : EReal) →
@@ -128,8 +128,8 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 /-- The norm form of the subgradient bound: on a compact `S ⊆ int (dom f)` a single constant bounds
 `‖y‖` for every subgradient `y` at every point of `S`. -/
-theorem exists_forall_norm_le_of_isCompact (hf : ConvexFn f) (hp : Proper f) {S : Set E}
-    (hS : IsCompact S) (hSD : S ⊆ interior (dom f)) :
+theorem exists_forall_norm_le_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f) {S : Set E}
+    (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     ∃ K : ℝ, 0 ≤ K ∧ ∀ x ∈ S, ∀ y ∈ subdifferential (innerₗ E) f x, ‖y‖ ≤ K := by
   obtain ⟨K, -, hpair, -⟩ :=
     exists_lipschitz_forall_pairing_le_of_isCompact (B := innerₗ E) hf hp hS hSD
@@ -142,8 +142,8 @@ theorem exists_forall_norm_le_of_isCompact (hf : ConvexFn f) (hp : Proper f) {S 
 
 /-- `∂f x` is compact at every interior point of `dom f`: closed because it is an intersection of
 closed half-spaces, and bounded by the constant above. -/
-theorem isCompact_subdifferential (hf : ConvexFn f) (hp : Proper f) {x : E}
-    (hx : x ∈ interior (dom f)) : IsCompact (subdifferential (innerₗ E) f x) := by
+theorem isCompact_subdifferential (hf : ConvexFn f) (hp : ProperConvex f) {x : E}
+    (hx : x ∈ interior (convexDom f)) : IsCompact (subdifferential (innerₗ E) f x) := by
   have : IsContinuousPairing ((innerₗ E).flip) := by rw [flip_innerₗ]; infer_instance
   obtain ⟨K, -, hK⟩ := exists_forall_norm_le_of_isCompact hf hp isCompact_singleton
     (by simpa using hx)
@@ -153,19 +153,19 @@ theorem isCompact_subdifferential (hf : ConvexFn f) (hp : Proper f) {x : E}
   exact hK x rfl y hy
 
 /-- **Nonemptiness**: `∂f(S) ≠ ∅` for a nonempty `S ⊆ int (dom f)`. -/
-theorem image_subgradientRel_nonempty (hf : ConvexFn f) (hp : Proper f) {S : Set E}
-    (hne : S.Nonempty) (hSD : S ⊆ interior (dom f)) :
+theorem image_subgradientRel_nonempty (hf : ConvexFn f) (hp : ProperConvex f) {S : Set E}
+    (hne : S.Nonempty) (hSD : S ⊆ interior (convexDom f)) :
     ((subgradientRel (innerₗ E) f).image S).Nonempty := by
   obtain ⟨x, hx⟩ := hne
-  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := innerₗ E) hf hp
-    (Convex.interior_subset_relint hf.convex_dom ⟨x, hSD hx⟩ (hSD hx))
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := innerₗ E) hf hp
+    (Convex.interior_subset_relint hf.convex_convexDom ⟨x, hSD hx⟩ (hSD hx))
   exact ⟨y, x, hx, hy⟩
 
 /-- **The topological half**: `∂f(S)` is compact for a closed proper convex `f` and a compact
 `S ⊆ int (dom f)`. The graph of `∂f` is closed, so it meets the compact box
 `S ×ˢ closedBall 0 K` in a compact set of which `∂f(S)` is the projection. -/
 theorem isCompact_image_subgradientRel (hf : ClosedProperConvexFn f) {S : Set E}
-    (hS : IsCompact S) (hSD : S ⊆ interior (dom f)) :
+    (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     IsCompact ((subgradientRel (innerₗ E) f).image S) := by
   obtain ⟨K, -, hnorm⟩ := exists_forall_norm_le_of_isCompact hf.convex hf.proper hS hSD
   have hbox : IsCompact (S ×ˢ Metric.closedBall (0 : E) (K : ℝ)) :=

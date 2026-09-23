@@ -60,25 +60,25 @@ theorem ConvexFn.convex_strictEpi (hf : ConvexFn f) :
 /-- **The continuity constraint qualification.** If `f` and `g` are proper convex functions and `f`
 is continuous at some point where both are finite, then `f` and `g` add exactly. This is the
 constructor of `IsExactSum` that survives into infinite dimensions. -/
-theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : ConvexFn g)
-    (hpg : Proper g) {x₀ : E} (hfx₀ : x₀ ∈ dom f) (hgx₀ : x₀ ∈ dom g)
+theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
+    (hpg : ProperConvex g) {x₀ : E} (hfx₀ : x₀ ∈ convexDom f) (hgx₀ : x₀ ∈ convexDom g)
     (hcont : ContinuousAt f x₀) : IsExactSum B f g := by
   refine ⟨hpf, hpg, fun y => ?_⟩
   -- the value to be attained
-  rcases eq_top_or_lt_top (conj B (f + g) y) with htop | hlt
+  rcases eq_top_or_lt_top (convexConj B (f + g) y) with htop | hlt
   · exact ⟨y, 0, add_zero y, htop ▸ le_top⟩
-  have hsumdom : (dom (f + g)).Nonempty := by
+  have hsumdom : (convexDom (f + g)).Nonempty := by
     refine ⟨x₀, ?_⟩
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x₀) hfx₀
     obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x₀) hgx₀
     have hval : (f + g) x₀ = ((p + q : ℝ) : EReal) := by
       rw [Pi.add_apply, hp, hq, ← EReal.coe_add]
-    rw [mem_dom, hval]
+    rw [mem_convexDom, hval]
     exact EReal.coe_lt_top _
   obtain ⟨a, ha⟩ :=
-    EReal.exists_coe_of_ne_bot_of_lt_top (conj_ne_bot hsumdom y) hlt
+    EReal.exists_coe_of_ne_bot_of_lt_top (convexConj_ne_bot hsumdom y) hlt
   have hkey : ∀ x, ((B x y : ℝ) : EReal) - (a : EReal) ≤ f x + g x :=
-    conj_le_coe_iff.1 ha.le
+    convexConj_le_coe_iff.1 ha.le
   -- the two convex sets
   have hC₂ : Convex ℝ {p : E × ℝ | g p.1 ≤ ((B p.1 y - a - p.2 : ℝ) : EReal)} := by
     rintro ⟨x, μ⟩ hx ⟨x', μ'⟩ hx' s t hs ht hst
@@ -180,8 +180,8 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
     exact le_of_mul_le_mul_left (by linarith : t * μ ≤ t * (B x y₁ - d)) htpos
   -- read off the two affine minorants
   refine ⟨y₁, y - y₁, by abel, ?_⟩
-  have hA : conj B f y₁ ≤ (d : EReal) := by
-    refine conj_le_coe_iff.2 fun x => ?_
+  have hA : convexConj B f y₁ ≤ (d : EReal) := by
+    refine convexConj_le_coe_iff.2 fun x => ?_
     rw [affineFn_eq_coe]
     rcases eq_top_or_lt_top (f x) with hx | hx
     · rw [hx]; exact le_top
@@ -193,8 +193,8 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
       have hmid : p < (p + (B x y₁ - d)) / 2 := by linarith
       have hstep := hlow x ((p + (B x y₁ - d)) / 2) (by rw [hp]; exact_mod_cast hmid)
       linarith
-  have hBb : conj B g (y - y₁) ≤ ((a - d : ℝ) : EReal) := by
-    refine conj_le_coe_iff.2 fun x => ?_
+  have hBb : convexConj B g (y - y₁) ≤ ((a - d : ℝ) : EReal) := by
+    refine convexConj_le_coe_iff.2 fun x => ?_
     rw [affineFn_eq_coe]
     rcases eq_top_or_lt_top (g x) with hx | hx
     · rw [hx]; exact le_top
@@ -204,10 +204,10 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
     have hBsub : B x (y - y₁) = B x y - B x y₁ := map_sub (B x) y y₁
     rw [hBsub]
     linarith
-  calc conj B f y₁ + conj B g (y - y₁) ≤ (d : EReal) + ((a - d : ℝ) : EReal) :=
+  calc convexConj B f y₁ + convexConj B g (y - y₁) ≤ (d : EReal) + ((a - d : ℝ) : EReal) :=
         add_le_add hA hBb
     _ = (a : EReal) := by rw [← EReal.coe_add]; norm_num
-    _ = conj B (f + g) y := ha.symm
+    _ = convexConj B (f + g) y := ha.symm
 
 end ContinuousAt
 

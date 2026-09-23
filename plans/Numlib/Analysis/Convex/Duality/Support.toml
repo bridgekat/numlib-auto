@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'supportFn'
 
 [[node]]
-id = 'supportFn_eq_conj_indicatorFn'
+id = 'supportFn_eq_convexConj_indicatorFn'
 
 [[node]]
 id = 'supportFn_singleton'
@@ -27,7 +27,7 @@ id = 'supportFn_add'
 id = 'supportSet'
 
 [[node]]
-id = 'conj_eq_indicatorFn_of_posHomogeneous'
+id = 'convexConj_eq_indicatorFn_of_posHomogeneous'
 
 [[node]]
 id = 'supportFn_closure'
@@ -36,13 +36,13 @@ id = 'supportFn_closure'
 id = 'mem_closure_convexHull_iff_le_supportFn'
 
 [[node]]
-id = 'clFn_eq_supportFn_of_posHomogeneous'
+id = 'convexCl_eq_supportFn_of_posHomogeneous'
 
 [[node]]
-id = 'supportSet_clFn'
+id = 'supportSet_convexCl'
 
 [[node]]
-id = 'conj_supportFn'
+id = 'convexConj_supportFn'
 
 [[node]]
 id = 'exists_supportFn_iff'

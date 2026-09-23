@@ -8,22 +8,20 @@ Applying the two partial closures of a concave-convex function in the two possib
 These do *not* agree in general — the discrepancy is what forces saddle-functions to be grouped
 into equivalence classes — but each is idempotent.
 
-Both halves run the correspondence between saddle-functions and convex bifunctions twice; the
-iteration stops because the adjoint does not see the closure, `(cl F)* = F*`.
+Idempotence needs no duality: `cl₁` raises, `cl₂` lowers, and each is monotone and idempotent.
 
 ## Main definitions
 
 * `lowerCl`, `upperCl` — the two closures; `LowerClosedFn`, `UpperClosedFn`, `FullyClosedFn` for
   the functions they fix.
-* `saddleSwap K = fun (x, u) => -K (u, x)` — the involution exchanging the roles of `cl₁` and
-  `cl₂`, bundled as the order isomorphism `saddleSwapOrderIso` onto the order dual.
 
 ## Main results
 
 * `fullyClosedFn_iff` — fully closed means lower closed and upper closed.
-* `upperClosedFn_upperCl`, `lowerClosedFn_lowerCl` — each closure is idempotent
-  ([rockafellar1970convex] Theorem 34.1). The pairings occur only in the hypotheses, never in the
-  conclusion, so they must be given explicitly at each use site.
+* `upperCl_saddleSwap`, `lowerCl_saddleSwap` — `saddleSwap` exchanges the two closures.
+* `lowerCl_idem`, `upperCl_idem` — each closure is idempotent ([rockafellar1970convex]
+  Theorem 34.1), for every `K`: `cl₁` and `cl₂` are a closure and a co-closure operator, so no
+  duality and no hypothesis is needed.
 
 ## References
 
@@ -55,13 +53,13 @@ def LowerClosedFn (K : U × X → EReal) : Prop := lowerCl K = K
 def UpperClosedFn (K : U × X → EReal) : Prop := upperCl K = K
 
 /-- `K` is **fully closed** when it is closed in each variable separately. -/
-def FullyClosedFn (K : U × X → EReal) : Prop := ConvexClosedFn K ∧ ConcaveClosedFn K
+def FullyClosedFn (K : U × X → EReal) : Prop := PartialClosed₂ K ∧ PartialClosed₁ K
 
 theorem lowerClosedFn_iff : LowerClosedFn K ↔ lowerCl K = K := Iff.rfl
 
 theorem upperClosedFn_iff : UpperClosedFn K ↔ upperCl K = K := Iff.rfl
 
-theorem fullyClosedFn_iff' : FullyClosedFn K ↔ ConvexClosedFn K ∧ ConcaveClosedFn K := Iff.rfl
+theorem fullyClosedFn_iff' : FullyClosedFn K ↔ PartialClosed₂ K ∧ PartialClosed₁ K := Iff.rfl
 
 end Defs
 
@@ -71,14 +69,14 @@ variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGr
   [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X] {K : U × X → EReal}
 
 omit [AddCommGroup U] [IsTopologicalAddGroup U] in
-theorem LowerClosedFn.convexClosedFn (hK : LowerClosedFn K) : ConvexClosedFn K := by
+theorem LowerClosedFn.partialClosed₂ (hK : LowerClosedFn K) : PartialClosed₂ K := by
   rw [← hK, lowerCl_def]
-  exact convexClosedFn_partialCl₂ (partialCl₁ K)
+  exact partialClosed₂_partialCl₂ (partialCl₁ K)
 
 omit [AddCommGroup X] [IsTopologicalAddGroup X] in
-theorem UpperClosedFn.concaveClosedFn (hK : UpperClosedFn K) : ConcaveClosedFn K := by
+theorem UpperClosedFn.partialClosed₁ (hK : UpperClosedFn K) : PartialClosed₁ K := by
   rw [← hK, upperCl_def]
-  exact concaveClosedFn_partialCl₁ (partialCl₂ K)
+  exact partialClosed₁_partialCl₁ (partialCl₂ K)
 
 /-- Fully closed is exactly lower closed and upper closed. -/
 theorem fullyClosedFn_iff : FullyClosedFn K ↔ LowerClosedFn K ∧ UpperClosedFn K := by
@@ -87,73 +85,15 @@ theorem fullyClosedFn_iff : FullyClosedFn K ↔ LowerClosedFn K ∧ UpperClosedF
     exact ⟨by rw [lowerClosedFn_iff, lowerCl_def, h1, h2],
       by rw [upperClosedFn_iff, upperCl_def, h2, h1]⟩
   · rintro ⟨hl, hu⟩
-    exact ⟨hl.convexClosedFn, hu.concaveClosedFn⟩
+    exact ⟨hl.partialClosed₂, hu.partialClosed₁⟩
 
 end FullyClosed
 
-/-! ### The swap involution -/
-
-section Swap
-
-variable {U X : Type*} {K : U × X → EReal}
-
-/-- Negate a saddle-function and exchange its arguments: an involution of saddle-functions that
-exchanges `cl₁` with `cl₂`. -/
-noncomputable def saddleSwap (K : U × X → EReal) : X × U → EReal := fun q => -(K (q.2, q.1))
-
-theorem saddleSwap_apply (K : U × X → EReal) (q : X × U) :
-    saddleSwap K q = -(K (q.2, q.1)) := rfl
-
-@[simp] theorem saddleSwap_saddleSwap (K : U × X → EReal) : saddleSwap (saddleSwap K) = K :=
-  funext fun p => neg_neg (K p)
-
-theorem saddleSwap_le_saddleSwap {K L : U × X → EReal} (h : K ≤ L) :
-    saddleSwap L ≤ saddleSwap K :=
-  fun q => EReal.neg_le_neg_iff.2 (h (q.2, q.1))
-
-/-- `saddleSwap` bundled as an order isomorphism onto the order dual. It is not an endomorphism —
-the two factors are exchanged — so its two-sided inverse has to be recorded as an `Equiv`. -/
-noncomputable def saddleSwapOrderIso : (U × X → EReal) ≃o (X × U → EReal)ᵒᵈ where
-  toFun K := OrderDual.toDual (saddleSwap K)
-  invFun K := saddleSwap (OrderDual.ofDual K)
-  left_inv := saddleSwap_saddleSwap
-  right_inv := saddleSwap_saddleSwap
-  map_rel_iff' {K L} := by
-    change saddleSwap L ≤ saddleSwap K ↔ K ≤ L
-    exact ⟨fun h => by simpa using saddleSwap_le_saddleSwap h, saddleSwap_le_saddleSwap⟩
-
-@[simp] theorem saddleSwapOrderIso_apply (K : U × X → EReal) :
-    saddleSwapOrderIso K = saddleSwap K := rfl
-
-theorem saddleSwap_injective :
-    Function.Injective (saddleSwap : (U × X → EReal) → X × U → EReal) :=
-  (saddleSwapOrderIso (U := U) (X := X)).injective
-
-end Swap
-
-section SwapConvex
-
-variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
-  {K : U × X → EReal}
-
-theorem concaveConvexFn_saddleSwap (hK : ConcaveConvexFn K) : ConcaveConvexFn (saddleSwap K) :=
-  ⟨fun u => (hK.convex_snd u).concaveFn_neg, fun x => (hK.concave_fst x).convexFn_neg⟩
-
-end SwapConvex
+/-! ### The closures under the swap involution -/
 
 section SwapClosure
 
 variable {U X : Type*} [TopologicalSpace U] [TopologicalSpace X] {K : U × X → EReal}
-
-omit [TopologicalSpace U] in
-theorem partialCl₁_saddleSwap (K : U × X → EReal) :
-    partialCl₁ (saddleSwap K) = saddleSwap (partialCl₂ K) :=
-  funext fun q => clConcave_neg (fun x => K (q.2, x)) q.1
-
-omit [TopologicalSpace X] in
-theorem partialCl₂_saddleSwap (K : U × X → EReal) :
-    partialCl₂ (saddleSwap K) = saddleSwap (partialCl₁ K) :=
-  funext fun q => (neg_clConcave (fun u => K (u, q.1)) q.2).symm
 
 theorem upperCl_saddleSwap (K : U × X → EReal) :
     upperCl (saddleSwap K) = saddleSwap (lowerCl K) := by
@@ -170,78 +110,47 @@ theorem lowerClosedFn_iff_upperClosedFn_saddleSwap :
 
 end SwapClosure
 
-/-! ### Concave-convexity of the first partial closure -/
-
-section CorMirror
-
-variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
-  [AddCommGroup X] [Module ℝ X] [TopologicalSpace U] [IsTopologicalAddGroup U]
-  [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] {K : U × X → EReal}
-
-/-- Mirroring `concaveConvexFn_partialCl₂`: `cl₁ K` is again concave-convex. The pairing needed
-is the one on the concave variable. -/
-theorem concaveConvexFn_partialCl₁ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
-    (hK : ConcaveConvexFn K) : ConcaveConvexFn (partialCl₁ K) := by
-  have h : partialCl₁ K = saddleSwap (partialCl₂ (saddleSwap K)) := by
-    rw [partialCl₂_saddleSwap, saddleSwap_saddleSwap]
-  rw [h]
-  exact concaveConvexFn_saddleSwap
-    (concaveConvexFn_partialCl₂ Bu.flip (concaveConvexFn_saddleSwap hK))
-
-end CorMirror
-
 /-! ### Idempotence of the two closures -/
 
 section Idempotence
 
-variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
-  [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
-  [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
-  [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X]
-  [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y]
-  {K : U × Y → EReal}
+variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U]
+  [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X]
 
-/-- The upper closure is idempotent: `cl₁ cl₂ cl₁ cl₂ K = cl₁ cl₂ K`.
+/-- The lower closure is lower closed: `lowerCl` is idempotent.
 
-`Bu` pairs the concave variable and `Bx` the convex one; `Bx` must be compatible on both sides,
-because Fenchel–Moreau is applied once on `Y` and once on `U × X`. -/
-theorem upperClosedFn_upperCl (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
-    (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
-    (hK : ConcaveConvexFn K) : UpperClosedFn (upperCl K) := by
-  have hF : ConvexBifun (bifunOfSaddle Bx K) := convexBifun_bifunOfSaddle hK Bx
-  have h2 : partialCl₂ K = fun p : U × Y => bracket Bx (bifunOfSaddle Bx K) p.1 p.2 :=
-    (funext fun p => bracket_bifunOfSaddle hK p).symm
-  have hup : upperCl K
-      = fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx (bifunOfSaddle Bx K)) p.1 p.2 := by
-    funext p
-    rw [upperCl_def, h2]
-    exact (congrFun (concaveBracket_adjointBifun_eq_partialCl₁ (Bu := Bu) hF p.2) p.1).symm
-  have h3 : partialCl₂ (upperCl K)
-      = fun p : U × Y => bracket Bx (clBifun (bifunOfSaddle Bx K)) p.1 p.2 := by
-    funext p
-    rw [hup]
-    have hb := bracket_concaveAdjointBifun_eq_partialCl₂ (Bu := Bu) (Bx := Bx)
-      (concaveBifun_adjointBifun Bu Bx (bifunOfSaddle Bx K)) p.1
-    rw [concaveAdjointBifun_adjointBifun_eq_clBifun hF] at hb
-    exact (congrFun hb p.2).symm
-  rw [upperClosedFn_iff, upperCl_def, h3]
-  have h4 : partialCl₁ (fun q : U × Y => bracket Bx (clBifun (bifunOfSaddle Bx K)) q.1 q.2)
-      = fun p : U × Y =>
-        concaveBracket Bu (adjointBifun Bu Bx (clBifun (bifunOfSaddle Bx K))) p.1 p.2 := by
-    funext p
-    exact (congrFun (concaveBracket_adjointBifun_eq_partialCl₁ (Bu := Bu) hF.clBifun p.2) p.1).symm
-  rw [h4, adjointBifun_clBifun, hup]
+No duality is needed: `cl₁` and `cl₂` are a closure and a *co*-closure operator — monotone,
+idempotent, one raising and one lowering — and with `M = cl₁ K`, `N = cl₂ M` the chain
+`cl₂ (cl₁ N) ≤ cl₂ (cl₁ M) = cl₂ M = N = cl₂ N ≤ cl₂ (cl₁ N)` closes. -/
+theorem lowerCl_idem (K : U × X → EReal) : lowerCl (lowerCl K) = lowerCl K := by
+  have hAM : partialCl₁ (partialCl₁ K) = partialCl₁ K := partialClosed₁_partialCl₁ K
+  have hBN : partialCl₂ (partialCl₂ (partialCl₁ K)) = partialCl₂ (partialCl₁ K) :=
+    partialClosed₂_partialCl₂ (partialCl₁ K)
+  have hNM : partialCl₂ (partialCl₁ K) ≤ partialCl₁ K := partialCl₂_le _
+  simp only [lowerCl_def]
+  refine le_antisymm ?_ ?_
+  · calc partialCl₂ (partialCl₁ (partialCl₂ (partialCl₁ K)))
+        ≤ partialCl₂ (partialCl₁ (partialCl₁ K)) := partialCl₂_mono (partialCl₁_mono hNM)
+      _ = partialCl₂ (partialCl₁ K) := by rw [hAM]
+  · calc partialCl₂ (partialCl₁ K) = partialCl₂ (partialCl₂ (partialCl₁ K)) := hBN.symm
+      _ ≤ partialCl₂ (partialCl₁ (partialCl₂ (partialCl₁ K))) :=
+          partialCl₂_mono (le_partialCl₁ _)
 
-omit [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
-  [LocallyConvexSpace ℝ X] in
-/-- The lower closure is idempotent: `cl₂ cl₁ cl₂ cl₁ K = cl₂ cl₁ K`. This is
-`upperClosedFn_upperCl` at `saddleSwap K`, which is why the pairings are needed on both sides. -/
-theorem lowerClosedFn_lowerCl [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
-    [LocallyConvexSpace ℝ V] (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
-    [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx.flip]
-    (hK : ConcaveConvexFn K) : LowerClosedFn (lowerCl K) := by
-  rw [lowerClosedFn_iff_upperClosedFn_saddleSwap, ← upperCl_saddleSwap]
-  exact upperClosedFn_upperCl Bx.flip Bu.flip (concaveConvexFn_saddleSwap hK)
+/-- The upper closure is upper closed, by the swap involution. -/
+theorem upperCl_idem (K : U × X → EReal) : upperCl (upperCl K) = upperCl K := by
+  have h := lowerCl_idem (saddleSwap K)
+  rw [lowerCl_saddleSwap, lowerCl_saddleSwap] at h
+  exact saddleSwap_injective h
+
+omit [AddCommGroup U] [IsTopologicalAddGroup U] in
+/-- The lower closure is convex-closed: it *is* a `cl₂`. -/
+theorem partialClosed₂_lowerCl (K : U × X → EReal) : PartialClosed₂ (lowerCl K) :=
+  partialClosed₂_partialCl₂ (partialCl₁ K)
+
+omit [AddCommGroup X] [IsTopologicalAddGroup X] in
+/-- The upper closure is concave-closed: it *is* a `cl₁`. -/
+theorem partialClosed₁_upperCl (K : U × X → EReal) : PartialClosed₁ (upperCl K) :=
+  partialClosed₁_partialCl₁ (partialCl₂ K)
 
 end Idempotence
 

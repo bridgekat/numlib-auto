@@ -7,7 +7,7 @@ id = 'supportFn_apply_rn'
 id = 'barrierCone'
 
 [[node]]
-id = 'barrierCone_eq_dom_supportFn'
+id = 'barrierCone_eq_convexDom_supportFn'
 
 [[node]]
 id = 'mem_barrierCone_iff'

@@ -128,8 +128,8 @@ theorem theorem_23_2 {f : Rn n → EReal} {x : Rn n} (ht : f x ≠ ⊤) (hb : f 
 the support function of the closed convex set `∂f(x)`. -/
 theorem theorem_23_2_closure {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) :
-    clFn (dirDeriv f x) = supportFn (pairing n) (subdifferential (pairing n) f x) := by
-  have h := clFn_dirDeriv (B := pairing n) hf ht hb
+    convexCl (dirDeriv f x) = supportFn (pairing n) (subdifferential (pairing n) f x) := by
+  have h := convexCl_dirDeriv (B := pairing n) hf ht hb
   rwa [flip_pairing] at h
 
 /-! ### Theorem 23.3: when subgradients exist -/
@@ -137,8 +137,8 @@ theorem theorem_23_2_closure {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (
 /-- **Theorem 23.3**, first assertion: a function subdifferentiable at a point where it is finite
 is proper — a subgradient exhibits an affine minorant. -/
 theorem theorem_23_3_proper {f : Rn n → EReal} {x : Rn n} (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
-    (h : (subdifferential (pairing n) f x).Nonempty) : Proper f :=
-  proper_of_subdifferential_nonempty ht hb h
+    (h : (subdifferential (pairing n) f x).Nonempty) : ProperConvex f :=
+  properConvex_of_subdifferential_nonempty ht hb h
 
 /-- **Theorem 23.3**, second assertion: if `f` is *not* subdifferentiable at `x`, some direction
 has `f'(x; y) = -f'(x; -y) = -∞`. The book's `-f'(x; -y) = -∞` is stated here as
@@ -151,54 +151,57 @@ theorem theorem_23_3_two_sided {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
 /-- **Theorem 23.3**, last assertion: if `f` is not subdifferentiable at `x` then
 `f'(x; z - x) = -∞` for *every* `z ∈ ri (dom f)`. -/
 theorem theorem_23_3_relint {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (ht : f x ≠ ⊤)
-    (hb : f x ≠ ⊥) (hsub : subdifferential (pairing n) f x = ∅) {z : Rn n} (hz : z ∈ ri (dom f)) :
+    (hb : f x ≠ ⊥) (hsub : subdifferential (pairing n) f x = ∅) {z : Rn n}
+        (hz : z ∈ ri (convexDom f)) :
     dirDeriv f x (z - x) = ⊥ :=
   dirDeriv_eq_bot_of_subdifferential_eq_empty hf ht hb hsub hz
 
 /-! ### Theorem 23.4: existence, closedness and boundedness -/
 
 /-- **Theorem 23.4**, first assertion: `∂f(x) = ∅` for `x ∉ dom f`. Convexity is not used. -/
-theorem theorem_23_4_notMem_dom {f : Rn n → EReal} (hp : Proper f) {x : Rn n} (hx : x ∉ dom f) :
+theorem theorem_23_4_notMem_dom {f : Rn n → EReal} (hp : ProperConvex f) {x : Rn n}
+    (hx : x ∉ convexDom f) :
     subdifferential (pairing n) f x = ∅ :=
-  subdifferential_eq_empty_of_notMem_dom hp hx
+  subdifferential_eq_empty_of_notMem_convexDom hp hx
 
 /-- **Theorem 23.4**: a proper convex function is subdifferentiable at every point of
 `ri (dom f)`. -/
-theorem theorem_23_4_nonempty {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
-    (hx : x ∈ ri (dom f)) : (subdifferential (pairing n) f x).Nonempty :=
-  subdifferential_nonempty_of_mem_relint_dom hf hp hx
+theorem theorem_23_4_nonempty {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n}
+    (hx : x ∈ ri (convexDom f)) : (subdifferential (pairing n) f x).Nonempty :=
+  subdifferential_nonempty_of_mem_relint_convexDom hf hp hx
 
 /-- **Theorem 23.4**: for `x ∈ ri (dom f)`, `f'(x; ·)` is proper. -/
-theorem theorem_23_4_proper {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
-    (hx : x ∈ ri (dom f)) : Proper (dirDeriv f x) :=
-  proper_dirDeriv_of_mem_relint_dom hf hp hx
+theorem theorem_23_4_proper {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n}
+    (hx : x ∈ ri (convexDom f)) : ProperConvex (dirDeriv f x) :=
+  properConvex_dirDeriv_of_mem_relint_convexDom hf hp hx
 
 /-- **Theorem 23.4**: for `x ∈ ri (dom f)`, `f'(x; ·)` is closed. -/
-theorem theorem_23_4_closed {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
-    (hx : x ∈ ri (dom f)) : ClosedFn (dirDeriv f x) :=
-  closedFn_dirDeriv_of_mem_relint_dom hf hp hx
+theorem theorem_23_4_closed {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n}
+    (hx : x ∈ ri (convexDom f)) : ClosedConvex (dirDeriv f x) :=
+  closedConvex_dirDeriv_of_mem_relint_convexDom hf hp hx
 
 /-- **Theorem 23.4**: for `x ∈ ri (dom f)`, `f'(x; y) = δ*(y | ∂f(x))`. Because `f'(x; ·)` is
 already closed there no closure appears — this is the sharpening of Theorem 23.2 that the relative
 interior buys. -/
-theorem theorem_23_4_supportFn {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
-    (hx : x ∈ ri (dom f)) :
+theorem theorem_23_4_supportFn {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n}
+    (hx : x ∈ ri (convexDom f)) :
     dirDeriv f x = supportFn (pairing n) (subdifferential (pairing n) f x) := by
-  have h := dirDeriv_eq_supportFn_of_mem_relint_dom (B := pairing n) hf hp hx
+  have h := dirDeriv_eq_supportFn_of_mem_relint_convexDom (B := pairing n) hf hp hx
   rwa [flip_pairing] at h
 
 /-- **Theorem 23.4**, last assertion: `∂f(x)` is non-empty and *bounded* iff
 `x ∈ int (dom f)`. -/
-theorem theorem_23_4_isBounded_iff {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
-    {x : Rn n} (hx : x ∈ ri (dom f)) :
-    Bornology.IsBounded (subdifferential (pairing n) f x) ↔ x ∈ interior (dom f) :=
-  isBounded_subdifferential_iff_mem_interior_dom hf hp hx
+theorem theorem_23_4_isBounded_iff {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    {x : Rn n} (hx : x ∈ ri (convexDom f)) :
+    Bornology.IsBounded (subdifferential (pairing n) f x) ↔ x ∈ interior (convexDom f) :=
+  isBounded_subdifferential_iff_mem_interior_convexDom hf hp hx
 
 /-- **Theorem 23.4**, last clause: in that case `f'(x; y)` is finite for every `y`. "Finite" is
 `dom (f'(x; ·)) = ℝⁿ` together with properness, which rules out `-∞`. -/
-theorem theorem_23_4_finite_iff {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
-    (hx : x ∈ ri (dom f)) : dom (dirDeriv f x) = univ ↔ x ∈ interior (dom f) :=
-  dom_dirDeriv_eq_univ_iff_mem_interior_dom hf hp hx
+theorem theorem_23_4_finite_iff {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    {x : Rn n}
+    (hx : x ∈ ri (convexDom f)) : convexDom (dirDeriv f x) = univ ↔ x ∈ interior (convexDom f) :=
+  convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom hf hp hx
 
 /-! ### `dom ∂f` need not be convex
 
@@ -211,7 +214,7 @@ for `ξ₁ ≥ 0` and `+∞` for `ξ₁ < 0`. Its effective domain is the closed
 subdifferentiable everywhere on that half-plane **except** in the relative interior of the segment
 joining `(0, 1)` and `(0, -1)`, so `dom ∂f` is not convex. -/
 noncomputable def nonsmoothMaxFn : Rn 2 → EReal :=
-  ConvexAnalysis.restrictFn {x : Rn 2 | 0 ≤ x 0}
+  ConvexAnalysis.convexRestrict {x : Rn 2 | 0 ≤ x 0}
     fun x => ((max (1 - Real.sqrt (x 0)) |x 1| : ℝ) : EReal)
 
 private theorem convexOn_nonsmoothMax :
@@ -255,10 +258,10 @@ private theorem convexFn_nonsmoothMaxFn : ConvexFn nonsmoothMaxFn :=
 
 private theorem nonsmoothMaxFn_of_nonneg {x : Rn 2} (hx : 0 ≤ x 0) :
     nonsmoothMaxFn x = ((max (1 - Real.sqrt (x 0)) |x 1| : ℝ) : EReal) :=
-  ConvexAnalysis.restrictFn_of_mem hx
+  ConvexAnalysis.convexRestrict_of_mem hx
 
 private theorem nonsmoothMaxFn_of_neg {x : Rn 2} (hx : ¬ 0 ≤ x 0) : nonsmoothMaxFn x = ⊤ :=
-  ConvexAnalysis.restrictFn_of_notMem hx
+  ConvexAnalysis.convexRestrict_of_notMem hx
 
 private noncomputable def upperPoint : Rn 2 := WithLp.toLp 2 ![(0 : ℝ), 1]
 
@@ -371,10 +374,11 @@ theorem notConvex_domSubdifferential_nonsmoothMaxFn :
 
 /-- The example really is a *proper convex* function, so it witnesses the statement the book
 makes. -/
-theorem proper_convexFn_nonsmoothMaxFn : ConvexFn nonsmoothMaxFn ∧ Proper nonsmoothMaxFn := by
+theorem properConvex_convexFn_nonsmoothMaxFn : ConvexFn nonsmoothMaxFn
+    ∧ ProperConvex nonsmoothMaxFn := by
   refine ⟨convexFn_nonsmoothMaxFn, ⟨⟨0, ?_⟩, fun x => ?_⟩⟩
   · have hz0 : (0 : Rn 2) 0 = (0 : ℝ) := rfl
-    rw [mem_dom, nonsmoothMaxFn_of_nonneg (by rw [hz0])]
+    rw [mem_convexDom, nonsmoothMaxFn_of_nonneg (by rw [hz0])]
     exact EReal.coe_lt_top _
   · by_cases hx : 0 ≤ x 0
     · rw [nonsmoothMaxFn_of_nonneg hx]
@@ -403,71 +407,72 @@ theorem theorem_23_5_b {f : Rn n → EReal} {x y : Rn n} :
 `f*(x*)`, this is (b) restated; again no hypothesis is needed. -/
 theorem theorem_23_5_c {f : Rn n → EReal} {x y : Rn n} :
     y ∈ subdifferential (pairing n) f x ↔
-      f x + conj (pairing n) f y ≤ ((pairing n x y : ℝ) : EReal) :=
-  mem_subdifferential_iff_add_conj_le
+      f x + convexConj (pairing n) f y ≤ ((pairing n x y : ℝ) : EReal) :=
+  mem_subdifferential_iff_add_convexConj_le
 
 /-- **Theorem 23.5**, condition (d): `f(x) + f*(x*) = ⟨x, x*⟩`. This is the one clause of (a)–(d)
 that genuinely consumes properness: Fenchel's inequality `⟨x, x*⟩ ≤ f(x) + f*(x*)` is false for
 `f ≡ +∞`, since `⊤ + ⊥ = ⊥` in `EReal`. -/
-theorem theorem_23_5_d {f : Rn n → EReal} (hp : Proper f) {x y : Rn n} :
+theorem theorem_23_5_d {f : Rn n → EReal} (hp : ProperConvex f) {x y : Rn n} :
     y ∈ subdifferential (pairing n) f x ↔
-      f x + conj (pairing n) f y = ((pairing n x y : ℝ) : EReal) :=
-  hp.mem_subdifferential_iff_add_conj_eq
+      f x + convexConj (pairing n) f y = ((pairing n x y : ℝ) : EReal) :=
+  hp.mem_subdifferential_iff_add_convexConj_eq
 
 /-- **Theorem 23.5**, condition (a*): `x ∈ ∂f*(x*)`, available when `(cl f)(x) = f(x)` — which for
 convex `f` is Fenchel–Moreau's `f** x = f x`. -/
 theorem theorem_23_5_a_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
-    (hx : clFn f x = f x) {y : Rn n} :
-    x ∈ subdifferential (pairing n) (conj (pairing n) f) y ↔
+    (hx : convexCl f x = f x) {y : Rn n} :
+    x ∈ subdifferential (pairing n) (convexConj (pairing n) f) y ↔
       y ∈ subdifferential (pairing n) f x := by
-  have hbi : biconj (pairing n) f x = f x := by rw [biconj_eq_clFn hf]; exact hx
-  have h := mem_subdifferential_conj_iff (B := pairing n) (f := f) (x := x) (y := y) hbi
+  have hbi : convexBiconj (pairing n) f x = f x := by rw [convexBiconj_eq_convexCl hf]; exact hx
+  have h := mem_subdifferential_convexConj_iff (B := pairing n) (f := f) (x := x) (y := y) hbi
   rwa [flip_pairing] at h
 
 /-- **Theorem 23.5**, condition (b*): `⟨x, z*⟩ - f*(z*)` attains its supremum in `z*` at `z* = x*`,
 available when `(cl f)(x) = f(x)`. -/
 theorem theorem_23_5_b_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
-    (hx : clFn f x = f x) {y : Rn n} :
+    (hx : convexCl f x = f x) {y : Rn n} :
     y ∈ subdifferential (pairing n) f x ↔
-      ∀ w : Rn n, ((pairing n x w : ℝ) : EReal) - conj (pairing n) f w
-        ≤ ((pairing n x y : ℝ) : EReal) - conj (pairing n) f y := by
+      ∀ w : Rn n, ((pairing n x w : ℝ) : EReal) - convexConj (pairing n) f w
+        ≤ ((pairing n x y : ℝ) : EReal) - convexConj (pairing n) f y := by
   rw [← theorem_23_5_a_star hf hx, theorem_23_5_b]
   exact forall_congr' fun w => by rw [pairing_comm w x, pairing_comm y x]
 
 /-- **Theorem 23.5**, condition (a**): `x* ∈ ∂(cl f)(x)`, available when `(cl f)(x) = f(x)`. -/
-theorem theorem_23_5_a_star_star {f : Rn n → EReal} {x : Rn n} (hx : clFn f x = f x)
+theorem theorem_23_5_a_star_star {f : Rn n → EReal} {x : Rn n} (hx : convexCl f x = f x)
     {y : Rn n} :
-    y ∈ subdifferential (pairing n) (clFn f) x ↔ y ∈ subdifferential (pairing n) f x :=
-  mem_subdifferential_clFn_iff hx
+    y ∈ subdifferential (pairing n) (convexCl f) x ↔ y ∈ subdifferential (pairing n) f x :=
+  mem_subdifferential_convexCl_iff hx
 
 /-- **Corollary 23.5.1**. For a closed proper convex `f`, the multivalued mapping `∂f*` is the
 inverse of `∂f` — literally `SetRel.inv` applied to `subgradientRel`. **The book states this
 corollary with no proof**; it follows from the equivalence of (a) and (a*) in Theorem 23.5, whose
 hypothesis `(cl f)(x) = f(x)` is automatic for a closed `f`. -/
-theorem corollary_23_5_1 {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedFn f) :
-    subgradientRel (pairing n) (conj (pairing n) f) = (subgradientRel (pairing n) f).inv := by
-  have h := subgradientRel_conj_eq_inv (B := pairing n) hf hc
+theorem corollary_23_5_1 {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedConvex f) :
+    subgradientRel (pairing n) (convexConj (pairing n) f) = (subgradientRel (pairing n) f).inv := by
+  have h := subgradientRel_convexConj_eq_inv (B := pairing n) hf hc
   rwa [flip_pairing] at h
 
 /-- **Corollary 23.5.1**, pointwise: `x ∈ ∂f*(x*)` iff `x* ∈ ∂f(x)`. -/
-theorem corollary_23_5_1_mem {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedFn f)
+theorem corollary_23_5_1_mem {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedConvex f)
     {x y : Rn n} :
-    x ∈ subdifferential (pairing n) (conj (pairing n) f) y ↔
+    x ∈ subdifferential (pairing n) (convexConj (pairing n) f) y ↔
       y ∈ subdifferential (pairing n) f x := by
-  have h := mem_subdifferential_conj_iff_of_closedFn (B := pairing n) (x := x) (y := y) hf hc
+  have h :=
+      mem_subdifferential_convexConj_iff_of_closedConvex (B := pairing n) (x := x) (y := y) hf hc
   rwa [flip_pairing] at h
 
 /-- **Corollary 23.5.2**, first assertion: if `f` is subdifferentiable at `x` then
 `(cl f)(x) = f(x)`. Properness is not needed. -/
 theorem corollary_23_5_2_clFn {f : Rn n → EReal} (hf : ConvexFn f) {x y : Rn n}
-    (hy : y ∈ subdifferential (pairing n) f x) : clFn f x = f x :=
-  clFn_eq_of_mem_subdifferential hf hy
+    (hy : y ∈ subdifferential (pairing n) f x) : convexCl f x = f x :=
+  convexCl_eq_of_mem_subdifferential hf hy
 
 /-- **Corollary 23.5.2**, second assertion: and then `∂(cl f)(x) = ∂f(x)`. -/
 theorem corollary_23_5_2_subdifferential {f : Rn n → EReal} (hf : ConvexFn f) {x y : Rn n}
     (hy : y ∈ subdifferential (pairing n) f x) :
-    subdifferential (pairing n) (clFn f) x = subdifferential (pairing n) f x :=
-  subdifferential_clFn hf hy
+    subdifferential (pairing n) (convexCl f) x = subdifferential (pairing n) f x :=
+  subdifferential_convexCl hf hy
 
 /-- **Corollary 23.5.3**. For a non-empty closed convex `C`, `∂δ*(x* | C)` consists of the points
 of `C` (if any) at which `⟨·, x*⟩ ` attains its maximum over `C`. -/
@@ -531,7 +536,7 @@ theorem epsSubdifferential_iInter (f : Rn n → EReal) (x : Rn n) :
 `f'(x; y) = lim_{ε ↓ 0} δ*(y | ∂_ε f(x))`. The sets `∂_ε f(x)` increase with `ε`, so the book's
 limit is written here as the infimum it is; and "closed" is spelled as `IsClosed (epi f)`, which
 for a proper convex function is the same condition. -/
-theorem theorem_23_6 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_23_6 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) {x : Rn n} {r : ℝ} (hr : f x = (r : EReal)) (v : Rn n) :
     ⨅ ε ∈ Ioi (0 : ℝ), supportFn (pairing n) (epsSubdifferential (pairing n) ε f x) v
       = dirDeriv f x v := by
@@ -554,22 +559,23 @@ theorem theorem_23_7 {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} {r : ℝ}
 closure in Theorem 23.7 is unnecessary: the normal cone is the convex cone generated by `∂f(x)`.
 What makes the closure redundant is that `∂f(x)` is then non-empty, closed, bounded and misses the
 origin, so Corollary 9.6.1 applies. -/
-theorem corollary_23_7_1 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n} {r : ℝ}
-    (hr : f x = (r : EReal)) (hinf : ⨅ z, f z < (r : EReal)) (hx : x ∈ interior (dom f)) :
+theorem corollary_23_7_1 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    {x : Rn n} {r : ℝ}
+    (hr : f x = (r : EReal)) (hinf : ⨅ z, f z < (r : EReal)) (hx : x ∈ interior (convexDom f)) :
     normalCone (pairing n) {z | f z ≤ (r : EReal)} x
       = (PointedCone.hull ℝ (subdifferential (pairing n) f x) : Set (Rn n)) :=
-  normalCone_setOf_le_eq_coe_hull_subdifferential_of_mem_interior_dom hf hp hr hinf hx
+  normalCone_setOf_le_eq_coe_hull_subdifferential_of_mem_interior_convexDom hf hp hr hinf hx
 
 /-- **Corollary 23.7.1** in the book's own words: `x*` is normal to `C = {z | f(z) ≤ f(x)}` at `x`
 iff `x* ∈ λ ∂f(x)` for some `λ ≥ 0`. The convex cone generated by a *convex* set is the union of
 its non-negative multiples (Corollary 9.6.1), and `∂f(x)` is non-empty here, which is what turns
 `λ > 0` into `λ ≥ 0`. -/
-theorem corollary_23_7_1_smul {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) {x : Rn n}
+theorem corollary_23_7_1_smul {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n}
     {r : ℝ} (hr : f x = (r : EReal)) (hinf : ⨅ z, f z < (r : EReal))
-    (hx : x ∈ interior (dom f)) {y : Rn n} :
+    (hx : x ∈ interior (convexDom f)) {y : Rn n} :
     y ∈ normalCone (pairing n) {z | f z ≤ (r : EReal)} x ↔
       ∃ a : ℝ, 0 ≤ a ∧ y ∈ a • subdifferential (pairing n) f x := by
-  have hri : x ∈ ri (dom f) := interior_subset_intrinsicInterior hx
+  have hri : x ∈ ri (convexDom f) := interior_subset_intrinsicInterior hx
   obtain ⟨y₀, hy₀⟩ := theorem_23_4_nonempty hf hp hri
   rw [corollary_23_7_1 hf hp hr hinf hx,
     mem_coe_hull_iff_of_convex (convex_subdifferential (pairing n) f x)]
@@ -598,8 +604,8 @@ by Theorem 16.4 in the same `m`-ary form. The book's ALTERNATIVE PROOF (p. 220) 
 — proper separation of `{(x, μ) | μ ≥ f₁ x}` from `{(x, μ) | μ ≤ -f₂ x}` in `ℝⁿ⁺¹` — but reduces
 `m` to `2` by an induction this route avoids. -/
 theorem theorem_23_8 {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {f : ι → Rn n → EReal}
-    (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, Proper (f i)) {x₀ : Rn n}
-    (hx₀ : ∀ i ∈ s, x₀ ∈ ri (dom (f i))) (x : Rn n) :
+    (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : Rn n}
+    (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) (x : Rn n) :
     subdifferential (pairing n) (∑ i ∈ s, f i) x = ∑ i ∈ s, subdifferential (pairing n) (f i) x :=
   (IsExactFinsetSum.of_relint hs hf hpf hx₀).subdifferential_finsetSum x
 
@@ -610,8 +616,8 @@ polyhedral. If `f₁, …, f_k` are polyhedral it is enough that `dom f₁, …,
 theorem theorem_23_8_polyhedral {ι : Type*} {s t u : Finset ι} (hs : s.Nonempty)
     (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u) {f : ι → Rn n → EReal}
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
-    (hpf : ∀ i ∈ s, Proper (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ dom (f i))
-    (hxu : ∀ i ∈ u, x₀ ∈ ri (dom (f i))) (x : Rn n) :
+    (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ convexDom (f i))
+    (hxu : ∀ i ∈ u, x₀ ∈ ri (convexDom (f i))) (x : Rn n) :
     subdifferential (pairing n) (∑ i ∈ s, f i) x = ∑ i ∈ s, subdifferential (pairing n) (f i) x :=
   (IsExactFinsetSum.of_polyhedral hs hdisj hmem hpoly hconv hpf hxt hxu).subdifferential_finsetSum x
 
@@ -655,11 +661,11 @@ theorem corollary_23_8_1 {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {C : ι 
     normalCone (pairing n) (⋂ i ∈ s, C i) x = ∑ i ∈ s, normalCone (pairing n) (C i) x := by
   have hconv : ∀ i ∈ s, ConvexFn (indicatorFn (C i)) :=
     fun i hi => convexFn_indicatorFn.2 (hC i hi)
-  have hprop : ∀ i ∈ s, Proper (indicatorFn (C i)) := fun i hi =>
-    ⟨⟨x, by rw [dom_indicatorFn]; exact hx i hi⟩, indicatorFn_ne_bot (C i)⟩
-  have hri : ∀ i ∈ s, x₀ ∈ ri (dom (indicatorFn (C i))) := by
+  have hprop : ∀ i ∈ s, ProperConvex (indicatorFn (C i)) := fun i hi =>
+    ⟨⟨x, by rw [convexDom_indicatorFn]; exact hx i hi⟩, indicatorFn_ne_bot (C i)⟩
+  have hri : ∀ i ∈ s, x₀ ∈ ri (convexDom (indicatorFn (C i))) := by
     intro i hi
-    rw [dom_indicatorFn]
+    rw [convexDom_indicatorFn]
     exact hx₀ i hi
   have hsum := theorem_23_8 hs hconv hprop hri x
   rw [indicatorFn_finsetSum C s,
@@ -680,8 +686,9 @@ theorem theorem_23_9_subset (A : Rn n →ₗ[ℝ] Rn m) (h : Rn m → EReal) (x 
 contains a point of `ri (dom h)`, then `∂f(x) = A*∂h(Ax)` for every `x`. This is Theorem 23.5
 applied to the exact conjugacy formula of Theorem 16.3; Rockafellar's `A*` is
 `LinearMap.adjoint A`. -/
-theorem theorem_23_9 (A : Rn n →ₗ[ℝ] Rn m) {h : Rn m → EReal} (hh : ConvexFn h) (hp : Proper h)
-    {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (dom h)) (x : Rn n) :
+theorem theorem_23_9 (A : Rn n →ₗ[ℝ] Rn m) {h : Rn m → EReal} (hh : ConvexFn h)
+    (hp : ProperConvex h)
+    {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom h)) (x : Rn n) :
     subdifferential (pairing n) (compLin h A) x
       = LinearMap.adjoint A '' subdifferential (pairing m) h (A x) :=
   (IsExactImage.of_relint (isAdjointPair_adjoint A) hh hp hx₀).subdifferential_compLin x
@@ -690,7 +697,7 @@ theorem theorem_23_9 (A : Rn n →ₗ[ℝ] Rn m) {h : Rn m → EReal} (hh : Conv
 `dom h` — no relative interior — then `∂f(x) = A*∂h(Ax)`. The book's route is Theorem 16.3 via
 Corollary 19.3.1, which is the one taken here. -/
 theorem theorem_23_9_polyhedral (A : Rn n →ₗ[ℝ] Rn m) {h : Rn m → EReal} (hh : PolyhedralFn h)
-    (hp : Proper h) {x₀ : Rn n} (hx₀ : A x₀ ∈ dom h) (x : Rn n) :
+    (hp : ProperConvex h) {x₀ : Rn n} (hx₀ : A x₀ ∈ convexDom h) (x : Rn n) :
     subdifferential (pairing n) (compLin h A) x
       = LinearMap.adjoint A '' subdifferential (pairing m) h (A x) :=
   (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hh hp hx₀).subdifferential_compLin x
@@ -717,8 +724,8 @@ theorem theorem_23_10_dirDeriv_polyhedral {f : Rn n → EReal} (hf : PolyhedralF
 /-- **Theorem 23.10**: `f'(x; ·)` is proper. The book's reason: `f'(x; 0) = 0`, and a polyhedral
 convex function taking the value `-∞` somewhere has no finite values at all. -/
 theorem theorem_23_10_dirDeriv_proper {f : Rn n → EReal} (hf : PolyhedralFn f) {x : Rn n}
-    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) : Proper (dirDeriv f x) :=
-  proper_dirDeriv_of_polyhedralFn hf ht hb
+    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) : ProperConvex (dirDeriv f x) :=
+  properConvex_dirDeriv_of_polyhedralFn hf ht hb
 
 /-- **Theorem 23.10**, last assertion: `f'(x; ·)` is the support function of `∂f(x)`, with no
 closure operation. -/

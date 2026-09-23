@@ -4,6 +4,9 @@ namespace = 'ConvexAnalysis'
 id = 'infConv'
 
 [[node]]
+id = 'supConv'
+
+[[node]]
 id = 'subset_epi_infConv'
 desc = 'The sum of the two epigraphs is contained in the epigraph of the infimal convolution.'
 
@@ -11,7 +14,10 @@ desc = 'The sum of the two epigraphs is contained in the epigraph of the infimal
 id = 'epi_infConv'
 
 [[node]]
-id = 'dom_infConv'
+id = 'convexDom_infConv'
+
+[[node]]
+id = 'concaveDom_supConv'
 
 [[node]]
 id = 'infConv_le_add'
@@ -20,10 +26,19 @@ id = 'infConv_le_add'
 id = 'infConv_apply'
 
 [[node]]
+id = 'supConv_apply'
+
+[[node]]
+id = 'infConv_comp_neg'
+
+[[node]]
 id = 'infConv_indicatorFn_singleton'
 
 [[node]]
 id = 'convexFn_infConv'
+
+[[node]]
+id = 'concaveFn_supConv'
 
 [[node]]
 id = 'InfConvFn'

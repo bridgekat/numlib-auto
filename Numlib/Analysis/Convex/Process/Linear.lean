@@ -113,13 +113,6 @@ private theorem pairing_eq_of_forall_le (h : ∀ u : U, Bx (T u) y ≤ Bu u v) (
   simp only [map_neg, LinearMap.neg_apply] at hn
   linarith
 
-private theorem pairing_eq_of_forall_ge (h : ∀ u : U, Bu u v ≤ Bx (T u) y) (u : U) :
-    Bx (T u) y = Bu u v := by
-  refine le_antisymm ?_ (h u)
-  have hn := h (-u)
-  simp only [map_neg, LinearMap.neg_apply] at hn
-  linarith
-
 private theorem eq_of_forall_pairing_eq (hB : Bu.SeparatingRight)
     (hA : IsAdjointPair Bu Bx T T') (h : ∀ u : U, Bx (T u) y = Bu u v) : v = T' y := by
   refine sub_eq_zero.1 (hB _ fun u => ?_)
@@ -139,19 +132,14 @@ theorem adjointProcess_ofLinearMap (hB : Bu.SeparatingRight) (hA : IsAdjointPair
     have hq : q.2 = T' q.1 := mem_graph_ofLinearMap.1 h
     rw [hp', hq, hA p.1 q.1]
 
-/-- **The infimum-oriented adjoint of a linear process is the same transpose**, the defining
-inequality holding in both directions on a subspace. -/
+/-- **The infimum-oriented adjoint of a linear process is the same transpose**: it is
+`adjointProcess_ofLinearMap` at the negated pairings, for which `T'` is still a transpose. -/
 theorem coadjointProcess_ofLinearMap (hB : Bu.SeparatingRight) (hA : IsAdjointPair Bu Bx T T') :
     coadjointProcess Bu Bx (ofLinearMap T) = ofLinearMap T' := by
-  ext q
-  constructor
-  · intro h
-    exact eq_of_forall_pairing_eq hB hA
-      (pairing_eq_of_forall_ge fun u => h (u, T u) (mem_graph_ofLinearMap.2 rfl))
-  · intro h p hp
-    have hp' : p.2 = T p.1 := mem_graph_ofLinearMap.1 hp
-    have hq : q.2 = T' q.1 := mem_graph_ofLinearMap.1 h
-    rw [hp', hq, hA p.1 q.1]
+  rw [coadjointProcess_eq_adjointProcess_neg]
+  refine adjointProcess_ofLinearMap (fun v hv => hB v fun u => ?_) fun u y => ?_
+  · simpa using hv u
+  · simp only [LinearMap.neg_apply, hA u y]
 
 end Adjoint
 

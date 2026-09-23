@@ -16,11 +16,12 @@ three of the section's counterexamples, transcribed as Lean definitions.
 
 Three of the book's hypotheses are stronger than its own proofs need. **Theorem 26.5 says "closed
 convex function" where its proof needs "closed *proper* convex"**, so `theorem_26_5` carries
-`Proper f`; nothing is lost, since an improper closed convex function is `+∞` everywhere or `−∞` on
-`cl (dom f)` and so is differentiable on no non-empty interior. **Theorem 26.4's single-valuedness
-and its formula `g = f*` follow from convexity alone**, so `theorem_26_4_wellDefined` and
-`theorem_26_4_eq` carry only `ConvexFn f`. **Corollary 26.3.3's "`A` maps `ℝⁿ` onto `ℝᵐ`" is used
-only through injectivity of `A*`** — the book's own proof says so parenthetically.
+`ProperConvex f`; nothing is lost, since an improper closed convex function is `+∞` everywhere or
+`−∞` on `cl (dom f)` and so is differentiable on no non-empty interior. **Theorem 26.4's
+single-valuedness and its formula `g = f*` follow from convexity alone**, so
+`theorem_26_4_wellDefined` and `theorem_26_4_eq` carry only `ConvexFn f`. **Corollary 26.3.3's "`A`
+maps `ℝⁿ` onto `ℝᵐ`" is used only through injectivity of `A*`** — the book's own proof says so
+parenthetically.
 
 ## Main definitions
 
@@ -61,7 +62,7 @@ only through injectivity of `A*`** — the book's own proof says so parenthetica
 * `theorem_26_6`, `theorem_26_6_conj`, `theorem_26_6_apply`, `lemma_26_7` — the finite
   differentiable case, in which `f*` and the Legendre conjugate agree.
 * `strictOnRelintFn_not_essentiallyStrictlyConvex`, `strictConvexOnFn_strictOnRelintFn`,
-  `essStrictlyConvexFn_not_strictConvexOn_dom`, `not_convex_legendreDomain_halfPlaneFn`,
+  `essStrictlyConvexFn_not_strictConvexOn_convexDom`, `not_convex_legendreDomain_halfPlaneFn`,
   `not_essentiallySmooth_halfPlaneFn` — the three counterexamples doing their work.
 
 There is deliberately **no involution lemma** for the Legendre transformation. The book is explicit
@@ -126,17 +127,18 @@ A proper convex function `f` is **essentially smooth** (p. 251) when, for `C = i
 /-- **Rockafellar, §26 (p. 251)**, verbatim: conditions (a), (b) and (c) with (c) quantified over
 *boundary points* of `C = int (dom f)`, as the book quantifies it. -/
 def EssentiallySmoothBook (f : Rn n → EReal) : Prop :=
-  (interior (dom f)).Nonempty ∧
-    (∀ ⦃z : Rn n⦄, z ∈ interior (dom f) → DifferentiableAtFn f z) ∧
-    ∀ ⦃z : Rn n⦄, z ∈ frontier (interior (dom f)) → ∀ zs : ℕ → Rn n,
-      (∀ i, zs i ∈ interior (dom f)) → Tendsto zs atTop (𝓝 z) →
+  (interior (convexDom f)).Nonempty ∧
+    (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
+    ∀ ⦃z : Rn n⦄, z ∈ frontier (interior (convexDom f)) → ∀ zs : ℕ → Rn n,
+      (∀ i, zs i ∈ interior (convexDom f)) → Tendsto zs atTop (𝓝 z) →
         Tendsto (fun i => ‖fderiv ℝ (fun w => (f w).toReal) (zs i)‖) atTop atTop
 
 /-- **The book's condition (c) and the backbone's are the same condition.** `C = int (dom f)` is
 open, so its frontier is `cl C \ C`: a boundary point of `C` is not in `C`, and conversely a point
 outside `C` that a sequence in `C` converges to lies on the boundary. -/
 theorem essentiallySmooth_iff_book : EssentiallySmooth f ↔ EssentiallySmoothBook f := by
-  have hfr : frontier (interior (dom f)) = closure (interior (dom f)) \ interior (dom f) :=
+  have hfr : frontier (interior (convexDom f))
+      = closure (interior (convexDom f)) \ interior (convexDom f) :=
     isOpen_interior.frontier_eq
   constructor
   · rintro ⟨hne, hdiff, hc⟩
@@ -153,14 +155,14 @@ theorem essentiallySmooth_iff_book : EssentiallySmooth f ↔ EssentiallySmoothBo
 
 /-- **Theorem 26.1.** Let `f` be a closed proper convex function. Then `∂f` is a
 single-valued mapping if and only if `f` is essentially smooth. -/
-theorem theorem_26_1 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem theorem_26_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     SingleValued (subdifferential (pairing n) f) ↔ EssentiallySmooth f :=
   subsingleton_subdifferential_iff_essentiallySmooth hf hp hcl
 
 /-- **Theorem 26.1**, the "in this case" clause, first half: `∂f x` consists of the
 vector `∇f x` alone when `x ∈ int (dom f)`. -/
 theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
-    (hx : x ∈ interior (dom f)) :
+    (hx : x ∈ interior (convexDom f)) :
     subdifferential (pairing n) f x = {gradient (fun w => (f w).toReal) x} := by
   have h := subdifferential_eq_singleton_of_essentiallySmooth hf hes hx
   rwa [show (InnerProductSpace.toDual ℝ (Rn n)).symm (fderiv ℝ (fun w => (f w).toReal) x)
@@ -169,17 +171,18 @@ theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x :
 /-- **Theorem 26.1**, the "in this case" clause, second half: `∂f x = ∅` when
 `x ∉ int (dom f)`. This is the substantive half — it is what makes `∂f` an ordinary function on
 `int (dom f)` and nothing anywhere else. -/
-theorem theorem_26_1_empty (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hes : EssentiallySmooth f) {x : Rn n} (hx : x ∉ interior (dom f)) :
+theorem theorem_26_1_empty (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hes : EssentiallySmooth f) {x : Rn n} (hx : x ∉ interior (convexDom f)) :
     subdifferential (pairing n) f x = ∅ :=
   subdifferential_eq_empty_of_essentiallySmooth hf hp hcl hes hx
 
 /-- **Theorem 26.1**, both halves of the "in this case" clause as one equation:
 `dom ∂f = int (dom f)` for an essentially smooth closed proper convex function. -/
-theorem theorem_26_1_domSubdifferential (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_1_domSubdifferential (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) :
-    domSubdifferential (pairing n) f = interior (dom f) :=
-  domSubdifferential_eq_interior_dom_of_essentiallySmooth hf hp hcl hes
+    domSubdifferential (pairing n) f = interior (convexDom f) :=
+  domSubdifferential_eq_interior_convexDom_of_essentiallySmooth hf hp hcl hes
 
 /-! ### Lemma 26.2 -/
 
@@ -193,31 +196,31 @@ with condition (c) replaced by
 The `↓` of the book records that the map is nondecreasing in `λ`, which holds for every convex `f`;
 the *content* of (c′) is the value of the limit, so only the limit appears here. -/
 def EssentiallySmoothDir (f : Rn n → EReal) : Prop :=
-  (interior (dom f)).Nonempty ∧
-    (∀ ⦃z : Rn n⦄, z ∈ interior (dom f) → DifferentiableAtFn f z) ∧
-    ∀ x ∉ interior (dom f), ∀ a ∈ interior (dom f),
+  (interior (convexDom f)).Nonempty ∧
+    (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
+    ∀ x ∉ interior (convexDom f), ∀ a ∈ interior (convexDom f),
       Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0) (𝓝 ⊥)
 
 /-- **Lemma 26.2**, at a single point: assuming (a) and (b), condition (c) at `x` and
 condition (c′) at `x` along the segment from any `a ∈ C` say the same thing — namely that `f` has
 no subgradient at `x`. -/
-theorem lemma_26_2_at (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hne : (interior (dom f)).Nonempty)
-    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (dom f) → DifferentiableAtFn f z)
-    {a : Rn n} (ha : a ∈ interior (dom f)) (x : Rn n) :
-    (∀ zs : ℕ → Rn n, (∀ i, zs i ∈ interior (dom f)) → Tendsto zs atTop (𝓝 x) →
+theorem lemma_26_2_at (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hne : (interior (convexDom f)).Nonempty)
+    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z)
+    {a : Rn n} (ha : a ∈ interior (convexDom f)) (x : Rn n) :
+    (∀ zs : ℕ → Rn n, (∀ i, zs i ∈ interior (convexDom f)) → Tendsto zs atTop (𝓝 x) →
         Tendsto (fun i => ‖fderiv ℝ (fun w => (f w).toReal) (zs i)‖) atTop atTop)
       ↔ Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0) (𝓝 ⊥) :=
   tendsto_norm_fderiv_iff_tendsto_dirDeriv hf hp hcl hne hdiff ha x
 
 /-- **Lemma 26.2.** For a closed proper convex function, condition (c) may be replaced
 by condition (c′): the two definitions of essential smoothness agree. -/
-theorem lemma_26_2 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem lemma_26_2 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     EssentiallySmooth f ↔ EssentiallySmoothDir f := by
   constructor
   · intro hes
-    refine ⟨hes.interior_dom_nonempty, hes.differentiableAtFn, ?_⟩
-    exact (essentiallySmooth_iff_tendsto_dirDeriv hf hp hcl hes.interior_dom_nonempty
+    refine ⟨hes.interior_convexDom_nonempty, hes.differentiableAtFn, ?_⟩
+    exact (essentiallySmooth_iff_tendsto_dirDeriv hf hp hcl hes.interior_convexDom_nonempty
       hes.differentiableAtFn).1 hes
   · rintro ⟨hne, hdiff, hc⟩
     exact (essentiallySmooth_iff_tendsto_dirDeriv hf hp hcl hne hdiff).2 hc
@@ -282,7 +285,7 @@ The two branches are one formula: at the origin the real expression reads `0/0 �
 in Lean, matching the book's second clause. Rockafellar's claim is that this `f` is essentially
 strictly convex — indeed essentially smooth — while **not** being strictly convex on `dom f`,
 because it vanishes along the whole non-negative `ξ₁`-axis. Only the second half is formalized, as
-`essStrictlyConvexFn_not_strictConvexOn_dom`. -/
+`essStrictlyConvexFn_not_strictConvexOn_convexDom`. -/
 noncomputable def essStrictlyConvexFn (x : Rn 2) : EReal :=
   ⨅ _ : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0),
     ((x 1 ^ 2 / (2 * x 0) - 2 * Real.sqrt (x 1) : ℝ) : EReal)
@@ -309,18 +312,18 @@ theorem essStrictlyConvexFn_axis {t : ℝ} (ht : 0 ≤ t) :
   norm_num
 
 /-- The non-negative `ξ₁`-axis lies in the effective domain of the p. 253 example. -/
-theorem essStrictlyConvexFn_mem_dom {t : ℝ} (ht : 0 ≤ t) :
-    (WithLp.toLp 2 ![t, 0] : Rn 2) ∈ dom essStrictlyConvexFn := by
-  rw [mem_dom, essStrictlyConvexFn_axis ht]
+theorem essStrictlyConvexFn_mem_convexDom {t : ℝ} (ht : 0 ≤ t) :
+    (WithLp.toLp 2 ![t, 0] : Rn 2) ∈ convexDom essStrictlyConvexFn := by
+  rw [mem_convexDom, essStrictlyConvexFn_axis ht]
   exact lt_top_iff_ne_top.2 (by simp)
 
 /-- **Rockafellar, §26 (p. 253).** The example is not strictly convex on `dom f`: it is identically
 zero along the non-negative `ξ₁`-axis, which is a convex subset of `dom f`. This is what separates
 *essential* strict convexity from strict convexity on the effective domain. -/
-theorem essStrictlyConvexFn_not_strictConvexOn_dom :
-    ¬ StrictConvexOnFn essStrictlyConvexFn (dom essStrictlyConvexFn) :=
-  not_strictConvexOnFn_of_axis (essStrictlyConvexFn_mem_dom zero_le_one)
-    (essStrictlyConvexFn_mem_dom (by norm_num)) fun _ ht => essStrictlyConvexFn_axis ht
+theorem essStrictlyConvexFn_not_strictConvexOn_convexDom :
+    ¬ StrictConvexOnFn essStrictlyConvexFn (convexDom essStrictlyConvexFn) :=
+  not_strictConvexOnFn_of_axis (essStrictlyConvexFn_mem_convexDom zero_le_one)
+    (essStrictlyConvexFn_mem_convexDom (by norm_num)) fun _ ht => essStrictlyConvexFn_axis ht
 
 /-! ### The counterexample of p. 254
 
@@ -438,34 +441,34 @@ theorem isOpen_openQuadrant : IsOpen openQuadrant :=
     (isOpen_lt continuous_const (continuous_coord 1))
 
 /-- The effective domain of the p. 254 example, spelled as a set. -/
-theorem dom_strictOnRelintFn :
-    dom strictOnRelintFn = {x : Rn 2 | (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)} := by
+theorem convexDom_strictOnRelintFn :
+    convexDom strictOnRelintFn = {x : Rn 2 | (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)} := by
   ext x
   by_cases h : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)
-  · simp only [mem_dom, strictOnRelintFn_of_mem h, Set.mem_ofPred_eq]
+  · simp only [mem_convexDom, strictOnRelintFn_of_mem h, Set.mem_ofPred_eq]
     exact ⟨fun _ => h, fun _ => EReal.coe_lt_top _⟩
-  · simp only [mem_dom, strictOnRelintFn_of_not_mem h, Set.mem_ofPred_eq, lt_self_iff_false]
+  · simp only [mem_convexDom, strictOnRelintFn_of_not_mem h, Set.mem_ofPred_eq, lt_self_iff_false]
     exact ⟨fun hc => absurd hc not_false, fun hc => absurd hc h⟩
 
-private theorem openQuadrant_subset_dom : openQuadrant ⊆ dom strictOnRelintFn := by
+private theorem openQuadrant_subset_convexDom : openQuadrant ⊆ convexDom strictOnRelintFn := by
   rintro x ⟨h0, h1⟩
-  rw [dom_strictOnRelintFn]
+  rw [convexDom_strictOnRelintFn]
   exact Or.inl ⟨h0, h1.le⟩
 
 /-- **`ri (dom f)` is the open positive quadrant** for the p. 254 example. The domain has
 non-empty interior, so `ri` collapses to `interior`, and the interior is the quadrant because a
 domain point with `ξ₂ = 0` has points with `ξ₂ < 0` arbitrarily close to it. -/
-theorem relint_dom_strictOnRelintFn : ri (dom strictOnRelintFn) = openQuadrant := by
+theorem relint_convexDom_strictOnRelintFn : ri (convexDom strictOnRelintFn) = openQuadrant := by
   have hpt : (WithLp.toLp 2 ![(1 : ℝ), 1] : Rn 2) ∈ openQuadrant := ⟨one_pos, one_pos⟩
-  have htop : affineSpan ℝ (dom strictOnRelintFn) = ⊤ :=
+  have htop : affineSpan ℝ (convexDom strictOnRelintFn) = ⊤ :=
     top_unique <| (isOpen_openQuadrant.affineSpan_eq_top ⟨_, hpt⟩).ge.trans
-      (affineSpan_mono ℝ openQuadrant_subset_dom)
+      (affineSpan_mono ℝ openQuadrant_subset_convexDom)
   rw [intrinsicInterior_eq_interior htop]
   refine Set.Subset.antisymm (fun x hx => ?_)
-    (interior_maximal openQuadrant_subset_dom isOpen_openQuadrant)
-  have hnn : ∀ y : Rn 2, y ∈ dom strictOnRelintFn → 0 ≤ y 1 := by
+    (interior_maximal openQuadrant_subset_convexDom isOpen_openQuadrant)
+  have hnn : ∀ y : Rn 2, y ∈ convexDom strictOnRelintFn → 0 ≤ y 1 := by
     intro y hy
-    rw [dom_strictOnRelintFn] at hy
+    rw [convexDom_strictOnRelintFn] at hy
     rcases hy with ⟨-, h⟩ | ⟨-, h⟩
     · exact h
     · exact h.ge
@@ -484,7 +487,7 @@ theorem relint_dom_strictOnRelintFn : ri (dom strictOnRelintFn) = openQuadrant :
   rw [hcoord] at hle
   have hx1 : 0 < x 1 := by linarith
   have hxD := interior_subset hx
-  rw [dom_strictOnRelintFn] at hxD
+  rw [convexDom_strictOnRelintFn] at hxD
   rcases hxD with ⟨h0, -⟩ | ⟨-, h1⟩
   · exact ⟨h0, hx1⟩
   · exact absurd h1 hx1.ne'
@@ -527,8 +530,8 @@ positively homogeneous, hence affine along every ray from the origin, and the se
 `ξ₁` — so no sum rule applies; what makes the sum strict is that their directions of affineness are
 disjoint. -/
 theorem strictConvexOnFn_strictOnRelintFn :
-    StrictConvexOnFn strictOnRelintFn (ri (dom strictOnRelintFn)) := by
-  rw [relint_dom_strictOnRelintFn]
+    StrictConvexOnFn strictOnRelintFn (ri (convexDom strictOnRelintFn)) := by
+  rw [relint_convexDom_strictOnRelintFn]
   rintro x ⟨hx0, hx1⟩ y ⟨hy0, hy1⟩ hxy a b ha hb hab
   have hzc0 : (a • x + b • y : Rn 2) 0 = a * x 0 + b * y 0 := rfl
   have hzc1 : (a • x + b • y : Rn 2) 1 = a * x 1 + b * y 1 := rfl
@@ -573,24 +576,24 @@ theorem strictConvexOnFn_strictOnRelintFn :
 
 /-- **Theorem 26.3.** A closed proper convex function is essentially strictly convex
 if and only if its conjugate is essentially smooth. -/
-theorem theorem_26_3 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    EssentiallyStrictlyConvex (B := pairing n) f ↔ EssentiallySmooth (conj (pairing n) f) :=
-  (essentiallySmooth_conj_iff_essentiallyStrictlyConvex hf hp hcl).symm
+theorem theorem_26_3 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
+    EssentiallyStrictlyConvex (B := pairing n) f ↔ EssentiallySmooth (convexConj (pairing n) f) :=
+  (essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex hf hp hcl).symm
 
 /-- **Theorem 26.3**, read at `f*`: the conjugate of a closed proper convex function is
 essentially strictly convex exactly when the function itself is essentially smooth. This is the
 direction Corollaries 26.3.2 and 26.3.3 use. -/
-theorem theorem_26_3' (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    EssentiallyStrictlyConvex (B := pairing n) (conj (pairing n) f) ↔ EssentiallySmooth f :=
-  essentiallyStrictlyConvex_conj_iff_essentiallySmooth hf hp hcl
+theorem theorem_26_3' (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
+    EssentiallyStrictlyConvex (B := pairing n) (convexConj (pairing n) f) ↔ EssentiallySmooth f :=
+  essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth hf hp hcl
 
 /-! ### Corollary 26.3.1 -/
 
 /-- **Corollary 26.3.1.** Let `f` be a closed proper convex function. Then `∂f` is a
 one-to-one mapping if and only if `f` is strictly convex on `int (dom f)` and essentially smooth. -/
-theorem corollary_26_3_1 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem corollary_26_3_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     OneToOne (subdifferential (pairing n) f) ↔
-      (StrictConvexOnFn f (interior (dom f)) ∧ EssentiallySmooth f) :=
+      (StrictConvexOnFn f (interior (convexDom f)) ∧ EssentiallySmooth f) :=
   oneToOne_iff.trans ((subdifferential_injective_iff hf hp hcl).trans and_comm)
 
 /-! ### Corollaries 26.3.2 and 26.3.3: preservation of essential smoothness -/
@@ -600,7 +603,9 @@ such that `f₁` is essentially smooth and `ri (dom f₁*) ∩ ri (dom f₂*) �
 essentially smooth. -/
 theorem corollary_26_3_2 {f₁ f₂ : Rn n → EReal} (h₁ : ClosedProperConvexFn f₁)
     (h₂ : ClosedProperConvexFn f₂) (hes : EssentiallySmooth f₁)
-    (hri : (ri (dom (conj (pairing n) f₁)) ∩ ri (dom (conj (pairing n) f₂))).Nonempty) :
+    (hri :
+        (ri (convexDom (convexConj (pairing n) f₁)) ∩
+            ri (convexDom (convexConj (pairing n) f₂))).Nonempty) :
     EssentiallySmooth (infConv f₁ f₂) := by
   obtain ⟨y₀, hy₁, hy₂⟩ := hri
   exact essentiallySmooth_infConv_of_relint h₁ h₂ hes hy₁ hy₂
@@ -614,7 +619,7 @@ smooth.
 what the argument consumes. -/
 theorem corollary_26_3_3 {m : ℕ} {g : Rn n → EReal} (hg : ClosedProperConvexFn g)
     (hes : EssentiallySmooth g) (A : Rn n →ₗ[ℝ] Rn m) (hsurj : Function.Surjective A) {y : Rn m}
-    (hy : LinearMap.adjoint A y ∈ ri (dom (conj (pairing n) g))) :
+    (hy : LinearMap.adjoint A y ∈ ri (convexDom (convexConj (pairing n) g))) :
     EssentiallySmooth (mapLin A g) := by
   have hA : IsAdjointPair (innerₗ (Rn m)) (innerₗ (Rn n)) (LinearMap.adjoint A) A := by
     have h := isAdjointPair_adjoint (LinearMap.adjoint A)
@@ -636,21 +641,21 @@ same for every `x` with `∇f x = x*`, which is Theorem 26.4's first clause. -/
 /-- **Rockafellar, §26 (p. 256).** Rockafellar's `D`: the image of `C = int (dom f)` under the
 gradient mapping. -/
 def legendreDomain (f : Rn n → EReal) : Set (Rn n) :=
-  gradient (fun w => (f w).toReal) '' interior (dom f)
+  gradient (fun w => (f w).toReal) '' interior (convexDom f)
 
 /-- **The bridge to the backbone's `gradientRange`**, valid as soon as condition (b) holds:
 `{v | ∃ x, ∇f x = v}` and "the image of `C` under `∇f`" are the same set, because every gradient is
 attained at an interior point of `dom f` (Corollary 25.1.1) and, on `C`, Mathlib's `gradient` of the
 real trace *is* Rockafellar's `∇f`. -/
 theorem legendreDomain_eq_gradientRange
-    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (dom f) → DifferentiableAtFn f z) :
+    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) :
     legendreDomain f = gradientRange f := by
   ext v
   constructor
   · rintro ⟨z, hz, rfl⟩
     exact (hdiff hz).hasGradientAtFn_gradient.mem_gradientRange
   · rintro ⟨z, hz⟩
-    exact ⟨z, hz.mem_interior_dom, by
+    exact ⟨z, hz.mem_interior_convexDom, by
       rw [hz.gradient_toReal_eq, LinearIsometryEquiv.symm_apply_apply]⟩
 
 /-! ### Theorem 26.4 -/
@@ -676,58 +681,60 @@ theorem theorem_26_4_wellDefined (hf : ConvexFn f) {v x₁ x₂ : Rn n}
 restriction of `f*` to `D` — at a point `x*` of `D` the defining formula returns `f*(x*)`. -/
 theorem theorem_26_4_eq (hf : ConvexFn f) {v x : Rn n}
     (h : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x) :
-    conj (pairing n) f v = ((pairing n x v - (f x).toReal : ℝ) : EReal) := by
+    convexConj (pairing n) f v = ((pairing n x v - (f x).toReal : ℝ) : EReal) := by
   obtain ⟨r, hr⟩ := h.exists_coe
-  have hval := conj_eq_of_hasGradientAtFn hf h hr
-  rw [conj_innerL_eq_conj_topDualPairing, hval, toDual_apply_eq_pairing, hr]
+  have hval := convexConj_eq_of_hasGradientAtFn hf h hr
+  rw [convexConj_innerL_eq_convexConj_topDualPairing, hval, toDual_apply_eq_pairing, hr]
   simp
 
 /-- **Theorem 26.4**: `D` is a subset of `dom f*`. -/
 theorem theorem_26_4_subset_dom_conj (hf : ConvexFn f)
-    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (dom f) → DifferentiableAtFn f z) :
-    legendreDomain f ⊆ dom (conj (pairing n) f) := by
+    (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) :
+    legendreDomain f ⊆ convexDom (convexConj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hdiff]
   rintro v ⟨x, hx⟩
-  rw [mem_dom, theorem_26_4_eq hf hx]
+  rw [mem_convexDom, theorem_26_4_eq hf hx]
   exact EReal.coe_lt_top _
 
 /-! ### Corollary 26.4.1 -/
 
 /-- **Corollary 26.4.1**, first clause: for an essentially smooth closed proper convex
 `f`, the domain `D` of the Legendre conjugate is `{x* | ∂f*(x*) ≠ ∅}`. -/
-theorem corollary_26_4_1_dom (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem corollary_26_4_1_dom (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) :
-    legendreDomain f = domSubdifferential (pairing n) (conj (pairing n) f) := by
+    legendreDomain f = domSubdifferential (pairing n) (convexConj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
-  exact gradientRange_eq_domSubdifferential_conj hf hp hcl hes
+  exact gradientRange_eq_domSubdifferential_convexConj hf hp hcl hes
 
 /-- **Corollary 26.4.1**: `ri (dom f*) ⊆ D`, so `D` is "almost convex". -/
-theorem corollary_26_4_1_relint_subset (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hes : EssentiallySmooth f) : ri (dom (conj (pairing n) f)) ⊆ legendreDomain f := by
+theorem corollary_26_4_1_relint_subset (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
+    (hes : EssentiallySmooth f) : ri (convexDom (convexConj (pairing n) f)) ⊆ legendreDomain f := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
-  exact relint_dom_conj_subset_gradientRange hf hp hcl hes
+  exact relint_convexDom_convexConj_subset_gradientRange hf hp hcl hes
 
 /-- **Corollary 26.4.1**: `D ⊆ dom f*`, the other half of the squeeze. -/
-theorem corollary_26_4_1_subset_dom (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hes : EssentiallySmooth f) : legendreDomain f ⊆ dom (conj (pairing n) f) := by
+theorem corollary_26_4_1_subset_dom (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hes : EssentiallySmooth f) : legendreDomain f ⊆ convexDom (convexConj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
-  exact gradientRange_subset_dom_conj hf hp hcl hes
+  exact gradientRange_subset_convexDom_convexConj hf hp hcl hes
 
 /-- **Corollary 26.4.1**: `g` is the restriction of `f*` to `D`. -/
 theorem corollary_26_4_1_eq (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
-    (hx : x ∈ interior (dom f)) :
-    conj (pairing n) f (gradient (fun w => (f w).toReal) x)
+    (hx : x ∈ interior (convexDom f)) :
+    convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
   theorem_26_4_eq hf (hes.differentiableAtFn hx).hasGradientAtFn_gradient
 
 /-- **Corollary 26.4.1**, last clause: `g` is strictly convex on every convex subset
 of `D`. Since `g = f*` on `D` (Theorem 26.4), this is the essential strict convexity of `f*`, which
 Theorem 26.3 supplies from the essential smoothness of `f`. -/
-theorem corollary_26_4_1_strictConvexOn (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem corollary_26_4_1_strictConvexOn (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) {C : Set (Rn n)} (hC : Convex ℝ C) (hCsub : C ⊆ legendreDomain f) :
-    StrictConvexOnFn (conj (pairing n) f) C := by
+    StrictConvexOnFn (convexConj (pairing n) f) C := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn] at hCsub
-  exact strictConvexOnFn_conj_of_subset_gradientRange hf hp hcl hes hC hCsub
+  exact strictConvexOnFn_convexConj_of_subset_gradientRange hf hp hcl hes hC hCsub
 
 /-! ### The counterexample of p. 257: the parabola
 
@@ -767,16 +774,17 @@ theorem halfPlaneFn_ne_bot (x : Rn 2) : halfPlaneFn x ≠ ⊥ := by
   · rw [halfPlaneFn_of_pos hx]; exact EReal.coe_ne_bot _
   · rw [halfPlaneFn_of_nonpos hx]; exact top_ne_bot
 
-theorem dom_halfPlaneFn : dom halfPlaneFn = {x : Rn 2 | 0 < x 1} := by
+theorem convexDom_halfPlaneFn : convexDom halfPlaneFn = {x : Rn 2 | 0 < x 1} := by
   ext x
-  rw [mem_dom]
+  rw [mem_convexDom]
   by_cases hx : 0 < x 1
   · simp [halfPlaneFn_of_pos hx, hx]
   · simp [halfPlaneFn_of_nonpos hx, hx]
 
 /-- `C = int (dom f)` is the open upper half-plane, as the book takes it to be. -/
-theorem interior_dom_halfPlaneFn : interior (dom halfPlaneFn) = {x : Rn 2 | 0 < x 1} := by
-  rw [dom_halfPlaneFn]
+theorem interior_convexDom_halfPlaneFn : interior (convexDom halfPlaneFn) =
+    {x : Rn 2 | 0 < x 1} := by
+  rw [convexDom_halfPlaneFn]
   exact IsOpen.interior_eq (isOpen_lt continuous_const (by fun_prop))
 
 /-- The p. 257 example is convex: "quadratic over linear" is jointly convex, and the identity
@@ -811,9 +819,9 @@ theorem convexFn_halfPlaneFn : ConvexFn halfPlaneFn := by
       EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (halfPlaneFn_ne_bot y))]
     exact le_top
 
-theorem proper_halfPlaneFn : Proper halfPlaneFn := by
+theorem properConvex_halfPlaneFn : ProperConvex halfPlaneFn := by
   refine ⟨⟨WithLp.toLp 2 ![0, 1], ?_⟩, halfPlaneFn_ne_bot⟩
-  rw [mem_dom, halfPlaneFn_of_pos (x := WithLp.toLp 2 ![0, 1]) (by norm_num)]
+  rw [mem_convexDom, halfPlaneFn_of_pos (x := WithLp.toLp 2 ![0, 1]) (by norm_num)]
   exact EReal.coe_lt_top _
 
 /-- **The subdifferential of `ξ₁²/4ξ₂` in coordinates.** Both directions come from the same
@@ -895,12 +903,13 @@ subgradient there (Theorem 25.1 backwards). -/
 theorem hasGradientAtFn_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
     HasGradientAtFn halfPlaneFn
       (InnerProductSpace.toDual ℝ (Rn 2) (parabolaPoint (x 0 / (2 * x 1)))) x :=
-  hasGradientAtFn_toDual_of_subdifferential_eq_singleton convexFn_halfPlaneFn proper_halfPlaneFn
+  hasGradientAtFn_toDual_of_subdifferential_eq_singleton convexFn_halfPlaneFn
+      properConvex_halfPlaneFn
     (subdifferential_halfPlaneFn hx)
 
-theorem differentiableAtFn_halfPlaneFn ⦃z : Rn 2⦄ (hz : z ∈ interior (dom halfPlaneFn)) :
+theorem differentiableAtFn_halfPlaneFn ⦃z : Rn 2⦄ (hz : z ∈ interior (convexDom halfPlaneFn)) :
     DifferentiableAtFn halfPlaneFn z := by
-  rw [interior_dom_halfPlaneFn] at hz
+  rw [interior_convexDom_halfPlaneFn] at hz
   exact ⟨_, hasGradientAtFn_halfPlaneFn hz⟩
 
 /-- **Rockafellar, §26 (p. 257).** The image `D` of `C` under `∇f` is exactly the parabola: as
@@ -910,8 +919,8 @@ theorem gradientRange_halfPlaneFn : gradientRange halfPlaneFn = parabola := by
   ext v
   constructor
   · rintro ⟨x, hx⟩
-    have hxi : x ∈ interior (dom halfPlaneFn) := hx.mem_interior_dom
-    rw [interior_dom_halfPlaneFn] at hxi
+    have hxi : x ∈ interior (convexDom halfPlaneFn) := hx.mem_interior_convexDom
+    rw [interior_convexDom_halfPlaneFn] at hxi
     have hsing := subdifferential_innerL_eq_singleton convexFn_halfPlaneFn hx
     rw [LinearIsometryEquiv.symm_apply_apply] at hsing
     have hv : v ∈ subdifferential (pairing 2) halfPlaneFn x := by
@@ -987,12 +996,12 @@ theorem not_essentiallySmooth_halfPlaneFn : ¬ EssentiallySmooth halfPlaneFn := 
     intro i
     rw [hcoord i]
     positivity
-  have hmem : ∀ i, zs i ∈ interior (dom halfPlaneFn) := by
+  have hmem : ∀ i, zs i ∈ interior (convexDom halfPlaneFn) := by
     intro i
-    rw [interior_dom_halfPlaneFn]
+    rw [interior_convexDom_halfPlaneFn]
     exact hpos i
-  have hout : (0 : Rn 2) ∉ interior (dom halfPlaneFn) := by
-    rw [interior_dom_halfPlaneFn]
+  have hout : (0 : Rn 2) ∉ interior (convexDom halfPlaneFn) := by
+    rw [interior_convexDom_halfPlaneFn]
     intro hc
     have hlt : (0 : ℝ) < (0 : Rn 2) 1 := hc
     simp at hlt
@@ -1023,7 +1032,7 @@ one-to-one. -/
 /-- **Rockafellar, p. 258**, the characterisation the book states immediately after the definition:
 a closed proper convex function `f` has `∂f` one-to-one if and only if the restriction of `f` to
 `C = int (dom f)` is a convex function of Legendre type. -/
-theorem legendreType_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem legendreType_iff (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     LegendreType f ↔ OneToOne (subdifferential (pairing n) f) :=
   (legendreType_iff_subdifferential_injective hf hp hcl).trans oneToOne_iff.symm
 
@@ -1032,117 +1041,126 @@ theorem legendreType_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
 /-- **Theorem 26.5**, first assertion. Let `f` be a closed convex function, and let
 `C = int (dom f)`, `C* = int (dom f*)`. Then `(C, f)` is a convex function of Legendre type if and
 only if `(C*, f*)` is. -/
-theorem theorem_26_5 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    LegendreType f ↔ LegendreType (conj (pairing n) f) :=
-  (legendreType_conj_iff hf hp hcl).symm
+theorem theorem_26_5 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
+    LegendreType f ↔ LegendreType (convexConj (pairing n) f) :=
+  (legendreType_convexConj_iff hf hp hcl).symm
 
 /-- **Theorem 26.5**: when `f` is of Legendre type, `(C*, f*)` **is** the Legendre
 conjugate of `(C, f)` — the domain half, `D = C*`. -/
-theorem theorem_26_5_legendreDomain (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_5_legendreDomain (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
-    legendreDomain f = interior (dom (conj (pairing n) f)) := by
+    legendreDomain f = interior (convexDom (convexConj (pairing n) f)) := by
   rw [legendreDomain_eq_gradientRange hleg.1.differentiableAtFn]
-  exact gradientRange_eq_interior_dom_conj hf hp hcl hleg
+  exact gradientRange_eq_interior_convexDom_convexConj hf hp hcl hleg
 
 /-- **Theorem 26.5**: the value half of "`(C*, f*)` is the Legendre conjugate of
 `(C, f)`" — on `C` the defining formula of the Legendre conjugate returns `f*`. -/
 theorem theorem_26_5_conj_apply (hf : ConvexFn f) (hleg : LegendreType f) {x : Rn n}
-    (hx : x ∈ interior (dom f)) :
-    conj (pairing n) f (gradient (fun w => (f w).toReal) x)
+    (hx : x ∈ interior (convexDom f)) :
+    convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
   corollary_26_4_1_eq hf hleg.1 hx
 
 /-- **Theorem 26.5**: `(C, f)` is *in turn* the Legendre conjugate of `(C*, f*)` — the
 domain half. Note the hypothesis: this is the involutivity of the Legendre transformation, and it
 holds **only** within the Legendre-type class. See the module docstring. -/
-theorem theorem_26_5_legendreDomain_conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_5_legendreDomain_conj (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
-    legendreDomain (conj (pairing n) f) = interior (dom f) := by
-  have hgleg := hleg.conj hf hp hcl
-  have h := theorem_26_5_legendreDomain (convexFn_conj _ f) (proper_conj ⟨hf, hcl, hp⟩)
-    closedFn_conj hgleg
-  rwa [conj_conj_innerL hf hcl] at h
+    legendreDomain (convexConj (pairing n) f) = interior (convexDom f) := by
+  have hgleg := hleg.convexConj hf hp hcl
+  have h :=
+      theorem_26_5_legendreDomain (convexFn_convexConj _ f) (properConvex_convexConj ⟨hf, hcl, hp⟩)
+    closedConvex_convexConj hgleg
+  rwa [convexConj_convexConj_innerL hf hcl] at h
 
 /-- **Theorem 26.5**: `(C, f)` is in turn the Legendre conjugate of `(C*, f*)` — the
 value half. Again only within the Legendre-type class. -/
-theorem theorem_26_5_apply (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (dom (conj (pairing n) f))) :
-    f (gradient (fun w => (conj (pairing n) f w).toReal) v)
-      = ((pairing n v (gradient (fun w => (conj (pairing n) f w).toReal) v)
-          - (conj (pairing n) f v).toReal : ℝ) : EReal) := by
-  have hgleg := hleg.conj hf hp hcl
-  have h := corollary_26_4_1_eq (convexFn_conj (pairing n) f) hgleg.1 hv
-  rwa [conj_conj_innerL hf hcl] at h
+theorem theorem_26_5_apply (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (convexDom (convexConj (pairing n) f))) :
+    f (gradient (fun w => (convexConj (pairing n) f w).toReal) v)
+      = ((pairing n v (gradient (fun w => (convexConj (pairing n) f w).toReal) v)
+          - (convexConj (pairing n) f v).toReal : ℝ) : EReal) := by
+  have hgleg := hleg.convexConj hf hp hcl
+  have h := corollary_26_4_1_eq (convexFn_convexConj (pairing n) f) hgleg.1 hv
+  rwa [convexConj_convexConj_innerL hf hcl] at h
 
 /-- **Theorem 26.5**: the gradient mapping `∇f` is one-to-one from the open convex set
 `C` onto the open convex set `C*`. -/
-theorem theorem_26_5_bijOn (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_5_bijOn (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
-    Set.BijOn (gradient fun w => (f w).toReal) (interior (dom f))
-      (interior (dom (conj (pairing n) f))) :=
+    Set.BijOn (gradient fun w => (f w).toReal) (interior (convexDom f))
+      (interior (convexDom (convexConj (pairing n) f))) :=
   bijOn_gradient_of_legendreType hf hp hcl hleg
 
 /-- **Theorem 26.5**: `∇f` is continuous on `C`. -/
-theorem theorem_26_5_continuousOn (hf : ConvexFn f) (hp : Proper f) (hleg : LegendreType f) :
-    ContinuousOn (gradient fun w => (f w).toReal) (interior (dom f)) :=
-  continuousOn_gradient_interior_dom hf hp hleg.1
+theorem theorem_26_5_continuousOn (hf : ConvexFn f) (hp : ProperConvex f) (hleg : LegendreType f) :
+    ContinuousOn (gradient fun w => (f w).toReal) (interior (convexDom f)) :=
+  continuousOn_gradient_interior_convexDom hf hp hleg.1
 
 /-- **Theorem 26.5**: `∇f` is continuous *in both directions*, the second half being
 the continuity of `∇f*` on `C*`. -/
-theorem theorem_26_5_continuousOn_conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_5_continuousOn_conj (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
-    ContinuousOn (gradient fun w => (conj (pairing n) f w).toReal)
-      (interior (dom (conj (pairing n) f))) :=
-  continuousOn_gradient_interior_dom (convexFn_conj _ f) (proper_conj ⟨hf, hcl, hp⟩)
-    (hleg.conj hf hp hcl).1
+    ContinuousOn (gradient fun w => (convexConj (pairing n) f w).toReal)
+      (interior (convexDom (convexConj (pairing n) f))) :=
+  continuousOn_gradient_interior_convexDom (convexFn_convexConj _ f)
+      (properConvex_convexConj ⟨hf, hcl, hp⟩)
+    (hleg.convexConj hf hp hcl).1
 
 /-- **Theorem 26.5**: `∇f* = (∇f)⁻¹`, one composite. -/
-theorem theorem_26_5_gradient_conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hleg : LegendreType f) {x : Rn n} (hx : x ∈ interior (dom f)) :
-    gradient (fun w => (conj (pairing n) f w).toReal) (gradient (fun w => (f w).toReal) x) = x :=
-  gradient_conj_gradient hf hp hcl hleg hx
+theorem theorem_26_5_gradient_conj (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hleg : LegendreType f) {x : Rn n} (hx : x ∈ interior (convexDom f)) :
+    gradient (fun w => (convexConj (pairing n) f w).toReal)
+        (gradient (fun w => (f w).toReal) x) = x :=
+  gradient_convexConj_gradient hf hp hcl hleg hx
 
 /-- **Theorem 26.5**: `∇f* = (∇f)⁻¹`, the other composite. -/
-theorem theorem_26_5_gradient_gradient_conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (dom (conj (pairing n) f))) :
-    gradient (fun w => (f w).toReal) (gradient (fun w => (conj (pairing n) f w).toReal) v) = v :=
-  gradient_gradient_conj hf hp hcl hleg hv
+theorem theorem_26_5_gradient_gradient_conj (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f)
+    (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (convexDom (convexConj (pairing n) f))) :
+    gradient (fun w => (f w).toReal)
+        (gradient (fun w => (convexConj (pairing n) f w).toReal) v) = v :=
+  gradient_gradient_convexConj hf hp hcl hleg hv
 
 /-! ### Theorem 26.6 -/
 
 /-- **Theorem 26.6.** Let `f` be a (finite) differentiable convex function on `ℝⁿ`. In
 order that `∇f` be a one-to-one mapping from `ℝⁿ` onto itself, it is necessary and sufficient that
 `f` be strictly convex and co-finite. -/
-theorem theorem_26_6 (hf : ConvexFn f) (hp : Proper f) (hdom : dom f = Set.univ)
+theorem theorem_26_6 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z) :
     Set.BijOn (gradient fun w => (f w).toReal) Set.univ Set.univ ↔
       (StrictConvexOnFn f Set.univ ∧ Cofinite f) := by
-  have hcl : ClosedFn f := closedFn_of_dom_eq_univ hf hp hdom
+  have hcl : ClosedConvex f := closedConvex_of_convexDom_eq_univ hf hp hdom
   rw [bijOn_gradient_univ_iff hf hp hdom hdiff,
-    ← cofinite_iff_dom_conj_eq_univ (B := pairing n) ⟨hf, hcl, hp⟩]
+    ← cofinite_iff_convexDom_convexConj_eq_univ (B := pairing n) ⟨hf, hcl, hp⟩]
 
 /-- **Theorem 26.6**, the concluding clauses: when `∇f` is one-to-one from `ℝⁿ` onto
 itself, `f*` is likewise a (finite) differentiable convex function on `ℝⁿ` which is strictly convex
 and co-finite. -/
-theorem theorem_26_6_conj (hf : ConvexFn f) (hp : Proper f) (hdom : dom f = Set.univ)
+theorem theorem_26_6_conj (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z)
     (hbij : Set.BijOn (gradient fun w => (f w).toReal) Set.univ Set.univ) :
-    dom (conj (pairing n) f) = Set.univ ∧
-      (∀ z : Rn n, DifferentiableAtFn (conj (pairing n) f) z) ∧
-      StrictConvexOnFn (conj (pairing n) f) Set.univ ∧ Cofinite (conj (pairing n) f) := by
-  have hcl : ClosedFn f := closedFn_of_dom_eq_univ hf hp hdom
-  obtain ⟨hdc, hdiffc, hscc⟩ := conj_finite_of_bijOn_gradient_univ hf hp hdom hdiff hbij
+    convexDom (convexConj (pairing n) f) = Set.univ ∧
+      (∀ z : Rn n, DifferentiableAtFn (convexConj (pairing n) f) z) ∧
+      StrictConvexOnFn (convexConj (pairing n) f) Set.univ
+          ∧ Cofinite (convexConj (pairing n) f) := by
+  have hcl : ClosedConvex f := closedConvex_of_convexDom_eq_univ hf hp hdom
+  obtain ⟨hdc, hdiffc, hscc⟩ := convexConj_finite_of_bijOn_gradient_univ hf hp hdom hdiff hbij
   refine ⟨hdc, hdiffc, hscc, ?_⟩
-  have hcpc : ClosedProperConvexFn (conj (pairing n) f) :=
-    ⟨convexFn_conj _ f, closedFn_conj, proper_conj ⟨hf, hcl, hp⟩⟩
-  rw [cofinite_iff_dom_conj_eq_univ (B := pairing n) hcpc, conj_conj_innerL hf hcl]
+  have hcpc : ClosedProperConvexFn (convexConj (pairing n) f) :=
+    ⟨convexFn_convexConj _ f, closedConvex_convexConj, properConvex_convexConj ⟨hf, hcl, hp⟩⟩
+  rw [cofinite_iff_convexDom_convexConj_eq_univ (B := pairing n) hcpc,
+      convexConj_convexConj_innerL hf hcl]
   exact hdom
 
 /-- **Theorem 26.6**: `f*` is the same as the Legendre conjugate of `f`, i.e.
 `f*(x*) = ⟨(∇f)⁻¹(x*), x*⟩ − f((∇f)⁻¹(x*))` for every `x*`. -/
 theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, DifferentiableAtFn f z)
     (x : Rn n) :
-    conj (pairing n) f (gradient (fun w => (f w).toReal) x)
+    convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
   theorem_26_4_eq hf (hdiff x).hasGradientAtFn_gradient
 
@@ -1151,7 +1169,7 @@ theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, Differentiab
 /-- **Lemma 26.7.** Let `f` be a differentiable convex function on `ℝⁿ`. In order that
 `f` be co-finite, it is necessary and sufficient that `|∇f(xᵢ)| → +∞` for every sequence with
 `|xᵢ| → +∞`. -/
-theorem lemma_26_7 (hf : ConvexFn f) (hp : Proper f) (hdom : dom f = Set.univ)
+theorem lemma_26_7 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z) :
     Cofinite f ↔ ∀ xs : ℕ → Rn n, Tendsto (fun i => ‖xs i‖) atTop atTop →
       Tendsto (fun i => ‖gradient (fun w => (f w).toReal) (xs i)‖) atTop atTop :=

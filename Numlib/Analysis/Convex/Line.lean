@@ -122,9 +122,9 @@ theorem continuousAt_comp_line_of_convexOn (hS : IsOpen S) (hf : ConvexOn ℝ S 
 /-- A concave function is continuous along a line through an interior point. -/
 theorem continuousAt_comp_line_of_concaveOn (hS : IsOpen S) (hf : ConcaveOn ℝ S f) (hx : x ∈ S)
     (d : E) : ContinuousAt (fun t : ℝ => f (x + t • d)) 0 := by
-  have hI : IsOpen {t : ℝ | x + t • d ∈ S} := isOpen_line_steps hS x d
-  have h0 : (0 : ℝ) ∈ {t : ℝ | x + t • d ∈ S} := by simpa using hx
-  exact ((concaveOn_comp_line hf x d).continuousOn hI).continuousAt (hI.mem_nhds h0)
+  refine (continuousAt_comp_line_of_convexOn hS hf.neg hx d).neg.congr
+    (Filter.Eventually.of_forall fun t => ?_)
+  simp
 
 end LineTopology
 

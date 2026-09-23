@@ -87,24 +87,24 @@ variable {f : ℝ → EReal}
 
 /-- **Theorem 24.1**: `f'₊` is non-decreasing on `R`. Closedness is not needed here nor in the next
 three clauses: the interlacing chain is an inequality between difference quotients. -/
-theorem theorem_24_1_monotone_rightDeriv (hf : ConvexFn f) (hp : Proper f) :
+theorem theorem_24_1_monotone_rightDeriv (hf : ConvexFn f) (hp : ProperConvex f) :
     Monotone (rightDeriv f) :=
   monotone_rightDeriv hf hp
 
 /-- **Theorem 24.1**: `f'₋` is a non-decreasing function on `R`. -/
-theorem theorem_24_1_monotone_leftDeriv (hf : ConvexFn f) (hp : Proper f) :
+theorem theorem_24_1_monotone_leftDeriv (hf : ConvexFn f) (hp : ProperConvex f) :
     Monotone (leftDeriv f) :=
   monotone_leftDeriv hf hp
 
 /-- **Theorem 24.1**: `f'₊` and `f'₋` are finite exactly on `int (dom f)`. The book says "finite on
 the interior"; the biconditional says slightly more, that finiteness *characterises* it. -/
-theorem theorem_24_1_finite_iff (hf : ConvexFn f) (hp : Proper f) {x : ℝ} :
-    (⊥ < leftDeriv f x ∧ rightDeriv f x < ⊤) ↔ x ∈ interior (dom f) :=
+theorem theorem_24_1_finite_iff (hf : ConvexFn f) (hp : ProperConvex f) {x : ℝ} :
+    (⊥ < leftDeriv f x ∧ rightDeriv f x < ⊤) ↔ x ∈ interior (convexDom f) :=
   bot_lt_leftDeriv_and_rightDeriv_lt_top_iff hf hp
 
 /-- **Theorem 24.1**, the interlacing chain:
 `f'₊(z₁) ≤ f'₋(x) ≤ f'₊(x) ≤ f'₋(z₂)` when `z₁ < x < z₂`. -/
-theorem theorem_24_1_chain (hf : ConvexFn f) (hp : Proper f) {z₁ x z₂ : ℝ} (h₁ : z₁ < x)
+theorem theorem_24_1_chain (hf : ConvexFn f) (hp : ProperConvex f) {z₁ x z₂ : ℝ} (h₁ : z₁ < x)
     (h₂ : x < z₂) :
     rightDeriv f z₁ ≤ leftDeriv f x ∧ leftDeriv f x ≤ rightDeriv f x ∧
       rightDeriv f x ≤ leftDeriv f z₂ :=
@@ -134,7 +134,7 @@ theorem theorem_24_1_tendsto_leftDeriv_Iio (hf : ClosedProperConvexFn f) (x : �
 
 /-- **§24**, the remark after Theorem 24.1: `∂f(x) = {x* ∈ R | f'₋(x) ≤ x* ≤ f'₊(x)}`. Only
 properness is needed. -/
-theorem theorem_24_1_subdifferential (hp : Proper f) (x : ℝ) :
+theorem theorem_24_1_subdifferential (hp : ProperConvex f) (x : ℝ) :
     subdifferential (innerₗ ℝ) f x
       = {y : ℝ | leftDeriv f x ≤ (y : EReal) ∧ (y : EReal) ≤ rightDeriv f x} :=
   Set.ext fun _ => mem_subdifferential_iff_le_rightDeriv hp
@@ -184,15 +184,16 @@ f(y) - f(x) = ∫ₓʸ f'₊(t) dt.
 
 The integrand is the derivative of a function already convex and finite on an open interval, so
 this is the fundamental theorem of calculus and needs no theory of monotone functions. -/
-theorem corollary_24_2_1_rightDeriv {f : ℝ → EReal} (hf : ConvexFn f) (hp : Proper f) {x y : ℝ}
-    (hx : x ∈ interior (dom f)) (hy : y ∈ interior (dom f)) :
+theorem corollary_24_2_1_rightDeriv {f : ℝ → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
+    {x y : ℝ}
+    (hx : x ∈ interior (convexDom f)) (hy : y ∈ interior (convexDom f)) :
     (f y).toReal - (f x).toReal = ∫ t in x..y, (rightDeriv f t).toReal :=
   sub_eq_intervalIntegral_rightDeriv hf hp hx hy
 
 /-- **Corollary 24.2.1**, left-derivative half: `f(y) - f(x) = ∫ₓʸ f'₋(t) dt`. The two one-sided
 derivatives differ only on the jump set of `f'₊`, which is countable and hence null. -/
-theorem corollary_24_2_1_leftDeriv {f : ℝ → EReal} (hf : ConvexFn f) (hp : Proper f) {x y : ℝ}
-    (hx : x ∈ interior (dom f)) (hy : y ∈ interior (dom f)) :
+theorem corollary_24_2_1_leftDeriv {f : ℝ → EReal} (hf : ConvexFn f) (hp : ProperConvex f) {x y : ℝ}
+    (hx : x ∈ interior (convexDom f)) (hy : y ∈ interior (convexDom f)) :
     (f y).toReal - (f x).toReal = ∫ t in x..y, (leftDeriv f t).toReal :=
   sub_eq_intervalIntegral_leftDeriv hf hp hx hy
 
@@ -338,14 +339,16 @@ variable {n : ℕ} {C : Set (Rn n)} {f : ℕ → Rn n → EReal} {g : Rn n → E
 /-- **Finiteness on a non-empty open set forces properness** (Theorem 7.2), and supplies
 `C ⊆ dom f` at the same time. This is what lets Theorem 24.5 be stated with the book's own
 hypotheses. -/
-private theorem proper_of_finite_on_isOpen {g : Rn n → EReal} (hg : ConvexFn g) (hC : IsOpen C)
-    (hfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤) {x : Rn n} (hx : x ∈ C) : Proper g ∧ C ⊆ dom g := by
-  have hCdom : C ⊆ dom g := fun z hz => mem_dom.2 (lt_top_iff_ne_top.2 (hfin z hz).2)
+private theorem properConvex_of_finite_on_isOpen {g : Rn n → EReal} (hg : ConvexFn g)
+    (hC : IsOpen C)
+    (hfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤) {x : Rn n}
+        (hx : x ∈ C) : ProperConvex g ∧ C ⊆ convexDom g := by
+  have hCdom : C ⊆ convexDom g := fun z hz => mem_convexDom.2 (lt_top_iff_ne_top.2 (hfin z hz).2)
   refine ⟨?_, hCdom⟩
   by_contra hp
-  have hxi : x ∈ interior (dom g) := hC.subset_interior_iff.2 hCdom hx
-  exact (hfin x hx).1 (hg.eq_bot_of_mem_relint_dom hp
-    (Convex.interior_subset_relint hg.convex_dom ⟨x, hxi⟩ hxi))
+  have hxi : x ∈ interior (convexDom g) := hC.subset_interior_iff.2 hCdom hx
+  exact (hfin x hx).1 (hg.eq_bot_of_mem_relint_convexDom hp
+    (Convex.interior_subset_relint hg.convex_convexDom ⟨x, hxi⟩ hxi))
 
 /-- **Theorem 24.5**, first assertion without junk values: every real `μ` above `f'(x; y)`
 eventually bounds `fᵢ'(xᵢ; yᵢ)`. This is the book's `limsup` inequality with the extended-real limit
@@ -358,8 +361,8 @@ theorem theorem_24_5_lt (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, Convex
     (hx : x ∈ C) {xs : ℕ → Rn n} (hxs : Tendsto xs atTop (𝓝 x)) {y : Rn n} {ys : ℕ → Rn n}
     (hys : Tendsto ys atTop (𝓝 y)) {μ : ℝ} (hμ : dirDeriv g x y < (μ : EReal)) :
     ∀ᶠ i in atTop, dirDeriv (f i) (xs i) (ys i) < (μ : EReal) := by
-  obtain ⟨hgp, hgC⟩ := proper_of_finite_on_isOpen hg hC hgfin hx
-  have h := fun i => proper_of_finite_on_isOpen (hf i) hC (hfin i) hx
+  obtain ⟨hgp, hgC⟩ := properConvex_of_finite_on_isOpen hg hC hgfin hx
+  have h := fun i => properConvex_of_finite_on_isOpen (hf i) hC (hfin i) hx
   exact eventually_dirDeriv_lt hC hCc hf (fun i => (h i).1) (fun i => (h i).2) hg hgp hgC hconv hx
     hxs hys hμ
 
@@ -388,23 +391,24 @@ theorem theorem_24_5_subdifferential (hC : IsOpen C) (hCc : Convex ℝ C) (hf : 
     (hx : x ∈ C) {xs : ℕ → Rn n} (hxs : Tendsto xs atTop (𝓝 x)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ i in atTop, subdifferential (pairing n) (f i) (xs i)
       ⊆ subdifferential (pairing n) g x + Metric.closedBall (0 : Rn n) ε := by
-  obtain ⟨hgp, hgC⟩ := proper_of_finite_on_isOpen hg hC hgfin hx
-  have h := fun i => proper_of_finite_on_isOpen (hf i) hC (hfin i) hx
+  obtain ⟨hgp, hgC⟩ := properConvex_of_finite_on_isOpen hg hC hgfin hx
+  have h := fun i => properConvex_of_finite_on_isOpen (hf i) hC (hfin i) hx
   exact eventually_subdifferential_subset_add_closedBall hC hCc hf (fun i => (h i).1)
     (fun i => (h i).2) hg hgp hgC hconv hx hxs hε
 
 /-- **Corollary 24.5.1**, first assertion: `f'(x; y)` is upper semicontinuous in
 `(x, y) ∈ int (dom f) × Rⁿ` — the constant sequence in Theorem 24.5. It cannot be strengthened to
 continuity in `x`, though it is continuous in `y` for each fixed interior `x`. -/
-theorem corollary_24_5_1_upperSemicontinuous {f : Rn n → EReal} (hf : ConvexFn f) (hfp : Proper f)
-    {x : Rn n} (hx : x ∈ interior (dom f)) (y : Rn n) :
+theorem corollary_24_5_1_upperSemicontinuous {f : Rn n → EReal} (hf : ConvexFn f)
+    (hfp : ProperConvex f)
+    {x : Rn n} (hx : x ∈ interior (convexDom f)) (y : Rn n) :
     UpperSemicontinuousAt (fun p : Rn n × Rn n => dirDeriv f p.1 p.2) (x, y) :=
   upperSemicontinuousAt_dirDeriv hf hfp hx y
 
 /-- **Corollary 24.5.1**, second assertion: for `x ∈ int (dom f)` and `ε > 0` there is
 a `δ > 0` with `∂f(z) ⊆ ∂f(x) + εB` for every `z` within `δ` of `x`. -/
-theorem corollary_24_5_1_subdifferential {f : Rn n → EReal} (hf : ConvexFn f) (hfp : Proper f)
-    {x : Rn n} (hx : x ∈ interior (dom f)) {ε : ℝ} (hε : 0 < ε) :
+theorem corollary_24_5_1_subdifferential {f : Rn n → EReal} (hf : ConvexFn f) (hfp : ProperConvex f)
+    {x : Rn n} (hx : x ∈ interior (convexDom f)) {ε : ℝ} (hε : 0 < ε) :
     ∃ δ > 0, ∀ z ∈ Metric.ball x δ, subdifferential (pairing n) f z
       ⊆ subdifferential (pairing n) f x + Metric.closedBall (0 : Rn n) ε := by
   obtain ⟨δ, hδ, hmem⟩ := Metric.eventually_nhds_iff.1
@@ -440,20 +444,22 @@ theorem subdifferentialNormal_eq_sep (f : Rn n → EReal) (x y : Rn n) :
 derivative `f'(x; y; z) = dirDeriv (dirDeriv f x) y z` eventually bounds `f'(xᵢ; z)`. Rockafellar
 assumes `f` closed; that is not needed here, because the vanishing step `|xᵢ - x|` is replaced by a
 fixed larger one, so only continuity of `f` at interior points is used. -/
-theorem theorem_24_6_lt (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f) {xs : ℕ → Rn n}
-    (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
+theorem theorem_24_6_lt (hf : ConvexFn f) (hfp : ProperConvex f) (hx : x ∈ convexDom f)
+    {xs : ℕ → Rn n}
+    (hxsdom : ∀ i, xs i ∈ convexDom f) (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
     (hdir : Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y)) (hy : dirDeriv f x y ≠ ⊥)
-    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (dom f)) {z : Rn n} {μ : ℝ}
+    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (convexDom f)) {z : Rn n} {μ : ℝ}
     (hμ : dirDeriv (dirDeriv f x) y z < (μ : EReal)) :
     ∀ᶠ i in atTop, dirDeriv f (xs i) z < (μ : EReal) :=
   eventually_dirDeriv_lt_of_tendsto_dir hf hfp hx hxsdom hxsne hxs hdir hy hα hαy hμ
 
 /-- **Theorem 24.6**, first assertion, literally:
 `limsup_i f'(xᵢ; z) ≤ f'(x; y; z)` for every `z`. -/
-theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f) {xs : ℕ → Rn n}
-    (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
+theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : ProperConvex f) (hx : x ∈ convexDom f)
+    {xs : ℕ → Rn n}
+    (hxsdom : ∀ i, xs i ∈ convexDom f) (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
     (hdir : Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y)) (hy : dirDeriv f x y ≠ ⊥)
-    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (dom f)) (z : Rn n) :
+    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (convexDom f)) (z : Rn n) :
     limsup (fun i => dirDeriv f (xs i) z) atTop ≤ dirDeriv (dirDeriv f x) y z := by
   refine le_of_forall_gt_imp_ge_of_dense fun c hc => ?_
   obtain ⟨μ, hμ₁, hμ₂⟩ := EReal.lt_iff_exists_real_btwn.1 hc
@@ -463,11 +469,11 @@ theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f
 
 /-- **Theorem 24.6**, second assertion: given `ε > 0` there is an index `i₀` with
 `∂f(xᵢ) ⊆ ∂f(x)_y + εB` for all `i ≥ i₀`. -/
-theorem theorem_24_6_subdifferential (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f)
-    {xs : ℕ → Rn n} (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x)
+theorem theorem_24_6_subdifferential (hf : ConvexFn f) (hfp : ProperConvex f) (hx : x ∈ convexDom f)
+    {xs : ℕ → Rn n} (hxsdom : ∀ i, xs i ∈ convexDom f) (hxsne : ∀ i, xs i ≠ x)
     (hxs : Tendsto xs atTop (𝓝 x))
     (hdir : Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y)) (hy : dirDeriv f x y ≠ ⊥)
-    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (dom f)) {ε : ℝ} (hε : 0 < ε) :
+    {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (convexDom f)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ i in atTop, subdifferential (pairing n) f (xs i)
       ⊆ subdifferentialNormal f x y + Metric.closedBall (0 : Rn n) ε := by
   rw [subdifferentialNormal_eq_sep]
@@ -486,8 +492,8 @@ variable {n : ℕ} {f : Rn n → EReal} {S : Set (Rn n)}
 `S ⊆ int (dom f)`, bounds the directional derivatives there, and is a Lipschitz constant for `f` on
 `S`. The book takes `α = sup {|x*| : x* ∈ ∂f(S)}`; what is asserted here is the existence of *some*
 such `α`, which is implied by, but weaker than, the book's sharper reading. -/
-theorem theorem_24_7_bound (hf : ConvexFn f) (hp : Proper f) (hS : IsCompact S)
-    (hSD : S ⊆ interior (dom f)) :
+theorem theorem_24_7_bound (hf : ConvexFn f) (hp : ProperConvex f) (hS : IsCompact S)
+    (hSD : S ⊆ interior (convexDom f)) :
     ∃ α : NNReal, LipschitzOnWith α (fun x => (f x).toReal) S ∧
       (∀ x ∈ S, ∀ v ∈ subdifferential (pairing n) f x, ‖v‖ ≤ (α : ℝ)) ∧
       ∀ x ∈ S, ∀ z : Rn n, dirDeriv f x z ≤ (((α : ℝ) * ‖z‖ : ℝ) : EReal) := by
@@ -502,24 +508,24 @@ theorem theorem_24_7_bound (hf : ConvexFn f) (hp : Proper f) (hS : IsCompact S)
 
 /-- **Theorem 24.7**: `∂f(S) = ⋃ {∂f(x) | x ∈ S}` is non-empty for a non-empty
 `S ⊆ int (dom f)`. This is Theorem 23.4 applied at any point of `S`. -/
-theorem theorem_24_7_nonempty (hf : ConvexFn f) (hp : Proper f) (hne : S.Nonempty)
-    (hSD : S ⊆ interior (dom f)) : ((subgradientRel (pairing n) f).image S).Nonempty :=
+theorem theorem_24_7_nonempty (hf : ConvexFn f) (hp : ProperConvex f) (hne : S.Nonempty)
+    (hSD : S ⊆ interior (convexDom f)) : ((subgradientRel (pairing n) f).image S).Nonempty :=
   image_subgradientRel_nonempty hf hp hne hSD
 
 /-- **Theorem 24.7**, topological half: `∂f(S)` is compact for a closed proper convex
 `f` and a compact `S ⊆ int (dom f)`. Closedness of `∂f(S)` is Theorem 24.4. -/
 theorem theorem_24_7_isCompact (hf : ClosedProperConvexFn f) (hS : IsCompact S)
-    (hSD : S ⊆ interior (dom f)) : IsCompact ((subgradientRel (pairing n) f).image S) :=
+    (hSD : S ⊆ interior (convexDom f)) : IsCompact ((subgradientRel (pairing n) f).image S) :=
   isCompact_image_subgradientRel hf hS hSD
 
 /-- **Theorem 24.7**: `∂f(S)` is closed. -/
 theorem theorem_24_7_isClosed (hf : ClosedProperConvexFn f) (hS : IsCompact S)
-    (hSD : S ⊆ interior (dom f)) : IsClosed ((subgradientRel (pairing n) f).image S) :=
+    (hSD : S ⊆ interior (convexDom f)) : IsClosed ((subgradientRel (pairing n) f).image S) :=
   (theorem_24_7_isCompact hf hS hSD).isClosed
 
 /-- **Theorem 24.7**: `∂f(S)` is bounded. -/
 theorem theorem_24_7_isBounded (hf : ClosedProperConvexFn f) (hS : IsCompact S)
-    (hSD : S ⊆ interior (dom f)) :
+    (hSD : S ⊆ interior (convexDom f)) :
     Bornology.IsBounded ((subgradientRel (pairing n) f).image S) :=
   (theorem_24_7_isCompact hf hS hSD).isBounded
 
@@ -535,8 +541,8 @@ variable {n : ℕ} {ρ : SetRel (Rn n) (Rn n)} {f : Rn n → EReal}
 24.8 true for the empty mapping, which Rockafellar's proof sets aside. -/
 private theorem closedProperConvexFn_zero (n : ℕ) :
     ClosedProperConvexFn (affineFn (pairing n) 0 0) :=
-  ⟨convexFn_affineFn 0 0, closedFn_affineFn (continuous_pairing (pairing n) 0),
-    proper_affineFn 0 0⟩
+  ⟨convexFn_affineFn 0 0, closedConvex_affineFn (continuous_pairing (pairing n) 0),
+    properConvex_affineFn 0 0⟩
 
 /-- **Theorem 24.8**, sufficiency: a cyclically monotone multivalued mapping from `Rⁿ` to `Rⁿ` is
 contained in the subdifferential of a closed proper convex function. The empty mapping is included,
@@ -581,7 +587,7 @@ theorem theorem_24_9_unique {g : Rn n → EReal} (hf : ClosedProperConvexFn f)
 /-- **§24**: `∂f` is a monotone mapping, the case `m = 1` of cyclic monotonicity. Kept deliberately
 separate from `theorem_24_9`: maximal monotonicity of `∂f`, Corollary 31.5.2, does **not** follow
 from Theorem 24.9 together with "cyclically monotone implies monotone". -/
-theorem isMonotoneRel_subgradientRel_rn (hp : Proper f) :
+theorem isMonotoneRel_subgradientRel_rn (hp : ProperConvex f) :
     IsMonotoneRel (pairing n) (subgradientRel (pairing n) f) :=
   isMonotoneRel_subgradientRel hp
 

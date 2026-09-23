@@ -76,19 +76,22 @@ id = '_root_.Convex.relint_convexHull_union'
 id = 'ConvexFn.relint_epi'
 
 [[node]]
-id = 'ConvexFn.eq_bot_of_mem_relint_dom'
+id = 'ConvexFn.eq_bot_of_mem_relint_convexDom'
 
 [[node]]
-id = 'ConvexFn.proper_clFn'
+id = 'ConvexFn.properConvex_convexCl'
 
 [[node]]
-id = 'ConvexFn.clFn_eq_of_mem_relint_dom'
+id = 'ConvexFn.convexCl_eq_of_mem_relint_convexDom'
 
 [[node]]
-id = 'ConvexFn.relint_dom_clFn'
+id = 'ConcaveFn.concaveCl_eq_of_mem_relint_concaveDom'
 
 [[node]]
-id = 'ConvexFn.interior_dom_clFn'
+id = 'ConvexFn.relint_convexDom_convexCl'
+
+[[node]]
+id = 'ConvexFn.interior_convexDom_convexCl'
 
 [[node]]
 id = 'ConvexFn.le_of_mem_closure'
@@ -97,7 +100,7 @@ id = 'ConvexFn.le_of_mem_closure'
 id = 'ConvexFn.tendsto_lscHull_along_segment_relint'
 
 [[node]]
-id = 'ConvexFn.exists_mem_relint_dom_lt'
+id = 'ConvexFn.exists_mem_relint_convexDom_lt'
 
 [[node]]
 id = 'ConvexFn.relint_setOf_le'
@@ -113,3 +116,9 @@ id = 'ConvexFn.relint_setOf_lt_eq'
 
 [[node]]
 id = 'exists_separatesProperly_iff_disjoint_relint'
+
+[[node]]
+id = 'convexCl_eq_of_eqOn_relint_convexDom'
+
+[[node]]
+id = 'concaveCl_eq_of_eqOn_relint_concaveDom'

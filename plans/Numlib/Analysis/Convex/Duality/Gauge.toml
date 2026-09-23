@@ -16,13 +16,28 @@ id = 'isGauge_iff'
 id = 'gaugeEquiv'
 
 [[node]]
+id = 'gaugeFn_polarSet'
+
+[[node]]
+id = 'supportFn_polarSet'
+
+[[node]]
 id = 'recessionCone_eq_polarCone_polarSet'
+
+[[node]]
+id = 'polarCone_recessionCone'
+
+[[node]]
+id = 'linealitySpace_eq_setOf_pairing_eq_zero'
 
 [[node]]
 id = 'polarCone_linealitySpace'
 
 [[node]]
 id = 'finrank_vectorSpan_polarSet_add_lineality'
+
+[[node]]
+id = 'finrank_vectorSpan_add_lineality_polarSet'
 
 [[node]]
 id = 'polarSet_setOf_le_subset_and_subset'
@@ -67,13 +82,16 @@ id = 'obverse'
 id = 'obverse_obverse'
 
 [[node]]
-id = 'conj_eq_obverse_polarFn'
+id = 'convexConj_eq_obverse_polarFn'
 
 [[node]]
-id = 'polarFn_eq_obverse_conj'
+id = 'polarFn_eq_obverse_convexConj'
 
 [[node]]
-id = 'polarFn_conj_eq_conj_polarFn'
+id = 'polarFn_convexConj_eq_convexConj_polarFn'
+
+[[node]]
+id = 'setOf_obverse_le'
 
 [[node]]
 id = 'setOf_polarFn_le'

@@ -19,11 +19,11 @@ does not exist.
 
 * `supportFn_univ_pi` — the support function of a product set is the sum of the support functions
   of the factors.
-* `conj_piFn` — the conjugate of a separable sum of proper functions is the separable sum of the
-  conjugates, `(∑ i, fᵢ ∘ prᵢ)* = ∑ i, fᵢ* ∘ prᵢ`.
-* `iInter_relint_nonempty_iff_supportFn`, `iInter_relint_dom_nonempty_iff` — a finite family of
-  convex sets (resp. of effective domains) has a common relative-interior point exactly when there
-  is no family `y` with `∑ i, yᵢ = 0`, `∑ i, δ*(yᵢ ∣ Cᵢ) ≤ 0` and `∑ i, δ*(-yᵢ ∣ Cᵢ) > 0`
+* `convexConj_piFn` — the conjugate of a separable sum of proper functions is the separable sum of
+  the conjugates, `(∑ i, fᵢ ∘ prᵢ)* = ∑ i, fᵢ* ∘ prᵢ`.
+* `iInter_relint_nonempty_iff_supportFn`, `iInter_relint_convexDom_nonempty_iff` — a finite family
+  of convex sets (resp. of effective domains) has a common relative-interior point exactly when
+  there is no family `y` with `∑ i, yᵢ = 0`, `∑ i, δ*(yᵢ ∣ Cᵢ) ≤ 0` and `∑ i, δ*(-yᵢ ∣ Cᵢ) > 0`
   ([rockafellar1970convex] Corollary 16.2.2). The diagonal `{x ∣ x₁ = ⋯ = xₘ}` is a subspace of
   `ι → E` whose annihilator under the product pairing is the family of `y` summing to zero, so this
   is the subspace criterion of `Duality/RelintSeparation.lean` read at a product set.
@@ -259,21 +259,21 @@ family of proper functions, `(∑ i, fᵢ ∘ prᵢ)* = ∑ i, fᵢ* ∘ prᵢ` 
 
 Properness keeps the two sides from colliding at `∞ - ∞`: it lets the supremum defining `fᵢ*` be
 taken over `dom fᵢ`, and it keeps `fᵢ* yᵢ` off `⊥`, so no summand on the right can absorb. -/
-theorem conj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal) (hf : ∀ i, Proper (f i))
+theorem convexConj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal) (hf : ∀ i, ProperConvex (f i))
     (y : ι → F) :
-    conj (piPairing B) (fun x => ∑ i, f i (x i)) y = ∑ i, conj B (f i) (y i) := by
+    convexConj (piPairing B) (fun x => ∑ i, f i (x i)) y = ∑ i, convexConj B (f i) (y i) := by
   have hbot : ∀ i z, f i z ≠ ⊥ := fun i z => (hf i).ne_bot z
-  have hoff : ∀ i, ∀ z ∉ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) = ⊥ := by
+  have hoff : ∀ i, ∀ z ∉ convexDom (f i), (((B z (y i) : ℝ) : EReal) - f i z) = ⊥ := by
     intro i z hz
     have hz' : ¬ (f i z < ⊤) := hz
     rw [top_le_iff.1 (not_lt.1 hz'), EReal.sub_top]
-  have hval : ∀ i, ∀ z ∈ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) ≠ ⊥ := by
+  have hval : ∀ i, ∀ z ∈ convexDom (f i), (((B z (y i) : ℝ) : EReal) - f i z) ≠ ⊥ := by
     intro i z hz
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot i z) hz
     rw [hr, ← EReal.coe_sub]
     exact EReal.coe_ne_bot _
-  have hcoord : ∀ i, conj B (f i) (y i)
-      = ⨆ z ∈ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) :=
+  have hcoord : ∀ i, convexConj B (f i) (y i)
+      = ⨆ z ∈ convexDom (f i), (((B z (y i) : ℝ) : EReal) - f i z) :=
     fun i => iSup_eq_biSup_of_notMem (hoff i)
   have hsplit : ∀ x : ι → E, ((piPairing B x y : ℝ) : EReal) - (∑ i, f i (x i))
       = ∑ i, (((B (x i) (y i) : ℝ) : EReal) - f i (x i)) := by
@@ -281,17 +281,18 @@ theorem conj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal)
     rw [piPairing_apply]
     exact coe_sum_sub_sum (fun i => B (x i) (y i)) (fun i => f i (x i)) Finset.univ
       fun i => hbot i (x i)
-  have hprod : conj (piPairing B) (fun x => ∑ i, f i (x i)) y
-      = ⨆ x ∈ univ.pi fun i => dom (f i), ∑ i, (((B (x i) (y i) : ℝ) : EReal) - f i (x i)) := by
-    rw [conj_apply]
+  have hprod : convexConj (piPairing B) (fun x => ∑ i, f i (x i)) y
+      = ⨆ x ∈ univ.pi fun i => convexDom (f i), ∑ i,
+          (((B (x i) (y i) : ℝ) : EReal) - f i (x i)) := by
+    rw [convexConj_apply]
     simp only [hsplit]
     refine iSup_eq_biSup_of_notMem fun x hx => ?_
-    obtain ⟨i₀, -, hi₀⟩ : ∃ i₀ ∈ (univ : Set ι), x i₀ ∉ dom (f i₀) := by
+    obtain ⟨i₀, -, hi₀⟩ : ∃ i₀ ∈ (univ : Set ι), x i₀ ∉ convexDom (f i₀) := by
       simpa [Set.mem_pi] using hx
     exact sum_eq_bot_of_mem (Finset.mem_univ i₀) (hoff i₀ (x i₀) hi₀)
   rw [hprod]
   simp only [hcoord]
-  exact biSup_sum_univ_pi (fun i => (hf i).dom_nonempty)
+  exact biSup_sum_univ_pi (fun i => (hf i).convexDom_nonempty)
     (fun i z => ((B z (y i) : ℝ) : EReal) - f i z) hval Finset.univ
 
 end Separable
@@ -362,16 +363,17 @@ theorem iInter_relint_nonempty_iff_supportFn (hB : B.SeparatingRight) (C : ι �
 effective domains** exactly when there is no family `y` summing to zero with
 `∑ i, (fᵢ* 0⁺)(yᵢ) ≤ 0 < ∑ i, (fᵢ* 0⁺)(-yᵢ)`: the previous statement at `Cᵢ = dom fᵢ`, whose
 support function is the recession function of `fᵢ*`. -/
-theorem iInter_relint_dom_nonempty_iff (hB : B.SeparatingRight) (f : ι → E → EReal)
-    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i)) (hc : ∀ i, Proper (conj B (f i))) :
-    (⋂ i, ri (dom (f i))).Nonempty ↔
-      ¬ ∃ y : ι → F, (∑ i, y i = 0) ∧ (∑ i, recessionFn (conj B (f i)) (y i)) ≤ 0 ∧
-        0 < ∑ i, recessionFn (conj B (f i)) (-(y i)) := by
-  have hrec : ∀ i, recessionFn (conj B (f i)) = supportFn B (dom (f i)) :=
-    fun i => recessionFn_conj (hp i) (hc i)
+theorem iInter_relint_convexDom_nonempty_iff (hB : B.SeparatingRight) (f : ι → E → EReal)
+    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
+        (hc : ∀ i, ProperConvex (convexConj B (f i))) :
+    (⋂ i, ri (convexDom (f i))).Nonempty ↔
+      ¬ ∃ y : ι → F, (∑ i, y i = 0) ∧ (∑ i, recessionFn (convexConj B (f i)) (y i)) ≤ 0 ∧
+        0 < ∑ i, recessionFn (convexConj B (f i)) (-(y i)) := by
+  have hrec : ∀ i, recessionFn (convexConj B (f i)) = supportFn B (convexDom (f i)) :=
+    fun i => recessionFn_convexConj (hp i) (hc i)
   simp only [hrec]
-  exact iInter_relint_nonempty_iff_supportFn hB _ (fun i => (hf i).convex_dom)
-    fun i => (hp i).dom_nonempty
+  exact iInter_relint_nonempty_iff_supportFn hB _ (fun i => (hf i).convex_convexDom)
+    fun i => (hp i).convexDom_nonempty
 
 end Diagonal
 

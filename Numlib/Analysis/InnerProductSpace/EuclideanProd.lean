@@ -16,7 +16,7 @@ coordinates, and its one mathematical property — that it *adds the two inner p
 concatenation with a scalar factor at each end, `ℝ × ℝⁿ × ℝ ≃ ℝⁿ⁺²`, is assembled from it.
 
 Nothing here is about convexity. What a convexity statement needs on top of this — that the
-concatenation is an adjoint pair for the two pairings, and the transport of `conj`,
+concatenation is an adjoint pair for the two pairings, and the transport of `convexConj`,
 `subdifferential` and `ri` along it — is `Numlib/Analysis/Convex/EuclideanProd`, which is where the
 one consumer of this module reaches it from.
 

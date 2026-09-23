@@ -77,12 +77,12 @@ variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGr
 omit [AddCommGroup U] [IsTopologicalAddGroup U] in
 theorem ClosedSaddleFn.saddleEquiv_partialCl₂ (h : ClosedSaddleFn K) :
     SaddleEquiv (partialCl₂ K) K :=
-  ⟨h.1, convexClosedFn_partialCl₂ K⟩
+  ⟨h.1, partialClosed₂_partialCl₂ K⟩
 
 omit [AddCommGroup X] [IsTopologicalAddGroup X] in
 theorem ClosedSaddleFn.saddleEquiv_partialCl₁ (h : ClosedSaddleFn K) :
     SaddleEquiv (partialCl₁ K) K :=
-  ⟨concaveClosedFn_partialCl₁ K, h.2⟩
+  ⟨partialClosed₁_partialCl₁ K, h.2⟩
 
 end ClosedEquiv
 
@@ -99,7 +99,7 @@ theorem partialCl₂_eq_of_mem_saddleClass (h2 : partialCl₂ Kup = Klow)
     (hK : K ∈ saddleClass Klow Kup) : partialCl₂ K = Klow := by
   have hcc : partialCl₂ Klow = Klow := by
     rw [← h2]
-    exact convexClosedFn_partialCl₂ Kup
+    exact partialClosed₂_partialCl₂ Kup
   exact le_antisymm ((partialCl₂_mono hK.2).trans h2.le)
     (hcc.symm.trans_le (partialCl₂_mono hK.1))
 
@@ -110,11 +110,13 @@ section IntervalCl₁
 variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U]
   {Klow Kup K : U × X → EReal}
 
+/-- On the interval of a closure pair, `cl₁` is constant at the upper end. Monotonicity squeezes
+`cl₁ K` between `cl₁ K̲ = K̄` and `cl₁ K̄ = K̄`. -/
 theorem partialCl₁_eq_of_mem_saddleClass (h1 : partialCl₁ Klow = Kup)
     (hK : K ∈ saddleClass Klow Kup) : partialCl₁ K = Kup := by
   have hcc : partialCl₁ Kup = Kup := by
     rw [← h1]
-    exact concaveClosedFn_partialCl₁ Klow
+    exact partialClosed₁_partialCl₁ Klow
   exact le_antisymm ((partialCl₁_mono hK.2).trans hcc.le)
     (h1.symm.trans_le (partialCl₁_mono hK.1))
 
@@ -165,9 +167,9 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 the upper. -/
 theorem partialCl₂_eq_bracket_of_mem_saddleClass (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
-    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ saddleClass (fun p : U × Y => bracket Bx F p.1 p.2)
-      (fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2)) :
+      (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2)) :
     partialCl₂ K = fun p : U × Y => bracket Bx F p.1 p.2 :=
   partialCl₂_eq_of_mem_saddleClass (partialCl₂_concaveBracket_adjoint Bu Bx hF hcl) hK
 
@@ -178,15 +180,15 @@ theorem partialCl₁_eq_concaveBracket_of_mem_saddleClass (Bu : U →ₗ[ℝ] V 
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (hF : ConvexBifun F)
     (hK : K ∈ saddleClass (fun p : U × Y => bracket Bx F p.1 p.2)
-      (fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2)) :
-    partialCl₁ K = fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2 :=
+      (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2)) :
+    partialCl₁ K = fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2 :=
   partialCl₁_eq_of_mem_saddleClass (partialCl₁_bracket Bu Bx hF) hK
 
 theorem closedSaddleFn_of_mem_saddleClass_bracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
-    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ saddleClass (fun p : U × Y => bracket Bx F p.1 p.2)
-      (fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2)) :
+      (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2)) :
     ClosedSaddleFn K :=
   closedSaddleFn_of_mem_saddleClass (partialCl₁_bracket Bu Bx hF)
     (partialCl₂_concaveBracket_adjoint Bu Bx hF hcl) hK
@@ -197,9 +199,9 @@ saddle-functions is an `Ω(F)`. -/
 theorem exists_unique_bifun_of_closedSaddleFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K) :
-    ∃! F : Bifun U X, ConvexBifun F ∧ ClosedBifun F ∧
+    ∃! F : Bifun U X, ConvexBifun F ∧ ClosedConvexBifun F ∧
       (fun p : U × Y => bracket Bx F p.1 p.2) = partialCl₂ K ∧
-      (fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2) = partialCl₁ K :=
+      (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2) = partialCl₁ K :=
   exists_unique_bifun_of_closure_pair Bu Bx (concaveConvexFn_partialCl₂ Bx hK) hcl.1 hcl.2
 
 end Omega

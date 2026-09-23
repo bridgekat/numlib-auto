@@ -10,7 +10,7 @@ id = 'containsNoLine_subdifferential'
 id = 'recessionCone_subdifferential_eq_normalCone'
 
 [[node]]
-id = 'exists_mem_interior_dom_of_forall_normalCone'
+id = 'exists_mem_interior_convexDom_of_forall_normalCone'
 
 [[node]]
 id = 'exposedPoints_subset_gradientLimits'

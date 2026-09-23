@@ -7,10 +7,10 @@ id = 'piPairing'
 id = 'supportFn_univ_pi'
 
 [[node]]
-id = 'conj_piFn'
+id = 'convexConj_piFn'
 
 [[node]]
 id = 'iInter_relint_nonempty_iff_supportFn'
 
 [[node]]
-id = 'iInter_relint_dom_nonempty_iff'
+id = 'iInter_relint_convexDom_nonempty_iff'

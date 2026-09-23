@@ -127,7 +127,8 @@ theorem hasGradientVecAt_coe {g : Rn n → ℝ} (hd : HasFDerivAt g (linFn b) x)
 /-- **The dictionary to Mathlib.** At an interior point of `dom f` — and by Corollary 25.1.1 there
 is nowhere else to look — differentiability in §25's sense is ordinary differentiability of the
 real trace `z ↦ (f z).toReal`. -/
-theorem differentiableAtFn_iff_differentiableAt (hp : Proper f) (hx : x ∈ interior (dom f)) :
+theorem differentiableAtFn_iff_differentiableAt (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) :
     DifferentiableAtFn f x ↔ DifferentiableAt ℝ (fun z => (f z).toReal) x :=
   differentiableAtFn_iff_differentiableAt_toReal hp hx
 
@@ -159,7 +160,7 @@ theorem theorem_25_1_le (hf : ConvexFn f) (h : HasGradientVecAt f b x) (z : Rn n
 convex `f` has a unique subgradient at `x` then `f` is differentiable at `x`. In finite dimensions
 a convex set is a neighbourhood of every point whose normal cone is trivial (Corollary 11.6.1),
 which is the step Rockafellar passes over. -/
-theorem theorem_25_1_converse (hf : ConvexFn f) (hp : Proper f)
+theorem theorem_25_1_converse (hf : ConvexFn f) (hp : ProperConvex f)
     (h : subdifferential (pairing n) f x = {b}) : HasGradientVecAt f b x := by
   have hg := hasGradientAtFn_toDual_of_subdifferential_eq_singleton (E := Rn n) hf hp h
   rw [hasGradientVecAt_iff_hasGradientAtFn, linFn_eq_toDual]
@@ -167,36 +168,36 @@ theorem theorem_25_1_converse (hf : ConvexFn f) (hp : Proper f)
 
 /-- **Theorem 25.1**, in full: for a proper convex function on `ℝⁿ`, having gradient
 `b` at `x` and having `b` as sole subgradient at `x` are the same thing. -/
-theorem theorem_25_1 (hf : ConvexFn f) (hp : Proper f) :
+theorem theorem_25_1 (hf : ConvexFn f) (hp : ProperConvex f) :
     HasGradientVecAt f b x ↔ subdifferential (pairing n) f x = {b} :=
   ⟨theorem_25_1_forward hf, theorem_25_1_converse hf hp⟩
 
 /-- **Theorem 25.1** as the book's following sentence states it: `∂f(x)` is a single vector exactly
 when `f` is differentiable at `x`. -/
-theorem theorem_25_1_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
+theorem theorem_25_1_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
     DifferentiableAtFn f x ↔ ∃ b : Rn n, subdifferential (pairing n) f x = {b} := by
   rw [differentiableAtFn_iff_exists_hasGradientVecAt]
   exact exists_congr fun _ => theorem_25_1 hf hp
 
 /-- **Corollary 25.1.1**, second half: a convex function finite and differentiable at `x` is
 proper. This holds in any topological vector space. -/
-theorem corollary_25_1_1_proper (hf : ConvexFn f) (h : HasGradientVecAt f b x) : Proper f :=
+theorem corollary_25_1_1_proper (hf : ConvexFn f) (h : HasGradientVecAt f b x) : ProperConvex f :=
   HasGradientAtFn.proper hf (hasGradientVecAt_iff_hasGradientAtFn.1 h)
 
 /-- **Corollary 25.1.1**, first half: `x ∈ int (dom f)`. It uses neither convexity nor
 differentiability, only that `f` is finite near `x`, which the definition of `∇f(x)` presupposes. -/
-theorem corollary_25_1_1_mem_interior (h : HasGradientVecAt f b x) : x ∈ interior (dom f) :=
-  HasGradientAtFn.mem_interior_dom (hasGradientVecAt_iff_hasGradientAtFn.1 h)
+theorem corollary_25_1_1_mem_interior (h : HasGradientVecAt f b x) : x ∈ interior (convexDom f) :=
+  HasGradientAtFn.mem_interior_convexDom (hasGradientVecAt_iff_hasGradientAtFn.1 h)
 
 /-- **Corollary 25.1.2**: for a proper convex `f` on `ℝⁿ`, the exposed points of `epi f*` are the
 points `(x*, f*(x*))` such that `f` is differentiable at some `x` with `∇f(x) = x*`. **`f` need not
 be closed**, as in the book, which replaces `f` by `cl f` on the strength of its unproved remark
 `∇(cl f) = ∇f`; that remark needs `int (dom (cl f)) = int (dom f)` as well as `cl f = f` on the
 interior, and both halves are in the backbone. -/
-theorem corollary_25_1_2 (hf : ConvexFn f) (hp : Proper f) {y : Rn n} {μ : ℝ} :
-    (y, μ) ∈ (epi (conj (pairing n) f)).exposedPoints ℝ ↔
-      conj (pairing n) f y = (μ : EReal) ∧ ∃ x : Rn n, HasGradientVecAt f y x := by
-  rw [mem_exposedPoints_epi_conj_iff_of_proper (B := pairing n) hf hp]
+theorem corollary_25_1_2 (hf : ConvexFn f) (hp : ProperConvex f) {y : Rn n} {μ : ℝ} :
+    (y, μ) ∈ (epi (convexConj (pairing n) f)).exposedPoints ℝ ↔
+      convexConj (pairing n) f y = (μ : EReal) ∧ ∃ x : Rn n, HasGradientVecAt f y x := by
+  rw [mem_exposedPoints_epi_convexConj_iff_of_properConvex (B := pairing n) hf hp]
   exact and_congr_right fun _ => exists_congr fun _ => (theorem_25_1 hf hp).symm
 
 /-- **Corollary 25.1.3**: let `C` be a non-empty closed convex set and `g` a positively homogeneous
@@ -204,11 +205,11 @@ proper convex function with `C = {z | ⟨y, z⟩ ≤ g(y) for all y}`. Then `z` 
 iff `g` is differentiable at some `y` with `∇g(y) = z`. Non-emptiness and closedness of
 `supportSet (pairing n) g` follow from the other hypotheses and are not assumed. -/
 theorem corollary_25_1_3 {g : Rn n → EReal} {C : Set (Rn n)} (hgh : PosHomogeneous g)
-    (hgc : ConvexFn g) (hgp : Proper g)
+    (hgc : ConvexFn g) (hgp : ProperConvex g)
     (hC : C = supportSet (pairing n) g) {z : Rn n} :
     z ∈ C.exposedPoints ℝ ↔ ∃ y : Rn n, HasGradientVecAt g z y := by
   subst hC
-  have h := mem_exposedPoints_supportSet_iff_of_proper (B := pairing n) hgh hgc hgp (z := z)
+  have h := mem_exposedPoints_supportSet_iff_of_properConvex (B := pairing n) hgh hgc hgp (z := z)
   simp only [flip_pairing] at h
   rw [h]
   exact exists_congr fun _ => (theorem_25_1 hgc hgp).symm
@@ -265,30 +266,31 @@ variable {f : ℝ → EReal}
 
 /-- **Theorem 25.3**, the definition of `D`: on the line, differentiability at an interior point of
 `dom f` is exactly equality of the two one-sided derivatives. -/
-theorem theorem_25_3_differentiableAtFn_iff (hf : ConvexFn f) (hp : Proper f) {x : ℝ}
-    (hx : x ∈ interior (dom f)) : DifferentiableAtFn f x ↔ leftDeriv f x = rightDeriv f x :=
+theorem theorem_25_3_differentiableAtFn_iff (hf : ConvexFn f) (hp : ProperConvex f) {x : ℝ}
+    (hx : x ∈ interior (convexDom f)) : DifferentiableAtFn f x ↔ leftDeriv f x = rightDeriv f x :=
   differentiableAtFn_iff_leftDeriv_eq_rightDeriv hf hp hx
 
 /-- **Theorem 25.3**, first assertion: `D` contains all but countably many points of `I`. -/
-theorem theorem_25_3_countable (hf : ConvexFn f) (hp : Proper f) :
-    {x ∈ interior (dom f) | ¬DifferentiableAtFn f x}.Countable :=
+theorem theorem_25_3_countable (hf : ConvexFn f) (hp : ProperConvex f) :
+    {x ∈ interior (convexDom f) | ¬DifferentiableAtFn f x}.Countable :=
   countable_not_differentiableAtFn hf hp
 
 /-- **Theorem 25.3**, the parenthesis: `D` is dense in `I`. -/
-theorem theorem_25_3_dense (hf : ConvexFn f) (hp : Proper f) :
-    interior (dom f) ⊆ closure {z : ℝ | DifferentiableAtFn f z} :=
+theorem theorem_25_3_dense (hf : ConvexFn f) (hp : ProperConvex f) :
+    interior (convexDom f) ⊆ closure {z : ℝ | DifferentiableAtFn f z} :=
   subset_closure_differentiableAtFn hf hp
 
 /-- **Theorem 25.3**, second assertion: `f'` is continuous relative to `D` — here in the stronger
 form that `rightDeriv f` is continuous at each point of `D` in the ordinary sense. This is the
 clause that wants the book's extension of `f` to a closed proper convex function on the line. -/
 theorem theorem_25_3_continuousAt (hf : ClosedProperConvexFn f) {x : ℝ}
-    (hx : x ∈ interior (dom f)) (hd : DifferentiableAtFn f x) : ContinuousAt (rightDeriv f) x :=
+    (hx : x ∈ interior (convexDom f))
+        (hd : DifferentiableAtFn f x) : ContinuousAt (rightDeriv f) x :=
   continuousAt_rightDeriv_of_differentiableAtFn hf hx hd
 
 /-- **Theorem 25.3**, third assertion: `f'` is non-decreasing relative to `D`. Again stronger:
 `rightDeriv f` is monotone on the whole line. -/
-theorem theorem_25_3_monotone (hf : ConvexFn f) (hp : Proper f) : Monotone (rightDeriv f) :=
+theorem theorem_25_3_monotone (hf : ConvexFn f) (hp : ProperConvex f) : Monotone (rightDeriv f) :=
   monotone_rightDeriv hf hp
 
 end Theorem253
@@ -302,23 +304,23 @@ variable {f : Rn n → EReal} {x : Rn n}
 /-- **Theorem 25.4**, first assertion: for proper convex `f` and fixed `y`, the two-sided
 directional derivative exists at a point of `int (dom f)` exactly where `x ↦ f'(x; y)` is
 continuous. Rockafellar's `y ≠ 0` is not needed — at `y = 0` both sides hold. -/
-theorem theorem_25_4_continuousAt_iff (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) (y : Rn n) :
+theorem theorem_25_4_continuousAt_iff (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) (y : Rn n) :
     ContinuousAt (fun z => dirDeriv f z y) x ↔ dirDeriv f x y = -dirDeriv f x (-y) :=
   continuousAt_dirDeriv_iff hf hp hx y
 
 /-- **Theorem 25.4**, density — **and this clause is general**: restricting `f` to the line through
 `x` in the direction `y` turns it into Theorem 25.3. -/
-theorem theorem_25_4_dense (hf : ConvexFn f) (hp : Proper f) (y : Rn n) :
-    interior (dom f) ⊆
-      closure {z ∈ interior (dom f) | dirDeriv f z y = -dirDeriv f z (-y)} :=
+theorem theorem_25_4_dense (hf : ConvexFn f) (hp : ProperConvex f) (y : Rn n) :
+    interior (convexDom f) ⊆
+      closure {z ∈ interior (convexDom f) | dirDeriv f z y = -dirDeriv f z (-y)} :=
   subset_closure_twoSided_dirDeriv hf hp y
 
 /-- **Theorem 25.4**, the measure-zero clause. The implication runs the other way here: Rockafellar
 proves this first, by a Fubini argument over lines, and deduces Theorem 25.5; with Rademacher's
 theorem available, Theorem 25.5 comes first and this is its consequence. -/
-theorem theorem_25_4_measure (hf : ConvexFn f) (hp : Proper f) (y : Rn n) :
-    volume (interior (dom f) \ {z | dirDeriv f z y = -dirDeriv f z (-y)}) = 0 :=
+theorem theorem_25_4_measure (hf : ConvexFn f) (hp : ProperConvex f) (y : Rn n) :
+    volume (interior (convexDom f) \ {z | dirDeriv f z y = -dirDeriv f z (-y)}) = 0 :=
   measure_diff_twoSided_dirDeriv hf hp y
 
 end Theorem254
@@ -331,19 +333,19 @@ variable {f : Rn n → EReal}
 
 /-- **Theorem 25.5**, density: the set of points where a proper convex function is differentiable
 is dense in `int (dom f)`. -/
-theorem theorem_25_5_dense (hf : ConvexFn f) (hp : Proper f) :
-    interior (dom f) ⊆ closure {z : Rn n | DifferentiableAtFn f z} :=
-  interior_dom_subset_closure_differentiableAtFn hf hp
+theorem theorem_25_5_dense (hf : ConvexFn f) (hp : ProperConvex f) :
+    interior (convexDom f) ⊆ closure {z : Rn n | DifferentiableAtFn f z} :=
+  interior_convexDom_subset_closure_differentiableAtFn hf hp
 
 /-- **Theorem 25.5**, measure zero: the complement of `D` in `int (dom f)` is null. This is
 Rademacher's theorem; convexity contributes only the local Lipschitz constants. -/
-theorem theorem_25_5_measure (hf : ConvexFn f) (hp : Proper f) :
-    volume (interior (dom f) \ {z : Rn n | DifferentiableAtFn f z}) = 0 :=
+theorem theorem_25_5_measure (hf : ConvexFn f) (hp : ProperConvex f) :
+    volume (interior (convexDom f) \ {z : Rn n | DifferentiableAtFn f z}) = 0 :=
   measure_diff_differentiableAtFn hf hp
 
 /-- **Theorem 25.5**, continuity: `x ↦ ∇f(x)` is continuous on `D`. This is Corollary 24.5.1 with
 both subdifferentials collapsed to singletons by Theorem 25.1. -/
-theorem theorem_25_5_continuousOn (hf : ConvexFn f) (hp : Proper f) :
+theorem theorem_25_5_continuousOn (hf : ConvexFn f) (hp : ProperConvex f) :
     ContinuousOn (gradientVec f) {z : Rn n | DifferentiableAtFn f z} :=
   (InnerProductSpace.toDual ℝ (Rn n)).symm.continuous.comp_continuousOn
     (continuousOn_fderiv_toReal hf hp)
@@ -384,9 +386,9 @@ theorem mem_gradientLimits_iff {v : Rn n} :
 /-- For `x` with `∂f(x) ≠ ∅`, the recession cone of `∂f(x)` is the normal cone to `dom f` at `x`.
 Rockafellar leaves this as a §23 exercise and says it will be verified inside the proof of Theorem
 25.6; **it is not** — that proof uses only `⊆`, and the equality is discharged separately. -/
-theorem recessionCone_subdifferential_eq_normalCone (hp : Proper f) {v : Rn n}
+theorem recessionCone_subdifferential_eq_normalCone (hp : ProperConvex f) {v : Rn n}
     (hv : v ∈ subdifferential (pairing n) f x) :
-    recessionCone (subdifferential (pairing n) f x) = normalCone (pairing n) (dom f) x :=
+    recessionCone (subdifferential (pairing n) f x) = normalCone (pairing n) (convexDom f) x :=
   ConvexAnalysis.recessionCone_subdifferential_eq_normalCone hp hv
 
 /-- **Theorem 25.6**: for a closed proper convex `f` whose `dom f` has non-empty interior,
@@ -399,10 +401,10 @@ where `K(x)` is the normal cone to `dom f` at `x` and `S(x)` is `gradientLimits 
 declares `K(x)` empty off `dom f`, whereas `normalCone` is total; the two readings agree wherever
 both sides are non-empty, and off `dom f` the left side is empty, forcing `cl (conv S(x))` to be
 empty too. -/
-theorem theorem_25_6 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
-    (hne : (interior (dom f)).Nonempty) :
+theorem theorem_25_6 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
+    (hne : (interior (convexDom f)).Nonempty) :
     subdifferential (pairing n) f x
-      = closure (convexHull ℝ (gradientLimits f x)) + normalCone (pairing n) (dom f) x :=
+      = closure (convexHull ℝ (gradientLimits f x)) + normalCone (pairing n) (convexDom f) x :=
   subdifferential_eq_closure_convexHull_gradientLimits_add_normalCone hf hp hcl hne
 
 end Theorem256
@@ -418,8 +420,9 @@ with `fᵢ → g` pointwise on `C`, one has `∇fᵢ(x) → ∇g(x)` for every `
 differentiable functions this is false; convexity supplies it through the upper semicontinuity of
 `∂f` under pointwise convergence (Theorem 24.5). -/
 theorem theorem_25_7 (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hfp : ∀ i, Proper (f i)) (hfC : ∀ i, C ⊆ dom (f i)) (hg : ConvexFn g) (hgp : Proper g)
-    (hgC : C ⊆ dom g) (hconv : ∀ z ∈ C, Tendsto (fun i => f i z) atTop (𝓝 (g z))) (hx : x ∈ C)
+    (hfp : ∀ i, ProperConvex (f i)) (hfC : ∀ i, C ⊆ convexDom (f i)) (hg : ConvexFn g)
+        (hgp : ProperConvex g)
+    (hgC : C ⊆ convexDom g) (hconv : ∀ z ∈ C, Tendsto (fun i => f i z) atTop (𝓝 (g z))) (hx : x ∈ C)
     {b : ℕ → Rn n} {b' : Rn n} (hb : ∀ i, HasGradientVecAt (f i) (b i) x)
     (hb' : HasGradientVecAt g b' x) : Tendsto b atTop (𝓝 b') := by
   have h := tendsto_of_hasGradientAtFn hC hCc hf hfp hfC hg hgp hgC hconv hx
@@ -434,8 +437,9 @@ theorem theorem_25_7 (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn 
 /-- **Theorem 25.7**, the sentence after it: `∇fᵢ → ∇g` uniformly on every closed bounded subset of
 `C`. "Closed and bounded" is `IsCompact` in `ℝⁿ`. -/
 theorem theorem_25_7_uniform (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
-    (hfp : ∀ i, Proper (f i)) (hfC : ∀ i, C ⊆ dom (f i)) (hg : ConvexFn g) (hgp : Proper g)
-    (hgC : C ⊆ dom g) (hconv : ∀ z ∈ C, Tendsto (fun i => f i z) atTop (𝓝 (g z)))
+    (hfp : ∀ i, ProperConvex (f i)) (hfC : ∀ i, C ⊆ convexDom (f i)) (hg : ConvexFn g)
+        (hgp : ProperConvex g)
+    (hgC : C ⊆ convexDom g) (hconv : ∀ z ∈ C, Tendsto (fun i => f i z) atTop (𝓝 (g z)))
     (hfd : ∀ i, ∀ z ∈ C, DifferentiableAtFn (f i) z)
     (hgd : ∀ z ∈ C, DifferentiableAtFn g z) {S : Set (Rn n)} (hS : IsCompact S) (hSC : S ⊆ C) :
     TendstoUniformlyOn (fun i => gradientVec (f i)) (gradientVec g) atTop S := by

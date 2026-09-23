@@ -4,15 +4,17 @@ import Numlib.Analysis.Convex.Subdifferential.Monotone
 /-!
 # Existence of saddle-values and saddle-points
 
-`Saddle/Conjugate.lean` proves the `D*` halves of the criteria for a saddle-value; this module
-supplies the `C*` halves, turns the saddle-point criterion into a statement about `K` alone, and
-then specialises everything to a finite continuous concave-convex function on a product of closed
-convex sets — where the result is the classical **minimax theorem**.
+This module turns the effective domains of the conjugates (`Saddle/Conjugate.lean`) into criteria
+for a saddle-value and a saddle-point in terms of `K` alone, each in a second-variable and a
+first-variable form, and then specialises everything to a finite continuous concave-convex
+function on a product of closed convex sets — where the result is the classical **minimax
+theorem**.
 
 The device is the involution `saddleSwap K (y, u) = -K (u, y)`. Under it the class `Ω (F)` becomes
 the class `Ω (F♯)` for the **negated flipped pairings** `-Bx.flip`, `-Bu.flip`, where `F♯` is the
-bifunction `(F♯ y) v = -(F* y)(v)`, and the two conjugates are exchanged. So every `C*` statement
-is its `D*` companion read at the swapped data, and no new duality is needed. The pairings must be
+bifunction `(F♯ y) v = -(F* y)(v)`, and the two conjugates are exchanged. So every first-variable
+(`C*`) statement is its second-variable (`D*`) companion read at the swapped data, and no new
+duality is needed. The pairings must be
 negated and not merely flipped: `saddleSwap` negates values, and only the negated pairings restore
 the sign of the linear terms in the two conjugates.
 
@@ -21,21 +23,27 @@ The file closes with the identification of `∂K` with the subdifferential of th
 
 ## Main results
 
-* `swapAdjointBifun`, `adjointBifun_swapAdjointBifun`, `saddleSwap_mem_bifunSaddleClass` — the swap
-  dictionary: `saddleSwap` carries `Ω (F)` onto `Ω (F♯)`, and the adjoint of `F♯` is `-F`;
-  `upperConjSaddle_saddleSwap`, `lowerConjSaddle_saddleSwap` exchange the two conjugates.
-* `proper_graphFn_of_properSaddleFn` — a proper member of `Ω (F)` forces `Proper (graphFn F)`.
-* `zero_mem_interior_dom₁_lowerConjSaddle_iff` — `0 ∈ int C*` in terms of directions of recession;
-  `hasSaddleValue_of_no_common_direction_of_recession_neg` — no common direction of recession in
-  the first variable gives a saddle-value; `hasSaddleValue_of_isBounded_dom₁` — likewise when `C`
-  is bounded.
+* `swapAdjointBifun`, `convexAdjointBifun_swapAdjointBifun`, `saddleSwap_mem_bifunSaddleClass` — the
+  swap dictionary: `saddleSwap` carries `Ω (F)` onto `Ω (F♯)`, and the adjoint of `F♯` is `-F`; the
+  two conjugates are exchanged by `upperConjSaddle_saddleSwap`, `lowerConjSaddle_saddleSwap`
+  (`Saddle/Minimax.lean`).
+* `properConvex_graphFn_of_properSaddleFn` — a proper member of `Ω (F)` forces
+  `ProperConvex (graphFn F)`.
+* `zero_mem_interior_dom₂_upperConjSaddle_iff`, `zero_mem_interior_dom₁_upperConjSaddle_iff` —
+  `0 ∈ int D*` and `0 ∈ int C*` in terms of directions of recession
+  ([rockafellar1970convex] Corollary 37.2.1);
+  `hasSaddleValue_of_no_common_direction_of_recession_snd`, `…_fst` — no common direction of
+  recession in one variable gives a saddle-value ([rockafellar1970convex] Theorem 37.3);
+  `hasSaddleValue_of_isBounded_dom₂`, `hasSaddleValue_of_isBounded_dom₁` — likewise when `D` or
+  `C` is bounded.
 * `exists_isSaddlePoint_of_no_common_direction_of_recession` — a saddle-point exists when neither
   variable has a common direction of recession ([rockafellar1970convex] Theorem 37.6);
   `exists_isSaddlePoint_of_isBounded_domSaddle` — likewise for a bounded effective domain.
 * `saddleStructure_lowerSimpleExt`, `maximin_lowerSimpleExt`,
   `exists_bifunSaddleClass_lowerSimpleExt` — the transfer to a finite continuous concave-convex
   function on a closed `C × D`, through its lower simple extension.
-* `biSup_biInf_eq_biInf_biSup_of_isBounded_right` — `sup inf = inf sup` with one factor bounded;
+* `biSup_biInf_eq_biInf_biSup_of_isBounded_right`, `…_left` — `sup inf = inf sup` with one factor
+  bounded;
   `exists_saddlePoint_of_isBounded` — the **minimax theorem**
   ([rockafellar1970convex] Corollary 37.6.2).
 * `isBifunSubgradientPair_iff_mem_subdifferential_graphFn`,
@@ -63,22 +71,16 @@ section SwapNeg
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-private theorem coe_neg_sub_neg (r : ℝ) (z : EReal) :
-    ((-r : ℝ) : EReal) - -z = z - ((r : ℝ) : EReal) := by
-  induction z using EReal.rec with
-  | bot => simp
-  | coe s => norm_cast; ring
-  | top => simp
-
 /-- **The adjoint commutes with `flipBifun` once both pairings are negated and exchanged.** This is
-the identity behind the whole swap dictionary: `adjointBifun` is an infimum over `U × X` of
+the identity behind the whole swap dictionary: `convexAdjointBifun` is an infimum over `U × X` of
 `F u x + ⟨u, v⟩ - ⟨x, y⟩`, and negating and exchanging the pairings restores that summand with the
 two bound variables exchanged. -/
-theorem adjointBifun_neg_flipBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+theorem convexAdjointBifun_neg_flipBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) :
-    adjointBifun (-Bx) (-Bu) (flipBifun F) = flipBifun (adjointBifun Bu Bx F) := by
+    convexAdjointBifun (-Bx) (-Bu) (flipBifun F) = flipBifun (convexAdjointBifun Bu Bx F) := by
   funext v y
-  rw [flipBifun_apply, adjointBifun_apply, adjointBifun_apply, iInf_prod, iInf_prod, iInf_comm]
+  rw [flipBifun_apply, convexAdjointBifun_apply, convexAdjointBifun_apply, iInf_prod, iInf_prod,
+      iInf_comm]
   refine iInf_congr fun u => iInf_congr fun x => ?_
   rw [flipBifun_apply]
   congr 2
@@ -128,16 +130,16 @@ flipped pairings are the negatives of the two brackets of `F`, exchanged — whi
 `saddleSwap` does to the class `Ω (F)`. -/
 noncomputable def swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) : Bifun Y V :=
-  flipBifun (inverseBifun (adjointBifun Bu Bx F))
+  flipBifun (lowerAdjointBifun Bu Bx F)
 
 @[simp] theorem swapAdjointBifun_apply (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) (y : Y) (v : V) :
-    swapAdjointBifun Bu Bx F y v = -(adjointBifun Bu Bx F y v) := rfl
+    swapAdjointBifun Bu Bx F y v = -(convexAdjointBifun Bu Bx F y v) := rfl
 
 /-- `F♯` is a convex bifunction: it is `F_*^*` with its two arguments exchanged. -/
 theorem convexBifun_swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) : ConvexBifun (swapAdjointBifun Bu Bx F) :=
-  convexBifun_flipBifun (convexBifun_inverseBifun_adjointBifun Bu Bx F)
+  convexBifun_flipBifun (convexBifun_lowerAdjointBifun Bu Bx F)
 
 end SwapClass
 
@@ -148,10 +150,11 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [TopologicalSpace V] [IsTopologicalAddGroup V] [TopologicalSpace Y] [IsTopologicalAddGroup Y]
 
 /-- `F♯` is a closed bifunction, because an adjoint bifunction is closed. -/
-theorem closedBifun_swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsContinuousPairing Bu.flip]
+theorem closedConvexBifun_swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsContinuousPairing Bu.flip]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsContinuousPairing Bx.flip] (F : Bifun U X) :
-    ClosedBifun (swapAdjointBifun Bu Bx F) :=
-  closedBifun_flipBifun (closedBifun_inverseBifun_adjointBifun Bu Bx F)
+    ClosedConvexBifun (swapAdjointBifun Bu Bx F) :=
+  haveI := isContinuousPairing_prodPairing_flip Bu Bx
+  closedConvexBifun_flipBifun closedConvexBifun_lowerAdjointBifun
 
 end SwapClassClosed
 
@@ -164,76 +167,39 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {F : Bifun U X} {K : U × Y → EReal}
 
 /-- **The adjoint of `F♯` is `-F`**, which is the biadjoint identity `(F_*^*)^* = F_*` read
-through `adjointBifun_neg_flipBifun`. -/
-theorem adjointBifun_swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
+through `convexAdjointBifun_neg_flipBifun`. -/
+theorem convexAdjointBifun_swapAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) :
-    adjointBifun (-Bx.flip) (-Bu.flip) (swapAdjointBifun Bu Bx F) = flipBifun (inverseBifun F) := by
-  rw [swapAdjointBifun, adjointBifun_neg_flipBifun Bu.flip Bx.flip,
-    adjointBifun_flip_inverseBifun_adjointBifun Bu Bx hF hcl]
+    (hcl : ClosedConvexBifun F) :
+    convexAdjointBifun (-Bx.flip) (-Bu.flip) (swapAdjointBifun Bu Bx F)
+        = flipBifun (inverseBifun F) := by
+  rw [swapAdjointBifun, convexAdjointBifun_neg_flipBifun Bu.flip Bx.flip,
+    convexAdjointBifun_flip_lowerAdjointBifun (Bu := Bu) (Bx := Bx) hF hcl]
 
 /-- **The swap dictionary for equivalence classes**: `saddleSwap` carries `Ω (F)` onto `Ω (F♯)`
 at the negated flipped pairings. Every statement about the first variable is therefore the
 corresponding statement about the second variable, read here. -/
 theorem saddleSwap_mem_bifunSaddleClass (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
-    (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] (hF : ConvexBifun F)
+        (hcl : ClosedConvexBifun F)
     (hK : K ∈ bifunSaddleClass Bu Bx F) :
     saddleSwap K ∈ bifunSaddleClass (-Bx.flip) (-Bu.flip) (swapAdjointBifun Bu Bx F) := by
   have h1 : (fun p : Y × U => bracket (-Bu.flip) (swapAdjointBifun Bu Bx F) p.1 p.2)
-      = saddleSwap fun p : U × Y => concaveBracket Bu (adjointBifun Bu Bx F) p.1 p.2 := by
+      = saddleSwap fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2 := by
     funext p
-    rw [swapAdjointBifun, bracket_neg_flip_flipBifun_inverseBifun, saddleSwap_apply]
+    rw [swapAdjointBifun, lowerAdjointBifun_eq_inverseBifun_convexAdjointBifun,
+      bracket_neg_flip_flipBifun_inverseBifun, saddleSwap_apply]
   have h2 : (fun p : Y × U => concaveBracket (-Bx.flip)
-        (adjointBifun (-Bx.flip) (-Bu.flip) (swapAdjointBifun Bu Bx F)) p.1 p.2)
+        (convexAdjointBifun (-Bx.flip) (-Bu.flip) (swapAdjointBifun Bu Bx F)) p.1 p.2)
       = saddleSwap fun p : U × Y => bracket Bx F p.1 p.2 := by
     funext p
-    rw [adjointBifun_swapAdjointBifun Bu Bx hF hcl,
+    rw [convexAdjointBifun_swapAdjointBifun Bu Bx hF hcl,
       concaveBracket_neg_flip_flipBifun_inverseBifun, saddleSwap_apply]
   rw [mem_bifunSaddleClass] at hK
   rw [mem_bifunSaddleClass, h1, h2]
   exact ⟨saddleSwap_le_saddleSwap hK.2, saddleSwap_le_saddleSwap hK.1⟩
 
 end SwapClassMem
-
-/-! ### The two conjugates of `saddleSwap K` -/
-
-section SwapConj
-
-variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
-  [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
-
-/-- **The upper conjugate of `saddleSwap K` is the swap of the lower conjugate of `K`.**
-Negating both pairings turns a supremum-of-infima into an infimum-of-suprema. -/
-theorem upperConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
-    (K : U × Y → EReal) :
-    upperConjSaddle (-Bx.flip) (-Bu.flip) (saddleSwap K)
-      = saddleSwap (lowerConjSaddle Bu Bx K) := by
-  funext q
-  rw [upperConjSaddle_apply, saddleSwap_apply, lowerConjSaddle_apply, EReal.neg_iSup]
-  refine iInf_congr fun y => ?_
-  rw [EReal.neg_iInf]
-  refine iSup_congr fun u => ?_
-  have hr : ((-Bx.flip) y q.1 + (-Bu.flip) q.2 u : ℝ) = -(Bu u q.2 + Bx q.1 y) := by
-    simp only [LinearMap.neg_apply, LinearMap.flip_apply]
-    ring
-  rw [hr, saddleSwap_apply, coe_neg_sub_neg, EReal.neg_coe_sub]
-
-/-- **The lower conjugate of `saddleSwap K` is the swap of the upper conjugate of `K`.** -/
-theorem lowerConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
-    (K : U × Y → EReal) :
-    lowerConjSaddle (-Bx.flip) (-Bu.flip) (saddleSwap K)
-      = saddleSwap (upperConjSaddle Bu Bx K) := by
-  funext q
-  rw [lowerConjSaddle_apply, saddleSwap_apply, upperConjSaddle_apply, EReal.neg_iInf]
-  refine iSup_congr fun u => ?_
-  rw [EReal.neg_iSup]
-  refine iInf_congr fun y => ?_
-  have hr : ((-Bx.flip) y q.1 + (-Bu.flip) q.2 u : ℝ) = -(Bu u q.2 + Bx q.1 y) := by
-    simp only [LinearMap.neg_apply, LinearMap.flip_apply]
-    ring
-  rw [hr, saddleSwap_apply, coe_neg_sub_neg, EReal.neg_coe_sub]
-
-end SwapConj
 
 /-! ### Properness of the bifunction behind a proper class -/
 
@@ -244,13 +210,13 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {F : Bifun U X} {K : U × Y → EReal}
 
 /-- **A proper member forces a proper bifunction.** The two propernesses are usually not
-separated, but the results here ask for `Proper (graphFn F)` while the structural theorems deliver
-`ProperSaddleFn K`, so the bridge is crossed explicitly.
+separated, but the results here ask for `ProperConvex (graphFn F)` while the structural theorems
+deliver `ProperSaddleFn K`, so the bridge is crossed explicitly.
 
 `F u x = ⊥` would make the bracket `⟨Fu, y⟩` identically `+∞`, contradicting `dom₂ K ≠ ∅`; and
 `F ≡ +∞` would make the upper bracket `-∞`, contradicting `dom₁ K ≠ ∅`. -/
-theorem proper_graphFn_of_properSaddleFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
-    (hK : K ∈ bifunSaddleClass Bu Bx F) (hp : ProperSaddleFn K) : Proper (graphFn F) := by
+theorem properConvex_graphFn_of_properSaddleFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+    (hK : K ∈ bifunSaddleClass Bu Bx F) (hp : ProperSaddleFn K) : ProperConvex (graphFn F) := by
   obtain ⟨u₀, hu₀⟩ := hp.dom₁_nonempty
   obtain ⟨y₀, hy₀⟩ := hp.dom₂_nonempty
   rw [mem_bifunSaddleClass] at hK
@@ -264,26 +230,26 @@ theorem proper_graphFn_of_properSaddleFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) 
     rw [htop] at hle
     exact absurd (top_le_iff.1 (hle.trans (hK.1 (u, y₀)))) (ne_of_lt (hy₀ u))
   refine ⟨?_, hbot⟩
-  have hlt : ⊥ < concaveBracket Bu (adjointBifun Bu Bx F) u₀ y₀ := lt_of_lt_of_le (hu₀ y₀)
+  have hlt : ⊥ < concaveBracket Bu (convexAdjointBifun Bu Bx F) u₀ y₀ := lt_of_lt_of_le (hu₀ y₀)
     (hK.2 (u₀, y₀))
-  have hterm : (⊥ : EReal) < ((Bu u₀ 0 : ℝ) : EReal) - adjointBifun Bu Bx F y₀ 0 := by
+  have hterm : (⊥ : EReal) < ((Bu u₀ 0 : ℝ) : EReal) - convexAdjointBifun Bu Bx F y₀ 0 := by
     refine lt_of_lt_of_le hlt ?_
     rw [concaveBracket_apply]
-    exact iInf_le (fun v => ((Bu u₀ v : ℝ) : EReal) - adjointBifun Bu Bx F y₀ v) 0
-  have hne : adjointBifun Bu Bx F y₀ 0 ≠ ⊤ := by
+    exact iInf_le (fun v => ((Bu u₀ v : ℝ) : EReal) - convexAdjointBifun Bu Bx F y₀ v) 0
+  have hne : convexAdjointBifun Bu Bx F y₀ 0 ≠ ⊤ := by
     intro hcon
     rw [hcon] at hterm
     simp at hterm
   obtain ⟨q, hq⟩ := iInf_lt_iff.1 (lt_of_le_of_ne le_top hne)
   refine ⟨q, ?_⟩
   by_contra hcon
-  rw [mem_dom, not_lt, top_le_iff] at hcon
+  rw [mem_convexDom, not_lt, top_le_iff] at hcon
   rw [show F q.1 q.2 = (⊤ : EReal) from hcon] at hq
   simp at hq
 
 end ProperGraph
 
-/-! ### The `C*` half of the saddle-value criteria -/
+/-! ### Negated flipped pairings -/
 
 section SeparatingNeg
 
@@ -299,7 +265,14 @@ theorem separatingRight_neg_flip {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} (hB : B.S
 
 end SeparatingNeg
 
-section SaddleValueFst
+/-! ### The saddle-value criteria
+
+Each criterion comes in a second-variable form, about `D*` and the slices `K (u, ·)`, and a
+first-variable form, about `C*` and the slices `-K (·, y)`. The `D*` form is proved from the
+support function of `D*` (`Saddle/Conjugate.lean`); the `C*` form is the `D*` form read at
+`saddleSwap K`, whose class is `Ω (F♯)` for the negated flipped pairings. -/
+
+section SaddleValue
 
 variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup V] [NormedSpace ℝ V] [FiniteDimensional ℝ V]
@@ -307,59 +280,129 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] [FiniteDimensional ℝ Y]
   {F : Bifun U X} {K : U × Y → EReal}
 
-omit [FiniteDimensional ℝ X] in
-/-- The origin is an interior point of `C*` if and only if the convex functions `-K (·, v)`, for
-`v ∈ ri D`, have no common direction of recession. This is the `D*` half read at `saddleSwap K`,
-whose class is `Ω (F♯)` for the negated flipped pairings. -/
-theorem zero_mem_interior_dom₁_lowerConjSaddle_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+omit [FiniteDimensional ℝ V] in
+/-- **The origin is an interior point of `D*`** if and only if the convex functions `K (u, ·)`, for
+`u ∈ ri C`, have no common direction of recession.
+
+`0 ∈ int D*` iff `δ*(w | D*) > 0` for every `w ≠ 0`, and `δ*(w | D*)` is the supremum of the
+`(K (u, ·))∞ (w)`. `Bx.SeparatingRight` is what makes `w ≠ 0` and `⟨·, w⟩ ≠ 0` the same
+condition; where a space is paired with itself it is automatic. -/
+theorem zero_mem_interior_dom₂_upperConjSaddle_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+    [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+    [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bx.SeparatingRight)
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
+    (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SaddleStructure K) :
+    (0 : X) ∈ interior (dom₂ (upperConjSaddle Bu Bx K)) ↔
+      ∀ w : Y, w ≠ 0 → ∃ u ∈ ri (dom₁ K), 0 < recessionFn (fun y => K (u, y)) w := by
+  have hconv : Convex ℝ (dom₂ (upperConjSaddle Bu Bx K)) :=
+    (concaveConvexFn_upperConjSaddle Bu Bx hF hcl hK).convex_dom₂
+  have hnex : (dom₂ (upperConjSaddle Bu Bx K)).Nonempty :=
+    (properSaddleFn_upperConjSaddle Bu Bx hF
+        hcl (properConvex_graphFn_of_properSaddleFn Bu Bx hK hp)
+      hK).dom₂_nonempty
+  rw [mem_interior_iff_lt_supportFn (B := Bx) hconv hnex hB 0]
+  refine forall_congr' fun w => imp_congr_right fun _ => ?_
+  rw [map_zero, LinearMap.zero_apply, EReal.coe_zero,
+    supportFn_dom₂_upperConjSaddle_eq_iSup_recessionFn Bu Bx hF hcl hK hKcc hp.dom₂_nonempty hs.1
+      w]
+  simp only [lt_iSup_iff, exists_prop]
+
+/-- **The origin is an interior point of `C*`** if and only if the convex functions `-K (·, y)`,
+for `y ∈ ri D`, have no common direction of recession. This is the `D*` criterion read at
+`saddleSwap K`. -/
+theorem zero_mem_interior_dom₁_upperConjSaddle_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bu.SeparatingLeft)
-    (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
     (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SaddleStructure K) :
-    (0 : V) ∈ interior (dom₁ (lowerConjSaddle Bu Bx K)) ↔
+    (0 : V) ∈ interior (dom₁ (upperConjSaddle Bu Bx K)) ↔
       ∀ z : U, z ≠ 0 → ∃ y ∈ ri (dom₂ K), 0 < recessionFn (fun u => -(K (u, y))) z := by
-  have hswap := saddleSwap_mem_bifunSaddleClass Bu Bx hF hcl hK
-  have hprF : Proper (graphFn (swapAdjointBifun Bu Bx F)) :=
-    proper_graphFn_of_properSaddleFn (-Bx.flip) (-Bu.flip) hswap hp.saddleSwap
   have hmain := zero_mem_interior_dom₂_upperConjSaddle_iff (-Bx.flip) (-Bu.flip)
     (separatingRight_neg_flip hB) (convexBifun_swapAdjointBifun Bu Bx F)
-    (closedBifun_swapAdjointBifun Bu Bx F) hprF hswap (concaveConvexFn_saddleSwap hKcc)
-    (by rw [dom₂_saddleSwap]; exact hp.dom₁_nonempty) hs.2
-  rw [upperConjSaddle_saddleSwap, dom₂_saddleSwap, dom₁_saddleSwap] at hmain
+    (closedConvexBifun_swapAdjointBifun Bu Bx F) (saddleSwap_mem_bifunSaddleClass Bu Bx hF hcl hK)
+    hKcc.saddleSwap hp.saddleSwap hs.saddleSwap
+  rw [upperConjSaddle_saddleSwap, dom₂_saddleSwap, dom₁_saddleSwap,
+    dom₁_conjSaddle_eq Bu Bx hF hcl (properConvex_graphFn_of_properSaddleFn Bu Bx hK hp) hK]
+        at hmain
   exact hmain
 
-/-- If the convex functions `-K (·, v)` for `v ∈ ri D` have no common direction of recession,
-then the saddle-value of `K` exists. -/
-theorem hasSaddleValue_of_no_common_direction_of_recession_neg (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+/-- If the convex functions `K (u, ·)` for `u ∈ ri C` have no common direction of recession, then
+the saddle-value of `K` exists: the hypothesis is `0 ∈ int D*`, and the origin in `ri D*` gives
+the saddle-value. -/
+theorem hasSaddleValue_of_no_common_direction_of_recession_snd (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+    [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
+    [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bx.SeparatingRight)
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
+    (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SaddleStructure K)
+    (hrec : ∀ w : Y, w ≠ 0 → ∃ u ∈ ri (dom₁ K), 0 < recessionFn (fun y => K (u, y)) w) :
+    HasSaddleValue K := by
+  have hpr := properConvex_graphFn_of_properSaddleFn Bu Bx hK hp
+  refine hasSaddleValue_of_mem_relint_dom₂_lowerConjSaddle Bu Bx hF hcl hpr hK ?_
+  rw [dom₂_conjSaddle_eq Bu Bx hF hcl hpr hK]
+  exact interior_subset_intrinsicInterior
+    ((zero_mem_interior_dom₂_upperConjSaddle_iff Bu Bx hB hF hcl hK hKcc hp hs).2 hrec)
+
+/-- If the convex functions `-K (·, y)` for `y ∈ ri D` have no common direction of recession, then
+the saddle-value of `K` exists: the hypothesis is `0 ∈ int C*`. -/
+theorem hasSaddleValue_of_no_common_direction_of_recession_fst (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hB : Bu.SeparatingLeft)
-    (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
+    (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
     (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SaddleStructure K)
     (hrec : ∀ z : U, z ≠ 0 → ∃ y ∈ ri (dom₂ K), 0 < recessionFn (fun u => -(K (u, y))) z) :
     HasSaddleValue K := by
-  refine hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle Bu Bx hF hcl
-    (proper_graphFn_of_properSaddleFn Bu Bx hK hp) hK ?_
+  have hpr := properConvex_graphFn_of_properSaddleFn Bu Bx hK hp
+  refine hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle Bu Bx hF hcl hpr hK ?_
+  rw [dom₁_conjSaddle_eq Bu Bx hF hcl hpr hK]
   exact interior_subset_intrinsicInterior
-    ((zero_mem_interior_dom₁_lowerConjSaddle_iff Bu Bx hB hF hcl hK hKcc hp hs).2 hrec)
+    ((zero_mem_interior_dom₁_upperConjSaddle_iff Bu Bx hB hF hcl hK hKcc hp hs).2 hrec)
+
+omit [NormedAddCommGroup V] [NormedSpace ℝ V] [FiniteDimensional ℝ V] [NormedAddCommGroup X]
+  [NormedSpace ℝ X] [FiniteDimensional ℝ X] [FiniteDimensional ℝ Y] in
+/-- **A bounded `D` leaves the slices `K (u, ·)` no common direction of recession**: for
+`u ∈ ri C` the effective domain of `K (u, ·)` is exactly `D`. -/
+theorem exists_mem_relint_lt_recessionFn_of_isBounded_dom₂ (hKcc : ConcaveConvexFn K)
+    (hp : ProperSaddleFn K) (hs : SaddleStructure K) (hbd : Bornology.IsBounded (dom₂ K))
+    {w : Y} (hw : w ≠ 0) : ∃ u ∈ ri (dom₁ K), 0 < recessionFn (fun y => K (u, y)) w := by
+  obtain ⟨u, hu⟩ := Convex.relint_nonempty hKcc.convex_dom₁ hp.dom₁_nonempty
+  have hdom : convexDom (fun y => K (u, y)) = dom₂ K := hs.1.convexDom_slice u hu
+  exact ⟨u, hu, lt_recessionFn_of_isBounded_convexDom (by rw [hdom]; exact hp.dom₂_nonempty)
+    (by rw [hdom]; exact hbd) hw⟩
+
+omit [NormedAddCommGroup V] [NormedSpace ℝ V] [FiniteDimensional ℝ V] [NormedAddCommGroup X]
+  [NormedSpace ℝ X] [FiniteDimensional ℝ X] [FiniteDimensional ℝ U] in
+/-- **A bounded `C` leaves the slices `-K (·, y)` no common direction of recession**: the
+second-variable statement read at `saddleSwap K`. -/
+theorem exists_mem_relint_lt_recessionFn_of_isBounded_dom₁ (hKcc : ConcaveConvexFn K)
+    (hp : ProperSaddleFn K) (hs : SaddleStructure K) (hbd : Bornology.IsBounded (dom₁ K))
+    {z : U} (hz : z ≠ 0) : ∃ y ∈ ri (dom₂ K), 0 < recessionFn (fun u => -(K (u, y))) z := by
+  have h := exists_mem_relint_lt_recessionFn_of_isBounded_dom₂ hKcc.saddleSwap hp.saddleSwap
+    hs.saddleSwap (by rwa [dom₂_saddleSwap]) hz
+  rw [dom₁_saddleSwap] at h
+  exact h
+
+/-- **If the second effective domain of `K` is bounded, the saddle-value of `K` exists.** Over a
+compact `D` this is the classical minimax theorem. -/
+theorem hasSaddleValue_of_isBounded_dom₂ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
+    [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
+    [IsCompatiblePairing Bx.flip] (hB : Bx.SeparatingRight) (hF : ConvexBifun F)
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K)
+    (hp : ProperSaddleFn K) (hs : SaddleStructure K)
+    (hbd : Bornology.IsBounded (dom₂ K)) : HasSaddleValue K :=
+  hasSaddleValue_of_no_common_direction_of_recession_snd Bu Bx hB hF hcl hK hKcc hp hs
+    fun _ hw => exists_mem_relint_lt_recessionFn_of_isBounded_dom₂ hKcc hp hs hbd hw
 
 /-- If the first effective domain of `K` is bounded, the saddle-value of `K` exists. -/
 theorem hasSaddleValue_of_isBounded_dom₁ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hB : Bu.SeparatingLeft) (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K)
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) (hs : SaddleStructure K)
-    (hbd : Bornology.IsBounded (dom₁ K)) : HasSaddleValue K := by
-  refine hasSaddleValue_of_no_common_direction_of_recession_neg Bu Bx hB hF hcl hK hKcc hp hs
-    fun z hz => ?_
-  obtain ⟨y, hy⟩ := Convex.relint_nonempty hKcc.convex_dom₂ hp.dom₂_nonempty
-  have hy' : y ∈ ri (dom₁ (saddleSwap K)) := by rwa [dom₁_saddleSwap]
-  have hdom : dom (fun u => -(K (u, y))) = dom₁ K := by
-    have h := hs.2.dom_slice y hy'
-    rwa [dom₂_saddleSwap] at h
-  exact ⟨y, hy, lt_recessionFn_of_isBounded_dom (by rw [hdom]; exact hp.dom₁_nonempty)
-    (by rw [hdom]; exact hbd) hz⟩
+    (hbd : Bornology.IsBounded (dom₁ K)) : HasSaddleValue K :=
+  hasSaddleValue_of_no_common_direction_of_recession_fst Bu Bx hB hF hcl hK hKcc hp hs
+    fun _ hz => exists_mem_relint_lt_recessionFn_of_isBounded_dom₁ hKcc hp hs hbd hz
 
-end SaddleValueFst
+end SaddleValue
 
 /-! ### Existence of a saddle-point -/
 
@@ -377,49 +420,35 @@ nonempty set of saddle-points. -/
 theorem exists_isSaddlePoint_of_no_common_direction_of_recession (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hBu : Bu.SeparatingLeft)
-    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SaddleStructure K)
     (hrec₂ : ∀ w : Y, w ≠ 0 → ∃ u ∈ ri (dom₁ K), 0 < recessionFn (fun y => K (u, y)) w)
     (hrec₁ : ∀ z : U, z ≠ 0 → ∃ y ∈ ri (dom₂ K), 0 < recessionFn (fun u => -(K (u, y))) z) :
     ∃ q, IsSaddlePoint K q := by
-  have hpr : Proper (graphFn F) := proper_graphFn_of_properSaddleFn Bu Bx hK hp
-  have h₁ : (0 : V) ∈ interior (dom₁ (upperConjSaddle Bu Bx K)) := by
-    rw [← dom₁_conjSaddle_eq Bu Bx hF hcl hpr hK]
-    exact (zero_mem_interior_dom₁_lowerConjSaddle_iff Bu Bx hBu hF hcl hK hKcc hp hs).2 hrec₁
-  have h₂ : (0 : X) ∈ interior (dom₂ (upperConjSaddle Bu Bx K)) :=
-    (zero_mem_interior_dom₂_upperConjSaddle_iff Bu Bx hBx hF hcl hpr hK hKcc hp.dom₂_nonempty
-      hs.1).2 hrec₂
-  exact exists_isSaddlePoint_of_zero_mem_interior_dom_upperConjSaddle Bu Bx hF hcl hpr hK h₁ h₂
+  exact exists_isSaddlePoint_of_zero_mem_interior_dom_upperConjSaddle Bu Bx hF hcl
+    (properConvex_graphFn_of_properSaddleFn Bu Bx hK hp) hK
+    ((zero_mem_interior_dom₁_upperConjSaddle_iff Bu Bx hBu hF hcl hK hKcc hp hs).2 hrec₁)
+    ((zero_mem_interior_dom₂_upperConjSaddle_iff Bu Bx hBx hF hcl hK hKcc hp hs).2 hrec₂)
 
 /-- If both halves of the effective domain of `K` are bounded, `K` has a saddle-point. -/
 theorem exists_isSaddlePoint_of_isBounded_domSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hBu : Bu.SeparatingLeft)
-    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SaddleStructure K) (hbd₁ : Bornology.IsBounded (dom₁ K))
     (hbd₂ : Bornology.IsBounded (dom₂ K)) : ∃ q, IsSaddlePoint K q := by
-  refine exists_isSaddlePoint_of_no_common_direction_of_recession Bu Bx hBu hBx hF hcl hK hKcc
-    hp hs (fun w hw => ?_) fun z hz => ?_
-  · obtain ⟨u, hu⟩ := Convex.relint_nonempty hKcc.convex_dom₁ hp.dom₁_nonempty
-    have hdom : dom (fun y => K (u, y)) = dom₂ K := hs.1.dom_slice u hu
-    exact ⟨u, hu, lt_recessionFn_of_isBounded_dom (by rw [hdom]; exact hp.dom₂_nonempty)
-      (by rw [hdom]; exact hbd₂) hw⟩
-  · obtain ⟨y, hy⟩ := Convex.relint_nonempty hKcc.convex_dom₂ hp.dom₂_nonempty
-    have hy' : y ∈ ri (dom₁ (saddleSwap K)) := by rwa [dom₁_saddleSwap]
-    have hdom : dom (fun u => -(K (u, y))) = dom₁ K := by
-      have h := hs.2.dom_slice y hy'
-      rwa [dom₂_saddleSwap] at h
-    exact ⟨y, hy, lt_recessionFn_of_isBounded_dom (by rw [hdom]; exact hp.dom₁_nonempty)
-      (by rw [hdom]; exact hbd₁) hz⟩
+  exact exists_isSaddlePoint_of_no_common_direction_of_recession Bu Bx hBu hBx hF hcl hK hKcc
+    hp hs (fun _ hw => exists_mem_relint_lt_recessionFn_of_isBounded_dom₂ hKcc hp hs hbd₂ hw)
+    fun _ hz => exists_mem_relint_lt_recessionFn_of_isBounded_dom₁ hKcc hp hs hbd₁ hz
 
 /-- The saddle-value is then finite — it is a value of `K` at a saddle-point, and a proper
 saddle-function is finite on its effective domain. -/
 theorem exists_maximin_eq_coe_of_isBounded_domSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hBu : Bu.SeparatingLeft)
-    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedBifun F)
+    (hBx : Bx.SeparatingRight) (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ bifunSaddleClass Bu Bx F) (hKcc : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SaddleStructure K) (hbd₁ : Bornology.IsBounded (dom₁ K))
     (hbd₂ : Bornology.IsBounded (dom₂ K)) : ∃ r : ℝ, maximin K = (r : EReal) := by
@@ -502,7 +531,7 @@ theorem exists_bifunSaddleClass_lowerSimpleExt (Bu : U →ₗ[ℝ] V →ₗ[ℝ]
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
-    ∃ F : Bifun U X, ConvexBifun F ∧ ClosedBifun F ∧
+    ∃ F : Bifun U X, ConvexBifun F ∧ ClosedConvexBifun F ∧
       lowerSimpleExt C D K ∈ bifunSaddleClass Bu Bx F := by
   obtain ⟨F, ⟨hFconv, hFcl, hbr1, hbr2⟩, -⟩ := exists_unique_bifun_of_simpleExt Bu Bx hC hCcl
     hDcl hCne hconv hconc hDne hcontD hcontC
@@ -519,6 +548,23 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] [FiniteDimensional ℝ Y]
   {C : Set U} {D : Set Y} {K : U × Y → ℝ}
+
+omit [FiniteDimensional ℝ V] [NormedAddCommGroup X] [NormedSpace ℝ X]
+  [FiniteDimensional ℝ X] in
+/-- The common last step of the two bounded halves: once the lower simple extension has a
+saddle-value, `sup inf = inf sup` over `C × D`, because its extrema over the whole space are the
+restricted ones. -/
+theorem biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt (hC : Convex ℝ C)
+    (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty) (hDne : D.Nonempty)
+    (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
+    (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
+    (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
+    (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C)
+    (hsv : HasSaddleValue (lowerSimpleExt C D K)) :
+    (⨆ u ∈ C, ⨅ x ∈ D, ((K (u, x) : ℝ) : EReal))
+      = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
+  rwa [hasSaddleValue_iff, maximin_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC,
+    minimax_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC] at hsv
 
 /-- The half where `D` is bounded: a finite continuous concave-convex function on a product of
 nonempty closed convex sets, one of them bounded, has `sup inf = inf sup` over `C × D`. The lower
@@ -537,18 +583,12 @@ theorem biSup_biInf_eq_biInf_biSup_of_isBounded_right (Bu : U →ₗ[ℝ] V →�
       = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
     hCne hDne hconv hconc hcontD hcontC
-  have hcc : ConcaveConvexFn (lowerSimpleExt C D K) :=
-    concaveConvexFn_lowerSimpleExt hC hconv hconc
-  have hp : ProperSaddleFn (lowerSimpleExt C D K) := properSaddleFn_lowerSimpleExt hCne hDne
-  have hs : SaddleStructure (lowerSimpleExt C D K) :=
-    saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC
-  have hsv : HasSaddleValue (lowerSimpleExt C D K) :=
-    hasSaddleValue_of_isBounded_dom₂ Bu Bx hB hFconv hFcl
-      (proper_graphFn_of_properSaddleFn Bu Bx hmem hp) hmem hcc hp.dom₂_nonempty hp.dom₁_nonempty
-      hs.1 (by rw [dom₂_lowerSimpleExt (K := K) hCne]; exact hbd)
-  rw [hasSaddleValue_iff, maximin_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC,
-    minimax_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC] at hsv
-  exact hsv
+  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hconv
+    hconc hcontD hcontC ?_
+  exact hasSaddleValue_of_isBounded_dom₂ Bu Bx hB hFconv hFcl hmem
+    (concaveConvexFn_lowerSimpleExt hC hconv hconc) (properSaddleFn_lowerSimpleExt hCne hDne)
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (by rw [dom₂_lowerSimpleExt (K := K) hCne]; exact hbd)
 
 /-- The half where `C` is bounded. -/
 theorem biSup_biInf_eq_biInf_biSup_of_isBounded_left (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
@@ -564,17 +604,12 @@ theorem biSup_biInf_eq_biInf_biSup_of_isBounded_left (Bu : U →ₗ[ℝ] V →�
       = ⨅ x ∈ D, ⨆ u ∈ C, ((K (u, x) : ℝ) : EReal) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
     hCne hDne hconv hconc hcontD hcontC
-  have hcc : ConcaveConvexFn (lowerSimpleExt C D K) :=
-    concaveConvexFn_lowerSimpleExt hC hconv hconc
-  have hp : ProperSaddleFn (lowerSimpleExt C D K) := properSaddleFn_lowerSimpleExt hCne hDne
-  have hs : SaddleStructure (lowerSimpleExt C D K) :=
-    saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC
-  have hsv : HasSaddleValue (lowerSimpleExt C D K) :=
-    hasSaddleValue_of_isBounded_dom₁ Bu Bx hB hFconv hFcl hmem hcc hp hs
-      (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbd)
-  rw [hasSaddleValue_iff, maximin_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC,
-    minimax_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC] at hsv
-  exact hsv
+  refine biSup_biInf_eq_biInf_biSup_of_hasSaddleValue_lowerSimpleExt hC hCcl hDcl hCne hDne hconv
+    hconc hcontD hcontC ?_
+  exact hasSaddleValue_of_isBounded_dom₁ Bu Bx hB hFconv hFcl hmem
+    (concaveConvexFn_lowerSimpleExt hC hconv hconc) (properSaddleFn_lowerSimpleExt hCne hDne)
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbd)
 
 /-- **The minimax theorem**: a finite continuous concave-convex function on a product of nonempty
 compact convex sets has a saddle-point relative to that product. The bounded-domain criterion gives
@@ -593,13 +628,11 @@ theorem exists_saddlePoint_of_isBounded (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
       (∀ u ∈ C, K (u, q.2) ≤ K q) ∧ ∀ x ∈ D, K q ≤ K (q.1, x) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_bifunSaddleClass_lowerSimpleExt Bu Bx hC hCcl hDcl
     hCne hDne hconv hconc hcontD hcontC
-  have hcc : ConcaveConvexFn (lowerSimpleExt C D K) :=
-    concaveConvexFn_lowerSimpleExt hC hconv hconc
   have hp : ProperSaddleFn (lowerSimpleExt C D K) := properSaddleFn_lowerSimpleExt hCne hDne
-  have hs : SaddleStructure (lowerSimpleExt C D K) :=
-    saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC
   obtain ⟨q, hq⟩ := exists_isSaddlePoint_of_isBounded_domSaddle Bu Bx hBu hBx hFconv hFcl hmem
-    hcc hp hs (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbdC)
+    (concaveConvexFn_lowerSimpleExt hC hconv hconc) hp
+    (saddleStructure_lowerSimpleExt hC hCcl hDcl hCne hDne hconv hconc hcontD hcontC)
+    (by rw [dom₁_lowerSimpleExt (K := K) hDne]; exact hbdC)
     (by rw [dom₂_lowerSimpleExt (K := K) hCne]; exact hbdD)
   obtain ⟨hq₁, hq₂⟩ := hq.mem_domSaddle hp
   rw [dom₁_lowerSimpleExt (K := K) hDne] at hq₁
@@ -654,13 +687,14 @@ theorem isBifunSubgradientPair_iff_mem_subdifferential_graphFn (Bu : U →ₗ[�
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (p : U × Y) (q : V × X) :
     IsBifunSubgradientPair Bu Bx F p q ↔
       (-q.1, p.2) ∈ subdifferential (prodPairing Bu Bx) (graphFn F) (p.1, q.2) := by
-  have hconj : conj (prodPairing Bu Bx) (graphFn F) (-q.1, p.2)
-      = -(adjointBifun Bu Bx F p.2 q.1) := by
-    rw [adjointBifun_eq_neg_conj_graphFn, neg_neg]
+  have hconj : convexConj (prodPairing Bu Bx) (graphFn F) (-q.1, p.2)
+      = -(convexAdjointBifun Bu Bx F p.2 q.1) := by
+    rw [convexAdjointBifun_eq_neg_convexConj_graphFn, neg_neg]
   have hpair : (prodPairing Bu Bx (p.1, q.2) (-q.1, p.2) : ℝ)
       = -(Bu p.1 q.1) + Bx q.2 p.2 := by
     simp
-  rw [mem_subdifferential_iff_conj_eq, hconj, hpair, graphFn_apply, isBifunSubgradientPair_def]
+  rw [mem_subdifferential_iff_convexConj_eq, hconj, hpair, graphFn_apply,
+      isBifunSubgradientPair_def]
   exact (neg_eq_coe_sub_iff_sub_coe_eq_sub_coe _ _ _ _ _ rfl).symm
 
 end GraphSubdifferential
@@ -677,7 +711,7 @@ which is what makes closedness and maximal monotonicity transfer from `∂f`. -/
 theorem setOf_mem_saddleSubdifferential_eq_preimage (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
+    (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
     {r : (U × Y) × (V × X) | r.2 ∈ saddleSubdifferential Bu Bx.flip K r.1}
       = (fun r : (U × Y) × (V × X) => ((r.1.1, r.2.2), (-r.2.1, r.1.2)))
         ⁻¹' subgradientRel (prodPairing Bu Bx) (graphFn F) := by
@@ -693,8 +727,8 @@ The homeomorphism clause is `saddleSubdifferentialHomeomorph`. -/
 theorem isClosed_setOf_mem_saddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hcu : Continuous fun r : U × V => Bu r.1 r.2)
-    (hcx : Continuous fun r : X × Y => Bx r.1 r.2) (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hK : K ∈ bifunSaddleClass Bu Bx F) :
+    (hcx : Continuous fun r : X × Y => Bx r.1 r.2) (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hK : K ∈ bifunSaddleClass Bu Bx F) :
     IsClosed {r : (U × Y) × (V × X) | r.2 ∈ saddleSubdifferential Bu Bx.flip K r.1} := by
   have hcont : Continuous fun r : (U × Y) × (V × X) => ((r.1.1, r.2.2), (-r.2.1, r.1.2)) := by
     fun_prop
@@ -708,7 +742,7 @@ theorem isClosed_setOf_mem_saddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[�
     simpa only [prodPairing_apply] using h3
   rw [setOf_mem_saddleSubdifferential_eq_preimage Bu Bx hF hcl hK]
   exact IsClosed.preimage hcont
-    (isClosed_subgradientRel hpairing hpr (ClosedFn.lowerSemicontinuous hcl))
+    (isClosed_subgradientRel hpairing hpr (ClosedConvex.lowerSemicontinuous hcl))
 
 end GraphInversion
 

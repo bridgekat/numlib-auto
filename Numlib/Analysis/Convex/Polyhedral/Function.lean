@@ -1,6 +1,7 @@
 import Numlib.Analysis.Convex.Polyhedral.Ops
 import Numlib.Analysis.Convex.Closure
 import Numlib.Analysis.Convex.Indicator
+import Numlib.Analysis.Convex.Operations.Image
 import Numlib.Analysis.Convex.Operations.InfConv
 
 /-!
@@ -12,20 +13,24 @@ effective domain. `PolyhedralFn f` is `Polyhedral (epi f)`, and everything here 
 epigraph through the polyhedral calculus of `Polyhedral/Ops.lean`.
 
 `PolyhedralFn` does not by itself exclude `f x = ⊥` — the epigraph of `f ≡ ⊥` is all of `E × ℝ`,
-which is polyhedral — so `PolyhedralFn.closedFn` carries `f ≠ ⊥`, while lower semicontinuity holds
-regardless. The classical convention makes polyhedral convex functions proper.
+which is polyhedral — so `PolyhedralFn.closedConvex` carries `f ≠ ⊥`, while lower semicontinuity
+holds regardless. The classical convention makes polyhedral convex functions proper.
 
 ## Main results
 
-* `PolyhedralFn.convexFn`, `PolyhedralFn.lowerSemicontinuous`, `PolyhedralFn.closedFn` — a
+* `PolyhedralFn.convexFn`, `PolyhedralFn.lowerSemicontinuous`, `PolyhedralFn.closedConvex` — a
   polyhedral convex function is convex and closed.
-* `PolyhedralFn.polyhedral_dom`, `PolyhedralFn.polyhedral_sublevel` — the effective domain and
+* `PolyhedralFn.polyhedral_convexDom`, `PolyhedralFn.polyhedral_sublevel` — the effective domain and
   every sublevel set are polyhedral.
 * `polyhedralFn_indicatorFn` — the indicator of a polyhedral set is a polyhedral function, which
   is what makes the polyhedral constraint qualifications apply to constraint *sets*.
-* `PolyhedralFn.add` — a sum of polyhedral convex functions is polyhedral.
+* `PolyhedralFn.add`, `PolyhedralFn.finsetSum` — a sum of polyhedral convex functions is
+  polyhedral.
 * `PolyhedralFn.infConv`, `epi_infConv_of_polyhedralFn` — an infimal convolute of polyhedral convex
   functions is polyhedral, and the infimum defining it is attained.
+* `PolyhedralFn.compLin` — the composite `gA` of a polyhedral `g` with a linear map is polyhedral.
+* `PolyhedralFn.mapLin`, `epi_mapLin_of_polyhedralFn`, `exists_mapLin_eq_of_polyhedralFn` — the
+  image `Af` is polyhedral, and the infimum defining it is attained.
 
 ## References
 
@@ -55,13 +60,13 @@ theorem PolyhedralFn.isClosed_epi (hf : PolyhedralFn f) : IsClosed (epi f) :=
 theorem PolyhedralFn.lowerSemicontinuous (hf : PolyhedralFn f) : LowerSemicontinuous f :=
   lowerSemicontinuous_iff_isClosed_epi.2 hf.isClosed_epi
 
-theorem PolyhedralFn.closedFn (hf : PolyhedralFn f) (h : ∀ x, f x ≠ ⊥) : ClosedFn f :=
-  (closedFn_iff_lowerSemicontinuous h).2 hf.lowerSemicontinuous
+theorem PolyhedralFn.closedConvex (hf : PolyhedralFn f) (h : ∀ x, f x ≠ ⊥) : ClosedConvex f :=
+  (closedConvex_iff_lowerSemicontinuous h).2 hf.lowerSemicontinuous
 
 /-- The effective domain of a polyhedral convex function is a polyhedral convex set — it is the
 image of the epigraph under `Prod.fst`. -/
-theorem PolyhedralFn.polyhedral_dom (hf : PolyhedralFn f) : Polyhedral (dom f) := by
-  rw [dom_eq_fst_image_epi]
+theorem PolyhedralFn.polyhedral_convexDom (hf : PolyhedralFn f) : Polyhedral (convexDom f) := by
+  rw [convexDom_eq_fst_image_epi]
   exact Polyhedral.image hf (LinearMap.fst ℝ E ℝ)
 
 omit [FiniteDimensional ℝ E] in
@@ -183,6 +188,25 @@ theorem PolyhedralFn.add {g : E → EReal} (hf : PolyhedralFn f) (hg : Polyhedra
   rw [PolyhedralFn, himg]
   exact Polyhedral.image hS _
 
+/-- A finite non-empty sum of proper polyhedral convex functions is polyhedral. -/
+theorem PolyhedralFn.finsetSum {ι : Type*} {s : Finset ι} {f : ι → E → EReal}
+    (hs : s.Nonempty) (hpoly : ∀ i ∈ s, PolyhedralFn (f i))
+    (hbot : ∀ i ∈ s, ∀ x, f i x ≠ ⊥) : PolyhedralFn (∑ i ∈ s, f i) := by
+  induction s using Finset.cons_induction with
+  | empty => exact absurd hs (by simp)
+  | cons i t hi ih =>
+    have hmt : ∀ j ∈ t, j ∈ Finset.cons i t hi := fun j hj => Finset.mem_cons_of_mem hj
+    rcases Finset.eq_empty_or_nonempty t with rfl | htne
+    · rw [Finset.cons_empty, Finset.sum_singleton]
+      exact hpoly i (by simp)
+    rw [Finset.sum_cons]
+    exact PolyhedralFn.add (hpoly i (by simp))
+      (ih htne (fun j hj => hpoly j (hmt j hj)) (fun j hj => hbot j (hmt j hj)))
+      (hbot i (by simp))
+      (fun x => by
+        rw [Finset.sum_apply]
+        exact EReal.sum_ne_bot fun j hj => hbot j (hmt j hj) x)
+
 /-- **The attainment half**: for polyhedral `f` and `g` the sum of the epigraphs *is* the epigraph
 of the infimal convolute, so the infimum defining `(f □ g) x` is attained whenever it is finite.
 A sum of epigraphs is always upward closed, and here it is also closed, being polyhedral; those
@@ -202,5 +226,69 @@ theorem PolyhedralFn.infConv (hf : PolyhedralFn f) {g : E → EReal} (hg : Polyh
   exact h
 
 end Defs
+
+/-! ### Linear images and inverse images -/
+
+section Image
+
+variable {E G : Type*}
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+  [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimensional ℝ G] {f : E → EReal}
+
+omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ G] in
+/-- A polyhedral convex function composed with a linear map is polyhedral. `epi (gA)` is `epi g`
+pulled back along `(x, μ) ↦ (A x, μ)`, and a preimage of a polyhedral set under a linear map is
+polyhedral (`Polyhedral.comap`).
+
+This is much the cheaper direction: pulling back needs neither closedness nor attainment, so no
+finite dimension is used on either side. -/
+theorem PolyhedralFn.compLin {g : G → EReal} (hg : PolyhedralFn g) (A : E →ₗ[ℝ] G) :
+    PolyhedralFn (_root_.ConvexAnalysis.compLin g A) := by
+  change Polyhedral (epi (_root_.ConvexAnalysis.compLin g A))
+  rw [epi_compLin]
+  exact Polyhedral.comap hg _
+
+/-- An identity of epigraphs: for a polyhedral `f` the epigraph of the image `Af` really *is* the
+image of `epi f` under `(x, μ) ↦ (Ax, μ)`.
+
+In general `epi (Af)` is only the *epigraph closure* of that image, because an infimum need not be
+attained. Here the image is polyhedral, hence closed, and a closed set with upward-closed vertical
+sections is already an epigraph. Both conclusions — polyhedrality of `Af` and attainment of the
+infimum — fall out of this one identity. -/
+theorem epi_mapLin_of_polyhedralFn (hf : PolyhedralFn f) (A : E →ₗ[ℝ] G) :
+    epi (mapLin A f) = A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) '' epi f := by
+  refine epi_mapLin (IsEpiLike.of_isClosed ?_ (Polyhedral.image hf _).isClosed)
+  rintro y μ ν ⟨⟨x, ρ⟩, hx, hxy⟩ hμν
+  have h1 : A x = y := congrArg Prod.fst hxy
+  have h2 : ρ = μ := congrArg Prod.snd hxy
+  refine ⟨(x, ν), mk_mem_epi.2 ?_, ?_⟩
+  · exact le_trans (h2 ▸ mk_mem_epi.1 hx) (by exact_mod_cast hμν)
+  · rw [LinearMap.prodMap_apply, h1]
+    rfl
+
+/-- The image of a polyhedral convex function under a linear transformation is polyhedral. By
+`epi_mapLin_of_polyhedralFn`, `epi (Af)` *is* the image of `epi f`, and a linear image of a
+polyhedral set is polyhedral. -/
+theorem PolyhedralFn.mapLin (hf : PolyhedralFn f) (A : E →ₗ[ℝ] G) :
+    PolyhedralFn (_root_.ConvexAnalysis.mapLin A f) := by
+  change Polyhedral (epi (_root_.ConvexAnalysis.mapLin A f))
+  rw [epi_mapLin_of_polyhedralFn hf A]
+  exact Polyhedral.image hf _
+
+/-- **The attainment clause**: wherever `(Af)(y)` is finite the infimum defining it is attained,
+some `x` in the fibre over `y` realising the value. By `epi_mapLin_of_polyhedralFn` the point
+`(y, μ)` of `epi (Af)` is literally an image point. -/
+theorem exists_mapLin_eq_of_polyhedralFn (hf : PolyhedralFn f) (A : E →ₗ[ℝ] G) {y : G} {μ : ℝ}
+    (hy : mapLin A f y = (μ : EReal)) : ∃ x : E, A x = y ∧ f x = mapLin A f y := by
+  have hmem : ((y, μ) : G × ℝ) ∈ epi (mapLin A f) := mk_mem_epi.2 (le_of_eq hy)
+  rw [epi_mapLin_of_polyhedralFn hf A] at hmem
+  obtain ⟨⟨x, ν⟩, hx, hxy⟩ := hmem
+  have h1 : A x = y := congrArg Prod.fst hxy
+  have h2 : ν = μ := congrArg Prod.snd hxy
+  refine ⟨x, h1, le_antisymm ?_ (mapLin_le h1)⟩
+  rw [hy]
+  exact h2 ▸ mk_mem_epi.1 hx
+
+end Image
 
 end ConvexAnalysis

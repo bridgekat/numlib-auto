@@ -76,7 +76,7 @@ id = 'monotoneConjOrthant'
 id = 'monotoneConjOrthant_apply'
 
 [[node]]
-id = 'conj_posPart'
+id = 'convexConj_posPart'
 
 [[node]]
 id = 'theorem_12_4_mem'

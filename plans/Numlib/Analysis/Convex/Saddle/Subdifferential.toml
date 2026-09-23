@@ -1,18 +1,6 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'concaveSubdifferential'
-
-[[node]]
-id = 'mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg'
-
-[[node]]
-id = 'mem_concaveSubdifferential_iff_concaveConj_eq'
-
-[[node]]
-id = 'concaveSubdifferential_nonempty_of_mem_relint_domConcave'
-
-[[node]]
 id = 'saddleSubdifferential'
 
 [[node]]

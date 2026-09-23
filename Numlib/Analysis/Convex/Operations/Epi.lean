@@ -109,7 +109,7 @@ theorem ofEpi_apply_congr (h : ∀ μ : ℝ, (x, μ) ∈ F ↔ (x, μ) ∈ G) : 
   simp only [ofEpi, hs]
 
 /-- For any `F`: `ofEpi F x < ⊤` says exactly that the vertical section over `x` is nonempty. -/
-theorem dom_ofEpi (F : Set (E × ℝ)) : dom (ofEpi F) = Prod.fst '' F := by
+theorem convexDom_ofEpi (F : Set (E × ℝ)) : convexDom (ofEpi F) = Prod.fst '' F := by
   ext x
   constructor
   · intro hx

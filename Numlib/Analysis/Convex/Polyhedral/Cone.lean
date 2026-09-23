@@ -100,13 +100,8 @@ def FinitelyGeneratedCone (K : Set E) : Prop :=
 
 theorem PolyhedralCone.convex {K : Set E} (hK : PolyhedralCone K) : Convex ℝ K := by
   obtain ⟨s, rfl⟩ := hK
-  intro x hx y hy a b ha hb _ φ hφ
-  have h₁ : φ x ≤ 0 := hx φ hφ
-  have h₂ : φ y ≤ 0 := hy φ hφ
-  have : φ (a • x + b • y) = a * φ x + b * φ y := by
-    rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul]
-  rw [this]
-  nlinarith
+  simpa only [Set.ofPred_forall] using
+    convex_iInter₂ fun φ (_ : φ ∈ s) => convex_halfSpace_le φ.isLinear 0
 
 theorem PolyhedralCone.zero_mem {K : Set E} (hK : PolyhedralCone K) : (0 : E) ∈ K := by
   obtain ⟨s, rfl⟩ := hK
@@ -270,10 +265,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 dimensions every linear functional is continuous. -/
 theorem PolyhedralCone.isClosed {K : Set E} (hK : PolyhedralCone K) : IsClosed K := by
   obtain ⟨s, rfl⟩ := hK
-  have hEq : {x : E | ∀ φ ∈ s, φ x ≤ 0} = ⋂ φ ∈ s, {x : E | φ x ≤ 0} := by
-    ext x; simp
-  rw [hEq]
-  exact isClosed_iInter fun φ => isClosed_iInter fun _ =>
+  simpa only [Set.ofPred_forall] using isClosed_iInter fun φ => isClosed_iInter fun (_ : φ ∈ s) =>
     isClosed_le (LinearMap.continuous_of_finiteDimensional φ) continuous_const
 
 /-- **A finitely generated convex cone is closed.** The classical route is Carathéodory's theorem,

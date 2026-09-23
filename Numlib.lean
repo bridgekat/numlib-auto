@@ -26,12 +26,9 @@ import Numlib.Analysis.Convex.Bifunction.Algebra
 import Numlib.Analysis.Convex.Bifunction.Cofinite
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Closure
-import Numlib.Analysis.Convex.Concave
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Convergence
 import Numlib.Analysis.Convex.Duality.Barrier
-import Numlib.Analysis.Convex.Duality.ConcaveConj
-import Numlib.Analysis.Convex.Duality.ConcaveOps
 import Numlib.Analysis.Convex.Duality.Conjugate
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.Exact

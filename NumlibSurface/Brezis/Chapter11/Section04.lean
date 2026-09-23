@@ -196,10 +196,10 @@ theorem rePairing_apply (x : E) (f : StrongDual ℂ E) : rePairing E x f = (f x)
   rfl
 
 /-- **Definition.** Given `φ : E → (−∞, +∞]`, its conjugate `φ*` on `E*` is
-`φ*(f) = sup_{x ∈ E} {Re ⟨f, x⟩ − φ(x)}`: the backbone's `ConvexAnalysis.conj` against
+`φ*(f) = sup_{x ∈ E} {Re ⟨f, x⟩ − φ(x)}`: the backbone's `ConvexAnalysis.convexConj` against
 `rePairing E`, with `φ : E → EReal` as in chapter 1. -/
 def conjugateC (φ : E → EReal) : StrongDual ℂ E → EReal :=
-  ConvexAnalysis.conj (rePairing E) φ
+  ConvexAnalysis.convexConj (rePairing E) φ
 
 /-- `φ*(f) = ⨆ x, Re ⟨f, x⟩ − φ(x)`. -/
 theorem conjugateC_apply (φ : E → EReal) (f : StrongDual ℂ E) :
@@ -210,13 +210,13 @@ theorem conjugateC_apply (φ : E → EReal) (f : StrongDual ℂ E) :
 `ℂ` is the real conjugate (chapter 1's, against the pairing `(topDualPairing ℝ E).flip` of
 `E_ℝ` with `E_ℝ*`) evaluated at `I f`. -/
 theorem conjugateC_eq (φ : E → EReal) (f : StrongDual ℂ E) :
-    conjugateC φ f = ConvexAnalysis.conj (topDualPairing ℝ E).flip φ (reDual E f) :=
+    conjugateC φ f = ConvexAnalysis.convexConj (topDualPairing ℝ E).flip φ (reDual E f) :=
   rfl
 
 /-- **The biconjugate over `ℂ`**, back on `E`: `φ**(x) = sup_{f ∈ E*} {Re ⟨f, x⟩ − φ*(f)}`,
-the backbone's `ConvexAnalysis.biconj` against `rePairing E`. -/
+the backbone's `ConvexAnalysis.convexBiconj` against `rePairing E`. -/
 def biconjugateC (φ : E → EReal) : E → EReal :=
-  ConvexAnalysis.biconj (rePairing E) φ
+  ConvexAnalysis.convexBiconj (rePairing E) φ
 
 /-- `φ**(x) = ⨆ f, Re ⟨f, x⟩ − φ*(f)`. -/
 theorem biconjugateC_apply (φ : E → EReal) (x : E) :
@@ -275,7 +275,7 @@ l.s.c. and `φ ≢ +∞`. Then `φ** = φ`. The book's first method: chapter 1's
 the real biconjugate's supremum reindexed along the bijection `I = reDual E`. -/
 theorem proposition_11_25 {φ : E → EReal} (hφ : ConvexAnalysis.ConvexFn φ)
     (hl : LowerSemicontinuous φ) (hbot : ∀ x, φ x ≠ ⊥)
-    (hdom : (ConvexAnalysis.dom φ).Nonempty) : biconjugateC φ = φ := by
+    (hdom : (ConvexAnalysis.convexDom φ).Nonempty) : biconjugateC φ = φ := by
   funext x
   refine Eq.trans ?_ (congrFun (Chapter01.theorem_1_11 hφ hl hbot hdom) x)
   rw [biconjugateC_apply, Chapter01.biconjugate_apply]

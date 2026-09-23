@@ -19,4 +19,4 @@ id = 'ConvexFn.continuousOn_of_locallySimplicial'
 id = 'eqOn_of_continuousOn_of_eqOn_relint'
 
 [[node]]
-id = 'exists_closedFn_continuousOn_of_locallySimplicial'
+id = 'exists_closedConvex_continuousOn_of_locallySimplicial'

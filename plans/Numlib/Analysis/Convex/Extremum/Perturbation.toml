@@ -7,31 +7,64 @@ id = 'Bifun'
 id = 'graphFn'
 
 [[node]]
+id = 'flipBifun'
+
+[[node]]
+id = 'inverseBifun'
+
+[[node]]
 id = 'infBifun'
 
 [[node]]
-id = 'domBifun'
+id = 'supBifun'
 
 [[node]]
-id = 'dom_infBifun'
+id = 'convexDomBifun'
+
+[[node]]
+id = 'concaveDomBifun'
+
+[[node]]
+id = 'convexDom_infBifun'
 
 [[node]]
 id = 'ConvexBifun'
 
 [[node]]
+id = 'ConcaveBifun'
+
+[[node]]
 id = 'convexFn_infBifun'
+
+[[node]]
+id = 'concaveFn_supBifun'
+
+[[node]]
+id = 'convexBifun_inverseBifun'
+
+[[node]]
+id = 'concaveBifun_inverseBifun'
 
 [[node]]
 id = 'Consistent'
 
 [[node]]
+id = 'ConcaveConsistent'
+
+[[node]]
 id = 'StronglyConsistent'
+
+[[node]]
+id = 'ConcaveStronglyConsistent'
 
 [[node]]
 id = 'StrictlyConsistent'
 
 [[node]]
 id = 'KuhnTucker'
+
+[[node]]
+id = 'ConcaveKuhnTucker'
 
 [[node]]
 id = 'mem_kuhnTucker_iff_neg_mem_subdifferential'
@@ -71,6 +104,9 @@ id = 'kuhnTucker_eq_singleton_of_hasGradientAtFn'
 
 [[node]]
 id = 'PolyhedralBifun'
+
+[[node]]
+id = 'ConcavePolyhedralBifun'
 
 [[node]]
 id = 'PolyhedralBifun.polyhedralFn_infBifun'

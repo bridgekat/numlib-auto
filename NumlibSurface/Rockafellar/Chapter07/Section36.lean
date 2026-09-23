@@ -224,13 +224,8 @@ section Inverse
 variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
 /-- `F_*` is **concave** if `F` is convex: it is `flipBifun` composed with a change of sign. -/
-theorem concaveBifun_inverseBifun (hF : ConvexBifun F) : ConcaveBifun (inverseBifun F) := by
-  have he : (fun q : Rn n × Rn m => -(graphFn (inverseBifun F) q)) = graphFn (flipBifun F) :=
-    funext fun _ => neg_neg _
-  have h : ConcaveFn (graphFn (inverseBifun F)) := by
-    rw [concaveFn_iff_convexFn_neg, he]
-    exact convexBifun_flipBifun hF
-  exact h
+theorem concaveBifun_inverseBifun (hF : ConvexBifun F) : ConcaveBifun (inverseBifun F) :=
+  ConvexAnalysis.concaveBifun_inverseBifun hF
 
 /-- The inverse operation is **involutory**, `(F_*)_* = F`. -/
 theorem inverseBifun_involutive (F : Bifun (Rn m) (Rn n)) :
@@ -289,7 +284,7 @@ bifunction from `ℝᵐ` to `ℝⁿ` **if and only if** `L` is an upper closed c
 closed member per class, that names the canonical representative of a class. -/
 theorem theorem_36_5 (L : Rn m × Rn n → EReal) :
     (∃ F : Bifun (Rn m) (Rn n),
-        ConvexBifun F ∧ ClosedBifun F ∧ saddleLagrangian (pairing m) F = L)
+        ConvexBifun F ∧ ClosedConvexBifun F ∧ saddleLagrangian (pairing m) F = L)
       ↔ ConcaveConvexFn L ∧ UpperClosedFn L := by
   constructor
   · rintro ⟨F, hF, hcl, rfl⟩
@@ -297,12 +292,12 @@ theorem theorem_36_5 (L : Rn m × Rn n → EReal) :
       upperClosedFn_saddleLagrangian (pairing m) (pairing n) hF hcl⟩
   · rintro ⟨hL, huc⟩
     obtain ⟨G, hG, -⟩ :=
-      exists_unique_closedBifun_saddleLagrangian_eq (pairing m) (pairing n) hL huc
+      exists_unique_closedConvexBifun_saddleLagrangian_eq (pairing m) (pairing n) hL huc
     exact ⟨G, hG⟩
 
 /-- **Theorem 36.5**, necessity alone: the Lagrangian of a closed convex bifunction is upper
 closed concave-convex. -/
-theorem theorem_36_5_upperClosed (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_36_5_upperClosed (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     UpperClosedFn (saddleLagrangian (pairing m) F) :=
   upperClosedFn_saddleLagrangian (pairing m) (pairing n) hF hcl
 
@@ -311,8 +306,8 @@ bifunction. The book determines it explicitly by `(Fu)(x) = sup_{u*} {L (u*, x) 
 statement here asserts existence and uniqueness without naming the witness. -/
 theorem theorem_36_5_unique (hL : ConcaveConvexFn L) (huc : UpperClosedFn L) :
     ∃! G : Bifun (Rn m) (Rn n),
-      ConvexBifun G ∧ ClosedBifun G ∧ saddleLagrangian (pairing m) G = L :=
-  exists_unique_closedBifun_saddleLagrangian_eq (pairing m) (pairing n) hL huc
+      ConvexBifun G ∧ ClosedConvexBifun G ∧ saddleLagrangian (pairing m) G = L :=
+  exists_unique_closedConvexBifun_saddleLagrangian_eq (pairing m) (pairing n) hL huc
 
 end Thm365
 
@@ -332,8 +327,8 @@ theorem zero_mem_saddleSubdifferential_iff_isSaddlePoint (K : Rn m × Rn n → E
 /-- The **Kuhn–Tucker condition for `(P)`**: for a closed proper convex bifunction `F`,
 `(0, 0) ∈ ∂L (ū*, x̄)` holds exactly when `ū*` is a Kuhn–Tucker vector for `(P)` and `x̄` is an
 optimal solution. -/
-theorem kuhnTucker_condition_iff (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (v : Rn m) (x : Rn n) :
+theorem kuhnTucker_condition_iff (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (v : Rn m) (x : Rn n) :
     (0 : Rn m × Rn n) ∈ saddleSubdifferential (pairing m) (pairing n)
         (saddleLagrangian (pairing m) F) (v, x)
       ↔ v ∈ KuhnTucker (pairing m) F ∧ IsOptimalSolution F x := by
@@ -343,8 +338,8 @@ theorem kuhnTucker_condition_iff (hF : ConvexBifun F) (hcl : ClosedBifun F)
 /-- **Theorem 36.6**, the **strongly consistent** case: for `(P)` associated with a closed proper
 convex bifunction and strongly consistent, `x̄` is optimal if and only if `(0, 0) ∈ ∂L (ū*, x̄)` for
 some `ū*`. The book prints no proof; this is the Kuhn–Tucker theorem, Corollary 29.3.1. -/
-theorem theorem_36_6_stronglyConsistent (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hs : StronglyConsistent F) :
+theorem theorem_36_6_stronglyConsistent (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hs : StronglyConsistent F) :
     IsOptimalSolution F x ↔ ∃ v : Rn m, (0 : Rn m × Rn n) ∈
       saddleSubdifferential (pairing m) (pairing n) (saddleLagrangian (pairing m) F) (v, x) := by
   rw [corollary_29_3_1_stronglyConsistent hF hcl hpr hs]
@@ -352,16 +347,16 @@ theorem theorem_36_6_stronglyConsistent (hF : ConvexBifun F) (hcl : ClosedBifun 
     (zero_mem_saddleSubdifferential_iff_isSaddlePoint (saddleLagrangian (pairing m) F) (v, x)).symm
 
 /-- **Theorem 36.6**, the **strictly consistent** case, which is strongly consistent. -/
-theorem theorem_36_6_strictlyConsistent (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hs : StrictlyConsistent F) :
+theorem theorem_36_6_strictlyConsistent (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hs : StrictlyConsistent F) :
     IsOptimalSolution F x ↔ ∃ v : Rn m, (0 : Rn m × Rn n) ∈
       saddleSubdifferential (pairing m) (pairing n) (saddleLagrangian (pairing m) F) (v, x) :=
   theorem_36_6_stronglyConsistent hF hcl hpr hs.stronglyConsistent
 
 /-- **Theorem 36.6**, the **polyhedral** case: plain consistency suffices, Theorem 29.2 supplying
 a Kuhn–Tucker vector with no interiority hypothesis. -/
-theorem theorem_36_6_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hc : Consistent F) :
+theorem theorem_36_6_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hc : Consistent F) :
     IsOptimalSolution F x ↔ ∃ v : Rn m, (0 : Rn m × Rn n) ∈
       saddleSubdifferential (pairing m) (pairing n) (saddleLagrangian (pairing m) F) (v, x) := by
   rw [corollary_29_3_1_polyhedral hF hcl hpr hc]
@@ -370,8 +365,8 @@ theorem theorem_36_6_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedBifun F)
 
 /-- **Theorem 36.6**, last sentence: for a given optimal `x̄`, the `ū*` satisfying the Kuhn–Tucker
 condition are precisely the Kuhn–Tucker vectors for `(P)`. No constraint qualification is used. -/
-theorem theorem_36_6_kuhnTucker (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hx : IsOptimalSolution F x) (v : Rn m) :
+theorem theorem_36_6_kuhnTucker (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hx : IsOptimalSolution F x) (v : Rn m) :
     (0 : Rn m × Rn n) ∈ saddleSubdifferential (pairing m) (pairing n)
         (saddleLagrangian (pairing m) F) (v, x)
       ↔ v ∈ KuhnTucker (pairing m) F := by

@@ -36,8 +36,9 @@ difference between the two is exactly what Theorem 35.6 is about.
   equi-Lipschitz, parametric-continuity and convergence theorems of §10, for saddle-functions.
 * `subdiff_eq_prod`, `mem_subdiff₁_iff`, `mem_subdiff₂_iff`,
   `mem_subdiff₁_iff_neg_mem_subdifferential_neg`, `convex_subdiff`,
-  `subdifferentialFst_univ_eq`, `subdifferentialSnd_univ_eq`, `subdifferentialSaddle_univ_eq` —
-  the subdifferential of a saddle-function and the bridges between its two readings.
+  `superdifferentialFstOn_univ_eq`, `subdifferentialSndOn_univ_eq`,
+  `saddleSubdifferentialOn_univ_eq` — the subdifferential of a saddle-function and the bridges
+  between its two readings.
 * `theorem_35_6`, `theorem_35_6_tendsto`, `theorem_35_6_concaveConvex`, `theorem_35_6_posHom` —
   the joint directional derivative exists, and is itself a finite positively homogeneous
   concave-convex function.
@@ -54,9 +55,9 @@ difference between the two is exactly what Theorem 35.6 is about.
 
 Theorems 35.6–35.10 are stated for a **real-valued** `K` on an open rectangle `C × D`, where the
 book's `K` is `EReal`-valued on `ℝᵐ × ℝⁿ` and merely finite on `C × D`. So `∂₁K` and `∂₂K` are
-tested against `C` and `D` rather than all of `ℝᵐ` and `ℝⁿ`; `subdifferentialFst_univ_eq` and its
-two companions are the bridge, and the readings agree once `K` is extended off `C × D` by the simple
-extension, which makes the extra inequalities vacuous.
+tested against `C` and `D` rather than all of `ℝᵐ` and `ℝⁿ`; `superdifferentialFstOn_univ_eq` and
+its two companions are the bridge, and the readings agree once `K` is extended off `C × D` by the
+simple extension, which makes the extra inequalities vacuous.
 
 The `εB` of Theorems 35.7, 35.9 and 35.10 is the **supremum** ball, Mathlib's norm on a product. It
 differs from the book's Euclidean ball by a factor bounded by `√2`, and every such statement
@@ -265,9 +266,9 @@ variable {m n : ℕ}
 
 /-- Rockafellar's `∂₁K (u, v) = ∂_u K (u, v)`: the `u*` with `K (u′, v) ≤ K (u, v) + ⟨u*, u′ - u⟩`
 for every `u′`, i.e. the **super**gradients at `u` of the concave slice `K (·, v)`. An `abbrev` for
-`concaveSubdifferential` at the Euclidean pairing. -/
+`superdifferential` at the Euclidean pairing. -/
 abbrev subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn m) :=
-  concaveSubdifferential (pairing m) (fun u => K (u, p.2)) p.1
+  superdifferential (pairing m) (fun u => K (u, p.2)) p.1
 
 /-- Rockafellar's `∂₂K (u, v) = ∂_v K (u, v)`: the `v*` with `K (u, v) + ⟨v*, v′ - v⟩ ≤ K (u, v′)`
 for every `v′`, i.e. the **sub**gradients at `v` of the convex slice `K (u, ·)`. The inequality
@@ -301,7 +302,7 @@ is a subgradient of `-K (·, v)` there. This negation is what §37 inserts in Co
 make the relation monotone and in Corollary 37.5.1 to make the map `(u - u*, v* + v)`. -/
 theorem mem_subdiff₁_iff_neg_mem_subdifferential_neg {y : Rn m} :
     y ∈ subdiff₁ K p ↔ -y ∈ subdifferential (pairing m) (fun u => -K (u, p.2)) p.1 :=
-  mem_concaveSubdifferential_iff_neg_mem_subdifferential_neg
+  mem_superdifferential_iff_neg_mem_subdifferential_neg
 
 /-- `∂K (u, v)` is a convex subset of `ℝᵐ × ℝⁿ`, with no hypothesis on `K` at all. -/
 theorem convex_subdiff : Convex ℝ (subdiff K p) := convex_saddleSubdifferential
@@ -315,27 +316,30 @@ section Bridge
 variable {m n : ℕ} (K : Rn m × Rn n → ℝ) (p : Rn m × Rn n)
 
 /-- `∂₁` in rectangle-relative form is `∂₁` in the book's global form, at `C = ℝᵐ`. -/
-theorem subdifferentialFst_univ_eq :
-    subdifferentialFst (Set.univ : Set (Rn m)) K p = subdiff₁ (fun z => ((K z : ℝ) : EReal)) p := by
+theorem superdifferentialFstOn_univ_eq :
+    superdifferentialFstOn (Set.univ : Set (Rn m)) K p
+        = subdiff₁ (fun z => ((K z : ℝ) : EReal)) p := by
   ext y
-  simp only [mem_subdifferentialFst, Set.mem_univ, forall_const, mem_concaveSubdifferential,
+  simp only [mem_superdifferentialFstOn, Set.mem_univ, forall_const, mem_superdifferential,
     pairing_apply]
   refine forall_congr' fun u' => ?_
   rw [← EReal.coe_add, EReal.coe_le_coe_iff]
 
 /-- `∂₂` in rectangle-relative form is `∂₂` in the book's global form, at `D = ℝⁿ`. -/
-theorem subdifferentialSnd_univ_eq :
-    subdifferentialSnd (Set.univ : Set (Rn n)) K p = subdiff₂ (fun z => ((K z : ℝ) : EReal)) p := by
+theorem subdifferentialSndOn_univ_eq :
+    subdifferentialSndOn (Set.univ : Set (Rn n)) K p
+        = subdiff₂ (fun z => ((K z : ℝ) : EReal)) p := by
   ext y
-  simp only [mem_subdifferentialSnd, Set.mem_univ, forall_const, mem_subdifferential, pairing_apply]
+  simp only [mem_subdifferentialSndOn, Set.mem_univ, forall_const, mem_subdifferential,
+      pairing_apply]
   refine forall_congr' fun v' => ?_
   rw [← EReal.coe_add, EReal.coe_le_coe_iff]
 
 /-- `∂K` in rectangle-relative form is `∂K` in the book's global form, at `C × D = ℝᵐ × ℝⁿ`. -/
-theorem subdifferentialSaddle_univ_eq :
-    subdifferentialSaddle (Set.univ : Set (Rn m)) (Set.univ : Set (Rn n)) K p
+theorem saddleSubdifferentialOn_univ_eq :
+    saddleSubdifferentialOn (Set.univ : Set (Rn m)) (Set.univ : Set (Rn n)) K p
       = subdiff (fun z => ((K z : ℝ) : EReal)) p := by
-  rw [subdiff_eq_prod, ← subdifferentialFst_univ_eq, ← subdifferentialSnd_univ_eq]
+  rw [subdiff_eq_prod, ← superdifferentialFstOn_univ_eq, ← subdifferentialSndOn_univ_eq]
   rfl
 
 end Bridge
@@ -423,9 +427,9 @@ theorem theorem_35_7_subdiff (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen 
     (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ p ∈ C ×ˢ D, Tendsto (fun i => Ks i p) atTop (𝓝 (K p))) (hu : u ∈ C) (hv : v ∈ D)
     (hus : Tendsto us atTop (𝓝 u)) (hvs : Tendsto vs atTop (𝓝 v)) {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subdifferentialSaddle C D (Ks i) (us i, vs i)
-      ⊆ subdifferentialSaddle C D K (u, v) + Metric.closedBall (0 : Rn m × Rn n) ε :=
-  eventually_subdifferentialSaddle_subset hCo hC hDo hD hKs hK hconv hu hv hus hvs hε
+    ∀ᶠ i in atTop, saddleSubdifferentialOn C D (Ks i) (us i, vs i)
+      ⊆ saddleSubdifferentialOn C D K (u, v) + Metric.closedBall (0 : Rn m × Rn n) ε :=
+  eventually_saddleSubdifferentialOn_subset hCo hC hDo hD hKs hK hconv hu hv hus hvs hε
 
 /-- **Corollary 35.7.1**, first assertion: for each `u′`, `K′(u, v; u′, 0)` is lower
 semicontinuous in `(u, v)` on `C × D`. It is Theorem 35.7 for the constant sequence. -/
@@ -449,10 +453,10 @@ theorem corollary_35_7_1_subdiff (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsO
     (hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) {ε : ℝ}
     (hε : 0 < ε) :
     ∃ δ > 0, ∀ p : Rn m × Rn n, dist p (u, v) < δ →
-      subdifferentialSaddle C D K p ⊆ subdifferentialSaddle C D K (u, v)
+      saddleSubdifferentialOn C D K p ⊆ saddleSubdifferentialOn C D K (u, v)
         + Metric.closedBall (0 : Rn m × Rn n) ε := by
   obtain ⟨δ, hδ, h⟩ := Metric.eventually_nhds_iff.1
-    (eventually_nhds_subdifferentialSaddle_subset hCo hC hDo hD hK hu hv hε)
+    (eventually_nhds_saddleSubdifferentialOn_subset hCo hC hDo hD hK hu hv hε)
   exact ⟨δ, hδ, fun p hp => h hp⟩
 
 end Thm357
@@ -469,15 +473,15 @@ unique subgradient there. `HasSaddleGradientAt K q p` reads `∇K p = q` with `q
 vectors, a product of inner-product spaces carrying the supremum norm in Mathlib. -/
 theorem theorem_35_8_gradient (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D)
     (_hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
-    (hd : HasSaddleGradientAt K q (u, v)) : subdifferentialSaddle C D K (u, v) = {q} :=
-  subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hK hu hv hd
+    (hd : HasSaddleGradientAt K q (u, v)) : saddleSubdifferentialOn C D K (u, v) = {q} :=
+  saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hK hu hv hd
 
 /-- **Theorem 35.8**: `K` is differentiable at `(u, v)` if and only if it has a unique subgradient
 there. The converse is proved from Corollary 35.7.1, which gives the Fréchet estimate directly. -/
 theorem theorem_35_8 (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) :
-    DifferentiableAt ℝ K (u, v) ↔ ∃ q, subdifferentialSaddle C D K (u, v) = {q} :=
-  differentiableAt_iff_exists_subdifferentialSaddle_eq_singleton hCo hC hDo hD hK hu hv
+    DifferentiableAt ℝ K (u, v) ↔ ∃ q, saddleSubdifferentialOn C D K (u, v) = {q} :=
+  differentiableAt_iff_exists_saddleSubdifferentialOn_eq_singleton hCo hC hDo hD hK hu hv
 
 /-- **Corollary 35.8.1**: for `K` concave-convex and finite on a neighbourhood of `(u, v)`,
 differentiability there is exactly linearity of `K′(u, v; ·, ·)`. The corollary's last clause —

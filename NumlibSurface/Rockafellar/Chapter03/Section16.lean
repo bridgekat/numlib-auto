@@ -77,15 +77,16 @@ is conjugate to the indicator function `δ(· | 0)`". Both halves of that senten
 /-- **Rockafellar, §16, p. 141**: the conjugate of the constant function `0` is `δ(· | 0)`.
 
 `Rn n` is a `SeparatingDual`, asserted in the shared header. -/
-theorem conj_zero_rn : conj (pairing n) (0 : Rn n → EReal) = indicatorFn ({0} : Set (Rn n)) := by
-  have h := conj_zero_eq_indicatorFn (B := pairing n) (E := Rn n) (F := Rn n)
+theorem convexConj_zero_rn : convexConj (pairing n)
+    (0 : Rn n → EReal) = indicatorFn ({0} : Set (Rn n)) := by
+  have h := convexConj_zero_eq_indicatorFn (B := pairing n) (E := Rn n) (F := Rn n)
   rwa [flip_pairing] at h
 
 /-- The conjugate of `δ(· | 0)` is the constant function `0`, the other half of the same sentence.
-Specialises `conj_indicatorFn_zero`. -/
-theorem conj_indicatorFn_zero_rn :
-    conj (pairing n) (indicatorFn ({0} : Set (Rn n))) = 0 :=
-  conj_indicatorFn_zero (pairing n)
+Specialises `convexConj_indicatorFn_zero`. -/
+theorem convexConj_indicatorFn_zero_rn :
+    convexConj (pairing n) (indicatorFn ({0} : Set (Rn n))) = 0 :=
+  convexConj_indicatorFn_zero (pairing n)
 
 /-- The half-space `{x | ⟨x, x*⟩ ≤ 1}` cutting out a polar set is convex, which is why polarity
 does not see a convex hull. -/
@@ -99,29 +100,30 @@ theorem convex_setOf_pairing_le_one (y : Rn n) : Convex ℝ {x : Rn n | pairing 
 /-- **Theorem 16.1.** For any proper convex function `f` one has `(λf)* = f*λ`,
 `0 ≤ λ < ∞`. This is the case `λ > 0`, where no hypothesis on `f` is needed at all. -/
 theorem theorem_16_1_left (f : Rn n → EReal) {l : ℝ} (hl : 0 < l) :
-    conj (pairing n) (fun x => (l : EReal) * f x) = smulRight (conj (pairing n) f) l :=
-  conj_smul hl (pairing n) f
+    convexConj (pairing n) (fun x => (l : EReal) * f x) = smulRight (convexConj (pairing n) f) l :=
+  convexConj_smul hl (pairing n) f
 
 /-- **Theorem 16.1**, the other formula: `(fλ)* = λf*`, `0 < λ < ∞`. -/
 theorem theorem_16_1_right (f : Rn n → EReal) {l : ℝ} (hl : 0 < l) :
-    conj (pairing n) (smulRight f l) = fun y => (l : EReal) * conj (pairing n) f y :=
-  conj_smulRight hl (pairing n) f
+    convexConj (pairing n) (smulRight f l) = fun y => (l : EReal) * convexConj (pairing n) f y :=
+  convexConj_smulRight hl (pairing n) f
 
 /-- **Theorem 16.1** at `λ = 0`: `(0f)* = f*0`. Left multiplication by `0` sends any
 `f` to the constant function `0`, right multiplication by `0` sends `f*` to `δ(· | 0)`, and the two
 are conjugate. This is the clause the book's proof singles out. -/
-theorem theorem_16_1_left_zero {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
-    conj (pairing n) (fun x => (0 : EReal) * f x) = smulRight (conj (pairing n) f) 0 := by
-  have hdom : (dom (conj (pairing n) f)).Nonempty :=
-    (proper_conj_of_proper hf hp).dom_nonempty
+theorem theorem_16_1_left_zero {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) :
+    convexConj (pairing n) (fun x => (0 : EReal) * f x)
+        = smulRight (convexConj (pairing n) f) 0 := by
+  have hdom : (convexDom (convexConj (pairing n) f)).Nonempty :=
+    (properConvex_convexConj_of_properConvex hf hp).convexDom_nonempty
   simp only [zero_mul]
   rw [smulRight_zero hdom]
-  exact conj_zero_rn
+  exact convexConj_zero_rn
 
 /-- **Theorem 16.1** at `λ = 0`, the other formula: `(f0)* = 0f*`. -/
-theorem theorem_16_1_right_zero {f : Rn n → EReal} (hp : Proper f) :
-    conj (pairing n) (smulRight f 0) = fun y => (0 : EReal) * conj (pairing n) f y := by
-  rw [smulRight_zero hp.dom_nonempty, conj_indicatorFn_zero_rn]
+theorem theorem_16_1_right_zero {f : Rn n → EReal} (hp : ProperConvex f) :
+    convexConj (pairing n) (smulRight f 0) = fun y => (0 : EReal) * convexConj (pairing n) f y := by
+  rw [smulRight_zero hp.convexDom_nonempty, convexConj_indicatorFn_zero_rn]
   funext y
   simp
 
@@ -165,11 +167,13 @@ function. Then `L` meets `ri (dom f)` if and only if there exists no vector `x* 
 `(f* 0⁺)(x*) ≤ 0` and `(f* 0⁺)(-x*) > 0`.
 
 `Lᗮ` *is* the annihilator of `L` for the pairing, definitionally. -/
-theorem lemma_16_2 (L : Submodule ℝ (Rn n)) {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
-    ((L : Set (Rn n)) ∩ ri (dom f)).Nonempty ↔
-      ¬ ∃ x' ∈ Lᗮ, recessionFn (conj (pairing n) f) x' ≤ 0 ∧
-        0 < recessionFn (conj (pairing n) f) (-x') :=
-  submodule_inter_relint_dom_nonempty_iff (B := pairing n) L hf hp (proper_conj_of_proper hf hp)
+theorem lemma_16_2 (L : Submodule ℝ (Rn n)) {f : Rn n → EReal} (hf : ConvexFn f)
+    (hp : ProperConvex f) :
+    ((L : Set (Rn n)) ∩ ri (convexDom f)).Nonempty ↔
+      ¬ ∃ x' ∈ Lᗮ, recessionFn (convexConj (pairing n) f) x' ≤ 0 ∧
+        0 < recessionFn (convexConj (pairing n) f) (-x') :=
+  submodule_inter_relint_convexDom_nonempty_iff (B := pairing n) L hf
+      hp (properConvex_convexConj_of_properConvex hf hp)
 
 /-- **Corollary 16.2.1.** Let `A` be a linear transformation from `ℝⁿ` to `ℝᵐ` and let `g` be a
 proper convex function on `ℝᵐ`. In order that there exist no vector `y* ∈ ℝᵐ` with `A*y* = 0`,
@@ -177,12 +181,12 @@ proper convex function on `ℝᵐ`. In order that there exist no vector `y* ∈ 
 at least one `x ∈ ℝⁿ`. Lemma 16.2 for the subspace `L = range A`, whose orthogonal complement is
 `ker A*`. -/
 theorem corollary_16_2_1 (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
-    (hp : Proper g) :
+    (hp : ProperConvex g) :
     (¬ ∃ y' : Rn m, LinearMap.adjoint A y' = 0 ∧
-        recessionFn (conj (pairing m) g) y' ≤ 0 ∧
-        0 < recessionFn (conj (pairing m) g) (-y')) ↔ ∃ x, A x ∈ ri (dom g) :=
-  (exists_apply_mem_relint_dom_iff (separatingRight_pairing n) (isAdjointPair_adjoint A) hg hp
-    (proper_conj_of_proper hg hp)).symm
+        recessionFn (convexConj (pairing m) g) y' ≤ 0 ∧
+        0 < recessionFn (convexConj (pairing m) g) (-y')) ↔ ∃ x, A x ∈ ri (convexDom g) :=
+  (exists_apply_mem_relint_convexDom_iff (separatingRight_pairing n) (isAdjointPair_adjoint A) hg hp
+    (properConvex_convexConj_of_properConvex hg hp)).symm
 
 /-- **Corollary 16.2.2.** Let `f₁, …, fₘ` be proper convex functions on `ℝⁿ`. In
 order that there exist no vectors `x₁*, …, xₘ*` with
@@ -196,53 +200,55 @@ it is necessary and sufficient that `ri (dom f₁) ∩ ⋯ ∩ ri (dom fₘ) ≠
 This is Lemma 16.2 inside `ℝᵐⁿ` for the diagonal subspace `L = {x | x₁ = ⋯ = xₘ}`, whose
 orthogonal complement is `{x* | x₁* + ⋯ + xₘ* = 0}`. -/
 theorem corollary_16_2_2 {ι : Type*} [Fintype ι] (f : ι → Rn n → EReal)
-    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i)) :
+    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i)) :
     (¬ ∃ x' : ι → Rn n, (∑ i, x' i = 0) ∧
-        (∑ i, recessionFn (conj (pairing n) (f i)) (x' i)) ≤ 0 ∧
-        0 < ∑ i, recessionFn (conj (pairing n) (f i)) (-(x' i)))
-      ↔ (⋂ i, ri (dom (f i))).Nonempty :=
-  (iInter_relint_dom_nonempty_iff (separatingRight_pairing n) f hf hp
-    fun i => proper_conj_of_proper (hf i) (hp i)).symm
+        (∑ i, recessionFn (convexConj (pairing n) (f i)) (x' i)) ≤ 0 ∧
+        0 < ∑ i, recessionFn (convexConj (pairing n) (f i)) (-(x' i)))
+      ↔ (⋂ i, ri (convexDom (f i))).Nonempty :=
+  (iInter_relint_convexDom_nonempty_iff (separatingRight_pairing n) f hf hp
+    fun i => properConvex_convexConj_of_properConvex (hf i) (hp i)).symm
 
 /-! ### Theorem 16.3: linear transformations -/
 
 /-- **Theorem 16.3**, first formula: for a linear transformation `A` from `ℝⁿ` to
 `ℝᵐ` and any convex function `f` on `ℝⁿ`, `(Af)* = f*A*`.
 
-Unconditional: no convexity, no properness, no closure. Specialises `conj_mapLin`, whose only
+Unconditional: no convexity, no properness, no closure. Specialises `convexConj_mapLin`, whose only
 input is the adjointness datum, supplied by `isAdjointPair_adjoint`. -/
 theorem theorem_16_3_image (A : Rn n →ₗ[ℝ] Rn m) (f : Rn n → EReal) :
-    conj (pairing m) (mapLin A f) = compLin (conj (pairing n) f) (LinearMap.adjoint A) :=
-  conj_mapLin (isAdjointPair_adjoint A) f
+    convexConj (pairing m) (mapLin A f)
+        = compLin (convexConj (pairing n) f) (LinearMap.adjoint A) :=
+  convexConj_mapLin (isAdjointPair_adjoint A) f
 
 /-- **Theorem 16.3**, second formula: `((cl g)A)* = cl(A*g*)` for any convex `g`
 on `ℝᵐ`.
 
-Specialises `conj_compLin_eq_clFn_mapLin`, applied to `cl g` (which is closed convex) and read
-back through `(cl g)* = g*`. -/
+Specialises `convexConj_compLin_eq_convexCl_mapLin`, applied to `cl g` (which is closed convex) and
+read back through `(cl g)* = g*`. -/
 theorem theorem_16_3_closure (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g) :
-    conj (pairing n) (compLin (clFn g) A)
-      = clFn (mapLin (LinearMap.adjoint A) (conj (pairing m) g)) := by
-  rw [conj_compLin_eq_clFn_mapLin (isAdjointPair_adjoint A) (convexFn_clFn hg)
-    (closedFn_clFn g), conj_clFn]
+    convexConj (pairing n) (compLin (convexCl g) A)
+      = convexCl (mapLin (LinearMap.adjoint A) (convexConj (pairing m) g)) := by
+  rw [convexConj_compLin_eq_convexCl_mapLin (isAdjointPair_adjoint A) (convexFn_convexCl hg)
+    (closedConvex_convexCl g), convexConj_convexCl]
 
 /-- **Theorem 16.3**, the exact half: if there is an `x` with `Ax ∈ ri (dom g)`, the closure
 operation can be omitted and `(gA)* = A*g*`. The book's hypotheses are `g` proper convex, not
 closed. -/
 theorem theorem_16_3_exact (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
-    (hp : Proper g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (dom g)) :
-    conj (pairing n) (compLin g A) = mapLin (LinearMap.adjoint A) (conj (pairing m) g) :=
-  (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).conj_compLin
+    (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) :
+    convexConj (pairing n) (compLin g A)
+        = mapLin (LinearMap.adjoint A) (convexConj (pairing m) g) :=
+  (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).convexConj_compLin
 
 /-- **Theorem 16.3**, the attainment: under the same qualification, for each `x*` the infimum
 `inf {g*(y*) | A*y* = x*}` is attained (or is `+∞` vacuously). The backbone's guard `< ⊤` is exactly
 the book's "or is `+∞` vacuously". -/
 theorem theorem_16_3_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
-    (hp : Proper g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (dom g)) {y : Rn n}
-    (hy : conj (pairing n) (compLin g A) y < ⊤) :
+    (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) {y : Rn n}
+    (hy : convexConj (pairing n) (compLin g A) y < ⊤) :
     ∃ z : Rn m, LinearMap.adjoint A z = y ∧
-      conj (pairing m) g z = conj (pairing n) (compLin g A) y :=
-  (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).exists_conj_compLin_eq hy
+      convexConj (pairing m) g z = convexConj (pairing n) (compLin g A) y :=
+  (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).exists_convexConj_compLin_eq hy
 
 /-- **Rockafellar, §16**, the unnumbered remark: when `g` is *polyhedral*, the
 qualification `Ax ∈ ri (dom g)` of Theorem 16.3 weakens to `Ax ∈ dom g`, and the conclusion is
@@ -252,19 +258,20 @@ Rockafellar states this as a remark just after Corollary 16.3.1 and defers the p
 Corollary 19.3.1: `g*` is polyhedral by Theorem 19.2, so `A*g*` is polyhedral and hence closed,
 and the closure in the second formula has nothing left to close. -/
 theorem theorem_16_3_polyhedral (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : PolyhedralFn g)
-    (hp : Proper g) {x₀ : Rn n} (hx₀ : A x₀ ∈ dom g) :
-    conj (pairing n) (compLin g A) = mapLin (LinearMap.adjoint A) (conj (pairing m) g) :=
-  (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).conj_compLin
+    (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ convexDom g) :
+    convexConj (pairing n) (compLin g A)
+        = mapLin (LinearMap.adjoint A) (convexConj (pairing m) g) :=
+  (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).convexConj_compLin
 
 /-- **Rockafellar, §16**, the same remark, attainment clause under the weakened
 qualification: for a polyhedral `g` the infimum `inf {g*(y*) | A*y* = x*}` is still attained
 wherever it is finite. -/
 theorem theorem_16_3_polyhedral_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal}
-    (hg : PolyhedralFn g) (hp : Proper g) {x₀ : Rn n} (hx₀ : A x₀ ∈ dom g) {y : Rn n}
-    (hy : conj (pairing n) (compLin g A) y < ⊤) :
+    (hg : PolyhedralFn g) (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ convexDom g) {y : Rn n}
+    (hy : convexConj (pairing n) (compLin g A) y < ⊤) :
     ∃ z : Rn m, LinearMap.adjoint A z = y ∧
-      conj (pairing m) g z = conj (pairing n) (compLin g A) y :=
-  (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).exists_conj_compLin_eq hy
+      convexConj (pairing m) g z = convexConj (pairing n) (compLin g A) y :=
+  (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).exists_convexConj_compLin_eq hy
 
 /-- **Corollary 16.3.1**, first formula: `δ*(y* | AC) = δ*(A*y* | C)` for any convex set `C` in
 `ℝⁿ`. The indicator instance of `theorem_16_3_image`, via `mapLin_indicatorFn`. Convexity is not
@@ -273,20 +280,22 @@ theorem corollary_16_3_1_image (A : Rn n →ₗ[ℝ] Rn m) (C : Set (Rn n)) (y :
     supportFn (pairing m) (A '' C) y = supportFn (pairing n) C (LinearMap.adjoint A y) := by
   have h : supportFn (pairing m) (A '' C)
       = compLin (supportFn (pairing n) C) (LinearMap.adjoint A) := by
-    rw [supportFn_eq_conj_indicatorFn, supportFn_eq_conj_indicatorFn, ← mapLin_indicatorFn,
+    rw [supportFn_eq_convexConj_indicatorFn, supportFn_eq_convexConj_indicatorFn,
+        ← mapLin_indicatorFn,
       theorem_16_3_image]
   rw [h, compLin_apply]
 
 /-- **Corollary 16.3.1**, second formula: for any convex set `D` in `ℝᵐ`,
 `δ*(· | A⁻¹(cl D)) = cl(A* δ*(· | D))`.
 
-The indicator instance of `theorem_16_3_closure`, via `clFn_indicatorFn` and
+The indicator instance of `theorem_16_3_closure`, via `convexCl_indicatorFn` and
 `compLin_indicatorFn`. -/
 theorem corollary_16_3_1_closure (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (hD : Convex ℝ D) :
     supportFn (pairing n) (A ⁻¹' closure D)
-      = clFn (mapLin (LinearMap.adjoint A) (supportFn (pairing m) D)) := by
-  rw [supportFn_eq_conj_indicatorFn, supportFn_eq_conj_indicatorFn, ← compLin_indicatorFn,
-    ← clFn_indicatorFn]
+      = convexCl (mapLin (LinearMap.adjoint A) (supportFn (pairing m) D)) := by
+  rw [supportFn_eq_convexConj_indicatorFn, supportFn_eq_convexConj_indicatorFn,
+      ← compLin_indicatorFn,
+    ← convexCl_indicatorFn]
   exact theorem_16_3_closure A (convexFn_indicatorFn.2 hD)
 
 /-- **Corollary 16.3.1**, the exact half: if some `Ax ∈ ri D`, the closure operation
@@ -295,10 +304,11 @@ theorem corollary_16_3_1_exact (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (hD 
     (hne : D.Nonempty) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri D) :
     supportFn (pairing n) (A ⁻¹' D)
       = mapLin (LinearMap.adjoint A) (supportFn (pairing m) D) := by
-  rw [supportFn_eq_conj_indicatorFn, supportFn_eq_conj_indicatorFn, ← compLin_indicatorFn]
+  rw [supportFn_eq_convexConj_indicatorFn, supportFn_eq_convexConj_indicatorFn,
+      ← compLin_indicatorFn]
   refine theorem_16_3_exact A (convexFn_indicatorFn.2 hD)
-    ⟨by rw [dom_indicatorFn]; exact hne, indicatorFn_ne_bot D⟩ (x₀ := x₀) ?_
-  rw [dom_indicatorFn]
+    ⟨by rw [convexDom_indicatorFn]; exact hne, indicatorFn_ne_bot D⟩ (x₀ := x₀) ?_
+  rw [convexDom_indicatorFn]
   exact hx₀
 
 /-- **Corollary 16.3.2**, first formula: `(AC)° = A*⁻¹(C°)` for any convex set `C` in `ℝⁿ`. One
@@ -326,40 +336,43 @@ theorem corollary_16_3_2_preimage (A : Rn n →ₗ[ℝ] Rn m) (D : Set (Rn m)) :
 The `□`-product is the `AddCommMonoid` sum of `InfConvFn`. Properness is *not* needed, and must
 not be assumed at the intermediate stages, since `□` does not preserve it. -/
 theorem theorem_16_4_infConv_finset {ι : Type*} (s : Finset ι) (f : ι → Rn n → EReal) :
-    conj (pairing n) (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)))
-      = ∑ i ∈ s, conj (pairing n) (f i) :=
-  conj_sum_toInfConvFn (pairing n) s f
+    convexConj (pairing n) (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)))
+      = ∑ i ∈ s, convexConj (pairing n) (f i) :=
+  convexConj_sum_toInfConvFn (pairing n) s f
 
 /-- **Theorem 16.4**, first formula for `m = 2`: `(f □ g)* = f* + g*`. -/
 theorem theorem_16_4_infConv (f g : Rn n → EReal) :
-    conj (pairing n) (infConv f g) = conj (pairing n) f + conj (pairing n) g :=
-  conj_infConv (pairing n) f g
+    convexConj (pairing n) (infConv f g) = convexConj (pairing n) f + convexConj (pairing n) g :=
+  convexConj_infConv (pairing n) f g
 
 /-- **Theorem 16.4**, second formula: `(cl f + cl g)* = cl(f* □ g*)`. Specialises
-`conj_add_eq_clFn_infConv`, applied to the closures. -/
+`convexConj_add_eq_convexCl_infConv`, applied to the closures. -/
 theorem theorem_16_4_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hg : ConvexFn g) :
-    conj (pairing n) (clFn f + clFn g)
-      = clFn (infConv (conj (pairing n) f) (conj (pairing n) g)) := by
-  rw [conj_add_eq_clFn_infConv (convexFn_clFn hf) (closedFn_clFn f) (convexFn_clFn hg)
-    (closedFn_clFn g), conj_clFn, conj_clFn]
+    convexConj (pairing n) (convexCl f + convexCl g)
+      = convexCl (infConv (convexConj (pairing n) f) (convexConj (pairing n) g)) := by
+  rw [convexConj_add_eq_convexCl_infConv (convexFn_convexCl hf) (closedConvex_convexCl f)
+      (convexFn_convexCl hg)
+    (closedConvex_convexCl g), convexConj_convexCl, convexConj_convexCl]
 
 /-- **Theorem 16.4**, the exact half: if `ri (dom f)` and `ri (dom g)` have a point in common, the
 closure operation can be omitted and `(f + g)* = f* □ g*`. Closedness is not assumed, as in the
 book. -/
-theorem theorem_16_4_exact {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConvexFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (dom g)) :
-    conj (pairing n) (f + g) = infConv (conj (pairing n) f) (conj (pairing n) g) :=
-  (IsExactSum.of_relint hf hpf hg hpg hxf hxg).conj_add
+theorem theorem_16_4_exact {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (convexDom g)) :
+    convexConj (pairing n) (f + g)
+        = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
+  (IsExactSum.of_relint hf hpf hg hpg hxf hxg).convexConj_add
 
 /-- **Theorem 16.4**, the attainment: under the same qualification, for each `x*` the
 infimum `inf {f*(x₁*) + g*(x₂*) | x₁* + x₂* = x*}` is attained. -/
-theorem theorem_16_4_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Proper f)
-    (hg : ConvexFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
-    (hxg : x₀ ∈ ri (dom g)) (y : Rn n) :
+theorem theorem_16_4_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
+    (hxg : x₀ ∈ ri (convexDom g)) (y : Rn n) :
     ∃ y₁ y₂ : Rn n, y₁ + y₂ = y ∧
-      conj (pairing n) f y₁ + conj (pairing n) g y₂ = conj (pairing n) (f + g) y :=
-  (IsExactSum.of_relint hf hpf hg hpg hxf hxg).exists_conj_add_eq y
+      convexConj (pairing n) f y₁ + convexConj (pairing n) g y₂
+          = convexConj (pairing n) (f + g) y :=
+  (IsExactSum.of_relint hf hpf hg hpg hxf hxg).exists_convexConj_add_eq y
 
 /-- **Corollary 16.4.1**, first formula for `m = 2`:
 `δ*(· | C₁ + C₂) = δ*(· | C₁) + δ*(· | C₂)`.
@@ -385,9 +398,10 @@ theorem corollary_16_4_1_add_finset {ι : Type*} (s : Finset ι) (C : ι → Set
 indicator instance of `theorem_16_4_closure`: adding indicators intersects the sets. -/
 theorem corollary_16_4_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Convex ℝ D) :
     supportFn (pairing n) (closure C ∩ closure D)
-      = clFn (infConv (supportFn (pairing n) C) (supportFn (pairing n) D)) := by
-  rw [supportFn_eq_conj_indicatorFn, supportFn_eq_conj_indicatorFn,
-    supportFn_eq_conj_indicatorFn, ← indicatorFn_add, ← clFn_indicatorFn, ← clFn_indicatorFn]
+      = convexCl (infConv (supportFn (pairing n) C) (supportFn (pairing n) D)) := by
+  rw [supportFn_eq_convexConj_indicatorFn, supportFn_eq_convexConj_indicatorFn,
+    supportFn_eq_convexConj_indicatorFn, ← indicatorFn_add, ← convexCl_indicatorFn,
+        ← convexCl_indicatorFn]
   exact theorem_16_4_closure (convexFn_indicatorFn.2 hC) (convexFn_indicatorFn.2 hD)
 
 /-- **Corollary 16.4.1**, the exact half: if `ri C₁` and `ri C₂` have a point in
@@ -397,13 +411,13 @@ theorem corollary_16_4_1_exact {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Conv
     (hCne : C.Nonempty) (hDne : D.Nonempty) {x₀ : Rn n} (hxC : x₀ ∈ ri C) (hxD : x₀ ∈ ri D) :
     supportFn (pairing n) (C ∩ D)
       = infConv (supportFn (pairing n) C) (supportFn (pairing n) D) := by
-  rw [supportFn_eq_conj_indicatorFn, supportFn_eq_conj_indicatorFn,
-    supportFn_eq_conj_indicatorFn, ← indicatorFn_add]
+  rw [supportFn_eq_convexConj_indicatorFn, supportFn_eq_convexConj_indicatorFn,
+    supportFn_eq_convexConj_indicatorFn, ← indicatorFn_add]
   refine theorem_16_4_exact (convexFn_indicatorFn.2 hC)
-    ⟨by rw [dom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩ (convexFn_indicatorFn.2 hD)
-    ⟨by rw [dom_indicatorFn]; exact hDne, indicatorFn_ne_bot D⟩ (x₀ := x₀) ?_ ?_
-  · rw [dom_indicatorFn]; exact hxC
-  · rw [dom_indicatorFn]; exact hxD
+    ⟨by rw [convexDom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩ (convexFn_indicatorFn.2 hD)
+    ⟨by rw [convexDom_indicatorFn]; exact hDne, indicatorFn_ne_bot D⟩ (x₀ := x₀) ?_ ?_
+  · rw [convexDom_indicatorFn]; exact hxC
+  · rw [convexDom_indicatorFn]; exact hxD
 
 /-- **Corollary 16.4.2**, first formula: `(K₁ + K₂)° = K₁° ∩ K₂°` for non-empty
 convex cones.
@@ -448,20 +462,20 @@ the second formula and `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*`.
 The family is indexed by a `Finset` rather than by `Fin m`, so `m = 0` is the vacuous empty
 family and the book's `m ≥ 1` is `hs`. -/
 theorem theorem_16_4_exact_finset {ι : Type*} {s : Finset ι} {f : ι → Rn n → EReal}
-    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, Proper (f i))
-    {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (dom (f i))) :
-    conj (pairing n) (∑ i ∈ s, f i)
-      = ofInfConvFn (∑ i ∈ s, toInfConvFn (conj (pairing n) (f i))) :=
-  (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).conj_finsetSum
+    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
+    {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) :
+    convexConj (pairing n) (∑ i ∈ s, f i)
+      = ofInfConvFn (∑ i ∈ s, toInfConvFn (convexConj (pairing n) (f i))) :=
+  (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).convexConj_finsetSum
 
 /-- **Theorem 16.4**, the attainment for `m` summands: under the same qualification,
 for each `x*` the infimum `inf {f₁*(x₁*) + ⋯ + fₘ*(xₘ*) | x₁* + ⋯ + xₘ* = x*}` is attained. -/
 theorem theorem_16_4_attained_finset {ι : Type*} {s : Finset ι} {f : ι → Rn n → EReal}
-    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, Proper (f i))
-    {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (dom (f i))) (y : Rn n) :
+    (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
+    {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) (y : Rn n) :
     ∃ y' : ι → Rn n, ∑ i ∈ s, y' i = y ∧
-      ∑ i ∈ s, conj (pairing n) (f i) (y' i) = conj (pairing n) (∑ i ∈ s, f i) y :=
-  (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).exists_conj_finsetSum_eq y
+      ∑ i ∈ s, convexConj (pairing n) (f i) (y' i) = convexConj (pairing n) (∑ i ∈ s, f i) y :=
+  (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).exists_convexConj_finsetSum_eq y
 
 /-- Adding indicator functions over a `Finset` intersects the sets: the `m`-ary form of
 `indicatorFn_add`. The empty intersection is `ℝⁿ`, whose indicator is the zero function, so no
@@ -489,14 +503,14 @@ theorem corollary_16_4_1_exact_finset {ι : Type*} {s : Finset ι} {C : ι → S
     (hs : s.Nonempty) (hC : ∀ i ∈ s, Convex ℝ (C i)) {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i)) :
     supportFn (pairing n) (⋂ i ∈ s, C i)
       = ofInfConvFn (∑ i ∈ s, toInfConvFn (supportFn (pairing n) (C i))) := by
-  have hconj : ∀ i, supportFn (pairing n) (C i) = conj (pairing n) (indicatorFn (C i)) :=
-    fun i => supportFn_eq_conj_indicatorFn (pairing n) (C i)
-  rw [supportFn_eq_conj_indicatorFn, ← sum_indicatorFn_finset,
+  have hconj : ∀ i, supportFn (pairing n) (C i) = convexConj (pairing n) (indicatorFn (C i)) :=
+    fun i => supportFn_eq_convexConj_indicatorFn (pairing n) (C i)
+  rw [supportFn_eq_convexConj_indicatorFn, ← sum_indicatorFn_finset,
     theorem_16_4_exact_finset (f := fun i => indicatorFn (C i)) hs
       (fun i hi => convexFn_indicatorFn.2 (hC i hi))
-      (fun i hi => ⟨⟨x₀, by rw [dom_indicatorFn]; exact intrinsicInterior_subset (hx₀ i hi)⟩,
+      (fun i hi => ⟨⟨x₀, by rw [convexDom_indicatorFn]; exact intrinsicInterior_subset (hx₀ i hi)⟩,
         indicatorFn_ne_bot (C i)⟩)
-      (fun i hi => by rw [dom_indicatorFn]; exact hx₀ i hi)]
+      (fun i hi => by rw [convexDom_indicatorFn]; exact hx₀ i hi)]
   simp only [hconj]
 
 /-- **Corollary 16.4.1**, the attainment for `m` sets: under the same qualification,
@@ -508,33 +522,35 @@ theorem corollary_16_4_1_attained_finset {ι : Type*} {s : Finset ι} {C : ι �
     ∃ y' : ι → Rn n, ∑ i ∈ s, y' i = y ∧
       ∑ i ∈ s, supportFn (pairing n) (C i) (y' i)
         = supportFn (pairing n) (⋂ i ∈ s, C i) y := by
-  have hconj : ∀ i, supportFn (pairing n) (C i) = conj (pairing n) (indicatorFn (C i)) :=
-    fun i => supportFn_eq_conj_indicatorFn (pairing n) (C i)
+  have hconj : ∀ i, supportFn (pairing n) (C i) = convexConj (pairing n) (indicatorFn (C i)) :=
+    fun i => supportFn_eq_convexConj_indicatorFn (pairing n) (C i)
   obtain ⟨y', hy', hval⟩ :=
     theorem_16_4_attained_finset (f := fun i => indicatorFn (C i)) hs
       (fun i hi => convexFn_indicatorFn.2 (hC i hi))
-      (fun i hi => ⟨⟨x₀, by rw [dom_indicatorFn]; exact intrinsicInterior_subset (hx₀ i hi)⟩,
+      (fun i hi => ⟨⟨x₀, by rw [convexDom_indicatorFn]; exact intrinsicInterior_subset (hx₀ i hi)⟩,
         indicatorFn_ne_bot (C i)⟩)
-      (fun i hi => by rw [dom_indicatorFn]; exact hx₀ i hi) y
+      (fun i hi => by rw [convexDom_indicatorFn]; exact hx₀ i hi) y
   refine ⟨y', hy', ?_⟩
-  rw [supportFn_eq_conj_indicatorFn, ← sum_indicatorFn_finset, ← hval]
+  rw [supportFn_eq_convexConj_indicatorFn, ← sum_indicatorFn_finset, ← hval]
   simp only [hconj]
 
 /-! ### Theorem 16.5: pointwise suprema and convex hulls -/
 
 /-- **Theorem 16.5**, first formula: `(conv {fᵢ | i ∈ I})* = sup {fᵢ* | i ∈ I}` for an arbitrary
-index set `I`. Unconditional; the empty family is not an exception. Specialises `conj_convFn`. -/
+index set `I`. Unconditional; the empty family is not an exception. Specialises
+`convexConj_convFn`. -/
 theorem theorem_16_5_convFn {ι : Sort*} (f : ι → Rn n → EReal) :
-    conj (pairing n) (convFn f) = ⨆ i, conj (pairing n) (f i) :=
-  conj_convFn (pairing n) f
+    convexConj (pairing n) (convFn f) = ⨆ i, convexConj (pairing n) (f i) :=
+  convexConj_convFn (pairing n) f
 
 /-- **Theorem 16.5**, second formula: `(sup {cl fᵢ | i ∈ I})* = cl (conv {fᵢ* | i ∈ I})`.
-Specialises `conj_iSup_eq_clFn_convFn`, applied to the closures. -/
+Specialises `convexConj_iSup_eq_convexCl_convFn`, applied to the closures. -/
 theorem theorem_16_5_closure {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀ i, ConvexFn (f i)) :
-    conj (pairing n) (⨆ i, clFn (f i))
-      = clFn (convFn fun i => conj (pairing n) (f i)) := by
-  rw [conj_iSup_eq_clFn_convFn (fun i => convexFn_clFn (hf i)) (fun i => closedFn_clFn (f i))]
-  simp only [conj_clFn]
+    convexConj (pairing n) (⨆ i, convexCl (f i))
+      = convexCl (convFn fun i => convexConj (pairing n) (f i)) := by
+  rw [convexConj_iSup_eq_convexCl_convFn (fun i => convexFn_convexCl (hf i))
+      (fun i => closedConvex_convexCl (f i))]
+  simp only [convexConj_convexCl]
 
 /-- **Corollary 16.5.1**, first formula: the support function of the convex hull `D`
 of the union of the sets `Cᵢ` is `sup {δ*(· | Cᵢ) | i ∈ I}`. -/
@@ -551,9 +567,9 @@ family the book's `⋂ cl Cᵢ` is all of `ℝⁿ` while `sup {δ(· | Cᵢ)}` i
 theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn n)}
     (hC : ∀ i, Convex ℝ (C i)) :
     supportFn (pairing n) (⋂ i, closure (C i))
-      = clFn (convFn fun i => supportFn (pairing n) (C i)) := by
-  have hind : (⨆ i, clFn (indicatorFn (C i))) = indicatorFn (⋂ i, closure (C i)) := by
-    simp only [clFn_indicatorFn]
+      = convexCl (convFn fun i => supportFn (pairing n) (C i)) := by
+  have hind : (⨆ i, convexCl (indicatorFn (C i))) = indicatorFn (⋂ i, closure (C i)) := by
+    simp only [convexCl_indicatorFn]
     funext x
     rw [iSup_apply]
     by_cases hx : x ∈ ⋂ i, closure (C i)
@@ -564,7 +580,7 @@ theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn 
     · rw [indicatorFn_of_notMem hx]
       obtain ⟨i, hi⟩ := not_forall.1 (fun h => hx (Set.mem_iInter.2 h))
       exact le_antisymm le_top (le_iSup_of_le i (by rw [indicatorFn_of_notMem hi]))
-  simp only [supportFn_eq_conj_indicatorFn]
+  simp only [supportFn_eq_convexConj_indicatorFn]
   rw [← hind]
   exact theorem_16_5_closure fun i => convexFn_indicatorFn.2 (hC i)
 

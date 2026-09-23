@@ -1,31 +1,31 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'adjointBifun'
+id = 'convexAdjointBifun'
 
 [[node]]
-id = 'adjointBifun_eq_neg_conj_graphFn'
+id = 'convexAdjointBifun_eq_neg_convexConj_graphFn'
 
 [[node]]
-id = 'ConcaveBifun'
+id = 'concaveFn_graphFn_convexAdjointBifun'
 
 [[node]]
-id = 'concaveFn_graphFn_adjointBifun'
+id = 'closedConcave_graphFn_convexAdjointBifun'
 
 [[node]]
-id = 'closedConcaveFn_graphFn_adjointBifun'
+id = 'convexClBifun'
 
 [[node]]
-id = 'clBifun'
+id = 'ClosedConvexBifun'
 
 [[node]]
-id = 'ClosedBifun'
+id = 'closedConvexBifun_inverseBifun'
 
 [[node]]
-id = 'clBifun_apply_eq_clFn'
+id = 'convexClBifun_apply_eq_convexCl'
 
 [[node]]
-id = 'infBifun_clBifun_eq'
+id = 'infBifun_convexClBifun_eq'
 
 [[node]]
 id = 'ImageClosedBifun'
@@ -34,16 +34,31 @@ id = 'ImageClosedBifun'
 id = 'concaveAdjointBifun'
 
 [[node]]
-id = 'concaveAdjointBifun_adjointBifun_eq_clBifun'
+id = 'lowerAdjointBifun'
 
 [[node]]
-id = 'properConcave_graphFn_adjointBifun_iff'
+id = 'convexAdjointBifun_flip_inverseBifun'
 
 [[node]]
-id = 'adjointBifun_zero_eq_concaveConj'
+id = 'lowerAdjointBifun_eq_concaveAdjointBifun'
 
 [[node]]
-id = 'adjointBifun_zero_le'
+id = 'closedConvexBifun_lowerAdjointBifun'
 
 [[node]]
-id = 'mem_kuhnTucker_iff_adjointBifun_zero_eq'
+id = 'concaveAdjointBifun_convexAdjointBifun_eq_convexClBifun'
+
+[[node]]
+id = 'convexAdjointBifun_flip_lowerAdjointBifun'
+
+[[node]]
+id = 'properConcave_graphFn_convexAdjointBifun_iff'
+
+[[node]]
+id = 'convexAdjointBifun_zero_eq_concaveConj'
+
+[[node]]
+id = 'convexAdjointBifun_zero_le'
+
+[[node]]
+id = 'mem_kuhnTucker_iff_convexAdjointBifun_zero_eq'

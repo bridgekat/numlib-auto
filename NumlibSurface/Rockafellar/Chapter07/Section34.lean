@@ -49,7 +49,7 @@ concave-convex functions. Theorem 34.1 then says the two closures always land on
 * `corollary_34_2_4_*` — the class of the extensions of a finite continuous `K` on `C × D`.
 * `theorem_34_3_a` through `theorem_34_3_f`, `theorem_34_3` — the six-clause characterisation of
   closedness by the behaviour of the slices on `ri C`, `C ∖ ri C` and off `C`, and dually.
-* `kernel_eq_restrictFn`, `kernel_eq_iff'`, `simpleSaddleFn_iff`, `simpleSaddleFn_of_closed`,
+* `kernel_eq_convexRestrict`, `kernel_eq_iff'`, `simpleSaddleFn_iff`, `simpleSaddleFn_of_closed`,
   `simpleSaddleFn_bifunBracket` — the kernel and simple saddle-functions.
 * `theorem_34_4` — two closed proper concave-convex functions are equivalent exactly when they have
   the same kernel.
@@ -146,19 +146,19 @@ theorem mem_bifunSaddleClass_of_mem_Ω (hK : K ∈ Ω F) :
     K ∈ bifunSaddleClass (pairing m) (pairing n) F := hK.2
 
 /-- **Theorem 34.2**: `K̲ (u, x*) = ⟨Fu, x*⟩` belongs to `Ω (F)`. -/
-theorem theorem_34_2_lower_mem (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_34_2_lower_mem (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     bifunBracket F ∈ Ω F :=
   ⟨theorem_33_1_concaveConvex hF,
     mem_saddleClass_left (corollary_33_3_1_necessity_second hF hcl)⟩
 
 /-- **Theorem 34.2**: `K̄ (u, x*) = ⟨u, F*x*⟩` belongs to `Ω (F)`. -/
-theorem theorem_34_2_upper_mem (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_34_2_upper_mem (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     adjointBracket F ∈ Ω F :=
   ⟨adjointBracket_concaveConvex F,
     mem_saddleClass_right (corollary_33_3_1_necessity_second hF hcl)⟩
 
 /-- **Theorem 34.2**, second equation: `cl₂ K = K̲` for every `K ∈ Ω (F)`. -/
-theorem theorem_34_2_cl₂ (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F) :
+theorem theorem_34_2_cl₂ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F) :
     cl₂ K = bifunBracket F :=
   partialCl₂_eq_bracket_of_mem_saddleClass (pairing m) (pairing n) hF hcl hK.2
 
@@ -169,19 +169,19 @@ theorem theorem_34_2_cl₁ (hF : ConvexBifun F) (hK : K ∈ Ω F) :
   partialCl₁_eq_concaveBracket_of_mem_saddleClass (pairing m) (pairing n) hF hK.2
 
 /-- **Theorem 34.2**: every member of `Ω (F)` is a closed saddle-function. -/
-theorem theorem_34_2_closed (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F) :
+theorem theorem_34_2_closed (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F) :
     ClosedSaddleFn K :=
   closedSaddleFn_of_mem_saddleClass_bracket (pairing m) (pairing n) hF hcl hK.2
 
 /-- **Theorem 34.2**: any two members of `Ω (F)` are equivalent. -/
-theorem theorem_34_2_equiv (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
+theorem theorem_34_2_equiv (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hL : L ∈ Ω F) : SaddleEquiv K L :=
   saddleEquiv_of_mem_saddleClass (corollary_33_3_1_necessity_first hF)
     (corollary_33_3_1_necessity_second hF hcl) hK.2 hL.2
 
 /-- **Theorem 34.2**: `Ω (F)` is a *whole* equivalence class — a concave-convex function
 equivalent to a member is itself a member. -/
-theorem theorem_34_2_maximal (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
+theorem theorem_34_2_maximal (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) : L ∈ Ω F := by
   refine ⟨hL, ?_⟩
   have e2 : partialCl₂ L = bifunBracket F := by
@@ -197,7 +197,7 @@ theorem theorem_34_2_maximal (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K 
 /-- **Theorem 34.2**, converse: a closed concave-convex function determines one and only one
 closed convex bifunction whose two brackets are `cl₂ K` and `cl₁ K`. -/
 theorem theorem_34_2_converse (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K) :
-    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedBifun F ∧
+    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧
       bifunBracket F = cl₂ K ∧ adjointBracket F = cl₁ K :=
   exists_unique_bifun_of_closedSaddleFn (pairing m) (pairing n) hK hcl
 
@@ -214,66 +214,60 @@ theorem theorem_34_2_mem_self (hK : ConcaveConvexFn K) (hlow : bifunBracket F = 
 
 /-- **Theorem 34.2**, `dom` clause, first factor: `dom₁ K = dom F` for `K ∈ Ω (F)`. The
 nonemptiness hypothesis is not in the book and cannot be dropped; see the module docstring. -/
-theorem theorem_34_2_dom₁ (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
-    (hne : (dom₂ K).Nonempty) : dom₁ K = domBifun F :=
-  dom₁_eq_domBifun_of_mem_bifunSaddleClass (pairing m) (pairing n) hF hcl hK.2 hK.1 hne
+theorem theorem_34_2_dom₁ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
+    (hne : (dom₂ K).Nonempty) : dom₁ K = convexDomBifun F :=
+  dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass (pairing m) (pairing n) hF hcl hK.2 hK.1 hne
 
 private theorem dom₂_adjointBracket (F : Bifun (Rn m) (Rn n)) :
-    dom₂ (adjointBracket F) = domConcaveBifun (dualProgram F) := by
+    dom₂ (adjointBracket F) = concaveDomBifun (dualProgram F) := by
   ext y
   constructor
   · intro hy
-    have h : y ∈ dom fun w => concaveBracket (pairing m) (dualProgram F) (0 : Rn m) w := hy 0
-    rwa [dom_concaveBracket] at h
+    have h : y ∈ convexDom fun w => concaveBracket (pairing m) (dualProgram F) (0 : Rn m) w := hy 0
+    rwa [convexDom_concaveBracket] at h
   · intro hy u
-    have h : y ∈ dom fun w => concaveBracket (pairing m) (dualProgram F) u w := by
-      rw [dom_concaveBracket]; exact hy
+    have h : y ∈ convexDom fun w => concaveBracket (pairing m) (dualProgram F) u w := by
+      rw [convexDom_concaveBracket]; exact hy
     exact h
 
 /-- **Theorem 34.2**, `dom` clause, second factor: `dom₂ K = dom F*` for `K ∈ Ω (F)`, again with a
 nonemptiness hypothesis the book suppresses. -/
 theorem theorem_34_2_dom₂ (hF : ConvexBifun F) (hK : K ∈ Ω F) (hne : (dom₁ K).Nonempty) :
-    dom₂ K = domConcaveBifun (dualProgram F) := by
+    dom₂ K = concaveDomBifun (dualProgram F) := by
   have e1 : partialCl₁ K = adjointBracket F := theorem_34_2_cl₁ hF hK
   rw [← dom₂_partialCl₁ hK.1 hne, e1, dom₂_adjointBracket]
 
 /-- **Theorem 34.2**: `dom K = dom F × dom F*`. -/
-theorem theorem_34_2_dom (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
+theorem theorem_34_2_dom (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hp : ProperSaddleFn K) :
-    domSaddle K = domBifun F ×ˢ domConcaveBifun (dualProgram F) := by
+    domSaddle K = convexDomBifun F ×ˢ concaveDomBifun (dualProgram F) := by
   have h : domSaddle K = dom₁ K ×ˢ dom₂ K := rfl
   rw [h, theorem_34_2_dom₁ hF hcl hK hp.dom₂_nonempty,
     theorem_34_2_dom₂ hF hK hp.dom₁_nonempty]
 
 /-- **Theorem 34.2**: `F` is recovered from any `K ∈ Ω (F)` as `Fu = K (u, ·)*`. -/
-theorem theorem_34_2_bifunOfSaddleFn (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F) :
+theorem theorem_34_2_bifunOfSaddleFn (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hK : K ∈ Ω F) :
     bifunOfSaddleFn K = F := by
   have h2 : partialCl₂ K = bifunBracket F := theorem_34_2_cl₂ hF hcl hK
   refine eq_of_bracket_eq (Bx := pairing n) (theorem_33_1_convexBifun hK.1) hF
-    (theorem_33_1_imageClosed K) (imageClosedBifun_of_closedBifun hcl) ?_
+    (theorem_33_1_imageClosed K) (imageClosedBifun_of_closedConvexBifun hcl) ?_
   funext u x
   calc bracket (pairing n) (bifunOfSaddleFn K) u x
       = partialCl₂ K (u, x) := bracket_bifunOfSaddle hK.1 (u, x)
     _ = bracket (pairing n) F u x := congrFun h2 (u, x)
 
 /-- **Theorem 34.2**, third equation: `(Fu)(x) = sup_{x*} {⟨x, x*⟩ − K (u, x*)}`. -/
-theorem theorem_34_2_bifun_apply (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
+theorem theorem_34_2_bifun_apply (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (u : Rn m) (x : Rn n) :
     F u x = ⨆ y : Rn n, ((pairing n x y : ℝ) : EReal) - K (u, y) := by
   rw [← theorem_34_2_bifunOfSaddleFn hF hcl hK]
   exact bifunOfSaddleFn_apply K u x
 
-private theorem concaveConj_clConcave (g : Rn m → EReal) :
-    concaveConj (pairing m) (clConcave g) = concaveConj (pairing m) g := by
-  funext y
-  rw [concaveConj_eq_neg_conj_neg, concaveConj_eq_neg_conj_neg]
-  have h : (fun x => -(clConcave g x)) = clFn fun z => -(g z) := funext (neg_clConcave g)
-  rw [h, conj_clFn]
-
 /-- **Theorem 34.2**, fourth equation: `(F*x*)(u*) = inf_u {⟨u, u*⟩ − K (u, x*)}`. The book writes
 this off the third by symmetry, but it is not symmetric: `F* x*` is the *concave* conjugate of
 `u ↦ (cl₂ K) (u, x*)`, and replacing `cl₂ K` by `K` under it is what closedness of `K` buys. -/
-theorem theorem_34_2_adjoint (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
+theorem theorem_34_2_adjoint (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (x : Rn n) (v : Rn m) :
     dualProgram F x v = ⨅ u : Rn m, ((pairing m u v : ℝ) : EReal) - K (u, x) := by
   have hcls : ClosedSaddleFn K := theorem_34_2_closed hF hcl hK
@@ -281,18 +275,18 @@ theorem theorem_34_2_adjoint (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K 
   have hfun : (fun u => bracket (pairing n) F u x) = fun u => partialCl₂ K (u, x) := by
     funext u
     exact (congrFun h2 (u, x)).symm
-  have hclc : clConcave (fun u => partialCl₂ K (u, x)) = clConcave fun u => K (u, x) := by
+  have hclc : concaveCl (fun u => partialCl₂ K (u, x)) = concaveCl fun u => K (u, x) := by
     rw [← partialCl₁_slice (partialCl₂ K) x, ← partialCl₁_slice K x, hcls.1]
-  have hgoal : adjointBifun (pairing m) (pairing n) F x v
+  have hgoal : convexAdjointBifun (pairing m) (pairing n) F x v
       = ⨅ u : Rn m, ((pairing m u v : ℝ) : EReal) - K (u, x) := by
-    rw [adjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) F x v, hfun,
-      ← concaveConj_clConcave (fun u => partialCl₂ K (u, x)), hclc, concaveConj_clConcave,
+    rw [convexAdjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) F x v, hfun,
+      ← concaveConj_concaveCl (fun u => partialCl₂ K (u, x)), hclc, concaveConj_concaveCl,
       concaveConj_apply]
   exact hgoal
 
 /-- **Theorem 34.2**, last clause: `K (u, x*) = ⟨Fu, x*⟩ = ⟨u, F*x*⟩` when `u ∈ ri (dom F)`. -/
-theorem theorem_34_2_eq_of_mem_relint_dom₁ (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hK : K ∈ Ω F) (hp : ProperSaddleFn K) {u : Rn m} (hu : u ∈ ri (domBifun F)) (x : Rn n) :
+theorem theorem_34_2_eq_of_mem_relint_dom₁ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hK : K ∈ Ω F) (hp : ProperSaddleFn K) {u : Rn m} (hu : u ∈ ri (convexDomBifun F)) (x : Rn n) :
     K (u, x) = bifunBracket F (u, x) ∧ K (u, x) = adjointBracket F (u, x) := by
   have hcls : ClosedSaddleFn K := theorem_34_2_closed hF hcl hK
   have h2 : partialCl₂ K = bifunBracket F := theorem_34_2_cl₂ hF hcl hK
@@ -305,9 +299,9 @@ theorem theorem_34_2_eq_of_mem_relint_dom₁ (hF : ConvexBifun F) (hcl : ClosedB
   exact congrFun h1 (u, x)
 
 /-- **Theorem 34.2**, last clause, second half: the same when `x* ∈ ri (dom F*)`. -/
-theorem theorem_34_2_eq_of_mem_relint_dom₂ (hF : ConvexBifun F) (hcl : ClosedBifun F)
+theorem theorem_34_2_eq_of_mem_relint_dom₂ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) (hp : ProperSaddleFn K) {x : Rn n}
-    (hx : x ∈ ri (domConcaveBifun (dualProgram F))) (u : Rn m) :
+    (hx : x ∈ ri (concaveDomBifun (dualProgram F))) (u : Rn m) :
     K (u, x) = bifunBracket F (u, x) ∧ K (u, x) = adjointBracket F (u, x) := by
   have hcls : ClosedSaddleFn K := theorem_34_2_closed hF hcl hK
   have h2 : partialCl₂ K = bifunBracket F := theorem_34_2_cl₂ hF hcl hK
@@ -527,29 +521,29 @@ variable {m n : ℕ} {K : Rn m × Rn n → EReal}
 effective domain `D`. -/
 theorem theorem_34_3_a (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     {u : Rn m} (hu : u ∈ ri (dom₁ K)) :
-    ConvexFn (fun v => K (u, v)) ∧ ClosedFn (fun v => K (u, v)) ∧
-      Proper (fun v => K (u, v)) ∧ dom (fun v => K (u, v)) = dom₂ K := by
+    ConvexFn (fun v => K (u, v)) ∧ ClosedConvex (fun v => K (u, v)) ∧
+      ProperConvex (fun v => K (u, v)) ∧ convexDom (fun v => K (u, v)) = dom₂ K := by
   have hs := hcl.saddleStructure hK hp
-  exact ⟨hK.convex_snd u, hs.1.closedFn_slice u hu,
-    hs.1.proper_slice u (intrinsicInterior_subset hu), hs.1.dom_slice u hu⟩
+  exact ⟨hK.convex_snd u, hs.1.closedConvex_slice u hu,
+    hs.1.properConvex_slice u (intrinsicInterior_subset hu), hs.1.convexDom_slice u hu⟩
 
 /-- **Theorem 34.3 (b)**. For `u ∈ C ∖ ri C` the convex function `K (u, ·)` is proper and its
 effective domain lies between `D` and `cl D`. The lower inclusion holds for every `u` whatsoever;
 only the upper one uses the structure. -/
 theorem theorem_34_3_b (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     {u : Rn m} (hu : u ∈ dom₁ K \ ri (dom₁ K)) :
-    ConvexFn (fun v => K (u, v)) ∧ Proper (fun v => K (u, v)) ∧
-      dom₂ K ⊆ dom (fun v => K (u, v)) ∧
-      dom (fun v => K (u, v)) ⊆ closure (dom₂ K) := by
+    ConvexFn (fun v => K (u, v)) ∧ ProperConvex (fun v => K (u, v)) ∧
+      dom₂ K ⊆ convexDom (fun v => K (u, v)) ∧
+      convexDom (fun v => K (u, v)) ⊆ closure (dom₂ K) := by
   have hs := hcl.saddleStructure hK hp
-  exact ⟨hK.convex_snd u, hs.1.proper_slice u hu.1, dom₂_subset_dom_slice K u,
-    hs.1.dom_slice_subset_closure u hu.1⟩
+  exact ⟨hK.convex_snd u, hs.1.properConvex_slice u hu.1, dom₂_subset_convexDom_slice K u,
+    hs.1.convexDom_slice_subset_closure u hu.1⟩
 
 /-- **Theorem 34.3 (c)**. For `u ∉ C` the convex function `K (u, ·)` is improper, with value `−∞`
 throughout `ri D` — throughout `D` itself if `u ∉ cl C`. -/
 theorem theorem_34_3_c (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     {u : Rn m} (hu : u ∉ dom₁ K) :
-    ¬ Proper (fun v => K (u, v)) ∧ (∀ v ∈ ri (dom₂ K), K (u, v) = ⊥) ∧
+    ¬ ProperConvex (fun v => K (u, v)) ∧ (∀ v ∈ ri (dom₂ K), K (u, v) = ⊥) ∧
       (u ∉ closure (dom₁ K) → ∀ v ∈ dom₂ K, K (u, v) = ⊥) := by
   have hs := hcl.saddleStructure hK hp
   have hbot : ∀ v ∈ ri (dom₂ K), K (u, v) = ⊥ := hs.1.eq_bot_of_notMem_dom₁ u hu
@@ -561,22 +555,22 @@ theorem theorem_34_3_c (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : P
 effective domain `C`. -/
 theorem theorem_34_3_d (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     {v : Rn n} (hv : v ∈ ri (dom₂ K)) :
-    ConcaveFn (fun u => K (u, v)) ∧ ClosedConcaveFn (fun u => K (u, v)) ∧
-      ProperConcave (fun u => K (u, v)) ∧ domConcave (fun u => K (u, v)) = dom₁ K := by
+    ConcaveFn (fun u => K (u, v)) ∧ ClosedConcave (fun u => K (u, v)) ∧
+      ProperConcave (fun u => K (u, v)) ∧ concaveDom (fun u => K (u, v)) = dom₁ K := by
   have hs := hcl.saddleStructure hK hp
-  exact ⟨hK.concave_fst v, hs.closedConcaveFn_slice hv,
-    hs.properConcave_slice (intrinsicInterior_subset hv), hs.domConcave_slice hv⟩
+  exact ⟨hK.concave_fst v, hs.closedConcave_slice hv,
+    hs.properConcave_slice (intrinsicInterior_subset hv), hs.concaveDom_slice hv⟩
 
 /-- **Theorem 34.3 (e)**. For `v ∈ D ∖ ri D` the concave function `K (·, v)` is proper and its
 effective domain lies between `C` and `cl C`. -/
 theorem theorem_34_3_e (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     {v : Rn n} (hv : v ∈ dom₂ K \ ri (dom₂ K)) :
     ConcaveFn (fun u => K (u, v)) ∧ ProperConcave (fun u => K (u, v)) ∧
-      dom₁ K ⊆ domConcave (fun u => K (u, v)) ∧
-      domConcave (fun u => K (u, v)) ⊆ closure (dom₁ K) := by
+      dom₁ K ⊆ concaveDom (fun u => K (u, v)) ∧
+      concaveDom (fun u => K (u, v)) ⊆ closure (dom₁ K) := by
   have hs := hcl.saddleStructure hK hp
-  exact ⟨hK.concave_fst v, hs.properConcave_slice hv.1, dom₁_subset_domConcave_slice K v,
-    hs.domConcave_slice_subset_closure hv.1⟩
+  exact ⟨hK.concave_fst v, hs.properConcave_slice hv.1, dom₁_subset_concaveDom_slice K v,
+    hs.concaveDom_slice_subset_closure hv.1⟩
 
 /-- **Theorem 34.3 (f)**. For `v ∉ D` the concave function `K (·, v)` is improper, with value `+∞`
 throughout `ri C` — throughout `C` itself if `v ∉ cl D`. -/
@@ -613,9 +607,9 @@ theorem relint_domSaddle_eq_prod (K : Rn m × Rn n → EReal) :
 /-- The **kernel** of `K`: its restriction to `ri (dom K)`. Rockafellar's kernel is a partial
 function on a rectangle that moves with `K`; here it is extended by `+∞` off the rectangle, so that
 `kernel K = kernel L` is one equation rather than a rectangle equality plus a transport. -/
-theorem kernel_eq_restrictFn (K : Rn m × Rn n → EReal) :
-    kernel K = ConvexAnalysis.restrictFn (ri (domSaddle K)) K := by
-  have h : kernel K = ConvexAnalysis.restrictFn (kernelSet K) K := rfl
+theorem kernel_eq_convexRestrict (K : Rn m × Rn n → EReal) :
+    kernel K = ConvexAnalysis.convexRestrict (ri (domSaddle K)) K := by
+  have h : kernel K = ConvexAnalysis.convexRestrict (kernelSet K) K := rfl
   rw [h, kernelSet_eq_relint_domSaddle]
 
 /-- Equality of kernels unpacked into the book's two facts: the same rectangle, same values. -/
@@ -627,8 +621,8 @@ theorem kernel_eq_iff' :
 over `ri (dom₂ K)` the concave slices stay inside `cl (dom₁ K)`. -/
 theorem simpleSaddleFn_iff (K : Rn m × Rn n → EReal) :
     SimpleSaddleFn K ↔
-      ((∀ u ∈ ri (dom₁ K), dom (fun v => K (u, v)) ⊆ closure (dom₂ K)) ∧
-        ∀ v ∈ ri (dom₂ K), domConcave (fun u => K (u, v)) ⊆ closure (dom₁ K)) :=
+      ((∀ u ∈ ri (dom₁ K), convexDom (fun v => K (u, v)) ⊆ closure (dom₂ K)) ∧
+        ∀ v ∈ ri (dom₂ K), concaveDom (fun u => K (u, v)) ⊆ closure (dom₁ K)) :=
   ⟨fun h => ⟨h.1, h.2⟩, fun h => ⟨h.1, h.2⟩⟩
 
 /-- Every closed proper saddle-function is simple: clauses (b) and (e) of Theorem 34.3. -/
@@ -649,7 +643,7 @@ Stated here for `F` **closed** and `K` **proper**, where the book asks only that
 concave bifunction: closedness makes `K` closed (Theorem 33.3) and properness lets Theorem 34.3
 apply. Whether the unrestricted claim holds is not settled here. -/
 theorem simpleSaddleFn_bifunBracket {F : Bifun (Rn m) (Rn n)} (hF : ConvexBifun F)
-    (hcl : ClosedBifun F) (hp : ProperSaddleFn (bifunBracket F)) :
+    (hcl : ClosedConvexBifun F) (hp : ProperSaddleFn (bifunBracket F)) :
     SimpleSaddleFn (bifunBracket F) :=
   (theorem_34_2_closed hF hcl (theorem_34_2_lower_mem hF hcl)).simpleSaddleFn
     (theorem_33_1_concaveConvex hF) hp
@@ -736,9 +730,9 @@ theorem corollary_34_5_1 (hC : Convex ℝ C) (hCne : C.Nonempty) (hDne : D.Nonem
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun v => K (u, v))
     (hconc : ∀ v ∈ D, ConcaveOn ℝ C fun u => K (u, v)) :
     ∃ M : Rn m × Rn n → EReal, (ClosedSaddleFn M ∧ ConcaveConvexFn M ∧ ProperSaddleFn M ∧
-      kernel M = ConvexAnalysis.restrictFn (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
+      kernel M = ConvexAnalysis.convexRestrict (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
       ∀ L : Rn m × Rn n → EReal, ClosedSaddleFn L → ConcaveConvexFn L → ProperSaddleFn L →
-        (kernel L = ConvexAnalysis.restrictFn (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔
+        (kernel L = ConvexAnalysis.convexRestrict (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔
           SaddleEquiv M L) :=
   exists_unique_saddleEquiv_class_of_finite hC hCne hDne hconv hconc
 

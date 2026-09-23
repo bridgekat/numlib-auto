@@ -196,10 +196,10 @@ theorem corollary_19_1_2 {f : Rn n → EReal} : PolyhedralFn f ↔ FinitelyGener
 
 /-- **Corollary 19.1.2**, second sentence: a proper polyhedral convex function is closed.
 Properness cannot be dropped: `f ≡ ⊥` has epigraph `ℝⁿ⁺¹`, polyhedral by the empty system, and is
-not closed in the `ClosedFn` sense. -/
-theorem corollary_19_1_2_closed {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : Proper f) :
-    ClosedFn f :=
-  hf.closedFn hp.ne_bot
+not closed in the `ClosedConvex` sense. -/
+theorem corollary_19_1_2_closed {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : ProperConvex f) :
+    ClosedConvex f :=
+  hf.closedConvex hp.ne_bot
 
 /-- **Corollary 19.1.2**, third sentence: the infimum defining a finitely generated convex function
 is attained wherever it is finite. -/
@@ -215,8 +215,8 @@ theorem corollary_19_1_2_attained {f : Rn n → EReal} {P D : Finset (Rn n × �
 /-- **Theorem 19.2**. The conjugate of a polyhedral convex function is polyhedral. No properness
 is assumed, and none is needed. -/
 theorem theorem_19_2 {f : Rn n → EReal} (hf : PolyhedralFn f) :
-    PolyhedralFn (conj (pairing n) f) :=
-  hf.conj
+    PolyhedralFn (convexConj (pairing n) f) :=
+  hf.convexConj
 
 /-- **Corollary 19.2.1**. A closed convex set is polyhedral iff its support function is
 polyhedral. -/
@@ -224,20 +224,20 @@ theorem corollary_19_2_1 {C : Set (Rn n)} (hconv : Convex ℝ C) (hcl : IsClosed
     Polyhedral C ↔ PolyhedralFn (supportFn (pairing n) C) := by
   constructor
   · intro hC
-    rw [supportFn_eq_conj_indicatorFn]
-    exact (polyhedralFn_indicatorFn hC).conj
+    rw [supportFn_eq_convexConj_indicatorFn]
+    exact (polyhedralFn_indicatorFn hC).convexConj
   · intro hs
-    have h := hs.conj (B := (pairing n).flip)
-    rw [conj_supportFn hconv hcl] at h
-    have hd := h.polyhedral_dom
-    rwa [dom_indicatorFn] at hd
+    have h := hs.convexConj (B := (pairing n).flip)
+    rw [convexConj_supportFn hconv hcl] at h
+    have hd := h.polyhedral_convexDom
+    rwa [convexDom_indicatorFn] at hd
 
 /-- **Corollary 19.2.2**. The polar of a polyhedral convex set is polyhedral. -/
 theorem corollary_19_2_2 {C : Set (Rn n)} (hC : Polyhedral C) :
     Polyhedral (polarSet (pairing n) C) := by
   have hs : PolyhedralFn (supportFn (pairing n) C) := by
-    rw [supportFn_eq_conj_indicatorFn]
-    exact (polyhedralFn_indicatorFn hC).conj
+    rw [supportFn_eq_convexConj_indicatorFn]
+    exact (polyhedralFn_indicatorFn hC).convexConj
   have heq : polarSet (pairing n) C
       = {y : Rn n | supportFn (pairing n) C y ≤ ((1 : ℝ) : EReal)} := by
     ext y
@@ -263,7 +263,7 @@ theorem theorem_19_3_preimage {D : Set (Rn m)} (hD : Polyhedral D) (A : Rn n →
 polyhedral. -/
 theorem corollary_19_3_1_image {f : Rn n → EReal} (hf : PolyhedralFn f) (A : Rn n →ₗ[ℝ] Rn m) :
     PolyhedralFn (mapLin A f) :=
-  polyhedralFn_mapLin hf A
+  PolyhedralFn.mapLin hf A
 
 /-- **Corollary 19.3.1**, the attainment clause: the infimum defining `(Af)(y)` is attained
 wherever it is finite. -/
@@ -275,7 +275,7 @@ theorem corollary_19_3_1_attained {f : Rn n → EReal} (hf : PolyhedralFn f) (A 
 /-- **Corollary 19.3.1**, second half: `gA` is polyhedral for `g` polyhedral. -/
 theorem corollary_19_3_1_preimage {g : Rn m → EReal} (hg : PolyhedralFn g)
     (A : Rn n →ₗ[ℝ] Rn m) : PolyhedralFn (compLin g A) :=
-  polyhedralFn_compLin hg A
+  PolyhedralFn.compLin hg A
 
 /-- **Corollary 19.3.2**. A sum of two polyhedral convex sets is polyhedral. -/
 theorem corollary_19_3_2 {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (h₂ : Polyhedral C₂) :
@@ -316,7 +316,7 @@ theorem corollary_19_3_4_attained {f₁ f₂ : Rn n → EReal} (h₁ : Polyhedra
 enters only as `∀ x, fᵢ x ≠ ⊥`, which is what makes the `EReal` splitting
 `f₁ x + f₂ x ≤ μ ↔ ∃ α β, f₁ x ≤ α ∧ f₂ x ≤ β ∧ α + β = μ` valid; `⊤ + ⊥` would break it. -/
 theorem theorem_19_4 {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁) (h₂ : PolyhedralFn f₂)
-    (hp₁ : Proper f₁) (hp₂ : Proper f₂) : PolyhedralFn (f₁ + f₂) :=
+    (hp₁ : ProperConvex f₁) (hp₂ : ProperConvex f₂) : PolyhedralFn (f₁ + f₂) :=
   h₁.add h₂ hp₁.ne_bot hp₂.ne_bot
 
 /-! ### The normal form `f = h + δ(· | C)` -/
@@ -396,13 +396,13 @@ theorem theorem_19_5_generators {C : Set (Rn n)} {P D : Finset (Rn n)}
 
 /-- **Corollary 19.5.1**. For `f` a proper polyhedral convex function, `fλ` is polyhedral for
 `λ ≥ 0` and for `λ = 0⁺`, the `λ ≥ 0⁺` convention being §9's `ExtCoeff.smulFn`. -/
-theorem corollary_19_5_1 {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : Proper f)
+theorem corollary_19_5_1 {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : ProperConvex f)
     {l : ExtCoeff} (hl : l.Nonneg) : PolyhedralFn (l.smulFn f) := by
   cases l with
   | ofReal t =>
     rw [ExtCoeff.smulFn_ofReal]
     rcases eq_or_lt_of_le (hl : (0 : ℝ) ≤ t) with ht | ht
-    · rw [← ht, smulRight_zero hp.dom_nonempty]
+    · rw [← ht, smulRight_zero hp.convexDom_nonempty]
       exact polyhedralFn_indicatorFn polyhedral_zero
     · change Polyhedral (epi (smulRight f t))
       rw [epi_smulRight ht]
@@ -411,7 +411,7 @@ theorem corollary_19_5_1 {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : Proper
     change Polyhedral (epi (recessionFn f))
     rw [epi_recessionFn]
     exact (hf.polyhedralCone_recessionCone
-      ((epi_nonempty_iff f).2 hp.dom_nonempty)).polyhedral
+      ((epi_nonempty_iff f).2 hp.convexDom_nonempty)).polyhedral
 
 /-! ### Theorems 19.6 and 19.7 -/
 

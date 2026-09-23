@@ -134,15 +134,15 @@ theorem theorem_15_1_isGauge {k : Rn n → EReal} (hk : IsGauge k) :
 
 /-- **Theorem 15.1**, first assertion: the polar of a gauge is *closed*. -/
 theorem theorem_15_1_closedFn {k : Rn n → EReal} (hk : IsGauge k) :
-    ClosedFn (polarGauge (pairing n) k) :=
-  closedFn_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
+    ClosedConvex (polarGauge (pairing n) k) :=
+  closedConvex_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
 
 /-- **Theorem 15.1**, second assertion: `k°° = cl k`.
 
 The backbone derives this from Theorem 15.4 rather than by Rockafellar's route through Theorem 14.5
 and the unit level set. -/
 theorem theorem_15_1_polar_polar {k : Rn n → EReal} (hk : IsGauge k) :
-    polarGauge (pairing n) (polarGauge (pairing n) k) = clFn k := by
+    polarGauge (pairing n) (polarGauge (pairing n) k) = convexCl k := by
   have h := polarGauge_polarGauge (B := pairing n) hk
   rwa [flip_pairing] at h
 
@@ -153,14 +153,14 @@ the closed convex sets containing the origin and the closed gauges; Corollary 15
 over this class. -/
 noncomputable def corollary_15_1_1_gaugeEquiv (n : ℕ) :
     {C : Set (Rn n) // Convex ℝ C ∧ IsClosed C ∧ (0 : Rn n) ∈ C} ≃
-      {k : Rn n → EReal // IsGauge k ∧ ClosedFn k} :=
+      {k : Rn n → EReal // IsGauge k ∧ ClosedConvex k} :=
   gaugeEquiv (Rn n)
 
 /-- **Corollary 15.1.1**, first assertion: `k ↦ k°` induces a one-to-one symmetric
 correspondence in the class of all closed gauges on `ℝⁿ`. -/
 noncomputable def corollary_15_1_1 (n : ℕ) :
-    {k : Rn n → EReal // IsGauge k ∧ ClosedFn k} ≃
-      {j : Rn n → EReal // IsGauge j ∧ ClosedFn j} :=
+    {k : Rn n → EReal // IsGauge k ∧ ClosedConvex k} ≃
+      {j : Rn n → EReal // IsGauge j ∧ ClosedConvex j} :=
   polarGaugeEquiv (pairing n)
 
 /-- **Corollary 15.1.1**, second assertion: two closed convex sets containing the
@@ -188,14 +188,14 @@ theorem corollary_15_1_2_symm {C : Set (Rn n)} (hC : Convex ℝ C) (h0 : (0 : Rn
     (hcl : IsClosed C) :
     polarGauge (pairing n) (supportFn (pairing n) C) = gaugeFn C := by
   rw [← corollary_15_1_2 hC h0, theorem_15_1_polar_polar (isGauge_gaugeFn hC ⟨0, h0⟩)]
-  exact closedFn_gaugeFn hC h0 hcl
+  exact closedConvex_gaugeFn hC h0 hcl
 
 /-! ### The polar-pair inequality -/
 
 /-- **Rockafellar §15, p. 129**: gauges polar to each other satisfy `⟨x, x*⟩ ≤ k(x) k°(x*)` for
 every `x ∈ dom k` and `x* ∈ dom k°`. The two values are named as reals because the right-hand side
 is a product of reals. -/
-theorem pairing_le_mul_rn {k : Rn n → EReal} (hk : IsGauge k) (hkc : ClosedFn k) {x y : Rn n}
+theorem pairing_le_mul_rn {k : Rn n → EReal} (hk : IsGauge k) (hkc : ClosedConvex k) {x y : Rn n}
     {c d : ℝ} (hx : k x = (c : EReal)) (hy : polarGauge (pairing n) k y = (d : EReal)) :
     (inner ℝ x y : ℝ) ≤ c * d :=
   pairing_le_mul_of_gauge hk hkc hx hy
@@ -209,17 +209,17 @@ variable {k : Rn n → EReal}
 /-- **Rockafellar §15, p. 131**, the opening of the proof of Theorem 15.2: "norms, being finite
 convex functions, are continuous (Theorem 10.1)".
 
-`ConvexFn.continuous_of_dom_eq_univ` is the backbone's Corollary 10.1.1. -/
+`ConvexFn.continuous_of_convexDom_eq_univ` is the backbone's Corollary 10.1.1. -/
 theorem isNorm_continuous_rn (hk : IsNorm k) : Continuous k := by
-  refine hk.toIsGauge.convexFn.continuous_of_dom_eq_univ
+  refine hk.toIsGauge.convexFn.continuous_of_convexDom_eq_univ
     ⟨⟨0, lt_of_le_of_ne le_top (hk.ne_top 0)⟩, hk.toIsGauge.ne_bot⟩ ?_
   exact Set.eq_univ_of_forall fun x => lt_of_le_of_ne le_top (hk.ne_top x)
 
 /-- **Rockafellar §15, p. 131**: a norm on `ℝⁿ` is a closed function. The backbone declines to
 prove this in general — closedness of a norm comes from Theorem 10.1, which is
 finite-dimensional. -/
-theorem isNorm_closedFn_rn (hk : IsNorm k) : ClosedFn k :=
-  (closedFn_iff_lowerSemicontinuous hk.toIsGauge.ne_bot).2
+theorem isNorm_closedConvex_rn (hk : IsNorm k) : ClosedConvex k :=
+  (closedConvex_iff_lowerSemicontinuous hk.toIsGauge.ne_bot).2
     (isNorm_continuous_rn hk).lowerSemicontinuous
 
 /-- The unit level set of a norm on `ℝⁿ` contains the origin in its interior — Rockafellar's
@@ -238,7 +238,7 @@ theorem isNorm_isBounded_setOf_le_one_rn (hk : IsNorm k) :
     IsBounded {x : Rn n | k x ≤ 1} := by
   obtain ⟨hconv, h0, -, -, hray⟩ := hk.level_one
   refine (isBounded_iff_recessionCone_eq_zero hconv
-    (isClosed_setOf_le_one (isNorm_closedFn_rn hk)) ⟨0, h0⟩).2
+    (isClosed_setOf_le_one (isNorm_closedConvex_rn hk)) ⟨0, h0⟩).2
     (Set.Subset.antisymm (fun y hy => ?_) ?_)
   · by_contra hy0
     obtain ⟨l, hl, hlm⟩ := hray y (by simpa using hy0)
@@ -272,7 +272,7 @@ theorem theorem_15_2_setOf_le_one (hk : IsNorm k) :
     Convex ℝ {x : Rn n | k x ≤ 1} ∧ IsClosed {x : Rn n | k x ≤ 1} ∧
       IsBounded {x : Rn n | k x ≤ 1} ∧ -{x : Rn n | k x ≤ 1} = {x : Rn n | k x ≤ 1} ∧
       (0 : Rn n) ∈ interior {x : Rn n | k x ≤ 1} :=
-  ⟨hk.toIsGauge.convex_level_one, isClosed_setOf_le_one (isNorm_closedFn_rn hk),
+  ⟨hk.toIsGauge.convex_level_one, isClosed_setOf_le_one (isNorm_closedConvex_rn hk),
     isNorm_isBounded_setOf_le_one_rn hk, hk.level_one.2.2.1, isNorm_zero_mem_interior_rn hk⟩
 
 /-- **Theorem 15.2**: the correspondence, in the direction `k ↦ C ↦ γ(· | C)`. -/
@@ -352,7 +352,7 @@ theorem polarGauge_euclideanNorm (n : ℕ) :
 Euclidean norm: `⟨x, y⟩ ≤ |x| · |y|`. -/
 theorem schwarz_rn (x y : Rn n) : (inner ℝ x y : ℝ) ≤ ‖x‖ * ‖y‖ := by
   have hk := isNorm_euclideanNorm n
-  refine pairing_le_mul_rn hk.toIsGauge (isNorm_closedFn_rn hk) rfl ?_
+  refine pairing_le_mul_rn hk.toIsGauge (isNorm_closedConvex_rn hk) rfl ?_
   rw [polarGauge_euclideanNorm n]
 
 /-! ### Minkowski metrics -/
@@ -411,24 +411,24 @@ theorem theorem_15_3 {f : Rn n → EReal} :
     (ClosedProperConvexFn f ∧ IsGaugeLike f) ↔
       ∃ (g : ℝ → EReal) (k : Rn n → EReal),
         (MonotoneHalfLineFn g ∧ (∃ t : ℝ, 0 < t ∧ g 0 < g t) ∧ (∃ z : ℝ, 0 < z ∧ g z ≠ ⊤)) ∧
-        (IsGauge k ∧ ClosedFn k) ∧ f = monotoneComp g k :=
+        (IsGauge k ∧ ClosedConvex k) ∧ f = monotoneComp g k :=
   closedProperConvexFn_and_isGaugeLike_iff (pairing n)
 
 /-- **Theorem 15.3**, second assertion: `f* (x*) = g⁺(k°(x*))`, where `g⁺` is the monotone
 conjugate of `g`. -/
-theorem theorem_15_3_conj {g : ℝ → EReal} {k : Rn n → EReal} (hk : IsGauge k) (hkc : ClosedFn k)
+theorem theorem_15_3_conj {g : ℝ → EReal} {k : Rn n → EReal} (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g) (hfin : ∃ z : ℝ, 0 < z ∧ g z ≠ ⊤) :
-    conj (pairing n) (monotoneComp g k)
+    convexConj (pairing n) (monotoneComp g k)
       = monotoneComp (monotoneConj g) (polarGauge (pairing n) k) :=
-  conj_monotoneComp hk hkc hg hfin
+  convexConj_monotoneComp hk hkc hg hfin
 
 /-- **Theorem 15.3**, second assertion: "if `f` is of this type, then `f*` is
 gauge-like too". -/
 theorem theorem_15_3_isGaugeLike_conj {g : ℝ → EReal} {k : Rn n → EReal} (hk : IsGauge k)
-    (hkc : ClosedFn k) (hg : MonotoneHalfLineFn g) (hfin : ∃ z : ℝ, 0 < z ∧ g z ≠ ⊤)
+    (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g) (hfin : ∃ z : ℝ, 0 < z ∧ g z ≠ ⊤)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) :
-    IsGaugeLike (conj (pairing n) (monotoneComp g k)) :=
-  isGaugeLike_conj_monotoneComp (pairing n) hk hkc hg hfin hne
+    IsGaugeLike (convexConj (pairing n) (monotoneComp g k)) :=
+  isGaugeLike_convexConj_monotoneComp (pairing n) hk hkc hg hfin hne
 
 /-! ### Corollary 15.3.1 -/
 
@@ -437,16 +437,16 @@ homogeneous of degree `p`, `1 < p < ∞`, if and only if `f = (1/p) k^p` for a c
 book's `(1/p) k^p` is `monotoneComp (powHalfLine p) k`. -/
 theorem corollary_15_3_1 {p : ℝ} {f : Rn n → EReal} (hp : 1 < p) (hf : ClosedProperConvexFn f) :
     PosHomogeneousDeg p f ↔
-      ∃ k : Rn n → EReal, IsGauge k ∧ ClosedFn k ∧ f = monotoneComp (powHalfLine p) k :=
+      ∃ k : Rn n → EReal, IsGauge k ∧ ClosedConvex k ∧ f = monotoneComp (powHalfLine p) k :=
   posHomogeneousDeg_iff_exists_isGauge hp hf.convex hf.closed hf.proper
 
 /-- **Corollary 15.3.1**, second assertion: `[(1/p) k^p]* = (1/q) (k°)^q`, where
 `(1/p) + (1/q) = 1`. -/
 theorem corollary_15_3_1_conj {p q : ℝ} {k : Rn n → EReal} (hpq : p.HolderConjugate q)
-    (hk : IsGauge k) (hkc : ClosedFn k) :
-    conj (pairing n) (monotoneComp (powHalfLine p) k)
+    (hk : IsGauge k) (hkc : ClosedConvex k) :
+    convexConj (pairing n) (monotoneComp (powHalfLine p) k)
       = monotoneComp (powHalfLine q) (polarGauge (pairing n) k) :=
-  conj_monotoneComp_powHalfLine hpq hk hkc
+  convexConj_monotoneComp_powHalfLine hpq hk hkc
 
 /-! ### Corollary 15.3.2 -/
 
@@ -456,26 +456,26 @@ variable {p q : ℝ} {f : Rn n → EReal}
 
 /-- **Corollary 15.3.2**, first assertion: `(pf)^{1/p}` is a closed gauge. -/
 theorem corollary_15_3_2_isGauge (hp : 1 < p) (hf : ClosedProperConvexFn f)
-    (hph : PosHomogeneousDeg p f) : IsGauge (degGauge p f) ∧ ClosedFn (degGauge p f) := by
+    (hph : PosHomogeneousDeg p f) : IsGauge (degGauge p f) ∧ ClosedConvex (degGauge p f) := by
   have hp0 : (0 : ℝ) < p := lt_trans zero_lt_one hp
   have h0 : f 0 = 0 :=
     PosHomogeneousDeg.map_zero_eq_zero hp0 hf.closed hf.proper hph
   have hnn : ∀ z, 0 ≤ f z :=
     PosHomogeneousDeg.nonneg hp hf.convex hf.proper.ne_bot hph h0
   exact ⟨isGauge_degGauge hp0 hf.convex hnn hph h0,
-    closedFn_degGauge hp0 hf.convex hf.closed hnn hph h0⟩
+    closedConvex_degGauge hp0 hf.convex hf.closed hnn hph h0⟩
 
 /-- **Corollary 15.3.2**: the polar of the closed gauge `(pf)^{1/p}` is `(qf*)^{1/q}`. -/
 theorem corollary_15_3_2 (hpq : p.HolderConjugate q) (hf : ClosedProperConvexFn f)
     (hph : PosHomogeneousDeg p f) :
-    polarGauge (pairing n) (degGauge p f) = degGauge q (conj (pairing n) f) :=
+    polarGauge (pairing n) (degGauge p f) = degGauge q (convexConj (pairing n) f) :=
   polarGauge_degGauge hpq hf.convex hf.closed hf.proper hph
 
 /-- **Corollary 15.3.2**, the Hölder-type inequality
 `⟨x, x*⟩ ≤ [p f(x)]^{1/p} [q f*(x*)]^{1/q}` on `dom f × dom f*`. -/
 theorem corollary_15_3_2_inequality (hpq : p.HolderConjugate q) (hf : ClosedProperConvexFn f)
     (hph : PosHomogeneousDeg p f) {x y : Rn n} {a b : ℝ} (hx : f x = (a : EReal))
-    (hy : conj (pairing n) f y = (b : EReal)) :
+    (hy : convexConj (pairing n) f y = (b : EReal)) :
     (inner ℝ x y : ℝ) ≤ (p * a) ^ p⁻¹ * (q * b) ^ q⁻¹ :=
   pairing_le_rpow_mul_rpow hpq hf.convex hf.closed hf.proper hph hx hy
 
@@ -484,7 +484,7 @@ theorem corollary_15_3_2_inequality (hpq : p.HolderConjugate q) (hf : ClosedProp
 theorem corollary_15_3_2_polarSet (hpq : p.HolderConjugate q) (hf : ClosedProperConvexFn f)
     (hph : PosHomogeneousDeg p f) :
     polarSet (pairing n) {x : Rn n | f x ≤ ((p⁻¹ : ℝ) : EReal)}
-      = {y : Rn n | conj (pairing n) f y ≤ ((q⁻¹ : ℝ) : EReal)} :=
+      = {y : Rn n | convexConj (pairing n) f y ≤ ((q⁻¹ : ℝ) : EReal)} :=
   polarSet_setOf_le_inv hpq hf.convex hf.closed hf.proper hph
 
 end Cor1532
@@ -510,15 +510,15 @@ theorem theorem_15_4_convexFn (hnn : ∀ x, 0 ≤ f x) : ConvexFn (polarFn (pair
 
 /-- **Theorem 15.4**: `f°` is closed. -/
 theorem theorem_15_4_closedFn (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 = 0) :
-    ClosedFn (polarFn (pairing n) f) :=
-  closedFn_polarFn hnn h0.le
+    ClosedConvex (polarFn (pairing n) f) :=
+  closedConvex_polarFn hnn h0.le
 
 /-- **Theorem 15.4**, second assertion: `f°° = cl f`.
 
 Note that `f` is *not* assumed closed: this is the statement that makes `f ↦ f°` an involution on
 the closed members of the class. -/
 theorem theorem_15_4_polar_polar (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 = 0) :
-    polarFn (pairing n) (polarFn (pairing n) f) = clFn f := by
+    polarFn (pairing n) (polarFn (pairing n) f) = convexCl f := by
   have h := polarFn_polarFn (B := pairing n) hconv hnn h0.le
   rwa [flip_pairing] at h
 
@@ -549,29 +549,30 @@ theorem theorem_15_5_obverse_obverse (h : IsPolarFn f) : obverse (obverse f) = f
 
 /-- **Theorem 15.5**: `f° = g*`, where `g` is the obverse of `f`. -/
 theorem theorem_15_5_polarFn_eq_conj_obverse (h : IsPolarFn f) :
-    conj (pairing n) (obverse f) = polarFn (pairing n) f :=
-  conj_obverse h
+    convexConj (pairing n) (obverse f) = polarFn (pairing n) f :=
+  convexConj_obverse h
 
 /-- **Theorem 15.5**: `f* = g°`, where `g` is the obverse of `f`. -/
 theorem theorem_15_5_conj_eq_polarFn_obverse (h : IsPolarFn f) :
-    polarFn (pairing n) (obverse f) = conj (pairing n) f :=
+    polarFn (pairing n) (obverse f) = convexConj (pairing n) f :=
   polarFn_obverse h
 
 /-- **Theorem 15.5**, last assertion: `f*` is the obverse of `f°`. -/
 theorem theorem_15_5_conj_eq_obverse_polarFn (h : IsPolarFn f) :
-    conj (pairing n) f = obverse (polarFn (pairing n) f) :=
-  conj_eq_obverse_polarFn h
+    convexConj (pairing n) f = obverse (polarFn (pairing n) f) :=
+  convexConj_eq_obverse_polarFn h
 
 /-- **Theorem 15.5**, last assertion: `f°` is the obverse of `f*`. -/
 theorem theorem_15_5_polarFn_eq_obverse_conj (h : IsPolarFn f) :
-    polarFn (pairing n) f = obverse (conj (pairing n) f) :=
-  polarFn_eq_obverse_conj h
+    polarFn (pairing n) f = obverse (convexConj (pairing n) f) :=
+  polarFn_eq_obverse_convexConj h
 
 /-- **Corollary 15.5.1**: `f*° = f°*` for a nonnegative closed convex function `f`
 vanishing at the origin. -/
 theorem corollary_15_5_1 (h : IsPolarFn f) :
-    polarFn (pairing n) (conj (pairing n) f) = conj (pairing n) (polarFn (pairing n) f) := by
-  have hp := polarFn_conj_eq_conj_polarFn (B := pairing n) h
+    polarFn (pairing n) (convexConj (pairing n) f)
+        = convexConj (pairing n) (polarFn (pairing n) f) := by
+  have hp := polarFn_convexConj_eq_convexConj_polarFn (B := pairing n) h
   rwa [flip_pairing] at hp
 
 /-! ### The level sets at the end of §15 -/
@@ -587,7 +588,7 @@ theorem setOf_obverse_le_rn (h : IsPolarFn f) {alpha : ℝ} (ha : 0 < alpha) :
 This set is the middle set of the inclusions of Theorem 14.7. -/
 theorem setOf_polarFn_le_rn (h : IsPolarFn f) {alpha : ℝ} (ha : 0 < alpha) :
     {y : Rn n | polarFn (pairing n) f y ≤ ((alpha⁻¹ : ℝ) : EReal)}
-      = alpha⁻¹ • {y : Rn n | conj (pairing n) f y ≤ (alpha : EReal)} :=
+      = alpha⁻¹ • {y : Rn n | convexConj (pairing n) f y ≤ (alpha : EReal)} :=
   setOf_polarFn_le h ha
 
 end Thm155

@@ -13,16 +13,22 @@ id = 'mem_subdifferential_of_combo'
 id = 'le_combo_of_mem_subdifferential'
 
 [[node]]
-id = 'mem_subdifferential_conj_innerL_iff'
+id = 'essentiallyStrictlyConvex_iff_pairwise_disjoint'
 
 [[node]]
-id = 'pairwise_disjoint_subdifferential_conj_iff'
+id = 'mem_subdifferential_convexConj_innerL_iff'
 
 [[node]]
-id = 'essentiallySmooth_conj_iff_essentiallyStrictlyConvex'
+id = 'subsingleton_subdifferential_convexConj_iff'
 
 [[node]]
-id = 'essentiallyStrictlyConvex_conj_iff_essentiallySmooth'
+id = 'pairwise_disjoint_subdifferential_convexConj_iff'
+
+[[node]]
+id = 'essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex'
+
+[[node]]
+id = 'essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth'
 
 [[node]]
 id = 'subdifferential_injective_iff'

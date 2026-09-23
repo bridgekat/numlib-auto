@@ -8,6 +8,10 @@ id = 'polarSet'
 
 [[node]]
 id = 'polarSet_union'
+desc = 'The polar set of a union is the intersection of the polar sets.'
+
+[[node]]
+id = 'polarCone_union'
 desc = 'The polar of a union is the intersection of the polars.'
 
 [[node]]
@@ -35,7 +39,7 @@ id = 'polarSet_smul'
 id = 'polarCone_add'
 
 [[node]]
-id = 'conj_indicatorFn_eq_indicatorFn_polarCone'
+id = 'convexConj_indicatorFn_eq_indicatorFn_polarCone'
 
 [[node]]
 id = 'polarCone_eq_setOf_supportFn_le_zero'
@@ -44,7 +48,14 @@ id = 'polarCone_eq_setOf_supportFn_le_zero'
 id = 'isClosed_polarCone'
 
 [[node]]
+id = 'isClosed_polarSet'
+desc = 'The polar set is closed when the pairing is continuous in its second argument.'
+
+[[node]]
 id = 'polarSet_closure'
+
+[[node]]
+id = 'polarCone_closure'
 
 [[node]]
 id = 'polarCone_polarCone'
@@ -65,7 +76,7 @@ id = 'polarSubmodule'
 id = 'polarCone_hull_range'
 
 [[node]]
-id = 'conj_partialAffineFn'
+id = 'convexConj_partialAffineFn'
 
 [[node]]
 id = 'polarCone_setOf_forall_le_zero'

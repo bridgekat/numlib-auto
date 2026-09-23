@@ -27,8 +27,8 @@ convex set `F` in `ℝⁿ⁺¹`" means when Theorem 5.3 goes on to write `(x, μ
   construction the rest of the section is phrased through.
 * `theorem_5_4`, `convexFn_infimalConvolution` — the infimal convolute of proper convex functions
   is convex, and `□` needs no properness in the epigraph form.
-* `infimalConvolution_apply`, `dom_infimalConvolution`, `infimalConvolution_isCommMonoid` — the
-  classical formula `(f □ g) x = infᵧ {f (x - y) + g y}`, the effective domain `dom f + dom g`,
+* `infimalConvolution_apply`, `convexDom_infimalConvolution`, `infimalConvolution_isCommMonoid` —
+  the classical formula `(f □ g) x = infᵧ {f (x - y) + g y}`, the effective domain `dom f + dom g`,
   and commutativity and associativity with `δ(· | 0)` as identity.
 * `convexFn_leftSMul`, `convexFn_rightSMul`, `rightSMul_apply_pos`, `rightSMul_zero`,
   `rightSMul_zero_of_top`, `posHomogeneous_iff_rightSMul_eq` — the two scalar multiplications of
@@ -49,7 +49,7 @@ convex set `F` in `ℝⁿ⁺¹`" means when Theorem 5.3 goes on to write `(x, μ
 ## Two traps
 
 **Properness is not preserved by `□`.** No declaration here concludes properness of an infimal
-convolute, and `exists_not_proper_infimalConvolution` is the witness: `f x = ⟨v, x⟩` and
+convolute, and `exists_not_properConvex_infimalConvolution` is the witness: `f x = ⟨v, x⟩` and
 `g x = -⟨v, x⟩` are proper convex with `f □ g ≡ -∞`. That is also why the backbone defines `□` by
 adding epigraphs rather than by the infimum formula, which would be `∞ - ∞`;
 `infimalConvolution_apply` recovers the formula under properness.
@@ -92,8 +92,8 @@ theorem theorem_5_1 {n : ℕ} {f : Rn n → EReal} {φ : ℝ → EReal} (hf : Co
 
 /-- **Theorem 5.2.** The sum of two proper convex functions is convex. Properness is there only
 to avoid `∞ - ∞`, and only its `≠ -∞` half is used. -/
-theorem theorem_5_2 {n : ℕ} {f₁ f₂ : Rn n → EReal} (h₁ : ConvexFn f₁) (hp₁ : Proper f₁)
-    (h₂ : ConvexFn f₂) (hp₂ : Proper f₂) : ConvexFn (f₁ + f₂) :=
+theorem theorem_5_2 {n : ℕ} {f₁ f₂ : Rn n → EReal} (h₁ : ConvexFn f₁) (hp₁ : ProperConvex f₁)
+    (h₂ : ConvexFn f₂) (hp₂ : ProperConvex f₂) : ConvexFn (f₁ + f₂) :=
   h₁.add h₂ hp₁.ne_bot hp₂.ne_bot
 
 /-! ### Theorem 5.3 -/
@@ -128,7 +128,7 @@ noncomputable def sumLin (n m : ℕ) : (Fin m → Rn n) →ₗ[ℝ] Rn n :=
 `f x = inf {f₁x₁ + ⋯ + fₘxₘ | x₁ + ⋯ + xₘ = x}` is convex. Properness is used only through its
 `≠ -∞` half, which is what makes the sum unambiguous. -/
 theorem theorem_5_4 {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) :
+    (hp : ∀ i, ProperConvex (f i)) :
     ConvexFn fun x => ⨅ p ∈ {p : Fin m → Rn n | ∑ i, p i = x}, ∑ i, f i (p i) := by
   have hsep : ConvexFn fun p : Fin m → Rn n => ∑ i, f i (p i) :=
     ConvexFn.sum (s := (Finset.univ : Finset (Fin m)))
@@ -159,15 +159,16 @@ theorem convexFn_infimalConvolution {n : ℕ} {f g : Rn n → EReal} (hf : Conve
 formula for integral convolution. Properness is what makes the right-hand side unambiguous; `□`
 is *defined* through epigraph addition, as in the book, because this infimum produces the
 forbidden `∞ - ∞` when one function reaches `-∞`. -/
-theorem infimalConvolution_apply {n : ℕ} {f g : Rn n → EReal} (hf : Proper f) (hg : Proper g)
+theorem infimalConvolution_apply {n : ℕ} {f g : Rn n → EReal} (hf : ProperConvex f)
+    (hg : ProperConvex g)
     (x : Rn n) : (f □ g) x = ⨅ y, f (x - y) + g y :=
   infConv_apply hf.ne_bot hg.ne_bot x
 
 /-- **Rockafellar, §5.** "The effective domain of `f □ g` is the sum of `dom f` and `dom g`." It
 needs no hypothesis at all. -/
-theorem dom_infimalConvolution {n : ℕ} (f g : Rn n → EReal) :
-    dom (f □ g) = dom f + dom g :=
-  dom_infConv f g
+theorem convexDom_infimalConvolution {n : ℕ} (f g : Rn n → EReal) :
+    convexDom (f □ g) = convexDom f + convexDom g :=
+  convexDom_infConv f g
 
 /-- **Rockafellar, §5.** "`f □ δ(· | a)` is the function whose graph is obtained by translating
 the graph of `f` horizontally by `a`." -/
@@ -186,8 +187,9 @@ theorem infimalConvolution_isCommMonoid {n : ℕ} :
 /-- **Properness is not preserved by `□`.** For `v ≠ 0` the pair `f x = ⟨v, x⟩`, `g x = -⟨v, x⟩`
 is finite, hence proper, and convex, while `(f □ g) x = -∞` everywhere. This is why no result of
 §5 concludes properness of an infimal convolute. -/
-theorem exists_not_proper_infimalConvolution {n : ℕ} {v : Rn n} (hv : v ≠ 0) :
-    ∃ f g : Rn n → EReal, ConvexFn f ∧ Proper f ∧ ConvexFn g ∧ Proper g ∧ ¬ Proper (f □ g) := by
+theorem exists_not_properConvex_infimalConvolution {n : ℕ} {v : Rn n} (hv : v ≠ 0) :
+    ∃ f g : Rn n → EReal,
+        ConvexFn f ∧ ProperConvex f ∧ ConvexFn g ∧ ProperConvex g ∧ ¬ ProperConvex (f □ g) := by
   have hsurj : Function.Surjective (pairing n v) := by
     refine LinearMap.surjective_of_ne_zero ?_
     intro hzero
@@ -215,7 +217,7 @@ Theorem 5.3 with `F = λ (epi f)`. -/
 obeys the book's `0 · ∞ = 0`, so `λ = 0` is not a special case. -/
 theorem convexFn_leftSMul {n : ℕ} {f : Rn n → EReal} (l : ℝ) (hl : 0 ≤ l) (hf : ConvexFn f) :
     ConvexFn fun x => (l : EReal) * f x :=
-  hf.smul l hl
+  convexFn_coe_mul hl hf
 
 /-- **Rockafellar, §5.** Right scalar multiplication preserves convexity: `fλ` is Theorem 5.3
 applied to the convex set `λ (epi f)`. -/
@@ -231,7 +233,7 @@ theorem rightSMul_apply_pos {n : ℕ} {l : ℝ} (hl : 0 < l) (f : Rn n → EReal
 
 /-- Right scalar multiplication at zero: `(f0) x = δ(x | 0)` provided `f ≢ +∞`. The side
 condition is the book's own and is not decoration; see `rightSMul_zero_of_top`. -/
-theorem rightSMul_zero {n : ℕ} {f : Rn n → EReal} (hf : (dom f).Nonempty) :
+theorem rightSMul_zero {n : ℕ} {f : Rn n → EReal} (hf : (convexDom f).Nonempty) :
     smulRight f 0 = indicatorFn ({0} : Set (Rn n)) :=
   smulRight_zero hf
 
@@ -325,7 +327,7 @@ theorem isGreatest_convCollection {n : ℕ} {ι : Sort*} (f : ι → Rn n → ER
 with finitely many non-zero coefficients (carried by the `Finset`). The function-level analogue of
 Theorem 2.3. -/
 theorem theorem_5_6 {n : ℕ} {ι : Type*} {f : ι → Rn n → EReal} (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) (x : Rn n) :
+    (hp : ∀ i, ProperConvex (f i)) (x : Rn n) :
     convFn f x = sInf {z : EReal | ∃ (t : Finset ι) (w : ι → ℝ) (p : ι → Rn n),
       (∀ i ∈ t, 0 ≤ w i) ∧ ∑ i ∈ t, w i = 1 ∧ ∑ i ∈ t, w i • p i = x ∧
         z = ∑ i ∈ t, (w i : EReal) * f i (p i)} :=
@@ -410,7 +412,7 @@ theorem theorem_5_8_f {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, Co
 `μ`". Not the formula for `conv {f₁, …, fₘ}` after Theorem 5.6, which has `f₁λ₁ □ ⋯ □ fₘλₘ` in
 place of the pointwise sum. -/
 theorem theorem_5_8_g {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) :
+    (hp : ∀ i, ProperConvex (f i)) :
     ConvexFn fun x => ⨅ l ∈ {l : Fin m → ℝ | (∀ i, 0 ≤ l i) ∧ ∑ i, l i = 1},
       ∑ i, smulRight (f i) (l i) x := by
   have hPsi : ConvexFn fun q : (Fin m → ℝ) × Rn n => ∑ i, hom (f i) (q.1 i, q.2) :=
@@ -498,7 +500,7 @@ noncomputable def coordPairLin (n m : ℕ) (i : Fin m) :
 `k x = inf {max {λ₁f₁x₁, …, λₘfₘxₘ}}` over all convex representations `x = λ₁x₁ + ⋯ + λₘxₘ` is
 convex, the book's "adding in `λ` and `x`". -/
 theorem theorem_5_8_k {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, ConvexFn (f i))
-    (hp : ∀ i, Proper (f i)) :
+    (hp : ∀ i, ProperConvex (f i)) :
     ConvexFn fun x => ⨅ lp ∈ {lp : (Fin m → ℝ) × (Fin m → Rn n) |
         (∀ i, 0 ≤ lp.1 i) ∧ ∑ i, lp.1 i = 1 ∧ ∑ i, lp.1 i • lp.2 i = x},
       ⨆ i, (lp.1 i : EReal) * f i (lp.2 i) := by
@@ -516,7 +518,7 @@ theorem theorem_5_8_k {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, Co
     refine le_antisymm (le_iInf₂ fun lp hlp => ?_) (le_mapLin fun q hq => ?_)
     · refine (mapLin_le (x := (lp.1, fun i => lp.1 i • lp.2 i)) ?_).trans_eq ?_
       · rw [sumPairLin_apply, hlp.2.1, hlp.2.2]
-      · exact iSup_congr fun i => hom_apply_smul (hp i).dom_nonempty (hlp.1 i) (lp.2 i)
+      · exact iSup_congr fun i => hom_apply_smul (hp i).convexDom_nonempty (hlp.1 i) (lp.2 i)
     · obtain ⟨l, y⟩ := q
       rw [sumPairLin_apply, Prod.mk.injEq] at hq
       obtain ⟨hq₁, hq₂⟩ := hq
@@ -531,7 +533,7 @@ theorem theorem_5_8_k {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, Co
           · refine iSup_congr fun i => ?_
             calc (l i : EReal) * f i ((l i)⁻¹ • y i)
                 = hom (f i) (l i, l i • (l i)⁻¹ • y i) :=
-                  (hom_apply_smul (hp i).dom_nonempty (hpos i) ((l i)⁻¹ • y i)).symm
+                  (hom_apply_smul (hp i).convexDom_nonempty (hpos i) ((l i)⁻¹ • y i)).symm
               _ = hom (f i) (l i, y i) := by rw [hsmul i]
           · change (∑ i, l i • (l i)⁻¹ • y i) = x
             simp_rw [hsmul]
@@ -542,7 +544,7 @@ theorem theorem_5_8_k {n m : ℕ} {f : Fin m → Rn n → EReal} (hf : ∀ i, Co
             exact hj fun h0 => absurd h0 hc
           have hjy : y j ≠ 0 := fun h0 => hj fun _ => h0
           have hjtop : hom (f j) (l j, y j) = ⊤ := by
-            rw [hj0, hom_apply_zero, smulRight_zero (hp j).dom_nonempty,
+            rw [hj0, hom_apply_zero, smulRight_zero (hp j).convexDom_nonempty,
               indicatorFn_of_notMem (by simpa using hjy)]
           have htop : (⨆ i, hom (f i) (l i, y i)) = ⊤ :=
             top_le_iff.1 (le_iSup_of_le j hjtop.ge)

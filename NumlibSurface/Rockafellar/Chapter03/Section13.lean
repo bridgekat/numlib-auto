@@ -29,7 +29,7 @@ translate-and-scale form.
 * **The support function** `δ*(x* | C) = sup {⟨x, x*⟩ | x ∈ C}` is the backbone's `supportFn`;
   `supportFn_apply_rn` records that it is the book's formula verbatim.
 * **The barrier cone** of `C` is `dom δ*(· | C)`, recorded as `barrierCone`, with the bridge
-  `barrierCone_eq_dom_supportFn` and the unfolded form `mem_barrierCone_iff`.
+  `barrierCone_eq_convexDom_supportFn` and the unfolded form `mem_barrierCone_iff`.
 * **Co-finite** is the backbone's `Cofinite`: closed, proper, convex, and `f0⁺ = +∞` in every
   non-zero direction — the epigraph contains no non-vertical half-line.
 * **Rank** is `rankFn f = dim (dom f) - lineality f`, defined here rather than in §8 because it
@@ -77,17 +77,17 @@ theorem supportFn_apply_rn (C : Set (Rn n)) (y : Rn n) :
 
 /-- **Rockafellar's barrier cone** (§13, p. 112): the effective domain of `δ*(· | C)`, the set of
 directions in which a linear function is bounded above on `C`. -/
-def barrierCone (C : Set (Rn n)) : Set (Rn n) := dom (supportFn (pairing n) C)
+def barrierCone (C : Set (Rn n)) : Set (Rn n) := convexDom (supportFn (pairing n) C)
 
 /-- The bridge: the barrier cone *is* `dom δ*(· | C)`. -/
-theorem barrierCone_eq_dom_supportFn (C : Set (Rn n)) :
-    barrierCone C = dom (supportFn (pairing n) C) := rfl
+theorem barrierCone_eq_convexDom_supportFn (C : Set (Rn n)) :
+    barrierCone C = convexDom (supportFn (pairing n) C) := rfl
 
 /-- The barrier cone unfolded: `x*` is a barrier direction exactly when `⟨·, x*⟩` is bounded above
 on `C`. -/
 theorem mem_barrierCone_iff (C : Set (Rn n)) (y : Rn n) :
     y ∈ barrierCone C ↔ ∃ c : ℝ, ∀ x ∈ C, inner ℝ x y ≤ c := by
-  rw [barrierCone_eq_dom_supportFn, dom_supportFn]
+  rw [barrierCone_eq_convexDom_supportFn, convexDom_supportFn]
   exact Iff.rfl
 
 /-- **Rockafellar's co-finite convex functions** (§13, p. 116): closed proper convex functions whose
@@ -102,7 +102,7 @@ theorem cofinite_iff_rn (f : Rn n → EReal) :
 `dim f` is the dimension of `dom f` and the lineality of `f` is the dimension of its lineality
 space. Defined here rather than in §8 because it needs §1's `dim`; Corollary 13.4.1 is the first
 result that uses it. -/
-noncomputable def rankFn (f : Rn n → EReal) : ℤ := dim (dom f) - (linealityFn f : ℤ)
+noncomputable def rankFn (f : Rn n → EReal) : ℤ := dim (convexDom f) - (linealityFn f : ℤ)
 
 /-! ### Properness of the conjugate
 
@@ -219,14 +219,14 @@ theorem corollary_13_1_1 {C₁ C₂ : Set (Rn n)} (h₁ : Convex ℝ C₁) (h₂
 /-- **Theorem 13.2**, first assertion, one direction: the support function of a set is
 the conjugate of its indicator function. -/
 theorem theorem_13_2_conj_indicator (C : Set (Rn n)) :
-    conj (pairing n) (indicatorFn C) = supportFn (pairing n) C :=
-  (supportFn_eq_conj_indicatorFn (pairing n) C).symm
+    convexConj (pairing n) (indicatorFn C) = supportFn (pairing n) C :=
+  (supportFn_eq_convexConj_indicatorFn (pairing n) C).symm
 
 /-- **Theorem 13.2**, first assertion: the indicator function and the support function
 of a closed convex set are conjugate to each other. -/
 theorem theorem_13_2_conj {C : Set (Rn n)} (hC : Convex ℝ C) (hCcl : IsClosed C) :
-    conj (pairing n) (supportFn (pairing n) C) = indicatorFn C := by
-  have h := conj_supportFn (B := pairing n) hC hCcl
+    convexConj (pairing n) (supportFn (pairing n) C) = indicatorFn C := by
+  have h := convexConj_supportFn (B := pairing n) hC hCcl
   rwa [flip_pairing] at h
 
 /-- **Theorem 13.2**, second assertion: the functions which are the support functions
@@ -262,9 +262,9 @@ The improper case is included: if `f` takes `-∞` then `cl f ≡ -∞`, `C` is 
 `δ*(· | ∅)`. -/
 theorem corollary_13_2_1 {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : ConvexFn f)
     (hne : ∃ x, f x ≠ ⊤) :
-    clFn f =
+    convexCl f =
       supportFn (pairing n) {y : Rn n | ∀ x : Rn n, ((inner ℝ x y : ℝ) : EReal) ≤ f x} := by
-  have h := clFn_eq_supportFn_of_posHomogeneous (B := pairing n) hf hconv hne
+  have h := convexCl_eq_supportFn_of_posHomogeneous (B := pairing n) hf hconv hne
   rwa [flip_pairing] at h
 
 /-- **Corollary 13.2.2.** The support functions of the non-empty bounded convex sets
@@ -275,7 +275,7 @@ not redundant, a discontinuous linear functional being finite, convex and positi
 without being a support function. -/
 theorem corollary_13_2_2 (g : Rn n → EReal) :
     (∃ C : Set (Rn n), C.Nonempty ∧ Bornology.IsBounded C ∧ g = supportFn (pairing n) C) ↔
-      ((∀ y, g y ≠ ⊥) ∧ (∀ y, g y ≠ ⊤) ∧ ConvexFn g ∧ ClosedFn g ∧ PosHomogeneous g) := by
+      ((∀ y, g y ≠ ⊥) ∧ (∀ y, g y ≠ ⊤) ∧ ConvexFn g ∧ ClosedConvex g ∧ PosHomogeneous g) := by
   rw [← exists_supportFn_finite_iff (B := pairing n) (g := g)]
   exact exists_congr fun C => and_congr_right fun _ =>
     and_congr_left fun _ => isBounded_iff_forall_bddAbove
@@ -284,16 +284,16 @@ theorem corollary_13_2_2 (g : Rn n → EReal) :
 
 /-- **Theorem 13.3**, first assertion. Let `f` be a proper convex function. The support function of
 `dom f` is the recession function `f*0⁺` of `f*`. The extra properness hypothesis the backbone
-carries is discharged here by `proper_conj_of_proper`. -/
-theorem theorem_13_3 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
-    supportFn (pairing n) (dom f) = recessionFn (conj (pairing n) f) :=
-  (recessionFn_conj hp (proper_conj_of_proper hf hp)).symm
+carries is discharged here by `properConvex_convexConj_of_properConvex`. -/
+theorem theorem_13_3 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) :
+    supportFn (pairing n) (convexDom f) = recessionFn (convexConj (pairing n) f) :=
+  (recessionFn_convexConj hp (properConvex_convexConj_of_properConvex hf hp)).symm
 
 /-- **Theorem 13.3**, second assertion. If `f` is closed, the support function of
 `dom f*` is the recession function `f0⁺` of `f`. -/
 theorem theorem_13_3_dual {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    supportFn (pairing n) (dom (conj (pairing n) f)) = recessionFn f := by
-  have h := recessionFn_eq_supportFn_dom_conj (B := pairing n) hf
+    supportFn (pairing n) (convexDom (convexConj (pairing n) f)) = recessionFn f := by
+  have h := recessionFn_eq_supportFn_convexDom_convexConj (B := pairing n) hf
   rw [flip_pairing] at h
   exact h.symm
 
@@ -301,8 +301,8 @@ theorem theorem_13_3_dual {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
 `f*` be finite everywhere, so that `dom f* = ℝⁿ`, it is necessary and sufficient that `f` be
 co-finite. -/
 theorem corollary_13_3_1 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    dom (conj (pairing n) f) = univ ↔ Cofinite f :=
-  (cofinite_iff_dom_conj_eq_univ hf).symm
+    convexDom (convexConj (pairing n) f) = univ ↔ Cofinite f :=
+  (cofinite_iff_convexDom_convexConj_eq_univ hf).symm
 
 /-! ### Corollary 13.3.2
 
@@ -320,8 +320,9 @@ theorem affine_iff_forall_reversible {C : Set (Rn n)} (hC : Convex ℝ C) (hne :
   · intro haff y hy
     refine (neg_supportFn_neg_eq_iff (B := pairing n) hne y).2 ?_
     obtain ⟨x₀, hx₀⟩ := hne
-    have hmemdom : y ∈ dom (supportFn (pairing n) C) := mem_dom.2 (lt_top_iff_ne_top.2 hy)
-    rw [dom_supportFn] at hmemdom
+    have hmemdom : y ∈ convexDom (supportFn (pairing n) C) :=
+        mem_convexDom.2 (lt_top_iff_ne_top.2 hy)
+    rw [convexDom_supportFn] at hmemdom
     obtain ⟨c, hc⟩ := hmemdom
     refine ⟨inner ℝ x₀ y, fun x hx => ?_⟩
     by_contra hne'
@@ -367,10 +368,13 @@ affine set, it is necessary and sufficient that `(f0⁺)(y) = +∞` for every `y
 in the lineality space of `f`. The step the book leaves as an exercise is
 `affine_iff_forall_reversible` above. -/
 theorem corollary_13_3_2 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    (affineSpan ℝ (dom (conj (pairing n) f)) : Set (Rn n)) = dom (conj (pairing n) f) ↔
+    (affineSpan ℝ (convexDom (convexConj (pairing n) f)) : Set (Rn n))
+        = convexDom (convexConj (pairing n) f) ↔
       ∀ y : Rn n, y ∉ linealitySpaceFn f → recessionFn f y = ⊤ := by
-  have hconv : Convex ℝ (dom (conj (pairing n) f)) := (convexFn_conj (pairing n) f).convex_dom
-  have hne : (dom (conj (pairing n) f)).Nonempty := (proper_conj hf).dom_nonempty
+  have hconv : Convex ℝ (convexDom (convexConj (pairing n) f)) :=
+      (convexFn_convexConj (pairing n) f).convex_convexDom
+  have hne : (convexDom (convexConj (pairing n) f)).Nonempty :=
+      (properConvex_convexConj hf).convexDom_nonempty
   rw [affine_iff_forall_reversible hconv hne, theorem_13_3_dual hf]
   constructor
   · intro h y hy
@@ -389,16 +393,16 @@ of radius `α`. This is what "the smallest such `α` is `sup {|x*| : x* ∈ dom 
 theorem corollary_13_3_3_least {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {α : ℝ}
     (hα : 0 ≤ α) :
     (∀ x z : Rn n, f z ≤ f x + ((α * ‖z - x‖ : ℝ) : EReal)) ↔
-      dom (conj (pairing n) f) ⊆ Metric.closedBall (0 : Rn n) α := by
+      convexDom (convexConj (pairing n) f) ⊆ Metric.closedBall (0 : Rn n) α := by
   have hball : supportFn (pairing n) (Metric.closedBall (0 : Rn n) α) =
       fun y => ((α * ‖y‖ : ℝ) : EReal) := funext fun y => supportFn_closedBall hα y
   constructor
   · intro hlip
     have hle : recessionFn f ≤ fun y => ((α * ‖y‖ : ℝ) : EReal) :=
       (recessionFn_isLeast hf.convex hf.proper).2 fun x z => hlip x z
-    have hsub : closure (dom (conj (pairing n) f)) ⊆
+    have hsub : closure (convexDom (convexConj (pairing n) f)) ⊆
         closure (Metric.closedBall (0 : Rn n) α) := by
-      refine (corollary_13_1_1 (convexFn_conj (pairing n) f).convex_dom
+      refine (corollary_13_1_1 (convexFn_convexConj (pairing n) f).convex_convexDom
         (convex_closedBall 0 α)).2 ?_
       rw [theorem_13_3_dual hf, hball]
       exact hle
@@ -408,7 +412,7 @@ theorem corollary_13_3_3_least {f : Rn n → EReal} (hf : ClosedProperConvexFn f
   · intro hsub x z
     have hle : recessionFn f ≤ fun y => ((α * ‖y‖ : ℝ) : EReal) := by
       rw [← hball, ← theorem_13_3_dual hf]
-      exact (corollary_13_1_1 (convexFn_conj (pairing n) f).convex_dom
+      exact (corollary_13_1_1 (convexFn_convexConj (pairing n) f).convex_convexDom
         (convex_closedBall 0 α)).1 (closure_mono hsub)
     exact ((recessionFn_isLeast hf.convex hf.proper).1 x z).trans
       (add_le_add le_rfl (hle (z - x)))
@@ -416,12 +420,12 @@ theorem corollary_13_3_3_least {f : Rn n → EReal} (hf : ClosedProperConvexFn f
 /-- **Corollary 13.3.3**, first assertion: `dom f*` is bounded if and only if `f`
 satisfies a global Lipschitz condition. -/
 theorem corollary_13_3_3 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    Bornology.IsBounded (dom (conj (pairing n) f)) ↔
+    Bornology.IsBounded (convexDom (convexConj (pairing n) f)) ↔
       ∃ α : ℝ, 0 ≤ α ∧ ∀ x z : Rn n, f z ≤ f x + ((α * ‖z - x‖ : ℝ) : EReal) := by
   constructor
   · intro hb
     obtain ⟨r, hr⟩ := (Metric.isBounded_iff_subset_closedBall (0 : Rn n)).1 hb
-    obtain ⟨y₀, hy₀⟩ := (proper_conj (B := pairing n) hf).dom_nonempty
+    obtain ⟨y₀, hy₀⟩ := (properConvex_convexConj (B := pairing n) hf).convexDom_nonempty
     have hr0 : 0 ≤ r := by
       have hmem := hr hy₀
       rw [Metric.mem_closedBall, dist_zero_right] at hmem
@@ -436,7 +440,7 @@ condition forces a proper `f` to be real-valued. -/
 theorem corollary_13_3_3_finite {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {α : ℝ}
     (hlip : ∀ x z : Rn n, f z ≤ f x + ((α * ‖z - x‖ : ℝ) : EReal)) (z : Rn n) :
     f z ≠ ⊤ ∧ f z ≠ ⊥ := by
-  obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
   refine ⟨?_, hf.proper.ne_bot z⟩
   obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x₀) hx₀
   have hstep := hlip x₀ z
@@ -450,35 +454,36 @@ below are stated through `f0⁺` and `⟨y, x*⟩` directly, which makes the tra
 disappear. Rockafellar's exception set in (b) is `y`-independent for this reason. -/
 
 /-- **Corollary 13.3.4(a).** `x* ∈ cl (dom f*)` if and only if `(g0⁺)(y) ≥ 0` for
-every `y`. Specialises `mem_closure_dom_conj_iff`. -/
+every `y`. Specialises `mem_closure_convexDom_convexConj_iff`. -/
 theorem corollary_13_3_4_a {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (y₀ : Rn n) :
-    y₀ ∈ closure (dom (conj (pairing n) f)) ↔
+    y₀ ∈ closure (convexDom (convexConj (pairing n) f)) ↔
       ∀ y : Rn n, ((inner ℝ y y₀ : ℝ) : EReal) ≤ recessionFn f y :=
-  mem_closure_dom_conj_iff hf y₀
+  mem_closure_convexDom_convexConj_iff hf y₀
 
 /-- **Corollary 13.3.4(b).** `x* ∈ ri (dom f*)` if and only if `(g0⁺)(y) > 0` for all
-`y` except those with `-(g0⁺)(-y) = (g0⁺)(y) = 0`. Specialises `mem_relint_dom_conj_iff`. -/
+`y` except those with `-(g0⁺)(-y) = (g0⁺)(y) = 0`. Specialises
+`mem_relint_convexDom_convexConj_iff`. -/
 theorem corollary_13_3_4_b {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (y₀ : Rn n) :
-    y₀ ∈ ri (dom (conj (pairing n) f)) ↔
+    y₀ ∈ ri (convexDom (convexConj (pairing n) f)) ↔
       (∀ y : Rn n, ((inner ℝ y y₀ : ℝ) : EReal) ≤ recessionFn f y) ∧
       ∀ y : Rn n, -recessionFn f (-y) ≠ recessionFn f y →
         ((inner ℝ y y₀ : ℝ) : EReal) < recessionFn f y :=
-  mem_relint_dom_conj_iff hf y₀
+  mem_relint_convexDom_convexConj_iff hf y₀
 
 /-- **Corollary 13.3.4(c).** `x* ∈ int (dom f*)` if and only if `(g0⁺)(y) > 0` for
-every `y ≠ 0`. Specialises `mem_interior_dom_conj_iff`. -/
+every `y ≠ 0`. Specialises `mem_interior_convexDom_convexConj_iff`. -/
 theorem corollary_13_3_4_c {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (y₀ : Rn n) :
-    y₀ ∈ interior (dom (conj (pairing n) f)) ↔
+    y₀ ∈ interior (convexDom (convexConj (pairing n) f)) ↔
       ∀ y : Rn n, y ≠ 0 → ((inner ℝ y y₀ : ℝ) : EReal) < recessionFn f y :=
-  mem_interior_dom_conj_iff hf y₀
+  mem_interior_convexDom_convexConj_iff hf y₀
 
 /-- **Corollary 13.3.4(d).** `x* ∈ aff (dom f*)` if and only if `(g0⁺)(y) = 0` for
-every `y` with `-(g0⁺)(-y) = (g0⁺)(y)`. Specialises `mem_affineSpan_dom_conj_iff`. -/
+every `y` with `-(g0⁺)(-y) = (g0⁺)(y)`. Specialises `mem_affineSpan_convexDom_convexConj_iff`. -/
 theorem corollary_13_3_4_d {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (y₀ : Rn n) :
-    y₀ ∈ affineSpan ℝ (dom (conj (pairing n) f)) ↔
+    y₀ ∈ affineSpan ℝ (convexDom (convexConj (pairing n) f)) ↔
       ∀ y : Rn n, -recessionFn f (-y) = recessionFn f y →
         ((inner ℝ y y₀ : ℝ) : EReal) = recessionFn f y :=
-  mem_affineSpan_dom_conj_iff hf y₀
+  mem_affineSpan_convexDom_convexConj_iff hf y₀
 
 /-! ### Theorem 13.4 -/
 
@@ -488,9 +493,9 @@ The lineality space of `f*` is the orthogonal complement of the subspace paralle
 
 In an inner-product space the annihilator of a subspace is its orthogonal complement, which is the
 book's phrasing, and `vectorSpan ℝ (dom f)` is the subspace parallel to `aff (dom f)`. -/
-theorem theorem_13_4 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
-    linealitySpaceFn (conj (pairing n) f) = ((vectorSpan ℝ (dom f))ᗮ : Set (Rn n)) := by
-  rw [linealitySpaceFn_conj_eq_annihilator hp (proper_conj_of_proper hf hp)]
+theorem theorem_13_4 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) :
+    linealitySpaceFn (convexConj (pairing n) f) = ((vectorSpan ℝ (convexDom f))ᗮ : Set (Rn n)) := by
+  rw [linealitySpaceFn_convexConj_eq_annihilator hp (properConvex_convexConj_of_properConvex hf hp)]
   ext y
   simp only [Set.mem_ofPred_eq, SetLike.mem_coe, Submodule.mem_orthogonal]
   exact forall₂_congr fun v _ => by rw [pairing_apply, real_inner_comm]
@@ -501,34 +506,36 @@ theorem theorem_13_4 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
 Stated in the equivalent form `lineality f = (vectorSpan (dom f*))ᗮ`; a subspace of `ℝⁿ` is its
 own double complement, so this is the book's phrasing. -/
 theorem theorem_13_4_dual {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    linealitySpaceFn f = ((vectorSpan ℝ (dom (conj (pairing n) f)))ᗮ : Set (Rn n)) := by
-  rw [linealitySpaceFn_eq_annihilator_dom_conj (B := pairing n) hf]
+    linealitySpaceFn f = ((vectorSpan ℝ (convexDom (convexConj (pairing n) f)))ᗮ : Set (Rn n)) := by
+  rw [linealitySpaceFn_eq_annihilator_convexDom_convexConj (B := pairing n) hf]
   ext x
   simp only [Set.mem_ofPred_eq, SetLike.mem_coe, Submodule.mem_orthogonal]
   exact forall₂_congr fun v _ => by rw [pairing_apply, real_inner_comm]
 
 /-- **Theorem 13.4**, first dimensionality formula:
 `lineality f* = n - dimension f`. -/
-theorem theorem_13_4_lineality {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f) :
-    (linealityFn (conj (pairing n) f) : ℤ) = (n : ℤ) - dim (dom f) := by
-  have hsub : linealitySubmoduleFn (conj (pairing n) f) = (vectorSpan ℝ (dom f))ᗮ :=
+theorem theorem_13_4_lineality {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) :
+    (linealityFn (convexConj (pairing n) f) : ℤ) = (n : ℤ) - dim (convexDom f) := by
+  have hsub : linealitySubmoduleFn (convexConj (pairing n) f) = (vectorSpan ℝ (convexDom f))ᗮ :=
     SetLike.ext' (by
-      rw [coe_linealitySubmoduleFn (proper_conj_of_proper hf hp), theorem_13_4 hf hp])
-  have hcount := Submodule.finrank_add_finrank_orthogonal (K := vectorSpan ℝ (dom f))
+      rw [coe_linealitySubmoduleFn (properConvex_convexConj_of_properConvex hf hp),
+          theorem_13_4 hf hp])
+  have hcount := Submodule.finrank_add_finrank_orthogonal (K := vectorSpan ℝ (convexDom f))
   rw [finrank_euclideanSpace_fin] at hcount
-  rw [linealityFn, hsub, dim_of_nonempty hp.dom_nonempty]
+  rw [linealityFn, hsub, dim_of_nonempty hp.convexDom_nonempty]
   omega
 
 /-- **Theorem 13.4**, second dimensionality formula:
 `dimension f* = n - lineality f`. -/
 theorem theorem_13_4_dimension {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    dim (dom (conj (pairing n) f)) = (n : ℤ) - (linealityFn f : ℤ) := by
-  have hsub : linealitySubmoduleFn f = (vectorSpan ℝ (dom (conj (pairing n) f)))ᗮ :=
+    dim (convexDom (convexConj (pairing n) f)) = (n : ℤ) - (linealityFn f : ℤ) := by
+  have hsub : linealitySubmoduleFn f = (vectorSpan ℝ (convexDom (convexConj (pairing n) f)))ᗮ :=
     SetLike.ext' (by rw [coe_linealitySubmoduleFn hf.proper, theorem_13_4_dual hf])
   have hcount := Submodule.finrank_add_finrank_orthogonal
-    (K := vectorSpan ℝ (dom (conj (pairing n) f)))
+    (K := vectorSpan ℝ (convexDom (convexConj (pairing n) f)))
   rw [finrank_euclideanSpace_fin] at hcount
-  rw [linealityFn, hsub, dim_of_nonempty (proper_conj (B := pairing n) hf).dom_nonempty]
+  rw [linealityFn, hsub,
+      dim_of_nonempty (properConvex_convexConj (B := pairing n) hf).convexDom_nonempty]
   omega
 
 /-- **Corollary 13.4.1.** Closed proper convex functions conjugate to each other have
@@ -537,15 +544,15 @@ the same rank.
 Immediate from the two dimensionality formulas of Theorem 13.4 and the definition of rank:
 `rank f* = (n - lineality f) - (n - dim f) = dim f - lineality f = rank f`. -/
 theorem corollary_13_4_1 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    rankFn (conj (pairing n) f) = rankFn f := by
+    rankFn (convexConj (pairing n) f) = rankFn f := by
   rw [rankFn, rankFn, theorem_13_4_dimension hf, theorem_13_4_lineality hf.convex hf.proper]
   omega
 
 /-- **Corollary 13.4.2.** Let `f` be a closed proper convex function. Then `dom f*` has
 a non-empty interior if and only if there are no lines along which `f` is (finite and) affine. -/
 theorem corollary_13_4_2 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    (interior (dom (conj (pairing n) f))).Nonempty ↔ linealitySpaceFn f = {0} :=
-  interior_dom_conj_nonempty_iff hf
+    (interior (convexDom (convexConj (pairing n) f))).Nonempty ↔ linealitySpaceFn f = {0} :=
+  interior_convexDom_convexConj_nonempty_iff hf
 
 /-! ### Theorem 13.5 -/
 
@@ -553,18 +560,18 @@ theorem corollary_13_4_2 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
 support function of `{x | f x ≤ 0}` is `cl g`, where `g` is the positively homogeneous convex
 function generated by `f*`.
 
-Properness is not needed: Fenchel–Moreau in the form `biconj_eq_self` already covers the improper
-cases. -/
-theorem theorem_13_5 {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedFn f) :
-    supportFn (pairing n) {x : Rn n | f x ≤ 0} = clFn (posHomGen (conj (pairing n) f)) :=
+Properness is not needed: Fenchel–Moreau in the form `convexBiconj_eq_self` already covers the
+improper cases. -/
+theorem theorem_13_5 {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedConvex f) :
+    supportFn (pairing n) {x : Rn n | f x ≤ 0} = convexCl (posHomGen (convexConj (pairing n) f)) :=
   supportFn_setOf_le_zero hf hc
 
 /-- **Theorem 13.5**, second assertion. The closure of the positively homogeneous convex function
 `k` generated by `f` is the support function of `{x* | f*(x*) ≤ 0}`. It needs no hypothesis at
 all. -/
 theorem theorem_13_5_dual (f : Rn n → EReal) :
-    clFn (posHomGen f) = supportFn (pairing n) {y : Rn n | conj (pairing n) f y ≤ 0} := by
-  have h := clFn_posHomGen (B := pairing n) f
+    convexCl (posHomGen f) = supportFn (pairing n) {y : Rn n | convexConj (pairing n) f y ≤ 0} := by
+  have h := convexCl_posHomGen (B := pairing n) f
   rwa [flip_pairing] at h
 
 /-- **Corollary 13.5.1.** Let `f` be a closed proper convex function on `ℝⁿ`. The
@@ -573,9 +580,9 @@ for `λ < 0` is the support function of `C = {(λ*, x*) | λ* ≤ -f*(x*)}`.
 
 Identifying the book's three-case `k` with `cl (hom f)` is Corollary 8.5.2, a §8 statement, and is
 not repeated here. -/
-theorem corollary_13_5_1 {f : Rn n → EReal} (hf : ConvexFn f) (hdom : (dom f).Nonempty) :
-    clFn (hom f) = supportFn (prodPairing (innerₗ ℝ) (pairing n)).flip
-      {q : ℝ × Rn n | conj (pairing n) f q.2 ≤ ((-q.1 : ℝ) : EReal)} :=
-  clFn_hom hf hdom
+theorem corollary_13_5_1 {f : Rn n → EReal} (hf : ConvexFn f) (hdom : (convexDom f).Nonempty) :
+    convexCl (hom f) = supportFn (prodPairing (innerₗ ℝ) (pairing n)).flip
+      {q : ℝ × Rn n | convexConj (pairing n) f q.2 ≤ ((-q.1 : ℝ) : EReal)} :=
+  convexCl_hom hf hdom
 
 end Rockafellar

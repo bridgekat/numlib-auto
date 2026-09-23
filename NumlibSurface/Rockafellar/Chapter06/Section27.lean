@@ -138,23 +138,23 @@ theorem convex_argmin_surface (hf : ConvexFn f) : Convex ℝ (argmin f) :=
 theorem isClosed_argmin (hf : ClosedProperConvexFn f) : IsClosed (argmin f) := by
   rcases Set.eq_empty_or_nonempty (argmin f) with hE | ⟨a, ha⟩
   · rw [hE]; exact isClosed_empty
-  · obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
+  · obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
     obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot a)
-      (lt_of_le_of_lt (ha x₀) (mem_dom.1 hx₀))
+      (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
     rw [argmin_eq_setOf_le ha hμ]
     exact (lowerSemicontinuous_iff_isClosed_le.1 hf.lowerSemicontinuous) μ
 
 /-- The minimum set contains at most one point when `f` is strictly convex on `dom f`: two distinct
 minimisers lie in `dom f` — a minimiser of a proper `f` has a finite value — and their midpoint
 would have a strictly smaller value. -/
-theorem subsingleton_argmin_of_strictConvexOnFn (hp : Proper f)
-    (hs : StrictConvexOnFn f (dom f)) : (argmin f).Subsingleton := by
+theorem subsingleton_argmin_of_strictConvexOnFn (hp : ProperConvex f)
+    (hs : StrictConvexOnFn f (convexDom f)) : (argmin f).Subsingleton := by
   intro x hx y hy
   by_contra hne
-  obtain ⟨x₀, hx₀⟩ := hp.dom_nonempty
-  have hxd : x ∈ dom f := mem_dom.2 (lt_of_le_of_lt (hx x₀) (mem_dom.1 hx₀))
-  have hyd : y ∈ dom f := mem_dom.2 (lt_of_le_of_lt (hy x₀) (mem_dom.1 hx₀))
-  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_dom.1 hxd)
+  obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
+  have hxd : x ∈ convexDom f := mem_convexDom.2 (lt_of_le_of_lt (hx x₀) (mem_convexDom.1 hx₀))
+  have hyd : y ∈ convexDom f := mem_convexDom.2 (lt_of_le_of_lt (hy x₀) (mem_convexDom.1 hx₀))
+  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_convexDom.1 hxd)
   have hxy : f x = f y := le_antisymm (hx y) (hy x)
   have hstrict := hs hxd hyd hne (a := 1 / 2) (b := 1 / 2) (by norm_num) (by norm_num)
     (by norm_num)
@@ -183,9 +183,9 @@ theorem mem_argmin_iff_zero_le_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
 is a *global* minimum. Rockafellar routes it through Theorem 23.2 — the directional derivatives see
 only an arbitrarily small neighbourhood — while the proof here is the underlying convexity estimate
 along `[x, z]`. -/
-theorem mem_argmin_of_localMin (hf : ConvexFn f) (hp : Proper f) (hx : x ∈ dom f)
+theorem mem_argmin_of_localMin (hf : ConvexFn f) (hp : ProperConvex f) (hx : x ∈ convexDom f)
     {ε : ℝ} (hε : 0 < ε) (hloc : ∀ z : Rn n, dist z x < ε → f x ≤ f z) : x ∈ argmin f := by
-  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_dom.1 hx)
+  obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_convexDom.1 hx)
   intro z
   rcases eq_or_ne (f z) ⊤ with hz | hz
   · rw [hz]; exact le_top
@@ -227,79 +227,84 @@ variable {f : Rn n → EReal}
 
 /-- **Theorem 27.1(a)**. `inf f = -f*(0)`. Needs **no hypothesis at all**, not even convexity: the
 theorem's standing "closed proper convex" is there for the other eight clauses. -/
-theorem theorem_27_1_a (f : Rn n → EReal) : (⨅ x, f x) = -(conj (pairing n) f 0) :=
-  iInf_eq_neg_conj_zero (pairing n) f
+theorem theorem_27_1_a (f : Rn n → EReal) : (⨅ x, f x) = -(convexConj (pairing n) f 0) :=
+  iInf_eq_neg_convexConj_zero (pairing n) f
 
 /-- **Theorem 27.1(a)**, second sentence: `f` is bounded below iff `0 ∈ dom f*`. Also
 hypothesis-free. -/
 theorem theorem_27_1_a_bddBelow (f : Rn n → EReal) :
-    (⊥ : EReal) < ⨅ x, f x ↔ (0 : Rn n) ∈ dom (conj (pairing n) f) :=
-  (zero_mem_dom_conj_iff (pairing n) f).symm
+    (⊥ : EReal) < ⨅ x, f x ↔ (0 : Rn n) ∈ convexDom (convexConj (pairing n) f) :=
+  (zero_mem_convexDom_convexConj_iff (pairing n) f).symm
 
 /-! ### Theorem 27.1(b): the minimum set is `∂f*(0)` -/
 
 /-- **Theorem 27.1(b)**, first sentence: the minimum set of a closed convex `f` is `∂f*(0)`, by
 Theorem 23.5 at the origin. Properness, which the book assumes throughout, is not needed. -/
-theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedFn f) :
-    argmin f = subdifferential (pairing n) (conj (pairing n) f) 0 := by
-  rw [argmin_eq_subdifferential_conj_zero (B := pairing n) hf hc, flip_pairing]
+theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedConvex f) :
+    argmin f = subdifferential (pairing n) (convexConj (pairing n) f) 0 := by
+  rw [argmin_eq_subdifferential_convexConj_zero (B := pairing n) hf hc, flip_pairing]
 
 /-- **Theorem 27.1(b)**, second sentence: the infimum of `f` is attained exactly when `f*` is
 subdifferentiable at the origin. -/
-theorem theorem_27_1_b_attained (hf : ConvexFn f) (hc : ClosedFn f) :
-    (argmin f).Nonempty ↔ (subdifferential (pairing n) (conj (pairing n) f) 0).Nonempty := by
+theorem theorem_27_1_b_attained (hf : ConvexFn f) (hc : ClosedConvex f) :
+    (argmin f).Nonempty ↔ (subdifferential (pairing n) (convexConj (pairing n) f) 0).Nonempty := by
   rw [theorem_27_1_b hf hc]
 
 /-- **Theorem 27.1(b)**, third sentence: `0 ∈ ri (dom f*)` is enough for the infimum to be attained.
 This is Theorem 23.4 for `f*` at the origin. -/
-theorem theorem_27_1_b_relint (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
-    (h0 : (0 : Rn n) ∈ ri (dom (conj (pairing n) f))) : (argmin f).Nonempty := by
+theorem theorem_27_1_b_relint (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
+    (h0 : (0 : Rn n) ∈ ri (convexDom (convexConj (pairing n) f))) : (argmin f).Nonempty := by
   rw [theorem_27_1_b hf hc]
-  exact subdifferential_nonempty_of_mem_relint_dom (B := pairing n) (convexFn_conj (pairing n) f)
-    (proper_conj ⟨hf, hc, hp⟩) h0
+  exact subdifferential_nonempty_of_mem_relint_convexDom
+      (B := pairing n) (convexFn_convexConj (pairing n) f)
+    (properConvex_convexConj ⟨hf, hc, hp⟩) h0
 
 /-- **Theorem 27.1(b)**, last sentence: `0 ∈ ri (dom f*)` exactly when every direction of recession
 of `f` is a direction in which `f` is constant. Corollary 8.6.1 is what makes `constancySpace f` the
 book's phrase. -/
-theorem theorem_27_1_b_constancy (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
-    (0 : Rn n) ∈ ri (dom (conj (pairing n) f)) ↔ recessionConeFn f ⊆ constancySpace f :=
-  zero_mem_relint_dom_conj_iff_recessionConeFn_subset_constancySpace (B := pairing n) hf hc hp
+theorem theorem_27_1_b_constancy (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
+    (0 : Rn n) ∈ ri (convexDom (convexConj (pairing n) f)) ↔ recessionConeFn f ⊆ constancySpace f :=
+  zero_mem_relint_convexDom_convexConj_iff_recessionConeFn_subset_constancySpace (B := pairing n)
+      hf hc hp
 
 /-! ### Theorem 27.1(c): finite but unattained -/
 
 /-- **Theorem 27.1(c)**. The infimum of a closed proper convex `f` is finite but unattained exactly
 when `f*(0)` is finite and `f*'(0; y) = -∞` for some `y`. **Only one of the book's two finiteness
 bounds carries information on each side**; the two that are free are `theorem_27_1_c_free`. -/
-theorem theorem_27_1_c (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
+theorem theorem_27_1_c (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((⨅ x, f x) ≠ ⊥ ∧ argmin f = ∅)
-      ↔ (conj (pairing n) f 0 ≠ ⊤ ∧ ∃ y : Rn n, dirDeriv (conj (pairing n) f) 0 y = ⊥) :=
+      ↔ (convexConj (pairing n) f 0 ≠ ⊤ ∧ ∃ y : Rn n,
+          dirDeriv (convexConj (pairing n) f) 0 y = ⊥) :=
   iInf_ne_bot_and_argmin_eq_empty_iff (B := pairing n) hf hc hp
 
 /-- The two bounds `theorem_27_1_c` leaves out, so that the reading "finite" can be checked against
 the statement: for a proper `f`, `inf f ≠ ⊤` and `f*(0) ≠ ⊥` hold unconditionally. -/
-theorem theorem_27_1_c_free (hp : Proper f) :
-    (⨅ x, f x) ≠ ⊤ ∧ conj (pairing n) f 0 ≠ ⊥ :=
-  ⟨iInf_ne_top hp, conj_ne_bot hp.dom_nonempty 0⟩
+theorem theorem_27_1_c_free (hp : ProperConvex f) :
+    (⨅ x, f x) ≠ ⊤ ∧ convexConj (pairing n) f 0 ≠ ⊥ :=
+  ⟨iInf_ne_top hp, convexConj_ne_bot hp.convexDom_nonempty 0⟩
 
 /-! ### Theorem 27.1(d): a nonempty bounded minimum set -/
 
 /-- **Theorem 27.1(d)**, first sentence: the minimum set of a closed proper convex `f` is nonempty
 and bounded exactly when `0 ∈ int (dom f*)`. -/
-theorem theorem_27_1_d (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
+theorem theorem_27_1_d (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ IsBounded (argmin f))
-      ↔ (0 : Rn n) ∈ interior (dom (conj (pairing n) f)) :=
-  argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj (B := pairing n) hf hc hp
+      ↔ (0 : Rn n) ∈ interior (convexDom (convexConj (pairing n) f)) :=
+  argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (B := pairing n) hf hc hp
 
 /-- **Theorem 27.1(d)**, second sentence: that holds exactly when `f` has no direction of
 recession. -/
-theorem theorem_27_1_d_recession (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
-    (0 : Rn n) ∈ interior (dom (conj (pairing n) f)) ↔ ¬ ∃ y : Rn n, IsDirectionOfRecession f y :=
-  (zero_mem_interior_dom_conj_iff_recessionConeFn_eq_zero (B := pairing n) hf hc hp).trans
+theorem theorem_27_1_d_recession (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
+    (0 : Rn n) ∈ interior (convexDom (convexConj (pairing n) f)) ↔ ¬ ∃ y : Rn n,
+        IsDirectionOfRecession f y :=
+  (zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (B := pairing n) hf hc
+      hp).trans
     (recessionConeFn_eq_zero_iff f)
 
 /-- **Theorem 27.1(d)** in the form Theorem 30.4(g) uses it: *some* level set of `f` is nonempty and
 bounded exactly when the minimum set is. -/
-theorem theorem_27_1_d_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
+theorem theorem_27_1_d_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ IsBounded (argmin f))
       ↔ ∃ α : ℝ, {x : Rn n | f x ≤ (α : EReal)}.Nonempty ∧
           IsBounded {x : Rn n | f x ≤ (α : EReal)} :=
@@ -310,22 +315,24 @@ theorem theorem_27_1_d_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper
 /-- **Theorem 27.1(e)**. The minimum set of a closed proper convex `f` is `{x}` exactly when `f*` is
 differentiable at the origin with `∇f*(0) = x`. Nothing needs reflexivity: `∂f*(0)` is a subset of
 `ℝⁿ`, because the pairing is what says what a dual variable of `f*` is. -/
-theorem theorem_27_1_e (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) {x : Rn n} :
-    argmin f = {x} ↔ HasGradientVecAt (conj (pairing n) f) x 0 := by
+theorem theorem_27_1_e (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) {x : Rn n} :
+    argmin f = {x} ↔ HasGradientVecAt (convexConj (pairing n) f) x 0 := by
   rw [theorem_27_1_b hf hc,
-    theorem_25_1 (convexFn_conj (pairing n) f) (proper_conj ⟨hf, hc, hp⟩)]
+    theorem_25_1 (convexFn_convexConj (pairing n) f) (properConvex_convexConj ⟨hf, hc, hp⟩)]
 
 /-- **Theorem 27.1(e)** as existence: the infimum is attained at a unique point iff `f*` is
 differentiable at the origin. -/
-theorem theorem_27_1_e_differentiable (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) :
-    (∃ x : Rn n, argmin f = {x}) ↔ DifferentiableAtFn (conj (pairing n) f) 0 := by
+theorem theorem_27_1_e_differentiable (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f) :
+    (∃ x : Rn n, argmin f = {x}) ↔ DifferentiableAtFn (convexConj (pairing n) f) 0 := by
   rw [differentiableAtFn_iff_exists_hasGradientVecAt]
   exact exists_congr fun _ => theorem_27_1_e hf hc hp
 
 /-- **Theorem 27.1(e)**, the identification `x = ∇f*(0)`: the unique minimiser is computed by
 `gradientVec` (§25). -/
-theorem theorem_27_1_e_gradientVec (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) {x : Rn n}
-    (h : argmin f = {x}) : x = gradientVec (conj (pairing n) f) 0 :=
+theorem theorem_27_1_e_gradientVec (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
+    {x : Rn n}
+    (h : argmin f = {x}) : x = gradientVec (convexConj (pairing n) f) 0 :=
   ((theorem_27_1_e hf hc hp).1 h).gradientVec_eq.symm
 
 /-! ### Theorem 27.1(f): all nonempty level sets share a recession cone -/
@@ -350,9 +357,10 @@ theorem theorem_27_1_f_polarCone (hf : ClosedProperConvexFn f) {α : ℝ}
     (hne : {x : Rn n | f x ≤ (α : EReal)}.Nonempty) :
     recessionCone {x : Rn n | f x ≤ (α : EReal)}
       = polarCone (pairing n)
-          (PointedCone.hull ℝ (dom (conj (pairing n) f)) : Set (Rn n)) := by
+          (PointedCone.hull ℝ (convexDom (convexConj (pairing n) f)) : Set (Rn n)) := by
   rw [polarCone_hull]
-  have h := recessionCone_setOf_le_eq_polarCone_dom_conj (B := pairing n) hf.convex hf.closed
+  have h :=
+      recessionCone_setOf_le_eq_polarCone_convexDom_convexConj (B := pairing n) hf.convex hf.closed
     hf.proper hne
   rwa [flip_pairing] at h
 
@@ -360,62 +368,63 @@ theorem theorem_27_1_f_polarCone (hf : ClosedProperConvexFn f) {α : ℝ}
 
 /-- **Theorem 27.1(g)**, first sentence: for each real `α` the support function of `lev_α f` is the
 closure of the positively homogeneous convex function generated by `f* + α`. -/
-theorem theorem_27_1_g_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (α : ℝ) :
+theorem theorem_27_1_g_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (α : ℝ) :
     supportFn (pairing n) {x : Rn n | f x ≤ (α : EReal)}
-      = clFn (posHomGen fun y => conj (pairing n) f y + (α : EReal)) :=
+      = convexCl (posHomGen fun y => convexConj (pairing n) f y + (α : EReal)) :=
   supportFn_setOf_le (B := pairing n) hf hc α
 
 /-- **Theorem 27.1(g)**, second sentence: when `f` is bounded below, the support function of the
 minimum set is the closure of `f*'(0; ·)`. Clause (b) plus Theorem 23.2; "bounded below" enters as
 `f*(0) ≠ ⊤`, which is clause (a). -/
-theorem theorem_27_1_g_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem theorem_27_1_g_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hbdd : (⊥ : EReal) < ⨅ x, f x) :
-    supportFn (pairing n) (argmin f) = clFn (dirDeriv (conj (pairing n) f) 0) :=
+    supportFn (pairing n) (argmin f) = convexCl (dirDeriv (convexConj (pairing n) f) 0) :=
   supportFn_argmin (B := pairing n) hf hc hp
-    (lt_top_iff_ne_top.1 (mem_dom.1 ((theorem_27_1_a_bddBelow f).1 hbdd)))
+    (lt_top_iff_ne_top.1 (mem_convexDom.1 ((theorem_27_1_a_bddBelow f).1 hbdd)))
 
 /-! ### Theorem 27.1(h): the limit of the support functions -/
 
 /-- **Theorem 27.1(h)**. If `inf f` is finite then `lim_{α ↓ inf f} δ*(y | lev_α f) = f*'(0; y)` for
 every `y`. **The limit is stated as an infimum**: the level sets increase with `α`, so their support
 functions do, and the monotone limit *is* the infimum; no filter is needed. -/
-theorem theorem_27_1_h (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) {μ : ℝ}
+theorem theorem_27_1_h (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) {μ : ℝ}
     (hμ : (⨅ x, f x) = (μ : EReal)) (y : Rn n) :
     (⨅ ε ∈ Ioi (0 : ℝ), supportFn (pairing n) {z : Rn n | f z ≤ ((μ + ε : ℝ) : EReal)} y)
-      = dirDeriv (conj (pairing n) f) 0 y :=
+      = dirDeriv (convexConj (pairing n) f) 0 y :=
   iInf_supportFn_setOf_le (B := pairing n) hf hc hp hμ y
 
 /-- The identification the proof of Theorem 27.1(h) runs on, unnumbered in the book: the level sets
 of `f` above its infimum are the ε-subdifferentials of `f*` at the origin. -/
-theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedConvex f)
+    (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
-    epsSubdifferential (pairing n) ε (conj (pairing n) f) 0
+    epsSubdifferential (pairing n) ε (convexConj (pairing n) f) 0
       = {z : Rn n | f z ≤ ((μ + ε : ℝ) : EReal)} := by
-  rw [← epsSubdifferential_conj_zero (B := pairing n) hf hc hp hμ ε, flip_pairing]
+  rw [← epsSubdifferential_convexConj_zero (B := pairing n) hf hc hp hμ ε, flip_pairing]
 
 /-! ### Theorem 27.1(i): the origin in the closure of `dom f*` -/
 
 /-- **Theorem 27.1(i)**, first sentence: `0 ∈ cl (dom f*)` exactly when `(f0⁺)(y) ≥ 0` for every
 `y`. This is the origin case of Corollary 13.3.4. -/
 theorem theorem_27_1_i (hf : ClosedProperConvexFn f) :
-    (0 : Rn n) ∈ closure (dom (conj (pairing n) f)) ↔ ∀ y : Rn n, 0 ≤ recessionFn f y :=
-  zero_mem_closure_dom_conj_iff (B := pairing n) hf
+    (0 : Rn n) ∈ closure (convexDom (convexConj (pairing n) f)) ↔ ∀ y : Rn n, 0 ≤ recessionFn f y :=
+  zero_mem_closure_convexDom_convexConj_iff (B := pairing n) hf
 
 /-- **Theorem 27.1(i)**, second sentence: `0 ∉ cl (dom f*)` exactly when `f` decreases at a uniform
 positive rate along some nonzero direction. `y ≠ 0` is automatic — at `y = 0` the inequality at
 `λ = 1` would read `0 ≤ -ε` on `dom f` — and restricting `x` to `dom f` costs nothing. -/
 theorem theorem_27_1_i_notMem (hf : ClosedProperConvexFn f) :
-    (0 : Rn n) ∉ closure (dom (conj (pairing n) f)) ↔
+    (0 : Rn n) ∉ closure (convexDom (convexConj (pairing n) f)) ↔
       ∃ y : Rn n, y ≠ 0 ∧ ∃ ε : ℝ, 0 < ε ∧
-        ∀ x ∈ dom f, ∀ a : ℝ, 0 ≤ a → f (x + a • y) ≤ f x - ((a * ε : ℝ) : EReal) :=
-  zero_notMem_closure_dom_conj_iff (B := pairing n) hf
+        ∀ x ∈ convexDom f, ∀ a : ℝ, 0 ≤ a → f (x + a • y) ≤ f x - ((a * ε : ℝ) : EReal) :=
+  zero_notMem_closure_convexDom_convexConj_iff (B := pairing n) hf
 
 /-- Clauses (a) and (i) together, an unnumbered remark of §27: `f` can recede nowhere at a negative
 rate and still be unbounded below, exactly when `0 ∈ cl (dom f*)` but `0 ∉ dom f*`. -/
 theorem theorem_27_1_ai (hf : ClosedProperConvexFn f) :
     ((∀ y : Rn n, 0 ≤ recessionFn f y) ∧ (⨅ x, f x) = ⊥)
-      ↔ ((0 : Rn n) ∈ closure (dom (conj (pairing n) f)) ∧
-          (0 : Rn n) ∉ dom (conj (pairing n) f)) := by
+      ↔ ((0 : Rn n) ∈ closure (convexDom (convexConj (pairing n) f)) ∧
+          (0 : Rn n) ∉ convexDom (convexConj (pairing n) f)) := by
   rw [theorem_27_1_i hf, ← theorem_27_1_a_bddBelow f, not_lt, le_bot_iff]
 
 end Theorem271
@@ -642,8 +651,8 @@ theorem corollary_27_3_3_polyhedral {ι₀ ι₁ : Type*} [Finite ι₀]
     have hvDm : v ∈ D := (hmemD v).2 hvD
     have hval : ∀ z : Rn n, z ∈ D → (f₀ + indicatorFn D) z = f₀ z := fun z hz => by
       rw [Pi.add_apply, indicatorFn_of_mem hz, add_zero]
-    have hdom : (dom (f₀ + indicatorFn D)).Nonempty :=
-      ⟨v, mem_dom.2 (by rw [hval v hvDm]; exact lt_top_iff_ne_top.2 hvtop)⟩
+    have hdom : (convexDom (f₀ + indicatorFn D)).Nonempty :=
+      ⟨v, mem_convexDom.2 (by rw [hval v hvDm]; exact lt_top_iff_ne_top.2 hvtop)⟩
     have hh : ClosedProperConvexFn (f₀ + indicatorFn D) :=
       hf₀.add (closedProperConvexFn_indicatorFn hDconv hDclosed ⟨w, hwDm⟩) hdom
     have hhrec : recessionConeFn (f₀ + indicatorFn D) = recessionConeFn f₀ ∩ recessionCone D :=
@@ -698,24 +707,26 @@ theorem theorem_27_4_sufficient {y : Rn n} (hy : y ∈ subdifferential (pairing 
 /-- **Theorem 27.4**, necessity under the book's first constraint qualification: `ri (dom h)` meets
 `ri C`. The exactness of the sum `h + δ(· | C)` comes from Theorem 16.4; Rockafellar's proof cites
 Theorem 23.8 for the same step. -/
-theorem theorem_27_4_necessary (hh : ConvexFn h) (hp : Proper h) (hC : Convex ℝ C)
-    (hCne : C.Nonempty) {x₀ : Rn n} (hx₀h : x₀ ∈ ri (dom h)) (hx₀C : x₀ ∈ ri C)
+theorem theorem_27_4_necessary (hh : ConvexFn h) (hp : ProperConvex h) (hC : Convex ℝ C)
+    (hCne : C.Nonempty) {x₀ : Rn n} (hx₀h : x₀ ∈ ri (convexDom h)) (hx₀C : x₀ ∈ ri C)
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
     ∃ y ∈ subdifferential (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
   exists_mem_subdifferential_neg_mem_normalCone
     (IsExactSum.of_relint (B := pairing n) hh hp (convexFn_indicatorFn.2 hC)
-      (proper_indicatorFn.2 hCne) hx₀h (by rw [dom_indicatorFn]; exact hx₀C)) hx hmin
+      (properConvex_indicatorFn.2 hCne) hx₀h (by rw [convexDom_indicatorFn]; exact hx₀C)) hx hmin
 
 /-- **Theorem 27.4**, necessity under the book's second constraint qualification: `C` polyhedral and
 `ri (dom h)` meets `C` — merely `C`, not `ri C`, since the polyhedral summand of the `IsExactSum` of
 Theorem 20.1 needs only a point of its effective domain. -/
-theorem theorem_27_4_necessary_polyhedral (hh : ConvexFn h) (hp : Proper h) (hC : Polyhedral C)
-    {x₀ : Rn n} (hx₀h : x₀ ∈ ri (dom h)) (hx₀C : x₀ ∈ C)
+theorem theorem_27_4_necessary_polyhedral (hh : ConvexFn h) (hp : ProperConvex h)
+    (hC : Polyhedral C)
+    {x₀ : Rn n} (hx₀h : x₀ ∈ ri (convexDom h)) (hx₀C : x₀ ∈ C)
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
     ∃ y ∈ subdifferential (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
   exists_mem_subdifferential_neg_mem_normalCone
     (IsExactSum.symm (IsExactSum.of_polyhedral (B := pairing n) (polyhedralFn_indicatorFn hC)
-      (proper_indicatorFn.2 ⟨x₀, hx₀C⟩) hh hp (by rw [dom_indicatorFn]; exact hx₀C) hx₀h))
+      (properConvex_indicatorFn.2 ⟨x₀, hx₀C⟩) hh
+          hp (by rw [convexDom_indicatorFn]; exact hx₀C) hx₀h))
     hx hmin
 
 private theorem quadFn_le_quadFn_iff (u v : Rn n) :
@@ -731,8 +742,8 @@ theorem nearest_iff_sub_mem_normalCone (hC : Convex ℝ C) (hCne : C.Nonempty) {
     (hx : x ∈ C) :
     (∀ z ∈ C, dist a x ≤ dist a z) ↔ a - x ∈ normalCone (pairing n) C x := by
   have hdist : ∀ u : Rn n, dist a u = ‖a - u‖ := fun u => dist_eq_norm a u
-  have hdom : dom (fun u => quadFn (pairing n) (a - u)) = Set.univ :=
-    Set.eq_univ_iff_forall.2 fun u => mem_dom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))
+  have hdom : convexDom (fun u => quadFn (pairing n) (a - u)) = Set.univ :=
+    Set.eq_univ_iff_forall.2 fun u => mem_convexDom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))
   have hmin : (∀ z ∈ C, dist a x ≤ dist a z) ↔
       ∀ z ∈ C, quadFn (pairing n) (a - x) ≤ quadFn (pairing n) (a - z) := by
     refine forall_congr' fun z => forall_congr' fun _ => ?_
@@ -741,7 +752,8 @@ theorem nearest_iff_sub_mem_normalCone (hC : Convex ℝ C) (hCne : C.Nonempty) {
   constructor
   · intro hmin'
     obtain ⟨x₀, hx₀⟩ := Convex.relint_nonempty hC hCne
-    obtain ⟨y, hy, hny⟩ := theorem_27_4_necessary (convexFn_quadFn_sub a) (proper_quadFn_sub a) hC
+    obtain ⟨y, hy, hny⟩ :=
+        theorem_27_4_necessary (convexFn_quadFn_sub a) (properConvex_quadFn_sub a) hC
       hCne (x₀ := x₀) (by rw [hdom, intrinsicInterior_univ]; trivial) hx₀ hx hmin'
     rw [subdifferential_quadFn_sub, Set.mem_singleton_iff] at hy
     rwa [hy, neg_sub] at hny

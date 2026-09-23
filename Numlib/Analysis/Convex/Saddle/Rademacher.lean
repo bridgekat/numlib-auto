@@ -165,16 +165,16 @@ theorem continuousOn_saddleGradient (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo :
     {G : U × X → U × X} (hG : ∀ p ∈ S, HasSaddleGradientAt K (G p) p) : ContinuousOn G S := by
   intro x hx
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
-  have hev := eventually_nhds_subdifferentialSaddle_subset hCo hCc hDo hDc hK (hS hx).1 (hS hx).2
+  have hev := eventually_nhds_saddleSubdifferentialOn_subset hCo hCc hDo hDc hK (hS hx).1 (hS hx).2
     (half_pos hε)
-  have hxs : subdifferentialSaddle C D K x = {G x} :=
-    subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hK (hS hx).1 (hS hx).2
+  have hxs : saddleSubdifferentialOn C D K x = {G x} :=
+    saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hK (hS hx).1 (hS hx).2
       (hG x hx)
   filter_upwards [nhdsWithin_le_nhds hev, self_mem_nhdsWithin] with z hzsub hzS
-  have hzs : subdifferentialSaddle C D K z = {G z} :=
-    subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hK (hS hzS).1 (hS hzS).2
+  have hzs : saddleSubdifferentialOn C D K z = {G z} :=
+    saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hK (hS hzS).1 (hS hzS).2
       (hG z hzS)
-  have hmem : G z ∈ subdifferentialSaddle C D K x + closedBall (0 : U × X) (ε / 2) :=
+  have hmem : G z ∈ saddleSubdifferentialOn C D K x + closedBall (0 : U × X) (ε / 2) :=
     hzsub (by rw [hzs]; rfl)
   rw [hxs] at hmem
   rw [dist_eq_norm]
@@ -193,18 +193,18 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- **An inclusion of singleton subdifferentials is a bound on gradients.** If `∇L(p) = a`,
 `∇M(p') = b` and `∂L(p) ⊆ ∂M(p') + εB`, then `‖a - b‖ ≤ ε`. -/
-theorem dist_le_of_subdifferentialSaddle_subset (hCo : IsOpen C) (hDo : IsOpen D)
+theorem dist_le_of_saddleSubdifferentialOn_subset (hCo : IsOpen C) (hDo : IsOpen D)
     {L M : U × X → ℝ} {p' a b : U × X} {ε : ℝ} (hL : ConcaveConvexOn C D L)
     (hM : ConcaveConvexOn C D M) (hp : p ∈ C ×ˢ D) (hp' : p' ∈ C ×ˢ D)
     (ha : HasSaddleGradientAt L a p) (hb : HasSaddleGradientAt M b p')
-    (hsub : subdifferentialSaddle C D L p
-      ⊆ subdifferentialSaddle C D M p' + closedBall (0 : U × X) ε) :
+    (hsub : saddleSubdifferentialOn C D L p
+      ⊆ saddleSubdifferentialOn C D M p' + closedBall (0 : U × X) ε) :
     dist a b ≤ ε := by
-  have hLa : subdifferentialSaddle C D L p = {a} :=
-    subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hL hp.1 hp.2 ha
-  have hMb : subdifferentialSaddle C D M p' = {b} :=
-    subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hM hp'.1 hp'.2 hb
-  have hmem : a ∈ subdifferentialSaddle C D M p' + closedBall (0 : U × X) ε :=
+  have hLa : saddleSubdifferentialOn C D L p = {a} :=
+    saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hL hp.1 hp.2 ha
+  have hMb : saddleSubdifferentialOn C D M p' = {b} :=
+    saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt hCo hDo hM hp'.1 hp'.2 hb
+  have hmem : a ∈ saddleSubdifferentialOn C D M p' + closedBall (0 : U × X) ε :=
     hsub (by rw [hLa]; rfl)
   rw [hMb] at hmem
   rw [dist_eq_norm]
@@ -220,12 +220,12 @@ theorem tendsto_of_hasSaddleGradientAt (hCo : IsOpen C) (hCc : Convex ℝ C) (hD
     {G : ℕ → U × X} {G' : U × X} (hG : ∀ i, HasSaddleGradientAt (Ks i) (G i) p)
     (hG' : HasSaddleGradientAt K G' p) : Tendsto G atTop (𝓝 G') := by
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
-  have hev := eventually_subdifferentialSaddle_subset hCo hCc hDo hDc hKs hK hconv hp.1 hp.2
+  have hev := eventually_saddleSubdifferentialOn_subset hCo hCc hDo hDc hKs hK hconv hp.1 hp.2
     (tendsto_const_nhds (x := p.1) (f := (atTop : Filter ℕ)))
     (tendsto_const_nhds (x := p.2) (f := (atTop : Filter ℕ))) (half_pos hε)
   filter_upwards [hev] with i hi
   exact lt_of_le_of_lt
-    (dist_le_of_subdifferentialSaddle_subset hCo hDo (hKs i) hK hp hp (hG i) hG' hi)
+    (dist_le_of_saddleSubdifferentialOn_subset hCo hDo (hKs i) hK hp hp (hG i) hG' hi)
     (half_lt_self hε)
 
 /-- On every compact subset of the open rectangle the gradients converge uniformly.
@@ -256,19 +256,20 @@ theorem tendstoUniformlyOn_saddleGradient (hCo : IsOpen C) (hCc : Convex ℝ C) 
   have hlim : Tendsto (fun n => zs (ψ n)) atTop (𝓝 w) := hψlim
   have hsub : ∀ q ∈ C ×ˢ D, Tendsto (fun n => Ks (φ (ψ n)) q) atTop (𝓝 (K q)) := fun q hq =>
     (hconv q hq).comp (hφ.comp hψ).tendsto_atTop
-  have h1 := eventually_subdifferentialSaddle_subset hCo hCc hDo hDc (fun n => hKs (φ (ψ n))) hK
+  have h1 := eventually_saddleSubdifferentialOn_subset hCo hCc hDo hDc (fun n => hKs (φ (ψ n))) hK
     hsub hwU.1 hwU.2 ((continuous_fst.tendsto w).comp hlim) ((continuous_snd.tendsto w).comp hlim)
     (by positivity : (0 : ℝ) < ε / 3)
-  have h2 : ∀ᶠ n in atTop, subdifferentialSaddle C D K (zs (ψ n))
-      ⊆ subdifferentialSaddle C D K w + closedBall (0 : U × X) (ε / 3) :=
-    hlim.eventually (eventually_nhds_subdifferentialSaddle_subset hCo hCc hDo hDc hK hwU.1 hwU.2
+  have h2 : ∀ᶠ n in atTop, saddleSubdifferentialOn C D K (zs (ψ n))
+      ⊆ saddleSubdifferentialOn C D K w + closedBall (0 : U × X) (ε / 3) :=
+    hlim.eventually (eventually_nhds_saddleSubdifferentialOn_subset hCo hCc hDo hDc hK hwU.1 hwU.2
       (by positivity))
   obtain ⟨n, hn1, hn2⟩ := (h1.and h2).exists
   have hzU : zs (ψ n) ∈ C ×ˢ D := hSU (hzsS (ψ n))
   have hA : dist (Gs (φ (ψ n)) (zs (ψ n))) (G w) ≤ ε / 3 :=
-    dist_le_of_subdifferentialSaddle_subset hCo hDo (hKs _) hK hzU hwU (hGs _ _ hzU) (hG w hwU) hn1
+    dist_le_of_saddleSubdifferentialOn_subset hCo hDo (hKs _) hK hzU
+        hwU (hGs _ _ hzU) (hG w hwU) hn1
   have hB : dist (G (zs (ψ n))) (G w) ≤ ε / 3 :=
-    dist_le_of_subdifferentialSaddle_subset hCo hDo hK hK hzU hwU (hG _ hzU) (hG w hwU) hn2
+    dist_le_of_saddleSubdifferentialOn_subset hCo hDo hK hK hzU hwU (hG _ hzU) (hG w hwU) hn2
   have hlow := hzsdist (ψ n)
   have htri := dist_triangle (G (zs (ψ n))) (G w) (Gs (φ (ψ n)) (zs (ψ n)))
   rw [dist_comm (G w)] at htri

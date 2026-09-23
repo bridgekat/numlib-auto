@@ -7,7 +7,13 @@ id = 'StrictConvexOnFn.add_convexFn'
 id = 'StrictConvexOnFn.compLin'
 
 [[node]]
+id = 'IsExactSum.essentiallyStrictlyConvex_add'
+
+[[node]]
 id = 'IsExactSum.essentiallySmooth_infConv'
+
+[[node]]
+id = 'IsExactImage.essentiallyStrictlyConvex_compLin'
 
 [[node]]
 id = 'IsExactImage.essentiallySmooth_mapLin'

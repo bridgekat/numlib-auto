@@ -1,55 +1,67 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'bracket_infConvBifun'
+id = 'infConvBifun'
 
 [[node]]
 id = 'supConvBifun'
 
 [[node]]
-id = 'adjointBifun_infConvBifun'
+id = 'bracket_infConvBifun'
 
 [[node]]
-id = 'closedBifun_lowerAdjointBifun'
+id = 'concaveBracket_supConvBifun'
 
 [[node]]
-id = 'conj_imageBifun'
+id = 'convexAdjointBifun_infConvBifun'
 
 [[node]]
-id = 'exists_conj_imageBifun_eq'
+id = 'concaveAdjointBifun_supConvBifun'
 
 [[node]]
-id = 'conj_imageBifun_of_bracket_eq_top'
+id = 'convexConj_imageBifun'
+
+[[node]]
+id = 'exists_convexConj_imageBifun_eq'
+
+[[node]]
+id = 'convexConj_imageBifun_of_bracket_eq_top'
 
 [[node]]
 id = 'fenchelSup_le_fenchelInf'
 
 [[node]]
-id = 'fenchelPairing_conj'
+id = 'fenchelPairing_convexConj'
 
 [[node]]
-id = 'conj_imageBifun_eq_fenchelPairing'
+id = 'convexConj_imageBifun_eq_fenchelPairing'
 
 [[node]]
 id = 'fenchelSup_imageBifun_lowerAdjointBifun'
 
 [[node]]
-id = 'adjointBifun_smulRightBifun'
+id = 'convexAdjointBifun_smulRightBifun'
 
 [[node]]
 id = 'inverseBifun_compBifun'
 
 [[node]]
-id = 'adjointBifun_compBifun'
+id = 'convexAdjointBifun_compBifun'
 
 [[node]]
 id = 'lowerAdjointBifun_compBifun'
 
 [[node]]
-id = 'closedBifun_compBifun'
+id = 'closedConvexBifun_compBifun'
+
+[[node]]
+id = 'infConvFstBifun'
 
 [[node]]
 id = 'lowerAdjointBifun_infConvFstBifun'
+
+[[node]]
+id = 'closedConvexBifun_infConvBifun'
 
 [[node]]
 id = 'bracket_compBifun_eq_fenchelPairing'

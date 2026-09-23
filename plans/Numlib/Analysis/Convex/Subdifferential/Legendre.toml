@@ -1,10 +1,10 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'conj_eq_of_hasGradientAtFn'
+id = 'convexConj_eq_of_hasGradientAtFn'
 
 [[node]]
 id = 'legendreDom'
 
 [[node]]
-id = 'legendreDom_subset_dom_conj'
+id = 'legendreDom_subset_convexDom_convexConj'

@@ -47,8 +47,8 @@ summing to zero — so both signs carry a positive coefficient and the sign may 
   norm nor finite dimension, and `HullDirections.lean` builds the converse half on it.
 * `IsCompact.convexHull`, `Bornology.IsBounded.closure_convexHull` — the convex hull of
   a compact set is compact, and `cl (conv S) = conv (cl S)` for bounded `S`.
-* `closedProperConvexFn_convHullFn_restrictFn` — the convex hull of a function with compact graph is
-  a closed proper convex function.
+* `closedProperConvexFn_convHullFn_convexRestrict` — the convex hull of a function with compact
+  graph is a closed proper convex function.
 * `exists_subset_linearIndepOn_of_sum`, `exists_subset_affineIndependent_of_sum` — the **indexed**
   elimination step: a representation `∑ i ∈ t, w i • v i` is thinned to a sub-*index set* on which
   the generators are linearly (resp. affinely) independent. The affine form carries a real cost
@@ -259,24 +259,24 @@ private theorem isClosed_upRay : IsClosed (upRay E) := by
 
 /-- The epigraph of a function that is real-valued on `S` and `+∞` off `S` is the graph of that
 function over `S`, translated upward along the vertical ray. -/
-private theorem epi_restrictFn_eq (S : Set E) (g : E → ℝ) :
-    epi (restrictFn S fun x => ((g x : ℝ) : EReal))
+private theorem epi_convexRestrict_eq (S : Set E) (g : E → ℝ) :
+    epi (convexRestrict S fun x => ((g x : ℝ) : EReal))
       = (fun x => ((x, g x) : E × ℝ)) '' S + upRay E := by
   ext p
   constructor
   · intro hp
     rw [mem_epi] at hp
     by_cases hp1 : p.1 ∈ S
-    · rw [restrictFn_of_mem hp1, EReal.coe_le_coe_iff] at hp
+    · rw [convexRestrict_of_mem hp1, EReal.coe_le_coe_iff] at hp
       exact ⟨(p.1, g p.1), ⟨p.1, hp1, rfl⟩, (0, p.2 - g p.1), ⟨rfl, by linarith⟩,
         Prod.ext (by change p.1 + 0 = p.1; rw [add_zero])
           (by change g p.1 + (p.2 - g p.1) = p.2; ring)⟩
-    · rw [restrictFn_of_notMem hp1] at hp
+    · rw [convexRestrict_of_notMem hp1] at hp
       exact absurd hp (by simp)
   · rintro ⟨u, ⟨x, hx, rfl⟩, v, ⟨hv1, hv2⟩, rfl⟩
     rw [mem_epi]
     have h1 : ((x, g x) + v).1 = x := by change x + v.1 = x; rw [hv1, add_zero]
-    rw [h1, restrictFn_of_mem hx]
+    rw [h1, convexRestrict_of_mem hx]
     change ((g x : ℝ) : EReal) ≤ ((g x + v.2 : ℝ) : EReal)
     exact_mod_cast le_add_of_nonneg_right hv2
 
@@ -293,18 +293,18 @@ private theorem convex_upRay : Convex ℝ (upRay E) := by
 
 /-- Taking the convex hull of such an epigraph leaves the vertical ray alone: it acts only on the
 graph. -/
-private theorem convexHull_epi_restrictFn_eq (S : Set E) (g : E → ℝ) :
-    convexHull ℝ (epi (restrictFn S fun x => ((g x : ℝ) : EReal)))
+private theorem convexHull_epi_convexRestrict_eq (S : Set E) (g : E → ℝ) :
+    convexHull ℝ (epi (convexRestrict S fun x => ((g x : ℝ) : EReal)))
       = convexHull ℝ ((fun x => ((x, g x) : E × ℝ)) '' S) + upRay E := by
-  rw [epi_restrictFn_eq, convexHull_add, (convex_upRay (E := E)).convexHull_eq]
+  rw [epi_convexRestrict_eq, convexHull_add, (convex_upRay (E := E)).convexHull_eq]
 
 variable [FiniteDimensional ℝ E]
 
 /-- **The convex hull of the epigraph of a function with compact graph is closed.** The graph is
 compact, so its convex hull is compact, and a compact set plus the closed vertical ray is closed. -/
-theorem isClosed_convexHull_epi_restrictFn (hS : IsCompact S) (hg : ContinuousOn g S) :
-    IsClosed (convexHull ℝ (epi (restrictFn S fun x => ((g x : ℝ) : EReal)))) := by
-  rw [convexHull_epi_restrictFn_eq]
+theorem isClosed_convexHull_epi_convexRestrict (hS : IsCompact S) (hg : ContinuousOn g S) :
+    IsClosed (convexHull ℝ (epi (convexRestrict S fun x => ((g x : ℝ) : EReal)))) := by
+  rw [convexHull_epi_convexRestrict_eq]
   exact isClosed_upRay.add_left_of_isCompact (IsCompact.convexHull
     (hS.image_of_continuousOn (ContinuousOn.prodMk continuousOn_id hg)))
 
@@ -313,15 +313,16 @@ non-empty compact `S` and `g` continuous on `S`, extended by `+∞`, the graph `
 compact, so `conv G` is compact; `epi f = G + K` for the upward vertical ray
 `K`, so `conv (epi f) = conv G + K` is closed and upward closed on each vertical line, hence *is*
 an epigraph. -/
-theorem closedProperConvexFn_convHullFn_restrictFn (hSne : S.Nonempty) (hS : IsCompact S)
+theorem closedProperConvexFn_convHullFn_convexRestrict (hSne : S.Nonempty) (hS : IsCompact S)
     (hg : ContinuousOn g S) :
-    ClosedProperConvexFn (convHullFn (restrictFn S fun x => ((g x : ℝ) : EReal))) := by
-  set f : E → EReal := restrictFn S (fun x => ((g x : ℝ) : EReal)) with hfdef
+    ClosedProperConvexFn (convHullFn (convexRestrict S fun x => ((g x : ℝ) : EReal))) := by
+  set f : E → EReal := convexRestrict S (fun x => ((g x : ℝ) : EReal)) with hfdef
   set G : Set (E × ℝ) := (fun x => ((x, g x) : E × ℝ)) '' S with hGdef
   have hGc : IsCompact G := hS.image_of_continuousOn (ContinuousOn.prodMk continuousOn_id hg)
   have hCc : IsCompact (convexHull ℝ G) := IsCompact.convexHull hGc
-  have hFeq : convexHull ℝ (epi f) = convexHull ℝ G + upRay E := convexHull_epi_restrictFn_eq S g
-  have hFcl : IsClosed (convexHull ℝ (epi f)) := isClosed_convexHull_epi_restrictFn hS hg
+  have hFeq : convexHull ℝ (epi f) = convexHull ℝ G + upRay E :=
+      convexHull_epi_convexRestrict_eq S g
+  have hFcl : IsClosed (convexHull ℝ (epi f)) := isClosed_convexHull_epi_convexRestrict hS hg
   have hEpi : IsEpiLike (convexHull ℝ (epi f)) := by
     refine IsEpiLike.of_isClosed (fun x μ ν hp hμν => ?_) hFcl
     rw [hFeq] at hp ⊢
@@ -341,11 +342,11 @@ theorem closedProperConvexFn_convHullFn_restrictFn (hSne : S.Nonempty) (hS : IsC
   obtain ⟨x₀, hx₀⟩ := hSne
   have hCne : (convexHull ℝ G).Nonempty := ⟨(x₀, g x₀), subset_convexHull ℝ G ⟨x₀, hx₀, rfl⟩⟩
   obtain ⟨q, -, hqmin⟩ := hCc.exists_isMinOn hCne continuous_snd.continuousOn
-  have hproper : Proper (convHullFn f) := by
+  have hproper : ProperConvex (convHullFn f) := by
     refine ⟨⟨x₀, ?_⟩, fun x hbot => ?_⟩
-    · rw [mem_dom]
+    · rw [mem_convexDom]
       refine lt_of_le_of_lt (convHullFn_le f x₀) ?_
-      rw [hfdef, restrictFn_of_mem hx₀]
+      rw [hfdef, convexRestrict_of_mem hx₀]
       exact EReal.coe_lt_top _
     · have hge : ((q.2 : ℝ) : EReal) ≤ convHullFn f x := by
         refine le_ofEpi fun μ hμ => ?_

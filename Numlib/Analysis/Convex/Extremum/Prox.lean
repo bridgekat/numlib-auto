@@ -27,7 +27,8 @@ maximal cyclic monotonicity of a subdifferential.
   recedes in no direction but `0`.
 * `argmin_moreauObj_nonempty`, `mem_argmin_moreauObj_iff`, `existsUnique_sub_mem_subdifferential`,
   `prox_eq_iff` — the minimum exists, is unique, and solves `z - x ∈ ∂f x`
-  ([rockafellar1970convex] Theorem 31.5); `prox_add_prox_conj` — `z = prox (z | f) + prox (z | f*)`.
+  ([rockafellar1970convex] Theorem 31.5); `prox_add_prox_convexConj` —
+  `z = prox (z | f) + prox (z | f*)`.
 * `pairingNorm_prox_sub_le`, `dist_prox_prox_le`, `lipschitzWith_prox` — proximation is
   nonexpansive.
 * `subgradientRelHomeomorph` — the graph of `∂f` is homeomorphic to `E`;
@@ -107,8 +108,8 @@ theorem subdifferential_quadFn (x : E) : subdifferential B (quadFn B) x = {x} :=
 /-- `u ↦ w (z - u)` is closed proper convex: it is finite, convex and continuous. -/
 theorem closedProperConvexFn_quadFn_sub (z : E) :
     ClosedProperConvexFn (fun x => quadFn B (z - x)) := by
-  refine ⟨convexFn_quadFn_sub z, ?_, proper_quadFn_sub z⟩
-  rw [closedFn_iff_lowerSemicontinuous fun _ => quadFn_ne_bot _]
+  refine ⟨convexFn_quadFn_sub z, ?_, properConvex_quadFn_sub z⟩
+  rw [closedConvex_iff_lowerSemicontinuous fun _ => quadFn_ne_bot _]
   exact (continuous_quadFn_sub z).lowerSemicontinuous
 
 /-- **The translated quadratic recedes in no direction**: `(w (z - ·))0⁺ y = +∞` for `y ≠ 0`.
@@ -118,7 +119,7 @@ theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
     recessionFn (fun x => quadFn B (z - x)) y = ⊤ := by
   by_contra hne
   obtain ⟨ν, hν⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
-    (recessionFn_ne_bot (proper_quadFn_sub z) y) (lt_top_iff_ne_top.2 hne)
+    (recessionFn_ne_bot (properConvex_quadFn_sub z) y) (lt_top_iff_ne_top.2 hne)
   have hy2 : 0 < B y y := self_pairing_pos hy
   have ha1 : (1 : ℝ) ≤ max 1 (2 * (|ν| + 1) / B y y) := le_max_left _ _
   have ha0 : (0 : ℝ) ≤ max 1 (2 * (|ν| + 1) / B y y) := le_trans zero_le_one ha1
@@ -139,7 +140,7 @@ theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
 
 /-- **Uniqueness of the proximal point**: at most one `x` satisfies `z - x ∈ ∂f x`. Monotonicity
 of `∂f` gives `0 ≤ B (x₁ - x₂) (-(x₁ - x₂))`, and definiteness finishes. -/
-theorem eq_of_sub_mem_subdifferential (hp : Proper f) {z x₁ x₂ : E}
+theorem eq_of_sub_mem_subdifferential (hp : ProperConvex f) {z x₁ x₂ : E}
     (h₁ : z - x₁ ∈ subdifferential B f x₁) (h₂ : z - x₂ ∈ subdifferential B f x₂) :
     x₁ = x₂ := by
   have hmono := isMonotoneRel_subgradientRel (B := B) hp (x₁, z - x₁) h₁ (x₂, z - x₂) h₂
@@ -168,9 +169,9 @@ omit [FiniteDimensional ℝ E] in
 `f + w (z - ·)` splits and the subgradient sum rule applies. -/
 theorem isExactSum_quadFn_sub (hf : ClosedProperConvexFn f) (z : E) :
     IsExactSum B f (fun x => quadFn B (z - x)) := by
-  obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
-  exact (IsExactSum.of_continuousAt (convexFn_quadFn_sub z) (proper_quadFn_sub z) hf.convex
-    hf.proper (mem_dom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))) hx₀
+  obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
+  exact (IsExactSum.of_continuousAt (convexFn_quadFn_sub z) (properConvex_quadFn_sub z) hf.convex
+    hf.proper (mem_convexDom.2 (lt_top_iff_ne_top.2 (quadFn_ne_top _))) hx₀
     (continuous_quadFn_sub z).continuousAt).symm
 
 omit [FiniteDimensional ℝ E] in
@@ -183,9 +184,9 @@ omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
 /-- The Moreau objective of a closed proper convex function is closed proper convex. -/
 theorem closedProperConvexFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     ClosedProperConvexFn (moreauObj B f z) := by
-  obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
   refine ClosedProperConvexFn.add hf (closedProperConvexFn_quadFn_sub z) ⟨x₀, ?_⟩
-  exact mem_dom.2 (EReal.add_lt_top (mem_dom.1 hx₀).ne (quadFn_ne_top _))
+  exact mem_convexDom.2 (EReal.add_lt_top (mem_convexDom.1 hx₀).ne (quadFn_ne_top _))
 
 omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
 /-- **The Moreau objective has no direction of recession.** Its recession function splits as
@@ -197,7 +198,8 @@ theorem recessionConeFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
   · by_contra hy0
     rw [Set.mem_singleton_iff] at hy0
     rw [mem_recessionConeFn, moreauObj_def,
-      congrFun (recessionFn_add hf (closedProperConvexFn_quadFn_sub z) hg.proper.dom_nonempty) y,
+      congrFun (recessionFn_add hf (closedProperConvexFn_quadFn_sub z)
+          hg.proper.convexDom_nonempty) y,
       Pi.add_apply, recessionFn_quadFn_sub z hy0,
       EReal.add_top_of_ne_bot (recessionFn_ne_bot hf.proper y)] at hy
     exact absurd hy (by simp)
@@ -277,21 +279,21 @@ theorem infConv_quadFn_eq_moreauObj_prox (hf : ClosedProperConvexFn f) (z : E) :
 
 omit [FiniteDimensional ℝ E] in
 /-- The conjugate of a closed proper convex function is closed proper convex. -/
-theorem closedProperConvexFn_conj (hf : ClosedProperConvexFn f) :
-    ClosedProperConvexFn (conj B f) := by
-  exact ⟨convexFn_conj _ _, closedFn_conj, proper_conj hf⟩
+theorem closedProperConvexFn_convexConj (hf : ClosedProperConvexFn f) :
+    ClosedProperConvexFn (convexConj B f) := by
+  exact ⟨convexFn_convexConj _ _, closedConvex_convexConj, properConvex_convexConj hf⟩
 
 /-- **Moreau's decomposition of a point**: `z` splits as `prox (z | f) + prox (z | f*)`. Conjugate
 inversion turns `∂f` into `∂f*`, so the second half of `z = x + x*` is `prox (z | f*)`. -/
-theorem prox_add_prox_conj (hf : ClosedProperConvexFn f) (z : E) :
-    prox B f z + prox B (conj B f) z = z := by
+theorem prox_add_prox_convexConj (hf : ClosedProperConvexFn f) (z : E) :
+    prox B f z + prox B (convexConj B f) z = z := by
   have hx : z - prox B f z ∈ subdifferential B f (prox B f z) := sub_prox_mem_subdifferential hf z
   have hstar : z - (z - prox B f z) ∈
-      subdifferential B (conj B f) (z - prox B f z) := by
+      subdifferential B (convexConj B f) (z - prox B f z) := by
     rw [sub_sub_cancel]
-    have h := (mem_subdifferential_conj_iff_of_closedFn (B := B) hf.convex hf.closed).2 hx
+    have h := (mem_subdifferential_convexConj_iff_of_closedConvex (B := B) hf.convex hf.closed).2 hx
     rwa [flip_eq_self] at h
-  rw [prox_eq_of_sub_mem_subdifferential (closedProperConvexFn_conj hf) hstar]
+  rw [prox_eq_of_sub_mem_subdifferential (closedProperConvexFn_convexConj hf) hstar]
   abel
 
 /-! ### The graph of `∂f` is homeomorphic to the space -/

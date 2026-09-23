@@ -1,19 +1,22 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'recessionFn_conj'
+id = 'recessionFn_convexConj'
 
 [[node]]
-id = 'constancySpace_conj'
+id = 'recessionFn_eq_supportFn_convexDom_convexConj'
 
 [[node]]
-id = 'recessionConeFn_conj'
+id = 'constancySpace_convexConj'
 
 [[node]]
-id = 'recessionConeFn_conj_hull'
+id = 'recessionConeFn_convexConj'
 
 [[node]]
-id = 'recessionConeFn_eq_polarCone_dom_conj'
+id = 'recessionConeFn_convexConj_hull'
+
+[[node]]
+id = 'recessionConeFn_eq_polarCone_convexDom_convexConj'
 
 [[node]]
 id = 'polarCone_recessionConeFn'
@@ -22,4 +25,4 @@ id = 'polarCone_recessionConeFn'
 id = 'zero_mem_interior_iff_polarCone_eq_zero'
 
 [[node]]
-id = 'isBounded_setOf_le_iff_zero_mem_interior_dom_conj'
+id = 'isBounded_setOf_le_iff_zero_mem_interior_convexDom_convexConj'

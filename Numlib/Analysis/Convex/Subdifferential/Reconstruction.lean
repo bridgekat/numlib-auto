@@ -25,7 +25,7 @@ assembled out of honest gradients and normal directions.
 
 * `containsNoLine_subdifferential` — `∂f x` contains no line, when `dom f` has interior.
 * `recessionCone_subdifferential_eq_normalCone` — the recession cone of `∂f x` is `N_{dom f}(x)`.
-* `exists_mem_interior_dom_of_forall_normalCone` — the separation step: a direction making a
+* `exists_mem_interior_convexDom_of_forall_normalCone` — the separation step: a direction making a
   strictly obtuse angle with every non-zero normal to `dom f` at `x` reaches `int (dom f)`.
 * `exposedPoints_subset_gradientLimits` — the heart of the proof: every exposed point of `∂f x` is
   a limit of gradients.
@@ -72,11 +72,12 @@ theorem mem_gradientLimits_of_hasGradientAtFn {v : E}
 
 /-- **`S x ⊆ ∂f x`**: the graph of `∂f` is closed, so a limit of gradients at points tending to `x`
 is a subgradient at `x`. -/
-theorem gradientLimits_subset_subdifferential (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem gradientLimits_subset_subdifferential (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f) :
     gradientLimits f x ⊆ subdifferential (innerₗ E) f x := by
   rintro v ⟨xs, vs, hxs, hgrad, hvs⟩
   have hclosed : IsClosed (subgradientRel (innerₗ E) f) :=
-    isClosed_subgradientRel continuous_inner hp (ClosedFn.lowerSemicontinuous hcl)
+    isClosed_subgradientRel continuous_inner hp (ClosedConvex.lowerSemicontinuous hcl)
   have hmem : ∀ i, (xs i, vs i) ∈ subgradientRel (innerₗ E) f := fun i => by
     have := subdifferential_innerL_eq_singleton hf (hgrad i)
     rw [LinearIsometryEquiv.symm_apply_apply] at this
@@ -88,9 +89,9 @@ omit [FiniteDimensional ℝ E] in
 /-- **A subgradient plus a multiple of a normal direction is a subgradient**, packaged for the
 `innerₗ` pairing. -/
 theorem add_smul_mem_subdifferential {v w : E} (hv : v ∈ subdifferential (innerₗ E) f x)
-    (hw : w ∈ normalCone (innerₗ E) (dom f) x) {a : ℝ} (ha : 0 ≤ a) :
+    (hw : w ∈ normalCone (innerₗ E) (convexDom f) x) {a : ℝ} (ha : 0 ≤ a) :
     v + a • w ∈ subdifferential (innerₗ E) f x := by
-  refine subdifferential_add_normalCone_dom_subset (innerₗ E) f x ⟨v, hv, a • w, ?_, rfl⟩
+  refine subdifferential_add_normalCone_convexDom_subset (innerₗ E) f x ⟨v, hv, a • w, ?_, rfl⟩
   intro z hz
   have := hw z hz
   rw [map_smul, smul_eq_mul]
@@ -100,15 +101,15 @@ omit [FiniteDimensional ℝ E] in
 /-- **The subgradient inequality at `v + a • w`, as a bound between real numbers.** Both `f z` and
 `f x` are finite — the first because `z ∈ dom f`, the second because a subgradient exists at `x` —
 so the `EReal` inequality is a real one, and the pairing splits by bilinearity. -/
-theorem inner_add_smul_le_of_mem_subdifferential (hp : Proper f) {v w z : E} {a : ℝ}
-    (hmem : v + a • w ∈ subdifferential (innerₗ E) f x) (hz : z ∈ dom f) :
+theorem inner_add_smul_le_of_mem_subdifferential (hp : ProperConvex f) {v w z : E} {a : ℝ}
+    (hmem : v + a • w ∈ subdifferential (innerₗ E) f x) (hz : z ∈ convexDom f) :
     ⟪z - x, v⟫ + a * ⟪z - x, w⟫ ≤ (f z).toReal - (f x).toReal := by
   have hle := hmem z
   have hval : (innerₗ E) (z - x) (v + a • w) = ⟪z - x, v⟫ + a * ⟪z - x, w⟫ := by
     rw [innerₗ_apply_apply, inner_add_right, real_inner_smul_right]
-  have hfz : f z ≠ ⊤ := (mem_dom.1 hz).ne
+  have hfz : f z ≠ ⊤ := (mem_convexDom.1 hz).ne
   have hzb : f z ≠ ⊥ := hp.ne_bot z
-  have hfx : f x ≠ ⊤ := (mem_dom.1 (mem_dom_of_mem_subdifferential hp hmem)).ne
+  have hfx : f x ≠ ⊤ := (mem_convexDom.1 (mem_convexDom_of_mem_subdifferential hp hmem)).ne
   have hxb : f x ≠ ⊥ := hp.ne_bot x
   rw [hval, ← EReal.coe_toReal hfx hxb, ← EReal.coe_toReal hfz hzb,
     ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
@@ -118,13 +119,14 @@ omit [FiniteDimensional ℝ E] in
 /-- **The subdifferential contains no line** once `dom f` has interior. If `v + t w ∈ ∂f x` for
 every real `t`, the subgradient inequality forces `⟨z - x, w⟩ = 0` on all of `dom f`, and a set
 with interior lies in no hyperplane. -/
-theorem containsNoLine_subdifferential (hp : Proper f) (hne : (interior (dom f)).Nonempty) :
+theorem containsNoLine_subdifferential (hp : ProperConvex f)
+    (hne : (interior (convexDom f)).Nonempty) :
     ContainsNoLine (subdifferential (innerₗ E) f x) := by
   intro v w hw
   by_contra hall
   push Not at hall
   -- `⟨z - x, w⟩ = 0` for every `z ∈ dom f`: otherwise a large `t` breaks the bound.
-  have hzero : ∀ z ∈ dom f, ⟪z - x, w⟫ = 0 := by
+  have hzero : ∀ z ∈ convexDom f, ⟪z - x, w⟫ = 0 := by
     intro z hz
     by_contra hne'
     have hMle : ∀ t : ℝ, ⟪z - x, v⟫ + t * ⟪z - x, w⟫ ≤ (f z).toReal - (f x).toReal :=
@@ -137,7 +139,7 @@ theorem containsNoLine_subdifferential (hp : Proper f) (hne : (interior (dom f))
   obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.1 isOpen_interior z₀ hz₀
   have hwpos : 0 < ‖w‖ := norm_pos_iff.2 hw
   have hw0 : ‖w‖ ≠ 0 := hwpos.ne'
-  have hmem : z₀ + (r / (2 * ‖w‖)) • w ∈ dom f := by
+  have hmem : z₀ + (r / (2 * ‖w‖)) • w ∈ convexDom f := by
     refine interior_subset (hball ?_)
     rw [mem_ball_iff_norm]
     have hcalc : ‖z₀ + (r / (2 * ‖w‖)) • w - z₀‖ = r / 2 := by
@@ -157,9 +159,9 @@ theorem containsNoLine_subdifferential (hp : Proper f) (hne : (interior (dom f))
 omit [FiniteDimensional ℝ E] in
 /-- **A direction of recession of `∂f x` is normal to `dom f` at `x`.** Letting `λ → ∞` in the
 subgradient inequality for `v + λ w` forces `⟨z - x, w⟩ ≤ 0` on `dom f`. -/
-theorem recessionCone_subdifferential_subset_normalCone (hp : Proper f) {v : E}
+theorem recessionCone_subdifferential_subset_normalCone (hp : ProperConvex f) {v : E}
     (hv : v ∈ subdifferential (innerₗ E) f x) :
-    recessionCone (subdifferential (innerₗ E) f x) ⊆ normalCone (innerₗ E) (dom f) x := by
+    recessionCone (subdifferential (innerₗ E) f x) ⊆ normalCone (innerₗ E) (convexDom f) x := by
   intro w hw z hz
   by_contra hpos
   push Not at hpos
@@ -181,9 +183,9 @@ omit [FiniteDimensional ℝ E] in
 reconstruction below uses only the inclusion `recessionCone_subdifferential_subset_normalCone`, so
 this equality is discharged here on its own: the other inclusion is `∂f x + N_{dom f}(x) ⊆ ∂f x`
 read at a single normal direction. -/
-theorem recessionCone_subdifferential_eq_normalCone (hp : Proper f) {v : E}
+theorem recessionCone_subdifferential_eq_normalCone (hp : ProperConvex f) {v : E}
     (hv : v ∈ subdifferential (innerₗ E) f x) :
-    recessionCone (subdifferential (innerₗ E) f x) = normalCone (innerₗ E) (dom f) x :=
+    recessionCone (subdifferential (innerₗ E) f x) = normalCone (innerₗ E) (convexDom f) x :=
   Set.Subset.antisymm (recessionCone_subdifferential_subset_normalCone hp hv)
     fun _ hw _ hv' _ ha => add_smul_mem_subdifferential hv' hw ha
 
@@ -192,11 +194,11 @@ obtuse angle with `y`, then the half-line from `x` in the direction `y` reaches 
 Contrapositive plus `geometric_hahn_banach_open`: if the half-line missed the open convex set
 `int (dom f)`, the separating functional would be a non-zero normal making a non-obtuse angle with
 `y`. Proper separation is not needed. -/
-theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
-    (hne : (interior (dom f)).Nonempty) {y : E}
-    (hy : ∀ w ∈ normalCone (innerₗ E) (dom f) x, w ≠ 0 → ⟪y, w⟫ < 0) :
-    ∃ a : ℝ, 0 < a ∧ x + a • y ∈ interior (dom f) := by
-  have hdom : Convex ℝ (dom f) := hf.convex_dom
+theorem exists_mem_interior_convexDom_of_forall_normalCone (hf : ConvexFn f)
+    (hne : (interior (convexDom f)).Nonempty) {y : E}
+    (hy : ∀ w ∈ normalCone (innerₗ E) (convexDom f) x, w ≠ 0 → ⟪y, w⟫ < 0) :
+    ∃ a : ℝ, 0 < a ∧ x + a • y ∈ interior (convexDom f) := by
+  have hdom : Convex ℝ (convexDom f) := hf.convex_convexDom
   by_contra hcon
   push Not at hcon
   -- The half-line from `x` in the direction `y`.
@@ -207,7 +209,7 @@ theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
     have hx' : (s + t) • x = x := by rw [hst, one_smul]
     calc s • (x + a • y) + t • (x + b • y) = (s + t) • x + (s * a + t * b) • y := by module
       _ = x + (s * a + t * b) • y := by rw [hx']
-  have hdisj : Disjoint (interior (dom f)) R := by
+  have hdisj : Disjoint (interior (convexDom f)) R := by
     rw [Set.disjoint_right]
     rintro _ ⟨a, ha, rfl⟩ hmem
     rcases eq_or_lt_of_le ha with rfl | hpos
@@ -240,7 +242,7 @@ theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
     linarith
   -- It is bounded above by `u` on all of `dom f`, not merely on the interior: a point of `dom f`
   -- can be nudged into the interior towards `z₀`, by an amount too small to change the sign.
-  have hlex : ∀ z ∈ dom f, l z ≤ u := by
+  have hlex : ∀ z ∈ convexDom f, l z ≤ u := by
     intro z hz
     by_contra hgt
     push Not at hgt
@@ -249,7 +251,7 @@ theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
     set t : ℝ := min (1 / 2) ((l z - u) / (2 * c)) with htdef
     have htpos : 0 < t := lt_min (by norm_num) (by positivity)
     have htle : t ≤ 1 := (min_le_left _ _).trans (by norm_num)
-    have hmem : t • z₀ + (1 - t) • z ∈ interior (dom f) :=
+    have hmem : t • z₀ + (1 - t) • z ∈ interior (convexDom f) :=
       hdom.combo_interior_self_mem_interior hz₀ hz htpos (by linarith) (by ring)
     have hlt' := hlt _ hmem
     rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul] at hlt'
@@ -271,7 +273,7 @@ theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
   have hwne : w ≠ 0 := by
     rw [hw]
     simpa using hl0
-  have hwnormal : w ∈ normalCone (innerₗ E) (dom f) x := by
+  have hwnormal : w ∈ normalCone (innerₗ E) (convexDom f) x := by
     intro z hz
     have hzx : l (z - x) ≤ 0 := by
       rw [map_sub]
@@ -299,9 +301,9 @@ theorem exists_mem_interior_dom_of_forall_normalCone (hf : ConvexFn f)
 the unit direction `y` enters `int (dom f)`, density of the points of differentiability supplies
 points arbitrarily close to it. The tolerance has to be `ε²` at distance `ε`, not `ε`:
 it is the *direction* of approach that must converge to `y`. -/
-theorem exists_seq_differentiableAtFn_tendsto_dir (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ dom f) {y : E} (hy : ‖y‖ = 1) {α : ℝ} (hα : 0 < α)
-    (hαy : x + α • y ∈ interior (dom f)) :
+theorem exists_seq_differentiableAtFn_tendsto_dir (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ convexDom f) {y : E} (hy : ‖y‖ = 1) {α : ℝ} (hα : 0 < α)
+    (hαy : x + α • y ∈ interior (convexDom f)) :
     ∃ xs : ℕ → E, (∀ i, DifferentiableAtFn f (xs i)) ∧ (∀ i, xs i ≠ x) ∧
       Tendsto xs atTop (𝓝 x) ∧
       Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y) := by
@@ -326,10 +328,10 @@ theorem exists_seq_differentiableAtFn_tendsto_dir (hf : ConvexFn f) (hp : Proper
   have hδhalf : ∀ i, δ i ≤ ε i / 2 := fun i => min_le_right _ _
   -- Points of differentiability within `δ i` of `x + ε i • y`, which is interior.
   have hcl : ∀ i, ∃ z, DifferentiableAtFn f z ∧ dist (x + (ε i) • y) z < δ i := fun i => by
-    have hpt : x + (ε i) • y ∈ interior (dom f) :=
-      mem_interior_dom_smul hf hx hα hαy (hεpos i) (hεle i)
+    have hpt : x + (ε i) • y ∈ interior (convexDom f) :=
+      mem_interior_convexDom_smul hf hx hα hαy (hεpos i) (hεle i)
     exact Metric.mem_closure_iff.1
-      (interior_dom_subset_closure_differentiableAtFn hf hp hpt) (δ i) (hδpos i)
+      (interior_convexDom_subset_closure_differentiableAtFn hf hp hpt) (δ i) (hδpos i)
   choose xs hxsdiff hxsdist using hcl
   have hεy : ∀ i, ‖(ε i) • y‖ = ε i := fun i => by
     rw [norm_smul, Real.norm_eq_abs, abs_of_pos (hεpos i), hy, mul_one]
@@ -400,12 +402,12 @@ normalised, makes a strictly obtuse angle with every non-zero normal to `dom f` 
 `x + α y` enters `int (dom f)`; density supplies points of differentiability approaching `x` in the
 direction `y`, and the boundary convergence theorem collapses their subdifferentials onto the face
 of `∂f x` exposed by `y`, which is `{x*}`. -/
-theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
-    (hne : (interior (dom f)).Nonempty) :
+theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : ProperConvex f)
+    (hne : (interior (convexDom f)).Nonempty) :
     (subdifferential (innerₗ E) f x).exposedPoints ℝ ⊆ gradientLimits f x := by
   intro v hvmem
   obtain ⟨hv, l, hl⟩ := hvmem
-  have hx : x ∈ dom f := mem_dom_of_mem_subdifferential hp hv
+  have hx : x ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp hv
   set y₀ : E := (InnerProductSpace.toDual ℝ E).symm l with hy₀
   have hlw : ∀ z : E, l z = ⟪y₀, z⟫ := fun z => by
     rw [hy₀, InnerProductSpace.toDual_symm_apply]
@@ -426,7 +428,7 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
       rw [hydef, real_inner_smul_left, hlw]
     have hinvpos : (0 : ℝ) < ‖y₀‖⁻¹ := by positivity
     -- Every non-zero normal to `dom f` at `x` makes a strictly obtuse angle with `y`.
-    have hnormal : ∀ w ∈ normalCone (innerₗ E) (dom f) x, w ≠ 0 → ⟪y, w⟫ < 0 := by
+    have hnormal : ∀ w ∈ normalCone (innerₗ E) (convexDom f) x, w ≠ 0 → ⟪y, w⟫ < 0 := by
       intro w hw hw0
       have hmem : v + w ∈ subdifferential (innerₗ E) f x := by
         have h := add_smul_mem_subdifferential hv hw zero_le_one
@@ -438,7 +440,7 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
         simpa using heq)
       rw [hyinner]
       exact mul_neg_of_pos_of_neg hinvpos (lt_of_le_of_ne (by linarith) hlwne)
-    obtain ⟨α, hα, hαy⟩ := exists_mem_interior_dom_of_forall_normalCone hf hne hnormal
+    obtain ⟨α, hα, hαy⟩ := exists_mem_interior_convexDom_of_forall_normalCone hf hne hnormal
     obtain ⟨xs, hxsdiff, hxsne, hxslim, hxsdir⟩ :=
       exists_seq_differentiableAtFn_tendsto_dir hf hp hx hynorm hα hαy
     choose G hG using hxsdiff
@@ -455,7 +457,7 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
         exact (hl w hw).2 (le_of_mul_le_mul_left h1 hinvpos)
     -- The directional derivative is finite in the direction `y`, as the collapse step requires.
     have hdirbot : dirDeriv f x y ≠ ⊥ := by
-      have h := (mem_subdifferential_iff_le_dirDeriv (B := innerₗ E) (mem_dom.1 hx).ne
+      have h := (mem_subdifferential_iff_le_dirDeriv (B := innerₗ E) (mem_convexDom.1 hx).ne
         (hp.ne_bot x)).1 hv y
       intro hbot
       rw [hbot, le_bot_iff] at h
@@ -465,7 +467,7 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
       exact hG i
     refine Metric.tendsto_nhds.2 fun ε hε => ?_
     have hev := eventually_subdifferential_subset_exposed_add_closedBall hf hp hx
-      (fun i => interior_subset (hG i).mem_interior_dom) hxsne hxslim hxsdir hdirbot hα hαy
+      (fun i => interior_subset (hG i).mem_interior_convexDom) hxsne hxslim hxsdir hdirbot hα hαy
       (half_pos hε)
     rw [hface] at hev
     filter_upwards [hev] with i hi
@@ -496,9 +498,9 @@ the exposed ones, which `exposedPoints_subset_gradientLimits` places in `S(x)`, 
 `recessionCone_subdifferential_subset_normalCone` carrying the extreme directions into the normal
 cone. -/
 theorem subdifferential_eq_closure_convexHull_gradientLimits_add_normalCone (hf : ConvexFn f)
-    (hp : Proper f) (hcl : ClosedFn f) (hne : (interior (dom f)).Nonempty) :
+    (hp : ProperConvex f) (hcl : ClosedConvex f) (hne : (interior (convexDom f)).Nonempty) :
     subdifferential (innerₗ E) f x
-      = closure (convexHull ℝ (gradientLimits f x)) + normalCone (innerₗ E) (dom f) x := by
+      = closure (convexHull ℝ (gradientLimits f x)) + normalCone (innerₗ E) (convexDom f) x := by
   have hflip : IsContinuousPairing ((innerₗ E).flip) := by rw [flip_innerₗ]; infer_instance
   have hSsub : gradientLimits f x ⊆ subdifferential (innerₗ E) f x :=
     gradientLimits_subset_subdifferential hf hp hcl
@@ -525,20 +527,20 @@ theorem subdifferential_eq_closure_convexHull_gradientLimits_add_normalCone (hf 
         ⊆ closure (convexHull ℝ (gradientLimits f x)) :=
       convexHull_min hEP (convex_convexHull ℝ _).closure
     have hED : (PointedCone.hull ℝ (extremeDirections (subdifferential (innerₗ E) f x)) : Set E)
-        ⊆ normalCone (innerₗ E) (dom f) x :=
+        ⊆ normalCone (innerₗ E) (convexDom f) x :=
       Submodule.span_le.2 ((extremeDirections_subset_recessionCone hconv hclosed).trans
         (recessionCone_subdifferential_subset_normalCone hp hv₀) :
           extremeDirections (subdifferential (innerₗ E) f x)
-            ⊆ (normalPointedCone (innerₗ E) (dom f) x : Set E))
+            ⊆ (normalPointedCone (innerₗ E) (convexDom f) x : Set E))
     calc subdifferential (innerₗ E) f x
         = convexHullPD ((subdifferential (innerₗ E) f x).extremePoints ℝ)
             (extremeDirections (subdifferential (innerₗ E) f x)) :=
           (convexHullPD_extremePoints_extremeDirections hconv hclosed hnl).symm
-      _ ⊆ closure (convexHull ℝ (gradientLimits f x)) + normalCone (innerₗ E) (dom f) x :=
+      _ ⊆ closure (convexHull ℝ (gradientLimits f x)) + normalCone (innerₗ E) (convexDom f) x :=
           Set.add_subset_add hhullEP hED
   · -- `⊇`: the hull is inside `∂f x`, which absorbs normal directions.
     exact (Set.add_subset_add_right hhull).trans
-      (subdifferential_add_normalCone_dom_subset (innerₗ E) f x)
+      (subdifferential_add_normalCone_convexDom_subset (innerₗ E) f x)
 
 end Reconstruction
 

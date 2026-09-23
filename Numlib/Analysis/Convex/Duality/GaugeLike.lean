@@ -39,11 +39,11 @@ inequality, read as a conjugacy.
   `monotoneConj`, and `g⁺⁺ = g` ([rockafellar1970convex] Theorem 12.4).
 * `closedProperConvexFn_monotoneComp`, `setOf_monotoneComp_le_eq_smul` — for a non-constant `g`,
   `g ∘ k` is closed proper convex, and its sublevel sets are all dilates of `{k ≤ 1}`.
-* `conj_monotoneComp` — `(g ∘ k)* = g⁺ ∘ k°` for a closed gauge `k`.
+* `convexConj_monotoneComp` — `(g ∘ k)* = g⁺ ∘ k°` for a closed gauge `k`.
 * `monotoneConj_powHalfLine` — `(ζ ↦ ζ^p / p)⁺ = (σ ↦ σ^q / q)`.
 * `posHomogeneousDeg_iff_exists_isGauge` — a closed proper convex function is positively
   homogeneous of degree `p` exactly when it is `(1/p) k^p` for a closed gauge `k`.
-* `conj_monotoneComp_powHalfLine`, `polarGauge_degGauge`, `pairing_le_rpow_mul_rpow`,
+* `convexConj_monotoneComp_powHalfLine`, `polarGauge_degGauge`, `pairing_le_rpow_mul_rpow`,
   `polarSet_setOf_le_inv` — the conjugate of `(1/p) k^p` is `(1/q) (k°)^q`, the gauges
   `(p f)^{1/p}` and `(q f*)^{1/q}` are polar, and the level sets `{f ≤ 1/p}` and `{f* ≤ 1/q}` are
   polar sets.
@@ -75,15 +75,16 @@ section RestrictClosed
 variable {E : Type*} [AddCommGroup E] [TopologicalSpace E] [IsTopologicalAddGroup E]
 
 /-- Cutting a closed function down to a closed set leaves it closed. -/
-theorem ClosedFn.restrictFn {f : E → EReal} {s : Set E} (hf : ClosedFn f) (hne : ∀ x, f x ≠ ⊥)
-    (hs : IsClosed s) : ClosedFn (ConvexAnalysis.restrictFn s f) := by
-  have hne' : ∀ x, ConvexAnalysis.restrictFn s f x ≠ ⊥ := fun x => by
+theorem ClosedConvex.convexRestrict {f : E → EReal} {s : Set E} (hf : ClosedConvex f)
+    (hne : ∀ x, f x ≠ ⊥)
+    (hs : IsClosed s) : ClosedConvex (ConvexAnalysis.convexRestrict s f) := by
+  have hne' : ∀ x, ConvexAnalysis.convexRestrict s f x ≠ ⊥ := fun x => by
     by_cases hx : x ∈ s
-    · rw [restrictFn_of_mem hx]; exact hne x
-    · rw [restrictFn_of_notMem hx]; exact top_ne_bot
+    · rw [convexRestrict_of_mem hx]; exact hne x
+    · rw [convexRestrict_of_notMem hx]; exact top_ne_bot
   have hepi : IsClosed (epi f) := lowerSemicontinuous_iff_isClosed_epi.1 hf.lowerSemicontinuous
-  refine (closedFn_iff_lowerSemicontinuous hne').2 ?_
-  rw [lowerSemicontinuous_iff_isClosed_epi, epi_restrictFn]
+  refine (closedConvex_iff_lowerSemicontinuous hne').2 ?_
+  rw [lowerSemicontinuous_iff_isClosed_epi, epi_convexRestrict]
   exact hepi.inter (hs.prod isClosed_univ)
 
 end RestrictClosed
@@ -117,18 +118,18 @@ structure MonotoneHalfLineFn (g : ℝ → EReal) : Prop where
   /-- `g` is convex. -/
   convex : ConvexFn g
   /-- `g` is closed. -/
-  closed : ClosedFn g
+  closed : ClosedConvex g
   /-- `g` is finite at the origin. -/
   zero_ne_top : g 0 ≠ ⊤
 
 namespace MonotoneHalfLineFn
 
 /-- A function of this class never takes the value `-∞`: it is `+∞` somewhere, so the exceptional
-branch of `clFn` is excluded. -/
+branch of `convexCl` is excluded. -/
 theorem ne_bot (hg : MonotoneHalfLineFn g) (t : ℝ) : g t ≠ ⊥ := by
   by_cases hb : ∃ x, lscHull g x = ⊥
-  · have h : clFn g = g := hg.closed
-    rw [clFn_of_exists_eq_bot hb] at h
+  · have h : convexCl g = g := hg.closed
+    rw [convexCl_of_exists_eq_bot hb] at h
     have hcon : (⊤ : EReal) = ⊥ := by
       rw [← hg.top_of_neg (t := -1) (by norm_num), ← h]
     exact absurd hcon top_ne_bot
@@ -147,7 +148,7 @@ theorem zero_le (hg : MonotoneHalfLineFn g) (t : ℝ) : g 0 ≤ g t :=
   hg.iInf_eq_zero ▸ iInf_le _ t
 
 /-- A function of this class is proper. -/
-theorem proper (hg : MonotoneHalfLineFn g) : Proper g :=
+theorem proper (hg : MonotoneHalfLineFn g) : ProperConvex g :=
   ⟨⟨0, lt_top_iff_ne_top.2 hg.zero_ne_top⟩, hg.ne_bot⟩
 
 end MonotoneHalfLineFn
@@ -158,22 +159,22 @@ end MonotoneHalfLineFn
 Like `g` itself it is taken to be `+∞` to the left of the origin, which is what makes the
 operation an involution rather than a bijection onto a smaller class. -/
 noncomputable def monotoneConj (g : ℝ → EReal) : ℝ → EReal :=
-  ConvexAnalysis.restrictFn (Set.Ici 0) fun s =>
+  ConvexAnalysis.convexRestrict (Set.Ici 0) fun s =>
     ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t
 
 theorem monotoneConj_of_nonneg (g : ℝ → EReal) (hs : 0 ≤ s) :
     monotoneConj g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t :=
-  restrictFn_of_mem hs
+  convexRestrict_of_mem hs
 
 theorem monotoneConj_of_neg (g : ℝ → EReal) (hs : s < 0) : monotoneConj g s = ⊤ :=
-  restrictFn_of_notMem (by simpa using hs)
+  convexRestrict_of_notMem (by simpa using hs)
 
 /-- On a function that is `+∞` to the left of the origin, the supremum over the half-line and the
 supremum over the whole line agree, so the monotone conjugate is the ordinary conjugate for
 `mulPairing`, cut back to the half-line. -/
-theorem conj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
-    conj mulPairing g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t := by
-  rw [conj_apply]
+theorem convexConj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
+    convexConj mulPairing g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t := by
+  rw [convexConj_apply]
   refine le_antisymm (iSup_le fun t => ?_) (iSup_le fun t => iSup_le fun ht => ?_)
   · rcases le_or_gt 0 t with ht | ht
     · exact le_trans (le_iSup (fun _ : (0 : ℝ) ≤ t => ((t * s : ℝ) : EReal) - g t) ht)
@@ -182,37 +183,37 @@ theorem conj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s :
   · exact le_iSup (fun t : ℝ => ((mulPairing t s : ℝ) : EReal) - g t) t
 
 /-- The monotone conjugate as a restricted ordinary conjugate. -/
-theorem monotoneConj_eq_restrictFn_conj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
-    monotoneConj g = ConvexAnalysis.restrictFn (Set.Ici 0) (conj mulPairing g) := by
-  rw [monotoneConj, funext fun s => (conj_mulPairing_apply hg s).symm]
+theorem monotoneConj_eq_convexRestrict_convexConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
+    monotoneConj g = ConvexAnalysis.convexRestrict (Set.Ici 0) (convexConj mulPairing g) := by
+  rw [monotoneConj, funext fun s => (convexConj_mulPairing_apply hg s).symm]
 
 /-- On the half-line the monotone conjugate and the ordinary conjugate agree. -/
 theorem monotoneConj_of_nonneg' (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (hs : 0 ≤ s) :
-    monotoneConj g s = conj mulPairing g s := by
-  rw [monotoneConj_eq_restrictFn_conj hg, restrictFn_of_mem (Set.mem_Ici.2 hs)]
+    monotoneConj g s = convexConj mulPairing g s := by
+  rw [monotoneConj_eq_convexRestrict_convexConj hg, convexRestrict_of_mem (Set.mem_Ici.2 hs)]
 
 /-- The monotone conjugate dominates the ordinary one, being `+∞` where they differ. -/
-theorem conj_le_monotoneConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
-    conj mulPairing g s ≤ monotoneConj g s := by
+theorem convexConj_le_monotoneConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
+    convexConj mulPairing g s ≤ monotoneConj g s := by
   rcases le_or_gt 0 s with hs | hs
   · exact (monotoneConj_of_nonneg' hg hs).ge
   · rw [monotoneConj_of_neg _ hs]; exact le_top
 
 /-- The ordinary conjugate of a function that is `+∞` to the left of the origin is nondecreasing:
 only nonnegative arguments contribute to the supremum. -/
-theorem monotone_conj_mulPairing (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
-    Monotone (conj mulPairing g) := by
+theorem monotone_convexConj_mulPairing (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
+    Monotone (convexConj mulPairing g) := by
   intro s s' hss
-  rw [conj_mulPairing_apply hg, conj_mulPairing_apply hg]
+  rw [convexConj_mulPairing_apply hg, convexConj_mulPairing_apply hg]
   refine iSup_le fun t => iSup_le fun ht => le_trans ?_
     (le_trans (le_iSup (fun _ : (0 : ℝ) ≤ t => ((t * s' : ℝ) : EReal) - g t) ht)
       (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t, ((t * s' : ℝ) : EReal) - g t) t))
   exact EReal.sub_le_sub (by exact_mod_cast mul_le_mul_of_nonneg_left hss ht) le_rfl
 
 /-- The conjugate is constant to the left of the origin, with the value `-g 0`. -/
-theorem conj_mulPairing_of_nonpos (hg : MonotoneHalfLineFn g) (hs : s ≤ 0) :
-    conj mulPairing g s = -g 0 := by
-  rw [conj_mulPairing_apply hg.top_of_neg]
+theorem convexConj_mulPairing_of_nonpos (hg : MonotoneHalfLineFn g) (hs : s ≤ 0) :
+    convexConj mulPairing g s = -g 0 := by
+  rw [convexConj_mulPairing_apply hg.top_of_neg]
   refine le_antisymm (iSup_le fun t => iSup_le fun ht => ?_) ?_
   · refine le_trans (EReal.sub_le_sub (y := (0 : EReal)) ?_ le_rfl) ?_
     · exact_mod_cast mul_nonpos_of_nonneg_of_nonpos ht hs
@@ -224,7 +225,7 @@ theorem conj_mulPairing_of_nonpos (hg : MonotoneHalfLineFn g) (hs : s ≤ 0) :
 
 /-- The monotone conjugate at the origin is `-g 0`. -/
 theorem monotoneConj_zero (hg : MonotoneHalfLineFn g) : monotoneConj g 0 = -g 0 := by
-  rw [monotoneConj_of_nonneg' hg.top_of_neg le_rfl, conj_mulPairing_of_nonpos hg le_rfl]
+  rw [monotoneConj_of_nonneg' hg.top_of_neg le_rfl, convexConj_mulPairing_of_nonpos hg le_rfl]
 
 /-- **The class is stable under monotone conjugacy.** -/
 theorem monotoneHalfLineFn_monotoneConj (hg : MonotoneHalfLineFn g) :
@@ -232,13 +233,14 @@ theorem monotoneHalfLineFn_monotoneConj (hg : MonotoneHalfLineFn g) :
   top_of_neg _ ht := monotoneConj_of_neg g ht
   monotoneOn s hs s' hs' hss := by
     rw [monotoneConj_of_nonneg' hg.top_of_neg hs, monotoneConj_of_nonneg' hg.top_of_neg hs']
-    exact monotone_conj_mulPairing hg.top_of_neg hss
+    exact monotone_convexConj_mulPairing hg.top_of_neg hss
   convex := by
-    rw [monotoneConj_eq_restrictFn_conj hg.top_of_neg]
-    exact (convexFn_conj mulPairing g).restrictFn (convex_Ici 0)
+    rw [monotoneConj_eq_convexRestrict_convexConj hg.top_of_neg]
+    exact (convexFn_convexConj mulPairing g).convexRestrict (convex_Ici 0)
   closed := by
-    rw [monotoneConj_eq_restrictFn_conj hg.top_of_neg]
-    exact closedFn_conj.restrictFn (fun _ => conj_ne_bot hg.proper.dom_nonempty _) isClosed_Ici
+    rw [monotoneConj_eq_convexRestrict_convexConj hg.top_of_neg]
+    exact closedConvex_convexConj.convexRestrict
+        (fun _ => convexConj_ne_bot hg.proper.convexDom_nonempty _) isClosed_Ici
   zero_ne_top := by
     rw [monotoneConj_zero hg]
     exact fun h => hg.ne_bot 0 (EReal.neg_eq_top_iff.1 h)
@@ -248,9 +250,9 @@ argument: there `g⁺` is constant, and the constant is already the value of the
 This is the only place where the truncation in `monotoneConj` has to be undone. -/
 theorem iSup_sub_monotoneConj (hg : MonotoneHalfLineFn g) (ht : 0 ≤ t) :
     (⨆ s : ℝ, ((s * t : ℝ) : EReal) - monotoneConj g s)
-      = ⨆ s : ℝ, ((s * t : ℝ) : EReal) - conj mulPairing g s := by
+      = ⨆ s : ℝ, ((s * t : ℝ) : EReal) - convexConj mulPairing g s := by
   refine le_antisymm
-    (iSup_mono fun s => EReal.sub_le_sub le_rfl (conj_le_monotoneConj hg.top_of_neg s))
+    (iSup_mono fun s => EReal.sub_le_sub le_rfl (convexConj_le_monotoneConj hg.top_of_neg s))
     (iSup_le fun s => ?_)
   rcases le_or_gt 0 s with hs | hs
   · exact le_trans (le_of_eq (by rw [monotoneConj_of_nonneg' hg.top_of_neg hs]))
@@ -259,7 +261,7 @@ theorem iSup_sub_monotoneConj (hg : MonotoneHalfLineFn g) (ht : 0 ≤ t) :
       rw [monotoneConj_zero hg, zero_mul, EReal.coe_zero, sub_eq_add_neg, neg_neg, zero_add]
     refine le_trans ?_ (le_trans hz.ge
       (le_iSup (fun s : ℝ => ((s * t : ℝ) : EReal) - monotoneConj g s) (0 : ℝ)))
-    rw [conj_mulPairing_of_nonpos hg hs.le, sub_eq_add_neg, neg_neg]
+    rw [convexConj_mulPairing_of_nonpos hg hs.le, sub_eq_add_neg, neg_neg]
     calc ((s * t : ℝ) : EReal) + g 0
         ≤ (0 : EReal) + g 0 :=
           add_le_add (by exact_mod_cast mul_nonpos_of_nonpos_of_nonneg hs.le ht) le_rfl
@@ -280,10 +282,11 @@ theorem monotoneConj_monotoneConj (hg : MonotoneHalfLineFn g) :
   have h1 : monotoneConj (monotoneConj g) t
       = ⨆ s : ℝ, ((s * t : ℝ) : EReal) - monotoneConj g s :=
     monotoneConj_of_nonneg' hG.top_of_neg ht
-  have h2 : biconj mulPairing g t = ⨆ s : ℝ, ((t * s : ℝ) : EReal) - conj mulPairing g s := rfl
+  have h2 : convexBiconj mulPairing g t = ⨆ s : ℝ,
+      ((t * s : ℝ) : EReal) - convexConj mulPairing g s := rfl
   rw [h1, iSup_sub_monotoneConj hg ht,
-    iSup_congr (g := fun s : ℝ => ((t * s : ℝ) : EReal) - conj mulPairing g s)
-      fun s => by rw [mul_comm], ← h2, biconj_eq_clFn hg.convex, hg.closed]
+    iSup_congr (g := fun s : ℝ => ((t * s : ℝ) : EReal) - convexConj mulPairing g s)
+      fun s => by rw [mul_comm], ← h2, convexBiconj_eq_convexCl hg.convex, hg.closed]
 
 end MonotoneHalfLine
 
@@ -360,9 +363,9 @@ theorem convexFn_monotoneComp (hg : ConvexFn g) (hk : ConvexFn k) :
 
 /-- **The composite is proper**: it takes the value `g 0` at the origin, which is finite, and it is
 bounded below by `g 0` everywhere. -/
-theorem proper_monotoneComp (hg : MonotoneHalfLineFn g) (hk : IsGauge k) :
-    Proper (monotoneComp g k) where
-  dom_nonempty := ⟨0, by
+theorem properConvex_monotoneComp (hg : MonotoneHalfLineFn g) (hk : IsGauge k) :
+    ProperConvex (monotoneComp g k) where
+  convexDom_nonempty := ⟨0, by
     have h : monotoneComp g k (0 : E) = g 0 :=
       monotoneComp_of_eq_coe hg.monotoneOn le_rfl (by rw [hk.map_zero, EReal.coe_zero])
     change monotoneComp g k (0 : E) < ⊤
@@ -546,7 +549,7 @@ theorem levelSup_mem (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g
   have hcl : IsClosed {t : ℝ | 0 ≤ t ∧ g t ≤ (α : EReal)} := by
     rw [hset]
     exact isClosed_Ici.inter
-      (lowerSemicontinuous_iff_isClosed_preimage.1 (ClosedFn.lowerSemicontinuous hg.closed) _)
+      (lowerSemicontinuous_iff_isClosed_preimage.1 (ClosedConvex.lowerSemicontinuous hg.closed) _)
   exact hcl.csSup_mem ⟨0, le_rfl, hα⟩ (MonotoneHalfLineFn.bddAbove_setOf_le hg hne α)
 
 /-- Any level below `α` is below the crossing level. -/
@@ -600,7 +603,7 @@ variable [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsTopologicalAddG
 /-- **The sublevel sets of `g ∘ k` are dilates of `{k ≤ 1}`** — Rockafellar's "gauge-like", for
 the composite of a closed gauge with a non-constant nondecreasing closed convex function of the
 half-line finite at some positive level. -/
-theorem setOf_monotoneComp_le_eq_smul (hk : IsGauge k) (hkc : ClosedFn k)
+theorem setOf_monotoneComp_le_eq_smul (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
     (hα : g 0 < (α : EReal)) :
@@ -621,7 +624,7 @@ The composite `g ∘ k` of a closed gauge with a nondecreasing closed convex fun
 half-line is conjugate to the composite of the polar gauge with the monotone conjugate. The proof
 regroups the supremum defining the conjugate by the level `ζ = k x`: on the dilate `ζ • {k ≤ 1}`
 the composite is at most `g ζ`, and the supremum of the pairing over that dilate is `ζ k°(y)`.
-Closedness of `k` enters only through `conj_monotoneComp_le`. -/
+Closedness of `k` enters only through `convexConj_monotoneComp_le`. -/
 
 section GaugeCompLower
 
@@ -666,21 +669,21 @@ Nothing is assumed about `g` beyond finiteness at the single level `ζ`, and not
 beyond its being a gauge. This one lemma supplies both the `≥` half of the conjugacy formula and,
 at a point where the polar gauge is `+∞`, the degeneracy that forces the conjugate to be `+∞`
 there. -/
-theorem coe_mul_polarGauge_sub_le_conj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < ζ)
+theorem coe_mul_polarGauge_sub_le_convexConj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < ζ)
     (hr : g ζ = (r : EReal)) :
-    (ζ : EReal) * polarGauge B k y - g ζ ≤ conj B (monotoneComp g k) y := by
+    (ζ : EReal) * polarGauge B k y - g ζ ≤ convexConj B (monotoneComp g k) y := by
   have hkC : gaugeFn {z : E | k z ≤ 1} = k :=
     gaugeFn_level_one hk.nonneg hk.posHomogeneous hk.map_zero
   have hsmul : (ζ : EReal) * polarGauge B k y = supportFn B (ζ • {z : E | k z ≤ 1}) y := by
     rw [polarGauge_eq_supportFn hk.nonneg hk.posHomogeneous hk.map_zero, supportFn_smul B hζ]
   have hbound : ∀ z ∈ ζ • {z : E | k z ≤ 1},
-      ((B z y : ℝ) : EReal) + ((-r : ℝ) : EReal) ≤ conj B (monotoneComp g k) y := by
+      ((B z y : ℝ) : EReal) + ((-r : ℝ) : EReal) ≤ convexConj B (monotoneComp g k) y := by
     intro z hz
     have hkz : k z ≤ (ζ : EReal) := by
       rw [← hkC]; exact gaugeFn_le_of_mem_smul hζ.le hz
     have hfz : monotoneComp g k z ≤ (r : EReal) := by
       rw [← hr]; exact monotoneComp_le hkz
-    refine le_trans ?_ (sub_le_conj B (monotoneComp g k) z y)
+    refine le_trans ?_ (sub_le_convexConj B (monotoneComp g k) z y)
     rw [EReal.coe_neg, ← sub_eq_add_neg]
     exact EReal.sub_le_sub le_rfl hfz
   rw [hsmul, hr, sub_eq_add_neg, ← EReal.coe_neg, supportFn_apply,
@@ -688,17 +691,17 @@ theorem coe_mul_polarGauge_sub_le_conj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < 
   exact iSup₂_le hbound
 
 /-- The origin realises the level `ζ = 0` of the computation, since a gauge vanishes there. -/
-theorem sub_apply_zero_le_conj (hk : IsGauge k) (hg : MonotoneOn g (Set.Ici 0)) :
-    (0 : EReal) - g 0 ≤ conj B (monotoneComp g k) y := by
+theorem sub_apply_zero_le_convexConj (hk : IsGauge k) (hg : MonotoneOn g (Set.Ici 0)) :
+    (0 : EReal) - g 0 ≤ convexConj B (monotoneComp g k) y := by
   have hf0 : monotoneComp g k (0 : E) = g 0 :=
     monotoneComp_of_eq_coe hg le_rfl (by rw [hk.map_zero, EReal.coe_zero])
-  have h := sub_le_conj B (monotoneComp g k) (0 : E) y
+  have h := sub_le_convexConj B (monotoneComp g k) (0 : E) y
   rwa [hf0, map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
 /-- The `≥` half of the conjugacy formula, at a point where the polar gauge is finite. -/
-theorem monotoneConj_le_conj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLineFn g)
+theorem monotoneConj_le_convexConj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLineFn g)
     (hc : polarGauge B k y = (c : EReal)) :
-    monotoneConj g c ≤ conj B (monotoneComp g k) y := by
+    monotoneConj g c ≤ convexConj B (monotoneComp g k) y := by
   have hc0 : (0 : ℝ) ≤ c := by
     have h := polarGauge_nonneg B k y
     rw [hc] at h
@@ -711,8 +714,8 @@ theorem monotoneConj_le_conj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLin
     (lt_top_iff_ne_top.2 htop)
   rcases eq_or_lt_of_le ht with rfl | ht'
   · rw [zero_mul, EReal.coe_zero]
-    exact sub_apply_zero_le_conj hk hg.monotoneOn
-  · have h := coe_mul_polarGauge_sub_le_conj (B := B) (y := y) hk ht' hr
+    exact sub_apply_zero_le_convexConj hk hg.monotoneOn
+  · have h := coe_mul_polarGauge_sub_le_convexConj (B := B) (y := y) hk ht' hr
     rwa [hc, ← EReal.coe_mul] at h
 
 end GaugeCompLower
@@ -729,7 +732,7 @@ both sides are finite.
 For `k(x) > 0` this is the level-set description of a closed gauge, `x ∈ k(x) • {k ≤ 1}`, together
 with the identification of `k°` as the support function of `{k ≤ 1}`. For `k(x) = 0` the product
 would be `0 · k°(y)`, and the bound is `pairing_nonpos_of_gauge_eq_zero`. -/
-theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedFn k) {d : ℝ}
+theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedConvex k) {d : ℝ}
     (hx : k x = (c : EReal)) (hy : polarGauge B k y = (d : EReal)) : B x y ≤ c * d := by
   have hc0 : (0 : ℝ) ≤ c := by
     have h := hk.nonneg x
@@ -754,14 +757,15 @@ theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedFn k) {d : ℝ}
 
 The supremum over `x` is regrouped by the level `ζ = k x`, and on each level the pairing is bounded
 by `pairing_le_mul_of_gauge`. -/
-theorem conj_monotoneComp_le (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneHalfLineFn g)
+theorem convexConj_monotoneComp_le (hk : IsGauge k) (hkc : ClosedConvex k)
+    (hg : MonotoneHalfLineFn g)
     (hc : polarGauge B k y = (c : EReal)) :
-    conj B (monotoneComp g k) y ≤ monotoneConj g c := by
+    convexConj B (monotoneComp g k) y ≤ monotoneConj g c := by
   have hc0 : (0 : ℝ) ≤ c := by
     have h := polarGauge_nonneg B k y
     rw [hc] at h
     exact EReal.coe_nonneg.1 h
-  rw [conj_apply, monotoneConj_of_nonneg g hc0]
+  rw [convexConj_apply, monotoneConj_of_nonneg g hc0]
   refine iSup_le fun z => ?_
   rcases eq_top_or_exists_coe_of_nonneg (hk.nonneg z) with hz | ⟨c', hc'0, hc'⟩
   · rw [monotoneComp_of_eq_top g hz, EReal.sub_top]; exact bot_le
@@ -786,21 +790,21 @@ cones differ.
 
 Neither compatibility nor continuity of the pairing is needed, and `g` need not be non-constant;
 the topology on `E` enters only through the closedness of `k`. -/
-theorem conj_monotoneComp (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneHalfLineFn g)
+theorem convexConj_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
-    conj B (monotoneComp g k) = monotoneComp (monotoneConj g) (polarGauge B k) := by
+    convexConj B (monotoneComp g k) = monotoneComp (monotoneConj g) (polarGauge B k) := by
   funext y
   rcases eq_top_or_exists_coe_of_nonneg (polarGauge_nonneg B k y) with htop | ⟨c, hc0, hc⟩
   · rw [monotoneComp_of_eq_top _ htop]
     obtain ⟨ζ, hζ, hζt⟩ := hfin
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hg.ne_bot ζ)
       (lt_top_iff_ne_top.2 hζt)
-    have h := coe_mul_polarGauge_sub_le_conj (B := B) (y := y) hk hζ hr
+    have h := coe_mul_polarGauge_sub_le_convexConj (B := B) (y := y) hk hζ hr
     rw [htop, hr, EReal.coe_mul_top_of_pos hζ, EReal.top_sub_coe] at h
     exact top_le_iff.1 h
   · rw [monotoneComp_of_eq_coe (monotoneHalfLineFn_monotoneConj hg).monotoneOn hc0 hc]
-    exact le_antisymm (conj_monotoneComp_le hk hkc hg hc)
-      (monotoneConj_le_conj_monotoneComp hk hg hc)
+    exact le_antisymm (convexConj_monotoneComp_le hk hkc hg hc)
+      (monotoneConj_le_convexConj_monotoneComp hk hg hc)
 
 end GaugeComp
 
@@ -824,34 +828,34 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 Non-constancy is essential and is exactly what the proof consumes, through
 `MonotoneHalfLineFn.exists_monotoneConj_ne_top`: for constant `g` the composite is `g 0` on
 `dom k` and `+∞` off it, and `dom k` need not be closed. -/
-theorem closedFn_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
-    [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneHalfLineFn g)
+theorem closedConvex_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
+    [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) :
-    ClosedFn (monotoneComp g k) := by
+    ClosedConvex (monotoneComp g k) := by
   have hpk : IsGauge (polarGauge B k) :=
     isGauge_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
-  have hpkc : ClosedFn (polarGauge B k) :=
-    closedFn_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
-  have hkc' : clFn k = k := hkc
-  have h1 : conj B (monotoneComp g k) = monotoneComp (monotoneConj g) (polarGauge B k) :=
-    conj_monotoneComp hk hkc hg hfin
-  have h2 : conj B.flip (monotoneComp (monotoneConj g) (polarGauge B k))
+  have hpkc : ClosedConvex (polarGauge B k) :=
+    closedConvex_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
+  have hkc' : convexCl k = k := hkc
+  have h1 : convexConj B (monotoneComp g k) = monotoneComp (monotoneConj g) (polarGauge B k) :=
+    convexConj_monotoneComp hk hkc hg hfin
+  have h2 : convexConj B.flip (monotoneComp (monotoneConj g) (polarGauge B k))
       = monotoneComp (monotoneConj (monotoneConj g)) (polarGauge B.flip (polarGauge B k)) :=
-    conj_monotoneComp hpk hpkc (monotoneHalfLineFn_monotoneConj hg)
+    convexConj_monotoneComp hpk hpkc (monotoneHalfLineFn_monotoneConj hg)
       (MonotoneHalfLineFn.exists_monotoneConj_ne_top hg hne)
-  have hbi : biconj B (monotoneComp g k) = monotoneComp g k := by
-    change conj B.flip (conj B (monotoneComp g k)) = monotoneComp g k
+  have hbi : convexBiconj B (monotoneComp g k) = monotoneComp g k := by
+    change convexConj B.flip (convexConj B (monotoneComp g k)) = monotoneComp g k
     rw [h1, h2, monotoneConj_monotoneConj hg, polarGauge_polarGauge hk, hkc']
-  change clFn (monotoneComp g k) = monotoneComp g k
-  rw [← biconj_eq_clFn (B := B) (convexFn_monotoneComp hg.convex hk.convexFn), hbi]
+  change convexCl (monotoneComp g k) = monotoneComp g k
+  rw [← convexBiconj_eq_convexCl (B := B) (convexFn_monotoneComp hg.convex hk.convexFn), hbi]
 
 /-- **`g ∘ k` is a closed proper convex function.** -/
 theorem closedProperConvexFn_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
-    [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedFn k)
+    [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) : ClosedProperConvexFn (monotoneComp g k) :=
   ⟨convexFn_monotoneComp hg.convex hk.convexFn,
-    closedFn_monotoneComp B hk hkc hg hfin hne, proper_monotoneComp hg hk⟩
+    closedConvex_monotoneComp B hk hkc hg hfin hne, properConvex_monotoneComp hg hk⟩
 
 end MonotoneCompClosed
 
@@ -866,13 +870,13 @@ variable {p q ζ : ℝ}
 
 /-- The function `ζ ↦ ζ^p / p` of the half-line, extended by `+∞` to the negative axis. -/
 noncomputable def powHalfLine (p : ℝ) : ℝ → EReal :=
-  ConvexAnalysis.restrictFn (Set.Ici 0) fun ζ => ((ζ ^ p / p : ℝ) : EReal)
+  ConvexAnalysis.convexRestrict (Set.Ici 0) fun ζ => ((ζ ^ p / p : ℝ) : EReal)
 
 @[simp] theorem powHalfLine_of_nonneg (p : ℝ) (hζ : 0 ≤ ζ) :
-    powHalfLine p ζ = ((ζ ^ p / p : ℝ) : EReal) := restrictFn_of_mem hζ
+    powHalfLine p ζ = ((ζ ^ p / p : ℝ) : EReal) := convexRestrict_of_mem hζ
 
 theorem powHalfLine_of_neg (p : ℝ) (hζ : ζ < 0) : powHalfLine p ζ = ⊤ :=
-  restrictFn_of_notMem (by simpa using hζ)
+  convexRestrict_of_notMem (by simpa using hζ)
 
 theorem powHalfLine_ne_top (p : ℝ) (hζ : 0 ≤ ζ) : powHalfLine p ζ ≠ ⊤ := by
   rw [powHalfLine_of_nonneg p hζ]; exact EReal.coe_ne_top _
@@ -920,8 +924,8 @@ theorem monotoneHalfLineFn_powHalfLine (hp : 1 ≤ p) : MonotoneHalfLineFn (powH
   closed := by
     have hcont : Continuous fun ζ : ℝ => ((ζ ^ p / p : ℝ) : EReal) :=
       EReal.continuous_coe_iff.2 ((Real.continuous_rpow_const (by linarith)).div_const p)
-    exact ClosedFn.restrictFn
-      ((closedFn_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
+    exact ClosedConvex.convexRestrict
+      ((closedConvex_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
         hcont.lowerSemicontinuous)
       (fun _ => EReal.coe_ne_bot _) isClosed_Ici
   zero_ne_top := powHalfLine_ne_top p le_rfl
@@ -1168,12 +1172,13 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 /-- **A closed proper function positively homogeneous of degree `p > 0` vanishes at the origin.**
 Along a ray into the origin the values are `λ^p f x₀ → 0`, so the epigraph, being closed, contains
 `(0, 0)`; of the three values homogeneity allows at the origin, only `0` is `≤ 0`. -/
-theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedFn f) (hpr : Proper f)
+theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedConvex f)
+    (hpr : ProperConvex f)
     (hf : PosHomogeneousDeg p f) : f 0 = 0 := by
-  obtain ⟨x₀, hx₀⟩ := hpr.dom_nonempty
+  obtain ⟨x₀, hx₀⟩ := hpr.convexDom_nonempty
   obtain ⟨b, hb⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpr.ne_bot x₀) hx₀
   have hepi : IsClosed (epi f) :=
-    lowerSemicontinuous_iff_isClosed_epi.1 (ClosedFn.lowerSemicontinuous hcl)
+    lowerSemicontinuous_iff_isClosed_epi.1 (ClosedConvex.lowerSemicontinuous hcl)
   have hmem : ∀ n : ℕ, ((1 / (n + 1 : ℝ)) • x₀, (1 / (n + 1 : ℝ)) ^ p * b) ∈ epi f := by
     intro n
     have hpos : (0 : ℝ) < 1 / (n + 1 : ℝ) := by positivity
@@ -1205,12 +1210,12 @@ theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedFn f) (hpr 
 
 /-- `(p f)^{1/p}` is a **closed** gauge, being the Minkowski functional of the closed convex set
 `{f ≤ 1/p}`. -/
-theorem closedFn_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hcl : ClosedFn f)
+theorem closedConvex_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hcl : ClosedConvex f)
     (hnn : ∀ z, 0 ≤ f z) (hf : PosHomogeneousDeg p f) (h0 : f 0 = 0) :
-    ClosedFn (degGauge p f) := by
+    ClosedConvex (degGauge p f) := by
   rw [degGauge_eq_gaugeFn hp hnn hf h0]
-  refine closedFn_gaugeFn (hconv.convex_le _) ?_
-    (lowerSemicontinuous_iff_isClosed_preimage.1 (ClosedFn.lowerSemicontinuous hcl) _)
+  refine closedConvex_gaugeFn (hconv.convex_le _) ?_
+    (lowerSemicontinuous_iff_isClosed_preimage.1 (ClosedConvex.lowerSemicontinuous hcl) _)
   change f 0 ≤ ((p⁻¹ : ℝ) : EReal)
   rw [h0]
   exact EReal.coe_nonneg.2 (by positivity)
@@ -1218,7 +1223,7 @@ theorem closedFn_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hcl : ClosedFn f)
 /-- **The representation `f = (1/p) [(p f)^{1/p}]^p`** of a closed proper convex function
 positively homogeneous of degree `p`. -/
 theorem monotoneComp_powHalfLine_degGauge_eq_self (hp : 1 < p) (hconv : ConvexFn f)
-    (hcl : ClosedFn f) (hpr : Proper f) (hf : PosHomogeneousDeg p f) :
+    (hcl : ClosedConvex f) (hpr : ProperConvex f) (hf : PosHomogeneousDeg p f) :
     monotoneComp (powHalfLine p) (degGauge p f) = f :=
   monotoneComp_powHalfLine_degGauge (lt_trans zero_lt_one hp)
     (PosHomogeneousDeg.nonneg hp hconv hpr.ne_bot hf
@@ -1227,16 +1232,17 @@ theorem monotoneComp_powHalfLine_degGauge_eq_self (hp : 1 < p) (hconv : ConvexFn
 /-- **A closed proper convex function is positively homogeneous of degree `p ∈ (1, ∞)` exactly
 when it is `(1/p) k^p` for a closed gauge `k`.** The gauge is unique — it is `(p f)^{1/p}`, by
 `degGauge_monotoneComp_powHalfLine`. -/
-theorem posHomogeneousDeg_iff_exists_isGauge (hp : 1 < p) (hconv : ConvexFn f) (hcl : ClosedFn f)
-    (hpr : Proper f) :
+theorem posHomogeneousDeg_iff_exists_isGauge (hp : 1 < p) (hconv : ConvexFn f)
+    (hcl : ClosedConvex f)
+    (hpr : ProperConvex f) :
     PosHomogeneousDeg p f ↔
-      ∃ k : E → EReal, IsGauge k ∧ ClosedFn k ∧ f = monotoneComp (powHalfLine p) k := by
+      ∃ k : E → EReal, IsGauge k ∧ ClosedConvex k ∧ f = monotoneComp (powHalfLine p) k := by
   have hp0 : (0 : ℝ) < p := lt_trans zero_lt_one hp
   refine ⟨fun hf => ?_, ?_⟩
   · have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hp0 hcl hpr hf
     have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hp hconv hpr.ne_bot hf h0
     exact ⟨degGauge p f, isGauge_degGauge hp0 hconv hnn hf h0,
-      closedFn_degGauge hp0 hconv hcl hnn hf h0,
+      closedConvex_degGauge hp0 hconv hcl hnn hf h0,
       (monotoneComp_powHalfLine_degGauge hp0 hnn).symm⟩
   · rintro ⟨k, hk, -, rfl⟩
     exact posHomogeneousDeg_monotoneComp_powHalfLine hp0 hk
@@ -1255,10 +1261,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f k : E → EReal} {x : E} {y : F} {p q : ℝ}
 
 /-- **`[(1/p) k^p]* = (1/q) (k°)^q`.** -/
-theorem conj_monotoneComp_powHalfLine (hpq : p.HolderConjugate q) (hk : IsGauge k)
-    (hkc : ClosedFn k) :
-    conj B (monotoneComp (powHalfLine p) k) = monotoneComp (powHalfLine q) (polarGauge B k) := by
-  rw [conj_monotoneComp hk hkc (monotoneHalfLineFn_powHalfLine hpq.lt.le)
+theorem convexConj_monotoneComp_powHalfLine (hpq : p.HolderConjugate q) (hk : IsGauge k)
+    (hkc : ClosedConvex k) :
+    convexConj B (monotoneComp (powHalfLine p) k)
+        = monotoneComp (powHalfLine q) (polarGauge B k) := by
+  rw [convexConj_monotoneComp hk hkc (monotoneHalfLineFn_powHalfLine hpq.lt.le)
       ⟨1, one_pos, powHalfLine_ne_top p zero_le_one⟩,
     monotoneConj_powHalfLine hpq]
 
@@ -1272,26 +1279,27 @@ theorem setOf_polarGauge_le_one (hk : IsGauge k) :
   rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) from (EReal.coe_one).symm,
     supportFn_le_coe_iff, mem_polarSet]
 
-variable (hpq : p.HolderConjugate q) (hconv : ConvexFn f) (hcl : ClosedFn f) (hpr : Proper f)
+variable (hpq : p.HolderConjugate q) (hconv : ConvexFn f) (hcl : ClosedConvex f)
+    (hpr : ProperConvex f)
   (hf : PosHomogeneousDeg p f)
 include hpq hconv hcl hpr hf
 
 /-- The conjugate of a closed proper convex function positively homogeneous of degree `p` is
 `(1/q) (k°)^q` for the gauge `k = (p f)^{1/p}` — in particular it is positively homogeneous of
 degree `q`. -/
-theorem conj_eq_monotoneComp_powHalfLine :
-    conj B f = monotoneComp (powHalfLine q) (polarGauge B (degGauge p f)) := by
+theorem convexConj_eq_monotoneComp_powHalfLine :
+    convexConj B f = monotoneComp (powHalfLine q) (polarGauge B (degGauge p f)) := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
   have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hpq.lt hconv hpr.ne_bot hf h0
   conv_lhs => rw [← monotoneComp_powHalfLine_degGauge hpq.pos hnn]
-  exact conj_monotoneComp_powHalfLine hpq (isGauge_degGauge hpq.pos hconv hnn hf h0)
-    (closedFn_degGauge hpq.pos hconv hcl hnn hf h0)
+  exact convexConj_monotoneComp_powHalfLine hpq (isGauge_degGauge hpq.pos hconv hnn hf h0)
+    (closedConvex_degGauge hpq.pos hconv hcl hnn hf h0)
 
 /-- **`(p f)^{1/p}` is a closed gauge whose polar is `(q f*)^{1/q}`.** -/
-theorem polarGauge_degGauge : polarGauge B (degGauge p f) = degGauge q (conj B f) := by
+theorem polarGauge_degGauge : polarGauge B (degGauge p f) = degGauge q (convexConj B f) := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
   have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hpq.lt hconv hpr.ne_bot hf h0
-  rw [conj_eq_monotoneComp_powHalfLine (B := B) hpq hconv hcl hpr hf,
+  rw [convexConj_eq_monotoneComp_powHalfLine (B := B) hpq hconv hcl hpr hf,
     degGauge_monotoneComp_powHalfLine hpq.symm.pos
       (isGauge_polarGauge (B := B) (degGauge_nonneg hpq.pos hnn)
         (posHomogeneous_degGauge hpq.pos hnn hf) (degGauge_map_zero hpq.pos h0))]
@@ -1299,7 +1307,7 @@ theorem polarGauge_degGauge : polarGauge B (degGauge p f) = degGauge q (conj B f
 /-- **The Hölder-type inequality** `⟨x, y⟩ ≤ [p f(x)]^{1/p} [q f*(y)]^{1/q}` on
 `dom f × dom f*`. -/
 theorem pairing_le_rpow_mul_rpow {a b : ℝ} (hx : f x = (a : EReal))
-    (hy : conj B f y = (b : EReal)) : B x y ≤ (p * a) ^ p⁻¹ * (q * b) ^ q⁻¹ := by
+    (hy : convexConj B f y = (b : EReal)) : B x y ≤ (p * a) ^ p⁻¹ * (q * b) ^ q⁻¹ := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
   have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hpq.lt hconv hpr.ne_bot hf h0
   have ha0 : (0 : ℝ) ≤ a := by
@@ -1307,21 +1315,21 @@ theorem pairing_le_rpow_mul_rpow {a b : ℝ} (hx : f x = (a : EReal))
     rw [hx] at h
     exact EReal.coe_nonneg.1 h
   have hb0 : (0 : ℝ) ≤ b := by
-    have h := zero_le_conj (B := B) (le_of_eq h0) y
+    have h := zero_le_convexConj (B := B) (le_of_eq h0) y
     rw [hy] at h
     exact EReal.coe_nonneg.1 h
   refine pairing_le_mul_of_gauge (isGauge_degGauge hpq.pos hconv hnn hf h0)
-    (closedFn_degGauge hpq.pos hconv hcl hnn hf h0) (degGauge_of_eq_coe hpq.pos ha0 hx) ?_
+    (closedConvex_degGauge hpq.pos hconv hcl hnn hf h0) (degGauge_of_eq_coe hpq.pos ha0 hx) ?_
   rw [polarGauge_degGauge hpq hconv hcl hpr hf]
   exact degGauge_of_eq_coe hpq.symm.pos hb0 hy
 
 /-- **The closed convex sets `{f ≤ 1/p}` and `{f* ≤ 1/q}` are polar to each other.** -/
 theorem polarSet_setOf_le_inv :
     polarSet B {x : E | f x ≤ ((p⁻¹ : ℝ) : EReal)}
-      = {y : F | conj B f y ≤ ((q⁻¹ : ℝ) : EReal)} := by
+      = {y : F | convexConj B f y ≤ ((q⁻¹ : ℝ) : EReal)} := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
   have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hpq.lt hconv hpr.ne_bot hf h0
-  have hcnn : ∀ z, 0 ≤ conj B f z := fun z => zero_le_conj (le_of_eq h0) z
+  have hcnn : ∀ z, 0 ≤ convexConj B f z := fun z => zero_le_convexConj (le_of_eq h0) z
   rw [← setOf_degGauge_le_one hpq.pos hnn, ← setOf_polarGauge_le_one
       (isGauge_degGauge hpq.pos hconv hnn hf h0),
     polarGauge_degGauge hpq hconv hcl hpr hf, setOf_degGauge_le_one hpq.symm.pos hcnn]
@@ -1373,11 +1381,11 @@ theorem IsGaugeLike.exists_setOf_le_eq_smul_setOf_le (hgl : IsGaugeLike f) {α �
 
 /-- `f 0` is a real number, for a proper gauge-like `f`: it is finite below by properness, and
 above because it is bounded by any value in the effective domain. -/
-theorem IsGaugeLike.exists_map_zero_eq_coe (hgl : IsGaugeLike f) (hpr : Proper f) :
+theorem IsGaugeLike.exists_map_zero_eq_coe (hgl : IsGaugeLike f) (hpr : ProperConvex f) :
     ∃ a : ℝ, f 0 = (a : EReal) := by
-  obtain ⟨x, hx⟩ := hpr.dom_nonempty
+  obtain ⟨x, hx⟩ := hpr.convexDom_nonempty
   exact EReal.exists_coe_of_ne_bot_of_lt_top (hpr.ne_bot 0)
-    (lt_of_le_of_lt (hgl.map_zero_le x) (mem_dom.1 hx))
+    (lt_of_le_of_lt (hgl.map_zero_le x) (mem_convexDom.1 hx))
 
 omit [AddCommGroup E] [Module ℝ E] in
 /-- **`f` is a nondecreasing function of `k`.** If every sublevel set of `f` above its infimum
@@ -1462,8 +1470,8 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 /-- **The gauge attached to a gauge-like function**: the gauge of one sublevel set, of which every
 sublevel set of `f` above the infimum is again a sublevel set. -/
 theorem IsGaugeLike.exists_isGauge_setOf_le_eq (hgl : IsGaugeLike f) (hconv : ConvexFn f)
-    (hcl : ClosedFn f) {a₀ : ℝ} (h0 : f 0 = (a₀ : EReal)) :
-    ∃ k : E → EReal, IsGauge k ∧ ClosedFn k ∧ ∀ α : ℝ, a₀ < α → ∃ c : ℝ, 0 < c ∧
+    (hcl : ClosedConvex f) {a₀ : ℝ} (h0 : f 0 = (a₀ : EReal)) :
+    ∃ k : E → EReal, IsGauge k ∧ ClosedConvex k ∧ ∀ α : ℝ, a₀ < α → ∃ c : ℝ, 0 < c ∧
       {x : E | f x ≤ (α : EReal)} = {x : E | k x ≤ (c : EReal)} := by
   have hβ : f 0 < ((a₀ + 1 : ℝ) : EReal) := by
     rw [h0]
@@ -1471,9 +1479,9 @@ theorem IsGaugeLike.exists_isGauge_setOf_le_eq (hgl : IsGaugeLike f) (hconv : Co
   have hD0 : (0 : E) ∈ {x : E | f x ≤ ((a₀ + 1 : ℝ) : EReal)} := le_of_lt hβ
   have hDconv : Convex ℝ {x : E | f x ≤ ((a₀ + 1 : ℝ) : EReal)} := hconv.convex_le _
   have hDcl : IsClosed {x : E | f x ≤ ((a₀ + 1 : ℝ) : EReal)} :=
-    (ClosedFn.lowerSemicontinuous hcl).isClosed_preimage _
+    (ClosedConvex.lowerSemicontinuous hcl).isClosed_preimage _
   refine ⟨gaugeFn {x : E | f x ≤ ((a₀ + 1 : ℝ) : EReal)}, isGauge_gaugeFn hDconv ⟨0, hD0⟩,
-    closedFn_gaugeFn hDconv hD0 hDcl, fun α hα => ?_⟩
+    closedConvex_gaugeFn hDconv hD0 hDcl, fun α hα => ?_⟩
   have hα' : f 0 < (α : EReal) := by
     rw [h0]
     exact_mod_cast hα
@@ -1484,10 +1492,10 @@ theorem IsGaugeLike.exists_isGauge_setOf_le_eq (hgl : IsGaugeLike f) (hconv : Co
 gauge `k` and a non-constant nondecreasing closed convex function `g` of the half-line that is
 finite at some positive level. -/
 theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : ConvexFn f)
-    (hcl : ClosedFn f) (hpr : Proper f) :
+    (hcl : ClosedConvex f) (hpr : ProperConvex f) :
     ∃ (g : ℝ → EReal) (k : E → EReal), MonotoneHalfLineFn g ∧
       (∃ t : ℝ, 0 < t ∧ g 0 < g t) ∧ (∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) ∧
-      IsGauge k ∧ ClosedFn k ∧ f = monotoneComp g k := by
+      IsGauge k ∧ ClosedConvex k ∧ f = monotoneComp g k := by
   obtain ⟨a₀, h0⟩ := hgl.exists_map_zero_eq_coe hpr
   obtain ⟨k, hkg, hkc, hlev⟩ := hgl.exists_isGauge_setOf_le_eq hconv hcl h0
   have hmin : ∀ x, (a₀ : EReal) ≤ f x := fun x => by
@@ -1509,10 +1517,10 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       have hc : Continuous fun t : ℝ => t • x₁ := continuous_id.smul continuous_const
       exact hc
     set gray : ℝ → EReal :=
-      ConvexAnalysis.restrictFn (Set.Ici 0) (compLin f (LinearMap.toSpanSingleton ℝ E x₁))
+      ConvexAnalysis.convexRestrict (Set.Ici 0) (compLin f (LinearMap.toSpanSingleton ℝ E x₁))
       with hgray
     have hgval : ∀ t : ℝ, 0 ≤ t → gray t = f (t • x₁) := fun t ht =>
-      restrictFn_of_mem (Set.mem_Ici.2 ht)
+      convexRestrict_of_mem (Set.mem_Ici.2 ht)
     have hgmono : MonotoneOn gray (Set.Ici 0) := by
       intro s hs t ht hst
       rw [hgval s (Set.mem_Ici.1 hs), hgval t (Set.mem_Ici.1 ht)]
@@ -1520,9 +1528,10 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       rw [hkray s (Set.mem_Ici.1 hs), hkray t (Set.mem_Ici.1 ht)]
       exact_mod_cast hst
     have hg0 : gray 0 = (a₀ : EReal) := by rw [hgval 0 le_rfl, zero_smul, h0]
-    refine ⟨gray, k, ⟨fun t ht => restrictFn_of_notMem (by simpa using not_le.2 ht), hgmono,
-      ConvexFn.restrictFn (convexFn_compLin _ hconv) (convex_Ici 0),
-      ClosedFn.restrictFn (closedFn_compLin hcl hAcont) (fun _ => hpr.ne_bot _) isClosed_Ici,
+    refine ⟨gray, k, ⟨fun t ht => convexRestrict_of_notMem (by simpa using not_le.2 ht), hgmono,
+      ConvexFn.convexRestrict (convexFn_compLin _ hconv) (convex_Ici 0),
+      ClosedConvex.convexRestrict (closedConvex_compLin hcl hAcont) (fun _ => hpr.ne_bot _)
+          isClosed_Ici,
       by rw [hg0]; exact EReal.coe_ne_top a₀⟩, ⟨c₁ + 1, by linarith, ?_⟩,
       ⟨c₁, hc₁, ?_⟩, hkg, hkc, ?_⟩
     · have hnot : ¬ k ((c₁ + 1) • x₁) ≤ (c₁ : EReal) := by
@@ -1549,10 +1558,11 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
         · rw [hx, hkray c hc0]
   · -- The degenerate case: the sublevel sets are a single cone, and the factor is a step function.
     set gstep : ℝ → EReal :=
-      ConvexAnalysis.restrictFn (Set.Icc (0 : ℝ) 1) (fun _ => (a₀ : EReal)) with hgstep
+      ConvexAnalysis.convexRestrict (Set.Icc (0 : ℝ) 1) (fun _ => (a₀ : EReal)) with hgstep
     have hgin : ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) 1 → gstep t = (a₀ : EReal) :=
-      fun _ ht => restrictFn_of_mem ht
-    have hgout : ∀ t : ℝ, t ∉ Set.Icc (0 : ℝ) 1 → gstep t = ⊤ := fun _ ht => restrictFn_of_notMem ht
+      fun _ ht => convexRestrict_of_mem ht
+    have hgout : ∀ t : ℝ, t ∉ Set.Icc (0 : ℝ) 1 → gstep t = ⊤ :=
+        fun _ ht => convexRestrict_of_notMem ht
     have hzero : gstep 0 = (a₀ : EReal) := hgin 0 (Set.mem_Icc.2 ⟨le_rfl, zero_le_one⟩)
     have hgmono : MonotoneOn gstep (Set.Ici 0) := by
       intro s hs t _ hst
@@ -1562,8 +1572,8 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       · rw [hgout t htm]
         exact le_top
     refine ⟨gstep, k, ⟨fun t ht => hgout t fun h => absurd (Set.mem_Icc.1 h).1 (not_le.2 ht),
-      hgmono, ConvexFn.restrictFn (convexFn_const _) (convex_Icc 0 1),
-      ClosedFn.restrictFn ((closedFn_iff_lowerSemicontinuous
+      hgmono, ConvexFn.convexRestrict (convexFn_const _) (convex_Icc 0 1),
+      ClosedConvex.convexRestrict ((closedConvex_iff_lowerSemicontinuous
         (fun _ => EReal.coe_ne_bot a₀)).2 lowerSemicontinuous_const)
         (fun _ => EReal.coe_ne_bot a₀) isClosed_Icc,
       by rw [hzero]; exact EReal.coe_ne_top a₀⟩, ⟨2, by norm_num, ?_⟩,
@@ -1581,7 +1591,7 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
 
 /-- **The forward half, in the packaging the converse produces**: `g ∘ k` is gauge-like. This is
 `setOf_monotoneComp_le_eq_smul` with the auxiliary set named. -/
-theorem isGaugeLike_monotoneComp (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneHalfLineFn g)
+theorem isGaugeLike_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
     IsGaugeLike (monotoneComp g k) := by
   have h0 : monotoneComp g k (0 : E) = g 0 :=
@@ -1610,17 +1620,17 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 
 omit [LocallyConvexSpace ℝ E] in
 /-- **The conjugate of a gauge-like closed proper convex function is gauge-like too.**
-`conj_monotoneComp` says which composite it is; what has
+`convexConj_monotoneComp` says which composite it is; what has
 to be checked is that `g⁺` satisfies the same two side conditions as `g`, and conjugacy *exchanges*
 them — `g` finite at a positive level makes `g⁺` non-constant, and `g` non-constant makes `g⁺`
 finite at a positive level. -/
-theorem isGaugeLike_conj_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsContinuousPairing B.flip]
-    {g : ℝ → EReal} {k : E → EReal} (hk : IsGauge k) (hkc : ClosedFn k)
+theorem isGaugeLike_convexConj_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsContinuousPairing B.flip]
+    {g : ℝ → EReal} {k : E → EReal} (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
-    (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) : IsGaugeLike (conj B (monotoneComp g k)) := by
-  rw [conj_monotoneComp hk hkc hg hfin]
+    (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) : IsGaugeLike (convexConj B (monotoneComp g k)) := by
+  rw [convexConj_monotoneComp hk hkc hg hfin]
   exact isGaugeLike_monotoneComp (isGauge_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero)
-    (closedFn_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero)
+    (closedConvex_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero)
     (monotoneHalfLineFn_monotoneConj hg) (MonotoneHalfLineFn.exists_lt_monotoneConj hg hfin)
     (MonotoneHalfLineFn.exists_monotoneConj_ne_top hg hne)
 
@@ -1628,14 +1638,15 @@ theorem isGaugeLike_conj_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsC
 closed gauge `k` and a non-constant nondecreasing closed convex function `g` of the half-line which
 is finite at some positive level.
 
-The conjugacy formula that accompanies the theorem is `conj_monotoneComp`, `(g ∘ k)* = g⁺ ∘ k°`;
-it needs neither the pairing hypotheses of the forward implication nor non-constancy. -/
+The conjugacy formula that accompanies the theorem is `convexConj_monotoneComp`,
+`(g ∘ k)* = g⁺ ∘ k°`; it needs neither the pairing hypotheses of the forward implication nor
+non-constancy. -/
 theorem closedProperConvexFn_and_isGaugeLike_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsContinuousPairing B.flip] :
     (ClosedProperConvexFn f ∧ IsGaugeLike f) ↔
       ∃ (g : ℝ → EReal) (k : E → EReal),
         (MonotoneHalfLineFn g ∧ (∃ t : ℝ, 0 < t ∧ g 0 < g t) ∧ (∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)) ∧
-        (IsGauge k ∧ ClosedFn k) ∧ f = monotoneComp g k := by
+        (IsGauge k ∧ ClosedConvex k) ∧ f = monotoneComp g k := by
   constructor
   · rintro ⟨⟨hconv, hcl, hpr⟩, hgl⟩
     obtain ⟨g, k, hgm, hne, hfin, hkg, hkc, hf⟩ := hgl.exists_eq_monotoneComp hconv hcl hpr

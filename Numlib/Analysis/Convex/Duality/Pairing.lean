@@ -28,8 +28,9 @@ topology: that pairing is continuous on both sides, but compatible only if `E` i
 
 ## Main results
 
-* `convexFn_affineFn`, `closedFn_affineFn`, `affineFn_le_iff` — the affine functions of the pairing
-  are closed proper convex, and `affineFn B y c ≤ f` is the inequality the conjugate measures.
+* `convexFn_affineFn`, `closedConvex_affineFn`, `affineFn_le_iff` — the affine functions of the
+  pairing are closed proper convex, and `affineFn B y c ≤ f` is the inequality the conjugate
+  measures.
 * `isAdjointPair_adjoint`, `isAdjointPair_topDualPairing` — the two sources of an adjoint datum: a
   real inner-product space paired with itself, and a space paired with its topological dual.
 * `instIsCompatiblePairingTopDual` — a topological vector space is compatibly paired with its own
@@ -88,7 +89,7 @@ theorem affineFn_ne_bot (y : F) (c : ℝ) (x : E) : affineFn B y c x ≠ ⊥ := 
 theorem affineFn_ne_top (y : F) (c : ℝ) (x : E) : affineFn B y c x ≠ ⊤ := by
   rw [affineFn_eq_coe]; exact EReal.coe_ne_top _
 
-theorem proper_affineFn (y : F) (c : ℝ) : Proper (affineFn B y c) :=
+theorem properConvex_affineFn (y : F) (c : ℝ) : ProperConvex (affineFn B y c) :=
   ⟨⟨0, lt_top_iff_ne_top.2 (affineFn_ne_top y c 0)⟩, affineFn_ne_bot y c⟩
 
 /-- A multiple of one affine function plus another is again an affine function — the algebraic
@@ -137,8 +138,8 @@ variable [IsTopologicalAddGroup E]
 
 /-- An affine function of the pairing is a closed convex function as soon as the pairing is
 continuous. In `WeakBilin B` — and hence in any finer topology — this holds for every `y`. -/
-theorem closedFn_affineFn (h : Continuous fun x => B x y) : ClosedFn (affineFn B y c) :=
-  (closedFn_iff_lowerSemicontinuous (affineFn_ne_bot y c)).2 (lowerSemicontinuous_affineFn h)
+theorem closedConvex_affineFn (h : Continuous fun x => B x y) : ClosedConvex (affineFn B y c) :=
+  (closedConvex_iff_lowerSemicontinuous (affineFn_ne_bot y c)).2 (lowerSemicontinuous_affineFn h)
 
 end AffineTopology
 
@@ -331,9 +332,9 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [AddCommGroup F] [Module ℝ F]
 
 /-- The pairing `B` is **continuous** in its first variable: every `⟨·, y⟩` is a continuous linear
-functional on `E`. This is all that closedness needs — `closedFn_conj`, `conj_clFn`,
-`isClosed_polarCone`, `isClosed_subdifferential` — and it is strictly weaker than
-`IsCompatiblePairing`. -/
+functional on `E`. This is all that closedness needs — `closedConvex_convexConj`,
+`convexConj_convexCl`, `isClosed_polarCone`, `isClosed_subdifferential` — and it is strictly weaker
+than `IsCompatiblePairing`. -/
 class IsContinuousPairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : Prop where
   /-- Every `⟨·, y⟩` is continuous. -/
   continuous_left (B) (y : F) : Continuous fun x : E => B x y

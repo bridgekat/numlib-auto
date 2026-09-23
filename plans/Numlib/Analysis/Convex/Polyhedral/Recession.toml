@@ -1,7 +1,16 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
+id = 'recessionCone_polyhedral_system'
+
+[[node]]
+id = 'Polyhedral.polyhedralCone_recessionCone'
+
+[[node]]
 id = 'recessionCone_of_finitelyGenerated'
+
+[[node]]
+id = 'FinitelyGenerated.finitelyGeneratedCone_recessionCone'
 
 [[node]]
 id = 'Polyhedral.recessionCone_image'

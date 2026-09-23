@@ -13,21 +13,22 @@ the Rockafellar development) read over the pairing `⟨f, x⟩ = f x` of `E` wit
 ## Correspondence
 
 * The book's `φ : E → (-∞, +∞]` is a function `φ : E → EReal` with `∀ x, φ x ≠ ⊥`; `φ ≢ +∞` is
-  `(ConvexAnalysis.dom φ).Nonempty`, and the two together are `ConvexAnalysis.Proper φ`. The
-  domain `D(φ)` and the epigraph `epi φ` are `ConvexAnalysis.dom` and `ConvexAnalysis.epi`
+  `(ConvexAnalysis.convexDom φ).Nonempty`, and the two together are `ConvexAnalysis.ProperConvex φ`.
+  The domain `D(φ)` and the epigraph `epi φ` are `ConvexAnalysis.convexDom` and `ConvexAnalysis.epi`
   (`mem_domain_iff`, `mem_epigraph_iff`).
 * "l.s.c." is Mathlib's `LowerSemicontinuous` (`lowerSemicontinuous_iff` is the book's
   definition by sublevel sets), which for a function never equal to `⊥` is the backbone's
-  `ClosedFn` (`closedFn_iff_lowerSemicontinuous`). "Convex" is `ConvexAnalysis.ConvexFn`,
+  `ClosedConvex` (`closedConvex_iff_lowerSemicontinuous`). "Convex" is `ConvexAnalysis.ConvexFn`,
   convexity of the epigraph (`convexFn_iff` is the book's inequality).
 * The pairing is `dualPairing E := (topDualPairing ℝ E).flip`, `E` on the left as the backbone's
-  `conj` wants; the conjugate `φ* : E* → (-∞, +∞]` is `conjugate φ := conj (dualPairing E) φ`
-  and the biconjugate *restricted to `E`* is `biconjugate φ := biconj (dualPairing E) φ`, which
-  is why the backbone's `biconj` uses `B.flip` rather than a second copy of `B`.
+  `convexConj` wants; the conjugate `φ* : E* → (-∞, +∞]` is
+  `conjugate φ := convexConj (dualPairing E) φ` and the biconjugate *restricted to `E`* is
+  `biconjugate φ := convexBiconj (dualPairing E) φ`, which is why the backbone's `convexBiconj` uses
+  `B.flip` rather than a second copy of `B`.
 * The instance `instIsCompatiblePairingTopDual` makes `E` compatibly paired with its dual in its
-  own norm topology, so Fenchel–Moreau (`biconj_eq_clFn_topDual`) applies with no reflexivity
-  assumption, exactly as in the book; the constraint qualification of Theorem 1.12 is the
-  backbone's `IsExactSum.of_continuousAt`. No new backbone module was needed.
+  own norm topology, so Fenchel–Moreau (`convexBiconj_eq_convexCl_topDual`) applies with no
+  reflexivity assumption, exactly as in the book; the constraint qualification of Theorem 1.12 is
+  the backbone's `IsExactSum.of_continuousAt`. No new backbone module was needed.
 
 ## Main results
 
@@ -59,8 +60,8 @@ namespace Brezis.Chapter01
 
 /-- **The Notation of §1.4, the domain.** For `φ : E → (-∞, +∞]`, `D(φ) = {x ∈ E | φ x < +∞}` is
 the backbone's `dom φ`. -/
-theorem mem_domain_iff {E : Type*} (φ : E → EReal) (x : E) : x ∈ dom φ ↔ φ x < ⊤ :=
-  mem_dom
+theorem mem_domain_iff {E : Type*} (φ : E → EReal) (x : E) : x ∈ convexDom φ ↔ φ x < ⊤ :=
+  mem_convexDom
 
 /-- **The Notation of §1.4, the epigraph.** `epi φ = {[x, λ] ∈ E × ℝ | φ x ≤ λ}` is the
 backbone's `epi φ`, a subset of `E × ℝ` — `λ` does not take the value `+∞` (footnote 5). -/
@@ -97,7 +98,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-! ### The conjugate function -/
 
 /-- **The scalar product of the duality `E*, E`**, `⟨f, x⟩ = f x`, written with `E` on the left as
-the backbone's `conj` wants: `dualPairing E x f = f x`. An `abbrev` of
+the backbone's `convexConj` wants: `dualPairing E x f = f x`. An `abbrev` of
 `(topDualPairing ℝ E).flip`, so that the backbone's instances `instIsCompatiblePairingTopDual`
 (`E` compatibly paired with `E*` in its norm topology) and `instIsContinuousPairingTopDualNorm`
 (`E*` continuously paired with `E` in the norm topology of `E*`) are found on it. -/
@@ -111,33 +112,33 @@ theorem flip_dualPairing : (dualPairing E).flip = topDualPairing ℝ E := rfl
 
 /-- **The Definition of the conjugate function.** For `φ : E → (-∞, +∞]`,
 `φ* : E* → (-∞, +∞]` is `φ* f = sup_{x ∈ E} (⟨f, x⟩ - φ x)`: the backbone's
-`conj (dualPairing E) φ`. The book assumes `φ ≢ +∞`; the backbone defines `conj` for every `φ`
-(`conj_eq_bot_iff`: `φ* ≡ -∞` exactly when `φ ≡ +∞`), and the hypothesis reappears where it
-matters (`remark_1_7`, `proposition_1_10`). -/
+`convexConj (dualPairing E) φ`. The book assumes `φ ≢ +∞`; the backbone defines `convexConj` for
+every `φ` (`convexConj_eq_bot_iff`: `φ* ≡ -∞` exactly when `φ ≡ +∞`), and the hypothesis reappears
+where it matters (`remark_1_7`, `proposition_1_10`). -/
 noncomputable def conjugate (φ : E → EReal) : StrongDual ℝ E → EReal :=
-  conj (dualPairing E) φ
+  convexConj (dualPairing E) φ
 
-theorem conjugate_eq_conj (φ : E → EReal) : conjugate φ = conj (dualPairing E) φ := rfl
+theorem conjugate_eq_convexConj (φ : E → EReal) : conjugate φ = convexConj (dualPairing E) φ := rfl
 
 theorem conjugate_apply (φ : E → EReal) (f : StrongDual ℝ E) :
     conjugate φ f = ⨆ x, ((f x : ℝ) : EReal) - φ x := rfl
 
 /-- "Note that `φ*` is convex and l.s.c. on `E*`", first half: `φ*` is convex, for every `φ`. -/
 theorem conjugate_convexFn (φ : E → EReal) : ConvexFn (conjugate φ) :=
-  convexFn_conj _ _
+  convexFn_convexConj _ _
 
 /-- "Note that `φ*` is convex and l.s.c. on `E*`", second half: `φ*` is l.s.c. in the norm
 topology of `E*` — the superior envelope of the continuous affine functions `f ↦ ⟨f, x⟩ - φ x`
 (the section's fact 4). -/
 theorem conjugate_lowerSemicontinuous (φ : E → EReal) : LowerSemicontinuous (conjugate φ) :=
-  (closedFn_conj (B := dualPairing E) (f := φ)).lowerSemicontinuous
+  (closedConvex_convexConj (B := dualPairing E) (f := φ)).lowerSemicontinuous
 
 /-- **Remark 7, Young's inequality (11).** `⟨f, x⟩ ≤ φ x + φ* f` for all `x ∈ E`, `f ∈ E*`, when
 `φ x ≠ -∞` and `φ ≢ +∞`; "obvious with our definition of `φ*`" (in `EReal` the two hypotheses are
 what keeps the right-hand side from collapsing to `-∞`). -/
-theorem remark_1_7 {φ : E → EReal} (hφ : ∀ x, φ x ≠ ⊥) (hdom : (dom φ).Nonempty) (x : E)
+theorem remark_1_7 {φ : E → EReal} (hφ : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) (x : E)
     (f : StrongDual ℝ E) : ((f x : ℝ) : EReal) ≤ φ x + conjugate φ f :=
-  le_add_conj (B := dualPairing E) (hφ x) hdom f
+  le_add_convexConj (B := dualPairing E) (hφ x) hdom f
 
 /-- **Remark 7, the classical Young inequality (12).** For `a, b ≥ 0`, `1 < p < ∞` and
 `1/p + 1/p' = 1`, `a b ≤ a^p / p + b^{p'} / p'`. That it is (11) for `φ t = |t|^p / p` on
@@ -152,29 +153,30 @@ theorem remark_1_7_classical {a b p p' : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp 
 /-- **Proposition 1.10, first clause.** If `φ : E → (-∞, +∞]` is convex, l.s.c. and `φ ≢ +∞`,
 then `φ* ≢ +∞`. -/
 theorem proposition_1_10 {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
-    (hbot : ∀ x, φ x ≠ ⊥) (hdom : (dom φ).Nonempty) : (dom (conjugate φ)).Nonempty :=
-  ((proper_conj_iff (B := dualPairing E) hφ
-    ((closedFn_iff_lowerSemicontinuous hbot).2 hl)).2 ⟨hdom, hbot⟩).dom_nonempty
+    (hbot : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) : (convexDom (conjugate φ)).Nonempty :=
+  ((properConvex_convexConj_iff (B := dualPairing E) hφ
+    ((closedConvex_iff_lowerSemicontinuous hbot).2 hl)).2 ⟨hdom, hbot⟩).convexDom_nonempty
 
 /-- **Proposition 1.10, "in particular".** Under the same hypotheses `φ` is bounded below by a
 continuous affine function: there are `f ∈ E*` and `c ∈ ℝ` with `⟨f, x⟩ - c ≤ φ x` for all
 `x`. -/
 theorem proposition_1_10_affine {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
-    (hbot : ∀ x, φ x ≠ ⊥) (hdom : (dom φ).Nonempty) :
+    (hbot : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) :
     ∃ (f : StrongDual ℝ E) (c : ℝ), ∀ x, ((f x - c : ℝ) : EReal) ≤ φ x := by
   obtain ⟨f, c, hfc⟩ := exists_affine_le_of_closed_proper
-    ⟨hφ, (closedFn_iff_lowerSemicontinuous hbot).2 hl, ⟨hdom, hbot⟩⟩
+    ⟨hφ, (closedConvex_iff_lowerSemicontinuous hbot).2 hl, ⟨hdom, hbot⟩⟩
   exact ⟨f, c, fun x => by rw [EReal.coe_sub]; exact hfc x⟩
 
 /-- **The biconjugate restricted to `E`**, as the book defines it before Theorem 1.11:
-`φ** x = sup_{f ∈ E*} (⟨f, x⟩ - φ* f)` for `x ∈ E` — the backbone's `biconj (dualPairing E) φ`,
-which is `conj (topDualPairing ℝ E) (conjugate φ)`. Iterating `*` instead would give a function
-on `E**`; that is why the backbone's `biconj` is `conj B.flip ∘ conj B` and not `conj ∘ conj`. -/
+`φ** x = sup_{f ∈ E*} (⟨f, x⟩ - φ* f)` for `x ∈ E` — the backbone's
+`convexBiconj (dualPairing E) φ`, which is `convexConj (topDualPairing ℝ E) (conjugate φ)`.
+Iterating `*` instead would give a function on `E**`; that is why the backbone's `convexBiconj` is
+`convexConj B.flip ∘ convexConj B` and not `convexConj ∘ convexConj`. -/
 noncomputable def biconjugate (φ : E → EReal) : E → EReal :=
-  biconj (dualPairing E) φ
+  convexBiconj (dualPairing E) φ
 
-theorem biconjugate_eq_conj (φ : E → EReal) :
-    biconjugate φ = conj (topDualPairing ℝ E) (conjugate φ) := rfl
+theorem biconjugate_eq_convexConj (φ : E → EReal) :
+    biconjugate φ = convexConj (topDualPairing ℝ E) (conjugate φ) := rfl
 
 theorem biconjugate_apply (φ : E → EReal) (x : E) :
     biconjugate φ x = ⨆ f : StrongDual ℝ E, ((f x : ℝ) : EReal) - conjugate φ f := rfl
@@ -184,8 +186,8 @@ then `φ** = φ`. No reflexivity is needed: `E` is compatibly paired with `E*` i
 topology (`instIsCompatiblePairingTopDual`). The backbone's statement does not need `φ ≢ +∞`
 (then `φ* ≡ -∞` and `φ** ≡ +∞`); the hypothesis is kept as the book states it. -/
 theorem theorem_1_11 {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
-    (hbot : ∀ x, φ x ≠ ⊥) (_hdom : (dom φ).Nonempty) : biconjugate φ = φ :=
-  biconj_eq_self (B := dualPairing E) hφ ((closedFn_iff_lowerSemicontinuous hbot).2 hl)
+    (hbot : ∀ x, φ x ≠ ⊥) (_hdom : (convexDom φ).Nonempty) : biconjugate φ = φ :=
+  convexBiconj_eq_self (B := dualPairing E) hφ ((closedConvex_iff_lowerSemicontinuous hbot).2 hl)
 
 /-! ### Example 1: the norm -/
 
@@ -258,7 +260,7 @@ omit [NormedSpace ℝ E] in
 /-- **Example 2.** `I_K` is l.s.c. iff `K` is closed. -/
 theorem example_1_2_lowerSemicontinuous_iff (K : Set E) :
     LowerSemicontinuous (indicatorFn K) ↔ IsClosed K := by
-  refine ⟨fun hl => ?_, fun hK => (closedFn_indicatorFn hK).lowerSemicontinuous⟩
+  refine ⟨fun hl => ?_, fun hK => (closedConvex_indicatorFn hK).lowerSemicontinuous⟩
   have hK : {x | indicatorFn K x ≤ ((0 : ℝ) : EReal)} = K := by
     ext x
     by_cases hx : x ∈ K <;> simp [hx]
@@ -291,16 +293,16 @@ theorem polarCone_dualPairing_eq :
 theorem example_1_2_conj (M : Submodule ℝ E) :
     conjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator : Set (StrongDual ℝ E)) := by
-  rw [conjugate_eq_conj,
-    conj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule M ha)
+  rw [conjugate_eq_convexConj,
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule M ha)
       ⟨0, M.zero_mem⟩, polarCone_dualPairing_eq.1 M]
 
 /-- **Example 2.** For a linear subspace `M ⊆ E`, `(I_M)** = I_{(M^⊥)^⊥}`. -/
 theorem example_1_2_biconj (M : Submodule ℝ E) :
     biconjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator.strongDualCoannihilator : Set E) := by
-  rw [biconjugate_eq_conj, example_1_2_conj,
-    conj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule _ ha)
+  rw [biconjugate_eq_convexConj, example_1_2_conj,
+    convexConj_indicatorFn_eq_indicatorFn_polarCone (fun _ ha => smul_coe_submodule _ ha)
       ⟨0, Submodule.zero_mem _⟩, polarCone_dualPairing_eq.2]
 
 /-- **Example 2, the conclusion.** For a *closed* linear subspace `M ⊆ E`, writing
@@ -311,10 +313,10 @@ theorem example_1_2_orthogonal {M : Submodule ℝ E} (hM : IsClosed (M : Set E))
     M.strongDualAnnihilator.strongDualCoannihilator = M := by
   have h := theorem_1_11 (convexFn_indicatorFn.2 M.convex)
     ((example_1_2_lowerSemicontinuous_iff (M : Set E)).2 hM) (indicatorFn_ne_bot _)
-    ⟨0, by rw [dom_indicatorFn]; exact M.zero_mem⟩
+    ⟨0, by rw [convexDom_indicatorFn]; exact M.zero_mem⟩
   rw [example_1_2_biconj] at h
-  have h' := congrArg dom h
-  rw [dom_indicatorFn, dom_indicatorFn] at h'
+  have h' := congrArg convexDom h
+  rw [convexDom_indicatorFn, convexDom_indicatorFn] at h'
   exact SetLike.coe_injective h'
 
 /-! ### Theorem 1.12 -/
@@ -324,35 +326,39 @@ and let `x₀ ∈ D(φ) ∩ D(ψ)` be a point at which `φ` is continuous. Then
 `inf_{x ∈ E} (φ x + ψ x) = sup_{f ∈ E*} (-φ*(-f) - ψ* f)`. The case `a = -∞` the book treats
 separately is absorbed by the `EReal` formulation. -/
 theorem theorem_1_12 {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : ConvexFn ψ)
-    (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ dom φ) (hx₀ψ : x₀ ∈ dom ψ)
+    (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ convexDom φ)
+        (hx₀ψ : x₀ ∈ convexDom ψ)
     (hcont : ContinuousAt φ x₀) :
     (⨅ x, φ x + ψ x) = ⨆ f : StrongDual ℝ E, -(conjugate φ (-f)) - conjugate ψ f := by
   have hex : IsExactSum (dualPairing E) φ ψ :=
     IsExactSum.of_continuousAt hφ ⟨⟨x₀, hx₀φ⟩, hφb⟩ hψ ⟨⟨x₀, hx₀ψ⟩, hψb⟩ hx₀φ hx₀ψ hcont
-  have h1 : (⨅ x, φ x + ψ x) = -(conj (dualPairing E) (φ + ψ) 0) :=
-    iInf_eq_neg_conj_zero (dualPairing E) (φ + ψ)
-  rw [h1, hex.conj_add_apply 0, EReal.neg_iInf]
+  have h1 : (⨅ x, φ x + ψ x) = -(convexConj (dualPairing E) (φ + ψ) 0) :=
+    iInf_eq_neg_convexConj_zero (dualPairing E) (φ + ψ)
+  rw [h1, hex.convexConj_add_apply 0, EReal.neg_iInf]
   refine iSup_congr fun f => ?_
   rw [zero_sub]
-  exact EReal.neg_add (Or.inl (hex.conj_left_ne_bot (-f))) (Or.inr (hex.conj_right_ne_bot f))
+  exact EReal.neg_add (Or.inl (hex.convexConj_left_ne_bot (-f)))
+      (Or.inr (hex.convexConj_right_ne_bot f))
 
 /-- **Theorem 1.12 (Fenchel–Rockafellar), the attainment.** Under the same hypotheses the
 supremum is a maximum: there is `f ∈ E*` with `-φ*(-f) - ψ* f = inf_{x ∈ E} (φ x + ψ x)`, and
 (the book's last expression) the same `f` realizes `inf (φ + ψ) = -min_{f} (φ*(-f) + ψ* f)`. -/
 theorem theorem_1_12_max {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : ConvexFn ψ)
-    (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ dom φ) (hx₀ψ : x₀ ∈ dom ψ)
+    (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ convexDom φ)
+        (hx₀ψ : x₀ ∈ convexDom ψ)
     (hcont : ContinuousAt φ x₀) :
     ∃ f : StrongDual ℝ E, -(conjugate φ (-f)) - conjugate ψ f = (⨅ x, φ x + ψ x) ∧
       conjugate φ (-f) + conjugate ψ f = -(⨅ x, φ x + ψ x) := by
   have hex : IsExactSum (dualPairing E) φ ψ :=
     IsExactSum.of_continuousAt hφ ⟨⟨x₀, hx₀φ⟩, hφb⟩ hψ ⟨⟨x₀, hx₀ψ⟩, hψb⟩ hx₀φ hx₀ψ hcont
-  have h1 : (⨅ x, φ x + ψ x) = -(conj (dualPairing E) (φ + ψ) 0) :=
-    iInf_eq_neg_conj_zero (dualPairing E) (φ + ψ)
-  obtain ⟨y₁, y₂, hy, hval⟩ := hex.exists_conj_add_eq 0
+  have h1 : (⨅ x, φ x + ψ x) = -(convexConj (dualPairing E) (φ + ψ) 0) :=
+    iInf_eq_neg_convexConj_zero (dualPairing E) (φ + ψ)
+  obtain ⟨y₁, y₂, hy, hval⟩ := hex.exists_convexConj_add_eq 0
   obtain rfl : y₁ = -y₂ := eq_neg_of_add_eq_zero_left hy
   refine ⟨y₂, ?_, ?_⟩
   · rw [h1, ← hval,
-      EReal.neg_add (Or.inl (hex.conj_left_ne_bot (-y₂))) (Or.inr (hex.conj_right_ne_bot y₂))]
+      EReal.neg_add (Or.inl (hex.convexConj_left_ne_bot (-y₂)))
+          (Or.inr (hex.convexConj_right_ne_bot y₂))]
     rfl
   · rw [h1, neg_neg]
     exact hval
@@ -370,12 +376,12 @@ theorem lemma_1_4 {C : Set E} (hC : Convex ℝ C) (hne : (interior C).Nonempty) 
 /-! ### Examples 3 and 4 -/
 
 /-- The conjugate of `x ↦ ‖x - x₀‖` at `-f`: `example_1_1_conj` translated by the conjugacy
-table's translation row (`conj_comp_sub`), the unit ball being symmetric. -/
+table's translation row (`convexConj_comp_sub`), the unit ball being symmetric. -/
 private theorem conjugate_norm_sub_neg (x₀ : E) (f : StrongDual ℝ E) :
     conjugate (fun x : E => (‖x - x₀‖ : EReal)) (-f) =
       indicatorFn (closedBall (0 : StrongDual ℝ E) 1) f - ((f x₀ : ℝ) : EReal) := by
-  have h := conj_comp_sub (dualPairing E) (fun x : E => (‖x‖ : EReal)) x₀ (-f)
-  rw [conjugate_eq_conj, h, ← conjugate_eq_conj, example_1_1_conj, dualPairing_apply,
+  have h := convexConj_comp_sub (dualPairing E) (fun x : E => (‖x‖ : EReal)) x₀ (-f)
+  rw [conjugate_eq_convexConj, h, ← conjugate_eq_convexConj, example_1_1_conj, dualPairing_apply,
     neg_apply, EReal.coe_neg, ← sub_eq_add_neg]
   congr 1
   by_cases hf : f ∈ closedBall (0 : StrongDual ℝ E) 1
@@ -414,7 +420,7 @@ theorem example_1_3 {K : Set E} (hK : Convex ℝ K) (hne : K.Nonempty) (x₀ : E
   have hφcont : Continuous φ :=
     EReal.continuous_coe_iff.2 (continuous_id.sub continuous_const).norm
   obtain ⟨x₁, hx₁⟩ := hne
-  have hx₁ψ : x₁ ∈ dom (indicatorFn K) := by rw [dom_indicatorFn]; exact hx₁
+  have hx₁ψ : x₁ ∈ convexDom (indicatorFn K) := by rw [convexDom_indicatorFn]; exact hx₁
   -- the dual side, term by term
   have hC : ∀ f : StrongDual ℝ E, -(conjugate φ (-f)) - conjugate (indicatorFn K) f =
       ⨆ _ : f ∈ closedBall (0 : StrongDual ℝ E) 1,
@@ -500,15 +506,16 @@ theorem example_1_4 {φ : E → ℝ} (hφ : ConvexOn ℝ univ φ) (hc : Continuo
       ∃ f ∈ M.strongDualAnnihilator, conjugate (fun x => ((φ x : ℝ) : EReal)) f =
         ⨅ g ∈ M.strongDualAnnihilator, conjugate (fun x => ((φ x : ℝ) : EReal)) g := by
   have hex : IsExactSum (dualPairing E) (fun x => ((φ x : ℝ) : EReal)) (indicatorFn (M : Set E)) :=
-    IsExactSum.of_continuousAt hφ.convexFn_coe (proper_coe φ) (convexFn_indicatorFn.2 M.convex)
-      (proper_indicatorFn.2 ⟨0, M.zero_mem⟩) (x₀ := 0) (EReal.coe_lt_top _)
-      (by rw [dom_indicatorFn]; exact M.zero_mem) (EReal.continuous_coe_iff.2 hc).continuousAt
+    IsExactSum.of_continuousAt hφ.convexFn_coe (properConvex_coe φ)
+        (convexFn_indicatorFn.2 M.convex)
+      (properConvex_indicatorFn.2 ⟨0, M.zero_mem⟩) (x₀ := 0) (EReal.coe_lt_top _)
+      (by rw [convexDom_indicatorFn]; exact M.zero_mem) (EReal.continuous_coe_iff.2 hc).continuousAt
   have hpol := polarCone_dualPairing_eq.1 M
   constructor
   · have h := iInf_mem_submodule_eq_neg_iInf_mem_polarCone hex
     rw [hpol] at h
     exact h
-  · have h := exists_mem_neg_polarCone_conj_eq_iInf hex (fun _ ha => smul_coe_submodule M ha)
+  · have h := exists_mem_neg_polarCone_convexConj_eq_iInf hex (fun _ ha => smul_coe_submodule M ha)
       ⟨0, M.zero_mem⟩
     rw [neg_polarCone_coe_submodule, hpol] at h
     exact h

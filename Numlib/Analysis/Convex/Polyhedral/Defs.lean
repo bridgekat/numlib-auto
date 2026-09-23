@@ -218,17 +218,13 @@ theorem Polyhedral.eq_biInter {C : Set E} (hC : Polyhedral C) :
   obtain ⟨s, rfl⟩ := hC
   exact ⟨s, by ext x; simp⟩
 
+/-- A polyhedral set is convex, as an intersection of finitely many half-spaces. -/
 theorem Polyhedral.convex {C : Set E} (hC : Polyhedral C) : Convex ℝ C := by
   obtain ⟨s, rfl⟩ := hC
-  intro x hx y hy a b ha hb hab q hq
-  have h₁ : q.1 x ≤ q.2 := hx q hq
-  have h₂ : q.1 y ≤ q.2 := hy q hq
-  have hval : q.1 (a • x + b • y) = a * q.1 x + b * q.1 y := by
-    rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul]
-  have hq2 : a * q.2 + b * q.2 = q.2 := by rw [← add_mul, hab, one_mul]
-  rw [hval]
-  nlinarith [mul_nonneg ha (sub_nonneg.2 h₁), mul_nonneg hb (sub_nonneg.2 h₂), hq2]
+  simpa only [Set.ofPred_forall] using
+    convex_iInter₂ fun q (_ : q ∈ s) => convex_halfSpace_le q.1.isLinear q.2
 
+/-- A finitely generated set is convex, as the sum of a convex hull and a convex cone. -/
 theorem FinitelyGenerated.convex {C : Set E} (hC : FinitelyGenerated C) : Convex ℝ C := by
   obtain ⟨P, D, rfl⟩ := hC
   exact (convex_convexHull ℝ _).add ((PointedCone.hull ℝ (D : Set E) : ConvexCone ℝ E)).convex
@@ -415,10 +411,7 @@ theorem polyhedral_iff_finitelyGenerated {C : Set E} :
 /-- A polyhedral set is closed. -/
 theorem Polyhedral.isClosed {C : Set E} (hC : Polyhedral C) : IsClosed C := by
   obtain ⟨s, rfl⟩ := hC
-  have hEq : {x : E | ∀ q ∈ s, q.1 x ≤ q.2} = ⋂ q ∈ s, {x : E | q.1 x ≤ q.2} := by
-    ext x; simp
-  rw [hEq]
-  exact isClosed_iInter fun q => isClosed_iInter fun _ =>
+  simpa only [Set.ofPred_forall] using isClosed_iInter fun q => isClosed_iInter fun (_ : q ∈ s) =>
     isClosed_le (LinearMap.continuous_of_finiteDimensional q.1) continuous_const
 
 /-- A finitely generated convex set is closed; in particular the sum of a polytope and a finitely

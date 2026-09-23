@@ -1,31 +1,70 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'conj'
+id = 'convexConj'
 
 [[node]]
-id = 'biconj'
+id = 'convexBiconj'
 
 [[node]]
-id = 'sub_le_conj'
+id = 'concaveConj'
 
 [[node]]
-id = 'conj_le_coe_iff'
+id = 'concaveBiconj'
 
 [[node]]
-id = 'conj_le_iff'
+id = 'neg_concaveConj'
 
 [[node]]
-id = 'le_add_conj'
+id = 'concaveConj_eq_neg_convexConj_neg'
 
 [[node]]
-id = 'convexFn_conj'
+id = 'convexConj_eq_neg_concaveConj_neg'
 
 [[node]]
-id = 'closedFn_conj'
+id = 'sub_le_convexConj'
 
 [[node]]
-id = 'conj_clFn'
+id = 'concaveConj_le_sub'
+
+[[node]]
+id = 'convexConj_le_coe_iff'
+
+[[node]]
+id = 'coe_le_concaveConj_iff'
+
+[[node]]
+id = 'convexConj_le_iff'
+
+[[node]]
+id = 'le_concaveConj_iff'
+
+[[node]]
+id = 'le_add_convexConj'
+
+[[node]]
+id = 'add_concaveConj_le'
+
+[[node]]
+id = 'convexFn_convexConj'
+
+[[node]]
+id = 'concaveFn_concaveConj'
+
+[[node]]
+id = 'concaveBiconj_eq_neg_convexBiconj_neg'
+
+[[node]]
+id = 'closedConvex_convexConj'
+
+[[node]]
+id = 'closedConcave_concaveConj'
+
+[[node]]
+id = 'convexConj_convexCl'
+
+[[node]]
+id = 'concaveConj_concaveCl'
 
 [[node]]
 id = 'exists_affineFn_le_of_lt'
@@ -34,48 +73,51 @@ id = 'exists_affineFn_le_of_lt'
 id = 'eq_biSup_affineFn'
 
 [[node]]
-id = 'biconj_eq_clFn'
+id = 'convexBiconj_eq_convexCl'
 
 [[node]]
-id = 'proper_conj_iff'
+id = 'concaveBiconj_eq_concaveCl'
+
+[[node]]
+id = 'properConvex_convexConj_iff'
 desc = 'For a closed convex `f`, the conjugate is proper exactly when `f` is.'
 
 [[node]]
-id = 'gc_conj_conj'
+id = 'gc_convexConj_convexConj'
 desc = 'Conjugation against `B` and against `B.flip` form an antitone Galois connection.'
 
 [[node]]
-id = 'conjClosure'
+id = 'convexConjClosure'
 
 [[node]]
-id = 'conjOrderIso'
+id = 'convexConjOrderIso'
 
 [[node]]
-id = 'conjEquiv'
+id = 'convexConjEquiv'
 
 [[node]]
-id = 'conj_comp_sub'
+id = 'convexConj_comp_sub'
 
 [[node]]
-id = 'conj_comp_add'
+id = 'convexConj_comp_add'
 
 [[node]]
-id = 'conj_add_pairing'
+id = 'convexConj_add_pairing'
 
 [[node]]
-id = 'conj_sub_pairing'
+id = 'convexConj_sub_pairing'
 
 [[node]]
-id = 'conj_add_const'
+id = 'convexConj_add_const'
 
 [[node]]
-id = 'conj_comp_linearEquiv'
+id = 'convexConj_comp_linearEquiv'
 
 [[node]]
-id = 'conj_comp_affine'
+id = 'convexConj_comp_affine'
 
 [[node]]
-id = 'biconj_eq_clFn_topDual'
+id = 'convexBiconj_eq_convexCl_topDual'
 
 [[node]]
-id = 'biconj_eq_clFn_inner'
+id = 'convexBiconj_eq_convexCl_inner'

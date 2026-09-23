@@ -60,7 +60,7 @@ to `conv S`.
 **Corollary 32.3.2's finiteness clause is false as printed.** "Then the supremum of `f` relative to
 `C` is finite" fails for the improper `f ≡ −∞`, whose domain is `ℝⁿ`, so that `ri (dom f)` contains
 every compact convex `C` while the supremum is `−∞`. `corollary_32_3_2` and
-`corollary_32_3_2_finite` therefore carry `Proper f`; the attainment clause needs no repair.
+`corollary_32_3_2_finite` therefore carry `ProperConvex f`; the attainment clause needs no repair.
 
 The two examples both use `parabolicFn`, `f(ξ₁, ξ₂) = ξ₁²/ξ₂ − ξ₂` for `ξ₂ > 0`, `0` at the origin
 and `+∞` elsewhere, which is convex, closed and proper because it is the support function of
@@ -85,13 +85,13 @@ a set `C ⊆ dom f` at a point of `ri C`, it takes the same value everywhere on 
 Rockafellar assumes `C` convex; the proof does not use it. All that is needed is that a relative
 interior point can be prolonged past itself inside `C` (Theorem 6.4), which exhibits `z` as a
 proper convex combination of `x` and a further point of `C`. -/
-theorem theorem_32_1 (hf : ConvexFn f) (hCdom : C ⊆ dom f) {z : Rn n} (hz : z ∈ ri C)
+theorem theorem_32_1 (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : Rn n} (hz : z ∈ ri C)
     (hmax : ∀ w ∈ C, f w ≤ f z) {x : Rn n} (hx : x ∈ C) : f x = f z :=
   hf.eq_of_isMaxOn_mem_relint hCdom hz hmax hx
 
 /-- **Theorem 32.1**: "`f` is actually constant throughout `C`", stated as constancy rather than as
 "every value equals the maximum". -/
-theorem theorem_32_1_const (hf : ConvexFn f) (hCdom : C ⊆ dom f) {z : Rn n} (hz : z ∈ ri C)
+theorem theorem_32_1_const (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : Rn n} (hz : z ∈ ri C)
     (hmax : ∀ w ∈ C, f w ≤ f z) {x y : Rn n} (hx : x ∈ C) (hy : y ∈ C) : f x = f y := by
   rw [theorem_32_1 hf hCdom hz hmax hx, theorem_32_1 hf hCdom hz hmax hy]
 
@@ -99,7 +99,7 @@ theorem theorem_32_1_const (hf : ConvexFn f) (hCdom : C ⊆ dom f) {z : Rn n} (h
 supremum relative to an affine set `M ⊆ dom f` is constant on `M`. Theorem 32.1 at `C = M`, where
 `ri M = M` so the relative interior hypothesis is free. -/
 theorem theorem_32_1_affineSubspace (hf : ConvexFn f) {M : AffineSubspace ℝ (Rn n)}
-    (hMdom : (M : Set (Rn n)) ⊆ dom f) {z : Rn n} (hz : z ∈ M)
+    (hMdom : (M : Set (Rn n)) ⊆ convexDom f) {z : Rn n} (hz : z ∈ M)
     (hmax : ∀ w ∈ (M : Set (Rn n)), f w ≤ f z) {x : Rn n} (hx : x ∈ M) : f x = f z :=
   theorem_32_1 hf hMdom (by rw [AffineSubspace.intrinsicInterior_coe]; exact hz) hmax hx
 
@@ -123,7 +123,7 @@ theorem mem_maximumSet {x : Rn n} :
 The inclusion `⊇` is free. For `⊆`, Theorem 18.2 produces the unique face `C'` having a given
 maximiser in its relative interior, and Theorem 32.1 applied to `C'` makes `f` constant on it, so
 `C'` consists of maximisers too. -/
-theorem corollary_32_1_1 (hf : ConvexFn f) (hC : Convex ℝ C) (hCdom : C ⊆ dom f) :
+theorem corollary_32_1_1 (hf : ConvexFn f) (hC : Convex ℝ C) (hCdom : C ⊆ convexDom f) :
     maximumSet f C = ⋃₀ {C' | IsFace C C' ∧ C' ⊆ maximumSet f C} := by
   refine Set.Subset.antisymm (fun x hx => ?_) (Set.sUnion_subset fun C' hC' => hC'.2)
   obtain ⟨C', hface, hxC', hconst⟩ :=
@@ -182,14 +182,14 @@ def NoUnboundedHalfLine (f : Rn n → EReal) (C : Set (Rn n)) : Prop :=
 hypotheses of Theorem 32.3 into one predicate by letting the direction `v` be `0`, so that the
 degenerate "half-line" `{u}` carries the condition `f u < ⊤`; under `C ⊆ dom f` the degenerate case
 is automatic and the two predicates agree. -/
-theorem bddAboveOnRays_iff (hCdom : C ⊆ dom f) :
+theorem bddAboveOnRays_iff (hCdom : C ⊆ convexDom f) :
     BddAboveOnRays f C ↔ NoUnboundedHalfLine f C := by
   constructor
   · exact fun h u v _ hray => h u v hray
   · intro h u v hray
     rcases eq_or_ne v 0 with rfl | hv
     · have hu : u ∈ C := by simpa using hray 0 le_rfl
-      obtain ⟨β, hβ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hCdom hu))
+      obtain ⟨β, hβ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 (hCdom hu))
       exact ⟨β, fun t _ => by simpa using hβ.le⟩
     · exact h u v hv hray
 
@@ -200,7 +200,7 @@ The backbone states this for an *arbitrary* complement `N` of `L`, since fixing 
 inner product it does not assume. Here the inner product is available, so this is that theorem at
 `N = L⊥` — the book's form. -/
 theorem theorem_32_3 (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
-    (hCdom : C ⊆ dom f) (hray : NoUnboundedHalfLine f C) :
+    (hCdom : C ⊆ convexDom f) (hray : NoUnboundedHalfLine f C) :
     (⨆ x ∈ C, f x)
       = ⨆ x ∈ (C ∩ ((linealitySubmodule C)ᗮ : Set (Rn n))).extremePoints ℝ, f x :=
   hf.iSup_extremePoints_inter_of_isCompl hC hCcl ((bddAboveOnRays_iff hCdom).2 hray)
@@ -210,7 +210,7 @@ theorem theorem_32_3 (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
 `E` is attained". The maximiser is transported to `C ∩ L⊥` along the lineality space, where
 Corollary 32.3.1 applies. Rockafellar's `C ⊆ dom f` is what supplies `f x ≠ ⊤` there. -/
 theorem theorem_32_3_attained (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
-    (hCdom : C ⊆ dom f) (hray : NoUnboundedHalfLine f C) {x : Rn n} (hx : x ∈ C)
+    (hCdom : C ⊆ convexDom f) (hray : NoUnboundedHalfLine f C) {x : Rn n} (hx : x ∈ C)
     (hmax : ∀ w ∈ C, f w ≤ f x) :
     ∃ z ∈ (C ∩ ((linealitySubmodule C)ᗮ : Set (Rn n))).extremePoints ℝ, f z = f x :=
   exists_mem_extremePoints_inter_eq_of_isMaxOn_of_isCompl hf hC hCcl
@@ -220,33 +220,33 @@ theorem theorem_32_3_attained (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsCl
 no lines is attained at all, it is attained at an extreme point. No boundedness is needed — a finite
 maximum is itself a bound — but `f x ≠ ⊤` is, and that is what `C ⊆ dom f` supplies. -/
 theorem corollary_32_3_1 (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
-    (hCdom : C ⊆ dom f) (hnl : ContainsNoLine C) {x : Rn n} (hx : x ∈ C)
+    (hCdom : C ⊆ convexDom f) (hnl : ContainsNoLine C) {x : Rn n} (hx : x ∈ C)
     (hmax : ∀ z ∈ C, f z ≤ f x) : ∃ z ∈ C.extremePoints ℝ, f z = f x :=
   exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine hf hC hCcl hnl hx
-    (mem_dom.1 (hCdom hx)).ne hmax
+    (mem_convexDom.1 (hCdom hx)).ne hmax
 
 /-- **Corollary 32.3.2**: a convex function attains its supremum relative to a non-empty closed
 bounded convex `C ⊆ ri (dom f)` at an extreme point of `C`. `C ⊆ ri (dom f)` makes `f` continuous
 relative to `C` (Theorem 10.1), closed and bounded makes `C` compact, and Corollary 32.3.1 moves the
-maximiser to an extreme point. `Proper f` is not in the book's statement; see
+maximiser to an extreme point. `ProperConvex f` is not in the book's statement; see
 `corollary_32_3_2_finite`. -/
-theorem corollary_32_3_2 (hf : ConvexFn f) (hp : Proper f) (hne : C.Nonempty)
+theorem corollary_32_3_2 (hf : ConvexFn f) (hp : ProperConvex f) (hne : C.Nonempty)
     (hCcl : IsClosed C) (hCbdd : Bornology.IsBounded C) (hCconv : Convex ℝ C)
-    (hCri : C ⊆ ri (dom f)) : ∃ z ∈ C.extremePoints ℝ, ∀ w ∈ C, f w ≤ f z :=
+    (hCri : C ⊆ ri (convexDom f)) : ∃ z ∈ C.extremePoints ℝ, ∀ w ∈ C, f w ≤ f z :=
   exists_mem_extremePoints_isMaxOn_of_isCompact hf hp
     (Metric.isCompact_of_isClosed_isBounded hCcl hCbdd) hCconv hne hCri
 
 /-- **Corollary 32.3.2**: "the supremum of `f` relative to `C` is finite". **This is the clause that
-needs `Proper f`, which the book omits**: for `f ≡ −∞` the printed hypotheses hold and the supremum
-is `⊥`. Given properness the supremum is the value at the maximiser, a real number because the
-maximiser lies in `dom f` and `f` never takes `−∞`. -/
-theorem corollary_32_3_2_finite (hf : ConvexFn f) (hp : Proper f) (hne : C.Nonempty)
+needs `ProperConvex f`, which the book omits**: for `f ≡ −∞` the printed hypotheses hold and the
+supremum is `⊥`. Given properness the supremum is the value at the maximiser, a real number because
+the maximiser lies in `dom f` and `f` never takes `−∞`. -/
+theorem corollary_32_3_2_finite (hf : ConvexFn f) (hp : ProperConvex f) (hne : C.Nonempty)
     (hCcl : IsClosed C) (hCbdd : Bornology.IsBounded C) (hCconv : Convex ℝ C)
-    (hCri : C ⊆ ri (dom f)) : ∃ r : ℝ, (⨆ x ∈ C, f x) = (r : EReal) := by
+    (hCri : C ⊆ ri (convexDom f)) : ∃ r : ℝ, (⨆ x ∈ C, f x) = (r : EReal) := by
   obtain ⟨z, hz, hzmax⟩ := corollary_32_3_2 hf hp hne hCcl hCbdd hCconv hCri
   have hzC : z ∈ C := extremePoints_subset hz
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot z)
-    (mem_dom.1 (intrinsicInterior_subset (hCri hzC)))
+    (mem_convexDom.1 (intrinsicInterior_subset (hCri hzC)))
   refine ⟨r, le_antisymm (iSup₂_le fun w hw => hr ▸ hzmax w hw) ?_⟩
   rw [← hr]
   exact le_iSup₂ (f := fun w (_ : w ∈ C) => f w) z hzC
@@ -255,7 +255,7 @@ theorem corollary_32_3_2_finite (hf : ConvexFn f) (hp : Proper f) (hne : C.Nonem
 unbounded above, the supremum of `f` relative to `C` is attained. Nothing is claimed about extreme
 points, and nothing is assumed about lines in `C` — a set containing a line has none. -/
 theorem corollary_32_3_3 (hf : ConvexFn f) (hC : Polyhedral C) (hne : C.Nonempty)
-    (hCdom : C ⊆ dom f) (hray : NoUnboundedHalfLine f C) : ∃ z ∈ C, ∀ w ∈ C, f w ≤ f z :=
+    (hCdom : C ⊆ convexDom f) (hray : NoUnboundedHalfLine f C) : ∃ z ∈ C, ∀ w ∈ C, f w ≤ f z :=
   exists_isMaxOn_of_polyhedral_of_bddAboveOnRays hf hC hne ((bddAboveOnRays_iff hCdom).2 hray)
 
 /-- **Corollary 32.3.4**: a convex function bounded above on a non-empty polyhedral convex set
@@ -289,7 +289,7 @@ theorem theorem_32_2_extremePoints_add_coneHull (hf : ConvexFn f) (hC : Convex �
 
 /-- **§32**: the step of Theorem 32.3's proof that cites Corollary 8.6.2 — `f` is constant along
 every line in `C`. -/
-theorem theorem_32_3_const_on_lineality (hf : ConvexFn f) (hCdom : C ⊆ dom f)
+theorem theorem_32_3_const_on_lineality (hf : ConvexFn f) (hCdom : C ⊆ convexDom f)
     (hray : NoUnboundedHalfLine f C) {u v : Rn n} (hu : u ∈ C) (hv : v ∈ linealitySpace C) :
     f (u + v) = f u :=
   hf.add_eq_of_mem_linealitySpace ((bddAboveOnRays_iff hCdom).2 hray) hu hv
@@ -298,7 +298,7 @@ theorem theorem_32_3_const_on_lineality (hf : ConvexFn f) (hCdom : C ⊆ dom f)
 `C` is the supremum over the extreme points of `C` itself. This is the form Corollary 32.3.1 is read
 off. -/
 theorem theorem_32_3_containsNoLine (hf : ConvexFn f) (hC : Convex ℝ C) (hCcl : IsClosed C)
-    (hCdom : C ⊆ dom f) (hray : NoUnboundedHalfLine f C) (hnl : ContainsNoLine C) :
+    (hCdom : C ⊆ convexDom f) (hray : NoUnboundedHalfLine f C) (hnl : ContainsNoLine C) :
     (⨆ x ∈ C, f x) = ⨆ x ∈ C.extremePoints ℝ, f x :=
   hf.iSup_extremePoints_of_containsNoLine hC hCcl hnl ((bddAboveOnRays_iff hCdom).2 hray)
 
@@ -357,16 +357,16 @@ theorem corollary_32_3_4_linearSystem {m : ℕ} (a : Fin m → Rn n) (α : Fin m
 /-- **Theorem 32.4**: "here `f` must be proper by Theorem 7.2, since `f` is assumed to be finite at
 a point of `ri (dom f)`." Properness is a *consequence* of the theorem's hypotheses, not one of
 them, and this is the step that produces it. -/
-theorem theorem_32_4_proper (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (dom f))
-    (hxb : f x ≠ ⊥) : Proper f := by
+theorem theorem_32_4_proper (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (convexDom f))
+    (hxb : f x ≠ ⊥) : ProperConvex f := by
   by_contra himp
-  exact hxb (hf.eq_bot_of_mem_relint_dom himp hxri)
+  exact hxb (hf.eq_bot_of_mem_relint_convexDom himp hxri)
 
 /-- **Theorem 32.4**: "the set `∂f(x)` is non-empty, because `x ∈ ri (dom f)` (Theorem 23.4)" —
 which is what makes the theorem's conclusion about *every* subgradient a statement with content. -/
-theorem theorem_32_4_nonempty (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (dom f))
+theorem theorem_32_4_nonempty (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (convexDom f))
     (hxb : f x ≠ ⊥) : (subdifferential (pairing n) f x).Nonempty :=
-  subdifferential_nonempty_of_mem_relint_dom hf (theorem_32_4_proper hf hxri hxb) hxri
+  subdifferential_nonempty_of_mem_relint_convexDom hf (theorem_32_4_proper hf hxri hxb) hxri
 
 /-- **Theorem 32.4**: at a point where `f` attains its supremum relative to `C`, every
 `x* ∈ ∂f(x)` is normal to `C` at `x`.
@@ -393,13 +393,14 @@ non-zero and the *linear* function `⟨·, x*⟩` attains its supremum relative 
 
 Rockafellar passes to `C = conv S` so that Theorem 32.4 applies to a convex set. That detour is
 unnecessary: `theorem_32_4_normal` asks nothing of `C`, so it applies to `S` itself. -/
-theorem corollary_32_4_1 (hp : Proper f) {S : Set (Rn n)} {x : Rn n} (hxri : x ∈ ri (dom f))
+theorem corollary_32_4_1 (hp : ProperConvex f) {S : Set (Rn n)} {x : Rn n}
+    (hxri : x ∈ ri (convexDom f))
     (hmax : ∀ z ∈ S, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ S) (hne : f z₀ ≠ f x)
     {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) :
     y ≠ 0 ∧ ∀ z ∈ S, pairing n z y ≤ pairing n x y := by
   refine ⟨ne_zero_of_mem_subdifferential_of_isMaxOn hmax hz₀ hne hy, fun z hz => ?_⟩
   exact le_of_mem_normalCone (mem_normalCone_of_mem_subdifferential_of_isMaxOn (hp.ne_bot x)
-    (mem_dom.1 (intrinsicInterior_subset hxri)).ne hmax hy) hz
+    (mem_convexDom.1 (intrinsicInterior_subset hxri)).ne hmax hy) hz
 
 /-- **§32**: the vectors normal to the Euclidean unit ball at a boundary
 point `x` are exactly the `λx` with `λ ≥ 0`.
@@ -528,12 +529,12 @@ theorem supportFn_parabolicSet : supportFn (pairing 2) parabolicSet = parabolicF
 theorem convexFn_parabolicFn : ConvexFn parabolicFn := by
   rw [← supportFn_parabolicSet]; exact convexFn_supportFn _ _
 
-theorem closedFn_parabolicFn : ClosedFn parabolicFn := by
-  rw [← supportFn_parabolicSet]; exact closedFn_supportFn
+theorem closedConvex_parabolicFn : ClosedConvex parabolicFn := by
+  rw [← supportFn_parabolicSet]; exact closedConvex_supportFn
 
-theorem proper_parabolicFn : Proper parabolicFn := by
+theorem properConvex_parabolicFn : ProperConvex parabolicFn := by
   rw [← supportFn_parabolicSet]
-  exact proper_supportFn ⟨parabolicPoint 0, parabolicPoint_mem 0⟩
+  exact properConvex_supportFn ⟨parabolicPoint 0, parabolicPoint_mem 0⟩
 
 /-! #### The two caps -/
 
@@ -605,9 +606,9 @@ private theorem parabolicFn_cap {g : ℝ → ℝ} (hgnn : ∀ t : ℝ, 0 ≤ g t
     parabolicFn x = ((x 0 ^ 2 / x 1 - x 1 : ℝ) : EReal) :=
   parabolicFn_of_mem ⟨le_trans (hgnn _) hx.1, fun h => hgz _ (h ▸ hx.1)⟩
 
-private theorem cap_subset_dom {g : ℝ → ℝ} (hgnn : ∀ t : ℝ, 0 ≤ g t)
-    (hgz : ∀ t : ℝ, g t ≤ 0 → t = 0) : cap g ⊆ dom parabolicFn := fun x hx => by
-  rw [mem_dom, parabolicFn_cap hgnn hgz hx]
+private theorem cap_subset_convexDom {g : ℝ → ℝ} (hgnn : ∀ t : ℝ, 0 ≤ g t)
+    (hgz : ∀ t : ℝ, g t ≤ 0 → t = 0) : cap g ⊆ convexDom parabolicFn := fun x hx => by
+  rw [mem_convexDom, parabolicFn_cap hgnn hgz hx]
   exact EReal.coe_lt_top _
 
 private noncomputable def capPoint (k : ℕ) (t : ℝ) : Rn 2 := WithLp.toLp 2 ![t, t ^ k]
@@ -652,8 +653,8 @@ theorem isBounded_parabolicCap : Bornology.IsBounded parabolicCap := by
 theorem convex_parabolicCap : Convex ℝ parabolicCap := by
   rw [parabolicCap_eq]; exact convex_cap fun _ _ _ _ ha hb hab => sq_combo_le ha hb hab
 
-theorem parabolicCap_subset_dom : parabolicCap ⊆ dom parabolicFn := by
-  rw [parabolicCap_eq]; exact cap_subset_dom sq_nonneg' sq_eq_zero'
+theorem parabolicCap_subset_convexDom : parabolicCap ⊆ convexDom parabolicFn := by
+  rw [parabolicCap_eq]; exact cap_subset_convexDom sq_nonneg' sq_eq_zero'
 
 theorem zero_mem_quarticCap : (0 : Rn 2) ∈ quarticCap := by
   rw [quarticCap_eq]; exact zero_mem_cap (by norm_num)
@@ -668,8 +669,8 @@ theorem isBounded_quarticCap : Bornology.IsBounded quarticCap := by
 theorem convex_quarticCap : Convex ℝ quarticCap := by
   rw [quarticCap_eq]; exact convex_cap fun _ _ _ _ ha hb hab => quartic_combo_le ha hb hab
 
-theorem quarticCap_subset_dom : quarticCap ⊆ dom parabolicFn := by
-  rw [quarticCap_eq]; exact cap_subset_dom quartic_nonneg quartic_eq_zero
+theorem quarticCap_subset_convexDom : quarticCap ⊆ convexDom parabolicFn := by
+  rw [quarticCap_eq]; exact cap_subset_convexDom quartic_nonneg quartic_eq_zero
 
 /-! #### The first example: a supremum that is not attained -/
 
@@ -753,24 +754,25 @@ theorem quarticCap_not_bddAbove :
 
 /-- **§32**, first half of the remark the two examples exist for, *stated and refuted*: Corollary
 32.3.2 with `C ⊆ ri (dom f)` weakened to `C ⊆ dom f` would say that the supremum is still attained.
-It is not, and adding `ClosedFn` and `Proper` — the book's "even when `f` is closed" — does not save
-it. The witness is `parabolicCap`. -/
+It is not, and adding `ClosedConvex` and `ProperConvex` — the book's "even when `f` is closed" —
+does not save it. The witness is `parabolicCap`. -/
 theorem corollary_32_3_2_not_attained_of_subset_dom :
-    ¬ ∀ (g : Rn 2 → EReal) (D : Set (Rn 2)), ConvexFn g → ClosedFn g → Proper g →
-        D.Nonempty → IsClosed D → Bornology.IsBounded D → Convex ℝ D → D ⊆ dom g →
+    ¬ ∀ (g : Rn 2 → EReal) (D : Set (Rn 2)), ConvexFn g → ClosedConvex g → ProperConvex g →
+        D.Nonempty → IsClosed D → Bornology.IsBounded D → Convex ℝ D → D ⊆ convexDom g →
         ∃ z ∈ D, ∀ w ∈ D, g w ≤ g z := fun h =>
   parabolicCap_not_attained (h parabolicFn parabolicCap convexFn_parabolicFn
-    closedFn_parabolicFn proper_parabolicFn ⟨0, zero_mem_parabolicCap⟩ isClosed_parabolicCap
-    isBounded_parabolicCap convex_parabolicCap parabolicCap_subset_dom)
+    closedConvex_parabolicFn properConvex_parabolicFn ⟨0, zero_mem_parabolicCap⟩
+        isClosed_parabolicCap
+    isBounded_parabolicCap convex_parabolicCap parabolicCap_subset_convexDom)
 
 /-- **§32**, second half, *stated and refuted*: the same weakening would say that the supremum is
 still finite. The witness is `quarticCap`, on which `f` is not even bounded above. -/
 theorem corollary_32_3_2_not_bddAbove_of_subset_dom :
-    ¬ ∀ (g : Rn 2 → EReal) (D : Set (Rn 2)), ConvexFn g → ClosedFn g → Proper g →
-        D.Nonempty → IsClosed D → Bornology.IsBounded D → Convex ℝ D → D ⊆ dom g →
+    ¬ ∀ (g : Rn 2 → EReal) (D : Set (Rn 2)), ConvexFn g → ClosedConvex g → ProperConvex g →
+        D.Nonempty → IsClosed D → Bornology.IsBounded D → Convex ℝ D → D ⊆ convexDom g →
         ∃ r : ℝ, ∀ w ∈ D, g w ≤ (r : EReal) := fun h =>
   quarticCap_not_bddAbove (h parabolicFn quarticCap convexFn_parabolicFn
-    closedFn_parabolicFn proper_parabolicFn ⟨0, zero_mem_quarticCap⟩ isClosed_quarticCap
-    isBounded_quarticCap convex_quarticCap quarticCap_subset_dom)
+    closedConvex_parabolicFn properConvex_parabolicFn ⟨0, zero_mem_quarticCap⟩ isClosed_quarticCap
+    isBounded_quarticCap convex_quarticCap quarticCap_subset_convexDom)
 
 end Rockafellar

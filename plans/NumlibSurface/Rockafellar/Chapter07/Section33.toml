@@ -7,7 +7,7 @@ id = 'cl₂'
 id = 'cl₁'
 
 [[node]]
-id = 'conjBracket'
+id = 'convexConjBracket'
 
 [[node]]
 id = 'concaveConjBracket'

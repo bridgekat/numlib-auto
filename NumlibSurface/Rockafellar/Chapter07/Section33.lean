@@ -23,8 +23,8 @@ argument convexly. So `K` is **lower closed** when `cl₂ (cl₁ K) = K` and **u
 ## Main definitions
 
 * `cl₁`, `cl₂` — the two partial closures.
-* `conjBracket`, `concaveConjBracket`, `bifunBracket`, `concaveBifunBracket`, `adjointBracket` —
-  Rockafellar's overloaded `⟨·, ·⟩`, split into one name per meaning: the conjugate of a convex
+* `convexConjBracket`, `concaveConjBracket`, `bifunBracket`, `concaveBifunBracket`, `adjointBracket`
+  — Rockafellar's overloaded `⟨·, ·⟩`, split into one name per meaning: the conjugate of a convex
   `f`, of a concave `f`, and of a slice of a convex, of a concave, and of an adjoint bifunction.
   The bifunction brackets are uncurried, as functions of the pair `(u, x*)`, the form every
   closedness predicate is stated against.
@@ -81,7 +81,7 @@ section Brackets
 variable {m n : ℕ}
 
 /-- Rockafellar's `⟨f, x*⟩ = f*(x*)` for a **convex** `f`: the conjugate, as an inner product. -/
-noncomputable abbrev conjBracket (f : Rn n → EReal) : Rn n → EReal := conj (pairing n) f
+noncomputable abbrev convexConjBracket (f : Rn n → EReal) : Rn n → EReal := convexConj (pairing n) f
 
 /-- Rockafellar's `⟨f, x*⟩` for a **concave** `f`: the concave conjugate. -/
 noncomputable abbrev concaveConjBracket (f : Rn n → EReal) : Rn n → EReal :=
@@ -120,9 +120,9 @@ theorem bifunOfSaddleFn_apply (K : Rn m × Rn n → EReal) (u : Rn m) (x : Rn n)
 
 /-- `⟨f, x*⟩ = ⟨x, x*⟩` when `f` is the indicator of `x`: the notation extends the ordinary inner
 product along the embedding of `ℝⁿ` into the convex functions. -/
-theorem conjBracket_indicatorFn (x y : Rn n) :
-    conjBracket (indicatorFn ({x} : Set (Rn n))) y = ((pairing n x y : ℝ) : EReal) :=
-  congrFun ((supportFn_eq_conj_indicatorFn (pairing n) {x}).symm.trans
+theorem convexConjBracket_indicatorFn (x y : Rn n) :
+    convexConjBracket (indicatorFn ({x} : Set (Rn n))) y = ((pairing n x y : ℝ) : EReal) :=
+  congrFun ((supportFn_eq_convexConj_indicatorFn (pairing n) {x}).symm.trans
     (supportFn_singleton (pairing n) x)) y
 
 end Brackets
@@ -140,13 +140,13 @@ theorem theorem_33_1_concaveConvex (hF : ConvexBifun F) : ConcaveConvexFn (bifun
 
 /-- **Theorem 33.1**, second clause: `⟨Fu, x*⟩` is convex-closed, with no hypothesis on `F`
 whatever — each slice is a conjugate. -/
-theorem theorem_33_1_convexClosed (F : Bifun (Rn m) (Rn n)) : ConvexClosedFn (bifunBracket F) :=
-  convexClosedFn_saddleOfBifun
+theorem theorem_33_1_convexClosed (F : Bifun (Rn m) (Rn n)) : PartialClosed₂ (bifunBracket F) :=
+  partialClosed₂_saddleOfBifun
 
 /-- **Theorem 33.1**, the inversion formula: Fenchel–Moreau (Theorem 12.2) uniformly in `u`. -/
 theorem theorem_33_1_inversion (hF : ConvexBifun F) (u : Rn m) (x : Rn n) :
-    clFn (F u) x = ⨆ y : Rn n, ((pairing n x y : ℝ) : EReal) - bifunBracket F (u, y) :=
-  congrFun (clFn_eq_conj_bracket (Bx := pairing n) hF u) x
+    convexCl (F u) x = ⨆ y : Rn n, ((pairing n x y : ℝ) : EReal) - bifunBracket F (u, y) :=
+  congrFun (convexCl_eq_convexConj_bracket (Bx := pairing n) hF u) x
 
 /-- **Theorem 33.1**, converse: for a concave-convex `K`, the bifunction `Fu = K (u, ·)*` is
 convex. -/
@@ -184,13 +184,13 @@ theorem corollary_33_1_1_cl₂_concaveConvex (hK : ConcaveConvexFn K) :
 
 /-- **Corollary 33.1.1**: `cl₁ K` is concave-closed; the concave closure is idempotent. -/
 theorem corollary_33_1_1_cl₁_concaveClosed (K : Rn m × Rn n → EReal) :
-    ConcaveClosedFn (cl₁ K) :=
-  concaveClosedFn_partialCl₁ K
+    PartialClosed₁ (cl₁ K) :=
+  partialClosed₁_partialCl₁ K
 
 /-- **Corollary 33.1.1**: `cl₂ K` is convex-closed. -/
 theorem corollary_33_1_1_cl₂_convexClosed (K : Rn m × Rn n → EReal) :
-    ConvexClosedFn (cl₂ K) :=
-  convexClosedFn_partialCl₂ K
+    PartialClosed₂ (cl₂ K) :=
+  partialClosed₂_partialCl₂ K
 
 end Cor3311
 
@@ -202,7 +202,7 @@ section Cor3312
 variable {m n : ℕ}
 
 /-- A closed bifunction is image-closed: a slice of a closed function is closed. -/
-theorem imageClosedBifun_of_closedBifun {F : Bifun (Rn m) (Rn n)} (hF : ClosedBifun F) :
+theorem imageClosedBifun_of_closedConvexBifun {F : Bifun (Rn m) (Rn n)} (hF : ClosedConvexBifun F) :
     ImageClosedBifun F :=
   hF.imageClosedBifun
 
@@ -211,7 +211,7 @@ one-to-one correspondence between the convex-closed concave-convex functions on 
 image-closed convex bifunctions from `ℝᵐ` to `ℝⁿ`. -/
 noncomputable def corollary_33_1_2 :
     {F : Bifun (Rn m) (Rn n) // ConvexBifun F ∧ ImageClosedBifun F} ≃
-      {K : Rn m × Rn n → EReal // ConcaveConvexFn K ∧ ConvexClosedFn K} :=
+      {K : Rn m × Rn n → EReal // ConcaveConvexFn K ∧ PartialClosed₂ K} :=
   bifunSaddleEquiv (Bx := pairing n)
 
 /-- The forward relation of Corollary 33.1.2 is `K (u, x*) = ⟨Fu, x*⟩`. -/
@@ -221,7 +221,7 @@ theorem corollary_33_1_2_apply
 
 /-- The inverse relation of Corollary 33.1.2 is `Fu = K (u, ·)*`. -/
 theorem corollary_33_1_2_symm_apply
-    (K : {K : Rn m × Rn n → EReal // ConcaveConvexFn K ∧ ConvexClosedFn K}) :
+    (K : {K : Rn m × Rn n → EReal // ConcaveConvexFn K ∧ PartialClosed₂ K}) :
     (corollary_33_1_2.symm K).1 = bifunOfSaddleFn K.1 := rfl
 
 end Cor3312
@@ -245,7 +245,8 @@ theorem corollary_33_1_3_concave (hF : PolyhedralBifun F) (y : Rn n) :
 
 /-- **Corollary 33.1.3**: a proper polyhedral convex bifunction is recovered from its bracket with
 no closure operation, being already closed. -/
-theorem corollary_33_1_3_inversion (hF : PolyhedralBifun F) (hp : Proper (graphFn F)) (u : Rn m)
+theorem corollary_33_1_3_inversion (hF : PolyhedralBifun F) (hp : ProperConvex (graphFn F))
+    (u : Rn m)
     (x : Rn n) :
     F u x = ⨆ y : Rn n, ((pairing n x y : ℝ) : EReal) - bifunBracket F (u, y) :=
   eq_iSup_sub_bracket_of_polyhedralBifun (pairing n) hF hp u x
@@ -262,12 +263,13 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 bifunction is concave. -/
 theorem adjointBracket_concaveConvex (F : Bifun (Rn m) (Rn n)) :
     ConcaveConvexFn (adjointBracket F) :=
-  concaveConvexFn_concaveBracket (concaveBifun_adjointBifun (pairing m) (pairing n) F) (pairing m)
+  concaveConvexFn_concaveBracket (concaveBifun_convexAdjointBifun (pairing m) (pairing n) F)
+      (pairing m)
 
 /-- `⟨u, F*x*⟩` is concave-closed: it is a `cl₁` by Theorem 33.2, and every `cl₁` is
 concave-closed by Corollary 33.1.1. -/
 theorem adjointBracket_concaveClosed (hF : ConvexBifun F) :
-    ConcaveClosedFn (adjointBracket F) := by
+    PartialClosed₁ (adjointBracket F) := by
   have h : adjointBracket F = cl₁ (bifunBracket F) :=
     (partialCl₁_bracket (pairing m) (pairing n) hF).symm
   rw [h]
@@ -289,10 +291,10 @@ theorem theorem_33_2_first (hF : ConvexBifun F) : adjointBracket F = cl₁ (bifu
 /-- **Theorem 33.2**, second equation: `cl₂ ⟨u, F*x*⟩ = ⟨(cl F)u, x*⟩`, the closure in the convex —
 second — argument. It is the first equation at `F*` composed with Theorem 30.1's `F** = cl F`. -/
 theorem theorem_33_2_second (hF : ConvexBifun F) :
-    cl₂ (adjointBracket F) = bifunBracket (clBifun F) := by
+    cl₂ (adjointBracket F) = bifunBracket (convexClBifun F) := by
   funext p
   exact congrFun
-    (partialCl₂_concaveBracket_adjointBifun (Bu := pairing m) (Bx := pairing n) hF p.1) p.2
+    (partialCl₂_concaveBracket_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) hF p.1) p.2
 
 end Thm332
 
@@ -304,18 +306,18 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
 /-- **Corollary 33.2.1**, first assertion: if `u ∈ ri (dom F)` then `⟨Fu, x*⟩ = ⟨u, F*x*⟩` for
 every `x*`. The two differ by `cl₁`, which Theorem 7.4 removes on `ri (dom)`. -/
-theorem corollary_33_2_1_primal (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (domBifun F))
+theorem corollary_33_2_1_primal (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (convexDomBifun F))
     (y : Rn n) : bifunBracket F (u, y) = adjointBracket F (u, y) :=
-  bracket_eq_concaveBracket_adjointBifun_of_mem_relint (pairing m) (pairing n) hF hu y
+  bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint (pairing m) (pairing n) hF hu y
 
 /-- **Corollary 33.2.1**, second assertion: if `F` is closed and `x* ∈ ri (dom F*)` then
 `⟨Fu, x*⟩ = ⟨u, F*x*⟩` for every `u`. The book's "apply the first fact to `F*`" is not literally
 available, `F*` being concave; the route here spends the closedness hypothesis, and it is spent
 nowhere else in the corollary. -/
-theorem corollary_33_2_1_dual (hF : ConvexBifun F) (hcl : ClosedBifun F) (u : Rn m) {y : Rn n}
-    (hy : y ∈ ri (domConcaveBifun (dualProgram F))) :
+theorem corollary_33_2_1_dual (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (u : Rn m) {y : Rn n}
+    (hy : y ∈ ri (concaveDomBifun (dualProgram F))) :
     bifunBracket F (u, y) = adjointBracket F (u, y) :=
-  bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun
+  bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBifun
     (Bu := pairing m) (Bx := pairing n) hF hcl u hy
 
 end Cor3321
@@ -328,15 +330,16 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
 /-- **Corollary 33.2.2**. For a proper polyhedral convex bifunction `F`, `⟨Fu, x*⟩ = ⟨u, F*x*⟩`
 except when both `u ∉ dom F` and `x* ∉ dom F*`: polyhedrality drops Corollary 33.2.1's `ri`. -/
-theorem corollary_33_2_2 (hF : PolyhedralBifun F) (hp : Proper (graphFn F)) (u : Rn m) (y : Rn n)
-    (h : u ∈ domBifun F ∨ y ∈ domConcaveBifun (dualProgram F)) :
+theorem corollary_33_2_2 (hF : PolyhedralBifun F) (hp : ProperConvex (graphFn F)) (u : Rn m)
+    (y : Rn n)
+    (h : u ∈ convexDomBifun F ∨ y ∈ concaveDomBifun (dualProgram F)) :
     bifunBracket F (u, y) = adjointBracket F (u, y) :=
-  bracket_eq_concaveBracket_adjointBifun_of_polyhedral (pairing m) (pairing n) hF hp u y h
+  bracket_eq_concaveBracket_convexAdjointBifun_of_polyhedral (pairing m) (pairing n) hF hp u y h
 
 /-- **Corollary 33.2.2**, the parenthetical: in the exceptional case one quantity is `+∞`, the
 other `-∞`. Neither polyhedrality nor properness is used. -/
-theorem corollary_33_2_2_exceptional {u : Rn m} (hu : u ∉ domBifun F) {y : Rn n}
-    (hy : y ∉ domConcaveBifun (dualProgram F)) :
+theorem corollary_33_2_2_exceptional {u : Rn m} (hu : u ∉ convexDomBifun F) {y : Rn n}
+    (hy : y ∉ concaveDomBifun (dualProgram F)) :
     bifunBracket F (u, y) = ⊥ ∧ adjointBracket F (u, y) = ⊤ :=
   bracket_eq_bot_and_concaveBracket_eq_top (pairing m) (pairing n) hu hy
 
@@ -350,21 +353,21 @@ section Closedness
 variable {m n : ℕ} {K : Rn m × Rn n → EReal}
 
 /-- A saddle-function finite everywhere is convex-closed: Corollary 10.1.1, slice by slice. -/
-theorem convexClosedFn_of_finite (hK : ConcaveConvexFn K) (hbot : ∀ p, K p ≠ ⊥)
-    (htop : ∀ p, K p ≠ ⊤) : ConvexClosedFn K := by
-  refine convexClosedFn_iff.2 fun u => ?_
-  refine (closedFn_iff_lowerSemicontinuous fun x => hbot (u, x)).2 ?_
+theorem partialClosed₂_of_finite (hK : ConcaveConvexFn K) (hbot : ∀ p, K p ≠ ⊥)
+    (htop : ∀ p, K p ≠ ⊤) : PartialClosed₂ K := by
+  refine partialClosed₂_iff.2 fun u => ?_
+  refine (closedConvex_iff_lowerSemicontinuous fun x => hbot (u, x)).2 ?_
   refine Continuous.lowerSemicontinuous
-    (ConvexFn.continuous_of_dom_eq_univ (hK.convex_snd u) ⟨⟨0, ?_⟩, fun x => hbot (u, x)⟩ ?_)
+    (ConvexFn.continuous_of_convexDom_eq_univ (hK.convex_snd u) ⟨⟨0, ?_⟩, fun x => hbot (u, x)⟩ ?_)
   · exact lt_top_iff_ne_top.2 (htop (u, 0))
   · exact Set.eq_univ_of_forall fun x => lt_top_iff_ne_top.2 (htop (u, x))
 
 /-- A saddle-function finite everywhere is fully closed. -/
 theorem fullyClosedFn_of_finite (hK : ConcaveConvexFn K) (hbot : ∀ p, K p ≠ ⊥)
     (htop : ∀ p, K p ≠ ⊤) : FullyClosedFn K := by
-  refine ⟨convexClosedFn_of_finite hK hbot htop, ?_⟩
-  have hswap : ConvexClosedFn (saddleSwap K) :=
-    convexClosedFn_of_finite (concaveConvexFn_saddleSwap hK)
+  refine ⟨partialClosed₂_of_finite hK hbot htop, ?_⟩
+  have hswap : PartialClosed₂ (saddleSwap K) :=
+    partialClosed₂_of_finite hK.saddleSwap
       (fun q => by simpa [saddleSwap] using htop (q.2, q.1))
       (fun q => by simpa [saddleSwap] using hbot (q.2, q.1))
   have h : saddleSwap (partialCl₁ K) = saddleSwap K := by
@@ -411,14 +414,14 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {K : Rn m × Rn n → EReal}
 
 /-- **Theorem 33.3**, one direction: the bracket of a *closed* convex bifunction is a lower closed
 concave-convex function. Both closure steps are Theorem 33.2. -/
-theorem theorem_33_3_lowerClosed (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem theorem_33_3_lowerClosed (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     LowerClosedFn (bifunBracket F) :=
   lowerClosedFn_bracket (pairing m) (pairing n) hF hcl
 
 /-- **Theorem 33.3**. The same relations are a one-to-one correspondence between the lower closed
 concave-convex functions on `ℝᵐ × ℝⁿ` and the *closed* convex bifunctions from `ℝᵐ` to `ℝⁿ`. -/
 theorem theorem_33_3 (hK : ConcaveConvexFn K) (hlc : LowerClosedFn K) :
-    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedBifun F ∧ bifunBracket F = K :=
+    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧ bifunBracket F = K :=
   exists_unique_convexBifun_bracket_eq (pairing m) (pairing n) hK hlc
 
 end Thm333
@@ -433,7 +436,7 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {Klow Kup : Rn m × Rn n → ERea
 `K̲ (u, x*) = ⟨Fu, x*⟩` and `K̄ (u, x*) = ⟨u, F*x*⟩` exists — and is then unique — if and only if
 `cl₁ K̲ = K̄` and `cl₂ K̄ = K̲`. This is the sufficiency. -/
 theorem corollary_33_3_1 (hK : ConcaveConvexFn Klow) (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = Klow) :
-    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedBifun F ∧
+    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧
       bifunBracket F = Klow ∧ adjointBracket F = Kup :=
   exists_unique_bifun_of_closure_pair (pairing m) (pairing n) hK h1 h2
 
@@ -443,7 +446,7 @@ theorem corollary_33_3_1_necessity_first (hF : ConvexBifun F) :
   partialCl₁_bracket (pairing m) (pairing n) hF
 
 /-- **Corollary 33.3.1**, necessity: `cl₂ ⟨u, F*x*⟩ = ⟨Fu, x*⟩` for a *closed* `F`. -/
-theorem corollary_33_3_1_necessity_second (hF : ConvexBifun F) (hcl : ClosedBifun F) :
+theorem corollary_33_3_1_necessity_second (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     cl₂ (adjointBracket F) = bifunBracket F :=
   partialCl₂_concaveBracket_adjoint (pairing m) (pairing n) hF hcl
 
@@ -502,15 +505,15 @@ section Cor3333
 variable {m n : ℕ} {C : Set (Rn m)} {D : Set (Rn n)} {K : Rn m × Rn n → ℝ}
 
 private theorem dom₂_concaveBifunBracket (G : Bifun (Rn n) (Rn m)) :
-    dom₂ (concaveBifunBracket G) = domConcaveBifun G := by
+    dom₂ (concaveBifunBracket G) = concaveDomBifun G := by
   ext y
   constructor
   · intro hy
-    have h : y ∈ dom fun w => concaveBracket (pairing m) G (0 : Rn m) w := hy 0
-    rwa [dom_concaveBracket] at h
+    have h : y ∈ convexDom fun w => concaveBracket (pairing m) G (0 : Rn m) w := hy 0
+    rwa [convexDom_concaveBracket] at h
   · intro hy u
-    have h : y ∈ dom fun w => concaveBracket (pairing m) G u w := by
-      rw [dom_concaveBracket]; exact hy
+    have h : y ∈ convexDom fun w => concaveBracket (pairing m) G u w := by
+      rw [convexDom_concaveBracket]; exact hy
     exact h
 
 /-- **Corollary 33.3.3**: the lower simple extension `K̲` of such a `K` is lower closed. -/
@@ -535,7 +538,7 @@ theorem corollary_33_3_3 (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClose
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
-    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedBifun F ∧
+    ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧
       bifunBracket F = lowerSimpleExt C D K ∧ adjointBracket F = upperSimpleExt C D K :=
   exists_unique_bifun_of_simpleExt (pairing m) (pairing n) hC hCcl hDcl hCne hconv hconc hDne
     hcontD hcontC
@@ -566,9 +569,9 @@ theorem corollary_33_3_3_dom (hC : Convex ℝ C) (hDcl : IsClosed D) (hDne : D.N
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D) :
-    domBifun (bifunOfSaddleFn (lowerSimpleExt C D K)) = C := by
+    convexDomBifun (bifunOfSaddleFn (lowerSimpleExt C D K)) = C := by
   have h1 : dom₁ (bifunBracket (bifunOfSaddleFn (lowerSimpleExt C D K)))
-      = domBifun (bifunOfSaddleFn (lowerSimpleExt C D K)) :=
+      = convexDomBifun (bifunOfSaddleFn (lowerSimpleExt C D K)) :=
     dom₁_bracket (pairing n) _
   rw [← h1, corollary_33_3_3_bracket hC hDcl hconv hconc hcontD, dom₁_lowerSimpleExt hDne]
 
@@ -578,9 +581,9 @@ theorem corollary_33_3_3_domAdjoint (hC : Convex ℝ C) (hCcl : IsClosed C) (hDc
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
-    domConcaveBifun (dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K))) = D := by
+    concaveDomBifun (dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K))) = D := by
   have h2 : dom₂ (adjointBracket (bifunOfSaddleFn (lowerSimpleExt C D K)))
-      = domConcaveBifun (dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K))) :=
+      = concaveDomBifun (dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K))) :=
     dom₂_concaveBifunBracket _
   rw [← h2, corollary_33_3_3_adjointBracket hC hCcl hDcl hCne hconv hconc hcontD hcontC,
     dom₂_upperSimpleExt hCne]
@@ -617,7 +620,7 @@ theorem corollary_33_3_3_adjoint_of_mem (hC : Convex ℝ C) (hDcl : IsClosed D)
   have h : dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K)) y v
       = concaveConj (pairing m)
         (fun u => bracket (pairing n) (bifunOfSaddleFn (lowerSimpleExt C D K)) u y) v :=
-    adjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) _ y v
+    convexAdjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) _ y v
   rw [h, concaveConj_apply]
   refine iInf_congr fun u => ?_
   rw [show bracket (pairing n) (bifunOfSaddleFn (lowerSimpleExt C D K)) u y
@@ -637,7 +640,7 @@ theorem corollary_33_3_3_adjoint_of_notMem (hC : Convex ℝ C) (hDcl : IsClosed 
   have h : dualProgram (bifunOfSaddleFn (lowerSimpleExt C D K)) y v
       = concaveConj (pairing m)
         (fun u => bracket (pairing n) (bifunOfSaddleFn (lowerSimpleExt C D K)) u y) v :=
-    adjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) _ y v
+    convexAdjointBifun_eq_concaveConj_bracket (pairing m) (pairing n) _ y v
   obtain ⟨u, hu⟩ := hCne
   rw [h, concaveConj_apply]
   refine le_antisymm (iInf_le_of_le u ?_) bot_le

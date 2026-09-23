@@ -1,47 +1,53 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'conj_add_le_infConv'
+id = 'convexConj_add_le_infConv'
 
 [[node]]
 id = 'IsExactSum'
 
 [[node]]
-id = 'IsExactSum.proper_add'
+id = 'IsExactSum.properConvex_add'
 
 [[node]]
-id = 'IsExactSum.conj_add'
+id = 'IsExactSum.convexConj_add'
 
 [[node]]
-id = 'IsExactSum.exists_conj_add_eq'
+id = 'IsExactSum.concaveConj_add'
 
 [[node]]
-id = 'conj_finsetSum_le_sum_toInfConvFn'
+id = 'IsExactSum.exists_convexConj_add_eq'
+
+[[node]]
+id = 'convexConj_finsetSum_le_sum_toInfConvFn'
 
 [[node]]
 id = 'IsExactFinsetSum'
 
 [[node]]
-id = 'IsExactFinsetSum.proper_finsetSum'
+id = 'IsExactFinsetSum.properConvex_finsetSum'
 
 [[node]]
-id = 'IsExactFinsetSum.conj_finsetSum'
+id = 'IsExactFinsetSum.convexConj_finsetSum'
 
 [[node]]
 id = 'IsExactFinsetSum.singleton'
 
 [[node]]
-id = 'conj_compLin_le_mapLin'
+id = 'convexConj_compLin_le_mapLin'
 
 [[node]]
 id = 'IsExactImage'
 
 [[node]]
-id = 'IsExactImage.proper_compLin'
+id = 'IsExactImage.properConvex_compLin'
 desc = 'A function that pulls back exactly along `A` has proper pullback.'
 
 [[node]]
-id = 'IsExactImage.conj_compLin'
+id = 'IsExactImage.convexConj_compLin'
 
 [[node]]
-id = 'IsExactImage.exists_conj_compLin_eq'
+id = 'IsExactImage.concaveConj_compLin'
+
+[[node]]
+id = 'IsExactImage.exists_convexConj_compLin_eq'

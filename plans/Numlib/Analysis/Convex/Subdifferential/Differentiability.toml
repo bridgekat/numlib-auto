@@ -4,6 +4,9 @@ namespace = 'ConvexAnalysis'
 id = 'continuousAt_rightDeriv_iff'
 
 [[node]]
+id = 'continuousAt_leftDeriv_iff'
+
+[[node]]
 id = 'countable_leftDeriv_ne_rightDeriv'
 
 [[node]]
@@ -14,6 +17,9 @@ id = 'countable_not_differentiableAtFn'
 
 [[node]]
 id = 'continuousAt_rightDeriv_of_differentiableAtFn'
+
+[[node]]
+id = 'continuousAt_leftDeriv_of_differentiableAtFn'
 
 [[node]]
 id = 'subset_closure_differentiableAtFn'

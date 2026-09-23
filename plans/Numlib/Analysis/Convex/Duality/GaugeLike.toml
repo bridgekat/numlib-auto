@@ -22,7 +22,7 @@ id = 'levelSup'
 id = 'setOf_monotoneComp_le_eq_smul'
 
 [[node]]
-id = 'conj_monotoneComp'
+id = 'convexConj_monotoneComp'
 
 [[node]]
 id = 'closedProperConvexFn_monotoneComp'
@@ -43,7 +43,7 @@ id = 'degGauge'
 id = 'posHomogeneousDeg_iff_exists_isGauge'
 
 [[node]]
-id = 'conj_monotoneComp_powHalfLine'
+id = 'convexConj_monotoneComp_powHalfLine'
 
 [[node]]
 id = 'polarGauge_degGauge'

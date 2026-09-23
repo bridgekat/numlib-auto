@@ -25,13 +25,25 @@ id = 'lineality'
 id = 'recessionCone_coe_affineSubspace'
 
 [[node]]
+id = 'linealitySpace_coe_affineSubspace'
+
+[[node]]
 id = 'recessionCone_setOf_forall_le'
+
+[[node]]
+id = 'linealitySpace_setOf_forall_le'
 
 [[node]]
 id = 'recessionCone_prod'
 
 [[node]]
+id = 'linealitySpace_prod'
+
+[[node]]
 id = 'recessionCone_pi'
+
+[[node]]
+id = 'linealitySpace_pi'
 
 [[node]]
 id = 'isClosed_recessionCone'

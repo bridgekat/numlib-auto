@@ -25,8 +25,8 @@ existence theorem applies it directly and the affine-only case is `ι = Empty`.
 
 * `exists_isKuhnTuckerVector_of_slater` — the existence theorem
   ([rockafellar1970convex] Theorem 28.2).
-* `exists_isKuhnTuckerVector_of_mem_dom` — when every constraint holds strictly somewhere in `C`,
-  the Slater point need not lie in `ri C`.
+* `exists_isKuhnTuckerVector_of_mem_convexDom` — when every constraint holds strictly somewhere in
+  `C`, the Slater point need not lie in `ri C`.
 * `exists_isKuhnTuckerVector_of_affine` — with only affine constraints, a feasible point in `ri C`
   suffices.
 * `exists_multipliers_of_slater_eq` — the same for affine *equality* constraints, whose
@@ -203,18 +203,19 @@ private theorem add_neg_coe_lt_top_iff {u : EReal} {a : ℝ} :
 /-- **Existence of Kuhn–Tucker coefficients under Slater's condition.** If the optimal value is
 not `-∞` and the program has a feasible solution in `ri C`, `C = dom f₀`, satisfying *strictly*
 every constraint of the first family, then a vector of Kuhn–Tucker coefficients exists. -/
-theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
-    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i)) (hsub : ∀ i, dom f₀ ⊆ dom (f i))
+theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
+    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
+        (hsub : ∀ i, convexDom f₀ ⊆ convexDom (f i))
     (hbot : optimalValue f₀ f b ≠ ⊥)
-    (hslater : ∃ x ∈ ri (dom f₀), (∀ i, f i x < 0) ∧ ∀ j, b j x ≤ 0) :
+    (hslater : ∃ x ∈ ri (convexDom f₀), (∀ i, f i x < 0) ∧ ∀ j, b j x ≤ 0) :
     ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKuhnTuckerVector f₀ f b l μ := by
   classical
   obtain ⟨z, hzri, hzf, hzb⟩ := hslater
-  have hzC : z ∈ dom f₀ := intrinsicInterior_subset hzri
+  have hzC : z ∈ convexDom f₀ := intrinsicInterior_subset hzri
   have hzfeas : z ∈ feasibleSet f b := ⟨fun i => (hzf i).le, hzb⟩
   -- the optimal value is a real number
   have htop : optimalValue f₀ f b < ⊤ :=
-    lt_of_le_of_lt (optimalValue_le hzfeas) (mem_dom.1 hzC)
+    lt_of_le_of_lt (optimalValue_le hzfeas) (mem_convexDom.1 hzC)
   obtain ⟨α, hα⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbot htop
   -- the shifted system, indexed by `Option ι`
   set g : Option ι → E → EReal := fun i' x => i'.elim (f₀ x + ((-α : ℝ) : EReal)) (fun i => f i x)
@@ -227,25 +228,27 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
         hf₀.add (convexFn_const _) hp₀.ne_bot (fun _ => EReal.coe_ne_bot _)
       exact this
     · exact hf i
-  have hgproper : ∀ i', Proper (g i') := by
+  have hgproper : ∀ i', ProperConvex (g i') := by
     rintro (_ | i)
     · refine ⟨⟨z, ?_⟩, fun x => ?_⟩
-      · exact mem_dom.2 (add_neg_coe_lt_top_iff.2 (mem_dom.1 hzC))
+      · exact mem_convexDom.2 (add_neg_coe_lt_top_iff.2 (mem_convexDom.1 hzC))
       · exact EReal.add_ne_bot_iff.2 ⟨hp₀.ne_bot x, EReal.coe_ne_bot _⟩
     · exact hp i
-  have hgdom : ∀ i', ri (dom f₀) ⊆ dom (g i') := by
+  have hgdom : ∀ i', ri (convexDom f₀) ⊆ convexDom (g i') := by
     rintro (_ | i) x hx
-    · exact mem_dom.2 (add_neg_coe_lt_top_iff.2 (mem_dom.1 (intrinsicInterior_subset hx)))
+    · exact mem_convexDom.2
+        (add_neg_coe_lt_top_iff.2 (mem_convexDom.1 (intrinsicInterior_subset hx)))
     · exact hsub i (intrinsicInterior_subset hx)
   -- the strict system is unsolvable, so the theorem of the alternative produces multipliers
-  have hnoalt : ¬ ∃ x ∈ dom f₀, (∀ i', g i' x < 0) ∧ ∀ j, b j x ≤ 0 := by
+  have hnoalt : ¬ ∃ x ∈ convexDom f₀, (∀ i', g i' x < 0) ∧ ∀ j, b j x ≤ 0 := by
     rintro ⟨x, _, hxg, hxb⟩
     have hx0 : f₀ x < (α : EReal) := add_neg_coe_lt_zero_iff.1 (hxg none)
     have hxfeas : x ∈ feasibleSet f b := ⟨fun i => (hxg (some i)).le, hxb⟩
     have hle : (α : EReal) ≤ f₀ x := hα ▸ optimalValue_le (f₀ := f₀) hxfeas
     exact absurd (lt_of_le_of_lt hle hx0) (lt_irrefl _)
   obtain ⟨c, μ, hcnonneg, hμnonneg, hcne, hkey⟩ :=
-    (alternative_of_convex_system_affine (C := dom f₀) (f := g) (a := b) hf₀.convex_dom hgconv
+    (alternative_of_convex_system_affine (C := convexDom f₀) (f := g)
+        (a := b) hf₀.convex_convexDom hgconv
       hgproper hgdom ⟨z, hzri, hzb⟩).resolve_left hnoalt
   -- the multiplier of the objective is positive
   have hcpos : 0 < c none := by
@@ -282,10 +285,10 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
   have hνnonneg : ∀ j, 0 ≤ ν j := fun j => div_nonneg (hμnonneg j) hcpos.le
   have hL : ∀ x, (α : EReal) ≤ programLagrangian f₀ f b l ν x := by
     intro x
-    by_cases hxC : x ∈ dom f₀
-    · obtain ⟨r₀, hr₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp₀.ne_bot x) (mem_dom.1 hxC)
+    by_cases hxC : x ∈ convexDom f₀
+    · obtain ⟨r₀, hr₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp₀.ne_bot x) (mem_convexDom.1 hxC)
       have hrfin : ∀ i, ∃ r : ℝ, f i x = (r : EReal) := fun i =>
-        EReal.exists_coe_of_ne_bot_of_lt_top ((hp i).ne_bot x) (mem_dom.1 (hsub i hxC))
+        EReal.exists_coe_of_ne_bot_of_lt_top ((hp i).ne_bot x) (mem_convexDom.1 (hsub i hxC))
       choose r hr using hrfin
       have hx' := hkey x hxC
       rw [Fintype.sum_option] at hx'
@@ -317,7 +320,7 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
       linarith
     · have htopx : f₀ x = ⊤ := by
         rcases lt_or_eq_of_le (le_top : f₀ x ≤ ⊤) with h | h
-        · exact absurd (mem_dom.2 h) hxC
+        · exact absurd (mem_convexDom.2 h) hxC
         · exact h
       rw [programLagrangian_eq_top hlnonneg (fun i y => (hp i).ne_bot y) htopx]
       exact le_top
@@ -331,8 +334,8 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
 
 /-- With only affine constraints a feasible solution in `ri C` suffices: the existence theorem
 with an empty family of strict constraints. -/
-theorem exists_isKuhnTuckerVector_of_affine [IsEmpty ι] (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
-    (hbot : optimalValue f₀ f b ≠ ⊥) (hfeas : ∃ x ∈ ri (dom f₀), ∀ j, b j x ≤ 0) :
+theorem exists_isKuhnTuckerVector_of_affine [IsEmpty ι] (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
+    (hbot : optimalValue f₀ f b ≠ ⊥) (hfeas : ∃ x ∈ ri (convexDom f₀), ∀ j, b j x ≤ 0) :
     ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKuhnTuckerVector f₀ f b l μ := by
   obtain ⟨x, hx, hxb⟩ := hfeas
   exact exists_isKuhnTuckerVector_of_slater hf₀ hp₀ (fun i => isEmptyElim i)
@@ -357,19 +360,20 @@ theorem affineMap_segment (g : E →ᵃ[ℝ] ℝ) (y z : E) (a : ℝ) :
 The book states this for a program with no affine constraints; affine constraints are allowed here,
 at the price of asking strict inequality of them too, which is what survives the prolongation. The
 hypothesis `hri` is what following `fᵢ` along the segment needs. -/
-theorem exists_isKuhnTuckerVector_of_mem_dom (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
-    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i)) (hsub : ∀ i, dom f₀ ⊆ dom (f i))
-    (hri : ∀ i, ri (dom f₀) ⊆ ri (dom (f i))) (hbot : optimalValue f₀ f b ≠ ⊥)
-    (hslater : ∃ x ∈ dom f₀, (∀ i, f i x < 0) ∧ ∀ j, b j x < 0) :
+theorem exists_isKuhnTuckerVector_of_mem_convexDom (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
+    (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
+        (hsub : ∀ i, convexDom f₀ ⊆ convexDom (f i))
+    (hri : ∀ i, ri (convexDom f₀) ⊆ ri (convexDom (f i))) (hbot : optimalValue f₀ f b ≠ ⊥)
+    (hslater : ∃ x ∈ convexDom f₀, (∀ i, f i x < 0) ∧ ∀ j, b j x < 0) :
     ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKuhnTuckerVector f₀ f b l μ := by
   classical
   obtain ⟨z, hz, hzf, hzb⟩ := hslater
-  obtain ⟨y, hy⟩ := Convex.relint_nonempty hf₀.convex_dom ⟨z, hz⟩
+  obtain ⟨y, hy⟩ := Convex.relint_nonempty hf₀.convex_convexDom ⟨z, hz⟩
   -- along the segment from `y` to `z`, every constraint stays strict near the far end
-  have hmem : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), (1 - a) • y + a • z ∈ ri (dom f₀) := by
+  have hmem : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), (1 - a) • y + a • z ∈ ri (convexDom f₀) := by
     filter_upwards [(eventually_gt_nhds (by norm_num : (0 : ℝ) < 1)).filter_mono nhdsWithin_le_nhds,
       eventually_mem_nhdsWithin] with a ha ha'
-    exact Convex.segment_mem_relint hf₀.convex_dom hy (subset_closure hz) ha.le ha'
+    exact Convex.segment_mem_relint hf₀.convex_convexDom hy (subset_closure hz) ha.le ha'
   have hcon : ∀ i, ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), f i ((1 - a) • y + a • z) < 0 := by
     intro i
     have hlim := (hf i).tendsto_lscHull_along_segment_relint (hri i hy) z
@@ -393,10 +397,11 @@ theorem exists_isKuhnTuckerVector_of_mem_dom (hf₀ : ConvexFn f₀) (hp₀ : Pr
 /-- The same for a program whose affine constraints are *equations*. Their multipliers are then of
 unrestricted sign, obtained as `μ' - μ''` from the two inequalities each equation splits into. -/
 theorem exists_multipliers_of_slater_eq {σ : Type*} [Fintype σ] {a : σ → E →ᵃ[ℝ] ℝ}
-    (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀) (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, Proper (f i))
-    (hsub : ∀ i, dom f₀ ⊆ dom (f i))
+    (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀) (hf : ∀ i, ConvexFn (f i))
+        (hp : ∀ i, ProperConvex (f i))
+    (hsub : ∀ i, convexDom f₀ ⊆ convexDom (f i))
     (hbot : optimalValue f₀ f (Sum.elim a fun k => -(a k)) ≠ ⊥)
-    (hslater : ∃ x ∈ ri (dom f₀), (∀ i, f i x < 0) ∧ ∀ k, a k x = 0) :
+    (hslater : ∃ x ∈ ri (convexDom f₀), (∀ i, f i x < 0) ∧ ∀ k, a k x = 0) :
     ∃ (l : ι → ℝ) (ρ : σ → ℝ), (∀ i, 0 ≤ l i) ∧
       (⨅ x, f₀ x + (∑ i, (l i : EReal) * f i x) + ((∑ k, ρ k * a k x : ℝ) : EReal))
         = ⨅ x ∈ {x | (∀ i, f i x ≤ 0) ∧ ∀ k, a k x = 0}, f₀ x := by
@@ -475,40 +480,40 @@ is a proper convex function with `x₀` in the relative interior of its effectiv
 represented through the pairing by some `v` with `⟨w, v⟩ = a.linear w` — and `λ` is arbitrary.
 These are the inequality and the equality constraints of an ordinary convex program. -/
 def IsLagrangeSummand (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x₀ : E) (l : ℝ) (g : E → EReal) : Prop :=
-  (0 ≤ l ∧ ConvexFn g ∧ Proper g ∧ x₀ ∈ ri (dom g)) ∨
+  (0 ≤ l ∧ ConvexFn g ∧ ProperConvex g ∧ x₀ ∈ ri (convexDom g)) ∨
     ∃ (a : E →ᵃ[ℝ] ℝ) (v : F), (∀ y, g y = a y) ∧ ∀ w, B w v = a.linear w
 
 /-- A real multiple of an affine function is a convex, proper, everywhere finite function. -/
-theorem convexFn_proper_coe_mul_affineMap (c : ℝ) (a : E →ᵃ[ℝ] ℝ) :
+theorem convexFn_properConvex_coe_mul_affineMap (c : ℝ) (a : E →ᵃ[ℝ] ℝ) :
     ConvexFn (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
-      Proper (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
-      dom (fun y => (c : EReal) * ((a y : ℝ) : EReal)) = univ := by
+      ProperConvex (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
+      convexDom (fun y => (c : EReal) * ((a y : ℝ) : EReal)) = univ := by
   have hrw : (fun y => (c : EReal) * ((a y : ℝ) : EReal))
       = fun y => (((c • a) y : ℝ) : EReal) := by
     funext y
     rw [← EReal.coe_mul, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
   rw [hrw]
-  refine ⟨?_, proper_coe _, dom_coe _⟩
+  refine ⟨?_, properConvex_coe _, convexDom_coe _⟩
   refine ConvexOn.convexFn_coe ⟨convex_univ, fun x _ y _ p q hp hq hpq => ?_⟩
   rw [Convex.combo_affine_apply hpq]
 
 /-- An admissible summand is a proper convex function whose effective domain has `x₀` in its
 relative interior — the hypotheses of the sum rule for subgradients. -/
-theorem IsLagrangeSummand.convexFn_proper_mem_relint {c : ℝ} {g : E → EReal}
+theorem IsLagrangeSummand.convexFn_properConvex_mem_relint {c : ℝ} {g : E → EReal}
     (h : IsLagrangeSummand B x₀ c g) :
-    ConvexFn (fun y => (c : EReal) * g y) ∧ Proper (fun y => (c : EReal) * g y) ∧
-      x₀ ∈ ri (dom fun y => (c : EReal) * g y) := by
+    ConvexFn (fun y => (c : EReal) * g y) ∧ ProperConvex (fun y => (c : EReal) * g y) ∧
+      x₀ ∈ ri (convexDom fun y => (c : EReal) * g y) := by
   rcases h with ⟨hc, hg, hp, hx₀⟩ | ⟨a, v, hga, -⟩
-  · refine ⟨convexFn_coe_mul hc hg, proper_coe_mul hc hp, ?_⟩
+  · refine ⟨convexFn_coe_mul hc hg, properConvex_coe_mul hc hp, ?_⟩
     rcases hc.eq_or_lt with rfl | hpos
-    · have hdom : dom (fun y => ((0 : ℝ) : EReal) * g y) = univ :=
+    · have hdom : convexDom (fun y => ((0 : ℝ) : EReal) * g y) = univ :=
         eq_univ_of_forall fun y => by simp
       rw [hdom, intrinsicInterior_univ]
       exact mem_univ _
-    · rwa [dom_coe_mul hpos]
+    · rwa [convexDom_coe_mul hpos]
   · have hg : g = fun y => ((a y : ℝ) : EReal) := funext hga
     subst hg
-    obtain ⟨h₁, h₂, h₃⟩ := convexFn_proper_coe_mul_affineMap c a
+    obtain ⟨h₁, h₂, h₃⟩ := convexFn_properConvex_coe_mul_affineMap c a
     refine ⟨h₁, h₂, ?_⟩
     rw [h₃, intrinsicInterior_univ]
     exact mem_univ _
@@ -541,8 +546,8 @@ the Lagrange function: when the effective domains share a relative interior poin
 cosmetic — `∂fᵢ(x)` can be empty at a boundary point of `dom fᵢ`, and then `0 · ∂fᵢ(x)` would be
 empty rather than `{0}`. -/
 theorem subdifferential_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
-    (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i)) (x : E) :
+    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
+    (hx₀ : x₀ ∈ ri (convexDom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i)) (x : E) :
     subdifferential B (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) x
       = subdifferential B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subdifferential B (f i) x := by
   classical
@@ -551,11 +556,12 @@ theorem subdifferential_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePai
     funext y
     rw [Finset.sum_apply, Finset.sum_insertNone]
     rfl
-  have hprop : ∀ o ∈ s.insertNone, ConvexFn (g o) ∧ Proper (g o) ∧ x₀ ∈ ri (dom (g o)) := by
+  have hprop : ∀ o ∈ s.insertNone,
+      ConvexFn (g o) ∧ ProperConvex (g o) ∧ x₀ ∈ ri (convexDom (g o)) := by
     intro o ho
     cases o with
     | none => exact ⟨hf₀, hp₀, hx₀⟩
-    | some i => exact (hf i (Finset.some_mem_insertNone.1 ho)).convexFn_proper_mem_relint
+    | some i => exact (hf i (Finset.some_mem_insertNone.1 ho)).convexFn_properConvex_mem_relint
   have hex : IsExactFinsetSum B s.insertNone g :=
     IsExactFinsetSum.of_relint ⟨none, Finset.mem_insertNone.2 (by simp)⟩
       (fun o ho => (hprop o ho).1) (fun o ho => (hprop o ho).2.1) fun o ho => (hprop o ho).2.2
@@ -580,7 +586,8 @@ theorem add_sum_coe_mul_eq_of_forall_mul_eq_zero {x : E}
 `0 ∈ ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the `λᵢ ≠ 0`, then `x ∈ argmin h`. -/
 theorem mem_argmin_add_sum_coe_mul_of_zero_mem [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀)
-    (hp₀ : Proper f₀) (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i))
+    (hp₀ : ProperConvex f₀) (hx₀ : x₀ ∈ ri (convexDom f₀))
+        (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i))
     {x : E}
     (h : (0 : F) ∈ subdifferential B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subdifferential B (f i) x) :
     x ∈ argmin fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y := by
@@ -638,9 +645,11 @@ optimal solution: `f₀ x` is the optimal value. This is the "if" half of Rockaf
 Theorem 28.3, which needs no constraint qualification beyond a relative interior point `x₀` of
 `dom f₀` lying in `ri (dom fᵢ)` for every `i`. -/
 theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
-    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
-    (hf : ∀ i, ConvexFn (f i)) (hpf : ∀ i, Proper (f i)) {x₀ : E} (hx₀ : x₀ ∈ ri (dom f₀))
-    (hri : ∀ i, x₀ ∈ ri (dom (f i))) {a : κ → F} (ha : ∀ j w, B w (a j) = (b j).linear w) {x : E}
+    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
+    (hf : ∀ i, ConvexFn (f i)) (hpf : ∀ i, ProperConvex (f i)) {x₀ : E}
+        (hx₀ : x₀ ∈ ri (convexDom f₀))
+    (hri : ∀ i, x₀ ∈ ri (convexDom (f i))) {a : κ → F}
+        (ha : ∀ j w, B w (a j) = (b j).linear w) {x : E}
     (hl : ∀ i, 0 ≤ l i ∧ f i x ≤ 0 ∧ (l i : EReal) * f i x = 0)
     (hμ : ∀ j, 0 ≤ μ j ∧ b j x ≤ 0 ∧ μ j * b j x = 0)
     (hc : (0 : F) ∈ subdifferential B f₀ x + ∑ i with l i ≠ 0, l i • subdifferential B (f i) x
@@ -693,10 +702,10 @@ theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePa
     exact add_sum_coe_mul_eq_of_forall_mul_eq_zero hslack
   -- `x` is feasible and in `dom f₀`
   have hfeas : x ∈ feasibleSet f b := ⟨fun i => (hl i).2.1, fun j => (hμ j).2.1⟩
-  have hxdom : x ∈ dom f₀ := by
+  have hxdom : x ∈ convexDom f₀ := by
     obtain ⟨w, hw, -, -, -⟩ := Set.mem_add.1 hc
     obtain ⟨v₀, hv₀, -, -, -⟩ := Set.mem_add.1 hw
-    exact mem_dom_of_mem_subdifferential hp₀ hv₀
+    exact mem_convexDom_of_mem_subdifferential hp₀ hv₀
   have hinf : (⨅ y, programLagrangian f₀ f b l μ y) = f₀ x := by
     rw [iInf_eq_of_mem_argmin hmin, hLx]
   have hopt : f₀ x = optimalValue f₀ f b := by
@@ -708,7 +717,7 @@ theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePa
         programLagrangian_le_of_mem_feasibleSet (fun i => (hl i).1) (fun j => (hμ j).1) hy
   refine ⟨⟨fun i => (hl i).1, fun j => (hμ j).1, ?_, ?_, ?_⟩, hfeas, hopt⟩
   · rw [hinf]; exact hp₀.ne_bot x
-  · rw [hinf]; exact (mem_dom.1 hxdom).ne
+  · rw [hinf]; exact (mem_convexDom.1 hxdom).ne
   · rw [hinf, hopt]
 
 end KuhnTuckerProgram

@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Duality.ConcaveConj
+import Numlib.Analysis.Convex.Duality.Conjugate
 import Numlib.Analysis.Convex.Extremum.Perturbation
 
 /-!
@@ -18,7 +18,8 @@ definition of a Kuhn–Tucker vector into a statement about `L`.
 ## Main results
 
 * `lagrangian_eq_concaveConj` — `L(·, x)` is the concave conjugate of `-F(·)(x)`.
-* `iInf_lagrangian` — `⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`.
+* `iInf_lagrangian` — `⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`; its mirror `iSup_lagrangian` —
+  `⨆ v L(v, x) = (cl F(·)(x))(0)`, from `convexCl_zero_eq_iSup_iInf`, Fenchel–Moreau at the origin.
 * `mem_kuhnTucker_iff_iInf_lagrangian` — `v` is a Kuhn–Tucker vector exactly when `⨅ x L(v, x)` is
   finite and equal to the optimal value.
 
@@ -78,6 +79,54 @@ theorem iInf_lagrangian_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X)
   exact iInf_add_infBifun_le B F v
 
 end Defs
+
+/-! ### The closure of a convex function at the origin -/
+
+section ClosureAtZero
+
+variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
+  [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
+  {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f : E → EReal}
+
+/-- `EReal.neg_coe_sub` with the difference read as a sum. -/
+private theorem neg_coe_sub_eq {c : ℝ} {w : EReal} :
+    -(((c : ℝ) : EReal) - w) = w + ((-c : ℝ) : EReal) := by
+  rw [EReal.neg_coe_sub]
+  rfl
+
+/-- **Fenchel–Moreau at the origin.** For a convex `f`, the closure at `0` is the supremum over the
+dual variable of the infimum of `x ↦ ⟨x, y⟩ + f x`. Everything below rests on this computation. -/
+theorem convexCl_zero_eq_iSup_iInf (hf : ConvexFn f) :
+    convexCl f 0 = ⨆ y : F, ⨅ x : E, (((B x y : ℝ) : EReal) + f x) := by
+  have hsurj : Function.Surjective (fun y : F => -y) := fun y => ⟨-y, neg_neg y⟩
+  have hterm : ∀ y : F, ((B (0 : E) y : ℝ) : EReal) - convexConj B f y
+      = ⨅ x : E, (((B x (-y) : ℝ) : EReal) + f x) := by
+    intro y
+    rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_sub, convexConj_apply,
+      EReal.neg_iSup]
+    refine iInf_congr fun x => ?_
+    have hb : (B x (-y) : ℝ) = -(B x y) := by rw [map_neg]
+    rw [neg_coe_sub_eq, hb, add_comm]
+  rw [← convexBiconj_eq_convexCl (B := B) hf, convexBiconj_apply, iSup_congr hterm]
+  exact hsurj.iSup_comp fun y : F => ⨅ x : E, (((B x y : ℝ) : EReal) + f x)
+
+end ClosureAtZero
+
+section LagrangianSup
+
+variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
+  [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
+  {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {F : Bifun U X} {x : X}
+
+/-- The mirror of `iInf_lagrangian`: *maximising* the Lagrangian over the price variable gives
+the closure of the objective slice at the origin. This is Fenchel–Moreau at the origin, read at
+`u ↦ F u x`. -/
+theorem iSup_lagrangian (hf : ConvexFn fun u => F u x) :
+    (⨆ w, lagrangian Bu F w x) = convexCl (fun u => F u x) 0 :=
+  (convexCl_zero_eq_iSup_iInf (B := Bu) hf).symm
+
+end LagrangianSup
+
 
 section Concave
 

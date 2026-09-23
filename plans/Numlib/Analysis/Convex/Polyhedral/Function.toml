@@ -1,6 +1,9 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
+id = 'PolyhedralFn'
+
+[[node]]
 id = 'PolyhedralFn.convexFn'
 desc = 'A polyhedral function is convex.'
 
@@ -9,11 +12,11 @@ id = 'PolyhedralFn.lowerSemicontinuous'
 desc = 'A polyhedral function is lower semicontinuous.'
 
 [[node]]
-id = 'PolyhedralFn.closedFn'
+id = 'PolyhedralFn.closedConvex'
 desc = 'A polyhedral function that never takes the bottom value is closed.'
 
 [[node]]
-id = 'PolyhedralFn.polyhedral_dom'
+id = 'PolyhedralFn.polyhedral_convexDom'
 
 [[node]]
 id = 'PolyhedralFn.polyhedral_sublevel'
@@ -25,7 +28,22 @@ id = 'polyhedralFn_indicatorFn'
 id = 'PolyhedralFn.add'
 
 [[node]]
+id = 'PolyhedralFn.finsetSum'
+
+[[node]]
 id = 'epi_infConv_of_polyhedralFn'
 
 [[node]]
 id = 'PolyhedralFn.infConv'
+
+[[node]]
+id = 'PolyhedralFn.compLin'
+
+[[node]]
+id = 'epi_mapLin_of_polyhedralFn'
+
+[[node]]
+id = 'PolyhedralFn.mapLin'
+
+[[node]]
+id = 'exists_mapLin_eq_of_polyhedralFn'

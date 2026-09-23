@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.Deriv.Shift
 import Mathlib.Analysis.Convex.Deriv
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Numlib.Analysis.Convex.Subdifferential.Differentiability
@@ -12,8 +13,9 @@ derivatives by integration, `f y - f x = ∫ₓʸ f'₊(t) dt = ∫ₓʸ f'₋(t
 
 * `sub_eq_intervalIntegral_derivWithin_Ioi` — the statement for a real-valued convex function on
   an open convex subset of the line. This is the theorem; the rest is translation.
-* `rightDeriv_eq_coe_derivWithin` — at an interior point of `dom f`, the `EReal`-valued
-  `rightDeriv` is the coercion of Mathlib's `derivWithin f (Ioi t) t`.
+* `rightDeriv_eq_coe_derivWithin`, `leftDeriv_eq_coe_derivWithin` — at an interior point of
+  `dom f`, the `EReal`-valued `rightDeriv` (`leftDeriv`) is the coercion of Mathlib's
+  `derivWithin f (Ioi t) t` (`derivWithin f (Iio t) t`).
 * `sub_eq_intervalIntegral_rightDeriv`, `sub_eq_intervalIntegral_leftDeriv` — both halves for an
   `EReal`-valued `f` ([rockafellar1970convex] Corollary 24.2.1).
 
@@ -67,36 +69,36 @@ variable {f : ℝ → EReal} {t : ℝ}
 
 /-- A difference quotient of `f` in the direction `1`, taken between two points where `f` is
 finite, is the coercion of Mathlib's `slope`. No order relation between the points is needed. -/
-theorem sub_div_eq_coe_slope (hb : f t ≠ ⊥) (ht : f t ≠ ⊤) {z : ℝ} (hz : z ∈ dom f)
+theorem sub_div_eq_coe_slope (hb : f t ≠ ⊥) (ht : f t ≠ ⊤) {z : ℝ} (hz : z ∈ convexDom f)
     (hzb : f z ≠ ⊥) :
     (f (t + (z - t) • (1 : ℝ)) - f t) / ((z - t : ℝ) : EReal)
       = ((slope (fun w => (f w).toReal) t z : ℝ) : EReal) := by
   have hzt : t + (z - t) • (1 : ℝ) = z := by rw [smul_eq_mul, mul_one]; ring
-  rw [hzt, ← EReal.coe_toReal (mem_dom.1 hz).ne hzb, ← EReal.coe_toReal ht hb,
+  rw [hzt, ← EReal.coe_toReal (mem_convexDom.1 hz).ne hzb, ← EReal.coe_toReal ht hb,
     ← EReal.coe_sub, ← EReal.coe_div, slope_def_field]
 
 /-- At an interior point of `dom f`, the `EReal` infimum of difference quotients `rightDeriv f t`
 is the coercion of Mathlib's `derivWithin f (Ioi t) t`. Both are the infimum of the slopes
 `slope f t z` over the `z > t` at which `f` is finite. -/
-theorem rightDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : Proper f)
-    (ht : t ∈ interior (dom f)) :
+theorem rightDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : ProperConvex f)
+    (ht : t ∈ interior (convexDom f)) :
     rightDeriv f t = ((derivWithin (fun z => (f z).toReal) (Ioi t) t : ℝ) : EReal) := by
-  have htdom : t ∈ dom f := interior_subset ht
-  have httop : f t ≠ ⊤ := (mem_dom.1 htdom).ne
+  have htdom : t ∈ convexDom f := interior_subset ht
+  have httop : f t ≠ ⊤ := (mem_convexDom.1 htdom).ne
   have htbot : f t ≠ ⊥ := hp.ne_bot t
-  have hgc : ConvexOn ℝ (dom f) fun z => (f z).toReal := hf.convexOn_toReal_dom hp
+  have hgc : ConvexOn ℝ (convexDom f) fun z => (f z).toReal := hf.convexOn_toReal_convexDom hp
   have hsInf : derivWithin (fun z => (f z).toReal) (Ioi t) t
-      = sInf (slope (fun z => (f z).toReal) t '' {z | z ∈ dom f ∧ t < z}) :=
+      = sInf (slope (fun z => (f z).toReal) t '' {z | z ∈ convexDom f ∧ t < z}) :=
     hgc.rightDeriv_eq_sInf_slope_of_mem_interior ht
-  have hbdd : BddBelow (slope (fun z => (f z).toReal) t '' {z | z ∈ dom f ∧ t < z}) :=
+  have hbdd : BddBelow (slope (fun z => (f z).toReal) t '' {z | z ∈ convexDom f ∧ t < z}) :=
     bddBelow_slope_lt_of_mem_interior hgc ht
   -- `t` is interior, so `dom f` has points immediately to the right of it.
   obtain ⟨u, v, htuv, huvs⟩ := mem_nhds_iff_exists_Ioo_subset.1 (mem_interior_iff_mem_nhds.1 ht)
   obtain ⟨w, htw, hwv⟩ := exists_between htuv.2
-  have hwT : w ∈ {z | z ∈ dom f ∧ t < z} := ⟨huvs ⟨htuv.1.trans htw, hwv⟩, htw⟩
-  have hne : (slope (fun z => (f z).toReal) t '' {z | z ∈ dom f ∧ t < z}).Nonempty :=
+  have hwT : w ∈ {z | z ∈ convexDom f ∧ t < z} := ⟨huvs ⟨htuv.1.trans htw, hwv⟩, htw⟩
+  have hne : (slope (fun z => (f z).toReal) t '' {z | z ∈ convexDom f ∧ t < z}).Nonempty :=
     ⟨_, ⟨w, hwT, rfl⟩⟩
-  rw [rightDeriv_of_exists ⟨w, htw, mem_dom.1 hwT.1⟩]
+  rw [rightDeriv_of_exists ⟨w, htw, mem_convexDom.1 hwT.1⟩]
   refine le_antisymm ?_ ?_
   · by_contra hcon
     rw [not_le] at hcon
@@ -108,16 +110,29 @@ theorem rightDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : Proper f)
     exact absurd (hle.trans_lt (by exact_mod_cast hlt)) (not_lt.2 hm2.le)
   · refine le_dirDeriv fun a ha => ?_
     have hstep : t + a • (1 : ℝ) = t + a := by rw [smul_eq_mul, mul_one]
-    by_cases hz : t + a • (1 : ℝ) ∈ dom f
-    · have hmem : t + a ∈ {z | z ∈ dom f ∧ t < z} := ⟨by rwa [hstep] at hz, by linarith⟩
+    by_cases hz : t + a • (1 : ℝ) ∈ convexDom f
+    · have hmem : t + a ∈ {z | z ∈ convexDom f ∧ t < z} := ⟨by rwa [hstep] at hz, by linarith⟩
       have hquot := sub_div_eq_coe_slope (f := f) htbot httop hmem.1 (hp.ne_bot _)
       rw [show t + a - t = a by ring] at hquot
       rw [hquot, hsInf, EReal.coe_le_coe_iff]
       exact csInf_le hbdd ⟨t + a, hmem, rfl⟩
-    · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_dom.2 h)),
+    · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_convexDom.2 h)),
         ← EReal.coe_toReal httop htbot, EReal.top_sub_coe,
         EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
       exact le_top
+
+/-- The reflection of `rightDeriv_eq_coe_derivWithin`: at an interior point of `dom f`,
+`leftDeriv f t` is the coercion of `derivWithin f (Iio t) t`. -/
+theorem leftDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : ProperConvex f)
+    (ht : t ∈ interior (convexDom f)) :
+    leftDeriv f t = ((derivWithin (fun z => (f z).toReal) (Iio t) t : ℝ) : EReal) := by
+  have ht' : -t ∈ interior ((Homeomorph.neg ℝ) ⁻¹' convexDom f) := by
+    rw [← Homeomorph.preimage_interior]; simpa using ht
+  rw [leftDeriv_eq_neg_rightDeriv_comp_neg,
+    rightDeriv_eq_coe_derivWithin (f := fun z => f (-z)) hf.comp_neg
+      hp.comp_neg ht',
+    derivWithin_comp_neg (f := fun z => (f z).toReal), neg_neg, neg_Ioi, neg_neg, EReal.coe_neg,
+    neg_neg]
 
 end Bridge
 
@@ -129,21 +144,21 @@ variable {f : ℝ → EReal} {x y : ℝ}
 
 /-- **Right-derivative half**: on the interior of its effective domain, a proper convex function on
 the line is the integral of `f'₊`. -/
-theorem sub_eq_intervalIntegral_rightDeriv (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) (hy : y ∈ interior (dom f)) :
+theorem sub_eq_intervalIntegral_rightDeriv (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) (hy : y ∈ interior (convexDom f)) :
     (f y).toReal - (f x).toReal = ∫ t in x..y, (rightDeriv f t).toReal := by
-  have hconv : Convex ℝ (interior (dom f)) := hf.convex_dom.interior
-  have hg : ConvexOn ℝ (interior (dom f)) fun z => (f z).toReal :=
-    (hf.convexOn_toReal_dom hp).subset interior_subset hconv
+  have hconv : Convex ℝ (interior (convexDom f)) := hf.convex_convexDom.interior
+  have hg : ConvexOn ℝ (interior (convexDom f)) fun z => (f z).toReal :=
+    (hf.convexOn_toReal_convexDom hp).subset interior_subset hconv
   rw [sub_eq_intervalIntegral_derivWithin_Ioi hg isOpen_interior hx hy]
   refine integral_congr fun t ht => ?_
-  have htint : t ∈ interior (dom f) := (convex_iff_ordConnected.1 hconv).uIcc_subset hx hy ht
+  have htint : t ∈ interior (convexDom f) := (convex_iff_ordConnected.1 hconv).uIcc_subset hx hy ht
   rw [rightDeriv_eq_coe_derivWithin hf hp htint, EReal.toReal_coe]
 
 /-- **Left-derivative half**. The two one-sided derivatives differ only on the jump set of `f'₊`,
 which is countable and therefore null. -/
-theorem sub_eq_intervalIntegral_leftDeriv (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) (hy : y ∈ interior (dom f)) :
+theorem sub_eq_intervalIntegral_leftDeriv (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) (hy : y ∈ interior (convexDom f)) :
     (f y).toReal - (f x).toReal = ∫ t in x..y, (leftDeriv f t).toReal := by
   rw [sub_eq_intervalIntegral_rightDeriv hf hp hx hy]
   refine integral_congr_ae ?_

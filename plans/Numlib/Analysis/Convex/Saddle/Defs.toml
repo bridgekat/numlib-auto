@@ -25,22 +25,28 @@ id = 'partialCl₂'
 id = 'partialCl₁'
 
 [[node]]
-id = 'ConvexClosedFn'
+id = 'PartialClosed₂'
 
 [[node]]
-id = 'ConcaveClosedFn'
+id = 'PartialClosed₁'
+
+[[node]]
+id = 'saddleSwap'
+
+[[node]]
+id = 'saddleSwapOrderIso'
 
 [[node]]
 id = 'bracket'
 
 [[node]]
-id = 'closedFn_bracket'
+id = 'closedConvex_bracket'
 
 [[node]]
 id = 'concaveConvexFn_bracket'
 
 [[node]]
-id = 'clFn_eq_conj_bracket'
+id = 'convexCl_eq_convexConj_bracket'
 
 [[node]]
 id = 'bifunOfSaddle'
@@ -61,10 +67,13 @@ id = 'concaveFn_partialCl₁'
 id = 'concaveBracket'
 
 [[node]]
-id = 'concaveBracket_adjointBifun_eq_partialCl₁'
+id = 'concaveBracket_convexAdjointBifun_eq_partialCl₁'
 
 [[node]]
-id = 'partialCl₂_concaveBracket_adjointBifun'
+id = 'partialCl₂_concaveBracket_convexAdjointBifun'
 
 [[node]]
 id = 'concaveConvexFn_partialCl₂'
+
+[[node]]
+id = 'concaveConvexFn_partialCl₁'

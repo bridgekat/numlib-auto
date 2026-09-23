@@ -14,13 +14,13 @@ id = 'relint_eq_vadd_image_interior'
 id = 'exists_chart_retraction'
 
 [[node]]
-id = 'ConvexFn.continuousOn_toReal_relint_dom'
+id = 'ConvexFn.continuousOn_toReal_relint_convexDom'
 
 [[node]]
-id = 'ConvexFn.continuousOn_relint_dom'
+id = 'ConvexFn.continuousOn_relint_convexDom'
 
 [[node]]
-id = 'ConvexFn.continuous_of_dom_eq_univ'
+id = 'ConvexFn.continuous_of_convexDom_eq_univ'
 
 [[node]]
 id = '_root_.ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset'

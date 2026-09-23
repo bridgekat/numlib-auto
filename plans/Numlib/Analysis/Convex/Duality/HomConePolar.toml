@@ -10,13 +10,13 @@ id = 'homCoord'
 id = 'negSwapEnds'
 
 [[node]]
-id = 'conj_le_coe_iff_forall_mem_epi'
+id = 'convexConj_le_coe_iff_forall_mem_epi'
 
 [[node]]
 id = 'polarCone_homCone'
 
 [[node]]
-id = 'mem_homCone_conj_iff_of_pos'
+id = 'mem_homCone_convexConj_iff_of_pos'
 
 [[node]]
-id = 'closure_homCone_conj'
+id = 'closure_homCone_convexConj'

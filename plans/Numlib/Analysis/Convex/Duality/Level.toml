@@ -10,49 +10,46 @@ id = 'posHomGen_eq_ofEpi'
 id = 'posHomGen_apply_of_ne_zero'
 
 [[node]]
-id = 'setOf_clFn_posHomGen_le_zero'
+id = 'setOf_convexCl_posHomGen_le_zero'
 
 [[node]]
-id = 'conj_posHomGen'
+id = 'convexConj_posHomGen'
 
 [[node]]
-id = 'conj_apply_zero'
+id = 'convexConj_apply_zero'
 
 [[node]]
-id = 'iInf_conj_eq_neg_apply_zero'
+id = 'iInf_convexConj_eq_neg_apply_zero'
 
 [[node]]
-id = 'clFn_posHomGen'
+id = 'convexCl_posHomGen'
 
 [[node]]
 id = 'supportFn_setOf_le_zero'
 
 [[node]]
-id = 'clFn_hom'
+id = 'convexCl_hom'
 
 [[node]]
-id = 'mem_linealitySpaceFn_conj_iff'
+id = 'mem_linealitySpaceFn_convexConj_iff'
 
 [[node]]
-id = 'linealitySpaceFn_conj_eq_annihilator'
+id = 'linealitySpaceFn_convexConj_eq_annihilator'
 
 [[node]]
 id = 'Cofinite'
 
 [[node]]
-id = 'recessionFn_eq_supportFn_dom_conj'
+id = 'closure_convexDom_convexConj_eq_univ_iff'
 
 [[node]]
-id = 'closure_dom_conj_eq_univ_iff'
+id = 'mem_closure_convexDom_convexConj_iff'
 
 [[node]]
-id = 'mem_closure_dom_conj_iff'
+id = 'cofinite_iff_convexDom_convexConj_eq_univ'
 
 [[node]]
-id = 'cofinite_iff_dom_conj_eq_univ'
+id = 'Cofinite.convexDom_convexConj_eq_univ'
 
 [[node]]
-id = 'Cofinite.dom_conj_eq_univ'
-
-[[node]]
-id = 'interior_dom_conj_nonempty_iff'
+id = 'interior_convexDom_convexConj_nonempty_iff'

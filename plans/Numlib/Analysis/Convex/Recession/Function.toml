@@ -10,7 +10,7 @@ id = 'posHomogeneous_recessionFn'
 id = 'convexFn_recessionFn'
 
 [[node]]
-id = 'proper_recessionFn'
+id = 'properConvex_recessionFn'
 
 [[node]]
 id = 'recessionFn_apply_eq_iSup_sub'

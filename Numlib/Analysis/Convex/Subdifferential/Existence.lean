@@ -28,10 +28,10 @@ pointing into `ri (dom f)`.
 
 ## Main results
 
-* `dirDeriv_eq_supportFn_of_mem_relint_dom`, `subdifferential_nonempty_of_mem_relint_dom` —
-  subdifferentiability on the relative interior ([rockafellar1970convex] Theorem 23.4);
-  `bddAbove_subdifferential_iff_mem_interior_dom` is its last clause, that `∂f x` is bounded exactly
-  when `x` is an *interior* point of `dom f`.
+* `dirDeriv_eq_supportFn_of_mem_relint_convexDom`,
+  `subdifferential_nonempty_of_mem_relint_convexDom` — subdifferentiability on the relative interior
+  ([rockafellar1970convex] Theorem 23.4); `bddAbove_subdifferential_iff_mem_interior_convexDom` is
+  its last clause, that `∂f x` is bounded exactly when `x` is an *interior* point of `dom f`.
 * `dirDeriv_eq_supportFn_of_polyhedralFn`, `subdifferential_nonempty_of_polyhedralFn`,
   `polyhedral_subdifferential_of_polyhedralFn` — the polyhedral case
   ([rockafellar1970convex] Theorem 23.10).
@@ -44,9 +44,9 @@ pointing into `ri (dom f)`.
 
 ## Implementation notes
 
-The two existence theorems share their last two steps: `dirDeriv_eq_supportFn_of_closedFn` and
-`subdifferential_nonempty_of_closedFn_dirDeriv` take `ClosedFn (dirDeriv f x)` as a hypothesis, and
-only the *supply* of that hypothesis differs between the two.
+The two existence theorems share their last two steps: `dirDeriv_eq_supportFn_of_closedConvex` and
+`subdifferential_nonempty_of_closedConvex_dirDeriv` take `ClosedConvex (dirDeriv f x)` as a
+hypothesis, and only the *supply* of that hypothesis differs between the two.
 
 ## References
 
@@ -174,19 +174,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **The closure removed.** As soon as `f'(x; ·)` is closed it *is* the support function of
 `∂f x`; this is the last step of both existence theorems. -/
-theorem dirDeriv_eq_supportFn_of_closedFn [IsCompatiblePairing B] (hf : ConvexFn f)
-    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hcl : ClosedFn (dirDeriv f x)) :
+theorem dirDeriv_eq_supportFn_of_closedConvex [IsCompatiblePairing B] (hf : ConvexFn f)
+    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hcl : ClosedConvex (dirDeriv f x)) :
     dirDeriv f x = supportFn B.flip (subdifferential B f x) :=
-  hcl.symm.trans (clFn_dirDeriv hf ht hb)
+  hcl.symm.trans (convexCl_dirDeriv hf ht hb)
 
 /-- **Subdifferentiability from closedness.** The support function of the empty set is the
 constant `−∞`, but `f'(x; 0) = 0`; so a closed `f'(x; ·)` forces `∂f x ≠ ∅`. -/
-theorem subdifferential_nonempty_of_closedFn_dirDeriv [IsCompatiblePairing B] (hf : ConvexFn f)
-    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hcl : ClosedFn (dirDeriv f x)) :
+theorem subdifferential_nonempty_of_closedConvex_dirDeriv [IsCompatiblePairing B] (hf : ConvexFn f)
+    (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hcl : ClosedConvex (dirDeriv f x)) :
     (subdifferential B f x).Nonempty := by
   rcases Set.eq_empty_or_nonempty (subdifferential B f x) with he | hne
   · exfalso
-    have hEq := dirDeriv_eq_supportFn_of_closedFn (B := B) hf ht hb hcl
+    have hEq := dirDeriv_eq_supportFn_of_closedConvex (B := B) hf ht hb hcl
     rw [he, supportFn_empty] at hEq
     have h0 := congrFun hEq 0
     rw [dirDeriv_zero ht hb] at h0
@@ -207,19 +207,19 @@ omit [FiniteDimensional ℝ E] in
 `dom f`: a direction along which some difference quotient is finite points from `x` into `dom f`.
 
 Unlike the reverse inclusion this needs nothing of `x` beyond finiteness of `f x`. -/
-theorem dom_dirDeriv_subset_direction (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
-    dom (dirDeriv f x) ⊆ ((affineSpan ℝ (dom f)).direction : Set E) := by
-  have hxdom : x ∈ dom f := mem_dom.2 (lt_top_iff_ne_top.2 ht)
-  have hxaff : x ∈ affineSpan ℝ (dom f) := subset_affineSpan ℝ (dom f) hxdom
-  obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (mem_dom.1 hxdom)
+theorem convexDom_dirDeriv_subset_direction (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
+    convexDom (dirDeriv f x) ⊆ ((affineSpan ℝ (convexDom f)).direction : Set E) := by
+  have hxdom : x ∈ convexDom f := mem_convexDom.2 (lt_top_iff_ne_top.2 ht)
+  have hxaff : x ∈ affineSpan ℝ (convexDom f) := subset_affineSpan ℝ (convexDom f) hxdom
+  obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (mem_convexDom.1 hxdom)
   intro y hy
-  obtain ⟨m, hm, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hy)
+  obtain ⟨m, hm, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 hy)
   obtain ⟨a, ha, hbound⟩ := exists_le_of_dirDeriv_lt hf hr hm
-  have hmem : x + a • y ∈ dom f :=
-    mem_dom.2 (lt_of_le_of_lt (hbound a ha le_rfl) (EReal.coe_lt_top _))
-  have hvs : (x + a • y) - x ∈ (affineSpan ℝ (dom f)).direction :=
-    AffineSubspace.vsub_mem_direction (subset_affineSpan ℝ (dom f) hmem) hxaff
-  have hay : a • y ∈ (affineSpan ℝ (dom f)).direction := by
+  have hmem : x + a • y ∈ convexDom f :=
+    mem_convexDom.2 (lt_of_le_of_lt (hbound a ha le_rfl) (EReal.coe_lt_top _))
+  have hvs : (x + a • y) - x ∈ (affineSpan ℝ (convexDom f)).direction :=
+    AffineSubspace.vsub_mem_direction (subset_affineSpan ℝ (convexDom f) hmem) hxaff
+  have hay : a • y ∈ (affineSpan ℝ (convexDom f)).direction := by
     have h : (x + a • y) - x = a • y := by abel
     rwa [h] at hvs
   have hfinal := Submodule.smul_mem _ (a⁻¹ : ℝ) hay
@@ -232,22 +232,23 @@ subspace parallel to the affine hull of `dom f`.
 Both inclusions are elementary: a direction along which the difference quotient is ever finite
 points from `x` into `dom f`, and conversely a relative interior point can be moved a little in
 any direction of the affine hull without leaving `dom f`. -/
-theorem dom_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f) (hx : x ∈ ri (dom f)) :
-    dom (dirDeriv f x) = ((affineSpan ℝ (dom f)).direction : Set E) := by
+theorem convexDom_dirDeriv_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ ri (convexDom f)) :
+    convexDom (dirDeriv f x) = ((affineSpan ℝ (convexDom f)).direction : Set E) := by
   obtain ⟨hxaff, ε, hε, hball⟩ := mem_intrinsicInterior_iff.1 hx
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
   obtain ⟨r, hr⟩ :=
-    EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_dom.1 hxdom)
+    EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_convexDom.1 hxdom)
   refine Set.Subset.antisymm
-    (dom_dirDeriv_subset_direction hf (mem_dom.1 hxdom).ne (hp.ne_bot x)) fun y hy => ?_
-  · have hyd : y ∈ (affineSpan ℝ (dom f)).direction := hy
+    (convexDom_dirDeriv_subset_direction hf (mem_convexDom.1 hxdom).ne (hp.ne_bot x)) fun y hy => ?_
+  · have hyd : y ∈ (affineSpan ℝ (convexDom f)).direction := hy
     set a : ℝ := ε / (‖y‖ + 1) with hadef
     have hpos : 0 < a := by positivity
     have hnorm : ‖a • y‖ < ε := by
       rw [norm_smul, Real.norm_eq_abs, abs_of_pos hpos, hadef, div_mul_eq_mul_div]
       rw [div_lt_iff₀ (by positivity)]
       nlinarith [norm_nonneg y, hε]
-    have haff : x + a • y ∈ affineSpan ℝ (dom f) := by
+    have haff : x + a • y ∈ affineSpan ℝ (convexDom f) := by
       have h := AffineSubspace.vadd_mem_of_mem_direction
         (Submodule.smul_mem _ a hyd) hxaff
       have he : (a • y) +ᵥ x = x + a • y := by
@@ -257,9 +258,9 @@ theorem dom_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f) (hx : x
       rw [dist_eq_norm]
       have h : (x + a • y) - x = a • y := by abel
       rwa [h]
-    have hmem : x + a • y ∈ dom f := hball _ haff hdist
-    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hmem)
-    refine mem_dom.2 (lt_of_le_of_lt (dirDeriv_le f x y hpos) ?_)
+    have hmem : x + a • y ∈ convexDom f := hball _ haff hdist
+    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_convexDom.1 hmem)
+    refine mem_convexDom.2 (lt_of_le_of_lt (dirDeriv_le f x y hpos) ?_)
     rw [hr]
     have hbound : (f (x + a • y) - (r : EReal)) / ((a : ℝ) : EReal)
         ≤ (((c - r) / a : ℝ) : EReal) := by
@@ -275,65 +276,79 @@ omit [FiniteDimensional ℝ E] in
 subspace, hence relatively open, so a `−∞` value anywhere would spread over all of it — including
 the origin, where `f'(x; 0) = 0`. Relative interiority is essential: for `f y = -√y` on `[0, ∞)` and
 `+∞` elsewhere, `f'(0; y) = −∞` for every `y > 0` while `f'(0; 0) = 0`. -/
-theorem proper_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ ri (dom f)) : Proper (dirDeriv f x) := by
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
-  have ht : f x ≠ ⊤ := (mem_dom.1 hxdom).ne
+theorem properConvex_dirDeriv_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ ri (convexDom f)) : ProperConvex (dirDeriv f x) := by
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
+  have ht : f x ≠ ⊤ := (mem_convexDom.1 hxdom).ne
   have hb : f x ≠ ⊥ := hp.ne_bot x
-  have hdom := dom_dirDeriv_of_mem_relint_dom hf hp hx
-  have h0 : (0 : E) ∈ dom (dirDeriv f x) := by
-    rw [mem_dom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
+  have hdom := convexDom_dirDeriv_of_mem_relint_convexDom hf hp hx
+  have h0 : (0 : E) ∈ convexDom (dirDeriv f x) := by
+    rw [mem_convexDom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
   by_contra hcon
-  have hopen : ri (dom (dirDeriv f x)) = dom (dirDeriv f x) := by
+  have hopen : ri (convexDom (dirDeriv f x)) = convexDom (dirDeriv f x) := by
     have h := AffineSubspace.intrinsicInterior_coe
-      (((affineSpan ℝ (dom f)).direction : Submodule ℝ E).toAffineSubspace)
+      (((affineSpan ℝ (convexDom f)).direction : Submodule ℝ E).toAffineSubspace)
     rw [hdom]
     exact h
-  have hbot := (convexFn_dirDeriv hf ht hb).eq_bot_of_mem_relint_dom hcon
+  have hbot := (convexFn_dirDeriv hf ht hb).eq_bot_of_mem_relint_convexDom hcon
     (by rw [hopen]; exact h0)
   rw [dirDeriv_zero ht hb] at hbot
   exact absurd hbot (by simp)
 
 /-- Third step: `f'(x; ·)` is closed, a proper convex function whose effective domain is affine
 being closed. -/
-theorem closedFn_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ ri (dom f)) : ClosedFn (dirDeriv f x) := by
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
-  refine (convexFn_dirDeriv hf (mem_dom.1 hxdom).ne (hp.ne_bot x)).closedFn_of_dom_eq_coe
-    (proper_dirDeriv_of_mem_relint_dom hf hp hx)
-    (M := ((affineSpan ℝ (dom f)).direction : Submodule ℝ E).toAffineSubspace) ?_
-  rw [dom_dirDeriv_of_mem_relint_dom hf hp hx]
+theorem closedConvex_dirDeriv_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ ri (convexDom f)) : ClosedConvex (dirDeriv f x) := by
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
+  refine (convexFn_dirDeriv
+      hf (mem_convexDom.1 hxdom).ne (hp.ne_bot x)).closedConvex_of_convexDom_eq_coe
+    (properConvex_dirDeriv_of_mem_relint_convexDom hf hp hx)
+    (M := ((affineSpan ℝ (convexDom f)).direction : Submodule ℝ E).toAffineSubspace) ?_
+  rw [convexDom_dirDeriv_of_mem_relint_convexDom hf hp hx]
   rfl
 
 /-- At a relative interior point of `dom f` the directional derivative is *exactly* the support
 function of the subdifferential. -/
-theorem dirDeriv_eq_supportFn_of_mem_relint_dom [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hp : Proper f) (hx : x ∈ ri (dom f)) :
+theorem dirDeriv_eq_supportFn_of_mem_relint_convexDom [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hp : ProperConvex f) (hx : x ∈ ri (convexDom f)) :
     dirDeriv f x = supportFn B.flip (subdifferential B f x) := by
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
-  exact dirDeriv_eq_supportFn_of_closedFn hf (mem_dom.1 hxdom).ne (hp.ne_bot x)
-    (closedFn_dirDeriv_of_mem_relint_dom hf hp hx)
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
+  exact dirDeriv_eq_supportFn_of_closedConvex hf (mem_convexDom.1 hxdom).ne (hp.ne_bot x)
+    (closedConvex_dirDeriv_of_mem_relint_convexDom hf hp hx)
 
 /-- A proper convex function is subdifferentiable at every relative interior point of its
 effective domain. -/
-theorem subdifferential_nonempty_of_mem_relint_dom [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hp : Proper f) (hx : x ∈ ri (dom f)) : (subdifferential B f x).Nonempty := by
-  have hxdom : x ∈ dom f := intrinsicInterior_subset hx
-  exact subdifferential_nonempty_of_closedFn_dirDeriv hf (mem_dom.1 hxdom).ne (hp.ne_bot x)
-    (closedFn_dirDeriv_of_mem_relint_dom hf hp hx)
+theorem subdifferential_nonempty_of_mem_relint_convexDom [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hp : ProperConvex f) (hx : x ∈ ri (convexDom f)) : (subdifferential B f x).Nonempty := by
+  have hxdom : x ∈ convexDom f := intrinsicInterior_subset hx
+  exact subdifferential_nonempty_of_closedConvex_dirDeriv
+      hf (mem_convexDom.1 hxdom).ne (hp.ne_bot x)
+    (closedConvex_dirDeriv_of_mem_relint_convexDom hf hp hx)
+
+/-- A proper concave function has a supergradient at every relative interior point of its
+effective domain; the mirror of `subdifferential_nonempty_of_mem_relint_convexDom`. -/
+theorem superdifferential_nonempty_of_mem_relint_concaveDom [IsCompatiblePairing B]
+    {g : E → EReal} (hg : ConcaveFn g) (hp : ProperConcave g) (hx : x ∈ ri (concaveDom g)) :
+    (superdifferential B g x).Nonempty := by
+  rw [concaveDom_eq_convexDom_neg] at hx
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_convexDom (B := B) hg.convexFn_neg
+    hp.properConvex_neg hx
+  exact ⟨-y, neg_mem_superdifferential_iff.2 hy⟩
 
 /-- In terms of the directional derivative: `f'(x; ·)` is finite everywhere exactly when `x` is an
 interior point of `dom f`. -/
-theorem dom_dirDeriv_eq_univ_iff_mem_interior_dom (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ ri (dom f)) : dom (dirDeriv f x) = univ ↔ x ∈ interior (dom f) := by
-  have hxaff : x ∈ affineSpan ℝ (dom f) := subset_affineSpan ℝ (dom f) (intrinsicInterior_subset hx)
-  have hdom := dom_dirDeriv_of_mem_relint_dom hf hp hx
+theorem convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom (hf : ConvexFn f)
+    (hp : ProperConvex f)
+    (hx : x ∈ ri (convexDom f)) : convexDom (dirDeriv f x) = univ ↔ x ∈ interior (convexDom f) := by
+  have hxaff : x ∈ affineSpan ℝ (convexDom f) :=
+      subset_affineSpan ℝ (convexDom f) (intrinsicInterior_subset hx)
+  have hdom := convexDom_dirDeriv_of_mem_relint_convexDom hf hp hx
   constructor
   · intro huniv
-    have hdir : ((affineSpan ℝ (dom f)).direction : Set E) = univ := by rw [← hdom, huniv]
-    have htop : affineSpan ℝ (dom f) = ⊤ := by
+    have hdir : ((affineSpan ℝ (convexDom f)).direction : Set E) = univ := by rw [← hdom, huniv]
+    have htop : affineSpan ℝ (convexDom f) = ⊤ := by
       refine eq_top_iff.2 fun z _ => ?_
-      have hz : z - x ∈ (affineSpan ℝ (dom f)).direction := by
+      have hz : z - x ∈ (affineSpan ℝ (convexDom f)).direction := by
         rw [← SetLike.mem_coe, hdir]; trivial
       have h := AffineSubspace.vadd_mem_of_mem_direction hz hxaff
       have he : (z - x) +ᵥ x = z := by rw [vadd_eq_add]; abel
@@ -341,56 +356,57 @@ theorem dom_dirDeriv_eq_univ_iff_mem_interior_dom (hf : ConvexFn f) (hp : Proper
     rw [← intrinsicInterior_eq_interior htop]
     exact hx
   · intro hint
-    have htop : affineSpan ℝ (dom f) = ⊤ :=
-      (Convex.interior_nonempty_iff_affineSpan_eq_top hf.convex_dom).1 ⟨x, hint⟩
+    have htop : affineSpan ℝ (convexDom f) = ⊤ :=
+      (Convex.interior_nonempty_iff_affineSpan_eq_top hf.convex_convexDom).1 ⟨x, hint⟩
     rw [hdom, htop, AffineSubspace.direction_top]
     exact Submodule.top_coe
 
 /-- `∂f x` is bounded — in the pairing sense, that every `⟨v, ·⟩` is bounded above on it —
 exactly when `x` is an interior point of `dom f`. -/
-theorem bddAbove_subdifferential_iff_mem_interior_dom [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hp : Proper f) (hx : x ∈ ri (dom f)) :
-    (∀ v : E, ∃ c : ℝ, ∀ y ∈ subdifferential B f x, B v y ≤ c) ↔ x ∈ interior (dom f) := by
-  rw [← dom_dirDeriv_eq_univ_iff_mem_interior_dom hf hp hx,
-    dirDeriv_eq_supportFn_of_mem_relint_dom (B := B) hf hp hx]
+theorem bddAbove_subdifferential_iff_mem_interior_convexDom [IsCompatiblePairing B]
+    (hf : ConvexFn f)
+    (hp : ProperConvex f) (hx : x ∈ ri (convexDom f)) :
+    (∀ v : E, ∃ c : ℝ, ∀ y ∈ subdifferential B f x, B v y ≤ c) ↔ x ∈ interior (convexDom f) := by
+  rw [← convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom hf hp hx,
+    dirDeriv_eq_supportFn_of_mem_relint_convexDom (B := B) hf hp hx]
   constructor
   · intro h
     refine eq_univ_of_forall fun v => ?_
-    exact mem_dom.2 (supportFn_lt_top_iff.2 (h v))
+    exact mem_convexDom.2 (supportFn_lt_top_iff.2 (h v))
   · intro h v
-    exact supportFn_lt_top_iff.1 (mem_dom.1 (h ▸ Set.mem_univ v))
+    exact supportFn_lt_top_iff.1 (mem_convexDom.1 (h ▸ Set.mem_univ v))
 
 /-! ### What happens when there is no subgradient -/
 
 omit [FiniteDimensional ℝ E] in
 /-- Every point of `dom f` gives a direction in the effective domain of `f'(x; ·)`: the difference
 quotient at `a = 1` is `f z - f x`, which stays below `⊤` as soon as `f x ≠ ⊥`. -/
-theorem sub_mem_dom_dirDeriv (hb : f x ≠ ⊥) {z : E} (hz : z ∈ dom f) :
-    z - x ∈ dom (dirDeriv f x) := by
-  refine mem_dom.2 (dirDeriv_lt_iff.2 ⟨1, one_pos, ?_⟩)
+theorem sub_mem_convexDom_dirDeriv (hb : f x ≠ ⊥) {z : E} (hz : z ∈ convexDom f) :
+    z - x ∈ convexDom (dirDeriv f x) := by
+  refine mem_convexDom.2 (dirDeriv_lt_iff.2 ⟨1, one_pos, ?_⟩)
   rw [one_smul, show x + (z - x) = z from by abel, EReal.coe_one, div_one, sub_eq_add_neg]
-  exact EReal.add_lt_top (mem_dom.1 hz).ne
+  exact EReal.add_lt_top (mem_convexDom.1 hz).ne
     (by rw [Ne, EReal.neg_eq_top_iff]; exact hb)
 
 /-- Directions pointing from `x` into the relative interior of `dom f` are relative interior points
 of the effective domain of `f'(x; ·)`. This is the geometric core of the non-existence statement
 below, proved through the prolongation criterion for relative interiors. -/
-theorem sub_mem_relint_dom_dirDeriv (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) {z : E}
-    (hz : z ∈ ri (dom f)) : z - x ∈ ri (dom (dirDeriv f x)) := by
+theorem sub_mem_relint_convexDom_dirDeriv (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) {z : E}
+    (hz : z ∈ ri (convexDom f)) : z - x ∈ ri (convexDom (dirDeriv f x)) := by
   have hconv : ConvexFn (dirDeriv f x) := convexFn_dirDeriv hf ht hb
-  have h0 : (0 : E) ∈ dom (dirDeriv f x) :=
-    mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)
-  have hxaff : x ∈ affineSpan ℝ (dom f) :=
-    subset_affineSpan ℝ (dom f) (mem_dom.2 (lt_top_iff_ne_top.2 ht))
-  refine (Convex.mem_relint_iff_prolong hconv.convex_dom ⟨0, h0⟩).2 fun w hw => ?_
-  have hxw : x + w ∈ affineSpan ℝ (dom f) := by
+  have h0 : (0 : E) ∈ convexDom (dirDeriv f x) :=
+    mem_convexDom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)
+  have hxaff : x ∈ affineSpan ℝ (convexDom f) :=
+    subset_affineSpan ℝ (convexDom f) (mem_convexDom.2 (lt_top_iff_ne_top.2 ht))
+  refine (Convex.mem_relint_iff_prolong hconv.convex_convexDom ⟨0, h0⟩).2 fun w hw => ?_
+  have hxw : x + w ∈ affineSpan ℝ (convexDom f) := by
     have h := AffineSubspace.vadd_mem_of_mem_direction
-      (dom_dirDeriv_subset_direction hf ht hb hw) hxaff
+      (convexDom_dirDeriv_subset_direction hf ht hb hw) hxaff
     rwa [show w +ᵥ x = x + w from by rw [vadd_eq_add]; abel] at h
   obtain ⟨μ, hμ, hmem⟩ := exists_one_lt_smul_mem_of_mem_relint hz hxw
   refine ⟨μ, hμ, ?_⟩
   rw [show (1 - μ) • w + μ • (z - x) = ((1 - μ) • (x + w) + μ • z) - x from by module]
-  exact sub_mem_dom_dirDeriv hb hmem
+  exact sub_mem_convexDom_dirDeriv hb hmem
 
 /-- Where a convex function is finite but has no subgradient, the directional derivative is `−∞`
 in every direction pointing into the relative interior of `dom f`. No properness of `f` is needed,
@@ -401,19 +417,21 @@ The classical proof overshoots in its last sentence, concluding that `f'(x; ·)`
 `f'(0; y) = −∞` for every `y > 0`, but `f'(0; 0) = 0` and `0 ∈ (dom f) - x`. -/
 theorem dirDeriv_eq_bot_of_subdifferential_eq_empty [IsCompatiblePairing B] (hf : ConvexFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hsub : subdifferential B f x = ∅) {z : E}
-    (hz : z ∈ ri (dom f)) : dirDeriv f x (z - x) = ⊥ := by
+    (hz : z ∈ ri (convexDom f)) : dirDeriv f x (z - x) = ⊥ := by
   have hconv : ConvexFn (dirDeriv f x) := convexFn_dirDeriv hf ht hb
-  refine hconv.eq_bot_of_mem_relint_dom (fun hpd => ?_) (sub_mem_relint_dom_dirDeriv hf ht hb hz)
-  have hcl : clFn (dirDeriv f x) = fun _ => (⊥ : EReal) := by
-    rw [clFn_dirDeriv (B := B) hf ht hb, hsub, supportFn_empty]
-  exact (hconv.proper_clFn hpd).ne_bot 0 (congrFun hcl 0)
+  refine hconv.eq_bot_of_mem_relint_convexDom (fun hpd => ?_)
+      (sub_mem_relint_convexDom_dirDeriv hf ht hb hz)
+  have hcl : convexCl (dirDeriv f x) = fun _ => (⊥ : EReal) := by
+    rw [convexCl_dirDeriv (B := B) hf ht hb, hsub, supportFn_empty]
+  exact (hconv.properConvex_convexCl hpd).ne_bot 0 (congrFun hcl 0)
 
 /-- In its usual shape: where a convex function is finite but has no subgradient there is an
 *infinite two-sided* directional derivative, `f'(x; y) = -f'(x; -y) = −∞`. -/
 theorem exists_dirDeriv_eq_bot_and_dirDeriv_neg_eq_top [IsCompatiblePairing B] (hf : ConvexFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hsub : subdifferential B f x = ∅) :
     ∃ y : E, dirDeriv f x y = ⊥ ∧ dirDeriv f x (-y) = ⊤ := by
-  obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_dom ⟨x, mem_dom.2 (lt_top_iff_ne_top.2 ht)⟩
+  obtain ⟨z, hz⟩ :=
+      Convex.relint_nonempty hf.convex_convexDom ⟨x, mem_convexDom.2 (lt_top_iff_ne_top.2 ht)⟩
   refine ⟨z - x, dirDeriv_eq_bot_of_subdifferential_eq_empty (B := B) hf ht hb hsub hz, ?_⟩
   have h := neg_dirDeriv_neg_le hf ht hb (z - x)
   rwa [dirDeriv_eq_bot_of_subdifferential_eq_empty (B := B) hf ht hb hsub hz, le_bot_iff,
@@ -461,13 +479,13 @@ theorem polyhedralFn_dirDeriv (hf : PolyhedralFn f) (ht : f x ≠ ⊤) (hb : f x
 
 /-- Second step: `f'(x; ·)` is proper. A lower semicontinuous convex function taking the value
 `−∞` somewhere is `−∞` on the whole closure of its effective domain, and `f'(x; 0) = 0`. -/
-theorem proper_dirDeriv_of_polyhedralFn (hf : PolyhedralFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
-    Proper (dirDeriv f x) := by
+theorem properConvex_dirDeriv_of_polyhedralFn (hf : PolyhedralFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
+    ProperConvex (dirDeriv f x) := by
   have hpoly := polyhedralFn_dirDeriv hf ht hb
-  have h0 : (0 : E) ∈ dom (dirDeriv f x) := by
-    rw [mem_dom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
+  have h0 : (0 : E) ∈ convexDom (dirDeriv f x) := by
+    rw [mem_convexDom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
   by_contra hcon
-  have hbot := hpoly.convexFn.eq_bot_of_mem_closure_dom hpoly.lowerSemicontinuous hcon
+  have hbot := hpoly.convexFn.eq_bot_of_mem_closure_convexDom hpoly.lowerSemicontinuous hcon
     (subset_closure h0)
   rw [dirDeriv_zero ht hb] at hbot
   exact absurd hbot (by simp)
@@ -477,14 +495,16 @@ of the subdifferential. -/
 theorem dirDeriv_eq_supportFn_of_polyhedralFn [IsCompatiblePairing B] (hf : PolyhedralFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     dirDeriv f x = supportFn B.flip (subdifferential B f x) :=
-  dirDeriv_eq_supportFn_of_closedFn hf.convexFn ht hb
-    ((polyhedralFn_dirDeriv hf ht hb).closedFn (proper_dirDeriv_of_polyhedralFn hf ht hb).ne_bot)
+  dirDeriv_eq_supportFn_of_closedConvex hf.convexFn ht hb
+    ((polyhedralFn_dirDeriv hf ht hb).closedConvex
+        (properConvex_dirDeriv_of_polyhedralFn hf ht hb).ne_bot)
 
 /-- A polyhedral convex function is subdifferentiable at every point where it is finite. -/
 theorem subdifferential_nonempty_of_polyhedralFn [IsCompatiblePairing B] (hf : PolyhedralFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) : (subdifferential B f x).Nonempty :=
-  subdifferential_nonempty_of_closedFn_dirDeriv hf.convexFn ht hb
-    ((polyhedralFn_dirDeriv hf ht hb).closedFn (proper_dirDeriv_of_polyhedralFn hf ht hb).ne_bot)
+  subdifferential_nonempty_of_closedConvex_dirDeriv hf.convexFn ht hb
+    ((polyhedralFn_dirDeriv hf ht hb).closedConvex
+        (properConvex_dirDeriv_of_polyhedralFn hf ht hb).ne_bot)
 
 end Polyhedral
 
@@ -499,11 +519,11 @@ effective domain of `(f'(x; ·))*`, which is the indicator of `∂f x`, and the 
 polyhedral convex function is again polyhedral. -/
 theorem polyhedral_subdifferential_of_polyhedralFn (hf : PolyhedralFn f) (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) : Polyhedral (subdifferential B f x) := by
-  have hconj : PolyhedralFn (conj B (dirDeriv f x)) :=
-    PolyhedralFn.conj (polyhedralFn_dirDeriv hf ht hb)
-  rw [conj_dirDeriv ht hb] at hconj
-  have h := hconj.polyhedral_dom
-  rwa [dom_indicatorFn] at h
+  have hconj : PolyhedralFn (convexConj B (dirDeriv f x)) :=
+    PolyhedralFn.convexConj (polyhedralFn_dirDeriv hf ht hb)
+  rw [convexConj_dirDeriv ht hb] at hconj
+  have h := hconj.polyhedral_convexDom
+  rwa [convexDom_indicatorFn] at h
 
 end PolyhedralSubdifferential
 
@@ -548,8 +568,8 @@ omit [FiniteDimensional ℝ E] [TopologicalSpace F] [IsTopologicalAddGroup F] [C
 /-- The polar of the subdifferential is a sublevel set of the closed directional derivative. -/
 theorem polarCone_subdifferential [IsCompatiblePairing B] (hf : ConvexFn f) (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) :
-    polarCone B.flip (subdifferential B f x) = {v : E | clFn (dirDeriv f x) v ≤ 0} := by
-  rw [clFn_dirDeriv (B := B) hf ht hb]
+    polarCone B.flip (subdifferential B f x) = {v : E | convexCl (dirDeriv f x) v ≤ 0} := by
+  rw [convexCl_dirDeriv (B := B) hf ht hb]
   ext v
   simp only [mem_polarCone, Set.mem_ofPred_eq, supportFn_apply, LinearMap.flip_apply,
     iSup₂_le_iff]
@@ -571,10 +591,10 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subdifferential [IsCompatiblePai
   have ht : f x ≠ ⊤ := by rw [hr]; exact EReal.coe_ne_top r
   have hb : f x ≠ ⊥ := by rw [hr]; exact EReal.coe_ne_bot r
   have hk : ConvexFn (dirDeriv f x) := convexFn_dirDeriv hf ht hb
-  have hkp : Proper (dirDeriv f x) := by
+  have hkp : ProperConvex (dirDeriv f x) := by
     obtain ⟨y₀, hy₀⟩ := hne
     refine ⟨⟨0, ?_⟩, fun v => ?_⟩
-    · rw [mem_dom, dirDeriv_zero ht hb]
+    · rw [mem_convexDom, dirDeriv_zero ht hb]
       simp
     · exact ne_bot_of_le_ne_bot (EReal.coe_ne_bot _)
         ((mem_subdifferential_iff_le_dirDeriv ht hb).1 hy₀ v)
@@ -593,7 +613,7 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subdifferential [IsCompatiblePai
   have hpol : polarCone B.flip (subdifferential B f x) = closure {v : E | dirDeriv f x v < 0} := by
     have h76 := hk.closure_setOf_lt hneg
     rw [EReal.coe_zero] at h76
-    rw [polarCone_subdifferential hf ht hb, h76, hk.clFn_eq_lscHull hkp]
+    rw [polarCone_subdifferential hf ht hb, h76, hk.convexCl_eq_lscHull hkp]
   have hbip : closure ((PointedCone.hull ℝ (subdifferential B f x) : Set F))
       = polarCone B (polarCone B.flip (subdifferential B f x)) := by
     have h := polarCone_polarCone (B := B.flip)
@@ -635,10 +655,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 /-- Boundedness of `∂f x` with "bounded" read in the norm rather than in the pairing sense. The
 pairing form is all a general dual pair supports; the upgrade is what costs the
 finite-dimensionality of `F`. -/
-theorem isBounded_subdifferential_iff_mem_interior_dom [IsCompatiblePairing B]
-    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : Proper f) (hx : x ∈ ri (dom f)) :
-    Bornology.IsBounded (subdifferential B f x) ↔ x ∈ interior (dom f) := by
-  rw [← bddAbove_subdifferential_iff_mem_interior_dom (B := B) hf hp hx,
+theorem isBounded_subdifferential_iff_mem_interior_convexDom [IsCompatiblePairing B]
+    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : ProperConvex f)
+        (hx : x ∈ ri (convexDom f)) :
+    Bornology.IsBounded (subdifferential B f x) ↔ x ∈ interior (convexDom f) := by
+  rw [← bddAbove_subdifferential_iff_mem_interior_convexDom (B := B) hf hp hx,
     isBounded_iff_forall_bddAbove (B := B.flip)]
   simp
 
@@ -664,15 +685,16 @@ theorem normalCone_setOf_le_eq_coe_hull_subdifferential [IsCompatiblePairing B]
 /-- The same under the hypothesis `x ∈ int (dom f)`, which supplies both non-emptiness and
 boundedness of `∂f x`. Properness of `f` is assumed rather than deduced from `∂f x ≠ ∅`, because
 the relative-interior existence theorem needs it first. -/
-theorem normalCone_setOf_le_eq_coe_hull_subdifferential_of_mem_interior_dom [IsCompatiblePairing B]
-    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : Proper f) (hr : f x = (r : EReal))
-    (hinf : ⨅ z, f z < (r : EReal)) (hx : x ∈ interior (dom f)) :
+theorem normalCone_setOf_le_eq_coe_hull_subdifferential_of_mem_interior_convexDom
+    [IsCompatiblePairing B]
+    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : ProperConvex f) (hr : f x = (r : EReal))
+    (hinf : ⨅ z, f z < (r : EReal)) (hx : x ∈ interior (convexDom f)) :
     normalCone B {z | f z ≤ (r : EReal)} x
       = (PointedCone.hull ℝ (subdifferential B f x) : Set F) := by
-  have hri : x ∈ ri (dom f) := interior_subset_intrinsicInterior hx
+  have hri : x ∈ ri (convexDom f) := interior_subset_intrinsicInterior hx
   exact normalCone_setOf_le_eq_coe_hull_subdifferential hf hr hinf
-    (subdifferential_nonempty_of_mem_relint_dom (B := B) hf hp hri)
-    ((isBounded_subdifferential_iff_mem_interior_dom (B := B) hf hp hri).2 hx)
+    (subdifferential_nonempty_of_mem_relint_convexDom (B := B) hf hp hri)
+    ((isBounded_subdifferential_iff_mem_interior_convexDom (B := B) hf hp hri).2 hx)
 
 end NormalConeBounded
 

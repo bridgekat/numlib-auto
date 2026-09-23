@@ -19,13 +19,7 @@ id = 'FullyClosedFn'
 id = 'fullyClosedFn_iff'
 
 [[node]]
-id = 'saddleSwap'
+id = 'lowerCl_idem'
 
 [[node]]
-id = 'saddleSwapOrderIso'
-
-[[node]]
-id = 'upperClosedFn_upperCl'
-
-[[node]]
-id = 'lowerClosedFn_lowerCl'
+id = 'upperCl_idem'

@@ -11,15 +11,15 @@ nothing but the restriction of the Fenchel conjugate `f*` to `D`; in particular 
 ## Main results
 
 * `legendreDom` — the set `D`, the image of the gradient mapping, with
-  `legendreDom_subset_dom_conj` for `D ⊆ dom f*`.
-* `conj_eq_of_hasGradientAtFn` — `f*(∇f x) = ⟨x, ∇f x⟩ - f x`: both the formula for `g` and, at a
-  stroke, its well-definedness ([rockafellar1970convex] Theorem 26.4).
+  `legendreDom_subset_convexDom_convexConj` for `D ⊆ dom f*`.
+* `convexConj_eq_of_hasGradientAtFn` — `f*(∇f x) = ⟨x, ∇f x⟩ - f x`: both the formula for `g` and,
+  at a stroke, its well-definedness ([rockafellar1970convex] Theorem 26.4).
 
 ## Implementation notes
 
 There is deliberately no `legendreConj` definition: `y ↦ ⟨(∇f)⁻¹ y, y⟩ - f ((∇f)⁻¹ y)` would need
-a choice function and would then have to be proved equal to `conj B f` on `D` anyway, and
-`conj_eq_of_hasGradientAtFn` is that equality without the detour.
+a choice function and would then have to be proved equal to `convexConj B f` on `D` anyway, and
+`convexConj_eq_of_hasGradientAtFn` is that equality without the detour.
 
 ## References
 
@@ -53,16 +53,16 @@ theorem HasGradientAtFn.exists_coe (h : HasGradientAtFn f y x) :
   exact ⟨g x, hfg.self_of_nhds⟩
 
 /-- Where `f` is differentiable, Fenchel's inequality holds with equality at `(x, ∇f x)`. -/
-theorem HasGradientAtFn.add_conj_eq (hf : ConvexFn f) (h : HasGradientAtFn f y x) :
-    f x + conj (topDualPairing ℝ E).flip f y = ((y x : ℝ) : EReal) :=
-  (h.proper hf).mem_subdifferential_iff_add_conj_eq.1 (h.mem_subdifferential hf)
+theorem HasGradientAtFn.add_convexConj_eq (hf : ConvexFn f) (h : HasGradientAtFn f y x) :
+    f x + convexConj (topDualPairing ℝ E).flip f y = ((y x : ℝ) : EReal) :=
+  (h.proper hf).mem_subdifferential_iff_add_convexConj_eq.1 (h.mem_subdifferential hf)
 
 /-- The Legendre conjugate at `∇f x` *is* `f*` at `∇f x`, given by the formula
 `⟨x, ∇f x⟩ - f x`. -/
-theorem conj_eq_of_hasGradientAtFn (hf : ConvexFn f) (h : HasGradientAtFn f y x) {r : ℝ}
+theorem convexConj_eq_of_hasGradientAtFn (hf : ConvexFn f) (h : HasGradientAtFn f y x) {r : ℝ}
     (hr : f x = ((r : ℝ) : EReal)) :
-    conj (topDualPairing ℝ E).flip f y = ((y x - r : ℝ) : EReal) :=
-  eq_coe_of_coe_add_eq_coe (by rw [← hr]; exact h.add_conj_eq hf)
+    convexConj (topDualPairing ℝ E).flip f y = ((y x - r : ℝ) : EReal) :=
+  eq_coe_of_coe_add_eq_coe (by rw [← hr]; exact h.add_convexConj_eq hf)
 
 /-- **Well-definedness**: `⟨x, y⟩ - f x` is the same for every `x` with `∇f x = y`, because it is
 `f* y`. So `∇f` need not be one-to-one for `g` to be single-valued. -/
@@ -71,29 +71,29 @@ theorem sub_eq_sub_of_hasGradientAtFn (hf : ConvexFn f) {x₁ x₂ : E} {r₁ r�
     (hr₁ : f x₁ = ((r₁ : ℝ) : EReal)) (hr₂ : f x₂ = ((r₂ : ℝ) : EReal)) :
     y x₁ - r₁ = y x₂ - r₂ := by
   have he : ((y x₁ - r₁ : ℝ) : EReal) = ((y x₂ - r₂ : ℝ) : EReal) := by
-    rw [← conj_eq_of_hasGradientAtFn hf h₁ hr₁, ← conj_eq_of_hasGradientAtFn hf h₂ hr₂]
+    rw [← convexConj_eq_of_hasGradientAtFn hf h₁ hr₁, ← convexConj_eq_of_hasGradientAtFn hf h₂ hr₂]
   exact_mod_cast he
 
 /-- The domain `D` of the Legendre conjugate, the image of the gradient mapping. Every gradient is
-attained at an interior point of `dom f` (`HasGradientAtFn.mem_interior_dom`), so no interiority
-side condition is needed here. -/
+attained at an interior point of `dom f` (`HasGradientAtFn.mem_interior_convexDom`), so no
+interiority side condition is needed here. -/
 def legendreDom (f : E → EReal) : Set (StrongDual ℝ E) := {y | ∃ x, HasGradientAtFn f y x}
 
 theorem mem_legendreDom_iff : y ∈ legendreDom f ↔ ∃ x, HasGradientAtFn f y x := Iff.rfl
 
 theorem HasGradientAtFn.mem_legendreDom (h : HasGradientAtFn f y x) : y ∈ legendreDom f := ⟨x, h⟩
 
-theorem exists_mem_interior_dom_of_mem_legendreDom (hy : y ∈ legendreDom f) :
-    ∃ x ∈ interior (dom f), HasGradientAtFn f y x := by
+theorem exists_mem_interior_convexDom_of_mem_legendreDom (hy : y ∈ legendreDom f) :
+    ∃ x ∈ interior (convexDom f), HasGradientAtFn f y x := by
   obtain ⟨x, hx⟩ := hy
-  exact ⟨x, hx.mem_interior_dom, hx⟩
+  exact ⟨x, hx.mem_interior_convexDom, hx⟩
 
 /-- Every gradient of `f` is a point where `f*` is finite: `D ⊆ dom f*`. -/
-theorem legendreDom_subset_dom_conj (hf : ConvexFn f) :
-    legendreDom f ⊆ dom (conj (topDualPairing ℝ E).flip f) := by
+theorem legendreDom_subset_convexDom_convexConj (hf : ConvexFn f) :
+    legendreDom f ⊆ convexDom (convexConj (topDualPairing ℝ E).flip f) := by
   rintro y ⟨x, hx⟩
   obtain ⟨r, hr⟩ := hx.exists_coe
-  rw [mem_dom, conj_eq_of_hasGradientAtFn hf hx hr]
+  rw [mem_convexDom, convexConj_eq_of_hasGradientAtFn hf hx hr]
   exact EReal.coe_lt_top _
 
 end Legendre

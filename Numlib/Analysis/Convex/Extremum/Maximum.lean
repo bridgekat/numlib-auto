@@ -62,7 +62,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal
 
 /-- **The maximum principle**: a convex function attaining its supremum over a convex `C ⊆ dom f`
 at a *relative interior* point of `C` is constant on `C`. -/
-theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ dom f) {z : E}
+theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : E}
     (hz : z ∈ ri C) (hmax : ∀ w ∈ C, f w ≤ f z) {x : E} (hx : x ∈ C) : f x = f z := by
   refine le_antisymm (hmax x hx) ?_
   by_contra hcon
@@ -74,7 +74,7 @@ theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ dom f
     have hcancel : t * t⁻¹ = 1 := mul_inv_cancel₀ ht0.ne'
     nlinarith
   obtain ⟨ζ, hζ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (ne_bot_of_gt hxlt)
-    (mem_dom.1 (hCdom (intrinsicInterior_subset hz)))
+    (mem_convexDom.1 (hCdom (intrinsicInterior_subset hz)))
   rw [hζ] at hxlt
   obtain ⟨ξ, hξ1, hξ2⟩ := EReal.lt_iff_exists_real_btwn.1 hxlt
   have hξlt : ξ < ζ := by exact_mod_cast hξ2
@@ -86,7 +86,7 @@ theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ dom f
 /-- Every maximiser lies in a face of `C` on which `f` is constant, so the maximiser set is a union
 of faces: the maximum principle applied on the face whose relative interior contains it. -/
 theorem exists_isFace_forall_eq_of_isMaxOn [FiniteDimensional ℝ E] (hf : ConvexFn f)
-    (hC : Convex ℝ C) (hCdom : C ⊆ dom f) {z : E} (hz : z ∈ C) (hmax : ∀ w ∈ C, f w ≤ f z) :
+    (hC : Convex ℝ C) (hCdom : C ⊆ convexDom f) {z : E} (hz : z ∈ C) (hmax : ∀ w ∈ C, f w ≤ f z) :
     ∃ C', IsFace C C' ∧ z ∈ C' ∧ ∀ x ∈ C', f x = f z := by
   obtain ⟨C', hface, hzri⟩ := exists_isFace_mem_relint hC hz
   have hsub : C' ⊆ C := hface.toIsExtreme.1
@@ -224,7 +224,7 @@ theorem BddAboveOnRays.mono {C' : Set E} (hray : BddAboveOnRays f C) (hsub : C' 
     BddAboveOnRays f C' := fun u v hr => hray u v fun t ht => hsub (hr t ht)
 
 /-- The degenerate half-lines — the points — of `C` already force `C ⊆ dom f`. -/
-theorem BddAboveOnRays.subset_dom (hray : BddAboveOnRays f C) : C ⊆ dom f := by
+theorem BddAboveOnRays.subset_convexDom (hray : BddAboveOnRays f C) : C ⊆ convexDom f := by
   intro u hu
   obtain ⟨β, hβ⟩ := hray u 0 fun t _ => by simpa using hu
   have hle := hβ 0 le_rfl
@@ -375,7 +375,7 @@ theorem exists_mem_extremePoints_inter_eq_of_isMaxOn_of_isCompl (hf : ConvexFn f
   obtain ⟨z, hz, hzq⟩ := exists_mem_extremePoints_eq_of_isMaxOn_of_containsNoLine hf
     (hC.inter (Submodule.convex N)) (hCcl.inter (Submodule.closed_of_finiteDimensional N))
     (containsNoLine_inter_of_isCompl hC hCcl hN) hq
-    (by rw [← hfq]; exact (mem_dom.1 (hray.subset_dom hx)).ne)
+    (by rw [← hfq]; exact (mem_convexDom.1 (hray.subset_convexDom hx)).ne)
     (fun w hw => by rw [← hfq]; exact hmax w hw.1)
   exact ⟨z, hz, by rw [hzq, ← hfq]⟩
 
@@ -459,10 +459,11 @@ theorem exists_mem_extremePoints_eq_of_isMaxOn (hf : ConvexFn f) (hcomp : IsComp
 /-- The "supremum is attained" clause: a convex function attains its supremum over a nonempty
 compact convex `C ⊆ ri (dom f)` at an extreme point. The hypothesis is `C ⊆ ri (dom f)`, not the
 book's `C ⊆ dom f`, under which the clause is false. -/
-theorem exists_mem_extremePoints_isMaxOn_of_isCompact (hf : ConvexFn f) (hp : Proper f)
-    (hcomp : IsCompact C) (hconv : Convex ℝ C) (hne : C.Nonempty) (hCri : C ⊆ ri (dom f)) :
+theorem exists_mem_extremePoints_isMaxOn_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcomp : IsCompact C) (hconv : Convex ℝ C) (hne : C.Nonempty) (hCri : C ⊆ ri (convexDom f)) :
     ∃ z ∈ C.extremePoints ℝ, ∀ w ∈ C, f w ≤ f z := by
-  obtain ⟨x, hx, hxmax⟩ := hcomp.exists_isMaxOn hne ((hf.continuousOn_relint_dom hp).mono hCri)
+  obtain ⟨x, hx, hxmax⟩ :=
+      hcomp.exists_isMaxOn hne ((hf.continuousOn_relint_convexDom hp).mono hCri)
   obtain ⟨z, hz, hzx⟩ :=
     exists_mem_extremePoints_eq_of_isMaxOn hf hcomp hconv hx fun w hw => isMaxOn_iff.1 hxmax w hw
   exact ⟨z, hz, fun w hw => hzx ▸ isMaxOn_iff.1 hxmax w hw⟩

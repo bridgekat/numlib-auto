@@ -18,16 +18,16 @@ computes `f'(x; ·)` itself, and it is linear.
 
 ## Main results
 
-* `mem_interior_dom_of_subdifferential_eq_singleton` — the interior step.
+* `mem_interior_convexDom_of_subdifferential_eq_singleton` — the interior step.
 * `hasGradientAtFn_iff_subdifferential_eq_singleton` — the equivalence in full
   ([rockafellar1970convex] Theorem 25.1), with
   `differentiableAtFn_iff_exists_subdifferential_eq_singleton` naming no gradient.
-* `hasGradientAtFn_clFn_iff` — `∇(cl f) = ∇f`: a closure changes no gradient and creates none.
-* `mem_exposedPoints_epi_conj_iff_hasGradientAtFn`,
+* `hasGradientAtFn_convexCl_iff` — `∇(cl f) = ∇f`: a closure changes no gradient and creates none.
+* `mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn`,
   `mem_exposedPoints_supportSet_iff_hasGradientAtFn` — the exposed points of `epi f*` and of a
   support set, for a merely proper convex `f`, by reduction to `cl f`. Only the *gradients*
   transfer: `∂f = ∂(cl f)` fails at relative boundary points, so the subgradient forms in
-  `Gradient.lean` keep their `ClosedFn` hypothesis.
+  `Gradient.lean` keep their `ClosedConvex` hypothesis.
 
 ## References
 
@@ -49,11 +49,13 @@ include B in
 /-- A lone subgradient puts `x` in the interior of `dom f`: it leaves no room for a normal
 direction to `dom f`, and in finite dimensions a convex set is a neighbourhood of every point at
 which its normal cone is trivial. -/
-theorem mem_interior_dom_of_subdifferential_eq_singleton [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hp : Proper f) (h : subdifferential B f x = {y₀}) : x ∈ interior (dom f) := by
+theorem mem_interior_convexDom_of_subdifferential_eq_singleton [IsCompatiblePairing B]
+    (hf : ConvexFn f)
+    (hp : ProperConvex f) (h : subdifferential B f x = {y₀}) : x ∈ interior (convexDom f) := by
   have hy₀ : y₀ ∈ subdifferential B f x := by rw [h]; rfl
-  exact mem_interior_of_normalCone_eq_zero hf.convex_dom (mem_dom_of_mem_subdifferential hp hy₀)
-    (normalCone_dom_eq_zero_of_subdifferential_eq_singleton h)
+  exact mem_interior_of_normalCone_eq_zero
+      hf.convex_convexDom (mem_convexDom_of_mem_subdifferential hp hy₀)
+    (normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton h)
 
 end Interior
 
@@ -67,29 +69,30 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 /-- At an interior point of `dom f` the directional derivative is its own closure: it is finite in
 every direction there, hence a finite convex function on the whole space, hence continuous. This is
 what removes the `cl` from the support-function formula for `f'(x; ·)`. -/
-theorem closedFn_dirDeriv_of_mem_interior_dom (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) : ClosedFn (dirDeriv f x) := by
-  have hri : x ∈ ri (dom f) := Convex.interior_subset_relint hf.convex_dom ⟨x, hx⟩ hx
-  have hgp : Proper (dirDeriv f x) := proper_dirDeriv_of_mem_relint_dom hf hp hri
+theorem closedConvex_dirDeriv_of_mem_interior_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) : ClosedConvex (dirDeriv f x) := by
+  have hri : x ∈ ri (convexDom f) := Convex.interior_subset_relint hf.convex_convexDom ⟨x, hx⟩ hx
+  have hgp : ProperConvex (dirDeriv f x) := properConvex_dirDeriv_of_mem_relint_convexDom hf hp hri
   have hgc : ConvexFn (dirDeriv f x) :=
-    convexFn_dirDeriv hf (mem_dom.1 (interior_subset hx)).ne (hp.ne_bot x)
-  have hdom : dom (dirDeriv f x) = univ :=
-    (dom_dirDeriv_eq_univ_iff_mem_interior_dom hf hp hri).2 hx
-  exact (closedFn_iff_lowerSemicontinuous hgp.ne_bot).2
-    (hgc.continuous_of_dom_eq_univ hgp hdom).lowerSemicontinuous
+    convexFn_dirDeriv hf (mem_convexDom.1 (interior_subset hx)).ne (hp.ne_bot x)
+  have hdom : convexDom (dirDeriv f x) = univ :=
+    (convexDom_dirDeriv_eq_univ_iff_mem_interior_convexDom hf hp hri).2 hx
+  exact (closedConvex_iff_lowerSemicontinuous hgp.ne_bot).2
+    (hgc.continuous_of_convexDom_eq_univ hgp hdom).lowerSemicontinuous
 
 /-- **The converse half**: a convex function with a *unique* subgradient at `x` is differentiable
 there, and the subgradient is the gradient. Properness replaces the usual "let `f` be finite at
 `x`", which is weaker only in appearance: where `f = -∞`, every element of `F` is a subgradient. -/
 theorem hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton [IsCompatiblePairing B]
-    (hf : ConvexFn f) (hp : Proper f) (h : subdifferential B f x = {y₀}) :
+    (hf : ConvexFn f) (hp : ProperConvex f) (h : subdifferential B f x = {y₀}) :
     HasGradientAtFn f (evalCLM B y₀) x := by
-  have hint := mem_interior_dom_of_subdifferential_eq_singleton hf hp h
-  have ht : f x ≠ ⊤ := (mem_dom.1 (interior_subset hint)).ne
+  have hint := mem_interior_convexDom_of_subdifferential_eq_singleton hf hp h
+  have ht : f x ≠ ⊤ := (mem_convexDom.1 (interior_subset hint)).ne
   have hb : f x ≠ ⊥ := hp.ne_bot x
-  have hcl : clFn (dirDeriv f x) = dirDeriv f x := closedFn_dirDeriv_of_mem_interior_dom hf hp hint
+  have hcl : convexCl (dirDeriv f x) = dirDeriv f x :=
+      closedConvex_dirDeriv_of_mem_interior_convexDom hf hp hint
   have heq : dirDeriv f x = fun v => ((B v y₀ : ℝ) : EReal) :=
-    hcl.symm.trans (clFn_dirDeriv_eq_of_subdifferential_eq_singleton hf ht hb h)
+    hcl.symm.trans (convexCl_dirDeriv_eq_of_subdifferential_eq_singleton hf ht hb h)
   exact hasGradientAtFn_of_dirDeriv_eq hf ht hb fun v => congrFun heq v
 
 end Converse
@@ -103,19 +106,19 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 /-- The converse half in the pairing of `E` with its continuous dual: there `evalCLM` is the
 identity, so the unique subgradient *is* the gradient. -/
-theorem hasGradientAtFn_of_subdifferential_eq_singleton (hf : ConvexFn f) (hp : Proper f)
+theorem hasGradientAtFn_of_subdifferential_eq_singleton (hf : ConvexFn f) (hp : ProperConvex f)
     (h : subdifferential (topDualPairing ℝ E).flip f x = {f'}) : HasGradientAtFn f f' x :=
   hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton (B := (topDualPairing ℝ E).flip) hf hp h
 
 /-- For a proper convex function, having gradient `f'` at `x` and having `f'` as sole subgradient
 at `x` are the same thing. -/
-theorem hasGradientAtFn_iff_subdifferential_eq_singleton (hf : ConvexFn f) (hp : Proper f) :
+theorem hasGradientAtFn_iff_subdifferential_eq_singleton (hf : ConvexFn f) (hp : ProperConvex f) :
     HasGradientAtFn f f' x ↔ subdifferential (topDualPairing ℝ E).flip f x = {f'} :=
   ⟨fun h => h.subdifferential_eq hf, hasGradientAtFn_of_subdifferential_eq_singleton hf hp⟩
 
 /-- Differentiability at `x` is exactly the subdifferential being a single point. -/
 theorem differentiableAtFn_iff_exists_subdifferential_eq_singleton (hf : ConvexFn f)
-    (hp : Proper f) :
+    (hp : ProperConvex f) :
     DifferentiableAtFn f x ↔
       ∃ y : StrongDual ℝ E, subdifferential (topDualPairing ℝ E).flip f x = {y} :=
   exists_congr fun _ => hasGradientAtFn_iff_subdifferential_eq_singleton hf hp
@@ -131,33 +134,34 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 /-- `cl f` agrees with `f` on a whole neighbourhood of an interior point of `dom f`, since
 `interior (dom f)` is open and sits inside `ri (dom f)`. -/
-theorem ConvexFn.clFn_eventuallyEq_of_mem_interior_dom (hf : ConvexFn f)
-    (hx : x ∈ interior (dom f)) : clFn f =ᶠ[nhds x] f := by
+theorem ConvexFn.convexCl_eventuallyEq_of_mem_interior_convexDom (hf : ConvexFn f)
+    (hx : x ∈ interior (convexDom f)) : convexCl f =ᶠ[nhds x] f := by
   filter_upwards [isOpen_interior.mem_nhds hx] with z hz
-  exact hf.clFn_eq_of_mem_relint_dom (Convex.interior_subset_relint hf.convex_dom ⟨x, hx⟩ hz)
+  exact hf.convexCl_eq_of_mem_relint_convexDom
+      (Convex.interior_subset_relint hf.convex_convexDom ⟨x, hx⟩ hz)
 
 /-- `∇(cl f) = ∇f` for a proper convex `f`: a closure changes no gradient, and creates none. One
 direction holds because a gradient of `f` at `x` puts `x` in `int (dom f)`, where the two functions
-agree on a neighbourhood; the other needs `ConvexFn.interior_dom_clFn`, since a gradient of `cl f`
-only supplies a point interior to the larger domain `dom (cl f)`. -/
-theorem hasGradientAtFn_clFn_iff (hf : ConvexFn f) (hp : Proper f) :
-    HasGradientAtFn (clFn f) f' x ↔ HasGradientAtFn f f' x := by
+agree on a neighbourhood; the other needs `ConvexFn.interior_convexDom_convexCl`, since a gradient
+of `cl f` only supplies a point interior to the larger domain `dom (cl f)`. -/
+theorem hasGradientAtFn_convexCl_iff (hf : ConvexFn f) (hp : ProperConvex f) :
+    HasGradientAtFn (convexCl f) f' x ↔ HasGradientAtFn f f' x := by
   constructor
   · intro h
-    have hx : x ∈ interior (dom f) := by
-      rw [← hf.interior_dom_clFn hp]
-      exact HasGradientAtFn.mem_interior_dom h
+    have hx : x ∈ interior (convexDom f) := by
+      rw [← hf.interior_convexDom_convexCl hp]
+      exact HasGradientAtFn.mem_interior_convexDom h
     obtain ⟨g, hfg, hd⟩ := h
-    exact ⟨g, (hf.clFn_eventuallyEq_of_mem_interior_dom hx).symm.trans hfg, hd⟩
+    exact ⟨g, (hf.convexCl_eventuallyEq_of_mem_interior_convexDom hx).symm.trans hfg, hd⟩
   · intro h
-    have hx : x ∈ interior (dom f) := HasGradientAtFn.mem_interior_dom h
+    have hx : x ∈ interior (convexDom f) := HasGradientAtFn.mem_interior_convexDom h
     obtain ⟨g, hfg, hd⟩ := h
-    exact ⟨g, (hf.clFn_eventuallyEq_of_mem_interior_dom hx).trans hfg, hd⟩
+    exact ⟨g, (hf.convexCl_eventuallyEq_of_mem_interior_convexDom hx).trans hfg, hd⟩
 
 /-- `∇(cl f) = ∇f`, in the form that names no gradient. -/
-theorem differentiableAtFn_clFn_iff (hf : ConvexFn f) (hp : Proper f) :
-    DifferentiableAtFn (clFn f) x ↔ DifferentiableAtFn f x :=
-  exists_congr fun _ => hasGradientAtFn_clFn_iff hf hp
+theorem differentiableAtFn_convexCl_iff (hf : ConvexFn f) (hp : ProperConvex f) :
+    DifferentiableAtFn (convexCl f) x ↔ DifferentiableAtFn f x :=
+  exists_congr fun _ => hasGradientAtFn_convexCl_iff hf hp
 
 end Closure
 
@@ -171,34 +175,38 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 /-- A subdifferential that is a single point is unchanged by taking the closure: `∂(cl f) = ∂f`
 wherever `(cl f) x = f x`, and a singleton subdifferential puts `x` inside `ri (dom f)`, where the
 two functions do agree. -/
-theorem exists_subdifferential_clFn_eq_singleton_iff [IsCompatiblePairing B] (hf : ConvexFn f)
-    (hp : Proper f) {y : F} :
-    (∃ x : E, subdifferential B (clFn f) x = {y}) ↔ ∃ x : E, subdifferential B f x = {y} := by
-  have key : ∀ x : E, x ∈ interior (dom f) → subdifferential B (clFn f) x = subdifferential B f x :=
-    fun x hx => Set.ext fun _ => mem_subdifferential_clFn_iff
-      (hf.clFn_eq_of_mem_relint_dom (Convex.interior_subset_relint hf.convex_dom ⟨x, hx⟩ hx))
+theorem exists_subdifferential_convexCl_eq_singleton_iff [IsCompatiblePairing B] (hf : ConvexFn f)
+    (hp : ProperConvex f) {y : F} :
+    (∃ x : E, subdifferential B (convexCl f) x = {y}) ↔ ∃ x : E, subdifferential B f x = {y} := by
+  have key : ∀ x : E,
+      x ∈ interior (convexDom f) → subdifferential B (convexCl f) x = subdifferential B f x :=
+    fun x hx => Set.ext fun _ => mem_subdifferential_convexCl_iff
+      (hf.convexCl_eq_of_mem_relint_convexDom (Convex.interior_subset_relint
+          hf.convex_convexDom ⟨x, hx⟩ hx))
   constructor
   · rintro ⟨x, hx⟩
-    have hint : x ∈ interior (dom f) := by
-      rw [← hf.interior_dom_clFn hp]
-      exact mem_interior_dom_of_subdifferential_eq_singleton (convexFn_clFn hf) (hf.proper_clFn hp)
+    have hint : x ∈ interior (convexDom f) := by
+      rw [← hf.interior_convexDom_convexCl hp]
+      exact mem_interior_convexDom_of_subdifferential_eq_singleton (convexFn_convexCl hf)
+          (hf.properConvex_convexCl hp)
         hx
     exact ⟨x, (key x hint).symm.trans hx⟩
   · rintro ⟨x, hx⟩
-    exact ⟨x, (key x (mem_interior_dom_of_subdifferential_eq_singleton hf hp hx)).trans hx⟩
+    exact ⟨x, (key x (mem_interior_convexDom_of_subdifferential_eq_singleton hf hp hx)).trans hx⟩
 
 variable [TopologicalSpace F]
 
 /-- The exposed points of `epi f*` for `f` merely proper convex. `(cl f)* = f*`, and `cl f` has
-exactly the same points of single-valued subdifferential as `f`, so the `ClosedFn` hypothesis of
-`mem_exposedPoints_epi_conj_iff` can be discharged by passing to `cl f`. -/
-theorem mem_exposedPoints_epi_conj_iff_of_proper [IsCompatiblePairing B]
-    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : Proper f) {y : F} {μ : ℝ} :
-    (y, μ) ∈ (epi (conj B f)).exposedPoints ℝ ↔
-      conj B f y = (μ : EReal) ∧ ∃ x : E, subdifferential B f x = {y} := by
-  rw [← conj_clFn (B := B) f,
-    mem_exposedPoints_epi_conj_iff (convexFn_clFn hf) (hf.proper_clFn hp) (closedFn_clFn f)]
-  exact and_congr_right fun _ => exists_subdifferential_clFn_eq_singleton_iff hf hp
+exactly the same points of single-valued subdifferential as `f`, so the `ClosedConvex` hypothesis of
+`mem_exposedPoints_epi_convexConj_iff` can be discharged by passing to `cl f`. -/
+theorem mem_exposedPoints_epi_convexConj_iff_of_properConvex [IsCompatiblePairing B]
+    [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : ProperConvex f) {y : F} {μ : ℝ} :
+    (y, μ) ∈ (epi (convexConj B f)).exposedPoints ℝ ↔
+      convexConj B f y = (μ : EReal) ∧ ∃ x : E, subdifferential B f x = {y} := by
+  rw [← convexConj_convexCl (B := B) f,
+    mem_exposedPoints_epi_convexConj_iff (convexFn_convexCl hf) (hf.properConvex_convexCl hp)
+        (closedConvex_convexCl f)]
+  exact and_congr_right fun _ => exists_subdifferential_convexCl_eq_singleton_iff hf hp
 
 end ClosureExposedEpi
 
@@ -211,18 +219,18 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 /-- The exposed points of a support set for `g` merely positively homogeneous proper convex. The
 reduction to `cl g` is done directly here; `cl g` supports the same set and is again positively
 homogeneous. -/
-theorem mem_exposedPoints_supportSet_iff_of_proper [IsCompatiblePairing B]
+theorem mem_exposedPoints_supportSet_iff_of_properConvex [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
-    [LocallyConvexSpace ℝ E] (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : Proper g)
+    [LocallyConvexSpace ℝ E] (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
     {z : E} :
     z ∈ (supportSet B.flip g).exposedPoints ℝ ↔ ∃ y : F, subdifferential B.flip g y = {z} := by
-  obtain ⟨w, hw⟩ := hgp.dom_nonempty
-  have hne : ∃ y, g y ≠ ⊤ := ⟨w, (mem_dom.1 hw).ne⟩
-  have hph := posHomogeneous_clFn hgh
-  rw [← supportSet_clFn (B := B) hgh hne,
-    mem_exposedPoints_supportSet_iff (B := B) hph (convexFn_clFn hgc)
-    (hgc.proper_clFn hgp) (closedFn_clFn g)]
-  exact exists_subdifferential_clFn_eq_singleton_iff hgc hgp
+  obtain ⟨w, hw⟩ := hgp.convexDom_nonempty
+  have hne : ∃ y, g y ≠ ⊤ := ⟨w, (mem_convexDom.1 hw).ne⟩
+  have hph := posHomogeneous_convexCl hgh
+  rw [← supportSet_convexCl (B := B) hgh hne,
+    mem_exposedPoints_supportSet_iff (B := B) hph (convexFn_convexCl hgc)
+    (hgc.properConvex_convexCl hgp) (closedConvex_convexCl g)]
+  exact exists_subdifferential_convexCl_eq_singleton_iff hgc hgp
 
 end ClosureExposedSupport
 
@@ -235,21 +243,21 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 /-- The exposed points of `epi f*` are the points `(∇f x, f* (∇f x))` at which `f` is
 differentiable. `f` need not be closed. -/
-theorem mem_exposedPoints_epi_conj_iff_hasGradientAtFn (hf : ConvexFn f) (hp : Proper f)
+theorem mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn (hf : ConvexFn f) (hp : ProperConvex f)
     {y : StrongDual ℝ E} {μ : ℝ} :
-    (y, μ) ∈ (epi (conj (topDualPairing ℝ E).flip f)).exposedPoints ℝ ↔
-      conj (topDualPairing ℝ E).flip f y = (μ : EReal) ∧ ∃ x : E, HasGradientAtFn f y x := by
-  rw [mem_exposedPoints_epi_conj_iff_of_proper hf hp]
+    (y, μ) ∈ (epi (convexConj (topDualPairing ℝ E).flip f)).exposedPoints ℝ ↔
+      convexConj (topDualPairing ℝ E).flip f y = (μ : EReal) ∧ ∃ x : E, HasGradientAtFn f y x := by
+  rw [mem_exposedPoints_epi_convexConj_iff_of_properConvex hf hp]
   exact and_congr_right fun _ =>
     exists_congr fun _ => (hasGradientAtFn_iff_subdifferential_eq_singleton hf hp).symm
 
 /-- For a proper convex positively homogeneous `f`, the exposed points of the closed convex set
 that `f` supports are exactly its gradients. Again `f` need not be closed. -/
 theorem mem_exposedPoints_supportSet_iff_hasGradientAtFn (hgh : PosHomogeneous f) (hgc : ConvexFn f)
-    (hgp : Proper f) {z : StrongDual ℝ E} :
+    (hgp : ProperConvex f) {z : StrongDual ℝ E} :
     z ∈ (supportSet (topDualPairing ℝ E).flip f).exposedPoints ℝ ↔
       ∃ y : E, HasGradientAtFn f z y := by
-  rw [mem_exposedPoints_supportSet_iff_of_proper (B := topDualPairing ℝ E) hgh hgc hgp]
+  rw [mem_exposedPoints_supportSet_iff_of_properConvex (B := topDualPairing ℝ E) hgh hgc hgp]
   exact exists_congr fun _ => (hasGradientAtFn_iff_subdifferential_eq_singleton hgc hgp).symm
 
 end Exposed

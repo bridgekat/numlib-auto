@@ -11,16 +11,16 @@ with `P` and `D` finite. An affine function `x ↦ ⟨x, y⟩ - c` lies below
 `f` exactly when the linear functional `p ↦ ⟨p.1, y⟩ - p.2` is bounded by `c` on `epi f`, and on a
 sum of a convex hull and a cone that is two *finite* families of conditions: `⟨p.1, y⟩ - c ≤ p.2`
 for the generating points `p ∈ P`, and `⟨d.1, y⟩ ≤ d.2` for the generating directions `d ∈ D`.
-Both are linear in `(y, c)`, so they cut `epi (conj B f)` out of `F × ℝ` as a polyhedral set.
+Both are linear in `(y, c)`, so they cut `epi (convexConj B f)` out of `F × ℝ` as a polyhedral set.
 
 ## Main results
 
-* `mem_epi_conj_iff` — the epigraph of `conj B f`, read off `epi f`, with no hypothesis on `f`. In
-  particular none excluding `f x = ⊥`: in that case both sides are false.
-* `PolyhedralFn.conj` — the conjugate of a polyhedral convex function is polyhedral
+* `mem_epi_convexConj_iff` — the epigraph of `convexConj B f`, read off `epi f`, with no hypothesis
+  on `f`. In particular none excluding `f x = ⊥`: in that case both sides are false.
+* `PolyhedralFn.convexConj` — the conjugate of a polyhedral convex function is polyhedral
   ([rockafellar1970convex] Theorem 19.2). The case `P = ∅` is separate: then `f ≡ ⊤` and
-  `epi (conj B f)` is all of `F × ℝ`, whereas the generator argument needs a base point to slide
-  along a recession direction.
+  `epi (convexConj B f)` is all of `F × ℝ`, whereas the generator argument needs a base point to
+  slide along a recession direction.
 
 ## References
 
@@ -70,12 +70,12 @@ section Conj
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- **The epigraph of a conjugate.** `(y, c)` lies over `conj B f` exactly when the linear
-functional `p ↦ ⟨p.1, y⟩ - p.2` is bounded by `c` on `epi f`. This is `conj_le_coe_iff` with the
-affine minorant traded for its epigraph, and it holds with no hypothesis on `f`. -/
-theorem mem_epi_conj_iff {q : F × ℝ} :
-    q ∈ epi (conj B f) ↔ ∀ p ∈ epi f, B p.1 q.1 - q.2 ≤ p.2 := by
-  rw [mem_epi, conj_le_coe_iff]
+/-- **The epigraph of a conjugate.** `(y, c)` lies over `convexConj B f` exactly when the linear
+functional `p ↦ ⟨p.1, y⟩ - p.2` is bounded by `c` on `epi f`. This is `convexConj_le_coe_iff` with
+the affine minorant traded for its epigraph, and it holds with no hypothesis on `f`. -/
+theorem mem_epi_convexConj_iff {q : F × ℝ} :
+    q ∈ epi (convexConj B f) ↔ ∀ p ∈ epi f, B p.1 q.1 - q.2 ≤ p.2 := by
+  rw [mem_epi, convexConj_le_coe_iff]
   constructor
   · intro h p hp
     have h₁ : ((B p.1 q.1 - q.2 : ℝ) : EReal) ≤ f p.1 := by
@@ -96,7 +96,7 @@ variable [FiniteDimensional ℝ E]
 
 `epi f = conv P + cone D` turns the condition "`x ↦ ⟨x, y⟩ - c` lies below `f`" into finitely
 many linear inequalities on `(y, c)`: one per generating point, one per generating direction. -/
-theorem PolyhedralFn.conj (hf : PolyhedralFn f) : PolyhedralFn (conj B f) := by
+theorem PolyhedralFn.convexConj (hf : PolyhedralFn f) : PolyhedralFn (convexConj B f) := by
   classical
   obtain ⟨P, D, hPD⟩ := Polyhedral.finitelyGenerated hf
   rcases P.eq_empty_or_nonempty with rfl | hPne
@@ -109,13 +109,13 @@ theorem PolyhedralFn.conj (hf : PolyhedralFn f) : PolyhedralFn (conj B f) := by
     · intro _ r hr
       simp at hr
     · intro _
-      rw [mem_epi_conj_iff, hempty]
+      rw [mem_epi_convexConj_iff, hempty]
       intro p hp
       exact hp.elim
   · refine ⟨P.image (fun p => (epiFunctional B p.1, p.2)) ∪
       D.image (fun d => (dirFunctional B d.1, d.2)), ?_⟩
     ext q
-    rw [mem_epi_conj_iff, hPD]
+    rw [mem_epi_convexConj_iff, hPD]
     constructor
     · intro h r hr
       rcases Finset.mem_union.1 hr with hr | hr

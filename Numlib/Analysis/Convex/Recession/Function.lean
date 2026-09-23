@@ -13,7 +13,7 @@ its *constancy space*, and those with `(f0⁺) (-y) = -(f0⁺) y` its *lineality
 
 Most of the theory needs only a real vector space with no topology; closedness of `epi f` enters
 exactly where the answer must not depend on the base point `x`, and is always carried as
-`IsClosed (epi f)`, never as `ClosedFn f`, which also collapses improper functions to `⊥`.
+`IsClosed (epi f)`, never as `ClosedConvex f`, which also collapses improper functions to `⊥`.
 
 ## Main definitions
 
@@ -25,8 +25,8 @@ exactly where the answer must not depend on the base point `x`, and is always ca
 
 ## Main results
 
-* `posHomogeneous_recessionFn`, `convexFn_recessionFn`, `proper_recessionFn` — `f0⁺` is positively
-  homogeneous and convex, proper when `f` is proper and closed when `f` is closed; and
+* `posHomogeneous_recessionFn`, `convexFn_recessionFn`, `properConvex_recessionFn` — `f0⁺` is
+  positively homogeneous and convex, proper when `f` is proper and closed when `f` is closed; and
   `recessionFn_apply_eq_iSup_sub`: `(f0⁺) y = sup {f (x + y) - f x | x ∈ dom f}`, reached for closed
   `f` by the difference quotients at any one `x ∈ dom f` ([rockafellar1970convex] Theorem 8.5).
 * `recessionFn_isLeast` — `f0⁺` is the least `h` with `f z ≤ f x + h (z - x)`.
@@ -38,6 +38,8 @@ exactly where the answer must not depend on the base point `x`, and is always ca
 * `recessionCone_setOf_le`, `linealitySpace_setOf_le` — all nonempty level sets of a closed convex
   `f` share its recession cone and constancy space, and by `isBounded_setOf_le` one of them is
   bounded only if all are.
+* `lt_recessionFn_of_isBounded_convexDom` — a nonempty bounded effective domain leaves no nonzero
+  direction of recession.
 * `forall_eq_add_iff_mk_mem_linealitySpace_epi`, `linealitySpaceFn_eq_image` —
   `f` is affine with slope `ν` along `y` exactly when `(y, ν)` lies in the lineality space of
   `epi f`, whose projection is the lineality space of `f`.
@@ -228,9 +230,9 @@ theorem recessionFn_apply_zero_le (f : E → EReal) : recessionFn f 0 ≤ 0 := b
 Properness is needed on both counts: for `f ≡ +∞` the epigraph is empty, `0⁺∅` is everything and
 `f0⁺ ≡ -∞`; and if `f` takes the value `-∞` somewhere, a vertical section of `0⁺(epi f)` can be
 all of `ℝ`. -/
-theorem recessionFn_ne_bot (hp : Proper f) (y : E) : recessionFn f y ≠ ⊥ := by
+theorem recessionFn_ne_bot (hp : ProperConvex f) (y : E) : recessionFn f y ≠ ⊥ := by
   intro hbot
-  obtain ⟨x, hx⟩ := hp.dom_nonempty
+  obtain ⟨x, hx⟩ := hp.convexDom_nonempty
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
   refine hp.ne_bot (x + y) (le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun s _ => ?_))
   have hmem : ((y, s - r) : E × ℝ) ∈ recessionCone (epi f) :=
@@ -239,9 +241,9 @@ theorem recessionFn_ne_bot (hp : Proper f) (y : E) : recessionFn f y ≠ ⊥ := 
   simpa using hle
 
 @[simp]
-theorem recessionFn_apply_zero (hp : Proper f) : recessionFn f 0 = 0 := by
+theorem recessionFn_apply_zero (hp : ProperConvex f) : recessionFn f 0 = 0 := by
   refine le_antisymm (recessionFn_apply_zero_le f) (EReal.le_of_forall_coe_le fun r hr => ?_)
-  obtain ⟨x, hx⟩ := hp.dom_nonempty
+  obtain ⟨x, hx⟩ := hp.convexDom_nonempty
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
   have hle := mk_mem_recessionCone_epi.1 (recessionFn_le_coe_iff.1 hr) x s hs.le 1 zero_le_one
   rw [smul_zero, add_zero, hs] at hle
@@ -249,8 +251,9 @@ theorem recessionFn_apply_zero (hp : Proper f) : recessionFn f 0 = 0 := by
   exact_mod_cast (by linarith : (0 : ℝ) ≤ r)
 
 /-- The recession function of a proper convex function is proper. -/
-theorem proper_recessionFn (hp : Proper f) : Proper (recessionFn f) where
-  dom_nonempty := ⟨0, by rw [mem_dom, recessionFn_apply_zero hp]; exact EReal.zero_lt_top⟩
+theorem properConvex_recessionFn (hp : ProperConvex f) : ProperConvex (recessionFn f) where
+  convexDom_nonempty :=
+      ⟨0, by rw [mem_convexDom, recessionFn_apply_zero hp]; exact EReal.zero_lt_top⟩
   ne_bot := recessionFn_ne_bot hp
 
 /-! ### The difference formula and the least-function property -/
@@ -260,7 +263,8 @@ omit [Module ℝ E] in
 what makes `f x` real on `dom f`, and the restriction to `dom f` is what keeps `⊤ + r = ⊤` from
 being read as a constraint. -/
 theorem forall_le_add_coe_iff (hbot : ∀ x, f x ≠ ⊥) {r : ℝ} :
-    (∀ x : E, f (x + y) ≤ f x + (r : EReal)) ↔ ∀ x ∈ dom f, f (x + y) - f x ≤ (r : EReal) := by
+    (∀ x : E, f (x + y) ≤ f x + (r : EReal)) ↔ ∀ x ∈ convexDom f, f (x + y) - f x ≤
+        (r : EReal) := by
   constructor
   · intro h x hx
     obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot x) hx
@@ -286,12 +290,12 @@ Convexity enters by letting the recession condition be tested at `a = 1` only, a
 `∀ x, f x ≠ ⊥` is what makes the difference meaningful. Properness is *not* needed: for
 `f ≡ +∞` both sides are `-∞`, the supremum because `dom f = ∅`. -/
 theorem recessionFn_apply_eq_iSup_sub (hf : ConvexFn f) (hbot : ∀ x, f x ≠ ⊥) (y : E) :
-    recessionFn f y = ⨆ x ∈ dom f, (f (x + y) - f x) := by
+    recessionFn f y = ⨆ x ∈ convexDom f, (f (x + y) - f x) := by
   refine EReal.eq_of_forall_le_coe_iff fun r => ?_
   rw [recessionFn_le_coe_iff_of_convexFn hf, forall_le_add_coe_iff hbot, iSup₂_le_iff]
 
 /-- The inequality `f (x + y) ≤ f x + (f0⁺) y`: `f0⁺` is one such bounding function. -/
-theorem le_add_recessionFn (hf : ConvexFn f) (hp : Proper f) (x y : E) :
+theorem le_add_recessionFn (hf : ConvexFn f) (hp : ProperConvex f) (x y : E) :
     f (x + y) ≤ f x + recessionFn f y := by
   rcases eq_top_or_lt_top (f x) with hx | hx
   · rw [hx, EReal.top_add_of_ne_bot (recessionFn_ne_bot hp y)]
@@ -299,14 +303,14 @@ theorem le_add_recessionFn (hf : ConvexFn f) (hp : Proper f) (x y : E) :
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
   have hterm : f (x + y) - f x ≤ recessionFn f y := by
     rw [recessionFn_apply_eq_iSup_sub hf hp.ne_bot]
-    exact le_iSup₂ (f := fun x' (_ : x' ∈ dom f) => f (x' + y) - f x') x hx
+    exact le_iSup₂ (f := fun x' (_ : x' ∈ convexDom f) => f (x' + y) - f x') x hx
   calc f (x + y) = f (x + y) - f x + f x := by rw [hs]; exact EReal.sub_add_cancel.symm
     _ ≤ recessionFn f y + f x := add_le_add hterm le_rfl
     _ = f x + recessionFn f y := add_comm _ _
 
 /-- `f0⁺` is the *least* function `h` for which `f` satisfies the global inequality
 `f z ≤ f x + h (z - x)` at every pair of points. -/
-theorem recessionFn_isLeast (hf : ConvexFn f) (hp : Proper f) :
+theorem recessionFn_isLeast (hf : ConvexFn f) (hp : ProperConvex f) :
     IsLeast {h : E → EReal | ∀ x z : E, f z ≤ f x + h (z - x)} (recessionFn f) := by
   refine ⟨fun x z => ?_, fun h hh y => ?_⟩
   · have hxz : x + (z - x) = z := by abel
@@ -550,7 +554,7 @@ theorem constancySubmodule_isGreatest (f : E → EReal) :
 
 /-- Two opposite directions of recession of a proper `f` have nonnegative total slope: adding the
 two recession directions gives `(0, ν + ρ) ∈ 0⁺(epi f)`, and `(f0⁺) 0 = 0`. -/
-theorem zero_le_add_of_recessionFn_le (hp : Proper f) {ν ρ : ℝ}
+theorem zero_le_add_of_recessionFn_le (hp : ProperConvex f) {ν ρ : ℝ}
     (h1 : recessionFn f y ≤ (ν : EReal)) (h2 : recessionFn f (-y) ≤ (ρ : EReal)) : 0 ≤ ν + ρ := by
   have hsum := add_mem_recessionCone (recessionFn_le_coe_iff.1 h1) (recessionFn_le_coe_iff.1 h2)
   rw [Prod.mk_add_mk, add_neg_cancel] at hsum
@@ -559,7 +563,7 @@ theorem zero_le_add_of_recessionFn_le (hp : Proper f) {ν ρ : ℝ}
   exact_mod_cast hle
 
 /-- A bound on `(f0⁺) (-y)` is a *lower* bound on `(f0⁺) y`. -/
-theorem le_recessionFn_of_neg_le (hp : Proper f) {ν : ℝ}
+theorem le_recessionFn_of_neg_le (hp : ProperConvex f) {ν : ℝ}
     (h : recessionFn f (-y) ≤ ((-ν : ℝ) : EReal)) : (ν : EReal) ≤ recessionFn f y :=
   EReal.le_of_forall_coe_le fun r hr => by
     have hsum := zero_le_add_of_recessionFn_le hp hr h
@@ -568,7 +572,7 @@ theorem le_recessionFn_of_neg_le (hp : Proper f) {ν : ℝ}
 /-- `(y, ν)` lies in the lineality space of `epi f` exactly when `(f0⁺) y = ν` and
 `(f0⁺) (-y) = -ν`. Properness is what upgrades the inequalities `(f0⁺) y ≤ ν`,
 `(f0⁺) (-y) ≤ -ν` to equalities. -/
-theorem mk_mem_linealitySpace_epi_iff (hp : Proper f) {ν : ℝ} :
+theorem mk_mem_linealitySpace_epi_iff (hp : ProperConvex f) {ν : ℝ} :
     ((y, ν) : E × ℝ) ∈ linealitySpace (epi f) ↔
       recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) := by
   rw [mem_linealitySpace]
@@ -635,7 +639,7 @@ theorem forall_eq_add_iff_mk_mem_linealitySpace_epi :
 
 /-- For proper `f`, being affine along `y` with slope `ν` is `(f0⁺) y = ν` together with
 `(f0⁺) (-y) = -ν`. -/
-theorem forall_eq_add_iff_recessionFn (hp : Proper f) :
+theorem forall_eq_add_iff_recessionFn (hp : ProperConvex f) :
     (∀ (x : E) (a : ℝ), f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) ↔
       recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) :=
   forall_eq_add_iff_mk_mem_linealitySpace_epi.trans (mk_mem_linealitySpace_epi_iff hp)
@@ -650,7 +654,7 @@ theorem mem_linealitySpaceFn :
 
 /-- The lineality space of `f` is the image of the lineality space of `epi f` under the projection
 `(y, ν) ↦ y`. -/
-theorem linealitySpaceFn_eq_image (hp : Proper f) :
+theorem linealitySpaceFn_eq_image (hp : ProperConvex f) :
     linealitySpaceFn f = Prod.fst '' linealitySpace (epi f) := by
   ext z
   constructor
@@ -676,7 +680,7 @@ noncomputable def linealitySubmoduleFn (f : E → EReal) : Submodule ℝ E :=
   Submodule.map (LinearMap.fst ℝ E ℝ) (linealitySubmodule (epi f))
 
 /-- The carrier of `linealitySubmoduleFn` is the lineality space of `f`. -/
-theorem coe_linealitySubmoduleFn (hp : Proper f) :
+theorem coe_linealitySubmoduleFn (hp : ProperConvex f) :
     (linealitySubmoduleFn f : Set E) = linealitySpaceFn f := by
   rw [linealitySpaceFn_eq_image hp, linealitySubmoduleFn, Submodule.map_coe,
     coe_linealitySubmodule]
@@ -690,8 +694,8 @@ constancy.** If `y` is a direction of recession of a proper `f` in which `f` is 
 (`y ∈ linealitySpaceFn f`) and `f` is bounded below on the half-line `x + a • y`, `a ≥ 0`, issuing
 from some `x ∈ dom f`, then `y ∈ constancySpace f`. Affineness turns the hypotheses on `y` into
 `f (x + a • y) = f x + a * ν` with `ν = (f0⁺) y ≤ 0`, and the lower bound forces `ν = 0`. -/
-theorem mem_constancySpace_of_mem_linealitySpaceFn (hp : Proper f)
-    (hy : y ∈ recessionConeFn f) (hlin : y ∈ linealitySpaceFn f) {x : E} (hx : x ∈ dom f)
+theorem mem_constancySpace_of_mem_linealitySpaceFn (hp : ProperConvex f)
+    (hy : y ∈ recessionConeFn f) (hlin : y ∈ linealitySpaceFn f) {x : E} (hx : x ∈ convexDom f)
     {β : ℝ} (hbdd : ∀ a : ℝ, 0 ≤ a → (β : EReal) ≤ f (x + a • y)) : y ∈ constancySpace f := by
   have hle : recessionFn f y ≤ 0 := hy
   obtain ⟨ν, hν⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (recessionFn_ne_bot hp y)
@@ -730,7 +734,8 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {x y : E}
 /-- The difference quotient `(f (x + a • y) - f x) / a` is below `ν` exactly when the point
 `(x, f x) + a • (y, ν)` lies in `epi f`. This is the translation that turns the difference formula
 into a statement about a single half-line. -/
-theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f) {a ν : ℝ} (ha : 0 < a) :
+theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) {a ν : ℝ}
+    (ha : 0 < a) :
     ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x) ≤ (ν : EReal) ↔
       f (x + a • y) ≤ f x + ((a * ν : ℝ) : EReal) := by
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot x) hx
@@ -756,7 +761,8 @@ theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f
 
 /-- **The difference quotient is nondecreasing** in `a`. Convexity is the whole content:
 `x + a₁ • y` is a convex combination of `x` and `x + a₂ • y`. -/
-theorem monotone_coe_inv_mul_sub (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f) (y : E)
+theorem monotone_coe_inv_mul_sub (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥)
+    (hx : x ∈ convexDom f) (y : E)
     {a₁ a₂ : ℝ} (h1 : 0 < a₁) (h12 : a₁ ≤ a₂) :
     ((a₁⁻¹ : ℝ) : EReal) * (f (x + a₁ • y) - f x)
       ≤ ((a₂⁻¹ : ℝ) : EReal) * (f (x + a₂ • y) - f x) := by
@@ -848,8 +854,10 @@ theorem lowerSemicontinuous_recessionFn (hc : IsClosed (epi f)) :
   lowerSemicontinuous_iff_isClosed_epi.2 (isClosed_epi_recessionFn hc)
 
 /-- `f0⁺` is a closed function when `f` is a closed proper function. -/
-theorem closedFn_recessionFn (hp : Proper f) (hc : IsClosed (epi f)) : ClosedFn (recessionFn f) :=
-  (closedFn_iff_lowerSemicontinuous (recessionFn_ne_bot hp)).2 (lowerSemicontinuous_recessionFn hc)
+theorem closedConvex_recessionFn (hp : ProperConvex f)
+    (hc : IsClosed (epi f)) : ClosedConvex (recessionFn f) :=
+  (closedConvex_iff_lowerSemicontinuous (recessionFn_ne_bot hp)).2
+      (lowerSemicontinuous_recessionFn hc)
 
 theorem isClosed_recessionConeFn (hc : IsClosed (epi f)) : IsClosed (recessionConeFn f) := by
   have hpre : recessionConeFn f = (fun z : E => (z, (0 : ℝ))) ⁻¹' recessionCone (epi f) := by
@@ -870,7 +878,7 @@ theorem mk_mem_recessionCone_epi_of_ray (hf : ConvexFn f) (hc : IsClosed (epi f)
 /-- For a closed convex `f` the recession condition may be tested at a *single* point of `dom f`.
 This is the sharpening that the difference-quotient formula rests on. -/
 theorem recessionFn_le_coe_iff_of_isClosed (hf : ConvexFn f) (hc : IsClosed (epi f))
-    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f) {ν : ℝ} :
+    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) {ν : ℝ} :
     recessionFn f y ≤ (ν : EReal) ↔
       ∀ a : ℝ, 0 < a → f (x + a • y) ≤ f x + ((a * ν : ℝ) : EReal) := by
   refine ⟨fun h a ha => recessionFn_le_coe_iff_forall.1 h x a ha.le, fun h => ?_⟩
@@ -886,7 +894,7 @@ theorem recessionFn_le_coe_iff_of_isClosed (hf : ConvexFn f) (hc : IsClosed (epi
 `(f0⁺) y = sup {(f (x + a • y) - f x) / a | a > 0}`. Closedness is what makes the answer
 independent of `x`. -/
 theorem recessionFn_apply_eq_iSup_inv_mul (hf : ConvexFn f) (hc : IsClosed (epi f))
-    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f) (y : E) :
+    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) (y : E) :
     recessionFn f y = ⨆ a : ℝ, ⨆ _ : 0 < a, ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x) := by
   refine EReal.eq_of_forall_le_coe_iff fun ν => ?_
   rw [recessionFn_le_coe_iff_of_isClosed hf hc hbot hx, iSup₂_le_iff]
@@ -896,7 +904,7 @@ theorem recessionFn_apply_eq_iSup_inv_mul (hf : ConvexFn f) (hc : IsClosed (epi 
 Monotonicity of the quotient (`monotone_coe_inv_mul_sub`) is what turns the supremum into a
 limit. -/
 theorem tendsto_coe_inv_mul_sub_atTop (hf : ConvexFn f) (hc : IsClosed (epi f))
-    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f) (y : E) :
+    (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) (y : E) :
     Tendsto (fun a : ℝ => ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x)) atTop
       (𝓝 (recessionFn f y)) := by
   rw [tendsto_order]
@@ -917,7 +925,7 @@ theorem tendsto_coe_inv_mul_sub_atTop (hf : ConvexFn f) (hc : IsClosed (epi f))
 /-- When `f` is closed, a single `x ∈ dom f` along which `f` is nonincreasing already forces
 `(f0⁺) y ≤ 0`. -/
 theorem recessionFn_nonpos_of_antitone (hf : ClosedProperConvexFn f)
-    (hx : x ∈ dom f) (h : Antitone fun a : ℝ => f (x + a • y)) : recessionFn f y ≤ 0 := by
+    (hx : x ∈ convexDom f) (h : Antitone fun a : ℝ => f (x + a • y)) : recessionFn f y ≤ 0 := by
   have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) := by
     rw [recessionFn_le_coe_iff_of_isClosed hf.convex hf.isClosed_epi hf.proper.ne_bot hx]
     intro a ha
@@ -929,7 +937,7 @@ theorem recessionFn_nonpos_of_antitone (hf : ClosedProperConvexFn f)
 /-- For a closed `f`, a single `x ∈ dom f` along which `f` is affine with slope `ν` already forces
 `(f0⁺) y = ν` and `(f0⁺) (-y) = -ν`. -/
 theorem recessionFn_eq_of_affine_along (hf : ClosedProperConvexFn f)
-    (hx : x ∈ dom f) {ν : ℝ} (h : ∀ a : ℝ, f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) :
+    (hx : x ∈ convexDom f) {ν : ℝ} (h : ∀ a : ℝ, f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) :
     recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) := by
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hx
   refine (mk_mem_linealitySpace_epi_iff hf.proper).1 (mem_linealitySpace.2 ⟨?_, ?_⟩)
@@ -1010,7 +1018,7 @@ stays below any bound exceeding `(f0⁺) y`. `θ = 1` is the case `y ∈ dom f` 
 `0 ∈ dom f`; no other point of `dom f` helps, because the endpoint of the half-line must lie on
 the line through `y`. This half needs no topology on `E`: it is the one-step recession test plus
 one limit in `ℝ`. -/
-theorem eventually_smulRight_lt (hp : Proper f) {θ : ℝ} (hθ : θ • y ∈ dom f) {b : EReal}
+theorem eventually_smulRight_lt (hp : ProperConvex f) {θ : ℝ} (hθ : θ • y ∈ convexDom f) {b : EReal}
     (hb : recessionFn f y < b) :
     ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), smulRight f a y < b := by
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot (θ • y)) hθ
@@ -1049,8 +1057,8 @@ theorem eventually_smulRight_lt (hp : Proper f) {θ : ℝ} (hθ : θ • y ∈ d
 
 /-- For a closed proper convex `f`, the recession function is the limit of the right scalar
 multiples `fa` as `a ↓ 0`, at every `y ∈ dom f` — and, by
-`tendsto_smulRight_recessionFn_of_zero_mem_dom`, at *every* `y` when `0 ∈ dom f`. -/
-theorem tendsto_smulRight_recessionFn (hf : ClosedProperConvexFn f) (hy : y ∈ dom f) :
+`tendsto_smulRight_recessionFn_of_zero_mem_convexDom`, at *every* `y` when `0 ∈ dom f`. -/
+theorem tendsto_smulRight_recessionFn (hf : ClosedProperConvexFn f) (hy : y ∈ convexDom f) :
     Tendsto (fun a : ℝ => smulRight f a y) (𝓝[>] (0 : ℝ)) (𝓝 (recessionFn f y)) := by
   rw [tendsto_order]
   exact ⟨fun _ hb => eventually_lt_smulRight hf.convex hf.isClosed_epi hb,
@@ -1058,8 +1066,8 @@ theorem tendsto_smulRight_recessionFn (hf : ClosedProperConvexFn f) (hy : y ∈ 
 
 /-- **Global form**: when `0 ∈ dom f` the limit formula holds at every `y`, with no condition on
 `y` at all. -/
-theorem tendsto_smulRight_recessionFn_of_zero_mem_dom (hf : ClosedProperConvexFn f)
-    (h0 : (0 : E) ∈ dom f) (y : E) :
+theorem tendsto_smulRight_recessionFn_of_zero_mem_convexDom (hf : ClosedProperConvexFn f)
+    (h0 : (0 : E) ∈ convexDom f) (y : E) :
     Tendsto (fun a : ℝ => smulRight f a y) (𝓝[>] (0 : ℝ)) (𝓝 (recessionFn f y)) := by
   rw [tendsto_order]
   exact ⟨fun _ hb => eventually_lt_smulRight hf.convex hf.isClosed_epi hb,
@@ -1140,5 +1148,40 @@ theorem isBounded_setOf_le (hf : ConvexFn f) (hc : IsClosed (epi f)) {α β : �
   exact hzero
 
 end FiniteDimensional
+
+/-! ### Bounded effective domains -/
+
+section Bounded
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal}
+
+/-- **A function with a nonempty bounded effective domain has no nonzero direction of recession**:
+`f0⁺ (w) > 0` for every `w ≠ 0`. If `f0⁺ (w) ≤ 0` then `f` is nonincreasing along `w`, so the whole
+ray stays in `dom f`, and a ray in a direction `w ≠ 0` leaves every ball. -/
+theorem lt_recessionFn_of_isBounded_convexDom (hne : (convexDom f).Nonempty)
+    (hb : Bornology.IsBounded (convexDom f)) {w : E} (hw : w ≠ 0) : 0 < recessionFn f w := by
+  rw [lt_iff_not_ge]
+  intro h
+  obtain ⟨y₀, hy₀⟩ := hne
+  obtain ⟨r, hr⟩ := isBounded_iff_forall_norm_le.1 hb
+  have hwpos : (0 : ℝ) < ‖w‖ := norm_pos_iff.2 hw
+  have hy₀r : ‖y₀‖ ≤ r := hr y₀ hy₀
+  have hy₀nn : (0 : ℝ) ≤ ‖y₀‖ := norm_nonneg y₀
+  set a : ℝ := (r + ‖y₀‖ + 1) / ‖w‖ with hadef
+  have hann : (0 : ℝ) ≤ a := by
+    rw [hadef]
+    exact div_nonneg (by linarith) hwpos.le
+  have hmem : y₀ + a • w ∈ convexDom f :=
+    lt_of_le_of_lt (add_smul_le_of_recessionFn_nonpos h y₀ hann) hy₀
+  have h1 : ‖y₀ + a • w‖ ≤ r := hr _ hmem
+  have h2 : a * ‖w‖ = r + ‖y₀‖ + 1 := div_mul_cancel₀ _ (ne_of_gt hwpos)
+  have h3 : ‖a • w‖ ≤ ‖y₀ + a • w‖ + ‖y₀‖ := by
+    have hsub : (y₀ + a • w) - y₀ = a • w := add_sub_cancel_left y₀ (a • w)
+    calc ‖a • w‖ = ‖(y₀ + a • w) - y₀‖ := by rw [hsub]
+      _ ≤ ‖y₀ + a • w‖ + ‖y₀‖ := norm_sub_le _ _
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hann, h2] at h3
+  linarith
+
+end Bounded
 
 end ConvexAnalysis

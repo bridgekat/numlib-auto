@@ -10,10 +10,22 @@ id = 'lowerSemicontinuous_iff_isClosed_le'
 id = 'lscHull'
 
 [[node]]
-id = 'clFn'
+id = 'uscHull'
 
 [[node]]
-id = 'ClosedFn'
+id = 'convexCl'
+
+[[node]]
+id = 'ClosedConvex'
+
+[[node]]
+id = 'concaveCl'
+
+[[node]]
+id = 'ClosedConcave'
+
+[[node]]
+id = 'closedConcave_iff_closedConvex_neg'
 
 [[node]]
 id = 'epi_lscHull'
@@ -22,10 +34,13 @@ id = 'epi_lscHull'
 id = 'isGreatest_lscHull'
 
 [[node]]
-id = 'closedFn_iff'
+id = 'closedConvex_iff'
 
 [[node]]
-id = 'iInf_clFn_eq_iInf'
+id = 'iInf_convexCl_eq_iInf'
+
+[[node]]
+id = 'iSup_concaveCl_eq_iSup'
 
 [[node]]
 id = 'lscHull_le_setOf'
@@ -34,7 +49,7 @@ id = 'lscHull_le_setOf'
 id = 'lscHullClosure'
 
 [[node]]
-id = 'clFnClosure'
+id = 'convexClClosure'
 
 [[node]]
 id = 'ConvexFn.eq_bot_or_eq_top'
@@ -43,10 +58,16 @@ id = 'ConvexFn.eq_bot_or_eq_top'
 id = 'posHomogeneous_lscHull'
 
 [[node]]
-id = 'posHomogeneous_clFn'
+id = 'posHomogeneous_convexCl'
 
 [[node]]
 id = 'ClosedProperConvexFn'
+
+[[node]]
+id = 'ClosedProperConcaveFn'
+
+[[node]]
+id = 'closedProperConcaveFn_iff_closedProperConvexFn_neg'
 
 [[node]]
 id = 'closedProperConvexFn_coe_affineMap'
@@ -64,4 +85,7 @@ id = 'tendsto_along_segment_of_closed_proper'
 id = 'lscHull_eq_liminf'
 
 [[node]]
-id = 'clFn_eq_liminf_or'
+id = 'convexCl_eq_liminf_or'
+
+[[node]]
+id = 'concaveCl_eq_limsup_or'

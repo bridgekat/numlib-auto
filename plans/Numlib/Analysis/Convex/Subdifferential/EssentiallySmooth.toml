@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'EssentiallySmooth'
 
 [[node]]
-id = 'domSubdifferential_eq_interior_dom_of_essentiallySmooth'
+id = 'domSubdifferential_eq_interior_convexDom_of_essentiallySmooth'
 
 [[node]]
 id = 'subsingleton_subdifferential_iff_essentiallySmooth'

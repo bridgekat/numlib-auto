@@ -31,7 +31,7 @@ id = 'epi_lscHull_posHomGen'
 id = 'lscHull_posHomGen'
 
 [[node]]
-id = 'proper_posHomGen'
+id = 'properConvex_posHomGen'
 
 [[node]]
 id = 'lscHull_posHomGen_eq'

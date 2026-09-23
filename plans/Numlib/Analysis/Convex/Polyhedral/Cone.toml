@@ -1,6 +1,12 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
+id = 'PolyhedralCone'
+
+[[node]]
+id = 'FinitelyGeneratedCone'
+
+[[node]]
 id = 'FinitelyGeneratedCone.polyhedralCone'
 
 [[node]]

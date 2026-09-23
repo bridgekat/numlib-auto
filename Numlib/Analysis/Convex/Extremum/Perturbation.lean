@@ -23,16 +23,22 @@ formulas, the polyhedral case.
 ## Main definitions
 
 * `Bifun U X` — a bifunction; `graphFn F` is the same data on `U × X`, `ConvexBifun F` and
-  `PolyhedralBifun F` are convexity and polyhedrality of it.
-* `infBifun F`, `domBifun F` — the perturbation function and the effective domain `{u | F u ≢ ⊤}`.
+  `PolyhedralBifun F` are convexity and polyhedrality of it. `flipBifun F` exchanges the two
+  variables and `inverseBifun F` is Rockafellar's `F_*`, `(F_* x) u = -(F u)(x)`.
+* `infBifun F`, `convexDomBifun F` — the perturbation function and the effective domain
+  `{u | F u ≢ ⊤}`.
 * `KuhnTucker B F` — the `v` for which `⨅ u (⟨u, v⟩ + inf F u)` is finite and equal to `inf F 0`.
 * `Consistent`, `StronglyConsistent`, `StrictlyConsistent` — `0 ∈ dom F`, `0 ∈ ri (dom F)`,
   `0 ∈ int (dom F)`.
+* The concave twins `ConcaveBifun`, `supBifun`, `concaveDomBifun`, `ConcaveConsistent`,
+  `ConcaveStronglyConsistent`, `ConcaveKuhnTucker`, `ConcavePolyhedralBifun`, each right after its
+  convex twin and each the convex notion read at `-G` (`neg_supBifun`, `convexDomBifun_neg`,
+  `mem_concaveKuhnTucker_iff_neg_mem_kuhnTucker`).
 
 ## Main results
 
-* `convexFn_infBifun`, `dom_infBifun`, `mem_kuhnTucker_iff_neg_mem_subdifferential` — `inf F` is
-  convex with effective domain `dom F`, and `∂(inf F)(0)` is the reflected Kuhn–Tucker set
+* `convexFn_infBifun`, `convexDom_infBifun`, `mem_kuhnTucker_iff_neg_mem_subdifferential` — `inf F`
+  is convex with effective domain `dom F`, and `∂(inf F)(0)` is the reflected Kuhn–Tucker set
   ([rockafellar1970convex] Theorem 29.1).
 * `kuhnTucker_eq_neg_subdifferential`, `convex_kuhnTucker`, `isClosed_kuhnTucker`,
   `supportFn_kuhnTucker` — the Kuhn–Tucker set is closed convex with a computable support function;
@@ -78,6 +84,18 @@ def graphFn (F : Bifun U X) : U × X → EReal := fun p => F p.1 p.2
 
 @[simp] theorem graphFn_apply (F : Bifun U X) (u : U) (x : X) : graphFn F (u, x) = F u x := rfl
 
+/-- The bifunction with its two arguments exchanged. Unlike Rockafellar's inverse operation `F_*`
+this does not negate, so it stays convex; it is what lets the convex bracket theory be applied to
+the swapped saddle-function, and what relates the two variables of a bifunction to each other. -/
+def flipBifun (F : Bifun U X) : Bifun X U := fun x u => F u x
+
+@[simp] theorem flipBifun_apply (F : Bifun U X) (x : X) (u : U) : flipBifun F x u = F u x := rfl
+
+@[simp] theorem flipBifun_flipBifun (F : Bifun U X) : flipBifun (flipBifun F) = F := rfl
+
+theorem graphFn_flipBifun (F : Bifun U X) (q : X × U) :
+    graphFn (flipBifun F) q = graphFn F (q.2, q.1) := rfl
+
 /-- **The inverse `F_*` of a bifunction**: `(F_* x) u = -(F u)(x)`. Unlike `flipBifun` it also
 changes the sign, so it carries convex bifunctions to concave ones and back; it is involutory, and
 composition of bifunctions is built on it. The sign flip is what makes
@@ -95,20 +113,37 @@ noncomputable def inverseBifun (F : Bifun U X) : Bifun X U := fun x u => -(F u x
 theorem graphFn_inverseBifun (F : Bifun U X) (q : X × U) :
     graphFn (inverseBifun F) q = -(graphFn F (q.2, q.1)) := rfl
 
+/-- The inverse is `flipBifun` composed with a change of sign. -/
+theorem inverseBifun_eq_flipBifun_neg (F : Bifun U X) :
+    inverseBifun F = flipBifun fun u x => -(F u x) := rfl
+
 /-- The **perturbation function** `inf F`; its value at `0` is the optimal value of `(P)`. -/
 noncomputable def infBifun (F : Bifun U X) : U → EReal := fun u => ⨅ x, F u x
 
 theorem infBifun_apply (F : Bifun U X) (u : U) : infBifun F u = ⨅ x, F u x := rfl
 
+/-- The optimal value of the concave program `G u`, as a function of the perturbation `u`: the
+mirror of `infBifun`. Rockafellar writes `sup G`. -/
+noncomputable def supBifun (G : Bifun U X) : U → EReal := fun u => ⨆ x, G u x
+
+theorem supBifun_apply (G : Bifun U X) (u : U) : supBifun G u = ⨆ x, G u x := rfl
+
 /-- The **effective domain** of a bifunction: the perturbations for which `F u` is not identically
 `⊤`. -/
-def domBifun (F : Bifun U X) : Set U := {u | ∃ x, F u x ≠ ⊤}
+def convexDomBifun (F : Bifun U X) : Set U := {u | ∃ x, F u x ≠ ⊤}
 
-@[simp] theorem mem_domBifun {F : Bifun U X} {u : U} :
-    u ∈ domBifun F ↔ ∃ x, F u x ≠ ⊤ := Iff.rfl
+@[simp] theorem mem_convexDomBifun {F : Bifun U X} {u : U} :
+    u ∈ convexDomBifun F ↔ ∃ x, F u x ≠ ⊤ := Iff.rfl
+
+/-- The mirror of `convexDomBifun`: the perturbations for which the concave program is
+consistent. -/
+def concaveDomBifun (G : Bifun U X) : Set U := {u | ∃ x, G u x ≠ ⊥}
+
+theorem mem_concaveDomBifun {G : Bifun U X} {u : U} :
+    u ∈ concaveDomBifun G ↔ ∃ x, G u x ≠ ⊥ := Iff.rfl
 
 /-- The effective domain of the perturbation function is the effective domain of `F`. -/
-theorem dom_infBifun (F : Bifun U X) : dom (infBifun F) = domBifun F := by
+theorem convexDom_infBifun (F : Bifun U X) : convexDom (infBifun F) = convexDomBifun F := by
   ext u
   constructor
   · intro h
@@ -117,10 +152,32 @@ theorem dom_infBifun (F : Bifun U X) : dom (infBifun F) = domBifun F := by
       by_contra hx
       exact hcon ⟨x, hx⟩
     have htop : (⨅ x, F u x) = ⊤ := le_antisymm le_top (le_iInf fun x => (hall x).ge)
-    rw [mem_dom, infBifun_apply, htop] at h
+    rw [mem_convexDom, infBifun_apply, htop] at h
     exact absurd h (lt_irrefl ⊤)
   · rintro ⟨x, hx⟩
-    exact mem_dom.2 (lt_of_le_of_lt (iInf_le _ x) (lt_top_iff_ne_top.2 hx))
+    exact mem_convexDom.2 (lt_of_le_of_lt (iInf_le _ x) (lt_top_iff_ne_top.2 hx))
+
+/-- The mirror of `convexDom_infBifun`. -/
+theorem concaveDom_supBifun (G : Bifun U X) : concaveDom (supBifun G) = concaveDomBifun G := by
+  ext u
+  simp only [mem_concaveDom, supBifun_apply, mem_concaveDomBifun, bot_lt_iff_ne_bot, ne_eq,
+    iSup_eq_bot, not_forall]
+
+/-! #### The sign dictionary -/
+
+/-- Negating a concave bifunction turns its `sup` into the `inf` of the negation. -/
+theorem neg_supBifun (G : Bifun U X) :
+    (fun u => -(supBifun G u)) = infBifun fun u x => -(G u x) := by
+  funext u
+  rw [supBifun_apply, EReal.neg_iSup, infBifun_apply]
+
+/-- **The effective domain of `-G` is the concave effective domain of `G`**: `-(G u x) ≠ ⊤` and
+`G u x ≠ ⊥` are the same condition. This turns every consistency hypothesis about a concave program
+into the corresponding hypothesis about the convex program `-G`. -/
+theorem convexDomBifun_neg
+    (G : Bifun U X) : convexDomBifun (fun u x => -(G u x)) = concaveDomBifun G := by
+  ext u
+  simp only [mem_convexDomBifun, mem_concaveDomBifun, ne_eq, EReal.neg_eq_top_iff]
 
 end Defs
 
@@ -136,10 +193,44 @@ def ConvexBifun (F : Bifun U X) : Prop := ConvexFn (graphFn F)
 
 theorem convexBifun_iff : ConvexBifun F ↔ ConvexFn (graphFn F) := Iff.rfl
 
+/-- A bifunction is **concave** when its graph function is. -/
+def ConcaveBifun (G : Bifun U X) : Prop := ConcaveFn (graphFn G)
+
+theorem concaveBifun_iff {G : Bifun U X} : ConcaveBifun G ↔ ConcaveFn (graphFn G) := Iff.rfl
+
 /-- The perturbation function of a convex bifunction is convex: a partial minimisation of the
 jointly convex graph function along the projection `(u, x) ↦ u`. -/
 theorem convexFn_infBifun (hF : ConvexBifun F) : ConvexFn (infBifun F) :=
   convexFn_iInf_right hF
+
+/-- The mirror of `convexFn_infBifun`: the optimal value of a concave program is a concave function
+of the perturbation. -/
+theorem concaveFn_supBifun {G : Bifun U X} (hG : ConcaveBifun G) : ConcaveFn (supBifun G) :=
+  concaveFn_iff_convexFn_neg.2 (by
+    rw [neg_supBifun]
+    exact convexFn_infBifun (concaveFn_iff_convexFn_neg.1 hG))
+
+/-- Exchanging the two arguments preserves convexity. -/
+theorem convexBifun_flipBifun (hF : ConvexBifun F) : ConvexBifun (flipBifun F) := by
+  refine convexFn_of_epi_combo fun q r mu nu hq hr a b ha hb hab => ?_
+  have h := hF.epi_combo (x := (q.2, q.1)) (y := (r.2, r.1)) hq hr ha hb hab
+  have hsw : a • ((q.2, q.1) : U × X) + b • (r.2, r.1)
+      = ((a • q + b • r).2, (a • q + b • r).1) := rfl
+  rwa [hsw] at h
+
+/-- **The inverse of a concave bifunction is convex.** -/
+theorem convexBifun_inverseBifun {G : Bifun U X} (hG : ConcaveBifun G) :
+    ConvexBifun (inverseBifun G) := by
+  have h : ConvexBifun fun u x => -(G u x) := hG.convexFn_neg
+  exact convexBifun_flipBifun h
+
+/-- **The inverse of a convex bifunction is concave**, the mirror of `convexBifun_inverseBifun`:
+`-(F_*)` is `flipBifun F`. -/
+theorem concaveBifun_inverseBifun (hF : ConvexBifun F) : ConcaveBifun (inverseBifun F) := by
+  have he : (fun q : X × U => -(graphFn (inverseBifun F) q)) = graphFn (flipBifun F) :=
+    funext fun _ => neg_neg _
+  rw [ConcaveBifun, concaveFn_iff_convexFn_neg, he]
+  exact convexBifun_flipBifun hF
 
 /-- Each image `F u` of a convex bifunction is a convex function: a slice of a jointly convex
 function, since `a * u + b * u = u` when `a + b = 1`. -/
@@ -151,9 +242,9 @@ theorem ConvexBifun.convexFn_apply (hF : ConvexBifun F) (u : U) : ConvexFn (F u)
   rwa [hu] at h
 
 /-- The effective domain of a convex bifunction is convex — it is `dom (inf F)`. -/
-theorem convex_domBifun (hF : ConvexBifun F) : Convex ℝ (domBifun F) := by
-  rw [← dom_infBifun]
-  exact ConvexFn.convex_dom (convexFn_infBifun hF)
+theorem convex_convexDomBifun (hF : ConvexBifun F) : Convex ℝ (convexDomBifun F) := by
+  rw [← convexDom_infBifun]
+  exact ConvexFn.convex_convexDom (convexFn_infBifun hF)
 
 end Convex
 
@@ -165,9 +256,15 @@ variable {U X : Type*} [AddCommGroup U] {F : Bifun U X}
 
 /-- `(P)` is **consistent** when it has a feasible solution, i.e. when its optimal value is
 `< ⊤`. -/
-def Consistent (F : Bifun U X) : Prop := (0 : U) ∈ domBifun F
+def Consistent (F : Bifun U X) : Prop := (0 : U) ∈ convexDomBifun F
 
 theorem consistent_iff : Consistent F ↔ ∃ x, F 0 x ≠ ⊤ := Iff.rfl
+
+/-- The mirror of `Consistent`: the unperturbed concave program has a point where it is not
+`-∞`. -/
+def ConcaveConsistent (G : Bifun U X) : Prop := (0 : U) ∈ concaveDomBifun G
+
+theorem concaveConsistent_iff {G : Bifun U X} : ConcaveConsistent G ↔ ∃ x, G 0 x ≠ ⊥ := Iff.rfl
 
 end Consistency
 
@@ -177,10 +274,13 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] {F : Bifun U X
 
 /-- `(P)` is **strongly consistent** when `0` is a *relative interior* point of `dom F`: the
 qualification behind the existence of Kuhn–Tucker vectors. -/
-def StronglyConsistent (F : Bifun U X) : Prop := (0 : U) ∈ ri (domBifun F)
+def StronglyConsistent (F : Bifun U X) : Prop := (0 : U) ∈ ri (convexDomBifun F)
+
+/-- The mirror of `StronglyConsistent`. -/
+def ConcaveStronglyConsistent (G : Bifun U X) : Prop := (0 : U) ∈ ri (concaveDomBifun G)
 
 /-- `(P)` is **strictly consistent** when `0` is an interior point of `dom F`. -/
-def StrictlyConsistent (F : Bifun U X) : Prop := (0 : U) ∈ interior (domBifun F)
+def StrictlyConsistent (F : Bifun U X) : Prop := (0 : U) ∈ interior (convexDomBifun F)
 
 theorem StrictlyConsistent.stronglyConsistent (h : StrictlyConsistent F) :
     StronglyConsistent F :=
@@ -188,6 +288,16 @@ theorem StrictlyConsistent.stronglyConsistent (h : StrictlyConsistent F) :
 
 theorem StronglyConsistent.consistent (h : StronglyConsistent F) : Consistent F :=
   intrinsicInterior_subset h
+
+theorem ConcaveStronglyConsistent.concaveConsistent {G : Bifun U X}
+    (h : ConcaveStronglyConsistent G) : ConcaveConsistent G :=
+  intrinsicInterior_subset h
+
+/-- Strong consistency of the concave program `G` is strong consistency of `-G`; this is what lets
+the concave consistency statements be read off the convex ones. -/
+theorem concaveStronglyConsistent_iff_stronglyConsistent_neg {G : Bifun U X} :
+    ConcaveStronglyConsistent G ↔ StronglyConsistent fun u x => -(G u x) := by
+  rw [ConcaveStronglyConsistent, StronglyConsistent, convexDomBifun_neg]
 
 end ConsistencyTopology
 
@@ -203,6 +313,41 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
 def KuhnTucker (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) : Set V :=
   {v | infBifun F 0 ≠ ⊤ ∧ infBifun F 0 ≠ ⊥ ∧
     (⨅ u, (((B u v : ℝ) : EReal) + infBifun F u)) = infBifun F 0}
+
+/-- **Kuhn–Tucker vectors for a concave program**, the mirror of `KuhnTucker`: the `v` for which
+`⨆ u (⟨u, v⟩ + sup G u)` is finite and equal to the optimal value `sup G 0`. -/
+def ConcaveKuhnTucker (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (G : Bifun U X) : Set V :=
+  {v | supBifun G 0 ≠ ⊤ ∧ supBifun G 0 ≠ ⊥ ∧
+    (⨆ u, (((B u v : ℝ) : EReal) + supBifun G u)) = supBifun G 0}
+
+/-- The concave mirror is the reflection of the convex notion: `v` is a Kuhn–Tucker vector of the
+concave program `G` exactly when `-v` is one of the convex program `-G`. -/
+theorem mem_concaveKuhnTucker_iff_neg_mem_kuhnTucker {G : Bifun U X} :
+    v ∈ ConcaveKuhnTucker B G ↔ -v ∈ KuhnTucker B (fun u x => -(G u x)) := by
+  have hinf : ∀ u : U, infBifun (fun u' x => -(G u' x)) u = -(supBifun G u) := fun u =>
+    (congrFun (neg_supBifun G) u).symm
+  have hkey : (⨅ u : U, (((B u (-v) : ℝ) : EReal) + infBifun (fun u' x => -(G u' x)) u))
+      = -(⨆ u : U, (((B u v : ℝ) : EReal) + supBifun G u)) := by
+    rw [EReal.neg_iSup]
+    refine iInf_congr fun u => ?_
+    have hb : ((B u (-v) : ℝ) : EReal) = -(((B u v : ℝ)) : EReal) := by
+      rw [← EReal.coe_neg, map_neg]
+    rw [hinf u, hb, EReal.neg_add (.inl (EReal.coe_ne_bot _))
+      (.inl (EReal.coe_ne_top _))]
+    rfl
+  constructor
+  · rintro ⟨h1, h2, h3⟩
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hinf 0, ne_eq, EReal.neg_eq_top_iff]
+      exact h2
+    · rw [hinf 0, ne_eq, EReal.neg_eq_bot_iff]
+      exact h1
+    · rw [hkey, hinf 0, h3]
+  · rintro ⟨h1, h2, h3⟩
+    rw [hinf 0, ne_eq, EReal.neg_eq_top_iff] at h1
+    rw [hinf 0, ne_eq, EReal.neg_eq_bot_iff] at h2
+    rw [hkey, hinf 0] at h3
+    exact ⟨h2, h1, neg_inj.1 h3⟩
 
 /-- Evaluating at `u = 0`: the infimum defining a Kuhn–Tucker vector never exceeds `inf F 0`. -/
 theorem iInf_add_infBifun_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) :
@@ -287,11 +432,11 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
 /-- A strongly consistent convex program whose perturbation function is proper has a Kuhn–Tucker
 vector: `inf F` is subdifferentiable at the origin, a relative-interior point of its domain. -/
 theorem kuhnTucker_nonempty_of_stronglyConsistent [IsCompatiblePairing B] (hF : ConvexBifun F)
-    (hp : Proper (infBifun F)) (hs : StronglyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
+    (hp : ProperConvex (infBifun F)) (hs : StronglyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
     (KuhnTucker B F).Nonempty := by
-  have hri : (0 : U) ∈ ri (dom (infBifun F)) := by rwa [dom_infBifun]
+  have hri : (0 : U) ∈ ri (convexDom (infBifun F)) := by rwa [convexDom_infBifun]
   obtain ⟨y, hy⟩ :=
-    subdifferential_nonempty_of_mem_relint_dom (B := B) (convexFn_infBifun hF) hp hri
+    subdifferential_nonempty_of_mem_relint_convexDom (B := B) (convexFn_infBifun hF) hp hri
   refine ⟨-y, ?_⟩
   rw [mem_kuhnTucker_iff_neg_mem_subdifferential ht (hp.ne_bot 0), neg_neg]
   exact hy
@@ -346,9 +491,9 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
 support function of a subdifferential, composed with the reflection. -/
 theorem supportFn_kuhnTucker (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) (u : U) :
-    supportFn B.flip (KuhnTucker B F) u = clFn (dirDeriv (infBifun F) 0) (-u) := by
+    supportFn B.flip (KuhnTucker B F) u = convexCl (dirDeriv (infBifun F) 0) (-u) := by
   rw [kuhnTucker_eq_neg_subdifferential ht hb, supportFn_neg_set,
-    clFn_dirDeriv (B := B) (convexFn_infBifun hF) ht hb]
+    convexCl_dirDeriv (B := B) (convexFn_infBifun hF) ht hb]
 
 end DirDerivSupport
 
@@ -363,20 +508,21 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
 omit [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U] [AddCommGroup V]
   [Module ℝ V] [AddCommGroup X] [Module ℝ X] in
 /-- Off `dom F` the optimal value is `+∞`. -/
-theorem infBifun_eq_top_of_notMem_domBifun {u : U} (hu : u ∉ domBifun F) : infBifun F u = ⊤ := by
+theorem infBifun_eq_top_of_notMem_convexDomBifun {u : U}
+    (hu : u ∉ convexDomBifun F) : infBifun F u = ⊤ := by
   by_contra h
-  exact hu (by rw [← dom_infBifun]; exact mem_dom.2 (lt_of_le_of_ne le_top h))
+  exact hu (by rw [← convexDom_infBifun]; exact mem_convexDom.2 (lt_of_le_of_ne le_top h))
 
 omit [FiniteDimensional ℝ U] [AddCommGroup V] [Module ℝ V] in
 /-- If some perturbation drives the optimal value to `-∞`, so does every perturbation in
 `ri (dom F)`: an improper convex function is `-∞` throughout the relative interior of its
 domain. -/
 theorem infBifun_eq_bot_of_mem_relint (hF : ConvexBifun F) (h : ∃ u, infBifun F u = ⊥) {u : U}
-    (hu : u ∈ ri (domBifun F)) : infBifun F u = ⊥ := by
+    (hu : u ∈ ri (convexDomBifun F)) : infBifun F u = ⊥ := by
   obtain ⟨u₀, hu₀⟩ := h
-  have hp : ¬ Proper (infBifun F) := fun hp => hp.ne_bot u₀ hu₀
-  refine ConvexFn.eq_bot_of_mem_relint_dom (convexFn_infBifun hF) hp ?_
-  rwa [dom_infBifun]
+  have hp : ¬ ProperConvex (infBifun F) := fun hp => hp.ne_bot u₀ hu₀
+  refine ConvexFn.eq_bot_of_mem_relint_convexDom (convexFn_infBifun hF) hp ?_
+  rwa [convexDom_infBifun]
 
 end Improper
 
@@ -403,15 +549,15 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
     have hsub : subdifferential B (infBifun F) 0 = ∅ := by
       rw [← neg_neg (subdifferential B (infBifun F) 0), h1]
       simp
-    have hcl : clFn (dirDeriv (infBifun F) 0) = fun _ => (⊥ : EReal) := by
-      rw [clFn_dirDeriv (B := B) hconv ht hb, hsub, supportFn_empty]
-    have hnp : ¬ Proper (dirDeriv (infBifun F) 0) := by
+    have hcl : convexCl (dirDeriv (infBifun F) 0) = fun _ => (⊥ : EReal) := by
+      rw [convexCl_dirDeriv (B := B) hconv ht hb, hsub, supportFn_empty]
+    have hnp : ¬ ProperConvex (dirDeriv (infBifun F) 0) := by
       intro hp
-      have hpc := ConvexFn.proper_clFn (convexFn_dirDeriv hconv ht hb) hp
+      have hpc := ConvexFn.properConvex_convexCl (convexFn_dirDeriv hconv ht hb) hp
       rw [hcl] at hpc
       exact hpc.ne_bot 0 rfl
-    have hdom : (dom (dirDeriv (infBifun F) 0)).Nonempty :=
-      ⟨0, mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)⟩
+    have hdom : (convexDom (dirDeriv (infBifun F) 0)).Nonempty :=
+      ⟨0, mem_convexDom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)⟩
     have hy : ∃ u, dirDeriv (infBifun F) 0 u = ⊥ := by
       by_contra hcon
       push Not at hcon
@@ -442,28 +588,29 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
 omit [FiniteDimensional ℝ U] in
 /-- A strongly consistent convex program whose optimal value is `> -∞` has a proper perturbation
 function: an improper `inf F` would be `-∞` throughout `ri (dom F)`. -/
-theorem proper_infBifun_of_stronglyConsistent (hF : ConvexBifun F) (hs : StronglyConsistent F)
-    (hb : infBifun F 0 ≠ ⊥) : Proper (infBifun F) := by
+theorem properConvex_infBifun_of_stronglyConsistent (hF : ConvexBifun F) (hs : StronglyConsistent F)
+    (hb : infBifun F 0 ≠ ⊥) : ProperConvex (infBifun F) := by
   refine ⟨⟨0, ?_⟩, fun u => ?_⟩
-  · rw [dom_infBifun]
+  · rw [convexDom_infBifun]
     exact StronglyConsistent.consistent hs
   · exact fun hcon => hb (infBifun_eq_bot_of_mem_relint hF ⟨u, hcon⟩ hs)
 
 /-- Under strict consistency the optimal value is finite and continuous on `int (dom F)`, a
 neighbourhood of the origin. -/
-theorem continuousOn_infBifun_interior (hF : ConvexBifun F) (hp : Proper (infBifun F)) :
-    ContinuousOn (infBifun F) (interior (domBifun F)) := by
-  have hsub : interior (domBifun F) ⊆ ri (dom (infBifun F)) := by
-    rw [dom_infBifun]
+theorem continuousOn_infBifun_interior (hF : ConvexBifun F) (hp : ProperConvex (infBifun F)) :
+    ContinuousOn (infBifun F) (interior (convexDomBifun F)) := by
+  have hsub : interior (convexDomBifun F) ⊆ ri (convexDom (infBifun F)) := by
+    rw [convexDom_infBifun]
     exact interior_subset_intrinsicInterior
-  exact ContinuousOn.mono ((convexFn_infBifun hF).continuousOn_relint_dom hp) hsub
+  exact ContinuousOn.mono ((convexFn_infBifun hF).continuousOn_relint_convexDom hp) hsub
 
 omit [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U] [AddCommGroup X]
   [Module ℝ X] in
 /-- The optimal value is finite at every point of `dom F`. -/
-theorem infBifun_ne_top_of_mem_domBifun {u : U} (hu : u ∈ domBifun F) : infBifun F u ≠ ⊤ := by
-  rw [← dom_infBifun] at hu
-  exact (mem_dom.1 hu).ne
+theorem infBifun_ne_top_of_mem_convexDomBifun {u : U}
+    (hu : u ∈ convexDomBifun F) : infBifun F u ≠ ⊤ := by
+  rw [← convexDom_infBifun] at hu
+  exact (mem_convexDom.1 hu).ne
 
 end Consistency
 
@@ -476,24 +623,26 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
 /-- **The derivative formula**: for a strongly consistent program with a proper perturbation
 function, `(inf F)'(0; u) = δ*(-u | U*)`, the support function of the Kuhn–Tucker set read at the
 reflected direction. -/
-theorem dirDeriv_infBifun_eq (hF : ConvexBifun F) (hp : Proper (infBifun F))
+theorem dirDeriv_infBifun_eq (hF : ConvexBifun F) (hp : ProperConvex (infBifun F))
     (hs : StronglyConsistent F) (u : U) :
     dirDeriv (infBifun F) 0 u = supportFn B.flip (KuhnTucker B F) (-u) := by
-  have hri : (0 : U) ∈ ri (dom (infBifun F)) := by rwa [dom_infBifun]
-  have ht : infBifun F 0 ≠ ⊤ := (mem_dom.1 (intrinsicInterior_subset hri)).ne
+  have hri : (0 : U) ∈ ri (convexDom (infBifun F)) := by rwa [convexDom_infBifun]
+  have ht : infBifun F 0 ≠ ⊤ := (mem_convexDom.1 (intrinsicInterior_subset hri)).ne
   rw [kuhnTucker_eq_neg_subdifferential ht (hp.ne_bot 0), supportFn_neg_set, neg_neg,
-    dirDeriv_eq_supportFn_of_mem_relint_dom (B := B) (convexFn_infBifun hF) hp hri]
+    dirDeriv_eq_supportFn_of_mem_relint_convexDom (B := B) (convexFn_infBifun hF) hp hri]
 
 /-- Under *strict* consistency the Kuhn–Tucker set is bounded in the pairing sense: every
 `⟨u, ·⟩` is bounded above on it. -/
-theorem bddAbove_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F) (hp : Proper (infBifun F))
+theorem bddAbove_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F)
+    (hp : ProperConvex (infBifun F))
     (hs : StrictlyConsistent F) (u : U) :
     ∃ c : ℝ, ∀ v ∈ KuhnTucker B F, B u v ≤ c := by
-  have hint : (0 : U) ∈ interior (dom (infBifun F)) := by rwa [dom_infBifun]
-  have hri : (0 : U) ∈ ri (dom (infBifun F)) := interior_subset_intrinsicInterior hint
-  have ht : infBifun F 0 ≠ ⊤ := (mem_dom.1 (intrinsicInterior_subset hri)).ne
+  have hint : (0 : U) ∈ interior (convexDom (infBifun F)) := by rwa [convexDom_infBifun]
+  have hri : (0 : U) ∈ ri (convexDom (infBifun F)) := interior_subset_intrinsicInterior hint
+  have ht : infBifun F 0 ≠ ⊤ := (mem_convexDom.1 (intrinsicInterior_subset hri)).ne
   obtain ⟨c, hc⟩ :=
-    (bddAbove_subdifferential_iff_mem_interior_dom (B := B) (convexFn_infBifun hF) hp hri).2 hint
+    (bddAbove_subdifferential_iff_mem_interior_convexDom (B := B) (convexFn_infBifun hF) hp
+        hri).2 hint
       (-u)
   refine ⟨c, fun v hv => ?_⟩
   rw [kuhnTucker_eq_neg_subdifferential ht (hp.ne_bot 0), Set.mem_neg] at hv
@@ -511,7 +660,7 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
 /-- Under *strict* consistency the Kuhn–Tucker set is bounded in the norm. The upgrade from
 pairing-boundedness is finite-dimensional. -/
 theorem isBounded_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F)
-    (hp : Proper (infBifun F)) (hs : StrictlyConsistent F) :
+    (hp : ProperConvex (infBifun F)) (hs : StrictlyConsistent F) :
     Bornology.IsBounded (KuhnTucker B F) := by
   rw [isBounded_iff_forall_bddAbove (B := B.flip)]
   intro u
@@ -521,7 +670,7 @@ theorem isBounded_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F)
 by Heine–Borel. With nonemptiness and convexity this is the book's "non-empty closed bounded convex
 set". -/
 theorem isCompact_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F)
-    (hp : Proper (infBifun F)) (hs : StrictlyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
+    (hp : ProperConvex (infBifun F)) (hs : StrictlyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
     IsCompact (KuhnTucker B F) :=
   Metric.isCompact_of_isClosed_isBounded (isClosed_kuhnTucker ht (hp.ne_bot 0))
     (isBounded_kuhnTucker_of_strictlyConsistent hF hp hs)
@@ -529,7 +678,7 @@ theorem isCompact_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F)
 omit [FiniteDimensional ℝ V] [IsCompatiblePairing B.flip] in
 /-- A strictly consistent program is strongly consistent, so it has a Kuhn–Tucker vector. -/
 theorem kuhnTucker_nonempty_of_strictlyConsistent (hF : ConvexBifun F)
-    (hp : Proper (infBifun F)) (hs : StrictlyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
+    (hp : ProperConvex (infBifun F)) (hs : StrictlyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
     (KuhnTucker B F).Nonempty :=
   kuhnTucker_nonempty_of_stronglyConsistent (B := B) hF hp hs.stronglyConsistent ht
 
@@ -579,14 +728,16 @@ variable {E G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
 
 /-- A polyhedral convex function agrees with its closure throughout its effective domain: if proper
 it *is* closed, and otherwise both are `-∞` there. -/
-theorem PolyhedralFn.clFn_eq_of_mem_dom (hf : PolyhedralFn f) {x : E} (hx : x ∈ dom f) :
-    clFn f x = f x := by
-  by_cases hp : Proper f
-  · exact congrFun (hf.closedFn hp.ne_bot) x
+theorem PolyhedralFn.convexCl_eq_of_mem_convexDom (hf : PolyhedralFn f) {x : E}
+    (hx : x ∈ convexDom f) :
+    convexCl f x = f x := by
+  by_cases hp : ProperConvex f
+  · exact congrFun (hf.closedConvex hp.ne_bot) x
   · have hbot : f x = ⊥ :=
-      ConvexFn.eq_bot_of_mem_closure_dom hf.convexFn hf.lowerSemicontinuous hp (subset_closure hx)
+      ConvexFn.eq_bot_of_mem_closure_convexDom hf.convexFn hf.lowerSemicontinuous
+          hp (subset_closure hx)
     have hl : lscHull f x = ⊥ := le_bot_iff.1 (hbot ▸ lscHull_le f x)
-    rw [clFn_of_exists_eq_bot ⟨x, hl⟩, hbot]
+    rw [convexCl_of_exists_eq_bot ⟨x, hl⟩, hbot]
 
 end PolyhedralImage
 
@@ -600,6 +751,10 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
 /-- A convex bifunction is **polyhedral** when its graph function is; the associated program is then
 a *polyhedral convex program*. -/
 def PolyhedralBifun (F : Bifun U X) : Prop := PolyhedralFn (graphFn F)
+
+/-- A concave bifunction is **polyhedral** when its negative is: the mirror of
+`PolyhedralBifun`. -/
+def ConcavePolyhedralBifun (G : Bifun U X) : Prop := PolyhedralBifun fun u x => -(G u x)
 
 omit [FiniteDimensional ℝ U] [NormedAddCommGroup V] [NormedSpace ℝ V] [FiniteDimensional ℝ V]
   [FiniteDimensional ℝ X] in
@@ -635,7 +790,7 @@ theorem PolyhedralBifun.polyhedralFn_infBifun (hF : PolyhedralBifun F) :
     rw [mapLin_fst_apply, infBifun_apply]
     rfl
   rw [h]
-  exact polyhedralFn_mapLin hF _
+  exact PolyhedralFn.mapLin hF _
 
 omit [FiniteDimensional ℝ V] in
 /-- A polyhedral convex program with a finite optimal value has a Kuhn–Tucker vector: a polyhedral

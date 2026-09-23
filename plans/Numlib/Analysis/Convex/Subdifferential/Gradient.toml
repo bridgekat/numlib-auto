@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'subdifferential_eq_singleton_of_dirDeriv_eq'
 
 [[node]]
-id = 'clFn_dirDeriv_eq_of_subdifferential_eq_singleton'
+id = 'convexCl_dirDeriv_eq_of_subdifferential_eq_singleton'
 
 [[node]]
 id = 'eq_of_mem_subdifferential_of_hasFDerivAt'
@@ -25,7 +25,7 @@ id = 'differentiableAtFn_iff_exists_dirDeriv_eq'
 id = 'differentiableAtFn_of_forall_basis_dirDeriv_eq'
 
 [[node]]
-id = 'mem_exposedPoints_epi_conj_iff'
+id = 'mem_exposedPoints_epi_convexConj_iff'
 
 [[node]]
 id = 'mem_exposedPoints_supportSet_iff'

@@ -22,11 +22,11 @@ essential strict convexity.
 
 * `mem_subdifferential_of_combo`, `le_combo_of_mem_subdifferential` — a subgradient shared by two
   points is a subgradient at every point between them, and `f` is affine along that segment.
-* `mem_subdifferential_conj_innerL_iff`, `pairwise_disjoint_subdifferential_conj_iff` — `∂f*`
-  inverts `∂f` for the self-pairing, and the transfer it gives between single-valuedness and
+* `mem_subdifferential_convexConj_innerL_iff`, `pairwise_disjoint_subdifferential_convexConj_iff` —
+  `∂f*` inverts `∂f` for the self-pairing, and the transfer it gives between single-valuedness and
   injectivity.
-* `essentiallySmooth_conj_iff_essentiallyStrictlyConvex` and
-  `essentiallyStrictlyConvex_conj_iff_essentiallySmooth` — the duality, both ways round
+* `essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex` and
+  `essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth` — the duality, both ways round
   ([rockafellar1970convex] Theorem 26.3).
 * `subdifferential_injective_iff` — `∂f` is one-to-one exactly when `f` is essentially smooth and
   strictly convex on `int (dom f)`.
@@ -94,12 +94,12 @@ def EssentiallyStrictlyConvex (f : E → EReal) : Prop :=
 
 /-- **The subgradient inequality between real numbers.** Both values are finite — `f x` because a
 subgradient exists there, `f z` by hypothesis — so the `EReal` inequality is a real one. -/
-theorem sub_le_of_mem_subdifferential (hp : Proper f) {v : F} {x z : E}
-    (h : v ∈ subdifferential B f x) (hz : z ∈ dom f) :
+theorem sub_le_of_mem_subdifferential (hp : ProperConvex f) {v : F} {x z : E}
+    (h : v ∈ subdifferential B f x) (hz : z ∈ convexDom f) :
     (f x).toReal + B (z - x) v ≤ (f z).toReal := by
   have hle := h z
-  have hxt : f x ≠ ⊤ := (mem_dom.1 (mem_dom_of_mem_subdifferential hp h)).ne
-  have hzt : f z ≠ ⊤ := (mem_dom.1 hz).ne
+  have hxt : f x ≠ ⊤ := (mem_convexDom.1 (mem_convexDom_of_mem_subdifferential hp h)).ne
+  have hzt : f z ≠ ⊤ := (mem_convexDom.1 hz).ne
   rw [← EReal.coe_toReal hxt (hp.ne_bot x), ← EReal.coe_toReal hzt (hp.ne_bot z),
     ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
   exact hle
@@ -107,15 +107,17 @@ theorem sub_le_of_mem_subdifferential (hp : Proper f) {v : F} {x z : E}
 /-- The subgradient inequality, in the direction that has to be *proved*: a real bound at every
 point of `dom f` is the `EReal` subgradient inequality everywhere, since off `dom f` it reads
 `≤ ⊤`. -/
-theorem mem_subdifferential_of_forall_sub_le (hp : Proper f) {v : F} {x : E} (hx : x ∈ dom f)
-    (h : ∀ z ∈ dom f, (f x).toReal + B (z - x) v ≤ (f z).toReal) : v ∈ subdifferential B f x := by
+theorem mem_subdifferential_of_forall_sub_le (hp : ProperConvex f) {v : F} {x : E}
+    (hx : x ∈ convexDom f)
+    (h : ∀ z ∈ convexDom f, (f x).toReal + B (z - x) v ≤ (f z).toReal) : v
+        ∈ subdifferential B f x := by
   intro z
-  by_cases hz : z ∈ dom f
-  · rw [← EReal.coe_toReal (mem_dom.1 hx).ne (hp.ne_bot x),
-      ← EReal.coe_toReal (mem_dom.1 hz).ne (hp.ne_bot z), ← EReal.coe_add,
+  by_cases hz : z ∈ convexDom f
+  · rw [← EReal.coe_toReal (mem_convexDom.1 hx).ne (hp.ne_bot x),
+      ← EReal.coe_toReal (mem_convexDom.1 hz).ne (hp.ne_bot z), ← EReal.coe_add,
       EReal.coe_le_coe_iff]
     exact h z hz
-  · rw [top_le_iff.1 (not_lt.1 fun hlt => hz (mem_dom.2 hlt))]
+  · rw [top_le_iff.1 (not_lt.1 fun hlt => hz (mem_convexDom.2 hlt))]
     exact le_top
 
 end Defs
@@ -155,20 +157,20 @@ theorem pairing_combo_sub_right (hab : a + b = 1) :
 /-- **A subgradient shared by two points is a subgradient all along the segment between them.**
 The graph of `⟨·, v⟩ - f*(v)` is a supporting hyperplane touching `epi f` at both endpoints, so it
 touches it along the whole segment. -/
-theorem mem_subdifferential_of_combo (hf : ConvexFn f) (hp : Proper f)
+theorem mem_subdifferential_of_combo (hf : ConvexFn f) (hp : ProperConvex f)
     (h₁ : v ∈ subdifferential B f x₁) (h₂ : v ∈ subdifferential B f x₂)
     (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1) :
     v ∈ subdifferential B f (a • x₁ + b • x₂) := by
-  have hx₁ : x₁ ∈ dom f := mem_dom_of_mem_subdifferential hp h₁
-  have hx₂ : x₂ ∈ dom f := mem_dom_of_mem_subdifferential hp h₂
-  have hcomb : a • x₁ + b • x₂ ∈ dom f := hf.convex_dom hx₁ hx₂ ha.le hb.le hab
+  have hx₁ : x₁ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp h₁
+  have hx₂ : x₂ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp h₂
+  have hcomb : a • x₁ + b • x₂ ∈ convexDom f := hf.convex_convexDom hx₁ hx₂ ha.le hb.le hab
   refine mem_subdifferential_of_forall_sub_le hp hcomb fun z hz => ?_
   -- The combination's value is bounded by the combination of the endpoint values.
   have hcv := (convexFn_iff_le hp.ne_bot).1 hf x₁ x₂ a b ha hb hab
   have hreal : (f (a • x₁ + b • x₂)).toReal ≤ a * (f x₁).toReal + b * (f x₂).toReal := by
-    rw [← EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
-      ← EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
-      ← EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
+    rw [← EReal.coe_toReal (mem_convexDom.1 hx₁).ne (hp.ne_bot x₁),
+      ← EReal.coe_toReal (mem_convexDom.1 hx₂).ne (hp.ne_bot x₂),
+      ← EReal.coe_toReal (mem_convexDom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
       ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff] at hcv
     exact hcv
   rw [pairing_sub_combo hab z]
@@ -180,12 +182,12 @@ theorem mem_subdifferential_of_combo (hf : ConvexFn f) (hp : Proper f)
 
 /-- **A shared subgradient makes `f` affine along the segment**, so the convexity inequality there
 is an *equality* and strict convexity fails. -/
-theorem le_combo_of_mem_subdifferential (hp : Proper f) (h₁ : v ∈ subdifferential B f x₁)
+theorem le_combo_of_mem_subdifferential (hp : ProperConvex f) (h₁ : v ∈ subdifferential B f x₁)
     (h₂ : v ∈ subdifferential B f x₂) (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
-    (hcomb : a • x₁ + b • x₂ ∈ dom f) :
+    (hcomb : a • x₁ + b • x₂ ∈ convexDom f) :
     (a : EReal) * f x₁ + (b : EReal) * f x₂ ≤ f (a • x₁ + b • x₂) := by
-  have hx₁ : x₁ ∈ dom f := mem_dom_of_mem_subdifferential hp h₁
-  have hx₂ : x₂ ∈ dom f := mem_dom_of_mem_subdifferential hp h₂
+  have hx₁ : x₁ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp h₁
+  have hx₂ : x₂ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp h₂
   have hs₁ := sub_le_of_mem_subdifferential hp h₁ hcomb
   have hs₂ := sub_le_of_mem_subdifferential hp h₂ hcomb
   rw [pairing_combo_sub_left hab] at hs₁
@@ -194,9 +196,9 @@ theorem le_combo_of_mem_subdifferential (hp : Proper f) (h₁ : v ∈ subdiffere
   have hB' := mul_le_mul_of_nonneg_left hs₂ hb.le
   have hsum : a * (f (a • x₁ + b • x₂)).toReal + b * (f (a • x₁ + b • x₂)).toReal
       = (f (a • x₁ + b • x₂)).toReal := by rw [← add_mul, hab, one_mul]
-  rw [← EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
-    ← EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
-    ← EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
+  rw [← EReal.coe_toReal (mem_convexDom.1 hx₁).ne (hp.ne_bot x₁),
+    ← EReal.coe_toReal (mem_convexDom.1 hx₂).ne (hp.ne_bot x₂),
+    ← EReal.coe_toReal (mem_convexDom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
     ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff]
   linarith
 
@@ -204,12 +206,12 @@ theorem le_combo_of_mem_subdifferential (hp : Proper f) (h₁ : v ∈ subdiffere
 a subgradient at the point between them, that subgradient serves at both endpoints.
 
 The two endpoint inequalities add up to the failed strict inequality, so neither can be strict. -/
-theorem mem_subdifferential_endpoints_of_le_combo (hp : Proper f) (hx₁ : x₁ ∈ dom f)
-    (hx₂ : x₂ ∈ dom f) (hv : v ∈ subdifferential B f (a • x₁ + b • x₂))
+theorem mem_subdifferential_endpoints_of_le_combo (hp : ProperConvex f) (hx₁ : x₁ ∈ convexDom f)
+    (hx₂ : x₂ ∈ convexDom f) (hv : v ∈ subdifferential B f (a • x₁ + b • x₂))
     (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
     (hle : a * (f x₁).toReal + b * (f x₂).toReal ≤ (f (a • x₁ + b • x₂)).toReal) :
     v ∈ subdifferential B f x₁ ∧ v ∈ subdifferential B f x₂ := by
-  have hcomb : a • x₁ + b • x₂ ∈ dom f := mem_dom_of_mem_subdifferential hp hv
+  have hcomb : a • x₁ + b • x₂ ∈ convexDom f := mem_convexDom_of_mem_subdifferential hp hv
   have hs₁ := sub_le_of_mem_subdifferential hp hv hx₁
   have hs₂ := sub_le_of_mem_subdifferential hp hv hx₂
   rw [show x₁ - (a • x₁ + b • x₂) = -(a • x₁ + b • x₂ - x₁) by abel, map_neg,
@@ -256,7 +258,7 @@ convex exactly when two distinct points never share a subgradient. Forwards, a s
 makes the whole segment lie in `dom ∂f` and `f` affine on it, so strict convexity fails there.
 Backwards, a failure of strict convexity on a convex `C ⊆ dom ∂f` puts a subgradient at a point
 between two points of `C`, and the failed inequality forces it to serve at both of them. -/
-theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : Proper f) :
+theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : ProperConvex f) :
     EssentiallyStrictlyConvex (B := B) f ↔
       ∀ x₁ x₂ : E, x₁ ≠ x₂ → Disjoint (subdifferential B f x₁) (subdifferential B f x₂) := by
   constructor
@@ -278,8 +280,9 @@ theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : 
     have hstrict := hes (convex_segment x₁ x₂) hseg (left_mem_segment ℝ x₁ x₂)
       (right_mem_segment ℝ x₁ x₂) hne (a := 1/2) (b := 1/2) (by norm_num) (by norm_num)
       (by norm_num)
-    have hcomb : (1/2 : ℝ) • x₁ + (1/2 : ℝ) • x₂ ∈ dom f :=
-      hf.convex_dom (mem_dom_of_mem_subdifferential hp h₁) (mem_dom_of_mem_subdifferential hp h₂)
+    have hcomb : (1/2 : ℝ) • x₁ + (1/2 : ℝ) • x₂ ∈ convexDom f :=
+      hf.convex_convexDom (mem_convexDom_of_mem_subdifferential hp h₁)
+          (mem_convexDom_of_mem_subdifferential hp h₂)
         (by norm_num) (by norm_num) (by norm_num)
     exact absurd (le_combo_of_mem_subdifferential hp h₁ h₂ (by norm_num) (by norm_num) (by norm_num)
       hcomb) (not_le.2 hstrict)
@@ -288,13 +291,13 @@ theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : 
     push Not at hcon
     have hmem : a • x₁ + b • x₂ ∈ C := hC hx₁ hx₂ ha.le hb.le hab
     obtain ⟨v, hv⟩ := hCsub hmem
-    have hx₁d : x₁ ∈ dom f := domSubdifferential_subset_dom hp (hCsub hx₁)
-    have hx₂d : x₂ ∈ dom f := domSubdifferential_subset_dom hp (hCsub hx₂)
-    have hcombd : a • x₁ + b • x₂ ∈ dom f := hf.convex_dom hx₁d hx₂d ha.le hb.le hab
+    have hx₁d : x₁ ∈ convexDom f := domSubdifferential_subset_convexDom hp (hCsub hx₁)
+    have hx₂d : x₂ ∈ convexDom f := domSubdifferential_subset_convexDom hp (hCsub hx₂)
+    have hcombd : a • x₁ + b • x₂ ∈ convexDom f := hf.convex_convexDom hx₁d hx₂d ha.le hb.le hab
     have hle : a * (f x₁).toReal + b * (f x₂).toReal ≤ (f (a • x₁ + b • x₂)).toReal := by
-      rw [← EReal.coe_toReal (mem_dom.1 hx₁d).ne (hp.ne_bot x₁),
-        ← EReal.coe_toReal (mem_dom.1 hx₂d).ne (hp.ne_bot x₂),
-        ← EReal.coe_toReal (mem_dom.1 hcombd).ne (hp.ne_bot _), ← EReal.coe_mul,
+      rw [← EReal.coe_toReal (mem_convexDom.1 hx₁d).ne (hp.ne_bot x₁),
+        ← EReal.coe_toReal (mem_convexDom.1 hx₂d).ne (hp.ne_bot x₂),
+        ← EReal.coe_toReal (mem_convexDom.1 hcombd).ne (hp.ne_bot _), ← EReal.coe_mul,
         ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff] at hcon
       exact hcon
     obtain ⟨hsub₁, hsub₂⟩ :=
@@ -309,88 +312,95 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   {f : E → EReal}
 
 /-- **`∂f*` is the inverse of `∂f`**, for the self-pairing of an inner-product space. The flip of
-`innerₗ E` is discharged once here so that no later rewrite has to reach inside `conj`. -/
-theorem mem_subdifferential_conj_innerL_iff (hf : ConvexFn f) (hcl : ClosedFn f) (u w : E) :
-    u ∈ subdifferential (innerₗ E) (conj (innerₗ E) f) w ↔ w ∈ subdifferential (innerₗ E) f u := by
+`innerₗ E` is discharged once here so that no later rewrite has to reach inside `convexConj`. -/
+theorem mem_subdifferential_convexConj_innerL_iff (hf : ConvexFn f) (hcl : ClosedConvex f)
+    (u w : E) :
+    u ∈ subdifferential (innerₗ E) (convexConj (innerₗ E) f) w ↔ w
+        ∈ subdifferential (innerₗ E) f u := by
   have h :=
-    mem_subdifferential_conj_iff_of_closedFn (B := innerₗ E) (f := f) (x := u) (y := w) hf hcl
+    mem_subdifferential_convexConj_iff_of_closedConvex (B := innerₗ E) (f := f) (x := u)
+        (y := w) hf hcl
   rwa [flip_innerₗ] at h
 
 /-- Single-valuedness of `∂f*` is injectivity of `∂f`. -/
-theorem subsingleton_subdifferential_conj_iff (hf : ConvexFn f) (hcl : ClosedFn f) :
-    (∀ w : E, (subdifferential (innerₗ E) (conj (innerₗ E) f) w).Subsingleton) ↔
+theorem subsingleton_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl : ClosedConvex f) :
+    (∀ w : E, (subdifferential (innerₗ E) (convexConj (innerₗ E) f) w).Subsingleton) ↔
       ∀ x₁ x₂ : E, x₁ ≠ x₂ →
         Disjoint (subdifferential (innerₗ E) f x₁) (subdifferential (innerₗ E) f x₂) := by
   constructor
   · intro h x₁ x₂ hne
     rw [Set.disjoint_left]
     intro v hv₁ hv₂
-    exact hne (h v ((mem_subdifferential_conj_innerL_iff hf hcl x₁ v).2 hv₁)
-      ((mem_subdifferential_conj_innerL_iff hf hcl x₂ v).2 hv₂))
+    exact hne (h v ((mem_subdifferential_convexConj_innerL_iff hf hcl x₁ v).2 hv₁)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl x₂ v).2 hv₂))
   · intro h v x₁ hx₁ x₂ hx₂
     by_contra hne
     exact (Set.disjoint_left.1 (h x₁ x₂ hne))
-      ((mem_subdifferential_conj_innerL_iff hf hcl x₁ v).1 hx₁)
-      ((mem_subdifferential_conj_innerL_iff hf hcl x₂ v).1 hx₂)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl x₁ v).1 hx₁)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl x₂ v).1 hx₂)
 
 /-- Injectivity of `∂f*` is single-valuedness of `∂f` — the mirror of
-`subsingleton_subdifferential_conj_iff`. -/
-theorem pairwise_disjoint_subdifferential_conj_iff (hf : ConvexFn f) (hcl : ClosedFn f) :
+`subsingleton_subdifferential_convexConj_iff`. -/
+theorem pairwise_disjoint_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl : ClosedConvex f) :
     (∀ y₁ y₂ : E, y₁ ≠ y₂ →
-        Disjoint (subdifferential (innerₗ E) (conj (innerₗ E) f) y₁)
-          (subdifferential (innerₗ E) (conj (innerₗ E) f) y₂)) ↔
+        Disjoint (subdifferential (innerₗ E) (convexConj (innerₗ E) f) y₁)
+          (subdifferential (innerₗ E) (convexConj (innerₗ E) f) y₂)) ↔
       ∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton := by
   constructor
   · intro h z y₁ hy₁ y₂ hy₂
     by_contra hne
     exact (Set.disjoint_left.1 (h y₁ y₂ hne))
-      ((mem_subdifferential_conj_innerL_iff hf hcl z y₁).2 hy₁)
-      ((mem_subdifferential_conj_innerL_iff hf hcl z y₂).2 hy₂)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₁).2 hy₁)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₂).2 hy₂)
   · intro h y₁ y₂ hne
     rw [Set.disjoint_left]
     intro z hz₁ hz₂
-    exact hne (h z ((mem_subdifferential_conj_innerL_iff hf hcl z y₁).1 hz₁)
-      ((mem_subdifferential_conj_innerL_iff hf hcl z y₂).1 hz₂))
+    exact hne (h z ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₁).1 hz₁)
+      ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₂).1 hz₂))
 
 /-- A closed proper convex function is essentially strictly convex exactly when its conjugate is
 essentially smooth. -/
-theorem essentiallySmooth_conj_iff_essentiallyStrictlyConvex (hf : ConvexFn f) (hp : Proper f)
-    (hcl : ClosedFn f) :
-    EssentiallySmooth (conj (innerₗ E) f) ↔ EssentiallyStrictlyConvex (B := innerₗ E) f := by
+theorem essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex (hf : ConvexFn f)
+    (hp : ProperConvex f)
+    (hcl : ClosedConvex f) :
+    EssentiallySmooth (convexConj (innerₗ E) f) ↔ EssentiallyStrictlyConvex (B := innerₗ E) f := by
   have hcp : ClosedProperConvexFn f := ⟨hf, hcl, hp⟩
-  have hgc : ConvexFn (conj (innerₗ E) f) := convexFn_conj _ f
-  have hgp : Proper (conj (innerₗ E) f) := proper_conj hcp
-  have hgcl : ClosedFn (conj (innerₗ E) f) := closedFn_conj
+  have hgc : ConvexFn (convexConj (innerₗ E) f) := convexFn_convexConj _ f
+  have hgp : ProperConvex (convexConj (innerₗ E) f) := properConvex_convexConj hcp
+  have hgcl : ClosedConvex (convexConj (innerₗ E) f) := closedConvex_convexConj
   rw [← subsingleton_subdifferential_iff_essentiallySmooth hgc hgp hgcl,
     essentiallyStrictlyConvex_iff_pairwise_disjoint hf hp,
-    subsingleton_subdifferential_conj_iff hf hcl]
+    subsingleton_subdifferential_convexConj_iff hf hcl]
 
 /-- `f** = f` for the self-pairing of an inner-product space, with the flip of `innerₗ E`
-discharged so that the equation is stated in terms of `conj (innerₗ E)` twice. -/
-theorem conj_conj_innerL (hf : ConvexFn f) (hcl : ClosedFn f) :
-    conj (innerₗ E) (conj (innerₗ E) f) = f := by
-  have h : conj ((innerₗ E).flip) (conj (innerₗ E) f) = f := biconj_eq_self hf hcl
+discharged so that the equation is stated in terms of `convexConj (innerₗ E)` twice. -/
+theorem convexConj_convexConj_innerL (hf : ConvexFn f) (hcl : ClosedConvex f) :
+    convexConj (innerₗ E) (convexConj (innerₗ E) f) = f := by
+  have h : convexConj ((innerₗ E).flip) (convexConj (innerₗ E) f) = f := convexBiconj_eq_self hf hcl
   rwa [flip_innerₗ] at h
 
 /-- The same duality read in the other direction: the conjugate of a closed proper convex function
 is essentially strictly convex exactly when the function itself is essentially smooth. This is the
 previous theorem applied to `f*`, together with `f** = f`. -/
-theorem essentiallyStrictlyConvex_conj_iff_essentiallySmooth (hf : ConvexFn f) (hp : Proper f)
-    (hcl : ClosedFn f) :
-    EssentiallyStrictlyConvex (B := innerₗ E) (conj (innerₗ E) f) ↔ EssentiallySmooth f := by
-  rw [← essentiallySmooth_conj_iff_essentiallyStrictlyConvex (convexFn_conj _ f)
-    (proper_conj ⟨hf, hcl, hp⟩) closedFn_conj, conj_conj_innerL hf hcl]
+theorem essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth (hf : ConvexFn f)
+    (hp : ProperConvex f)
+    (hcl : ClosedConvex f) :
+    EssentiallyStrictlyConvex (B := innerₗ E) (convexConj (innerₗ E) f) ↔ EssentiallySmooth f := by
+  rw [← essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex (convexFn_convexConj _ f)
+    (properConvex_convexConj ⟨hf, hcl, hp⟩) closedConvex_convexConj,
+        convexConj_convexConj_innerL hf hcl]
 
 /-- `∂f` is a one-to-one mapping — single-valued and injective — exactly when `f` is essentially
 smooth and strictly convex on `int (dom f)`. Under essential smoothness `dom ∂f` *is*
 `int (dom f)`, so essential strict convexity, which quantifies over all convex subsets of
 `dom ∂f`, collapses to strict convexity on that one set. -/
-theorem subdifferential_injective_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
+theorem subdifferential_injective_iff (hf : ConvexFn f) (hp : ProperConvex f)
+    (hcl : ClosedConvex f) :
     ((∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton) ∧
         ∀ x₁ x₂ : E, x₁ ≠ x₂ →
           Disjoint (subdifferential (innerₗ E) f x₁) (subdifferential (innerₗ E) f x₂)) ↔
-      (EssentiallySmooth f ∧ StrictConvexOnFn f (interior (dom f))) := by
-  have hdom : Convex ℝ (dom f) := hf.convex_dom
+      (EssentiallySmooth f ∧ StrictConvexOnFn f (interior (convexDom f))) := by
+  have hdom : Convex ℝ (convexDom f) := hf.convex_convexDom
   rw [subsingleton_subdifferential_iff_essentiallySmooth hf hp hcl,
     ← essentiallyStrictlyConvex_iff_pairwise_disjoint hf hp]
   refine and_congr_right fun hes => ⟨fun h => ?_, fun h => ?_⟩

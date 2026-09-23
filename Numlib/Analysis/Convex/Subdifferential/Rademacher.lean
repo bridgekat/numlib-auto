@@ -17,17 +17,17 @@ gradient map is continuous where it is defined.
   `fun z => (f z).toReal`, valid at interior points of `dom f`.
 * `exists_lipschitzOnWith_ball` — a proper convex function is Lipschitz on a whole *ball* around
   any interior point of its effective domain.
-* `ae_differentiableAtFn`, `interior_dom_subset_closure_differentiableAtFn`,
+* `ae_differentiableAtFn`, `interior_convexDom_subset_closure_differentiableAtFn`,
   `continuousOn_fderiv_toReal` — the almost-everywhere, density and continuity clauses
   ([rockafellar1970convex] Theorem 25.5); `continuousOn_fderiv_of_convexOn` restates the last for
   Mathlib's `ConvexOn`.
 * `measure_diff_twoSided_dirDeriv` — in a fixed direction the two-sided directional derivative
   exists almost everywhere, a corollary here rather than the source it classically is.
 * `topDualPairing_flip_toDual`, `mem_subdifferential_innerL_iff`,
-  `conj_innerL_eq_conj_topDualPairing`, `subdifferential_innerL_eq_singleton` — the Riesz bridge
-  between the two pairings the library uses on an inner-product space, which is what lets results
-  stated for `innerₗ E`, whose subgradients are vectors, speak about gradients, which live in
-  `StrongDual ℝ E`.
+  `convexConj_innerL_eq_convexConj_topDualPairing`, `subdifferential_innerL_eq_singleton` — the
+  Riesz bridge between the two pairings the library uses on an inner-product space, which is what
+  lets results stated for `innerₗ E`, whose subgradients are vectors, speak about gradients, which
+  live in `StrongDual ℝ E`.
 * `normalCone_innerₗ_closedBall` — the normal cone to the unit ball at a boundary point is the ray
   through it. Needs neither finite dimension nor completeness, only Cauchy–Schwarz.
 
@@ -64,10 +64,10 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal
 omit [NormedSpace ℝ E] in
 /-- Near an interior point of its effective domain, a proper function is the coercion of its
 **real trace** `fun z => (f z).toReal`. -/
-theorem eventuallyEq_coe_toReal (hp : Proper f) (hx : x ∈ interior (dom f)) :
+theorem eventuallyEq_coe_toReal (hp : ProperConvex f) (hx : x ∈ interior (convexDom f)) :
     f =ᶠ[𝓝 x] fun z => (((f z).toReal : ℝ) : EReal) := by
   filter_upwards [isOpen_interior.mem_nhds hx] with z hz
-  exact (EReal.coe_toReal (mem_dom.1 (interior_subset hz)).ne (hp.ne_bot z)).symm
+  exact (EReal.coe_toReal (mem_convexDom.1 (interior_subset hz)).ne (hp.ne_bot z)).symm
 
 /-- A gradient of `f` is a Fréchet derivative of its real trace. -/
 theorem HasGradientAtFn.hasFDerivAt_toReal (h : HasGradientAtFn f f' x) :
@@ -79,16 +79,18 @@ theorem HasGradientAtFn.hasFDerivAt_toReal (h : HasGradientAtFn f f' x) :
 
 /-- Conversely, at an interior point of `dom f` a Fréchet derivative of the real trace is a
 gradient of `f`. -/
-theorem hasGradientAtFn_of_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f))
+theorem hasGradientAtFn_of_hasFDerivAt_toReal (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f))
     (hd : HasFDerivAt (fun z => (f z).toReal) f' x) : HasGradientAtFn f f' x :=
   ⟨_, eventuallyEq_coe_toReal hp hx, hd⟩
 
-theorem hasGradientAtFn_iff_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f)) :
+theorem hasGradientAtFn_iff_hasFDerivAt_toReal (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) :
     HasGradientAtFn f f' x ↔ HasFDerivAt (fun z => (f z).toReal) f' x :=
   ⟨HasGradientAtFn.hasFDerivAt_toReal, hasGradientAtFn_of_hasFDerivAt_toReal hp hx⟩
 
-theorem differentiableAtFn_iff_differentiableAt_toReal (hp : Proper f)
-    (hx : x ∈ interior (dom f)) :
+theorem differentiableAtFn_iff_differentiableAt_toReal (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) :
     DifferentiableAtFn f x ↔ DifferentiableAt ℝ (fun z => (f z).toReal) x :=
   ⟨fun ⟨_, h⟩ => h.hasFDerivAt_toReal.differentiableAt,
     fun h => ⟨_, hasGradientAtFn_of_hasFDerivAt_toReal hp hx h.hasFDerivAt⟩⟩
@@ -117,9 +119,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 /-- A proper convex function is Lipschitz on a whole *ball* around any interior point of its
 effective domain. Balls are what Rademacher's theorem needs, because differentiability *within* an
 open set is differentiability. -/
-theorem exists_lipschitzOnWith_ball (hf : ConvexFn f) (hp : Proper f)
-    (hx : x ∈ interior (dom f)) :
-    ∃ r > 0, ball x r ⊆ interior (dom f) ∧
+theorem exists_lipschitzOnWith_ball (hf : ConvexFn f) (hp : ProperConvex f)
+    (hx : x ∈ interior (convexDom f)) :
+    ∃ r > 0, ball x r ⊆ interior (convexDom f) ∧
       ∃ K : ℝ≥0, LipschitzOnWith K (fun z => (f z).toReal) (ball x r) := by
   obtain ⟨r, hr, hsub⟩ := Metric.isOpen_iff.1 isOpen_interior x hx
   obtain ⟨K, hK⟩ := hf.exists_lipschitzOnWith_of_isCompact hp (isCompact_closedBall x (r / 2))
@@ -131,15 +133,15 @@ variable [MeasurableSpace E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasur
 
 /-- A proper convex function is differentiable at almost every point of the interior of its
 effective domain. -/
-theorem ae_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    ∀ᵐ z ∂μ, z ∈ interior (dom f) → DifferentiableAtFn f z := by
-  choose! r hr hball K hK using fun z (hz : z ∈ interior (dom f)) =>
+theorem ae_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
+    ∀ᵐ z ∂μ, z ∈ interior (convexDom f) → DifferentiableAtFn f z := by
+  choose! r hr hball K hK using fun z (hz : z ∈ interior (convexDom f)) =>
     exists_lipschitzOnWith_ball hf hp hz
   obtain ⟨T, hTc, hTeq⟩ := TopologicalSpace.isOpen_iUnion_countable
-    (fun p : interior (dom f) => ball (p : E) (r p)) fun _ => isOpen_ball
-  have hcover : ∀ z ∈ interior (dom f), ∃ p ∈ T, z ∈ ball ((p : E)) (r p) := by
+    (fun p : interior (convexDom f) => ball (p : E) (r p)) fun _ => isOpen_ball
+  have hcover : ∀ z ∈ interior (convexDom f), ∃ p ∈ T, z ∈ ball ((p : E)) (r p) := by
     intro z hz
-    have hmem : z ∈ ⋃ p : interior (dom f), ball ((p : E)) (r p) :=
+    have hmem : z ∈ ⋃ p : interior (convexDom f), ball ((p : E)) (r p) :=
       Set.mem_iUnion.2 ⟨⟨z, hz⟩, mem_ball_self (hr z hz)⟩
     rw [← hTeq] at hmem
     simpa using hmem
@@ -152,12 +154,12 @@ theorem ae_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
     ((hz p hpT hzp).differentiableAt (isOpen_ball.mem_nhds hzp))
 
 /-- The points of `int (dom f)` at which `f` fails to be differentiable form a null set. -/
-theorem measure_diff_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    μ (interior (dom f) \ {z | DifferentiableAtFn f z}) = 0 := by
+theorem measure_diff_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
+    μ (interior (convexDom f) \ {z | DifferentiableAtFn f z}) = 0 := by
   have hae := ae_differentiableAtFn (μ := μ) hf hp
   rw [ae_iff] at hae
   refine measure_mono_null (fun z hz => ?_) hae
-  change ¬(z ∈ interior (dom f) → DifferentiableAtFn f z)
+  change ¬(z ∈ interior (convexDom f) → DifferentiableAtFn f z)
   exact fun hcon => hz.2 (hcon hz.1)
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
@@ -171,8 +173,8 @@ theorem twoSided_dirDeriv_of_differentiableAtFn (hf : ConvexFn f)
 /-- In any fixed direction `y` the two-sided directional derivative exists at almost every point
 of `int (dom f)`. Here this is a consequence of almost-everywhere differentiability, which supplies
 the two-sided derivative in *every* direction at once. -/
-theorem measure_diff_twoSided_dirDeriv (hf : ConvexFn f) (hp : Proper f) (y : E) :
-    μ (interior (dom f) \ {z | dirDeriv f z y = -dirDeriv f z (-y)}) = 0 := by
+theorem measure_diff_twoSided_dirDeriv (hf : ConvexFn f) (hp : ProperConvex f) (y : E) :
+    μ (interior (convexDom f) \ {z | dirDeriv f z y = -dirDeriv f z (-y)}) = 0 := by
   refine measure_mono_null (fun z hz => ?_) (measure_diff_differentiableAtFn (μ := μ) hf hp)
   obtain ⟨hzU, hzy⟩ := hz
   exact Set.mem_sdiff_of_mem hzU fun hzd =>
@@ -187,18 +189,20 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 /-- The points of differentiability are dense in the interior of the effective domain. No measure
 appears in the statement; the proof borrows one. -/
-theorem interior_dom_subset_closure_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    interior (dom f) ⊆ closure {z | DifferentiableAtFn f z} := by
+theorem interior_convexDom_subset_closure_differentiableAtFn (hf : ConvexFn f)
+    (hp : ProperConvex f) :
+    interior (convexDom f) ⊆ closure {z | DifferentiableAtFn f z} := by
   let _ : MeasurableSpace E := borel E
   have _ : BorelSpace E := ⟨rfl⟩
   let w := Module.Basis.ofVectorSpace ℝ E
   intro x hx
   refine mem_closure_iff.2 fun V hV hxV => ?_
   by_contra hne
-  have hsub : V ∩ interior (dom f) ⊆ interior (dom f) \ {z | DifferentiableAtFn f z} := by
+  have hsub : V ∩ interior (convexDom f)
+      ⊆ interior (convexDom f) \ {z | DifferentiableAtFn f z} := by
     rintro z ⟨hzV, hzU⟩
     exact ⟨hzU, fun hzD => hne ⟨z, hzV, hzD⟩⟩
-  have hpos : 0 < w.addHaar (V ∩ interior (dom f)) :=
+  have hpos : 0 < w.addHaar (V ∩ interior (convexDom f)) :=
     (hV.inter isOpen_interior).measure_pos _ ⟨x, hxV, hx⟩
   exact hpos.ne' (measure_mono_null hsub (measure_diff_differentiableAtFn hf hp))
 
@@ -218,12 +222,13 @@ theorem topDualPairing_flip_toDual (x v : E) :
     (topDualPairing ℝ E).flip x (InnerProductSpace.toDual ℝ E v) = (innerₗ E) x v := by
   simp [innerₗ_apply_apply, real_inner_comm]
 
-/-- The Riesz bridge for the conjugate: `mem_subdifferential_innerL_iff` with `conj` in place of
-`subdifferential`. It carries results stated on a general normed space with the pairing
-`⟨x, y⟩ = y x` over to statements about `conj (innerₗ E)`. -/
-theorem conj_innerL_eq_conj_topDualPairing (f : E → EReal) (v : E) :
-    conj (innerₗ E) f v = conj (topDualPairing ℝ E).flip f (InnerProductSpace.toDual ℝ E v) := by
-  simp only [conj_apply]
+/-- The Riesz bridge for the conjugate: `mem_subdifferential_innerL_iff` with `convexConj` in place
+of `subdifferential`. It carries results stated on a general normed space with the pairing
+`⟨x, y⟩ = y x` over to statements about `convexConj (innerₗ E)`. -/
+theorem convexConj_innerL_eq_convexConj_topDualPairing (f : E → EReal) (v : E) :
+    convexConj (innerₗ E) f v
+        = convexConj (topDualPairing ℝ E).flip f (InnerProductSpace.toDual ℝ E v) := by
+  simp only [convexConj_apply]
   exact iSup_congr fun x => by rw [topDualPairing_flip_toDual x v]
 
 /-- **The Riesz bridge between the two pairings of an inner-product space with itself and with its
@@ -264,7 +269,8 @@ theorem subdifferential_topDualPairing_eq_singleton {v : E}
     exact mem_subdifferential_innerL_iff.1 (by rw [h]; rfl)
 
 /-- Converse, in vector form: a lone subgradient for the inner-product pairing is the gradient. -/
-theorem hasGradientAtFn_toDual_of_subdifferential_eq_singleton (hf : ConvexFn f) (hp : Proper f)
+theorem hasGradientAtFn_toDual_of_subdifferential_eq_singleton (hf : ConvexFn f)
+    (hp : ProperConvex f)
     {v : E} (h : subdifferential (innerₗ E) f x = {v}) :
     HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x :=
   hasGradientAtFn_of_subdifferential_eq_singleton hf hp
@@ -272,7 +278,7 @@ theorem hasGradientAtFn_toDual_of_subdifferential_eq_singleton (hf : ConvexFn f)
 
 /-- The gradient mapping is continuous on the set where the function is differentiable. This is
 upper semicontinuity of `∂f` with both subdifferentials collapsed to singletons. -/
-theorem continuousOn_fderiv_toReal (hf : ConvexFn f) (hp : Proper f) :
+theorem continuousOn_fderiv_toReal (hf : ConvexFn f) (hp : ProperConvex f) :
     ContinuousOn (fderiv ℝ fun w => (f w).toReal) {z | DifferentiableAtFn f z} := by
   set g := fderiv ℝ fun w => (f w).toReal with hgdef
   have hgrad : ∀ z ∈ {z | DifferentiableAtFn f z}, HasGradientAtFn f (g z) z := fun _ hz =>
@@ -280,7 +286,7 @@ theorem continuousOn_fderiv_toReal (hf : ConvexFn f) (hp : Proper f) :
   intro x hx
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
   have hev := eventually_nhds_subdifferential_subset_add_closedBall hf hp
-    (hgrad x hx).mem_interior_dom (half_pos hε)
+    (hgrad x hx).mem_interior_convexDom (half_pos hε)
   filter_upwards [nhdsWithin_le_nhds hev, self_mem_nhdsWithin] with z hzsub hzD
   have hzz : (InnerProductSpace.toDual ℝ E).symm (g z) ∈ subdifferential (innerₗ E) f z := by
     rw [subdifferential_innerL_eq_singleton hf (hgrad z hzD)]
@@ -308,14 +314,14 @@ same gradients. -/
 theorem continuousOn_fderiv_of_convexOn {C : Set E} {g : E → ℝ} (hC : IsOpen C)
     (hne : C.Nonempty) (hg : ConvexOn ℝ C g) (hd : DifferentiableOn ℝ g C) :
     ContinuousOn (fderiv ℝ g) C := by
-  set f : E → EReal := restrictFn C fun z => ((g z : ℝ) : EReal) with hfdef
+  set f : E → EReal := convexRestrict C fun z => ((g z : ℝ) : EReal) with hfdef
   have hcf : ConvexFn f := (convexOn_iff_convexFn C g).1 hg
-  have hdom : dom f = C := by
+  have hdom : convexDom f = C := by
     ext z
     by_cases hz : z ∈ C <;> simp [hfdef, hz]
-  have hp : Proper f := ⟨by rw [hdom]; exact hne, fun z => by
+  have hp : ProperConvex f := ⟨by rw [hdom]; exact hne, fun z => by
     by_cases hz : z ∈ C <;> simp [hfdef, hz]⟩
-  have hint : interior (dom f) = C := by rw [hdom, hC.interior_eq]
+  have hint : interior (convexDom f) = C := by rw [hdom, hC.interior_eq]
   have hgrad : ∀ z ∈ C, HasGradientAtFn f (fderiv ℝ g z) z := fun z hz => by
     refine ⟨g, ?_, ((hd z hz).differentiableAt (hC.mem_nhds hz)).hasFDerivAt⟩
     filter_upwards [hC.mem_nhds hz] with w hw

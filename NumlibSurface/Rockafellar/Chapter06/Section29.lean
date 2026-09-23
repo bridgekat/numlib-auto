@@ -18,9 +18,9 @@ All 12 numbered results of §29 are formalized: Theorems 29.1, 29.2, 29.3 and 29
 29.1.1–29.1.6, 29.3.1 and 29.4.1. Corollary 29.4.1 is printed with no proof.
 
 Almost all of §29's vocabulary is the backbone's under the book's own names: `Bifun (Rn m) (Rn n)`,
-`graphFn`, `ConvexBifun`, `ClosedBifun`, `domBifun`, `infBifun` for the perturbation function
-`inf F`, `KuhnTucker (pairing m) F`, `lagrangian (pairing m) F`, `Consistent`,
-`StronglyConsistent`, `StrictlyConsistent`, `PolyhedralBifun`, and `clBifun` for `cl F`. The
+`graphFn`, `ConvexBifun`, `ClosedConvexBifun`, `convexDomBifun`, `infBifun` for the perturbation
+function `inf F`, `KuhnTucker (pairing m) F`, `lagrangian (pairing m) F`, `Consistent`,
+`StronglyConsistent`, `StrictlyConsistent`, `PolyhedralBifun`, and `convexClBifun` for `cl F`. The
 objective function `F0` is `F 0`; the optimal value in `(P)` is `infBifun F 0`. `IsOptimalSolution`
 is deliberately *not* `argmin (F 0)` — the book asks for `(F0)(x)` to be *finite* and equal to the
 optimal value, so an inconsistent program has no optimal solutions although `argmin (F 0) = ℝⁿ`.
@@ -53,8 +53,8 @@ optimal value, so an inconsistent program has no optimal solutions although `arg
 of `(P)` and `(cl P)` agree on a neighbourhood of `0` — drops the properness that its own
 Theorem 29.4 carries. `corollary_29_4_1_perturbation` transcribes the claim as printed and
 `corollary_29_4_1_perturbation_false` refutes it, with the counterexample `originBifun` on `ℝ¹`.
-The corrected statement is `corollary_29_4_1_eventually`, which adds `Proper (graphFn F)`. Every
-other clause of the corollary holds as printed and is proved here.
+The corrected statement is `corollary_29_4_1_eventually`, which adds `ProperConvex (graphFn F)`.
+Every other clause of the corollary holds as printed and is proved here.
 -/
 
 open Filter Topology
@@ -72,23 +72,23 @@ variable {m n : ℕ}
 
 /-- The **graph domain** of a bifunction: the effective domain of its graph function, a convex
 subset of `ℝᵐ × ℝⁿ`. -/
-def graphDomain (F : Bifun (Rn m) (Rn n)) : Set (Rn m × Rn n) := dom (graphFn F)
+def graphDomain (F : Bifun (Rn m) (Rn n)) : Set (Rn m × Rn n) := convexDom (graphFn F)
 
-theorem graphDomain_eq (F : Bifun (Rn m) (Rn n)) : graphDomain F = dom (graphFn F) := rfl
+theorem graphDomain_eq (F : Bifun (Rn m) (Rn n)) : graphDomain F = convexDom (graphFn F) := rfl
 
 @[simp] theorem mem_graphDomain {F : Bifun (Rn m) (Rn n)} {u : Rn m} {x : Rn n} :
     (u, x) ∈ graphDomain F ↔ F u x < ⊤ := Iff.rfl
 
 /-- **`dom F` is the projection of the graph domain on `ℝᵐ`**, and is therefore a convex set. This
 is the identification every relative-interior step of Theorem 29.4 runs on. -/
-theorem domBifun_eq_image_graphDomain (F : Bifun (Rn m) (Rn n)) :
-    domBifun F = LinearMap.fst ℝ (Rn m) (Rn n) '' graphDomain F :=
-  domBifun_eq_image_dom_graphFn F
+theorem convexDomBifun_eq_image_graphDomain (F : Bifun (Rn m) (Rn n)) :
+    convexDomBifun F = LinearMap.fst ℝ (Rn m) (Rn n) '' graphDomain F :=
+  convexDomBifun_eq_image_convexDom_graphFn F
 
 /-- The graph domain of a convex bifunction is convex. -/
 theorem convex_graphDomain {F : Bifun (Rn m) (Rn n)} (hF : ConvexBifun F) :
     Convex ℝ (graphDomain F) :=
-  ConvexFn.convex_dom hF
+  ConvexFn.convex_convexDom hF
 
 /-- An **optimal solution** to the convex program `(P)` associated with `F`: a vector `x` at which
 `(F0)(x)` is *finite* and equal to the optimal value in `(P)`. Not `argmin (F 0)`: Rockafellar is
@@ -155,10 +155,10 @@ theorem convexBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
     ConvexBifun (linearIndicatorBifun A) :=
   ConvexProcess.convexBifun_indicatorBifun _
 
-theorem closedBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
-    ClosedBifun (linearIndicatorBifun A) := by
-  rw [ClosedBifun, graphFn_linearIndicatorBifun]
-  refine closedFn_indicatorFn ?_
+theorem closedConvexBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
+    ClosedConvexBifun (linearIndicatorBifun A) := by
+  rw [ClosedConvexBifun, graphFn_linearIndicatorBifun]
+  refine closedConvex_indicatorFn ?_
   have hker : {p : Rn m × Rn n | p.2 = A p.1}
       = LinearMap.ker ((LinearMap.snd ℝ (Rn m) (Rn n)) - A ∘ₗ LinearMap.fst ℝ (Rn m) (Rn n)) := by
     ext p
@@ -166,14 +166,14 @@ theorem closedBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
   rw [hker]
   exact (LinearMap.ker _).closed_of_finiteDimensional
 
-theorem proper_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
-    Proper (graphFn (linearIndicatorBifun A)) := by
+theorem properConvex_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
+    ProperConvex (graphFn (linearIndicatorBifun A)) := by
   rw [graphFn_linearIndicatorBifun]
   exact ⟨⟨(0, A 0), by simp⟩, indicatorFn_ne_bot _⟩
 
-@[simp] theorem domBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
-    domBifun (linearIndicatorBifun A) = Set.univ := by
-  rw [linearIndicatorBifun, ConvexProcess.domBifun_indicatorBifun,
+@[simp] theorem convexDomBifun_linearIndicatorBifun (A : Rn m →ₗ[ℝ] Rn n) :
+    convexDomBifun (linearIndicatorBifun A) = Set.univ := by
+  rw [linearIndicatorBifun, ConvexProcess.convexDomBifun_indicatorBifun,
     ConvexProcess.dom_ofLinearMap]
 
 end LinearIndicator
@@ -191,8 +191,8 @@ theorem theorem_29_1_convexFn (hF : ConvexBifun F) : ConvexFn (infBifun F) :=
 
 /-- **Theorem 29.1**, first assertion, second half: `dom (inf F) = dom F`. Needs no hypothesis on
 `F`: `inf F` is `+∞` at `u` only if `Fu` is the constant `+∞`. -/
-theorem theorem_29_1_dom (F : Bifun (Rn m) (Rn n)) : dom (infBifun F) = domBifun F :=
-  dom_infBifun F
+theorem theorem_29_1_dom (F : Bifun (Rn m) (Rn n)) : convexDom (infBifun F) = convexDomBifun F :=
+  convexDom_infBifun F
 
 /-- The reformulation of the definition of a Kuhn–Tucker vector that the book records immediately
 after giving it: `inf F0` is finite and `inf Fu + ⟨u*, u⟩ ≥ inf F0` for every `u`. -/
@@ -264,7 +264,7 @@ directional derivative of `inf F` at the origin, in the book's `-inf {⟨u*, u�
 theorem corollary_29_1_1_supportFn (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) (u : Rn m) :
     supportFn (pairing m) (KuhnTucker (pairing m) F) u
-      = clFn (dirDeriv (infBifun F) 0) (-u) := by
+      = convexCl (dirDeriv (infBifun F) 0) (-u) := by
   have h := supportFn_kuhnTucker (B := pairing m) hF ht hb u
   rwa [flip_pairing] at h
 
@@ -296,7 +296,7 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {b : Rn m}
 /-- **Corollary 29.1.3**. At a finite optimal value `(P)` has a *unique* Kuhn–Tucker vector exactly
 when the perturbation function is differentiable at the origin. The book's hypotheses are kept even
 though its proof cites Theorem 25.1, which needs properness that "finite optimal value" does not
-give: properness is free on each side, from `proper_of_mem_subdifferential` and
+give: properness is free on each side, from `properConvex_of_mem_subdifferential` and
 `HasGradientAtFn.proper`. -/
 theorem corollary_29_1_3 (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     (∃ v : Rn m, KuhnTucker (pairing m) F = {v}) ↔ DifferentiableAtFn (infBifun F) 0 := by
@@ -309,11 +309,11 @@ theorem corollary_29_1_3 (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤) (hb : 
         rw [h, neg_neg]
       rw [h2, Set.neg_singleton]
     have hmem : -v ∈ subdifferential (pairing m) (infBifun F) 0 := by rw [hsub]; rfl
-    have hp : Proper (infBifun F) := proper_of_mem_subdifferential ht hb hmem
+    have hp : ProperConvex (infBifun F) := properConvex_of_mem_subdifferential ht hb hmem
     exact (theorem_25_1_differentiableAtFn (convexFn_infBifun hF) hp).2 ⟨-v, hsub⟩
   · intro hd
     obtain ⟨c, hc⟩ := differentiableAtFn_iff_exists_hasGradientVecAt.1 hd
-    have hp : Proper (infBifun F) := corollary_25_1_1_proper (convexFn_infBifun hF) hc
+    have hp : ProperConvex (infBifun F) := corollary_25_1_1_proper (convexFn_infBifun hF) hc
     refine ⟨-c, ?_⟩
     rw [theorem_29_1_set ht hb, theorem_25_1_forward (convexFn_infBifun hF) hc,
       Set.neg_singleton]
@@ -351,8 +351,8 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 consistent program is strictly consistent unless some perturbation empties the feasible set at
 once. -/
 theorem strictlyConsistent_iff (hF : ConvexBifun F) :
-    StrictlyConsistent F ↔ ∀ u : Rn m, ∃ a : ℝ, 0 < a ∧ a • u ∈ domBifun F := by
-  rw [StrictlyConsistent, Convex.mem_interior_iff_absorbs (convex_domBifun hF)]
+    StrictlyConsistent F ↔ ∀ u : Rn m, ∃ a : ℝ, 0 < a ∧ a • u ∈ convexDomBifun F := by
+  rw [StrictlyConsistent, Convex.mem_interior_iff_absorbs (convex_convexDomBifun hF)]
   exact forall_congr' fun u => exists_congr fun a => by rw [zero_add]
 
 end Consistency
@@ -376,7 +376,7 @@ theorem corollary_29_1_4_nonempty (hF : ConvexBifun F) (hs : StronglyConsistent 
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     (KuhnTucker (pairing m) F).Nonempty :=
   kuhnTucker_nonempty_of_stronglyConsistent hF
-    (proper_infBifun_of_stronglyConsistent hF hs hb) hs ht
+    (properConvex_infBifun_of_stronglyConsistent hF hs hb) hs ht
 
 /-- **Corollary 29.1.4**, the formula: the directional derivative of the optimal value at `0` is
 `-inf {⟨u*, u⟩ | u* a Kuhn–Tucker vector}`. -/
@@ -384,7 +384,7 @@ theorem corollary_29_1_4_dirDeriv (hF : ConvexBifun F) (hs : StronglyConsistent 
     (hb : infBifun F 0 ≠ ⊥) (u : Rn m) :
     dirDeriv (infBifun F) 0 u
       = -(⨅ v ∈ KuhnTucker (pairing m) F, ((pairing m u v : ℝ) : EReal)) := by
-  have hp : Proper (infBifun F) := proper_infBifun_of_stronglyConsistent hF hs hb
+  have hp : ProperConvex (infBifun F) := properConvex_infBifun_of_stronglyConsistent hF hs hb
   rw [dirDeriv_infBifun_eq (B := pairing m) hF hp hs u, flip_pairing, supportFn_apply,
     ← iSup_coe_neg_eq]
   refine iSup_congr fun v => iSup_congr fun _ => ?_
@@ -404,10 +404,10 @@ theorem corollary_29_1_5_nbhd (hF : ConvexBifun F) (hs : StrictlyConsistent F)
     (hb : infBifun F 0 ≠ ⊥) :
     ∃ V : Set (Rn m), IsOpen V ∧ Convex ℝ V ∧ (0 : Rn m) ∈ V ∧
       (∀ u ∈ V, infBifun F u ≠ ⊤ ∧ infBifun F u ≠ ⊥) ∧ ContinuousOn (infBifun F) V := by
-  have hp : Proper (infBifun F) :=
-    proper_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb
-  refine ⟨interior (domBifun F), isOpen_interior, (convex_domBifun hF).interior, hs,
-    fun u hu => ⟨infBifun_ne_top_of_mem_domBifun (interior_subset hu), hp.ne_bot u⟩,
+  have hp : ProperConvex (infBifun F) :=
+    properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb
+  refine ⟨interior (convexDomBifun F), isOpen_interior, (convex_convexDomBifun hF).interior, hs,
+    fun u hu => ⟨infBifun_ne_top_of_mem_convexDomBifun (interior_subset hu), hp.ne_bot u⟩,
     continuousOn_infBifun_interior hF hp⟩
 
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors form a **non-empty** set. -/
@@ -415,7 +415,7 @@ theorem corollary_29_1_5_nonempty (hF : ConvexBifun F) (hs : StrictlyConsistent 
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     (KuhnTucker (pairing m) F).Nonempty :=
   kuhnTucker_nonempty_of_strictlyConsistent hF
-    (proper_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs ht
+    (properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs ht
 
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors form a **closed** set. -/
 theorem corollary_29_1_5_isClosed (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
@@ -428,7 +428,7 @@ Kuhn–Tucker set need not be bounded, Theorem 23.4 bounding `∂f x` only at in
 theorem corollary_29_1_5_isBounded (hF : ConvexBifun F) (hs : StrictlyConsistent F)
     (hb : infBifun F 0 ≠ ⊥) : Bornology.IsBounded (KuhnTucker (pairing m) F) :=
   isBounded_kuhnTucker_of_strictlyConsistent hF
-    (proper_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs
+    (properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs
 
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors form a **convex** set. -/
 theorem corollary_29_1_5_convex (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
@@ -441,7 +441,7 @@ theorem corollary_29_1_5_isCompact (hF : ConvexBifun F) (hs : StrictlyConsistent
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     IsCompact (KuhnTucker (pairing m) F) :=
   isCompact_kuhnTucker_of_strictlyConsistent hF
-    (proper_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs ht
+    (properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs ht
 
 end Corollary2915
 
@@ -454,13 +454,13 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 /-- **Corollary 29.1.6**: if `inf Fu = -∞` for *some* `u`, then `inf Fu = -∞` for *every*
 `u ∈ ri (dom F)`. -/
 theorem corollary_29_1_6_bot (hF : ConvexBifun F) (h : ∃ u : Rn m, infBifun F u = ⊥) {u : Rn m}
-    (hu : u ∈ ri (domBifun F)) : infBifun F u = ⊥ :=
+    (hu : u ∈ ri (convexDomBifun F)) : infBifun F u = ⊥ :=
   infBifun_eq_bot_of_mem_relint hF h hu
 
 /-- **Corollary 29.1.6**, the parenthesis: `inf Fu = +∞` for `u ∉ dom F`. Needs neither convexity
 nor the corollary's hypothesis; it is Theorem 29.1's `dom (inf F) = dom F`. -/
-theorem corollary_29_1_6_top {u : Rn m} (hu : u ∉ domBifun F) : infBifun F u = ⊤ :=
-  infBifun_eq_top_of_notMem_domBifun hu
+theorem corollary_29_1_6_top {u : Rn m} (hu : u ∉ convexDomBifun F) : infBifun F u = ⊤ :=
+  infBifun_eq_top_of_notMem_convexDomBifun hu
 
 end Corollary2916
 
@@ -515,7 +515,8 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {v : Rn m} {x : Rn n}
 /-- **Theorem 29.3**, as the book displays it: for a closed proper convex bifunction, `ū*` is a
 Kuhn–Tucker vector and `x̄` an optimal solution iff `L(u*, x̄) ≤ L(ū*, x̄) ≤ L(ū*, x)` for all `u*`
 and all `x` — that is, iff `(ū*, x̄)` is a saddle-point of the Lagrangian. -/
-theorem theorem_29_3 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (graphFn F)) :
+theorem theorem_29_3 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) :
     ((∀ w : Rn m, lagrangian (pairing m) F w x ≤ lagrangian (pairing m) F v x) ∧
         ∀ y : Rn n, lagrangian (pairing m) F v x ≤ lagrangian (pairing m) F v y)
       ↔ v ∈ KuhnTucker (pairing m) F ∧ IsOptimalSolution F x := by
@@ -524,8 +525,8 @@ theorem theorem_29_3 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (g
   exact (isOptimalSolution_iff_mem_argmin (fun y => hpr.ne_bot (0, y)) hv.1).symm
 
 /-- **Theorem 29.3**, in the backbone's bundled form. -/
-theorem theorem_29_3_isSaddlePoint (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) :
+theorem theorem_29_3_isSaddlePoint (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) :
     IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x)
       ↔ v ∈ KuhnTucker (pairing m) F ∧ IsOptimalSolution F x := by
   rw [isSaddlePoint_lagrangian_iff_forall]
@@ -542,8 +543,8 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {x : Rn n}
 /-- The common core of Corollary 29.3.1's three constraint qualifications: whenever one supplies a
 Kuhn–Tucker vector at a finite optimal value, optimality of `x̄` is equivalent to `x̄` completing
 some `ū*` to a saddle-point. At optimal value `-∞` both sides are false. -/
-private theorem corollary_29_3_1_aux (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hc : Consistent F)
+private theorem corollary_29_3_1_aux (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hc : Consistent F)
     (hkt : infBifun F 0 ≠ ⊥ → (KuhnTucker (pairing m) F).Nonempty) :
     IsOptimalSolution F x ↔
       ∃ v : Rn m, IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x) := by
@@ -551,35 +552,35 @@ private theorem corollary_29_3_1_aux (hF : ConvexBifun F) (hcl : ClosedBifun F)
   · refine ⟨fun h => absurd h (not_isOptimalSolution_of_infBifun_eq_bot hb), ?_⟩
     rintro ⟨v, hv⟩
     exact absurd ((theorem_29_3_isSaddlePoint hF hcl hpr).1 hv).1.2.1 (not_not.2 hb)
-  · have ht : infBifun F 0 ≠ ⊤ := infBifun_ne_top_of_mem_domBifun hc
+  · have ht : infBifun F 0 ≠ ⊤ := infBifun_ne_top_of_mem_convexDomBifun hc
     rw [isOptimalSolution_iff_mem_argmin (fun y => hpr.ne_bot (0, y)) ht]
     exact mem_argmin_iff_exists_isSaddlePoint_lagrangian hF hcl hpr (hkt hb)
 
 /-- **Corollary 29.3.1**, the strongly consistent case: `x̄` is an optimal solution exactly when it
 completes some `ū*` to a saddle-point of the Lagrangian. -/
-theorem corollary_29_3_1_stronglyConsistent (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hs : StronglyConsistent F) :
+theorem corollary_29_3_1_stronglyConsistent (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hs : StronglyConsistent F) :
     IsOptimalSolution F x ↔
       ∃ v : Rn m, IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x) :=
   corollary_29_3_1_aux hF hcl hpr hs.consistent fun hb =>
-    corollary_29_1_4_nonempty hF hs (infBifun_ne_top_of_mem_domBifun hs.consistent) hb
+    corollary_29_1_4_nonempty hF hs (infBifun_ne_top_of_mem_convexDomBifun hs.consistent) hb
 
 /-- **Corollary 29.3.1**, the strictly consistent case. A strictly consistent program is strongly
 consistent, so this is the previous corollary verbatim. -/
-theorem corollary_29_3_1_strictlyConsistent (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hs : StrictlyConsistent F) :
+theorem corollary_29_3_1_strictlyConsistent (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hs : StrictlyConsistent F) :
     IsOptimalSolution F x ↔
       ∃ v : Rn m, IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x) :=
   corollary_29_3_1_stronglyConsistent hF hcl hpr hs.stronglyConsistent
 
 /-- **Corollary 29.3.1**, the polyhedral case: for a *polyhedral* closed proper convex program plain
 consistency suffices, Theorem 29.2 supplying a Kuhn–Tucker vector with no interiority hypothesis. -/
-theorem corollary_29_3_1_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedBifun F)
-    (hpr : Proper (graphFn F)) (hc : Consistent F) :
+theorem corollary_29_3_1_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedConvexBifun F)
+    (hpr : ProperConvex (graphFn F)) (hc : Consistent F) :
     IsOptimalSolution F x ↔
       ∃ v : Rn m, IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x) :=
   corollary_29_3_1_aux hF.convexBifun hcl hpr hc fun hb =>
-    theorem_29_2_kuhnTucker_nonempty hF (infBifun_ne_top_of_mem_domBifun hc) hb
+    theorem_29_2_kuhnTucker_nonempty hF (infBifun_ne_top_of_mem_convexDomBifun hc) hb
 
 end Corollary2931
 
@@ -593,41 +594,41 @@ section Theorem294
 variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
 /-- `cl F` is a closed convex bifunction, and proper when `F` is. -/
-theorem clBifun_convex (hF : ConvexBifun F) : ConvexBifun (clBifun F) :=
-  ConvexBifun.clBifun hF
+theorem convexClBifun_convex (hF : ConvexBifun F) : ConvexBifun (convexClBifun F) :=
+  ConvexBifun.convexClBifun hF
 
 /-- `cl F` is closed, for any `F`. -/
-theorem clBifun_closed (F : Bifun (Rn m) (Rn n)) : ClosedBifun (clBifun F) :=
-  closedBifun_clBifun F
+theorem convexClBifun_closed (F : Bifun (Rn m) (Rn n)) : ClosedConvexBifun (convexClBifun F) :=
+  closedConvexBifun_convexClBifun F
 
 /-- `cl F` is proper when `F` is. -/
-theorem clBifun_proper (hF : ConvexBifun F) (hp : Proper (graphFn F)) :
-    Proper (graphFn (clBifun F)) :=
-  ConvexFn.proper_clFn hF hp
+theorem convexClBifun_properConvex (hF : ConvexBifun F) (hp : ProperConvex (graphFn F)) :
+    ProperConvex (graphFn (convexClBifun F)) :=
+  ConvexFn.properConvex_convexCl hF hp
 
 /-- **Theorem 29.4**, first assertion: `(cl F)u = cl (Fu)` for each `u ∈ ri (dom F)`. Rockafellar's
 closure of an improper convex function that is somewhere `-∞` is the constant `-∞` everywhere, not
 the lower semicontinuous hull `f̄`; both proofs turn on that convention. -/
-theorem theorem_29_4_apply (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (domBifun F)) :
-    clBifun F u = clFn (F u) :=
-  clBifun_apply_eq_clFn hF hu
+theorem theorem_29_4_apply (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (convexDomBifun F)) :
+    convexClBifun F u = convexCl (F u) :=
+  convexClBifun_apply_eq_convexCl hF hu
 
 /-- **Theorem 29.4**, second assertion: `inf (cl F)u = inf Fu` for `u ∈ ri (dom F)`. A convex
 function and its closure have the same infimum, so the content is the first assertion. -/
-theorem theorem_29_4_inf (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (domBifun F)) :
-    infBifun (clBifun F) u = infBifun F u :=
-  infBifun_clBifun_eq hF hu
+theorem theorem_29_4_inf (hF : ConvexBifun F) {u : Rn m} (hu : u ∈ ri (convexDomBifun F)) :
+    infBifun (convexClBifun F) u = infBifun F u :=
+  infBifun_convexClBifun_eq hF hu
 
 /-- **Theorem 29.4**, third assertion, first inclusion: `dom F ⊆ dom (cl F)` for proper `F`. -/
-theorem theorem_29_4_dom_subset (hF : ConvexBifun F) (hp : Proper (graphFn F)) :
-    domBifun F ⊆ domBifun (clBifun F) :=
-  domBifun_subset_domBifun_clBifun hF hp
+theorem theorem_29_4_dom_subset (hF : ConvexBifun F) (hp : ProperConvex (graphFn F)) :
+    convexDomBifun F ⊆ convexDomBifun (convexClBifun F) :=
+  convexDomBifun_subset_convexDomBifun_convexClBifun hF hp
 
 /-- **Theorem 29.4**, third assertion, second inclusion: `dom (cl F) ⊆ cl (dom F)` for proper `F`.
 Properness is not decoration: `originBifun` below has `dom F = {0}` and `dom (cl F) = ℝ¹`. -/
-theorem theorem_29_4_dom_subset_closure (hF : ConvexBifun F) (hp : Proper (graphFn F)) :
-    domBifun (clBifun F) ⊆ closure (domBifun F) :=
-  domBifun_clBifun_subset_closure hF hp
+theorem theorem_29_4_dom_subset_closure (hF : ConvexBifun F) (hp : ProperConvex (graphFn F)) :
+    convexDomBifun (convexClBifun F) ⊆ closure (convexDomBifun F) :=
+  convexDomBifun_convexClBifun_subset_closure hF hp
 
 end Theorem294
 
@@ -640,21 +641,21 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {x : Rn n}
 /-- **Corollary 29.4.1**, the underlying domain fact: closing a proper convex bifunction leaves
 `ri (dom F)` alone. Theorem 29.4 sandwiches `dom (cl F)` between `dom F` and `cl (dom F)`, and
 Corollary 6.3.1 says such a sandwich has the same relative interior. -/
-theorem corollary_29_4_1_relint (hF : ConvexBifun F) (hp : Proper (graphFn F)) :
-    ri (domBifun (clBifun F)) = ri (domBifun F) :=
-  relint_domBifun_clBifun hF hp
+theorem corollary_29_4_1_relint (hF : ConvexBifun F) (hp : ProperConvex (graphFn F)) :
+    ri (convexDomBifun (convexClBifun F)) = ri (convexDomBifun F) :=
+  relint_convexDomBifun_convexClBifun hF hp
 
 /-- **Corollary 29.4.1**, first clause: if `(P)` is strongly consistent then so is `(cl P)`. This
 clause **does** survive without properness: an improper `F` whose graph function is somewhere `-∞`
 has `dom (cl F) = ℝᵐ`, and one with empty graph domain is not consistent at all. -/
 theorem corollary_29_4_1_stronglyConsistent (hF : ConvexBifun F) (hs : StronglyConsistent F) :
-    StronglyConsistent (clBifun F) := by
-  by_cases hp : Proper (graphFn F)
-  · exact stronglyConsistent_clBifun hF hp hs
-  · have hne : (dom (graphFn F)).Nonempty := by
-      have h0 : (0 : Rn m) ∈ domBifun F := intrinsicInterior_subset hs
+    StronglyConsistent (convexClBifun F) := by
+  by_cases hp : ProperConvex (graphFn F)
+  · exact stronglyConsistent_convexClBifun hF hp hs
+  · have hne : (convexDom (graphFn F)).Nonempty := by
+      have h0 : (0 : Rn m) ∈ convexDomBifun F := intrinsicInterior_subset hs
       obtain ⟨x, hx⟩ := h0
-      exact ⟨(0, x), mem_dom.2 (lt_of_le_of_ne le_top hx)⟩
+      exact ⟨(0, x), mem_convexDom.2 (lt_of_le_of_ne le_top hx)⟩
     have hbot : ∃ p, graphFn F p = ⊥ := by
       by_contra hcon
       push Not at hcon
@@ -662,44 +663,44 @@ theorem corollary_29_4_1_stronglyConsistent (hF : ConvexBifun F) (hs : StronglyC
     obtain ⟨p, hpbot⟩ := hbot
     have hlsc : lscHull (graphFn F) p = ⊥ :=
       le_bot_iff.1 (le_trans (lscHull_le (graphFn F) p) (le_of_eq hpbot))
-    have hcl : clFn (graphFn F) = fun _ => ⊥ := clFn_of_exists_eq_bot ⟨p, hlsc⟩
-    have hdom : domBifun (clBifun F) = Set.univ := by
+    have hcl : convexCl (graphFn F) = fun _ => ⊥ := convexCl_of_exists_eq_bot ⟨p, hlsc⟩
+    have hdom : convexDomBifun (convexClBifun F) = Set.univ := by
       ext u
-      simp only [mem_domBifun, Set.mem_univ, iff_true]
-      exact ⟨0, by rw [clBifun_apply, hcl]; simp⟩
-    change (0 : Rn m) ∈ ri (domBifun (clBifun F))
+      simp only [mem_convexDomBifun, Set.mem_univ, iff_true]
+      exact ⟨0, by rw [convexClBifun_apply, hcl]; simp⟩
+    change (0 : Rn m) ∈ ri (convexDomBifun (convexClBifun F))
     rw [hdom]
     exact interior_subset_intrinsicInterior (by simp)
 
 /-- **Corollary 29.4.1**, second clause: the objective function for `(cl P)` is the closure of the
 objective function for `(P)`. This is Theorem 29.4 read at the origin. -/
 theorem corollary_29_4_1_objective (hF : ConvexBifun F) (hs : StronglyConsistent F) :
-    clBifun F 0 = clFn (F 0) :=
-  clBifun_zero_eq_clFn hF hs
+    convexClBifun F 0 = convexCl (F 0) :=
+  convexClBifun_zero_eq_convexCl hF hs
 
 /-- **Corollary 29.4.1**, third clause: `(P)` and `(cl P)` have the same optimal value. -/
 theorem corollary_29_4_1_optimalValue (hF : ConvexBifun F) (hs : StronglyConsistent F) :
-    infBifun (clBifun F) 0 = infBifun F 0 :=
-  infBifun_clBifun_zero_eq hF hs
+    infBifun (convexClBifun F) 0 = infBifun F 0 :=
+  infBifun_convexClBifun_zero_eq hF hs
 
 /-- **Corollary 29.4.1**, fourth clause, in the backbone's vocabulary: every minimiser of `F0`
 minimises `(cl F)0`. The inclusion is strict in general — closing can create new minimisers. -/
 theorem corollary_29_4_1_argmin (hF : ConvexBifun F) (hs : StronglyConsistent F) :
-    argmin (F 0) ⊆ argmin (clBifun F 0) :=
-  argmin_subset_argmin_clBifun hF hs
+    argmin (F 0) ⊆ argmin (convexClBifun F 0) :=
+  argmin_subset_argmin_convexClBifun hF hs
 
 /-- **Corollary 29.4.1**, fourth clause, in the book's own vocabulary: every optimal solution to
 `(P)` is an optimal solution to `(cl P)`. -/
 theorem corollary_29_4_1_optimalSolution (hF : ConvexBifun F) (hs : StronglyConsistent F)
-    (h : IsOptimalSolution F x) : IsOptimalSolution (clBifun F) x := by
-  have hval : infBifun (clBifun F) 0 = infBifun F 0 := infBifun_clBifun_zero_eq hF hs
-  have hge : infBifun (clBifun F) 0 ≤ clBifun F 0 x := by
+    (h : IsOptimalSolution F x) : IsOptimalSolution (convexClBifun F) x := by
+  have hval : infBifun (convexClBifun F) 0 = infBifun F 0 := infBifun_convexClBifun_zero_eq hF hs
+  have hge : infBifun (convexClBifun F) 0 ≤ convexClBifun F 0 x := by
     rw [infBifun_apply]
     exact iInf_le _ x
-  have hle : clBifun F 0 x ≤ infBifun (clBifun F) 0 := by
+  have hle : convexClBifun F 0 x ≤ infBifun (convexClBifun F) 0 := by
     rw [hval, ← h.2.2]
-    exact clBifun_le F 0 x
-  have heq : clBifun F 0 x = infBifun (clBifun F) 0 := le_antisymm hle hge
+    exact convexClBifun_le F 0 x
+  have heq : convexClBifun F 0 x = infBifun (convexClBifun F) 0 := le_antisymm hle hge
   refine ⟨?_, ?_, heq⟩
   · rw [heq, hval, ← h.2.2]; exact h.1
   · rw [heq, hval, ← h.2.2]; exact h.2.1
@@ -709,17 +710,17 @@ perturbation functions of `(P)` and `(cl P)` agree on a neighbourhood of `0`. Th
 agreement only on `ri (dom F)`; what upgrades it is `dom (cl F) ⊆ cl (dom F) ⊆ aff (dom F)`, so a
 small enough ball meets only `ri (dom F)` and points off `aff (dom F)` where both are `+∞`. That
 inclusion is where properness enters — see `corollary_29_4_1_perturbation_false`. -/
-theorem corollary_29_4_1_eventually (hF : ConvexBifun F) (hp : Proper (graphFn F))
+theorem corollary_29_4_1_eventually (hF : ConvexBifun F) (hp : ProperConvex (graphFn F))
     (hs : StronglyConsistent F) :
-    ∀ᶠ u in 𝓝 (0 : Rn m), infBifun (clBifun F) u = infBifun F u :=
-  eventually_infBifun_clBifun_eq hF hp hs
+    ∀ᶠ u in 𝓝 (0 : Rn m), infBifun (convexClBifun F) u = infBifun F u :=
+  eventually_infBifun_convexClBifun_eq hF hp hs
 
 /-- **Corollary 29.4.1**, last clause: `(P)` and `(cl P)` have the same Kuhn–Tucker vectors. The
 book deduces this from the perturbation clause, which needs properness; the route here does not,
-since the adjoint bifunction never sees the closure (`adjointBifun_clBifun`). -/
+since the adjoint bifunction never sees the closure (`convexAdjointBifun_convexClBifun`). -/
 theorem corollary_29_4_1_kuhnTucker (hF : ConvexBifun F) (hs : StronglyConsistent F) :
-    KuhnTucker (pairing m) (clBifun F) = KuhnTucker (pairing m) F :=
-  kuhnTucker_clBifun_eq (Bu := pairing m) (pairing n) hF hs
+    KuhnTucker (pairing m) (convexClBifun F) = KuhnTucker (pairing m) F :=
+  kuhnTucker_convexClBifun_eq (Bu := pairing m) (pairing n) hF hs
 
 end Corollary2941
 
@@ -758,9 +759,9 @@ theorem convexBifun_originBifun : ConvexBifun originBifun := by
   exact (convex_singleton (0 : Rn 1)).linear_preimage _
 
 /-- `dom F = {0}`. -/
-@[simp] theorem domBifun_originBifun : domBifun originBifun = ({0} : Set (Rn 1)) := by
+@[simp] theorem convexDomBifun_originBifun : convexDomBifun originBifun = ({0} : Set (Rn 1)) := by
   ext u
-  simp only [mem_domBifun, Set.mem_singleton_iff]
+  simp only [mem_convexDomBifun, Set.mem_singleton_iff]
   constructor
   · rintro ⟨y, hy⟩
     by_contra hu
@@ -770,22 +771,23 @@ theorem convexBifun_originBifun : ConvexBifun originBifun := by
 
 /-- `(P)` is strongly consistent: `ri {0} = {0}` contains the origin. -/
 theorem stronglyConsistent_originBifun : StronglyConsistent originBifun := by
-  change (0 : Rn 1) ∈ ri (domBifun originBifun)
-  rw [domBifun_originBifun, intrinsicInterior_singleton]
+  change (0 : Rn 1) ∈ ri (convexDomBifun originBifun)
+  rw [convexDomBifun_originBifun, intrinsicInterior_singleton]
   exact rfl
 
 /-- `cl F` is the constant `-∞`: the graph function takes the value `-∞`, and Rockafellar's closure
 convention makes the closure of such a function the constant `-∞` everywhere. -/
-theorem clBifun_originBifun (u x : Rn 1) : clBifun originBifun u x = ⊥ := by
+theorem convexClBifun_originBifun (u x : Rn 1) : convexClBifun originBifun u x = ⊥ := by
   have hlsc : lscHull (graphFn originBifun) ((0 : Rn 1), (0 : Rn 1)) = ⊥ := by
     refine le_bot_iff.1 (le_trans (lscHull_le (graphFn originBifun) _) (le_of_eq ?_))
     rw [graphFn_apply, originBifun_zero]
-  rw [clBifun_apply, clFn_of_exists_eq_bot ⟨_, hlsc⟩]
+  rw [convexClBifun_apply, convexCl_of_exists_eq_bot ⟨_, hlsc⟩]
 
 /-- `inf (cl F) ≡ -∞`. -/
-theorem infBifun_clBifun_originBifun (u : Rn 1) : infBifun (clBifun originBifun) u = ⊥ := by
+theorem infBifun_convexClBifun_originBifun (u : Rn 1) : infBifun (convexClBifun originBifun) u
+    = ⊥ := by
   rw [infBifun_apply]
-  exact le_bot_iff.1 (le_trans (iInf_le _ 0) (le_of_eq (clBifun_originBifun u 0)))
+  exact le_bot_iff.1 (le_trans (iInf_le _ 0) (le_of_eq (convexClBifun_originBifun u 0)))
 
 /-- `inf F = +∞` away from the origin. -/
 theorem infBifun_originBifun_of_ne_zero {u : Rn 1} (hu : u ≠ 0) : infBifun originBifun u = ⊤ := by
@@ -797,7 +799,7 @@ convex bifunction from `Rᵐ` to `Rⁿ`. … Assume that `(P)` is strongly consi
 functions for `(P)` and `(cl P)` agree on a neighborhood of `0`." No properness anywhere. -/
 def corollary_29_4_1_perturbation : Prop :=
   ∀ (m n : ℕ) (F : Bifun (Rn m) (Rn n)), ConvexBifun F → StronglyConsistent F →
-    ∀ᶠ u in 𝓝 (0 : Rn m), infBifun (clBifun F) u = infBifun F u
+    ∀ᶠ u in 𝓝 (0 : Rn m), infBifun (convexClBifun F) u = infBifun F u
 
 /-- **Corollary 29.4.1 is false as Rockafellar states it.**
 
@@ -813,11 +815,11 @@ theorem corollary_29_4_1_perturbation_false : ¬ corollary_29_4_1_perturbation :
   intro hcor
   have hev := hcor 1 1 originBifun convexBifun_originBifun stronglyConsistent_originBifun
   have h1 : ∀ᶠ u in 𝓝[≠] (0 : Rn 1),
-      infBifun (clBifun originBifun) u = infBifun originBifun u :=
+      infBifun (convexClBifun originBifun) u = infBifun originBifun u :=
     hev.filter_mono nhdsWithin_le_nhds
   obtain ⟨u, hu, hune⟩ := (h1.and (eventually_mem_nhdsWithin (a := (0 : Rn 1)))).exists
   have hune' : u ≠ 0 := hune
-  rw [infBifun_clBifun_originBifun u, infBifun_originBifun_of_ne_zero hune'] at hu
+  rw [infBifun_convexClBifun_originBifun u, infBifun_originBifun_of_ne_zero hune'] at hu
   exact absurd hu (by simp)
 
 end Counterexample

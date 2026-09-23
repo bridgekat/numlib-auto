@@ -20,3 +20,6 @@ id = 'isOpen_line_steps'
 
 [[node]]
 id = 'continuousAt_comp_line_of_convexOn'
+
+[[node]]
+id = 'continuousAt_comp_line_of_concaveOn'

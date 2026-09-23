@@ -7,28 +7,28 @@ id = 'gradientRange'
 id = 'hasGradientAtFn_toDual_iff_mem_subdifferential'
 
 [[node]]
-id = 'gradientRange_eq_domSubdifferential_conj'
+id = 'gradientRange_eq_domSubdifferential_convexConj'
 
 [[node]]
-id = 'relint_dom_conj_subset_gradientRange'
+id = 'relint_convexDom_convexConj_subset_gradientRange'
 
 [[node]]
-id = 'gradientRange_subset_dom_conj'
+id = 'gradientRange_subset_convexDom_convexConj'
 
 [[node]]
 id = 'LegendreType'
 
 [[node]]
-id = 'legendreType_conj_iff'
+id = 'legendreType_convexConj_iff'
 
 [[node]]
 id = 'bijOn_gradient_of_legendreType'
 
 [[node]]
-id = 'continuousOn_gradient_interior_dom'
+id = 'continuousOn_gradient_interior_convexDom'
 
 [[node]]
 id = 'bijOn_gradient_univ_iff'
 
 [[node]]
-id = 'conj_finite_of_bijOn_gradient_univ'
+id = 'convexConj_finite_of_bijOn_gradient_univ'

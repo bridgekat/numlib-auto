@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'epi_iSup'
 
 [[node]]
-id = 'dom_add'
+id = 'convexDom_add'
 
 [[node]]
 id = 'convexFn_iSup'
@@ -20,17 +20,17 @@ id = 'ConvexFn.add'
 id = 'ConvexFn.sum'
 
 [[node]]
-id = 'ConvexFn.smul'
-
-[[node]]
 id = 'ConvexFn.comp'
 
 [[node]]
 id = 'ConvexFn.comp_extendTop'
 
 [[node]]
-id = 'ConvexFn.restrictFn'
+id = 'ConvexFn.convexRestrict'
 desc = 'A convex function restricted to a convex set, extended by the top value, is convex.'
+
+[[node]]
+id = 'ConcaveFn.concaveRestrict'
 
 [[node]]
 id = 'ConvexFn.add_indicatorFn'

@@ -689,7 +689,7 @@ theorem exists_kkt_of_convexOn_of_slater {f : E → ℝ} {f' : E → E →L[ℝ]
     rw [ConvexAnalysis.optimalValue, hfeas]
     exact le_antisymm (iInf₂_le x hx)
       (le_iInf₂ fun y hy => EReal.coe_le_coe_iff.2 (hmin hy))
-  have hdom : ConvexAnalysis.dom f₀ = univ := by
+  have hdom : ConvexAnalysis.convexDom f₀ = univ := by
     ext y; simp [hf₀]
   obtain ⟨z, hza, hzg⟩ := hslater
   obtain ⟨μ, l, hμ, hinf⟩ := ConvexAnalysis.exists_multipliers_of_slater_eq (f₀ := f₀) (f := G)

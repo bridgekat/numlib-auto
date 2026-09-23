@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'isAdjointPair_euclideanProdEquiv'
 
 [[node]]
-id = 'conj_comp_euclideanProdEquiv'
+id = 'convexConj_comp_euclideanProdEquiv'
 
 [[node]]
 id = 'subdifferential_comp_euclideanProdEquiv'

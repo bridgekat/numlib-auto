@@ -19,7 +19,7 @@ id = 'subdifferential_coe_affineMap'
 id = 'IsExactSum.normalCone_inter'
 
 [[node]]
-id = 'subdifferential_add_normalCone_dom_subset'
+id = 'subdifferential_add_normalCone_convexDom_subset'
 
 [[node]]
-id = 'normalCone_dom_eq_zero_of_subdifferential_eq_singleton'
+id = 'normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton'

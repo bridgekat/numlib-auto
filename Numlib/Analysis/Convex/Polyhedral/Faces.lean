@@ -150,9 +150,13 @@ theorem FinitelyGenerated.finite_setOf_isFace (hC : FinitelyGenerated C) :
     rw [hp, hd]
     exact hface.eq_convexHullPD.symm
 
+/-- A face of a polyhedral set is polyhedral: `FinitelyGenerated.of_isFace` through
+`polyhedral_iff_finitelyGenerated`. -/
 theorem Polyhedral.of_isFace (hC : Polyhedral C) (hface : IsFace C C') : Polyhedral C' :=
   (hC.finitelyGenerated.of_isFace hface).polyhedral
 
+/-- A polyhedral set has only finitely many faces: `FinitelyGenerated.finite_setOf_isFace`
+through `polyhedral_iff_finitelyGenerated`. -/
 theorem Polyhedral.finite_setOf_isFace (hC : Polyhedral C) :
     {C' : Set E | IsFace C C'}.Finite :=
   hC.finitelyGenerated.finite_setOf_isFace
@@ -235,6 +239,8 @@ theorem polyhedral_iff_isClosed_finite_setOf_isFace (hC : Convex ℝ C) :
   ⟨fun h => ⟨h.isClosed, h.finite_setOf_isFace⟩,
     fun h => polyhedral_of_finite_setOf_isFace hC h.1 h.2⟩
 
+/-- **A convex set is finitely generated exactly when it is closed and has only finitely many
+faces**: `polyhedral_iff_isClosed_finite_setOf_isFace` on the generator side. -/
 theorem finitelyGenerated_iff_isClosed_finite_setOf_isFace (hC : Convex ℝ C) :
     FinitelyGenerated C ↔ IsClosed C ∧ {C' : Set E | IsFace C C'}.Finite := by
   rw [← polyhedral_iff_finitelyGenerated]

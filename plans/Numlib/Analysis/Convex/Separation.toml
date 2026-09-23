@@ -43,10 +43,16 @@ id = 'halfSpaceCone'
 id = 'SeparatesProperly.zero_of_isCone_left'
 
 [[node]]
+id = 'SeparatesProperly.zero_of_isCone_right'
+
+[[node]]
 id = 'separatesStrongly_iff_zero_notMem_closure_sub'
 
 [[node]]
 id = 'separatesStrongly_of_disjoint_isCompact_isClosed'
+
+[[node]]
+id = 'separatesStrongly_of_disjoint_isClosed_isCompact'
 
 [[node]]
 id = 'exists_separating_of_notMem_closed_convex'

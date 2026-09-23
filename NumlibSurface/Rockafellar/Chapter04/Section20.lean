@@ -139,19 +139,23 @@ theorem separableProperlyNotContaining_iff_exists {C₁ C₂ : Set (Rn n)}
 functions whose effective domains meet at all, then `(f + g)* = f* □ g*`. No relative interior
 appears in the hypothesis. Rockafellar gives this unnumbered, as the computation motivating
 Theorem 20.1. -/
-theorem theorem_20_1_pair_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : PolyhedralFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ dom f) (hxg : x₀ ∈ dom g) :
-    conj (pairing n) (f + g) = infConv (conj (pairing n) f) (conj (pairing n) g) :=
-  (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).conj_add
+theorem theorem_20_1_pair_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
+    (hg : PolyhedralFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+        (hxg : x₀ ∈ convexDom g) :
+    convexConj (pairing n) (f + g)
+        = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
+  (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).convexConj_add
 
 /-- **§20 (p. 179)**, the all-polyhedral case, attainment: the infimum defining `(f* □ g*)(x*)` is
 attained for every `x*`. -/
-theorem theorem_20_1_pair_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : PolyhedralFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ dom f) (hxg : x₀ ∈ dom g)
+theorem theorem_20_1_pair_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
+    (hg : PolyhedralFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+        (hxg : x₀ ∈ convexDom g)
     (y : Rn n) :
     ∃ y₁ y₂ : Rn n, y₁ + y₂ = y ∧
-      conj (pairing n) f y₁ + conj (pairing n) g y₂ = conj (pairing n) (f + g) y :=
-  (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).exists_conj_add_eq y
+      convexConj (pairing n) f y₁ + convexConj (pairing n) g y₂
+          = convexConj (pairing n) (f + g) y :=
+  (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).exists_convexConj_add_eq y
 
 /-- **Theorem 20.1**. For `f` and `g` proper convex with `f` polyhedral and
 `dom f ∩ ri (dom g) ≠ ∅`,
@@ -161,70 +165,76 @@ theorem theorem_20_1_pair_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) 
 **The asymmetry is the point**: the polyhedral summand contributes only a point of `dom f`, the
 other a point of `ri (dom g)`. Compare `theorem_16_4_exact`, which asks for a point of
 `ri (dom f) ∩ ri (dom g)`, and `theorem_20_1_pair_exact`, which asks for neither. -/
-theorem theorem_20_1_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : ConvexFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : x₀ ∈ ri (dom g)) :
-    conj (pairing n) (f + g) = infConv (conj (pairing n) f) (conj (pairing n) g) :=
-  (IsExactSum.of_polyhedral (B := pairing n) hf hpf hg hpg hxf hxg).conj_add
+theorem theorem_20_1_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+    (hxg : x₀ ∈ ri (convexDom g)) :
+    convexConj (pairing n) (f + g)
+        = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
+  (IsExactSum.of_polyhedral (B := pairing n) hf hpf hg hpg hxf hxg).convexConj_add
 
 /-- **Theorem 20.1**, the attainment clause: under the same qualification the infimum
 `inf {f*(x₁*) + g*(x₂*) | x₁* + x₂* = x*}` is attained for each `x*`. -/
-theorem theorem_20_1_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : Proper f)
-    (hg : ConvexFn g) (hpg : Proper g) {x₀ : Rn n} (hxf : x₀ ∈ dom f)
-    (hxg : x₀ ∈ ri (dom g)) (y : Rn n) :
+theorem theorem_20_1_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
+    (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
+    (hxg : x₀ ∈ ri (convexDom g)) (y : Rn n) :
     ∃ y₁ y₂ : Rn n, y₁ + y₂ = y ∧
-      conj (pairing n) f y₁ + conj (pairing n) g y₂ = conj (pairing n) (f + g) y :=
-  (IsExactSum.of_polyhedral (B := pairing n) hf hpf hg hpg hxf hxg).exists_conj_add_eq y
+      convexConj (pairing n) f y₁ + convexConj (pairing n) g y₂
+          = convexConj (pairing n) (f + g) y :=
+  (IsExactSum.of_polyhedral (B := pairing n) hf hpf hg hpg hxf hxg).exists_convexConj_add_eq y
 
 section Corollary_20_1_1
 
 variable {f g : Rn n → EReal}
 
-private theorem isExactSum_conj_of_polyhedral (hf : PolyhedralFn f)
+private theorem isExactSum_convexConj_of_polyhedral (hf : PolyhedralFn f)
     (hcf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g) {x₀ : Rn n}
-    (hxf : x₀ ∈ dom (conj (pairing n) f)) (hxg : x₀ ∈ ri (dom (conj (pairing n) g))) :
-    IsExactSum (pairing n) (conj (pairing n) f) (conj (pairing n) g) :=
-  IsExactSum.of_polyhedral (B := pairing n) (PolyhedralFn.conj hf) (proper_conj hcf)
-    (convexFn_conj _ _) (proper_conj hg) hxf hxg
+    (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
+        (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) :
+    IsExactSum (pairing n) (convexConj (pairing n) f) (convexConj (pairing n) g) :=
+  IsExactSum.of_polyhedral (B := pairing n) (PolyhedralFn.convexConj hf)
+      (properConvex_convexConj hcf)
+    (convexFn_convexConj _ _) (properConvex_convexConj hg) hxf hxg
 
-private theorem infConv_eq_conj_add_conj (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
-    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ dom (conj (pairing n) f))
-    (hxg : x₀ ∈ ri (dom (conj (pairing n) g))) :
-    infConv f g = conj (pairing n) (conj (pairing n) f + conj (pairing n) g) := by
-  have hff : conj (pairing n) (conj (pairing n) f) = f := by
+private theorem infConv_eq_convexConj_add_convexConj (hf : PolyhedralFn f)
+    (hcf : ClosedProperConvexFn f)
+    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
+    (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) :
+    infConv f g = convexConj (pairing n) (convexConj (pairing n) f + convexConj (pairing n) g) := by
+  have hff : convexConj (pairing n) (convexConj (pairing n) f) = f := by
     rw [theorem_12_2_biconj hcf.convex]; exact hcf.closed
-  have hgg : conj (pairing n) (conj (pairing n) g) = g := by
+  have hgg : convexConj (pairing n) (convexConj (pairing n) g) = g := by
     rw [theorem_12_2_biconj hg.convex]; exact hg.closed
-  rw [(isExactSum_conj_of_polyhedral hf hcf hg hxf hxg).conj_add, hff, hgg]
+  rw [(isExactSum_convexConj_of_polyhedral hf hcf hg hxf hxg).convexConj_add, hff, hgg]
 
 /-- **Corollary 20.1.1**. For `f` and `g` closed proper convex with `f` polyhedral and
 `dom f* ∩ ri (dom g*) ≠ ∅`, the infimal convolute `f □ g` is a closed proper convex function.
 Rockafellar's proof verbatim: apply Theorem 20.1 to the conjugates, `f*` being polyhedral by
 Theorem 19.2, and read back through Theorem 12.2. -/
 theorem corollary_20_1_1 (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
-    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ dom (conj (pairing n) f))
-    (hxg : x₀ ∈ ri (dom (conj (pairing n) g))) :
+    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
+    (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) :
     ClosedProperConvexFn (infConv f g) := by
-  have hexact := isExactSum_conj_of_polyhedral hf hcf hg hxf hxg
-  rw [infConv_eq_conj_add_conj hf hcf hg hxf hxg]
-  exact ⟨convexFn_conj _ _, closedFn_conj, proper_conj_of_proper
-    (ConvexFn.add (convexFn_conj _ _) (convexFn_conj _ _)
-      (proper_conj hcf).ne_bot (proper_conj hg).ne_bot) hexact.proper_add⟩
+  have hexact := isExactSum_convexConj_of_polyhedral hf hcf hg hxf hxg
+  rw [infConv_eq_convexConj_add_convexConj hf hcf hg hxf hxg]
+  exact ⟨convexFn_convexConj _ _, closedConvex_convexConj, properConvex_convexConj_of_properConvex
+    (ConvexFn.add (convexFn_convexConj _ _) (convexFn_convexConj _ _)
+      (properConvex_convexConj hcf).ne_bot (properConvex_convexConj hg).ne_bot)
+          hexact.properConvex_add⟩
 
 /-- **Corollary 20.1.1**, the attainment clause: the infimum defining `(f □ g)(x)` is attained for
 every `x`. -/
 theorem corollary_20_1_1_attained (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
-    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ dom (conj (pairing n) f))
-    (hxg : x₀ ∈ ri (dom (conj (pairing n) g))) (x : Rn n) :
+    (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
+    (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) (x : Rn n) :
     ∃ x₁ x₂ : Rn n, x₁ + x₂ = x ∧ f x₁ + g x₂ = infConv f g x := by
-  have hff : conj (pairing n) (conj (pairing n) f) = f := by
+  have hff : convexConj (pairing n) (convexConj (pairing n) f) = f := by
     rw [theorem_12_2_biconj hcf.convex]; exact hcf.closed
-  have hgg : conj (pairing n) (conj (pairing n) g) = g := by
+  have hgg : convexConj (pairing n) (convexConj (pairing n) g) = g := by
     rw [theorem_12_2_biconj hg.convex]; exact hg.closed
   obtain ⟨x₁, x₂, hsum, hval⟩ :=
-    (isExactSum_conj_of_polyhedral hf hcf hg hxf hxg).exists_conj_add_eq x
+    (isExactSum_convexConj_of_polyhedral hf hcf hg hxf hxg).exists_convexConj_add_eq x
   refine ⟨x₁, x₂, hsum, ?_⟩
-  rw [infConv_eq_conj_add_conj hf hcf hg hxf hxg, ← hval, hff, hgg]
+  rw [infConv_eq_convexConj_add_convexConj hf hcf hg hxf hxg, ← hval, hff, hgg]
 
 end Corollary_20_1_1
 
@@ -239,47 +249,49 @@ index. -/
 theorem theorem_20_1_exact_finset {ι : Type*} {s t u : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
-    (hpf : ∀ i ∈ s, Proper (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ dom (f i))
-    (hxu : ∀ i ∈ u, x₀ ∈ ri (dom (f i))) :
-    conj (pairing n) (∑ i ∈ s, f i)
-      = ofInfConvFn (∑ i ∈ s, toInfConvFn (conj (pairing n) (f i))) :=
+    (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ convexDom (f i))
+    (hxu : ∀ i ∈ u, x₀ ∈ ri (convexDom (f i))) :
+    convexConj (pairing n) (∑ i ∈ s, f i)
+      = ofInfConvFn (∑ i ∈ s, toInfConvFn (convexConj (pairing n) (f i))) :=
   (IsExactFinsetSum.of_polyhedral (B := pairing n) hs hdisj hmem hpoly hconv hpf hxt
-    hxu).conj_finsetSum
+    hxu).convexConj_finsetSum
 
 /-- **Theorem 20.1**, the attainment clause for `m` summands:
 `inf {f₁*(x₁*) + ⋯ + fₘ*(xₘ*) | x₁* + ⋯ + xₘ* = x*}` is attained for each `x*`. -/
 theorem theorem_20_1_attained_finset {ι : Type*} {s t u : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
-    (hpf : ∀ i ∈ s, Proper (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ dom (f i))
-    (hxu : ∀ i ∈ u, x₀ ∈ ri (dom (f i))) (y : Rn n) :
+    (hpf : ∀ i ∈ s, ProperConvex (f i)) {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ convexDom (f i))
+    (hxu : ∀ i ∈ u, x₀ ∈ ri (convexDom (f i))) (y : Rn n) :
     ∃ y' : ι → Rn n, ∑ i ∈ s, y' i = y ∧
-      ∑ i ∈ s, conj (pairing n) (f i) (y' i) = conj (pairing n) (∑ i ∈ s, f i) y :=
+      ∑ i ∈ s, convexConj (pairing n) (f i) (y' i) = convexConj (pairing n) (∑ i ∈ s, f i) y :=
   (IsExactFinsetSum.of_polyhedral (B := pairing n) hs hdisj hmem hpoly hconv hpf hxt
-    hxu).exists_conj_finsetSum_eq y
+    hxu).exists_convexConj_finsetSum_eq y
 
 section Corollary_20_1_1_finset
 
 variable {ι : Type*} {s t u : Finset ι} {f : ι → Rn n → EReal}
 variable (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
 variable (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hcf : ∀ i ∈ s, ClosedProperConvexFn (f i))
-variable {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ dom (conj (pairing n) (f i)))
-variable (hxu : ∀ i ∈ u, x₀ ∈ ri (dom (conj (pairing n) (f i))))
+variable {x₀ : Rn n} (hxt : ∀ i ∈ t, x₀ ∈ convexDom (convexConj (pairing n) (f i)))
+variable (hxu : ∀ i ∈ u, x₀ ∈ ri (convexDom (convexConj (pairing n) (f i))))
 
 include hs hdisj hmem hpoly hcf hxt hxu
 
-private theorem isExactFinsetSum_conj_of_polyhedral :
-    IsExactFinsetSum (pairing n) s fun i => conj (pairing n) (f i) :=
+private theorem isExactFinsetSum_convexConj_of_polyhedral :
+    IsExactFinsetSum (pairing n) s fun i => convexConj (pairing n) (f i) :=
   IsExactFinsetSum.of_polyhedral (B := pairing n) hs hdisj hmem
-    (fun i hi => PolyhedralFn.conj (B := pairing n) (hpoly i hi))
-    (fun i _ => convexFn_conj (pairing n) (f i)) (fun i hi => proper_conj (hcf i hi)) hxt hxu
+    (fun i hi => PolyhedralFn.convexConj (B := pairing n) (hpoly i hi))
+    (fun i _ => convexFn_convexConj (pairing n) (f i))
+        (fun i hi => properConvex_convexConj (hcf i hi)) hxt hxu
 
-private theorem sum_toInfConvFn_eq_conj_finsetSum_conj :
+private theorem sum_toInfConvFn_eq_convexConj_finsetSum_convexConj :
     ofInfConvFn (∑ i ∈ s, toInfConvFn (f i))
-      = conj (pairing n) (∑ i ∈ s, conj (pairing n) (f i)) := by
-  have hbi : ∀ i ∈ s, conj (pairing n) (conj (pairing n) (f i)) = f i := fun i hi => by
+      = convexConj (pairing n) (∑ i ∈ s, convexConj (pairing n) (f i)) := by
+  have hbi : ∀ i ∈ s, convexConj (pairing n) (convexConj (pairing n) (f i)) = f i := fun i hi => by
     rw [theorem_12_2_biconj (hcf i hi).convex]; exact (hcf i hi).closed
-  rw [(isExactFinsetSum_conj_of_polyhedral hs hdisj hmem hpoly hcf hxt hxu).conj_finsetSum]
+  rw [(isExactFinsetSum_convexConj_of_polyhedral hs hdisj hmem hpoly hcf hxt
+      hxu).convexConj_finsetSum]
   exact congrArg ofInfConvFn
     (Finset.sum_congr rfl fun i hi => congrArg toInfConvFn (hbi i hi).symm)
 
@@ -291,27 +303,31 @@ private theorem sum_toInfConvFn_eq_conj_finsetSum_conj :
 is non-empty. Then `f₁ □ ⋯ □ fₘ` is a closed proper convex function. -/
 theorem corollary_20_1_1_finset :
     ClosedProperConvexFn (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i))) := by
-  have hx₀ : ∀ i ∈ s, x₀ ∈ dom (conj (pairing n) (f i)) := fun i hi =>
+  have hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (convexConj (pairing n) (f i)) := fun i hi =>
     (hmem i).1 hi |>.elim (fun h => hxt i h) fun h => intrinsicInterior_subset (hxu i h)
   obtain ⟨hconvsum, -, -⟩ :=
-    properConvexFn_finsetSum (f := fun i => conj (pairing n) (f i))
-      (fun i _ => convexFn_conj (pairing n) (f i)) (fun i hi => proper_conj (hcf i hi)) hx₀
-  rw [sum_toInfConvFn_eq_conj_finsetSum_conj hs hdisj hmem hpoly hcf hxt hxu]
-  exact ⟨convexFn_conj _ _, closedFn_conj, proper_conj_of_proper hconvsum
-    (isExactFinsetSum_conj_of_polyhedral hs hdisj hmem hpoly hcf hxt hxu).proper_finsetSum⟩
+    properConvexFn_finsetSum (f := fun i => convexConj (pairing n) (f i))
+      (fun i _ => convexFn_convexConj (pairing n) (f i))
+          (fun i hi => properConvex_convexConj (hcf i hi)) hx₀
+  rw [sum_toInfConvFn_eq_convexConj_finsetSum_convexConj hs hdisj hmem hpoly hcf hxt hxu]
+  exact ⟨convexFn_convexConj _ _, closedConvex_convexConj,
+      properConvex_convexConj_of_properConvex hconvsum
+    (isExactFinsetSum_convexConj_of_polyhedral hs hdisj hmem hpoly hcf hxt
+        hxu).properConvex_finsetSum⟩
 
 /-- **Corollary 20.1.1**, the attainment clause: the infimum defining `(f₁ □ ⋯ □ fₘ)(x)` is
 attained for every `x`. -/
 theorem corollary_20_1_1_attained_finset (x : Rn n) :
     ∃ x' : ι → Rn n, ∑ i ∈ s, x' i = x ∧
       ∑ i ∈ s, f i (x' i) = ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)) x := by
-  have hbi : ∀ i ∈ s, conj (pairing n) (conj (pairing n) (f i)) = f i := fun i hi => by
+  have hbi : ∀ i ∈ s, convexConj (pairing n) (convexConj (pairing n) (f i)) = f i := fun i hi => by
     rw [theorem_12_2_biconj (hcf i hi).convex]; exact (hcf i hi).closed
   obtain ⟨x', hx', hval⟩ :=
-    (isExactFinsetSum_conj_of_polyhedral hs hdisj hmem hpoly hcf hxt hxu).exists_conj_finsetSum_eq
+    (isExactFinsetSum_convexConj_of_polyhedral hs hdisj hmem hpoly hcf hxt
+        hxu).exists_convexConj_finsetSum_eq
       x
   refine ⟨x', hx', ?_⟩
-  rw [sum_toInfConvFn_eq_conj_finsetSum_conj hs hdisj hmem hpoly hcf hxt hxu, ← hval]
+  rw [sum_toInfConvFn_eq_convexConj_finsetSum_convexConj hs hdisj hmem hpoly hcf hxt hxu, ← hval]
   exact Finset.sum_congr rfl fun i hi => congrArg (fun k => k (x' i)) (hbi i hi).symm
 
 end Corollary_20_1_1_finset

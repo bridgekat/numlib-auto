@@ -16,7 +16,8 @@ example uses only one `⊤` value and one `⊥` value, a single such hypothesis 
 
 ## Main definitions
 
-* `infConv f g` — the infimal convolute `f □ g`.
+* `infConv f g` — the infimal convolute `f □ g`; `supConv g h`, its concave twin
+  `-((-g) □ (-h))`, the supremal convolute.
 * `InfConvFn E` — the type synonym `E → EReal` carrying `□` as its addition, so that
   `f₁ □ ⋯ □ fₘ` is a `Finset.sum`. A synonym is forced, since `E → EReal` already carries the
   pointwise `+` that `□` is dual to; additive notation is right, `□` being addition of epigraphs.
@@ -26,7 +27,10 @@ example uses only one `⊤` value and one `⊥` value, a single such hypothesis 
 * `convexFn_infConv` — `□` preserves convexity; `convexFn_sum_toInfConvFn` is the m-ary form.
 * `infConv_apply`, `infConv_le_add` — the classical infimum formula and its inequality half;
   `sum_toInfConvFn_apply_le`, `sum_toInfConvFn_le_sum` are the m-ary versions.
-* `dom_infConv` — `dom (f □ g) = dom f + dom g`, with no hypothesis at all.
+* `convexDom_infConv` — `dom (f □ g) = dom f + dom g`, with no hypothesis at all.
+* `supConv_apply`, `concaveDom_supConv`, `concaveFn_supConv` — the concave mirrors, by one
+  negation.
+* `infConv_comp_neg` — infimal convolution commutes with negating the argument.
 * `InfConvFn.instAddCommMonoid` — `□` is commutative and associative with identity `δ(· | 0)`;
   `infConv_indicatorFn_singleton` translates the graph of `f` by `a`.
 * `subset_epi_infConv`, `epi_infConv` — `epi f + epi g ⊆ epi (f □ g)` always; equality needs
@@ -53,6 +57,20 @@ formula `(f □ g) x = ⨅ y, f (x - y) + g y`, which is ill-formed when `f` or 
 noncomputable def infConv (f g : E → EReal) : E → EReal := ofEpi (epi f + epi g)
 
 theorem infConv_def (f g : E → EReal) : infConv f g = ofEpi (epi f + epi g) := rfl
+
+/-- **Supremal convolution** of two concave functions, Rockafellar's `□` in its concave
+orientation: `(g □ h)(x) = sup {g x₁ + h x₂ | x₁ + x₂ = x}`. Defined as `-((-g) □ (-h))`, so that
+every property of `infConv` transfers by one negation; the supremum formula is `supConv_apply`. -/
+noncomputable def supConv (g h : E → EReal) : E → EReal :=
+  fun x => -(infConv (fun w => -(g w)) (fun w => -(h w)) x)
+
+theorem supConv_def (g h : E → EReal) :
+    supConv g h = fun x => -(infConv (fun w => -(g w)) (fun w => -(h w)) x) := rfl
+
+/-- The sign dictionary for `□`: `-(g □ h) = (-g) □ (-h)`. The two convolutions negate *values*,
+not arguments. -/
+@[simp] theorem neg_supConv (g h : E → EReal) (x : E) :
+    -(supConv g h x) = infConv (fun w => -(g w)) (fun w => -(h w)) x := neg_neg _
 
 theorem subset_epi_infConv (f g : E → EReal) : epi f + epi g ⊆ epi (infConv f g) :=
   subset_epi_ofEpi _
@@ -88,11 +106,19 @@ theorem infConv_apply_le (hy : f y ≤ (ν : EReal)) (hz : g z ≤ (ρ : EReal))
 
 /-! ### The effective domain -/
 
-/-- `dom (f □ g) = dom f + dom g`, with no hypothesis, unlike `dom_add` for pointwise addition:
-`dom` is the projection of the epigraph, and projection is an additive hom. -/
-theorem dom_infConv (f g : E → EReal) : dom (infConv f g) = dom f + dom g := by
-  rw [infConv_def, dom_ofEpi, dom_eq_fst_image_epi f, dom_eq_fst_image_epi g]
+/-- `dom (f □ g) = dom f + dom g`, with no hypothesis, unlike `convexDom_add` for pointwise
+addition: `convexDom` is the projection of the epigraph, and projection is an additive hom. -/
+theorem convexDom_infConv
+    (f g : E → EReal) : convexDom (infConv f g) = convexDom f + convexDom g := by
+  rw [infConv_def, convexDom_ofEpi, convexDom_eq_fst_image_epi f, convexDom_eq_fst_image_epi g]
   exact Set.image_add (AddMonoidHom.fst E ℝ)
+
+/-- `concaveDom (g □ h) = concaveDom g + concaveDom h`, with no hypothesis. -/
+theorem concaveDom_supConv (g h : E → EReal) :
+    concaveDom (supConv g h) = concaveDom g + concaveDom h := by
+  rw [concaveDom_eq_convexDom_neg, concaveDom_eq_convexDom_neg, concaveDom_eq_convexDom_neg]
+  simp only [neg_supConv]
+  exact convexDom_infConv _ _
 
 /-! ### The infimum formula -/
 
@@ -122,10 +148,50 @@ theorem infConv_apply (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E
   rw [← hab.1, add_sub_cancel_right, ← hab.2, EReal.coe_add]
   exact add_le_add (mk_mem_epi.1 ha) (mk_mem_epi.1 hb)
 
+/-- **The formula for the concave `□`**: `(g □ h)(x) = sup {g (x - y) + h y | y}`. The hypotheses
+mirror those of `infConv_apply`: without them the summand is `∞ - ∞` where one function is `+∞` and
+the other `-∞`, and `EReal` resolves it on the wrong side. -/
+theorem supConv_apply {g h : E → EReal} (hg : ∀ x, g x ≠ ⊤) (hh : ∀ x, h x ≠ ⊤) (x : E) :
+    supConv g h x = ⨆ y, g (x - y) + h y := by
+  change -(infConv (fun w => -(g w)) (fun w => -(h w)) x) = _
+  rw [infConv_apply (fun z => by simpa using hg z) (fun z => by simpa using hh z), EReal.neg_iInf]
+  refine iSup_congr fun y => ?_
+  rw [EReal.neg_add_of_ne_bot (by simpa using hg (x - y)) (by simpa using hh y), neg_neg, neg_neg]
+
 /-! ### Commutativity, associativity, monotonicity -/
 
 theorem infConv_comm (f g : E → EReal) : infConv f g = infConv g f := by
   rw [infConv_def, infConv_def, add_comm]
+
+theorem supConv_comm (g h : E → EReal) : supConv g h = supConv h g :=
+  funext fun x => congrArg Neg.neg (congrFun (infConv_comm _ _) x)
+
+/-- **Infimal convolution commutes with negating the argument**: `(f ∘ -) □ (g ∘ -) = (f □ g) ∘ -`.
+Negation in the first coordinate is an additive bijection of `E × ℝ`, so it carries the sum of the
+epigraphs to the sum of their images. -/
+theorem infConv_comp_neg (f g : E → EReal) (x : E) :
+    infConv (fun w => f (-w)) (fun w => g (-w)) x = infConv f g (-x) := by
+  have key : ∀ μ : ℝ, ((x, μ) : E × ℝ) ∈ epi (fun w => f (-w)) + epi (fun w => g (-w))
+      ↔ ((-x, μ) : E × ℝ) ∈ epi f + epi g := by
+    intro μ
+    constructor
+    · rintro ⟨⟨a, α⟩, ha, ⟨b, β⟩, hb, hab⟩
+      have hab' : ((a, α) : E × ℝ) + (b, β) = (x, μ) := hab
+      rw [Prod.mk_add_mk, Prod.mk.injEq] at hab'
+      refine ⟨(-a, α), mk_mem_epi.2 (mk_mem_epi.1 ha), (-b, β),
+        mk_mem_epi.2 (mk_mem_epi.1 hb), ?_⟩
+      change ((-a, α) : E × ℝ) + (-b, β) = (-x, μ)
+      rw [Prod.mk_add_mk, ← neg_add, hab'.1, hab'.2]
+    · rintro ⟨⟨a, α⟩, ha, ⟨b, β⟩, hb, hab⟩
+      have hab' : ((a, α) : E × ℝ) + (b, β) = (-x, μ) := hab
+      rw [Prod.mk_add_mk, Prod.mk.injEq] at hab'
+      refine ⟨(-a, α), ?_, (-b, β), ?_, ?_⟩
+      · exact mk_mem_epi.2 (by rw [neg_neg]; exact mk_mem_epi.1 ha)
+      · exact mk_mem_epi.2 (by rw [neg_neg]; exact mk_mem_epi.1 hb)
+      · change ((-a, α) : E × ℝ) + (-b, β) = (x, μ)
+        rw [Prod.mk_add_mk, ← neg_add, hab'.1, neg_neg, hab'.2]
+  exact le_antisymm (le_ofEpi fun μ hμ => ofEpi_apply_le ((key μ).2 hμ))
+    (le_ofEpi fun μ hμ => ofEpi_apply_le ((key μ).1 hμ))
 
 /-- Enlarging a summand from `F` to the epigraph it determines does not move the lower boundary of
 the sum: the points `epi (ofEpi F)` adds are limits from above of points of `F`. This is what makes
@@ -162,8 +228,18 @@ theorem infConv_assoc (f g h : E → EReal) :
     infConv (infConv f g) h = infConv f (infConv g h) := by
   rw [infConv_def f g, infConv_def g h, infConv_ofEpi_left, infConv_ofEpi_right, add_assoc]
 
+theorem supConv_assoc (g h k : E → EReal) :
+    supConv (supConv g h) k = supConv g (supConv h k) := by
+  simp only [supConv_def, neg_neg]
+  exact congrArg (fun F : E → EReal => fun x => -(F x)) (infConv_assoc _ _ _)
+
 theorem infConv_mono (hf : f₁ ≤ f₂) (hg : g₁ ≤ g₂) : infConv f₁ g₁ ≤ infConv f₂ g₂ :=
   ofEpi_mono (Set.add_subset_add (epi_anti hf) (epi_anti hg))
+
+theorem supConv_mono {h₁ h₂ : E → EReal} (hg : g₁ ≤ g₂) (hh : h₁ ≤ h₂) :
+    supConv g₁ h₁ ≤ supConv g₂ h₂ := fun x =>
+  EReal.neg_le_neg_iff.2 (infConv_mono (fun w => EReal.neg_le_neg_iff.2 (hg w))
+    (fun w => EReal.neg_le_neg_iff.2 (hh w)) x)
 
 /-! ### Indicator functions: the identity element and translation -/
 
@@ -203,6 +279,34 @@ theorem infConv_indicatorFn_singleton (f : E → EReal) (a : E) :
     infConv (indicatorFn ({0} : Set E)) f = f := by
   rw [infConv_comm, infConv_indicatorFn_zero]
 
+/-- The infimal convolute of two indicator functions is the indicator function of the sum of the
+sets. -/
+theorem infConv_indicatorFn (S T : Set E) :
+    infConv (indicatorFn S) (indicatorFn T) = indicatorFn (S + T) := by
+  have hepi : epi (indicatorFn S) + epi (indicatorFn T) = epi (indicatorFn (S + T)) := by
+    rw [epi_indicatorFn, epi_indicatorFn, epi_indicatorFn]
+    ext p
+    constructor
+    · rintro ⟨q, ⟨hq, hq0⟩, r, ⟨hr, hr0⟩, rfl⟩
+      exact ⟨⟨q.1, hq, r.1, hr, rfl⟩,
+        Set.mem_Ici.2 (add_nonneg (Set.mem_Ici.1 hq0) (Set.mem_Ici.1 hr0))⟩
+    · rintro ⟨hw, hc⟩
+      obtain ⟨a, ha, b, hb, hab⟩ := hw
+      refine ⟨(a, p.2), ⟨ha, hc⟩, (b, 0), ⟨hb, Set.mem_Ici.2 (le_refl 0)⟩, ?_⟩
+      have hab2 : a + b = p.1 := hab
+      change ((a, p.2) : E × ℝ) + (b, 0) = p
+      rw [Prod.mk_add_mk, hab2, add_zero]
+  rw [infConv_def, hepi, ofEpi_epi]
+
+/-- The concave mirror of `infConv_indicatorFn`: the supremal convolute of two *negated* indicator
+functions is the negated indicator function of the sum of the sets. -/
+theorem supConv_neg_indicatorFn (S T : Set E) :
+    supConv (fun x => -(indicatorFn S x)) (fun x => -(indicatorFn T x))
+      = fun x => -(indicatorFn (S + T) x) := by
+  funext x
+  simp only [supConv_def, neg_neg]
+  rw [infConv_indicatorFn]
+
 /-- If `g` is nonpositive at the origin then `f □ g ≤ f`, since `δ(· | 0)` dominates such a `g`. -/
 theorem infConv_le_left (f : E → EReal) (hg : g 0 ≤ 0) : infConv f g ≤ f := by
   refine le_of_le_of_eq (infConv_mono (le_refl f) ?_) (infConv_indicatorFn_zero f)
@@ -230,6 +334,13 @@ classical hypothesis only makes the infimum formula meaningful, and the epigraph
 does not use it. -/
 theorem convexFn_infConv (hf : ConvexFn f) (hg : ConvexFn g) : ConvexFn (infConv f g) :=
   convexFn_ofEpi (hf.convex_epi.add hg.convex_epi)
+
+/-- The supremal convolute of two concave functions is concave. -/
+theorem concaveFn_supConv {h : E → EReal} (hg : ConcaveFn g) (hh : ConcaveFn h) :
+    ConcaveFn (supConv g h) := by
+  rw [concaveFn_iff_convexFn_neg]
+  simp only [neg_supConv]
+  exact convexFn_infConv hg.convexFn_neg hh.convexFn_neg
 
 end Module
 
@@ -342,13 +453,14 @@ theorem sum_toInfConvFn_le_sum (hg : ∀ i ∈ s, ∀ x, g i x ≠ ⊥) (y : ι 
 
 /-- `dom (g₁ □ ⋯ □ gₘ) = dom g₁ + ⋯ + dom gₘ`, with no hypothesis; the empty convolute is
 `δ(· | 0)`, whose domain `{0}` is the empty sum of sets. -/
-theorem dom_sum_toInfConvFn (s : Finset ι) (g : ι → E → EReal) :
-    dom (ofInfConvFn (∑ i ∈ s, toInfConvFn (g i))) = ∑ i ∈ s, dom (g i) := by
+theorem convexDom_sum_toInfConvFn (s : Finset ι) (g : ι → E → EReal) :
+    convexDom (ofInfConvFn (∑ i ∈ s, toInfConvFn (g i))) = ∑ i ∈ s, convexDom (g i) := by
   induction s using Finset.cons_induction with
-  | empty => rw [Finset.sum_empty, Finset.sum_empty, ofInfConvFn_zero, dom_indicatorFn,
+  | empty => rw [Finset.sum_empty, Finset.sum_empty, ofInfConvFn_zero, convexDom_indicatorFn,
       Set.singleton_zero]
   | cons i t hi ih =>
-    rw [Finset.sum_cons, Finset.sum_cons, ofInfConvFn_add, ofInfConvFn_toInfConvFn, dom_infConv,
+    rw [Finset.sum_cons, Finset.sum_cons, ofInfConvFn_add, ofInfConvFn_toInfConvFn,
+        convexDom_infConv,
       ih]
 
 end MonoidSum

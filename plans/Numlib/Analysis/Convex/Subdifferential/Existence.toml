@@ -1,13 +1,16 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'dirDeriv_eq_supportFn_of_mem_relint_dom'
+id = 'dirDeriv_eq_supportFn_of_mem_relint_convexDom'
 
 [[node]]
-id = 'subdifferential_nonempty_of_mem_relint_dom'
+id = 'subdifferential_nonempty_of_mem_relint_convexDom'
 
 [[node]]
-id = 'bddAbove_subdifferential_iff_mem_interior_dom'
+id = 'superdifferential_nonempty_of_mem_relint_concaveDom'
+
+[[node]]
+id = 'bddAbove_subdifferential_iff_mem_interior_convexDom'
 
 [[node]]
 id = 'subdifferential_eq_empty_iff_exists_dirDeriv_eq_bot'
