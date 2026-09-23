@@ -64,8 +64,18 @@ Modules (dependency order; sizes are estimates of Lean lines):
   the piecewise-Sobolev membership and continuity theorems (Atkinson–Han Examples 7.2.7–7.2.8).
 * `Kernel` (~600, wave C): `ker traceL = W_0^{1,p}(Ω)` on a bounded `C¹` domain (Evans §5.5,
   Theorem 2).
-* `KornSecond` (blocked): Korn's second inequality and the mixed elasticity problem, planned with
-  the route (Lions's lemma) and no proof.
+
+Not formalized. `KornSecond` was planned as a twelfth module — Korn's second inequality
+`‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})` on `[H¹(Ω)]^N`, the space `[H¹(Ω)]^N` itself with its
+strain operators and the mixed space `V = {v : γv = 0 on Γ_D}`, and the `V`-ellipticity
+`‖v‖²_{H¹} ≤ C ‖ε(v)‖²_{L²}` on `V` (Atkinson–Han §8.5, Theorem 8.5.1's missing step) — and was
+removed unwritten in the closing round (2026-09-23): the proof needs **Lions's lemma**
+(`f, ∇f ∈ H^{−1}(Ω) ⇒ f ∈ L²(Ω)` on a bounded Lipschitz domain, through Bogovskiĭ's right inverse
+of the divergence or the `H^{−1}` Nečas inequality), which is research-scale, 2000+ lines, and
+which neither Mathlib nor `Numlib/` has; the trace is not what is missing. The full record, with
+the route, the rigid-motion step and the line estimates, is the `## Not formalized here` section of
+`ContDiffDomain.lean`, and the consumer's side of it is in
+`NumlibSurface/AtkinsonHan/Chapter08/Section05.lean`.
 
 Order of attack: wave A in parallel — `Gram` + `GraphMeasure` (one agent), `Data` (first, tiny),
 `Divergence`, `Density`, `Trace`, `Polygon`, `ChartGraph`; wave B — `ContDiffDomain`,

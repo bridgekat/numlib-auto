@@ -54,32 +54,6 @@ id = "kelvin"
 id = "kelvin_harmonic"
 
 [[node]]
-id = "theorem_13_1_1"
-kind = "theorem"
-source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 13.1.1; the OCR's Theorem 13.1.31 is a garbled reference to it"
-desc = '''
-Theorem 13.1.1 (§13.1): for `f` continuous on a boundary `S` that admits a twice continuously
-differentiable parametrization, the interior Dirichlet problem has a unique solution, and the
-interior Neumann problem has a solution, unique up to an additive constant, exactly when
-`∫_S f dS = 0`. The classical existence theory for the planar Laplace equation, quoted from the
-book's Chapter 8 rather than proved here.
-
-Blocked: rechecked 2026-09-21 (boundary round, agent bsurf11). What the round supplies: the
-surface measure `dS`, the normal, the trace and Green's formula on bounded `C¹` plane domains
-(`IsContDiffDomain.traceFamily`), so the *weak* Neumann problem is statable and solvable — it is
-`theorem_13_1_1_neumann_weak`, proved (existence iff `∫_S f dS = 0`, uniqueness up to a constant,
-on a bounded connected `C¹` domain in any dimension). What remains blocked are the classical clauses: the
-Dirichlet problem with merely continuous boundary data `f ∈ C(S)` (the variational route needs
-an `H¹` extension of `f`, i.e. `f ∈ H^{1/2}(S)`, `theorem_7_3_10_range`; the potential route
-needs the layer potentials and jump relations the rest of §13.1 is skipped for), and the
-classical (rather than weak) Neumann solution with `∂u/∂n = f` pointwise, which needs boundary
-regularity of the weak solution (`Elliptic.regularity_neumann` and its `C²` version). The
-maximum principle for the uniqueness of the Dirichlet problem is Mathlib's `HarmonicContOnCl`.
-Estimate as before for the classical clauses; the weak Neumann clause is ~300 lines.
-'''
-deps = ["theorem_13_1_2", "theorem_13_1_1_neumann_weak"]
-
-[[node]]
 id = "exists_one"
 
 [[node]]
@@ -105,20 +79,3 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 13.1.2"
 [[node]]
 id = "theorem_13_1_2_polygon"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 13.1.2 (on a polygon)"
-
-[[node]]
-id = "theorem_13_1_2_piecewise"
-kind = "theorem"
-desc = '''
-Theorem 13.1.2 in the chapter's generality: a multiply connected planar region whose boundary is a
-finite union of piecewise `C²` (or merely `C¹`) Jordan curves with corners.
-
-Blocked (2026-09-21, boundary round; the `C¹` and polygonal cases are `theorem_13_1_2`): a
-region bounded by curves with corners that are neither straight (polygon) nor `C¹` — a curved
-polygon — is a Lipschitz domain and falls under the Lipschitz theory left out of scope; an
-arclength measure on a parametrized `C¹` curve as a `BoundaryData` (the plane case of a
-chart-based, Brezis-style definition through `EuclideanSpace.gram`) would cover the smooth
-multiply connected case at ~600 lines, and the curved-corner case needs the piecewise gluing of
-`Polygon.lean` for curved edges. Nothing in the chapter's proved part depends on it.
-'''
-deps = ["theorem_13_1_2"]

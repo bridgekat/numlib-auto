@@ -73,9 +73,33 @@ there is no Theorem 13.1.3 in the chapter.
 
 **Boundary round (2026-09-21).** The divergence theorem `theorem_13_1_2` is restated on bounded
 `C¹` plane domains and on triangulated polygons (`Numlib/Analysis/Sobolev/Boundary/`), with the
-chapter's inner-normal sign; the general piecewise-smooth multiply connected region is
-`theorem_13_1_2_piecewise` (blocked, Lipschitz/curved-corner theory). Of Theorem 13.1.1 the weak
-Neumann clause is split off as `theorem_13_1_1_neumann_weak` (in reach: trace, Green,
-Poincaré–Wirtinger); the classical clauses and the jump relation behind `equation_13_2_19` stay
-blocked (potential theory, `H^{1/2}` data), though the double layer potential is now definable.
+chapter's inner-normal sign; the general piecewise-smooth multiply connected region stays out of
+reach (Lipschitz/curved-corner theory). Of Theorem 13.1.1 the weak Neumann clause is split off as
+`theorem_13_1_1_neumann_weak` (in reach: trace, Green, Poincaré–Wirtinger); the classical clauses
+and the jump relation behind (13.2.19) stay blocked (potential theory, `H^{1/2}` data), though the
+double layer potential is now definable.
+
+**Closing round (2026-09-23).** The four remaining open nodes of the chapter were removed and
+written up in the module docs, which are now the permanent record; the reasons above are unchanged,
+and each is carried there in full.
+
+* **Theorem 13.1.1**, the classical clauses: the Dirichlet problem with merely continuous data
+  (wants `f ∈ H^{1/2}(S)`, i.e. a characterization of the range of the trace, or the layer
+  potentials) and the classical Neumann solution with `∂u/∂n = f` pointwise (wants boundary
+  regularity of the weak solution). The weak Neumann clause is proved.
+  `NumlibSurface/AtkinsonHan/Chapter13/Section01.lean`.
+* **Theorem 13.1.2** on a multiply connected region bounded by piecewise `C²` Jordan curves with
+  corners: a curved polygon is a Lipschitz domain, out of scope; an arclength measure on a
+  parametrized `C¹` curve as a `BoundaryData` would cover the smooth multiply connected case at
+  ~600 lines. The `C¹` and polygonal cases are proved. Same module doc.
+* **(13.2.19)** and (13.2.14)–(13.2.23): the bound needs the maximum principle *and* the **jump
+  relation** (13.2.17) of the double layer potential across `S`, not a singularity subtraction —
+  §13.2.1 contains no singularity subtraction, that scheme being from Atkinson's own monograph.
+  Nothing of it follows from Green's formula alone; ~800 lines on a `C²` boundary.
+  `NumlibSurface/AtkinsonHan/Chapter13/Section02.lean`.
+* **Exercise 13.2.5** and (13.2.20), `‖K‖ = π` on a convex region: a boundary-point form of Hopf's
+  Umlaufsatz, needing a continuous argument along a plane curve and a turning number. **Convexity
+  is used for the whole statement, not only for the lower bound**: for a non-convex smooth curve
+  `∫_0^L |k(t, s)| ds > |∫_0^L k(t, s) ds| = π`, so the `≤ π` half is false there. ~400–600 lines.
+  Same module doc.
 '''

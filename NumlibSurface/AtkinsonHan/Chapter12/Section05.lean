@@ -48,11 +48,44 @@ book's numbered results, each a specialization of one of those.
 
 ## Not formalized here
 
-* Theorem 12.5.4, the regularity of the solution of a weakly singular equation.  It is the one
-  item of the chapter whose *mathematics*, and not merely whose supporting API, is missing: the
-  book proves it by differentiating `u = (f + K u)/λ` under the singular integral sign and
-  bootstrapping, and nothing in `Numlib/IntegralEquations/WeaklySingular` touches
-  differentiability.  `theorem_12_5_6` therefore takes its conclusion as a hypothesis.
+* **Theorem 12.5.4**, the regularity of the solution of a weakly singular equation: for (12.5.26)
+  with `g_γ(u) = u^{γ-1}` (`0 < γ < 1`) or `log |u|` (`γ = 1`), a `C^{k+1}` coefficient `l` and
+  data `f` of the stated class, the solution satisfies `u ∈ C^{(0,γ)}[a, b] ∩ C^k(a, b)` with
+  `(x - a)^i (b - x)^i u^{(i)}(x) ∈ C^{(0,γ)}[a, b]` vanishing at the endpoints, and
+  `|u^{(i)}(x)| ≤ c_i (x - a)^{γ-i}` near `a`.  It is the one item of the chapter whose
+  *mathematics*, and not merely whose supporting API, is missing, and the book does not carry it
+  out either: it cites Schneider.
+
+  Two things it is *not* blocked on, both of which an earlier note here got wrong.  The concrete
+  admissible kernels exist: `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` is the kernel
+  `|x - y|^{-γ}`, `0 < γ < 1`, on an interval — the book's `g_γ` up to the naming of the exponent
+  — and `isAdmissibleKernel_of_abs_le_rpow` with `abs_log_le_two_mul_rpow` covers `log |x - y|`,
+  so the interval-integral estimates are done.  And proving 12.5.4 would unlock
+  nothing downstream: `theorem_12_5_6` already carries its conclusion as a hypothesis, which is
+  what the book's own use of it amounts to, so a proof would turn that hypothesis into a
+  consequence and no more.
+
+  What is genuinely missing is two pieces.  (1) **Differentiation under a weakly singular
+  integral sign, with a moving singularity.**  Every step of the bootstrap needs
+  `d/dx ∫_a^b l(x, y) g_γ(x - y) u(y) dy`, and the derivative is *not* the integral of the
+  differentiated integrand: differentiating the kernel in `x` produces `|x - y|^{γ-2}`, which is
+  not integrable, so Mathlib's
+  `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le` cannot apply — its
+  dominating function cannot exist.  The classical fix is the substitution `y = x + s`, splitting
+  the integral at `y = x` and differentiating in the shifted variable, where the `x`-dependence
+  sits in the *limits* as well as in `l`; the endpoint weights `(x - a)^i (b - x)^i` of the
+  conclusion are exactly the boundary terms this produces.  That change of variables for an
+  interval integral with a moving singularity is what the library lacks, and it is the whole of
+  the work: `300-500` lines for it and one differentiation step, `500-800` more for the bootstrap
+  to order `k` with the weights.  (2) **The log-modified Hölder class** `C^{(0,1)}[a, b]` of the
+  paragraph preceding the theorem, with modulus `|x - ξ| log |B / (x - ξ)|` for some `B > b - a`:
+  `AtkinsonHan.Chapter03.HolderClass` covers only `0 < β < 1`, and the `γ = 1` half of the
+  statement needs the modified class.  Cheap — about 50 lines — once the class is defined.
+
+  A worthwhile intermediate target, and the only consequence chapter 12 actually consumes: that
+  `y ↦ l(x, y) u(y)` is of Rice's type `(γ, m + 1)` uniformly in `x` whenever `u` is.  That is
+  the hypothesis `theorem_12_5_6` carries, and deriving it from 12.5.4 needs only the Leibniz
+  rule and the smoothness of `l`.
 * §12.5.2, the generalizations to kernels not of the form `l g`.
 * The numerical half of Example 12.5.3: Table 12.3, the measured errors of the product trapezoidal
   and product Simpson rules for (12.5.21), and the remark that the first, naive splitting

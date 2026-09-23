@@ -71,32 +71,3 @@ id = "elasticityLoad_apply"
 [[node]]
 id = "theorem_8_5_1_dirichlet"
 source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 8.5.1, the pure displacement case Gamma_D = Gamma"
-
-[[node]]
-id = "theorem_8_5_1"
-kind = "theorem"
-desc = '''Theorem 8.5.1, the mixed displacement–traction problem: on a bounded connected `C¹` domain
-`Ω ⊆ ℝ^{d+1}` (`hΩ : IsContDiffDomain 1 Ω`, `hb`; the book's "Lipschitz" restated), with
-`σ := hΩ.boundaryMeasure hb`, `ν := hΩ.outwardNormal hb`, the componentwise trace
-`γ` of `(hΩ.traceFamily hb)` (`SobolevEuclideanVec.traceL`, decision B8), a measurable
-`Γ_D ⊆ frontier Ω` with `0 < σ Γ_D` (the book's `meas(Γ_D) > 0`) and `Γ_N := frontier Ω \ Γ_D`,
-the space `V := SobolevEuclideanVec.dirichletOn (hΩ.traceFamily hb) Γ_D = {v ∈ [H¹(Ω)]^{d+1} : γ v = 0 σ-a.e. on Γ_D}`
-(a closed subspace, `Numlib/Analysis/Sobolev/Boundary/KornSecond.lean`), an elasticity tensor `C`
-satisfying (8.5.6)–(8.5.8) (`IsElasticityTensor`), `f ∈ [L²(Ω)]^{d+1}` and a traction
-`g ∈ [L²(σ.restrict Γ_N)]^{d+1}` (8.5.14): the weak problem (8.5.15) — `u ∈ V`,
-`∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫ x in Γ_N, g x · γ v x ∂σ` for all `v ∈ V` — has a unique
-solution, equal to the minimizer of the energy (8.5.17) over `V`. Restated 2026-09-21 (boundary
-round): every object is now statable — the form is `elasticityForm Ω C` restricted to `V`, the
-load is `elasticityLoad Ω f` plus the traction functional `v ↦ ∫_{Γ_N} g · γ v dσ`, bounded by
-`‖g‖_{L²(σ)} ‖γ‖ ‖v‖` — and the proof is Lax–Milgram (`theorem_8_3_4`, `existsUnique_and_isMinOn_iff`)
-exactly as in the pure displacement case `theorem_8_5_1_dirichlet`, once the `V`-ellipticity
-`elasticityForm_isCoerciveWith` on `V` is known, i.e. Korn's inequality on the mixed space
-`SobolevEuclideanVec.norm_le_strain_of_dirichletOn`.
-
-Blocked (2026-09-21, boundary round; replaces the 2026-09-20 note, whose item (1) — the trace and
-the surface measure — is now provided): on `SobolevEuclideanVec.korn_second`, Korn's second
-inequality `‖v‖_{H¹} ≤ C (‖v‖_{L²} + ‖ε(v)‖_{L²})` on `[H¹(Ω)]^{d+1}`, whose proof needs Lions's
-lemma (`f, ∇f ∈ H^{−1} ⇒ f ∈ L²`; Bogovskiĭ's operator), a research-scale formalization
-(2000+ lines) recorded with its route in `KornSecond.toml`. After it: ~200 lines here (the
-compactness argument and the rigid motions are `norm_le_strain_of_dirichletOn`).'''
-deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex", "SobolevEuclideanVec.norm_le_strain_of_dirichletOn", "SobolevEuclideanVec"]

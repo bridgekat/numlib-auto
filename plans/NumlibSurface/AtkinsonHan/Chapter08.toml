@@ -21,9 +21,17 @@ those spaces — the trace, Poincaré–Friedrichs, Deny–Lions — and that is
   equivalent to the `H¹` seminorm) is a Deny–Lions equivalence (AH Theorem 7.3.12); the weak
   formulations (8.4.1)–(8.4.22) and Exercises 8.4.1–8.4.9 need the trace for the Dirichlet,
   Neumann and Robin conditions, and 8.4.9 needs `H²₀(Ω)` and the second trace as well.
-* **§8.5, linearized elasticity.** Theorem 8.5.1 needs the trace on `Γ_D`, the linearized strain
-  over `[H¹(Ω)]^d`, the symmetry conditions (8.5.6)–(8.5.8) and above all **Korn's inequality**,
-  which no library has.
+* **§8.5, linearized elasticity.** The pure displacement case of Theorem 8.5.1 is proved
+  (`theorem_8_5_1_dirichlet`), on Korn's *first* inequality. The **mixed displacement–traction
+  case** `meas(Γ_D) > 0`, `Γ_N ≠ ∅` is not formalized, and its node was removed in the closing
+  round (2026-09-23): every object in it is statable since the boundary round — the trace, the
+  surface measure, the space `V` of (8.5.13) — and the proof is Lax–Milgram exactly as in the
+  displacement case, ~200 lines, but it needs the `V`-ellipticity of the elasticity form and
+  hence **Korn's second inequality** `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})`, whose proof
+  rests on Lions's lemma (Bogovskiĭ's right inverse of the divergence; research-scale, 2000+
+  lines). The record is the `## Not formalized here` section of
+  `NumlibSurface/AtkinsonHan/Chapter08/Section05.lean`, with the backbone side in
+  `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`.
 * **§8.8, a nonlinear problem.** Lemmas 8.8.1–8.8.4 and Theorem 8.8.5 are set on `W^{1,p}₀(Ω)`,
   which exists. What they need of it is the Poincaré inequality (AH Theorem 7.3.13) making
   `(∫_Ω |∇v|^p)^{1/p}` a norm on it, and the reflexivity of that space — statable, since

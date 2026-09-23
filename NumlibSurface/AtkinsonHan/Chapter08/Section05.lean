@@ -35,9 +35,48 @@ as `L^∞` classes, its symmetry (8.5.7) and pointwise stability (8.5.8) as `IsE
   only if it minimizes the energy (8.5.17) over `V` — Lax–Milgram (`theorem_8_3_4`) and
   Theorem 8.3.3.
 
-**Not formalized**: the mixed case `meas(Γ_D) > 0`, `Γ_N ≠ ∅` of `theorem_8_5_1`, which needs the
-trace on `Γ_D`, the surface measure on `Γ_N` and Korn's *second* inequality on `H¹(Ω)` of a
-Lipschitz domain (blocker 2 of `notes/frontier.md`); the group's plan file records the state.
+## Not formalized here
+
+* **Theorem 8.5.1 in the mixed displacement–traction case** `meas(Γ_D) > 0`, `Γ_N ≠ ∅`. On a
+  bounded connected `C¹` domain `Ω ⊆ ℝ^{d+1}` (the book's "Lipschitz"), with the surface measure
+  `σ`, the componentwise trace `γ`, a measurable `Γ_D ⊆ Γ` of positive `σ`-measure,
+  `Γ_N := Γ \ Γ_D`, an elasticity tensor `C` satisfying (8.5.6)–(8.5.8), `f ∈ [L²(Ω)]^{d+1}` and
+  a traction `g ∈ [L²(σ|Γ_N)]^{d+1}` (8.5.14), the weak problem (8.5.15) — find `u ∈ V` with
+  `∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫_{Γ_N} g · γv dσ` for every `v ∈ V`, where
+  `V = {v ∈ [H¹(Ω)]^{d+1} : γv = 0 σ-a.e. on Γ_D}` of (8.5.13) — has a unique solution, which is
+  the minimizer of the energy (8.5.17) over `V`.
+
+  **This is the nearest of the chapter's gaps, and it is blocked on exactly one thing.** Since
+  the boundary round of 2026-09-21 every object in the statement exists: the surface measure is
+  `IsContDiffDomain.boundaryMeasure`, the normal `IsContDiffDomain.outwardNormal` and the trace
+  `IsContDiffDomain.traceFamily` of `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`, so
+  `V` is a closed subspace of `[H¹(Ω)]^{d+1}`; the form is `elasticityForm Ω C` restricted to
+  `V`, bounded and Hermitian by the lemmas below; and the load is `elasticityLoad Ω f` plus the
+  traction functional `v ↦ ∫_{Γ_N} g · γv dσ`, bounded by `‖g‖_{L²(σ)} ‖γ‖ ‖v‖`. The proof is
+  then Lax–Milgram with the energy characterization — `existsUnique_and_isMinOn_iff`, that is
+  `theorem_8_3_4` and Theorem 8.3.3 — *exactly* as in the pure displacement case
+  `theorem_8_5_1_dirichlet` below. What is missing is the one hypothesis those need: the
+  `V`-ellipticity of `elasticityForm` on `V`. On `V` that is not Korn's *first* inequality (which
+  holds on `[H¹₀]^{d+1}` only) but the mixed-space inequality `‖v‖²_{H¹} ≤ C ‖ε(v)‖²_{L²}` on
+  `V`, and that rests on **Korn's second inequality**
+  `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})` on all of `[H¹(Ω)]^{d+1}`. After it, `~200 lines`
+  here.
+
+* **Korn's second inequality itself**, with the space `[H¹(Ω)]^{d+1}` and the `V`-ellipticity
+  statement around it: planned as `Numlib/Analysis/Sobolev/Boundary/KornSecond.lean` and removed
+  unwritten. Its proof (Duvaut–Lions, Nečas) writes `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` in
+  `H^{−1}(Ω)` and invokes **Lions's lemma**: on a bounded Lipschitz domain a distribution `f`
+  with `f ∈ H^{−1}(Ω)` and `∇f ∈ H^{−1}(Ω)^N` lies in `L²(Ω)`, with
+  `‖f‖_{L²} ≤ C (‖f‖_{H^{−1}} + ‖∇f‖_{H^{−1}})`. That lemma needs Bogovskiĭ's right inverse of
+  the divergence, or the `H^{−1}` Nečas inequality, and neither is in Mathlib or in `Numlib/`; it
+  is research-scale, 2000+ lines. The `V`-ellipticity is then a compactness argument (Rellich,
+  then the kernel of `ε` on a connected domain) whose one delicate step is that a nonzero
+  infinitesimal rigid motion `a + Wx` with `W` skew cannot vanish on a boundary piece of positive
+  surface measure: its zero set is an affine subspace of *even codimension* `≥ 2`, hence `σ`-null
+  on a `C¹` hypersurface — and not merely a hyperplane, which a `C¹` boundary may well contain as
+  a flat face. The full record, with the route and the line estimates, is the
+  `## Not formalized here` section of `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`;
+  **the trace is not what is missing**.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace Topology
@@ -355,7 +394,8 @@ form is `elasticityForm Ω C` (`elasticityForm_apply`) and the load `elasticityL
 (`elasticityLoad_apply`); the proof is the Lax–Milgram lemma `theorem_8_3_4` and Theorem 8.3.3,
 the `V`-ellipticity being `elasticityForm_isCoerciveWith` (Korn's first inequality on
 `[H¹₀(Ω)]^{d+1}`, Poincaré's inequality and (8.5.8)). The mixed boundary conditions of the book's
-statement, `meas(Γ_D) > 0` with a traction `g` on `Γ_N`, are `theorem_8_5_1`, which stays open. -/
+statement, `meas(Γ_D) > 0` with a traction `g` on `Γ_N`, are not formalized; the module doc says
+what they would need. -/
 theorem theorem_8_5_1_dirichlet {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) {α : ℝ}
     (hC : IsElasticityTensor Ω C α)

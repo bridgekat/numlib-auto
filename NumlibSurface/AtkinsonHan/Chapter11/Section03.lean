@@ -72,10 +72,33 @@ without proof and which the fixed point argument gives for nothing: every iterat
   unique solvability for every `f ∈ L²(Ω)` and Lipschitz dependence on `f`, from Theorem 11.3.9
   with the convex continuous friction functional `g ∫_Γ |v| ds` (`Chapter11.frictionFunctional`).
 
-Not formalized: Theorem 11.3.12 in the book's generality (`W^{2,p}` regularity of the obstacle
-problem, quoted from Brezis–Stampacchia; the `p = 2` Laplacian case is `theorem_11_3_12_two`),
-the one-dimensional solution formula following Example 11.3.11, and Exercises 11.3.4–11.3.9,
-11.3.11 and 11.3.12, all of which name a domain and hence a Sobolev space.
+## Not formalized here
+
+* **Theorem 11.3.12 in the book's generality.** On a `C^{1,1}` domain `Ω ⊆ ℝ^d`, for
+  `a_ij ∈ C(Ω̄)` uniformly elliptic, `p ∈ [2, ∞)`, `f ∈ L^p(Ω)` and an obstacle
+  `ψ ∈ W^{2,p}(Ω)` with `ψ ≤ 0` on `Γ`, the solution of the obstacle problem on
+  `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e.}` lies in `W^{2,p}(Ω)` and satisfies
+  `‖u‖_{2,p} ≤ C_p (‖f‖_{0,p} + ‖ψ‖_{2,p})` with `C_p` independent of `u`, `f` and `ψ`. The book
+  quotes it without proof, from Brezis–Stampacchia and Gilbarg–Trudinger Theorem 9.14.
+
+  **The `p = 2` case is proved**, as `theorem_11_3_12_two` below: for `a_ij = δ_ij` on a bounded
+  `C²` domain, the solution of the obstacle problem lies in `H²(Ω)` with the corresponding bound.
+  The route is the Lewy–Stampacchia inequality `f ≤ −Δu ≤ max (f, −Δψ)`, which is
+  `Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load` of
+  `Numlib/Analysis/PDE/Elliptic/Obstacle.lean` (proved by the truncation `min (εΦ, u − ψ)` and
+  Hahn–Banach, not by penalization); it gives `−Δu ∈ L²(Ω)` and so reduces the obstacle problem
+  to `Elliptic.regularity_dirichlet`. `Elliptic.regularity_obstacle_sobolev_two` is the backbone
+  form, with the a priori bound `Elliptic.IsObstacleSolution.norm_le` and
+  `‖ψ⁺‖_{H¹} ≤ ‖ψ‖_{H¹} ≤ ‖ψ‖_{H²}`.
+
+  What remains is exactly the book's extra generality, in three independent directions:
+  `W^{2,p}` and `L^p` regularity for `p ≠ 2`, which is Gilbarg–Trudinger Theorem 9.14 and rests
+  on the Calderón–Zygmund theory that neither Mathlib nor `Numlib/` has; general uniformly
+  elliptic `a_ij ∈ C(Ω̄)`, the linear regularity theory `Elliptic.regularity_dirichlet` being for
+  `−Δ + 1` only; and the `C^{1,1}` boundary class in place of `C²`.
+
+* The one-dimensional solution formula following Example 11.3.11, and Exercises 11.3.4–11.3.9,
+  11.3.11 and 11.3.12, all of which name a domain and hence a Sobolev space.
 -/
 
 open Filter Set TopologicalSpace Topology
@@ -707,7 +730,8 @@ The book quotes the theorem (for `1 < p < ∞`, `C^{1,1}` domains and general un
 Laplacian case is proved in the backbone through the Lewy–Stampacchia inequality
 `f ≤ −Δu ≤ max (f, −Δψ)` (`Elliptic.regularity_obstacle_sobolev_two`,
 `Numlib/Analysis/PDE/Elliptic/Obstacle.lean`). The `C^{1,1}` hypothesis of the book is replaced
-by the backbone's `C²` chart domain, and `p ≠ 2` stays open (`theorem_11_3_12`). -/
+by the backbone's `C²` chart domain, and `p ≠ 2` is not formalized; the module doc says what the
+book's generality would need. -/
 theorem theorem_11_3_12_two {R : ℝ} (hR : 0 ≤ R)
     (hΩb : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :

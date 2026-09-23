@@ -28,12 +28,18 @@ nodes:
 * Sections 12.6 and 12.7.1 (`Chapter12/Section06`, `Chapter12/Section07`), including the sharp
   error bound (12.7.13).
 
-What is left is two items of backbone approximation theory and one of regularity theory, each
-recorded in full on its node: Theorem 12.3.3 and Lemma 12.5.5 both wait on a piecewise polynomial
-interpolation operator of degree `m` (and 12.3.3 in addition on the Simpson panel error, which
-`Numlib/Approximation/CompositeQuadrature` does not carry); Theorem 12.5.6 waits on Lemma 12.5.5;
-and Theorem 12.5.4 waits on differentiation under a weakly singular integral sign, to bootstrap the
-regularity of the solution.
+Not formalized: **Theorem 12.5.4**, the regularity of the solution of a weakly singular equation,
+which the book itself quotes from Schneider without proof; its node was removed in the closing
+round (2026-09-23). It is the one item of the chapter whose mathematics, rather than whose
+supporting API, is missing — differentiation under a weakly singular integral sign with a *moving*
+singularity, the differentiated kernel `|x − y|^{γ−2}` being non-integrable so that no dominating
+function exists for Mathlib's `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`,
+plus the log-modified Hölder class `C^{(0,1)}[a, b]` for `γ = 1`. Nothing downstream waits on it:
+`theorem_12_5_6` already carries its conclusion as a hypothesis, which is what the book's own use
+of it amounts to. The record is the `## Not formalized here` section of
+`NumlibSurface/AtkinsonHan/Chapter12/Section05.lean`. (This paragraph used to list Theorem 12.3.3,
+Lemma 12.5.5 and Theorem 12.5.6 as waiting on a piecewise polynomial interpolation operator of
+degree `m`; that is stale — the operator exists and all three are proved.)
 
 Also left out: Section 12.7.2, the homotopy argument, which needs the rotation and index of a
 completely continuous vector field (Section 5.5.1) — no Mathlib degree theory, and the book quotes

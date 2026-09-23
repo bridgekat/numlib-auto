@@ -10,10 +10,18 @@ contact problems of elasticity. They live in `H¹₀(Ω)` and `H¹(Ω)^d` with p
 boundary integrals, and are out of scope for want of Sobolev spaces; the pointwise complementarity
 relations (11.1.9) additionally need the regularity theory of elliptic equations.
 
-Also out of scope: Theorem 11.3.12, the `W^{2,p}` regularity of the obstacle problem, quoted by the
-book from Brezis–Stampacchia; Theorem 11.4.5, the Lagrange-multiplier form of the friction problem,
-which lives on the trace space `H^{1/2}(Γ)` and uses `(L¹(Γ))' = L^∞(Γ)`; and every exercise of the
-chapter that names a domain (11.3.4–11.3.9, 11.3.11, 11.3.12, 11.4.1, 11.4.4, 11.4.5).
+Also out of scope: Theorem 11.3.12 in the book's generality — the `W^{2,p}` regularity of the
+obstacle problem on a `C^{1,1}` domain for `a_ij ∈ C(Ω̄)`, quoted by the book from
+Brezis–Stampacchia and Gilbarg–Trudinger 9.14 without proof; its node was removed in the closing
+round (2026-09-23), the `p = 2`, `a_ij = δ_ij`, `C²`-domain case being proved as
+`theorem_11_3_12_two` through the Lewy–Stampacchia inequality, and what is left being `L^p`
+regularity for `p ≠ 2` (Calderón–Zygmund), variable coefficients and the `C^{1,1}` class — see
+the `## Not formalized here` section of `NumlibSurface/AtkinsonHan/Chapter11/Section03.lean`; and
+every exercise of the chapter that names a domain (11.3.4–11.3.9, 11.3.11, 11.3.12, 11.4.1,
+11.4.4, 11.4.5). (This paragraph used to list Theorem 11.4.5, the Lagrange-multiplier form of the
+friction problem, as out of scope for want of the trace space `H^{1/2}(Γ)`; that is stale — the
+boundary round proved it as `theorem_11_4_5`, through Hahn–Banach on `L¹(Γ)` and
+`(L¹)' = L^∞`, as the closing paragraph of this description records.)
 
 The surface works over a real Hilbert space `V` throughout, with a real bilinear form
 `a : BilinForm V` where the book uses one, reusing the vocabulary of `Chapter08/Section03`

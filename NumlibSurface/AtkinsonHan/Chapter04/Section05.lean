@@ -58,16 +58,40 @@ in the book's own form, at every level.
 
 ## Not formalized here
 
-Half of the existence theory that §4.5 defers to Daubechies: that a sequence `{p_k}` satisfying the
-condition of Exercise 4.5.2 is the dilation-coefficient sequence of an actual scaling function.  The
-quadrature mirror condition alone is *not* sufficient for that — `p₀ = p₃ = 1/√2` satisfies it and
-its cascade limit `(1/3) 1_[0,3]` has non-orthonormal translates — so a correct statement needs a
-further hypothesis such as Cohen's condition, and its standard proofs run on the Fourier side: the
+**The existence half of the construction (4.5.1)–(4.5.3)**, which §4.5 defers to Daubechies: that a
+sequence `{p_k}` is the dilation-coefficient sequence of an actual scaling function, a `φ ∈ L²(ℝ)`
+with orthonormal integer translates satisfying the scaling equation (4.5.1).
+
+**The obvious reading of that is not a theorem, and this is the point worth remembering.**  "The
+scaling equation has a solution in `L²`" is trivially true — take `φ = 0` — and the orthonormality
+condition of Exercise 4.5.2 alone does *not* give a scaling function: the mask
+`m₀(ξ) = (1 + e^{3iξ})/2`, that is `p₀ = p₃ = 1/√2` and `p_k = 0` otherwise, satisfies
+`∑_k p_k p_{k-2l} = δ_{0l}`, and its cascade limit `(1/3) 1_[0,3]` has integer translates that are
+*not* orthonormal.  A correct statement therefore needs a further hypothesis — Cohen's condition,
+or `m₀` nonvanishing on `[-π/2, π/2]`.
+
+Whatever the hypothesis, the standard proofs (the infinite product `φ̂(ξ) = ∏_{j≥1} m₀(2^{-j} ξ)`,
+or `L²` convergence of the cascade iteration) run on the Fourier side of the symbol: the
 periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of the integer translates, and
-the relation `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  Of that theory the backbone has only the periodisation
-identity, `Numlib/Analysis/Fourier/Periodisation`.  The *other* half,
-the existence of the `D4` function of (4.5.5)–(4.5.7), is `equation_4_5_6`, and it needs none of it:
-for one explicit mask the cascade iteration converges by an elementary matrix estimate.
+the identity `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  Of that theory the library has the periodisation identity
+`∫_0^T ∑_k g(x + kT) = ∫_ℝ g` with its corollary on Fourier coefficients
+(`Numlib/Analysis/Fourier/Periodisation`), and the transform-side rules it needs —
+`Real.fourierIntegral_comp_add_right`, the translation rule, and the identification of Mathlib's
+`L²` transform `MeasureTheory.Lp.fourierTransformₗᵢ` with `Real.fourierIntegral` on `L¹ ∩ L²`
+(`Numlib/Analysis/Fourier/FourierIntegral`).  Two pieces are still missing: **`L¹` uniqueness on
+the circle**, that an integrable function whose Fourier coefficients are those of the constant `1`
+equals `1` a.e. — Mathlib has the `L²` statement through `fourierBasis` but not this one, and the
+usual proof needs the Fejér kernel or a density argument against `C(𝕋)`, for which
+`span_fourier_closure_eq_top` is available (both in the root namespace,
+`Mathlib/Analysis/Fourier/AddCircle.lean`); and **Cohen's condition with the infinite product**
+and its `L²` convergence.  Estimate `600–900` lines, a self-contained harmonic-analysis
+task that nothing else in the chapter needs.
+
+The *other* half, the existence of the `D4` function of (4.5.5)–(4.5.7), is `equation_4_5_6`, and
+it needs none of that: for one explicit mask the cascade iteration converges by an elementary
+matrix estimate (`Numlib/Analysis/Wavelet/Daubechies`).  Mallat's theorem
+(`theorem_wavelet_spaces`) likewise needs none of it, being proved from the two-channel algebra of
+`Numlib/Analysis/Wavelet/QuadratureMirror`.
 
 The orthonormality of the integer translates of that `D4` function is not proved either; it is the
 same Fourier-side statement.  So `equation_4_5_6` gives the function of (4.5.5)–(4.5.7), not a

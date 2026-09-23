@@ -67,6 +67,69 @@ measure enters (decision B4).
   theorem and Green's formula on a bounded `C¹` domain;
 * `IsContDiffDomain.isCompactOperator_traceL`: compactness of the trace for `1 < p < ∞`.
 
+## Not formalized here
+
+**Korn's second inequality and the mixed displacement–traction problem of linear elasticity**
+(Nečas–Hlaváček; Duvaut–Lions; Atkinson–Han §8.5, the `V`-ellipticity remark after (8.5.15)).
+This was planned as a module `Boundary/KornSecond.lean` of this directory and is recorded here
+instead, the trace family above being everything it was waiting for. Three statements, in the
+order they were planned: the first is a definition and is cheap, the second is the deep one, and
+the third follows from it.
+
+* `[H¹(Ω)]^N` as a Hilbert space, and the mixed space `V` of Atkinson–Han (8.5.13). The type is
+  `PiLp 2 fun _ : Fin N ↦ SobolevEuclidean N 1 2 Ω`, the `ℓ²` product of `N` copies of `H¹(Ω)`
+  with `‖v‖² = ∑ᵢ ‖vᵢ‖²`; over it the partial derivatives `v ↦ ∂ⱼvᵢ` and the linearized strain
+  `ε(v)ᵢⱼ = ½ (∂ⱼvᵢ + ∂ᵢvⱼ)` as continuous linear maps into `L²(Ω)` — the analogues of
+  `SobolevEuclideanZeroVec.partialL` and `.strainL` of `Numlib/Analysis/Sobolev/Korn.lean`, of
+  which they are the extensions off the subspace `[H¹₀(Ω)]^N`; the trace taken componentwise,
+  `v ↦ fun i ↦ 𝒯.traceL 2 _ (v i)` for `𝒯 := hΩ.traceFamily hb`; and the subspace
+  `V = {v | ∀ i, 𝒯.traceL 2 _ (v i) = 0 σ-a.e. on Γ_D}` of the fields whose trace vanishes on a
+  measurable `Γ_D ⊆ ∂Ω`, closed because the trace is continuous. Nothing in this first item is
+  missing; it was never written because the two theorems below are.
+* **Korn's second inequality**: on a bounded `C¹` domain `Ω` there is a `C` with
+  `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})` for every `v ∈ [H¹(Ω)]^N`. On `[H¹₀(Ω)]^N` the
+  sharper inequality without the `L²` term is `SobolevEuclideanZeroVec.korn_first` and needs no
+  regularity of `Ω` at all; on `[H¹(Ω)]^N` the boundary terms of its two integrations by parts do
+  not vanish, and the standard proof (Duvaut–Lions, Nečas) runs the other way. It writes
+  `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` in `H^{−1}(Ω)` and invokes **Lions's lemma**: on a bounded
+  Lipschitz (a fortiori `C¹`) domain, a distribution `f` with `f ∈ H^{−1}(Ω)` and
+  `∇f ∈ H^{−1}(Ω)^N` lies in `L²(Ω)`, with `‖f‖_{L²} ≤ C (‖f‖_{H^{−1}} + ‖∇f‖_{H^{−1}})`.
+  Lions's lemma is itself proved through a right inverse of the divergence (Bogovskiĭ) or through
+  the Nečas inequality `‖f‖_{L²} ≤ C ‖∇f‖_{H^{−1}}` on `L²_0`, and neither is in Mathlib or in
+  `Numlib/`; the alternatives — Kondratiev–Oleĭnik's integral representation for star-shaped
+  domains, or the Fourier proof on `ℝ^N` combined with a `C¹` extension operator commuting with
+  `ε`, which does not exist — are no cheaper. What exists towards it is `H^{−1}(Ω)` as the dual
+  of `H¹₀(Ω)` with its norm (`SobolevEuclideanZero.exists_dual_repr` of
+  `Numlib/Analysis/Sobolev/Zero.lean`). Research-scale, 2000+ lines. **The trace is not what is
+  missing**: with `IsContDiffDomain.traceFamily` every statement of this section is statable, and
+  the boundary round of 2026-09-21 confirmed it.
+* **`V`-ellipticity of the elasticity form**: for `Ω` bounded, `C¹` and connected and a
+  measurable `Γ_D ⊆ ∂Ω` with `σ(Γ_D) > 0`, there is a `C` with `‖v‖²_{H¹} ≤ C ‖ε(v)‖²_{L²}` for
+  every `v ∈ V` — the missing step of Atkinson–Han Theorem 8.5.1. The route from Korn's second
+  inequality is a contradiction argument: a sequence `vₙ ∈ V` with `‖vₙ‖ = 1` and `ε(vₙ) → 0`
+  has, by Rellich on the extension domain (`SobolevEuclidean.isCompactEmbedding_fnL`), a
+  subsequence converging in `L²`, hence by Korn's second inequality in `H¹`, to some `v ∈ V` with
+  `‖v‖ = 1` and `ε(v) = 0`; and the kernel of `ε` on a connected domain is the infinitesimal
+  rigid motions `x ↦ a + W x` with `W` skew, because the same identity
+  `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` makes every second derivative vanish and
+  `Numlib/Analysis/Sobolev/DenyLions.lean`'s "`|u|_{2,p} = 0` forces a polynomial of degree
+  `≤ 1`" then makes `v` affine. **The last step is the non-obvious one, and is the part of this
+  route worth keeping.** It is *not* enough to say "an affine map vanishing on a set of positive
+  surface measure is zero": the zero set of a general affine map is a hyperplane, of dimension
+  `N − 1`, and a `C¹` boundary may perfectly well contain a flat face of positive `σ`-measure
+  inside one. What makes the step true is that `W` is **skew**. The zero set of a nonzero
+  infinitesimal rigid motion `a + W x` is an affine subspace of *even codimension* `≥ 2` — for
+  `N = 2` a point and for `N = 3` a line, which is the classical form of the argument — and an
+  affine subspace of dimension `≤ N − 2` is `σ`-null on a `C¹` hypersurface. That nullity is the
+  only piece of the step needing work: by `IsContDiffDomain.boundaryMeasure_restrict_ball` the
+  surface measure is a graph measure in each chart, and the preimage of an affine subspace of
+  dimension `≤ N − 2` under a graph parametrization over `ℝ^{N−1}` is Lebesgue-null — about 100
+  lines. The whole of this third statement is about 400 lines once Korn's second inequality
+  exists; it is blocked on that alone.
+
+The consumer is `NumlibSurface/AtkinsonHan/Chapter08/Section05.lean`, whose module doc carries
+the same record from the elasticity side.
+
 ## References
 
 Atkinson–Han, *Theoretical Numerical Analysis*, §7.3 (Theorem 7.3.10) and §7.6; Grisvard,

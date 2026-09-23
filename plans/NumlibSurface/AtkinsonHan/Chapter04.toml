@@ -16,4 +16,12 @@ trigonometric system and the Dirichlet kernel, which are the backbone modules
 is elementary but entirely absent from Mathlib and is `Numlib/Analysis/Wavelet/Haar`; §4.5's
 general wavelet construction is the one part of the chapter that is genuinely out of reach, and the
 book states it without proof.
+
+Not formalized: the existence half of §4.5's construction (4.5.1)–(4.5.3), that a coefficient
+sequence `{p_k}` is the dilation sequence of an actual scaling function — the obvious reading is
+false (`φ = 0` solves the scaling equation; the mask `p₀ = p₃ = 1/√2` satisfies Exercise 4.5.2 but
+its cascade limit `(1/3) 1_[0,3]` has non-orthonormal translates), so the statement needs Cohen's
+condition and the Fourier-side symbol theory, of which `L¹` uniqueness on the circle and the
+infinite product `φ̂(ξ) = ∏_{j≥1} m₀(2^{-j}ξ)` are still missing; the record is the
+`## Not formalized here` section of `NumlibSurface/AtkinsonHan/Chapter04/Section05.lean`.
 '''

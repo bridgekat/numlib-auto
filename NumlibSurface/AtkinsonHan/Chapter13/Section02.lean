@@ -60,13 +60,56 @@ Neumann problem, and for §13.3.
   stated.  Its *convergence* for every continuous periodic integrand is no longer a hypothesis:
   `Quadrature.tendsto_circleTrapezoid` of `Numlib/Approximation/CompositeQuadrature` proves it, and
   `equation_13_2_4` is the resulting concrete scheme.
-* Exercise 13.2.5, that `‖K‖ = π` for a convex region, and (13.2.14)–(13.2.23), the evaluation of
-  the potential near the boundary.  Both are planar potential theory rather than numerical
-  analysis: the row integral `∫_0^L k (t, s) ds` of the double layer kernel is the total turning of
-  the chord direction seen from a boundary point, so it is a degree-theoretic statement about plane
-  curves — an Umlaufsatz — and Mathlib has no turning number; and (13.2.16) is the maximum
-  principle for harmonic functions on the region together with the jump relation (13.2.17).  See
-  `plans/NumlibSurface/AtkinsonHan/Chapter13/Section02.toml`.
+* **(13.2.19)** and, with it, (13.2.14)–(13.2.23), the evaluation of the potential near the
+  boundary: with `u_n` the double layer potential of the Nyström density `ρ_n`,
+
+  `max_{closure D_i} |u - u_n| ≤ (π + ‖K‖) ‖ρ - ρ_n‖_∞`.
+
+  The book's derivation is (13.2.16) together with (13.2.17).  `u - u_n` is harmonic on `D_i` and
+  continuous on its closure, so by the maximum principle its supremum is attained on `S`; and on
+  `S` its value is given by the **jump relation**
+
+  `u(P) - u_n(P) = -π (ρ - ρ_n)(P) + ∫_S (ρ - ρ_n)(Q) ∂/∂n_Q log |P - Q| dS_Q`.
+
+  The jump relations (13.1.7)–(13.1.8) are exactly the potential theory the rest of §13.1 is
+  skipped for.  The maximum principle alone is within range of Mathlib's `HarmonicContOnCl`; the
+  jump relation is not.  **There is no singularity subtraction in Atkinson–Han §13.2.1** — an
+  earlier note in the plan described that scheme, which is from Atkinson's own monograph and not
+  from this book, and it is not what (13.2.19) rests on.
+
+  What the boundary round of 2026-09-21 changed: the double layer potential as a function on the
+  region, `u(P) = ∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, is now *definable* on a bounded `C¹` plane
+  domain.  The arclength measure `dS` is `IsContDiffDomain.boundaryMeasure` and the normal `n_Q`
+  is `IsContDiffDomain.outwardNormal` (up to the chapter's inner-normal sign; `-ν` is continuous
+  on `S`, `IsContDiffDomain.continuousOn_outwardNormal`), Green's theorem is `theorem_13_1_2` and
+  Green's identities are `BoundaryData.integral_laplacian_mul_add_eq`.  **Nothing of (13.2.19)
+  follows from Green's formula alone**: the jump relation is a singular-integral statement about
+  the principal value of the kernel at a boundary point, and neither Mathlib nor `Numlib/` has
+  it.  Estimate `800+` lines on a `C²` boundary.
+
+* **Exercise 13.2.5 and (13.2.20)**: for a bounded *convex* region with smooth boundary the
+  double layer operator has `‖K‖ = π` exactly, so that `‖(-π + K)⁻¹‖` cannot be obtained from a
+  Neumann series and the compactness argument of chapter 12 is necessary rather than merely
+  convenient.
+
+  `IntegralOperator.norm_kernelCLM` reduces the statement to `sup_t ∫_0^L |k (t, s)| ds = π`, and
+  `Chapter13.doubleLayerKernel_eq_neg_im_div` identifies the integrand: writing the curve as
+  `r(s) = ξ(s) + i η(s)`, off the diagonal `k(t, s) = -Im (r'(s) / (r(s) - r(t)))`, which is minus
+  `d/ds arg (r(s) - r(t))`.  So the row integral is **minus the total turning of the chord
+  direction seen from the boundary point `r(t)`**, hence `-π` for a counterclockwise regular
+  simple closed curve, whose chord direction turns by `+π` — a boundary-point form of Hopf's
+  Umlaufsatz — and the absolute value may be dropped exactly when the region is convex, so that
+  the turning is monotone.
+
+  **Convexity is used for the whole statement, not only for the lower bound.**  It is tempting to
+  say that the `≤ π` half holds for a general smooth curve by the same computation with `|k|`,
+  and to attempt that half first; that is **false**.  For a non-convex smooth curve the chord
+  direction reverses, so `∫_0^L |k (t, s)| ds > |∫_0^L k (t, s) ds| = π` and `‖K‖ > π`.
+
+  What is missing is therefore a continuous argument — a lift along the covering `ℝ → S¹` — for a
+  plane curve, and a turning number; Mathlib has neither, and neither is numerical analysis.
+  `Complex.arg` and the covering are there for the *local* lift; the global lift along a closed
+  curve and the Umlaufsatz at a boundary point are unwritten, `400–600` lines.
 * The bound (13.2.33), `‖A‖_{C_p → C_p} ≤ √(1 + π²/3)`, which the book quotes from Atkinson;
   only the diagonalization (13.2.32) is proved.
 * The numerical halves of Examples 13.2.1, 13.2.2 and 13.2.3, which are Tables 13.1–13.3 and

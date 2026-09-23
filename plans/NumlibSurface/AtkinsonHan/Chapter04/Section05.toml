@@ -36,56 +36,6 @@ id = "theorem_wavelet_spaces"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"
 
 [[node]]
-id = "scaling_exists"
-kind = "theorem"
-desc = '''
-The existence half of the construction: a sequence `{p_k}` is the dilation-coefficient sequence of
-an actual scaling function — a `φ ∈ L²(ℝ)` with orthonormal integer translates satisfying the
-scaling equation (4.5.1).
-
-OPEN, and the description above is deliberately vaguer than the book's phrasing, because the
-obvious reading is not a theorem.  "The scaling equation has a solution in `L²`" is trivially true
-(take `φ = 0`), and the orthonormality condition of Exercise 4.5.2 alone does *not* give a scaling
-function: `m₀(ξ) = (1 + e^{3iξ})/2`, that is `p₀ = p₃ = 1/√2` and `p_k = 0` otherwise, satisfies
-`∑_k p_k p_{k-2l} = δ_{0l}`, and the cascade limit is `(1/3) 1_[0,3]`, whose integer translates are
-not orthonormal.  A correct statement needs a further hypothesis — Cohen's condition, or `m₀`
-nonvanishing on `[-π/2, π/2]`.  Whatever the hypothesis, the standard proofs (the infinite product
-`φ̂(ξ) = ∏_{j≥1} m₀(2^{-j}ξ)`, or `L²` convergence of the cascade iteration) need the Fourier-side
-theory of the symbol: the periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of
-the integer translates, and the identity `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  That theory is what remains of
-§4.5; it is a self-contained harmonic-analysis project and is not needed for anything else in the
-chapter.
-
-What of it exists: `Numlib/Analysis/Fourier/Periodisation` has the periodisation identity
-`∫_0^T ∑_k g(x + kT) = ∫_ℝ g` for integrable `g`, with a periodic weight, and the corollary that the
-Fourier coefficients of the periodisation are the samples of `ĝ` at the integers.  Three pieces are
-missing before the criterion itself can be stated.  (1) `L¹` uniqueness on the circle — that an
-integrable function whose Fourier coefficients are those of the constant `1` equals `1` a.e.
-Mathlib has the `L²` uniqueness (`AddCircle.fourierBasis`) but not this, and the usual proof needs
-the Fejér kernel or a density argument against `C(𝕋)`, which `AddCircle.span_fourier_closure_eq_top`
-supplies.  (2) A bridge from Mathlib's `L²` Fourier transform (`MeasureTheory.Lp.fourierTransformₗᵢ`,
-defined abstractly by extension from Schwartz space, with Plancherel as
-`MeasureTheory.Lp.inner_fourier_eq`) to `Real.fourierIntegral`, so that a pointwise formula and the
-translation rule `τ_n f ↦ ᵉ[-n·] f̂` are available; only the translation rule is really needed, and it
-could instead be proved abstractly by density.  (3) Cohen's condition and the infinite product.  Mallat's theorem (`theorem_wavelet_spaces`) is proved without it, from the two-channel
-algebra of `Numlib/Analysis/Wavelet/QuadratureMirror`, and so is the existence of the Daubechies
-`D4` function (`equation_4_5_6`), from the cascade estimate of `Numlib/Analysis/Wavelet/Daubechies`
-— that construction is for one explicit mask and gives no general theorem here.
-
-Blocked: rechecked 2026-09-20 (blocker 18 of `notes/frontier.md`); the reason stands. Of the three
-missing pieces, (2) has moved: `Numlib/Analysis/Fourier/FourierIntegral` now carries the translation
-rule `Real.fourierIntegral_comp_add_right` and the identification of Mathlib's `L²` transform with
-`Real.fourierIntegral` on `L¹ ∩ L²` (Plancherel with the integrals written out). Still missing:
-(1) `L¹` uniqueness on the circle (`AddCircle.fourierCoeff` injective on `L¹`; Mathlib has only the
-`L²` statement through `fourierBasis`), and (3) Cohen's condition with the infinite product
-`φ̂(ξ) = ∏_{j ≥ 1} m₀(2^{-j} ξ)` and its `L²` convergence; `Numlib/Analysis/Wavelet/Daubechies`
-proves the cascade estimate for the one explicit `D4` mask only. The corrected statement needs
-Cohen's condition as a hypothesis (the counterexample above stays); estimate 600–900 lines, a
-self-contained harmonic-analysis task not needed elsewhere in the chapter.
-'''
-deps = ["exercise_4_5_2"]
-
-[[node]]
 id = "equation_4_5_6"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)–(4.5.7)"
 

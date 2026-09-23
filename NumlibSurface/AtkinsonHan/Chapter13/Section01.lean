@@ -88,7 +88,7 @@ Green's identities carry them:
 * `theorem_13_1_2` — the divergence theorem (13.1.4) on a bounded `C¹` plane domain, with the
   chapter's *inner* normal `n = −ν`; `theorem_13_1_2_polygon` on a triangulated polygon
   (`Triangulation.boundaryData`).  The chapter's piecewise smooth multiply connected region is
-  `theorem_13_1_2_piecewise`, open.
+  not covered; see below.
 * `theorem_13_1_1_neumann_weak` — the Neumann clause of Theorem 13.1.1 in weak form, on a bounded
   connected `C¹` domain: `∫_Ω ∇u·∇v = ∫_Γ f γv dσ` for all `v ∈ H¹(Ω)` is solvable if and only
   if `∫_Γ f dσ = 0`, uniquely up to a constant — Lax–Milgram on the mean-zero subspace, where the
@@ -101,11 +101,38 @@ Green's identities carry them:
 * The identification of the double layer operator with the boundary integral
   `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`: the surface measure and the normal now exist, but the
   identification needs the jump relations of the layer potentials.
-* The classical clauses of Theorem 13.1.1 (the Dirichlet problem with continuous data, the
-  pointwise Neumann condition) and everything the Kelvin transform is used *for*: the exterior
-  Dirichlet and Neumann problems (13.1.14)–(13.1.23) rest on Theorem 13.1.1, quoted by the book
-  from Chapter 8, and on the removable singularity statement for a bounded harmonic function on
-  a punctured neighbourhood of the origin.
+
+* **Theorem 13.1.1, the classical clauses.**  For `f` continuous on a boundary `S` admitting a
+  twice continuously differentiable parametrization, the interior Dirichlet problem has a unique
+  solution, and the interior Neumann problem has a solution, unique up to an additive constant,
+  exactly when `∫_S f dS = 0`.  This is the classical existence theory for the planar Laplace
+  equation, which the book quotes from its own Chapter 8 rather than proving here.
+
+  The *weak Neumann* clause is proved, as `theorem_13_1_1_neumann_weak` above.  What remains is
+  the two classical clauses.  The **Dirichlet problem with merely continuous data** `f ∈ C(S)`:
+  the variational route wants an `H¹` extension of `f`, that is `f ∈ H^{1/2}(S)`, and the range
+  of the trace on a `C¹` domain is not characterized in this library; the potential route wants
+  the layer potentials and their jump relations, which are the rest of §13.1 and are skipped.
+  The **classical Neumann solution**, with `∂u/∂n = f` pointwise rather than in the weak sense:
+  that needs boundary regularity of the weak solution — the `H²` Neumann estimate of
+  `Numlib/Analysis/PDE/Elliptic/Regularity` and, beyond it, a `C²` version of it.  Uniqueness
+  for the Dirichlet problem, by contrast, is within reach: it is the maximum principle, Mathlib's
+  `HarmonicContOnCl`.
+
+* **Theorem 13.1.2 in the chapter's own generality**: the divergence theorem on a multiply
+  connected planar region whose boundary is a finite union of piecewise `C²` (or merely `C¹`)
+  Jordan curves with corners.  The `C¹` case and the polygonal case are proved
+  (`theorem_13_1_2`, `theorem_13_1_2_polygon`).  A region bounded by curves with corners that are
+  neither straight nor `C¹` — a curved polygon — is a Lipschitz domain, and the Lipschitz theory
+  is out of scope.  An arclength measure on a parametrized `C¹` curve, packaged as a
+  `BoundaryData` (the plane case of a chart-based definition through `EuclideanSpace.gramDet`),
+  would cover the *smooth* multiply connected case at about `600` lines; the curved-corner case
+  needs in addition the piecewise gluing of `Boundary/Polygon.lean` for curved edges.  Nothing in
+  the formalized part of the chapter depends on it.
+
+* Everything the Kelvin transform is used *for*: the exterior Dirichlet and Neumann problems
+  (13.1.14)–(13.1.23) rest on Theorem 13.1.1 above, and on the removable singularity statement
+  for a bounded harmonic function on a punctured neighbourhood of the origin.
 -/
 
 open Set
@@ -545,7 +572,7 @@ open scoped InnerProductSpace
 
 /-- **Theorem 13.1.2 (the divergence theorem)** on a bounded `C¹` plane domain `Ω ⊆ ℝ²`
 (`hΩ : IsContDiffDomain 1 Ω`, `hb`; the chapter's piecewise smooth multiply connected region is
-`theorem_13_1_2_piecewise`), with the chapter's *inner* unit normal `n = −ν` — `ν` being the
+not covered — see the module doc), with the chapter's *inner* unit normal `n = −ν` — `ν` being the
 outward normal `IsContDiffDomain.outwardNormal` of `Numlib/Analysis/Sobolev/Boundary/` — and the
 arclength measure `dΓ = σ` (`IsContDiffDomain.boundaryMeasure`), for `F : ℝ² → ℝ²` with both
 components in `C¹(Ω̄)` (`ContinuousOn F (closure Ω)`, `ContDiffOnClosure ℝ 1 F Ω`):
@@ -796,8 +823,8 @@ Poincaré–Wirtinger inequality (`exists_forall_dirichletForm_eq`), and `v ↦ 
 bounded and vanishes on the constants when `∫_Γ f dσ = 0`. Uniqueness: two solutions differ by
 `w` with `∫_Ω |∇w|² = 0`, a constant on the connected `Ω`
 (`exists_fn_ae_eq_const_of_gradNorm_eq_zero`). The classical clauses of Theorem 13.1.1 — the
-Dirichlet problem with continuous data and the pointwise Neumann condition — stay open
-(`theorem_13_1_1`). -/
+Dirichlet problem with continuous data and the pointwise Neumann condition — are not formalized;
+the module doc says what they would need. -/
 theorem theorem_13_1_1_neumann_weak (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hc : IsConnected (Ω : Set 𝔼))
     (f : Lp ℝ 2 (hΩ.boundaryMeasure hb)) :
