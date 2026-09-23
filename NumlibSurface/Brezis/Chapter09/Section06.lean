@@ -34,13 +34,17 @@ by case (A: `ℝ^N`; B: `ℝ^N_+`; C₁: interior; C₂: near the boundary, thro
 * Remark 25 is stated with the book's global hypotheses `u ∈ H^1(Ω)`, `f ∈ H^m(Ω)`; the backbone
   needs only the local ones. The hypoellipticity clause is stated for any open `ω ⊆ Ω` (the
   book's `ω ⊂⊂ Ω` is not needed).
-* Theorem 9.26 (Neumann) and Remark 24 (general operators) are stated by the book without proof;
-  their `H²` clauses are not restated here (the backbone nodes `Elliptic.regularity_neumann`,
-  `Elliptic.regularity_dirichlet_general` are deferred). The boundary condition `∂u/∂n = 0` that
-  the `H²` solution of the Neumann problem satisfies — meaningful once the trace exists — is
+* Theorem 9.26 (Neumann) and Remark 24 (general operators) are stated by the book without proof.
+  Of Theorem 9.26, the `H²` clause on the half space is `theorem_9_26_upperHalfSpace` and the
+  `H^{m+2}` clause there is `theorem_9_26_upperHalfSpace_higher` (the book's own alternative "or
+  else `Ω = ℝ^N_+`" in Theorem 9.25, inherited by 9.26; the `H^{m+2}` clause is stated as a
+  membership, the book's norm bound needing a solution map for the Neumann problem that the
+  backbone does not build). The boundary condition `∂u/∂n = 0` that the `H²` solution
+  satisfies — meaningful once the trace exists — is
   `theorem_9_26_normalDeriv`, on a bounded `C¹` domain in the graph form `IsContDiffDomain 1 Ω`
   of `Numlib/Analysis/Sobolev/Boundary/`, with the normal derivative
-  `BoundaryData.TraceFamily.normalTrace`.
+  `BoundaryData.TraceFamily.normalTrace`. Theorem 9.26 on a general `C²` domain and both
+  halves of Remark 24 are not formalized; see `## Not formalized here`.
 
 ## Main results
 
@@ -48,7 +52,49 @@ by case (A: `ℝ^N`; B: `ℝ^N_+`; C₁: interior; C₂: near the boundary, thro
   `theorem_9_25_contDiffOn`, `theorem_9_25_smooth`, `theorem_9_25_smooth_of_forall_mem`.
 * `lemma_9_6`, `lemma_9_7`, `lemma_9_8`.
 * `remark_9_25`, `remark_9_25_smooth`, `remark_9_25_local`.
-* `theorem_9_26_normalDeriv`.
+* `theorem_9_26_upperHalfSpace`, `theorem_9_26_upperHalfSpace_higher`,
+  `theorem_9_26_normalDeriv`.
+
+## Not formalized here
+
+Everything §9.6 proves is here. What is left out is what the book states without proof, and the
+line falls exactly at the boundary of a general domain: proved nearby are Theorem 9.25 in all its
+clauses for the Dirichlet problem (`theorem_9_25`, `theorem_9_25_higher`,
+`theorem_9_25_contDiffOn`, `theorem_9_25_smooth`), Theorem 9.26's `H²` and `H^{m+2}` clauses on
+the half space (`theorem_9_26_upperHalfSpace`, `theorem_9_26_upperHalfSpace_higher`) and
+Theorem 9.26's boundary condition for an `H²` solution (`theorem_9_26_normalDeriv`).
+
+* **Theorem 9.26 on a general domain.** For `Ω` of class `C²` with `Γ` bounded, `f ∈ L²(Ω)` and
+  `u ∈ H^1(Ω)` with `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for *every* `φ ∈ H^1(Ω)` (49): the
+  conclusions of Theorem 9.25, `u ∈ H²(Ω)` with `‖u‖_{H²} ≤ C ‖f‖_{L²}` and `u ∈ H^{m+2}(Ω)` for
+  `f ∈ H^m(Ω)` on a `C^{m+2}` domain. The book says only "the proof of Theorem 9.26 is entirely
+  analogous", and the analogy fails at case C₂: a Neumann solution cut off by a partition
+  function `θᵢ` does **not** solve a homogeneous Neumann problem on `Ω ∩ Uᵢ` but the
+  inhomogeneous one `∂(θᵢu)/∂n = (∂θᵢ/∂n) u` on `Γ ∩ Uᵢ`. (One dimension: `Ω = (0, ∞)`,
+  `θ ∈ C_c^∞(−1, 1)` with `θ(0) = 1`, `θ'(0) = a ≠ 0`; a Neumann solution has `u'(0) = 0`, so
+  `(θu)'(0) = a u(0) ≠ 0`.) The correct proof cuts off the test function instead — the method of
+  translations with `ψ = D_{−h}(ζ² D_h w)`, a Caccioppoli estimate — which the backbone does not
+  have; the details and the cost are in the `## Not formalized here` of
+  `Numlib/Analysis/PDE/Elliptic/Regularity.lean`.
+* **Remark 24, the Dirichlet half.** The conclusions of Theorem 9.25 for the Dirichlet problem of
+  a general second-order elliptic operator: if `u ∈ H^1_0(Ω)` solves (50) — `a_{ij} ∈ C¹(Ω̄)`
+  elliptic, `a_i ∈ C(Ω̄)`, `a₀ ∈ L^∞(Ω)`, with bounded derivatives of the coefficients when `Ω`
+  is unbounded (footnote 26) — with `f ∈ L²(Ω)`, then `u ∈ H²(Ω)`; and for `m ≥ 1`,
+  `f ∈ H^m(Ω)`, `a_{ij} ∈ C^{m+1}(Ω̄)`, `a_i ∈ C^m(Ω̄)` give `u ∈ H^{m+2}(Ω)`. The book gives no
+  proof; the route is real (case C₂ of Theorem 9.25 is already the variable-coefficient estimate,
+  and the lower-order terms move to the right-hand side) and is recorded in the backbone module's
+  own `## Not formalized here`, at about 600 lines beyond Theorem 9.25. No node of the corpus
+  consumes it.
+* **Remark 24, the Neumann half** ("or Neumann"). The same conclusions for the Neumann problem of
+  the general operator, together with the conormal boundary condition
+  `∑_{ij} a_{ij} ν_j γ(∂_i u) = 0` `σ`-a.e. on `Γ`. This needs the `H²` regularity of the Neumann
+  problem for a variable-coefficient operator — hence the missing Caccioppoli machinery above,
+  which the Laplacian case already lacks on a general domain — and, for the boundary-condition
+  clause alone (with `H²` as a hypothesis, as in `theorem_9_26_normalDeriv`, about 150 lines), an
+  `H²` Green formula for the conormal derivative: the analogue of
+  `BoundaryData.TraceFamily.green_laplacian` for `Elliptic.generalForm`, obtained from
+  `BoundaryData.TraceFamily.green` against the products `a_{ij} ∂_i u ∈ H^1(Ω)`, which needs
+  `a_{ij} ∈ C¹(Ω̄)` and the product rule in `H^1`. Neither is in the backbone.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -533,7 +579,66 @@ theorem lemma_9_8 (c : ContDiffChart 2 (Ω : Set 𝔼)) {Ω₁ Qp : Opens 𝔼}
     rw [hy]
     rfl
 
-/-! ### Theorem 9.26: the Neumann boundary condition of the `H²` solution -/
+/-! ### Theorem 9.26: the half space, and the Neumann boundary condition -/
+
+/-- **Theorem 9.26 (regularity for the Neumann problem), the alternative "or else
+`Ω = ℝ^N_+`"**, `H²` clause: on the half space, the weak solution `u ∈ H^1(ℝ^N_+)` of
+`∫ ∇u · ∇φ + ∫ u φ = ∫ f φ` for all `φ ∈ H^1(ℝ^N_+)` (49) lies in `H²(ℝ^N_+)` with
+`‖u‖_{H²} ≤ C ‖f‖_{L²}`. Case B of the book's proof, whose method of translations asks of the
+test space only that it contain the test functions and be invariant under the tangential
+translations — both trivial for `H^1(ℝ^N_+)`, so that the book's delicate point (Lemma 9.7)
+does not arise: `Elliptic.regularity_neumann_upperHalfSpace` is the Dirichlet case B with the
+test space `⊤`, and the constant is the same `3 C_N` as in `theorem_9_25_upperHalfSpace` (from
+`‖u‖_{H¹} ≤ ‖f‖_{L²}` and `‖f − u‖_{L²} ≤ 2 ‖f‖_{L²}`). On a general `C²` domain with `Γ`
+bounded the theorem is not formalized; see `## Not formalized here` in the module
+documentation. -/
+theorem theorem_9_26_upperHalfSpace :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : Lp ℝ 2 (volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼)))
+      (u : hSpace (d + 1) ℝ₊), IsWeakSolutionNeumann ℝ₊ f u →
+        (∃ U : sobolevSpaceHigher (d + 1) 2 2 ℝ₊, SobolevMultiIndex.fn U
+          =ᵐ[volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼)] SobolevMultiIndex.fn u) ∧
+        ∀ U : sobolevSpaceHigher (d + 1) 2 2 ℝ₊, SobolevMultiIndex.fn U
+          =ᵐ[volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼)] SobolevMultiIndex.fn u →
+            ‖U‖ ≤ C * ‖f‖ := by
+  have hC0 : (0 : ℝ) ≤ Elliptic.regularityConst d 1 1 0 := by
+    unfold Elliptic.regularityConst
+    positivity
+  refine ⟨3 * Elliptic.regularityConst d 1 1 0, by linarith, fun f u hu ↦ ?_⟩
+  have hu' := (isWeakSolutionNeumann_iff f u).1 hu
+  have hg := Elliptic.dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace hu'
+  obtain ⟨U, hU, hUn⟩ := Elliptic.regularity_neumann_upperHalfSpace ⟨hu'.1, hg⟩
+  have hun : ‖u‖ ≤ ‖f‖ := Elliptic.norm_le_of_isGalerkinSolution_laplace _ hu'
+  have hg' : ‖f - SobolevMultiIndex.weakDeriv u 0‖ ≤ 2 * ‖f‖ := by
+    calc ‖f - SobolevMultiIndex.weakDeriv u 0‖ ≤ ‖f‖ + ‖SobolevMultiIndex.weakDeriv u 0‖ :=
+          norm_sub_le _ _
+      _ ≤ ‖f‖ + ‖u‖ := by gcongr; exact SobolevMultiIndex.norm_weakDeriv_le u 0
+      _ ≤ 2 * ‖f‖ := by linarith
+  refine ⟨⟨U, hU⟩, fun U' hU' ↦ ?_⟩
+  rw [SobolevMultiIndex.ext_of_fn_ae_eq (hU'.trans hU.symm)]
+  calc ‖U‖ ≤ Elliptic.regularityConst d 1 1 0 * (‖u‖ + ‖f - SobolevMultiIndex.weakDeriv u 0‖) :=
+        hUn
+    _ ≤ Elliptic.regularityConst d 1 1 0 * (‖f‖ + 2 * ‖f‖) := by gcongr
+    _ = 3 * Elliptic.regularityConst d 1 1 0 * ‖f‖ := by ring
+
+/-- **Theorem 9.26, the alternative "or else `Ω = ℝ^N_+`"**, `H^{m+2}` clause: on the half
+space, if `f ∈ H^m(ℝ^N_+)` then the weak solution `u ∈ H^1(ℝ^N_+)` of (49) lies in
+`H^{m+2}(ℝ^N_+)`. Case B of the book's proof at every order
+(`Elliptic.regularity_neumann_upperHalfSpace_higher_mem_laplace`): the tangential derivatives of
+a Neumann solution are Neumann solutions with the differentiated data — the Neumann analogue of
+Lemma 9.7, proved here by a tangential integration by parts against the test functions of `ℝ^N`
+rather than by the book's weak compactness — and the normal-normal derivative is read off the
+equation. The book's norm bound `‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}` is not stated: the closed-graph
+argument of `theorem_9_25_higher` needs a solution map for the Neumann problem, and the
+backbone's `Elliptic.solutionMap` is built for the test space `H^1_0(Ω)` only. -/
+theorem theorem_9_26_upperHalfSpace_higher (m : ℕ) (f : sobolevSpaceHigher (d + 1) m 2 ℝ₊)
+    {u : hSpace (d + 1) ℝ₊}
+    (hu : IsWeakSolutionNeumann ℝ₊ (SobolevMultiIndex.fnL ℝ 𝔟 m 2 ℝ₊ volume f) u) :
+    ∃ U : sobolevSpaceHigher (d + 1) (m + 2) 2 ℝ₊, SobolevMultiIndex.fn U
+      =ᵐ[volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼)] SobolevMultiIndex.fn u := by
+  refine (Elliptic.regularity_neumann_upperHalfSpace_higher_mem_laplace m ?_
+    ((isWeakSolutionNeumann_iff _ u).1 hu)).exists_sobolevMultiIndex
+  rw [SobolevMultiIndex.fnL_apply]
+  exact SobolevMultiIndex.memSobolevMultiIndex f
 
 /-- **Theorem 9.26, the boundary condition.** On a bounded `C¹` domain (`hΩ : IsContDiffDomain 1 Ω`,
 `hb`; the `C²` hypothesis of Theorem 9.26 is needed only for the `H²` regularity, which is here a
@@ -543,9 +648,9 @@ the Neumann problem (49), then its normal derivative in the trace sense vanishes
 `σ = hΩ.boundaryMeasure hb` and `n = hΩ.outwardNormal hb` (`BoundaryData.TraceFamily.normalTrace`,
 the `∂u/∂n` of the Comments on chapter 9, 7 (iii)). This is the sense in which the Neumann
 condition `∂u/∂n = 0` on `Γ` of (44) holds for the `H²` solution of Theorem 9.26; together with
-the `H²` regularity `Elliptic.regularity_neumann` (deferred, the book gives no proof) it is the
-full Theorem 9.26. The backbone's
-`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` through
+the `H²` regularity — which is `theorem_9_26_upperHalfSpace` on the half space and is not
+formalized on a general `C²` domain, the book giving no proof — it is the full Theorem 9.26. The
+backbone's `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` through
 `isWeakSolutionNeumann_iff`. -/
 theorem theorem_9_26_normalDeriv (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}

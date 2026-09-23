@@ -41,11 +41,96 @@ coefficients, on an open `Ω ⊆ ℝ^N`.
   chart transfers hold at every order (`Elliptic.memSobolevMultiIndex_comp_chart_of_order`). The
   `C²(Ω̄)` and `C^∞(Ω̄)` clauses (`Elliptic.regularity_dirichlet_contDiffOn`,
   `regularity_dirichlet_smooth`) follow from Corollary 9.15.
+* **The test space is a parameter of case B.** `Elliptic.exists_sobolevEuclidean_two_of_tangential`
+  and `Elliptic.memSobolevMultiIndex_of_tangential_of_order` take the space `K` of admissible test
+  elements as an argument, asking of it only that it contain the test-function elements, be
+  invariant under the translations that leave `Ω` invariant and (at higher order) carry the
+  tangential derivatives of its `H²` elements. The Dirichlet problem is `K = H^1_0(Ω)`, where the
+  last condition is the book's Lemma 9.7 (`Elliptic.tangentialDeriv_hyp_zero`); the Neumann
+  problem is `K = ⊤`, where the first two conditions are trivial, and the `H²` clause of
+  Theorem 9.26 on the half space (`Elliptic.regularity_neumann_upperHalfSpace`) comes at no
+  extra cost.
+* **Theorem 9.26 on the half space at every order.** The third condition — Lemma 9.7 for
+  `K = ⊤`, that a tangential derivative of a Neumann solution is a Neumann solution with the
+  differentiated datum — is `Elliptic.tangentialDeriv_hyp_top`. Its proof replaces the book's
+  weak compactness by two integrations by parts along `e_j` against a test function of `ℝ^N`
+  (`Elliptic.integral_fderiv_mul_eq_neg_of_tangential`, legitimate on the half space because the
+  cut-offs `Elliptic.normalCutoff n` that push such a test function inside `ℝ^N_+` depend on
+  `x_N` alone and so are constant along `e_j`) together with Corollary 9.8 on the half space,
+  which makes those test functions dense (`Elliptic.isTestFunctionDense_upperHalfSpace`). The
+  result is `Elliptic.regularity_neumann_upperHalfSpace_higher_mem` and, for the book's equation
+  `−Δu + u = f`, `regularity_neumann_upperHalfSpace_higher_mem_laplace`.
 
 ## References
 
 [brezis2011functional], §9.6: Theorem 9.25 and its proof (cases A, B, C₁, C₂), Lemmas 9.6–9.8,
 Remark 25.
+
+## Not formalized here
+
+Two results that §9.6 states without proof are not in this module. What *is* proved nearby is
+Theorem 9.25 in all four clauses for the Dirichlet problem (`Elliptic.regularity_dirichlet`,
+`regularity_dirichlet_higher`, `regularity_dirichlet_contDiffOn`, `regularity_dirichlet_smooth`)
+and, for the Neumann problem, the `H²` estimate and the `H^{m+2}` membership on the half space
+(`Elliptic.regularity_neumann_upperHalfSpace`,
+`regularity_neumann_upperHalfSpace_higher_mem_laplace` — the book's own alternative "or else
+`Ω = ℝ^N_+`") together with the boundary condition `∂u/∂n = 0` of an `H²` Neumann solution on a
+bounded `C¹` domain
+(`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` of
+`Numlib/Analysis/Sobolev/Boundary/Data.lean`).
+
+* **Theorem 9.26 (regularity for the Neumann problem) on a general domain.** For `Ω` of class
+  `C²` with `Γ` bounded, `f ∈ L²(Ω)` and `u ∈ H^1(Ω)` with `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for
+  *every* `φ ∈ H^1(Ω)` (49), the conclusions of Theorem 9.25: `u ∈ H²(Ω)` with
+  `‖u‖_{H²} ≤ C ‖f‖_{L²}`, and `u ∈ H^{m+2}(Ω)` for `f ∈ H^m(Ω)` on a `C^{m+2}` domain. The book
+  proves nothing ("the proof of Theorem 9.26 is entirely analogous"), and the analogy breaks at
+  case C₂. The plan recorded the route "the localized `v = θᵢ u` satisfies the equation against
+  the test space `Vᵢ = {φ ∈ H^1(Ω ∩ Uᵢ) : φ = 0 near ∂Uᵢ ∩ Ω̄}`"; **that is false.** Testing (49)
+  against `θᵢ φ ∈ H^1(Ω)` gives, for `φ ∈ Vᵢ`,
+  `∫_{Ω∩Uᵢ} ∇(θᵢu)·∇φ = ∫_{Ω∩Uᵢ} (θᵢ f − θᵢ u − ∇u·∇θᵢ) φ + ∫_{Ω∩Uᵢ} u ∇θᵢ·∇φ`, and the last
+  term is `−∫ div(u ∇θᵢ) φ + ∫_{Γ∩Uᵢ} u (∂θᵢ/∂n) φ dσ`. The boundary term vanishes for
+  `φ ∈ 𝓓(Ω ∩ Uᵢ)`, which is why the Dirichlet case C₂ works, but not on `Vᵢ`: the localized
+  function `θᵢ u` satisfies the *inhomogeneous* Neumann condition `∂(θᵢu)/∂n = (∂θᵢ/∂n) u` on
+  `Γ ∩ Uᵢ`. In one dimension: `Ω = (0, ∞)`, `U = (−1, 1)`, `θ ∈ C_c^∞(U)` with `θ(0) = 1` and
+  `θ'(0) = a ≠ 0`; a Neumann solution has `u'(0) = 0`, so `(θu)'(0) = a u(0) ≠ 0` in general,
+  whereas a weak solution of `−v'' = g ∈ L²` on `(0, 1)` against `{φ ∈ H^1 : φ = 0 near 1}` must
+  have `v'(0) = 0`. The same computation shows that localizing *after* the chart transfer fails
+  too, the boundary term on the flat face `Q₀` being `∑_k a_{kN} w (∂_k ζ) ψ`, which a cut-off
+  `ζ` independent of `y_N` near `Q₀` kills only if the chart is orthogonal at the boundary.
+
+  What does work is to cut off the *test function* instead: `w = u ∘ H ∈ H^1(Q₊)` does satisfy
+  the transferred equation against `{ψ ∈ H^1(Q₊) : ψ = 0 near the lateral and top boundary}`,
+  because the pullback of such a `ψ` extends by zero to an element of `H^1(Ω)` — no cut-off of
+  the solution is needed — and one then runs the method of translations with
+  `ψ = D_{−h}(ζ² D_h w)`, `ζ` a cut-off supported in `Q`. That is a Caccioppoli estimate:
+  `Elliptic.gradNorm_diffQuotL_le` and the chain above it would have to be redone with the
+  weight `ζ²` (the extra terms `∑ a_{kℓ} ∂_k w ∂_ℓ(ζ²) D_h w` absorbed by Young's inequality),
+  and the `H^{m+2}` clause would need a nested-cut-off induction in place of the book's global
+  one. Estimated well beyond the 600 lines the plan allowed, with no consumer in the corpus.
+  On the half space itself nothing has to be cut off — the solution is treated whole — which is
+  why `Elliptic.regularity_neumann_upperHalfSpace` and
+  `regularity_neumann_upperHalfSpace_higher_mem` *are* proved; it is exactly the passage to a
+  general domain, which must cut either the solution or the test function, that fails.
+* **Remark 24, the Dirichlet half** (planned as `Elliptic.regularity_dirichlet_general`): the
+  conclusions of Theorem 9.25 for a general second-order elliptic operator. For `Ω` of class
+  `C²` with bounded boundary, `a_{ij} ∈ C¹(Ω̄)` satisfying the ellipticity condition (36) (with
+  bounded derivatives if `Ω` is unbounded, footnote 26), `a_i ∈ C(Ω̄)`, `a₀ ∈ L^∞(Ω)`,
+  `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` with `generalForm Ω A a₁ a₀ u φ = ∫_Ω f φ` for all
+  `φ ∈ H^1_0(Ω)` (50): `u ∈ H²(Ω)`; and for `m ≥ 1`, `a_{ij} ∈ C^{m+1}(Ω̄)`, `a_i ∈ C^m(Ω̄)`,
+  `Ω` of class `C^{m+2}` and `f ∈ H^m(Ω)`: `u ∈ H^{m+2}(Ω)`. The book gives no proof. The route
+  is sound and is recorded here: case C₂ of Theorem 9.25 *is* already the variable-coefficient
+  estimate (`Elliptic.exists_sobolevEuclidean_two_of_tangential`,
+  `memSobolevMultiIndex_two_of_tangential_of_compact`), so one moves the lower-order terms
+  `∑ a_i ∂_i u + a₀ u ∈ L²(Ω)` to the right-hand side and only the principal part remains; cases
+  A and C₁ become that same tangential estimate with translations in every direction of `ℝ^N`
+  (the product rule for `D_h(a_{ij} ∂_i u)` is the only change from `Elliptic.regularity_top`);
+  case C₂ needs `Elliptic.transfer_chart` for a variable-coefficient equation (footnote 28: the
+  ellipticity condition is preserved under a change of variables) followed by the cylinder
+  estimate unchanged. Estimated ~600 lines beyond Theorem 9.25, with no consumer in the corpus.
+  The Neumann half of the same remark is further out of reach: it needs the general-coefficient
+  Neumann `H²` estimate, hence the missing Caccioppoli machinery above, and an `H²` Green
+  formula for the conormal derivative `∑_{ij} a_{ij} ν_j γ(∂_i u)`, which the boundary backbone
+  does not have.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -2207,12 +2292,15 @@ theorem single_apply_last_eq_zero {k : Fin (d + 1)} (hk : k ≠ Fin.last d) :
 
 /-- **Second derivatives of a weak solution, all but `∂_N∂_N`, on an open set invariant under
 the tangential translations** ([brezis2011functional] §9.6, (55)–(56) and (66)–(67), the half
-space being the case in point): for `u ∈ H^1_0(Ω)` solving `a(u, ψ) = ∫ g ψ` for all
-`ψ ∈ H^1_0(Ω)`, with `C¹` elliptic coefficients, every partial derivative `∂_k u` has a weak
-derivative along `e_ℓ` in `L²(Ω)` for `(k, ℓ) ≠ (N, N)`, bounded by `α⁻¹ (‖g‖ + N² M ‖∇u‖)`. For
-tangential `ℓ` this is the tangential estimate along `e_ℓ`; for `ℓ = N` and tangential `k` it is
-the derivative `∂_k ∂_N u`, which is `∂_N ∂_k u` by the symmetry of weak derivatives
-(`HasWeakIteratedLineDerivOn.of_perm`). -/
+space being the case in point): for a subspace `K` of `H^1(Ω)` invariant under the translations
+that leave `Ω` invariant and `u ∈ K` solving `a(u, ψ) = ∫ g ψ` for all `ψ ∈ K`, with `C¹`
+elliptic coefficients, every partial derivative `∂_k u` has a weak derivative along `e_ℓ` in
+`L²(Ω)` for `(k, ℓ) ≠ (N, N)`, bounded by `α⁻¹ (‖g‖ + N² M ‖∇u‖)`. For tangential `ℓ` this is
+the tangential estimate along `e_ℓ`; for `ℓ = N` and tangential `k` it is the derivative
+`∂_k ∂_N u`, which is `∂_N ∂_k u` by the symmetry of weak derivatives
+(`HasWeakIteratedLineDerivOn.of_perm`). The Dirichlet problem is `K = H^1_0(Ω)` and the Neumann
+problem is `K = ⊤`; only the invariance of `K` is used, which is why the "delicate point" of the
+book's Lemma 9.7 does not arise here. -/
 theorem exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
@@ -2224,21 +2312,19 @@ theorem exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential
     (hAa : ∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] a k l)
     (ha : ∀ k l, ContDiffOn ℝ 1 (a k l) Ω) {M : ℝ} (hM0 : 0 ≤ M)
     (haM : ∀ k l, ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ‖fderiv ℝ (a k l) x‖ ≤ M)
-    {α : ℝ} (hA : IsUniformlyElliptic Ω A α) {u : SobolevEuclidean (d + 1) 1 2 Ω}
-    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {α : ℝ} (hA : IsUniformlyElliptic Ω A α)
+    {K : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)}
+    (hK : ∀ ⦃h : EuclideanSpace ℝ (Fin (d + 1))⦄
+      (hh : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) h), ∀ v ∈ K,
+        translateL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 volume hh v ∈ K)
+    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ K)
     {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (heq : ∀ ψ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, generalForm Ω A 0 0 u ψ = load Ω g ψ)
+    (heq : ∀ ψ ∈ K, generalForm Ω A 0 0 u ψ = load Ω g ψ)
     (k l : Fin (d + 1)) (hkl : k ≠ Fin.last d ∨ l ≠ Fin.last d) :
     ∃ w : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
       ‖w‖ ≤ α⁻¹ * (‖g‖ + (d + 1) ^ 2 * M * gradNorm u) ∧
         HasWeakIteratedLineDerivOn ![EuclideanSpace.single l 1]
           (weakDeriv u (MultiIndexLE.single k)) w Ω volume := by
-  have hK : ∀ ⦃h : EuclideanSpace ℝ (Fin (d + 1))⦄
-      (hh : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) h),
-      ∀ v ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
-        translateL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 volume hh v
-          ∈ SobolevEuclideanZero (d + 1) 1 2 Ω :=
-    fun _ hh _ hv ↦ translateL_mem_zero hh hv
   have hsec : ∀ (j : Fin (d + 1)), j ≠ Fin.last d → ∀ i,
       ∃ w : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
         ‖w‖ ≤ α⁻¹ * (‖g‖ + (d + 1) ^ 2 * M * gradNorm u) ∧
@@ -2356,9 +2442,16 @@ variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, ca
 (`Ω = ℝ^N_+`), in the generality of the estimates (63)–(69) of case C₂. Let `Ω ⊆ ℝ^N` be open
 and invariant under the translations `t e_j`, `j ≠ N`, let the coefficients `A_{kℓ} ∈ L^∞(Ω)`
 have `C¹` representatives `a_{kℓ}` on `Ω` with `|a_{kℓ}| ≤ M₀`, `‖∇a_{kℓ}‖ ≤ M`, elliptic with
-constant `α > 0` at every point of `Ω`, and let `u ∈ H^1_0(Ω)` satisfy
-`∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ H^1_0(Ω)`. Then `u` is the function of an
-element `U ∈ H²(Ω)` with `‖U‖_{H²} ≤ C (‖u‖_{H¹} + ‖g‖₂)`, `C = regularityConst d α M₀ M`.
+constant `α > 0` at every point of `Ω`, let `K` be a subspace of `H^1(Ω)` containing the
+test-function elements and invariant under the translations that leave `Ω` invariant, and let
+`u ∈ K` satisfy `∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ K`. Then `u` is the
+function of an element `U ∈ H²(Ω)` with `‖U‖_{H²} ≤ C (‖u‖_{H¹} + ‖g‖₂)`,
+`C = regularityConst d α M₀ M`.
+
+The test space is a parameter because the same estimate serves the Dirichlet problem
+(`K = H^1_0(Ω)`), the Neumann problem (`K = ⊤`, Theorem 9.26 on the half space) and case C₂'s
+localized problems: the method of translations needs of `K` only that `D_{−h}(D_h u) ∈ K`, and
+the normal-normal derivative needs only the test functions.
 
 The tangential second derivatives come from the method of translations
 (`Elliptic.exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential`), the normal-normal one
@@ -2378,9 +2471,14 @@ theorem exists_sobolevEuclidean_two_of_tangential
     (hα0 : 0 < α)
     (hell : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ∀ ξ : EuclideanSpace ℝ (Fin (d + 1)),
       α * ‖ξ‖ ^ 2 ≤ ∑ k, ∑ l, a k l x * ξ k * ξ l)
-    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {K : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)}
+    (hKt : ∀ ⦃h : EuclideanSpace ℝ (Fin (d + 1))⦄
+      (hh : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) h), ∀ v ∈ K,
+        translateL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 volume hh v ∈ K)
+    (hKtest : testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume ≤ K)
+    {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ K)
     {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-    (heq : ∀ ψ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, generalForm Ω A 0 0 u ψ = load Ω g ψ) :
+    (heq : ∀ ψ ∈ K, generalForm Ω A 0 0 u ψ = load Ω g ψ) :
     ∃ U : SobolevEuclidean (d + 1) 2 2 Ω,
       fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u ∧
       ‖U‖ ≤ regularityConst d α M₀ M * (‖u‖ + ‖g‖) := by
@@ -2398,7 +2496,8 @@ theorem exists_sobolevEuclidean_two_of_tangential
     have h3 : 0 ≤ α⁻¹ := inv_nonneg.2 hα0.le
     nlinarith [norm_nonneg g, norm_nonneg u, mul_nonneg h1 (norm_nonneg g)]
   -- the second derivatives other than `∂_N ∂_N`
-  have hsec := exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential hΩ hAa ha hM0 haM hA hu heq
+  have hsec :=
+    exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential hΩ hAa ha hM0 haM hA hKt hu heq
   choose V hVb hVd using hsec
   classical
   obtain ⟨V', hV'⟩ : ∃ V' : Fin (d + 1) → Fin (d + 1) →
@@ -2418,8 +2517,7 @@ theorem exists_sobolevEuclidean_two_of_tangential
     rw [dite_eq_left h]
     exact hVd k l h
   -- the predicate form of the equation, and the normal-normal derivative
-  have hpred := forall_testFunction_of_forall_mem_general hAa
-    (SobolevMultiIndexZero.testFunctions_le) heq
+  have hpred := forall_testFunction_of_forall_mem_general hAa hKtest heq
   obtain ⟨vNN, hvNN, hvNNp, hvNNb⟩ := exists_hasWeakIteratedLineDerivOn_last_of_forall ha haM₀ haM
     hα0 (fun x hx ↦ le_diag_of_forall_elliptic hell hx _)
     (w := fun k ↦ ⇑(weakDeriv u (MultiIndexLE.single k))) (fun k ↦ Lp.memLp _) (Lp.memLp g)
@@ -2518,7 +2616,8 @@ theorem regularity_upperHalfSpace_general
         Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u ∧
       ‖U‖ ≤ regularityConst d α M₀ M * (‖u‖ + ‖g‖) :=
   exists_sobolevEuclidean_two_of_tangential upperHalfSpaceOpens_isTranslationInvariant hAa ha hM₀0
-    hM0 haM₀ haM hα0 hell hu heq
+    hM0 haM₀ haM hα0 hell (fun _ hh _ hv ↦ translateL_mem_zero hh hv)
+    SobolevMultiIndexZero.testFunctions_le hu heq
 
 /-- The constant representatives `δ_{kℓ}` of the identity coefficients are bounded by `1`. -/
 theorem abs_kroneckerRep_le_one (k l : Fin (d + 1)) (x : EuclideanSpace ℝ (Fin (d + 1))) :
@@ -2558,6 +2657,43 @@ theorem regularity_upperHalfSpace {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSp
     zero_le_one le_rfl (fun k l x _ ↦ abs_kroneckerRep_le_one k l x)
     (fun k l x _ ↦ by simp) one_pos (fun x _ ξ ↦ one_mul_norm_sq_le_sum_kroneckerRep x ξ) hu.1
     fun ψ hψ ↦ ?_
+  rw [generalForm_kroneckerCoeff]
+  exact hu.2 ψ hψ
+
+/-- **[brezis2011functional] Theorem 9.26 (regularity for the Neumann problem) on the half
+space, the `H²` clause**: let `u ∈ H^1(ℝ^N_+)`, `g ∈ L²(ℝ^N_+)` and `∫ ∇u · ∇ψ = ∫ g ψ` for
+every `ψ ∈ H^1(ℝ^N_+)` — the Neumann problem, whose test space is the whole of `H^1`. Then `u`
+is the function of an element `U ∈ H²(ℝ^N_+)`, with `‖U‖_{H²} ≤ C_N (‖u‖_{H¹} + ‖g‖₂)`,
+`C_N = regularityConst d 1 1 0`, the same constant as in the Dirichlet case
+(`Elliptic.regularity_upperHalfSpace`). The book's equation `−Δu + u = f` of (49) is the case
+`g = f − u`.
+
+This is `Elliptic.exists_sobolevEuclidean_two_of_tangential` with the test space `K = ⊤`, which
+is invariant under every translation and contains the test-function elements: on the half space
+the Neumann problem costs nothing beyond the Dirichlet one, because the method of translations
+needs of the test space only that it be invariant under the tangential translations, and the
+delicate point of the book's Lemma 9.7 is precisely about staying inside `H^1_0`. For a general
+`C²` domain the argument does *not* localize; see `## Not formalized here` in the module
+documentation. -/
+theorem regularity_neumann_upperHalfSpace
+    {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
+    {g : Lp ℝ 2 (volume.restrict
+      ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hu : IsGalerkinSolution (dirichletForm (upperHalfSpaceOpens d))
+      (load (upperHalfSpaceOpens d) g) ⊤ u) :
+    ∃ U : SobolevEuclidean (d + 1) 2 2 (upperHalfSpaceOpens d),
+      fn U =ᵐ[volume.restrict
+        ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u ∧
+      ‖U‖ ≤ regularityConst d 1 1 0 * (‖u‖ + ‖g‖) := by
+  refine exists_sobolevEuclidean_two_of_tangential upperHalfSpaceOpens_isTranslationInvariant
+    (A := kroneckerCoeff (upperHalfSpaceOpens d))
+    (a := fun k l _ ↦ if k = l then (1 : ℝ) else 0) (coeFn_kroneckerCoeff _)
+    (fun k l ↦ contDiffOn_const)
+    zero_le_one le_rfl (fun k l x _ ↦ abs_kroneckerRep_le_one k l x)
+    (fun k l x _ ↦ by simp) one_pos (fun x _ ξ ↦ one_mul_norm_sq_le_sum_kroneckerRep x ξ)
+    (fun _ _ _ _ ↦ Submodule.mem_top) le_top Submodule.mem_top fun ψ hψ ↦ ?_
   rw [generalForm_kroneckerCoeff]
   exact hu.2 ψ hψ
 
@@ -4425,7 +4561,8 @@ theorem memSobolevMultiIndex_two_of_tangential_of_compact
     (fun k l ↦ (hmem k l).coeFn_toLp)
     (fun k l ↦ (contDiff_extendCoeff hχ1' hQ ha hχQ k l).contDiffOn)
     hM₀0 hM0 (fun k l x _ ↦ hM₀ k l x) (fun k l x _ ↦ hM k l x) (lt_min hα0 one_pos)
-    (fun y hy ξ ↦ extendCoeff_elliptic hχ01 hχΩ' hell hy ξ) hW heq'
+    (fun y hy ξ ↦ extendCoeff_elliptic hχ01 hχΩ' hell hy ξ)
+    (fun _ hh _ hv ↦ translateL_mem_zero hh hv) SobolevMultiIndexZero.testFunctions_le hW heq'
   -- restriction to `Ω'`
   have hU' := fn_restrictL hΩ' U
   refine (memSobolevMultiIndex (restrictL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -5013,14 +5150,13 @@ theorem laplaceForm_restrict_isCoercive :
     ((laplaceForm Ω).restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive :=
   ⟨1, one_pos, fun v ↦ laplaceForm_isCoerciveWith_one Ω (v : SobolevEuclidean N 1 2 Ω)⟩
 
-/-- A weak solution of `−Δu + u = f` on `H^1_0(Ω)` solves `∫_Ω ∇u · ∇Φ = ∫_Ω (f − u) Φ` on
-`H^1_0(Ω)`. -/
+/-- A weak solution of `−Δu + u = f` on a test space `K` solves `∫_Ω ∇u · ∇Φ = ∫_Ω (f − u) Φ` on
+`K`: the Dirichlet problem is `K = H^1_0(Ω)` and the Neumann problem is `K = ⊤`. -/
 theorem dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    {u : SobolevEuclidean N 1 2 Ω}
-    (hu : IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u) :
-    ∀ Φ ∈ SobolevEuclideanZero N 1 2 Ω,
-      dirichletForm Ω u Φ = load Ω (f - weakDeriv u 0) Φ := by
+    {K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)} {u : SobolevEuclidean N 1 2 Ω}
+    (hu : IsGalerkinSolution (laplaceForm Ω) (load Ω f) K u) :
+    ∀ Φ ∈ K, dirichletForm Ω u Φ = load Ω (f - weakDeriv u 0) Φ := by
   intro Φ hΦ
   have h := hu.2 Φ hΦ
   rw [laplaceForm_apply_inner, ← dirichletForm_apply_inner, load_apply_inner] at h
@@ -5536,18 +5672,48 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
+/-- **The Dirichlet test space carries Lemma 9.7.** On an open set invariant under the
+translations along `e_j`, `j ≠ N`, the tangential derivative of an element of `H^1_0(Ω)` with an
+`H²` companion is again an element of `H^1_0(Ω)`
+(`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`), and on `H^1_0(Ω)` — the closure of the
+test-function elements — a weak equation is determined by its restriction to those elements
+(`Elliptic.generalForm_eq_load_of_forall_testFunctions`). Together these are the hypothesis
+`hKd` of `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Dirichlet problem. -/
+theorem tangentialDeriv_hyp_zero
+    (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
+      IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
+        (t • EuclideanSpace.single j 1))
+    {A : Fin (d + 1) → Fin (d + 1) →
+      Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} (hv : v ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {V : SobolevEuclidean (d + 1) 2 2 Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v)
+    (j : Fin (d + 1)) (hj : j ≠ Fin.last d) :
+    ∃ w : SobolevEuclidean (d + 1) 1 2 Ω, w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω ∧
+      HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume ∧
+      ∀ G' : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        (∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+          generalForm Ω A 0 0 w Φ = load Ω G' Φ) →
+        ∀ ψ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, generalForm Ω A 0 0 w ψ = load Ω G' ψ := by
+  obtain ⟨w, hw, hwd⟩ := tangentialDeriv_mem_zero_of_sobolev_two
+    (y := EuclideanSpace.single j 1) (by rw [PiLp.norm_single, norm_one]) (hΩ j hj) hv hV
+  exact ⟨w, hw, hwd, fun _ hG' _ hψ ↦ generalForm_eq_load_of_forall_testFunctions hG' hψ⟩
+
 /-- **Higher-order regularity on an open set invariant under the tangential translations, for a
 variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, case B, the
 induction "`f ∈ H^m ⇒ u ∈ H^{m+2}`", in the generality of case C₂. Let `Ω ⊆ ℝ^N` be open and
 invariant under the translations `t e_j`, `j ≠ N`, let the coefficients `A_{kℓ} ∈ L^∞(Ω)` have
 representatives `a_{kℓ}` of class `C^{m+1}` on `ℝ^N` and constant off a compact set
-(`IsContDiffConstOffCompact`), elliptic with constant `α > 0` at every point, and let
-`u ∈ H^1_0(Ω)` satisfy `∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ H^1_0(Ω)` with
-`g ∈ H^m(Ω)`. Then `u ∈ H^{m+2}(Ω)`.
+(`IsContDiffConstOffCompact`), elliptic with constant `α > 0` at every point, let `K` be a test
+space as in `Elliptic.exists_sobolevEuclidean_two_of_tangential` that moreover carries Lemma 9.7
+(`hKd`: a tangential derivative of an `H²` element of `K` is again in `K`, and for it the
+equation extends from the test functions to `K`), and let `u ∈ K` satisfy
+`∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ K` with `g ∈ H^m(Ω)`. Then
+`u ∈ H^{m+2}(Ω)`.
 
 Induction on `m`, the case `m = 0` being `Elliptic.exists_sobolevEuclidean_two_of_tangential`.
 For `m + 1`: `u ∈ H^{m+2}(Ω)` by the inductive hypothesis; for a tangential direction `e_j` the
-derivative `∂_j u` lies in `H^1_0(Ω)` (Lemma 9.7,
+derivative `∂_j u` lies in `K` by `hKd` (for `K = H^1_0(Ω)` this is Lemma 9.7,
 `Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`) and solves the equation with the datum
 `∂_j g + ∑_{kℓ} ∂_ℓ((∂_j a_{kℓ}) ∂_k u) ∈ H^m(Ω)` (`Elliptic.forall_testFunction_deriv_general`),
 so `∂_j u ∈ H^{m+2}(Ω)` by the inductive hypothesis; the normal derivative `∂_N ∂_N u` is read
@@ -5563,12 +5729,29 @@ theorem memSobolevMultiIndex_of_tangential_of_order (m : ℕ)
     (hAa : ∀ k l, ⇑(A k l) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] a k l)
     {α : ℝ} (hα0 : 0 < α)
     (hell : ∀ (x ξ : EuclideanSpace ℝ (Fin (d + 1))),
-      α * ‖ξ‖ ^ 2 ≤ ∑ k, ∑ l, a k l x * ξ k * ξ l) :
+      α * ‖ξ‖ ^ 2 ≤ ∑ k, ∑ l, a k l x * ξ k * ξ l)
+    {K : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)}
+    (hKt : ∀ ⦃h : EuclideanSpace ℝ (Fin (d + 1))⦄
+      (hh : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) h), ∀ v ∈ K,
+        translateL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 volume hh v ∈ K)
+    (hKtest : testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume ≤ K)
+    (hKd : ∀ {v : SobolevEuclidean (d + 1) 1 2 Ω}, v ∈ K →
+      ∀ {V : SobolevEuclidean (d + 1) 2 2 Ω},
+        fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v →
+      ∀ {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))},
+        (∀ ψ ∈ K, generalForm Ω A 0 0 v ψ = load Ω G ψ) →
+      ∀ j : Fin (d + 1), j ≠ Fin.last d →
+      ∃ w : SobolevEuclidean (d + 1) 1 2 Ω, w ∈ K ∧
+        HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume ∧
+        ∀ G' : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+          (∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+            generalForm Ω A 0 0 w Φ = load Ω G' Φ) →
+          ∀ ψ ∈ K, generalForm Ω A 0 0 w ψ = load Ω G' ψ) :
     (∀ k l, IsContDiffConstOffCompact (m + 1) (a k l)) →
-    ∀ {u : SobolevEuclidean (d + 1) 1 2 Ω}, u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω →
+    ∀ {u : SobolevEuclidean (d + 1) 1 2 Ω}, u ∈ K →
     ∀ {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))},
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑g) m 2 Ω volume →
-    (∀ ψ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, generalForm Ω A 0 0 u ψ = load Ω g ψ) →
+    (∀ ψ ∈ K, generalForm Ω A 0 0 u ψ = load Ω g ψ) →
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) (m + 2) 2 Ω
       volume := by
   have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := Ω.isOpen.measurableSet
@@ -5584,7 +5767,8 @@ theorem memSobolevMultiIndex_of_tangential_of_order (m : ℕ)
     obtain ⟨M, hM0, hM⟩ := exists_forall_norm_fderiv_le_of_isContDiffConstOffCompact ha
     obtain ⟨U, hU, -⟩ := exists_sobolevEuclidean_two_of_tangential hΩ hAa
       (fun k l ↦ ((ha k l).contDiff.of_le (by simp)).contDiffOn) hM₀0 hM0
-      (fun k l x _ ↦ hM₀ k l x) (fun k l x _ ↦ hM k l x) hα0 (fun x _ ξ ↦ hell x ξ) hu heq
+      (fun k l x _ ↦ hM₀ k l x) (fun k l x _ ↦ hM k l x) hα0 (fun x _ ξ ↦ hell x ξ) hKt hKtest
+      hu heq
     exact (memSobolevMultiIndex U).congr_ae hU
   | succ m ih =>
     intro ha u hu g hg heq
@@ -5641,15 +5825,13 @@ theorem memSobolevMultiIndex_of_tangential_of_order (m : ℕ)
       exact ⟨v, hv, hvm⟩
     choose v hv hvm using hv
     -- the predicate form of the equation
-    have hpred := forall_testFunction_of_forall_mem_general hAa
-      SobolevMultiIndexZero.testFunctions_le heq
+    have hpred := forall_testFunction_of_forall_mem_general hAa hKtest heq
     -- (6) for a tangential `j`, `∂_j u ∈ H^{m+2}(Ω)`
     have htan : ∀ j, j ≠ Fin.last d →
         MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
           (weakDeriv u (MultiIndexLE.single j)) (m + 2) 2 Ω volume := by
       intro j hj
-      obtain ⟨W, hW, hWd⟩ := tangentialDeriv_mem_zero_of_sobolev_two
-        (y := EuclideanSpace.single j 1) (by rw [PiLp.norm_single, norm_one]) (hΩ j hj) hu hU
+      obtain ⟨W, hW, hWd, hWext⟩ := hKd hu hU heq j hj
       have hWfn : fn W =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
           weakDeriv u (MultiIndexLE.single j) :=
         (ae_restrict_iff' hΩm).2 (hWd.ae_eq (weakDeriv_hasWeakIteratedLineDerivOn_single u j))
@@ -5682,10 +5864,8 @@ theorem memSobolevMultiIndex_of_tangential_of_order (m : ℕ)
           exact List.Perm.swap _ _ _
         exact (ae_restrict_iff' hΩm).2 (h1.ae_eq h3)
       -- the typed equation for `W`
-      have heqW : ∀ ψ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
-          generalForm Ω A 0 0 W ψ = load Ω (hG'p.toLp _) ψ := by
-        intro ψ hψ
-        refine generalForm_eq_load_of_forall_testFunctions (fun Φ hΦ ↦ ?_) hψ
+      have heqW : ∀ ψ ∈ K, generalForm Ω A 0 0 W ψ = load Ω (hG'p.toLp _) ψ := by
+        refine hWext _ (fun Φ hΦ ↦ ?_)
         obtain ⟨φ, hφ⟩ := hΦ
         rw [generalForm_zero_zero_apply_eq_of_ae_eq hAa W hφ,
           load_apply_eq_of_ae_eq hG'p.coeFn_toLp hφ, ← hderiv φ]
@@ -5849,11 +6029,600 @@ theorem regularity_upperHalfSpace_higher (m : ℕ)
     (A := kroneckerCoeff (upperHalfSpaceOpens d))
     (a := fun k l _ ↦ if k = l then (1 : ℝ) else 0) (coeFn_kroneckerCoeff _) one_pos
     (fun x ξ ↦ one_mul_norm_sq_le_sum_kroneckerRep x ξ)
+    (fun _ hh _ hv ↦ translateL_mem_zero hh hv) SobolevMultiIndexZero.testFunctions_le
+    (fun {_v} hv {_V} hV {_G} _ j hj ↦
+      tangentialDeriv_hyp_zero upperHalfSpaceOpens_isTranslationInvariant hv hV j hj)
     (fun k l ↦ IsContDiffConstOffCompact.const _) hu.1 hg fun ψ hψ ↦ ?_
   rw [generalForm_kroneckerCoeff]
   exact hu.2 ψ hψ
 
 end UpperHalfSpaceHigher
+
+/-! ### Theorem 9.26 on the half space: integration by parts in a tangential direction
+
+The `H^{m+2}` clause of the Neumann problem needs the analogue of Lemma 9.7 for the test space
+`⊤`: for a tangential `e_j` the derivative `∂_j u` of a Neumann solution is again a Neumann
+solution, with datum `∂_j g`. Its proof replaces the book's weak-compactness argument by two
+integrations by parts against a test function of `ℝ^N` — legitimate on the half space because
+the cut-offs `Elliptic.normalCutoff n`, which push such a test function inside `ℝ^N_+`, are
+functions of `x_N` alone and so are constant along `e_j` — together with Corollary 9.8 on the
+half space, which makes those test functions dense in `H^1(ℝ^N_+)`. -/
+
+section TangentialByParts
+
+variable {d : ℕ}
+
+open SobolevMultiIndex EuclideanSpace
+
+/-- The normal cut-off of the half space at height `1/(n+1)`: `x ↦ η((n+1) x_N)`, with `η` the
+smooth transition that vanishes below `1/2` and equals `1` above `1`. -/
+def normalCutoff (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) : ℝ :=
+  reflectionCutoff ((n + 1 : ℝ) * x (Fin.last d))
+
+/-- The normal cut-off is nonnegative. -/
+theorem normalCutoff_nonneg (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    0 ≤ normalCutoff n x := reflectionCutoff_nonneg _
+
+/-- The normal cut-off is at most `1`. -/
+theorem normalCutoff_le_one (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    normalCutoff n x ≤ 1 := reflectionCutoff_le_one _
+
+/-- The normal cut-off vanishes below the height `1/(2(n+1))`. -/
+theorem normalCutoff_eq_zero_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1))}
+    (hx : x (Fin.last d) ≤ (2 * ((n : ℝ) + 1))⁻¹) : normalCutoff n x = 0 := by
+  refine reflectionCutoff_of_le_half ?_
+  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  calc ((n : ℝ) + 1) * x (Fin.last d) ≤ ((n : ℝ) + 1) * (2 * ((n : ℝ) + 1))⁻¹ :=
+        mul_le_mul_of_nonneg_left hx hn.le
+    _ = 1 / 2 := by field_simp
+
+/-- The normal cut-off equals `1` above the height `1/(n+1)`. -/
+theorem normalCutoff_eq_one_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1))}
+    (hx : ((n : ℝ) + 1)⁻¹ ≤ x (Fin.last d)) : normalCutoff n x = 1 := by
+  refine reflectionCutoff_of_one_le ?_
+  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  calc (1 : ℝ) = ((n : ℝ) + 1) * ((n : ℝ) + 1)⁻¹ := by field_simp
+    _ ≤ ((n : ℝ) + 1) * x (Fin.last d) := mul_le_mul_of_nonneg_left hx hn.le
+
+/-- The normal cut-off is smooth: a smooth function of the last coordinate. -/
+theorem contDiff_normalCutoff (n : ℕ) : ContDiff ℝ ∞ (normalCutoff (d := d) n) := by
+  have h : (normalCutoff (d := d) n) = reflectionCutoff ∘
+      fun x : EuclideanSpace ℝ (Fin (d + 1)) ↦ ((n : ℝ) + 1) * x (Fin.last d) := rfl
+  rw [h]
+  exact contDiff_reflectionCutoff.comp
+    (contDiff_const.mul (EuclideanSpace.proj (𝕜 := ℝ) (Fin.last d)).contDiff)
+
+/-- **The normal cut-off is constant along the tangential directions**: its differential kills
+every `y` with `y_N = 0`. This is the point of the construction. -/
+theorem fderiv_normalCutoff_apply (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1)))
+    {y : EuclideanSpace ℝ (Fin (d + 1))} (hy : y (Fin.last d) = 0) :
+    fderiv ℝ (normalCutoff (d := d) n) x y = 0 := by
+  obtain ⟨L, hL⟩ : ∃ L : EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] ℝ,
+      L = ((n : ℝ) + 1) • (EuclideanSpace.proj (𝕜 := ℝ) (Fin.last d)) := ⟨_, rfl⟩
+  have hLapp : ∀ z : EuclideanSpace ℝ (Fin (d + 1)), L z = ((n : ℝ) + 1) * z (Fin.last d) := by
+    intro z; rw [hL]; rfl
+  have hd : HasDerivAt reflectionCutoff (deriv reflectionCutoff (L x)) (L x) :=
+    ((contDiff_reflectionCutoff.differentiable (by simp)).differentiableAt).hasDerivAt
+  have hcomp : HasFDerivAt (normalCutoff (d := d) n) (deriv reflectionCutoff (L x) • L) x := by
+    have h1 := hd.comp_hasFDerivAt x (L.hasFDerivAt (x := x))
+    refine h1.congr_of_eventuallyEq ?_
+    filter_upwards with z
+    simp only [Function.comp_apply, normalCutoff, hLapp z]
+  rw [hcomp.fderiv]
+  simp [hLapp y, hy]
+
+/-- A test function of `ℝ^N` cut off by the normal cut-off is a test function of `ℝ^N_+`. -/
+def normalCutoffTestFunction (n : ℕ) (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ)) :
+    𝓓(upperHalfSpaceOpens d, ℝ) where
+  toFun x := normalCutoff n x * φ x
+  contDiff' := (contDiff_normalCutoff n).mul φ.contDiff
+  hasCompactSupport' := φ.hasCompactSupport.mul_left
+  tsupport_subset' := by
+    have hcl : IsClosed {x : EuclideanSpace ℝ (Fin (d + 1)) |
+        (2 * ((n : ℝ) + 1))⁻¹ ≤ x (Fin.last d)} :=
+      isClosed_le continuous_const (by fun_prop)
+    have hsub : Function.support (fun x ↦ normalCutoff (d := d) n x * φ x) ⊆
+        {x : EuclideanSpace ℝ (Fin (d + 1)) | (2 * ((n : ℝ) + 1))⁻¹ ≤ x (Fin.last d)} := by
+      intro x hx
+      by_cases hle : x (Fin.last d) ≤ (2 * ((n : ℝ) + 1))⁻¹
+      · exact absurd (show normalCutoff (d := d) n x * φ x = 0 by
+          rw [normalCutoff_eq_zero_of_le n hle, zero_mul]) hx
+      · exact (not_le.1 hle).le
+    refine (closure_minimal hsub hcl).trans fun x hx ↦ ?_
+    have hn : (0 : ℝ) < (2 * ((n : ℝ) + 1))⁻¹ := by positivity
+    exact lt_of_lt_of_le hn hx
+
+/-- The function of the cut-off test function. -/
+@[simp]
+theorem normalCutoffTestFunction_coe (n : ℕ)
+    (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ)) :
+    (normalCutoffTestFunction n φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      = fun x ↦ normalCutoff n x * φ x := rfl
+
+/-- **Integration by parts along a tangential direction of the half space, against a test
+function of the whole space.** If `w` is the weak derivative of `f` along a tangential `y`
+(`y_N = 0`) on `ℝ^N_+` and both lie in `L²(ℝ^N_+)`, then
+`∫_{ℝ^N_+} (∂_y φ) f = −∫_{ℝ^N_+} φ w` for *every* `φ ∈ C_c^∞(ℝ^N)` — the test function need
+not vanish on `∂ℝ^N_+`, as the definition of the weak derivative demands. Multiplying `φ` by
+`Elliptic.normalCutoff n` gives a test function of `ℝ^N_+`, for which the identity is the
+definition, and the cut-off contributes nothing because it is a function of `x_N` alone, so that
+`∂_y (normalCutoff n) = 0`; `normalCutoff n → 1` pointwise on the open half space and dominated
+convergence closes the argument. It is this lemma, and not weak compactness, that carries
+Lemma 9.7 for the Neumann test space `⊤`. -/
+theorem integral_fderiv_mul_eq_neg_of_tangential {y : EuclideanSpace ℝ (Fin (d + 1))}
+    (hy : y (Fin.last d) = 0) {f w : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (h : HasWeakIteratedLineDerivOn ![y] f w (upperHalfSpaceOpens d) volume)
+    (hf : MemLp f 2 (volume.restrict
+      ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (hw : MemLp w 2 (volume.restrict
+      ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ)) :
+    ∫ x in ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1)))), fderiv ℝ (φ : _ → ℝ) x y * f x
+      = -∫ x in ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1)))), φ x * w x := by
+  set Ω : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+    ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+      Set (EuclideanSpace ℝ (Fin (d + 1)))) with hΩdef
+  -- the identity for the cut-off test function
+  have hderiv : ∀ (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))),
+      fderiv ℝ (fun z ↦ normalCutoff (d := d) n z * φ z) x y
+        = normalCutoff n x * fderiv ℝ (φ : _ → ℝ) x y := by
+    intro n x
+    rw [fderiv_fun_mul
+      ((contDiff_normalCutoff (d := d) n).differentiable (by simp)).differentiableAt
+      (φ.contDiff.differentiable (by simp)).differentiableAt]
+    simp [fderiv_normalCutoff_apply n x hy]
+  have key : ∀ n : ℕ, ∫ x in Ω, normalCutoff n x * fderiv ℝ (φ : _ → ℝ) x y * f x
+      = -∫ x in Ω, normalCutoff n x * φ x * w x := by
+    intro n
+    have hint := h.integral_smul_eq (normalCutoffTestFunction n φ)
+    simp only [normalCutoffTestFunction_coe, iteratedFDeriv_one_apply, Matrix.cons_val_zero,
+      pow_one, smul_eq_mul, neg_one_mul] at hint
+    rw [← hint]
+    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+    dsimp only
+    rw [hderiv n x]
+  -- the two integrands are integrable
+  have hAcont : Continuous fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x y := by
+    have := (φ.fderivApply y).continuous
+    rwa [TestFunction.fderivApply_coe] at this
+  have hAmem : MemLp (fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x y) 2
+      (volume.restrict Ω) := by
+    have := (φ.fderivApply y).continuous.memLp_of_hasCompactSupport
+      (p := 2) (μ := volume.restrict Ω) (φ.fderivApply y).hasCompactSupport
+    rwa [TestFunction.fderivApply_coe] at this
+  have hφmem : MemLp (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) 2 (volume.restrict Ω) :=
+    φ.continuous.memLp_of_hasCompactSupport φ.hasCompactSupport
+  have hb1 : Integrable
+      (fun x ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x y * f x)
+      (volume.restrict Ω) := hAmem.integrable_mul_two hf
+  have hb2 : Integrable (fun x ↦ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x * w x)
+      (volume.restrict Ω) := hφmem.integrable_mul_two hw
+  -- the cut-offs tend to `1` on the open half space
+  have hone : ∀ᵐ x ∂(volume.restrict Ω), ∀ᶠ n : ℕ in atTop, normalCutoff (d := d) n x = 1 := by
+    filter_upwards [self_mem_ae_restrict (upperHalfSpaceOpens d).isOpen.measurableSet] with x hx
+    have hx0 : (0 : ℝ) < x (Fin.last d) := hx
+    obtain ⟨n₀, hn₀⟩ := exists_nat_one_div_lt hx0
+    filter_upwards [eventually_ge_atTop n₀] with n hn
+    refine normalCutoff_eq_one_of_le n ?_
+    have hmono : ((n : ℝ) + 1)⁻¹ ≤ ((n₀ : ℝ) + 1)⁻¹ := by
+      refine inv_anti₀ (by positivity) ?_
+      have : (n₀ : ℝ) ≤ (n : ℝ) := Nat.cast_le.2 hn
+      linarith
+    rw [one_div] at hn₀
+    exact hmono.trans hn₀.le
+  have hlim1 : Tendsto
+      (fun n : ℕ ↦ ∫ x in Ω, normalCutoff n x * fderiv ℝ (φ : _ → ℝ) x y * f x) atTop
+      (𝓝 (∫ x in Ω, fderiv ℝ (φ : _ → ℝ) x y * f x)) := by
+    refine tendsto_integral_of_dominated_convergence
+      (fun x ↦ |fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x y * f x|) (fun n ↦ ?_)
+      hb1.abs (fun n ↦ ?_) ?_
+    · exact (((contDiff_normalCutoff (d := d) n).continuous.mul
+        hAcont).aestronglyMeasurable).mul hf.aestronglyMeasurable
+    · filter_upwards with x
+      rw [Real.norm_eq_abs, mul_assoc, abs_mul, abs_of_nonneg (normalCutoff_nonneg n x)]
+      exact mul_le_of_le_one_left (abs_nonneg _) (normalCutoff_le_one n x)
+    · filter_upwards [hone] with x hx
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards [hx] with n hn
+      rw [hn, one_mul]
+  have hlim2 : Tendsto (fun n : ℕ ↦ ∫ x in Ω, normalCutoff n x * (φ : _ → ℝ) x * w x) atTop
+      (𝓝 (∫ x in Ω, (φ : _ → ℝ) x * w x)) := by
+    refine tendsto_integral_of_dominated_convergence
+      (fun x ↦ |(φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x * w x|) (fun n ↦ ?_)
+      hb2.abs (fun n ↦ ?_) ?_
+    · exact (((contDiff_normalCutoff (d := d) n).continuous.mul
+        φ.continuous).aestronglyMeasurable).mul hw.aestronglyMeasurable
+    · filter_upwards with x
+      rw [Real.norm_eq_abs, mul_assoc, abs_mul, abs_of_nonneg (normalCutoff_nonneg n x)]
+      exact mul_le_of_le_one_left (abs_nonneg _) (normalCutoff_le_one n x)
+    · filter_upwards [hone] with x hx
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards [hx] with n hn
+      rw [hn, one_mul]
+  have := tendsto_nhds_unique (hlim1.congr key) hlim2.neg
+  exact this
+
+end TangentialByParts
+
+section NeumannTangential
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+open SobolevMultiIndex
+
+/-- The Dirichlet form against an element whose function is `C¹` on `Ω`, in terms of functions:
+`Elliptic.dirichletForm_apply_eq_of_ae_eq` with no compact-support hypothesis on the second
+argument. -/
+theorem dirichletForm_apply_eq_of_ae_eq_contDiffOn {V : SobolevEuclidean N 1 2 Ω}
+    {wv : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    (hV : ∀ i, ⇑(weakDeriv V (MultiIndexLE.single i))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] wv i)
+    {Φ : SobolevEuclidean N 1 2 Ω} {ψ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hψ : ContDiffOn ℝ 1 ψ Ω)
+    (hΦ : fn Φ =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ψ) :
+    dirichletForm Ω V Φ = ∑ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      wv i x * fderiv ℝ ψ x (EuclideanSpace.single i 1) := by
+  rw [dirichletForm_apply_inner]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [L2.inner_eq_integral_mul]
+  have hΦi := weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hψ hΦ i
+  refine integral_congr_ae ?_
+  filter_upwards [hV i, hΦi] with x h1 h2
+  rw [h1, h2]
+
+/-- A test function of `ℝ^N` restricts to an element of `H^1(Ω)` for every open `Ω`. -/
+theorem exists_sobolevEuclidean_one_fn_ae_eq_top
+    (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin N))), ℝ)) :
+    ∃ Ψ : SobolevEuclidean N 1 2 Ω,
+      fn Ψ =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ := by
+  obtain ⟨Φ₀, -, hΦ₀⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (k := 1) (p := 2) (μ := volume)
+  refine ⟨restrictL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume
+    (le_top (a := Ω)) Φ₀, ?_⟩
+  refine (fn_restrictL (le_top (a := Ω)) Φ₀).trans ?_
+  exact ae_restrict_of_ae_restrict_of_subset (le_top (a := Ω)) hΦ₀
+
+end NeumannTangential
+
+section NeumannHalf
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex EuclideanSpace
+
+variable (Ω) in
+/-- **Integration by parts along `y` against the test functions of the whole space** holds on
+`Ω`. This is the half space's property `Elliptic.integral_fderiv_mul_eq_neg_of_tangential` for a
+tangential `y`, isolated as the hypothesis under which the Neumann test space `⊤` carries
+Lemma 9.7. -/
+def IsTangentialByParts (y : EuclideanSpace ℝ (Fin (d + 1))) : Prop :=
+  ∀ f w : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+    HasWeakIteratedLineDerivOn ![y] f w Ω volume →
+    MemLp f 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+    MemLp w 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+    ∀ φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ),
+      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), fderiv ℝ (φ : _ → ℝ) x y * f x
+        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), φ x * w x
+
+/-- The half space integrates by parts along every tangential direction. -/
+theorem isTangentialByParts_upperHalfSpace {j : Fin (d + 1)} (hj : j ≠ Fin.last d) :
+    IsTangentialByParts (upperHalfSpaceOpens d) (EuclideanSpace.single j 1) :=
+  fun _ _ h hf hw φ ↦
+    integral_fderiv_mul_eq_neg_of_tangential (single_apply_last_eq_zero hj) h hf hw φ
+
+/-- **The Dirichlet form of a tangential derivative against a smooth test function of `ℝ^N`.**
+Let `v ∈ H^1(Ω)` be a weak solution of `∫_Ω ∇v · ∇ψ = ∫_Ω G ψ` for *every* `ψ ∈ H^1(Ω)` which is
+the function of an element of `H²(Ω)`, and let `w ∈ H^1(Ω)` be its weak derivative along a
+direction `e_j` in which `Ω` integrates by parts against the test functions of `ℝ^N`. Then
+`∫_Ω ∇w · ∇Ψ = −∫_Ω G ∂_j φ` for every `Ψ ∈ H^1(Ω)` whose function is a `φ ∈ C_c^∞(ℝ^N)`: two
+integrations by parts in the direction `e_j`, the symmetry `∂_j ∂_i φ = ∂_i ∂_j φ` of the smooth
+`φ` and the equation for `v` tested against `∂_j φ`. -/
+theorem dirichletForm_tangentialDeriv_apply_eq {j : Fin (d + 1)}
+    (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1))
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v)
+    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG : ∀ ψ : SobolevEuclidean (d + 1) 1 2 Ω, dirichletForm Ω v ψ = load Ω G ψ)
+    {w : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hwd : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume)
+    (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ))
+    {Ψ : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hΨ : fn Ψ =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] φ) :
+    dirichletForm Ω w Ψ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+      G x * fderiv ℝ (φ : _ → ℝ) x (EuclideanSpace.single j 1) := by
+  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := Ω.isOpen.measurableSet
+  -- the first derivatives of `v` as elements of `H^1(Ω)`
+  choose Vi hVi using exists_sobolevEuclidean_one_fn_ae_eq_weakDeriv hV
+  have hq : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1]
+      (⇑(weakDeriv v (MultiIndexLE.single i)))
+      (⇑(weakDeriv (Vi i) (MultiIndexLE.single j))) Ω volume := fun i ↦
+    (weakDeriv_hasWeakIteratedLineDerivOn_single (Vi i) j).congr_ae (hVi i)
+      (EventuallyEq.refl _ _)
+  -- `∂_i ∂_j v = ∂_j ∂_i v`
+  have hsym : ∀ i, ⇑(weakDeriv w (MultiIndexLE.single i))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        ⇑(weakDeriv (Vi i) (MultiIndexLE.single j)) := by
+    intro i
+    have h1 := (weakDeriv_hasWeakIteratedLineDerivOn_single v i).cons (hq i)
+    have h2 := hwd.cons (weakDeriv_hasWeakIteratedLineDerivOn_single w i)
+    have h3 : HasWeakIteratedLineDerivOn
+        (Fin.cons (EuclideanSpace.single j 1) ![EuclideanSpace.single i 1]) (fn v)
+        (⇑(weakDeriv w (MultiIndexLE.single i))) Ω volume := by
+      refine h2.of_perm ?_
+      simp only [List.ofFn_cons]
+      exact List.Perm.swap _ _ _
+    exact Filter.EventuallyEq.symm ((ae_restrict_iff' hΩm).2 (h1.ae_eq h3))
+  -- the element of `H^1(Ω)` with function `∂_j φ`, and the equation for `v` against it
+  obtain ⟨Ψ', hΨ'⟩ := exists_sobolevEuclidean_one_fn_ae_eq_top (Ω := Ω)
+    (φ.fderivApply (EuclideanSpace.single j 1))
+  have hv' : dirichletForm Ω v Ψ' = ∑ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+      weakDeriv v (MultiIndexLE.single i) x
+        * fderiv ℝ ((φ.fderivApply (EuclideanSpace.single j 1)) :
+          EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single i 1) :=
+    dirichletForm_apply_eq_of_ae_eq_contDiffOn (fun _ ↦ EventuallyEq.refl _ _)
+      ((φ.fderivApply (EuclideanSpace.single j 1)).contDiff.contDiffOn.of_le (by simp)) hΨ'
+  have hload : load Ω G Ψ' = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+      G x * fderiv ℝ (φ : _ → ℝ) x (EuclideanSpace.single j 1) := by
+    rw [load_apply]
+    refine integral_congr_ae ?_
+    filter_upwards [hΨ'] with x hx
+    rw [hx, TestFunction.fderivApply_apply]
+  rw [dirichletForm_apply_eq_of_ae_eq_contDiffOn hsym
+    (φ.contDiff.contDiffOn.of_le (by simp)) hΨ, ← hload, ← hG Ψ', hv',
+    ← Finset.sum_neg_distrib]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  have hbpi := hbp _ _ (hq i) (Lp.memLp _) (Lp.memLp _)
+    (φ.fderivApply (EuclideanSpace.single i 1))
+  simp only [TestFunction.fderivApply_coe] at hbpi
+  have hcomm := φ.contDiff.fderiv_fderiv_comm (EuclideanSpace.single i 1)
+    (EuclideanSpace.single j 1)
+  have e1 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+      fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single i 1)
+        * weakDeriv (Vi i) (MultiIndexLE.single j) x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        weakDeriv (Vi i) (MultiIndexLE.single j) x
+          * fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single i 1) :=
+    integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+  have e2 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+      fderiv ℝ (fun z ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) z
+          (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1)
+        * weakDeriv v (MultiIndexLE.single i) x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        weakDeriv v (MultiIndexLE.single i) x
+          * fderiv ℝ ((φ.fderivApply (EuclideanSpace.single j 1)) :
+            EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single i 1) := by
+    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+    dsimp only
+    rw [TestFunction.fderivApply_coe, show fderiv ℝ (fun z ↦
+        fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) z (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single j 1)
+        = fderiv ℝ (fun z ↦ fderiv ℝ (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) z
+          (EuclideanSpace.single j 1)) x (EuclideanSpace.single i 1) from congrFun hcomm x]
+    ring
+  rw [← e2, hbpi, e1, neg_neg]
+
+/-- **The datum of the differentiated equation is the weak derivative of the datum along `e_j`.**
+Any `G'` that represents the equation for `w = ∂_j v` against the test functions of `Ω` is the
+weak `e_j`-derivative of the datum `G` of the equation for `v`, because
+`Elliptic.dirichletForm_tangentialDeriv_apply_eq` computes both sides at a test function. This is
+what lets the equation for `w` be pushed from the test functions to all of `H^1(Ω)`: a second
+tangential integration by parts, now applied to the pair `(G, G')`. -/
+theorem hasWeakIteratedLineDerivOn_datum_of_tangentialDeriv {j : Fin (d + 1)}
+    (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1))
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v)
+    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG : ∀ ψ : SobolevEuclidean (d + 1) 1 2 Ω, dirichletForm Ω v ψ = load Ω G ψ)
+    {w : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hwd : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume)
+    {G' : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG' : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω w Φ = load Ω G' Φ) :
+    HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (⇑G) (⇑G') Ω volume where
+  locallyIntegrableOn := (Lp.memLp G).locallyIntegrableOn one_le_two
+  locallyIntegrableOn_weakDeriv := (Lp.memLp G').locallyIntegrableOn one_le_two
+  integral_smul_eq χ := by
+    obtain ⟨X, hXt, hX⟩ := χ.exists_mem_sobolevMultiIndex_testFunctions
+      (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (k := 1) (p := 2) (μ := volume)
+    have h1 := dirichletForm_tangentialDeriv_apply_eq hbp hV hG hwd
+      (χ.ofLE (le_top : Ω ≤ ⊤)) hX
+    have h2 : dirichletForm Ω w X = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        G' x * χ x := by
+      rw [hG' X hXt, load_apply]
+      refine integral_congr_ae ?_
+      filter_upwards [hX] with x hx
+      rw [hx]
+    rw [h2] at h1
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, pow_one, smul_eq_mul, neg_one_mul,
+      TestFunction.ofLE_coe] at h1 ⊢
+    have e1 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        fderiv ℝ (χ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single j 1) * G x
+        = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), G x
+          * fderiv ℝ (χ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single j 1) :=
+      integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+    have e2 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        (χ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x * G' x
+        = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), G' x
+          * (χ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x :=
+      integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+    rw [e1, e2, h1, neg_neg]
+
+variable (Ω) in
+/-- **Restrictions of the test functions of `ℝ^N` are dense in `H^1(Ω)`**: Corollary 9.8. -/
+def IsTestFunctionDense : Prop :=
+  ∀ Ψ : SobolevEuclidean (d + 1) 1 2 Ω,
+    ∃ (φ : ℕ → 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ))
+      (Ψn : ℕ → SobolevEuclidean (d + 1) 1 2 Ω),
+      (∀ n, fn (Ψn n) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] φ n) ∧
+        Tendsto Ψn atTop (𝓝 Ψ)
+
+/-- **Corollary 9.8 on the half space**, in the form the Neumann test space needs. -/
+theorem isTestFunctionDense_upperHalfSpace : IsTestFunctionDense (upperHalfSpaceOpens d) := by
+  intro Ψ
+  obtain ⟨v, hv, hvc, w, hwv, hlim⟩ :=
+    SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace
+      (p := 2) ENNReal.ofNat_ne_top Ψ
+  obtain ⟨φ, hφ⟩ : ∃ φ : ℕ → 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ),
+      ∀ n, (φ n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) = v n :=
+    ⟨fun n ↦ ⟨v n, hv n, hvc n, by simp⟩, fun _ ↦ rfl⟩
+  refine ⟨φ, w, fun n ↦ ?_, hlim⟩
+  rw [hφ n]
+  exact hwv n
+
+/-- **The equation for a tangential derivative extends from the test functions to all of
+`H^1(Ω)`** when `Ω` integrates by parts tangentially and carries Corollary 9.8. -/
+theorem forall_dirichletForm_tangentialDeriv_eq {j : Fin (d + 1)}
+    (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1)) (hdense : IsTestFunctionDense Ω)
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v)
+    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG : ∀ ψ : SobolevEuclidean (d + 1) 1 2 Ω, dirichletForm Ω v ψ = load Ω G ψ)
+    {w : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hwd : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume)
+    {G' : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG' : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω w Φ = load Ω G' Φ) :
+    ∀ ψ : SobolevEuclidean (d + 1) 1 2 Ω, dirichletForm Ω w ψ = load Ω G' ψ := by
+  have hGd := hasWeakIteratedLineDerivOn_datum_of_tangentialDeriv hbp hV hG hwd hG'
+  intro Ψ
+  obtain ⟨φ, Ψn, hΨn, hlim⟩ := hdense Ψ
+  have hkey : ∀ n, dirichletForm Ω w (Ψn n) = load Ω G' (Ψn n) := by
+    intro n
+    rw [dirichletForm_tangentialDeriv_apply_eq hbp hV hG hwd (φ n) (hΨn n)]
+    have hbpn := hbp _ _ hGd (Lp.memLp G) (Lp.memLp G') (φ n)
+    have e0 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        G x * fderiv ℝ ((φ n) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x
+          (EuclideanSpace.single j 1)
+        = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+          fderiv ℝ ((φ n) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x (EuclideanSpace.single j 1)
+            * G x := integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+    have e1 : load Ω G' (Ψn n) = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        (φ n) x * G' x := by
+      rw [load_apply]
+      refine integral_congr_ae ?_
+      filter_upwards [hΨn n] with x hx
+      rw [hx, mul_comm]
+    rw [e0, hbpn, e1, neg_neg]
+  have h1 : Tendsto (fun n ↦ dirichletForm Ω w (Ψn n)) atTop (𝓝 (dirichletForm Ω w Ψ)) :=
+    ((dirichletForm Ω w).continuous.tendsto Ψ).comp hlim
+  have h2 : Tendsto (fun n ↦ load Ω G' (Ψn n)) atTop (𝓝 (load Ω G' Ψ)) :=
+    ((load Ω G').continuous.tendsto Ψ).comp hlim
+  exact tendsto_nhds_unique (h1.congr hkey) h2
+
+/-- **Lemma 9.7 for the Neumann test space `⊤`.** On an open set that integrates by parts along
+`e_j` against the test functions of `ℝ^N` and in which those test functions are dense, the weak
+derivative along `e_j` of a Neumann solution `v` with an `H²` companion is again an element of
+`H^1(Ω)` — trivially, the test space being everything — *and* satisfies the differentiated
+equation against all of `H^1(Ω)`, not merely against the test functions. This is the hypothesis
+`hKd` of `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Neumann problem, the
+counterpart of `Elliptic.tangentialDeriv_hyp_zero` for the Dirichlet problem; where `H^1_0(Ω)`
+gets the second clause for free from the density of the test functions, `⊤` has to earn it, and
+`Elliptic.forall_dirichletForm_tangentialDeriv_eq` is where it is earned. -/
+theorem tangentialDeriv_hyp_top {j : Fin (d + 1)}
+    (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1)) (hdense : IsTestFunctionDense Ω)
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] fn v)
+    {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hG : ∀ ψ ∈ (⊤ : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)),
+      generalForm Ω (kroneckerCoeff Ω) 0 0 v ψ = load Ω G ψ) :
+    ∃ w : SobolevEuclidean (d + 1) 1 2 Ω,
+      w ∈ (⊤ : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)) ∧
+      HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume ∧
+      ∀ G' : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        (∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+          generalForm Ω (kroneckerCoeff Ω) 0 0 w Φ = load Ω G' Φ) →
+        ∀ ψ ∈ (⊤ : Submodule ℝ (SobolevEuclidean (d + 1) 1 2 Ω)),
+          generalForm Ω (kroneckerCoeff Ω) 0 0 w ψ = load Ω G' ψ := by
+  have hGtop : ∀ ψ : SobolevEuclidean (d + 1) 1 2 Ω, dirichletForm Ω v ψ = load Ω G ψ := by
+    intro ψ
+    rw [← generalForm_kroneckerCoeff]
+    exact hG ψ Submodule.mem_top
+  obtain ⟨w, hwfn⟩ := exists_sobolevEuclidean_one_fn_ae_eq_weakDeriv hV j
+  have hwd : HasWeakIteratedLineDerivOn ![EuclideanSpace.single j 1] (fn v) (fn w) Ω volume :=
+    (weakDeriv_hasWeakIteratedLineDerivOn_single v j).congr_ae (EventuallyEq.refl _ _) hwfn.symm
+  refine ⟨w, Submodule.mem_top, hwd, fun G' hG'' ψ _ ↦ ?_⟩
+  rw [generalForm_kroneckerCoeff]
+  refine forall_dirichletForm_tangentialDeriv_eq hbp hdense hV hGtop hwd (fun Φ hΦ ↦ ?_) ψ
+  rw [← generalForm_kroneckerCoeff]
+  exact hG'' Φ hΦ
+
+/-- **[brezis2011functional] Theorem 9.26 on the half space, the `H^{m+2}` membership.** Let
+`u ∈ H^1(ℝ^N_+)` satisfy `∫ ∇u · ∇ψ = ∫ g ψ` for *every* `ψ ∈ H^1(ℝ^N_+)` with
+`g ∈ H^m(ℝ^N_+)`. Then `u ∈ H^{m+2}(ℝ^N_+)`. This is
+`Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the identity coefficients and the test
+space `⊤`, whose Lemma 9.7 is `Elliptic.tangentialDeriv_hyp_top`: the tangential derivative of a
+Neumann solution is a Neumann solution with the differentiated datum, by the tangential
+integration by parts of `Elliptic.isTangentialByParts_upperHalfSpace` and the density of
+`Elliptic.isTestFunctionDense_upperHalfSpace`. -/
+theorem regularity_neumann_upperHalfSpace_higher_mem (m : ℕ)
+    {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
+    {g : Lp ℝ 2 (volume.restrict
+      ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hu : IsGalerkinSolution (dirichletForm (upperHalfSpaceOpens d))
+      (load (upperHalfSpaceOpens d) g) ⊤ u)
+    (hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑g) m 2
+      (upperHalfSpaceOpens d) volume) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) (m + 2) 2
+      (upperHalfSpaceOpens d) volume := by
+  refine memSobolevMultiIndex_of_tangential_of_order m upperHalfSpaceOpens_isTranslationInvariant
+    (A := kroneckerCoeff (upperHalfSpaceOpens d))
+    (a := fun k l _ ↦ if k = l then (1 : ℝ) else 0) (coeFn_kroneckerCoeff _) one_pos
+    (fun x ξ ↦ one_mul_norm_sq_le_sum_kroneckerRep x ξ)
+    (fun _ _ _ _ ↦ Submodule.mem_top) le_top
+    (fun {_v} _ {_V} hV {_G} hG j hj ↦ tangentialDeriv_hyp_top
+      (isTangentialByParts_upperHalfSpace hj) isTestFunctionDense_upperHalfSpace hV hG)
+    (fun k l ↦ IsContDiffConstOffCompact.const _) hu.1 hg fun ψ hψ ↦ ?_
+  rw [generalForm_kroneckerCoeff]
+  exact hu.2 ψ hψ
+
+/-- **[brezis2011functional] Theorem 9.26 on the half space, the `H^{m+2}` clause for the book's
+equation (49).** For `f ∈ H^m(ℝ^N_+)` and the weak solution `u ∈ H^1(ℝ^N_+)` of
+`∫ ∇u · ∇φ + ∫ u φ = ∫ f φ` for every `φ ∈ H^1(ℝ^N_+)`, one has `u ∈ H^{m+2}(ℝ^N_+)`. The datum
+of `−Δu = f − u` lies in `H^k` only as far as `u` is already known to lie in `H^k`, so the order is
+raised one step at a time, exactly as in the Dirichlet case
+(`Elliptic.regularity_dirichlet_higher_mem_laplace`). -/
+theorem regularity_neumann_upperHalfSpace_higher_mem_laplace (m : ℕ)
+    {f : Lp ℝ 2 (volume.restrict
+      ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
+        Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hf : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑f) m 2
+      (upperHalfSpaceOpens d) volume)
+    {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
+    (hu : IsGalerkinSolution (laplaceForm (upperHalfSpaceOpens d))
+      (load (upperHalfSpaceOpens d) f) ⊤ u) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) (m + 2) 2
+      (upperHalfSpaceOpens d) volume := by
+  have heq := dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace hu
+  have hg : ∀ j, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u) j 2
+      (upperHalfSpaceOpens d) volume → j ≤ m →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (⇑(f - weakDeriv u 0)) j 2 (upperHalfSpaceOpens d) volume := fun j huj hjm ↦ by
+    refine ((hf.mono_order hjm).sub huj).congr_ae ?_
+    filter_upwards [Lp.coeFn_sub f (weakDeriv u 0)] with x hx
+    rw [hx]
+    rfl
+  have key : ∀ j, j ≤ m → MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fn u) (j + 2) 2 (upperHalfSpaceOpens d) volume := by
+    intro j
+    induction j with
+    | zero =>
+      intro _
+      obtain ⟨U, hU, -⟩ := regularity_neumann_upperHalfSpace ⟨hu.1, heq⟩
+      exact (memSobolevMultiIndex U).congr_ae hU
+    | succ j ih =>
+      intro hjm
+      have huj : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn u)
+          (j + 1) 2 (upperHalfSpaceOpens d) volume :=
+        (ih (Nat.le_of_succ_le hjm)).mono_order (Nat.le_succ (j + 1))
+      exact regularity_neumann_upperHalfSpace_higher_mem (j + 1) ⟨hu.1, heq⟩ (hg (j + 1) huj hjm)
+  exact key m le_rfl
+
+end NeumannHalf
 
 /-! ### Case C₂ on the model cylinder, higher order -/
 
@@ -5963,7 +6732,10 @@ theorem memSobolevMultiIndex_of_tangential_of_compact_of_order (m : ℕ)
     exact sum_integral_extendCoeff_eq hΩ' hQΩ' hχ hχQ hχ1 hK.isClosed hKL hAa hwK heq hWd ψ
   -- higher-order regularity on `Ω`
   have hW2 := memSobolevMultiIndex_of_tangential_of_order m hΩ (fun k l ↦ (hmem k l).coeFn_toLp)
-    (lt_min hα0 one_pos) hell' hmult hW (hgm.congr_ae hgmem.coeFn_toLp.symm) heq'
+    (lt_min hα0 one_pos) hell' (fun _ hh _ hv ↦ translateL_mem_zero hh hv)
+    SobolevMultiIndexZero.testFunctions_le
+    (fun {_v} hv {_V} hV {_G} _ j hj ↦ tangentialDeriv_hyp_zero hΩ hv hV j hj)
+    hmult hW (hgm.congr_ae hgmem.coeFn_toLp.symm) heq'
   -- restriction to `Ω'`
   refine (hW2.mono_set hΩ').congr_ae ?_
   have h2 := ae_restrict_of_ae_restrict_of_subset hΩ' hWfn

@@ -133,46 +133,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 at
 id = "regularity_dirichlet_smooth"
 
 [[node]]
-id = "regularity_neumann"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **[brezis2011functional] Theorem 9.26 (regularity for the Neumann problem)**: the
-conclusions of Theorem 9.25 for `u ∈ H^1(Ω)` with `laplaceForm Ω u φ = ⟪f, fn φ⟫` for all
-`φ ∈ H^1(Ω)`; stated for the `H²` clause with `‖u‖_{H²} ≤ C ‖f‖₂`, and for the `H^{m+2}` clause
-as `regularity_neumann_higher`. The book proves nothing ("entirely analogous"), and the route is:
-case A is `regularity_top` unchanged; case B goes through with `φ = D_{-h}(D_h u) ∈ H^1(ℝ^N_+)`
-(no boundary condition is needed for a tangential translate to be admissible, so Lemma 9.7's
-delicate point disappears); in case C₂ the localized `v = θ_i u` satisfies the equation against
-the test space `V_i = {φ ∈ H^1(Ω ⊓ U_i) : φ = 0 near ∂U_i ∩ Ω̄}`, which transfers under the chart
-to the space `V` of functions of `H^1(Q₊)` vanishing near the lateral and top boundary of `Q₊`, a
-closed subspace containing `𝓓(Q₊)` and invariant under small tangential translations of functions
-supported in `{|x'| < 1 - δ, x_N < 1 - δ}`; `tangential_estimate_cylinder` applies with this `V`,
-(67) follows as before, and (68) uses the equation tested against `ψ / a_{NN}` for `ψ ∈ 𝓓(Q₊)`,
-which is in `V`. The boundary condition `∂u/∂n = 0` is *not* part of this node: it is recovered,
-for the `H²` solution, as the vanishing of the normal trace
-`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq`
-(`Numlib/Analysis/Sobolev/Boundary/Data.lean`, boundary round 2026-09-21; surface node
-`Brezis.Chapter09.theorem_9_26_normalDeriv`), which takes the `H²` membership as a hypothesis and
-needs no regularity theory — so this node stays what it is, the `H²` estimate, deferred and judged
-unchanged by the boundary round: ★★★ (~600 lines given the Dirichlet case, most of it the two
-variants of `transfer_chart` and of the assembly with the new test space). Not needed by any
-consumer; planned so that the estimate's parametrization by `V` is fixed now.'''
-deps = ["regularity_top", "regularity_upperHalfSpace", "gradNorm_diffQuotL_le_of_invariant", "transfer_chart", "regularity_dirichlet"]
+id = "regularity_neumann_upperHalfSpace"
 
 [[node]]
-id = "regularity_dirichlet_general"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **[brezis2011functional] Chapter 9, Remark 24: regularity for a general second-order
-elliptic operator.** For `Ω` of class `C²` with bounded boundary, coefficients `a_ij` in
-`C¹(Ω̄)` (with bounded derivatives if `Ω` is unbounded, footnote 26) satisfying the ellipticity
-condition, `a_i ∈ C(Ω̄)`, `a₀ ∈ L^∞(Ω)`, `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` with
-`generalForm Ω A a₁ a₀ u φ = ⟪f, fn φ⟫` for all `φ ∈ H^1_0(Ω)`: `u ∈ H²(Ω)`; and for `m ≥ 1`,
-`a_ij ∈ C^{m+1}(Ω̄)`, `a_i ∈ C^m(Ω̄)`, `Ω` of class `C^{m+2}`, `f ∈ H^m(Ω)`: `u ∈ H^{m+2}(Ω)`.
-The book gives no proof; the route is the one already taken for the Laplacian, since case C₂ is
-*already* the variable-coefficient estimate: move the lower-order terms `∑ a_i ∂_i u + a₀ u` to
-the right-hand side (they are in `L²`), so that only the principal part `∑ a_ij ∂_i ∂_j` remains;
-case A and C₁ become `tangential_estimate_cylinder`'s argument with translations in all
-directions on `ℝ^N` (the product formula for `D_h(a_ij ∂_i u)` is the only change from
-`regularity_top`); case C₂ is `transfer_chart_general` (footnote 28) followed by
-`regularity_unitChartCubePos` unchanged. ★★★ (~600 lines beyond Theorem 9.25). Lowest priority
-of this file: no consumer, and the book itself does not prove it.'''
-deps = ["regularity_dirichlet", "transfer_chart", "memSobolevMultiIndex_two_of_tangential_of_compact", "generalForm"]
+id = "regularity_neumann_upperHalfSpace_higher_mem"
+
+[[node]]
+id = "regularity_neumann_upperHalfSpace_higher_mem_laplace"

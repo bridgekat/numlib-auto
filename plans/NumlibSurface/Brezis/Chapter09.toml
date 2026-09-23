@@ -139,7 +139,7 @@ condition (36), the load, weak problems as `IsGalerkinSolution` on `H^1_0(Ω)` o
 Theorem 9.21, Prop 9.22, Example 3, Theorem 9.23, Remark 23, Prop 9.24, Steps A and D of
 Example 1, the solution operator on `L²(Ω)` and its compactness), `Regularity` (Theorem 9.25 in
 the book's four cases, Lemmas 9.6–9.8, Remark 25 first and separately since §9.8 and chapter 10
-need only it, Theorem 9.26 and Remark 24 with a route), `MaximumPrinciple` (Theorem 9.27 in both
+need only it, Theorem 9.26 on the half space), `MaximumPrinciple` (Theorem 9.27 in both
 cases, Cor 9.28, Remark 27, Prop 9.29 — the drift-free case the book proves and the general case
 by Gilbarg–Trudinger 8.1 — Prop 9.30, and the `H^1_0` variants of footnotes 35/37/38), `Spectral`
 (Theorem 9.31 for a general symmetric coercive form with the basis as data,
@@ -153,9 +153,19 @@ to the backbone by `_iff` lemmas.
 
 **Blocked (§9.5–9.8, 2 nodes):** `example_9_4_stepA` and `example_9_4_stepD` — Green's formula
 with a boundary term and the surface measure on `Γ`, `notes/frontier.md` blocker 2. Everything
-else in §9.5–9.8 is provable with today's Mathlib on top of the §9.1–9.4 backbone; Theorem 9.26,
-Remark 24 and the general-drift Prop 9.29 have routes but no proof in the book and are the last
-items of the order of attack.
+else in §9.5–9.8 is provable with today's Mathlib on top of the §9.1–9.4 backbone, except the
+three results the book quotes without proof that the closing round (2026-09-23) removed and wrote
+up: **Theorem 9.26** on a general `C²` domain — "entirely analogous" is wrong, the cut-off
+`θᵢ u` of a Neumann solution satisfies the inhomogeneous condition `∂(θᵢu)/∂n = (∂θᵢ/∂n) u` on
+`Γ ∩ Uᵢ`, and the correct proof is a Caccioppoli estimate the backbone does not have (the
+half-space clauses `theorem_9_26_upperHalfSpace`, `theorem_9_26_upperHalfSpace_higher` and the
+boundary condition `theorem_9_26_normalDeriv` are proved); **Remark 24**, Dirichlet half — a
+real route, ~600 lines beyond Theorem 9.25, no consumer; **Remark 24**, Neumann half — the general-coefficient Neumann
+`H²` estimate plus an `H²` Green formula for the conormal derivative, neither available. The
+write-ups are the `## Not formalized here` sections of
+`NumlibSurface/Brezis/Chapter09/Section06.lean` and
+`Numlib/Analysis/PDE/Elliptic/Regularity.lean`. The general-drift Prop 9.29 has a route but no
+proof in the book and is the last item of the order of attack.
 
 **Not planned (Comments 9–16):** Theorem 9.32 (Agmon–Douglis–Nirenberg: quoted without proof;
 needs Calderón–Zygmund); Theorem 9.33 (Schauder: quoted without proof; Hölder singular
@@ -190,7 +200,8 @@ corpus proves elliptic regularity" becomes false for `p = 2` on `C²` domains.
 
 **Order of attack (§9.5–9.8):** `Elliptic/Dirichlet` (≈ 2 200) → `Elliptic/MaximumPrinciple`
 (≈ 2 200) → `Elliptic/Regularity` cases A and C₁ (≈ 1 850) → `Elliptic/Spectral` (≈ 1 500) →
-`Elliptic/Regularity` cases B and C₂ (≈ 3 900; Theorem 9.26 and Remark 24 a further 1 200).
+`Elliptic/Regularity` cases B and C₂ (≈ 3 900; Theorem 9.26 on the half space is a further 450
+over the test-space parametrization of case B, and Remark 24 is not formalized).
 Chapter 10 consumes `Dirichlet`, `Regularity` (Remark 25 and `regularity_dirichlet`) and
 `Spectral.dirichletEigenbasis`.
 
@@ -202,7 +213,9 @@ the trace `W^{1,p}(Ω) → L^p(Γ)` of Comment 7 with `W_0^{1,p} ⊆ ker` (`Data
 `ker ⊆ W_0^{1,p}` (`Kernel.lean`). Restated here: `isContDiffDomain_of_isClassC1`,
 `example_9_4_stepA`, `example_9_4_stepD` (through the classical Green formula
 `BoundaryData.integral_laplacian_mul_add_eq` and the full support of the surface measure), and
-the boundary condition of Theorem 9.26 as `theorem_9_26_normalDeriv` (the `H²` regularity itself
-stays deferred); `remark_9_24_neumann` is split off and blocked. Comment 7 (i) and (iv), the
-fractional spaces on `Γ`, remain out of scope.
+the boundary condition of Theorem 9.26 as `theorem_9_26_normalDeriv` (the regularity is proved
+on the half space by the closing round, `theorem_9_26_upperHalfSpace` and
+`theorem_9_26_upperHalfSpace_higher`, and not formalized on a general domain);
+`remark_9_24_neumann`, split off by that round, was removed and written up by the closing round.
+Comment 7 (i) and (iv), the fractional spaces on `Γ`, remain out of scope.
 '''

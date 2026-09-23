@@ -49,8 +49,11 @@ Everything is on `E = EuclideanSpace ℝ (Fin N)` with Lebesgue measure and the 
   translations, in the book's four cases: `ℝ^N` (case A), the half space with Lemmas 9.6–9.7
   (case B), interior estimates (case C₁, which is Remark 25's `H^{m+2}_loc` regularity on an
   arbitrary open set, stated first because `Spectral` needs only it), and boundary estimates
-  through a `C²` chart with Lemma 9.8 (case C₂). Theorem 9.26 (Neumann) and Remark 24 (general
-  operator) are planned with a route through the same estimates, parametrized by the test space.
+  through a `C²` chart with Lemma 9.8 (case C₂). Case B is parametrized by the test space, which
+  gives Theorem 9.26 (Neumann) on the half space (`regularity_neumann_upperHalfSpace` and, at
+  every order, `regularity_neumann_upperHalfSpace_higher_mem_laplace`);
+  Theorem 9.26 on a general domain and Remark 24 (general operator) are not formalized — see
+  "What is consumed, and what is not proved".
 * `MaximumPrinciple` — Theorem 9.27 (Stampacchia's truncation, `|Ω| < ∞` and `|Ω| = ∞`),
   Corollary 9.28, Remark 27 (the classical-solution proof, which extends to general operators),
   Proposition 9.29 (the drift-free case the book proves, and the general case by the route of
@@ -72,6 +75,19 @@ boundary characterization of `W^{1,p}_0` and Poincaré's inequality (`Zero`), an
 domains with their partitions of unity (`Chart`). The dependencies on those modules are named
 in the nodes below by their planned identifiers.
 
+**Not formalized.** Theorem 9.26 (Neumann regularity) on a general `C²` domain: the book gives
+no proof, and the "entirely analogous" localization is false — the cut-off `θᵢ u` of a Neumann
+solution satisfies the *inhomogeneous* condition `∂(θᵢu)/∂n = (∂θᵢ/∂n) u` on `Γ ∩ Uᵢ`, so the
+correct proof cuts off the test function (a Caccioppoli estimate with `D_{−h}(ζ² D_h w)`), which
+the backbone does not have; the half-space clauses are proved at every order
+(`Regularity.regularity_neumann_upperHalfSpace`,
+`regularity_neumann_upperHalfSpace_higher_mem_laplace`) and the boundary condition of an `H²`
+Neumann solution is `Brezis.Chapter09.theorem_9_26_normalDeriv`. Remark 24 (general second-order
+operator), Dirichlet and Neumann halves: quoted by the book without proof, ~600 lines beyond
+Theorem 9.25 for the Dirichlet half and out of reach for the Neumann half; no consumer. The full
+record, with the routes and the counterexample, is the `## Not formalized here` section of
+`Numlib/Analysis/PDE/Elliptic/Regularity.lean`.
+
 No trace, no surface measure, no Green's formula with a boundary term: everything that reads a
 function on `∂Ω` is stated for a function continuous up to the boundary, as the book does. The
 Neumann boundary condition is therefore never recovered from the weak formulation (the book's
@@ -89,7 +105,8 @@ quotients 300, case A 350, higher order 200, local spaces and interior regularit
 `Spectral` (≈ 1500: infinite dimension 100, operator properties 350, the basis 350, smoothness
 and the pointwise equation 400, Remarks 28–30 450) → `Regularity` cases B and C₂ (≈ 3500:
 half space 900, Lemma 9.8 450, the cylinder estimate 850, transfer and assembly 900, higher
-order and the `C²`/`C^∞` clauses 400; Theorem 9.26 and Remark 24 a further 1200). Cases A and
+order and the `C²`/`C^∞` clauses 400; Theorem 9.26 on the half space is ~450 lines, Theorem 9.26
+on a general domain and Remark 24 are not formalized). Cases A and
 C₁ are what `Spectral` and Chapter 10 (the heat and wave equations, which need Remark 25 and
 Theorem 9.25) consume first; cases B and C₂ are the long tail.
 '''
