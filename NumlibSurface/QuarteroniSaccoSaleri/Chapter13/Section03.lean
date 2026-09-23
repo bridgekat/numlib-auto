@@ -60,6 +60,62 @@ the Sturm comparison for the Legendre equation in `θ = arccos x`
 `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the exact integrals are `∫ φ_i² = 2h/3` and
 `∫ φ_i φ_{i±1} = h/6`, i.e. `M = (h/6) tridiag(1, 4, 1)`, which is what Program 100 assembles.
 
+## Not formalized here
+
+Two convergence estimates of chapter 13 are quoted by the book without proof and are recorded
+here. The second of them belongs to §13.4, the space–time (cG(1)dG(q)) method, which has no
+module of its own: the error estimate (13.25) was the only numbered result of that section.
+
+* **The convergence estimates after (13.24)** (§13.3.1):
+  `‖u(t^k) - u_h^k‖_{L²} ≤ C(u₀, f, u)(Δt^{p(θ)} + h^{r+1})` with `p(θ) = 1` for `θ ≠ 1/2` and
+  `p(1/2) = 2`; and, for `f = 0` and `θ ∈ {1, 1/2}`, the improved
+  `‖u(t^k) - u_h^k‖ ≤ C[(h/√t^k)^{r+1} + (Δt/t^k)^{p(θ)}] ‖u₀‖`. Both are quoted from [QV94]
+  pp. 394–395. The *stability* half is here — (13.21) is `equation_13_21`, the θ-step
+  `equation_13_17` — and so are the approximation pieces: the `L²` projection error for `r = 1`
+  (`Numlib/Approximation/PiecewiseLinearL2`), the degree-`r` interpolation estimate in broken
+  form (`sobolevSeminorm_sub_piecewisePolyInterp_le`,
+  `Numlib/Approximation/SobolevInterpolation`), and, for the `f = 0` clause, the semigroup
+  smoothing `‖A S(t) u₀‖ ≤ ‖u₀‖/t` of Brezis Theorem 7.7 on the Dirichlet Laplacian
+  (`Numlib/Analysis/PDE/Heat`). What is missing is (i) the time regularity of the *weak* solution
+  of (13.12) — `u_tt ∈ L²(0,1)` uniformly in `t`, `u_ttt` for `θ = 1/2` — which needs a
+  Bochner-space vocabulary `L²(0,T;V)`/`H¹(0,T;H⁻¹)` and Lions's existence theorem;
+  `Numlib/Analysis/PDE/Bochner` has the classes `C^k(s;V)` and `L^p(s;V)` read through an
+  embedding, no `L²(0,T;V)` type and no existence theory, and the Brezis heat module works with
+  the semigroup on `L²(Ω)` and classical `C¹`-in-time solutions. (ii) The time-truncation error
+  of the θ-method against the *semi-discrete* problem: a Taylor expansion of `u_h` in `t` with
+  the `L²`-in-space remainder. (iii) The bridge from `SobolevInterval`'s `H^{r+1}(0,1)` norm to
+  the broken seminorm the interpolation estimate is stated in. The book leaves `C(u₀, f, u)`
+  unspecified, so a faithful statement must quantify one constant over all `h` and `Δt`, and that
+  uniformity is the content of the estimate: no weakened form is available. Estimate: a
+  Bochner-space module (weeks), plus ~600 lines for (ii) and (iii).
+* **(13.25)** (§13.4): for the cG(1)dG(1) space–time discretization of the heat equation (13.12)
+  on `[0,1] × [0,T]` with time slabs `I_k`, continuous piecewise linear elements in space and
+  discontinuous piecewise linear elements in time, the meshes being allowed to change from slab
+  to slab (`V_{h,k-1} ⊄ V_{h,k}` is permitted),
+  `‖u(t^n) - U^n‖_{L²(0,1)} ≤ C(u_{0h}, f, u, n)(Δt² + h²)`. Quoted from [EEHJ96] without proof.
+  Three things are missing, none of them small. (i) The space–time spaces themselves: `Q_q(S_k)`,
+  `V_{h,Δt}`, `Y_{h,k}`, the time jumps `[v^k]` and the cG(1)dG(q) form exist nowhere — per slab
+  a tensor product of chapter 12's `X_h^1` with `ℙ_q(I_k)` on a slab-dependent mesh, with
+  one-sided time traces, whereas `Approximation/BrokenPolynomial` has traces and jumps in one
+  variable only (~1500 lines). (ii) The exact solution `u(t^n)`: `equation_13_12` is a
+  definition, and the Brezis round gives the *homogeneous* heat equation on the Dirichlet
+  Laplacian of an open `Ω ⊆ EuclideanSpace ℝ (Fin N)` (`Heat.IsSolution`,
+  `Heat.existsUnique_isSolution`) with `u ∈ C^∞((0,∞); L²)` and the smoothing bounds
+  (`LinearPMap.norm_applyL_semigroupLift_le`,
+  `LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup`); beyond that, (13.12) needs a
+  source term `f ≠ 0` — there is no Duhamel formula `u = S(t)u₀ + ∫₀ᵗ S(t-s) f(s) ds` in
+  `Numlib/Analysis/ODE/HilleYosida` — the identification of the one-dimensional problem with that
+  vocabulary (no bridge between `SobolevInterval` on `Ioo 0 1 ⊆ ℝ` and `SobolevEuclidean` on
+  `EuclideanSpace ℝ (Fin 1)`, and no instance making an interval an `IsContDiffChartDomain`),
+  and, for the weak formulation with `u' ∈ L²(0,T;H⁻¹)`, the same Lions theorem the previous
+  bullet waits on (~800 lines). (iii) The [EEHJ96] proof is a space–time duality argument over
+  the discrete backward problem, with a strong-stability estimate and parabolic regularity in
+  time for the *nonhomogeneous* problem; the semigroup smoothing above is its `f = 0` piece
+  (~1500 lines). The constant `C(u_{0h}, f, u, n)` is unspecified by the book, so here too no
+  weakened form is available. The rest of §13.4 — the spaces, and the algebraic forms of the
+  method for `q = 0` (backward Euler with the projection matrix `B_{k,k-1}` on the right) and
+  `q = 1` (the `2 × 2` block system) — is unnumbered, and Example 13.2 is a numerical experiment.
+
 ## Conventions
 
 `V` is the book's `V_h`, a real inner product space carrying the `L²` inner product of the book;

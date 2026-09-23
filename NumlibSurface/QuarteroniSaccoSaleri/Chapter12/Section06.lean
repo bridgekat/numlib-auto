@@ -64,17 +64,35 @@ the one module of the other book this file imports, for its `ℙ_k` Lagrange ele
 
 ## Not formalized here
 
-The `L²` estimate (12.97) of Property 12.2 (`property_12_2_l2`) is left as an open node with its
-reason: the `H²` regularity of the Dirichlet problem on a convex polygon behind the Aubin–Nitsche
-argument (`notes/frontier.md` blocker 18; the abstract duality argument is
-`AtkinsonHan.Chapter10.theorem_10_4_3`). Green's formula (12.95) on a *Lipschitz* plane domain in
-general is out of scope: it is proved on bounded `C¹` domains and on triangulated polygons (the
-boundary round of 2026-09-21, `notes/boundary/planning-brief.md` §1), and on the rectangle, the
-domain §12.6's own finite difference discretization uses, directly from Mathlib's divergence
-theorem. The book proves neither estimate of
-Property 12.2 (both are quoted from [QV94]); (12.96) is proved here on the triangulation
-scaffold of `Numlib/Geometry/Triangulation.lean`, with the polygon entering through the
-hypothesis that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`), the
+* **Property 12.2, the `L²` estimate (12.97)**: under the assumptions of `property_12_2` —
+  `u ∈ H¹₀(Ω) ∩ H^{l+1}(Ω)` the solution of the Poisson problem (12.90) on a polygon, `u_h ∈ V_h`
+  its finite element approximation of degree `k ≥ 1`, `l = min(k, s - 1)` — one has
+  `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}`. The book quotes it from [QV94, Theorem 6.2.1]
+  without proof. The proof is the Aubin–Nitsche duality argument, and that argument is already
+  formalized abstractly: `AtkinsonHan.Chapter10.theorem_10_4_3` and `corollary_10_4_4_abstract`
+  give `‖u - u_h‖_{L²} ≤ M δ ‖u - u_h‖_{H¹}` whenever every dual solution `φ_g`, defined by
+  `a(v, φ_g) = (g, v)_{L²}`, is approximated from `V_h` within `δ ‖g‖_{L²}`. With (12.96), proved
+  here as `property_12_2`, that yields (12.97) as soon as `δ = C h`, that is as soon as the dual
+  solutions satisfy `φ_g ∈ H²(Ω)` with `‖φ_g‖_{H²} ≤ C ‖g‖_{L²}`. This is the `H²` regularity of
+  the Dirichlet problem on a **convex polygon** (Grisvard, *Elliptic Problems in Nonsmooth
+  Domains*, Theorem 3.2.1.2), and it is the single missing piece: `Elliptic.regularity_dirichlet`
+  (`Numlib/Analysis/PDE/Elliptic/Regularity.lean`, Brezis Theorem 9.25) proves it on `C²` domains
+  with bounded boundary, and nothing proves it on a polygon. Convexity is not a technicality
+  there — at a re-entrant corner of angle `ω > π` the solution carries a singular part
+  `r^{π/ω} sin(πθ/ω) ∉ H²`, so the bound is false without it. The interpolation half is
+  available: `‖φ_g - Π_h φ_g‖_{H¹} ≤ C h |φ_g|_{H²}` is
+  `AtkinsonHan.Chapter10.theorem_10_3_9_lattice` at `m = 1`, `k = 1`, with `Π_h φ_g ∈ V_h` by
+  `Triangulation.exists_mem_polySpaceZero_globalInterp`. Estimate: ~100 lines here once that
+  regularity bound exists on a convex polygon; the regularity bound itself is research-scale
+  (`notes/frontier.md` blocker 18).
+
+Green's formula (12.95) on a *Lipschitz* plane domain in general is out of scope: it is proved on
+bounded `C¹` domains and on triangulated polygons (the boundary round of 2026-09-21,
+`notes/boundary/planning-brief.md` §1), and on the rectangle, the domain §12.6's own finite
+difference discretization uses, directly from Mathlib's divergence theorem. The book proves
+neither estimate of Property 12.2 (both are quoted from [QV94]); (12.96) is proved here on the
+triangulation scaffold of `Numlib/Geometry/Triangulation.lean`, with the polygon entering through
+the hypothesis that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`), the
 regularity `u ∈ H^{l+1}(Ω)` read on a representative continuous up to the boundary, and the
 boundary condition `u = 0` on `∂Ω` on that representative.
 
@@ -431,7 +449,7 @@ polynomial and edge unisolvent, so that `Π_h ũ` vanishes on `∂Ω` with `ũ`
 (`Triangulation.exists_mem_polySpaceZero_globalInterp`). The regularity `u ∈ H^{l+1}(Ω)` is read on
 the continuous representative as in Theorem 10.3.9; the boundary condition `ũ = 0` on `∂Ω` is
 the problem's, a hypothesis on a polygon (on a `C¹` domain it follows from `u ∈ H¹₀(Ω)`). The
-`L²` estimate (12.97) is `property_12_2_l2`, open. -/
+`L²` estimate (12.97) is not formalized; see `## Not formalized here` in the module doc. -/
 theorem property_12_2 {k : ℕ} (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω}
     (hreg : AtkinsonHan.Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)

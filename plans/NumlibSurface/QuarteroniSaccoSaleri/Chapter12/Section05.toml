@@ -133,46 +133,6 @@ id = "equation_12_75"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.75)–(12.76)'
 
 [[node]]
-id = "remark_12_6_piecewise_const"
-kind = "theorem"
-desc = '''Remark 12.6's general claim: if `f` is piecewise constant over the grid partition, the
-Scharfetter-Gummel scheme yields a nodally exact solution of `-eps u'' + beta u' = f` with
-`u(0) = 0`, `u(1) = 1`, irrespective of `h`.
-
-Not formalized, and not merely unreached: the book quotes it from [HGR96, pp. 44-45] and proves
-nothing, and the argument is not the one behind the homogeneous case.  What
-`AdvectionDiffusion.sg_nodal_exact` uses is that the discrete amplification ratio
-`(1 + Pe*)/(1 - Pe*)` equals `e^{2 Pe}` exactly, which fixes the *homogeneous* solution at the
-nodes; for a piecewise constant `f` one needs in addition that the particular solution of the
-two-point problem on each panel is reproduced exactly by the scheme's right-hand side, i.e. the
-Green's function of `-eps u'' + beta u'` on a panel and the exactness of the trapezoidal/exponential
-quadrature against a constant.  That is a new development (the exponentially fitted Green's
-function of one panel), not a rearrangement of what is here; estimated one day, and it is used
-nowhere in the book -- Theorem 12.4 needs only the homogeneous case, which is
-`QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact`.
-
-Blocked (2026-09-20, agent qss5). Checked in `Numlib/Variational/AdvectionDiffusion`:
-`viscosityScheme ε β n φ u` is the scheme (12.79)/(12.82) for the *homogeneous* model problem
-(12.72) (`u(0) = 0`, `u(1) = 1`), `sg_nodal_exact` its nodal exactness through
-`centredRatio_stabilizedPeclet_phiSG` (`(1+Pe*)/(1−Pe*) = e^{2Pe}`), and
-`Variational/EllipticInterval` the load functional `load f = ⟪f, ·⟫` of the Galerkin problem; there
-is no scheme with a right-hand side and no exact solution of `−ε u'' + β u' = f` (a
-variation-of-constants formula on `(0,1)` with the exponential Green's function). The claim itself
-is underdetermined by the book: (12.79)–(12.83) never say how `f` enters, and nodal exactness for
-piecewise constant `f` is a statement about the *right-hand side* discretization — it holds when `f`
-is integrated against the exponentially fitted test functions (the flux `ε u' − β u` is linear on
-each panel and the three-point relation of the exact solution is reproduced; Roos–Stynes–Tobiska,
-*Robust Numerical Methods for Singularly Perturbed Differential Equations*, 2nd ed., chapter I, §2,
-the Il'in–Allen–Southwell scheme) and is not expected for the finite-difference right-hand side
-`f(x_i)` or the `P_1` load with `φ^{SG}` viscosity alone. A faithful node must therefore first fix
-the scheme with `f` (a new definition beside `viscosityScheme`, with the exponentially fitted
-weights), then compute the panel Green's function and prove the three-point identity. Quoted from
-[HGR96] without proof and used nowhere in the book; out of scope by policy. Estimate: ~1 day
-(400–600 lines) once the scheme is chosen.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
-
-[[node]]
 id = "equation_12_84_problem"
 source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.84)'
 

@@ -43,9 +43,26 @@ collocation problem is equivalent to the discrete weak form
 
 ## Not formalized here
 
-Theorem 12.2 rests on the quadrature error bound (10.36) in weighted Sobolev norms and the
-interpolation estimate (10.22), which the book quotes without proof from [CHQZ88] and which
-chapter 10 does not have; its node stays open with the reason.
+* **Theorem 12.2**: for `f ∈ H^s(-1, 1)` with `s ≥ 1`, the spectral collocation solution
+  satisfies `‖u' - u_n'‖_{L²(-1,1)} ≤ C n^{-s} (‖f‖_{H^s(-1,1)} + ‖u‖_{H^{s+1}(-1,1)})` with `C`
+  independent of `n`; it is statable here with `SobolevInterval s (-1) 1` for the norms. The book
+  sketches the proof, and the two estimates it rests on are quoted from [CHQZ88]: the
+  Gauss–Lobatto quadrature error `|E(f, v_n)| ≤ C n^{-s} ‖f‖_{H^s} ‖v_n‖_{L²}` of (10.36)–(10.37)
+  and the interpolation error `‖u - I_n u‖_{H¹} ≤ C n^{1-s} ‖u‖_{H^s}` of (10.22)/(10.71) at the
+  Gauss–Lobatto nodes. Both are open in chapter 10 for the same reason, and the three layers that
+  are missing — the weighted Sobolev seminorms on `(-1, 1)`, the Legendre coefficient decay
+  `|f̂_k| ≤ C k^{-s} ‖f‖_{H^s}` by repeated integration by parts against the Sturm–Liouville
+  operator `((1-x²) f')'`, and the aliasing step from the projection to the interpolant — are
+  written out in `## Not formalized here` of §10.3
+  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`), with the Legendre specifics
+  in §10.4. Everything *else* the proof uses is in this module: the discrete weak form
+  `equation_12_38`, Young's inequality `exercise_12_8` (12.40), the exactness
+  `equation_12_37_exact`, the norm equivalence `equation_12_37_norm_equiv`, Poincaré
+  (`poincare_poly`, `SobolevInterval.norm_le_of_eq_integral`) and the Legendre normalizations
+  `Polynomial.integral_legendre_sq`, `OrthogonalPolynomial.normSq_legendreMeasure`. The constant
+  `C` is not effective in the book, so a faithful statement must quantify one `C` over all `n`,
+  which leaves no weakened form short of the two estimates themselves. Estimate: an
+  `Approximation/SpectralProjection` module, over a thousand lines, and a few hundred more here.
 
 ## Conventions
 

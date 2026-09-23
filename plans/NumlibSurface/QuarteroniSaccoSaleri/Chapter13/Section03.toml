@@ -241,36 +241,6 @@ id = "equation_13_24_lower"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
 
 [[node]]
-id = "thetaMethod_convergence"
-kind = "theorem"
-desc = '''The convergence estimates after (13.24): `‖u(t^k) - u_h^k‖_{L²} ≤ C(u₀, f, u)(Δt^{p(θ)} +
-h^{r+1})` with `p(θ) = 1` for `θ ≠ 1/2`, `p(1/2) = 2`, and for `f = 0`, `θ ∈ {1, 1/2}`, the
-improved `‖u(t^k) - u_h^k‖ ≤ C[(h/√t^k)^{r+1} + (Δt/t^k)^{p(θ)}] ‖u₀‖`. The book quotes both from
-[QV94] pp. 394–395 and proves neither.
-
-Blocked: re-read 2026-09-20 (agent qss1); the verdict stands. Checked in `Numlib/`: the two
-stability ingredients are proved ((13.21) is `equation_13_21`, the θ-step `equation_13_17`), the
-`L²` projection error for `r = 1` is `Numlib/Approximation/PiecewiseLinearL2` and
-`sobolevSeminorm_sub_piecewisePolyInterp_le` (`Numlib/Approximation/SobolevInterpolation`) gives the
-degree-`r` interpolation estimate in broken form, and the Brezis round (2026-09-17–20) added the
-classical heat equation on the Dirichlet Laplacian (`Numlib/Analysis/PDE/Heat`, `PDE/Heat/Classical`)
-and the semigroup smoothing estimate `‖A S(t) u₀‖ ≤ ‖u₀‖/t` (Brezis Theorem 7.7, in
-`Numlib/Analysis/PDE/Heat`),
-so ingredient (iii) — the parabolic smoothing bounds for `f = 0` — now has a semigroup-level
-source to specialize. Still missing: (i) the time regularity `u_tt ∈ L²(0,1)` uniformly in `t`
-(`u_ttt` for `θ = 1/2`) of the *weak* solution of (13.12), i.e. a Bochner-space vocabulary
-`L²(0,T;V)`/`H¹(0,T;H⁻¹)` and Lions' theorem, which nothing in `Numlib/Analysis/PDE/*` has (the
-Brezis heat module works with the semigroup on `L²(Ω)` and classical `C¹`-in-time solutions);
-(ii) the time-truncation error of the θ-method against the semi-discrete problem (a Taylor
-expansion of `u_h` in `t` with the `L²`-in-space remainder); (iii) the bridge from
-`SobolevInterval`'s `H^{r+1}(0,1)` norm to the broken seminorm the interpolation estimate uses. A
-faithful statement must quantify one constant `C(u₀, f, u)` over all `h`, `Δt`, so no weakened
-form is available. Estimate: a Bochner-space module (several weeks) plus (ii) and (iii)
-(~600 lines).'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_21"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the convergence result ‖u(t^k) − u_h^k‖ ≤ C(Δt^{p(θ)} + h^{r+1})'''
-
-[[node]]
 id = "massMatrix_eq_gram"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, the mass matrix M'
 

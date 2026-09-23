@@ -18,9 +18,14 @@ are nodes here whenever the text treats them as results. The plan is organized b
   backward Euler energy inequalities (13.19)–(13.21) (Exercises 3–4, Remark 13.1), Definition 13.1
   and the discrete eigenproblem (13.22), the θ-method stability dichotomy and (13.23). The
   backbone for this is the new `Numlib/Variational/Evolution` (form level) and
-  `Numlib/FiniteDifference/Parabolic` (matrix level).
-* §13.4 (`Section04`): the space–time (cG(1)dG(q)) method; only the cited error estimate (13.25),
-  not formalized.
+  `Numlib/FiniteDifference/Parabolic` (matrix level). Not formalized: the convergence estimates
+  after (13.24), quoted from [QV94] without proof and removed as a node in the closing round of
+  2026-09-23; they need a Bochner-space vocabulary `L²(0,T;V)`/`H¹(0,T;H⁻¹)` and Lions's existence
+  theorem, which `Numlib/Analysis/PDE/Bochner` has not got.
+* §13.4: the space–time (cG(1)dG(q)) method. Its only numbered result is the error estimate
+  (13.25), quoted from [EEHJ96] without proof; it is not formalized, so the section has no group
+  and no module of its own. The record is in `## Not formalized here` of
+  `NumlibSurface/QuarteroniSaccoSaleri/Chapter13/Section03.lean`.
 * §13.5–13.6 (`Section05`, `Section06`): characteristics, the exact solution of the transport
   problem, the Burgers example, hyperbolic systems and characteristic variables, the domain of
   dependence, the wave equation as a first-order system.

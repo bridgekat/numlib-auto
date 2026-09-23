@@ -21,7 +21,7 @@ Dahlquist barrier (Property 11.2), the region `𝒜*` of Remark 11.3 and relativ
 Everything is the scalar case `E = ℝ` of `Numlib/ODE/Multistep` — the test problem on `ℂ` — with
 `Numlib/ODE/DifferenceEquation` for Lemma 11.3. The Dahlquist barriers (Property 11.1 and the
 order and ϑ-stability clauses of Property 11.2) and the zero-stability of the BDF methods with
-`p ≥ 3` are not formalized.
+`p ≥ 3` are not formalized; see `## Not formalized here` below.
 
 ## Main definitions
 
@@ -43,6 +43,41 @@ order and ϑ-stability clauses of Property 11.2) and the zero-stability of the B
   `corollary_11_1` — convergence.
 * `absoluteStability`, `property_11_2_explicit`, `remark_11_3_midpoint`,
   `remark_11_3_zeroStable` — absolute stability.
+
+## Not formalized here
+
+* **Property 11.1, the first Dahlquist barrier**: no zero-stable `p`-step linear multistep method
+  has order greater than `p + 1` when `p` is odd, or `p + 2` when `p` is even. The vocabulary is
+  complete, so the statement can be written down —
+  `M.p + 1 = p → M.SatisfiesRootCondition → M.HasOrder q → q ≤ p + (if Even p then 2 else 1)`,
+  in the backbone's `ODE.LinearMultistep` and `HasOrder`, the algebraic order conditions
+  `orderCondition` with `orderCondition_iff_taylorCoeff_eq_zero` (Theorem 11.3), the
+  characteristic polynomials `characteristicPolynomials` and `Polynomial.SatisfiesRootCondition`
+  (Definition 11.10) — and it is the *proof* that is missing. Dahlquist's argument (Dahlquist
+  1956; Hairer–Nørsett–Wanner I, III.3, Theorem 3.5) runs through the Möbius transform
+  `z ↦ (1+z)/(1-z)`, which carries the closed unit disc onto a half-plane, the expansion of
+  `(ρ/σ)(ζ) - log ζ` in `z`, and the positivity of the coefficients of power series of the type
+  `z/log((1+z)/(1-z))` together with a count of sign changes forced by the root condition.
+  Nothing named Dahlquist, Herglotz or "positive real" is in Mathlib or in `Numlib/` — the
+  Dahlquist–Golub–Nash identity of `Numlib/Krylov` is unrelated — and the book quotes the result
+  from [Dah63] without proof. Estimate: 1500–2500 lines of complex analysis on power series with
+  real coefficients, a module of its own (`ODE/Multistep/Dahlquist`).
+* **Property 11.2, the second Dahlquist barrier**, except its explicit clause. The property has
+  three clauses: an explicit linear multistep method is neither A-stable nor ϑ-stable; no
+  A-stable linear multistep method has order greater than `2`; and for every `ϑ ∈ (0, π/2)` there
+  are ϑ-stable `p`-step methods of order `p` only for `p = 3` and `p = 4` (as printed; the
+  standard statement, Widlund 1967, is that such methods *exist* for `p = 3, 4`, the trapezoidal
+  rule having the smallest error constant among A-stable methods). The **explicit clause is
+  proved** here, as `property_11_2_explicit`: `Π` is then a polynomial of degree `p + 1` in `r`
+  whose roots cannot all stay in the disc as `|z| → ∞`. The order-two barrier is statable —
+  `absoluteStability` and `thetaStable` (Definitions 11.11–11.13) exist, so it reads
+  `M.IsAStable → M.HasOrder q → q ≤ 2` — but its proof (Dahlquist 1963; Hairer–Wanner II, V.1,
+  Theorem 1.4) needs, beyond the first barrier's Möbius transform, a Riesz–Herglotz positivity
+  argument: a function with nonnegative real part on the disc has a nonnegative error constant.
+  The ϑ-stability clause is Widlund's theorem and is existential — a construction plus a
+  stability-region computation for two specific methods. The book quotes all of it without proof
+  ([Wid67]). Estimate: ~500 lines for the order-two barrier once the Möbius transform of
+  Property 11.1 exists, inside the same 1500–2500 line module.
 
 ## Conventions
 
@@ -621,7 +656,8 @@ with all its roots in the open unit disc is bounded by `2^{p+1}` on the closed d
 `|Π(-t)(x₀)| ≥ t |σ(x₀)| - |ρ(x₀)|` at a point `x₀ ∈ [0, 1]` with `σ(x₀) ≠ 0`;
 `ODE.LinearMultistep.not_isAStable_of_bm1_eq_zero`,
 `ODE.LinearMultistep.not_isThetaStable_of_bm1_eq_zero`. The order-2 barrier for A-stable methods
-and Widlund's statement on ϑ-stable methods (`property_11_2`) are not formalized. -/
+and Widlund's statement on ϑ-stable methods are not formalized; see `## Not formalized here` in
+the module doc. -/
 theorem property_11_2_explicit (M : LinearMultistep) (hex : ¬ M.IsImplicit)
     (h0 : ∑ j, M.a j = 1) :
     ¬ aStableMultistep M ∧ ∀ ϑ : ℝ, 0 < ϑ → ¬ thetaStable M ϑ := by

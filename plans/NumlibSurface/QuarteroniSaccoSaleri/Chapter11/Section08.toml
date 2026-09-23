@@ -17,29 +17,8 @@ id = "rungeKutta_convergent"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8'
 
 [[node]]
-id = "property_11_4"
-kind = "theorem"
-desc = '''The order of an `s`-stage explicit RK method is at most `s`, and there is no `s`-stage
-explicit method of order `s` for `s ≥ 5`; the minimal stage numbers are `1, 2, 3, 4, 6, 7, 9, 11`
-for orders `1, …, 8`. Not formalized: Butcher's order barriers rest on the rooted-tree order
-conditions (a B-series theory, not in Mathlib nor in this library) and, for the `s ≥ 5` statement,
-on a delicate case analysis of those conditions (Butcher 1965; Hairer–Nørsett–Wanner II.5); the
-book states the property without proof (citing [But87]).
-
-Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). Checked in `Numlib/ODE/RungeKutta`:
-`ButcherTableau`, the order conditions up to four written out for RK4 (`rk4_orderConditions`,
-`rk4_hasOrderFor`), consistency (`rungeKutta_consistent_iff`, (11.71)); no rooted-tree
-combinatorics, no elementary differentials, no B-series — the order conditions exist only as the
-explicit list for `s ≤ 4`. The first clause (`order ≤ s` for an explicit `s`-stage method) is the
-cheapest: on `y' = y` the stability function is a polynomial of degree `≤ s` in `hλ`, and order `q`
-forces it to agree with `e^{hλ}` to order `q`, so `q ≤ s` (~200 lines from the linear-test-equation
-lemmas of the chapter-11 surface). The `s ≥ 5` clause and the minimal stage counts are Butcher's
-case analysis of the tree order conditions (Butcher 1965; Hairer–Nørsett–Wanner I, II.5), which
-presupposes the B-series framework, several thousand lines. The book quotes the property without
-proof ([But87]); out of scope by policy. Estimate: the first clause alone is a bounded task (~200
-lines, would be a new node `property_11_4_order_le_stages`); the rest is a B-series module.'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.rungeKutta_consistent_iff"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.4'
+id = "property_11_4_order_le_stages"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.4, the first clause'''
 
 [[node]]
 id = "equation_11_73"

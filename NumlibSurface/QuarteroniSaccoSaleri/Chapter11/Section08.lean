@@ -15,9 +15,10 @@ the Runge–Kutta–Fehlberg pair (§11.8.2); the implicit families of §11.8.3;
 (11.77) and the regions of absolute stability (§11.8.4).
 
 Everything is the scalar case `E = ℝ` of `Numlib/ODE/RungeKutta` (the test problem on `ℂ`), with
-the one-step theory of §11.3. Butcher's order barriers (Property 11.4), Remarks 11.4–11.5, the
-step-doubling estimates (11.74)–(11.75) and the maximal orders of the implicit families are not
-formalized.
+the one-step theory of §11.3. Of Butcher's order barriers (Property 11.4) only the first clause
+is proved — an explicit `s`-stage method has order at most `s`; the rest of that property, with
+Remarks 11.4–11.5, the step-doubling estimates (11.74)–(11.75) and the maximal orders of the
+implicit families, is not formalized (see `## Not formalized here` below).
 
 ## Main definitions
 
@@ -38,6 +39,31 @@ formalized.
 * `gaussLegendre_tableaux`, `radau_tableaux`, `lobatto_tableaux`, `dirk_tableau` — §11.8.3.
 * `equation_11_77`, `rungeKutta_absStable_iff`, `rungeKutta_explicit_stabilityFunction` —
   absolute stability.
+* `property_11_4_order_le_stages` — the first clause of Property 11.4: an explicit `s`-stage
+  method that has order `q` along `y' = y` has `q ≤ s`.
+
+## Not formalized here
+
+* **Property 11.4**, all of it but the first clause. Butcher's order barriers say, beyond
+  `q ≤ s` — which is `property_11_4_order_le_stages` above — that no explicit `s`-stage method
+  has order `s` when `s ≥ 5`, and that the least number of stages of an explicit method of order
+  `1, …, 8` is `1, 2, 3, 4, 6, 7, 9, 11`. Both rest on the rooted-tree order conditions: the
+  elementary differentials of `f` indexed by rooted trees and the B-series they generate; the
+  `s ≥ 5` clause is then Butcher's case analysis of those conditions (Butcher 1965;
+  Hairer–Nørsett–Wanner I, II.5), and the minimal stage counts need it together with an explicit
+  method attaining each count. The book states the property without proof, citing [But87].
+  `Numlib/ODE/RungeKutta` has no tree combinatorics, no elementary differentials and no
+  B-series: the order conditions exist only as the list written out for small `s`
+  (`ODE.rk4_orderConditions`, `twoStageOrderConditions` and `equation_11_73_order` here), so a
+  B-series module of several thousand lines is the whole of what is missing. What made the
+  first clause cheap by comparison is that it is a statement about the *linear* test equation
+  alone, where the order conditions collapse to the coefficients of a polynomial of degree at
+  most `s`; no case analysis and no trees are involved.
+
+Remarks 11.4–11.5, the step-doubling estimates (11.74)–(11.75) and the maximal orders of the
+implicit families (Gauss–Legendre `2s`, Radau `2s - 1`, Lobatto `2s - 2`, all quoted from
+[But87]) are likewise not formalized: the last three are the same B-series theory, and the
+step-doubling estimates are heuristics the book states as such.
 
 ## Conventions
 
@@ -500,5 +526,152 @@ theorem rungeKutta_explicit_stabilityFunction (tab : ButcherTableau s)
     fun hb => ⟨tab.isBounded_absStabilityRegion hex hb, tab.not_isAStable_of_isExplicit hex hb⟩,
     fun hord z => tab.stabilityFunction_eq_truncExp_of_hasOrder hex hord z,
     fun z => stabilityFunction_rk4 z⟩
+
+/-! ### Property 11.4: the order of an explicit method is at most its number of stages -/
+
+/-- Along `h → 0⁺` a higher power is dominated by a lower one: `h^q = O(h^p)` for `p ≤ q`. -/
+private theorem isBigO_pow_of_le {p q : ℕ} (hpq : p ≤ q) :
+    (fun h : ℝ => h ^ q) =O[𝓝[>] 0] fun h : ℝ => h ^ p := by
+  refine IsBigO.of_bound 1 ?_
+  filter_upwards [Ioc_mem_nhdsGT zero_lt_one] with h hh
+  rw [Real.norm_of_nonneg (pow_nonneg hh.1.le _), Real.norm_of_nonneg (pow_nonneg hh.1.le _),
+    one_mul]
+  exact pow_le_pow_of_le_one hh.1.le hh.2 hpq
+
+/-- **Order (11.14) is monotone in the exponent**: a method of order `q` along `y` has order `p`
+for every `p ≤ q`. -/
+private theorem equation_11_14_of_le {Φ : OneStep.Increment ℝ} {t₀ T : ℝ} {y : ℝ → ℝ} {p q : ℕ}
+    (hpq : p ≤ q) (hord : equation_11_14 Φ t₀ T y q) : equation_11_14 Φ t₀ T y p :=
+  equation_11_14_iff.2 ((equation_11_14_iff.1 hord).trans (isBigO_pow_of_le hpq))
+
+/-- The `O`-estimate behind Property 11.4: if an explicit method has order `m` along the solution
+`e^t` of `y' = y` on `[0, 1]`, then `R(h) - e^h = -h τ(h) = O(h^{m+1})`, because one step from `1`
+on that problem is `R(h)` (`ODE.ButcherTableau.stabilityFunction_ofReal`). This is the first half
+of `ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder`, restated with the order `m`
+released from the number of stages `s`, which that backbone lemma identifies. -/
+private theorem isBigO_stabilityFunction_sub_exp {m : ℕ} (tab : ButcherTableau s)
+    (hex : tab.IsExplicit)
+    (hord : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp m) :
+    (fun h : ℝ => tab.stabilityFunction h - Complex.exp h) =O[𝓝[>] 0]
+      fun h : ℝ => h ^ (m + 1) := by
+  have hmul : (fun h : ℝ => h * OneStep.globalLte (tab.explicitIncrement fun _ y => y)
+      0 1 Real.exp h) =O[𝓝[>] 0] fun h : ℝ => h ^ (m + 1) := by
+    have := (isBigO_refl (fun h : ℝ => h) (𝓝[>] 0)).mul hord
+    refine this.congr' EventuallyEq.rfl (Eventually.of_forall fun h => ?_)
+    simp [pow_succ']
+  refine (IsBigO.of_bound 1 ?_).trans hmul
+  filter_upwards [Ioc_mem_nhdsGT zero_lt_one] with h hh
+  have hN : 0 < gridCount 1 h := (le_gridCount_iff zero_le_one hh.1).2 (by simpa using hh.2)
+  have hle := OneStep.norm_lte_le_globalLte (Φ := tab.explicitIncrement fun _ y => y) (t₀ := 0)
+    (T := 1) (y := Real.exp) hN
+  rw [node_zero] at hle
+  have e : tab.stabilityFunction h - Complex.exp h =
+      -((h * OneStep.lte (tab.explicitIncrement fun _ y => y) h Real.exp 0 : ℝ) : ℂ) := by
+    rw [tab.stabilityFunction_ofReal hex, ← Complex.ofReal_exp, ← Complex.ofReal_sub,
+      ← Complex.ofReal_neg]
+    congr 1
+    simp only [OneStep.lte, smul_eq_mul, zero_add, Real.exp_zero]
+    have : tab.explicitIncrement (fun _ y => y) 0 1 (Real.exp h) h =
+        tab.explicitIncrement (fun _ y => y) 0 1 1 h := rfl
+    rw [this]
+    have hne : h ≠ 0 := hh.1.ne'
+    field_simp
+    ring
+  rw [e, norm_neg, Complex.norm_real, Real.norm_eq_abs, abs_mul, abs_of_pos hh.1, one_mul,
+    Real.norm_eq_abs, abs_mul, abs_of_pos hh.1, abs_of_nonneg (OneStep.globalLte_nonneg _)]
+  exact mul_le_mul_of_nonneg_left hle hh.1.le
+
+/-- Taylor's bound for the exponential: `e^h - ∑_{k ≤ m} h^k / k! = O(h^{m+1})` as `h → 0⁺`. -/
+private theorem isBigO_exp_sub_truncExp (m : ℕ) :
+    (fun h : ℝ => Complex.exp h - ∑ k ∈ range (m + 1), (h : ℂ) ^ k / k.factorial) =O[𝓝[>] 0]
+      fun h : ℝ => h ^ (m + 1) := by
+  refine IsBigO.of_bound ((m.succ.succ : ℝ) * ((m.succ.factorial : ℝ) * (m.succ : ℝ))⁻¹) ?_
+  filter_upwards [Ioc_mem_nhdsGT zero_lt_one] with h hh
+  have hx : ‖(h : ℂ)‖ ≤ 1 := by
+    rw [Complex.norm_real, Real.norm_of_nonneg hh.1.le]
+    exact hh.2
+  have := Complex.exp_bound hx (Nat.succ_pos m)
+  rw [Complex.norm_real, Real.norm_of_nonneg hh.1.le] at this
+  rw [Real.norm_of_nonneg (pow_pos hh.1 _).le, mul_comm]
+  exact this
+
+/-- **The stability polynomial of an explicit `s`-stage method of order `m ≥ s`** is the truncated
+exponential `∑_{k ≤ m} X^k / k!`: the difference has degree at most `m` — here `s ≤ m` is used —
+and is `O(h^{m+1})` at `0⁺`, hence zero (`Polynomial.eq_zero_of_isBigO_pow_succ`). This is
+`ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder` with the order released from the
+number of stages, and as a polynomial identity rather than pointwise. -/
+private theorem stabilityPolynomial_eq_truncExp {m : ℕ} (tab : ButcherTableau s)
+    (hex : tab.IsExplicit) (hsm : s ≤ m)
+    (hord : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp m) :
+    tab.stabilityPolynomial =
+      ∑ k ∈ range (m + 1), Polynomial.C ((k.factorial : ℂ)⁻¹) * Polynomial.X ^ k := by
+  have hSeval : ∀ w : ℂ, (∑ k ∈ range (m + 1),
+      Polynomial.C ((k.factorial : ℂ)⁻¹) * Polynomial.X ^ k).eval w =
+        ∑ k ∈ range (m + 1), w ^ k / k.factorial := by
+    intro w
+    rw [Polynomial.eval_finsetSum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X,
+      div_eq_mul_inv, mul_comm]
+  have hQdeg : (tab.stabilityPolynomial -
+      ∑ k ∈ range (m + 1), Polynomial.C ((k.factorial : ℂ)⁻¹) * Polynomial.X ^ k).natDegree
+        ≤ m := by
+    refine (Polynomial.natDegree_sub_le _ _).trans (max_le ?_ ?_)
+    · refine Polynomial.natDegree_add_le_of_degree_le (by simp) ?_
+      refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+      exact (Polynomial.natDegree_C_mul_X_pow_le _ _).trans
+        ((Finset.mem_range.1 hk).trans_le hsm)
+    · refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+      exact (Polynomial.natDegree_C_mul_X_pow_le _ _).trans
+        (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk))
+  have hQ : tab.stabilityPolynomial -
+      ∑ k ∈ range (m + 1), Polynomial.C ((k.factorial : ℂ)⁻¹) * Polynomial.X ^ k = 0 := by
+    refine Polynomial.eq_zero_of_isBigO_pow_succ m _ hQdeg ?_
+    refine ((isBigO_stabilityFunction_sub_exp tab hex hord).add
+      (isBigO_exp_sub_truncExp m)).congr' (Eventually.of_forall fun h => ?_) EventuallyEq.rfl
+    change tab.stabilityFunction h - Complex.exp h +
+        (Complex.exp h - ∑ k ∈ range (m + 1), (h : ℂ) ^ k / k.factorial) =
+      Polynomial.eval (h : ℂ) (tab.stabilityPolynomial -
+        ∑ k ∈ range (m + 1), Polynomial.C ((k.factorial : ℂ))⁻¹ * Polynomial.X ^ k)
+    rw [Polynomial.eval_sub, hSeval, tab.stabilityFunction_eq_eval hex, sub_add_sub_cancel]
+  exact sub_eq_zero.1 hQ
+
+/-- **Property 11.4, first clause (Butcher's first order barrier)**: *the order of an `s`-stage
+explicit Runge–Kutta method is at most `s`.*
+
+It is enough that the method have order `q` along the single solution `e^t` of the test problem
+`y' = y` on `[0, 1]`, which is the form the book's Table 11.1 (`s = 1, …, 4`) is read from. The
+proof is the one of §11.8.4 rather than Butcher's: for an explicit method the stability function
+`R` is a polynomial of degree at most `s` (`rungeKutta_explicit_stabilityFunction`), and one step
+from `1` on `y' = y` is `R(h)`, so order `q` makes `R(h) - e^h = O(h^{q+1})`. Were `q > s`, the
+method would have order `s + 1` too, and `R` would have to be `∑_{k ≤ s+1} X^k / k!`, whose
+coefficient `1/(s+1)!` in degree `s + 1` a polynomial of degree at most `s` cannot carry.
+
+The other clauses of Property 11.4 — that no explicit `s`-stage method attains order `s` for
+`s ≥ 5`, and the minimal stage numbers `1, 2, 3, 4, 6, 7, 9, 11` for orders `1, …, 8` — are not
+formalized; see the module doc. -/
+theorem property_11_4_order_le_stages {q : ℕ} (tab : ButcherTableau s)
+    (hex : equation_11_71_explicit tab)
+    (hord : equation_11_14 (equation_11_70_increment tab fun _ y => y) 0 1 Real.exp q) :
+    q ≤ s := by
+  by_contra hq
+  rw [not_le] at hq
+  have hord' : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp (s + 1) :=
+    equation_11_14_of_le hq hord
+  have hP := stabilityPolynomial_eq_truncExp tab hex (Nat.le_succ s) hord'
+  have hcoeff : tab.stabilityPolynomial.coeff (s + 1) = (((s + 1).factorial : ℂ))⁻¹ := by
+    rw [hP, Polynomial.finsetSum_coeff, Finset.sum_eq_single (s + 1)]
+    · simp
+    · intro k _ hk
+      simp [Ne.symm hk]
+    · intro h
+      exact absurd (Finset.mem_range.2 (by omega)) h
+  have hdeg : tab.stabilityPolynomial.natDegree ≤ s := by
+    simp only [ODE.ButcherTableau.stabilityPolynomial]
+    refine Polynomial.natDegree_add_le_of_degree_le (by simp) ?_
+    refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+    exact (Polynomial.natDegree_C_mul_X_pow_le _ _).trans (Finset.mem_range.1 hk)
+  rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)] at hcoeff
+  exact inv_ne_zero (Nat.cast_ne_zero.2 (Nat.factorial_ne_zero (s + 1))) hcoeff.symm
 
 end QuarteroniSaccoSaleri.Chapter11

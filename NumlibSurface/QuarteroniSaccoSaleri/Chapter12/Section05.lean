@@ -61,9 +61,36 @@ three-term relations are written at the indices `i`, `i + 1`, `i + 2` rather tha
 
 ## Not formalized here
 
-Remark 12.6's nodal exactness for a piecewise constant right-hand side is quoted by the book from
-[HGR96] and is not formalized; the homogeneous case, which is what the proof of Theorem 12.4
-uses, is `remark_12_6_nodal_exact`. Example 12.3 is a numerical experiment.
+* **Remark 12.6's general claim**: if `f` is piecewise constant over the grid partition, the
+  Scharfetter–Gummel scheme yields a nodally exact solution of `-ε u'' + β u' = f` with
+  `u(0) = 0`, `u(1) = 1`, irrespective of `h`. The book quotes it from [HGR96, pp. 44–45] and
+  proves nothing, and it is used nowhere in the book: Theorem 12.4 needs only the homogeneous
+  case, which is proved here as `remark_12_6_nodal_exact`. It is *not* a rearrangement of that
+  case. What `AdvectionDiffusion.sg_nodal_exact` uses is that the discrete amplification ratio
+  `(1 + Pe*)/(1 - Pe*)` equals `e^{2Pe}` exactly (`centredRatio_stabilizedPeclet_phiSG`), which
+  fixes the *homogeneous* solution at the nodes; for a piecewise constant `f` one needs in
+  addition that the particular solution of the two-point problem on each panel is reproduced
+  exactly by the scheme's right-hand side — the Green's function of `-ε u'' + β u'` on one panel,
+  and the exactness of the exponential quadrature against a constant. Worse, **the claim is
+  underdetermined by the book**: (12.79)–(12.83) never say how `f` enters. Nodal exactness for
+  piecewise constant `f` is a statement about the *right-hand side* discretization. It holds when
+  `f` is integrated against the exponentially fitted test functions — the flux `ε u' - β u` is
+  then linear on each panel and the three-point relation of the exact solution is reproduced
+  (Roos–Stynes–Tobiska, *Robust Numerical Methods for Singularly Perturbed Differential
+  Equations*, 2nd ed., chapter I §2, the Il'in–Allen–Southwell scheme) — and it is not expected
+  for the finite-difference right-hand side `f(x_i)`, nor for the `P_1` load with the `φ^SG`
+  viscosity alone. A faithful node must therefore first *choose* the scheme with `f`: a new
+  definition beside `AdvectionDiffusion.viscosityScheme`, with the exponentially fitted weights.
+  Only then can one compute the panel Green's function and prove the three-point identity.
+  `Numlib/Variational/AdvectionDiffusion` carries the homogeneous model problem (12.72) only —
+  `viscosityScheme ε β n φ u` is (12.79)/(12.82) with `u(0) = 0`, `u(1) = 1` — and there is
+  neither a scheme with a right-hand side nor an exact solution of `-ε u'' + β u' = f` (a
+  variation-of-constants formula on `(0,1)` with the exponential Green's function) anywhere in
+  the library; `Variational/EllipticInterval` has the load functional `load f = ⟪f, ·⟫` of the
+  Galerkin problem and nothing more. Estimate: about a day, 400–600 lines, once the scheme is
+  chosen.
+
+Example 12.3 is a numerical experiment.
 -/
 
 open Filter MeasureTheory Set

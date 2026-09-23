@@ -19,63 +19,6 @@ id = "legendreLobattoWeight_bounds"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.4, bounds on the Gauss–Lobatto weights'
 
 [[node]]
-id = "equation_10_36"
-kind = "theorem"
-desc = '''(10.36)-(10.37): `|(f, v_n) - (f, v_n)_n| <= C n^{-s} ‖f‖_s ‖v_n‖_{L^2(-1,1)}` for every `v_n` in
-`P_n`, and `|int_{-1}^1 f - I^{GL}_n f| <= C n^{-s} ‖f‖_s` at `v_n = 1` with `‖1‖ = sqrt 2`,
-together with the Legendre analogues of (10.22) and (10.24), stated with the norm (10.35). Quoted
-from [CHQZ88].
-
-Blocked (2026-09-20, agent qss5; replaces the 2026-09-15 note). The Legendre member of the five
-spectral-approximation nodes; see `equation_10_22` for the full picture. The Legendre side is the
-better prepared one: Checked in `Numlib/` on 2026-09-20 (agent qss5): the `L²(-1,1)`
-orthogonal-polynomial Hilbert basis with its truncation as the best approximation
-(`IsWeight.hilbertBasis`, `IsWeight.isBestApprox_truncation`,
-`Numlib/Approximation/OrthogonalPolynomial`), the Chebyshev orthogonality
-`integral_T_mul_T_div_sqrt` and Mathlib's operator identity
-`Polynomial.Chebyshev.one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T`; for Legendre the
-operator identities `legendre_ode`, `quad_mul_derivative_legendre`, the coefficient layer on `ℙ_N` —
-`Polynomial.legendreCoeff`, `eq_sum_legendreCoeff`, Parseval `integral_sq_eq_sum_legendreCoeff`,
-`integral_derivative_legendre_mul_legendre`, the `L²` Markov inequality `integral_derivative_sq_le`
-(`Numlib/Approximation/MarkovInequality`, agent qss1) — and the Gauss–Lobatto norm equivalence
-`‖p‖ ≤ ‖p‖_n ≤ √3 ‖p‖` on `ℙ_n` (`Quadrature.integral_sq_le_discreteInner_self_legendre`,
-`Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`,
-`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`); on the surface, the discrete inner
-products and their exactness on `ℙ_{2n-1}` (`equation_10_28`, `isExactOnMeasure_chebyshevLobatto`,
-`equation_10_34`) and the discrete Chebyshev expansion (10.31). Nothing about the projection or
-interpolation *error* exists. The reduction of (10.36) is that of (10.27) with the
-Legendre–Gauss–Lobatto rule (`equation_10_34`, exact on `ℙ_{2n−1}`),
-`(f, v_n) − (f, v_n)_n = (g, v_n) − (g, v_n)_n` for `g = f − P_{n−1} f`, `‖v_n‖_n ≤ √3 ‖v_n‖` by the
-proved norm equivalence, and `‖g‖_n ≤ √2 ‖g‖_∞` (the weights sum to `2`); (10.37) is `v_n = 1` with
-`‖1‖ = √2`. Two corrections to the 2026-09-15 three-layer route (projection estimate in the
-non-uniformly weighted seminorm; Hardy-type comparison with the uniform norm (10.23); aliasing from
-projection to interpolant). The comparison layer is not needed for the `L²` statements: the seminorm
-`(∑_{k≤s} ‖(1−x²)^{k/2} f^{(k)}‖²_w)^{1/2}` is bounded by (10.23) termwise because
-`(1 − x²)^{k/2} ≤ 1`, so the projection estimate in the seminorm gives the book's right-hand side at
-once (a Hardy inequality would only serve the reverse comparison). The aliasing layer at the
-*printed* rate `n^{-s}` is the expensive part: the elementary argument
-(`Π_n f − P_n f = Π_n (P_n f − f)`, `‖Π_n g‖_w ≤ C ‖g‖_n ≤ C' ‖g‖_∞` by the discrete norm
-equivalence, `‖f − P_n f‖_∞ ≤ ∑_{k>n} |f̂_k| sup|T_k|`) loses a factor `n^{1/2}` and yields
-`‖f − Π_n f‖_w ≤ C n^{1/2−s} ‖f‖_{s,w}`; the printed rate is Canuto–Quarteroni's / Bernardi–Maday's
-argument through the `H¹` projection and a Marcinkiewicz–Zygmund-type bound
-`‖v‖_n ≤ C (‖v‖_w + n⁻¹ ‖v'‖_w)`, which needs the node-spacing estimate — a Sturm comparison for the
-Chebyshev/Legendre equation, the gap `spectralForm_eigenvalue_*` (Chapter13/Section03) also records.
-Missing now, in order: (i) the projection estimate `‖f − P_n f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for
-`f ∈ C^s[-1,1]`: the Sturm–Liouville symmetry `∫ (L u) v w = ∫ u (L v) w` with the boundary terms
-killed by the factor `1 − x²`, iterated `⌊s/2⌋` times with one half-step
-`∫ (L u) v w = −∫ (1−x²) u' v' w` for odd `s`, and the tail bound
-`∑_{k>n} λ_k^{-2m} |ĝ_k|² ‖T_k‖² ≤ λ_{n+1}^{-2m} ‖g‖²_w` (`λ_k = k²` for Chebyshev, `k(k+1)` for
-Legendre) — ~600–800 lines per weight, no missing theory; (iii) the aliasing layer, ~200 lines for
-the `n^{1/2−s}` form on top of (i), well over 1000 for the printed one. For the Legendre projection
-estimate the coefficient identity is `f̂_k = −(k(k+1))⁻¹ ((1−x²) f')'^_k` from `legendre_ode` and
-one integration by parts on `[-1, 1]` (boundary terms vanish with `1 − x²`), and Parseval in
-`L²(-1,1)` is `IsWeight.hilbertBasis` with `family_eq_legendre`. Estimate: the Legendre forms of
-(10.22)/(10.24) and (10.36)–(10.37) at the rate `n^{1/2−s}` are ~1000 lines away, with no missing
-theory; at the printed rate `n^{-s}`, ~2000 lines and a plan of their own.'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_34", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.36)–(10.37), and the Legendre forms of (10.22), (10.24)'''
-
-[[node]]
 id = "legendreDiscreteCoeff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.40)'
 

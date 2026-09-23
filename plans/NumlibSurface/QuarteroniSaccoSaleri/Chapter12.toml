@@ -14,7 +14,16 @@ product and norms are `Numlib/FiniteDifference/BoundaryValue.lean` with `n - 1` 
 where the book has `n` subintervals; its bilinear form (12.44), Galerkin problem, finite element
 spaces, stiffness matrices and stabilized schemes are `Numlib/Variational/{EllipticInterval,
 FiniteElementInterval, AdvectionDiffusion}.lean`; its distributions (§12.4.2) are Mathlib's
-`Distribution` on the open set `(0, 1)`. Two-dimensional statements (§12.6 beyond the five-point
-matrix, Property 12.2) and the spectral estimate Theorem 12.2 are stated and marked "not
-formalized".
+`Distribution` on the open set `(0, 1)`.
+
+Not formalized, and removed as nodes in the closing round of 2026-09-23: the spectral estimate
+Theorem 12.2 of §12.3, which rests on the chapter-10 estimates (10.22) and (10.36)–(10.37), quoted
+from [CHQZ88] and open there; Remark 12.6's nodal exactness for a piecewise constant right-hand
+side in §12.5, quoted from [HGR96], used nowhere in the book and underdetermined by it — the text
+never says how `f` enters the scheme; and the `L²` estimate (12.97) of Property 12.2 in §12.6,
+quoted from [QV94], which needs the `H²` regularity of the Dirichlet problem on a convex polygon
+(Grisvard). Property 12.2's `H¹` estimate (12.96) is proved, as is the homogeneous case of Remark
+12.6. Each record is in `## Not formalized here` of the section's module. Green's formula (12.95)
+on a general Lipschitz plane domain stays out of scope; §12.6 proves it on bounded `C¹` domains,
+on triangulated polygons and on a rectangle.
 '''

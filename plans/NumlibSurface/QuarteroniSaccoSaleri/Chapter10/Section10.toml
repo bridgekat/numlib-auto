@@ -37,66 +37,6 @@ id = "degree_pseudoSpectralDerivative_lt"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.10.3, `𝒟_n f ∈ ℙ_{n-1}(I)`'
 
 [[node]]
-id = "equation_10_71"
-kind = "theorem"
-desc = '''(10.71): `‖f' - D_n f‖_w <= C n^{1-m} ‖f‖_{m,w}` for every `m >= 2` with `‖f‖_{m,w}` finite, where
-`D_n f` is the pseudo-spectral derivative `(Pi^{GL}_{n,w} f)'` of §10.10.3. Quoted from [CHQZ88].
-This is the derivative form of (10.22): differentiation loses one power of `n`, which is an inverse
-inequality on `P_n` applied to the interpolation error.
-
-Blocked (2026-09-20, agent qss5; replaces the 2026-09-15 note). One of the five
-spectral-approximation nodes; see `equation_10_22` for the full picture. Checked in `Numlib/` on
-2026-09-20 (agent qss5): the `L²(-1,1)` orthogonal-polynomial Hilbert basis with its truncation as
-the best approximation (`IsWeight.hilbertBasis`, `IsWeight.isBestApprox_truncation`,
-`Numlib/Approximation/OrthogonalPolynomial`), the Chebyshev orthogonality
-`integral_T_mul_T_div_sqrt` and Mathlib's operator identity
-`Polynomial.Chebyshev.one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T`; for Legendre the
-operator identities `legendre_ode`, `quad_mul_derivative_legendre`, the coefficient layer on `ℙ_N` —
-`Polynomial.legendreCoeff`, `eq_sum_legendreCoeff`, Parseval `integral_sq_eq_sum_legendreCoeff`,
-`integral_derivative_legendre_mul_legendre`, the `L²` Markov inequality `integral_derivative_sq_le`
-(`Numlib/Approximation/MarkovInequality`, agent qss1) — and the Gauss–Lobatto norm equivalence
-`‖p‖ ≤ ‖p‖_n ≤ √3 ‖p‖` on `ℙ_n` (`Quadrature.integral_sq_le_discreteInner_self_legendre`,
-`Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`,
-`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`); on the surface, the discrete inner
-products and their exactness on `ℙ_{2n-1}` (`equation_10_28`, `isExactOnMeasure_chebyshevLobatto`,
-`equation_10_34`) and the discrete Chebyshev expansion (10.31). Nothing about the projection or
-interpolation *error* exists. This is the `H¹` form of (10.22):
-`‖f' − (Π_n f)'‖_w ≤ C n^{1−m} ‖f‖_{m,w}`. The derivative of the *projection* error is estimated by
-the same Sturm–Liouville argument one order lower (the Chebyshev coefficients of `(P_n f)'` are
-`∑_{k>n, k−j odd} 2k f̂_k`-type sums, the Legendre ones `∑_{k>n} (2j+1) f̂_k` over `k − j` odd — the
-identity behind `integral_derivative_legendre_mul_legendre`), and the derivative of the *aliasing*
-error `Π_n f − P_n f ∈ ℙ_n` by the inverse (Markov) inequality `‖p'‖_w ≤ C n² ‖p‖_w` on `ℙ_n`
-(`Polynomial.integral_derivative_sq_le` is the Legendre case with the constant `n(n+1)`; the
-Chebyshev-weighted inverse inequality is not there) applied to the `L²_w` aliasing bound. The
-Marcinkiewicz–Zygmund-type bound `‖Π_n g‖_w ≤ C (‖g‖_w + n⁻¹ ‖g'‖_w)` makes the inverse inequality
-cost exactly one power of `n` and gives the printed `n^{1−m}`; with the elementary `n^{1/2−m}`
-aliasing bound the derivative estimate comes out at `n^{5/2−m}`, three halves of a power worse than
-printed. Two corrections to the 2026-09-15 three-layer route (projection estimate in the
-non-uniformly weighted seminorm; Hardy-type comparison with the uniform norm (10.23); aliasing from
-projection to interpolant). The comparison layer is not needed for the `L²` statements: the seminorm
-`(∑_{k≤s} ‖(1−x²)^{k/2} f^{(k)}‖²_w)^{1/2}` is bounded by (10.23) termwise because
-`(1 − x²)^{k/2} ≤ 1`, so the projection estimate in the seminorm gives the book's right-hand side at
-once (a Hardy inequality would only serve the reverse comparison). The aliasing layer at the
-*printed* rate `n^{-s}` is the expensive part: the elementary argument
-(`Π_n f − P_n f = Π_n (P_n f − f)`, `‖Π_n g‖_w ≤ C ‖g‖_n ≤ C' ‖g‖_∞` by the discrete norm
-equivalence, `‖f − P_n f‖_∞ ≤ ∑_{k>n} |f̂_k| sup|T_k|`) loses a factor `n^{1/2}` and yields
-`‖f − Π_n f‖_w ≤ C n^{1/2−s} ‖f‖_{s,w}`; the printed rate is Canuto–Quarteroni's / Bernardi–Maday's
-argument through the `H¹` projection and a Marcinkiewicz–Zygmund-type bound
-`‖v‖_n ≤ C (‖v‖_w + n⁻¹ ‖v'‖_w)`, which needs the node-spacing estimate — a Sturm comparison for the
-Chebyshev/Legendre equation, the gap `spectralForm_eigenvalue_*` (Chapter13/Section03) also records.
-Missing now, in order: (i) the projection estimate `‖f − P_n f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for
-`f ∈ C^s[-1,1]`: the Sturm–Liouville symmetry `∫ (L u) v w = ∫ u (L v) w` with the boundary terms
-killed by the factor `1 − x²`, iterated `⌊s/2⌋` times with one half-step
-`∫ (L u) v w = −∫ (1−x²) u' v' w` for odd `s`, and the tail bound
-`∑_{k>n} λ_k^{-2m} |ĝ_k|² ‖T_k‖² ≤ λ_{n+1}^{-2m} ‖g‖²_w` (`λ_k = k²` for Chebyshev, `k(k+1)` for
-Legendre) — ~600–800 lines per weight, no missing theory; (iii) the aliasing layer, ~200 lines for
-the `n^{1/2−s}` form on top of (i), well over 1000 for the printed one. Estimate: gated on (10.22);
-~400 lines on top of it for the Legendre weight, plus the Chebyshev-weighted Markov inequality
-(~300).'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.pseudoSpectralDerivative", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.71)'
-
-[[node]]
 id = "equation_10_72"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.72)'
 

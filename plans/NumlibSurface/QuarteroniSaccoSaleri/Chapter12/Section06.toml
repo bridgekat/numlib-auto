@@ -59,28 +59,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) a
 [[node]]
 id = "property_12_2"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.2, equation (12.96)'
-
-[[node]]
-id = "property_12_2_l2"
-kind = "theorem"
-desc = '''Property 12.2, the `L²` estimate (12.97): under the assumptions of `property_12_2` — `u ∈ H¹₀(Ω) ∩
-H^{l+1}(Ω)` the solution of the Poisson problem (12.90) on a polygon and `u_h ∈ V_h` its finite
-element approximation of degree `k ≥ 1`, `l = min(k, s − 1)` — `‖u − u_h‖_{L²(Ω)} ≤ C h^{l+1}
-‖u‖_{H^{l+1}(Ω)}`. The book quotes it from [QV94, Theorem 6.2.1] without proof.
-
-Blocked (2026-09-21, agent fem2; split off `property_12_2`, whose (12.96) clause is proved). The
-proof is the Aubin–Nitsche duality argument, which is formalized abstractly
-(`AtkinsonHan.Chapter10.theorem_10_4_3`, `corollary_10_4_4_abstract`: `‖u − u_h‖_{L²} ≤ M δ
-‖u − u_h‖_{H¹}` whenever every dual solution `φ_g`, `a(v, φ_g) = (g, v)_{L²}`, is approximated
-from `V_h` within `δ ‖g‖_{L²}`); with (12.96) it gives (12.97) as soon as `δ = C h`, that is, as
-soon as the dual solutions satisfy `φ_g ∈ H²(Ω)` with `‖φ_g‖_{H²} ≤ C ‖g‖_{L²}` — the `H²`
-regularity of the Dirichlet problem on a *convex polygon* (Grisvard), `notes/frontier.md`
-blocker 18. Checked in `Numlib/`: `Elliptic.regularity_dirichlet`
-(`Numlib/Analysis/PDE/Elliptic/Regularity.lean`, Brezis Theorem 9.25) proves it on `C²` domains
-with a bounded boundary, and nothing proves it on a polygon; the interpolation half
-(`‖φ_g − Π_h φ_g‖_{H¹} ≤ C h |φ_g|_{H²}`, `AtkinsonHan.Chapter10.theorem_10_3_9_lattice` at `m = 1`,
-`k = 1`, with `Π_h φ_g ∈ V_h` by `Triangulation.exists_mem_polySpaceZero_globalInterp`) exists.
-Estimate: ~100 lines once the regularity bound on a convex polygon exists (research-scale:
-Grisvard's *Elliptic problems in nonsmooth domains*, Theorem 3.2.1.2).'''
-deps = ["property_12_2", "AtkinsonHan.Chapter10.corollary_10_4_4_abstract"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.2, equation (12.97)'

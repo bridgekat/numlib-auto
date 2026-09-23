@@ -43,9 +43,27 @@ for `OrthogonalPolynomial.legendreMeasure`, with `OrthogonalPolynomial.family_eq
   Legendre polynomials (the hint of Exercise 6), and the identification of the interpolant with
   the discrete truncation `f_n^*` of (10.4).
 
-## Not formalized
+## Not formalized here
 
-`equation_10_36` (the spectral estimates (10.36)–(10.37)) is left in the plan with the reason.
+* **(10.36)–(10.37)**, together with the Legendre forms of (10.22) and (10.24) stated in the norm
+  (10.35): `|(f, v_n) - (f, v_n)_n| ≤ C n^{-s} ‖f‖_s ‖v_n‖_{L²(-1,1)}` for every `v_n ∈ ℙ_n`,
+  and `|∫_{-1}^1 f - I^{GL}_n f| ≤ C n^{-s} ‖f‖_s` at `v_n = 1` with `‖1‖ = √2`. Quoted from
+  [CHQZ88] without proof. This is the Legendre member of the spectral-approximation cluster
+  whose three missing layers — the weighted Sobolev seminorms on `(-1, 1)`, the coefficient decay
+  by the Sturm–Liouville symmetry, and the aliasing step from the projection to the interpolant —
+  are written out in `## Not formalized here` of §10.3
+  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`), together with the inventory of
+  what the library already has. Two things are specific to this side, and both make it the
+  better-prepared one. The **reduction** is that of (10.27) with the Legendre–Gauss–Lobatto rule
+  (`equation_10_34`, exact on `ℙ_{2n-1}`): `(f, v_n) - (f, v_n)_n = (g, v_n) - (g, v_n)_n` for
+  `g = f - P_{n-1} f`, with `‖v_n‖_n ≤ √3 ‖v_n‖` by the proved norm equivalence and
+  `‖g‖_n ≤ √2 ‖g‖_∞` because the weights sum to `2`; (10.37) is then the case `v_n = 1`. And the
+  **coefficient identity** the projection layer runs on is `f̂_k = -(k(k+1))⁻¹ ((1-x²) f')'^_k`,
+  from `Polynomial.legendre_ode` and one integration by parts on `[-1, 1]` whose boundary terms
+  vanish with `1 - x²`; Parseval in `L²(-1,1)` is `IsWeight.hilbertBasis` with
+  `OrthogonalPolynomial.family_eq_legendre`. Estimate: the Legendre forms of (10.22), (10.24) and
+  (10.36)–(10.37) at the rate `n^{1/2-s}` are some 1000 lines away with no missing theory; at the
+  printed rate `n^{-s}`, some 2000 lines and a plan of their own.
 
 ## Conventions
 

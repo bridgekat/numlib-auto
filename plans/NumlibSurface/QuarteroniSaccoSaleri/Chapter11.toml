@@ -14,4 +14,15 @@ all stated for a real normed space `E`; the surface reads them at `E = ℝ` (sca
 §11.2–11.8), at `E = ℂ` for the test equation, and at `E = EuclideanSpace ℝ (Fin n)` in §11.9.
 The book's `Φ(t_n, u_n, f_n; h)` becomes an increment `Φ t u v h` with `f` built in; the book's
 grid is `ODE.node t₀ h n`, `ODE.gridCount T h`.
+
+Not formalized: the Dahlquist barriers of §11.6 — Property 11.1 (the first barrier) and the
+order-2 and ϑ-stability clauses of Property 11.2, whose explicit clause is proved as
+`property_11_2_explicit` — and Property 11.4 of §11.8 beyond its first clause, which is proved as
+`property_11_4_order_le_stages` (an explicit `s`-stage method has order at most `s`). The book
+quotes all of them without proof, from [Dah63], [Wid67] and [But87]; they need the Möbius
+transform `z ↦ (1+z)/(1-z)` with a Riesz–Herglotz positivity argument, and the rooted-tree
+(B-series) order conditions, respectively — neither in Mathlib nor in `Numlib/`. Their nodes were
+removed in the closing round of 2026-09-23 and the records are in `## Not formalized here` of
+`NumlibSurface/QuarteroniSaccoSaleri/Chapter11/Section06.lean` and `.../Section08.lean`. The
+zero-stability of the BDF methods with `p ≥ 3` is likewise not formalized.
 '''

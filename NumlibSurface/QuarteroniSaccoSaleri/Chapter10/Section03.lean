@@ -53,16 +53,96 @@ the backbone's measure-level form `Quadrature.tendsto_of_isExactOnMeasure`.
 * `equation_10_31` — the Chebyshev discrete transform (10.29)–(10.31) and the identification of
   the interpolant with the discrete truncation `f_n^*` of (10.4).
 
-## Not formalized
+## Not formalized here
 
-`equation_10_22`, `equation_10_24`, `equation_10_27` are the weighted-Sobolev estimates quoted from
-[CHQZ88] without proof; the plan carries them. The bound on the Lebesgue constant printed in
-(10.25), Rivlin's `Λ_n ≤ (2/π) log(n + 1) + 1`, is deliberately absent: `equation_10_25` carries
-the backbone's `2 + (2/π) log(2n + 2)` instead, which has the same growth rate and a larger
-additive constant. The printed bound is attained at `n = 0` (`Λ_0 = 1`), so no step of a proof of
-it may lose anything, and it rests on two further theorems (the Lebesgue function is maximal at
-`±1`, and Rivlin's bound on the resulting cotangent sum) that nothing else needs; see
-`## Not formalized` in `Numlib/Approximation/Interpolation`.
+Three of the section's quoted results are the Chebyshev members of the **spectral-approximation
+cluster** — (10.22), (10.24), (10.26)–(10.27) here, (10.36)–(10.37) in §10.4, (10.71) in §10.10
+and Theorem 12.2 in §12.3 — which the book quotes from [CHQZ88] without proof and which all wait
+on the same missing development. The statements first, then the inventory; the other four modules
+refer back to this list rather than repeat it.
+
+* **(10.22)**: there is a `C` independent of `n` with
+  `‖f - Π^{GL}_{n,w} f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for every `f` with `s ≥ 1` derivatives in `L²_w`,
+  where `Π^{GL}_{n,w} f` is the interpolant of degree `n` (the book prints "degree `n + 1`") at
+  the Chebyshev–Gauss–Lobatto nodes (10.21) and `‖·‖_{s,w}` is the norm (10.23),
+  `equation_10_23`.
+* **(10.24)** (Exercise 10.3): `‖f - Π^{GL}_{n,w} f‖_∞ ≤ C n^{1/2-s} ‖f‖_{s,w}`, and the same for
+  the interpolant at the Gauss nodes (10.20); hence pointwise convergence for `f` of class `C¹`.
+  Beyond (10.22) it needs the derivative estimate (10.71) and the one-dimensional
+  Gagliardo–Nirenberg inequality `‖v‖²_∞ ≤ ‖v‖²_{L²(-1,1)} + 2 ‖v‖ ‖v'‖`, which is absent:
+  `Numlib/Analysis/Sobolev/Interval/Embedding` has the `L^∞` embedding
+  `‖u‖_∞ ≤ C ‖u‖_{W^{1,p}}` and the `L^p`–`L^∞` interpolation
+  `eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_top_rpow`, not the product form (~100 lines from the
+  fundamental theorem of calculus). Its rate `n^{1/2-s}` is **not** sharper than what the
+  elementary aliasing argument of layer 3 below already yields for (10.22); what costs the extra
+  work is the sup-norm form, through the `H¹` error (10.71).
+* **(10.26)–(10.27)**: `|(f, v_n)_w - (f, v_n)_n| ≤ C n^{-s} ‖f‖_{s,w} ‖v_n‖_w` for every
+  `v_n ∈ ℙ_n`, hence `|∫ f w - I^{GL}_{n,w} f| ≤ C √π n^{-s} ‖f‖_{s,w}` at `v_n = 1`, where
+  `‖1‖_w = √π` (`integral_T_mul_T_div_sqrt 0 0`). (10.26) is that case of (10.27) and is
+  elementary once (10.27) holds. The reduction of (10.27) is
+  `(f, v_n)_w - (f, v_n)_n = (g, v_n)_w - (g, v_n)_n` with `g = f - P_{n-1} f`, exact because the
+  Gauss–Lobatto rule integrates `ℙ_{2n-1}` (`isExactOnMeasure_chebyshevLobatto`), so that
+  `|(f, v_n)_w - (f, v_n)_n| ≤ ‖g‖_w ‖v_n‖_w + ‖g‖_n ‖v_n‖_n`; the second term is where the rate
+  is decided, exactly as in layer 3.
+
+**What exists**, checked in `Numlib/` and Mathlib: the `L²(-1,1)` orthogonal-polynomial Hilbert
+basis with its truncation as the best approximation (`IsWeight.hilbertBasis`,
+`IsWeight.isBestApprox_truncation`, `Numlib/Approximation/OrthogonalPolynomial`); the Chebyshev
+orthogonality `integral_T_mul_T_div_sqrt` and Mathlib's operator identity
+`Polynomial.Chebyshev.one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T`; for Legendre the
+operator identities `Polynomial.legendre_ode` and `quad_mul_derivative_legendre`, the coefficient
+layer on `ℙ_N` (`Polynomial.legendreCoeff`, `eq_sum_legendreCoeff`, Parseval
+`integral_sq_eq_sum_legendreCoeff`, `integral_derivative_legendre_mul_legendre`) and the `L²`
+Markov inequality `Polynomial.integral_derivative_sq_le`
+(`Numlib/Approximation/MarkovInequality`); the Gauss–Lobatto norm equivalence
+`‖p‖ ≤ ‖p‖_n ≤ √3 ‖p‖` on `ℙ_n` (`Quadrature.integral_sq_le_discreteInner_self_legendre`,
+`Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`,
+`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`); and on the surface the discrete
+inner products with their exactness on `ℙ_{2n-1}` (`equation_10_28`,
+`isExactOnMeasure_chebyshevLobatto`, `equation_10_34` of §10.4) and the discrete Chebyshev
+expansion (10.31). Nothing about the projection or the interpolation **error** exists.
+
+**What is missing**, in three layers; this is the whole of it, and it is the shape a module
+`Approximation/SpectralProjection` would take.
+
+1. *The weighted Sobolev seminorms on `(-1, 1)`.* The norm (10.23) is
+   `‖f‖_{s,w} = (∑_{k ≤ s} ‖(1-x²)^{k/2} f^{(k)}‖²_w)^{1/2}`; only its surface reading
+   `equation_10_23` exists, as a definition, with no calculus attached to it. The non-uniform
+   weight is *not* an obstacle for the `L²` statements: `(1-x²)^{k/2} ≤ 1`, so a projection
+   estimate in the seminorm bounds the book's right-hand side termwise, and no Hardy-type
+   comparison with the uniform norm (10.23) is needed — a correction to an earlier reading of
+   this cluster, which made that comparison a layer of its own; a Hardy inequality would serve
+   only the reverse comparison.
+2. *The coefficient decay and the projection estimate* `‖f - P_n f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for
+   `f ∈ C^s[-1,1]`, `P_n` the truncation of the orthogonal expansion: the Sturm–Liouville
+   symmetry `∫ (L u) v w = ∫ u (L v) w` with the boundary terms killed by the factor `1 - x²`,
+   iterated `⌊s/2⌋` times with one half-step `∫ (L u) v w = -∫ (1-x²) u' v' w` for odd `s`, and
+   the tail bound `∑_{k>n} λ_k^{-2m} |ĝ_k|² ‖T_k‖² ≤ λ_{n+1}^{-2m} ‖g‖²_w` with `λ_k = k²` for
+   the Chebyshev weight and `λ_k = k(k+1)` for the Legendre one. **No missing theory**: 600–800
+   lines per weight.
+3. *The aliasing layer*, from the projection to the interpolant. The elementary argument —
+   `Π_n f - P_n f = Π_n (P_n f - f)`, then `‖Π_n g‖_w ≤ C ‖g‖_n ≤ C' ‖g‖_∞` by the discrete norm
+   equivalence and `‖f - P_n f‖_∞ ≤ ∑_{k>n} |f̂_k| sup |T_k|` — loses a factor `n^{1/2}` and
+   yields `‖f - Π_n f‖_w ≤ C n^{1/2-s} ‖f‖_{s,w}`, some 200 lines on top of layer 2. The
+   **printed** rate `n^{-s}` is Canuto–Quarteroni's / Bernardi–Maday's argument through the `H¹`
+   projection and a Marcinkiewicz–Zygmund-type bound `‖v‖_n ≤ C (‖v‖_w + n⁻¹ ‖v'‖_w)`, which
+   needs the node-spacing estimate — a Sturm comparison for the Chebyshev or Legendre equation,
+   the same gap `SpectralSpace.spectralForm_eigenvalue_le`'s lower companion in §13.3 had to
+   fill for the Legendre nodes (`Numlib/Approximation/OrthogonalPolynomial/LegendreNodes`): well
+   over 1000 lines.
+
+A weakened form at the rate `n^{1/2-s}` is therefore about 1000 lines away with no missing
+theory, and would have to be a *new* node beside (10.22) rather than a replacement, since (10.22)
+as printed is the sharp rate quoted from [CHQZ88]; the printed rates are some 2000 lines and a
+plan of their own.
+
+The bound on the Lebesgue constant printed in (10.25), Rivlin's `Λ_n ≤ (2/π) log(n + 1) + 1`, is
+deliberately absent for an unrelated reason: `equation_10_25` carries the backbone's
+`2 + (2/π) log(2n + 2)` instead, which has the same growth rate and a larger additive constant.
+The printed bound is attained at `n = 0` (`Λ_0 = 1`), so no step of a proof of it may lose
+anything, and it rests on two further theorems (the Lebesgue function is maximal at `±1`, and
+Rivlin's bound on the resulting cotangent sum) that nothing else needs; see `## Not formalized`
+in `Numlib/Approximation/Interpolation`.
 
 ## Conventions
 

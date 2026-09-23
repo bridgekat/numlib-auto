@@ -42,12 +42,30 @@ All of it is `Numlib/FiniteDifference/Derivative`: `FiniteDifference.forwardDiff
 * `equation_10_72` — `(𝒟_n f)(x̄_i) = ∑_j f(x̄_j) l̄_j'(x̄_i)`, i.e. `f' = D f`, and `f'' = D² f`.
 * `equation_10_73` — the explicit entries of `D`.
 
-## Not formalized
+## Not formalized here
 
-(10.71), `‖f' - 𝒟_n f‖_w ≤ C n^{1-m} ‖f‖_{m,w}`, is quoted from [CHQZ88] without proof and needs
-the weighted-Sobolev machinery that (10.22) and (10.27) already wait on; its node is open. The
-wave-number discussion of §10.10.2, the boundary closure of the compact scheme and Example 10.4
-are prose or numerical runs and get no node.
+* **(10.71)**: `‖f' - 𝒟_n f‖_w ≤ C n^{1-m} ‖f‖_{m,w}` for every `m ≥ 2` with `‖f‖_{m,w}` finite,
+  where `𝒟_n f = (Π^{GL}_{n,w} f)'` is the pseudo-spectral derivative of §10.10.3 and `‖·‖_{m,w}`
+  is the norm (10.23). Quoted from [CHQZ88] without proof. It is the `H¹` form of (10.22) —
+  differentiation loses one power of `n` — and it belongs to the spectral-approximation cluster
+  whose three missing layers and whose inventory of what exists are written out in
+  `## Not formalized here` of §10.3
+  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`). Two things are specific to
+  it. The derivative of the *projection* error is estimated by the same Sturm–Liouville argument
+  one order lower (the Chebyshev coefficients of `(P_n f)'` are `∑_{k>n, k-j odd} 2k f̂_k`-type
+  sums, the Legendre ones `∑_{k>n, k-j odd} (2j+1) f̂_k` — the identity behind
+  `Polynomial.integral_derivative_legendre_mul_legendre`); the derivative of the *aliasing* error
+  `Π_n f - P_n f ∈ ℙ_n` is estimated by the inverse (Markov) inequality `‖p'‖_w ≤ C n² ‖p‖_w` on
+  `ℙ_n`, of which `Polynomial.integral_derivative_sq_le` is the Legendre case with the constant
+  `n(n+1)` while the Chebyshev-weighted one is absent (~300 lines). Only the
+  Marcinkiewicz–Zygmund-type bound `‖Π_n g‖_w ≤ C (‖g‖_w + n⁻¹ ‖g'‖_w)` makes the inverse
+  inequality cost exactly one power of `n` and gives the printed `n^{1-m}`; with the elementary
+  `n^{1/2-m}` aliasing bound of §10.3's third layer the derivative estimate comes out at
+  `n^{5/2-m}`, three halves of a power worse than printed. Estimate: gated on (10.22); ~400 lines
+  on top of it for the Legendre weight, plus the Chebyshev-weighted Markov inequality.
+
+The wave-number discussion of §10.10.2, the boundary closure of the compact scheme and Example
+10.4 are prose or numerical runs and get no node.
 
 ## Conventions
 

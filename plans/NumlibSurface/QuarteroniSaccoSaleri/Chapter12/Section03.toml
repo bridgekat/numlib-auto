@@ -71,31 +71,3 @@ source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the stab
 [[node]]
 id = "equation_12_36_unique"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, "problem (12.36) has a unique solution which is stable"'
-
-[[node]]
-id = "theorem_12_2"
-kind = "theorem"
-desc = '''Theorem 12.2: for `f ∈ H^s(-1, 1)`, `s ≥ 1`, the spectral collocation solution satisfies
-`‖u' - u_n'‖_{L²(-1,1)} ≤ C n^{-s} (‖f‖_{H^s(-1,1)} + ‖u‖_{H^{s+1}(-1,1)})` with `C` independent of `n`.
-Statable with `SobolevInterval s (-1) 1` for the norms.
-
-Blocked: re-examined 2026-09-20 (agent qss1). Checked in `Numlib/`: the discrete weak form
-`equation_12_38`, Young's inequality `exercise_12_8`, exactness `equation_12_37_exact`, the norm
-equivalence `equation_12_37_norm_equiv` (now proved, from `Quadrature.discreteInner_legendre_legendre`
-and the closed-form weights `Quadrature.legendreLobattoWeight_eq`), Poincaré (`poincare_poly` in
-this module, `SobolevInterval.norm_le_of_eq_integral`), and the Legendre normalizations
-`Polynomial.integral_legendre_sq`, `OrthogonalPolynomial.normSq_legendreMeasure`. Still missing,
-and the whole of what is missing (blocker 10 of `notes/frontier.md`): (i) the Gauss–Lobatto
-quadrature error `|E(f, v_n)| ≤ C n^{-s} ‖f‖_{H^s} ‖v_n‖_{L²}` of (10.36) and (ii) the interpolation
-error (10.22) `‖u - I_n u‖_{H^1} ≤ C n^{1-s} ‖u‖_{H^s}` at the Gauss–Lobatto nodes, both quoted from
-[CHQZ88] and proved there through the weighted Sobolev spaces `H^s_w` and the decay of Legendre
-coefficients; neither `Numlib/Approximation/*` nor Mathlib has the Legendre coefficient decay
-`|f̂_k| ≤ C k^{-s} ‖f‖_{H^s}` (repeated integration by parts against the Sturm–Liouville operator
-`((1-x²) f')'`, whose ingredients — `Polynomial.legendre_ode`, `Quadrature.derivative_legendre_eq_family`
-— exist) or the aliasing step from projection to interpolant. Chapter 10's nodes (10.22), (10.36)
-are open for the same reason. The constant `C` is not effective in the book, so the statement must
-quantify one `C` over all `n`, which makes (i) and (ii) the only route. Estimate: a
-`Approximation/SpectralProjection` module (weighted Sobolev seminorms on `(-1, 1)`, coefficient
-decay, aliasing), over a thousand lines; several weeks.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_38", "QuarteroniSaccoSaleri.Chapter12.exercise_12_8", "SobolevInterval"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.2'
