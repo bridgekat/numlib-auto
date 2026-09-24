@@ -1,6 +1,6 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.LinearAlgebra.Matrix.Circulant
-import Numlib.Analysis.Fourier.DFT
+import Numlib.Analysis.Fourier.Circulant
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.FiniteDifference.Stencil
 
@@ -13,7 +13,10 @@ discrete Fourier modes `j ↦ ω^{jk}`, the columns of `Matrix.dft N`, are its c
 (`FiniteDifference.fourierMode`), with eigenvalues the **amplification factors** `γ_k = ∑_s c s
 ω^{-sk}`, the discrete Fourier transform of the stencil (`FiniteDifference.amplificationFactor`,
 `FiniteDifference.periodicScheme_mulVec_fourierMode`). Iterating,
-`Qⁿ e_k = γ_kⁿ e_k` ([quarteroni2000numerical] (13.52)).
+`Qⁿ e_k = γ_kⁿ e_k` ([quarteroni2000numerical] (13.52)). This is the diagonalization of circulant
+matrices of `Numlib.Analysis.Fourier.Circulant` in the convention whose eigenvectors are the
+columns of `dft N` (`Matrix.circulant_mulVec_dft_col`), the complex conjugate of the textbook
+convention of numerical linear algebra.
 
 **The `ℓ²` norm of the powers.** Any matrix `A` with `A e_k = γ_k e_k` for every mode is
 `N⁻¹ F diag(γ) Fᴴ` (`FiniteDifference.eq_dft_mul_diagonal_of_forall_mulVec_fourierMode`), and the
@@ -99,33 +102,17 @@ theorem amplificationFactor_eq_sum (c : Fin N → ℂ) (k : Fin N) :
       = ∑ s : Fin N, (Complex.exp (2 * π * I / N))⁻¹ ^ ((s : ℕ) * (k : ℕ)) * c s :=
   Matrix.conjTranspose_dft_mulVec_apply c k
 
-/-- The root of unity of the grid satisfies `ω ^ N = 1`. -/
-private theorem expRoot_pow_self : Complex.exp (2 * π * I / N) ^ N = 1 := by
-  rcases Nat.eq_zero_or_pos N with rfl | hN
-  · simp
-  · exact (Complex.isPrimitiveRoot_exp N hN.ne').pow_eq_one
-
 /-- A Fourier mode evaluated at a difference of grid points: `e_k (j - s) = e_k j ω^{-sk}`. -/
 theorem fourierMode_sub (k j s : Fin N) :
     fourierMode N k (j - s)
       = fourierMode N k j * (Complex.exp (2 * π * I / N))⁻¹ ^ ((s : ℕ) * k) := by
-  set ω := Complex.exp (2 * π * I / N) with hω
-  have hω0 : ω ≠ 0 := Complex.exp_ne_zero _
-  have hωN : ω ^ N = 1 := expRoot_pow_self
-  simp only [fourierMode_apply, ← hω]
-  rw [Fin.val_sub, pow_mul, ← pow_eq_pow_mod _ hωN, pow_add, pow_sub₀ _ hω0 s.isLt.le, hωN,
-    one_mul, ← inv_pow, mul_pow, ← pow_mul, ← pow_mul, mul_comm]
+  rw [fourierMode, fourierMode, Matrix.dft_apply_sub, conjTranspose_dft_apply, Nat.mul_comm]
 
 /-- **The Fourier modes are eigenvectors of every circulant scheme**, with eigenvalues the
 amplification factors: `Q e_k = γ_k e_k` ([quarteroni2000numerical] (13.52) at one step). -/
 theorem periodicScheme_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) :
-    periodicScheme c *ᵥ fourierMode N k = amplificationFactor c k • fourierMode N k := by
-  ext j
-  rw [periodicScheme_mulVec_apply, Pi.smul_apply, smul_eq_mul, amplificationFactor_eq_sum,
-    Finset.sum_mul]
-  refine Finset.sum_congr rfl fun s _ => ?_
-  rw [fourierMode_sub]
-  ring
+    periodicScheme c *ᵥ fourierMode N k = amplificationFactor c k • fourierMode N k :=
+  Matrix.circulant_mulVec_dft_col c k
 
 /-- `Qⁿ e_k = γ_kⁿ e_k` ([quarteroni2000numerical] (13.52)): the recursion on one harmonic. -/
 theorem periodicScheme_pow_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) (n : ℕ) :
@@ -143,12 +130,8 @@ theorem periodicScheme_pow_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) (n
 `A F = F diag(γ)`. -/
 theorem mul_dft_eq_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ} {γ : Fin N → ℂ}
     (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) :
-    A * Matrix.dft N = Matrix.dft N * diagonal γ := by
-  ext j k
-  have h := congrFun (hA k) j
-  rw [Pi.smul_apply, smul_eq_mul] at h
-  rw [mul_diagonal, mul_comm (Matrix.dft N j k)]
-  exact h
+    A * Matrix.dft N = Matrix.dft N * diagonal γ :=
+  Matrix.mul_eq_mul_diagonal_of_forall_mulVec_col hA
 
 /-- **Spectral decomposition through the discrete Fourier transform**: a matrix with every Fourier
 mode as an eigenvector, `A e_k = γ_k e_k`, is `N⁻¹ F diag(γ) Fᴴ`. -/
@@ -167,7 +150,7 @@ factors. -/
 theorem periodicScheme_eq_dft_mul_diagonal (c : Fin N → ℂ) :
     periodicScheme c
       = (N : ℂ)⁻¹ • (Matrix.dft N * diagonal (amplificationFactor c) * (Matrix.dft N)ᴴ) :=
-  eq_dft_mul_diagonal_of_forall_mulVec_fourierMode (periodicScheme_mulVec_fourierMode c)
+  Matrix.circulant_eq_dft_mul_diagonal_mul_conjTranspose_dft c
 
 /-- Parseval for a matrix with orthogonal columns: `Mᴴ M = N • 1` gives
 `∑ k, ‖(M y) k‖² = N ∑ j, ‖y j‖²`. -/

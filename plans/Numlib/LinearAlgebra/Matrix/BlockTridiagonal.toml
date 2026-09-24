@@ -1,148 +1,43 @@
 namespace = "Matrix"
-desc = '''
-Block tridiagonal matrices and their block LU factorization ([golub2013matrix] §4.5.1–4.5.2;
-[higham2002accuracy] §13.2).
-
-Design (prototype `notes/gvl/ch04/proto/Shapes.lean` §1, elaborates). A block tridiagonal matrix
-with `q × q` blocks is the scalar tridiagonal matrix `Matrix.tridiagonalOf E D F` of
-`Numlib/LinearAlgebra/Matrix/Hessenberg` *over the block ring* `R := Matrix (Fin q) (Fin q) K`, and
-the matrix the book writes is its flattening by Mathlib's `Matrix.comp`
-(`Matrix.compRingEquiv (Fin (N+1)) (Fin q) K`, a ring isomorphism, so products and inverses
-transport). The block LU recurrence (4.5.4) is then a recurrence in a *noncommutative ring*,
-`U₀ = D₀`, `U_{i+1} = D_{i+1} − E_i U_i⁻¹ F_i` (`Ring.inverse`), and the factorization theorem is
-proved once over any `[Ring R]`; the scalar Thomas recurrence of `Numlib/LinearAlgebra/Matrix/LU`
-(`Matrix.thomasAlpha`) is the case `R = K` (`Matrix.tridiagonalLUPivot_eq_thomasAlpha`), and a
-`Fin (N+1) × Fin q`-indexed statement is one application of `compRingEquiv`. The sequences are
-`ℕ`-indexed (the convention of `thomasAlpha`), read on `Fin` through `fun i => E i`.
-
-Block diagonal dominance (4.5.6) is `Matrix.IsStrictBlockColDiagDominant`, defined for any square block
-matrix and read on `tridiagonalOf` by `isStrictBlockColDiagDominant_tridiagonalOf_iff`, stated with the induced `1`-norm `Matrix.lpOpNorm 1` of
-`Numlib/Analysis/Matrix/OperatorNorm` on the blocks; its consequences (4.5.7)–(4.5.8) use the
-Neumann bound `Matrix.inducedNorm_inv_one_sub_le` (through `lpOpNorm_eq_inducedNorm`) and the
-column-sum formula `Matrix.lpOpNorm_one_eq_sup_sum_norm`.
-
-Relation to existing modules: `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` (LU) is the
-*labelling* form (a block structure `b : Fin N → Fin m` on a scalar matrix) of the same shape
-statement, for the block LU of `Matrix.IsBlockLU`; this module is the constructive form with the
-recurrence. `Stationary/Block` (block Jacobi/Gauss–Seidel) uses labellings too; no bridge is
-planned (the product index `Fin (N+1) × Fin q` carries no `LinearOrder` instance, and nothing in
-the corpus needs one).
-
-Order of the module: `blockTridiagonal`, the recurrence, the factorization, the scalar bridge, then
-block dominance; about 400 lines.
-'''
 
 [[node]]
 id = "blockTridiagonal"
-kind = "definition"
-desc = '''The block tridiagonal matrix (4.5.2) with subdiagonal blocks `E i`, diagonal blocks `D i`, superdiagonal
-blocks `F i`: `blockTridiagonal (E F : Fin N → Matrix (Fin q) (Fin q) R) (D : Fin (N + 1) → Matrix
-(Fin q) (Fin q) R) : Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) R := Matrix.comp _ _ _ _ R
-(tridiagonalOf E D F)` for `[Zero R]`; `blockTridiagonal_apply` gives the entry at `((i, k), (j,
-l))`. Prototype `notes/gvl/ch04/proto/Shapes.lean`. ★'''
-deps = ["Matrix.tridiagonalOf"]
 
 [[node]]
 id = "tridiagonalLUPivot"
-kind = "definition"
-desc = '''The pivots of the block LU recurrence (4.5.4), over any `[Ring R]`:
-`tridiagonalLUPivot (E D F : ℕ → R) : ℕ → R`, `0 ↦ D 0`,
-`i + 1 ↦ D (i + 1) - E i * Ring.inverse (tridiagonalLUPivot E D F i) * F i` (the book's
-`U_1 = D_1`, `U_i = D_i − L_{i−1} F_{i−1}`). Prototype `blockTridiagonalPivot`. ★'''
-deps = []
 
 [[node]]
 id = "tridiagonalLUMultiplier"
-kind = "definition"
-desc = '''The multipliers of (4.5.4): `tridiagonalLUMultiplier E D F i := E i * Ring.inverse (tridiagonalLUPivot
-E D F i)` (the book's `L_i`, the solution of `L_i U_i = E_i`), and the recurrence restated:
-`tridiagonalLUPivot_succ : U_{i+1} = D_{i+1} - L_i * F_i`. ★'''
-deps = ["tridiagonalLUPivot"]
 
 [[node]]
 id = "tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot"
-kind = "theorem"
-desc = '''**The block LU factorization (4.5.3)** over any ring: if `tridiagonalLUPivot E D F i` is a unit for
-every `i < N`, then `tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i) =
-tridiagonalOf (fun i => tridiagonalLUMultiplier E D F i) 1 0 * tridiagonalOf 0 (fun i =>
-tridiagonalLUPivot E D F i) (fun i => F i)` — a unit lower bidiagonal times an upper bidiagonal
-(statement elaborates in the prototype). Entrywise from `Matrix.tridiagonalOf_apply_mul_eq`
-(the three-term product formula, untracked in the plan): the diagonal is `L_{i-1} F_{i-1} + U_i = D_i`, the subdiagonal
-`L_i U_i = E_i` (`Ring.inverse_mul_cancel` on the unit), the superdiagonal `F_i`. No hypothesis on
-the last pivot `U_N` (it may be singular, as for the scalar LU). ★★ (~80 lines)'''
-deps = ["tridiagonalLUMultiplier", "Matrix.tridiagonalOf"]
 
 [[node]]
 id = "tridiagonalLUPivot_eq_thomasAlpha"
-kind = "theorem"
-desc = '''Over a field the block recurrence is the Thomas recurrence: `tridiagonalLUPivot E D F i =
-thomasAlpha D (fun j => E (j - 1)) F i` (indices as in `Matrix.thomasAlpha`, whose subdiagonal
-sequence is shifted by one), and the multipliers are `thomasBeta` shifted. Induction on `i`,
-`Ring.inverse_eq_inv'`. Connects (4.5.4) with [quarteroni2000numerical] (3.53) and the Thomas
-rounding theory of `FloatingPoint/LU`. ★'''
-deps = ["tridiagonalLUPivot", "Matrix.thomasAlpha", "Matrix.thomasBeta"]
 
 [[node]]
 id = "IsStrictBlockColDiagDominant"
-kind = "definition"
-desc = '''Strict block column diagonal dominance in the induced `1`-norm, for any square block matrix: for
-`A : Matrix ι ι (Matrix (Fin q) (Fin q) 𝕜)` (`[Fintype ι] [DecidableEq ι]`, `[RCLike 𝕜]`; a block matrix over the
-block ring, the representation `tridiagonalOf` uses), `A.IsStrictBlockColDiagDominant` means: every diagonal
-block `A j j` is nonsingular and `lpOpNorm 1 (A j j)⁻¹ * ∑ i ∈ univ.erase j, lpOpNorm 1 (A i j) < 1`
-([golub2013matrix] (4.5.6) for block tridiagonal matrices; the block analogue of `Matrix.IsStrictlyDiagDominant`
-by columns, Feingold–Varga 1962). (The book writes the condition without the nonsingularity of `D_i`;
-`‖D_i⁻¹‖₁` presupposes it.) Was the tridiagonal-only `Matrix.IsBlockColDiagDominant N E D F`, generalized and
-renamed at the review of the Golub–Van Loan round. ★'''
-deps = ["Matrix.lpOpNorm"]
 
 [[node]]
 id = "isStrictBlockColDiagDominant_tridiagonalOf_iff"
-kind = "theorem"
-desc = '''The block tridiagonal reading of (4.5.6): for `E D F : ℕ → Matrix (Fin q) (Fin q) 𝕜`,
-`(tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i)).IsStrictBlockColDiagDominant ↔ ∀ i ≤ N,
-IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * (fOff i + eOff i) < 1`, where `fOff i := if i = 0 then 0 else lpOpNorm 1
-(F (i - 1))` and `eOff i := if i < N then lpOpNorm 1 (E i) else 0` — the book's convention `E_N ≡ F_0 ≡ 0` in
-0-based form. Column `i` of a tridiagonal matrix has at most the two off-diagonal blocks `F (i-1)` (row `i-1`)
-and `E i` (row `i+1`); `Matrix.tridiagonalOf` entrywise, `Finset.sum_erase`-type bookkeeping. ★'''
-deps = ["IsStrictBlockColDiagDominant", "Matrix.tridiagonalOf"]
 
 [[node]]
 id = "IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot"
-kind = "theorem"
-desc = '''Under block column dominance of `tridiagonalOf E D F` (hypothesis
-`(tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i)).IsStrictBlockColDiagDominant`, read through
-`isStrictBlockColDiagDominant_tridiagonalOf_iff`), every pivot `U_i`, `i ≤ N`, is nonsingular and
-`lpOpNorm 1 (U_i)⁻¹ ≤ lpOpNorm 1 (D_i)⁻¹ / (1 - lpOpNorm 1 (D_i)⁻¹ * fOff i)` — so the factorization
-(4.5.3) exists. Induction on `i` with the invariant `lpOpNorm 1 L_{i-1} < 1`: `U_i = D_i (1 −
-D_i⁻¹ L_{i−1} F_{i−1})` and `‖D_i⁻¹ L_{i−1} F_{i−1}‖₁ ≤ ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁ < 1`
-(`Matrix.lpOpNorm_mul_le`, `Matrix.isUnit_one_sub_of_inducedNorm_lt_one`,
-`Matrix.inducedNorm_inv_one_sub_le`). ★★ (~120 lines, shared with the next node)'''
-deps = ["IsStrictBlockColDiagDominant", "isStrictBlockColDiagDominant_tridiagonalOf_iff", "tridiagonalLUMultiplier", "Matrix.lpOpNorm_mul_le", "Matrix.inducedNorm_inv_one_sub_le", "Matrix.isUnit_one_sub_of_inducedNorm_lt_one", "Matrix.lpOpNorm_eq_inducedNorm"]
 
 [[node]]
 id = "IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le"
-kind = "theorem"
-desc = '''[golub2013matrix] (4.5.7): under block column dominance `lpOpNorm 1 (tridiagonalLUMultiplier E D F i) ≤ 1`
-(indeed `< 1`) for `i < N`: `‖E_i U_i⁻¹‖₁ ≤ ‖E_i‖₁ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁) < 1` by
-the previous node and (4.5.6). ★★'''
-deps = ["IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot"]
 
 [[node]]
 id = "IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le"
-kind = "theorem"
-desc = '''[golub2013matrix] (4.5.8), read as `‖U_i‖₁ ≤ ‖A‖₁` (the printed `‖A_n‖₁` has no referent; see the ch04
-report, Doubts): under block column dominance, for `i ≤ N`, `lpOpNorm 1 (tridiagonalLUPivot E D F i)
-≤ lpOpNorm 1 (blockTridiagonal E' D' F')` where `E' D' F'` are the `Fin` restrictions. Column by
-column: `U_i e_c = D_i e_c − L_{i−1}(F_{i−1} e_c)`, so `‖U_i e_c‖₁ ≤ ‖D_i e_c‖₁ + ‖F_{i−1} e_c‖₁`
-(`‖L_{i−1}‖₁ ≤ 1`), which is at most the `1`-norm of the block column `(i, c)` of `A`
-(`Matrix.lpOpNorm_one_eq_sup_sum_norm`, `Matrix.sum_norm_le_lpOpNorm_one`). ★★ (~80 lines)'''
-deps = ["IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le", "blockTridiagonal", "Matrix.lpOpNorm_one_eq_sup_sum_norm", "Matrix.sum_norm_le_lpOpNorm_one"]
 
 [[node]]
 id = "IsStrictBlockColDiagDominant.isUnit_blockTridiagonal"
-kind = "theorem"
-desc = '''A block column diagonally dominant block tridiagonal matrix is nonsingular ([golub2013matrix] P4.5.1(a),
-the fact the book's §4.5.2 presupposes): all pivots `U_0, …, U_N` are units, so the factorization
-(4.5.3) flattened by `compRingEquiv` is a product of two nonsingular matrices
-(`Matrix.isUnit_comp_iff`; a block triangular matrix with unit diagonal blocks is a unit). ★★'''
-deps = ["IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot", "tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot", "blockTridiagonal"]
+
+[[node]]
+id = "blockTridiagonal_apply"
+
+[[node]]
+id = "tridiagonalLUPivot_succ"
+
+[[node]]
+id = "tridiagonalLUMultiplier_mul_tridiagonalLUPivot"

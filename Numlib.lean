@@ -152,6 +152,7 @@ import Numlib.Analysis.Convolution.Lp
 import Numlib.Analysis.Distributions.TestFunctionApprox
 import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.Fourier.Aliasing
+import Numlib.Analysis.Fourier.Circulant
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
@@ -160,6 +161,7 @@ import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Analysis.Fourier.OddExtension
 import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.Fourier.SineBasis
+import Numlib.Analysis.Fourier.SineCosineTransform
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
@@ -430,6 +432,7 @@ import Numlib.LinearAlgebra.Matrix.Band
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
 import Numlib.LinearAlgebra.Matrix.Block
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
+import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Companion
@@ -463,6 +466,7 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Similar
+import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Frobenius

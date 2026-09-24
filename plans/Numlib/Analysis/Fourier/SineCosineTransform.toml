@@ -1,199 +1,73 @@
 namespace = "Matrix"
-desc = '''
-The discrete sine and cosine transforms as matrices, and their computation through the discrete
-Fourier transform of an odd, respectively even, extension.
-
-The matrices are those of [golub2013matrix] §1.4.2, in `0`-based indexing:
-
-**One naming scheme for the four transform matrices** (fixed at the review of the Golub–Van Loan round,
-which renamed `sinMatrix` → `dst1`, `dct` → `dct1` and moved `FastPoisson.dst2Matrix` here as `dst2`):
-
-* `dst1 r : Matrix (Fin r) (Fin r) ℝ`, `(k, j) ↦ sin ((k+1)(j+1) π / (r+1))` — the book's
-  `S_r` (1.4.6), which is the DST-I matrix `DST(r)` (1.4.8) and, column by column, the eigenvector
-  matrix of the tridiagonal Toeplitz matrix (`Matrix.sineVec` of
-  `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`; `dst1_apply_eq_sineVec`);
-* `dst2 n : Matrix (Fin n) (Fin n) ℝ`, `(k, j) ↦ sin ((k+1)(2j+1) π / (2n))` — the DST-II matrix
-  `DST2(n)` of §1.4.2, the eigenvector matrix of the Dirichlet–Neumann second difference;
-* `dct1 m : Matrix (Fin (m+1)) (Fin (m+1)) ℝ`, `(k, j) ↦ c_j cos (k j π / m)` with `c_0 = c_m = 1/2`
-  and `c_j = 1` otherwise — the DCT-I matrix `DCT(m+1)` of (1.4.4)/(1.4.10);
-* `dct2 n : Matrix (Fin n) (Fin n) ℝ`, `(k, j) ↦ cos (k(2j+1) π / (2n))` — the DCT-II matrix, rows the
-  vectors `Matrix.cosineIIVec` of `TridiagonalToeplitz`, which diagonalizes `Y₁₁` of (12.1.13);
-* and the auxiliary `cosMatrix r`, `(k, j) ↦ cos ((k+1)(j+1) π / (r+1))` — the book's `C_r` (1.4.6),
-  the interior block of `dct1 (r + 1)` (not a transform of its own, so it keeps the book's name).
-
-The sizes follow the book (`DST(r)` is `r × r`, `DCT(m + 1)` is `(m + 1) × (m + 1)`). The eigensystems of
-the second-difference matrices `Matrix.secondDifferenceDN`/`…NN` (`TridiagonalToeplitz`) by `dst2`/`dct1`
-are here too (`secondDifferenceDN_mulVec_dst2_col`, `secondDifferenceNN_mulVec_dct1_col`); the periodic one
-and the circulant diagonalization are in `Numlib/Analysis/Fourier/Circulant`.
-
-The DFT side is `Matrix.dft` of `Numlib/Analysis/Fourier/DFT`, whose root is `exp(+2πi/n)`; the
-transform matrix of the numerical literature, `F_n = (ω_n^{kj})` with `ω_n = exp(-2πi/n)`, is
-`(dft n)ᴴ`. The two correctness identities of the fast transforms are
-
-* `dst1_mulVec_eq_dft`: `S x = (i/2) (F_{2m} x_sin)(1:m−1)` for the odd extension
-  `x_sin = [0; x; 0; -E x]` (`oddExtensionVec`, the book's (1.4.9)),
-* `dct1_mulVec_eq_dft`: `DCT(m+1) x = ½ (F_{2m} x_cos)(0:m)` for the even extension
-  `x_cos = [x₀; x̃; x_m; E x̃]` (`evenExtensionVec`, (1.4.11)),
-
-which with the radix-2 identity `Matrix.dft_radix_two` make the DST and DCT `O(m log m)`
-(Golub–Van Loan Algorithms 1.4.2–1.4.3). The pairing argument: the entries of `F_{2m}` are
-`cos(kjπ/m) − i sin(kjπ/m)` (`conjTranspose_dft_apply_eq_cos_sub_sin`, staged for `DFT`), and
-the terms at `l` and `2m − l` pair off by `cos` even / `sin` odd, so the odd extension keeps
-only the sine terms (doubled) and the even one only the cosine terms.
-
-The inversion formulas `S_r² = ((r+1)/2) I` (`dst1_mul_self`, the orthogonality of the sine
-vectors `Matrix.dotProduct_sineVec`) and its cosine analogue `dct1 m * dct1 m = (m/2) I`
-(`dct1_mul_self`) are what Golub–Van Loan §4.8 needs for the fast Poisson solvers.
-
-Searched: `Matrix.dst`, `Matrix.dct1`, `dst1`, `cosMatrix`, `discreteSineTransform` (absent
-from Mathlib and `Numlib`); `Matrix.sineVec` (reused as the bridge).
-'''
 
 [[node]]
 id = "dst1"
-kind = "definition"
-desc = '''The DST-I matrix `dst1 (r : ℕ) : Matrix (Fin r) (Fin r) ℝ := of fun k j => Real.sin (((k : ℕ) + 1) * ((j : ℕ) + 1) *
-π / (r + 1))` — [golub2013matrix] `S_r` (1.4.6), `= DST(r)` (1.4.8). Was `Matrix.sinMatrix` (renamed at the
-review of the Golub–Van Loan round: one scheme `dst1`/`dst2`/`dct1`/`dct2` for the four transform matrices). ★'''
-deps = []
 
 [[node]]
 id = "dst1_transpose"
-kind = "theorem"
-desc = '''`(dst1 r)ᵀ = dst1 r`; `mul_comm` in the argument. ★'''
-deps = ["dst1"]
 
 [[node]]
 id = "dst1_apply_eq_sineVec"
-kind = "theorem"
-desc = '''`dst1 r k j = sineVec r j k` (the columns of `S_r` are the eigenvectors `Matrix.sineVec` of the
-tridiagonal Toeplitz matrix); `sineVec_apply`, `ring_nf` in the argument. ★'''
-deps = ["dst1", "sineVec"]
 
 [[node]]
 id = "dst1_mul_self"
-kind = "theorem"
-desc = '''`dst1 r * dst1 r = (((r : ℝ) + 1) / 2) • 1`: the DST-I is its own inverse up to the factor
-`2/(r+1)` ([golub2013matrix] §4.8.6 uses it for the inverse DST). Entry `(k, l)` is `sineVec r k ⬝ᵥ
-sineVec r l`, `Matrix.dotProduct_sineVec`. ★'''
-deps = ["dst1_apply_eq_sineVec", "dotProduct_sineVec", "dst1_transpose"]
 
 [[node]]
 id = "dst2"
-kind = "definition"
-desc = '''The DST-II matrix of [golub2013matrix] §1.4.2 (the book's `DST2(n)`, `V^{(DN)}_n`; was
-`FastPoisson.dst2Matrix`, moved here at the review of the Golub–Van Loan round):
-`dst2 n : Matrix (Fin n) (Fin n) ℝ := of fun k j => sin ((k + 1) * (2 * j + 1) * π / (2 * n))`
-(1-based `sin(k(2j − 1)π/(2n))`). With its Gram identity, the book's P4.8.11(a) used as a helper:
-`(dst2 n)ᵀ * dst2 n = (n / 2) • 1 + (1 / 2) • vecMulVec v v`, `v = ((−1)^j)_j` — hence
-`isUnit_dst2` (`1 + vᵀ(…)v` Sherman–Morrison, or positive definiteness of the right side) and
-the inverse formula P4.8.11(b). Orthogonality sums: `Finset.sum` of `cos` over an arithmetic
-progression (`Real.cos_sum`-type telescoping, as in `Matrix.dotProduct_sineVec`). Column `j` is
-`sinAngleVec n ((2j + 1)π/(2n))` (`dst2_col_eq_sinAngleVec`, `rfl` up to `ring_nf`). ★★ (~120 lines)'''
-deps = ["sinAngleVec"]
 
 [[node]]
 id = "dct2"
-kind = "definition"
-desc = '''The DCT-II matrix `dct2 n : Matrix (Fin n) (Fin n) ℝ := of fun k j => Real.cos ((k : ℕ) * (2 * (j : ℕ) + 1) *
-π / (2 * n))` — row `k` is `Matrix.cosineIIVec n k` of `TridiagonalToeplitz` (`dct2_apply : dct2 n k j =
-cosineIIVec n k j`, `rfl` up to `ring_nf`); the book's `𝒞_n` of [golub2013matrix] (12.1.13) is `(dct2 n)ᵀ`
-with the column normalization `√(2/n)` (`√(1/n)` for `k = 0`). With `dct2_mul_transpose : dct2 n * (dct2 n)ᵀ =
-diagonal fun k => if (k : ℕ) = 0 then n else n / 2` (`Matrix.dotProduct_cosineIIVec`), hence `IsUnit (dct2 n)`
-for `0 < n`, and the diagonalization `(dct2 n) * cornerTridiagonal n 1 1 * (dct2 n)⁻¹ = diagonal fun k => 2 cos(kπ/n)`
-(`Matrix.cornerTridiagonal_one_one_mulVec_cosineIIVec`, the fast eigensystem (12.1.13)). Before the review of
-the Golub–Van Loan round the DCT-II existed only as the vectors `cosineIIVec`. ★'''
-deps = ["cosineIIVec", "dotProduct_cosineIIVec", "cornerTridiagonal_one_one_mulVec_cosineIIVec"]
 
 [[node]]
 id = "cosMatrix"
-kind = "definition"
-desc = '''`cosMatrix (r : ℕ) : Matrix (Fin r) (Fin r) ℝ := of fun k j => Real.cos (((k : ℕ) + 1) * ((j : ℕ) + 1) *
-π / (r + 1))` — [golub2013matrix] `C_r` (1.4.6), the interior block of `DCT(r + 2)`. Symmetric
-(`cosMatrix_transpose`, foreseeable API). ★'''
-deps = []
 
 [[node]]
 id = "dct1"
-kind = "definition"
-desc = '''The DCT-I matrix (was `Matrix.dct`) `dct1 (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ := of fun k j => (if (j : ℕ) = 0 ∨
-(j : ℕ) = m then 1 / 2 else 1) * Real.cos ((k : ℕ) * (j : ℕ) * π / m)` — [golub2013matrix] `DCT(m+1)`
-(1.4.10), the matrix of the transform (1.4.4) `y_k = x₀/2 + ∑_{j=1}^{m-1} cos(kjπ/m) x_j + (−1)^k
-x_m/2`. Its interior block is `cosMatrix (m − 1)`, its border rows/columns `e/2`, `v/2` and `(−1)^m/2`
-(a block lemma `dct_eq_fromBlocks` is foreseeable surface work, not planned). For `m = 0` the
-formula degenerates (`π / 0 = 0`) to `[[1/2]]`; the correctness theorem assumes `0 < m`. ★'''
-deps = []
 
 [[node]]
 id = "oddExtensionVec"
-kind = "definition"
-desc = '''The odd extension of `x : Fin r → ℝ` to length `2(r+1)`: `oddExtensionVec x : Fin (2 * (r + 1)) → ℝ`,
-`l ↦ x (l − 1)` for `1 ≤ l ≤ r`, `− x (2(r+1) − l − 1)` for `r + 2 ≤ l`, and `0` at `l = 0, r + 1` —
-the book's `x_sin = [0; x; 0; −E x]` (1.4.9) with `m = r + 1`. ★'''
-deps = []
 
 [[node]]
 id = "evenExtensionVec"
-kind = "definition"
-desc = '''The even extension of `x : Fin (m + 1) → ℝ` to length `2m`: `evenExtensionVec x : Fin (2 * m) → ℝ`,
-`l ↦ x l` for `l ≤ m`, `x (2m − l)` for `l > m` — the book's `x_cos = [x₀; x̃; x_m; E x̃]` (1.4.11). ★'''
-deps = []
 
 [[node]]
 id = "dst1_mulVec_eq_dft"
-kind = "theorem"
-desc = '''The DST through the DFT ([golub2013matrix] §1.4.2, the display after (1.4.9)): for `x : Fin r → ℝ` and
-`k : Fin r`, `(((dst1 r *ᵥ x) k : ℝ) : ℂ) = (Complex.I / 2) * (((dft (2 * (r + 1)))ᴴ *ᵥ fun l =>
-(oddExtensionVec x l : ℂ)) ⟨k + 1, _⟩)` — the DST of `x` is a scaled subvector of `F_{2m} x_sin`.
-Proof: expand the entries by `conjTranspose_dft_apply_eq_cos_sub_sin` (staged for `DFT`), split the
-sum over `l ∈ [0, 2m)` into `l ∈ [1, m)` and its mirror `2m − l` (`Finset.sum_bij`/`Fin.revPerm`
-shifted), use `cos(k(2m−l)π/m) = cos(klπ/m)`, `sin(k(2m−l)π/m) = −sin(klπ/m)` (`Real.cos_sub`,
-`Real.sin_sub`, `Real.cos_nat_mul_two_pi`-type facts), so the cosine part cancels and the sine part
-doubles. ★★ (≈ 60 lines)'''
-deps = ["dst1", "oddExtensionVec", "dft", "Matrix.conjTranspose_dft_apply_eq_cos_sub_sin"]
 
 [[node]]
 id = "dct1_mulVec_eq_dft"
-kind = "theorem"
-desc = '''The DCT through the DFT ([golub2013matrix] §1.4.2, the display after (1.4.11)): for `0 < m`,
-`x : Fin (m + 1) → ℝ`, `k : Fin (m + 1)`, `(((dct1 m *ᵥ x) k : ℝ) : ℂ) = (1 / 2) * (((dft (2 * m))ᴴ *ᵥ fun l
-=> (evenExtensionVec x l : ℂ)) ⟨k, _⟩)`. Same pairing as `dst1_mulVec_eq_dft`, with the sine
-part cancelling; the unpaired terms `l = 0` and `l = m` give the halves `x₀/2`, `(−1)^k x_m/2`. ★★
-(≈ 60 lines)'''
-deps = ["dct1", "evenExtensionVec", "dft", "Matrix.conjTranspose_dft_apply_eq_cos_sub_sin"]
 
 [[node]]
 id = "dct1_mul_self"
-kind = "theorem"
-desc = '''`dct1 m * dct1 m = (m / 2 : ℝ) • 1` for `0 < m` — the DCT-I is its own inverse up to a factor, the
-twin of `dst1_mul_self` ([golub2013matrix] §4.8.5 with the `DCT(m + 1)` of (1.4.10):
-`(m + 1) × (m + 1)`, entries `w_j cos(kjπ/m)`, `w_0 = w_m = 1/2`, else `1`), hence
-`DCT(m+1)⁻¹ = (2/m) DCT(m+1)`. Direct proof by the discrete cosine orthogonality
-`∑_{j=0}^{m} w_j cos(kjπ/m) cos(ljπ/m) = (m/2) δ_{kl} / w_k`-type sums (the trapezoidal rule is exact
-for these trigonometric polynomials: `Numlib/Approximation/TrapezoidExactness` may already carry
-the sum), or the book's route through `2C² = mI − eeᵀ − vvᵀ`, `2Ce + e + v = 0`,
-`2Cv + e + (−1)^m v = 0` (the blocks of `F̄_{2m} F_{2m} = 2mI`). Moved here from `Numlib/Direct/FastPoisson` (where it was
-`FastPoisson.dctMatrix_mul_self`) at the consolidation of the Golub–Van Loan round, beside its
-sine twin; renamed from `dct_mul_self` at the review. ★★ (~100 lines)'''
-deps = ["dct1"]
 
 [[node]]
 id = "secondDifferenceDN_mulVec_dst2_col"
-kind = "theorem"
-desc = '''The Dirichlet–Neumann eigensystem, diagonalized by the DST-II ([golub2013matrix] §4.8.6): for `j : Fin n` and `θ_j = (2j + 1)π/(2n)`
-(1-based `(2j − 1)π/(2n)`), `secondDifferenceDN n *ᵥ sinAngleVec n θ_j = 4 sin²(θ_j/2) • sinAngleVec
-n θ_j` (the residual `sin((n+1)θ) − sin((n−1)θ) = 2 sin θ cos(nθ)` vanishes); the eigenvector
-matrix is `dst2 n` (its `j`-th column is `sinAngleVec n θ_j`), so `(dst2 n)⁻¹ *
-secondDifferenceDN n * dst2 n = diagonal fun j => 4 sin²(θ_j/2)` (`isUnit_dst2`). ★★'''
-deps = ["secondDifferenceDN_mulVec_sinAngleVec", "dst2"]
 
 [[node]]
 id = "secondDifferenceNN_mulVec_dct1_col"
-kind = "theorem"
-desc = '''The Neumann–Neumann eigensystem, diagonalized by the DCT-I ([golub2013matrix] §4.8.6): for `2 ≤ n`, `j : Fin n`, `θ_j = jπ/(n − 1)`
-(1-based `(j − 1)π/(n − 1)`), `secondDifferenceNN n *ᵥ cosAngleVec n θ_j = 4 sin²(θ_j/2) •
-cosAngleVec n θ_j` (the residual `cos(nθ) − cos((n−2)θ) = −2 sin θ sin((n−1)θ)` vanishes). The
-eigenvector matrix `(cos(kjπ/(n−1)))_{k,j}` is `dct1 (n − 1) * diagonal (2, 1, …, 1, 2)`
-(the `DCT(m + 1)` of (1.4.10) at `m = n − 1`), nonsingular by `dct1_mul_self`, so
-`secondDifferenceNN n` has the corresponding diagonalization. ★★'''
-deps = ["secondDifferenceNN_mulVec_cosAngleVec", "dct1", "dct1_mul_self"]
+
+[[node]]
+id = "transpose_dst2_mul_dst2"
+
+[[node]]
+id = "isUnit_dst2"
+
+[[node]]
+id = "dct2_mul_transpose"
+
+[[node]]
+id = "isUnit_dct2"
+
+[[node]]
+id = "dct2_mul_cornerTridiagonal_one_one_mul_inv"
+
+[[node]]
+id = "isUnit_dct1"
+
+[[node]]
+id = "secondDifferenceDN_mul_dst2"
+
+[[node]]
+id = "inv_dst2_mul_secondDifferenceDN_mul_dst2"
+
+[[node]]
+id = "secondDifferenceNN_mul_dct1_mul_diagonal"

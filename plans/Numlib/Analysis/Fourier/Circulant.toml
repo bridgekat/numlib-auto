@@ -1,65 +1,46 @@
 namespace = "Matrix"
-desc = '''
-The diagonalization of circulant matrices by the discrete Fourier transform ([golub2013matrix] §4.8.2,
-Theorem 4.8.2), and its consequence for the periodic second-difference matrix ([golub2013matrix] §4.8.6).
-
-Convention: the transform matrix of the numerical literature is `F_n = (ω̄^{jk})`, `ω = e^{2πi/n}`, i.e.
-`(Matrix.dft n)ᴴ` of `Numlib/Analysis/Fourier/DFT` (whose root is `exp(+2πi/n)`); its columns are eigenvectors
-of every circulant (`circulant_mulVec_conj_dft_col`), with eigenvalues `F̄_n z = dft n *ᵥ z`.
-
-Placed here (not in `Numlib/LinearAlgebra/Matrix/Toeplitz`, where chapter 4 of the Golub–Van Loan round had
-planned it) at the review of that round: the DFT module imports `Numlib/Approximation/TrapezoidExactness`, and
-`Toeplitz` — hence `Displacement` and `Direct/Levinson` — should not depend on a numerical layer. This module
-imports `DFT`, `Toeplitz` (circulants are Toeplitz; `Matrix.secondDifferencePeriodic_eq_circulant`) and
-`Permutation` (the downshift is the circulant of `e₂`). Refactor task R12 moves
-`FiniteDifference.periodicScheme_mulVec_fourierMode` and its companions (the opposite convention, eigenvectors
-the columns of `dft N`) here, as corollaries of `circulant_mulVec_conj_dft_col`.
-
-Mathlib has `Matrix.circulant` and its algebra but no diagonalization. About 200 lines, ★ to ★★.
-'''
 
 [[node]]
 id = "circulant_mulVec_conj_dft_col"
-kind = "theorem"
-desc = '''The eigenvector equation behind both diagonalization conventions: for `n ≠ 0`, `z : Fin n → ℂ` and
-`k : Fin n`, `circulant z *ᵥ (fun j => (dft n)ᴴ j k) = (dft n *ᵥ z) k • (fun j => (dft n)ᴴ j k)`
-— the `k`-th column `(ω̄^{jk})_j` of `F_n` (Golub–Van Loan's DFT matrix) is an eigenvector with
-eigenvalue the `k`-th entry of `F̄_n z = dft n *ᵥ z`. Row `j`: `∑_s z_{j-s} ω̄^{sk} =
-ω̄^{jk} ∑_t z_t ω^{tk}` by reindexing `t = j - s` in `Fin n` and `ω^n = 1`
-(`Complex.isPrimitiveRoot_exp`); the same computation as `FiniteDifference.fourierMode_sub`,
-which it replaces after refactor task R12. ★★'''
-deps = ["Matrix.dft"]
 
 [[node]]
 id = "inv_conjTranspose_dft_mul_circulant_mul_conjTranspose_dft"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 4.8.2 in Golub–Van Loan's convention: for `n ≠ 0` and `z : Fin n → ℂ`,
-`((dft n)ᴴ)⁻¹ * circulant z * (dft n)ᴴ = diagonal (dft n *ᵥ z)`; equivalently
-`circulant z = (n : ℂ)⁻¹ • ((dft n)ᴴ * diagonal (dft n *ᵥ z) * dft n)`. From
-`circulant_mulVec_conj_dft_col` column by column and `Matrix.inv_conjTranspose_dft`. The case
-`z = Pi.single 1 1` is Lemma 4.8.1 (`downshift_eq_circulant`). ★'''
-deps = ["circulant_mulVec_conj_dft_col", "downshift", "Matrix.inv_conjTranspose_dft"]
 
 [[node]]
 id = "inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft"
-kind = "theorem"
-desc = '''The periodic eigenvalues ([golub2013matrix] §4.8.6): for `3 ≤ n`,
-`((dft n)ᴴ)⁻¹ * (secondDifferencePeriodic n).map (↑) * (dft n)ᴴ = diagonal fun j => 4 sin²(jπ/n)`
-(1-based `λ_j = 4 sin²((j−1)π/n)`): the circulant diagonalization with `λ = F̄_n (2, −1, 0, …, −1) =
-2 F̄(:,1) − F̄(:,2) − F̄(:,n)`, and `2 − ω^j − ω^{−j} = 2 − 2 cos(2πj/n) = 4 sin²(πj/n)`
-("It can be shown that"). Also (4.8.22) `λ_j = λ_{n+2−j}` (0-based `λ_j = λ_{n−j}` for `1 ≤ j`)
-and (4.8.23) `F̄_n(:, j) = F_n(:, n+2−j)` as the lemmas `secondDifferencePeriodic_eigenvalue_symm`,
-`conj_dft_col_eq` (same node). ★★'''
-deps = ["secondDifferencePeriodic_eq_circulant", "inv_conjTranspose_dft_mul_circulant_mul_conjTranspose_dft"]
 
 [[node]]
 id = "secondDifferencePeriodic_mulVec_realDftCol"
-kind = "theorem"
-desc = '''[golub2013matrix] (4.8.24)–(4.8.25): with `m = ⌈(n+1)/2⌉` and `realDftCol n j := if (j : ℕ) < m then
-fun k => Real.cos (2π k j / n) else fun k => −Real.sin (2π k j / n)` (the columns
-`Re F_n(:, j)`, `j ≤ m`, and `Im F_n(:, j)`, `j > m`, 1-based; `Im` of `ω̄^{kj}` is `−sin`),
-`secondDifferencePeriodic n *ᵥ realDftCol n j = 4 sin²(jπ/n) • realDftCol n j` for every `j`.
-Real and imaginary parts of the complex eigenvector equation (the matrix is real and `λ_j` real).
-(The book does not claim that `V^{(P)}` is nonsingular; P4.8.13 computes its Gram matrix; not a
-node.) ★'''
-deps = ["inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft"]
+
+[[node]]
+id = "dft_apply_sub"
+
+[[node]]
+id = "circulant_mulVec_dft_col"
+
+[[node]]
+id = "mul_eq_mul_diagonal_of_forall_mulVec_col"
+
+[[node]]
+id = "circulant_mul_conjTranspose_dft"
+
+[[node]]
+id = "circulant_mul_dft"
+
+[[node]]
+id = "circulant_eq_conjTranspose_dft_mul_diagonal_mul_dft"
+
+[[node]]
+id = "circulant_eq_dft_mul_diagonal_mul_conjTranspose_dft"
+
+[[node]]
+id = "secondDifferencePeriodic_map_mulVec_conj_dft_col"
+
+[[node]]
+id = "secondDifferencePeriodic_eigenvalue_symm"
+
+[[node]]
+id = "conj_dft_col_eq"
+
+[[node]]
+id = "realDftCol"

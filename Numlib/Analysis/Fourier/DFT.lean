@@ -35,6 +35,14 @@ even- and odd-indexed halves of the input, at the cost of one multiplication per
 An implementation of the fast Fourier transform and its operation count are algorithmic and are not
 formalized here; the theorem content is exactly the identity above.
 
+The entries of the transform matrix `(dft n)ᴴ` in real form, `cos (2 π k j / n) − i sin (2 π k j /
+n)` (`Matrix.conjTranspose_dft_apply_eq_cos_sub_sin`, [golub2013matrix] (1.4.5)), and its two index
+symmetries — the reflection `j ↦ n − j` conjugates (`Matrix.dft_apply_sub_eq_conj`), the half shift
+`j ↦ j + n / 2` multiplies by `(−1) ^ k` (`Matrix.dft_two_mul_apply_add`) — are what the block
+structure of `F_{2m}` ([golub2013matrix] Theorem 1.4.1) and the sine and cosine transform identities
+of `Numlib.Analysis.Fourier.SineCosineTransform` are proved from. The diagonalization of circulant
+matrices by `(dft n)ᴴ` is in `Numlib.Analysis.Fourier.Circulant`.
+
 [han2009theoretical] state the matrix in Section 4.3, the inversion formula as Theorem 4.3.2 and the
 radix-2 identity as (4.3.8)–(4.3.9).
 
@@ -118,6 +126,67 @@ theorem conjTranspose_dft_mulVec_apply {n : ℕ} (y : Fin n → ℂ) (k : Fin n)
       = ∑ j : Fin n, (Complex.exp (2 * π * I / n))⁻¹ ^ ((j : ℕ) * (k : ℕ)) * y j := by
   rw [Matrix.mulVec_apply_eq_sum]
   exact Finset.sum_congr rfl fun j _ => by rw [conjTranspose_dft_apply, Nat.mul_comm]
+
+/-! ### The entries in real form, and two index symmetries -/
+
+/-- The entries of `dft n` are symmetric in the two indices. -/
+theorem dft_apply_comm {n : ℕ} (j k : Fin n) : dft n j k = dft n k j := by
+  rw [dft_apply, dft_apply, Nat.mul_comm]
+
+/-- The entries of the transform matrix `(dft n)ᴴ` in real form: `(dft n)ᴴ k j = cos (2 π k j / n)
+- i sin (2 π k j / n)` ([golub2013matrix] (1.4.5), where `n = 2 m` and the angle is `k j π / m`). -/
+theorem conjTranspose_dft_apply_eq_cos_sub_sin {n : ℕ} (k j : Fin n) :
+    (dft n)ᴴ k j = (Real.cos (2 * π * (k : ℕ) * (j : ℕ) / n) : ℂ)
+      - I * (Real.sin (2 * π * (k : ℕ) * (j : ℕ) / n) : ℂ) := by
+  rw [conjTranspose_dft_apply, inv_expRoot_pow]
+  have h : -(2 * π * I * (((k : ℕ) * (j : ℕ) : ℕ) : ℂ)) / n
+      = ((-(2 * π * (k : ℕ) * (j : ℕ) / n) : ℝ) : ℂ) * I := by
+    push_cast
+    ring
+  rw [h, Complex.exp_mul_I, ← Complex.ofReal_cos, ← Complex.ofReal_sin, Real.cos_neg,
+    Real.sin_neg]
+  push_cast
+  ring
+
+/-- **Reflection of an index conjugates**: for `0 < j`, `dft n k (n - j) = conj (dft n k j)`, since
+`ω ^ (k (n - j)) = ω ^ (- k j)` by `ω ^ n = 1`, and `ω⁻¹ = conj ω` on the unit circle. -/
+theorem dft_apply_sub_eq_conj {n : ℕ} (k j : Fin n) (hj : 0 < (j : ℕ)) :
+    dft n k ⟨n - j, by omega⟩ = conj (dft n k j) := by
+  have hω : Complex.exp (2 * π * I / n) ^ n = 1 :=
+    (Complex.isPrimitiveRoot_exp n k.pos.ne').pow_eq_one
+  rw [dft_apply, dft_apply, map_pow, ← inv_expRoot, inv_pow]
+  refine eq_inv_of_mul_eq_one_left ?_
+  rw [← pow_add, ← Nat.mul_add, Nat.sub_add_cancel j.isLt.le, Nat.mul_comm, pow_mul, hω, one_pow]
+
+/-- Reflection of an index conjugates the entries of the transform matrix `(dft n)ᴴ` as well. -/
+theorem conjTranspose_dft_apply_sub_eq_conj {n : ℕ} (k j : Fin n) (hj : 0 < (j : ℕ)) :
+    (dft n)ᴴ k ⟨n - j, by omega⟩ = conj ((dft n)ᴴ k j) := by
+  rw [conjTranspose_apply, conjTranspose_apply, dft_apply_comm _ k, dft_apply_comm _ k,
+    dft_apply_sub_eq_conj k j hj]
+  rfl
+
+/-- The `m`-th power of the root of unity of order `2 m` is `-1`. -/
+private theorem expRoot_two_mul_pow_self {m : ℕ} (hm : m ≠ 0) :
+    Complex.exp (2 * π * I / ((2 * m : ℕ) : ℂ)) ^ m = -1 := by
+  have hm' : (m : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hm
+  rw [← Complex.exp_nat_mul,
+    show (m : ℂ) * (2 * π * I / ((2 * m : ℕ) : ℂ)) = π * I by push_cast; field_simp]
+  exact Complex.exp_pi_mul_I
+
+/-- **The half shift multiplies by a sign**: `dft (2 m) k (m + j) = (-1) ^ k * dft (2 m) k j`, since
+`ω ^ m = -1` for the root of unity `ω` of order `2 m`. -/
+theorem dft_two_mul_apply_add {m : ℕ} (k : Fin (2 * m)) (j : Fin m) :
+    dft (2 * m) k ⟨m + j, by omega⟩ = (-1) ^ (k : ℕ) * dft (2 * m) k ⟨j, by omega⟩ := by
+  have hm : m ≠ 0 := by rintro rfl; exact j.elim0
+  rw [dft_apply, dft_apply, Nat.mul_add, pow_add, Nat.mul_comm (k : ℕ) m, pow_mul,
+    expRoot_two_mul_pow_self hm]
+
+/-- The half shift multiplies the entries of the transform matrix `(dft (2 m))ᴴ` by the same
+sign. -/
+theorem conjTranspose_dft_two_mul_apply_add {m : ℕ} (k : Fin (2 * m)) (j : Fin m) :
+    (dft (2 * m))ᴴ k ⟨m + j, by omega⟩ = (-1) ^ (k : ℕ) * (dft (2 * m))ᴴ k ⟨j, by omega⟩ := by
+  rw [conjTranspose_apply, conjTranspose_apply, dft_apply_comm _ k, dft_apply_comm _ k,
+    dft_two_mul_apply_add, star_mul', star_pow, star_neg, star_one]
 
 /-! ### The bridge to `ZMod.dft` -/
 
