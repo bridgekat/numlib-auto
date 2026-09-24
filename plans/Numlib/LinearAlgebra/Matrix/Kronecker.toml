@@ -1,318 +1,94 @@
 namespace = "Matrix"
-desc = '''
-The Kronecker product, vectorization and the perfect shuffle in the positional (`Fin`) layout of
-the matrix-computations literature.
 
-Upstreaming candidate (natural home `Mathlib.LinearAlgebra.Matrix.Kronecker` /
-`Mathlib.LinearAlgebra.Matrix.Vec`). Mathlib has the Kronecker product on product index types,
-`A ⊗ₖ B : Matrix (l × n) (m × p) α`, with its algebra (`kroneckerMap_transpose`,
-`mul_kronecker_mul`, `inv_kronecker`, `kronecker_assoc`, `det_kronecker`) and the
-column-stacking `Matrix.vec A : n × m → R` with `kronecker_mulVec_vec : (B ⊗ₖ A) *ᵥ vec X = vec
-(A * X * Bᵀ)`. What it lacks is the *positional* reading every numerical text uses: `B ⊗ C` as an
-`m₁m₂ × n₁n₂` array whose `(i, j)` block is `b_ij C`, `vec X ∈ ℝ^{nm}`, `reshape` (with its
-product-type form `Matrix.unvec`, the inverse of Mathlib's `vec`, and the bridge `reshape_eq_unvec`), and the
-perfect shuffle `Π_{p,r}` that relates `B ⊗ C` to `C ⊗ B`. The positional layout is
-`finProdFinEquiv : Fin m × Fin n ≃ Fin (m * n)`, `(a, b) ↦ b + n a`, which is exactly the
-block-row ordering of the books (row `(i₁ - 1) m₂ + i₂` of `B ⊗ C` is the pair `(i₁, i₂)`), and
-Mathlib's `vec` composed with it is the column stacking (Mathlib's own `Vec.lean` docstring
-recommends `vec A ∘ finProdFinEquiv.symm`).
-
-Everything is proved on product types first (Mathlib) and transported; the `Fin` statements are
-thin. The perfect shuffle `Matrix.perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R` and its
-index map are defined in `Numlib/LinearAlgebra/Matrix/Permutation` with the other named permutation
-matrices of Golub–Van Loan §1.2.11 (the exchange `ℰ_n`, the downshift `𝒟_n`), typed so that
-`(Π_{p,r})ᵀ = Π_{r,p}` and `Π (B ⊗ C) Πᵀ = C ⊗ B` hold with no cast; what is here is its relation to
-the Kronecker product: it is the vec-permutation (commutation) matrix, `Π_{p,r} vec X = vec Xᵀ` for
-`X ∈ R^{r×p}` (`perfectShuffle_mulVec_vecFin`), which is the characterization every proof goes
-through, and (1.3.5) `perfectShuffle_mul_kroneckerFin_mul_transpose`.
-
-**Kronecker products of families and the Khatri–Rao product.** The Kronecker product of a family
-`Matrix.piKronecker M : Matrix (∀ i, μ i) (∀ i, κ i) R`, `(a, b) ↦ ∏ i, M i (a i) (b i)` (the
-matrix of the multilinear product of `Numlib/LinearAlgebra/Tensor`), with its flattening to the
-book's reversed-order `M_d ⊗ ⋯ ⊗ M_1`; the column-wise Khatri–Rao product and its family version;
-the Tracy–Singh product as a reindexed Kronecker product; and the algebraic facts of
-[golub2013matrix] §12.3.1 that Mathlib lacks (rank, permutation and stochastic matrices). The norm,
-eigenvalue, singular-value and triangular-factor facts of §12.3.1 need the SVD, the Schur form and the
-LU/Cholesky specifications, so they are in the child module `Numlib/LinearAlgebra/Matrix/Kronecker/Spectral`
-(split off at the review of the Golub–Van Loan round), which keeps this module — and
-`Numlib/LinearAlgebra/Tensor/Basic`, which imports it — free of the factorization layer.
-
-Consumers: Golub–Van Loan §1.2.11, §1.3.6–1.3.8, §1.4 (the Haar recursion, the radix-2 FFT),
-§4.8 (Kronecker forms of the fast Poisson solvers), §12.3 (the Kronecker product SVD and the
-nearest Kronecker product) and §12.4 (unfoldings).
-
-Searched and not duplicated: `Matrix.vec`, `Matrix.kronecker_mulVec_vec`, `Matrix.inv_kronecker`
-(Mathlib, reused); `Matrix.kroneckerFin`, `Matrix.perfectShuffle`, `Matrix.commutationMatrix`,
-`Matrix.reshape`, `vecPerm` (absent from Mathlib and `Numlib`). `Matrix.kroneckerVec` and
-`Matrix.kroneckerSum_mulVec_kroneckerVec` of `Numlib/LinearAlgebra/Matrix/KroneckerSum` are Kronecker
-facts on product types — `kroneckerVec x y` is the elementary tensor `x ⊗ y` (the vector `(B ⊗ C)(y ⊗ z)`
-of §12.3.1 is built from it) — and are used here (`unvec`) and in `Kronecker/Spectral`; today this module
-imports `KroneckerSum` for them. Refactor task (recorded in `notes/gvl/consolidation.md` §R): move
-`kroneckerVec` and the elementary-tensor lemmas into this module and let `KroneckerSum` import `Kronecker`,
-the natural direction (the Kronecker sum is built from the product).
-'''
+[[node]]
+id = "kroneckerVec"
 
 [[node]]
 id = "kroneckerFin"
-kind = "definition"
-desc = '''The Kronecker product in positional layout: for `[Mul R]`, `A : Matrix (Fin m₁) (Fin n₁) R`,
-`B : Matrix (Fin m₂) (Fin n₂) R`, `kroneckerFin A B : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) R :=
-(A ⊗ₖ B).submatrix finProdFinEquiv.symm finProdFinEquiv.symm` (equivalently `reindex
-finProdFinEquiv finProdFinEquiv (A ⊗ₖ B)`). ★'''
-deps = []
 
 [[node]]
 id = "kroneckerFin_apply"
-kind = "theorem"
-desc = '''`kroneckerFin A B (finProdFinEquiv (i₁, i₂)) (finProdFinEquiv (j₁, j₂)) = A i₁ j₁ * B i₂ j₂`
-(`@[simp]`): the `(i₁, j₁)` block of `A ⊗ B` is `A i₁ j₁ • B`. `Equiv.symm_apply_apply`,
-`kronecker_apply`. ★'''
-deps = ["kroneckerFin"]
 
 [[node]]
 id = "transpose_kroneckerFin"
-kind = "theorem"
-desc = '''`(kroneckerFin A B)ᵀ = kroneckerFin Aᵀ Bᵀ` ([golub2013matrix] (1.3.1)); Mathlib
-`kroneckerMap_transpose` through `transpose_submatrix`. ★'''
-deps = ["kroneckerFin"]
 
 [[node]]
 id = "kroneckerFin_mul_kroneckerFin"
-kind = "theorem"
-desc = '''The mixed-product rule over a `CommSemiring R`: `kroneckerFin A B * kroneckerFin C D =
-kroneckerFin (A * C) (B * D)` for conformable `Fin` shapes ([golub2013matrix] (1.3.2)); Mathlib
-`mul_kronecker_mul` and `submatrix_mul_equiv`. ★'''
-deps = ["kroneckerFin"]
 
 [[node]]
 id = "inv_kroneckerFin"
-kind = "theorem"
-desc = '''`(kroneckerFin A B)⁻¹ = kroneckerFin A⁻¹ B⁻¹` for square `A`, `B` over a `CommRing` — with Lean's
-`nonsing_inv` convention it needs no hypothesis ([golub2013matrix] (1.3.3) assumes both
-nonsingular); Mathlib `inv_kronecker` and `inv_submatrix_equiv`. ★'''
-deps = ["kroneckerFin"]
 
 [[node]]
 id = "kroneckerFin_one_one"
-kind = "theorem"
-desc = '''`kroneckerFin (1 : Matrix (Fin m) (Fin m) R) (1 : Matrix (Fin n) (Fin n) R) = 1`; Mathlib
-`one_kronecker_one`, `submatrix_one_equiv`. Used for `W₂ ⊗ I_m` in the Haar recursion and for
-`I ⊗ F_m` in the radix-2 FFT. ★'''
-deps = ["kroneckerFin"]
 
 [[node]]
 id = "kroneckerFin_assoc"
-kind = "theorem"
-desc = '''Associativity ([golub2013matrix] (1.3.4)) in positional layout, over a `Semigroup R`:
-`kroneckerFin A (kroneckerFin B C) = (kroneckerFin (kroneckerFin A B) C).submatrix (finCongr
-(Nat.mul_assoc m₁ m₂ m₃)).symm (finCongr (Nat.mul_assoc n₁ n₂ n₃)).symm` (the index types `Fin (m₁ *
-(m₂ * m₃))` and `Fin (m₁ * m₂ * m₃)` differ by `Nat.mul_assoc`). Mathlib `kronecker_assoc` plus the
-index identity `finProdFinEquiv (a, finProdFinEquiv (b, c)) = finCongr _ (finProdFinEquiv
-(finProdFinEquiv (a, b), c))`, i.e. `c + m₃ (b + m₂ a) = c + m₃ b + m₂ m₃ a` in `ℕ` (`Fin.ext`,
-`ring`/`omega`). ★★'''
-deps = ["kroneckerFin", "kroneckerFin_apply"]
 
 [[node]]
 id = "vecFin"
-kind = "definition"
-desc = '''Column stacking in positional layout: `vecFin (X : Matrix (Fin m) (Fin n) R) : Fin (n * m) → R :=
-vec X ∘ finProdFinEquiv.symm`, so `vecFin X (finProdFinEquiv (j, i)) = X i j` — entry `(i, j)` at
-position `j m + i` ([golub2013matrix] §1.3.7, `vec(X) = [X(:,1); …; X(:,n)]`). ★'''
-deps = []
 
 [[node]]
 id = "vecFin_apply"
-kind = "theorem"
-desc = '''`@[simp] vecFin X (finProdFinEquiv (j, i)) = X i j`; `rfl` up to `Equiv.symm_apply_apply`. ★'''
-deps = ["vecFin"]
 
 [[node]]
 id = "vecFin_injective"
-kind = "theorem"
-desc = '''`Function.Injective (vecFin : Matrix (Fin m) (Fin n) R → Fin (n * m) → R)`; Mathlib
-`vec_inj`/`vec_bijective` composed with an equivalence. ★'''
-deps = ["vecFin"]
 
 [[node]]
 id = "kroneckerFin_mulVec_vecFin"
-kind = "theorem"
-desc = '''The reshaping identity ([golub2013matrix] (1.3.6)) over a `CommSemiring R`: for `B : Matrix (Fin m₁)
-(Fin n₁) R`, `C : Matrix (Fin m₂) (Fin n₂) R`, `X : Matrix (Fin n₂) (Fin n₁) R`, `kroneckerFin B C *ᵥ
-vecFin X = vecFin (C * X * Bᵀ)`. Mathlib `kronecker_mulVec_vec` transported along
-`finProdFinEquiv` (`submatrix_mulVec_equiv`). The book's `Y = C X Bᵀ ↔ vec Y = (B ⊗ C) vec X` is
-this with `vecFin_injective`. ★'''
-deps = ["kroneckerFin", "vecFin", "vecFin_injective"]
 
 [[node]]
 id = "reshape"
-kind = "definition"
-desc = '''`reshape (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n₁ * m₁ = n * m) : Matrix (Fin m₁) (Fin n₁) R
-:= of fun i j => vecFin A (Fin.cast h (finProdFinEquiv (j, i)))` — the unique `m₁ × n₁` matrix with the
-same column stacking ([golub2013matrix] §1.3.7, `reshape(A, m₁, n₁)`, `vec(B) = vec(A)`). The size
-hypothesis is an argument, as in MATLAB where a mismatch is an error. ★'''
-deps = ["vecFin"]
 
 [[node]]
 id = "vecFin_reshape"
-kind = "theorem"
-desc = '''`vecFin (reshape A m₁ n₁ h) = vecFin A ∘ Fin.cast h`, the defining property; with `vecFin_injective`
-it characterizes `reshape`. `funext` over `finProdFinEquiv`. ★'''
-deps = ["reshape", "vecFin_injective"]
 
 [[node]]
 id = "unvec"
-kind = "definition"
-desc = '''`unvec u : Matrix m n K := of fun i j => u (j, i)` for `u : n × m → K`, the inverse of Mathlib's
-`Matrix.vec` (`unvec_vec`, `vec_unvec`, and `unvecLinearEquiv`); the book's `reshape(u, m, n)` in typed
-form ([golub2013matrix] §12.3.4) — the product-type form of `reshape`, which stays the positional
-definition (`reshape_eq_unvec`). Planned by chapter 12 in `KroneckerApprox`, placed here beside `vec`
-and `reshape` at the Golub–Van Loan consolidation. `unvec (Matrix.kroneckerVec v u)`-type lemma: `unvec` of the
-elementary tensor `(j, i) ↦ v j * u i` is `vecMulVec u v` (the book's `reshape(v ⊗ u, m, n) = u vᵀ`). ★'''
-deps = ["kroneckerVec"]
 
 [[node]]
 id = "reshape_eq_unvec"
-kind = "theorem"
-desc = '''The bridge between the two readings of MATLAB's `reshape`: `reshape A m₁ n₁ h = unvec ((vecFin A ∘ Fin.cast h)
-∘ finProdFinEquiv)` — the positional `reshape` of [golub2013matrix] §1.3.7 is the typed inverse of `vec` read
-through the positional layout; equivalently `vec (reshape A m₁ n₁ h) = vecFin A ∘ Fin.cast h ∘ finProdFinEquiv`.
-`ext`, `reshape`, `unvec`, `vecFin_apply`. ★'''
-deps = ["reshape", "unvec", "vecFin_reshape"]
 
 [[node]]
 id = "perfectShuffle_mulVec_vecFin"
-kind = "theorem"
-desc = '''The perfect shuffle is the vec-permutation (commutation) matrix: for `X : Matrix (Fin r) (Fin p) R`,
-`perfectShuffle p r *ᵥ vecFin X = vecFin Xᵀ` — the `p` piles are the columns of `X`. From
-`perfectShuffle_mulVec`, `vecFin_apply`, `finPerfectShuffle_apply`. ★'''
-deps = ["perfectShuffle_mulVec", "vecFin_apply"]
 
 [[node]]
 id = "kronecker_submatrix_swap"
-kind = "theorem"
-desc = '''The commutation of the Kronecker product on product types, over a `CommMagma`/`CommSemiring`:
-`(A ⊗ₖ B).submatrix Prod.swap Prod.swap = B ⊗ₖ A`; `ext`, `mul_comm`. Searched Mathlib:
-`kronecker_comm`, `kroneckerMap_swap`, `kronecker_reindex_prodComm` — absent (Mathlib only reindexes
-by `prodComm` inside `kroneckerMap_diagonal_left`). ★'''
-deps = []
 
 [[node]]
 id = "perfectShuffle_mul_kroneckerFin_mul_transpose"
-kind = "theorem"
-desc = '''[golub2013matrix] (1.3.5): for `B : Matrix (Fin m₁) (Fin n₁) R`, `C : Matrix (Fin m₂) (Fin n₂) R` over a
-`CommSemiring`, `perfectShuffle m₁ m₂ * kroneckerFin B C * (perfectShuffle n₁ n₂)ᵀ = kroneckerFin C B`
-(both sides `Matrix (Fin (m₂ * m₁)) (Fin (n₂ * n₁)) R`). Permutation matrices act as `submatrix`
-(`PEquiv.toMatrix_toPEquiv_mul`, `mul_toPEquiv_toMatrix`), after which the identity is
-`kronecker_submatrix_swap` read through `finProdFinEquiv`. ★★'''
-deps = ["perfectShuffle", "kroneckerFin", "transpose_perfectShuffle", "kronecker_submatrix_swap", "kroneckerFin_apply"]
 
 [[node]]  # staged by ch12
 id = "piKronecker"
-kind = "definition"
-desc = '''The Kronecker product of a finite family of matrices: `piKronecker (M : ∀ i, Matrix (μ i) (κ i) R) :
-Matrix (∀ i, μ i) (∀ i, κ i) R := of fun a b => ∏ i, M i (a i) (b i)` (`[Fintype ι]`, `[CommSemiring R]`);
-for `ι = Fin 2` it is `M 0 ⊗ₖ M 1` up to `Equiv.piFinTwo` (`piKronecker_fin_two`). Prototype
-`notes/gvl/ch12/proto/Tensor.lean`. [golub2013matrix] §12.3.10, §12.4.11. ★'''
-deps = []
 
 [[node]]  # staged by ch12
 id = "piKronecker_mul_piKronecker"
-kind = "theorem"
-desc = '''`piKronecker N * piKronecker M = piKronecker (fun i => N i * M i)` (the family form of Mathlib's
-`Matrix.mul_kronecker_mul`, (1.3.2)): `Finset.prod_univ_sum` (`Fintype.prod_sum`) exchanges `∏ i ∑ c` and
-`∑ c ∏ i`. Also `piKronecker (fun i => 1) = 1`, `piKronecker_mulVec_rankOne` (`piKronecker M *ᵥ (fun b => ∏
-z i (b i)) = fun a => ∏ i, (M i *ᵥ z i) (a i)`, the eigenvector statement `(B ⊗ C)(y ⊗ z) = βγ (y ⊗ z)` of
-§12.3.1 in family form). ★'''
-deps = ["Matrix.piKronecker"]
 
 [[node]]  # staged by ch12
 id = "conjTranspose_piKronecker"
-kind = "theorem"
-desc = '''`(piKronecker M)ᴴ = piKronecker (fun i => (M i)ᴴ)` and the transpose twin; hence `piKronecker` of
-unitary (orthogonal) matrices is unitary, and of matrices with orthonormal columns has orthonormal
-columns (`piKronecker_mem_unitaryGroup`, the family form of Mathlib's `Matrix.kronecker_mem_unitary`). ★'''
-deps = ["Matrix.piKronecker", "Matrix.piKronecker_mul_piKronecker"]
 
 [[node]]  # staged by ch12
 id = "piKronecker_reindex_finPiFinEquiv"
-kind = "theorem"
-desc = '''The book's flattening of a family Kronecker product: for `M : ∀ k : Fin (d + 1), Matrix (Fin (m k)) (Fin (n
-k)) R`, `(piKronecker M).reindex finPiFinEquiv finPiFinEquiv` equals `kroneckerFin (M (Fin.last d))
-((piKronecker (M ∘ Fin.castSucc)).reindex finPiFinEquiv finPiFinEquiv)` up to the `finCongr` of
-`Fin.prod_univ_castSucc` and commutativity of the size products (chapter 1's `Matrix.kroneckerFin`, the
-`Fin (m₁ m₂)` layout of `B ⊗ C`). By induction, the flattened `piKronecker` is `M_d ⊗ ⋯ ⊗ M_1` — reversed,
-because `finPiFinEquiv` (the book's `col`) is little-endian while `finProdFinEquiv` is big-endian. The single
-conversion lemma between the typed tensor statements and [golub2013matrix] (12.4.15), (12.4.19), Theorem
-12.4.1, (12.5.9). `Tensor.finPiFinEquiv_snoc`. ★★ (~70 lines; writing the `finCongr` inline is error-prone,
-see the prototype's note)'''
-deps = ["Matrix.piKronecker", "Tensor.finPiFinEquiv_snoc"]
 
 [[node]]  # staged by ch12
 id = "khatriRao"
-kind = "definition"
-desc = '''The column-wise Khatri–Rao product ([golub2013matrix] §12.3.3): `khatriRao (B : Matrix m₁ r R) (C : Matrix m₂ r
-R) : Matrix (m₁ × m₂) r R := of fun ik j => B ik.1 j * C ik.2 j` (column `j` is `b_j ⊗ c_j`);
-`khatriRao_eq_submatrix_kronecker : khatriRao B C = (B ⊗ₖ C).submatrix id (fun j => (j, j))` (a submatrix of
-`B ⊗ C`, as the book says), and the Hadamard twin `hadamard_eq_submatrix_kronecker : A ⊙ B = (A ⊗ₖ
-B).submatrix (fun i => (i, i)) (fun j => (j, j))`. ★'''
-deps = []
 
 [[node]]  # staged by ch12
 id = "khatriRao_transpose_mul_self"
-kind = "theorem"
-desc = '''The Gram matrix of a Khatri–Rao product ([golub2013matrix] (12.5.20)): `(khatriRao B C)ᵀ * khatriRao B C = (Bᵀ
-* B) ⊙ (Cᵀ * C)`, and the `ᴴ` twin. Proved in the prototype (`Fintype.sum_prod_type`,
-`Finset.sum_mul_sum`, `ring`). ★'''
-deps = ["Matrix.khatriRao"]
 
 [[node]]  # staged by ch12
 id = "piKhatriRao"
-kind = "definition"
-desc = '''The Khatri–Rao product of a family: `piKhatriRao (F : ∀ i, Matrix (κ i) r R) : Matrix (∀ i, κ i) r R := of
-fun a j => ∏ i, F i (a i) j`, the typed form of [golub2013matrix]'s `F⁽ᵈ⁾ ⊙ ⋯ ⊙ F⁽¹⁾` (§12.5.4);
-`piKhatriRao_apply`, `piKhatriRao_fin_two` (the binary `khatriRao` up to `Equiv.piFinTwo`). ★'''
-deps = ["Matrix.khatriRao"]
 
 [[node]]  # staged by ch12
 id = "tracySingh"
-kind = "definition"
-desc = '''The Tracy–Singh product of block matrices ([golub2013matrix] §12.3.2, (12.3.5)): for `B : Matrix (M₁ × m₁) (N₁ ×
-n₁) R`, `C : Matrix (M₂ × m₂) (N₂ × n₂) R` (outer index = block), `tracySingh B C : Matrix ((M₁ × M₂) × (m₁ ×
-m₂)) ((N₁ × N₂) × (n₁ × n₂)) R := of fun I J => B (I.1.1, I.2.1) (J.1.1, J.2.1) * C (I.1.2, I.2.2) (J.1.2,
-J.2.2)`; block `(I₁, J₁)` of it is the block matrix `[B_{I₁J₁} ⊗ C_{kl}]_{k,l}`. `tracySingh_eq_reindex_kronecker :
-tracySingh B C = (B ⊗ₖ C).reindex (Equiv.prodProdProdComm _ _ _ _) (Equiv.prodProdProdComm _ _ _ _)` — the
-typed (12.3.6); the book's explicit perfect-shuffle factors (12.3.7)–(12.3.8) are its flattening (surface). ★'''
-deps = []
 
 [[node]]  # staged by ch12
 id = "rank_kronecker"
-kind = "theorem"
-desc = '''`(B ⊗ₖ C).rank = B.rank * C.rank` over a field ([golub2013matrix] §12.3.1). Mathlib has `Matrix.toLin_kronecker`
-(`toLin (B ⊗ₖ C) = TensorProduct.map (toLin B) (toLin C)` up to bases) and the range of a tensor product of
-maps is the tensor product of ranges over a field (`LinearMap.range_map_eq`-type, `Module.finrank_tensorProduct`).
-Consumer: `Matrix.rank_hadamard_le`. ★★ (~60 lines)'''
-deps = []
 
 [[node]]  # staged by ch12
 id = "rank_hadamard_le"
-kind = "theorem"
-desc = '''`(A ⊙ B).rank ≤ A.rank * B.rank` over a field: `hadamard_eq_submatrix_kronecker`, Mathlib
-`Matrix.rank_submatrix_le`, `rank_kronecker`. Consumer: [golub2013matrix] (12.2.7) (`IsQuasiseparable.hadamard`). ★'''
-deps = ["Matrix.rank_kronecker", "Matrix.khatriRao"]
 
 [[node]]  # staged by ch12
 id = "permMatrix_kronecker_permMatrix"
-kind = "theorem"
-desc = '''The Kronecker product of permutation matrices is a permutation matrix ([golub2013matrix] §12.3.1, (12.3.2)
-typed): `σ.permMatrix R ⊗ₖ τ.permMatrix R = (σ.prodCongr τ).permMatrix R` (`Equiv.Perm.permMatrix`,
-`Equiv.prodCongr`). The book's index vector `w = (1_m ⊗ q) + n (p − 1_m) ⊗ 1_n` is its flattening by
-`finProdFinEquiv` (surface). ★'''
-deps = []
 
 [[node]]  # staged by ch12
 id = "kronecker_mem_rowStochastic"
-kind = "theorem"
-desc = '''`B ∈ rowStochastic R m → C ∈ rowStochastic R n → B ⊗ₖ C ∈ rowStochastic R (m × n)` and the column twin
-(Mathlib `Matrix.rowStochastic`/`colStochastic` of `Mathlib/LinearAlgebra/Matrix/Stochastic`; nonnegative
-entries multiply, `(B ⊗ C) 1 = (B 1) ⊗ (C 1)`). [golub2013matrix] §12.3.1, "(stochastic) ⊗ (stochastic)". ★'''
-deps = []

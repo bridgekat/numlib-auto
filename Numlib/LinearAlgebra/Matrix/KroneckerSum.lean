@@ -4,8 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.Kronecker`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.Kronecker
 
 /-!
 # The Kronecker sum and separation of variables
@@ -16,7 +17,8 @@ Kronecker *product* `A ⊗ₖ B` and its algebra but neither this construction n
 statement about it, and this file supplies both.
 
 The point is separation of variables.  On the elementary tensor `kroneckerVec v w`, whose `(i, j)`
-entry is `v i * w j`, one has
+entry is `v i * w j` (`Numlib.LinearAlgebra.Matrix.Kronecker`, which also has the factor-by-factor
+action `Matrix.kronecker_mulVec` of a Kronecker product on it), one has
 
 `(A ⊕ₖ B) *ᵥ (v ⊗ w) = (A *ᵥ v) ⊗ w + v ⊗ (B *ᵥ w)`,
 
@@ -40,7 +42,6 @@ proof.
 ## Main definitions
 
 * `Matrix.kroneckerSum`, written `A ⊕ₖ B`: the Kronecker sum `A ⊗ₖ 1 + 1 ⊗ₖ B`.
-* `Matrix.kroneckerVec`: the elementary tensor `v ⊗ w` of two vectors.
 * `Matrix.kroneckerOrthonormalBasis`: the orthonormal basis of `EuclideanSpace 𝕜 (m × n)` made of
   the elementary tensors of two orthonormal bases.
 
@@ -51,6 +52,10 @@ proof.
   eigenvalues add.
 * `Matrix.isCoerciveWith_kroneckerSum`, `Matrix.isSymmetricBoundedBy_kroneckerSum` and
   `Matrix.posDef_kroneckerSum`: quadratic-form bounds add, with no eigenvalue named.
+* `Matrix.kroneckerSum_mulVec_vec`: on `vec X`, the Kronecker sum is the Sylvester operator
+  `X ↦ B X + X Aᵀ`.
+* `Matrix.kroneckerSum_hasBandwidth`: in the positional layout `Fin (n₂ * n₁)`, `A₂ ⊕ₖ A₁` with `A₂`
+  tridiagonal has bandwidth `n₁` (the five-point structure).
 
 ## Notation
 
@@ -59,7 +64,9 @@ proof.
 ## Implementation notes
 
 Everything here is indexed by the product type `m × n`, matching Mathlib's `kroneckerMap`; a
-consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product equivalence.
+consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product equivalence,
+as the band statements do with `finProdFinEquiv` (the positional layout of
+`Numlib.LinearAlgebra.Matrix.Kronecker`).
 -/
 
 open scoped Matrix Kronecker
@@ -70,7 +77,7 @@ namespace Matrix
 
 section Ring
 
-variable {R : Type*} [CommRing R] {l m n p : Type*}
+variable {R : Type*} [CommRing R] {m n : Type*}
 
 section Def
 
@@ -109,6 +116,13 @@ theorem kroneckerSum_smul (c : R) (A : Matrix m m R) (B : Matrix n n R) :
 theorem kroneckerSum_zero_zero : (0 : Matrix m m R) ⊕ₖ (0 : Matrix n n R) = 0 := by
   simp [kroneckerSum]
 
+/-- Transposition distributes over a Kronecker sum. -/
+theorem transpose_kroneckerSum (A : Matrix m m R) (B : Matrix n n R) :
+    (A ⊕ₖ B)ᵀ = Aᵀ ⊕ₖ Bᵀ := by
+  ext ⟨i₁, i₂⟩ ⟨j₁, j₂⟩
+  rw [transpose_apply, kroneckerSum_apply, kroneckerSum_apply, transpose_apply, transpose_apply]
+  congr 1 <;> exact if_congr eq_comm rfl rfl
+
 /-- Conjugate transposition distributes over a Kronecker sum. -/
 theorem conjTranspose_kroneckerSum [StarRing R] (A : Matrix m m R) (B : Matrix n n R) :
     (A ⊕ₖ B)ᴴ = Aᴴ ⊕ₖ Bᴴ := by
@@ -121,41 +135,7 @@ theorem isHermitian_kroneckerSum [StarRing R] {A : Matrix m m R} {B : Matrix n n
 
 end Def
 
-/-! ### Elementary tensors -/
-
-/-- The Kronecker product of two vectors: `kroneckerVec v w (i, j) = v i * w j`. -/
-def kroneckerVec (v : m → R) (w : n → R) : m × n → R := fun q => v q.1 * w q.2
-
-@[simp]
-theorem kroneckerVec_apply (v : m → R) (w : n → R) (i : m) (j : n) :
-    kroneckerVec v w (i, j) = v i * w j := rfl
-
-/-- A scalar on the left factor of an elementary tensor scales the tensor. -/
-theorem kroneckerVec_smul_left (c : R) (v : m → R) (w : n → R) :
-    kroneckerVec (c • v) w = c • kroneckerVec v w := by
-  funext q; simp [kroneckerVec, mul_assoc]
-
-/-- A scalar on the right factor of an elementary tensor scales the tensor. -/
-theorem kroneckerVec_smul_right (c : R) (v : m → R) (w : n → R) :
-    kroneckerVec v (c • w) = c • kroneckerVec v w := by
-  funext q; simp [kroneckerVec, mul_left_comm]
-
-/-- An elementary tensor of two nonzero vectors is nonzero. -/
-theorem kroneckerVec_ne_zero [NoZeroDivisors R] {v : m → R} {w : n → R} (hv : v ≠ 0)
-    (hw : w ≠ 0) : kroneckerVec v w ≠ 0 := by
-  obtain ⟨i, hi⟩ := Function.ne_iff.1 hv
-  obtain ⟨j, hj⟩ := Function.ne_iff.1 hw
-  intro h
-  exact mul_ne_zero hi hj (by simpa using congrFun h (i, j))
-
-/-- The Kronecker product of matrices acts on an elementary tensor factor by factor. -/
-theorem kronecker_mulVec [Fintype m] [Fintype n] (A : Matrix l m R) (B : Matrix p n R)
-    (v : m → R) (w : n → R) :
-    (A ⊗ₖ B) *ᵥ kroneckerVec v w = kroneckerVec (A *ᵥ v) (B *ᵥ w) := by
-  funext q
-  simp only [mulVec_apply_eq_sum, Fintype.sum_prod_type, kroneckerVec, kroneckerMap_apply]
-  rw [Fintype.sum_mul_sum]
-  exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
+/-! ### Separation of variables -/
 
 variable [DecidableEq m] [DecidableEq n]
 
@@ -173,6 +153,65 @@ theorem kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul [Fintype m] [Fintype 
     (A ⊕ₖ B) *ᵥ kroneckerVec v w = (σ + μ) • kroneckerVec v w := by
   rw [kroneckerSum_mulVec_kroneckerVec, hv, hw, kroneckerVec_smul_left,
     kroneckerVec_smul_right, add_smul]
+
+/-! ### Vectorization and band structure -/
+
+/-- The Kronecker sum on Mathlib's column stacking `Matrix.vec`:
+`(A ⊕ₖ B) vec X = vec (B X + X Aᵀ)`, so the linear system `(A ⊕ₖ B) vec X = vec C` is the Sylvester
+equation `B X + X Aᵀ = C` ([golub2013matrix] (4.8.12)). -/
+theorem kroneckerSum_mulVec_vec [Fintype m] [Fintype n] (A : Matrix m m R) (B : Matrix n n R)
+    (X : Matrix n m R) : (A ⊕ₖ B) *ᵥ vec X = vec (B * X + X * Aᵀ) := by
+  rw [kroneckerSum, add_mulVec, kronecker_mulVec_vec, kronecker_mulVec_vec, Matrix.one_mul,
+    transpose_one, Matrix.mul_one, ← vec_add, add_comm]
+
+section Band
+
+variable {n₁ n₂ : ℕ}
+
+/-- In the positional layout `Fin (n₂ * n₁)`, the Kronecker sum `A₂ ⊕ₖ A₁` of an `A₂` of lower
+bandwidth `1` with any `A₁` has lower bandwidth `n₁`: a block of `A₁` is `n₁ × n₁`, and `A₂` couples
+only neighbouring blocks. -/
+theorem kroneckerSum_hasLowerBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
+    (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.HasLowerBandwidth 1) :
+    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasLowerBandwidth n₁ := by
+  rw [hasLowerBandwidth_iff_fin] at h₂ ⊢
+  intro I J hIJ
+  obtain ⟨⟨j, i⟩, rfl⟩ := finProdFinEquiv.surjective I
+  obtain ⟨⟨j', i'⟩, rfl⟩ := finProdFinEquiv.surjective J
+  simp only [finProdFinEquiv_apply_val] at hIJ
+  rw [submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply, kroneckerSum_apply]
+  have hi := i.is_lt
+  have hjj : (j : ℕ) ≠ j' := by
+    intro h
+    rw [h] at hIJ
+    omega
+  rw [ite_eq_right fun h : j = j' => hjj (congrArg Fin.val h), add_zero]
+  split_ifs with hii
+  · subst hii
+    refine h₂ j j' ?_
+    have : n₁ * ((j' : ℕ) + 1) < n₁ * j := by rw [mul_add_one]; omega
+    have := Nat.lt_of_mul_lt_mul_left this
+    omega
+  · rfl
+
+/-- The upper-bandwidth twin of `Matrix.kroneckerSum_hasLowerBandwidth`, by transposition. -/
+theorem kroneckerSum_hasUpperBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
+    (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.HasUpperBandwidth 1) :
+    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasUpperBandwidth n₁ := by
+  rw [hasUpperBandwidth_iff_transpose, transpose_submatrix, transpose_kroneckerSum]
+  exact kroneckerSum_hasLowerBandwidth A₁ᵀ (hasUpperBandwidth_iff_transpose.1 h₂)
+
+/-- The five-point structure ([golub2013matrix] §4.8.4): in the positional layout, the Kronecker sum
+`A₂ ⊕ₖ A₁` of a tridiagonal `A₂` with any `A₁` has lower and upper bandwidth `n₁` (the book's
+"bandwidth `n₁ + 1`" counts the diagonal). -/
+theorem kroneckerSum_hasBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
+    (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.IsTridiagonal) :
+    ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasLowerBandwidth n₁ ∧
+      ((A₂ ⊕ₖ A₁).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).HasUpperBandwidth n₁ :=
+  ⟨kroneckerSum_hasLowerBandwidth A₁ (isTridiagonal_iff_hasBandwidth_one.1 h₂).1,
+    kroneckerSum_hasUpperBandwidth A₁ (isTridiagonal_iff_hasBandwidth_one.1 h₂).2⟩
+
+end Band
 
 end Ring
 
