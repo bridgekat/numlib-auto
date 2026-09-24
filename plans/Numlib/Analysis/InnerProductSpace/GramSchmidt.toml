@@ -17,3 +17,15 @@ id = "modifiedGramSchmidtSweep_eq_sub_sum"
 
 [[node]]
 id = "modifiedGramSchmidt_eq_gramSchmidt"
+
+[[node]]
+id = "gramSchmidt_comp_linearIsometry"
+
+[[node]]
+id = "gramSchmidtNormed_comp_linearIsometry"
+
+[[node]]
+id = "modifiedGramSchmidtSweep_congr"
+
+[[node]]
+id = "inner_modifiedGramSchmidtSweep_self"

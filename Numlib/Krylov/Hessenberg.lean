@@ -10,6 +10,8 @@ import Numlib.LinearAlgebra.Matrix.PlaneRotation
   *unrelated* families, the iterate basis `z` on the left and the residual basis `v` on the right,
   *without* orthogonality; flexible GMRES ([saad2003iterative] (9.22), where `z_j = M_j⁻¹ v_j` for a
   step-dependent preconditioner) and TFQMR ([saad2003iterative] (7.70)) are genuinely two-family.
+  The operator may map between two modules, `A : E →ₗ[𝕜] F` with `z` in `E` and `v` in `F`, as in
+  the bidiagonalization `A v_j = α_j u_j + β_{j+1} u_{j+1}` behind LSQR ([golub2013matrix] §11.4.2).
   `Krylov.HessenbergRelation A v h` is the diagonal case `z = v` ([saad2003iterative] (6.6)–(6.7)),
   so that the residual formulas `Krylov.HessenbergRelation₂.residual_eq` and
   `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` ([saad2003iterative] (6.18), (6.27) and
@@ -43,7 +45,7 @@ Galerkin (FOM) iterate, both over `x₀ + 𝒦_m`.
 
 open Krylov Finset
 
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {𝕜 : Type*} [RCLike 𝕜]
 
 namespace Krylov
 
@@ -58,11 +60,21 @@ def hessenbergSqOf (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m)
 /-- `β e₁ ∈ 𝕜^m`. -/
 def firstVec (β : 𝕜) (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0 then β else 0
 
+section Relation
+
+variable {E F : Type*} [AddCommGroup E] [Module 𝕜 E] [AddCommGroup F] [Module 𝕜 F]
+
 /-- A pair of sequences `z`, `v` satisfying the two-family Hessenberg relation `A z_j = ∑_{i ≤ j+1}
 h i j v_i` with `h` upper Hessenberg: the iterate basis `z` on the left, the residual basis `v` on
 the right ([saad2003iterative], (9.22) for FGMRES and (7.70) for TFQMR). `Krylov.HessenbergRelation`
-is the diagonal case `z = v`. -/
-structure HessenbergRelation₂ (A : E →ₗ[𝕜] E) (z v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
+is the diagonal case `z = v`.
+
+The operator may map between two spaces, `A : E →ₗ[𝕜] F` with `z` in `E` and `v` in `F`: nothing
+below uses more than the module structures, and the Paige–Saunders bidiagonalization
+`A v_j = α_j u_j + β_{j+1} u_{j+1}` behind LSQR ([golub2013matrix] §10.4, §11.4.2) is an instance
+of this shape, with lower bidiagonal coefficients. -/
+structure HessenbergRelation₂ (A : E →ₗ[𝕜] F) (z : ℕ → E) (v : ℕ → F) (h : ℕ → ℕ → 𝕜) :
+    Prop where
   /-- The expansion of `A z_j` in the residual basis up to `v_{j+1}`. -/
   apply_eq : ∀ j, A (z j) = ∑ i ∈ range (j + 2), h i j • v i
   /-- The coefficients are upper Hessenberg. -/
@@ -77,7 +89,8 @@ abbrev HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → �
 
 namespace HessenbergRelation₂
 
-variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation₂ A z v h)
+variable {A : E →ₗ[𝕜] F} {z : ℕ → E} {v : ℕ → F} {h : ℕ → ℕ → 𝕜}
+  (hv : HessenbergRelation₂ A z v h)
 include hv
 
 /-- The matrix `H̄_m` cut out of the coefficients of a two-family relation is upper Hessenberg. -/
@@ -110,7 +123,7 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
 /-- [saad2003iterative], (6.27) and (9.25): with `r₀ = β v₀`, the residual of `x₀ + Z_m y` is
 `V_{m+1} (β e₁ - H̄_m y)`. In the one-family case it is [saad2003iterative] (6.27) for FOM/GMRES and
 (7.16) for QMR; in the two-family case (7.75) for TFQMR and (9.25) for FGMRES. -/
-theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
+theorem residual_eq {b : F} {x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • z j) =
       ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i := by
   have hfirst : ∑ i : Fin (m + 1), firstVec β (m + 1) i • v i = β • v 0 := by
@@ -132,7 +145,7 @@ theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m :
 
 /-- [saad2003iterative], Prop 6.7 / (6.18), (7.76) and (9.23): if `H_m y = β e₁` then the residual
 of `x₀ + Z_m y` is `-(h_{m,m-1} y_{m-1}) v_m`. -/
-theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
+theorem residual_eq_of_mulVec_eq {b : F} {x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     (hm : 0 < m) (y : Fin m → 𝕜) (hy : (hessenbergSqOf h m).mulVec y = firstVec β m) :
     b - A (x₀ + ∑ j, y j • z j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
   rw [hv.residual_eq hr m y]
@@ -172,7 +185,11 @@ theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β 
 
 end HessenbergRelation₂
 
+end Relation
+
 end Krylov
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 namespace Arnoldi
 

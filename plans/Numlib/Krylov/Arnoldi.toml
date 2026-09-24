@@ -83,3 +83,24 @@ id = "w"
 
 [[node]]
 id = "w_eq_sub_starProjection"
+
+[[node]]
+id = "vec_conj_linearIsometryEquiv"
+
+[[node]]
+id = "coeff_conj_linearIsometryEquiv"
+
+[[node]]
+id = "mgsVec"
+
+[[node]]
+id = "mgsVec_succ"
+
+[[node]]
+id = "eq_vec_of_modifiedGramSchmidt"
+
+[[node]]
+id = "mgsVec_eq_vec"
+
+[[node]]
+id = "coeff_eq_inner_modifiedGramSchmidtSweep"

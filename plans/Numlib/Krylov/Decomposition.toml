@@ -255,15 +255,3 @@ has `W e₀ ∝ u` and `Wᴴ Cᴴ W` upper Hessenberg, i.e. `Wᴴ C W` lower Hes
 exchange permutation `E` (`Matrix.reindex Fin.revPerm`) turns lower into upper Hessenberg and sends
 `e₀` to the last unit vector. ★★'''
 deps = ["Matrix.IsUpperHessenberg", "Krylov.lastVec", "Matrix.hessenbergReduce_eq_conj", "Matrix.isUpperHessenberg_hessenbergReduce", "Matrix.householder"]
-
-[[node]]
-id = "Arnoldi.vec_conj_linearIsometryEquiv"
-kind = "theorem"
-desc = '''Naturality of the Arnoldi process under isometries: for a linear isometry equivalence `e : E ≃ₗᵢ[𝕜] E'`,
-`Arnoldi.vec (e.toLinearEquiv.conj A) (e b) j = e (Arnoldi.vec A b j)` and
-`Arnoldi.coeff (e.toLinearEquiv.conj A) (e b) = Arnoldi.coeff A b` (hence the same `Lanczos.alpha`, `Lanczos.beta`,
-`Lanczos.tridiag`, `Krylov.grade`). Gram–Schmidt commutes with isometries (Mathlib `gramSchmidt` is defined by inner
-products and `starProjection`s, both preserved; check for `InnerProductSpace.gramSchmidt_map` first) and
-`(e.conj A)^i (e b) = e (A^i b)`. Transports statements between `WithLp 2 (F × E)` and `EuclideanSpace 𝕜 (m ⊕ n)`
-([golub2013matrix] §10.4.3) and between an operator and its matrix. ★★'''
-deps = ["Arnoldi.vec", "Arnoldi.coeff"]

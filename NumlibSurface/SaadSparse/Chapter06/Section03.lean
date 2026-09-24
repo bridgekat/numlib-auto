@@ -14,8 +14,11 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 Algorithm 6.1 (Arnoldi with classical Gram–Schmidt) is `arnoldiCGS`; its coefficients `h_{ij}`
 are `arnoldiCoeff` and its unnormalized vectors `w_j` are `arnoldiW`; the matrices `V_m`,
 `H̄_m`, `H_m` of §6.3.1 are `V`, `Hbar`, `H`. Algorithm 6.2 (modified Gram–Schmidt) is
-`arnoldiMGS`, with coefficients `arnoldiMGSCoeff`. Algorithm 6.3 (Householder Arnoldi) is
-`hhZ`, `hhW`, `hhV`, `hhH` with the reflectors `householder`, `householderVec` of Saad
+`arnoldiMGS`, with coefficients `arnoldiMGSCoeff`; its inner loop `mgsW` is the backbone sweep
+`InnerProductSpace.modifiedGramSchmidtSweep`, and it is identified with `Arnoldi.vec` through the
+backbone's modified Gram–Schmidt recurrence (`Arnoldi.eq_vec_of_modifiedGramSchmidt`, here
+`arnoldiMGS_eq_vec`), which Golub–Van Loan's Algorithm 10.5.1 shares. Algorithm 6.3 (Householder
+Arnoldi) is `hhZ`, `hhW`, `hhV`, `hhH` with the reflectors `householder`, `householderVec` of Saad
 (1.23)–(1.26); `Qhh` is the `Q_j` of (6.10).
 
 Indices are `0`-based: `arnoldiCGS A v₁ j` is the book's `v_{j+1}` and `arnoldiCoeff A v₁ i j`
@@ -441,35 +444,33 @@ noncomputable def mgsW (v : ℕ → 𝔼) (w₀ : 𝔼) : ℕ → 𝔼
   | 0 => w₀
   | k + 1 => mgsW v w₀ k - inner 𝕜 (v k) (mgsW v w₀ k) • v k
 
-private theorem mgsW_congr {v v' : ℕ → 𝔼} (w₀ : 𝔼) {k : ℕ} (h : ∀ i < k, v i = v' i) :
-    mgsW v w₀ k = mgsW v' w₀ k := by
+/-- The inner loop of Algorithm 6.2 is the backbone modified Gram–Schmidt sweep
+`InnerProductSpace.modifiedGramSchmidtSweep`, through which the lemmas below are proved. -/
+theorem mgsW_eq_modifiedGramSchmidtSweep (v : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
+    mgsW v w₀ k = InnerProductSpace.modifiedGramSchmidtSweep 𝕜 v w₀ k := by
   induction k with
   | zero => rfl
-  | succ k ih =>
-    rw [mgsW, mgsW, ih fun i hi => h i (hi.trans k.lt_succ_self), h k k.lt_succ_self]
+  | succ k ih => rw [mgsW, ih, InnerProductSpace.modifiedGramSchmidtSweep_succ]
+
+private theorem mgsW_congr {v v' : ℕ → 𝔼} (w₀ : 𝔼) {k : ℕ} (h : ∀ i < k, v i = v' i) :
+    mgsW v w₀ k = mgsW v' w₀ k := by
+  rw [mgsW_eq_modifiedGramSchmidtSweep, mgsW_eq_modifiedGramSchmidtSweep]
+  exact InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 w₀ h
 
 /-- The inner loop of modified Gram–Schmidt subtracts the same total as classical Gram–Schmidt,
 as soon as the `v_i` are pairwise orthogonal. -/
 theorem mgsW_eq_sub_sum {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
     (w₀ : 𝔼) (k : ℕ) :
     mgsW v w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (v i) w₀ • v i := by
-  induction k with
-  | zero => simp [mgsW]
-  | succ k ih =>
-    have hik : inner 𝕜 (v k) (mgsW v w₀ k) = inner 𝕜 (v k) w₀ := by
-      rw [ih, inner_sub_right, inner_sum]
-      refine sub_eq_self.2 (Finset.sum_eq_zero fun i hi => ?_)
-      rw [inner_smul_right, ho k i (Ne.symm (Finset.mem_range.1 hi).ne), mul_zero]
-    rw [mgsW, hik, ih, Finset.sum_range_succ]
-    abel
+  rw [mgsW_eq_modifiedGramSchmidtSweep]
+  exact InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum 𝕜 (fun i j h => ho i j h) w₀ k
 
 /-- For a pairwise orthogonal family the modified Gram–Schmidt loop does not change the
 coefficient it is about to compute: `(v_k, w)` after `k` subtractions is `(v_k, w_0)`. -/
 theorem inner_mgsW_self {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
     (w₀ : 𝔼) (k : ℕ) : inner 𝕜 (v k) (mgsW v w₀ k) = inner 𝕜 (v k) w₀ := by
-  rw [mgsW_eq_sub_sum ho, inner_sub_right, inner_sum]
-  refine sub_eq_self.2 (Finset.sum_eq_zero fun i hi => ?_)
-  rw [inner_smul_right, ho k i (Ne.symm (Finset.mem_range.1 hi).ne), mul_zero]
+  rw [mgsW_eq_modifiedGramSchmidtSweep]
+  exact InnerProductSpace.inner_modifiedGramSchmidtSweep_self 𝕜 (fun i j h => ho i j h) w₀ k
 
 /-- **Algorithm 6.2** (Arnoldi, modified Gram–Schmidt), `0`-based. The clamp `min i j` is
 invisible: the inner loop reads only `v_0, …, v_j`, where the clamped family agrees with
@@ -503,20 +504,17 @@ theorem arnoldiMGS_succ (j : ℕ) :
   rw [mgsW_congr (v := fun i => arnoldiMGS A v₁ (min i j)) (v' := arnoldiMGS A v₁)
     (op A (arnoldiMGS A v₁ j)) fun i hi => by rw [Nat.min_eq_left (Nat.lt_succ_iff.1 hi)]]
 
+/-- Algorithm 6.2 from a unit vector is the backbone modified Gram–Schmidt Arnoldi process, hence
+the Gram–Schmidt orthonormalization `Arnoldi.vec` of the Krylov sequence: it satisfies the
+recurrence that `Arnoldi.eq_vec_of_modifiedGramSchmidt` characterizes. -/
+theorem arnoldiMGS_eq_vec (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = Arnoldi.vec (op A) v₁ := by
+  refine Arnoldi.eq_vec_of_modifiedGramSchmidt (op A) v₁ (by simp [hv]) fun j => ?_
+  rw [arnoldiMGS_succ, arnoldiMGSW, mgsW_eq_modifiedGramSchmidtSweep]
+
 /-- §6.3.2: in exact arithmetic Algorithm 6.2 computes the same vectors as Algorithm 6.1. -/
 theorem arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiMGS A v₁ j = arnoldiCGS A v₁ j := by
-  induction j using Nat.strong_induction_on with
-  | _ j ih =>
-    rcases Nat.eq_zero_or_pos j with rfl | hj
-    · rw [arnoldiMGS_zero, arnoldiCGS_zero]
-    · obtain ⟨k, rfl⟩ : ∃ k, j = k + 1 := ⟨j - 1, by omega⟩
-      have hle : ∀ i < k + 1, arnoldiMGS A v₁ i = arnoldiCGS A v₁ i := fun i hi => ih i hi
-      have hw : arnoldiMGSW A v₁ k = arnoldiW A v₁ k := by
-        rw [arnoldiMGSW, mgsW_congr _ hle, hle k k.lt_succ_self,
-          mgsW_eq_sub_sum (fun a b hab => inner_arnoldiCGS_eq_zero A v₁ hv hab), arnoldiW]
-        rfl
-      rw [arnoldiMGS_succ, arnoldiCGS_succ, hw]
+  rw [arnoldiMGS_eq_vec A v₁ hv, arnoldiCGS_eq_vec A v₁ hv]
 
 /-- §6.3.2: in exact arithmetic Algorithm 6.2 computes the same coefficients as Algorithm 6.1. -/
 theorem arnoldiMGSCoeff_eq_arnoldiCoeff (hv : ‖v₁‖ = 1) (i j : ℕ) :

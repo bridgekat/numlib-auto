@@ -8,13 +8,22 @@ import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 
 /-!
-# Uniqueness of orthonormal bases of a flag
+# Gram–Schmidt: flag uniqueness, naturality, and the modified process
 
 An orthonormal family `u` with `span {u_0, …, u_j} = span {f_0, …, f_j}` for every `j` agrees with
 the Gram–Schmidt orthonormalization of `f` up to unimodular scalars, and equals it under the
 sign normalization `re ⟪u_j, f_j⟫ > 0`. This is the "same method, different implementation"
 principle behind classical/modified Gram–Schmidt Arnoldi, Householder Arnoldi (up to signs),
 and the identification of the Lanczos vectors with the normalized conjugate-gradient residuals.
+
+Gram–Schmidt commutes with linear isometries (`InnerProductSpace.gramSchmidt_comp_linearIsometry`,
+`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`), which carries every process built on it
+(Arnoldi, Lanczos) between isometric spaces, for instance from an operator to its matrix.
+
+The modified Gram–Schmidt sweep `InnerProductSpace.modifiedGramSchmidtSweep` subtracts the
+components along `q 0, q 1, …` one at a time, each against the current vector; against an
+orthogonal family it returns the classical vector and leaves each coefficient unchanged, so in
+exact arithmetic the modified process computes the Gram–Schmidt vectors.
 -/
 
 namespace InnerProductSpace
@@ -168,6 +177,33 @@ theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 
     rwa [RCLike.conj_conj, map_one] at this
   rw [hue, hε1, one_smul]
 
+section LinearIsometry
+
+variable {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E']
+
+/-- **Gram–Schmidt commutes with linear isometries**: orthogonalizing the image `e ∘ f` of a family
+under a linear isometry `e` gives the image of its Gram–Schmidt vectors. The process only sees
+inner products and norms, which `e` preserves. -/
+theorem gramSchmidt_comp_linearIsometry (e : E →ₗᵢ[𝕜] E') (f : ι → E) (n : ι) :
+    gramSchmidt 𝕜 (e ∘ f) n = e (gramSchmidt 𝕜 f n) := by
+  induction n using WellFoundedLT.induction with
+  | _ n ih =>
+    rw [eq_sub_of_add_eq (gramSchmidt_def'' 𝕜 (e ∘ f) n).symm,
+      eq_sub_of_add_eq (gramSchmidt_def'' 𝕜 f n).symm, map_sub, map_sum, Function.comp_apply]
+    congr 1
+    refine Finset.sum_congr rfl fun i hi => ?_
+    rw [ih i (Finset.mem_Iio.1 hi), LinearIsometry.inner_map_map,
+      LinearIsometry.norm_map, map_smul]
+
+/-- **Normalized Gram–Schmidt commutes with linear isometries**: the normalized form of
+`InnerProductSpace.gramSchmidt_comp_linearIsometry`. -/
+theorem gramSchmidtNormed_comp_linearIsometry (e : E →ₗᵢ[𝕜] E') (f : ι → E) (n : ι) :
+    gramSchmidtNormed 𝕜 (e ∘ f) n = e (gramSchmidtNormed 𝕜 f n) := by
+  rw [gramSchmidtNormed, gramSchmidtNormed, gramSchmidt_comp_linearIsometry,
+    LinearIsometry.norm_map, map_smul]
+
+end LinearIsometry
+
 section ModifiedGramSchmidt
 
 variable (𝕜)
@@ -198,6 +234,17 @@ theorem modifiedGramSchmidtSweep_succ (q : ℕ → E) (a : E) (j : ℕ) :
       inner 𝕜 (q j) (modifiedGramSchmidtSweep 𝕜 q a j) • q j :=
   rfl
 
+/-- The sweep up to step `k` reads only `q 0, …, q (k - 1)`: two families that agree there give the
+same vector. -/
+theorem modifiedGramSchmidtSweep_congr {q q' : ℕ → E} (a : E) {k : ℕ}
+    (h : ∀ i < k, q i = q' i) :
+    modifiedGramSchmidtSweep 𝕜 q a k = modifiedGramSchmidtSweep 𝕜 q' a k := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [modifiedGramSchmidtSweep_succ, modifiedGramSchmidtSweep_succ,
+      ih fun i hi => h i (hi.trans k.lt_succ_self), h k k.lt_succ_self]
+
 /-- **The modified sweep against an orthogonal family is the classical Gram–Schmidt vector**:
 `modifiedGramSchmidtSweep 𝕜 q a k = a - ∑ j < k, ⟪q j, a⟫ • q j`. Each subtraction leaves the
 inner products with the later `q j` unchanged, because the vector subtracted at step `i` is a
@@ -214,6 +261,17 @@ theorem modifiedGramSchmidtSweep_eq_sub_sum {q : ℕ → E}
       refine sub_eq_self.2 (Finset.sum_eq_zero fun j hj => ?_)
       rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
     rw [modifiedGramSchmidtSweep_succ, hinner, ih, Finset.sum_range_succ, sub_sub]
+
+/-- **The modified sweep does not change the coefficient it is about to compute**: against an
+orthogonal family, `⟪q k, modifiedGramSchmidtSweep 𝕜 q a k⟫ = ⟪q k, a⟫`, so the coefficients of the
+modified process (taken against the current vector) are those of the classical one (taken against
+`a`). -/
+theorem inner_modifiedGramSchmidtSweep_self {q : ℕ → E}
+    (hq : Pairwise fun i j => inner 𝕜 (q i) (q j) = 0) (a : E) (k : ℕ) :
+    inner 𝕜 (q k) (modifiedGramSchmidtSweep 𝕜 q a k) = inner 𝕜 (q k) a := by
+  rw [modifiedGramSchmidtSweep_eq_sub_sum 𝕜 hq, inner_sub_right, inner_sum]
+  refine sub_eq_self.2 (Finset.sum_eq_zero fun j hj => ?_)
+  rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
 
 /-- The rank-one term of the classical Gram–Schmidt formula, written with the normalized
 vectors: `⟪gramSchmidtNormed f i, x⟫ • gramSchmidtNormed f i` is the orthogonal projection of `x`

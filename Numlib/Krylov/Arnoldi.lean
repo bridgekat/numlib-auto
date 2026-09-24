@@ -1,5 +1,4 @@
-import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
-import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
+import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Hessenberg
@@ -17,6 +16,16 @@ j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book. Also 
 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the orthogonal projection onto `𝒦_m`
 ([saad2011numerical], P-6.1, which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`).
 Indices are `0`-based: `v 0 = b / ‖b‖`.
+
+Two further facts close the file. The process is natural under linear isometries
+(`Arnoldi.vec_conj_linearIsometryEquiv`, `Arnoldi.coeff_conj_linearIsometryEquiv`), which carries it
+between an operator and its matrix and between isometric models of one space; the proof is the
+naturality of Gram–Schmidt. And the modified Gram–Schmidt recurrence `Arnoldi.mgsVec`, whose inner
+loop subtracts the projections one at a time against the current vector ([saad2003iterative] Alg
+6.2, [golub2013matrix] Algorithm 10.5.1), computes the same vectors in exact arithmetic
+(`Arnoldi.mgsVec_eq_vec`); more generally any sequence satisfying that recurrence is `Arnoldi.vec`
+(`Arnoldi.eq_vec_of_modifiedGramSchmidt`), which is how a textbook's program is identified with the
+backbone.
 -/
 
 open Krylov
@@ -447,5 +456,119 @@ theorem starProjection_apply_vec (m : ℕ) :
   rcases eq_or_ne (w A b m) 0 with h | h
   · rw [h, smul_zero]
   · rw [mul_inv_cancel₀ (by simpa using norm_ne_zero_iff.2 h), one_smul]
+
+/-! ### Naturality under linear isometries -/
+
+section LinearIsometryEquiv
+
+variable {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] (e : E ≃ₗᵢ[𝕜] E')
+
+/-- The Krylov sequence of the conjugated operator from `e b` is the image of the Krylov sequence
+of `A` from `b`. -/
+private theorem pow_conj_apply (i : ℕ) (x : E) :
+    ((e.toLinearEquiv.conj A) ^ i) (e x) = e ((A ^ i) x) := by
+  induction i with
+  | zero => rfl
+  | succ i ih =>
+    rw [pow_succ', Module.End.mul_apply, ih, LinearEquiv.conj_apply_apply, pow_succ',
+      Module.End.mul_apply]
+    simp
+
+/-- **Naturality of the Arnoldi vectors under isometries**: for a linear isometry equivalence
+`e : E ≃ₗᵢ[𝕜] E'`, the Arnoldi vectors of the conjugated operator `e A e⁻¹` from `e b` are the
+images of those of `A` from `b`. Gram–Schmidt commutes with isometries
+(`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`) and `(e A e⁻¹)^i (e b) = e (A^i b)`. -/
+theorem vec_conj_linearIsometryEquiv (j : ℕ) :
+    vec (e.toLinearEquiv.conj A) (e b) j = e (vec A b j) := by
+  have hseq : (fun i : ℕ => ((e.toLinearEquiv.conj A) ^ i) (e b)) =
+      e.toLinearIsometry ∘ fun i : ℕ => (A ^ i) b :=
+    funext fun i => pow_conj_apply A e i b
+  rw [vec, hseq, InnerProductSpace.gramSchmidtNormed_comp_linearIsometry]
+  rfl
+
+/-- **Naturality of the Arnoldi coefficients under isometries**: the conjugated operator `e A e⁻¹`
+from `e b` has the same Hessenberg coefficients as `A` from `b`. -/
+theorem coeff_conj_linearIsometryEquiv :
+    coeff (e.toLinearEquiv.conj A) (e b) = coeff A b := by
+  ext i j
+  rw [coeff, coeff, vec_conj_linearIsometryEquiv, vec_conj_linearIsometryEquiv,
+    LinearEquiv.conj_apply_apply]
+  simp
+
+end LinearIsometryEquiv
+
+/-! ### The modified Gram–Schmidt recurrence -/
+
+/-- **Arnoldi with modified Gram–Schmidt** ([saad2003iterative] Alg 6.2, [golub2013matrix]
+Algorithm 10.5.1): `v_0 = b / ‖b‖`, and `v_{j+1} = w / ‖w‖` where `w` is `A v_j` after the
+components along `v_0, …, v_j` have been removed one at a time, each against the current `w`
+(`InnerProductSpace.modifiedGramSchmidtSweep`). The clamp `min i j` is invisible: the sweep reads
+only `v_0, …, v_j` (`Arnoldi.mgsVec_succ`). In exact arithmetic this is `Arnoldi.vec`
+(`Arnoldi.mgsVec_eq_vec`). -/
+noncomputable def mgsVec (A : E →ₗ[𝕜] E) (b : E) : ℕ → E
+  | 0 => (‖b‖⁻¹ : 𝕜) • b
+  | j + 1 =>
+    let q : ℕ → E := fun i => mgsVec A b (min i j)
+    let w := InnerProductSpace.modifiedGramSchmidtSweep 𝕜 q (A (q j)) (j + 1)
+    (‖w‖⁻¹ : 𝕜) • w
+  termination_by j => j
+  decreasing_by exact Nat.lt_succ_of_le (Nat.min_le_right _ _)
+
+/-- Modified Gram–Schmidt Arnoldi starts from the normalized vector `b / ‖b‖`. -/
+@[simp]
+theorem mgsVec_zero : mgsVec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
+  rw [mgsVec]
+
+/-- The step of `Arnoldi.mgsVec`: `v_{j+1}` is the normalized modified Gram–Schmidt sweep of
+`A v_j` against `v_0, …, v_j`. -/
+theorem mgsVec_succ (j : ℕ) :
+    mgsVec A b (j + 1) =
+      (‖InnerProductSpace.modifiedGramSchmidtSweep 𝕜 (mgsVec A b) (A (mgsVec A b j)) (j + 1)‖⁻¹ :
+        𝕜) •
+        InnerProductSpace.modifiedGramSchmidtSweep 𝕜 (mgsVec A b) (A (mgsVec A b j)) (j + 1) := by
+  rw [mgsVec]
+  simp only [Nat.min_self]
+  rw [InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 _
+    fun i hi => by rw [Nat.min_eq_left (Nat.lt_succ_iff.1 hi)]]
+
+/-- **The modified Gram–Schmidt recurrence characterizes the Arnoldi vectors**: a sequence `q` with
+`q 0 = b / ‖b‖` and `q (j + 1) = w / ‖w‖`, where `w` is the modified Gram–Schmidt sweep of `A (q j)`
+against `q 0, …, q j`, is `Arnoldi.vec A b`. By induction: once `q` agrees with the orthonormal
+Arnoldi vectors up to `j`, the sweep is the classical `w_j`
+(`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`) and `Arnoldi.vec_succ_eq` applies. -/
+theorem eq_vec_of_modifiedGramSchmidt {q : ℕ → E} (h0 : q 0 = (‖b‖⁻¹ : 𝕜) • b)
+    (hsucc : ∀ j, q (j + 1) =
+      (‖InnerProductSpace.modifiedGramSchmidtSweep 𝕜 q (A (q j)) (j + 1)‖⁻¹ : 𝕜) •
+        InnerProductSpace.modifiedGramSchmidtSweep 𝕜 q (A (q j)) (j + 1)) :
+    q = vec A b := by
+  funext j
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    rcases j with _ | k
+    · rw [h0]
+      rcases eq_or_ne b 0 with rfl | hb
+      · rw [smul_zero, eq_comm, vec_eq_zero_iff_pow_apply_mem, map_zero]
+        exact Submodule.zero_mem _
+      · exact (vec_zero A b hb).symm
+    · have hq : ∀ i < k + 1, q i = vec A b i := ih
+      rw [hsucc, InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 _ hq, hq k k.lt_succ_self,
+        InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum 𝕜
+          (fun _ _ h => inner_vec_eq_zero A b h),
+        vec_succ_eq]
+      rfl
+
+/-- **Modified Gram–Schmidt Arnoldi computes the Arnoldi vectors** in exact arithmetic
+([saad2003iterative] §6.3.2, [golub2013matrix] §10.5.1). -/
+theorem mgsVec_eq_vec : mgsVec A b = vec A b :=
+  eq_vec_of_modifiedGramSchmidt A b (mgsVec_zero A b) (mgsVec_succ A b)
+
+/-- The coefficients of the modified Gram–Schmidt loop are the Arnoldi coefficients: `h i j` is also
+the inner product of `v_i` with `A v_j` after the components along `v_0, …, v_{i-1}` have been
+removed. -/
+theorem coeff_eq_inner_modifiedGramSchmidtSweep (i j : ℕ) :
+    coeff A b i j = inner 𝕜 (vec A b i)
+      (InnerProductSpace.modifiedGramSchmidtSweep 𝕜 (vec A b) (A (vec A b j)) i) :=
+  (InnerProductSpace.inner_modifiedGramSchmidtSweep_self 𝕜
+    (fun _ _ h => inner_vec_eq_zero A b h) _ i).symm
 
 end Arnoldi
