@@ -1,126 +1,32 @@
-desc = '''
-The transpose-free variants of the biconjugate gradient method: conjugate gradient squared (CGS,
-Sonneveld) and BiCGSTAB (van der Vorst), with the polynomial identification that gives each its
-meaning ([saad2003iterative] §7.4, Algorithms 7.6–7.7, (7.32)–(7.54); [golub2013matrix] §11.4.5 and
-Figure 11.4.1, whose recurrences are line by line the same).
-
-For `A B : E →ₗ[𝕜] E` on an inner product space over `RCLike 𝕜` with `B` the adjoint of `A` (the
-convention of `BCG` in `Numlib/Krylov/BiLanczos`, whose `BCG.iterate` is Algorithm 7.3 / the BiCG
-column of Figure 11.4.1):
-
-* `BCG.residualPoly`, `BCG.directionPoly` are the polynomials `φ_j`, `π_j` of the BCG run, defined by
-  `φ_0 = π_0 = 1`, `φ_{j+1} = φ_j - α_j X π_j`, `π_{j+1} = φ_{j+1} + β_j π_j` from the run's own
-  coefficients `BCG.alpha`, `BCG.beta`; `BCG.residual_eq_aeval` says the four BCG sequences are
-  `φ_j(A) r₀`, `π_j(A) r₀`, `φ̄_j(B) r*₀`, `π̄_j(B) r*₀`. Every scalar of the transpose-free methods is
-  then computed by moving a polynomial across the inner product (`BiLanczos.inner_aeval_map_eq`).
-* `CGS.iterate` is Algorithm 7.6 in the `State`/`step`/`iterate` convention of the Krylov layer
-  (`CGS.State` with fields `x r u p`, `CGS.step`, `CGS.iterate A b x₀ rs₀ k = (step A rs₀)^[k] s₀`);
-  it uses `A` only. `CGS.residual_eq_aeval_sq`: its vectors are `φ_j² r₀`, `π_j² r₀`, `φ_j π_j r₀`,
-  `φ_{j+1} π_j r₀` and its coefficients are the BCG ones — no breakdown hypothesis.
-* `BiCGSTAB.iterate` is Algorithm 7.7 likewise, with the stabilizing polynomial `BiCGSTAB.stabPoly`
-  `ψ_{j+1} = (1 - ω_j X) ψ_j`; `BiCGSTAB.residual_eq`: `r_j = ψ_j(A) φ_j(A) r₀`,
-  `p_j = ψ_j(A) π_j(A) r₀`, under `BCG.NoBreakdown` through step `m` and `ω_i ≠ 0` for `i < m` (the
-  leading-coefficient argument needs both).
-
-These statements were first proved in the Saad surface (`SaadSparse.Chapter07.bcgResidualPoly`,
-`bcg_residual_eq_aeval`, `cgs`, `cgs_residual_eq`, `bicgstab`, `bicgstabPoly`,
-`bicgstab_residual_eq`, over `EuclideanSpace 𝕜 (Fin n)` with `op A`); Golub–Van Loan's Figure 11.4.1
-is a second source in identical form, so by `notes/backbone.md` §1.2 they move down here, stated for
-an operator. Their proofs are the Saad surface's, with `op A` read as `A` and `op Aᴴ` as `B`;
-making the Saad surface delegate to this module is a recorded refactor task on proved code
-(`notes/gvl/consolidation.md`, R5). The TFQMR half of Saad §7.4 stays in the Saad surface (one source).
-
-Namespaces follow the existing `BCG`, `QMR` of `Numlib/Krylov/BiLanczos` (root `BCG`, `CGS`,
-`BiCGSTAB`). Order of attack: `BCG.residualPoly`/`directionPoly` and `residual_eq_aeval` (★, ~80),
-`CGS.iterate` and `residual_eq_aeval_sq` (★★, ~200), `BiCGSTAB` (★★, ~300). About 600 lines, most
-of it transcription.
-'''
-
 [[node]]
 id = "BCG.residualPoly"
-kind = "definition"
-desc = '''The BCG residual polynomial `φ_j` ([saad2003iterative] (7.32), (7.35); [golub2013matrix] (11.4.14),
-its `ψ_k`): `BCG.residualPoly A B b x₀ rs₀ : ℕ → 𝕜[X]`, defined together with `BCG.directionPoly` by
-`φ_0 = 1`, `φ_{j+1} = φ_j - C (BCG.alpha A B b x₀ rs₀ j) * (X * π_j)` (a private pair recursion, as in
-`SaadSparse.Chapter07.bcgResidualPoly`). `φ_j(0) = 1` and `natDegree φ_j ≤ j` are foreseeable API. ★'''
-deps = ["BCG.alpha", "BCG.iterate"]
 
 [[node]]
 id = "BCG.directionPoly"
-kind = "definition"
-desc = '''The BCG direction polynomial `π_j` ([saad2003iterative] (7.33), (7.36); [golub2013matrix] (11.4.14), its
-`φ_k`): `π_0 = 1`, `π_{j+1} = φ_{j+1} + C (BCG.beta A B b x₀ rs₀ j) * π_j`. (Its value at `0` is not `1`
-in general, contrary to the printed (11.4.14).) ★'''
-deps = ["BCG.residualPoly", "BCG.beta"]
 
 [[node]]
 id = "BCG.residual_eq_aeval"
-kind = "theorem"
-desc = '''[saad2003iterative] (7.32)–(7.33), [golub2013matrix] (11.4.14): for every `j`,
-`BCG.residual A B b x₀ rs₀ j = aeval A (BCG.residualPoly A B b x₀ rs₀ j) (b - A x₀)`,
-`BCG.direction … j = aeval A (BCG.directionPoly … j) (b - A x₀)`,
-`BCG.dualResidual … j = aeval B ((BCG.residualPoly … j).map (starRingEnd 𝕜)) rs₀` and
-`BCG.dualDirection … j = aeval B ((BCG.directionPoly … j).map (starRingEnd 𝕜)) rs₀`. No hypothesis:
-induction on `j` with the step equations of `BCG.step` (`BCG.iterate_succ`); the proof of
-`SaadSparse.Chapter07.bcg_residual_eq_aeval` transcribed. ★ (~60 lines)'''
-deps = ["BCG.residualPoly", "BCG.directionPoly", "BCG.residual", "BCG.direction", "BCG.dualResidual", "BCG.dualDirection", "BCG.step"]
 
 [[node]]
 id = "CGS.iterate"
-kind = "definition"
-desc = '''Conjugate gradient squared ([saad2003iterative] Algorithm 7.6; [golub2013matrix] Figure 11.4.1, CGS
-column): `structure CGS.State (E) where (x r u p : E)`; `CGS.step A rs₀ s` with
-`α = ⟪rs₀, s.r⟫ / ⟪rs₀, A s.p⟫`, `q = s.u - α • A s.p`, `x' = s.x + α • (s.u + q)`,
-`r' = s.r - α • A (s.u + q)`, `β = ⟪rs₀, r'⟫ / ⟪rs₀, s.r⟫`, `u' = r' + β • q`, `p' = u' + β • (q + β • s.p)`;
-`CGS.iterate A b x₀ rs₀ k := (CGS.step A rs₀)^[k] ⟨x₀, b - A x₀, b - A x₀, b - A x₀⟩` (four definitions
-in this node, with `CGS.alpha`, `CGS.beta`, `CGS.q` read off the iterates as in the Saad surface). Only
-`A` is applied. ★'''
-deps = []
 
 [[node]]
 id = "CGS.residual_eq_aeval_sq"
-kind = "theorem"
-desc = '''[saad2003iterative] (7.40)–(7.45) (Sonneveld; [golub2013matrix] §11.4.5): if `∀ x y, ⟪A x, y⟫ = ⟪x, B y⟫`,
-then for every `j`, with `φ_j = BCG.residualPoly A B b x₀ rs₀ j`, `π_j = BCG.directionPoly … j` and
-`r₀ = b - A x₀`: `(CGS.iterate A b x₀ rs₀ j).r = aeval A (φ_j ^ 2) r₀`, `.p = aeval A (π_j ^ 2) r₀`,
-`.u = aeval A (φ_j * π_j) r₀`, `CGS.q … j = aeval A (φ_{j+1} * π_j) r₀`, and `CGS.alpha … j =
-BCG.alpha A B b x₀ rs₀ j`, `CGS.beta … j = BCG.beta … j` — the coefficients agree even where both are
-`0 / 0`, so no breakdown hypothesis. Also `(CGS.iterate …).r = b - A (CGS.iterate …).x`. Simultaneous
-induction; the scalars by `BCG.residual_eq_aeval` and `BiLanczos.inner_aeval_map_eq`. The proof of
-`SaadSparse.Chapter07.cgs_residual_eq` transcribed. ★★ (~150 lines)'''
-deps = ["CGS.iterate", "BCG.residual_eq_aeval", "BiLanczos.inner_aeval_map_eq", "BCG.alpha", "BCG.beta"]
 
 [[node]]
 id = "BiCGSTAB.iterate"
-kind = "definition"
-desc = '''BiCGSTAB ([saad2003iterative] Algorithm 7.7; [golub2013matrix] Figure 11.4.1, BiCGstab column):
-`structure BiCGSTAB.State (E) where (x r p : E)`; `BiCGSTAB.step A rs₀ s` with
-`α = ⟪rs₀, s.r⟫ / ⟪rs₀, A s.p⟫`, `s' = s.r - α • A s.p`, `ω = ⟪A s', s'⟫ / ⟪A s', A s'⟫`,
-`x' = s.x + α • s.p + ω • s'`, `r' = s' - ω • A s'`, `β = ⟪rs₀, r'⟫ / ⟪rs₀, s.r⟫ * (α / ω)`,
-`p' = r' + β • (s.p - ω • A s.p)`; `BiCGSTAB.iterate A b x₀ rs₀ k := (BiCGSTAB.step A rs₀)^[k]
-⟨x₀, b - A x₀, b - A x₀⟩`, with `BiCGSTAB.alpha`, `BiCGSTAB.s`, `BiCGSTAB.omega`, `BiCGSTAB.beta` read off
-the iterates (definitions in this node). `ω_j` is `Projection.minResStep` along `s_j` (the
-steepest-descent characterization, [saad2003iterative] (7.55)), a one-line lemma. ★'''
-deps = ["Projection.minResStep"]
 
 [[node]]
 id = "BiCGSTAB.stabPoly"
-kind = "definition"
-desc = '''The stabilizing polynomial `ψ_j` of BiCGSTAB ([saad2003iterative] (7.47)): `ψ_0 = 1`,
-`ψ_{j+1} = (1 - C (BiCGSTAB.omega A b x₀ rs₀ j) * X) * ψ_j`. `natDegree ψ_j ≤ j`, and its coefficient of
-`X^j` is `∏_{i<j} (-ω_i)`, nonzero when no `ω_i` vanishes. ★'''
-deps = ["BiCGSTAB.iterate"]
 
 [[node]]
 id = "BiCGSTAB.residual_eq"
-kind = "theorem"
-desc = '''[saad2003iterative] (7.46), (7.52) (van der Vorst; [golub2013matrix] §11.4.5): if
-`h : BCG.NoBreakdown A B b x₀ rs₀ m` (which carries `∀ x y, ⟪A x, y⟫ = ⟪x, B y⟫`) and
-`∀ i < m, BiCGSTAB.omega A b x₀ rs₀ i ≠ 0`, then for `j ≤ m`, with `r₀ = b - A x₀`,
-`(BiCGSTAB.iterate A b x₀ rs₀ j).r = aeval A (BiCGSTAB.stabPoly … j * BCG.residualPoly A B b x₀ rs₀ j) r₀`
-and `.p = aeval A (BiCGSTAB.stabPoly … j * BCG.directionPoly A B b x₀ rs₀ j) r₀`; also
-`(BiCGSTAB.iterate …).r = b - A (BiCGSTAB.iterate …).x` (no hypothesis). The coefficient identities
-(`BiCGSTAB.alpha = BCG.alpha`, the book's (7.53)–(7.54)) are carried through the induction by the
-leading-coefficient argument, which needs both hypotheses. The proof of
-`SaadSparse.Chapter07.bicgstab_residual_eq` transcribed. ★★ (~250 lines)'''
-deps = ["BiCGSTAB.iterate", "BiCGSTAB.stabPoly", "BCG.residual_eq_aeval", "BCG.NoBreakdown", "BiLanczos.inner_aeval_map_eq"]
+
+[[node]]
+id = "BiCGSTAB.alpha_eq"
+
+[[node]]
+id = "BiCGSTAB.beta_eq"
+
+[[node]]
+id = "BiCGSTAB.iterate_succ_x_eq_minResStep"

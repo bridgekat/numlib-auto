@@ -91,42 +91,9 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
 
 [[node]]  # staged by ch10
 id = "Lanczos.ritzValues"
-kind = "definition"
-desc = '''The Ritz values `θ_1 ≥ ⋯ ≥ θ_m` of the Lanczos process: `Lanczos.ritzValues A b m : Fin m → ℝ :=
-(Matrix.isHermitian_iff_isSymm.mpr (Lanczos.tridiag_isSymm A b m)).eigenvalues₀ ∘ Fin.cast (Fintype.card_fin m).symm`,
-the sorted eigenvalues of `T_m` ([golub2013matrix] (10.1.7), [quarteroni2000numerical] §5.11). The QSS surface's
-`lanczosEigenvalues` is this definition at `A = toEuclideanLin A'`. ★'''
-deps = ["Lanczos.tridiag", "Lanczos.tridiag_isSymm"]
 
 [[node]]  # staged by ch10
 id = "Lanczos.ritzValues_eq_eigenvalues_compression"
-kind = "theorem"
-desc = '''Below the grade (`Module.finrank (Krylov.subspace A b m) = m`), `Lanczos.ritzValues A b m` equals
-`(compression.isSymmetric A (Krylov.subspace A b m) hA).eigenvalues hm`. The reindexed form of
-`Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression` (the proof of the QSS surface's
-`lanczosEigenvalues_eq`, moved down). ★'''
-deps = ["Lanczos.ritzValues", "Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression"]
 
 [[node]]  # staged by ch10
 id = "BlockLanczos.kaniel_paige_saad"
-kind = "theorem"
-desc = '''The block Kaniel–Paige–Saad bound (Underwood 1975; [golub2013matrix] Theorem 10.3.2): for symmetric `A`
-with eigenvalues `λ_1 ≥ ⋯ ≥ λ_n` and orthonormal eigenvectors `z_i`, a starting block `v : Fin p → E`
-orthonormal, and `μ_1 ≥ ⋯` the eigenvalues of the compression of `A` to `Krylov.blockSubspace A v k`
-(the eigenvalues of `T̄_k` below the block grade): if `cos φ_p := σ_min(Z₁ᴴ X₁) > 0` (`Z₁ = [z_1…z_p]`,
-`X₁ = [v]`; stated as: the map `c ↦ ∑ c_i v_i` followed by the projection onto `span {z_1, …, z_p}`
-is injective with a lower bound `cos φ_p ‖c‖`), then for every `i < p`,
-`λ_i − (λ_1 − λ_n) (tan φ_p / T_{k−1}(1 + 2 ρ_i))² ≤ μ_i ≤ λ_i`, `ρ_i = (λ_i − λ_{p+1})/(λ_{p+1} − λ_n)`
-(`Polynomial.Chebyshev.T`). Upper bound: `LinearMap.IsSymmetric.eigenvalues_compression_le`. Lower bound:
-Courant–Fischer for the compression (`LinearMap.IsSymmetric.isGreatest_eigenvalues_compression`) with
-the `i + 1`-dimensional competitor `{ c(A) X₁ g : g ∈ G_i }`, where `c` is the shifted Chebyshev polynomial
-of `Polynomial.exists_deflated_chebyshev` (no deflation factor: small on `[λ_n, λ_{p+1}]`, value
-`T_{k−1}(1+2ρ_i)` at `λ_i`) and `G_i` spans the preimages under `Z₁ᴴ X₁` of `e_1, …, e_{i+1}`; the Rayleigh
-quotient on it is `≥ λ_i − (λ_1 − λ_n) tan²φ_p / T²`, as in `Lanczos.tan_angle_le_of_forall_abs_eval_le`.
-No gap hypothesis `λ_n < λ_{p+1} < λ_i` (the book states none): if `λ_{p+1} = λ_n` then `ρ_i = 0` in Lean
-(division by zero), `T_{k−1}(1) = 1`, and the competitor with `c = 1` (the `k = 1` block `X₁` itself, contained
-in every block Krylov subspace) gives the bound; if `λ_i = λ_{p+1} > λ_n` then `ρ_i = 0` and the shifted
-Chebyshev competitor still has value `T_{k−1}(1) = 1` at `λ_i`. So the proof case-splits on `λ_{p+1} = λ_n`
-before calling `Polynomial.exists_deflated_chebyshev` (which needs a nondegenerate interval).
-(The book writes `tan(θ_p)` for `tan(φ_p)`.) ★★★ (~450 lines)'''
-deps = ["Krylov.blockSubspace", "LinearMap.IsSymmetric.eigenvalues_compression_le", "LinearMap.IsSymmetric.isGreatest_eigenvalues_compression", "Polynomial.exists_deflated_chebyshev", "Lanczos.tan_angle_le_of_forall_abs_eval_le"]

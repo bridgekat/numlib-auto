@@ -57,13 +57,4 @@ source = "Choi, Iterative Methods for Singular Linear Equations and Least-Square
 
 [[node]]  # staged by ch11
 id = "Krylov.grade_le_finrank_range_sub_algebraMap_add_one"
-kind = "theorem"
-desc = '''
-`grade A v ≤ finrank (range (A − algebraMap K _ c)) + 1` for every scalar `c` (finite-dimensional `V`):
-the grade is shift-invariant (`Krylov.grade_add_algebraMap`, staged to `Krylov/Subspace`), so
-`Krylov.grade_le_finrank_range_add_one` applies to `A − c`. The low-rank-perturbation-of-the-identity
-bound behind [golub2013matrix] Corollary 11.3.2 (`A = I + UDUᵀ`: at most `rank(UDUᵀ) + 1` CG steps),
-with the distinct-eigenvalue count of the book replaced by a rank. ★
-'''
-deps = ["Krylov.grade_add_algebraMap", "Krylov.grade_le_finrank_range_add_one"]
 source = 'Golub–Van Loan, Matrix Computations, Corollary 11.3.2'

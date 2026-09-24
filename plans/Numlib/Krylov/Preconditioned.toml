@@ -1,9 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Krylov.Preconditioned` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch11) add to "Main statements": `Krylov.PCG.inner_inv_residual_eq_zero` and
-# `Krylov.PCG.inner_apply_direction_eq_zero`, the orthogonality relations of the preconditioned
-# conjugate gradient iteration ([golub2013matrix] (11.5.2), corrected; [saad2003iterative] §9.2.1),
-# read off `Krylov.PCG.iterate_eq_CG_iterate_withEnergy` and the CG invariants.
 namespace = "Krylov"
 
 [[node]]
@@ -119,26 +113,8 @@ id = "IsPreconditioner.toEnergy_step1_inv_residual"
 
 [[node]]  # staged by ch11
 id = "PCG.inner_inv_residual_eq_zero"
-kind = "theorem"
-desc = '''
-For `hA : A.IsSymmetricCoercive`, `hM : Krylov.IsPreconditioner M Minv` and `i ≠ j`:
-`⟪Minv (PCG.iterate A Minv b x₀ i).r, (PCG.iterate A Minv b x₀ j).r⟫ = 0` — the PCG residuals are
-`M⁻¹`-orthogonal. In the `M`-inner product the PCG preconditioned residuals `z = M⁻¹r` are the CG
-residuals of `M⁻¹A` (`Krylov.PCG.iterate_eq_CG_iterate_withEnergy`), which are orthogonal
-(`CG.inner_residual_eq_zero`), and `⟪M z_i, z_j⟫ = ⟪r_i, M⁻¹ r_j⟫`. ★★ (~30 lines)
-'''
-deps = ["Krylov.PCG.iterate", "Krylov.PCG.iterate_eq_CG_iterate_withEnergy", "CG.inner_residual_eq_zero",
-  "Krylov.IsPreconditioner"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.5.2)'
 
 [[node]]  # staged by ch11
 id = "PCG.inner_apply_direction_eq_zero"
-kind = "theorem"
-desc = '''
-Under the same hypotheses, `⟪A p_i, p_j⟫ = 0` for `i ≠ j` (the PCG directions are `A`-conjugate):
-`⟪M⁻¹A p_i, p_j⟫_M = ⟪A p_i, p_j⟫` and `CG.inner_apply_direction_eq_zero` in the energy space. ★★
-(~30 lines)
-'''
-deps = ["Krylov.PCG.iterate", "Krylov.PCG.iterate_eq_CG_iterate_withEnergy", "CG.inner_apply_direction_eq_zero",
-  "Krylov.IsPreconditioner.inner_energyEnd_left"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.5.2)'

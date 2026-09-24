@@ -1,4 +1,4 @@
-import Numlib.Projection.OneDimensional
+import Numlib.Krylov.TransposeFree
 import NumlibSurface.SaadSparse.Chapter07.Section03
 
 /-!
@@ -72,85 +72,22 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
-/-! ### Polynomials in an operator and its adjoint -/
-
-section AevalHelpers
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
-/-- `p(T)` commutes with `T`. -/
-private theorem aeval_apply_apply (T : E →ₗ[𝕜] E) (p : 𝕜[X]) (v : E) :
-    aeval T p (T v) = T (aeval T p v) := by
-  have hmul : aeval T (p * X) = aeval T (X * p) := by rw [mul_comm]
-  have := congrArg (fun f : E →ₗ[𝕜] E => f v) hmul
-  simpa only [map_mul, aeval_X, Module.End.mul_apply] using this
-
-/-- `(p q)(T) v = p(T) (q(T) v)`. -/
-private theorem aeval_mul_apply (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p * q) v = aeval T p (aeval T q v) := by
-  rw [map_mul]
-  rfl
-
-/-- Evaluation is additive in the polynomial. -/
-private theorem aeval_apply_add (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p + q) v = aeval T p v + aeval T q v := by
-  rw [map_add]; rfl
-
-/-- Evaluation is additive in the polynomial. -/
-private theorem aeval_apply_sub (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p - q) v = aeval T p v - aeval T q v := by
-  rw [map_sub]; rfl
-
-/-- A constant factor becomes a scalar. -/
-private theorem aeval_apply_C_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p : 𝕜[X]) (v : E) :
-    aeval T (C c * p) v = c • aeval T p v := by
-  rw [map_mul, aeval_C]
-  simp [Module.End.mul_apply, Module.algebraMap_end_apply]
-
-/-- A factor of `t` becomes an application of `T`. -/
-private theorem aeval_apply_X_mul (T : E →ₗ[𝕜] E) (p : 𝕜[X]) (v : E) :
-    aeval T (X * p) v = T (aeval T p v) := by
-  rw [aeval_mul_apply, aeval_X]
-
-/-- The evaluation of `p - c X q`. -/
-private theorem aeval_sub_C_mul_X_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p q : 𝕜[X]) (v : E) :
-    aeval T (p - C c * (X * q)) v = aeval T p v - c • T (aeval T q v) := by
-  rw [map_sub, map_mul, map_mul, aeval_C, aeval_X]
-  simp [Module.End.mul_apply, Module.algebraMap_end_apply]
-
-/-- The evaluation of `p + c q`. -/
-private theorem aeval_add_C_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p q : 𝕜[X]) (v : E) :
-    aeval T (p + C c * q) v = aeval T p v + c • aeval T q v := by
-  rw [map_add, map_mul, aeval_C]
-  simp [Module.End.mul_apply, Module.algebraMap_end_apply]
-
-end AevalHelpers
-
 /-! ### §7.4.1: the BCG residual and direction polynomials -/
 
 section BCGPolynomials
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- The pair `(φ_j, π_j)` of (7.35)–(7.36), defined together because each recurrence feeds the
-other. -/
-private noncomputable def bcgPolyPair (A : Matrix (Fin n) (Fin n) 𝕜)
-    (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) : ℕ → 𝕜[X] × 𝕜[X]
-  | 0 => (1, 1)
-  | j + 1 =>
-      let φ : 𝕜[X] :=
-        (bcgPolyPair A b x₀ rs₀ j).1
-          - C (bcgAlpha A b x₀ rs₀ j) * (X * (bcgPolyPair A b x₀ rs₀ j).2)
-      (φ, φ + C (bcgBeta A b x₀ rs₀ j) * (bcgPolyPair A b x₀ rs₀ j).2)
-
 /-- (7.32), (7.35): the **BCG residual polynomial** `φ_j`, the polynomial of degree at most `j` with
 `φ_j(0) = 1` and `r_j = φ_j(A) r_0`, defined from the coefficients of Algorithm 7.3 by `φ_0 = 1`,
-`φ_{j+1} = φ_j - α_j t π_j`.  Its degree is exactly `j` while no `α_i` vanishes. -/
-noncomputable def bcgResidualPoly (j : ℕ) : 𝕜[X] := (bcgPolyPair A b x₀ rs₀ j).1
+`φ_{j+1} = φ_j - α_j t π_j`.  Its degree is exactly `j` while no `α_i` vanishes.  Backbone
+`BCG.residualPoly` at the pair `(A, Aᴴ)`. -/
+noncomputable def bcgResidualPoly (j : ℕ) : 𝕜[X] := BCG.residualPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
 /-- (7.33), (7.36): the **BCG direction polynomial** `π_j`, the polynomial of degree at most `j`
-with `p_j = π_j(A) r_0`, defined by `π_0 = 1`, `π_{j+1} = φ_{j+1} + β_j π_j`. -/
-noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := (bcgPolyPair A b x₀ rs₀ j).2
+with `p_j = π_j(A) r_0`, defined by `π_0 = 1`, `π_{j+1} = φ_{j+1} + β_j π_j`.  Backbone
+`BCG.directionPoly`. -/
+noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := BCG.directionPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
 @[simp] theorem bcgResidualPoly_zero : bcgResidualPoly A b x₀ rs₀ 0 = 1 := rfl
 
@@ -159,70 +96,40 @@ noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := (bcgPolyPair A b x₀ 
 /-- (7.35): `φ_{j+1} = φ_j - α_j t π_j`. -/
 theorem bcgResidualPoly_succ (j : ℕ) : bcgResidualPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ j
-      - C (bcgAlpha A b x₀ rs₀ j) * (X * bcgDirectionPoly A b x₀ rs₀ j) := rfl
+      - C (bcgAlpha A b x₀ rs₀ j) * (X * bcgDirectionPoly A b x₀ rs₀ j) :=
+  BCG.residualPoly_succ _ _ _ _ _ j
 
 /-- (7.36): `π_{j+1} = φ_{j+1} + β_j π_j`. -/
 theorem bcgDirectionPoly_succ (j : ℕ) : bcgDirectionPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ (j + 1)
-      + C (bcgBeta A b x₀ rs₀ j) * bcgDirectionPoly A b x₀ rs₀ j := rfl
+      + C (bcgBeta A b x₀ rs₀ j) * bcgDirectionPoly A b x₀ rs₀ j :=
+  BCG.directionPoly_succ _ _ _ _ _ j
 
 /-- The residual polynomials are *consistent*: `φ_j(0) = 1` for every `j`, which is what makes
 `φ_j(A) r_0` a residual. -/
 @[simp] theorem bcgResidualPoly_eval_zero (j : ℕ) :
-    (bcgResidualPoly A b x₀ rs₀ j).eval 0 = 1 := by
-  induction j with
-  | zero => simp
-  | succ j ih => rw [bcgResidualPoly_succ]; simp [ih]
-
-/-- `deg φ_j ≤ j` and `deg π_j ≤ j`. -/
-private theorem bcgPoly_natDegree_le (j : ℕ) :
-    (bcgResidualPoly A b x₀ rs₀ j).natDegree ≤ j ∧
-      (bcgDirectionPoly A b x₀ rs₀ j).natDegree ≤ j := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    have hπ := ih.2
-    have hφ : (bcgResidualPoly A b x₀ rs₀ (j + 1)).natDegree ≤ j + 1 := by
-      rw [bcgResidualPoly_succ]
-      refine (natDegree_sub_le _ _).trans (max_le (ih.1.trans (Nat.le_succ j)) ?_)
-      refine (natDegree_C_mul_le _ _).trans (natDegree_mul_le.trans ?_)
-      simp only [natDegree_X]
-      omega
-    refine ⟨hφ, ?_⟩
-    rw [bcgDirectionPoly_succ]
-    refine (natDegree_add_le _ _).trans (max_le hφ ?_)
-    exact (natDegree_C_mul_le _ _).trans (hπ.trans (Nat.le_succ j))
+    (bcgResidualPoly A b x₀ rs₀ j).eval 0 = 1 :=
+  BCG.residualPoly_eval_zero _ _ _ _ _ j
 
 theorem bcgResidualPoly_natDegree_le (j : ℕ) : (bcgResidualPoly A b x₀ rs₀ j).natDegree ≤ j :=
-  (bcgPoly_natDegree_le A b x₀ rs₀ j).1
+  BCG.residualPoly_natDegree_le _ _ _ _ _ j
 
 theorem bcgDirectionPoly_natDegree_le (j : ℕ) : (bcgDirectionPoly A b x₀ rs₀ j).natDegree ≤ j :=
-  (bcgPoly_natDegree_le A b x₀ rs₀ j).2
+  BCG.directionPoly_natDegree_le _ _ _ _ _ j
 
 /-- The two polynomials of a step have the same leading coefficient, `π_{j+1}` differing from
 `φ_{j+1}` only by a multiple of the lower-degree `π_j`.  This is the "the leading coefficients for
 `φ_j(Aᴴ) r*_0` and `π_j(Aᴴ) r*_0` are identical" of the derivation of (7.54). -/
 theorem bcgDirectionPoly_coeff_self (j : ℕ) :
-    (bcgDirectionPoly A b x₀ rs₀ j).coeff j = (bcgResidualPoly A b x₀ rs₀ j).coeff j := by
-  cases j with
-  | zero => simp
-  | succ j =>
-    rw [bcgDirectionPoly_succ, coeff_add, coeff_C_mul,
-      coeff_eq_zero_of_natDegree_lt
-        (lt_of_le_of_lt (bcgDirectionPoly_natDegree_le A b x₀ rs₀ j) (Nat.lt_succ_self j)),
-      mul_zero, add_zero]
+    (bcgDirectionPoly A b x₀ rs₀ j).coeff j = (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
+  BCG.directionPoly_coeff_self _ _ _ _ _ j
 
 /-- The leading coefficients obey `γ_1^{(j+1)} = -α_j γ_1^{(j)}`, the first of the two relations
 the derivation of (7.53) compares. -/
 theorem bcgResidualPoly_coeff_succ (j : ℕ) :
     (bcgResidualPoly A b x₀ rs₀ (j + 1)).coeff (j + 1) =
-      -bcgAlpha A b x₀ rs₀ j * (bcgResidualPoly A b x₀ rs₀ j).coeff j := by
-  rw [bcgResidualPoly_succ, coeff_sub,
-    coeff_eq_zero_of_natDegree_lt
-      (lt_of_le_of_lt (bcgResidualPoly_natDegree_le A b x₀ rs₀ j) (Nat.lt_succ_self j)),
-    ← mul_assoc, mul_comm (C (bcgAlpha A b x₀ rs₀ j)) X, mul_assoc, coeff_X_mul, coeff_C_mul,
-    bcgDirectionPoly_coeff_self]
-  ring
+      -bcgAlpha A b x₀ rs₀ j * (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
+  BCG.residualPoly_coeff_succ _ _ _ _ _ j
 
 /-- The recurrences of **Algorithm 7.3** in the book's own notation, lines 6, 7, 9 and 10. -/
 theorem bcg_succ (j : ℕ) :
@@ -243,7 +150,8 @@ theorem bcg_succ (j : ℕ) :
 /-- **(7.32)–(7.33)**: the four BCG sequences are the two polynomials evaluated at `A` on `r_0` and
 at `Aᴴ` on `r*_0`.  The starred recurrences are the unstarred ones with `A` replaced by `Aᴴ` and
 every coefficient conjugated, so the starred vectors carry the *conjugate* polynomials — over `ℝ`,
-where the book works, `φ̄_j = φ_j` and this is the book's `r*_j = φ_j(Aᵀ) r*_0`. -/
+where the book works, `φ̄_j = φ_j` and this is the book's `r*_j = φ_j(Aᵀ) r*_0`.  Backbone
+`BCG.residual_eq_aeval`. -/
 theorem bcg_residual_eq_aeval (j : ℕ) :
     (bcg A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j) (b - op A x₀) ∧
       (bcg A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀) ∧
@@ -251,31 +159,8 @@ theorem bcg_residual_eq_aeval (j : ℕ) :
         = aeval (op Aᴴ) ((bcgResidualPoly A b x₀ rs₀ j).map (starRingEnd 𝕜)) rs₀ ∧
       (bcg A b x₀ rs₀ j).ps
         = aeval (op Aᴴ) ((bcgDirectionPoly A b x₀ rs₀ j).map (starRingEnd 𝕜)) rs₀ := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    obtain ⟨hr, hp, hrs, hps⟩ := ih
-    obtain ⟨sr, srs, sp, sps⟩ := bcg_succ A b x₀ rs₀ j
-    have hrmap : ((bcgResidualPoly A b x₀ rs₀ (j + 1)).map (starRingEnd 𝕜))
-        = (bcgResidualPoly A b x₀ rs₀ j).map (starRingEnd 𝕜)
-          - C (starRingEnd 𝕜 (bcgAlpha A b x₀ rs₀ j))
-            * (X * (bcgDirectionPoly A b x₀ rs₀ j).map (starRingEnd 𝕜)) := by
-      rw [bcgResidualPoly_succ]
-      simp [Polynomial.map_sub, Polynomial.map_mul]
-    have hpmap : ((bcgDirectionPoly A b x₀ rs₀ (j + 1)).map (starRingEnd 𝕜))
-        = (bcgResidualPoly A b x₀ rs₀ (j + 1)).map (starRingEnd 𝕜)
-          + C (starRingEnd 𝕜 (bcgBeta A b x₀ rs₀ j))
-            * (bcgDirectionPoly A b x₀ rs₀ j).map (starRingEnd 𝕜) := by
-      rw [bcgDirectionPoly_succ]
-      simp [Polynomial.map_add, Polynomial.map_mul]
-    have h1 : (bcg A b x₀ rs₀ (j + 1)).r
-        = aeval (op A) (bcgResidualPoly A b x₀ rs₀ (j + 1)) (b - op A x₀) := by
-      rw [sr, bcgResidualPoly_succ, aeval_sub_C_mul_X_mul, hr, hp]
-    have h3 : (bcg A b x₀ rs₀ (j + 1)).rs
-        = aeval (op Aᴴ) ((bcgResidualPoly A b x₀ rs₀ (j + 1)).map (starRingEnd 𝕜)) rs₀ := by
-      rw [srs, hrmap, aeval_sub_C_mul_X_mul, hrs, hps]
-    exact ⟨h1, by rw [sp, bcgDirectionPoly_succ, aeval_add_C_mul, h1, hp], h3,
-      by rw [sps, hpmap, aeval_add_C_mul, h3, hps]⟩
+  rw [bcg_eq]
+  exact BCG.residual_eq_aeval (op A) (op Aᴴ) b x₀ rs₀ j
 
 end BCGPolynomials
 
@@ -284,17 +169,8 @@ end BCGPolynomials
 section CGS
 
 /-- The state `(x_j, r_j, u_j, p_j)` of **Algorithm 7.6**; the auxiliary `q_j` of line 5 is read off
-it by `cgsQ`. -/
-@[ext]
-structure CGSState (E : Type*) where
-  /-- The iterate `x_j`. -/
-  x : E
-  /-- The residual `r_j`, which is `φ_j²(A) r_0`. -/
-  r : E
-  /-- The auxiliary vector `u_j = r_j + β_{j-1} q_{j-1}`, which is `φ_j(A) π_j(A) r_0`. -/
-  u : E
-  /-- The direction `p_j`, which is `π_j²(A) r_0`. -/
-  p : E
+it by `cgsQ`.  The backbone record `CGS.State` carries exactly that data. -/
+abbrev CGSState (E : Type*) := CGS.State E
 
 /-- One pass through lines 4–10 of **Algorithm 7.6**, on the state `(x_j, r_j, u_j, p_j)`. -/
 noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
@@ -322,6 +198,12 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (
 /-- One pass of **Algorithm 7.6**. -/
 theorem cgs_succ (k : ℕ) : cgs A b x₀ rs₀ (k + 1) = cgsStep A rs₀ (cgs A b x₀ rs₀ k) := rfl
 
+/-- **The bridge to the backbone**: the book's Algorithm 7.6 computes `CGS.iterate` of `op A`. -/
+theorem cgs_eq (k : ℕ) : cgs A b x₀ rs₀ k = CGS.iterate (op A) b x₀ rs₀ k := by
+  induction k with
+  | zero => rfl
+  | succ k ih => rw [cgs_succ, ih, CGS.iterate_succ]; rfl
+
 /-- **Algorithm 7.6**, line 4: `α_j = (r_j, r*_0)/(A p_j, r*_0)`. -/
 noncomputable def cgsAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (cgs A b x₀ rs₀ j).p)
@@ -333,6 +215,15 @@ noncomputable def cgsBeta (j : ℕ) : 𝕜 :=
 /-- **Algorithm 7.6**, line 5: `q_j = u_j - α_j A p_j`. -/
 noncomputable def cgsQ (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   (cgs A b x₀ rs₀ j).u - cgsAlpha A b x₀ rs₀ j • op A (cgs A b x₀ rs₀ j).p
+
+theorem cgsAlpha_eq (j : ℕ) : cgsAlpha A b x₀ rs₀ j = CGS.alpha (op A) b x₀ rs₀ j := by
+  rw [cgsAlpha, CGS.alpha, cgs_eq]
+
+theorem cgsBeta_eq (j : ℕ) : cgsBeta A b x₀ rs₀ j = CGS.beta (op A) b x₀ rs₀ j := by
+  rw [cgsBeta, CGS.beta, cgs_eq, cgs_eq]
+
+theorem cgsQ_eq (j : ℕ) : cgsQ A b x₀ rs₀ j = CGS.q (op A) b x₀ rs₀ j := by
+  rw [cgsQ, CGS.q, cgsAlpha_eq, cgs_eq]
 
 /-- **Algorithm 7.6**, line 6: `x_{j+1} = x_j + α_j (u_j + q_j)`. -/
 theorem cgs_succ_x (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).x =
@@ -356,11 +247,8 @@ theorem cgs_succ_p (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).p =
 
 /-- The CGS residual is the true residual of the CGS iterate. -/
 theorem cgs_residual (j : ℕ) : (cgs A b x₀ rs₀ j).r = b - op A (cgs A b x₀ rs₀ j).x := by
-  induction j with
-  | zero => rfl
-  | succ j ih =>
-    simp only [cgs_succ_r, cgs_succ_x, ih, map_add, map_smul]
-    abel
+  rw [cgs_eq]
+  exact CGS.r_eq_sub_apply_x (op A) b x₀ rs₀ j
 
 /-- **The step that removes the transpose**: a bilinear expression in `p(A) r_0` and `q̄(Aᴴ) r*_0`
 is one in `(q p)(A) r_0` and `r*_0`.  This is `BiLanczos.inner_aeval_map_eq` at the pair `(op A, op
@@ -369,111 +257,14 @@ Aᴴ)`, and it is what turns `α_j = (φ_j(A) r_0, φ_j(Aᴴ) r*_0)/(A π_j(A) r
 theorem inner_aeval_conjTranspose_aeval (p q : 𝕜[X]) (v w : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (aeval (op Aᴴ) (q.map (starRingEnd 𝕜)) w) (aeval (op A) p v)
       = inner 𝕜 w (aeval (op A) (q * p) v) := by
-  rw [BiLanczos.inner_aeval_map_eq (inner_op_conjTranspose A) q, aeval_mul_apply]
-
-variable {A b x₀ rs₀}
-
-/-- The numerator of `α_j` (which is the denominator of `β_j`): `(r_j, r*_j) = (φ_j²(A) r_0, r*_0)`.
--/
-private theorem inner_bcg_residual_eq {j : ℕ}
-    (hr : (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀)) :
-    inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r
-      = inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r := by
-  obtain ⟨hbr, -, hbrs, -⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  rw [hbr, hbrs, inner_aeval_conjTranspose_aeval, hr, ← sq]
-
-/-- The denominator of `α_j`: `(A p_j, p*_j) = (A π_j²(A) r_0, r*_0)`. -/
-private theorem inner_bcg_direction_eq {j : ℕ}
-    (hp : (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀)) :
-    inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p)
-      = inner 𝕜 rs₀ (op A (cgs A b x₀ rs₀ j).p) := by
-  obtain ⟨-, hbp, -, hbps⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  have hpoly : bcgDirectionPoly A b x₀ rs₀ j * (X * bcgDirectionPoly A b x₀ rs₀ j)
-      = X * bcgDirectionPoly A b x₀ rs₀ j ^ 2 := by ring
-  rw [hbp, hbps, ← aeval_apply_X_mul, inner_aeval_conjTranspose_aeval, hpoly, hp,
-    aeval_apply_X_mul]
-
-/-- The CGS `α_j` is the BCG one, given the polynomial form of `r_j` and `p_j`. -/
-private theorem cgsAlpha_eq_aux {j : ℕ}
-    (hr : (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀))
-    (hp : (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀)) :
-    cgsAlpha A b x₀ rs₀ j = bcgAlpha A b x₀ rs₀ j := by
-  rw [cgsAlpha, bcgAlpha_eq, inner_bcg_residual_eq hr, inner_bcg_direction_eq hp]
-
-/-- The CGS `β_j` is the BCG one, given the polynomial form of `r_j` and `r_{j+1}`. -/
-private theorem cgsBeta_eq_aux {j : ℕ}
-    (hr : (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀))
-    (hr' : (cgs A b x₀ rs₀ (j + 1)).r
-      = aeval (op A) (bcgResidualPoly A b x₀ rs₀ (j + 1) ^ 2) (b - op A x₀)) :
-    cgsBeta A b x₀ rs₀ j = bcgBeta A b x₀ rs₀ j := by
-  rw [cgsBeta, bcgBeta_eq, inner_bcg_residual_eq hr, inner_bcg_residual_eq hr']
-
-/-- (7.44): `q_j = φ_{j+1}(A) π_j(A) r_0`, given the polynomial form of `u_j`, `p_j` and `α_j`. -/
-private theorem cgsQ_eq_aux {j : ℕ}
-    (hp : (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀))
-    (hu : (cgs A b x₀ rs₀ j).u
-      = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀))
-    (hα : cgsAlpha A b x₀ rs₀ j = bcgAlpha A b x₀ rs₀ j) :
-    cgsQ A b x₀ rs₀ j
-      = aeval (op A) (bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ j)
-          (b - op A x₀) := by
-  have hpoly : bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ j
-      = bcgResidualPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j
-        - C (bcgAlpha A b x₀ rs₀ j) * (X * bcgDirectionPoly A b x₀ rs₀ j ^ 2) := by
-    rw [bcgResidualPoly_succ]; ring
-  rw [cgsQ, hu, hp, hα, hpoly, aeval_apply_sub, aeval_apply_C_mul, aeval_apply_X_mul]
-
-/-- (7.40)–(7.42): the three CGS vectors are the squared BCG polynomials evaluated at `A` on `r_0`.
-The heart of the induction; `cgs_residual_eq` states it together with the coefficient identities. -/
-private theorem cgs_vec_eq (j : ℕ) :
-    (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
-      (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
-      (cgs A b x₀ rs₀ j).u
-        = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j)
-            (b - op A x₀) := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    obtain ⟨hr, hp, hu⟩ := ih
-    have hα := cgsAlpha_eq_aux hr hp
-    have hq := cgsQ_eq_aux hp hu hα
-    have hr' : (cgs A b x₀ rs₀ (j + 1)).r
-        = aeval (op A) (bcgResidualPoly A b x₀ rs₀ (j + 1) ^ 2) (b - op A x₀) := by
-      have hpoly : bcgResidualPoly A b x₀ rs₀ (j + 1) ^ 2
-          = bcgResidualPoly A b x₀ rs₀ j ^ 2
-            - C (bcgAlpha A b x₀ rs₀ j)
-              * (X * (bcgResidualPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j
-                  + bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ j)) := by
-        rw [bcgResidualPoly_succ]; ring
-      rw [cgs_succ_r, hu, hq, hr, hα, hpoly, aeval_apply_sub, aeval_apply_C_mul,
-        aeval_apply_X_mul, aeval_apply_add]
-    have hβ := cgsBeta_eq_aux hr hr'
-    have hu' : (cgs A b x₀ rs₀ (j + 1)).u
-        = aeval (op A) (bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ (j + 1))
-            (b - op A x₀) := by
-      have hpoly : bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ (j + 1)
-          = bcgResidualPoly A b x₀ rs₀ (j + 1) ^ 2
-            + C (bcgBeta A b x₀ rs₀ j)
-              * (bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ j) := by
-        rw [bcgDirectionPoly_succ (A := A) (b := b) (x₀ := x₀) (rs₀ := rs₀) j]; ring
-      rw [cgs_succ_u, hq, hr', hβ, hpoly, aeval_apply_add, aeval_apply_C_mul]
-    refine ⟨hr', ?_, hu'⟩
-    have hpoly : bcgDirectionPoly A b x₀ rs₀ (j + 1) ^ 2
-        = bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ (j + 1)
-          + C (bcgBeta A b x₀ rs₀ j)
-            * (bcgResidualPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ j
-              + C (bcgBeta A b x₀ rs₀ j) * bcgDirectionPoly A b x₀ rs₀ j ^ 2) := by
-      rw [bcgDirectionPoly_succ (A := A) (b := b) (x₀ := x₀) (rs₀ := rs₀) j]; ring
-    rw [cgs_succ_p, hu', hq, hp, hβ, hpoly, aeval_apply_add, aeval_apply_C_mul, aeval_apply_add,
-      aeval_apply_C_mul]
-
-variable (A b x₀ rs₀)
+  rw [BiLanczos.inner_aeval_map_eq (inner_op_conjTranspose A) q, map_mul, Module.End.mul_apply]
 
 /-- **(7.40)–(7.45)**: Algorithm 7.6 computes the *squared* BCG polynomials.  Its vectors are
 `r_j = φ_j²(A) r_0`, `p_j = π_j²(A) r_0`, `u_j = φ_j(A) π_j(A) r_0` and `q_j = φ_{j+1}(A) π_j(A)
 r_0` for the BCG polynomials of the same run, and its `α_j` and `β_j` are the BCG ones.  This is
 what makes Algorithm 7.6 a method: it delivers the residual `φ_j²(A) r_0` of (7.34) without ever
-applying `Aᴴ`.  No hypothesis is needed — the coefficients agree even where both are `0 / 0`. -/
+applying `Aᴴ`.  No hypothesis is needed — the coefficients agree even where both are `0 / 0`.
+Backbone `CGS.residual_eq_aeval_sq`. -/
 theorem cgs_residual_eq (j : ℕ) :
     (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
       (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
@@ -485,10 +276,8 @@ theorem cgs_residual_eq (j : ℕ) :
             (b - op A x₀) ∧
         cgsAlpha A b x₀ rs₀ j = bcgAlpha A b x₀ rs₀ j ∧
         cgsBeta A b x₀ rs₀ j = bcgBeta A b x₀ rs₀ j := by
-  obtain ⟨hr, hp, hu⟩ := cgs_vec_eq (A := A) (b := b) (x₀ := x₀) (rs₀ := rs₀) j
-  have hα := cgsAlpha_eq_aux hr hp
-  have hr' := (cgs_vec_eq (A := A) (b := b) (x₀ := x₀) (rs₀ := rs₀) (j + 1)).1
-  exact ⟨hr, hp, hu, cgsQ_eq_aux hp hu hα, hα, cgsBeta_eq_aux hr hr'⟩
+  rw [cgsQ_eq, cgsAlpha_eq, cgsBeta_eq, cgs_eq]
+  exact CGS.residual_eq_aeval_sq (inner_op_conjTranspose A) j
 
 end CGS
 
@@ -497,15 +286,8 @@ end CGS
 section BICGSTAB
 
 /-- The state `(x_j, r_j, p_j)` of **Algorithm 7.7**; the half-step residual `s_j` of line 5 is read
-off it by `bicgstabS`. -/
-@[ext]
-structure BICGSTABState (E : Type*) where
-  /-- The iterate `x_j`. -/
-  x : E
-  /-- The residual `r_j`, which is `ψ_j(A) φ_j(A) r_0`. -/
-  r : E
-  /-- The direction `p_j`, which is `ψ_j(A) π_j(A) r_0`. -/
-  p : E
+off it by `bicgstabS`.  The backbone record `BiCGSTAB.State` carries exactly that data. -/
+abbrev BICGSTABState (E : Type*) := BiCGSTAB.State E
 
 /-- One pass through lines 4–10 of **Algorithm 7.7**, on the state `(x_j, r_j, p_j)`. -/
 noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
@@ -534,6 +316,13 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (
 theorem bicgstab_succ (k : ℕ) :
     bicgstab A b x₀ rs₀ (k + 1) = bicgstabStep A rs₀ (bicgstab A b x₀ rs₀ k) := rfl
 
+/-- **The bridge to the backbone**: the book's Algorithm 7.7 computes `BiCGSTAB.iterate` of
+`op A`. -/
+theorem bicgstab_eq (k : ℕ) : bicgstab A b x₀ rs₀ k = BiCGSTAB.iterate (op A) b x₀ rs₀ k := by
+  induction k with
+  | zero => rfl
+  | succ k ih => rw [bicgstab_succ, ih, BiCGSTAB.iterate_succ]; rfl
+
 /-- **Algorithm 7.7**, line 4: `α_j = (r_j, r*_0)/(A p_j, r*_0)`. -/
 noncomputable def bicgstabAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (bicgstab A b x₀ rs₀ j).p)
@@ -551,6 +340,17 @@ noncomputable def bicgstabOmega (j : ℕ) : 𝕜 :=
 noncomputable def bicgstabBeta (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r
     * (bicgstabAlpha A b x₀ rs₀ j / bicgstabOmega A b x₀ rs₀ j)
+
+theorem bicgstabAlpha_eq (j : ℕ) :
+    bicgstabAlpha A b x₀ rs₀ j = BiCGSTAB.alpha (op A) b x₀ rs₀ j := by
+  rw [bicgstabAlpha, BiCGSTAB.alpha, bicgstab_eq]
+
+theorem bicgstabS_eq (j : ℕ) : bicgstabS A b x₀ rs₀ j = BiCGSTAB.s (op A) b x₀ rs₀ j := by
+  rw [bicgstabS, BiCGSTAB.s, bicgstabAlpha_eq, bicgstab_eq]
+
+theorem bicgstabOmega_eq (j : ℕ) :
+    bicgstabOmega A b x₀ rs₀ j = BiCGSTAB.omega (op A) b x₀ rs₀ j := by
+  rw [bicgstabOmega, BiCGSTAB.omega, bicgstabS_eq]
 
 /-- **Algorithm 7.7**, line 7: `x_{j+1} = x_j + α_j p_j + ω_j s_j`. -/
 theorem bicgstab_succ_x (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).x =
@@ -570,174 +370,45 @@ theorem bicgstab_succ_p (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).p =
 /-- The BICGSTAB residual is the true residual of the BICGSTAB iterate. -/
 theorem bicgstab_residual (j : ℕ) :
     (bicgstab A b x₀ rs₀ j).r = b - op A (bicgstab A b x₀ rs₀ j).x := by
-  induction j with
-  | zero => rfl
-  | succ j ih =>
-    simp only [bicgstab_succ_r, bicgstab_succ_x, bicgstabS, ih, map_add, map_smul]
-    abel
+  rw [bicgstab_eq]
+  exact BiCGSTAB.r_eq_sub_apply_x (op A) b x₀ rs₀ j
 
 /-- (7.47): the **stabilizing polynomial** `ψ_j` of BICGSTAB, `ψ_0 = 1` and
-`ψ_{j+1} = (1 - ω_j t) ψ_j` for the `ω_j` that Algorithm 7.7 computes. -/
-noncomputable def bicgstabPoly (A : Matrix (Fin n) (Fin n) 𝕜)
-    (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) : ℕ → 𝕜[X]
-  | 0 => 1
-  | j + 1 => (1 - C (bicgstabOmega A b x₀ rs₀ j) * X) * bicgstabPoly A b x₀ rs₀ j
+`ψ_{j+1} = (1 - ω_j t) ψ_j` for the `ω_j` that Algorithm 7.7 computes.  Backbone
+`BiCGSTAB.stabPoly`. -/
+noncomputable def bicgstabPoly (j : ℕ) : 𝕜[X] := BiCGSTAB.stabPoly (op A) b x₀ rs₀ j
 
 @[simp] theorem bicgstabPoly_zero : bicgstabPoly A b x₀ rs₀ 0 = 1 := rfl
 
 /-- (7.47): `ψ_{j+1} = (1 - ω_j t) ψ_j`. -/
 theorem bicgstabPoly_succ (j : ℕ) : bicgstabPoly A b x₀ rs₀ (j + 1) =
-    (1 - C (bicgstabOmega A b x₀ rs₀ j) * X) * bicgstabPoly A b x₀ rs₀ j := rfl
+    (1 - C (bicgstabOmega A b x₀ rs₀ j) * X) * bicgstabPoly A b x₀ rs₀ j := by
+  rw [bicgstabPoly, bicgstabPoly, BiCGSTAB.stabPoly_succ, bicgstabOmega_eq]
 
 /-- `deg ψ_j ≤ j`. -/
-theorem bicgstabPoly_natDegree_le (j : ℕ) : (bicgstabPoly A b x₀ rs₀ j).natDegree ≤ j := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    have hsub : bicgstabPoly A b x₀ rs₀ (j + 1)
-        = bicgstabPoly A b x₀ rs₀ j
-          - C (bicgstabOmega A b x₀ rs₀ j) * (X * bicgstabPoly A b x₀ rs₀ j) := by
-      rw [bicgstabPoly_succ]; ring
-    rw [hsub]
-    refine (natDegree_sub_le _ _).trans (max_le (ih.trans (Nat.le_succ j)) ?_)
-    refine (natDegree_C_mul_le _ _).trans (natDegree_mul_le.trans ?_)
-    simp only [natDegree_X]
-    omega
+theorem bicgstabPoly_natDegree_le (j : ℕ) : (bicgstabPoly A b x₀ rs₀ j).natDegree ≤ j :=
+  BiCGSTAB.stabPoly_natDegree_le _ _ _ _ j
 
 /-- The leading coefficients obey `η_1^{(j+1)} = -ω_j η_1^{(j)}`, the second of the two relations
 the derivation of (7.53) compares. -/
 theorem bicgstabPoly_coeff_succ (j : ℕ) :
     (bicgstabPoly A b x₀ rs₀ (j + 1)).coeff (j + 1) =
       -bicgstabOmega A b x₀ rs₀ j * (bicgstabPoly A b x₀ rs₀ j).coeff j := by
-  have hsub : bicgstabPoly A b x₀ rs₀ (j + 1)
-      = bicgstabPoly A b x₀ rs₀ j
-        - C (bicgstabOmega A b x₀ rs₀ j) * (X * bicgstabPoly A b x₀ rs₀ j) := by
-    rw [bicgstabPoly_succ]; ring
-  rw [hsub, coeff_sub,
-    coeff_eq_zero_of_natDegree_lt
-      (lt_of_le_of_lt (bicgstabPoly_natDegree_le A b x₀ rs₀ j) (Nat.lt_succ_self j)),
-    coeff_C_mul, coeff_X_mul]
-  ring
+  rw [bicgstabOmega_eq]
+  exact BiCGSTAB.stabPoly_coeff_succ _ _ _ _ j
 
 /-- `η_1^{(j)} = ∏_{i<j} (-ω_i)` does not vanish while no `ω_i` does. -/
 theorem bicgstabPoly_coeff_ne_zero {j : ℕ}
     (hω : ∀ i < j, bicgstabOmega A b x₀ rs₀ i ≠ 0) :
-    (bicgstabPoly A b x₀ rs₀ j).coeff j ≠ 0 := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    rw [bicgstabPoly_coeff_succ]
-    exact mul_ne_zero (neg_ne_zero.2 (hω j (Nat.lt_succ_self j)))
-      (ih fun i hi => hω i (by omega))
-
-/-- `a b / (a c) = b / c` for `a ≠ 0`, the cancellation the leading-coefficient argument runs on. -/
-private theorem mul_div_mul_left_cancel {a b c : 𝕜} (ha : a ≠ 0) : a * b / (a * c) = b / c := by
-  rcases eq_or_ne c 0 with rfl | hc
-  · simp
-  · rw [div_eq_div_iff (mul_ne_zero ha hc) hc]
-    ring
-
-/-- **Only the leading coefficient survives**: for `deg q ≤ j` and `v` orthogonal to `𝒦_j(Aᴴ,
-r*_0)`, `(r*_0, q(A) v) = q_j ((Aᴴ)^j r*_0, v)`.  This is the step "since `φ_j(A) r_0` is orthogonal
-to all vectors `(Aᴴ)^k r*_0` with `k < j`, only the leading power is relevant" of the derivation of
-(7.53). -/
-private theorem inner_aeval_eq_coeff_mul {j : ℕ} {q : 𝕜[X]} (hq : q.natDegree ≤ j)
-    {v : EuclideanSpace 𝕜 (Fin n)}
-    (hv : ∀ u ∈ Krylov.subspace (op Aᴴ) rs₀ j, inner 𝕜 u v = 0) :
-    inner 𝕜 rs₀ (aeval (op A) q v) = q.coeff j * inner 𝕜 ((op Aᴴ ^ j) rs₀) v := by
-  have hz : ∀ i < j, inner 𝕜 rs₀ ((op A ^ i) v) = 0 := by
-    intro i hi
-    rw [← BiLanczos.inner_pow_apply_eq (inner_op_conjTranspose A) i rs₀ v]
-    exact hv _ (Krylov.pow_apply_mem_subspace (op Aᴴ) rs₀ hi)
-  rw [Polynomial.aeval_eq_sum_range' (Nat.lt_succ_of_le hq) (op A), LinearMap.sum_apply, inner_sum,
-    Finset.sum_eq_single j]
-  · rw [LinearMap.smul_apply, inner_smul_right,
-      BiLanczos.inner_pow_apply_eq (inner_op_conjTranspose A) j rs₀ v]
-  · intro i hi hij
-    rw [Finset.mem_range] at hi
-    rw [LinearMap.smul_apply, inner_smul_right, hz i (by omega), mul_zero]
-  · intro hc
-    exact absurd (Finset.mem_range.2 (Nat.lt_succ_self j)) hc
+    (bicgstabPoly A b x₀ rs₀ j).coeff j ≠ 0 :=
+  BiCGSTAB.stabPoly_coeff_ne_zero _ _ _ _ fun i hi => bicgstabOmega_eq A b x₀ rs₀ i ▸ hω i hi
 
 variable {A b x₀ rs₀}
 
-/-- **Proposition 7.2** against the whole shadow Krylov space: `r_j` and `A p_j` are orthogonal to
-`𝒦_j(Aᴴ, r*_0)`. -/
-private theorem inner_bcg_eq_zero {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) {j : ℕ} (hj : j ≤ m)
-    {u : EuclideanSpace 𝕜 (Fin n)} (hu : u ∈ Krylov.subspace (op Aᴴ) rs₀ j) :
-    inner 𝕜 u (bcg A b x₀ rs₀ j).r = 0 ∧ inner 𝕜 u (op A (bcg A b x₀ rs₀ j).p) = 0 := by
-  have hb := (h.mono hj).toBCG
-  rw [bcg_eq]
-  exact ⟨BCG.inner_residual_eq_zero_of_mem_subspace hb hu,
-    BCG.inner_apply_direction_eq_zero_of_mem_subspace hb hu⟩
-
-/-- `ρ_j = (r_j, r*_j) = γ_1^{(j)} ((Aᴴ)^j r*_0, r_j)`. -/
-private theorem inner_bcg_rs_r {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) {j : ℕ} (hj : j ≤ m) :
-    inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r
-      = (bcgResidualPoly A b x₀ rs₀ j).coeff j
-        * inner 𝕜 ((op Aᴴ ^ j) rs₀) (bcg A b x₀ rs₀ j).r := by
-  obtain ⟨-, -, hbrs, -⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  rw [hbrs, BiLanczos.inner_aeval_map_eq (inner_op_conjTranspose A)]
-  exact inner_aeval_eq_coeff_mul A rs₀ (bcgResidualPoly_natDegree_le A b x₀ rs₀ j)
-    fun u hu => (inner_bcg_eq_zero h hj hu).1
-
-/-- `(A p_j, p*_j) = γ_1^{(j)} ((Aᴴ)^j r*_0, A p_j)`: the leading coefficient of `π_j` is that of
-`φ_j`. -/
-private theorem inner_bcg_ps_ap {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) {j : ℕ} (hj : j ≤ m) :
-    inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p)
-      = (bcgResidualPoly A b x₀ rs₀ j).coeff j
-        * inner 𝕜 ((op Aᴴ ^ j) rs₀) (op A (bcg A b x₀ rs₀ j).p) := by
-  obtain ⟨-, -, -, hbps⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  rw [hbps, BiLanczos.inner_aeval_map_eq (inner_op_conjTranspose A),
-    ← bcgDirectionPoly_coeff_self A b x₀ rs₀ j]
-  refine inner_aeval_eq_coeff_mul A rs₀ (bcgDirectionPoly_natDegree_le A b x₀ rs₀ j)
-    fun u hu => (inner_bcg_eq_zero h hj hu).2
-
-/-- `ρ̃_j = (r_j, r*_0) = η_1^{(j)} ((Aᴴ)^j r*_0, r_j^{BCG})`, once `r_j = ψ_j(A) φ_j(A) r_0`. -/
-private theorem inner_bicgstab_r {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) {j : ℕ} (hj : j ≤ m)
-    (hr : (bicgstab A b x₀ rs₀ j).r
-      = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ j) (b - op A x₀)) :
-    inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r
-      = (bicgstabPoly A b x₀ rs₀ j).coeff j
-        * inner 𝕜 ((op Aᴴ ^ j) rs₀) (bcg A b x₀ rs₀ j).r := by
-  obtain ⟨hbr, -, -, -⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  rw [hr, aeval_mul_apply, ← hbr]
-  exact inner_aeval_eq_coeff_mul A rs₀ (bicgstabPoly_natDegree_le A b x₀ rs₀ j)
-    fun u hu => (inner_bcg_eq_zero h hj hu).1
-
-/-- `(A p_j, r*_0) = η_1^{(j)} ((Aᴴ)^j r*_0, A p_j^{BCG})`, once `p_j = ψ_j(A) π_j(A) r_0`. -/
-private theorem inner_bicgstab_ap {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) {j : ℕ} (hj : j ≤ m)
-    (hp : (bicgstab A b x₀ rs₀ j).p
-      = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀)) :
-    inner 𝕜 rs₀ (op A (bicgstab A b x₀ rs₀ j).p)
-      = (bicgstabPoly A b x₀ rs₀ j).coeff j
-        * inner 𝕜 ((op Aᴴ ^ j) rs₀) (op A (bcg A b x₀ rs₀ j).p) := by
-  obtain ⟨-, hbp, -, -⟩ := bcg_residual_eq_aeval A b x₀ rs₀ j
-  rw [hp, aeval_mul_apply, ← aeval_apply_apply, ← hbp]
-  exact inner_aeval_eq_coeff_mul A rs₀ (bicgstabPoly_natDegree_le A b x₀ rs₀ j)
-    fun u hu => (inner_bcg_eq_zero h hj hu).2
-
-/-- The BICGSTAB `α_j` is the BCG one, given the polynomial form of `r_j` and `p_j`: numerator and
-denominator both lose their degree-`j` polynomial in favour of its leading coefficient, and the two
-leading coefficients cancel. -/
-private theorem bicgstabAlpha_eq_aux {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
-    (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m)
-    (hr : (bicgstab A b x₀ rs₀ j).r
-      = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ j) (b - op A x₀))
-    (hp : (bicgstab A b x₀ rs₀ j).p
-      = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀)) :
-    bicgstabAlpha A b x₀ rs₀ j = bcgAlpha A b x₀ rs₀ j := by
-  have hg : (bcgResidualPoly A b x₀ rs₀ j).coeff j ≠ 0 := by
-    intro hc
-    exact h.inner_residual_ne_zero j hj (by rw [inner_bcg_rs_r h hj.le, hc, zero_mul])
-  have he := bicgstabPoly_coeff_ne_zero A b x₀ rs₀ (j := j) fun i hi => hω i (by omega)
-  rw [bicgstabAlpha, bcgAlpha_eq, inner_bicgstab_r h hj.le hr, inner_bicgstab_ap h hj.le hp,
-    inner_bcg_rs_r h hj.le, inner_bcg_ps_ap h hj.le, mul_div_mul_left_cancel he,
-    mul_div_mul_left_cancel hg]
-
 /-- (7.46), (7.52): the BICGSTAB vectors carry the stabilized BCG polynomials.  The induction
 carries the coefficient identities with it, because the polynomials `φ_{j+1}` and `π_{j+1}` are
-built from the BCG coefficients while the algorithm computes its own. -/
+built from the BCG coefficients while the algorithm computes its own.  Backbone
+`BiCGSTAB.residual_eq`. -/
 theorem bicgstab_residual_eq {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) :
     ∀ j ≤ m, (bicgstab A b x₀ rs₀ j).r
@@ -745,66 +416,17 @@ theorem bicgstab_residual_eq {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
       (bicgstab A b x₀ rs₀ j).p
         = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j)
             (b - op A x₀) := by
-  intro j
-  induction j with
-  | zero => intro _; simp
-  | succ j ih =>
-    intro hj
-    obtain ⟨hr, hp⟩ := ih (by omega)
-    have hjm : j < m := by omega
-    have hα := bicgstabAlpha_eq_aux h hω hjm hr hp
-    -- `s_j = ψ_j(A) φ_{j+1}(A) r_0`
-    have hs : bicgstabS A b x₀ rs₀ j
-        = aeval (op A) (bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ (j + 1))
-            (b - op A x₀) := by
-      have hpoly : bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ (j + 1)
-          = bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ j
-            - C (bcgAlpha A b x₀ rs₀ j)
-              * (X * (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j)) := by
-        rw [bcgResidualPoly_succ]; ring
-      rw [bicgstabS, hr, hp, hα, hpoly, aeval_apply_sub, aeval_apply_C_mul, aeval_apply_X_mul]
-    -- (7.52): `r_{j+1} = ψ_{j+1}(A) φ_{j+1}(A) r_0`
-    have hr' : (bicgstab A b x₀ rs₀ (j + 1)).r
-        = aeval (op A) (bicgstabPoly A b x₀ rs₀ (j + 1) * bcgResidualPoly A b x₀ rs₀ (j + 1))
-            (b - op A x₀) := by
-      have hpoly : bicgstabPoly A b x₀ rs₀ (j + 1) * bcgResidualPoly A b x₀ rs₀ (j + 1)
-          = bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ (j + 1)
-            - C (bicgstabOmega A b x₀ rs₀ j)
-              * (X * (bicgstabPoly A b x₀ rs₀ j * bcgResidualPoly A b x₀ rs₀ (j + 1))) := by
-        rw [bicgstabPoly_succ]; ring
-      rw [bicgstab_succ_r, hs, hpoly, aeval_apply_sub, aeval_apply_C_mul, aeval_apply_X_mul]
-    refine ⟨hr', ?_⟩
-    -- the direction needs `β_j` as well
-    have hβ : bicgstabBeta A b x₀ rs₀ j = bcgBeta A b x₀ rs₀ j := by
-      have hg : (bcgResidualPoly A b x₀ rs₀ j).coeff j ≠ 0 := by
-        intro hc
-        exact h.inner_residual_ne_zero j hjm (by rw [inner_bcg_rs_r h hjm.le, hc, zero_mul])
-      have hL : inner 𝕜 ((op Aᴴ ^ j) rs₀) (bcg A b x₀ rs₀ j).r ≠ 0 := by
-        intro hc
-        exact h.inner_residual_ne_zero j hjm (by rw [inner_bcg_rs_r h hjm.le, hc, mul_zero])
-      have he := bicgstabPoly_coeff_ne_zero A b x₀ rs₀ (j := j) fun i hi => hω i (by omega)
-      have hωj := hω j hjm
-      rw [bicgstabBeta, bcgBeta_eq, inner_bicgstab_r h hjm.le hr, inner_bicgstab_r h hj hr',
-        inner_bcg_rs_r h hjm.le, inner_bcg_rs_r h hj, bcgResidualPoly_coeff_succ,
-        bicgstabPoly_coeff_succ, hα]
-      field_simp
-    have hpoly : bicgstabPoly A b x₀ rs₀ (j + 1) * bcgDirectionPoly A b x₀ rs₀ (j + 1)
-        = bicgstabPoly A b x₀ rs₀ (j + 1) * bcgResidualPoly A b x₀ rs₀ (j + 1)
-          + C (bcgBeta A b x₀ rs₀ j)
-            * (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j
-              - C (bicgstabOmega A b x₀ rs₀ j)
-                * (X * (bicgstabPoly A b x₀ rs₀ j * bcgDirectionPoly A b x₀ rs₀ j))) := by
-      rw [bcgDirectionPoly_succ (A := A) (b := b) (x₀ := x₀) (rs₀ := rs₀) j, bicgstabPoly_succ]
-      ring
-    rw [bicgstab_succ_p, hr', hp, hβ, hpoly, aeval_apply_add, aeval_apply_C_mul, aeval_apply_sub,
-      aeval_apply_C_mul, aeval_apply_X_mul]
+  intro j hj
+  rw [bicgstab_eq]
+  exact BiCGSTAB.residual_eq h.toBCG
+    (fun i hi => bicgstabOmega_eq A b x₀ rs₀ i ▸ hω i hi) hj
 
 /-- **(7.53)–(7.54)**: the BCG coefficients are computable from the BICGSTAB vectors alone,
 `α_j = ρ̃_j/(A p_j, r*_0)` and `β_j = (ρ̃_{j+1}/ρ̃_j)(α_j/ω_j)` with `ρ̃_j = (r_j, r*_0)`.
 The proof replaces `ψ_j(Aᴴ) r*_0` and `φ_j(Aᴴ) r*_0` by their leading terms — legitimate because
-`r_j^{BCG}`
-and `A p_j^{BCG}` are orthogonal to `(Aᴴ)^k r*_0` for `k < j` — and compares the two leading
-coefficients, `η_1^{(j+1)} = -ω_j η_1^{(j)}` against `γ_1^{(j+1)} = -α_j γ_1^{(j)}`. -/
+`r_j^{BCG}` and `A p_j^{BCG}` are orthogonal to `(Aᴴ)^k r*_0` for `k < j` — and compares the two
+leading coefficients, `η_1^{(j+1)} = -ω_j η_1^{(j)}` against `γ_1^{(j+1)} = -α_j γ_1^{(j)}`.
+Backbone `BiCGSTAB.alpha_eq`, `BiCGSTAB.beta_eq`. -/
 theorem equation_7_53 {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m) :
     bcgAlpha A b x₀ rs₀ j
@@ -813,22 +435,14 @@ theorem equation_7_53 {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
       bcgBeta A b x₀ rs₀ j
         = inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r
           * (bcgAlpha A b x₀ rs₀ j / bicgstabOmega A b x₀ rs₀ j) := by
-  obtain ⟨hr, hp⟩ := bicgstab_residual_eq h hω j hj.le
-  have hα := bicgstabAlpha_eq_aux h hω hj hr hp
-  refine ⟨hα.symm, ?_⟩
-  have hg : (bcgResidualPoly A b x₀ rs₀ j).coeff j ≠ 0 := by
-    intro hc
-    exact h.inner_residual_ne_zero j hj (by rw [inner_bcg_rs_r h hj.le, hc, zero_mul])
-  have hL : inner 𝕜 ((op Aᴴ ^ j) rs₀) (bcg A b x₀ rs₀ j).r ≠ 0 := by
-    intro hc
-    exact h.inner_residual_ne_zero j hj (by rw [inner_bcg_rs_r h hj.le, hc, mul_zero])
-  have he := bicgstabPoly_coeff_ne_zero A b x₀ rs₀ (j := j) fun i hi => hω i (by omega)
-  have hωj := hω j hj
-  have hr' := (bicgstab_residual_eq h hω (j + 1) hj).1
-  rw [bcgBeta_eq, inner_bicgstab_r h hj.le hr, inner_bicgstab_r h hj hr',
-    inner_bcg_rs_r h hj.le, inner_bcg_rs_r h hj, bcgResidualPoly_coeff_succ,
-    bicgstabPoly_coeff_succ]
-  field_simp
+  have hω' : ∀ i < m, BiCGSTAB.omega (op A) b x₀ rs₀ i ≠ 0 :=
+    fun i hi => bicgstabOmega_eq A b x₀ rs₀ i ▸ hω i hi
+  have hα := BiCGSTAB.alpha_eq h.toBCG hω' hj
+  have hβ := BiCGSTAB.beta_eq h.toBCG hω' hj
+  rw [BiCGSTAB.beta, hα] at hβ
+  rw [BiCGSTAB.alpha] at hα
+  simp only [bicgstabOmega_eq, bicgstab_eq]
+  exact ⟨hα.symm, hβ.symm⟩
 
 variable (A b x₀ rs₀)
 
@@ -850,8 +464,8 @@ theorem equation_7_55 (j : ℕ) :
   have hstep : (bicgstab A b x₀ rs₀ (j + 1)).x
       = Projection.minResStep (op A) b
         ((bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p) := by
-    rw [Projection.minResStep, Projection.step1, hres, bicgstab_succ_x]
-    rfl
+    simp only [bicgstabAlpha_eq, bicgstab_eq]
+    exact BiCGSTAB.iterate_succ_x_eq_minResStep _ _ _ _ j
   refine ⟨hstep, ?_⟩
   have := Projection.minResStep_isMinResidual (A := op A) (b := b)
     ((bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p)

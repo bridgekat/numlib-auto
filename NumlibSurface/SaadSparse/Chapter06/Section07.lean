@@ -963,115 +963,57 @@ theorem cgBeta_eq' (hA : A.PosDef) (j : ℕ) : cgBeta A b x₀ j =
     linear_combination inner ℝ (op A (cgP A b x₀ j)) (cgP A b x₀ j) * h2 -
       inner ℝ (op A (cgP A b x₀ j)) (cgR A b x₀ (j + 1)) * h1
 
-private theorem apply_cgP_eq' (hA : A.PosDef) {j : ℕ} (hr : cgR A b x₀ j ≠ 0) :
-    op A (cgP A b x₀ j) = (cgAlpha A b x₀ j)⁻¹ • (cgR A b x₀ j - cgR A b x₀ (j + 1)) := by
-  rw [← cgAlpha_smul_apply_cgP, smul_smul, inv_mul_cancel₀ (cgAlpha_ne_zero hA hr), one_smul]
+/-- `α_j` computed from `v_1 = r_0/‖r_0‖` is the backbone Lanczos coefficient of `r_0`. -/
+private theorem lanczosAlpha_v₁ (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : ℕ) :
+    lanczosAlpha A (v₁ A b x₀) j = Lanczos.alpha (op A) (b - op A x₀) j := by
+  have h := lanczosAlpha_eq_arnoldiCoeff A (v₁ A b x₀)
+    (isSymmetric_op_of_isSymm hA) (norm_v₁ A b x₀ hb) j
+  have h2 : arnoldiCoeff A (v₁ A b x₀) j j = Arnoldi.coeff (op A) (b - op A x₀) j j := by
+    rw [v₁_def]
+    exact arnoldiCoeff_normalize A hb j j
+  have h3 := Lanczos.coe_alpha (b - op A x₀) (isSymmetric_op_of_isSymm hA) j
+  rw [h2, ← h3] at h
+  simpa using h
 
-private theorem apply_cgR_zero' (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
-    op A (cgR A b x₀ 0) = (cgAlpha A b x₀ 0)⁻¹ • (cgR A b x₀ 0 - cgR A b x₀ 1) := by
-  have h := apply_cgP_eq' hA hr
-  rwa [cgP_zero] at h
-
-private theorem apply_cgR_succ' (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
-    op A (cgR A b x₀ (k + 1)) =
-      (cgAlpha A b x₀ (k + 1))⁻¹ • (cgR A b x₀ (k + 1) - cgR A b x₀ (k + 1 + 1)) -
-        (cgBeta A b x₀ k * (cgAlpha A b x₀ k)⁻¹) • (cgR A b x₀ k - cgR A b x₀ (k + 1)) := by
-  have hrk : cgR A b x₀ k ≠ 0 := cgR_ne_zero_of_le hA hr (by omega)
-  have h100 := equation_6_100 (A := A) (b := b) (x₀ := x₀) k
-  conv_lhs => rw [h100]
-  rw [map_sub, map_smul, apply_cgP_eq' hA hr, apply_cgP_eq' hA hrk, smul_smul]
-
-private theorem inner_cgR_apply_cgR_zero (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
-    inner ℝ (cgR A b x₀ 0) (op A (cgR A b x₀ 0))
-      = (cgAlpha A b x₀ 0)⁻¹ * ‖cgR A b x₀ 0‖ ^ 2 := by
-  rw [apply_cgR_zero' hA hr, real_inner_smul_right, inner_sub_right,
-    inner_cgR_eq_zero hA (show (0 : ℕ) ≠ 1 by omega), sub_zero, real_inner_self_eq_norm_sq]
-
-private theorem inner_cgR_apply_cgR_succ (hA : A.PosDef) {k : ℕ}
-    (hr : cgR A b x₀ (k + 1) ≠ 0) :
-    inner ℝ (cgR A b x₀ (k + 1)) (op A (cgR A b x₀ (k + 1)))
-      = ((cgAlpha A b x₀ (k + 1))⁻¹ + cgBeta A b x₀ k * (cgAlpha A b x₀ k)⁻¹)
-        * ‖cgR A b x₀ (k + 1)‖ ^ 2 := by
-  rw [apply_cgR_succ' hA hr, inner_sub_right, real_inner_smul_right, real_inner_smul_right,
-    inner_sub_right, inner_sub_right,
-    inner_cgR_eq_zero hA (show k + 1 ≠ k + 1 + 1 by omega),
-    inner_cgR_eq_zero hA (show k + 1 ≠ k by omega), real_inner_self_eq_norm_sq]
-  ring
-
-private theorem inner_cgR_succ_apply_cgR (hA : A.PosDef) {k : ℕ}
-    (hr : cgR A b x₀ (k + 1) ≠ 0) :
-    inner ℝ (cgR A b x₀ (k + 1)) (op A (cgR A b x₀ k))
-      = -((cgAlpha A b x₀ k)⁻¹ * ‖cgR A b x₀ (k + 1)‖ ^ 2) := by
-  have hrk : cgR A b x₀ k ≠ 0 := cgR_ne_zero_of_le hA hr (by omega)
-  cases k with
-  | zero =>
-    rw [apply_cgR_zero' hA hrk, real_inner_smul_right, inner_sub_right,
-      inner_cgR_eq_zero hA (show (1 : ℕ) ≠ 0 by omega), zero_sub, real_inner_self_eq_norm_sq]
-    ring
-  | succ k =>
-    rw [apply_cgR_succ' hA hrk, inner_sub_right, real_inner_smul_right, real_inner_smul_right,
-      inner_sub_right, inner_sub_right,
-      inner_cgR_eq_zero hA (show k + 1 + 1 ≠ k + 1 by omega),
-      inner_cgR_eq_zero hA (show k + 1 + 1 ≠ k by omega), real_inner_self_eq_norm_sq]
-    ring
-
-private theorem sign_norm_sq (k : ℕ) (t : ℝ) :
-    ((-1 : ℝ) ^ k * t⁻¹) * ((-1 : ℝ) ^ k * t⁻¹) = (t ^ 2)⁻¹ := by
-  calc ((-1 : ℝ) ^ k * t⁻¹) * ((-1 : ℝ) ^ k * t⁻¹)
-      = ((-1 : ℝ) ^ k * (-1 : ℝ) ^ k) * (t⁻¹ * t⁻¹) := by ring
-    _ = (t ^ 2)⁻¹ := by
-        rw [neg_one_pow_mul_self, one_mul, ← mul_inv, ← sq]
-
-private theorem sign_norm_mul (k : ℕ) (s t : ℝ) :
-    ((-1 : ℝ) ^ (k + 1) * s⁻¹) * ((-1 : ℝ) ^ k * t⁻¹) = -(s * t)⁻¹ := by
-  have h : ((-1 : ℝ) ^ (k + 1)) * ((-1 : ℝ) ^ k) = -1 := by
-    rw [pow_succ]
-    calc ((-1 : ℝ) ^ k * (-1)) * (-1 : ℝ) ^ k
-        = ((-1 : ℝ) ^ k * (-1 : ℝ) ^ k) * (-1) := by ring
-      _ = -1 := by rw [neg_one_pow_mul_self]; ring
-  calc ((-1 : ℝ) ^ (k + 1) * s⁻¹) * ((-1 : ℝ) ^ k * t⁻¹)
-      = ((-1 : ℝ) ^ (k + 1) * (-1 : ℝ) ^ k) * (s⁻¹ * t⁻¹) := by ring
-    _ = -(s * t)⁻¹ := by rw [h, ← mul_inv]; ring
-
-/-- (6.102): `δ_1 = 1/α_0`. -/
+/-- (6.102): `δ_1 = 1/α_0`.  Backbone `CG.lanczos_alpha_zero_eq`. -/
 theorem equation_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
     lanczosAlpha A (v₁ A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
-  have hb : b - op A x₀ ≠ 0 := hr
-  have hn : ‖cgR A b x₀ 0‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
-    lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
-    inner_cgR_apply_cgR_zero hA hr]
-  field_simp
+  have hs := isSymmetricCoercive_op_of_posDef hA
+  have hr' : (CG.iterate (op A) b x₀ 0).r ≠ 0 := by rwa [cgR_eq_CG A b x₀ hs.isSymmetric] at hr
+  rw [lanczosAlpha_v₁ hA.isSymm hr, cgAlpha_eq_CG A b x₀ hs.isSymmetric, one_div]
+  simpa using CG.lanczos_alpha_zero_eq b x₀ hs hr'
 
-/-- (6.101): `δ_{j+1} = 1/α_j + β_{j-1}/α_{j-1}`. -/
+/-- (6.101): `δ_{j+1} = 1/α_j + β_{j-1}/α_{j-1}`.  Backbone `CG.lanczos_alpha_succ_eq`. -/
 theorem equation_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     lanczosAlpha A (v₁ A b x₀) (k + 1) =
       1 / cgAlpha A b x₀ (k + 1) + cgBeta A b x₀ k / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
-  have hn : ‖cgR A b x₀ (k + 1)‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
-    lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
-    inner_cgR_apply_cgR_succ hA hr, ← mul_assoc, sign_norm_sq]
-  field_simp
+  have hs := isSymmetricCoercive_op_of_posDef hA
+  have hr' : (CG.iterate (op A) b x₀ (k + 1)).r ≠ 0 := by
+    rwa [cgR_eq_CG A b x₀ hs.isSymmetric] at hr
+  rw [lanczosAlpha_v₁ hA.isSymm hb, cgAlpha_eq_CG A b x₀ hs.isSymmetric,
+    cgAlpha_eq_CG A b x₀ hs.isSymmetric, cgBeta_eq_CG A b x₀ hs.isSymmetric, one_div]
+  simpa using CG.lanczos_alpha_succ_eq b x₀ hs hr'
 
-/-- (6.103): `η_{j+1} = √(β_{j-1})/α_{j-1}`. -/
+/-- (6.103): `η_{j+1} = √(β_{j-1})/α_{j-1}`.  Backbone `CG.lanczos_beta_eq`, with
+`√β_k = ‖r_{k+1}‖/‖r_k‖`. -/
 theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     lanczosBeta A (v₁ A b x₀) (k + 1) =
       Real.sqrt (cgBeta A b x₀ k) / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
-  have hrk : cgR A b x₀ k ≠ 0 := cgR_ne_zero_of_le hA hr (by omega)
-  have hn : ‖cgR A b x₀ (k + 1)‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  have hnk : ‖cgR A b x₀ k‖ ≠ 0 := norm_ne_zero_iff.2 hrk
+  have hs := isSymmetricCoercive_op_of_posDef hA
+  have hr' : (CG.iterate (op A) b x₀ (k + 1)).r ≠ 0 := by
+    rwa [cgR_eq_CG A b x₀ hs.isSymmetric] at hr
   have hbeta : cgBeta A b x₀ k = ‖cgR A b x₀ (k + 1)‖ ^ 2 / ‖cgR A b x₀ k‖ ^ 2 := by
     rw [cgBeta_eq, real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq]
   have hsqrt : Real.sqrt (cgBeta A b x₀ k) = ‖cgR A b x₀ (k + 1)‖ / ‖cgR A b x₀ k‖ := by
     rw [hbeta, ← div_pow, Real.sqrt_sq (by positivity)]
-  have hα : cgAlpha A b x₀ k ≠ 0 := cgAlpha_ne_zero hA hrk
-  rw [lanczosBeta_succ_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
-    lanczosV_eq_smul_cgR hA hr, lanczosV_eq_smul_cgR hA hrk, map_smul, real_inner_smul_left,
-    real_inner_smul_right, inner_cgR_succ_apply_cgR hA hr, ← mul_assoc, sign_norm_mul,
-    hsqrt]
-  field_simp
+  have hL : lanczosBeta A (v₁ A b x₀) (k + 1) = Lanczos.beta (op A) (b - op A x₀) k := by
+    rw [lanczosBeta_succ_v₁ hA.isSymm hb, ← Lanczos.coe_beta]
+    rfl
+  rw [hL, CG.lanczos_beta_eq b x₀ hs hr', hsqrt, cgR_eq_CG A b x₀ hs.isSymmetric,
+    cgR_eq_CG A b x₀ hs.isSymmetric, cgAlpha_eq_CG A b x₀ hs.isSymmetric, RCLike.re_to_real,
+    div_div]
 
 /-- §6.7.1, last sentence: the search directions of Algorithm 6.18 are nonzero multiples of
 the auxiliary vectors of Algorithm 6.17. -/

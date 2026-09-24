@@ -11,8 +11,10 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
 * **Termination.** The full Krylov space of `b` misses the range of `A` only in the direction of `b`
   itself (`Krylov.fullSubspace_le_span_sup_range`), so the grade is at most `rank A + 1`, and at
   most `rank A` when `b ∈ range A` (`Krylov.grade_le_finrank_range_add_one`,
-  `Krylov.grade_le_finrank_range`).  Counting distinct eigenvalues instead of dimensions, a vector
-  lying in the span of the eigenspaces of `t` scalars has grade at most `t`
+  `Krylov.grade_le_finrank_range`); by shift invariance, at most `rank (A - c) + 1` for every scalar
+  `c` (`Krylov.grade_le_finrank_range_sub_algebraMap_add_one`, [golub2013matrix] Corollary
+  11.3.2).  Counting distinct eigenvalues instead of dimensions, a vector lying in the span of
+  the eigenspaces of `t` scalars has grade at most `t`
   (`Krylov.grade_le_card_of_mem_iSup_eigenspace`); for symmetric `A` in finite dimension the
   eigenspaces span, which turns this into a bound by the number of *nonzero* eigenvalues
   (`Lanczos.grade_le_card_eigenvalues`, `Lanczos.grade_le_card_eigenvalues_of_mem_range`).
@@ -101,6 +103,18 @@ theorem grade_le_finrank_range_add_one [FiniteDimensional K V] (A : Module.End K
       omega
     · exact le_of_eq (finrank_span_singleton hv)
   omega
+
+/-- The shifted form of `Krylov.grade_le_finrank_range_add_one`: since the grade is shift invariant
+(`Krylov.grade_add_algebraMap`), `grade A v ≤ rank (A - c) + 1` for every scalar `c`. For a
+low-rank perturbation of the identity, `A = I + E`, this bounds the number of steps of a Krylov
+method by `rank E + 1` ([golub2013matrix] Corollary 11.3.2, with the count of distinct eigenvalues
+replaced by a rank). -/
+theorem grade_le_finrank_range_sub_algebraMap_add_one [FiniteDimensional K V]
+    (A : Module.End K V) (v : V) (c : K) :
+    grade A v ≤ Module.finrank K (LinearMap.range (A - algebraMap K (Module.End K V) c)) + 1 := by
+  have h : grade (A - algebraMap K (Module.End K V) c) v = grade A v := by
+    rw [sub_eq_add_neg, ← map_neg, grade_add_algebraMap]
+  exact h ▸ grade_le_finrank_range_add_one _ v
 
 /-- If `v` lies in the span of the eigenspaces of the `S.card` scalars of `S`, then the monic
 polynomial `∏_{μ ∈ S} (X - μ)` annihilates `v`, so the Krylov sequence of `v` terminates within

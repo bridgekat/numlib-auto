@@ -35,6 +35,10 @@ proves therefore transports.
   minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)` and obeys the Chebyshev bound
   with the condition number of the *generalized* eigenvalue problem `A x = λ M x`, which is the
   condition number of `M⁻¹ A`;
+* `Krylov.PCG.inner_inv_residual_eq_zero` and `Krylov.PCG.inner_apply_direction_eq_zero`: the PCG
+  residuals are `M⁻¹`-orthogonal and the directions `A`-conjugate ([golub2013matrix] (11.5.2),
+  [saad2003iterative] §9.2.1), read off `Krylov.PCG.iterate_eq_CG_iterate_withEnergy` and the CG
+  invariants;
 * `Krylov.exists_aeval_of_isMinResidualIterate_preconditioned` and
   `Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned` ([saad2003iterative],
   Proposition 9.1): left and right preconditioning search the *same* affine space
@@ -473,6 +477,35 @@ theorem isGalerkinIterate {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) 
       rw [IsPreconditioner.energyEnd_apply, LinearMap.comp_apply, ← map_sub, ← map_sub],
     hM.subspace_energyEnd, ← toEnergy_iterate_x A Minv b x₀ hM k] at hgal
   exact (hM.isGalerkin_energyEnd_iff A b x₀ _ _).1 hgal
+
+/-- **The PCG residuals are `M⁻¹`-orthogonal** ([saad2003iterative] Algorithm 9.1;
+[golub2013matrix] (11.5.2)): `⟪M⁻¹ r_i, r_j⟫ = 0` for `i ≠ j`. In the `M`-inner product the
+preconditioned residuals `z = M⁻¹ r` are the CG residuals of `M⁻¹ A`, which are orthogonal, and
+`⟪z_i, z_j⟫_M = ⟪M⁻¹ r_i, r_j⟫`. The hypotheses on `A` are those of `Krylov.PCG.isGalerkinIterate`:
+symmetric, and coercive relative to `M`. -/
+theorem inner_inv_residual_eq_zero {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv)
+    (hA : A.IsSymmetric) {c : ℝ} (hc : 0 < c)
+    (hcoer : ∀ x : E, c * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x))
+    {i j : ℕ} (hij : i ≠ j) :
+    inner 𝕜 (Minv (iterate A Minv b x₀ i).r) (iterate A Minv b x₀ j).r = 0 := by
+  have h := CG.inner_residual_eq_zero (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
+    (hM.isSymmetricCoercive_energyEnd A hA hc hcoer) hij
+  rwa [← (iterate_eq_CG_iterate_withEnergy A Minv b x₀ hM i).2.1,
+    ← (iterate_eq_CG_iterate_withEnergy A Minv b x₀ hM j).2.1, hM.inner_toEnergy_inv] at h
+
+/-- **The PCG directions are `A`-conjugate** ([saad2003iterative] Algorithm 9.1;
+[golub2013matrix] (11.5.2)): `⟪A p_i, p_j⟫ = 0` for `i ≠ j`, because `⟪M⁻¹ A p_i, p_j⟫_M =
+⟪A p_i, p_j⟫` and the PCG directions are the CG directions of `M⁻¹ A` in the `M`-inner product. -/
+theorem inner_apply_direction_eq_zero {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv)
+    (hA : A.IsSymmetric) {c : ℝ} (hc : 0 < c)
+    (hcoer : ∀ x : E, c * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x))
+    {i j : ℕ} (hij : i ≠ j) :
+    inner 𝕜 (A (iterate A Minv b x₀ i).p) (iterate A Minv b x₀ j).p = 0 := by
+  have h := CG.inner_apply_direction_eq_zero (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
+    (hM.isSymmetricCoercive_energyEnd A hA hc hcoer) hij
+  rwa [← (iterate_eq_CG_iterate_withEnergy A Minv b x₀ hM i).2.2.1,
+    ← (iterate_eq_CG_iterate_withEnergy A Minv b x₀ hM j).2.2.1,
+    hM.inner_energyEnd_left A] at h
 
 /-- The Chebyshev bound for PCG ([saad2003iterative], §9.2): with the generalized eigenvalues of `A
 x = λ M x` in `[λmin, λmax]` and `κ = λmax / λmin`, `‖x* - x_k‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖x* -

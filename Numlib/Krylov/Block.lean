@@ -35,6 +35,13 @@ the block subspace, one right-hand side at a time — are the small banded syste
 `BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinResidual_iff`. Ruhe's variant makes
 sense at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it builds
 with the block Krylov subspace exactly at the multiples of `p`.
+
+For symmetric `A` this is block Lanczos: the coefficient array is Hermitian
+(`BlockArnoldi.coeff_conj_of_isSymmetric`), so it vanishes more than `p` places above the diagonal
+as well (`BlockArnoldi.coeff_eq_zero_of_isSymmetric`) and `H_m` is a Hermitian band matrix of
+bandwidth `p`, the block tridiagonal `T_m` of [golub2013matrix] (10.3.7)
+(`BlockArnoldi.isHermitian_hessenbergSq_of_isSymmetric`,
+`BlockArnoldi.hasBandwidth_hessenbergSq_of_isSymmetric`).
 -/
 
 open InnerProductSpace
@@ -463,6 +470,26 @@ relation of bandwidth `p`, `A V_m = V_{m+p} H̄_m`. -/
 theorem hessenbergRelation : BandRelation A (vec A v) (coeff A v) p :=
   ⟨apply_vec A v, fun _ _ h => coeff_eq_zero_of_lt A v h⟩
 
+/-! ### Symmetric `A`: block Lanczos -/
+
+section Symmetric
+
+variable {A} (hA : A.IsSymmetric)
+include hA
+
+/-- For symmetric `A` the band coefficient array is Hermitian: `h i k = conj (h k i)`. -/
+theorem coeff_conj_of_isSymmetric (i k : ℕ) :
+    coeff A v i k = starRingEnd 𝕜 (coeff A v k i) := by
+  rw [coeff_apply, coeff_apply, inner_conj_symm, hA]
+
+/-- For symmetric `A` the band coefficients vanish more than `p` places *above* the diagonal as
+well, `h i k = 0` for `k > i + p`: the coefficient matrix of block Lanczos is block tridiagonal,
+a Hermitian band matrix of bandwidth `p` ([golub2013matrix] (10.3.7)). -/
+theorem coeff_eq_zero_of_isSymmetric {i k : ℕ} (h : i + p < k) : coeff A v i k = 0 := by
+  rw [coeff_conj_of_isSymmetric v hA, coeff_eq_zero_of_lt A v h, map_zero]
+
+end Symmetric
+
 /-! ### The case of one starting vector -/
 
 /-- For a single starting vector, Ruhe's variant is Arnoldi's process. -/
@@ -544,6 +571,20 @@ noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + p)) (Fin m) 𝕜 := ba
 /-- The square `m × m` band Hessenberg matrix `H_m`. -/
 noncomputable def hessenbergSq (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   hessenbergSqOf (coeff A v) m
+
+/-- For symmetric `A` the square block Lanczos matrix `T_m = H_m` is Hermitian. -/
+theorem isHermitian_hessenbergSq_of_isSymmetric {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (m : ℕ) :
+    (hessenbergSq A v m).IsHermitian := by
+  refine Matrix.IsHermitian.ext fun i k => ?_
+  change starRingEnd 𝕜 (coeff A v k i) = coeff A v i k
+  rw [coeff_conj_of_isSymmetric v hA (i : ℕ) (k : ℕ)]
+
+/-- For symmetric `A` the square block Lanczos matrix `T_m = H_m` has upper and lower bandwidth
+`p`: it is block tridiagonal ([golub2013matrix] (10.3.7)). -/
+theorem hasBandwidth_hessenbergSq_of_isSymmetric {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (m : ℕ) :
+    (hessenbergSq A v m).HasUpperBandwidth p ∧ (hessenbergSq A v m).HasLowerBandwidth p :=
+  ⟨Matrix.hasUpperBandwidthRect_iff.1 fun _ _ h => coeff_eq_zero_of_isSymmetric v hA h,
+    Matrix.hasLowerBandwidthRect_iff.1 fun _ _ h => coeff_eq_zero_of_lt A v h⟩
 
 /-- The first `n` block Arnoldi vectors as a `Fin n`-indexed family. -/
 private theorem image_Iio_eq_range (n : ℕ) :

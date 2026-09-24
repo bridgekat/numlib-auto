@@ -28,8 +28,12 @@ import Numlib.Projection.ConjugateDirection
 * `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`: the orthogonality invariants
   ([saad2003iterative] Prop 6.20);
 * `CG.arnoldi_vec_eq`: the CG residuals are the Lanczos vectors up to sign ([saad2003iterative]
-  (6.87), (6.99); [meurant2006lanczos] (3.4)), which is what lets the surface read the Lanczos
-  tridiagonal off the CG coefficients;
+  (6.87), (6.99); [meurant2006lanczos] (3.4)); and the Lanczos *coefficients* of `r₀` are read off
+  the CG coefficients, `α^L_0 = 1/α_0`, `α^L_{k+1} = 1/α_{k+1} + β_k/α_k`, `β^L_k = √β_k/α_k`
+  (`CG.lanczos_alpha_zero_eq`, `CG.lanczos_alpha_succ_eq`, `CG.lanczos_beta_eq`;
+  [saad2003iterative] (6.101)–(6.103); [golub2013matrix] §11.3.5–11.3.6), so that the Lanczos
+  tridiagonal is `T_m = L D Lᵀ` with `D = diag(1/α_j)` and `L` unit lower bidiagonal with
+  subdiagonal `‖r_{j+1}‖/‖r_j‖` (`CG.lanczos_tridiag_eq_ldl`, [golub2013matrix] (11.3.15));
 * `CG.energyNorm_error_sq_sub`, `CG.energyNorm_error_sq_eq_sum`, `CG.norm_error_antitone`,
   `CG.energyNorm_error_antitone`: the [hestenes1952methods] error identities and the monotonicity
   they give ([hestenes1952methods] Thm 6:1, 6:3);
@@ -1394,5 +1398,258 @@ theorem residual_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
       linear_combination hrho
 
 end ThreeTerm
+
+/-! ### The Lanczos coefficients of `r₀` from the CG coefficients
+
+Because the Lanczos vectors are the normalized CG residuals up to sign (`CG.arnoldi_vec_eq`), the
+Lanczos coefficients of `r₀ = b - A x₀` are quotients of CG quantities ([saad2003iterative]
+(6.101)–(6.103), [golub2013matrix] §11.3.5–11.3.6): `α^L_0 = 1/α_0`,
+`α^L_{k+1} = 1/α_{k+1} + β_k/α_k` and `β^L_k = ‖r_{k+1}‖/(‖r_k‖ α_k)`, which is the statement
+`T_m = L D Lᵀ` with `D = diag(1/α_j)` (`CG.lanczos_tridiag_eq_ldl`). -/
+
+section LanczosCoefficients
+
+/-- `A p_k = α_k⁻¹ (r_k - r_{k+1})` while the residual survives. -/
+private theorem apply_direction_eq_inv_smul {k : ℕ} (hr : (iterate A b x₀ k).r ≠ 0) :
+    A (iterate A b x₀ k).p =
+      (alpha A (iterate A b x₀ k))⁻¹ • ((iterate A b x₀ k).r - (iterate A b x₀ (k + 1)).r) := by
+  rw [← alpha_smul_apply_direction, smul_smul, inv_mul_cancel₀ (alpha_ne_zero b x₀ hA hr),
+    one_smul]
+
+/-- `A r_{k+1} = α_{k+1}⁻¹ (r_{k+1} - r_{k+2}) - β_k α_k⁻¹ (r_k - r_{k+1})`, from
+`r_{k+1} = p_{k+1} - β_k p_k` ([saad2003iterative] (6.100)). -/
+private theorem apply_residual_succ {k : ℕ} (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    A (iterate A b x₀ (k + 1)).r =
+      (alpha A (iterate A b x₀ (k + 1)))⁻¹ •
+          ((iterate A b x₀ (k + 1)).r - (iterate A b x₀ (k + 1 + 1)).r) -
+        (beta A (iterate A b x₀ k) * (alpha A (iterate A b x₀ k))⁻¹) •
+          ((iterate A b x₀ k).r - (iterate A b x₀ (k + 1)).r) := by
+  have hrk := residual_ne_zero_of_le b x₀ hr (Nat.le_succ k)
+  have hsplit : (iterate A b x₀ (k + 1)).r =
+      (iterate A b x₀ (k + 1)).p - beta A (iterate A b x₀ k) • (iterate A b x₀ k).p := by
+    rw [iterate_succ_p]; abel
+  calc A (iterate A b x₀ (k + 1)).r
+      = A ((iterate A b x₀ (k + 1)).p - beta A (iterate A b x₀ k) • (iterate A b x₀ k).p) := by
+        rw [← hsplit]
+    _ = _ := by
+        rw [map_sub, map_smul, apply_direction_eq_inv_smul b x₀ hA hr,
+          apply_direction_eq_inv_smul b x₀ hA hrk, smul_smul]
+
+/-- `⟪r_0, A r_0⟫ = α_0⁻¹ ⟪r_0, r_0⟫`. -/
+private theorem inner_residual_apply_residual_zero (hr : (iterate A b x₀ 0).r ≠ 0) :
+    inner 𝕜 (iterate A b x₀ 0).r (A (iterate A b x₀ 0).r) =
+      (alpha A (iterate A b x₀ 0))⁻¹ * inner 𝕜 (iterate A b x₀ 0).r (iterate A b x₀ 0).r := by
+  rw [← direction_zero A b x₀, apply_direction_eq_inv_smul b x₀ hA hr, direction_zero,
+    inner_smul_right, inner_sub_right, inner_residual_eq_zero b x₀ hA (show 0 ≠ 0 + 1 by omega),
+    sub_zero]
+
+/-- `⟪r_{k+1}, A r_{k+1}⟫ = (α_{k+1}⁻¹ + β_k α_k⁻¹) ⟪r_{k+1}, r_{k+1}⟫`. -/
+private theorem inner_residual_apply_residual_succ {k : ℕ}
+    (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    inner 𝕜 (iterate A b x₀ (k + 1)).r (A (iterate A b x₀ (k + 1)).r) =
+      ((alpha A (iterate A b x₀ (k + 1)))⁻¹ +
+          beta A (iterate A b x₀ k) * (alpha A (iterate A b x₀ k))⁻¹) *
+        inner 𝕜 (iterate A b x₀ (k + 1)).r (iterate A b x₀ (k + 1)).r := by
+  rw [apply_residual_succ b x₀ hA hr, inner_sub_right, inner_smul_right, inner_smul_right,
+    inner_sub_right, inner_sub_right,
+    inner_residual_eq_zero b x₀ hA (show k + 1 ≠ k + 1 + 1 by omega),
+    inner_residual_eq_zero b x₀ hA (show k + 1 ≠ k by omega)]
+  ring
+
+/-- `⟪r_{k+1}, A r_k⟫ = -α_k⁻¹ ⟪r_{k+1}, r_{k+1}⟫`. -/
+private theorem inner_residual_succ_apply_residual {k : ℕ}
+    (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    inner 𝕜 (iterate A b x₀ (k + 1)).r (A (iterate A b x₀ k).r) =
+      -((alpha A (iterate A b x₀ k))⁻¹ *
+        inner 𝕜 (iterate A b x₀ (k + 1)).r (iterate A b x₀ (k + 1)).r) := by
+  have hrk := residual_ne_zero_of_le b x₀ hr (Nat.le_succ k)
+  cases k with
+  | zero =>
+    rw [← direction_zero A b x₀, apply_direction_eq_inv_smul b x₀ hA hrk,
+      inner_smul_right, inner_sub_right, inner_residual_eq_zero b x₀ hA (show 0 + 1 ≠ 0 by omega)]
+    ring
+  | succ k =>
+    rw [apply_residual_succ b x₀ hA hrk, inner_sub_right, inner_smul_right, inner_smul_right,
+      inner_sub_right, inner_sub_right,
+      inner_residual_eq_zero b x₀ hA (show k + 1 + 1 ≠ k + 1 by omega),
+      inner_residual_eq_zero b x₀ hA (show k + 1 + 1 ≠ k by omega)]
+    ring
+
+omit hA in
+/-- `conj ((-1)^k t) ((-1)^k s) = t s` for real `t`, `s`. -/
+private theorem conj_sign_mul_sign (k : ℕ) (t s : ℝ) :
+    starRingEnd 𝕜 ((-1 : 𝕜) ^ k * (t : 𝕜)) * ((-1 : 𝕜) ^ k * (s : 𝕜)) = ((t * s : ℝ) : 𝕜) := by
+  have h : ((-1 : 𝕜) ^ k) * (-1 : 𝕜) ^ k = 1 := by rw [← mul_pow]; norm_num
+  rw [map_mul, map_pow, map_neg, map_one, RCLike.conj_ofReal]
+  push_cast
+  linear_combination (t : 𝕜) * s * h
+
+omit hA in
+/-- `conj ((-1)^(k+1) t) ((-1)^k s) = -(t s)` for real `t`, `s`. -/
+private theorem conj_sign_succ_mul_sign (k : ℕ) (t s : ℝ) :
+    starRingEnd 𝕜 ((-1 : 𝕜) ^ (k + 1) * (t : 𝕜)) * ((-1 : 𝕜) ^ k * (s : 𝕜)) =
+      -((t * s : ℝ) : 𝕜) := by
+  have h : ((-1 : 𝕜) ^ k) * (-1 : 𝕜) ^ k = 1 := by rw [← mul_pow]; norm_num
+  rw [map_mul, map_pow, map_neg, map_one, RCLike.conj_ofReal]
+  push_cast
+  linear_combination -(t : 𝕜) * s * h
+
+/-- The CG step lengths are real: `α_k = re α_k`. -/
+private theorem ofReal_re_alpha (k : ℕ) :
+    ((RCLike.re (alpha A (iterate A b x₀ k)) : ℝ) : 𝕜) = alpha A (iterate A b x₀ k) :=
+  RCLike.conj_eq_iff_re.1 (conj_alpha hA.isSymmetric _)
+
+/-- **The first Lanczos coefficient from CG** ([saad2003iterative] (6.102)): the Lanczos process
+started at `r₀ = b - A x₀ ≠ 0` has `α^L_0 = 1/α_0`, the reciprocal of the first CG step length. -/
+theorem lanczos_alpha_zero_eq (hr : (iterate A b x₀ 0).r ≠ 0) :
+    (Lanczos.alpha A (b - A x₀) 0 : 𝕜) = (alpha A (iterate A b x₀ 0))⁻¹ := by
+  have hn : ((‖(iterate A b x₀ 0).r‖ : ℝ) : 𝕜) ≠ 0 := by simpa using hr
+  have hα := alpha_ne_zero b x₀ hA hr
+  rw [Lanczos.coe_alpha _ hA.isSymmetric, Arnoldi.coeff, arnoldi_vec_eq b x₀ hA 0 hr, map_smul,
+    inner_smul_left, inner_smul_right, inner_residual_apply_residual_zero b x₀ hA hr,
+    ← mul_assoc, conj_sign_mul_sign, inner_self_eq_norm_sq_to_K]
+  push_cast
+  field_simp
+
+/-- **The diagonal Lanczos coefficients from CG** ([saad2003iterative] (6.101)): while
+`r_{k+1} ≠ 0`, `α^L_{k+1} = 1/α_{k+1} + β_k/α_k`. -/
+theorem lanczos_alpha_succ_eq {k : ℕ} (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    (Lanczos.alpha A (b - A x₀) (k + 1) : 𝕜) =
+      (alpha A (iterate A b x₀ (k + 1)))⁻¹ +
+        beta A (iterate A b x₀ k) / alpha A (iterate A b x₀ k) := by
+  have hn : ((‖(iterate A b x₀ (k + 1)).r‖ : ℝ) : 𝕜) ≠ 0 := by simpa using hr
+  have hα := alpha_ne_zero b x₀ hA hr
+  have hαk := alpha_ne_zero b x₀ hA (residual_ne_zero_of_le b x₀ hr (Nat.le_succ k))
+  rw [Lanczos.coe_alpha _ hA.isSymmetric, Arnoldi.coeff, arnoldi_vec_eq b x₀ hA (k + 1) hr,
+    map_smul, inner_smul_left, inner_smul_right, inner_residual_apply_residual_succ b x₀ hA hr,
+    ← mul_assoc, conj_sign_mul_sign, inner_self_eq_norm_sq_to_K]
+  push_cast
+  field_simp
+
+/-- **The off-diagonal Lanczos coefficients from CG** ([saad2003iterative] (6.103)): while
+`r_{k+1} ≠ 0`, `β^L_k = ‖r_{k+1}‖/(‖r_k‖ α_k)`, which is `√β_k/α_k` since
+`β_k = ‖r_{k+1}‖²/‖r_k‖²`. -/
+theorem lanczos_beta_eq {k : ℕ} (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    Lanczos.beta A (b - A x₀) k =
+      ‖(iterate A b x₀ (k + 1)).r‖ /
+        (‖(iterate A b x₀ k).r‖ * RCLike.re (alpha A (iterate A b x₀ k))) := by
+  have hrk := residual_ne_zero_of_le b x₀ hr (Nat.le_succ k)
+  have hn : ((‖(iterate A b x₀ (k + 1)).r‖ : ℝ) : 𝕜) ≠ 0 := by simpa using hr
+  have hnk : ((‖(iterate A b x₀ k).r‖ : ℝ) : 𝕜) ≠ 0 := by simpa using hrk
+  have hα := alpha_ne_zero b x₀ hA hrk
+  refine RCLike.ofReal_injective (K := 𝕜) ?_
+  rw [RCLike.ofReal_div, RCLike.ofReal_mul, ofReal_re_alpha b x₀ hA k]
+  rw [Lanczos.coe_beta, Arnoldi.coeff, arnoldi_vec_eq b x₀ hA (k + 1) hr,
+    arnoldi_vec_eq b x₀ hA k hrk, map_smul, inner_smul_left, inner_smul_right,
+    inner_residual_succ_apply_residual b x₀ hA hr, ← mul_assoc, conj_sign_succ_mul_sign,
+    inner_self_eq_norm_sq_to_K]
+  push_cast
+  field_simp
+
+/-- `CG.lanczos_alpha_zero_eq` read in `ℝ`. -/
+private theorem lanczos_alpha_zero_eq_re (hr : (iterate A b x₀ 0).r ≠ 0) :
+    Lanczos.alpha A (b - A x₀) 0 = (RCLike.re (alpha A (iterate A b x₀ 0)))⁻¹ := by
+  refine RCLike.ofReal_injective (K := 𝕜) ?_
+  rw [RCLike.ofReal_inv, ofReal_re_alpha b x₀ hA 0]
+  exact lanczos_alpha_zero_eq b x₀ hA hr
+
+/-- `CG.lanczos_alpha_succ_eq` read in `ℝ`, with `β_k = ‖r_{k+1}‖²/‖r_k‖²`. -/
+private theorem lanczos_alpha_succ_eq_re {k : ℕ} (hr : (iterate A b x₀ (k + 1)).r ≠ 0) :
+    Lanczos.alpha A (b - A x₀) (k + 1) =
+      (RCLike.re (alpha A (iterate A b x₀ (k + 1))))⁻¹ +
+        (‖(iterate A b x₀ (k + 1)).r‖ / ‖(iterate A b x₀ k).r‖) ^ 2 *
+          (RCLike.re (alpha A (iterate A b x₀ k)))⁻¹ := by
+  refine RCLike.ofReal_injective (K := 𝕜) ?_
+  have hβ := beta_eq_ofReal (A := A) b x₀ k
+  rw [RCLike.ofReal_add, RCLike.ofReal_mul, RCLike.ofReal_inv, RCLike.ofReal_inv,
+    RCLike.ofReal_pow, RCLike.ofReal_div, ofReal_re_alpha b x₀ hA (k + 1),
+    ofReal_re_alpha b x₀ hA k, lanczos_alpha_succ_eq b x₀ hA hr, hβ]
+  push_cast
+  ring
+
+/-- **The Lanczos tridiagonal is the `LDLᵀ` of CG** ([golub2013matrix] (11.3.15), with
+Algorithm 11.3.2's pivots `d_k = 1/α_{k-1}`; [saad2003iterative] §6.7.3): below the grade,
+`T_m = L D Lᵀ` with `D = diag(1/α_j)` the reciprocal CG step lengths and `L` unit lower
+bidiagonal with subdiagonal entries `L_{j+1,j} = ‖r_{j+1}‖/‖r_j‖`. Entrywise this is
+`CG.lanczos_alpha_zero_eq`, `CG.lanczos_alpha_succ_eq` and `CG.lanczos_beta_eq`. -/
+theorem lanczos_tridiag_eq_ldl [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {m : ℕ}
+    (hm : m ≤ grade A (b - A x₀)) :
+    Lanczos.tridiag A (b - A x₀) m =
+      Matrix.of (fun i j : Fin m => if (i : ℕ) = j then 1 else if (j : ℕ) + 1 = i then
+          ‖(iterate A b x₀ i).r‖ / ‖(iterate A b x₀ j).r‖ else 0) *
+        Matrix.diagonal (fun j : Fin m => (RCLike.re (alpha A (iterate A b x₀ j)))⁻¹) *
+        (Matrix.of (fun i j : Fin m => if (i : ℕ) = j then 1 else if (j : ℕ) + 1 = i then
+          ‖(iterate A b x₀ i).r‖ / ‖(iterate A b x₀ j).r‖ else 0)).transpose := by
+  have hne : ∀ k : ℕ, k < m → (iterate A b x₀ k).r ≠ 0 := fun k hk =>
+    residual_ne_zero_of_lt_grade b x₀ hA (hk.trans_le hm)
+  ext i j
+  rw [Lanczos.tridiag_apply, Matrix.mul_apply]
+  simp only [Matrix.mul_diagonal, Matrix.transpose_apply, Matrix.of_apply]
+  by_cases hij : (i : ℕ) = j
+  · obtain rfl : i = j := Fin.ext hij
+    rw [ite_eq_left rfl]
+    rcases Nat.eq_zero_or_pos (i : ℕ) with h0 | hpos
+    · rw [Fintype.sum_eq_single i fun k hk => ?_]
+      · rw [ite_eq_left rfl, one_mul, mul_one, h0]
+        exact lanczos_alpha_zero_eq_re b x₀ hA (hne 0 (by omega))
+      · have hk' : (i : ℕ) ≠ k := fun h => hk (Fin.ext h.symm)
+        rw [ite_eq_right hk', ite_eq_right (by omega)]
+        simp
+    · obtain ⟨k₀, hk₀⟩ : ∃ k₀, (i : ℕ) = k₀ + 1 := ⟨(i : ℕ) - 1, by omega⟩
+      let i' : Fin m := ⟨k₀, by omega⟩
+      have hii' : i ≠ i' := fun h => by
+        have := congrArg Fin.val h
+        simp only [i'] at this
+        omega
+      rw [Fintype.sum_eq_add i i' hii' fun k ⟨hk, hk'⟩ => ?_]
+      · have hne' : (i : ℕ) ≠ k₀ := by omega
+        have hsucc : k₀ + 1 = (i : ℕ) := hk₀.symm
+        simp only [i', ite_true, ite_eq_right hne', ite_eq_left hsucc]
+        rw [hk₀, lanczos_alpha_succ_eq_re b x₀ hA (hne (k₀ + 1) (by omega))]
+        ring
+      · have h1 : (i : ℕ) ≠ k := fun h => hk (Fin.ext h.symm)
+        have h2 : (k : ℕ) + 1 ≠ i := fun h => hk' (Fin.ext (by simp only [i']; omega))
+        rw [ite_eq_right h1, ite_eq_right h2]
+        simp
+  · rw [ite_eq_right hij]
+    by_cases hij1 : (i : ℕ) + 1 = j
+    · rw [ite_eq_left hij1, Fintype.sum_eq_single i fun k hk => ?_]
+      · have hne' : (j : ℕ) ≠ i := by omega
+        rw [ite_eq_left rfl, ite_eq_right hne', ite_eq_left hij1, one_mul,
+          lanczos_beta_eq b x₀ hA (k := i) (by rw [hij1]; exact hne j j.2), hij1]
+        ring
+      · have hk' : (i : ℕ) ≠ k := fun h => hk (Fin.ext h.symm)
+        rw [ite_eq_right hk']
+        by_cases hki : (k : ℕ) + 1 = i
+        · rw [ite_eq_left hki, ite_eq_right (by omega), ite_eq_right (by omega)]
+          simp
+        · rw [ite_eq_right hki]
+          simp
+    · rw [ite_eq_right hij1]
+      by_cases hji : (j : ℕ) + 1 = i
+      · rw [ite_eq_left hji, Fintype.sum_eq_single j fun k hk => ?_]
+        · rw [ite_eq_right hij, ite_eq_left hji, ite_eq_left rfl, mul_one,
+            lanczos_beta_eq b x₀ hA (k := j) (by rw [hji]; exact hne i i.2), hji]
+          ring
+        · have hk' : (j : ℕ) ≠ k := fun h => hk (Fin.ext h.symm)
+          rw [ite_eq_right hk']
+          by_cases hkj : (k : ℕ) + 1 = j
+          · rw [ite_eq_left hkj, ite_eq_right (by omega), ite_eq_right (by omega)]
+            simp
+          · rw [ite_eq_right hkj]
+            simp
+      · rw [ite_eq_right hji]
+        refine (Finset.sum_eq_zero fun k _ => ?_).symm
+        by_cases h1 : (i : ℕ) = k
+        · rw [ite_eq_left h1, ite_eq_right (by omega), ite_eq_right (by omega)]
+          simp
+        · rw [ite_eq_right h1]
+          by_cases h2 : (k : ℕ) + 1 = i
+          · rw [ite_eq_left h2, ite_eq_right (by omega), ite_eq_right (by omega)]
+            simp
+          · rw [ite_eq_right h2]
+            simp
+
+end LanczosCoefficients
 
 end CG

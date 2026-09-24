@@ -16,6 +16,13 @@ and — over a field — the grade of `v` together with its minimal polynomial, 
 the annihilator ideal `{p | p(A) v = 0}` ([saad2003iterative] §6.2, Prop 6.1–6.2;
 [saad2011numerical] Prop 6.1–6.3; [choi2006iterative] Def 2.1; [meurant2006lanczos] §2.1).
 
+The full Krylov space is the least `A`-invariant subspace containing `v`
+(`Krylov.fullSubspace_mem_invtSubmodule`, `Krylov.fullSubspace_le_of_mem_invtSubmodule`), so the
+grade is the dimension of that subspace ([golub2013matrix] Theorem 11.3.1). Krylov spaces, full
+Krylov spaces and grades are invariant under shifts `A ↦ A + c` (`Krylov.subspace_add_algebraMap`,
+`Krylov.fullSubspace_add_algebraMap`, `Krylov.grade_add_algebraMap`) and under `A ↦ -A`
+(`Krylov.subspace_neg`).
+
 ## Notation
 
 `𝒦[A, v] m` is `Krylov.subspace A v m`, the `m`-th Krylov subspace of `A` at `v`. The notation is
@@ -158,6 +165,21 @@ theorem fullSubspace_mem_invtSubmodule : fullSubspace A v ∈ Module.End.invtSub
   rw [pow_succ']
   rfl
 
+/-- **The full Krylov space is the least invariant subspace containing `v`**: every `A`-invariant
+submodule containing `v` contains every `A^i v`. With `Krylov.fullSubspace_mem_invtSubmodule` this
+makes the grade the dimension of the smallest invariant subspace containing `v`
+([golub2013matrix] Theorem 11.3.1). -/
+theorem fullSubspace_le_of_mem_invtSubmodule {W : Submodule R M}
+    (hW : W ∈ Module.End.invtSubmodule A) (hv : v ∈ W) : fullSubspace A v ≤ W := by
+  rw [fullSubspace, Submodule.span_le]
+  rintro _ ⟨i, rfl⟩
+  induction i with
+  | zero => simpa using hv
+  | succ i ih =>
+    change (A ^ (i + 1)) v ∈ W
+    rw [pow_succ', Module.End.mul_apply]
+    exact hW ih
+
 /-- The full Krylov space of the zero vector is trivial. -/
 @[simp]
 theorem fullSubspace_zero : fullSubspace A (0 : M) = ⊥ := by
@@ -201,6 +223,37 @@ of the polynomial description that the Krylov methods use. -/
 theorem aeval_apply_mem_subspace {p : R[X]} {m : ℕ} (hp : p.degree < m) :
     aeval A p v ∈ subspace A v m :=
   (mem_subspace_iff_exists_aeval A v).2 ⟨p, hp, rfl⟩
+
+/-- One inclusion of `Krylov.subspace_add_algebraMap`: `(A + c)^i v = q(A) v` for
+`q = (X + c)^i`, a polynomial of degree at most `i`. -/
+private theorem subspace_add_algebraMap_le (c : R) (m : ℕ) :
+    subspace (A + algebraMap R (Module.End R M) c) v m ≤ subspace A v m := by
+  rw [subspace, Submodule.span_le]
+  rintro _ ⟨i, rfl⟩
+  have hdeg : ((X + C c) ^ (i : ℕ) : R[X]).degree < (m : ℕ) := by
+    refine degree_le_natDegree.trans_lt ?_
+    have h1 : (X + C c : R[X]).natDegree ≤ 1 := by rw [natDegree_add_C]; exact natDegree_X_le
+    exact_mod_cast (natDegree_pow_le_of_le (i : ℕ) h1).trans_lt (by simp)
+  have happ : aeval A ((X + C c) ^ (i : ℕ)) v =
+      ((A + algebraMap R (Module.End R M) c) ^ (i : ℕ)) v := by
+    simp
+  change ((A + algebraMap R (Module.End R M) c) ^ (i : ℕ)) v ∈ subspace A v m
+  rw [← happ]
+  exact aeval_apply_mem_subspace A v hdeg
+
+/-- **Shift invariance**: the Krylov subspaces of `A + c` are those of `A` for every scalar `c`,
+both being `span {v, A v, …, A^(m-1) v}` — `(A + c)^i v` is a combination of the `A^j v`, `j ≤ i`,
+and conversely with `-c`. A companion of `Krylov.subspace_neg`. -/
+theorem subspace_add_algebraMap (c : R) (m : ℕ) :
+    subspace (A + algebraMap R (Module.End R M) c) v m = subspace A v m := by
+  refine le_antisymm (subspace_add_algebraMap_le A v c m) ?_
+  have h := subspace_add_algebraMap_le (A + algebraMap R (Module.End R M) c) v (-c) m
+  rwa [map_neg, add_neg_cancel_right] at h
+
+/-- The full Krylov space is shift invariant: `𝒦_∞(A + c, v) = 𝒦_∞(A, v)`. -/
+theorem fullSubspace_add_algebraMap (c : R) :
+    fullSubspace (A + algebraMap R (Module.End R M) c) v = fullSubspace A v := by
+  simp only [← iSup_subspace, subspace_add_algebraMap]
 
 /-- `𝒦_{m+1} = 𝒦_m` iff `A^m v ∈ 𝒦_m` iff `𝒦_m` is `A`-invariant (for `m ≥ 1` or `v = 0`). -/
 theorem subspace_succ_eq_iff (m : ℕ) :
@@ -424,6 +477,12 @@ theorem minpolyVec_monic (h : minpolyVec A v ≠ 0) : (minpolyVec A v).Monic :=
 finite dimension terminates in at most `dim V` steps. -/
 theorem grade_le_finrank [FiniteDimensional K V] : grade A v ≤ Module.finrank K V :=
   Submodule.finrank_le _
+
+/-- The grade is shift invariant: `grade (A + c) v = grade A v`, the full Krylov spaces being
+equal (`Krylov.fullSubspace_add_algebraMap`). -/
+theorem grade_add_algebraMap (c : K) :
+    grade (A + algebraMap K (Module.End K V) c) v = grade A v := by
+  rw [grade, grade, fullSubspace_add_algebraMap]
 
 /-- The zero vector has grade `0`. -/
 @[simp]
