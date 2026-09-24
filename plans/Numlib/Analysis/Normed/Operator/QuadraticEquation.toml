@@ -1,26 +1,2 @@
-desc = '''
-Linear-plus-quadratic equations in a Banach space: Stewart's lemma, the fixed-point engine of the
-perturbation theory of invariant and singular subspaces ([golub2013matrix] Theorem 7.2.4 and its
-singular-subspace analogue Theorem 8.6.5; G. W. Stewart, "Error and perturbation bounds for subspaces
-associated with certain eigenvalue problems", SIAM Rev. 15 (1973), Theorem 3.1). For an invertible
-bounded operator `L` with `‖L⁻¹‖ ≤ 1/δ` and a map `φ` with `φ 0 = 0` that is Lipschitz with constant
-`η (‖x‖ + ‖y‖)`, the equation `L x + φ x = g` has a solution with `‖x‖ ≤ 2‖g‖/δ` when `4 ‖g‖ η < δ²`.
-Placed here at the Golub–Van Loan review (it was the root-namespace `exists_norm_le_of_quadratic` in
-`Numlib/Eigen/InvariantSubspace`; the review asked for a descriptive name and a home below both of
-its consumers, the invariant-subspace theorem in `Numlib/Eigen` and the singular-subspace theorem in
-`Numlib/Analysis/Matrix/SingularValues`, which must not import `Eigen` or `Nonlinear`). Upstreaming
-candidate (natural home `Mathlib.Analysis.Normed.Operator`/`Mathlib.Topology.MetricSpace.Contracting`).
-Imports Mathlib only. ★★ (~150 lines).
-'''
-
 [[node]]
 id = "ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic"
-kind = "theorem"
-desc = '''Stewart's quadratic-equation lemma: in a Banach space `F` over `𝕜` (`RCLike`, or any nontrivially
-normed field), let `L : F ≃L[𝕜] F` with `‖(L.symm : F →L[𝕜] F)‖ ≤ 1/δ` (`δ > 0`), `g : F`, `γ ≥ ‖g‖`,
-and `φ : F → F` with `φ 0 = 0` and `‖φ x - φ y‖ ≤ η * (‖x‖ + ‖y‖) * ‖x - y‖` for all `x y`. If `4 * γ
-* η < δ ^ 2` then `∃ x, L x + φ x = g ∧ ‖x‖ ≤ 2 * γ / δ`. Proof: `T x = L.symm (g - φ x)` maps the
-closed ball of radius `ρ = 2γ/δ` into itself (`‖T x‖ ≤ (γ + η ρ²)/δ ≤ ρ` since `ηρ² ≤ γ` by `4γη <
-δ²`) and is a contraction there with constant `2ηρ/δ < 1` (`ContractingWith` on the complete subtype
-`Metric.closedBall 0 ρ`, `ContractingWith.fixedPoint`, `isComplete_closedBall`). ★★ (~150 lines)'''
-deps = []

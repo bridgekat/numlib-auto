@@ -221,6 +221,7 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Compact.Banach
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Normed.Operator.Multilinear
+import Numlib.Analysis.Normed.Operator.QuadraticEquation
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
@@ -377,6 +378,7 @@ import Numlib.Eigen.NumericalRange
 import Numlib.Eigen.Pencil
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
+import Numlib.Eigen.Pseudospectrum
 import Numlib.Eigen.QRAlgorithm
 import Numlib.Eigen.RayleighQuotientIteration
 import Numlib.Eigen.RayleighRitz
@@ -467,6 +469,7 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Similar
+import Numlib.LinearAlgebra.Matrix.Sylvester
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz

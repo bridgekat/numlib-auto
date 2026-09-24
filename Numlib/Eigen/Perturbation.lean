@@ -10,6 +10,7 @@ import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
+import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
@@ -32,7 +33,7 @@ Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a
 the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the bounds below turn
 `‖r‖` into a distance from `θ` to the spectrum.
 
-## The eigenvector, the condition numbers and the pseudospectrum
+## The eigenvector and the condition numbers
 
 `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div` is the residual bound for the eigen*vector*
 ([saad2011numerical], Thm 3.9): a small residual and a separated eigenvalue force a small angle
@@ -53,11 +54,21 @@ inverse function theorem applied to `(t, μ, z) ↦ (t, ⟪w, z⟫, A z + t B z 
 is injective exactly because the eigenvalue is simple.  No determinant and no implicit function
 theorem are involved.
 
-`ContinuousLinearMap.pseudospectrum` is the `ε`-pseudospectrum ([saad2011numerical], Def 3.3).  It
-is defined by the approximate-eigenvector form `∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`, his (3.55), rather
-than by the resolvent norm, so that no convention about the resolvent on the spectrum is needed;
-`ContinuousLinearMap.mem_pseudospectrum_iff` is the backward-error characterization of his Prop 3.7,
-with the strict inequality `‖B‖ < ε` that the equivalence actually needs.
+The `ε`-pseudospectra, open (`ContinuousLinearMap.pseudospectrum`) and closed
+(`ContinuousLinearMap.closedPseudospectrum`), live in `Numlib/Eigen/Pseudospectrum.lean`.
+
+## Non-diagonalizable matrices and approximate invariant subspaces
+
+`Matrix.one_le_norm_mul_of_mem_spectrum_add` (and its `p`-norm twin) is the resolvent step shared
+by the eigenvalue perturbation bounds of [golub2013matrix] §7.2: an eigenvalue `μ` of `A + E` that
+is not one of `A` has `‖(μ I - A)⁻¹ E‖ ≥ 1`. `Matrix.infDist_spectrum_le_of_schur` is
+[golub2013matrix] Theorem 7.2.3, the Henrici-type bound for a matrix that need not be
+diagonalizable: from a Schur form `Qᴴ A Q = D + N`, the distance from `μ` to the diagonal of `D` is
+at most `max θ θ^{1/p}`, `θ = ‖E‖₂ ∑_{k<p} ‖N‖₂^k`, where `p` is the nilpotency index of the
+entrywise absolute value `|N|`. `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul`
+is the block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with constant `1`): an
+orthonormal block `Q₁` and a Hermitian `S` with `‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A`
+within `ε` of every eigenvalue of `S`.
 
 ## The Gershgorin discs and how many eigenvalues each group of them holds
 
@@ -794,99 +805,6 @@ theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E �
 
 end Module.End
 
-/-! ### Pseudospectra
-
-The `ε`-pseudospectrum of `A` ([saad2011numerical], Def 3.3) is the set of scalars that are
-eigenvalues of some perturbation of `A` of norm below `ε`. [saad2011numerical] defines it by the
-resolvent, `‖(A - z)⁻¹‖ > ε⁻¹`, with the convention that the resolvent norm is infinite on the
-spectrum; the equivalent form taken here as the definition,
-
-`z ∈ pseudospectrum ε A ↔ ∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`,
-
-is his (3.55), needs no convention at the spectrum — an exact eigenvector has residual `0` — and is
-what the perturbation statements consume. -/
-
-/-- The **`ε`-pseudospectrum** of `A` ([saad2011numerical], Def 3.3, in the form of his (3.55)): the
-scalars `z` for which some unit vector is an eigenvector to within `ε`.
-
-`ContinuousLinearMap.mem_pseudospectrum_iff` identifies this with the backward-error form, and
-`ContinuousLinearMap.spectrum_subset_pseudospectrum` records that it contains the spectrum, which is
-why no convention about the resolvent at the spectrum is needed. -/
-def ContinuousLinearMap.pseudospectrum (ε : ℝ) (A : E →L[𝕜] E) : Set 𝕜 :=
-  {z | ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε}
-
-namespace ContinuousLinearMap
-
-/-- Membership in the pseudospectrum, unfolded. -/
-theorem mem_pseudospectrum {ε : ℝ} {A : E →L[𝕜] E} {z : 𝕜} :
-    z ∈ pseudospectrum ε A ↔ ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε := Iff.rfl
-
-/-- **The backward-error characterization of the pseudospectrum** ([saad2011numerical], Prop 3.7,
-(iv) ↔ (v)): `z` is in the `ε`-pseudospectrum exactly when it is an eigenvalue of some `A - B` with
-`‖B‖ < ε`.
-
-Forwards, the perturbation is the rank-one one of `isLeast_eigen_backwardError`, built from the
-residual of the approximate eigenvector; backwards, an eigenvector of `A - B` has residual `B w` for
-`A`.  The book states (v) with `‖B‖ ≤ ε`, but its own proof of (v) ⇒ (iv) needs the strict
-inequality, and with `≤` the equivalence is false: for `A = 0` every `z` of modulus `ε` satisfies
-the right-hand side, with the perturbation `B = -z • 1` of norm exactly `ε`, and none satisfies the
-left, `‖0 - z • w‖` being `ε` at every unit `w`. -/
-theorem mem_pseudospectrum_iff {ε : ℝ} (A : E →L[𝕜] E) (z : 𝕜) :
-    z ∈ pseudospectrum ε A ↔
-      ∃ B : E →L[𝕜] E, ‖B‖ < ε ∧ Module.End.HasEigenvalue ((A - B : E →L[𝕜] E) :
-        E →ₗ[𝕜] E) z := by
-  constructor
-  · rintro ⟨w, hw, hlt⟩
-    have hw0 : w ≠ 0 := by
-      rintro rfl
-      simp at hw
-    refine ⟨InnerProductSpace.rankOne 𝕜 (A w - z • w) w, ?_, ?_⟩
-    · rwa [InnerProductSpace.norm_rankOne, hw, mul_one]
-    · have huu : (inner 𝕜 w w : 𝕜) = 1 := by
-        rw [inner_self_eq_norm_sq_to_K, hw]; norm_num
-      refine Module.End.hasEigenvalue_of_hasEigenvector
-        ⟨Module.End.mem_eigenspace_iff.2 ?_, hw0⟩
-      simp only [ContinuousLinearMap.coe_coe, sub_apply, InnerProductSpace.rankOne_apply, huu,
-        one_smul, sub_sub_cancel]
-  · rintro ⟨B, hB, hz⟩
-    obtain ⟨w, hw, hw0⟩ := hz.exists_hasEigenvector
-    have hval : A w - B w = z • w := by
-      have := Module.End.mem_eigenspace_iff.1 hw
-      simpa using this
-    have hn : ‖w‖ ≠ 0 := norm_ne_zero_iff.2 hw0
-    refine ⟨(‖w‖ : 𝕜)⁻¹ • w, ?_, ?_⟩
-    · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg w),
-        inv_mul_cancel₀ hn]
-    · have hres : A ((‖w‖ : 𝕜)⁻¹ • w) - z • (‖w‖ : 𝕜)⁻¹ • w
-          = (‖w‖ : 𝕜)⁻¹ • B w := by
-        rw [map_smul, smul_comm z, ← smul_sub]
-        congr 1
-        rw [← hval]
-        abel
-      rw [hres, norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg w)]
-      calc ‖w‖⁻¹ * ‖B w‖ ≤ ‖w‖⁻¹ * (‖B‖ * ‖w‖) := by
-            gcongr
-            exact B.le_opNorm w
-        _ = ‖B‖ := by field_simp
-        _ < ε := hB
-
-/-- Every eigenvalue lies in every pseudospectrum of positive radius: an exact eigenvector has
-residual `0`.  With `Module.End.hasEigenvalue_iff_mem_spectrum` this is the inclusion `σ(A) ⊆
-Λ_ε(A)`, and it is the reason the residual form of the definition needs no convention about the
-resolvent norm on the spectrum. -/
-theorem mem_pseudospectrum_of_hasEigenvalue {ε : ℝ} (hε : 0 < ε) {A : E →L[𝕜] E} {z : 𝕜}
-    (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : z ∈ pseudospectrum ε A := by
-  obtain ⟨w, hw, hw0⟩ := hz.exists_hasEigenvector
-  have hval : A w = z • w := by simpa using Module.End.mem_eigenspace_iff.1 hw
-  have hn : ‖w‖ ≠ 0 := norm_ne_zero_iff.2 hw0
-  refine ⟨(‖w‖ : 𝕜)⁻¹ • w, ?_, ?_⟩
-  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg w),
-      inv_mul_cancel₀ hn]
-  · rw [map_smul, smul_comm z, hval, sub_self, norm_zero]
-    exact hε
-
-end ContinuousLinearMap
-
 namespace Matrix
 
 open scoped Matrix.Norms.L2Operator
@@ -1385,3 +1303,299 @@ theorem dist_eigenvectorSpan_le_norm_residual_div {n : ℕ} (hn : Module.finrank
     sq_nonneg ‖A p - (θ : 𝕜) • p‖]
 
 end LinearMap.IsSymmetric
+
+/-! ### The resolvent step, the Schur-form bound and approximate invariant subspaces
+
+`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is the step shared by every
+resolvent-based perturbation bound ([golub2013matrix] (7.2.1), via Lemma 2.3.3): if `μ` is an
+eigenvalue of `A + E` but not of `A`, then `‖(μ - A)⁻¹ E‖ ≥ 1`, since otherwise
+`μ - A - E = (μ - A)(1 - (μ - A)⁻¹ E)` would be invertible by the Neumann series.
+`Matrix.infDist_spectrum_le_of_schur` is [golub2013matrix] Theorem 7.2.3, a Henrici-type bound for
+a matrix that need not be diagonalizable: with a Schur form `Qᴴ A Q = D + N`, the resolvent of
+`D + N` is a finite Neumann series in `(μ - D)⁻¹ N`, whose length is the nilpotency index of the
+entrywise absolute value `|N|`.
+
+`Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` is the block form of the
+residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1` of the one-vector residual
+bound instead of the book's `√2`): an orthonormal block `Q₁` and a Hermitian `S` with
+`‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A` within `ε` of every eigenvalue of `S`. -/
+
+/-- In a Banach algebra, if `a` is a unit and `a - b` is not, then `‖a⁻¹ b‖ ≥ 1`: otherwise
+`a - b = a (1 - a⁻¹ b)` would be a unit by the Neumann series. -/
+theorem NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub {R : Type*} [NormedRing R]
+    [HasSummableGeomSeries R] {a b : R} (ha : IsUnit a) (hab : ¬IsUnit (a - b)) :
+    1 ≤ ‖Ring.inverse a * b‖ := by
+  by_contra hlt
+  push Not at hlt
+  apply hab
+  obtain ⟨u, rfl⟩ := ha
+  have : (u : R) - b = u * (1 - Ring.inverse (u : R) * b) := by
+    rw [Ring.inverse_unit, mul_sub, mul_one, ← mul_assoc, Units.mul_inv, one_mul]
+  rw [this]
+  exact u.isUnit.mul (Units.oneSub _ hlt).isUnit
+
+namespace Matrix
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+private theorem not_isUnit_sub_sub_of_mem_spectrum_add {A E : Matrix n n 𝕜} {μ : 𝕜}
+    (hμ : μ ∈ spectrum 𝕜 (A + E)) : ¬IsUnit ((μ • 1 - A) - E) := by
+  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one] at hμ
+  rwa [sub_sub]
+
+private theorem isUnit_smul_one_sub_of_notMem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
+    (hA : μ ∉ spectrum 𝕜 A) : IsUnit (μ • 1 - A) := by
+  rwa [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, not_not] at hA
+
+section L2
+
+open scoped Matrix.Norms.L2Operator
+
+/-- The step shared by [golub2013matrix] Theorems 7.2.1–7.2.3 and 7.9.8 ((7.2.1), via their
+Lemma 2.3.3), in the spectral norm: if `μ ∈ σ(A + E)` and `μ ∉ σ(A)` then
+`1 ≤ ‖(μ I - A)⁻¹ E‖₂` (and so `1 ≤ ‖(μ I - A)⁻¹‖₂ ‖E‖₂`). -/
+theorem one_le_norm_mul_of_mem_spectrum_add {A E : Matrix n n 𝕜} {μ : 𝕜}
+    (hμ : μ ∈ spectrum 𝕜 (A + E)) (hA : μ ∉ spectrum 𝕜 A) : 1 ≤ ‖(μ • 1 - A)⁻¹ * E‖ := by
+  rw [nonsing_inv_eq_ringInverse]
+  exact NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub
+    (isUnit_smul_one_sub_of_notMem_spectrum hA) (not_isUnit_sub_sub_of_mem_spectrum_add hμ)
+
+end L2
+
+/-- The resolvent step `Matrix.one_le_norm_mul_of_mem_spectrum_add` in every induced `p`-norm:
+if `μ ∈ σ(A + E)` and `μ ∉ σ(A)` then `1 ≤ ‖(μ I - A)⁻¹ E‖_p`. -/
+theorem one_le_lpOpNorm_mul_of_mem_spectrum_add (p : ENNReal) [Fact (1 ≤ p)]
+    {A E : Matrix n n 𝕜} {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 (A + E)) (hA : μ ∉ spectrum 𝕜 A) :
+    1 ≤ lpOpNorm p ((μ • 1 - A)⁻¹ * E) := by
+  rw [lpOpNorm, lpCLM_mul, ← ringInverse_lpCLM]
+  refine NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub
+    ((isUnit_lpCLM_iff p _).mpr (isUnit_smul_one_sub_of_notMem_spectrum hA)) ?_
+  have : lpCLM p (μ • 1 - A) - lpCLM p E = lpCLM p ((μ • 1 - A) - E) := by
+    ext x i; simp [sub_mulVec]
+  rw [this, isUnit_lpCLM_iff]
+  exact not_isUnit_sub_sub_of_mem_spectrum_add hμ
+
+/-- Unitary conjugation preserves the spectrum. -/
+private theorem spectrum_star_mul_mul {Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜)
+    (M : Matrix n n 𝕜) : spectrum 𝕜 (star Q * M * Q) = spectrum 𝕜 M := by
+  have hQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.mp hQ
+  have hdet : star Q.det * Q.det = 1 := by
+    have := congrArg det hQ'
+    rwa [det_mul, det_one, star_eq_conjTranspose, det_conjTranspose] at this
+  ext μ
+  simp only [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det]
+  have : μ • (1 : Matrix n n 𝕜) - star Q * M * Q = star Q * (μ • 1 - M) * Q := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ']
+  rw [this, det_mul, det_mul, star_eq_conjTranspose, det_conjTranspose, mul_comm (star Q.det),
+    mul_assoc, hdet, mul_one]
+
+section Schur
+
+open scoped Matrix.Norms.L2Operator
+
+/-- Entrywise domination of powers: if `‖M i j‖ ≤ c ‖N i j‖` entrywise then
+`‖(M ^ k) i j‖ ≤ c ^ k ((|N|) ^ k) i j`, with `|N| = N.map ‖·‖`. -/
+private theorem norm_pow_apply_le {M N : Matrix n n ℂ} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ i j, ‖M i j‖ ≤ c * ‖N i j‖) (k : ℕ) (i j : n) :
+    ‖(M ^ k) i j‖ ≤ c ^ k * ((N.map (‖·‖)) ^ k) i j ∧ 0 ≤ ((N.map (‖·‖)) ^ k) i j := by
+  induction k generalizing i j with
+  | zero =>
+    by_cases hij : i = j
+    · subst hij; simp
+    · simp [one_apply_ne hij]
+  | succ k ih =>
+    refine ⟨?_, ?_⟩
+    · rw [pow_succ M, mul_apply, pow_succ (N.map (‖·‖)), mul_apply, Finset.mul_sum]
+      refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun l _ => ?_)
+      rw [norm_mul, map_apply]
+      calc ‖(M ^ k) i l‖ * ‖M l j‖ ≤ (c ^ k * ((N.map (‖·‖)) ^ k) i l) * (c * ‖N l j‖) :=
+            mul_le_mul (ih i l).1 (h l j) (norm_nonneg _)
+              (mul_nonneg (pow_nonneg hc _) (ih i l).2)
+        _ = c ^ (k + 1) * (((N.map (‖·‖)) ^ k) i l * ‖N l j‖) := by ring
+    · rw [pow_succ, mul_apply]
+      exact Finset.sum_nonneg fun l _ => mul_nonneg (ih i l).2 (by rw [map_apply]; positivity)
+
+/-- [golub2013matrix] Theorem 7.2.3: let `Qᴴ A Q = diagonal d + N` for a unitary `Q`, and let
+`p ≥ 1` be such that the entrywise absolute value `|N|` satisfies `|N| ^ p = 0` (for a strictly
+upper triangular `N`, `p = n` always works; the book takes the least such `p`). If `μ` is an
+eigenvalue of `A + E`, then `|μ - d i| ≤ max θ θ^{1/p}` for some `i`, where
+`θ = ‖E‖₂ ∑_{k < p} ‖N‖₂ ^ k`. With `δ = min_i |μ - d_i| > 0`, the resolvent of `D + N` is the
+finite Neumann series `∑_{k<p} ((μ - D)⁻¹ N)^k (μ - D)⁻¹` (the entrywise bound
+`|((μ - D)⁻¹ N)^p| ≤ δ^{-p} |N|^p = 0`), so `‖(μ - A)⁻¹‖₂ ≤ ∑_{k<p} ‖N‖₂^k / δ^{k+1}` and
+`1 ≤ ‖(μ - A)⁻¹‖₂ ‖E‖₂` gives `δ ≤ θ` if `δ ≥ 1` and `δ^p ≤ θ` if `δ < 1`. The book's
+hypothesis that `N` be strictly upper triangular is not needed. -/
+theorem infDist_spectrum_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
+    (hQ : Q ∈ unitaryGroup n ℂ) {d : n → ℂ} {N : Matrix n n ℂ}
+    (hQA : star Q * A * Q = diagonal d + N) {p : ℕ} (hp : 1 ≤ p) (hN : (N.map (‖·‖)) ^ p = 0)
+    (E : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E)) :
+    ∃ i, ‖μ - d i‖ ≤
+      max (‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k)
+        ((‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k) ^ (1 / p : ℝ)) := by
+  set θ := ‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k with hθ
+  have hθ0 : 0 ≤ θ := mul_nonneg (norm_nonneg _)
+    (Finset.sum_nonneg fun _ _ => pow_nonneg (norm_nonneg _) _)
+  -- the index set is nonempty, since the spectrum of `A + E` is
+  have hne : Nonempty n := by
+    by_contra h
+    rw [not_nonempty_iff] at h
+    rw [spectrum.mem_iff] at hμ
+    exact hμ (isUnit_of_subsingleton _)
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_min_image Finset.univ (fun i => ‖μ - d i‖)
+    ⟨Classical.arbitrary n, Finset.mem_univ _⟩
+  refine ⟨i₀, ?_⟩
+  set δ := ‖μ - d i₀‖ with hδdef
+  rcases (norm_nonneg (μ - d i₀)).eq_or_lt with hδ0 | hδ
+  · rw [hδdef, ← hδ0]; exact hθ0.trans (le_max_left _ _)
+  have hne0 : ∀ i, μ - d i ≠ 0 := fun i hi => by
+    have h := hi₀ i (Finset.mem_univ i)
+    rw [hi, norm_zero] at h
+    exact hδ.ne' (le_antisymm h (norm_nonneg _))
+  -- the diagonal part and its inverse
+  set Dμ : Matrix n n ℂ := diagonal fun i => μ - d i with hDμ
+  set Dinv : Matrix n n ℂ := diagonal fun i => (μ - d i)⁻¹ with hDinv
+  have hDD : Dinv * Dμ = 1 := by
+    rw [hDinv, hDμ, diagonal_mul_diagonal,
+      show (fun i => (μ - d i)⁻¹ * (μ - d i)) = (1 : n → ℂ) from
+        funext fun i => inv_mul_cancel₀ (hne0 i)]
+    simp
+  have hDinv_le : ‖Dinv‖ ≤ δ⁻¹ := by
+    rw [hDinv, l2_opNorm_diagonal]
+    refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr fun i => ?_
+    rw [norm_inv]
+    gcongr
+    exact hi₀ i (Finset.mem_univ i)
+  -- `M = (μ - D)⁻¹ N` is nilpotent
+  set M := Dinv * N with hM
+  have hMent : ∀ i j, ‖M i j‖ ≤ δ⁻¹ * ‖N i j‖ := fun i j => by
+    rw [hM, hDinv, diagonal_mul, norm_mul, norm_inv]
+    gcongr
+    exact hi₀ i (Finset.mem_univ i)
+  have hMp : M ^ p = 0 := by
+    ext i j
+    have h := (norm_pow_apply_le (inv_nonneg.mpr hδ.le) hMent p i j).1
+    rw [hN, zero_apply, mul_zero] at h
+    simpa using h
+  -- the resolvent of `B = D + N` as a finite Neumann series
+  set B := diagonal d + N with hB
+  set S := ∑ k ∈ Finset.range p, M ^ k with hS
+  have hSinv : S * Dinv * (μ • 1 - B) = 1 := by
+    have h1 : μ • (1 : Matrix n n ℂ) - B = Dμ - N := by
+      rw [hB, hDμ, ← diagonal_one, ← diagonal_smul, sub_add_eq_sub_sub, diagonal_sub]
+      congr 2
+      funext i
+      simp
+    rw [h1, Matrix.mul_assoc, Matrix.mul_sub, hDD, ← hM, geom_sum_mul_neg, hMp, sub_zero]
+  have hBunit : IsUnit (μ • (1 : Matrix n n ℂ) - B) :=
+    (isUnit_iff_isUnit_det _).mpr (isUnit_det_of_left_inverse hSinv)
+  have hBinv : (μ • (1 : Matrix n n ℂ) - B)⁻¹ = S * Dinv := inv_eq_left_inv hSinv
+  have hμB : μ ∉ spectrum ℂ B := by
+    rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, not_not]; exact hBunit
+  -- move the perturbation to the Schur basis
+  set E' := star Q * E * Q with hE'
+  have hμ' : μ ∈ spectrum ℂ (B + E') := by
+    rw [← hQA, hE', ← Matrix.add_mul, ← Matrix.mul_add, spectrum_star_mul_mul hQ]
+    exact hμ
+  have hE'n : ‖E'‖ = ‖E‖ := l2_opNorm_unitary_mul_mul_unitary (Unitary.star_mem hQ) E hQ
+  have hstep := one_le_norm_mul_of_mem_spectrum_add hμ' hμB
+  rw [hBinv] at hstep
+  -- bound the Neumann series
+  have hpow : ∀ k : ℕ, ‖M ^ k‖ ≤ ‖M‖ ^ k := by
+    intro k
+    rcases k with _ | k
+    · rw [pow_zero, pow_zero, CStarRing.norm_one]
+    · exact norm_pow_le' M (Nat.succ_pos k)
+  have hMnorm : ‖M‖ ≤ δ⁻¹ * ‖N‖ :=
+    (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right hDinv_le (norm_nonneg _))
+  have hSnorm : ‖S * Dinv‖ ≤ ∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1) := by
+    calc ‖S * Dinv‖ ≤ ‖S‖ * ‖Dinv‖ := norm_mul_le _ _
+      _ ≤ (∑ k ∈ Finset.range p, ‖M‖ ^ k) * δ⁻¹ :=
+          mul_le_mul ((norm_sum_le _ _).trans (Finset.sum_le_sum fun k _ => hpow k)) hDinv_le
+            (norm_nonneg _) (Finset.sum_nonneg fun _ _ => pow_nonneg (norm_nonneg _) _)
+      _ ≤ (∑ k ∈ Finset.range p, (δ⁻¹ * ‖N‖) ^ k) * δ⁻¹ :=
+          mul_le_mul_of_nonneg_right (Finset.sum_le_sum fun k _ =>
+            pow_le_pow_left₀ (norm_nonneg _) hMnorm k) (inv_nonneg.mpr hδ.le)
+      _ = ∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1) := by
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun k _ => by ring
+  have hmain : 1 ≤ ‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1) := by
+    calc (1 : ℝ) ≤ ‖S * Dinv * E'‖ := hstep
+      _ ≤ ‖S * Dinv‖ * ‖E'‖ := norm_mul_le _ _
+      _ ≤ (∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1)) * ‖E‖ := by
+          rw [hE'n]; exact mul_le_mul_of_nonneg_right hSnorm (norm_nonneg _)
+      _ = _ := mul_comm _ _
+  rcases le_or_gt 1 δ with h1 | h1
+  · -- `δ ≥ 1`: every `δ^{-(k+1)} ≤ δ⁻¹`
+    refine le_max_of_le_left ?_
+    have : ‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1) ≤ θ * δ⁻¹ := by
+      rw [hθ, mul_assoc, Finset.sum_mul]
+      gcongr with k
+      calc δ⁻¹ ^ (k + 1) = δ⁻¹ ^ k * δ⁻¹ := pow_succ _ _
+        _ ≤ 1 * δ⁻¹ := by gcongr; exact pow_le_one₀ (by positivity) (inv_le_one_of_one_le₀ h1)
+        _ = δ⁻¹ := one_mul _
+    have h2 := hmain.trans this
+    rwa [← div_eq_mul_inv, one_le_div hδ] at h2
+  · -- `δ < 1`: every `δ^{-(k+1)} ≤ δ^{-p}`
+    refine le_max_of_le_right ?_
+    have : ‖E‖ * ∑ k ∈ Finset.range p, ‖N‖ ^ k * δ⁻¹ ^ (k + 1) ≤ θ * δ⁻¹ ^ p := by
+      rw [hθ, mul_assoc, Finset.sum_mul]
+      gcongr with k hk
+      all_goals first
+        | exact (one_le_inv₀ hδ).mpr h1.le
+        | exact Finset.mem_range.mp hk
+    have h2 := hmain.trans this
+    rw [inv_pow, ← div_eq_mul_inv, one_le_div (by positivity)] at h2
+    have hp0 : (p : ℝ) ≠ 0 := by exact_mod_cast (show p ≠ 0 by omega)
+    calc δ = (δ ^ p) ^ (1 / p : ℝ) := by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul hδ.le, mul_one_div_cancel hp0, Real.rpow_one]
+      _ ≤ θ ^ (1 / p : ℝ) := by gcongr
+
+end Schur
+
+/-- The block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1`
+in place of `√2`): let `A` and `S` be Hermitian, `Q₁ : Matrix n r 𝕜` have orthonormal columns
+(`Q₁ᴴ Q₁ = 1`) and `‖A Q₁ - Q₁ S‖₂ ≤ ε`. Then every eigenvalue `θ` of `S` has an eigenvalue `μ`
+of `A` with `|μ - θ| ≤ ε`: a unit eigenvector `y` of `S` gives the unit vector `x = Q₁ y` with
+`A x - θ x = (A Q₁ - Q₁ S) y`, and `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` does the
+rest. The book's paired form, with `√2 ε` and distinct eigenvalues of `A` for distinct `θ`, is
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`. -/
+theorem IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul {r : Type*} [Fintype r]
+    [DecidableEq r] {A : Matrix n n 𝕜} {S : Matrix r r 𝕜} (hA : A.IsHermitian)
+    (hS : S.IsHermitian) {Q₁ : Matrix n r 𝕜} (hQ : Q₁ᴴ * Q₁ = 1) {ε : ℝ}
+    (hε : lpOpNorm 2 (A * Q₁ - Q₁ * S) ≤ ε) {θ : ℝ} (hθ : θ ∈ spectrum ℝ S) :
+    ∃ μ ∈ spectrum ℝ A, |μ - θ| ≤ ε := by
+  rw [hS.spectrum_real_eq_range_eigenvalues] at hθ
+  obtain ⟨k, rfl⟩ := hθ
+  set y := hS.eigenvectorBasis k with hy
+  have hy1 : ‖y‖ = 1 := hS.eigenvectorBasis.orthonormal.1 k
+  set x : EuclideanSpace 𝕜 n := toEuclideanLin Q₁ y with hx
+  -- `Q₁` is an isometry
+  have hxy : ‖x‖ = ‖y‖ := by
+    have h : (inner 𝕜 x x : 𝕜) = inner 𝕜 y y := by
+      rw [hx, inner_toEuclideanLin_apply, hQ]
+      simp
+    rw [inner_self_eq_norm_sq_to_K, inner_self_eq_norm_sq_to_K] at h
+    have h' : ‖x‖ ^ 2 = ‖y‖ ^ 2 := by exact_mod_cast h
+    exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp h'
+  have hx1 : ‖x‖ = 1 := hxy.trans hy1
+  have hx0 : x ≠ 0 := by rintro h; rw [h, norm_zero] at hx1; exact zero_ne_one hx1
+  have hres : toEuclideanLin A x - ((hS.eigenvalues k : ℝ) : 𝕜) • x =
+      toEuclideanLin (A * Q₁ - Q₁ * S) y := by
+    have hSy : S *ᵥ ⇑y = ((hS.eigenvalues k : ℝ) : 𝕜) • ⇑y := by
+      rw [hS.mulVec_eigenvectorBasis k, RCLike.real_smul_eq_coe_smul (K := 𝕜)]
+    apply WithLp.ofLp_injective 2
+    simp only [hx, WithLp.ofLp_sub, WithLp.ofLp_smul, toLpLin_apply, WithLp.ofLp_toLp,
+      sub_mulVec, ← mulVec_mulVec, hSy, mulVec_smul]
+  obtain ⟨μ, hμ, hμle⟩ := (isSymmetric_toEuclideanLin_iff.mpr hA).exists_hasEigenvalue_dist_le
+    (hS.eigenvalues k) hx0
+  have hμsp : μ ∈ spectrum 𝕜 A := by
+    rw [← spectrum_toLpLin (p := 2)]
+    exact hμ.mem_spectrum
+  rw [hA.spectrum_eq_image_range] at hμsp
+  obtain ⟨_, ⟨i, rfl⟩, rfl⟩ := hμsp
+  refine ⟨hA.eigenvalues i, hA.eigenvalues_mem_spectrum_real i, ?_⟩
+  rw [hres, hx1, div_one, ← RCLike.ofReal_sub, RCLike.norm_ofReal] at hμle
+  refine hμle.trans ((norm_toEuclideanLin_apply_le _ _).trans ?_)
+  rw [hy1, mul_one, ← lpOpNorm_two]
+  exact hε
+
+end Matrix

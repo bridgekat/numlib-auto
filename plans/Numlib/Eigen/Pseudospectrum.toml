@@ -1,106 +1,35 @@
-desc = '''
-The closed `ε`-pseudospectrum of an operator and of a matrix ([golub2013matrix] §7.9; Trefethen and
-Embree, *Spectra and Pseudospectra*).
+[[node]]  # moved from Numlib/Eigen/Perturbation (R8)
+id = "ContinuousLinearMap.pseudospectrum"
 
-`ContinuousLinearMap.closedPseudospectrum ε A = {z | ∃ w, ‖w‖ = 1 ∧ ‖A w - z • w‖ ≤ ε}`, the
-approximate-eigenvalue form, stated for `A : E →L[𝕜] E` on a normed space exactly as the existing
-open version `ContinuousLinearMap.pseudospectrum` of `Numlib/Eigen/Perturbation` (strict `< ε`,
-Saad's definition and Trefethen–Embree's). The book uses `≤` ((7.9.5): "the distinction has no impact
-in the matrix case"), so the closed set is the one its theorems are about; the two are related by
-`closedPseudospectrum_eq_iInter_pseudospectrum` (`Λ_ε = ⋂_{δ > ε} Λ^{open}_δ` in finite dimension).
+[[node]]  # moved from Numlib/Eigen/Perturbation (R8)
+id = "ContinuousLinearMap.mem_pseudospectrum"
 
-In finite dimension the three definitions of the book agree
-([golub2013matrix] (7.9.5)–(7.9.7), their P7.9.1):
+[[node]]  # moved from Numlib/Eigen/Perturbation (R8)
+id = "ContinuousLinearMap.mem_pseudospectrum_iff"
 
-* (7.9.5) `σ_min(z I - A) ≤ ε` — for matrices, `Matrix.mem_closedPseudospectrum_iff_iInf_singularValues`
-  (with `σ_min` the last of `Matrix.sortedSingularValues`; through the staged SVD bridge
-  `Matrix.iInf_singularValues_eq_iInf_norm`);
-* (7.9.6) the resolvent: `z ∈ spectrum 𝕜 A ∨ 1/ε ≤ ‖Ring.inverse (z • 1 - A)‖` for `ε > 0`
-  (`mem_closedPseudospectrum_iff_resolvent`; at `ε = 0` the resolvent form degenerates in Lean, since
-  `1/0 = 0`, and `closedPseudospectrum_zero` says `Λ₀ = σ` instead);
-* (7.9.7) eigenvalues of nearby matrices: `∃ E, ‖E‖ ≤ ε ∧ z ∈ spectrum 𝕜 (A + E)` on a
-  finite-dimensional inner product space (`mem_closedPseudospectrum_iff_exists_mem_spectrum_add`); the
-  rank-one `E = -(A w - z w) ⊗ w` of `ContinuousLinearMap.mem_pseudospectrum_iff` again.
-
-The gallery of §7.9.4 — translation and scaling (Theorem 7.9.1), similarity (7.9.2, 7.9.3),
-diagonal and normal matrices (7.9.4, 7.9.5), block triangular and block diagonal matrices (7.9.6,
-7.9.7), the distance bound (7.9.8) — the compactness that makes the pseudospectral abscissa (7.9.8)
-and radius (7.9.9) maxima, the transient-growth bound (7.9.11), and the fact quoted in §7.9.3 that
-every connected component of `Λ_ε(A)` (`ε > 0`) contains an eigenvalue. The last is proved by the
-maximum modulus principle for the resolvent (`Complex.norm_le_of_forall_mem_frontier_norm_le`) on
-a clopen neighbourhood of the component (components of a compact Hausdorff space are intersections
-of clopen sets, `connectedComponent_eq_iInter_isClopen`): on the frontier of a small open set
-separating the component from the rest of `Λ_ε` the resolvent norm is `< 1/ε`, inside it is `≥ 1/ε`.
-
-The matrix statements are over `RCLike 𝕜` with the scoped `Matrix.Norms.L2Operator` norm, square
-index type `n`, through `Matrix.toEuclideanCLM`; the surface specializes to `ℂ` and `Fin n`. The
-pseudospectral abscissa and radius and the transient-growth bound are defined and proved for operators
-(`ContinuousLinearMap.pseudospectralAbscissa`, `…Radius`, beside the operator `closedPseudospectrum`),
-the matrix names being abbreviations through `Matrix.toEuclideanCLM` (Golub–Van Loan review).
-
-**Refactor proposal** (recorded in `notes/gvl/ch07/report.md`): move the open
-`ContinuousLinearMap.pseudospectrum` and its three lemmas from `Eigen/Perturbation` into this module,
-so that both pseudospectra live in one place; Perturbation's module doc already points here.
-
-Mathlib has no pseudospectrum (grep `pseudospect`: nothing). About 900 lines; the component theorem
-is the one ★★★ (~250).
-'''
+[[node]]  # moved from Numlib/Eigen/Perturbation (R8)
+id = "ContinuousLinearMap.mem_pseudospectrum_of_hasEigenvalue"
 
 [[node]]
 id = "ContinuousLinearMap.closedPseudospectrum"
-kind = "definition"
-desc = '''`closedPseudospectrum ε A : Set 𝕜 := {z | ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ ≤ ε}` for
-`A : E →L[𝕜] E` ([golub2013matrix] (7.9.5), closed form). ★'''
-deps = ["ContinuousLinearMap.pseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.closedPseudospectrum_mono"
-kind = "theorem"
-desc = '''`ε₁ ≤ ε₂ → closedPseudospectrum ε₁ A ⊆ closedPseudospectrum ε₂ A` ([golub2013matrix] §7.9.3). ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.closedPseudospectrum_zero"
-kind = "theorem"
-desc = '''`Λ₀(A) = Λ(A)`: in finite dimension, `closedPseudospectrum 0 A = spectrum 𝕜 A` (a unit `w` with
-`A w = z w` is an eigenvector; `Module.End.hasEigenvalue_iff_mem_spectrum`). ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.closedPseudospectrum_eq_iInter_pseudospectrum"
-kind = "theorem"
-desc = '''In finite dimension (`E` nontrivial), `closedPseudospectrum ε A = ⋂ δ > ε, pseudospectrum δ A`:
-`⊆` trivially; `⊇` because the unit sphere is compact and `w ↦ ‖A w - z w‖` attains its infimum. This
-is the book's remark that the strict and non-strict definitions agree for matrices up to the
-boundary. ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum", "ContinuousLinearMap.pseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf"
-kind = "theorem"
-desc = '''In finite dimension (`E` nontrivial): `z ∈ closedPseudospectrum ε A ↔
-⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z • w‖ ≤ ε` (attainment on the compact sphere). The least value is
-the book's `σ_min(A - z I)`. ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.9.6): in finite dimension, for `ε > 0`, `z ∈ closedPseudospectrum ε A ↔
-z ∈ spectrum 𝕜 A ∨ 1 / ε ≤ ‖Ring.inverse (z • 1 - A)‖`. For `z ∉ spectrum`, the least value of
-`‖(A - z) w‖` on the unit sphere is `1 / ‖(A - z)⁻¹‖` (`‖(A-z)⁻¹ v‖ ≤ ‖(A-z)⁻¹‖ ‖v‖` with
-`v = (A - z) w`, and attainment of the operator norm in finite dimension). ★★'''
-deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf"]
 
 [[node]]
 id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.9.7): on a finite-dimensional inner product space,
-`z ∈ closedPseudospectrum ε A ↔ ∃ B : E →L[𝕜] E, ‖B‖ ≤ ε ∧ z ∈ spectrum 𝕜 (A + B)`. `→`: the rank-one
-`B = -rankOne (A w - z w) w` (`InnerProductSpace.rankOne`, norm `‖A w - z w‖`) as in
-`ContinuousLinearMap.mem_pseudospectrum_iff`; `←`: an eigenvector `w` of `A + B` for `z` gives
-`‖A w - z w‖ = ‖B w‖ ≤ ε`. ★★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum", "ContinuousLinearMap.mem_pseudospectrum_iff"]
 
 [[node]]
 id = "Matrix.mem_closedPseudospectrum_iff_iInf_singularValues"
@@ -110,176 +39,137 @@ desc = '''[golub2013matrix] (7.9.5) for matrices: for `A : Matrix n n 𝕜` (`[N
 (the smallest singular value in the sorted reading, dense review M2), equivalently `⨅ i, (z • 1 -
 A).singularValues i ≤ ε` for the column-indexed family (`Matrix.sortedSingularValues_eq_iInf_singularValues`).
 From `mem_closedPseudospectrum_iff_iInf` and `Matrix.iInf_singularValues_eq_iInf_norm` (`σ_min(M) =
-⨅_{‖w‖ = 1} ‖M w‖`). The id keeps `iInf` for the surface's (7.9.5) node. ★'''
+⨅_{‖w‖ = 1} ‖M w‖`). The id keeps `iInf` for the surface's (7.9.5) node. ★
+
+Blocked: on `Matrix.sortedSingularValues`, `Matrix.sortedSingularValues_eq_iInf_singularValues` and
+`Matrix.iInf_singularValues_eq_iInf_norm` (all open, `Numlib/LinearAlgebra/Matrix/SVD`, a group no
+agent of wave 1 owns). The operator side is done: `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf`
+is (7.9.5) with `σ_min` read as `⨅_{‖w‖ = 1} ‖(A - z) w‖`; once the SVD bridge exists this is a
+rewrite, ~15 lines.'''
 deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf", "Matrix.iInf_singularValues_eq_iInf_norm", "Matrix.sortedSingularValues_eq_iInf_singularValues", "Matrix.sortedSingularValues"]
 
 [[node]]
 id = "ContinuousLinearMap.isCompact_closedPseudospectrum"
-kind = "theorem"
-desc = '''In finite dimension, `closedPseudospectrum ε A` is compact: bounded by `‖A‖ + ε`
-(`‖z‖ = ‖z w‖ ≤ ‖A w‖ + ε`) and closed (`z ↦ ⨅_w ‖A w - z w‖` is 1-Lipschitz). Nonempty when
-`ε ≥ 0`, `𝕜 = ℂ` and `E` nontrivial (it contains the spectrum). ★'''
-deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf"]
 
 [[node]]
 id = "ContinuousLinearMap.closedPseudospectrum_smul_add"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.9.1: for `α β : 𝕜` with `β ≠ 0`,
-`closedPseudospectrum (ε * ‖β‖) (α • 1 + β • A) = (fun z => α + β * z) '' closedPseudospectrum ε A`
-(`‖(α + β A) w - (α + β z) w‖ = ‖β‖ ‖A w - z w‖`). The book's statement at `β = 0` degenerates to
-`Λ₀(α I) = {α}`, which holds for nontrivial `E` and `ε ≥ 0` with `Λ_ε(A) ≠ ∅`
-(`closedPseudospectrum_zero`); it is recorded as a remark, not a clause. ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_conj_subset"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.9.2: for `X` invertible and `B = X⁻¹ * A * X`,
-`(toEuclideanCLM B).closedPseudospectrum ε ⊆ (toEuclideanCLM A).closedPseudospectrum (ε * κ₂(X))`
-with `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂` (`NormedRing.condNumber`). Approximate-eigenvector form: from a unit `w`
-with `‖(B - z) w‖ ≤ ε`, `v = X w / ‖X w‖` has `‖(A - z) v‖ ≤ ‖X‖ ε / ‖X w‖ ≤ κ₂(X) ε`
-(`‖X w‖ ≥ 1/‖X⁻¹‖`). (The book's proof writes `X⁻¹ (zI - A)⁻¹ X⁻¹` for `X⁻¹ (zI - A)⁻¹ X`, a typo.) ★★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_unitary_conj"
-kind = "theorem"
-desc = '''[golub2013matrix] Corollary 7.9.3: for unitary `U`, the pseudospectra of `star U * A * U` and `A`
-are equal (both inclusions of `closedPseudospectrum_conj_subset` with `κ₂(U) = 1`,
-`Matrix.condNumber_l2_of_mem_unitaryGroup`). ★'''
-deps = ["Matrix.closedPseudospectrum_conj_subset", "Matrix.condNumber_l2_of_mem_unitaryGroup"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_diagonal"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.9.4: for `d : n → 𝕜` (`[Nonempty n]`, `0 ≤ ε`),
-`(toEuclideanCLM (diagonal d)).closedPseudospectrum ε = ⋃ i, Metric.closedBall (d i) ε` —
-`‖(D - z) w‖² = ∑ |d_i - z|² |w_i|² ≥ min |d_i - z|²` for unit `w`, attained at `e_i`. ★★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_of_isStarNormal"
-kind = "theorem"
-desc = '''[golub2013matrix] Corollary 7.9.5: a normal `A` over an algebraically closed `RCLike` field has
-`Λ_ε(A) = ⋃ λ ∈ spectrum 𝕜 A, closedBall λ ε` (`Matrix.IsStarNormal.spectral_theorem`,
-`closedPseudospectrum_unitary_conj`, `closedPseudospectrum_diagonal`). ★'''
-deps = ["Matrix.closedPseudospectrum_diagonal", "Matrix.closedPseudospectrum_unitary_conj", "Matrix.IsStarNormal.spectral_theorem"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.9.6: for `T = fromBlocks T₁₁ T₁₂ 0 T₂₂` with square blocks,
-`Λ_ε(T₁₁) ∪ Λ_ε(T₂₂) ⊆ Λ_ε(T)`. For `T₁₁`: pad a unit `w` with zeros. For `T₂₂`: use the transpose —
-`Λ_ε(M) = conj '' Λ_ε(Mᴴ)` (`σ_min` of `M - z` and `Mᴴ - conj z` agree), and `Tᴴ` is block lower
-triangular with `T₂₂ᴴ` in the corner reached by padding. (Resolvent route of the book: the inverse
-of `T - z` has the inverses of the diagonal blocks as diagonal blocks, so its norm dominates theirs.) ★★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum", "Matrix.mem_closedPseudospectrum_iff_iInf_singularValues"]
 
 [[node]]
 id = "Matrix.closedPseudospectrum_fromBlocks_diagonal"
-kind = "theorem"
-desc = '''[golub2013matrix] Corollary 7.9.7: `Λ_ε(fromBlocks T₁₁ 0 0 T₂₂) = Λ_ε(T₁₁) ∪ Λ_ε(T₂₂)`. `⊇` is
-Theorem 7.9.6; `⊆`: a unit `w = (u, v)` with `‖(T - z) w‖² = ‖(T₁₁ - z) u‖² + ‖(T₂₂ - z) v‖² ≤ ε²` has
-`‖u‖ ≥` or `‖v‖ ≥` a fraction making one of the normalized halves an `ε`-pseudoeigenvector
-(`‖(T₁₁-z)u‖ ≤ ε ‖u‖` or `‖(T₂₂-z)v‖ ≤ ε ‖v‖`, else summing gives `> ε²`). ★★'''
-deps = ["Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset"]
 
 [[node]]
 id = "ContinuousLinearMap.le_infDist_closedPseudospectrum"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.9.8: in finite dimension, for `z₀ : 𝕜` and nonempty
-`closedPseudospectrum ε A`, `(⨅ w : {w // ‖w‖ = 1}, ‖A w - z₀ • w‖) - ε ≤ Metric.infDist z₀
-(closedPseudospectrum ε A)`; for `z₀ ∉ spectrum` the left side is `1/‖(z₀ - A)⁻¹‖ - ε`, the book's
-form. Proof (the book's): `ε ≥ σ_min(z - A) ≥ σ_min(z₀ - A) - |z - z₀|` for `z ∈ Λ_ε` (the least value
-is 1-Lipschitz in `z`), then take the infimum over `z`. ★★'''
-deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf", "ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent"]
 
 [[node]]
 id = "ContinuousLinearMap.exists_mem_spectrum_mem_connectedComponentIn"
-kind = "theorem"
-desc = '''[golub2013matrix] §7.9.3, "each connected component of `Λ_ε(A)` contains at least one eigenvalue
-of `A`": for `A : E →L[ℂ] E` on a nontrivial finite-dimensional space, `ε > 0` and
-`z ∈ closedPseudospectrum ε A`, there is `λ ∈ spectrum ℂ A` with
-`λ ∈ connectedComponentIn (closedPseudospectrum ε A) z`. Proof: let `K` be the component; if it held
-no eigenvalue, a clopen subset `C` of the compact set `Λ_ε` containing `K` avoids the spectrum
-(`connectedComponent_eq_iInter_isClopen` in the subtype, compactness of the spectrum); choose a
-bounded open `U ⊇ C` with `closure U ∩ Λ_ε = C` and `closure U ∩ spectrum = ∅`. The resolvent
-`R(z) = (z - A)⁻¹` is holomorphic on a neighbourhood of `closure U`
-(`DifferentiableOn` of `Ring.inverse` on units), `‖R‖ < 1/ε` on `frontier U` (which misses `Λ_ε`), so
-`‖R‖ < 1/ε` on `U` by `Complex.norm_le_of_forall_mem_frontier_norm_le` (plus a compactness margin),
-contradicting `‖R(z)‖ ≥ 1/ε` on `C ∋ z` (`mem_closedPseudospectrum_iff_resolvent`). ★★★ (~250 lines).'''
-deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent", "ContinuousLinearMap.isCompact_closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.pseudospectralAbscissa"
-kind = "definition"
-desc = '''The pseudospectral abscissa of an operator ([golub2013matrix] (7.9.8); Trefethen–Embree §14):
-`pseudospectralAbscissa ε A = sSup ((fun z : ℂ => z.re) '' closedPseudospectrum ε A)` for `A : E →L[ℂ] E` on a
-normed space (junk `0` if the set is empty or unbounded above; in finite dimension it is a maximum,
-`ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius`). The `ε`-analogue of the backbone's
-`spectralAbscissa` (`Numlib/Analysis/Normed/Algebra/SpectralRadius`). Operator-level at the Golub–Van Loan
-review (eigen review, Low): matrices read it through `Matrix.toEuclideanCLM`. ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.pseudospectralRadius"
-kind = "definition"
-desc = '''The pseudospectral radius of an operator ([golub2013matrix] (7.9.9)): `pseudospectralRadius ε A =
-sSup (norm '' closedPseudospectrum ε A)` for `A : E →L[ℂ] E`; the `ε`-analogue of `spectralRadius` (real-valued,
-not `ℝ≥0∞`, since `Λ_ε` is bounded by `‖A‖ + ε`). ★'''
-deps = ["ContinuousLinearMap.closedPseudospectrum"]
 
 [[node]]
 id = "ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius"
-kind = "theorem"
-desc = '''The maxima in (7.9.8) and (7.9.9) are attained: on a nontrivial finite-dimensional `E`, for `0 ≤ ε`
-there are `z₁ z₂ ∈ closedPseudospectrum ε A` with `re z₁ = pseudospectralAbscissa ε A` and `‖z₂‖ =
-pseudospectralRadius ε A` (`IsCompact.exists_isMaxOn`, `ContinuousLinearMap.isCompact_closedPseudospectrum`,
-nonemptiness from the spectrum, `ContinuousLinearMap.closedPseudospectrum_zero` and monotonicity). ★'''
-deps = ["ContinuousLinearMap.pseudospectralAbscissa", "ContinuousLinearMap.pseudospectralRadius", "ContinuousLinearMap.isCompact_closedPseudospectrum", "ContinuousLinearMap.closedPseudospectrum_zero", "ContinuousLinearMap.closedPseudospectrum_mono"]
 
 [[node]]
 id = "ContinuousLinearMap.pseudospectralRadius_sub_one_div_le_norm_pow"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.9.11) (Trefethen–Embree, pp. 160–161), operator form: on a nontrivial
-finite-dimensional complex normed space, for `A : E →L[ℂ] E`, `ε > 0` and `M` with `‖A ^ k‖ ≤ M` for all
-`k`, `(pseudospectralRadius ε A - 1) / ε ≤ M` — i.e. `sup_k ‖A^k‖ ≥ (ρ_ε(A) - 1)/ε`, stated for any upper
-bound so that no `ℝ≥0∞` supremum is needed. Proof: if `ρ_ε ≤ 1` the left side is `≤ 0 ≤ ‖A⁰‖ ≤ M`
-(`NormOneClass`); otherwise take `z ∈ Λ_ε` with `|z| = ρ_ε > 1`
-(`ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius`). Bounded powers give `ρ(A) ≤ 1`
-(Gelfand, `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`), so `z ∉ spectrum` and `(z -
-A)⁻¹ = ∑ A^k / z^{k+1}` (`NormedRing.inverse_one_sub` with `‖A/z‖`-bounded partial sums, or `hasSum` of
-the Neumann series under `‖(A/z)^k‖ ≤ M / |z|^k`), so `1/ε ≤ ‖(z - A)⁻¹‖ ≤ M / (|z| - 1)`. ★★'''
-deps = ["ContinuousLinearMap.pseudospectralRadius", "ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius", "ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent"]
 
 [[node]]
 id = "Matrix.pseudospectralAbscissa"
-kind = "definition"
-desc = '''[golub2013matrix] (7.9.8) for a matrix: `abbrev Matrix.pseudospectralAbscissa ε (A : Matrix n n ℂ) :=
-(toEuclideanCLM A).pseudospectralAbscissa ε` — the operator notion (`ContinuousLinearMap.pseudospectralAbscissa`)
-read through `Matrix.toEuclideanCLM`, kept as a named abbreviation for the surface. ★'''
-deps = ["ContinuousLinearMap.pseudospectralAbscissa"]
 
 [[node]]
 id = "Matrix.pseudospectralRadius"
-kind = "definition"
-desc = '''[golub2013matrix] (7.9.9) for a matrix: `abbrev Matrix.pseudospectralRadius ε (A : Matrix n n ℂ) :=
-(toEuclideanCLM A).pseudospectralRadius ε`. ★'''
-deps = ["ContinuousLinearMap.pseudospectralRadius"]
 
 [[node]]
 id = "Matrix.exists_eq_pseudospectralAbscissa_radius"
-kind = "theorem"
-desc = '''The maxima in (7.9.8) and (7.9.9) are attained for a matrix: for `[Nonempty n]` and `0 ≤ ε` there are
-`z₁ z₂` in `Λ_ε(A)` with `re z₁ = pseudospectralAbscissa ε A` and `‖z₂‖ = pseudospectralRadius ε A`.
-`ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius` for `toEuclideanCLM A`. ★'''
-deps = ["Matrix.pseudospectralAbscissa", "Matrix.pseudospectralRadius", "ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius"]
 
 [[node]]
 id = "Matrix.pseudospectralRadius_sub_one_div_le_norm_pow"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.9.11) for a matrix: for `A : Matrix n n ℂ` (`[Nonempty n]`), `ε > 0` and `M` with
-`‖A ^ k‖₂ ≤ M` for all `k`, `(pseudospectralRadius ε A - 1) / ε ≤ M`.
-`ContinuousLinearMap.pseudospectralRadius_sub_one_div_le_norm_pow` for `toEuclideanCLM A`
-(`‖toEuclideanCLM (A ^ k)‖ = ‖A ^ k‖₂` under `Matrix.Norms.L2Operator`). ★'''
-deps = ["Matrix.pseudospectralRadius", "ContinuousLinearMap.pseudospectralRadius_sub_one_div_le_norm_pow"]
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.mem_closedPseudospectrum"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.pseudospectrum_subset_closedPseudospectrum"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.closedPseudospectrum_subset_pseudospectrum"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.pseudospectrum_mono"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.closedPseudospectrum_eq_empty"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.mem_closedPseudospectrum_of_hasEigenvalue"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.iInf_norm_sub_smul_mul_norm_le"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.iInf_norm_sub_smul_le_add"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.pseudospectrum_smul_add"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.norm_le_norm_inverse_mul_norm_sub_smul"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.inv_norm_inverse_le_norm_sub_smul"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.exists_norm_sub_smul_eq_iInf"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.spectrum_subset_closedPseudospectrum"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.spectrum_subset_pseudospectrum"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.le_norm_adjoint_apply_of_le"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.mem_closedPseudospectrum_adjoint_iff"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.mul_norm_lt_norm_sub_smul_of_notMem"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.closedPseudospectrum_subset_of_intertwine"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.closedPseudospectrum_units_conj_subset"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.closedPseudospectrum_nonempty"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.exists_hasEigenvalue_add_of_norm_sub_smul_le"
+
+[[node]]  # added by syl1
+id = "ContinuousLinearMap.mem_closedPseudospectrum_of_hasEigenvalue_add"
+
+[[node]]  # added by syl1
+id = "Matrix.mem_closedPseudospectrum_conjTranspose_iff"
+
+[[node]]  # added by syl1
+id = "Matrix.norm_toEuclideanCLM_of_mem_unitaryGroup"

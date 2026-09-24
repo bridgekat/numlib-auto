@@ -1,257 +1,67 @@
 namespace = "Matrix"
-desc = '''
-The Sylvester equation `A X - X B = C` and the separation `sep(A, B)` of two square matrices.
-
-`Matrix.sylvesterMap A B : Matrix m n K →ₗ[K] Matrix m n K`, `X ↦ A * X - X * B`, over a field
-`K`, rectangular in the unknown (`A : Matrix m m K`, `B : Matrix n n K`). The three facts every
-consumer needs:
-
-* **Unique solvability** ([golub2013matrix] Lemma 7.1.5). Over any field the map is injective
-  (hence bijective, finite dimension) as soon as the characteristic polynomials are coprime:
-  from `A X = X B` follows `p(A) X = X p(B)` for every polynomial `p`; take `p = A.charpoly`, so
-  `0 = X · p_A(B)` by Cayley–Hamilton (`Matrix.aeval_self_charpoly`), and `p_A(B)` is invertible
-  because a Bézout identity `u p_A + v p_B = 1` evaluated at `B` gives `u(B) p_A(B) = 1`. Over an
-  algebraically closed field coprimality is "no common eigenvalue"
-  (`Polynomial.isCoprime_iff_aeval_ne_zero_of_isAlgClosed`), and conversely a common eigenvalue
-  `λ` with `A x = λ x`, `Bᵀ y = λ y` puts `vecMulVec x y` in the kernel (the book's `x yᴴ`, with
-  the transpose so that no star is needed). Real matrices (the real Schur blocks of §7.6.3) go
-  through `isCoprime_charpoly_iff_disjoint_spectrum_complexify`: coprimality is invariant under
-  the field extension `ℝ → ℂ`.
-* **Block diagonalization** ([golub2013matrix] Lemma 7.1.5, Theorem 7.1.6):
-  `Y = fromBlocks 1 Z 0 1` conjugates `fromBlocks T₁₁ T₁₂ 0 T₂₂` to
-  `fromBlocks T₁₁ (T₁₁ Z - Z T₂₂ + T₁₂) 0 T₂₂`, so a solution of `T₁₁ Z - Z T₂₂ = -T₁₂` kills the
-  corner; the `q`-block version is stated for any `T.BlockTriangular b` whose diagonal blocks
-  `T.toBlock (b · = k) (b · = k)` have pairwise disjoint spectra, with conclusion
-  `Y⁻¹ * T * Y = of fun i j => if b i = b j then T i j else 0` (the block diagonal part).
-  The prototype `notes/gvl/ch07/proto/Shapes.lean` elaborates this statement.
-* **The separation** ([golub2013matrix] (7.2.5)): `Matrix.sep A B` over `RCLike 𝕜` is the least
-  value of `‖A X - X B‖_F` on the Frobenius unit sphere, `⨅ X : {X // ‖X‖ = 1}, ‖A X - X B‖`
-  with `open scoped Matrix.Norms.Frobenius` (prototype: elaborates). It is the smallest singular
-  value of `sylvesterMap A B` for the Frobenius inner product; it is positive exactly when the
-  spectra are disjoint, it bounds the solution (`‖X‖_F ≤ ‖A X - X B‖_F / sep`, the book's
-  (7.3.20)), it is at most `|λ - μ|` for `λ ∈ σ(A)`, `μ ∈ σ(B)` (the book's P7.2.10), it is
-  unitarily invariant, symmetric (`sep A B = sep B A` — the operator `P ↦ P A - B P` that the
-  invariant-subspace perturbation theory actually inverts has the same smallest singular value,
-  because it is minus the adjoint of `sylvesterMap A B` read through `X ↦ Xᴴ`), Lipschitz under
-  perturbation of `A` and `B`, and for a `1 × 1` left argument it is `σ_min(T - λ I)`.
-
-* **Diagonal coefficients and changes of basis** ([golub2013matrix] §4.8.4 and §12.1.2):
-  `sylvesterMap (diagonal ω) (diagonal ν)` acts entrywise, `X k j ↦ (ω k - ν j) X k j`
-  (`sylvesterMap_diagonal_apply`), so for `ω k ≠ ν j` the equation is solved by entrywise division
-  (`sylvesterMap_diagonal_eq_iff`); with `sylvesterMap_conj` (conjugating both coefficients conjugates
-  the map) this is the eigenvector-basis solve behind the fast Poisson solver
-  (`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`, whose Kronecker sum is `sylvesterMap A₁ (-A₂ᵀ)` on
-  `vec`) and the entrywise description of Cauchy-like matrices by their generators
-  (`apply_eq_of_sylvesterMap_diagonal_eq`, used by `Displacement`). These three nodes were planned by
-  chapter 12 in `Displacement` and moved here at the review of the Golub–Van Loan round.
-
-**Operator-level form (recorded, not planned).** Everything above except `sep` is a statement about the
-map `X ↦ A ∘ₗ X - X ∘ₗ B` on `F →ₗ[K] E` for endomorphisms `A` of `E` and `B` of `F` (finite-dimensional
-`E`, `F`; the matrix map is its conjugate by `Matrix.toLin`); coprime minimal (or
-characteristic) polynomials give injectivity by the same Bézout argument, and over `ℂ` it is the
-Rosenblum theorem `σ(X ↦ AX − XB) ⊆ σ(A) − σ(B)` in any Banach algebra. The matrix statements are its
-coordinate form; when a second source needs the operator version (Stewart–Sun, Bhatia), it goes into
-`Numlib/LinearAlgebra/…` as `LinearMap.sylvesterMap` with these nodes as `toLin` corollaries.
-
-`sep` lives here rather than in `Numlib/Eigen/InvariantSubspace` (where the planning brief put it)
-because it is a property of the Sylvester operator alone, and its consumers — invariant subspace
-perturbation (§7.2.4), orthogonal iteration (§7.3), block diagonalization (§7.6.3) and the
-conditioning of the Sylvester equation itself (chapters 9 and 12) — all import this module.
-
-Mathlib has no Sylvester equation: `Polynomial.sylvester` (`RingTheory/Polynomial/Resultant`) is
-the Sylvester *matrix* of two polynomials; grep for `sylvester`, `intertwin`, `IsCoprime` in
-`Mathlib/LinearAlgebra` found nothing else; LeanSearch was unreachable (HTML only / HTTP 500) this
-round.
-
-Order: `sylvesterMap` and its algebra (★), injectivity and bijectivity (★★), the block lemmas (★
-and ★★★), then `sep` (★–★★). About 650 lines.
-'''
 
 [[node]]
 id = "sylvesterMap"
-kind = "definition"
-desc = '''The Sylvester operator `sylvesterMap A B : Matrix m n K →ₗ[K] Matrix m n K`, `X ↦ A * X - X * B`,
-for `A : Matrix m m K`, `B : Matrix n n K` over a field (commutative ring suffices for the
-definition). ★'''
-deps = []
 
 [[node]]
 id = "sylvesterMap_apply"
-kind = "theorem"
-desc = '''`sylvesterMap A B X = A * X - X * B` (rfl). ★'''
-deps = ["sylvesterMap"]
 
 [[node]]
 id = "aeval_mul_eq_mul_aeval_of_mul_eq_mul"
-kind = "theorem"
-desc = '''Intertwining passes to polynomials: `A * X = X * B → aeval A p * X = X * aeval B p` for every
-`p : K[X]` (induction on `p`, `Polynomial.induction_on`). ★'''
-deps = []
 
 [[node]]
 id = "sylvesterMap_injective_of_isCoprime"
-kind = "theorem"
-desc = '''Over a field `K`: `IsCoprime A.charpoly B.charpoly → Function.Injective (sylvesterMap A B)`.
-Proof: `A X = X B` gives `0 = aeval A A.charpoly * X = X * aeval B A.charpoly`
-(`aeval_mul_eq_mul_aeval_of_mul_eq_mul`, `Matrix.aeval_self_charpoly`); Bézout `u p_A + v p_B = 1`
-at `B` with `aeval B p_B = 0` gives `aeval B u * aeval B p_A = 1`, so `X = 0`. ★★'''
-deps = ["sylvesterMap", "aeval_mul_eq_mul_aeval_of_mul_eq_mul"]
 
 [[node]]
 id = "sylvesterMap_bijective_of_isCoprime"
-kind = "theorem"
-desc = '''`IsCoprime A.charpoly B.charpoly → Function.Bijective (sylvesterMap A B)`: an injective endomorphism
-of a finite-dimensional space (`LinearMap.injective_iff_surjective`). ★'''
-deps = ["sylvesterMap_injective_of_isCoprime"]
 
 [[node]]
 id = "sylvesterMap_vecMulVec_eq_zero"
-kind = "theorem"
-desc = '''A common eigenvalue gives a kernel element: if `A *ᵥ x = c • x` and `y ᵥ* B = c • y` then
-`sylvesterMap A B (vecMulVec x y) = 0` ([golub2013matrix] proof of Lemma 7.1.5, with `yᵀ` in
-place of `yᴴ`). ★'''
-deps = ["sylvesterMap"]
 
 [[node]]
 id = "sylvesterMap_bijective_iff_disjoint_spectrum"
-kind = "theorem"
-desc = '''[golub2013matrix] Lemma 7.1.5, first half: over an algebraically closed field,
-`Function.Bijective (sylvesterMap A B) ↔ Disjoint (spectrum K A) (spectrum K B)`. `←`:
-`Polynomial.isCoprime_iff_aeval_ne_zero_of_isAlgClosed` (the roots of `charpoly` are the spectrum,
-`Matrix.mem_spectrum_iff_isRoot_charpoly`) and `sylvesterMap_bijective_of_isCoprime`. `→`: a
-common `λ` has a right eigenvector of `A` and a left eigenvector of `B` (a right eigenvector of
-`Bᵀ`, `Matrix.charpoly_transpose`), and `sylvesterMap_vecMulVec_eq_zero` contradicts
-injectivity (`vecMulVec x y ≠ 0` for `x, y ≠ 0`). ★★'''
-deps = ["sylvesterMap_bijective_of_isCoprime", "sylvesterMap_vecMulVec_eq_zero"]
 
 [[node]]
 id = "isCoprime_charpoly_iff_disjoint_spectrum_complexify"
-kind = "theorem"
-desc = '''For real square `A`, `B`: `IsCoprime A.charpoly B.charpoly ↔ Disjoint (spectrum ℂ A.complexify)
-(spectrum ℂ B.complexify)` (`Matrix.complexify` of `Numlib/LinearAlgebra/Matrix/Complexify`;
-`Matrix.charpoly_map`, coprimality is preserved and reflected by the field extension —
-`Polynomial.isCoprime_map` — and over `ℂ` it is "no common root"). This is how a real Sylvester
-equation between real Schur blocks is known to be uniquely solvable. ★★'''
-deps = ["sylvesterMap_bijective_iff_disjoint_spectrum"]
 
 [[node]]
 id = "existsUnique_sylvesterMap_eq"
-kind = "theorem"
-desc = '''`Disjoint (spectrum K A) (spectrum K B) → ∀ C, ∃! X, A * X - X * B = C` over an algebraically
-closed field; and the same over any field under `IsCoprime A.charpoly B.charpoly`. ★'''
-deps = ["sylvesterMap_bijective_iff_disjoint_spectrum", "sylvesterMap_bijective_of_isCoprime"]
 
 [[node]]
 id = "fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one"
-kind = "theorem"
-desc = '''The block computation of [golub2013matrix] Lemma 7.1.5 over any ring:
-`fromBlocks 1 (-Z) 0 1 * fromBlocks T₁₁ T₁₂ 0 T₂₂ * fromBlocks 1 Z 0 1 =
-fromBlocks T₁₁ (T₁₁ * Z - Z * T₂₂ + T₁₂) 0 T₂₂`, together with
-`fromBlocks 1 (-Z) 0 1 * fromBlocks 1 Z 0 1 = 1` (so `(fromBlocks 1 Z 0 1)⁻¹ = fromBlocks 1 (-Z) 0 1`,
-`Matrix.inv_eq_left_inv`). `fromBlocks_multiply` and `abel`. ★'''
-deps = []
 
 [[node]]
 id = "exists_fromBlocks_conj_eq_fromBlocks_zero"
-kind = "theorem"
-desc = '''[golub2013matrix] Lemma 7.1.5, second half: if `sylvesterMap T₁₁ T₂₂` is bijective (e.g. disjoint
-spectra) there is `Z` with `T₁₁ Z - Z T₂₂ = -T₁₂`, and with `Y = fromBlocks 1 Z 0 1`,
-`IsUnit Y ∧ Y⁻¹ * fromBlocks T₁₁ T₁₂ 0 T₂₂ * Y = fromBlocks T₁₁ 0 0 T₂₂`. ★'''
-deps = ["fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one", "sylvesterMap"]
 
 [[node]]
 id = "exists_isUnit_conj_eq_blockDiagonalPart"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.1.6 (block diagonal decomposition), in coordinates: over an
-algebraically closed field, let `T : Matrix n n K` with `[LinearOrder n]` be block upper triangular
-for `b : n → ι` (`T.BlockTriangular b`, `ι` a finite linear order) and suppose the diagonal blocks
-`T.toBlock (b · = k) (b · = k)` have pairwise disjoint spectra (`Pairwise fun k l => Disjoint …`).
-Then `∃ Y, IsUnit Y ∧ Y⁻¹ * T * Y = of fun i j => if b i = b j then T i j else 0`. Proof: induction
-on the number of occupied block values — split off the last block `{i | b i = kmax}`, reindex
-`n ≃ {b ≠ kmax} ⊕ {b = kmax}` (`Equiv.sumCompl`), apply `exists_fromBlocks_conj_eq_fromBlocks_zero`
-(the union of the other blocks' spectra is the spectrum of the leading block by
-`Matrix.BlockTriangular.charpoly`), recurse on the leading block, and assemble with
-`fromBlocks_multiply`. The statement shape elaborates (`notes/gvl/ch07/proto/Shapes.lean`). A version
-over any field under pairwise coprime characteristic polynomials is the same proof and is welcome.
-★★★ (~300 lines: the reindexing is the cost).'''
-deps = ["exists_fromBlocks_conj_eq_fromBlocks_zero", "sylvesterMap_bijective_iff_disjoint_spectrum"]
 
 [[node]]
 id = "sep"
-kind = "definition"
-desc = '''The separation ([golub2013matrix] (7.2.5)): for `A : Matrix m m 𝕜`, `B : Matrix n n 𝕜` over
-`RCLike 𝕜`, `sep A B = ⨅ X : {X : Matrix m n 𝕜 // ‖X‖ = 1}, ‖A * X - X * B‖` with the scoped
-Frobenius norm (`open scoped Matrix.Norms.Frobenius in` before the definition; elaborates in the
-prototype). The junk value when `m` or `n` is empty is `0` (`Real.iInf` of an empty family). ★'''
-deps = ["sylvesterMap"]
 
 [[node]]
 id = "sep_nonneg"
-kind = "theorem"
-desc = '''`0 ≤ sep A B` (`Real.iInf_nonneg`). ★'''
-deps = ["sep"]
 
 [[node]]
 id = "exists_sep_eq"
-kind = "theorem"
-desc = '''The minimum is attained: with `[Nonempty m] [Nonempty n]`, `∃ X, ‖X‖_F = 1 ∧ ‖A X - X B‖_F = sep A B`
-(the Frobenius unit sphere of a finite-dimensional space is compact and nonempty,
-`IsCompact.exists_isMinOn`), and `sep A B ≤ ‖A X - X B‖_F / ‖X‖_F` for every `X ≠ 0`
-(homogeneity), which is the book's `min_{X ≠ 0}` form. ★★'''
-deps = ["sep"]
 
 [[node]]
 id = "sep_pos_iff"
-kind = "theorem"
-desc = '''`0 < sep A B ↔ Function.Injective (sylvesterMap A B)` (for nonempty `m`, `n`; attainment
-`exists_sep_eq`), hence, over `ℂ` (or any algebraically closed `RCLike`),
-`0 < sep A B ↔ Disjoint (spectrum 𝕜 A) (spectrum 𝕜 B)`. ★'''
-deps = ["exists_sep_eq", "sylvesterMap_bijective_iff_disjoint_spectrum"]
 
 [[node]]
 id = "frobenius_norm_le_div_sep"
-kind = "theorem"
-desc = '''`0 < sep A B → ‖X‖_F ≤ ‖A * X - X * B‖_F / sep A B` for every `X` (the book's (7.3.20) and the
-display after (7.6.6): a solution of `T₁₁ X - X T₂₂ = -T₁₂` has `‖X‖_F ≤ ‖T₁₂‖_F / sep`). The
-prototype elaborates the statement. ★'''
-deps = ["exists_sep_eq"]
 
 [[node]]
 id = "sep_le_norm_sub"
-kind = "theorem"
-desc = '''[golub2013matrix] P7.2.10 and the displays in §7.2.5 and §7.6.3: for `α ∈ spectrum 𝕜 A` and
-`β ∈ spectrum 𝕜 B`, `sep A B ≤ ‖α - β‖`. Take a unit right eigenvector `x` of `A` and a unit
-left eigenvector `y` of `B` (`star y ᵥ* B = β • star y`), `X = vecMulVec x (star y)`:
-`A X - X B = (α - β) • X` and `‖X‖_F = 1`. ★★'''
-deps = ["sep"]
 
 [[node]]
 id = "sep_unitary_conj"
-kind = "theorem"
-desc = '''Unitary invariance: for `U ∈ unitaryGroup m 𝕜`, `V ∈ unitaryGroup n 𝕜`,
-`sep (star U * A * U) (star V * B * V) = sep A B` (`X ↦ U X star V` is a Frobenius isometry,
-`Matrix.frobenius_norm_unitary_mul_mul_unitary`). ★'''
-deps = ["sep"]
 
 [[node]]
 id = "sep_comm"
-kind = "theorem"
-desc = '''`sep A B = sep B A`. The map `L = sylvesterMap A B` and `L' = sylvesterMap B A` satisfy
-`‖L' Z‖_F = ‖L† (Zᴴ)‖_F` where `L† Y = Aᴴ Y - Y Bᴴ` is the Frobenius adjoint of `L`
-(`(Aᴴ Zᴴ - Zᴴ Bᴴ) = -(B Z - Z A)ᴴ`), and a linear endomorphism of a finite-dimensional inner product
-space and its adjoint have the same least value of `‖T v‖` on the unit sphere (both are the least
-singular value; `LinearMap.adjoint`, via `Matrix.exists_svd` or `IsSymmetric` eigenvalues of `T† T`
-and `T T†`). This is what lets the invariant-subspace perturbation theory, whose linear part is
-`P ↦ P T₁₁ - T₂₂ P`, be stated with the book's `sep(T₁₁, T₂₂)`. ★★'''
-deps = ["exists_sep_eq"]
 
 [[node]]
 id = "sep_sub_le_sep_add"
-kind = "theorem"
-desc = '''Perturbation: `sep A B - ‖E‖_F - ‖F‖_F ≤ sep (A + E) (B + F)`, since
-`‖(A + E) X - X (B + F)‖_F ≥ ‖A X - X B‖_F - ‖E‖_F ‖X‖_F - ‖F‖_F ‖X‖_F`
-(`Matrix.frobenius_norm_mul`). Used in the proof of `Matrix.exists_invariant_graph_of_sep`. ★'''
-deps = ["sep"]
 
 [[node]]
 id = "sep_eq_iInf_singularValues"
@@ -263,58 +73,79 @@ and the least value of `‖Mᵀ x‖` on the unit sphere is that of `‖M x‖` 
 argument, or the SVD bridge `Matrix.iInf_singularValues_eq_iInf_norm` staged by ch07 for `SVD`).
 (Column-indexed `Matrix.singularValues` on purpose: `T - c • 1` is square, so the `⨅` over its `n`
 columns is `σ_min` with no sorted-index bookkeeping; in the sorted reading it is
-`(T - c • 1).sortedSingularValues (Fintype.card n - 1)`.) ★'''
+`(T - c • 1).sortedSingularValues (Fintype.card n - 1)`.) ★
+
+Blocked: on `Matrix.iInf_singularValues_eq_iInf_norm` (open, in `Numlib/LinearAlgebra/Matrix/SVD`, a
+group no agent of wave 1 owns). Everything else is in place: `sep_comm` turns the `1 × n` unknown
+into an `n × 1` column `x` with `‖T x - x c‖_F = ‖(T - c • 1) x‖₂`, and `le_sep`, `sep_le_norm`,
+`exists_sep_eq` match the two infima; about 30 lines once the bridge exists.'''
 deps = ["exists_sep_eq", "sep_comm", "Matrix.iInf_singularValues_eq_iInf_norm"]
 
 [[node]]
 id = "IsHermitian.sep_eq_iInf_abs_eigenvalues_sub"
-kind = "theorem"
-desc = '''The separation of two Hermitian matrices is the gap between their spectra ([golub2013matrix] P8.1.9,
-the step of its Theorem 8.1.10): for `hA : A.IsHermitian`, `hB : B.IsHermitian` with `A : Matrix m m 𝕜`,
-`B : Matrix n n 𝕜`, `[Nonempty m] [Nonempty n]`, `sep A B = ⨅ i, ⨅ j, |hA.eigenvalues i - hB.eigenvalues j|`
-(Mathlib's `Matrix.IsHermitian.eigenvalues`, whose range is `spectrum ℝ A` by
-`Matrix.IsHermitian.spectrum_real_eq_range_eigenvalues`). `≤`: `sep_le_norm_sub` at a minimizing pair
-(`eigenvalues_mem_spectrum_real`). `≥`: diagonalize both by the spectral theorem
-(`Matrix.IsHermitian.spectral_theorem`) and `sep_unitary_conj`; for diagonal `Λ`, `M`,
-`‖Λ X - X M‖_F² = ∑ |λ_i - μ_j|² |x_ij|² ≥ (min |λ_i - μ_j|)² ‖X‖_F²`. Moved down from chapter 8's surface
-(`sepSymm_eq_sep`) at the Golub–Van Loan consolidation; it holds for normal matrices as well, which is not
-planned. ★★'''
-deps = ["sep", "sep_le_norm_sub", "sep_unitary_conj"]
 
 [[node]]
 id = "sylvesterMap_diagonal_apply"
-kind = "theorem"
-desc = '''`sylvesterMap (diagonal ω) (diagonal ν) A k j = (ω k - ν j) * A k j` (`diagonal_mul`,
-`mul_diagonal`). ★'''
-deps = ["Matrix.sylvesterMap"]
 
 [[node]]
 id = "sylvesterMap_diagonal_eq_iff"
-kind = "theorem"
-desc = '''The diagonal Sylvester equation is solved by entrywise division: if `ω k ≠ ν j` for all `k j`
-(`ω : m → K`, `ν : n → K`, a field) then `sylvesterMap (diagonal ω) (diagonal ν) X = C ↔ X = of fun k j =>
-C k j / (ω k - ν j)`. From `sylvesterMap_diagonal_apply`, `Matrix.ext_iff`, `eq_div_iff`. The one
-elimination step shared by the fast Poisson solver ([golub2013matrix] §4.8.4, `ũ_ij = b̃_ij/(λ_i + μ_j)`)
-and Cauchy-like matrices ([golub2013matrix] (12.1.4)). ★'''
-deps = ["sylvesterMap_diagonal_apply"]
 
 [[node]]
 id = "apply_eq_of_sylvesterMap_diagonal_eq"
-kind = "theorem"
-desc = '''**Cauchy-like matrices are determined entrywise by their generators** ([golub2013matrix] (12.1.4)
-and the display after it): if `ω k ≠ ν j` for all `k j` and `sylvesterMap (diagonal ω) (diagonal ν) A
-= R * Sᵀ` then `A k j = (R k ⬝ᵥ S j) / (ω k - ν j)`; conversely such an `A` satisfies the displacement
-equation. `sylvesterMap_diagonal_eq_iff` at `C = R * Sᵀ` (`Matrix.mul_apply` gives `R k ⬝ᵥ S j`). ★'''
-deps = ["sylvesterMap_diagonal_eq_iff"]
 
 [[node]]
 id = "sylvesterMap_conj"
-kind = "theorem"
-desc = '''Displacement under a change of bases ([golub2013matrix] §12.1.6 and §12.1.8): for invertible `P`,
-`Q`, `sylvesterMap (P * F * P⁻¹) (Q * G * Q⁻¹) (P * A * Q⁻¹) = P * sylvesterMap F G A * Q⁻¹`; for
-permutations (`P = σ.permMatrix`, `P⁻¹ = Pᵀ`) the generators `R`, `S` become `P R`, `Q S`, and for
-the diagonalizing `X_F`, `X_G` of §12.1.8 (`P := X_F⁻¹`, `Q := X_G⁻¹`) they become `X_F⁻¹ R` and
-`Q⁻ᵀ S = X_Gᵀ S`. Also the reindexing form `sylvesterMap (F.submatrix σ σ) (G.submatrix
-τ τ) (A.submatrix σ τ) = (sylvesterMap F G A).submatrix σ τ` for equivalences `σ τ`, which is what the
-pivoting Algorithm 12.1.2 uses. `ring`-level. ★'''
-deps = ["Matrix.sylvesterMap"]
+
+[[node]]  # added by syl1: unique solvability over any field (split off `existsUnique_sylvesterMap_eq`)
+id = "existsUnique_sylvesterMap_eq_of_isCoprime"
+
+[[node]]  # added by syl1: the reindexing form of `sylvesterMap_conj`'s desc
+id = "sylvesterMap_submatrix"
+
+[[node]]  # added by syl1: the eigenvector computation behind the kernel element and `sep_le_norm_sub`
+id = "sylvesterMap_vecMulVec"
+
+[[node]]  # added by syl1: the inverse clause of the block computation
+id = "fromBlocks_one_neg_mul_fromBlocks_one"
+
+[[node]]  # added by syl1: coprime characteristic polynomials iff disjoint spectra, algebraically closed field
+id = "isCoprime_charpoly_iff_disjoint_spectrum"
+
+[[node]]  # added by syl1: a left eigenvector for every eigenvalue
+id = "exists_vecMul_eq_smul_of_mem_spectrum"
+
+[[node]]  # added by syl1: Theorem 7.1.6 over any field
+id = "exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime"
+
+[[node]]  # added by syl1: the `min_{X ≠ 0}` form of (7.2.5), split off `exists_sep_eq`
+id = "sep_mul_norm_le"
+
+[[node]]  # added by syl1
+id = "sep_le_norm"
+
+[[node]]  # added by syl1
+id = "le_sep"
+
+[[node]]  # added by syl1
+id = "sep_of_isEmpty"
+
+[[node]]  # added by syl1
+id = "sep_le_norm_of_sylvesterMap_eq_smul"
+
+[[node]]  # added by syl1: the disjoint-spectrum clause, split off `sep_pos_iff`
+id = "sep_pos_iff_disjoint_spectrum"
+
+[[node]]  # added by syl1: the Frobenius pairing behind `sep_comm`
+id = "re_trace_conjTranspose_mul_le"
+
+[[node]]  # added by syl1
+id = "trace_conjTranspose_mul_sylvesterMap"
+
+[[node]]  # added by syl1
+id = "le_norm_sylvesterMap_conjTranspose_of_le"
+
+[[node]]  # added by syl1
+id = "sep_conjTranspose"
+
+[[node]]  # added by syl1: the diagonal case behind the Hermitian formula
+id = "sep_diagonal"
