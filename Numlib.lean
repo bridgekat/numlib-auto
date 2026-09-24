@@ -376,6 +376,9 @@ import Numlib.Direct.Substitution
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
+import Numlib.Eigen.DivideConquer
+import Numlib.Eigen.Inertia
+import Numlib.Eigen.InverseEigenvalue
 import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax

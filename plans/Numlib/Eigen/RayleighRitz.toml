@@ -1,9 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Eigen.RayleighRitz` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch08) add to "Main results": the matrix form of Ritz optimality,
-# `Matrix.isLeast_frobenius_norm_mul_sub_mul` — among all `S`, the residual `‖A Q₁ - Q₁ S‖_F` of an
-# orthonormal block `Q₁` is least at the compression `S = Q₁ᴴ A Q₁`, with minimum `‖(1 - Q₁ Q₁ᴴ) A
-# Q₁‖_F` ([golub2013matrix] Theorem 8.1.14).
 [[node]]
 id = "Submodule.norm_sub_sq_eq_add_of_mem"
 
@@ -127,14 +121,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.67)'
 
 [[node]]  # staged by ch08
 id = "Matrix.isLeast_frobenius_norm_mul_sub_mul"
-kind = "theorem"
-desc = '''Optimality of the compression ([golub2013matrix] Theorem 8.1.14; no symmetry needed): for
-`A : Matrix n n 𝕜` and `Q₁ : Matrix n r 𝕜` with `Q₁ᴴ * Q₁ = 1`, with the Frobenius norm (scoped
-`Matrix.Norms.Frobenius`),
-`IsLeast (Set.range fun S : Matrix r r 𝕜 => ‖A * Q₁ - Q₁ * S‖) ‖(1 - Q₁ * Q₁ᴴ) * A * Q₁‖`, attained
-exactly at `S = Q₁ᴴ * A * Q₁`. Proof: Pythagoras
-`‖A Q₁ - Q₁ S‖² = ‖Q₁ᴴ A Q₁ - S‖² + ‖(1 - Q₁ Q₁ᴴ) A Q₁‖²`: the two summands are the images under
-the complementary orthogonal projections `Q₁ Q₁ᴴ` and `1 - Q₁ Q₁ᴴ` (columnwise, then
-`frobenius_norm_sq_eq_sum_col`-type), and `‖Q₁ M‖_F = ‖M‖_F`. The book's proof completes `Q₁` to
-an orthogonal `Q`; the projection form avoids the completion. ★★ (~70 lines)'''
-deps = []
+
+[[node]]  # added by eig1: the Pythagoras identity behind Theorem 8.1.14
+id = "Matrix.frobenius_norm_mul_sub_mul_sq"

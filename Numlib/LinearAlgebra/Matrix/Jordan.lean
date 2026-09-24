@@ -16,6 +16,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.StdBasis
 import Mathlib.RingTheory.AdjoinRoot
 import Numlib.LinearAlgebra.Matrix.Rank
+import Numlib.LinearAlgebra.Matrix.Similar
 
 /-!
 # The Jordan canonical form
@@ -67,6 +68,11 @@ of the powers of `jordanForm e μ - c` stop growing, is the largest of their siz
   `Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff`, which says that the
   dimensions stop growing at `k` exactly when every block carrying `c` has size at most `k`, so
   that the least such `k` — the **index** of `c` — is the largest of those sizes.
+* `Matrix.card_filter_le_jordanBlocks_eq`: the number of blocks of size at least `k + 1` carrying
+  `c` is the growth of the nullity of `(jordanForm e μ - c)^k` from `k` to `k + 1`; hence
+  **uniqueness**, `Matrix.card_jordanBlocks_eq_of_isSimilar`: the number of Jordan blocks of each
+  size for each eigenvalue is a similarity invariant ([golub2013matrix] the remark after
+  Theorem 7.1.9, and §7.6.5).
 * `Matrix.exists_equiv_submatrix_jordanForm_pos`: the size-zero blocks that `Matrix.jordanForm`
   admits, and that would spoil those counts, can always be dropped. The existence theorems above
   produce block sizes that are already positive.
@@ -987,5 +993,109 @@ theorem finrank_eigenspace_le_rootMultiplicity_charpoly (A : Matrix n n K) (μ :
   rwa [charpoly_mulVecLin] at h
 
 end Multiplicity
+
+/-! ### Uniqueness of the Jordan form -/
+
+section Uniqueness
+
+variable {K : Type*} [Field K] [DecidableEq K] {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+/-- **The number of Jordan blocks of size at least `k + 1`** for an eigenvalue `c`
+([golub2013matrix] §7.6.5: "`p_i - p_{i-1}` equals the number of blocks in `C`'s Jordan form that
+have dimension `i` or greater") is the growth of the null spaces of the powers of
+`jordanForm e μ - c` from `k` to `k + 1`: each block carrying `c` contributes `min (e i) k` to the
+`k`-th nullity (`Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow`), which grows by one
+exactly when `k + 1 ≤ e i`. -/
+theorem card_filter_le_jordanBlocks_eq (e : ι → ℕ) (μ : ι → K) (c : K) (k : ℕ) :
+    Module.finrank K (LinearMap.ker (((jordanForm e μ - c • 1) ^ (k + 1)).mulVecLin)) -
+        Module.finrank K (LinearMap.ker (((jordanForm e μ - c • 1) ^ k).mulVecLin)) =
+      (Finset.univ.filter fun i => μ i = c ∧ k + 1 ≤ e i).card := by
+  rw [finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow,
+    finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow]
+  have hsplit : ∑ i ∈ Finset.univ.filter fun i => μ i = c, min (e i) (k + 1) =
+      ∑ i ∈ Finset.univ.filter fun i => μ i = c, min (e i) k +
+        ∑ i ∈ Finset.univ.filter fun i => μ i = c, if k + 1 ≤ e i then 1 else 0 := by
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    split_ifs with h <;> omega
+  rw [hsplit, add_tsub_cancel_left, Finset.sum_boole, Finset.filter_filter]
+  simp
+
+omit [DecidableEq K] in
+/-- The nullities of the powers of a shifted matrix are similarity invariants, reindexing
+included: if `A` is similar to the reindexed `J`, the null spaces of `(A - c)^k` and `(J - c)^k`
+have the same dimension. -/
+private theorem finrank_ker_pow_eq_of_isSimilar_reindex {n m : Type*} [Fintype n] [DecidableEq n]
+    [Fintype m] [DecidableEq m] {A : Matrix n n K} {J : Matrix m m K} (σ : m ≃ n)
+    (h : IsSimilar A (J.reindex σ σ)) (c : K) (k : ℕ) :
+    Module.finrank K (LinearMap.ker (((A - c • 1) ^ k).mulVecLin)) =
+      Module.finrank K (LinearMap.ker (((J - c • 1) ^ k).mulVecLin)) := by
+  have hr : (J.reindex σ σ - c • 1) ^ k = ((J - c • 1) ^ k).reindex σ σ := by
+    have := map_pow (reindexAlgEquiv K K σ) (J - c • 1) k
+    rw [map_sub, map_smul, map_one] at this
+    simpa using this.symm
+  rw [((h.sub_smul_one c).pow k).finrank_ker_mulVecLin_eq, hr, finrank_ker_mulVecLin_reindex]
+
+omit [Field K] in
+/-- Blocks of size exactly `k + 1` are the blocks of size at least `k + 1` that are not of size at
+least `k + 2`. -/
+private theorem card_filter_eq_add_card_filter_le {κ : Type*} [Fintype κ] (f : κ → ℕ)
+    (ν : κ → K) (c : K) (k : ℕ) :
+    (Finset.univ.filter fun i => ν i = c ∧ f i = k + 1).card +
+        (Finset.univ.filter fun i => ν i = c ∧ k + 2 ≤ f i).card =
+      (Finset.univ.filter fun i => ν i = c ∧ k + 1 ≤ f i).card := by
+  classical
+  have hdisj : Disjoint (Finset.univ.filter fun i => ν i = c ∧ f i = k + 1)
+      (Finset.univ.filter fun i => ν i = c ∧ k + 2 ≤ f i) :=
+    Finset.disjoint_filter.mpr fun i _ h1 h2 => by omega
+  rw [← Finset.card_union_of_disjoint hdisj, ← Finset.filter_or]
+  congr 1
+  refine Finset.filter_congr fun i _ => ⟨?_, ?_⟩
+  · rintro (⟨h1, h2⟩ | ⟨h1, h2⟩)
+    exacts [⟨h1, by omega⟩, ⟨h1, by omega⟩]
+  · rintro ⟨h1, h2⟩
+    rcases (show f i = k + 1 ∨ k + 2 ≤ f i by omega) with h | h
+    exacts [Or.inl ⟨h1, h⟩, Or.inr ⟨h1, h⟩]
+
+omit [Field K] in
+/-- With positive block sizes there are no blocks of size `0`. -/
+private theorem card_filter_eq_zero_of_pos {κ : Type*} [Fintype κ] (f : κ → ℕ) (ν : κ → K)
+    (c : K) (hf : ∀ i, 0 < f i) : (Finset.univ.filter fun i => ν i = c ∧ f i = 0).card = 0 := by
+  rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  exact fun i _ hi => (hf i).ne' hi.2
+
+/-- **Uniqueness of the Jordan form** up to the order of the blocks ([golub2013matrix] after
+Theorem 7.1.9: "the number and dimensions of the Jordan blocks associated with each distinct
+eigenvalue are unique"): if a matrix `A` is similar to two Jordan forms with positive block sizes,
+laid out along `A`'s index type by `σ` and `σ'`, then for every eigenvalue `c` and size `k` the two
+forms have the same number of blocks of size `k` carrying `c`. The number of blocks of size at
+least `k` is a difference of nullities of powers of `A - c`
+(`Matrix.card_filter_le_jordanBlocks_eq`), a similarity invariant, and "size `k`" is "size at
+least `k`" minus "size at least `k + 1`". -/
+theorem card_jordanBlocks_eq_of_isSimilar {n : Type*} [Fintype n] [DecidableEq n] {ι' : Type*}
+    [Fintype ι'] [DecidableEq ι'] {e : ι → ℕ} {μ : ι → K} {e' : ι' → ℕ} {μ' : ι' → K}
+    (he : ∀ i, 0 < e i) (he' : ∀ i, 0 < e' i) {A : Matrix n n K}
+    (σ : ((i : ι) × Fin (e i)) ≃ n) (σ' : ((i : ι') × Fin (e' i)) ≃ n)
+    (h : IsSimilar A ((jordanForm e μ).reindex σ σ))
+    (h' : IsSimilar A ((jordanForm e' μ').reindex σ' σ')) (c : K) (k : ℕ) :
+    (Finset.univ.filter fun i => μ i = c ∧ e i = k).card =
+      (Finset.univ.filter fun i => μ' i = c ∧ e' i = k).card := by
+  -- the number of blocks of size at least `k + 1` is an invariant of `A`
+  have hge : ∀ k : ℕ, (Finset.univ.filter fun i => μ i = c ∧ k + 1 ≤ e i).card =
+      (Finset.univ.filter fun i => μ' i = c ∧ k + 1 ≤ e' i).card := fun k => by
+    rw [← card_filter_le_jordanBlocks_eq, ← card_filter_le_jordanBlocks_eq,
+      ← finrank_ker_pow_eq_of_isSimilar_reindex σ h, ← finrank_ker_pow_eq_of_isSimilar_reindex σ h,
+      finrank_ker_pow_eq_of_isSimilar_reindex σ' h',
+      finrank_ker_pow_eq_of_isSimilar_reindex σ' h']
+  rcases k with _ | k
+  · rw [card_filter_eq_zero_of_pos e μ c he, card_filter_eq_zero_of_pos e' μ' c he']
+  · have h1 := card_filter_eq_add_card_filter_le e μ c k
+    have h2 := card_filter_eq_add_card_filter_le e' μ' c k
+    have h3 := hge k
+    have h4 : (Finset.univ.filter fun i => μ i = c ∧ k + 2 ≤ e i).card =
+        (Finset.univ.filter fun i => μ' i = c ∧ k + 2 ≤ e' i).card := hge (k + 1)
+    omega
+
+end Uniqueness
 
 end Matrix

@@ -12,6 +12,7 @@ import Mathlib.LinearAlgebra.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
 # The real Schur form
@@ -34,6 +35,14 @@ two*, and that is exactly where the `2 × 2` blocks come from.
   elements, with `⟪b i, A (b j)⟫ = 0` whenever `p j < p i`.
 * `Matrix.exists_orthogonal_conj_quasiUpperTriangular`: the matrix form, `Qᵀ A Q` quasi upper
   triangular for an orthogonal `Q`.
+* `Matrix.IsQuasiUpperTriangular`: the named predicate for the shape the existence theorems produce
+  (block upper triangular for a monotone block index with fibres of size at most two), with its
+  `Fin` characterization `Matrix.isQuasiUpperTriangular_iff_fin` (upper Hessenberg with no two
+  consecutive nonzero subdiagonal entries), `Matrix.IsQuasiUpperTriangular.isUpperHessenberg`, and
+  its closure under triangular factors `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`
+  ([golub2013matrix] §7.4–7.8 state the real Schur, QR, QZ, periodic and Hamiltonian Schur forms
+  with it); `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular` is the real Schur form in that
+  vocabulary ([golub2013matrix] Theorem 7.4.1).
 * `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the sharper form
   of [quarteroni2000numerical] Property 5.8, in which no `2 × 2` diagonal block has a real
   eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
@@ -598,6 +607,168 @@ theorem exists_orthogonal_conj_quasiUpperTriangular {N : ℕ} (A : Matrix (Fin N
       (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p := by
   obtain ⟨Q, hQ, p, hmono, hcard, htri, -⟩ :=
     exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
+  exact ⟨Q, hQ, p, hmono, hcard, htri⟩
+
+end Matrix
+
+/-! ### The quasi upper triangular shape -/
+
+namespace Matrix
+
+section QuasiTriangular
+
+variable {n R : Type*} [Fintype n] [LinearOrder n]
+
+/-- **Upper quasi-triangular** ([golub2013matrix] §7.4.1): block upper triangular for a monotone
+block index `p : n → ℕ` whose fibres, the diagonal blocks, have at most two elements. This is the
+shape of the real Schur form (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`) and of the
+real QR, QZ, periodic and Hamiltonian Schur forms of [golub2013matrix] §7.4–7.8. -/
+def IsQuasiUpperTriangular [Zero R] (T : Matrix n n R) : Prop :=
+  ∃ p : n → ℕ, Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
+    T.BlockTriangular p
+
+omit [Fintype n] in
+/-- An upper triangular matrix is block upper triangular for any monotone block index: a nonzero
+entry `M i j` has `i ≤ j`, hence `p i ≤ p j`. -/
+theorem IsUpperTriangular.blockTriangular_of_monotone [Zero R] {M : Matrix n n R}
+    (hM : M.IsUpperTriangular) {p : n → ℕ} (hp : Monotone p) : M.BlockTriangular p :=
+  fun _ _ h => hM (lt_of_not_ge fun hij => absurd h (not_lt.mpr (hp hij)))
+
+/-- An upper triangular matrix is upper quasi-triangular, with `1 × 1` blocks: the block index
+counting the smaller indices is strictly monotone. -/
+theorem IsUpperTriangular.isQuasiUpperTriangular [Zero R] {T : Matrix n n R}
+    (hT : T.IsUpperTriangular) : T.IsQuasiUpperTriangular := by
+  classical
+  let p : n → ℕ := fun i => (Finset.univ.filter fun j => j < i).card
+  have hsm : StrictMono p := by
+    intro i i' h
+    apply Finset.card_lt_card
+    refine (Finset.ssubset_iff_of_subset fun j hj => ?_).mpr ⟨i, ?_, ?_⟩
+    · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj ⊢
+      exact hj.trans h
+    · simpa using h
+    · simp
+  refine ⟨p, hsm.monotone, fun k => ?_, hT.blockTriangular_of_monotone hsm.monotone⟩
+  calc (Finset.univ.filter fun i => p i = k).card ≤ 1 :=
+        Finset.card_le_one.mpr fun a ha b hb => hsm.injective (by
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
+          rw [ha, hb])
+    _ ≤ 2 := by norm_num
+
+/-- Three indices in one fibre of the block index are impossible: a fibre has at most two
+elements. -/
+private theorem not_three_of_card_le_two {p : n → ℕ}
+    (hcard : ∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) {a b c : n} (hab : a < b)
+    (hbc : b < c) (h1 : p b = p a) (h2 : p c = p a) : False := by
+  have h3 : 2 < (Finset.univ.filter fun x => p x = p a).card :=
+    Finset.two_lt_card.mpr ⟨a, by simp, b, by simp [h1], c, by simp [h2], hab.ne,
+      (hab.trans hbc).ne, hbc.ne⟩
+  exact absurd (hcard (p a)) (not_le.mpr h3)
+
+/-- An upper quasi-triangular matrix is upper Hessenberg: if an index `k` lies strictly between
+`j` and `i`, the three indices cannot share a block, so `p j < p i`. -/
+theorem IsQuasiUpperTriangular.isUpperHessenberg [Zero R] {T : Matrix n n R}
+    (hT : T.IsQuasiUpperTriangular) : T.IsUpperHessenberg := by
+  obtain ⟨p, hmono, hcard, htri⟩ := hT
+  rintro i j ⟨k, hjk, hki⟩
+  refine htri (lt_of_le_of_ne (hmono (hjk.trans hki).le) fun heq => ?_)
+  have hk : p k = p j := le_antisymm ((hmono hki.le).trans heq.ge) (hmono hjk.le)
+  exact not_three_of_card_le_two hcard hjk hki hk heq.symm
+
+/-- **Products with upper triangular factors keep the quasi-triangular shape**, with the same block
+index: an upper triangular `R` is block triangular for the monotone index of `T`
+(`Matrix.IsUpperTriangular.blockTriangular_of_monotone`), and block triangular matrices for one
+index are closed under multiplication. Used for the generalized real Schur form of a nonsingular
+pencil and the periodic Schur form. -/
+theorem IsQuasiUpperTriangular.mul_isUpperTriangular [NonUnitalNonAssocSemiring R]
+    {T M : Matrix n n R} (hT : T.IsQuasiUpperTriangular) (hM : M.IsUpperTriangular) :
+    (T * M).IsQuasiUpperTriangular ∧ (M * T).IsQuasiUpperTriangular := by
+  obtain ⟨p, hmono, hcard, htri⟩ := hT
+  exact ⟨⟨p, hmono, hcard, htri.mul (hM.blockTriangular_of_monotone hmono)⟩,
+    ⟨p, hmono, hcard, (hM.blockTriangular_of_monotone hmono).mul htri⟩⟩
+
+end QuasiTriangular
+
+section Fin
+
+variable {R : Type*} [Zero R] {N : ℕ}
+
+/-- **Upper quasi-triangular on `Fin N`**: upper Hessenberg with no two consecutive nonzero
+subdiagonal entries. The block index counts the zero subdiagonal entries before an index; a nonzero
+subdiagonal entry keeps its two indices in one block, and two consecutive ones would put three
+indices in one block. -/
+theorem isQuasiUpperTriangular_iff_fin {T : Matrix (Fin N) (Fin N) R} :
+    T.IsQuasiUpperTriangular ↔ T.IsUpperHessenberg ∧ ∀ i : ℕ, (hi : i + 2 < N) →
+      T ⟨i + 1, by omega⟩ ⟨i, by omega⟩ = 0 ∨ T ⟨i + 2, hi⟩ ⟨i + 1, by omega⟩ = 0 := by
+  classical
+  constructor
+  · intro hT
+    refine ⟨hT.isUpperHessenberg, fun i hi => ?_⟩
+    obtain ⟨p, hmono, hcard, htri⟩ := hT
+    by_contra! h
+    obtain ⟨h1, h2⟩ := h
+    have e1 : p ⟨i + 1, by omega⟩ = p ⟨i, by omega⟩ :=
+      le_antisymm (not_lt.mp fun hlt => h1 (htri hlt))
+        (hmono (Fin.mk_le_mk.mpr (by omega)))
+    have e2 : p ⟨i + 2, hi⟩ = p ⟨i + 1, by omega⟩ :=
+      le_antisymm (not_lt.mp fun hlt => h2 (htri hlt))
+        (hmono (Fin.mk_le_mk.mpr (by omega)))
+    exact not_three_of_card_le_two hcard (b := ⟨i + 1, by omega⟩) (c := ⟨i + 2, hi⟩)
+      (Fin.mk_lt_mk.mpr (by omega)) (Fin.mk_lt_mk.mpr (by omega)) e1 (e2.trans e1)
+  · rintro ⟨hH, hsub⟩
+    let s : ℕ → Prop := fun j => ∃ h : j + 1 < N, T ⟨j + 1, h⟩ ⟨j, by omega⟩ = 0
+    let P : ℕ → ℕ := fun m => ((Finset.range m).filter s).card
+    have hPsucc : ∀ m, P (m + 1) = P m + if s m then 1 else 0 := fun m => by
+      simp only [P, Finset.range_add_one, Finset.filter_insert]
+      split_ifs
+      · rw [Finset.card_insert_of_notMem (by simp)]
+      · rfl
+    have hPmono : Monotone P := monotone_nat_of_le_succ fun m => by rw [hPsucc]; omega
+    have hns : ∀ j (h : j + 1 < N), P (j + 1) = P j → T ⟨j + 1, h⟩ ⟨j, by omega⟩ ≠ 0 :=
+      fun j h hP h0 => by
+        rw [hPsucc] at hP
+        simp only [show s j from ⟨h, h0⟩, ↓reduceIte] at hP
+        omega
+    -- equal block indices are at distance at most one
+    have hclose : ∀ i j : Fin N, P i = P j → (i : ℕ) ≤ (j : ℕ) + 1 := by
+      intro i j hij
+      by_contra! hlt
+      have a1 := hPmono (show (j : ℕ) ≤ j + 1 by omega)
+      have a2 := hPmono (show (j : ℕ) + 1 ≤ j + 1 + 1 by omega)
+      have a3 := hPmono (show (j : ℕ) + 1 + 1 ≤ i by omega)
+      have hN : (j : ℕ) + 2 < N := by have := i.isLt; omega
+      rcases hsub j hN with h0 | h0
+      · exact hns j (by omega) (by omega) h0
+      · exact hns (j + 1) hN (by omega) h0
+    refine ⟨fun i => P i, fun a b hab => hPmono hab, LinearMap.card_filter_le_two hclose,
+      fun i j hji => ?_⟩
+    have hji' : (j : ℕ) < i := by
+      by_contra! hle
+      exact absurd hji (not_lt.mpr (hPmono hle))
+    rcases (show (j : ℕ) + 1 = i ∨ (j : ℕ) + 1 < i by omega) with he | hlt
+    · have hs : s j := by
+        by_contra hns'
+        have := hPsucc j
+        simp only [hns', ↓reduceIte, add_zero] at this
+        rw [he] at this
+        simp only at hji
+        rw [this] at hji
+        exact lt_irrefl _ hji
+      obtain ⟨h, h0⟩ := hs
+      convert h0 using 2
+      exact Fin.ext he.symm
+    · exact hH i j ⟨⟨j + 1, by omega⟩, Fin.lt_def.mpr (by simp),
+        Fin.lt_def.mpr (by simp only; omega)⟩
+
+end Fin
+
+/-- **The real Schur form**, named shape ([golub2013matrix] Theorem 7.4.1): a real square matrix is
+orthogonally similar to an upper quasi-triangular matrix. The refinement that no `2 × 2` diagonal
+block has a real eigenvalue stays with the block index in
+`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`. -/
+theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
+    ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, (Qᵀ * A * Q).IsQuasiUpperTriangular := by
+  obtain ⟨Q, hQ, p, hmono, hcard, htri⟩ := exists_orthogonal_conj_quasiUpperTriangular A
   exact ⟨Q, hQ, p, hmono, hcard, htri⟩
 
 end Matrix

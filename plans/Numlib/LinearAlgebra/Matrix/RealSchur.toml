@@ -1,14 +1,7 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.RealSchur` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch07) add to "Main results": `Matrix.IsQuasiUpperTriangular`, the named predicate for the shape
-# the two existence theorems produce (block upper triangular for a monotone block index with fibres
-# of size at most two), with its `Fin` characterization and its closure under triangular factors
-# ([golub2013matrix] §7.4–7.8 state the real Schur, QR, QZ, periodic and Hamiltonian Schur forms
-# with it).
-# (review) add to "Main results": `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup` — the
-# eigenvalues of a real orthogonal matrix of even size with determinant `1` are `m` conjugate pairs
-# `e^{±iθ_k}` ([golub2013matrix] (12.2.19), stated there for orthogonal Hessenberg matrices; true for all),
-# from the real Schur form of an orthogonal matrix (block diagonal with plane rotations and `±1`).
+# Planned addition (review of the GVL round): when `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`
+# is formalized, add to the module doc's "Main results": the eigenvalues of a real orthogonal matrix of even size with
+# determinant `1` are `m` conjugate pairs `e^{±iθ_k}` ([golub2013matrix] (12.2.19), stated there for orthogonal
+# Hessenberg matrices; true for all).
 [[node]]
 id = "LinearMap.exists_invariant_finrank_le_two"
 
@@ -34,59 +27,21 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8"
 
 [[node]]  # staged by ch07
 id = "Matrix.IsQuasiUpperTriangular"
-kind = "definition"
-desc = '''Upper quasi-triangular ([golub2013matrix] §7.4.1, Definition): for `T : Matrix n n R` with
-`[LinearOrder n]`, `∃ p : n → ℕ, Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧ T.BlockTriangular p` —
-exactly the shape of `Matrix.exists_orthogonal_conj_quasiUpperTriangular`, which becomes
-`∃ Q ∈ orthogonalGroup, (Qᵀ * A * Q).IsQuasiUpperTriangular`. The shape elaborates
-(`notes/gvl/ch07/proto/Shapes.lean`). ★'''
-deps = []
 
 [[node]]  # staged by ch07
 id = "Matrix.isQuasiUpperTriangular_iff_fin"
-kind = "theorem"
-desc = '''On `Fin N`: `T.IsQuasiUpperTriangular ↔ T.IsUpperHessenberg ∧ ∀ i : ℕ, (hi : i + 2 < N) →
-T ⟨i+1, _⟩ ⟨i, _⟩ = 0 ∨ T ⟨i+2, _⟩ ⟨i+1, _⟩ = 0` — Hessenberg with no two consecutive nonzero
-subdiagonal entries. `→`: an entry below the first subdiagonal crosses a block boundary, and two
-consecutive subdiagonal nonzeros would put three indices in one fibre. `←`: build `p` by counting
-the zero subdiagonal entries before `i` (`p i = #{j < i | T (j+1) j = 0}` shifted so that a nonzero
-`T (i+1) i` keeps `i`, `i+1` together). ★★'''
-deps = ["Matrix.IsQuasiUpperTriangular"]
 
 [[node]]  # staged by ch07
 id = "Matrix.IsUpperTriangular.isQuasiUpperTriangular"
-kind = "theorem"
-desc = '''An upper triangular matrix is upper quasi-triangular (`p` the order embedding into `ℕ`,
-`Fin` or via `Finset.card (Iio i)`; fibres are singletons). ★'''
-deps = ["Matrix.IsQuasiUpperTriangular"]
 
 [[node]]  # staged by ch07
 id = "Matrix.IsQuasiUpperTriangular.isUpperHessenberg"
-kind = "theorem"
-desc = '''Upper quasi-triangular implies upper Hessenberg (`Matrix.IsUpperHessenberg`): if some `k`
-lies strictly between `j` and `i` then `p j < p i`, since the fibre of `p` containing `j` and `i`
-would contain three indices. ★'''
-deps = ["Matrix.IsQuasiUpperTriangular"]
 
 [[node]]  # staged by ch07
 id = "Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular"
-kind = "theorem"
-desc = '''Products with triangular factors keep the shape, with the same block index `p`: if
-`T.BlockTriangular p` with `p` monotone and `R` is upper triangular then `T * R` and `R * T` are
-`BlockTriangular p` (for `p j < p i`, a nonzero term `T i k R k j` needs `p i ≤ p k` and `k ≤ j`, so
-`p k ≤ p j`); hence `IsQuasiUpperTriangular` is closed under multiplication by upper triangular
-matrices on either side. Used for the generalized real Schur form of a nonsingular pencil and the
-periodic Schur form. ★'''
-deps = ["Matrix.IsQuasiUpperTriangular"]
 
 [[node]]  # staged by ch07
 id = "Matrix.exists_orthogonal_conj_isQuasiUpperTriangular"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.4.1 in the named form: for `A : Matrix (Fin N) (Fin N) ℝ` there is
-`Q ∈ orthogonalGroup (Fin N) ℝ` with `(Qᵀ * A * Q).IsQuasiUpperTriangular` (the shape only; the
-refinement that no `2 × 2` diagonal block has a real eigenvalue stays with the block index in
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`). ★'''
-deps = ["Matrix.IsQuasiUpperTriangular", "Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks"]
 
 [[node]]
 id = "Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup"
@@ -102,5 +57,15 @@ block is a rotation by some `θ` (`e^{±iθ}`), each `1 × 1` block is `±1`, an
 `−1` blocks even, so the `±1` blocks pair up as `θ = 0`, `θ = π`. (Alternatively: roots of modulus one,
 conjugation pairing of the real charpoly, and the parity count on `−1` and `1`.) Replaces the Hessenberg-only
 `Matrix.charpoly_orthogonalHessenberg_eq_prod` of `Semiseparable` (review of the Golub–Van Loan round). ★★★ (~180
-lines)'''
+lines)
+
+Blocked (effort): not attempted in wave 1 (eig1). The shape lemmas it needs are proved
+(`Matrix.IsQuasiUpperTriangular`, `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`); the
+missing pieces are "a normal block upper triangular matrix is block diagonal" (the block version of
+`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` in `Schur`) and the classification of `2 × 2`
+real orthogonal blocks. The alternative route (roots of modulus one, conjugate pairing of a real
+charpoly, the parity of `-1` from `det = 1`) avoids the Schur form and may be shorter.'''
 deps = ["Matrix.exists_orthogonal_conj_quasiUpperTriangular"]
+
+[[node]]  # added by eig1: the triangular factor is block triangular for any monotone index
+id = "Matrix.IsUpperTriangular.blockTriangular_of_monotone"

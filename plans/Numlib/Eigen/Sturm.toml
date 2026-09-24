@@ -226,5 +226,10 @@ is `b i` (`Matrix.isUnreducedUpperHessenberg_iff_fin`). So the hypothesis `∀ j
 the Sturm theorems (`Sturm.eigenvalues_simple`, `Sturm.eigenvalues_strictInterlace`, …; weakened from
 `∀ i, b i ≠ 0` by the refactor task R24) is exactly `IsUnreducedUpperHessenberg`, and the implicit Q theorem of `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`
 and the geometric simplicity `Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one` apply to it.
-★'''
+★
+
+Blocked: needs `Matrix.IsUnreducedUpperHessenberg` and `Matrix.isUnreducedUpperHessenberg_iff_fin`
+(group `LinearAlgebra/Matrix/UnreducedHessenberg`, module not yet written, not in wave 1). Once they
+exist the proof is a few lines (`isUnreducedUpperHessenberg_iff_fin`, the entries of
+`symmTridiagonalOf`, and tridiagonal ⇒ upper Hessenberg). Nothing was attempted (eig1, wave 1).'''
 deps = ["Matrix.symmTridiagonalOf", "Matrix.IsUnreducedUpperHessenberg", "Matrix.isUnreducedUpperHessenberg_iff_fin"]

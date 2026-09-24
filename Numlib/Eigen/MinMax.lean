@@ -1,5 +1,7 @@
+import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Mathlib.Analysis.InnerProductSpace.Trace
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.Matrix.ToEuclideanLin
 
@@ -35,16 +37,40 @@ i`.
   `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`: the classical `max min` and `min max` formulas.
 * `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form, the
   maximum over the vectors orthogonal to the `i` leading eigenvectors.
-* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a time.
+* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a time,
+  and its two-sided form `LinearMap.IsSymmetric.eigenvalues_add_mem_Icc`,
+  `λ_i(A) + λ_min(E) ≤ λ_i(A + E) ≤ λ_i(A) + λ_max(E)` ([golub2013matrix] Theorem 8.1.5).
 * `LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry` and its two faces
   `LinearMap.IsSymmetric.eigenvalues_restrict_interlace` (a subspace) and
   `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` (a principal submatrix): Cauchy interlacing,
   `λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)` whenever the quadratic form of `S` on an `m`-dimensional
   space is that of `T` pulled back along a linear isometry.
+* `LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`: low-rank interlacing, a
+  perturbation of rank at most `r` moves every eigenvalue by at most `r` places,
+  `λ_{i+r}(B) ≤ λ_i(A)`; with a positive perturbation this is
+  `LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`
+  ([golub2013matrix] Theorem 8.1.8 at `r = 1`).
+* `LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues` and
+  `LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner`: Ky Fan's maximum and minimum principles,
+  `∑_{i<k} λ_{n-k+i} ≤ ∑_{i<k} re ⟪T x_i, x_i⟫ ≤ ∑_{i<k} λ_i` for an orthonormal family `x`. The sum
+  is the trace of the compression of `T` to the span of the family, and each eigenvalue of the
+  compression is bounded by Cauchy interlacing. They are the one source of the trace-maximization
+  results: the trace inequality `LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`
+  (`re tr(A B) ≤ ∑ λ_i(A) λ_i(B)`, by Abel summation over the eigenvectors of `B`) and the
+  **Hoffman–Wielandt inequality** `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le`, with its
+  matrix form `Matrix.IsHermitian.hoffman_wielandt`, `∑ (λ_k(A) - λ_k(B))² ≤ ‖A - B‖_F²`
+  ([golub2013matrix] Theorem 8.1.4).
 * `Matrix.IsHermitian.sortedEigenvalues`: the eigenvalues of a Hermitian matrix of order `n`, sorted
   decreasingly and indexed by `Fin n` (Mathlib's `eigenvalues₀` reindexed), with Cauchy interlacing
   for the leading principal submatrix,
-  `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`.
+  `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`, and the sorted spectral
+  decomposition `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀`
+  (`Uᴴ A U = diag(λ_1 ≥ ⋯ ≥ λ_n)`, [golub2013matrix] Theorem 8.1.1).
+* `ContinuousLinearMap.hasGradientAt_rayleighQuotient`: the gradient of the Rayleigh quotient,
+  `∇r(x) = 2 (T x - r(x) x) / ‖x‖²` ([golub2013matrix] (10.1.1)); hence
+  `LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`, the stationary points of the
+  Rayleigh quotient are exactly the eigenvectors ([golub2013matrix] (12.5.23)). Mathlib has only
+  the extremal case, `IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`.
 * `LinearMap.IsSymmetric.eigenvalues_neg`: the eigenvalues of `-T` are the negatives of those of
   `T` in reversed order, which is the reduction that turns any statement about a largest eigenvalue
   into the matching statement about a smallest one; `exists_smul_eigenvectorBasis_neg` transports
@@ -534,6 +560,32 @@ theorem abs_eigenvalues_sub_le_opNorm {A B : E →L[𝕜] E} (hA : (A : E →ₗ
   rw [← ContinuousLinearMap.toLinearMap_sub]
   exact (A - B).le_opNorm x
 
+/-- **Weyl's inequality, two-sided form** ([golub2013matrix] Theorem 8.1.5): adding a symmetric `E`
+to a symmetric `A` moves every eigenvalue by an amount between the extreme eigenvalues of `E`,
+`λ_i(A) + λ_min(E) ≤ λ_i(A + E) ≤ λ_i(A) + λ_max(E)`. Both bounds are
+`LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`, with the quadratic-form bounds
+`λ_min(E) ‖x‖² ≤ re ⟪E x, x⟫ ≤ λ_max(E) ‖x‖²` as the slack. -/
+theorem eigenvalues_add_mem_Icc {m : ℕ} (hA : A.IsSymmetric) (hE : B.IsSymmetric)
+    (hAE : (A + B).IsSymmetric) (hn : Module.finrank 𝕜 E = m + 1) (i : Fin (m + 1)) :
+    hAE.eigenvalues hn i ∈ Set.Icc (hA.eigenvalues hn i + hE.eigenvalues hn (Fin.last m))
+      (hA.eigenvalues hn i + hE.eigenvalues hn 0) := by
+  have huniv : ∀ x : E, x ∈ hE.eigenvectorSpan hn Finset.univ := fun x => by
+    rw [hE.eigenvectorSpan_univ hn]; trivial
+  have hup : ∀ x : E, RCLike.re (inner 𝕜 (B x) x) ≤ hE.eigenvalues hn 0 * ‖x‖ ^ 2 := fun x =>
+    hE.re_inner_apply_self_le_of_mem_eigenvectorSpan hn
+      (fun j _ => hE.eigenvalues_antitone hn (Fin.zero_le j)) (huniv x)
+  have hlo : ∀ x : E, hE.eigenvalues hn (Fin.last m) * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (B x) x) :=
+    fun x => hE.le_re_inner_apply_self_of_mem_eigenvectorSpan hn
+      (fun j _ => hE.eigenvalues_antitone hn (Fin.le_last j)) (huniv x)
+  constructor
+  · have h := hA.eigenvalues_le_add_of_re_inner_le hAE hn
+      (C := -hE.eigenvalues hn (Fin.last m)) (fun x => by
+        rw [LinearMap.add_apply, inner_add_left, map_add]; linarith [hlo x]) i
+    linarith
+  · have h := hAE.eigenvalues_le_add_of_re_inner_le hA hn (C := hE.eigenvalues hn 0)
+      (fun x => by rw [LinearMap.add_apply, inner_add_left, map_add]; linarith [hup x]) i
+    linarith
+
 end LinearMap.IsSymmetric
 
 namespace LinearMap.IsSymmetric
@@ -593,6 +645,223 @@ theorem eigenvalues_restrict_interlace {K : Submodule 𝕜 E} {S : K →ₗ[𝕜
     hT.eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩ ≤ hS.eigenvalues hm i ∧
       hS.eigenvalues hm i ≤ hT.eigenvalues hn (Fin.castLE hmn i) :=
   hT.eigenvalues_interlace_of_linearIsometry hn hS hm hmn K.subtypeₗᵢ hSK i
+
+end LinearMap.IsSymmetric
+
+/-! ### Low-rank interlacing -/
+
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E] {n : ℕ} {A B : E →ₗ[𝕜] E}
+
+/-- **Low-rank interlacing**: a perturbation of rank at most `r` moves every eigenvalue by at most
+`r` places. For symmetric `A`, `B` with `finrank (range (B - A)) ≤ r`, `λ_{i+r}(B) ≤ λ_i(A)`
+(and, exchanging the two, `λ_{i+r}(A) ≤ λ_i(B)`). Courant–Fischer: on the `(i + r + 1)`-dimensional
+span of the leading eigenvectors of `B` the Rayleigh quotient of `B` is at least `λ_{i+r}(B)`; its
+intersection with `ker (B - A)`, of dimension at least `i + 1`, carries a nonzero vector whose
+Rayleigh quotient for `A`, the same as for `B` there, is at most `λ_i(A)`. -/
+theorem eigenvalues_le_of_finrank_range_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
+    (hn : Module.finrank 𝕜 E = n) {r : ℕ} (hr : Module.finrank 𝕜 (LinearMap.range (B - A)) ≤ r)
+    (i : Fin n) (hir : (i : ℕ) + r < n) :
+    hB.eigenvalues hn ⟨(i : ℕ) + r, hir⟩ ≤ hA.eigenvalues hn i := by
+  set S := hB.eigenvectorSpan hn (Finset.Iic ⟨(i : ℕ) + r, hir⟩)
+  have hS : Module.finrank 𝕜 S = (i : ℕ) + r + 1 := by
+    rw [hB.finrank_eigenvectorSpan hn, Fin.card_Iic]
+  have hK : n - r ≤ Module.finrank 𝕜 (LinearMap.ker (B - A)) := by
+    have := LinearMap.finrank_range_add_finrank_ker (B - A)
+    omega
+  have hsum := Submodule.finrank_sup_add_finrank_inf_eq S (LinearMap.ker (B - A))
+  have hle : Module.finrank 𝕜 (S ⊔ LinearMap.ker (B - A) : Submodule 𝕜 E) ≤ n :=
+    hn ▸ Submodule.finrank_le _
+  obtain ⟨x, hxW, hx0, hxle⟩ := hA.exists_mem_ne_zero_rayleighQuotient_le hn i
+    (S := S ⊓ LinearMap.ker (B - A)) (by omega)
+  have hBx : B x = A x := by
+    have := (Submodule.mem_inf.mp hxW).2
+    rwa [LinearMap.mem_ker, LinearMap.sub_apply, sub_eq_zero] at this
+  have hlb := hB.le_rayleighQuotient_of_mem_eigenvectorSpan_Iic hn ⟨(i : ℕ) + r, hir⟩
+    (Submodule.mem_inf.mp hxW).1 hx0
+  rw [LinearMap.rayleighQuotient, hBx] at hlb
+  exact hlb.trans hxle
+
+/-- **Interlacing for a positive low-rank perturbation** ([golub2013matrix] Theorem 8.1.8 is
+`r = 1`, `B - A = τ c cᵀ` with `τ ≥ 0`): if `B - A` is positive and of rank at most `r`, then
+`λ_{i+r}(B) ≤ λ_i(A) ≤ λ_i(B)`. The first inequality is
+`LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`, which needs no positivity; the
+second is the monotonicity `LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le`. -/
+theorem eigenvalues_le_of_isPositive_sub_of_finrank_range_le (hA : A.IsSymmetric)
+    (hB : B.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (hBA : (B - A).IsPositive) {r : ℕ}
+    (hr : Module.finrank 𝕜 (LinearMap.range (B - A)) ≤ r) (i : Fin n) (hir : (i : ℕ) + r < n) :
+    hB.eigenvalues hn ⟨(i : ℕ) + r, hir⟩ ≤ hA.eigenvalues hn i ∧
+      hA.eigenvalues hn i ≤ hB.eigenvalues hn i :=
+  ⟨hA.eigenvalues_le_of_finrank_range_sub_le hB hn hr i hir,
+    hA.eigenvalues_le_of_re_inner_le hB hn (fun x => by
+      have := hBA.2 x
+      rw [LinearMap.sub_apply, inner_sub_left, map_sub] at this
+      linarith) i⟩
+
+end LinearMap.IsSymmetric
+
+/-! ### Ky Fan's principles and the Hoffman–Wielandt inequality -/
+
+/-- The quadratic form summed over an orthonormal family is the real trace of the compression of
+the operator to the span of the family: the family is an orthonormal basis of its span, in which
+the diagonal entries of the compression are `⟪x i, T (x i)⟫`. -/
+theorem LinearMap.sum_re_inner_eq_re_trace_compression [FiniteDimensional 𝕜 E] (T : E →ₗ[𝕜] E)
+    {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x) :
+    ∑ i, RCLike.re (inner 𝕜 (T (x i)) (x i)) =
+      RCLike.re (LinearMap.trace 𝕜 _ (compression T (Submodule.span 𝕜 (Set.range x)))) := by
+  set K := Submodule.span 𝕜 (Set.range x)
+  let b : OrthonormalBasis (Fin k) 𝕜 K :=
+    (Module.Basis.span hx.linearIndependent).toOrthonormalBasis
+      (K.subtypeₗᵢ.orthonormal_comp_iff.mp (by convert hx; ext; simp))
+  have hb : ∀ i, (b i : E) = x i := fun i => by simp [b]
+  rw [LinearMap.trace_eq_sum_inner _ b, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [compression.inner_apply', hb, ← inner_conj_symm, RCLike.conj_re]
+
+/-- Summation by parts, in the form used for the trace inequality: if every partial sum of `d` is
+nonnegative and `f` decreases, then `∑ f i d i ≥ f_last ∑ d i`. -/
+private theorem mul_sum_le_sum_mul_of_antitone {n : ℕ} {f d : Fin (n + 1) → ℝ} (hf : Antitone f)
+    (hd : ∀ (k : ℕ) (hk : k ≤ n + 1), 0 ≤ ∑ i : Fin k, d (Fin.castLE hk i)) :
+    f (Fin.last n) * ∑ i, d i ≤ ∑ i, f i * d i := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have ih' := ih (f := f ∘ Fin.castSucc) (d := d ∘ Fin.castSucc)
+      (fun i j hij => hf (Fin.castSucc_le_castSucc_iff.mpr hij))
+      (fun k hk => hd k (by omega))
+    have h0 : 0 ≤ ∑ i : Fin (n + 1), d (Fin.castSucc i) := hd (n + 1) (by omega)
+    have hfl : f (Fin.last (n + 1)) ≤ f (Fin.castSucc (Fin.last n)) := hf (Fin.le_last _)
+    rw [Fin.sum_univ_castSucc, Fin.sum_univ_castSucc (fun i => f i * d i), mul_add]
+    simp only [Function.comp] at ih'
+    nlinarith
+
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E] {n : ℕ} (hn : Module.finrank 𝕜 E = n)
+
+section KyFan
+
+variable {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
+include hT
+
+/-- **Ky Fan's maximum principle**: for an orthonormal family `x : Fin k → E`, the quadratic forms
+`re ⟪T x_i, x_i⟫` sum to at most the sum of the `k` largest eigenvalues, with equality at the
+leading eigenvectors (`LinearMap.IsSymmetric.sum_re_inner_eigenvectorBasis`). The sum is the real
+trace of the compression of `T` to the span of the family
+(`LinearMap.sum_re_inner_eq_re_trace_compression`), that is the sum of the compression's
+eigenvalues, each of which is at most the corresponding eigenvalue of `T` by Cauchy interlacing. -/
+theorem sum_re_inner_le_sum_eigenvalues {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x)
+    (hkn : k ≤ n) :
+    ∑ i, RCLike.re (inner 𝕜 (T (x i)) (x i)) ≤
+      ∑ i : Fin k, hT.eigenvalues hn (Fin.castLE hkn i) := by
+  have hK : Module.finrank 𝕜 (Submodule.span 𝕜 (Set.range x)) = k := by
+    rw [finrank_span_eq_card hx.linearIndependent, Fintype.card_fin]
+  have hS := compression.isSymmetric T (Submodule.span 𝕜 (Set.range x)) hT
+  rw [T.sum_re_inner_eq_re_trace_compression hx, hS.re_trace_eq_sum_eigenvalues hK]
+  exact Finset.sum_le_sum fun i _ =>
+    (hT.eigenvalues_restrict_interlace hn hS hK hkn
+      (fun y => by rw [compression.inner_apply]) i).2
+
+/-- **Ky Fan's minimum principle**, the dual of
+`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`: for an orthonormal family
+`x : Fin k → E`, the quadratic forms `re ⟪T x_i, x_i⟫` sum to at least the sum of the `k` smallest
+eigenvalues (the trace-minimization principle of [golub2013matrix] §10.6.5 for `B = I`). The same
+compression argument, with the other half of Cauchy interlacing. -/
+theorem sum_eigenvalues_le_sum_re_inner {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x)
+    (hkn : k ≤ n) :
+    ∑ i : Fin k, hT.eigenvalues hn ⟨(i : ℕ) + (n - k), by omega⟩ ≤
+      ∑ i, RCLike.re (inner 𝕜 (T (x i)) (x i)) := by
+  have hK : Module.finrank 𝕜 (Submodule.span 𝕜 (Set.range x)) = k := by
+    rw [finrank_span_eq_card hx.linearIndependent, Fintype.card_fin]
+  have hS := compression.isSymmetric T (Submodule.span 𝕜 (Set.range x)) hT
+  rw [T.sum_re_inner_eq_re_trace_compression hx, hS.re_trace_eq_sum_eigenvalues hK]
+  exact Finset.sum_le_sum fun i _ =>
+    (hT.eigenvalues_restrict_interlace hn hS hK hkn
+      (fun y => by rw [compression.inner_apply]) i).1
+
+/-- The equality case of Ky Fan's maximum principle: at the `k` leading eigenvectors the quadratic
+forms sum to the sum of the `k` largest eigenvalues. -/
+theorem sum_re_inner_eigenvectorBasis {k : ℕ} (hkn : k ≤ n) :
+    ∑ i : Fin k, RCLike.re (inner 𝕜 (T (hT.eigenvectorBasis hn (Fin.castLE hkn i)))
+        (hT.eigenvectorBasis hn (Fin.castLE hkn i))) =
+      ∑ i : Fin k, hT.eigenvalues hn (Fin.castLE hkn i) := by
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [← T.rayleighQuotient_of_norm_eq_one ((hT.eigenvectorBasis hn).norm_eq_one _),
+    hT.rayleighQuotient_eigenvectorBasis]
+
+/-- The trace of the square of a symmetric operator is the sum of the squared eigenvalues. -/
+theorem trace_comp_self_eq_sum_sq :
+    LinearMap.trace 𝕜 E (T ∘ₗ T) = ∑ i, ((hT.eigenvalues hn i : 𝕜)) ^ 2 := by
+  rw [LinearMap.trace_eq_sum_inner _ (hT.eigenvectorBasis hn)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [LinearMap.comp_apply, hT.apply_eigenvectorBasis, map_smul, hT.apply_eigenvectorBasis,
+    smul_smul, inner_smul_right, inner_self_eq_norm_sq_to_K,
+    (hT.eigenvectorBasis hn).norm_eq_one]
+  simp [sq]
+
+end KyFan
+
+variable {A B : E →ₗ[𝕜] E}
+
+/-- **The trace inequality for two symmetric operators**: `re tr(A B) ≤ ∑ λ_i(A) λ_i(B)`, both
+eigenvalue lists sorted decreasingly (the symmetric case of von Neumann's trace inequality). In the
+eigenbasis `v` of `B`, `re tr(A B) = ∑ μ_i a_i` with `a_i = re ⟪A v_i, v_i⟫`; the partial sums of
+`a` are bounded by those of `λ(A)` (Ky Fan,
+`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`), with equality for the full sum (the
+trace), and summation by parts against the decreasing `μ` gives the claim. -/
+theorem re_trace_comp_le_sum_eigenvalues_mul (hA : A.IsSymmetric) (hB : B.IsSymmetric) :
+    RCLike.re (LinearMap.trace 𝕜 E (A ∘ₗ B)) ≤
+      ∑ i, hA.eigenvalues hn i * hB.eigenvalues hn i := by
+  set v := hB.eigenvectorBasis hn
+  set a : Fin n → ℝ := fun i => RCLike.re (inner 𝕜 (A (v i)) (v i))
+  have htr : RCLike.re (LinearMap.trace 𝕜 E (A ∘ₗ B)) = ∑ i, hB.eigenvalues hn i * a i := by
+    rw [LinearMap.trace_eq_sum_inner _ v, map_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [LinearMap.comp_apply, hB.apply_eigenvectorBasis, map_smul, inner_smul_right,
+      ← hA, RCLike.re_ofReal_mul]
+  have hsum : ∑ i, a i = ∑ i, hA.eigenvalues hn i := by
+    rw [← hA.re_trace_eq_sum_eigenvalues hn, LinearMap.trace_eq_sum_inner _ v, map_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [← hA]
+  rw [htr]
+  obtain _ | m := n
+  · simp
+  have key := mul_sum_le_sum_mul_of_antitone (f := hB.eigenvalues hn)
+    (d := fun i => hA.eigenvalues hn i - a i) (hB.eigenvalues_antitone hn) (fun k hk => by
+      rw [Finset.sum_sub_distrib, sub_nonneg]
+      exact hA.sum_re_inner_le_sum_eigenvalues hn
+        (v.orthonormal.comp _ (Fin.castLE_injective hk)) hk)
+  rw [Finset.sum_sub_distrib, hsum, sub_self, mul_zero] at key
+  have : ∑ i, hB.eigenvalues hn i * (hA.eigenvalues hn i - a i) =
+      ∑ i, hA.eigenvalues hn i * hB.eigenvalues hn i - ∑ i, hB.eigenvalues hn i * a i := by
+    rw [← Finset.sum_sub_distrib]
+    exact Finset.sum_congr rfl fun i _ => by ring
+  linarith
+
+/-- **The Hoffman–Wielandt inequality**, operator form: for symmetric `A`, `B` with eigenvalues
+sorted decreasingly, `∑ (λ_i(A) - λ_i(B))² ≤ re tr((A - B)²)`, the right side being the squared
+Hilbert–Schmidt norm of `A - B`. Expand the square: `tr A² = ∑ λ_i(A)²`, `tr B² = ∑ λ_i(B)²`, and
+the cross term is the trace inequality
+`LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`. -/
+theorem sum_sq_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric) :
+    ∑ i, (hA.eigenvalues hn i - hB.eigenvalues hn i) ^ 2 ≤
+      RCLike.re (LinearMap.trace 𝕜 E ((A - B) ∘ₗ (A - B))) := by
+  have hexp : (A - B) ∘ₗ (A - B) = A ∘ₗ A - A ∘ₗ B - B ∘ₗ A + B ∘ₗ B := by
+    rw [LinearMap.sub_comp, LinearMap.comp_sub, LinearMap.comp_sub]; abel
+  have hAA := congrArg RCLike.re (hA.trace_comp_self_eq_sum_sq hn)
+  have hBB := congrArg RCLike.re (hB.trace_comp_self_eq_sum_sq hn)
+  have hAB := re_trace_comp_le_sum_eigenvalues_mul hn hA hB
+  have hBA : LinearMap.trace 𝕜 E (B ∘ₗ A) = LinearMap.trace 𝕜 E (A ∘ₗ B) :=
+    (LinearMap.trace_comp_comm' B A).symm
+  simp only [map_sum, ← RCLike.ofReal_pow, RCLike.ofReal_re] at hAA hBB
+  rw [hexp, map_add, map_sub, map_sub, hBA, map_add, map_sub, map_sub, hAA, hBB]
+  have : ∑ i, (hA.eigenvalues hn i - hB.eigenvalues hn i) ^ 2 =
+      ∑ i, hA.eigenvalues hn i ^ 2 - 2 * ∑ i, hA.eigenvalues hn i * hB.eigenvalues hn i +
+        ∑ i, hB.eigenvalues hn i ^ 2 := by
+    rw [Finset.mul_sum, ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun i _ => by ring
+  linarith
 
 end LinearMap.IsSymmetric
 
@@ -736,6 +1005,51 @@ theorem IsHermitian.eigenvalues₀_submatrix_interlace {A : Matrix n n 𝕜} (hA
 
 end Matrix
 
+/-! ### Traces and the Hoffman–Wielandt inequality for Hermitian matrices -/
+
+namespace Matrix.IsHermitian
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The trace of a Hermitian matrix is the sum of its sorted eigenvalues `eigenvalues₀`
+([golub2013matrix] P8.1.8). Mathlib's `Matrix.IsHermitian.trace_eq_sum_eigenvalues` is the same
+statement for the `n`-indexed `eigenvalues`. -/
+theorem trace_eq_sum_eigenvalues₀ {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    A.trace = ∑ k, (hA.eigenvalues₀ k : 𝕜) := by
+  rw [← A.trace_toLin_eq (EuclideanSpace.basisFun n 𝕜).toBasis,
+    ← toEuclideanLin_eq_toLin_orthonormal]
+  exact_mod_cast (isSymmetric_toEuclideanLin_iff.mpr hA).trace_eq_sum_eigenvalues
+    finrank_euclideanSpace
+
+open scoped Matrix.Norms.Frobenius in
+/-- For a Hermitian `M`, the squared Frobenius norm is the real trace of the square of the operator
+`toEuclideanLin M`: `‖M‖_F² = ∑ i j |M i j|² = re tr(M M)`, as `M j i = conj (M i j)`. -/
+theorem re_trace_toEuclideanLin_comp_self {M : Matrix n n 𝕜} (hM : M.IsHermitian) :
+    RCLike.re (LinearMap.trace 𝕜 _ (toEuclideanLin M ∘ₗ toEuclideanLin M)) = ‖M‖ ^ 2 := by
+  rw [← toLpLin_mul_same, toLpLin_eq_toLin,
+    LinearMap.trace_eq_matrix_trace 𝕜 (PiLp.basisFun 2 𝕜 n), LinearMap.toMatrix_toLin,
+    frobenius_norm_def, ← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
+  norm_num
+  rw [trace, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [diag_apply, mul_apply, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [← hM.apply i j, RCLike.star_def, RCLike.conj_mul, RCLike.norm_conj, ← RCLike.ofReal_pow,
+    RCLike.ofReal_re]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **The Hoffman–Wielandt inequality** ([golub2013matrix] Theorem 8.1.4, "Wielandt–Hoffman"): for
+Hermitian `A`, `B` with eigenvalues sorted decreasingly, `∑ k (λ_k(A) - λ_k(B))² ≤ ‖A - B‖_F²`.
+The operator form `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le` for `toEuclideanLin`, with
+`Matrix.IsHermitian.re_trace_toEuclideanLin_comp_self` for the right side. -/
+theorem hoffman_wielandt {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian) :
+    ∑ k, (hA.eigenvalues₀ k - hB.eigenvalues₀ k) ^ 2 ≤ ‖A - B‖ ^ 2 := by
+  rw [← (hA.sub hB).re_trace_toEuclideanLin_comp_self, map_sub]
+  exact LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le finrank_euclideanSpace
+    (isSymmetric_toEuclideanLin_iff.mpr hA) (isSymmetric_toEuclideanLin_iff.mpr hB)
+
+end Matrix.IsHermitian
+
 /-! ### The sorted eigenvalues of a Hermitian matrix, indexed by `Fin n` -/
 
 namespace Matrix.IsHermitian
@@ -799,4 +1113,95 @@ theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1))
   rw [e1, e2] at h
   exact h
 
+
+/-- **The spectral decomposition with sorted eigenvalues** ([golub2013matrix] Theorem 8.1.1, with
+`λ_1 ≥ ⋯ ≥ λ_n`): a Hermitian `A` of order `N` is unitarily similar to the diagonal matrix of its
+decreasingly sorted eigenvalues, `Uᴴ A U = diag(λ_1, …, λ_n)`, the `k`-th column of `U` being an
+eigenvector for `λ_k`. The columns are the eigenvector basis of `toEuclideanLin A`, which Mathlib
+sorts; Mathlib's `Matrix.IsHermitian.spectral_theorem` is the unsorted form. At `𝕜 = ℝ`,
+`unitaryGroup = orthogonalGroup`. The name records that the diagonal is `eigenvalues₀`, reindexed
+to `Fin N` as `sortedEigenvalues`. -/
+theorem exists_unitary_conj_eq_diagonal_eigenvalues₀ {A : Matrix (Fin n) (Fin n) 𝕜}
+    (hA : A.IsHermitian) :
+    ∃ U ∈ Matrix.unitaryGroup (Fin n) 𝕜,
+      star U * A * U = Matrix.diagonal (fun k => (hA.sortedEigenvalues k : 𝕜)) ∧
+        ∀ k, A *ᵥ U.col k = (hA.sortedEigenvalues k : 𝕜) • U.col k := by
+  have hT := Matrix.isSymmetric_toEuclideanLin_iff.mpr hA
+  let b := (hT.eigenvectorBasis finrank_euclideanSpace).reindex (finCongr (Fintype.card_fin n))
+  let U := (EuclideanSpace.basisFun (Fin n) 𝕜).toBasis.toMatrix b.toBasis
+  have hU : U ∈ Matrix.unitaryGroup (Fin n) 𝕜 :=
+    (EuclideanSpace.basisFun (Fin n) 𝕜).toMatrix_orthonormalBasis_mem_unitary b
+  have hcol : ∀ k, A *ᵥ U.col k = (hA.sortedEigenvalues k : 𝕜) • U.col k := fun k => by
+    have h := hT.apply_eigenvectorBasis finrank_euclideanSpace
+      (Fin.cast (Fintype.card_fin n).symm k)
+    have hbk : b k = hT.eigenvectorBasis finrank_euclideanSpace
+        (Fin.cast (Fintype.card_fin n).symm k) := by
+      simp [b, OrthonormalBasis.reindex_apply]
+    have hUk : U.col k = WithLp.ofLp (b k) := by
+      ext i; simp [U, Matrix.col, Module.Basis.toMatrix_apply]
+    rw [hUk, hbk, ← Matrix.ofLp_toEuclideanLin, h, WithLp.ofLp_smul]
+    rfl
+  have hAU : A * U = U * Matrix.diagonal (fun k => (hA.sortedEigenvalues k : 𝕜)) := by
+    ext i k
+    rw [Matrix.mul_diagonal]
+    have := congrFun (hcol k) i
+    simpa [Matrix.mulVec, dotProduct, Matrix.mul_apply, Matrix.col, mul_comm] using this
+  refine ⟨U, hU, ?_, hcol⟩
+  rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, (Matrix.mem_unitaryGroup_iff').mp hU,
+    Matrix.one_mul]
+
 end Matrix.IsHermitian
+
+/-! ### Stationary points of the Rayleigh quotient -/
+
+section Gradient
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- **The gradient of the Rayleigh quotient** ([golub2013matrix] (10.1.1)): on a real Hilbert
+space, for a symmetric `T` and `x ≠ 0`, `∇ r(x) = (2 / ‖x‖²) (T x - r(x) x)` with
+`r(x) = ⟪T x, x⟫ / ‖x‖²`. The quotient rule on `⟪T x, x⟫` (derivative `2 ⟪T x, ·⟫`, Mathlib's
+`LinearMap.IsSymmetric.hasStrictFDerivAt_reApplyInnerSelf`) over `‖x‖²` (derivative
+`2 ⟪x, ·⟫`). In particular the gradient lies in `span {x, T x}`. -/
+theorem ContinuousLinearMap.hasGradientAt_rayleighQuotient [CompleteSpace F] {T : F →L[ℝ] F}
+    (hT : (T : F →ₗ[ℝ] F).IsSymmetric) {x : F} (hx : x ≠ 0) :
+    HasGradientAt T.rayleighQuotient
+      ((2 / ‖x‖ ^ 2) • (T x - T.rayleighQuotient x • x)) x := by
+  have hN : ‖x‖ ^ 2 ≠ 0 := pow_ne_zero 2 (norm_ne_zero_iff.mpr hx)
+  have hQ := (hT.hasStrictFDerivAt_reApplyInnerSelf x).hasFDerivAt
+  have hD := (hasFDerivAt_inv hN).comp x (hasStrictFDerivAt_norm_sq x).hasFDerivAt
+  rw [hasGradientAt_iff_hasFDerivAt]
+  convert hQ.mul hD using 1
+  · ext y; simp [ContinuousLinearMap.rayleighQuotient, div_eq_mul_inv]
+  · ext y
+    simp only [InnerProductSpace.toDual_apply_apply, add_apply, smul_apply, Function.comp_apply,
+      ContinuousLinearMap.comp_apply, innerSL_apply_apply,
+      ContinuousLinearMap.toSpanSingleton_apply, smul_eq_mul, inner_smul_left, inner_sub_left,
+      ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf_apply,
+      RCLike.re_to_real, RCLike.conj_to_real, nsmul_eq_mul, Nat.cast_ofNat]
+    rw [real_inner_comm y (T x), real_inner_comm y x]
+    field_simp
+    ring
+
+/-- **The stationary points of the Rayleigh quotient are the eigenvectors** ([golub2013matrix]
+(12.5.23)): for a symmetric `T` on a finite-dimensional real inner product space and `x ≠ 0`, the
+Fréchet derivative of `r(y) = ⟪T y, y⟫ / ‖y‖²` at `x` vanishes iff `T x = r(x) x`. The derivative
+is the gradient `ContinuousLinearMap.hasGradientAt_rayleighQuotient`, a nonzero multiple of
+`T x - r(x) x`. Mathlib has only the extremal case,
+`IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`. -/
+theorem LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff
+    [FiniteDimensional ℝ F] {T : F →ₗ[ℝ] F} (hT : T.IsSymmetric) {x : F} (hx : x ≠ 0)
+    {f' : F →L[ℝ] ℝ} (hf : HasFDerivAt T.rayleighQuotient f' x) :
+    f' = 0 ↔ T x = T.rayleighQuotient x • x := by
+  set T' := LinearMap.toContinuousLinearMap T
+  have hg := ContinuousLinearMap.hasGradientAt_rayleighQuotient (T := T') hT hx
+  have heq : f' = InnerProductSpace.toDual ℝ F
+      ((2 / ‖x‖ ^ 2) • (T' x - T'.rayleighQuotient x • x)) :=
+    hf.unique (hasGradientAt_iff_hasFDerivAt.mp hg)
+  have hN : 2 / ‖x‖ ^ 2 ≠ 0 :=
+    div_ne_zero two_ne_zero (pow_ne_zero 2 (norm_ne_zero_iff.mpr hx))
+  rw [heq, map_eq_zero_iff _ (InnerProductSpace.toDual ℝ F).injective, smul_eq_zero, sub_eq_zero]
+  simp only [hN, false_or]
+  rfl
+
+end Gradient

@@ -1,9 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.GeneralizedSchur` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch07) the complex generalized Schur form of an arbitrary (possibly singular) pair is now written
-# out (`Matrix.exists_generalizedSchur`), by the limiting argument the module doc already describes,
-# with the compactness of the unitary group over any `RCLike` field (Golub–Van Loan
-# Theorem 7.7.1). The module then imports `Numlib/Eigen/Pencil`.
 namespace = "Matrix"
 
 [[node]]
@@ -26,23 +20,12 @@ id = "exists_generalizedRealSchur"
 
 [[node]]  # staged by ch07
 id = "isCompact_unitaryGroup"
-kind = "theorem"
-desc = '''`IsCompact (unitaryGroup n 𝕜 : Set (Matrix n n 𝕜))` for `RCLike 𝕜`: closed (continuity of
-`U ↦ star U * U`) and bounded (entries of norm `≤ 1`, the columns being unit vectors) — the proof of
-`Matrix.isCompact_orthogonalGroup` over `RCLike`; that theorem becomes its `ℝ` instance. ★'''
-deps = ["Matrix.isCompact_orthogonalGroup"]
 
 [[node]]  # staged by ch07
 id = "exists_generalizedSchur"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.7.1, existence, for an *arbitrary* pair: for `A B : Matrix (Fin n)
-(Fin n) 𝕜` over an algebraically closed `RCLike 𝕜` there are `U Z ∈ unitaryGroup` with
-`star U * A * Z` and `star U * B * Z` upper triangular. The book's proof: `B_k = B + ε_k I`
-nonsingular for small `ε_k > 0` (`Matrix.exists_forall_isUnit_det_add_smul_one`, over `ℂ` via its
-proof), so each pencil `(A, B_k)` is regular and `Matrix.exists_unitary_pencil_isUpperTriangular`
-applies; extract a convergent subsequence of `(U_k, Z_k)` (`Matrix.isCompact_unitaryGroup`,
-`IsCompact.tendsto_subseq`, which needs `FirstCountableTopology` supplied by `inferInstanceAs`, see
-`notes/lessons.md` 2026-09-20 agent/qss1); vanishing entries are closed conditions and
-`star U_k * B * Z_k - star U_k * B_k * Z_k = -ε_k star U_k Z_k → 0`. Exactly the argument of
-`Matrix.exists_generalizedRealSchur`, without the block-pattern pigeonhole. ★★ (~150 lines).'''
-deps = ["Matrix.isCompact_unitaryGroup", "Matrix.exists_unitary_pencil_isUpperTriangular", "Matrix.exists_forall_isUnit_det_add_smul_one"]
+
+[[node]]  # added by eig1
+id = "isClosed_unitaryGroup"
+
+[[node]]  # added by eig1
+id = "norm_apply_le_one_of_mem_unitaryGroup"

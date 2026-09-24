@@ -1,170 +1,38 @@
-desc = '''
-The eigenproblem of a diagonal-plus-rank-one Hermitian matrix `D + ρ z zᴴ`, the secular equation,
-and the tearing step of the divide-and-conquer method for tridiagonal matrices
-([golub2013matrix] §8.4.3–8.4.4; Dongarra–Sorensen 1987; Barlow 1993).
-
-Setting: `d : n → ℝ`, `ρ : ℝ`, `z : n → 𝕜` over `[RCLike 𝕜]`, the matrix
-`M = diagonal (fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)`. The **secular function**
-`Matrix.secularFunction d ρ z λ = 1 + ρ ∑ i, ‖z i‖² / (d i - λ)` is the real function whose zeros
-are the eigenvalues of `M` when the `d i` are distinct and no `z i` vanishes (Lemma 8.4.2 and
-Theorem 8.4.3 of the book; `Matrix.hasEigenvalue_iff_secularFunction_eq_zero`). The eigenvalues
-then *strictly* interlace the `d i` (`Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace`),
-and the eigenvector for `λ` is `(D - λ)⁻¹ z` up to a scalar. The weak interlacing without the
-genericity hypotheses is the rank-one case of `LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`
-(`Numlib/Eigen/MinMax`, [golub2013matrix] Theorem 8.1.8); the reduction of an arbitrary
-`(d, z)` to the generic case by rotations and a permutation is `Matrix.exists_orthogonal_deflation`
-(the book's Theorem 8.4.4).
-
-The ordering convention is the book's and the backbone's: eigenvalues sorted decreasingly,
-`Matrix.IsHermitian.eigenvalues₀` indexed by `Fin (Fintype.card n)`; the statements with a
-sorted `d` take `n = Fin N` and `StrictAnti d`.
-
-Why a module and not an append to `Numlib/Eigen/MinMax`: the secular equation is algebra
-(resolvent and `Matrix.det_add_mul`/matrix determinant lemma, `Matrix.det_one_add_replicateCol_mul_replicateRow`
-in Mathlib — there is no `Matrix.det_one_add_col_mul_row`) and calculus of a rational function (strict monotonicity between poles, the
-intermediate value theorem on each interval), not a min–max argument; and the divide-and-conquer
-material (tearing, merging) builds on it. The inverse tridiagonal eigenproblem of §8.4.6 shares the
-resolvent expansion but not the rank-one structure and is `Numlib/Eigen/InverseEigenvalue`.
-
-The **bordered** secular function `Matrix.borderedSecularFunction r B λ = 1 − λ − rᵀ(B − λ)⁻¹ r` of
-`T = [1 rᵀ; r B]` ([golub2013matrix] §4.7.7, Cybenko–Van Loan's `λ_min` of a symmetric Toeplitz
-matrix) also lives here (moved from `Numlib/Direct/Levinson` at the Golub–Van Loan review), with its
-zero at an eigenvalue, its derivatives, the monotone Newton convergence to `λ_min(T)` and the bridge
-`Matrix.borderedSecularFunction_eq_secularFunction_sub` to the rank-one secular function.
-
-Order of attack: `secularFunction` and `hasEigenvalue_iff_secularFunction_eq_zero` (★★, ~150 lines,
-with the Lemma 8.4.2 node first), then the strict interlacing (★★★, ~250 lines: one root of the
-secular function in each interval from monotonicity + IVT, and counting to match all `N`
-eigenvalues), then the deflation (★★, ~150 lines).
-'''
-
 [[node]]
 id = "Matrix.secularFunction"
-kind = "definition"
-desc = '''The secular function of `D + ρ z zᴴ`: for `d : n → ℝ`, `ρ : ℝ`, `z : n → 𝕜`,
-`secularFunction d ρ z : ℝ → ℝ := fun λ => 1 + ρ * ∑ i, ‖z i‖ ^ 2 / (d i - λ)`
-([golub2013matrix] Theorem 8.4.3(a): `f(λ) = 1 + ρ zᵀ (D - λI)⁻¹ z`). At a pole `λ = d i` the
-Lean value is junk (`x / 0 = 0`); every statement assumes `λ ∉ range d`. ★'''
-deps = []
 
 [[node]]
 id = "Matrix.secularFunction_eq_inner_resolvent"
-kind = "theorem"
-desc = '''For `λ ∉ Set.range d`, `secularFunction d ρ z λ = 1 + ρ * re (star z ⬝ᵥ (diagonal (d - λ))⁻¹ *ᵥ z)`,
-the book's `1 + ρ zᵀ (D - λ I)⁻¹ z`. `Matrix.inv_diagonal`, `dotProduct` expansion. ★'''
-deps = ["Matrix.secularFunction"]
 
 [[node]]
 id = "Matrix.hasDerivAt_secularFunction"
-kind = "theorem"
-desc = '''`f'(λ) = ρ ∑ i, ‖z i‖² / (d i - λ)²` for `λ ∉ range d` ([golub2013matrix] §8.4.3, proof of
-Theorem 8.4.3); hence `f` is strictly monotone (increasing for `ρ > 0`, decreasing for `ρ < 0`) on
-each open interval between consecutive poles when some `z i ≠ 0` (`secularFunction_strictMonoOn`
-as a corollary in the same node's API). `HasDerivAt.inv`, `HasDerivAt.sum`. ★'''
-deps = ["Matrix.secularFunction"]
 
 [[node]]
 id = "Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne"
-kind = "theorem"
-desc = '''[golub2013matrix] Lemma 8.4.2: if the `d i` are pairwise distinct (`Function.Injective d`),
-`ρ ≠ 0`, every `z i ≠ 0`, and `(D + ρ z zᴴ) v = λ v` with `v ≠ 0`, then `star z ⬝ᵥ v ≠ 0` and
-`λ ∉ Set.range d` (so `D - λ I` is invertible). Proof as in the book: if `λ = d i`, the `i`-th row
-of `(D - λ) v + ρ (zᴴ v) z = 0` gives `ρ (zᴴ v) z_i = 0`, so `zᴴ v = 0`, `D v = λ v`, `v ∈ span e_i`
-(distinct `d`), and then `zᴴ v = conj z_i v_i ≠ 0`, a contradiction; `zᴴ v = 0` likewise forces
-`D v = λ v`. ★'''
-deps = []
 
 [[node]]
 id = "Matrix.hasEigenvalue_iff_secularFunction_eq_zero"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 8.4.3(a): under the hypotheses of Lemma 8.4.2 (injective `d`,
-`ρ ≠ 0`, `z i ≠ 0` for all `i`), for real `λ`, `λ` is an eigenvalue of `D + ρ z zᴴ`
-(`Module.End.HasEigenvalue (toLin' M) λ`, equivalently `λ ∈ spectrum`) iff `λ ∉ range d` and
-`secularFunction d ρ z λ = 0`. (⇒) apply `zᴴ (D - λ)⁻¹` to (8.4.4) and cancel `zᴴ v ≠ 0`;
-(⇐) `v = (D - λ)⁻¹ z` is an eigenvector: `(D + ρ z zᴴ) v - λ v = z + ρ (zᴴ v) z = f(λ) z = 0`.
-Alternatively the matrix determinant lemma `det(D - λ + ρ z zᴴ) = det(D - λ) f(λ)`
-(Mathlib `Matrix.det_one_add_replicateCol_mul_replicateRow`; there is no `det_one_add_col_mul_row`). ★★ (~80 lines)'''
-deps = ["Matrix.secularFunction", "Matrix.secularFunction_eq_inner_resolvent", "Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne"]
 
 [[node]]
 id = "Matrix.hasEigenvector_diagonal_add_rankOne_resolvent"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 8.4.3(c): under the hypotheses of Lemma 8.4.2, every eigenvector
-`v` of `D + ρ z zᴴ` for `λ` is a nonzero multiple of `(diagonal (d - λ))⁻¹ *ᵥ z`, i.e. `v ∈ span
-{(D - λ I)⁻¹ z}`; conversely that vector is an eigenvector. From (8.4.4) and
-`isUnit_diagonal_sub_of_hasEigenvector_add_rankOne`. ★'''
-deps = ["Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne", "Matrix.hasEigenvalue_iff_secularFunction_eq_zero"]
 
 [[node]]
 id = "Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 8.4.3(b), strict interlacing. For `n = Fin N`, `d` strictly
-decreasing (`StrictAnti d`, the book's `d_1 > ⋯ > d_n`), `ρ ≠ 0`, all `z i ≠ 0`, and `λ` the sorted
-eigenvalues of `M = D + ρ z zᴴ` (`eigenvalues₀`, reindexed to `Fin N`):
-if `ρ > 0` then `λ 0 > d 0` and `d (i-1) > λ i > d i` for `0 < i`, i.e. `λ_1 > d_1 > λ_2 > ⋯ > λ_n > d_n`;
-if `ρ < 0` then `d i > λ i` for all `i` and `λ i > d (i+1)`, i.e. `d_1 > λ_1 > d_2 > ⋯ > d_n > λ_n`.
-Proof: `f` is strictly monotone between consecutive poles with limits `∓∞` at the poles and `1` at
-`±∞` (`hasDerivAt_secularFunction`, `Filter.Tendsto` of each `‖z_i‖²/(d_i - λ)`), so it has exactly
-one zero in each of the `N` intervals `(d_{i+1}, d_i)` and `(d_1, ∞)` (resp. `(-∞, d_n)`) by the
-IVT; these `N` zeros are eigenvalues (`hasEigenvalue_iff_secularFunction_eq_zero`), which
-exhausts the `N` eigenvalues since each is simple (`card` of the root set `≤ N` — the eigenvalues
-are distinct because each lies in its own interval). ★★★ (~250 lines)'''
-deps = ["Matrix.hasEigenvalue_iff_secularFunction_eq_zero", "Matrix.hasDerivAt_secularFunction"]
 
 [[node]]
 id = "Matrix.exists_orthogonal_deflation"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 8.4.4 (deflation to the generic case), real form: for
-`d z : Fin N → ℝ` there exist an orthogonal `V₁ ∈ Matrix.orthogonalGroup (Fin N) ℝ`, `μ : Fin N → ℝ`
-and `r ≤ N` with `V₁ᵀ * diagonal d * V₁ = diagonal μ`, `μ` strictly decreasing on `{i | i < r}`
-and antitone on `{i | r ≤ i}` (the book's `μ_1 > ⋯ > μ_r ≥ μ_{r+1} ≥ ⋯ ≥ μ_n`), and `w = V₁ᵀ z`
-with `w i ≠ 0 ↔ i < r`. Proof by the book's two moves, by strong induction on the number of
-"bad" indices: a plane rotation `Matrix.planeRotation i j c s` with `(c, s) = Matrix.givensPair`
-in the plane of a repeated value `d i = d j` commutes with `D` and zeroes `z_j`
-(`Matrix.transpose_planeRotation_givensPair_mulVec`); a permutation moves the zero `z`-entries to
-the end; a final sort. `V₁` is the product. ★★ (~150 lines)'''
-deps = ["Matrix.planeRotation", "Matrix.givensPair", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.planeRotation_mem_orthogonalGroup"]
 
 [[node]]
 id = "Matrix.conj_fromBlocks_add_rankOne_eq"
-kind = "theorem"
-desc = '''The merge step of divide and conquer ([golub2013matrix] §8.4.4): for `T = fromBlocks T₁ 0 0
-T₂ + ρ • vecMulVec v v` and orthogonal `Q₁`, `Q₂` with `Q₁ᵀ T₁ Q₁ = diagonal d₁`, `Q₂ᵀ T₂ Q₂ =
-diagonal d₂`, the block-diagonal `U = fromBlocks Q₁ 0 0 Q₂` is orthogonal and
-`Uᵀ T U = diagonal (Sum.elim d₁ d₂) + ρ • vecMulVec z z` with `z = Uᵀ v`. `Matrix.fromBlocks_multiply`,
-`Matrix.vecMulVec` with `Matrix.mulVec_vecMulVec`-type rewriting. ★'''
-deps = []
 
 [[node]]
 id = "Matrix.borderedSecularFunction"
-kind = "definition"
-desc = '''The secular function of a bordered symmetric matrix `T = [1 rᵀ; r B]` ([golub2013matrix] §4.7.7, Cybenko and
-Van Loan 1986): `Matrix.borderedSecularFunction (r : Fin m → ℝ) (B : Matrix (Fin m) (Fin m) ℝ) (λ : ℝ) : ℝ :=
-1 − λ − r ⬝ᵥ ((B − λ • 1)⁻¹ *ᵥ r)`. Not Toeplitz-specific (only the unit corner is used). Moved here
-from `Numlib/Direct/Levinson` (where it was `BorderedEigen.secular`) at the Golub–Van Loan review: it is
-an eigenvalue object, the bordered sibling of `Matrix.secularFunction`
-(`Matrix.borderedSecularFunction_eq_secularFunction_sub`). ★'''
-deps = []
 
 [[node]]
 id = "Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq"
-kind = "theorem"
-desc = '''If `T := (fromBlocks (1 : Matrix (Fin 1) (Fin 1) ℝ) (replicateRow _ r) (replicateCol _ r) B)` has an
-eigenvector `Sum.elim (fun _ => α) y ≠ 0` for `λ` and `B − λ • 1` is nonsingular, then `α ≠ 0`,
-`y = −α • (B − λ • 1)⁻¹ *ᵥ r` and `borderedSecularFunction r B λ = 0` (the book: "`λ_min` is a zero of the rational
-function `f`"). The second block row gives `y`; `α = 0` would force `y = 0`. ★'''
-deps = ["Matrix.borderedSecularFunction"]
 
 [[node]]
 id = "Matrix.hasDerivAt_borderedSecularFunction"
-kind = "theorem"
-desc = '''For symmetric `B` and `λ` below every eigenvalue of `B` (`∀ i, λ < hB.eigenvalues i`): `borderedSecularFunction r B` has
-derivative `−1 − ‖(B − λ • 1)⁻¹ *ᵥ r‖²` at `λ` (so `≤ −1`) and its derivative has derivative
-`−2 r ⬝ᵥ ((B − λ • 1)⁻¹ ^ 3 *ᵥ r) ≤ 0` (the book's `f′`, `f″`). The derivative of the matrix inverse
-is Mathlib's `hasFDerivAt_ring_inverse` (`d(X⁻¹) = −X⁻¹ dX X⁻¹` with `dX = −1`); positivity from
-`(B − λ • 1)⁻¹` positive definite (`Matrix.PosDef.inv`). Hence `borderedSecularFunction r B` is strictly
-decreasing and concave on `(−∞, λ_min(B))`. ★★ (~120 lines)'''
-deps = ["Matrix.borderedSecularFunction"]
 
 [[node]]
 id = "Matrix.tendsto_newton_borderedSecularFunction"
@@ -174,17 +42,29 @@ desc = '''[golub2013matrix] (4.7.9)–(4.7.10): let `λ* := λ_min(T)` with `λ*
 (borderedSecularFunction r B)) λ⁽ᵏ⁾` are antitone, bounded below by `λ*`, and tend to `λ*` ("monotonically from the
 right"). From `Newton.tendsto_iterate_scalarStep_of_concaveOn` on `[λ*, λ⁽⁰⁾]` with the sign facts
 of `Matrix.hasDerivAt_borderedSecularFunction` and `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq` at `λ*` (`borderedSecularFunction r B` has the unique zero
-`λ*` below `λ_min(B)`). ★★'''
+`λ*` below `λ_min(B)`). ★★
+
+Blocked: needs `Newton.tendsto_iterate_scalarStep_of_concaveOn` (group `Nonlinear/ScalarNewton`, open,
+not in wave 1). The inputs on this side are proved: `Matrix.hasDerivAt_borderedSecularFunction`
+(first and second derivative at every non-eigenvalue), `Matrix.borderedSecularFunction_deriv_nonpos`
+(`f' ≤ -1`, `f'' ≤ 0` below the spectrum of `B`) and `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`.
+Once the Newton lemma exists this is ~40 lines (eig1, wave 1).'''
 deps = ["Matrix.hasDerivAt_borderedSecularFunction", "Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq", "Newton.tendsto_iterate_scalarStep_of_concaveOn", "Newton.scalarStep"]
 
 [[node]]
 id = "Matrix.borderedSecularFunction_eq_secularFunction_sub"
-kind = "theorem"
-desc = '''The bordered secular function in the eigenbasis of the border block is a rank-one secular function:
-if `Q ∈ unitaryGroup (Fin m) ℝ` with `Qᵀ * B * Q = diagonal d` (symmetric `B`, e.g.
-`Matrix.IsHermitian.spectral_theorem`) and `λ ∉ Set.range d`, then `borderedSecularFunction r B λ =
-Matrix.secularFunction d (-1) (Qᵀ *ᵥ r) λ - λ`, i.e. `1 − λ − ∑ i, (Qᵀ r)_i² / (d i − λ)`. `(B − λ)⁻¹ = Q
-(diagonal (d − λ))⁻¹ Qᵀ` and `Matrix.secularFunction_eq_inner_resolvent`. Connects the §4.7.7 Newton
-iteration for `λ_min` of a bordered matrix with the pole structure of §8.4.3 (one root below `min d`,
-the others strictly interlacing the `d i`). ★'''
-deps = ["Matrix.borderedSecularFunction", "Matrix.secularFunction", "Matrix.secularFunction_eq_inner_resolvent"]
+
+[[node]]  # added by eig1: the sorted eigenvalues of a decreasing real diagonal matrix are its entries
+id = "Matrix.IsHermitian.sortedEigenvalues_diagonal"
+
+[[node]]  # added by eig1: the row form of (8.4.4)
+id = "Matrix.diagonal_add_rankOne_mulVec_eq_iff"
+
+[[node]]  # added by eig1: monotonicity between the poles, split out of hasDerivAt_secularFunction
+id = "Matrix.secularFunction_strictMonoOn"
+
+[[node]]  # added by eig1: rᵀ (B - λ)⁻ᵏ r in an eigenbasis; the engine of the bordered lemmas
+id = "Matrix.dotProduct_inv_sub_smul_one_pow_mulVec"
+
+[[node]]  # added by eig1: the sign facts f' ≤ -1, f'' ≤ 0 below the spectrum of B, split from hasDerivAt
+id = "Matrix.borderedSecularFunction_deriv_nonpos"
