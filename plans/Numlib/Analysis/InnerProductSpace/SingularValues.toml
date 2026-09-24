@@ -1,238 +1,56 @@
-# Planned additions (GVL round): the module doc of `Numlib.Analysis.InnerProductSpace.SingularValues` is the
-# group description; when the nodes planned below are formalized, extend it with the following plan text.
-# Singular values of a linear map between finite-dimensional inner product spaces, coordinate-free:
-# the max–min characterizations, Weyl's inequality in its general form, interlacing under restriction,
-# the singular value decomposition of a map as orthonormal singular vector families, the invariance
-# under isometries and adjoints, the norm identity of a stacked isometry, and the Hermitian dilation
-# (Jordan–Wielandt operator) with its spectrum ([golub2013matrix] §2.4, §8.6.1–8.6.2). The module
-# mirrors Mathlib's `Mathlib/Analysis/InnerProductSpace/SingularValues` and is an upstreaming
-# candidate. It imports Mathlib and `Numlib/Eigen/MinMax` (Courant–Fischer, Cauchy interlacing, Ky
-# Fan's maximum principle) and nothing from the matrix layer.
-#
-# **Matrices live one rung up.** The matrix corollaries — Mirsky's inequality, the Eckart–Young
-# lower bounds, column deletion, the least-stretch Lipschitz bound, Ky Fan's SVD form, the matrix
-# Hermitian dilation and its sorted spectrum, the subspace-distance theorem of [golub2013matrix]
-# Theorem 2.5.1 and (7.3.19), and the perturbation of singular subspace pairs (Theorem 8.6.5) — are
-# `Numlib/Analysis/Matrix/SingularValues`, which imports this module, `Numlib/LinearAlgebra/Matrix/SVD`
-# and `Numlib/Analysis/Matrix/OperatorNorm`, mirroring `Numlib/Analysis/Matrix/SpectralNorm`. (The
-# Golub–Van Loan review split the two rungs: the first plan had them in one file importing `SVD`,
-# which kept `Projection/Gap` from using `singularValues_adjoint` without the matrix layer.)
-#
-# The singular values are Mathlib's `LinearMap.singularValues : ℕ →₀ ℝ`, sorted decreasingly
-# (`LinearMap.singularValues_antitone`), square roots of the eigenvalues of `T† ∘ T`
-# (`LinearMap.sq_singularValues_fin`), zero past `finrank E`. Mathlib has no min–max, no Weyl, no
-# Mirsky, no SVD of a map and no dilation; searched `singularValues_le`, `singularValues_sub`,
-# `mirsky`, `iSup_iInf`, `dilation`, `jordan` in `Mathlib/Analysis/InnerProductSpace/` and `Numlib/`.
-#
-# ## Design
-#
-# * **One Weyl inequality.** `LinearMap.singularValues_add_le`, `σ_{i+j}(S + T) ≤ σ_i(S) + σ_j(T)`,
-#   is proved once from the min–max form (`isLeast_singularValues`, a dimension count). Its `j = 0`
-#   case is the perturbation bound `abs_singularValues_sub_le` ([golub2013matrix] Corollary 8.6.2,
-#   Corollary 2.4.4), and its `σ_j(T) = 0` case (`T` of rank `≤ j`) is the lower half of the
-#   Eckart–Young theorem in the 2-norm (`Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le`
-#   of the matrix module). No other proof of either is planned.
-# * **Stacked isometries.** If `‖Q₁ x‖² + ‖Q₂ x‖² = ‖x‖²` for all `x` then
-#   `‖Q₂‖² = 1 − σ_min(Q₁)²` (`LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`):
-#   one fact behind the subspace-distance identities of `Projection/Gap`, the CS block norms, the
-#   size of the total-least-squares solution and (7.3.19).
-# * **The Hermitian dilation** `LinearMap.hermitianDilation A Astar : WithLp 2 (E × F) →ₗ[𝕜] WithLp 2 (E × F)`,
-#   `(x, y) ↦ (Astar y, A x)` — domain first, the block order of the matrix
-#   `Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0` indexed `n ⊕ m` — is the library's one
-#   definition of the Jordan–Wielandt operator (the book's `S₃` of §8.6.1, `C` of (10.4.16) with the
-#   factors swapped, `Ã` of (8.6.4)). As in `Numlib/Krylov/NormalEquations` and
-#   `Numlib/Krylov/Bidiagonalization`, the adjoint is a second argument `Astar` with the hypothesis
-#   `∀ u x, ⟪Astar u, x⟫ = ⟪u, A x⟫`, so that the definition needs neither completeness nor finite
-#   dimension; `Numlib/Krylov/Bidiagonalization` consumes it (`GolubKahan.lanczos_jordanWielandt`),
-#   and the matrix bridge `Matrix.toEuclideanLin_hermitianDilation` is in the matrix module. Its sorted
-#   spectrum (`LinearMap.eigenvalues_hermitianDilation`) is proved from an explicit orthonormal
-#   eigenbasis `(v_i, ±u_i)/√2` built from the SVD of the map, not by block computations.
-#
-# **Refactor done.** Four coordinate-free lemmas this module needs were proved inside
-# `Numlib/LinearAlgebra/Matrix/SVD` (`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`,
-# `LinearMap.inner_apply_eigenvectorBasis_adjoint_comp_self`,
-# `LinearMap.norm_apply_eigenvectorBasis_adjoint_comp_self`, and
-# `LinearMap.singularValues_of_finrank_codomain_le`); the refactor task (`notes/gvl/consolidation.md`
-# §R, item 14) moved them into this module, which `SVD` now imports. The module imports only Mathlib so
-# far; the planned min–max nodes add `Numlib/Eigen/MinMax`.
-#
-# ## Order of attack
-#
-# `isGreatest_singularValues`/`isLeast_singularValues` (★★, ~150), `singularValues_add_le` (★★, ~60),
-# `abs_singularValues_sub_le` (★), the interlacing (★★, ~80), `singularValues_adjoint` (★★),
-# `singularValues_comp_linearIsometryEquiv` (★★), `exists_orthonormal_singularVectors` (★★), the
-# stacked-isometry identity (★, ~50), `hermitianDilation` and its spectrum (★★, ~120).
-
 [[node]]
 id = "LinearMap.isGreatest_singularValues"
-kind = "theorem"
-desc = '''Max–min characterization of singular values ([golub2013matrix] Theorem 8.6.1, right-hand
-form): for `T : E →ₗ[𝕜] F` between finite-dimensional inner product spaces, `finrank 𝕜 E = n`, and
-`k < n`, `IsGreatest {c | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = k + 1 ∧ ∀ x ∈ S, c * ‖x‖ ≤ ‖T x‖}
-(T.singularValues k)`. Courant–Fischer (`LinearMap.IsSymmetric.isGreatest_eigenvalues`) for the
-positive `T.adjoint ∘ₗ T` (`LinearMap.isSymmetric_adjoint_mul_self`), `re ⟪T† T x, x⟫ = ‖T x‖²`,
-`LinearMap.sq_singularValues_fin`, and `Real.sqrt` monotone (the bound `c * ‖x‖ ≤ ‖T x‖` with
-`c ≥ 0` is `c² ‖x‖² ≤ ‖T x‖²`; negative `c` are dominated). At `k = n - 1` (`S = ⊤`) it says that
-`σ_{n-1}` is the least stretch `⨅_{‖x‖ = 1} ‖T x‖`. ★★ (~120 lines)'''
-deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues"]
 
 [[node]]
 id = "LinearMap.isLeast_singularValues"
-kind = "theorem"
-desc = '''Min–max form: for `k < n`, `IsLeast {c | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = n - k ∧
-∀ x ∈ S, ‖T x‖ ≤ c * ‖x‖} (T.singularValues k)` — `LinearMap.IsSymmetric.isLeast_eigenvalues` for
-`T† T`. Together with `sup_{y ≠ 0} re ⟪y, T x⟫ / ‖y‖ = ‖T x‖` (attained at `y = T x`) this is the
-bilinear form of [golub2013matrix] Theorem 8.6.1,
-`σ_k = min_{dim S = n-k+1} max_{x ∈ S, y} yᵀAx / (‖x‖‖y‖)`, which the book leaves to Xiang (2006);
-the bilinear reading is `LinearMap.isLeast_singularValues_bilinear`. At `k = 0` (`S = ⊤`) it says
-that `σ_0` is the least `c` with `‖T x‖ ≤ c ‖x‖`, the operator norm. ★★'''
-deps = ["LinearMap.IsSymmetric.isLeast_eigenvalues"]
 
 [[node]]
 id = "LinearMap.isLeast_singularValues_bilinear"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 8.6.1, left-hand (bilinear) form: for `k < n`,
-`IsLeast {c | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = n - k ∧ ∀ x ∈ S, ∀ y : F,
-  re ⟪y, T x⟫ ≤ c * (‖x‖ * ‖y‖)} (T.singularValues k)`. From `isLeast_singularValues` and
-`re ⟪y, T x⟫ ≤ ‖y‖ ‖T x‖` with equality at `y = T x`. ★'''
-deps = ["LinearMap.isLeast_singularValues"]
+
+[[node]]
+id = "LinearMap.le_singularValues_of_mul_norm_le"
+
+[[node]]
+id = "LinearMap.singularValues_le_of_norm_le_mul"
 
 [[node]]
 id = "LinearMap.singularValues_add_le"
-kind = "theorem"
-desc = '''**Weyl's inequality for singular values, general form** (Weyl 1949; the principle behind
-[golub2013matrix] Corollary 2.4.4, Corollary 8.6.2 and the lower half of Theorem 2.4.8): for
-`S T : E →ₗ[𝕜] F` between finite-dimensional inner product spaces and all `i j : ℕ`,
-`(S + T).singularValues (i + j) ≤ S.singularValues i + T.singularValues j`.
-Proof: with `n = finrank E`, if `i + j ≥ n` the left side is `0`
-(`LinearMap.singularValues_of_finrank_le`) and the right side is nonnegative. Otherwise
-`isLeast_singularValues` gives subspaces `V_S`, `V_T` of dimensions `n - i`, `n - j` with
-`‖S x‖ ≤ σ_i(S) ‖x‖` on `V_S` and `‖T x‖ ≤ σ_j(T) ‖x‖` on `V_T`; their intersection has dimension
-`≥ n - i - j` (`Submodule.finrank_sup_add_finrank_inf_eq`), so it contains a subspace `W` of
-dimension exactly `n - (i + j)` (`Submodule.exists_le_finrank_eq`-type lemma), on which
-`‖(S + T) x‖ ≤ (σ_i(S) + σ_j(T)) ‖x‖`; `isLeast_singularValues` for `S + T` at `i + j` concludes.
-★★ (~60 lines)'''
-deps = ["LinearMap.isLeast_singularValues"]
 
 [[node]]
 id = "LinearMap.abs_singularValues_sub_le"
-kind = "theorem"
-desc = '''Weyl's perturbation bound for singular values ([golub2013matrix] Corollary 8.6.2 and
-Corollary 2.4.4): for `T S : E →ₗ[𝕜] F` (finite-dimensional) and `C` with
-`∀ x, ‖(T - S) x‖ ≤ C * ‖x‖`, every `|T.singularValues k - S.singularValues k| ≤ C`. The `j = 0`
-case of `singularValues_add_le` twice (`T = S + (T - S)` and `S = T + (S - T)`), with
-`σ_0(T - S) ≤ C` by `isLeast_singularValues` at `k = 0` (for `finrank E = 0` everything vanishes).
-The matrix corollary with `C = ‖A - B‖₂` is the surface's. ★ (~30 lines)'''
-deps = ["LinearMap.singularValues_add_le", "LinearMap.isLeast_singularValues"]
 
 [[node]]
 id = "LinearMap.singularValues_domRestrict_interlace"
-kind = "theorem"
-desc = '''Singular-value interlacing under restriction to a subspace ([golub2013matrix] Corollary 8.6.3
-in operator form, for any codimension — the general node of which the column-deletion statements
-of `Numlib/Analysis/Matrix/SingularValues` are corollaries): for `T : E →ₗ[𝕜] F` and a subspace
-`K ≤ E` with `finrank K + r = finrank E`, for every `k`,
-`T.singularValues (k + r) ≤ (T.domRestrict K).singularValues k ≤ T.singularValues k`
-(Corollary 8.6.3 is `r = 1`). Cauchy interlacing
-(`LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry`, `Numlib/Eigen/MinMax`, which already
-allows any codimension `n - m`) for `T† T` pulled back along the inclusion `K →ₗᵢ E`, whose
-quadratic form is `‖T x‖²`, then square roots. ★★'''
-deps = ["LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry", "LinearMap.isGreatest_singularValues"]
+
+[[node]]
+id = "LinearMap.singularValues_eq_of_forall_norm_eq"
 
 [[node]]
 id = "LinearMap.singularValues_adjoint"
-kind = "theorem"
-desc = '''**A map and its adjoint have the same singular values** (with Mathlib's zero padding):
-`(LinearMap.adjoint T).singularValues = T.singularValues` for `T : E →ₗ[𝕜] F` finite-dimensional.
-`T†T` and `TT†` have the same nonzero eigenvalues with multiplicity (`T` maps the eigenspace of
-`T†T` for `λ ≠ 0` isometrically-up-to-`√λ` onto that of `TT†`), and the number of nonzero ones is
-`finrank (range T) = finrank (range T†)` (`LinearMap.card_support_singularValues`). Planned by the
-Golub–Van Loan chapter-6 agent in the `SVD` append and moved here with the operator nodes (review
-H3), so that `Projection/Gap` can use it without the matrix layer. ★★'''
-deps = []
 
 [[node]]
 id = "LinearMap.singularValues_comp_linearIsometryEquiv"
-kind = "theorem"
-desc = '''**Singular values are unitarily invariant**: for `T : E →ₗ[𝕜] F` and linear isometry
-equivalences `e : E' ≃ₗᵢ[𝕜] E`, `f : F ≃ₗᵢ[𝕜] F'`,
-`(f.toLinearMap ∘ₗ T ∘ₗ e.toLinearMap).singularValues = T.singularValues`. The Gram operator is
-conjugated by `e`, so its characteristic polynomial and hence its sorted eigenvalues agree
-(`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`, proved in this module). Matrix corollary: `(toEuclideanLin (U * A * V)).singularValues =
-(toEuclideanLin A).singularValues` for unitary `U`, `V`. ★★'''
-deps = ["LinearMap.IsSymmetric.eigenvalues_eq_of_antitone"]
 
 [[node]]
 id = "LinearMap.exists_orthonormal_singularVectors"
-kind = "theorem"
-desc = '''**The SVD of a linear map** (operator form of [golub2013matrix] Theorem 2.4.1 and
-Corollary 2.4.2): for `T : E →ₗ[𝕜] F` between finite-dimensional inner product spaces with
-`finrank E = q ≤ finrank F`, there are an orthonormal basis `v : OrthonormalBasis (Fin q) 𝕜 E`
-and an orthonormal family `u : Fin q → F` with `T (v i) = (T.singularValues i : 𝕜) • u i`.
-Coordinate-free proof: `v` is the sorted eigenbasis of `T† T`
-(`(T.isSymmetric_adjoint_comp_self).eigenvectorBasis`); the vectors `T v_i` are pairwise orthogonal
-with `‖T v_i‖ = σ_i` (`LinearMap.inner_apply_eigenvectorBasis_adjoint_comp_self`,
-`LinearMap.norm_apply_eigenvectorBasis_adjoint_comp_self`, proved in this module); set `u i = σ_i⁻¹ T v_i` for `σ_i ≠ 0` and complete orthonormally in
-`(span {u_i : σ_i ≠ 0})ᗮ` otherwise (`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`;
-there is room because `q ≤ finrank F`). No matrix SVD is used (the first plan went through
-`Matrix.exists_svd`; review H3). ★★'''
-deps = ["LinearMap.inner_apply_eigenvectorBasis_adjoint_comp_self", "LinearMap.norm_apply_eigenvectorBasis_adjoint_comp_self"]
+
+[[node]]
+id = "LinearMap.singularValues_comp_linearIsometry_eq_succ"
 
 [[node]]
 id = "LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues"
-kind = "theorem"
-desc = '''**The stacked-isometry identity**: for `Q₁ : E →ₗ[𝕜] F₁`, `Q₂ : E →ₗ[𝕜] F₂` on a
-finite-dimensional `E` with `0 < finrank 𝕜 E = n` and `∀ x, ‖Q₁ x‖ ^ 2 + ‖Q₂ x‖ ^ 2 = ‖x‖ ^ 2`
-(`[Q₁; Q₂]` is an isometry), `‖LinearMap.toContinuousLinearMap Q₂‖ ^ 2 = 1 - Q₁.singularValues (n - 1) ^ 2`.
-Proof: `‖Q₂‖² = sup_{‖x‖ = 1} ‖Q₂ x‖² = 1 - inf_{‖x‖ = 1} ‖Q₁ x‖²`, and the least stretch of `Q₁` is
-`σ_{n-1}(Q₁)` (`isGreatest_singularValues` at `k = n - 1`, attained on the compact unit sphere).
-The one fact behind [golub2013matrix] the proof of Theorem 2.5.1 (`‖Q₂₁‖² = 1 - σ_min(Q₁₁)²` for a
-unitary `Q`), (7.3.19), the norm of the total-least-squares solution (§6.3.1) and the one-sided gap
-`‖P_{L⊥} P_K‖² = 1 - σ_min(P_L|_K)²` of `Projection/Gap`; the matrix instance is
-`Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`. ★ (~50 lines)'''
-deps = ["LinearMap.isGreatest_singularValues"]
 
 [[node]]
 id = "LinearMap.hermitianDilation"
-kind = "definition"
-desc = '''**The Hermitian dilation (Jordan–Wielandt operator)** of `A : E →ₗ[𝕜] F` with a given adjoint
-`Astar : F →ₗ[𝕜] E`: `LinearMap.hermitianDilation A Astar : WithLp 2 (E × F) →ₗ[𝕜] WithLp 2 (E × F)`,
-`(x, y) ↦ (Astar y, A x)` (domain factor first). Its matrix for `A = toEuclideanLin A`,
-`Astar = toEuclideanLin Aᴴ` is `Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0` (indexed `n ⊕ m`,
-same block order; `Matrix.toEuclideanLin_hermitianDilation` in `Numlib/Analysis/Matrix/SingularValues`).
-It is the book's `S₃ = [0 Aᵀ; A 0]` of [golub2013matrix] §8.6.1 and `Ã` of (8.6.4), and the
-`C = [0 A; Aᴴ 0]` of (10.4.16) with the two factors exchanged. The docstring says "Jordan–Wielandt
-matrix" so that the name is found. It replaces the earlier plan's `GolubKahan.jordanWielandt` (on
-`F × E`, `(y, x) ↦ (A x, Astar y)`), whose opposite block order made the matrix bridge swap the roles
-of `A` and `Aᴴ` (review H1). Defined with `WithLp.toLp`/`WithLp.ofLp` and `LinearMap.prod`/
-`LinearMap.fst`/`LinearMap.snd`. ★'''
-deps = []
 
 [[node]]
 id = "LinearMap.isSymmetric_hermitianDilation"
-kind = "theorem"
-desc = '''`(hermitianDilation A Astar).IsSymmetric` when `∀ u x, ⟪Astar u, x⟫ = ⟪u, A x⟫`: the inner
-product of `WithLp 2 (E × F)` is the sum of the two (Mathlib `WithLp.prod_inner_apply`), and
-`⟪(Astar y, A x), (x', y')⟫ = ⟪Astar y, x'⟫ + ⟪A x, y'⟫ = ⟪y, A x'⟫ + ⟪x, Astar y'⟫`. ★'''
-deps = ["LinearMap.hermitianDilation"]
+
+[[node]]
+id = "LinearMap.isSymmetric_hermitianDilation_adjoint"
 
 [[node]]
 id = "LinearMap.eigenvalues_hermitianDilation"
-kind = "theorem"
-desc = '''**The spectrum of the dilation** ([golub2013matrix] (8.6.3), operator form): for
-`A : E →ₗ[𝕜] F` between finite-dimensional spaces, `finrank E = n`, `finrank F = m`,
-`p = min n m`, `σ_k = A.singularValues k`, and `h := isSymmetric_hermitianDilation` at
-`Astar = LinearMap.adjoint A` (`hN : finrank (WithLp 2 (E × F)) = n + m`), the sorted eigenvalues are
-`σ_0, …, σ_{p-1}`, then `n + m - 2p` zeros, then `-σ_{p-1}, …, -σ_0`: for `k < p`,
-`h.eigenvalues hN ⟨k, _⟩ = σ_k` and `h.eigenvalues hN ⟨n + m - 1 - k, _⟩ = -σ_k`, the others `0`.
-Proof (review H3, cheaper than the book's block computation): by symmetry of roles assume `n ≤ m`
-(else pass to the adjoint, `singularValues_adjoint`, and the swap isometry `E × F ≃ F × E`, which
-conjugates the dilations); `exists_orthonormal_singularVectors` gives `v_i`, `u_i` with
-`A v_i = σ_i u_i`, `A† u_i = σ_i v_i`; the `n + m` vectors `(v_i, u_i)/√2`, `(v_i, -u_i)/√2`
-(`i < n`) and `(0, w)` for an orthonormal basis `w` of `(span u)ᗮ` form an orthonormal eigenbasis
-with eigenvalues `σ_i`, `-σ_i`, `0`; so the characteristic polynomial is `∏ (X - d_j)` for that
-list `d`, sorted decreasingly, and `LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` identifies the eigenvalues. ★★ (~120 lines)'''
-deps = ["LinearMap.isSymmetric_hermitianDilation", "LinearMap.exists_orthonormal_singularVectors", "LinearMap.singularValues_adjoint", "LinearMap.IsSymmetric.eigenvalues_eq_of_antitone"]
 
 [[node]]
 id = "LinearMap.inner_apply_eigenvectorBasis_adjoint_comp_self"

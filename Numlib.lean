@@ -182,6 +182,7 @@ import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
+import Numlib.Analysis.InnerProductSpace.PrincipalAngles
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
