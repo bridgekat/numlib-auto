@@ -34,7 +34,7 @@ a *vector* and a subspace, `Submodule.cosAngle`) of this library, whose vocabula
   module. The vector case is `cosPrincipalAngle_span_singleton_zero`: one principal angle between
   `F` and a line is the angle of `Projection/Angle`.
 * **Distance.** The subspace distance of [golub2013matrix] §2.5.3 is the existing `Submodule.gap`
-  (`‖P_K − P_L‖`) of `Projection/Angle`, whose equal-dimension theory is `Projection/Gap`; this
+  (`‖P_K − P_L‖`) of `Projection/Gap`, which also carries its equal-dimension theory; this
   module imports `Projection/Gap` and `Numlib/Analysis/InnerProductSpace/SingularValues`, and
   `gap_eq_sin_principalAngle` is proved directly from `Gap`'s one-sided identity (review H2), without
   coordinates.

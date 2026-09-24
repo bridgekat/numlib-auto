@@ -1,42 +1,43 @@
-desc = '''
-The distance between two subspaces, `dist(S₁, S₂) = ‖P₁ - P₂‖₂` ([golub2013matrix] §2.5.3, (2.5.1),
-Theorem 2.5.1), and its characterizations — coordinate-free.
-
-**No new distance.** The distance *is* `Submodule.gap K L = ‖K.starProjection - L.starProjection‖`
-of `Numlib/Analysis/InnerProductSpace/Projection/Angle` (defined there for any two subspaces with
-orthogonal projections, with `gap_le_one`, `gap_eq_zero_iff`, `gap_comm`, `finrank_eq_of_gap_lt_one`).
-The brief's placeholder name `Submodule.projDist` is therefore not introduced; every consumer
-(chapter 2's surface, `PrincipalAngles`, where `gap K L = sin θ_max` for equal dimensions) uses
-`Submodule.gap`. What this module adds is the equal-dimension theory that `Angle` explicitly leaves
-open ("the two are not proved equal here"): the symmetric gap equals either one-sided gap
-`‖P_{L⊥} P_K‖` when `finrank K = finrank L`, `gap = 1` exactly when `K` meets `Lᗮ`, and the gap
-between a subspace and the graph of a map over it.
-
-**The engine is the restricted projection** `T = P_L|_K : K → L`
-(`Submodule.orthogonalProjectionRestrict L K`, defined here; its adjoint is `P_K|_L`). For `x ∈ K`,
-`‖P_{L⊥} x‖² = ‖x‖² − ‖T x‖²`, so `‖P_{L⊥} P_K‖² = 1 − σ_min(T)²`
-(`Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`, the stacked-isometry identity of
-`Numlib/Analysis/InnerProductSpace/SingularValues`). For equal dimensions `T` is square, so
-`σ_min(T) = σ_min(T†)` (`LinearMap.singularValues_adjoint`) and the two one-sided gaps agree; and
-`gap = 1 ↔ σ_min(T) = 0 ↔ T` not injective `↔ K ⊓ Lᗮ ≠ ⊥`. The Golub–Van Loan review (H2) replaced
-the first plan's route — orthonormal bases, `EuclideanSpace`, and the CS block lemma of
-`Numlib/LinearAlgebra/Matrix/CSDecomposition` — by this one; no finite dimension of the ambient
-space is needed (only of `K` and `L`), and the module no longer imports anything from the matrix
-layer. The matrix form of Theorem 2.5.1 and (7.3.19) are corollaries in
-`Numlib/Analysis/Matrix/SingularValues`.
-
-Upstreaming candidate (natural home: `Mathlib.Analysis.InnerProductSpace.Projection`). Imports
-`Projection/Angle` and `Numlib/Analysis/InnerProductSpace/SingularValues`; `PrincipalAngles` imports
-this module. Planned as `SubspaceDistance` by chapter 2 and placed here, beside `Angle`, at the
-Golub–Van Loan consolidation; moving the existing `Submodule.gap` definition and its API out of
-`Angle` into this module is a recorded refactor task on proved code (`notes/gvl/consolidation.md`,
-R6), after which `Gap` no longer imports `Angle` for it. (R6's move of
-`ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq` is no longer needed by this module.)
-
-Order: the Pythagorean identity and the max formula (★, ★★), the restricted projection and its
-adjoint (★), the one-sided gap identity (★★), the equal-dimension theorems (★ each), the graph gap
-(★★). About 250 lines.
-'''
+# Planned additions (GVL round): the module doc of `Numlib.Analysis.InnerProductSpace.Projection.Gap` is
+# the group description; when the nodes planned below are formalized, extend it with the following plan text.
+# The distance between two subspaces, `dist(S₁, S₂) = ‖P₁ - P₂‖₂` ([golub2013matrix] §2.5.3, (2.5.1),
+# Theorem 2.5.1), and its characterizations — coordinate-free.
+#
+# **No new distance.** The distance *is* `Submodule.gap K L = ‖K.starProjection - L.starProjection‖`
+# of this module (defined for any two subspaces with orthogonal projections, with `gap_le_one`,
+# `gap_eq_zero_iff`, `gap_comm`, `finrank_eq_of_gap_lt_one`; moved here from
+# `Numlib/Analysis/InnerProductSpace/Projection/Angle` by the refactor task R6).
+# The brief's placeholder name `Submodule.projDist` is therefore not introduced; every consumer
+# (chapter 2's surface, `PrincipalAngles`, where `gap K L = sin θ_max` for equal dimensions) uses
+# `Submodule.gap`. What this module adds is the equal-dimension theory that the module doc explicitly leaves
+# open ("the two are not proved equal here"): the symmetric gap equals either one-sided gap
+# `‖P_{L⊥} P_K‖` when `finrank K = finrank L`, `gap = 1` exactly when `K` meets `Lᗮ`, and the gap
+# between a subspace and the graph of a map over it.
+#
+# **The engine is the restricted projection** `T = P_L|_K : K → L`
+# (`Submodule.orthogonalProjectionRestrict L K`, defined here; its adjoint is `P_K|_L`). For `x ∈ K`,
+# `‖P_{L⊥} x‖² = ‖x‖² − ‖T x‖²`, so `‖P_{L⊥} P_K‖² = 1 − σ_min(T)²`
+# (`Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`, the stacked-isometry identity of
+# `Numlib/Analysis/InnerProductSpace/SingularValues`). For equal dimensions `T` is square, so
+# `σ_min(T) = σ_min(T†)` (`LinearMap.singularValues_adjoint`) and the two one-sided gaps agree; and
+# `gap = 1 ↔ σ_min(T) = 0 ↔ T` not injective `↔ K ⊓ Lᗮ ≠ ⊥`. The Golub–Van Loan review (H2) replaced
+# the first plan's route — orthonormal bases, `EuclideanSpace`, and the CS block lemma of
+# `Numlib/LinearAlgebra/Matrix/CSDecomposition` — by this one; no finite dimension of the ambient
+# space is needed (only of `K` and `L`), and the module no longer imports anything from the matrix
+# layer. The matrix form of Theorem 2.5.1 and (7.3.19) are corollaries in
+# `Numlib/Analysis/Matrix/SingularValues`.
+#
+# Upstreaming candidate (natural home: `Mathlib.Analysis.InnerProductSpace.Projection`). Imports
+# `Projection/Angle` (for `Submodule.sinAngle_le_gap`) and, once the nodes below are written,
+# `Numlib/Analysis/InnerProductSpace/SingularValues`; `PrincipalAngles` imports this module. Planned as
+# `SubspaceDistance` by chapter 2 and placed here, beside `Angle`, at the Golub–Van Loan consolidation;
+# the existing `Submodule.gap` definition and its API were moved out of `Angle` into this module by the
+# refactor task R6 (`notes/gvl/consolidation.md`). (R6's move of
+# `ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq` is not needed by this module.)
+#
+# Order: the Pythagorean identity and the max formula (★, ★★), the restricted projection and its
+# adjoint (★), the one-sided gap identity (★★), the equal-dimension theorems (★ each), the graph gap
+# (★★). About 250 lines.
 
 [[node]]
 id = "Submodule.norm_starProjection_sub_apply_sq"
@@ -159,3 +160,42 @@ unit sphere of `K`). The tracked operator form of the "graph-gap" lemma that
 `Numlib/Eigen/InvariantSubspace` (`Matrix.gap_range_fromRows_le`, its matrix form) and
 `Numlib/Eigen/PowerMethod` (Theorem 8.2.2) both need. ★★ (~80 lines)'''
 deps = ["Submodule.graph", "Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq", "Submodule.gap_comm"]
+
+[[node]]
+id = "Submodule.finrank_eq_of_gap_lt_one"
+
+[[node]]
+id = "Submodule.gap"
+
+[[node]]
+id = "Submodule.gap_bot_eq_one"
+
+[[node]]
+id = "Submodule.gap_comm"
+
+[[node]]
+id = "Submodule.gap_eq_zero_iff"
+
+[[node]]
+id = "Submodule.gap_congr"
+
+[[node]]
+id = "Submodule.gap_le_add"
+
+[[node]]
+id = "Submodule.gap_le_of_forall_norm_sub_le"
+
+[[node]]
+id = "Submodule.gap_le_one"
+
+[[node]]
+id = "Submodule.gap_self"
+
+[[node]]
+id = "Submodule.norm_starProjection_sub_apply_le"
+
+[[node]]
+id = "Submodule.sinAngle_le_gap"
+
+[[node]]
+id = "LinearIndependent.exists_forall_sum_norm_le"

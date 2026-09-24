@@ -357,7 +357,8 @@ eigenvalues of an unreduced `T` are therefore simple (`Sturm.eigenvalues_simple`
 theorem property_5_11_interlace (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) (i : ℕ) (k : Fin i) :
     Sturm.eigenvalues d b (i + 1) k.succ < Sturm.eigenvalues d b i k ∧
       Sturm.eigenvalues d b i k < Sturm.eigenvalues d b (i + 1) k.castSucc :=
-  ⟨Sturm.eigenvalues_succ_lt d b hb i k, Sturm.eigenvalues_lt_castSucc d b hb i k⟩
+  ⟨Sturm.eigenvalues_succ_lt d b i (fun j _ => hb j) k,
+    Sturm.eigenvalues_lt_castSucc d b i (fun j _ => hb j) k⟩
 
 /-- **Property 5.11, second clause (the sign-change count).** For an unreduced `T` and any real
 `μ`, two consecutive elements of `S_μ = {p_0(μ), …, p_n(μ)}` cannot vanish together, and the
@@ -373,8 +374,8 @@ theorem property_5_11_count (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) (n : ℕ
       Sturm.signChanges d b n μ =
         (symmTridiagonalOf d b n).charpoly.countRootsIn (Set.Iic μ) := by
   simp only [sturmSeq_eq]
-  exact ⟨fun i => Sturm.eval_ne_zero_or_eval_ne_zero d b hb i μ,
-    Sturm.signChanges_eq_countRootsIn d b hb n μ⟩
+  exact ⟨fun i => Sturm.eval_ne_zero_or_eval_ne_zero d b i (fun j _ => hb j) μ,
+    Sturm.signChanges_eq_countRootsIn d b n (fun j _ => hb j) μ⟩
 
 /-! ### Givens' method -/
 
@@ -421,14 +422,16 @@ theorem eigenvalues_mem_Icc_givensBisection (d b : ℕ → ℝ) (hb : ∀ i, b i
   set β := ⨆ j : Fin n, (d j + Sturm.gershgorinRadius b n j) with hβ
   have hn : 0 < n := by omega
   have hβs : n - i < Sturm.signChanges d b n β := by
-    rw [Sturm.signChanges_eq_count d b hb, Sturm.count_eq_of_le d b le_rfl]
+    rw [Sturm.signChanges_eq_count d b n (fun j _ => hb j), Sturm.count_eq_of_le d b le_rfl]
     omega
   by_cases hαs : Sturm.signChanges d b n α ≤ n - i
   · exact Set.Ioc_subset_Icc_self
-      (Sturm.eigenvalues_mem_bisectionIterate d b hb hi hin (ab := (α, β)) ⟨hαs, hβs⟩ r)
+      (Sturm.eigenvalues_mem_bisectionIterate d b (fun j _ => hb j) hi hin (ab := (α, β)) ⟨hαs, hβs⟩
+        r)
   push Not at hαs
   -- `α` is an eigenvalue, hence the smallest one, and `i = n`
-  have hpos : 0 < Sturm.count d b n α := by rw [← Sturm.signChanges_eq_count d b hb]; omega
+  have hpos : 0 < Sturm.count d b n α := by
+    rw [← Sturm.signChanges_eq_count d b n (fun j _ => hb j)]; omega
   obtain ⟨k, hk⟩ : ∃ k, Sturm.eigenvalues d b n k ≤ α := by
     rw [Sturm.count, Finset.card_pos] at hpos
     obtain ⟨k, hk⟩ := hpos
@@ -437,13 +440,13 @@ theorem eigenvalues_mem_Icc_givensBisection (d b : ℕ → ℝ) (hb : ∀ i, b i
     le_antisymm ((Sturm.antitone_eigenvalues d b n
       (Fin.le_iff_val_le_val.mpr (by simp; omega))).trans hk) (Sturm.eigenvalues_mem_Icc d b n _).1
   have hcount : Sturm.count d b n α = 1 := by
-    have h := Sturm.count_eigenvalues d b hb (n := n) ⟨n - 1, by omega⟩
+    have h := Sturm.count_eigenvalues d b (n := n) (fun j _ => hb j) ⟨n - 1, by omega⟩
     rw [hlast] at h
     rw [h]
     simp only
     omega
   have hin' : i = n := by
-    rw [Sturm.signChanges_eq_count d b hb, hcount] at hαs
+    rw [Sturm.signChanges_eq_count d b n (fun j _ => hb j), hcount] at hαs
     omega
   subst hin'
   -- the left endpoint never moves
@@ -457,7 +460,7 @@ theorem eigenvalues_mem_Icc_givensBisection (d b : ℕ → ℝ) (hb : ∀ i, b i
         rw [ih.1]; linarith [ih.2]
       have hs : i - i < Sturm.signChanges d b i
           (((givensBisection d b i i r).1 + (givensBisection d b i i r).2) / 2) :=
-        lt_of_lt_of_le hαs (Sturm.signChanges_monotone d b hb i hc)
+        lt_of_lt_of_le hαs (Sturm.signChanges_monotone d b i (fun j _ => hb j) hc)
       rw [(givensBisection_spec d b i i).2 r, ite_eq_left hs]
       exact ⟨ih.1, hc⟩
   rw [hlast, (hleft r).1]

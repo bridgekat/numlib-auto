@@ -41,6 +41,10 @@ i`.
   `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` (a principal submatrix): Cauchy interlacing,
   `λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)` whenever the quadratic form of `S` on an `m`-dimensional
   space is that of `T` pulled back along a linear isometry.
+* `Matrix.IsHermitian.sortedEigenvalues`: the eigenvalues of a Hermitian matrix of order `n`, sorted
+  decreasingly and indexed by `Fin n` (Mathlib's `eigenvalues₀` reindexed), with Cauchy interlacing
+  for the leading principal submatrix,
+  `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`.
 * `LinearMap.IsSymmetric.eigenvalues_neg`: the eigenvalues of `-T` are the negatives of those of
   `T` in reversed order, which is the reduction that turns any statement about a largest eigenvalue
   into the matching statement about a smallest one; `exists_smul_eigenvectorBasis_neg` transports
@@ -731,3 +735,68 @@ theorem IsHermitian.eigenvalues₀_submatrix_interlace {A : Matrix n n 𝕜} (hA
   convert h using 3 <;> exact hVAV.symm
 
 end Matrix
+
+/-! ### The sorted eigenvalues of a Hermitian matrix, indexed by `Fin n` -/
+
+namespace Matrix.IsHermitian
+
+variable {n : ℕ}
+
+/-- The eigenvalues of a Hermitian `n × n` matrix, **sorted decreasingly and indexed by `Fin n`**:
+`hA.sortedEigenvalues k` is the `(k + 1)`-st largest eigenvalue, the `λ_{k+1}(A)` of
+[golub2013matrix] §8.1.1. It is Mathlib's `Matrix.IsHermitian.eigenvalues₀`, whose index type
+`Fin (Fintype.card (Fin n))` is not `Fin n` by definition, reindexed along `Fintype.card_fin`, so
+that statements about the `k`-th eigenvalue of a matrix and of its leading principal submatrices
+read on `Fin n` with `Fin.succ` and `Fin.castSucc`. -/
+noncomputable def sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
+    Fin n → ℝ :=
+  hA.eigenvalues₀ ∘ Fin.cast (Fintype.card_fin n).symm
+
+/-- `Matrix.IsHermitian.sortedEigenvalues` in terms of Mathlib's `eigenvalues₀`. -/
+theorem sortedEigenvalues_apply {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) (k : Fin n) :
+    hA.sortedEigenvalues k = hA.eigenvalues₀ (Fin.cast (Fintype.card_fin n).symm k) :=
+  rfl
+
+/-- The sorted eigenvalues depend on the matrix only, not on the proof that it is Hermitian nor on
+the way it is written. -/
+theorem sortedEigenvalues_congr {A B : Matrix (Fin n) (Fin n) 𝕜} (h : A = B) (hA : A.IsHermitian)
+    (hB : B.IsHermitian) : hA.sortedEigenvalues = hB.sortedEigenvalues := by
+  subst h
+  rfl
+
+/-- The sorted eigenvalues decrease. -/
+theorem sortedEigenvalues_antitone {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
+    Antitone hA.sortedEigenvalues := fun i j hij =>
+  hA.eigenvalues₀_antitone (show Fin.cast _ i ≤ Fin.cast _ j from hij)
+
+/-- The roots of the characteristic polynomial, with multiplicity, are the sorted eigenvalues. -/
+theorem roots_charpoly_eq_sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
+    A.charpoly.roots = Multiset.map (RCLike.ofReal ∘ hA.sortedEigenvalues) Finset.univ.val := by
+  rw [hA.roots_charpoly_eq_eigenvalues₀,
+    ← Finset.map_univ_equiv (finCongr (Fintype.card_fin n).symm), Finset.map_val,
+    Multiset.map_map]
+  rfl
+
+/-- **Cauchy interlacing for the leading principal submatrix** ([golub2013matrix] Theorem 8.1.7;
+[quarteroni2000numerical] Property 5.11, the weak inequalities): the eigenvalues of the leading
+`n × n` block of a Hermitian `(n + 1) × (n + 1)` matrix `A` separate those of `A`,
+`λ_{k+1}(A) ≤ λ_k(A.submatrix castSucc castSucc) ≤ λ_k(A)`. The `Fin`-indexed reading of
+`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`. -/
+theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
+    (hA : A.IsHermitian) (hB : (A.submatrix Fin.castSucc Fin.castSucc).IsHermitian) (k : Fin n) :
+    hA.sortedEigenvalues k.succ ≤ hB.sortedEigenvalues k ∧
+      hB.sortedEigenvalues k ≤ hA.sortedEigenvalues k.castSucc := by
+  have hmn : Fintype.card (Fin n) ≤ Fintype.card (Fin (n + 1)) := by simp
+  have h := hA.eigenvalues₀_submatrix_interlace (Fin.castSucc_injective n) hB
+    (Fin.cast (Fintype.card_fin n).symm k)
+  have e1 : (⟨(Fin.cast (Fintype.card_fin n).symm k : ℕ) + (Fintype.card (Fin (n + 1))
+      - Fintype.card (Fin n)), by simp⟩ : Fin (Fintype.card (Fin (n + 1))))
+      = Fin.cast (Fintype.card_fin (n + 1)).symm k.succ := by
+    ext; simp
+  have e2 : Fin.castLE hmn (Fin.cast (Fintype.card_fin n).symm k)
+      = Fin.cast (Fintype.card_fin (n + 1)).symm k.castSucc := by
+    ext; simp
+  rw [e1, e2] at h
+  exact h
+
+end Matrix.IsHermitian

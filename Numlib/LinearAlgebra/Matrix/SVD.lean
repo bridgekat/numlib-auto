@@ -13,6 +13,7 @@ import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Matrix.DotProduct
 import Mathlib.LinearAlgebra.Matrix.Rank
+import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Ring.CondNumber
 
@@ -46,6 +47,8 @@ residual has exactly the size of the data error, and does so uniquely
 * `Matrix.rectDiagonal`: the rectangular diagonal matrix `diag(σ₀, σ₁, …) ∈ 𝕜^{m × n}` of a
   factorization `Uᴴ A V = Σ`, and `Matrix.sortedRightSingularVec`, the right singular vectors
   sorted by decreasing singular value.
+* `Matrix.unitaryOfBasis b`: the unitary matrix whose columns are the vectors of an orthonormal
+  basis `b` of a Euclidean space, the form in which `Matrix.exists_svd` produces its factors.
 
 ## Main results
 
@@ -76,7 +79,9 @@ residual has exactly the size of the data error, and does so uniquely
 `Matrix.singularValues` is indexed by the columns of `A`, not sorted, because that is how Mathlib
 indexes `Matrix.IsHermitian.eigenvalues`, and because every consumer here wants the value attached
 to a given right singular vector rather than the `j`-th largest. Mathlib's
-`LinearMap.singularValues` is the sorted `ℕ`-indexed sequence, which this file does not use.
+`LinearMap.singularValues` is the sorted `ℕ`-indexed sequence; it appears here only in the full
+factorization `Matrix.exists_svd` and its uniqueness, and the coordinate-free facts about it that
+those use are in `Numlib/Analysis/InnerProductSpace/SingularValues`.
 -/
 
 open Module
@@ -1297,17 +1302,27 @@ theorem conjTranspose_rectDiagonal_mul_self (σ : ℕ → 𝕜) :
   rw [conjTranspose_rectDiagonal, rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
   rfl
 
-/-- The unitary matrix whose columns are the vectors of an orthonormal basis of a Euclidean
-space: the change-of-basis matrix from the standard basis. -/
-private noncomputable def unitaryOfBasis {ι : Type*} [Fintype ι] [DecidableEq ι]
+/-- The unitary matrix whose columns are the vectors of an orthonormal basis `b` of a Euclidean
+space: the change-of-basis matrix from the standard basis to `b`, whose `j`-th column is `b j`
+(`Matrix.unitaryOfBasis_apply`). -/
+noncomputable def unitaryOfBasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : Matrix ι ι 𝕜 :=
   (EuclideanSpace.basisFun ι 𝕜).toBasis.toMatrix b.toBasis
 
-private theorem unitaryOfBasis_mem {ι : Type*} [Fintype ι] [DecidableEq ι]
+/-- The entries of `Matrix.unitaryOfBasis b` are the coordinates of the basis vectors: the `j`-th
+column is `b j`. -/
+theorem unitaryOfBasis_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) (i j : ι) : unitaryOfBasis b i j = b j i :=
+  rfl
+
+/-- The matrix of an orthonormal basis of a Euclidean space is unitary. -/
+theorem unitaryOfBasis_mem_unitaryGroup {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : unitaryOfBasis b ∈ unitaryGroup ι 𝕜 :=
   (EuclideanSpace.basisFun ι 𝕜).toMatrix_orthonormalBasis_mem_unitary b
 
-private theorem unitaryOfBasis_transpose_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
+/-- The rows of the transpose of `Matrix.unitaryOfBasis b`, that is its columns, are the vectors
+of `b`. -/
+theorem unitaryOfBasis_transpose_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) (j : ι) :
     (unitaryOfBasis b)ᵀ j = ⇑(b j) := rfl
 
@@ -1322,59 +1337,6 @@ theorem star_mul_mul_apply (U : Matrix (Fin m) (Fin m) 𝕜) (A : Matrix (Fin m)
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => ?_
   ring
-
-end SVD
-
-end Matrix
-
-/-! ### The sorted singular system of a linear map
-
-Facts about `LinearMap.singularValues` and the eigenbasis of `T† T` they are read from, missing
-from Mathlib's `Mathlib.Analysis.InnerProductSpace.SingularValues`. -/
-
-namespace LinearMap
-
-variable {𝕜 : Type*} [RCLike 𝕜] {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-  [FiniteDimensional 𝕜 E] [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F]
-  (T : E →ₗ[𝕜] F)
-
-/-- The images under `T` of the sorted orthonormal eigenbasis of `T† T` are pairwise orthogonal,
-with squared norms the squared singular values. -/
-theorem inner_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n)
-    (i j : Fin n) :
-    inner 𝕜 (T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn i))
-        (T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j))
-      = if i = j then ((T.singularValues j ^ 2 : ℝ) : 𝕜) else 0 := by
-  rw [← adjoint_inner_right, ← comp_apply, T.isSymmetric_adjoint_comp_self.apply_eigenvectorBasis,
-    inner_smul_right,
-    orthonormal_iff_ite.1 (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn).orthonormal i j,
-    ← T.sq_singularValues_fin hn j]
-  split_ifs <;> simp
-
-/-- The image under `T` of the `j`-th vector of the sorted eigenbasis of `T† T` has norm the `j`-th
-singular value. -/
-theorem norm_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n) (j : Fin n) :
-    ‖T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j)‖ = T.singularValues j := by
-  have h := T.inner_apply_eigenvectorBasis_adjoint_comp_self hn j j
-  rw [ite_eq_left rfl, inner_self_eq_norm_sq_to_K] at h
-  have h2 : ‖T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j)‖ ^ 2
-      = T.singularValues j ^ 2 := by exact_mod_cast h
-  exact (pow_left_inj₀ (norm_nonneg _) (T.singularValues_nonneg j) two_ne_zero).1 h2
-
-/-- The singular values vanish from the dimension of the *codomain* on, as they do from the
-dimension of the domain on (`LinearMap.singularValues_of_finrank_le`): only `rank T` of them are
-nonzero. -/
-theorem singularValues_of_finrank_codomain_le {i : ℕ} (hi : finrank 𝕜 F ≤ i) :
-    T.singularValues i = 0 :=
-  T.singularValues_eq_zero_iff_le_finrank_range.2 ((Submodule.finrank_le _).trans hi)
-
-end LinearMap
-
-namespace Matrix
-
-section SVD
-
-variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
 /-- The right singular vectors of `A`, sorted by decreasing singular value and extended by zero to
 an `ℕ`-indexed family: `A.sortedRightSingularVec j` for `j < n` is the `j`-th vector of the sorted
@@ -1476,7 +1438,8 @@ theorem exists_svd (A : Matrix (Fin m) (Fin n) 𝕜) :
   set v : OrthonormalBasis (Fin n) 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
     (toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis finrank_euclideanSpace_fin
     with hv
-  refine ⟨unitaryOfBasis b, unitaryOfBasis_mem b, unitaryOfBasis v, unitaryOfBasis_mem v, ?_⟩
+  refine ⟨unitaryOfBasis b, unitaryOfBasis_mem_unitaryGroup b, unitaryOfBasis v,
+    unitaryOfBasis_mem_unitaryGroup v, ?_⟩
   ext i j
   rw [star_mul_mul_apply, rectDiagonal_apply, unitaryOfBasis_transpose_apply,
     unitaryOfBasis_transpose_apply, WithLp.toLp_ofLp, WithLp.toLp_ofLp, hv,
@@ -1772,22 +1735,6 @@ private theorem charpoly_unitary_conj {n : Type*} [Fintype n] [DecidableEq n]
     {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜) (M : Matrix n n 𝕜) :
     (U * M * star U).charpoly = M.charpoly := by
   rw [charpoly_mul_comm, ← Matrix.mul_assoc, mem_unitaryGroup_iff'.1 hU, Matrix.one_mul]
-
-/-- **The sorted eigenvalues of a symmetric operator are determined by its characteristic
-polynomial**: if the roots of `T.charpoly` are the values of an antitone `d : Fin n → ℝ`, then
-`hT.eigenvalues hn = d`. This is `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` read
-backwards. -/
-theorem _root_.LinearMap.IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
-    [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E}
-    (hT : T.IsSymmetric) {n : ℕ} (hn : Module.finrank 𝕜 E = n) {d : Fin n → ℝ} (hd : Antitone d)
-    (hroots : T.charpoly.roots = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val) :
-    hT.eigenvalues hn = d := by
-  rw [← List.ofFn_inj, ← hT.sort_roots_charpoly_eq_eigenvalues hn, hroots]
-  simp_rw [Fin.univ_val_map, Multiset.map_coe, List.map_ofFn, Function.comp_def, RCLike.ofReal_re,
-    Multiset.coe_sort]
-  apply List.mergeSort_of_pairwise
-  simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
-  exact hd.sortedGE_ofFn
 
 /-- The roots of the characteristic polynomial of a real diagonal matrix are its diagonal
 entries. -/

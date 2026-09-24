@@ -25,7 +25,7 @@ the GSVD and the structured quadratic eigenproblem (§8.7). One surface module p
 * Norms: `‖·‖₂` is `Matrix.lpOpNorm 2` (`Numlib/Analysis/Matrix/OperatorNorm`, equal to Mathlib's
   scoped `L2Operator` norm by `lpOpNorm_two`), `‖·‖_F` Mathlib's scoped `Matrix.Norms.Frobenius`;
   the distance between subspaces `dist(S₁, S₂) = ‖P₁ - P₂‖₂` is the backbone's `Submodule.gap`
-  (`Numlib/Analysis/InnerProductSpace/Projection/Angle`).
+  (`Numlib/Analysis/InnerProductSpace/Projection/Gap`).
 * Rounding: the relational `FloatingPoint.RoundingModel` with `fp.u`, `γ_n = FloatingPoint.gamma`;
   the book's `≈ u ‖A‖` statements become explicit `γ`-constants where the book (or its source) gives
   a derivation, and are not formalized otherwise.

@@ -1,7 +1,6 @@
 # Planned additions (GVL round): the module doc of `Numlib.Analysis.Matrix.OperatorNorm` is the group description;
 # when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch02) Under "Main results" add: `Matrix.lpOpNorm_submatrix_le` (a submatrix has a smaller induced
-# `p`-norm, with `Matrix.l2_opNorm_submatrix_le` of `SchurComplement` its `p = 2` case),
+# (ch02) Under "Main results" add (`Matrix.lpOpNorm_submatrix_le` is already there):
 # `Matrix.condNumberLp_le_card_rpow_mul_condNumberLp` (the equivalence of the `p`-norm condition
 # numbers), the isometry lemmas `Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one` /
 # `…_mul_conjTranspose_…` for matrices with orthonormal columns, and the Neumann series
@@ -359,14 +358,12 @@ id = "frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM"
 
 [[node]]  # staged by ch02
 id = "lpOpNorm_submatrix_le"
-kind = "theorem"
-desc = '''A submatrix has a smaller induced `p`-norm, for injective row and column selections:
-`Injective f → Injective g → lpOpNorm p (A.submatrix f g) ≤ lpOpNorm p A` ([golub2013matrix] (2.3.13)
-and P2.3.2). Same proof as `Matrix.l2_opNorm_submatrix_le` (`Numlib/LinearAlgebra/Matrix/SchurComplement`):
-extend `x` by zero along `g` (`Function.extend`, norm-preserving in `PiLp p`) and drop coordinates
-along `f` (norm-nonincreasing in `PiLp p`); `ContinuousLinearMap.opNorm_le_bound`. The `p = 2` case
-then follows through `Matrix.lpOpNorm_two`, and the existing lemma should become its corollary. ★'''
-deps = ["Matrix.lpOpNorm", "Matrix.lpCLM", "Matrix.l2_opNorm_submatrix_le"]
+
+[[node]]
+id = "_root_.PiLp.norm_toLp_comp_le"
+
+[[node]]
+id = "_root_.PiLp.norm_toLp_extend"
 
 [[node]]  # staged by ch02
 id = "condNumberLp_le_card_rpow_mul_condNumberLp"
@@ -453,3 +450,6 @@ desc = '''The spectral norm of a block diagonal matrix is the largest spectral n
 blocks) in `Numlib/Analysis/Matrix/Function/Approximation`. With `Matrix.l2_opNorm_unitary_mul_mul_unitary`
 applied to the permutation matrix of a reindexing it also covers `reindex e e (blockDiagonal' M)`. ★'''
 deps = ["Matrix.lpOpNorm_blockDiagonal'", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
+
+[[node]]
+id = "l2_opNorm_submatrix_le"

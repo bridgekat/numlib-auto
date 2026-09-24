@@ -27,7 +27,7 @@ theorem), and the convergence of orthogonal iteration to the dominant one.
   `gap(ran [I; 0], ran [I; P]) ≤ ‖P‖₂` (`Matrix.gap_range_fromRows_le`), a corollary of the
   operator-level `Submodule.gap_graph` of `Numlib/Analysis/InnerProductSpace/Projection/Gap`
   (`gap(K, graph X) = ‖X‖/√(1 + ‖X‖²)` for `X : K → Kᗮ`); `Submodule.gap` of
-  `Numlib/Analysis/InnerProductSpace/Projection/Angle` is the book's `dist(S₁, S₂) = ‖P₁ - P₂‖₂`
+  `Numlib/Analysis/InnerProductSpace/Projection/Gap` is the book's `dist(S₁, S₂) = ‖P₁ - P₂‖₂`
   (§2.5.3), and it is unitarily invariant (`Submodule.gap_map_linearIsometryEquiv`).
 * **Orthogonal iteration** ([golub2013matrix] Theorem 7.3.1, **corrected**): the subspaces
   `A^k S₀` (`Krylov.subspaceIterate`) approach the dominant invariant subspace `D_r(A)` at the rate

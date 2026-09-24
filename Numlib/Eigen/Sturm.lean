@@ -23,7 +23,8 @@ sequence** whose sign changes count the eigenvalues below any given point
   `p_{i+2} = (d_{i+1} - X) p_{i+1} - b_i² p_i` ([quarteroni2000numerical] (5.65)), which is
   `det (T_i - X)` (`Sturm.seq_eq_det`), that is, `(-1)^i` times the characteristic polynomial of
   the leading principal submatrix of order `i` (`Sturm.seq_eq_charpoly`).
-* `Sturm.eigenvalues d b n`: the eigenvalues of `T_n` sorted decreasingly and indexed by `Fin n`.
+* `Sturm.eigenvalues d b n`: the eigenvalues of `T_n` sorted decreasingly and indexed by `Fin n`,
+  the backbone's `Matrix.IsHermitian.sortedEigenvalues`.
 * `Sturm.sign d b μ`, `Sturm.signChanges d b n μ`: the signs of `p_0(μ), …, p_n(μ)` with the
   convention that a vanishing `p_i(μ)` takes the sign opposite to `p_{i-1}(μ)`, and the number
   `s(μ)` of sign changes among them.
@@ -32,8 +33,8 @@ sequence** whose sign changes count the eigenvalues below any given point
 
 ## Main results
 
-* `Sturm.eval_ne_zero_or_eval_ne_zero`: for an unreduced matrix (`b i ≠ 0`) consecutive members
-  of the sequence have no common root.
+* `Sturm.eval_ne_zero_or_eval_ne_zero`: for an unreduced matrix consecutive members of the
+  sequence have no common root.
 * `Sturm.eigenvalues_strictInterlace`: **strict interlacing** ([quarteroni2000numerical]
   Property 5.11): the eigenvalues of `T_i` strictly separate those of `T_{i+1}`. It is Cauchy's
   weak interlacing for a principal submatrix (`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`)
@@ -53,11 +54,16 @@ sequence** whose sign changes count the eigenvalues below any given point
 
 ## Implementation notes
 
+*Unreduced* is the hypothesis `∀ j, j + 1 < n → b j ≠ 0` on the off-diagonal entries that actually
+occur in `T_n`; a statement about `T_i` and `T_{i+1}` takes it at order `i + 1`. Nothing is assumed
+about the entries `b j` with `j + 1 ≥ n`, which `symmTridiagonalOf d b n` does not read.
+
 The sorted eigenvalues of Mathlib, `Matrix.IsHermitian.eigenvalues₀`, are indexed by
-`Fin (Fintype.card (Fin i))`; `Sturm.eigenvalues d b i` reindexes them along `Fintype.card_fin` so
-that the interlacing and counting statements read on `Fin i` and `Fin (i + 1)` with `Fin.succ` and
-`Fin.castSucc`. All counting is done through `Finset.card` of index sets of these sorted lists,
-which `Polynomial.countRootsIn` reaches by `Matrix.IsHermitian.roots_charpoly_eq_eigenvalues₀`.
+`Fin (Fintype.card (Fin i))`; `Sturm.eigenvalues d b i` is `Matrix.IsHermitian.sortedEigenvalues`
+(`Numlib/Eigen/MinMax`), which reindexes them along `Fintype.card_fin` so that the interlacing and
+counting statements read on `Fin i` and `Fin (i + 1)` with `Fin.succ` and `Fin.castSucc`. All
+counting is done through `Finset.card` of index sets of these sorted lists, which
+`Polynomial.countRootsIn` reaches by `Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`.
 -/
 
 open Polynomial Finset
@@ -275,7 +281,7 @@ theorem seq_ne_zero (i : ℕ) : seq d b i ≠ 0 := by
 /-- **Consecutive members of the Sturm sequence have no common root** when the off-diagonal
 does not vanish: a common root of `p_{i+1}` and `p_{i+2}` is a root of `p_i` by the recurrence,
 and so on down to `p_0 = 1`. -/
-theorem eval_ne_zero_or_eval_ne_zero (hb : ∀ i, b i ≠ 0) (i : ℕ) (μ : ℝ) :
+theorem eval_ne_zero_or_eval_ne_zero (i : ℕ) (hb : ∀ j, j + 1 < i + 1 → b j ≠ 0) (μ : ℝ) :
     (seq d b i).eval μ ≠ 0 ∨ (seq d b (i + 1)).eval μ ≠ 0 := by
   induction i with
   | zero => exact Or.inl (by simp)
@@ -286,29 +292,37 @@ theorem eval_ne_zero_or_eval_ne_zero (hb : ∀ i, b i ≠ 0) (i : ℕ) (μ : ℝ
     have h3 : (seq d b i).eval μ = 0 := by
       rw [seq_add_two, eval_sub, eval_mul, eval_mul, eval_pow, eval_C, h1, mul_zero, zero_sub,
         neg_eq_zero, mul_eq_zero, pow_eq_zero_iff two_ne_zero] at h2
-      exact h2.resolve_left (hb i)
-    rcases ih with h | h
+      exact h2.resolve_left (hb i (by omega))
+    rcases ih (fun j hj => hb j (by omega)) with h | h
     · exact h h3
     · exact h h1
 
 /-- At a root of `p_{i+1}` the neighbours `p_i` and `p_{i+2}` have opposite signs, since then
 `p_{i+2}(μ) = -b_i² p_i(μ)` with `p_i(μ) ≠ 0`. This is the lemma behind the sign convention for a
 vanishing member. -/
-theorem eval_seq_add_two_mul_eval_seq_neg (hb : ∀ i, b i ≠ 0) (i : ℕ) {μ : ℝ}
+theorem eval_seq_add_two_mul_eval_seq_neg (i : ℕ) (hb : ∀ j, j + 1 < i + 2 → b j ≠ 0) {μ : ℝ}
     (h : (seq d b (i + 1)).eval μ = 0) :
     (seq d b (i + 2)).eval μ * (seq d b i).eval μ < 0 := by
   have hne : (seq d b i).eval μ ≠ 0 :=
-    (eval_ne_zero_or_eval_ne_zero d b hb i μ).resolve_right (by simpa using h)
+    (eval_ne_zero_or_eval_ne_zero d b i (fun j hj => hb j (by omega)) μ).resolve_right
+      (by simpa using h)
   rw [seq_add_two, eval_sub, eval_mul, eval_mul, eval_pow, eval_C, h, mul_zero, zero_sub,
     neg_mul, neg_lt_zero, mul_assoc]
-  exact mul_pos ((even_two).pow_pos (hb i)) (mul_self_pos.mpr hne)
+  exact mul_pos ((even_two).pow_pos (hb i (by omega))) (mul_self_pos.mpr hne)
 
 /-! ### The sorted eigenvalues -/
 
 /-- The eigenvalues of `symmTridiagonalOf d b n`, sorted decreasingly and indexed by `Fin n`:
-Mathlib's `Matrix.IsHermitian.eigenvalues₀` reindexed along `Fintype.card_fin`. -/
+the backbone's `Matrix.IsHermitian.sortedEigenvalues`. -/
 noncomputable def eigenvalues (n : ℕ) : Fin n → ℝ :=
-  (Matrix.isHermitian_symmTridiagonalOf d b n).eigenvalues₀ ∘ Fin.cast (Fintype.card_fin n).symm
+  (Matrix.isHermitian_symmTridiagonalOf d b n).sortedEigenvalues
+
+/-- The sorted eigenvalues, in terms of `Matrix.IsHermitian.sortedEigenvalues` for any proof of
+Hermitianness. -/
+theorem eigenvalues_eq_sortedEigenvalues {n : ℕ}
+    (hT : (Matrix.symmTridiagonalOf d b n).IsHermitian) :
+    eigenvalues d b n = hT.sortedEigenvalues :=
+  rfl
 
 /-- The sorted eigenvalues, in terms of `Matrix.IsHermitian.eigenvalues₀` for any proof of
 Hermitianness. -/
@@ -317,18 +331,14 @@ theorem eigenvalues_eq_eigenvalues₀ {n : ℕ} (hT : (Matrix.symmTridiagonalOf 
   rfl
 
 /-- The sorted eigenvalues decrease. -/
-theorem antitone_eigenvalues (n : ℕ) : Antitone (eigenvalues d b n) := fun i j hij =>
-  (Matrix.isHermitian_symmTridiagonalOf d b n).eigenvalues₀_antitone
-    (show Fin.cast _ i ≤ Fin.cast _ j from hij)
+theorem antitone_eigenvalues (n : ℕ) : Antitone (eigenvalues d b n) :=
+  (Matrix.isHermitian_symmTridiagonalOf d b n).sortedEigenvalues_antitone
 
 /-- The roots of the characteristic polynomial of `T_n` are the sorted eigenvalues. -/
 theorem roots_charpoly_eq (n : ℕ) :
     (Matrix.symmTridiagonalOf d b n).charpoly.roots
-      = Multiset.map (eigenvalues d b n) univ.val := by
-  rw [(Matrix.isHermitian_symmTridiagonalOf d b n).roots_charpoly_eq_eigenvalues₀,
-    ← Finset.map_univ_equiv (finCongr (Fintype.card_fin n).symm), Finset.map_val,
-    Multiset.map_map]
-  rfl
+      = Multiset.map (eigenvalues d b n) univ.val :=
+  (Matrix.isHermitian_symmTridiagonalOf d b n).roots_charpoly_eq_sortedEigenvalues
 
 /-- The characteristic polynomial of `T_n` splits as `∏ (X - λ_k)` over the sorted eigenvalues. -/
 theorem charpoly_eq_prod (n : ℕ) :
@@ -362,12 +372,6 @@ theorem exists_eigenvalues_eq_of_eval_eq_zero {n : ℕ} {μ : ℝ} (h : (seq d b
 
 /-! ### Interlacing -/
 
-/-- `Matrix.IsHermitian.eigenvalues₀` depends on the matrix only. -/
-private theorem eigenvalues₀_congr {m : Type*} [Fintype m] [DecidableEq m] {A B : Matrix m m ℝ}
-    (h : A = B) (hA : A.IsHermitian) (hB : B.IsHermitian) : hA.eigenvalues₀ = hB.eigenvalues₀ := by
-  subst h
-  rfl
-
 /-- **Weak (Cauchy) interlacing** for the leading principal submatrix:
 `λ_{k+1}(T_{i+1}) ≤ λ_k(T_i) ≤ λ_k(T_{i+1})`. -/
 theorem eigenvalues_interlace (i : ℕ) (k : Fin i) :
@@ -377,75 +381,67 @@ theorem eigenvalues_interlace (i : ℕ) (k : Fin i) :
   have hB : ((Matrix.symmTridiagonalOf d b (i + 1)).submatrix Fin.castSucc
       Fin.castSucc).IsHermitian :=
     hsub ▸ Matrix.isHermitian_symmTridiagonalOf d b i
-  have hmn : Fintype.card (Fin i) ≤ Fintype.card (Fin (i + 1)) := by simp
-  have h := (Matrix.isHermitian_symmTridiagonalOf d b (i + 1)).eigenvalues₀_submatrix_interlace
-    (Fin.castSucc_injective i) hB (Fin.cast (Fintype.card_fin i).symm k)
-  rw [eigenvalues₀_congr hsub hB (Matrix.isHermitian_symmTridiagonalOf d b i)] at h
-  simp only [eigenvalues, Function.comp_apply]
-  have e1 : (⟨(Fin.cast (Fintype.card_fin i).symm k : ℕ) + (Fintype.card (Fin (i + 1))
-      - Fintype.card (Fin i)), by simp⟩ : Fin (Fintype.card (Fin (i + 1))))
-      = Fin.cast (Fintype.card_fin (i + 1)).symm k.succ := by
-    ext; simp
-  have e2 : Fin.castLE hmn (Fin.cast (Fintype.card_fin i).symm k)
-      = Fin.cast (Fintype.card_fin (i + 1)).symm k.castSucc := by
-    ext; simp
-  rw [e1, e2] at h
+  have h := Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace
+    (Matrix.isHermitian_symmTridiagonalOf d b (i + 1)) hB k
+  rw [Matrix.IsHermitian.sortedEigenvalues_congr hsub hB
+    (Matrix.isHermitian_symmTridiagonalOf d b i)] at h
   exact h
 
 /-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11), lower half: for an
 unreduced matrix, `λ_{k+1}(T_{i+1}) < λ_k(T_i)`. Equality would make `λ_k(T_i)` a common root of
 `p_i` and `p_{i+1}`. -/
-theorem eigenvalues_succ_lt (hb : ∀ i, b i ≠ 0) (i : ℕ) (k : Fin i) :
+theorem eigenvalues_succ_lt (i : ℕ) (hb : ∀ j, j + 1 < i + 1 → b j ≠ 0) (k : Fin i) :
     eigenvalues d b (i + 1) k.succ < eigenvalues d b i k := by
   refine lt_of_le_of_ne (eigenvalues_interlace d b i k).1 fun h => ?_
   have h1 := eval_seq_eigenvalues d b (i + 1) k.succ
   have h2 := eval_seq_eigenvalues d b i k
   rw [h] at h1
-  rcases eval_ne_zero_or_eval_ne_zero d b hb i (eigenvalues d b i k) with h' | h'
+  rcases eval_ne_zero_or_eval_ne_zero d b i hb (eigenvalues d b i k) with h' | h'
   · exact h' h2
   · exact h' h1
 
 /-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11), upper half: for an
 unreduced matrix, `λ_k(T_i) < λ_k(T_{i+1})`. -/
-theorem eigenvalues_lt_castSucc (hb : ∀ i, b i ≠ 0) (i : ℕ) (k : Fin i) :
+theorem eigenvalues_lt_castSucc (i : ℕ) (hb : ∀ j, j + 1 < i + 1 → b j ≠ 0) (k : Fin i) :
     eigenvalues d b i k < eigenvalues d b (i + 1) k.castSucc := by
   refine lt_of_le_of_ne (eigenvalues_interlace d b i k).2 fun h => ?_
   have h1 := eval_seq_eigenvalues d b (i + 1) k.castSucc
   have h2 := eval_seq_eigenvalues d b i k
   rw [← h] at h1
-  rcases eval_ne_zero_or_eval_ne_zero d b hb i (eigenvalues d b i k) with h' | h'
+  rcases eval_ne_zero_or_eval_ne_zero d b i hb (eigenvalues d b i k) with h' | h'
   · exact h' h2
   · exact h' h1
 
 /-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11) in the form of Mathlib's
 sorted `Matrix.IsHermitian.eigenvalues₀`: for an unreduced matrix the eigenvalues of `T_i`
 strictly separate those of `T_{i+1}`, `λ_{k+1}(T_{i+1}) < λ_k(T_i) < λ_k(T_{i+1})`. -/
-theorem eigenvalues_strictInterlace (hb : ∀ i, b i ≠ 0) (i : ℕ)
+theorem eigenvalues_strictInterlace (i : ℕ) (hb : ∀ j, j + 1 < i + 1 → b j ≠ 0)
     (hT : (Matrix.symmTridiagonalOf d b (i + 1)).IsHermitian)
     (hT' : (Matrix.symmTridiagonalOf d b i).IsHermitian) (k : Fin i) :
     hT.eigenvalues₀ ⟨k + 1, by simp⟩ < hT'.eigenvalues₀ ⟨k, by simp⟩ ∧
       hT'.eigenvalues₀ ⟨k, by simp⟩ < hT.eigenvalues₀ ⟨k, by simp⟩ := by
-  have h1 := eigenvalues_succ_lt d b hb i k
-  have h2 := eigenvalues_lt_castSucc d b hb i k
+  have h1 := eigenvalues_succ_lt d b i hb k
+  have h2 := eigenvalues_lt_castSucc d b i hb k
   rw [eigenvalues_eq_eigenvalues₀ d b hT, eigenvalues_eq_eigenvalues₀ d b hT'] at h1 h2
   exact ⟨h1, h2⟩
 
 /-- The eigenvalues of an unreduced symmetric tridiagonal matrix are **simple**: the sorted list
 strictly decreases. -/
-theorem strictAnti_eigenvalues (hb : ∀ i, b i ≠ 0) (n : ℕ) : StrictAnti (eigenvalues d b n) := by
+theorem strictAnti_eigenvalues (n : ℕ) (hb : ∀ j, j + 1 < n → b j ≠ 0) :
+    StrictAnti (eigenvalues d b n) := by
   cases n with
   | zero => exact fun i => i.elim0
   | succ n =>
     rw [Fin.strictAnti_iff_succ_lt]
     intro k
-    exact (eigenvalues_succ_lt d b hb n k).trans (eigenvalues_lt_castSucc d b hb n k)
+    exact (eigenvalues_succ_lt d b n hb k).trans (eigenvalues_lt_castSucc d b n hb k)
 
 /-- **The eigenvalues of an unreduced symmetric tridiagonal matrix are simple**: the roots of its
 characteristic polynomial have no repetition ([quarteroni2000numerical] Property 5.11). -/
-theorem eigenvalues_simple (hb : ∀ i, b i ≠ 0) (n : ℕ) :
+theorem eigenvalues_simple (n : ℕ) (hb : ∀ j, j + 1 < n → b j ≠ 0) :
     (Matrix.symmTridiagonalOf d b n).charpoly.roots.Nodup := by
   rw [roots_charpoly_eq]
-  exact (Finset.univ.nodup).map_on fun x _ y _ h => (strictAnti_eigenvalues d b hb n).injective h
+  exact (Finset.univ.nodup).map_on fun x _ y _ h => (strictAnti_eigenvalues d b n hb).injective h
 
 /-! ### The Sturm count -/
 
@@ -480,16 +476,16 @@ theorem count_mono (n : ℕ) : Monotone (count d b n) := fun μ ν hμν =>
 
 /-- The count at the `k`-th sorted eigenvalue of an unreduced matrix is `n - k`: the eigenvalues
 at most `λ_k` are `λ_k, …, λ_{n-1}`. -/
-theorem count_eigenvalues (hb : ∀ i, b i ≠ 0) {n : ℕ} (k : Fin n) :
+theorem count_eigenvalues {n : ℕ} (hb : ∀ j, j + 1 < n → b j ≠ 0) (k : Fin n) :
     count d b n (eigenvalues d b n k) = n - k := by
   have : (univ.filter fun j => eigenvalues d b n j ≤ eigenvalues d b n k) = Finset.Ici k := by
     ext j
-    simp [(strictAnti_eigenvalues d b hb n).le_iff_ge]
+    simp [(strictAnti_eigenvalues d b n hb).le_iff_ge]
   rw [count, this, Fin.card_Ici]
 
 /-- The count of `T_i` at the `k`-th sorted eigenvalue of `T_{i+1}` is `i - k`: by strict
 interlacing the eigenvalues of `T_i` at most `λ_k(T_{i+1})` are `θ_k, …, θ_{i-1}`. -/
-theorem count_eigenvalues_succ (hb : ∀ i, b i ≠ 0) {i : ℕ} (k : Fin (i + 1)) :
+theorem count_eigenvalues_succ {i : ℕ} (hb : ∀ j, j + 1 < i + 1 → b j ≠ 0) (k : Fin (i + 1)) :
     count d b i (eigenvalues d b (i + 1) k) = i - k := by
   have hset : (univ.filter fun j : Fin i => eigenvalues d b i j ≤ eigenvalues d b (i + 1) k)
       = univ.filter fun j : Fin i => (k : ℕ) ≤ j := by
@@ -499,12 +495,12 @@ theorem count_eigenvalues_succ (hb : ∀ i, b i ≠ 0) {i : ℕ} (k : Fin (i + 1
     · intro h
       by_contra hlt
       push Not at hlt
-      have h1 := eigenvalues_succ_lt d b hb i j
+      have h1 := eigenvalues_succ_lt d b i hb j
       have h2 := antitone_eigenvalues d b (i + 1)
         (show j.succ ≤ k by rw [Fin.le_def, Fin.val_succ]; omega)
       linarith
     · intro h
-      have h1 := (eigenvalues_lt_castSucc d b hb i j).le
+      have h1 := (eigenvalues_lt_castSucc d b i hb j).le
       have h2 := antitone_eigenvalues d b (i + 1)
         (show k ≤ j.castSucc by rw [Fin.le_def, Fin.val_castSucc]; exact h)
       linarith
@@ -602,14 +598,14 @@ theorem eval_seq_pos_iff {n : ℕ} {μ : ℝ} (hμ : ∀ k, eigenvalues d b n k 
 `p_i(μ)` is `(-1)^{N_i(μ)}`, `N_i(μ)` the number of eigenvalues of `T_i` at most `μ`. Off the
 roots this is `Sturm.eval_seq_pos_iff`; at a root of `p_{i+1}` strict interlacing places exactly
 one more eigenvalue of `T_{i+1}` than of `T_i` at or below `μ`. -/
-theorem sign_eq_neg_one_pow (hb : ∀ i, b i ≠ 0) (μ : ℝ) (i : ℕ) :
+theorem sign_eq_neg_one_pow (μ : ℝ) (i : ℕ) (hb : ∀ j, j + 1 < i → b j ≠ 0) :
     sign d b μ i = (-1) ^ count d b i μ := by
   induction i with
   | zero => simp
   | succ i ih =>
     rw [sign_succ]
     by_cases h0 : (seq d b (i + 1)).eval μ = 0
-    · rw [ite_eq_left h0, ih]
+    · rw [ite_eq_left h0, ih (fun j hj => hb j (by omega))]
       obtain ⟨k, hk⟩ := exists_eigenvalues_eq_of_eval_eq_zero d b h0
       rw [← hk, count_eigenvalues d b hb k, count_eigenvalues_succ d b hb k,
         show i + 1 - (k : ℕ) = (i - k) + 1 by have := k.isLt; omega, pow_succ]
@@ -627,12 +623,13 @@ theorem sign_eq_neg_one_pow (hb : ∀ i, b i ≠ 0) (μ : ℝ) (i : ℕ) :
 changes in `p_0(μ), …, p_n(μ)` — with a vanishing member taking the sign opposite to its
 predecessor — is the number of eigenvalues of `T_n` that are at most `μ`. The book says "strictly
 less than `μ`", which agrees off the spectrum; at an eigenvalue its own convention counts `μ`. -/
-theorem signChanges_eq_count (hb : ∀ i, b i ≠ 0) (n : ℕ) (μ : ℝ) :
+theorem signChanges_eq_count (n : ℕ) (hb : ∀ j, j + 1 < n → b j ≠ 0) (μ : ℝ) :
     signChanges d b n μ = count d b n μ := by
   induction n with
   | zero => simp
   | succ n ih =>
-    rw [signChanges_succ, ih, sign_eq_neg_one_pow d b hb, sign_eq_neg_one_pow d b hb]
+    rw [signChanges_succ, ih (fun j hj => hb j (by omega)), sign_eq_neg_one_pow d b μ (n + 1) hb,
+      sign_eq_neg_one_pow d b μ n (fun j hj => hb j (by omega))]
     have h1 := count_le_count_succ d b n μ
     have h2 := count_succ_le d b n μ
     rcases Nat.lt_or_ge (count d b n μ) (count d b (n + 1) μ) with h | h
@@ -648,15 +645,16 @@ theorem signChanges_eq_count (hb : ∀ i, b i ≠ 0) (n : ℕ) (μ : ℝ) :
 /-- **The Sturm count** in terms of `Polynomial.countRootsIn`: `s(μ)` is the number of roots of
 the characteristic polynomial of `T_n` in `(-∞, μ]`, with multiplicity (all simple, by
 `Sturm.eigenvalues_simple`). -/
-theorem signChanges_eq_countRootsIn (hb : ∀ i, b i ≠ 0) (n : ℕ) (μ : ℝ) :
+theorem signChanges_eq_countRootsIn (n : ℕ) (hb : ∀ j, j + 1 < n → b j ≠ 0) (μ : ℝ) :
     signChanges d b n μ =
       (Matrix.symmTridiagonalOf d b n).charpoly.countRootsIn (Set.Iic μ) := by
-  rw [signChanges_eq_count d b hb, countRootsIn_Iic_eq_count]
+  rw [signChanges_eq_count d b n hb, countRootsIn_Iic_eq_count]
 
 /-- The Sturm count is monotone in `μ`. -/
-theorem signChanges_monotone (hb : ∀ i, b i ≠ 0) (n : ℕ) : Monotone (signChanges d b n) := by
+theorem signChanges_monotone (n : ℕ) (hb : ∀ j, j + 1 < n → b j ≠ 0) :
+    Monotone (signChanges d b n) := by
   intro μ ν h
-  rw [signChanges_eq_count d b hb, signChanges_eq_count d b hb]
+  rw [signChanges_eq_count d b n hb, signChanges_eq_count d b n hb]
   exact count_mono d b n h
 
 /-! ### The Gershgorin interval -/
@@ -831,7 +829,7 @@ theorem bisectionIterate_invariant (n idx : ℕ) {ab : ℝ × ℝ}
 
 /-- The `idx`-th largest eigenvalue lies in `(a, b']` exactly when at most `n - idx` eigenvalues
 are at most `a` and more than `n - idx` are at most `b'`. -/
-theorem eigenvalues_mem_Ioc_of_count (hb : ∀ i, b i ≠ 0) {n idx : ℕ} (hidx : 1 ≤ idx)
+theorem eigenvalues_mem_Ioc_of_count {n idx : ℕ} (hb : ∀ j, j + 1 < n → b j ≠ 0) (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) {a b' : ℝ} (ha : count d b n a ≤ n - idx) (hb' : n - idx < count d b n b') :
     eigenvalues d b n ⟨idx - 1, by omega⟩ ∈ Set.Ioc a b' := by
   set k : Fin n := ⟨idx - 1, by omega⟩ with hk
@@ -864,18 +862,20 @@ theorem eigenvalues_mem_Ioc_of_count (hb : ∀ i, b i ≠ 0) {n idx : ℕ} (hidx
 eigenvalue lies in the `r`-th bisection interval for every `r`, whose length is `(b' - a) / 2^r`
 (`Sturm.bisectionIterate_length`); the midpoint is therefore within `(b' - a) / 2^(r+1)` of it. The
 Gershgorin interval supplies a starting bracket (`Sturm.signChanges_gershgorin`). -/
-theorem eigenvalues_mem_bisectionIterate (hb : ∀ i, b i ≠ 0) {n idx : ℕ} (hidx : 1 ≤ idx)
+theorem eigenvalues_mem_bisectionIterate {n idx : ℕ} (hb : ∀ j, j + 1 < n → b j ≠ 0)
+    (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) {ab : ℝ × ℝ}
     (h : signChanges d b n ab.1 ≤ n - idx ∧ n - idx < signChanges d b n ab.2) (r : ℕ) :
     eigenvalues d b n ⟨idx - 1, by omega⟩ ∈
       Set.Ioc (bisectionIterate d b n idx ab r).1 (bisectionIterate d b n idx ab r).2 := by
   have hinv := bisectionIterate_invariant d b n idx h r
-  rw [signChanges_eq_count d b hb, signChanges_eq_count d b hb] at hinv
+  rw [signChanges_eq_count d b n hb, signChanges_eq_count d b n hb] at hinv
   exact eigenvalues_mem_Ioc_of_count d b hb hidx hidxn hinv.1 hinv.2
 
 /-- `Sturm.eigenvalues_mem_bisectionIterate` for Mathlib's sorted `Matrix.IsHermitian.eigenvalues₀`:
 the `idx`-th largest eigenvalue `hT.eigenvalues₀ ⟨idx - 1, _⟩` stays in the bisection interval. -/
-theorem eigenvalues₀_mem_bisectionIterate (hb : ∀ i, b i ≠ 0) {n idx : ℕ} (hidx : 1 ≤ idx)
+theorem eigenvalues₀_mem_bisectionIterate {n idx : ℕ} (hb : ∀ j, j + 1 < n → b j ≠ 0)
+    (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) (hT : (Matrix.symmTridiagonalOf d b n).IsHermitian) {ab : ℝ × ℝ}
     (h : signChanges d b n ab.1 ≤ n - idx ∧ n - idx < signChanges d b n ab.2) (r : ℕ) :
     hT.eigenvalues₀ ⟨idx - 1, by simp; omega⟩ ∈
@@ -884,11 +884,12 @@ theorem eigenvalues₀_mem_bisectionIterate (hb : ∀ i, b i ≠ 0) {n idx : ℕ
 
 /-- The Gershgorin interval brackets every eigenvalue: a point `a` below it and a point `b'` at or
 above it satisfy `s(a) = 0 ≤ n - idx < n = s(b')` for `1 ≤ idx ≤ n`. -/
-theorem signChanges_gershgorin (hb : ∀ i, b i ≠ 0) {n idx : ℕ} (hidx : 1 ≤ idx) (hidxn : idx ≤ n)
+theorem signChanges_gershgorin {n idx : ℕ} (hb : ∀ j, j + 1 < n → b j ≠ 0) (hidx : 1 ≤ idx)
+    (hidxn : idx ≤ n)
     {a b' : ℝ} (ha : a < ⨅ i : Fin n, (d i - gershgorinRadius b n i))
     (hb' : (⨆ i : Fin n, (d i + gershgorinRadius b n i)) ≤ b') :
     signChanges d b n a ≤ n - idx ∧ n - idx < signChanges d b n b' := by
-  rw [signChanges_eq_count d b hb, signChanges_eq_count d b hb, count_eq_zero_of_lt d b ha,
+  rw [signChanges_eq_count d b n hb, signChanges_eq_count d b n hb, count_eq_zero_of_lt d b ha,
     count_eq_of_le d b hb']
   omega
 

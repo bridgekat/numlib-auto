@@ -96,6 +96,25 @@ id = "Matrix.IsHermitian.eigenvalues₀_submatrix_interlace"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
 
 [[node]]
+id = "Matrix.IsHermitian.sortedEigenvalues"
+
+[[node]]
+id = "Matrix.IsHermitian.sortedEigenvalues_apply"
+
+[[node]]
+id = "Matrix.IsHermitian.sortedEigenvalues_congr"
+
+[[node]]
+id = "Matrix.IsHermitian.sortedEigenvalues_antitone"
+
+[[node]]
+id = "Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues"
+
+[[node]]
+id = "Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
+
+[[node]]
 id = "LinearMap.IsSymmetric.rayleighQuotient_mem_Icc"
 
 [[node]]

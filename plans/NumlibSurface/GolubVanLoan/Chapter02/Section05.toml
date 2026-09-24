@@ -4,7 +4,7 @@ desc = '''
 the distance between equal-dimensional subspaces (2.5.1) and Theorem 2.5.1, and the CS decomposition
 (Theorems 2.5.2–2.5.3). Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(A)` is
 `LinearMap.range (Matrix.toEuclideanLin A)`. The book's `dist(S₁, S₂) = ‖P₁ - P₂‖₂` is the backbone's
-`Submodule.gap` (`Numlib/Analysis/InnerProductSpace/Projection/Angle`), restated as `subspaceDist`;
+`Submodule.gap` (`Numlib/Analysis/InnerProductSpace/Projection/Gap`), restated as `subspaceDist`;
 the book defines it only for `dim S₁ = dim S₂`, and the theorems carry that hypothesis. Backbone:
 `Numlib/Analysis/InnerProductSpace/Projection/Gap`, `Numlib/Analysis/Matrix/SingularValues` (the matrix
 form of Theorem 2.5.1), `Numlib/LinearAlgebra/Matrix/CSDecomposition`

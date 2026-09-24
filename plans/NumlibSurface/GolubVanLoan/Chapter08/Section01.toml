@@ -27,14 +27,15 @@ id = "symmEigenvalue"
 kind = "definition"
 desc = '''The book's `λ_k(A)` (§8.1.1: "the `k`th largest eigenvalue", `λ_n(A) ≤ ⋯ ≤ λ_1(A)`): for
 `A : Matrix (Fin n) (Fin n) ℝ` with `hA : A.IsSymm`,
-`symmEigenvalue hA (k : Fin n) : ℝ := (hA_herm).eigenvalues₀ (Fin.cast (Fintype.card_fin n).symm k)`
+`symmEigenvalue hA (k : Fin n) : ℝ := (hA_herm).sortedEigenvalues k`
 where `hA_herm : A.IsHermitian` is the real bridge (`Matrix.IsHermitian` over `ℝ` is `Aᵀ = A`,
-`conjTranspose_eq_transpose_of_trivial`). API in the same node: `antitone_symmEigenvalue`
-(`eigenvalues₀_antitone`), `symmEigenvalue_mem_spectrum`, and the multiset of values is the root
-multiset of `A.charpoly` (`Matrix.IsHermitian.roots_charpoly_eq_eigenvalues₀`). The same
-reindexing as `Sturm.eigenvalues` (`Numlib/Eigen/Sturm`). 0-based: the book's `λ_k` is
+`conjTranspose_eq_transpose_of_trivial`) and `Matrix.IsHermitian.sortedEigenvalues` (`Numlib/Eigen/MinMax`)
+is Mathlib's `eigenvalues₀` reindexed along `Fintype.card_fin`, as `Sturm.eigenvalues` is. API in the
+same node: `antitone_symmEigenvalue` (`Matrix.IsHermitian.sortedEigenvalues_antitone`),
+`symmEigenvalue_mem_spectrum`, and the multiset of values is the root multiset of `A.charpoly`
+(`Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`). 0-based: the book's `λ_k` is
 `symmEigenvalue hA ⟨k - 1, _⟩`. ★'''
-deps = ["Sturm.eigenvalues"]
+deps = ["Matrix.IsHermitian.sortedEigenvalues", "Matrix.IsHermitian.sortedEigenvalues_antitone", "Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues"]
 source = 'Golub–Van Loan, Matrix Computations, §8.1.1, Definition'
 
 [[node]]

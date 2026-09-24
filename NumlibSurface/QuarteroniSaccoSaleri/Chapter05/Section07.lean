@@ -83,7 +83,7 @@ Programs 36–37 are not nodes.
   are `(T − λ)⁻ᵀ (T − λ̄)⁻ᵀ [e_{n−1}, e_n]` orthonormalized, so `t_{n−1,n−2}^{(k+1)}` has to be
   controlled by the sine of the angle between `span {e_{n−1}, e_n}` and the two-dimensional left
   invariant subspace of the complex pair, with the gap `Submodule.gap` of
-  `Numlib/Analysis/InnerProductSpace/Projection/Angle` in place of the complementary component and
+  `Numlib/Analysis/InnerProductSpace/Projection/Gap` in place of the complementary component and
   a resolvent bound on the complement of the invariant pair. Estimate: about 400 lines for the
   block form of `Numlib/Eigen/RayleighQuotientIteration`, after which the genericity hypothesis
   would still have to be invented.

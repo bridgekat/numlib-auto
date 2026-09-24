@@ -40,6 +40,8 @@ operator algebra results (`‖1‖ = 1`, invertibility, the condition number) ar
   (Saad §1.5 (1.13); Quarteroni–Sacco–Saleri §1.11, the "column sum norm"), and
   `Matrix.lpOpNorm_two`: `‖A‖₂` is Mathlib's scoped `L2Operator` norm.
 * `Matrix.lpOpNorm_mul_le`: the induced norms are submultiplicative, `‖A B‖_p ≤ ‖A‖_p ‖B‖_p`.
+* `Matrix.lpOpNorm_submatrix_le`: a submatrix has a smaller induced `p`-norm
+  ([golub2013matrix] (2.3.13)), with `Matrix.l2_opNorm_submatrix_le` its `p = 2` case.
 * `Matrix.complexSpectralRadius_le_lpOpNorm`: `ρ(A) ≤ ‖A‖_p` for a real matrix (Saad §1.5;
   Quarteroni–Sacco–Saleri Theorem 1.4 for the induced norms), the spectral radius being that of
   the complexification, `Matrix.complexSpectralRadius` of
@@ -238,6 +240,91 @@ theorem complexSpectralRadius_le_lpOpNorm (A : Matrix n n ℝ) :
   rwa [lpOpNorm, ofReal_norm, enorm_eq_nnnorm]
 
 end CLM
+
+/-! ### Submatrices -/
+
+section Submatrix
+
+/-- The `ℓ^p` norm of a subfamily of the coordinates of a vector is at most the norm of the
+vector. -/
+theorem _root_.PiLp.norm_toLp_comp_le {ι ι' : Type*} [Fintype ι] [Fintype ι'] {f : ι → ι'}
+    (hf : Function.Injective f) (y : ι' → 𝕜) :
+    ‖(WithLp.toLp p (y ∘ f) : PiLp p fun _ : ι => 𝕜)‖
+      ≤ ‖(WithLp.toLp p y : PiLp p fun _ : ι' => 𝕜)‖ := by
+  classical
+  rcases p.dichotomy with rfl | hp
+  · rw [PiLp.norm_eq_ciSup]
+    exact Real.iSup_le (fun i => PiLp.norm_apply_le (WithLp.toLp ⊤ y) (f i)) (norm_nonneg _)
+  · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
+    rw [PiLp.norm_eq_sum hp0, PiLp.norm_eq_sum hp0]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun i _ => by positivity) ?_ (by positivity)
+    change ∑ i, ‖y (f i)‖ ^ p.toReal ≤ ∑ k, ‖y k‖ ^ p.toReal
+    rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ p.toReal) hf.injOn]
+    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
+
+/-- Extending a vector by zero along an injection preserves its `ℓ^p` norm. -/
+theorem _root_.PiLp.norm_toLp_extend {ι ι' : Type*} [Fintype ι] [Fintype ι'] {g : ι → ι'}
+    (hg : Function.Injective g) (x : ι → 𝕜) :
+    ‖(WithLp.toLp p (Function.extend g x 0) : PiLp p fun _ : ι' => 𝕜)‖
+      = ‖(WithLp.toLp p x : PiLp p fun _ : ι => 𝕜)‖ := by
+  classical
+  refine le_antisymm ?_ ?_
+  · rcases p.dichotomy with rfl | hp
+    · rw [PiLp.norm_eq_ciSup]
+      refine Real.iSup_le (fun k => ?_) (norm_nonneg _)
+      by_cases hk : ∃ i, g i = k
+      · obtain ⟨i, rfl⟩ := hk
+        rw [WithLp.ofLp_toLp, hg.extend_apply]
+        exact PiLp.norm_apply_le (WithLp.toLp ⊤ x) i
+      · rw [WithLp.ofLp_toLp, Function.extend_apply' _ _ _ hk, Pi.zero_apply, norm_zero]
+        exact norm_nonneg _
+    · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
+      rw [PiLp.norm_eq_sum hp0, PiLp.norm_eq_sum hp0]
+      refine le_of_eq (congrArg (· ^ (1 / p.toReal)) ?_)
+      change ∑ k, ‖Function.extend g x 0 k‖ ^ p.toReal = ∑ i, ‖x i‖ ^ p.toReal
+      refine (Fintype.sum_of_injective g hg (fun i => ‖x i‖ ^ p.toReal) _ (fun k hk => ?_)
+        fun i => ?_).symm
+      · rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, norm_zero,
+          Real.zero_rpow hp0.ne']
+      · rw [hg.extend_apply]
+  · simpa [Function.extend_comp hg] using
+      PiLp.norm_toLp_comp_le p hg (Function.extend g x 0)
+
+variable [DecidableEq n]
+
+/-- **A submatrix has a smaller induced `p`-norm**, for injective row and column selections:
+`‖A.submatrix f g‖_p ≤ ‖A‖_p` ([golub2013matrix] (2.3.13) and Problem P2.3.2). Apply `A` to the
+vector extended by zero along `g` (`PiLp.norm_toLp_extend`) and drop the coordinates outside the
+range of `f` (`PiLp.norm_toLp_comp_le`). -/
+theorem lpOpNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [DecidableEq n']
+    (A : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
+    (hg : Function.Injective g) : lpOpNorm p (A.submatrix f g) ≤ lpOpNorm p A := by
+  refine ContinuousLinearMap.opNorm_le_bound _ (lpOpNorm_nonneg p A) fun x => ?_
+  have hx : (A.submatrix f g) *ᵥ WithLp.ofLp x
+      = (A *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f := by
+    funext i
+    simp only [mulVec, dotProduct, submatrix_apply, Function.comp_apply]
+    exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
+      rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
+      rw [hg.extend_apply]
+  rw [lpCLM_apply, hx]
+  calc ‖(WithLp.toLp p ((A *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f)
+        : PiLp p fun _ : m' => 𝕜)‖
+      ≤ ‖lpCLM p A (WithLp.toLp p (Function.extend g (WithLp.ofLp x) 0))‖ :=
+        PiLp.norm_toLp_comp_le p hf _
+    _ ≤ lpOpNorm p A * ‖(WithLp.toLp p (Function.extend g (WithLp.ofLp x) 0)
+          : PiLp p fun _ : n => 𝕜)‖ := (lpCLM p A).le_opNorm _
+    _ = lpOpNorm p A * ‖x‖ := by rw [PiLp.norm_toLp_extend p hg]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **A submatrix has a smaller `ℓ²` operator norm**, for injective row and column selections:
+`‖A.submatrix f g‖₂ ≤ ‖A‖₂`. The case `p = 2` of `Matrix.lpOpNorm_submatrix_le`. -/
+theorem l2_opNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [DecidableEq n']
+    (A : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
+    (hg : Function.Injective g) : ‖A.submatrix f g‖ ≤ ‖A‖ := by
+  simpa only [lpOpNorm_two] using lpOpNorm_submatrix_le 2 A hf hg
+
+end Submatrix
 
 /-! ### Invertible matrices, and the condition number `κ_p(A)` -/
 

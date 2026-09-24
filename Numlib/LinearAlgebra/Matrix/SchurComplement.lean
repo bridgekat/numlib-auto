@@ -9,6 +9,7 @@ import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
+import Numlib.Analysis.Matrix.OperatorNorm
 
 /-!
 # The Schur complement of a block matrix
@@ -416,30 +417,6 @@ theorem l2_opNorm_toLp_mulVec {m n : Type*} [Fintype m] [Fintype n] [DecidableEq
     ‖(WithLp.toLp 2 (A *ᵥ v) : EuclideanSpace 𝕜 m)‖
       ≤ ‖A‖ * ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ :=
   l2_opNorm_mulVec A (WithLp.toLp 2 v)
-
-/-- **A submatrix has a smaller `ℓ²` operator norm**, for injective row and column selections:
-`‖A.submatrix f g‖₂ ≤ ‖A‖₂`. Apply `A` to the vector extended by zero and drop coordinates. -/
-theorem l2_opNorm_submatrix_le {m n m' n' : Type*} [Fintype m] [Fintype n] [DecidableEq n]
-    [Fintype m'] [Fintype n'] [DecidableEq n'] (A : Matrix m n 𝕜) {f : m' → m} (hf : Injective f)
-    {g : n' → n} (hg : Injective g) : ‖A.submatrix f g‖ ≤ ‖A‖ := by
-  rw [l2_opNorm_def]
-  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
-  have hx : (A.submatrix f g) *ᵥ WithLp.ofLp x = (A *ᵥ extend g (WithLp.ofLp x) 0) ∘ f := by
-    funext i
-    simp only [mulVec, dotProduct, submatrix_apply]
-    exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
-      rw [extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
-      rw [hg.extend_apply]
-  have key : ‖(WithLp.toLp 2 ((A.submatrix f g) *ᵥ WithLp.ofLp x) : EuclideanSpace 𝕜 m')‖
-      ≤ ‖A‖ * ‖x‖ := by
-    rw [hx]
-    calc ‖(WithLp.toLp 2 ((A *ᵥ extend g (WithLp.ofLp x) 0) ∘ f) : EuclideanSpace 𝕜 m')‖
-        ≤ ‖(WithLp.toLp 2 (A *ᵥ extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 m)‖ :=
-          EuclideanSpace.norm_toLp_comp_le hf _
-      _ ≤ ‖A‖ * ‖(WithLp.toLp 2 (extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 n)‖ :=
-          l2_opNorm_toLp_mulVec A _
-      _ = ‖A‖ * ‖x‖ := by rw [EuclideanSpace.norm_toLp_extend hg]
-  exact key
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 

@@ -2,7 +2,7 @@ import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Projection
-import Numlib.Analysis.InnerProductSpace.Projection.Angle
+import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Eigen.MinMax
 
@@ -124,7 +124,7 @@ between subspaces.
 * `Krylov.tendsto_starProjection_subspaceIterate` is the convergence it states, under the dominance
   `r < ‖λ‖` that makes the rate a contraction.
 
-The gap of `Numlib.Analysis.InnerProductSpace.Projection.Angle` says more than any of these:
+The gap of `Numlib.Analysis.InnerProductSpace.Projection.Gap` says more than any of these:
 `Submodule.sinAngle_le_gap` turns a bound on `gap M S_k` into the same distance bound for *every*
 vector of the dominant invariant subspace `M`, whereas the theorems above give it only for the
 eigenvectors of `M`. That stronger statement is [kress1998numerical], Lemma 7.18, and it is
