@@ -180,16 +180,6 @@ id = "complexSpectralRadius_lt_one_iff_forall_norm_lt"
 [[node]]
 id = "complexify_mulVec_ofReal"
 
-[[node]]  # staged by ch11
+[[node]]
 id = "complexSpectralRadius_diagonal"
-kind = "theorem"
-desc = '''
-`complexSpectralRadius (diagonal d) = ⨆ i, (‖d i‖₊ : ℝ≥0∞)` for `d : n → ℝ` (`n` finite): the
-spectrum of `complexify (diagonal d) = diagonal (ofReal ∘ d)` is the range of `d`
-(Mathlib's `Matrix.spectrum_diagonal`, `Mathlib/LinearAlgebra/Eigenspace/Matrix`), then
-`Matrix.complexSpectralRadius_eq_iSup`.
-With `Matrix.complexSpectralRadius_conj` it evaluates `ρ(C⁻¹ D C)` for any similarity to a diagonal
-matrix. ★
-'''
-deps = ["Matrix.complexSpectralRadius", "Matrix.complexSpectralRadius_conj"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.15)'

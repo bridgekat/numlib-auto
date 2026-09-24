@@ -1,14 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Analysis.Matrix.OperatorNorm` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch02) Under "Main results" add (`Matrix.lpOpNorm_submatrix_le` is already there):
-# `Matrix.condNumberLp_le_card_rpow_mul_condNumberLp` (the equivalence of the `p`-norm condition
-# numbers), the isometry lemmas `Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one` /
-# `…_mul_conjTranspose_…` for matrices with orthonormal columns, and the Neumann series
-# `Matrix.hasSum_pow_of_inducedNorm_lt_one` with `Matrix.inducedNorm_inv_one_sub_sub_one_le`
-# ([golub2013matrix] §2.3).
-# (review) add: `Matrix.lpOpNorm_blockDiagonal'` — the induced `p`-norm of a block diagonal matrix is the
-# largest block norm, for every `p`, with the diagonal (`lpOpNorm_diagonal`) and spectral-norm
-# (`l2_opNorm_blockDiagonal'`) cases as corollaries.
 namespace = "Matrix"
 
 [[node]]
@@ -356,100 +345,29 @@ id = "norm_toEuclideanCLM_le_frobenius_norm"
 [[node]]
 id = "frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM"
 
-[[node]]  # staged by ch02
+[[node]]
 id = "lpOpNorm_submatrix_le"
 
 [[node]]
-id = "_root_.PiLp.norm_toLp_comp_le"
+id = "condNumberLp_le_card_rpow_mul_condNumberLp"
 
 [[node]]
-id = "_root_.PiLp.norm_toLp_extend"
-
-[[node]]  # staged by ch02
-id = "condNumberLp_le_card_rpow_mul_condNumberLp"
-kind = "theorem"
-desc = '''The `p`-norm condition numbers of a square matrix are equivalent: for `p ≤ q` (both `≥ 1`) and
-`A : Matrix n n 𝕜`, `condNumberLp p A ≤ c * condNumberLp q A ∧ condNumberLp q A ≤ c * condNumberLp p
-A` with `c = (card n : ℝ) ^ (2 * (1 / p.toReal - 1 / q.toReal))` ([golub2013matrix] (2.6.8): `c = n`
-for `(p, q) = (1, 2)` and `(2, ∞)`, `c = n²` for `(1, ∞)`). Multiply the two one-sided norm
-comparisons `Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le` and `…_of_ge` for `A` and for `A⁻¹`;
-the singular case is `0 ≤ 0` by the junk value. ★'''
-deps = ["Matrix.condNumberLp", "Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le", "Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge"]
-
-[[node]]  # staged by ch02
 id = "l2_opNorm_mul_of_conjTranspose_mul_self_eq_one"
-kind = "theorem"
-desc = '''Left multiplication by a matrix with orthonormal columns preserves the spectral norm: `Wᴴ * W
-= 1 → ‖W * M‖ = ‖M‖` for `W : Matrix m k 𝕜`, `M : Matrix k n 𝕜` (scoped `L2Operator`). `W` is an
-isometry of `EuclideanSpace` (`‖W x‖² = ⟪x, Wᴴ W x⟫`), so `‖W M x‖ = ‖M x‖`. The square unitary case
-is `Matrix.l2_opNorm_unitary_mul`. Used by the subspace distance ([golub2013matrix] Theorem 2.5.1). ★'''
-deps = ["Matrix.l2_opNorm_unitary_mul_mul_unitary"]
 
-[[node]]  # staged by ch02
+[[node]]
 id = "l2_opNorm_mul_conjTranspose_of_conjTranspose_mul_self_eq_one"
-kind = "theorem"
-desc = '''Right multiplication by the adjoint of a matrix with orthonormal columns preserves the spectral
-norm: `Wᴴ * W = 1 → ‖M * Wᴴ‖ = ‖M‖` for `W : Matrix n k 𝕜`, `M : Matrix m k 𝕜`. By
-`‖X‖ = ‖Xᴴ‖` (Mathlib `Matrix.l2_opNorm_conjTranspose`) and
-`l2_opNorm_mul_of_conjTranspose_mul_self_eq_one`. ★'''
-deps = ["Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one"]
 
-[[node]]  # staged by ch02
+[[node]]
 id = "hasSum_pow_of_inducedNorm_lt_one"
-kind = "theorem"
-desc = '''**The Neumann series of a matrix** ([golub2013matrix] Lemma 2.3.3): for a definite vector norm
-`p` on `n → 𝕜` and `inducedNorm p p F < 1`, `HasSum (fun k => F ^ k) (1 - F)⁻¹` in the (product)
-topology of `Matrix n n 𝕜`. Bundle `inducedAlgebraNorm p hp` into a normed ring structure on a type
-synonym, or transfer through the injective continuous algebra map `Matrix.lpCLM`-style
-`A ↦ (x ↦ A x)` on `(n → 𝕜, p)`: Mathlib `NormedRing.summable_geometric_of_norm_lt_one`,
-`NormedRing.tsum_geometric_of_norm_lt_one` / `geom_series_mul_neg` give the sum `Ring.inverse (1 - F)`,
-which is `(1 - F)⁻¹` by `Matrix.isUnit_one_sub_of_inducedNorm_lt_one`; finite dimension makes the
-two topologies agree. ★★ (~50 lines)'''
-deps = ["Matrix.inducedNorm", "Matrix.inducedAlgebraNorm", "Matrix.isUnit_one_sub_of_inducedNorm_lt_one"]
 
-[[node]]  # staged by ch02
+[[node]]
 id = "inducedNorm_inv_one_sub_sub_one_le"
-kind = "theorem"
-desc = '''`inducedNorm p p F < 1 → inducedNorm p p ((1 - F)⁻¹ - 1) ≤ inducedNorm p p F / (1 -
-inducedNorm p p F)` ([golub2013matrix] §2.3.4, the remark after Lemma 2.3.3), the twin of
-`Matrix.inducedNorm_inv_one_sub_le`: `(1 - F)⁻¹ - 1 = F (1 - F)⁻¹`, submultiplicativity
-(`Matrix.inducedNorm_mul_le`). ★'''
-deps = ["Matrix.inducedNorm_inv_one_sub_le", "Matrix.inducedNorm_mul_le"]
 
 [[node]]
 id = "lpOpNorm_blockDiagonal'"
-kind = "theorem"
-desc = '''The induced `p`-norm of a block diagonal matrix is the largest induced `p`-norm of its blocks, for every
-`p`: for `1 ≤ p` (`[Fact (1 ≤ p)]`, `p : ℝ≥0∞`), `M : ∀ i, Matrix (m i) (m i) 𝕜` over a nonempty `Fintype ι`,
-`lpOpNorm p (blockDiagonal' M) = ⨆ i, lpOpNorm p (M i)`. `≤`: for `x` on the sigma type, `‖B x‖_p^p =
-∑ᵢ ‖Mᵢ xᵢ‖_p^p ≤ (maxᵢ ‖Mᵢ‖_p)^p ∑ᵢ ‖xᵢ‖_p^p` (`PiLp.norm_eq_sum`-type, `Fintype.sum_sigma`), and for `p = ∞`
-the same with suprema; `≥`: test on vectors supported in one block (`lpOpNorm_submatrix_le` along the block
-inclusion). One statement for every `p`, planned at the review of the Golub–Van Loan round: the diagonal case
-`lpOpNorm_diagonal` (chapter 7) and the spectral-norm case `l2_opNorm_blockDiagonal'` (chapter 9) are its
-corollaries. ★★ (~90 lines)'''
-deps = ["Matrix.lpOpNorm", "Matrix.lpCLM", "Matrix.lpOpNorm_submatrix_le"]
-
-[[node]]  # staged by ch07
-id = "lpOpNorm_diagonal"
-kind = "theorem"
-desc = '''For `1 ≤ p` (`[Fact (1 ≤ p)]`, `p : ℝ≥0∞`) and `d : n → 𝕜` with `[Nonempty n]`:
-`lpOpNorm p (diagonal d) = ⨆ i, ‖d i‖`. The `1 × 1`-block case of `lpOpNorm_blockDiagonal'`
-(`diagonal d` is `blockDiagonal' (fun i => !![d i])` reindexed along `n ≃ Σ i, Unit`; the induced norm is
-invariant under a simultaneous permutation of rows and columns, `lpOpNorm_submatrix_le` in both directions;
-`lpOpNorm` of a `1 × 1` matrix is its entry's norm). Mathlib has the cases `p = 2`
-(`Matrix.l2_opNorm_diagonal`) and `p = ∞` (`Matrix.linfty_opNorm_diagonal`); this is the general `p`. ★'''
-deps = ["Matrix.lpOpNorm_blockDiagonal'", "Matrix.lpOpNorm_submatrix_le"]
-
-[[node]]  # staged by ch09
-id = "l2_opNorm_blockDiagonal'"
-kind = "theorem"
-desc = '''The spectral norm of a block diagonal matrix is the largest spectral norm of its blocks: for
-`M : ∀ i, Matrix (m i) (m i) 𝕜` over a `Fintype ι`, with the scoped `Matrix.Norms.L2Operator` norm,
-`‖blockDiagonal' M‖ = ⨆ i, ‖M i‖`: `lpOpNorm_blockDiagonal'` at `p = 2`, read in the scoped norm through
-`Matrix.lpOpNorm_two` (the `L2Operator` norm is `lpOpNorm 2`). Consumer: [golub2013matrix] Theorem 9.2.1 (the Jordan form's
-blocks) in `Numlib/Analysis/Matrix/Function/Approximation`. With `Matrix.l2_opNorm_unitary_mul_mul_unitary`
-applied to the permutation matrix of a reindexing it also covers `reindex e e (blockDiagonal' M)`. ★'''
-deps = ["Matrix.lpOpNorm_blockDiagonal'", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
 
 [[node]]
-id = "l2_opNorm_submatrix_le"
+id = "lpOpNorm_diagonal"
+
+[[node]]
+id = "l2_opNorm_blockDiagonal'"

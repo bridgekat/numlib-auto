@@ -23,6 +23,13 @@ For `x` in a finite product `PiLp p β` of seminormed groups, the `p`-norms
   `1 ≤ p ≤ q ≤ ∞`, from the power-mean inequality `NNReal.rpow_sum_le_const_mul_sum_rpow`
   (Hölder with exponents `q / p` and its conjugate);
 * `PiLp.tendsto_norm_toLp_atTop`: `‖x‖_p → ‖x‖_∞` as `p → ∞`, by squeezing between the two.
+* `PiLp.norm_toLp_comp_le` and `PiLp.norm_toLp_extend`: dropping coordinates does not increase
+  the `p`-norm, and extending by zero preserves it; together they bound the induced norm of a
+  submatrix (`Matrix.lpOpNorm_submatrix_le`).
+* `PiLp.norm_dotProduct_le`: Hölder's inequality `|x ⬝ᵥ y| ≤ ‖x‖_p ‖y‖_q` for Hölder-conjugate
+  exponents, endpoints included ([golub2013matrix] (2.2.2)). Mathlib has it for the sequence
+  space `lp` (`lp.norm_dualPairing`) and for finite sums of reals (`Real.inner_le_Lp_mul_Lq`),
+  not in this form.
 
 The six instances with `p, q ∈ {1, 2, ∞}` are the equivalence constants `1`, `√n`, `n` of
 [quarteroni2000numerical] Table 1.1 and are stated as corollaries
@@ -183,6 +190,127 @@ theorem norm_toLp_one_le_card_mul_norm_toLp_top (x : ∀ i, β i) :
     ‖toLp 1 x‖ ≤ Fintype.card ι * ‖toLp ∞ x‖ := by
   have h := norm_le_card_rpow_mul_norm (p := 1) (q := ∞) le_top x
   simpa using h
+
+/-! ### Monotonicity in the coordinates -/
+
+section Mono
+
+variable {γ : ι → Type*} [∀ i, SeminormedAddCommGroup (γ i)]
+
+/-- The `ℓ^p` norm is monotone in the norms of the coordinates: if `‖y i‖ ≤ c ‖z i‖` for every
+`i`, then `‖y‖_p ≤ c ‖z‖_p`. -/
+theorem norm_toLp_le_mul_norm_toLp (p : ℝ≥0∞) [Fact (1 ≤ p)] {y : ∀ i, β i} {z : ∀ i, γ i}
+    {c : ℝ} (hc : 0 ≤ c) (h : ∀ i, ‖y i‖ ≤ c * ‖z i‖) :
+    ‖WithLp.toLp p y‖ ≤ c * ‖WithLp.toLp p z‖ := by
+  rcases p.dichotomy with rfl | hp
+  · rw [norm_eq_ciSup]
+    exact Real.iSup_le (fun i => (h i).trans (mul_le_mul_of_nonneg_left
+      (norm_apply_le (WithLp.toLp ⊤ z) i) hc)) (by positivity)
+  · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
+    rw [norm_eq_sum hp0, norm_eq_sum hp0]
+    calc (∑ i, ‖y i‖ ^ p.toReal) ^ (1 / p.toReal)
+        ≤ (∑ i, (c * ‖z i‖) ^ p.toReal) ^ (1 / p.toReal) :=
+          Real.rpow_le_rpow (Finset.sum_nonneg fun i _ => by positivity)
+            (Finset.sum_le_sum fun i _ => Real.rpow_le_rpow (norm_nonneg _) (h i) hp0.le)
+            (by positivity)
+      _ = c * (∑ i, ‖z i‖ ^ p.toReal) ^ (1 / p.toReal) := by
+          simp_rw [Real.mul_rpow hc (norm_nonneg _)]
+          rw [← Finset.mul_sum, Real.mul_rpow (Real.rpow_nonneg hc _)
+            (Finset.sum_nonneg fun i _ => Real.rpow_nonneg (norm_nonneg _) _),
+            ← Real.rpow_mul hc, mul_one_div_cancel hp0.ne', Real.rpow_one]
+
+end Mono
+
+/-! ### Subfamilies of coordinates, and extension by zero -/
+
+section Reindex
+
+variable {E : Type*} [SeminormedAddCommGroup E] (p : ℝ≥0∞) [Fact (1 ≤ p)]
+
+/-- The `ℓ^p` norm of a subfamily of the coordinates of a vector is at most the norm of the
+vector. -/
+theorem norm_toLp_comp_le {ι ι' : Type*} [Fintype ι] [Fintype ι'] {f : ι → ι'}
+    (hf : Function.Injective f) (y : ι' → E) :
+    ‖(toLp p (y ∘ f) : PiLp p fun _ : ι => E)‖ ≤ ‖(toLp p y : PiLp p fun _ : ι' => E)‖ := by
+  classical
+  rcases p.dichotomy with rfl | hp
+  · rw [norm_eq_ciSup]
+    exact Real.iSup_le (fun i => norm_apply_le (toLp ⊤ y) (f i)) (norm_nonneg _)
+  · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
+    rw [norm_eq_sum hp0, norm_eq_sum hp0]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun i _ => by positivity) ?_ (by positivity)
+    change ∑ i, ‖y (f i)‖ ^ p.toReal ≤ ∑ k, ‖y k‖ ^ p.toReal
+    rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ p.toReal) hf.injOn]
+    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
+
+/-- Extending a vector by zero along an injection preserves its `ℓ^p` norm. -/
+theorem norm_toLp_extend {ι ι' : Type*} [Fintype ι] [Fintype ι'] {g : ι → ι'}
+    (hg : Function.Injective g) (x : ι → E) :
+    ‖(toLp p (Function.extend g x 0) : PiLp p fun _ : ι' => E)‖
+      = ‖(toLp p x : PiLp p fun _ : ι => E)‖ := by
+  classical
+  refine le_antisymm ?_ ?_
+  · rcases p.dichotomy with rfl | hp
+    · rw [norm_eq_ciSup]
+      refine Real.iSup_le (fun k => ?_) (norm_nonneg _)
+      by_cases hk : ∃ i, g i = k
+      · obtain ⟨i, rfl⟩ := hk
+        rw [ofLp_toLp, hg.extend_apply]
+        exact norm_apply_le (toLp ⊤ x) i
+      · rw [ofLp_toLp, Function.extend_apply' _ _ _ hk, Pi.zero_apply, norm_zero]
+        exact norm_nonneg _
+    · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
+      rw [norm_eq_sum hp0, norm_eq_sum hp0]
+      refine le_of_eq (congrArg (· ^ (1 / p.toReal)) ?_)
+      change ∑ k, ‖Function.extend g x 0 k‖ ^ p.toReal = ∑ i, ‖x i‖ ^ p.toReal
+      refine (Fintype.sum_of_injective g hg (fun i => ‖x i‖ ^ p.toReal) _ (fun k hk => ?_)
+        fun i => ?_).symm
+      · rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, norm_zero,
+          Real.zero_rpow hp0.ne']
+      · rw [hg.extend_apply]
+  · simpa [Function.extend_comp hg] using norm_toLp_comp_le p hg (Function.extend g x 0)
+
+end Reindex
+
+/-! ### Hölder's inequality -/
+
+section Holder
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+private theorem norm_dotProduct_le_sum (x y : ι → 𝕜) :
+    ‖x ⬝ᵥ y‖ ≤ ∑ i, ‖x i‖ * ‖y i‖ :=
+  (norm_sum_le _ _).trans_eq (by simp only [norm_mul])
+
+/-- Hölder's inequality for the exponents `(∞, 1)`. -/
+private theorem norm_dotProduct_le_top_one (x y : ι → 𝕜) :
+    ‖x ⬝ᵥ y‖ ≤ ‖toLp ∞ x‖ * ‖toLp 1 y‖ := by
+  refine (norm_dotProduct_le_sum x y).trans ?_
+  rw [norm_eq_sum (p := 1) (by simp)]
+  simp only [ENNReal.toReal_one, Real.rpow_one, div_one, Finset.mul_sum]
+  gcongr with i
+  exact norm_apply_le (toLp ∞ x) i
+
+/-- **Hölder's inequality** on `𝕜^ι` ([golub2013matrix] (2.2.2)): for Hölder-conjugate exponents
+`1/p + 1/q = 1`, endpoints included, `‖x ⬝ᵥ y‖ ≤ ‖x‖_p ‖y‖_q`. The finite exponents are
+`Real.inner_le_Lp_mul_Lq_of_nonneg` applied to the moduli of the coordinates. -/
+theorem norm_dotProduct_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
+    (x y : ι → 𝕜) : ‖x ⬝ᵥ y‖ ≤ ‖toLp p x‖ * ‖toLp q y‖ := by
+  obtain rfl | hp := eq_or_ne p ∞
+  · obtain rfl := (ENNReal.HolderConjugate.eq_top_iff_eq_one ∞ q).mp rfl
+    exact norm_dotProduct_le_top_one x y
+  obtain rfl | hq := eq_or_ne q ∞
+  · obtain rfl := (ENNReal.HolderConjugate.eq_top_iff_eq_one ∞ p).mp rfl
+    rw [dotProduct_comm, mul_comm]
+    exact norm_dotProduct_le_top_one y x
+  have hpq := ENNReal.HolderConjugate.toReal_of_ne_top hp hq
+  refine (norm_dotProduct_le_sum x y).trans ?_
+  rw [norm_eq_sum (ENNReal.toReal_pos (ENNReal.HolderConjugate.ne_zero p q) hp),
+    norm_eq_sum (ENNReal.toReal_pos (ENNReal.HolderConjugate.ne_zero q p) hq)]
+  simpa only [toLp_apply] using Real.inner_le_Lp_mul_Lq_of_nonneg Finset.univ hpq
+    (fun i _ => norm_nonneg (x i)) (fun i _ => norm_nonneg (y i))
+
+end Holder
 
 end PiLp
 

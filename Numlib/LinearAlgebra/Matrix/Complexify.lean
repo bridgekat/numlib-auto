@@ -8,6 +8,7 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.PosDef
@@ -57,6 +58,7 @@ corollaries at the end of the file.
   `Matrix.complexSpectralRadius_pow` and `Matrix.complexSpectralRadius_affine_le`: the spectrum of
   a real matrix is closed under conjugation, spectral mapping for affine images and powers, and the
   relaxation estimate `ρ((1 - ω) I + ω X) ≤ (1 - ω) + ω ρ(X)`.
+* `Matrix.complexSpectralRadius_diagonal`: the spectral radius of `diag(d)` is `maxᵢ |dᵢ|`.
 * `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one` and
   `Matrix.summable_pow_iff_complexSpectralRadius_lt_one`: the real Neumann series
   `∑ Aᵏ = (1 - A)⁻¹` under `ρ(A) < 1` alone, [quarteroni2000numerical] Theorem 1.5.
@@ -357,6 +359,17 @@ theorem complexSpectralRadius_conj {C : Matrix n n ℝ} (hC : IsUnit C) (B : Mat
   have hC' : IsUnit (complexify C) := (isUnit_complexify_iff C).2 hC
   simp only [complexSpectralRadius_eq_iSup, complexify_mul, complexify_inv]
   rw [← hC'.unit_spec, ← coe_units_inv, spectrum.units_conjugate']
+
+/-- **The spectral radius of a diagonal matrix** is the largest modulus of a diagonal entry: the
+spectrum of `diag(d)` over `ℂ` is the range of `d` (Mathlib's `Matrix.spectrum_diagonal`). With
+`Matrix.complexSpectralRadius_conj` it evaluates `ρ(C⁻¹ D C)` for a diagonalizable matrix. -/
+theorem complexSpectralRadius_diagonal (d : n → ℝ) :
+    complexSpectralRadius (diagonal d) = ⨆ i, (‖d i‖₊ : ℝ≥0∞) := by
+  have hc : complexify (diagonal d) = diagonal fun i => (d i : ℂ) := by
+    ext i j
+    by_cases h : i = j <;> simp [complexify, h]
+  rw [complexSpectralRadius_eq_iSup, hc, spectrum_diagonal, iSup_range]
+  simp only [Complex.nnnorm_real]
 
 omit [DecidableEq n] in
 /-- A matrix and its transpose have the same spectral radius, their characteristic polynomials

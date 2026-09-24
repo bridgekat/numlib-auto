@@ -16,6 +16,12 @@ Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring:
 equivalences. These are the explicit forms of the classical geometric-series (Banach perturbation)
 estimates for the inverse of a small perturbation of an invertible element, and are stated as
 [han2009theoretical] (2.3.6), Theorem 2.3.5 and its displays (2.3.13) and (2.3.14).
+
+The one-sided forms `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one` and
+`NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one` measure the perturbation by
+`r = ‖a⁻¹ t‖ ≤ ‖a⁻¹‖ ‖t‖` instead ([golub2013matrix] Theorem 2.3.4), and give
+`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`. They, and `NormedRing.norm_inverse_one_sub_sub_one_le`,
+need neither `‖1‖ = 1` nor completeness beyond summable geometric series.
 -/
 
 /-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/
@@ -39,30 +45,24 @@ private theorem norm_inverse_one_sub_le' {R : Type*} [NormedRing R] [HasSummable
   have := tsum_geometric_le_of_norm_lt_one t h
   linarith
 
-/-- The companion of `norm_inverse_one_sub_le'` for the difference from `1`, again assuming only
-`‖1‖ ≤ 1`. -/
-private theorem norm_inverse_one_sub_sub_one_le' {R : Type*} [NormedRing R]
-    [HasSummableGeomSeries R] (h₁ : ‖(1 : R)‖ ≤ 1) {t : R} (h : ‖t‖ < 1) :
-    ‖Ring.inverse (1 - t) - 1‖ ≤ ‖t‖ / (1 - ‖t‖) := by
-  have key : Ring.inverse (1 - t) - 1 = t * Ring.inverse (1 - t) := by
-    rw [← geom_series_eq_inverse t h, geom_series_mul_shift t h, geom_series_succ t h]
-  rw [key]
-  calc ‖t * Ring.inverse (1 - t)‖ ≤ ‖t‖ * ‖Ring.inverse (1 - t)‖ := norm_mul_le _ _
-    _ ≤ ‖t‖ * (1 / (1 - ‖t‖)) :=
-        mul_le_mul_of_nonneg_left (norm_inverse_one_sub_le' h₁ h) (norm_nonneg _)
-    _ = ‖t‖ / (1 - ‖t‖) := by ring
+variable {R : Type*} [NormedRing R]
 
-variable {R : Type*} [NormedRing R] [NormOneClass R] [CompleteSpace R]
+/-- `‖(1 - t)⁻¹ - 1‖ ≤ ‖t‖ / (1 - ‖t‖)`. No `‖1‖ = 1` is needed: `(1 - t)⁻¹ - 1` is the tail
+`∑ t ^ (i + 1)` of the geometric series, whose terms have norm at most `‖t‖ ^ (i + 1)`. -/
+theorem norm_inverse_one_sub_sub_one_le [HasSummableGeomSeries R] {t : R} (h : ‖t‖ < 1) :
+    ‖Ring.inverse (1 - t) - 1‖ ≤ ‖t‖ / (1 - ‖t‖) := by
+  rw [← geom_series_eq_inverse t h, ← geom_series_succ t h]
+  have hs : HasSum (fun i : ℕ => ‖t‖ ^ (i + 1)) (‖t‖ / (1 - ‖t‖)) := by
+    simpa only [pow_succ', div_eq_mul_inv] using
+      (hasSum_geometric_of_lt_one (norm_nonneg t) h).mul_left ‖t‖
+  exact tsum_of_norm_bounded hs fun i => norm_pow_le' t i.succ_pos
+
+variable [NormOneClass R] [CompleteSpace R]
 
 /-- Geometric series theorem with the explicit bound `‖(1 - t)⁻¹‖ ≤ 1 / (1 - ‖t‖)`. -/
 theorem norm_inverse_one_sub_le {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) :=
   norm_inverse_one_sub_le' norm_one.le h
-
-/-- `‖(1 - t)⁻¹ - 1‖ ≤ ‖t‖ / (1 - ‖t‖)`. -/
-theorem norm_inverse_one_sub_sub_one_le {t : R} (h : ‖t‖ < 1) :
-    ‖Ring.inverse (1 - t) - 1‖ ≤ ‖t‖ / (1 - ‖t‖) :=
-  norm_inverse_one_sub_sub_one_le' norm_one.le h
 
 omit [NormOneClass R] [CompleteSpace R] in
 /-- `1 - t^m = (1 - t) ∑_{i < m} t^i`, and the two factors commute. -/
@@ -110,6 +110,63 @@ theorem norm_inverse_one_sub_le_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^
         mul_le_mul (norm_sum_le _ _) (norm_inverse_one_sub_le h) (norm_nonneg _)
           (Finset.sum_nonneg fun i _ => norm_nonneg _)
     _ = (∑ i ∈ Finset.range m, ‖t ^ i‖) / (1 - ‖t ^ m‖) := by ring
+
+section OneSided
+
+omit [NormOneClass R] [CompleteSpace R]
+
+/-- The factorization `a + t = a (1 + a⁻¹ t)`, written with `1 - (-(a⁻¹ t))`. -/
+private theorem add_eq_mul_one_sub {a t : R} (ha : IsUnit a) :
+    a + t = a * (1 - -(Ring.inverse a * t)) := by
+  rw [sub_neg_eq_add, mul_add, mul_one, ← mul_assoc, Ring.mul_inverse_cancel _ ha, one_mul]
+
+variable [HasSummableGeomSeries R] {a t : R}
+
+/-- **Perturbation of a unit, one-sided form**: if `a` is a unit and `‖a⁻¹ t‖ < 1`, then `a + t` is
+a unit, since `a + t = a (1 + a⁻¹ t)`. The hypothesis is weaker than the `‖a⁻¹‖ ‖t‖ < 1` of
+`Units.isUnit_add_of_norm_lt`. -/
+theorem isUnit_add_of_norm_inverse_mul_lt_one (ha : IsUnit a) (h : ‖Ring.inverse a * t‖ < 1) :
+    IsUnit (a + t) := by
+  rw [add_eq_mul_one_sub ha]
+  exact ha.mul (isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg]))
+
+/-- `(a + t)⁻¹ = (1 + a⁻¹ t)⁻¹ a⁻¹` when `a` is a unit and `‖a⁻¹ t‖ < 1`. -/
+private theorem inverse_add_eq_mul (ha : IsUnit a) (h : ‖Ring.inverse a * t‖ < 1) :
+    Ring.inverse (a + t) = Ring.inverse (1 - -(Ring.inverse a * t)) * Ring.inverse a := by
+  obtain ⟨u, rfl⟩ := ha
+  obtain ⟨v, hv⟩ := isUnit_one_sub_of_norm_lt_one (x := -(Ring.inverse (u : R) * t))
+    (by rwa [norm_neg])
+  rw [add_eq_mul_one_sub u.isUnit, ← hv, ← Units.val_mul, Ring.inverse_unit, Ring.inverse_unit,
+    Ring.inverse_unit, mul_inv_rev, Units.val_mul]
+
+/-- **Perturbation of the inverse, one-sided form** ([golub2013matrix] Theorem 2.3.4): if `a` is a
+unit and `r = ‖a⁻¹ t‖ < 1`, then `‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`, and hence
+`‖(a + t)⁻¹ - a⁻¹‖ ≤ ‖t‖ ‖a⁻¹‖² / (1 - r)`, the form printed in [golub2013matrix]. The proof writes
+`(a + t)⁻¹ - a⁻¹ = ((1 + a⁻¹ t)⁻¹ - 1) a⁻¹` and bounds the first factor by the tail of the
+geometric series (`NormedRing.norm_inverse_one_sub_sub_one_le`); no `‖1‖ = 1` is needed. Since
+`r ≤ ‖a⁻¹‖ ‖t‖`, this sharpens `Units.norm_inverse_add_sub_le`. -/
+theorem norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one (ha : IsUnit a)
+    (h : ‖Ring.inverse a * t‖ < 1) :
+    ‖Ring.inverse (a + t) - Ring.inverse a‖
+        ≤ ‖Ring.inverse a * t‖ * ‖Ring.inverse a‖ / (1 - ‖Ring.inverse a * t‖) ∧
+      ‖Ring.inverse (a + t) - Ring.inverse a‖
+        ≤ ‖t‖ * ‖Ring.inverse a‖ ^ 2 / (1 - ‖Ring.inverse a * t‖) := by
+  have hr : 0 < 1 - ‖Ring.inverse a * t‖ := by linarith
+  have h₁ : ‖Ring.inverse (a + t) - Ring.inverse a‖
+      ≤ ‖Ring.inverse a * t‖ * ‖Ring.inverse a‖ / (1 - ‖Ring.inverse a * t‖) := by
+    have hn : ‖-(Ring.inverse a * t)‖ < 1 := by rwa [norm_neg]
+    rw [inverse_add_eq_mul ha h, ← sub_one_mul]
+    refine (norm_mul_le _ _).trans ?_
+    have := norm_inverse_one_sub_sub_one_le hn
+    rw [norm_neg] at this
+    rw [mul_div_right_comm]
+    exact mul_le_mul_of_nonneg_right this (norm_nonneg _)
+  refine ⟨h₁, h₁.trans (div_le_div_of_nonneg_right ?_ hr.le)⟩
+  calc ‖Ring.inverse a * t‖ * ‖Ring.inverse a‖ ≤ ‖Ring.inverse a‖ * ‖t‖ * ‖Ring.inverse a‖ := by
+        gcongr; exact norm_mul_le _ _
+    _ = ‖t‖ * ‖Ring.inverse a‖ ^ 2 := by ring
+
+end OneSided
 
 end NormedRing
 
@@ -262,7 +319,7 @@ theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
             ‖(e.symm : F →L[𝕜] E)‖ := by
           refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
           rw [hvinv]
-          exact (NormedRing.norm_inverse_one_sub_sub_one_le' hone hnu1).trans
+          exact (NormedRing.norm_inverse_one_sub_sub_one_le hnu1).trans
             (div_one_sub_le_div_one_sub (by rwa [norm_neg]) h)
       _ = ‖(e.symm : F →L[𝕜] E)‖ ^ 2 * ‖t‖ / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖) := by ring
 

@@ -6,7 +6,9 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.CStarAlgebra.Spectrum
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # The spectral norm of a Hermitian matrix
@@ -37,6 +39,13 @@ reverse bound, so no diagonalization is needed.
   for the root form `‖Aᵐ‖₂ ^ (1 / m) = ‖A‖₂`.
 * `Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`: the spectral norm of a real
   symmetric matrix is its spectral radius.
+* `Matrix.l2_opNorm_submatrix_le`: a submatrix, for injective row and column selections, has the
+  smaller spectral norm, through `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` and the `ℓ^p`
+  facts `PiLp.norm_toLp_comp_le`, `PiLp.norm_toLp_extend`; the induced `p`-norm version is
+  `Matrix.lpOpNorm_submatrix_le` in `Numlib/Analysis/Matrix/OperatorNorm`.
+* `Matrix.l2_opNorm_fromBlocks_le`: Kahan's bound on the spectral norm of a `2 × 2` block matrix
+  by the norms of its blocks, the largest eigenvalue of `[μ γ; γ δ]` ([golub2013matrix]
+  Lemma 10.3.1), with its Hermitian-shaped case `Matrix.l2_opNorm_fromBlocks_le_of_isHermitian`.
 -/
 
 open scoped Matrix.Norms.L2Operator
@@ -197,5 +206,138 @@ theorem norm_toEuclideanCLM_le_of_isSymmetricBoundedBy {A : Matrix n n ℝ} {M :
     ‖toEuclideanCLM (𝕜 := ℝ) A‖ ≤ M := by
   rw [l2_opNorm_toEuclideanCLM, l2_opNorm_eq_norm_toEuclideanLin]
   exact ContinuousLinearMap.norm_le_of_isSymmetricBoundedBy hM hb
+
+/-! ### Submatrices -/
+
+section Submatrix
+
+/-- **A submatrix has a smaller spectral norm**, for injective row and column selections:
+`‖A.submatrix f g‖₂ ≤ ‖A‖₂` ([golub2013matrix] (2.3.13) at `p = 2`). Apply `A` to the vector
+extended by zero along `g` (`PiLp.norm_toLp_extend`) and drop the coordinates outside the range
+of `f` (`PiLp.norm_toLp_comp_le`). -/
+theorem l2_opNorm_submatrix_le {m m' n' : Type*} [Fintype m] [Fintype m'] [Fintype n']
+    [DecidableEq n'] (B : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
+    (hg : Function.Injective g) : ‖B.submatrix f g‖ ≤ ‖B‖ := by
+  rw [l2_opNorm_def]
+  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
+  have key : ‖(WithLp.toLp 2 (B.submatrix f g *ᵥ WithLp.ofLp x) : EuclideanSpace 𝕜 m')‖
+      ≤ ‖B‖ * ‖x‖ := by
+    rw [submatrix_mulVec_eq_comp_mulVec_extend B f hg]
+    calc ‖(WithLp.toLp 2 ((B *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f) : EuclideanSpace 𝕜 m')‖
+        ≤ ‖(WithLp.toLp 2 (B *ᵥ Function.extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 m)‖ :=
+          PiLp.norm_toLp_comp_le 2 hf _
+      _ ≤ ‖B‖ * ‖(WithLp.toLp 2 (Function.extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 n)‖ :=
+          l2_opNorm_mulVec B (WithLp.toLp 2 (Function.extend g (WithLp.ofLp x) 0))
+      _ = ‖B‖ * ‖x‖ := by rw [PiLp.norm_toLp_extend 2 hg]
+  exact key
+
+end Submatrix
+
+/-! ### Block matrices -/
+
+section Blocks
+
+/-- The largest eigenvalue `λ = (μ + δ + √((μ - δ)² + 4γ²)) / 2` of the symmetric matrix
+`[μ γ; γ δ]` with nonnegative entries bounds its quadratic action:
+`(μ a + γ b)² + (γ a + δ b)² ≤ λ² (a² + b²)`. -/
+private theorem sq_add_sq_le_of_blockBound {μ γ δ a b : ℝ} (hμ : 0 ≤ μ) (hγ : 0 ≤ γ)
+    (hδ : 0 ≤ δ) :
+    (μ * a + γ * b) ^ 2 + (γ * a + δ * b) ^ 2
+      ≤ ((μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2) ^ 2 * (a ^ 2 + b ^ 2) := by
+  set s := √((μ - δ) ^ 2 + 4 * γ ^ 2) with hs_def
+  set l := (μ + δ + s) / 2 with hl
+  have hs2 : s ^ 2 = (μ - δ) ^ 2 + 4 * γ ^ 2 := Real.sq_sqrt (by positivity)
+  have hsabs : |δ - μ| ≤ s := Real.abs_le_sqrt (by nlinarith [sq_abs (δ - μ)])
+  have hlμ : 0 ≤ l - μ := by rw [hl]; linarith [neg_abs_le (δ - μ)]
+  have hlδ : 0 ≤ l - δ := by rw [hl]; linarith [le_abs_self (δ - μ)]
+  have hchar' : l ^ 2 - (μ + δ) * l + μ * δ - γ ^ 2 = 0 := by
+    rw [hl]; linear_combination hs2 / 4
+  have hchar : (l - μ) * (l - δ) = γ ^ 2 := by linear_combination hchar'
+  set P := √(l - μ)
+  set R := √(l - δ)
+  have hP : P ^ 2 = l - μ := Real.sq_sqrt hlμ
+  have hR : R ^ 2 = l - δ := Real.sq_sqrt hlδ
+  have hPR : P * R = γ := by
+    rw [← Real.sqrt_mul hlμ, hchar, Real.sqrt_sq hγ]
+  have key : l ^ 2 * (a ^ 2 + b ^ 2) - ((μ * a + γ * b) ^ 2 + (γ * a + δ * b) ^ 2)
+      = (μ + δ) * (P * a - R * b) ^ 2 := by
+    linear_combination (a ^ 2 + b ^ 2) * hchar' - (μ + δ) * a ^ 2 * hP - (μ + δ) * b ^ 2 * hR
+      + 2 * (μ + δ) * a * b * hPR
+  nlinarith [mul_nonneg (add_nonneg hμ hδ) (sq_nonneg (P * a - R * b))]
+
+/-- The squared `ℓ²` norm of a vector on a sum type is the sum of the squared norms of its two
+parts. -/
+private theorem norm_toLp_sumElim_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (u : m₁ → 𝕜)
+    (w : m₂ → 𝕜) :
+    ‖(WithLp.toLp 2 (Sum.elim u w) : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
+      = ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m₁)‖ ^ 2
+        + ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 m₂)‖ ^ 2 := by
+  simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl,
+    Sum.elim_inr]
+
+/-- **The spectral norm of a `2 × 2` block matrix from the norms of its blocks**: if `‖E‖₂ ≤ μ`,
+`‖C‖₂ ≤ γ`, `‖C'‖₂ ≤ γ` and `‖D‖₂ ≤ δ`, then `‖[E C; C' D]‖₂ ≤ λ`, the largest eigenvalue
+`(μ + δ + √((μ - δ)² + 4γ²)) / 2` of `[μ γ; γ δ]` (Kahan's lemma, [golub2013matrix] Lemma 10.3.1,
+stated there for a Hermitian matrix `C' = Cᴴ`; no symmetry is needed). Blockwise,
+`‖M z‖² ≤ (μ ‖x‖ + γ ‖y‖)² + (γ ‖x‖ + δ ‖y‖)² ≤ λ² ‖z‖²` for `z = (x, y)`. -/
+theorem l2_opNorm_fromBlocks_le {m₁ m₂ n₁ n₂ : Type*} [Fintype m₁] [Fintype m₂] [Fintype n₁]
+    [Fintype n₂] [DecidableEq n₁] [DecidableEq n₂] {E : Matrix m₁ n₁ 𝕜} {C : Matrix m₁ n₂ 𝕜}
+    {C' : Matrix m₂ n₁ 𝕜} {D : Matrix m₂ n₂ 𝕜} {μ γ δ : ℝ} (hE : ‖E‖ ≤ μ) (hC : ‖C‖ ≤ γ)
+    (hC' : ‖C'‖ ≤ γ) (hD : ‖D‖ ≤ δ) :
+    ‖fromBlocks E C C' D‖ ≤ (μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 := by
+  have hμ : 0 ≤ μ := (norm_nonneg _).trans hE
+  have hγ : 0 ≤ γ := (norm_nonneg _).trans hC
+  have hδ : 0 ≤ δ := (norm_nonneg _).trans hD
+  have hl : 0 ≤ (μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 := by positivity
+  rw [l2_opNorm_def]
+  refine ContinuousLinearMap.opNorm_le_bound _ hl fun z => ?_
+  set x : n₁ → 𝕜 := fun i => WithLp.ofLp z (Sum.inl i)
+  set y : n₂ → 𝕜 := fun i => WithLp.ofLp z (Sum.inr i)
+  have hz : WithLp.ofLp z = Sum.elim x y := by
+    funext i; cases i <;> rfl
+  have hnz : ‖z‖ ^ 2 = ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n₁)‖ ^ 2
+      + ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 n₂)‖ ^ 2 := by
+    rw [← norm_toLp_sumElim_sq, ← hz, WithLp.toLp_ofLp]
+  -- the two block rows
+  have h1 : ‖(WithLp.toLp 2 (E *ᵥ x + C *ᵥ y) : EuclideanSpace 𝕜 m₁)‖
+      ≤ μ * ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n₁)‖
+        + γ * ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 n₂)‖ := by
+    rw [WithLp.toLp_add]
+    refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+    · exact (l2_opNorm_mulVec E (WithLp.toLp 2 x)).trans
+        (mul_le_mul_of_nonneg_right hE (norm_nonneg _))
+    · exact (l2_opNorm_mulVec C (WithLp.toLp 2 y)).trans
+        (mul_le_mul_of_nonneg_right hC (norm_nonneg _))
+  have h2 : ‖(WithLp.toLp 2 (C' *ᵥ x + D *ᵥ y) : EuclideanSpace 𝕜 m₂)‖
+      ≤ γ * ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n₁)‖
+        + δ * ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 n₂)‖ := by
+    rw [WithLp.toLp_add]
+    refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+    · exact (l2_opNorm_mulVec C' (WithLp.toLp 2 x)).trans
+        (mul_le_mul_of_nonneg_right hC' (norm_nonneg _))
+    · exact (l2_opNorm_mulVec D (WithLp.toLp 2 y)).trans
+        (mul_le_mul_of_nonneg_right hD (norm_nonneg _))
+  have hMz : ‖(WithLp.toLp 2 (fromBlocks E C C' D *ᵥ WithLp.ofLp z)
+      : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
+      ≤ ((μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 * ‖z‖) ^ 2 := by
+    rw [hz, fromBlocks_mulVec, norm_toLp_sumElim_sq, mul_pow, hnz]
+    refine le_trans ?_ (sq_add_sq_le_of_blockBound hμ hγ hδ)
+    exact add_le_add (pow_le_pow_left₀ (norm_nonneg _) h1 2)
+      (pow_le_pow_left₀ (norm_nonneg _) h2 2)
+  exact le_of_pow_le_pow_left₀ two_ne_zero (by positivity) hMz
+
+/-- **Kahan's lemma for a Hermitian-shaped block matrix** ([golub2013matrix] Lemma 10.3.1): for
+`M = [E C; Cᴴ D]` with `‖E‖₂ ≤ μ`, `‖C‖₂ ≤ γ`, `‖D‖₂ ≤ δ`,
+`‖M‖₂ ≤ (μ + δ + √((μ - δ)² + 4γ²)) / 2`. The case `C' = Cᴴ` of
+`Matrix.l2_opNorm_fromBlocks_le`, since `‖Cᴴ‖₂ = ‖C‖₂`; the Hermitian-ness of `E` and `D` is not
+needed. -/
+theorem l2_opNorm_fromBlocks_le_of_isHermitian {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂]
+    [DecidableEq m₁] [DecidableEq m₂] {E : Matrix m₁ m₁ 𝕜} {C : Matrix m₁ m₂ 𝕜}
+    {D : Matrix m₂ m₂ 𝕜}
+    {μ γ δ : ℝ} (hE : ‖E‖ ≤ μ) (hC : ‖C‖ ≤ γ) (hD : ‖D‖ ≤ δ) :
+    ‖fromBlocks E C Cᴴ D‖ ≤ (μ + δ + √((μ - δ) ^ 2 + 4 * γ ^ 2)) / 2 :=
+  l2_opNorm_fromBlocks_le hE hC (by rwa [l2_opNorm_conjTranspose]) hD
+
+end Blocks
 
 end Matrix

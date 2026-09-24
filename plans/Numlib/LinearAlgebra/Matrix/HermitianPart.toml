@@ -1,9 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.HermitianPart` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch04) add — "A real matrix is *positive definite* in the unsymmetric sense of Golub–Van Loan §4.2
-# (`xᵀ A x > 0` for `x ≠ 0`) exactly when its Hermitian part is positive definite
-# (`Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos`); congruence commutes with taking
-# the Hermitian part (`Matrix.hermitianPart_conjTranspose_mul_mul`), and `‖T‖₂ ≤ ‖A‖₂`."
 namespace = "Matrix"
 
 [[node]]
@@ -27,31 +21,14 @@ source = 'Saad, Iterative Methods for Sparse Linear Systems, Equation (1.49)'
 [[node]]
 id = "re_inner_hermitianPart"
 
-[[node]]  # staged by ch04
+[[node]]
 id = "posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos"
-kind = "theorem"
-desc = '''Over `RCLike 𝕜`, for `A : Matrix n n 𝕜`: `(hermitianPart A).PosDef ↔ ∀ x ≠ 0, 0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x))`
-— the bridge from the unsymmetric "positive definite" of [golub2013matrix] §4.2 (real: `xᵀ A x > 0`) and of
-the coercivity vocabulary to Mathlib's `PosDef` of the Hermitian part `H = (A + Aᴴ)/2`
-(`re (xᴴ A x) = xᴴ H x`, `Matrix.re_inner_hermitianPart` / `Matrix.mulVec_dotProduct_eq_hermitianPart`;
-`Matrix.posDef_iff_dotProduct_mulVec` for the Hermitian `H`). The real form `∀ x ≠ 0, 0 < x ⬝ᵥ (A *ᵥ x)`
-is the case `𝕜 = ℝ` (`star x = x`, `RCLike.re_to_real`); stated over `RCLike` at the review of the
-Golub–Van Loan round. ★'''
-deps = ["Matrix.hermitianPart"]
 
-[[node]]  # staged by ch04
+[[node]]
 id = "hermitianPart_conjTranspose_mul_mul"
-kind = "theorem"
-desc = '''`hermitianPart (Xᴴ * A * X) = Xᴴ * hermitianPart A * X` for rectangular `X : Matrix n k 𝕜` (the
-Hermitian part of a congruence), so [golub2013matrix] Theorem 4.2.1 for unsymmetric `A` is Mathlib's
-`Matrix.PosDef.conjTranspose_mul_mul_same` applied to `hermitianPart A`. `Matrix.conjTranspose_mul`,
-`smul` distributivity. ★'''
-deps = ["Matrix.hermitianPart"]
 
-[[node]]  # staged by ch04
+[[node]]
 id = "l2_opNorm_hermitianPart_le"
-kind = "theorem"
-desc = '''`‖hermitianPart A‖ ≤ ‖A‖` in the scoped `Matrix.Norms.L2Operator` norm ([golub2013matrix] §4.2.2, "It is easy to
-show that `‖T‖₂ ≤ ‖A‖₂`"): triangle inequality and `‖Aᴴ‖ = ‖A‖` (Mathlib's C*-norm
-`norm_conjTranspose` for the `L2Operator` instance). ★'''
-deps = ["Matrix.hermitianPart"]
+
+[[node]]
+id = "star_dotProduct_hermitianPart_mulVec"

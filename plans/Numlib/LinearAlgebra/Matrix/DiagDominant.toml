@@ -1,9 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.DiagDominant` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch04) add to "Main results": "`Matrix.IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec`
-# and `Matrix.IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec`: the dominance margin `δ` bounds
-# `A` below in the `1`- and `∞`-norms, `δ ‖x‖ ≤ ‖A x‖` (Varah; [golub2013matrix] Theorem 4.1.2),
-# stated with explicit sums so that this module stays free of the operator-norm layer."
 namespace = "Matrix"
 
 [[node]]
@@ -105,24 +99,8 @@ id = "IsDiagDominant.schurComplementSingle"
 [[node]]
 id = "IsDiagDominant.posSemidef"
 
-[[node]]  # staged by ch04
+[[node]]
 id = "IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec"
-kind = "theorem"
-desc = '''The heart of [golub2013matrix] Theorem 4.1.2: for `A : Matrix n n 𝕜` and `δ` with
-`∀ j, δ ≤ ‖A j j‖ − ∑ i ∈ univ.erase j, ‖A i j‖` (column dominance with margin `δ`),
-`δ * ∑ j, ‖x j‖ ≤ ∑ i, ‖(A *ᵥ x) i‖` for every `x`. The book's proof: `D x = A x − E x`, so
-`|D||x| ≤ |A x| + |E||x|`, summed with `eᵀ|E| ≤ eᵀ|D| − δ eᵀ`. The norm form `lpOpNorm 1 A⁻¹ ≤ 1/δ`
-(the theorem as printed) is the surface's one-line corollary through
-`Matrix.lpOpNorm_one_eq_sup_sum_norm`, kept out of this module, which does not import the
-operator-norm layer. ★'''
-deps = ["Matrix.IsStrictColDiagDominant"]
 
-[[node]]  # staged by ch04
+[[node]]
 id = "IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec"
-kind = "theorem"
-desc = '''The row twin ([golub2013matrix] P4.1.2; Varah 1975): if `∀ i, δ ≤ ‖A i i‖ − ∑ j ∈ univ.erase i, ‖A i j‖`
-then `δ * ‖x j‖ ≤ sup_i ‖(A *ᵥ x) i‖` for every `j` (at an index of maximal `‖x j‖`,
-`‖(A x)_j‖ ≥ ‖a_jj‖‖x_j‖ − ∑_{k≠j} ‖a_jk‖‖x_k‖ ≥ δ‖x_j‖`), i.e. `‖A⁻¹‖_∞ ≤ 1/δ` in the surface. Also
-the transpose: it is `mul_sum_norm_le_sum_norm_mulVec` for `Aᵀ` up to the duality of the two
-norms; prove directly, it is shorter. ★'''
-deps = ["Matrix.IsStrictDiagDominant"]

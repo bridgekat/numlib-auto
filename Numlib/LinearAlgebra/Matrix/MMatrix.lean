@@ -20,6 +20,8 @@ consume them are in `Numlib/Stationary/RegularSplitting`.
 
 * `Matrix.IsMMatrix`: [saad2003iterative] Definition 1.30, as a three-field structure; the remaining
   clause of the book, positivity of the diagonal, is the derived `Matrix.IsMMatrix.diag_pos`.
+* `Matrix.IsStieltjes`: a Stieltjes matrix, positive definite with nonpositive off-diagonal
+  entries ([golub2013matrix] §11.5.8).
 
 ## Main results
 
@@ -44,6 +46,13 @@ consume them are in `Numlib/Stationary/RegularSplitting`.
   M-matrix an M-matrix, through `Matrix.inv_schurComplementSingle`: the inverse of the `1 × 1`-pivot
   Schur complement is the submatrix of `A⁻¹` off the pivot. The incomplete factorizations of
   `Numlib/Preconditioner/ILU` are its consumers.
+* Stieltjes matrices are the symmetric M-matrices (`Matrix.isStieltjes_iff_isMMatrix_isSymm`,
+  whose hard half is `Matrix.IsMMatrix.posDef_of_isSymm`); their inverse is nonnegative
+  ([golub2013matrix] Lemma 11.5.1, `Matrix.IsStieltjes.inv_entrywiseNonneg`), they are stable
+  under raising off-diagonal entries (`Matrix.IsStieltjes.of_entrywiseLE`), under principal
+  submatrices and under an elimination step, with or without dropped entries of the pivot column
+  ([golub2013matrix] Theorem 11.5.2, `Matrix.IsStieltjes.isStieltjes_sub_drop`): what incomplete
+  Cholesky needs.
 
 ## Implementation notes
 
@@ -618,86 +627,6 @@ end Criterion
 
 /-! ### One step of Gaussian elimination on the smaller index type -/
 
-section SchurSingle
-
-variable {K : Type*} [Field K]
-
-/-- A sum over the indices other than `p`, read as a sum over the subtype. -/
-private theorem sum_subtype_ne (p : n) (f : n → K) :
-    ∑ j : {x : n // x ≠ p}, f j.1 = ∑ x ∈ Finset.univ.erase p, f x := by
-  have h : ∀ x : n, x ∈ Finset.univ.erase p ↔ x ≠ p := fun x => by simp
-  exact (Finset.sum_subtype _ h f).symm
-
-/-- The row of a matrix-vector product, with the pivot term separated off. -/
-private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) :
-    ∑ j : {x : n // x ≠ p}, A t j.1 * X j.1 = (A *ᵥ X) t - A t p * X p := by
-  rw [sum_subtype_ne p fun j => A t j * X j, Matrix.mulVec_apply_eq_sum,
-    ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
-  ring
-
-/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose image
-under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of `X`
-reproduces the remaining rows of `A X`.
-
-This is the whole content of one step of Gaussian elimination: `X` is recovered from its restriction
-by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
-theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
-    (hpp : A p p ≠ 0) {X : n → K} (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
-    (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
-  have hp := sum_ne_eq_mulVec_sub A X p p
-  rw [hX, zero_sub] at hp
-  have hXp : (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = -X p := by
-    rw [hp]; field_simp
-  have expand : ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1
-      = (∑ j : {x : n // x ≠ p}, A i.1 j.1 * X j.1)
-        - ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1) := by
-    rw [← Finset.sum_sub_distrib]
-    exact Finset.sum_congr rfl fun j _ => by
-      rw [Matrix.schurComplementSingle_apply]; ring
-  have pull : ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1)
-      = A i.1 p * (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 := by
-    rw [Finset.mul_sum]
-  have lhs : (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i
-      = ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1 :=
-    Matrix.mulVec_apply_eq_sum _ _ _
-  rw [lhs, expand, pull, mul_assoc, hXp, sum_ne_eq_mulVec_sub A X p i.1]
-  ring
-
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is inverted by
-the corresponding submatrix of the inverse. -/
-theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA : IsUnit A)
-    (hpp : A p p ≠ 0) :
-    A.schurComplementSingle p * A⁻¹.submatrix Subtype.val Subtype.val = 1 := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA
-  ext i j
-  have hcol : ∀ s : n, (A *ᵥ fun t => A⁻¹ t j.1) s = (1 : Matrix n n K) s j.1 := fun s => by
-    rw [Matrix.mulVec_apply_eq_sum, ← Matrix.mul_apply, mul_nonsing_inv A hdet]
-  have hzero : (A *ᵥ fun t => A⁻¹ t j.1) p = 0 := by
-    rw [hcol p, Matrix.one_apply_ne (Ne.symm j.2)]
-  have h := schurComplementSingle_mulVec_of_apply_eq_zero A hpp hzero i
-  rw [hcol i.1] at h
-  have hone : (1 : Matrix n n K) i.1 j.1
-      = (1 : Matrix {x : n // x ≠ p} {x : n // x ≠ p} K) i j := by
-    rcases eq_or_ne i j with rfl | hij
-    · rw [Matrix.one_apply_eq, Matrix.one_apply_eq]
-    · rw [Matrix.one_apply_ne (Subtype.coe_injective.ne hij), Matrix.one_apply_ne hij]
-  exact h.trans hone
-
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is nonsingular.
--/
-theorem isUnit_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
-    IsUnit (A.schurComplementSingle p) :=
-  have h := schurComplementSingle_mul_submatrix_inv hA hpp
-  ⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩
-
-/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the indices
-other than the pivot — the `1 × 1`-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
-theorem inv_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
-    (A.schurComplementSingle p)⁻¹ = A⁻¹.submatrix Subtype.val Subtype.val :=
-  Matrix.inv_eq_right_inv (schurComplementSingle_mul_submatrix_inv hA hpp)
-
-end SchurSingle
-
 section KyFan
 
 /-- **[fan1960note] theorem** ([saad2003iterative], Theorem 10.1): the matrix obtained from an
@@ -722,5 +651,145 @@ theorem IsMMatrix.isMMatrix_schurComplementSingle {A : Matrix n n ℝ} (hA : A.I
     exact entrywiseNonneg_iff.2 fun i j => hA.inv_entrywiseNonneg.apply i.1 j.1
 
 end KyFan
+
+/-! ### Stieltjes matrices -/
+
+section Stieltjes
+
+omit [Fintype n] [DecidableEq n] in
+/-- A real matrix is Hermitian exactly when it is symmetric. -/
+private theorem isHermitian_iff_isSymm_real {A : Matrix n n ℝ} : A.IsHermitian ↔ A.IsSymm := by
+  rw [IsHermitian, conjTranspose_eq_transpose_of_trivial, IsSymm]
+
+/-- **A symmetric M-matrix is positive definite.** With `w > 0` and `A w > 0`
+(`Matrix.isMMatrix_iff_exists_pos_mulVec_pos`) and `W = diag(w)`, the congruent matrix `W A W`
+is symmetric with nonpositive off-diagonal entries and positive row sums `w_i (A w)_i`, hence
+strictly diagonally dominant with a positive diagonal, hence positive definite
+(`Matrix.IsStrictDiagDominant.posDef`); positive definiteness passes back along the congruence. The
+converse of `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos` on symmetric matrices. -/
+theorem IsMMatrix.posDef_of_isSymm {A : Matrix n n ℝ} (hA : A.IsMMatrix) (hs : A.IsSymm) :
+    A.PosDef := by
+  obtain ⟨w, hw, hAw⟩ := (isMMatrix_iff_exists_pos_mulVec_pos hA.offDiag_nonpos).1 hA
+  have hWu : IsUnit (diagonal w) := (isUnit_iff_isUnit_det _).2 (by
+    rw [det_diagonal]
+    exact isUnit_iff_ne_zero.2 (prod_ne_zero_iff.2 fun i _ => (hw i).ne'))
+  have hB : ∀ i j, (star (diagonal w) * A * diagonal w) i j = w i * A i j * w j := fun i j => by
+    rw [star_eq_conjTranspose, diagonal_conjTranspose, mul_diagonal, diagonal_mul]
+    simp
+  rw [← Matrix.IsUnit.posDef_star_left_conjugate_iff hWu]
+  refine IsStrictDiagDominant.posDef ?_ (fun i => ?_) (fun i => ?_)
+  · rw [star_eq_conjTranspose]
+    exact isHermitian_conjTranspose_mul_mul _ (isHermitian_iff_isSymm_real.2 hs)
+  · have hrow : (A *ᵥ w) i = A i i * w i + ∑ j ∈ univ.erase i, A i j * w j := by
+      rw [mulVec_apply_eq_sum, ← add_sum_erase _ _ (mem_univ i)]
+    have hoff : ∀ j ∈ univ.erase i, ‖(star (diagonal w) * A * diagonal w) i j‖
+        = -(w i * (A i j * w j)) := fun j hj => by
+      rw [hB, Real.norm_eq_abs, abs_of_nonpos, mul_assoc]
+      exact mul_nonpos_of_nonpos_of_nonneg (mul_nonpos_of_nonneg_of_nonpos (hw i).le
+        (hA.offDiag_nonpos i j (mem_erase.1 hj).1.symm)) (hw j).le
+    rw [sum_congr rfl hoff, sum_neg_distrib, ← mul_sum, hB, Real.norm_eq_abs,
+      abs_of_pos (mul_pos (mul_pos (hw i) (hA.diag_pos i)) (hw i))]
+    have key : w i * A i i * w i + w i * ∑ j ∈ univ.erase i, A i j * w j = w i * (A *ᵥ w) i := by
+      rw [hrow]; ring
+    linarith [mul_pos (hw i) (hAw i)]
+  · rw [hB, RCLike.re_to_real]
+    exact mul_pos (mul_pos (hw i) (hA.diag_pos i)) (hw i)
+
+/-- A **Stieltjes matrix** ([golub2013matrix] §11.5.8; Varga, *Matrix Iterative Analysis*, §3.5):
+a real positive definite matrix with nonpositive off-diagonal entries. By
+`Matrix.isStieltjes_iff_isMMatrix_isSymm` these are exactly the symmetric M-matrices. -/
+structure IsStieltjes (A : Matrix n n ℝ) : Prop where
+  /-- The matrix is positive definite (in particular symmetric). -/
+  posDef : A.PosDef
+  /-- The off-diagonal entries are nonpositive. -/
+  offDiag_nonpos : ∀ i j, i ≠ j → A i j ≤ 0
+
+namespace IsStieltjes
+
+variable {A : Matrix n n ℝ} (hA : A.IsStieltjes)
+include hA
+
+/-- A Stieltjes matrix is an M-matrix (`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`). -/
+theorem isMMatrix : A.IsMMatrix := IsMMatrix.of_posDef_of_offDiag_nonpos hA.posDef hA.offDiag_nonpos
+
+/-- The inverse of a Stieltjes matrix is entrywise nonnegative ([golub2013matrix] Lemma 11.5.1). -/
+theorem inv_entrywiseNonneg : A⁻¹.EntrywiseNonneg := hA.isMMatrix.inv_entrywiseNonneg
+
+omit [Fintype n] [DecidableEq n] in
+/-- A Stieltjes matrix is symmetric. -/
+theorem isSymm : A.IsSymm := isHermitian_iff_isSymm_real.1 hA.posDef.isHermitian
+
+end IsStieltjes
+
+/-- **The Stieltjes matrices are the symmetric M-matrices**: the forward half is
+`Matrix.IsStieltjes.isMMatrix`, the backward `Matrix.IsMMatrix.posDef_of_isSymm`. -/
+theorem isStieltjes_iff_isMMatrix_isSymm {A : Matrix n n ℝ} :
+    A.IsStieltjes ↔ A.IsMMatrix ∧ A.IsSymm :=
+  ⟨fun h => ⟨h.isMMatrix, h.isSymm⟩, fun h => ⟨h.1.posDef_of_isSymm h.2, h.1.offDiag_nonpos⟩⟩
+
+omit [Fintype n] [DecidableEq n] in
+/-- **Raising off-diagonal entries keeps a matrix Stieltjes**: if `A` is Stieltjes and `B ≥ A`
+entrywise is symmetric with nonpositive off-diagonal entries, then `B` is Stieltjes
+(`Matrix.IsMMatrix.of_entrywiseLE`). In particular zeroing a symmetric set of off-diagonal entries,
+the dropping step of incomplete Cholesky, leaves a Stieltjes matrix. -/
+theorem IsStieltjes.of_entrywiseLE [Finite n] {A B : Matrix n n ℝ} (hA : A.IsStieltjes)
+    (hAB : A ≤ₑ B) (hB : B.IsSymm) (hoff : ∀ i j, i ≠ j → B i j ≤ 0) : B.IsStieltjes := by
+  classical
+  have := Fintype.ofFinite n
+  exact isStieltjes_iff_isMMatrix_isSymm.2 ⟨hA.isMMatrix.of_entrywiseLE hAB hoff, hB⟩
+
+omit [Fintype n] [DecidableEq n] in
+/-- Principal submatrices of a Stieltjes matrix are Stieltjes. -/
+theorem IsStieltjes.submatrix {m : Type*} {A : Matrix n n ℝ}
+    (hA : A.IsStieltjes) {e : m → n} (he : Function.Injective e) :
+    (A.submatrix e e).IsStieltjes :=
+  ⟨hA.posDef.submatrix he, fun _ _ hij => hA.offDiag_nonpos _ _ (he.ne hij)⟩
+
+omit [Fintype n] [DecidableEq n] in
+/-- **One step of symmetric Gaussian elimination keeps a matrix Stieltjes**: the Schur complement
+of a pivot is an M-matrix (Ky Fan, `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`) and
+symmetric. -/
+theorem IsStieltjes.schurComplementSingle [Finite n] {A : Matrix n n ℝ} (hA : A.IsStieltjes)
+    (p : n) : (A.schurComplementSingle p).IsStieltjes := by
+  classical
+  have := Fintype.ofFinite n
+  exact isStieltjes_iff_isMMatrix_isSymm.2 ⟨hA.isMMatrix.isMMatrix_schurComplementSingle p, by
+    rw [IsSymm, schurComplementSingle_transpose, hA.isSymm.eq]⟩
+
+omit [Fintype n] [DecidableEq n] in
+/-- **Elimination with a dropped pivot column keeps a matrix Stieltjes** ([golub2013matrix]
+Theorem 11.5.2): for a Stieltjes `A`, a pivot `p` and any set `S` of the other indices, the matrix
+`A_ij - ṽ_i ṽ_j / a_pp` on the indices other than `p`, where `ṽ` is the pivot column with its
+entries outside `S` dropped, is Stieltjes. It lies above the Schur complement entrywise, since the
+products `a_ip a_pj` it omits are nonnegative, so `Matrix.IsStieltjes.of_entrywiseLE` applies. -/
+theorem IsStieltjes.isStieltjes_sub_drop [Finite n] {A : Matrix n n ℝ} (hA : A.IsStieltjes)
+    (p : n) (S : Set {i : n // i ≠ p}) [DecidablePred (· ∈ S)] :
+    (Matrix.of fun i j : {i : n // i ≠ p} =>
+        A i j - (if i ∈ S then A i p else 0) * (if j ∈ S then A p j else 0) / A p p
+      ).IsStieltjes := by
+  classical
+  have := Fintype.ofFinite n
+  have hpp : 0 < A p p := hA.isMMatrix.diag_pos p
+  have hsym : ∀ i j, A i j = A j i := fun i j => hA.isSymm.apply j i
+  have hprod : ∀ i j : {i : n // i ≠ p}, 0 ≤ A i p * A p j := fun i j =>
+    mul_nonneg_of_nonpos_of_nonpos (hA.offDiag_nonpos _ _ i.2) (hA.offDiag_nonpos _ _ (Ne.symm j.2))
+  have hdrop : ∀ i j : {i : n // i ≠ p},
+      0 ≤ (if i ∈ S then A i p else 0) * (if j ∈ S then A p j else 0) / A p p := fun i j => by
+    refine div_nonneg ?_ hpp.le
+    split_ifs <;> simp [hprod i j]
+  refine (hA.schurComplementSingle p).of_entrywiseLE (fun i j => ?_) ?_ (fun i j hij => ?_)
+  · rw [schurComplementSingle_apply, of_apply]
+    have : A i p * (A p p)⁻¹ * A p j = A i p * A p j / A p p := by ring
+    rw [this]
+    refine sub_le_sub_left (div_le_div_of_nonneg_right ?_ hpp.le) _
+    split_ifs <;> simp [hprod i j]
+  · ext i j
+    simp only [transpose_apply, of_apply, hsym (i : n) j, hsym (j : n) p, hsym p (i : n)]
+    congr 2
+    split_ifs <;> ring
+  · rw [of_apply]
+    linarith [hA.offDiag_nonpos _ _ (Subtype.coe_injective.ne hij), hdrop i j]
+
+end Stieltjes
 
 end Matrix

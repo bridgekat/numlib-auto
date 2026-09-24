@@ -1,12 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.MMatrix` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch11) add a paragraph "Stieltjes matrices": `Matrix.IsStieltjes` (symmetric positive definite
-# with nonpositive off-diagonal entries; [golub2013matrix] §11.5.8) is the symmetric case of
-# `Matrix.IsMMatrix` (`Matrix.isStieltjes_iff_isMMatrix_isSymm`, whose hard half is
-# `Matrix.IsMMatrix.posDef_of_isSymm`); its inverse is nonnegative ([golub2013matrix] Lemma 11.5.1)
-# and it is stable under raising off-diagonal entries (`Matrix.IsStieltjes.of_entrywiseLE`), which
-# is what incomplete Cholesky needs; and the elimination-step results for Stieltjes matrices (Ky Fan
-# for Stieltjes matrices, [golub2013matrix] Theorem 11.5.2) beside Ky Fan's M-matrix theorem.
 [[node]]
 id = "Matrix.EntrywiseNonneg.of_tendsto"
 
@@ -73,107 +64,39 @@ id = "Matrix.isMMatrix_of_forall_dotProduct_mulVec_pos"
 [[node]]
 id = "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos"
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes"
-kind = "definition"
-desc = '''
-`structure Matrix.IsStieltjes (A : Matrix n n ℝ) : Prop` with fields `posDef : A.PosDef` and
-`offDiag_nonpos : ∀ i j, i ≠ j → A i j ≤ 0` ([golub2013matrix] §11.5.8; Varga, *Matrix Iterative
-Analysis*, §3.5). Shape settled by `notes/gvl/ch11/proto/Shapes.lean` (c). ★
-'''
-deps = []
 source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.isMMatrix"
-kind = "theorem"
-desc = '''
-A Stieltjes matrix is an M-matrix. `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`. ★
-'''
-deps = ["Matrix.IsStieltjes", "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos"]
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.inv_entrywiseNonneg"
-kind = "theorem"
-desc = '''
-`hA.IsStieltjes → (A⁻¹).EntrywiseNonneg` ([golub2013matrix] Lemma 11.5.1). The `inv_entrywiseNonneg`
-field of `Matrix.IsStieltjes.isMMatrix`. ★
-'''
-deps = ["Matrix.IsStieltjes.isMMatrix"]
 source = 'Golub–Van Loan, Matrix Computations, Lemma 11.5.1'
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsMMatrix.posDef_of_isSymm"
-kind = "theorem"
-desc = '''
-A symmetric M-matrix is positive definite: `A.IsMMatrix → A.IsSymm → A.PosDef`. Proof: by
-`Matrix.isMMatrix_iff_exists_pos_mulVec_pos` pick `w > 0` with `A w > 0`; `W = diagonal w`; then
-`W A W` is symmetric with nonpositive off-diagonal entries and positive row sums `w_i (A w)_i`, so
-strictly diagonally dominant with positive diagonal, hence positive definite
-(`Matrix.IsStrictDiagDominant.posDef`); and `A = W⁻¹ (W A W) W⁻¹` is congruent to it. The converse
-of `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos` on symmetric matrices. ★★ (~40 lines)
-'''
-deps = ["Matrix.IsMMatrix", "Matrix.isMMatrix_iff_exists_pos_mulVec_pos", "Matrix.IsStrictDiagDominant.posDef"]
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.isStieltjes_iff_isMMatrix_isSymm"
-kind = "theorem"
-desc = '''
-`A.IsStieltjes ↔ A.IsMMatrix ∧ A.IsSymm`. `Matrix.IsStieltjes.isMMatrix` and
-`Matrix.IsMMatrix.posDef_of_isSymm`. ★
-'''
-deps = ["Matrix.IsStieltjes.isMMatrix", "Matrix.IsMMatrix.posDef_of_isSymm"]
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.of_entrywiseLE"
-kind = "theorem"
-desc = '''
-If `A` is Stieltjes, `B` is symmetric with nonpositive off-diagonal entries and `A ≤ B` entrywise
-(`Matrix.EntrywiseLE A B`), then `B` is Stieltjes. `Matrix.IsMMatrix.of_entrywiseLE` and
-`Matrix.IsMMatrix.posDef_of_isSymm`. In particular zeroing any symmetric set of off-diagonal entries
-of a Stieltjes matrix leaves a Stieltjes matrix (the dropping step of incomplete Cholesky). ★
-'''
-deps = ["Matrix.IsStieltjes", "Matrix.IsMMatrix.of_entrywiseLE", "Matrix.IsMMatrix.posDef_of_isSymm",
-  "Matrix.EntrywiseLE"]
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.submatrix"
-kind = "theorem"
-desc = '''
-Principal submatrices of a Stieltjes matrix are Stieltjes: for an injective `e : m → n`,
-`(A.submatrix e e).IsStieltjes`. `Matrix.PosDef.submatrix` (Mathlib) and the entrywise sign. ★
-'''
-deps = ["Matrix.IsStieltjes"]
 
 [[node]]
 id = "Matrix.IsMMatrix.isMMatrix_schurComplementSingle"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.schurComplementSingle"
-kind = "theorem"
-desc = '''
-One step of symmetric Gaussian elimination keeps a Stieltjes matrix Stieltjes:
-`A.IsStieltjes → (A.schurComplementSingle p).IsStieltjes`. `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`
-(Ky Fan), symmetry of the Schur complement of a symmetric matrix, and
-`Matrix.IsMMatrix.posDef_of_isSymm`. ★
-'''
-deps = ["Matrix.IsStieltjes", "Matrix.IsStieltjes.isMMatrix", "Matrix.IsMMatrix.isMMatrix_schurComplementSingle",
-  "Matrix.IsMMatrix.posDef_of_isSymm", "Matrix.schurComplementSingle"]
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.IsStieltjes.isStieltjes_sub_drop"
-kind = "theorem"
-desc = '''
-[golub2013matrix] Theorem 11.5.2, backbone form: for `A.IsStieltjes`, a pivot `p` and any set `S` of
-non-pivot indices, the matrix `B̃ i j = A i j − ṽ_i ṽ_j / A p p` on `{i // i ≠ p}` with
-`ṽ_i = if i ∈ S then A i p else 0` (the pivot column with the entries outside `S` dropped) is
-Stieltjes. Proof: `B̃ ≥ A.schurComplementSingle p` entrywise, because `ṽ_iṽ_j ∈ {0, A i p · A p j}` and
-`A i p · A p j ≥ 0` (both `≤ 0`), `A p p > 0`; the Schur complement is Stieltjes
-(`Matrix.IsStieltjes.schurComplementSingle`) and `B̃` is symmetric with nonpositive off-diagonal
-entries, so `Matrix.IsStieltjes.of_entrywiseLE`. (The book's proof via `B⁻¹ ≥ 0` and
-Sherman–Morrison is the alternative.) Statement shape settled by
-`notes/gvl/ch11/proto/Shapes.lean` (c). ★★ (~40 lines)
-'''
-deps = ["Matrix.IsStieltjes.schurComplementSingle", "Matrix.IsStieltjes.of_entrywiseLE"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 11.5.2'
+
+[[node]]
+id = "Matrix.IsStieltjes.isSymm"

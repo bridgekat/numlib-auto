@@ -49,6 +49,11 @@ without importing the theory of stationary iterations.
   diagonal, or its lower triangle, scaled by an eigenvalue) rather than to the matrix itself.
 * `Matrix.IsStrictDiagDominant.posDef`: a Hermitian strictly row dominant matrix with positive
   diagonal is positive definite ([quarteroni2000numerical] §1.12), by Gershgorin's theorem.
+* `Matrix.IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec` and
+  `Matrix.IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec`: dominance with a margin `δ`
+  bounds `A x` from below, `δ ‖x‖₁ ≤ ‖A x‖₁` for columns and `δ ‖x‖_∞ ≤ ‖A x‖_∞` for rows, which
+  is `‖A⁻¹‖ ≤ 1 / δ` in the corresponding induced norm ([golub2013matrix] Theorem 4.1.2 and its
+  row twin, Varah's bound).
 * `Matrix.IsColDiagDominant.schurComplementSingle`, `Matrix.IsDiagDominant.schurComplementSingle`:
   one step of Gaussian elimination (`Matrix.schurComplementSingle` of
   `Numlib/LinearAlgebra/Matrix/SchurComplement.lean`) preserves weak column and weak row dominance
@@ -335,6 +340,71 @@ theorem IsColDiagDominant.diag_ne_zero_of_isUnit (hA : A.IsColDiagDominant) (hu 
   (IsColDiagDominant.transpose_iff.mpr hA).diag_ne_zero_of_isUnit ((isUnit_transpose A).mpr hu) i
 
 end Weak
+
+/-! ### Lower bounds for `A x` under dominance with a margin -/
+
+section Margin
+
+variable {A : Matrix n n 𝕜}
+
+/-- The diagonal term of `(A x)_i` is bounded by the row: `‖a_ii x_i‖ ≤ ‖(A x)_i‖ + ∑_{j ≠ i}
+‖a_ij‖ ‖x_j‖`. -/
+private theorem norm_diag_mul_le (A : Matrix n n 𝕜) (x : n → 𝕜) (i : n) :
+    ‖A i i‖ * ‖x i‖ ≤ ‖(A *ᵥ x) i‖ + ∑ j ∈ Finset.univ.erase i, ‖A i j‖ * ‖x j‖ := by
+  have h : A i i * x i = (A *ᵥ x) i - ∑ j ∈ Finset.univ.erase i, A i j * x j := by
+    rw [mulVec, dotProduct, ← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
+    ring
+  rw [← norm_mul, h]
+  refine (norm_sub_le _ _).trans (add_le_add le_rfl ((norm_sum_le _ _).trans_eq ?_))
+  simp only [norm_mul]
+
+/-- **Column dominance with a margin bounds `A x` from below in the `1`-norm** ([golub2013matrix]
+Theorem 4.1.2, the heart of its proof): if `δ ≤ |a_jj| - ∑_{i ≠ j} |a_ij|` for every column `j`,
+then `δ ∑ⱼ |x_j| ≤ ∑ᵢ |(A x)_i|`. The diagonal terms `|a_ii x_i| ≤ |(A x)_i| + ∑_{j ≠ i} |a_ij x_j|`
+are summed over the rows, and the off-diagonal double sum is regrouped by columns. The bound
+`‖A⁻¹‖₁ ≤ 1 / δ` follows. -/
+theorem IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec {δ : ℝ}
+    (hδ : ∀ j, δ ≤ ‖A j j‖ - ∑ i ∈ Finset.univ.erase j, ‖A i j‖) (x : n → 𝕜) :
+    δ * ∑ j, ‖x j‖ ≤ ∑ i, ‖(A *ᵥ x) i‖ := by
+  have hoff : ∑ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ * ‖x j‖
+      = ∑ j, (∑ i ∈ Finset.univ.erase j, ‖A i j‖) * ‖x j‖ := by
+    simp_rw [Finset.sum_mul, Finset.sum_erase_eq_sub (Finset.mem_univ _), Finset.sum_sub_distrib]
+    rw [Finset.sum_comm]
+  have hrow := Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => norm_diag_mul_le A x i
+  rw [Finset.sum_add_distrib, hoff] at hrow
+  calc δ * ∑ j, ‖x j‖ = ∑ j, δ * ‖x j‖ := Finset.mul_sum _ _ _
+    _ ≤ ∑ j, (‖A j j‖ - ∑ i ∈ Finset.univ.erase j, ‖A i j‖) * ‖x j‖ :=
+        Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_right (hδ j) (norm_nonneg _)
+    _ ≤ ∑ i, ‖(A *ᵥ x) i‖ := by
+        simp_rw [sub_mul, Finset.sum_sub_distrib]
+        linarith
+
+/-- **Row dominance with a margin bounds `A x` from below in the `∞`-norm** ([golub2013matrix]
+P4.1.2; Varah 1975): if `δ ≤ |a_ii| - ∑_{j ≠ i} |a_ij|` for every row `i`, then
+`δ ‖x‖_∞ ≤ ‖A x‖_∞`, the sup norms of `n → 𝕜`. At an index `j` where `|x_j|` is largest,
+`|(A x)_j| ≥ |a_jj| |x_j| - ∑_{k ≠ j} |a_jk| |x_k| ≥ δ |x_j|`. The bound `‖A⁻¹‖_∞ ≤ 1 / δ`
+follows. -/
+theorem IsStrictDiagDominant.mul_sup_norm_le_sup_norm_mulVec {δ : ℝ}
+    (hδ : ∀ i, δ ≤ ‖A i i‖ - ∑ j ∈ Finset.univ.erase i, ‖A i j‖) (x : n → 𝕜) :
+    δ * ‖x‖ ≤ ‖A *ᵥ x‖ := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · simp [Subsingleton.elim x 0]
+  obtain ⟨j, -, hj⟩ := Finset.exists_max_image Finset.univ (fun k => ‖x k‖) Finset.univ_nonempty
+  have hxj : ‖x‖ = ‖x j‖ :=
+    le_antisymm ((pi_norm_le_iff_of_nonneg (norm_nonneg _)).2 fun k => hj k (Finset.mem_univ k))
+      (norm_le_pi_norm x j)
+  have hoff : ∑ k ∈ Finset.univ.erase j, ‖A j k‖ * ‖x k‖
+      ≤ (∑ k ∈ Finset.univ.erase j, ‖A j k‖) * ‖x j‖ := by
+    rw [Finset.sum_mul]
+    exact Finset.sum_le_sum fun k _ =>
+      mul_le_mul_of_nonneg_left (hj k (Finset.mem_univ k)) (norm_nonneg _)
+  rw [hxj]
+  calc δ * ‖x j‖ ≤ (‖A j j‖ - ∑ k ∈ Finset.univ.erase j, ‖A j k‖) * ‖x j‖ :=
+        mul_le_mul_of_nonneg_right (hδ j) (norm_nonneg _)
+    _ ≤ ‖(A *ᵥ x) j‖ := by linarith [norm_diag_mul_le A x j]
+    _ ≤ ‖A *ᵥ x‖ := norm_le_pi_norm _ j
+
+end Margin
 
 section Gershgorin
 

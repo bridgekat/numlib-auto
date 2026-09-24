@@ -9,7 +9,7 @@ import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
-import Numlib.Analysis.Matrix.OperatorNorm
+import Numlib.Analysis.Matrix.SpectralNorm
 
 /-!
 # The Schur complement of a block matrix
@@ -51,7 +51,11 @@ about its inverse. This file adds the name and the facts a domain-decomposition 
   when each of its blocks is.
 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
-the form incomplete factorizations use ([saad2003iterative] Theorem 10.1).
+the form incomplete factorizations use ([saad2003iterative] Theorem 10.1). Its defining property
+`Matrix.schurComplementSingle_mulVec_of_apply_eq_zero` (it reproduces `A x` off the pivot row when
+`(A x)_p = 0`) gives the `1 × 1`-pivot inverse formula `Matrix.inv_schurComplementSingle`,
+`S⁻¹ = (A⁻¹)` restricted to the indices other than the pivot, and nonsingularity
+`Matrix.isUnit_schurComplementSingle`.
 
 `Matrix.saddleMatrix A B D = fromBlocks A B Bᴴ D` is the saddle-point (equilibrium, KKT) matrix
 ([golub2013matrix] §4.4.5, [saad2003iterative] (8.30)), with its block equations
@@ -307,6 +311,82 @@ theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
   simp only [transpose_apply, schurComplementSingle_apply]
   ring
 
+variable [Fintype n] [DecidableEq n]
+
+/-- A sum over the indices other than `p`, read as a sum over the subtype. -/
+private theorem sum_subtype_ne (p : n) (f : n → K) :
+    ∑ j : {x : n // x ≠ p}, f j.1 = ∑ x ∈ Finset.univ.erase p, f x := by
+  have h : ∀ x : n, x ∈ Finset.univ.erase p ↔ x ≠ p := fun x => by simp
+  exact (Finset.sum_subtype _ h f).symm
+
+/-- The row of a matrix-vector product, with the pivot term separated off. -/
+private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) :
+    ∑ j : {x : n // x ≠ p}, A t j.1 * X j.1 = (A *ᵥ X) t - A t p * X p := by
+  rw [sum_subtype_ne p fun j => A t j * X j, Matrix.mulVec_apply_eq_sum,
+    ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
+  ring
+
+/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose image
+under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of `X`
+reproduces the remaining rows of `A X`.
+
+This is the whole content of one step of Gaussian elimination: `X` is recovered from its restriction
+by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
+theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
+    (hpp : A p p ≠ 0) {X : n → K} (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
+    (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
+  have hp := sum_ne_eq_mulVec_sub A X p p
+  rw [hX, zero_sub] at hp
+  have hXp : (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = -X p := by
+    rw [hp]; field_simp
+  have expand : ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1
+      = (∑ j : {x : n // x ≠ p}, A i.1 j.1 * X j.1)
+        - ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1) := by
+    rw [← Finset.sum_sub_distrib]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [Matrix.schurComplementSingle_apply]; ring
+  have pull : ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1)
+      = A i.1 p * (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 := by
+    rw [Finset.mul_sum]
+  have lhs : (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i
+      = ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1 :=
+    Matrix.mulVec_apply_eq_sum _ _ _
+  rw [lhs, expand, pull, mul_assoc, hXp, sum_ne_eq_mulVec_sub A X p i.1]
+  ring
+
+/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is inverted by
+the corresponding submatrix of the inverse. -/
+theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA : IsUnit A)
+    (hpp : A p p ≠ 0) :
+    A.schurComplementSingle p * A⁻¹.submatrix Subtype.val Subtype.val = 1 := by
+  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA
+  ext i j
+  have hcol : ∀ s : n, (A *ᵥ fun t => A⁻¹ t j.1) s = (1 : Matrix n n K) s j.1 := fun s => by
+    rw [Matrix.mulVec_apply_eq_sum, ← Matrix.mul_apply, mul_nonsing_inv A hdet]
+  have hzero : (A *ᵥ fun t => A⁻¹ t j.1) p = 0 := by
+    rw [hcol p, Matrix.one_apply_ne (Ne.symm j.2)]
+  have h := schurComplementSingle_mulVec_of_apply_eq_zero A hpp hzero i
+  rw [hcol i.1] at h
+  have hone : (1 : Matrix n n K) i.1 j.1
+      = (1 : Matrix {x : n // x ≠ p} {x : n // x ≠ p} K) i j := by
+    rcases eq_or_ne i j with rfl | hij
+    · rw [Matrix.one_apply_eq, Matrix.one_apply_eq]
+    · rw [Matrix.one_apply_ne (Subtype.coe_injective.ne hij), Matrix.one_apply_ne hij]
+  exact h.trans hone
+
+/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is nonsingular.
+-/
+theorem isUnit_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
+    IsUnit (A.schurComplementSingle p) :=
+  have h := schurComplementSingle_mul_submatrix_inv hA hpp
+  ⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩
+
+/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the indices
+other than the pivot — the `1 × 1`-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
+theorem inv_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
+    (A.schurComplementSingle p)⁻¹ = A⁻¹.submatrix Subtype.val Subtype.val :=
+  Matrix.inv_eq_right_inv (schurComplementSingle_mul_submatrix_inv hA hpp)
+
 end Single
 
 section BlockLDU
@@ -384,41 +464,7 @@ section L2Order
 
 open scoped Matrix.Norms.L2Operator
 
-variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- The `ℓ²` norm of a subfamily of the coordinates of a vector is at most the norm of the
-vector. -/
-theorem _root_.EuclideanSpace.norm_toLp_comp_le {ι κ : Type*} [Fintype ι] [Fintype κ]
-    {f : ι → κ} (hf : Injective f) (y : κ → 𝕜) :
-    ‖(WithLp.toLp 2 (y ∘ f) : EuclideanSpace 𝕜 ι)‖ ≤ ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 κ)‖ := by
-  classical
-  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
-  refine Real.sqrt_le_sqrt ?_
-  change ∑ i, ‖y (f i)‖ ^ 2 ≤ ∑ k, ‖y k‖ ^ 2
-  rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ 2) hf.injOn]
-  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
-
-/-- Extending a vector by zero along an injection preserves the `ℓ²` norm. -/
-theorem _root_.EuclideanSpace.norm_toLp_extend {ι κ : Type*} [Fintype ι] [Fintype κ]
-    {g : ι → κ} (hg : Injective g) (x : ι → 𝕜) :
-    ‖(WithLp.toLp 2 (extend g x 0) : EuclideanSpace 𝕜 κ)‖
-      = ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 ι)‖ := by
-  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
-  congr 1
-  refine (Fintype.sum_of_injective g hg (fun i => ‖x i‖ ^ 2) (fun k => ‖extend g x 0 k‖ ^ 2)
-    (fun k hk => ?_) fun i => ?_).symm
-  · rw [extend_apply' _ _ _ (by simpa using hk)]
-    simp
-  · rw [hg.extend_apply]
-
-/-- `Matrix.l2_opNorm_mulVec` in the `WithLp.toLp` form. -/
-theorem l2_opNorm_toLp_mulVec {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
-    (A : Matrix m n 𝕜) (v : n → 𝕜) :
-    ‖(WithLp.toLp 2 (A *ᵥ v) : EuclideanSpace 𝕜 m)‖
-      ≤ ‖A‖ * ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ :=
-  l2_opNorm_mulVec A (WithLp.toLp 2 v)
-
-variable {n : Type*} [Fintype n] [DecidableEq n]
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- **The `ℓ²` operator norm is monotone on positive semidefinite matrices**: if `0 ≤ X ≤ Y` in the
 Loewner order — `X` and `Y - X` positive semidefinite — then `‖X‖₂ ≤ ‖Y‖₂`. The norm of a

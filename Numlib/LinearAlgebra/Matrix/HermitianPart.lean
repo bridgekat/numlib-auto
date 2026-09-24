@@ -30,7 +30,12 @@ Methods for Sparse Linear Systems*, §1.11.
   every statement about `S` reduces to one about `H`.
 * `Matrix.re_inner_hermitianPart`: `re ⟪H x, x⟫ = re ⟪A x, x⟫` — the quadratic form of `A` sees
   only its Hermitian part — and `Matrix.mulVec_dotProduct_eq_hermitianPart`, the same identity
-  for a real matrix and the dot product.
+  for a real matrix and the dot product; `Matrix.star_dotProduct_hermitianPart_mulVec`,
+  `xᴴ H x = re (xᴴ A x)`, and with it
+  `Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos`, the unsymmetric "positive
+  definite" of [golub2013matrix] §4.2 read through `H`.
+* `Matrix.hermitianPart_conjTranspose_mul_mul`: the Hermitian part commutes with congruence, and
+  `Matrix.l2_opNorm_hermitianPart_le`: `‖H‖₂ ≤ ‖A‖₂` ([golub2013matrix] §4.2.2).
 
 ## Implementation notes
 
@@ -43,6 +48,8 @@ read through `Matrix.toEuclideanLin`.
 `skewHermitianPart` is stated over `ℂ` only: over a general `RCLike 𝕜` the imaginary unit may be
 `0`, and the division by `2i` is then meaningless.
 -/
+
+open scoped ComplexOrder
 
 namespace Matrix
 
@@ -140,5 +147,45 @@ theorem re_inner_hermitianPart (A : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n)
       map_inv₀, RCLike.conj_ofNat]
   rw [key, RCLike.add_conj, ← mul_assoc, show (2⁻¹ : 𝕜) * 2 = 1 by norm_num, one_mul,
     RCLike.ofReal_re]
+
+/-! ### Congruence, definiteness and the spectral norm -/
+
+omit [DecidableEq n] in
+/-- The Hermitian part of a congruence is the congruence of the Hermitian part:
+`hermitianPart (Xᴴ A X) = Xᴴ (hermitianPart A) X` for a rectangular `X`. -/
+theorem hermitianPart_conjTranspose_mul_mul {k : Type*} (X : Matrix n k 𝕜)
+    (A : Matrix n n 𝕜) : hermitianPart (Xᴴ * A * X) = Xᴴ * hermitianPart A * X := by
+  simp only [hermitianPart, conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_smul,
+    Matrix.smul_mul, Matrix.mul_add, Matrix.add_mul, Matrix.mul_assoc]
+
+
+omit [DecidableEq n] in
+/-- The quadratic form of the Hermitian part is the real part of that of `A`:
+`xᴴ H x = re (xᴴ A x)`. -/
+theorem star_dotProduct_hermitianPart_mulVec (A : Matrix n n 𝕜) (x : n → 𝕜) :
+    star x ⬝ᵥ (hermitianPart A *ᵥ x) = (RCLike.re (star x ⬝ᵥ (A *ᵥ x)) : 𝕜) := by
+  have h : starRingEnd 𝕜 (star x ⬝ᵥ (A *ᵥ x)) = star x ⬝ᵥ (Aᴴ *ᵥ x) := by
+    rw [starRingEnd_apply, star_dotProduct, star_star, star_mulVec, ← dotProduct_mulVec]
+  rw [hermitianPart, smul_mulVec, add_mulVec, dotProduct_smul, dotProduct_add, ← h,
+    RCLike.add_conj, smul_eq_mul, ← mul_assoc, show (2⁻¹ : 𝕜) * 2 = 1 by norm_num, one_mul]
+
+omit [DecidableEq n] in
+/-- **Positive definiteness of the Hermitian part** is positivity of the real part of the
+quadratic form: `(hermitianPart A).PosDef ↔ ∀ x ≠ 0, 0 < re (xᴴ A x)`. Over `ℝ` it reads
+`∀ x ≠ 0, 0 < xᵀ A x`, the unsymmetric "positive definite" of [golub2013matrix] §4.2. -/
+theorem posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos (A : Matrix n n 𝕜) :
+    (hermitianPart A).PosDef ↔ ∀ x : n → 𝕜, x ≠ 0 → 0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x)) := by
+  rw [posDef_iff_dotProduct_mulVec]
+  simp only [hermitianPart_isHermitian, true_and, star_dotProduct_hermitianPart_mulVec,
+    RCLike.ofReal_pos]
+
+open scoped Matrix.Norms.L2Operator in
+/-- The spectral norm of the Hermitian part is at most that of the matrix ([golub2013matrix]
+§4.2.2): `‖(A + Aᴴ)/2‖₂ ≤ (‖A‖₂ + ‖Aᴴ‖₂)/2 = ‖A‖₂`. -/
+theorem l2_opNorm_hermitianPart_le (A : Matrix n n 𝕜) :
+    ‖hermitianPart A‖ ≤ ‖A‖ := by
+  rw [hermitianPart, norm_smul, norm_inv, RCLike.norm_ofNat]
+  calc 2⁻¹ * ‖A + Aᴴ‖ ≤ 2⁻¹ * (‖A‖ + ‖Aᴴ‖) := by gcongr; exact norm_add_le _ _
+    _ = ‖A‖ := by rw [l2_opNorm_conjTranspose]; ring
 
 end Matrix

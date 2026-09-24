@@ -41,7 +41,11 @@ operator algebra results (`‖1‖ = 1`, invertibility, the condition number) ar
   `Matrix.lpOpNorm_two`: `‖A‖₂` is Mathlib's scoped `L2Operator` norm.
 * `Matrix.lpOpNorm_mul_le`: the induced norms are submultiplicative, `‖A B‖_p ≤ ‖A‖_p ‖B‖_p`.
 * `Matrix.lpOpNorm_submatrix_le`: a submatrix has a smaller induced `p`-norm
-  ([golub2013matrix] (2.3.13)), with `Matrix.l2_opNorm_submatrix_le` its `p = 2` case.
+  ([golub2013matrix] (2.3.13)); the `p = 2` case for the scoped spectral norm,
+  `Matrix.l2_opNorm_submatrix_le`, is in `Numlib/Analysis/Matrix/SpectralNorm`.
+* `Matrix.lpOpNorm_blockDiagonal'`: the induced `p`-norm of a block diagonal matrix is the largest
+  of its blocks', for every `p`, with the corollaries `Matrix.lpOpNorm_diagonal` and
+  `Matrix.l2_opNorm_blockDiagonal'`.
 * `Matrix.complexSpectralRadius_le_lpOpNorm`: `ρ(A) ≤ ‖A‖_p` for a real matrix (Saad §1.5;
   Quarteroni–Sacco–Saleri Theorem 1.4 for the induced norms), the spectral radius being that of
   the complexification, `Matrix.complexSpectralRadius` of
@@ -73,14 +77,17 @@ bundled on demand as `Matrix.inducedSeminorm` (rectangular) or `Matrix.inducedAl
   column-sum formulas; `Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le` and `…_of_ge`, the
   comparison of the induced `p`-norms with the constants `card ^ (1/p - 1/q)`, and their
   instances `Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`,
-  `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`.
+  `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`; for the condition numbers,
+  `Matrix.condNumberLp_le_card_rpow_mul_condNumberLp` ([golub2013matrix] (2.6.8)).
 * The spectral norm (their Theorem 1.2):
   `Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self` (`‖A‖₂² = ρ(Aᴴ A) = ρ(A Aᴴ)`),
   `Matrix.IsHermitian.l2_opNorm_eq_spectralRadius`,
   `Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal`, `Matrix.l2_opNorm_of_mem_unitaryGroup`,
   unitary invariance `Matrix.l2_opNorm_unitary_mul_mul_unitary` and
   `Matrix.frobenius_norm_unitary_mul_mul_unitary`, `Matrix.condNumber_l2_of_mem_unitaryGroup`,
-  `Matrix.condNumber_l2_unitary_mul`, and `Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`
+  `Matrix.condNumber_l2_unitary_mul`, the invariance under a factor with orthonormal columns
+  `Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one` and its adjoint form, and
+  `Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`
   (`κ₂ = λ_max / λ_min`, their (3.5)).
 * The Frobenius norm: `Matrix.frobenius_norm_sq_eq_trace` (their (1.18)),
   `Matrix.frobenius_norm_mulVec_le` (their Example 1.7), `Matrix.frobenius_norm_one`,
@@ -96,7 +103,8 @@ bundled on demand as `Matrix.inducedSeminorm` (rectangular) or `Matrix.inducedAl
   form (their Property 1.13), `Matrix.complexSpectralRadius_eq_iInf_inducedNorm` (their (1.23)),
   `Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal`, and the Neumann bounds
   `Matrix.inducedNorm_inv_one_sub_le`, `Matrix.one_div_one_add_le_inducedNorm_inv_one_sub`
-  (their (1.26)).
+  (their (1.26)), `Matrix.inducedNorm_inv_one_sub_sub_one_le`, and the Neumann series itself,
+  `Matrix.hasSum_pow_of_inducedNorm_lt_one` ([golub2013matrix] Lemma 2.3.3).
 * `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`: the `∞`-norm is monotone in the entrywise
   absolute values, which turns entrywise error bounds into normwise ones.
 -/
@@ -245,51 +253,6 @@ end CLM
 
 section Submatrix
 
-/-- The `ℓ^p` norm of a subfamily of the coordinates of a vector is at most the norm of the
-vector. -/
-theorem _root_.PiLp.norm_toLp_comp_le {ι ι' : Type*} [Fintype ι] [Fintype ι'] {f : ι → ι'}
-    (hf : Function.Injective f) (y : ι' → 𝕜) :
-    ‖(WithLp.toLp p (y ∘ f) : PiLp p fun _ : ι => 𝕜)‖
-      ≤ ‖(WithLp.toLp p y : PiLp p fun _ : ι' => 𝕜)‖ := by
-  classical
-  rcases p.dichotomy with rfl | hp
-  · rw [PiLp.norm_eq_ciSup]
-    exact Real.iSup_le (fun i => PiLp.norm_apply_le (WithLp.toLp ⊤ y) (f i)) (norm_nonneg _)
-  · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
-    rw [PiLp.norm_eq_sum hp0, PiLp.norm_eq_sum hp0]
-    refine Real.rpow_le_rpow (Finset.sum_nonneg fun i _ => by positivity) ?_ (by positivity)
-    change ∑ i, ‖y (f i)‖ ^ p.toReal ≤ ∑ k, ‖y k‖ ^ p.toReal
-    rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ p.toReal) hf.injOn]
-    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
-
-/-- Extending a vector by zero along an injection preserves its `ℓ^p` norm. -/
-theorem _root_.PiLp.norm_toLp_extend {ι ι' : Type*} [Fintype ι] [Fintype ι'] {g : ι → ι'}
-    (hg : Function.Injective g) (x : ι → 𝕜) :
-    ‖(WithLp.toLp p (Function.extend g x 0) : PiLp p fun _ : ι' => 𝕜)‖
-      = ‖(WithLp.toLp p x : PiLp p fun _ : ι => 𝕜)‖ := by
-  classical
-  refine le_antisymm ?_ ?_
-  · rcases p.dichotomy with rfl | hp
-    · rw [PiLp.norm_eq_ciSup]
-      refine Real.iSup_le (fun k => ?_) (norm_nonneg _)
-      by_cases hk : ∃ i, g i = k
-      · obtain ⟨i, rfl⟩ := hk
-        rw [WithLp.ofLp_toLp, hg.extend_apply]
-        exact PiLp.norm_apply_le (WithLp.toLp ⊤ x) i
-      · rw [WithLp.ofLp_toLp, Function.extend_apply' _ _ _ hk, Pi.zero_apply, norm_zero]
-        exact norm_nonneg _
-    · have hp0 : 0 < p.toReal := zero_lt_one.trans_le hp
-      rw [PiLp.norm_eq_sum hp0, PiLp.norm_eq_sum hp0]
-      refine le_of_eq (congrArg (· ^ (1 / p.toReal)) ?_)
-      change ∑ k, ‖Function.extend g x 0 k‖ ^ p.toReal = ∑ i, ‖x i‖ ^ p.toReal
-      refine (Fintype.sum_of_injective g hg (fun i => ‖x i‖ ^ p.toReal) _ (fun k hk => ?_)
-        fun i => ?_).symm
-      · rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, norm_zero,
-          Real.zero_rpow hp0.ne']
-      · rw [hg.extend_apply]
-  · simpa [Function.extend_comp hg] using
-      PiLp.norm_toLp_comp_le p hg (Function.extend g x 0)
-
 variable [DecidableEq n]
 
 /-- **A submatrix has a smaller induced `p`-norm**, for injective row and column selections:
@@ -300,14 +263,7 @@ theorem lpOpNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [Decidab
     (A : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
     (hg : Function.Injective g) : lpOpNorm p (A.submatrix f g) ≤ lpOpNorm p A := by
   refine ContinuousLinearMap.opNorm_le_bound _ (lpOpNorm_nonneg p A) fun x => ?_
-  have hx : (A.submatrix f g) *ᵥ WithLp.ofLp x
-      = (A *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f := by
-    funext i
-    simp only [mulVec, dotProduct, submatrix_apply, Function.comp_apply]
-    exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
-      rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
-      rw [hg.extend_apply]
-  rw [lpCLM_apply, hx]
+  rw [lpCLM_apply, submatrix_mulVec_eq_comp_mulVec_extend A f hg]
   calc ‖(WithLp.toLp p ((A *ᵥ Function.extend g (WithLp.ofLp x) 0) ∘ f)
         : PiLp p fun _ : m' => 𝕜)‖
       ≤ ‖lpCLM p A (WithLp.toLp p (Function.extend g (WithLp.ofLp x) 0))‖ :=
@@ -316,15 +272,85 @@ theorem lpOpNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [Decidab
           : PiLp p fun _ : n => 𝕜)‖ := (lpCLM p A).le_opNorm _
     _ = lpOpNorm p A * ‖x‖ := by rw [PiLp.norm_toLp_extend p hg]
 
-open scoped Matrix.Norms.L2Operator in
-/-- **A submatrix has a smaller `ℓ²` operator norm**, for injective row and column selections:
-`‖A.submatrix f g‖₂ ≤ ‖A‖₂`. The case `p = 2` of `Matrix.lpOpNorm_submatrix_le`. -/
-theorem l2_opNorm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n'] [DecidableEq n']
-    (A : Matrix m n 𝕜) {f : m' → m} (hf : Function.Injective f) {g : n' → n}
-    (hg : Function.Injective g) : ‖A.submatrix f g‖ ≤ ‖A‖ := by
-  simpa only [lpOpNorm_two] using lpOpNorm_submatrix_le 2 A hf hg
-
 end Submatrix
+
+/-! ### Block diagonal and diagonal matrices -/
+
+section BlockDiagonal
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {m' n' : ι → Type*} [∀ i, Fintype (m' i)]
+  [∀ i, Fintype (n' i)] [∀ i, DecidableEq (n' i)]
+
+omit [Fintype ι] [∀ i, Fintype (m' i)] [∀ i, Fintype (n' i)] [∀ i, DecidableEq (n' i)] in
+/-- The diagonal block of a block diagonal matrix. -/
+private theorem blockDiagonal'_submatrix_mk {α : Type*} [Zero α] (M : ∀ i, Matrix (m' i) (n' i) α)
+    (i : ι) : (blockDiagonal' M).submatrix (Sigma.mk i) (Sigma.mk i) = M i := by
+  ext a b
+  simp [blockDiagonal'_apply_eq]
+
+omit [∀ i, Fintype (m' i)] [∀ i, DecidableEq (n' i)] in
+/-- A block diagonal matrix acts blockwise. -/
+private theorem blockDiagonal'_mulVec_apply (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
+    (x : (Σ i, n' i) → 𝕜) (k : Σ i, m' i) :
+    (blockDiagonal' M *ᵥ x) k = (M k.1 *ᵥ fun b => x ⟨k.1, b⟩) k.2 := by
+  obtain ⟨i, a⟩ := k
+  simp only [mulVec, dotProduct, Fintype.sum_sigma, blockDiagonal'_apply']
+  rw [Finset.sum_eq_single i (fun j _ hj => by simp [Ne.symm hj]) (by simp)]
+  simp
+
+/-- **The induced `p`-norm of a block diagonal matrix is the largest induced `p`-norm of its
+blocks**, for every `p`: `‖diag(M₁, …, M_k)‖_p = maxᵢ ‖Mᵢ‖_p`. The lower bound is
+`Matrix.lpOpNorm_submatrix_le` along each block; the upper bound reads the `ℓ^p` norm on the sigma
+type block by block (`LinearIsometryEquiv.piLpCurry`). -/
+theorem lpOpNorm_blockDiagonal' (M : ∀ i, Matrix (m' i) (n' i) 𝕜) :
+    lpOpNorm p (blockDiagonal' M) = ⨆ i, lpOpNorm p (M i) := by
+  have hS : 0 ≤ ⨆ i, lpOpNorm p (M i) := Real.iSup_nonneg fun i => lpOpNorm_nonneg p _
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ hS fun x => ?_)
+    (Real.iSup_le (fun i => ?_) (lpOpNorm_nonneg p _))
+  · rw [lpCLM_apply, ← (LinearIsometryEquiv.piLpCurry 𝕜 p fun i (_ : m' i) => 𝕜).norm_map,
+      ← (LinearIsometryEquiv.piLpCurry 𝕜 p fun i (_ : n' i) => 𝕜).norm_map x,
+      LinearIsometryEquiv.piLpCurry_apply, LinearIsometryEquiv.piLpCurry_apply]
+    refine PiLp.norm_toLp_le_mul_norm_toLp p hS fun i => ?_
+    have hx : (WithLp.toLp p (Sigma.curry (γ := fun _ _ => 𝕜) (WithLp.ofLp (WithLp.toLp p
+        (blockDiagonal' M *ᵥ WithLp.ofLp x))) i) : PiLp p fun _ : m' i => 𝕜)
+        = lpCLM p (M i) (WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩) := by
+      ext a
+      simp [Sigma.curry, blockDiagonal'_mulVec_apply]
+    rw [hx]
+    calc ‖lpCLM p (M i) (WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩)‖
+        ≤ lpOpNorm p (M i) * ‖(WithLp.toLp p fun b => WithLp.ofLp x ⟨i, b⟩
+          : PiLp p fun _ : n' i => 𝕜)‖ := (lpCLM p (M i)).le_opNorm _
+      _ ≤ _ := mul_le_mul_of_nonneg_right
+          (le_ciSup (Finite.bddAbove_range fun i => lpOpNorm p (M i)) i) (norm_nonneg _)
+  · have h := lpOpNorm_submatrix_le p (blockDiagonal' M) (sigma_mk_injective (i := i))
+      (sigma_mk_injective (i := i))
+    rwa [blockDiagonal'_submatrix_mk] at h
+
+/-- The induced `p`-norm of a diagonal matrix is the largest modulus of a diagonal entry:
+`‖diag(d)‖_p = maxᵢ |dᵢ|` for every `p`. Mathlib has the cases `p = 2`
+(`Matrix.l2_opNorm_diagonal`) and `p = ∞` (`Matrix.linfty_opNorm_diagonal`). -/
+theorem lpOpNorm_diagonal [DecidableEq n] (d : n → 𝕜) :
+    lpOpNorm p (diagonal d) = ⨆ i, ‖d i‖ := by
+  have hS : 0 ≤ ⨆ i, ‖d i‖ := Real.iSup_nonneg fun i => norm_nonneg _
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ hS fun x => ?_)
+    (Real.iSup_le (fun i => ?_) (lpOpNorm_nonneg p _))
+  · rw [lpCLM_apply]
+    refine PiLp.norm_toLp_le_mul_norm_toLp p hS fun i => ?_
+    rw [mulVec_diagonal, norm_mul]
+    exact mul_le_mul_of_nonneg_right (le_ciSup (Finite.bddAbove_range fun i => ‖d i‖) i)
+      (norm_nonneg _)
+  · have h := (lpCLM p (diagonal d)).le_opNorm (PiLp.single p i (1 : 𝕜))
+    rwa [lpCLM_apply, PiLp.norm_single, norm_one, mul_one, ← lpOpNorm, PiLp.ofLp_single,
+      diagonal_mulVec_single, mul_one, PiLp.toLp_single, PiLp.norm_single] at h
+
+open scoped Matrix.Norms.L2Operator in
+/-- **The spectral norm of a block diagonal matrix is the largest spectral norm of its blocks**:
+`Matrix.lpOpNorm_blockDiagonal'` at `p = 2`. -/
+theorem l2_opNorm_blockDiagonal' (M : ∀ i, Matrix (m' i) (n' i) 𝕜) :
+    ‖blockDiagonal' M‖ = ⨆ i, ‖M i‖ := by
+  simpa only [lpOpNorm_two] using lpOpNorm_blockDiagonal' 2 M
+
+end BlockDiagonal
 
 /-! ### Invertible matrices, and the condition number `κ_p(A)` -/
 
@@ -831,6 +857,34 @@ theorem l2_opNorm_le_sqrt_card_mul_lpOpNorm_one (A : Matrix m n 𝕜) :
   · have h := lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge (p := 1) (q := 2) (by norm_num) A
     rwa [h2, ← Real.sqrt_eq_rpow] at h
 
+/-- **The `p`-norm condition numbers are equivalent** ([golub2013matrix] (2.6.8)): for `p ≤ q`,
+`κ_p(A) ≤ c κ_q(A)` and `κ_q(A) ≤ c κ_p(A)` with `c = (card n) ^ (2 (1/p - 1/q))`, which is `n`
+for `(p, q) = (1, 2)` and `(2, ∞)` and `n²` for `(1, ∞)`. Multiply the one-sided comparisons
+`Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le` and `…_of_ge` for `A` and `A⁻¹`. -/
+theorem condNumberLp_le_card_rpow_mul_condNumberLp (hpq : p ≤ q) (A : Matrix n n 𝕜) :
+    condNumberLp p A ≤ (Fintype.card n : ℝ) ^ (2 * (1 / p.toReal - 1 / q.toReal)) *
+        condNumberLp q A ∧
+      condNumberLp q A ≤ (Fintype.card n : ℝ) ^ (2 * (1 / p.toReal - 1 / q.toReal)) *
+        condNumberLp p A := by
+  set k := (Fintype.card n : ℝ) ^ (1 / p.toReal - 1 / q.toReal)
+  have hk : 0 ≤ k := by positivity
+  have hc : (Fintype.card n : ℝ) ^ (2 * (1 / p.toReal - 1 / q.toReal)) = k * k := by
+    rw [mul_comm, Real.rpow_mul (Nat.cast_nonneg _), Real.rpow_two, sq]
+  rw [hc]
+  constructor
+  · calc condNumberLp p A = lpOpNorm p A * lpOpNorm p A⁻¹ := rfl
+      _ ≤ (k * lpOpNorm q A) * (k * lpOpNorm q A⁻¹) :=
+          mul_le_mul (lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le hpq A)
+            (lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le hpq A⁻¹) (lpOpNorm_nonneg _ _)
+            (mul_nonneg hk (lpOpNorm_nonneg _ _))
+      _ = k * k * condNumberLp q A := by rw [condNumberLp]; ring
+  · calc condNumberLp q A = lpOpNorm q A * lpOpNorm q A⁻¹ := rfl
+      _ ≤ (k * lpOpNorm p A) * (k * lpOpNorm p A⁻¹) :=
+          mul_le_mul (lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge hpq A)
+            (lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge hpq A⁻¹) (lpOpNorm_nonneg _ _)
+            (mul_nonneg hk (lpOpNorm_nonneg _ _))
+      _ = k * k * condNumberLp p A := by rw [condNumberLp]; ring
+
 end Compare
 
 /-! ### The spectral radius and the induced norms -/
@@ -1018,6 +1072,56 @@ theorem one_div_one_add_le_inducedNorm_inv_one_sub [Nonempty n] (hp : ∀ x, p x
   rw [nonsing_inv_eq_ringInverse]
   exact (inducedAlgebraNorm p hp).one_div_one_add_le_norm_inverse_one_sub (inducedNorm_one hp) hA
 
+/-- **The Neumann bound for the difference** ([golub2013matrix] §2.3.4, after Lemma 2.3.3): for
+an induced norm with `‖F‖ < 1`, `‖(1 - F)⁻¹ - 1‖ ≤ ‖F‖ / (1 - ‖F‖)`, because
+`(1 - F)⁻¹ - 1 = F (1 - F)⁻¹`. The twin of `Matrix.inducedNorm_inv_one_sub_le`. -/
+theorem inducedNorm_inv_one_sub_sub_one_le (hp : ∀ x, p x = 0 → x = 0) {F : Matrix n n 𝕜}
+    (hF : inducedNorm p p F < 1) :
+    inducedNorm p p ((1 - F)⁻¹ - 1) ≤ inducedNorm p p F / (1 - inducedNorm p p F) := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [Subsingleton.elim ((1 - F)⁻¹ - 1) 0, show inducedNorm p p (0 : Matrix n n 𝕜) = 0 from
+      (inducedNorm_eq_zero_iff hp hp 0).2 rfl]
+    exact div_nonneg (inducedNorm_nonneg F) (by linarith)
+  have hu : IsUnit (1 - F) := isUnit_one_sub_of_inducedNorm_lt_one hp hF
+  have hkey : (1 - F)⁻¹ - 1 = F * (1 - F)⁻¹ := by
+    have h := mul_nonsing_inv (1 - F) ((isUnit_iff_isUnit_det _).1 hu)
+    calc (1 - F)⁻¹ - 1 = (1 - F)⁻¹ - (1 - F) * (1 - F)⁻¹ := by rw [h]
+      _ = F * (1 - F)⁻¹ := by noncomm_ring
+  rw [hkey]
+  calc inducedNorm p p (F * (1 - F)⁻¹) ≤ inducedNorm p p F * inducedNorm p p (1 - F)⁻¹ :=
+        inducedNorm_mul_le p hp hp F _
+    _ ≤ inducedNorm p p F * (1 / (1 - inducedNorm p p F)) :=
+        mul_le_mul_of_nonneg_left (inducedNorm_inv_one_sub_le hp hF) (inducedNorm_nonneg F)
+    _ = inducedNorm p p F / (1 - inducedNorm p p F) := by ring
+
+/-- **The Neumann series of a matrix** ([golub2013matrix] Lemma 2.3.3): if `‖F‖ < 1` in the norm
+induced by a vector norm `p`, then `∑ₖ Fᵏ = (1 - F)⁻¹`, the series converging in the (entrywise)
+topology of `Matrix n n 𝕜`. All norms on the finite-dimensional space of matrices are equivalent
+(`Seminorm.exists_mul_norm_le`), so the geometric bound `‖Fᵏ‖ ≤ ‖F‖ᵏ` in the induced norm makes
+the series absolutely summable for the `∞`-operator norm, whose topology is the entrywise one. -/
+theorem hasSum_pow_of_inducedNorm_lt_one (hp : ∀ x, p x = 0 → x = 0) {F : Matrix n n 𝕜}
+    (hF : inducedNorm p p F < 1) : HasSum (fun k => F ^ k) (1 - F)⁻¹ := by
+  let _ : NormedRing (Matrix n n 𝕜) := Matrix.linftyOpNormedRing
+  let _ : NormedAlgebra ℝ (Matrix n n 𝕜) := Matrix.linftyOpNormedAlgebra
+  set N := inducedAlgebraNorm p hp
+  obtain ⟨c, hc, hcN⟩ := ((inducedSeminorm p p hp).restrictScalars ℝ).exists_mul_norm_le
+    fun X hX => eq_zero_of_map_eq_zero N hX
+  have hbound : ∀ k, k ≠ 0 → ‖F ^ k‖ ≤ c⁻¹ * N F ^ k := fun k hk => by
+    have h1 := hcN (F ^ k)
+    have h2 : N (F ^ k) ≤ N F ^ k := map_pow_le_pow N F hk
+    change c * ‖F ^ k‖ ≤ N (F ^ k) at h1
+    rw [le_inv_mul_iff₀ hc]
+    exact h1.trans h2
+  have hs : Summable fun k => F ^ k := by
+    refine Summable.of_norm_bounded_eventually
+      ((summable_geometric_of_lt_one (apply_nonneg N F) hF).mul_left c⁻¹) ?_
+    filter_upwards [Filter.eventually_cofinite_ne 0] with k hk
+    exact hbound k hk
+  have hinv : (1 - F)⁻¹ = ∑' k, F ^ k :=
+    inv_eq_right_inv hs.one_sub_mul_tsum_pow
+  rw [hinv]
+  exact hs.hasSum
+
 end Neumann
 
 /-! ### The spectral norm `‖A‖₂` -/
@@ -1112,6 +1216,41 @@ theorem condNumber_l2_unitary_mul {Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup
   rw [hinv, l2_opNorm_mul_unitary _ (Unitary.star_mem hQ)]
 
 end Unitary
+
+/-- A matrix with orthonormal columns, `Wᴴ W = 1`, acts isometrically on `EuclideanSpace`. -/
+theorem norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one [DecidableEq l]
+    {W : Matrix m l 𝕜} (hW : Wᴴ * W = 1) (x : EuclideanSpace 𝕜 l) :
+    ‖toEuclideanLin W x‖ = ‖x‖ := by
+  classical
+  have h : inner 𝕜 (toEuclideanLin W x) (toEuclideanLin W x) = inner 𝕜 x x := by
+    rw [← LinearMap.adjoint_inner_left, ← toEuclideanLin_conjTranspose_eq_adjoint,
+      ← toEuclideanLin_mul_apply, hW, toEuclideanLin_one, LinearMap.id_apply]
+  rw [← sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _), ← RCLike.ofReal_inj (K := 𝕜),
+    RCLike.ofReal_pow, RCLike.ofReal_pow, ← inner_self_eq_norm_sq_to_K,
+    ← inner_self_eq_norm_sq_to_K, h]
+
+/-- **Left multiplication by a matrix with orthonormal columns preserves the spectral norm**:
+`Wᴴ W = 1 → ‖W M‖₂ = ‖M‖₂`, `W` being an isometry of `EuclideanSpace`. The square case is
+`Matrix.l2_opNorm_unitary_mul`. -/
+theorem l2_opNorm_mul_of_conjTranspose_mul_self_eq_one [DecidableEq l] {W : Matrix m l 𝕜}
+    (hW : Wᴴ * W = 1) (M : Matrix l n 𝕜) : ‖W * M‖ = ‖M‖ := by
+  refine le_antisymm (l2_opNorm_le_of_forall_norm_toEuclideanLin_le _ (norm_nonneg _) fun x => ?_)
+    (l2_opNorm_le_of_forall_norm_toEuclideanLin_le _ (norm_nonneg _) fun x => ?_)
+  · rw [toEuclideanLin_mul_apply, norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hW]
+    exact norm_toEuclideanLin_apply_le M x
+  · rw [← norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hW,
+      ← toEuclideanLin_mul_apply]
+    exact norm_toEuclideanLin_apply_le _ x
+
+/-- **Right multiplication by the adjoint of a matrix with orthonormal columns preserves the
+spectral norm**: `Wᴴ W = 1 → ‖M Wᴴ‖₂ = ‖M‖₂`, the adjoint form of
+`Matrix.l2_opNorm_mul_of_conjTranspose_mul_self_eq_one`. -/
+theorem l2_opNorm_mul_conjTranspose_of_conjTranspose_mul_self_eq_one [DecidableEq l]
+    {W : Matrix n l 𝕜} (hW : Wᴴ * W = 1) (M : Matrix m l 𝕜) :
+    ‖M * Wᴴ‖ = ‖M‖ := by
+  classical
+  rw [← l2_opNorm_conjTranspose, conjTranspose_mul, conjTranspose_conjTranspose,
+    l2_opNorm_mul_of_conjTranspose_mul_self_eq_one hW, l2_opNorm_conjTranspose]
 
 /-- Every entry is bounded by the spectral norm: `‖A i j‖ ≤ ‖A‖₂`, the lower half of the first
 estimate of [quarteroni2000numerical] §1.11 after Theorem 1.2. -/

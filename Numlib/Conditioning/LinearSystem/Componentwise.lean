@@ -29,6 +29,12 @@ the maximum absolute row sum, Mathlib's scoped `Matrix.Norms.Operator` instance,
   `FloatingPoint.exists_roundsAffineStep_eq_add` of `Numlib/FloatingPoint/Stationary` delivers for
   `r̂ = fl(b - A y)`; the bound is stated for an arbitrary constant `c` in place of `γ_{n+1}`.
 
+* **Skeel against `κ_∞`** ([golub2013matrix] §2.6.5): `Matrix.skeelCond_le_condNumberLp_top`.
+* **The Oettli–Prager theorem** ([golub2013matrix] (2.6.13), [higham2002accuracy] Theorem 7.3,
+  `Matrix.exists_perturbation_iff_abs_residual_le`) for rectangular systems, and the componentwise
+  backward error `Matrix.componentwiseBackwardError` with its attainment
+  `Matrix.isLeast_componentwiseBackwardError`.
+
 This module is separate from `Numlib/Conditioning/LinearSystem` because that one is
 operator-level and norm-only; everything here needs entries.
 -/
@@ -313,5 +319,139 @@ theorem norm_sub_le_of_computedResidual (hA : IsUnit A) (hx : A *ᵥ x = b) {rha
     _ ≤ |rhat i| + c * ((A.abs *ᵥ |y|) i + |b i|) := add_le_add le_rfl h2
 
 end Perturbation
+
+/-! ### Skeel against `κ_∞` -/
+
+/-- **Skeel's condition number never exceeds `κ_∞`** ([golub2013matrix] §2.6.5):
+`cond(A) = ‖|A⁻¹| |A|‖_∞ ≤ ‖|A⁻¹|‖_∞ ‖|A|‖_∞ = ‖A⁻¹‖_∞ ‖A‖_∞ = κ_∞(A)`, by submultiplicativity and
+the invariance of the `∞`-norm under entrywise absolute values. -/
+theorem skeelCond_le_condNumberLp_top (A : Matrix n n ℝ) : skeelCond A ≤ condNumberLp ⊤ A := by
+  rw [skeelCond, condNumberLp, lpOpNorm_top, lpOpNorm_top, mul_comm (‖A‖)]
+  refine (linfty_opNorm_mul _ _).trans ?_
+  rw [linfty_opNorm_abs, linfty_opNorm_abs]
+
+/-! ### The Oettli–Prager theorem and the componentwise backward error -/
+
+section OettliPrager
+
+variable {m p : Type*} [Fintype p]
+
+/-- `|sign t| ≤ 1`. -/
+private theorem abs_sign_le_one (t : ℝ) : |(SignType.sign t : ℝ)| ≤ 1 := by
+  rcases lt_trichotomy t 0 with h | h | h
+  · simp [sign_neg h]
+  · simp [h]
+  · simp [sign_pos h]
+
+/-- **The Oettli–Prager theorem** ([golub2013matrix] (2.6.13); [higham2002accuracy] Theorem 7.3,
+after Oettli and Prager 1964): for `ω ≥ 0`, the vector `x` solves exactly a perturbed system
+`(A + ΔA) x = b + Δb` with `|ΔA| ≤ ω |E|` and `|Δb| ≤ ω |f|` if and only if the residual satisfies
+`|b - A x| ≤ ω (|E| |x| + |f|)` entrywise. `→` bounds `b - A x = ΔA x - Δb`; `←` takes, row by
+row with `r = b - A x` and `s = |E| |x| + |f|`, `ΔA i j = (r i / s i) |E i j| sign (x j)` and
+`Δb i = -(r i / s i) |f i|`, a row with `s i = 0` having `r i = 0`. -/
+theorem exists_perturbation_iff_abs_residual_le (A E : Matrix m p ℝ) (b f : m → ℝ) (x : p → ℝ)
+    {ω : ℝ} (hω : 0 ≤ ω) :
+    (∃ (ΔA : Matrix m p ℝ) (Δb : m → ℝ), (A + ΔA) *ᵥ x = b + Δb ∧ ΔA.abs ≤ₑ ω • E.abs ∧
+      |Δb| ≤ ω • |f|) ↔ |b - A *ᵥ x| ≤ ω • (E.abs *ᵥ |x| + |f|) := by
+  constructor
+  · rintro ⟨ΔA, Δb, h, hA, hb⟩
+    have hr : b - A *ᵥ x = ΔA *ᵥ x - Δb := by
+      rw [add_mulVec] at h
+      have hb' : b = A *ᵥ x + ΔA *ᵥ x - Δb := by rw [h]; abel
+      rw [hb']
+      abel
+    have hAx : |ΔA *ᵥ x| ≤ ω • (E.abs *ᵥ |x|) := by
+      refine (abs_mulVec_le ΔA x).trans ?_
+      rw [← smul_mulVec]
+      exact hA.mulVec_le_of_nonneg (fun j => abs_nonneg (x j))
+    intro i
+    rw [hr, smul_add, Pi.add_apply]
+    exact (abs_sub _ _).trans (add_le_add (hAx i) (hb i))
+  · intro h
+    set r := b - A *ᵥ x with hr
+    set s := E.abs *ᵥ |x| + |f| with hs
+    have hs0 : ∀ i, 0 ≤ s i := fun i =>
+      add_nonneg ((entrywiseNonneg_abs E).mulVec_nonneg (fun j => abs_nonneg (x j)) i)
+        (abs_nonneg (f i))
+    have hri : ∀ i, |r i| ≤ ω * s i := fun i => h i
+    set c : m → ℝ := fun i => r i / s i with hc
+    have hcs : ∀ i, c i * s i = r i := fun i => by
+      rcases eq_or_ne (s i) 0 with h0 | h0
+      · have : r i = 0 := abs_nonpos_iff.1 (by simpa [h0] using hri i)
+        simp [hc, h0, this]
+      · exact div_mul_cancel₀ _ h0
+    have hcω : ∀ i, |c i| ≤ ω := fun i => by
+      rcases eq_or_ne (s i) 0 with h0 | h0
+      · simp [hc, h0, hω]
+      · rw [hc, abs_div, abs_of_nonneg (hs0 i), div_le_iff₀ ((hs0 i).lt_of_ne' h0)]
+        exact hri i
+    refine ⟨Matrix.of fun i j => c i * |E i j| * SignType.sign (x j), fun i => -(c i * |f i|),
+      ?_, fun i j => ?_, fun i => ?_⟩
+    · ext i
+      have hrow : (Matrix.of fun i j => c i * |E i j| * SignType.sign (x j)) *ᵥ x
+          = fun i => c i * (E.abs *ᵥ |x|) i := by
+        ext i
+        simp only [mulVec, dotProduct, of_apply, Finset.mul_sum, abs_apply, Pi.abs_apply]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        rw [mul_assoc, mul_assoc, sign_mul_self]
+      have hi := hcs i
+      rw [hs, Pi.add_apply, mul_add] at hi
+      rw [add_mulVec, Pi.add_apply, hrow, Pi.add_apply]
+      simp only [hr, Pi.sub_apply, Pi.abs_apply] at hi
+      linarith
+    · rw [abs_apply, of_apply, smul_apply, abs_apply, smul_eq_mul, abs_mul, abs_mul, abs_abs]
+      calc |c i| * |E i j| * |(SignType.sign (x j) : ℝ)| ≤ ω * |E i j| * 1 := by
+            gcongr
+            · exact hcω i
+            · exact abs_sign_le_one _
+        _ = ω * |E i j| := mul_one _
+    · rw [Pi.abs_apply, Pi.smul_apply, Pi.abs_apply, smul_eq_mul, abs_neg, abs_mul, abs_abs]
+      exact mul_le_mul_of_nonneg_right (hcω i) (abs_nonneg _)
+
+/-- **The componentwise backward error** of `x` for `A x = b`, relative to the tolerances `E` on
+`A` and `f` on `b` ([golub2013matrix] §2.6.5, `ω_min`; [higham2002accuracy] (7.8)):
+`max_i |b - A x|_i / (|E| |x| + |f|)_i`, with `r / 0 = 0` in a row where the denominator vanishes.
+By `Matrix.isLeast_componentwiseBackwardError` it is the least `ω` for which `x` solves exactly a
+perturbed system with `|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|`, when such an `ω` exists. The normwise
+counterpart is the root `backwardError` of `Numlib/Conditioning/LinearSystem` (Rigal–Gaches). -/
+noncomputable def componentwiseBackwardError (A E : Matrix m p ℝ) (b f : m → ℝ) (x : p → ℝ) :
+    ℝ :=
+  ⨆ i, |(b - A *ᵥ x) i| / (E.abs *ᵥ |x| + |f|) i
+
+/-- **The componentwise backward error is attained** ([golub2013matrix] §2.6.5;
+[higham2002accuracy] Theorem 7.3): if every row with `(|E| |x| + |f|)_i = 0` has zero residual,
+`componentwiseBackwardError A E b f x` is the least `ω ≥ 0` for which some perturbation with
+`|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|` makes `x` an exact solution. (Otherwise no `ω` works; the book
+writes `ω_min = ∞`.) From `Matrix.exists_perturbation_iff_abs_residual_le`, row by row. -/
+theorem isLeast_componentwiseBackwardError [Finite m] (A E : Matrix m p ℝ) (b f : m → ℝ)
+    (x : p → ℝ) (hz : ∀ i, (E.abs *ᵥ |x| + |f|) i = 0 → (b - A *ᵥ x) i = 0) :
+    IsLeast {ω : ℝ | 0 ≤ ω ∧ ∃ (ΔA : Matrix m p ℝ) (Δb : m → ℝ),
+      (A + ΔA) *ᵥ x = b + Δb ∧ ΔA.abs ≤ₑ ω • E.abs ∧ |Δb| ≤ ω • |f|}
+      (componentwiseBackwardError A E b f x) := by
+  set s := E.abs *ᵥ |x| + |f| with hs
+  have hs0 : ∀ i, 0 ≤ s i := fun i =>
+    add_nonneg ((entrywiseNonneg_abs E).mulVec_nonneg (fun j => abs_nonneg (x j)) i)
+      (abs_nonneg (f i))
+  have hterm : ∀ i, 0 ≤ |(b - A *ᵥ x) i| / s i := fun i => div_nonneg (abs_nonneg _) (hs0 i)
+  have h0 : 0 ≤ componentwiseBackwardError A E b f x := Real.iSup_nonneg hterm
+  refine ⟨⟨h0, (exists_perturbation_iff_abs_residual_le A E b f x h0).2 fun i => ?_⟩, ?_⟩
+  · change |(b - A *ᵥ x) i| ≤ componentwiseBackwardError A E b f x * s i
+    rcases eq_or_ne (s i) 0 with hsi | hsi
+    · rw [hz i hsi, abs_zero]
+      exact mul_nonneg h0 (hs0 i)
+    · rw [← div_le_iff₀ ((hs0 i).lt_of_ne' hsi)]
+      exact le_ciSup (f := fun i => |(b - A *ᵥ x) i| / s i) (Finite.bddAbove_range _) i
+  · rintro ω ⟨hω, h⟩
+    have hr := (exists_perturbation_iff_abs_residual_le A E b f x hω).1 h
+    refine Real.iSup_le (fun i => ?_) hω
+    rcases eq_or_ne (s i) 0 with hsi | hsi
+    · change |(b - A *ᵥ x) i| / s i ≤ ω
+      rw [hsi, div_zero]
+      exact hω
+    · change |(b - A *ᵥ x) i| / s i ≤ ω
+      rw [div_le_iff₀ ((hs0 i).lt_of_ne' hsi)]
+      exact hr i
+
+end OettliPrager
 
 end Matrix

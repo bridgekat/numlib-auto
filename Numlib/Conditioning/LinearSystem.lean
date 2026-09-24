@@ -10,6 +10,7 @@ import Mathlib.Analysis.Normed.Operator.Banach
 import Mathlib.Analysis.RCLike.Lemmas
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Conditioning.Problem
 
 /-!
 # Perturbation theory for linear systems
@@ -37,6 +38,18 @@ The chapter-3 layer of [quarteroni2000numerical] is here as well:
   (`NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt` and its companions), with (3.19) and the a
   posteriori bound (3.20) (`norm_error_le_of_norm_mul_sub_one_lt`).
 
+The condition number as the sensitivity of inversion ([golub2013matrix] §2.6):
+
+* `relative_error_le_norm_inverse`, the rigorous form of (2.6.2), of which
+  `relative_error_le_condNumber` is the consequence after `‖b‖ ≤ ‖A‖ ‖x‖`;
+* `ContinuousLinearEquiv.relCondNumber_ringInverse`: `κ(A)` is the relative condition number
+  (`Conditioning.relCondNumber` of `Numlib/Conditioning/Problem`) of `T ↦ T⁻¹` at `A`, because the
+  derivative `H ↦ -A⁻¹ H A⁻¹` of inversion has norm `‖A⁻¹‖²`
+  (`ContinuousLinearEquiv.norm_mulLeftRight_symm_symm`, from
+  `ContinuousLinearMap.norm_mulLeftRight_apply_apply`);
+* `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`: the book's limit formula (2.6.7)
+  itself, by squeezing between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`.
+
 The componentwise theory (the Skeel condition numbers, (3.14)–(3.16)) is
 `Numlib/Conditioning/LinearSystem/Componentwise`.
 
@@ -49,7 +62,7 @@ and by tolerances, the latter is absolute on a single datum — and no bridge be
 stated.
 -/
 
-open NormedRing
+open Filter NormedRing Topology
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
@@ -96,20 +109,17 @@ theorem relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) 
   rw [ContinuousLinearEquiv.condNumber_coe]
   exact A.relative_error_le_condNumber_mul_relative_residual hx rfl hb
 
-/-- Normwise perturbation bound ([saad2003iterative], (1.76); [kress1998numerical], Thm 5.3;
-[higham2002accuracy], *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
-`‖A⁻¹‖ ‖ΔA‖ < 1` then `‖y - x‖/‖x‖ ≤ κ(A)/(1 - ‖A⁻¹‖‖ΔA‖) (‖ΔA‖/‖A‖ + ‖Δb‖/‖b‖)`. -/
-theorem relative_error_le_condNumber [CompleteSpace E] (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
-    {b Δb x y : E} (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
-    (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) (hb : b ≠ 0) :
-    ‖y - x‖ / ‖x‖ ≤ condNumber (A : E →L[𝕜] E) / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
-      * (‖ΔA‖ / ‖(A : E →L[𝕜] E)‖ + ‖Δb‖ / ‖b‖) := by
+/-- **The normwise perturbation bound with `‖A⁻¹‖`** ([golub2013matrix] (2.6.2), rigorous form):
+if `A x = b`, `(A + ΔA) y = b + Δb`, `‖A⁻¹‖ ‖ΔA‖ < 1` and `x ≠ 0`, then
+`‖y - x‖ / ‖x‖ ≤ ‖A⁻¹‖ / (1 - ‖A⁻¹‖ ‖ΔA‖) (‖Δb‖ / ‖x‖ + ‖ΔA‖)`. With `ΔA = ε F`, `Δb = ε f` this is
+the book's first-order bound with its `O(ε²)` term made explicit as the factor
+`1 / (1 - |ε| ‖A⁻¹‖ ‖F‖)`. From `A (y - x) = Δb - ΔA y` and `‖y‖ ≤ ‖y - x‖ + ‖x‖`. -/
+theorem relative_error_le_norm_inverse (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E) {b Δb x y : E}
+    (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
+    (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) :
+    ‖y - x‖ / ‖x‖ ≤ ‖(A.symm : E →L[𝕜] E)‖ / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
+      * (‖Δb‖ / ‖x‖ + ‖ΔA‖) := by
   have hxn : 0 < ‖x‖ := norm_pos_iff.mpr hx0
-  have hbn : 0 < ‖b‖ := norm_pos_iff.mpr hb
-  have hAb : ‖b‖ ≤ ‖(A : E →L[𝕜] E)‖ * ‖x‖ := by
-    rw [← hx]
-    simpa using (A : E →L[𝕜] E).le_opNorm x
-  have hN : 0 < ‖(A : E →L[𝕜] E)‖ := by nlinarith [norm_nonneg (A : E →L[𝕜] E)]
   have hden : 0 < 1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ := by linarith
   -- the residual identity `A (y - x) = Δb - ΔA y`
   have hyx : y - x = (A.symm : E →L[𝕜] E) (Δb - ΔA y) := by
@@ -131,23 +141,43 @@ theorem relative_error_le_condNumber [CompleteSpace E] (A : E ≃L[𝕜] E) (ΔA
   have h3 : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ * ‖y‖
       ≤ ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ * (‖y - x‖ + ‖x‖) :=
     mul_le_mul_of_nonneg_left h2 (by positivity)
-  have hkey : (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖) * ‖y - x‖
-      ≤ ‖(A.symm : E →L[𝕜] E)‖ * ‖Δb‖ + ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ * ‖x‖ := by
-    nlinarith [h1, h3]
-  have hlast : ‖(A.symm : E →L[𝕜] E)‖ * ‖Δb‖
-      ≤ ‖(A : E →L[𝕜] E)‖ * ‖(A.symm : E →L[𝕜] E)‖ * ‖Δb‖ * ‖x‖ / ‖b‖ := by
-    rw [le_div_iff₀ hbn]
-    nlinarith [mul_nonneg (norm_nonneg (A.symm : E →L[𝕜] E)) (norm_nonneg Δb)]
-  rw [ContinuousLinearEquiv.condNumber_eq, div_le_iff₀ hxn]
-  have hexp : ‖(A : E →L[𝕜] E)‖ * ‖(A.symm : E →L[𝕜] E)‖ /
-        (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖) *
-        (‖ΔA‖ / ‖(A : E →L[𝕜] E)‖ + ‖Δb‖ / ‖b‖) * ‖x‖
-      = (‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ * ‖x‖ +
-          ‖(A : E →L[𝕜] E)‖ * ‖(A.symm : E →L[𝕜] E)‖ * ‖Δb‖ * ‖x‖ / ‖b‖) /
-        (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖) := by
+  have hexp : ‖(A.symm : E →L[𝕜] E)‖ / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
+        * (‖Δb‖ / ‖x‖ + ‖ΔA‖) * ‖x‖
+      = (‖(A.symm : E →L[𝕜] E)‖ * ‖Δb‖ + ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ * ‖x‖)
+        / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖) := by
     field_simp
-  rw [hexp, le_div_iff₀ hden]
-  nlinarith
+  rw [div_le_iff₀ hxn, hexp, le_div_iff₀ hden]
+  nlinarith [h1, h3]
+
+/-- Normwise perturbation bound ([saad2003iterative], (1.76); [kress1998numerical], Thm 5.3;
+[higham2002accuracy], *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
+`‖A⁻¹‖ ‖ΔA‖ < 1` then `‖y - x‖/‖x‖ ≤ κ(A)/(1 - ‖A⁻¹‖‖ΔA‖) (‖ΔA‖/‖A‖ + ‖Δb‖/‖b‖)`. It is
+`relative_error_le_norm_inverse` after `‖b‖ ≤ ‖A‖ ‖x‖`. -/
+theorem relative_error_le_condNumber (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
+    {b Δb x y : E} (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
+    (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) (hb : b ≠ 0) :
+    ‖y - x‖ / ‖x‖ ≤ condNumber (A : E →L[𝕜] E) / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
+      * (‖ΔA‖ / ‖(A : E →L[𝕜] E)‖ + ‖Δb‖ / ‖b‖) := by
+  have hxn : 0 < ‖x‖ := norm_pos_iff.mpr hx0
+  have hbn : 0 < ‖b‖ := norm_pos_iff.mpr hb
+  have hAb : ‖b‖ ≤ ‖(A : E →L[𝕜] E)‖ * ‖x‖ := by
+    rw [← hx]
+    simpa using (A : E →L[𝕜] E).le_opNorm x
+  have hN : 0 < ‖(A : E →L[𝕜] E)‖ := by nlinarith [norm_nonneg (A : E →L[𝕜] E)]
+  have hden : 0 < 1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ := by linarith
+  refine (relative_error_le_norm_inverse A ΔA hx hy hsmall hx0).trans ?_
+  have hexp : condNumber (A : E →L[𝕜] E) / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
+        * (‖ΔA‖ / ‖(A : E →L[𝕜] E)‖ + ‖Δb‖ / ‖b‖)
+      = ‖(A.symm : E →L[𝕜] E)‖ / (1 - ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖)
+        * (‖(A : E →L[𝕜] E)‖ * ‖Δb‖ / ‖b‖ + ‖ΔA‖) := by
+    rw [ContinuousLinearEquiv.condNumber_eq]
+    field_simp
+    ring
+  rw [hexp]
+  refine mul_le_mul_of_nonneg_left (add_le_add_left ?_ _)
+    (div_nonneg (norm_nonneg _) hden.le)
+  rw [div_le_div_iff₀ hxn hbn]
+  nlinarith [norm_nonneg Δb]
 
 /-- The perturbed operator is invertible and the perturbed solution exists (companion to
 `relative_error_le_condNumber`). -/
@@ -400,6 +430,194 @@ theorem ContinuousLinearEquiv.exists_not_isUnit_add_norm_le [FiniteDimensional �
       abs_of_nonneg (inv_nonneg.2 (norm_nonneg _)), hx, hy]
     ring
 
+/-- On a nontrivial finite-dimensional space, for operators `a`, `b` there is an operator `T` of
+norm `1` with `‖a T b‖ = ‖a‖ ‖b‖`: with unit vectors `y`, `z` at which `a` and `b` attain their
+norms and a norming functional `φ` of `b z`, the rank-one `T = φ(·) y` sends `z` through
+`a T b z = ‖b z‖ a y`. -/
+theorem ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq [FiniteDimensional 𝕜 E]
+    [Nontrivial E] (a b : E →L[𝕜] E) : ∃ T : E →L[𝕜] E, ‖T‖ = 1 ∧ ‖a * T * b‖ = ‖a‖ * ‖b‖ := by
+  obtain ⟨y, hy1, hay⟩ := a.exists_norm_eq_one_and_norm_apply_eq
+  obtain ⟨z, hz1, hbz⟩ := b.exists_norm_eq_one_and_norm_apply_eq
+  obtain ⟨φ, hφ1, hφ⟩ := exists_dual_vector' 𝕜 (b z)
+  have hT : ‖φ.smulRight y‖ = 1 := by rw [norm_smulRight_apply, hφ1, hy1, one_mul]
+  refine ⟨φ.smulRight y, hT, le_antisymm ?_ ?_⟩
+  · calc ‖a * φ.smulRight y * b‖ ≤ ‖a * φ.smulRight y‖ * ‖b‖ := _root_.norm_mul_le _ _
+      _ ≤ ‖a‖ * ‖φ.smulRight y‖ * ‖b‖ := by gcongr; exact _root_.norm_mul_le _ _
+      _ = ‖a‖ * ‖b‖ := by rw [hT, mul_one]
+  have happ : (a * φ.smulRight y * b) z = ((‖b z‖ : ℝ) : 𝕜) • a y := by
+    change a (φ (b z) • y) = _
+    rw [hφ, map_smul]
+  calc ‖a‖ * ‖b‖ = ‖(a * φ.smulRight y * b) z‖ := by
+        rw [happ, norm_smul, RCLike.norm_ofReal, abs_norm, hbz, hay, mul_comm]
+    _ ≤ ‖a * φ.smulRight y * b‖ * ‖z‖ := le_opNorm _ _
+    _ = ‖a * φ.smulRight y * b‖ := by rw [hz1, mul_one]
+
+/-- On a nontrivial finite-dimensional space, the two-sided multiplication `T ↦ a T b` of the
+operator algebra has norm `‖a‖ ‖b‖`: `≤` is submultiplicativity
+(`ContinuousLinearMap.opNorm_mulLeftRight_apply_apply_le`), `≥` is attained at the `T` of
+`ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq`. -/
+theorem ContinuousLinearMap.norm_mulLeftRight_apply_apply [FiniteDimensional 𝕜 E] [Nontrivial E]
+    (a b : E →L[𝕜] E) : ‖ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ = ‖a‖ * ‖b‖ := by
+  refine le_antisymm (opNorm_mulLeftRight_apply_apply_le 𝕜 _ a b) ?_
+  obtain ⟨T, hT, hab⟩ := a.exists_norm_eq_one_and_norm_mul_mul_eq b
+  calc ‖a‖ * ‖b‖ = ‖mulLeftRight 𝕜 (E →L[𝕜] E) a b T‖ := by rw [mulLeftRight_apply, hab]
+    _ ≤ ‖mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ * ‖T‖ := le_opNorm _ _
+    _ = ‖mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ := by rw [hT, mul_one]
+
+/-- **The Fréchet derivative of inversion has norm `‖A⁻¹‖²`** in an operator norm on a nontrivial
+finite-dimensional space: the derivative at `A` is `H ↦ -A⁻¹ H A⁻¹` (Mathlib
+`hasFDerivAt_ringInverse`), and `ContinuousLinearMap.norm_mulLeftRight_apply_apply` computes the
+norm of `H ↦ A⁻¹ H A⁻¹`. -/
+theorem ContinuousLinearEquiv.norm_mulLeftRight_symm_symm [FiniteDimensional 𝕜 E] [Nontrivial E]
+    (A : E ≃L[𝕜] E) :
+    ‖ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (A.symm : E →L[𝕜] E) (A.symm : E →L[𝕜] E)‖
+      = ‖(A.symm : E →L[𝕜] E)‖ ^ 2 := by
+  rw [ContinuousLinearMap.norm_mulLeftRight_apply_apply, sq]
+
+/-- **The condition number is the relative condition number of inversion** ([golub2013matrix]
+(2.6.7), in the vocabulary of `Numlib/Conditioning/Problem`): on a nontrivial finite-dimensional
+space, the relative condition number of `T ↦ T⁻¹` at an isomorphism `A` is `κ(A) = ‖A‖ ‖A⁻¹‖`. By
+the first-order formula `Conditioning.relCondNumber_eq_enorm_fderiv`, it is
+`‖H ↦ A⁻¹ H A⁻¹‖ ‖A‖ / ‖A⁻¹‖ = ‖A⁻¹‖² ‖A‖ / ‖A⁻¹‖`. -/
+theorem ContinuousLinearEquiv.relCondNumber_ringInverse [FiniteDimensional 𝕜 E] [Nontrivial E]
+    (A : E ≃L[𝕜] E) :
+    Conditioning.relCondNumber (fun T : E →L[𝕜] E => Ring.inverse T) Set.univ (A : E →L[𝕜] E)
+      = ENNReal.ofReal A.condNumber := by
+  have : CompleteSpace E := FiniteDimensional.complete 𝕜 E
+  have hne : ∀ B : E ≃L[𝕜] E, (B : E →L[𝕜] E) ≠ 0 := fun B hB => by
+    obtain ⟨y, hy⟩ := exists_ne (0 : E)
+    exact hy (B.injective (by simpa using congrArg (fun T : E →L[𝕜] E => T y) hB))
+  have hsymm : 0 < ‖(A.symm : E →L[𝕜] E)‖ := norm_pos_iff.2 (hne A.symm)
+  have hd : HasFDerivAt (fun T : E →L[𝕜] E => Ring.inverse T)
+      (-ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (A.symm : E →L[𝕜] E)
+        (A.symm : E →L[𝕜] E)) (A : E →L[𝕜] E) :=
+    hasFDerivAt_ringInverse A.toUnit
+  have hG : Ring.inverse (A : E →L[𝕜] E) = (A.symm : E →L[𝕜] E) := A.ring_inverse_coe
+  rw [Conditioning.relCondNumber_eq_enorm_fderiv hd Filter.univ_mem (hne A)
+      (by rw [hG]; exact hne A.symm), hG, enorm_neg, ← ofReal_norm, ← ofReal_norm,
+    ← ofReal_norm, A.norm_mulLeftRight_symm_symm, ← ENNReal.ofReal_div_of_pos hsymm,
+    ← ENNReal.ofReal_mul (by positivity), ContinuousLinearEquiv.condNumber]
+  congr 1
+  field_simp
+
+/-- The two bounds behind `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`: for
+`0 < ε` with `ε κ(A) < 1`, the largest change of the inverse under perturbations of relative size
+`ε`, divided by `ε ‖A⁻¹‖`, lies between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`. The upper bound is
+`Units.norm_inverse_add_sub_le`; the lower one is attained at `ΔA = -ε ‖A‖ T` with `T` the
+operator of `ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq` for `A⁻¹, A⁻¹`, through
+`A⁻¹ ΔA A⁻¹ = (1 + A⁻¹ ΔA) ((A + ΔA)⁻¹ ΔA A⁻¹)` and `(A + ΔA)⁻¹ - A⁻¹ = -(A + ΔA)⁻¹ ΔA A⁻¹`. -/
+private theorem ContinuousLinearEquiv.iSup_norm_inverse_add_sub_div_mem [FiniteDimensional 𝕜 E]
+    [Nontrivial E] (A : E ≃L[𝕜] E) {ε : ℝ} (hε : 0 < ε) (hεκ : ε * A.condNumber < 1) :
+    A.condNumber / (1 + ε * A.condNumber)
+        ≤ (⨆ ΔA : {ΔA : E →L[𝕜] E // ‖ΔA‖ ≤ ε * ‖(A : E →L[𝕜] E)‖},
+            ‖Ring.inverse ((A : E →L[𝕜] E) + ΔA) - (A.symm : E →L[𝕜] E)‖)
+          / (ε * ‖(A.symm : E →L[𝕜] E)‖) ∧
+      (⨆ ΔA : {ΔA : E →L[𝕜] E // ‖ΔA‖ ≤ ε * ‖(A : E →L[𝕜] E)‖},
+            ‖Ring.inverse ((A : E →L[𝕜] E) + ΔA) - (A.symm : E →L[𝕜] E)‖)
+          / (ε * ‖(A.symm : E →L[𝕜] E)‖) ≤ A.condNumber / (1 - ε * A.condNumber) := by
+  have : CompleteSpace E := FiniteDimensional.complete 𝕜 E
+  set A' : E →L[𝕜] E := (A : E →L[𝕜] E) with hA'
+  set Ai : E →L[𝕜] E := (A.symm : E →L[𝕜] E) with hAi
+  set a := ‖A'‖ with ha_def
+  set s := ‖Ai‖ with hs_def
+  have hne : ∀ B : E ≃L[𝕜] E, (B : E →L[𝕜] E) ≠ 0 := fun B hB => by
+    obtain ⟨y, hy⟩ := exists_ne (0 : E)
+    exact hy (B.injective (by simpa using congrArg (fun T : E →L[𝕜] E => T y) hB))
+  have ha : 0 < a := norm_pos_iff.2 (hne A)
+  have hs : 0 < s := norm_pos_iff.2 (hne A.symm)
+  have hκ : A.condNumber = a * s := rfl
+  rw [hκ] at hεκ ⊢
+  have hεs : 0 < ε * s := mul_pos hε hs
+  have hsmall : ∀ Δ : E →L[𝕜] E, ‖Δ‖ ≤ ε * a → ‖Δ‖ < ‖Ai‖⁻¹ := fun Δ hΔ => by
+    rw [← hs_def, ← one_div, lt_div_iff₀ hs]
+    nlinarith
+  -- the upper bound, perturbation by perturbation
+  have hup : ∀ Δ : {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a},
+      ‖Ring.inverse (A' + Δ) - Ai‖ ≤ s ^ 2 * (ε * a) / (1 - ε * (a * s)) := by
+    rintro ⟨Δ, hΔ⟩
+    have h : ‖Ring.inverse (A' + Δ) - Ai‖ ≤ s ^ 2 * ‖Δ‖ / (1 - s * ‖Δ‖) :=
+      Units.norm_inverse_add_sub_le A.toUnit Δ (hsmall Δ hΔ)
+    refine h.trans (div_le_div₀ (by positivity) (by gcongr) (by linarith) ?_)
+    change 1 - ε * (a * s) ≤ 1 - s * ‖Δ‖
+    nlinarith
+  have : Nonempty {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a} := ⟨⟨0, by rw [norm_zero]; positivity⟩⟩
+  have hbdd : BddAbove (Set.range fun Δ : {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a} =>
+      ‖Ring.inverse (A' + Δ) - Ai‖) := ⟨_, Set.forall_mem_range.2 hup⟩
+  -- the lower bound, at one perturbation
+  obtain ⟨T, hT1, hTT⟩ := Ai.exists_norm_eq_one_and_norm_mul_mul_eq Ai
+  set Δ₀ : E →L[𝕜] E := ((-(ε * a) : ℝ) : 𝕜) • T with hΔ₀_def
+  have hΔ₀ : ‖Δ₀‖ = ε * a := by
+    rw [hΔ₀_def, norm_smul, RCLike.norm_ofReal, abs_neg, abs_of_pos (by positivity), hT1,
+      mul_one]
+  have hunit : IsUnit (A' + Δ₀) := Units.isUnit_add_of_norm_lt A.toUnit Δ₀ (hsmall _ hΔ₀.le)
+  set B := Ring.inverse (A' + Δ₀) with hB
+  have hB1 : (A' + Δ₀) * B = 1 := Ring.mul_inverse_cancel _ hunit
+  have hB2 : B * (A' + Δ₀) = 1 := Ring.inverse_mul_cancel _ hunit
+  have hAiA : Ai * A' = 1 := by ext x; simp [hA', hAi]
+  have hAAi : A' * Ai = 1 := by ext x; simp [hA', hAi]
+  have hdiff : B - Ai = -(B * Δ₀ * Ai) := by
+    calc B - Ai = B * (A' * Ai) - B * (A' + Δ₀) * Ai := by rw [hAAi, hB2, mul_one, one_mul]
+      _ = -(B * Δ₀ * Ai) := by noncomm_ring
+  have hkey : Ai * Δ₀ * Ai = (1 + Ai * Δ₀) * (B * Δ₀ * Ai) := by
+    calc Ai * Δ₀ * Ai = Ai * ((A' + Δ₀) * B) * Δ₀ * Ai := by rw [hB1, mul_one]
+      _ = (Ai * A' + Ai * Δ₀) * (B * Δ₀ * Ai) := by noncomm_ring
+      _ = (1 + Ai * Δ₀) * (B * Δ₀ * Ai) := by rw [hAiA]
+  have hn1 : ‖Ai * Δ₀ * Ai‖ = ε * a * s ^ 2 := by
+    rw [hΔ₀_def, mul_smul_comm, smul_mul_assoc, norm_smul, RCLike.norm_ofReal, abs_neg,
+      abs_of_pos (by positivity), hTT]
+    ring
+  have hn2 : ‖1 + Ai * Δ₀‖ ≤ 1 + ε * (a * s) := by
+    refine (norm_add_le _ _).trans (add_le_add norm_one.le ?_)
+    calc ‖Ai * Δ₀‖ ≤ s * ‖Δ₀‖ := _root_.norm_mul_le _ _
+      _ = ε * (a * s) := by rw [hΔ₀]; ring
+  have hD : ε * a * s ^ 2 ≤ (1 + ε * (a * s)) * ‖B - Ai‖ := by
+    rw [← hn1, hkey, hdiff, norm_neg]
+    exact (_root_.norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right hn2 (norm_nonneg _))
+  have hlow : ‖B - Ai‖ ≤ ⨆ Δ : {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a}, ‖Ring.inverse (A' + Δ) - Ai‖ :=
+    le_ciSup hbdd ⟨Δ₀, hΔ₀.le⟩
+  constructor
+  · rw [div_le_div_iff₀ (by positivity) hεs]
+    calc a * s * (ε * s) = ε * a * s ^ 2 := by ring
+      _ ≤ (1 + ε * (a * s)) * ‖B - Ai‖ := hD
+      _ ≤ (1 + ε * (a * s)) * ⨆ Δ : {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a},
+            ‖Ring.inverse (A' + Δ) - Ai‖ := by gcongr
+      _ = _ := by ring
+  · rw [div_le_div_iff₀ hεs (by linarith)]
+    calc (⨆ Δ : {Δ : E →L[𝕜] E // ‖Δ‖ ≤ ε * a}, ‖Ring.inverse (A' + Δ) - Ai‖)
+          * (1 - ε * (a * s))
+        ≤ s ^ 2 * (ε * a) / (1 - ε * (a * s)) * (1 - ε * (a * s)) :=
+          mul_le_mul_of_nonneg_right (ciSup_le hup) (by linarith)
+      _ = a * s * (ε * s) := by
+          rw [div_mul_cancel₀ _ (by linarith : (0 : ℝ) < 1 - ε * (a * s)).ne']
+          ring
+
+/-- **The book's limit formula for the condition number** ([golub2013matrix] (2.6.7)): on a
+nontrivial finite-dimensional space, `κ(A)` is the limit as `ε → 0⁺` of the largest change
+`‖(A + ΔA)⁻¹ - A⁻¹‖` over perturbations with `‖ΔA‖ ≤ ε ‖A‖`, divided by `ε ‖A⁻¹‖`. The quotient
+lies between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`. -/
+theorem ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div [FiniteDimensional 𝕜 E]
+    [Nontrivial E] (A : E ≃L[𝕜] E) :
+    Tendsto (fun ε : ℝ => (⨆ ΔA : {ΔA : E →L[𝕜] E // ‖ΔA‖ ≤ ε * ‖(A : E →L[𝕜] E)‖},
+        ‖Ring.inverse ((A : E →L[𝕜] E) + ΔA) - (A.symm : E →L[𝕜] E)‖)
+          / (ε * ‖(A.symm : E →L[𝕜] E)‖)) (𝓝[>] 0) (𝓝 A.condNumber) := by
+  have hlim : ∀ c : ℝ, Tendsto (fun ε : ℝ => A.condNumber / (1 + c * (ε * A.condNumber)))
+      (𝓝[>] 0) (𝓝 A.condNumber) := fun c => by
+    have h : Tendsto (fun ε : ℝ => A.condNumber / (1 + c * (ε * A.condNumber))) (𝓝 0)
+        (𝓝 (A.condNumber / (1 + c * (0 * A.condNumber)))) :=
+      tendsto_const_nhds.div (tendsto_const_nhds.add (tendsto_const_nhds.mul
+        (tendsto_id.mul tendsto_const_nhds))) (by simp)
+    simpa using h.mono_left nhdsWithin_le_nhds
+  have hev : ∀ᶠ ε in 𝓝[>] (0 : ℝ), 0 < ε ∧ ε * A.condNumber < 1 := by
+    have h2 : Tendsto (fun ε : ℝ => ε * A.condNumber) (𝓝[>] 0) (𝓝 0) := by
+      simpa using (tendsto_id.mul_const A.condNumber).mono_left
+        (nhdsWithin_le_nhds (a := (0 : ℝ)) (s := Set.Ioi 0))
+    exact (eventually_mem_nhdsWithin.mono fun ε hε => hε).and
+      (h2.eventually (gt_mem_nhds one_pos))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (by simpa using hlim 1) (by
+    simpa [sub_eq_add_neg] using hlim (-1)) (hev.mono fun ε h => ?_) (hev.mono fun ε h => ?_)
+  · exact (A.iSup_norm_inverse_add_sub_div_mem h.1 h.2).1
+  · exact (A.iSup_norm_inverse_add_sub_div_mem h.1 h.2).2
+
 /-- **Kahan's distance-to-singularity formula** ([quarteroni2000numerical] Remark 3.1, (3.6);
 [Kah66], [Gas83]): on a nontrivial finite-dimensional space, the least relative distance
 `‖t‖ / ‖A‖` from an isomorphism `A` to a singular operator `A + t` is `1 / κ A`, in any operator
@@ -437,8 +655,6 @@ end Distance
 section Theorem33
 
 open NormedRing
-
-variable [CompleteSpace E]
 
 /-- **[quarteroni2000numerical] Theorem 3.3, (3.13)**: if `A x = b`, `(A + δA) y = b + δb` with
 `‖δA‖ ≤ γ ‖A‖`, `‖δb‖ ≤ γ ‖b‖` and `γ κ(A) < 1`, then
@@ -525,11 +741,12 @@ theorem NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : IsUnit
           rw [hac, ← mul_assoc, ← mul_assoc, Ring.inverse_mul_cancel _ ha, one_mul]
   rw [hinv]
   calc ‖c * Ring.inverse (1 - -(a * c - 1))‖ ≤ ‖c‖ * ‖Ring.inverse (1 - -(a * c - 1))‖ :=
-        norm_mul_le _ _
+        _root_.norm_mul_le _ _
     _ ≤ ‖c‖ * (1 / (1 - ‖-(a * c - 1)‖)) :=
         mul_le_mul_of_nonneg_left (NormedRing.norm_inverse_one_sub_le hr') (norm_nonneg _)
     _ = ‖c‖ / (1 - ‖a * c - 1‖) := by rw [norm_neg]; ring
 
+omit [NormOneClass R] in
 /-- **[quarteroni2000numerical] Property 3.1, the upper bound of the second display**:
 `‖C - A⁻¹‖ ≤ ‖C‖ ‖R‖ / (1 - ‖R‖)`, since `C - A⁻¹ = -C ((1 + R)⁻¹ - 1)`. -/
 theorem NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : IsUnit a)
@@ -549,7 +766,7 @@ theorem NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : Is
     abel
   rw [hdiff, norm_neg]
   calc ‖c * (Ring.inverse (1 - -(a * c - 1)) - 1)‖
-      ≤ ‖c‖ * ‖Ring.inverse (1 - -(a * c - 1)) - 1‖ := norm_mul_le _ _
+      ≤ ‖c‖ * ‖Ring.inverse (1 - -(a * c - 1)) - 1‖ := _root_.norm_mul_le _ _
     _ ≤ ‖c‖ * (‖-(a * c - 1)‖ / (1 - ‖-(a * c - 1)‖)) :=
         mul_le_mul_of_nonneg_left (NormedRing.norm_inverse_one_sub_sub_one_le hr') (norm_nonneg _)
     _ = ‖c‖ * ‖a * c - 1‖ / (1 - ‖a * c - 1‖) := by rw [norm_neg]; ring
@@ -565,7 +782,7 @@ theorem NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse {a c : R} (ha :
   · rw [← h0, div_zero]
     exact norm_nonneg _
   · rw [div_le_iff₀ h0, h, mul_comm]
-    exact norm_mul_le _ _
+    exact _root_.norm_mul_le _ _
 
 omit [NormOneClass R] in
 /-- **[quarteroni2000numerical] Property 3.1, "then `A` and `C` are nonsingular"**: in a
@@ -583,6 +800,7 @@ theorem isUnit_of_norm_mul_sub_one_lt [IsDedekindFiniteMonoid R] {a c : R}
   have h2 : (↑u⁻¹ * a) * c = 1 := by rw [mul_assoc, ← hu, Units.inv_mul]
   exact ⟨⟨⟨a, c * ↑u⁻¹, h1, mul_eq_one_symm h1⟩, rfl⟩, ⟨⟨c, ↑u⁻¹ * a, mul_eq_one_symm h2, h2⟩, rfl⟩⟩
 
+omit [NormOneClass R] in
 /-- **[quarteroni2000numerical] (3.19)**, the backward reading of Property 3.1 with the roles of
 `A` and `C` exchanged: if `C` is a unit and `‖C A - 1‖ < 1`, the perturbation `δA = C⁻¹ - A` that
 makes `C` an exact inverse satisfies `‖δA‖ ≤ ‖C A - 1‖ ‖A‖ / (1 - ‖C A - 1‖)`. The book writes the

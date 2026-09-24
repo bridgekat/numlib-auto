@@ -72,15 +72,6 @@ id = "IsHermitian.toBlocks₁₂_eq_conjTranspose"
 id = "PosDef.schurComplement_loewner_le"
 
 [[node]]
-id = "_root_.EuclideanSpace.norm_toLp_comp_le"
-
-[[node]]
-id = "_root_.EuclideanSpace.norm_toLp_extend"
-
-[[node]]
-id = "l2_opNorm_toLp_mulVec"
-
-[[node]]
 id = "l2_opNorm_le_of_posSemidef_of_posSemidef_sub"
 
 [[node]]
@@ -89,6 +80,15 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.6"
 
 [[node]]
 id = "schurComplementSingle_transpose"
+
+[[node]]
+id = "schurComplementSingle_mulVec_of_apply_eq_zero"
+
+[[node]]
+id = "isUnit_schurComplementSingle"
+
+[[node]]
+id = "inv_schurComplementSingle"
 
 [[node]]
 id = "saddleMatrix"
