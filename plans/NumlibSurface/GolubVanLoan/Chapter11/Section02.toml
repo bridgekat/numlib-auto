@@ -446,8 +446,8 @@ desc = '''
 (11.2.24) and the claims after it: for symmetric `A` with positive diagonal and `0 < ω < 2`,
 `M_SSOR := (ω/(2−ω)) (ω⁻¹ D + L) D⁻¹ (ω⁻¹ D + Lᵀ)` equals `(Matrix.ssorSplitting A h hω hω2).m`
 (`= (ω(2−ω))⁻¹ (D + ωL) D⁻¹ (D + ωLᵀ)`), is symmetric (`Matrix.ssorSplitting_m_isSymm`) and positive
-definite (`Matrix.ssorSplitting_m_posDef_of_diag_pos`, staged: the existing
-`Matrix.ssorSplitting_m_posDef` assumes `A.PosDef`, while the book needs only positive diagonal).
+definite (`Matrix.ssorSplitting_m_posDef_of_diag_pos`: the book needs only a positive diagonal,
+not `A.PosDef`).
 Scalar algebra for the equality. ★
 '''
 deps = ["Matrix.ssorSplitting", "Matrix.ssorSplitting_m_isSymm", "Matrix.ssorSplitting_m_posDef_of_diag_pos"]

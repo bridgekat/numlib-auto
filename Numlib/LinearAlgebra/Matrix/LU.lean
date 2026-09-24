@@ -54,8 +54,9 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 * `Matrix.IsLU.det_leadingPrincipalSubmatrix`, `Matrix.IsLU.det_eq_prod_diag`,
   `Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`: the leading principal minors are the
   products of the pivots, and the pivots are ratios of consecutive minors ((3.39)).
-* `Matrix.existsUnique_isLDM` (Theorem 3.5, with the *leading* principal minors, which is what the
-  book's proof uses), `Matrix.IsLDM.eq_of_isSymm` (`L D Lᵀ`), `Matrix.IsLDM.diag_pos_of_posDef`.
+* `Matrix.existsUnique_isLDM` (Theorem 3.5, [golub2013matrix] Theorem 4.1.3, with the *strict*
+  leading principal minors, the last pivot free to vanish), `Matrix.IsLDM.eq_of_isSymm`
+  (`L D Lᵀ`), `Matrix.IsLDM.diag_pos_of_posDef`.
 * `Matrix.exists_isLU_of_isDiagDominant`, `Matrix.exists_isLU_of_isColDiagDominant`: Property 3.2,
   [higham2002accuracy] Theorem 9.9, for *nonsingular* weakly dominant matrices (the book omits
   the nonsingularity, which `!![0, 0; 1, 1]` shows is needed), by induction through the Schur
@@ -1021,29 +1022,42 @@ theorem IsLU.diag_upper_ne_zero_of_forall_isUnit {A L U : Matrix n n K} (h : IsL
   rw [h.det_leadingPrincipalSubmatrix, Finset.prod_ne_zero_iff] at this
   exact this i (mem_filter.2 ⟨mem_univ _, le_rfl⟩)
 
-/-- **[quarteroni2000numerical] Theorem 3.5**: if every leading principal submatrix of `A` is
-nonsingular, then `A` has a unique `L D Mᵀ` factorization. From the LU factorization `A = L U`
-take `D = diag U` (nonzero, since `det A = ∏ u_ii ≠ 0`) and `Mᵀ = D⁻¹ U`; uniqueness follows
-from the uniqueness of the LU factorization, since `L (D Mᵀ)` is one. The book says "all the
-principal minors"; its proof uses the leading ones, and needs the last for `D` to be invertible. -/
-theorem existsUnique_isLDM {A : Matrix n n K} (hA : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) :
+/-- **[quarteroni2000numerical] Theorem 3.5**, at the generality of [golub2013matrix]
+Theorem 4.1.3: if every *strict* leading principal submatrix of `A` is nonsingular, then `A` has a
+unique `L D Mᵀ` factorization (`A` itself may be singular, and then the last pivot vanishes). From
+the LU factorization `A = L U` take `D = diag U` and `Mᵀ = D⁻¹ U` off the diagonal: every pivot but
+the last is nonzero (`Matrix.IsLU.diag_upper_ne_zero_of_lt`), and a vanishing last pivot comes
+with a zero last row. Uniqueness follows from the uniqueness of the LU factorization, since
+`L (D Mᵀ)` is one. The book says "all the principal minors"; its proof uses the leading ones. -/
+theorem existsUnique_isLDM {A : Matrix n n K}
+    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
     ∃! LDM : Matrix n n K × Matrix n n K × Matrix n n K, IsLDM A LDM.1 LDM.2.1 LDM.2.2 := by
-  have hA' := isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit hA
-  obtain ⟨L, U, hLU⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA'
-  have hU := hLU.diag_upper_ne_zero_of_forall_isUnit hA
-  have hM : (diagonal (fun i => (U i i)⁻¹) * U)ᵀ.IsUnitLowerTriangular := by
-    refine ⟨fun i j hij => ?_, fun i => ?_⟩
-    · rw [transpose_apply, diagonal_mul, hLU.isUpperTriangular (OrderDual.toDual_lt_toDual.1 hij),
-        mul_zero]
-    · rw [transpose_apply, diagonal_mul, inv_mul_cancel₀ (hU i)]
-  refine ⟨(L, diagonal fun i => U i i, (diagonal (fun i => (U i i)⁻¹) * U)ᵀ),
+  obtain ⟨L, U, hLU⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA
+  have hrow : ∀ i j, U i i = 0 → U i j = 0 := fun i j hi => by
+    rcases lt_trichotomy j i with hji | rfl | hij
+    · exact hLU.isUpperTriangular hji
+    · exact hi
+    · exact absurd hi (hLU.diag_upper_ne_zero_of_lt (hA j) hij)
+  set Mt : Matrix n n K := of fun i j => if i = j then 1 else (U i i)⁻¹ * U i j with hMt
+  have hM : Mtᵀ.IsUnitLowerTriangular := by
+    refine ⟨fun i j hij => ?_, fun i => by simp [hMt]⟩
+    have hij' : i < j := OrderDual.toDual_lt_toDual.1 hij
+    rw [transpose_apply, hMt, of_apply, ite_eq_right hij'.ne', hLU.isUpperTriangular hij',
+      mul_zero]
+  have hDM : diagonal (fun i => U i i) * Mt = U := by
+    ext i j
+    rw [diagonal_mul, hMt, of_apply]
+    split_ifs with hij
+    · rw [hij, mul_one]
+    · rcases eq_or_ne (U i i) 0 with hi | hi
+      · rw [hi, zero_mul, hrow i j hi]
+      · rw [← mul_assoc, mul_inv_cancel₀ hi, one_mul]
+  refine ⟨(L, diagonal fun i => U i i, Mtᵀ),
     ⟨hLU.isUnitLowerTriangular, isDiag_diagonal _, hM, ?_⟩, ?_⟩
-  · rw [transpose_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _),
-      diagonal_mul_diagonal]
-    simp only [mul_inv_cancel₀ (hU _), diagonal_one, Matrix.one_mul, hLU.mul_eq]
+  · rw [transpose_transpose, Matrix.mul_assoc, hDM, hLU.mul_eq]
   · rintro ⟨L', D', M'⟩ h'
     dsimp only at h'
-    obtain ⟨hL, hU'⟩ := h'.isLU.unique hLU hA'
+    obtain ⟨hL, hU'⟩ := h'.isLU.unique hLU hA
     have hD'M' : ∀ i j, (D' * M'ᵀ) i j = D' i i * M' j i := fun i j => by
       conv_lhs => rw [← h'.isDiag.diagonal_diag]
       rw [diagonal_mul, transpose_apply]
@@ -1057,17 +1071,23 @@ theorem existsUnique_isLDM {A : Matrix n n K} (hA : ∀ k, IsUnit (A.leadingPrin
       · simp [hD]
       · simp [h'.isDiag hij, diagonal_apply_ne _ hij]
     · ext i j
-      have := congrFun (congrFun hU' j) i
-      rw [hD'M' j i, hD j] at this
-      simp only [transpose_apply, diagonal_mul]
-      rw [← this, ← mul_assoc, inv_mul_cancel₀ (hU j), one_mul]
+      change M' i j = Mtᵀ i j
+      rw [transpose_apply, hMt, of_apply]
+      rcases lt_trichotomy j i with hji | rfl | hij
+      · have := congrFun (congrFun hU' j) i
+        rw [hD'M' j i, hD j] at this
+        rw [ite_eq_right hji.ne, ← this, ← mul_assoc,
+          inv_mul_cancel₀ (hLU.diag_upper_ne_zero_of_lt (hA i) hji), one_mul]
+      · rw [ite_eq_left rfl, h'.isUnitLowerTriangular_right.diag_eq_one]
+      · rw [ite_eq_right hij.ne', hLU.isUpperTriangular hij, mul_zero,
+          h'.isUnitLowerTriangular_right.isLowerTriangular (OrderDual.toDual_lt_toDual.2 hij)]
 
 /-- The `L D Lᵀ` factorization ([quarteroni2000numerical] §3.4.2): for a symmetric matrix with
-nonsingular leading principal submatrices, the two unit triangular factors of the `L D Mᵀ`
+nonsingular strict leading principal submatrices, the two unit triangular factors of the `L D Mᵀ`
 factorization coincide, since transposing `A = L D Mᵀ` gives the second factorization
 `A = M D Lᵀ`. -/
 theorem IsLDM.eq_of_isSymm {A L D M : Matrix n n K} (h : IsLDM A L D M) (hs : A.IsSymm)
-    (hA : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) : M = L := by
+    (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : M = L := by
   have h' : IsLDM A M D L := ⟨h.isUnitLowerTriangular_right, h.isDiag,
     h.isUnitLowerTriangular_left, by
       rw [← hs.eq, ← h.mul_eq, transpose_mul, transpose_mul, transpose_transpose,

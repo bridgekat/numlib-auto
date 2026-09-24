@@ -66,7 +66,9 @@ stated at the operator level wherever the proof allows.
   `0 < ω < 2` for SOR to converge ([kress1998numerical] Thm 4.11,
   `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`) follow.
 * **SSOR.**  The SSOR preconditioner is symmetric (`Matrix.ssorSplitting_m_isSymm`), positive
-  definite for `0 < ω < 2` (`Matrix.ssorSplitting_m_posDef`) and dominates `A`
+  definite for `0 < ω < 2` as soon as `A` is symmetric with positive diagonal
+  (`Matrix.ssorSplitting_m_posDef_of_diag_pos`, [golub2013matrix] (11.2.24); for positive definite
+  `A`, `Matrix.ssorSplitting_m_posDef`) and dominates `A`
   (`Matrix.ssorSplitting_m_sub_posSemidef`, the factorization `P - A = c ((1-ω)D - ωL) D⁻¹ ((1-ω)D -
   ωU)`); hence SSOR converges for a positive definite `A` and `0 < ω < 2`, and its iteration matrix
   is `A`-self-adjoint and `A`-positive semidefinite
@@ -1508,20 +1510,32 @@ end Parts
 
 variable {A : Matrix n n ℝ}
 
-/-- **The SSOR preconditioner is positive definite** for a positive definite `A` and `0 < ω < 2`: it
-is the positive multiple `(ω (2 - ω))⁻¹` of the congruence `X D⁻¹ Xᵀ` of the positive definite
+/-- **The SSOR preconditioner is positive definite** for a symmetric `A` with positive diagonal
+(not necessarily positive definite) and `0 < ω < 2` ([golub2013matrix] §11.2.7, after (11.2.24)):
+it is the positive multiple `(ω (2 - ω))⁻¹` of the congruence `X D⁻¹ Xᵀ` of the positive definite
 `D⁻¹` by the invertible `X = D + ωL`. -/
-theorem ssorSplitting_m_posDef (hA : A.PosDef) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω)
-    (hω2 : ω < 2) : (ssorSplitting A h hω0.ne' hω2.ne).m.PosDef := by
-  have hsymm : A.IsSymm := isHermitian_iff_isSymm.mp hA.1
+theorem ssorSplitting_m_posDef_of_diag_pos (hA : A.IsHermitian) (hd : ∀ i, 0 < A i i)
+    (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
+    (ssorSplitting A h hω0.ne' hω2.ne).m.PosDef := by
+  have hsymm : A.IsSymm := isHermitian_iff_isSymm.mp hA
   have hX : IsUnit (diagPart A + ω • strictLower A) := isUnit_diagPart_add_smul_strictLower h ω
-  have hDi : (diagPart A)⁻¹.PosDef := hA.diagPart.inv
+  have hDi : (diagPart A)⁻¹.PosDef := by
+    refine PosDef.inv ?_
+    rw [diagPart, posDef_diagonal_iff]
+    exact hd
   change ((ω * (2 - ω))⁻¹ • ((diagPart A + ω • strictLower A) * (diagPart A)⁻¹ *
     (diagPart A + ω • strictUpper A))).PosDef
   rw [← diagPart_add_smul_strictLower_transpose hsymm, ← conjTranspose_eq_transpose_of_trivial]
   refine PosDef.smul (hDi.mul_mul_conjTranspose_same ?_) ?_
   · exact (vecMul_injective_iff_isUnit).mpr hX
   · exact inv_pos.mpr (mul_pos hω0 (by linarith))
+
+/-- **The SSOR preconditioner is positive definite** for a positive definite `A` and `0 < ω < 2`,
+the case of `Matrix.ssorSplitting_m_posDef_of_diag_pos` where the diagonal is positive because `A`
+is positive definite. -/
+theorem ssorSplitting_m_posDef (hA : A.PosDef) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω)
+    (hω2 : ω < 2) : (ssorSplitting A h hω0.ne' hω2.ne).m.PosDef :=
+  ssorSplitting_m_posDef_of_diag_pos hA.1 (fun _ => hA.diag_pos) h hω0 hω2
 
 /-- The two triangular factors of the SSOR preconditioner, expanded. -/
 private theorem expand_mul_inv_mul (h : IsUnit (diagPart A)) (a b : ℝ) :

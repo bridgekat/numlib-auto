@@ -4,8 +4,8 @@ triangular matrix (`Substitution`), and the two accuracy-improving devices of Qu
 §3.11–3.12 — scaling and iterative refinement as a stationary iteration (`Refinement`) — and
 condition-number estimation (`ConditionEstimation`, [golub2013matrix] §3.5.4: the lower bounds
 `‖y‖ ≤ ‖A⁻¹‖ ‖A y‖` and `κ̂ ≤ κ` that every condition estimator built on a solve satisfies, in the
-induced `p`-norms of `Analysis/Matrix/OperatorNorm`, derived from its operator-level forerunners
-`condEstimate`, `norm_apply_div_le_norm_inverse` of `Refinement`, which refactor task R1 moves there). The factorizations
+induced `p`-norms of `Analysis/Matrix/OperatorNorm`, as instances of the operator-level
+`norm_apply_div_le_norm_inverse` and `condEstimate_le_condNumber` beside them). The factorizations
 themselves are `LinearAlgebra/Matrix/LU`, `LinearAlgebra/Matrix/Cholesky` and
 `LinearAlgebra/Matrix/QR`; their rounding-error analyses are `FloatingPoint/Substitution` and
 `FloatingPoint/LU`.

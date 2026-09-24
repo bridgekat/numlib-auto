@@ -1,10 +1,10 @@
 # Planned additions (GVL round): the module doc of `Numlib.Preconditioner.ILU` is the group description;
 # when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch11) add to "Existence for M-matrices" the symmetric case: for a Stieltjes matrix one
-# elimination step, even after dropping any entries of the pivot column, is again Stieltjes
-# (`Matrix.IsStieltjes.isStieltjes_sub_drop`, [golub2013matrix] Theorem 11.5.2, after
-# [meijerink1977iterative]), and an incomplete Cholesky factor with positive diagonal exists for
-# every symmetric zero pattern avoiding the diagonal (`Matrix.IsStieltjes.exists_isIC`).
+# (ch11) add to "Existence for M-matrices" the symmetric case: an incomplete Cholesky factor with
+# positive diagonal exists for every symmetric zero pattern avoiding the diagonal
+# (`Matrix.IsStieltjes.exists_isIC`, after [meijerink1977iterative]), by the Stieltjes elimination
+# step `Matrix.IsStieltjes.isStieltjes_sub_drop` ([golub2013matrix] Theorem 11.5.2) of
+# `Numlib/LinearAlgebra/Matrix/MMatrix`.
 namespace = "Matrix"
 
 [[node]]
@@ -18,10 +18,6 @@ id = "zeroPattern"
 
 [[node]]
 id = "IsILU0"
-
-[[node]]
-id = "IsMMatrix.isMMatrix_schurComplementSingle"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 
 [[node]]
 id = "IsMMatrix.isMMatrix_elimStep"
@@ -75,35 +71,6 @@ id = "IsIC.isILU"
 
 [[node]]
 id = "IsIC.eq_of_diag_pos"
-
-[[node]]  # staged by ch11
-id = "IsStieltjes.schurComplementSingle"
-kind = "theorem"
-desc = '''
-One step of symmetric Gaussian elimination keeps a Stieltjes matrix Stieltjes:
-`A.IsStieltjes → (A.schurComplementSingle p).IsStieltjes`. `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`
-(Ky Fan), symmetry of the Schur complement of a symmetric matrix, and
-`Matrix.IsMMatrix.posDef_of_isSymm`. ★
-'''
-deps = ["Matrix.IsStieltjes", "Matrix.IsStieltjes.isMMatrix", "Matrix.IsMMatrix.isMMatrix_schurComplementSingle",
-  "Matrix.IsMMatrix.posDef_of_isSymm", "Matrix.schurComplementSingle"]
-
-[[node]]  # staged by ch11
-id = "IsStieltjes.isStieltjes_sub_drop"
-kind = "theorem"
-desc = '''
-[golub2013matrix] Theorem 11.5.2, backbone form: for `A.IsStieltjes`, a pivot `p` and any set `S` of
-non-pivot indices, the matrix `B̃ i j = A i j − ṽ_i ṽ_j / A p p` on `{i // i ≠ p}` with
-`ṽ_i = if i ∈ S then A i p else 0` (the pivot column with the entries outside `S` dropped) is
-Stieltjes. Proof: `B̃ ≥ A.schurComplementSingle p` entrywise, because `ṽ_iṽ_j ∈ {0, A i p · A p j}` and
-`A i p · A p j ≥ 0` (both `≤ 0`), `A p p > 0`; the Schur complement is Stieltjes
-(`Matrix.IsStieltjes.schurComplementSingle`) and `B̃` is symmetric with nonpositive off-diagonal
-entries, so `Matrix.IsStieltjes.of_entrywiseLE`. (The book's proof via `B⁻¹ ≥ 0` and
-Sherman–Morrison is the alternative.) Statement shape settled by
-`notes/gvl/ch11/proto/Shapes.lean` (c). ★★ (~40 lines)
-'''
-deps = ["Matrix.IsStieltjes.schurComplementSingle", "Matrix.IsStieltjes.of_entrywiseLE"]
-source = 'Golub–Van Loan, Matrix Computations, Theorem 11.5.2'
 
 [[node]]  # staged by ch11
 id = "IsStieltjes.exists_isIC"

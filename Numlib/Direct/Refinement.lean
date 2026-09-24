@@ -1,14 +1,11 @@
-import Mathlib.Analysis.InnerProductSpace.Adjoint
-import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.FloatingPoint.LU
 import Numlib.FloatingPoint.Stationary
 import Numlib.Stationary.Basic
 
 /-!
-# Iterative refinement, scaling and condition estimation
+# Iterative refinement and scaling
 
-The devices of [quarteroni2000numerical] §3.11–3.12 for improving and assessing the accuracy of
-a direct solve.
+The devices of [quarteroni2000numerical] §3.12 for improving the accuracy of a direct solve.
 
 * **Iterative refinement** (§3.12.2) with an approximate inverse `C` — in practice the LU solve
   of §3.12.2, `C = luSolve` as a linear map — is the step `x ↦ x + C (b - A x)`
@@ -44,17 +41,14 @@ a direct solve.
   `Refinement.RoundsStepLU` and `Refinement.RoundsStepLUMixed`.
 * **Scaling** (§3.12.1): `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x` for nonsingular `D₁`,
   `D₂` (`Matrix.scaled_mulVec_eq_iff`), diagonal in the book and arbitrary here.
-* **Condition estimation** (§3.11): the basic inequality `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖`
-  (`norm_apply_div_le_norm_inverse`), the estimate `K̂(A) = ‖A‖ ‖y‖ / ‖x‖` from the probe `d`,
-  `A† x = d`, `A y = x` ((3.70), `condEstimate`, on a Hilbert space where the adjoint lives), and
-  its one property, `K̂(A) ≤ K(A)` (`condEstimate_le_condNumber`). The lookahead heuristic
-  (3.71)–(3.72) that chooses `d` is an algorithm with no theorem attached and is not formalized.
 
-Stated on a normed space (`E →L[𝕜] E`, `NormedRing.condNumber`) where possible, on matrices only
-for scaling.
+The condition estimate of §3.11 is `Numlib/Direct/ConditionEstimation`.
+
+Stated on a normed space (`E →L[𝕜] E`) where possible, on matrices only for scaling and the
+rounding-error analysis.
 -/
 
-open Filter Topology NormedRing
+open Filter Topology
 
 /-! ### Iterative refinement -/
 
@@ -792,40 +786,3 @@ theorem scaled_mulVec_eq_iff {D₁ D₂ : Matrix n n K} (h₁ : IsUnit D₁) (h�
   exact (mulVec_injective_iff_isUnit.2 h₁).eq_iff.symm
 
 end Matrix
-
-/-! ### Condition estimation -/
-
-section CondEstimate
-
-variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-
-/-- **The basic inequality of condition estimation** ([quarteroni2000numerical] §3.11): for any
-probe `d`, `γ(d) = ‖y‖ / ‖d‖ ≤ ‖A⁻¹‖` where `A y = d`; the estimators look for a `d` making
-`γ(d)` as large as possible. -/
-theorem norm_apply_div_le_norm_inverse (A : E ≃L[𝕜] E) (d : E) :
-    ‖A.symm d‖ / ‖d‖ ≤ ‖(A.symm : E →L[𝕜] E)‖ := by
-  rcases eq_or_ne d 0 with rfl | hd
-  · simp
-  rw [div_le_iff₀ (norm_pos_iff.2 hd)]
-  exact (A.symm : E →L[𝕜] E).le_opNorm d
-
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [CompleteSpace E]
-
-/-- **The condition estimate** of [quarteroni2000numerical] §3.11, (3.70): from a probe vector
-`d`, solve `A† x = d` (the book's `Rᵀ x = d`, or `(L U)ᵀ x = d` in (3.72)) and `A y = x`, and
-estimate `K(A)` by `K̂(A) = ‖A‖ ‖y‖ / ‖x‖`. Here `x = (A⁻¹)† d`, the adjoint being that of the
-Hilbert space `E`; the only provable property of the estimate is `K̂(A) ≤ K(A)`
-(`condEstimate_le_condNumber`), its quality depending on the heuristic choice of `d`. -/
-noncomputable def condEstimate (A : E ≃L[𝕜] E) (d : E) : ℝ :=
-  ‖(A : E →L[𝕜] E)‖ * ‖A.symm (ContinuousLinearMap.adjoint (A.symm : E →L[𝕜] E) d)‖ /
-    ‖ContinuousLinearMap.adjoint (A.symm : E →L[𝕜] E) d‖
-
-/-- **The condition estimate never exceeds the condition number**: `K̂(A) ≤ K(A)`, since
-`‖y‖ / ‖x‖ = ‖A⁻¹ x‖ / ‖x‖ ≤ ‖A⁻¹‖`. The book's `K̂₁(A) = ‖R‖₁ ‖y‖₁ / ‖x‖₁` is this in the
-`1`-norm; the statement here is norm-agnostic. -/
-theorem condEstimate_le_condNumber (A : E ≃L[𝕜] E) (d : E) :
-    condEstimate A d ≤ condNumber (A : E →L[𝕜] E) := by
-  rw [condEstimate, A.condNumber_eq, mul_div_assoc]
-  exact mul_le_mul_of_nonneg_left (norm_apply_div_le_norm_inverse A _) (norm_nonneg _)
-
-end CondEstimate

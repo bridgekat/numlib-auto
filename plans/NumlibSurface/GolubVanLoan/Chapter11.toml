@@ -102,8 +102,8 @@ rounding-independent `linMoreIC_nnz_le`. There is no Algorithm 11.4.1 in the sou
 Backbone first (about 900 lines, all independent of the surface):
 1. `LinearAlgebra/Sparse/Pattern` appends (`Matrix.IsPatternSymm`, ~20) and `LinearAlgebra/Sparse/Fill`
    (new, ~150).
-2. `LinearAlgebra/Matrix/MMatrix` appends (Stieltjes, symmetric M ⇒ PD, ~110), then
-   `Preconditioner/ILU` appends (Theorem 11.5.2 backbone form, IC existence, ~180).
+2. `LinearAlgebra/Matrix/MMatrix` appends (Stieltjes, symmetric M ⇒ PD, Theorem 11.5.2 backbone form
+   beside Ky Fan's theorem, ~150), then `Preconditioner/ILU` appends (IC existence, ~140).
 3. `LinearAlgebra/Matrix/Complexify` append (`complexSpectralRadius_diagonal`, ~20) and
    `Stationary/SPD` appends (~70).
 4. `Krylov/Subspace` appends (shift invariance, least invariant subspace, ~50), `Krylov/Singular`

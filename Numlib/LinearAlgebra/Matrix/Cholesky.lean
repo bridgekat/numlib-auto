@@ -43,9 +43,12 @@ bounds of positive (semi)definite matrices; and the bridge to Mathlib's `Matrix.
   ratios of consecutive leading minors (`Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`).
 * `Matrix.posDef_iff_exists_isUnit_conjTranspose_mul_self` (Property 1.18 (4)),
   `Matrix.posDef_iff_forall_principalSubmatrix_eigenvalues_pos` (Property 1.18 (2)).
-* `Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag`, `Matrix.PosDef.norm_apply_le_max_re_diag`:
-  `|a_ij|² ≤ a_ii a_jj`, so the entry of largest modulus of a positive definite matrix is diagonal
-  ([quarteroni2000numerical] §1.12).
+* `Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag`,
+  `Matrix.PosSemidef.norm_apply_le_add_re_diag_div_two`,
+  `Matrix.PosSemidef.norm_apply_le_max_re_diag` (with its definite case
+  `Matrix.PosDef.norm_apply_le_max_re_diag`): `|a_ij|² ≤ a_ii a_jj`, hence
+  `|a_ij| ≤ (a_ii + a_jj) / 2`, so the entry of largest modulus of a positive semidefinite matrix is
+  diagonal ([quarteroni2000numerical] §1.12, [golub2013matrix] (4.2.12)–(4.2.14)).
 * `Matrix.LDL.lower_isUnitLowerTriangular` (the TODO of `Mathlib/Analysis/Matrix/LDL.lean`),
   `Matrix.LDL.diagEntries_pos`, `Matrix.isLDM_ldl`, `Matrix.LDL.lower_eq_of_isLDM`: Mathlib's `LDL`
   factors are the unique `L D Lᴴ` factors of `Numlib/LinearAlgebra/Matrix/LU`.
@@ -97,18 +100,35 @@ theorem PosSemidef.norm_apply_sq_le_mul_re_diag (hA : A.PosSemidef) (i j : n) :
   exact h
 
 omit [Fintype n] [LinearOrder n] in
+/-- Every entry of a positive semidefinite matrix is bounded in modulus by the mean of the two
+diagonal entries in its row and column, `‖a_ij‖ ≤ (a_ii + a_jj) / 2` ([golub2013matrix] (4.2.12)):
+`‖a_ij‖² ≤ a_ii a_jj ≤ ((a_ii + a_jj) / 2)²`. -/
+theorem PosSemidef.norm_apply_le_add_re_diag_div_two (hA : A.PosSemidef) (i j : n) :
+    ‖A i j‖ ≤ (RCLike.re (A i i) + RCLike.re (A j j)) / 2 := by
+  have hi : 0 ≤ RCLike.re (A i i) := (RCLike.nonneg_iff.1 hA.diag_nonneg).1
+  have hj : 0 ≤ RCLike.re (A j j) := (RCLike.nonneg_iff.1 hA.diag_nonneg).1
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
+  refine (hA.norm_apply_sq_le_mul_re_diag i j).trans ?_
+  nlinarith [sq_nonneg (RCLike.re (A i i) - RCLike.re (A j j))]
+
+omit [Fintype n] [LinearOrder n] in
+/-- Every entry of a positive semidefinite matrix is bounded in modulus by the larger of the two
+diagonal entries in its row and column, so the entry of largest modulus lies on the diagonal
+([golub2013matrix] (4.2.14)). -/
+theorem PosSemidef.norm_apply_le_max_re_diag (hA : A.PosSemidef) (i j : n) :
+    ‖A i j‖ ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) :=
+  (hA.norm_apply_le_add_re_diag_div_two i j).trans (by
+    linarith [le_max_left (RCLike.re (A i i)) (RCLike.re (A j j)),
+      le_max_right (RCLike.re (A i i)) (RCLike.re (A j j))])
+
+omit [Fintype n] [LinearOrder n] in
 /-- Every entry of a positive definite matrix is bounded in modulus by the larger of the two
 diagonal entries in its row and column, so the entry of largest modulus lies on the diagonal
-([quarteroni2000numerical] §1.12, after Property 1.18). -/
+([quarteroni2000numerical] §1.12, after Property 1.18); the definite case of
+`Matrix.PosSemidef.norm_apply_le_max_re_diag`. -/
 theorem PosDef.norm_apply_le_max_re_diag (hA : A.PosDef) (i j : n) :
-    ‖A i j‖ ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) := by
-  have hi : 0 < RCLike.re (A i i) := (RCLike.pos_iff.1 hA.diag_pos).1
-  have hj : 0 < RCLike.re (A j j) := (RCLike.pos_iff.1 hA.diag_pos).1
-  have hM : 0 ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) := le_max_of_le_left hi.le
-  refine (pow_le_pow_iff_left₀ (norm_nonneg _) hM two_ne_zero).1 ?_
-  refine (hA.posSemidef.norm_apply_sq_le_mul_re_diag i j).trans ?_
-  rw [sq]
-  exact mul_le_mul (le_max_left _ _) (le_max_right _ _) hj.le hM
+    ‖A i j‖ ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) :=
+  hA.posSemidef.norm_apply_le_max_re_diag i j
 
 end Entries
 
@@ -184,12 +204,12 @@ theorem IsLDM.conjTranspose (h : IsLDM A L D M) : IsLDM Aᴴ Mᴴᵀ Dᴴ Lᴴ�
     rw [← h.mul_eq, conjTranspose_mul, conjTranspose_mul, transpose_transpose,
       conjTranspose_transpose, transpose_conjTranspose, Matrix.mul_assoc]
 
-/-- For a Hermitian matrix with nonsingular leading principal submatrices, the `L D Mᵀ`
+/-- For a Hermitian matrix with nonsingular strict leading principal submatrices, the `L D Mᵀ`
 factorization is Hermitian: `M = Lᴴᵀ` (so that `Mᵀ = Lᴴ`) and `D` is real. The conjugate transpose
 of the factorization is a second factorization of `A`, and `Matrix.existsUnique_isLDM` identifies
 the two. -/
 theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
-    (hlead : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) : M = Lᴴᵀ ∧ D = Dᴴ := by
+    (hlead : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : M = Lᴴᵀ ∧ D = Dᴴ := by
   have h' := h.conjTranspose
   rw [hA.eq] at h'
   obtain ⟨LDM₀, -, huniq⟩ := existsUnique_isLDM hlead
@@ -201,10 +221,11 @@ theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
   ext i j
   simp only [transpose_apply, conjTranspose_apply, star_star]
 
-/-- The Hermitian `L D Lᴴ` factorization of a Hermitian matrix with nonsingular leading principal
-submatrices, from `Matrix.existsUnique_isLDM`. -/
+/-- The Hermitian `L D Lᴴ` factorization of a Hermitian matrix with nonsingular strict leading
+principal submatrices ([golub2013matrix] Theorem 4.1.3; unique by `Matrix.existsUnique_isLDM`),
+from `Matrix.existsUnique_isLDM`. -/
 theorem exists_isLDM_conjTranspose_of_isHermitian (hA : A.IsHermitian)
-    (hlead : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) : ∃ L D, IsLDM A L D Lᴴᵀ := by
+    (hlead : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) : ∃ L D, IsLDM A L D Lᴴᵀ := by
   obtain ⟨⟨L, D, M⟩, h, -⟩ := existsUnique_isLDM hlead
   obtain ⟨hM, -⟩ := h.eq_of_isHermitian hA hlead
   exact ⟨L, D, hM ▸ h⟩
@@ -245,7 +266,7 @@ theorem IsLDM.diag_pos_of_forall_det_pos (h : IsLDM A L D M)
 theorem exists_isLDM_conjTranspose_of_posDef (hA : A.PosDef) :
     ∃ L D, IsLDM A L D Lᴴᵀ ∧ ∀ i, 0 < D i i := by
   obtain ⟨L, D, h⟩ :=
-    exists_isLDM_conjTranspose_of_isHermitian hA.1 hA.isUnit_leadingPrincipalSubmatrix
+    exists_isLDM_conjTranspose_of_isHermitian hA.1 hA.isUnit_strictLeadingPrincipalSubmatrix
   exact ⟨L, D, h, h.posDef_iff.1 hA⟩
 
 end LDLstar
@@ -267,7 +288,8 @@ theorem posDef_iff_forall_det_leadingPrincipalSubmatrix_pos (hA : A.IsHermitian)
   refine ⟨fun h k => h.det_leadingPrincipalSubmatrix_pos k, fun hpos => ?_⟩
   have hlead : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k) := fun k =>
     (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hpos k).ne')
-  obtain ⟨L, D, h⟩ := exists_isLDM_conjTranspose_of_isHermitian hA hlead
+  obtain ⟨L, D, h⟩ := exists_isLDM_conjTranspose_of_isHermitian hA
+    (isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit hlead)
   exact h.posDef_iff.2 (h.diag_pos_of_forall_det_pos hpos)
 
 omit [Fintype n] in
@@ -668,7 +690,7 @@ theorem isLDM_ldl : IsLDM S (LDL.lower hS) (LDL.diag hS) (LDL.lower hS)ᴴᵀ wh
 /-- Mathlib's `LDL` factors are the unique `L D Lᴴ` factors of a positive definite matrix. -/
 theorem LDL.lower_eq_of_isLDM {L D : Matrix n n 𝕜} (h : IsLDM S L D Lᴴᵀ) :
     LDL.lower hS = L ∧ LDL.diag hS = D := by
-  obtain ⟨LDM₀, -, huniq⟩ := existsUnique_isLDM hS.isUnit_leadingPrincipalSubmatrix
+  obtain ⟨LDM₀, -, huniq⟩ := existsUnique_isLDM hS.isUnit_strictLeadingPrincipalSubmatrix
   have := (huniq (LDL.lower hS, LDL.diag hS, (LDL.lower hS)ᴴᵀ) (isLDM_ldl hS)).trans
     (huniq (L, D, Lᴴᵀ) h).symm
   simp only [Prod.mk.injEq] at this

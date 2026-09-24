@@ -1,4 +1,3 @@
-import Mathlib.Tactic.FieldSimp
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.Stationary.RegularSplitting
@@ -51,7 +50,8 @@ The elimination step is taken in the form `Matrix.elimStep` of
 the unipotent `G = Matrix.elimMul A p` carrying the multipliers of column `p`, so the accumulated
 `L` factor is a product of such matrices and no reindexing appears. The `1 × 1`-pivot Schur
 complement `Matrix.schurComplementSingle` of `Numlib/LinearAlgebra/Matrix/SchurComplement` is the
-same step read on the smaller index type, and [fan1960note] theorem is stated there.
+same step read on the smaller index type, and [fan1960note] theorem is stated for it in
+`Numlib/LinearAlgebra/Matrix/MMatrix`.
 
 ## Threshold factorizations
 
@@ -316,115 +316,6 @@ theorem IsIC.eq_of_diag_pos (h₁ : IsIC P B L₁) (h₂ : IsIC P B L₂) (hP : 
   exact Matrix.ext fun i j => key i j
 
 end ICUnique
-
-/-! ### One step of Gaussian elimination on the smaller index type -/
-
-section SchurSingle
-
-variable [Fintype n] [DecidableEq n] {K : Type*} [Field K]
-
-/-- A sum over the indices other than `p`, read as a sum over the subtype. -/
-private theorem sum_subtype_ne (p : n) (f : n → K) :
-    ∑ j : {x : n // x ≠ p}, f j.1 = ∑ x ∈ Finset.univ.erase p, f x := by
-  have h : ∀ x : n, x ∈ Finset.univ.erase p ↔ x ≠ p := fun x => by simp
-  exact (Finset.sum_subtype _ h f).symm
-
-/-- The row of a matrix-vector product, with the pivot term separated off. -/
-private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) :
-    ∑ j : {x : n // x ≠ p}, A t j.1 * X j.1 = (A *ᵥ X) t - A t p * X p := by
-  rw [sum_subtype_ne p fun j => A t j * X j, Matrix.mulVec_apply_eq_sum,
-    ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
-  ring
-
-/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose image
-under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of `X`
-reproduces the remaining rows of `A X`.
-
-This is the whole content of one step of Gaussian elimination: `X` is recovered from its restriction
-by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
-theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
-    (hpp : A p p ≠ 0) {X : n → K} (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
-    (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
-  have hp := sum_ne_eq_mulVec_sub A X p p
-  rw [hX, zero_sub] at hp
-  have hXp : (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = -X p := by
-    rw [hp]; field_simp
-  have expand : ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1
-      = (∑ j : {x : n // x ≠ p}, A i.1 j.1 * X j.1)
-        - ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1) := by
-    rw [← Finset.sum_sub_distrib]
-    exact Finset.sum_congr rfl fun j _ => by
-      rw [Matrix.schurComplementSingle_apply]; ring
-  have pull : ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * (A p j.1 * X j.1)
-      = A i.1 p * (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 := by
-    rw [Finset.mul_sum]
-  have lhs : (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i
-      = ∑ j : {x : n // x ≠ p}, A.schurComplementSingle p i j * X j.1 :=
-    Matrix.mulVec_apply_eq_sum _ _ _
-  rw [lhs, expand, pull, mul_assoc, hXp, sum_ne_eq_mulVec_sub A X p i.1]
-  ring
-
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is inverted by
-the corresponding submatrix of the inverse. -/
-theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA : IsUnit A)
-    (hpp : A p p ≠ 0) :
-    A.schurComplementSingle p * A⁻¹.submatrix Subtype.val Subtype.val = 1 := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA
-  ext i j
-  have hcol : ∀ s : n, (A *ᵥ fun t => A⁻¹ t j.1) s = (1 : Matrix n n K) s j.1 := fun s => by
-    rw [Matrix.mulVec_apply_eq_sum, ← Matrix.mul_apply, mul_nonsing_inv A hdet]
-  have hzero : (A *ᵥ fun t => A⁻¹ t j.1) p = 0 := by
-    rw [hcol p, Matrix.one_apply_ne (Ne.symm j.2)]
-  have h := schurComplementSingle_mulVec_of_apply_eq_zero A hpp hzero i
-  rw [hcol i.1] at h
-  have hone : (1 : Matrix n n K) i.1 j.1
-      = (1 : Matrix {x : n // x ≠ p} {x : n // x ≠ p} K) i j := by
-    rcases eq_or_ne i j with rfl | hij
-    · rw [Matrix.one_apply_eq, Matrix.one_apply_eq]
-    · rw [Matrix.one_apply_ne (Subtype.coe_injective.ne hij), Matrix.one_apply_ne hij]
-  exact h.trans hone
-
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is nonsingular.
--/
-theorem isUnit_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
-    IsUnit (A.schurComplementSingle p) :=
-  have h := schurComplementSingle_mul_submatrix_inv hA hpp
-  ⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩
-
-/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the indices
-other than the pivot — the `1 × 1`-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
-theorem inv_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
-    (A.schurComplementSingle p)⁻¹ = A⁻¹.submatrix Subtype.val Subtype.val :=
-  Matrix.inv_eq_right_inv (schurComplementSingle_mul_submatrix_inv hA hpp)
-
-end SchurSingle
-
-section KyFan
-
-variable [Fintype n] [DecidableEq n]
-
-/-- **[fan1960note] theorem** ([saad2003iterative], Theorem 10.1): the matrix obtained from an
-M-matrix by one step of Gaussian elimination is again an M-matrix.
-
-The three checks are the book's. Off the diagonal, `a_ij - a_ip a_pj / a_pp ≤ a_ij ≤ 0`, because the
-subtracted term is a product of two nonpositive entries and a positive pivot. Nonsingularity and the
-nonnegativity of the inverse are one identity, `Matrix.inv_schurComplementSingle`: the inverse of
-the Schur complement is the submatrix of `A⁻¹` on the indices other than the pivot, which is the
-content of [saad2003iterative] `A_1⁻¹ e_j = A⁻¹ e_j`. -/
-theorem IsMMatrix.isMMatrix_schurComplementSingle {A : Matrix n n ℝ} (hA : A.IsMMatrix) (p : n) :
-    (A.schurComplementSingle p).IsMMatrix := by
-  have hpp : 0 < A p p := hA.diag_pos p
-  refine ⟨fun i j hij => ?_, isUnit_schurComplementSingle hA.isUnit hpp.ne', ?_⟩
-  · rw [Matrix.schurComplementSingle_apply]
-    have h1 : A i.1 j.1 ≤ 0 := hA.offDiag_nonpos _ _ (Subtype.coe_injective.ne hij)
-    have h3 : A p j.1 ≤ 0 := hA.offDiag_nonpos _ _ (Ne.symm j.2)
-    have h5 : A i.1 p * (A p p)⁻¹ ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (hA.offDiag_nonpos _ _ i.2) (inv_pos.2 hpp).le
-    nlinarith [h5, h3]
-  · rw [inv_schurComplementSingle hA.isUnit hpp.ne']
-    exact entrywiseNonneg_iff.2 fun i j => hA.inv_entrywiseNonneg.apply i.1 j.1
-
-end KyFan
 
 /-! ### Threshold factorizations and [saad2003iterative] `M̂` matrices -/
 

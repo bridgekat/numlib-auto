@@ -105,10 +105,11 @@ theorem orthogonal_ker_eq_range (B : Matrix (Fin n) (Fin m) 𝕜) :
 /-! ### (8.30): the block system -/
 
 /-- **Saad (8.30)** and **Example 8.2**: the saddle-point block matrix `[[A, B], [Bᴴ, D]]`.
-The block system of §8.4 is `D = 0`; the regularized system of Example 8.2 is `D = ρ C`. -/
+The block system of §8.4 is `D = 0`; the regularized system of Example 8.2 is `D = ρ C`
+(backbone `Matrix.saddleMatrix`). -/
 def saddleMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (D : Matrix (Fin m) (Fin m) 𝕜) : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
-  Matrix.fromBlocks A B Bᴴ D
+  Matrix.saddleMatrix A B D
 
 private theorem ofLp_eq_add_iff {k : ℕ} (x y z : EuclideanSpace 𝕜 (Fin k)) :
     WithLp.ofLp x = WithLp.ofLp y + WithLp.ofLp z ↔ x = y + z := by
@@ -126,14 +127,14 @@ private theorem fromBlocks_mulVec_elim (M₁ : Matrix (Fin n) (Fin n) 𝕜)
   rfl
 
 /-- **Saad (8.30)** written out: `(x, y)` solves the block system exactly when
-`A x + B y = b` and `Bᴴ x + D y = c`. -/
+`A x + B y = b` and `Bᴴ x + D y = c` (backbone `Matrix.saddleMatrix_mulVec_elim`). -/
 theorem saddleMatrix_mulVec_iff (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (D : Matrix (Fin m) (Fin m) 𝕜) (x b : EuclideanSpace 𝕜 (Fin n))
     (y c : EuclideanSpace 𝕜 (Fin m)) :
     saddleMatrix A B D *ᵥ Sum.elim (WithLp.ofLp x) (WithLp.ofLp y)
         = Sum.elim (WithLp.ofLp b) (WithLp.ofLp c) ↔
       ((A ⬝ x) + (B ⬝ y) = b ∧ (Bᴴ ⬝ x) + (D ⬝ y) = c) := by
-  rw [saddleMatrix, fromBlocks_mulVec_elim, Sum.elim_eq_iff]
+  rw [saddleMatrix, Matrix.saddleMatrix_mulVec_elim]
   exact and_congr (WithLp.ofLp_injective 2).eq_iff (WithLp.ofLp_injective 2).eq_iff
 
 /-- A block identity `M z' = N z + p` read off as its two rows. -/
@@ -301,22 +302,13 @@ theorem schur_eq (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n)) (c y : Euclid
     abel
 
 /-- **Saad, Corollary 8.1**, first half: the Schur complement `S = Bᴴ A⁻¹ B` is symmetric
-positive definite whenever `A` is and `B` has full column rank. -/
+positive definite whenever `A` is and `B` has full column rank (backbone
+`Matrix.PosDef.conjTranspose_mul_inv_mul`). -/
 theorem schur_posDef (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B)) :
-    (schur A B).PosDef := by
-  have hAinv := (Matrix.posDef_iff_isSymmetricCoercive A⁻¹).1 hA.inv
-  rw [Matrix.posDef_iff_isSymmetricCoercive]
-  refine ⟨fun u v => ?_, (LinearMap.isCoercive_iff_forall_pos _).2 fun y hy => ?_⟩
-  · rw [show (Matrix.toEuclideanLin (schur A B)) u = (schur A B ⬝ u) from rfl,
-      show (Matrix.toEuclideanLin (schur A B)) v = (schur A B ⬝ v) from rfl, schur_apply,
-      schur_apply, inner_conjTranspose B (A⁻¹ ⬝ (B ⬝ u)) v,
-      ← inner_mul_conjTranspose B u (A⁻¹ ⬝ (B ⬝ v))]
-    exact hAinv.isSymmetric (B ⬝ u) (B ⬝ v)
-  · have hBy : (B ⬝ y) ≠ 0 := fun h => hy (hB (by
-      rw [show (Matrix.toEuclideanLin B) y = (B ⬝ y) from rfl, h, map_zero]))
-    rw [show (Matrix.toEuclideanLin (schur A B)) y = (schur A B ⬝ y) from rfl, schur_apply,
-      inner_conjTranspose B (A⁻¹ ⬝ (B ⬝ y)) y]
-    exact hAinv.isCoercive.inner_self_pos hBy
+    (schur A B).PosDef :=
+  hA.conjTranspose_mul_inv_mul fun x y hxy =>
+    (WithLp.toLp_injective 2) (hB (a₁ := WithLp.toLp 2 x) (a₂ := WithLp.toLp 2 y)
+      (WithLp.ofLp_injective 2 hxy))
 
 /-- **Saad §8.4**, the reason the Stokes preconditioners of the section work: for `c = 0` the
 reduced system `S y = Bᴴ A⁻¹ b` is the system of normal equations of the least-squares problem
@@ -865,7 +857,8 @@ theorem saddleMatrix_apply_blockVec (D : Matrix (Fin m) (Fin m) 𝕜)
   refine WithLp.ofLp_injective 2 ?_
   rw [show WithLp.ofLp (saddleMatrix A B D ⬝ blockVec u v)
       = saddleMatrix A B D *ᵥ WithLp.ofLp (blockVec u v) from rfl,
-    blockVec, WithLp.ofLp_toLp, saddleMatrix, fromBlocks_mulVec_elim, blockVec, WithLp.ofLp_toLp]
+    blockVec, WithLp.ofLp_toLp, saddleMatrix, Matrix.saddleMatrix, fromBlocks_mulVec_elim,
+    blockVec, WithLp.ofLp_toLp]
 
 /-- The inner product of two block vectors is the sum of the block inner products. -/
 theorem inner_blockVec (u u' : EuclideanSpace 𝕜 (Fin n)) (v v' : EuclideanSpace 𝕜 (Fin m)) :
@@ -925,9 +918,8 @@ theorem problem_8_12_indefinite (hA : A.PosDef) (hB : Function.Injective (Matrix
       ∃ μ ∈ spectrum ℝ (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)), μ < 0 := by
   set M : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
     saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜) with hMdef
-  have hherm : M.IsHermitian := by
-    rw [hMdef, Matrix.IsHermitian, saddleMatrix, Matrix.fromBlocks_conjTranspose,
-      Matrix.conjTranspose_conjTranspose, hA.isHermitian.eq, Matrix.conjTranspose_zero]
+  have hherm : M.IsHermitian :=
+    hA.isHermitian.saddleMatrix B (Matrix.isHermitian_zero (n := Fin m))
   have hhermneg : (-M).IsHermitian := by
     rw [Matrix.IsHermitian, Matrix.conjTranspose_neg, hherm.eq]
   refine ⟨?_, ?_⟩

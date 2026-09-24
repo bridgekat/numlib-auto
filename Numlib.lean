@@ -358,6 +358,7 @@ import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
 import Numlib.Data.ENNReal.Real
+import Numlib.Direct.ConditionEstimation
 import Numlib.Direct.Refinement
 import Numlib.Direct.Substitution
 import Numlib.DomainDecomposition.Schur

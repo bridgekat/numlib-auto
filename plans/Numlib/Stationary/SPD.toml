@@ -1,9 +1,8 @@
 # Planned additions (GVL round): the module doc of `Numlib.Stationary.SPD` is the group description;
 # when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
 # (ch11) in the SSOR bullet, replace "so its eigenvalues are real and lie in `[0, 1)`" (prose only
-# today) by a reference to `Stationary.Splitting.spectrum_complexify_iterationOperator_subset`, and
-# note that the SSOR preconditioner is positive definite as soon as `A` is symmetric with positive
-# diagonal (`Matrix.ssorSplitting_m_posDef_of_diag_pos`; [golub2013matrix] (11.2.24)).
+# today) by a reference to `Stationary.Splitting.spectrum_complexify_iterationOperator_subset`.
+# (The positive diagonal form `Matrix.ssorSplitting_m_posDef_of_diag_pos` is in the module since R2.)
 [[node]]
 id = "Stationary.Splitting.richardson_complexSpectralRadius_eq"
 
@@ -238,15 +237,6 @@ deps = ["Stationary.Splitting.mul_iterationOperator_posSemidef", "Stationary.Spl
   "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Matrix.complexSpectralRadius"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.4'
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Matrix.ssorSplitting_m_posDef_of_diag_pos"
-kind = "theorem"
-desc = '''
-For symmetric `A` with positive diagonal (not necessarily positive definite) and `0 < ω < 2`, the SSOR
-preconditioner `(ω(2−ω))⁻¹ (D + ωL) D⁻¹ (D + ωLᵀ)` is positive definite: `X D⁻¹ Xᵀ` with `X = D + ωL`
-nonsingular lower triangular and `D⁻¹` positive definite ([golub2013matrix] §11.2.7, after (11.2.24)).
-Generalizes `Matrix.ssorSplitting_m_posDef`, whose proof uses only these facts; that lemma should then
-delegate. ★
-'''
-deps = ["Matrix.ssorSplitting", "Matrix.ssorSplitting_m_posDef"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.24)'

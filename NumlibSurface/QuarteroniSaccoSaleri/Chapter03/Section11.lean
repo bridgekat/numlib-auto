@@ -1,11 +1,11 @@
-import Numlib.Direct.Refinement
+import Numlib.Direct.ConditionEstimation
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section10
 
 /-!
 # Quarteroni–Sacco–Saleri §3.11: an approximate computation of `K(A)`
 
 Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.11, over the backbone `Numlib/Direct/Refinement` (the basic
+[quarteroni2000numerical], §3.11, over the backbone `Numlib/Direct/ConditionEstimation` (the basic
 inequality `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖` and the Hilbert-space condition estimate `condEstimate`) and
 `Numlib/Analysis/Matrix/OperatorNorm` (`κ₂(Q R) = κ₂(R)`).
 

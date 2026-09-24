@@ -83,7 +83,8 @@ theorem theorem_3_5 {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ k, (A.leadingPrincipalSubmatrix k).det ≠ 0) :
     ∃! LDM : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ,
       IsLDM A LDM.1 LDM.2.1 LDM.2.2 :=
-  existsUnique_isLDM fun k => (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
+  existsUnique_isLDM <| isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit fun k =>
+    (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
 
 /-- **§3.4.2, the `L D Lᵀ` factorization.** When `A` is symmetric (and its leading principal
 minors are nonzero) the `L D Mᵀ` factorization has `M = L`, so `A = L D Lᵀ`; and if `A` is also
@@ -93,8 +94,9 @@ theorem ldl_of_isSymm {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
     (hA : ∀ k, (A.leadingPrincipalSubmatrix k).det ≠ 0) :
     (∀ L D M, IsLDM A L D M → M = L) ∧ (∃ L D, IsLDM A L D L) ∧
       (A.PosDef → ∀ L D, IsLDM A L D L → ∀ i, 0 < D i i) := by
-  have hA' : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k) := fun k =>
-    (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
+  have hA' : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
+    isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit fun k =>
+      (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
   refine ⟨fun L D M h => h.eq_of_isSymm hs hA', ?_, fun hpd L D h i => h.diag_pos_of_posDef hpd i⟩
   obtain ⟨⟨L, D, M⟩, h, -⟩ := existsUnique_isLDM hA'
   have h' : IsLDM A L D M := h

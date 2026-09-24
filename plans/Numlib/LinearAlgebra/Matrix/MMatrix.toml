@@ -5,8 +5,8 @@
 # `Matrix.IsMMatrix` (`Matrix.isStieltjes_iff_isMMatrix_isSymm`, whose hard half is
 # `Matrix.IsMMatrix.posDef_of_isSymm`); its inverse is nonnegative ([golub2013matrix] Lemma 11.5.1)
 # and it is stable under raising off-diagonal entries (`Matrix.IsStieltjes.of_entrywiseLE`), which
-# is what incomplete Cholesky needs. The elimination-step results (Ky Fan for Stieltjes matrices,
-# [golub2013matrix] Theorem 11.5.2) are in `Numlib/Preconditioner/ILU` beside the M-matrix ones.
+# is what incomplete Cholesky needs; and the elimination-step results for Stieltjes matrices (Ky Fan
+# for Stieltjes matrices, [golub2013matrix] Theorem 11.5.2) beside Ky Fan's M-matrix theorem.
 [[node]]
 id = "Matrix.EntrywiseNonneg.of_tendsto"
 
@@ -144,3 +144,36 @@ Principal submatrices of a Stieltjes matrix are Stieltjes: for an injective `e :
 `(A.submatrix e e).IsStieltjes`. `Matrix.PosDef.submatrix` (Mathlib) and the entrywise sign. ★
 '''
 deps = ["Matrix.IsStieltjes"]
+
+[[node]]
+id = "Matrix.IsMMatrix.isMMatrix_schurComplementSingle"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
+
+[[node]]  # staged by ch11
+id = "Matrix.IsStieltjes.schurComplementSingle"
+kind = "theorem"
+desc = '''
+One step of symmetric Gaussian elimination keeps a Stieltjes matrix Stieltjes:
+`A.IsStieltjes → (A.schurComplementSingle p).IsStieltjes`. `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`
+(Ky Fan), symmetry of the Schur complement of a symmetric matrix, and
+`Matrix.IsMMatrix.posDef_of_isSymm`. ★
+'''
+deps = ["Matrix.IsStieltjes", "Matrix.IsStieltjes.isMMatrix", "Matrix.IsMMatrix.isMMatrix_schurComplementSingle",
+  "Matrix.IsMMatrix.posDef_of_isSymm", "Matrix.schurComplementSingle"]
+
+[[node]]  # staged by ch11
+id = "Matrix.IsStieltjes.isStieltjes_sub_drop"
+kind = "theorem"
+desc = '''
+[golub2013matrix] Theorem 11.5.2, backbone form: for `A.IsStieltjes`, a pivot `p` and any set `S` of
+non-pivot indices, the matrix `B̃ i j = A i j − ṽ_i ṽ_j / A p p` on `{i // i ≠ p}` with
+`ṽ_i = if i ∈ S then A i p else 0` (the pivot column with the entries outside `S` dropped) is
+Stieltjes. Proof: `B̃ ≥ A.schurComplementSingle p` entrywise, because `ṽ_iṽ_j ∈ {0, A i p · A p j}` and
+`A i p · A p j ≥ 0` (both `≤ 0`), `A p p > 0`; the Schur complement is Stieltjes
+(`Matrix.IsStieltjes.schurComplementSingle`) and `B̃` is symmetric with nonpositive off-diagonal
+entries, so `Matrix.IsStieltjes.of_entrywiseLE`. (The book's proof via `B⁻¹ ≥ 0` and
+Sherman–Morrison is the alternative.) Statement shape settled by
+`notes/gvl/ch11/proto/Shapes.lean` (c). ★★ (~40 lines)
+'''
+deps = ["Matrix.IsStieltjes.schurComplementSingle", "Matrix.IsStieltjes.of_entrywiseLE"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.5.2'

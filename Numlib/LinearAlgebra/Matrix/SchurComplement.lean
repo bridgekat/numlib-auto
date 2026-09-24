@@ -52,6 +52,14 @@ about its inverse. This file adds the name and the facts a domain-decomposition 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
 the form incomplete factorizations use ([saad2003iterative] Theorem 10.1).
 
+`Matrix.saddleMatrix A B D = fromBlocks A B Bᴴ D` is the saddle-point (equilibrium, KKT) matrix
+([golub2013matrix] §4.4.5, [saad2003iterative] (8.30)), with its block equations
+(`Matrix.saddleMatrix_mulVec_elim`), the definiteness of the Schur complement `Bᴴ A⁻¹ B` for
+positive definite `A` and full-column-rank `B` (`Matrix.PosDef.conjTranspose_mul_inv_mul`), the
+nonsingularity of `[A B; Bᴴ 0]` ((4.4.18), `Matrix.isUnit_saddleMatrix_zero`), its triangular
+factorization (`Matrix.saddleMatrix_zero_eq_mul`) and the reduced equation (4.4.20)
+(`Matrix.saddleMatrix_zero_mulVec_snd_eq`).
+
 ## Implementation notes
 
 The hypotheses are `IsUnit`, not `Invertible`, because that is the form a nonsingularity hypothesis
@@ -501,5 +509,87 @@ theorem PosDef.condNumber_schurComplement_le {A : Matrix (m ⊕ n) (m ⊕ n) �
   exact mul_le_mul hS hSinv (norm_nonneg _) (norm_nonneg _)
 
 end CondNumber
+
+
+/-! ### Saddle-point matrices -/
+
+section Saddle
+
+/-- **The saddle-point (equilibrium, KKT) matrix** `[A B; Bᴴ D]` ([golub2013matrix] §4.4.5, the
+equilibrium system `[C B; Bᵀ 0]` with `D = 0`; [saad2003iterative] (8.30), with `D = 0` the
+saddle-point matrix itself and `D = ρ C` its regularization). -/
+def saddleMatrix [Star R] (A : Matrix m m R) (B : Matrix m n R) (D : Matrix n n R) :
+    Matrix (m ⊕ n) (m ⊕ n) R :=
+  fromBlocks A B Bᴴ D
+
+/-- The conjugate transpose of a saddle-point matrix is the saddle-point matrix of the conjugate
+transposed diagonal blocks. -/
+theorem saddleMatrix_conjTranspose [InvolutiveStar R] (A : Matrix m m R) (B : Matrix m n R)
+    (D : Matrix n n R) : (saddleMatrix A B D)ᴴ = saddleMatrix Aᴴ B Dᴴ := by
+  rw [saddleMatrix, saddleMatrix, fromBlocks_conjTranspose, conjTranspose_conjTranspose]
+
+/-- A saddle-point matrix with Hermitian diagonal blocks is Hermitian. -/
+theorem IsHermitian.saddleMatrix [InvolutiveStar R] {A : Matrix m m R} {D : Matrix n n R}
+    (hA : A.IsHermitian) (B : Matrix m n R) (hD : D.IsHermitian) :
+    (saddleMatrix A B D).IsHermitian :=
+  hA.fromBlocks rfl hD
+
+/-- **The block equations** of a saddle-point system: `(x, y)` solves
+`[A B; Bᴴ D] (x, y) = (b, c)` exactly when `A x + B y = b` and `Bᴴ x + D y = c`. -/
+theorem saddleMatrix_mulVec_elim [Fintype m] [Fintype n] [NonUnitalNonAssocSemiring R] [Star R]
+    (A : Matrix m m R) (B : Matrix m n R) (D : Matrix n n R) (x b : m → R) (y c : n → R) :
+    saddleMatrix A B D *ᵥ Sum.elim x y = Sum.elim b c ↔
+      A *ᵥ x + B *ᵥ y = b ∧ Bᴴ *ᵥ x + D *ᵥ y = c := by
+  rw [saddleMatrix, fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, Sum.elim_eq_iff]
+
+/-- **The triangular factorization of an equilibrium matrix** ([golub2013matrix] §4.4.5): with
+`A = G Gᴴ` (a Cholesky factorization), `G K = B` and `H Hᴴ = Kᴴ K` (a Cholesky factorization of
+`Bᴴ A⁻¹ B = Kᴴ K`), `[A B; Bᴴ 0] = [G 0; Kᴴ H] [Gᴴ K; 0 -Hᴴ]`. The identity needs no
+definiteness. -/
+theorem saddleMatrix_zero_eq_mul [Fintype m] [Fintype n] [Ring R] [StarRing R]
+    {A G : Matrix m m R} {B K : Matrix m n R} {H : Matrix n n R} (hA : A = G * Gᴴ)
+    (hK : G * K = B) (hH : H * Hᴴ = Kᴴ * K) :
+    saddleMatrix A B 0 = fromBlocks G 0 Kᴴ H * fromBlocks Gᴴ K 0 (-Hᴴ) := by
+  rw [fromBlocks_multiply, saddleMatrix, ← hK, conjTranspose_mul, hA]
+  simp only [Matrix.zero_mul, Matrix.mul_zero, add_zero, Matrix.mul_neg, neg_zero, hH,
+    add_neg_cancel]
+
+variable {K : Type*} [Field K] [PartialOrder K] [StarRing K]
+variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+
+omit [DecidableEq n] in
+/-- **The Schur complement of a saddle-point matrix is definite**: for positive definite `A` and
+`B` of full column rank, `Bᴴ A⁻¹ B` is positive definite ([saad2003iterative] Corollary 8.1). The
+complement of `A` in `[A B; Bᴴ 0]` is its negative (`Matrix.schurComplement_fromBlocks`). -/
+theorem PosDef.conjTranspose_mul_inv_mul {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
+    (hB : Function.Injective B.mulVec) : (Bᴴ * A⁻¹ * B).PosDef :=
+  hA.inv.conjTranspose_mul_mul_same hB
+
+/-- **The equilibrium matrix is nonsingular** ([golub2013matrix] (4.4.18)): for positive definite
+`A` and `B` of full column rank, `[A B; Bᴴ 0]` is nonsingular, since its Schur complement
+`-Bᴴ A⁻¹ B` is negative definite. -/
+theorem isUnit_saddleMatrix_zero {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
+    (hB : Function.Injective B.mulVec) : IsUnit (saddleMatrix A B 0) := by
+  refine isUnit_of_isUnit_schurComplement (by simpa [saddleMatrix] using hA.isUnit) ?_
+  rw [saddleMatrix, schurComplement_fromBlocks, zero_sub, Matrix.mul_assoc Bᴴ, ← Matrix.mul_assoc]
+  exact (hA.conjTranspose_mul_inv_mul hB).isUnit.neg
+
+/-- **The reduced equation of an equilibrium system** ([golub2013matrix] (4.4.20)): for positive
+definite `A` and `B` of full column rank, if `[A B; Bᴴ 0] (x, y) = (f, 0)` then
+`y = (Bᴴ A⁻¹ B)⁻¹ Bᴴ A⁻¹ f`, by eliminating `x = A⁻¹ (f - B y)`. -/
+theorem saddleMatrix_zero_mulVec_snd_eq {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
+    (hB : Function.Injective B.mulVec) {x f : m → K} {y : n → K}
+    (h : saddleMatrix A B 0 *ᵥ Sum.elim x y = Sum.elim f 0) :
+    y = (Bᴴ * A⁻¹ * B)⁻¹ *ᵥ ((Bᴴ * A⁻¹) *ᵥ f) := by
+  obtain ⟨h₁, h₂⟩ := (saddleMatrix_mulVec_elim A B 0 x f y 0).1 h
+  rw [zero_mulVec, add_zero] at h₂
+  have hx : x = A⁻¹ *ᵥ (f - B *ᵥ y) := by
+    rw [← h₁, add_sub_cancel_right, mulVec_mulVec,
+      nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).1 hA.isUnit), one_mulVec]
+  rw [hx, mulVec_mulVec, mulVec_sub, mulVec_mulVec, sub_eq_zero] at h₂
+  rw [h₂, mulVec_mulVec, nonsing_inv_mul _
+    ((isUnit_iff_isUnit_det _).1 (hA.conjTranspose_mul_inv_mul hB).isUnit), one_mulVec]
+
+end Saddle
 
 end Matrix
