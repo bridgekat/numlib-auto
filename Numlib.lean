@@ -398,6 +398,7 @@ import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FiniteDifference.VonNeumann
+import Numlib.FloatingPoint.Givens
 import Numlib.FloatingPoint.Householder
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.LU

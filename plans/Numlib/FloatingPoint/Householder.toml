@@ -1,28 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.Householder` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch05) add to the module doc a paragraph "The [golub2013matrix] variants": the Householder vector
-# of Golub–Van Loan Algorithm 5.1.1 (Parlett's formula for `v₁` when `x₁ > 0`, the normalization `v₁
-# = 1`, and `P x = +‖x‖ e₁`) is a different computation from Higham's (19.1) and gets its own
-# relation `RoundsHouseholderVectorParlett` with its Lemma 19.1 analogue; the book's application
-# order `A - (β v)(vᵀ A)` associates the product differently from `RoundsHouseholderApply` and gets
-# `RoundsHouseholderApplyScaled` with the same Lemma 19.2 constant (both proved from one shared
-# lemma); and the two-sided accumulation of Lemma 19.3 is stated for rectangular `A_k : Matrix ι κ
-# ℝ` (`exists_eq_prodRev_mul_add_mul_prodFwd_rect`), which is what the book's (5.1.11) needs (`A ∈
-# ℝ^{m×n}`).
-# (ch08, restated by Fix-A after the GVL review, algo H1/M4) add a paragraph "Householder reductions
-# with any reflector-vector relation": the reflector data of a step enter only through
-# `IsReflectorPert` (computed `(v̂, β̂)` are order-`K` relative perturbations of exact reflector data
-# that map the column to `c e_i`), which Higham's `RoundsHouseholderVector` (`isReflectorPert`) and
-# [golub2013matrix] Algorithm 5.1.1's `RoundsHouseholderVectorParlett` (`isReflectorPert`) both
-# provide; the Hessenberg step in the book's association (`RoundsHessenbergStepPert`,
-# [golub2013matrix] Algorithm 7.4.2) and the symmetric tridiagonalization step
-# (`RoundsTridiagonalizeStepPert`, [golub2013matrix] Algorithm 8.3.1: the trailing block by the
-# symmetric rank-two update `RoundsSymmRankTwoUpdate`, lower triangle computed and mirrored, the
-# subdiagonal the freshly computed `fl(√fl(xᵀx))`) are stated over it, each with its Frobenius step
-# bound, and both reductions follow from the one accumulation lemma
-# `exists_eq_transpose_mul_add_mul_of_forall_step` (Lemma 19.3, two-sided, per-step reflector
-# chosen). The existing Higham-convention `RoundsHessenbergStep` is the unscaled-association twin of
-# `RoundsHessenbergStepPert` (refactor R-8: make it an instance)."
 namespace = "FloatingPoint"
 
 [[node]]
@@ -137,128 +112,30 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2; Gol
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "IsReflectorPert"
-kind = "definition"
-desc = '''**Computed reflector data, whatever the formula that produced them.** For `x : ι → ℝ`, a pivot
-`i : ι` and a target `c : ℝ`: `IsReflectorPert u K x i c v̂ β̂ :=
-∃ (v : ι → ℝ) (β : ℝ), (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup ι ℝ ∧
-(1 - β • vecMulVec v v) *ᵥ x = c • Pi.single i 1 ∧ |β| * (v ⬝ᵥ v) ≤ 2 ∧
-IsRelPert u K β β̂ ∧ ∀ j, IsRelPert u K (v j) (v̂ j)` — the computed `(v̂, β̂)` are order-`K`
-relative perturbations of exact reflector data sending `x` to `c e_i` (so `|c| = ‖x‖₂`). This is
-the only thing a Householder *reduction* needs from the formula that computed the vector, so the
-reductions below are stated over it and hold for every vector formula: Higham's (19.1)
-(`RoundsHouseholderVector.isReflectorPert`, `c = -sign(x_i)‖x‖`) and [golub2013matrix] Algorithm
-5.1.1 with Parlett's formula (`RoundsHouseholderVectorParlett.isReflectorPert`, `c = ‖x‖`). This
-is the "parametrize the reflector-vector relation, taking its `IsRelPert` conclusion as
-hypothesis" of review `notes/gvl/review/algo.md` H1. ★'''
-deps = ["FloatingPoint.IsRelPert"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHouseholderVector.isReflectorPert"
-kind = "theorem"
-desc = '''Higham's computed Householder vector is reflector data in the sense of `IsReflectorPert`: with
-`K = 4 · card ι + 8`, `K u < 1` and `RoundsHouseholderVector m x i v̂ β̂`,
-`IsReflectorPert m.u K x i (-(phase (x i)) * ‖toLp 2 x‖) v̂ β̂` (exact data
-`v = householderAxis x i`, `β = 2 / (vᵀv)`). From `RoundsHouseholderVector.isRelPert`,
-`householder_householderVec_eq` and the reflection property of `Matrix.householder`, as in
-`exists_isRelPert_hessenbergReflector`. ★'''
-deps = ["FloatingPoint.IsReflectorPert", "FloatingPoint.RoundsHouseholderVector.isRelPert", "FloatingPoint.householder_householderVec_eq", "FloatingPoint.exists_isRelPert_hessenbergReflector"]
 
 [[node]]  # staged by ch05
 id = "RoundsHouseholderVectorParlett"
-kind = "definition"
-desc = '''The computed Householder vector of [golub2013matrix] Algorithm 5.1.1 (`house`), as a
-relation on `x : ι → ℝ`, a pivot `i : ι`, and the computed `(v̂, β̂)`, with `σ` the tail inner
-product over `{j // j ≠ i}`:
-`∃ σ̂, RoundsDot m (fun j : {j // j ≠ i} => x j) (fun j => x j) σ̂ ∧ v̂ i = 1 ∧ (
-   (σ̂ = 0 ∧ 0 ≤ x i ∧ β̂ = 0 ∧ ∀ j ≠ i, v̂ j = x j) ∨
-   (σ̂ = 0 ∧ x i < 0 ∧ β̂ = 2 ∧ ∀ j ≠ i, v̂ j = x j) ∨
-   (σ̂ ≠ 0 ∧ ∃ p t μ v₁ q w d, m.Rounds (x i * x i) p ∧ m.Rounds (p + σ̂) t ∧ m.Rounds (√t) μ ∧
-      (x i ≤ 0 ∧ m.Rounds (x i - μ) v₁ ∨ 0 < x i ∧ ∃ e, m.Rounds (x i + μ) e ∧ m.Rounds (-σ̂ / e) v₁) ∧
-      m.Rounds (v₁ * v₁) q ∧ m.Rounds (2 * q) w ∧ m.Rounds (σ̂ + q) d ∧ m.Rounds (w / d) β̂ ∧
-      ∀ j ≠ i, m.Rounds (x j / v₁) (v̂ j)))`.
-The second branch is the book's `σ = 0 & x(1) < 0` case **with `β = 2`**: the printed `β = -2`
-makes `P = I + 2 e₁e₁ᵀ`, not orthogonal (report, Doubts). The surface program is
-`GolubVanLoan.Chapter05.algorithm_5_1_1` (prototype `notes/gvl/ch05/proto/Chapter05.lean`); in a
-run, `σ̂ = 0` iff the exact tail is zero, since every rounded square of a nonzero number and every
-rounded sum of positive numbers is positive when `u < 1`. ★'''
-deps = ["FloatingPoint.RoundsDot", "FloatingPoint.RoundingModel"]
 
 [[node]]  # staged by ch05; renamed from `RoundsHouseholderVectorParlett.exists_isRelPert` by Fix-A
 id = "RoundsHouseholderVectorParlett.isReflectorPert"
-kind = "theorem"
-desc = '''**The analogue of [higham2002accuracy] Lemma 19.1 for [golub2013matrix] Algorithm 5.1.1.**
-With `n = Fintype.card ι`, `K := 18 n + 31` and `K u < 1`: if
-`RoundsHouseholderVectorParlett m x i v̂ β̂` then `v̂ i = 1` and
-`IsReflectorPert m.u K x i ‖toLp 2 x‖ v̂ β̂` — the exact `(v, β)` of the definition are the exact
-output of the same branch, with `v i = 1`, `P x = +‖x‖₂ e_i` (the book's sign), `|β| (vᵀv) ≤ 2`.
-Orders (with `k = n - 1` terms in `σ̂`, which is `IsRelPert k σ σ̂` by `abs_sub_le_of_roundsDot` on
-nonnegative terms and `isRelPert_of_abs_sub_le`): `μ̂` `k + 2`; `v̂₁` `k + 3` (`x₁ ≤ 0`: a same-sign
-sum) or `3k + 7` (`x₁ > 0`, Parlett's quotient); `v̂₁²` `6k + 15`; `β̂` `18k + 49`;
-`v̂_j = fl(x_j / v̂₁)` `6k + 15`; all `≤ 18n + 31`. The exact identities (Parlett's
-`x₁ - ‖x‖ = -σ/(x₁ + ‖x‖)`, `β (vᵀv) = 2`, the reflection) are those of the surface spec
-`GolubVanLoan.Chapter05.houseOn_spec`, proved here once on `ι`. The constants are the relational
-calculus's, not Wilkinson's; the formalizer may tighten them. ★★★ (~250 lines, mirroring
-`RoundsHouseholderVector.isRelPert`)'''
-deps = ["FloatingPoint.RoundsHouseholderVectorParlett", "FloatingPoint.IsReflectorPert", "FloatingPoint.abs_sub_le_of_roundsDot", "FloatingPoint.isRelPert_of_abs_sub_le", "FloatingPoint.IsRelPert.add_of_nonneg", "FloatingPoint.IsRelPert.rounds", "FloatingPoint.IsRelPert.sqrt", "FloatingPoint.IsRelPert.div", "FloatingPoint.IsRelPert.mul", "Matrix.reflector_mulVec_eq_of_sq"]
 
 [[node]]  # staged by ch05
 id = "RoundsHouseholderApplyScaled"
-kind = "definition"
-desc = '''The update `y = b - (β v)(vᵀ b)` in [golub2013matrix]'s association (§5.1.4:
-`PA = A - (βv)(vᵀA)`, the scaled vector `βv` formed once): `∃ (s : ℝ) (w : ι → ℝ),
-RoundsDot m v b s ∧ (∀ i, m.Rounds (β * v i) (w i)) ∧ ∀ i, ∃ t, m.Rounds (w i * s) t ∧
-m.Rounds (b i - t) (y i)`. Compare `RoundsHouseholderApply` (`y = b - v (β (vᵀ b))`,
-[quarteroni2000numerical] (5.49)–(5.50)). Row application `A - (A v)(βv)ᵀ` is the same relation on
-each row `b = A r`. ★'''
-deps = ["FloatingPoint.RoundsDot", "FloatingPoint.RoundingModel"]
 
 [[node]]  # staged by ch05
 id = "norm_sub_le_of_roundsHouseholderApplyScaled"
-kind = "theorem"
-desc = '''**[higham2002accuracy] Lemma 19.2 for the scaled association**, with the constant of
-`norm_sub_le_of_roundsHouseholderApply`: if `((3k + n + 3 : ℕ) : ℝ) * m.u < 1`,
-`IsRelPert m.u k β β̂`, `∀ i, IsRelPert m.u k (v i) (v̂ i)`, `|β| * (v ⬝ᵥ v) ≤ 2` and
-`RoundsHouseholderApplyScaled m β̂ v̂ b y`, then
-`‖toLp 2 (y - (1 - β • vecMulVec v v) *ᵥ b)‖ ≤ 3 γ_{3k+n+3} ‖toLp 2 b‖`. The two associations give
-the same entrywise form `w_i s = β v_i (vᵀb)(1 + θ)` with `|θ| ≤ γ` of the same order; factor the
-existing proof through a shared lemma about that form (the formalizer's choice of name) rather
-than copying it. ★★ (~80 lines with the refactor)'''
-deps = ["FloatingPoint.RoundsHouseholderApplyScaled", "FloatingPoint.norm_sub_le_of_roundsHouseholderApply"]
 
 [[node]]  # staged by ch05; split into `_col`/`_row` by Fix-A (GVL review, algo M7)
 id = "frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col"
-kind = "theorem"
-desc = '''Matrix form, left application: if every column of `B` is a computed
-`RoundsHouseholderApplyScaled m β̂ v̂` of the corresponding column of `A : Matrix ι κ ℝ` (hypotheses
-of `norm_sub_le_of_roundsHouseholderApplyScaled`), then columnwise
-`‖(B - P * A).col q‖₂ ≤ ε ‖A.col q‖₂` and `‖B - P * A‖_F ≤ ε ‖A‖_F` with `P = 1 - β • vecMulVec v v`,
-`ε = 3 γ_{3k+n+3}` (`frobenius_norm_le_of_forall_col_le`). [golub2013matrix] §5.1.4's
-premultiplication `A - (βv)(vᵀA)`. ★'''
-deps = ["FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled", "FloatingPoint.frobenius_norm_le_of_forall_col_le"]
 
 [[node]]  # Fix-A (GVL review, algo M7): the `_row` half, formerly planned inside the `_col` node
 id = "frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row"
-kind = "theorem"
-desc = '''Matrix form, right application: if every row of `B` is a computed
-`RoundsHouseholderApplyScaled m β̂ v̂` of the corresponding row of `A : Matrix κ ι ℝ`, then rowwise
-`‖(B - A * P).row r‖₂ ≤ ε ‖A.row r‖₂` and `‖B - A * P‖_F ≤ ε ‖A‖_F`, `ε = 3 γ_{3k+n+3}`
-(`frobenius_norm_le_of_forall_row_le`; `P` symmetric, so a row of `A P` is `P` applied to the row).
-[golub2013matrix] §5.1.4's post-multiplication `A - (Av)(βv)ᵀ`. ★'''
-deps = ["FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled", "FloatingPoint.frobenius_norm_le_of_forall_row_le"]
 
 [[node]]  # staged by ch05
 id = "exists_eq_prodRev_mul_add_mul_prodFwd_rect"
-kind = "theorem"
-desc = '''[higham2002accuracy] Lemma 19.3 in the two-sided Frobenius form for rectangular matrices:
-for `L : ℕ → Matrix ι ι ℝ`, `R : ℕ → Matrix κ κ ℝ` orthogonal and `A : ℕ → Matrix ι κ ℝ` with
-`‖A (k+1) - L k * A k * R k‖_F ≤ ε ‖A k‖_F` for `k < r`, there is `E` with
-`A r = prodRev L r * (A 0 + E) * prodFwd R r` and `‖E‖_F ≤ ((1 + ε) ^ r - 1) ‖A 0‖_F`. The proof
-of `exists_eq_prodRev_mul_add_mul_prodFwd` (square, `ι = κ`) with the rectangular unitary
-invariance `Matrix.frobenius_norm_unitary_mul_mul_unitary`; [golub2013matrix] (5.1.11) is its
-instance. `prodRev`/`prodFwd` need their index type generalized only in the sense that `R`'s
-product is over `κ`. Refactor proposal (report): make the square theorem the `κ = ι` instance.
-★ (~60 lines)'''
-deps = ["Matrix.prodRev", "Matrix.prodFwd", "Matrix.prodRev_mem_orthogonalGroup", "Matrix.prodFwd_mem_orthogonalGroup", "FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
 
 [[node]]  # staged by ch05
 id = "l2_opNorm_reflector_sub_le"
@@ -267,159 +144,52 @@ desc = '''The computed reflector is close to the exact one ([golub2013matrix] §
 O(u)", §5.1.12 "orthogonal to working precision"): if `v ≠ 0` and `∀ j, IsRelPert u K (v j) (v̂ j)`
 with `γ_K ≤ 1/2`, then `‖Matrix.reflector v̂ - Matrix.reflector v‖₂ ≤ 8 γ_K`. With
 `w = v/‖v‖`, `ŵ = v̂/‖v̂‖`: `‖v̂ - v‖ ≤ γ_K ‖v‖` gives `‖ŵ - w‖ ≤ 2 γ_K`, then
-`‖ŵŵᵀ - wwᵀ‖ ≤ 2 ‖ŵ - w‖`, and `reflector v = 1 - 2 w wᵀ` (`Matrix.reflector_eq_householder`). ★★'''
+`‖ŵŵᵀ - wwᵀ‖ ≤ 2 ‖ŵ - w‖`, and `reflector v = 1 - 2 w wᵀ` (`Matrix.reflector_eq_householder`). ★★
+
+Blocked: `Matrix.reflector` and `Matrix.reflector_eq_householder` are open nodes of
+`LinearAlgebra/Matrix/QR` (agent fac1's group in the GVL wave 2); the statement cannot be written
+before the definition exists. Nothing else is missing: once they land, the proof is the sketch above
+(~60 lines, the unit-vector estimate plus `Matrix.l2_opNorm_vecMulVec`-type bounds).'''
 deps = ["Matrix.reflector", "Matrix.reflector_eq_householder", "FloatingPoint.IsRelPert"]
 
 [[node]]  # staged by ch08
 id = "RoundsSymmRankTwoUpdate"
-kind = "definition"
-desc = '''The relational model of one symmetric rank-two Householder update ([golub2013matrix]
-§8.3.1 and Algorithm 8.3.1): for `m : RoundingModel ℝ`, reflector data `β, v : ι → ℝ`, a symmetric
-`B : Matrix ι ι ℝ` and a candidate result `B' : Matrix ι ι ℝ`,
-`RoundsSymmRankTwoUpdate m β v B B'` says there are `p̂, ŵ : ι → ℝ` and scalars `ŝ, t̂` with
-`p̂ i` the rounding of `β · (B i ⬝ᵥ v)` (the inner product as `RoundsDot`, then one multiplication),
-`ŝ` the rounding of `p̂ ⬝ᵥ v` (`RoundsDot`), `t̂ = fl(fl(β ŝ) / 2)`, `ŵ i = fl(p̂ i - fl(t̂ v i))`,
-and `B' i j = fl(fl(B i j - fl(v i ŵ j)) - fl(ŵ i v j))` for `i ≥ j` with `B' j i = B' i j` (only
-the lower triangle is computed, as the book says). ★'''
-deps = ["FloatingPoint.RoundingModel"]
 
 [[node]]  # staged by ch08
 id = "frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate"
-kind = "theorem"
-desc = '''Backward error of the symmetric rank-two update: if `(β̂, v̂)` are relative perturbations of
-order `k` of exact reflector data `(β, v)` with `|β| ‖v‖₂² ≤ 2` (the `IsRelPert` clauses of
-`IsReflectorPert`) and `RoundsSymmRankTwoUpdate m β̂ v̂ B B'` for a symmetric `B : Matrix ι ι ℝ`,
-then `B' = P B P + F` with `P = I - β v vᵀ`, `F` symmetric and `‖F‖_F ≤ c γ_{k + 2n + c'} ‖B‖_F` for
-small absolute constants `c, c'` fixed by the formalizer (Higham-style: `p = βBv` has a columnwise
-`γ_n` error, `w` and the two outer products `γ_3` each). `F` is symmetric because only the lower
-triangle is computed and mirrored. Proof: the exact identity `P B P = B - v wᵀ - w vᵀ`
-(`Matrix.conj_one_sub_smul_vecMulVec_eq_sub`, stated over a `StarRing` with `Bᴴ = B`, `star β = β`; at `ℝ`
-`star` is trivial (`star_trivial`, `Matrix.conjTranspose_eq_transpose_of_trivial`), and `β = 0` is allowed, so no
-normalization hypothesis is needed), bound `‖ŵ - w‖₂ ≤ γ ‖B‖_F ‖v‖₂`-type with `RoundsDot`
-bounds, and collect. ★★★ (~250 lines)'''
-deps = ["FloatingPoint.RoundsSymmRankTwoUpdate", "FloatingPoint.IsRelPert", "FloatingPoint.abs_sub_le_of_roundsDot", "Matrix.conj_one_sub_smul_vecMulVec_eq_sub"]
 
 [[node]]  # Fix-A (GVL review, algo M4): the shared accumulation lemma
 id = "exists_eq_transpose_mul_add_mul_of_forall_step"
-kind = "theorem"
-desc = '''**Two-sided accumulation with the reflector of each step chosen** ([higham2002accuracy]
-Lemma 19.3, two-sided, §19.10): for `A : ℕ → Matrix ι ι ℝ`, `0 ≤ ε` and `r`, if every step has an
-exact symmetric orthogonal transformation within `ε` —
-`∀ k < r, ∃ P ∈ Matrix.orthogonalGroup ι ℝ, Pᵀ = P ∧ ‖A (k+1) - P * A k * P‖ ≤ ε * ‖A k‖` — then
-`∃ Q ∈ Matrix.orthogonalGroup ι ℝ, ∃ E, A r = Qᵀ * (A 0 + E) * Q ∧ ‖E‖ ≤ ((1 + ε) ^ r - 1) * ‖A 0‖`
-(Frobenius norms). `choose` the `P k` (junk `1` for `k ≥ r`) and apply
-`exists_eq_transpose_mul_add_mul_prodFwd`; `Q = prodFwd P r` (`prodFwd_mem_orthogonalGroup`). The
-one lemma both reductions below — and any Householder reduction whose step bound is proved
-separately — end with. Proved in `notes/gvl/fixA/proto/StepPert.lean` (12 lines). ★'''
-deps = ["FloatingPoint.exists_eq_transpose_mul_add_mul_prodFwd", "Matrix.prodFwd", "Matrix.prodFwd_mem_orthogonalGroup"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHessenbergStepPert"
-kind = "definition"
-desc = '''**One step of the Householder reduction to Hessenberg form, in [golub2013matrix]'s association
-and for any reflector-vector formula** (Algorithm 7.4.2, step `k`). For `m`, `K`, `hk : k + 1 < N`
-and `A B : Matrix (Fin N) (Fin N) ℝ`, with `T := {i : Fin N // k + 1 ≤ i}` the active rows and `x`
-the tail of column `k` on `T`: `∃ (c : ℝ) (v̂ : T → ℝ) (β̂ : ℝ) (C : Matrix (Fin N) (Fin N) ℝ),
-IsReflectorPert m.u K x ⟨k+1, _⟩ c v̂ β̂ ∧` (column sweep, `A(k+1:n, k:n) = P̃ A(k+1:n, k:n)`) for
-every column `j ≥ k` the restriction of `C.col j` to `T` is a `RoundsHouseholderApplyScaled m β̂ v̂`
-of the restriction of `A.col j`, `C` equal to `A` in the rows outside `T` and in the columns `< k`,
-and `C i k = 0` for `i ≥ k + 2` (the book stores the vector there; those entries are never read
-again, and the surface bridge reads the array through its Hessenberg part) `∧` (row sweep,
-`A(1:n, k+1:n) = A(1:n, k+1:n) P̃`) for every row `i` the restriction of `B.row i` to `T` is a
-`RoundsHouseholderApplyScaled m β̂ v̂` of that of `C.row i`, `B` equal to `C` in the columns outside
-`T`. Rows and columns outside `T` are **not** re-rounded (the program never touches them); this is
-the difference from the Higham-convention `RoundsHessenbergStep` besides the association and the
-vector formula. The shape (with `T` an `abbrev` for the subtype) elaborates in
-`notes/gvl/fixA/proto/StepPert.lean`. ★'''
-deps = ["FloatingPoint.IsReflectorPert", "FloatingPoint.RoundsHouseholderApplyScaled"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHessenbergStepPert.apply_eq_zero"
-kind = "theorem"
-desc = '''A computed step keeps the reduced columns: if `A` vanishes below the first subdiagonal in the
-columns `j < k`, then `B` does in the columns `j < k + 1`. As `RoundsHessenbergStep.apply_eq_zero`
-(columns `< k` are copied by both sweeps; column `k` is zeroed below `k + 1`). ★'''
-deps = ["FloatingPoint.RoundsHessenbergStepPert"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHessenbergStepPert.frobenius_norm_sub_le"
-kind = "theorem"
-desc = '''The step bound: if `((3K + N + 3 : ℕ) : ℝ) * m.u < 1`, `A` is Hessenberg in the columns `< k`
-and `RoundsHessenbergStepPert m K hk A B`, there is `P ∈ orthogonalGroup (Fin N) ℝ` with `Pᵀ = P`,
-`P` the identity off `T` (the exact reflector of `IsReflectorPert`, extended by `1`), and
-`‖B - P * A * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖A‖`, `ε = 3 γ_{3K+N+3}`. The proof of
-`RoundsHessenbergStep.frobenius_norm_sub_le` with `norm_sub_le_of_roundsHouseholderApplyScaled` on
-the `T`-restrictions (rows and columns outside `T` are exact, and `P` is the identity there; column
-`k` below `k + 1`: the exact `P x = c e_{k+1}` is zero there). ★★ (~150 lines, copying that proof)'''
-deps = ["FloatingPoint.RoundsHessenbergStepPert", "FloatingPoint.IsReflectorPert", "FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled", "FloatingPoint.frobenius_norm_le_of_forall_col_le", "FloatingPoint.frobenius_norm_le_of_forall_row_le"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHessenbergReducePert"
-kind = "definition"
-desc = '''The whole reduction: `RoundsHessenbergReducePert m K A Â := Â 0 = A ∧ ∀ k (hk : k < N - 2),
-RoundsHessenbergStepPert m K (show k + 1 < N by omega) (Â k) (Â (k + 1))`, as
-`RoundsHessenbergReduce`. ★'''
-deps = ["FloatingPoint.RoundsHessenbergStepPert"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "exists_roundsHessenbergReducePert_eq"
-kind = "theorem"
-desc = '''**Backward stability of the Householder Hessenberg reduction for any reflector formula**
-([golub2013matrix] §7.4.3, Wilkinson AEP p. 351; [higham2002accuracy] Theorem 19.4): if
-`((3K + N + 3 : ℕ) : ℝ) * m.u < 1`, `2 (N - 2) ε < 1` (`ε = 3 γ_{3K+N+3}`) and
-`RoundsHessenbergReducePert m K A Â`, then `Â (N - 2)` is upper Hessenberg and
-`Â (N - 2) = Qᵀ (A + E) Q` with `Q` orthogonal and `‖E‖_F ≤ γ_{2(N-2)}(ε) ‖A‖_F` — the book's
-`c n² u ‖A‖_F` with `c` explicit. Hessenberg structure by induction with `.apply_eq_zero`; the
-bound by `.frobenius_norm_sub_le` and `exists_eq_transpose_mul_add_mul_of_forall_step`
-(`(1 + ε)^{2(N-2)} - 1 ≤ γ_{2(N-2)}(ε)` as in `exists_roundsHessenbergReduce_eq`). ★ (~40 lines)'''
-deps = ["FloatingPoint.RoundsHessenbergReducePert", "FloatingPoint.RoundsHessenbergStepPert.apply_eq_zero", "FloatingPoint.RoundsHessenbergStepPert.frobenius_norm_sub_le", "FloatingPoint.exists_eq_transpose_mul_add_mul_of_forall_step", "FloatingPoint.one_add_pow_sub_one_le_gamma"]
 
 [[node]]  # staged by ch08 as `RoundsTridiagonalize`; restated per step by Fix-A (GVL review, algo H1/M4)
 id = "RoundsTridiagonalizeStepPert"
-kind = "definition"
-desc = '''**One step of the Householder tridiagonalization of a symmetric matrix** ([golub2013matrix]
-Algorithm 8.3.1, step `k`), for any reflector-vector formula. For `m`, `K`, `hk : k + 1 < N`,
-symmetric `A` and `B`, with `T := {i : Fin N // k + 1 ≤ i}` and `x` the tail of column `k` on `T`:
-`∃ (v̂ : T → ℝ) (β̂ σ̂ ν̂ : ℝ), IsReflectorPert m.u K x ⟨k+1, _⟩ ‖toLp 2 x‖ v̂ β̂ ∧` (the target is
-`+‖x‖₂ e₁`, the book's sign) the subdiagonal entry is the **freshly computed norm** —
-`RoundsDot m x x σ̂ ∧ m.Rounds (√σ̂) ν̂ ∧ B ⟨k+1⟩ k = ν̂ ∧ B k ⟨k+1⟩ = ν̂` (the book's
-`A(k+1, k) = ‖A(k+1:n, k)‖₂`, computed by Algorithm 1.1.1 then one rounded square root; not the `μ`
-inside `house`, which `house` does not return) `∧ B i k = B k i = 0` for `i ≥ k + 2` (the book leaves
-them; they hold the vector in practice, are never read again, and the surface bridge reads the band)
-`∧` the trailing block `B(T, T)` is a `RoundsSymmRankTwoUpdate m β̂ v̂ A(T, T)` (lower triangle
-computed, upper mirrored) `∧` every other entry of `B` equals that of `A`. Shape elaborates in
-`notes/gvl/fixA/proto/StepPert.lean` (with a stand-in for `RoundsSymmRankTwoUpdate`). ★'''
-deps = ["FloatingPoint.IsReflectorPert", "FloatingPoint.RoundsSymmRankTwoUpdate", "FloatingPoint.RoundsDot"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsTridiagonalizeStepPert.frobenius_norm_sub_le"
-kind = "theorem"
-desc = '''The step bound: for symmetric `A`, tridiagonal in the rows and columns `< k`, `u` small enough
-for the constants (`((K + 2N + c') : ℕ) u < 1`), and `RoundsTridiagonalizeStepPert m K hk A B`:
-`B` is symmetric, tridiagonal in the rows and columns `< k + 1`, and there is `P` orthogonal and
-symmetric, the identity off `T`, with `‖B - P * A * P‖ ≤ ε * ‖A‖` for
-`ε = c γ_{K + 2N + c'} + γ_{N+1}` (the trailing block by `frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate`;
-the column part `(P A P)(T, k) = P x = ‖x‖ e₁` against `ν̂ e₁` by `abs_sub_le_of_roundsDot` and
-`IsRelPert.sqrt`, counted twice by symmetry; everything else exact). ★★ (~120 lines)'''
-deps = ["FloatingPoint.RoundsTridiagonalizeStepPert", "FloatingPoint.frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate", "FloatingPoint.abs_sub_le_of_roundsDot", "FloatingPoint.IsRelPert.sqrt"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsTridiagonalizePert"
-kind = "definition"
-desc = '''The whole tridiagonalization: `RoundsTridiagonalizePert m K A Â := Â 0 = A ∧ ∀ k (hk : k < N - 2),
-RoundsTridiagonalizeStepPert m K (show k + 1 < N by omega) (Â k) (Â (k + 1))`. ★'''
-deps = ["FloatingPoint.RoundsTridiagonalizeStepPert"]
 
 [[node]]  # staged by ch08 as `exists_roundsTridiagonalize_eq`; renamed by Fix-A
 id = "exists_roundsTridiagonalizePert_eq"
-kind = "theorem"
-desc = '''The backward stability of the Householder tridiagonalization ([golub2013matrix] §8.3.1,
-after Algorithm 8.3.1, citing Wilkinson AEP p. 297; [higham2002accuracy] Theorem 19.4 for the
-two-sided form): if `RoundsTridiagonalizePert m K A Â` for a symmetric `A : Matrix (Fin N) (Fin N) ℝ`,
-`u` is small enough for the step constant `ε` of `RoundsTridiagonalizeStepPert.frobenius_norm_sub_le`
-and `(N - 2) ε < 1`, then `Â (N - 2)` is symmetric tridiagonal and `Â (N - 2) = Qᵀ (A + E) Q` with
-`Q` orthogonal, `E` symmetric and `‖E‖_F ≤ γ_{N-2}(ε) ‖A‖_F` — `c N² u ‖A‖_F` for small `u`, the
-book's `c u ‖A‖_F` with `c` made explicit. Structure by induction; the bound by the step lemma and
-`exists_eq_transpose_mul_add_mul_of_forall_step`; `E = Q Â Qᵀ - A` is symmetric because `Â (N-2)`
-and `A` are. ★ (~50 lines)'''
-deps = ["FloatingPoint.RoundsTridiagonalizePert", "FloatingPoint.RoundsTridiagonalizeStepPert.frobenius_norm_sub_le", "FloatingPoint.exists_eq_transpose_mul_add_mul_of_forall_step"]
+
+[[node]]  # fp2: the shared core of Lemma 19.2 asked for by `norm_sub_le_of_roundsHouseholderApplyScaled`
+id = "norm_sub_le_of_forall_rounds_sub_sum"
+
+[[node]]  # fp2: orthogonality of `1 - β v vᵀ`, used by both `isReflectorPert` theorems
+id = "one_sub_smul_vecMulVec_mem_orthogonalGroup"

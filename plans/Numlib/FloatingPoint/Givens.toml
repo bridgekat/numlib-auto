@@ -1,212 +1,46 @@
 namespace = "FloatingPoint"
-desc = '''
-Rounding errors of Givens rotations: the computed cosine–sine pair and its application to a
-vector or to two rows (two columns) of a matrix, in the relational model of
-`Numlib/FloatingPoint/Model` and in the style of `Numlib/FloatingPoint/Householder`
-([higham2002accuracy] §19.6, Lemmas 19.7–19.9; [golub2013matrix] §5.1.10–§5.1.12). This is the
-"Givens rounding model" that `notes/frontier.md` records as the gap behind the QSS stability
-claims of §5.8–§5.9 (`qrCholesky_stability`, `golubKahan_svd_stability`).
-
-**Sign convention.** Every numerical source (Golub–Van Loan (5.1.7), Higham §19.6,
-Quarteroni–Sacco–Saleri (5.43)) writes the rotation as `G(i, k, θ)` with `g_ii = g_kk = c`,
-`g_ik = s`, `g_ki = -s`, and applies `G(i, k, θ)ᵀ`, i.e. `y_i = c x_i - s x_k`,
-`y_k = s x_i + c x_k`. The backbone's `Matrix.planeRotation j k c s` has the Jacobi convention
-(rows `(c, -s)`, `(s, c)`), so the exact rotation of this module is always
-`Matrix.planeRotation j k c (-s)`. The relations below mirror the numerical convention **exactly,
-signs included**: a relation stated in the Jacobi convention could not be reached from a run of a
-book algorithm, because the relational model does not know that rounding commutes with negation
-(`m.Rounds x y` does not give `m.Rounds (-x) (-y)`). With the numerical signs inside the rounded
-expressions (`Rounds (-a / b) τ`, `Rounds (p - q) y`) the bridge from a `SetM` run of the book's
-program is literal.
-
-**What is rounded.**
-
-* `RoundsGivensPair m a b ĉ ŝ` — [golub2013matrix] Algorithm 5.1.3, the `τ`-formula:
-  `b = 0 ↦ (1, 0)`; `|b| > |a| ↦ τ = fl(-a/b), ŝ = fl(1/fl(√fl(1 + fl(τ²)))), ĉ = fl(ŝ τ)`; otherwise
-  the same with the roles of `a, b` and `c, s` exchanged. The comparisons act on the inputs,
-  which are exact data of the relation (in a run they are the computed values the program holds).
-* `RoundsGivensPairDirect m a b ĉ ŝ` — the direct formula [golub2013matrix] (5.1.8),
-  [quarteroni2000numerical] (5.51), [higham2002accuracy] §19.6: `r = fl(√fl(fl(a²) + fl(b²)))`,
-  `ĉ = fl(a / r)`, `ŝ = fl(-b / r)`.
-* `RoundsGivensApply m c s j k x y` — the two-entry update of §5.1.9 on a vector:
-  `y_j = fl(fl(c x_j) - fl(s x_k))`, `y_k = fl(fl(s x_j) + fl(c x_k))`, every other entry kept;
-  `RoundsGivensRowUpdate` (rows `j, k` of a matrix, `Gᵀ A`) and `RoundsGivensColUpdate`
-  (columns `j, k`, `A G`) are it applied to every column, respectively every row.
-
-**What is proved.** The computed pair is a relative perturbation of an exact rotation that does
-the job (`RoundsGivensPair.exists_isRelPert`: order `13`, from the scalar calculus
-`IsRelPert.rounds`/`.mul`/`.div`/`.sqrt` and `IsRelPert.add_of_nonneg`, in `Numlib/FloatingPoint/Model`; the direct formula
-has order `7`); an update with such data is the exact rotation up to `√2 γ_{n+2}` in the 2-norm
-(`norm_sub_le_of_roundsGivensApply`, [higham2002accuracy] Lemma 19.8's normwise form), hence up to
-`√2 γ_{n+2}` columnwise / rowwise and in the Frobenius norm for the matrix updates; the computed
-rotation matrix is within `γ_n` of the exact one in the 2-norm and so "orthogonal to working
-precision" ([golub2013matrix] §5.1.12) through the general `l2_opNorm_transpose_mul_self_sub_one_le`.
-Sequences of rotations are then Lemma 19.3 of `Numlib/FloatingPoint/Householder`
-(`exists_eq_prodRev_mul_add` for one side, the rectangular two-sided accumulation staged there by
-this round for both); no separate "Givens QR" relation is planned here, because the loop
-bookkeeping of a Givens QR factorization is the book's algorithm and lives on the surface
-(`GolubVanLoan.Chapter05.algorithm_5_2_4_rounding`, `algorithm_5_2_5_rounding`). The constants are
-those of the relational calculus, looser than Higham's `γ₄`/`γ₆`, and rigorous.
-
-Everything is over `ℝ` (the 2-norm and square roots are the point), as in `Householder`.
-'''
 
 [[node]]
 id = "RoundsGivensPair"
-kind = "definition"
-desc = '''The computed cosine–sine pair of [golub2013matrix] Algorithm 5.1.3 (the `τ`-formula), as a
-relation on `(a, b, ĉ, ŝ) : ℝ⁴` for `m : RoundingModel ℝ`:
-`(b = 0 ∧ ĉ = 1 ∧ ŝ = 0) ∨
- (|a| < |b| ∧ ∃ τ t₁ t₂ r, m.Rounds (-a / b) τ ∧ m.Rounds (τ * τ) t₁ ∧ m.Rounds (1 + t₁) t₂ ∧
-   m.Rounds (√t₂) r ∧ m.Rounds (1 / r) ŝ ∧ m.Rounds (ŝ * τ) ĉ) ∨
- (b ≠ 0 ∧ |b| ≤ |a| ∧ ∃ τ t₁ t₂ r, m.Rounds (-b / a) τ ∧ m.Rounds (τ * τ) t₁ ∧
-   m.Rounds (1 + t₁) t₂ ∧ m.Rounds (√t₂) r ∧ m.Rounds (1 / r) ĉ ∧ m.Rounds (ĉ * τ) ŝ)`.
-The shape elaborates: `notes/gvl/ch05/proto/Chapter05.lean` (`FloatingPoint.RoundsGivensPair`),
-together with the bridge statement from a `SetM` run of the surface program. ★'''
-deps = ["RoundingModel"]
 
 [[node]]
 id = "RoundsGivensPair.exists_isRelPert"
-kind = "theorem"
-desc = '''**[higham2002accuracy] Lemma 19.7 for the `τ`-formula.** If `13 u < 1` and
-`RoundsGivensPair m a b ĉ ŝ`, there is an exact rotation doing the job, close to the computed one:
-`∃ c s, c ^ 2 + s ^ 2 = 1 ∧ s * a + c * b = 0 ∧ IsRelPert m.u 13 c ĉ ∧ IsRelPert m.u 13 s ŝ`
-(`[c s; -s c]ᵀ [a; b] = [r; 0]` is `s a + c b = 0`; the exact `(c, s)` is the exact-arithmetic
-output of the same branch: `s = 1/√(1 + τ²)`, `c = s τ`, `τ = -a/b`, or symmetrically).
-Orders, branch `|a| < |b|`: `τ̂` 1; `t₁` 3 (`IsRelPert.mul` then `.rounds`); `t₂` 4 (`1` exact,
-`IsRelPert.add_of_nonneg`, `.rounds`); `r` 5 (`IsRelPert.sqrt`, `.rounds`); `ŝ` 11
-(`IsRelPert.div` with numerator of order 0: `0 + 2·5`, `.rounds`); `ĉ` 13 (`.mul`, `.rounds`);
-both lifted to 13 by `IsRelPert.mono`. The `b = 0` branch is exact (`IsRelPert.refl`). ★★
-(~150 lines)'''
-deps = ["RoundsGivensPair", "IsRelPert.add_of_nonneg", "IsRelPert.rounds", "IsRelPert.sqrt", "IsRelPert.mul", "IsRelPert.div"]
 
 [[node]]
 id = "RoundsGivensPairDirect"
-kind = "definition"
-desc = '''The computed pair of the direct formula [golub2013matrix] (5.1.8)
-(`c = a/√(a² + b²)`, `s = -b/√(a² + b²)`), as a relation:
-`∃ p q t r, m.Rounds (a * a) p ∧ m.Rounds (b * b) q ∧ m.Rounds (p + q) t ∧ m.Rounds (√t) r ∧
-  m.Rounds (a / r) ĉ ∧ m.Rounds (-b / r) ŝ`. Used by the surface for (5.1.8) and available to
-[quarteroni2000numerical] (5.51) and [higham2002accuracy] §19.6, which write the same formula
-(QSS with the opposite sign of `s`, handled by its own bridge). ★'''
-deps = ["RoundingModel"]
 
 [[node]]
 id = "RoundsGivensPairDirect.isRelPert"
-kind = "theorem"
-desc = '''If `7 u < 1`, `RoundsGivensPairDirect m a b ĉ ŝ` and `(a, b) ≠ 0`, then
-`IsRelPert m.u 7 (a / √(a² + b²)) ĉ ∧ IsRelPert m.u 7 (-b / √(a² + b²)) ŝ`. Orders: squares 1,
-sum 1 (`IsRelPert.add_of_nonneg`), rounded 2, square root 2, rounded 3, quotient `0 + 2·3 = 6`,
-rounded 7. ★'''
-deps = ["RoundsGivensPairDirect", "IsRelPert.add_of_nonneg", "IsRelPert.rounds", "IsRelPert.sqrt", "IsRelPert.div"]
 
 [[node]]
 id = "RoundsGivensApply"
-kind = "definition"
-desc = '''One computed rotation of the coordinates `j, k` of `x : ι → ℝ` with the computed data
-`(c, s)`, in the order of [golub2013matrix] §5.1.9 (and [higham2002accuracy] §19.6):
-`(∃ p q, m.Rounds (c * x j) p ∧ m.Rounds (s * x k) q ∧ m.Rounds (p - q) (y j)) ∧
- (∃ p q, m.Rounds (s * x j) p ∧ m.Rounds (c * x k) q ∧ m.Rounds (p + q) (y k)) ∧
- ∀ i, i ≠ j → i ≠ k → y i = x i`. The exact counterpart is
-`(Matrix.planeRotation j k c (-s))ᵀ *ᵥ x` (module doc: sign convention). Shape checked in
-`notes/gvl/ch05/proto/Chapter05.lean`. ★'''
-deps = ["RoundingModel", "Matrix.planeRotation"]
 
 [[node]]
 id = "abs_sub_le_of_roundsGivensApply"
-kind = "theorem"
-desc = '''Componentwise form of [higham2002accuracy] Lemma 19.8: if `((n + 2 : ℕ) : ℝ) * m.u < 1`,
-`IsRelPert m.u n c ĉ`, `IsRelPert m.u n s ŝ` and `RoundsGivensApply m ĉ ŝ j k x y` with `j ≠ k`,
-then `|y j - (c x_j - s x_k)| ≤ γ_{n+2} (|c| |x j| + |s| |x k|)`, the same with
-`(s x_j + c x_k)` at `k`, and `y i = x i` elsewhere. Each product is `IsRelPert (n+1)` of its
-exact value (`IsRelPert.const_mul`, `.rounds`), the rounded difference adds one more
-(`gamma_mul_one_add_add_le`). ★'''
-deps = ["RoundsGivensApply", "IsRelPert.rounds", "gamma_mul_one_add_add_le"]
 
 [[node]]
 id = "norm_sub_le_of_roundsGivensApply"
-kind = "theorem"
-desc = '''**[higham2002accuracy] Lemma 19.8 (normwise), [golub2013matrix] §5.1.10.** Under the
-hypotheses of `abs_sub_le_of_roundsGivensApply` and `c ^ 2 + s ^ 2 = 1`:
-`‖toLp 2 (y - (planeRotation j k c (-s))ᵀ *ᵥ x)‖ ≤ √2 * γ_{n+2} * ‖toLp 2 x‖`. From the
-componentwise bound, `(|c||x_j| + |s||x_k|)² ≤ (c² + s²)(x_j² + x_k²)` (Cauchy–Schwarz) for each of
-the two rows, and `x_j² + x_k² ≤ ‖x‖²`; the entry formulas of the exact side are
-`Matrix.transpose_planeRotation_mulVec_apply`. Statement elaborated in
-`notes/gvl/ch05/proto/Chapter05.lean`. ★★ (~120 lines)'''
-deps = ["abs_sub_le_of_roundsGivensApply", "Matrix.transpose_planeRotation_mulVec_apply", "norm_toLp_le_of_abs_le_add"]
 
 [[node]]
 id = "RoundsGivensRowUpdate"
-kind = "definition"
-desc = '''The computed row update `A([j, k], :) = [c s; -s c]ᵀ A([j, k], :)` of [golub2013matrix]
-§5.1.9 on `A : Matrix ι κ ℝ`: `∀ q, RoundsGivensApply m c s j k (fun i => A i q) (fun i => B i q)`.
-The exact counterpart is `(planeRotation j k c (-s))ᵀ * A`. ★'''
-deps = ["RoundsGivensApply"]
 
 [[node]]
 id = "RoundsGivensColUpdate"
-kind = "definition"
-desc = '''The computed column update `A(:, [j, k]) = A(:, [j, k]) [c s; -s c]` of [golub2013matrix]
-§5.1.9 on `A : Matrix κ ι ℝ`: `∀ r, RoundsGivensApply m c s j k (A r) (B r)` (the book's loop
-computes `A(r, j) = c τ₁ - s τ₂`, `A(r, k) = s τ₁ + c τ₂`, the same two-entry operation on row
-`r`). The exact counterpart is `A * planeRotation j k c (-s)`, whose row `r` is
-`(planeRotation j k c (-s))ᵀ *ᵥ A r` (`Matrix.vecMul_transpose`-type identity). ★'''
-deps = ["RoundsGivensApply"]
 
 [[node]]
 id = "RoundsGivensRowUpdate.col_norm_sub_le"
-kind = "theorem"
-desc = '''Columnwise: under the hypotheses of `norm_sub_le_of_roundsGivensApply`,
-`RoundsGivensRowUpdate m ĉ ŝ j k A B` gives for every column `q`
-`‖toLp 2 ((B - (planeRotation j k c (-s))ᵀ * A).col q)‖ ≤ √2 γ_{n+2} ‖toLp 2 (A.col q)‖` — the
-hypothesis shape of `exists_eq_prodRev_mul_add` (Lemma 19.3, columnwise) with
-`P = (planeRotation j k c (-s))ᵀ`, orthogonal by `Matrix.planeRotation_mem_orthogonalGroup`. ★'''
-deps = ["RoundsGivensRowUpdate", "norm_sub_le_of_roundsGivensApply", "exists_eq_prodRev_mul_add"]
 
 [[node]]  # Fix-A (GVL review, algo M7): the rowwise twin of `RoundsGivensRowUpdate.col_norm_sub_le`
 id = "RoundsGivensColUpdate.row_norm_sub_le"
-kind = "theorem"
-desc = '''Rowwise: under the hypotheses of `norm_sub_le_of_roundsGivensApply`,
-`RoundsGivensColUpdate m ĉ ŝ j k A B` gives for every row `r`
-`‖toLp 2 ((B - A * planeRotation j k c (-s)).row r)‖ ≤ √2 γ_{n+2} ‖toLp 2 (A.row r)‖` — row `r` of
-`A G` is `Gᵀ` applied to row `r` of `A`, so this is `norm_sub_le_of_roundsGivensApply` on each row.
-The symmetric twin of `RoundsGivensRowUpdate.col_norm_sub_le`. ★'''
-deps = ["RoundsGivensColUpdate", "norm_sub_le_of_roundsGivensApply"]
 
 [[node]]
 id = "RoundsGivensRowUpdate.frobenius_norm_sub_le"
-kind = "theorem"
-desc = '''`‖B - (planeRotation j k c (-s))ᵀ * A‖_F ≤ √2 γ_{n+2} ‖A‖_F` for a computed row update
-(Frobenius norm through `Matrix.Norms.Frobenius`; `frobenius_norm_le_of_forall_col_le` of
-`Numlib/FloatingPoint/Householder`). This is the per-step hypothesis of the two-sided accumulation
-(`exists_eq_prodRev_mul_add_mul_prodFwd_rect`) with right factor `1`. ★'''
-deps = ["RoundsGivensRowUpdate.col_norm_sub_le", "frobenius_norm_le_of_forall_col_le"]
 
 [[node]]
 id = "RoundsGivensColUpdate.frobenius_norm_sub_le"
-kind = "theorem"
-desc = '''`‖B - A * planeRotation j k c (-s)‖_F ≤ √2 γ_{n+2} ‖A‖_F` for a computed column update
-(`RoundsGivensColUpdate.row_norm_sub_le`, then `frobenius_norm_le_of_forall_row_le`). The
-right-hand per-step hypothesis of the two-sided accumulation. ★'''
-deps = ["RoundsGivensColUpdate.row_norm_sub_le", "frobenius_norm_le_of_forall_row_le"]
 
 [[node]]
 id = "l2_opNorm_planeRotation_sub_le"
-kind = "theorem"
-desc = '''The computed rotation matrix is close to the exact one: if `IsRelPert u n c ĉ`,
-`IsRelPert u n s ŝ`, `c ^ 2 + s ^ 2 = 1` and `j ≠ k`, then
-`‖planeRotation j k ĉ (-ŝ) - planeRotation j k c (-s)‖₂ ≤ γ_n` (L2 operator norm). The difference
-is `planeEmbed j k !![δc, -δs; δs, δc]` (identity part cancels), a scaled rotation, whose norm is
-`√(δc² + δs²) ≤ γ_n √(c² + s²)`. The Givens half of [golub2013matrix] §5.1.12's "the matrices
-defined by the floating point output of house and givens are orthogonal to working precision". ★'''
-deps = ["IsRelPert", "Matrix.planeEmbed", "Matrix.planeRotation"]
 
 [[node]]
 id = "l2_opNorm_transpose_mul_self_sub_one_le"
-kind = "theorem"
-desc = '''"Orthogonal to working precision" implies near-orthogonality ([golub2013matrix] §5.1.12,
-the corollary of the definition): if `Q ∈ orthogonalGroup ι ℝ` and `‖Q̂ - Q‖₂ ≤ ε` then
-`‖Q̂ᵀ * Q̂ - 1‖₂ ≤ 2 ε + ε ^ 2` (write `Q̂ = Q + E`, `Q̂ᵀQ̂ - 1 = QᵀE + EᵀQ + EᵀE`, unitary invariance
-`Matrix.l2_opNorm_unitary_mul`). A general matrix fact, placed here because the working-precision
-vocabulary is this module's. ★'''
-deps = ["Matrix.l2_opNorm_unitary_mul"]
