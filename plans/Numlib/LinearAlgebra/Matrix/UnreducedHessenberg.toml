@@ -1,136 +1,58 @@
 namespace = "Matrix"
-desc = '''
-Unreduced upper Hessenberg matrices and the **implicit Q theorem**.
-
-An upper Hessenberg matrix is *unreduced* when every subdiagonal entry is nonzero:
-`Matrix.IsUnreducedUpperHessenberg H := H.IsUpperHessenberg ∧ ∀ i j, j ⋖ i → H i j ≠ 0`, stated
-over a bare `LinearOrder` with the covering relation `⋖` in the style of `Matrix.IsUpperHessenberg`
-(on `Fin N`, `H (k+1) k ≠ 0`; `isUnreducedUpperHessenberg_iff_fin`). The prototype
-`notes/gvl/ch07/proto/Shapes.lean` elaborates the definition.
-
-Main results ([golub2013matrix] §7.4.5):
-
-* The implicit Q theorem (Theorem 7.4.2; `Matrix.implicitQ`, `Matrix.implicitQ_of_apply_eq_zero`
-  and their real forms, the names chapter 8 consumes) moved at the Golub–Van Loan review to
-  `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`, which imports this module and proves it once,
-  for Arnoldi decompositions with any number of columns (`Matrix.IsArnoldiDecomposition.implicitQ`),
-  so that the square theorem and the uniqueness of the Arnoldi process are two corollaries of one
-  column recursion.
-* `Matrix.krylovMatrix A v j`, the Krylov matrix `[v | A v | … | A^{j-1} v]`, and Theorem 7.4.3:
-  `Qᴴ A Q` is unreduced Hessenberg iff `Qᴴ K(A, Q e₁, n)` is upper triangular and nonsingular
-  (`isUnreducedUpperHessenberg_conj_iff_krylovMatrix`).
-* Theorem 7.4.4: an eigenvalue of an unreduced Hessenberg matrix has geometric multiplicity one
-  (`IsUnreducedUpperHessenberg.finrank_eigenspace_le_one`), because the first `n - 1` columns of
-  `H - λ I` are linearly independent (`IsUnreducedUpperHessenberg.linearIndependent_init_cols`).
-* `IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular`: `R H R⁻¹` is unreduced Hessenberg
-  for a nonsingular upper triangular `R` — the explicit double-shift step is such a conjugate, which
-  is how the Francis step is identified with it (`Numlib/Eigen/QRAlgorithm`).
-
-Everything else in the Hessenberg world stays in `Numlib/LinearAlgebra/Matrix/Hessenberg` (the
-predicate `IsUpperHessenberg`) and `Numlib/LinearAlgebra/Matrix/QR` (the reduction). Mathlib has no
-Hessenberg notion; Numlib had no "unreduced" predicate (grep `unreduced`, `implicit`,
-`krylovMatrix`: only prose in `Eigen/Sturm` for tridiagonal matrices).
-
-About 400 lines; `isUnreducedUpperHessenberg_conj_iff_krylovMatrix` and
-`linearIndependent_init_cols` are the ★★ nodes.
-'''
 
 [[node]]
 id = "IsUnreducedUpperHessenberg"
-kind = "definition"
-desc = '''`H.IsUnreducedUpperHessenberg := H.IsUpperHessenberg ∧ ∀ i j : n, j ⋖ i → H i j ≠ 0` for
-`H : Matrix n n R` with `[LinearOrder n]`, `[Zero R]` ([golub2013matrix] §7.4.5, Definition:
-"Hessenberg matrices with no zero subdiagonal entries are said to be unreduced"). ★'''
-deps = ["Matrix.IsUpperHessenberg"]
 
 [[node]]
 id = "isUnreducedUpperHessenberg_iff_fin"
-kind = "theorem"
-desc = '''On `Fin N`: `H.IsUnreducedUpperHessenberg ↔ H.IsUpperHessenberg ∧ ∀ (k : ℕ) (hk : k + 1 < N),
-H ⟨k + 1, hk⟩ ⟨k, _⟩ ≠ 0` (`Fin.covBy_iff`/`Order.covBy_iff_add_one_eq`). ★'''
-deps = ["IsUnreducedUpperHessenberg", "Matrix.isUpperHessenberg_iff_fin"]
+
+[[node]]
+id = "isUnreducedUpperHessenberg_iff_succ"
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.sub_smul_one"
-kind = "theorem"
-desc = '''Shifts keep unreducedness: `H.IsUnreducedUpperHessenberg → (H - μ • 1).IsUnreducedUpperHessenberg`
-(the subdiagonal is untouched; `Matrix.IsUpperHessenberg.sub_smul_one`). ★'''
-deps = ["IsUnreducedUpperHessenberg", "Matrix.IsUpperHessenberg.sub_smul_one"]
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.map"
-kind = "theorem"
-desc = '''An injective ring hom (e.g. `Complex.ofReal`, `Matrix.complexify`) keeps unreducedness:
-`H.IsUnreducedUpperHessenberg → (H.map f).IsUnreducedUpperHessenberg`. ★'''
-deps = ["IsUnreducedUpperHessenberg"]
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.linearIndependent_init_cols"
-kind = "theorem"
-desc = '''Over a field, the first `N` columns of an unreduced upper Hessenberg `H : Matrix (Fin (N+1))
-(Fin (N+1)) K` are linearly independent: column `j` has its last nonzero entry at row `j + 1`
-(`H (j+1) j ≠ 0`), a staircase. Stated as `LinearIndependent K fun j : Fin N => H.col j.castSucc`;
-the corollary `N ≤ H.rank`. Also for `H - λ • 1` via `sub_smul_one`. ★★'''
-deps = ["IsUnreducedUpperHessenberg"]
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.finrank_eigenspace_le_one"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.4.4: every eigenvalue of an unreduced upper Hessenberg matrix has
-geometric multiplicity one — `Module.finrank K (Module.End.eigenspace (toLin' H) λ) ≤ 1` for every
-`λ`, with equality when `λ` is an eigenvalue. `rank (H - λ I) ≥ N` from
-`linearIndependent_init_cols` and rank–nullity. Over any field; the real book statement with a
-complex `λ` goes through `IsUnreducedUpperHessenberg.map`. ★'''
-deps = ["IsUnreducedUpperHessenberg.linearIndependent_init_cols", "IsUnreducedUpperHessenberg.sub_smul_one"]
+
+[[node]]
+id = "IsUnreducedUpperHessenberg.finrank_eigenspace_eq_one"
 
 [[node]]
 id = "krylovMatrix"
-kind = "definition"
-desc = '''The Krylov matrix ([golub2013matrix] §7.4.5): `krylovMatrix A v j : Matrix n (Fin j) R`,
-`krylovMatrix A v j i k = (A ^ (k : ℕ) *ᵥ v) i` — the columns `v, A v, …, A^{j-1} v`. Its column
-space is `Krylov.subspace (toLin' A) v j` of `Numlib/Krylov/Subspace` (`span_cols_krylovMatrix`,
-welcome; chapter 10 may want it). ★'''
-deps = []
+
+[[node]]
+id = "aeval_mul_krylovMatrix"
+
+[[node]]
+id = "conj_pow_of_mem_unitaryGroup"
 
 [[node]]
 id = "conjTranspose_mul_krylovMatrix"
-kind = "theorem"
-desc = '''For unitary `Q`: `star Q * krylovMatrix A (Q *ᵥ w) j = krylovMatrix (star Q * A * Q) w j`
-(`(Qᴴ A Q)^k = Qᴴ A^k Q`). With `w = Pi.single 0 1` this is the identity
-`Qᵀ K(A, Q(:,1), n) = [e₁ | H e₁ | … | H^{n-1} e₁]` of the book's proof of Theorem 7.4.3. ★'''
-deps = ["krylovMatrix"]
+
+[[node]]
+id = "IsUpperHessenberg.isUpperTriangular_krylovMatrix"
+
+[[node]]
+id = "IsUpperHessenberg.krylovMatrix_succ_succ"
+
+[[node]]
+id = "IsUnreducedUpperHessenberg.isUnit_krylovMatrix"
+
+[[node]]
+id = "isUnreducedUpperHessenberg_iff_krylovMatrix"
 
 [[node]]
 id = "isUnreducedUpperHessenberg_conj_iff_krylovMatrix"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.4.3: for `Q ∈ unitaryGroup (Fin N) 𝕜` and `A : Matrix (Fin N) (Fin N) 𝕜`,
-`(star Q * A * Q).IsUnreducedUpperHessenberg ↔ (R.IsUpperTriangular ∧ IsUnit R.det)` where
-`R = star Q * krylovMatrix A (Q.col 0) N` (a square matrix after `Fin N` columns). `→`: with
-`H = Qᴴ A Q` unreduced, `H^k e₀` is supported on the first `k+1` coordinates with entry
-`h₂₁ h₃₂ ⋯ h_{k+1,k} ≠ 0` at `k` (induction), so `R` is upper triangular with nonzero diagonal.
-`←`: `R(:, k+1) = H R(:, k)` and `R` upper triangular nonsingular force `H e_k ∈ span(e₀..e_{k+1})`
-(Hessenberg) and `r_{nn} = ∏ h_{i+1,i} ≠ 0` (unreduced). Over any field in fact; stated over
-`RCLike` for the unitary `Q`. ★★'''
-deps = ["conjTranspose_mul_krylovMatrix", "IsUnreducedUpperHessenberg"]
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular"
-kind = "theorem"
-desc = '''If `H` is unreduced upper Hessenberg and `R` is upper triangular with nonzero diagonal, then
-`R * H * R⁻¹` is unreduced upper Hessenberg: Hessenberg by `Matrix.IsUpperTriangular.mul_isUpperHessenberg`
-and `IsUpperHessenberg.mul_isUpperTriangular` (`R⁻¹` upper triangular, `Matrix.IsUpperTriangular.inv`),
-and the subdiagonal entry is `r_{k+1,k+1} h_{k+1,k} / r_{kk} ≠ 0`. ★'''
-deps = ["IsUnreducedUpperHessenberg", "Matrix.IsUpperTriangular.mul_isUpperHessenberg", "Matrix.IsUpperHessenberg.mul_isUpperTriangular", "Matrix.IsUpperTriangular.inv"]
 
 [[node]]
 id = "IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval"
-kind = "theorem"
-desc = '''The implicit-shift principle behind the Francis and QZ steps ([golub2013matrix] §7.5.5 and §7.7.6):
-let `H` be unreduced upper Hessenberg, `p` a polynomial, `Z` unitary with `star Z * H * Z` upper
-Hessenberg and `Z.col 0 ∈ span {aeval H p *ᵥ e₀}` (e.g. `Z e₀ ∥ p(H) e₀`). Then
-`(star Z * aeval H p).IsUpperTriangular`. Proof: `e_k ∈ K_{k+1}(H, e₀)` (unreduced `H`, via
-`isUnreducedUpperHessenberg_conj_iff_krylovMatrix` at `Q = 1`), so
-`p(H) e_k ∈ K_{k+1}(H, p(H) e₀) ⊆ K_{k+1}(H, z₀) ⊆ span {z₀, …, z_k}` (the last inclusion because
-`Zᴴ H Z` is Hessenberg), i.e. column `k` of `Zᴴ p(H)` vanishes below row `k`. No nonsingularity and
-no uniqueness is needed. ★★'''
-deps = ["IsUnreducedUpperHessenberg", "krylovMatrix", "isUnreducedUpperHessenberg_conj_iff_krylovMatrix"]

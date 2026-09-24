@@ -417,6 +417,7 @@ import Numlib.Krylov.Convergence.CG
 import Numlib.Krylov.Convergence.MinRes
 import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Convergence.Superlinear
+import Numlib.Krylov.Decomposition
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
@@ -450,6 +451,7 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
+import Numlib.LinearAlgebra.Matrix.KrylovDecomposition
 import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
 import Numlib.LinearAlgebra.Matrix.LU.Pivoting
@@ -473,6 +475,7 @@ import Numlib.LinearAlgebra.Matrix.Sylvester
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering

@@ -3,7 +3,9 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Eigen.PowerMethod
+import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.KrylovDecomposition
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
@@ -30,6 +32,12 @@ form.
   makes it unique and lets it be recognized inside a product.
 * `Matrix.qrIterate`, `Matrix.qrAccum`, `Matrix.qrTriangle`: the QR iterates `A_k`, the accumulated
   unitary factor `Q̃_k = Q_0 ⋯ Q_{k-1}` and the accumulated triangular factor `R_{k-1} ⋯ R_0`.
+* `Matrix.IsShiftedQrStep μ H H'`: one QR step with shift `μ` for *some* QR factorization, the
+  specification of the textbook algorithms (Givens or Householder, any signs);
+  `Matrix.IsShiftedQrChain H V R μ p`: a chain of such steps with its factors ([golub2013matrix]
+  (10.5.4)).
+* `Matrix.IsFrancisStep s t H H'`: the specification of the implicit double-shift (Francis) step,
+  `H' = Zᵀ H Z` Hessenberg with `Zᵀ (H² − s H + t I)` upper triangular.
 
 ## Main results
 
@@ -57,6 +65,22 @@ form.
   `Matrix.doubleShiftQrStep`: the shifted iterations of [quarteroni2000numerical] §5.7, each a
   unitary similarity; `Matrix.shiftedQrIterate_eq_qrIterate_sub_add` reduces a fixed shift to the
   basic iteration on `A - μ I`.
+* Shifted steps for arbitrary factorizations: each is a unitary similarity
+  (`Matrix.IsShiftedQrStep.eq_conj`), two of them are diagonally similar when `H − μ I` is
+  nonsingular (`Matrix.IsShiftedQrStep.unique_of_isUnit`), Hessenberg form survives a nonsingular
+  step (`Matrix.IsShiftedQrStep.isUpperHessenberg`, of which `Matrix.isUpperHessenberg_qrQ` and
+  `Matrix.isUpperHessenberg_qrIterate` are the canonical instances), and an exact shift deflates
+  an unreduced Hessenberg matrix in one step
+  (`Matrix.IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last`, [golub2013matrix] Theorem 7.5.1).
+* `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one`: a chain multiplies out to the shift
+  polynomial, `(V_0 ⋯ V_{p-1})(R_{p-1} ⋯ R_0) = ∏ (H_0 − μ_i I)` ([golub2013matrix] (7.5.7),
+  Theorem 10.5.1); `Matrix.pow_eq_qrAccum_mul_qrTriangle` is its unshifted canonical instance.
+  `Matrix.exists_isShiftedQrChain`: Givens chains exist for arbitrary shifts.
+* The Francis step: the double-shift step of a real matrix is real
+  (`Matrix.doubleShiftQrStep_map_ofReal`), the explicit route gives a Francis step
+  (`Matrix.isFrancisStep_qrQ`), and every Francis step of an unreduced Hessenberg matrix is that
+  one up to a `±1` diagonal similarity (`Matrix.IsFrancisStep.eq_diagonal_conj`, through the
+  implicit Q theorem `Matrix.implicitQ_real` of `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`).
 
 ## Implementation notes
 
@@ -602,6 +626,346 @@ theorem IsUpperTriangular.diag_mul {M N : Matrix n n 𝕜} (hM : M.IsUpperTriang
 
 end Order
 
+/-! ### Shifted QR steps for arbitrary factorizations
+
+The canonical steps below (`Matrix.shiftedQrStep`, `Matrix.qrIterate`) fix one QR factorization,
+the Gram–Schmidt one with a positive diagonal. The textbook algorithms compute *some* QR
+factorization — by Givens rotations or Householder reflectors, with their own signs — so their
+specifications are stated for any factorization: `Matrix.IsShiftedQrStep μ H H'` says that `H'` is
+one QR step with shift `μ` for some factorization, and `Matrix.IsShiftedQrChain` records a chain of
+steps together with its factors ([golub2013matrix] (10.5.4)). -/
+
+section ShiftedStep
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
+
+/-- `H'` is obtained from `H` by **one QR step with shift `μ`, for some QR factorization**
+([golub2013matrix] (7.3.1) with `μ = 0`, (7.4.1), (7.5.3)): `H - μ I = Q R` with `Q` unitary and
+`R` upper triangular, and `H' = R Q + μ I`. -/
+def IsShiftedQrStep (μ : 𝕜) (H H' : Matrix n n 𝕜) : Prop :=
+  ∃ Q ∈ unitaryGroup n 𝕜, ∃ R : Matrix n n 𝕜, R.IsUpperTriangular ∧ H - μ • 1 = Q * R ∧
+    H' = R * Q + μ • 1
+
+/-- Every shifted QR step is a unitary similarity: `R Q + μ I = Qᴴ (Q R + μ I) Q` (the display
+after [golub2013matrix] (7.5.3)). -/
+theorem IsShiftedQrStep.eq_conj {μ : 𝕜} {H H' : Matrix n n 𝕜} (h : IsShiftedQrStep μ H H') :
+    ∃ Q ∈ unitaryGroup n 𝕜, H' = star Q * H * Q := by
+  obtain ⟨Q, hQ, R, -, hQR, rfl⟩ := h
+  refine ⟨Q, hQ, ?_⟩
+  have h1 : star Q * Q = 1 := (mem_unitaryGroup_iff').1 hQ
+  have hR : R = star Q * (H - μ • 1) := by rw [hQR, ← Matrix.mul_assoc, h1, Matrix.one_mul]
+  rw [hR, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, h1,
+    sub_add_cancel]
+
+/-- A unitary upper triangular matrix is diagonal: its inverse `Uᴴ` is both upper and lower
+triangular. -/
+theorem IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup {U : Matrix n n 𝕜}
+    (hU : U.IsUpperTriangular) (hUu : U ∈ unitaryGroup n 𝕜) : U = diagonal fun i => U i i := by
+  have hinv : U⁻¹ = star U := inv_eq_left_inv ((mem_unitaryGroup_iff').1 hUu)
+  have hst : (star U).IsUpperTriangular := by rw [← hinv]; exact hU.inv
+  ext i j
+  rcases lt_trichotomy i j with hij | rfl | hij
+  · rw [diagonal_apply_ne _ hij.ne]
+    have := hst hij
+    rwa [star_apply, star_eq_zero] at this
+  · rw [diagonal_apply_eq]
+  · rw [diagonal_apply_ne _ hij.ne', hU hij]
+
+/-- For nonsingular `H - μ I` any two shifted QR steps are unitarily *diagonally* similar: the two
+QR factorizations of `H - μ I` differ by a unimodular diagonal (`Q₁ᴴ Q₂ = R₁ R₂⁻¹` is unitary and
+upper triangular, hence diagonal). -/
+theorem IsShiftedQrStep.unique_of_isUnit {μ : 𝕜} {H H₁ H₂ : Matrix n n 𝕜}
+    (h₁ : IsShiftedQrStep μ H H₁) (h₂ : IsShiftedQrStep μ H H₂) (hH : IsUnit (H - μ • 1).det) :
+    ∃ d : n → 𝕜, (∀ i, ‖d i‖ = 1) ∧ H₂ = star (diagonal d) * H₁ * diagonal d := by
+  obtain ⟨Q₁, hQ₁, R₁, hR₁, hM₁, rfl⟩ := h₁
+  obtain ⟨Q₂, hQ₂, R₂, hR₂, hM₂, rfl⟩ := h₂
+  have hdet₂ : IsUnit R₂.det := by
+    rw [hM₂, det_mul] at hH
+    exact isUnit_of_mul_isUnit_right hH
+  set U := star Q₁ * Q₂ with hUdef
+  have hU : U ∈ unitaryGroup n 𝕜 := mul_mem (Unitary.star_mem hQ₁) hQ₂
+  have hUR₂ : U * R₂ = R₁ := by
+    rw [hUdef, Matrix.mul_assoc, ← hM₂, hM₁, ← Matrix.mul_assoc, (mem_unitaryGroup_iff').1 hQ₁,
+      Matrix.one_mul]
+  have hUt : U.IsUpperTriangular := by
+    rw [← mul_nonsing_inv_cancel_right R₂ U hdet₂, hUR₂]
+    exact hR₁.mul hR₂.inv
+  have hUd := hUt.eq_diagonal_of_mem_unitaryGroup hU
+  have hUU : star U * U = 1 := (mem_unitaryGroup_iff').1 hU
+  have hQ₂' : Q₂ = Q₁ * U := by
+    rw [hUdef, ← Matrix.mul_assoc, (mem_unitaryGroup_iff).1 hQ₁, Matrix.one_mul]
+  have hR₂' : R₂ = star U * R₁ := by rw [← hUR₂, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+  refine ⟨fun i => U i i, fun i => ?_, ?_⟩
+  · refine RCLike.norm_eq_one_of_star_mul_self_eq_one ?_
+    have := congrFun (congrFun hUU i) i
+    rw [hUd, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal,
+      diagonal_apply_eq, one_apply_eq] at this
+    simpa using this
+  · rw [← hUd, hR₂', hQ₂']
+    calc star U * R₁ * (Q₁ * U) + μ • 1 = star U * R₁ * (Q₁ * U) + μ • (star U * U) := by
+          rw [hUU]
+      _ = star U * (R₁ * Q₁ + μ • 1) * U := by
+          simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
+            Matrix.mul_one, Matrix.mul_assoc]
+
+/-- If `M = Q R` is nonsingular and upper Hessenberg with `R` upper triangular, then `Q` is upper
+Hessenberg: `Q = M R⁻¹`, Hessenberg times triangular ([golub2013matrix] §7.4.2,
+[quarteroni2000numerical] §5.6.3). -/
+theorem IsUpperHessenberg.isUpperHessenberg_of_eq_mul {R : Type*} [CommRing R]
+    {M Q T : Matrix n n R} (hM : M.IsUpperHessenberg) (hdet : IsUnit M.det)
+    (hT : T.IsUpperTriangular) (hMQT : M = Q * T) : Q.IsUpperHessenberg := by
+  have hTu : IsUnit T.det := by
+    rw [hMQT, det_mul] at hdet
+    exact isUnit_of_mul_isUnit_right hdet
+  rw [← mul_nonsing_inv_cancel_right T Q hTu, ← hMQT]
+  exact hM.mul_isUpperTriangular hT.inv
+
+/-- Hessenberg form survives a nonsingular shifted QR step, for any factorization
+([golub2013matrix] §7.4.2): `Q = (H − μ I) R⁻¹` is Hessenberg, and so is `R Q + μ I`. -/
+theorem IsShiftedQrStep.isUpperHessenberg {μ : 𝕜} {H H' : Matrix n n 𝕜}
+    (h : IsShiftedQrStep μ H H') (hH : H.IsUpperHessenberg) (hdet : IsUnit (H - μ • 1).det) :
+    H'.IsUpperHessenberg := by
+  obtain ⟨Q, -, R, hR, hQR, rfl⟩ := h
+  exact (hR.mul_isUpperHessenberg ((hH.sub_smul_one μ).isUpperHessenberg_of_eq_mul hdet hR
+    hQR)).add_smul_one μ
+
+/-- [golub2013matrix] **Theorem 7.5.1** (an exact shift deflates in one step): if `H` is unreduced
+upper Hessenberg, `μ` an eigenvalue of `H` and `H'` a QR step of `H` with shift `μ`, then the last
+row of `H'` is `μ e_Nᵀ`. In `H − μ I = Q R` the leading `N × N` block of `R` is nonsingular
+(deleting the first row of `H − μ I` and the last column leaves the unreduced subdiagonal, and that
+block is `Q(2:, :N) R(:N, :N)`); `det (H − μ I) = 0` then forces `r_{NN} = 0`, so the last row of
+`R`, and hence of `R Q`, is zero. -/
+theorem IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last {N : ℕ}
+    {H H' : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜} (hH : H.IsUnreducedUpperHessenberg) {μ : 𝕜}
+    (hμ : μ ∈ spectrum 𝕜 H) (h : IsShiftedQrStep μ H H') (j : Fin (N + 1)) :
+    H' (Fin.last N) j = if j = Fin.last N then μ else 0 := by
+  obtain ⟨Q, hQ, R, hR, hM, rfl⟩ := h
+  have hMu := hH.sub_smul_one μ
+  have hdetM : (H - μ • 1).det = 0 := by
+    rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
+      isUnit_iff_ne_zero, not_not] at hμ
+    rw [show H - μ • 1 = -(μ • 1 - H) by abel, det_neg, hμ, mul_zero]
+  -- the leading block of `R` is nonsingular
+  have hS : (H - μ • 1).submatrix Fin.succ Fin.castSucc =
+      Q.submatrix Fin.succ Fin.castSucc * R.submatrix Fin.castSucc Fin.castSucc := by
+    ext a b
+    rw [hM, submatrix_apply, mul_apply, Fin.sum_univ_castSucc,
+      show R (Fin.last N) b.castSucc = 0 from hR (Fin.castSucc_lt_last b), mul_zero, add_zero]
+    rfl
+  have hRdet : (R.submatrix Fin.castSucc Fin.castSucc).det ≠ 0 := by
+    intro h0
+    apply hMu.det_submatrix_succ_castSucc_ne_zero
+    rw [hS, det_mul, h0, mul_zero]
+  have hRt : (R.submatrix Fin.castSucc Fin.castSucc).IsUpperTriangular := fun a b hab =>
+    hR (Fin.castSucc_lt_castSucc_iff.2 hab)
+  rw [det_of_isUpperTriangular hRt, Finset.prod_ne_zero_iff] at hRdet
+  -- hence `r_NN = 0`
+  have hRNN : R (Fin.last N) (Fin.last N) = 0 := by
+    have hQd : Q.det ≠ 0 := (isUnit_iff_ne_zero).1 ((isUnit_iff_isUnit_det Q).1
+      (isUnit_of_mem_unitaryGroup hQ))
+    rw [hM, det_mul, det_of_isUpperTriangular hR, Fin.prod_univ_castSucc] at hdetM
+    rcases mul_eq_zero.1 hdetM with h0 | h0
+    · exact absurd h0 hQd
+    rcases mul_eq_zero.1 h0 with h1 | h1
+    · exact absurd h1 (Finset.prod_ne_zero_iff.2 fun i hi => hRdet i hi)
+    · exact h1
+  have hrow : ∀ l, R (Fin.last N) l = 0 := by
+    intro l
+    rcases eq_or_ne l (Fin.last N) with rfl | hl
+    · exact hRNN
+    · exact hR (Fin.lt_last_iff_ne_last.2 hl)
+  rw [add_apply, mul_apply, Finset.sum_eq_zero fun l _ => by rw [hrow l, zero_mul], zero_add,
+    smul_apply, smul_eq_mul]
+  by_cases hj : j = Fin.last N
+  · subst hj
+    simp
+  · rw [one_apply_ne (Ne.symm hj), mul_zero]
+    exact (ite_eq_right_iff.2 fun h => absurd h hj).symm
+
+end ShiftedStep
+
+section Chain
+
+variable {𝕜 : Type*} [CommRing 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **A chain of shifted QR steps with explicit factors** ([golub2013matrix] (10.5.4), whose loop
+`for i = 0:p` should read `i = 1:p`): `H i − μ_i I = V_i R_i` and `H (i + 1) = R_i V_i + μ_i I`
+for `i < p`. Neither unitarity nor triangularity is part of the definition; the theorems add what
+they use. -/
+structure IsShiftedQrChain (H V R : ℕ → Matrix n n 𝕜) (μ : ℕ → 𝕜) (p : ℕ) : Prop where
+  /-- The factorization of each shifted matrix. -/
+  sub_eq : ∀ i < p, H i - μ i • 1 = V i * R i
+  /-- The next matrix of the chain. -/
+  succ_eq : ∀ i < p, H (i + 1) = R i * V i + μ i • 1
+
+namespace IsShiftedQrChain
+
+variable {H V R : ℕ → Matrix n n 𝕜} {μ : ℕ → 𝕜} {p : ℕ}
+
+/-- A chain of length `p` restricts to every shorter length. -/
+theorem mono (h : IsShiftedQrChain H V R μ p) {q : ℕ} (hq : q ≤ p) :
+    IsShiftedQrChain H V R μ q :=
+  ⟨fun i hi => h.sub_eq i (by omega), fun i hi => h.succ_eq i (by omega)⟩
+
+/-- One link of the chain: `H i V i = V i H (i + 1)`. -/
+theorem mul_eq_mul_succ (h : IsShiftedQrChain H V R μ p) {i : ℕ} (hi : i < p) :
+    H i * V i = V i * H (i + 1) := by
+  rw [h.succ_eq i hi, Matrix.mul_add, ← Matrix.mul_assoc, ← h.sub_eq i hi, Matrix.sub_mul,
+    Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one, Matrix.one_mul, sub_add_cancel]
+
+/-- `H₀ V_{<p} = V_{<p} H_p` with `V_{<p} = V_0 V_1 ⋯ V_{p-1}`. -/
+theorem mul_prod (h : IsShiftedQrChain H V R μ p) :
+    H 0 * ((List.range p).map V).prod = ((List.range p).map V).prod * H p := by
+  induction p with
+  | zero => simp
+  | succ p ih =>
+    rw [List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+      List.prod_singleton, ← Matrix.mul_assoc, ih (h.mono p.le_succ), Matrix.mul_assoc,
+      h.mul_eq_mul_succ (lt_add_one p), ← Matrix.mul_assoc]
+
+end IsShiftedQrChain
+
+/-- **The product identity of a chain of shifted QR steps** ([golub2013matrix] (7.5.7), P7.5.5,
+and Theorem 10.5.1): `(V_0 ⋯ V_{p-1}) (R_{p-1} ⋯ R_0) = ∏_{i<p} (H_0 − μ_i I)`. No unitarity or
+triangularity is used: `V_{<p} (H_p − μ_p) = (H_0 − μ_p) V_{<p}` by `IsShiftedQrChain.mul_prod`, and
+the factors `H_0 − μ_i I` commute. -/
+theorem prod_mul_prod_reverse_eq_prod_sub_smul_one {H V R : ℕ → Matrix n n 𝕜} {μ : ℕ → 𝕜}
+    {p : ℕ} (h : IsShiftedQrChain H V R μ p) :
+    ((List.range p).map V).prod * ((List.range p).reverse.map R).prod =
+      ((List.range p).map fun i => H 0 - μ i • 1).prod := by
+  induction p with
+  | zero => simp
+  | succ p ih =>
+    have hc := h.mono p.le_succ
+    have hcomm : ∀ a b : 𝕜, Commute (H 0 - a • 1) (H 0 - b • 1) := fun a b =>
+      ((Commute.refl _).sub_right ((Commute.one_right _).smul_right b)).sub_left
+        ((Commute.one_left _).smul_left a)
+    have hV : ((List.range p).map V).prod * (H p - μ p • 1) =
+        (H 0 - μ p • 1) * ((List.range p).map V).prod := by
+      rw [Matrix.mul_sub, Matrix.sub_mul, ← hc.mul_prod, Matrix.mul_smul, Matrix.smul_mul,
+        Matrix.mul_one, Matrix.one_mul]
+    simp only [List.range_succ, List.reverse_append, List.map_append, List.prod_append,
+      List.reverse_singleton, List.singleton_append, List.map_cons, List.prod_cons, List.map_nil,
+      List.prod_nil, mul_one]
+    calc ((List.range p).map V).prod * V p * (R p * ((List.range p).reverse.map R).prod)
+        = ((List.range p).map V).prod * (H p - μ p • 1) *
+            ((List.range p).reverse.map R).prod := by
+          rw [h.sub_eq p (lt_add_one p)]
+          simp only [Matrix.mul_assoc]
+      _ = (H 0 - μ p • 1) * ((List.range p).map fun i => H 0 - μ i • 1).prod := by
+          rw [hV, Matrix.mul_assoc, ih hc]
+      _ = ((List.range p).map fun i => H 0 - μ i • 1).prod * (H 0 - μ p • 1) :=
+          (Commute.list_prod_right _ _ fun y hy => by
+            obtain ⟨i, -, rfl⟩ := List.mem_map.1 hy
+            exact hcomm _ _).eq
+
+namespace IsShiftedQrChain
+
+variable {H V R : ℕ → Matrix n n 𝕜} {μ : ℕ → 𝕜} {p : ℕ}
+
+/-- [golub2013matrix] (10.5.6): with unitary `V_i`, the accumulated `V_{<p}` is unitary and
+`H_p = V_{<p}ᴴ H_0 V_{<p}`. -/
+theorem conjTranspose_mul_mul [StarRing 𝕜] (h : IsShiftedQrChain H V R μ p)
+    (hV : ∀ i < p, V i ∈ unitaryGroup n 𝕜) :
+    ((List.range p).map V).prod ∈ unitaryGroup n 𝕜 ∧
+      H p = star ((List.range p).map V).prod * H 0 * ((List.range p).map V).prod := by
+  have hmem : ((List.range p).map V).prod ∈ unitaryGroup n 𝕜 := by
+    refine Submonoid.list_prod_mem _ fun x hx => ?_
+    obtain ⟨i, hi, rfl⟩ := List.mem_map.1 hx
+    exact hV i (List.mem_range.1 hi)
+  refine ⟨hmem, ?_⟩
+  rw [Matrix.mul_assoc, h.mul_prod, ← Matrix.mul_assoc, (mem_unitaryGroup_iff').1 hmem,
+    Matrix.one_mul]
+
+/-- Hessenberg form along a chain ([golub2013matrix] §10.5.3, "each `H^{(i)}` is upper
+Hessenberg"): if `H_0` is upper Hessenberg and every `R_i` upper triangular and `V_i` upper
+Hessenberg, then so is every `H_i`, `i ≤ p`. -/
+theorem isUpperHessenberg [LinearOrder n] (h : IsShiftedQrChain H V R μ p)
+    (h0 : (H 0).IsUpperHessenberg) (hR : ∀ i < p, (R i).IsUpperTriangular)
+    (hV : ∀ i < p, (V i).IsUpperHessenberg) : ∀ i ≤ p, (H i).IsUpperHessenberg := by
+  intro i hi
+  induction i with
+  | zero => exact h0
+  | succ i ih =>
+    rw [h.succ_eq i (by omega)]
+    exact ((hR i (by omega)).mul_isUpperHessenberg (hV i (by omega))).add_smul_one _
+
+/-- With upper Hessenberg `V_i`, the accumulated `V_{<p}` has lower bandwidth `p`
+([golub2013matrix] §10.5.3, "`V(m, 1:m−p−1) = 0`"). -/
+theorem hasLowerBandwidth_prod [LinearOrder n] (hV : ∀ i < p, (V i).IsUpperHessenberg) :
+    (((List.range p).map V).prod).HasLowerBandwidth p := by
+  induction p with
+  | zero => exact hasLowerBandwidth_zero_iff.2 (by simpa using blockTriangular_one)
+  | succ p ih =>
+    rw [List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+      List.prod_singleton]
+    exact (ih fun i hi => hV i (by omega)).mul
+      (isUpperHessenberg_iff_hasLowerBandwidth_one.1 (hV p (lt_add_one p)))
+
+/-- The first column of the accumulated factor ([golub2013matrix] §10.5.3, "`V(:,1) = p(H_c) e₁`
+with `c = 1/R(1,1)`"), without dividing: with upper triangular `R_i`,
+`(∏_{i<p} (H_0 − μ_i I)) e₀ = (R_{<p})₀₀ • V_{<p} e₀` where `R_{<p} = R_{p-1} ⋯ R_0`. -/
+theorem mulVec_first [LinearOrder n] [OrderBot n] (h : IsShiftedQrChain H V R μ p)
+    (hR : ∀ i < p, (R i).IsUpperTriangular) :
+    ((List.range p).map fun i => H 0 - μ i • 1).prod *ᵥ Pi.single ⊥ 1 =
+      ((List.range p).reverse.map R).prod ⊥ ⊥ •
+        (((List.range p).map V).prod *ᵥ Pi.single ⊥ 1) := by
+  have hlist : ∀ l : List ℕ, (∀ i ∈ l, i < p) → ((l.map R).prod).IsUpperTriangular := by
+    intro l hl
+    induction l with
+    | nil => simpa using blockTriangular_one
+    | cons a l ih =>
+      rw [List.map_cons, List.prod_cons]
+      exact (hR a (hl a List.mem_cons_self)).mul (ih fun i hi => hl i (List.mem_cons_of_mem a hi))
+  have htri := hlist (List.range p).reverse fun i hi => List.mem_range.1 (List.mem_reverse.1 hi)
+  rw [← prod_mul_prod_reverse_eq_prod_sub_smul_one h, ← mulVec_mulVec, ← mulVec_smul]
+  congr 1
+  ext i
+  rw [mulVec_single_one, Pi.smul_apply, col_apply, Pi.single_apply, smul_eq_mul]
+  split_ifs with hi
+  · rw [hi, mul_one]
+  · rw [mul_zero, htri (bot_lt_iff_ne_bot.2 hi)]
+
+end IsShiftedQrChain
+
+/-- **Existence of Givens chains for arbitrary shifts** ([golub2013matrix] (10.5.4) with "Givens
+QR"): for upper Hessenberg real `H` and any shifts `μ`, there is a chain from `H` whose factors
+come from the Givens QR factorization of `Matrix.hessenbergGivensQR`: every `V_i` orthogonal and
+upper Hessenberg, every `R_i` upper triangular. No nonsingularity is needed — exact shifts are
+allowed. -/
+theorem exists_isShiftedQrChain {m : ℕ} {H : Matrix (Fin m) (Fin m) ℝ} (hH : H.IsUpperHessenberg)
+    (μ : ℕ → ℝ) :
+    ∃ Hs V R : ℕ → Matrix (Fin m) (Fin m) ℝ, Hs 0 = H ∧
+      (∀ p, IsShiftedQrChain Hs V R μ p) ∧
+      ∀ i, V i ∈ orthogonalGroup (Fin m) ℝ ∧ (V i).IsUpperHessenberg ∧
+        (R i).IsUpperTriangular ∧ (Hs i).IsUpperHessenberg := by
+  let Hs : ℕ → Matrix (Fin m) (Fin m) ℝ := fun i => Nat.rec (motive := fun _ =>
+    Matrix (Fin m) (Fin m) ℝ) H (fun i M =>
+    (hessenbergGivensQR (M - μ i • 1)).2 * (hessenbergGivensQR (M - μ i • 1)).1 + μ i • 1) i
+  have hHs : ∀ i, (Hs i).IsUpperHessenberg := by
+    intro i
+    induction i with
+    | zero => exact hH
+    | succ i ih =>
+      obtain ⟨-, hR, -, hQ⟩ := hessenbergGivensQR_spec (ih.sub_smul_one (μ i))
+      exact (hR.mul_isUpperHessenberg hQ).add_smul_one _
+  refine ⟨Hs, fun i => (hessenbergGivensQR (Hs i - μ i • 1)).1,
+    fun i => (hessenbergGivensQR (Hs i - μ i • 1)).2, rfl, fun p => ⟨fun i _ => ?_, fun i _ => rfl⟩,
+    fun i => ?_⟩
+  · exact (hessenbergGivensQR_spec ((hHs i).sub_smul_one (μ i))).2.2.1
+  · obtain ⟨hQ, hR, -, hQH⟩ := hessenbergGivensQR_spec ((hHs i).sub_smul_one (μ i))
+    exact ⟨hQ, hQH, hR, hHs i⟩
+
+end Chain
+
+/-- Each link of a chain with unitary `V_i` and upper triangular `R_i` is a shifted QR step. -/
+theorem IsShiftedQrChain.isShiftedQrStep {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+    [DecidableEq n] [LinearOrder n] {H V R : ℕ → Matrix n n 𝕜} {μ : ℕ → 𝕜} {p : ℕ}
+    (h : IsShiftedQrChain H V R μ p) (hV : ∀ i < p, V i ∈ unitaryGroup n 𝕜)
+    (hR : ∀ i < p, (R i).IsUpperTriangular) {i : ℕ} (hi : i < p) :
+    IsShiftedQrStep (μ i) (H i) (H (i + 1)) :=
+  ⟨V i, hV i hi, R i, hR i hi, h.sub_eq i hi, h.succ_eq i hi⟩
+
 section GramSchmidt
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
@@ -770,6 +1134,37 @@ theorem qrTriangle_zero (A : Matrix n n 𝕜) : qrTriangle A 0 = 1 := rfl
 theorem qrTriangle_succ (A : Matrix n n 𝕜) (k : ℕ) :
     qrTriangle A (k + 1) = qrR (qrIterate A k) * qrTriangle A k := rfl
 
+/-- Each QR iterate is an unshifted QR step (`Matrix.IsShiftedQrStep` with `μ = 0`) of the
+previous one. -/
+theorem isShiftedQrStep_qrIterate (A : Matrix n n 𝕜) (k : ℕ) :
+    IsShiftedQrStep 0 (qrIterate A k) (qrIterate A (k + 1)) :=
+  ⟨qrQ _, qrQ_mem_unitaryGroup _, qrR _, isUpperTriangular_qrR _,
+    by rw [zero_smul, sub_zero, qrQ_mul_qrR], by rw [zero_smul, add_zero, qrIterate_succ]⟩
+
+/-- The QR iterates with their factors form a chain of unshifted QR steps. -/
+theorem isShiftedQrChain_qrIterate (A : Matrix n n 𝕜) (p : ℕ) :
+    IsShiftedQrChain (qrIterate A) (fun k => qrQ (qrIterate A k)) (fun k => qrR (qrIterate A k))
+      (fun _ => 0) p :=
+  ⟨fun _ _ => by rw [zero_smul, sub_zero, qrQ_mul_qrR], fun _ _ => by rw [zero_smul, add_zero]; rfl⟩
+
+/-- The accumulated unitary factor is the product `Q_0 Q_1 ⋯ Q_{k-1}` of the chain. -/
+theorem qrAccum_eq_prod (A : Matrix n n 𝕜) (k : ℕ) :
+    qrAccum A k = ((List.range k).map fun i => qrQ (qrIterate A i)).prod := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [qrAccum_succ, ih, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+      List.prod_singleton]
+
+/-- The accumulated triangular factor is the product `R_{k-1} ⋯ R_0` of the chain. -/
+theorem qrTriangle_eq_prod (A : Matrix n n 𝕜) (k : ℕ) :
+    qrTriangle A k = ((List.range k).reverse.map fun i => qrR (qrIterate A i)).prod := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [qrTriangle_succ, ih, List.range_succ, List.reverse_append, List.reverse_singleton,
+      List.singleton_append, List.map_cons, List.prod_cons]
+
 /-- The accumulated factor of the QR algorithm is unitary. -/
 theorem qrAccum_mem_unitaryGroup (A : Matrix n n 𝕜) (k : ℕ) :
     qrAccum A k ∈ Matrix.unitaryGroup n 𝕜 := by
@@ -826,17 +1221,9 @@ algorithm therefore orthonormalizes the columns of `A^k`, which is what identifi
 orthogonal iteration. -/
 theorem pow_eq_qrAccum_mul_qrTriangle (A : Matrix n n 𝕜) (k : ℕ) :
     A ^ k = qrAccum A k * qrTriangle A k := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    have hcomm : A * qrAccum A k = qrAccum A k * qrIterate A k := by
-      rw [qrIterate_eq_conj_qrAccum, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
-        qrAccum_mul_conjTranspose, Matrix.one_mul]
-    have hsplit : qrIterate A k = qrQ (qrIterate A k) * qrR (qrIterate A k) :=
-      (qrQ_mul_qrR _).symm
-    rw [pow_succ', ih, ← Matrix.mul_assoc, hcomm, qrAccum_succ, qrTriangle_succ]
-    conv_lhs => rw [hsplit]
-    simp only [Matrix.mul_assoc]
+  rw [qrAccum_eq_prod, qrTriangle_eq_prod,
+    prod_mul_prod_reverse_eq_prod_sub_smul_one (isShiftedQrChain_qrIterate A k)]
+  simp [List.map_const', List.prod_replicate]
 
 /-- The accumulated triangular factor is upper triangular. -/
 theorem isUpperTriangular_qrTriangle (A : Matrix n n 𝕜) (k : ℕ) :
@@ -1062,31 +1449,22 @@ theorem isHermitian_qrIterate {A : Matrix n n 𝕜} (hA : A.IsHermitian) (k : �
   exact isHermitian_conjTranspose_mul_mul _ hA
 
 /-- The unitary factor of a nonsingular upper Hessenberg matrix is upper Hessenberg
-([quarteroni2000numerical] §5.6.3): `Q = H R⁻¹` with `R⁻¹` upper triangular, by uniqueness of
-the factorization rather than by inspecting a product of rotations. -/
+([quarteroni2000numerical] §5.6.3): the canonical instance of
+`Matrix.IsUpperHessenberg.isUpperHessenberg_of_eq_mul`, which holds for every QR factorization. -/
 theorem isUpperHessenberg_qrQ {A : Matrix n n 𝕜} (hA : IsUnit A.det) (hH : A.IsUpperHessenberg) :
-    (qrQ A).IsUpperHessenberg := by
-  have hR : IsUnit (qrR A).det := by
-    rw [det_of_isUpperTriangular (isUpperTriangular_qrR A), isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (qrR_diag_pos hA j).ne'
-  have : Invertible (qrR A) := invertibleOfIsUnitDet _ hR
-  have hQ : qrQ A = A * (qrR A)⁻¹ := by
-    calc qrQ A = qrQ A * (qrR A * (qrR A)⁻¹) := by rw [mul_nonsing_inv _ hR, Matrix.mul_one]
-      _ = A * (qrR A)⁻¹ := by rw [← Matrix.mul_assoc, qrQ_mul_qrR]
-  rw [hQ]
-  exact hH.mul_isUpperTriangular
-    (blockTriangular_inv_of_blockTriangular (isUpperTriangular_qrR A))
+    (qrQ A).IsUpperHessenberg :=
+  hH.isUpperHessenberg_of_eq_mul hA (isUpperTriangular_qrR A) (qrQ_mul_qrR A).symm
 
 /-- **The QR iteration preserves upper Hessenberg form** ([quarteroni2000numerical] §5.6.4): each
-step is `R Q` with `R` upper triangular and `Q` upper Hessenberg. -/
+iterate is a nonsingular QR step of the previous one (`Matrix.isShiftedQrStep_qrIterate`), and
+Hessenberg form survives such a step (`Matrix.IsShiftedQrStep.isUpperHessenberg`). -/
 theorem isUpperHessenberg_qrIterate {A : Matrix n n 𝕜} (hA : IsUnit A.det)
     (hH : A.IsUpperHessenberg) (k : ℕ) : (qrIterate A k).IsUpperHessenberg := by
   induction k with
   | zero => exact hH
   | succ k ih =>
-    rw [qrIterate_succ]
-    exact (isUpperTriangular_qrR _).mul_isUpperHessenberg
-      (isUpperHessenberg_qrQ (isUnit_det_qrIterate hA k) ih)
+    exact (isShiftedQrStep_qrIterate A k).isUpperHessenberg ih
+      (by rw [zero_smul, sub_zero]; exact isUnit_det_qrIterate hA k)
 
 /-! ### Shifts -/
 
@@ -1101,6 +1479,11 @@ theorem shiftedQrStep_eq_conj (μ : 𝕜) (T : Matrix n n 𝕜) :
     shiftedQrStep μ T = (qrQ (T - μ • 1))ᴴ * T * qrQ (T - μ • 1) := by
   rw [shiftedQrStep, qrR_eq, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one,
     Matrix.smul_mul, conjTranspose_qrQ_mul_self, sub_add_cancel]
+
+/-- The canonical shifted step is a shifted QR step in the sense of `Matrix.IsShiftedQrStep`. -/
+theorem isShiftedQrStep_shiftedQrStep (μ : 𝕜) (T : Matrix n n 𝕜) :
+    IsShiftedQrStep μ T (shiftedQrStep μ T) :=
+  ⟨qrQ _, qrQ_mem_unitaryGroup _, qrR _, isUpperTriangular_qrR _, (qrQ_mul_qrR _).symm, rfl⟩
 
 /-- **The QR iteration with a fixed shift `μ`** ([quarteroni2000numerical] §5.7.1): `T₀ = A` and
 `T_{k+1} = shiftedQrStep μ T_k`. -/
@@ -1139,8 +1522,10 @@ theorem shiftedQrIterate_eq_conj_qrAccum (A : Matrix n n 𝕜) (μ : 𝕜) (k : 
 
 /-- **The double-shift step** ([quarteroni2000numerical] (5.55)): two consecutive shifted steps
 with the complex-conjugate pair of shifts `μ`, `conj μ`, the shifts being the two eigenvalues of
-a `2 × 2` trailing block that the single-shift iteration cannot split. The real-arithmetic Francis
-implementation is not defined. -/
+a `2 × 2` trailing block that the single-shift iteration cannot split. For a real matrix it is the
+real step `Matrix.doubleShiftQrStep_map_ofReal`; the real-arithmetic Francis implementation is
+specified by `Matrix.IsFrancisStep` and implemented in the Golub–Van Loan surface (Algorithm
+7.5.1). -/
 noncomputable def doubleShiftQrStep (T : Matrix n n 𝕜) (μ : 𝕜) : Matrix n n 𝕜 :=
   shiftedQrStep (starRingEnd 𝕜 μ) (shiftedQrStep μ T)
 
@@ -1206,6 +1591,235 @@ theorem exists_unitary_conj_rayleighShiftQrIterate (A : Matrix (Fin (N + 1)) (Fi
     simp only [Matrix.mul_assoc]
 
 end Rayleigh
+
+/-! ### The Francis double-shift step
+
+`Matrix.doubleShiftQrStep` takes two complex-conjugate shifts in complex arithmetic. For a real
+matrix its result is real (`Matrix.doubleShiftQrStep_map_ofReal`): it is the orthogonal
+similarity by the orthogonal factor of the real matrix `M = H² − s H + t I`. The implicit
+(Francis) step computes such a similarity without forming `M`; its specification is
+`Matrix.IsFrancisStep`, and the implicit Q theorem identifies every Francis step of an unreduced
+Hessenberg matrix with the explicit one up to signs (`Matrix.IsFrancisStep.eq_diagonal_conj`).
+The implementation is [golub2013matrix] Algorithm 7.5.1, in the surface. -/
+
+section Francis
+
+variable {𝕜 : Type*} [RCLike 𝕜] {N : ℕ}
+
+/-- A nonsingular matrix has a nonsingular canonical triangular factor. -/
+theorem isUnit_det_qrR {A : Matrix (Fin N) (Fin N) 𝕜} (hA : IsUnit A.det) :
+    IsUnit (qrR A).det := by
+  rw [det_of_isUpperTriangular (isUpperTriangular_qrR A), isUnit_iff_ne_zero]
+  exact Finset.prod_ne_zero_iff.2 fun j _ => (qrR_diag_pos hA j).ne'
+
+/-- For a nonsingular real `M` commuting with `H`, the orthogonal factor `Z` of `M = Z R`
+conjugates `H` to `R H R⁻¹`: `Zᵀ H Z = Zᵀ H M R⁻¹ = Zᵀ M H R⁻¹ = R H R⁻¹`. -/
+theorem transpose_qrQ_mul_mul_qrQ {H M : Matrix (Fin N) (Fin N) ℝ} (hM : IsUnit M.det)
+    (hHM : H * M = M * H) : (qrQ M)ᵀ * H * qrQ M = qrR M * H * (qrR M)⁻¹ := by
+  have hZ : qrQ M = M * (qrR M)⁻¹ := by
+    calc qrQ M = qrQ M * qrR M * (qrR M)⁻¹ :=
+          (mul_nonsing_inv_cancel_right _ _ (isUnit_det_qrR hM)).symm
+      _ = M * (qrR M)⁻¹ := by rw [qrQ_mul_qrR]
+  have hRM : (qrQ M)ᵀ * M = qrR M := by
+    rw [← conjTranspose_eq_transpose_of_trivial, ← qrR_eq]
+  calc (qrQ M)ᵀ * H * qrQ M = (qrQ M)ᵀ * H * (M * (qrR M)⁻¹) := by rw [← hZ]
+    _ = (qrQ M)ᵀ * (H * M) * (qrR M)⁻¹ := by simp only [Matrix.mul_assoc]
+    _ = (qrQ M)ᵀ * M * H * (qrR M)⁻¹ := by rw [hHM]; simp only [Matrix.mul_assoc]
+    _ = qrR M * H * (qrR M)⁻¹ := by rw [hRM]
+
+/-- `H` commutes with the double-shift polynomial `H² − s H + t I`. -/
+theorem mul_francisPoly_comm (H : Matrix (Fin N) (Fin N) ℝ) (s t : ℝ) :
+    H * (H * H - s • H + t • 1) = (H * H - s • H + t • 1) * H := by
+  simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul,
+    Matrix.smul_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
+
+/-- **The specification of the implicit double-shift (Francis) step** ([golub2013matrix]
+Algorithm 7.5.1, header): `H' = Zᵀ H Z` for an orthogonal `Z` such that `H'` is upper Hessenberg
+and `Zᵀ (H² − s H + t I)` is upper triangular — i.e. `Z` is the orthogonal factor of *some* QR
+factorization of `M = H² − s H + t I`. (In the algorithm `s`, `t` are the trace and determinant of
+the trailing `2 × 2` block; the predicate is for any real `s`, `t`.) -/
+def IsFrancisStep (s t : ℝ) (H H' : Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  ∃ Z ∈ orthogonalGroup (Fin N) ℝ, H' = Zᵀ * H * Z ∧ H'.IsUpperHessenberg ∧
+    (Zᵀ * (H * H - s • H + t • 1)).IsUpperTriangular
+
+/-- **Existence through the explicit route** ([golub2013matrix] §7.5.4: "explicitly form `M`,
+compute `M = Z R`, set `H₂ = Zᵀ H Z`"): for upper Hessenberg `H` and nonsingular
+`M = H² − s H + t I`, the canonical orthogonal factor of `M` gives a Francis step, `Zᵀ H Z =
+R H R⁻¹` being Hessenberg. -/
+theorem isFrancisStep_qrQ {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) {s t : ℝ}
+    (hM : IsUnit (H * H - s • H + t • 1).det) :
+    IsFrancisStep s t H
+      ((qrQ (H * H - s • H + t • 1))ᵀ * H * qrQ (H * H - s • H + t • 1)) := by
+  refine ⟨qrQ _, qrQ_mem_unitaryGroup _, rfl, ?_, ?_⟩
+  · rw [transpose_qrQ_mul_mul_qrQ hM (mul_francisPoly_comm H s t)]
+    exact ((isUpperTriangular_qrR _).mul_isUpperHessenberg hH).mul_isUpperTriangular
+      (isUpperTriangular_qrR _).inv
+  · rw [← conjTranspose_eq_transpose_of_trivial, ← qrR_eq]
+    exact isUpperTriangular_qrR _
+
+/-- The first column of `M = Z T` with `T` upper triangular is `T₀₀ Z e₀`. -/
+theorem col_zero_eq_smul_of_eq_mul {K : Type*} [CommRing K] {M Z T : Matrix (Fin (N + 1))
+    (Fin (N + 1)) K} (hM : M = Z * T) (hT : T.IsUpperTriangular) : M.col 0 = T 0 0 • Z.col 0 := by
+  ext i
+  rw [hM, col_apply, mul_apply, Finset.sum_eq_single 0, Pi.smul_apply, col_apply, smul_eq_mul,
+    mul_comm]
+  · intro l _ hl
+    rw [hT (Fin.pos_iff_ne_zero.2 hl), mul_zero]
+  · simp
+
+/-- **Essential uniqueness of the Francis step** ([golub2013matrix] §7.5.5: "the implicit Q
+theorem permits us to conclude that … they are essentially equal"): for unreduced upper Hessenberg
+`H` and nonsingular `M = H² − s H + t I`, every Francis step is the explicit one up to a
+`±1` diagonal similarity. The first columns of `Z` and of `Z₀ = qrQ M` are both multiples of
+`M e₀ ≠ 0`, hence equal up to sign; after flipping the sign of `Z`, `Matrix.implicitQ_real` applies
+with the unreduced `Z₀ᵀ H Z₀ = R H R⁻¹`. -/
+theorem IsFrancisStep.eq_diagonal_conj {H H' : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
+    (hH : H.IsUnreducedUpperHessenberg) {s t : ℝ} (hM : IsUnit (H * H - s • H + t • 1).det)
+    (h : IsFrancisStep s t H H') :
+    ∃ d : Fin (N + 1) → ℝ, (∀ i, d i = 1 ∨ d i = -1) ∧
+      H' = diagonal d * ((qrQ (H * H - s • H + t • 1))ᵀ * H *
+        qrQ (H * H - s • H + t • 1)) * diagonal d := by
+  set M := H * H - s • H + t • 1 with hMdef
+  obtain ⟨Z, hZ, rfl, hH', hT⟩ := h
+  have hstar : ∀ X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ, star X = Xᵀ :=
+    conjTranspose_eq_transpose_of_trivial
+  have hZZ : Z * Zᵀ = 1 := by rw [← hstar]; exact (mem_unitaryGroup_iff).1 hZ
+  have hZZ' : Zᵀ * Z = 1 := by rw [← hstar]; exact (mem_unitaryGroup_iff').1 hZ
+  -- the explicit step is unreduced
+  have hG₀ : ((qrQ M)ᵀ * H * qrQ M).IsUnreducedUpperHessenberg := by
+    rw [transpose_qrQ_mul_mul_qrQ hM (mul_francisPoly_comm H s t)]
+    exact hH.mul_mul_inv_of_isUpperTriangular (isUpperTriangular_qrR M)
+      fun i => (qrR_diag_pos hM i).ne'
+  -- the first columns
+  have hc : M.col 0 = (Zᵀ * M) 0 0 • Z.col 0 :=
+    col_zero_eq_smul_of_eq_mul (by rw [← Matrix.mul_assoc, hZZ, Matrix.one_mul]) hT
+  have hc₀ : M.col 0 = qrR M 0 0 • (qrQ M).col 0 :=
+    col_zero_eq_smul_of_eq_mul (qrQ_mul_qrR M).symm (isUpperTriangular_qrR M)
+  have hM0 : M.col 0 ≠ 0 :=
+    (linearIndependent_cols_of_det_ne_zero (isUnit_iff_ne_zero.1 hM)).ne_zero 0
+  have hT0 : (Zᵀ * M) 0 0 ≠ 0 := fun h0 => hM0 (by rw [hc, h0, zero_smul])
+  set σ := qrR M 0 0 / (Zᵀ * M) 0 0 with hσ
+  have hZcol : Z.col 0 = σ • (qrQ M).col 0 := by
+    rw [hσ, div_eq_inv_mul, ← smul_smul, ← hc₀, hc, smul_smul, inv_mul_cancel₀ hT0, one_smul]
+  have hunit : ∀ X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ, Xᵀ * X = 1 →
+      X.col 0 ⬝ᵥ X.col 0 = 1 := fun X hX => by
+    have := congrFun (congrFun hX 0) 0
+    rwa [mul_apply, one_apply_eq] at this
+  have hσσ : σ * σ = 1 := by
+    have h1 := hunit Z hZZ'
+    have hQM : (qrQ M)ᵀ * qrQ M = 1 := by
+      rw [← hstar]
+      exact (mem_unitaryGroup_iff').1 (qrQ_mem_unitaryGroup M)
+    have h2 := hunit (qrQ M) hQM
+    rw [hZcol, smul_dotProduct, dotProduct_smul, h2, smul_eq_mul, smul_eq_mul, mul_one] at h1
+    exact h1
+  -- flip the sign of `Z`
+  have hV : σ • Z ∈ orthogonalGroup (Fin (N + 1)) ℝ := by
+    rw [mem_unitaryGroup_iff', hstar]
+    simp only [transpose_smul, Matrix.smul_mul, Matrix.mul_smul, hZZ', smul_smul, hσσ, one_smul]
+  have hVHV : (σ • Z)ᵀ * H * (σ • Z) = Zᵀ * H * Z := by
+    simp only [transpose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, hσσ, one_smul]
+  have hV0 : (σ • Z).col 0 = (qrQ M).col 0 := by
+    ext i
+    have := congrFun hZcol i
+    simp only [col_apply, smul_apply, Pi.smul_apply, smul_eq_mul] at this ⊢
+    rw [this, ← mul_assoc, hσσ, one_mul]
+  obtain ⟨d, hd, -, -, hGH⟩ := implicitQ_real (qrQ_mem_unitaryGroup M) hV hG₀
+    (by rw [hVHV]; exact hH') hV0
+  exact ⟨d, hd, by rw [← hVHV, hGH]⟩
+
+/-- If `μ` is not an eigenvalue of `A`, then `A − μ I` is nonsingular. -/
+theorem isUnit_det_sub_smul_one_of_notMem_spectrum {K : Type*} [Field K] {m : Type*}
+    [Fintype m] [DecidableEq m] {A : Matrix m m K} {μ : K} (h : μ ∉ spectrum K A) :
+    IsUnit (A - μ • 1).det := by
+  rw [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det] at h
+  rw [show A - μ • 1 = -(μ • 1 - A) by abel, det_neg]
+  exact (isUnit_one.neg.pow _).mul h
+
+/-- **The double-shift step of a real matrix is real** ([golub2013matrix] §7.5.4): for real `H` and
+a complex shift `a` that is not an eigenvalue, the two canonical complex steps with shifts `a`,
+`ā` give the real orthogonal similarity by the orthogonal factor of
+`M = H² − 2 re(a) H + |a|² I`. By the product identity the two steps give the factorization
+`(U₁ U₂)(R₂ R₁) = (H − a)(H − ā) = M` with positive diagonal, and so does the complexified
+`qrQ M * qrR M`; `Matrix.qr_unique` identifies them. -/
+theorem doubleShiftQrStep_map_ofReal (H : Matrix (Fin N) (Fin N) ℝ) {a : ℂ}
+    (ha : a ∉ spectrum ℂ H.complexify) :
+    doubleShiftQrStep H.complexify a =
+      ((qrQ (H * H - (2 * a.re) • H + Complex.normSq a • 1))ᵀ * H *
+        qrQ (H * H - (2 * a.re) • H + Complex.normSq a • 1)).complexify := by
+  set M := H * H - (2 * a.re) • H + Complex.normSq a • 1 with hMdef
+  have hdet₁ : IsUnit (H.complexify - a • 1).det := isUnit_det_sub_smul_one_of_notMem_spectrum ha
+  have hdetc : IsUnit (H.complexify - starRingEnd ℂ a • 1).det :=
+    isUnit_det_sub_smul_one_of_notMem_spectrum fun h =>
+      ha ((star_mem_spectrum_complexify_iff H a).1 h)
+  set U₁ := qrQ (H.complexify - a • 1) with hU₁
+  set R₁ := qrR (H.complexify - a • 1) with hR₁
+  have hU₁R₁ : U₁ * R₁ = H.complexify - a • 1 := qrQ_mul_qrR _
+  have hU₁u : U₁ᴴ * U₁ = 1 := conjTranspose_qrQ_mul_self _
+  have hH₁ : shiftedQrStep a H.complexify - starRingEnd ℂ a • 1 =
+      U₁ᴴ * (H.complexify - starRingEnd ℂ a • 1) * U₁ := by
+    rw [shiftedQrStep_eq_conj, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one,
+      Matrix.smul_mul, hU₁u]
+  have hdet₂ : IsUnit (shiftedQrStep a H.complexify - starRingEnd ℂ a • 1).det := by
+    rw [hH₁, det_mul, det_mul, mul_right_comm, ← det_mul, hU₁u, det_one, one_mul]
+    exact hdetc
+  set U₂ := qrQ (shiftedQrStep a H.complexify - starRingEnd ℂ a • 1) with hU₂
+  set R₂ := qrR (shiftedQrStep a H.complexify - starRingEnd ℂ a • 1) with hR₂
+  have hU₂R₂ : U₂ * R₂ = shiftedQrStep a H.complexify - starRingEnd ℂ a • 1 := qrQ_mul_qrR _
+  -- the two steps multiply out to `M`
+  have hMc : M.complexify = (H.complexify - a • 1) * (H.complexify - starRingEnd ℂ a • 1) := by
+    have h1 : Matrix.complexify (1 : Matrix (Fin N) (Fin N) ℝ) = 1 := by
+      ext i j; by_cases hij : i = j <;> simp [complexify_apply, one_apply, hij]
+    rw [hMdef, complexify_add, complexify_sub, complexify_mul, complexify_smul, complexify_smul,
+      h1]
+    have h2 : ((2 * a.re : ℝ) : ℂ) = a + starRingEnd ℂ a := (Complex.add_conj a).symm
+    have h3 : ((Complex.normSq a : ℝ) : ℂ) = a * starRingEnd ℂ a := (Complex.mul_conj a).symm
+    rw [h2, h3]
+    simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
+      Matrix.one_mul]
+    module
+  have hprod : U₁ * U₂ * (R₂ * R₁) = M.complexify := by
+    have hstep : shiftedQrStep a H.complexify = R₁ * U₁ + a • 1 := rfl
+    calc U₁ * U₂ * (R₂ * R₁) = U₁ * (U₂ * R₂) * R₁ := by simp only [Matrix.mul_assoc]
+      _ = U₁ * R₁ * (U₁ * R₁) + (a - starRingEnd ℂ a) • (U₁ * R₁) := by
+          rw [hU₂R₂, hstep]
+          simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul,
+            Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one, Matrix.mul_assoc]
+          module
+      _ = M.complexify := by
+          rw [hU₁R₁, hMc]
+          simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul,
+            Matrix.mul_one, Matrix.one_mul]
+          module
+  -- `M` is nonsingular
+  have hMdet : IsUnit M.det := by
+    have hc : IsUnit (M.complexify).det := by
+      rw [hMc, det_mul]; exact hdet₁.mul hdetc
+    have : (M.complexify).det = (M.det : ℂ) := (Complex.ofRealHom.map_det M).symm
+    rw [this, isUnit_iff_ne_zero, Complex.ofReal_ne_zero] at hc
+    exact isUnit_iff_ne_zero.2 hc
+  -- two factorizations with positive diagonal
+  have hQM : (qrQ M).complexify ᴴ * (qrQ M).complexify = 1 := by
+    rw [← complexify_conjTranspose, ← complexify_mul, conjTranspose_qrQ_mul_self]
+    ext i j; by_cases hij : i = j <;> simp [complexify_apply, one_apply, hij]
+  have hUU : (U₁ * U₂)ᴴ * (U₁ * U₂) = 1 := by
+    rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc U₁ᴴ, hU₁u, Matrix.one_mul,
+      conjTranspose_qrQ_mul_self]
+  have htri : (R₂ * R₁).IsUpperTriangular := (isUpperTriangular_qrR _).mul (isUpperTriangular_qrR _)
+  have hpos : ∀ j, 0 < (R₂ * R₁).diag j := fun j => by
+    rw [diag_apply, IsUpperTriangular.diag_mul (isUpperTriangular_qrR _) (isUpperTriangular_qrR _)]
+    exact mul_pos (qrR_diag_pos hdet₂ j) (qrR_diag_pos hdet₁ j)
+  have htriM : ((qrR M).complexify).IsUpperTriangular := fun i j hij => by
+    rw [complexify_apply, isUpperTriangular_qrR M hij, Complex.ofReal_zero]
+  have hposM : ∀ j, 0 < ((qrR M).complexify).diag j := fun j => by
+    rw [diag_apply, complexify_apply]
+    exact Complex.zero_lt_real.2 (qrR_diag_pos hMdet j)
+  obtain ⟨hU, -⟩ := qr_unique hprod.symm (by rw [← complexify_mul, qrQ_mul_qrR]) hUU hQM htri
+    htriM hpos hposM
+  rw [doubleShiftQrStep_eq_conj, ← hU₁, ← hU₂, hU, ← complexify_conjTranspose, ← complexify_mul,
+    ← complexify_mul, conjTranspose_eq_transpose_of_trivial]
+
+end Francis
 
 section LeadingPrincipal
 

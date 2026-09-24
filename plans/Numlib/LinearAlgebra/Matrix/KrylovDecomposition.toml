@@ -1,160 +1,58 @@
 namespace = "Matrix"
-desc = '''
-Krylov and Arnoldi decompositions of a matrix, and **the implicit Q theorem** proved once, for
-decompositions with any number of columns.
-
-A *Krylov decomposition* (Stewart) of `A : Matrix n n 𝕜` is `A Q = Q B + r bᵀ` with `Q : Matrix n
-(Fin k) 𝕜` having orthonormal columns and the residual `r` orthogonal to them
-(`Matrix.IsKrylovDecomposition`); an *Arnoldi decomposition* is the case `B` upper Hessenberg, `b =
-e_last` ([golub2013matrix] §10.5.1, the definition after (10.5.2); `Matrix.IsArnoldiDecomposition`,
-stated with `k + 1` columns so that the last unit vector is `Pi.single (Fin.last k) 1` and the first
-column `Q *ᵥ Pi.single 0 1` typechecks — the review found the `k = 0` typing bug of the earlier
-`Fin k` form). These are pure matrix predicates over `[RCLike 𝕜] [Fintype n] [DecidableEq n]`; the
-operator-level predicates on an orthonormal family `q : Fin k → E` are `Krylov.IsKrylovDecomposition`
-and `Krylov.IsArnoldiDecomposition` of `Numlib/Krylov/Decomposition`, which proves that these
-matrix predicates are their `toEuclideanLin` instances (this module must not import the Krylov layer).
-
-**The engine** is `Matrix.IsArnoldiDecomposition.implicitQ`: two Arnoldi decompositions of the same
-`A` with `k + 1` columns and the same first column, the first with unreduced `H`, agree up to a
-unimodular diagonal: `Q' = Q D`, `H' = Dᴴ H D`, `r' = d_k r`. The proof is the column recursion of
-[golub2013matrix] Theorem 7.4.2: for `i < k`, column `i` of `A Q = Q H + r e_kᵀ` has no residual
-term, so `h_{i+1,i} q_{i+1} = A q_i − ∑_{j ≤ i} h_{j,i} q_j`, and by induction `q'_i = d_i q_i` with
-`|d_i| = 1` (orthonormal columns, no unitarity of a square `W = Vᴴ Q` needed). Every other
-uniqueness statement is a corollary:
-* the square implicit Q theorems (`Matrix.implicitQ_of_apply_eq_zero`, `Matrix.implicitQ`, their
-  real forms — the **fixed names chapter 8 consumes**): the leading `k + 1` columns of a unitary `Q`
-  with `Qᴴ A Q = H` Hessenberg form an Arnoldi decomposition with residual `h_{k+1,k} q_{k+1}`
-  (`Matrix.IsKrylovDecomposition.leading`), and `k = n − 1`, `r = 0` is the unreduced case;
-* the uniqueness of the Arnoldi process given its first column,
-  `Matrix.IsArnoldiDecomposition.eq_basisMatrix` (`Numlib/Krylov/Decomposition`): the engine against
-  `Arnoldi.isArnoldiDecomposition`, and positive subdiagonals on both sides force `D = 1`.
-
-Moved here at the Golub–Van Loan review from `Numlib/Krylov/Decomposition` (the predicates, change
-of basis, truncation) and `Numlib/LinearAlgebra/Matrix/UnreducedHessenberg` (the square theorems),
-which had proved the same uniqueness twice (column recursion ★★ ~200 and Gram–Schmidt flag
-uniqueness ★★★ ~250). Imports `Numlib/LinearAlgebra/Matrix/UnreducedHessenberg` (for
-`Matrix.IsUnreducedUpperHessenberg`) and `Hessenberg`. Order: predicates and the three structural
-lemmas (★, ~120), the engine (★★, ~200), the square corollaries (★, ~100).
-'''
 
 [[node]]
 id = "IsKrylovDecomposition"
-kind = "definition"
-desc = '''A Krylov decomposition (Stewart; [golub2013matrix] §10.5.4 uses one): a structure on
-`(A : Matrix n n 𝕜) (Q : Matrix n (Fin k) 𝕜) (B : Matrix (Fin k) (Fin k) 𝕜) (r : n → 𝕜) (b : Fin k → 𝕜)`
-with fields `conjTranspose_mul_self : Qᴴ * Q = 1`, `conjTranspose_mulVec : Qᴴ *ᵥ r = 0`,
-`mul_eq : A * Q = Q * B + vecMulVec r b`. Then `B = Qᴴ A Q` (`IsKrylovDecomposition.conjTranspose_mul_mul`).
-The `toEuclideanLin` instance of `Krylov.IsKrylovDecomposition` (`Matrix.isKrylovDecomposition_iff`,
-`Numlib/Krylov/Decomposition`). ★'''
-deps = []
 
 [[node]]
 id = "IsArnoldiDecomposition"
-kind = "definition"
-desc = '''A `(k + 1)`-step Arnoldi decomposition ([golub2013matrix] §10.5.1, the definition after (10.5.2)):
-`structure Matrix.IsArnoldiDecomposition (A : Matrix n n 𝕜) (Q : Matrix n (Fin (k + 1)) 𝕜)
-(H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜) (r : n → 𝕜) extends Matrix.IsKrylovDecomposition A Q H r
-(Pi.single (Fin.last k) 1)` with the extra field `isUpperHessenberg : H.IsUpperHessenberg`. The
-column count is `k + 1` (not `k`) so that `e_last = Pi.single (Fin.last k) 1` and the first column
-`Q *ᵥ Pi.single 0 1` are well typed (review: the `Fin k` form did not typecheck at `k = 0`); the
-book's `k`-step decomposition is `k = k' + 1`. `Krylov.lastVec 1 (k + 1) = Pi.single (Fin.last k) 1`
-(`Krylov.lastVec_succ`) connects it to the Krylov layer. ★'''
-deps = ["IsKrylovDecomposition", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "IsKrylovDecomposition.star_col_dotProduct_col"
+
+[[node]]
+id = "IsKrylovDecomposition.mulVec_col"
+
+[[node]]
+id = "IsKrylovDecomposition.apply_eq_star_col_dotProduct"
 
 [[node]]
 id = "IsKrylovDecomposition.conjTranspose_mul_mul"
-kind = "theorem"
-desc = '''For a Krylov decomposition, `Qᴴ * A * Q = B` (multiply `mul_eq` by `Qᴴ`). ★'''
-deps = ["IsKrylovDecomposition"]
 
 [[node]]
 id = "IsKrylovDecomposition.mul_unitary"
-kind = "theorem"
-desc = '''Change of basis ([golub2013matrix] (10.5.9) and §10.5.4): if `Uᴴ * U = 1` (`U : Matrix (Fin k) (Fin k) 𝕜`)
-then `Matrix.IsKrylovDecomposition A (Q * U) (Uᴴ * B * U) r (b ᵥ* U)`. `vecMulVec r b * U =
-vecMulVec r (b ᵥ* U)` (Mathlib `Matrix.vecMulVec_mul`/by `ext`) and `U * Uᴴ = 1` for a square `U`
-(`Matrix.mul_eq_one_comm`). ★'''
-deps = ["IsKrylovDecomposition"]
 
 [[node]]
 id = "IsKrylovDecomposition.leading"
-kind = "theorem"
-desc = '''Truncation to the leading `j + 1` columns: if `A Q = Q B + r bᵀ` (as `Matrix.IsKrylovDecomposition`)
-with `Q : Matrix n (Fin k)`, `j + 1 ≤ k`, the block `B(j+1:, :j+1)` below the leading `(j+1) × (j+1)`
-block has the single nonzero entry `c = B(j+1, j)` (Hessenberg case; `c = 0` if `j + 1 = k`) or is
-zero (block-triangular case, `c = 0`), and `b(:j+1) = β e_last`, then with `Q' = Q(:, :j+1)`, `B' =
-B(:j+1, :j+1)`: `Matrix.IsKrylovDecomposition A Q' B' (c • Q(:, j+1) + β • r) (Pi.single (Fin.last j) 1)`
-(read `Q(:, j+1) = 0` when `j + 1 = k`). Submatrices through `Matrix.submatrix` with `Fin.castLE`.
-Orthogonality of the new residual: `Q'ᴴ Q(:, j+1) = 0` and `Q'ᴴ r = 0`. This single lemma serves
-implicit restarting (Hessenberg `B = H₊`, [golub2013matrix] §10.5.3), Krylov–Schur (block triangular
-`B = T`, §10.5.4) and the square implicit Q theorem (the leading columns of a unitary `Q` with `Qᴴ A Q`
-Hessenberg, `r = 0`, `b = 0`). ★★'''
-deps = ["IsKrylovDecomposition"]
+
+[[node]]
+id = "IsKrylovDecomposition.isArnoldiDecomposition_leading"
+
+[[node]]
+id = "isKrylovDecomposition_of_mem_unitaryGroup"
+
+[[node]]
+id = "isArnoldiDecomposition_of_mem_unitaryGroup"
+
+[[node]]
+id = "IsArnoldiDecomposition.smul_col_succ"
 
 [[node]]
 id = "IsArnoldiDecomposition.implicitQ"
-kind = "theorem"
-desc = '''The implicit Q theorem for Arnoldi decompositions — the one uniqueness engine ([golub2013matrix]
-Theorem 7.4.2 and §10.5.1, `k`-step form): if `Matrix.IsArnoldiDecomposition A Q H r` and
-`Matrix.IsArnoldiDecomposition A Q' H' r'` (both with `k + 1` columns), `H.IsUnreducedUpperHessenberg`
-and `Q' *ᵥ Pi.single 0 1 = Q *ᵥ Pi.single 0 1`, then there is `d : Fin (k + 1) → 𝕜` with `∀ i, ‖d i‖
-= 1`, `d 0 = 1`, `Q' = Q * diagonal d`, `H' = star (diagonal d) * H * diagonal d` and `r' = d
-(Fin.last k) • r`. Proof (column recursion, no square unitary needed): for `i < k` column `i` of
-`mul_eq` has no residual term, so `h_{i+1,i} q_{i+1} = A q_i − ∑_{j ≤ i} h_{j,i} q_j` and likewise
-for `Q'`, `H'`; by strong induction `q'_j = d_j q_j` for `j ≤ i` with `|d_j| = 1`, hence `h'_{j,i} =
-⟪q'_j, A q'_i⟫ = conj (d_j) h_{j,i} d_i` for `j ≤ i` (orthonormal columns and `Qᴴ r = 0`), so
-`h'_{i+1,i} q'_{i+1} = d_i h_{i+1,i} q_{i+1}` with `h_{i+1,i} ≠ 0`; both `q_{i+1}`, `q'_{i+1}` are unit
-vectors, so `q'_{i+1} = d_{i+1} q_{i+1}` with `|d_{i+1}| = 1`. Then `H' = Q'ᴴ A Q'`
-(`IsKrylovDecomposition.conjTranspose_mul_mul`) and the last column gives `r' = d_k r`. Also the
-real form `…implicitQ_real` (`d i = ±1` over `ℝ`, `‖c‖ = 1 ↔ c = 1 ∨ c = -1`), as a clause or a
-sibling lemma. ★★ (~200 lines)'''
-deps = ["IsArnoldiDecomposition", "IsKrylovDecomposition.conjTranspose_mul_mul", "IsUnreducedUpperHessenberg"]
+
+[[node]]
+id = "IsArnoldiDecomposition.pow_mulVec_first"
+
+[[node]]
+id = "IsArnoldiDecomposition.aeval_mulVec_first"
 
 [[node]]
 id = "implicitQ_of_apply_eq_zero"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.4.2 (implicit Q theorem), the book's form, over `RCLike 𝕜`. Let
-`Q V ∈ unitaryGroup (Fin (N+1)) 𝕜`, `H := star Q * A * Q`, `G := star V * A * V` both upper
-Hessenberg, `Q.col 0 = V.col 0`, and `k ≤ N` such that `H (i+1) i ≠ 0` for all `i < k`. Then
-(a) for every `i ≤ k` there is `c` with `‖c‖ = 1` and `V.col i = c • Q.col i`;
-(b) `‖H (i+1) i‖ = ‖G (i+1) i‖` for `i < k`;
-(c) if `k < N` and `H (k+1) k = 0` then `G (k+1) k = 0`.
-(Book: `k` is the least index with `h_{k+1,k} = 0`, `k = n` if `H` is unreduced; 1-based there.)
-Proof: a corollary of the engine `Matrix.IsArnoldiDecomposition.implicitQ`. From `A Q = Q H`
-(`Q` unitary) and `H` Hessenberg, the leading `k + 1` columns give
-`Matrix.IsArnoldiDecomposition A Q(:, :k+1) H(:k+1, :k+1) (h_{k+1,k} • Q.col (k+1))` (zero residual if
-`k = N`) by `Matrix.IsKrylovDecomposition.leading`, and likewise for `V`, `G`; the leading block of
-`H` is unreduced by hypothesis. The engine gives `V(:, :k+1) = Q(:, :k+1) D` — (a) —, `G(:k+1,:k+1) =
-Dᴴ H(:k+1,:k+1) D` — (b) —, and `g_{k+1,k} V.col (k+1) = d_k h_{k+1,k} Q.col (k+1)`, which is `0` when
-`h_{k+1,k} = 0`, and `V.col (k+1) ≠ 0` — (c). ★ (~80 lines)'''
-deps = ["IsArnoldiDecomposition.implicitQ", "IsKrylovDecomposition.leading", "Matrix.IsUpperHessenberg"]
 
 [[node]]
 id = "implicitQ"
-kind = "theorem"
-desc = '''The implicit Q theorem, unreduced case ([golub2013matrix] the "gist" after Theorem 7.4.2: `G`
-and `H` are "essentially equal", `G = D⁻¹ H D`): under the hypotheses of
-`implicitQ_of_apply_eq_zero` with `H.IsUnreducedUpperHessenberg`, there is `d : Fin (N+1) → 𝕜` with
-`∀ i, ‖d i‖ = 1`, `d 0 = 1`, `V = Q * diagonal d` and `G = star (diagonal d) * H * diagonal d`.
-The case `k = N` of `implicitQ_of_apply_eq_zero`, read through the engine
-(`Matrix.IsArnoldiDecomposition.implicitQ` with `r = 0` gives the diagonal `d` directly).
-**Fixed name for chapter 8.** ★'''
-deps = ["IsArnoldiDecomposition.implicitQ", "implicitQ_of_apply_eq_zero", "IsUnreducedUpperHessenberg"]
 
 [[node]]
 id = "implicitQ_of_apply_eq_zero_real"
-kind = "theorem"
-desc = '''The real (orthogonal) form of `implicitQ_of_apply_eq_zero`, as the book states it: for
-`Q V ∈ orthogonalGroup (Fin (N+1)) ℝ`, `Qᵀ A Q = H`, `Vᵀ A V = G` upper Hessenberg, same first
-column, `H (i+1) i ≠ 0` for `i < k`: `V.col i = Q.col i ∨ V.col i = -Q.col i` for `i ≤ k`,
-`|H (i+1) i| = |G (i+1) i|` for `i < k`, and `G (k+1) k = 0` when `k < N` and `H (k+1) k = 0`. From
-the `RCLike` form at `𝕜 = ℝ` (`‖c‖ = 1 ↔ c = 1 ∨ c = -1`). **Fixed name for chapter 8**
-(Theorem 8.3.2 is its symmetric-tridiagonal instance). ★'''
-deps = ["implicitQ_of_apply_eq_zero"]
 
 [[node]]
 id = "implicitQ_real"
-kind = "theorem"
-desc = '''The real unreduced case: `V = Q * diagonal d`, `G = diagonal d * H * diagonal d` with
-`d i ∈ {1, -1}`, `d 0 = 1`. ★'''
-deps = ["implicitQ"]
