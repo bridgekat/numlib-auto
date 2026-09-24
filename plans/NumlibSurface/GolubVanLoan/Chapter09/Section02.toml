@@ -1,0 +1,167 @@
+namespace = "GolubVanLoan.Chapter09"
+desc = '''
+§9.2, approximation methods: the Jordan and Schur error bounds (Theorems 9.2.1, 9.2.2 with (9.2.1),
+(9.2.2)), Taylor truncation (Theorem 9.2.3), the double-angle formulas, Horner and
+Paterson–Stockmeyer evaluation of matrix polynomials (Algorithm 9.2.1, (9.2.5)), binary powering
+(Algorithm 9.2.2), Simpson quadrature of `∫ f(At) dt` ((9.2.7), corrected), and the Cauchy integral
+(9.2.8) over circles. Backbone: `Numlib/Analysis/Matrix/Function/{Approximation,Triangular}` and
+`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/{Analytic,Cauchy}` (`norm_pfc_sub_sum_le`,
+`pfc_eq_circleIntegral`). Algorithms 9.2.1 and 9.2.2 are real (`Matrix (Fin n) (Fin n) ℝ`), with matrix products by
+chapter 1's `algorithm_1_1_5`. Not nodes: (9.2.3) (notation: the remainder `E(s)` of the Taylor
+truncation) and (9.2.4) (the entrywise mean-value remainder, a step of the proof of Theorem 9.2.3,
+whose rigorous form is the backbone's `norm_pfc_sub_sum_le`; as printed it applies the real
+mean-value theorem to complex entries — errata in the chapter group); the numerical examples (after Theorem 9.2.2, the
+`[-49 24; -64 31]` matrix, `q = 9`), the multiplication counts, the sin/cos scaling loop.
+'''
+
+[[node]]
+id = "theorem_9_2_1"
+kind = "theorem"
+desc = '''Theorem 9.2.1: with the Jordan decomposition `A = X · diag(J₁, …, J_q) · X⁻¹` of `equation_9_1_3`
+(`J_i` of size `n_i` at `λ_i`) and `f`, `g` analytic on an open set containing `λ(A)`: `‖pfc f A -
+pfc g A‖₂ ≤ κ₂(X) · max_{1 ≤ i ≤ q, 0 ≤ r ≤ n_i - 1} n_i ‖f⁽ʳ⁾(λ_i) - g⁽ʳ⁾(λ_i)‖ / r!` (the book's
+`max` over `1 ≤ i ≤ p` is a misprint for `q`). `Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm` with
+`κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. ★'''
+deps = ["Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm", "equation_9_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.2.1'
+
+[[node]]
+id = "equation_9_2_1"
+kind = "theorem"
+desc = '''(9.2.1): for `Ω` convex and compact (see `theorem_9_2_2` for why compact), `h` analytic on a neighbourhood of `Ω` and eigenvalues
+`λ_{s₀}, …, λ_{s_r} ∈ Ω`, `|h[λ_{s₀}, …, λ_{s_r}]| ≤ sup_{z ∈ Ω} |h⁽ʳ⁾(z)| / r! = δ_r / r!`, divided
+differences confluent at repeated nodes (`Hermite.divDiff`). `Hermite.norm_divDiff_le` (the complex
+Hermite–Genocchi bound; the book gives no argument). ★'''
+deps = ["Hermite.norm_divDiff_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.1)'
+
+[[node]]
+id = "equation_9_2_2"
+kind = "theorem"
+desc = '''(9.2.2) (the book's P9.2.1): for `N` strictly upper triangular and `r ≥ 1`, the entries of
+`|N|^r` (`|N| = N.map (‖·‖)`) are `0` for `j < i + r` and otherwise `∑_{s ∈ S_ij^{(r)}} |n_{s₀s₁} ⋯
+n_{s_{r-1}s_r}|`, `S_ij^{(r)}` the strictly increasing sequences of length `r + 1` from `i` to `j`
+(`(Finset.Ioo i j).powersetCard (r - 1)` through `Matrix.path`). `Matrix.pow_apply_eq_sum_pathProd` (a)
+applied to `|N|`. ★'''
+deps = ["Matrix.pow_apply_eq_sum_pathProd", "Matrix.pathProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.2)'
+
+[[node]]
+id = "theorem_9_2_2"
+kind = "theorem"
+desc = '''Theorem 9.2.2: let `Qᴴ A Q = T = diag(λ_i) + N` be a Schur decomposition (`Q ∈ unitaryGroup`, `T`
+upper triangular, `N` its strictly upper part), `Ω` closed convex with `λ(A) ⊆ interior Ω`, `f`, `g`
+analytic on `Ω` (on a neighbourhood of it), `δ_r = sup_{z ∈ Ω} |f⁽ʳ⁾(z) - g⁽ʳ⁾(z)|`. **`Ω` is assumed
+compact** (`IsCompact Ω`; the book's closed convex `Ω` may be unbounded, and Lean's `⨆` of an
+unbounded set of reals is `0`, which would make the bound false): then `δ_r` is a `sSup` of a
+continuous function on a compact set, attained and finite. (Equivalently one could keep a closed
+`Ω` and read `δ_r` in `ℝ≥0∞`; the compact reading is the one the backbone takes.) Then
+`‖pfc f A - pfc g A‖_F ≤ ∑_{r=0}^{n-1} δ_r ‖|N|^r‖_F / r!`. Backbone
+`Matrix.frobenius_norm_pfc_sub_le_of_isCompact` (the same `IsCompact Ω` hypothesis and `δ_r` as `sSup`),
+itself a corollary of the bound-hypothesis form `Matrix.frobenius_norm_pfc_sub_le`. The
+book's proof cites "Theorem 9.1.3" (meaning Theorem 9.1.4) and sums `r` up to `j - 1` (meaning `j - i`). ★'''
+deps = ["Matrix.frobenius_norm_pfc_sub_le_of_isCompact", "theorem_9_1_4", "equation_9_2_1", "equation_9_2_2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.2.2'
+
+[[node]]
+id = "theorem_9_2_3"
+kind = "theorem"
+desc = '''Theorem 9.2.3: if `f(z) = ∑ α_k z^k` on an open disk centred at `0` containing `λ(A)`
+(`HasFPowerSeriesOnBall f p 0 r`, `spectrum ℂ A ⊆ ball 0 r`; the book's "open disk containing the
+eigenvalues" must be centred at `0` for its proof), then `‖pfc f A - ∑_{k=0}^{q} α_k A^k‖₂ ≤ n/(q+1)!
+· max_{0 ≤ s ≤ 1} ‖A^{q+1} f⁽ᑫ⁺¹⁾(As)‖₂` with `f⁽ᑫ⁺¹⁾(As) = pfc (iteratedDeriv (q+1) f) (s • A)`.
+From `norm_pfc_sub_sum_le` (the same bound without `n`, Mathias' remark after the proof) and `1 ≤ n`
+(for `n = 0` both sides vanish). The book's proof (mean-value remainders `ε_ij`, invalid for
+complex-valued entries; "`f_ij^{(q-1)}`" for `f_ij^{(q+1)}`) is replaced by the vector-valued
+Taylor bound. ★'''
+deps = ["norm_pfc_sub_sum_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.2.3'
+
+[[node]]
+id = "double_angle"
+kind = "theorem"
+desc = '''§9.2.3's double-angle formulas: `pfc Complex.cos (2 • A) = 2 • pfc Complex.cos A ^ 2 - 1` and
+`pfc Complex.sin (2 • A) = 2 • pfc Complex.sin A * pfc Complex.cos A`, for every `A : Matrix (Fin n)
+(Fin n) ℂ` (the book's `cos(2A) = 2cos(A)² - I`, `sin(2A) = 2 sin(A) cos(A)`, used to build `sin`,
+`cos` from `A/2^k`). `pfc_comp` with the inner function `z ↦ 2z` (`pfc_polynomial`: `pfc (2·) A = 2A`),
+`pfc_mul`, `pfc_add`, and `Complex.cos_two_mul`, `Complex.sin_two_mul`. ★'''
+deps = ["pfc_comp", "pfc_mul", "pfc_add", "pfc_polynomial"]
+source = 'Golub–Van Loan, Matrix Computations, §9.2.3, display'
+
+[[node]]
+id = "algorithm_9_2_1"
+kind = "definition"
+desc = '''Algorithm 9.2.1 (Horner's scheme for `F = b_q A^q + ⋯ + b₁ A + b₀ I`), D4:
+`algorithm_9_2_1 {M} [Monad M] (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) (b : ℕ → ℝ) : M
+(Matrix (Fin n) (Fin n) ℝ)`. First `F ← b_q A + b_{q-1} I` entrywise (`rnd (b q * A i j)`, then on
+the diagonal `rnd (· + b (q-1))`); then for `k` in `(List.range (q - 1)).reverse` (`k = q-2, …, 0`):
+`F ← GolubVanLoan.Chapter01.algorithm_1_1_5 rnd A F (b k • 1)` — chapter 1's `C ← C + A B` with `C =
+b_k I` is exactly the book's `F = A F + b_k I`. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.2.1'
+
+[[node]]
+id = "algorithm_9_2_1_spec"
+kind = "theorem"
+desc = '''For `1 ≤ q`, `Id.run (algorithm_9_2_1 pure A q b) = ∑ k ∈ range (q + 1), b k • A ^ k` (`= aeval A
+(∑ C (b k) X^k)`). Induction on the loop with the invariant `F = ∑_{i ≤ q - k} b_{k+i} A^i` after the
+step for `k`, `GolubVanLoan.Chapter01.algorithm_1_1_5_spec`. ★'''
+deps = ["algorithm_9_2_1", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.2.1'
+
+[[node]]
+id = "equation_9_2_5"
+kind = "theorem"
+desc = '''(9.2.5), Paterson–Stockmeyer: for `1 ≤ s` and `r = q / s` (`ℕ` division, the book's
+`floor(q/s)`), `∑_{k ≤ q} b_k A^k = ∑_{k ≤ r} B_k (A^s)^k` with `B_k = ∑_{i < s} b_{sk+i} A^i` for
+`k < r` and `B_r = ∑_{i ≤ q - sr} b_{sr+i} A^i` — in any semiring (the book's `s ≤ √q` only
+optimizes the count). Reindex `k = s·(k / s) + k % s` (`Nat.div_add_mod`, `Finset.sum_sigma`-type
+regrouping, `pow_add`, `pow_mul`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.5)'
+
+[[node]]
+id = "algorithm_9_2_2"
+kind = "definition"
+desc = '''Algorithm 9.2.2 (binary powering), D4: `algorithm_9_2_2 rnd (A : Matrix (Fin n) (Fin n) ℝ) (s : ℕ)
+: M (Matrix (Fin n) (Fin n) ℝ)`. With `t = Nat.log 2 s` and `q` the least `k` with `s.testBit k`
+(exact integer computations on the exponent, not flops): `Z ← A` squared `q` times
+(`(List.range q).foldlM`), `F ← Z`, then for `k` in `List.range' (q + 1) (t - q)`: `Z ← Z²`, and
+`if s.testBit k then F ← F Z`; every product `← GolubVanLoan.Chapter01.algorithm_1_1_5 rnd X Y 0`. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.2.2'
+
+[[node]]
+id = "algorithm_9_2_2_spec"
+kind = "theorem"
+desc = '''For `1 ≤ s`, `Id.run (algorithm_9_2_2 pure A s) = A ^ s`. Invariants: after the squaring loop `Z
+= A^{2^q}`; after step `k` of the main loop `Z = A^{2^k}` and `F = A^{s mod 2^{k+1}}`
+(`Nat.testBit`, `Nat.mod_two_pow_succ`-type bit lemmas, `Nat.lt_pow_succ_log_self`); at `k = t`,
+`s mod 2^{t+1} = s`. `GolubVanLoan.Chapter01.algorithm_1_1_5_spec` for each product. ★★ (~120 lines)'''
+deps = ["algorithm_9_2_2", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.2.2'
+
+[[node]]
+id = "equation_9_2_7"
+kind = "theorem"
+desc = '''(9.2.6)–(9.2.7), corrected: for `A : Matrix (Fin n) (Fin n) ℂ`, `f` analytic on an open set
+containing `t • λ(A)` for all `t ∈ [a, b]`, `m` even, `h = (b - a)/m`, and `F̃ = (h/3) ∑_{k=0}^{m}
+w_k f(A(a + kh))` with Simpson weights `w = 1, 4, 2, …, 2, 4, 1`: `‖F̃ - ∫_a^b pfc f (t • A) dt‖₂ ≤
+n h⁴ (b - a)/180 · max_{a ≤ t ≤ b} ‖A⁴ f⁽⁴⁾(At)‖₂`. The book prints `max ‖f⁽⁴⁾(At)‖₂` without the factor
+`A⁴`, which is false (`n = 1`, `f = exp`, `A = 2`: the fourth `t`-derivative of `e^{2t}` is `16
+e^{2t}`); its hypothesis line "`(d⁴/dz⁴) f(zt) = f⁽⁴⁾(zt)`" is garbled. From
+`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le` (no factor `n`) and `1 ≤ n`, after identifying
+`F̃` with the backbone's composite Simpson sum on `m/2` panels of width `2h`. ★'''
+deps = ["Matrix.norm_integral_pfc_smul_sub_simpsonSum_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.7)'
+
+[[node]]
+id = "equation_9_2_8"
+kind = "theorem"
+desc = '''(9.2.8), the Cauchy integral, for circular contours: if `f` is analytic on a neighbourhood of the
+closed disk `closedBall c R` and `λ(A) ⊆ ball c R`, then `pfc f A = (2πi)⁻¹ ∮_{|z-c|=R} f(z) (zI -
+A)⁻¹ dz` (entrywise, or in the normed space `Matrix (Fin n) (Fin n) ℂ` under any of the scoped
+norms: `circleIntegral` of `fun z => f z • (z • 1 - A)⁻¹`). A general closed contour `Γ` enclosing
+`λ(A)` is not formalized (Mathlib integrates over circles only). `pfc_eq_circleIntegral`. ★'''
+deps = ["pfc_eq_circleIntegral"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.8)'

@@ -1,3 +1,7 @@
+# Planned additions (GVL round): the module doc of `Numlib.Approximation.GaussLobatto` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch10) add Gauss–Radau beside Gauss–Lobatto — the one-endpoint rule is built the same way, from
+# the Gauss rule of the modified weight `(x − a) μ`.
 namespace = "Quadrature"
 
 [[node]]
@@ -119,3 +123,23 @@ id = "_root_.OrthogonalPolynomial.lobattoMeasure_jacobiMeasure"
 
 [[node]]
 id = "isExactOnMeasure_of_nodal_eq_lobattoNodal"
+
+[[node]]  # staged by ch10
+id = "_root_.OrthogonalPolynomial.radauMeasure"
+kind = "definition"
+desc = '''`OrthogonalPolynomial.radauMeasure μ a := μ.withDensity (fun x => ENNReal.ofReal (x − a))`, the weight
+`(x − a) dμ`; the one-endpoint sibling of `OrthogonalPolynomial.lobattoMeasure`. For a weight carried by
+`Icc a b` it is again a weight carried by `Icc a b` (same proof as `isWeight_lobattoMeasure`). ★'''
+deps = ["OrthogonalPolynomial.lobattoMeasure", "OrthogonalPolynomial.isWeight_lobattoMeasure"]
+
+[[node]]  # staged by ch10
+id = "exists_gaussRadau"
+kind = "theorem"
+desc = '''The Gauss–Radau rule ([golub2013matrix] (10.2.8)): for `hw : IsWeight μ` carried by `Icc a b` and `n ≥ 0`
+there are injective nodes `x : Fin (n + 1) → ℝ` in `Icc a b` with `x 0 = a` and positive weights
+`w` such that `IsExactOnMeasure μ w x (2 * n)`. Nodes `a` and the `n` roots of the orthogonal polynomial
+of `radauMeasure μ a` (all in `(a, b)` by `OrthogonalPolynomial.root_family_mem_Ioo`), interpolatory weights;
+exactness by `Quadrature.isExactOnMeasure_add_iff` exactly as `Quadrature.exists_gaussLobatto`,
+positivity by `Quadrature.pos_of_isExactOnMeasure`. The right-endpoint rule (10.2.9) is this one for the
+reflected measure (`Quadrature.isExactOnMeasure_map_affine` with `x ↦ −x`). ★★★ (~200 lines)'''
+deps = ["OrthogonalPolynomial.radauMeasure", "Quadrature.exists_gaussLobatto", "Quadrature.isExactOnMeasure_add_iff", "Quadrature.pos_of_isExactOnMeasure", "OrthogonalPolynomial.root_family_mem_Ioo"]

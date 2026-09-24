@@ -1,3 +1,20 @@
+# Planned additions (GVL round): the module doc of `Numlib.Eigen.PowerMethod` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add to "Rayleigh quotients, the diagonalizable rate": the rate of the Rayleigh quotient and
+# of the eigendirection for a *nonsymmetric* operator with an eigenbasis (Golub–Van Loan (7.3.5) and
+# the display before it), `O((ρ/|λ₁|)^k)` — for a symmetric operator the rate is squared
+# (`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`).
+# (ch08) in "Rayleigh quotients, the diagonalizable rate, and changes of coordinates", add the two
+# eigenbasis-form bounds of [golub2013matrix] Theorem 8.2.1 — the angle bound
+# `Krylov.sinAngle_powerIterate_le_of_eigenbasis` ((8.2.4): `sin θ_k ≤ tan θ_0 (ρ/|λ|)^k`) and the
+# Rayleigh-quotient bound `Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis` ((8.2.5), with the
+# book's `max_{i ≠ i₀} |λ_{i₀} - λ_i|` in place of the spread `b - a` of
+# `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`, which becomes its corollary) — both for
+# an arbitrary orthonormal eigenbasis, so that the surface's given Schur decomposition applies
+# without matching it to `eigenvectorBasis`. (The explicit-constant rate for symmetric operators,
+# `LinearMap.IsSymmetric.gap_subspaceIterate_le` ((8.2.12)), staged here by ch08, moved at the GVL
+# review to `Numlib/Eigen/InvariantSubspace`, beside the graph transport it shares with Theorem 7.3.1;
+# mention it in "subspace iteration" as a pointer.)
 [[node]]
 id = "Krylov.powerIterate"
 
@@ -159,3 +176,54 @@ id = "LinearMap.IsSymmetric.re_inner_powerIterate_eq_div"
 
 [[node]]
 id = "Krylov.tendsto_smul_powerIterate_of_mem_iSup"
+
+[[node]]  # staged by ch07
+id = "Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis"
+kind = "theorem"
+desc = '''The eigendirection rate of the power method with an eigenbasis ([golub2013matrix] §7.3.1,
+`dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`): under the hypotheses of
+`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` (eigenbasis `x`, dominant index `i₀`,
+`‖l i‖ ≤ ρ` for `i ≠ i₀`, `α i₀ ≠ 0`), there is `C` with
+`‖c_k • powerIterate A x₀ k - x i₀‖ ≤ C (ρ / ‖l i₀‖)^k` for the unimodular
+`c_k = phase(α i₀ l i₀^k)⁻¹` and all `k`, and hence `(𝕜 ∙ x i₀).sinAngle (powerIterate A x₀ k) ≤
+C (ρ/‖l i₀‖)^k` (`Submodule.sinAngle_mul_norm`). Normalizing the bound of
+`norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` costs a factor 2 (`‖v/‖v‖ - u‖ ≤ 2‖v - u‖` for
+unit `u`). ★★'''
+deps = ["Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis", "Krylov.powerIterate"]
+
+[[node]]  # staged by ch07
+id = "Krylov.exists_norm_inner_powerIterate_sub_le_of_eigenbasis"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.3.5), rigorous: with the hypotheses of
+`exists_norm_sub_smul_powerIterate_le_of_eigenbasis` and `A` continuous, there is `C` with
+`‖⟪q_k, A q_k⟫ - l i₀‖ ≤ C (ρ / ‖l i₀‖)^k` for `q_k = powerIterate A x₀ k`: the Rayleigh quotient
+is invariant under the unimodular factor and Lipschitz in `q` near the unit eigenvector `x i₀`
+(`⟪q, A q⟫ - ⟪x, A x⟫ = ⟪q - x, A q⟫ + ⟪x, A (q - x)⟫`). The book's `O(|λ₂/λ₁|^k)` is `ρ = |λ₂|`. ★★'''
+deps = ["Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis"]
+
+[[node]]  # staged by ch08
+id = "Krylov.sinAngle_powerIterate_le_of_eigenbasis"
+kind = "theorem"
+desc = '''The angle bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.4)): let `v`
+be an orthonormal basis of `E` (indexed by a finite `ι`) with `A (v i) = l i • v i`, `l i` real, a
+distinguished `i₀` with `l i₀ ≠ 0` and `|l i| ≤ ρ` for `i ≠ i₀`, and a unit `x₀` with
+`c := ‖⟪v i₀, x₀⟫‖ ≠ 0` (`cos θ₀`). Then for all `k`,
+`(𝕜 ∙ v i₀).sinAngle (Krylov.powerIterate A x₀ k) ≤ (√(1 - c²) / c) * (ρ / |l i₀|) ^ k`
+(`tan θ₀ |λ₂/λ₁|^k`). Proof as in the book: `powerIterate A x₀ k` is a positive multiple of
+`A^k x₀ = ∑ a_i l_i^k v_i`; `sin² θ_k = ∑_{i≠i₀} |a_i|² l_i^{2k} / ∑ |a_i|² l_i^{2k}
+≤ ∑_{i≠i₀} |a_i|² (l_i / l_{i₀})^{2k} / |a_{i₀}|² ≤ ((1 - c²)/c²) (ρ/|l i₀|)^{2k}`; the
+`sinAngle` of a line through a unit vector is `√(1 - |⟪u, x⟫|²)`
+(`Numlib/Analysis/InnerProductSpace/Projection/Angle`). ★★ (~90 lines)'''
+deps = ["Krylov.powerIterate", "Submodule.sinAngle"]
+
+[[node]]  # staged by ch08
+id = "Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis"
+kind = "theorem"
+desc = '''The Rayleigh-quotient bound ([golub2013matrix] Theorem 8.2.1, (8.2.5)) with the book's
+constant: in the setting of `Krylov.sinAngle_powerIterate_le_of_eigenbasis` (`A` symmetric through
+the real eigenbasis), with `δ` such that `|l i₀ - l i| ≤ δ` for all `i ≠ i₀`,
+`|l i₀ - re ⟪q_k, A q_k⟫| ≤ δ * ((1 - c²)/c²) * (ρ / |l i₀|)^(2k)` for `q_k = powerIterate A x₀ k`.
+The proof of `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le` verbatim, using `δ` where
+it uses `b - a` (only indices `i ≠ i₀` enter the numerator). The existing theorem is then the
+case `δ = b - a` and `v = eigenvectorBasis`. ★★ (~80 lines, mostly a copy)'''
+deps = ["Krylov.powerIterate", "LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le"]

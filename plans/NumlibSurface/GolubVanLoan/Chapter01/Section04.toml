@@ -1,0 +1,206 @@
+namespace = "GolubVanLoan.Chapter01"
+desc = '''
+§1.4, fast matrix-vector products: the DFT matrix and the radix-2 FFT (Algorithm 1.4.1), the
+block structure of `F_{2m}` (Theorem 1.4.1) and the fast sine and cosine transforms through it
+((1.4.3)–(1.4.11), Algorithms 1.4.2–1.4.3), the Haar wavelet transform ((1.4.13), Algorithm 1.4.4).
+
+`F_n = (ω_n^{kj})`, `ω_n = exp(−2πi/n)` (1.4.1)–(1.4.2) is `(Matrix.dft n)ᴴ` — the backbone's
+`Matrix.dft` uses the root `exp(+2πi/n)` (`Numlib/Analysis/Fourier/DFT`) — named `fourierMatrix n`
+here; its radix-2 splitting `y(1:m) = y_T + d .* y_B`, `y(m+1:n) = y_T − d .* y_B` is the backbone's
+`Matrix.dft_radix_two`/`dft_radix_two_add`. `S_r`, `C_r` (1.4.6) are `Matrix.dst1 r`,
+`Matrix.cosMatrix r`, `DCT(m+1)` (1.4.10) is `Matrix.dct1 m`, `x_sin`, `x_cos` ((1.4.9), (1.4.11)) are
+`Matrix.oddExtensionVec`, `Matrix.evenExtensionVec` (`Numlib/Analysis/Fourier/SineCosineTransform`),
+the exchange `E` is `Matrix.exchange` (§1.2). The book's 1-based indices `k, j` run from `0` in (1.4.3)–(1.4.5)
+already; 0-based `Fin` indices shift the others by one, stated per node.
+
+The fast transforms are complex algorithms: their hook is `rnd : ℂ → M ℂ` (every complex `+`, `−`,
+`×`, `/` and the twiddle factor `ω^k` through `rnd`), whose exact semantics is the same as the real
+case; no complex rounding model exists in the backbone and the book analyses none. Recursive
+algorithms recurse on `t` with `n = 2^t`; `Fin (2^(t+1))` is `Fin (2^t * 2)` definitionally
+(`Nat.pow_succ`), and the even/odd and top/bottom splittings are `finProdFinEquiv` /
+`finSumFinEquiv` with a `finCongr (Nat.mul_two _)` where needed.
+
+The Haar matrix `W_n` is surface-only: no other source uses the discrete Haar transform (the
+backbone's `Numlib/Analysis/Wavelet/Haar` is the continuous system on `L²(ℝ)`; the columns of
+`W_n` are samples of its scaling and wavelet functions, a bridge nobody needs yet).
+
+Not nodes: the flop analyses (`8n log₂ n`, `5n log₂ n`, `2n`), the display of `F_8(:,cols)` as a worked
+example (its content is the radix-2 splitting), the definitions DST-II … DCT-IV of (1.4.12) and the
+unnumbered claim that DST-II is a subvector of a DST of an interleaved vector (not used later
+except as `DST2(n)` in §4.8), the Haar examples `W_2, W_4, W_8`. The backbone names the DST-II and DCT-II
+matrices `Matrix.dst2`, `Matrix.dct2` (one scheme `dst1`/`dst2`/`dct1`/`dct2` in `SineCosineTransform`); a
+node restating (1.4.12)'s DST-II/DCT-II, if one is added, delegates there.
+'''
+
+[[node]]
+id = "fourierMatrix"
+kind = "definition"
+desc = '''(1.4.1)–(1.4.2): the DFT matrix `F_n = (f_kj)`, `f_kj = ω_n^{(k−1)(j−1)}`, `ω_n = exp(−2πi/n)`:
+`fourierMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℂ := (Matrix.dft n)ᴴ`, with the helper
+`fourierMatrix_apply : fourierMatrix n k j = Complex.exp (−2 * π * Complex.I / n) ^ ((k : ℕ) * (j :
+ℕ))` (from `Matrix.conjTranspose_dft_apply`, `inv` of the root). ★'''
+deps = ["Matrix.dft"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.1)'
+
+[[node]]
+id = "algorithm_1_4_1"
+kind = "definition"
+desc = '''Algorithm 1.4.1 (radix-2 FFT, `function y = fft(x, n)`), D4, by recursion on `t` (`n = 2^t`):
+`algorithm_1_4_1 {M} [Monad M] (rnd : ℂ → M ℂ) : (t : ℕ) → (Fin (2 ^ t) → ℂ) → M (Fin (2 ^ t) → ℂ)`; `t = 0`:
+`pure x`; `t + 1`: `y_T ← fft (x(1:2:n))`, `y_B ← fft (x(2:2:n))` (0-based `x (2l)`, `x (2l + 1)`), `ω ←
+rnd (exp(−2πi/n))`, `d_k ← ω^k` with each power formed by a rounded multiplication, `z_k ← rnd (d_k *
+y_B k)`, `y_k ← rnd (y_T k + z_k)`, `y_{k+m} ← rnd (y_T k − z_k)`. ★★ (writing the recursion with the
+`Fin` splitting)'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.1'
+
+[[node]]
+id = "algorithm_1_4_1_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_4_1 pure t x) = fourierMatrix (2 ^ t) *ᵥ x`. Induction on `t`; the step is
+`Matrix.dft_radix_two` (first half) and `Matrix.dft_radix_two_add` (second half), with `ω_{2m}^{−k}`
+matched to the program's `d_k` (`Complex.exp` of a multiple). `F_1 x = x` is `Matrix.dft 1 = 1`. ★★'''
+deps = ["algorithm_1_4_1", "fourierMatrix", "Matrix.dft_radix_two", "Matrix.dft_radix_two_add"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.1'
+
+[[node]]
+id = "dstTransform"
+kind = "definition"
+desc = '''(1.4.3): the discrete sine transform of `x_1, …, x_{m−1}`, `y_k = ∑_{j=1}^{m−1} sin(kjπ/m) x_j`,
+`k = 1:m−1`: `dstTransform (m : ℕ) (x : Fin (m − 1) → ℝ) : Fin (m − 1) → ℝ := fun k => ∑ j, Real.sin (((k : ℕ) + 1) *
+((j : ℕ) + 1) * π / m) * x j`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.3)'
+
+[[node]]
+id = "dctTransform"
+kind = "definition"
+desc = '''(1.4.4): the discrete cosine transform of `x_0, …, x_m`, `y_k = x_0/2 + ∑_{j=1}^{m−1} cos(kjπ/m) x_j +
+(−1)^k x_m/2`, `k = 0:m`: `dctTransform (m : ℕ) (x : Fin (m + 1) → ℝ) : Fin (m + 1) → ℝ`, written with the three
+terms as printed (the middle sum over `j : Fin (m − 1)` shifted by one). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.4)'
+
+[[node]]
+id = "equation_1_4_5"
+kind = "theorem"
+desc = '''(1.4.5): for `k, j < 2m`, `fourierMatrix (2 * m) k j = cos(kjπ/m) − i sin(kjπ/m)` (as complex numbers
+with real `cos`, `sin`); `Matrix.conjTranspose_dft_apply_eq_cos_sub_sin` with `2π kj / 2m = kjπ/m`. ★'''
+deps = ["fourierMatrix", "Matrix.conjTranspose_dft_apply_eq_cos_sub_sin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.5)'
+
+[[node]]
+id = "theorem_1_4_1"
+kind = "theorem"
+desc = '''Theorem 1.4.1: for `0 < m`, with `e = 1`, `v = ((−1)^{j+1})_{j < m−1}`, `E = Matrix.exchange (m − 1)`, `C =
+Matrix.cosMatrix (m − 1)`, `S = Matrix.dst1 (m − 1)` (complexified), `F = fourierMatrix (2 * m)`
+has the block form (1.4.7). Stated as the conjunction of its sixteen blocks, each an equation between
+`F.submatrix ι₁ ι₂` and the printed block, for the four index embeddings `{0}`, `1 + Fin (m−1)`,
+`{m}`, `m + 1 + Fin (m−1)` of `Fin (2m)` (0-based rows/columns `0`, `1..m−1`, `m`, `m+1..2m−1`): row
+and column `0` are all ones; row `m` is `(1, vᵀ, (−1)^m, vᵀE)`; the `(2,2)` block is `C − iS`, `(2,4)` is
+`(C + iS)E`, `(4,2)` is `E(C + iS)`, `(4,4)` is `E(C − iS)E`. Proof: `equation_1_4_5` entrywise, the
+book's trigonometry `cos(k(m+j)π/m) = (−1)^k cos(kjπ/m)` = `cos(k(m−j)π/m)`, `sin` likewise, i.e.
+`Matrix.dft_two_mul_apply_add` and `Matrix.dft_apply_sub_eq_conj`. ★★ (≈ 100 lines, sixteen small
+cases)'''
+deps = ["equation_1_4_5", "Matrix.exchange", "Matrix.dst1", "Matrix.cosMatrix", "Matrix.dft_two_mul_apply_add", "Matrix.dft_apply_sub_eq_conj"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 1.4.1'
+
+[[node]]
+id = "equation_1_4_8"
+kind = "theorem"
+desc = '''(1.4.8): `DST(m − 1) = S_{m−1}`, i.e. `dstTransform m x = Matrix.dst1 (m − 1) *ᵥ x` (for `m = 0` both sides
+are on `Fin 0`; for `m ≥ 1`, `(m − 1 : ℕ) + 1 = m` in the angle). ★'''
+deps = ["dstTransform", "Matrix.dst1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.8)'
+
+[[node]]
+id = "equation_1_4_10"
+kind = "theorem"
+desc = '''(1.4.10): `dctTransform m x = Matrix.dct1 m *ᵥ x` for `0 < m` — the transform (1.4.4) is the matrix `[1/2, eᵀ, 1/2;
+e/2, C_{m−1}, v/2; 1/2, vᵀ, (−1)^m/2]`; the block form itself is the doc of `Matrix.dct1`. Split
+`∑ j : Fin (m + 1)` into `j = 0`, `1 ≤ j ≤ m − 1`, `j = m` (`Fin.sum_univ_succ`, `Fin.sum_univ_castSucc`),
+`cos(kmπ/m) = (−1)^k`. ★'''
+deps = ["dctTransform", "Matrix.dct1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.10)'
+
+[[node]]
+id = "algorithm_1_4_2"
+kind = "definition"
+desc = '''Algorithm 1.4.2 (DST through the FFT), D4, for `m = 2^t` (so that `2m = 2^{t+1}`): `algorithm_1_4_2 rnd
+(t : ℕ) (x : Fin (2 ^ t − 1) → ℝ) : M (Fin (2 ^ t − 1) → ℂ)`: set up `x_sin` (`Matrix.oddExtensionVec`,
+no arithmetic but negation), `ỹ ← algorithm_1_4_1 rnd (t + 1) x_sin`, `y_k ← rnd (i * ỹ (k + 1) / 2)` (multiplying by `i` swaps real and imaginary parts with a negation: exact, convention 1; the division is rounded)
+(product and quotient each rounded). The output is complex: in floating point `y` acquires an
+imaginary part. ★'''
+deps = ["algorithm_1_4_1", "Matrix.oddExtensionVec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.2'
+
+[[node]]
+id = "algorithm_1_4_2_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_4_2 pure t x) = fun k => (dstTransform (2 ^ t) x k : ℂ)` — the output is the DST of `x`.
+`algorithm_1_4_1_spec`, `Matrix.dst1_mulVec_eq_dft`, `equation_1_4_8`. ★'''
+deps = ["algorithm_1_4_2", "algorithm_1_4_1_spec", "Matrix.dst1_mulVec_eq_dft", "equation_1_4_8"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.2'
+
+[[node]]
+id = "algorithm_1_4_3"
+kind = "definition"
+desc = '''Algorithm 1.4.3 (DCT through the FFT), D4, for `m = 2^t`: `algorithm_1_4_3 rnd (t : ℕ) (x : Fin (2 ^ t + 1)
+→ ℝ) : M (Fin (2 ^ t + 1) → ℂ)`: set up `x_cos` (`Matrix.evenExtensionVec`), `ỹ ← algorithm_1_4_1 rnd (t +
+1) x_cos`, `y_k ← rnd (ỹ k / 2)` for `k = 0:m`. ★'''
+deps = ["algorithm_1_4_1", "Matrix.evenExtensionVec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.3'
+
+[[node]]
+id = "algorithm_1_4_3_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_4_3 pure t x) = fun k => (dctTransform (2 ^ t) x k : ℂ)`. `algorithm_1_4_1_spec`,
+`Matrix.dct1_mulVec_eq_dft`, `equation_1_4_10`. ★'''
+deps = ["algorithm_1_4_3", "algorithm_1_4_1_spec", "Matrix.dct1_mulVec_eq_dft", "equation_1_4_10"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.3'
+
+[[node]]
+id = "haarMatrix"
+kind = "definition"
+desc = '''§1.4.3: the Haar wavelet transform matrix `W_n`, `n = 2^t`, by recursion on `t`: `W_1 = [1]`, `W_{2m} =
+[W_m ⊗ (1, 1)ᵀ | I_m ⊗ (1, −1)ᵀ]` — `haarMatrix : (t : ℕ) → Matrix (Fin (2 ^ t)) (Fin (2 ^ t)) ℝ`, the step
+`Matrix.fromCols (Matrix.kroneckerFin (haarMatrix t) ![![1], ![1]]) (Matrix.kroneckerFin 1 ![![1],
+![−1]])` reindexed from `Fin (2^t * 2) × (Fin (2^t * 1) ⊕ Fin (2^t * 1))` to `Fin (2^(t+1))²`
+(`finSumFinEquiv`, `finCongr`). A helper `haarMatrix_succ_apply` gives the entries: column `j < m` is
+`W_m (i / 2) j`, column `m + j` is `(−1)^{i mod 2}` if `i / 2 = j` and `0` otherwise. (The printed
+recursion lost its brackets in conversion; `W_2` and `W_4` fix it. The printed `W_8` has a garbled
+sixth row — as printed it does not follow the recursion — so it is not used as evidence; errata.) ★★'''
+deps = ["Matrix.kroneckerFin", "Matrix.kroneckerFin_apply"]
+source = 'Golub–Van Loan, Matrix Computations, §1.4.3, Definition'
+
+[[node]]
+id = "equation_1_4_13"
+kind = "theorem"
+desc = '''(1.4.13): `P_{2,m}ᵀ W_n = [W_m, I_m; W_m, −I_m] = (W_2 ⊗ I_m) diag(W_m, I_m)` for `n = 2m = 2^{t+1}`:
+`(Matrix.perfectShuffle 2 m)ᵀ * haarMatrix (t + 1)` (a `Matrix (Fin (2 * m)) (Fin (m * 2))`, `m = 2^t`)
+equals the reindexed `fromBlocks (haarMatrix t) 1 (haarMatrix t) (−1)`, which equals `kroneckerFin
+(haarMatrix 1) 1 * reindexed (fromBlocks (haarMatrix t) 0 0 1)`. Entrywise from
+`haarMatrix_succ_apply`, `Matrix.perfectShuffle_mulVec`-type row action (odd-indexed rows first),
+`Matrix.kroneckerFin_apply`. The consequence used by the algorithm, `y(1:2:n) = W_m x_T + x_B`,
+`y(2:2:n) = W_m x_T − x_B`, is a helper. ★★'''
+deps = ["haarMatrix", "Matrix.perfectShuffle", "Matrix.transpose_perfectShuffle", "Matrix.kroneckerFin_apply", "Matrix.kroneckerFin_one_one"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.4.13)'
+
+[[node]]
+id = "algorithm_1_4_4"
+kind = "definition"
+desc = '''Algorithm 1.4.4 (Haar wavelet transform, `function y = fht(x, n)`), D4, by recursion on `t`: `t = 0`:
+`pure x`; `t + 1`: `z ← fht (x(1:m))`, then `y(2k) ← rnd (z k + x (m + k))`, `y(2k + 1) ← rnd (z k − x (m +
+k))` for `k < m`. The book's `y(1:2:m)`, `y(2:2:m)` are misprints for `y(1:2:n)`, `y(2:2:n)` (chapter
+report). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.4'
+
+[[node]]
+id = "algorithm_1_4_4_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_4_4 pure t x) = haarMatrix t *ᵥ x`. Induction on `t` with the row form of
+`equation_1_4_13` (`y(1:2:n) = W_m x_T + x_B`, `y(2:2:n) = W_m x_T − x_B`). ★★'''
+deps = ["algorithm_1_4_4", "equation_1_4_13"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.4.4'
+

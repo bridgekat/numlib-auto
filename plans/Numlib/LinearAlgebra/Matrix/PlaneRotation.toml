@@ -1,3 +1,13 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.PlaneRotation` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch06) add to the module description, after the Givens pair paragraph: "The **hyperbolic
+# rotation** `Matrix.hyperbolicRotation j k c s = planeEmbed j k !![c, -s; -s, c]` with `c² − s² =
+# 1` is the indefinite counterpart of `planeRotation`: it is `J`-orthogonal (`H J Hᵀ = J`,
+# `Matrix.IsJOrthogonal`) for any signature `J = diagonal ε` with `ε j = 1`, `ε k = −1`, and the
+# **hyperbolic pair** `Matrix.hyperbolicPair a b` (`τ = b/a`, `c = 1/√(1 − τ²)`, `s = cτ`,
+# [golub2013matrix] (6.5.13)) makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and
+# nothing does when `|x j| ≤ |x k|`, `x k ≠ 0`. Consumer: the Cholesky downdating of
+# `Numlib/Direct/Updating`."
 namespace = "Matrix"
 
 [[node]]
@@ -122,3 +132,96 @@ id = "planeEmbed_mulVec_apply_of_ne"
 
 [[node]]
 id = "vecMul_planeEmbed_apply"
+
+[[node]]  # staged by ch06
+id = "IsJOrthogonal"
+kind = "definition"
+desc = '''**`J`-orthogonality** ([golub2013matrix] (6.5.11), "`S`-orthogonal"; Higham, "J-orthogonal
+matrices", SIAM Review 2003): for `J H : Matrix n n R` over a commutative ring,
+`IsJOrthogonal J H : Prop := H * J * Hᵀ = J`. For `J = 1` it is membership in `orthogonalGroup`.
+Prototype: `notes/gvl/ch06/proto/Shapes.lean` §2. ★'''
+deps = []
+
+[[node]]  # staged by ch06
+id = "IsJOrthogonal.mul"
+kind = "theorem"
+desc = '''**Products of `J`-orthogonal matrices are `J`-orthogonal** ([golub2013matrix] §6.5.4, "the
+product of `S`-orthogonal matrices is also `S`-orthogonal"): `IsJOrthogonal J H₁ → IsJOrthogonal J H₂ →
+IsJOrthogonal J (H₁ * H₂)`; also `isJOrthogonal_one`. `Matrix.mul_assoc`, `Matrix.transpose_mul`. ★'''
+deps = ["Matrix.IsJOrthogonal"]
+
+[[node]]  # staged by ch06
+id = "IsJOrthogonal.transpose"
+kind = "theorem"
+desc = '''For an involutive signature (`J * J = 1`), `IsJOrthogonal J H ↔ IsJOrthogonal J Hᵀ`
+(`H J Hᵀ = J` iff `Hᵀ J H = J`): `H (J Hᵀ J) = J² = 1`, so `J Hᵀ J` is a right, hence left,
+inverse of `H` (`Matrix.mul_eq_one_comm`), and `J Hᵀ J H = 1` is `Hᵀ J H = J`. The form
+`Hᵀ S H = S` is the one P6.5.5 writes. ★'''
+deps = ["Matrix.IsJOrthogonal"]
+
+[[node]]
+id = "isJOrthogonal_iff_mem_symplecticGroup"
+kind = "theorem"
+desc = '''The bridge to Mathlib's symplectic group: for `A : Matrix (l ⊕ l) (l ⊕ l) R`,
+`IsJOrthogonal (Matrix.J l R) A ↔ A ∈ Matrix.symplecticGroup l R` — Mathlib's carrier is literally
+`A * J l R * Aᵀ = J l R` (`Matrix.symplecticGroup.mem_iff`), so `Iff.rfl` up to unfolding; and for `J = 1`,
+`IsJOrthogonal 1 A ↔ A ∈ Matrix.orthogonalGroup n R` (same node). The `J`-orthogonal matrices of a general
+signature `J` are the `J`-analogue; `IsJOrthogonal.mul`/`.transpose` specialize to Mathlib's
+`symplecticGroup` monoid structure and `symplecticGroup.transpose_mem_iff`, which is how
+`Numlib/LinearAlgebra/Matrix/Hamiltonian` (symplectic matrices with Mathlib's `J`) and the hyperbolic
+downdating of `Numlib/Direct/Updating` share one vocabulary. ★'''
+deps = ["Matrix.IsJOrthogonal"]
+
+[[node]]  # staged by ch06
+id = "hyperbolicRotation"
+kind = "definition"
+desc = '''**The hyperbolic rotation** ([golub2013matrix] §6.5.4, `H_k(θ)`): for `j k : n`, `c s : ℝ`,
+`hyperbolicRotation j k c s = planeEmbed j k !![c, -s; -s, c]`; with `c = cosh θ`, `s = sinh θ`
+it agrees with the identity except at `(j,j), (j,k), (k,j), (k,k)` = `c, −s, −s, c`. Symmetric
+(`hyperbolicRotation_transpose`, from `planeEmbed_transpose`). ★'''
+deps = ["Matrix.planeEmbed", "Matrix.planeEmbed_transpose"]
+
+[[node]]  # staged by ch06
+id = "isJOrthogonal_hyperbolicRotation"
+kind = "theorem"
+desc = '''**Hyperbolic rotations are `J`-orthogonal** ([golub2013matrix] §6.5.4, "The `S`-orthogonality
+of this matrix follows from `cosh(θ)² − sinh(θ)² = 1`"): for `ε : n → ℝ` with `ε j = 1`,
+`ε k = −1`, `j ≠ k`, and `c ^ 2 − s ^ 2 = 1`,
+`IsJOrthogonal (diagonal ε) (hyperbolicRotation j k c s)`. Instance used by the downdate:
+`diagonal ε = LieAlgebra.Orthogonal.indefiniteDiagonal p Unit ℝ`, `j = Sum.inl i`, `k = Sum.inr ()`.
+`planeEmbed_mul_planeEmbed`-style entry computation. Prototype: `notes/gvl/ch06/proto/Shapes.lean`
+§2. ★'''
+deps = ["Matrix.hyperbolicRotation", "Matrix.IsJOrthogonal", "Matrix.planeEmbed_mul_apply", "Matrix.mul_planeEmbed_apply"]
+
+[[node]]  # staged by ch06
+id = "hyperbolicPair"
+kind = "definition"
+desc = '''**The hyperbolic pair** ([golub2013matrix] (6.5.13)): `hyperbolicPair a b = (c, c * τ)` with
+`τ = b / a`, `c = 1 / √(1 − τ²)`; meaningful when `|b| < |a|`. Named after `givensPair`. ★'''
+deps = ["Matrix.givensPair"]
+
+[[node]]  # staged by ch06
+id = "hyperbolicPair_sq_sub_sq"
+kind = "theorem"
+desc = '''`|b| < |a| → (hyperbolicPair a b).1 ^ 2 − (hyperbolicPair a b).2 ^ 2 = 1` and
+`0 < (hyperbolicPair a b).1` ([golub2013matrix] (6.5.13)). `c²(1 − τ²) = 1`. ★'''
+deps = ["Matrix.hyperbolicPair"]
+
+[[node]]  # staged by ch06
+id = "hyperbolicRotation_hyperbolicPair_mulVec"
+kind = "theorem"
+desc = '''**Hyperbolic rotations introduce zeros** ([golub2013matrix] §6.5.4, "if `|x₁| > |x₂|`, then
+`{c, s}` can be computed as follows" (6.5.13)): for `j ≠ k`, `x : n → ℝ` with `|x k| < |x j|` and
+`(c, s) = hyperbolicPair (x j) (x k)`, `(hyperbolicRotation j k c s *ᵥ x) k = 0` and
+`(hyperbolicRotation j k c s *ᵥ x) j = SignType.sign (x j) * √(x j ^ 2 − x k ^ 2)`; other entries
+unchanged. `planeEmbed_mulVec_apply`. ★'''
+deps = ["Matrix.hyperbolicRotation", "Matrix.hyperbolicPair", "Matrix.hyperbolicPair_sq_sub_sq", "Matrix.planeEmbed_mulVec_apply", "Matrix.planeEmbed_mulVec_apply_of_ne"]
+
+[[node]]  # staged by ch06
+id = "not_exists_hyperbolic_of_abs_le"
+kind = "theorem"
+desc = '''**The hyperbolic pair may not exist** ([golub2013matrix] §6.5.4, "there is no real solution to
+`−s x₁ + c x₂ = 0` if `|x₂| > |x₁|`"): if `|x₁| ≤ |x₂|` and `x₂ ≠ 0` then
+`¬ ∃ c s : ℝ, c ^ 2 − s ^ 2 = 1 ∧ −s * x₁ + c * x₂ = 0`. From `|c| > |s|` whenever
+`c² − s² = 1`. (The book's strict `|x₂| > |x₁|`; equality with `x₂ ≠ 0` fails too.) ★'''
+deps = []

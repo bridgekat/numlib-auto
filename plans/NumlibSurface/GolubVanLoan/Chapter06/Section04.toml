@@ -1,0 +1,208 @@
+namespace = "GolubVanLoan.Chapter06"
+desc = '''
+§6.4, Subspace Computations with the SVD: the orthogonal Procrustes problem (6.4.1)–(6.4.2) and
+Algorithm 6.4.1, with the polar decomposition read off an SVD; the intersection of null spaces
+(Theorem 6.4.1, Algorithm 6.4.2); principal angles and vectors (6.4.3)–(6.4.6), Algorithm 6.4.3,
+the distance of equal-dimensional subspaces; the intersection of ranges (Theorem 6.4.2).
+Backbone: `Numlib/LinearAlgebra/Matrix/Procrustes`, `Numlib/Analysis/InnerProductSpace/PrincipalAngles`,
+Mathlib's `Submodule.map_comap_eq`. Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin m))`, the range
+of `A` is `LinearMap.range (toEuclideanLin A)`, its null space `LinearMap.ker (toEuclideanLin A)`.
+Not nodes: (6.4.4)–(6.4.5) (name the columns of `Q_A Y`, `Q_B Z`; their orthonormality is part of
+`algorithm_6_4_3_spec`), the numerical-rank remarks ("requires an ability to reason about
+numerical rank", the threshold `σ̂ᵢ ≥ 1 − δ`).
+'''
+
+[[node]]
+id = "procrustes_iff_trace"
+kind = "theorem"
+desc = '''§6.4.1: for orthogonal `Q`, `‖A − BQ‖_F² = ‖A‖_F² + ‖B‖_F² − 2 tr(Qᵀ(BᵀA))`, so (6.4.1)
+`min_{QᵀQ = I} ‖A − BQ‖_F` is equivalent to `max_{QᵀQ = I} tr(QᵀBᵀA)` (same minimizers).
+`Matrix.frobenius_norm_sub_mul_sq`. ★'''
+deps = ["Matrix.frobenius_norm_sub_mul_sq"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.1'
+
+[[node]]
+id = "equation_6_4_2"
+kind = "theorem"
+desc = '''(6.4.2): `tr(C₁ᵀC₂) = tr(C₂ᵀC₁)` for `C₁ C₂ : Matrix (Fin m) (Fin n) ℝ`. Mathlib:
+`Matrix.trace_transpose` with `Matrix.transpose_mul`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.4.2)'
+
+[[node]]
+id = "procrustes_solution"
+kind = "theorem"
+desc = '''§6.4.1: if `Uᵀ(BᵀA)V = Σ` is an SVD then, with `Z = VᵀQᵀU`, `tr(QᵀBᵀA) = tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`,
+and the bound is attained at `Z = I`, i.e. `Q = UVᵀ` minimizes `‖A − BQ‖_F` over orthogonal `Q`.
+`Matrix.re_trace_mul_le_sum_singularValues` (now for any `Fintype`s), `Matrix.frobenius_norm_sub_mul_le_of_isSVD`
+(both ids and statements unchanged). The book's closing reading "`Q = UVᵀ` is the orthogonal polar factor of
+`BᵀA`" is the backbone's polar form `Matrix.frobenius_norm_sub_mul_le_of_isPolarDecomposition` (a second
+declaration of this node may state it). ★'''
+deps = ["procrustes_iff_trace", "equation_6_4_2", "Matrix.re_trace_mul_le_sum_singularValues", "Matrix.frobenius_norm_sub_mul_le_of_isSVD", "Matrix.frobenius_norm_sub_mul_le_of_isPolarDecomposition"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.1'
+
+[[node]]
+id = "algorithm_6_4_1"
+kind = "definition"
+desc = '''Algorithm 6.4.1 (orthogonal Procrustes), D4 form: `algorithm_6_4_1 (rnd : ℝ → M ℝ)
+(svd : Matrix (Fin p) (Fin p) ℝ → M (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin p) (Fin p) ℝ))
+(A B : Matrix (Fin m) (Fin p) ℝ) : M (Matrix (Fin p) (Fin p) ℝ)`:
+`C ← Chapter01.algorithm_1_1_5 rnd Bᵀ A 0`; `(U, _, V) ← svd C`; `Chapter01.algorithm_1_1_5 rnd U Vᵀ 0`.
+Prototype: `notes/gvl/ch06/proto/Shapes.lean` §4 (elaborates, with a stand-in for the chapter-1
+product). ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.1'
+
+[[node]]
+id = "algorithm_6_4_1_spec"
+kind = "theorem"
+desc = '''Algorithm 6.4.1 is correct in exact arithmetic: if `svd` meets `Matrix.IsSVD`, the output
+`Q = Id.run (algorithm_6_4_1 pure svd A B)` is orthogonal and `‖A − BQ‖_F ≤ ‖A − BQ'‖_F` for every
+orthogonal `Q'`. `procrustes_solution` with `Chapter01.algorithm_1_1_5_spec`. Prototype statement:
+`notes/gvl/ch06/proto/Shapes.lean` §4. ★'''
+deps = ["algorithm_6_4_1", "procrustes_solution", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.1'
+
+[[node]]
+id = "polar_of_svd"
+kind = "theorem"
+desc = '''§6.4.1: "if `A = UΣVᵀ` is the SVD of `A`, then `A = (UVᵀ)(VΣVᵀ)` is its polar decomposition":
+for square `A` and `Matrix.IsSVD A U σ V`, `A = (U * Vᵀ) * (V * rectDiagonal σ * Vᵀ)` with
+`U * Vᵀ ∈ orthogonalGroup` and `V * rectDiagonal σ * Vᵀ` positive semidefinite, i.e.
+`Matrix.IsPolarDecomposition A (U * Vᵀ) (V * diagonal σ * Vᵀ)` at `ℝ`. Backbone
+`Matrix.IsSVD.isPolarDecomposition` (the one place the library builds the polar factor from an SVD; for
+`m = n` the factor is `U * Vᴴ`), with `IsPolarDecomposition.mem_unitaryGroup` for the orthogonality. The
+existence and uniqueness of the polar decomposition is chapter 9's Theorem 9.4.1
+(`Matrix.exists_isPolarDecomposition`, proved from this). ★'''
+deps = ["Matrix.IsSVD", "Matrix.IsPolarDecomposition", "Matrix.IsSVD.isPolarDecomposition"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.1'
+
+[[node]]
+id = "theorem_6_4_1"
+kind = "theorem"
+desc = '''Theorem 6.4.1: for `A ∈ ℝ^{m×n}`, `B ∈ ℝ^{p×n}`, if the columns of `Z ∈ ℝ^{n×t}` are an
+orthonormal basis of `null(A)` and those of `W ∈ ℝ^{t×q}` an orthonormal basis of `null(BZ)`, then
+the columns of `ZW` are an orthonormal basis of `null(A) ∩ null(B)`: `(ZW)ᵀ(ZW) = I` and
+`LinearMap.range (toEuclideanLin (Z * W)) = ker A ⊓ ker B`. `range (Z W) = map Z (ker (B Z)) =
+map Z (comap Z (ker B)) = range Z ⊓ ker B` (Mathlib's `Submodule.map_comap_eq`), and
+`range Z = ker A`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.4.1'
+
+[[node]]
+id = "algorithm_6_4_2"
+kind = "definition"
+desc = '''Algorithm 6.4.2 (intersection of null spaces), D4 form: `algorithm_6_4_2 (rnd : ℝ → M ℝ)
+(svdA : Matrix (Fin m) (Fin n) ℝ → M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
+(svdC : ∀ k, Matrix (Fin p) (Fin k) ℝ → M (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin k) (Fin k) ℝ))
+(A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin p) (Fin n) ℝ) : M (Σ s : ℕ, Matrix (Fin n) (Fin s) ℝ)`:
+`(_, σ, V_A) ← svdA A`, `r :=` the number of nonzero computed `σ i`; if `r < n`:
+`C ← Chapter01.algorithm_1_1_5 rnd B (V_A(:, r : n)) 0`, `(_, γ, V_C) ← svdC (n − r) C`, `q :=` the
+number of nonzero `γ i`; if `q < n − r`: `s := n − r − q`,
+`Y ← Chapter01.algorithm_1_1_5 rnd (V_A(:, r : n)) (V_C(:, q : n − r)) 0`, else `s := 0`; else `s := 0`.
+Column ranges are `Matrix.submatrix` along `fun j => ⟨r + j, _⟩`. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.2'
+
+[[node]]
+id = "algorithm_6_4_2_spec"
+kind = "theorem"
+desc = '''Algorithm 6.4.2 is correct in exact arithmetic: if `svdA`, `svdC` meet `Matrix.IsSVD`, the output
+`⟨s, Y⟩` has `Yᵀ Y = 1`, `LinearMap.range (toEuclideanLin Y) = ker A ⊓ ker B`, and
+`s = finrank (ker A ⊓ ker B)` (so `s = 0` iff the intersection is trivial). The trailing columns of
+`V_A` are an orthonormal basis of `null(A)` (`Matrix.ker_mulVecLin_eq_span_of_svd`), those of `V_C`
+of `null(C)`; then `theorem_6_4_1`. ★★'''
+deps = ["algorithm_6_4_2", "theorem_6_4_1", "Matrix.ker_mulVecLin_eq_span_of_svd", "Matrix.IsSVD", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.2'
+
+[[node]]
+id = "equation_6_4_3"
+kind = "theorem"
+desc = '''(6.4.3), the recursive definition of principal angles and vectors: for subspaces `F`, `G` of
+`ℝᵐ` with `p = dim F ≥ dim G = q ≥ 1`, (a) principal vectors `{fᵢ, gᵢ}` exist
+(`Submodule.exists_isPrincipalVectors`) and satisfy the recursion — `cos θ_k = f_kᵀg_k` is the
+maximum of `fᵀg` over unit `f ∈ F`, `g ∈ G` orthogonal to `f₁, …, f_{k−1}`, resp. `g₁, …, g_{k−1}`
+(`Submodule.IsPrincipalVectors.isGreatest_re_inner`); (b) any sequence produced by the recursion
+(`Submodule.IsRecursivePrincipalVectors`) has `f_kᵀg_k = cos θ_k := Submodule.cosPrincipalAngle F G (k−1)`,
+so the recursion defines the angles unambiguously
+(`Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors`). ★'''
+deps = ["Submodule.exists_isPrincipalVectors", "Submodule.IsPrincipalVectors.isGreatest_re_inner", "Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.4.3)'
+
+[[node]]
+id = "principalAngle_mono"
+kind = "theorem"
+desc = '''§6.4.3: "the principal angles satisfy `0 ≤ θ₁ ≤ ⋯ ≤ θ_q ≤ π/2`". `Submodule.monotone_principalAngle`. ★'''
+deps = ["Submodule.monotone_principalAngle"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.3'
+
+[[node]]
+id = "cosPrincipalAngle_le_one"
+kind = "theorem"
+desc = '''§6.4.3: for thin QR factorizations `A = Q_A R_A`, `B = Q_B R_B`, `‖Q_AᵀQ_B‖₂ ≤ 1`, so the singular
+values of `Q_AᵀQ_B` lie in `[0, 1]` and are the cosines `σᵢ = cos θᵢ`. `Matrix.l2_opNorm` submultiplicativity
+with `‖Q_A‖₂ = ‖Q_B‖₂ = 1`, `Submodule.cosPrincipalAngle_eq_singularValues`,
+`Submodule.cosPrincipalAngle_le_one`. ★'''
+deps = ["Submodule.cosPrincipalAngle_eq_singularValues", "Submodule.cosPrincipalAngle_le_one"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.3'
+
+[[node]]
+id = "equation_6_4_6"
+kind = "theorem"
+desc = '''(6.4.6): if `f = Q_A u`, `g = Q_B v` and `Q_AᵀQ_B = YΣZᵀ`, then
+`fᵀg = uᵀ(Q_AᵀQ_B)v = (Yᵀu)ᵀΣ(Zᵀv) = ∑_{i ≤ q} σᵢ (yᵢᵀu)(zᵢᵀv)`. `Matrix.IsSVD` unfolded,
+`Matrix.rectDiagonal_mulVec`. ★'''
+deps = ["Matrix.IsSVD", "Matrix.rectDiagonal_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.4.6)'
+
+[[node]]
+id = "algorithm_6_4_3"
+kind = "definition"
+desc = '''Algorithm 6.4.3 (principal angles and vectors), D4 form: `algorithm_6_4_3 (rnd : ℝ → M ℝ)
+(svd : Matrix (Fin p) (Fin q) ℝ → M (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin q) (Fin q) ℝ))
+(A : Matrix (Fin m) (Fin p) ℝ) (B : Matrix (Fin m) (Fin q) ℝ) :
+M ((Fin q → ℝ) × Matrix (Fin m) (Fin q) ℝ × Matrix (Fin m) (Fin q) ℝ)`:
+`Q_A := firstColumns` of the orthogonal factor of chapter 5's Householder QR of `A`
+(`Chapter05.algorithm_5_2_1`, then `Chapter05.forwardAccumulation` on `Chapter05.storedReflectors A' β`,
+the returned `β` — the QR
+step is delegated to an earlier chapter, so it calls that chapter's program, convention 5 of the
+`GolubVanLoan` group), `Q_B` likewise (the thin factors); `C ←
+Chapter01.algorithm_1_1_5 rnd Q_Aᵀ Q_B 0`; `(Y, σ, Z) ← svd C`; `F ← … Q_A (Y(:, 1:q))`,
+`G ← … Q_B Z`; return `(fun k => σ k, F, G)`. The SVD is chapter 8's and stays a parameter. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5", "Matrix.firstColumns", "GolubVanLoan.Chapter05.algorithm_5_2_1", "GolubVanLoan.Chapter05.forwardAccumulation", "GolubVanLoan.Chapter05.storedReflectors"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.3'
+
+[[node]]
+id = "algorithm_6_4_3_spec"
+kind = "theorem"
+desc = '''Algorithm 6.4.3 is correct in exact arithmetic: for `p ≥ q`, `A`, `B` with linearly independent
+columns (the Householder QRs of `A` and `B` meet `Matrix.IsQR` unconditionally, by
+`Chapter05.algorithm_5_2_1_spec` and `forwardAccumulation_spec` with the returned `β`) and `svd` meeting `Matrix.IsSVD`, the output
+`(c, F, G)` has `c k = Submodule.cosPrincipalAngle (ran A) (ran B) k` and the columns of `F`, `G`
+are principal vectors: `Submodule.IsPrincipalVectors (ran A) (ran B) F.col G.col` (orthonormal
+columns, `P_F g_k = c_k f_k` from `Q_A Q_Aᵀ Q_B z_k = σ_k Q_A y_k`). The book's heading "computes the
+cosines of the principal angles `θ₁ ≥ ⋯ ≥ θ_q`" has the order reversed (the cosines decrease, the
+angles increase; report, Doubts). `Submodule.cosPrincipalAngle_eq_singularValues`,
+`Matrix.IsQR.span_firstColumns_eq`, `Matrix.IsQR.conjTranspose_firstColumns_mul_self`. ★★'''
+deps = ["algorithm_6_4_3", "Submodule.cosPrincipalAngle_eq_singularValues", "Submodule.IsPrincipalVectors", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.conjTranspose_firstColumns_mul_self", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec", "Matrix.IsSVD", "GolubVanLoan.Chapter05.algorithm_5_2_1_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.4.3'
+
+[[node]]
+id = "dist_eq_sin_principalAngle"
+kind = "theorem"
+desc = '''§6.4.3: "If `p = q`, then `dist(F, G) = √(1 − cos(θ_p)²) = sin(θ_p)`", `dist` being the
+subspace distance of §2.5.3 (`‖P_F − P_G‖₂`), stated through chapter 2's surface restatement
+`GolubVanLoan.Chapter02.subspaceDist` (the backbone's `Submodule.gap`).
+`Submodule.gap_eq_sin_principalAngle`. ★'''
+deps = ["Submodule.gap_eq_sin_principalAngle", "GolubVanLoan.Chapter02.subspaceDist"]
+source = 'Golub–Van Loan, Matrix Computations, §6.4.3'
+
+[[node]]
+id = "theorem_6_4_2"
+kind = "theorem"
+desc = '''Theorem 6.4.2: with `{cos θᵢ}` and `{fᵢ, gᵢ}` from Algorithm 6.4.3 and `s` defined by
+`1 = cos θ₁ = ⋯ = cos θ_s > cos θ_{s+1}`, `ran(A) ∩ ran(B) = span{f₁, …, f_s} = span{g₁, …, g_s}`.
+`Submodule.IsPrincipalVectors.inf_eq_span` (through `algorithm_6_4_3_spec`). The book's one-line proof
+("if `cos θᵢ = 1` then `fᵢ = gᵢ`") gives only `⊇`; the backbone proves `⊆`. ★'''
+deps = ["algorithm_6_4_3_spec", "Submodule.IsPrincipalVectors.inf_eq_span"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.4.2'

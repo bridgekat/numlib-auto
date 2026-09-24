@@ -1,0 +1,104 @@
+namespace = "Matrix"
+desc = '''
+Symbolic fill-in of the Cholesky factorization: which entries of the Cholesky factor can be
+nonzero, read off the pattern of the matrix alone ([golub2013matrix] §11.1.6, the "Facts 1 and 2"
+after S. Parter, SIAM Review 3 (1961); George–Liu, *Computer Solution of Large Sparse Positive Definite Systems*,
+Ch. 5; Davis, *Direct Methods for Sparse Linear Systems*, Ch. 4).
+
+`Matrix.IsCholeskyFill A i j` (`j < i`) is the least relation containing the strictly lower pattern of `A`
+(`A i j ≠ 0`) and closed under Parter's rule: `IsCholeskyFill A i k` and `IsCholeskyFill A j k` with `k < j < i`
+give `IsCholeskyFill A i j`. It is an inductive predicate over any linearly ordered index type and any
+`R` with a zero; no graph is mentioned, although it is the *filled graph* of the literature and a
+path characterization (fill paths through lower-numbered vertices, Rose–Tarjan–Lueker) is a
+foreseeable addition when a consumer appears.
+
+**The rigorous half of Facts 1–2.** The book states the two facts as "`g_ij` is nonzero assuming
+no numerical cancellation". That direction has no exact reading without a genericity framework (a
+cancellation can make any predicted entry zero), and it is not formalized. What *is* a theorem, and
+what the symbolic factorization of [golub2013matrix] §11.1.6 (Step 0′: allocate placeholder zeros
+where fill is predicted) actually relies on, is the converse: the Cholesky factor vanishes outside
+the predicted fill (`Matrix.IsCholesky.apply_eq_zero_of_not_isCholeskyFill`). It needs no cancellation
+hypothesis; the proof is strong induction on the column through the Cholesky recurrence
+`Matrix.IsCholesky.star_apply_mul_diag_eq`.
+
+The backbone Cholesky specification is `Matrix.IsCholesky A H` with `H` *upper* triangular and
+`Hᴴ H = A`; the book's lower factor is `G = Hᴴ`, so the book's `g_ij` is `star (H j i)` and a
+zero of `g_ij` is a zero of `H j i`.
+
+The separator lemma (`Matrix.not_isCholeskyFill_of_isLowerSet_of_forall_eq_zero`) is what makes nested
+dissection work: an initial segment of the ordering that is uncoupled from a later block produces
+no fill between them. The book's nested-dissection claim (the Cholesky factor inherits the
+recursive block structure) is its corollary `Matrix.IsCholesky.apply_eq_zero_of_separated`.
+
+Upstreaming: none; this is sparse-direct theory. Order: `IsCholeskyFill`, `IsCholeskyFill.lt`, the separator
+lemma, then the two Cholesky theorems. About 150 lines.
+'''
+
+[[node]]
+id = "IsCholeskyFill"
+kind = "definition"
+desc = '''
+`inductive Matrix.IsCholeskyFill {n R} [LinearOrder n] [Zero R] (A : Matrix n n R) : n → n → Prop`
+with constructors `of_ne_zero (hji : j < i) (h : A i j ≠ 0) : IsCholeskyFill A i j` (Fact 1) and
+`trans (hkj : k < j) (hji : j < i) (hik : IsCholeskyFill A i k) (hjk : IsCholeskyFill A j k) : IsCholeskyFill A i j`
+(Fact 2, Parter's rule). The predicted strictly-lower nonzero pattern of the Cholesky factor.
+Shape settled by `notes/gvl/ch11/proto/Shapes.lean` (b). Renamed from `IsFill` at the review of the
+Golub–Van Loan round (the name says which factorization's fill it predicts). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.1.6'
+
+[[node]]
+id = "IsCholeskyFill.lt"
+kind = "theorem"
+desc = '''
+`IsCholeskyFill A i j → j < i`: fill positions are strictly below the diagonal. Case analysis on the
+constructor. ★
+'''
+deps = ["IsCholeskyFill"]
+
+[[node]]
+id = "not_isCholeskyFill_of_isLowerSet_of_forall_eq_zero"
+kind = "theorem"
+desc = '''
+Separator lemma. Let `S : Set n` be a lower set (`IsLowerSet S`) and `T : Set n` with
+`∀ i ∈ T, ∀ j ∈ S, A i j = 0`. Then `∀ i ∈ T, ∀ j ∈ S, ¬ IsCholeskyFill A i j`. Proof: induction on
+`IsCholeskyFill`; the base case is the hypothesis, and in the Parter step `k < j ∈ S` forces `k ∈ S`
+(lower set), so `IsCholeskyFill A i k` with `i ∈ T`, `k ∈ S` is excluded by the induction hypothesis.
+This is why nested dissection ([golub2013matrix] §11.1.7) creates no fill between the two
+dissected halves: the first half is an initial segment of the ordering and uncoupled from the
+second. ★ (~25 lines)
+'''
+deps = ["IsCholeskyFill"]
+
+[[node]]
+id = "IsCholesky.apply_eq_zero_of_not_isCholeskyFill"
+kind = "theorem"
+desc = '''
+For `IsCholesky A H` over `[RCLike 𝕜]`, `[Fintype n] [LinearOrder n]`, and `j < i` with
+`¬ A.IsCholeskyFill i j`: `H j i = 0` (the book's `g_ij = 0`). The Cholesky factor vanishes outside the
+symbolic fill, with no cancellation hypothesis — the rigorous half of [golub2013matrix] §11.1.6
+Facts 1–2 (the other half, "nonzero unless cancellation", has no exact reading; see the module
+description).
+
+Proof: strong induction on `j` (well-founded on the linear order of the finite `n`). By
+`Matrix.IsCholesky.star_apply_mul_diag_eq`, `star (H j i) * H j j = A i j − ∑_{k<j} star (H k i) *
+H k j`. If `¬ IsCholeskyFill A i j` then `A i j = 0` (else `of_ne_zero`), and for each `k < j` one of
+`H k i`, `H k j` vanishes: otherwise the induction hypothesis (contrapositive, at `k < j`) gives
+`IsCholeskyFill A i k` and `IsCholeskyFill A j k`, and `trans` gives `IsCholeskyFill A i j`. So the right side is `0` and
+`H j j ≠ 0` (`Matrix.IsCholesky.diag_ne_zero`). Shape settled by the prototype (b). ★★ (~60 lines)
+'''
+deps = ["IsCholeskyFill", "Matrix.IsCholesky", "Matrix.IsCholesky.star_apply_mul_diag_eq"]
+
+[[node]]
+id = "IsCholesky.apply_eq_zero_of_separated"
+kind = "theorem"
+desc = '''
+Nested-dissection corollary. For `IsCholesky A H`, a lower set `S` and a set `T` with
+`∀ i ∈ T, ∀ j ∈ S, A i j = 0`: `∀ i ∈ T, ∀ j ∈ S, H j i = 0`, i.e. the lower Cholesky factor has a
+zero block between `T` and `S`. From `Matrix.not_isCholeskyFill_of_isLowerSet_of_forall_eq_zero` and
+`Matrix.IsCholesky.apply_eq_zero_of_not_isCholeskyFill` (for `j < i`; for `i ≤ j` it is upper
+triangularity of `H`, since `i ∈ T`, `j ∈ S`, `S` lower and `i ∉ S` when `A i i ≠ 0` — state it
+for `j < i` only, which is what the book draws). [golub2013matrix] §11.1.7. ★
+'''
+deps = ["not_isCholeskyFill_of_isLowerSet_of_forall_eq_zero", "IsCholesky.apply_eq_zero_of_not_isCholeskyFill"]

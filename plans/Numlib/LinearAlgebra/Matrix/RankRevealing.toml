@@ -1,0 +1,211 @@
+namespace = "Matrix"
+desc = '''
+Rank-revealing orthogonal factorizations: QR factorization with column pivoting, the bounds that
+make a triangular factor reveal the singular values, the `UTV` subspace bounds, and the
+rank-deficient least-squares solutions they produce ([golub2013matrix] §5.4.2–§5.4.6, §5.5.5,
+§5.5.7–§5.5.8; Businger–Golub 1965, Chan 1987, Stewart 1993, Golub–Klema–Stewart 1976).
+
+## Bundles (Golub–Van Loan review M5)
+
+* `Matrix.IsPivotedQR A Q R σ` (`A Π = Q R`, `Π` the column permutation `σ`) is planned in
+  `Numlib/LinearAlgebra/Matrix/LeastSquares` beside `Matrix.IsQR`, of which it is the permuted form
+  (and moves with it to `QR` beside `IsThinQR` when the recorded refactor task R4 moves `IsQR`).
+* `Matrix.IsPivotedQR.IsRankRevealing A Q R σ r` extends it with the rank-revealing shape of
+  [golub2013matrix] (5.4.6): rows `≥ r` of `R` vanish and the leading `r × r` block is invertible. It
+  always exists with `r = rank A` (`exists_isPivotedQR_rank`: permute a basis of the column space to
+  the front, then any QR of the permuted matrix has that shape — no pivoting rule needed for
+  existence), and every least-squares statement of §5.5.5 and §5.6.2 takes it as its one hypothesis.
+* `Matrix.IsURV A U R V` and `Matrix.IsULV A U L V` are the two-sided orthogonal (`UTV`) forms of
+  Stewart (1993): `U`, `V` unitary and `Uᴴ A V` upper (resp. lower) triangular. A pivoted QR is a URV
+  decomposition with `V = Π` (`IsPivotedQR.isURV`); Stewart's subspace bounds (5.4.10)–(5.4.11) are
+  stated for them.
+
+## Singular values
+
+Chapter 2's `Matrix.sortedSingularValues A k` (Mathlib's sorted `(toEuclideanLin A).singularValues k`,
+0-based: `k` is the book's `σ_{k+1}`) wherever an ordered index matters, and `⨅ i, A.singularValues i`
+for `σ_min` where a node says so; an SVD is chapter 6's specification `Matrix.IsSVD A U σ V`. The
+singular-value inequalities this module first planned — the trailing-block bound
+`Matrix.sortedSingularValues_le_l2_opNorm_trailing` and the subset-selection lower bound
+`Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` (the dual of the column-deletion bound
+`Matrix.sortedSingularValues_submatrix_le`) — live in `Numlib/Analysis/Matrix/SingularValues` with the
+Eckart–Young lower bound they rest on (review M3). The distance between subspaces is the existing
+`Submodule.gap` (`‖P₁ - P₂‖`), with its matrix form `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`
+([golub2013matrix] Theorem 2.5.1).
+'''
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing"
+kind = "definition"
+desc = '''**A rank-revealing pivoted QR factorization** ([golub2013matrix] (5.4.6)): for
+`A : Matrix (Fin M) (Fin N) 𝕜`, `Q R σ` and `r : ℕ`,
+`structure IsPivotedQR.IsRankRevealing A Q R σ r : Prop extends IsPivotedQR A Q R σ` with fields
+`le_rows : r ≤ M`, `le_cols : r ≤ N`, `apply_eq_zero : ∀ i j, r ≤ (i : ℕ) → R i j = 0` and
+`isUnit_block : IsUnit (R.submatrix (Fin.castLE le_rows) (Fin.castLE le_cols))` (the leading `r × r`
+block `R₁₁`). Then `r = A.rank` (`IsPivotedQR.IsRankRevealing.rank_eq`, a further declaration: rank is
+invariant under `Q` and `Π`). The one hypothesis of the least-squares statements below (review M5). ★'''
+deps = ["Matrix.IsPivotedQR"]
+
+[[node]]
+id = "exists_isPivotedQR_rank"
+kind = "theorem"
+desc = '''**[golub2013matrix] (5.4.6).** Every `A : Matrix (Fin M) (Fin N) 𝕜` has a rank-revealing
+pivoted QR factorization: `∃ σ Q R, IsPivotedQR.IsRankRevealing A Q R σ A.rank`. Proof:
+`exists_linearIndependent_col` gives `r` independent columns; extend to a permutation putting them first;
+take any `IsQR` of the permuted matrix (`exists_isQR`); the first `r` columns of `Q` span `ran A`
+(`IsQR.span_col_prefix_eq` on the independent prefix), so rows `≥ r` of `R = Qᴴ A Π` vanish, and the
+leading block is invertible by independence. ★★ (~120 lines)'''
+deps = ["IsPivotedQR.IsRankRevealing", "Matrix.exists_linearIndependent_col", "Matrix.exists_isQR", "Matrix.IsQR.span_col_prefix_eq"]
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing.range_eq_span"
+kind = "theorem"
+desc = '''If `IsPivotedQR.IsRankRevealing A Q R σ r` then `LinearMap.range (toEuclideanLin A) =
+span {q_1, …, q_r}` (the first `r` columns of `Q`) ([golub2013matrix] §5.4.2: `a_{c_k} = Σ_{i ≤ min(r,k)}
+r_ik q_i`, so `ran(A) = span{q_1, …, q_r}`); `≤` needs only the vanishing rows, `≥` the invertible
+leading block. Renamed from `IsPivotedQR.range_eq_span` (the hypotheses are now the bundle). ★'''
+deps = ["IsPivotedQR.IsRankRevealing"]
+
+[[node]]
+id = "norm_sq_tail_eq_of_mem_unitaryGroup"
+kind = "theorem"
+desc = '''The column-norm downdating identity of [golub2013matrix] §5.4.2: for `Q` unitary on
+`Fin (s + 1)` and `z`, `‖tail (Qᴴ z)‖² = ‖z‖² - |(Qᴴ z) 0|²` (`Qᴴ z = [α; w] ⇒ ‖w‖² = ‖z‖² - α²`).
+The fact that makes Algorithm 5.4.1's updated `c(i) = c(i) - A(r, i)²` equal to the squared norms
+of the trailing columns in exact arithmetic. ★'''
+deps = ["Matrix.sum_norm_sq_mulVec_of_mem_unitaryGroup"]
+
+[[node]]
+id = "exists_perm_isQR_abs_le"
+kind = "theorem"
+desc = '''**[golub2013matrix] Theorem 5.4.1 (Chan)**, over `RCLike 𝕜` (review L1). For
+`A : Matrix (Fin M) (Fin (N + 1)) 𝕜`, `N + 1 ≤ M`, and a unit vector `v`, there is a permutation `σ` such
+that every QR factorization `IsQR (A.submatrix id σ) Q R` has `‖R (last) (last)‖ ≤ √(N + 1) * ‖A v‖₂`.
+Choose `σ` moving an entry of maximal modulus of `v` to the last position (`‖w_n‖ ≥ 1/√n`); then
+`‖A v‖ = ‖R w‖ ≥ ‖r_nn w_n‖`. ★★'''
+deps = ["Matrix.IsQR", "Matrix.l2_opNorm_unitary_mul"]
+
+[[node]]
+id = "IsURV"
+kind = "definition"
+desc = '''**A URV decomposition** (Stewart 1993; [golub2013matrix] §5.4.5): for `A : Matrix (Fin M) (Fin N) 𝕜`,
+`U`, `R`, `V`, a structure with fields `mem_unitaryGroup_left : U ∈ unitaryGroup (Fin M) 𝕜`,
+`mem_unitaryGroup_right : V ∈ unitaryGroup (Fin N) 𝕜`, `star_mul_mul : star U * A * V = R` and
+`apply_eq_zero : ∀ i j, (j : ℕ) < i → R i j = 0` (upper triangular in the rectangular sense). The
+two-sided orthogonal factorization whose trailing block reveals the small singular values; a pivoted QR
+is one with `V` the permutation matrix (`IsPivotedQR.isURV`), a triangularized complete orthogonal
+decomposition another. ★'''
+deps = []
+
+[[node]]
+id = "IsULV"
+kind = "definition"
+desc = '''**A ULV decomposition** (Stewart 1993; [golub2013matrix] §5.4.5), the lower triangular twin of
+`IsURV`: `U`, `V` unitary, `star U * A * V = L` with `∀ i j, (i : ℕ) < j → L i j = 0`. Stated
+symmetrically with `IsURV` (field names `mem_unitaryGroup_left`, `mem_unitaryGroup_right`,
+`star_mul_mul`, `apply_eq_zero`). ★'''
+deps = []
+
+[[node]]
+id = "IsPivotedQR.isURV"
+kind = "theorem"
+desc = '''A pivoted QR factorization is a URV decomposition: `IsPivotedQR A Q R σ →
+IsURV A Q R (σ.permMatrix 𝕜)ᵀ`-type statement (with the permutation matrix `Π` whose columns select
+`σ`, so that `A Π = A.submatrix id σ`; `Matrix.submatrix_id_eq_mul_permMatrix`-type lemma). `IsQR`'s
+`Q` unitary and `R` vanishing below the diagonal are the two remaining fields. ★'''
+deps = ["IsURV", "Matrix.IsPivotedQR"]
+
+[[node]]
+id = "gap_le_of_urv"
+kind = "theorem"
+desc = '''**[golub2013matrix] (5.4.10) (Stewart, URV).** Let `IsURV A U R V` with the blocks of `R` split at
+`k` (`R = [R₁₁ R₁₂; 0 R₂₂]`, sizes `k`, `n - k`), `ρ = ‖R₂₂‖₂ / σ_min(R₁₁) < 1` (`σ_min(R₁₁) =
+R₁₁.sortedSingularValues (k - 1)`), `S` the span of the right singular vectors of `A` belonging to its
+`n - k` smallest singular values (for any SVD of `A`), and `V₂` the last `n - k` columns of `V`. Then
+`(LinearMap.range (toEuclideanLin V₂)).gap S ≤ ‖R₁₂‖₂ / ((1 - ρ²) σ_min(R₁₁))`. Proof (in `R`'s
+coordinates): with `Y = [Y₁; Y₂]` an orthonormal basis of the trailing right singular subspace of
+`R`, the gap is `‖Y₁‖₂` (`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`); the first block row of
+`Rᴴ R Y = Y Σ²` gives `R₁₁ Y₁ + R₁₂ Y₂ = R₁₁⁻ᴴ Y₁ Σ²`, hence
+`σ_min(R₁₁) ‖Y₁‖ ≤ ‖R₁₂‖ + σ_{k+1}²/σ_min(R₁₁) ‖Y₁‖`, and `σ_{k+1} ≤ ‖R₂₂‖`
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`). The book states it without proof, after Stewart
+(1993). Restated on `IsURV` (review M5). ★★★ (~150 lines)'''
+deps = [
+  "IsURV",
+  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
+  "Submodule.gap",
+  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
+]
+
+[[node]]
+id = "gap_le_of_ulv"
+kind = "theorem"
+desc = '''**[golub2013matrix] (5.4.11) (Stewart, ULV)**, with the book's `L₁₂` read as `L₂₁` (`L` is
+lower triangular, `L₁₂ = 0`; report, Doubts). For `IsULV A U L V`, `L = [L₁₁ 0; L₂₁ L₂₂]`,
+`ρ = ‖L₂₂‖₂/σ_min(L₁₁) < 1`: `(LinearMap.range (toEuclideanLin V₂)).gap S ≤
+ρ ‖L₂₁‖₂ / ((1 - ρ²) σ_min(L₁₁))`. Proof: with a full SVD `L = Z Σ Yᴴ`, the trailing blocks satisfy
+`L Y = Z Σ` and `Lᴴ Z = Y Σ`; the first block rows give
+`L₁₁ᴴ L₁₁ Y₁ = Y₁ Σ² - L₂₁ᴴ Z₂ Σ`, so `σ_min(L₁₁)² ‖Y₁‖ ≤ σ_{k+1}² ‖Y₁‖ + σ_{k+1} ‖L₂₁‖`, then
+`σ_{k+1} ≤ ‖L₂₂‖` (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`, lower form) and monotonicity of
+`t ↦ t/(1 - t²)`. Stated without proof in the book. Restated on `IsULV` (review M5). ★★★ (~150 lines)'''
+deps = [
+  "IsULV",
+  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
+  "Submodule.gap",
+  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
+]
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff"
+kind = "theorem"
+desc = '''The least-squares solutions from a rank-revealing pivoted QR ([golub2013matrix] §5.5.5): if
+`IsPivotedQR.IsRankRevealing A Q R σ r` and `Qᴴ b = [c; d]`, then
+`IsLeastSquaresSolution A b x ↔ ∃ z, Πᵀ x = [R₁₁⁻¹ (c - R₁₂ z); z]`; in particular the basic solution
+`x_B = Π [R₁₁⁻¹ c; 0]` (`z = 0`) is one, with at most `r` nonzero entries.
+`‖A x - b‖² = ‖R₁₁ y - (c - R₁₂ z)‖² + ‖d‖²` (`IsQR.norm_sub_eq`). Renamed from
+`IsPivotedQR.isLeastSquaresSolution_iff`. ★★'''
+deps = ["IsPivotedQR.IsRankRevealing", "Matrix.IsQR.norm_sub_eq", "Matrix.isLeastSquaresSolution_iff"]
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.5.4): under `IsPivotedQR.IsRankRevealing A Q R σ r`,
+`‖A⁺ b‖ = ⨅ z, ‖x_B - Π [R₁₁⁻¹ R₁₂; -I] z‖` (the book writes `z ∈ ℝ^{n-2}`; it is `ℝ^{n-r}`):
+the solution set is `x_B + ran(Π [R₁₁⁻¹R₁₂; -I])` and the minimal-norm solution is its element of
+least norm (`isMinNormLeastSquaresSolution_pinv`). Renamed from `IsPivotedQR.norm_minNorm_eq_iInf`. ★★'''
+deps = ["IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff", "Matrix.isMinNormLeastSquaresSolution_pinv"]
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing.norm_basic_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.5.5) (Golub–Pereyra): `‖A⁺ b‖ ≤ ‖x_B‖ ≤ √(1 + ‖R₁₁⁻¹ R₁₂‖₂²) ‖A⁺ b‖`.
+With `S = R₁₁⁻¹R₁₂`, `x_LS = Π [I; Sᴴ] y` where `(I + S Sᴴ) y = R₁₁⁻¹ c`; then
+`‖x_LS‖² = yᴴ G y`, `‖x_B‖² = yᴴ G² y` with `G = I + S Sᴴ` Hermitian, `1 ≤ G ≤ 1 + ‖S‖²`, and
+`yᴴG²y ≤ λ_max(G) yᴴGy`. The lower bound is minimality. Renamed from `IsPivotedQR.norm_basic_le`. ★★'''
+deps = ["IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf", "Matrix.isMinNormLeastSquaresSolution_pinv"]
+
+[[node]]
+id = "IsPivotedQR.IsRankRevealing.mulVec_basic_eq"
+kind = "theorem"
+desc = '''Underdetermined full-row-rank systems ([golub2013matrix] §5.6.2, Algorithm 5.6.1): if
+`A : Matrix (Fin M) (Fin N) 𝕜` has independent rows and `IsPivotedQR.IsRankRevealing A Q R σ M` (the
+leading `M × M` block `R₁` of `R` invertible; no rows vanish), then `x = Π [R₁⁻¹ Qᴴ b; 0]` satisfies
+`A x = b`. Renamed from `IsPivotedQR.mulVec_basic_eq`. ★'''
+deps = ["IsPivotedQR.IsRankRevealing"]
+
+[[node]]
+id = "norm_residual_subset_sub_le"
+kind = "theorem"
+desc = '''**[golub2013matrix] Theorem 5.5.3.** In the setting of `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix`
+(`IsSVD A U σ V`, column permutation `π`, `B₁` the first `r̃` columns of `A Π`, `Ṽ₁₁` invertible),
+with `U₁` the first `r̃` columns of `U`, `r_{x_r̃} = (I - U₁U₁ᴴ) b` and `r_y = b - B₁ B₁⁺ b`:
+`‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃}(A) / σ_{r̃-1}(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂` (0-based sorted singular values; the book's
+`σ_{r̃+1}/σ_{r̃}`). Proof: both are `(I - P) b` for the orthogonal projections onto `ran U₁` and
+`ran B₁`, so the difference is at most `‖U₁U₁ᴴ - Q₁Q₁ᴴ‖₂ ‖b‖ = ‖U₂ᴴ Q₁‖₂ ‖b‖`
+(`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, Theorem 2.5.1; the book cites "Theorem 2.6.1"), and
+`‖U₂ᴴ Q₁‖ ≤ ‖U₂ᴴ B₁‖ ‖(B₁ᴴB₁)^{-1/2}‖ ≤ σ_{r̃}(A) / σ_{r̃-1}(B₁)` with the lower bound of Theorem 5.5.2.
+(The book's hypothesis "leading `r`-by-`r`" means `r̃`.) ★★★ (~120 lines)'''
+deps = [
+  "Matrix.IsSVD.sortedSingularValues_le_mul_submatrix",
+  "Matrix.mul_pinv_eq_starProjection",
+  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
+]

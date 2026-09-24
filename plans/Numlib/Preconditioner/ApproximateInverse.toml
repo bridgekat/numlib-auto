@@ -1,3 +1,10 @@
+# Planned additions (GVL round): the module doc of `Numlib.Preconditioner.ApproximateInverse` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch11) add a first bullet "the Frobenius objective decouples into one least-squares problem per
+# column of `M`, and a column constrained to a support `J` only sees the rows where `A(:, J)` is
+# nonzero" (`Preconditioner.frobenius_sq_mul_sub_one_eq_sum`,
+# `Preconditioner.isMinOn_submatrix_iff`; [saad2003iterative] §10.5.2 and [golub2013matrix] §11.5.5
+# both use it to compute sparse approximate inverses column by column).
 namespace = "Preconditioner"
 
 [[node]]
@@ -14,3 +21,27 @@ id = "norm_le_norm_sq_of_isMinOn"
 
 [[node]]
 id = "residual_selfPreconditionedStep"
+
+[[node]]  # staged by ch11
+id = "frobenius_sq_mul_sub_one_eq_sum"
+kind = "theorem"
+desc = '''
+For `A M : Matrix n n ℝ` (or `𝕜`): `‖A * M − 1‖_F² = ∑_k ‖A *ᵥ (M · k) − Pi.single k 1‖²` (scoped
+`Matrix.Norms.Frobenius`; column `k` of `M` is `fun i => M i k`). `Matrix.frobenius_norm_def` and a
+sum swap. Hence a pattern-constrained minimization of `‖AM − I‖_F` is `n` independent column
+problems. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.5.5'
+
+[[node]]  # staged by ch11
+id = "isMinOn_submatrix_iff"
+kind = "theorem"
+desc = '''
+Reduced least squares: for `J ⊆ n` (the allowed support), `I ⊆ n` containing every row `i` with
+`A i j ≠ 0` for some `j ∈ J`, and `c : n → ℝ`, a vector `τ : J → ℝ` minimizes
+`‖A(I, J) τ − c(I)‖₂` iff its extension by zero minimizes `‖A x − c‖₂` over `x` supported in `J`
+(the objectives differ by the constant `‖c(Iᶜ)‖²`). `Matrix.submatrix`, `Finset.sum_subset`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.5.5'

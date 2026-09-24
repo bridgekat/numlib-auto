@@ -1,0 +1,181 @@
+namespace = "GolubVanLoan.Chapter10"
+desc = '''
+§10.6, Jacobi–Davidson and related methods: the approximate Newton framework (10.6.1)–(10.6.10), the Jacobi
+orthogonal component correction (10.6.11)–(10.6.15), Davidson's method (10.6.16), the Jacobi–Davidson
+correction (10.6.17)–(10.6.19), and the trace-min principle of §10.6.5. Backbone
+`Numlib/Eigen/JacobiDavidson` (the residual maps, their derivatives, the bordered Newton correction, the
+projected equation), `Numlib/Eigen/RayleighRitz` (`Krylov.IsRitzPair`, the Ritz–Galerkin condition that
+Davidson and Jacobi–Davidson impose), and the Ky Fan principle staged in `Eigen/MinMax`. No convergence
+claim is made by the book and none is planned; the trace-min *iteration* is sketched without a claim and is
+not formalized. Real matrices and vectors (`Fin n → ℝ`, `EuclideanSpace ℝ (Fin n)` where norms enter).
+'''
+
+[[node]]
+id = "equation_10_6_1"
+kind = "theorem"
+desc = '''(10.6.1): if `A (x_c + δx) = (λ_c + δλ)(x_c + δx)` then `(A − λ_c I) δx − δλ x_c = −r_c + δλ δx`, `r_c = A x_c − λ_c x_c`.
+Ring arithmetic (`module`/`linear_combination` on vectors). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.1)'
+
+[[node]]
+id = "equation_10_6_4"
+kind = "theorem"
+desc = '''(10.6.4): with `x₊ = x_c + δx` (10.6.3), if `wᵀ x₊ = 1` and `wᵀ x_c = 1` then `wᵀ δx = 0`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.4)'
+
+[[node]]
+id = "equation_10_6_5"
+kind = "theorem"
+desc = '''(10.6.5): the bordered system `[A − λ_c I, −x_c; wᵀ, 0] [δx; δλ] = −[r_c; 0]` is the Newton system of
+`F([x; λ]) = [A x − λ x; wᵀ x − 1]` at `(x_c, λ_c)` when `wᵀ x_c = 1`: `F` has derivative the bordered matrix
+(`ContinuousLinearMap.hasFDerivAt_eigenpairResidual` with `ℓ = ⟪w, ·⟫`), and `F(x_c, λ_c) = (r_c, 0)`. Stated as: `(δx, δλ)` solves
+(10.6.5) iff `fderiv ℝ F (x_c, λ_c) (δx, δλ) = −F (x_c, λ_c)`, and as the matrix identity for the block matrix
+(`Matrix.fromBlocks` reindexed to `Fin (n + 1)`). ★'''
+deps = ["ContinuousLinearMap.eigenpairResidual", "ContinuousLinearMap.hasFDerivAt_eigenpairResidual"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.5)'
+
+[[node]]
+id = "equation_10_6_7"
+kind = "theorem"
+desc = '''(10.6.6)–(10.6.7): if `A − λ_c I` is nonsingular and `wᵀ (A − λ_c I)⁻¹ x_c ≠ 0`, the solution of (10.6.5) is
+`δλ = wᵀ(A − λ_c I)⁻¹ r_c / wᵀ(A − λ_c I)⁻¹ x_c`, `δx = −(A − λ_c I)⁻¹ (r_c − δλ x_c)`, and it is the unique one.
+Backbone `JacobiDavidson.newtonCorrection_eq` (matrices through `Matrix.toLin'`). ★'''
+deps = ["JacobiDavidson.newtonCorrection_eq", "equation_10_6_5"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.7)'
+
+[[node]]
+id = "equation_10_6_10"
+kind = "theorem"
+desc = '''(10.6.8)–(10.6.10), the approximate Newton correction: with `M` in place of `A` (`N = M − A`, the term `N δx` dropped),
+the solution of (10.6.8) is (10.6.9)–(10.6.10), `δλ = wᵀ(M − λ_c I)⁻¹ r_c / wᵀ(M − λ_c I)⁻¹ x_c`,
+`δx = −(M − λ_c I)⁻¹ (r_c − δλ x_c)`. The same lemma `JacobiDavidson.newtonCorrection_eq` for the operator `M`
+(the right side `r_c` is still `A x_c − λ_c x_c`). ★'''
+deps = ["JacobiDavidson.newtonCorrection_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.10)'
+
+[[node]]
+id = "equation_10_6_13"
+kind = "theorem"
+desc = '''(10.6.13) and the JOCC rearrangement: for `A = [α cᵀ; c A₁]` (10.6.11), `w = e₁`, `x_c = [1; z_c]`, `δx = [δμ; δz]`,
+(a) the system (10.6.5) is equivalent to `δμ = 0` together with
+`[A₁ − λ_c I, −z_c; cᵀ, −1] [δz; δλ] = −[(A₁ − λ_c I) z_c + c; α + cᵀ z_c − λ_c]` (the book's first row prints `α + + cᵀz_c`),
+which is the Newton system of `f([z; λ]) = A [1; z] − λ [1; z]` (derivative by the same computation as
+`ContinuousLinearMap.hasFDerivAt_eigenpairResidual`); (b) if `A₁ = M₁ − N₁` then, with `z₊ = z_c + δz`, `λ₊ = λ_c + δλ`:
+`(M₁ − λ_c I) z₊ = −c + N₁ z_c + (δλ z_c + N₁ δz)` and `λ₊ = α + cᵀ z₊`. Block algebra. ★★'''
+deps = ["equation_10_6_5"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.13)'
+
+[[node]]
+id = "joccIteration"
+kind = "definition"
+desc = '''(10.6.14), the Jacobi orthogonal component correction as a D4 program with fuel and tolerance `tol`: `λ_1 = α`,
+`z_1 = 0`, `ρ_1 = ‖c‖₂`; while `ρ_k > tol`: solve `(M₁ − λ_k I) z_{k+1} = −c + N₁ z_k` with `M₁` the diagonal of `A₁`
+(entrywise division, one `rnd` each), `λ_{k+1} = α + cᵀ z_{k+1}`, `k = k+1`, `ρ_k = ‖A₁ z_k − λ_k z_k + c‖₂`.
+`noncomputable def`. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.14)'
+
+[[node]]
+id = "equation_10_6_14"
+kind = "theorem"
+desc = '''Exact semantics of (10.6.14): every iterate satisfies the two update equations (with `M₁` diagonal and nonzero
+`M₁ − λ_k I` diagonal, which the spec assumes), the corrections `x_{k+1} − x_k = [0; z_{k+1} − z_k]` are orthogonal to `e₁`
+(the name of the method), and `ρ_k = ‖r_k‖₂` for the residual of `equation_10_6_15`; the loop stops with `ρ_k ≤ tol`
+or after `fuel` passes. ★'''
+deps = ["joccIteration", "equation_10_6_15"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.14)'
+
+[[node]]
+id = "equation_10_6_15"
+kind = "theorem"
+desc = '''(10.6.15): with `λ_k = α + cᵀ z_k` and `x_k = [1; z_k]`, `r_k = (A − λ_k I) x_k = [0; (A₁ − λ_k I) z_k + c]` — the first
+component vanishes. Block arithmetic. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.15)'
+
+[[node]]
+id = "davidson"
+kind = "definition"
+desc = '''(10.6.16), Davidson's method as a D4 program with fuel and `tol`: `x_1 = e₁`, `λ_1 = x_1ᵀ A x_1`, `r_1 = A x_1 − λ_1 x_1`,
+`V_1 = [e₁]`; while `‖r_k‖ > tol`: solve `(M − λ_k I) δv_k = −r_k` (`M` the diagonal of `A`), `s_{k+1} = (I − V_k V_kᵀ) δv_k`,
+`v_{k+1} = s_{k+1}/‖s_{k+1}‖₂`, `V_{k+1} = [V_k | v_{k+1}]`, compute a Ritz pair `(θ_{k+1}, t_{k+1})` of `V_{k+1}ᵀ A V_{k+1}`
+("a suitably chosen" one: a caller-supplied selector from the eigenpairs of the small symmetric matrix, e.g. the
+largest), `λ_{k+1} = θ_{k+1}`, `x_{k+1} = V_{k+1} t_{k+1}`, `r_{k+1} = A x_{k+1} − λ_{k+1} x_{k+1}`. The orthogonalization is
+modified Gram–Schmidt (the book's remark), i.e. `InnerProductSpace.modifiedGramSchmidtSweep` in exact arithmetic. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
+
+[[node]]
+id = "equation_10_6_16"
+kind = "theorem"
+desc = '''Exact semantics of (10.6.16) (the claims of §10.6.3): as long as no `s_{k+1}` vanishes, `V_k` has orthonormal columns,
+`(λ_k, x_k)` is a Ritz pair of symmetric `A` on `ran V_k` (`Krylov.IsRitzPair`), and hence `V_kᵀ r_k = 0`. The
+Ritz values are nondecreasing in `k` when the largest is selected (`LinearMap.IsSymmetric.eigenvalues_compression_mono`,
+the Davidson monotonicity; not claimed by the book, stated because it is free). ★★'''
+deps = ["davidson", "Krylov.IsRitzPair", "Krylov.isRitzPair_iff_hasEigenvector", "InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum", "LinearMap.IsSymmetric.eigenvalues_compression_mono"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
+
+[[node]]
+id = "equation_10_6_17"
+kind = "theorem"
+desc = '''(10.6.17): for `x_cᵀ x_c = 1`, the system `[A − λ_c I, −x_c; x_cᵀ, 0] [δx; δλ] = −[r_c; 0]` is the Newton system of
+`F([x; λ]) = [A x − λ x; (xᵀx − 1)/2]` at `(x_c, λ_c)`. Backbone `ContinuousLinearMap.hasFDerivAt_eigenpairResidualSphere`. ★'''
+deps = ["ContinuousLinearMap.eigenpairResidualSphere", "ContinuousLinearMap.hasFDerivAt_eigenpairResidualSphere"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.17)'
+
+[[node]]
+id = "equation_10_6_18"
+kind = "theorem"
+desc = '''(10.6.18): if `‖x_c‖ = 1` and `λ_c = x_cᵀ A x_c`, then `(δx, δλ)` solves (10.6.17) iff `x_cᵀ δx = 0` and
+`(I − x_c x_cᵀ)(A − λ_c I)(I − x_c x_cᵀ) δx = −r_c`, with `δλ = x_cᵀ (A − λ_c I) δx`. The book derives `⇒` (the chain of
+equalities before (10.6.18)); `⇐` is what "the correction is obtained by solving the projected system" uses.
+Backbone `JacobiDavidson.newtonStep_iff_projected`. ★'''
+deps = ["equation_10_6_17", "JacobiDavidson.newtonStep_iff_projected"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.18)'
+
+[[node]]
+id = "IsJDCorrection"
+kind = "definition"
+desc = '''(10.6.19): `δv` is a Jacobi–Davidson correction for `(x_k, λ_k, r_k)` and the preconditioner `M` if `x_kᵀ δv = 0` and
+`(I − x_k x_kᵀ)(M − λ_k I)(I − x_k x_kᵀ) δv = −r_k`. For `M = A` it is exactly the Newton correction of `equation_10_6_18`
+(one-line theorem in the same node's docstring). ★'''
+deps = ["equation_10_6_18"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.19)'
+
+[[node]]
+id = "jacobiDavidson"
+kind = "definition"
+desc = '''§10.6.4, the Jacobi–Davidson framework: (10.6.16) with the Davidson correction replaced by a correction solver
+`solve : (x λ r) → Fin n → ℝ` supplied by the caller (the book: "various Chapter 11 iterative solvers can be
+applied"), the initial unit vector `x_1` arbitrary. A D4 program. ★'''
+deps = ["davidson", "IsJDCorrection"]
+source = 'Golub–Van Loan, Matrix Computations, §10.6.4, the Jacobi–Davidson framework'
+
+[[node]]
+id = "jacobiDavidson_spec"
+kind = "theorem"
+desc = '''Exact semantics of the framework: if every call of `solve` returns an `IsJDCorrection` (for some `M`), then the
+expansion vectors are orthogonal to the current Ritz vector, `V_k` stays orthonormal as long as no expansion
+vector lies in `ran V_k`, and each `(λ_k, x_k)` is a Ritz pair on `ran V_k` with `V_kᵀ r_k = 0` — the same
+specification as `equation_10_6_16`. ★'''
+deps = ["jacobiDavidson", "equation_10_6_16", "IsJDCorrection"]
+source = 'Golub–Van Loan, Matrix Computations, §10.6.4, the Jacobi–Davidson framework'
+
+[[node]]
+id = "traceMin"
+kind = "theorem"
+desc = '''§10.6.5, the trace-min principle for the symmetric-definite pencil `A − λB` (`A` symmetric, `B` positive definite) with
+eigenvalues `μ_1 ≤ ⋯ ≤ μ_n` (the book counts from the smallest here): `min {tr(Vᵀ A V) : V ∈ ℝ^{n×k}, Vᵀ B V = I_k} =
+μ_1 + ⋯ + μ_k`, attained at `V_opt = [x_1 | ⋯ | x_k]` with `A x_j = μ_j B x_j`, `x_iᵀ B x_j = δ_ij`, for which
+`V_optᵀ A V_opt = diag(μ_1, …, μ_k)`. The book's "if `V_opt` solves the problem then the eigenpairs are exposed by
+`V_optᵀ A V_opt = diag(μ)`" holds for *some* minimizer, not every one (any `V_opt Q`, `Q` orthogonal, also minimizes;
+Doubts); every minimizer spans the sum of the eigenspaces when `μ_k < μ_{k+1}`, which is not planned. The pencil
+eigenvalues are chapter 8's `Matrix.pencilEigenvalues` (decreasing; the book's `μ_1, …, μ_k` here are its last
+`k`). Proof: with a normalizer `W`, `Wᵀ B W = I` (`Matrix.PosDef.exists_isUnit_conj_eq_one`), every feasible `V` is
+`W X` with `Xᵀ X = I_k`, and `tr(VᵀAV) = tr(Xᵀ (WᵀAW) X)`; the staged Ky Fan minimum principle
+`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for `WᵀAW`, whose sorted eigenvalues are
+`pencilEigenvalues` (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); equality at `X` = the last `k` eigenvectors. ★★'''
+deps = ["LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner", "Matrix.pencilEigenvalues", "Matrix.pencilEigenvalues_eq_of_conj_eq_one"]
+source = 'Golub–Van Loan, Matrix Computations, §10.6.5, the trace-min principle'

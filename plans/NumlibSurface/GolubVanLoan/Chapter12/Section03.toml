@@ -1,0 +1,250 @@
+namespace = "GolubVanLoan.Chapter12"
+desc = '''
+§12.3, Kronecker product computations: the properties of §12.3.1 ((12.3.1)–(12.3.4) and the unnumbered list), the
+Tracy–Singh (12.3.5)–(12.3.8), Hadamard and Khatri–Rao products, vec and reshape (12.3.9)–(12.3.11), vec and perfect
+shuffles (12.3.12), the Kronecker product SVD and nearest Kronecker products (12.3.14)–(12.3.19), Theorem 12.3.1,
+Lemmas 12.3.2–12.3.3 with (12.3.20)–(12.3.21), and the reshaping identity of §12.3.10. Backbone:
+`Numlib/LinearAlgebra/Matrix/KroneckerApprox` and the Kronecker material staged for chapter 1's `…/Matrix/Kronecker`;
+the four basic identities of §12.3.1 (transpose, inverse, product, associativity) are chapter 1's (1.3.1)–(1.3.4) and are
+not restated. (12.3.13), (12.3.16), (12.3.17) are notation/partitions (the SVD (12.3.17) is Theorem 12.3.1's hypothesis).
+'''
+
+[[node]]
+id = "equation_12_3_1"
+kind = "theorem"
+desc = '''(12.3.1): `𝒫_{m₁,m₂} (B ⊗ C) 𝒫_{n₁,n₂}ᵀ = C ⊗ B` for `B ∈ ℝ^{m₁×n₁}`, `C ∈ ℝ^{m₂×n₂}` — chapter 1's (1.3.5), restated.
+`GolubVanLoan.Chapter01.equation_1_3_5`. ★'''
+deps = ["GolubVanLoan.Chapter01.equation_1_3_5"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.1)'
+
+[[node]]
+id = "equation_12_3_2"
+kind = "theorem"
+desc = '''(12.3.2): for permutations `p` of `1:m` and `q` of `1:n`, `I_m(p, :) ⊗ I_n(q, :) = I_{mn}(w, :)` with `w = (1_m ⊗ q) + n · (p − 1_m) ⊗
+1_n`; in particular the Kronecker product of permutation matrices is a permutation matrix. Typed:
+`Matrix.permMatrix_kronecker_permMatrix`; the book's `w` is `finProdFinEquiv ∘ Prod.map p q ∘ finProdFinEquiv.symm` read 1-based
+(chapter 1's `Matrix.kroneckerFin`). ★★ (~40 lines, the flattening)'''
+deps = ["Matrix.permMatrix_kronecker_permMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.2)'
+
+[[node]]
+id = "kronecker_structure_preserved"
+kind = "theorem"
+desc = '''§12.3.1: (orthogonal) ⊗ (orthogonal) = (orthogonal) (Mathlib `Matrix.kronecker_mem_unitary` over `ℝ`), (stochastic) ⊗
+(stochastic) = (stochastic) (`Matrix.kronecker_mem_rowStochastic`), (sym. pos. def.) ⊗ (sym. pos. def.) = (sym. pos. def.)
+(Mathlib `Matrix.PosDef.kronecker`), and `B = G_B G_Bᵀ`, `C = G_C G_Cᵀ ⇒ B ⊗ C = (G_B ⊗ G_C)(G_B ⊗ G_C)ᵀ` (Mathlib
+`Matrix.mul_kronecker_mul`, `Matrix.kroneckerMap_transpose`). ★'''
+deps = ["Matrix.kronecker_mem_rowStochastic"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.1'
+
+[[node]]
+id = "kronecker_factorizations"
+kind = "theorem"
+desc = '''§12.3.1: the Cholesky factor of `B ⊗ C` is the Kronecker product of the Cholesky factors; `P_B B = L_B U_B`, `P_C C = L_C U_C ⇒
+(P_B ⊗ P_C)(B ⊗ C) = (L_B ⊗ L_C)(U_B ⊗ U_C)` (an LU factorization); `B = Q_B R_B`, `C = Q_C R_C ⇒ B ⊗ C = (Q_B ⊗ Q_C)(R_B ⊗ R_C)` (a QR
+factorization for square factors); and with thin pivoted QRs `B P_B = Q_B R_B`, `C P_C = Q_C R_C`, `(B ⊗ C)(P_B ⊗ P_C) = (Q_B ⊗ Q_C)(R_B
+⊗ R_C)` is a thin QR factorization. In the book's layout (chapter 1's `Matrix.kroneckerFin`):
+`Matrix.IsUpperTriangular.kroneckerFin` (with `IsLU.kroneckerFin`, `IsCholesky.kroneckerFin`), Mathlib
+`Matrix.mul_kronecker_mul`, `Matrix.kronecker_mem_unitary`. The remark that rectangular `R` factors need row permutations
+to be triangular is prose. ★★ (~50 lines)'''
+deps = ["Matrix.IsUpperTriangular.kroneckerFin"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.1'
+
+[[node]]
+id = "equation_12_3_3"
+kind = "theorem"
+desc = '''(12.3.3): `Q_Bᴴ B Q_B = T_B`, `Q_Cᴴ C Q_C = T_C ⇒ (Q_B ⊗ Q_C)ᴴ (B ⊗ C) (Q_B ⊗ Q_C) = T_B ⊗ T_C`, and `T_B ⊗ T_C` is upper triangular
+when `T_B`, `T_C` are (Schur decompositions, over `ℂ`); hence `λ(B ⊗ C) = {β_i γ_j}` (the display before (12.3.3)). Mathlib
+`Matrix.mul_kronecker_mul`, `Matrix.conjTranspose_kronecker`; `Matrix.IsUpperTriangular.kroneckerFin`,
+`Matrix.charpoly_kronecker`. ★'''
+deps = ["Matrix.IsUpperTriangular.kroneckerFin", "Matrix.charpoly_kronecker"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.3)'
+
+[[node]]
+id = "equation_12_3_4"
+kind = "theorem"
+desc = '''(12.3.4): `U_Bᴴ B V_B = Σ_B`, `U_Cᴴ C V_C = Σ_C ⇒ (U_B ⊗ U_C)ᴴ (B ⊗ C)(V_B ⊗ V_C) = Σ_B ⊗ Σ_C`; hence `σ(B ⊗ C) = {β_i γ_j}` (as a
+multiset, `Σ_B ⊗ Σ_C` being rectangular diagonal up to a permutation). Mathlib `Matrix.mul_kronecker_mul`;
+`Matrix.singularValues_kronecker`. ★'''
+deps = ["Matrix.singularValues_kronecker"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.4)'
+
+[[node]]
+id = "kronecker_invariants"
+kind = "theorem"
+desc = '''§12.3.1, after (12.3.4): `B y = β y`, `C z = γ z ⇒ (B ⊗ C)(y ⊗ z) = βγ (y ⊗ z)`; `rank(B ⊗ C) = rank B · rank C`; `det(B ⊗ C) =
+det(B)ⁿ det(C)ᵐ` (Mathlib `Matrix.det_kronecker`); `tr(B ⊗ C) = tr B · tr C` (Mathlib `Matrix.trace_kronecker`); `‖B ⊗ C‖_F = ‖B‖_F
+‖C‖_F`; `‖B ⊗ C‖₂ = ‖B‖₂ ‖C‖₂`. `Matrix.piKronecker_mul_piKronecker` (its `mulVec` clause, at `Fin 2`),
+`Matrix.rank_kronecker`, `Matrix.frobenius_norm_kronecker`, `Matrix.l2_opNorm_kronecker`. ★'''
+deps = ["Matrix.piKronecker_mul_piKronecker", "Matrix.rank_kronecker", "Matrix.frobenius_norm_kronecker", "Matrix.l2_opNorm_kronecker"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.1'
+
+[[node]]
+id = "equation_12_3_6"
+kind = "theorem"
+desc = '''(12.3.5)–(12.3.6): the Tracy–Singh product of the block matrices (12.3.5) — `M₁ × N₁` blocks of size `m₁ × n₁`, `M₂ × N₂` blocks
+of size `m₂ × n₂` — is a row and column permutation of `B ⊗ C`: `B ⊗_TS C = P (B ⊗ C) Qᵀ`. Typed: `Matrix.tracySingh` and
+`tracySingh_eq_reindex_kronecker`; the surface definition `tracySinghFin` (the book's block layout on `Fin`, through
+`finProdFinEquiv`) is shown equal to the typed one. ★'''
+deps = ["Matrix.tracySingh"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.6)'
+
+[[node]]
+id = "equation_12_3_7"
+kind = "theorem"
+desc = '''(12.3.7)–(12.3.8): the permutations of (12.3.6) are `P = (I_{M₁M₂} ⊗ 𝒫_{m₂,m₁})(I_{M₁} ⊗ 𝒫_{m₁,M₂m₂})` and `Q = (I_{N₁N₂} ⊗
+𝒫_{n₂,n₁})(I_{N₁} ⊗ 𝒫_{n₁,N₂n₂})`, with chapter 1's perfect shuffle `Matrix.perfectShuffle` and `Matrix.kroneckerFin`. Index
+computation: both sides are permutation matrices; compare the permutations of `Fin (M₁ M₂ m₁ m₂)` on the mixed-radix digits
+(`finProdFinEquiv` four times). The book derives it from (12.3.1) without detail; checked by hand in planning with the
+book's convention `(𝒫_{p,r} x)_{(m−1)p+k} = x_{(k−1)r+m}`: the right factor moves `i₁` behind `(I₂, i₂)`, the left one swaps `(i₂,
+i₁)`, giving the Tracy–Singh order `(I₁, I₂, i₁, i₂)` from the Kronecker order `(I₁, i₁, I₂, i₂)`. ★★ (~80 lines)'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_6", "GolubVanLoan.Chapter12.equation_12_3_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.7)'
+
+[[node]]
+id = "hadamard_khatriRao_submatrix_kronecker"
+kind = "theorem"
+desc = '''§12.3.3: the Hadamard product `B .* C` and the Khatri–Rao product are submatrices of `B ⊗ C`; the column Khatri–Rao product is
+`[b₁ ⊗ c₁ | ⋯ | b_n ⊗ c_n]`. The block Khatri–Rao product (blocks `B_ij ⊗ C_ij`) is the surface definition `blockKhatriRao`
+(content-named, no backbone consumer), equal to a submatrix of the Tracy–Singh product. `Matrix.khatriRao`
+(`khatriRao_eq_submatrix_kronecker`, `hadamard_eq_submatrix_kronecker`). ★'''
+deps = ["Matrix.khatriRao", "Matrix.tracySingh"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.3'
+
+[[node]]
+id = "equation_12_3_9"
+kind = "theorem"
+desc = '''(12.3.9): `Y = C X Bᵀ ⇔ vec(Y) = (B ⊗ C) vec(X)` — chapter 1's (1.3.6), restated (the book's dimension `X ∈ ℝ^{n₁×m₂}` should read `X ∈
+ℝ^{n₂×n₁}`). `GolubVanLoan.Chapter01.equation_1_3_6`. ★'''
+deps = ["GolubVanLoan.Chapter01.equation_1_3_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.9)'
+
+[[node]]
+id = "equation_12_3_11"
+kind = "theorem"
+desc = '''(12.3.10) ⇔ (12.3.11): `F₁ X G₁ᵀ + ⋯ + F_p X G_pᵀ = C ⇔ (G₁ ⊗ F₁ + ⋯ + G_p ⊗ F_p) vec(X) = vec(C)`; and `reshape(v ⊗ u, m, n) = u vᵀ`
+(the display after the definition of `reshape`). Sum of (12.3.9) (Mathlib `Matrix.kronecker_mulVec_vec`, `Matrix.add_mulVec`,
+`Matrix.vec_add`, `Matrix.vec_inj`); `Matrix.unvec`. ★'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_9", "Matrix.unvec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.11)'
+
+[[node]]
+id = "equation_12_3_12"
+kind = "theorem"
+desc = '''(12.3.12): `vec(Aᵀ) = 𝒫_{r,q} vec(A)` for `A ∈ ℝ^{q×r}` (chapter 1's `Matrix.perfectShuffle` and `Matrix.vecFin`; typed, Mathlib
+`Matrix.vec_transpose`). ★'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.12)'
+
+[[node]]
+id = "perfectShuffle_two_pass"
+kind = "theorem"
+desc = '''§12.3.5, the two-pass transposition of `A = [A₁; ⋯; A_r]` (`A_k ∈ ℝ^{q×q}`): `𝒫_{q,rq} = Γ₂ Γ₁` with `Γ₁ = 𝒫_{q,r} ⊗ I_q` and `Γ₂ = I_r ⊗
+𝒫_{q,q}`; `reshape(Γ₁ vec(A), q, rq) = [A₁ | ⋯ | A_r]` and `reshape(Γ₂ Γ₁ vec(A), q, rq) = [A₁ᵀ ⋯ A_rᵀ] = Aᵀ`. The book prints `Γ₁ = 𝒫_{r,q} ⊗
+I_q` (its transpose; the two agree only for `r = q`) and announces a factorization of `𝒫_{rq,q}` before writing `𝒫_{q,rq}`
+(chapter 12 report). Index computation with `Matrix.perfectShuffle`'s action on `vecFin` ((12.3.12)). ★★ (~60 lines)'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_12"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.5'
+
+[[node]]
+id = "rearrangement"
+kind = "definition"
+desc = '''§12.3.6, the book's `𝓡(A)` for `A ∈ ℝ^{m₁m₂ × n₁n₂}` blocked as (12.3.16): `rearrangement A : Matrix (Fin (n₁ * m₁)) (Fin (n₂ * m₂))
+ℝ := (Matrix.kroneckerRearrange (A.reindex finProdFinEquiv.symm finProdFinEquiv.symm)).reindex finProdFinEquiv finProdFinEquiv`
+(row `(j−1)m₁ + i` is `vec(A_{ij})ᵀ`, the order `Ã₁, …, Ã_{n₁}` of the display after (12.3.16); the book's 3×2 example writes a 5-row
+`A` and `b₃₂` twice for `b₂₂`, misprints). ★'''
+deps = ["Matrix.kroneckerRearrange"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.6, Definition'
+
+[[node]]
+id = "equation_12_3_14"
+kind = "theorem"
+desc = '''(12.3.14) and the display after the example: `φ(B, C) = ‖A − B ⊗ C‖_F = ‖𝓡(A) − vec(B) vec(C)ᵀ‖_F`, so minimizing `φ` is finding a
+nearest rank-1 matrix to `𝓡(A)`. `Matrix.frobenius_norm_kroneckerRearrange`, `Matrix.kroneckerRearrange_kronecker`. ★'''
+deps = ["GolubVanLoan.Chapter12.rearrangement", "Matrix.frobenius_norm_kroneckerRearrange", "Matrix.kroneckerRearrange_kronecker"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.14)'
+
+[[node]]
+id = "equation_12_3_15"
+kind = "theorem"
+desc = '''(12.3.15) and the sentence after it: if `Uᵀ 𝓡(A) V = Σ` is an SVD (chapter 2's Theorem 2.4.1 form), then `vec(B_opt) = √σ₁ U(:,1)`,
+`vec(C_opt) = √σ₁ V(:,1)` minimize `φ`, and so do `α B_opt`, `C_opt/α` for `α ≠ 0`. `Matrix.isLeast_frobenius_norm_sub_sum_kronecker`
+at `r̃ = 1` with `Matrix.kroneckerRank_le_iff`. ★'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_14", "Matrix.isLeast_frobenius_norm_sub_sum_kronecker", "Matrix.kroneckerRank_le_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.15)'
+
+[[node]]
+id = "theorem_12_3_1"
+kind = "theorem"
+desc = '''Theorem 12.3.1 (Kronecker product SVD): if `𝓡(A) = ∑_{k=1}^r σ_k u_k v_kᵀ` is the SVD of `𝓡(A)` (12.3.17) then `A = ∑_{k=1}^r σ_k U_k ⊗ V_k`
+(12.3.18) with `U_k = reshape(u_k, m₁, n₁)`, `V_k = reshape(v_k, m₂, n₂)`; and `r` is the Kronecker product rank. Typed:
+`Matrix.eq_sum_kronecker_iff` (the proof, lines 37225–37240) and `Matrix.exists_kroneckerSVD`; flattened through
+`rearrangement` and chapter 1's `Matrix.reshape`. ★★ (~40 lines, the flattening)'''
+deps = ["Matrix.eq_sum_kronecker_iff", "Matrix.exists_kroneckerSVD", "Matrix.kroneckerRank", "GolubVanLoan.Chapter12.rearrangement"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.3.1'
+
+[[node]]
+id = "equation_12_3_19"
+kind = "theorem"
+desc = '''(12.3.19): for `r̃ ≤ r`, `A_{r̃} = ∑_{k=1}^{r̃} σ_k U_k ⊗ V_k` is the closest matrix to `A` in the Frobenius norm among sums of `r̃` Kronecker
+products. `Matrix.isLeast_frobenius_norm_sub_sum_kronecker` (and `Matrix.kroneckerRank_le_iff` for "sum of `r̃` Kronecker
+products"). ★'''
+deps = ["GolubVanLoan.Chapter12.theorem_12_3_1", "Matrix.isLeast_frobenius_norm_sub_sum_kronecker", "Matrix.kroneckerRank_le_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.19)'
+
+[[node]]
+id = "equation_12_3_20"
+kind = "theorem"
+desc = '''(12.3.20): for `A ∈ ℝ^{m²×m²}`, `φ_sym(X) = ‖A − X ⊗ X‖_F = ‖𝓡(A) − vec(X) vec(X)ᵀ‖_F`. `Matrix.frobenius_norm_kroneckerRearrange`. ★'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_14"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.20)'
+
+[[node]]
+id = "lemma_12_3_2"
+kind = "theorem"
+desc = '''Lemma 12.3.2: for `M ∈ ℝ^{n×n}` with `T = (M + Mᵀ)/2 = Q diag(α) Qᵀ` and `|α_k| = max |α_i|`, `Z_opt = α_k q_k q_kᵀ` minimizes `‖M − Z‖_F` over
+symmetric `Z` with `rank(Z) ≤ 1` (P12.3.11). The book's "`rank(Z) = 1`" fails for `T = 0` (no minimizer of rank exactly one); `rank ≤ 1`
+is the formalized reading and coincides with it for `T ≠ 0`. `Matrix.isMinOn_frobenius_norm_sub_symm_rank_le_one`. ★'''
+deps = ["Matrix.isMinOn_frobenius_norm_sub_symm_rank_le_one"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.2'
+
+[[node]]
+id = "nearest_kronecker_self"
+kind = "theorem"
+desc = '''§12.3.8, "the solution `X_opt` is a reshaping of an eigenvector associated with the symmetric part of `𝓡(A)`", in the form that is true:
+with `T = (𝓡(A) + 𝓡(A)ᵀ)/2`, `α_max` its largest eigenvalue and `q` a unit eigenvector, `X_opt = reshape(√(α_max⁺) q, m, m)` minimizes
+`φ_sym` (`α_max⁺ = max(α_max, 0)`). Lemma 12.3.2 alone does not give it: `vec(X) vec(X)ᵀ` is positive semidefinite, so a negative
+eigenvalue of largest modulus is not admissible (chapter 12 report). Proof: `Matrix.norm_sub_smul_vecMulVec_self_sq` with `α ≥ 0`
+and the Rayleigh bound `xᵀ T x ≤ α_max`. ★★ (~50 lines)'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_20", "Matrix.norm_sub_smul_vecMulVec_self_sq"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.8'
+
+[[node]]
+id = "equation_12_3_21"
+kind = "theorem"
+desc = '''(12.3.21): for `A ∈ ℝ^{m²×m²}`, `φ_skew(X, Y) = ‖A − (X ⊗ Y − Y ⊗ X)‖_F = ‖𝓡(A) − (vec(X) vec(Y)ᵀ − vec(Y) vec(X)ᵀ)‖_F` (the book writes `φ_skew(X)`
+and drops a parenthesis). `Matrix.frobenius_norm_kroneckerRearrange`. ★'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_14"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.21)'
+
+[[node]]
+id = "lemma_12_3_3"
+kind = "theorem"
+desc = '''Lemma 12.3.3: for `M ∈ ℝ^{n×n}`, `S = (M − Mᵀ)/2`, and orthonormal `u, v` with `S[u | v] = [u | v][0 μ; −μ 0]`, `μ = ρ(S)`: `Z_opt = μ(u vᵀ − v
+uᵀ)` minimizes `‖M − Z‖_F` over skew-symmetric `Z` of rank `≤ 2` (P12.3.12). The constraint is `rank Z ≤ 2`, not `= 2`:
+`Z_opt` is a difference of two rank-one matrices, of rank exactly `2` when `μ ≠ 0` and equal to `0` when `S = 0` (then `μ = 0`
+and the book's formula gives `Z_opt = 0`, which is indeed the minimizer, `M` being symmetric). `ρ(S) =
+‖S‖₂` for the normal matrix `S` (the surface helper `spectralRadius_skew_eq_l2_opNorm`, through `Matrix.complexify` and the
+singular values of a normal matrix); then `Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`. ★★ (~40 lines, the `ρ = ‖·‖₂`
+helper)'''
+deps = ["Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.3'
+
+[[node]]
+id = "kronecker_mulVec_reshape"
+kind = "theorem"
+desc = '''§12.3.10: for `B_i ∈ ℝ^{m_i×n_i}`, `M_i = m₁⋯m_i`, `N_i = n₁⋯n_i`, and `y = (B₁ ⊗ ⋯ ⊗ B_p) x`: `reshape(y, M_p/M_i, M_i) = (B_{i+1} ⊗ ⋯ ⊗ B_p) ·
+reshape(x, N_p/N_i, N_i) · (B₁ ⊗ ⋯ ⊗ B_i)ᵀ`. (1.3.6) applied to `(B₁ ⊗ ⋯ ⊗ B_i) ⊗ (B_{i+1} ⊗ ⋯ ⊗ B_p)` (Mathlib `Matrix.kronecker_assoc`), in the
+`Fin` layout of chapter 1 (`Matrix.kroneckerFin`, `Matrix.reshape`). ★★ (~50 lines)'''
+deps = ["GolubVanLoan.Chapter12.equation_12_3_9"]
+source = 'Golub–Van Loan, Matrix Computations, §12.3.10'

@@ -1,0 +1,231 @@
+desc = '''
+Principal angles and principal vectors between two finite-dimensional subspaces of an inner
+product space ([golub2013matrix] §6.4.3–6.4.4, after Björck–Golub 1973; Jordan 1875): the cosines
+are the singular values of the restricted projection `P_F|_G : G → F`, the principal vectors are
+its singular vectors, the recursive max–max definition (6.4.3) is a theorem, the intersection
+`F ⊓ G` is spanned by the principal vectors of angle `0` (Theorem 6.4.2), and for subspaces of
+equal dimension the gap `‖P_F − P_G‖` is the sine of the largest angle.
+
+Upstreaming candidate: no numerical content. Natural home
+`Mathlib.Analysis.InnerProductSpace.PrincipalAngles`, beside `Projection/Angle` (the angle between
+a *vector* and a subspace, `Submodule.cosAngle`) of this library, whose vocabulary it extends.
+
+## Design
+
+* **Definition by singular values, not by recursion.** `Submodule.cosPrincipalAngle F G i` is
+  `LinearMap.singularValues` (Mathlib's sorted, `ℕ`-indexed sequence) of
+  `Submodule.orthogonalProjectionRestrict F G : G →ₗ[𝕜] F`, `x ↦ P_F x` (defined in `Projection/Gap`,
+  whose engine it is); `principalAngle` is its
+  `Real.arccos`. Index `i` is the book's `θ_{i+1}`; for `i ≥ finrank G` the cosine is `0` (Mathlib's
+  padding) and the angle `π/2`. This needs `[FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G]` and
+  no completeness of `E`, as in `Projection/Angle`. The book's recursive definition (6.4.3) is then
+  a characterization (`IsPrincipalVectors.isGreatest_re_inner`) together with the fact that its
+  values do not depend on the choices made
+  (`cosPrincipalAngle_eq_of_isRecursivePrincipalVectors`).
+* **Principal vectors are a predicate** `Submodule.IsPrincipalVectors F G f g` for
+  `f g : Fin q → E`: `g` an orthonormal basis of `G` (`finrank G = q` a field, so the surface's
+  `Fin q` needs no cast), `f` orthonormal in `F`, and `P_F (g j) = cos θ_j • f j`. They exist when
+  `finrank G ≤ finrank F` (the book's `p ≥ q`), from an SVD of `P_F|_G` (the operator SVD
+  `LinearMap.exists_orthonormal_singularVectors` of `Numlib/Analysis/InnerProductSpace/SingularValues`).
+* **Matrices** enter only through `Submodule.cosPrincipalAngle_eq_singularValues`: if the columns of
+  `Q_A`, `Q_B` are orthonormal bases of `F`, `G`, the cosines are the sorted singular values of
+  `Q_Aᴴ Q_B` — the bridge Algorithm 6.4.3 needs, and the one through which the matrix corollaries
+  of `Numlib/Analysis/Matrix/SingularValues` ([golub2013matrix] Theorem 2.5.1, (7.3.19)) reach this
+  module. The vector case is `cosPrincipalAngle_span_singleton_zero`: one principal angle between
+  `F` and a line is the angle of `Projection/Angle`.
+* **Distance.** The subspace distance of [golub2013matrix] §2.5.3 is the existing `Submodule.gap`
+  (`‖P_K − P_L‖`) of `Projection/Angle`, whose equal-dimension theory is `Projection/Gap`; this
+  module imports `Projection/Gap` and `Numlib/Analysis/InnerProductSpace/SingularValues`, and
+  `gap_eq_sin_principalAngle` is proved directly from `Gap`'s one-sided identity (review H2), without
+  coordinates.
+
+## Order of attack
+
+Definitions and bounds (★) → `exists_isPrincipalVectors` from the operator SVD (★★) →
+Theorem 6.4.2 and the matrix bridge (★★) → the variational characterization (★★) → the recursive
+definition's well-posedness (★★★, ~200 lines) → the gap identity (★, after `Projection/Gap`).
+'''
+
+[[node]]
+id = "Submodule.cosPrincipalAngle"
+kind = "definition"
+desc = '''**The cosines of the principal angles** ([golub2013matrix] (6.4.3), `cos θ_{i+1}`), for
+finite-dimensional `F G : Submodule 𝕜 E`: `F.cosPrincipalAngle G i =
+(F.orthogonalProjectionRestrict G).singularValues i` (`i : ℕ`, Mathlib's sorted singular values,
+`0` for `i ≥ finrank G`). Prototype: `notes/gvl/ch06/proto/Shapes.lean` §1 (elaborates). ★'''
+deps = ["Submodule.orthogonalProjectionRestrict"]
+
+[[node]]
+id = "Submodule.principalAngle"
+kind = "definition"
+desc = '''**The principal angles** ([golub2013matrix] (6.4.3), `θ_{i+1}`):
+`F.principalAngle G i = Real.arccos (F.cosPrincipalAngle G i)`. ★'''
+deps = ["Submodule.cosPrincipalAngle"]
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_le_one"
+kind = "theorem"
+desc = '''`0 ≤ F.cosPrincipalAngle G i ≤ 1` ([golub2013matrix] §6.4.3, "Since `‖Q_AᵀQ_B‖₂ ≤ 1`, all the
+singular values are between 0 and 1"): singular values are nonnegative
+(`LinearMap.singularValues_nonneg`) and bounded by the operator norm of `P_F|_G`, which is at most
+`‖P_F‖ ≤ 1` (`Submodule.starProjection_norm_le`/`orthogonalProjection_norm_le`). ★'''
+deps = ["Submodule.cosPrincipalAngle"]
+
+[[node]]
+id = "Submodule.antitone_cosPrincipalAngle"
+kind = "theorem"
+desc = '''`Antitone (F.cosPrincipalAngle G)` — Mathlib's `LinearMap.singularValues_antitone`. ★'''
+deps = ["Submodule.cosPrincipalAngle"]
+
+[[node]]
+id = "Submodule.monotone_principalAngle"
+kind = "theorem"
+desc = '''**`0 ≤ θ₁ ≤ ⋯ ≤ θ_q ≤ π/2`** ([golub2013matrix] §6.4.3): `Monotone (F.principalAngle G)` and
+`F.principalAngle G i ∈ Set.Icc 0 (π / 2)`. `Real.arccos` is antitone and maps `[0, 1]` into
+`[0, π/2]` (`Real.arccos_nonneg`, `Real.arccos_le_pi_div_two`). ★'''
+deps = ["Submodule.principalAngle", "Submodule.antitone_cosPrincipalAngle", "Submodule.cosPrincipalAngle_le_one"]
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_comm"
+kind = "theorem"
+desc = '''Principal angles are symmetric: `F.cosPrincipalAngle G = G.cosPrincipalAngle F` (for all
+indices; the zero padding agrees because the nonzero singular values of a map and its adjoint
+coincide). The adjoint of `P_F|_G : G → F` is `P_G|_F`
+(`Submodule.orthogonalProjectionRestrict_adjoint`, `Projection/Gap`), and
+`LinearMap.singularValues_adjoint`. ★'''
+deps = ["Submodule.cosPrincipalAngle", "Submodule.orthogonalProjectionRestrict_adjoint", "LinearMap.singularValues_adjoint"]
+
+[[node]]
+id = "Submodule.IsPrincipalVectors"
+kind = "definition"
+desc = '''**Principal vectors** ([golub2013matrix] (6.4.3)–(6.4.5), `{f_i, g_i}`): for finite-dimensional
+`F G`, `q : ℕ` and `f g : Fin q → E`, a structure with fields `finrank_eq : Module.finrank 𝕜 G = q`,
+`orthonormal_left : Orthonormal 𝕜 f`, `orthonormal_right : Orthonormal 𝕜 g`,
+`mem_left : ∀ i, f i ∈ F`, `mem_right : ∀ i, g i ∈ G`,
+`starProjection_right : ∀ j, F.starProjection (g j) = (F.cosPrincipalAngle G j : 𝕜) • f j`.
+So `g` is an orthonormal basis of `G` of right singular vectors of `P_F|_G` and `f` the matching
+left singular vectors (arbitrary orthonormal completions where the cosine vanishes).
+Prototype: `notes/gvl/ch06/proto/Shapes.lean` §1 (there indexed by `Fin (finrank G)`; the `Fin q`
+form with a field is the one to write). ★'''
+deps = ["Submodule.cosPrincipalAngle"]
+
+[[node]]
+id = "Submodule.exists_isPrincipalVectors"
+kind = "theorem"
+desc = '''**Principal vectors exist** when `finrank G ≤ finrank F` ([golub2013matrix] §6.4.3, the
+book's `p ≥ q`): `∃ f g : Fin (finrank 𝕜 G) → E, F.IsPrincipalVectors G f g`. From the operator SVD
+`LinearMap.exists_orthonormal_singularVectors` applied to `P_F|_G` (its codomain `F` has
+dimension `≥ finrank G`, so the left singular vectors of zero singular values can be completed
+orthonormally). ★★'''
+deps = ["Submodule.IsPrincipalVectors", "LinearMap.exists_orthonormal_singularVectors"]
+
+[[node]]
+id = "Submodule.IsPrincipalVectors.inner_eq"
+kind = "theorem"
+desc = '''`⟪f i, g j⟫ = if i = j then (cos θ_j : 𝕜) else 0` for principal vectors ([golub2013matrix]
+(6.4.3), `cos θ_k = f_kᵀ g_k`): `⟪f i, g j⟫ = ⟪f i, P_F g j⟫ = cos θ_j ⟪f i, f j⟫`. ★'''
+deps = ["Submodule.IsPrincipalVectors"]
+
+[[node]]
+id = "Submodule.IsPrincipalVectors.isGreatest_re_inner"
+kind = "theorem"
+desc = '''**The max–max characterization** ([golub2013matrix] (6.4.3) and the argument (6.4.6) that
+follows it): if `F.IsPrincipalVectors G f g` then for each `k < q`, `cos θ_k` is the greatest value
+of `re ⟪u, v⟫` over unit `u ∈ F`, `v ∈ G` with `⟪f i, u⟫ = 0` and `⟪g i, v⟫ = 0` for all `i < k`,
+attained at `(f k, g k)`: `IsGreatest {re ⟪u, v⟫ | …} (F.cosPrincipalAngle G k)`. Proof (the book's,
+lines 17640–17665): expand `v = ∑_{i ≥ k} c_i g_i`; then `⟪u, v⟫ = ∑_{i ≥ k} c_i cos θ_i ⟪u, f_i⟫`
+(`⟪u, g_i⟫ = ⟪u, P_F g_i⟫` for `u ∈ F`), bounded by `cos θ_k ∑|c_i||⟪f_i, u⟫| ≤ cos θ_k` by
+Cauchy–Schwarz and Bessel. ★★'''
+deps = ["Submodule.IsPrincipalVectors", "Submodule.IsPrincipalVectors.inner_eq", "Submodule.antitone_cosPrincipalAngle"]
+
+[[node]]
+id = "Submodule.IsRecursivePrincipalVectors"
+kind = "definition"
+desc = '''**The book's recursive definition** ([golub2013matrix] (6.4.3)) as a predicate on
+`f g : Fin q → E` with `q = finrank G`: for every `k`, `f k ∈ F`, `g k ∈ G` are unit vectors
+orthogonal to `f i`, resp. `g i`, `i < k`, and `re ⟪f k, g k⟫` is the greatest value of `re ⟪u, v⟫`
+over such unit pairs. Any greedy choice of maximizers satisfies it. ★'''
+deps = []
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors"
+kind = "theorem"
+desc = '''**The recursive definition is well posed** ([golub2013matrix] (6.4.3): the angles "are defined
+recursively by …"): if `finrank G ≤ finrank F` and `IsRecursivePrincipalVectors F G f g` then
+`re ⟪f k, g k⟫ = F.cosPrincipalAngle G k` for all `k`, whichever maximizers were chosen.
+Proof by induction on `k`: a maximizing pair `(u, v)` at stage `0` is a pair of singular vectors,
+`P_F v = σ₀ u` and `P_G u = σ₀ v` (first-order conditions of `re ⟪u, v⟫` on the product of spheres,
+or directly: `re⟪u, v⟫ ≤ ‖P_F v‖ ≤ σ₀` with equality forcing both); then `P_F|_G` maps
+`G ∩ v^⊥` into `F ∩ u^⊥` (`⟪P_F g, u⟫ = ⟪g, P_G u⟫ = σ₀ ⟪g, v⟫ = 0`), and the singular values of
+this restriction are `σ₁, σ₂, …` (deflation of the SVD: the singular values of `T` restricted to
+the orthogonal complement of a singular pair). Apply the induction hypothesis to the restricted
+subspaces. ★★★ (~200 lines; the deflation lemma is the bulk).'''
+deps = ["Submodule.IsRecursivePrincipalVectors", "Submodule.IsPrincipalVectors.isGreatest_re_inner", "Submodule.exists_isPrincipalVectors"]
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_eq_singularValues"
+kind = "theorem"
+desc = '''**The matrix bridge** ([golub2013matrix] §6.4.3, "`σ_i = cos(θ_i)`" for the SVD of `Q_AᵀQ_B`):
+for `Q_A : Matrix m p 𝕜`, `Q_B : Matrix m q 𝕜` (any `Fintype`s) with `Q_Aᴴ * Q_A = 1`,
+`Q_Bᴴ * Q_B = 1`, `F = LinearMap.range (toEuclideanLin Q_A)`, `G = LinearMap.range (toEuclideanLin Q_B)`:
+`F.cosPrincipalAngle G i = (toEuclideanLin (Q_Aᴴ * Q_B)).singularValues i` for all `i`.
+`toEuclideanLin Q_A`, `toEuclideanLin Q_B` are linear isometries onto `F`, `G`, and
+`toEuclideanLin (Q_Aᴴ Q_B) = e_Fᴴ ∘ P_F|_G ∘ e_G`; singular values are invariant under composition
+with linear isometry equivalences (`LinearMap.singularValues_comp_linearIsometryEquiv`). ★★'''
+deps = ["Submodule.cosPrincipalAngle", "LinearMap.singularValues_comp_linearIsometryEquiv"]
+
+[[node]]
+id = "Submodule.IsPrincipalVectors.eq_of_cosPrincipalAngle_eq_one"
+kind = "theorem"
+desc = '''If `cos θ_i = 1` then `f i = g i` ([golub2013matrix] Theorem 6.4.2, proof): `⟪f i, g i⟫ = 1`
+for unit vectors (`inner_eq_one_iff_of_norm_one`). ★'''
+deps = ["Submodule.IsPrincipalVectors.inner_eq"]
+
+[[node]]
+id = "Submodule.IsPrincipalVectors.inf_eq_span"
+kind = "theorem"
+desc = '''**Intersection of subspaces** ([golub2013matrix] Theorem 6.4.2): if `F.IsPrincipalVectors G f g`
+then `F ⊓ G = span 𝕜 (f '' {i | F.cosPrincipalAngle G i = 1}) = span 𝕜 (g '' {i | … = 1})`, and the
+index set is an initial segment `{i | i < s}` (antitone cosines bounded by `1`). The book's proof
+("if `cos θ_i = 1` then `f_i = g_i`") gives only `⊇`; for `⊆`: `x ∈ F ⊓ G` expands as
+`x = ∑ c_j g_j`, and `x = P_F x = ∑ c_j cos θ_j f_j`, so `∑ |c_j|² = ∑ |c_j|² cos² θ_j` and
+`c_j = 0` unless `cos θ_j = 1`. ★★'''
+deps = ["Submodule.IsPrincipalVectors", "Submodule.IsPrincipalVectors.eq_of_cosPrincipalAngle_eq_one", "Submodule.cosPrincipalAngle_le_one"]
+
+[[node]]
+id = "Submodule.finrank_inf_eq_card"
+kind = "theorem"
+desc = '''`Module.finrank 𝕜 (F ⊓ G : Submodule 𝕜 E) = #{i : Fin (finrank G) | F.cosPrincipalAngle G i = 1}`
+when `finrank G ≤ finrank F` ([golub2013matrix] §6.4.4, "the intersection dimension `s`"). From
+`IsPrincipalVectors.inf_eq_span` and orthonormality. ★'''
+deps = ["Submodule.IsPrincipalVectors.inf_eq_span", "Submodule.exists_isPrincipalVectors"]
+
+[[node]]
+id = "Submodule.gap_eq_sin_principalAngle"
+kind = "theorem"
+desc = '''**The distance of equal-dimensional subspaces is the sine of the largest principal angle**
+([golub2013matrix] §6.4.3, "If `p = q`, then `dist(F, G) = √(1 − cos(θ_p)²) = sin(θ_p)`"): if
+`finrank F = finrank G = q + 1` (finite-dimensional `F`, `G`; `E` arbitrary) then
+`F.gap G = Real.sin (F.principalAngle G q)`. Direct (review H2): `F.gap G = ‖Fᗮ.starProjection *
+G.starProjection‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq` with `gap_comm`), whose square
+is `1 − σ_q(P_F|_G)² = 1 − cos² θ_q` (`Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`,
+the definition of `cosPrincipalAngle`), and `sin (arccos c) = √(1 − c²)` for `c ∈ [0, 1]`
+(`Real.sin_arccos`, `cosPrincipalAngle_le_one`). No coordinates, no CS decomposition. ★'''
+deps = [
+  "Submodule.gap",
+  "Submodule.principalAngle",
+  "Submodule.cosPrincipalAngle_le_one",
+  "Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq",
+  "Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues",
+]
+
+[[node]]
+id = "Submodule.cosPrincipalAngle_span_singleton_zero"
+kind = "theorem"
+desc = '''**One principal angle with a line is the angle with a vector** (review M8): for a
+finite-dimensional `F : Submodule 𝕜 E` and `u ≠ 0`, `F.cosPrincipalAngle (𝕜 ∙ u) 0 = F.cosAngle u`
+(`Submodule.cosAngle` of `Projection/Angle`, `‖P_F u‖ / ‖u‖`), and `F.principalAngle (𝕜 ∙ u) 0 =
+F.angle u`. The restricted projection `P_F|_{𝕜 u}` acts on a line, so its only singular value is its
+norm, `‖P_F u‖ / ‖u‖` (`LinearMap.sq_singularValues_fin` at `n = 1`, or
+`LinearMap.isLeast_singularValues` at `k = 0`). ★'''
+deps = ["Submodule.cosPrincipalAngle", "Submodule.principalAngle", "Submodule.cosAngle"]

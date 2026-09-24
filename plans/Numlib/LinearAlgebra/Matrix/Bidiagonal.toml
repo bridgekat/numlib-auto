@@ -1,0 +1,101 @@
+namespace = "Matrix"
+desc = '''
+Orthogonal bidiagonalization of a rectangular matrix, `Uᴴ A V = B` with `B` upper bidiagonal
+([golub2013matrix] §5.4.8 (5.4.13), §5.4.9; Golub–Kahan 1965; [quarteroni2000numerical] §5.8.3),
+the first stage of every SVD algorithm (Chapter 8) and the matrix form of the Golub–Kahan
+bidiagonalization of `Numlib/Krylov/Bidiagonalization` (chapter 10).
+
+The square shapes `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal` live in
+`Numlib/LinearAlgebra/Matrix/Hessenberg`; the rectangular shapes here are `Matrix.IsUpperBidiagonalRect` and
+`Matrix.IsLowerBidiagonalRect` on `Fin M × Fin N` (entries zero unless `j = i` or `j = i + 1`, resp.
+`i = j + 1`, as natural numbers), matching `Matrix.rectDiagonal`. Naming follows the rectangular
+vocabulary of `Hessenberg` — the `Rect` suffix last, as in `IsUpperHessenbergRect`,
+`HasLowerBandwidthRect` (the review of the Golub–Van Loan round renamed the earlier
+`IsRectUpperBidiagonal`) — and each shape has its bandwidth characterization
+(`isUpperBidiagonalRect_iff_hasBandwidthRect`, `isLowerBidiagonalRect_iff_hasBandwidthRect`), the Hessenberg
+one being `Matrix.isUpperHessenbergRect_iff_hasLowerBandwidthRect_one`. The lower shape is the `(k+1) × k`
+matrix `B_k` of the Golub–Kahan lower bidiagonalization (`Numlib/Krylov/Bidiagonalization`) and of
+[golub2013matrix] (10.4.18). The existence
+theorem already exists in `Numlib/LinearAlgebra/Matrix/QR`
+(`exists_unitary_mul_mul_unitary_apply_eq_zero`, `exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`,
+by tail reflectors on alternating sides); this module names the factorization
+(`Matrix.IsBidiagonalization`), restates existence through it, adds the `R`-bidiagonalization
+(QR first, then bidiagonalize the square `R₁`), and the link to tridiagonalization of `Aᴴ A`.
+Refactor proposal (report): move the two existence theorems here, where their name is.
+'''
+
+[[node]]
+id = "IsUpperBidiagonalRect"
+kind = "definition"
+desc = '''`def IsUpperBidiagonalRect (B : Matrix (Fin M) (Fin N) R) : Prop :=
+∀ i j, (j : ℕ) ≠ i → (j : ℕ) ≠ i + 1 → B i j = 0` — the shape of [golub2013matrix] (5.4.13) for
+`M ≥ N` (rows `≥ N` vanish automatically) and of P5.4.8's `[B | 0]` for `M < N`. (Renamed from `IsRectUpperBidiagonal`.) ★'''
+deps = []
+
+[[node]]
+id = "isUpperBidiagonalRect_iff_isUpperBidiagonal"
+kind = "theorem"
+desc = '''On a square `Fin N`, `IsUpperBidiagonalRect B ↔ B.IsUpperBidiagonal` (the `Hessenberg`
+predicate, which is phrased with the order on the index). ★'''
+deps = ["IsUpperBidiagonalRect", "Matrix.IsUpperBidiagonal"]
+
+[[node]]
+id = "isUpperBidiagonalRect_iff_hasBandwidthRect"
+kind = "theorem"
+desc = '''`B.IsUpperBidiagonalRect ↔ B.HasLowerBandwidthRect 0 ∧ B.HasUpperBandwidthRect 1` for `B : Matrix (Fin M)
+(Fin N) R` (`Matrix.HasLowerBandwidthRect`, `Matrix.HasUpperBandwidthRect` of `Hessenberg`): "upper bidiagonal"
+is "lower bandwidth 0, upper bandwidth 1" ([golub2013matrix] Table 1.2.1). Unfold, `omega`. ★'''
+deps = ["IsUpperBidiagonalRect", "Matrix.HasLowerBandwidthRect", "Matrix.HasUpperBandwidthRect"]
+
+[[node]]
+id = "IsLowerBidiagonalRect"
+kind = "definition"
+desc = '''`def IsLowerBidiagonalRect (B : Matrix (Fin M) (Fin N) R) : Prop := ∀ i j, (i : ℕ) ≠ j → (i : ℕ) ≠ j + 1 →
+B i j = 0` — the rectangular lower bidiagonal shape, the dual of `IsUpperBidiagonalRect`
+(`isLowerBidiagonalRect_iff_transpose : B.IsLowerBidiagonalRect ↔ Bᵀ.IsUpperBidiagonalRect`, same node). The
+shape of the `(k + 1) × k` Golub–Kahan matrix `B_k` of the lower bidiagonalization ([golub2013matrix] (10.4.18),
+Paige–Saunders' LSQR) — the consumers `GolubKahan.bidiagLower` (`Numlib/Krylov/Bidiagonalization`) and the
+chapter 10 surface state it with this predicate, not with the square-only `Matrix.IsLowerBidiagonal`. ★'''
+deps = ["IsUpperBidiagonalRect"]
+
+[[node]]
+id = "isLowerBidiagonalRect_iff_hasBandwidthRect"
+kind = "theorem"
+desc = '''`B.IsLowerBidiagonalRect ↔ B.HasLowerBandwidthRect 1 ∧ B.HasUpperBandwidthRect 0`, and on a square `Fin N`
+`B.IsLowerBidiagonalRect ↔ B.IsLowerBidiagonal` (`isLowerBidiagonalRect_iff_isLowerBidiagonal`, same node; the
+`Hessenberg` predicate). By transposition from the upper statements (`isLowerBidiagonalRect_iff_transpose`,
+`Matrix.hasUpperBandwidthRect_transpose_iff`). ★'''
+deps = ["IsLowerBidiagonalRect", "isUpperBidiagonalRect_iff_hasBandwidthRect", "isUpperBidiagonalRect_iff_isUpperBidiagonal", "Matrix.hasUpperBandwidthRect_transpose_iff", "Matrix.IsLowerBidiagonal"]
+
+[[node]]
+id = "IsBidiagonalization"
+kind = "definition"
+desc = '''`structure IsBidiagonalization (A : Matrix (Fin M) (Fin N) 𝕜) (U V B) : Prop` with
+`U ∈ unitaryGroup (Fin M) 𝕜`, `V ∈ unitaryGroup (Fin N) 𝕜`, `conj_eq : Uᴴ * A * V = B`,
+`isUpperBidiagonalRect : IsUpperBidiagonalRect B`. The specification of [golub2013matrix]
+Algorithm 5.4.2 and of the `R`-bidiagonalization. ★'''
+deps = ["IsUpperBidiagonalRect"]
+
+[[node]]
+id = "exists_isBidiagonalization"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.4.13): `∃ U V B, IsBidiagonalization A U V B` for every
+`A : Matrix (Fin M) (Fin N) 𝕜` — `exists_unitary_mul_mul_unitary_apply_eq_zero` repackaged. ★'''
+deps = ["IsBidiagonalization", "Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero"]
+
+[[node]]
+id = "IsBidiagonalization.of_isQR"
+kind = "theorem"
+desc = '''`R`-bidiagonalization ([golub2013matrix] §5.4.9, Chan 1982): if `N ≤ M`, `IsQR A Q R` and
+`IsBidiagonalization (firstRows R h) U_R V B₁`, then `IsBidiagonalization A (Q * diag(U_R, I)) V B`
+with `B` the matrix `B₁` stacked on `0` (`diag(U_R, I)` as the block-diagonal unitary on
+`Fin M` built from `Fin.castLE`; `B i j = if (i : ℕ) < N then B₁ ⟨i, _⟩ j else 0`). ★★'''
+deps = ["IsBidiagonalization", "Matrix.IsQR", "Matrix.firstRows", "Matrix.IsQR.apply_eq_zero_of_le"]
+
+[[node]]
+id = "IsBidiagonalization.isTridiagonal_conjTranspose_mul_self"
+kind = "theorem"
+desc = '''"The bidiagonalization of `A` is related to the tridiagonalization of `AᵀA`"
+([golub2013matrix] §5.4.8, §8.3.1): if `IsBidiagonalization A U V B` with `N ≤ M`, then
+`Vᴴ (Aᴴ A) V = Bᴴ B` and `Bᴴ B` is tridiagonal (`Matrix.IsTridiagonal` on `Fin N`). ★'''
+deps = ["IsBidiagonalization"]

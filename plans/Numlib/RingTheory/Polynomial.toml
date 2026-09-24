@@ -1,1 +1,1 @@
-desc = 'The Chebyshev min-max property.'
+desc = 'Polynomial facts Mathlib lacks: the Chebyshev min-max property and its relatives, Horner, the rule of signs, Schur–Cohn, and Hermite interpolation on a multiset of nodes over any field (`HermiteInterpolation`).'

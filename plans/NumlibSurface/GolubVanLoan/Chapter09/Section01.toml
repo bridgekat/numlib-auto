@@ -1,0 +1,239 @@
+namespace = "GolubVanLoan.Chapter09"
+desc = '''
+§9.1, eigenvalue methods: the Jordan-based definition (9.1.1)–(9.1.4), read as the theorem that the
+backbone's `pfc f A` has the Jordan form expression; Lemma 9.1.1 and Theorem 9.1.2 (Taylor series),
+the Taylor series of `exp`, `log`, `sin`, `cos`, (9.1.7)–(9.1.8), Corollary 9.1.3, the Schur approach
+(Theorem 9.1.4, the Parlett recurrence (9.1.11), Algorithm 9.1.1), the block Parlett equations
+(9.1.12) and the relative condition number of §9.1.6. Backbone:
+`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/{Basic,Analytic}` (the algebra-level `pfc`,
+`hasSum_pfc`, `pfc_comp`) and `Numlib/Analysis/Matrix/Function/{Basic,Triangular}` (the matrix facts). `A : Matrix (Fin n) (Fin n) ℂ`, `f : ℂ → ℂ`, `f(A) = pfc f A`. Not nodes: the
+numerical example of §9.1.3, the `3 × 3` illustration of Theorem 9.1.4, the flop counts, the
+forward-stability heuristic of §9.1.6.
+'''
+
+[[node]]
+id = "rational_example"
+kind = "theorem"
+desc = '''The rational examples of the chapter introduction and §9.1: `pfc (fun z => 1 + z) A = 1 + A`; if
+`2 ∉ spectrum ℂ A` then `pfc (fun z => (1 - z/2)⁻¹ * (1 + z/2)) A = (1 - A/2)⁻¹ * (1 + A/2)`; if `1 ∉
+spectrum ℂ A` then `pfc (fun z => (1 + z) / (1 - z)) A = (1 + A) * (1 - A)⁻¹`. `pfc_polynomial`,
+`pfc_mul`, `pfc_inv` (the functions are analytic off their poles). ★'''
+deps = ["pfc_polynomial", "pfc_mul", "pfc_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1, display'
+
+[[node]]
+id = "equation_9_1_3"
+kind = "theorem"
+desc = '''(9.1.1)–(9.1.4), the book's definition as a theorem: if `A = X · diag(J₁, …, J_q) · X⁻¹` is a
+Jordan decomposition — `IsUnit X`, `X⁻¹ * A * X = reindex σ σ (Matrix.jordanForm e μ)` as produced by
+chapter 7's Theorem 7.1.9 (`GolubVanLoan.Chapter07.theorem_7_1_9`) — then `pfc f A = X · diag(F₁, …, F_q) · X⁻¹` with `F_i = pfc f
+(jordanBlock (e i) (μ i))`, the matrices (9.1.4) (`equation_9_1_4`). `Matrix.pfc_conj_jordanForm`
+(the book's `X` is the backbone's `P`). In particular the right side does not depend on the Jordan
+decomposition chosen, which the book's definition takes for granted. ★'''
+deps = ["Matrix.pfc_conj_jordanForm", "GolubVanLoan.Chapter07.theorem_7_1_9"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.3)'
+
+[[node]]
+id = "equation_9_1_4"
+kind = "theorem"
+desc = '''(9.1.4): for a Jordan block `J = jordanBlock m λ`, `(pfc f J) i j = f⁽ʲ⁻ⁱ⁾(λ) / (j - i)!` for
+`i ≤ j` and `0` below the diagonal (`iteratedDeriv (j - i) f λ / (j - i)!`). No hypothesis on `f`
+(junk derivatives appear on both sides). `Matrix.pfc_jordanBlock` (its entrywise form). ★'''
+deps = ["Matrix.pfc_jordanBlock"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.4)'
+
+[[node]]
+id = "lemma_9_1_1"
+kind = "theorem"
+desc = '''Lemma 9.1.1: let `f` have the Taylor series (9.1.5) on `|z - z₀| < r` — `HasFPowerSeriesOnBall f p
+z₀ r`, the coefficients being `f⁽ᵏ⁾(z₀)/k!` (`HasFPowerSeriesAt.coeff_eq_iteratedDeriv_div`-type
+identification, or state with `iteratedDeriv k f z₀ / k!` and derive `p` from analyticity) — and
+`B = jordanBlock m λ` with `|λ - z₀| < r`; then `HasSum (fun k => (f⁽ᵏ⁾(z₀)/k!) • (B - z₀ • 1) ^ k)
+(pfc f B)`. The case of `theorem_9_1_2` for a single Jordan block; the book's proof by (9.1.6) and the
+binomial expansion of `((λ - z₀)I + E)^k` is exactly `hasSum_pfc`'s. ★'''
+deps = ["hasSum_pfc", "Matrix.pfc_jordanBlock"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 9.1.1'
+
+[[node]]
+id = "equation_9_1_6"
+kind = "theorem"
+desc = '''(9.1.6): for `B = λ I + E`, `E = jordanBlock m 0` the strictly upper bidiagonal part,
+`pfc f B = ∑_{p < m} f⁽ᵖ⁾(λ) E^p / p!`; with the powers of `E` shifting the superdiagonal
+(`[E^p]_ij = δ_{i, j-p}`: `Matrix.jordanBlock_zero_pow_apply`) and `E^m = 0`. `Matrix.pfc_jordanBlock`. ★'''
+deps = ["Matrix.pfc_jordanBlock", "Matrix.jordanBlock_zero_pow_apply"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.6)'
+
+[[node]]
+id = "theorem_9_1_2"
+kind = "theorem"
+desc = '''Theorem 9.1.2: if `f` has the Taylor series (9.1.5) on `|z - z₀| < r` and every eigenvalue of `A`
+satisfies `|λ - z₀| < r`, then `HasSum (fun k => (f⁽ᵏ⁾(z₀)/k!) • (A - z₀ • 1) ^ k) (pfc f A)` (the
+book's `f(A) = ∑_{k=0}^∞ …`; `HasSum` in the Pi topology of `Matrix (Fin n) (Fin n) ℂ`, no norm).
+`hasSum_pfc`. The book's proof through the Jordan form (and Lemma 9.1.1) is replaced by the
+spectral decomposition; both are the same computation. ★'''
+deps = ["hasSum_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.1.2'
+
+[[node]]
+id = "taylor_exp"
+kind = "theorem"
+desc = '''§9.1.2's Taylor series of the exponential: `HasSum (fun k => (k! : ℂ)⁻¹ • A ^ k) (pfc Complex.exp
+A)` and `pfc Complex.exp A = NormedSpace.exp A` (so the book's `exp(A) = ∑ A^k/k!` is Mathlib's
+matrix exponential). `theorem_9_1_2` at `z₀ = 0`, `r = ⊤` (`Complex.exp` entire), and
+`pfc_exp_eq_normedSpace_exp`. ★'''
+deps = ["theorem_9_1_2", "pfc_exp_eq_normedSpace_exp"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.2, display'
+
+[[node]]
+id = "taylor_log_one_sub"
+kind = "theorem"
+desc = '''§9.1.2's series of the logarithm, with the sign corrected: if every eigenvalue of `A` has `|λ| <
+1` then `HasSum (fun k : ℕ => -(((k + 1 : ℕ) : ℂ)⁻¹) • A ^ (k + 1)) (pfc (fun z => Complex.log (1 -
+z)) A)`, i.e. `log(I - A) = -∑_{k≥1} A^k/k`; the book prints `log(I - A) = ∑_{k≥1} A^k/k`, which is
+`-log(I - A)` (erratum). `theorem_9_1_2` with Mathlib's `Complex.hasSum_taylorSeries_neg_log`
+(`Mathlib/Analysis/SpecialFunctions/Complex/LogBounds`). ★'''
+deps = ["theorem_9_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.2, display'
+
+[[node]]
+id = "taylor_sin_cos"
+kind = "theorem"
+desc = '''§9.1.2's series of the sine and cosine: `HasSum (fun k => ((-1) ^ k / (2k+1)! : ℂ) • A ^ (2k+1))
+(pfc Complex.sin A)` and `HasSum (fun k => ((-1) ^ k / (2k)! : ℂ) • A ^ (2k)) (pfc Complex.cos A)`.
+`theorem_9_1_2` with `Complex.hasSum_sin`, `Complex.hasSum_cos`
+(`Mathlib/Analysis/SpecialFunctions/Trigonometric/Series`), after reindexing the even/odd series as
+power series (`HasSum.even_add_odd`-type splitting or `hasSum_extend_zero`). ★'''
+deps = ["theorem_9_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.2, display'
+
+[[node]]
+id = "equation_9_1_7"
+kind = "theorem"
+desc = '''(9.1.7): `A * pfc f A = pfc f A * A`. `commute_pfc` (no hypothesis: the book restricts to Taylor
+series only "for clarity"). ★'''
+deps = ["commute_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.7)'
+
+[[node]]
+id = "equation_9_1_8"
+kind = "theorem"
+desc = '''(9.1.8), corrected: for `IsUnit X`, `pfc f (X⁻¹ * A * X) = X⁻¹ * pfc f A * X`. The book prints
+`f(X⁻¹AX) = X · f(A) · X⁻¹`, with `X` and `X⁻¹` exchanged on the right (erratum; its own use in
+§9.1.4, `f(A) = Q f(T) Qᴴ` from `A = Q T Qᴴ`, is the corrected form). `Matrix.pfc_conj` with `P =
+X⁻¹`. ★'''
+deps = ["Matrix.pfc_conj"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.8)'
+
+[[node]]
+id = "corollary_9_1_3"
+kind = "theorem"
+desc = '''Corollary 9.1.3 and (9.1.9): if `A = X · diagonal λ · X⁻¹` with `IsUnit X`, then `pfc f A = X ·
+diagonal (f ∘ λ) · X⁻¹` — for every `f` (the book's "if `f(A)` is defined" is vacuous here:
+diagonalizable matrices need only values of `f`). `Matrix.pfc_conj`, `Matrix.pfc_diagonal`. ★'''
+deps = ["Matrix.pfc_conj", "Matrix.pfc_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 9.1.3'
+
+[[node]]
+id = "theorem_9_1_4"
+kind = "theorem"
+desc = '''Theorem 9.1.4 with (9.1.10): for upper triangular `T : Matrix (Fin n) (Fin n) ℂ`, `λ_i = T i i`, `F
+= pfc f T`: `F i j = 0` for `i > j`, `F i i = f (λ_i)`, and for `i < j`, `F i j = ∑_{(s₀,…,s_k) ∈
+S_ij} t_{s₀s₁} ⋯ t_{s_{k-1}s_k} f[λ_{s₀}, …, λ_{s_k}]` — encoded as `∑ s ⊆ Finset.Ioo i j,
+Matrix.pathProd T (Matrix.path i s j) * Hermite.divDiff f ((Matrix.path i s j).map fun k => T k
+k)`, with confluent divided differences where eigenvalues repeat (the book leaves repeated
+eigenvalues implicit). `Matrix.pfc_apply_eq_sum_divDiff`; the book cites Descloux (1963), Davis (1973),
+Van Loan (1975) for the proof. ★'''
+deps = ["Matrix.pfc_apply_eq_sum_divDiff", "Matrix.pathProd", "Hermite.divDiff"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.1.4'
+
+[[node]]
+id = "equation_9_1_11"
+kind = "theorem"
+desc = '''(9.1.11), the Parlett recurrence: for upper triangular `T`, `F = pfc f T` and `i < j` with `t_ii ≠
+t_jj`, `f_ij = t_ij (f_jj - f_ii)/(t_jj - t_ii) + ∑_{k=i+1}^{j-1} (t_ik f_kj - f_ik t_kj)/(t_jj -
+t_ii)`, together with the commutativity equation `∑_{k=i}^{j} f_ik t_kj = ∑_{k=i}^{j} t_ik f_kj`
+from which the book derives it. `Matrix.pfc_apply_eq_parlett`. ★'''
+deps = ["Matrix.pfc_apply_eq_parlett", "commute_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.11)'
+
+[[node]]
+id = "algorithm_9_1_1"
+kind = "definition"
+desc = '''Algorithm 9.1.1 (Schur–Parlett), D4, scalar-field-generic: `algorithm_9_1_1 {K} [Field K] {M}
+[Monad M] (rnd : K → M K) (f : K → K) (T : Matrix (Fin n) (Fin n) K) : M (Matrix (Fin n) (Fin n) K)`.
+First `F i i ← rnd (f (T i i))` for `i` in `List.finRange n` (one rounding for the function value,
+the `√·`-convention of the brief); then over the superdiagonal order `superdiagPairs n` (`p = 1, …,
+n-1`, `i = 0, …, n-1-p`, `j = i + p`, as a `List.flatMap` of `filterMap`s): `s ← rnd (T i j *
+(← rnd (F j j - F i i)))`; for `k` in `(finRange n).filter (i < · ∧ · < j)`: `s ← rnd (rnd (s + rnd
+(T i k * F k j)) - rnd (F i k * T k j))` (left to right as printed); `F i j ← rnd (s / rnd (T j j -
+T i i))`; state updates by `Matrix.updateRow`. Elaborates in `notes/gvl/ch09/proto/Function.lean`
+(definition `GVLProto.algorithm_9_1_1`, index list `GVLProto.superdiagPairs`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.1.1'
+
+[[node]]
+id = "algorithm_9_1_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 9.1.1: for upper triangular `T : Matrix (Fin n) (Fin n) ℂ` with
+distinct diagonal entries (`Function.Injective fun i => T i i`), `Id.run (algorithm_9_1_1 pure f T) =
+pfc f T` (prototype statement in `notes/gvl/ch09/proto/Function.lean`). Proof by induction along
+`superdiagPairs n`: invariant "every entry already written equals `pfc f T`'s; the lower triangle is
+`0`"; each step is `equation_9_1_11` (its right side reads only entries to the left and below, all
+earlier in the superdiagonal order), the diagonal step `F i i = f (T i i)`, and `pfc f T` is upper
+triangular (`Matrix.BlockTriangular.pfc`). ★★ (~200 lines, mostly list bookkeeping)'''
+deps = ["algorithm_9_1_1", "equation_9_1_11", "Matrix.BlockTriangular.pfc", "Matrix.BlockTriangular.toBlock_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.1.1'
+
+[[node]]
+id = "blockParlett_diag"
+kind = "theorem"
+desc = '''§9.1.5: for a block upper triangular `T` (`T.BlockTriangular b`, `b : Fin n → Fin p` the block
+index) the conformal blocks of `F = pfc f T` satisfy `F_ij = 0` for `i > j` and `F_ii = f(T_ii)`,
+`T_ii = T.toBlock (b · = i) (b · = i)`. `Matrix.BlockTriangular.pfc`, `Matrix.BlockTriangular.toBlock_pfc`. ★'''
+deps = ["Matrix.BlockTriangular.pfc", "Matrix.BlockTriangular.toBlock_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.5, display'
+
+[[node]]
+id = "equation_9_1_12"
+kind = "theorem"
+desc = '''(9.1.12): with blocks as in `blockParlett_diag` and `i < j`: `F_ij T_jj - T_ii F_ij = T_ij F_jj -
+F_ii T_ij + ∑_{k=i+1}^{j-1} (T_ik F_kj - F_ik T_kj)`. `Matrix.BlockTriangular.pfc_sylvester`. ★'''
+deps = ["Matrix.BlockTriangular.pfc_sylvester"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.12)'
+
+[[node]]
+id = "equation_9_1_12_unique"
+kind = "theorem"
+desc = '''§9.1.5, "a Sylvester system whose unknowns are the elements of the block `F_ij`": if `λ(T_ii) ∩
+λ(T_jj) = ∅` (as the clustering of §9.1.5 arranges) then `F_ij` is the unique `X` with `X T_jj -
+T_ii X = C_ij`, `C_ij` the right side of (9.1.12) — so the blocks can be computed one block
+superdiagonal at a time. `equation_9_1_12` and chapter 7's unique solvability of the Sylvester
+equation (`GolubVanLoan.Chapter07.lemma_7_1_5`: `X ↦ T_ii X - X T_jj` is bijective iff the spectra
+are disjoint; backbone `Matrix.sylvesterMap_bijective_iff_disjoint_spectrum` /
+`Matrix.existsUnique_sylvesterMap_eq` of `Numlib/LinearAlgebra/Matrix/Sylvester`), applied to
+`T_ii`, `T_jj` on their subtype index sets with right side `-C_ij`. ★'''
+deps = ["equation_9_1_12", "GolubVanLoan.Chapter07.lemma_7_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.5'
+
+[[node]]
+id = "condRel"
+kind = "definition"
+desc = '''§9.1.6's relative condition number of a matrix function, for a map `F : E → E` on a normed space
+(for `f(A)`: `F = pfc f` on `Matrix (Fin n) (Fin n) ℂ` with a chosen matrix norm): `condRel F A :
+ℝ≥0∞ := limsup_{ε → 0⁺} ⨆ (E : E) (_ : ‖E‖ ≤ ε ‖A‖), ‖F (A + E) - F A‖ₑ / (ε ‖F A‖ₑ)` (the book's
+`lim`, made total as a `limsup` over `𝓝[>] 0` in `ℝ≥0∞`). It differs from the backbone's
+`Conditioning.relCondNumber` (which divides by `‖E‖/‖A‖` inside the supremum) but agrees with it where
+`F` is differentiable (`condRel_eq_of_hasFDerivAt`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §9.1.6, Definition'
+
+[[node]]
+id = "condRel_eq_of_hasFDerivAt"
+kind = "theorem"
+desc = '''§9.1.6, "essentially a normalized Fréchet derivative", made precise: if `F` has Fréchet derivative
+`L` at `A`, `A ≠ 0` and `F A ≠ 0`, then `condRel F A = ‖L‖ₑ ‖A‖ₑ / ‖F A‖ₑ`
+(`= Conditioning.relCondNumber F univ A` by `Conditioning.relCondNumber_eq_enorm_fderiv`). Proof: `F
+(A + E) - F A = L E + o(‖E‖)`, so the supremum over `‖E‖ ≤ ε‖A‖` divided by `ε ‖F A‖` tends to
+`‖L‖ ‖A‖ / ‖F A‖` (the supremum of `‖L E‖` over the ball is `ε ‖A‖ ‖L‖`). ★★'''
+deps = ["condRel", "Conditioning.relCondNumber_eq_enorm_fderiv"]
+source = 'Golub–Van Loan, Matrix Computations, §9.1.6'

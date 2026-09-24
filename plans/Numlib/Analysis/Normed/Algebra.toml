@@ -2,5 +2,12 @@ desc = '''
 Spectral radius in a normed algebra (`SpectralRadius`), and the spectrum of a bounded operator on
 a complex Banach or Hilbert space beyond Mathlib — spectral mapping for eigenvalues, the
 numerical range, isometries, and the spectral decomposition of compact normal operators
-(`Spectrum`; Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §11.4).
+(`Spectrum`; Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §11.4);
+and the exponential and logarithm of a Banach algebra beyond Mathlib (`Exponential`: the
+variation-of-constants identity, the ODE characterization, the Fréchet derivative of `a ↦ e^{ta}` and
+Van Loan's condition number built on it, the Laplace-transform resolvent bound; `Logarithm`:
+`exp (log x) = x` near `1` and the norm bound of the log series); and the primary functional
+calculus `pfc f a` of an algebraic element of any `𝕜`-algebra (`PrimaryFunctionalCalculus/`, by
+Hermite interpolation on the roots of the minimal polynomial), for the matrix functions of
+[golub2013matrix] Chapter 9 (`Numlib/Analysis/Matrix/Function`).
 '''

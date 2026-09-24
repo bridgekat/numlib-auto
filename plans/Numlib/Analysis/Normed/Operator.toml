@@ -4,5 +4,7 @@ Mathlib-shaped facts about bounded operators between normed spaces that the proj
 operators and the Riesz theory (`Compact`, `Compact/Banach`, `Riesz`), embeddings, scaling,
 multilinear maps, and unbounded operators between Banach spaces with their adjoints and the
 closed range theorem (`Unbounded/`; Brezis, *Functional Analysis, Sobolev Spaces and Partial
-Differential Equations*, §2.6–2.7).
+Differential Equations*, §2.6–2.7); and Stewart's lemma on linear-plus-quadratic equations
+`L x + φ x = g` (`QuadraticEquation`, the engine of invariant- and singular-subspace perturbation
+bounds, [golub2013matrix] Theorems 7.2.4 and 8.6.5).
 '''

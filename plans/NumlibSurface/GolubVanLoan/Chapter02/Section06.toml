@@ -1,0 +1,193 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.6, The Sensitivity of Square Systems: the SVD expansion (2.6.1), the derivative of the perturbed
+solution and the first-order bounds (2.6.2), (2.6.4) in rigorous form, the condition number (2.6.3)
+and its characterizations (2.6.5)–(2.6.8), the examples (2.6.9) and `D_n`, the rigorous normwise
+bounds Lemma 2.6.1 / Theorem 2.6.2 with (2.6.10)–(2.6.11), the componentwise Theorem 2.6.3 (2.6.12)
+with the Skeel condition number, and Oettli–Prager (2.6.13). Backbone: `Numlib/Conditioning/LinearSystem`
+(+ `/Componentwise`), `Numlib/Analysis/Matrix/OperatorNorm` (`Matrix.condNumberLp`, `Matrix.lpEquiv`),
+`Numlib/LinearAlgebra/Matrix/SVD`. Norms are the induced `p`-norms (`p : ℝ≥0∞`, `[Fact (1 ≤ p)]`) —
+the book's "any vector norm and consistent matrix norm" is the backbone's operator statement, which the
+surface instantiates at `Matrix.lpEquiv`. Nonsingularity, which the book carries through the convention
+`κ = ∞` for singular `A`, is an explicit `IsUnit A` hypothesis. The `2 × 2` example after Theorem
+2.6.2 (the bound attained or not) is a numerical example.
+'''
+
+[[node]]
+id = "equation_2_6_1"
+kind = "theorem"
+desc = '''(2.6.1): for nonsingular `A : Matrix (Fin n) (Fin n) ℝ` with an SVD (`U`, `V`, `σ`), `A⁻¹ *ᵥ b = ∑ i,
+((U.col i ⬝ᵥ b) / σ i) • V.col i`. From `A⁻¹ = V Σ⁻¹ Uᵀ`: backbone `Matrix.pinv_eq_of_svd` and
+`Matrix.pinv_eq_inv`, expanded by columns. ★'''
+deps = ["theorem_2_4_1", "Matrix.pinv_eq_of_svd", "Matrix.pinv_eq_inv"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.1)'
+
+[[node]]
+id = "perturbed_solution_hasDerivAt"
+kind = "theorem"
+desc = '''§2.6.2: for nonsingular `A`, `F`, `b`, `f`, the solution `x(ε) = (A + ε F)⁻¹ (b + ε f)` is
+differentiable at `0` with `ẋ(0) = A⁻¹ (f - F x)`. Backbone `hasDerivAt_perturbed_solution` (operator
+form) at `Matrix.toEuclideanCLM`/`Matrix.lpEquiv`, with `Ring.inverse ↔ ⁻¹` through
+`Matrix.ringInverse_lpCLM`. ★'''
+deps = ["hasDerivAt_perturbed_solution", "Matrix.ringInverse_lpCLM"]
+source = 'Golub–Van Loan, Matrix Computations, §2.6.2'
+
+[[node]]
+id = "equation_2_6_2"
+kind = "theorem"
+desc = '''(2.6.2), rigorous form: with `x(ε)` as above, `x ≠ 0` and `|ε| ‖A⁻¹‖_p ‖F‖_p < 1`: `‖x(ε) - x‖_p /
+‖x‖_p ≤ |ε| ‖A⁻¹‖_p (‖f‖_p / ‖x‖_p + ‖F‖_p) / (1 - |ε| ‖A⁻¹‖_p ‖F‖_p)`. The printed `+ O(ε²)` is the
+factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)` applied to an `O(ε)` quantity; the rigorous form implies the
+book's `O(ε²)` form (and a `IsBigO` corollary may be added by the formalizer). Backbone
+`relative_error_le_norm_inverse` at `ΔA = ε F`, `Δb = ε f`. ★'''
+deps = ["relative_error_le_norm_inverse", "perturbed_solution_hasDerivAt"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.2)'
+
+[[node]]
+id = "kappa"
+kind = "definition"
+desc = '''(2.6.3): `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p`, with the book's convention `κ(A) = ∞` for singular `A`: `kappa p A :
+ℝ≥0∞ := if IsUnit A then ENNReal.ofReal (Matrix.condNumberLp p A) else ⊤`. The theorems use the
+real-valued backbone `Matrix.condNumberLp p A` (which is `0`, Mathlib's junk, at singular `A`) under an
+explicit `IsUnit A`; `kappa` records the book's convention and satisfies `kappa p A =
+ENNReal.ofReal (condNumberLp p A)` for nonsingular `A` (by `if_pos`). ★'''
+deps = ["Matrix.condNumberLp"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.3)'
+
+[[node]]
+id = "equation_2_6_4"
+kind = "theorem"
+desc = '''(2.6.4), rigorous form: `x ≠ 0`, `b ≠ 0`, `|ε| ‖A⁻¹‖ ‖F‖ < 1` ⇒ `‖x(ε) - x‖/‖x‖ ≤ κ(A) / (1 - |ε| ‖A⁻¹‖
+‖F‖) · (ρ_A + ρ_b)`, `ρ_A = |ε| ‖F‖/‖A‖`, `ρ_b = |ε| ‖f‖/‖b‖` (`p`-norms). Backbone
+`relative_error_le_condNumber` through `Matrix.lpEquiv` and `Matrix.condNumberLp_eq_condNumber`
+(untracked); same `O(ε²)` reading as (2.6.2). ★'''
+deps = ["relative_error_le_condNumber", "kappa", "equation_2_6_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.4)'
+
+[[node]]
+id = "equation_2_6_5"
+kind = "theorem"
+desc = '''(2.6.5): `κ₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = σ_max(A) / σ_min(A)` for nonsingular `A`. Backbone
+`Matrix.condNumber_l2_eq_div_singularValues` (column-indexed `⨆ / ⨅`) with
+`Matrix.exists_equiv_singularValues_eq_sortedSingularValues` and antitonicity for the sorted form. ★'''
+deps = ["Matrix.condNumber_l2_eq_div_singularValues", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues", "sigmaMax", "sigmaMin", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.5)'
+
+[[node]]
+id = "equation_2_6_6"
+kind = "theorem"
+desc = '''(2.6.6), Kahan: for nonsingular `A : Matrix (Fin n) (Fin n) ℝ`, `n ≥ 1`, `IsLeast {‖ΔA‖_p / ‖A‖_p |
+¬ IsUnit (A + ΔA)} (1 / condNumberLp p A)`. Backbone `ContinuousLinearEquiv.isLeast_dist_singular` at
+`Matrix.lpEquiv p hA` on `PiLp p` (finite-dimensional, nontrivial), transported by `Matrix.lpCLM`
+(`Matrix.isUnit_lpCLM_iff`; every operator on `PiLp p` is some `lpCLM p ΔA`). ★★'''
+deps = ["ContinuousLinearEquiv.isLeast_dist_singular", "Matrix.lpEquiv", "Matrix.isUnit_lpCLM_iff", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.6)'
+
+[[node]]
+id = "equation_2_6_7"
+kind = "theorem"
+desc = '''(2.6.7): for nonsingular `A` (`n ≥ 1`), `Tendsto (fun ε => (⨆ ΔA : {ΔA // ‖ΔA‖_p ≤ ε ‖A‖_p}, ‖(A +
+ΔA)⁻¹ - A⁻¹‖_p) / (ε ‖A⁻¹‖_p)) (𝓝[>] 0) (𝓝 (condNumberLp p A))` — "the condition number is a normalized
+Fréchet derivative of `A ↦ A⁻¹`". Backbone `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`
+at `Matrix.lpEquiv`, the sup over matrices matching the sup over operators because `lpCLM p` is a
+bijection onto `PiLp p →L PiLp p` (finite dimension); the derivative form is
+`ContinuousLinearEquiv.relCondNumber_ringInverse`. ★★'''
+deps = ["ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div", "ContinuousLinearEquiv.relCondNumber_ringInverse", "Matrix.lpEquiv", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.7)'
+
+[[node]]
+id = "equation_2_6_8"
+kind = "theorem"
+desc = '''(2.6.8): on `ℝ^{n×n}`, `(1/n) κ₂ ≤ κ₁ ≤ n κ₂`, `(1/n) κ_∞ ≤ κ₂ ≤ n κ_∞`, `(1/n²) κ₁ ≤ κ_∞ ≤ n² κ₁`
+(three conjunctions, `condNumberLp`). Backbone `Matrix.condNumberLp_le_card_rpow_mul_condNumberLp` at
+`(1, 2)`, `(2, ∞)`, `(1, ∞)`. The prose "any two condition numbers are equivalent" is the same
+backbone lemma for general `p ≤ q`. ★'''
+deps = ["Matrix.condNumberLp_le_card_rpow_mul_condNumberLp", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.8)'
+
+[[node]]
+id = "one_le_kappa"
+kind = "theorem"
+desc = '''§2.6.2: `κ_p(A) ≥ 1` for nonsingular `A` (`n ≥ 1`), and `κ₂(Q) = 1` for orthogonal `Q` (two clauses).
+Backbone `Matrix.one_le_condNumberLp` (untracked), `Matrix.condNumber_l2_of_mem_unitaryGroup`
+(with `Matrix.lpOpNorm_two` for the `κ₂ = condNumberLp 2` bridge). ★'''
+deps = ["Matrix.condNumberLp", "Matrix.condNumber_l2_of_mem_unitaryGroup", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, §2.6.2'
+
+[[node]]
+id = "equation_2_6_9"
+kind = "theorem"
+desc = '''(2.6.9): `B_n = Matrix.of fun i j => if i = j then 1 else if i < j then -1 else 0` (unit upper
+triangular, `-1` above the diagonal) has `det B_n = 1` and `κ_∞(B_n) = n · 2^(n-1)` (`n ≥ 1`). `det`:
+triangular (Mathlib `Matrix.det_of_upperTriangular`). `‖B_n‖_∞ = n` (first row). `B_n⁻¹` is unit upper
+triangular with `(B_n⁻¹)_{ij} = 2^(j-i-1)` for `i < j` (check `B_n * C = 1` entrywise: a geometric sum),
+so `‖B_n⁻¹‖_∞ = 1 + ∑_{k<n-1} 2^k = 2^(n-1)` (first row). ★★ (~60 lines)'''
+deps = ["Matrix.condNumberLp", "Matrix.lpOpNorm_top"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.9)'
+
+[[node]]
+id = "condNumberLp_diag_tenth"
+kind = "theorem"
+desc = '''§2.6.3: `D_n = diag(10⁻¹, …, 10⁻¹) = (1/10) • 1` has `κ_p(D_n) = 1` and `det D_n = 10^(-n)` — backbone
+`Matrix.condNumberLp_smul_one` (untracked), Mathlib `Matrix.det_smul`. ("Determinant size does not
+measure conditioning.") ★'''
+deps = ["Matrix.condNumberLp"]
+source = 'Golub–Van Loan, Matrix Computations, §2.6.3'
+
+[[node]]
+id = "lemma_2_6_1"
+kind = "theorem"
+desc = '''Lemma 2.6.1: `A` nonsingular, `A x = b`, `b ≠ 0`, `(A + ΔA) y = b + Δb`, `‖ΔA‖_p ≤ ε ‖A‖_p`, `‖Δb‖_p ≤
+ε ‖b‖_p`, `r = ε κ_p(A) < 1` ⇒ `A + ΔA` nonsingular and `‖y‖_p / ‖x‖_p ≤ (1 + r) / (1 - r)`. Backbone
+`norm_add_div_le_of_norm_le_mul` and, for nonsingularity, Theorem 2.3.4 (`‖A⁻¹ ΔA‖ ≤ ε κ < 1`). ★'''
+deps = ["norm_add_div_le_of_norm_le_mul", "theorem_2_3_4", "kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 2.6.1'
+
+[[node]]
+id = "theorem_2_6_2"
+kind = "theorem"
+desc = '''Theorem 2.6.2, (2.6.10): under Lemma 2.6.1's hypotheses, `‖y - x‖_p / ‖x‖_p ≤ 2 ε / (1 - r) · κ_p(A)`.
+Backbone `relative_error_le_of_norm_le_mul` (the book's proof: (2.6.11) and Lemma 2.6.1). ★'''
+deps = ["relative_error_le_of_norm_le_mul", "lemma_2_6_1", "equation_2_6_11"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.6.2'
+
+[[node]]
+id = "equation_2_6_11"
+kind = "theorem"
+desc = '''(2.6.11): `A x = b`, `(A + ΔA) y = b + Δb`, `A` nonsingular ⇒ `y - x = A⁻¹ Δb - A⁻¹ ΔA y` — backbone
+`Matrix.sub_eq_inv_mulVec_of_mulVec_eq`. ★'''
+deps = ["Matrix.sub_eq_inv_mulVec_of_mulVec_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.11)'
+
+[[node]]
+id = "theorem_2_6_3"
+kind = "theorem"
+desc = '''Theorem 2.6.3, (2.6.12): `A x = b`, `b ≠ 0`, `(A + ΔA) y = b + Δb`, `|ΔA| ≤ ε |A|`, `|Δb| ≤ ε |b|`
+(entrywise: `ΔA.abs ≤ₑ ε • A.abs`, `|Δb| ≤ ε • |b|`), `r = ε κ_∞(A) < 1` ⇒ `A + ΔA` nonsingular and `‖y -
+x‖_∞ / ‖x‖_∞ ≤ 2 ε / (1 - r) · ‖|A⁻¹| |A|‖_∞`. Backbone `Matrix.norm_sub_le_of_abs_le_abs` (second clause,
+denominator `1 - ε cond(A)`) weakened by `Matrix.skeelCond_le_condNumberLp_top` (`1 - ε cond(A) ≥ 1 -
+r`); nonsingularity from Lemma 2.6.1 in the `∞`-norm (`‖ΔA‖_∞ ≤ ε ‖A‖_∞` by
+`Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE`). The printed hypothesis "`δ κ_∞(A) = r < 1`" is a typo
+for `ε` (report, Doubts); the printed "`(A + ΔA) y, = b + ΔbΔA ∈ …`" is a conversion artefact. ★★'''
+deps = ["Matrix.norm_sub_le_of_abs_le_abs", "Matrix.skeelCond_le_condNumberLp_top", "lemma_2_6_1", "Matrix.skeelCond"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.6.3'
+
+[[node]]
+id = "skeel_condition_number"
+kind = "theorem"
+desc = '''§2.6.5: the Skeel condition number `‖|A⁻¹| |A|‖_∞` is backbone `Matrix.skeelCond A`, and it is at most
+`κ_∞(A)` — backbone `Matrix.skeelCond_le_condNumberLp_top`. (That it can be "considerably less" is an
+example claim without a specific matrix; not a node.) ★'''
+deps = ["Matrix.skeelCond", "Matrix.skeelCond_le_condNumberLp_top"]
+source = 'Golub–Van Loan, Matrix Computations, §2.6.5'
+
+[[node]]
+id = "equation_2_6_13"
+kind = "theorem"
+desc = '''(2.6.13), Oettli–Prager: for `A E : Matrix (Fin n) (Fin n) ℝ`, `b f x̂ : Fin n → ℝ`, the least `ω ≥ 0`
+with `(A + ΔA) x̂ = b + Δb`, `|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|` is `ω_min = max_i |A x̂ - b|_i / (|E| |x̂| +
+|f|)_i` (`Matrix.componentwiseBackwardError`), when every row with `(|E||x̂| + |f|)_i = 0` has zero
+residual; otherwise no `ω` exists (the book's `ω_min = ∞`); `A x̂ = b ⇒ ω_min = 0`. Backbone
+`Matrix.isLeast_componentwiseBackwardError`, `Matrix.exists_perturbation_iff_abs_residual_le`. ★'''
+deps = ["Matrix.isLeast_componentwiseBackwardError", "Matrix.exists_perturbation_iff_abs_residual_le", "Matrix.componentwiseBackwardError"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.6.13)'

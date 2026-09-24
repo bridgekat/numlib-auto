@@ -1,0 +1,95 @@
+desc = '''
+Golub–Van Loan, Chapter 1: matrix multiplication (book lines 699–3806). Real matrices
+`Matrix (Fin m) (Fin n) ℝ` and vectors `Fin n → ℝ`, `ℂ` in §1.4's transforms; namespace
+`GolubVanLoan.Chapter01`, one module per section.
+
+**Conventions of the chapter's surface files.**
+
+* Indices are 0-based `Fin n`; the book's 1-based `i` is `i − 1`, the colon range `p:q` is
+  `(List.finRange n).filter (fun i => p − 1 ≤ i ∧ i ≤ q − 1)` inside algorithms and a
+  `submatrix` along an explicit embedding in statements. Stated once per section where it matters
+  (storage formulas (1.2.1)–(1.2.2), Theorem 1.4.1's blocks).
+* **Algorithms (decision D4).** Every numbered algorithm is a definition `algorithm_1_M_K {M : Type →
+  Type} [Monad M] (rnd : ℝ → M ℝ) …` (`rnd : ℂ → M ℂ` for the FFT-based ones of §1.4) following the
+  numbered **Algorithm conventions** of `NumlibSurface/GolubVanLoan` (what is rounded, loops,
+  submatrices as index lists, suffixes `_spec`/`_rounds`/`_mem_run`/`_rounding`, exact specs read
+  off bridges); recursive algorithms (Strassen, FFT, Haar) recurse on `q`/`t` with `n = 2^q`. Its
+  specification `algorithm_1_M_K_spec` is the exact run `Id.run (algorithm_1_M_K pure …)` equal to
+  Mathlib's product (`x ⬝ᵥ y`, `y + a • x`, `y + A *ᵥ x`, `C + A * B`) or the backbone transform
+  (`(dft n)ᴴ *ᵥ x`, `sinMatrix`, `dct`); for §1.1 it is read off the run characterization at the
+  exact model (`FloatingPoint.RoundingModel.round_exact`, `FloatingPoint.mem_run_dotAccum_exact_iff`,
+  convention 11). Data come in BLAS order (`a x y`, `A x y`, `A B C`).
+* **Floating point.** The book analyses the algorithms of §1.1 in §2.7; the bridges chapter 2 needs
+  are here, beside the algorithms: `algorithm_1_1_1_rounds` (`RoundsDot`),
+  `algorithm_1_1_{2,3,4,5,6,7,8}_mem_run` (the run set characterized entrywise: every entry of
+  every run is a run of the backbone accumulation `FloatingPoint.dotAccum` onto the initial entry,
+  whatever the loop order) and `algorithm_1_1_{5,6,7,8}_rounds` (`RoundsMul`). Loops that write one
+  entry per step go through `SetM.mem_run_foldlM_update_of_nodup`, loops whose every step acts on
+  every entry independently through `SetM.mem_run_foldlM_of_pi`. The `0 + fl(x₁y₁)` mismatch
+  between the book's loop and `RoundsSum` is resolved by the hypothesis `fp.IsIdempotent`
+  (rounding fixes its outputs; true of `System.roundingModel`), assumed only by the `_rounds`
+  nodes that need the book's `γ_n` (convention 6), see `Numlib/FloatingPoint/Program`.
+  `algorithm_1_1_1_run_nonempty` shows the run set is nonempty for a total model.
+* Kronecker products, `vec`, `reshape` and the perfect shuffle are the positional backbone forms
+  `Matrix.kroneckerFin`, `vecFin`, `reshape`, `perfectShuffle` (row `(i₁ − 1) m₂ + i₂` of `B ⊗ C` is
+  `finProdFinEquiv (i₁, i₂)`); permutation matrices `I_n(v,:)` are Mathlib's `v.permMatrix ℝ`.
+  Hamiltonian/symplectic matrices live on `Fin n ⊕ Fin n` with Mathlib's `J = −J_book`.
+
+**Backbone correspondence.** New modules: `Numlib/FloatingPoint/Program` (the D4 semantics, every
+chapter's dependency), `Numlib/LinearAlgebra/Matrix/Kronecker` (§1.2.11, §1.3.6–1.3.7),
+`Numlib/LinearAlgebra/Matrix/Hamiltonian` (§1.3.10; chapter 7's §7.8 consumes it),
+`Numlib/Analysis/Fourier/SineCosineTransform` (§1.4.2; chapter 4's §4.8 consumes it). Staged
+appends: `FloatingPoint/{Model,System,InnerProduct}` (exact model, idempotence), `Hessenberg`
+(rectangular bandwidth), `BlockDiagonal` (block multiplication over `Sigma`, Theorem 1.3.1), `DFT`
+((1.4.5) and the index symmetries of `F_n`). Reused as they are: `Matrix.HasLowerBandwidth`/
+`HasUpperBandwidth` and the shape iff-lemmas of `Hessenberg` (Table 1.2.1; the planned
+`LinearAlgebra/Matrix/Band` module is not needed), `Matrix.dft` with `dft_radix_two` (the FFT's
+correctness), `Matrix.sineVec`/`dotProduct_sineVec` (`TridiagonalToeplitz`), Mathlib's `Matrix.vec`,
+`kronecker_mulVec_vec`, `inv_kronecker`, `kronecker_assoc`, `Matrix.symplecticGroup`,
+`symplecticGroup.fromBlocks_mem_iff`, `LieAlgebra.Symplectic.sp`, `Equiv.Perm.permMatrix`,
+`Fin.revPerm`, `finRotate`, `finSigmaFinEquiv`.
+
+**Not formalized** (by decision, planning brief §3 rule 5, recorded once here):
+
+* operation counts and flop, memory and communication analyses everywhere (§1.1.15–1.1.16,
+  Tables 1.1.1–1.1.2, §1.2.4, the counts after Algorithms 1.2.2, 1.3.1, 1.4.1–1.4.4, Strassen's
+  `n^{log₂ 7}`, the `6n⁴` Kronecker count);
+* §1.5 (vectorization, stride, cache blocking, (1.5.1)–(1.5.6)) as a whole — `Section05` has no nodes;
+* §1.6 (parallel matrix multiplication) except Cannon's identity (1.6.16) and its shift relations;
+* the BLAS "level" discussion (§1.1.17) and storage schemes as such ((1.2.1), (1.2.2) enter only as
+  hypotheses of Algorithms 1.2.2–1.2.3's specifications);
+* notation-only displays ((1.1.1)–(1.1.3), (1.4.1)–(1.4.2), (1.4.6), (1.4.9), (1.4.11) are
+  definitions, given as definition nodes where an object is needed), the numerical examples
+  (`F_4`, `F_8(:,cols)`, `W_2, W_4, W_8`, the 2×2 products), the MATLAB `reshape` example;
+* unnumbered prose remarks without a later citation: band inheritance of `B ⊗ C`, the real form of
+  complex multiplication (§1.3.9), the multiple-Kronecker reshaping of §1.3.8, the DST-II
+  embedding remark after (1.4.12); the DST-II … DCT-IV definitions of (1.4.12) are left to
+  chapter 4, which uses `DST2`;
+* "Notes and References" of every section.
+
+No Theorem/Lemma/Corollary of the chapter is blocked: Theorems 1.3.1 and 1.4.1 are planned in
+full.
+
+**Closes.** No existing open node or `notes/frontier.md` item; the chapter opens the program
+semantics (D4) the other eleven chapters use.
+
+**Order of attack** (lines are estimates):
+
+1. `Numlib/FloatingPoint/Program` with the staged `Model` (exact model, `IsIdempotent`), `System`
+   (`roundingModel_isIdempotent`, `chop_chop`, `choppingModel_isIdempotent`) and `InnerProduct`
+   (tracking `RoundsSumFrom`) appends — ≈ 350 + 30 + 80 lines; first, since chapters 2–12 depend on
+   `RoundingModel.round` and `SetM.mem_run_bind`. The ★★ items are `SetM.mem_run_foldlM_update_of_nodup`
+   (≈ 45, prototype `notes/gvl/fixA/proto/UpdateNodup.lean`), `roundsDot_of_mem_run_dotAccum`
+   (≈ 40), `abs_sub_le_of_mem_run_dotAccum` (≈ 50).
+2. `Numlib/LinearAlgebra/Matrix/Kronecker` — ≈ 300 lines (`kroneckerFin_assoc` and (1.3.5) ★★).
+3. `Hessenberg` (rectangular bandwidth, ≈ 40) and `BlockDiagonal` (≈ 15) appends.
+4. `Numlib/LinearAlgebra/Matrix/Hamiltonian` — ≈ 150 lines.
+5. `DFT` appends (≈ 60), then `Numlib/Analysis/Fourier/SineCosineTransform` — ≈ 250 lines (the two
+   pairing identities ★★, ≈ 60 each).
+6. Surface `Section01` (≈ 450 lines; the `_mem_run` proofs share two patterns and should be
+   written once as local helpers; the `_spec` proofs are one-liners from them at the exact model), `Section02` (≈ 300), `Section03` (≈ 350, Strassen's
+   recursion ≈ 150), `Section04` (≈ 600: Theorem 1.4.1 ≈ 100, FFT ≈ 120, Haar ≈ 150), `Section05`
+   (module doc only), `Section06` (≈ 60).
+
+Total ≈ 1 300 backbone and ≈ 1 750 surface lines.
+'''

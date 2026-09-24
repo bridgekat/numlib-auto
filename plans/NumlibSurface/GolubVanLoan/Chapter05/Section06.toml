@@ -1,0 +1,103 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.6, square and underdetermined systems: solving a square system through a QR factorization of
+`(HA)ᵀ` without back substitution (§5.6.1); the solution set of an underdetermined system; the
+basic solution from QR with column pivoting (Algorithm 5.6.1) and the minimal-norm solution from a
+QR factorization of `Aᵀ` (Algorithm 5.6.2) or the SVD (§5.6.2); and the perturbation of the
+minimal-norm solution (Theorem 5.6.1, (5.6.2)).
+
+Theorem 5.6.1 is planned rigorously (`Matrix.norm_minNorm_sub_le`: `σ_m(A) - ‖δA‖₂` for `σ_m(A)`, no
+`O(ε²)`) with the book's first-order form as a corollary. Its printed hypothesis `ε < σ_m(A)`
+compares a relative quantity with an absolute one; the reading is `‖δA‖₂ < σ_m(A)` (what the proof
+uses: `rank(A + tE) = m`); and its proof's last display puts `min(1, n - m)` in front of all three
+terms, while the theorem's `min{2, n - m + 1}` is right (report, Doubts).
+
+Not formalized: the flop table (Figure 5.6.1) and the three bullet arguments for orthogonal methods
+(prose).
+'''
+
+[[node]]
+id = "solve_householderPreprocess"
+kind = "theorem"
+desc = '''§5.6.1: for nonsingular `A ∈ ℝ^{n×n}`, `H` a Householder matrix with `H b = β e_n`, and a QR
+factorization `(H A)ᵀ = Q R`: the solution of `A x = b` is `x = (β / r_nn) Q(:, n)` (`A = Hᵀ Rᵀ Qᵀ`,
+`Rᵀ y = β e_n` is solved by `y = (β / r_nn) e_n` since `Rᵀ` is lower triangular, `x = Q y`). ★'''
+deps = ["theorem_5_2_1", "householderMatrix_isSymm", "equation_5_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, §5.6.1'
+
+[[node]]
+id = "underdetermined_solutions"
+kind = "theorem"
+desc = '''§5.6.2: for `A ∈ ℝ^{m×n}` with `m < n`, the system (5.6.1) `A x = b` either has no solution or
+infinitely many (`{x | A *ᵥ x = b}.Infinite` when nonempty, since `ker A ≠ 0` by rank–nullity,
+`Matrix.rank_add_finrank_ker_mulVecLin`-type count for rectangular `A`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.6.2'
+
+[[node]]
+id = "algorithm_5_6_1"
+kind = "definition"
+desc = '''Algorithm 5.6.1: Algorithm 5.4.1 on `A` (`m ≤ n`, full row rank) giving `Qᵀ A Π = R`; `Qᵀb` by
+(5.1.4); `z₁ ← GolubVanLoan.Chapter03.algorithm_3_1_2 rnd R(1:m, 1:m) (Qᵀb)`; `x = Π [z₁; 0]`. `Qᵀb` by the book's
+(5.1.4), i.e. `factoredQTransposeMul` (which recomputes `β`, hence the nondegeneracy hypothesis of
+the spec). ★'''
+deps = ["algorithm_5_4_1", "factoredQTransposeMul", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.6.1'
+
+[[node]]
+id = "algorithm_5_6_1_spec"
+kind = "theorem"
+desc = '''For `rank A = m` (and Algorithm 5.4.1's Householder steps nondegenerate, as in
+`algorithm_5_3_2_spec`): the exact output solves `A x = b` and has at most `m` nonzero entries
+("the minimum norm solution is not guaranteed"). Backbone `Matrix.IsPivotedQR.IsRankRevealing.mulVec_basic_eq` with
+`algorithm_5_4_1_spec`, which supplies the bundle `IsPivotedQR.IsRankRevealing A Q R Π r` with
+`r = rank A = m` (the backbone's `M`; no rows vanish and `R₁` is nonsingular). ★★'''
+deps = ["algorithm_5_6_1", "algorithm_5_4_1_spec", "equation_5_1_4", "equation_5_1_4_beta", "Matrix.IsPivotedQR.IsRankRevealing.mulVec_basic_eq", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.6.1'
+
+[[node]]
+id = "algorithm_5_6_2"
+kind = "definition"
+desc = '''Algorithm 5.6.2: the QR factorization `Aᵀ = Q R` (Algorithm 5.2.1 on `Aᵀ`, `Q(:, 1:m)` by
+(5.1.5), i.e. `factoredQFirstColumns`, which recomputes `β` as the book prints); `z ← GolubVanLoan.Chapter03.algorithm_3_1_1 rnd R(1:m, 1:m)ᵀ b` (lower triangular: forward
+substitution); `x = Q(:, 1:m) z` (a gaxpy). ★'''
+deps = ["algorithm_5_2_1", "factoredQFirstColumns", "GolubVanLoan.Chapter03.algorithm_3_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.6.2'
+
+[[node]]
+id = "algorithm_5_6_2_spec"
+kind = "theorem"
+desc = '''For `rank A = m` (nondegenerate Householder steps): the exact output `x` satisfies `A x = b` and
+is the minimal-norm solution, `x = A⁺ b`. Backbone `Matrix.pinv_eq_of_isThinQR_conjTranspose` with
+the thin factorization from `algorithm_5_2_1_spec` and `equation_5_1_5`. ★★'''
+deps = ["algorithm_5_6_2", "algorithm_5_2_1_spec", "equation_5_1_5", "equation_5_1_4_beta", "Matrix.pinv_eq_of_isThinQR_conjTranspose", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.6.2'
+
+[[node]]
+id = "minNorm_svd_underdetermined"
+kind = "theorem"
+desc = '''§5.6.2: if `A = ∑_{i<r} σ_i u_i v_iᵀ` (SVD, `r = rank A`) and `A x = b` is solvable, then
+`x = ∑_{i<r} (u_iᵀ b / σ_i) v_i` is its minimal-norm solution — `equation_5_5_1` with zero residual. ★'''
+deps = ["equation_5_5_1"]
+source = 'Golub–Van Loan, Matrix Computations, §5.6.2'
+
+[[node]]
+id = "theorem_5_6_1"
+kind = "theorem"
+desc = '''Theorem 5.6.1, rigorous: for `A ∈ ℝ^{m×n}` with `rank A = m ≤ n`, `‖δA‖₂ < σ_m(A)`, `b ≠ 0`, and
+`x`, `x̂` the minimal-norm solutions of `Ax = b`, `(A + δA)x̂ = b + δb`:
+`‖x̂ - x‖₂/‖x‖₂ ≤ (‖A‖₂/(σ_m(A) - ‖δA‖₂)) (ε_A + ε_b) + [m < n] κ₂(A) ε_A`, which is the book's
+`κ₂(A)(ε_A min{2, n - m + 1} + ε_b)` with `σ_m` replaced by `σ_m - ‖δA‖₂` in the first term.
+Backbone `Matrix.norm_minNorm_sub_le`; the first-order form (`+ O(ε²)`, fixed `A`, `b`) is a second
+declaration, as for `theorem_5_3_1`. ★★'''
+deps = ["Matrix.norm_minNorm_sub_le", "kappa2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.6.1'
+
+[[node]]
+id = "equation_5_6_2"
+kind = "theorem"
+desc = '''(5.6.2): with `x(t) = (A + tE)ᵀ((A + tE)(A + tE)ᵀ)⁻¹(b + tf)`,
+`ẋ(0) = (I - Aᵀ(AAᵀ)⁻¹A) Eᵀ (AAᵀ)⁻¹ b + Aᵀ(AAᵀ)⁻¹ (f - E x)` (the Problem P5.6.1 asks to derive it).
+Backbone `Matrix.hasDerivAt_minNorm_line`. ★'''
+deps = ["Matrix.hasDerivAt_minNorm_line"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.6.2)'

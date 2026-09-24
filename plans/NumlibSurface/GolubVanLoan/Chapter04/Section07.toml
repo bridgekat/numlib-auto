@@ -1,0 +1,322 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.7, classical methods for Toeplitz systems: persymmetry (§4.7.1), Durbin's algorithm for the
+Yule–Walker equations ((4.7.1), Algorithm 4.7.1), Levinson's algorithm ((4.7.2)–(4.7.3), Algorithm
+4.7.2), Trench's algorithm for the inverse ((4.7.4)–(4.7.5), Algorithm 4.7.3), Cybenko's bounds
+((4.7.6)–(4.7.7)), the Cybenko–Van Loan minimum-eigenvalue method (§4.7.7) and the unsymmetric
+bordering ((4.7.12)–(4.7.13)). Backbone: `LinearAlgebra/Matrix/Toeplitz`, `Direct/Levinson`,
+`Nonlinear/ScalarNewton`, and `Eigen/DivideConquer` for the bordered secular function of §4.7.7
+(`Matrix.borderedSecularFunction` and its lemmas, beside `Matrix.secularFunction`; moved there from
+`Direct/Levinson` at the review, statements unchanged).
+
+Conventions: `T_k = Matrix.symmToeplitz k r` with `r : ℕ → ℝ`, `r 0 = 1` (the book normalizes the
+diagonal); "`T_n` positive definite" is `(symmToeplitz n r).PosDef`. The book's `y^{(k)}`, `β_k`, `α_k`
+of (4.7.1) are `Durbin.sol r k`, `Durbin.beta r k`, `Durbin.alpha r k` (0-based, recurrence started at
+the empty solution); in §4.7.6 the book reuses `α_j` for `y^{(j)}_j = Durbin.alpha r (j − 1)`. The
+exchange matrix is `Matrix.exchange`. The error approximations of §4.7.6 (`≈`), the `O(log n)`
+iteration count and lookahead are not formalized (chapter group).
+'''
+
+[[node]]
+id = "IsPersymmetric"
+kind = "definition"
+desc = '''§4.7.1, Definition (the book's form): `IsPersymmetric (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+Matrix.exchange n * B * Matrix.exchange n = Bᵀ`. ★'''
+deps = ["Matrix.exchange"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Definition'
+
+[[node]]
+id = "isPersymmetric_iff"
+kind = "theorem"
+desc = '''`IsPersymmetric B ↔ B.IsPersymmetric` (the backbone's entrywise `B (rev j) (rev i) = B i j`);
+`Matrix.isPersymmetric_iff_exchange_mul_mul_exchange`. ★'''
+deps = ["IsPersymmetric", "Matrix.isPersymmetric_iff_exchange_mul_mul_exchange"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Definition'
+
+[[node]]
+id = "isSymm_exchange_mul"
+kind = "theorem"
+desc = '''§4.7.1: "If `B` is persymmetric, then `ℰ_n B` is symmetric"; `Matrix.IsPersymmetric.isSymm_exchange_mul`. ★'''
+deps = ["isPersymmetric_iff", "Matrix.IsPersymmetric.isSymm_exchange_mul"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Display'
+
+[[node]]
+id = "isPersymmetric_inv"
+kind = "theorem"
+desc = '''§4.7.1: the inverse of a (nonsingular) persymmetric matrix is persymmetric,
+`ℰ B⁻¹ ℰ = (ℰ B ℰ)⁻¹ = (Bᵀ)⁻¹ = (B⁻¹)ᵀ`; `Matrix.IsPersymmetric.inv`. ★'''
+deps = ["isPersymmetric_iff", "Matrix.IsPersymmetric.inv"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Display'
+
+[[node]]
+id = "isPersymmetric_inv_of_isToeplitz"
+kind = "theorem"
+desc = '''§4.7.1: "the inverse of a nonsingular Toeplitz matrix is persymmetric": `A.IsToeplitz → IsPersymmetric A⁻¹`;
+`Matrix.IsToeplitz.isPersymmetric`, `isPersymmetric_inv`. ★'''
+deps = ["Matrix.IsToeplitz.isPersymmetric", "isPersymmetric_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.1, Display'
+
+[[node]]
+id = "durbin_step"
+kind = "theorem"
+desc = '''§4.7.3, the Yule–Walker bordering: if `T_k y = −(r_1, …, r_k)` and `1 + rᵀy ≠ 0`, then with
+`α = −(r_{k+1} + rᵀℰ_k y)/(1 + rᵀy)` and `z = y + α ℰ_k y`, the vector `[z; α]` solves the
+`(k+1)`st order Yule–Walker system `T_{k+1} [z; α] = −(r_1, …, r_{k+1})`; `Durbin.bordered_solve`. ★'''
+deps = ["Durbin.bordered_solve"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.3, Display'
+
+[[node]]
+id = "durbin_denominator_pos"
+kind = "theorem"
+desc = '''§4.7.3: "the denominator is positive because `T_{k+1}` is positive definite and because
+`[I ℰ_k y; 0 1]ᵀ T_{k+1} [I ℰ_k y; 0 1] = diag(T_k, 1 + rᵀy)`": the congruence identity (from
+`T_k y = −r`) and `0 < 1 + rᵀy` for `T_{k+1}` positive definite; `Durbin.det_symmToeplitz_succ`,
+`Durbin.beta_pos`. ★'''
+deps = ["Durbin.det_symmToeplitz_succ", "Durbin.beta_pos"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.3, Display'
+
+[[node]]
+id = "equation_4_7_1"
+kind = "theorem"
+desc = '''(4.7.1): if `T_n` is positive definite (`r 0 = 1`), Durbin's recurrence produces the solutions of the
+Yule–Walker systems of every order: `T_k y^{(k)} = −r^{(k)}` for `k = 1 … n`, with `y^{(k)} =
+Durbin.sol r k`, `β_k = Durbin.beta r k > 0`; `Durbin.symmToeplitz_mulVec_sol`, `Durbin.beta_pos`. ★'''
+deps = ["Durbin.symmToeplitz_mulVec_sol", "Durbin.beta_pos"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.1)'
+
+[[node]]
+id = "durbin_beta_succ"
+kind = "theorem"
+desc = '''§4.7.3, the derivation before Algorithm 4.7.1: `β_k = (1 − α_{k−1}²) β_{k−1}`; `Durbin.beta_succ`. ★'''
+deps = ["Durbin.beta_succ"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.3, Display'
+
+[[node]]
+id = "algorithm_4_7_1"
+kind = "definition"
+desc = '''Algorithm 4.7.1 (Durbin), D4, the program of `notes/gvl/ch04/proto/Shapes.lean` §3 (elaborates):
+`algorithm_4_7_1 (rnd) (n : ℕ) (r : ℕ → ℝ) : M (Fin n → ℝ)` with state `(y, α, β) : (Fin n → ℝ) × ℝ ×
+ℝ`, `y` holding `y(1:k)` in its first `k` entries; start `y 0 = −r 1`, `β = 1`, `α = −r 1`; for
+`k = 1 … n−1` (a `List.range (n − 1)` fold): `β ← rnd (rnd (1 − rnd (α * α)) * β)`, `α ← rnd (−s / β)` with
+`s` the running sum from `r (k+1)` of `rnd (r (k + 1 − j) * y j)`, `j < k` (the book's
+`r(k:−1:1)ᵀ y(1:k)`), `z i ← rnd (y i + rnd (α * y (k − 1 − i)))` for `i < k`, `y ← [z; α]`. Every flop is rounded
+(convention 1), so the `β` update is `β ← rnd (rnd (1 − rnd (α * α)) * β)` — three roundings; the
+formula written first in this description is shorthand for it (algo review L5: the first plan said
+both that `1 − fl(α²)` is and is not rounded). The prototype shows the shape. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.1'
+
+[[node]]
+id = "algorithm_4_7_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.7.1: if `T_n` is positive definite with `r 0 = 1`, then
+`symmToeplitz n r *ᵥ Id.run (algorithm_4_7_1 pure n r) = −(fun i => r (i + 1))`. By induction, the exact state after
+the `k`-th pass (book index `k = 1 … n−1`) is `(Durbin.sol r (k+1), Durbin.alpha r k, Durbin.beta r k)`,
+with `Durbin.beta_succ` identifying the algorithm's update `β ← (1 − α²) β` (`β_{k−1} ≠ 0` from
+`Durbin.beta_pos`); then `equation_4_7_1`. ★★ (~120 lines)'''
+deps = ["algorithm_4_7_1", "Durbin.sol", "Durbin.beta_succ", "Durbin.beta_pos", "equation_4_7_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.1'
+
+[[node]]
+id = "equation_4_7_3"
+kind = "theorem"
+desc = '''(4.7.2)→(4.7.3): if `T_k x = b` (4.7.2) and `T_k y = −r`, then `(4.7.3)` is solved by
+`v = x + μ ℰ_k y`, `μ = (b_{k+1} − rᵀℰ_k x)/(1 + rᵀy)` ("we can effect the transition from (4.7.2) to
+(4.7.3) in `O(k)` flops"); `Levinson.bordered_solve`. ★'''
+deps = ["Levinson.bordered_solve"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.3)'
+
+[[node]]
+id = "algorithm_4_7_2"
+kind = "definition"
+desc = '''Algorithm 4.7.2 (Levinson), D4: state `(x, y, α, β)`; start `y 0 = −r 1`, `x 0 = b 0`, `β = 1`, `α = −r 1`;
+for `k = 1 … n−1`: `β ← rnd ((rnd (1 − rnd (α * α))) * β)`, `μ ← rnd ((b k − s) / β)` with `s` the
+rounded running sum of `rnd (r (j+1) * x (k − 1 − j))`, `j < k` (so `rnd (b k − s)` first), `v i ←
+rnd (x i + rnd (μ * y (k − 1 − i)))`, `x ← [v; μ]`; and if `k < n − 1`: `α ← rnd (−t'/β)`
+with `t'` the rounded running sum from `r (k+1)` of `rnd (r (j+1) * y (k − 1 − j))` (the addition of
+`r (k+1)` is rounded too — convention 1; the negation is exact), `z i ← rnd (y i + rnd (α * y (k − 1 −
+i)))`, `y ← [z; α]`. Same state encoding as `algorithm_4_7_1`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.2'
+
+[[node]]
+id = "algorithm_4_7_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.7.2: if `T_n` is positive definite with `r 0 = 1`, then
+`symmToeplitz n r *ᵥ Id.run (algorithm_4_7_2 pure n r b) = b`. The exact state after pass `k` is
+`(Levinson.sol r b (k+1), Durbin.sol r (k+1), Durbin.alpha r k, Durbin.beta r k)`;
+`Levinson.symmToeplitz_mulVec_sol`. ★★'''
+deps = ["algorithm_4_7_2", "Levinson.sol", "Levinson.symmToeplitz_mulVec_sol", "algorithm_4_7_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.2'
+
+[[node]]
+id = "equation_4_7_4"
+kind = "theorem"
+desc = '''(4.7.4) and the formulas after it: for positive definite `T_n` (`r 0 = 1`), writing
+`T_n⁻¹ = [B v; vᵀ γ]` and `y` the solution of the order-`(n−1)` Yule–Walker system:
+`γ = 1/(1 + rᵀy)`, `v = γ ℰ y`, `B = T_{n−1}⁻¹ + v vᵀ/γ`; `Trench.inv_symmToeplitz_last`,
+`Trench.inv_symmToeplitz_eq`. ★'''
+deps = ["Trench.inv_symmToeplitz_last", "Trench.inv_symmToeplitz_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.4)'
+
+[[node]]
+id = "equation_4_7_5"
+kind = "theorem"
+desc = '''(4.7.5): `b_ij = b_{n−j, n−i} + (v_i v_j − v_{n−j} v_{n−i})/γ` (1-based, `B` of size `n − 1`);
+`Trench.inv_symmToeplitz_apply_succ`. ★'''
+deps = ["Trench.inv_symmToeplitz_apply_succ"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.5)'
+
+[[node]]
+id = "algorithm_4_7_3"
+kind = "definition"
+desc = '''Algorithm 4.7.3 (Trench), D4: `y ← algorithm_4_7_1 rnd (n − 1) r`; `γ ← rnd (1 / rnd (1 + s))` with `s` the
+running sum of `rnd (r (j+1) * y j)`; `v i ← rnd (γ * y (n − 2 − i))`; `B 0 0 := γ`,
+`B 0 j := v (n − 1 − j)` for `j ≥ 1`; for `i = 1 … ⌊(n−1)/2⌋`, `j = i … n − 1 − i`:
+`B i j ← rnd (B (i−1) (j−1) + rnd (rnd (rnd (v (n − 1 − j) * v (n − 1 − i)) − rnd (v (i−1) * v (j−1))) / γ))`
+(0-based from the book's `B(i,j) = B(i−1,j−1) + (v(n+1−j) v(n+1−i) − v(i−1) v(j−1))/γ`). Entries
+outside the "upper wedge" are left `0`. ★'''
+deps = ["algorithm_4_7_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.3'
+
+[[node]]
+id = "algorithm_4_7_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.7.3: for positive definite `T_n` (`r 0 = 1`, `n ≥ 1`), the computed
+`B := Id.run (algorithm_4_7_3 pure n r)` agrees with `T_n⁻¹` on the wedge: `B i j = (symmToeplitz n
+r)⁻¹ i j` whenever `i ≤ j` and `i + j ≤ n − 1` (0-based form of the book's `i ≤ j`, `i + j ≤ n + 1`);
+the other entries follow by symmetry and persymmetry (`isPersymmetric_inv_of_isToeplitz`). Induction
+along the diagonals with `equation_4_7_5` and `equation_4_7_4` (the first row), after
+`algorithm_4_7_1_spec` for `y`. ★★ (~150 lines, index bookkeeping)'''
+deps = ["algorithm_4_7_3", "algorithm_4_7_1_spec", "equation_4_7_4", "equation_4_7_5", "isPersymmetric_inv_of_isToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.7.3'
+
+[[node]]
+id = "abs_reflection_lt_one"
+kind = "theorem"
+desc = '''§4.7.6: in exact arithmetic the `α_k` of (4.7.1) satisfy `|α_k| < 1` (for positive definite `T_n`);
+`Durbin.abs_alpha_lt_one`. ★'''
+deps = ["Durbin.abs_alpha_lt_one"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.6, Display'
+
+[[node]]
+id = "equation_4_7_6_lower"
+kind = "theorem"
+desc = '''(4.7.6), left-hand side: for positive definite `T_n`, with `α_j` (`j = 1 … n−1`) Cybenko's reflection
+coefficients, `max{1/∏(1 − α_j²), 1/∏(1 − α_j)} ≤ ‖T_n⁻¹‖₁` — stronger than the printed bound, which
+carries an extra factor `1/(n − 1)` in both terms (ch04 report, Doubts);
+`Durbin.inv_beta_le_lpOpNorm_one_inv`. **Index shift**: Cybenko's `α_j = y^{(j)}_j` (the last entry of the
+`j`-th Durbin solution, `j = 1 … n`) is the backbone's `Durbin.alpha r (j − 1)` — the book reuses the
+letter `α` of Algorithm 4.7.1 (whose `α_k`, `k = 0 … n−1`, is `Durbin.alpha r k`) with this shift of
+index (`Numlib/Direct/Levinson`'s description); the products run over `Durbin.alpha r k`,
+`k = 0 … n − 2`. ★'''
+deps = ["Durbin.inv_beta_le_lpOpNorm_one_inv"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.6)'
+
+[[node]]
+id = "equation_4_7_6_upper"
+kind = "theorem"
+desc = '''(4.7.6), right-hand side: for positive definite `T_n`, `‖T_n⁻¹‖₁ ≤ ∏_{j=1}^{n−1} (1 + |α_j|)/(1 − |α_j|)`
+with Cybenko's `α_j = Durbin.alpha r (j − 1)` (the index shift of `equation_4_7_6_lower`: the product
+runs over `Durbin.alpha r k`, `k = 0 … n − 2`); `Durbin.lpOpNorm_one_inv_le` (★★★ in the backbone;
+quoted from Cybenko without proof). ★'''
+deps = ["Durbin.lpOpNorm_one_inv_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.6)'
+
+[[node]]
+id = "equation_4_7_7"
+kind = "theorem"
+desc = '''(4.7.7): the solution of `T_n y = −r(1:n)` satisfies `‖y‖₁ = ∏_{k=1}^{n} (1 + α_k) − 1` provided all
+`α_k ≥ 0` (Cybenko's `α_k = Durbin.alpha r (k−1)`); `Durbin.sum_abs_sol_eq` with
+`equation_4_7_1` identifying `y`. ★'''
+deps = ["Durbin.sum_abs_sol_eq", "equation_4_7_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.7)'
+
+[[node]]
+id = "secular_lambdaMin"
+kind = "theorem"
+desc = '''§4.7.7: for symmetric positive definite Toeplitz `T = [1 rᵀ; r B]` with (4.7.8) `λ_min(T) < λ_min(B)`,
+an eigenvector `[α; y]` for `λ_min(T)` has `α ≠ 0`, `y = −α (B − λ_min I)⁻¹ r`, and `λ_min(T)` is a
+zero of `f(λ) = 1 − λ − rᵀ(B − λ I)⁻¹ r`; `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq` (with
+`B = T_{n−1}` for a symmetric Toeplitz `T = T_n`, `Matrix.symmToeplitz_succ_eq_fromBlocks` read at
+the front by persymmetry). ★★'''
+deps = ["Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq", "Matrix.symmToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "secular_deriv"
+kind = "theorem"
+desc = '''§4.7.7: for `λ < λ_min(B)`, `f′(λ) = −1 − ‖(B − λI)⁻¹ r‖₂² ≤ −1` and `f″(λ) = −2 rᵀ(B − λI)⁻³ r ≤ 0`;
+`Matrix.hasDerivAt_borderedSecularFunction`. ★'''
+deps = ["Matrix.hasDerivAt_borderedSecularFunction"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "equation_4_7_10"
+kind = "theorem"
+desc = '''(4.7.9)–(4.7.10): under (4.7.8), if `λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton iteration
+`λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ − f(λ⁽ᵏ⁾)/f′(λ⁽ᵏ⁾)` converges to `λ_min(T)` monotonically from the right;
+`Matrix.tendsto_newton_borderedSecularFunction`. ★'''
+deps = ["Matrix.tendsto_newton_borderedSecularFunction", "secular_lambdaMin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.10)'
+
+[[node]]
+id = "newton_step_eq"
+kind = "theorem"
+desc = '''§4.7.7: the Newton step has the form `λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ + (1 + rᵀw − λ⁽ᵏ⁾)/(1 + wᵀw)` where `w` solves the
+shifted Yule–Walker system `(B − λ⁽ᵏ⁾I) w = −r`; algebra from `Matrix.borderedSecularFunction` and
+`secular_deriv` (`w = −(B − λI)⁻¹ r`). The remark that Durbin's algorithm applies to
+`(B − λ⁽ᵏ⁾I)/(1 − λ⁽ᵏ⁾)` is `equation_4_7_1` for that normalized Toeplitz matrix (no separate node).
+★'''
+deps = ["Matrix.borderedSecularFunction", "secular_deriv"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "durbin_beta_pos_iff"
+kind = "theorem"
+desc = '''§4.7.7: for a symmetric Toeplitz `T_λ` with unit diagonal, if `β_1, …, β_{k−1} > 0` and `β_k ≤ 0` (Durbin's
+`β` for `T_λ`) then `T_λ(1:k,1:k)` is positive definite and `T_λ(1:k+1,1:k+1)` is not; more
+generally `T_λ(1:k+1, 1:k+1)` is positive definite iff `β_0, …, β_k > 0`. `Durbin.beta_pos` (its `iff`
+form), `Durbin.det_symmToeplitz_succ`, Sylvester's criterion
+(`Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos`). ★★'''
+deps = ["Durbin.beta_pos", "Durbin.det_symmToeplitz_succ", "Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "equation_4_7_11"
+kind = "theorem"
+desc = '''(4.7.11), the bisection for a starting value: let `m(λ)` (surface definition `bisectionIndex T λ`, part of
+this node) be the least `k < n` with `β_k ≤ 0` for Durbin's recurrence on `T_λ = (T − λI)/(1 − λ)`, and
+`n` if there is none. For `λ < 1`: `m(λ) ≥ n − 1 ↔ B − λI` is positive definite, and
+`m(λ) = n − 1 ↔ λ_min(T) ≤ λ < λ_min(B)` — "if `m(λ⁽⁰⁾) = n − 1` then `B − λ⁽⁰⁾I` is positive definite
+and `T − λ⁽⁰⁾I` is not, thereby establishing (4.7.9)"; `m` is antitone in `λ`, so the loop keeps
+`m(R) ≤ n − 1 ≤ m(L)` with `L = 0`, `R = 1 − |r₁|` initially (`lambdaMin_bracket`). The book prints the
+invariant as `m(L) ≤ n − 1 ≤ m(R)`, the reverse of what its update rule (`m(μ) < n − 1 ⇒ R = μ`)
+maintains (ch04 report, Doubts). From `durbin_beta_pos_iff` (definiteness of the leading blocks of
+`T_λ` read off the `β_k`), the leading `(n−1)` block of `T` being `B`
+(`Matrix.leadingPrincipal_symmToeplitz`), and eigenvalue monotonicity of `T − λI` in `λ`. ★★'''
+deps = ["durbin_beta_pos_iff", "Matrix.leadingPrincipal_symmToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.11)'
+
+[[node]]
+id = "lambdaMin_bracket"
+kind = "theorem"
+desc = '''§4.7.7, the initial bracket of (4.7.11): for symmetric positive definite Toeplitz `T = [1 rᵀ; r B]` (`n ≥ 3`),
+`0 < λ_min(T) ≤ λ_min(B) ≤ λ_min([1 r₁; r₁ 1]) = 1 − |r₁|` (the book writes `<` in the middle, which is
+the hypothesis (4.7.8)). Rayleigh quotients (Mathlib `Matrix.IsHermitian.eigenvalues` with the
+min–max characterization at the extreme eigenvalue, e.g. `Matrix.IsHermitian.eigenvalues_le`-type
+lemmas, or ch08's `MinMax`): vectors supported on `B`'s indices, then on its first two. ★★'''
+deps = ["Matrix.symmToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, §4.7.7, Display'
+
+[[node]]
+id = "equation_4_7_13"
+kind = "theorem"
+desc = '''(4.7.12)→(4.7.13), unsymmetric Toeplitz systems: if `T_k` (`t_ij = r_{j−i}` above, `p_{i−j}` below, unit
+diagonal) has nonsingular leading principal submatrices and `T_kᵀ y = −r`, `T_k w = −p`, `T_k x = b`,
+then the three bordered systems (4.7.13) are solved by `[y + α ℰ w; α]`, `[w + ν ℰ y; ν]`,
+`[x + μ ℰ y; μ]` with `α = −(r_{k+1} + rᵀℰy)/(1 + rᵀw)`, `ν = −(p_{k+1} + pᵀℰw)/(1 + pᵀy)`,
+`μ = (b_{k+1} − pᵀℰx)/(1 + pᵀy)` (the book: "It can be shown that … in `O(k)` flops"; the formulas
+are the book's P4.7.11); `Levinson.bordered_solve_toeplitz`. ★'''
+deps = ["Levinson.bordered_solve_toeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.7.13)'

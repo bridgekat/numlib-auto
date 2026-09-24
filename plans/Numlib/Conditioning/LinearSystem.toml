@@ -1,3 +1,12 @@
+# Planned additions (GVL round): the module doc of `Numlib.Conditioning.LinearSystem` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch02) Add: the rigorous form of the first-order bound `‖x(ε) - x‖/‖x‖ ≲ |ε| ‖A⁻¹‖ (‖f‖/‖x‖ +
+# ‖F‖)` (`relative_error_le_norm_inverse`), and the condition number as the normalized Fréchet
+# derivative of inversion ([golub2013matrix] (2.6.7), after Rice 1966):
+# `ContinuousLinearEquiv.norm_mulLeftRight_symm_symm`,
+# `ContinuousLinearEquiv.relCondNumber_ringInverse` (in the vocabulary of
+# `Numlib/Conditioning/Problem`, which this module then imports) and the book's limit form
+# `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`.
 [[node]]
 id = "backwardError"
 
@@ -63,3 +72,52 @@ id = "norm_error_le_of_norm_mul_sub_one_lt"
 
 [[node]]
 id = "ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq"
+
+[[node]]  # staged by ch02
+id = "relative_error_le_norm_inverse"
+kind = "theorem"
+desc = '''The perturbation bound with `‖A⁻¹‖` in place of `κ(A)` ([golub2013matrix] (2.6.2), rigorous
+form): for `A : E ≃L[𝕜] E` on a Banach space, `A x = b`, `(A + ΔA) y = b + Δb`, `‖A⁻¹‖ ‖ΔA‖ < 1`, `x ≠
+0`: `‖y - x‖ / ‖x‖ ≤ ‖A⁻¹‖ / (1 - ‖A⁻¹‖ ‖ΔA‖) * (‖Δb‖ / ‖x‖ + ‖ΔA‖)`. From `y - x = (A + ΔA)⁻¹ (Δb - ΔA x)`
+and `ContinuousLinearEquiv.exists_symm_norm_le_of_add` (the same route as `relative_error_le_condNumber`,
+which is this bound after `‖b‖ ≤ ‖A‖ ‖x‖`). With `ΔA = ε F`, `Δb = ε f` it is the book's (2.6.2) with
+the `O(ε²)` term made explicit as the factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)`. ★'''
+deps = ["ContinuousLinearEquiv.exists_symm_norm_le_of_add", "relative_error_le_condNumber"]
+
+[[node]]  # staged by ch02
+id = "ContinuousLinearEquiv.norm_mulLeftRight_symm_symm"
+kind = "theorem"
+desc = '''The Fréchet derivative of inversion at `A` has norm `‖A⁻¹‖²` in an operator norm: for `E` a
+nontrivial finite-dimensional normed space over `RCLike 𝕜` and `A : E ≃L[𝕜] E`,
+`‖ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (A.symm : E →L[𝕜] E) (A.symm : E →L[𝕜] E)‖ =
+‖(A.symm : E →L[𝕜] E)‖ ^ 2` (Mathlib `fderiv_inverse` is `-mulLeftRight 𝕜 R x⁻¹ x⁻¹`). `≤` is
+submultiplicativity (Mathlib `ContinuousLinearMap.opNorm_mulLeftRight_apply_apply_le`). `≥`: pick unit
+`y`, `z` with `‖A⁻¹ y‖ = ‖A⁻¹‖` and `‖A⁻¹ z‖ = ‖A⁻¹‖` (finite dimension), a norming functional `φ`
+of `A⁻¹ z` (`exists_dual_vector`), and the rank-one `H = y ⊗ φ` (`‖H‖ = 1`); then `‖A⁻¹ H A⁻¹ z‖ =
+‖A⁻¹‖²`. ★★ (~60 lines)'''
+deps = ["ContinuousLinearEquiv.condNumber", "ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq"]
+
+[[node]]  # staged by ch02
+id = "ContinuousLinearEquiv.relCondNumber_ringInverse"
+kind = "theorem"
+desc = '''**The condition number is the relative condition number of inversion** ([golub2013matrix] (2.6.7)
+read in the vocabulary of `Numlib/Conditioning/Problem`): for `E` nontrivial finite-dimensional over
+`RCLike 𝕜` and `A : E ≃L[𝕜] E`, `Conditioning.relCondNumber (fun T : E →L[𝕜] E => Ring.inverse T)
+Set.univ (A : E →L[𝕜] E) = ENNReal.ofReal A.condNumber` (prototype elaborates). From
+`Conditioning.relCondNumber_eq_enorm_fderiv` with Mathlib `hasFDerivAt_ringInverse` at the unit `A`,
+`norm_mulLeftRight_symm_symm`, and `‖A‖ ‖A⁻¹‖² / ‖A⁻¹‖ = κ(A)`. Needs `import Numlib.Conditioning.Problem`
+(no cycle: `Problem` does not import this module). ★★'''
+deps = ["ContinuousLinearEquiv.norm_mulLeftRight_symm_symm", "Conditioning.relCondNumber_eq_enorm_fderiv", "Conditioning.relCondNumber", "ContinuousLinearEquiv.condNumber"]
+
+[[node]]  # staged by ch02
+id = "ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div"
+kind = "theorem"
+desc = '''**The book's limit formula for `κ`** ([golub2013matrix] (2.6.7)): for `E` nontrivial
+finite-dimensional over `RCLike 𝕜` and `A : E ≃L[𝕜] E`, `Tendsto (fun ε => (⨆ ΔA : {ΔA : E →L[𝕜] E //
+‖ΔA‖ ≤ ε * ‖A‖}, ‖Ring.inverse (A + ΔA) - A⁻¹‖) / (ε * ‖A⁻¹‖)) (𝓝[>] 0) (𝓝 A.condNumber)` (prototype
+`notes/gvl/ch02/proto/Shapes.lean` elaborates this statement). Upper bound for `ε κ < 1`:
+`Units.norm_inverse_add_sub_le` gives the quotient `≤ κ / (1 - ε κ)`; lower bound: with `H` the rank-one
+direction of `norm_mulLeftRight_symm_symm`, `ΔA = -ε ‖A‖ H` gives `(A + ΔA)⁻¹ - A⁻¹ = (A + ΔA)⁻¹ ΔA
+A⁻¹`, whose norm is `≥ ε ‖A‖ ‖A⁻¹‖² (1 - O(ε))`; squeeze. The `⨆` is bounded (the upper bound) so
+`le_ciSup` applies. ★★★ (~120 lines)'''
+deps = ["ContinuousLinearEquiv.norm_mulLeftRight_symm_symm", "Units.norm_inverse_add_sub_le", "ContinuousLinearEquiv.condNumber"]

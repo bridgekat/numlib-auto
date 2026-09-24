@@ -1,3 +1,26 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch04) add a paragraph — "For an arbitrary angle `θ` the sine and cosine vectors
+# `Matrix.sinAngleVec n θ = (sin((k+1)θ))_k` and `Matrix.cosAngleVec n θ = (cos(kθ))_k` are
+# eigenvectors of `tridiag(a, b, a)` up to residuals in the first and last rows
+# (`symmTridiagonalToeplitz_mulVec_sinAngleVec`, `…_cosAngleVec`; [golub2013matrix] Lemma 4.8.3);
+# `sineVec n k` is `sinAngleVec n θ_k`, the case in which the residual vanishes. The Neumann and
+# periodic variants are here as well (next paragraph)."
+# (review) add a paragraph "The second-difference matrices": `𝒯^{(DD)}_n` is
+# `symmTridiagonalToeplitz n (-1) 2`; its three low-rank adjustments of [golub2013matrix] (4.8.8)–(4.8.10),
+# `Matrix.secondDifferenceDN n` (`− e_n e_{n−1}ᵀ`), `Matrix.secondDifferenceNN n` (also `− e_1 e_2ᵀ`) and
+# `Matrix.secondDifferencePeriodic n` (`− e_1 e_nᵀ − e_n e_1ᵀ`), with their residual identities on
+# `sinAngleVec`/`cosAngleVec`; the eigenvector matrices (DST-II, DCT-I, DFT) are in `Numlib/Analysis/Fourier`
+# (`SineCosineTransform`, `Circulant`), and the solver framework in `Numlib/Direct/FastPoisson`. They are *not*
+# the corner-modified `Y_{γ,δ}` below: `𝒯^{(DN)}`, `𝒯^{(NN)}` are unsymmetric and no diagonal scaling maps
+# one family to the other; the only shared member is `2 • 1 − Y₀₀ = 𝒯^{(DD)}`
+# (`two_smul_one_sub_cornerTridiagonal_zero_zero`), and `2 • 1 − Y₁₁` is the *symmetric* Neumann matrix
+# (diagonal `(1, 2, …, 2, 1)`) that the DCT-II diagonalizes.
+# (consolidation) add: the corner-modified tridiagonal `cornerTridiagonal n γ δ` (`Y_{γ,δ}` of
+# [golub2013matrix] (12.1.7)) and the DCT-II vectors `cosineIIVec n k = (cos((2j+1)kπ/(2n)))_j`,
+# eigenvectors of `Y₁₁` with eigenvalues `2 cos(kπ/n)` and mutually orthogonal — the cosine twins of
+# `sineVec` (planned by ch12 for `Displacement`, placed here beside `sineVec`). `cornerTridiagonal` is real
+# (its only consumers are the real DCT-II and the real Sylvester injectivity of `Displacement`).
 namespace = "Matrix"
 
 [[node]]
@@ -113,3 +136,133 @@ id = "symmTridiagonalToeplitz_mulVec_apply"
 
 [[node]]
 id = "symmTridiagonalToeplitz_mulVec_apply'"
+
+[[node]]  # staged by ch04
+id = "sinAngleVec"
+kind = "definition"
+desc = '''[golub2013matrix] (4.8.15): `sinAngleVec n (θ : ℝ) : Fin n → ℝ := fun k => Real.sin ((k + 1) * θ)` (the book's
+`s(θ) = (s_1, …, s_n)`, `s_k = sin(kθ)`) and, in the same node, `cosAngleVec n θ := fun k =>
+Real.cos (k * θ)` (`c(θ) = (c_0, …, c_{n−1})`); `sineVec_eq_sinAngleVec : sineVec n k =
+sinAngleVec n ((k + 1) π/(n + 1))`. ★'''
+deps = ["Matrix.sineVec"]
+
+[[node]]  # staged by ch04
+id = "symmTridiagonalToeplitz_mulVec_sinAngleVec"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.16) in the general `tridiag(a, b, a)` form: for `1 ≤ n` and every `θ`,
+`symmTridiagonalToeplitz n a b *ᵥ sinAngleVec n θ = (b + 2 a cos θ) • sinAngleVec n θ − (a * sin ((n + 1) θ)) •
+Pi.single ⟨n − 1, _⟩ 1`. At `a = −1`, `b = 2`: `2 − 2 cos θ = 4 sin²(θ/2)` and the residual
+`s_{n+1} e_n`. Row by row `sin((k−1)θ) + sin((k+1)θ) = 2 cos θ sin(kθ)` (the identities of the book's
+proof), `sin 0 = 0` in the first row; generalizes the proof of
+`Matrix.symmTridiagonalToeplitz_mulVec_sineVec` (whose residual vanishes). ★'''
+deps = ["Matrix.sinAngleVec", "Matrix.symmTridiagonalToeplitz"]
+
+[[node]]  # staged by ch04
+id = "symmTridiagonalToeplitz_mulVec_cosAngleVec"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.17) in the general form: for `2 ≤ n` and every `θ`,
+`symmTridiagonalToeplitz n a b *ᵥ cosAngleVec n θ = (b + 2 a cos θ) • cosAngleVec n θ − (a * cos θ) •
+Pi.single 0 1 − (a * cos (n θ)) • Pi.single ⟨n − 1, _⟩ 1` (at `a = −1`, `b = 2`: residual `c_1 e_1 + c_n
+e_n`). Rows: `cos((k−1)θ) + cos((k+1)θ) = 2 cos θ cos(kθ)`; the first row misses `c_{−1} = cos θ`, the
+last misses `c_n`. ★'''
+deps = ["Matrix.sinAngleVec", "Matrix.symmTridiagonalToeplitz"]
+
+[[node]]
+id = "cornerTridiagonal"
+kind = "definition"
+desc = '''`Y_{γ,δ}` ([golub2013matrix] (12.1.7)): `cornerTridiagonal n (γ δ : ℝ) : Matrix (Fin n) (Fin n) ℝ`, ones
+on the two off-diagonals, `γ` at `(0, 0)`, `δ` at `(n - 1, n - 1)` (added, so `γ + δ` when `n = 1`), zero
+elsewhere. Real, like every consumer (the DCT-II eigenvectors, the Sylvester injectivity of
+`Displacement`). `cornerTridiagonal_zero_zero : cornerTridiagonal n 0 0 = symmTridiagonalToeplitz n 1 0`. ★'''
+deps = ["symmTridiagonalToeplitz"]
+
+[[node]]
+id = "two_smul_one_sub_cornerTridiagonal_zero_zero"
+kind = "theorem"
+desc = '''The bridge between the displacement operators of [golub2013matrix] §12.1.7 and the second-difference
+matrices of [golub2013matrix] §4.8: `2 • 1 - cornerTridiagonal n 0 0 = symmTridiagonalToeplitz n (-1) 2`
+(`= 𝒯^{(DD)}_n`), from `cornerTridiagonal_zero_zero` and `symmTridiagonalToeplitz` entrywise. (The `(1, 1)`
+member gives `2 • 1 - cornerTridiagonal n 1 1`, the *symmetric* Neumann matrix with diagonal `(1, 2, …, 2, 1)`,
+which the DCT-II diagonalizes by `cornerTridiagonal_one_one_mulVec_cosineIIVec`; it is not
+`secondDifferenceNN`, which is unsymmetric.) ★'''
+deps = ["cornerTridiagonal", "symmTridiagonalToeplitz"]
+
+[[node]]
+id = "cosineIIVec"
+kind = "definition"
+desc = '''The DCT-II vectors `cosineIIVec n k : Fin n → ℝ`, `j ↦ cos((2j + 1) k π / (2n))` (0-based; the
+columns of the book's `𝒞_n` (12.1.13) up to the normalization `√(2/n) q_k`). ★'''
+deps = []
+
+[[node]]
+id = "cornerTridiagonal_one_one_mulVec_cosineIIVec"
+kind = "theorem"
+desc = '''`cornerTridiagonal n 1 1 *ᵥ cosineIIVec n k = (2 * cos(k π / n)) • cosineIIVec n k` for `k : Fin n`.
+Interior rows: `cos((2j−1)θ/2) + cos((2j+3)θ/2) = 2 cos θ cos((2j+1)θ/2)` with `θ = kπ/n`
+(`Real.cos_add_cos`); row `0`: `cos(θ/2) + cos(3θ/2) = 2 cos θ cos(θ/2)` because the corner `1` stands in
+for `cos(-θ/2) = cos(θ/2)`; row `n-1`: the corner stands in for `cos((2n+1)θ/2) = cos((2n-1)θ/2)`, true
+since `nθ = kπ` (`Real.cos_sub`-type reflection). Model: `symmTridiagonalToeplitz_mulVec_sineVec`.
+Equivalently `(2 • 1 - cornerTridiagonal n 1 1) *ᵥ cosineIIVec n k = (4 * sin (k π / (2 n)) ^ 2) •
+cosineIIVec n k`: the DCT-II diagonalizes the symmetric Neumann second difference. ★★ (~70 lines)'''
+deps = ["cornerTridiagonal", "cosineIIVec"]
+
+[[node]]
+id = "dotProduct_cosineIIVec"
+kind = "theorem"
+desc = '''Orthogonality: `cosineIIVec n k ⬝ᵥ cosineIIVec n l = if k = l then (if (k : ℕ) = 0 then n else n /
+2) else 0`. Off the diagonal from the symmetric eigen-relation with distinct eigenvalues `2 cos(kπ/n)`
+(`Real.injOn_cos` on `[0, π)`), exactly as `dotProduct_sineVec`; on the diagonal a telescoping cosine
+sum (`∑_j cos((2j+1)kπ/n) = 0` for `0 < k < n`). ★★ (~70 lines)'''
+deps = ["cornerTridiagonal_one_one_mulVec_cosineIIVec", "cosineIIVec"]
+
+[[node]]
+id = "secondDifferenceDN"
+kind = "definition"
+desc = '''The Dirichlet–Neumann second difference, [golub2013matrix] (4.8.8): `secondDifferenceDN n : Matrix (Fin n) (Fin n) ℝ :=
+symmTridiagonalToeplitz n (-1) 2 - Matrix.of fun i j => if (i : ℕ) + 1 = n ∧ (j : ℕ) + 2 = n
+then 1 else 0` — `𝒯^{(DD)}_n − e_n e_{n−1}ᵀ`, last row `(…, −2, 2)`. Moved here from
+`Numlib/Direct/FastPoisson` (where it was `FastPoisson.secondDifferenceDN`) at the review of the Golub–Van Loan
+round, beside the `DD` member `symmTridiagonalToeplitz n (-1) 2`. ★'''
+deps = ["symmTridiagonalToeplitz"]
+
+[[node]]
+id = "secondDifferenceNN"
+kind = "definition"
+desc = '''The Neumann–Neumann second difference, [golub2013matrix] (4.8.9): `secondDifferenceNN n := secondDifferenceDN n − Matrix.of fun i j => if (i : ℕ) = 0 ∧
+(j : ℕ) = 1 then 1 else 0` — `𝒯^{(DD)}_n − e_n e_{n−1}ᵀ − e_1 e_2ᵀ`, first row `(2, −2, 0, …)`. ★'''
+deps = ["secondDifferenceDN"]
+
+[[node]]
+id = "secondDifferencePeriodic"
+kind = "definition"
+desc = '''The periodic second difference, [golub2013matrix] (4.8.10): `secondDifferencePeriodic n := symmTridiagonalToeplitz n (-1) 2 −
+Matrix.of fun i j => if ((i : ℕ) = 0 ∧ (j : ℕ) + 1 = n) ∨ ((i : ℕ) + 1 = n ∧ (j : ℕ) = 0) then 1 else
+0` — `𝒯^{(DD)}_n − e_1 e_nᵀ − e_n e_1ᵀ`. ★'''
+deps = ["symmTridiagonalToeplitz"]
+
+[[node]]
+id = "secondDifferenceDN_mulVec_sinAngleVec"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.18): `secondDifferenceDN n *ᵥ sinAngleVec n θ = (4 * sin (θ/2) ^ 2) •
+sinAngleVec n θ + (sin ((n+1)θ) − sin ((n−1)θ)) • Pi.single ⟨n−1, _⟩ 1` (`2 ≤ n`), from (4.8.16)
+(`Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec` with `a = −1`, `b = 2`, `2 − 2cos θ =
+4 sin²(θ/2)`) and the rank-one correction. ★'''
+deps = ["secondDifferenceDN", "symmTridiagonalToeplitz_mulVec_sinAngleVec"]
+
+[[node]]
+id = "secondDifferenceNN_mulVec_cosAngleVec"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.19): `secondDifferenceNN n *ᵥ cosAngleVec n θ = (4 * sin (θ/2) ^ 2) •
+cosAngleVec n θ + (cos (nθ) − cos ((n−2)θ)) • Pi.single ⟨n−1, _⟩ 1` (`2 ≤ n`), from (4.8.17) and the two
+corrections (the `c₁ e₁` residual of (4.8.17) is cancelled by `−e₁e₂ᵀ`). ★'''
+deps = ["secondDifferenceNN", "symmTridiagonalToeplitz_mulVec_cosAngleVec"]
+
+[[node]]
+id = "secondDifferencePeriodic_mulVec_sinAngleVec"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.20) and (4.8.21): `secondDifferencePeriodic n *ᵥ sinAngleVec n θ = (4 sin²(θ/2)) •
+sinAngleVec n θ − sin (nθ) • e₁ + (sin ((n+1)θ) − sin θ) • e_n` and `secondDifferencePeriodic n *ᵥ
+cosAngleVec n θ = (4 sin²(θ/2)) • cosAngleVec n θ + (cos θ − cos ((n−1)θ)) • e₁ + (cos (nθ) − 1) • e_n`
+(`2 ≤ n`; `e₁ = Pi.single 0 1`, `e_n = Pi.single ⟨n−1, _⟩ 1`), from (4.8.16)–(4.8.17) and the
+corrections. Stated as two theorems, `…_sinAngleVec` and `…_cosAngleVec`. ★'''
+deps = ["secondDifferencePeriodic", "symmTridiagonalToeplitz_mulVec_sinAngleVec", "symmTridiagonalToeplitz_mulVec_cosAngleVec"]

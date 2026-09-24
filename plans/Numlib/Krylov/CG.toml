@@ -1,3 +1,13 @@
+# Planned additions (GVL round): the module doc of `Numlib.Krylov.CG` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch11) extend the "Identification with the Lanczos vectors" bullet: besides the vectors
+# (`CG.arnoldi_vec_eq`), the Lanczos *coefficients* of `r₀` are read off the CG coefficients —
+# `α^L_0 = 1/α_0`, `α^L_{k+1} = 1/α_{k+1} + β_k/α_k`, `β^L_k = √β_k/α_k` ([saad2003iterative]
+# (6.101)–(6.103); [golub2013matrix] §11.3.5–11.3.6; [meurant2006lanczos] §3) — and the Lanczos
+# tridiagonal factors as `T_m = L D Lᵀ` with `D = diag(1/α_j)` and `L` unit lower bidiagonal with
+# subdiagonal `‖r_{j+1}‖/‖r_j‖` (`CG.lanczos_tridiag_eq_ldl`). These were proved in the Saad surface
+# (`SaadSparse.Chapter06.equation_6_101`–`equation_6_103`) and are needed again by Golub–Van Loan's
+# Lanczos form of CG (Algorithm 11.3.2), so they move down; the Saad nodes then delegate.
 namespace = "CG"
 
 [[node]]
@@ -101,3 +111,52 @@ id = "isConjugateFamily_direction"
 
 [[node]]
 id = "iterate_x_eq_conjugateDirection_iterate"
+
+[[node]]  # staged by ch11
+id = "lanczos_alpha_zero_eq"
+kind = "theorem"
+desc = '''
+For `A.IsSymmetricCoercive` and `r₀ = b − A x₀ ≠ 0`: `(Lanczos.alpha A r₀ 0 : 𝕜) = (CG.alpha A (CG.iterate
+A b x₀ 0))⁻¹` ([saad2003iterative] (6.102)). `α^L_0 = ⟪A v₀, v₀⟫` with `v₀ = r₀/‖r₀‖`, and
+`α_0 = ‖r₀‖²/⟪A r₀, r₀⟫`. Moved down from `SaadSparse.Chapter06.equation_6_102` (real case there; the
+proof is the same over `RCLike`, the coefficients being real). ★
+'''
+deps = ["Lanczos.alpha", "CG.alpha", "CG.iterate", "CG.arnoldi_vec_eq"]
+
+[[node]]  # staged by ch11
+id = "lanczos_alpha_succ_eq"
+kind = "theorem"
+desc = '''
+For `A.IsSymmetricCoercive`, `r_{k+1} ≠ 0`: `(Lanczos.alpha A r₀ (k+1) : 𝕜) = (α_{k+1})⁻¹ + β_k / α_k`
+with `α_j = CG.alpha A (iterate j)`, `β_k = CG.beta A (iterate k)` ([saad2003iterative] (6.101)).
+Proof as in the Saad surface: `v_{k+1} = ±r_{k+1}/‖r_{k+1}‖` (`CG.arnoldi_vec_eq`),
+`r_{k+1} = p_{k+1} − β_k p_k`, `A`-conjugacy (`CG.inner_apply_direction_eq_zero`) and
+`⟪A p_j, p_j⟫ = ‖r_j‖²/α_j`. Moved down from `SaadSparse.Chapter06.equation_6_101`. ★★ (~60 lines)
+'''
+deps = ["Lanczos.alpha", "CG.alpha", "CG.beta", "CG.arnoldi_vec_eq", "CG.inner_apply_direction_eq_zero",
+  "CG.residual_eq"]
+
+[[node]]  # staged by ch11
+id = "lanczos_beta_eq"
+kind = "theorem"
+desc = '''
+For `A.IsSymmetricCoercive`, `r_{k+1} ≠ 0`: `Lanczos.beta A r₀ k = ‖r_{k+1}‖ / (‖r_k‖ · re α_k)`
+(`= √β_k/α_k`, [saad2003iterative] (6.103)). From `Lanczos.coe_beta` (`β^L_k = h_{k+1,k}`), the
+Arnoldi vectors of `CG.arnoldi_vec_eq` and `r_{k+1} = r_k − α_k A p_k`. Moved down from
+`SaadSparse.Chapter06.equation_6_103`. ★★ (~50 lines)
+'''
+deps = ["Lanczos.beta", "Lanczos.coe_beta", "CG.alpha", "CG.arnoldi_vec_eq"]
+
+[[node]]  # staged by ch11
+id = "lanczos_tridiag_eq_ldl"
+kind = "theorem"
+desc = '''
+For `A.IsSymmetricCoercive` and `m ≤ grade A r₀`: `Lanczos.tridiag A r₀ m = L * diagonal d * Lᵀ` with
+`d j = (re α_j)⁻¹` and `L` unit lower bidiagonal with `L (j+1) j = ‖r_{j+1}‖/‖r_j‖` — the `LDLᵀ`
+factorization of the Lanczos tridiagonal whose pivots are the reciprocal CG step lengths
+([golub2013matrix] (11.3.15) with Algorithm 11.3.2's `d_k = 1/α^{CG}_{k−1}`; [saad2003iterative]
+§6.7.3). Entrywise from the three lemmas above: diagonal `d_j + L_{j,j−1}² d_{j−1} = 1/α_j + β_{j−1}/α_{j−1}`,
+off-diagonal `L_{j+1,j} d_j = ‖r_{j+1}‖/(‖r_j‖ α_j)`. ★★ (~40 lines)
+'''
+deps = ["CG.lanczos_alpha_zero_eq", "CG.lanczos_alpha_succ_eq", "CG.lanczos_beta_eq", "Lanczos.tridiag"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.15)'

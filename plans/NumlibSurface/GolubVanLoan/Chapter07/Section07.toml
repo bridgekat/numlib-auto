@@ -1,0 +1,269 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.7, the generalized eigenvalue problem: the spectrum `λ(A, B)` and its basic properties, equivalent
+pencils (7.7.2), the generalized Schur decomposition (Theorem 7.7.1, for every pair) and its real form
+(7.7.2), the Hessenberg–triangular reduction (Algorithm 7.7.1), the zero-chasing deflation of §7.7.5,
+the QZ step (Algorithm 7.7.2) and the QZ algorithm (7.7.3), generalized inverse iteration, deflating
+subspaces, and the linearization of polynomial eigenvalue problems ((7.7.3)–(7.7.6)).
+
+`λ(A, B)` is the backbone's `Matrix.pencilSpectrum A B` (`{z | det (A - z B) = 0}`), eigenvectors
+`Matrix.HasPencilEigenvector` ((7.7.1)); complex `Matrix (Fin n) (Fin n) ℂ` for the theory, real for the
+algorithms. The algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan`, with
+chapter 5's shared helpers on index lists (`houseOn`, `householderApplyLeft/Right`,
+`givensApplyLeft/Right`); Algorithm 7.7.1 starts with chapter 5's Householder QR
+`GolubVanLoan.Chapter05.algorithm_5_2_1`, whose returned reflector data (the `β` that `house`
+returned, convention 13) are applied to `A`. The QZ step's `M = A B⁻¹` entries are computed
+from `B⁻¹ e_j` for `j ∈ {1, 2, n-1, n}` by back substitution (chapter 3's `algorithm_3_1_2`) — the book
+says only "`v` can be calculated in `O(1)` flops"; the design is recorded in the report. A Householder
+matrix acting on a *row* vector from the right, "`[b_{k+2,k} b_{k+2,k+1} b_{k+2,k+2}] Z_{k1} = [0 0 *]`",
+is `houseOn` on the **reversed index list** `[k+2, k+1, k]` (pivot `k+2`, convention 10): no exchange
+permutation is needed.
+
+Like Algorithm 7.5.2, Algorithm 7.7.3 gets tolerance `ε` and, last, `fuel`, runs Algorithm 7.7.2 and
+the zero chase on the window of the unreduced block, and its exact semantics carry
+the perturbation `E` of the deflations of `A`'s subdiagonal (the test on `B`'s diagonal is exact,
+`B₂₂` singular, handled by zero chasing, an orthogonal equivalence).
+
+Not formalized here: the Kronecker canonical form (mentioned, not stated); the `7`-digit example
+(`κ₂(B) ≈ 2 × 10⁶`); Stewart's chordal-metric bound `chord(λ, λ_ε) ≤ ε/√((yᴴAx)² + (yᴴBx)²) + O(ε²)`
+(first order, quoted without proof) and Wilkinson's remark on `t_kk = s_kk = 0`; the backward stability
+of QZ (`Q₀ᵀ(A + E)Z₀ = T`, `‖E‖₂ ≈ u ‖A‖₂`, stated without derivation); flop counts.
+'''
+
+[[node]]
+id = "pencilSpectrum_card"
+kind = "theorem"
+desc = '''§7.7.1: "there are `n` eigenvalues if and only if `rank(B) = n`": the characteristic polynomial
+`det(A - z B)` has degree `n` iff `B` is nonsingular (`Matrix.natDegree_pencilPoly_eq_card_iff`); and if
+`B` is rank deficient `λ(A, B)` may be finite, empty or infinite (`pencil_examples`). ★'''
+deps = ["Matrix.natDegree_pencilPoly_eq_card_iff", "Matrix.pencilSpectrum"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.1'
+
+[[node]]
+id = "pencil_examples"
+kind = "theorem"
+desc = '''§7.7.1, the three pencils: `λ(!![1,2;0,3], !![1,0;0,0]) = {1}`, `λ(!![1,2;0,3], !![0,1;0,0]) = ∅`,
+`λ(!![1,2;0,0], !![1,0;0,0]) = Set.univ` (`Matrix.pencilSpectrum_eq_of_isUpperTriangular`, `det_fin_two`). ★'''
+deps = ["Matrix.pencilSpectrum_eq_of_isUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.1'
+
+[[node]]
+id = "pencilSpectrum_inv"
+kind = "theorem"
+desc = '''§7.7.1: if `0 ≠ λ ∈ λ(A, B)` then `1/λ ∈ λ(B, A)`; if `B` is nonsingular then
+`λ(A, B) = λ(B⁻¹ A, I) = λ(B⁻¹ A)`. `Matrix.inv_mem_pencilSpectrum_swap`,
+`Matrix.pencilSpectrum_eq_spectrum_of_isUnit`, `Matrix.pencilSpectrum_one`. ★'''
+deps = ["Matrix.inv_mem_pencilSpectrum_swap", "Matrix.pencilSpectrum_eq_spectrum_of_isUnit", "Matrix.pencilSpectrum_one"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.1'
+
+[[node]]
+id = "equation_7_7_2"
+kind = "theorem"
+desc = '''(7.7.2): for nonsingular `Q`, `Z` and `A₁ = Q⁻¹ A Z`, `B₁ = Q⁻¹ B Z`, `λ(A, B) = λ(A₁, B₁)`, and
+`A x = λ B x ↔ A₁ y = λ B₁ y` with `x = Z y` (equivalent pencils). `Matrix.pencilSpectrum_mul_mul_of_isUnit`. ★'''
+deps = ["Matrix.pencilSpectrum_mul_mul_of_isUnit", "Matrix.HasPencilEigenvector"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.2)'
+
+[[node]]
+id = "theorem_7_7_1"
+kind = "theorem"
+desc = '''Theorem 7.7.1 (generalized Schur decomposition), existence: for any `A B : Matrix (Fin n) (Fin n) ℂ`
+there are unitary `Q`, `Z` with `Qᴴ A Z = T` and `Qᴴ B Z = S` upper triangular. `Matrix.exists_generalizedSchur`
+(the book's limiting proof; the backbone's `Matrix.exists_unitary_pencil_isUpperTriangular` is the
+regular case). ★'''
+deps = ["Matrix.exists_generalizedSchur"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.7.1'
+
+[[node]]
+id = "theorem_7_7_1_spectrum"
+kind = "theorem"
+desc = '''Theorem 7.7.1, the eigenvalue claims: with `T`, `S` as above, `det(A - λB) = det(Q Zᴴ) ∏ (t_ii - λ s_ii)`;
+if `t_kk = s_kk = 0` for some `k` then `λ(A, B) = ℂ`; otherwise `λ(A, B) = {t_ii / s_ii | s_ii ≠ 0}`.
+`Matrix.pencilPoly_of_isUpperTriangular`, `Matrix.pencilSpectrum_eq_of_isUpperTriangular`,
+`Matrix.pencilSpectrum_mul_mul_of_isUnit`. ★'''
+deps = ["Matrix.pencilPoly_of_isUpperTriangular", "Matrix.pencilSpectrum_eq_of_isUpperTriangular", "Matrix.pencilSpectrum_mul_mul_of_isUnit", "GolubVanLoan.Chapter07.theorem_7_7_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.7.1'
+
+[[node]]
+id = "theorem_7_7_2"
+kind = "theorem"
+desc = '''Theorem 7.7.2 (generalized real Schur decomposition): for `A B : Matrix (Fin n) (Fin n) ℝ` there are
+orthogonal `Q`, `Z` with `Qᵀ A Z` upper quasi-triangular and `Qᵀ B Z` upper triangular.
+`Matrix.exists_generalizedRealSchur` (block-index form) repackaged with `Matrix.IsQuasiUpperTriangular`. ★'''
+deps = ["Matrix.exists_generalizedRealSchur", "Matrix.IsQuasiUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.7.2'
+
+[[node]]
+id = "algorithm_7_7_1"
+kind = "definition"
+desc = '''Algorithm 7.7.1 (Hessenberg–triangular reduction), real `A`, `B`: `B = QR` by chapter 5's Algorithm 5.2.1
+(Householder QR; `B` overwritten by `R` above the diagonal and the Householder vectors below, and the
+returned `β`; its reflector data are `GolubVanLoan.Chapter05.storedReflectors B' β` — the stored vectors
+with the `β` that `house` computed), `A` overwritten by
+`Qᵀ A` (each `(v, β)` of the data applied in order with `GolubVanLoan.Chapter05.householderApplyLeft`,
+rows the support of `v`, all columns — never rebuilt from the stored vectors), `B` by its upper
+triangular part; then for `j = 0 .. n-3`, `i = n-1` down to `j+2`: `(c, s) ← givens(A (i-1) j, A i j)`,
+`A(i-1:i, j:n-1) = [c s; -s c]ᵀ A(i-1:i, j:n-1)`, `B(i-1:i, i-1:n-1) = [c s; -s c]ᵀ B(i-1:i, i-1:n-1)`
+(`givensApplyLeft` on the column lists `[j, …]`, `[i-1, …]`), `(c, s) ← givens(-B i i, B i (i-1))` (the
+negation exact), `B(0:i, i-1:i) = B(0:i, i-1:i) [c s; -s c]`, `A(0:n-1, i-1:i) = A(0:n-1, i-1:i) [c s; -s c]`
+(`givensApplyRight` on the row lists `[0, …, i]`, all rows). Returns `(A, B)`. ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_2_1", "GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.storedReflectors"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.1'
+
+[[node]]
+id = "algorithm_7_7_1_spec"
+kind = "theorem"
+desc = '''Algorithm 7.7.1, exact semantics: `(A', B') = Id.run (algorithm_7_7_1 pure A B)` satisfies
+`A' = Qᵀ A Z`, `B' = Qᵀ B Z` with `Q`, `Z` orthogonal, `A'` upper Hessenberg and `B'` upper triangular.
+Invariants: after the QR step `B` is upper triangular and `A` is `(householderProduct data)ᵀ A` (`GolubVanLoan.Chapter05.algorithm_5_2_1_spec`, `householderApplyLeft_spec`);
+each row rotation zeroes `A i j` and creates at most the fill-in `B i (i-1)`, which the column rotation
+removes (`givens(-b_ii, b_{i,i-1})` makes `b_{i,i-1} c - b_ii s = 0`), the column rotation touching only
+columns `i-1, i` of `A` below row `j` (the zeros of `A` in columns `< j` are kept). ★★★ (~350 lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_7_1", "GolubVanLoan.Chapter05.algorithm_5_2_1_spec", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderProduct"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.1'
+
+[[node]]
+id = "exists_hessenbergTriangular"
+kind = "theorem"
+desc = '''§7.7.4, the Hessenberg–triangular form exists: for real `A`, `B` there are orthogonal `Q`, `Z` with
+`Qᵀ A Z` upper Hessenberg and `Qᵀ B Z` upper triangular — from `algorithm_7_7_1_spec` (constructive),
+or from Theorem 7.7.2 (`Matrix.IsQuasiUpperTriangular.isUpperHessenberg`). ★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_7_1_spec", "Matrix.IsQuasiUpperTriangular.isUpperHessenberg"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.4'
+
+[[node]]
+id = "pencil_decouple"
+kind = "theorem"
+desc = '''§7.7.5, the first deflation: if `a_{k+1,k} = 0` in a Hessenberg–triangular pencil then
+`A - λB = [A₁₁ - λB₁₁, A₁₂ - λB₁₂; 0, A₂₂ - λB₂₂]` and `λ(A, B) = λ(A₁₁, B₁₁) ∪ λ(A₂₂, B₂₂)` (with the
+characteristic polynomials multiplying: `Matrix.det_fromBlocks_zero₂₁`). ★'''
+deps = ["Matrix.pencilSpectrum", "Matrix.pencilPoly"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
+
+[[node]]
+id = "qzZeroChase"
+kind = "definition"
+desc = '''§7.7.5, zero chasing (unnumbered; needed by Algorithm 7.7.3's "if `B₂₂` is singular, zero
+`a_{n-q, n-q-1}`"): for a Hessenberg–triangular `(A, B)` with `b_kk = 0`, the rotations the book displays —
+for `j = k .. n-2`: a row rotation in rows `(j, j+1)` zeroing `b_{j+1,j+1}` (moving the zero down the
+diagonal), and a column rotation in columns `(j-1, j)` restoring `A`'s Hessenberg form — ending with a
+column rotation in `(n-2, n-1)` that zeroes `a_{n-1,n-2}`. Stated on a window `w` of consecutive indices
+(the unreduced block of Algorithm 7.7.3; the book's display is `w = List.finRange n`), with chapter 5's
+`givensApplyLeft`/`givensApplyRight` on index lists and `givens` (Algorithm 5.1.3); returns
+`(A, B, Q, Z)`. ★'''
+deps = ["GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
+
+[[node]]
+id = "qzZeroChase_spec"
+kind = "theorem"
+desc = '''§7.7.5, "This zero-chasing technique is perfectly general and can be used to zero `a_{n,n-1}` regardless
+of where the zero appears along B's diagonal": for Hessenberg–triangular `(A, B)` with `b_kk = 0`, the
+output is `(Qᵀ A Z, Qᵀ B Z)`, still Hessenberg–triangular, with `(Qᵀ A Z)_{n,n-1} = 0` and `(Qᵀ B Z)_{nn} = 0`
+(`Q`, `Z` orthogonal). ★★'''
+deps = ["GolubVanLoan.Chapter07.qzZeroChase", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
+
+[[node]]
+id = "algorithm_7_7_2"
+kind = "definition"
+desc = '''Algorithm 7.7.2 (QZ step) on a window `w` of consecutive indices (the book's is `w = List.finRange n`;
+Algorithm 7.7.3 runs it on its unreduced block), `A` unreduced upper Hessenberg and `B` nonsingular upper
+triangular there (spec hypotheses): `M = A B⁻¹` enters only through `(M - aI)(M - bI) e₁ = [x, y, z, 0, …]ᵀ`
+with `a + b`, `a b` the trace and determinant of `M`'s trailing `2 × 2` block (the design of the group
+desc); for `k = 0 .. N-3` (`o_k = [w_k, w_{k+1}, w_{k+2}]`): `Q_k` from `houseOn rnd o_k` of `[x, y, z]`
+applied to rows `o_k` of `A` and `B` (`householderApplyLeft`); `Z_{k1}` from `houseOn` on the reversed
+list `[w_{k+2}, w_{k+1}, w_k]` of row `w_{k+2}` of `B` applied to columns `o_k` of `A` and `B`
+(`householderApplyRight`); `Z_{k2}` from the reversed list `[w_{k+1}, w_k]` of row `w_{k+1}` of `B` on
+columns `w_k, w_{k+1}`; `x = a_{k+1,k}`, `y = a_{k+2,k}`, `z = a_{k+3,k}` if `k < N-3`; finally `Q_{N-1}`
+from `houseOn` of `[x, y]` on the last two rows and `Z_{N-1}` from the reversed last row of `B` on the last
+two columns. Returns `(A, B)` and the two reflector data lists `List ((Fin n → ℝ) × ℝ)` (convention 13). ★'''
+deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
+
+[[node]]
+id = "algorithm_7_7_2_spec"
+kind = "theorem"
+desc = '''Algorithm 7.7.2, exact semantics: for `A` unreduced upper Hessenberg and `B` nonsingular upper
+triangular, `(A', B', dQ, dZ) = Id.run (algorithm_7_7_2 pure (List.finRange n) A B)` satisfies `A' = Qᵀ A Z`, `B' = Qᵀ B Z` with
+`Q = householderProduct dQ`, `Z = householderProduct dZ` orthogonal, `A'` upper Hessenberg, `B'` upper triangular, and `Q` has the same first column as the
+Francis step on `M = A B⁻¹`, so `Matrix.IsFrancisStep s t M (A' B'⁻¹)` with `s`, `t` the trace and
+determinant of `M`'s trailing `2 × 2` block — "`Ā B̄⁻¹` is essentially the same matrix that would result if
+a Francis QR step were explicitly applied to `A B⁻¹`". Proof: `A' B'⁻¹ = Qᵀ (A B⁻¹) Q` is upper Hessenberg
+(Hessenberg times triangular), `Q e₁ = Q₀ e₁ ∥ (M - aI)(M - bI) e₁`, so
+`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval` gives the triangularity of
+`Qᵀ p(M)`; the zero-chasing invariant (bulge in `A` below the subdiagonal, in `B` below the diagonal) as in
+`algorithm_7_5_1_spec`. ★★★ (~500 lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_7_2", "Matrix.IsFrancisStep", "Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
+
+[[node]]
+id = "algorithm_7_7_3"
+kind = "definition"
+desc = '''Algorithm 7.7.3 (QZ algorithm, Moler–Stewart): `algorithm_7_7_3 rnd ε A B fuel` (fuel last, convention 3)
+returns `(Q, Z, T, S, done)`: `algorithm_7_7_1`; then at most `fuel` passes of: zero every `a_{i,i-1}` with
+`|a_{i,i-1}| ≤ fl(ε · fl(|a_{i-1,i-1}| + |a_ii|))` (right side rounded, `|·|` and the comparison exact —
+convention 1); find the largest `q` and smallest `p` with `A₃₃` quasi-triangular and `A₂₂` unreduced
+Hessenberg (sizes `p, n-p-q, q`; the partition in the book's image, reconstructed from the text); if
+`q = n` stop; with `w = [p, …, n-q-1]` the window of the middle block: if `B₂₂` is singular (a zero on its
+diagonal, an exact test) run `qzZeroChase` on `w`, else `algorithm_7_7_2` on `w`, and apply the returned
+rotations / reflector data to the off-diagonal blocks and to `Q`, `Z` (`householderApplyLeft/Right`,
+`givensApplyLeft/Right` on index lists; `diag(I_p, Q, I_q)ᵀ A diag(I_p, Z, I_q)` etc.). ★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_7_1", "GolubVanLoan.Chapter07.algorithm_7_7_2", "GolubVanLoan.Chapter07.qzZeroChase", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
+
+[[node]]
+id = "algorithm_7_7_3_spec"
+kind = "theorem"
+desc = '''Algorithm 7.7.3, exact semantics: `Q`, `Z` orthogonal, `S = Qᵀ B Z` upper triangular, `T = Qᵀ (A + E) Z`
+upper Hessenberg with `‖E‖_F ≤ ((1 + 2ε)^(n * fuel) - 1) ‖A‖_F` (`E = 0` when `ε = 0`; the zero chase and the QZ
+steps are exact equivalences), and if `done` then `T` is upper quasi-triangular — the generalized real Schur
+form of `(A + E, B)` (Theorem 7.7.2 made constructive up to the deflation perturbation). Invariants
+from `algorithm_7_7_1_spec`, `qzZeroChase_spec`, `algorithm_7_7_2_spec`, `pencil_decouple`. ★★★ (~400
+lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_7_3", "GolubVanLoan.Chapter07.algorithm_7_7_1_spec", "GolubVanLoan.Chapter07.qzZeroChase_spec", "GolubVanLoan.Chapter07.algorithm_7_7_2_spec", "GolubVanLoan.Chapter07.pencil_decouple", "Matrix.IsQuasiUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
+
+[[node]]
+id = "generalizedInverseIteration_eq"
+kind = "theorem"
+desc = '''§7.7.8, generalized inverse iteration (solve `(A - μB) z^(k) = B q^(k-1)`, normalize,
+`λ^(k) = q^(k)ᴴ A q^(k) / q^(k)ᴴ B q^(k)` — the book prints `/ q^(k)ᴴ A q^(k)`, a misprint that would make
+`λ^(k) ≡ 1`; report, Doubts): if `B` is nonsingular the iterates `q^(k)` are those of (7.6.1) for
+`B⁻¹ A` and the same `μ` (`(A - μB)⁻¹ B = (B⁻¹ A - μ I)⁻¹`). ★'''
+deps = ["GolubVanLoan.Chapter07.inverseIteration"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.8'
+
+[[node]]
+id = "deflatingSubspace_of_generalizedSchur"
+kind = "theorem"
+desc = '''§7.7.8: with the generalized Schur decomposition `Qᴴ A Z = T`, `Qᴴ B Z = S`, for `k = 1:n`,
+`span{A z₁, …, A z_k} ⊆ span{q₁, …, q_k}` and `span{B z₁, …, B z_k} ⊆ span{q₁, …, q_k}`, so
+`span{z₁, …, z_k}` is a deflating subspace of `A - λB` (the book's definition: `{Ax + By : x, y ∈ S}` has
+dimension `≤ k`, `Matrix.IsDeflatingSubspace`). `Matrix.isDeflatingSubspace_span_cols_of_isUpperTriangular`. ★'''
+deps = ["Matrix.isDeflatingSubspace_span_cols_of_isUpperTriangular", "Matrix.IsDeflatingSubspace", "GolubVanLoan.Chapter07.theorem_7_7_1"]
+source = 'Golub–Van Loan, Matrix Computations, §7.7.8'
+
+[[node]]
+id = "equation_7_7_5"
+kind = "theorem"
+desc = '''(7.7.3)–(7.7.5): for `P(λ) = A₀ + λ A₁ + λ² A₂ + λ³ A₃` (7.7.4) and `L(λ)` of (7.7.5)
+(`[0 0 A₀; -I 0 A₁; 0 -I A₂] + λ [I 0 0; 0 I 0; 0 0 A₃]`, on `Fin 3 × Fin n` or `(Fin n ⊕ Fin n) ⊕ Fin n`),
+`L(λ) [u₁; u₂; x] = 0` implies `P(λ) x = 0` (7.7.3) (the rows give `u₂ = (A₂ + λ A₃) x`,
+`u₁ = A₁ x + λ u₂`, `λ u₁ + A₀ x = P(λ) x`), and conversely `P(λ) x = 0` with these `u₁`, `u₂` gives
+`L(λ) [u₁; u₂; x] = 0`, `x ≠ 0` iff the stacked vector is nonzero; so the eigenvalues agree. (The book's chain writes `A₀ + λ(…)` for `A₀ x + λ(…)`.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.5)'
+
+[[node]]
+id = "equation_7_7_6"
+kind = "theorem"
+desc = '''(7.7.6), the linearization identity: for `A₀, …, A_d` (`d ≥ 1`) and `P_k(λ) = A_k + λ A_{k+1} + ⋯ + λ^{d-k} A_d`,
+the block matrices `S(λ)` (identity blocks on the diagonal, `-λ I` on the superdiagonal) and `T(λ)`
+(first block row `[0 ⋯ 0 I]`, `-I` on the subdiagonal, last block column `[I; P₁(λ); …; P_{d-1}(λ)]`)
+satisfy `S(λ) diag(P(λ), I_{(d-1)n}) T(λ) = L(λ)` with `L(λ)` the companion-form pencil (first block row
+`[λI 0 ⋯ A₀]`, then `[-I λI ⋯ A₁]`, …, last `[0 ⋯ -I, A_{d-1} + λ A_d]`), and `det S(λ) = 1`,
+`det T(λ) = ±1` for every `λ`: `L(λ)` is a linearization of `P(λ)`. Stated pointwise in `λ : ℂ` on
+`Matrix (Fin d × Fin n) (Fin d × Fin n) ℂ`; induction on `d` along the book's two displayed steps. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.6)'

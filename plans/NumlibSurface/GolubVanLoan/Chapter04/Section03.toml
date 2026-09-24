@@ -1,0 +1,213 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.3, banded systems: band preservation of LU (Theorem 4.3.1), band Gaussian elimination and band
+substitution (Algorithms 4.3.1–4.3.3), band Gaussian elimination with partial pivoting (Theorem
+4.3.2), Hessenberg LU (Algorithm 4.3.4), band Cholesky (Algorithm 4.3.5), the symmetric positive
+definite tridiagonal solver (§4.3.6, Algorithm 4.3.6), and the rank structure of the inverse of a
+band matrix (Theorem 4.3.3). Backbone: `LinearAlgebra/Matrix/{Hessenberg,LU,LU/Pivoting,Cholesky,Rank}`,
+`Direct/Substitution`. §4.3.7 (vectorization) and §4.3.9 (banded inverses) are not formalized
+(chapter group). Bandwidths are `Matrix.HasLowerBandwidth`/`HasUpperBandwidth`; the book's loop
+bounds `min(k + p, n)` are guards on the index.
+'''
+
+[[node]]
+id = "theorem_4_3_1_a"
+kind = "theorem"
+desc = '''Theorem 4.3.1, the upper factor: if `A = L U` (`Matrix.IsLU A L U`) and `A` has upper bandwidth `q`, then
+`U` has upper bandwidth `q`; `Matrix.IsLU.hasUpperBandwidth` (no further hypothesis). ★'''
+deps = ["Matrix.IsLU.hasUpperBandwidth"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.1'
+
+[[node]]
+id = "theorem_4_3_1_b"
+kind = "theorem"
+desc = '''Theorem 4.3.1, the lower factor: if `A = L U`, `A` has lower bandwidth `p`, **and `A(1:k,1:k)` is
+nonsingular for `k = 1:n−1`**, then `L` has lower bandwidth `p`; `Matrix.IsLU.hasLowerBandwidth`.
+The hypothesis is the one the book's proof uses (it divides by `α`) and it is necessary:
+`A = [0 1; 0 2]` is upper triangular (lower bandwidth `0`) and equals `[1 0; β 1][0 1; 0 2 − β]` for
+every `β` (ch04 report, Doubts). ★'''
+deps = ["Matrix.IsLU.hasLowerBandwidth"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.1'
+
+[[node]]
+id = "theorem_4_3_1"
+kind = "theorem"
+desc = '''Theorem 4.3.1 as stated, with the nonsingularity of the strict leading principal submatrices added:
+`U` has upper bandwidth `q` and `L` lower bandwidth `p`. The conjunction of `theorem_4_3_1_a` and
+`theorem_4_3_1_b`. ★'''
+deps = ["theorem_4_3_1_a", "theorem_4_3_1_b"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.1'
+
+[[node]]
+id = "algorithm_4_3_1"
+kind = "definition"
+desc = '''Algorithm 4.3.1 (band Gaussian elimination), D4: `algorithm_4_3_1 (rnd) (p q : ℕ) (A : Matrix (Fin n) (Fin
+n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`, `List.foldlM` over `k` (the last `k = n − 1` does nothing):
+`A i k ← rnd (A i k / A k k)` for `k < i ≤ k + p`; then for `k < j ≤ k + q`, `k < i ≤ k + p`:
+`A i j ← rnd (A i j − rnd (A i k * A k j))`. Returns the packed factors. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.1'
+
+[[node]]
+id = "algorithm_4_3_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.1: if `A` has lower bandwidth `p`, upper bandwidth `q`, and
+`A(1:k,1:k)` is nonsingular for `k = 1:n−1` ("assuming it exists"), then with
+`F = Id.run (algorithm_4_3_1 pure p q A)`, `Matrix.IsLU A (Chapter03.packedL F) (Chapter03.packedU F)`.
+The band loops perform exactly the operations of full elimination on the nonzero entries: prove
+`F = Id.run (Chapter03.algorithm_3_2_1 pure A)` (the skipped updates subtract `0 · x` or act on
+entries that stay `0`, by `theorem_4_3_1` applied to the leading stages / `Matrix.gemStage`), then
+`Chapter03.algorithm_3_2_1_spec`. ★★ (~120 lines)'''
+deps = ["algorithm_4_3_1", "theorem_4_3_1", "GolubVanLoan.Chapter03.algorithm_3_2_1_spec", "GolubVanLoan.Chapter03.packedL", "GolubVanLoan.Chapter03.packedU"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.1'
+
+[[node]]
+id = "algorithm_4_3_2"
+kind = "definition"
+desc = '''Algorithm 4.3.2 (band forward substitution), D4: for unit lower triangular `L` of lower bandwidth `p`,
+`List.foldlM` over `j`, inner over `j < i ≤ j + p`: `b i ← rnd (b i − rnd (L i j * b j))`
+(the column-oriented Algorithm 3.1.3 restricted to the band, no division since `L` is unit). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.2'
+
+[[node]]
+id = "algorithm_4_3_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.2: for unit lower triangular `L` with lower bandwidth `p`,
+`L *ᵥ Id.run (algorithm_4_3_2 pure p L b) = b` (equivalently `= Matrix.forwardSubst L b`). The
+skipped products are `0 · b j`; `Matrix.mulVec_forwardSubst`. ★★'''
+deps = ["algorithm_4_3_2", "Matrix.mulVec_forwardSubst", "Matrix.forwardSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.2'
+
+[[node]]
+id = "algorithm_4_3_3"
+kind = "definition"
+desc = '''Algorithm 4.3.3 (band back substitution), D4: for upper triangular `U` of upper bandwidth `q`,
+`List.foldlM` over `j` in `(List.finRange n).reverse`: `b j ← rnd (b j / U j j)`, then
+`b i ← rnd (b i − rnd (U i j * b j))` for `j − q ≤ i < j`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.3'
+
+[[node]]
+id = "algorithm_4_3_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.3: for nonsingular upper triangular `U` with upper bandwidth `q`,
+`U *ᵥ Id.run (algorithm_4_3_3 pure q U b) = b` (`= Matrix.backSubst U b`); `Matrix.mulVec_backSubst`.
+★★'''
+deps = ["algorithm_4_3_3", "Matrix.mulVec_backSubst", "Matrix.backSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.3'
+
+[[node]]
+id = "theorem_4_3_2"
+kind = "theorem"
+desc = '''Theorem 4.3.2: if `A` is nonsingular with upper bandwidth `q` and lower bandwidth `p`, and Gaussian
+elimination with partial pivoting (`Matrix.gemPivotStage A Matrix.partialPivotRow`, the book's
+`M_{n−1} P_{n−1} ⋯ M_1 P_1 A = U`) is applied, then `U` has upper bandwidth `p + q` and the Gauss
+vectors satisfy `α^{(j)}_i = 0` whenever `i ≤ j` or `i > j + p`.
+`Matrix.gemPivotStage_partialPivotRow_hasUpperBandwidth`,
+`Matrix.gemPivotStage_partialPivotRow_multiplier_eq_zero` (the nonsingularity the book assumes is not
+needed). ★'''
+deps = ["Matrix.gemPivotStage_partialPivotRow_hasUpperBandwidth", "Matrix.gemPivotStage_partialPivotRow_multiplier_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.2'
+
+[[node]]
+id = "algorithm_4_3_4"
+kind = "definition"
+desc = '''Algorithm 4.3.4 (Hessenberg LU), D4: state `(H, piv) : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)`; for
+`k` with `k + 1 < n`: if `|H k k| < |H (k+1) k|` (exact comparison of computed values) then
+`piv k := 1` and rows `k`, `k+1` are interchanged on columns `≥ k` (`Matrix.updateRow` twice), else
+`piv k := 0`; then if `H k k ≠ 0`: `τ ← rnd (H (k+1) k / H k k)`,
+`H (k+1) j ← rnd (H (k+1) j − rnd (τ * H k j))` for `j > k`, `H (k+1) k ← τ`. (`|·|` is exact:
+comparisons act on computed values.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.4'
+
+[[node]]
+id = "algorithm_4_3_4_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.4: for upper Hessenberg `H` (`Matrix.IsUpperHessenberg`), with
+`(F, piv) = Id.run (algorithm_4_3_4 pure H)`, the upper triangle of `F` is
+`(Matrix.gemPivotStage H Matrix.partialPivotRow n).1` (whose rows the pivoting leaves Hessenberg:
+`Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant`), the interchanges are those of
+partial pivoting (`piv k = 1` iff the stage-`k` swap is `k ↔ k+1`; the strict comparison matches
+`partialPivotRow`'s first maximal row), and `|F (k+1) k| ≤ 1` — the multipliers are bounded by
+unity. ★★ (~120 lines)'''
+deps = ["algorithm_4_3_4", "Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant", "Matrix.partialPivotRow_le_succ"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.4'
+
+[[node]]
+id = "algorithm_4_3_5"
+kind = "definition"
+desc = '''Algorithm 4.3.5 (band Cholesky), D4: `List.foldlM` over `j`: for `max(0, j − p) ≤ k < j`, with
+`λ := min(k + p, n − 1)`, `A i j ← rnd (A i j − rnd (A j k * A i k))` for `j ≤ i ≤ λ`; then `λ :=
+min(j + p, n − 1)`, `s ← rnd (Real.sqrt (A j j))`, `A i j ← rnd (A i j / s)` for `j ≤ i ≤ λ`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.5'
+
+[[node]]
+id = "algorithm_4_3_5_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.5: for symmetric positive definite `A` with (lower) bandwidth `p`, the
+lower triangle of `Id.run (algorithm_4_3_5 pure p A)` is `Matrix.cholesky A`, which has lower
+bandwidth `p` (`Matrix.cholesky_hasLowerBandwidth`: "`G` has the same lower bandwidth as `A`").
+The band loops skip only products with a zero factor (`Matrix.cholesky_hasLowerBandwidth`), so the
+exact run agrees with `algorithm_4_2_1`'s; `algorithm_4_2_1_spec`. ★★'''
+deps = ["algorithm_4_3_5", "Matrix.cholesky_hasLowerBandwidth", "algorithm_4_2_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.5'
+
+[[node]]
+id = "tridiagonal_ldlt"
+kind = "theorem"
+desc = '''§4.3.6: for a symmetric tridiagonal `A` with nonsingular strict leading principal submatrices,
+`A = L D Lᵀ` with `L` unit lower bidiagonal (subdiagonal `ℓ_1, …, ℓ_{n−1}`) and `D = diag(d_1, …, d_n)`
+given by `d_1 = a_11`, `ℓ_{k−1} = a_{k,k−1}/d_{k−1}`, `d_k = a_kk − ℓ_{k−1} a_{k,k−1}`: these are
+the Thomas recurrences `Matrix.thomasAlpha`, `Matrix.thomasBeta` with equal off-diagonals, and
+`Matrix.isLU_tridiagonal_thomas` gives the factorization (`U = D Lᵀ`). ★'''
+deps = ["Matrix.thomasAlpha", "Matrix.thomasBeta", "Matrix.isLU_tridiagonal_thomas", "theorem_4_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, §4.3.6, Display'
+
+[[node]]
+id = "algorithm_4_3_6"
+kind = "definition"
+desc = '''Algorithm 4.3.6 (symmetric, tridiagonal, positive definite system solver), D4: inputs `α : Fin n → ℝ`
+(diagonal), `β : Fin n → ℝ` (superdiagonal, `β k` for `k + 1 < n`), `b`; three loops: for
+`k = 1:n−1` (0-based `k ≥ 1`): `t := β (k−1)`, `β (k−1) ← rnd (t / α (k−1))`,
+`α k ← rnd (α k − rnd (t * β (k−1)))`; for `k ≥ 1`: `b k ← rnd (b k − rnd (β (k−1) * b (k−1)))` —
+**the book prints `b(k) = b(k) − β(k−1)·β(k−1)`, a misprint for `β(k−1)·b(k−1)` (the forward solve
+`L y = b`; ch04 report, Doubts); the program follows the derivation**; `b (n−1) ← rnd (b (n−1) /
+α (n−1))`; for `k = n−2` down to `0`: `b k ← rnd (rnd (b k / α k) − rnd (β k * b (k+1)))`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.6'
+
+[[node]]
+id = "algorithm_4_3_6_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.3.6: if `A := Matrix.tridiagonalOf β' α β'` (symmetric tridiagonal from
+the inputs, `n = N + 1`) is positive definite, then `A *ᵥ Id.run (algorithm_4_3_6 pure α β b) = b`.
+After the first loop the arrays hold `d` and `ℓ` of `tridiagonal_ldlt`; the second and third loops
+are `L y = b` and `D Lᵀ x = y` (in the book's combined form `b(k)/α(k) − β(k) b(k+1)`);
+`ldlt_solve`. The pivots are positive by `Matrix.IsLDM.posDef_iff`. ★★ (~100 lines)'''
+deps = ["algorithm_4_3_6", "tridiagonal_ldlt", "ldlt_solve", "Matrix.tridiagonalOf", "Matrix.IsLDM.posDef_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.3.6'
+
+[[node]]
+id = "theorem_4_3_3"
+kind = "theorem"
+desc = '''Theorem 4.3.3, (4.3.1)–(4.3.2): if `A : Matrix (Fin n) (Fin n) ℝ` is nonsingular with lower bandwidth `p`
+and upper bandwidth `q`, partitioned with square diagonal blocks of sizes `k` and `n − k`
+(`A.submatrix e e = fromBlocks A₁₁ A₁₂ A₂₁ A₂₂`, `e : Fin k ⊕ Fin (n−k) ≃ Fin n`), and `X = A⁻¹`
+partitioned conformably, then `rank X₂₁ ≤ p` and `rank X₁₂ ≤ q`. From `Matrix.rank_inv_toBlocks₂₁`
+(`rank X₂₁ = rank A₂₁`; no limit argument, P4.3.11 not needed) and `rank A₂₁ ≤ p` because `A₂₁`
+has at most `p` nonzero rows (`Matrix.rank_le_card_…`-type: rows `k + p ≤ i` vanish by the band).
+★★'''
+deps = ["Matrix.rank_inv_toBlocks₂₁", "Matrix.rank_inv_toBlocks₁₂", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.3.3'
+
+[[node]]
+id = "rank_inv_offDiag_eq"
+kind = "theorem"
+desc = '''§4.3.8, "It can actually be shown that `rank(A₂₁) = rank(X₂₁)` and `rank(A₁₂) = rank(X₁₂)`" (Strang–Nguyen
+2004): for nonsingular `A` partitioned as in `theorem_4_3_3`, both equalities;
+`Matrix.rank_inv_toBlocks₂₁`, `Matrix.rank_inv_toBlocks₁₂` after the reindexing. ★'''
+deps = ["Matrix.rank_inv_toBlocks₂₁", "Matrix.rank_inv_toBlocks₁₂"]
+source = 'Golub–Van Loan, Matrix Computations, §4.3.8, Display'

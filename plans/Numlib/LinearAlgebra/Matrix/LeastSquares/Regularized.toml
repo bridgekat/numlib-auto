@@ -1,0 +1,229 @@
+namespace = "Matrix"
+desc = '''
+Regularized least squares ([golub2013matrix] §6.1.4–6.1.6): ridge regression
+`min ‖Ax − b‖² + λ‖x‖²` and its singular-value expansion, its limit `λ → 0⁺` and the monotone
+norm of its solution (the facts the LSQI problem of `LeastSquares/Constrained` is solved with),
+the leave-one-out formulas of cross-validation, and general-form Tikhonov regularization
+`min ‖Ax − b‖² + λ‖Bx‖²`, diagonalized by the GSVD.
+
+## Design
+
+* **Ridge regression is the existing `Matrix.tikhonov`** of `Numlib/LinearAlgebra/Matrix/SVD`
+  (`(λ + AᴴA)⁻¹Aᴴ`, from Kress's Theorem 5.7), with its characterizations `tikhonov_unique` and
+  `norm_sub_sq_add_mul_norm_sq_tikhonov_le` and its residual formula
+  `norm_sq_toEuclideanLin_tikhonov_sub`; this module adds what Golub–Van Loan use and Kress does
+  not: the expansion in an arbitrary SVD, the limit at `0`, the monotone solution norm, and the
+  deleted-row formulas. General-form Tikhonov is `Matrix.generalFormTikhonov A B λ = (AᴴA + λBᴴB)⁻¹Aᴴ`,
+  named after it (the literature's "general-form Tikhonov regularization"; the first plan's `tikhonovGen`
+  and `looResidual_eq` were renamed at review L2); `generalFormTikhonov A 1 λ = tikhonov A λ` is the bridge.
+* **Stacking** `‖[A; B] x − [b; d]‖² = ‖Ax − b‖² + ‖Bx − d‖²` (`norm_fromRows_sub_sq`) is the one
+  identity behind (6.1.11), (6.1.20) and (6.2.13); it is stated for `Matrix.fromRows` over the
+  sum index `m₁ ⊕ m₂`, vectors `WithLp.toLp 2 (Sum.elim b d)`.
+* **SVD statements take a factorization, not "the" SVD**: they assume `Matrix.IsSVD A U σ V`
+  (staged in the `SVD` append), exactly as `pinv_eq_of_svd` does, so any SVD a surface algorithm
+  returns can be fed in.
+* The cross-validation formulas (6.1.16)–(6.1.19) are real (`ℝ`): they are statistical and use
+  `a_kᵀ x` without conjugation.
+
+## Order of attack
+
+Stacking (★) → the SVD expansions (★★ for the first, ★ after) → the limit and monotonicity (★★) →
+the leave-one-out formulas (★★, Sherman–Morrison by hand or `Matrix.add_mul_mul_inv_eq_sub`) →
+general Tikhonov (★) → its GSVD expansion (★★, after `GSVD`).
+'''
+
+[[node]]
+id = "norm_fromRows_sub_sq"
+kind = "theorem"
+desc = '''**Stacking least-squares problems** ([golub2013matrix] (6.1.11), (6.1.20), (6.2.13)): for
+`A : Matrix m₁ n 𝕜`, `B : Matrix m₂ n 𝕜`, `b : m₁ → 𝕜`, `d : m₂ → 𝕜`, `x`,
+`‖toEuclideanLin (fromRows A B) x − WithLp.toLp 2 (Sum.elim b d)‖ ^ 2
+  = ‖toEuclideanLin A x − WithLp.toLp 2 b‖ ^ 2 + ‖toEuclideanLin B x − WithLp.toLp 2 d‖ ^ 2`.
+`EuclideanSpace.norm_sq_eq`, `Fintype.sum_sum_type`, `fromRows_mulVec`. ★'''
+deps = []
+
+[[node]]
+id = "isLeastSquaresSolution_fromRows_iff"
+kind = "theorem"
+desc = '''**A stacked problem is a penalized problem** ([golub2013matrix] (6.1.11), (6.1.20),
+(6.2.13)): for `0 ≤ λ`,
+`IsLeastSquaresSolution (fromRows A ((√λ : 𝕜) • B)) (toLp 2 (Sum.elim b ((√λ : 𝕜) • d))) x ↔
+ ∀ y, ‖A x − b‖² + λ ‖B x − d‖² ≤ ‖A y − b‖² + λ ‖B y − d‖²`
+(norms of `toEuclideanLin` images). `norm_fromRows_sub_sq` and monotonicity of squaring. ★'''
+deps = ["norm_fromRows_sub_sq", "Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "tikhonov_mulVec_eq_iff_isMinOn"
+kind = "theorem"
+desc = '''**Ridge regression, tracked form** ([golub2013matrix] (6.1.11)–(6.1.12)): for `0 < λ`,
+`x = toEuclideanLin (A.tikhonov λ) b ↔ ∀ y, ‖A x − b‖² + λ ‖x‖² ≤ ‖A y − b‖² + λ ‖y‖²`, and the
+minimizer is unique. Restates the untracked `Matrix.tikhonov_unique` and
+`Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le` of `SVD` (strict convexity gives uniqueness:
+the remainder `‖A(x − z)‖² + λ‖x − z‖²` of `norm_sub_sq_add_mul_norm_sq_le_of_smul_add_gram`
+vanishes only at `x = z`). ★'''
+deps = ["Matrix.tikhonov"]
+
+[[node]]
+id = "tikhonov_mulVec_eq_sum_of_isSVD"
+kind = "theorem"
+desc = '''**Ridge regression in singular vectors** ([golub2013matrix] (6.1.14)): if
+`IsSVD A U σ V` (`A : Matrix (Fin m) (Fin n) 𝕜`) and `0 < λ`, then
+`toEuclideanLin (A.tikhonov λ) b = ∑ i : Fin (min m n), ((σ i / (σ i ^ 2 + λ) : ℝ) : 𝕜) • ⟪u_i, b⟫ • v_i`
+with `u_i = U.col i`, `v_i = V.col i` (as `EuclideanSpace` vectors, `Fin.castLE` into `Fin m`,
+`Fin n`). Terms with `σ i = 0` vanish, which is the book's `∑_{i ≤ r}`.
+Proof: `(λ + AᴴA) = V (λ + ΣᴴΣ) Vᴴ` from the factorization (`eq_mul_mul_star_of_star_mul_mul_eq`),
+so `A.tikhonov λ = V (λ + ΣᴴΣ)⁻¹ Σᴴ Uᴴ` and the middle factor is rectangular diagonal with entries
+`σ_i / (σ_i² + λ)` (`rectDiagonal_mul_rectDiagonal`, `conjTranspose_rectDiagonal_mul_self`). ★★'''
+deps = ["Matrix.tikhonov", "Matrix.IsSVD", "Matrix.eq_mul_mul_star_of_star_mul_mul_eq", "Matrix.rectDiagonal_mul_rectDiagonal", "Matrix.conjTranspose_rectDiagonal_mul_self"]
+
+[[node]]
+id = "norm_sq_tikhonov_mulVec_eq_sum_of_isSVD"
+kind = "theorem"
+desc = '''**The secular function** ([golub2013matrix] §6.2.1, `f(λ) + α² = ‖x(λ)‖²`): if `IsSVD A U σ V`
+and `0 < λ`, `‖toEuclideanLin (A.tikhonov λ) b‖ ^ 2 = ∑ i : Fin (min m n), (σ i * ‖⟪u_i, b⟫‖ / (σ i ^ 2 + λ)) ^ 2`.
+Parseval on `tikhonov_mulVec_eq_sum_of_isSVD` (the `v_i` are orthonormal). ★'''
+deps = ["tikhonov_mulVec_eq_sum_of_isSVD"]
+
+[[node]]
+id = "norm_sq_pinv_mulVec_eq_sum_of_isSVD"
+kind = "theorem"
+desc = '''**The minimal-norm least-squares solution in singular vectors** ([golub2013matrix] (6.2.3)
+and the display before it): if `IsSVD A U σ V`, then
+`toEuclideanLin A.pinv b = ∑ i : Fin (min m n), ((σ i)⁻¹ : 𝕜) • ⟪u_i, b⟫ • v_i` and
+`‖toEuclideanLin A.pinv b‖ ^ 2 = ∑ i : Fin (min m n), (‖⟪u_i, b⟫‖ / σ i) ^ 2` (Lean's `0⁻¹ = 0`
+drops the terms beyond the rank, the book's `∑_{i ≤ r}`). From `pinv_eq_of_svd`. ★'''
+deps = ["Matrix.pinv_eq_of_svd", "Matrix.IsSVD"]
+
+[[node]]
+id = "norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD"
+kind = "theorem"
+desc = '''**The ridge residual** ([golub2013matrix] (6.2.4)): if `IsSVD A U σ V` and `0 < λ`,
+`‖A x(λ) − b‖ ^ 2 = ‖A x_LS − b‖ ^ 2 + ∑ i : Fin (min m n) with σ i ≠ 0, (λ * ‖⟪u_i, b⟫‖ / (σ i ^ 2 + λ)) ^ 2`
+with `x(λ) = A.tikhonov λ b`, `x_LS = A.pinv b`. The existing `norm_sq_toEuclideanLin_tikhonov_sub`
+is the same identity in the right singular basis of `SVD`; transport it to an arbitrary SVD by
+`tikhonov_mulVec_eq_sum_of_isSVD` and Pythagoras, or prove directly: `A x(λ) − b` has
+coordinates `−λ ⟪u_i,b⟫/(σ_i² + λ)` along `u_i` (`σ_i ≠ 0`) and `−⟪u_i,b⟫` along the rest, the
+latter being `A x_LS − b`. ★'''
+deps = ["tikhonov_mulVec_eq_sum_of_isSVD", "Matrix.norm_sq_toEuclideanLin_tikhonov_sub"]
+
+[[node]]
+id = "tendsto_tikhonov_pinv"
+kind = "theorem"
+desc = '''**Ridge regression tends to the minimal-norm least-squares solution**
+([golub2013matrix] §6.1.4, "`lim_{λ→0} x(λ) = x_LS`"):
+`Filter.Tendsto A.tikhonov (nhdsWithin 0 (Set.Ioi 0)) (nhds A.pinv)`. From
+`tikhonov_mulVec_eq_sum_of_isSVD` and `norm_sq_pinv_mulVec_eq_sum_of_isSVD` coefficientwise
+(`σ/(σ² + λ) → σ⁻¹` for `σ > 0`, `0 → 0`), or from `tikhonov_eq_pinv_sub` with
+`‖λ (λ + AᴴA)⁻¹ A⁺‖ → 0`. ★★'''
+deps = ["tikhonov_mulVec_eq_sum_of_isSVD", "norm_sq_pinv_mulVec_eq_sum_of_isSVD", "Matrix.tikhonov_eq_pinv_sub", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "antitoneOn_norm_tikhonov_mulVec"
+kind = "theorem"
+desc = '''**The ridge solution shrinks as `λ` grows** ([golub2013matrix] §6.1.4, "`‖x(λ)‖₂` is a monotone
+decreasing function of `λ`", and §6.2.1, "`f'(λ) < 0`"):
+`AntitoneOn (fun λ => ‖toEuclideanLin (A.tikhonov λ) b‖) (Set.Ioi 0)`, and
+`StrictAntiOn` on `Set.Ioi 0` when `toEuclideanLin Aᴴ b ≠ 0` (then some `σ_i ⟪u_i, b⟫ ≠ 0`).
+Each summand of `norm_sq_tikhonov_mulVec_eq_sum_of_isSVD` is antitone in `λ`. ★★'''
+deps = ["norm_sq_tikhonov_mulVec_eq_sum_of_isSVD", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "tendsto_norm_tikhonov_mulVec_atTop"
+kind = "theorem"
+desc = '''`‖x(λ)‖ → 0` as `λ → ∞` ([golub2013matrix] §6.2.1, used for the existence of the root
+`λ₊`): `Filter.Tendsto (fun λ => ‖toEuclideanLin (A.tikhonov λ) b‖) Filter.atTop (nhds 0)`.
+Each coefficient `σ/(σ² + λ) → 0`. ★'''
+deps = ["norm_sq_tikhonov_mulVec_eq_sum_of_isSVD", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "one_sub_dotProduct_inv_gram_pos"
+kind = "theorem"
+desc = '''The leave-one-out denominator is positive ([golub2013matrix] (6.1.16)–(6.1.17)): for
+`A : Matrix m n ℝ`, `0 < λ` and a row `a_k = A k`,
+`0 < 1 − a_k ⬝ᵥ (Aᵀ * A + λ • 1)⁻¹ *ᵥ a_k`. Since `AᵀA + λI ⪰ a_k a_kᵀ + λI`, the quadratic form
+of the inverse at `a_k` is at most `a_kᵀ (a_k a_kᵀ + λI)⁻¹ a_k = ‖a_k‖²/(‖a_k‖² + λ) < 1` (Loewner
+antitonicity of the inverse, or Sherman–Morrison on `AᵀA + λI = (D_k A)ᵀ(D_k A) + λI + a_k a_kᵀ`). ★★'''
+deps = []
+
+[[node]]
+id = "tikhonov_deleteRow_eq"
+kind = "theorem"
+desc = '''**Ridge regression with one equation deleted** ([golub2013matrix] (6.1.16)): for
+`A : Matrix m n ℝ`, `b`, `0 < λ`, `k : m`, `D_k = diagonal (Function.update 1 k 0)`,
+`x = (A.tikhonov λ) *ᵥ b`, `x_k = ((D_k * A).tikhonov λ) *ᵥ (D_k *ᵥ b)` (the solution of
+(6.1.15)), `z_k = (Aᵀ * A + λ • 1)⁻¹ *ᵥ A k`:
+`x_k = x + ((A k ⬝ᵥ x − b k) / (1 − z_k ⬝ᵥ A k)) • z_k`.
+Proof: `(D_kA)ᵀ(D_kA) + λI = M − a_k a_kᵀ` with `M = AᵀA + λI` and `(D_kA)ᵀ D_k b = Aᵀb − a_k b_k`;
+Sherman–Morrison (`Matrix.add_mul_mul_inv_eq_sub` of Mathlib, the Woodbury identity, with a
+`1 × 1` middle block) and `one_sub_dotProduct_inv_gram_pos` for the denominator. ★★'''
+deps = ["Matrix.tikhonov", "one_sub_dotProduct_inv_gram_pos"]
+
+[[node]]
+id = "tikhonov_deleteRow_residual_eq"
+kind = "theorem"
+desc = '''**The leave-one-out residual** ([golub2013matrix] (6.1.17)): in the setting of
+`tikhonov_deleteRow_eq`, with `H = A * (Aᵀ * A + λ • 1)⁻¹ * Aᵀ` (the ridge "hat" matrix),
+`b k − A k ⬝ᵥ x_k = ((1 − H) *ᵥ b) k / (1 − H) k k`, and `0 < (1 − H) k k`. Apply `−a_kᵀ` to
+(6.1.16) and add `b_k`: `(1 − H)_kk = 1 − z_kᵀ a_k`. ★'''
+deps = ["tikhonov_deleteRow_eq", "one_sub_dotProduct_inv_gram_pos"]
+
+[[node]]
+id = "posDef_gram_add_smul_gram_iff"
+kind = "theorem"
+desc = '''**General-form Tikhonov is well posed iff the kernels meet trivially** ([golub2013matrix]
+§6.1.5, "(6.1.21) is nonsingular if `null(A) ∩ null(B) = {0}`", with its converse): for
+`A : Matrix m n 𝕜`, `B : Matrix p n 𝕜`, `0 < λ`,
+`(Aᴴ * A + (λ : 𝕜) • (Bᴴ * B)).PosDef ↔ LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥`.
+The quadratic form is `‖Ax‖² + λ‖Bx‖²`. ★'''
+deps = []
+
+[[node]]
+id = "generalFormTikhonov"
+kind = "definition"
+desc = '''**General-form Tikhonov regularization** ([golub2013matrix] (6.1.20)–(6.1.21)):
+`generalFormTikhonov A B λ = (Aᴴ * A + (λ : 𝕜) • (Bᴴ * B))⁻¹ * Aᴴ` for `A : Matrix m n 𝕜`,
+`B : Matrix p n 𝕜`, `λ : ℝ`; the solution operator of `min ‖Ax − b‖² + λ‖Bx‖²` when
+`posDef_gram_add_smul_gram_iff` applies. Named after `Matrix.tikhonov`, which is its `B = 1` case
+(`generalFormTikhonov_one`). ★'''
+deps = ["Matrix.tikhonov"]
+
+[[node]]
+id = "generalFormTikhonov_one"
+kind = "theorem"
+desc = '''`generalFormTikhonov A (1 : Matrix n n 𝕜) λ = A.tikhonov λ` (`(λ • 1 + AᴴA)` versus `(AᴴA + λ • 1)`:
+`add_comm`). ★'''
+deps = ["generalFormTikhonov", "Matrix.tikhonov"]
+
+[[node]]
+id = "generalFormTikhonov_mulVec_eq_iff_isMinOn"
+kind = "theorem"
+desc = '''**General-form Tikhonov: normal equations and minimizer** ([golub2013matrix] (6.1.20)–(6.1.21)):
+for `0 < λ` and `ker A ⊓ ker B = ⊥`, `x = toEuclideanLin (generalFormTikhonov A B λ) b` iff
+`(AᴴA + λBᴴB) x = Aᴴ b` iff `∀ y, ‖A x − b‖² + λ‖B x‖² ≤ ‖A y − b‖² + λ‖B y‖²`. Through
+`isLeastSquaresSolution_fromRows_iff` with `d = 0` and the normal equations of the stacked matrix
+`[A; √λ B]`, which has full column rank by `posDef_gram_add_smul_gram_iff`. ★'''
+deps = ["generalFormTikhonov", "posDef_gram_add_smul_gram_iff", "isLeastSquaresSolution_fromRows_iff", "Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]
+id = "generalFormTikhonov_mulVec_eq_sum_of_isGSVD"
+kind = "theorem"
+desc = '''**General-form Tikhonov diagonalized by the GSVD** ([golub2013matrix] (6.1.26) and the display
+before it): for `B : Matrix (Fin n) (Fin n) 𝕜` invertible (the book's "`B` square and
+nonsingular", so `p = 0`, `r = n`, `β_k > 0`), `IsGSVD A B U₁ U₂ X α β` and `0 < λ`,
+`toEuclideanLin (generalFormTikhonov A B λ) b = ∑ k : Fin n, ((α k / (α k ^ 2 + λ * β k ^ 2) : ℝ) : 𝕜) • b̃_k • X.col k`
+with `b̃ = star U₁ *ᵥ b` (`b̃_k` read at `Fin.castLE (n ≤ m₁) k`). From
+`IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`: `(AᴴA + λBᴴB) X = X⁻ᴴ diag(α² + λβ²)` and
+`Xᴴ Aᴴ b = D_Aᴴ b̃`. ★★'''
+deps = ["generalFormTikhonov", "Matrix.IsGSVD", "Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses this module's expansion)
+id = "norm_sub_sq_pinv_eq_sum_of_isSVD"
+kind = "theorem"
+desc = '''The minimal residual in singular vectors ([golub2013matrix] (5.3.3), (5.5.2)): if
+`Matrix.IsSVD A U σ V` (chapter 6's specification) and `r = A.rank` (so `σ i ≠ 0 ↔ i < r` for
+`i < min m n`), then `‖toEuclideanLin A (toEuclideanLin A.pinv b) - b‖ ^ 2 = ∑_{r ≤ i < m} ‖⟪u_i, b⟫‖ ^ 2`
+(`u_i = Uᵀ i`). The solution expansion `A⁺ b = ∑_{i<r} (⟪u_i, b⟫/σ_i) v_i` ((5.3.2), (5.5.1)) is
+chapter 6's `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD` (`LeastSquares/Regularized`), consumed as is;
+this node adds the residual: `A A⁺ = U₁U₁ᴴ` (`mul_pinv_eq_starProjection`, `range_mulVecLin_eq_span_of_svd`)
+and Parseval in the orthonormal basis `U`. ★★'''
+deps = ["Matrix.IsSVD", "Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD", "Matrix.mul_pinv_eq_starProjection", "Matrix.range_mulVecLin_eq_span_of_svd", "Matrix.card_singularValues_ne_zero"]

@@ -6,7 +6,11 @@ Mathlib supplies a great deal already — the complex exponential Hilbert basis 
 `ZMod N` (`ZMod.dft`). What is missing, and what these modules add, is the *real* trigonometric
 system with the classical coefficients `a_j`, `b_j`, the Dirichlet kernel and the pointwise
 convergence of Fourier series, and the discrete Fourier transform in its matrix form with the
-radix-2 identity that the fast Fourier transform rests on.
+radix-2 identity that the fast Fourier transform rests on; the discrete sine and cosine transform
+matrices (`SineCosineTransform`: DST-I/II, DCT-I/II under one naming scheme `Matrix.dst1`, `dst2`, `dct1`,
+`dct2`) and the diagonalization of circulant matrices by the DFT (`Circulant`), which Golub–Van Loan
+§1.4, §4.8 and §12.1 use.
 
-Serves Atkinson–Han, *Theoretical Numerical Analysis*, §1.3.2 (Thm 1.3.13), §3.7 and Chapter 4.
+Serves Atkinson–Han, *Theoretical Numerical Analysis*, §1.3.2 (Thm 1.3.13), §3.7 and Chapter 4, and
+Golub–Van Loan, *Matrix Computations*, §1.4, §4.8, §12.1.
 '''

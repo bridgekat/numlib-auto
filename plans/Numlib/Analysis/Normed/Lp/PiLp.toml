@@ -1,3 +1,7 @@
+# Planned additions (GVL round): the module doc of `Numlib.Analysis.Normed.Lp.PiLp` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch02) Add Hölder's inequality for finite `ℓ^p` vectors with `ENNReal` Hölder-conjugate exponents,
+# endpoints included (`PiLp.norm_dotProduct_le`, [golub2013matrix] (2.2.2)).
 namespace = "PiLp"
 
 [[node]]
@@ -35,3 +39,19 @@ id = "norm_toLp_one_le_card_mul_norm_toLp_top"
 
 [[node]]
 id = "_root_.EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one"
+
+[[node]]  # staged by ch02
+id = "norm_dotProduct_le"
+kind = "theorem"
+desc = '''**Hölder's inequality on `𝕜^ι`** ([golub2013matrix] (2.2.2)): for `p q : ℝ≥0∞` with `[Fact (1 ≤
+p)] [Fact (1 ≤ q)] [p.HolderConjugate q]` and `x y : ι → 𝕜` (`RCLike 𝕜`, `Fintype ι`), `‖x ⬝ᵥ y‖ ≤
+‖WithLp.toLp p x‖ * ‖WithLp.toLp q y‖` (prototype `notes/gvl/ch02/proto/Shapes.lean` elaborates).
+Reuse Mathlib's finite-sum Hölder bounds rather than re-deriving them: with `‖x ⬝ᵥ y‖ ≤ ∑ ‖x i‖ ‖y i‖`
+(`norm_sum_le`, `norm_mul`), finite exponents are `Memℓp.holder_gen_bound` (`Mathlib/Analysis/Normed/Lp/lpHolder`)
+at `r = 1`, `B i = ContinuousLinearMap.mul 𝕜 𝕜`, `s = univ`, `C = ‖x‖_p ^ p`, `D = ‖y‖_q ^ q` (`PiLp.norm_eq_sum`,
+`Real.rpow` bookkeeping) — or directly `Real.inner_le_Lp_mul_Lq` on `‖x i‖`, `‖y i‖`, the lemma
+`holder_gen_bound` itself rests on; `(p, q) = (∞, 1)` and `(1, ∞)` are `Memℓp.holder_top_left_bound` /
+`Memℓp.holder_top_right_bound` (`PiLp.norm_eq_ciSup`). Mathlib's `lp.holder`/`lp.norm_dualPairing` are for the
+`lp` sequence space and need `Memℓp` packaging; a finite `PiLp` statement is still absent (searched
+`PiLp.inner_le…`, `PiLp.holder`). ★ (~30 lines)'''
+deps = []

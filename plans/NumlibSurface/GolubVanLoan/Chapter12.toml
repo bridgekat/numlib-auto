@@ -1,0 +1,98 @@
+desc = '''
+Golub–Van Loan, *Matrix Computations*, Chapter 12: Special Topics — displacement structure (§12.1),
+structured-rank matrices (§12.2), Kronecker product computations (§12.3), tensor unfoldings and
+contractions (§12.4), tensor decompositions and iterations (§12.5). Lines 35527–38950 of
+`references/matrix-computations/matrix-computations.md`.
+
+**Conventions of the chapter's surface files.** Real matrices `Matrix (Fin m) (Fin n) ℝ`, 0-based: the
+book's `a_{ij}` is `A (i-1) (j-1)`, `A(i₁:i₂, j₁:j₂)` is `A.toBlock (· ∈ Set.Icc …) (· ∈ Set.Icc …)` or a
+`submatrix`, `B(r)` with `r ∈ ℝ^{n−1}` is `Matrix.unitBidiagonal n r` with `r : ℕ → ℝ` (entries past `n − 2`
+unused). The book's MATLAB `tril`, `triu` are `Matrix.strictLower`/`Matrix.strictUpper` plus
+`Matrix.diagPart`; `.*` is `⊙`. Kronecker products are Mathlib's typed `B ⊗ₖ C : Matrix (m₁ × m₂) (n₁ × n₂)`
+and, where the book's `Fin (m₁ m₂)` layout matters (perfect shuffles, `vec`), chapter 1's
+`Matrix.kroneckerFin` and `Matrix.vecFin` (the `finProdFinEquiv` flattening). Tensors are
+`Tensor (fun k : Fin d => Fin (n k)) ℝ` (surface abbreviation `RTensor n`), entries `A i` with `i : ∀ k,
+Fin (n k)`; the book's `col(i, n)` is `finPiFinEquiv` (0-based), and every flattened statement carries the
+Kronecker products in the book's reversed order `M_d ⊗ ⋯ ⊗ M_1` through
+`Matrix.piKronecker_reindex_finPiFinEquiv`. Surface statements are typed first; a statement about the
+book's flattened unfoldings is added where the book's display is about the flattened object
+((12.4.6), (12.4.8), (12.4.9), (12.4.15), (12.4.19), Theorem 12.4.1). Frobenius norms through the scoped
+`Matrix.Norms.Frobenius` and the global Frobenius norm of `Tensor`.
+
+**Algorithms** (12.1.1, 12.1.2, 12.2.1, 12.2.2) are D4 monadic programs `algorithm_12_M_K {M} [Monad M] (rnd :
+ℝ → M ℝ) …` in the book's operation order, every arithmetic result through `rnd`, dot products as chapter
+1's `FloatingPoint.dotAccum`, loops as `List.foldlM` over `List.finRange`; the recursive `LUdisp`/`LUdispPiv`
+are structural recursions on the size `N + 1` (prototype `notes/gvl/ch12/proto/Structured.lean`, which
+elaborates `algorithm_12_1_1` in exactly this shape). Their `_spec` theorems are about `Id.run
+(algorithm_12_M_K pure …)`. The book analyses no rounding errors in this chapter (it cites Gu 1998 for
+the stability of `LUdispPiv`), so there are no rounding nodes. The numbered conventions 1–14 of `NumlibSurface/GolubVanLoan` govern
+(every `+ − × / √` result rounded; negation, `|·|`, `sign`, copies and comparisons exact); the chapter has
+no fuel-bounded loop (the ALS "Repeat" iterations of §12.5 are specified by their subproblems, not
+programmed).
+
+**Backbone correspondence.** §12.1 → `Numlib/LinearAlgebra/Matrix/Displacement` (on chapter 7's
+`Matrix.sylvesterMap`); §12.2 → `…/Matrix/Semiseparable` (on the nullity theorem, staged for `Rank`);
+§12.3 → `…/Matrix/KroneckerApprox` and the Kronecker material staged for chapter 1's `…/Matrix/Kronecker`;
+§12.4–12.5 → the new directory `Numlib/LinearAlgebra/Tensor/` (`Basic`, `Unfolding`,
+`MultilinearProduct`, `HOSVD`, `Tucker`, `CP`, `SingularValue`, `Train`), whose group description records
+the representation decision (prototype `notes/gvl/ch12/proto/Tensor.lean`). The Ky Fan principle
+(12.5.3) and the variational singular values (12.5.22) are staged for `SVD`, the Rayleigh stationary
+points (12.5.23) for `Numlib/Eigen/MinMax`. Chapter 2's Eckart–Young–Mirsky
+(`Matrix.isLeast_frobenius_norm_sub_of_rank_le`) carries every nearest-Kronecker statement.
+
+**Scope.** Every Theorem (12.1.1, 12.3.1, 12.4.1, 12.5.1), Lemma (12.3.2, 12.3.3) and Algorithm (12.1.1,
+12.1.2, 12.2.1, 12.2.2) is a node, and every numbered display that asserts a proposition. Unnumbered
+precise claims the text states and later relies on are nodes named by content (the Facts of §12.2.3
+and §12.2.10, the Kronecker properties of §12.3.1, the Tucker reduction of §12.5.3, …); unnumbered prose
+definitions likewise. The book's misprinted statements are formalized in corrected form, each saying
+so ((12.4.17), (12.5.11), (12.3.2)-adjacent perfect-shuffle factorizations, Lemma 12.3.2's `rank = 1`, the
+LU claim of §12.2.5, Algorithm 12.2.2's `g_k`); the chapter 12 report lists them.
+
+**Not formalized.**
+* Operation counts, flop and storage counts, data-sparsity counts (`2n²r`, `O(n)`, `O(nr + r³)`, `5n`, `pm²`
+  numbers for a Kronecker product, `O(dr²n)` for a tensor train, the `O(N¹⁰)` versus `O(N⁶)` contraction
+  counts), numerical examples (the `n = 4` Cauchy update of §12.1.3, the 2×2×3×4 unfolding of §12.4.1, the
+  vec/transposition examples of §12.4.3–12.4.4 and (12.4.7)), MATLAB fragments, Notes and References.
+* The non-recursive sketch of Algorithm 12.1.1 (prose, not an algorithm of its own; the recursive one is the
+  node), the pivoting variant of Algorithm 12.2.1 (described in words only), and the "Steps 1–4" framework
+  of §12.1.8 beyond its correctness statement.
+* §12.2.8's `{p, q}`-semiseparable definition (misprinted, no result attached), the extended and
+  sequentially semiseparable and hierarchical classes ((12.2.17) is a shape, no claim), and §12.2.9
+  (semiseparable eigenvalue methods: prose with citations only).
+* Fact 3 of §12.2.10: "perfect shuffle permutations … expose a pair of bidiagonal matrices" names neither
+  the permutations nor the positions of `B_C`, `B_S`; the book proves nothing (P12.2.13 asks for `n = 8`).
+  Formalizable once Ammar–Gragg–Reichel's explicit form is supplied.
+* §12.3.7 (constrained NKP): the claims that `B_opt`, `C_opt` are positive definite for SPD `A` and
+  nonnegative for nonnegative `A` are cited from Van Loan–Pitsianis without proof; the Toeplitz-constrained
+  reduction is a method sketch.
+* The multipass-transposition discussion of §12.3.5 beyond the two-pass identity (memory hierarchy), and
+  the dynamic-programming remark of §12.3.10 beyond the reshaping identity.
+* The space–time contraction example of §12.4.12 (flop counts; its index bookkeeping is also misprinted,
+  report).
+* The "Repeat" iterations of §12.5 (Tucker-ALS, CP-ALS, higher-order power method, SS-HOPM): unnumbered, no
+  convergence claimed; what is specified is the subproblem each step solves (nodes in §12.5).
+* "The truncated HOSVD does not solve the Tucker problem" (§12.5.3): a negative claim with no example; a
+  certified counterexample with its Tucker optimum is research-level to verify.
+* Complications 1–6 of §12.5.5 (NP-hardness, maximal and typical ranks, the 0.79/0.21 probabilities, real
+  versus complex rank, degenerate tensors, non-nestedness of best approximations): cited results whose
+  proofs need lower bounds on tensor rank the book does not supply.
+
+**Closes.** No existing open node or `notes/frontier.md` item; the chapter is new ground (the Tensor
+directory, displacement and structured rank). It adds the nullity theorem and the rank factorization to
+`Rank`, which later structured-matrix work will reuse.
+
+**Order of attack.**
+1. `Rank` appends (`rank_add_le`, `rank_le_iff_exists_mul[_transpose]`, support bound, nullity theorem;
+   ~250 lines) and chapter 1's `Kronecker` with the staged `piKronecker`/Khatri–Rao/rank/norm nodes (~450
+   lines of this chapter's share).
+2. `Displacement` (~550 lines; needs chapter 7's `Sylvester`, chapter 4's `Toeplitz`).
+3. `Semiseparable` (~1900 lines: definitions and representations ~400, nullity-theorem inverses ~400,
+   LU/QR closed forms ~500, orthogonal Hessenberg ~600 — the last block can wait).
+4. `KroneckerApprox` (~550 lines; needs chapter 2's SVD appends) and the `SVD` appends (Ky Fan, (12.5.22);
+   ~200) and the `MinMax` append (~60).
+5. `Tensor/Basic` (~250), `Tensor/Unfolding` (~250), `Tensor/MultilinearProduct` (~300),
+   `Tensor/HOSVD` (~350), `Tensor/Tucker` (~200), `Tensor/CP` (~200), `Tensor/SingularValue` (~350),
+   `Tensor/Train` (~300).
+6. Surface: `Section03` and `Section04` first (they only restate), then `Section05`, `Section01` (the two
+   recursive algorithms, ~400 lines), `Section02` (Algorithm 12.2.2's invariant proof, ~250 lines).
+'''

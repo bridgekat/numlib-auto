@@ -1,0 +1,230 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.6, invariant subspace computations: inverse iteration (7.6.1) and its stopping criterion (7.6.2),
+the unique invariant subspace of a leading Schur block, reordering the Schur form (the `2 × 2` swap and
+Algorithm 7.6.1), block diagonalization (the `Y_ij` updates, the Sylvester equation (7.6.4)–(7.6.5),
+the Bartels–Stewart Algorithm 7.6.2, Algorithm 7.6.3, the bounds around (7.6.6)), eigenvectors and
+eigenvalue conditions read off a Schur form (§7.6.4), and the Jordan block counts (§7.6.5).
+
+Real `Matrix (Fin n) (Fin n) ℝ` for the algorithms, complex where eigenvalues are complex. The
+algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan` (D4 monadic programs;
+rotations by chapter 5's shared helpers `givensApplyLeft`/`givensApplyRight` on index lists and
+chapter 5's `givens`, Algorithm 5.1.3); triangular solves are chapter 3's back substitution
+`GolubVanLoan.Chapter03.algorithm_3_1_2`. Block partitions (7.6.3) are given by the list of block
+sizes `n₁, …, n_q` (`∑ n_i = n`), block `i` occupying `[s_i, s_i + n_i)`; `T_ij` is the submatrix
+`T.submatrix (fun a : Fin n_i => ⟨s_i + a, _⟩) (fun b : Fin n_j => ⟨s_j + b, _⟩)`.
+
+**Algorithm 7.6.3 and quasi-triangular blocks.** The book applies it to a real Schur form, whose
+diagonal blocks are quasi-triangular, and says "Solve `T_ii Z - Z T_jj = -T_ij` using the
+Bartels–Stewart algorithm"; but Algorithm 7.6.2 is stated (and correct) only for triangular `F`, `G`,
+the quasi-triangular case needing the `2p × 2p` systems (7.6.5), which the book leaves to Bartels and
+Stewart (1972). The spec of `algorithm_7_6_3` therefore assumes the diagonal blocks upper triangular
+(the complex Schur form, or a real Schur form with real spectrum); (7.6.5) itself is a node
+(report, Doubts).
+
+Not formalized here: the SVD heuristic for why one step of inverse iteration suffices (`σ_n ≈ u σ₁`
+and "`z^(1)` is rich in the direction `v_n`": no precise claim); the stability claims of §7.6.2
+(`‖Q̂ᵀ Q̂ - I‖₂ ≈ u`, `(A + E) q̂_i ∈ span{q̂₁, …, q̂_p}` with `‖E‖₂ ≈ u ‖A‖₂`) and the relative error
+`≈ u ‖T‖_F / sep(T_ii, T_jj)` of the Sylvester solve after (7.6.6) (quoted from Golub, Nash and Van
+Loan 1979), all stated without derivation; Bavely and Stewart's algorithm and the 25% rule of thumb;
+the `7 × 7` Jordan-structure example of §7.6.5 (a numerical illustration of rank decisions); flop
+counts.
+'''
+
+[[node]]
+id = "inverseIteration"
+kind = "definition"
+desc = '''(7.6.1), inverse iteration: `inverseIteration A μ q₀ : ℕ → EuclideanSpace ℝ (Fin n) × ℝ` (real, as the book
+writes it, and the same over `ℂ`): solve `(A - μ I) z^(k) = q^(k-1)`, `q^(k) = z^(k)/‖z^(k)‖₂`,
+`λ^(k) = q^(k)ᵀ A q^(k)`; with the bridge to `Krylov.inverseIterate` (`(A - μ)⁻¹` by `Ring.inverse`,
+the power method on `(A - μ I)⁻¹`, "Inverse iteration is just the power method applied to
+`(A - μI)⁻¹`"). ★'''
+deps = ["Krylov.inverseIterate"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.1)'
+
+[[node]]
+id = "equation_7_6_1"
+kind = "theorem"
+desc = '''§7.6.1, the analysis of (7.6.1), rigorous: if `A - μ I` is nonsingular, `A` has an eigenvector basis
+`{x_i}`, `q^(0) = ∑ β_i x_i` with `β_j ≠ 0`, and `|λ_j - μ| < |λ_i - μ|` for every `i` with `λ_i ≠ λ_j`,
+then `q^(k)` converges essentially to the unit multiple of `x_j`'s component
+(`((λ_j - μ)/|λ_j - μ|)^k q^(k)` converges), and `λ^(k) → λ_j`: "if `μ` is much closer to an eigenvalue
+`λ_j` than to the other eigenvalues, then `q^(k)` is rich in the direction of `x_j`".
+`Krylov.tendsto_smul_inverseIterate`, `Krylov.tendsto_inner_inverseIterate`. ★'''
+deps = ["GolubVanLoan.Chapter07.inverseIteration", "Krylov.tendsto_smul_inverseIterate", "Krylov.tendsto_inner_inverseIterate"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.1)'
+
+[[node]]
+id = "equation_7_6_2"
+kind = "theorem"
+desc = '''(7.6.2) and the sentence after it: with `r^(k) = (A - μ I) q^(k)` and `E_k = -r^(k) q^(k)ᵀ`,
+`(A + E_k) q^(k) = μ q^(k)`; and `‖E_k‖_∞ = ‖r^(k)‖_∞ ‖q^(k)‖₁ ≤ √n ‖r^(k)‖_∞` (unit `q^(k)` in the
+2-norm), so the stopping test `‖r^(k)‖_∞ ≤ c u ‖A‖_∞` makes `(μ, q^(k))` an exact eigenpair of a matrix
+within `√n c u ‖A‖_∞` of `A` in the `∞`-norm — the rigorous form of "forces μ and q^(k) to be an exact
+eigenpair for a nearby matrix" (the book leaves the factor `√n` implicit). `Matrix.linfty_opNorm_def`
+for the rank-one matrix. ★'''
+deps = ["GolubVanLoan.Chapter07.inverseIteration"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.2)'
+
+[[node]]
+id = "invariantSubspace_leading_unique"
+kind = "theorem"
+desc = '''§7.6.2: if `Qᵀ A Q = [T₁₁ T₁₂; 0 T₂₂]` (`Q` orthogonal, `T₁₁` of size `p`) and `λ(T₁₁) ∩ λ(T₂₂) = ∅`
+(complex spectra), then the first `p` columns of `Q` span the unique invariant subspace associated with
+`λ(T₁₁)`: every `A`-invariant subspace of dimension `p` on which `A` has only eigenvalues from
+`λ(T₁₁)` equals it (the book's "(See §7.1.4.)"). `Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj`
+(complexified), `Module.End.invtSubmodule_eq_iSup_maxGenEigenspace`. ★'''
+deps = ["Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj", "Module.End.invtSubmodule_eq_iSup_maxGenEigenspace"]
+source = 'Golub–Van Loan, Matrix Computations, §7.6.2'
+
+[[node]]
+id = "swap_two_by_two"
+kind = "theorem"
+desc = '''§7.6.2, the `2 × 2` swap: for `T_F = [λ₁ t₁₂; 0 λ₂]` with `λ₁ ≠ λ₂`, `x = (t₁₂, λ₂ - λ₁)` satisfies
+`T_F x = λ₂ x`; if `Q_D` is a rotation `[c s; -s c]` with `(Q_Dᵀ x)₂ = 0` (the output of `givens(t₁₂,
+λ₂ - λ₁)`, chapter 5's Algorithm 5.1.3 spec), then `Q_Dᵀ T_F Q_D = [λ₂ ±t₁₂; 0 λ₁]` — the `(2,1)` entry is
+`0`, the diagonal is swapped, and the `(1,2)` entry has modulus `|t₁₂|` (Frobenius norm invariance,
+the book's argument). With `Q = Q_F Q_D`, `(Qᵀ A Q) e₁ = λ₂ e₁`. ★★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §7.6.2'
+
+[[node]]
+id = "algorithm_7_6_1"
+kind = "definition"
+desc = '''Algorithm 7.6.1 (reordering the Schur form, no `2 × 2` bumps): `algorithm_7_6_1 rnd Q T Δ fuel` with
+inputs `Q`, upper triangular `T = QᵀAQ`, the target set `Δ : Finset ℝ` and, last, the fuel of the `while`
+loop (convention 3). At most `fuel` passes of: for `k = 0 .. n-2`, if `T k k ∉ Δ` and
+`T (k+1) (k+1) ∈ Δ` (comparisons on the computed diagonal, exact): `(c, s) ← givens(T k (k+1),
+fl(T (k+1) (k+1) - T k k))`, `T(k:k+1, k:n-1) = [c s; -s c]ᵀ T(k:k+1, k:n-1)`
+(`GolubVanLoan.Chapter05.givensApplyLeft rnd k (k+1) c s cols T`, `cols` the indices `≥ k`),
+`T(0:k+1, k:k+1) = T(0:k+1, k:k+1) [c s; -s c]` (`givensApplyRight`, rows `≤ k+1`),
+`Q(:, k:k+1) = Q(:, k:k+1) [c s; -s c]` (`givensApplyRight`, all rows). A pass that finds
+`{t₁₁, …, t_pp} = Δ` (the book's `while` test) sets `done`. Returns `(Q, T)`. ★'''
+deps = ["GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.1'
+
+[[node]]
+id = "algorithm_7_6_1_spec"
+kind = "theorem"
+desc = '''Algorithm 7.6.1, exact semantics: for orthogonal `Q`, upper triangular `T = Qᵀ A Q`, `Δ : Finset ℝ` and
+`fuel ≥ n`, `(Q', S) = Id.run (algorithm_7_6_1 pure Q T Δ fuel)` satisfies `Q' = Q Q_D` with `Q_D` orthogonal,
+`S = Q_Dᵀ T Q_D = Q'ᵀ A Q'` upper triangular, the multiset of diagonal entries unchanged, and with
+`p = #{k | T k k ∈ Δ}`: `S k k ∈ Δ ↔ k < p` — the book's `{s₁₁, …, s_pp} = Δ` (as sets of diagonal
+values; `Δ` is a set of eigenvalues each of which may occur several times). Proof: each swap is
+`swap_two_by_two` embedded in the plane `(k, k+1)` (upper triangularity kept); a pass moves every
+`Δ`-entry that has a non-`Δ` entry above it up by one, so after `n` passes the diagonal is sorted
+(bubble-sort invariant: the number of inversions decreases); at most `(n - p) p` swaps. ★★★ (~400
+lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_6_1", "GolubVanLoan.Chapter07.swap_two_by_two", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.1'
+
+[[node]]
+id = "blockDiagonalization_update"
+kind = "theorem"
+desc = '''§7.6.3: with `Y_ij = I_n + E_i Z_ij E_jᵀ` (`i < j`, `Z_ij` in the `(i, j)` block position) and
+`T̄ = Y_ij⁻¹ T Y_ij` for block upper triangular `T` (7.6.3), `T` and `T̄` agree except
+`T̄_ij = T_ii Z_ij - Z_ij T_jj + T_ij`, `T̄_ik = T_ik - Z_ij T_jk` (`k > j`), `T̄_kj = T_ki Z_ij + T_kj`
+(`k < i`); `Y_ij⁻¹ = I - E_i Z_ij E_jᵀ`. Block multiplication (the `n`-block generalization of
+`Matrix.fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one`). ★★'''
+deps = ["Matrix.fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one"]
+source = 'Golub–Van Loan, Matrix Computations, §7.6.3'
+
+[[node]]
+id = "equation_7_6_5"
+kind = "theorem"
+desc = '''(7.6.4)–(7.6.5), the column recurrences of the Sylvester equation `F Z - Z G = C` with `G` upper
+quasi-triangular: if `g_{k+1,k} = 0` (or `k` is the last column), column `k` satisfies
+`(F - g_kk I) z_k = c_k + ∑_{i<k} g_ik z_i`; if `g_{k+1,k} ≠ 0`, with `m = k + 1`, columns `k, m` satisfy the
+`2p × 2p` system `[F - g_kk I, -g_mk I; -g_km I, F - g_mm I] [z_k; z_m] = [c_k; c_m] + ∑_{i<k} [g_ik z_i;
+g_im z_i]`; conversely a `Z` whose columns satisfy these equations solves `F Z - Z G = C`. Column-by-column
+comparison of `F Z - Z G = C` (P7.6.4). The perfect-shuffle banded reordering is not stated. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.5)'
+
+[[node]]
+id = "algorithm_7_6_2"
+kind = "definition"
+desc = '''Algorithm 7.6.2 (Bartels–Stewart), for `C : Matrix (Fin p) (Fin r) ℝ` and upper triangular
+`F : Matrix (Fin p) (Fin p) ℝ`, `G : Matrix (Fin r) (Fin r) ℝ`: for `k = 0 .. r-1`:
+`C(:, k) = C(:, k) + C(:, 0:k-1) G(0:k-1, k)` (each entry `fl(c_ik + ∑_{j<k} c_ij g_jk)` accumulated in order
+`j`), solve `(F - G(k, k) I) z = C(:, k)` by back substitution (chapter 3's `algorithm_3_1_2` on the
+matrix with diagonal `fl(f_ii - g_kk)`), `C(:, k) = z`. Returns `C` (overwritten by `Z`). ★'''
+deps = ["GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.2'
+
+[[node]]
+id = "algorithm_7_6_2_spec"
+kind = "theorem"
+desc = '''Algorithm 7.6.2 solves the Sylvester equation: for upper triangular `F`, `G` with `λ(F) ∩ λ(G) = ∅`
+(i.e. `F i i ≠ G j j` for all `i`, `j`), `Z = Id.run (algorithm_7_6_2 pure F G C)` satisfies
+`F * Z - Z * G = C`, and it is the unique solution (`Matrix.existsUnique_sylvesterMap_eq`, the spectra
+being the diagonals). Induction over the columns with `equation_7_6_5` (the triangular case) and the
+back-substitution spec `GolubVanLoan.Chapter03.algorithm_3_1_2_spec` (the pivots `f_ii - g_kk` are
+nonzero). ★★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_6_2", "GolubVanLoan.Chapter07.equation_7_6_5", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec", "Matrix.existsUnique_sylvesterMap_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.2'
+
+[[node]]
+id = "algorithm_7_6_3"
+kind = "definition"
+desc = '''Algorithm 7.6.3 (block diagonalization): inputs `Q`, `T = Qᵀ A Q` and the block sizes (7.6.3). For
+`j = 1 .. q-1`, `i = 0 .. j-1`: `Z ← algorithm_7_6_2 (T_ii, T_jj, -T_ij)` (on the extracted blocks),
+`T_ik = T_ik - Z T_jk` for `k = j+1 .. q-1` (rounded matrix products, entries in order), and
+`Q_kj = Q_ki Z + Q_kj` for all block rows `k` (i.e. `Q(:, block j) += Q(:, block i) Z`). Returns `Q`
+(overwritten by `Q Y`) and `T` (whose zeroed blocks `T_ij` are left unwritten, as in the book). ★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_6_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.3'
+
+[[node]]
+id = "algorithm_7_6_3_spec"
+kind = "theorem"
+desc = '''Algorithm 7.6.3 block-diagonalizes: for `T = Qᵀ A Q` upper triangular (see the group desc on the
+quasi-triangular case) with the diagonal blocks' spectra pairwise disjoint (diagonal entries of
+different blocks distinct), the output `Q'` of `Id.run (algorithm_7_6_3 pure Q T sizes)` is `Q Y` with
+`Y` block unit upper triangular, nonsingular, and `Y⁻¹ T Y = diag(T₁₁, …, T_qq)` (so
+`(Q Y)⁻¹ A (Q Y)` is block diagonal — Theorem 7.1.6 made constructive). Proof: `Y = ∏ Y_ij` in the loop
+order; after processing `(i, j)` the block `T_ij` of `Y⁻¹ T Y` is zero (`algorithm_7_6_2_spec`,
+`blockDiagonalization_update`), and blocks `T_kj`, `k < i`, stay zero because `T_ki = 0` already
+(columns `i < j` were processed in earlier outer iterations) — the reason the book's loop needs no
+`T_kj` update. ★★★ (~400 lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_6_3", "GolubVanLoan.Chapter07.algorithm_7_6_2_spec", "GolubVanLoan.Chapter07.blockDiagonalization_update", "GolubVanLoan.Chapter07.theorem_7_1_6"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.3'
+
+[[node]]
+id = "equation_7_6_6"
+kind = "theorem"
+desc = '''The two precise claims around (7.6.6): `sep(T_ii, T_jj) ≤ min_{λ ∈ λ(T_ii), μ ∈ λ(T_jj)} |λ - μ|`
+(`Matrix.sep_le_norm_sub`), and if `Z` satisfies (7.6.6) `T_ii Z - Z T_jj = -T_ij` then
+`‖Z‖_F ≤ ‖T_ij‖_F / sep(T_ii, T_jj)` (`Matrix.frobenius_norm_le_div_sep`). ★'''
+deps = ["Matrix.sep_le_norm_sub", "Matrix.frobenius_norm_le_div_sep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.6)'
+
+[[node]]
+id = "kappaF_blockUnit"
+kind = "theorem"
+desc = '''§7.6.3, the condition of `Y_ij = [I_{n_i} Z; 0 I_{n_j}]` in the Frobenius norm:
+`‖Y_ij‖_F ‖Y_ij⁻¹‖_F = n_i + n_j + ‖Z‖_F²` (`Y⁻¹ = [I -Z; 0 I]`, `‖I_k‖_F² = k`). The book prints
+`n_i² + n_j² + ‖Z‖_F²` — `‖I_k‖_F² = k`, not `k²` (report, Doubts). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §7.6.3'
+
+[[node]]
+id = "schur_eigenvectors"
+kind = "theorem"
+desc = '''§7.6.4: if `Qᵀ A Q = [T₁₁ u T₁₃; 0 λ vᵀ; 0 0 T₃₃]` (blocks of sizes `k-1, 1, n-k`, `Q` orthogonal) with
+`λ ∉ λ(T₁₁) ∪ λ(T₃₃)`, and `(T₁₁ - λ I) w = -u`, `(T₃₃ - λ I)ᵀ z = -v`, then `x = Q [w; 1; 0]` and
+`y = Q [0; 1; z]` are right and left eigenvectors of `A` for `λ` (`A x = λ x`, `yᵀ A = λ yᵀ`); and
+`1/s(λ) = √((1 + wᵀ w)(1 + zᵀ z))` (`eigenvalueSensitivity` of the normalized `x`, `y`, since
+`yᵀ x = 1`). Block multiplication. ★★'''
+deps = ["GolubVanLoan.Chapter07.eigenvalueSensitivity"]
+source = 'Golub–Van Loan, Matrix Computations, §7.6.4'
+
+[[node]]
+id = "jordan_block_count"
+kind = "theorem"
+desc = '''§7.6.5: for `C = λ I + N` with `N` nilpotent and `p_i = dim null(N^i)`, `p_i - p_{i-1}` equals the number
+of blocks of dimension `≥ i` in the Jordan form of `C` (and `p_i = dim null((C - λ I)^i)` is a similarity
+invariant). `Matrix.card_filter_le_jordanBlocks_eq` through the Jordan form of `C`
+(`Matrix.exists_conj_jordanForm`, `Matrix.IsSimilar.finrank_ker_mulVecLin_eq`). ★'''
+deps = ["Matrix.card_filter_le_jordanBlocks_eq", "Matrix.exists_conj_jordanForm", "Matrix.IsSimilar.finrank_ker_mulVecLin_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §7.6.5'

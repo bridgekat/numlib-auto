@@ -1,0 +1,164 @@
+namespace = "Matrix"
+desc = '''
+Weighted and generalized least squares ([golub2013matrix] §6.1.1–6.1.3): the problem
+`min ‖M (A x − b)‖` for an invertible weight factor `M`, which is the ordinary least-squares
+problem of `(M A, M b)` and needs no new predicate; the weighted solution for full column rank,
+its difference from the unweighted one and the monotone effect of one weight on its residual;
+the augmented (symmetric indefinite) system; Paige's generalized least-squares problem
+`min {‖v‖ : b = A x + B v}`; column weighting.
+
+Upstreaming candidate in the style of `Numlib/LinearAlgebra/Matrix/LeastSquares` (its parent):
+vectors are `EuclideanSpace 𝕜 m`, maps are `Matrix.toEuclideanLin`, the scalars `[RCLike 𝕜]`
+except for the derivative statements, which are over `ℝ` (a derivative in a weight is a real
+notion).
+
+## Design
+
+* **No `IsWeightedLeastSquaresSolution` in the backbone.** "`x` minimizes `‖M(Ax − b)‖`" is
+  literally `IsLeastSquaresSolution (M * A) (toEuclideanLin M b) x`; the surface defines the
+  book's diagonal-weight name as an abbreviation of it.
+* **`Matrix.weightedLeastSquaresOp W A = (Aᴴ W A)⁻¹ Aᴴ W`** is the solution operator for full column rank and
+  Hermitian positive definite `W = Mᴴ M` — the full-rank weighted pseudoinverse. It is not
+  Eldén's general-rank weighted pseudoinverse, and its docstring says so; the review (L2) renamed
+  the first plan's `weightedPinv` accordingly. "Weighted" in this library always means row (or
+  column) weights; the penalty parameter of the method of weighting is `Matrix.penaltyLSE`.
+* The augmented-system lemma is stated with a general weight, so the unweighted (5.3.20) of
+  chapter 5 is its `M = 1` instance (reported as a cross-reference to chapter 5).
+
+## Order of attack
+
+`weightedLeastSquaresOp` and its two algebraic lemmas (★), the augmented system and column weighting (★),
+generalized least squares (★, Paige's method ★★), then the weight derivative (★★, ~120 lines:
+the derivative of a matrix inverse through a normed-ring structure on matrices).
+'''
+
+[[node]]
+id = "weightedLeastSquaresOp"
+kind = "definition"
+desc = '''The **weighted least-squares solution operator** `weightedLeastSquaresOp W A = (Aᴴ * W * A)⁻¹ * Aᴴ * W`
+for `W : Matrix m m 𝕜`, `A : Matrix m n 𝕜` ([golub2013matrix] (6.1.2) with `W = D²`). Meaningful
+for `A` of full column rank and `W` Hermitian positive definite, where `Aᴴ W A` is invertible;
+junk otherwise (Lean's `⁻¹`). Not the general-rank weighted pseudoinverse of the literature. ★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "isLeastSquaresSolution_weightedLeastSquaresOp"
+kind = "theorem"
+desc = '''**The weighted solution solves the weighted problem** ([golub2013matrix] (6.1.1)–(6.1.2)):
+for `M : Matrix m m 𝕜` invertible and `A` with `LinearIndependent 𝕜 Aᵀ`,
+`IsLeastSquaresSolution (M * A) (toEuclideanLin M b) (toEuclideanLin (weightedLeastSquaresOp (Mᴴ * M) A) b)`,
+and it is the only one. `M A` has full column rank, so this is
+`isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent` with
+`pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose` rewritten by `(MA)ᴴ(MA) = Aᴴ (MᴴM) A`. ★'''
+deps = ["weightedLeastSquaresOp", "Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"]
+
+[[node]]
+id = "weightedLeastSquaresOp_mulVec_sub_pinv_mulVec"
+kind = "theorem"
+desc = '''**Weighted minus unweighted solution** ([golub2013matrix] (6.1.3)): for `A` of full column
+rank and `W` with `Aᴴ W A` invertible,
+`weightedLeastSquaresOp W A *ᵥ b − A.pinv *ᵥ b = (Aᴴ * W * A)⁻¹ *ᵥ (Aᴴ *ᵥ ((W − 1) *ᵥ (b − A *ᵥ (A.pinv *ᵥ b))))`
+(stated on `toEuclideanLin` in the module's convention). Subtract the two normal equations:
+`AᴴWA (x_W − x) = AᴴWb − AᴴWAx = AᴴW(b − Ax) − Aᴴ(b − Ax)` since `Aᴴ(b − Ax) = 0`. ★'''
+deps = ["weightedLeastSquaresOp", "Matrix.normalEquations_pinv"]
+
+[[node]]
+id = "weightedResidual"
+kind = "definition"
+desc = '''The **residual of the weighted solution** as a function of the weights
+([golub2013matrix] §6.1.1, `r_k(δ)`): for real `A : Matrix m n ℝ`, `b : m → ℝ` and `w : m → ℝ`,
+`weightedResidual A b w = b − A *ᵥ (weightedLeastSquaresOp (diagonal w) A *ᵥ b)`. The book's `D(δ)²` is
+`diagonal w` with `w = Function.update (d²) k (d_k² (1 + δ))`. ★'''
+deps = ["weightedLeastSquaresOp"]
+
+[[node]]
+id = "hasDerivAt_weightedResidual"
+kind = "theorem"
+desc = '''**The derivative of a residual in its own weight** ([golub2013matrix] (6.1.4)): for
+`A : Matrix m n ℝ` with `LinearIndependent ℝ Aᵀ`, `w : m → ℝ` with `∀ i, 0 < w i`, and `k : m`,
+with `W = diagonal w`,
+`HasDerivAt (fun t => weightedResidual A b (Function.update w k t) k)
+   (-(A k ⬝ᵥ (Aᵀ * W * A)⁻¹ *ᵥ A k) * weightedResidual A b w k) (w k)`
+(`A k` is the `k`-th row `a_kᵀ`). The book's `d/dδ` carries the extra factor `d_k²` of the chain
+rule through `δ ↦ d_k² (1 + δ)`, which the surface adds.
+
+Proof ([golub2013matrix] lines 16267–16283): with `M(t) = Aᵀ W(t) A`, `dM/dt = a_k a_kᵀ`, and
+`d(M⁻¹)/dt = −M⁻¹ a_k a_kᵀ M⁻¹` (Mathlib's `hasFDerivAt_ring_inverse` under a normed-ring structure
+on matrices, e.g. the scoped `Matrix.linftyOpNormedRing`, or `HasDerivAt.inv`-style through
+`Matrix.inv` and `Ring.inverse`); then `d(Aᵀ W b)/dt = a_k b_k`, and
+`dr_k = −a_kᵀ(dM⁻¹ AᵀWb + M⁻¹ a_k b_k) = (a_kᵀ M⁻¹ a_k)(a_kᵀ x − b_k)`. ★★ (~120 lines).'''
+deps = ["weightedResidual"]
+
+[[node]]
+id = "antitoneOn_abs_weightedResidual"
+kind = "theorem"
+desc = '''**Raising a weight never increases its residual** ([golub2013matrix] §6.1.1, "`|r_k(δ)|` is a
+monotone decreasing function of `δ`"): under the hypotheses of `hasDerivAt_weightedResidual`,
+`AntitoneOn (fun t => |weightedResidual A b (Function.update w k t) k|) (Set.Ioi 0)`.
+From `(r_k²)' = −2 (a_kᵀ M⁻¹ a_k) r_k² ≤ 0` (`M⁻¹` positive definite, so `a_kᵀ M⁻¹ a_k ≥ 0`) and
+Mathlib's `antitoneOn_of_deriv_nonpos` on the convex set `Ioi 0`. The book's strict inequality
+`< 0` fails when `a_k = 0` or `r_k = 0` (then `r_k ≡ 0`); strict antitonicity holds exactly when
+`a_k ≠ 0` and `r_k ≠ 0` at one weight, and is not claimed here. ★★'''
+deps = ["hasDerivAt_weightedResidual"]
+
+[[node]]
+id = "isLeastSquaresSolution_of_augmented"
+kind = "theorem"
+desc = '''**The augmented system of weighted least squares** ([golub2013matrix] (6.1.5), and (5.3.20)
+at `M = 1`): for `M : Matrix m m 𝕜` invertible, if `r : EuclideanSpace 𝕜 m` and `x` satisfy
+`toEuclideanLin (Mᴴ * M)⁻¹ r + toEuclideanLin A x = b` and `toEuclideanLin Aᴴ r = 0`, then
+`IsLeastSquaresSolution (M * A) (toEuclideanLin M b) x`. Normal equations:
+`(MA)ᴴ(MAx − Mb) = Aᴴ MᴴM (Ax − b) = −Aᴴ r = 0`; `isLeastSquaresSolution_iff_normalEquations`. ★'''
+deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]
+id = "IsGeneralizedLeastSquaresSolution"
+kind = "definition"
+desc = '''**The generalized least-squares problem** ([golub2013matrix] (6.1.8), Paige 1979): for
+`A : Matrix m n 𝕜`, `B : Matrix m l 𝕜`, `b`, the pair `(x, v)` is a solution when
+`b = toEuclideanLin A x + toEuclideanLin B v` and every feasible `(x', v')` has `‖v‖ ≤ ‖v'‖`.
+Defined for rank-deficient `A`, `B` as well, which is its point. ★'''
+deps = []
+
+[[node]]
+id = "isGeneralizedLeastSquaresSolution_iff"
+kind = "theorem"
+desc = '''**(6.1.7) is (6.1.8) when `B` is invertible** ([golub2013matrix] §6.1.2): for `B : Matrix m m 𝕜`
+invertible, `IsGeneralizedLeastSquaresSolution A B b x v ↔
+IsLeastSquaresSolution (B⁻¹ * A) (toEuclideanLin B⁻¹ b) x ∧ v = toEuclideanLin B⁻¹ (b − toEuclideanLin A x)`.
+Feasibility forces `v = B⁻¹(b − Ax)`, so the objective is `‖B⁻¹(Ax − b)‖`. ★'''
+deps = ["IsGeneralizedLeastSquaresSolution", "Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "isGeneralizedLeastSquaresSolution_of_paige"
+kind = "theorem"
+desc = '''**Paige's method** ([golub2013matrix] (6.1.9)–(6.1.10)): let `A : Matrix (Fin m) (Fin n) 𝕜`,
+`n ≤ m`, have full column rank with full QR factorization `IsQR A Q R` (`Q = [Q₁ Q₂]`,
+`R₁ = firstRows R`), let `B : Matrix (Fin m) (Fin m) 𝕜` be invertible and `Z` unitary with
+`Q₂ᴴ B Z = [0 S]`, `S : Matrix (Fin (m − n)) (Fin (m − n)) 𝕜` upper triangular (then invertible),
+`Z = [Z₁ Z₂]` split `n | m − n`. Put `u = S⁻¹ Q₂ᴴ b`, `v = Z₂ u`, `x = R₁⁻¹ (Q₁ᴴ b − Q₁ᴴ B Z₂ u)`.
+Then `IsGeneralizedLeastSquaresSolution A B b x v`.
+
+Proof: feasibility is the two block rows of `Qᴴ b = Qᴴ A x + (Qᴴ B Z)(Zᴴ v)` with `Z₁ᴴ v = 0`,
+`Z₂ᴴ v = u`. Minimality: any feasible `(x', v')` satisfies `Q₂ᴴ b = S (Z₂ᴴ v')`, so `Z₂ᴴ v' = u`
+and `‖v'‖ ≥ ‖Z₂ᴴ v'‖ = ‖u‖ = ‖v‖`. The blocks are `Matrix.submatrix` along `Fin.castLE`/`Fin.natAdd`
+(the `firstColumns`/`firstRows` of `LeastSquares`, and their complements). ★★'''
+deps = ["IsGeneralizedLeastSquaresSolution", "Matrix.IsQR", "Matrix.IsQR.firstColumns_mul_firstRows", "Matrix.firstColumns", "Matrix.firstRows"]
+
+[[node]]
+id = "isLeastSquaresSolution_mul_inv_iff"
+kind = "theorem"
+desc = '''**Column weighting** ([golub2013matrix] §6.1.3): for `G : Matrix n n 𝕜` invertible,
+`IsLeastSquaresSolution (A * G⁻¹) b y ↔ IsLeastSquaresSolution A b (toEuclideanLin G⁻¹ y)`.
+The change of variables `x = G⁻¹ y` is a bijection. ★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "IsMinNormLeastSquaresSolution.norm_le_of_mul_inv"
+kind = "theorem"
+desc = '''**The column-weighted solution has least `G`-norm** ([golub2013matrix] §6.1.3, "within the
+set of minimizers, `x_G` has the smallest `G`-norm", `‖z‖_G = ‖G z‖₂`): for `G` invertible, if
+`IsMinNormLeastSquaresSolution (A * G⁻¹) b y` and `IsLeastSquaresSolution A b x` then
+`‖y‖ ≤ ‖toEuclideanLin G x‖`, i.e. `‖x_G‖_G ≤ ‖x‖_G` with `x_G = G⁻¹ y`. Apply the minimality of
+`y` to `G x`, a least-squares solution of `A G⁻¹` by `isLeastSquaresSolution_mul_inv_iff`. ★'''
+deps = ["isLeastSquaresSolution_mul_inv_iff", "Matrix.IsMinNormLeastSquaresSolution"]

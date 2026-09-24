@@ -1,0 +1,80 @@
+namespace = "Matrix"
+desc = '''
+The orthogonal Procrustes problem ([golub2013matrix] §6.4.1, after Green 1952 and Schönemann
+1966): `min ‖A − B Q‖_F` over unitary `Q`, solved by the unitary polar factor of `Bᴴ A` — the book's
+`Q = U Vᴴ` from any SVD `Uᴴ (Bᴴ A) V = Σ`. The Frobenius expansion reduces it to `max re tr(Qᴴ Bᴴ A)`,
+and with `Bᴴ A = Q₀ P` (polar) the bound `re tr(W P) ≤ tr P` for unitary `W` and positive
+semidefinite `P` solves it.
+
+Upstreaming candidate (no numerical content), `[RCLike 𝕜]`, any `Fintype` index types (review L1:
+the first plan was `Fin`-only for no reason), square unitary `Q : Matrix p p 𝕜`,
+`A B : Matrix m p 𝕜`; Frobenius norms through the scoped `Matrix.Norms.Frobenius` instance, as in
+`Numlib/Analysis/Matrix/OperatorNorm` (`frobenius_norm_sq_eq_trace`,
+`frobenius_norm_unitary_mul_mul_unitary`).
+
+**One polar factor** (Golub–Van Loan review H4): the solution is stated for the polar factor
+(`Matrix.IsPolarDecomposition`, `Numlib/LinearAlgebra/Matrix/Polar`, which this module imports) and the
+book's SVD form is its corollary through `Matrix.IsSVD.isPolarDecomposition`; the singular-value
+trace bound of §6.4.1 is the unitary case of von Neumann's trace inequality
+(`Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul`, `Numlib/Analysis/Matrix/SingularValues`).
+
+## Order of attack
+
+The expansion (★), the positive-semidefinite trace bound (★), the theorem (★★), its SVD form (★),
+the singular-value trace bound (★) — about 150 lines together.
+'''
+
+[[node]]
+id = "frobenius_norm_sub_mul_sq"
+kind = "theorem"
+desc = '''**The Procrustes expansion** ([golub2013matrix] §6.4.1, the chain after (6.4.2)): for
+`Q ∈ unitaryGroup p 𝕜`, `‖A − B * Q‖ ^ 2 = ‖A‖ ^ 2 + ‖B‖ ^ 2 − 2 * RCLike.re (trace (Qᴴ * Bᴴ * A))`
+(Frobenius norms). `frobenius_norm_sq_eq_trace`, `‖B Q‖ = ‖B‖`
+(`frobenius_norm_unitary_mul_mul_unitary`), and `trace (Aᴴ B Q) = conj (trace (Qᴴ Bᴴ A))`. ★'''
+deps = ["Matrix.frobenius_norm_sq_eq_trace", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+
+[[node]]
+id = "re_trace_mul_le_trace_of_posSemidef"
+kind = "theorem"
+desc = '''**The trace bound for a unitary times a positive semidefinite matrix**: for
+`W ∈ unitaryGroup p 𝕜` and `P : Matrix p p 𝕜` with `P.PosSemidef`,
+`RCLike.re (trace (W * P)) ≤ RCLike.re (trace P)`, with equality at `W = 1`. With the spectral
+decomposition `P = ∑ λ_i p_i p_iᴴ` (`Matrix.IsHermitian.spectral_theorem`, `λ_i ≥ 0`),
+`trace (W P) = ∑ λ_i ⟪p_i, W p_i⟫` and `|⟪p_i, W p_i⟫| ≤ ‖W p_i‖ = 1`. The step "`tr(ZΣ) = ∑ z_ii σ_i
+≤ ∑ σ_i`" of [golub2013matrix] §6.4.1, in polar form. ★'''
+deps = []
+
+[[node]]
+id = "frobenius_norm_sub_mul_le_of_isPolarDecomposition"
+kind = "theorem"
+desc = '''**The orthogonal Procrustes theorem, polar form** ([golub2013matrix] §6.4.1): if
+`IsPolarDecomposition (Bᴴ * A) Q₀ P` then `Q₀ ∈ unitaryGroup p 𝕜`
+(`IsPolarDecomposition.mem_unitaryGroup`, square) and `∀ Q ∈ unitaryGroup p 𝕜, ‖A − B * Q₀‖ ≤
+‖A − B * Q‖`. By `frobenius_norm_sub_mul_sq` it is `re tr(Qᴴ Bᴴ A) ≤ re tr(Q₀ᴴ Bᴴ A)`; with
+`Bᴴ A = Q₀ P` the left side is `re tr((Qᴴ Q₀) P) ≤ re tr P` (`re_trace_mul_le_trace_of_posSemidef`,
+`Qᴴ Q₀` unitary) and the right side is `re tr(Q₀ᴴ Q₀ P) = re tr P`. ★★'''
+deps = ["frobenius_norm_sub_mul_sq", "re_trace_mul_le_trace_of_posSemidef", "Matrix.IsPolarDecomposition"]
+
+[[node]]
+id = "frobenius_norm_sub_mul_le_of_isSVD"
+kind = "theorem"
+desc = '''**The orthogonal Procrustes theorem, the book's form** ([golub2013matrix] §6.4.1, "The upper bound
+is clearly attained by setting `Z = I_p`, i.e., `Q = UVᵀ`"): if `IsSVD (Bᴴ * A) U σ V` (square, `Fin p`
+indices as `IsSVD` has) then `Q₀ = U * Vᴴ` is unitary and `∀ Q ∈ unitaryGroup (Fin p) 𝕜,
+‖A − B * Q₀‖ ≤ ‖A − B * Q‖`. `Matrix.IsSVD.isPolarDecomposition` (square case: the polar factor is
+`U Vᴴ`) and `frobenius_norm_sub_mul_le_of_isPolarDecomposition` (review H4: the polar factor is built
+once). ★'''
+deps = ["frobenius_norm_sub_mul_le_of_isPolarDecomposition", "Matrix.IsSVD.isPolarDecomposition", "Matrix.IsSVD"]
+
+[[node]]
+id = "re_trace_mul_le_sum_singularValues"
+kind = "theorem"
+desc = '''**The singular-value trace bound** ([golub2013matrix] §6.4.1, `tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`):
+for `C : Matrix p p 𝕜` and `Q ∈ unitaryGroup p 𝕜`, `RCLike.re (trace (Q * C)) ≤ ∑ i, C.singularValues i`,
+with equality at `Q = V Uᴴ` whenever `IsSVD C U σ V`. The unitary case of von Neumann's trace inequality
+`Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul` (review L1: the sorted singular values of a
+unitary matrix are all `1`), with `re z ≤ ‖z‖` and the multiset bridge
+`Matrix.exists_equiv_singularValues_eq_sortedSingularValues` (a sum over the columns is order-free, which
+is why the column-indexed `Matrix.singularValues` is kept here); the equality case is
+`trace (V Uᴴ U Σ Vᴴ) = ∑ σ_i`. ★'''
+deps = ["Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues", "Matrix.IsSVD", "Matrix.IsSVD.singularValues_eq"]

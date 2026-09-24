@@ -1,0 +1,278 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.4, other orthogonal factorizations: numerical rank and the SVD (§5.4.1: (5.4.1), the singular
+value perturbation under (5.4.4), the `δ`-rank (5.4.5)); QR with column pivoting ((5.4.6),
+Algorithm 5.4.1, the norm-downdating identity, the termination analysis of §5.4.3, the Kahan
+matrix); Chan's Theorem 5.4.1 and the rotation-based improvement of §5.4.5; the `UTV` bounds
+(5.4.10)–(5.4.11); complete orthogonal decompositions (5.4.12) and the two-QR construction;
+bidiagonalization ((5.4.13), Algorithm 5.4.2) and `R`-bidiagonalization (§5.4.9).
+
+Singular values: the book's sorted `σ_k` (1-based) is chapter 2's `A.sortedSingularValues (k - 1)`
+(Mathlib's `LinearMap.singularValues` of `toEuclideanLin A`, antitone, 0-based); an SVD is chapter
+6's `Matrix.IsSVD`; `dist(S₁, S₂)` is `Submodule.gap` (chapter 2's reading of Theorem 2.5.1). Pivoted QR: `Matrix.IsPivotedQR A Q R σ` with the
+permutation as `σ : Equiv.Perm (Fin n)` (the book's `Π` and its encoding `piv`).
+
+Not formalized here: (5.4.2)–(5.4.3) (approximations `≈`), the backward stability (5.4.4) of the
+Golub–Kahan–Reinsch SVD (a Chapter 8 algorithm; used here only as a hypothesis), the numerical
+claim `σ₃₀₀(Kah₃₀₀(.99)) = O(10⁻¹⁹)` (a computation), "in practice small trailing submatrices almost
+always emerge" (empirical), flop counts. Book slips (report, Doubts): §5.4.1 cites "Corollary 2.4.6"
+for `σ_k = min_{rank B = k-1} ‖A - B‖₂` (it is Theorem 2.4.8, Eckart–Young, and the minimum must
+be over `rank B ≤ k - 1`); (5.4.11) prints `‖L₁₂‖₂` for `‖L₂₁‖₂`; Algorithm 5.4.1 prints
+`A(:r:m, r:n)`.
+
+Also not formalized as a node: (5.4.8), the pivot rule `‖z_p^{(k-1)}‖₂ = max{‖z_k^{(k-1)}‖₂, …}` — an
+algorithm-step display, realized by the choice of `k` in `algorithm_5_4_1`.
+'''
+
+[[node]]
+id = "equation_5_4_1"
+kind = "theorem"
+desc = '''(5.4.1): if `rank A = r` and `Uᵀ A V = Σ` is an SVD, then `σ_{r+1} = ⋯ = σ_n = 0` and
+`A = ∑_{k<r} σ_k u_k v_kᵀ`. Chapter 2's Corollaries 2.4.6–2.4.7 restated. ★'''
+deps = ["GolubVanLoan.Chapter02.corollary_2_4_6", "GolubVanLoan.Chapter02.corollary_2_4_7"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.1)'
+
+[[node]]
+id = "singularValues_perturbation"
+kind = "theorem"
+desc = '''§5.4.1, the derived bound: if `Σ̂ = Wᵀ (A + ΔA) Z` with `W`, `Z` orthogonal, `Σ̂` diagonal with
+entries `σ̂₁ ≥ ⋯ ≥ σ̂_n ≥ 0`, and `‖ΔA‖₂ ≤ ε ‖A‖₂` (the conclusion (5.4.4) of a backward-stable SVD),
+then `|σ_k(A) - σ̂_k| ≤ ε σ_1(A)` for `k = 1:n`. The book's argument: `σ_k = min_{rank B ≤ k-1}
+‖A - B‖₂` (chapter 2's Theorem 2.4.8, generalized to every `k`) applied to `A` and to `Σ̂`, with
+`E = Wᵀ ΔA Z`; in the backbone it is Weyl's inequality for singular values (chapter 8's
+`LinearMap.abs_singularValues_sub_le`, `|σ_k(A + ΔA) - σ_k(A)| ≤ ‖ΔA‖₂`) with unitary invariance
+(`σ̂_k = σ_k(A + ΔA)`). ★'''
+deps = [
+  "GolubVanLoan.Chapter02.theorem_2_4_8",
+  "LinearMap.abs_singularValues_sub_le",  # ch08 (Numlib/Analysis/InnerProductSpace/SingularValues)
+]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.1'
+
+[[node]]
+id = "deltaRank"
+kind = "definition"
+desc = '''(5.4.5): the `δ`-rank of a nonincreasing nonnegative sequence `σ̂₁ ≥ ⋯ ≥ σ̂_n` (computed singular
+values), `deltaRank δ σ̂ = #{i | δ < σ̂ i}`; for antitone `σ̂` it is the unique `r̂` with
+`σ̂_{r̂} > δ ≥ σ̂_{r̂+1}` (`deltaRank_spec`, same node). For the exact singular values and `δ = 0`
+it is the rank (`card_singularValues_ne_zero`). ★'''
+deps = ["Matrix.card_singularValues_ne_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.5)'
+
+[[node]]
+id = "equation_5_4_6"
+kind = "theorem"
+desc = '''(5.4.6): every `A ∈ ℝ^{m×n}` has `Qᵀ A Π = [R₁₁ R₁₂; 0 0]` with `r = rank A`, `Q` orthogonal,
+`R₁₁` upper triangular and nonsingular (`r × r`), `Π` a permutation; and then
+`ran(A) = span{q₁, …, q_r}`. Backbone `Matrix.exists_isPivotedQR_rank` at `𝕜 = ℝ`, which concludes
+`∃ σ Q R, Matrix.IsPivotedQR.IsRankRevealing A Q R σ A.rank` (the bundle's fields `apply_eq_zero` — rows
+`≥ r` vanish — and `isUnit_block` — `R₁₁` invertible — are the book's block form), and
+`Matrix.IsPivotedQR.IsRankRevealing.range_eq_span`, which takes the bundle. ★'''
+deps = ["Matrix.exists_isPivotedQR_rank", "Matrix.IsPivotedQR.IsRankRevealing", "Matrix.IsPivotedQR.IsRankRevealing.range_eq_span"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.6)'
+
+[[node]]
+id = "norm_sq_tail_eq"
+kind = "theorem"
+desc = '''§5.4.2: for `Q ∈ ℝ^{s×s}` orthogonal, `Qᵀ z = [α; w] ⇒ ‖w‖₂² = ‖z‖₂² - α²`, whence the column
+norm update `‖z_j^{(k)}‖² = ‖z_j^{(k-1)}‖² - r_kj²`. Backbone
+`Matrix.norm_sq_tail_eq_of_mem_unitaryGroup`. ★'''
+deps = ["Matrix.norm_sq_tail_eq_of_mem_unitaryGroup"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.2'
+
+[[node]]
+id = "algorithm_5_4_1"
+kind = "definition"
+desc = '''Algorithm 5.4.1 (Householder QR with column pivoting), as printed (with `house`'s `β` fix):
+`c(j) = A(:, j)ᵀ A(:, j)` (Algorithm 1.1.1); `r = 0`; `τ = max c`; while `τ > 0 ∧ r < n`: `r += 1`,
+`k` = the smallest index `≥ r` with `c(k) = τ`, `piv(r) = k`, swap columns `r, k` of `A` and entries
+of `c` (copies), `(v, β_r) ← houseOn rnd (rows r) (A.col r)`,
+`A ← householderApplyLeft rnd v β_r (rows r) (cols r) A` (index lists `rows r = [r, …, m-1]`,
+`cols r = [r, …, n-1]`, convention 10), store `v(2:)` (copies),
+`c(i) ← rnd (c(i) - rnd (A(r, i) * A(r, i)))` for `i > r`, `τ ← max c(r+1:n)`. The `while` is a fold
+over `Fin n` with a "stopped" flag in the state (`r < m` is automatic while `τ > 0`, and is guarded).
+Returns `(A, β, piv, r)`. Comparisons (`c(k) = τ`, `τ > 0`, the `max`) act exactly on computed values;
+every arithmetic result, including the norm downdates feeding them, is rounded (convention 1). ★★'''
+deps = ["houseOn", "householderApplyLeft", "GolubVanLoan.Chapter01.algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.1'
+
+[[node]]
+id = "algorithm_5_4_1_spec"
+kind = "theorem"
+desc = '''In exact arithmetic, with `(A', β, piv, r) := Id.run (algorithm_5_4_1 pure A)`: `r = rank A`, and
+with `Π` the product of the transpositions `(j, piv j)`, `Q = factoredQ β A'` (first `r` reflectors,
+the returned `β`)
+and `R = upperPart A'` with rows `≥ r` set to `0`: `Matrix.IsPivotedQR.IsRankRevealing A Q R Π r`
+(so `Matrix.IsPivotedQR A Q R Π` with `R₁₁` nonsingular) — the factorization (5.4.6). Invariant (5.4.7): after `k` steps `R^{(k)} = H_k ⋯ H₁ A Π₁ ⋯ Π_k` with
+`R₁₁^{(k)}` upper triangular nonsingular, and `c(j) = ‖z_j^{(k)}‖²` (`norm_sq_tail_eq`); the loop
+stops exactly when the trailing block `R₂₂^{(k)}` is `0`, i.e. `k = rank A`. ★★★ (~300 lines)'''
+deps = ["algorithm_5_4_1", "houseOn_spec", "householderApplyLeft_spec", "norm_sq_tail_eq", "factoredQ", "upperPart", "Matrix.IsPivotedQR", "Matrix.IsPivotedQR.IsRankRevealing"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.1'
+
+[[node]]
+id = "sigma_succ_le_of_colPivot"
+kind = "theorem"
+desc = '''§5.4.3, the termination criterion: if `R̂^{(k)} = [R̂₁₁ R̂₁₂; 0 R̂₂₂]` is the exact R-factor of
+`A + E_k` (`Q R̂^{(k)} = (A + E_k) Π` with `Q` orthogonal), `‖E_k‖₂ ≤ ε₂ ‖A‖₂` and
+`‖R̂₂₂‖₂ ≤ ε₁ ‖A‖₂`, then `σ_{k+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂`: `σ_{k+1}(A + E_k) = σ_{k+1}(R̂^{(k)}) ≤ ‖R̂₂₂‖₂`
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`; the book cites Corollary 2.4.4) and
+`σ_{k+1}(A) ≤ σ_{k+1}(A + E_k) + ‖E_k‖₂` (Weyl, chapter 8's `LinearMap.abs_singularValues_sub_le`). ★★'''
+deps = [
+  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
+  "GolubVanLoan.Chapter02.corollary_2_4_4",
+  "LinearMap.abs_singularValues_sub_le",  # ch08 (Numlib/Analysis/InnerProductSpace/SingularValues)
+]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
+
+[[node]]
+id = "kahanMatrix"
+kind = "definition"
+desc = '''§5.4.3, the Kahan matrix `Kah_n(s) = diag(1, s, …, s^{n-1}) T` with `T` unit upper triangular,
+`T i j = -c` for `i < j` (`c² + s² = 1`, `c, s > 0`): `kahanMatrix n c s i j = s ^ (i : ℕ) *
+(if i = j then 1 else if i < j then -c else 0)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
+
+[[node]]
+id = "kahanMatrix_unaltered"
+kind = "theorem"
+desc = '''§5.4.3: "These matrices are unaltered by Algorithm 5.4.1 and thus `‖R₂₂^{(k)}‖₂ ≥ s^{n-1}`":
+every column of `Kah_n(s)` has unit 2-norm (`c²(1 + s² + ⋯ + s^{2(j-2)}) + s^{2(j-1)} = 1`), so with
+the smallest-index tie rule no column is swapped; each subcolumn is `[x₁; 0]` with `x₁ > 0`, so
+`house` returns `β = 0`; the trailing block after `k` steps is `s^k Kah_{n-k}(s)` with equal column
+norms again. Hence `Id.run (algorithm_5_4_1 pure (kahanMatrix n c s))` returns the matrix itself,
+`piv = id`, `r = n`, and `‖R₂₂^{(k)}‖₂ ≥ |R n n| = s^{n-1}`. ★★ (~150 lines)'''
+deps = ["kahanMatrix", "algorithm_5_4_1", "houseOn_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
+
+[[node]]
+id = "theorem_5_4_1"
+kind = "theorem"
+desc = '''Theorem 5.4.1: for `A ∈ ℝ^{m×n}` (`m ≥ n ≥ 1`) and a unit vector `v`, there is a permutation `Π`
+such that the QR factorization `A Π = Q R` satisfies `|r_nn| ≤ √n σ`, `σ = ‖A v‖₂`. Backbone
+`Matrix.exists_perm_isQR_abs_le` (over `RCLike 𝕜`, concluding `‖R last last‖ ≤ √n ‖A v‖₂`) at `𝕜 = ℝ`,
+where `‖·‖ = |·|` (`Real.norm_eq_abs`). The remark "if `v = v_n` then `|r_nn| ≤ √n σ_n`" is the instance
+`‖A v_n‖ = σ_n` (a second declaration). ★'''
+deps = ["Matrix.exists_perm_isQR_abs_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.4.1'
+
+[[node]]
+id = "givensRevealUpdate"
+kind = "definition"
+desc = '''§5.4.5, the zero-chasing update (displayed for `n = 4`, "the pattern is clear"): given
+`A Z = Q R` and a unit `v`, for `i = 1:n-1`: a "flipped" rotation `G_{i,i+1}` (Algorithm 5.1.3 with
+the roles of the entries exchanged, "a slight modification") zeroing `v_i` against `v_{i+1}`,
+`R ← R G_{i,i+1}` (`givensApplyRight rnd i (i+1) c s rows R`), `v ← G_{i,i+1}ᵀ v`; then a
+conventional `H_{i,i+1}` zeroing the new `r_{i+1,i}`, `R ← H_{i,i+1}ᵀ R` (`givensApplyLeft rnd i (i+1) c s
+cols R`); the accumulations `Z_G`, `Q_G` by `givensApplyRight` on all rows. Returns
+`(R_new, v_new, Z_G, Q_G)`. ★★'''
+deps = ["algorithm_5_1_3", "givensApplyLeft", "givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.5'
+
+[[node]]
+id = "givensRevealUpdate_spec"
+kind = "theorem"
+desc = '''In exact arithmetic: `R_new = Q_Gᵀ R Z_G` is upper triangular, `Z_G`, `Q_G` are orthogonal
+products of rotations in adjacent planes, `Z_Gᵀ v = ± e_n` (`‖v‖ = 1`), hence (the book's display)
+`‖R_new e_n‖₂ = ‖R v‖₂`, and `A Z_new = Q_new R_new` with `Z_new = Z Z_G`, `Q_new = Q Q_G`. Invariant:
+after step `i`, `v` is zero in positions `≤ i` and `R` is upper triangular. ★★★ (~180 lines)'''
+deps = ["givensRevealUpdate", "algorithm_5_1_3_spec", "givensApplyLeft_spec", "givensApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.5'
+
+[[node]]
+id = "equation_5_4_10"
+kind = "theorem"
+desc = '''(5.4.10) (Stewart, URV): for `Uᵀ A V = R = [R₁₁ R₁₂; 0 R₂₂]` (blocks `k`, `n - k`),
+`V = [V₁ | V₂]`, `σ_k(A) > σ_{k+1}(A)`, `S` the span of the right singular vectors `v_{k+1}, …, v_n`
+of `A`, `ρ_R = ‖R₂₂‖₂/σ_min(R₁₁) < 1`: `dist(ran V₂, S) ≤ ‖R₁₂‖₂ / ((1 - ρ_R²) σ_min(R₁₁))`.
+`dist` is `Submodule.gap` (`‖P₁ - P₂‖₂`, chapter 2's §2.5.3); backbone `Matrix.gap_le_of_urv`, whose
+hypothesis is the bundle `Matrix.IsURV A U R V` (`U`, `V` orthogonal — `unitaryGroup` at `ℝ` — `Uᵀ A V = R`
+upper triangular), assembled from the book's data; `σ_min(R₁₁)` is `R₁₁.sortedSingularValues (k - 1)`.
+The trailing-block step `σ_{k+1}(R) ≤ ‖R₂₂‖₂` is `Matrix.sortedSingularValues_le_l2_opNorm_trailing`
+(its second declaration `…_trailing_lower` is the ULV shape of (5.4.11)).
+Stated without proof by the book. ★'''
+deps = ["Matrix.gap_le_of_urv", "Matrix.IsURV", "Submodule.gap"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.10)'
+
+[[node]]
+id = "equation_5_4_11"
+kind = "theorem"
+desc = '''(5.4.11) (Stewart, ULV), with the printed `‖L₁₂‖₂` corrected to `‖L₂₁‖₂` (`L` is lower triangular):
+for `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`, `ρ_L = ‖L₂₂‖₂/σ_min(L₁₁) < 1`:
+`dist(ran V₂, S) ≤ ρ_L ‖L₂₁‖₂ / ((1 - ρ_L²) σ_min(L₁₁))`. Backbone `Matrix.gap_le_of_ulv`, with the
+hypothesis bundled as `Matrix.IsULV A U L V` (`U`, `V` orthogonal, `Uᵀ A V = L` lower triangular) and
+`σ_min(L₁₁) = L₁₁.sortedSingularValues (k - 1)`. ★'''
+deps = ["Matrix.gap_le_of_ulv", "Matrix.IsULV", "Submodule.gap"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.11)'
+
+[[node]]
+id = "equation_5_4_12"
+kind = "theorem"
+desc = '''(5.4.12): every `A ∈ ℝ^{m×n}` has a complete orthogonal decomposition `Uᵀ A V = [T₁₁ 0; 0 0]`
+with `T₁₁` nonsingular `r × r`, `r = rank A`; the SVD is one; and for any such, `ran(A) =
+span{u₁, …, u_r}`, `null(A) = span{v_{r+1}, …, v_n}`. Backbone `Matrix.exists_isCompleteOrthogonal`,
+`Matrix.isCompleteOrthogonal_of_svd`, `Matrix.IsCompleteOrthogonal.range_eq_span`,
+`Matrix.IsCompleteOrthogonal.rank_eq`. ★'''
+deps = ["Matrix.exists_isCompleteOrthogonal", "Matrix.isCompleteOrthogonal_of_svd", "Matrix.IsCompleteOrthogonal.range_eq_span", "Matrix.IsCompleteOrthogonal.rank_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.12)'
+
+[[node]]
+id = "completeOrthogonalDecomposition"
+kind = "definition"
+desc = '''§5.4.7, the two-step construction (unnumbered): Algorithm 5.4.1 gives `Uᵀ A Π = [R₁₁ R₁₂; 0 0]`;
+Algorithm 5.2.1 on `[R₁₁ R₁₂]ᵀ` (`n × r`) gives `Qᵀ [R₁₁ R₁₂]ᵀ = [S₁; 0]`; `V = Π Q`, `T₁₁ = S₁ᵀ`.
+Returns `(U, V, r)` with `U`, `V` accumulated from the two programs' reflector data
+(`storedReflectors` with the returned `β`, `backwardAccumulation`; convention 13). ★'''
+deps = ["algorithm_5_4_1", "algorithm_5_2_1", "storedReflectors", "backwardAccumulation"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.7'
+
+[[node]]
+id = "completeOrthogonalDecomposition_spec"
+kind = "theorem"
+desc = '''In exact arithmetic, `Matrix.IsCompleteOrthogonal A U V r` for the output (with `r = rank A`),
+from `algorithm_5_4_1_spec` and `algorithm_5_2_1_spec` (the triangular factor of a full-column-rank
+`r`-column matrix has a nonsingular leading block). ★★'''
+deps = ["completeOrthogonalDecomposition", "algorithm_5_4_1_spec", "algorithm_5_2_1_spec", "backwardAccumulation_spec", "Matrix.IsCompleteOrthogonal"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.7'
+
+[[node]]
+id = "equation_5_4_13"
+kind = "theorem"
+desc = '''(5.4.13): for `A ∈ ℝ^{m×n}`, `m ≥ n`, there are orthogonal `U_B`, `V_B` with `U_Bᵀ A V_B` upper
+bidiagonal (`d_i` on the diagonal, `f_i` above). Backbone `Matrix.exists_isBidiagonalization`
+(itself `Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`). ★'''
+deps = ["Matrix.exists_isBidiagonalization", "Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.13)'
+
+[[node]]
+id = "algorithm_5_4_2"
+kind = "definition"
+desc = '''Algorithm 5.4.2 (Householder bidiagonalization; the second call printed "ho se"), `m ≥ n`:
+for `j = 1:n`: `(u, β_j) ← houseOn rnd (rows j) (A.col j)`, `A ← householderApplyLeft rnd u β_j
+(rows j) (cols j) A`, store `u(2:)` in `A(j+1:m, j)`; if `j ≤ n - 2`: `(w, γ_j) ← houseOn rnd
+(cols (j+1)) (A j)` (the row `A(j, j+1:n)` as the function `A j` on the column list — no transpose
+copy, convention 10), `A ← householderApplyRight rnd w γ_j (rows j) (cols (j+1)) A`, store `w(2:)ᵀ` in
+`A(j, j+2:n)` (copies). Returns the array and both `β` vectors (the returned `β`, convention 13). ★★'''
+deps = ["houseOn", "householderApplyLeft", "householderApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.2'
+
+[[node]]
+id = "algorithm_5_4_2_spec"
+kind = "theorem"
+desc = '''With the output array `A'` and the two factored forms `U_B = U₁ ⋯ U_n = factoredQ β A'` (column
+vectors) and `V_B = V₁ ⋯ V_{n-2} = householderProduct` of the row-stored vectors with the returned
+`γ` (`storedReflectors` of the shifted transpose): `Matrix.IsBidiagonalization A U_B V_B B` where `B` is the
+bidiagonal part of `A'` (diagonal and superdiagonal). Invariant as in `algorithm_5_2_1_spec`, with
+the right reflectors acting on columns `≥ j + 1` and therefore not disturbing column `j`. ★★★
+(~250 lines)'''
+deps = ["algorithm_5_4_2", "houseOn_spec", "householderApplyLeft_spec", "householderApplyRight_spec", "factoredQ", "householderProduct", "Matrix.IsBidiagonalization"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.2'
+
+[[node]]
+id = "rBidiagonalization"
+kind = "definition"
+desc = '''§5.4.9, `R`-bidiagonalization (unnumbered): Algorithm 5.2.1 for `Qᵀ A = [R₁; 0]`, then Algorithm
+5.4.2 on the square `R₁`, `U_B = Q diag(U_R, I_{m-n})`; and `rBidiagonalization_spec` (same node):
+`Matrix.IsBidiagonalization A U_B V_B [B₁; 0]` in exact arithmetic, by
+`Matrix.IsBidiagonalization.of_isQR`. ★★'''
+deps = ["algorithm_5_2_1_spec", "algorithm_5_4_2_spec", "Matrix.IsBidiagonalization.of_isQR"]
+source = 'Golub–Van Loan, Matrix Computations, §5.4.9'

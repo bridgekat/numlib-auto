@@ -10,7 +10,7 @@ problems with resolvents `Gn n`. Everything is `Prop`-valued predicates and `ℝ
 quantities on these plain functions, never a bundle of data: a problem *is* well posed, a method
 *is* consistent, stable, convergent; a datum *has* a condition number, possibly `⊤`.
 
-Three modules:
+Four modules:
 
 * `Conditioning/Problem` — well-posedness, the absolute and relative condition numbers as suprema
   of amplification ratios over a set of admissible perturbations, their limit as the perturbation
@@ -24,6 +24,12 @@ Three modules:
   numerical resolvents, with a Lipschitz variant and the asymptotic condition number),
   convergence, the relations between them ending in the abstract equivalence theorem, and the
   backward error with "forward error ≤ condition number × backward error".
+* `Conditioning/LeastSquares` — the least-squares problem `min ‖A x - b‖₂` and the minimal-norm
+  solution of an underdetermined system: exact perturbation identities for `A⁺ b` and its
+  residual, the rigorous (non-first-order) forms of [golub2013matrix] Theorems 5.3.1 and 5.6.1,
+  the derivative formulas (5.3.15), (5.6.2), and the accuracy of the normal equations (5.3.4).
+  Its matrix vocabulary (`Matrix.pinv`, `Matrix.pinvCondNumberLp`) is
+  `Numlib/LinearAlgebra/Matrix/{LeastSquares,SVD}` and `Numlib/Analysis/Matrix/SingularValues`.
 
 Design rules: condition numbers take values in `ℝ≥0∞` so that an ill-conditioned datum has
 condition number `⊤` rather than a junk value, and so that no `BddAbove` side condition is ever

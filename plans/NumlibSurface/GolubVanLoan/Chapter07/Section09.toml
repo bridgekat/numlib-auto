@@ -1,0 +1,226 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.9, pseudospectra: matrix powers and the spectral radius ((7.9.1)–(7.9.3), the `2 × 2` bound), the
+`ε`-pseudospectrum and its three definitions ((7.9.5)–(7.9.7)), monotonicity and the connected
+components, the elementary properties (Theorems 7.9.1–7.9.8 with Corollaries 7.9.3, 7.9.5, 7.9.7),
+computing `σ_min(zI - A)` through a Schur form (§7.9.5), the pseudospectral abscissa and radius
+((7.9.8)–(7.9.9)), the Hamiltonian eigenvalue test (7.9.10), and transient growth (7.9.11).
+
+Complex `A : Matrix (Fin n) (Fin n) ℂ`, 2-norm (scoped `Matrix.Norms.L2Operator`),
+`σ_min(M) = ⨅ i, M.singularValues i` (backbone `Matrix.singularValues`, and the staged SVD bridge
+`Matrix.iInf_singularValues_eq_iInf_norm`). The surface defines `pseudospectrum ε A` literally by
+(7.9.5), `{z | σ_min(A - z I) ≤ ε}` (the book writes `λ` for `z` inside the set-builder, a misprint),
+and proves it equal to the backbone's `(toEuclideanCLM A).closedPseudospectrum ε` (the approximate
+eigenvector form; `Numlib/Eigen/Pseudospectrum`). The resolvent form (7.9.6) is stated for `ε > 0` and
+`z ∉ λ(A)` separately from `λ(A) ⊆ Λ_ε(A)`, since `‖(zI - A)⁻¹‖ ≥ 1/ε` has no meaning at an eigenvalue
+(Lean's `Ring.inverse` returns `0` there).
+
+Not formalized here: (7.9.4) (it repeats (7.9.1) and adds "`A^k` may grow substantially before
+exponential decay sets in", which is illustrated, not stated); the three Eigtool plots and the Kahan,
+Demmel and `Gallery(5)` matrices (numerical illustrations; the eigenvalues of `Kah_n(s)` are read off
+its triangular form but nothing is claimed about them beyond the pictures); the strategies 1–3 of
+§7.9.5 for computing pseudospectra and the Burke–Lewis–Overton and Mengi–Overton algorithms (no
+statements); "`σ_min(zI - T) ≈ 1/‖y‖₂` if `d` has a significant component along `u_min`" (heuristic).
+'''
+
+[[node]]
+id = "equation_7_9_1"
+kind = "theorem"
+desc = '''(7.9.1), rigorous: for every `ε > 0` there is `C` with `‖A^k‖₂ ≤ C (ρ(A) + ε)^k` for all `k`, and
+`‖A^k‖₂^{1/k} → ρ(A)` (Gelfand); so if `ρ(A) < 1` then `A^k → 0` and the decay is "like `ρ(A)^k`" in this
+sense. `Matrix.exists_inducedNorm_le_spectralRadius_add` (the book's P7.3.7 route) and
+`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`; `spectralRadius` of Section 1. ★'''
+deps = ["Matrix.exists_inducedNorm_le_spectralRadius_add", "GolubVanLoan.Chapter07.spectralRadius"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.1)'
+
+[[node]]
+id = "two_by_two_power_bound"
+kind = "theorem"
+desc = '''§7.9.1: for `A = [λ₁ M; 0 λ₂]` with `M > 0`, (a) `‖A^k‖₂ → 0` iff `|λ₁| < 1` and `|λ₂| < 1`; (b)
+`‖A^k‖₂ ≤ (M/ε)(ρ(A) + ε)^k` for all `k` and every `0 < ε ≤ M` — the book says "for any `ε > 0`", but at
+`k = 0` the bound reads `1 ≤ M/ε`, false for `ε > M` (report, Doubts). From Lemma 7.3.2 with `n = 2`,
+`1 + μ = M/ε` (the book cites it as "Lemma 7.3.1"). ★★'''
+deps = ["GolubVanLoan.Chapter07.lemma_7_3_2", "GolubVanLoan.Chapter07.equation_7_9_1"]
+source = 'Golub–Van Loan, Matrix Computations, §7.9.1'
+
+[[node]]
+id = "equation_7_9_2"
+kind = "theorem"
+desc = '''(7.9.2): for `λ₁ ≠ λ₂`, `[λ₁ M; 0 λ₂] = X diag(λ₁, λ₂) X⁻¹` with `X = [1 M/(λ₂ - λ₁); 0 1]`. `Matrix.inv_fin_two`-level
+computation (or `lemma_7_1_5_blockDiagonal` with `Z = M/(λ₂ - λ₁)`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.2)'
+
+[[node]]
+id = "equation_7_9_3"
+kind = "theorem"
+desc = '''(7.9.3): `[λ₁ M; 0 λ₂]^k = [λ₁^k, M ∑_{j=0}^{k-1} λ₁^{k-1-j} λ₂^j; 0, λ₂^k]` (induction on `k`;
+no hypothesis `λ₁ ≠ λ₂` is needed, although the book derives it from (7.9.2)). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.3)'
+
+[[node]]
+id = "pseudospectrum"
+kind = "definition"
+desc = '''(7.9.5): `pseudospectrum ε A = {z : ℂ | ⨅ i, (A - z • 1).singularValues i ≤ ε}`, with the bridge
+`pseudospectrum_eq : pseudospectrum ε A = (toEuclideanCLM A).closedPseudospectrum ε` for `n ≥ 1`
+(`Matrix.mem_closedPseudospectrum_iff_iInf_singularValues`, `σ_min(A - z) = σ_min(z - A)`). An
+`ε`-pseudoeigenvalue is a member; an `ε`-pseudoeigenvector a unit `v` with `‖(A - λ I) v‖₂ = ε`. ★'''
+deps = ["ContinuousLinearMap.closedPseudospectrum", "Matrix.mem_closedPseudospectrum_iff_iInf_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.5)'
+
+[[node]]
+id = "pseudospectrum_zero"
+kind = "theorem"
+desc = '''§7.9.2: `Λ₀(A) = Λ(A)` (`pseudospectrum 0 A = spectrum ℂ A`); and §7.9.3: `ε₁ ≤ ε₂ → Λ_{ε₁} ⊆ Λ_{ε₂}`.
+`ContinuousLinearMap.closedPseudospectrum_zero`, `ContinuousLinearMap.closedPseudospectrum_mono`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.closedPseudospectrum_zero", "ContinuousLinearMap.closedPseudospectrum_mono"]
+source = 'Golub–Van Loan, Matrix Computations, §7.9.2'
+
+[[node]]
+id = "equation_7_9_6"
+kind = "theorem"
+desc = '''(7.9.6): for `ε > 0`, `z ∈ Λ_ε(A) ↔ z ∈ λ(A) ∨ ‖(z I - A)⁻¹‖₂ ≥ 1/ε` (the book's resolvent set, with the
+eigenvalues included explicitly). `ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.6)'
+
+[[node]]
+id = "equation_7_9_7"
+kind = "theorem"
+desc = '''(7.9.7): `z ∈ Λ_ε(A) ↔ ∃ E, ‖E‖₂ ≤ ε ∧ z ∈ λ(A + E)`.
+`ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add` through `toEuclideanCLM`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.7)'
+
+[[node]]
+id = "pseudospectrum_component"
+kind = "theorem"
+desc = '''§7.9.3: "each connected component of `Λ_ε(A)` contains at least one eigenvalue of `A`" (for `ε > 0`).
+`ContinuousLinearMap.exists_mem_spectrum_mem_connectedComponentIn`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.exists_mem_spectrum_mem_connectedComponentIn"]
+source = 'Golub–Van Loan, Matrix Computations, §7.9.3'
+
+[[node]]
+id = "theorem_7_9_1"
+kind = "theorem"
+desc = '''Theorem 7.9.1: for `α β : ℂ`, `Λ_{ε|β|}(α I + β A) = α + β · Λ_ε(A)` — for `β ≠ 0`
+(`ContinuousLinearMap.closedPseudospectrum_smul_add`); at `β = 0` both sides are `{α}` when `n ≥ 1`
+and `ε ≥ 0` (a separate clause). The book's proof's first chain ends in `= Λ_ε(A)` for `α + Λ_ε(A)`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.closedPseudospectrum_smul_add"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.9.1'
+
+[[node]]
+id = "theorem_7_9_2"
+kind = "theorem"
+desc = '''Theorem 7.9.2: if `B = X⁻¹ A X` then `Λ_ε(B) ⊆ Λ_{ε κ₂(X)}(A)`. `Matrix.closedPseudospectrum_conj_subset`
+(the book's proof writes `X⁻¹ (zI - A)⁻¹ X⁻¹` for `X⁻¹ (zI - A)⁻¹ X`). ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_conj_subset"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.9.2'
+
+[[node]]
+id = "corollary_7_9_3"
+kind = "theorem"
+desc = '''Corollary 7.9.3: for unitary `X`, `Λ_ε(X⁻¹ A X) = Λ_ε(A)`. `Matrix.closedPseudospectrum_unitary_conj`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_unitary_conj"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.9.3'
+
+[[node]]
+id = "theorem_7_9_4"
+kind = "theorem"
+desc = '''Theorem 7.9.4: `Λ_ε(diag(λ₁, …, λ_n)) = {λ₁, …, λ_n} + Δ_ε` with `Δ_ε = closedBall 0 ε` (`n ≥ 1`, `ε ≥ 0`).
+`Matrix.closedPseudospectrum_diagonal` (`S + Δ_ε = ⋃ closedBall`). ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.9.4'
+
+[[node]]
+id = "corollary_7_9_5"
+kind = "theorem"
+desc = '''Corollary 7.9.5: if `A` is normal, `Λ_ε(A) = Λ(A) + Δ_ε`. `Matrix.closedPseudospectrum_of_isStarNormal`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_of_isStarNormal"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.9.5'
+
+[[node]]
+id = "theorem_7_9_6"
+kind = "theorem"
+desc = '''Theorem 7.9.6: for `T = [T₁₁ T₁₂; 0 T₂₂]` with square diagonal blocks, `Λ_ε(T₁₁) ∪ Λ_ε(T₂₂) ⊆ Λ_ε(T)`.
+`Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset` (reindexed to `Fin (p + q)`). ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.9.6'
+
+[[node]]
+id = "corollary_7_9_7"
+kind = "theorem"
+desc = '''Corollary 7.9.7: `Λ_ε(diag(T₁₁, T₂₂)) = Λ_ε(T₁₁) ∪ Λ_ε(T₂₂)`. `Matrix.closedPseudospectrum_fromBlocks_diagonal`. ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "Matrix.closedPseudospectrum_fromBlocks_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.9.7'
+
+[[node]]
+id = "theorem_7_9_8"
+kind = "theorem"
+desc = '''Theorem 7.9.8: for `z₀ ∉ λ(A)` and `ε ≥ 0` (`n ≥ 1`), `dist(z₀, Λ_ε(A)) ≥ 1/‖(z₀ I - A)⁻¹‖₂ - ε`
+(`Metric.infDist`); for `z₀ ∈ λ(A)` the book's left side is `0` and the right side `-ε` in the reading
+`1/‖(z₀I - A)⁻¹‖ = σ_min(z₀I - A) = 0`, which is the uniform statement
+`dist(z₀, Λ_ε(A)) ≥ σ_min(z₀ I - A) - ε`. `ContinuousLinearMap.le_infDist_closedPseudospectrum` (the
+book's proof with its Corollary 2.4.4). ★'''
+deps = ["GolubVanLoan.Chapter07.pseudospectrum", "ContinuousLinearMap.le_infDist_closedPseudospectrum", "Matrix.iInf_singularValues_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.9.8'
+
+[[node]]
+id = "sigmaMin_schur"
+kind = "theorem"
+desc = '''§7.9.5: for a Schur decomposition `Qᴴ A Q = T`, `σ_min(zI - A) = σ_min(zI - T)` (unitary invariance,
+`Matrix.iInf_singularValues_unitary_mul_mul`); and if `‖d‖₂ = 1` and `(zI - T) y = d` then
+`σ_min(zI - T) ≤ 1/‖y‖₂` (`‖(zI - T)(y/‖y‖)‖ = 1/‖y‖` and `Matrix.iInf_singularValues_mul_norm_le`). ★'''
+deps = ["Matrix.iInf_singularValues_unitary_mul_mul", "Matrix.iInf_singularValues_eq_iInf_norm"]
+source = 'Golub–Van Loan, Matrix Computations, §7.9.5'
+
+[[node]]
+id = "pseudospectralAbscissa"
+kind = "definition"
+desc = '''(7.9.8): `α_ε(A) = max_{z ∈ Λ_ε(A)} Re(z)` — `Matrix.pseudospectralAbscissa ε A`, attained
+(`Matrix.exists_eq_pseudospectralAbscissa_radius`) for `n ≥ 1`, `ε ≥ 0`. (Its boundary description
+"rightmost point on the boundary of `Λ_ε`" is the same number.) ★'''
+deps = ["Matrix.pseudospectralAbscissa", "Matrix.exists_eq_pseudospectralAbscissa_radius", "GolubVanLoan.Chapter07.pseudospectrum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.8)'
+
+[[node]]
+id = "pseudospectralRadius"
+kind = "definition"
+desc = '''(7.9.9): `ρ_ε(A) = max_{z ∈ Λ_ε(A)} |z|` — `Matrix.pseudospectralRadius ε A`, attained. ★'''
+deps = ["Matrix.pseudospectralRadius", "Matrix.exists_eq_pseudospectralAbscissa_radius", "GolubVanLoan.Chapter07.pseudospectrum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.9)'
+
+[[node]]
+id = "equation_7_9_10"
+kind = "theorem"
+desc = '''(7.9.10): for `θ r : ℝ` and `M = [i e^{iθ} Aᴴ, -ε I; ε I, i e^{-iθ} A]`, if `M [f; g] = (i r) [f; g]`
+with `[f; g] ≠ 0` then `(A - r e^{iθ} I)ᴴ (A - r e^{iθ} I) g = ε² g` (the book's computation) and `ε` is a
+singular value of `A - r e^{iθ} I` (for `ε ≠ 0`, `g ≠ 0`; `g = 0` forces `f = 0`); conversely every `r`
+with `ε` a singular value of `A - r e^{iθ} I` gives an eigenvalue `i r` of `M` (from a singular pair). Block
+computation and `Matrix.sq_singularValues`. ★★'''
+deps = ["Matrix.sq_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.10)'
+
+[[node]]
+id = "equation_7_9_10_max"
+kind = "theorem"
+desc = '''§7.9.6, "if `i r_max` is the largest pure imaginary eigenvalue of `M`, then `ε = σ_min(A - r_max e^{iθ} I)`"
+(stated "it can be shown"): for `ε > 0`, if `i r_max` is an eigenvalue of `M` and no `i r` with `r > r_max` is,
+then `σ_min(A - r_max e^{iθ} I) = ε`. Proof: `≤` from `equation_7_9_10`; if `<`, the continuous
+`r ↦ σ_min(A - r e^{iθ} I)` (`Matrix.iInf_singularValues_sub_le`) tends to `∞` and so takes the value `ε`
+at some `r > r_max` (intermediate value theorem), which by the converse of `equation_7_9_10` is an
+eigenvalue `i r` of `M`. Hence the intersection of the ray `{r e^{iθ}}` with the boundary of `Λ_ε(A)`
+farthest out is `r_max e^{iθ}`. ★★'''
+deps = ["GolubVanLoan.Chapter07.equation_7_9_10", "Matrix.iInf_singularValues_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, §7.9.6'
+
+[[node]]
+id = "equation_7_9_11"
+kind = "theorem"
+desc = '''(7.9.11) (Trefethen–Embree pp. 160–161): for `ε > 0`, `sup_{k ≥ 0} ‖A^k‖₂ ≥ (ρ_ε(A) - 1)/ε`, stated as
+`∀ M, (∀ k, ‖A^k‖₂ ≤ M) → (ρ_ε(A) - 1)/ε ≤ M` (if the powers are unbounded there is nothing to prove).
+`Matrix.pseudospectralRadius_sub_one_div_le_norm_pow`. The example's `ρ_ε(A) ≈ 1.0017` for `ε = 10⁻⁸` and
+`‖A^k‖₂ ≥ 1.7 × 10⁵` is numerical and not stated. ★'''
+deps = ["Matrix.pseudospectralRadius_sub_one_div_le_norm_pow", "GolubVanLoan.Chapter07.pseudospectralRadius"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.11)'

@@ -1,0 +1,191 @@
+namespace = "GolubVanLoan.Chapter01"
+desc = '''
+§1.2, structure and efficiency: bandwidth and the band terminology of Table 1.2.1, triangular
+matrix multiplication (Algorithm 1.2.1), the band- and symmetric-storage gaxpys (Algorithms
+1.2.2–1.2.3), permutation matrices `I_n(v,:)` and the three famous ones of §1.2.11 with (1.2.4).
+
+Bandwidth is the backbone's: `Matrix.HasLowerBandwidth`/`HasUpperBandwidth` (square, any linear
+order, `Numlib/LinearAlgebra/Matrix/Hessenberg`) and their rectangular `Fin` forms
+`HasLowerBandwidthRect`/`HasUpperBandwidthRect` (staged by ch01), which are the book's §1.2.1
+definition verbatim (`a_ij = 0` whenever `i > j + p`, resp. `j > i + q`, the same in 0- and
+1-based indexing).
+
+Storage schemes (1.2.1) `A.band(i − j + q + 1, j) = a_ij` and (1.2.2) `A.vec((n − j/2)(j − 1) + i) =
+a_ij` are not objects of their own (rule 5): each is the *hypothesis* of its algorithm's
+specification, relating the stored array to the matrix, and the specification says the
+storage-format algorithm computes the same gaxpy. In 0-based form (1.2.1) reads `Aband ⟨i + q − j, _⟩
+j = A i j` for `j ≤ i + q`, `i ≤ j + p`, and (1.2.2) reads `Avec ⟨j n − j (j + 1) / 2 + i, _⟩ = A i j` for `j
+≤ i` (derivation: `(n − (j+1)/2) j + (i + 1) − 1` with the book's `j ↦ j + 1`, `i ↦ i + 1`).
+
+A permutation matrix `I_n(v,:)` for a permutation vector `v` is Mathlib's `(v :
+Equiv.Perm (Fin n)).permMatrix ℝ`, whose `i`-th row is `e_{v(i)}ᵀ` and which acts by `permMatrix v
+*ᵥ x = x ∘ v` (`Matrix.permMatrix_mulVec`) — the book's `y = P x ⇒ y_i = x_{v_i}`. The exchange
+`E_n` is the backbone `Matrix.exchange` (`= Fin.revPerm.permMatrix`), the downshift `D_n` is the backbone `Matrix.downshift` (`(finRotate n).symm.permMatrix`; the
+book's `v = [(2:n) 1]` is wrong, see the chapter report), the perfect shuffle `P_{p,r}` is the
+backbone `Matrix.perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) ℝ` — all three in
+`Numlib/LinearAlgebra/Matrix/Permutation`.
+
+Not nodes: §1.2.4 (flop sums), §1.2.6 diagonal scaling (Mathlib `diagonal_mul`, `mul_diagonal`), the
+prose definitions of (skew-)symmetric and (skew-)Hermitian (Mathlib `IsSymm`, `IsHermitian`), the
+example (1.2.3), the index vectors of §1.2.9 (`v = 1:2:n` etc. are `Fin` maps).
+'''
+
+[[node]]
+id = "table_1_2_1"
+kind = "theorem"
+desc = '''Table 1.2.1 (band terminology), for `A : Matrix (Fin n) (Fin n) ℝ` (the shapes are backbone predicates
+on square matrices), as a conjunction: `A.IsDiag ↔ HasLowerBandwidth A 0 ∧ HasUpperBandwidth A 0`
+(`Matrix.isDiag_iff_hasBandwidth_zero`); upper triangular `↔` lower bandwidth `0` (upper bandwidth
+`n − 1` always holds, `hasUpperBandwidth_card_sub_one`) (`hasLowerBandwidth_zero_iff`); lower
+triangular `↔` upper bandwidth `0` (`hasUpperBandwidth_zero_iff`); tridiagonal `↔ (1, 1)`
+(`isTridiagonal_iff_hasBandwidth_one`); upper bidiagonal `→ (0, 1)`, lower bidiagonal `→ (1, 0)`
+(`IsUpperBidiagonal.hasBandwidth`, `IsLowerBidiagonal.hasBandwidth`; as `↔` where the backbone
+predicate is exactly the band condition — check the definitions); upper Hessenberg `↔` lower
+bandwidth `1` (`isUpperHessenberg_iff_hasLowerBandwidth_one`); lower Hessenberg (`Aᵀ` upper
+Hessenberg) `↔` upper bandwidth `1` (`hasUpperBandwidth_iff_transpose`). The book's `m × n` column
+is recorded in the doc: for rectangular matrices the triangular rows are
+`HasLowerBandwidthRect A 0`, `HasUpperBandwidthRect A 0`. ★★ (many small parts)'''
+deps = ["Matrix.isDiag_iff_hasBandwidth_zero", "Matrix.hasLowerBandwidth_zero_iff", "Matrix.hasUpperBandwidth_zero_iff", "Matrix.isTridiagonal_iff_hasBandwidth_one", "Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one", "Matrix.IsUpperBidiagonal", "Matrix.IsLowerBidiagonal", "Matrix.HasLowerBandwidthRect", "Matrix.HasUpperBandwidthRect"]
+source = 'Golub–Van Loan, Matrix Computations, Table 1.2.1'
+
+[[node]]
+id = "algorithm_1_2_1"
+kind = "definition"
+desc = '''Algorithm 1.2.1 (triangular matrix multiplication), D4: `algorithm_1_2_1 rnd (A B C : Matrix (Fin n) (Fin
+n) ℝ)`, loops `i ∈ finRange n`, `j ∈ (finRange n).filter (i ≤ ·)`, `k ∈ (finRange n).filter (fun k => i
+≤ k ∧ k ≤ j)`, body as Algorithm 1.1.5's (`C(i,j) = C(i,j) + A(i,k) B(k,j)`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.1'
+
+[[node]]
+id = "algorithm_1_2_1_spec"
+kind = "theorem"
+desc = '''For upper triangular `A`, `B` (`Matrix.BlockTriangular · id`, i.e. `A.IsUpperTriangular`):
+`Id.run (algorithm_1_2_1 pure A B C) = C + A * B`. Entries with `i ≤ j`: the abbreviated inner
+product `∑_{k=i}^{j} a_ik b_kj` equals `(A B) i j` because `a_ik b_kj = 0` for `k < i` or `j < k`
+(`Finset.sum_subset`); entries with `j < i` are untouched and `(A B) i j = 0`
+(`Matrix.BlockTriangular.mul`). The per-entry reduction is `algorithm_1_1_5_spec`'s, with
+`FloatingPoint.dotAccum_id` on the filtered list. ★★'''
+deps = ["algorithm_1_2_1", "List.foldl_apply_of_pi", "List.foldl_update_self", "FloatingPoint.dotAccum_id"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.1'
+
+[[node]]
+id = "algorithm_1_2_2"
+kind = "definition"
+desc = '''Algorithm 1.2.2 (band storage gaxpy), D4: `algorithm_1_2_2 rnd (p q : ℕ) (Aband : Matrix (Fin (p + q + 1))
+(Fin n) ℝ) (x y : Fin n → ℝ) : M (Fin n → ℝ)`; loop `j`, then over the band rows `i ∈ [max(0, j − q),
+min(n − 1, j + p)]` (a filtered `finRange n`), body `y(i) = y(i) + Aband(i − j + q, j) x(j)` with
+product and sum rounded. The index arithmetic `α₁, α₂, β₁, β₂` of the book is the filter and the
+map `i ↦ ⟨i + q − j, _⟩`; it is not rounded (integer arithmetic). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.2'
+
+[[node]]
+id = "algorithm_1_2_2_spec"
+kind = "theorem"
+desc = '''If `A : Matrix (Fin n) (Fin n) ℝ` has `Matrix.HasLowerBandwidth A p` and `HasUpperBandwidth A q` and
+`Aband` stores it as in (1.2.1) — `∀ i j (h₁ : (j : ℕ) ≤ i + q) (h₂ : (i : ℕ) ≤ j + p), Aband ⟨i + q −
+j, _⟩ j = A i j` — then `Id.run (algorithm_1_2_2 pure p q Aband x y) = y + A *ᵥ x`. As
+`algorithm_1_1_4_spec`, with the out-of-band terms of `(A x) i` zero by the bandwidth hypotheses
+(`Finset.sum_subset`). ★★'''
+deps = ["algorithm_1_2_2", "algorithm_1_1_4_spec", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth", "List.foldl_apply_of_pi"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.2'
+
+[[node]]
+id = "algorithm_1_2_3"
+kind = "definition"
+desc = '''Algorithm 1.2.3 (symmetric storage gaxpy), D4: `algorithm_1_2_3 rnd (Avec : Fin (n * (n + 1) / 2) → ℝ) (x
+y : Fin n → ℝ)`; loop `j`, then `i < j` with `y(i) = y(i) + Avec(i n − i(i+1)/2 + j) x(j)` and `j ≤ i`
+with `y(i) = y(i) + Avec(j n − j(j+1)/2 + i) x(j)` (0-based forms of the book's
+`(i−1)n − i(i−1)/2 + j` and `(j−1)n − j(j−1)/2 + i`); the index is formed in `ℕ` with a bound proof. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.3'
+
+[[node]]
+id = "algorithm_1_2_3_spec"
+kind = "theorem"
+desc = '''If `A` is symmetric (`A.IsSymm`) and `Avec` stores its lower triangle as in (1.2.2) — `∀ i j, j ≤ i →
+Avec ⟨j n − j (j + 1) / 2 + i, _⟩ = A i j` — then `Id.run (algorithm_1_2_3 pure Avec x y) = y + A *ᵥ x`.
+The first inner loop reads `A j i = A i j` by symmetry; the index bound `j n − j(j+1)/2 + i < n(n+1)/2`
+for `j ≤ i < n` is an `omega`/`Nat.div` lemma (a helper). ★★'''
+deps = ["algorithm_1_2_3", "algorithm_1_1_4_spec", "List.foldl_apply_of_pi"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.2.3'
+
+[[node]]
+id = "permutation_mulVec"
+kind = "theorem"
+desc = '''§1.2.8, §1.2.10: for a permutation `v : Equiv.Perm (Fin n)` and `P = I_n(v,:) = v.permMatrix ℝ`,
+`P *ᵥ x = x ∘ v` (`y = P x ⇒ y_i = x_{v_i}`) and `Pᵀ *ᵥ x = x ∘ v.symm` (`y = Pᵀ x ⇒ y(v) = x`);
+Mathlib `Matrix.permMatrix_mulVec`, `Matrix.transpose_permMatrix`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.2.10, Definition'
+
+[[node]]
+id = "permutation_transpose_mul_self"
+kind = "theorem"
+desc = '''§1.2.10: "the inverse of a permutation matrix is its transpose": `(v.permMatrix ℝ)ᵀ * v.permMatrix ℝ = 1`
+and `v.permMatrix ℝ * (v.permMatrix ℝ)ᵀ = 1`; `transpose_permMatrix`, `permMatrix_mul`,
+`permMatrix_one`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.2.10, Definition'
+
+[[node]]
+id = "permutation_mul_mul_transpose"
+kind = "theorem"
+desc = '''§1.2.10: `P A Qᵀ = A(v, w)` for `P = I_m(v,:)`, `Q = I_n(w,:)`, `A : Matrix (Fin m) (Fin n) ℝ`:
+`v.permMatrix ℝ * A * (w.permMatrix ℝ)ᵀ = A.submatrix v w`; and `I_n(v,:) · I_n(w,:) = I_n(w(v),:)`:
+`v.permMatrix ℝ * w.permMatrix ℝ = (v.trans w).permMatrix ℝ` (`w(v)` is `i ↦ w (v i)`, Mathlib's
+`permMatrix_mul` with `Equiv.Perm.mul_def`). `PEquiv.toMatrix_toPEquiv_mul`,
+`mul_toPEquiv_toMatrix`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.2.10, Definition'
+
+[[node]]
+id = "exchange_eq_permMatrix_rev"
+kind = "theorem"
+desc = '''§1.2.11: the exchange permutation `E_n = I_n(n:−1:1, :)` turns vectors upside down. It is the backbone's
+`Matrix.exchange n` (`Numlib/LinearAlgebra/Matrix/Permutation`, entries `if j =
+Fin.rev i then 1 else 0`); this node states the book's definition against it: `Matrix.exchange n =
+(Fin.revPerm : Equiv.Perm (Fin n)).permMatrix ℝ` (i.e. `I_n(v,:)` with `v = n:−1:1`) and `Matrix.exchange
+n *ᵥ x = x ∘ Fin.rev`. `Matrix.exchange_eq_permMatrix`, `Matrix.permMatrix_mulVec`. ★'''
+deps = ["Matrix.exchange", "Matrix.exchange_eq_permMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, §1.2.11, Definition'
+
+[[node]]
+id = "exchange_mul_self"
+kind = "theorem"
+desc = '''§1.2.11: `E_nᵀ E_n = E_n² = I_n`: `(Matrix.exchange n)ᵀ * Matrix.exchange n = 1` and `Matrix.exchange n *
+Matrix.exchange n = 1`; `Matrix.exchange_mul_exchange`. ★'''
+deps = ["exchange_eq_permMatrix_rev", "Matrix.exchange_mul_exchange"]
+source = 'Golub–Van Loan, Matrix Computations, §1.2.11, Definition'
+
+[[node]]
+id = "downshift"
+kind = "definition"
+desc = '''§1.2.11: the downshift permutation `D_n`, `downshift (n : ℕ) : Matrix (Fin n) (Fin n) ℝ := Matrix.downshift n`
+(the backbone's `((finRotate n).symm).permMatrix ℝ`, `Numlib/LinearAlgebra/Matrix/Permutation`), with `downshift n *ᵥ x = x ∘ (finRotate n).symm`, i.e. `(D_n x)_0 = x_{n−1}`,
+`(D_n x)_i = x_{i−1}` — as the book's displayed `D_4`. The book's formula `D_n = I_n(v,:)`, `v =
+[(2:n) 1]`, is the *upshift* `D_nᵀ` (chapter report, Doubts); the definition follows the display and
+the name. `D_nᵀ` as the upshift is `transpose_permMatrix`. ★'''
+deps = ["Matrix.downshift"]
+source = 'Golub–Van Loan, Matrix Computations, §1.2.11, Definition'
+
+[[node]]
+id = "perfectShuffle_mulVec_eq"
+kind = "theorem"
+desc = '''§1.2.11, the mod-`p` perfect shuffle: with `P_{p,r} = Matrix.perfectShuffle p r` and `n = p r`,
+`(P_{p,r} x)(a p + b) = x(b r + a)` for `a < r`, `b < p` — `y = [x(1:r:n); x(2:r:n); …; x(r:r:n)]`,
+the deck cut into `p` piles and dealt one card from each pile in turn (the book's `P_{3,4}`
+example). `Matrix.perfectShuffle_mulVec`, `Matrix.finPerfectShuffle_apply`. ★'''
+deps = ["Matrix.perfectShuffle", "Matrix.perfectShuffle_mulVec", "Matrix.finPerfectShuffle_apply"]
+source = 'Golub–Van Loan, Matrix Computations, §1.2.11, Definition'
+
+[[node]]
+id = "equation_1_2_4"
+kind = "theorem"
+desc = '''(1.2.4): `P_{p,r}ᵀ = I_n([(1:p:n) (2:p:n) ⋯ (p:p:n)], :)`, i.e. `(Matrix.perfectShuffle p r)ᵀ =
+Matrix.perfectShuffle r p` (the right side is `P_{r,p}` by definition — [the book's P1.2.12]);
+`Matrix.transpose_perfectShuffle`. ★'''
+deps = ["Matrix.transpose_perfectShuffle", "perfectShuffle_mulVec_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.2.4)'
+

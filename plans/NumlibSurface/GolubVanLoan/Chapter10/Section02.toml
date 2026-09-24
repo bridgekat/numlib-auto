@@ -1,0 +1,242 @@
+namespace = "GolubVanLoan.Chapter10"
+desc = '''
+§10.2, Lanczos, quadrature and approximation: `uᵀ f(A) u` as a Stieltjes integral against the spectral
+weight (10.2.2)–(10.2.6), the four Gauss-type rules (10.2.7)–(10.2.10) with their remainders and the
+two-sided bound, Facts 1–3 on orthogonal polynomials and Jacobi matrices with (10.2.11)–(10.2.12),
+the Lanczos polynomials (10.2.13) and the Gauss rule from `T_k`, the Gauss–Radau modification of §10.2.5
+and the framework of §10.2.6. Backbone: `Numlib/Krylov/{OrthogonalPolynomials, Quadrature}`,
+`Numlib/Approximation/{Quadrature, GaussLobatto, OrthogonalPolynomial}` with the staged Radau and Hermite
+remainder nodes. The Riemann–Stieltjes sums of §10.2.1 are replaced by `StieltjesFunction.measure` (chapter
+conventions). Two readings the book leaves implicit are made explicit: a *general* weight `w` on `[a, b]`
+is an `OrthogonalPolynomial.IsWeight` measure carried by `Icc a b` (infinitely supported, so every
+Gauss rule exists), while the spectral weight (10.2.5) is finitely supported and its rules exist only up
+to the grade of `u` — the Lanczos statements carry `k ≤ grade`. The Golub–Welsch weight formula of Fact 3
+for a general weight is not planned (the book uses Fact 3 only through §10.2.4; it would need the
+Christoffel numbers, ~250 backbone lines); Fact 3 is planned for the spectral weight, as (10.2.12).
+'''
+
+[[node]]
+id = "norm_error_sq_eq_residual"
+kind = "theorem"
+desc = '''§10.2 (display before §10.2.1): for symmetric positive definite `A`, `x* = A⁻¹ b`, `r = b − A x̂`:
+`‖x* − x̂‖₂² = rᵀ f(A) r` with `f(λ) = 1/λ²`, `f(A) = cfc (fun λ => λ⁻²) A`. Mathlib `cfc` of `λ ↦ λ⁻²`
+is `(A⁻¹)²` on a matrix with positive spectrum (`cfc_inv`/`cfc_pow`, `Matrix.PosDef.isUnit`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §10.2, error from residual'
+
+[[node]]
+id = "stepWeight"
+kind = "definition"
+desc = '''(10.2.2): for `λ : Fin n → ℝ` strictly decreasing (`λ_n < ⋯ < λ_1`, 0-based `λ 0` largest) and
+`w : Fin (n + 1) → ℝ` antitone and nonnegative (`0 ≤ w_{n+1} ≤ ⋯ ≤ w_1`), the right-continuous step
+function `stepWeight λ w : StieltjesFunction` with value `w_{n+1}` below `λ_n`, `w_μ` on `[λ_μ, λ_{μ−1})`
+and `w_1` from `λ_1` on (monotone and right-continuous: a finite sum of shifted Heaviside functions
+`∑_μ (w_μ − w_{μ+1}) 𝟙[λ_μ, ∞)` plus the constant `w_{n+1}`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.2)'
+
+[[node]]
+id = "equation_10_2_3"
+kind = "theorem"
+desc = '''(10.2.3): `∫ x in Icc a b, f x ∂(stepWeight λ w).measure = ∑ μ, (w_μ − w_{μ+1}) f(λ_μ)` for
+`a = λ_n`, `b = λ_1` and every `f` (the measure is `∑_μ (w_μ − w_{μ+1}) δ_{λ_μ}`: Mathlib
+`StieltjesFunction.measure_singleton` gives the atoms, and the complement of the atoms has measure
+`0` because the function is constant between them, `StieltjesFunction.measure_Ioc`). ★★ (~80 lines)'''
+deps = ["stepWeight"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.3)'
+
+[[node]]
+id = "spectralWeight"
+kind = "definition"
+desc = '''(10.2.5): for symmetric `A` with (10.2.4) `A = X Λ Xᵀ` and `u`, the weight `w_μ = [Xᵀu]_μ² + ⋯ + [Xᵀu]_n²`,
+read as the `StieltjesFunction` `spectralWeight hA u : x ↦ ∑_{i : λ_i ≤ x} [Xᵀu]_i²` (with the eigenvalues
+and eigenvectors of the chapter conventions). This formulation needs no distinctness of the
+eigenvalues, which (10.2.2) assumes; for distinct eigenvalues it is `stepWeight` with (10.2.5)'s `w`.
+Its measure is the backbone `Krylov.spectralMeasure hA' hn u` (`StieltjesFunction.measure` of a finite
+sum of Heavisides). ★'''
+deps = ["stepWeight", "Krylov.spectralMeasure"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.5)'
+
+[[node]]
+id = "equation_10_2_6"
+kind = "theorem"
+desc = '''(10.2.6): `uᵀ f(A) u = ∑_μ [Xᵀu]_μ² f(λ_μ) = ∫ f d(spectralWeight hA u).measure` for every `f : ℝ → ℝ`,
+`f(A) = cfc f A`. Backbone `Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure` (with Mathlib
+`Matrix.IsHermitian.cfc_eq` for the middle expression) and the identification of the two measures in
+`spectralWeight`. ★'''
+deps = ["spectralWeight", "Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure", "Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.6)'
+
+[[node]]
+id = "equation_10_2_7"
+kind = "theorem"
+desc = '''(10.2.7), the Gauss rule: for a weight `μ` (`OrthogonalPolynomial.IsWeight μ`) and `k`, there are distinct
+nodes `t : Fin k → ℝ` and weights `w` (positive) with `∫ p dμ = ∑ w_i p(t_i)` for every real polynomial of
+degree `≤ 2k − 1`. Backbone `Quadrature.exists_gauss`. ★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.IsWeight"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.7)'
+
+[[node]]
+id = "equation_10_2_8"
+kind = "theorem"
+desc = '''(10.2.8), the Gauss–Radau(a) rule: for a weight `μ` carried by `Icc a b` and `k`, there are weights
+`w_a, w_1, …, w_k` and distinct nodes `t_1, …, t_k ∈ (a, b]` with `∫ p dμ = w_a p(a) + ∑ w_i p(t_i)` for every
+polynomial of degree `≤ 2k`. Staged backbone `Quadrature.exists_gaussRadau` (node `a` first, `n = k`). ★'''
+deps = ["Quadrature.exists_gaussRadau"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.8)'
+
+[[node]]
+id = "equation_10_2_9"
+kind = "theorem"
+desc = '''(10.2.9), the Gauss–Radau(b) rule: the same with the prescribed node `b`. `Quadrature.exists_gaussRadau` for
+the reflected weight `μ.map (−·)` (carried by `Icc (−b) (−a)`) and `Quadrature.isExactOnMeasure_map_affine`. ★'''
+deps = ["equation_10_2_8", "Quadrature.isExactOnMeasure_map_affine"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.9)'
+
+[[node]]
+id = "equation_10_2_10"
+kind = "theorem"
+desc = '''(10.2.10), the Gauss–Lobatto rule: nodes `a`, `b` and `k` interior nodes, exact to degree `2k + 1`, for a weight
+carried by `Icc a b` (`a < b`). Backbone `Quadrature.exists_gaussLobatto` on `[−1, 1]` (with `n = k + 1`,
+exactness `2n − 1 = 2k + 1`) transported by the affine map `[−1, 1] → [a, b]`
+(`Quadrature.isExactOnMeasure_map_affine`). ★'''
+deps = ["Quadrature.exists_gaussLobatto", "Quadrature.isExactOnMeasure_map_affine"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.10)'
+
+[[node]]
+id = "gauss_remainder"
+kind = "theorem"
+desc = '''§10.2.2, `R_G`: for the rule of (10.2.7) on a weight carried by `Icc a b` and `f` of class `C^{2k}`,
+`∫ f dμ − I_G(f) = f^{(2k)}(η)/(2k)! ∫ ∏_i (λ − t_i)² dμ` for some `η ∈ [a, b]` (the book prints `(2n)!`;
+the rule has `k` nodes). Backbone `Quadrature.exists_gauss_error_eq` (its `normSq μ k` is `∫ ∏ (λ − t_i)² dμ`,
+the monic orthogonal polynomial being the nodal polynomial). The book's `a < η < b` (open) for the three
+other rules is proved with a closed interval here; the open form needs `f^{(N)}` strictly monotone
+information and is not claimed for `R_G` by the book. ★'''
+deps = ["equation_10_2_7", "Quadrature.exists_gauss_error_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.2, remainder of the Gauss rule'
+
+[[node]]
+id = "gaussRadau_remainder"
+kind = "theorem"
+desc = '''§10.2.2, `R_{GR(a)}` and `R_{GR(b)}`: for the rules of (10.2.8)–(10.2.9) and `f` of class `C^{2k+1}`,
+`∫ f dμ − I_{GR(a)}(f) = f^{(2k+1)}(η)/(2k+1)! ∫ (λ − a) ∏ (λ − t_i)² dμ`, likewise with `(λ − b)`, `η ∈ [a, b]`.
+Staged backbone `Quadrature.exists_error_eq_of_hermite` (multiplicity `1` at the endpoint, `2` elsewhere;
+the nodal polynomial has constant sign on `[a, b]`). ★'''
+deps = ["equation_10_2_8", "equation_10_2_9", "Quadrature.exists_error_eq_of_hermite"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.2, remainder of the Gauss–Radau rules'
+
+[[node]]
+id = "gaussLobatto_remainder"
+kind = "theorem"
+desc = '''§10.2.2, `R_{GL}` (printed `R_{GG}` in the list): for the rule of (10.2.10) and `f` of class `C^{2k+2}`,
+`∫ f dμ − I_{GL}(f) = f^{(2k+2)}(η)/(2k+2)! ∫ (λ − a)(λ − b) ∏ (λ − t_i)² dμ`, `η ∈ [a, b]`. Staged
+`Quadrature.exists_error_eq_of_hermite` (multiplicity `1` at both endpoints). ★'''
+deps = ["equation_10_2_10", "Quadrature.exists_error_eq_of_hermite"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.2, remainder of the Gauss–Lobatto rule'
+
+[[node]]
+id = "gauss_le_integral_le_gaussRadau"
+kind = "theorem"
+desc = '''§10.2.2: for `f(λ) = 1/λ²` and `0 < a < b`, `I_G(f) ≤ ∫ f dμ ≤ I_{GR(a)}(f)` (the rules of (10.2.7),
+(10.2.8) for a weight carried by `Icc a b`). Delegates to the backbone
+`Quadrature.gauss_le_integral_le_gaussRadau` (any finite measure carried by `[a, b]`, rules given by their
+exactness, `f` smooth on an open set containing `[a, b]`) with the weight rules of `equation_10_2_7` and
+`equation_10_2_8` (their nodes are distinct and lie in `[a, b]`, the Radau node `a` first). The sign
+hypotheses are `f^{(2k)} > 0` and `f^{(2k+1)} < 0` on `(0, ∞) ⊇ [a, b]` (`iteratedDeriv` of `x ↦ x⁻²`,
+Mathlib `iter_deriv_zpow`), and `x ↦ x⁻²` is smooth on the open `(0, ∞)`. The surface's own sign argument
+through the remainders (`gauss_remainder`, `gaussRadau_remainder`) is no longer needed. ★'''
+deps = ["Quadrature.gauss_le_integral_le_gaussRadau", "equation_10_2_7", "equation_10_2_8"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.2, bounds for f(λ) = 1/λ²'
+
+[[node]]
+id = "orthonormalPolynomials_threeTerm"
+kind = "theorem"
+desc = '''§10.2.3, Fact 1: for a weight `μ` there are polynomials `p_0, p_1, …` with `deg p_k = k`,
+`∫ p_i p_j dμ = δ_ij`, unique up to a factor `±1`, satisfying `γ_k p_k = (λ − ω_k) p_{k−1} − γ_{k−1} p_{k−2}`
+(`p_{−1} = 0`, `p_0` constant; the book writes `w_k` for `ω_k`). Backbone `OrthogonalPolynomial.orthonormalFamily`,
+`OrthogonalPolynomial.orthonormalFamily_recurrence`; the `±1` uniqueness from the monic uniqueness of
+`OrthogonalPolynomial.family` (orthogonality to lower degrees determines a polynomial up to a scalar). ★★'''
+deps = ["OrthogonalPolynomial.orthonormalFamily", "OrthogonalPolynomial.orthonormalFamily_recurrence", "OrthogonalPolynomial.IsWeight"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.3, Fact 1'
+
+[[node]]
+id = "roots_orthonormalPolynomial_eq_eigenvalues"
+kind = "theorem"
+desc = '''§10.2.3, Fact 2: the zeros of `p_k` are the eigenvalues of the Jacobi matrix `T_k` (diagonal `ω_i`, off-diagonal
+`γ_i`), and they are distinct. Backbone `OrthogonalPolynomial.charpoly_jacobiMatrix` (charpoly is the monic
+`family μ k`) and `OrthogonalPolynomial.exists_injective_family_eq_prod` (distinct real roots) — the book's
+appeal to Theorem 8.4.1 is replaced by the orthogonal-polynomial argument. ★'''
+deps = ["orthonormalPolynomials_threeTerm", "OrthogonalPolynomial.charpoly_jacobiMatrix", "OrthogonalPolynomial.exists_injective_family_eq_prod"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.3, Fact 2'
+
+[[node]]
+id = "equation_10_2_13"
+kind = "theorem"
+desc = '''§10.2.4 and (10.2.13): the Lanczos vectors are polynomials in `A` applied to `q₁`, `q_{j+1} = p_j(A) q₁` with
+`deg p_j = j` (0-based; the book's "`q_k = p_k(A) q₁` for some degree-`k` polynomial" is off by one), and
+`β_k p_{k+1}(λ) = (λ − α_k) p_k(λ) − β_{k−1} p_{k−1}(λ)` — the book prints `β_{k−1}²`, which is the recurrence
+of the *monic* polynomials `det(λ − T_k)`, not of these (Doubts). Backbone `Lanczos.poly`, `Lanczos.poly_add_two`,
+`Lanczos.aeval_poly`, `Lanczos.poly_degree` (before the grade). ★'''
+deps = ["Lanczos.poly", "Lanczos.poly_add_two", "Lanczos.aeval_poly", "Lanczos.poly_degree"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.13)'
+
+[[node]]
+id = "lanczosPolynomials_orthonormal"
+kind = "theorem"
+desc = '''§10.2.4, the chain after (10.2.13): with `q₁ = u/‖u‖`, `∫ p_i p_j dw = ‖u‖² q_iᵀ q_j`, i.e. the Lanczos polynomials
+are orthogonal for the spectral weight `w` of (10.2.5) and orthonormal after dividing by `‖u‖` (indices below the
+grade). Backbone `Lanczos.polyInner_poly`, `Krylov.polyInner_eq_integral`, with `equation_10_2_6` for the
+measure. ★'''
+deps = ["equation_10_2_13", "Lanczos.polyInner_poly", "Krylov.polyInner_eq_integral", "equation_10_2_6"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.4, orthogonality of the Lanczos polynomials'
+
+[[node]]
+id = "equation_10_2_12"
+kind = "theorem"
+desc = '''Fact 3 with (10.2.11)–(10.2.12), for the spectral weight: if `k ≤ grade`, `T_k` is the Lanczos matrix from
+`q₁ = u/‖u‖` and `Sᵀ T_k S = diag(θ_1, …, θ_k)`, the Gauss rule of `w` has nodes `θ_i` and weights `‖u‖² s_{1i}²`:
+`∫ p dw = ‖u‖² ∑ s_{1i}² p(θ_i)` for `deg p ≤ 2k − 1`. The book's weights `s_{1i}²` assume `∫ dw = 1`, i.e.
+`‖u‖ = 1` (Doubts). Backbone `Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag` and
+`Lanczos.gauss_quadrature`. ★'''
+deps = ["Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag", "Lanczos.gauss_quadrature", "equation_10_2_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.2.12)'
+
+[[node]]
+id = "lanczos_gaussRule"
+kind = "theorem"
+desc = '''§10.2.4, Steps 1–3: `σ = ‖u‖² (s_{11}² f(θ_1) + ⋯ + s_{1k}² f(θ_k))` computed from `k` Lanczos steps is the
+`k`-point Gauss rule `I_G(f)` of the spectral weight: it agrees with `uᵀ p(A) u` on polynomials of degree
+`≤ 2k − 1` and its error for `f` of class `C^{2k}` is `f^{(2k)}(η)/(2k)! ∫ π_k² dw` with `π_k = det(λ I − T_k)`,
+`η ∈ [λ_n, λ_1]`. Backbone `Lanczos.exists_gauss_error_eq` with `equation_10_2_12` and `equation_10_2_6`. ★'''
+deps = ["equation_10_2_12", "Lanczos.exists_gauss_error_eq", "equation_10_2_6"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.4, Gauss quadrature via Lanczos'
+
+[[node]]
+id = "gaussRadau_tridiag"
+kind = "theorem"
+desc = '''§10.2.5: with `T̃_{k+1}` equal to `T_{k+1}` except `α̃_{k+1} = a + β_k² e_kᵀ (T_k − a I)⁻¹ e_k` (the book prints
+`β_{k+1}²`, and its displayed `T̃_{k+1}` shows `β_k` below the diagonal and omits it above), `a` is an
+eigenvalue of `T̃_{k+1}` whenever `T_k − a I` is nonsingular; the eigenvector is `[x; −1]` with
+`x = β_k (T_k − a I)⁻¹ e_k`. Backbone `Lanczos.radauTridiag`, `Lanczos.radauTridiag_hasEigenvalue`. ★'''
+deps = ["Lanczos.radauTridiag", "Lanczos.radauTridiag_hasEigenvalue"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.5, the Gauss–Radau modification'
+
+[[node]]
+id = "gaussRadau_via_lanczos"
+kind = "theorem"
+desc = '''§10.2.5, the implicit claim "Guided by Gauss quadrature theory …": for `k + 1 ≤ grade` and `T_k − a I`
+nonsingular, the rule with the eigenvalues of `T̃_{k+1}` as nodes and `‖u‖²`·(squared first components of its
+eigenvectors) as weights is the Gauss–Radau(a) rule (10.2.8) of the spectral weight: it has `a` as a node and
+integrates every polynomial of degree `≤ 2k` exactly. Backbone `Lanczos.radau_quadrature`. ★'''
+deps = ["gaussRadau_tridiag", "Lanczos.radau_quadrature"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.5, the Gauss–Radau rule via Lanczos'
+
+[[node]]
+id = "lanczos_quadrature_bounds"
+kind = "theorem"
+desc = '''§10.2.6, the overall framework: for symmetric positive definite `A` with spectrum in `[a, b]`, `0 < a`, and
+`f(λ) = 1/λ²` (or any `f` with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}` on `[a, b]`), the Lanczos-computed Gauss value `b_k` and
+Gauss–Radau(a) value `B_k` satisfy `b_k ≤ uᵀ f(A) u ≤ B_k` for every `k` with `k + 1 ≤ grade`. Backbone
+`Lanczos.gauss_le_integral_le_radau` with `equation_10_2_6`; that `B_k − b_k → 0` is not claimed by the book. ★'''
+deps = ["Lanczos.gauss_le_integral_le_radau", "equation_10_2_6", "lanczos_gaussRule", "gaussRadau_via_lanczos"]
+source = 'Golub–Van Loan, Matrix Computations, §10.2.6'

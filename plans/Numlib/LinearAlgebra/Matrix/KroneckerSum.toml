@@ -25,3 +25,25 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, (13.14)"
 
 [[node]]
 id = "posDef_kroneckerSum"
+
+[[node]]  # staged by ch04
+id = "kroneckerSum_mulVec_vec"
+kind = "theorem"
+desc = '''The Kronecker sum on Mathlib's column-major `Matrix.vec` ([golub2013matrix] (4.8.12)): for
+`A : Matrix m m R`, `B : Matrix n n R`, `X : Matrix n m R` over a commutative semiring,
+`(A ⊕ₖ B) *ᵥ Matrix.vec X = Matrix.vec (B * X + X * Aᵀ)` — so the book's `(I_{n₂} ⊗ A₁ + A₂ ⊗
+I_{n₁}) u = b` with `u = vec U` is `A₂ ⊕ₖ A₁` and reads `A₁ U + U A₂ᵀ = B`. From Mathlib's
+`Matrix.kronecker_mulVec_vec` (`(B ⊗ₖ A) *ᵥ vec X = vec (A * X * Bᵀ)`) on the two summands of
+`Matrix.kroneckerSum_def`. ★'''
+deps = ["Matrix.kroneckerSum"]
+
+[[node]]  # staged by ch04
+id = "kroneckerSum_hasBandwidth"
+kind = "theorem"
+desc = '''The band of a Kronecker sum in the book's `Fin (n₂ n₁)` layout ([golub2013matrix] §4.8.4, "`A` is symmetric
+positive definite with bandwidth `n₁ + 1`" — the book's count includes the diagonal; lower and
+upper bandwidth `n₁`): for tridiagonal `A₁ : Matrix (Fin n₁) (Fin n₁) R` and `A₂ : Matrix (Fin n₂)
+(Fin n₂) R`, `(A₂ ⊕ₖ A₁).submatrix e e` with `e := finProdFinEquiv.symm : Fin (n₂ * n₁) ≃ Fin n₂ ×
+Fin n₁` has lower and upper bandwidth `n₁` (`Matrix.hasLowerBandwidth_iff_fin`; the flat index of
+`(j, i)` is `j n₁ + i`). ★'''
+deps = ["Matrix.kroneckerSum", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]

@@ -1,3 +1,30 @@
+# Planned additions (GVL round): the module doc of `Numlib.Eigen.QRAlgorithm` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add a section "QR steps for arbitrary factorizations, and the Francis step". The canonical
+# `Matrix.qrQ`/`qrR` steps above fix one QR factorization; the textbook algorithms (Golub–Van Loan
+# §7.3–7.5; chapter 8's symmetric QR) compute *some* QR factorization, by Givens rotations or
+# Householder reflectors with their own sign conventions. `Matrix.IsShiftedQrStep μ H H'` says that
+# `H'` is one QR step with shift `μ` for some factorization; the canonical step is one, every such
+# step is a unitary similarity, Hessenberg form survives a nonsingular step, the exact shift
+# deflates (Golub–Van Loan Theorem 7.5.1), and chains of steps multiply out to the shifted
+# polynomial (their (7.5.7), P7.5.5). `Matrix.IsFrancisStep s t H H'` is the specification of the
+# implicit double-shift (Francis) step, "H' = Zᵀ H Z Hessenberg with Zᵀ (H² - s H + t I) upper
+# triangular", identified with the explicit `doubleShiftQrStep` up to a ±1 diagonal similarity
+# through the implicit Q theorem (`Numlib/LinearAlgebra/Matrix/UnreducedHessenberg`, which this
+# module then imports). The module doc's remark "the real-arithmetic Francis implementation is not
+# defined" becomes: its specification is `IsFrancisStep`; the implementation is Golub–Van Loan
+# Algorithm 7.5.1 in the surface.
+# (consolidation) Add to the same section: chains of steps with explicit factors,
+# `Matrix.IsShiftedQrChain H V R μ p` ([golub2013matrix] (10.5.4)), the hypothesis of the product
+# identity `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one`, with its similarity, Hessenberg, band
+# and first-column lemmas and the existence of Givens chains for arbitrary shifts (planned by ch10 for
+# `Eigen/ImplicitRestart`, moved here beside `IsShiftedQrStep`).
+# (GVL review) Add to "orthogonal iteration": `Matrix.IsOrthogonalIterationStep A Q Q'` (one step for
+# *some* thin QR factorization, `∃ R, IsThinQR (A * Q) Q' R`), with existence for every orthonormal
+# block, the range identity `ran Q_k = A^k ran Q₀` under full rank, and the identification of a square
+# step with an unshifted `IsShiftedQrStep` — the one vocabulary both Golub–Van Loan chapters 7 and 8
+# restate. The implicit Q theorem this module uses now lives in
+# `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`.
 namespace = "Krylov"
 
 [[node]]
@@ -207,3 +234,243 @@ id = "_root_.Matrix.isUnit_det_of_conj_eq_diagonal"
 
 [[node]]
 id = "_root_.Matrix.qrQ_eq_one_of_isUpperTriangular"
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsShiftedQrStep"
+kind = "definition"
+desc = '''`IsShiftedQrStep μ H H'` for `H H' : Matrix n n 𝕜`, `μ : 𝕜` (`RCLike 𝕜`):
+`∃ Q ∈ unitaryGroup n 𝕜, ∃ R, R.IsUpperTriangular ∧ H - μ • 1 = Q * R ∧ H' = R * Q + μ • 1` — one QR
+step with shift `μ` for *some* QR factorization ([golub2013matrix] (7.3.1) with `μ = 0`, (7.4.1),
+(7.5.3)). Elaborates (`notes/gvl/ch07/proto/Shapes.lean`). ★'''
+deps = []
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.isShiftedQrStep_shiftedQrStep"
+kind = "theorem"
+desc = '''The canonical step is one: `IsShiftedQrStep μ H (shiftedQrStep μ H)` (`Matrix.qrQ_mul_qrR`,
+`Matrix.qrQ_mem_unitaryGroup`, `Matrix.isUpperTriangular_qrR`). ★'''
+deps = ["Matrix.IsShiftedQrStep", "Matrix.shiftedQrStep", "Matrix.qrQ_mul_qrR", "Matrix.qrQ_mem_unitaryGroup", "Matrix.isUpperTriangular_qrR"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsShiftedQrStep.eq_conj"
+kind = "theorem"
+desc = '''Every shifted QR step is a unitary similarity: `IsShiftedQrStep μ H H' → ∃ Q ∈ unitaryGroup n 𝕜,
+H' = star Q * H * Q` (`R Q + μ I = Qᴴ (Q R + μ I) Q`, the display after (7.5.3)). Elaborates in the
+prototype. ★'''
+deps = ["Matrix.IsShiftedQrStep"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsShiftedQrStep.unique_of_isUnit"
+kind = "theorem"
+desc = '''For nonsingular `H - μ I` any two shifted QR steps are unitarily *diagonally* similar:
+`IsShiftedQrStep μ H H₁ → IsShiftedQrStep μ H H₂ → IsUnit (H - μ • 1).det →
+∃ d : n → 𝕜, (∀ i, ‖d i‖ = 1) ∧ H₂ = star (diagonal d) * H₁ * diagonal d` — QR factorizations of a
+nonsingular matrix differ by a unimodular diagonal (`Matrix.qr_unique` after normalizing the diagonal
+of `R` to be positive with `Matrix.phase`). In particular the canonical `shiftedQrStep` represents
+every step up to this equivalence. ★★'''
+deps = ["Matrix.IsShiftedQrStep", "Matrix.qr_unique", "Matrix.phase"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsShiftedQrStep.isUpperHessenberg"
+kind = "theorem"
+desc = '''Hessenberg form survives a nonsingular step: `H.IsUpperHessenberg → IsUnit (H - μ • 1).det →
+IsShiftedQrStep μ H H' → H'.IsUpperHessenberg` ([golub2013matrix] §7.4.2; `Q = (H - μ I) R⁻¹` is
+Hessenberg times triangular, and `R Q` is triangular times Hessenberg — `Matrix.IsUpperHessenberg.mul_isUpperTriangular`,
+`Matrix.IsUpperTriangular.mul_isUpperHessenberg`). The generalization of `Matrix.isUpperHessenberg_qrQ`
+to any factorization. ★'''
+deps = ["Matrix.IsShiftedQrStep", "Matrix.IsUpperHessenberg.mul_isUpperTriangular", "Matrix.IsUpperTriangular.mul_isUpperHessenberg"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 7.5.1 (an exact shift deflates in one step): for `H : Matrix (Fin (N+1))
+(Fin (N+1)) 𝕜` unreduced upper Hessenberg, `μ ∈ spectrum 𝕜 H` and `IsShiftedQrStep μ H H'`, the last
+row of `H'` is `μ e_Nᵀ`: `H' (Fin.last N) j = if j = Fin.last N then μ else 0`. Proof (the book's):
+the first `N` columns of `H - μ I` are independent
+(`Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols`), so in `H - μ I = Q R` the entries
+`r_ii`, `i < N`, are nonzero (column `i` of `H - μ I` is `∑_{k ≤ i} r_ki q_k`); `det (H - μ I) = 0`
+then forces `r_NN = 0`; the last row of `R` is `0`, so the last row of `R Q` is `0`. Elaborates in
+the prototype. ★★'''
+deps = ["Matrix.IsShiftedQrStep", "Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols", "Matrix.IsUnreducedUpperHessenberg.sub_smul_one"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one"
+kind = "theorem"
+desc = '''Chains of shifted QR steps ([golub2013matrix] (7.5.7) and P7.5.5; the same identity is its Theorem
+10.5.1): for `h : Matrix.IsShiftedQrChain H U R μ j` (the two relations `H k - μ k • 1 = U k * R k`,
+`H (k+1) = R k * U k + μ k • 1` for `k < j`, bundled — the chain predicate below, which the
+Golub–Van Loan consolidation placed in this module so that this lemma could take it as its
+hypothesis), `(U 0 * U 1 * ⋯ * U (j-1)) * (R (j-1) * ⋯ * R 0) = ∏_{i<j} (H 0 - μ i • 1)` (lists over
+`List.range j` and its reverse). No unitarity is used. `(U_0 ⋯ U_{j-1}) H_j = H_0 (U_0 ⋯ U_{j-1})` is
+`Matrix.IsShiftedQrChain.mul_prod`, and then `P_{j+1} = (U_0⋯U_{j-1}) (H_j - μ_j) (R_{j-1}⋯R_0) =
+(H_0 - μ_j) P_j`; the factors commute, being polynomials in `H_0`. (The ch10 wrapper
+`IsShiftedQrChain.prod_mul_prod` was this statement and is merged into it.) ★'''
+deps = ["Matrix.IsShiftedQrChain", "Matrix.IsShiftedQrChain.mul_prod"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.doubleShiftQrStep_map_ofReal"
+kind = "theorem"
+desc = '''The double-shift step of a real matrix is real ([golub2013matrix] §7.5.4): for
+`H : Matrix n n ℝ` and `a : ℂ` with neither `a` nor `conj a` an eigenvalue of `H`, put
+`s = 2 re a`, `t = ‖a‖²` and `M = H * H - s • H + t • 1` (real, nonsingular). Then
+`doubleShiftQrStep H.complexify a = ((qrQ M)ᵀ * H * qrQ M).complexify`. Proof: by
+`Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` the two canonical steps give
+`(U₁ U₂)(R₂ R₁) = (H - a)(H - ā) = M.complexify`, a QR factorization with positive diagonal
+(`Matrix.qrR_diag_pos` twice), and so does `(qrQ M).complexify (qrR M).complexify`; `Matrix.qr_unique`
+identifies `U₁ U₂ = (qrQ M).complexify`, and `doubleShiftQrStep_eq_conj` finishes. ★★'''
+deps = ["Matrix.doubleShiftQrStep", "Matrix.doubleShiftQrStep_eq_conj", "Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one", "Matrix.qr_unique", "Matrix.qrR_diag_pos", "Matrix.complexify"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsFrancisStep"
+kind = "definition"
+desc = '''The specification of the implicit double-shift (Francis) step ([golub2013matrix] Algorithm 7.5.1,
+header): for real `s t` and `H H' : Matrix (Fin N) (Fin N) ℝ`,
+`IsFrancisStep s t H H' := ∃ Z ∈ orthogonalGroup (Fin N) ℝ, H' = Zᵀ * H * Z ∧ H'.IsUpperHessenberg ∧
+(Zᵀ * (H * H - s • H + t • 1)).IsUpperTriangular`. (`s`, `t` are the trace and determinant of the
+trailing `2 × 2` block in the algorithm, but the predicate is for any real `s`, `t`.) ★'''
+deps = []
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.isFrancisStep_qrQ"
+kind = "theorem"
+desc = '''Existence through the explicit route ([golub2013matrix] §7.5.4, the three bullets "explicitly form
+M, compute M = Z R, set H₂ = Zᵀ H Z"): if `H` is upper Hessenberg and `M = H * H - s • H + t • 1` is
+nonsingular then `IsFrancisStep s t H ((qrQ M)ᵀ * H * qrQ M)`. `Zᵀ M = R` is upper triangular by
+construction; `Zᵀ H Z = R (M⁻¹ H M) R⁻¹ = R H R⁻¹` (`M` commutes with `H`) is Hessenberg by
+`Matrix.IsUpperTriangular.mul_isUpperHessenberg`. ★★'''
+deps = ["Matrix.IsFrancisStep", "Matrix.qrQ_mul_qrR", "Matrix.isUpperTriangular_qrR", "Matrix.qrR_diag_pos", "Matrix.IsUpperTriangular.mul_isUpperHessenberg", "Matrix.IsUpperHessenberg.mul_isUpperTriangular"]
+
+[[node]]  # staged by ch07
+id = "_root_.Matrix.IsFrancisStep.eq_diagonal_conj"
+kind = "theorem"
+desc = '''Essential uniqueness of the Francis step ([golub2013matrix] §7.5.5, "the implicit Q theorem
+permits us to conclude that … they are essentially equal"): if `H` is unreduced upper Hessenberg,
+`M = H * H - s • H + t • 1` is nonsingular and `IsFrancisStep s t H H'`, then there is `d` with
+`d i = 1 ∨ d i = -1` and `H' = diagonal d * ((qrQ M)ᵀ * H * qrQ M) * diagonal d`. Proof: with
+`Z₀ = qrQ M`, `Z₀ᵀ H Z₀ = R H R⁻¹` is unreduced
+(`Matrix.IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular`); the first columns of `Z` and
+`Z₀` are both unit multiples of `M e₀` (`Zᵀ M` and `Z₀ᵀ M` upper triangular with `M e₀ ≠ 0`), so after a
+sign flip `Matrix.implicitQ_real` applies. With `Matrix.doubleShiftQrStep_map_ofReal` this identifies
+the Francis step with two explicit complex-conjugate shifted steps. ★★'''
+deps = ["Matrix.IsFrancisStep", "Matrix.isFrancisStep_qrQ", "Matrix.implicitQ_real", "Matrix.IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain"
+kind = "definition"
+desc = '''`structure Matrix.IsShiftedQrChain (H V R : ℕ → Matrix n n 𝕜) (μ : ℕ → 𝕜) (p : ℕ) : Prop` over a commutative
+ring `𝕜`, fields `sub_eq : ∀ i < p, H i − μ i • 1 = V i * R i` and `succ_eq : ∀ i < p, H (i + 1) = R i * V i + μ i • 1`:
+[golub2013matrix] (10.5.4) (whose loop `for i = 0:p` should read `i = 1:p`). No unitarity or
+triangularity in the definition; the theorems add what they use. It is the bundled hypothesis of
+chapter 7's `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one`. Shape in `notes/gvl/ch10/proto/Shapes.lean`
+(there over any ring). ★'''
+deps = []
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.mul_prod"
+kind = "theorem"
+desc = '''`H 0 * V_{<p} = V_{<p} * H p` with `V_{<p} = ((List.range p).map V).prod`: `V_i H_{i+1} = V_i R_i V_i + μ_i V_i =
+H_i V_i`. Induction on `p`. ★'''
+deps = ["Matrix.IsShiftedQrChain"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.conjTranspose_mul_mul"
+kind = "theorem"
+desc = '''[golub2013matrix] (10.5.6): if every `V i` (`i < p`) is unitary (`V i ∈ Matrix.unitaryGroup n 𝕜`, `𝕜` RCLike), then
+`V_{<p}` is unitary and `H p = (V_{<p})ᴴ * H 0 * V_{<p}`. From `Matrix.IsShiftedQrChain.mul_prod`. ★'''
+deps = ["Matrix.IsShiftedQrChain.mul_prod"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.isUpperHessenberg"
+kind = "theorem"
+desc = '''If `H 0` is upper Hessenberg, every `R i` upper triangular and every `V i` upper Hessenberg, every `H i`
+(`i ≤ p`) is upper Hessenberg ([golub2013matrix] "recall from §7.4.2 that each H^{(i)} is upper
+Hessenberg"): `R_i V_i` by `Matrix.IsUpperTriangular.mul_isUpperHessenberg`, plus `μ_i I`
+(`Matrix.IsUpperHessenberg.add_smul_one`). ★'''
+deps = ["Matrix.IsShiftedQrChain", "Matrix.IsUpperTriangular.mul_isUpperHessenberg", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.hasLowerBandwidth_prod"
+kind = "theorem"
+desc = '''If every `V i` is upper Hessenberg, `V_{<p}` has lower bandwidth `p` (`Matrix.HasLowerBandwidth (V_{<p}) p`); on
+`Fin m`, `V_{<p} (m − 1) i = 0` for `i + p + 1 < m` ([golub2013matrix] §10.5.3, "V(m, 1:m−p−1) = 0").
+`Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one`, `Matrix.HasLowerBandwidth.mul`. ★'''
+deps = ["Matrix.IsShiftedQrChain", "Matrix.HasLowerBandwidth.mul", "Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.mulVec_first"
+kind = "theorem"
+desc = '''If every `R i` is upper triangular: `(∏_{i<p} (H 0 − μ i • 1)) *ᵥ e₀ = (R_{<p} 0 0) • (V_{<p} *ᵥ e₀)` with
+`e₀ = Pi.single 0 1`: [golub2013matrix] "V(:,1) = p(H_c) e₁ with c = 1/R(1,1)", stated without dividing
+(the book's `c` needs `R(1,1) ≠ 0`, which fails exactly when a shift annihilates `e₀`'s Krylov flag).
+`Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` (the chain's product identity) and `R_{<p} e₀ = R_{<p} 0 0 • e₀` (a product of upper triangular
+matrices is upper triangular, Mathlib `Matrix.BlockTriangular.mul`). ★'''
+deps = ["Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one"]
+
+[[node]]
+id = "_root_.Matrix.exists_isShiftedQrChain"
+kind = "theorem"
+desc = '''Existence ([golub2013matrix] (10.5.4) with "Givens QR"): for an upper Hessenberg `H : Matrix (Fin m) (Fin m) ℝ` and any
+shifts `μ : ℕ → ℝ` there are `Hs V R` with `Hs 0 = H`, `Matrix.IsShiftedQrChain Hs V R μ p`, every `V i`
+orthogonal and upper Hessenberg and every `R i` upper triangular: induct with the backbone Givens QR
+`Matrix.hessenbergGivensQR` of the Hessenberg `Hs i − μ i • 1` (`Matrix.hessenbergGivensQR_spec`, no
+nonsingularity hypothesis — exact shifts allowed) and `Matrix.IsShiftedQrChain.isUpperHessenberg` for the
+next link. Chapter 5's Algorithm 5.2.5 spec is the surface reading of the same factorization. ★'''
+deps = ["Matrix.IsShiftedQrChain", "Matrix.hessenbergGivensQR_spec", "Matrix.IsShiftedQrChain.isUpperHessenberg"]
+
+[[node]]
+id = "_root_.Matrix.IsShiftedQrChain.isShiftedQrStep"
+kind = "theorem"
+desc = '''Each link of a chain with unitary `V i` and upper triangular `R i` is one of chapter 7's shifted QR steps:
+`∀ i < p, Matrix.IsShiftedQrStep (μ i) (Hs i) (Hs (i + 1))`. Unfold the existential. ★'''
+deps = ["Matrix.IsShiftedQrChain", "Matrix.IsShiftedQrStep"]
+
+[[node]]
+id = "_root_.Matrix.IsOrthogonalIterationStep"
+kind = "definition"
+desc = '''One step of orthogonal (simultaneous, subspace) iteration for *some* thin QR factorization
+([golub2013matrix] (7.3.6) and (8.2.8)): for `A : Matrix m m 𝕜` (`[RCLike 𝕜] [Fintype m]
+[DecidableEq m]`) and `Q Q' : Matrix m (Fin r) 𝕜`, `IsOrthogonalIterationStep A Q Q' : Prop := ∃ R,
+Matrix.IsThinQR (A * Q) Q' R` — i.e. there is an upper triangular `R` with `A * Q = Q' * R` and `Q'`
+has orthonormal columns (`Q'ᴴ * Q' = 1`). The book's "(QR factorization)" step `Z_k = A Q_{k-1}`,
+`Q_k R_k = Z_k`, for every choice of factorization (Gram–Schmidt, Householder, Givens, any signs); the
+canonical Gram–Schmidt iterates `Krylov.orthogonalIterate` (above) are one instance. The single
+backbone vocabulary both Golub–Van Loan chapters restate (surface review, Medium 3: chapters 7 and 8
+had two differently shaped definitions). A sequence `Q : ℕ → Matrix m (Fin r) 𝕜` is an orthogonal
+iteration when `(Q 0)ᴴ * Q 0 = 1` and `∀ k, IsOrthogonalIterationStep A (Q k) (Q (k + 1))`; the
+surface names that sequence predicate. ★'''
+deps = ["Matrix.IsThinQR"]
+
+[[node]]
+id = "_root_.Matrix.exists_isOrthogonalIterationStep"
+kind = "theorem"
+desc = '''Every orthonormal block has a next step: for `A : Matrix (Fin n) (Fin n) 𝕜`, `Q : Matrix (Fin n) (Fin r)
+𝕜` and `r ≤ n`, `∃ Q', Matrix.IsOrthogonalIterationStep A Q Q'` — with no rank assumption on `A Q`
+(the full QR factorization always exists, `Matrix.exists_isQR`, and its first `r` columns and rows
+are a thin one, `Matrix.IsQR.isThinQR`). Hence an orthogonal iteration exists from every `Q₀` with
+orthonormal columns (`Nat.rec`). When `A Q` has full column rank the step can be taken with `R` of
+positive diagonal (`Matrix.exists_isThinQR`), and then it is unique (`Matrix.IsThinQR.unique`) and
+equal to the Gram–Schmidt step. ★'''
+deps = ["Matrix.IsOrthogonalIterationStep", "Matrix.exists_isQR", "Matrix.IsQR.isThinQR"]
+
+[[node]]
+id = "_root_.Matrix.IsOrthogonalIterationStep.range_eq"
+kind = "theorem"
+desc = '''Orthogonal iteration iterates subspaces ([golub2013matrix] §7.3.2, "`ran(Q_k) = A^k ran(Q₀)`"): if
+`IsOrthogonalIterationStep A Q Q'` with factor `R` and `A * Q` has linearly independent columns, then
+`R` is invertible and `LinearMap.range (toEuclideanLin Q') = (LinearMap.range (toEuclideanLin
+Q)).map (toEuclideanLin A)`; iterated, for an orthogonal iteration `Q` with `A^k Q₀` of full column
+rank, `range (Q k) = Krylov.subspaceIterate (toEuclideanLin A) (range (Q 0)) k` and `A^k * Q 0 = Q k *
+(R_k ⋯ R_1)` (the first display of the book's appendix proof of Theorem 7.3.1). For the canonical
+iterates this is `Krylov.span_orthogonalIterate`. ★★ (~80 lines)'''
+deps = ["Matrix.IsOrthogonalIterationStep", "Krylov.subspaceIterate"]
+
+[[node]]
+id = "_root_.Matrix.IsOrthogonalIterationStep.isShiftedQrStep"
+kind = "theorem"
+desc = '''Orthogonal iteration with a full orthonormal block is the (unshifted) QR iteration
+([golub2013matrix] §7.3.3, (7.3.1) derived from (7.3.6); §8.2.5): for `Q Q' ∈ unitaryGroup (Fin n) 𝕜`
+with `IsOrthogonalIterationStep A Q Q'` (factor `R`), `T = Qᴴ * A * Q` and `T' = Q'ᴴ * A * Q'`,
+`T = (Qᴴ * Q') * R` and `T' = R * (Qᴴ * Q')`, so `Matrix.IsShiftedQrStep 0 T T'` with the unitary factor
+`Qᴴ * Q'`. From `A Q = Q' R` and `Q'ᴴ Q' = 1`. The canonical case is
+`Matrix.qrIterate_eq_conj_orthogonalIterate`. ★'''
+deps = ["Matrix.IsOrthogonalIterationStep", "Matrix.IsShiftedQrStep"]

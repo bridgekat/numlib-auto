@@ -1,0 +1,191 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.8, Hamiltonian and product eigenvalue problems: the structures of Figure 7.8.1 and the four facts
+(1)–(4), symplectic Householder and Givens transformations, the real Hamiltonian–Schur form (7.8.1)
+and the algebraic Riccati equation (7.8.2), the Paige–Van Loan and skew-Hamiltonian condensed forms
+(7.8.3)–(7.8.4) with the skew-Hamiltonian Schur form, and the product decompositions (7.8.5)–(7.8.6)
+with the block-cyclic restatement and its perfect-shuffle Hessenberg form.
+
+Real matrices on `Fin n ⊕ Fin n` (the book's `2n × 2n` with `n × n` blocks, `Matrix.fromBlocks`). The
+book's `J = [0 I; -I 0]` is `-Matrix.J (Fin n) ℝ` (Mathlib's `J = fromBlocks 0 (-1) 1 0`); every
+structure here is invariant under `J ↦ -J`, and — as chapter 1 decided for §1.3.10 — the surface uses
+Mathlib's `J` throughout and says so once. Hamiltonian matrices and the Hamiltonian/symplectic rows of
+Figure 7.8.1 are chapter 1's §1.3.10 (backbone `Numlib/LinearAlgebra/Matrix/Hamiltonian`:
+`Matrix.IsHamiltonian`, `Matrix.isHamiltonian_fromBlocks_iff`, `Matrix.IsHamiltonian.conj_symplectic`);
+the skew-Hamiltonian and orthogonal-symplectic rows are staged there by this chapter. Symplectic is
+Mathlib's `Matrix.symplecticGroup (Fin n) ℝ`.
+
+The product problem uses `A₁, A₂, A₃` as the book does, `A = A₃ A₂ A₁`, indexed `Fin 3` in the backbone
+(`A 0 = A₁`, `A 1 = A₂`, `A 2 = A₃`).
+
+Not formalized here: (7.8.7) (a sequence of iterates with "the property that all the iterates are in
+Hessenberg–triangular–triangular form" — no convergence statement); "a structure-preserving QR
+iteration that maintains this condensed form has yet to be devised" and the quality of eigenvalues
+computed from `M²` (no precise claims); rectangular and inverted factors (mentioned only).
+'''
+
+[[node]]
+id = "figure_7_8_1_skewHamiltonian"
+kind = "theorem"
+desc = '''Figure 7.8.1, skew-Hamiltonian row: `J N = -(J N)ᵀ` iff `N = [A G; F Aᵀ]` with `G`, `F` skew-symmetric.
+`Matrix.isSkewHamiltonian_iff_fromBlocks` (the backbone predicate is sign-independent). ★'''
+deps = ["Matrix.isSkewHamiltonian_iff_fromBlocks", "Matrix.IsSkewHamiltonian"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "figure_7_8_1_orthogonalSymplectic"
+kind = "theorem"
+desc = '''Figure 7.8.1, orthogonal symplectic row: for orthogonal `Q`, `Q` is symplectic iff `J Q = Q J` iff
+`Q = [Q₁ Q₂; -Q₂ Q₁]`, and then `Q₁ᵀ Q₂` is symmetric and `I = Q₁ᵀ Q₁ + Q₂ᵀ Q₂`.
+`Matrix.mem_orthogonalGroup_symplecticGroup_iff`. ★'''
+deps = ["Matrix.mem_orthogonalGroup_symplecticGroup_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "hamiltonian_symplectic_conj"
+kind = "theorem"
+desc = '''§7.8.1 (1): "Symplectic similarity transformations preserve Hamiltonian structure": `M` Hamiltonian and
+`S` symplectic imply `S⁻¹ M S` Hamiltonian (and likewise skew-Hamiltonian, the remark before (7.8.4)).
+`Matrix.IsHamiltonian.conj_symplectic`, `Matrix.IsSkewHamiltonian.conj_symplectic`. ★'''
+deps = ["Matrix.IsHamiltonian.conj_symplectic", "Matrix.IsSkewHamiltonian.conj_symplectic"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "hamiltonian_sq_skewHamiltonian"
+kind = "theorem"
+desc = '''§7.8.1 (2): the square of a Hamiltonian matrix is skew-Hamiltonian.
+`Matrix.IsHamiltonian.isSkewHamiltonian_mul_self`. ★'''
+deps = ["Matrix.IsHamiltonian.isSkewHamiltonian_mul_self"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "hamiltonian_neg_mem_spectrum"
+kind = "theorem"
+desc = '''§7.8.1 (3): if `M` is Hamiltonian and `λ ∈ λ(M)` then `-λ ∈ λ(M)` (complex spectrum of the real `M`);
+the book's witness: `M [u; v] = λ [u; v] ⇒ Mᵀ [v; -u] = -λ [v; -u]`. `Matrix.IsHamiltonian.neg_mem_spectrum`,
+with the eigenvector map as a clause. ★'''
+deps = ["Matrix.IsHamiltonian.neg_mem_spectrum"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "symplectic_inv_mem_spectrum"
+kind = "theorem"
+desc = '''§7.8.1 (4): if `S` is symplectic and `λ ∈ λ(S)` then `1/λ ∈ λ(S)` (`λ ≠ 0`); witness
+`S [u; v] = λ [u; v] ⇒ Sᵀ [v; -u] = (1/λ) [v; -u]`. `Matrix.inv_mem_spectrum_of_mem_symplecticGroup`. ★'''
+deps = ["Matrix.inv_mem_spectrum_of_mem_symplecticGroup"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "symplectic_householder_givens"
+kind = "theorem"
+desc = '''§7.8.1: if `P = I_n - 2 v vᵀ` is a Householder matrix then `diag(P, P)` is orthogonal symplectic; a Givens
+rotation in the planes `i` and `i + n` is orthogonal symplectic; and (the Householder–Givens–Householder
+sequence) every `x ∈ ℝ^{2n}` is mapped to a multiple of `e₁` by an orthogonal symplectic `Qᵀ`.
+`Matrix.fromBlocks_diagonal_mem_symplecticGroup`, `Matrix.planeRotation_inl_inr_mem_symplecticGroup`,
+`Matrix.exists_orthogonalSymplectic_mulVec_eq`. ★'''
+deps = ["Matrix.fromBlocks_diagonal_mem_symplecticGroup", "Matrix.planeRotation_inl_inr_mem_symplecticGroup", "Matrix.exists_orthogonalSymplectic_mulVec_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "hamiltonian_deflation_structure"
+kind = "theorem"
+desc = '''§7.8.1, the displayed deflation step: if `M` is Hamiltonian, `M x = λ x` with `λ` real and `‖x‖₂ = 1`, and
+`Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁`, then `Q₁ᵀ M Q₁` has first column `λ e₁` and row `n + 1`
+equal to `-λ e_{n+1}ᵀ` (the "extra" zeros from Hamiltonian structure: the `(2,1)` block is symmetric and
+the `(2,2)` block is minus the transpose of the `(1,1)` block); the remaining rows/columns
+`2:n, n+2:2n` form a `(2n-2) × (2n-2)` Hamiltonian matrix. Block computation with
+`hamiltonian_symplectic_conj` and `Matrix.isHamiltonian_fromBlocks_iff`. ★★'''
+deps = ["GolubVanLoan.Chapter07.hamiltonian_symplectic_conj", "GolubVanLoan.Chapter07.symplectic_householder_givens", "Matrix.isHamiltonian_fromBlocks_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "equation_7_8_1"
+kind = "theorem"
+desc = '''(7.8.1), the real Hamiltonian–Schur decomposition: if `M = [A F; G -Aᵀ]` is Hamiltonian with no purely
+imaginary eigenvalues, there is an orthogonal symplectic `Q = [Q₁ Q₂; -Q₂ Q₁]` with
+`Qᵀ M Q = [T R; 0 -Tᵀ]`, `T` upper quasi-triangular (and `λ(T)` the eigenvalues of `M` in the open left
+half-plane). `Matrix.exists_orthogonalSymplectic_hamiltonianSchur` (the invariant-subspace proof of the
+backbone replaces the book's deflation sketch). The book's (7.8.1) names the blocks `[A F; G -Aᵀ]` while
+Figure 7.8.1 names them `[A G; F -Aᵀ]` (report, Doubts); the surface follows (7.8.1), which is the
+labelling (7.8.2) uses. ★'''
+deps = ["Matrix.exists_orthogonalSymplectic_hamiltonianSchur", "GolubVanLoan.Chapter07.figure_7_8_1_orthogonalSymplectic"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.1)'
+
+[[node]]
+id = "equation_7_8_2"
+kind = "theorem"
+desc = '''(7.8.2), the algebraic Riccati equation: in (7.8.1), comparing `(2,1)` blocks gives
+`Q₂ᵀ A Q₁ - Q₂ᵀ F Q₂ + Q₁ᵀ G Q₁ + Q₁ᵀ Aᵀ Q₂ = 0`; if `Q₁` is nonsingular, `X = Q₂ Q₁⁻¹` is symmetric and
+satisfies `G + X A + Aᵀ X - X F X = 0`, and `A - F X = Q₁ T Q₁⁻¹`, so `λ(A - F X) = λ(T)` (in the open
+left half-plane when `T` is chosen so). `Matrix.riccati_of_hamiltonianSchur`. (The book derives the
+symmetry of `X` "from `I_n = Q₁ᵀQ₁ + Q₂ᵀQ₂`"; it follows from the symmetry of `Q₁ᵀ Q₂`.) ★'''
+deps = ["Matrix.riccati_of_hamiltonianSchur", "GolubVanLoan.Chapter07.equation_7_8_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.2)'
+
+[[node]]
+id = "equation_7_8_3"
+kind = "theorem"
+desc = '''(7.8.3), the Paige–Van Loan form: for Hamiltonian `M` there is an orthogonal symplectic `U₀` with
+`U₀ᵀ M U₀ = [H R; D -Hᵀ]`, `H` upper Hessenberg and `D` diagonal ("it is easy to compute"; the book
+gives no algorithm). `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`. ★'''
+deps = ["Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.3)'
+
+[[node]]
+id = "equation_7_8_4"
+kind = "theorem"
+desc = '''(7.8.4): for Hamiltonian `M` there is an orthogonal symplectic `V₀` with `V₀ᵀ M² V₀ = [H R; 0 Hᵀ]`, `H`
+upper Hessenberg (skew-Hamiltonian structure makes the `(2,1)` block zero: "Because the (2,1) block of a
+skew-Hamiltonian matrix is skew-symmetric, it has a zero diagonal").
+`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` with `hamiltonian_sq_skewHamiltonian`. ★'''
+deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg", "GolubVanLoan.Chapter07.hamiltonian_sq_skewHamiltonian"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.4)'
+
+[[node]]
+id = "skewHamiltonian_schur"
+kind = "theorem"
+desc = '''§7.8.1, the real skew-Hamiltonian Schur form: with `Uᵀ H U = T` the real Schur form of `H` in (7.8.4) and
+`Q = V₀ diag(U, U)`, `Qᵀ M² Q = [T UᵀRU; 0 Tᵀ]`. `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`
+(and the displayed block identity for this particular `Q`). ★'''
+deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur", "GolubVanLoan.Chapter07.equation_7_8_4"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
+
+[[node]]
+id = "equation_7_8_5"
+kind = "theorem"
+desc = '''(7.8.5) and the display after it: for `A₁, A₂, A₃ : Matrix (Fin n) (Fin n) ℝ` there are orthogonal `U₁`,
+`U₂`, `U₃` with `U₁ᵀ A₃ U₃ = H₃` upper Hessenberg, `U₃ᵀ A₂ U₂ = T₂` and `U₂ᵀ A₁ U₁ = T₁` upper triangular;
+then `U₁ᵀ (A₃ A₂ A₁) U₁ = H₃ T₂ T₁` is upper Hessenberg. `Matrix.exists_orthogonal_periodicHessenberg`
+(three factors) and `Matrix.IsUpperHessenberg.mul_isUpperTriangular`. The book's "procedure" (QR
+factorizations, then Givens with bulge chasing) is described, not given as an algorithm. ★'''
+deps = ["Matrix.exists_orthogonal_periodicHessenberg", "Matrix.IsUpperHessenberg.mul_isUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.5)'
+
+[[node]]
+id = "equation_7_8_6"
+kind = "theorem"
+desc = '''(7.8.6), the periodic real Schur form of `A = A₃ A₂ A₁`: orthogonal `Q₁`, `Q₂`, `Q₃` with `Q₁ᵀ A₃ Q₃ = T₃`
+upper quasi-triangular and `Q₃ᵀ A₂ Q₂ = T₂`, `Q₂ᵀ A₁ Q₁ = T₁` upper triangular (so `Q₁ᵀ A Q₁ = T₃ T₂ T₁` is a
+real Schur form of the product). `Matrix.exists_orthogonal_periodicRealSchur`,
+`Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`. ★'''
+deps = ["Matrix.exists_orthogonal_periodicRealSchur", "Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.6)'
+
+[[node]]
+id = "blockCyclic_restatement"
+kind = "theorem"
+desc = '''§7.8.2, "Product decompositions (7.8.5) and (7.8.6) can be framed as structured decompositions of
+block-cyclic 3-by-3 matrices": with `U = diag(U₁, U₂, U₃)`, `Uᵀ [0 0 A₃; A₁ 0 0; 0 A₂ 0] U = [0 0 H₃; T₁ 0 0;
+0 T₂ 0] = H̃`. `Matrix.blockDiagonal_conj_blockCyclic` (three blocks). ★'''
+deps = ["Matrix.blockDiagonal_conj_blockCyclic", "Matrix.blockCyclic", "GolubVanLoan.Chapter07.equation_7_8_5"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.2'
+
+[[node]]
+id = "blockCyclic_shuffle_isUpperHessenberg"
+kind = "theorem"
+desc = '''§7.8.2, "Using the perfect shuffle `𝒫₃₄` … `𝒫₃₄ H̃ 𝒫₃₄` is a highly structured 12-by-12 upper Hessenberg
+matrix", for every `n` (the book shows `n = 4`): the perfect-shuffle reindexing of `H̃` is upper Hessenberg.
+`Matrix.isUpperHessenberg_reindex_blockCyclic`; the shuffle is the book's §1.2.11 `𝒫_{p,r}`, chapter 1's
+`Matrix.perfectShuffle` / `Matrix.finPerfectShuffle` (the book writes `𝒫 H̃ 𝒫` for `𝒫 H̃ 𝒫ᵀ`). ★'''
+deps = ["Matrix.isUpperHessenberg_reindex_blockCyclic", "GolubVanLoan.Chapter07.blockCyclic_restatement"]
+source = 'Golub–Van Loan, Matrix Computations, §7.8.2'

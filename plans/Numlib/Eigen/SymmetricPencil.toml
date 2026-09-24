@@ -1,0 +1,178 @@
+desc = '''
+Symmetric-definite pencils `A - λ B` (`A` Hermitian, `B` positive definite, or more generally a
+positive-semidefinite convex combination), their sorted eigenvalues, the variational
+characterization, the Crawford number and Stewart's perturbation bound ([golub2013matrix]
+§8.7.1–8.7.3; G. W. Stewart, "Perturbation bounds for the definite generalized eigenvalue
+problem", Lin. Alg. Appl. 23 (1979); Stewart–Sun, *Matrix Perturbation Theory*, §VI.3).
+
+`Numlib/Eigen/Pencil` has the pencil vocabulary (`Matrix.pencilSpectrum`,
+`Matrix.HasPencilEigenvector`) and the simultaneous diagonalization of a Hermitian/positive-definite
+pair (`Matrix.exists_simultaneous_diagonalization`, [quarteroni2000numerical] Theorem 5.7 = the
+book's Corollary 8.7.2). This module is its symmetric-definite continuation, kept separate because
+it is where the *ordering* of the real eigenvalues enters (min–max, perturbation), which the
+general pencil theory does not have:
+
+* `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination`: [golub2013matrix] Theorem 8.7.1,
+  simultaneous diagonalization by congruence when some `C(μ) = μ A + (1 - μ) B`, `μ ∈ [0, 1]`, is
+  positive semidefinite with `ker C(μ) = ker A ⊓ ker B`.
+* `Matrix.pencilEigenvalues hA hB : Fin (Fintype.card n) → ℝ`: the eigenvalues of the pencil,
+  sorted decreasingly, defined as the eigenvalues of the Hermitian `Wᴴ A W` for any `W` with
+  `Wᴴ B W = 1` (independence of `W`: two such `W` differ by a unitary factor); the variational
+  characterization `Matrix.isGreatest_pencilEigenvalues` (the max–min of `re (xᴴ A x) / re (xᴴ B x)`
+  over `(i+1)`-dimensional subspaces), by substituting `x = W y` in `LinearMap.IsSymmetric.isGreatest_eigenvalues`.
+* `Matrix.crawfordNumber A B = ⨅ ‖x‖ = 1, √((re xᴴAx)² + (re xᴴBx)²)` (with the square root, as in
+  Stewart; the book's display (8.7.4) omits it) and the perturbation theorem
+  `Matrix.sin_abs_arctan_pencilEigenvalues_sub_le` in its correct form: the book's Theorem 8.7.3
+  asserts `|arctan λ_i - arctan μ_i| ≤ arctan(ε / c)`, which is false already for `n = 1` (see the
+  surface node `GolubVanLoan.Chapter08.theorem_8_7_3_counterexample`); what holds, and what the
+  chordal-metric form of Stewart's theorem says, is `sin |arctan λ_i - arctan μ_i| ≤ ε / c`.
+  Proof: `z(x) = xᴴBx + i xᴴAx` has `|z(x)| ≥ c ‖x‖²` and moves by at most `ε ‖x‖²` under the
+  perturbation, so its argument `arctan(xᴴAx / xᴴBx)` moves by at most `arcsin(ε/c)`; `arctan` is
+  monotone, so the max–min characterization transfers the bound index by index. The hypothesis
+  that `B + E_B` stays positive definite replaces the book's claim that it does (false as well: a
+  small positive-definite `B` can be perturbed to an indefinite one within `ε < c`).
+* `Matrix.isMinOn_pencil_residual`: the generalized Rayleigh quotient `xᴴAx / xᴴBx` minimizes
+  `‖A x - λ B x‖_{B⁻¹}` ((8.7.6)–(8.7.7)).
+
+**Generality (Golub–Van Loan review).** The natural hypothesis of Stewart's theory is a *definite
+pair* — `0 < crawfordNumber A B`, no definiteness of `B` — and it is stable: `crawfordNumber` is
+1-Lipschitz in the pair (`Matrix.crawfordNumber_sub_le`), so `ε < c` keeps the perturbed pair
+definite, which is the correct form of the book's false "`B + E_B` stays positive definite". A definite
+pair becomes one with a positive definite second matrix after a rotation `(A, B) ↦ (cos θ A − sin θ B,
+sin θ A + cos θ B)` (`Matrix.exists_posDef_rotation_of_crawfordNumber_pos`, Crawford; Stewart–Sun
+Theorem VI.1.18), which is how the planned `B`-positive-definite statements extend: the eigenvalue
+angles `arctan λ_i` shift by `θ`. The fully rotation-invariant statement (Stewart–Sun Theorem VI.3.2,
+eigenvalues as points of the projective line with the chordal metric) is not planned yet; the
+`B`-positive-definite nodes below are its case `θ = 0`.
+
+Order of attack: Theorem 8.7.1 (★★, ~150), `pencilEigenvalues` with its independence of `W` and
+min–max (★★, ~150), the residual minimization (★★, ~60), the perturbation theorem (★★★, ~250).
+'''
+
+[[node]]
+id = "Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 8.7.1: for Hermitian `A B : Matrix n n 𝕜` and `μ ∈ Set.Icc 0 1`,
+if `C = μ • A + (1 - μ) • B` is positive semidefinite and `LinearMap.ker (toLin' C) =
+LinearMap.ker (toLin' A) ⊓ LinearMap.ker (toLin' B)`, then there is an invertible `X` with
+`Xᴴ A X` and `Xᴴ B X` both diagonal (with real diagonals). Proof as in the book: unitarily
+diagonalize `C = Q₁ diag(D, 0) Q₁ᴴ` with `D > 0` (`Matrix.IsHermitian.spectral_theorem`, sorting
+the zero eigenvalues last), `X₁ = Q₁ diag(D^{-1/2}, I)`; then `X₁ᴴ C X₁ = diag(I_k, 0)` and, the
+kernel hypothesis giving `span{e_{k+1},…} = ker A₁ ⊓ ker B₁`, both `A₁ = X₁ᴴ A X₁` and `B₁` are
+`fromBlocks A₁₁ 0 0 0`-shaped; for `μ ≠ 0` diagonalize `B₁₁` unitarily and read `A₁₁` off
+`I = μ A₁₁ + (1 - μ) B₁₁`; for `μ = 0` diagonalize `A₁₁` (then `B₁₁ = I`). The block structure
+goes through a reindexing `n ≃ Fin k ⊕ Fin (card n - k)`. ★★ (~150 lines)'''
+deps = []
+
+[[node]]
+id = "Matrix.pencilEigenvalues"
+kind = "definition"
+desc = '''The sorted eigenvalues of a symmetric-definite pencil: for `hA : A.IsHermitian`,
+`hB : B.PosDef`, `pencilEigenvalues hA hB : Fin (Fintype.card n) → ℝ :=
+(hA.conjTranspose_mul_mul W).eigenvalues₀` with `W := (Matrix.PosDef.exists_isUnit_conj_eq_one hB).choose`
+(any `W` with `Wᴴ B W = 1`); decreasing (`eigenvalues₀_antitone`). The book's `λ_1 ≥ ⋯ ≥ λ_n` of
+Theorem 8.7.3. ★'''
+deps = ["Matrix.PosDef.exists_isUnit_conj_eq_one"]
+
+[[node]]
+id = "Matrix.pencilEigenvalues_eq_of_conj_eq_one"
+kind = "theorem"
+desc = '''Independence of the normalizer: for any `W` with `Wᴴ B W = 1`, the sorted eigenvalues of
+`Wᴴ A W` are `pencilEigenvalues hA hB`. Two normalizers differ by a unitary right factor
+(`W' = W U`, `U = W⁻¹ W'`, `Uᴴ U = Wᴴ B W`-computation), and unitary similarity preserves the
+characteristic polynomial, hence the sorted eigenvalues (`Matrix.IsHermitian.eigenvalues_eq_eigenvalues_iff`
+or `charpoly` + `sort_roots_charpoly_eq_eigenvalues₀`). Also: `pencilEigenvalues` lie in
+`Matrix.pencilSpectrum A B` and exhaust it. ★★'''
+deps = ["Matrix.pencilEigenvalues", "Matrix.pencilSpectrum"]
+
+[[node]]
+id = "Matrix.isGreatest_pencilEigenvalues"
+kind = "theorem"
+desc = '''Courant–Fischer for a symmetric-definite pencil: for every `i`,
+`IsGreatest {c | ∃ S : Submodule 𝕜 (n → 𝕜), finrank S = i + 1 ∧ ∀ x ∈ S, x ≠ 0 →
+  c ≤ re (star x ⬝ᵥ A *ᵥ x) / re (star x ⬝ᵥ B *ᵥ x)} (pencilEigenvalues hA hB i)`, and the
+min–max twin `isLeast` over `(card n - i)`-dimensional subspaces. Substitute `x = W y`
+(`W` invertible maps `(i+1)`-dimensional subspaces bijectively) in
+`LinearMap.IsSymmetric.isGreatest_eigenvalues` for `toEuclideanLin (Wᴴ A W)`. ★★'''
+deps = ["Matrix.pencilEigenvalues_eq_of_conj_eq_one", "LinearMap.IsSymmetric.isGreatest_eigenvalues", "LinearMap.IsSymmetric.isLeast_eigenvalues"]
+
+[[node]]
+id = "Matrix.crawfordNumber"
+kind = "definition"
+desc = '''The Crawford number of a Hermitian pair ([golub2013matrix] (8.7.4), with Stewart's square
+root): `crawfordNumber A B := ⨅ x : Metric.sphere (0 : EuclideanSpace 𝕜 n) 1,
+√((re ⟪x, toEuclideanLin A x⟫)² + (re ⟪x, toEuclideanLin B x⟫)²)`. The infimum of a continuous
+function on a compact sphere is attained when `n` is nonempty (`IsCompact.exists_isMinOn`); the
+pair is *definite* when it is positive. The book's display omits the square root; with it the
+number scales like the matrices, which is what `ε / c(A, B)` in Theorem 8.7.3 needs. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.crawfordNumber_le_norm_mul"
+kind = "theorem"
+desc = '''The pointwise form the perturbation proof consumes: for every `x`,
+`crawfordNumber A B * ‖x‖² ≤ ‖((re ⟪x, B x⟫ : ℝ) : ℂ) + ((re ⟪x, A x⟫ : ℝ) : ℂ) * I‖`, i.e.
+`c ‖x‖² ≤ √((xᴴBx)² + (xᴴAx)²)` (homogeneity of degree 2, `ciInf_le` on the sphere); and for a
+positive-definite `B`, `0 < crawfordNumber A B` (`λ_min(B) > 0` bounds it below). ★'''
+deps = ["Matrix.crawfordNumber"]
+
+[[node]]
+id = "Matrix.sin_abs_arctan_pencilEigenvalues_sub_le"
+kind = "theorem"
+desc = '''Stewart's perturbation theorem for definite pencils, corrected ([golub2013matrix]
+Theorem 8.7.3; Stewart 1979): let `A`, `E_A` Hermitian, `B` and `B + E_B` positive definite, `E_B`
+Hermitian, `ε = √(‖E_A‖₂² + ‖E_B‖₂²)` (`lpOpNorm 2`), `c = crawfordNumber A B`, and `ε < c`. Then
+for every `i`, with `λ = pencilEigenvalues hA hB` and `μ = pencilEigenvalues hA' hB'` of the
+perturbed pair, `Real.sin |Real.arctan (λ i) - Real.arctan (μ i)| ≤ ε / c`, equivalently
+`|arctan λ_i - arctan μ_i| ≤ arcsin (ε / c)`.
+Proof: for `x ≠ 0` put `z(x) = xᴴBx + i xᴴAx ∈ ℂ` (real parts), `Re z > 0` for both pairs;
+`arg z(x) = arctan(xᴴAx / xᴴBx)`; `|z(x)| ≥ c ‖x‖²` (`crawfordNumber_le_norm_mul`) and
+`|z'(x) - z(x)| ≤ ε ‖x‖²` (Cauchy–Schwarz on each part); so `|sin (arg z' - arg z)| ≤ ε / c`
+(`Complex.abs_sin_arg_sub_le`-type planar estimate: the angle subtended by a disc of radius `r`
+seen from distance `≥ R > r` is `≤ arcsin (r / R)`). `arctan ∘ (Rayleigh quotient)` then satisfies
+the max–min characterization with `arctan` applied (`isGreatest_pencilEigenvalues` and
+`Real.arctan_strictMono`), and a pointwise bound `|g' - g| ≤ δ` between two functions transfers to
+their max–min values. The printed `arctan(ε / c)` is false (counterexample `n = 1`, `A = 0`,
+`B = 1`, `E_A = √3/4`, `E_B = -1/4`: `ε = 1/2 < c = 1`, `λ = 0`, `μ = 1/√3`,
+`|arctan λ - arctan μ| = π/6 > arctan (1/2)`); the printed conclusion "the perturbed pencil is
+symmetric-definite" is replaced by the hypothesis that `B + E_B` is positive definite.
+★★★ (~250 lines)'''
+deps = ["Matrix.isGreatest_pencilEigenvalues", "Matrix.crawfordNumber_le_norm_mul", "Matrix.lpOpNorm"]
+
+[[node]]
+id = "Matrix.isMinOn_pencil_residual"
+kind = "theorem"
+desc = '''The generalized Rayleigh quotient minimizes the `B⁻¹`-norm residual ([golub2013matrix]
+(8.7.6)–(8.7.7)): for real symmetric `A`, positive-definite `B` and `x ≠ 0`, the function
+`f λ = (A x - λ B x) ⬝ᵥ B⁻¹ *ᵥ (A x - λ B x)` (the book's `‖A x - λ B x‖²_B`, `‖z‖²_B = zᵀB⁻¹z`) is
+minimized over `ℝ` at `λ = (x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)`: `IsMinOn f univ (xᵀAx / xᵀBx)`.
+`f` is the quadratic `xᵀAB⁻¹Ax - 2 λ xᵀAx + λ² xᵀBx` (symmetry of `B⁻¹`), with leading coefficient
+`xᵀBx > 0`; complete the square. ★★'''
+deps = []
+
+[[node]]
+id = "Matrix.crawfordNumber_sub_le"
+kind = "theorem"
+desc = '''The Crawford number is 1-Lipschitz in the pair: for Hermitian `A B E_A E_B` and `ε = √(‖E_A‖₂² +
+‖E_B‖₂²)`, `crawfordNumber A B - ε ≤ crawfordNumber (A + E_A) (B + E_B)` (for a unit `x`, `z(x) =
+xᴴBx + i xᴴAx` moves by at most `ε`: Cauchy–Schwarz on each part, `|xᴴEx| ≤ ‖E‖₂`). Hence a definite
+pair (`0 < c`) stays definite under perturbations with `ε < c` — the correct form of [golub2013matrix]
+Theorem 8.7.3's claim that the perturbed pencil is symmetric-definite (Stewart–Sun, *Matrix
+Perturbation Theory*, §VI.1.3). ★'''
+deps = ["Matrix.crawfordNumber", "Matrix.lpOpNorm"]
+
+[[node]]
+id = "Matrix.exists_posDef_rotation_of_crawfordNumber_pos"
+kind = "theorem"
+desc = '''Definite pairs are rotations of pairs with a positive definite second matrix (Crawford 1976;
+Stewart–Sun Theorem VI.1.18): for Hermitian `A B : Matrix n n 𝕜` with `0 < crawfordNumber A B` there is
+`θ : ℝ` with `(Real.sin θ • A + Real.cos θ • B).PosDef` (and then `crawfordNumber` is rotation-invariant,
+`z(x) ↦ e^{-iθ} z(x)`). Proof: the joint numerical range `W = {(re xᴴAx, re xᴴBx) | ‖x‖ = 1}` is convex
+(it is the numerical range of `B + i A`, convex by the Toeplitz–Hausdorff theorem
+`LinearMap.convex_numericalRange` of `Numlib/Eigen/NumericalRange` for `toEuclideanLin` over `ℂ`; over
+`ℝ` through `Matrix.complexify`, the real quadratic forms being the real parts of the complex ones) and
+compact, and misses the disc of radius `c` about `0`; a separating line through the origin
+(`ConvexCone`/`geometric_hahn_banach_point_compact`-type separation in `ℝ²`) gives `θ` with `sin θ · a
++ cos θ · b > 0` on `W`. Consumer: the extension of the `B`-positive-definite statements of this module
+to definite pairs. ★★ (~150 lines)'''
+deps = ["Matrix.crawfordNumber", "LinearMap.convex_numericalRange"]

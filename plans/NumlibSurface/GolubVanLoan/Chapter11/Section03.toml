@@ -1,0 +1,651 @@
+namespace = "GolubVanLoan.Chapter11"
+desc = '''
+Golub–Van Loan §11.3, *The Conjugate Gradient Method*: the quadratic `φ` and the `A`-norm, steepest
+descent (Algorithm 11.3.1, (11.3.7)–(11.3.9)), the Krylov subspace strategy, CG as Lanczos plus an
+`LDLᵀ` of `T_k` ((11.3.14)–(11.3.22), Algorithm 11.3.2, Theorems 11.3.1–11.3.5, Corollary 11.3.2),
+the Hestenes–Stiefel form (Algorithm 11.3.3, (11.3.23)–(11.3.25)), the practical loop (11.3.26), the
+Chebyshev bound (11.3.27), and CGNR/CGNE (Figure 11.3.1, (11.3.28)).
+
+Backbone: everything the section proves is already in `Numlib/Krylov/{Iterate,CG,Lanczos,Arnoldi,
+Hessenberg,Singular,NormalEquations,Convergence/CG}`, `Numlib/Projection/OneDimensional` (steepest
+descent, Kantorovich) and `Numlib/Analysis/InnerProductSpace/Energy` (`energyFunctional`,
+`energyNorm`). The one gap is the *dictionary* between the Lanczos coefficients and the CG
+coefficients (Saad (6.101)–(6.103), today proved only in the Saad surface): it is what makes the
+book's Lanczos-`LDLᵀ` derivation (Algorithm 11.3.2, Theorems 11.3.4–11.3.5) a correspondence rather
+than a second CG theory, and it is staged as appends to `Numlib/Krylov/CG`
+(`CG.lanczos_alpha_zero_eq`, `CG.lanczos_alpha_succ_eq`, `CG.lanczos_beta_eq`,
+`CG.lanczos_tridiag_eq_ldl`). With them: `q_k = ±r_{k−1}/‖r_{k−1}‖` (`CG.arnoldi_vec_eq`),
+`d_k = 1/α^{CG}_{k−1}`, `ℓ_k = ‖r_k‖/‖r_{k−1}‖`, `c_k = ±p_{k−1}/‖r_{k−1}‖`,
+`ν_k = ±α^{CG}_{k−1}‖r_{k−1}‖`, and `x_k` of Algorithm 11.3.2 is `(CG.iterate k).x`.
+
+Conventions. Real SPD `A : Matrix (Fin n) (Fin n) ℝ`; Krylov statements are about
+`T := Matrix.toEuclideanLin A` on `EuclideanSpace ℝ (Fin n)` with vectors transported by
+`WithLp.toLp 2` (`notes/gvl/ch11/proto/Shapes.lean` (a)). `φ(x) = ½ xᵀAx − xᵀb` is
+`energyFunctional T b x`, `‖v‖_A` is `energyNorm T v`, `κ₂(A) = λ_max/λ_min` is
+`NormedRing.condNumber A` under scoped `Matrix.Norms.L2Operator` (equal to the eigenvalue ratio by
+`Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`). Indices: the book's Lanczos `q_j, α_j, β_j`
+(`j ≥ 1`) are the backbone's `Arnoldi.vec T r₀ (j−1)`, `Lanczos.alpha T r₀ (j−1)`,
+`Lanczos.beta T r₀ (j−1)` for `r₀ = b − A x₀`; the book's Hestenes–Stiefel `p_k, μ_k` (`k ≥ 1`) are
+the backbone's `(CG.iterate (k−1)).p`, `CG.alpha` at step `k−1`; `x_k`, `r_k` agree. The "smallest
+invariant subspace containing `r₀`" is `Krylov.fullSubspace T r₀`, of dimension `Krylov.grade T r₀`.
+
+Algorithms (D4): Algorithms 11.3.1–11.3.3, (11.3.14) and (11.3.26) are monadic programs over the
+rounding hook, built from ch01's Algorithms 1.1.1 (dot), 1.1.2 (saxpy) and 1.1.3 (gaxpy); `while`
+loops get a fuel argument and a `done` flag (shape: `notes/gvl/ch11/proto/Shapes.lean` (a)). Their
+specs are exact-arithmetic identifications with the backbone recurrences; the book gives no rounding
+analysis of any of them (§11.3.8 only says orthogonality is lost), so none is planned.
+'''
+
+[[node]]
+id = "equation_11_3_2"
+kind = "theorem"
+desc = '''
+(11.3.1)–(11.3.3): for SPD `A`, `A x = b ↔ ∀ y, φ x ≤ φ y` (`x` minimizes `φ = energyFunctional`).
+From `LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq` (φ y − φ x* = ½‖y − x*‖_A²) and
+uniqueness of the solution. ★
+'''
+deps = ["energyFunctional", "LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq",
+  "Matrix.PosDef.isSymmetricCoercive_toEuclideanLin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.2)'
+
+[[node]]
+id = "gradient_energyFunctional"
+kind = "theorem"
+desc = '''
+§11.3.1: `∇φ(x) = A x − b` (`HasGradientAt φ (A x − b) x` on `EuclideanSpace ℝ (Fin n)`), and `φ` is
+convex. Delegates to `hasGradientAt_energyFunctional_of_finiteDimensional`
+(tracked as `hasGradientAt_energyFunctional`) and convexity of a PSD quadratic. ★
+'''
+deps = ["hasGradientAt_energyFunctional"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.1'
+
+[[node]]
+id = "equation_11_3_5"
+kind = "theorem"
+desc = '''
+(11.3.5): `φ(x_c) = ½ ‖x_c − x*‖_A² + φ(x*)` with `φ(x*) = −½ bᵀA⁻¹b`.
+`LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq` plus the value at `x*`. ★
+'''
+deps = ["LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq", "energyNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.5)'
+
+[[node]]
+id = "steepestDescent_mu_eq"
+kind = "theorem"
+desc = '''
+(11.3.6) and the line after: for `g_c = A x_c − b ≠ 0`, `μ ↦ φ(x_c − μ g_c)` is minimized exactly at
+`μ_c = g_cᵀg_c / g_cᵀAg_c`, and `x_c − μ_c g_c = Projection.steepestDescentStep T b x_c` (the
+one-dimensional Galerkin step with `r = −g`). From `energyFunctional_add_smul` (a quadratic in `μ`)
+and `Projection.steepestDescentStep_isGalerkin`. ★
+'''
+deps = ["Projection.steepestDescentStep", "Projection.steepestDescentStep_isGalerkin", "energyFunctional"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.6)'
+
+[[node]]
+id = "equation_11_3_7"
+kind = "theorem"
+desc = '''
+(11.3.7): `φ(x₊) = φ(x_c) − ½ (g_cᵀg_c)² / (g_cᵀAg_c)` (the book prints `r_cᵀAr_c` in the
+denominator; `r_c = −g_c` makes them equal). Expansion of the quadratic at `μ_c`. ★
+'''
+deps = ["steepestDescent_mu_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.7)'
+
+[[node]]
+id = "equation_11_3_8"
+kind = "theorem"
+desc = '''
+(11.3.8): with `κ_c = (g_cᵀAg_c/g_cᵀg_c)(g_cᵀA⁻¹g_c/g_cᵀg_c)`: `g_cᵀA⁻¹g_c = 2φ(x_c) + bᵀA⁻¹b` and
+`φ(x₊) = φ(x_c) − (1/κ_c)(φ(x_c) + ½ bᵀA⁻¹b)`. Algebra from `equation_11_3_7`. ★
+'''
+deps = ["equation_11_3_7"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.8)'
+
+[[node]]
+id = "kappa_c_le"
+kind = "theorem"
+desc = '''
+§11.3.2: `κ_c ≤ λ_max(A)/λ_min(A) = κ₂(A)` for `g_c ≠ 0`: each Rayleigh quotient `gᵀAg/gᵀg` lies in
+`[λ_min, λ_max]` and `gᵀA⁻¹g/gᵀg ≤ 1/λ_min`. From `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
+(for `A` and `A⁻¹`) and `Matrix.PosDef.condNumber_l2_eq_div_eigenvalues` (via the earlier chapter's restatement `GolubVanLoan.Chapter04.condNumber_eq_div_eigenvalues`). ★
+'''
+deps = ["Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "GolubVanLoan.Chapter04.condNumber_eq_div_eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.2'
+
+[[node]]
+id = "equation_11_3_9"
+kind = "theorem"
+desc = '''
+(11.3.9): `‖x₊ − x*‖_A² ≤ (1 − 1/κ₂(A)) ‖x_c − x*‖_A²` for the steepest-descent step. The book's
+route: subtract `φ(x*)` from (11.3.8), use (11.3.5) and `kappa_c_le`. (The backbone's
+`Projection.energyNorm_steepestDescentStep_le` gives the sharper Kantorovich factor
+`((κ−1)/(κ+1))²`; either proof is acceptable.) ★
+'''
+deps = ["equation_11_3_8", "equation_11_3_5", "kappa_c_le", "Projection.energyNorm_steepestDescentStep_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.9)'
+
+[[node]]
+id = "algorithm_11_3_1"
+kind = "definition"
+desc = '''
+Algorithm 11.3.1 (steepest descent with exact line search), D4 program with fuel:
+`algorithm_11_3_1 rnd A b x₀ τ fuel` (`τ` the tolerance, `fuel` last): `x = x₀`, `g = A x − b` (gaxpy,
+Algorithm 1.1.3), then while `‖g‖₂ > τ` — **the test as printed**: the computed norm
+`rnd (√(rnd (gᵀg)))` (Algorithm 1.1.1, then one rounded square root, convention 1) compared exactly
+with `τ` (the squared form `gᵀg > τ²` is not used: it would round `τ²` and change the test) —
+`μ = rnd (gᵀg / gᵀAg)`, `x ← x − μ g`, `g ← A x − b` (recomputed, as printed). State `(k, x, g, done)`. ★
+'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.1'
+
+[[node]]
+id = "algorithm_11_3_1_spec"
+kind = "theorem"
+desc = '''
+Exact semantics for SPD `A`: (i) the `k`-th loop state has `x = (Projection.steepestDescentStep T b)^[k]
+x₀` (as long as the test has not failed); (ii) the book's claim "produces `x` with `‖Ax − b‖₂ ≤ τ`":
+for `τ > 0` there is `N` (explicitly, from `steepestDescent_rate`, `N = ⌈2 log(‖x₀ − x*‖_A √λ_max/τ)
+/ −log(1 − 1/κ₂)⌉`) such that for `fuel ≥ N` the output satisfies `‖A x − b‖₂ ≤ τ`. ★★ (~60 lines)
+'''
+deps = ["algorithm_11_3_1", "steepestDescent_mu_eq", "steepestDescent_rate",
+  "GolubVanLoan.Chapter01.algorithm_1_1_1_spec", "GolubVanLoan.Chapter01.algorithm_1_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.1'
+
+[[node]]
+id = "steepestDescent_rate"
+kind = "theorem"
+desc = '''
+§11.3.2, "a convergence rate characterized by `(1 − 1/κ₂(A))^{k/2}`": the steepest-descent iterates
+satisfy `‖x_k − x*‖_A ≤ (1 − 1/κ₂(A))^{k/2} ‖x₀ − x*‖_A`, hence converge ("globally convergent", by
+induction). Induction on `equation_11_3_9`. ★
+'''
+deps = ["equation_11_3_9"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.2'
+
+[[node]]
+id = "equation_11_3_11"
+kind = "theorem"
+desc = '''
+(11.3.10)–(11.3.11): if `x_{k+1}` minimizes `φ` over `x₀ + S_{k+1}` and `x_k − x₀, g_k ∈ S_{k+1}`, then
+`φ(x_{k+1}) ≤ min_μ φ(x_k − μ g_k)`; with nested `S_k` the minima are nonincreasing and
+`S_n = ℝⁿ` gives `x_n = x*`. Immediate from minimality (`Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`
+reading of `φ`). ★
+'''
+deps = ["equation_11_3_2", "Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.11)'
+
+[[node]]
+id = "gradient_mem_krylov"
+kind = "theorem"
+desc = '''
+§11.3.3, the precise content of "the only way to satisfy this requirement is `S_k = 𝒦(A, g₀, k)`":
+the Krylov spaces satisfy it — if `x_k − x₀ ∈ 𝒦(A, g₀, k)` then `g_k = A x_k − b ∈ 𝒦(A, g₀, k+1)`
+(so `x_k − μ g_k − x₀ ∈ 𝒦(A, g₀, k+1)`). `Krylov.residual_mem_subspace_succ`. The uniqueness claim
+("the only way") has no precise statement in the text and is not formalized. ★
+'''
+deps = ["Krylov.residual_mem_subspace_succ", "Krylov.subspace"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.3'
+
+[[node]]
+id = "equation_11_3_13"
+kind = "theorem"
+desc = '''
+(11.3.12)–(11.3.13), recalled from §10.1: after `k ≤ grade` Lanczos steps from `q₁ = r₀/‖r₀‖`,
+`A Q_k = Q_k T_k + r_k e_kᵀ` with `Q_k` orthonormal columns, `T_k` = `Lanczos.tridiag T r₀ k` and
+`Q_kᵀ r_k = 0`. Restates ch10's (10.1.4) (`GolubVanLoan.Chapter10.equation_10_1_4`; backbone
+`Lanczos.apply_vec`, `Arnoldi.w`). ★
+'''
+deps = ["GolubVanLoan.Chapter10.equation_10_1_4", "Lanczos.tridiag", "Lanczos.apply_vec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.13)'
+
+[[node]]
+id = "lanczos_tridiag_posDef"
+kind = "theorem"
+desc = '''
+§11.3.4: "the tridiagonal matrix `Q_kᵀAQ_k = T_k` is positive definite" for SPD `A` and `k ≤ grade`.
+`T_k` is the compression of `A` to `𝒦_k` in the orthonormal Arnoldi basis
+(`Lanczos.hessenbergSq_eq_map_tridiag`, `Arnoldi.hessenbergSq_eq_toMatrix_compression`), and a
+compression of a coercive operator is coercive. ★★ (~30 lines)
+'''
+deps = ["Lanczos.tridiag", "Lanczos.hessenbergSq_eq_map_tridiag", "Matrix.PosDef.isSymmetricCoercive_toEuclideanLin"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.4'
+
+[[node]]
+id = "cg_lanczos_coordinates"
+kind = "theorem"
+desc = '''
+§11.3.4: minimizing `φ(x₀ + Q_k y)` over `y ∈ ℝ^k` is `T_k y = β₀ e₁` (`φ(x₀ + Q_k y) = ½ yᵀT_k y −
+yᵀ(Q_kᵀr₀) + φ(x₀)`, `Q_kᵀr₀ = β₀e₁`), and `x_k = x₀ + Q_k y_k` is the Galerkin iterate
+`Krylov.IsGalerkinIterate T b x₀ k x_k`. From `Krylov.isGalerkinIterate_iff_mulVec_eq` (Galerkin in
+Arnoldi coordinates) with `Lanczos.hessenbergSq_eq_map_tridiag`. ★
+'''
+deps = ["Krylov.isGalerkinIterate_iff_mulVec_eq", "Lanczos.hessenbergSq_eq_map_tridiag", "lanczos_tridiag_posDef",
+  "Krylov.IsGalerkinIterate"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.4'
+
+[[node]]
+id = "preliminaryCG"
+kind = "definition"
+desc = '''
+The preliminary CG (11.3.14), D4 program with fuel: the Lanczos loop of Algorithm 10.1.1 on
+`q₁ = r₀/β₀`, with `T_k y_k = β₀ e₁` solved by a tridiagonal solver passed as an argument
+(`solveT : Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → M (Fin k → ℝ)`; exact semantics `T_k⁻¹`), and
+`x_k = x₀ + Q_k y_k`. The book prints `x_k = Q_k y_k` (correct only for `x₀ = 0`; Doubts); the
+program uses `x₀ + Q_k y_k`. ★
+'''
+deps = ["GolubVanLoan.Chapter10.algorithm_10_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.14)'
+
+[[node]]
+id = "equation_11_3_14"
+kind = "theorem"
+desc = '''
+Exact semantics, SPD `A`, `solveT = T⁻¹`: the run stops with `k = min fuel (Krylov.grade T r₀)` steps,
+and after `k` steps `x_k` is the Galerkin iterate (`cg_lanczos_coordinates`); the test `β_k ≠ 0` fails
+exactly at `k = grade` (`Lanczos.beta_eq_zero_iff`). Uses ch10's spec of Algorithm 10.1.1 for the
+Lanczos part. ★★ (~50 lines)
+'''
+deps = ["preliminaryCG", "cg_lanczos_coordinates", "GolubVanLoan.Chapter10.algorithm_10_1_1_spec",
+  "Lanczos.beta_eq_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.14)'
+
+[[node]]
+id = "theorem_11_3_1"
+kind = "theorem"
+desc = '''
+Theorem 11.3.1: if `k*` is the dimension of the smallest invariant subspace containing `r₀`, the CG
+iteration (11.3.14) terminates with `x_{k*} = x*`. Formally: `k* = Krylov.grade T r₀`, which is the
+`finrank` of the least `A`-invariant subspace containing `r₀` (`Krylov.fullSubspace_mem_invtSubmodule`
+and `Krylov.fullSubspace_le_of_mem_invtSubmodule`, staged), and the run of `preliminaryCG` with
+`fuel ≥ k*` stops after `k*` steps with `A x = b`. From `equation_11_3_14` and
+`Krylov.IsGalerkinIterate.apply_eq_of_grade_le`. ★
+'''
+deps = ["equation_11_3_14", "Krylov.IsGalerkinIterate.apply_eq_of_grade_le", "Krylov.grade",
+  "Krylov.fullSubspace_le_of_mem_invtSubmodule"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.1'
+
+[[node]]
+id = "corollary_11_3_2"
+kind = "theorem"
+desc = '''
+Corollary 11.3.2: `U ∈ ℝ^{n×r}`, `D ∈ ℝ^{r×r}` symmetric, `A = I_n + U D Uᵀ` positive definite ⇒ CG
+(11.3.14) needs at most `r + 1` iterations: `Krylov.grade T r₀ ≤ r + 1`. The book counts distinct
+eigenvalues; the shorter route is the staged `Krylov.grade_le_finrank_range_sub_algebraMap_add_one`
+(`grade A v ≤ rank(A − c) + 1`, from shift invariance of Krylov spaces) at `c = 1`, with
+`rank(U D Uᵀ) ≤ r`. (The hypothesis `r < n` is not needed.) ★
+'''
+deps = ["theorem_11_3_1", "Krylov.grade_le_finrank_range_sub_algebraMap_add_one"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 11.3.2'
+
+[[node]]
+id = "theorem_11_3_3"
+kind = "theorem"
+desc = '''
+Theorem 11.3.3: for the CG iterates, `‖x_{k+1} − x*‖_A ≤ (1 − 1/κ₂(A))^{1/2} ‖x_k − x*‖_A`. The
+steepest-descent successor of `x_k` lies in `x₀ + 𝒦_{k+1}` (`gradient_mem_krylov`), so by Galerkin
+optimality (`Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`) and `equation_11_3_9`. (The Lean
+lemma `Krylov.IsGalerkinIterate.energyNorm_error_succ_le` gives the sharper Kantorovich factor.) ★
+'''
+deps = ["equation_11_3_9", "gradient_mem_krylov", "Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf",
+  "CG.isGalerkinIterate"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.3'
+
+[[node]]
+id = "ldlTridiag"
+kind = "definition"
+desc = '''
+The recurrence (11.3.15) as a definition: from the diagonal `α` and off-diagonal `β` of a symmetric
+tridiagonal matrix, `d₁ = α₁`, `ℓ_{i−1} = β_{i−1}/d_{i−1}`, `d_i = α_i − ℓ_{i−1}β_{i−1}`; returns
+`(d, ℓ)` as `ℕ`-indexed sequences (prefix-stable in `k`). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.15)'
+
+[[node]]
+id = "equation_11_3_15"
+kind = "theorem"
+desc = '''
+(11.3.15): if the pivots `d_1, …, d_{k−1}` of `ldlTridiag` are nonzero, then `T_k = L_k D_k L_kᵀ` with
+`L_k` unit lower bidiagonal (subdiagonal `ℓ`) and `D_k = diag(d)` — `Matrix.IsLDM T_k L_k D_k L_kᵀ`;
+for positive definite `T_k` all `d_i > 0` (`Matrix.IsLDM.diag_pos_of_posDef`) and the factorization
+is the unique one (`Matrix.IsLDM.eq_of_isSymm`). Induction on `k` (bordering). The same recurrence
+is ch04's Algorithm 4.3.6 (symmetric tridiagonal PD solver). ★★ (~50 lines)
+'''
+deps = ["ldlTridiag", "Matrix.IsLDM", "Matrix.IsLDM.diag_pos_of_posDef", "Matrix.IsLDM.eq_of_isSymm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.15)'
+
+[[node]]
+id = "cgLDLv"
+kind = "definition"
+desc = '''
+(11.3.16): `v_k ∈ ℝ^k` with `L_k D_k v_k = β₀ e₁` (forward substitution on the lower bidiagonal
+`L_k D_k`), for the Lanczos `T_k` of `r₀` and its `ldlTridiag` factors. ★
+'''
+deps = ["ldlTridiag", "Lanczos.tridiag"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.16)'
+
+[[node]]
+id = "cgLDLC"
+kind = "definition"
+desc = '''
+(11.3.17): `C_k = Q_k L_k⁻ᵀ ∈ ℝ^{n×k}` (the solution of `C_k L_kᵀ = Q_k`), `Q_k` the Lanczos
+basis matrix (`Arnoldi.vec` columns). ★
+'''
+deps = ["ldlTridiag", "Arnoldi.vec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.17)'
+
+[[node]]
+id = "equation_11_3_18"
+kind = "theorem"
+desc = '''
+(11.3.18): `x_k = x₀ + Q_k y_k = x₀ + C_k v_k` for the Galerkin iterate (`T_k y_k = β₀ e₁`,
+`L_kᵀ y_k = v_k`). Algebra with `equation_11_3_15` and `cg_lanczos_coordinates`. ★
+'''
+deps = ["cgLDLv", "cgLDLC", "equation_11_3_15", "cg_lanczos_coordinates"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.18)'
+
+[[node]]
+id = "equation_11_3_19"
+kind = "theorem"
+desc = '''
+(11.3.19)–(11.3.20): `v_k = [v_{k−1}; ν_k]` (`Fin.snoc`) with `ν₁ = β₀/d₁` and
+`ν_k = −d_{k−1} ℓ_{k−1} ν_{k−1}/d_k` (`= −β_{k−1}ν_{k−1}/d_k`): forward substitution on a lower
+bidiagonal system is prefix-stable. The printed `v_k = [ν₁; …; ν_{k−1}/ν_k]` is garbled (Doubts).
+Covers (11.3.20) (`equation_11_3_20` is its second clause). ★
+'''
+deps = ["cgLDLv", "equation_11_3_15"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.19)'
+
+[[node]]
+id = "equation_11_3_20"
+kind = "theorem"
+desc = '''
+(11.3.20): the recurrence for `ν_k` alone, `ν₁ = β₀/d₁`, `ν_k = −d_{k−1}ℓ_{k−1}ν_{k−1}/d_k`, as the
+last component of `v_k`. From `equation_11_3_19`. ★
+'''
+deps = ["equation_11_3_19"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.20)'
+
+[[node]]
+id = "equation_11_3_21"
+kind = "theorem"
+desc = '''
+(11.3.21)–(11.3.22): `C_k = [C_{k−1} | c_k]` with `c₁ = q₁`, `c_k = q_k − ℓ_{k−1} c_{k−1}` (column
+partitioning of `C_k L_kᵀ = Q_k`, `L_kᵀ` unit upper bidiagonal). Covers (11.3.22)
+(`equation_11_3_22`). ★
+'''
+deps = ["cgLDLC", "equation_11_3_15"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.21)'
+
+[[node]]
+id = "equation_11_3_22"
+kind = "theorem"
+desc = '''
+(11.3.22): `c₁ = q₁`, `c_k = q_k − ℓ_{k−1} c_{k−1}` (`k > 1`), the column recurrence. From
+`equation_11_3_21`. ★
+'''
+deps = ["equation_11_3_21"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.22)'
+
+[[node]]
+id = "cgLDL_x_succ"
+kind = "theorem"
+desc = '''
+§11.3.5: `x_k = x_{k−1} + ν_k c_k`, from (11.3.18), (11.3.19), (11.3.21). ★
+'''
+deps = ["equation_11_3_18", "equation_11_3_19", "equation_11_3_21"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.5'
+
+[[node]]
+id = "algorithm_11_3_2"
+kind = "definition"
+desc = '''
+Algorithm 11.3.2 (CG, Lanczos version), D4 program with fuel: state
+`(k, x, q, qPrev, r, β, βPrev, α, d, ν, c, done)`; the loop body exactly as printed:
+`q_{k+1} = r_k/β_k`, `k ← k+1`, `α_k = q_kᵀAq_k`, then (`k = 1`) `d₁ = α₁`, `ν₁ = β₀/d₁`, `c₁ = q₁` or
+(`k > 1`) `ℓ_{k−1} = β_{k−1}/d_{k−1}`, `d_k = α_k − β_{k−1}ℓ_{k−1}`, `ν_k = −β_{k−1}ν_{k−1}/d_k`,
+`c_k = q_k − ℓ_{k−1}c_{k−1}`; `x_k = x_{k−1} + ν_k c_k`, `r_k = Aq_k − α_k q_k − β_{k−1}q_{k−1}`,
+`β_k = ‖r_k‖₂` (one `√` then `rnd`); stop when `β_k = 0`. ★
+'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.2'
+
+[[node]]
+id = "algorithm_11_3_2_spec"
+kind = "theorem"
+desc = '''
+Exact semantics for SPD `A`, `r₀ = b − Ax₀ ≠ 0`: the run takes `k = min fuel (grade T r₀)` steps, and
+for `1 ≤ j ≤ k`: `q_j = Arnoldi.vec T r₀ (j−1)`, `α_j = Lanczos.alpha T r₀ (j−1)`,
+`β_j = Lanczos.beta T r₀ (j−1)`, `(d_j, ℓ_j)` are the `ldlTridiag` factors of `T_k`,
+`d_j = 1/α^{CG}_{j−1}`, `ν_j c_j = α^{CG}_{j−1} p^{CG}_{j−1}`, and `x_j = (CG.iterate T b x₀ j).x`
+(so `x_j` is the Galerkin iterate, and at exit `A x = b`). Proof: induction on the loop, with the
+dictionary `CG.lanczos_alpha_zero_eq`, `CG.lanczos_alpha_succ_eq`, `CG.lanczos_beta_eq` and
+`CG.arnoldi_vec_eq` (the signs `(−1)^{j−1}` cancel in `ν_j c_j`). ★★★ (~150 lines)
+'''
+deps = ["algorithm_11_3_2", "CG.iterate", "CG.arnoldi_vec_eq", "CG.lanczos_alpha_zero_eq",
+  "CG.lanczos_alpha_succ_eq", "CG.lanczos_beta_eq", "ldlTridiag", "cgLDL_x_succ", "CG.isGalerkinIterate",
+  "GolubVanLoan.Chapter01.algorithm_1_1_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.2'
+
+[[node]]
+id = "theorem_11_3_4"
+kind = "theorem"
+desc = '''
+Theorem 11.3.4: for the iterates of Algorithm 11.3.2 (exact run, SPD `A`), the gradients
+`g_i = A x_i − b` satisfy `g_iᵀ g_j = 0` for `1 ≤ i < j ≤ k`, and `g_k = ν_k r_k` (`r_k` the Lanczos
+residual of the algorithm). From `algorithm_11_3_2_spec`: `g_i = −r^{CG}_i` and
+`CG.inner_residual_eq_zero`; `ν_k r_k = −r^{CG}_k` by the dictionary. (The book's proof — `g_k =
+(e_kᵀy_k) r_k` from (11.3.13) and `e_kᵀy_k = ν_k` — is an alternative, not needed.) ★★ (~40 lines)
+'''
+deps = ["algorithm_11_3_2_spec", "CG.inner_residual_eq_zero", "CG.residual_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.4'
+
+[[node]]
+id = "theorem_11_3_5"
+kind = "theorem"
+desc = '''
+Theorem 11.3.5: `c_iᵀ A c_j = 0` for `i ≠ j` and `c_jᵀ A c_j = d_j`, for `1 ≤ i, j ≤ k` (the printed range
+"`1 ≤ i < j ≤ k`" excludes the diagonal case the statement includes; Doubts). From
+`algorithm_11_3_2_spec` (`c_j = ±p^{CG}_{j−1}/‖r^{CG}_{j−1}‖`), `CG.inner_apply_direction_eq_zero`, and
+`p_{j−1}ᵀAp_{j−1} = ‖r_{j−1}‖²/α^{CG}_{j−1}` with `d_j = 1/α^{CG}_{j−1}`. The book's route (`D_k =
+C_kᵀAC_k` by uniqueness of `LDLᵀ`) is equivalent. ★★ (~40 lines)
+'''
+deps = ["algorithm_11_3_2_spec", "CG.inner_apply_direction_eq_zero", "CG.alpha"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.5'
+
+[[node]]
+id = "equation_11_3_23"
+kind = "theorem"
+desc = '''
+(11.3.23): the Hestenes–Stiefel directions `p_k = g_{k−1} + τ_{k−1}p_{k−1}` (`p₁ = g₀`) are nonzero
+multiples of the `c_k` of Algorithm 11.3.2 (the book's rescaling argument): `p_k = s_k c_k` with
+`s_k ≠ 0` while `g_{k−1} ≠ 0`. In backbone terms `p_k = −p^{CG}_{k−1}` (the book's `g`-signed
+directions), so from `algorithm_11_3_2_spec`. ★
+'''
+deps = ["algorithm_11_3_2_spec", "CG.step"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.23)'
+
+[[node]]
+id = "equation_11_3_24"
+kind = "theorem"
+desc = '''
+(11.3.24)–(11.3.25): `τ_{k−1} = −p_{k−1}ᵀAg_{k−1}/p_{k−1}ᵀAp_{k−1}` and `p_kᵀAg_{k−1} = p_kᵀAp_k`, from
+the `A`-conjugacy `p_{k−1}ᵀAp_k = 0` (Theorem 11.3.5). Covers (11.3.25) (`equation_11_3_25`). ★
+'''
+deps = ["equation_11_3_23", "theorem_11_3_5"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.24)'
+
+[[node]]
+id = "equation_11_3_25"
+kind = "theorem"
+desc = '''
+(11.3.25): `p_kᵀ A g_{k−1} = p_kᵀ A p_k`. Second clause of `equation_11_3_24`. ★
+'''
+deps = ["equation_11_3_24"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.25)'
+
+[[node]]
+id = "hestenesStiefel_coeffs"
+kind = "theorem"
+desc = '''
+§11.3.7, the two formulas the derivation ends with: `μ_k = g_{k−1}ᵀg_{k−1}/p_kᵀAp_k` (the step in
+`x_k = x_{k−1} − μ_k p_k`) and `τ_{k−1} = g_{k−1}ᵀg_{k−1}/g_{k−2}ᵀg_{k−2}`. From Theorem 11.3.4,
+(11.3.25) and the two displays `g_{k−1}ᵀg_{k−1} = −μ_{k−1}g_{k−1}ᵀAp_{k−1}`,
+`g_{k−2}ᵀg_{k−2} = μ_{k−1}p_{k−1}ᵀAp_{k−1}`; equivalently `CG.alpha`, `CG.beta` of the backbone
+(`CG.beta_iterate`). ★
+'''
+deps = ["equation_11_3_25", "theorem_11_3_4", "CG.alpha", "CG.beta"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.7'
+
+[[node]]
+id = "algorithm_11_3_3"
+kind = "definition"
+desc = '''
+Algorithm 11.3.3 (CG, Hestenes–Stiefel version), D4 program with fuel, exactly the shape of
+`notes/gvl/ch11/proto/Shapes.lean` (a): state `(k, x, r, p, ρ_{k−2} = r_{k−2}ᵀr_{k−2}, done)`; test
+`‖r_k‖₂ > 0` as `r_kᵀr_k ≠ 0` on the computed value; `τ_{k−1} = rnd(r_{k−1}ᵀr_{k−1} / r_{k−2}ᵀr_{k−2})`,
+`p_k = r_{k−1} + τ_{k−1}p_{k−1}` (saxpy), `μ_k = rnd(r_{k−1}ᵀr_{k−1} / p_kᵀAp_k)`,
+`x_k = x_{k−1} + μ_k p_k`, `r_k = r_{k−1} − μ_k A p_k`. ★
+'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_2",
+  "GolubVanLoan.Chapter01.algorithm_1_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.3'
+
+[[node]]
+id = "algorithm_11_3_3_spec"
+kind = "theorem"
+desc = '''
+Exact semantics for SPD `A`: with `s := Id.run (algorithm_11_3_3 pure A b x₀ fuel)`,
+`s.k = min fuel (Krylov.grade T r₀)`, `toLp s.x = (CG.iterate T b x₀ s.k).x`, `toLp s.r = (CG.iterate
+…).r`, and on exit by the test (`s.done`) `A *ᵥ s.x = b`. Statement shape settled by
+`notes/gvl/ch11/proto/Shapes.lean` (a). Proof: loop invariant "the state is the backbone state
+(book's `p_k` = backbone `p_{k−1}`, the book's `τ` = `CG.beta`, `μ` = `CG.alpha`)", with ch01's specs of
+dot/saxpy/gaxpy at `Id`; termination from `CG.residual_eq_zero_of_grade_le` and
+`CG.residual_ne_zero_of_lt_grade`. ★★ (~80 lines)
+'''
+deps = ["algorithm_11_3_3", "CG.iterate", "CG.residual_eq_zero_of_grade_le", "CG.residual_ne_zero_of_lt_grade",
+  "GolubVanLoan.Chapter01.algorithm_1_1_1_spec", "GolubVanLoan.Chapter01.algorithm_1_1_2_spec",
+  "GolubVanLoan.Chapter01.algorithm_1_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.3.3'
+
+[[node]]
+id = "practicalCG"
+kind = "definition"
+desc = '''
+The practical CG loop (11.3.26), D4 program with fuel: `x = x₀`, `r = b − Ax`, `ρ_c = rᵀr`,
+`δ = tol·‖b‖₂` (computed: `δ ← rnd (tol · rnd (√(rnd (bᵀb))))`, the arithmetic feeding the test rounded,
+convention 1); while `rnd (√ρ_c) > δ` (a comparison of computed values; `fuel` the last argument): `p = r` (first step) or `τ = ρ_c/ρ₋`, `p = r + τp`; `w = Ap`,
+`μ = ρ_c/pᵀw`, `x = x + μp`, `r = r − μw`, `ρ₋ = ρ_c`, `ρ_c = rᵀr`. Four vectors of state. ★
+'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.26)'
+
+[[node]]
+id = "equation_11_3_26"
+kind = "theorem"
+desc = '''
+Exact semantics: the state after `k` steps is the `k`-th backbone CG state (as in
+`algorithm_11_3_3_spec`), and on exit by the test `‖b − A x‖₂ ≤ tol ‖b‖₂`. ★★ (~50 lines, a
+variant of the Algorithm 11.3.3 proof; share the loop-invariant lemma)
+'''
+deps = ["practicalCG", "algorithm_11_3_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.26)'
+
+[[node]]
+id = "cg_relativeError_le"
+kind = "theorem"
+desc = '''
+§11.3.8, the display after (11.3.26): if `‖b − A x_c‖₂ ≤ tol ‖b‖₂` and `A x* = b` then
+`‖x_c − x*‖₂ ≤ tol ‖A⁻¹‖₂ ‖b‖₂ ≤ tol κ₂(A) ‖x*‖₂`. Delegates to
+`relative_error_le_condNumber_mul_relative_residual` (for `A` as a `ContinuousLinearEquiv` of
+`EuclideanSpace`). ★
+'''
+deps = ["relative_error_le_condNumber_mul_relative_residual", "NormedRing.condNumber"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.8'
+
+[[node]]
+id = "equation_11_3_27"
+kind = "theorem"
+desc = '''
+(11.3.27): `‖x − x_k‖_A ≤ 2 ‖x − x₀‖_A ((√κ₂ − 1)/(√κ₂ + 1))^k` for the CG iterates of SPD `A`
+(quoted from Trefethen–Bau, proved in the backbone). `Krylov.IsGalerkinIterate.energyNorm_error_le`
+with `λ_min, λ_max` from `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` and
+`Matrix.PosDef.condNumber_l2_eq_div_eigenvalues` (via the earlier chapter's restatement `GolubVanLoan.Chapter04.condNumber_eq_div_eigenvalues`). ★
+'''
+deps = ["Krylov.IsGalerkinIterate.energyNorm_error_le", "CG.isGalerkinIterate",
+  "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "GolubVanLoan.Chapter04.condNumber_eq_div_eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.27)'
+
+[[node]]
+id = "energyFunctional_normalEquations"
+kind = "theorem"
+desc = '''
+§11.3.9, the two identities: `φ_{AᵀA}(x) = ½‖Ax − b‖₂² − ½ bᵀb` for any `A ∈ ℝ^{m×n}`, and, for
+nonsingular square `A`, `φ_{AAᵀ}(y) = ½ ‖Aᵀy − A⁻¹b‖₂² − ½ bᵀ(AAᵀ)⁻¹b`. Expansion. ★
+'''
+deps = ["energyFunctional"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.9'
+
+[[node]]
+id = "equation_11_3_28"
+kind = "theorem"
+desc = '''
+(11.3.28), CGNR: the `k`-th CG iterate for `AᵀA x = Aᵀb` minimizes `‖Ax − b‖₂` over
+`x₀ + 𝒦(AᵀA, Aᵀr₀, k)`. `Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual` with
+`Astar = toEuclideanLin Aᵀ` (the adjoint hypothesis from `Matrix.toEuclideanLin_conjTranspose_eq_adjoint`),
+and `energyFunctional_normalEquations`. ★
+'''
+deps = ["Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual", "energyFunctional_normalEquations"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.28)'
+
+[[node]]
+id = "cgne_isMinError"
+kind = "theorem"
+desc = '''
+§11.3.9, CGNE (Craig): if `y_k` is the `k`-th CG iterate for `AAᵀ y = b` from `y₀` and `x_k = Aᵀy_k`
+(`x₀ = Aᵀy₀`), then `x_k` minimizes `‖x − x*‖₂` over the affine space (11.3.28).
+`Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`. ★
+'''
+deps = ["Krylov.isMinError_of_isGalerkinIterate_comp_adjoint", "equation_11_3_28"]
+source = 'Golub–Van Loan, Matrix Computations, §11.3.9'
+
+[[node]]
+id = "cgnr"
+kind = "definition"
+desc = '''
+The CGNR column of Figure 11.3.1, D4 program with fuel: `r_c = b − Ax₀`, `z_c = Aᵀr_c`, `p_c = z_c`;
+`μ = z_cᵀz_c/(Ap_c)ᵀ(Ap_c)`, `x₊ = x_c + μp_c`, `r₊ = r_c − μAp_c`, `z₊ = Aᵀr₊`, `τ = z₊ᵀz₊/z_cᵀz_c`,
+`p₊ = z₊ + τp_c`. `A` may be rectangular. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.3.1'
+
+[[node]]
+id = "cgnr_spec"
+kind = "theorem"
+desc = '''
+The exact run of `cgnr` is `Krylov.CGNR.iterate` (one application of `A` and one of `Aᵀ` per step),
+hence its iterates are those of (11.3.28). Loop invariant against the backbone state. ★★ (~40 lines)
+'''
+deps = ["cgnr", "Krylov.CGNR.iterate", "equation_11_3_28"]
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.3.1'
+
+[[node]]
+id = "cgne"
+kind = "definition"
+desc = '''
+The CGNE column of Figure 11.3.1, D4 program with fuel: `r_c = b − Ax_c`, `p_c = Aᵀr_c`;
+`μ = r_cᵀr_c/p_cᵀp_c`, `x₊ = x_c + μp_c`, `r₊ = r_c − μAp_c`, `τ = r₊ᵀr₊/r_cᵀr_c`, `p₊ = Aᵀr₊ + τp_c`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.3.1'
+
+[[node]]
+id = "cgne_spec"
+kind = "theorem"
+desc = '''
+The exact run of `cgne` is `Krylov.CGNE.iterate`, hence its iterates are those of `cgne_isMinError`
+(for consistent `A x = b`). ★★ (~40 lines)
+'''
+deps = ["cgne", "Krylov.CGNE.iterate", "cgne_isMinError"]
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.3.1'

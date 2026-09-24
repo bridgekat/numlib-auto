@@ -1,0 +1,229 @@
+desc = '''
+Golub–Kahan bidiagonalization ([golub2013matrix] §10.4; Paige–Saunders' LSQR, [golub2013matrix]
+§11.4.2). For `A : E →ₗ[𝕜] F` between two inner product spaces and a second operator
+`Astar : F →ₗ[𝕜] E` that is its adjoint (`hadj : ∀ u x, ⟪Astar u, x⟫ = ⟪u, A x⟫`, taken as a
+hypothesis exactly as `Numlib/Krylov/NormalEquations` does, so that neither completeness nor finite
+dimension is needed), the process builds orthonormal `v_j ∈ E`, `u_j ∈ F` and nonnegative reals
+`α_j, β_j` with
+
+`A v_j = α_j u_j + β_{j-1} u_{j-1}`,   `Astar u_j = α_j v_j + β_j v_{j+1}`   ((10.4.2)–(10.4.3)).
+
+**Specification first.** The vectors are *defined* as Arnoldi vectors of the two Gram operators,
+`GolubKahan.rightVec A Astar v j := Arnoldi.vec (Astar ∘ₗ A) v j` and
+`GolubKahan.leftVec A Astar v j := Arnoldi.vec (A ∘ₗ Astar) (A v) j` ((10.4.11)–(10.4.12) become
+`Arnoldi.span_vec`), and `α_j := re ⟪u_j, A v_j⟫`, `β_j := re ⟪v_{j+1}, Astar u_j⟫`. The two coupled
+recurrences are then theorems; the proof is the flag-uniqueness argument that identifies the Lanczos
+vectors with Gram–Schmidt (`Arnoldi.vec_succ_eq`): `A v_j − β_{j-1} u_{j-1}` lies in
+`𝒦_{j+1}(A Aᴴ, A v) ⊓ 𝒦_j(A Aᴴ, A v)ᗮ` and has positive leading coefficient. This is the same design
+as `Numlib/Krylov/Lanczos` (defined through `Arnoldi.vec`) and keeps breakdown uniform: past the
+grade the vectors are `0` and every identity holds with both sides `0`. Indices are `0`-based:
+`rightVec … 0 = v/‖v‖` is the book's `v_1`, `alpha … j` is `α_{j+1}`, `beta … j` is `β_{j+1}`.
+
+**Upper and lower are dual, not two processes.** The Paige–Saunders lower bidiagonalization of `A`
+from `u ∈ F` ([golub2013matrix] Algorithm 10.4.2) *is* the Golub–Kahan process of the adjoint pair
+`(Astar, A)` from `u`: its recurrences `Astar u_j = α_j v_j + β_j v_{j-1}`, `A v_j = α_j u_j +
+β_{j+1} u_{j+1}` are (10.4.2)–(10.4.3) with the roles of `A` and `Astar` exchanged. So there is one
+process, and the lower matrix `B̄_k` is `GolubKahan.bidiagLower`, which already appears in the upper
+process as the matrix of `Astar` ((10.4.10)). Everything proved once serves both.
+
+**The link to Lanczos.** `Bᵀ_k B_k = T_k(Aᴴ A, v)` (`GolubKahan.bidiag_conjTranspose_mul_bidiag`), so
+every Lanczos convergence theorem applies to the singular values (the remark after (10.4.12)); and the
+Lanczos process of the Jordan–Wielandt operator — the Hermitian dilation
+`LinearMap.hermitianDilation A Astar` on `WithLp 2 (E × F)`, `(x, y) ↦ (Astar y, A x)`, defined in
+`Numlib/Analysis/InnerProductSpace/SingularValues` (the book's `C = [0 A; Aᴴ 0]` of (10.4.16) with the
+factors in domain-first order) — from `(v, 0)` interleaves the two families, with zero diagonal and
+off-diagonal `α₀, β₀, α₁, …` (`GolubKahan.lanczos_jordanWielandt`, §10.4.3). The Golub–Van Loan review
+(H1, eigen 7) moved the operator out of this module, where the first plan defined it as
+`GolubKahan.jordanWielandt` on `F × E`: a generic operator does not belong in a Krylov module, and the
+opposite block order made its matrix bridge swap `A` and `Aᴴ`. Only the Lanczos statement stays here.
+
+**Matrix form** for `A : Matrix m n 𝕜` through `toEuclideanLin A`, `toEuclideanLin Aᴴ`
+(`Matrix.toEuclideanLin_conjTranspose_inner_left` supplies `hadj`), with `rightMatrix`/`leftMatrix`
+built like `Arnoldi.basisMatrix`: (10.4.9) `A V_k = U_k B_k`, (10.4.10) `Aᴴ U_k = V_{k+1} B̄_k`, and by
+duality (10.4.19). The LSQR residual formula `b − A (x₀ + V_k y) = U_{k+1} (β e₁ − B̄_k y)` is stated
+here for chapter 11 (`GolubKahan.residual_eq`); with refactor proposal R1 of `notes/gvl/ch10/report.md`
+(generalizing `Krylov.HessenbergRelation₂` to `A : E →ₗ F`) it becomes an instance of
+`Krylov.HessenbergRelation₂.residual_eq`.
+
+`Numlib/Krylov/NormalEquations` (CGNR, CGNE) is the other half of the normal-equations story: LSQR's
+iterate satisfies the CGNR specification `Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`,
+which is chapter 11's to state.
+'''
+
+[[node]]
+id = "GolubKahan.rightVec"
+kind = "definition"
+desc = '''`GolubKahan.rightVec (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (v : E) (j : ℕ) : E := Arnoldi.vec (Astar ∘ₗ A) v j`,
+the book's `v_{j+1}` ([golub2013matrix] Algorithm 10.4.1). Shape in `notes/gvl/ch10/proto/Shapes.lean`. ★'''
+deps = ["Arnoldi.vec"]
+
+[[node]]
+id = "GolubKahan.leftVec"
+kind = "definition"
+desc = '''`GolubKahan.leftVec A Astar v j : F := Arnoldi.vec (A ∘ₗ Astar) (A v) j`, the book's `u_{j+1}`. ★'''
+deps = ["Arnoldi.vec"]
+
+[[node]]
+id = "GolubKahan.alpha"
+kind = "definition"
+desc = '''`GolubKahan.alpha A Astar v j : ℝ := RCLike.re ⟪leftVec j, A (rightVec j)⟫`, the book's `α_{j+1}`. ★'''
+deps = ["GolubKahan.leftVec", "GolubKahan.rightVec"]
+
+[[node]]
+id = "GolubKahan.beta"
+kind = "definition"
+desc = '''`GolubKahan.beta A Astar v j : ℝ := RCLike.re ⟪rightVec (j + 1), Astar (leftVec j)⟫`, the book's `β_{j+1}`. ★'''
+deps = ["GolubKahan.leftVec", "GolubKahan.rightVec"]
+
+[[node]]
+id = "GolubKahan.span_rightVec"
+kind = "theorem"
+desc = '''`span (rightVec '' Iio k) = Krylov.subspace (Astar ∘ₗ A) v k` ([golub2013matrix] (10.4.11)); `Arnoldi.span_vec`. ★'''
+deps = ["GolubKahan.rightVec", "Arnoldi.span_vec"]
+
+[[node]]
+id = "GolubKahan.span_leftVec"
+kind = "theorem"
+desc = '''`span (leftVec '' Iio k) = Krylov.subspace (A ∘ₗ Astar) (A v) k` ([golub2013matrix] (10.4.12)); `Arnoldi.span_vec`. ★'''
+deps = ["GolubKahan.leftVec", "Arnoldi.span_vec"]
+
+[[node]]
+id = "GolubKahan.grade_comp_adjoint"
+kind = "theorem"
+desc = '''With `hadj` and finite grades, `grade (A ∘ₗ Astar) (A v) ∈ {g − 1, g}` where `g = grade (Astar ∘ₗ A) v`,
+the second exactly when `A (Arnoldi.vec (Astar ∘ₗ A) v (g − 1)) ≠ 0`-type condition (precisely: `g − 1`
+iff the last Lanczos vector of `Aᴴ A` is in `ker A`). `A` maps `𝒦_k(AᴴA, v)` onto `𝒦_k(AAᴴ, Av)`
+(`Krylov.map_subspace_comp`) with kernel `ker A ⊓ 𝒦_k(AᴴA, v)`, which is `⊥` or a line by
+`ker A ⊥ range Aᴴ`. This is what makes the breakdown statements of the two families line up
+([golub2013matrix] "if α_k = 0 … if β_k = 0"). ★★'''
+deps = ["GolubKahan.span_rightVec", "GolubKahan.span_leftVec", "Krylov.map_subspace_comp", "Krylov.grade"]
+
+[[node]]
+id = "GolubKahan.apply_rightVec"
+kind = "theorem"
+desc = '''(10.4.2), `0`-based: `A (rightVec 0) = (alpha 0 : 𝕜) • leftVec 0` and
+`A (rightVec (j + 1)) = (beta j : 𝕜) • leftVec j + (alpha (j + 1) : 𝕜) • leftVec (j + 1)`, under `hadj`.
+Proof: `A v_{j+1} ∈ A 𝒦_{j+2}(AᴴA, v) = 𝒦_{j+2}(AAᴴ, Av)` and is orthogonal to `u_i`, `i < j`,
+because `⟪u_i, A v_{j+1}⟫ = ⟪Astar u_i, v_{j+1}⟫` and `Astar u_i ∈ 𝒦_{i+2}(AᴴA, v)`; expand in the
+orthonormal `u` (`Arnoldi.eq_sum_inner_smul_vec`) and identify the two surviving coefficients as
+`beta j` (by `hadj`) and `alpha (j+1)` — both real, by the positivity argument of the module doc. ★★★
+(~200 lines together with `GolubKahan.adjoint_apply_leftVec`)'''
+deps = ["GolubKahan.alpha", "GolubKahan.beta", "GolubKahan.span_rightVec", "GolubKahan.span_leftVec", "Arnoldi.eq_sum_inner_smul_vec", "Arnoldi.vec_succ_eq", "Krylov.map_subspace_comp"]
+
+[[node]]
+id = "GolubKahan.adjoint_apply_leftVec"
+kind = "theorem"
+desc = '''(10.4.3), `0`-based: `Astar (leftVec j) = (alpha j : 𝕜) • rightVec j + (beta j : 𝕜) • rightVec (j + 1)`,
+under `hadj`. Same argument as `GolubKahan.apply_rightVec` on the other side (`Astar u_j ∈ 𝒦_{j+2}(AᴴA, v)`,
+orthogonal to `v_i`, `i < j`). Statement shape in `notes/gvl/ch10/proto/Shapes.lean`. ★★★ (shared
+estimate)'''
+deps = ["GolubKahan.alpha", "GolubKahan.beta", "GolubKahan.apply_rightVec"]
+
+[[node]]
+id = "GolubKahan.alpha_nonneg"
+kind = "theorem"
+desc = '''`0 ≤ alpha A Astar v j` and `0 ≤ beta A Astar v j`, and the defining inner products are real:
+`⟪leftVec j, A (rightVec j)⟫ = (alpha j : 𝕜)`, `⟪rightVec (j+1), Astar (leftVec j)⟫ = (beta j : 𝕜)`
+(so `alpha j = ‖A v_j − β_{j−1} u_{j−1}‖` and `beta j = ‖Astar u_j − α_j v_j‖`, the algorithm's
+formulas). From the positivity of leading coefficients (`Arnoldi.coeff_succ_self`). ★★'''
+deps = ["GolubKahan.apply_rightVec", "GolubKahan.adjoint_apply_leftVec", "Arnoldi.coeff_succ_self"]
+
+[[node]]
+id = "GolubKahan.lanczos_alpha_eq"
+kind = "theorem"
+desc = '''The Lanczos coefficients of `Aᴴ A` from `v` in terms of the bidiagonal ones:
+`Lanczos.alpha (Astar ∘ₗ A) v 0 = alpha 0 ^ 2`, `Lanczos.alpha (Astar ∘ₗ A) v (j+1) = alpha (j+1) ^ 2 + beta j ^ 2`
+and `Lanczos.beta (Astar ∘ₗ A) v j = alpha j * beta j`. Compose (10.4.2) and (10.4.3):
+`Aᴴ A v_{j+1} = α_{j+1} β_j v_j + (α_{j+1}² + β_j²) v_{j+1} + α_{j+1} β_{j+1} v_{j+2}` and compare with
+`Lanczos.apply_vec`. ★★'''
+deps = ["GolubKahan.apply_rightVec", "GolubKahan.adjoint_apply_leftVec", "Lanczos.alpha", "Lanczos.beta", "Lanczos.apply_vec"]
+
+[[node]]
+id = "GolubKahan.bidiag"
+kind = "definition"
+desc = '''`GolubKahan.bidiag A Astar v k : Matrix (Fin k) (Fin k) ℝ`, upper bidiagonal with `alpha j` on the diagonal
+and `beta j` on the superdiagonal at `(j, j+1)` ([golub2013matrix] (10.4.8)); `Matrix.IsUpperBidiagonal`.
+★'''
+deps = ["GolubKahan.alpha", "GolubKahan.beta", "Matrix.IsUpperBidiagonal"]
+
+[[node]]
+id = "GolubKahan.bidiagLower"
+kind = "definition"
+desc = '''`GolubKahan.bidiagLower A Astar v k : Matrix (Fin (k + 1)) (Fin k) ℝ`, lower bidiagonal with `alpha j` at
+`(j, j)` and `beta j` at `(j+1, j)`: the matrix of `Astar` in (10.4.10), `Aᴴ U_k = V_{k+1} B̄_k`, and — for
+the adjoint pair — the Paige–Saunders `B(1:k+1, 1:k)` of (10.4.18)–(10.4.19). Its first `k` rows are
+`(bidiag k)ᵀ`; it is lower bidiagonal in the rectangular sense, `Matrix.IsLowerBidiagonalRect`
+(the square-only `Matrix.IsLowerBidiagonal` does not apply to a `(k + 1) × k` matrix; review H6). ★'''
+deps = ["GolubKahan.alpha", "GolubKahan.beta", "Matrix.IsLowerBidiagonalRect"]
+
+[[node]]
+id = "GolubKahan.bidiag_conjTranspose_mul_bidiag"
+kind = "theorem"
+desc = '''`(bidiag A Astar v k)ᵀ * bidiag A Astar v k = Lanczos.tridiag (Astar ∘ₗ A) v k` under `hadj` — the
+bidiagonal process is the Lanczos process of `Aᴴ A` with the tridiagonal factored ([golub2013matrix] the
+remark after (10.4.12)). Entrywise from `GolubKahan.lanczos_alpha_eq`. ★'''
+deps = ["GolubKahan.bidiag", "GolubKahan.lanczos_alpha_eq", "Lanczos.tridiag"]
+
+[[node]]
+id = "GolubKahan.rightMatrix"
+kind = "definition"
+desc = '''For `A : Matrix m n 𝕜` and `v : EuclideanSpace 𝕜 n`: `GolubKahan.rightMatrix A v k : Matrix n (Fin k) 𝕜`,
+the columns `(rightVec (toEuclideanLin A) (toEuclideanLin Aᴴ) v j).ofLp`, and `GolubKahan.leftMatrix A v k :
+Matrix m (Fin k) 𝕜` likewise (one node for the pair; `V_k`, `U_k` of (10.4.9)). Same pattern as
+`Arnoldi.basisMatrix`. ★'''
+deps = ["GolubKahan.rightVec", "GolubKahan.leftVec", "Arnoldi.basisMatrix"]
+
+[[node]]
+id = "GolubKahan.mul_rightMatrix"
+kind = "theorem"
+desc = '''(10.4.9): `A * rightMatrix A v k = leftMatrix A v k * (bidiag _ _ v k).map (algebraMap ℝ 𝕜)`, for every
+`k` (past breakdown both sides are consistent: a vanishing `α` gives a zero column). From
+`GolubKahan.apply_rightVec` with `hadj` from `Matrix.toEuclideanLin_conjTranspose_inner_left`. ★★'''
+deps = ["GolubKahan.rightMatrix", "GolubKahan.apply_rightVec", "GolubKahan.bidiag", "Matrix.toEuclideanLin_conjTranspose_inner_left"]
+
+[[node]]
+id = "GolubKahan.conjTranspose_mul_leftMatrix"
+kind = "theorem"
+desc = '''(10.4.10): `Aᴴ * leftMatrix A v k = rightMatrix A v (k + 1) * (bidiagLower _ _ v k).map (algebraMap ℝ 𝕜)`,
+equivalently `V_k B_kᵀ + p_k e_kᵀ` with `p_k = β_k v_{k+1}`. Applied to `Aᴴ` (so that `(Aᴴ)ᴴ = A`) it is
+the Paige–Saunders relation (10.4.19) `A V_k = U_{k+1} B̄_k`. From `GolubKahan.adjoint_apply_leftVec`. ★★'''
+deps = ["GolubKahan.rightMatrix", "GolubKahan.adjoint_apply_leftVec", "GolubKahan.bidiagLower"]
+
+[[node]]
+id = "GolubKahan.orthonormal"
+kind = "theorem"
+desc = '''`(rightMatrix A v k)ᴴ * rightMatrix A v k = 1` for `k ≤ grade ((Aᴴ).toEuclideanLin ∘ₗ A.toEuclideanLin) v`
+and `(leftMatrix A v k)ᴴ * leftMatrix A v k = 1` for `k ≤ grade (A ∘ₗ Aᴴ) (A v)`; one node for the pair,
+from `Arnoldi.conjTranspose_basisMatrix_mul_self`. ★'''
+deps = ["GolubKahan.rightMatrix", "Arnoldi.conjTranspose_basisMatrix_mul_self"]
+
+[[node]]
+id = "GolubKahan.residual_eq"
+kind = "theorem"
+desc = '''The LSQR residual (for chapter 11's §11.4.2). The Paige–Saunders process of `A` from `u ∈ F` is the
+process of the pair `(Astar, A)` from `u`: its `u_j` are `rightVec Astar A u j ∈ F`, its `v_j` are
+`leftVec Astar A u j ∈ E`, and `adjoint_apply_leftVec` for that pair reads `A v_j = α_j u_j + β_j u_{j+1}`.
+Statement: if `b − A x₀ = (β : 𝕜) • u` with `‖u‖ = 1` and `y : Fin k → 𝕜`, then
+`b − A (x₀ + ∑ j, y j • leftVec Astar A u j) = ∑ i : Fin (k + 1), (Krylov.firstVec β (k + 1) −
+((bidiagLower Astar A u k).map (algebraMap ℝ 𝕜)) *ᵥ y) i • rightVec Astar A u i`. The same computation
+as `Krylov.HessenbergRelation₂.residual_eq`, between two spaces; with refactor proposal R1 it is
+literally an instance. ★★'''
+deps = ["GolubKahan.adjoint_apply_leftVec", "GolubKahan.bidiagLower", "Krylov.firstVec", "Krylov.HessenbergRelation₂.residual_eq"]
+
+[[node]]
+id = "GolubKahan.lanczos_jordanWielandt"
+kind = "theorem"
+desc = '''The tridiagonal–bidiagonal connection ([golub2013matrix] §10.4.3, with (10.4.17)): under `hadj`, the
+Lanczos process of the Hermitian dilation `LinearMap.hermitianDilation A Astar` (on `WithLp 2 (E × F)`,
+`(x, y) ↦ (Astar y, A x)`, the library's Jordan–Wielandt operator of
+`Numlib/Analysis/InnerProductSpace/SingularValues`) from `(v, 0)` has
+`Arnoldi.vec _ _ (2j) = (rightVec j, 0)`, `Arnoldi.vec _ _ (2j+1) = (0, leftVec j)`,
+`Lanczos.alpha _ _ i = 0`, `Lanczos.beta _ _ (2j) = alpha j`, `Lanczos.beta _ _ (2j+1) = beta j`; hence
+`T_{2k}` has zero diagonal and subdiagonal `α₀, β₀, α₁, …, α_{k−1}`. (The book's `C = [0 A; Aᴴ 0]` of
+(10.4.16) acts on `F × E` from `(0, v)`; the dilation puts the domain factor first, so the start is
+`(v, 0)` and the interleaving reads the same.) Proof: the interleaved family is orthonormal, spans the
+Krylov flag of the dilation (from (10.4.2)–(10.4.3): `C (v_j, 0) = (0, α_j u_j + β_{j−1} u_{j−1})`, …) and
+has positive leading coefficients, so `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` identifies
+it with `Arnoldi.vec`. Product-space inner product: Mathlib `WithLp.prod_inner_apply`. Symmetry of the
+dilation: `LinearMap.isSymmetric_hermitianDilation`. ★★★ (~250 lines)'''
+deps = ["LinearMap.hermitianDilation", "LinearMap.isSymmetric_hermitianDilation", "GolubKahan.apply_rightVec", "GolubKahan.adjoint_apply_leftVec", "GolubKahan.alpha_nonneg", "InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos", "Lanczos.alpha", "Lanczos.beta"]

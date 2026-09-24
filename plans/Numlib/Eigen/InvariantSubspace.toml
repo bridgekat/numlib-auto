@@ -1,0 +1,200 @@
+desc = '''
+Invariant subspaces of a matrix: their uniqueness for a spectral set, their perturbation (Stewart's
+theorem), and the convergence of orthogonal iteration to the dominant one.
+
+* **Uniqueness.** An `A`-invariant subspace on which `A` has only eigenvalues from a set `Λ`, of the
+  dimension of the total algebraic multiplicity of `Λ`, *is* `⨆_{μ ∈ Λ} maxGenEigenspace A μ`
+  (`Module.End.invtSubmodule_eq_iSup_maxGenEigenspace`). That is the precise sense of
+  [golub2013matrix]'s "the unique invariant subspace associated with the eigenvalues λ₁, …, λ_r"
+  (§7.3.2, the dominant invariant subspace `D_r(A)`, and §7.6.2, the first `p` Schur vectors when
+  `λ(T₁₁) ∩ λ(T₂₂) = ∅`); the matrix form is `Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj`. It
+  rests on the splitting `Krylov.isCompl_iSup_maxGenEigenspace` of `Numlib/Eigen/PowerMethod`.
+* **Powers from a Schur form** ([golub2013matrix] Lemma 7.3.2): with `Qᴴ A Q = D + N`,
+  `‖A^k‖₂ ≤ (1+μ)^{n-1} (|λ_max| + ‖N‖_F/(1+μ))^k` and the inverse-power bound; the diagonal scaling
+  `Δ = diag(1, 1+μ, …, (1+μ)^{n-1})` shrinks the strictly upper part by `1+μ`.
+* **Stewart's perturbation theorem** ([golub2013matrix] Theorem 7.2.4, after Stewart 1973 Theorem
+  4.11). In Schur coordinates `T = fromBlocks T₁₁ T₁₂ 0 T₂₂` and a perturbation `E` with blocks
+  `Eᵢⱼ`, the column space of `fromRows 1 P` is `(T + E)`-invariant exactly when `P` solves the
+  Riccati equation `P A₁₁ - A₂₂ P = E₂₁ - P A₁₂ P` (`Aᵢⱼ` the blocks of `T + E`). Its linear part is
+  `-sylvesterMap A₂₂ A₁₁`, whose inverse has norm `≤ 1/sep(A₂₂, A₁₁) = 1/sep(A₁₁, A₂₂)`
+  (`Matrix.sep_comm`) and `sep(A₁₁, A₂₂) ≥ sep(T₁₁, T₂₂) - ‖E₁₁‖ - ‖E₂₂‖` (`Matrix.sep_sub_le_sep_add`);
+  a contraction argument on a ball (`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`, Banach fixed point
+  `ContractingWith.fixedPoint`) solves it with `‖P‖_F ≤ 2 γ / δ` when `γ η / δ² < 1/4`. With the book's
+  hypothesis `‖E‖_F (1 + 5‖T₁₂‖_F/sep) ≤ sep/5`: `δ ≥ sep - 2‖E‖ ≥ 3 sep/5`,
+  `γ η ≤ ‖E‖ (‖T₁₂‖ + ‖E‖) ≤ sep²/25`, so `γη/δ² ≤ 1/9 < 1/4` and `‖P‖_F ≤ (10/3) ‖E₂₁‖_F/sep ≤
+  4 ‖E₂₁‖_F/sep` — the book's constants, with room.
+* **Distance of a graph subspace** ([golub2013matrix] Corollary 7.2.5 and (7.2.6)):
+  `gap(ran [I; 0], ran [I; P]) ≤ ‖P‖₂` (`Matrix.gap_range_fromRows_le`), a corollary of the
+  operator-level `Submodule.gap_graph` of `Numlib/Analysis/InnerProductSpace/Projection/Gap`
+  (`gap(K, graph X) = ‖X‖/√(1 + ‖X‖²)` for `X : K → Kᗮ`); `Submodule.gap` of
+  `Numlib/Analysis/InnerProductSpace/Projection/Angle` is the book's `dist(S₁, S₂) = ‖P₁ - P₂‖₂`
+  (§2.5.3), and it is unitarily invariant (`Submodule.gap_map_linearIsometryEquiv`).
+* **Orthogonal iteration** ([golub2013matrix] Theorem 7.3.1, **corrected**): the subspaces
+  `A^k S₀` (`Krylov.subspaceIterate`) approach the dominant invariant subspace `D_r(A)` at the rate
+  `((|λ_{r+1}| + ‖N‖/(1+μ)) / (|λ_r| - ‖N‖/(1+μ)))^k`. The printed hypothesis `d₀ = dist(D_r(A), ran Q₀) < 1`
+  is the wrong one — the proof uses `dist(D_r(Aᴴ), ran Q₀) < 1`, and the text after the theorem
+  says so in words — and the printed theorem is false: for `A = [[2, 1], [0, 1]]`, `r = 1` and
+  `Q₀ = (1, -1)/√2` (an eigenvector for `λ₂ = 1`), `d₀ = 1/√2 < 1` but `d_k = 1/√2` for all `k`. The
+  backbone states the corrected form with `D_r(Aᴴ) = (⨆_{unselected μ} maxGenEigenspace A μ)ᗮ` and the
+  factor `d₀ / √(1 - d̃₀²)`, `d̃₀ = gap(D_r(Aᴴ), S₀)`.
+
+Mathlib has invariant submodules (`Module.End.invtSubmodule`) and generalized eigenspaces, nothing on
+their perturbation; Numlib has the gap and the qualitative convergence of subspace iteration
+(`Krylov.exists_gap_subspaceIterate_le`, `Krylov.tendsto_orthogonalIterate`), which assume
+diagonalizability — Theorem 7.3.1 does not, and its constant is explicit.
+
+The appendix proof of Theorem 7.3.1 uses two subspace-distance facts from [golub2013matrix] §2.5
+that chapter 2 plans (`Numlib/Analysis/InnerProductSpace/Projection/Gap` and, after the Golub–Van Loan review,
+`Numlib/Analysis/Matrix/SingularValues`):
+`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` (their Theorem 2.5.1; the book's (7.3.18)) and
+`Matrix.gap_range_sq_add_sortedSingularValues_sq` (`gap² + σ_min(W₁ᴴ Z₁)² = 1`, `σ_min` the last sorted singular value; (7.3.19)).
+
+Order and size: uniqueness ★★ (150), Lemma 7.3.2 ★★ (200), Stewart ★★★ (450, on the quadratic
+lemma `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` of `Numlib/Analysis/Normed/Operator/QuadraticEquation`), graph gap ★ (50),
+graph transport ★ (50), Theorem 8.2.2 ★★ (150), Theorem 7.3.1 ★★★ (350). About 1450 lines.
+'''
+
+[[node]]
+id = "Module.End.invtSubmodule_eq_iSup_maxGenEigenspace"
+kind = "theorem"
+desc = '''For `A : Module.End K V` on a finite-dimensional space over an algebraically closed field, a
+set `Λ` and `S ∈ A.invtSubmodule`: if every eigenvalue of `A.restrict S` lies in `Λ` then
+`S ≤ ⨆ μ ∈ Λ, A.maxGenEigenspace μ`, with equality when `finrank S` equals
+`finrank (⨆ μ ∈ Λ, A.maxGenEigenspace μ)` (= the sum of the algebraic multiplicities). Proof: `S`
+is the sum of the generalized eigenspaces of `A.restrict S`
+(`Module.End.iSup_maxGenEigenspace_eq_top`), each inside the corresponding one of `A`. ★★'''
+deps = ["Krylov.isCompl_iSup_maxGenEigenspace"]
+
+[[node]]
+id = "Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj"
+kind = "theorem"
+desc = '''Matrix form ([golub2013matrix] §7.6.2, "the first p columns of Q span the unique invariant
+subspace associated with λ(T₁₁)"; and `D_r(A)` in §7.3.2): if `Q` is invertible (e.g. unitary) and
+`(Q⁻¹ * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂` (`e : Fin N ≃ Fin p ⊕ Fin q`) with
+`Disjoint (spectrum ℂ T₁₁) (spectrum ℂ T₂₂)`, then the span of the first `p` columns of `Q` equals
+`⨆ μ ∈ spectrum ℂ T₁₁, (toLin' A).maxGenEigenspace μ`. ★'''
+deps = ["Module.End.invtSubmodule_eq_iSup_maxGenEigenspace"]
+
+[[node]]
+id = "Matrix.frobenius_norm_diagonal_mul_mul_inv_le"
+kind = "theorem"
+desc = '''The scaling step of [golub2013matrix] Lemma 7.3.2: for `N : Matrix (Fin n) (Fin n) 𝕜` strictly
+upper triangular, `μ ≥ 0` and `Δ = diagonal fun i => (1 + μ)^(i : ℕ)`,
+`‖Δ * N * Δ⁻¹‖_F ≤ ‖N‖_F / (1 + μ)` (entry `(i, j)`, `i < j`, is scaled by `(1+μ)^{i-j} ≤ (1+μ)⁻¹`),
+and `‖Δ‖₂ ‖Δ⁻¹‖₂ = (1 + μ)^(n - 1)` (for `n ≥ 1`; `Matrix.l2_opNorm_diagonal`). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.l2_opNorm_pow_le_of_schur"
+kind = "theorem"
+desc = '''[golub2013matrix] Lemma 7.3.2, (7.3.15): if `Q ∈ unitaryGroup (Fin n) 𝕜`, `star Q * A * Q = T`
+upper triangular, `N = strictUpper T`, `μ ≥ 0`, then for all `k`,
+`‖A ^ k‖₂ ≤ (1 + μ) ^ (n - 1) * (⨆ i, ‖T i i‖ + ‖N‖_F / (1 + μ)) ^ k`. `A^k = Q Δ⁻¹ (D + Δ N Δ⁻¹)^k Δ Qᴴ`,
+`‖D‖₂ = max |t_ii|` (`Matrix.l2_opNorm_diagonal`), `‖·‖₂ ≤ ‖·‖_F` (`Matrix.l2_opNorm_le_frobenius_norm`).
+(The empty case `n = 0` needs `k ≠ 0` or a convention; `notes/lessons.md` 2026-09-14 agent/norms.) ★★'''
+deps = ["Matrix.frobenius_norm_diagonal_mul_mul_inv_le", "Matrix.l2_opNorm_unitary_mul_mul_unitary", "Matrix.l2_opNorm_le_frobenius_norm"]
+
+[[node]]
+id = "Matrix.l2_opNorm_inv_pow_le_of_schur"
+kind = "theorem"
+desc = '''[golub2013matrix] Lemma 7.3.2, (7.3.16): in the setting of `l2_opNorm_pow_le_of_schur`, if `A`
+is nonsingular and `(1 + μ) * m > ‖N‖_F` where `m = ⨅ i, ‖T i i‖`, then
+`‖A⁻¹ ^ k‖₂ ≤ (1 + μ) ^ (n - 1) * (1 / (m - ‖N‖_F / (1 + μ))) ^ k`. `T' = D + Δ N Δ⁻¹ = D (1 + D⁻¹ Δ N Δ⁻¹)`
+with `‖D⁻¹ Δ N Δ⁻¹‖₂ < 1` and the Neumann bound `‖(1 + X)⁻¹‖ ≤ 1/(1 - ‖X‖)`
+(`NormedRing.inverse_one_sub` and its norm estimate in `Numlib/Analysis/Normed`). The book's last
+display writes `|μ|` for `|λ_min|` (typo). ★★'''
+deps = ["Matrix.frobenius_norm_diagonal_mul_mul_inv_le", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
+
+[[node]]
+id = "Matrix.exists_invariant_graph_of_sep"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 7.2.4, in Schur coordinates (the unitary `Q` is removed; the surface
+puts it back): for `T₁₁ : Matrix m m 𝕜`, `T₁₂ : Matrix m n 𝕜`, `T₂₂ : Matrix n n 𝕜`,
+`E : Matrix (m ⊕ n) (m ⊕ n) 𝕜`, `s = sep T₁₁ T₂₂ > 0` and
+`‖E‖_F * (1 + 5 * ‖T₁₂‖_F / s) ≤ s / 5`, there is `P : Matrix n m 𝕜` with
+`‖P‖_F ≤ 4 * ‖E.toBlocks₂₁‖_F / s` and
+`(fromBlocks T₁₁ T₁₂ 0 T₂₂ + E) * fromRows 1 P = fromRows 1 P * (T₁₁ + E.toBlocks₁₁ + (T₁₂ + E.toBlocks₁₂) * P)`
+(so `ran (fromRows 1 P)` is invariant). Proof: `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` with `F = Matrix n m 𝕜`
+(Frobenius norm), `L P = P A₁₁ - A₂₂ P`, `g = E₂₁`, `φ P = P A₁₂ P`, `δ = sep(A₁₁, A₂₂) ≥ s - 2‖E‖_F`
+(`Matrix.sep_sub_le_sep_add`, `Matrix.sep_comm`), `η = ‖A₁₂‖_F`; the arithmetic of the constants is in
+the module doc. ★★★ (~450 lines).'''
+deps = ["ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic", "Matrix.sep", "Matrix.sep_comm", "Matrix.sep_sub_le_sep_add", "Matrix.frobenius_norm_le_div_sep"]
+
+[[node]]
+id = "Submodule.gap_map_linearIsometryEquiv"
+kind = "theorem"
+desc = '''The gap is invariant under isometries: `(K.map e).gap (L.map e) = K.gap L` for a linear isometry
+equivalence `e` (`Submodule.starProjection_map`-type identity `P_{eK} = e P_K e⁻¹`). With unitary
+matrices this is the unitary invariance of the book's `dist`. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.gap_range_fromRows_le"
+kind = "theorem"
+desc = '''[golub2013matrix] Corollary 7.2.5's computation and (7.2.6): for `P : Matrix n m 𝕜`, in
+`EuclideanSpace 𝕜 (m ⊕ n)`, `gap (range (fromRows 1 0)) (range (fromRows 1 P)) ≤ ‖P‖₂ ≤ ‖P‖_F`. A
+corollary of the operator-level `Submodule.gap_graph` (review: the graph–gap lemma is tracked once, in
+`Numlib/Analysis/InnerProductSpace/Projection/Gap`): `range (fromRows 1 0)` is the coordinate
+subspace `K` of the first block, its orthogonal complement is the second block, and `range (fromRows
+1 P)` is the graph of `P : K → Kᗮ` read through `toEuclideanLin`; so the gap is `‖P‖₂ / √(1 +
+‖P‖₂²) ≤ ‖P‖₂` (`Matrix.l2_opNorm_le_frobenius_norm` for the last step). ★ (~50 lines)'''
+deps = ["Submodule.gap", "Submodule.gap_graph", "Matrix.l2_opNorm_le_frobenius_norm"]
+
+[[node]]
+id = "Krylov.subspaceIterate_graph"
+kind = "theorem"
+desc = '''The transport of a graph subspace by powers (the coordinate-free core of [golub2013matrix] Theorem
+7.3.1's appendix proof and of Theorem 8.2.2): let `A : E →ₗ[𝕜] E` over a field, `K W : Submodule 𝕜 E`
+both `A`-invariant with `IsCompl K W`, `A₁ = A.restrict hK : K →ₗ K` bijective (as a `LinearEquiv`,
+`LinearEquiv.ofBijective`), `A₂ = A.restrict hW`, and `X : K →ₗ[𝕜] W`. Write `graph X =
+LinearMap.range (K.subtype + W.subtype ∘ₗ X)` (`{u + X u | u ∈ K}`). Then for all `k`,
+`Krylov.subspaceIterate A (graph X) k = graph (A₂ ^ k ∘ₗ X ∘ₗ (A₁.symm ^ k))`. Proof: `A^k (u + X u) =
+A₁^k u + A₂^k X u` (invariance), and `u ↦ A₁^k u` is a bijection of `K`. Pure algebra (L0), no inner
+product, no finite dimension. ★ (~50 lines)'''
+deps = ["Krylov.subspaceIterate"]
+
+[[node]]
+id = "Matrix.gap_subspaceIterate_le_of_schur"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 7.3.1, corrected (see the module doc for the counterexample to the
+printed hypothesis). Setting: `Q ∈ unitaryGroup (Fin n) ℂ`, `(star Q * A * Q).reindex e e =
+fromBlocks T₁₁ T₁₂ 0 T₂₂` upper triangular with `e : Fin n ≃ Fin r ⊕ Fin (n - r)`, the diagonal ordered
+`|λ₁| ≥ … ≥ |λ_n|` with `|λ_r| > |λ_{r+1}|`; `N` the strictly upper part, `μ ≥ 0` with
+`(1 + μ) |λ_r| > ‖N‖_F`. Let `Dr = span {Q.col i | i < r}` (the dominant invariant subspace),
+`W = ⨆_{i ≥ r} maxGenEigenspace A λ_i` the complementary invariant subspace (the two eigenvalue sets
+are disjoint because `|λ_r| > |λ_{r+1}|`), `Dr' = Wᗮ` (= the book's `D_r(Aᴴ)`), and `S₀` of dimension `r` with `d̃₀ = gap Dr' S₀ < 1`. Then for all `k`,
+`gap Dr (Krylov.subspaceIterate A S₀ k) ≤ (1 + μ) ^ (n - 2) * (1 + ‖T₁₂‖_F / sep T₁₁ T₂₂) *
+((|λ_{r+1}| + ‖N‖_F/(1+μ)) / (|λ_r| - ‖N‖_F/(1+μ))) ^ k * (gap Dr S₀ / √(1 - d̃₀ ^ 2))`.
+Proof: the book's appendix, with its coordinate computation of `W_k` replaced by the graph
+transport — block-diagonalize `T` by the Sylvester solution `X` (`Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero`,
+`‖X‖_F ≤ ‖T₁₂‖_F/sep`), so that `Dr` and `W` are complementary invariant subspaces and `S₀` (with
+`V₀ - X W₀` invertible, from `d̃₀ < 1`) is the graph over `Dr` into `W` of `Z₀ = W₀ (V₀ - X W₀)⁻¹` in
+the basis `Q [I X; 0 I]`; `Krylov.subspaceIterate_graph` gives `A^k S₀ = graph (T₂₂^k Z₀ T₁₁^{-k})` (the
+book's `W_k = T₂₂^k W₀ (V₀ - X W₀)⁻¹ T₁₁^{-k} (V_k - X W_k)`), and the distance is read off by the
+same graph–gap bookkeeping as `Submodule.gap_graph` (`d_k = ‖Q_βᴴ Q_k‖₂`); powers by `l2_opNorm_pow_le_of_schur` and
+`l2_opNorm_inv_pow_le_of_schur` applied to the blocks, and `‖(V₀ - X W₀)⁻¹‖₂ ≤ 1/√(1 - d̃₀²)` from
+`V₀ - X W₀ = G (Zᴴ Q₀)` with `G Gᴴ = I + X Xᴴ` (`σ_min(G) ≥ 1`) and `σ_min(Zᴴ Q₀)² = 1 - d̃₀²`
+(`Matrix.gap_range_sq_add_sortedSingularValues_sq`), `d_k = ‖Q_βᴴ Q_k‖₂`
+(`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`). ★★★ (~400 lines).'''
+deps = ["Krylov.subspaceIterate_graph", "Submodule.gap_graph", "Matrix.l2_opNorm_pow_le_of_schur", "Matrix.l2_opNorm_inv_pow_le_of_schur", "Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero", "Matrix.frobenius_norm_le_div_sep", "Krylov.subspaceIterate", "Submodule.gap", "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul", "Matrix.gap_range_sq_add_sortedSingularValues_sq"]
+
+[[node]]
+id = "LinearMap.IsSymmetric.gap_subspaceIterate_le"
+kind = "theorem"
+desc = '''Subspace (orthogonal) iteration with the explicit constant ([golub2013matrix] Theorem
+8.2.2, (8.2.12)): let `A` be symmetric on a finite-dimensional `E`, `v` an orthonormal eigenbasis
+with real eigenvalues `l`, `J` a set of indices with `|l j| ≥ ρ > 0` for `j ∈ J` and `|l i| ≤ r'`
+for `i ∉ J`, `D = span (v '' J)` (the dominant invariant subspace `D_r(A)`), and `S` a subspace
+with `finrank S = finrank D` and `d₀ := D.gap S < 1`. Then for all `k`,
+`D.gap (Krylov.subspaceIterate A S k) ≤ (r' / ρ) ^ k * (d₀ / √(1 - d₀ ^ 2))`.
+Proof (the `tan Θ` form of the book's argument, with no CS decomposition; it is the normal case `T₁₂ =
+0`, `N = 0`, `μ = 0`, `d̃₀ = d₀` of `Matrix.gap_subspaceIterate_le_of_schur`, and shares its two
+ingredients): `Dᗮ = span (v '' Jᶜ)` is `A`-invariant (symmetric `A`); `d₀ < 1` with equal dimension
+makes `S` the graph of some `X : D →ₗ Dᗮ` (`P_D` is injective on `S`, hence bijective), and
+`Submodule.gap_graph` (`gap = ‖X‖ / √(1 + ‖X‖²)`, `Numlib/Analysis/InnerProductSpace/Projection/Gap`)
+gives `‖X‖ = d₀ / √(1 - d₀²)`; `Krylov.subspaceIterate_graph` gives `A^k S = graph (A₂^k X A₁^{-k})`
+with `‖A₂^k‖ ≤ r'^k`, `‖A₁^{-k}‖ ≤ ρ^{-k}` (eigenbasis); and `Submodule.gap_graph` again, `gap ≤
+‖X_k‖`. Compare `Krylov.exists_gap_subspaceIterate_span_image_le` (any diagonalizable `A`,
+unspecified constant). Moved here from `Numlib/Eigen/PowerMethod` at the Golub–Van Loan review
+(it needs the tracked graph lemmas, which live above `PowerMethod`). ★★ (~150 lines)'''
+deps = ["Krylov.subspaceIterate", "Submodule.gap", "Submodule.gap_graph", "Krylov.subspaceIterate_graph", "Krylov.exists_gap_subspaceIterate_span_image_le"]

@@ -1,3 +1,10 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Cholesky` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch04) add to the module doc — "Golub–Van Loan §4.1–4.3: the `L D Lᴴ` factorization under the
+# *strict* leading minors (Theorem 4.1.3), matrices with positive definite Hermitian part (Corollary
+# 4.2.4, Theorems 4.2.5–4.2.6), the semidefinite entry bounds and the rank-revealing pivoted `L D
+# Lᴴ` (Theorem 4.2.8, (4.2.16)–(4.2.17)), the block form of the Cholesky factor ((4.2.18)), and the
+# band and norm facts of the factor (§4.2.6, §4.3.5)."
 namespace = "Matrix"
 
 [[node]]
@@ -149,3 +156,153 @@ id = "isLDM_ldl"
 
 [[node]]
 id = "LDL.lower_eq_of_isLDM"
+
+[[node]]  # staged by ch04
+id = "existsUnique_isLDM_conjTranspose_of_isHermitian"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 4.1.3 at its stated generality: a Hermitian `A : Matrix n n 𝕜` (`[RCLike 𝕜]`,
+`[Fintype n] [LinearOrder n]`) whose *strict* leading principal submatrices are nonsingular
+(`∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`) has exactly one `L D Lᴴ` factorization:
+`∃! LD : Matrix n n 𝕜 × Matrix n n 𝕜, IsLDM A LD.1 LD.2 LD.1ᴴᵀ` (the last pivot may vanish when `A`
+is singular). The existing `Matrix.existsUnique_isLDM` asks for *all* leading submatrices,
+including `A` itself. Proof: `Matrix.existsUnique_isLU_iff` gives the unique `A = L U`; the pivots
+`u_kk`, `k` not maximal, are nonzero (`Matrix.IsLU.diag_upper_ne_zero_of_lt`), so
+`D := diag U` and `M := (D⁻¹ U)ᵀ` on the rows with `u_kk ≠ 0` (the last row of `U` is `u_nn e_n`)
+give `IsLDM A L D M`; the conjugate transpose is a second LU factorization of `A = Aᴴ`, so
+`M = Lᴴᵀ` by uniqueness, as in `Matrix.IsLDM.eq_of_isHermitian`. Uniqueness: `(L, D Lᴴ)` is an LU
+factorization. ★★ (~80 lines)'''
+deps = ["Matrix.existsUnique_isLU_iff", "Matrix.IsLU.diag_upper_ne_zero_of_lt", "Matrix.IsLDM.eq_of_isHermitian", "Matrix.IsLDM"]
+
+[[node]]  # staged by ch04
+id = "exists_isLU_of_posDef_hermitianPart"
+kind = "theorem"
+desc = '''[golub2013matrix] Corollary 4.2.4: if the Hermitian part of `A : Matrix n n 𝕜` is positive definite
+(`(Matrix.hermitianPart A).PosDef`, the book's "`A` positive definite" for unsymmetric `A`), then
+`A` has an LU factorization and the pivots have positive real part: `∃ L U, IsLU A L U ∧ ∀ i,
+0 < RCLike.re (U i i)` (over `ℝ`: `0 < U i i`). The leading principal submatrices have positive
+definite Hermitian parts (`Matrix.hermitianPart_conjTranspose_mul_mul` with the coordinate
+embedding), hence are nonsingular (`Matrix.isUnit_of_posDef_add_transpose`, its `RCLike` form);
+`Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix`. For the pivots, the book's
+`B = L⁻¹ A L⁻ᴴ = U L⁻ᴴ` has positive definite Hermitian part and diagonal `u_ii` (`L⁻ᴴ` unit upper
+triangular). ★★'''
+deps = ["Matrix.hermitianPart_conjTranspose_mul_mul", "Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix", "Matrix.isUnit_of_posDef_add_transpose", "Matrix.hermitianPart"]
+
+[[node]]  # staged by ch04
+id = "posDef_hermitianPart_schurComplementSingle"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 4.2.5: if `(hermitianPart A).PosDef` and `p` is the first index, then the Schur
+complement of one elimination step, `schurComplementSingle A p` (the book's `B₁ + C₁` of (4.2.1)),
+has positive definite Hermitian part. More precisely (the book's (4.2.2)–(4.2.3)): writing
+`A = [α, vᵀ − wᵀ; v + w, B + C]` with `B` Hermitian and `C` skew, `hermitianPart (schurComplementSingle A
+p) = B − (v vᴴ − w wᴴ)/α` and its skew part is `C − (w vᴴ − v wᴴ)/α`; the Hermitian part dominates the
+Schur complement of the Hermitian part, `B − v vᴴ/α` (positive definite by
+`Matrix.PosDef.schurComplement`), by the positive semidefinite `w wᴴ/α`. State over `RCLike` with
+`α = A p p` (real part positive). ★★ (~80 lines)'''
+deps = ["Matrix.schurComplementSingle", "Matrix.PosDef.schurComplement", "Matrix.hermitianPart"]
+
+[[node]]  # staged by ch04
+id = "IsLU.frobenius_norm_abs_mul_abs_le"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 4.2.6 (Golub–Van Loan 1979): for real `A : Matrix (Fin n) (Fin n) ℝ` with
+`T := hermitianPart A` positive definite and `S := A − T`, if `IsLU A L U` then
+`‖|L| * |U|‖_F ≤ n * (‖T‖₂ + ‖S * T⁻¹ * S‖₂)` (Frobenius norm of the entrywise absolute values;
+`Matrix.Norms.Frobenius`, `Matrix.Norms.L2Operator`). The book gives no proof ("See Golub and Van
+Loan (1979)"). Route to reconstruct: the outer-product form `|L||U| = ∑_k |ℓ_k| |u_kᵀ|`
+bounds the Frobenius norm by `∑_k ‖ℓ_k‖₂ ‖u_k‖₂` (`n` terms); at step `k` the book's Theorem 4.2.5
+gives `ℓ_k = (v + w)/α`, `u_k = (α, v − w)`, and the claim to prove is
+`‖v + w‖ ‖(α, v − w)‖/α ≤ ‖T_k‖₂ + ‖S_k T_k⁻¹ S_k‖₂ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` along the Schur complements
+(`T_k` the Hermitian part of the `k`-th Schur complement dominates the Schur complement of `T`,
+`posDef_hermitianPart_schurComplementSingle`; the identity `A T⁻¹ Aᵀ = T + S T⁻¹ Sᵀ` is a useful
+handle). Estimate ★★★ (~400 lines); if the per-step inequality fails, record the counterexample
+and mark the node `wrong` with the bound that was proved.'''
+deps = ["Matrix.posDef_hermitianPart_schurComplementSingle", "Matrix.IsLU"]
+
+[[node]]  # staged by ch04
+id = "PosSemidef.norm_apply_le_add_re_diag_div_two"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.2.12): for positive semidefinite `A`, `‖A i j‖ ≤ (re (A i i) + re (A j j)) / 2`. From
+`Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag` ((4.2.13)) and AM–GM (`Real.add_pow_le_pow_mul_pow_of_sq_le_sq`,
+or `sqrt(ab) ≤ (a+b)/2`). ★'''
+deps = ["Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag"]
+
+[[node]]  # staged by ch04
+id = "PosSemidef.norm_apply_le_max_re_diag"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.2.14): for positive semidefinite `A`, `‖A i j‖ ≤ max (re (A i i)) (re (A j j))`, so the
+largest entry in modulus is a diagonal one (`sup_{i,j} ‖A i j‖ = sup_i re (A i i)`); the semidefinite
+form of the existing `Matrix.PosDef.norm_apply_le_max_re_diag`, which should become its corollary. ★'''
+deps = ["Matrix.PosSemidef.norm_apply_le_add_re_diag_div_two"]
+
+[[node]]  # staged by ch04
+id = "PosSemidef.apply_eq_zero_of_diag_eq_zero"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.2.15): for positive semidefinite `A`, `A i i = 0 → ∀ j, A i j = 0 ∧ A j i = 0` (row and
+column vanish), from (4.2.13). ★'''
+deps = ["Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag"]
+
+[[node]]  # staged by ch04
+id = "PosSemidef.schurComplementSingle"
+kind = "theorem"
+desc = '''One step of the outer-product `L D Lᴴ` on a positive semidefinite matrix ([golub2013matrix] (4.2.16)): if `A` is
+positive semidefinite and `A p p ≠ 0`, then `schurComplementSingle A p` is positive semidefinite and
+its diagonal is dominated by that of `A`: `re ((schurComplementSingle A p) i i) ≤ re (A i i)` (the
+book's `Ã = B − v vᵀ/α` with `v vᵀ/α` positive semidefinite). The semidefinite analogue of
+`Matrix.PosDef.schurComplement` (Mathlib's `Matrix.PosSemidef.fromBlocks₁₁`). With `A p p = 0`,
+(4.2.15) makes the step trivial. ★★'''
+deps = ["Matrix.schurComplementSingle", "Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero"]
+
+[[node]]  # staged by ch04
+id = "PosSemidef.exists_perm_ldl_rank"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.2.17), the rank-revealing pivoted factorization: a positive semidefinite
+`A : Matrix (Fin n) (Fin n) 𝕜` of rank `r` has a permutation `σ`, a unit lower triangular `L` and a
+diagonal `D` with `A.submatrix σ σ = L * D * Lᴴ`, `D i i > 0` for `i < r` (real positive),
+`D i i = 0` for `i ≥ r`, and the pivots nonincreasing (`i ≤ j → re (D j j) ≤ re (D i i)`) —
+equivalently `A.submatrix σ σ = ∑_{j < r} d_j ℓ_j ℓ_jᴴ` with `ℓ_j` the columns of `L`, and the
+first `r` columns carry the factorization (`[L₁₁; L₂₁] D_r [L₁₁; L₂₁]ᴴ`). Proof: strong induction on
+`n` with the maximal-diagonal pivot, `Matrix.PosSemidef.schurComplementSingle`, and (4.2.15) once
+the maximal diagonal is `0` (then the remaining block vanishes); the count of positive pivots is
+the rank because `A.submatrix σ σ` is congruent to `D` (`Matrix.rank_mul_eq_right_of_isUnit`-type
+lemmas, `Matrix.rank_diagonal`). ★★★ (~250 lines)'''
+deps = ["Matrix.PosSemidef.schurComplementSingle", "Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero", "Matrix.IsUnitLowerTriangular"]
+
+[[node]]  # staged by ch04
+id = "cholesky_hasLowerBandwidth"
+kind = "theorem"
+desc = '''[golub2013matrix] §4.3.5, "if `A = G Gᵀ` is the Cholesky factorization of `A`, then `G` has the same lower
+bandwidth as `A`": for positive definite `A` with `A.HasLowerBandwidth p`, `(cholesky A).HasLowerBandwidth
+p`. `cholesky A = Hᴴ` and `IsCholesky.isLU` gives `A = (Hᴴ D⁻¹)(D H)`; the lower factor has lower
+bandwidth `p` by `Matrix.IsLU.hasLowerBandwidth` (leading submatrices of a positive definite
+matrix are nonsingular, `Matrix.PosDef.isUnit_strictLeadingPrincipalSubmatrix`), and right
+multiplication by a diagonal keeps it. ★'''
+deps = ["Matrix.cholesky", "Matrix.IsCholesky.isLU", "Matrix.IsLU.hasLowerBandwidth", "Matrix.PosDef.isUnit_strictLeadingPrincipalSubmatrix", "Matrix.isCholesky_cholesky"]
+
+[[node]]  # staged by ch04
+id = "sq_norm_cholesky_apply_le"
+kind = "theorem"
+desc = '''[golub2013matrix] §4.2.6, "`g_ij² ≤ ∑_{k ≤ i} g_ik² = a_ii`": for positive definite `A`,
+`‖cholesky A i j‖ ^ 2 ≤ re (A i i)`, from `A = G Gᴴ` read on the diagonal
+(`Matrix.IsCholesky.apply_eq_sum`). ★'''
+deps = ["Matrix.cholesky", "Matrix.isCholesky_cholesky", "Matrix.IsCholesky.apply_eq_sum"]
+
+[[node]]  # staged by ch04
+id = "l2_opNorm_cholesky_sq"
+kind = "theorem"
+desc = '''[golub2013matrix] §4.2.6, "`‖G‖₂² = ‖A‖₂`": for positive definite `A`, `‖cholesky A‖ ^ 2 = ‖A‖` in the scoped
+`Matrix.Norms.L2Operator` norm — Mathlib's C*-identity `‖Gᴴ G‖ = ‖G‖²` in the form
+`Matrix.l2_opNorm_conjTranspose_mul_self` applied to `Gᴴ` (`A = G Gᴴ`). ★'''
+deps = ["Matrix.cholesky", "Matrix.isCholesky_cholesky"]
+
+[[node]]  # staged by ch04
+id = "cholesky_finSumFin"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.2.18), the block form of the Cholesky factor (the specification of the block
+algorithms 4.2.3–4.2.4): for positive definite `A : Matrix (Fin (r + s)) (Fin (r + s)) 𝕜`, with
+`A' := A.submatrix finSumFinEquiv finSumFinEquiv = fromBlocks A₁₁ A₁₂ A₂₁ A₂₂`,
+`(cholesky A).submatrix finSumFinEquiv finSumFinEquiv = fromBlocks (cholesky A₁₁) 0 G₂₁ (cholesky
+(A₂₂ − A₂₁ A₁₁⁻¹ A₁₂))` with `G₂₁ = A₂₁ (cholesky A₁₁)⁻ᴴ` (the book's `G₂₁ G₁₁ᵀ = A₂₁`), the
+Schur complement being `Matrix.schurComplement A'` (positive definite, `Matrix.PosDef.schurComplement`).
+By uniqueness (`Matrix.cholesky_eq_of_isCholesky`): the right side is lower triangular with
+positive diagonal under the order embedding `finSumFinEquiv` (`Fin.castAdd` below `Fin.natAdd`) and
+its product with its conjugate transpose is `A'` by `Matrix.fromBlocks_multiply`. ★★ (~100 lines)'''
+deps = ["Matrix.cholesky_eq_of_isCholesky", "Matrix.PosDef.schurComplement", "Matrix.schurComplement", "Matrix.isCholesky_cholesky"]

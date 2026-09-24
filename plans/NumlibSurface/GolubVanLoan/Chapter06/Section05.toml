@@ -1,0 +1,357 @@
+namespace = "GolubVanLoan.Chapter06"
+desc = '''
+§6.5, Updating Matrix Factorizations: the QR factorization after a rank-one change (6.5.1)–(6.5.3),
+after deleting or appending a column (6.5.4) and after appending or deleting a row; Cholesky
+updating (6.5.5)–(6.5.7) and downdating with hyperbolic rotations (6.5.8)–(6.5.15), Theorem 6.5.1;
+the exact content of the rank-revealing ULV decomposition (6.5.16). Backbone: `Numlib/Direct/Updating`,
+the hyperbolic rotations of `LinearAlgebra/Matrix/PlaneRotation`, `Matrix.IsQR`, `Matrix.IsCholesky`.
+
+The section has no numbered algorithm; its procedures, described in prose, are formalized as
+definitions named by content (`qrUpdateRankOne`, `qrDeleteColumn`, `qrInsertColumn`,
+`qrInsertRow`, `qrDeleteFirstRow`, `choleskyUpdate`, `choleskyDowndate`) in the D4 convention — every
+flop through `rnd`, the rotations computed by chapter 5's `algorithm_5_1_3` (`givens`) — each with a
+`_spec` theorem against the backbone. Rotations are applied by chapter 5's shared helpers
+(convention 13): "rotate rows `i, k` of `R`" is `Chapter05.givensApplyLeft rnd i k c s cols R`
+(`R([i k], cols) = G(i,k,θ)ᵀ R([i k], cols)`), "rotate columns `i, k` of `Q`" is
+`Chapter05.givensApplyRight rnd i k c s rows Q`, "rotate entries `i, k` of `w`" is `givensApplyLeft`
+on the one-column matrix; their exact semantics is multiplication by
+`Chapter05.givensRotation i k c s = Matrix.planeRotation i k c (−s)` or its transpose
+(`givensApplyLeft_spec`, `givensApplyRight_spec`). The hyperbolic rotations of the downdate are not
+Givens rotations and are written out.
+
+Not formalized: the ULV updating procedure of §6.5.5 beyond (6.5.16) (condition estimation,
+"small" entries, "`≈ σ_min`"), the numerical caveats on hyperbolic rotations, and the flop counts
+(`26n²`, `O(n²)`, `O(mn)`). (6.5.4), (6.5.5), (6.5.8), (6.5.9) only name the data.
+'''
+
+[[node]]
+id = "equation_6_5_1"
+kind = "theorem"
+desc = '''(6.5.1): if `A = QR` then `Ã = A + uvᵀ = Q(R + wvᵀ)` with `w = Qᵀu` (`Q` orthogonal). The QR
+factorization is chapter 5's (Theorem 5.2.1, `Chapter05.theorem_5_2_1`; README layering). ★'''
+deps = ["GolubVanLoan.Chapter05.theorem_5_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.1)'
+
+[[node]]
+id = "equation_6_5_2"
+kind = "theorem"
+desc = '''(6.5.2): if `J_{n−1}, …, J₁` are rotations in the planes `(k, k+1)` with
+`J₁ᵀ ⋯ J_{n−1}ᵀ w = ±‖w‖₂ e₁`, then `H = J₁ᵀ ⋯ J_{n−1}ᵀ R` is upper Hessenberg (for `R` upper
+triangular, whatever the rotations). `Matrix.prod_planeEmbed_mul_apply_eq_zero`. ★'''
+deps = ["Matrix.prod_planeEmbed_mul_apply_eq_zero", "Matrix.planeRotation"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.2)'
+
+[[node]]
+id = "equation_6_5_3"
+kind = "theorem"
+desc = '''(6.5.3): `(J₁ᵀ ⋯ J_{n−1}ᵀ)(R + wvᵀ) = H ± ‖w‖₂ e₁vᵀ = H₁` is upper Hessenberg: the rank-one
+term touches row `1` only. From `equation_6_5_2`. ★'''
+deps = ["equation_6_5_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.3)'
+
+[[node]]
+id = "qrUpdateRankOne"
+kind = "definition"
+desc = '''§6.5.1, the rank-one QR update, D4 form: `qrUpdateRankOne (rnd : ℝ → M ℝ)
+(Q R : Matrix (Fin n) (Fin n) ℝ) (u v : Fin n → ℝ) : M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)`:
+`w ← Chapter01.algorithm_1_1_3 rnd Qᵀ u 0`; for `k = n−2, …, 0`: `(c, s) ← Chapter05.algorithm_5_1_3 rnd
+(w k) (w (k+1))`, rotate entries `k, k+1` of `w` and rows `k, k+1` of `R`, columns `k, k+1` of `Q`; then
+`R(0, :) ← R(0, :) + w₀ vᵀ` (through `rnd`); for `k = 0, …, n−2`: `(c, s) ← givens (R k k) (R (k+1) k)`,
+rotate rows `k, k+1` of `R` and columns of `Q`. Returns `(Q₁, R₁)`, `Q₁ = QJ_{n−1}⋯J₁G₁⋯G_{n−1}`. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_3", "GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
+
+[[node]]
+id = "qrUpdateRankOne_spec"
+kind = "theorem"
+desc = '''The rank-one update is correct in exact arithmetic: if `Matrix.IsQR A Q R` (`A` square) then
+`Matrix.IsQR (A + vecMulVec u v) Q₁ R₁` for `(Q₁, R₁) = Id.run (qrUpdateRankOne pure Q R u v)`.
+Invariants: `Q R = A + uvᵀ` after the first rank-one step is kept by every rotation;
+`Matrix.prod_planeEmbed_mul_apply_eq_zero` (Hessenberg after the first sweep, `equation_6_5_3`),
+`Matrix.upperTrapezoidal_of_adjacentRotations` with `Chapter05.algorithm_5_1_3_spec` for the zeroing
+hypothesis. ★★'''
+deps = ["qrUpdateRankOne", "equation_6_5_1", "equation_6_5_3", "Matrix.upperTrapezoidal_of_adjacentRotations", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter01.algorithm_1_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
+
+[[node]]
+id = "qrDeleteColumn"
+kind = "definition"
+desc = '''§6.5.2, deleting column `k`, D4 form: `qrDeleteColumn (rnd : ℝ → M ℝ) (Q : Matrix (Fin m) (Fin m) ℝ)
+(R : Matrix (Fin m) (Fin (n + 1)) ℝ) (k : Fin (n + 1))`: `H := R.submatrix id k.succAbove` (no flops);
+for `i = k, …, n − 1` (0-based, `i + 1 < m`): `(c, s) ← givens (H i i) (H (i+1) i)`, rotate rows `i, i+1`
+of `H`, columns `i, i+1` of `Q`. Returns `(Q₁, R₁)`. ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.2'
+
+[[node]]
+id = "qrDeleteColumn_spec"
+kind = "theorem"
+desc = '''§6.5.2: if `Matrix.IsQR A Q R` then the output of `qrDeleteColumn pure Q R k` is a QR factorization
+of `A` with its `k`-th column deleted, `Q₁ = QG_k ⋯ G_{n−1}`. `Matrix.IsQR.conjTranspose_mul_deleteColumn`,
+`Matrix.upperTrapezoidal_of_adjacentRotations` (with `a = k`), `Chapter05.algorithm_5_1_3_spec`. ★★'''
+deps = ["qrDeleteColumn", "Matrix.IsQR.conjTranspose_mul_deleteColumn", "Matrix.upperTrapezoidal_of_adjacentRotations", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.2'
+
+[[node]]
+id = "qrInsertColumn"
+kind = "definition"
+desc = '''§6.5.2, appending a column `z` after column `k`, D4 form: `qrInsertColumn (rnd : ℝ → M ℝ)
+(Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ) (z : Fin m → ℝ) (k : Fin (n + 1))`:
+`w ← Chapter01.algorithm_1_1_3 rnd Qᵀ z 0`; `H :=` `R` with `w` inserted as column `k`; for
+`i = m − 1, …, k + 1`: `(c, s) ← givens (H (i−1) k) (H i k)`, rotate rows `i − 1, i` of `H` and
+columns of `Q` (the book's `J_{m−1}, …, J_{k+1}` removing the spike). ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_3", "GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.2'
+
+[[node]]
+id = "qrInsertColumn_spec"
+kind = "theorem"
+desc = '''§6.5.2: if `Matrix.IsQR A Q R` then the output of `qrInsertColumn pure Q R z k` is a QR
+factorization of `A` with `z` inserted. `Matrix.IsQR.conjTranspose_mul_insertColumn`,
+`Matrix.IsQR.exists_insertColumn`'s invariant, `Chapter05.algorithm_5_1_3_spec`. ★★'''
+deps = ["qrInsertColumn", "Matrix.IsQR.conjTranspose_mul_insertColumn", "Matrix.IsQR.exists_insertColumn", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter01.algorithm_1_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.2'
+
+[[node]]
+id = "qrInsertRow"
+kind = "definition"
+desc = '''§6.5.3, inserting a row `wᵀ` at position `k` (the book: first on top, then "between rows `k` and
+`k + 1`" through the permutation `P`), D4 form: `qrInsertRow (rnd : ℝ → M ℝ)
+(Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ) (w : Fin n → ℝ) (k : Fin (m + 1))`:
+`H := [wᵀ; R]`, `Q' := Pᵀ diag(1, Q)` (no flops); for `j = 0, …, min n m − 1`:
+`(c, s) ← givens (H j j) (H (j+1) j)`, rotate rows `j, j+1` of `H` and columns of `Q'`
+(the book's `J₁, …, J_n`; "See Algorithm 5.2.5"). ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.3'
+
+[[node]]
+id = "qrInsertRow_spec"
+kind = "theorem"
+desc = '''§6.5.3: if `Matrix.IsQR A Q R` then the output of `qrInsertRow pure Q R w k` is a QR
+factorization of `A` with `wᵀ` inserted as row `k`. `Matrix.IsQR.conjTranspose_mul_insertRow`,
+`Matrix.upperTrapezoidal_of_adjacentRotations`, `Chapter05.algorithm_5_1_3_spec`. ★★'''
+deps = ["qrInsertRow", "Matrix.IsQR.conjTranspose_mul_insertRow", "Matrix.upperTrapezoidal_of_adjacentRotations", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.3'
+
+[[node]]
+id = "qrDeleteFirstRow"
+kind = "definition"
+desc = '''§6.5.3, deleting the first row, D4 form: `qrDeleteFirstRow (rnd : ℝ → M ℝ)
+(Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) (R : Matrix (Fin (m + 1)) (Fin n) ℝ)`: `q := Q 0` (the first
+row); for `i = m − 1, …, 0`: `(c, s) ← givens (q i) (q (i+1))`, rotate entries `i, i+1` of `q`, rows
+`i, i+1` of `R` and columns `i, i+1` of `Q`; return `(Q(1:m, 1:m), R(1:m, :))`. ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.3'
+
+[[node]]
+id = "qrDeleteFirstRow_spec"
+kind = "theorem"
+desc = '''§6.5.3: if `Matrix.IsQR A Q R` then the output `(Q₁, R₁)` of `qrDeleteFirstRow pure Q R` is a QR
+factorization of `A₁ = A(2:m, :)`: `QG_{m−1}⋯G₁ = diag(α, Q₁)`, `α = ±1`, `G₁ᵀ⋯G_{m−1}ᵀR = [vᵀ; R₁]`.
+`Matrix.IsQR.exists_deleteFirstRow`'s argument with `Matrix.prod_planeEmbed_mul_apply_eq_zero` and
+`Chapter05.algorithm_5_1_3_spec`. ★★'''
+deps = ["qrDeleteFirstRow", "Matrix.IsQR.exists_deleteFirstRow", "Matrix.prod_planeEmbed_mul_apply_eq_zero", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.3'
+
+[[node]]
+id = "qrDeleteRow_exists"
+kind = "theorem"
+desc = '''§6.5.3, "(The procedure is similar when an arbitrary row is deleted.)": if `Matrix.IsQR A Q R` with
+`A : Matrix (Fin (m + 1)) (Fin n) ℝ` and `k : Fin (m + 1)`, then `A` with row `k` deleted
+(`A.submatrix k.succAbove id`) has a QR factorization `Matrix.IsQR (A.submatrix k.succAbove id) Q₁ R₁`. Backbone
+`Matrix.IsQR.exists_deleteRow` (the cyclic permutation moving row `k` to the top, then the first-row case). ★'''
+deps = ["Matrix.IsQR.exists_deleteRow"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.3'
+
+[[node]]
+id = "equation_6_5_6"
+kind = "theorem"
+desc = '''(6.5.6): `Ã = A + zzᵀ = [Gᵀ; zᵀ]ᵀ [Gᵀ; zᵀ]` for `A = GGᵀ`. `Matrix.transpose_mul_self_fromRows`
+with `H = Gᵀ`. ★'''
+deps = ["Matrix.transpose_mul_self_fromRows"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.6)'
+
+[[node]]
+id = "equation_6_5_7"
+kind = "theorem"
+desc = '''(6.5.7): if `Q` is orthogonal with `Qᵀ[Gᵀ; zᵀ] = [R; 0]`, `R` upper triangular, then
+`Ã = RᵀR` (printed `RRᵀ`, a typo) and `G̃ = Rᵀ` is a triangular factor of `Ã`; it is the Cholesky
+factor once the signs of its diagonal are normalized (report, Doubts).
+`Matrix.transpose_mul_self_eq_of_mem_orthogonalGroup`, `Matrix.isCholesky_diagonal_sign_mul`. ★'''
+deps = ["equation_6_5_6", "Matrix.transpose_mul_self_eq_of_mem_orthogonalGroup", "Matrix.isCholesky_diagonal_sign_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.7)'
+
+[[node]]
+id = "choleskyUpdate"
+kind = "definition"
+desc = '''§6.5.4, Cholesky updating, D4 form: `choleskyUpdate (rnd : ℝ → M ℝ) (G : Matrix (Fin n) (Fin n) ℝ)
+(z : Fin n → ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`: `M := [Gᵀ; zᵀ]`; for `k = 0, …, n − 1`:
+`(c, s) ← Chapter05.algorithm_5_1_3 rnd (M k k) (M n k)`, rotate rows `k` and `n` (the last) of `M`
+(`Chapter05.givensApplyLeft rnd k n c s cols M`, `cols = [k, …, n−1]`; "The `Q_k` update involves only
+rows `k` and `n + 1`"); return `G̃ = (M(0:n, :))ᵀ`. ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "choleskyUpdate_spec"
+kind = "theorem"
+desc = '''§6.5.4: if `A = GGᵀ` with `G` lower triangular (`Matrix.IsCholesky A Gᵀ`), the output `G̃` of
+`choleskyUpdate pure G z` is lower triangular with nonzero diagonal and `G̃G̃ᵀ = A + zzᵀ`; after sign
+normalization `Matrix.IsCholesky (A + vecMulVec z z) (diag(sign) * G̃ᵀ)`.
+`Matrix.fromRows_rotate_step` by induction on `k` with `Chapter05.algorithm_5_1_3_spec` for the
+zeroing, `equation_6_5_7`. ★★'''
+deps = ["choleskyUpdate", "Matrix.fromRows_rotate_step", "equation_6_5_7", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "equation_6_5_10"
+kind = "theorem"
+desc = '''(6.5.10): `Ã = GGᵀ − zzᵀ = [Gᵀ; zᵀ]ᵀ S [Gᵀ; zᵀ]` with `S = diag(I_n, −1)` (6.5.9) —
+`LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n) Unit ℝ`. `Matrix.transpose_mul_self_fromRows`. ★'''
+deps = ["Matrix.transpose_mul_self_fromRows"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.10)'
+
+[[node]]
+id = "IsSOrthogonal"
+kind = "definition"
+desc = '''§6.5.4, (6.5.11): "A matrix `H` that satisfies `HSHᵀ = S` is said to be `S`-orthogonal":
+`IsSOrthogonal H := Matrix.IsJOrthogonal (LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n) Unit ℝ) H`
+for `H : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ`. ★'''
+deps = ["Matrix.IsJOrthogonal"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4, Definition'
+
+[[node]]
+id = "IsSOrthogonal.mul"
+kind = "theorem"
+desc = '''§6.5.4: "the product of `S`-orthogonal matrices is also `S`-orthogonal".
+`Matrix.IsJOrthogonal.mul`. ★'''
+deps = ["IsSOrthogonal", "Matrix.IsJOrthogonal.mul"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "equation_6_5_12"
+kind = "theorem"
+desc = '''(6.5.11)–(6.5.12): if `H` is `S`-orthogonal and `Hᵀ[Gᵀ; zᵀ] = [R; 0]` with `R` upper triangular,
+then `Ã = GGᵀ − zzᵀ = RᵀR`, so the Cholesky factor of `Ã` is `G̃ = Rᵀ` (after sign normalization).
+`Matrix.transpose_mul_self_sub_eq_of_isJOrthogonal`, `Matrix.isCholesky_diagonal_sign_mul`. ★'''
+deps = ["IsSOrthogonal", "equation_6_5_10", "Matrix.transpose_mul_self_sub_eq_of_isJOrthogonal", "Matrix.isCholesky_diagonal_sign_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.12)'
+
+[[node]]
+id = "hyperbolicRotation_isSOrthogonal"
+kind = "theorem"
+desc = '''§6.5.4: the hyperbolic rotation `H_k` — the identity except `[H_k]_{kk} = [H_k]_{n+1,n+1} = cosh θ`,
+`[H_k]_{k,n+1} = [H_k]_{n+1,k} = −sinh θ` — is `S`-orthogonal, "from `cosh(θ)² − sinh(θ)² = 1`":
+`IsSOrthogonal (Matrix.hyperbolicRotation (Sum.inl k) (Sum.inr ()) (Real.cosh θ) (Real.sinh θ))`.
+`Matrix.isJOrthogonal_hyperbolicRotation`, `Real.cosh_sq_sub_sinh_sq`. ★'''
+deps = ["IsSOrthogonal", "Matrix.isJOrthogonal_hyperbolicRotation", "Matrix.hyperbolicRotation"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "equation_6_5_13"
+kind = "theorem"
+desc = '''(6.5.13): if `|x₁| > |x₂|`, then `τ = x₂/x₁`, `c = 1/√(1 − τ²)`, `s = cτ` satisfy `c² − s² = 1`
+(`c = cosh θ`, `s = sinh θ` for `θ = artanh τ`) and `[c −s; −s c][x₁; x₂] = [r; 0]`.
+`Matrix.hyperbolicPair_sq_sub_sq`, `Matrix.hyperbolicRotation_hyperbolicPair_mulVec`. ★'''
+deps = ["Matrix.hyperbolicPair", "Matrix.hyperbolicPair_sq_sub_sq", "Matrix.hyperbolicRotation_hyperbolicPair_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.13)'
+
+[[node]]
+id = "hyperbolic_not_exists"
+kind = "theorem"
+desc = '''§6.5.4: "Since we always have `|cosh(θ)| > |sinh(θ)|`, there is no real solution to
+`−sx₁ + cx₂ = 0` if `|x₂| > |x₁|`" (also when `|x₂| = |x₁| ≠ 0`). `Matrix.not_exists_hyperbolic_of_abs_le`. ★'''
+deps = ["Matrix.not_exists_hyperbolic_of_abs_le"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "abs_lt_of_posDef_sub"
+kind = "theorem"
+desc = '''§6.5.4: "Since `Ã = GGᵀ − zzᵀ` is positive definite, `[Ã]₁₁ = g₁₁² − z₁² > 0`. It follows that
+`|g₁₁| > |z₁|`, which guarantees that the cosh–sinh computations (6.5.13) go through."
+`Matrix.PosDef.diag_pos` and `IsCholesky.apply_eq_sum` at `(0, 0)`. ★'''
+deps = ["Matrix.IsCholesky.apply_eq_sum"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "theorem_6_5_1"
+kind = "theorem"
+desc = '''Theorem 6.5.1: if `A = [α vᵀ; v B] = [g₁₁ 0; g₁ G₁][g₁₁ g₁ᵀ; 0 G₁ᵀ]` and `Ã = A − zzᵀ`,
+`z = [μ; w]`, are positive definite, then there are `c = cosh θ`, `s = sinh θ` with
+`[c 0 −s; 0 I 0; −s 0 c][g₁₁ g₁ᵀ; 0 G₁ᵀ; μ wᵀ] = [g̃₁₁ g̃₁ᵀ; 0 G₁ᵀ; 0 w₁ᵀ]`, and
+`Ã₁ = G₁G₁ᵀ − w₁w₁ᵀ` is positive definite. `Matrix.hyperbolicDowndate_step` (blocks over `Unit ⊕ Fin n`,
+reindexed from `Fin (n + 1)`). The proof's "Schur complement of `α`" is the Schur complement of the
+`(1,1)` entry `α − μ²` of `Ã` (report, Doubts). ★'''
+deps = ["Matrix.hyperbolicDowndate_step"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.5.1'
+
+[[node]]
+id = "equation_6_5_14"
+kind = "theorem"
+desc = '''(6.5.14): the blocks of the Cholesky factor of `A = [α vᵀ; v B]` are `g₁₁ = √α`, `g₁ = v/g₁₁`,
+`G₁G₁ᵀ = B − vvᵀ/α`. From `Matrix.IsCholesky.apply_eq_sum` in the first row and column and the
+remaining block identity (Cholesky bordering). ★★'''
+deps = ["Matrix.IsCholesky", "Matrix.IsCholesky.apply_eq_sum", "Matrix.IsCholesky.re_diag_eq_sqrt"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.14)'
+
+[[node]]
+id = "equation_6_5_15"
+kind = "theorem"
+desc = '''(6.5.15): with `τ = μ/g₁₁`, the hyperbolic pair is `c = √α/√(α − μ²)`, `s = μ/√(α − μ²)`, and
+it zeroes `μ`: `−s g₁₁ + c μ = 0`, `w₁ = −s g₁ + c w`. `Matrix.hyperbolicPair` unfolded with
+`g₁₁ = √α` (`equation_6_5_14`). ★'''
+deps = ["equation_6_5_13", "equation_6_5_14", "Matrix.hyperbolicPair"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.15)'
+
+[[node]]
+id = "choleskyDowndate_exists"
+kind = "theorem"
+desc = '''§6.5.4: "The theorem provides the key step in an induction proof that the factorization (6.5.12)
+exists": if `A = GGᵀ` and `A − zzᵀ` are positive definite, there are hyperbolic rotations
+`H₁, …, H_n` (planes `(k, n+1)`) with `H = H₁ ⋯ H_n` `S`-orthogonal and `Hᵀ[Gᵀ; zᵀ] = [R; 0]`,
+`R` upper triangular. `Matrix.exists_choleskyDowndate`. ★'''
+deps = ["theorem_6_5_1", "equation_6_5_12", "Matrix.exists_choleskyDowndate"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "choleskyDowndate"
+kind = "definition"
+desc = '''§6.5.4, Cholesky downdating with hyperbolic rotations, D4 form: `choleskyDowndate (rnd : ℝ → M ℝ)
+(G : Matrix (Fin n) (Fin n) ℝ) (z : Fin n → ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`: `M := [Gᵀ; zᵀ]`; for
+`k = 0, …, n − 1`: `τ ← rnd (M n k / M k k)`, `c ← rnd (1 / (← rnd (√(← rnd (1 − (← rnd (τ * τ)))))))`,
+`s ← rnd (c * τ)` ((6.5.13), `√` exact then rounded), apply `[c −s; −s c]` to rows `k` and `n` of `M`
+(each entry through `rnd`); return `(M(0:n, :))ᵀ`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "choleskyDowndate_spec"
+kind = "theorem"
+desc = '''§6.5.4: if `A = GGᵀ` (`Matrix.IsCholesky A Gᵀ`) and `A − zzᵀ` is positive definite, the output
+`G̃` of `choleskyDowndate pure G z` is the Cholesky factor of `A − zzᵀ`:
+`Matrix.IsCholesky (A − vecMulVec z z) G̃ᵀ` (the hyperbolic `c > 0` keeps the diagonal positive, so no
+sign normalization is needed). Induction on `k` with `theorem_6_5_1`, `Matrix.fromRows_rotate_step`,
+`equation_6_5_12`. ★★'''
+deps = ["choleskyDowndate", "theorem_6_5_1", "equation_6_5_15", "Matrix.fromRows_rotate_step", "equation_6_5_12", "choleskyDowndate_exists"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "equation_6_5_16"
+kind = "theorem"
+desc = '''(6.5.16), its exact content: if `UᵀAΠ = [R; 0]` (QR with column pivoting, `U` orthogonal,
+`Π` a permutation, `m ≥ n`) and `V₁ᵀRᵀ = Lᵀ` (a QR factorization of `Rᵀ`, `V₁` orthogonal, `Lᵀ` upper
+triangular), then with `V = ΠV₁`, `UᵀAV = [L; 0]`, `L` lower triangular, `UᵀU = I`, `VᵀV = I`. The
+rank-revealing property ("`‖L₂₁‖₂` and `‖L₂₂‖₂` are small compared to `σ_min(L₁₁)`") is a heuristic
+reading of pivoted QR and is not formalized. Pivoted QR and QR are chapter 5's restatements
+(`Chapter05.equation_5_4_6`, `Chapter05.theorem_5_2_1`; README layering). ★'''
+deps = ["GolubVanLoan.Chapter05.equation_5_4_6", "GolubVanLoan.Chapter05.theorem_5_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.16)'
+
+[[node]]
+id = "ulv_nullspace_norm"
+kind = "theorem"
+desc = '''§6.5.5: in a decomposition (6.5.16) partitioned `V = [V₁ V₂]` (`r | n − r`), `L = [L₁₁ 0; L₂₁ L₂₂]`,
+`‖AV₂‖₂ = ‖L₂₂‖₂` (the book writes `‖U₂L₂₂‖₂`, with `U₂` the columns `r + 1 : n` of `U`): `AV₂ = U[0; L₂₂; 0]`
+and `Matrix.l2_opNorm_unitary_mul`. ★'''
+deps = ["equation_6_5_16", "Matrix.l2_opNorm_unitary_mul"]
+source = 'Golub–Van Loan, Matrix Computations, §6.5.5'

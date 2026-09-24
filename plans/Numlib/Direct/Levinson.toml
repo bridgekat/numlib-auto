@@ -1,0 +1,234 @@
+desc = '''
+The Levinson–Durbin–Trench theory of symmetric positive definite Toeplitz systems
+([golub2013matrix] §4.7; Durbin 1960, Levinson 1947, Trench 1964, Cybenko 1980): the recurrences
+as *specifications* (the mathematical objects the surface's Algorithms 4.7.1–4.7.3 compute), their
+correctness, the reflection coefficients and their bounds, and the unsymmetric bordering of §4.7.8.
+The secular function of the minimum-eigenvalue method of Cybenko and Van Loan (§4.7.7), planned here
+as `BorderedEigen.secular` and its three lemmas, moved at the Golub–Van Loan review to
+`Numlib/Eigen/DivideConquer` as `Matrix.borderedSecularFunction` (an eigenvalue object, beside the
+rank-one `Matrix.secularFunction`).
+
+**Conventions.** A symmetric Toeplitz matrix with unit diagonal is `Matrix.symmToeplitz n r` of
+`Numlib/LinearAlgebra/Matrix/Toeplitz` with `r : ℕ → K`, `r 0 = 1` (a hypothesis where used). The
+growing solution vectors `y^{(k)} ∈ K^k` are `ℕ`-indexed functions `ℕ → K`, zero from index `k` on,
+exactly as the backbone's Givens recursions are `ℕ`-indexed (`notes/backbone.md` §1.7): prefix
+stability is automatic and no dependent `Fin k` arithmetic appears in the recurrences; statements
+read them on `Fin k` through `fun i : Fin k => Durbin.sol r k i`. Everything is 0-based: the book's
+`y^{(k)} = (y_1, …, y_k)` is `(sol r k 0, …, sol r k (k-1))`, and the recurrence is started at
+`k = 0` with the empty solution, so that the book's `y^{(1)} = −r_1` is its first step and the
+book's `β_k`, `α_k` (4.7.1) are `Durbin.beta r k`, `Durbin.alpha r k` (with `β₀ = 1`,
+`α₀ = −r₁`). **Cybenko's reflection coefficients** in (4.7.6)–(4.7.7), `α_j = y^{(j)}_j`
+(`j = 1 … n`), are `Durbin.alpha r (j - 1)` — the book reuses the letter with this shift of
+index (ch04 report, Doubts).
+
+**Why recurrences are backbone.** They are the specification of the Toeplitz solve in the sense of
+D4: the surface Algorithm 4.7.1 is proved to compute `Durbin.sol r n`, and `Durbin.sol` is proved to
+solve the Yule–Walker system; the second fact is reused by Levinson (4.7.2), Trench (4.7.3), the
+bounds (4.7.6)–(4.7.7), the characterization of definiteness by the `β_k` (§4.7.7), and by chapter
+12's Schur/displacement algorithms (Displacement), so it lives once, here.
+
+The algebra is over a field; positivity statements over `ℝ` (`Matrix.PosDef`). The key identities:
+the bordering `Matrix.symmToeplitz_succ_eq_fromBlocks` and the commutation
+`Matrix.exchange_mul_symmToeplitz` (Toeplitz), which replace the book's "`T_k⁻¹` is persymmetric".
+
+About 900 lines; the upper bound of (4.7.6) is the one ★★★ (numerically confirmed, see its node).
+'''
+
+[[node]]
+id = "Durbin.sol"
+kind = "definition"
+desc = '''Durbin's recurrence (4.7.1), `ℕ`-indexed: `Durbin.sol (r : ℕ → K) : ℕ → ℕ → K` with `sol r 0 = 0` and
+`sol r (k + 1) i = if i < k then sol r k i + alpha r k * sol r k (k - 1 - i) else if i = k then
+alpha r k else 0`, where `Durbin.beta r k := 1 + ∑ i ∈ range k, r (i + 1) * sol r k i` and
+`Durbin.alpha r k := -(r (k + 1) + ∑ i ∈ range k, r (k - i) * sol r k i) / beta r k` (the book's
+`β_k = 1 + r^{(k)ᵀ} y^{(k)}`, `α_k = −(r_{k+1} + r^{(k)ᵀ} ℰ_k y^{(k)})/β_k`,
+`y^{(k+1)} = [y^{(k)} + α_k ℰ_k y^{(k)}; α_k]`). One definition with `alpha`, `beta` as its two
+companions (`sol` by structural recursion, `alpha`/`beta` as functions of `sol r k`). ★'''
+deps = []
+
+[[node]]
+id = "Durbin.bordered_solve"
+kind = "theorem"
+desc = '''The Yule–Walker bordering step of [golub2013matrix] §4.7.3, pure algebra: if `symmToeplitz k r *ᵥ y =
+−(fun i => r (i + 1))` on `Fin k`, `r 0 = 1`, and `1 + ∑ r (i+1) y i ≠ 0`, then with `α := −(r (k+1) +
+∑ r (k - i) y i)/(1 + ∑ r (i+1) y i)` and `z := y + α • (exchange k *ᵥ y)`,
+`symmToeplitz (k + 1) r *ᵥ Fin.snoc z α = −(fun i => r (i + 1))`. Top block: `T_k z = −r − α ℰ r`
+because `T_k ℰ = ℰ T_k` (`Matrix.exchange_mul_symmToeplitz`) — no invertibility of `T_k` is
+used; last row: `rᵀℰz + α = −r_{k+1}` by the choice of `α`. The same computation with a general
+right-hand side is `Levinson.bordered_solve`. ★'''
+deps = ["Matrix.symmToeplitz_succ_eq_fromBlocks", "Matrix.exchange_mul_symmToeplitz"]
+
+[[node]]
+id = "Durbin.symmToeplitz_mulVec_sol"
+kind = "theorem"
+desc = '''**Correctness of (4.7.1)**: if `r 0 = 1` and `Durbin.beta r j ≠ 0` for all `j < k`, then
+`symmToeplitz k r *ᵥ (fun i : Fin k => Durbin.sol r k i) = fun i => −r (i + 1)`. Induction on `k`
+with `Durbin.bordered_solve` (`sol r (k+1)` is `Fin.snoc (y + α ℰ y) α` on `Fin (k+1)`). ★★
+(~100 lines, mostly the `ℕ`/`Fin` reading of `sol`)'''
+deps = ["Durbin.sol", "Durbin.bordered_solve"]
+
+[[node]]
+id = "Durbin.beta_succ"
+kind = "theorem"
+desc = '''`Durbin.beta r (k + 1) = (1 − Durbin.alpha r k ^ 2) * Durbin.beta r k` when `beta r k ≠ 0`
+([golub2013matrix] §4.7.3, the derivation before Algorithm 4.7.1): expand `beta r (k+1)` with the
+recurrence for `sol r (k+1)` and use `alpha r k * beta r k = −(r (k+1) + rᵀℰy)`. Pure algebra from
+the definitions; `ring_nf`/`field_simp` after `Finset.sum_range_reflect`. ★'''
+deps = ["Durbin.sol"]
+
+[[node]]
+id = "Durbin.det_symmToeplitz_succ"
+kind = "theorem"
+desc = '''`det (symmToeplitz (k + 1) r) = Durbin.beta r k * det (symmToeplitz k r)` when `r 0 = 1` and
+`beta r j ≠ 0` for `j < k`: the book's congruence `[I ℰy; 0 1]ᵀ T_{k+1} [I ℰy; 0 1] = diag(T_k,
+1 + rᵀy)` (§4.7.3) with `y = sol r k` (`Durbin.symmToeplitz_mulVec_sol`), and `det` of a unit
+triangular block matrix (`Matrix.det_fromBlocks_zero₂₁`). Consequently `beta_eq_det_div`:
+`beta r k = det T_{k+1} / det T_k` when `det T_k ≠ 0`. ★★'''
+deps = ["Durbin.symmToeplitz_mulVec_sol", "Matrix.symmToeplitz_succ_eq_fromBlocks"]
+
+[[node]]
+id = "Durbin.beta_pos"
+kind = "theorem"
+desc = '''Over `ℝ`, if `r 0 = 1` and `symmToeplitz n r` is positive definite, then `0 < Durbin.beta r k` for every
+`k < n` — the book's "the denominator is positive because `T_{k+1}` is positive definite". By
+induction with `Durbin.det_symmToeplitz_succ` and Sylvester's criterion
+(`Matrix.PosDef.det_leadingPrincipalSubmatrix_pos` through `Matrix.leadingPrincipal_symmToeplitz`).
+Conversely (`beta_pos_iff`): for symmetric `T_n` with `r 0 = 1`, `T_n` is positive definite iff
+`beta r k > 0` for all `k < n` — the characterization §4.7.7 uses for `T_λ`. ★★'''
+deps = ["Durbin.det_symmToeplitz_succ", "Matrix.PosDef.det_leadingPrincipalSubmatrix_pos", "Matrix.leadingPrincipal_symmToeplitz", "Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos"]
+
+[[node]]
+id = "Durbin.abs_alpha_lt_one"
+kind = "theorem"
+desc = '''[golub2013matrix] §4.7.6, "in exact arithmetic these scalars satisfy `|α_k| < 1`": if `symmToeplitz n r` is
+positive definite with `r 0 = 1`, then `|Durbin.alpha r k| < 1` for `k + 1 < n` (the reflection
+coefficients of `T_n`), from `beta_succ` and `beta_pos` at `k` and `k + 1`. ★'''
+deps = ["Durbin.beta_succ", "Durbin.beta_pos"]
+
+[[node]]
+id = "Durbin.transpose_mul_mul_eq_diagonal"
+kind = "theorem"
+desc = '''[golub2013matrix] P4.7.2/P4.7.12 (cited for the bounds below; a helper): with `U : Matrix (Fin n) (Fin n) K`
+unit upper triangular whose column `k` above the diagonal is `ℰ_k y^{(k)}`
+(`U i k = sol r k (k - 1 - i)` for `i < k`), `Uᵀ * symmToeplitz n r * U = diagonal (fun k => beta r
+k)` under the hypotheses of `symmToeplitz_mulVec_sol`. Column by column from the Yule–Walker
+equations of every order and the symmetry of the result. Gives `T_n⁻¹ = U diag(β)⁻¹ Uᵀ`. ★★'''
+deps = ["Durbin.symmToeplitz_mulVec_sol"]
+
+[[node]]
+id = "Durbin.sum_sol_add_one"
+kind = "theorem"
+desc = '''`1 + ∑ i ∈ range k, sol r k i = ∏ j ∈ range k, (1 + alpha r j)` and
+`1 + ∑ i ∈ range k, |sol r k i| ≤ ∏ j ∈ range k, (1 + |alpha r j|)`: the first from
+`eᵀy^{(k+1)} = (1 + α_k) eᵀy^{(k)} + α_k` (the recurrence and `∑ (ℰy)_i = ∑ y_i`), the second from the
+triangle inequality on the same recurrence. Pure recurrence, no definiteness. ★'''
+deps = ["Durbin.sol"]
+
+[[node]]
+id = "Durbin.sum_abs_sol_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.7): if `0 ≤ alpha r j` for all `j < k` then `∑ i ∈ range k, |sol r k i| =
+∏ j ∈ range k, (1 + alpha r j) − 1` (Cybenko's `α_1 … α_k` are `alpha r 0 … alpha r (k-1)`).
+All entries of `sol r k` are then nonnegative (induction: `y + α ℰ y ≥ 0` and `α ≥ 0`), so the
+`1`-norm is the sum, and `Durbin.sum_sol_add_one` concludes. ★'''
+deps = ["Durbin.sum_sol_add_one"]
+
+[[node]]
+id = "Durbin.inv_beta_le_lpOpNorm_one_inv"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.6), lower bounds: for positive definite `T_n = symmToeplitz n r`, `r 0 = 1`, `n ≥ 1`,
+`max (1 / ∏_{j<n−1} (1 − α_j²)) (1 / ∏_{j<n−1} (1 − α_j)) ≤ lpOpNorm 1 (T_n)⁻¹` with
+`α_j = alpha r j`. The last column of `T_n⁻¹` is `γ (ℰy; 1)`, `γ = 1/β_{n−1} = 1/∏(1 − α_j²)`
+(`Trench.inv_symmToeplitz_last`, `beta_succ`); its absolute sum is at least `γ` and at least
+`γ |1 + ∑ y_i| = γ ∏ (1 + α_j)` (`Durbin.sum_sol_add_one`), and `∏(1+α_j)/∏(1−α_j²) = 1/∏(1−α_j)`;
+`Matrix.sum_norm_le_lpOpNorm_one`. The book prints both lower bounds with an extra factor
+`1/(n−1)`; the statement here is stronger and implies the printed one (numerically tight at
+`1.0000`, 20 000 random positive definite Toeplitz matrices, `n ≤ 6`). ★★'''
+deps = ["Durbin.sum_sol_add_one", "Durbin.beta_succ", "Trench.inv_symmToeplitz_last", "Matrix.sum_norm_le_lpOpNorm_one"]
+
+[[node]]
+id = "Durbin.lpOpNorm_one_inv_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.6), upper bound (Cybenko 1980): for positive definite `T_n = symmToeplitz n r`,
+`r 0 = 1`, `lpOpNorm 1 (T_n)⁻¹ ≤ ∏_{j<n−1} (1 + |α_j|)/(1 − |α_j|)`. The book quotes it without
+proof. Numerically confirmed (ratio ≥ 1.00007 over 20 000 random positive definite Toeplitz
+matrices, `n ≤ 6`; `notes/gvl/ch04/report.md`). Route to reconstruct (Cybenko, SIAM J. Sci. Stat.
+Comput. 1 (1980)): induction on `n` through the Trench bordering `T_{k+1}⁻¹ = [T_k⁻¹ + v vᵀ/γ, v;
+vᵀ, γ]` (`Trench.inv_symmToeplitz_eq`) applied at the *front* (persymmetry), with the column sums of
+`[1; y]` bounded by `∏(1 + |α_j|)` (`Durbin.sum_sol_add_one`) and `γ = 1/∏(1 − α_j²)`; the crude
+triangle-inequality induction does not close, the proof must keep the cancellation in
+`T_k⁻¹ + v vᵀ/γ` (e.g. through `T_n⁻¹ = U diag(β)⁻¹ Uᵀ`, `Durbin.transpose_mul_mul_eq_diagonal`,
+and a column-by-column bound). If no proof is found within ~300 lines, mark the node `wrong`
+with the weaker constant that was proved. ★★★ (~300 lines)'''
+deps = ["Durbin.transpose_mul_mul_eq_diagonal", "Durbin.sum_sol_add_one", "Trench.inv_symmToeplitz_eq"]
+
+[[node]]
+id = "Levinson.bordered_solve"
+kind = "theorem"
+desc = '''The general right-hand-side bordering (4.7.2)→(4.7.3): if `symmToeplitz k r *ᵥ x = b` (on `Fin k`),
+`symmToeplitz k r *ᵥ y = −(fun i => r (i+1))`, `r 0 = 1` and `1 + ∑ r (i+1) y i ≠ 0`, then with
+`μ := (b' − ∑ r (k - i) x i)/(1 + ∑ r (i+1) y i)` and `v := x + μ • (exchange k *ᵥ y)`,
+`symmToeplitz (k + 1) r *ᵥ Fin.snoc v μ = Fin.snoc b b'`. Same computation as
+`Durbin.bordered_solve`. ★'''
+deps = ["Matrix.symmToeplitz_succ_eq_fromBlocks", "Matrix.exchange_mul_symmToeplitz"]
+
+[[node]]
+id = "Levinson.sol"
+kind = "definition"
+desc = '''Levinson's recurrence (the specification of Algorithm 4.7.2), `ℕ`-indexed like `Durbin.sol`:
+`Levinson.sol (r b : ℕ → K) : ℕ → ℕ → K`, `sol r b 0 = 0`, `sol r b (k+1) i = if i < k then
+sol r b k i + mu r b k * Durbin.sol r k (k - 1 - i) else if i = k then mu r b k else 0` with
+`Levinson.mu r b k := (b k − ∑ i ∈ range k, r (k - i) * sol r b k i) / Durbin.beta r k`. ★'''
+deps = ["Durbin.sol"]
+
+[[node]]
+id = "Levinson.symmToeplitz_mulVec_sol"
+kind = "theorem"
+desc = '''Correctness of Levinson's recurrence: if `r 0 = 1` and `Durbin.beta r j ≠ 0` for `j < k`, then
+`symmToeplitz k r *ᵥ (fun i : Fin k => Levinson.sol r b k i) = fun i => b i`. Induction with
+`Levinson.bordered_solve` and `Durbin.symmToeplitz_mulVec_sol`. ★★'''
+deps = ["Levinson.sol", "Levinson.bordered_solve", "Durbin.symmToeplitz_mulVec_sol"]
+
+[[node]]
+id = "Levinson.bordered_solve_toeplitz"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.12)→(4.7.13), the unsymmetric bordering (the book's P4.7.11; the formulas are not in
+the book and are fixed here). Let `T_{k+1} := toeplitz ρ` on `Fin (k+1)` with `ρ 0 = 1`,
+`ρ j = r_j`, `ρ (−j) = p_j`, so that `T_{k+1} = [T_k, ℰ r; pᵀℰ, 1]`. Given `T_kᵀ y = −r`,
+`T_k w = −p`, `T_k x = b` and `1 + pᵀy ≠ 0`, `1 + rᵀw ≠ 0`:
+`T_{k+1}ᵀ [y + α ℰ w; α] = −[r; r_{k+1}]` with `α = −(r_{k+1} + rᵀℰy)/(1 + rᵀw)`;
+`T_{k+1} [w + ν ℰ y; ν] = −[p; p_{k+1}]` with `ν = −(p_{k+1} + pᵀℰw)/(1 + pᵀy)`;
+`T_{k+1} [x + μ ℰ y; μ] = [b; b_{k+1}]` with `μ = (b_{k+1} − pᵀℰx)/(1 + pᵀy)`.
+Uses `ℰ T_k ℰ = T_kᵀ` (`Matrix.IsToeplitz.isPersymmetric`,
+`isPersymmetric_iff_exchange_mul_mul_exchange`) in place of the symmetric case's commutation. Also
+`det T_{k+1} = (1 + pᵀy) det T_k = (1 + rᵀw) det T_k`, so both denominators are nonzero when the
+leading principal submatrices are nonsingular (the book's hypothesis). ★★'''
+deps = ["Matrix.toeplitz", "Matrix.IsToeplitz.isPersymmetric", "Matrix.isPersymmetric_iff_exchange_mul_mul_exchange"]
+
+[[node]]
+id = "Trench.inv_symmToeplitz_last"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.4), the last row and column: with `r 0 = 1`, `beta r j ≠ 0` for `j < n`,
+`m := n − 1`, `y := Durbin.sol r m`, `γ := 1 / Durbin.beta r m` (the book's `1/(1 + rᵀy)`) and
+`v := γ • (exchange m *ᵥ y)`: the last column of `(symmToeplitz n r)⁻¹` is `Fin.snoc v γ` (and, by
+symmetry, so is the last row). From `T_n [v; γ] = [0; 1]`, which is `Durbin.bordered_solve`-type
+algebra (`T_m v = −γ ℰ r`, `γ = 1 − rᵀℰv`). ★★'''
+deps = ["Durbin.symmToeplitz_mulVec_sol", "Durbin.det_symmToeplitz_succ", "Matrix.symmToeplitz_succ_eq_fromBlocks"]
+
+[[node]]
+id = "Trench.inv_symmToeplitz_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.4), the leading block: under the hypotheses of `Trench.inv_symmToeplitz_last`, the
+leading `m × m` block of `(symmToeplitz n r)⁻¹` is `(symmToeplitz m r)⁻¹ + γ⁻¹ • vecMulVec v v`
+(the book's `B = A⁻¹ + v vᵀ/γ`, from `A B + ℰ r vᵀ = I` and `A⁻¹ ℰ r = −ℰ y`). Block inverse
+(`Matrix.inv_fromBlocks_eq` of `SchurComplement` with the `1 × 1` Schur complement `1/γ`). ★★'''
+deps = ["Trench.inv_symmToeplitz_last", "Matrix.inv_fromBlocks_eq"]
+
+[[node]]
+id = "Trench.inv_symmToeplitz_apply_succ"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.7.5): with `B` the leading `m × m` block of `(symmToeplitz n r)⁻¹` and `v`, `γ` as above,
+`B i j = B (rev j) (rev i) + (v i * v j − v (rev j) * v (rev i)) / γ` for all `i j : Fin m` (0-based:
+the book's `b_{n−j, n−i}` is `B (rev j) (rev i)`). From `Trench.inv_symmToeplitz_eq` and the
+persymmetry of `(symmToeplitz m r)⁻¹` (`Matrix.IsPersymmetric.inv`). ★'''
+deps = ["Trench.inv_symmToeplitz_eq", "Matrix.IsPersymmetric.inv"]

@@ -1,0 +1,136 @@
+namespace = "Matrix"
+desc = '''
+Factorization specifications for symmetric indefinite matrices ([golub2013matrix] §4.4; [higham2002accuracy]
+Ch. 11): the Aasen factorization `P A Pᵀ = L T Lᵀ` with `T` tridiagonal (`Matrix.IsAasen`) and the block
+`L D Lᵀ` factorization with `1 × 1` and `2 × 2` pivots (`Matrix.IsBlockLDL`, `Matrix.IsPivotBlockDiagonal`),
+with their existence theorems and solve chains.
+
+Specifications, not algorithms (README; planning brief D5). `IsAasen A L T` and `IsBlockLDL A L D` are
+`Prop`-valued specifications in the style of `Matrix.IsLU`/`IsLDM` (`Numlib/LinearAlgebra/Matrix/LU`); the
+permutation is a `σ : Equiv.Perm (Fin n)` acting as `A.submatrix σ σ` (`= P A Pᵀ` with `P = σ.permMatrix`),
+as in `Matrix.exists_permMatrix_mul_isLU` of `LU/Pivoting`. The existence theorems carry the multiplier bounds
+where they are true (Aasen with partial pivoting: `|l_ij| ≤ 1`).
+
+The `D` of a block `L D Lᵀ` factorization is "block diagonal with `1 × 1` and `2 × 2` blocks": on `Fin n`
+that is a symmetric tridiagonal matrix no two consecutive subdiagonal entries of which are nonzero
+(`IsPivotBlockDiagonal`), and the unit lower triangular `L` has the identity in each `2 × 2` diagonal block
+(`L (i+1) i = 0` where `D (i+1) i ≠ 0`). This avoids a sigma-typed block structure and keeps the statement on
+`Fin n` where `L D Lᵀ` is an ordinary product.
+
+Moved here from `Numlib/Direct/SymmetricIndefinite` at the review of the Golub–Van Loan round (a
+specification belongs to the linear-algebra layer, beside `IsLU`, `IsLDM`, `IsCholesky`; the node ids did not
+change). What stays in `Direct/SymmetricIndefinite` is numerical: the Bunch–Parlett element-growth bounds and
+the Stewart–Todd bound on scaled pseudoinverses. The equilibrium (saddle point) matrix of §4.4.5 is
+`Matrix.saddleMatrix` of `Numlib/LinearAlgebra/Matrix/SchurComplement`.
+
+Searched and not found (Mathlib, Numlib, LeanSearch "symmetric indefinite factorization", "Bunch Kaufman",
+"Aasen tridiagonal"): nothing. About 700 lines, most of it the two existence proofs.
+'''
+
+[[node]]
+id = "IsPivotBlockDiagonal"
+kind = "definition"
+desc = '''`D : Matrix (Fin n) (Fin n) K` is block diagonal with `1 × 1` and `2 × 2` diagonal blocks, symmetric:
+`D.IsSymm ∧ D.IsTridiagonal ∧ ∀ i : ℕ, ∀ (h : i + 2 < n), D ⟨i+1, _⟩ ⟨i, _⟩ ≠ 0 → D ⟨i+2, _⟩
+⟨i+1, _⟩ = 0` ([golub2013matrix] (4.4.2): "`D` is a direct sum of 1-by-1 and 2-by-2 pivot
+blocks"). ★'''
+deps = ["Matrix.IsTridiagonal"]
+
+[[node]]
+id = "IsBlockLDL"
+kind = "definition"
+desc = '''The block `L D Lᵀ` specification: `structure IsBlockLDL (A L D : Matrix (Fin n) (Fin n) K) : Prop` with
+fields `isUnitLowerTriangular : L.IsUnitLowerTriangular`, `isPivotBlockDiagonal :
+D.IsPivotBlockDiagonal`, `block : ∀ i j, (j : ℕ) + 1 = i → D i j ≠ 0 → L i j = 0` (identity
+diagonal blocks), `mul_eq : L * D * Lᵀ = A`. `IsBlockLDL.isSymm : A.IsSymm`. ★'''
+deps = ["IsPivotBlockDiagonal", "Matrix.IsUnitLowerTriangular"]
+
+[[node]]
+id = "exists_isUnit_principal_pivot"
+kind = "theorem"
+desc = '''[golub2013matrix] P4.4.1 (the step "if `A` is nonzero it is always possible to choose `s` and `P₁` so that
+`E` is nonsingular"): a nonzero symmetric `A : Matrix n n K` over a field has a nonzero diagonal
+entry or a pair `i ≠ j` with `A i i * A j j - A i j * A j i ≠ 0`. If all diagonal entries vanish,
+`A i j ≠ 0` for some `i ≠ j` gives the determinant `-A i j ^ 2 ≠ 0`. ★'''
+deps = []
+
+[[node]]
+id = "exists_perm_isBlockLDL"
+kind = "theorem"
+desc = '''**[golub2013matrix] (4.4.2)**, existence: every symmetric `A : Matrix (Fin n) (Fin n) K` over a field has a
+permutation `σ` and `L`, `D` with `IsBlockLDL (A.submatrix σ σ) L D`. Strong induction on `n`
+(the book: "a simple induction argument establishes that the factorization (4.4.2) exists"): if
+`A = 0` take `L = 1`, `D = 0`; otherwise `exists_isUnit_principal_pivot` gives an `s × s` pivot
+`E`, `s ∈ {1, 2}`, moved to the leading position by a permutation; the step
+`P₁ A P₁ᵀ = [I 0; C E⁻¹ I] [E 0; 0 B − C E⁻¹ Cᵀ] [I E⁻¹Cᵀ; 0 I]` is
+`Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement` of `SchurComplement` (the Schur complement
+of a symmetric matrix is symmetric), and the factorization of the Schur complement is bordered
+back, with the reindexing `Fin s ⊕ Fin (n − s) ≃ Fin n` (`finSumFinEquiv`). The multipliers are
+not bounded by `1` in general (see the ch04 report, Doubts, on the book's `|l_ij| ≤ 1`). ★★★
+(~250 lines)'''
+deps = ["IsBlockLDL", "exists_isUnit_principal_pivot", "Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement"]
+
+[[node]]
+id = "exists_perm_isBlockLDL_abs_le"
+kind = "theorem"
+desc = '''**The multiplier bound of the Bunch–Parlett pivot choice** ([golub2013matrix] (4.4.2)'s multiplier clause in its
+true form, §4.4.4; [higham2002accuracy] §11.1.1): every symmetric `A : Matrix (Fin n) (Fin n) K` over a linearly
+ordered field (`[Field K] [LinearOrder K] [IsStrictOrderedRing K]`) and every `α` with `0 < α < 1` admit
+`σ`, `L`, `D` with `IsBlockLDL (A.submatrix σ σ) L D` and `∀ i j, |L i j| ≤ max α⁻¹ (1 - α)⁻¹` (the book prints
+`|ℓ_ij| ≤ 1`, which is false for this strategy; at `α = (1 + √17)/8` the bound is `≈ 2.78`). Sharper, as a second
+clause: `|L i j| ≤ α⁻¹` in the column of a `1 × 1` pivot and `≤ (1 - α)⁻¹` in the two columns of a `2 × 2` pivot.
+Proof: the strong induction of `exists_perm_isBlockLDL`, with the pivot chosen by the Bunch–Parlett rule — with
+`μ₀ = max |a_ij|`, `μ₁ = max |a_ii|`: if `μ₁ ≥ α μ₀` a `1 × 1` pivot of modulus `μ₁`, so each multiplier is
+`|c/e| ≤ μ₀/μ₁ ≤ 1/α`; otherwise a `2 × 2` pivot `E` containing an off-diagonal entry of modulus `μ₀`, whose
+diagonal entries are `≤ μ₁ < α μ₀`, so `|det E| ≥ (1 − α²) μ₀²` and each entry of a row of `C E⁻¹` is at most
+`(α μ₀ · μ₀ + μ₀ · μ₀)/((1 − α²) μ₀²) = 1/(1 − α)`. Later stages permute only the rows below the current block, which
+permutes the entries of the finished columns of `L` and keeps the bound; `1 ≤ max α⁻¹ (1 - α)⁻¹` covers the unit
+diagonal. The element-growth side of the same pivot rule is `BunchParlett.*` of `Numlib/Direct/SymmetricIndefinite`.
+★★★ (~150 lines on top of `exists_perm_isBlockLDL`)'''
+deps = ["IsBlockLDL", "exists_perm_isBlockLDL", "Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement"]
+
+[[node]]
+id = "IsBlockLDL.solve"
+kind = "theorem"
+desc = '''The solve chain after (4.4.2): if `IsBlockLDL (A.submatrix σ σ) L D`, `L z = b ∘ σ`, `D w = z`,
+`Lᵀ y = w` and `x = y ∘ σ.symm`, then `A *ᵥ x = b`. (`Matrix.submatrix_mulVec_equiv`.) ★'''
+deps = ["IsBlockLDL"]
+
+[[node]]
+id = "IsAasen"
+kind = "definition"
+desc = '''The Aasen specification ([golub2013matrix] (4.4.1), §4.4.2): `structure IsAasen (A L T : Matrix (Fin n)
+(Fin n) K) : Prop` with `isUnitLowerTriangular : L.IsUnitLowerTriangular`, `col_zero : ∀ i, i ≠ 0
+→ L i 0 = 0` (the book's `L(:, 1) = e₁`, `n ≥ 1`; vacuous for `n = 0` via a `Fin` guard),
+`isSymm : T.IsSymm`, `isTridiagonal : T.IsTridiagonal`, `mul_eq : L * T * Lᵀ = A`. ★'''
+deps = ["Matrix.IsUnitLowerTriangular", "Matrix.IsTridiagonal"]
+
+[[node]]
+id = "exists_perm_isAasen"
+kind = "theorem"
+desc = '''**[golub2013matrix] (4.4.1)**, existence with the pivoting bound: every symmetric `A : Matrix (Fin n) (Fin n)
+K` over a linearly ordered field has a permutation `σ` and `L`, `T` with `IsAasen (A.submatrix σ σ)
+L T` and `∀ i j, |L i j| ≤ 1`. Proof by the Parlett–Reid process (§4.4.1): induction on the column;
+at step `k` the vector `v = A^{(k-1)}(k+1:n, k)` has its largest entry moved to the top by a
+permutation fixing `1:k`, the Gauss transform `M_k = I − α e_{k+1}ᵀ` with `|α_i| ≤ 1` annihilates
+`v(k+2:n)`, and `A^{(k)} = M_k P_k A^{(k-1)} P_kᵀ M_kᵀ` keeps symmetry and the tridiagonal leading
+part; `L = (M_{n-2} P_{n-2} ⋯ M_1 P_1 Pᵀ)⁻¹` has first column `e₁` and its column `k+1` made of
+the multipliers of `M_k` (the book: "It can be shown that (4.4.1) holds with …"). Organize as
+strong induction on `n` over the trailing block, the step being a similarity by
+`fromBlocks 1 0 0 (P̃ M̃)`. If `v = 0` take `M_k = P_k = I`. ★★★ (~300 lines)'''
+deps = ["IsAasen", "Matrix.elimMultipliers", "Matrix.partialPivotRow"]
+
+[[node]]
+id = "IsAasen.isUpperHessenberg_mul_transpose"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.5): if `IsAasen A L T` then `H := T * Lᵀ` is upper Hessenberg and `A = L * H`, so
+`A(:, j) = ∑_{k ≤ j+1} L(:, k) h_k` — a tridiagonal times an upper triangular is upper Hessenberg
+(`Matrix.IsUpperHessenberg.mul_isUpperTriangular`, `Matrix.IsTridiagonal.isUpperHessenberg`). ★'''
+deps = ["IsAasen", "Matrix.IsUpperHessenberg.mul_isUpperTriangular", "Matrix.IsTridiagonal.isUpperHessenberg"]
+
+[[node]]
+id = "IsAasen.solve"
+kind = "theorem"
+desc = '''The solve chain after (4.4.2) for (4.4.1): if `IsAasen (A.submatrix σ σ) L T`, `L z = b ∘ σ`, `T w = z`,
+`Lᵀ y = w`, `x = y ∘ σ.symm`, then `A *ᵥ x = b`. ★'''
+deps = ["IsAasen"]

@@ -1,0 +1,121 @@
+namespace = "GolubVanLoan.Chapter06"
+desc = '''
+§6.3, Total Least Squares: the problem (6.3.1)–(6.3.3) and an instance with no solution,
+Theorem 6.3.1 (generic existence and uniqueness through the SVD), the norm of the solution, the
+single right-hand side (§6.3.2, Algorithm 6.3.1), and the orthogonal-regression interpretation
+(6.3.6). Backbone: `Numlib/LinearAlgebra/Matrix/LeastSquares/Total`. Not formalized: the variants of
+§6.3.4 — (6.3.7) defines the restricted problem and claims nothing; (6.3.8)'s nongeneric problem
+is defined through "the largest index `p` with `V(n+1, p) ≠ 0`", which depends on the choice of `V`
+when singular values repeat, and its solvability is quoted from Van Huffel (1992) without proof;
+(6.3.9)'s "leads to a Lagrange multiplier system of the form" states no precise relation. The line
+"… solution if `AᵀD²b = 0` and `|t_{n+1}| ‖Db‖₂ ≥ σ_n(DAT₁)`" printed after §6.3.4 (line 17354) is a
+displaced fragment of P6.3.1(b) and is not formalized. The flop count is not formalized.
+'''
+
+[[node]]
+id = "equation_6_3_1"
+kind = "theorem"
+desc = '''(6.3.1): the least-squares problem recast — `x` minimizes `‖Ax − b‖₂` iff `r = Ax − b` has least
+norm among all `r` with `b + r ∈ ran(A)`; so `min ‖Ax − b‖₂ = min_{b + r ∈ ran(A)} ‖r‖₂`.
+`Matrix.IsLeastSquaresSolution` unfolded. ★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.3.1)'
+
+[[node]]
+id = "tls_not_exists_example"
+kind = "theorem"
+desc = '''§6.3, "(6.3.2) may fail to have a solution altogether": for `A = !![1, 0; 0, 0; 0, 0]`,
+`b = ![1, 1, 1]` and `E_ε = !![0, 0; 0, ε; 0, ε]`, `b ∈ ran(A + E_ε)` for every `ε > 0`, yet no
+`[E | r]` minimizes `‖[E | r]‖_F` subject to `b + r ∈ ran(A + E)`:
+`¬ ∃ E r, Matrix.IsTLSPerturbation 1 1 A (replicateCol Unit b) E r`. The infimum is `0` (take
+`E_ε`, `r = 0`) and is not attained (`E = 0`, `r = 0` would put `b ∈ ran(A)`). ★★'''
+deps = ["Matrix.IsTLSPerturbation"]
+source = 'Golub–Van Loan, Matrix Computations, §6.3'
+
+[[node]]
+id = "theorem_6_3_1"
+kind = "theorem"
+desc = '''Theorem 6.3.1, with (6.3.4): for `A ∈ ℝ^{m×n}`, `B ∈ ℝ^{m×k}`, nonsingular diagonal
+`D = diag(d)`, `T = diag(t)`, `m ≥ n + k`, `C = D[A | B]T = [C₁ C₂]` with SVD `UᵀCV = Σ` partitioned
+`U = [U₁ U₂]`, `V = [V₁₁ V₁₂; V₂₁ V₂₂]`, `Σ = diag(Σ₁, Σ₂)` (`n | k`): if `σ_n(C₁) > σ_{n+1}(C)`, then
+`[E₀ | R₀]` defined by `D[E₀ | R₀]T = −U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]` solves (6.3.3), `V₂₂` is invertible and
+`X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹` is the unique TLS solution of `(A + E₀)X = B + R₀`.
+`Matrix.existsUnique_isTLSPerturbation`, `Matrix.isTLSSolution_iff_eq`,
+`Matrix.isUnit_lowerRightBlock_of_lt`. The proof's appeal to Corollary 2.4.5 for
+`σ_n(C) ≥ σ_n(C₁)` is to column interlacing (Corollary 8.6.3), which Corollary 2.4.5 does not give
+(report, Doubts). ★'''
+deps = ["Matrix.existsUnique_isTLSPerturbation", "Matrix.isTLSSolution_iff_eq", "Matrix.isUnit_lowerRightBlock_of_lt", "Matrix.IsSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.3.1'
+
+[[node]]
+id = "tls_tauNorm"
+kind = "theorem"
+desc = '''§6.3.1, after the proof: with `‖Z‖_τ = ‖T₁⁻¹ZT₂‖₂`, `‖X_TLS‖_τ² = ‖V₁₂V₂₂⁻¹‖₂² =
+(1 − σ_k(V₂₂)²)/σ_k(V₂₂)²`. `Matrix.l2_opNorm_mul_inv_sq_eq` with `V₁₂ᵀV₁₂ + V₂₂ᵀV₂₂ = I` (the last
+`k` columns of `V`); the backbone reads `s = V₂₂.sortedSingularValues (Fintype.card k - 1)` (the smallest
+singular value, sorted — the book's `σ_k(V₂₂)` for the `k × k` block, i.e. `V₂₂.sortedSingularValues (k - 1)`
+on `Fin k`). The book's appeal to the thin CS decomposition is not needed. ★'''
+deps = ["theorem_6_3_1", "Matrix.l2_opNorm_mul_inv_sq_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §6.3.1'
+
+[[node]]
+id = "tls_single"
+kind = "theorem"
+desc = '''§6.3.2, the single right-hand side: let `σ_{n−p} > σ_{n−p+1} = ⋯ = σ_{n+1}` be the singular
+values of `C = D[A | b]T` and `Q̃` a Householder matrix with `V(:, n+1−p : n+1) Q̃ = [W z; 0 α]`.
+Then (a) `[z; α]` has the largest `(n+1)`st component in absolute value among the unit vectors of
+`span{v_{n+1−p}, …, v_{n+1}}`; (b) if `α = 0` the TLS problem has no solution; (c) otherwise
+`x_TLS = −T₁z/(t_{n+1}α)` solves it, with `D[E₀ | r₀]T = −D[A | b]T [z; α][zᵀ α]`. (a): the other
+columns of `V(:, n+1−p : n+1)Q̃` have zero last entry and are orthonormal to `[z; α]`; (b)
+`Matrix.not_isTLSSolution_of_forall_last_eq_zero` (by (a), `α = 0` means every vector of the span
+has zero last component); (c) `Matrix.isTLSSolution_of_mem_smallest`. The book's displayed
+`[I_{n−1} 0; 0 Q̃] Uᵀ(D[A|b]T) V [I_{n−p} 0; 0 Q̃] = Σ` has mismatched block sizes and is not
+stated (report, Doubts). ★★'''
+deps = ["Matrix.isTLSSolution_of_mem_smallest", "Matrix.not_isTLSSolution_of_forall_last_eq_zero", "Matrix.IsSVD"]
+source = 'Golub–Van Loan, Matrix Computations, §6.3.2'
+
+[[node]]
+id = "algorithm_6_3_1"
+kind = "definition"
+desc = '''Algorithm 6.3.1 (TLS, one right-hand side), D4 form: `algorithm_6_3_1 (rnd : ℝ → M ℝ)
+(svd : Matrix (Fin m) (Fin (n + 1)) ℝ → M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ))
+(A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) :
+M (Option (Fin n → ℝ))`. Steps: form `C = D[A | b]T` (each product through `rnd`); `(U, σ, V) ← svd C`;
+`p :=` the largest `p` with `σ_{n−p} = σ_n` (0-based: the length of the run of computed values
+equal to the last, by exact comparisons); `(v, β) ← Chapter05.houseOn rnd o (V n)` for
+the index list `o = [n, n−1, …, n−p]` (the row `V(n, n−p : n)` read backwards, pivot `n`, on the full
+row — no reversed copy, convention 10; the book's "Householder `P` such that `Ṽ = VP` has
+`Ṽ(n+1, n−p+1 : n) = 0`"), and `Ṽ ← Chapter05.householderApplyRight rnd v β (List.finRange (n+1)) o V`
+(`Ṽ(:, n−p : n) = V(:, n−p : n) P`); if
+`Ṽ(n, n) ≠ 0` return `some x` with `x_i ← rnd (−(← rnd (t_i Ṽ(i, n))) / (← rnd (t_n Ṽ(n, n))))`,
+else `none`. ★'''
+deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.householderApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.3.1'
+
+[[node]]
+id = "algorithm_6_3_1_spec"
+kind = "theorem"
+desc = '''Algorithm 6.3.1 is correct in exact arithmetic: for `m > n`, nonzero `d`, `t`, and an `svd`
+subroutine meeting `Matrix.IsSVD`, the output is `some x` with `Matrix.IsTLSSolution d t A b x`, or
+`none` and no TLS solution exists — the book's "computes (if possible) a vector `x_TLS` such that
+`(A + E₀)x_TLS = b + r₀` and `‖D[E₀ | r₀]T‖_F` is minimal". `tls_single` after collapsing the program
+at `Id` with `Chapter05.houseOn_spec` and `Chapter05.householderApplyRight_spec`. ★★'''
+deps = ["algorithm_6_3_1", "tls_single", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.3.1'
+
+[[node]]
+id = "equation_6_3_6"
+kind = "theorem"
+desc = '''(6.3.6): in the generic case (`σ_n(C₁) > σ_{n+1}(C)`, one right-hand side) `x_TLS` minimizes
+`ψ(x) = ∑ᵢ dᵢ² |aᵢᵀx − bᵢ|² / (xᵀT₁⁻²x + t_{n+1}⁻²)`. `Matrix.isMinOn_tlsObjective` (P6.3.5). ★'''
+deps = ["theorem_6_3_1", "Matrix.tlsObjective", "Matrix.isMinOn_tlsObjective"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.3.6)'
+
+[[node]]
+id = "tls_distance"
+kind = "theorem"
+desc = '''§6.3.3: `δᵢ = |aᵢᵀx − bᵢ|²/(xᵀT₁⁻²x + t_{n+1}⁻²)` is the square of the distance from
+`[aᵢ; bᵢ] ∈ ℝ^{n+1}` to the subspace `P_x = {[a; b] : b = xᵀa}` in the norm `‖z‖ = ‖Tz‖₂`, and the
+distance is attained. `Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane` with normal `[x; −1]`. ★'''
+deps = ["Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane"]
+source = 'Golub–Van Loan, Matrix Computations, §6.3.3'

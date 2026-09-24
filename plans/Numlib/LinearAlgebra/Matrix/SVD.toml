@@ -1,3 +1,44 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.SVD` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch02) Add a paragraph "Sorted and column-indexed singular values, orthonormal completion, thin SVD,
+# truncation": `Matrix.sortedSingularValues A i` (an `abbrev` for Mathlib's sorted
+# `(toEuclideanLin A).singularValues i`) and its bridge to the column-indexed `Matrix.singularValues`
+# (`exists_equiv_singularValues_eq_sortedSingularValues`), `σ₀ = ‖A‖₂`, `σ_k = 0 ↔ rank ≤ k`, the
+# orthonormal completion of a matrix with orthonormal columns ([golub2013matrix] Theorem 2.1.1), the thin
+# SVD and the rank-`k` truncation `Matrix.svdTruncation` ([golub2013matrix] §2.4). The Eckart–Young
+# theorems themselves (both halves, both norms) are corollaries of Weyl's and Mirsky's inequalities and
+# live in `Numlib/Analysis/Matrix/SingularValues` (Golub–Van Loan review, H3–H4).
+# (ch05) Add "The pseudoinverse as a projector": `A A⁺` and `A⁺ A` are the orthogonal projections onto
+# `ran A` and `ran Aᴴ` (`mul_pinv_eq_starProjection`). The pseudoinverse norms of [golub2013matrix]
+# (5.3.9) and the rectangular condition number `Matrix.pinvCondNumberLp` use `Numlib/Analysis/Matrix/OperatorNorm`,
+# which imports this module, so they are planned in `Numlib/Analysis/Matrix/SingularValues`; the
+# minimal-Frobenius property (5.5.3) and the orthonormal-column projector `V Vᴴ` are in
+# `LeastSquares`, the SVD expansion of the minimal residual in `LeastSquares/Regularized` (all three
+# use modules that import this one).
+# (ch06) add to "Main definitions": "`Matrix.IsSVD A U σ V`: a factorization `Uᴴ A V = rectDiagonal
+# σ` with unitary factors and `σ` antitone and nonnegative — the specification of a computed SVD;
+# `Matrix.shiftedRectDiagonal k σ`: `σ j` at `(j − k, j)`, the sine block of a CS decomposition with
+# fewer rows than columns and the `D_B` of the GSVD." The operator SVD
+# (`LinearMap.exists_orthonormal_singularVectors`) and the invariance of `LinearMap.singularValues`
+# under isometries and adjoints, staged here by ch06, moved to `Numlib/Analysis/InnerProductSpace/SingularValues`
+# (review H3); the refactor task "singular-value operator lemmas out of `SVD`" moves this module's
+# coordinate-free lemmas (`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`,
+# `LinearMap.inner_apply_eigenvectorBasis_adjoint_comp_self`,
+# `LinearMap.norm_apply_eigenvectorBasis_adjoint_comp_self`,
+# `LinearMap.singularValues_of_finrank_codomain_le`) there, and this module then imports it.
+# (ch08) (8.1.3) (`l2_opNorm_mul_inv_sqrt_one_add_gram_le`) moved to `Numlib/Analysis/Matrix/SingularValues`
+# (it uses `OperatorNorm`) and the nearest orthonormal block (8.1.7) to `Numlib/LinearAlgebra/Matrix/Polar`
+# (it is the polar factor, review H4).
+# (ch12) Add to "Main results": the variational characterization of singular values
+# `Matrix.abs_critical_bilinearRayleigh_mem_singularValues` ([golub2013matrix] (12.5.22)). (Ky
+# Fan's SVD maximum principle, staged here by ch12, and the singular-value inequalities staged by ch06
+# and ch07 are in `Numlib/Analysis/Matrix/SingularValues`.)
+# (consolidation, review M2) State the two readings once in the module doc: the sorted reading is
+# spelled `A.sortedSingularValues i` in statements and names (`sortedSingularValues_…`) whenever an
+# index matters (`σ_k`, interlacing, Eckart–Young); the column-indexed `Matrix.singularValues` is
+# used, and each such node says so, for `σ_min = ⨅ i` / `σ_max = ⨆ i` (the least and greatest stretch,
+# for every shape) and for order-free statements about the family. Renaming the column-indexed one
+# (e.g. `Matrix.colSingularValues`) is a recorded refactor task.
 namespace = "Matrix"
 
 [[node]]
@@ -193,3 +234,224 @@ id = "norm_pinv_le_of_normalEquations"
 
 [[node]]
 id = "norm_toEuclideanLin_pinv_sub_eq_iInf"
+
+[[node]]  # staged by ch02
+id = "exists_mem_unitaryGroup_submatrix_eq"
+kind = "theorem"
+desc = '''**Orthonormal columns extend to a unitary matrix** ([golub2013matrix] Theorem 2.1.1). For `V :
+Matrix n r 𝕜` with `Vᴴ * V = 1` and a column placement `f : r ↪ n`, `∃ U ∈ unitaryGroup n 𝕜,
+U.submatrix id f = V`; the remaining columns of `U` then span `(range V)ᗮ`. Mathlib
+`Orthonormal.exists_orthonormalBasis_extension_of_card_eq` applied to the columns of `V` (vectors of
+`EuclideanSpace 𝕜 n`), then the matrix of the basis (the private `unitaryOfBasis` of this module does
+exactly this inside `Matrix.exists_svd`; make it public). Prototype: statement elaborates
+(`notes/gvl/ch02/proto/Shapes.lean`). Consumers: the CS decomposition, the subspace distance, the
+book's Theorem 2.1.1. ★★'''
+deps = ["Matrix.exists_svd"]
+
+[[node]]  # staged by ch02
+id = "sortedSingularValues"
+kind = "definition"
+desc = '''The singular values of `A : Matrix m n 𝕜` in nonincreasing order, 0-based and zero past `rank A`:
+`abbrev sortedSingularValues (A : Matrix m n 𝕜) (i : ℕ) : ℝ := (toEuclideanLin A).singularValues i`
+(Mathlib `LinearMap.singularValues`; prototype `notes/gvl/ch02/proto/Shapes.lean`). The book's `σ_i(A)`
+(1-based) is `A.sortedSingularValues (i - 1)` ([golub2013matrix] §2.4.1). An `abbrev`, not a new
+notion: every backbone statement stays in the `toEuclideanLin` form of `Matrix.exists_svd` and of
+chapters 5, 6 and 8, and the two unify by `rfl`; the name exists for dot notation and for the
+surfaces (chapters 2 and 8). Antitone and nonnegative by Mathlib `LinearMap.singularValues_antitone`,
+`LinearMap.singularValues_nonneg`. ★'''
+deps = ["Matrix.exists_svd"]
+
+[[node]]  # staged by ch02
+id = "exists_equiv_singularValues_eq_sortedSingularValues"
+kind = "theorem"
+desc = '''The column-indexed and the sorted singular values are the same multiset: `∃ e : Fin (card n) ≃ n,
+∀ k, A.singularValues (e k) = A.sortedSingularValues k`. Both are square roots of the
+eigenvalues of `Aᴴ A`: Mathlib defines `Matrix.IsHermitian.eigenvalues` by reindexing `eigenvalues₀`,
+the sorted eigenvalues of the symmetric `toEuclideanLin (Aᴴ A)`, and `toEuclideanLin (Aᴴ A) =
+(toEuclideanLin A)† ∘ toEuclideanLin A` (`Matrix.toEuclideanLin_conjTranspose_eq_adjoint`); then
+Mathlib `LinearMap.singularValues_fin`. Every translation between the backbone's two readings goes
+through this. Renamed from `exists_equiv_singularValues_eq_singularValues_toEuclideanLin` (review M2: the
+sorted reading is spelled `sortedSingularValues`, in statements and names). ★★ (~40 lines)'''
+deps = ["Matrix.singularValues", "Matrix.sq_singularValues", "Matrix.sortedSingularValues"]
+
+[[node]]  # staged by ch02
+id = "sortedSingularValues_eq_zero_iff_rank_le"
+kind = "theorem"
+desc = '''`A.sortedSingularValues k = 0 ↔ A.rank ≤ k`: Mathlib
+`LinearMap.singularValues_eq_zero_iff_le_finrank_range` with `A.rank` the `finrank` of the range of
+`toEuclideanLin A` (`Matrix.rank_eq_finrank_range_toLin` through the `WithLp` equivalence). The number of
+positive singular values is the rank ([golub2013matrix] Corollary 2.4.6). Renamed from
+`singularValues_toEuclideanLin_eq_zero_iff_rank_le` (review M2). ★'''
+deps = ["Matrix.sortedSingularValues"]
+
+[[node]]  # staged by ch02
+id = "sortedSingularValues_zero_eq_l2_opNorm"
+kind = "theorem"
+desc = '''`A.sortedSingularValues 0 = ‖A‖` (scoped `L2Operator`; [golub2013matrix] Corollary 2.4.3,
+first half): `Matrix.l2_opNorm_eq_iSup_singularValues`, the multiset bridge, antitonicity; for `n`
+empty both sides are `0`. Prototype: statement elaborates. Renamed from
+`singularValues_toEuclideanLin_zero_eq_l2_opNorm` (review M2). ★'''
+deps = ["Matrix.l2_opNorm_eq_iSup_singularValues", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues"]
+
+[[node]]  # staged by ch02
+id = "sortedSingularValues_eq_iInf_singularValues"
+kind = "theorem"
+desc = '''The last sorted singular value is the least column-indexed one: `[Nonempty n] →
+A.sortedSingularValues (card n - 1) = ⨅ i, A.singularValues i`, for every shape (both are the least
+stretch `⨅_{‖x‖ = 1} ‖A x‖`, chapter 7's `Matrix.iInf_singularValues_eq_iInf_norm`; for a wide matrix
+both are `0`) — [golub2013matrix] `σ_min(A) ‖x‖ ≤ ‖A x‖` (proof of Corollary 2.4.4). Multiset bridge plus
+antitonicity. (For a wide matrix the book's `σ_min` is `σ_{m-1}`, a different index; statements about
+wide matrices go through `LinearMap.singularValues_adjoint`.) Renamed from
+`singularValues_toEuclideanLin_eq_iInf_singularValues` (review M2); the earlier `card n ≤ card m`
+hypothesis is not needed. ★'''
+deps = ["Matrix.exists_equiv_singularValues_eq_sortedSingularValues"]
+
+[[node]]  # staged by ch02
+id = "l2_opNorm_rectDiagonal"
+kind = "theorem"
+desc = '''`‖(rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)‖ = ⨆ i : Fin (min m n), ‖σ i‖` (scoped `L2Operator`;
+`0` when `min m n = 0`) — [golub2013matrix] P2.3.3 at `p = 2`, the step "`‖Uᵀ A V‖ = ‖Σ‖`" of Corollary
+2.4.3 and of Theorem 2.4.8. `‖Σ x‖² = ∑_{i < min} |σ_i|² |x_i|²`, evaluated at a standard basis vector for
+`≥`. (Chapter 7 stages the square `Matrix.lpOpNorm_diagonal`; this is the rectangular `p = 2` case.) ★'''
+deps = ["Matrix.rectDiagonal"]
+
+[[node]]  # staged by ch02
+id = "exists_thin_svd"
+kind = "theorem"
+desc = '''**The thin SVD** ([golub2013matrix] §2.4.3): for `A : Matrix (Fin m) (Fin n) 𝕜` with `n ≤ m`,
+`∃ U₁ : Matrix (Fin m) (Fin n) 𝕜, U₁ᴴ * U₁ = 1 ∧ ∃ V ∈ unitaryGroup (Fin n) 𝕜, A = U₁ * diagonal (fun i
+: Fin n => (A.sortedSingularValues i : 𝕜)) * star V` (prototype elaborates). The first `n`
+columns of the `U` of `Matrix.exists_svd` (`Matrix.eq_mul_mul_star_of_star_mul_mul_eq`); `U Σ = U₁ Σ₁`
+because the last `m - n` rows of `Σ` vanish. ★'''
+deps = ["Matrix.exists_svd", "Matrix.eq_mul_mul_star_of_star_mul_mul_eq"]
+
+[[node]]  # staged by ch02
+id = "svdTruncation"
+kind = "definition"
+desc = '''The rank-`k` truncation `A_k = ∑_{i<k} σ_i u_i v_iᴴ` of an SVD, [golub2013matrix] (2.4.3):
+`svdTruncation U σ V k = U * (rectDiagonal (fun i => if i < k then (σ i : 𝕜) else 0) : Matrix (Fin m)
+(Fin n) 𝕜) * star V` for `U : Matrix (Fin m) (Fin m) 𝕜`, `V : Matrix (Fin n) (Fin n) 𝕜`, `σ : ℕ → ℝ`
+(argument order as in chapter 6's `Matrix.IsSVD A U σ V`; prototype elaborates — the type ascription on
+`rectDiagonal` is needed). Defined from the factors because the SVD is not unique; the theorems take
+`IsSVD A U σ V`. Consumers: chapter 5 (rank-deficient least squares, `RankRevealing`), chapter 6 (the
+truncated SVD of TLS, `LeastSquares/Total`). ★'''
+deps = ["Matrix.rectDiagonal", "Matrix.IsSVD"]
+
+[[node]]  # staged by ch02
+id = "rank_svdTruncation"
+kind = "theorem"
+desc = '''`IsSVD A U σ V → k ≤ A.rank → (svdTruncation U σ V k).rank = k`: rank is invariant under the unitary
+factors (`Matrix.rank_mul_eq_left_of_isUnit_det`, `Matrix.rank_mul_eq_right_of_isUnit_det`) and a
+rectangular diagonal matrix has rank the number of its nonzero entries, here the first `k`
+(`sortedSingularValues_eq_zero_iff_rank_le` with `IsSVD.singularValues_eq`). ★'''
+deps = ["Matrix.svdTruncation", "Matrix.sortedSingularValues_eq_zero_iff_rank_le", "Matrix.IsSVD.singularValues_eq"]
+
+[[node]]  # staged by ch05
+id = "mul_pinv_eq_starProjection"
+kind = "theorem"
+desc = '''`A A⁺` and `A⁺ A` are the orthogonal projections onto `ran A` and `ran Aᴴ`
+([golub2013matrix] §5.5.2 "`AA⁺ = U₁U₁ᵀ`, `A⁺A = V₁V₁ᵀ`"): `toEuclideanLin (A * A.pinv) =
+((LinearMap.range (toEuclideanLin A)).starProjection : _ →ₗ[𝕜] _)` and the same for `A.pinv * A`
+with `toEuclideanLin Aᴴ` (second declaration `pinv_mul_eq_starProjection`). From the Penrose
+conditions: `A A⁺` is Hermitian and idempotent with range `ran A`
+(`isHermitian_mul_pinv`, `mul_pinv_mul_self`), and a Hermitian idempotent is the projection onto
+its range (Mathlib `LinearMap.IsSymmetricProjection`-type API; check names). ★★'''
+deps = ["Matrix.pinv", "Matrix.mul_pinv_mul_self", "Matrix.pinv_mul_self_mul_pinv"]
+
+[[node]]  # staged by ch05
+id = "frobenius_norm_pinv_sub_le"
+kind = "theorem"
+desc = '''**Wedin's bound** ([golub2013matrix] §5.5.3, after Wedin (1973) and Stewart (1977)): for
+`A, E : Matrix m n 𝕜` and `B = A + E`,
+`‖B⁺ - A⁺‖_F ≤ 2 ‖E‖_F * max (‖A⁺‖₂ ^ 2) (‖B⁺‖₂ ^ 2)` — no rank hypothesis. Proof (Wedin's
+decomposition): `B⁺ - A⁺ = -B⁺ E A⁺ + B⁺ B⁺ᴴ Eᴴ (1 - A A⁺) + (1 - B⁺ B) Eᴴ A⁺ᴴ A⁺` (a Penrose-
+condition identity); the third term's range is `ker B` and the first two lie in `ran Bᴴ`, and the
+first two are separated on the right by `A A⁺` versus `1 - A A⁺`, so the three are mutually
+Frobenius-orthogonal and `‖·‖_F² ≤ (‖B⁺‖²‖A⁺‖² + ‖B⁺‖⁴ + ‖A⁺‖⁴) ‖E‖_F²`, giving the constant `√3 ≤ 2`.
+Uses `mul_pinv_eq_starProjection` and the Penrose conditions. ★★★ (~200 lines)'''
+deps = ["Matrix.mul_pinv_eq_starProjection", "Matrix.mul_pinv_mul_self", "Matrix.pinv_mul_self_mul_pinv"]
+
+[[node]]  # staged by ch06
+id = "IsSVD"
+kind = "definition"
+desc = '''**A singular value decomposition, as a specification** ([golub2013matrix] Theorem 2.4.1; the
+output condition of every "Compute the SVD" step of Algorithms 6.2.1, 6.3.1, 6.4.1–6.4.3): for
+`A : Matrix (Fin m) (Fin n) 𝕜`, `U`, `V` and `σ : ℕ → ℝ`, a structure with fields
+`mem_unitaryGroup_left : U ∈ unitaryGroup (Fin m) 𝕜`, `mem_unitaryGroup_right : V ∈ unitaryGroup (Fin n) 𝕜`,
+`antitone : Antitone σ`, `nonneg : ∀ i, 0 ≤ σ i`,
+`star_mul_mul : star U * A * V = rectDiagonal fun i => ((σ i : ℝ) : 𝕜)`. The values `σ i` for
+`i ≥ min m n` are not read by `rectDiagonal` and are constrained only by the two order fields.
+Bundles the hypotheses `pinv_eq_of_svd`, `ker_mulVecLin_eq_span_of_svd`,
+`range_mulVecLin_eq_span_of_svd`, `singularValues_eq_of_svd` take unbundled. ★'''
+deps = ["Matrix.rectDiagonal"]
+
+[[node]]  # staged by ch06
+id = "exists_isSVD"
+kind = "theorem"
+desc = '''`∃ U σ V, IsSVD A U σ V` — `Matrix.exists_svd` with `σ = A.sortedSingularValues`
+(antitone and nonnegative by Mathlib's `LinearMap.singularValues_antitone`,
+`LinearMap.singularValues_nonneg`). ★'''
+deps = ["Matrix.IsSVD", "Matrix.exists_svd"]
+
+[[node]]  # staged by ch06
+id = "IsSVD.singularValues_eq"
+kind = "theorem"
+desc = '''The diagonal of any SVD is the sorted singular values: `IsSVD A U σ V → i < m → i < n →
+σ i = A.sortedSingularValues i` — `Matrix.singularValues_eq_of_svd`. ★'''
+deps = ["Matrix.IsSVD", "Matrix.singularValues_eq_of_svd"]
+
+[[node]]  # staged by ch06
+id = "shiftedRectDiagonal"
+kind = "definition"
+desc = '''**The shifted rectangular diagonal** ([golub2013matrix] (6.1.23), the `D_B` of the GSVD; the
+sine block of a thin CS decomposition with fewer rows than columns): for `k : ℕ`, `σ : ℕ → α`,
+`shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) α := of fun i j => if (j : ℕ) = i + k then σ j else 0`;
+`shiftedRectDiagonal_apply` (rfl) and `shiftedRectDiagonal_zero : shiftedRectDiagonal 0 σ = rectDiagonal σ`.
+Prototype: `notes/gvl/ch06/proto/Shapes.lean` §3. ★'''
+deps = ["Matrix.rectDiagonal"]
+
+[[node]]  # staged by ch06
+id = "conjTranspose_shiftedRectDiagonal_mul_self"
+kind = "theorem"
+desc = '''`(shiftedRectDiagonal k σ)ᴴ * shiftedRectDiagonal k σ = diagonal fun j : Fin n =>
+if k ≤ j ∧ (j : ℕ) < m + k then star (σ j) * σ j else 0` — the shift disappears in the Gram matrix,
+the analogue of `conjTranspose_rectDiagonal_mul_self` used by the GSVD's pencil identities. ★'''
+deps = ["Matrix.shiftedRectDiagonal", "Matrix.conjTranspose_rectDiagonal_mul_self"]
+
+[[node]]  # staged by ch07
+id = "iInf_singularValues_eq_iInf_norm"
+kind = "theorem"
+desc = '''For `A : Matrix m n 𝕜` (`RCLike 𝕜`, `[Nonempty n]`): `⨅ i, A.singularValues i =
+⨅ x : {x : EuclideanSpace 𝕜 n // ‖x‖ = 1}, ‖toEuclideanLin A x‖`. `≤` is
+`Matrix.iInf_singularValues_mul_norm_le` (SVD.lean, untracked); `≥` evaluates at the right singular vector
+`A.rightSingularBasis i₀` of a minimizing index (`Matrix.norm_toEuclideanLin_rightSingularBasis`,
+untracked). ([golub2013matrix] §2.4 characterizes `σ_min` this way; chapter 7 consumes it in (7.9.5).) (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.singularValues"]
+
+[[node]]  # staged by ch07
+id = "exists_norm_eq_iInf_singularValues"
+kind = "theorem"
+desc = '''Attainment: `∃ x : EuclideanSpace 𝕜 n, ‖x‖ = 1 ∧ ‖toEuclideanLin A x‖ = ⨅ i, A.singularValues i`
+(`[Nonempty n]`, rectangular `A`; the right singular vector of the least singular value). (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.iInf_singularValues_eq_iInf_norm"]
+
+[[node]]  # staged by ch07
+id = "iInf_singularValues_unitary_mul_mul"
+kind = "theorem"
+desc = '''Unitary invariance: `⨅ i, (U * A * V).singularValues i = ⨅ i, A.singularValues i` for
+`U ∈ unitaryGroup m 𝕜`, `V ∈ unitaryGroup n 𝕜` ([golub2013matrix] §7.9.5: `σ_min(z I - A) = σ_min(z I - T)`
+for a Schur form `T = Qᴴ A Q`). From `iInf_singularValues_eq_iInf_norm` (`V` permutes the unit sphere, `U`
+is an isometry). (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.iInf_singularValues_eq_iInf_norm"]
+
+[[node]]  # staged by ch12
+id = "abs_critical_bilinearRayleigh_mem_singularValues"
+kind = "theorem"
+desc = '''Singular values are the stationary values of `ψ_A(u, v) = uᵀ A v / (‖u‖ ‖v‖)` ([golub2013matrix] (12.5.22) and the
+gradient display after it), real case: for `A : Matrix m n ℝ` and nonzero `u`, `v`, the Fréchet derivative of
+`ψ_A` at `(u, v)` (on `EuclideanSpace ℝ m × EuclideanSpace ℝ n`) vanishes iff `A *ᵥ v̂ = ψ_A(u, v) • û` and `Aᵀ *ᵥ û =
+ψ_A(u, v) • v̂` (`û = u / ‖u‖`, `v̂ = v / ‖v‖`); then `|ψ_A(u, v)|` is a singular value (`Aᵀ A v̂ = ψ² v̂`,
+`Matrix.sq_singularValues`) and every singular triple is such a critical point. The quotient rule
+(`HasFDerivAt.div`, `hasStrictFDerivAt_norm_sq`) and homogeneity of degree `0`. The order-`d` generalization is
+`Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`. ★ (Column-indexed `Matrix.singularValues` on purpose: the statement is about the singular values as a family indexed by the columns, in no particular order, which the unsorted family gives without a sorting permutation.) ★ (~90 lines)'''
+deps = ["Matrix.singularValues", "Matrix.sq_singularValues", "Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff"]

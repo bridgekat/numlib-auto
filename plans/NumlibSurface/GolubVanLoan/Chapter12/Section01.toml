@@ -1,0 +1,217 @@
+namespace = "GolubVanLoan.Chapter12"
+desc = '''
+§12.1, Linear systems with displacement structure: displacement rank (12.1.1)–(12.1.3), Cauchy and
+Cauchy-like matrices (12.1.4), the generator update Theorem 12.1.1, the fast LU Algorithms 12.1.1
+(`LUdisp`) and 12.1.2 (`LUdispPiv`), Toeplitz-, Hankel- and Toeplitz-plus-Hankel-like matrices
+(12.1.7)–(12.1.11), and the conversion to Cauchy-like form with the fast eigensystems (12.1.12)–(12.1.13).
+Backbone: `Numlib/LinearAlgebra/Matrix/Displacement` (displacement = chapter 7's `Matrix.sylvesterMap`).
+(12.1.1), (12.1.2), (12.1.5)–(12.1.7) are definitions or parts of statements and have no node of their own;
+the `n = 4` Cauchy update display of §12.1.3 is an example (its third row repeats `ω₃` for `ω₄`).
+'''
+
+[[node]]
+id = "equation_12_1_3"
+kind = "theorem"
+desc = '''(12.1.3): for `F G A : Matrix (Fin n) (Fin n) ℝ` with `Matrix.displacementRank F G A = r`, there are generators
+`R S : Matrix (Fin n) (Fin r) ℝ` with `F * A - A * G = R * Sᵀ`. `Matrix.displacementRank_le_iff_exists`. The book's
+precondition that the Sylvester map be nonsingular is not needed for this direction. ★'''
+deps = ["Matrix.displacementRank_le_iff_exists"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.3)'
+
+[[node]]
+id = "cauchy_displacement"
+kind = "theorem"
+desc = '''§12.1.2: for `ω λ : Fin n → ℝ` with `ω k ≠ λ j` for all `k j`, the Cauchy matrix `a_kj = 1/(ω_k − λ_j)` (`Matrix.cauchy
+ω (-λ)`) satisfies `Ω A − A Λ = e eᵀ` (`Ω = diagonal ω`, `Λ = diagonal λ`, `e` the ones vector) and has
+`{Ω, Λ}`-displacement rank `1` (`n ≥ 1`). `Matrix.sylvesterMap_diagonal_cauchy`. ★'''
+deps = ["Matrix.sylvesterMap_diagonal_cauchy"]
+source = 'Golub–Van Loan, Matrix Computations, §12.1.2'
+
+[[node]]
+id = "IsCauchyLike"
+kind = "definition"
+desc = '''§12.1.2, Definition: `A` is Cauchy-like with respect to `ω`, `λ` if `∃ r (R S : Matrix (Fin n) (Fin r) ℝ), R.rank = r
+∧ S.rank = r ∧ diagonal ω * A - A * diagonal λ = R * Sᵀ` ((12.1.4); the book's "`r ≪ n`" is informal and not part
+of the definition). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §12.1.2, Definition'
+
+[[node]]
+id = "equation_12_1_4"
+kind = "theorem"
+desc = '''(12.1.4) and the display after it: if `ω k ≠ λ j` for all `k, j` and `Ω A − A Λ = R Sᵀ`, then `a_kj = r_kᵀ s_j / (ω_k −
+λ_j)` with `r_k`, `s_j` the rows of `R`, `S` (`A k j = (R k ⬝ᵥ S j) / (ω k - λ j)`); conversely. So `A` is determined by
+`{ω, λ, R, S}`. `Matrix.apply_eq_of_sylvesterMap_diagonal_eq`. ★'''
+deps = ["Matrix.apply_eq_of_sylvesterMap_diagonal_eq", "GolubVanLoan.Chapter12.IsCauchyLike"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.4)'
+
+[[node]]
+id = "theorem_12_1_1"
+kind = "theorem"
+desc = '''Theorem 12.1.1: for `A : Matrix (Fin (N+1)) (Fin (N+1)) ℝ` with `Ω A − A Λ = R Sᵀ` (12.1.5), `Ω = diagonal ω`, `Λ =
+diagonal λ` with no common diagonal entries, `A = [α gᵀ; f B]`, `R = [r₁ᵀ; R₁]`, `S = [s₁ᵀ; S₁]` (the `Fin.succ`
+blocks) and `α ≠ 0`: `Ω₁ A₁ − A₁ Λ₁ = R̃₁ S̃₁ᵀ` (12.1.6) with `A₁ = B − f gᵀ/α`, `R̃₁ = R₁ − f r₁ᵀ/α`, `S̃₁ = S₁ − g s₁ᵀ/α`,
+`Ω₁ = diagonal (ω ∘ succ)`, `Λ₁ = diagonal (λ ∘ succ)`. `Matrix.sylvesterMap_diagonal_schurComplement`, the diagonal
+case of the backbone's triangular-operator version. (The hypothesis "no common diagonal entries" is not used by
+the identity; it is kept as printed.) ★'''
+deps = ["Matrix.sylvesterMap_diagonal_schurComplement"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.1.1'
+
+[[node]]
+id = "theorem_12_1_1_b"
+kind = "theorem"
+desc = '''The display after Theorem 12.1.1: `rank_{Ω,Λ}(A) ≤ r ⇒ rank_{Ω₁,Λ₁}(A₁) ≤ r`, with `A₁` the Schur complement of
+`α ≠ 0`. `Matrix.sylvesterMap_diagonal_schurComplement` (its displacement-rank clause). ★'''
+deps = ["Matrix.sylvesterMap_diagonal_schurComplement", "GolubVanLoan.Chapter12.theorem_12_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.1.1'
+
+[[node]]
+id = "algorithm_12_1_1"
+kind = "definition"
+desc = '''Algorithm 12.1.1 (`LUdisp`), per D4: `algorithm_12_1_1 {M} [Monad M] (rnd : ℝ → M ℝ) : (N : ℕ) → (ω λ : Fin (N+1) → ℝ)
+→ (R S : Matrix (Fin (N+1)) (Fin r) ℝ) → M (Matrix (Fin (N+1)) (Fin (N+1)) ℝ × Matrix (Fin (N+1)) (Fin (N+1)) ℝ)`, by
+structural recursion on `N` in the book's order: `N = 0`: `L = 1`, `U = r₁ᵀ s₁ / (ω₁ − λ₁)`; otherwise `a = (R s₁) ./ (ω −
+λ₁)` (each entry a `dotAccum` then a rounded subtraction and division), `α = a₁`, `f = a(2:n)`, `g = (S₁ r₁) ./ (ω₁ −
+λ(2:n))`, `R̃₁ = R₁ − f r₁ᵀ/α`, `S̃₁ = S₁ − g s₁ᵀ/α` (entrywise, three roundings per entry in the order `f_i r_c`, `/α`,
+`−`), the recursive call on `ω(2:n), λ(2:n), R̃₁, S̃₁`, and `L = [1 0; f/α L₁]`, `U = [α gᵀ; 0 U₁]` assembled with
+`Fin.cases`. The prototype `notes/gvl/ch12/proto/Structured.lean` elaborates this definition. The
+book's non-recursive sketch is not a separate node. ★★'''
+deps = ["FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.1.1'
+
+[[node]]
+id = "algorithm_12_1_1_spec"
+kind = "theorem"
+desc = '''Correctness of Algorithm 12.1.1 in exact arithmetic: if `ω k ≠ λ j` for all `k j`, `diagonal ω * A - A * diagonal λ = R *
+Sᵀ`, and `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)` (the book's "has an LU factorization"; the pivots `α`
+met in the recursion are the pivots of Gaussian elimination and are nonzero exactly then), then `Id.run
+(algorithm_12_1_1 pure N ω λ R S) = (L, U)` with `Matrix.IsLU A L U`. Induction on `N`: the computed `a`, `g` are the
+first column and row of `A` (`Matrix.apply_eq_of_sylvesterMap_diagonal_eq`), the recursive call receives correct
+generators of the Schur complement (`theorem_12_1_1`), whose strict leading minors are those of `A` divided by `α`
+(`Matrix.isUnit_schurComplementSingle_of_isUnit` of `LU`), and `[1 0; f/α L₁][α gᵀ; 0 U₁] = A` block by block
+(`Matrix.isLU_luLowerOfSchur_luUpperOfSchur'`-shaped assembly). ★★★ (~150 lines)'''
+deps = ["GolubVanLoan.Chapter12.algorithm_12_1_1", "FloatingPoint.dotAccum_id", "GolubVanLoan.Chapter12.theorem_12_1_1", "GolubVanLoan.Chapter12.equation_12_1_4", "Matrix.IsLU", "Matrix.isUnit_schurComplementSingle_of_isUnit", "Matrix.strictLeadingPrincipalSubmatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.1.1'
+
+[[node]]
+id = "displacement_permute"
+kind = "theorem"
+desc = '''§12.1.6: for permutations `P`, `Q` (`σ.permMatrix`, `τ.permMatrix`), `(P Ω Pᵀ)(P A Qᵀ) − (P A Qᵀ)(Q Λ Qᵀ) = (P R)(Q S)ᵀ`, and
+`P Ω Pᵀ`, `Q Λ Qᵀ` are again diagonal (`diagonal (ω ∘ σ⁻¹)`): row and column permutations of a Cauchy-like matrix are
+tracked on `{Ω, Λ, R, S}`. `Matrix.sylvesterMap_conj`. ★'''
+deps = ["Matrix.sylvesterMap_conj"]
+source = 'Golub–Van Loan, Matrix Computations, §12.1.6'
+
+[[node]]
+id = "algorithm_12_1_2"
+kind = "definition"
+desc = '''Algorithm 12.1.2 (`LUdispPiv`), per D4, recursive as `algorithm_12_1_1`, returning `(L, U, P)` with `P : Equiv.Perm (Fin
+(N+1))`: after computing `a = (R s₁) ./ (ω − λ₁)`, a row index of maximal `|a_i|` (comparison on computed values; ties
+to the smallest index, the book's "`[Pa]₁` maximal" read with absolute values) is swapped to the top of `a`, `R`, `ω`
+(`Equiv.swap 0 i`), then the steps of `LUdisp`, the recursive call, and `L = [1 0; P₁ f/α L₁]`, `U = [α gᵀ; 0 U₁]`, `P =
+diag(1, P₁) · P`. ★★'''
+deps = ["FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.1.2'
+
+[[node]]
+id = "algorithm_12_1_2_spec"
+kind = "theorem"
+desc = '''Correctness of Algorithm 12.1.2 in exact arithmetic: if `ω k ≠ λ j` for all `k j`, `diagonal ω * A - A * diagonal λ = R *
+Sᵀ` and `A` is nonsingular, then `Id.run (algorithm_12_1_2 pure N ω λ R S) = (L, U, P)` with `Matrix.IsLU (P.permMatrix ℝ
+* A) L U` and `∀ i j, |L i j| ≤ 1` (partial pivoting). Induction on `N` as for `algorithm_12_1_1_spec`, with
+`displacement_permute` for the row swap, the display after the algorithm (`diag(1, P₁) P A = [1 0; P₁ f/α L₁][α gᵀ; 0 U₁]`),
+and nonsingularity passed to the Schur complement (`|α| = max |a_i| > 0` since the first column of a nonsingular `A`
+is nonzero). ★★★ (~180 lines)'''
+deps = ["GolubVanLoan.Chapter12.algorithm_12_1_2", "GolubVanLoan.Chapter12.displacement_permute", "GolubVanLoan.Chapter12.algorithm_12_1_1_spec", "Matrix.IsLU"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.1.2'
+
+[[node]]
+id = "IsToeplitzLike"
+kind = "definition"
+desc = '''§12.1.7, Definition (the braced display): `A` is Toeplitz-like of displacement rank `≤ r` if `Z₁ A − A Z₋₁ = R Sᵀ` for some `R
+S : Matrix (Fin n) (Fin r) ℝ`, i.e. `Matrix.displacementRank (cyclicShift n 1) (cyclicShift n (-1)) A ≤ r`;
+`IsHankelLike` with `Z₁ᵀ`, `Z₋₁`, and `IsToeplitzPlusHankelLike` with `Y₀₀`, `Y₁₁` (`Matrix.cornerTridiagonal`) are
+defined alongside as their own declarations (one node for the three; `r` explicit, the book's `r ≪ n` informal). ★'''
+deps = ["Matrix.displacementRank", "Matrix.cyclicShift", "Matrix.cornerTridiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, §12.1.7, Definition'
+
+[[node]]
+id = "equation_12_1_8"
+kind = "theorem"
+desc = '''(12.1.8): for Toeplitz `T : Matrix (Fin n) (Fin n) ℝ` (chapter 4's `Matrix.IsToeplitz`), `Z₁ T − T Z₋₁` vanishes outside the
+first row and the last column, and `rank_{Z₁, Z₋₁}(T) ≤ 2`. `Matrix.sylvesterMap_cyclicShift_toeplitz_apply`,
+`Matrix.displacementRank_cyclicShift_toeplitz_le`. ★'''
+deps = ["Matrix.sylvesterMap_cyclicShift_toeplitz_apply", "Matrix.displacementRank_cyclicShift_toeplitz_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.8)'
+
+[[node]]
+id = "equation_12_1_9"
+kind = "theorem"
+desc = '''(12.1.9): for Toeplitz `T`, `Y₀₀ T − T Y₁₁` vanishes off the border (first and last rows and columns) and
+`rank_{Y₀₀, Y₁₁}(T) ≤ 4`. `Matrix.sylvesterMap_cornerTridiagonal_toeplitz_apply`,
+`Matrix.displacementRank_cornerTridiagonal_toeplitz_le`. ★'''
+deps = ["Matrix.sylvesterMap_cornerTridiagonal_toeplitz_apply", "Matrix.displacementRank_cornerTridiagonal_toeplitz_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.9)'
+
+[[node]]
+id = "disjoint_spectra_displacement_operators"
+kind = "theorem"
+desc = '''§12.1.7, after (12.1.9) (printed "`λ(Z₋₁) ∪ λ(Z₁) = ∅`", read `∩`): no complex number is an eigenvalue of both `Z₋₁` and `Z₁`
+(`μⁿ = −1` versus `μⁿ = 1`, `Matrix.cyclicShift_pow_card`), nor of both `Y₀₀` and `Y₁₁`; consequently the Sylvester maps
+`X ↦ Z₁ X − X Z₋₁`, `X ↦ Z₁ᵀ X − X Z₋₁` and `X ↦ Y₀₀ X − X Y₁₁` are injective, which is the precondition of the definition
+(12.1.2) for the four displacement ranks of §12.1.7. `Matrix.sylvesterMap_cyclicShift_one_neg_one_injective`,
+`Matrix.sylvesterMap_cornerTridiagonal_injective`. ★★ (the complex-eigenvalue phrasing through
+`Matrix.map (algebraMap ℝ ℂ)`, ~30 lines)'''
+deps = ["Matrix.cyclicShift_pow_card", "Matrix.sylvesterMap_cyclicShift_one_neg_one_injective", "Matrix.sylvesterMap_cornerTridiagonal_injective"]
+source = 'Golub–Van Loan, Matrix Computations, §12.1.7'
+
+[[node]]
+id = "equation_12_1_10"
+kind = "theorem"
+desc = '''(12.1.10): for Hankel `H` (`Matrix.IsHankel`), `Z₁ᵀ H − H Z₋₁` vanishes outside the last row and the last column, and
+`rank_{Z₁ᵀ, Z₋₁}(H) ≤ 2`; also "`ℰ_n H` is Toeplitz" (`Matrix.exchange_mul_isHankel`, in the `hankel` node).
+`Matrix.sylvesterMap_cyclicShift_hankel_apply`. ★'''
+deps = ["Matrix.sylvesterMap_cyclicShift_hankel_apply", "Matrix.hankel"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.10)'
+
+[[node]]
+id = "equation_12_1_11"
+kind = "theorem"
+desc = '''(12.1.11) and the sentence after it: for Hankel `H`, `rank_{Y₀₀, Y₁₁}(H) ≤ 4`, and for `A = T + H` with `T` Toeplitz, `H`
+Hankel, `rank_{Y₀₀, Y₁₁}(A) ≤ 4`. `Matrix.sylvesterMap_cornerTridiagonal_hankel_apply`. ★'''
+deps = ["Matrix.sylvesterMap_cornerTridiagonal_hankel_apply"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.11)'
+
+[[node]]
+id = "cauchyLike_of_diagonalizable"
+kind = "theorem"
+desc = '''§12.1.8: if `F A − A G = R Sᵀ`, `X_F⁻¹ F X_F = Ω`, `X_G⁻¹ G X_G = Λ` (diagonal, real), then `Ã = X_F⁻¹ A X_G` satisfies `Ω Ã − Ã Λ =
+R̃ S̃ᵀ` with `R̃ = X_F⁻¹ R`, `S̃ = X_Gᵀ S` (the book's first display writes `X_G⁻¹ G X_F` for `X_G⁻¹ G X_G`); and Steps 1–4 are
+correct: if `P Ã = L U` (Algorithm 12.1.2) and `Ã x̃ = X_F⁻¹ b` then `x = X_G x̃` solves `A x = b`. `Matrix.sylvesterMap_conj`. ★'''
+deps = ["Matrix.sylvesterMap_conj"]
+source = 'Golub–Van Loan, Matrix Computations, §12.1.8'
+
+[[node]]
+id = "equation_12_1_12"
+kind = "theorem"
+desc = '''(12.1.12): with the DST-I matrix `𝒮_n`, `[𝒮_n]_kj = √(2/(n+1)) sin(kjπ/(n+1))` (orthogonal and symmetric),
+`𝒮_nᵀ Y₀₀ 𝒮_n = 2 diag(cos(π/(n+1)), …, cos(nπ/(n+1)))`. `Y₀₀ = Matrix.cornerTridiagonal n 0 0 =
+symmTridiagonalToeplitz n 1 0`, whose eigenvectors are `Matrix.sineVec` with eigenvalues `2 cos((k+1)π/(n+1))`
+(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec` (via the earlier chapter's restatement `GolubVanLoan.Chapter04.dd_eigen`)), orthonormal after scaling (`Matrix.orthonormal_sineVec`); the
+columns of `𝒮_n` are the scaled `sineVec`s: `𝒮_n = √(2/(n+1)) • Matrix.dst1 n` (the backbone DST-I matrix, formerly
+`sinMatrix`, which is chapter 1's `S_n`; `Matrix.dst1_apply_eq_sineVec`, and orthogonality from `Matrix.dst1_mul_self`). ★★ (~50 lines)'''
+deps = ["Matrix.cornerTridiagonal", "GolubVanLoan.Chapter04.dd_eigen", "Matrix.sineOrthonormalBasis", "Matrix.dst1", "Matrix.dst1_apply_eq_sineVec", "Matrix.dst1_mul_self"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.12)'
+
+[[node]]
+id = "equation_12_1_13"
+kind = "theorem"
+desc = '''(12.1.13): with the DCT-II matrix `𝒞_n`, `[𝒞_n]_kj = √(2/n) cos((2k−1)(j−1)π/(2n)) q_j` (`q₁ = 1/√2`, `q_j = 1` otherwise;
+orthogonal), `𝒞_nᵀ Y₁₁ 𝒞_n = 2 diag(1, cos(π/n), …, cos((n−1)π/n))`. The columns of `𝒞_n` are the normalized
+`Matrix.cosineIIVec n k` (`Matrix.dotProduct_cosineIIVec` gives the normalization `√(2/n) q`), eigenvectors of
+`Y₁₁ = cornerTridiagonal n 1 1` for `2 cos(kπ/n)` (`Matrix.cornerTridiagonal_one_one_mulVec_cosineIIVec`). (P12.1.5.)
+The backbone names the matrix: `𝒞_n` is `(Matrix.dct2 n)ᵀ` with the column normalization `√(2/n) q_j`, and `Matrix.dct2`'s
+node carries `dct2 n * (dct2 n)ᵀ` diagonal and the diagonalization of `cornerTridiagonal n 1 1` (typed over `ℝ`), so the
+surface states `𝒞_n` through `Matrix.dct2` rather than rebuilding it from `cosineIIVec`. ★ (~30 lines)'''
+deps = ["Matrix.dct2", "Matrix.cornerTridiagonal_one_one_mulVec_cosineIIVec", "Matrix.dotProduct_cosineIIVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.1.13)'

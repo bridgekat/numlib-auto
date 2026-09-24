@@ -1,0 +1,161 @@
+desc = '''
+The distance between two subspaces, `dist(S₁, S₂) = ‖P₁ - P₂‖₂` ([golub2013matrix] §2.5.3, (2.5.1),
+Theorem 2.5.1), and its characterizations — coordinate-free.
+
+**No new distance.** The distance *is* `Submodule.gap K L = ‖K.starProjection - L.starProjection‖`
+of `Numlib/Analysis/InnerProductSpace/Projection/Angle` (defined there for any two subspaces with
+orthogonal projections, with `gap_le_one`, `gap_eq_zero_iff`, `gap_comm`, `finrank_eq_of_gap_lt_one`).
+The brief's placeholder name `Submodule.projDist` is therefore not introduced; every consumer
+(chapter 2's surface, `PrincipalAngles`, where `gap K L = sin θ_max` for equal dimensions) uses
+`Submodule.gap`. What this module adds is the equal-dimension theory that `Angle` explicitly leaves
+open ("the two are not proved equal here"): the symmetric gap equals either one-sided gap
+`‖P_{L⊥} P_K‖` when `finrank K = finrank L`, `gap = 1` exactly when `K` meets `Lᗮ`, and the gap
+between a subspace and the graph of a map over it.
+
+**The engine is the restricted projection** `T = P_L|_K : K → L`
+(`Submodule.orthogonalProjectionRestrict L K`, defined here; its adjoint is `P_K|_L`). For `x ∈ K`,
+`‖P_{L⊥} x‖² = ‖x‖² − ‖T x‖²`, so `‖P_{L⊥} P_K‖² = 1 − σ_min(T)²`
+(`Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`, the stacked-isometry identity of
+`Numlib/Analysis/InnerProductSpace/SingularValues`). For equal dimensions `T` is square, so
+`σ_min(T) = σ_min(T†)` (`LinearMap.singularValues_adjoint`) and the two one-sided gaps agree; and
+`gap = 1 ↔ σ_min(T) = 0 ↔ T` not injective `↔ K ⊓ Lᗮ ≠ ⊥`. The Golub–Van Loan review (H2) replaced
+the first plan's route — orthonormal bases, `EuclideanSpace`, and the CS block lemma of
+`Numlib/LinearAlgebra/Matrix/CSDecomposition` — by this one; no finite dimension of the ambient
+space is needed (only of `K` and `L`), and the module no longer imports anything from the matrix
+layer. The matrix form of Theorem 2.5.1 and (7.3.19) are corollaries in
+`Numlib/Analysis/Matrix/SingularValues`.
+
+Upstreaming candidate (natural home: `Mathlib.Analysis.InnerProductSpace.Projection`). Imports
+`Projection/Angle` and `Numlib/Analysis/InnerProductSpace/SingularValues`; `PrincipalAngles` imports
+this module. Planned as `SubspaceDistance` by chapter 2 and placed here, beside `Angle`, at the
+Golub–Van Loan consolidation; moving the existing `Submodule.gap` definition and its API out of
+`Angle` into this module is a recorded refactor task on proved code (`notes/gvl/consolidation.md`,
+R6), after which `Gap` no longer imports `Angle` for it. (R6's move of
+`ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq` is no longer needed by this module.)
+
+Order: the Pythagorean identity and the max formula (★, ★★), the restricted projection and its
+adjoint (★), the one-sided gap identity (★★), the equal-dimension theorems (★ each), the graph gap
+(★★). About 250 lines.
+'''
+
+[[node]]
+id = "Submodule.norm_starProjection_sub_apply_sq"
+kind = "theorem"
+desc = '''For subspaces `K L` of an inner product space over `RCLike 𝕜` with orthogonal projections
+and any `z`: `‖K.starProjection z - L.starProjection z‖ ^ 2 = re ⟪K.starProjection z, z -
+L.starProjection z⟫ + re ⟪L.starProjection z, z - K.starProjection z⟫` ([golub2013matrix] §2.5.1,
+the display used for the uniqueness of the orthogonal projection). Expand the left side and use
+`⟪P z, P z⟫ = ⟪P z, z⟫` for a star projection (Mathlib `Submodule.inner_starProjection_left_eq_right`
+or `Submodule.inner_starProjection_left_eq_of_mem` of `Angle`). ★'''
+deps = ["Submodule.gap"]
+
+[[node]]
+id = "Submodule.gap_eq_max_norm_orthogonal_mul"
+kind = "theorem"
+desc = '''The symmetric gap is the larger of the two one-sided gaps, in any inner product space:
+`K.gap L = max ‖Lᗮ.starProjection * K.starProjection‖ ‖Kᗮ.starProjection * L.starProjection‖`
+(products in `E →L[𝕜] E`; prototype `notes/gvl/ch02/proto/Shapes.lean`). `≥`: for `x`,
+`(P_K - P_L) P_K x = P_{L⊥} P_K x`, and symmetrically. `≤`: `P_K - P_L = P_K P_{L⊥} - P_{K⊥} P_L`; the
+two terms take values in `K` and `Kᗮ` and act on the orthogonal pieces `P_{L⊥} x`, `P_L x`, so
+`‖(P_K - P_L) x‖² ≤ a² ‖P_{L⊥} x‖² + b² ‖P_L x‖² ≤ max(a,b)² ‖x‖²` with `a = ‖P_K P_{L⊥}‖ = ‖P_{L⊥}
+P_K‖` (adjoints, `ContinuousLinearMap.norm_adjoint`) and `b = ‖P_{K⊥} P_L‖`. ★★ (~60 lines)'''
+deps = ["Submodule.gap", "Submodule.gap_comm"]
+
+[[node]]
+id = "Submodule.gap_eq_one_of_inf_orthogonal_ne_bot"
+kind = "theorem"
+desc = '''If `K ⊓ Lᗮ ≠ ⊥` then `K.gap L = 1`: a unit `x ∈ K ⊓ Lᗮ` has `(P_K - P_L) x = x`, so `gap ≥ 1`,
+and `Submodule.gap_le_one`. No dimension hypothesis. ★'''
+deps = ["Submodule.gap", "Submodule.gap_le_one"]
+
+[[node]]
+id = "Submodule.orthogonalProjectionRestrict"
+kind = "definition"
+desc = '''The orthogonal projection onto `F` restricted to `G`, as a linear map between the
+subspaces: `(F.orthogonalProjectionOnto : E →ₗ[𝕜] F) ∘ₗ G.subtype : G →ₗ[𝕜] F` for
+`[F.HasOrthogonalProjection]` (Mathlib's `Submodule.orthogonalProjectionOnto`; the older
+`orthogonalProjection` is deprecated). Its matrix in orthonormal bases of `G`, `F` is `Q_Aᴴ Q_B`; its
+singular values are the cosines of the principal angles (`Submodule.cosPrincipalAngle` of
+`PrincipalAngles`). Prototype: `notes/gvl/ch06/proto/Shapes.lean` §1. Moved here from
+`PrincipalAngles` at the Golub–Van Loan review (H2): it is the engine of the gap theorems. ★'''
+deps = []
+
+[[node]]
+id = "Submodule.orthogonalProjectionRestrict_adjoint"
+kind = "theorem"
+desc = '''The adjoint of `P_F|_G` is `P_G|_F`: for finite-dimensional `F G : Submodule 𝕜 E`,
+`LinearMap.adjoint (F.orthogonalProjectionRestrict G) = G.orthogonalProjectionRestrict F`.
+`LinearMap.eq_adjoint_iff` and `⟪P_F g, f⟫ = ⟪g, f⟫ = ⟪g, P_G f⟫` for `f ∈ F`, `g ∈ G`
+(`Submodule.inner_orthogonalProjectionOnto_left_eq_right`-type Mathlib lemma). ★'''
+deps = ["Submodule.orthogonalProjectionRestrict"]
+
+[[node]]
+id = "Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues"
+kind = "theorem"
+desc = '''**The one-sided gap through the restricted projection**: for subspaces `K L` of an inner product
+space with `K` finite-dimensional and nonzero (`0 < finrank 𝕜 K`) and `L` finite-dimensional,
+`‖Lᗮ.starProjection * K.starProjection‖ ^ 2 = 1 - (L.orthogonalProjectionRestrict K).singularValues
+(finrank 𝕜 K - 1) ^ 2`: one minus the square of the least singular value of `P_L|_K`. For `x ∈ K`,
+`‖P_{L⊥} x‖² + ‖P_L x‖² = ‖x‖²`, so `P_{L⊥}|_K` and `P_L|_K` form a stacked isometry and
+`LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues` applies; and
+`‖P_{L⊥} P_K‖ = ‖P_{L⊥}|_K‖` (`‖P_K z‖ ≤ ‖z‖` with equality on `K`). If `finrank K > finrank L`
+both sides are `1`. ★★ (~60 lines)'''
+deps = ["Submodule.orthogonalProjectionRestrict", "LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues"]
+
+[[node]]
+id = "Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq"
+kind = "theorem"
+desc = '''For finite-dimensional subspaces of equal dimension of any inner product space, the symmetric
+gap equals the one-sided gap: `finrank K = finrank L → K.gap L = ‖Lᗮ.starProjection *
+K.starProjection‖` (and, by `gap_comm`, `= ‖Kᗮ.starProjection * L.starProjection‖`). Direct (review
+H2): by `norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues` the two one-sided gaps are
+`√(1 − σ_min(P_L|_K)²)` and `√(1 − σ_min(P_K|_L)²)`; `P_K|_L` is the adjoint of `P_L|_K`
+(`orthogonalProjectionRestrict_adjoint`), which has the same singular values
+(`LinearMap.singularValues_adjoint`), and the least one sits at the same index `finrank K - 1 =
+finrank L - 1`; then `gap_eq_max_norm_orthogonal_mul`. The case `K = L = ⊥` is `0 = 0`. This closes
+the question `Projection/Angle`'s module doc leaves open, without finite dimension of `E`. ★ (~30
+lines)'''
+deps = ["Submodule.gap_eq_max_norm_orthogonal_mul", "Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues", "Submodule.orthogonalProjectionRestrict_adjoint", "LinearMap.singularValues_adjoint"]
+
+[[node]]
+id = "Submodule.gap_eq_one_iff_of_finrank_eq"
+kind = "theorem"
+desc = '''For finite-dimensional subspaces of equal dimension: `K.gap L = 1 ↔ K ⊓ Lᗮ ≠ ⊥`
+([golub2013matrix] §2.5.3: "`dist(S₁, S₂) = 1 ⇒ S₁ ∩ S₂⊥ ≠ {0}`"). `←` is
+`gap_eq_one_of_inf_orthogonal_ne_bot`. `→` (direct, review H2): by
+`gap_eq_norm_orthogonal_mul_of_finrank_eq` and `norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`,
+`gap = 1` forces `σ_min(P_L|_K) = 0`, so `P_L|_K` is not injective (Mathlib
+`LinearMap.injective_iff_forall_lt_finrank_singularValues_pos`), and a nonzero `x ∈ K` with `P_L x = 0`
+lies in `K ⊓ Lᗮ`. No compactness argument and no `ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq`.
+Without equal dimensions `→` is false (`K = span e₁ ⊂ L = span {e₁, e₂}`). ★'''
+deps = ["Submodule.gap_eq_one_of_inf_orthogonal_ne_bot", "Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq", "Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues"]
+
+[[node]]
+id = "Submodule.graph"
+kind = "definition"
+desc = '''**The graph of a map over a subspace**: for `K : Submodule 𝕜 E` with an orthogonal projection
+and `X : K →L[𝕜] Kᗮ`, `K.graph X : Submodule 𝕜 E := LinearMap.range (K.subtype + Kᗮ.subtype ∘ₗ
+(X : K →ₗ[𝕜] Kᗮ))`, the subspace `{x + X x | x ∈ K}`. Every subspace `S` with `S ⊓ Kᗮ = ⊥` and
+`finrank S = finrank K` is such a graph; in matrix language, `range [I; X]` in coordinates adapted to
+`K ⊕ Kᗮ` ([golub2013matrix] §7.2.4, §7.3.1, §8.2.2: the subspaces `ran [I; X]` of the invariant-subspace
+and subspace-iteration theorems). `finrank (K.graph X) = finrank K` (the map is injective; second
+declaration `finrank_graph`). Mathlib's `LinearMap.graph` lives in `E × F` and is a different object.
+★'''
+deps = []
+
+[[node]]
+id = "Submodule.gap_graph"
+kind = "theorem"
+desc = '''**The gap between a subspace and a graph over it** (eigen review item 3; [golub2013matrix] the
+computation behind Theorems 7.3.1 and 8.2.2, Stewart–Sun Theorem I.5.5): for a finite-dimensional
+`K : Submodule 𝕜 E` and `X : K →L[𝕜] Kᗮ`,
+`K.gap (K.graph X) = ‖X‖ / Real.sqrt (1 + ‖X‖ ^ 2)`.
+Proof: the two subspaces have equal dimension (`finrank_graph`), so the gap is the one-sided
+`‖P_{K⊥} P_G‖` (`gap_eq_norm_orthogonal_mul_of_finrank_eq` with `gap_comm`); for `g = x + X x ∈ G`,
+`P_{K⊥} g = X x` and `‖g‖² = ‖x‖² + ‖X x‖²`, so
+`‖P_{K⊥} P_G‖ = sup_{x ≠ 0} ‖X x‖ / √(‖x‖² + ‖X x‖²) = f(sup_{x ≠ 0} ‖X x‖/‖x‖) = f(‖X‖)` with
+`f t = t / √(1 + t²)` increasing and continuous (the sup of the ratio is `‖X‖`, attained on the compact
+unit sphere of `K`). The tracked operator form of the "graph-gap" lemma that
+`Numlib/Eigen/InvariantSubspace` (`Matrix.gap_range_fromRows_le`, its matrix form) and
+`Numlib/Eigen/PowerMethod` (Theorem 8.2.2) both need. ★★ (~80 lines)'''
+deps = ["Submodule.graph", "Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq", "Submodule.gap_comm"]

@@ -1,0 +1,83 @@
+desc = '''
+Perturbation theory of the matrix exponential ([golub2013matrix] §9.3.2–9.3.3). The Banach-algebra
+layer — the variation-of-constants identity `e^{(A+E)t} - e^{At} = ∫₀ᵗ e^{A(t-s)} E e^{(A+E)s} ds`, the
+ODE characterization of `e^{At}` and Van Loan's condition number `ν(a, t) ≥ t ‖a‖` — is
+`Numlib/Analysis/Normed/Algebra/Exponential` (placed there at the Golub–Van Loan consolidation), which
+this module imports; here are the matrix statements: the Schur bound (9.3.2) `‖e^{At}‖₂ ≤
+e^{α(A)t} M_S(t)`, the relative perturbation bound, the normal case (9.3.4) and `ν(A, t)` for normal
+`A`. The resolvent bound behind the pseudospectral lower bound (9.3.6) is the Banach-algebra
+`norm_resolvent_le_of_norm_exp_smul_le` of `Exponential`, and the upper triangular criterion
+`Matrix.isStarNormal_iff_strictUpper_eq_zero` (normal ⇔ the Schur form is diagonal, "`M_S ≡ 1` iff
+normal") is in `Numlib/LinearAlgebra/Matrix/Schur` (both moved at the Golub–Van Loan review). The
+book's "`ν(A, t) = t‖A‖₂` for all `t ≥ 0` iff `A` is normal" is false in the `⇒` direction (see
+`Matrix.expCondNumber_eq_of_isStarNormal`); only `⇐` is planned. The exponential is Mathlib's `NormedSpace.exp`, which on
+matrices needs no norm; norms and integrals use a complete normed algebra (`[NormedRing 𝔸]
+[NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]`; complex matrices are an `ℝ`-algebra through
+`NormedAlgebra.complexToReal`) and, for the 2-norm statements, `Matrix n n ℂ` under `open scoped
+Matrix.Norms.L2Operator`. The spectral abscissa `α` is `spectralAbscissa` (staged append to
+`Numlib/Analysis/Normed/Algebra/SpectralRadius`). Prototype of the statement shapes:
+`notes/gvl/ch09/proto/Exp.lean` (elaborates).
+'''
+
+[[node]]
+id = "Matrix.l2_opNorm_exp_smul_le_of_schur"
+kind = "theorem"
+desc = '''[golub2013matrix] (9.3.2), read as `‖e^{At}‖₂ ≤ e^{α(A) t} M_S(t)` (the printed `e^{α(A) t M_S(t)}`
+is a typesetting slip): for `Q ∈ unitaryGroup`, `T = Qᴴ A Q` upper triangular, `N = T - diagonal
+(diag T)` and `t ≥ 0`, `‖exp (t • A)‖ ≤ Real.exp (spectralAbscissa A * t) * ∑ k ∈ range n, ‖t •
+N‖ ^ k / k!` (prototype statement in `notes/gvl/ch09/proto/Exp.lean`, over `LinearOrder n`). Proof
+(Van Loan 1977): unitary invariance reduces to `T = D + N`; iterate the variation-of-constants
+identity `e^{Tt} = e^{Dt} + ∫₀ᵗ e^{D(t-s)} N e^{Ts} ds` `n` times; the `k`-th term is an integral
+over the ordered `k`-simplex of `e^{D(t-s₁)} N e^{D(s₁-s₂)} N ⋯ N e^{D s_k}`, of norm `≤ e^{αt}
+‖N‖^k` (`‖e^{Ds}‖₂ = e^{s max Re dᵢ}` for diagonal `D`, `s ≥ 0`), integrated to `e^{αt}‖N‖^k t^k/k!`;
+the remainder carries `n` factors `N` interleaved with upper triangular matrices and vanishes
+(a product of `n` strictly upper triangular factors with upper triangular ones in between is `0`,
+`Matrix.BlockTriangular` bookkeeping). The nested integrals are the cost. ★★★ (~350 lines)'''
+deps = ["NormedSpace.exp_smul_add_sub_exp_smul", "spectralAbscissa", "re_le_spectralAbscissa", "Matrix.l2_opNorm_unitary_mul_mul_unitary", "Matrix.exists_unitary_conj_upperTriangular"]
+
+[[node]]
+id = "Matrix.exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul"
+kind = "theorem"
+desc = '''`Real.exp (spectralAbscissa A * t) ≤ ‖exp (t • A)‖₂` for `t ≥ 0` and `A : Matrix n n ℂ`, `n`
+nonempty: the spectral radius of `exp (t • A)` is `e^{α(A) t}` (`spectrum_pfc` through
+`pfc_exp_eq_normedSpace_exp`: `σ(e^{tA}) = exp '' (t σ(A))`, `‖exp z‖ = e^{re z}`) and is at most the
+norm (`spectrum.norm_le_norm_of_mem`). Used to divide by `‖e^{At}‖₂` in the relative bound. ★'''
+deps = ["spectrum_pfc", "pfc_exp_eq_normedSpace_exp", "spectralAbscissa", "re_le_spectralAbscissa"]
+
+[[node]]
+id = "Matrix.l2_opNorm_exp_smul_add_sub_le"
+kind = "theorem"
+desc = '''The relative perturbation bound of [golub2013matrix] §9.3.2: with `T = Qᴴ A Q` as in
+`Matrix.l2_opNorm_exp_smul_le_of_schur`, `M(t) = ∑_{k<n} ‖t N‖₂^k/k!` and `t ≥ 0`,
+`‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ t ‖E‖₂ M(t)² exp (t M(t) ‖E‖₂)`. Proof: the
+variation-of-constants bound; `‖e^{A(t-s)}‖ ≤ e^{α(t-s)} M(t)` (Schur bound, `M` monotone in `t ≥ 0`);
+`‖e^{(A+E)s}‖ ≤ e^{αs} M(s) e^{s M(s) ‖E‖}` by Gronwall applied to `e^{-αs}‖e^{(A+E)s}‖` in the
+integral equation `e^{(A+E)s} = e^{As} + ∫₀ˢ e^{A(s-r)} E e^{(A+E)r} dr` (Mathlib
+`norm_le_gronwallBound_of_norm_deriv_right_le` or the integral form; Numlib `Numlib/ODE/Gronwall`);
+divide by `‖e^{At}‖ ≥ e^{αt}` (`Matrix.exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul`). ★★ (~200 lines)'''
+deps = ["NormedSpace.exp_smul_add_sub_exp_smul", "Matrix.l2_opNorm_exp_smul_le_of_schur", "Matrix.exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul"]
+
+[[node]]
+id = "Matrix.l2_opNorm_exp_smul_of_isStarNormal"
+kind = "theorem"
+desc = '''[golub2013matrix] (9.3.4): for normal `A : Matrix n n ℂ` (`n` nonempty) and `t ≥ 0`,
+`‖exp (t • A)‖₂ = Real.exp (spectralAbscissa A * t)`. `exp (t • A)` is normal (a polynomial in `A`:
+`pfc_exp_eq_normedSpace_exp`, `commute_pfc`, `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`),
+its 2-norm is its spectral radius (`Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal`), and its
+spectrum is `exp '' (t • σ(A))` (`spectrum_pfc`). ★★'''
+deps = ["pfc_exp_eq_normedSpace_exp", "spectrum_pfc", "Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal", "Matrix.IsStarNormal.exists_aeval_eq_conjTranspose", "spectralAbscissa"]
+
+[[node]]
+id = "Matrix.expCondNumber_eq_of_isStarNormal"
+kind = "theorem"
+desc = '''Equality for normal matrices ([golub2013matrix] §9.3.2, the true direction of its "iff"): for
+`A : Matrix n n ℂ` normal (`n` nonempty) and `t ≥ 0`, under `open scoped Matrix.Norms.L2Operator`,
+`NormedSpace.expCondNumber A t = t * ‖A‖`. One line from the Banach-algebra criterion
+`NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq` with `c = spectralAbscissa A`, whose hypothesis
+`‖exp (s • A)‖ = Real.exp (spectralAbscissa A * s)` for `s ∈ [0, t]` is (9.3.4)
+(`Matrix.l2_opNorm_exp_smul_of_isStarNormal`). The converse printed in the book is false: `A = [1] ⊕
+[[0,1],[0,0]]` is not normal and has `‖e^{sA}‖₂ = e^s` for all `s ≥ 0` (spectral radius `e^s`, and
+`‖e^{sN}‖ ≤ 1 + s ≤ e^s` on the nilpotent block), hence `ν(A, t) = t‖A‖₂` by the same criterion
+(verified numerically in `notes/gvl/review/eigen/vanloan_cex.py`); equality holds exactly when the
+numerical and the spectral abscissa agree along `[0, t]`. ★'''
+deps = ["NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq", "Matrix.l2_opNorm_exp_smul_of_isStarNormal", "spectralAbscissa"]

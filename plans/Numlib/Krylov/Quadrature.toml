@@ -1,0 +1,148 @@
+desc = '''
+Quadratic forms `⟪v, f(A) v⟫` of a symmetric operator as integrals, and their two-sided estimation by
+Gauss and Gauss–Radau rules computed from the Lanczos process ([golub2013matrix] §10.2, after
+Golub–Meurant; [meurant2006lanczos] §2 for the Gauss half). `Numlib/Krylov/OrthogonalPolynomials`
+already has the spectral measure `Krylov.spectralMeasure hA hn v = ∑_l |⟪u_l, v⟫|² δ_{λ_l}`, the
+exactness of the `m`-point Gauss rule of the compression (`Lanczos.gauss_quadrature`,
+`Lanczos.gauss_quadrature_eq_sum`) and the Lanczos polynomials; this module adds what turns that into
+the book's *bounds*:
+
+* **integrands that are not polynomials.** For a Hermitian matrix, `star v ⬝ᵥ (cfc f A *ᵥ v) = ∫ f
+  ∂(spectral measure)` for every `f : ℝ → ℝ` (Mathlib's `Matrix.IsHermitian.cfc_eq` makes `cfc f A`
+  the spectral sum, and `Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin` identifies the
+  backbone's measure built from `LinearMap.IsSymmetric.eigenvectorBasis` of `toEuclideanLin A` with the
+  one built from Mathlib's matrix eigenbasis — the two index sets differ by `Fintype.equivOfCardEq`,
+  and the measure is a sum over them). The definition of `f(A)` for general matrices is chapter 9's
+  (`Numlib/Analysis/Matrix/Function/`); for Hermitian `A` it must agree with `cfc`, which is all this
+  module uses.
+* **the Golub–Welsch form of the Gauss rule**: nodes the eigenvalues `θ_j` of `T_m`, weights `‖v‖²`
+  times the squared first components of its normalized eigenvectors
+  (`Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`; [golub2013matrix] Fact 3, (10.2.12)).
+* **the remainder** for any `C^{2m}` integrand: `∫ f dμ_v − G_m(f) = f^{(2m)}(η)/(2m)! ∫ π_m² dμ_v` with
+  `η` in the convex hull of the spectrum and `π_m = charpoly T_m`
+  (`Lanczos.exists_gauss_error_eq`). The spectral measure is *finite-supported*, so it is not an
+  `OrthogonalPolynomial.IsWeight` and `Quadrature.exists_gauss_error_eq` does not apply to it; the proof
+  goes through the finite-measure Hermite remainder `Quadrature.exists_error_eq_of_hermite` staged in
+  `notes/gvl/ch10/appends/Numlib/Approximation/Quadrature.toml`.
+* **Gauss–Radau through a modified Lanczos matrix** ([golub2013matrix] §10.2.5, Golub 1973): the
+  `(m+1) × (m+1)` matrix `Lanczos.radauTridiag` agrees with `T_{m+1}` except in its last diagonal entry,
+  `α̃ = a + β_{m-1}² e_mᵀ (T_m − a)⁻¹ e_m`, which makes `a` an eigenvalue; its rule integrates every
+  polynomial of degree `≤ 2m` exactly, because `e₁ᵀ T^j e₁` for `j ≤ 2m` does not see the last diagonal
+  entry. With the remainders this gives the two-sided bound `G_m(f) ≤ ⟪v, f(A) v⟫ ≤ GR_m(a)(f)`
+  whenever `f^{(2m)} ≥ 0 ≥ f^{(2m+1)}` on an interval `[a, b] ⊇ σ(A)` (the book's `f(λ) = λ⁻²`).
+
+Indices: `m` is the number of Lanczos steps, `m + 1 ≤ grade` where the next step is used (Radau); the
+Gauss statements need only `m ≤ grade` (`Module.finrank (Krylov.subspace A v m) = m`, the hypothesis of
+`Lanczos.gauss_quadrature`).
+'''
+
+[[node]]
+id = "Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin"
+kind = "theorem"
+desc = '''For `hA : A.IsHermitian` (`A : Matrix n n 𝕜`) and `v : EuclideanSpace 𝕜 n`:
+`∫ x, f x ∂(Krylov.spectralMeasure hA' hn v) = ∑ i, ‖(star hA.eigenvectorUnitary *ᵥ v.ofLp) i‖ ^ 2 * f (hA.eigenvalues i)`
+for every `f : ℝ → ℝ`, where `hA'` is the symmetry of `toEuclideanLin A` (Mathlib
+`Matrix.isHermitian_iff_isSymmetric`) and `hn := finrank_euclideanSpace`. `Krylov.integral_spectralMeasure`
+gives the sum over the backbone eigenbasis; Mathlib defines `Matrix.IsHermitian.eigenvalues` and
+`eigenvectorBasis` from the same `LinearMap.IsSymmetric` objects reindexed by `Fintype.equivOfCardEq`,
+so `Equiv.sum_comp` finishes. ★★'''
+deps = ["Krylov.spectralMeasure", "Krylov.integral_spectralMeasure"]
+
+[[node]]
+id = "Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure"
+kind = "theorem"
+desc = '''`star v ⬝ᵥ (cfc f A *ᵥ v) = ∫ x, f x ∂(Krylov.spectralMeasure hA' hn (WithLp.toLp 2 v))` (as an equality in
+`𝕜` with the right side cast), every `f : ℝ → ℝ`: [golub2013matrix] (10.2.6). Mathlib
+`Matrix.IsHermitian.cfc_eq` (`cfc f A = U diag(f ∘ λ) Uᴴ`) and
+`Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin`. ★★'''
+deps = ["Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin"]
+
+[[node]]
+id = "Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag"
+kind = "theorem"
+desc = '''The Golub–Welsch form of the Gauss rule: for symmetric `A` and `Module.finrank (Krylov.subspace A v m) = m`,
+`∫ f ∂(Krylov.spectralMeasure (compression.isSymmetric …) hmk ⟨v, _⟩) = ‖v‖ ^ 2 * ∑ j, (hT.eigenvectorBasis j 0) ^ 2 * f (hT.eigenvalues j)`,
+`hT` the Hermitian-ness of `Lanczos.tridiag A v m` (real), `0` the first coordinate. Transport the
+compression to `T_m` through the orthonormal basis `Arnoldi.orthonormalBasis`
+(`Arnoldi.hessenbergSq_eq_toMatrix_compression`, `Lanczos.hessenbergSq_eq_map_tridiag`): an
+eigenvector `y` of the compression is `∑ s_i v_i` with `s` an eigenvector of `T_m`, and
+`⟪y, v⟫ = ‖v‖ s_0` since `v = ‖v‖ v_0`. Then `Lanczos.gauss_quadrature_eq_sum` is [golub2013matrix]
+(10.2.12) with the weight `‖v‖² s_{1i}²`. ★★ (~150 lines)'''
+deps = ["Lanczos.gauss_quadrature_eq_sum", "Krylov.integral_spectralMeasure", "Arnoldi.hessenbergSq_eq_toMatrix_compression", "Lanczos.hessenbergSq_eq_map_tridiag", "Arnoldi.orthonormalBasis"]
+
+[[node]]
+id = "Lanczos.exists_gauss_error_eq"
+kind = "theorem"
+desc = '''The Gauss remainder for the spectral measure ([golub2013matrix] §10.2.2, `R_G`): for symmetric `A`,
+`0 < m`, `Module.finrank (Krylov.subspace A v m) = m`, an interval `[a, b]` containing every eigenvalue
+of `A`, and `f` of class `C^{2m}`: `∃ η ∈ Icc a b, ∫ f ∂μ_v − ∫ f ∂μ_{v,m} = iteratedDeriv (2m) f η /
+(2m)! * ∫ (π_m.eval x)² ∂μ_v` with `μ_v = Krylov.spectralMeasure hA hn v`, `μ_{v,m}` the spectral measure
+of the compression (the Gauss rule) and `π_m = (Lanczos.tridiag A v m).charpoly`. Instance of the
+staged `Quadrature.exists_error_eq_of_hermite` (multiplicity 2 at the `m` Ritz values, which are
+distinct: `Lanczos.hasEigenvalue_compression_iff_isRoot_poly` and the simple roots of the Lanczos
+polynomial), exactness from `Lanczos.gauss_quadrature`. ★★ (~120 lines)'''
+deps = ["Lanczos.gauss_quadrature", "Lanczos.hasEigenvalue_compression_iff_isRoot_poly", "Lanczos.charpoly_tridiag_eq", "Quadrature.exists_error_eq_of_hermite"]
+
+[[node]]
+id = "Lanczos.radauTridiag"
+kind = "definition"
+desc = '''`Lanczos.radauTridiag A v m a : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ`: the entries of `Lanczos.tridiag A v (m + 1)`
+except the last diagonal entry, which is `a + (Lanczos.beta A v (m - 1)) ^ 2 * (Lanczos.tridiag A v m - a • 1)⁻¹ (m-1) (m-1)`
+([golub2013matrix] §10.2.5, `α̃_{k+1} = a + β_k² e_kᵀ (T_k − a I)⁻¹ e_k`; the book prints `β_{k+1}`).
+For `m = 0` it is the `1 × 1` matrix `a`. ★'''
+deps = ["Lanczos.tridiag", "Lanczos.beta"]
+
+[[node]]
+id = "Lanczos.radauTridiag_hasEigenvalue"
+kind = "theorem"
+desc = '''If `T_m − a I` is invertible, `a ∈ spectrum ℝ (Lanczos.radauTridiag A v m a)`: the vector `(x, −1)` with
+`x = β_{m−1} (T_m − a)⁻¹ e_m` satisfies `T̃ (x, −1) = a (x, −1)` (the book's "top and bottom halves").
+★★'''
+deps = ["Lanczos.radauTridiag"]
+
+[[node]]
+id = "Lanczos.radau_moment_eq"
+kind = "theorem"
+desc = '''For every `j ≤ 2m`: `((Lanczos.radauTridiag A v m a) ^ j) 0 0 = ((Lanczos.tridiag A v (m + 1)) ^ j) 0 0`, and more
+generally two tridiagonal matrices that agree outside the entry `(m, m)` have the same `(0,0)` entry of
+their `j`-th powers for `j ≤ 2m`: `(T^j)_{00} = ⟪T^{⌈j/2⌉} e₀, T^{⌊j/2⌋} e₀⟫`, and `T^i e₀` for `i ≤ m`
+is supported on the first `i + 1` coordinates and is computed from columns `0, …, i − 1` only.
+★★ (~100 lines)'''
+deps = ["Lanczos.radauTridiag", "Lanczos.tridiag", "Matrix.IsTridiagonal"]
+
+[[node]]
+id = "Lanczos.radau_quadrature"
+kind = "theorem"
+desc = '''The Gauss–Radau rule through Lanczos ([golub2013matrix] §10.2.5): with `m + 1 ≤ grade A v` and `T_m − a`
+invertible, the rule `GR_m(a)(f) = ‖v‖² ∑_j (s̃_{0j})² f(θ̃_j)` of the eigenpairs of `Lanczos.radauTridiag A v m a`
+has `a` among its nodes and integrates every real polynomial of degree `≤ 2m` exactly against
+`Krylov.spectralMeasure hA hn v`. Proof: `∑_j s̃_{0j}² θ̃_j^i = (T̃^i)_{00}` (spectral theorem of the
+symmetric `T̃`), `= (T_{m+1}^i)_{00}` for `i ≤ 2m` (`Lanczos.radau_moment_eq`), and
+`‖v‖² (T_{m+1}^i)_{00} = ⟪v, A^i v⟫` for `i ≤ 2m + 1` (`Lanczos.gauss_quadrature` at `m + 1` with
+`Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`, or directly by `Lanczos.apply_sum`). ★★
+(~150 lines)'''
+deps = ["Lanczos.radau_moment_eq", "Lanczos.radauTridiag_hasEigenvalue", "Lanczos.gauss_quadrature", "Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag"]
+
+[[node]]
+id = "Lanczos.exists_radau_error_eq"
+kind = "theorem"
+desc = '''The Gauss–Radau remainder for the spectral measure ([golub2013matrix] §10.2.2, `R_{GR(a)}`): under the
+hypotheses of `Lanczos.radau_quadrature`, with `a ≤ λ_min(A)`, `σ(A) ⊆ [a, b]` and `f` of class `C^{2m+1}`,
+`∃ η ∈ Icc a b, ⟪v, f(A) v⟫ − GR_m(a)(f) = iteratedDeriv (2m+1) f η / (2m+1)! * ∫ (x − a) ∏_j (x − θ̃_j)² ∂μ_v`
+(product over the nodes other than `a`). Instance of the staged `Quadrature.exists_error_eq_of_hermite`
+(multiplicity 1 at `a`, 2 at the other nodes; the nodal polynomial `(x − a) ∏ (x − θ̃_j)²` is `≥ 0` on
+`[a, b]`). The other nodes are distinct and differ from `a` (unreduced `T̃`). ★★ (~150 lines)'''
+deps = ["Lanczos.radau_quadrature", "Quadrature.exists_error_eq_of_hermite"]
+
+[[node]]
+id = "Lanczos.gauss_le_integral_le_radau"
+kind = "theorem"
+desc = '''The two-sided bound of [golub2013matrix] §10.2.2 and §10.2.6: if `σ(A) ⊆ [a, b]`, `f` is `C^{2m+1}` on a
+neighbourhood of `[a, b]` with `iteratedDeriv (2m) f ≥ 0` and `iteratedDeriv (2m+1) f ≤ 0` there, then
+`G_m(f) ≤ ∫ f ∂μ_v ≤ GR_m(a)(f)`. Signs of the two remainders. With
+`Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure` this is `G ≤ uᵀ f(A) u ≤ GR`. The book's
+`f(λ) = λ⁻²`, `0 < a`: `f^{(2m)} = (2m+1)! λ^{-2m-2} > 0`, `f^{(2m+1)} < 0` on `(0, ∞)`. Either the signs of
+the two remainders, or directly the measure-level `Quadrature.gauss_le_integral_le_gaussRadau` applied to
+the spectral measure with the Lanczos rules (exactness from `Lanczos.gauss_quadrature` and
+`Lanczos.radau_quadrature`). ★'''
+deps = ["Lanczos.exists_gauss_error_eq", "Lanczos.exists_radau_error_eq", "Quadrature.gauss_le_integral_le_gaussRadau"]

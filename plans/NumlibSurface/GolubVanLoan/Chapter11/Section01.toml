@@ -1,0 +1,355 @@
+namespace = "GolubVanLoan.Chapter11"
+desc = '''
+Golub–Van Loan §11.1, *Direct Methods* (sparse Cholesky, QR and LU). The section has no numbered
+theorem; its precise content is the storage-format algorithms (11.1.1)–(11.1.2), the first
+elimination steps (11.1.3)/(11.1.10), the profile (11.1.6), the minimum-degree and row-Givens
+procedures (11.1.8)/(11.1.9), the symbolic fill of §11.1.6 (Facts 1–2), the nested-dissection
+block structure, the seminormal equations, and the structural-symmetry remark of §11.1.9.
+
+Conventions: `A : Matrix (Fin n) (Fin n) ℝ`; the book's permutation `P = I_n(:, p)` acts as
+`A.submatrix p p` (`= P A Pᵀ` by `Matrix.submatrix_eq_permMatrix_mul_mul_transpose`); the lower
+Cholesky factor `G` of the book is `Hᵀ` for the backbone's `Matrix.IsCholesky A H` (`H` upper).
+The compressed-column format is a surface structure `CompressedColumn m n nnz` with a `toMatrix`
+reading (no backbone storage theory exists or is planned: storage formats are not mathematics,
+and the only claims about them are the specs of (11.1.1)–(11.1.2), which say the loops compute
+`y + A x` and `A + u vᵀ`).
+
+Backbone: `Numlib/LinearAlgebra/Sparse/{Pattern,Reordering,Fill}` (Fill is new, this round),
+`Numlib/LinearAlgebra/Matrix/{Cholesky,SchurComplement,LU/Elimination}`.
+
+Not formalized here (recorded once in the chapter group): the heuristics and "challenges"
+(choosing `P` to minimize `nnz(G)` is not a statement), Markowitz pivoting and threshold `τ`
+(a selection heuristic with no claim), the elimination tree (a definition with no theorem in
+the text; "can answer path-in-graph questions" is not a statement), the complexity claims of
+§11.1.7 (`O(n^{3/2})` work, `O(n log n)` fill), the numerical examples (the 9×9 matrix (11.1.5),
+its profile 37 → 25, the Davis e-tree example) and the Problems.
+'''
+
+[[node]]
+id = "CompressedColumn"
+kind = "definition"
+desc = '''
+The compressed-column format of §11.1.1: `structure CompressedColumn (m n nnz : ℕ)` with
+`val : Fin nnz → ℝ` (the book's `A.val`), `row : Fin nnz → Fin m` (`A.r`), `colStart : Fin (n+1) → ℕ`
+(`A.c`, 0-based, so `colStart 0 = 0` and `colStart (Fin.last n) = nnz` — the book's convention
+"the last component of `A.c` houses `nnz(A)+1`" shifted by one), `colStart` monotone, and row
+indices strictly increasing inside each column (the sortedness (11.1.2) relies on). A vector
+`u ∈ ℝ^m` in the same format is a `CompressedColumn m 1 nnz`. Shape settled by
+`notes/gvl/ch11/proto/Shapes.lean` (d). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.1.1, Definition'
+
+[[node]]
+id = "CompressedColumn.toMatrix"
+kind = "definition"
+desc = '''
+The matrix a compressed-column structure represents: `(A.toMatrix) i j = ∑` of `A.val k` over the
+positions `k` of column `j` (`colStart j ≤ k < colStart (j+1)`) with `A.row k = i` (at most one,
+by sortedness; entries not stored are `0`). With `CompressedColumn.positions j` the list of those
+positions. `nnz(A)` is the parameter `nnz`. ★
+'''
+deps = ["CompressedColumn"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.1, Definition'
+
+[[node]]
+id = "sparseGaxpy"
+kind = "definition"
+desc = '''
+The sparse gaxpy (11.1.1), D4 program: `def sparseGaxpy {M : Type → Type} [Monad M]
+(rnd : ℝ → M ℝ) (A : CompressedColumn mm n nnz) (x : Fin n → ℝ) (y : Fin mm → ℝ) : M (Fin mm → ℝ)`,
+the outer loop `List.finRange n` over columns `j`, the inner loop over `A.positions j`, each step
+`y(A.r(k)) ← rnd (y(A.r(k)) + rnd (A.val(k) · x(j)))` (a `Function.update`). Shape settled by the
+prototype (d). ★
+'''
+deps = ["CompressedColumn", "CompressedColumn.toMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.1)'
+
+[[node]]
+id = "equation_11_1_1"
+kind = "theorem"
+desc = '''
+`Id.run (sparseGaxpy pure A x y) = y + A.toMatrix *ᵥ x`: the loop overwrites `y` with
+`y + A x`. Proof: the column loop adds `x j • (column j of A.toMatrix)`, the inner loop touching
+each stored row once (`List.foldl` over `positions j`, entries distinct by sortedness); sum over
+`j` by `List.foldl` over `List.finRange`. ★★ (~50 lines)
+'''
+deps = ["sparseGaxpy", "CompressedColumn.toMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.1)'
+
+[[node]]
+id = "sparseOuterProductUpdate"
+kind = "definition"
+desc = '''
+The outer-product update with preallocated pattern (11.1.2), D4 program: arguments
+`A : CompressedColumn mm n nnz`, `u : CompressedColumn mm 1 nu`, `v : CompressedColumn n 1 nv`;
+state = `A.val` (the pattern is not changed); loop `β` over the stored entries of `v` (`j = v.r(β)`),
+inner loop `ℓ` over `A.positions j` with the merge pointer `α` (starting at `0`): if `α < nu` and
+`A.r(ℓ) = u.r(α)` then `A.val(ℓ) ← rnd (A.val(ℓ) + rnd (u.val(α) · v.val(β)))` — one rounded
+product and one rounded sum, as printed — and `α ← α + 1`. Returns the updated structure (same
+`row`, `colStart`). ★
+'''
+deps = ["CompressedColumn"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.2)'
+
+[[node]]
+id = "equation_11_1_2"
+kind = "theorem"
+desc = '''
+If for every column `j` with `v_j` stored the rows of `u` are among the stored rows of column `j`
+of `A` (the book's "zeros in locations destined to become nonzero": `∀ a, ∃ k ∈ A.positions j,
+A.row k = u.row a`), then `(Id.run (sparseOuterProductUpdate pure A u v)).toMatrix = A.toMatrix +
+vecMulVec (fun i => u.toMatrix i 0) (fun j => v.toMatrix j 0)` (`A + u vᵀ`). Proof: for fixed `j` the merge invariant "`α` = the
+number of rows of `u` smaller than the current `A.r(ℓ)`" holds because both row lists are strictly
+increasing (fields of `CompressedColumn`) and `supp u ⊆` the column's rows; so each row of `u` is
+matched exactly once. ★★★ (~150 lines; the merge-pointer invariant is the work)
+'''
+deps = ["sparseOuterProductUpdate", "CompressedColumn.toMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.2)'
+
+[[node]]
+id = "equation_11_1_3"
+kind = "theorem"
+desc = '''
+(11.1.3)–(11.1.4): for `A = [α vᵀ; v B]` with `α > 0` (written over `Fin 1 ⊕ Fin n` via
+`Matrix.fromBlocks`, reindexed to `Fin (n+1)`), `A = [√α 0; v/√α I] · [1 0; 0 A⁽¹⁾] ·
+[√α vᵀ/√α; 0 I]` with `A⁽¹⁾ = B − v vᵀ/α`. A block product identity (`Matrix.fromBlocks_multiply`)
+and `√α · √α = α`; `A⁽¹⁾` is `Matrix.schurComplementSingle A 0` up to the reindexing, which is what
+ties it to the backbone elimination layer. ★
+'''
+deps = ["Matrix.schurComplementSingle"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.3)'
+
+[[node]]
+id = "adjGraph_submatrix_iso"
+kind = "theorem"
+desc = '''
+§11.1.4: "if `P` is a permutation, then except for vertex labeling the adjacency graphs of `A` and
+`P A Pᵀ` look the same": for `σ : Equiv.Perm (Fin n)`, `Matrix.adjGraph (A.submatrix σ σ) ≃g
+Matrix.adjGraph A` (via `σ`). Delegates to `Matrix.adjGraphIso`. The book's graph of a symmetric
+matrix (no loops, edge `(i, j)` iff `a_ij ≠ 0`) is `Matrix.adjGraph A` for symmetric `A`
+(`Matrix.adjGraph_adj_iff_of_isSymm`); node degree is `SimpleGraph.degree`. ★
+'''
+deps = ["Matrix.adjGraphIso", "Matrix.adjGraph_adj_iff_of_isSymm"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.4'
+
+[[node]]
+id = "profileIndex"
+kind = "definition"
+desc = '''
+(11.1.6): the profile index `f_i(A) = min {j : j ≤ i, a_ij ≠ 0}` of row `i`, as `Fin n` (0-based);
+when row `i` has no nonzero at or left of the diagonal, `f_i = i` (the book leaves this case
+undefined; with `i` the row contributes `0` to the profile). `Finset.min'` over the filter, with
+the default. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.6)'
+
+[[node]]
+id = "profile"
+kind = "definition"
+desc = '''
+`profile A = n + ∑_{i} (i − f_i(A))` (§11.1.5), a natural number. The theorem the definition is
+for — `nnz(G) ≤ profile(A)` for the Cholesky factor, [the book's P11.1.6] — is a Problem not cited
+by the main text and is not planned; the main text states no theorem about the profile. ★
+'''
+deps = ["profileIndex"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.5, Definition'
+
+[[node]]
+id = "cuthillMcKee_blockTridiagonal"
+kind = "theorem"
+desc = '''
+§11.1.5 (the level-set structure the book observes on its example, and states in general in
+[the book's P11.1.4]): if `S_0, S_1, …` are the level sets of a root in `Matrix.adjGraph A` (vertices
+at graph distance `k` from the root) and `p` lists them in order (a Cuthill–McKee ordering, any
+tie-breaking), then `A(p, p)` is block tridiagonal with the level sets as diagonal blocks:
+`A i j = 0` whenever the distances of `i` and `j` to the root differ by more than one. Delegates
+to `Matrix.apply_eq_zero_of_dist_lt` (Saad Ch. 3's backbone). The profile values on the example
+are numerical and not formalized. ★
+'''
+deps = ["Matrix.apply_eq_zero_of_dist_lt", "Matrix.adjGraph"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.5'
+
+[[node]]
+id = "minDegreePivot"
+kind = "definition"
+desc = '''
+The minimum-degree pivot rule of §11.1.6: given the current matrix `A` and step `k`, an index
+`p ≥ k` minimizing the number of nonzeros `#{i ≥ k, i ≠ p : A i p ≠ 0}` (the degree of `p` in
+`𝒢_{A(k:n,k:n)}`), ties broken by the least index (`Finset.exists_min_image`/`argmin`). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.1.6, Definition'
+
+[[node]]
+id = "choleskyWithPivoting"
+kind = "definition"
+desc = '''
+Cholesky with (symmetric) pivoting (11.1.8), D4 program parametrized by a pivot rule
+`pivot : Matrix (Fin n) (Fin n) ℝ → ℕ → Fin n`: state `(P : Equiv.Perm (Fin n), A)`; for
+`k = 0, …, n−1` (the book's `k = 1:n−2` leaves the last two columns unfactored — see the chapter's
+Doubts; the program runs the loop to `n`), Step 1–3 swap `k` with `pivot A k` in rows and columns
+of the trailing block and in the rows of the computed columns, Step 4 `A(k:n,k) ← A(k:n,k)/√A(k,k)`
+(one `√` then one `rnd` per the D4 convention), Step 5 the outer-product update of the trailing
+block, all through `rnd`. The minimum-degree ordering is `pivot := minDegreePivot`. ★★
+'''
+deps = ["minDegreePivot"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.8)'
+
+[[node]]
+id = "equation_11_1_8"
+kind = "theorem"
+desc = '''
+For symmetric positive definite `A` and any pivot rule with `k ≤ pivot M k`, the exact run returns
+`(P, M)` with `G := ` the lower triangle of `M` satisfying `A.submatrix P P = G * Gᵀ` and `G`
+lower triangular with positive diagonal, i.e. `Matrix.IsCholesky (A.submatrix P P) Gᵀ`. Proof: loop
+invariant "the permuted `A` equals `G_{:,<k} G_{:,<k}ᵀ + [0 0; 0 trailing block]` and the trailing
+block is positive definite" — each Step 5 is (11.1.3) on the trailing block
+(`Matrix.schurComplementSingle` of a positive definite matrix is positive definite), and a
+symmetric permutation of the trailing block commutes with the invariant. ★★★ (~200 lines)
+'''
+deps = ["choleskyWithPivoting", "equation_11_1_3", "Matrix.IsCholesky"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.8)'
+
+[[node]]
+id = "cholesky_apply_eq"
+kind = "theorem"
+desc = '''
+§11.1.6, the display after Fact 2: for `j < i`, `g_ij = (a_ij − ∑_{k<j} g_ik g_jk) / g_jj`, with
+`G = Hᵀ` for `Matrix.IsCholesky A H` (real case). Delegates to
+`Matrix.IsCholesky.star_apply_mul_diag_eq` and `Matrix.IsCholesky.diag_ne_zero`. ★
+'''
+deps = ["Matrix.IsCholesky.star_apply_mul_diag_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.6'
+
+[[node]]
+id = "cholesky_eq_zero_of_not_isCholeskyFill"
+kind = "theorem"
+desc = '''
+Facts 1–2 of §11.1.6, the rigorous half: for `Matrix.IsCholesky A H` and `j < i`, if `(i, j)` is not
+in the fill predicted by Facts 1–2 (`¬ Matrix.IsCholeskyFill A i j`) then `g_ij = H j i = 0`. Delegates to
+`Matrix.IsCholesky.apply_eq_zero_of_not_isCholeskyFill`. The printed facts assert the converse ("`g_ij` is
+nonzero assuming no numerical cancellation"), which has no exact reading and is not formalized
+(chapter group, **Not formalized**); this direction is what Step 0′ (preallocating the fill)
+needs, and it is exact. ★
+'''
+deps = ["Matrix.IsCholeskyFill", "Matrix.IsCholesky.apply_eq_zero_of_not_isCholeskyFill"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.6'
+
+[[node]]
+id = "nestedDissection_cholesky"
+kind = "theorem"
+desc = '''
+§11.1.7: if `P₀ A P₀ᵀ` has the dissected form `[A₁ 0 C₁ᵀ; 0 A₂ C₂ᵀ; C₁ C₂ S]` (written as: the index
+set is `I₁ ∪ I₂ ∪ I_S` in this order, `A` vanishes between `I₁` and `I₂`), then the Cholesky
+factor inherits the zero block: `g_ij = 0` for `i ∈ I₂`, `j ∈ I₁`. Delegates to
+`Matrix.IsCholesky.apply_eq_zero_of_separated` with `S = I₁` (a lower set of the ordering). The
+recursive statement ("repeat on each of the four big diagonal blocks") is the same lemma applied
+to each dissection level. ★
+'''
+deps = ["Matrix.IsCholesky.apply_eq_zero_of_separated"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.7'
+
+[[node]]
+id = "seminormal_cholesky"
+kind = "theorem"
+desc = '''
+§11.1.8: if `A Pᵀ = Q R` is a thin QR factorization (`Qᵀ Q = I`, `R` upper triangular with positive
+diagonal) of `A ∈ ℝ^{m×n}` with full column rank, then `P (Aᵀ A) Pᵀ = Rᵀ R`, i.e. `Rᵀ` is the
+Cholesky factor of `P (AᵀA) Pᵀ`. Delegates to `Matrix.isCholesky_conjTranspose_mul_self_of_qr`
+with `X = A Pᵀ` (`(A Pᵀ)ᵀ (A Pᵀ) = P Aᵀ A Pᵀ`). ★
+'''
+deps = ["Matrix.isCholesky_conjTranspose_mul_self_of_qr"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.8'
+
+[[node]]
+id = "seminormal_normalEquations"
+kind = "theorem"
+desc = '''
+§11.1.8, the display after the Sparse QR challenge: with `A Pᵀ = Q R` as in `seminormal_cholesky`,
+the normal equations `Aᵀ A x = Aᵀ b` are equivalent to `P (Aᵀ b) = Rᵀ R (P x)` (the seminormal
+equations; `Q` is not needed). Rewriting with `Pᵀ P = I`. ★
+'''
+deps = ["seminormal_cholesky"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.8'
+
+[[node]]
+id = "seminormal_refinement"
+kind = "theorem"
+desc = '''
+§11.1.8, Steps 3–4: if `x₀` solves `Rᵀ R P x₀ = P Aᵀ b` exactly, `r = b − A x₀`, and `e` solves
+`Rᵀ R P e = P Aᵀ r`, then `Aᵀ A (x₀ + e) = Aᵀ b` — the book's identity
+`Aᵀ A (x₀ + e) = Aᵀb − Aᵀr + Aᵀr`, which holds for *any* `x₀` (the step is exact whatever the error
+in `x₀`). The claim that one refinement step makes the computed `x_LS` "just as good as" the QR
+solution is Björck's rounding analysis, cited, not proved: not formalized. ★
+'''
+deps = ["seminormal_normalEquations"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.8'
+
+[[node]]
+id = "rowGivensQR"
+kind = "definition"
+desc = '''
+Row-by-row Givens QR (11.1.9), D4 program on `A : Matrix (Fin m) (Fin n) ℝ`: for `i = 1 : m`,
+`j = 1 : min(i−1, n)`, if the current `a_ij ≠ 0` (a comparison on the computed value) compute
+`(c, s)` by ch05's Algorithm 5.1.3 (`GolubVanLoan.Chapter05.algorithm_5_1_3`, `givens(a_jj, a_ij)`)
+and rotate rows `j` and `i` on columns `j:n` by chapter 5's shared helper (convention 13)
+`GolubVanLoan.Chapter05.givensApplyLeft rnd j i c s cols A`, `cols` the index list `[j, …, n−1]`
+(convention 10). ★★
+'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.9)'
+
+[[node]]
+id = "equation_11_1_9"
+kind = "theorem"
+desc = '''
+Exact semantics: the result `R' := Id.run (rowGivensQR pure A)` has `R' i j = 0` for `j < i`
+and `R'ᵀ R' = Aᵀ A` (it is `Qᵀ A` for an orthogonal `Q`, the product of the plane rotations);
+in particular its first `n` rows are the `R` factor of a QR factorization of `A` up to row signs.
+Proof: loop invariant `R'ᵀ R' = Aᵀ A` (each rotation is orthogonal: `GolubVanLoan.Chapter05.givensRotation` via
+ch05's spec of Algorithm 5.1.3; `givensApplyLeft_spec` on the columns listed, the columns `< j` of rows
+`j`, `i` being zero) and "rows `< i` are upper triangular in their first `i−1`
+columns, row `i` is zero in columns `< j`" (the rotation zeros `a_ij`, `Matrix.givensPair`). ★★★
+(~150 lines)
+'''
+deps = ["rowGivensQR", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensRotation"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.9)'
+
+[[node]]
+id = "equation_11_1_10"
+kind = "theorem"
+desc = '''
+(11.1.10)–(11.1.11): for `P A Qᵀ = [α wᵀ; v B]` with `α ≠ 0`,
+`P A Qᵀ = [1 0; v/α I] [α wᵀ; 0 A⁽¹⁾]` with `A⁽¹⁾ = B − v wᵀ/α`. Block identity; `A⁽¹⁾` is
+`Matrix.schurComplementSingle (P A Qᵀ) 0` up to reindexing, one step of `Matrix.elimStep`. ★
+'''
+deps = ["Matrix.schurComplementSingle", "Matrix.elimStep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.10)'
+
+[[node]]
+id = "symbolicElim_isPatternSymm"
+kind = "theorem"
+desc = '''
+§11.1.9, "if `A` is structurally symmetric and `P = Q`, then `A⁽¹⁾` is structurally symmetric", in
+its only exact reading, the *symbolic* one: if `A` is structurally symmetric
+(`Matrix.IsPatternSymm A`) then so is `A.submatrix σ σ`, and the predicted pattern of `A⁽¹⁾` in
+(11.1.11) — `{(i, j) : b_ij ≠ 0} ∪ {(i, j) : v_i ≠ 0 ∧ w_j ≠ 0}` — is symmetric (because
+`supp v = supp w` and `B` is structurally symmetric). The numerical `A⁽¹⁾` is *not* structurally
+symmetric in general (`symbolicElim_isPatternSymm_counterexample`): the claim holds only
+"assuming no numerical cancellation", like Facts 1–2. ★
+'''
+deps = ["Matrix.IsPatternSymm", "Matrix.IsPatternSymm.submatrix"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.9'
+
+[[node]]
+id = "symbolicElim_isPatternSymm_counterexample"
+kind = "theorem"
+desc = '''
+The printed claim of §11.1.9 is false literally: `A = !![1, 1, 1; 1, 1, 2; 1, 1, 1]` is structurally
+symmetric, and one elimination step with pivot `(1,1)` gives `A⁽¹⁾ = !![0, 1; 0, 0]`, which is not
+(`¬ Matrix.IsPatternSymm`). `decide`/`norm_num` on `Fin 3`. Recorded in the chapter's Doubts. ★
+'''
+deps = ["Matrix.IsPatternSymm", "equation_11_1_10"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.9'

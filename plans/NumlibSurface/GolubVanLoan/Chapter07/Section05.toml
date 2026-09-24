@@ -1,0 +1,246 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.5, the practical QR algorithm: shifted QR steps (7.5.3) and their fixed-shift rate, the exact
+shift (Theorem 7.5.1), the single-shift strategy (7.5.4) and its quadratic convergence, the
+double-shift identities (7.5.6)–(7.5.8) and the reality of the double step, the Francis step
+(Algorithm 7.5.1, specified by `Matrix.IsFrancisStep` and identified with the explicit double shift
+through the implicit Q theorem), and the QR algorithm (Algorithm 7.5.2).
+
+Real Hessenberg `H : Matrix (Fin n) (Fin n) ℝ`; complex shifts through `Matrix.complexify`. The
+updates are chapter 5's shared helpers on index lists (`houseOn`, `householderApplyLeft/Right`,
+`givensApplyLeft/Right`, `backwardAccumulation`; conventions 10 and 13 of `NumlibSurface/GolubVanLoan`);
+`hessenbergPart` is Section 4's. A step on the unreduced block `H₂₂` of Algorithm 7.5.2 is Algorithm
+7.5.1 run on the **window** `w` of consecutive indices of `H₂₂` inside the full matrix (convention 10:
+no `Fin (n - p - q)` copy); the book's Algorithm 7.5.1 is the window `List.finRange n`.
+
+**Algorithm 7.5.2** is an iteration with a stopping test: it gets the tolerance `tol` and, last, a fuel
+parameter `fuel` (the number of passes of the `until q = n` loop; convention 3), and returns `(Q, T, done)`. Its
+exact-arithmetic specification is **not** "`Qᵀ A Q = T`": setting a subdiagonal entry to zero when
+`|h_{i,i-1}| ≤ tol (|h_{ii}| + |h_{i-1,i-1}|)` is a perturbation of size `≤ 2 tol ‖H‖_F`, so the exact
+statement is `T = Qᵀ (A + E) Q` with `‖E‖_F ≤ ((1 + 2 tol)^{n·fuel} - 1) ‖A‖_F` (and `E = 0` when
+`tol = 0`), plus "if `done` then `T` is upper quasi-triangular with nonreal `2 × 2` blocks". Convergence
+(that `done` holds for `fuel` large) is not proved by the book (it cites the empirical "two Francis iterations per
+eigenvalue") and is not planned; Quarteroni–Sacco–Saleri record the same gap (their §5.7.2).
+
+Not formalized here: the deflation criterion (7.5.2) and the "decoupling" heuristics (no precise
+claim beyond Lemma 7.1.1); Stewart's example `h̃_{n,n-1} = -ε² b/(a² + ε²)` (a worked computation after
+`n - 2` unspecified Givens steps; its rigorous content is `single_shift_quadratic`); the roundoff claims
+of §7.5.6 (`Qᵀ(A + E)Q = T̂` with `‖E‖₂ ≈ u ‖A‖₂`, `Q̂ᵀ Q̂ = I + F` with `‖F‖₂ ≈ u`), stated without
+derivation — a rigorous version needs the rounding analysis of every Francis step (3 × 3 reflectors),
+of the deflations and of the `2 × 2` standardizations, with the iteration count in the constant, which
+the book does not give; balancing (§7.5.7: no algorithm is given, and "`D⁻¹ A D` can be computed
+without roundoff" is a property of a concrete radix-`β` number system, not of the relational model);
+the flop counts.
+'''
+
+[[node]]
+id = "equation_7_5_3"
+kind = "theorem"
+desc = '''(7.5.3): each matrix of the shifted QR iteration is orthogonally similar to its predecessor: if
+`H - μ I = U R` (`U` orthogonal, `R` upper triangular) then `R U + μ I = Uᵀ H U`
+("`RU + μI = Uᵀ(UR + μI)U`"); with the Hessenberg reduction, every iterate is `Qᵀ A Q`.
+`Matrix.IsShiftedQrStep.eq_conj` at `ℝ` (`orthogonalGroup = unitaryGroup` over `ℝ`). ★'''
+deps = ["Matrix.IsShiftedQrStep.eq_conj", "GolubVanLoan.Chapter07.equation_7_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.5.3)'
+
+[[node]]
+id = "shiftedQr_rate"
+kind = "theorem"
+desc = '''§7.5.2, the fixed-shift rate: with eigenvalues ordered `|λ₁ - μ| > ⋯ > |λ_n - μ| > 0`, `A` diagonalizable
+by `X` whose inverse has nonsingular leading principal submatrices (the general-position hypothesis
+the book's "theory of §7.3" needs; Theorem 7.3.1's `d̃₀ < 1` for every `i`), the `p`-th subdiagonal entry
+of the fixed-shift iterates tends to `0` at the rate `|(λ_{p+1} - μ)/(λ_p - μ)|^k` in the weakened form:
+for every `r > |λ_{p+1} - μ|` there is `C` with `|H_k (p+1) p| ≤ C (r / |λ_p - μ|)^k`.
+`Matrix.shiftedQrIterate_eq_qrIterate_sub_add`, `Matrix.exists_abs_qrIterate_apply_le`,
+`Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal`, and
+`Matrix.IsShiftedQrStep.unique_of_isUnit` to pass from the canonical to any factorization (moduli of
+entries are invariant under the unimodular diagonal). "If `λ_p = λ_{p+1}` there is no convergence at
+all" is not a precise claim and is not stated. ★★'''
+deps = ["Matrix.shiftedQrIterate_eq_qrIterate_sub_add", "Matrix.exists_abs_qrIterate_apply_le", "Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal", "Matrix.IsShiftedQrStep.unique_of_isUnit"]
+source = 'Golub–Van Loan, Matrix Computations, §7.5.2'
+
+[[node]]
+id = "theorem_7_5_1"
+kind = "theorem"
+desc = '''Theorem 7.5.1, over `ℂ` as printed (the eigenvalue `μ` of the real `H` may be complex, book line
+20569): let `H : Matrix (Fin n) (Fin n) ℝ` be unreduced upper Hessenberg, `n ≥ 1`, and
+`μ ∈ spectrum ℂ H.complexify`. If `H̃ = R U + μ I` where `H.complexify - μ I = U R` is a QR
+factorization (`U` unitary, `R` upper triangular), then `h̃_{n,n-1} = 0` and `h̃_{nn} = μ` (indeed the
+whole last row is `μ e_nᵀ`). `Matrix.IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last` over `ℂ`
+for `H.complexify`, which is unreduced upper Hessenberg (`Matrix.IsUnreducedUpperHessenberg.map`,
+`Complex.ofReal_injective`); a real `μ` is the special case. ★'''
+deps = ["Matrix.IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last", "Matrix.IsUnreducedUpperHessenberg.map", "GolubVanLoan.Chapter07.IsUnreduced"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.5.1'
+
+[[node]]
+id = "single_shift_quadratic"
+kind = "theorem"
+desc = '''§7.5.3, the single-shift iteration (7.5.4) (`μ = H(n, n)`): "If the `(n, n-1)` entry converges to zero, it
+is likely to do so at a quadratic rate" — rigorous local form: for `A` with an algebraically simple real
+eigenvalue `l` and a Hessenberg orthogonal conjugate `T = Qᵀ A Q` with `|t_{n,n-1}|` and `|t_{nn} - l|`
+small enough and `T - t_{nn} I` nonsingular, one single-shift step `T'` has
+`|t'_{n,n-1}| ≤ C t_{n,n-1}²` (and `|t'_{nn} - l| ≤ C t_{n,n-1}²`), `C` depending only on `A` and `l`.
+Backbone `Matrix.abs_shiftedQrStep_last_le_of_conj` and
+`Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one` (Rayleigh quotient iteration on `Tᵀ`,
+Demmel §4.4.5), transported to any factorization by `Matrix.IsShiftedQrStep.unique_of_isUnit`. ★★'''
+deps = ["Matrix.abs_shiftedQrStep_last_le_of_conj", "Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one", "Matrix.IsShiftedQrStep.unique_of_isUnit"]
+source = 'Golub–Van Loan, Matrix Computations, §7.5.3'
+
+[[node]]
+id = "equation_7_5_7"
+kind = "theorem"
+desc = '''(7.5.6)–(7.5.7): if `H - a₁ I = U₁ R₁`, `H₁ = R₁ U₁ + a₁ I`, `H₁ - a₂ I = U₂ R₂`, `H₂ = R₂ U₂ + a₂ I`
+(complex `a₁`, `a₂`, factorizations of the complexified matrices), then `(U₁ U₂)(R₂ R₁) = M` with
+`M = (H - a₁ I)(H - a₂ I)` (7.5.8). `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` with `j = 2`;
+and `H₂ = (U₁ U₂)ᴴ H (U₁ U₂)` (`equation_7_3_2`). ★'''
+deps = ["Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one", "GolubVanLoan.Chapter07.equation_7_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.5.7)'
+
+[[node]]
+id = "equation_7_5_8"
+kind = "theorem"
+desc = '''(7.5.5) and (7.5.8): if `a₁`, `a₂` are the eigenvalues of `G = [h_mm h_mn; h_nm h_nn]` (`m = n - 1`),
+the roots of `G.charpoly` with multiplicity, then `M = (H - a₁ I)(H - a₂ I) = H² - s H + t I` with
+`s = a₁ + a₂ = h_mm + h_nn = tr G` and `t = a₁ a₂ = h_mm h_nn - h_mn h_nm = det G`; in particular `M` is
+real even when `a₁`, `a₂` are complex (Vieta for the monic quadratic `G.charpoly`,
+`Matrix.trace_eq_sum_roots_charpoly`, `Matrix.det_eq_prod_roots_charpoly`). ★'''
+deps = ["GolubVanLoan.Chapter07.det_eq_prod_eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.5.8)'
+
+[[node]]
+id = "double_shift_real"
+kind = "theorem"
+desc = '''§7.5.4, "(7.5.7) is the QR factorization of a real matrix and we may choose `U₁` and `U₂` so that
+`Z = U₁ U₂` is real orthogonal. It then follows that `H₂ = Zᵀ H Z` is real": for real `H` and a
+nonreal pair `a₂ = conj a₁` with `M` nonsingular, the canonical double-shift step is real,
+`doubleShiftQrStep H.complexify a₁ = (Zᵀ H Z).complexify` with `Z` the (positive-diagonal) Q factor of
+the real `M`; and for any choice of factorizations the result is a unimodular diagonal similarity of
+it. `Matrix.doubleShiftQrStep_map_ofReal`, `Matrix.IsShiftedQrStep.unique_of_isUnit`. ★★'''
+deps = ["Matrix.doubleShiftQrStep_map_ofReal", "Matrix.IsShiftedQrStep.unique_of_isUnit", "GolubVanLoan.Chapter07.equation_7_5_8"]
+source = 'Golub–Van Loan, Matrix Computations, §7.5.4'
+
+[[node]]
+id = "francis_first_column"
+kind = "theorem"
+desc = '''§7.5.5: for `H` upper Hessenberg with `n ≥ 3` and `M = H² - s H + t I`, `M e₁ = [x, y, z, 0, …, 0]ᵀ`
+with `x = h₁₁² + h₁₂ h₂₁ - s h₁₁ + t`, `y = h₂₁ (h₁₁ + h₂₂ - s)`, `z = h₂₁ h₃₂` (0-based in Lean). Entry
+computation with the Hessenberg zeros (`Matrix.mul_apply`, `Fin.sum_univ_succ`). ★'''
+deps = ["Matrix.IsUpperHessenberg"]
+source = 'Golub–Van Loan, Matrix Computations, §7.5.5'
+
+[[node]]
+id = "algorithm_7_5_1"
+kind = "definition"
+desc = '''Algorithm 7.5.1 (Francis QR step) on a window: `noncomputable def algorithm_7_5_1 {M} [Monad M]
+(rnd : ℝ → M ℝ) {n} (w : List (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ ×
+List ((Fin n → ℝ) × ℝ))`, `w = [w₀, …, w_{N-1}]` consecutive indices, `N ≥ 3` (hypotheses on the spec, not
+the program); the book's algorithm is `w = List.finRange n`. With `m, n` the last two indices of `w`:
+`s = fl(h_mm + h_nn)`, `t = fl(fl(h_mm h_nn) - fl(h_mn h_nm))`, `x, y, z` by the book's formulas (each
+operation rounded, in the printed order); for `k = 0 .. N-3`, with `o_k = [w_k, w_{k+1}, w_{k+2}]`:
+`(v, β) ← houseOn rnd o_k u` (chapter 5's `house`; `u` holds `x, y, z` at `o_k` — for `k ≥ 1` it is the
+column `w_{k-1}` of `H`), `q = max{1, k}` (1-based), apply `I - β v vᵀ` to rows `o_k`, columns
+`w_{q-1}, …, w_{N-1}` (`householderApplyLeft rnd v β o_k cols H`), `r = min{k+4, N}`, and to columns `o_k`,
+rows `w_0, …, w_{r-1}` (`householderApplyRight rnd v β rows o_k H`), read the new `x, y, z` if `k < N - 3`;
+finally the `2 × 2` reflector from `houseOn rnd [w_{N-2}, w_{N-1}]` on rows `w_{N-2}, w_{N-1}` (columns
+`w_{N-3}, …`) and on those columns (all rows of the window). Only the block `H(w, w)` changes. Returns the
+new `H` and the reflector data `List ((Fin n → ℝ) × ℝ)` in order of application (convention 13), so that
+Algorithm 7.5.2 can apply `Z` to `Q` and to the off-diagonal blocks ("If `Z` is accumulated into a given
+orthogonal matrix"). ★'''
+deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.1'
+
+[[node]]
+id = "algorithm_7_5_1_spec"
+kind = "theorem"
+desc = '''Algorithm 7.5.1 is a Francis step: for `H` unreduced upper Hessenberg, `n ≥ 3`, `s`, `t` the trace and
+determinant of the trailing `2 × 2` block, `(H', refl) = Id.run (algorithm_7_5_1 pure (List.finRange n) H)`:
+`Matrix.IsFrancisStep s t H H'` with `Z = GolubVanLoan.Chapter05.householderProduct refl` (so
+`H' = Zᵀ H Z` exactly, `H'` upper Hessenberg, and `Zᵀ (H - a₁ I)(H - a₂ I)` upper triangular — the book's
+header), and `Z e₁ = P₀ e₁` is parallel to `M e₁` (`francis_first_column`), `P_k e₁ = e₁` for `k ≥ 1`.
+Window form (what Algorithm 7.5.2 uses): for a window `w` on which `H` is unreduced Hessenberg, the
+same statement for the block `H(w, w)`, with `Z` the identity off `w` and `H'` equal to `H` outside
+`w × w`. Proof: bulge-chasing invariant — after step `k` the matrix is Hessenberg except for the bulge in
+rows `k+2, k+3` of column `k+1` (the book's picture; `GolubVanLoan.Chapter05.houseOn_spec` for each
+3-vector, `householderApplyLeft_spec`, `householderApplyRight_spec`); the upper triangularity of `Zᵀ M`
+needs only `H` unreduced and no nonsingularity: `e_k` lies in the Krylov space `K_k(H, e₁)` (unreduced
+`H`), so `M e_k ∈ p(H) K_k(H, e₁) = K_k(H, M e₁) = K_k(H, z₁)` (`z₁ ∥ M e₁`), which is inside
+`span{z₁, …, z_k}` because `Zᵀ H Z` is Hessenberg; hence column `k` of `Zᵀ M` vanishes below row `k`
+(`Matrix.krylovMatrix`, `Krylov.subspace`). ★★★ (~500 lines: the bulge invariant is the cost).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_5_1", "Matrix.IsFrancisStep", "Matrix.krylovMatrix", "GolubVanLoan.Chapter07.francis_first_column", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.1'
+
+[[node]]
+id = "algorithm_7_5_1_essential"
+kind = "theorem"
+desc = '''§7.5.5, "we can assert that `Z₁` essentially equals `Z` provided that the upper Hessenberg matrices `ZᵀHZ`
+and `Z₁ᵀHZ₁` are each unreduced": for `H` unreduced, `M` nonsingular, the Francis step's output equals
+`D H₂ D` for a `±1` diagonal `D`, where `H₂ = Zᵀ H Z` is the explicit double-shift step with the real
+`Z` of `double_shift_real` (and so `H'.complexify` is a unimodular diagonal similarity of
+`doubleShiftQrStep H.complexify a₁`). `Matrix.IsFrancisStep.eq_diagonal_conj`,
+`Matrix.doubleShiftQrStep_map_ofReal`. The book cites "Theorem 7.4.3 (the implicit Q theorem)" — it is
+Theorem 7.4.2 (report, Doubts). ★★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_5_1_spec", "Matrix.IsFrancisStep.eq_diagonal_conj", "Matrix.doubleShiftQrStep_map_ofReal", "GolubVanLoan.Chapter07.double_shift_real"]
+source = 'Golub–Van Loan, Matrix Computations, §7.5.5'
+
+[[node]]
+id = "triangularize2x2"
+kind = "definition"
+desc = '''Helper for the last step of Algorithm 7.5.2, "upper triangularize all 2-by-2 diagonal blocks in `H` that
+have real eigenvalues" (the book gives no algorithm; this is the design recorded in the report): for the
+block `[w x; y z]` in rows/columns `(i, i+1)`: `δ ← fl(w - z)`, `d ← fl(fl(δ · δ) + fl(fl(4 · x) · y))`;
+if the computed `d ≥ 0` (a comparison, exact): `λ ← fl(fl(fl(w + z) / 2) + sign(δ) · fl(fl(√d) / 2))`
+(the larger-modulus root; `sign(δ) · (·)` is a copy or a negation, exact — convention 1), the
+eigenvector `(x, fl(λ - w))` (or `(fl(λ - z), y)` when `x = 0`), `(c, s) ← givens` on it
+(`GolubVanLoan.Chapter05.algorithm_5_1_3`), and apply the rotation to rows `i, i+1` over the columns
+`≥ i` (`givensApplyLeft`), to columns `i, i+1` over the rows `≤ i+1` (`givensApplyRight`) and to the
+columns `i, i+1` of `Q` (`givensApplyRight`, all rows). ★'''
+deps = ["GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
+
+[[node]]
+id = "triangularize2x2_spec"
+kind = "theorem"
+desc = '''Exact semantics of `triangularize2x2` (formerly planned inside its node; convention 14): the
+result is `(Gᵀ H G, Q G)` for the rotation `G = GolubVanLoan.Chapter05.givensRotation i (i+1) c s`
+(orthogonal), and when the block's eigenvalues are real (`d ≥ 0`) and `H` is quasi-upper triangular
+with this block on the diagonal, the block of `Gᵀ H G` is upper triangular (the first column of `G` is
+an eigenvector of the block) and the rest of the quasi-triangular structure is kept.
+`GolubVanLoan.Chapter05.algorithm_5_1_3_spec`, `givensApplyLeft_spec`, `givensApplyRight_spec`. ★★'''
+deps = ["GolubVanLoan.Chapter07.triangularize2x2", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter05.givensRotation", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
+
+[[node]]
+id = "algorithm_7_5_2"
+kind = "definition"
+desc = '''Algorithm 7.5.2 (QR algorithm): `algorithm_7_5_2 rnd (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
+M (Matrix … × Matrix … × Bool)` returning `(Q, T, done)` (fuel last, convention 3). `(H, data) ←`
+Algorithm 7.4.2 and `Q ← GolubVanLoan.Chapter05.backwardAccumulation rnd data` (the returned reflector data,
+never rebuilt); then at most `fuel` passes of: set to zero every `h_{i,i-1}` with
+`|h_{i,i-1}| ≤ fl(tol · fl(|h_ii| + |h_{i-1,i-1}|))` (the right side rounded, `|·|` and the comparison
+exact — convention 1); find the largest `q ≥ 0` and smallest `p ≥ 0` with
+`H = [H₁₁ H₁₂ H₁₃; 0 H₂₂ H₂₃; 0 0 H₃₃]` (sizes `p, n-p-q, q`), `H₃₃` upper quasi-triangular and `H₂₂`
+unreduced (the partition shown in the book's image, reconstructed from the text: report, Doubts); if
+`q = n` stop with `done = true`; else run `algorithm_7_5_1` on the window `w = [p, …, n-q-1]` of `H`
+(no extraction) and apply its reflector data to `Q` (`householderApplyRight`, all rows, columns `w`),
+to `H₁₂` (`householderApplyRight`, rows `< p`, columns `w`) and to `H₂₃` (`householderApplyLeft`, rows
+`w`, columns `≥ n - q`). Finally `triangularize2x2` on every `2 × 2` diagonal block of `H₃₃ = H` with
+real eigenvalues. ★'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_4_2", "GolubVanLoan.Chapter05.backwardAccumulation", "GolubVanLoan.Chapter07.algorithm_7_5_1", "GolubVanLoan.Chapter07.triangularize2x2", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
+
+[[node]]
+id = "algorithm_7_5_2_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 7.5.2 (see the group desc for why the deflations make it a statement with
+a perturbation): for `(Q, T, done) = Id.run (algorithm_7_5_2 pure tol A fuel)` with `0 ≤ tol`:
+`Q ∈ orthogonalGroup` and there is `E` with `T = Qᵀ (A + E) Q`, `‖E‖_F ≤ ((1 + 2 tol)^(n * fuel) - 1) ‖A‖_F`
+(Frobenius norm, each deflation perturbing by at most `tol (|h_ii| + |h_{i-1,i-1}|) ≤ 2 tol ‖H‖_F` and at
+most `n` deflations per pass), `E = 0` if `tol = 0`, `T` upper Hessenberg, and if `done` then
+`T.IsQuasiUpperTriangular` with no `2 × 2` diagonal block having a real eigenvalue (the real Schur form
+of `A + E`). Invariants: `algorithm_7_4_2_spec` with `GolubVanLoan.Chapter05.backwardAccumulation_spec`
+(`Q₀ = householderProduct data`), the window form of `algorithm_7_5_1_spec` for the unreduced `H₂₂`
+(the block partition makes `diag(I, Z, I)` a similarity of the whole `H` that keeps the zero blocks,
+Lemma 7.1.1), `householderApplyLeft_spec`/`householderApplyRight_spec` for the off-diagonal blocks and
+`Q`, and `triangularize2x2_spec`. ★★★ (~450 lines).'''
+deps = ["GolubVanLoan.Chapter07.algorithm_7_5_2", "GolubVanLoan.Chapter07.algorithm_7_4_2_spec", "GolubVanLoan.Chapter05.backwardAccumulation_spec", "GolubVanLoan.Chapter07.algorithm_7_5_1_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec", "GolubVanLoan.Chapter07.triangularize2x2_spec", "Matrix.IsQuasiUpperTriangular", "GolubVanLoan.Chapter07.lemma_7_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'

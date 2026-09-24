@@ -1,0 +1,89 @@
+desc = '''
+The polar decomposition `A = U P` as a function of matrices ([golub2013matrix] §9.4.3): the
+specification `Matrix.IsPolarDecomposition A U P`, its existence (Theorem 9.4.1,
+`Matrix.exists_isPolarDecomposition`), the symmetric factor as `CFC.sqrt (Aᴴ A)` (`CFC.abs A` for
+square `A`) and the uniqueness for nonsingular square `A` (`Matrix.IsPolarDecomposition.eq_cfcSqrt`)
+are the decomposition module `Numlib/LinearAlgebra/Matrix/Polar` (moved there at the Golub–Van Loan
+consolidation, decision D6), which this module imports; here are the factor as the primary square
+root (`Matrix.IsPolarDecomposition.eq_pfc_sqrt`), Newton's iteration `X_{k+1} = (X_k + X_k⁻ᴴ)/2` and
+its quadratic convergence, the sign of the Hermitian dilation, and the Li–Sun perturbation bound.
+Every statement about "the polar factor `U`" takes an `IsPolarDecomposition A U P` hypothesis (review
+H5). The Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of §9.4.3 is `Matrix.hermitianDilation Aᴴ`
+(`Numlib/Analysis/Matrix/SingularValues`, imported). Searched: Mathlib has no polar decomposition of
+matrices or of C⋆-algebra elements (`grep -ri polar` over `Mathlib/Analysis` finds none for operators),
+and Numlib has none.
+'''
+
+[[node]]
+id = "Matrix.IsPolarDecomposition.eq_pfc_sqrt"
+kind = "theorem"
+desc = '''The symmetric polar factor is the primary square root of `Aᴴ A` ([golub2013matrix] §9.4.3, "`P = (AᵀA)^{1/2}`"
+read in chapter 9's functional calculus): if `IsPolarDecomposition A U P`, then
+`P = pfc (fun z : 𝕜 => ((Real.sqrt (RCLike.re z) : ℝ) : 𝕜)) (Aᴴ * A)`. `Matrix.IsPolarDecomposition.eq_cfcSqrt`
+(the `CFC.sqrt` form, `Numlib/LinearAlgebra/Matrix/Polar`) and `Matrix.PosSemidef.cfcSqrt_eq_pfc`.
+Renamed from `Matrix.polar_eq_pfc_sqrt` (review H5). ★'''
+deps = ["Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.PosSemidef.cfcSqrt_eq_pfc"]
+
+[[node]]
+id = "Matrix.newtonPolarIterate"
+kind = "definition"
+desc = '''Newton's polar iteration ([golub2013matrix] (9.4.11), whose body the conversion lost; reconstructed
+from (9.4.12)): `X₀ = A`, `X_{k+1} = (X_k + (X_k⁻¹)ᴴ)/2` for square `A : Matrix n n 𝕜` (`RCLike`;
+`X_k⁻ᵀ` in the real book). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.newtonPolarIterate_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (9.4.12): for nonsingular square `A` with `IsPolarDecomposition A U P`,
+`X_k = newtonPolarIterate A k = U * P_k` with `P₀ = P`, `P_{k+1} = (P_k + P_k⁻¹)/2`, every `P_k`
+positive definite (`P` is positive definite since `A` is nonsingular; the average of a positive
+definite matrix and its inverse is positive definite: `Matrix.PosDef.inv`, `Matrix.PosDef.add`,
+`smul`), so every `X_k` is nonsingular. Induction: `(U P_k)⁻ᴴ = U⁻ᴴ P_k⁻ᴴ = U P_k⁻¹` (`U` unitary,
+`IsPolarDecomposition.mem_unitaryGroup`; `P_k` Hermitian). Over `ℂ` the `P_k` are the Newton sign
+iterates of `P` (`Matrix.newtonSignIterate P k`). ★★'''
+deps = ["Matrix.newtonPolarIterate", "Matrix.IsPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt"]
+
+[[node]]
+id = "Matrix.tendsto_newtonPolarIterate"
+kind = "theorem"
+desc = '''Quadratic convergence of Newton's polar iteration ([golub2013matrix] §9.4.3): for nonsingular square
+`A` with `IsPolarDecomposition A U P`, `newtonPolarIterate A k → U`, with `‖X_k - U‖₂ = ‖P_k - 1‖₂`
+(unitary invariance, `Matrix.l2_opNorm_unitary_mul_mul_unitary`) and
+`‖P_{k+1} - 1‖₂ ≤ ½ ‖P_k⁻¹‖₂ ‖P_k - 1‖₂²`. Route over `RCLike` without the complex sign machinery:
+`P = V diag(σ) Vᴴ` (`Matrix.IsHermitian.spectral_theorem`), `P_k = V diag(r_k(σᵢ)) Vᴴ` with the
+scalar Newton map `r ↦ (r + 1/r)/2`, which converges to `1` for `r > 0`
+(`(r_{k+1} - 1) = (r_k - 1)²/(2 r_k)`); or over `ℂ` from `Matrix.tendsto_newtonSignIterate` with
+`matrixSign P = 1`. ★★'''
+deps = ["Matrix.newtonPolarIterate_eq", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
+
+[[node]]
+id = "Matrix.matrixSign_hermitianDilation"
+kind = "theorem"
+desc = '''The sign of the Jordan–Wielandt matrix ([golub2013matrix] §9.4.3): for nonsingular
+`A : Matrix n n ℂ` with `IsPolarDecomposition A U P`,
+`matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ`, i.e. the sign of `[0 A; Aᴴ 0]` is
+`[0 U; Uᴴ 0]` (`Matrix.hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0`, the book's block order; the book
+omits "nonsingular", needed so that no eigenvalue `±σᵢ` is `0`). Proof: from an SVD `A = W Σ Vᴴ`
+(`Matrix.exists_isSVD`; `U = W Vᴴ` by `Matrix.IsPolarDecomposition.unique` and
+`Matrix.IsSVD.isPolarDecomposition`), the unitary `Q = (1/√2) fromBlocks W 0 0 V * fromBlocks 1 1 1 (-1)`
+satisfies `Qᴴ (hermitianDilation Aᴴ) Q = fromBlocks Σ 0 0 (-Σ)`; `Matrix.matrixSign_conj_fromBlocks`
+with `X = Q`, `Q⁻¹ = Qᴴ`, then the block product. Renamed from
+`Matrix.matrixSign_fromBlocks_zero_conjTranspose` and restated through the dilation (review H1).
+★★ (~150 lines)'''
+deps = ["Matrix.hermitianDilation", "Matrix.matrixSign_conj_fromBlocks", "Matrix.IsPolarDecomposition", "Matrix.IsSVD.isPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "Matrix.frobenius_norm_polar_sub_le"
+kind = "theorem"
+desc = '''The Li–Sun perturbation bound for the orthogonal polar factor ([golub2013matrix] §9.4.3, quoted
+from W. Li and W. Sun, SIAM J. Matrix Anal. Appl. 25 (2003), no proof in the book): for nonsingular
+real `A, Ã : Matrix (Fin n) (Fin n) ℝ` (`n ≥ 2`) with `IsPolarDecomposition A U P` and
+`IsPolarDecomposition Ã Ũ P̃`, `‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (σ_{n-2}(A) + σ_{n-1}(A) + σ_{n-2}(Ã) + σ_{n-1}(Ã))`
+with `σ_k = sortedSingularValues k` (0-based: the book's `σ_{n-1} + σ_n`, the two smallest). Route
+(Li–Sun §2): with `W = Uᵀ Ũ` orthogonal, `Uᵀ(A - Ã)` relates `P - W P̃`; the skew part of `W` is
+controlled through a Sylvester-type equation `S P̃ + P S = …` whose solution operator has norm
+`≤ 1/(σ_i + σ̃_j)` on the relevant components, and the real case uses that a real orthogonal
+matrix's skew part pairs eigenvalues, giving the sum of the two smallest. ★★★ (~600 lines, the proof
+is not in the book)'''
+deps = ["Matrix.IsPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.sortedSingularValues"]

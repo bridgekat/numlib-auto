@@ -1,0 +1,260 @@
+namespace = "GolubVanLoan.Chapter06"
+desc = '''
+§6.2, Constrained Least Squares: least squares over a sphere (6.2.1)–(6.2.4) and Algorithm 6.2.1,
+over an ellipsoid through the GSVD (6.2.5)–(6.2.8), with equality constraints through QR
+(Algorithm 6.2.2), the augmented system (6.2.10), the GSVD (6.2.11)–(6.2.12) and weighting
+(6.2.13)–(6.2.14). Backbone: `Numlib/LinearAlgebra/Matrix/LeastSquares/{Constrained,Regularized}`,
+`GSVD`. The GSVD displays (6.2.7), (6.2.8), (6.2.12), (6.2.14) are printed in the third edition's
+block order and (6.2.14) is garbled; they are stated here in Theorem 6.1.1's order, corrected, as
+the report records. Not nodes: (6.2.2) (recalls the SVD), (6.2.5) and (6.2.9) (define problems:
+the backbone predicates), the Lagrange argument for (6.2.6) ("can be used … if it exists"), the
+remark that "there may not be a solution if `rank(B) < m₂`", and the numerical precautions of
+Powell–Reid.
+'''
+
+[[node]]
+id = "IsLSQISolution"
+kind = "definition"
+desc = '''§6.2.1, the LSQI problem (6.2.1) `min_{‖x‖₂ ≤ α} ‖Ax − b‖₂`, as the sphere case of the backbone
+predicate: `IsLSQISolution A b α x := Matrix.IsLSQISolution A b 1 0 α x` for
+`A : Matrix (Fin m) (Fin n) ℝ`, `b : EuclideanSpace ℝ (Fin m)`. ★'''
+deps = ["Matrix.IsLSQISolution"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.1, Definition'
+
+[[node]]
+id = "isLSQISolution_pinv"
+kind = "theorem"
+desc = '''§6.2.1: "If the unconstrained minimum norm solution `x_LS` satisfies `‖x_LS‖₂ ≤ α`, then it
+obviously solves (6.2.1)." `Matrix.isLSQISolution_of_isLeastSquaresSolution` with
+`Matrix.isLeastSquaresSolution_pinv`. ★'''
+deps = ["IsLSQISolution", "Matrix.isLSQISolution_of_isLeastSquaresSolution", "Matrix.isLeastSquaresSolution_pinv"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
+
+[[node]]
+id = "equation_6_2_3"
+kind = "theorem"
+desc = '''(6.2.3): with an SVD of rank `r`, `x_LS = ∑_{i ≤ r} (uᵢᵀb/σᵢ) vᵢ` and
+`‖x_LS‖₂² = ∑_{i ≤ r} (uᵢᵀb/σᵢ)²`. `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD`. ★'''
+deps = ["Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD", "Matrix.IsSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.3)'
+
+[[node]]
+id = "IsLSQISolution.norm_eq"
+kind = "theorem"
+desc = '''§6.2.1: if `‖x_LS‖₂² > α²` then "the solution to (6.2.1) is on the boundary of the constraint
+sphere": `IsLSQISolution A b α x → ‖x‖ = α`. `Matrix.IsLSQISolution.norm_eq_of_lt`. ★'''
+deps = ["IsLSQISolution", "equation_6_2_3", "Matrix.IsLSQISolution.norm_eq_of_lt"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
+
+[[node]]
+id = "secular_existsUnique"
+kind = "theorem"
+desc = '''§6.2.1, the secular equation: `f(λ) = ‖x(λ)‖₂² − α² = ∑_k (σ_k u_kᵀb/(σ_k² + λ))² − α²` for
+`λ > 0` (`Matrix.norm_sq_tikhonov_mulVec_eq_sum_of_isSVD`); if `‖x_LS‖₂ > α > 0`, `f` is strictly
+decreasing on `λ > 0` with a unique positive root `λ₊`
+(`Matrix.existsUnique_norm_tikhonov_mulVec_eq`). The book's "`f(0) > 0`" reads `f(0⁺) = ‖x_LS‖² − α²`
+(`x(λ)` is `x_LS` only in the limit). ★'''
+deps = ["Matrix.norm_sq_tikhonov_mulVec_eq_sum_of_isSVD", "Matrix.existsUnique_norm_tikhonov_mulVec_eq", "Matrix.antitoneOn_norm_tikhonov_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
+
+[[node]]
+id = "equation_6_2_4"
+kind = "theorem"
+desc = '''(6.2.4): `ρ(λ) = ‖Ax(λ) − b‖₂² = ‖Ax_LS − b‖₂² + ∑_{i ≤ r} (λ uᵢᵀb/(σᵢ² + λ))²` for `λ > 0`.
+`Matrix.norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD`. ★'''
+deps = ["Matrix.norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.4)'
+
+[[node]]
+id = "isLSQISolution_tikhonov"
+kind = "theorem"
+desc = '''§6.2.1, "It follows that `x(λ₊)` solves (6.2.1)": if `λ > 0` and `‖x(λ)‖₂ = α` then
+`IsLSQISolution A b α x(λ)`. `Matrix.isLSQISolution_tikhonov`. (The book infers it from (6.2.4); the
+backbone proof is the direct comparison `‖Ay − b‖² + λ‖y‖² ≥ ‖Ax − b‖² + λα²`.) ★'''
+deps = ["IsLSQISolution", "Matrix.isLSQISolution_tikhonov"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.1'
+
+[[node]]
+id = "algorithm_6_2_1"
+kind = "definition"
+desc = '''Algorithm 6.2.1 (LSQI over a sphere), D4 form with subroutine parameters:
+`algorithm_6_2_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (svd : Matrix (Fin m) (Fin n) ℝ →
+M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ)) (root : (ℝ → ℝ) → M ℝ)
+(A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (α : ℝ) : M (Fin n → ℝ)`. Steps, in the book's order:
+`(U, σ, V) ← svd A`; `b̃ ← Chapter01.algorithm_1_1_3 rnd Uᵀ b 0` (gaxpy); `r :=` the number of
+`i < min m n` with `σ i ≠ 0` (the book's "determine `r = rank(A)`", a comparison on computed values);
+`s ←` the fold `∑_{i<r} (b̃_i/σ_i)²` with every quotient, square and sum through `rnd`; if
+`s > (← rnd (α * α))` then `λ ← root f` for the secular function
+`f λ = ∑_{i<r} (σ_i b̃_i/(σ_i² + λ))² − α²` (the exact function of the computed data; "Find `λ₊ > 0`
+such that …" is a subroutine) and `x ← ∑_{i<r} (σ_i b̃_i/(σ_i² + λ)) v_i`, else
+`x ← ∑_{i<r} (b̃_i/σ_i) v_i`, each coefficient and each saxpy entry through `rnd`. "Compute the SVD"
+and "Find `λ₊`" are parameters because the book's SVD algorithm is Chapter 8's and the root finder
+is unspecified; the design is `notes/gvl/ch06/proto/Shapes.lean` §4. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.2.1'
+
+[[node]]
+id = "algorithm_6_2_1_spec"
+kind = "theorem"
+desc = '''Algorithm 6.2.1 is correct in exact arithmetic: for `m ≥ n`, `α > 0`, an `svd` subroutine with
+`∀ M, let (U, σ, V) := Id.run (svd M); Matrix.IsSVD M U σ V` and a `root` subroutine with
+`∀ f, (∃! λ, 0 < λ ∧ f λ = 0) → 0 < Id.run (root f) ∧ f (Id.run (root f)) = 0`,
+`IsLSQISolution A (toLp 2 b) α (toLp 2 (Id.run (algorithm_6_2_1 pure svd root A b α)))`.
+Proof: at `Id` the folds collapse (`List.foldlM_pure`); `r = rank A`; the test is `‖x_LS‖² > α²`
+(`equation_6_2_3`); the `then` branch is `x(λ₊)` (`equation_6_1_14`, `secular_existsUnique`,
+`isLSQISolution_tikhonov`), the `else` branch is `x_LS` (`isLSQISolution_pinv`). ★★'''
+deps = ["algorithm_6_2_1", "GolubVanLoan.Chapter01.algorithm_1_1_3_spec", "equation_6_2_3", "secular_existsUnique", "isLSQISolution_tikhonov", "isLSQISolution_pinv", "equation_6_1_14"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.2.1'
+
+[[node]]
+id = "equation_6_2_6"
+kind = "theorem"
+desc = '''(6.2.6): with the GSVD (6.1.22)–(6.1.23), `min ‖Ax − b‖₂` s.t. `‖Bx − d‖₂ ≤ α` (6.2.5) is
+equivalent to `min ‖D_A y − b̃‖₂` s.t. `‖D_B y − d̃‖₂ ≤ α`, `b̃ = U₁ᵀb`, `d̃ = U₂ᵀd`, `y = X⁻¹x`.
+`Matrix.isLSQISolution_iff_of_isGSVD`. (The book's cross-reference "(6.2.23)" is (6.1.23).) ★'''
+deps = ["theorem_6_1_1", "Matrix.isLSQISolution_iff_of_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.6)'
+
+[[node]]
+id = "equation_6_2_7"
+kind = "theorem"
+desc = '''(6.2.7), in Theorem 6.1.1's block order: `‖D_A y − b̃‖₂² = ∑_{i<r} (α_i y_i − b̃_i)² + ∑_{r ≤ i < m₁} b̃_i²`
+(0-based; `α_i = 1` for `i < p`). The book's form (`rank(B) = m₂ < n₁`, sums to `n₁`) is the third
+edition's order with `r = n₁`. `EuclideanSpace.norm_sq_eq`, `Matrix.rectDiagonal_mulVec`,
+`Matrix.rectDiagonal_mulVec_of_le`. ★'''
+deps = ["equation_6_2_6", "Matrix.rectDiagonal_mulVec", "Matrix.rectDiagonal_mulVec_of_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.7)'
+
+[[node]]
+id = "equation_6_2_8"
+kind = "theorem"
+desc = '''(6.2.8), in Theorem 6.1.1's block order: `‖D_B y − d̃‖₂² = ∑_{i < r−p} (β_{i+p} y_{i+p} − d̃_i)² + ∑_{r−p ≤ i < m₂} d̃_i²`.
+The printed second sum runs over `i = m₂+1 … n₁` of `d̃_i`, which has only `m₂` entries — a garble
+of the third edition's form (report, Doubts). From `Matrix.shiftedRectDiagonal_apply`. ★'''
+deps = ["equation_6_2_6", "Matrix.shiftedRectDiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.8)'
+
+[[node]]
+id = "isLSQISolution_zero_iff"
+kind = "theorem"
+desc = '''§6.2.3: "By setting `α = 0` in (6.2.5) we see that the LSE problem is a special case of the LSQI
+problem": `Matrix.IsLSQISolution A b B d 0 x ↔ Matrix.IsLSESolution A b B d x`.
+`Matrix.isLSQISolution_zero_iff`. ★'''
+deps = ["Matrix.isLSQISolution_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.3'
+
+[[node]]
+id = "isLSESolution_qr"
+kind = "theorem"
+desc = '''§6.2.3, the derivation of Algorithm 6.2.2: with `QᵀBᵀ = [R; 0]`, `AQ = [A₁ A₂]`, `Qᵀx = [y; z]`,
+problem (6.2.9) becomes `min_{Rᵀy = d} ‖A₁y + A₂z − b‖₂`; `y` is determined by `Rᵀy = d`, `z` solves
+`min ‖A₂z − (b − A₁y)‖₂`, and `x = Q[y; z]` solves the LSE problem (for `rank(B) = m₂ < n₁`; unique
+when moreover `rank(A) = n₁`). `Matrix.isLSESolution_of_isQR`, `Matrix.existsUnique_isLSESolution`. ★'''
+deps = ["Matrix.IsLSESolution", "Matrix.isLSESolution_of_isQR", "Matrix.existsUnique_isLSESolution"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.3'
+
+[[node]]
+id = "algorithm_6_2_2"
+kind = "definition"
+desc = '''Algorithm 6.2.2 (LSE by QR), D4 form: `algorithm_6_2_2 (rnd : ℝ → M ℝ)
+(ls : Matrix (Fin m) (Fin (n − p)) ℝ → (Fin m → ℝ) → M (Fin (n − p) → ℝ))
+(A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin p) (Fin n) ℝ) (b : Fin m → ℝ) (d : Fin p → ℝ) :
+M (Fin n → ℝ)` (`m₁ = m`, `n₁ = n`, `m₂ = p`). Steps: `(Q, R) ← qr Bᵀ`, the
+full QR of chapter 5 — `(A', β) ← Chapter05.algorithm_5_2_1 rnd h Bᵀ`, `Q ←
+Chapter05.forwardAccumulation rnd (Chapter05.storedReflectors A' β)` (the returned `β`, convention 13),
+`R := upperPart A'`; `y ←
+Chapter03.algorithm_3_1_1 rnd (R(1:p, 1:p))ᵀ d` (forward substitution); `AQ ←
+Chapter01.algorithm_1_1_5 rnd A Q 0`; `c ← b − AQ(:, 1:p) y` (gaxpy through `rnd`); `z ← ls (AQ(:, p+1:n)) c`;
+`x ← Q(:, 1:p) y + Q(:, p+1:n) z` (two gaxpys). "Compute the QR factorization" is delegated to
+chapter 5 and so calls its program (Householder QR and the forward accumulation, convention 5 of the
+`GolubVanLoan` group); "Find `z` so … is minimized" names no method (any of chapter 5's
+least-squares algorithms instantiates it), so `ls` is a monadic parameter. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5", "GolubVanLoan.Chapter01.algorithm_1_1_3", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter05.algorithm_5_2_1", "GolubVanLoan.Chapter05.forwardAccumulation", "GolubVanLoan.Chapter05.storedReflectors"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.2.2'
+
+[[node]]
+id = "algorithm_6_2_2_spec"
+kind = "theorem"
+desc = '''Algorithm 6.2.2 is correct in exact arithmetic: if `rank(A) = n`, `rank(B) = p < n` (no
+nondegeneracy hypothesis on the Householder QR of `Bᵀ`: with the returned `β`,
+`Chapter05.algorithm_5_2_1_spec` and `forwardAccumulation_spec` give `Matrix.IsQR Bᵀ Q R`
+unconditionally) and `ls M c` returns a least-squares solution
+(`Matrix.IsLeastSquaresSolution M c (ls M c)`), then the output `x` is the unique LSE solution:
+`Matrix.IsLSESolution A b B d x`. `isLSESolution_qr` after collapsing the program at `Id` with the
+specs of the chapter-1 and chapter-3 algorithms. ★★'''
+deps = ["algorithm_6_2_2", "isLSESolution_qr", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec", "GolubVanLoan.Chapter01.algorithm_1_1_3_spec", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec", "GolubVanLoan.Chapter05.algorithm_5_2_1_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 6.2.2'
+
+[[node]]
+id = "isLSESolution_not_unique"
+kind = "theorem"
+desc = '''§6.2.3: "if `null(A) ∩ null(B) ≠ {0}` and `d ∈ ran(B)` [the] LSE solution is not unique" (the
+printed sentence is garbled): if `z ≠ 0` lies in both null spaces and `x` solves (6.2.9), so does
+`x + z`, and a solution exists when `d ∈ ran(B)`. `Matrix.IsLSESolution.add_of_mem`,
+`Matrix.existsUnique_isLSESolution`. ★'''
+deps = ["Matrix.IsLSESolution.add_of_mem", "Matrix.existsUnique_isLSESolution"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.3'
+
+[[node]]
+id = "equation_6_2_10"
+kind = "theorem"
+desc = '''(6.2.10): if `[0 Aᵀ Bᵀ; A I 0; B 0 0][x; r; λ] = [0; b; d]` then `x` solves the LSE problem.
+`Matrix.isLSESolution_of_augmented`. ★'''
+deps = ["Matrix.augmentedLSE", "Matrix.isLSESolution_of_augmented"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.10)'
+
+[[node]]
+id = "equation_6_2_10_isUnit"
+kind = "theorem"
+desc = '''§6.2.4: "This system is nonsingular if both `A` and `B` have full rank" (full column rank `A`,
+full row rank `B`). `Matrix.isUnit_augmentedLSE`. ★'''
+deps = ["equation_6_2_10", "Matrix.isUnit_augmentedLSE"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.4'
+
+[[node]]
+id = "equation_6_2_11"
+kind = "theorem"
+desc = '''(6.2.11): with the GSVD, the LSE problem becomes `min_{D_B y = d̃} ‖D_A y − b̃‖₂`, `y = X⁻¹x`.
+`Matrix.isLSQISolution_iff_of_isGSVD` at `α = 0` with `Matrix.isLSQISolution_zero_iff`. ★'''
+deps = ["theorem_6_1_1", "Matrix.isLSQISolution_iff_of_isGSVD", "Matrix.isLSQISolution_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.11)'
+
+[[node]]
+id = "equation_6_2_12"
+kind = "theorem"
+desc = '''(6.2.12), in Theorem 6.1.1's block order: if `null(A) ∩ null(B) = {0}` and `rank(B) = m₂`, the
+LSE solution is `x = ∑_{i < n₁−m₂} b̃_i x_i + ∑_{n₁−m₂ ≤ i < n₁} (d̃_{i−(n₁−m₂)}/β_i) x_i`. The book's
+`∑_{i ≤ m₂} (d̃_i/β_i) x_i + ∑_{i > m₂} (b̃_i/α_i) x_i` is the third edition's order (report,
+Doubts). `Matrix.isLSESolution_sum_of_isGSVD`. ★'''
+deps = ["equation_6_2_11", "Matrix.isLSESolution_sum_of_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.12)'
+
+[[node]]
+id = "equation_6_2_13"
+kind = "theorem"
+desc = '''(6.2.13): `‖[A; √λ B] x − [b; √λ d]‖₂² = ‖Ax − b‖₂² + λ‖Bx − d‖₂²`, and for `λ > 0` with
+`null(A) ∩ null(B) = {0}` its minimizer is the solution `x(λ)` of
+`(AᵀA + λBᵀB)x = Aᵀb + λBᵀd`, `Matrix.penaltyLSE A B b d λ`. `Matrix.norm_fromRows_sub_sq`,
+`Matrix.isLeastSquaresSolution_fromRows_iff`, `Matrix.posDef_gram_add_smul_gram_iff`. ★'''
+deps = ["Matrix.norm_fromRows_sub_sq", "Matrix.isLeastSquaresSolution_fromRows_iff", "Matrix.posDef_gram_add_smul_gram_iff", "Matrix.penaltyLSE"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.13)'
+
+[[node]]
+id = "equation_6_2_14"
+kind = "theorem"
+desc = '''(6.2.14), corrected: with the GSVD and `x` the LSE solution,
+`x(λ) − x = ∑_{mixed i} (α_i (β_i b̃_i − α_i d̃_{i'}) / (β_i (α_i² + λβ_i²))) x_i` (`i' = i − (n₁ − m₂)`).
+The book prints `λ²` for `λ`, `u_iᵀb`, `v_iᵀd` for `b̃_i`, `d̃_i`, and the range `i = 1 : p`; its
+preceding formula for `x(λ)` is correct up to the block order (report, Doubts).
+`Matrix.penaltyLSE_sub_eq_sum_of_isGSVD`. ★'''
+deps = ["equation_6_2_13", "equation_6_2_12", "Matrix.penaltyLSE_sub_eq_sum_of_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.2.14)'
+
+[[node]]
+id = "tendsto_penaltyLSE"
+kind = "theorem"
+desc = '''§6.2.6, "This shows that `x(λ) → x` as `λ → ∞`": `Tendsto (Matrix.penaltyLSE A B b d) atTop
+(𝓝 x)` for `x` the LSE solution, `B` of full row rank and `null(A) ∩ null(B) = {0}`.
+`Matrix.tendsto_penaltyLSE`. ★'''
+deps = ["equation_6_2_14", "Matrix.tendsto_penaltyLSE"]
+source = 'Golub–Van Loan, Matrix Computations, §6.2.6'

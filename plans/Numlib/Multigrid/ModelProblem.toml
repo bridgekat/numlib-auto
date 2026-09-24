@@ -1,0 +1,108 @@
+namespace = "Multigrid"
+desc = '''
+The one-dimensional model problem of two-grid analysis: linear interpolation and full weighting
+between the grids with `m` and `n = 2m + 1` interior points, the Galerkin identity for the
+second-difference matrix, and the action of both transfer operators and of the exact coarse-grid
+correction on the discrete sine modes ([golub2013matrix] §11.6.3–11.6.4, Lemma 11.6.1 and Theorem
+11.6.2; [saad2003iterative] §13.3, (13.33)–(13.35)).
+
+Why this is backbone although `Numlib/Multigrid` leaves "the grids, the stencils, the specific
+prolongation and restriction matrices" to the surfaces: two books now define the *same* matrices
+(Saad's `SaadSparse.Chapter13.prolongation1D`/`restriction1D`, proved, and Golub–Van Loan's
+`P^h_{2h} = ½ B^h(:, 2:2:2m)`, `R^{2h}_h = ¼ B^h(2:2:2m, :)`), and the mode analysis is the standard
+Fourier analysis of two-grid methods, stated once here in the vocabulary of
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` (`Matrix.sineVec`, `Matrix.symmTridiagonalToeplitz`)
+without the scaling `h = 1/(n + 1)` (which the surfaces put back: `A^h = h⁻² T_n`). Planned at the
+Golub–Van Loan review (surface review, "backbone-move candidates" `lemma_11_6_1`, `theorem_11_6_2`).
+
+Conventions (0-based): fine points `i : Fin (2m + 1)`, coarse points `j : Fin m`; coarse point `j` is
+fine point `2j + 1`. `T_k = Matrix.symmTridiagonalToeplitz k (-1) 2`. Sine modes `Matrix.sineVec k l`,
+`(sineVec k l) i = sin ((i + 1)(l + 1)π/(k + 1))`; on the fine grid the mode `l` and its alias `2m − l`
+(the book's `n + 1 − j`) share the coarse restriction, and `l = m` (the book's `m + 1`) is invisible
+on the coarse grid. With `θ_l = (l + 1)π/(2m + 2)`, `s_l = sin(θ_l/2)`, `c_l = cos(θ_l/2)` (the
+book's `s_j`, `c_j` of (11.6.7)–(11.6.8), whose `jπ/(2(n+1))` is `θ_l/2`).
+
+Order: definitions (★), Galerkin identity (★★, stencil arithmetic), the two mode identities (★★,
+trigonometry, ~80 lines each), the coarse-correction modes (★★, ~80). About 350 lines. Imports
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and `Numlib/Multigrid/Basic`.
+'''
+
+[[node]]
+id = "linearInterpolation"
+kind = "definition"
+desc = '''Linear interpolation from `m` coarse to `2m + 1` fine interior points:
+`Multigrid.linearInterpolation m : Matrix (Fin (2 * m + 1)) (Fin m) ℝ`, column `j` carrying the stencil
+`½ [1 2 1]` on the fine rows `2j, 2j + 1, 2j + 2` (entries `1` at `(2j+1, j)`, `1/2` at `(2j, j)` and
+`(2j+2, j)`, `0` elsewhere). The same matrix as Saad's `SaadSparse.Chapter13.prolongation1D m`
+([saad2003iterative] (13.33)) and as [golub2013matrix]'s `P^h_{2h} = ½ B^h(:, 2:2:2m)`, `B^h = tridiag(1, 2,
+1)` ((11.6.14)). ★'''
+deps = []
+
+[[node]]
+id = "fullWeighting"
+kind = "definition"
+desc = '''Full weighting from `2m + 1` fine to `m` coarse points: `Multigrid.fullWeighting m : Matrix (Fin m)
+(Fin (2 * m + 1)) ℝ := (1/2 : ℝ) • (linearInterpolation m)ᵀ`, row `j` carrying `¼ [1 2 1]` on the fine
+columns `2j, 2j + 1, 2j + 2` (`Multigrid.fullWeighting_apply`, a clause of this node). Saad's
+`restriction1D` ((13.34)–(13.35): `I_h^{2h} = ½ (I_{2h}^h)ᵀ`) and [golub2013matrix]'s `R^{2h}_h = ¼ B^h(2:2:2m,
+:)`. ★'''
+deps = ["Multigrid.linearInterpolation"]
+
+[[node]]
+id = "fullWeighting_mul_mul_linearInterpolation"
+kind = "theorem"
+desc = '''The Galerkin identity of the model problem: `fullWeighting m * T_{2m+1} * linearInterpolation m =
+(1/4 : ℝ) • T_m`, `T_k = Matrix.symmTridiagonalToeplitz k (-1) 2`; with `A^h = h⁻² T_{2m+1}`, `A^{2h} =
+(2h)⁻² T_m` this is `R A^h P = A^{2h}` ([golub2013matrix] §11.6.3, used but not displayed; the stencil
+`¼(1 2 1) · (−1 2 −1) · ½(1 2 1)` collapses to `¼(−1 2 −1)` on the coarse grid). Entrywise, with the
+boundary rows. Consequence: the model coarse-grid correction is `Multigrid.coarseCorrection` of
+`Numlib/Multigrid/Basic` for the prolongation `linearInterpolation m` (the coarse matrix is the
+Galerkin one, `Multigrid.galerkinCoarse`). ★★ (~60 lines)'''
+deps = ["Multigrid.linearInterpolation", "Multigrid.fullWeighting", "Matrix.symmTridiagonalToeplitz"]
+
+[[node]]
+id = "linearInterpolation_mulVec_sineVec"
+kind = "theorem"
+desc = '''Interpolation of a coarse sine mode excites a mode and its alias ([golub2013matrix] Lemma 11.6.1, first
+identity, column by column; the standard two-grid Fourier analysis): for `j : Fin m`, with `θ = (j + 1)π/(2m
++ 2)`, `linearInterpolation m *ᵥ Matrix.sineVec m j = cos (θ/2) ^ 2 • Matrix.sineVec (2m + 1) j' -
+sin (θ/2) ^ 2 • Matrix.sineVec (2m + 1) j''`, where `j' = ⟨j, _⟩` and `j'' = ⟨2m − j, _⟩` are the fine
+indices (checked at `m = 1`: `(½, 1, ½) = cos²(π/8) (sin(kπ/4))_k − sin²(π/8) (sin(3kπ/4))_k`). Proof:
+entrywise; at the coarse points `2i + 1` the two fine modes agree with the coarse one
+(`sin((2i+2)(j+1)π/(2m+2)) = sin((i+1)(j+1)π/(m+1))`, and the alias carries the opposite sign), at the
+fine points `2i` the average `½(v_i + v_{i+1})` is `cos θ` times the fine mode value (sum-to-product),
+and `cos²(θ/2) − sin²(θ/2) = cos θ`, `cos² + sin² = 1`. ★★ (~80 lines)'''
+deps = ["Multigrid.linearInterpolation", "Matrix.sineVec"]
+
+[[node]]
+id = "fullWeighting_mulVec_sineVec"
+kind = "theorem"
+desc = '''Restriction of the fine sine modes ([golub2013matrix] Lemma 11.6.1, second identity, column by column;
+aliasing): with the notation of `Multigrid.linearInterpolation_mulVec_sineVec`, for `j : Fin m`,
+`fullWeighting m *ᵥ sineVec (2m + 1) j' = cos (θ/2) ^ 2 • sineVec m j`, `fullWeighting m *ᵥ sineVec (2m + 1)
+j'' = -(sin (θ/2) ^ 2) • sineVec m j`, and `fullWeighting m *ᵥ sineVec (2m + 1) ⟨m, _⟩ = 0`. Proof: from
+`fullWeighting = ½ (linearInterpolation)ᵀ`, the interpolation identity and the orthogonality of the
+sine modes on both grids (`Matrix.dotProduct_sineVec`, squared norms `(2m + 2)/2 = m + 1` fine and
+`(m + 1)/2` coarse, whence the factor `2 · ½ = 1`); the middle mode is orthogonal to the range of
+`linearInterpolation`. ★★ (~60 lines)'''
+deps = ["Multigrid.fullWeighting", "Multigrid.linearInterpolation_mulVec_sineVec", "Matrix.dotProduct_sineVec"]
+
+[[node]]
+id = "coarseCorrection_mulVec_sineVec"
+kind = "theorem"
+desc = '''The exact coarse-grid correction of the model problem acts on mode pairs ([golub2013matrix] Theorem
+11.6.2, (11.6.21)–(11.6.22), without the block matrices): let `E = 1 - linearInterpolation m * (T_m)⁻¹ *
+(4 • fullWeighting m) * T_{2m+1}` (the book's `E^h = I − P (A^{2h})⁻¹ R A^h` after the scaling `A^h = h⁻²
+T_{2m+1}`, `A^{2h} = (2h)⁻² T_m`). With `θ`, `j'`, `j''` as in `Multigrid.linearInterpolation_mulVec_sineVec`,
+`s = sin(θ/2)`, `c = cos(θ/2)`: `E *ᵥ sineVec (2m+1) j' = s² • (sineVec (2m+1) j' + sineVec (2m+1) j'')`,
+`E *ᵥ sineVec (2m+1) j'' = c² • (sineVec (2m+1) j' + sineVec (2m+1) j'')`, and `E *ᵥ sineVec (2m+1) ⟨m, _⟩ =
+sineVec (2m+1) ⟨m, _⟩`. Proof: `T_{2m+1}` scales the fine modes by `4 sin²(θ_l/2)` for `θ_l = (l+1)π/(2m+2)`
+(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec`; for the alias `sin²` becomes `c²`), `fullWeighting`
+restricts them (`Multigrid.fullWeighting_mulVec_sineVec`), `(T_m)⁻¹` inverts the coarse eigenvalue
+`4 sin²(θ) = 16 s² c²` (the book's printed coarse eigenvalue matrix is wrong; the correct one is
+`(4/h²) S^h C^h`, see [golub2013matrix] errata), and `linearInterpolation` re-expands
+(`Multigrid.linearInterpolation_mulVec_sineVec`); then `s² + c² = 1`. `E` is
+`Multigrid.coarseCorrection` for the Euclidean operators (by `Multigrid.fullWeighting_mul_mul_linearInterpolation`),
+so the formulas exhibit it as an `A`-orthogonal projector with the smooth modes in its kernel as
+`s → 0`. ★★ (~80 lines)'''
+deps = ["Multigrid.fullWeighting_mulVec_sineVec", "Multigrid.linearInterpolation_mulVec_sineVec", "Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "Multigrid.fullWeighting_mul_mul_linearInterpolation"]

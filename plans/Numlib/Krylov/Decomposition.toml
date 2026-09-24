@@ -1,0 +1,269 @@
+desc = '''
+Krylov and Arnoldi decompositions in matrix form. The Krylov layer states the Arnoldi and Lanczos
+processes for an operator on an inner product space with `ℕ`-indexed vectors (`Arnoldi.vec`,
+`Arnoldi.coeff`, `Lanczos.tridiag`); every book in the corpus (Saad §6.3, Quarteroni–Sacco–Saleri
+§5.11, Golub–Van Loan §10.1 and §10.5) states them for a matrix `A ∈ 𝕜^{n×n}` as the matrix identity
+`A Q_k = Q_k H_k + r_k e_kᵀ`. This module is that reading, once, so that no surface has to build the
+matrix `Q_k` itself; and it names the object that the restarting theory of
+`Numlib/Eigen/ImplicitRestart` transforms: a *Krylov decomposition* (Stewart) `A Q = Q B + r bᵀ`
+with orthonormal columns and residual orthogonal to them, of which an *Arnoldi decomposition* is the
+case `B` upper Hessenberg, `b = e_k` ([golub2013matrix] §10.5.1, the definition after (10.5.2)).
+
+Shapes (settled by `notes/gvl/ch10/proto/Shapes.lean`, which elaborates): `A : Matrix n n 𝕜` over
+`[RCLike 𝕜] [Fintype n] [DecidableEq n]`, `Q : Matrix n (Fin k) 𝕜`, `B H : Matrix (Fin k) (Fin k) 𝕜`,
+`r : n → 𝕜`, `b : Fin k → 𝕜`; the rank-one term is `Matrix.vecMulVec r b`; `e_k` is
+`Krylov.lastVec 1 k`, the sibling of the existing `Krylov.firstVec β k` (`β e₁`). The starting vector
+of the operator-level process is `q : EuclideanSpace 𝕜 n` and the operator is `toEuclideanLin A`;
+columns of `Q` are read back with `WithLp.ofLp`. Indices are `0`-based: column `j` of
+`Arnoldi.basisMatrix A q k` is the book's `q_{j+1}`.
+
+What is here: the basis matrix and its three identities (orthonormal columns below the grade,
+column space = Krylov subspace, `A Q = Q H + r eᵀ` at every step), the Lanczos specialization with
+`T_k`, the range of chapter 7's Krylov matrix `Matrix.krylovMatrix A q k = [q | A q | ⋯ | A^{k-1} q]`
+(`Numlib/LinearAlgebra/Matrix/UnreducedHessenberg`) and `grade = rank K(A, q, n)` (the index of
+[golub2013matrix] Theorem 10.1.1); the **operator-level** Krylov and Arnoldi decompositions
+`Krylov.IsKrylovDecomposition A q B r b`, `Krylov.IsArnoldiDecomposition A q H r` on an orthonormal
+family `q : Fin k → E` (the form of Saad's eigenvalue book, Parlett and Stewart), with the bridge
+`Matrix.isKrylovDecomposition_iff` making the matrix predicates of
+`Numlib/LinearAlgebra/Matrix/KrylovDecomposition` their `toEuclideanLin` instances and the bridge to
+`Krylov.HessenbergRelation₂`; the facts restarting needs (polynomial filtering of the first column,
+column spaces are Krylov spaces when `H` is unreduced); and the uniqueness of an Arnoldi
+decomposition with positive subdiagonal given its first column,
+`Matrix.IsArnoldiDecomposition.eq_basisMatrix`.
+
+Placement (Golub–Van Loan review): the matrix predicates `Matrix.IsKrylovDecomposition`,
+`Matrix.IsArnoldiDecomposition` and their change-of-basis and truncation lemmas moved down to
+`Numlib/LinearAlgebra/Matrix/KrylovDecomposition` (pure matrix statements; no `LinearAlgebra → Krylov`
+import), where the implicit Q theorem is proved **once** for Arnoldi decompositions with any number of
+columns (`Matrix.IsArnoldiDecomposition.implicitQ`, the column recursion of [golub2013matrix] Theorem
+7.4.2). Chapter 7's square theorem `Matrix.implicitQ` and the uniqueness here are both corollaries;
+the earlier plan proved them independently (Gram–Schmidt flag uniqueness here, ★★★ ~250). Arnoldi
+decompositions have `k + 1` columns (`e_last = Pi.single (Fin.last k) 1 = Krylov.lastVec 1 (k + 1)`,
+`Krylov.lastVec_succ`), which also fixes the `k = 0` typing of `Q *ᵥ Pi.single 0 1`.
+'''
+
+[[node]]
+id = "Krylov.lastVec"
+kind = "definition"
+desc = '''`Krylov.lastVec (β : 𝕜) (k : ℕ) : Fin k → 𝕜 := fun j => if (j : ℕ) + 1 = k then β else 0`, the
+vector `β e_k` (zero when `k = 0`); the sibling of `Krylov.firstVec`. ★'''
+deps = ["Krylov.firstVec"]
+
+[[node]]
+id = "Krylov.lastVec_succ"
+kind = "theorem"
+desc = '''`Krylov.lastVec β (k + 1) = Pi.single (Fin.last k) β`: the Krylov layer's `β e_k` is the matrix
+layer's last unit vector, so `Matrix.IsArnoldiDecomposition` (stated with `Pi.single (Fin.last k) 1`
+in `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`) and the matrix Arnoldi relation
+`Arnoldi.mul_basisMatrix` (stated with `Krylov.lastVec`) meet. `funext`, `Fin.ext_iff`. ★'''
+deps = ["Krylov.lastVec"]
+
+[[node]]
+id = "Arnoldi.basisMatrix"
+kind = "definition"
+desc = '''`Arnoldi.basisMatrix (A : Matrix n n 𝕜) (q : EuclideanSpace 𝕜 n) (k : ℕ) : Matrix n (Fin k) 𝕜 :=
+Matrix.of fun i j => (Arnoldi.vec (toEuclideanLin A) q j).ofLp i`, the matrix `Q_k = [q_1 | ⋯ | q_k]`
+of Arnoldi (for Hermitian `A`: Lanczos) vectors. Past the grade its columns are `0`. ★'''
+deps = ["Arnoldi.vec"]
+
+[[node]]
+id = "Arnoldi.range_basisMatrix"
+kind = "theorem"
+desc = '''`LinearMap.range (toEuclideanLin (Arnoldi.basisMatrix A q k)) = Krylov.subspace (toEuclideanLin A) q k`
+for every `k` ([golub2013matrix] (10.5.1), Theorem 10.1.1). `Arnoldi.span_vec` read through
+`Matrix.toEuclideanLin_apply_eq_sum`. ★'''
+deps = ["Arnoldi.basisMatrix", "Arnoldi.span_vec"]
+
+[[node]]
+id = "Arnoldi.conjTranspose_basisMatrix_mul_self"
+kind = "theorem"
+desc = '''`k ≤ grade (toEuclideanLin A) q → ‖q‖ = 1 → (Arnoldi.basisMatrix A q k)ᴴ * Arnoldi.basisMatrix A q k = 1`:
+orthonormal columns below the grade (`Arnoldi.orthonormal`, `Arnoldi.norm_vec_eq_one_of_lt_grade`,
+`Arnoldi.inner_vec_eq_zero`). The hypothesis `‖q‖ = 1` is not needed (`vec 0 = q/‖q‖`) and should be
+dropped if the proof does not use it; `q ≠ 0` is implied by `0 < k ≤ grade`. ★'''
+deps = ["Arnoldi.basisMatrix", "Arnoldi.orthonormal", "Arnoldi.inner_vec_eq_zero"]
+
+[[node]]
+id = "Arnoldi.mul_basisMatrix"
+kind = "theorem"
+desc = '''The Arnoldi relation in matrix form ([golub2013matrix] (10.5.2), [saad2003iterative] (6.7)), at
+every step: `A * Arnoldi.basisMatrix A q (k + 1) = Arnoldi.basisMatrix A q (k + 1) *
+Arnoldi.hessenbergSq (toEuclideanLin A) q (k + 1) + vecMulVec (Arnoldi.w (toEuclideanLin A) q k).ofLp
+(Krylov.lastVec 1 (k + 1))`. Stated at `k + 1` columns so that the residual `r_{k+1} = w_k` of the last
+column is named without `k - 1`. Column `j` is `Arnoldi.apply_vec` with `Arnoldi.vec_succ_eq`
+(`h_{j+1,j} v_{j+1} = w_j`); holds past breakdown because both sides then vanish. Shape settled by
+`notes/gvl/ch10/proto/Shapes.lean`. ★★'''
+deps = ["Arnoldi.basisMatrix", "Krylov.lastVec", "Arnoldi.apply_vec", "Arnoldi.vec_succ_eq", "Arnoldi.hessenbergSq", "Arnoldi.w"]
+
+[[node]]
+id = "Arnoldi.conjTranspose_basisMatrix_mulVec_w"
+kind = "theorem"
+desc = '''`(Arnoldi.basisMatrix A q (k + 1))ᴴ *ᵥ (Arnoldi.w (toEuclideanLin A) q k).ofLp = 0`: the residual is
+orthogonal to the columns (`Arnoldi.w_eq_sub_starProjection`, `Submodule.sub_starProjection_mem_orthogonal`).
+★'''
+deps = ["Arnoldi.basisMatrix", "Arnoldi.w_eq_sub_starProjection"]
+
+[[node]]
+id = "Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix"
+kind = "theorem"
+desc = '''`k ≤ grade → Qᴴ A Q = H_k` for `Q = Arnoldi.basisMatrix A q k`, `H_k = Arnoldi.hessenbergSq _ q k`
+([golub2013matrix] (10.1.6) and §10.5.1). From `Arnoldi.mul_basisMatrix`,
+`Arnoldi.conjTranspose_basisMatrix_mul_self` and `Arnoldi.conjTranspose_basisMatrix_mulVec_w`
+(the case `k = 0` is trivial). ★'''
+deps = ["Arnoldi.mul_basisMatrix", "Arnoldi.conjTranspose_basisMatrix_mul_self", "Arnoldi.conjTranspose_basisMatrix_mulVec_w"]
+
+[[node]]
+id = "Lanczos.mul_basisMatrix"
+kind = "theorem"
+desc = '''The Lanczos relation in matrix form ([golub2013matrix] (10.1.4)): for Hermitian `A`,
+`A * Q_{k+1} = Q_{k+1} * (Lanczos.tridiag (toEuclideanLin A) q (k + 1)).map (algebraMap ℝ 𝕜) +
+vecMulVec (Arnoldi.w _ q k).ofLp (Krylov.lastVec 1 (k + 1))`, `Q = Arnoldi.basisMatrix A q`. The
+Hermitian hypothesis enters as `(toEuclideanLin A).IsSymmetric` (Mathlib
+`Matrix.isHermitian_iff_isSymmetric`; `Matrix.IsSymm.isSymmetric_toEuclideanLin` over `ℝ`).
+`Arnoldi.mul_basisMatrix` with `Lanczos.hessenbergSq_eq_map_tridiag`. ★'''
+deps = ["Arnoldi.mul_basisMatrix", "Lanczos.hessenbergSq_eq_map_tridiag", "Lanczos.tridiag"]
+
+[[node]]
+id = "Matrix.range_krylovMatrix"
+kind = "theorem"
+desc = '''`LinearMap.range (toEuclideanLin (Matrix.krylovMatrix A q k)) = Krylov.subspace (toEuclideanLin A) (WithLp.toLp 2 q) k`:
+the Krylov subspace is the range of the Krylov matrix ([golub2013matrix] §10.1.1). `Krylov.subspace`
+unfolds to a span of `A^j q`; `Matrix.toEuclideanLin_pow`. ★'''
+deps = ["Matrix.krylovMatrix", "Krylov.subspace", "Matrix.krylov_subspace_toEuclideanLin"]
+
+[[node]]
+id = "Krylov.grade_eq_rank_krylovMatrix"
+kind = "theorem"
+desc = '''`grade (toEuclideanLin A) (WithLp.toLp 2 q) = (Matrix.krylovMatrix A q (Fintype.card n)).rank`: the
+termination index `m = rank K(A, q₁, n)` of [golub2013matrix] Theorem 10.1.1 is the grade.
+`Matrix.rank` is the finrank of the range (`Matrix.rank_eq_finrank_range_toLin`, then
+`Matrix.range_krylovMatrix`), and `Krylov.finrank_subspace` gives `min n grade = grade` by
+`Krylov.grade_le_finrank`. ★'''
+deps = ["Matrix.range_krylovMatrix", "Krylov.finrank_subspace", "Krylov.grade_le_finrank", "Krylov.grade"]
+
+[[node]]
+id = "Krylov.IsKrylovDecomposition"
+kind = "definition"
+desc = '''The operator-level Krylov decomposition (Stewart; the form of Saad, *Numerical Methods for Large
+Eigenvalue Problems*, Parlett, and Stewart, *Matrix Algorithms II*; [golub2013matrix] §10.5.4 in
+matrix form): for `A : E →ₗ[𝕜] E` on an inner product space over `[RCLike 𝕜]`, a family `q : Fin k →
+E`, `B : Matrix (Fin k) (Fin k) 𝕜`, `r : E`, `b : Fin k → 𝕜`, a structure with fields `orthonormal :
+Orthonormal 𝕜 q`, `inner_residual : ∀ j, ⟪q j, r⟫ = 0` and `apply_eq : ∀ j, A (q j) = ∑ i, B i j • q i
++ b j • r`. No completeness or finite dimension. The matrix predicate `Matrix.IsKrylovDecomposition`
+(`Numlib/LinearAlgebra/Matrix/KrylovDecomposition`) is its `toEuclideanLin` instance
+(`Matrix.isKrylovDecomposition_iff`). ★'''
+deps = []
+
+[[node]]
+id = "Krylov.IsArnoldiDecomposition"
+kind = "definition"
+desc = '''The operator-level Arnoldi decomposition with `k + 1` vectors: `structure Krylov.IsArnoldiDecomposition
+(A : E →ₗ[𝕜] E) (q : Fin (k + 1) → E) (H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜) (r : E) extends
+Krylov.IsKrylovDecomposition A q H r (Pi.single (Fin.last k) 1)` with `isUpperHessenberg :
+H.IsUpperHessenberg` — i.e. `A q_j = ∑_(i ≤ j+1) h_ij q_i` for `j < k` and `A q_k = ∑_(i ≤ k) h_ik q_i
++ r`, orthonormal `q`, `r ⊥ q`. ★'''
+deps = ["Krylov.IsKrylovDecomposition", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "Matrix.isKrylovDecomposition_iff"
+kind = "theorem"
+desc = '''The matrix predicate is the `toEuclideanLin` instance of the operator one:
+`Matrix.IsKrylovDecomposition A Q B r b ↔ Krylov.IsKrylovDecomposition (toEuclideanLin A) (fun j =>
+WithLp.toLp 2 (Q.col j)) B (WithLp.toLp 2 r) b`, and the same for `Matrix.IsArnoldiDecomposition` /
+`Krylov.IsArnoldiDecomposition` (`Matrix.isArnoldiDecomposition_iff`). `Qᴴ Q = 1 ↔` orthonormal
+columns (`EuclideanSpace.inner_eq_star_dotProduct`), `Qᴴ r = 0 ↔ r ⊥` the columns, and `A Q = Q B + r
+bᵀ` column by column (`Matrix.toEuclideanLin_apply`, `Matrix.mulVec_single`). Lets every
+operator-level theorem (Saad's eigenvalue book, Parlett, Stewart) apply to matrices and conversely.
+★'''
+deps = ["Krylov.IsKrylovDecomposition", "Krylov.IsArnoldiDecomposition", "Matrix.IsKrylovDecomposition", "Matrix.IsArnoldiDecomposition"]
+
+[[node]]
+id = "Krylov.IsArnoldiDecomposition.hessenbergRelation"
+kind = "theorem"
+desc = '''The bridge to `Krylov.HessenbergRelation₂` (`Numlib/Krylov/Hessenberg`): if
+`Krylov.IsArnoldiDecomposition A q H r` with `k + 1` vectors, then the `ℕ`-indexed families `z j = q j`
+for `j ≤ k` (`0` beyond) and `v j = q j` for `j ≤ k`, `v (k + 1) = r`, `v j = 0` beyond, with `h i j =
+H i j` for `i, j ≤ k`, `h (k+1) k = 1` and `0` otherwise, satisfy `Krylov.HessenbergRelation₂ A z v h`
+(for `j > k` both sides vanish since `z j = 0`), so every FOM/GMRES residual formula stated through the
+Hessenberg relation applies to an Arnoldi decomposition; for `r = h_(k+1,k) q_(k+1)` with a further
+orthonormal vector it is the diagonal `Krylov.HessenbergRelation` on the first `k + 1` columns.
+Conversely `Arnoldi.vec` with `Arnoldi.coeff` is both (`Arnoldi.isArnoldiDecomposition`). ★'''
+deps = ["Krylov.IsArnoldiDecomposition", "Krylov.HessenbergRelation", "Krylov.HessenbergRelation₂"]
+
+[[node]]
+id = "Arnoldi.isArnoldiDecomposition"
+kind = "theorem"
+desc = '''The Arnoldi process gives one: for `k + 1 ≤ grade (toEuclideanLin A) q`,
+`Matrix.IsArnoldiDecomposition A (Arnoldi.basisMatrix A q (k + 1)) (Arnoldi.hessenbergSq _ q (k + 1))
+(Arnoldi.w _ q k).ofLp` (`k + 1` columns, the residual of the last column named without `k - 1`);
+and the operator form `Krylov.IsArnoldiDecomposition A (fun j => Arnoldi.vec A q j)
+(Arnoldi.hessenbergSq A q (k + 1)) (Arnoldi.w A q k)` for any `A : E →ₗ[𝕜] E` (state it first; the
+matrix form through `Matrix.isArnoldiDecomposition_iff`). From the identities above,
+`Krylov.lastVec_succ` and `Arnoldi.hessenbergSq_isUpperHessenberg`. ★'''
+deps = ["Matrix.IsArnoldiDecomposition", "Krylov.IsArnoldiDecomposition", "Matrix.isKrylovDecomposition_iff", "Krylov.lastVec_succ", "Arnoldi.mul_basisMatrix", "Arnoldi.conjTranspose_basisMatrix_mul_self", "Arnoldi.conjTranspose_basisMatrix_mulVec_w"]
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.aeval_mulVec_first"
+kind = "theorem"
+desc = '''Polynomial filtering of the first column ([golub2013matrix] §10.5.3, "(A − μI) Q_c e₁ = Q_c (H_c − μI) e₁
+… and so q₊ = p(A) q₁"): for an Arnoldi decomposition with `k + 1` columns (`Q : Matrix n (Fin (k +
+1)) 𝕜`, so `e₀ = Pi.single 0 1 : Fin (k + 1) → 𝕜` is well typed — the review's `k = 0` typing fix) and
+`p : 𝕜[X]` with `p.natDegree ≤ k`, `aeval A p *ᵥ (Q *ᵥ e₀) = Q *ᵥ (aeval H p *ᵥ e₀)`. Induction on
+the monomials: `H^i e₀` is supported on the first `i + 1` coordinates (Hessenberg), so the residual
+term `r e_lastᵀ H^i e₀` vanishes for `i < k`. ★★ (~80 lines)'''
+deps = ["Matrix.IsArnoldiDecomposition"]
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.range_eq_subspace"
+kind = "theorem"
+desc = '''If `H` is unreduced (`H.IsUnreducedUpperHessenberg`, chapter 7's predicate), the leading `i` columns of
+`Q : Matrix n (Fin (k + 1)) 𝕜` span `Krylov.subspace (toEuclideanLin A) (WithLp.toLp 2 (Q *ᵥ
+Pi.single 0 1)) i` for every `i ≤ k + 1`: the statement behind "we are all set to perform step `j + 1`
+of the Arnoldi iteration with starting vector `q₊`" ([golub2013matrix] §10.5.3). Induction on `i`:
+`A q_i = ∑_(l ≤ i+1) h_(l,i) q_l` for `i < k` with `h_(i+1,i) ≠ 0`; `Krylov.subspace_succ_eq_iff`-style
+step. State it for `Krylov.IsArnoldiDecomposition` first (any `E`) and read it for matrices. ★★'''
+deps = ["Matrix.IsArnoldiDecomposition", "Krylov.IsArnoldiDecomposition", "Matrix.isKrylovDecomposition_iff", "Krylov.subspace", "Matrix.IsUnreducedUpperHessenberg"]
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.eq_basisMatrix"
+kind = "theorem"
+desc = '''Uniqueness of the Arnoldi process given its first column (the `k`-step implicit Q theorem with the
+positive normalization): if `Matrix.IsArnoldiDecomposition A Q H r` (`k + 1` columns) and the
+subdiagonal of `H` is real and positive (`0 < re (H i.succ i.castSucc)`, `im = 0`, `i : Fin k`), then
+with `q = WithLp.toLp 2 (Q *ᵥ Pi.single 0 1)`: `k + 1 ≤ grade (toEuclideanLin A) q`, `Q =
+Arnoldi.basisMatrix A q (k + 1)`, `H = Arnoldi.hessenbergSq (toEuclideanLin A) q (k + 1)` and `r =
+(Arnoldi.w _ q k).ofLp`. Proof (review: one engine, not a second flag-uniqueness argument): `H` is
+unreduced, so the columns span the Krylov flag (`Matrix.IsArnoldiDecomposition.range_eq_subspace`),
+which gives `k + 1 ≤ grade` (orthonormal columns); `Arnoldi.isArnoldiDecomposition` is a second
+Arnoldi decomposition with the same first column (`Arnoldi.vec _ q 0 = q/‖q‖ = q`), so the engine
+`Matrix.IsArnoldiDecomposition.implicitQ` gives a unimodular `d` with `H' = Dᴴ H D`; both
+subdiagonals are positive reals (`Arnoldi.hessenbergSq` has `‖w_j‖ > 0` below the grade), so
+`conj (d (i+1)) * h * d i > 0` with `h > 0` forces `d (i+1) = d i`, and `d 0 = 1` gives `D = 1`. ★★
+(~80 lines)'''
+deps = ["Matrix.IsArnoldiDecomposition.implicitQ", "Arnoldi.isArnoldiDecomposition", "Matrix.IsArnoldiDecomposition.range_eq_subspace", "Arnoldi.basisMatrix", "Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix"]
+
+[[node]]
+id = "Matrix.exists_isUpperHessenberg_conj_lastCol"
+kind = "theorem"
+desc = '''Hessenberg reduction with a prescribed last column ([golub2013matrix] P10.5.2, cited in §10.5.4):
+for `C : Matrix (Fin (j + 1)) (Fin (j + 1)) 𝕜` and `u : Fin (j + 1) → 𝕜` there is a unitary `Z` with
+`(Zᴴ * C * Z).IsUpperHessenberg` and `Zᴴ *ᵥ u = Pi.single (Fin.last j) τ` for some `τ` (`= Krylov.lastVec τ
+(j + 1)`, `Krylov.lastVec_succ`; `j + 1` columns, matching `Matrix.IsArnoldiDecomposition`). Proof: a Householder `P` (`Matrix.householder`) with
+`P e₀ ∝ u`; the backbone Householder reduction `Matrix.hessenbergQ` fixes `e₀` (its reflectors act on
+rows `≥ 1`; one lemma to add beside `Matrix.hessenbergReflector_of_lt`), so `W = P hessenbergQ (Pᴴ Cᴴ P)`
+has `W e₀ ∝ u` and `Wᴴ Cᴴ W` upper Hessenberg, i.e. `Wᴴ C W` lower Hessenberg; then `Z = W E` with the
+exchange permutation `E` (`Matrix.reindex Fin.revPerm`) turns lower into upper Hessenberg and sends
+`e₀` to the last unit vector. ★★'''
+deps = ["Matrix.IsUpperHessenberg", "Krylov.lastVec", "Matrix.hessenbergReduce_eq_conj", "Matrix.isUpperHessenberg_hessenbergReduce", "Matrix.householder"]
+
+[[node]]
+id = "Arnoldi.vec_conj_linearIsometryEquiv"
+kind = "theorem"
+desc = '''Naturality of the Arnoldi process under isometries: for a linear isometry equivalence `e : E ≃ₗᵢ[𝕜] E'`,
+`Arnoldi.vec (e.toLinearEquiv.conj A) (e b) j = e (Arnoldi.vec A b j)` and
+`Arnoldi.coeff (e.toLinearEquiv.conj A) (e b) = Arnoldi.coeff A b` (hence the same `Lanczos.alpha`, `Lanczos.beta`,
+`Lanczos.tridiag`, `Krylov.grade`). Gram–Schmidt commutes with isometries (Mathlib `gramSchmidt` is defined by inner
+products and `starProjection`s, both preserved; check for `InnerProductSpace.gramSchmidt_map` first) and
+`(e.conj A)^i (e b) = e (A^i b)`. Transports statements between `WithLp 2 (F × E)` and `EuclideanSpace 𝕜 (m ⊕ n)`
+([golub2013matrix] §10.4.3) and between an operator and its matrix. ★★'''
+deps = ["Arnoldi.vec", "Arnoldi.coeff"]

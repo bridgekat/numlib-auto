@@ -102,3 +102,17 @@ id = "tendsto_uniformMesh"
 
 [[node]]
 id = "simpsonSum_eq_trapezoidSum"
+
+[[node]]  # staged by ch09
+id = "norm_sub_simpsonSum_le"
+kind = "theorem"
+desc = '''The composite Simpson error bound for **vector-valued** integrands: for `g : ℝ → E`, `E` a
+real (or `RCLike`) Banach space, of class `C⁴` on `[a, b]` with `‖g⁗ t‖ ≤ M` there, `h = (b - a)/N`,
+`‖∫_a^b g - S_N(g)‖ ≤ M h⁴ (b - a) / 2880`, with `S_N` the module's `simpsonSum` read in `E`
+(generalize `simpsonSum` to a normed space, or state with the explicit sum). Route: for every
+continuous real-linear functional `φ` with `‖φ‖ ≤ 1` apply `Quadrature.sub_composite_simpson_eq` /
+`abs_sub_simpson_le` to `φ ∘ g` (whose fourth derivative is `φ ∘ g⁗`), then
+`exists_dual_vector''`/`NormedSpace.norm_le_dual_bound` (Hahn–Banach). No `n` factor, unlike the
+entrywise argument of [golub2013matrix] §9.2.6; that book's (9.2.7) is the instance `E = ℂ^{n×n}` with
+the 2-norm, `h_GVL = h/2`. ★★ (~120 lines)'''
+deps = ["Quadrature.sub_composite_simpson_eq", "Quadrature.simpsonSum"]

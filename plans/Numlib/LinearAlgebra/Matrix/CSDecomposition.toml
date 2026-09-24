@@ -1,0 +1,115 @@
+namespace = "Matrix"
+desc = '''
+The CS (cosine–sine) decomposition of a matrix with orthonormal columns and of a square unitary
+matrix partitioned into 2-by-2 blocks ([golub2013matrix] §2.5.4, Theorems 2.5.2 and 2.5.3,
+after C. C. Paige and M. A. Saunders, SIAM J. Numer. Anal. 18 (1981)), over `RCLike 𝕜`, the real case being `𝕜 = ℝ` with
+`Matrix.orthogonalGroup = Matrix.unitaryGroup`.
+
+**Specifications first** (Golub–Van Loan review H5): `Matrix.IsThinCSD Q₁ Q₂ U₁ U₂ V θ` and
+`Matrix.IsCSD Q U₁ U₂ V₁ V₂ θ` are predicates, and the theorems are `∃ …, IsThinCSD …` /
+`∃ …, IsCSD …`, so that Algorithm 8.7.2's `cs` step (a monadic parameter of the surface program,
+decision D4 convention 5) and chapter 6's GSVD can name the output condition of "compute the CS
+decomposition".
+
+Upstreaming candidate (natural home: `Mathlib.LinearAlgebra.Matrix` beside a future SVD). It rests on
+`Numlib/LinearAlgebra/Matrix/SVD` (the full SVD `Matrix.exists_svd`, the orthonormal completion
+`Matrix.exists_mem_unitaryGroup_submatrix_eq`, chapter 6's `Matrix.shiftedRectDiagonal`) and, for the
+block-norm corollary, on `Numlib/Analysis/Matrix/SingularValues` (the stacked-isometry identity
+`Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`, which replaced this module's
+`l2_opNorm_toBlocks₂₁_sq`). Consumers: the GSVD of `[golub2013matrix]` §6.1.6 (chapter 6's
+`Numlib/LinearAlgebra/Matrix/GSVD`) and the CS computation of §8.7.6. (`Projection/Gap` no longer uses
+this module: its theorems are proved coordinate-free, review H2.)
+
+Shapes (prototype `notes/gvl/ch02/proto/Shapes.lean`, elaborates): index types are `Fin m₁`,
+`Fin m₂`, `Fin n₁` so that the diagonal factors are the backbone's `Matrix.rectDiagonal σ` (and, for a
+sine block with fewer rows than columns, chapter 6's `Matrix.shiftedRectDiagonal p σ`, entry `σ j` at
+`(j - p, j)`) with
+`σ : ℕ → 𝕜` (0-based, entries past `min` ignored), exactly as in `Matrix.exists_svd`; the angles
+are one `θ : ℕ → ℝ`, `Monotone θ`, with values in `[0, π/2]` — a monotone extension past `n₁` always
+exists, so this costs nothing. "The columns of `[Q₁; Q₂]` are orthonormal" is `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1`
+(`Matrix.fromRows` is not needed in the statement).
+
+Order: the predicates (★), the block-norm corollary (★), the thin decomposition (★★★, ~200 lines), the
+full decomposition (★★★, ~400 lines).
+'''
+
+[[node]]
+id = "IsThinCSD"
+kind = "definition"
+desc = '''**A thin CS decomposition, as a specification** ([golub2013matrix] Theorem 2.5.2, without its
+hypothesis `m₂ ≥ n₁`). For `Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜`, `Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜`,
+`U₁ U₂ V` and `θ : ℕ → ℝ`, with `p := n₁ - min n₁ m₂`, a structure with fields
+`mem_unitaryGroup_left₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜`, `mem_unitaryGroup_left₂ : U₂ ∈ unitaryGroup (Fin m₂) 𝕜`,
+`mem_unitaryGroup_right : V ∈ unitaryGroup (Fin n₁) 𝕜`, `monotone : Monotone θ`,
+`mem_Icc : ∀ i, θ i ∈ Set.Icc 0 (π / 2)`, `eq_zero_of_lt : ∀ i < p, θ i = 0`,
+`star_mul_mul_left : star U₁ * Q₁ * V = rectDiagonal (fun i => (Real.cos (θ i) : 𝕜))`,
+`star_mul_mul_right : star U₂ * Q₂ * V = shiftedRectDiagonal p (fun i => (Real.sin (θ i) : 𝕜))`.
+For `m₂ ≥ n₁` (the book's case) `p = 0` and the sine block is `rectDiagonal`
+(`Matrix.shiftedRectDiagonal_zero`). The output condition of Algorithm 8.7.2's `cs` step and the input
+of `Matrix.exists_isGSVD`. ★'''
+deps = ["Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
+
+[[node]]
+id = "exists_isThinCSD"
+kind = "theorem"
+desc = '''**The thin CS decomposition** ([golub2013matrix] Theorem 2.5.2, without its hypothesis `m₂ ≥ n₁`):
+for `Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜`, `Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜` with `Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1`
+and `n₁ ≤ m₁`, `∃ U₁ U₂ V θ, IsThinCSD Q₁ Q₂ U₁ U₂ V θ`. The prototype
+`notes/gvl/ch02/proto/Shapes.lean` elaborates the `m₂ ≥ n₁` case of the unbundled statement. The general
+case is what chapter 6's GSVD (`Matrix.exists_isGSVD`) needs, and the book's proof gives it.
+Proof, following the book (lines 4966–5018): `‖Q₁‖₂ ≤ 1`, so an SVD `U₁ᴴ Q₁ V = diag(c)`
+(`Matrix.exists_svd`) has `1 ≥ c₁ ≥ … ≥ c_{n₁} ≥ 0`; let `t` be the number of `c_i = 1`. The columns of
+`Q₂ V` are pairwise orthogonal with squared norms `1 - c_i²`, so the first `t` vanish and the other `n₁ -
+t` are nonzero orthogonal vectors of `𝕜^{m₂}`, whence `t ≥ p`; normalize them (`s_i = √(1 - c_i²)`),
+place them at rows `i - p` and complete to a unitary `U₂` (`Matrix.exists_mem_unitaryGroup_submatrix_eq`),
+and set `θ_i = arccos c_i` (monotone because `c` is antitone, `0` for `i < t`). Renamed from
+`exists_thin_csd` (review H5). ★★★ (~220 lines)'''
+deps = ["IsThinCSD", "Matrix.exists_svd", "Matrix.exists_mem_unitaryGroup_submatrix_eq", "Matrix.sortedSingularValues_zero_eq_l2_opNorm"]
+
+[[node]]
+id = "IsCSD"
+kind = "definition"
+desc = '''**A CS decomposition of a unitary matrix, as a specification** ([golub2013matrix] Theorem 2.5.3).
+For `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ : Matrix (Fin m₁ ⊕ Fin m₂) (Fin n₁ ⊕ Fin n₂) 𝕜` (given by its four
+blocks), `U₁ U₂ V₁ V₂` and `θ : ℕ → ℝ`, with `p = n₁ - min n₁ m₂` (= `max 0 (n₁ - m₂)`) and
+`q = m₂ - min n₁ m₂` (= `max 0 (m₂ - n₁)`), a structure with fields: the four unitary-group memberships;
+`monotone : Monotone θ`; `mem_Icc : ∀ i, θ i ∈ Set.Icc 0 (π / 2)`; `eq_zero_of_lt : ∀ i < p, θ i = 0`;
+and the four block patterns (0-based, `c_i = cos θ_i`, `s_i = sin θ_i`):
+* `star U₁ * Q₁₁ * V₁ = rectDiagonal c`,
+* `star U₂ * Q₂₁ * V₁ = shiftedRectDiagonal p s` (entry `s_j` at `(i, j)` with `j = i + p`),
+* `(star U₁ * Q₁₂ * V₂) i j = if p ≤ i ∧ i < n₁ ∧ j = i - p then s_i else if n₁ ≤ i ∧ j = i - p + q
+  then 1 else 0`,
+* `(star U₂ * Q₂₂ * V₂) i j = if i = j ∧ i < n₁ - p then -c_{i+p} else if i = j then 1 else 0`.
+This is the book's 5-by-5 block form with row blocks `p, n₁-p, m₁-n₁ | n₁-p, q` and column blocks
+`p, n₁-p | n₁-p, q, m₁-n₁`; the printed display in `references/matrix-computations/matrix-computations.md`
+(line 5041) has its third row block and row labels mangled, and this reading is the one whose block
+sizes add up (see `notes/gvl/ch02/report.md`, Doubts). The formalizer may introduce helper
+definitions for the two off-diagonal patterns. The first two fields say that `(U₁, U₂, V₁, θ)` is a
+thin CS decomposition of the first block column (`IsCSD.isThinCSD`, a further declaration). ★'''
+deps = ["IsThinCSD", "Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
+
+[[node]]
+id = "exists_isCSD"
+kind = "theorem"
+desc = '''**The CS decomposition** ([golub2013matrix] Theorem 2.5.3, which defers the proof to Paige and
+Saunders (1981)): for `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂` with `m₁ + m₂ = n₁ + n₂`, `Qᴴ Q = 1` and
+`Q Qᴴ = 1`, `n₁ ≤ m₁` and `m₂ ≤ m₁`, `∃ U₁ U₂ V₁ V₂ θ, IsCSD Q U₁ U₂ V₁ V₂ θ`. Proof:
+`exists_isThinCSD` for the first block column `[Q₁₁; Q₂₁]` (with its `p`) gives `U₁, U₂, V₁`; the first
+block column of `Uᴴ Q` is then fixed, and orthogonality of the rows/columns of the unitary `Uᴴ Q`
+forces the second block column into the stated pattern up to a unitary `V₂` on the orthogonal
+complement, built by `Matrix.exists_mem_unitaryGroup_submatrix_eq`. Renamed from `exists_csd` (review
+H5). ★★★ (~400 lines)'''
+deps = ["IsCSD", "exists_isThinCSD", "Matrix.exists_svd", "Matrix.exists_mem_unitaryGroup_submatrix_eq"]
+
+[[node]]
+id = "l2_opNorm_toBlocks₂₁_eq_toBlocks₁₂"
+kind = "theorem"
+desc = '''The off-diagonal blocks of a unitary matrix with a *square* leading block have equal spectral
+norms: `Q ∈ unitaryGroup (k ⊕ l) 𝕜 → ‖Q.toBlocks₂₁‖ = ‖Q.toBlocks₁₂‖` ([golub2013matrix] proof of
+Theorem 2.5.1). The stacked-isometry identity `Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`
+applied to the first block column of `Q` and to the first block row (the first block column of `Qᴴ`,
+with `(1,1)` block `(Q.toBlocks₁₁)ᴴ`): both squared norms are `1 − σ_min(Q₁₁)²`, because a square
+matrix and its adjoint have the same singular values (`LinearMap.singularValues_adjoint`), and
+`‖Mᴴ‖ = ‖M‖` (Mathlib `Matrix.l2_opNorm_conjTranspose`). The case `k` empty is `0 = 0`. Prototype:
+statement elaborates. ★'''
+deps = ["Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues", "LinearMap.singularValues_adjoint"]

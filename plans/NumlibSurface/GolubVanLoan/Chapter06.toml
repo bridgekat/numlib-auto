@@ -1,0 +1,120 @@
+desc = '''
+Golub–Van Loan, Chapter 6: Modified Least Squares Problems and Methods — weighting and
+regularization with the generalized SVD (§6.1), constrained least squares (§6.2), total least
+squares (§6.3), subspace computations with the SVD (§6.4), updating matrix factorizations (§6.5).
+One module per section, `NumlibSurface/GolubVanLoan/Chapter06/SectionMM.lean`, namespace
+`GolubVanLoan.Chapter06`. Planned by agent `ch06` (report `notes/gvl/ch06/report.md`, inventory
+`notes/gvl/ch06/inventory.md`, prototype `notes/gvl/ch06/proto/Shapes.lean`).
+
+## Conventions
+
+* **Shapes and scalars.** Real throughout, as the book: `Matrix (Fin m) (Fin n) ℝ`; the book's
+  `m₁, n₁, m₂` are kept as `m₁ n₁ m₂` where they appear. Vectors in least-squares statements are
+  `EuclideanSpace ℝ (Fin n)` and matrices act through `Matrix.toEuclideanLin`, the convention of the
+  backbone's `LeastSquares`; programs take `Fin n → ℝ` and their specs apply `WithLp.toLp 2`.
+  "Orthogonal" is `Matrix.orthogonalGroup` (`= unitaryGroup` over `ℝ`); the backbone statements are
+  over `[RCLike 𝕜]` except where the book's content is real (derivatives in a weight, the
+  cross-validation formulas, rotations and hyperbolic rotations, TLS's orthogonal-regression
+  objective).
+* **Indices.** The book is 1-based with colon notation; the surface is 0-based on `Fin n`: the
+  book's `σ_i`, `θ_i`, `α_i`, `β_i`, `x_i` are `σ (i − 1)`, …, `X.col (i − 1)`; `A(:, 1:r)` is a
+  `Matrix.submatrix` along `Fin.castLE`, `A(:, r+1:n)` along `fun j => ⟨r + j, _⟩`; the block
+  partitions of Theorem 6.1.1, Theorem 6.3.1 and §6.5 are `Matrix.fromRows`/`fromCols`/`fromBlocks`
+  over sum types, reindexed by `finSumFinEquiv` where the book speaks of one matrix.
+* **The SVD** enters every statement as a *factorization* `Matrix.IsSVD A U σ V`
+  (`Uᵀ A V = rectDiagonal σ`, `σ` antitone and nonnegative; staged in the `SVD` append), never as
+  "the" SVD, so that the output of any SVD routine can be used. The book's `u_i`, `v_i` are
+  `U.col i`, `V.col i`.
+* **The GSVD** is `Matrix.IsGSVD A B U₁ U₂ X α β` (`Numlib/LinearAlgebra/Matrix/GSVD`) in
+  Theorem 6.1.1's block order: `D_A = rectDiagonal α`, `D_B = shiftedRectDiagonal p β`,
+  `p = max(r − m₂, 0)`. Displays of §6.2 printed in the third edition's order are restated in this
+  one (see Doubts in the report).
+* **Norms.** 2-norms of vectors are `EuclideanSpace` norms; the matrix 2-norm is the scoped
+  `Matrix.Norms.L2Operator` norm, the Frobenius norm the scoped `Matrix.Norms.Frobenius` one.
+
+## Algorithms (D4)
+
+Every numbered algorithm — 6.2.1, 6.2.2, 6.3.1, 6.4.1, 6.4.2, 6.4.3 — is a definition
+`algorithm_6_M_K {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) …` in the book's operation order,
+every arithmetic result through `rnd`, with a theorem `algorithm_6_M_K_spec` about
+`Id.run (algorithm_6_M_K pure …)`. The steps "Compute the SVD", "Find `z` so that … is minimized"
+and "Find `λ₊ > 0` such that …" are **subroutine parameters** (`svd : Matrix … → M (U × σ × V)`,
+`ls`, `root`), and the spec theorem assumes their specifications (`Matrix.IsSVD`,
+`Matrix.IsLeastSquaresSolution`, the root property): the book's SVD algorithm is Chapter 8's and a
+surface chapter may not use a later one, and the least-squares method and the root finder are
+unspecified (convention 5 of the `GolubVanLoan` group). "Compute the QR factorization" is
+chapter 5's and calls its program: Householder QR `Chapter05.algorithm_5_2_1` with the explicit
+factor from `Chapter05.forwardAccumulation` on its reflector data `Chapter05.storedReflectors A' β` (the
+`β` the program returned — reflectors are never rebuilt as `2/vᵀv`, convention 13). Rotations and
+reflections are applied by chapter 5's shared helpers (`givensApplyLeft`/`Right`, `houseOn`,
+`householderApplyLeft`/`Right`, on index lists — conventions 10, 13); the numbered conventions of
+`NumlibSurface/GolubVanLoan` apply throughout. Concrete steps call earlier chapters' algorithms: matrix products
+`Chapter01.algorithm_1_1_5`, gaxpys `Chapter01.algorithm_1_1_3`, forward substitution
+`Chapter03.algorithm_3_1_1`, the Householder vector `Chapter05.algorithm_5_1_1`, the Givens pair
+`Chapter05.algorithm_5_1_3`. Prototype: `notes/gvl/ch06/proto/Shapes.lean` §4 (Algorithm 6.4.1
+and its spec elaborate). The chapter contains no rounding-error analysis, so no `SetM` theorem is
+planned; the programs carry their floating-point meaning for later use.
+
+§6.5 has no numbered algorithm; its prose procedures are definitions named by content
+(`qrUpdateRankOne`, `qrDeleteColumn`, `qrInsertColumn`, `qrInsertRow`, `qrDeleteFirstRow`,
+`choleskyUpdate`, `choleskyDowndate`) in the same convention, each with a `_spec`.
+
+## Backbone correspondence
+
+| book | backbone |
+|---|---|
+| (6.1.1)–(6.1.10), §6.1.3 | `LinearAlgebra/Matrix/LeastSquares/Weighted` |
+| (6.1.11)–(6.1.21), (6.1.26), (6.2.3)–(6.2.4) | `LeastSquares/Regularized` (with `Matrix.tikhonov` of `SVD`) |
+| Theorem 6.1.1 | `LinearAlgebra/Matrix/GSVD` (needs chapter 2's thin CS decomposition) |
+| §6.2 | `LeastSquares/Constrained` |
+| §6.3 | `LeastSquares/Total` (+ `SVD` append: Frobenius Eckart–Young, column interlacing) |
+| §6.4.1 | `LinearAlgebra/Matrix/Procrustes` |
+| Theorem 6.4.1 | Mathlib `Submodule.map_comap_eq` |
+| (6.4.3), Theorem 6.4.2, `dist = sin θ_p` | `Analysis/InnerProductSpace/PrincipalAngles` (+ `Projection/Angle`'s `Submodule.gap`) |
+| §6.5 | `Direct/Updating` (+ `PlaneRotation` append: hyperbolic rotations, `IsJOrthogonal`) |
+
+## Not formalized
+
+* Operation counts and flop estimates (everywhere); the Notes and References; numerical caveats
+  (disparate weights, ill-conditioned `B`, large `λ` in the weighting method, hyperbolic rotations
+  with `|x₁| ≈ |x₂|`).
+* Heuristic claims without a rigorous reading: van der Sluis's "`κ₂(AG₀⁻¹)` is approximately
+  minimized" (§6.1.3), the choice of `λ` by minimizing `C(λ)` (§6.1.4), the threshold `1 − δ` for a
+  unit singular value (§6.4.4), the rank-revealing smallness in (6.5.16) and the whole ULV updating
+  procedure of §6.5.5 ("`‖pᵀL̃‖₂ ≈ σ_min(L̃)`", condition estimation, zero chasing to a "small" row).
+* Statements quoted without proof and without a precise reading: Paige's stability (§6.1.2), the
+  Lagrange argument for (6.2.6) ("if it exists"), the TLS variants (6.3.7) (a problem definition),
+  (6.3.8) (defined through "the largest index `p` with `V(n+1, p) ≠ 0`", which depends on the
+  choice of `V` under repeated singular values; solvability quoted from Van Huffel 1992) and (6.3.9)
+  ("leads to a system of the form"), "there may not be a solution if `rank(B) < m₂`".
+* Displays that only name data: (6.1.6), (6.1.13), (6.1.15) (becomes the definition `ridgeDeleted`),
+  (6.1.24)–(6.1.25) (proof steps of Theorem 6.1.1), (6.2.2), (6.2.5), (6.2.9) (backbone predicates),
+  (6.4.4)–(6.4.5), (6.5.4), (6.5.5), (6.5.8), (6.5.9).
+* The displaced fragment of P6.3.1(b) printed after §6.3.4 (line 17354).
+
+## Order of attack
+
+Backbone, in dependency order (estimated lines):
+1. Appends to `SVD` (`IsSVD`, `shiftedRectDiagonal`, the operator SVD and its invariances, column
+   interlacing, Frobenius Eckart–Young; ~500) and to `PlaneRotation` (hyperbolic rotations,
+   `IsJOrthogonal`; ~150).
+2. `LeastSquares/Weighted` (~350), `LeastSquares/Regularized` (~550) — independent of the GSVD
+   except the last node of `Regularized`.
+3. `GSVD` (~350; waits for chapter 2's thin CS decomposition `Matrix.exists_isThinCSD`, planned in
+   the general-`m₂` form the proof needs).
+4. `LeastSquares/Constrained` (~500), `LeastSquares/Total` (~800, Theorem 6.3.1's uniqueness being
+   the single largest proof).
+5. `Procrustes` (~150; after `Polar`, whose polar factor it consumes),
+   `Analysis/InnerProductSpace/PrincipalAngles` (~550; the gap identity waits for
+   `Matrix.gap_range_sq_add_sortedSingularValues_sq`, now in `Analysis/Matrix/SingularValues`; the
+   coordinate-free `Projection/Gap` imports no matrix module since the review).
+6. `Direct/Updating` (~700).
+Surface: `Section04` (after `Procrustes`/`PrincipalAngles`) and `Section05` (after `Updating`) can go
+first, then `Section01`, `Section02`, `Section03`; the algorithm specs also wait for chapters 1, 3
+and 5's algorithm nodes. Estimated surface total ~1400 lines (six numbered algorithms and seven
+§6.5 procedures carry most of it).
+
+This chapter closes no `notes/frontier.md` item and opens none; its external backbone dependencies
+are chapter 2's `Matrix.exists_isThinCSD` (for the GSVD) and `Matrix.gap_range_sq_add_sortedSingularValues_sq`
+(for the gap identity), and chapter 7's `Matrix.iInf_singularValues_eq_iInf_norm` (for TLS).
+'''

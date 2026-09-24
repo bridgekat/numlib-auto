@@ -1,0 +1,123 @@
+desc = '''
+Golub–Van Loan, *Matrix Computations* (4th ed.), Chapter 11, *Large Sparse Linear System Problems*:
+§11.1 direct methods (storage, ordering, fill), §11.2 the classical iterations, §11.3 conjugate
+gradients, §11.4 other Krylov methods, §11.5 preconditioning, §11.6 multigrid. Namespace
+`GolubVanLoan.Chapter11`, one module per section. Planned 2026-09-24 by agent `ch11`
+(`notes/gvl/ch11/report.md`, inventory `notes/gvl/ch11/inventory.md`, prototype
+`notes/gvl/ch11/proto/Shapes.lean`).
+
+## Conventions (all sections)
+
+* Real matrices `Matrix (Fin n) (Fin n) ℝ` and vectors `Fin n → ℝ`, 0-based: the book's `x_i`, `a_ij`
+  (`i, j = 1:n`) are `x (i−1)`, `A (i−1) (j−1)`; iterate superscripts/subscripts `x⁽ᵏ⁾`, `x_k` keep their
+  `k ≥ 0`. Krylov statements are about `T := Matrix.toEuclideanLin A` on `EuclideanSpace ℝ (Fin n)`,
+  vectors transported by `WithLp.toLp 2`.
+* The book's `L_A, D_A, U_A` are `strictLower A`, `diagPart A`, `strictUpper A` (Saad's `E = −L_A`,
+  `F = −U_A`, used by the book itself in §11.5.3); splittings are `Stationary.Splitting`, the spectral
+  radius `ρ(G)` of a real matrix is `Matrix.complexSpectralRadius G` (complexification; `ℝ≥0∞`).
+* Lanczos and CG indices: the book's `q_j, α_j, β_j` (`j ≥ 1`) are the backbone's `Arnoldi.vec T r₀ (j−1)`,
+  `Lanczos.alpha T r₀ (j−1)`, `Lanczos.beta T r₀ (j−1)`; the book's Hestenes–Stiefel `p_k, μ_k` (`k ≥ 1`)
+  are `(CG.iterate (k−1)).p`, `CG.alpha` at `k − 1`. `κ₂(A)` is `NormedRing.condNumber A` under
+  `Matrix.Norms.L2Operator`; `φ(x) = ½xᵀAx − xᵀb` is `energyFunctional`, `‖v‖_A` is `energyNorm`.
+* Cholesky: the book's lower `G` with `A = GGᵀ` is `Hᵀ` for the backbone's `Matrix.IsCholesky A H`
+  (`H` upper, `Hᴴ H = A`).
+
+## Algorithms (decision D4)
+
+Every numbered algorithm — Algorithms 11.3.1, 11.3.2, 11.3.3, 11.4.2, 11.5.1, 11.5.2 — and every
+algorithm written out as a numbered display or figure with a claim attached ((11.1.1), (11.1.2),
+(11.1.8), (11.1.9), (11.2.2), (11.2.3), the SOR/SSOR sweeps, (11.3.14), (11.3.26), (11.5.5), Figures
+11.3.1 and 11.4.1, `incChol`, the Lin–Moré factorization, the Chebyshev semi-iteration, the two-grid
+cycle (11.6.16)) is a monadic program over a rounding hook `rnd : ℝ → M ℝ` in the book's operation
+order, built from ch01's Algorithms 1.1.1–1.1.3; `while` loops take `fuel : ℕ` as the last explicit
+argument (a tolerance precedes it) and a `done` flag; solves with a preconditioner or a small matrix
+are routine arguments (exact semantics: the inverse). The numbered conventions 1–14 of
+`NumlibSurface/GolubVanLoan` govern (in particular convention 1: the arithmetic of a stopping test,
+`δ = tol·‖b‖₂`, `‖r‖₂`, is rounded, the comparison is exact). Programs written out as numbered
+displays are **content-named** (the `GolubVanLoan` naming rule), their exact-spec theorems keeping the
+display number: (11.1.1) `sparseGaxpy`, (11.1.2) `sparseOuterProductUpdate`, (11.1.8)
+`choleskyWithPivoting`, (11.1.9) `rowGivensQR`, (11.2.2) `jacobiSweep`, (11.2.3) `gaussSeidelSweep`,
+(11.2.16) `adiStep`, (11.2.20) `sorSweep`, (11.3.14) `preliminaryCG`, (11.3.26) `practicalCG`, (11.5.5)
+`concusGolubOLearyPCG`, (11.6.16) `twoGridCycle`; and the definitional displays are content-named too:
+(11.2.10) `poissonMatrix`, (11.2.11) `modelT`, (11.2.14) `modelEEigenvalues`, (11.2.28)
+`semiIterativeCombination`, (11.6.3) `modelA`, (11.6.5) `modelAEigenvalues`, (11.6.6) `modelQ`, (11.6.7)
+`modelS`, (11.6.8) `modelC`, (11.6.14) `restrictionMatrix`/`prolongationMatrix`, (11.6.15) `modelB`,
+(11.6.18) `twoGridErrorOperator`.
+Specs are exact-arithmetic identifications with the backbone recurrences (`CG.iterate`,
+`Krylov.PCG.iterate`, `Krylov.CGNR.iterate`, `BCG.iterate`, the sweeps of `Numlib/Stationary/Sweep`, the
+Arnoldi/Givens layer of `Numlib/Krylov/Hessenberg`). The book analyses no rounding error in this
+chapter (§11.3.8 says only that orthogonality is lost), so no `SetM` theorem is planned except the
+rounding-independent `linMoreIC_nnz_le`. There is no Algorithm 11.4.1 in the source.
+
+## Correspondence
+
+* §11.1 → `Numlib/LinearAlgebra/Sparse/{Pattern,Reordering}` (Saad Ch. 3) and the new
+  `Numlib/LinearAlgebra/Sparse/Fill` (symbolic Cholesky fill, the rigorous half of Facts 1–2, nested
+  dissection); `LinearAlgebra/Matrix/{Cholesky,SchurComplement,LU/Elimination}`.
+* §11.2 → `Numlib/Stationary/{Basic,Splitting,Sweep,Block,DiagDominant,SPD}` (Saad Ch. 4, QSS Ch. 4),
+  `LinearAlgebra/Matrix/{TridiagonalToeplitz,KroneckerSum,Complexify}`; Theorems 11.2.1–11.2.4 are
+  delegations.
+* §11.3 → `Numlib/Krylov/{Iterate,CG,Lanczos,Arnoldi,Hessenberg,Singular,NormalEquations,
+  Convergence/CG}`, `Numlib/Projection/OneDimensional`, `Numlib/Analysis/InnerProductSpace/Energy`; the
+  Lanczos–CG coefficient dictionary moves down from the Saad surface to `Krylov/CG`.
+* §11.4 → `Numlib/Krylov/{Iterate,Hessenberg,BiLanczos,QuasiMinRes,NormalEquations,Monotonicity}`, ch10's
+  `Numlib/Krylov/Bidiagonalization`, and the new `Numlib/Krylov/TransposeFree` (the BiCG polynomials,
+  CGS and BiCGstab, moved down from the Saad surface at the consolidation).
+* §11.5 → `Numlib/Krylov/Preconditioned`, `Numlib/Preconditioner/{ILU,Polynomial,ApproximateInverse}`,
+  `LinearAlgebra/Matrix/MMatrix` (new: Stieltjes matrices), `Numlib/DomainDecomposition/{Schur,Schwarz}`.
+* §11.6 → surface computation in the sine eigenbasis of `LinearAlgebra/Matrix/TridiagonalToeplitz`, with
+  the bridge `twoGridError_eq_coarseCorrection` to `Numlib/Multigrid/Basic`.
+
+## Not formalized (by class, with the reason)
+
+* Operation counts, flop and memory estimates, and complexity claims (§11.1.2 "`2·nnz(A)` flops",
+  §11.1.7 "`O(n^{3/2})` work, `O(n log n)` fill", the per-iteration costs of §11.3–11.5, the `O(n)`
+  V-cycle) — decision of the round.
+* Numerical examples and illustrations: the 9×9 matrix (11.1.5) and its profiles, the Davis e-tree
+  example, the `n = 7` matrices (11.6.13) and the mangled `n = 7` block display of §11.6.3; Problems;
+  Notes and References.
+* Heuristics without a precise statement: the Sparse Cholesky/QR/LU "challenges", choosing `P` to
+  minimize `nnz(G)`, Markowitz pivoting and the threshold `τ`, row orderings for sparse QR, the
+  "starting node with far-away neighbours" advice, the elimination tree (defined in prose, no theorem),
+  "the more dominant the diagonal the faster" (refuted by the book's own P11.2.3), the
+  when-to-use-what discussion of §11.4, Criteria 1–2 and the cost inequality of §11.5.1, the
+  Toeplitz/circulant preconditioners of §11.5.4 (T. Chan's and Strang's choices are definitions with
+  no claim), drop-tolerance incomplete Cholesky and `ILU(ℓ)`, the effectiveness of the HSS saddle-point
+  preconditioner, §11.6.5.
+* "Assuming no numerical cancellation" statements: the nonzero direction of Facts 1–2 (§11.1.6) and
+  the literal structural-symmetry claim of §11.1.9 — no exact reading without a genericity framework;
+  the exact halves (vanishing off the fill; symbolic symmetry) are nodes, and the literal §11.1.9
+  claim has a counterexample node.
+* Claims quoted, not proved, in the text: Björck's accuracy of the seminormal equations with one
+  refinement step, the convergence rate of multigrid being independent of `n`, "CGS typically
+  outperforms BiCG", superiority of reverse Cuthill–McKee.
+* The PDE (11.6.1), the Poisson problem on an L-shaped domain of §11.5.11 and all "discretizes"
+  claims (Saad-round rule, `notes/backbone.md` §12.5); the V-cycle `mgV` and full multigrid (no
+  property stated).
+* Storage *as such* (the compressed-column format has no theory; its two algorithms (11.1.1)–(11.1.2)
+  are nodes by the storage-format-algorithm rule).
+
+## Order of attack
+
+Backbone first (about 900 lines, all independent of the surface):
+1. `LinearAlgebra/Sparse/Pattern` appends (`Matrix.IsPatternSymm`, ~20) and `LinearAlgebra/Sparse/Fill`
+   (new, ~150).
+2. `LinearAlgebra/Matrix/MMatrix` appends (Stieltjes, symmetric M ⇒ PD, ~110), then
+   `Preconditioner/ILU` appends (Theorem 11.5.2 backbone form, IC existence, ~180).
+3. `LinearAlgebra/Matrix/Complexify` append (`complexSpectralRadius_diagonal`, ~20) and
+   `Stationary/SPD` appends (~70).
+4. `Krylov/Subspace` appends (shift invariance, least invariant subspace, ~50), `Krylov/Singular`
+   append (~10), `Krylov/CG` appends (the Lanczos–CG dictionary, ~180, moved from the Saad surface),
+   `Krylov/Preconditioned` appends (~60), `Preconditioner/ApproximateInverse` appends (~50).
+Surface next (about 5 800 lines; needs ch01's Algorithms 1.1.1–1.1.3 with specs, ch05's
+Algorithm 5.1.3, ch03's Algorithm 3.1.2, ch07's Lemma 7.3.2, ch10's Algorithms 10.1.1, 10.4.2, 10.5.1
+and (10.1.4), (10.4.19)):
+§11.2 (~900) → §11.3 (~1 300) → §11.4 (~800, CGS/BiCGstab delegating to `Krylov/TransposeFree`, ~600 backbone lines before it) → §11.5 (~1 000) →
+§11.6 (~800), with §11.1 (~700) independent. The ★★★ items are (11.1.2), (11.1.8), (11.1.9),
+Algorithm 11.3.2's spec, Algorithm 11.4.2's spec,
+(11.5.5)'s spec and `incChol_spec`.
+
+This chapter closes no `notes/frontier.md` item; it retires one restatement debt in the making (the
+Saad surface's (6.101)–(6.103) delegate to the new `Krylov/CG` nodes) and another (the Saad §7.4
+CGS and BiCGSTAB delegate to `Krylov/TransposeFree`; recorded refactor task R5).
+'''

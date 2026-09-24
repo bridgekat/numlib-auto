@@ -1,0 +1,114 @@
+desc = '''
+Sylvester's law of inertia for Hermitian matrices and symmetric operators.
+
+The inertia of a Hermitian `A : Matrix n n 𝕜` (`[RCLike 𝕜]`) is the triple of the numbers of
+negative, zero and positive eigenvalues, counted with multiplicity. The law of inertia says that a
+congruence `A ↦ Xᴴ A X` with `X` invertible preserves it ([golub2013matrix] Theorem 8.1.17). The
+proof route here is the variational one, at the operator level (L3 of `notes/backbone.md` §1.1):
+the number of positive eigenvalues of a symmetric `T` is the largest dimension of a subspace on
+which the quadratic form `re ⟪T x, x⟫` is positive definite (`LinearMap.IsSymmetric.card_pos_eigenvalues_isGreatest`,
+the eigenvector span of the positive eigenvalues attains it, and any competitor meets the eigenvector
+span of the nonpositive ones only in `0`, by `Submodule.finrank_sup_add_finrank_inf_eq`); an
+invertible `X` maps such subspaces bijectively, so the count is a congruence invariant. The negative
+count is the positive count of `-A` (`LinearMap.IsSymmetric.eigenvalues_neg`), the zero count is the
+rest.
+
+Mathlib has the real-quadratic-form version: `QuadraticForm.sigPos`, `QuadraticForm.sigNeg`
+(`Mathlib/LinearAlgebra/QuadraticForm/Signature.lean`) with `QuadraticMap.Equivalent.sigPos_eq`,
+which is the uniqueness half of Sylvester's law for quadratic forms over a linearly ordered field.
+It does not reach complex Hermitian matrices (sesquilinear forms are not `QuadraticMap`s), and it
+says nothing about eigenvalues; `Matrix.IsHermitian.inertia_pos_eq_sigPos` is the bridge at `𝕜 = ℝ`
+so that either theory can be used on real symmetric matrices. Searched before planning:
+`inertia`, `sigPos`, `signature` in `Numlib/` (none).
+
+The counting application of [golub2013matrix] §8.4.2 (the number of negative pivots of an
+`L D Lᵀ` factorization of `A - μ I` is the number of eigenvalues below `μ`) is
+`Matrix.IsHermitian.card_eigenvalues_lt_eq_card_neg_of_isLDM`, stated with the backbone's
+`Matrix.IsLDM` (`Numlib/LinearAlgebra/Matrix/LU`).
+
+Order of attack: `card_pos_eigenvalues_isGreatest` (★★, ~120 lines), then everything else is ★.
+'''
+
+[[node]]
+id = "Matrix.IsHermitian.inertia"
+kind = "definition"
+desc = '''The inertia of a Hermitian matrix: for `hA : A.IsHermitian` with `A : Matrix n n 𝕜`,
+`hA.inertia : ℕ × ℕ × ℕ := (#{i | hA.eigenvalues i < 0}, #{i | hA.eigenvalues i = 0},
+#{i | 0 < hA.eigenvalues i})` — the numbers of negative, zero and positive eigenvalues with
+multiplicity ([golub2013matrix] §8.1.5). Any indexing of the eigenvalues gives the same counts;
+`inertia_eq_eigenvalues₀` restates it through the sorted `eigenvalues₀`. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.IsHermitian.inertia_eq_eigenvalues₀"
+kind = "theorem"
+desc = '''The inertia through the sorted eigenvalues: each component of `hA.inertia` equals the
+corresponding count over `Fin (Fintype.card n)` of `hA.eigenvalues₀`. Proof: `eigenvalues` is
+`eigenvalues₀ ∘ (Fintype.equivOfCardEq _)`, and a count is invariant under an equivalence of the
+index type (`Finset.card_equiv`). ★'''
+deps = ["Matrix.IsHermitian.inertia"]
+
+[[node]]
+id = "LinearMap.IsSymmetric.card_pos_eigenvalues_isGreatest"
+kind = "theorem"
+desc = '''The positive count is a maximal dimension. For `T : E →ₗ[𝕜] E` symmetric on a
+finite-dimensional inner product space with `hn : finrank 𝕜 E = n`,
+`IsGreatest {d | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = d ∧ ∀ x ∈ S, x ≠ 0 → 0 < re ⟪T x, x⟫}
+  #{i | 0 < hT.eigenvalues hn i}`.
+Attained by `hT.eigenvectorSpan hn {i | 0 < λ i}` (`LinearMap.IsSymmetric.le_re_inner_apply_self_of_mem_eigenvectorSpan`
+with the positive minimum as constant, `finrank_eigenvectorSpan`); upper bound: a competitor `S`
+meets `eigenvectorSpan {i | λ i ≤ 0}` only in `0` (`re_inner_apply_self_le_of_mem_eigenvectorSpan`
+with `c = 0`), so `finrank S + (n - #pos) ≤ n` by `Submodule.finrank_sup_add_finrank_inf_eq`
+(the argument of `Submodule.exists_mem_inf_ne_zero` in `Numlib/Eigen/MinMax`). ★★ (~120 lines)'''
+deps = ["LinearMap.IsSymmetric.eigenvectorSpan", "LinearMap.IsSymmetric.finrank_eigenvectorSpan", "Submodule.exists_mem_inf_ne_zero"]
+
+[[node]]
+id = "LinearMap.IsSymmetric.card_neg_eigenvalues_isGreatest"
+kind = "theorem"
+desc = '''The negative count is the maximal dimension of a subspace on which `re ⟪T x, x⟫ < 0` for
+`x ≠ 0`: `card_pos_eigenvalues_isGreatest` for `-T`, with the eigenvalues of `-T` the negatives of
+those of `T` in reversed order (`LinearMap.IsSymmetric.eigenvalues_neg`, a bijection of index
+sets). ★'''
+deps = ["LinearMap.IsSymmetric.card_pos_eigenvalues_isGreatest", "LinearMap.IsSymmetric.eigenvalues_neg"]
+
+[[node]]
+id = "Matrix.IsHermitian.inertia_conj"
+kind = "theorem"
+desc = '''**Sylvester's law of inertia** ([golub2013matrix] Theorem 8.1.17): for `A` Hermitian and
+`X : Matrix n n 𝕜` invertible (`IsUnit X`), `(hA.conjTranspose_mul_mul X).inertia = hA.inertia`
+(the Hermitian proof term of `Xᴴ * A * X` is `Matrix.isHermitian_conjTranspose_mul_mul`).
+Positive and negative counts by `card_pos_eigenvalues_isGreatest` / `card_neg_eigenvalues_isGreatest`
+for `toEuclideanLin A` and `toEuclideanLin (Xᴴ A X)`: `re ⟪Xᴴ A X y, y⟫ = re ⟪A (X y), X y⟫`
+(`Matrix.toEuclideanLin_conjTranspose_inner_left`-type), and `S ↦ S.map (toEuclideanLin X)`
+is a dimension-preserving bijection of the positive-definite subspaces; the zero count is
+`card n` minus the other two. ★★ (~80 lines)'''
+deps = ["Matrix.IsHermitian.inertia", "LinearMap.IsSymmetric.card_pos_eigenvalues_isGreatest", "LinearMap.IsSymmetric.card_neg_eigenvalues_isGreatest"]
+
+[[node]]
+id = "Matrix.IsHermitian.inertia_diagonal"
+kind = "theorem"
+desc = '''The inertia of a real diagonal matrix `diagonal (fun i => (d i : 𝕜))` counts the signs of
+`d`: `(#{i | d i < 0}, #{i | d i = 0}, #{i | 0 < d i})`. Its eigenvalues are the `d i` up to a
+permutation (`Matrix.IsHermitian.eigenvalues_eq`-type, or `charpoly_diagonal` with
+`roots_charpoly_eq_eigenvalues`). ★'''
+deps = ["Matrix.IsHermitian.inertia"]
+
+[[node]]
+id = "Matrix.IsHermitian.card_eigenvalues_lt_eq_card_neg_of_isLDM"
+kind = "theorem"
+desc = '''The `L D Lᵀ` count ([golub2013matrix] §8.4.2, last paragraph; Parlett, SEP p. 46): for a
+real symmetric `A : Matrix n n ℝ` (`[LinearOrder n]`), `μ : ℝ` and an `L D Lᵀ` factorization
+`Matrix.IsLDM (A - μ • 1) L (diagonal d) L`, `#{i | hA.eigenvalues i < μ} = #{i | d i < 0}`.
+`A - μ I = L D Lᵀ` is a congruence (`L` unit lower triangular, hence invertible), so
+`inertia_conj` and `inertia_diagonal`; the negative eigenvalues of `A - μ I` are the
+`λ_i - μ` with `λ_i < μ`. ★'''
+deps = ["Matrix.IsHermitian.inertia_conj", "Matrix.IsHermitian.inertia_diagonal", "Matrix.IsLDM"]
+
+[[node]]
+id = "Matrix.IsHermitian.inertia_pos_eq_sigPos"
+kind = "theorem"
+desc = '''Bridge to Mathlib at `𝕜 = ℝ`: for a real symmetric `A`, the positive and negative counts of
+`hA.inertia` are `QuadraticForm.sigPos (Matrix.toQuadraticMap' A)` and `QuadraticForm.sigNeg …`.
+Both are the maximal dimension of a positive-definite subspace (`QuadraticForm.sigPos_isGreatest`
+against `card_pos_eigenvalues_isGreatest`), `x ⬝ᵥ A *ᵥ x = re ⟪toEuclideanLin A x, x⟫`. ★'''
+deps = ["Matrix.IsHermitian.inertia", "LinearMap.IsSymmetric.card_pos_eigenvalues_isGreatest", "LinearMap.IsSymmetric.card_neg_eigenvalues_isGreatest"]

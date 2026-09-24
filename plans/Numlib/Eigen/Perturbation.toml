@@ -1,3 +1,16 @@
+# Planned additions (GVL round): the module doc of `Numlib.Eigen.Perturbation` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add to "Bauer–Fike": the version for every induced `p`-norm (`Matrix.bauer_fike_lpOpNorm`),
+# and the Schur-form bound for a non-diagonalizable matrix (`Matrix.infDist_spectrum_le_of_schur`,
+# Golub–Van Loan Theorem 7.2.3, a Henrici-type bound in which the nilpotency index of `|N|` controls
+# the exponent).
+# (ch08) add a paragraph "Approximate invariant subspaces": the block form of the residual bound,
+# `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` — an orthonormal `n × r` block
+# `Q₁` and a Hermitian `S` with `‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A` within `ε` of every
+# eigenvalue of `S` (the eigenvector of `S` pushed through `Q₁` is a unit vector with residual `≤ ε`,
+# and `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` does the rest), and the paired form of
+# [golub2013matrix] Theorem 8.1.13, `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`:
+# an order embedding `σ` with `|λ_{σ k}(A) - λ_k(S)| ≤ √2 ε` (Weyl on a unitary block completion).
 [[node]]
 id = "LinearMap.IsSymmetric.abs_sub_rayleigh_le_norm_residual_sq_div"
 
@@ -110,3 +123,77 @@ id = "Module.End.maxGenEigenspace_eq_span_singleton_of_finrank_eq_one"
 
 [[node]]
 id = "LinearMap.IsSymmetric.mem_orthogonal_eigenvectorSpan_iff"
+
+[[node]]  # staged by ch07
+id = "Matrix.bauer_fike_lpOpNorm"
+kind = "theorem"
+desc = '''Bauer–Fike in every induced `p`-norm ([golub2013matrix] Theorem 7.2.2): for `1 ≤ p`,
+`X` invertible, `d : n → ℂ` and `μ ∈ spectrum ℂ (X * diagonal d * X⁻¹ + E)`,
+`∃ i, ‖μ - d i‖ ≤ condNumberLp p X * lpOpNorm p E`. The proof of `Matrix.bauer_fike` with
+`lpCLM p` in place of `toEuclideanCLM`: if `μ ∉ range d`, `I + (D - μ)⁻¹ X⁻¹ E X` is singular, so
+`1 ≤ ‖(D - μ)⁻¹‖_p ‖X⁻¹‖_p ‖E‖_p ‖X‖_p` (`Matrix.lpOpNorm_mul_le`) and
+`‖(D - μ)⁻¹‖_p = max 1/|d_i - μ|` (`Matrix.lpOpNorm_diagonal`). `Matrix.bauer_fike` is the `p = 2`
+instance (`Matrix.lpOpNorm_two`, `Matrix.condNumberLp` vs `NormedRing.condNumber`). ★★'''
+deps = ["Matrix.bauer_fike", "Matrix.lpOpNorm_diagonal", "Matrix.lpOpNorm_mul_le", "Matrix.condNumberLp"]
+
+[[node]]  # staged by ch07
+id = "Matrix.one_le_norm_mul_of_mem_spectrum_add"
+kind = "theorem"
+desc = '''The step shared by Theorems 7.2.1–7.2.3 and 7.9.8 of [golub2013matrix] ((7.2.1), via their
+Lemma 2.3.3): if `μ ∈ spectrum 𝕜 (A + E)` and `μ ∉ spectrum 𝕜 A` then
+`1 ≤ ‖(μ • 1 - A)⁻¹ * E‖ ≤ ‖(μ • 1 - A)⁻¹‖ * ‖E‖` in any submultiplicative matrix norm (stated for
+the scoped `L2Operator` norm and for `lpOpNorm p`): `μ - A - E = (μ - A)(1 - (μ - A)⁻¹ E)` is
+singular, so `(μ - A)⁻¹ E` has norm `≥ 1` (else `1 - …` is a unit, `NormedRing.inverse_one_sub`). ★'''
+deps = []
+
+[[node]]  # staged by ch07
+id = "Matrix.infDist_spectrum_le_of_schur"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 7.2.3: let `Q ∈ unitaryGroup n ℂ` with `star Q * A * Q = diagonal d + N`,
+`N` strictly upper triangular, and let `p ≥ 1` with `(N.map (‖·‖))^p = 0` (the entrywise absolute
+value is nilpotent of index `≤ p`; the book takes the least such `p`). If `μ ∈ spectrum ℂ (A + E)`
+then `∃ i, ‖μ - d i‖ ≤ max θ (θ ^ (1 / p : ℝ))` with `θ = ‖E‖₂ * ∑ k ∈ range p, ‖N‖₂ ^ k`. Proof (the
+book's): with `δ = min ‖μ - d i‖ > 0`, `(μ - D - N)⁻¹ = ∑_{k<p} ((μ - D)⁻¹ N)^k (μ - D)⁻¹` because
+`|((μ - D)⁻¹ N)^p| ≤ δ^{-p} |N|^p = 0` entrywise; so `‖(μ - A)⁻¹‖₂ ≤ δ⁻¹ ∑ (‖N‖₂/δ)^k`, and
+`Matrix.one_le_norm_mul_of_mem_spectrum_add` gives `δ ≤ θ` if `δ > 1` and `δ^p ≤ θ` if `δ ≤ 1`.
+Unitary invariance of `‖·‖₂` (`Matrix.l2_opNorm_unitary_mul_mul_unitary`). ★★ (~200 lines).'''
+deps = ["Matrix.one_le_norm_mul_of_mem_spectrum_add", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
+
+[[node]]  # staged by ch08
+id = "Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul"
+kind = "theorem"
+desc = '''Block residual bound ([golub2013matrix] Theorem 8.1.13, with constant `1` in place of
+`√2`): for Hermitian `A : Matrix n n 𝕜` and `S : Matrix r r 𝕜`, `Q₁ : Matrix n r 𝕜` with
+`Q₁ᴴ * Q₁ = 1`, and `ε` with `lpOpNorm 2 (A * Q₁ - Q₁ * S) ≤ ε`, for every eigenvalue `θ` of `S`
+(`θ ∈ spectrum ℝ S`, equivalently `θ = hS.eigenvalues₀ k`) there is `μ ∈ spectrum ℝ A` with
+`|μ - θ| ≤ ε`. Proof: a unit eigenvector `y` of `S` for `θ` gives the unit vector `x = Q₁ y`
+(`Q₁ᴴ Q₁ = 1` preserves norms) with `A x - θ x = (A Q₁ - Q₁ S) y`, of norm `≤ ε`;
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` for `toEuclideanLin A`. The book's proof
+(Weyl on a block completion) gives `√2 ε` but pairs the `μ_k` injectively with the `λ_k(S)`; that
+paired form is `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` (below). This weak
+form, with its constant `1`, is not a corollary of the paired `√2` form; it keeps its own short proof.
+★★ (~50 lines)'''
+deps = ["LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le", "Matrix.lpOpNorm"]
+
+[[node]]
+id = "Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul"
+kind = "theorem"
+desc = '''The paired block residual bound, as [golub2013matrix] Theorem 8.1.13 proves it: for Hermitian `A :
+Matrix n n 𝕜` and `S : Matrix r r 𝕜` (`hA`, `hS`), `Q₁ : Matrix n r 𝕜` with `Q₁ᴴ * Q₁ = 1`, and `ε` with
+`lpOpNorm 2 (A * Q₁ - Q₁ * S) ≤ ε`, there is an order embedding `σ : Fin (card r) ↪o Fin (card n)` with
+`|hA.eigenvalues₀ (σ k) - hS.eigenvalues₀ k| ≤ √2 * ε` for every `k` — distinct eigenvalues of `A`
+(counted with multiplicity) for distinct `k`, which is what Parlett's use of the theorem (Kahan's
+bound for Rayleigh–Ritz) needs; the "each `θ` has some `μ`" form above loses the injectivity. Proof
+(the book's): complete `Q₁` to a unitary `Q = [Q₁ | Q₂]` (`Matrix.exists_mem_unitaryGroup_submatrix_eq`,
+[golub2013matrix] Theorem 2.1.1); `Qᴴ A Q = B + E` with `B = fromBlocks S 0 0 (Q₂ᴴ A Q₂)` and `E =
+fromBlocks (Q₁ᴴ E₁) (E₁ᴴ Q₂) (Q₂ᴴ E₁) 0`, `E₁ = A Q₁ - Q₁ S`; `‖E‖₂ ≤ √2 ‖E₁‖₂` (for `(x, y)`, `‖E (x,
+y)‖ ≤ ‖E₁‖ (‖x‖ + ‖y‖) ≤ √2 ‖E₁‖ ‖(x, y)‖`, the book's last display — the `(1,1)` and `(2,1)` blocks
+together are `Qᴴ E₁`, the `(1,2)` block is `E₁ᴴ Q₂`); Weyl, `|λ_j(A) - λ_j(B)| ≤ ‖E‖₂`
+(`LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` for the Euclidean operators, unitary
+invariance of the eigenvalues); and the sorted eigenvalue list of `S` is a sublist of that of the
+block-diagonal `B` (the eigenvalue multiset of `B` is the sum of those of the blocks,
+`Matrix.charpoly_fromBlocks_zero₁₂`/`Matrix.det_fromBlocks_zero₂₁`; two antitone lists with `l₁ <+~
+l₂` have `l₁ <+ l₂`, Mathlib `List.sublist_of_subperm_of_pairwise`), which gives `σ` with
+`λ_{σ k}(B) = λ_k(S)`. Kahan's sharper constant `1` for the paired form is deferred (★★★; Parlett,
+*The Symmetric Eigenvalue Problem*, Theorem 11.5.1). ★★ (~150 lines)'''
+deps = ["LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm", "Matrix.exists_mem_unitaryGroup_submatrix_eq", "Matrix.lpOpNorm"]

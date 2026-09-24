@@ -1,0 +1,360 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.8, circulant and discrete Poisson systems: solving through an eigenvalue decomposition ((4.8.2)),
+the inverse DFT (§4.8.1), circulants and their diagonalization by the DFT ((4.8.3)–(4.8.4), Lemma
+4.8.1, Theorem 4.8.2, Algorithm 4.8.1), the one- and two-dimensional discrete Poisson problems
+((4.8.6)–(4.8.12)), the fast Poisson framework (Algorithm 4.8.2), the DST/DCT inverses (§4.8.5), the
+four fast eigenvalue decompositions (Lemma 4.8.3, (4.8.16)–(4.8.25)) and the symmetrization of
+`𝒯^{(DN)}` (§4.8.7). Backbone: `LinearAlgebra/Matrix/{Toeplitz,TridiagonalToeplitz,KroneckerSum}`,
+`Analysis/Fourier/{DFT,Circulant,SineCosineTransform}`, `Direct/FastPoisson`. The transform matrices are the backbone's
+one scheme `Matrix.dst1` (chapter 1's `S_n`), `Matrix.dst2` (the book's `DST2(n)`), `Matrix.dct1`, `Matrix.dct2`; the
+second-difference matrices live in `TridiagonalToeplitz` (namespace `Matrix`) with their eigensystems beside the
+transforms, and the periodic one's diagonalization in `Analysis/Fourier/Circulant`.
+
+Conventions: the book's `F_n` (`ω_n = e^{−2πi/n}`) is `(Matrix.dft n)ᴴ` and its conjugate `F̄_n` is
+`Matrix.dft n`; the book's `C(z)` (first column `z`) is Mathlib's `Matrix.circulant z`; `𝒟_n` is
+`Matrix.downshift n`; `𝒯^{(DD)}_n = Matrix.symmTridiagonalToeplitz n (-1) 2` and the other three
+second-difference matrices are `Matrix.secondDifferenceDN/NN/Periodic n`; `s(θ)`, `c(θ)` of
+(4.8.15) are `Matrix.sinAngleVec n θ`, `Matrix.cosAngleVec n θ`; `e_1`, `e_n` are `Pi.single 0 1`,
+`Pi.single ⟨n−1, _⟩ 1`. `reshape(u, n₁, n₂)` is Mathlib's column-major `Matrix.vec` read backwards,
+and `I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is the Kronecker sum `A₂ ⊕ₖ A₁` on `Fin n₂ × Fin n₁`. "Fast"
+(the `O(n log n)` counts), Figure 4.8.1 and the `m = 5` displays are not formalized.
+'''
+
+[[node]]
+id = "equation_4_8_2"
+kind = "theorem"
+desc = '''(4.8.2): if `V⁻¹ A V = Λ = diagonal ν` (4.8.1; the book's `λ`, renamed since `λ` is a Lean keyword, as in
+`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`) with `V` nonsingular and `A` nonsingular, then
+`A⁻¹ b = V (Λ⁻¹ (V⁻¹ b))`, over `ℂ` (or any field). `Matrix.mul_inv_rev`, `Matrix.inv_diagonal`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.2)'
+
+[[node]]
+id = "dft_conjTranspose"
+kind = "theorem"
+desc = '''§4.8.1: `F_nᴴ = F̄_n`, i.e. `(fourierMatrix n)ᴴ = (fourierMatrix n).map star` for chapter 1's
+`GolubVanLoan.Chapter01.fourierMatrix` — `F_n` is symmetric (`Matrix.dft_transpose` through
+`fourierMatrix n = (Matrix.dft n)ᴴ`). ★'''
+deps = ["GolubVanLoan.Chapter01.fourierMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.1, Display'
+
+[[node]]
+id = "dft_conjTranspose_mul_self"
+kind = "theorem"
+desc = '''§4.8.1: `n I_n = F_nᴴ F_n = F̄_n F_n` (the orthogonality sums `∑_k ω^{k(q−p)} = n δ_{pq}`);
+`Matrix.dft_mul_conjTranspose_dft` (with `F_n = (dft n)ᴴ`). ★'''
+deps = ["Matrix.conjTranspose_dft_mul_dft"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.1, Display'
+
+[[node]]
+id = "dft_inv"
+kind = "theorem"
+desc = '''§4.8.1: `F_n⁻¹ = F̄_n / n` (`n ≠ 0`); `Matrix.inv_conjTranspose_dft`. ★'''
+deps = ["Matrix.inv_conjTranspose_dft"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.1, Display'
+
+[[node]]
+id = "equation_4_8_3"
+kind = "theorem"
+desc = '''(4.8.3): `C(z) = ∑_{k=0}^{n−1} z_k 𝒟_n^k`, and `𝒟_n^n = I_n`; `Matrix.circulant_eq_sum_downshift_pow`,
+`Matrix.downshift_pow_card`. ★'''
+deps = ["Matrix.circulant_eq_sum_downshift_pow", "Matrix.downshift_pow_card"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.3)'
+
+[[node]]
+id = "equation_4_8_4"
+kind = "theorem"
+desc = '''(4.8.4): if `V⁻¹ 𝒟_n V = Λ` is diagonal then `V⁻¹ C(z) V = ∑_k z_k Λ^k` is diagonal (the book prints
+`(V⁻¹ 𝒟_n V⁻¹)^k`, a misprint for `(V⁻¹ 𝒟_n V)^k` — Doubts). `equation_4_8_3`, conjugation is a ring
+hom (`Matrix.mul_pow` of a similarity, `Matrix.diagonal_pow`). ★'''
+deps = ["equation_4_8_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.4)'
+
+[[node]]
+id = "lemma_4_8_1"
+kind = "theorem"
+desc = '''Lemma 4.8.1: with `V = F_n` (chapter 1's `GolubVanLoan.Chapter01.fourierMatrix n = (Matrix.dft n)ᴴ`),
+`V⁻¹ 𝒟_n V = diag(λ_1, …, λ_n)`, `λ_{j+1} = ω̄_n^j = cos(2jπ/n) + i sin(2jπ/n)`. The downshift is the
+circulant of the book's `e₂`: `𝒟_n = C(e₂)` (`Matrix.downshift_eq_circulant`, 0-based `z = Pi.single 1 1`
+for `n ≥ 2`; the first plan's "`z = e₁`" was the identity's circulant), and Theorem 4.8.2
+(`theorem_4_8_2`) at that `z` gives the eigenvalue vector `F̄_n e₂ = (ω̄^j)_j`. ★'''
+deps = ["theorem_4_8_2", "GolubVanLoan.Chapter01.fourierMatrix", "Matrix.downshift"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 4.8.1'
+
+[[node]]
+id = "theorem_4_8_2"
+kind = "theorem"
+desc = '''Theorem 4.8.2: for `z ∈ ℂⁿ`, `V = F_n` (chapter 1's `GolubVanLoan.Chapter01.fourierMatrix n`, the
+restatement of `(Matrix.dft n)ᴴ` that later chapters use — README layering) and `λ = F̄_n z`,
+`V⁻¹ C(z) V = diag(λ)`; `Matrix.inv_conjTranspose_dft_mul_circulant_mul_conjTranspose_dft` through
+`fourierMatrix`'s definition. ★'''
+deps = ["GolubVanLoan.Chapter01.fourierMatrix", "Matrix.inv_conjTranspose_dft_mul_circulant_mul_conjTranspose_dft"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.8.2'
+
+[[node]]
+id = "algorithm_4_8_1"
+kind = "definition"
+desc = '''Algorithm 4.8.1, D4 over `ℂ`: `algorithm_4_8_1 {M} [Monad M] (rnd : ℂ → M ℂ) (z y : Fin n → ℂ) : M (Fin n →
+ℂ)`: `c ← F̄_n y`, `d ← F̄_n z` (matrix–vector products with every product and sum through `rnd`;
+the book's "use an FFT" is any evaluation of `F̄_n ·`, and for `n = 2^t` it may call ch01's
+`GolubVanLoan.Chapter01.algorithm_1_4_1` — the exact result is the same by its spec),
+`w i ← rnd (c i / d i)`, `u ← F_n w`, `x i ← rnd (u i / n)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.1'
+
+[[node]]
+id = "algorithm_4_8_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.8.1: if `C(z)` is nonsingular (`n ≠ 0`), then
+`Matrix.circulant z *ᵥ Id.run (algorithm_4_8_1 pure z y) = y`. From `theorem_4_8_2`, `dft_inv` and
+`equation_4_8_2` (the eigenvalues `d i` are nonzero because `C(z)` is nonsingular). ★★'''
+deps = ["algorithm_4_8_1", "theorem_4_8_2", "dft_inv", "equation_4_8_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.1'
+
+[[node]]
+id = "equation_4_8_6"
+kind = "theorem"
+desc = '''(4.8.6) and the Dirichlet–Dirichlet system after it: `((u_{i+1} − u_i)/h − (u_i − u_{i−1})/h)/h =
+(u_{i−1} − 2u_i + u_{i+1})/h²`; and `u_1, …, u_{m−1}` satisfy (4.8.6) with `u_0 = u_α`, `u_m = u_β`
+for `i = 1 … m − 1` iff `𝒯^{(DD)}_{m−1} u(1:m−1) = h² f(1:m−1) + u_α e_1 + u_β e_{m−1}`
+(`Matrix.symmTridiagonalToeplitz_mulVec_apply`). ★'''
+deps = ["Matrix.symmTridiagonalToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.6)'
+
+[[node]]
+id = "equation_4_8_8"
+kind = "theorem"
+desc = '''(4.8.8): `𝒯^{(DN)}_n = 𝒯^{(DD)}_n − e_n e_{n−1}ᵀ` (`Matrix.vecMulVec`), the definition of
+`Matrix.secondDifferenceDN n` restated with the book's outer product (`2 ≤ n`). ★'''
+deps = ["Matrix.secondDifferenceDN"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.8)'
+
+[[node]]
+id = "equation_4_8_9"
+kind = "theorem"
+desc = '''(4.8.9): `𝒯^{(NN)}_n = 𝒯^{(DD)}_n − e_n e_{n−1}ᵀ − e_1 e_2ᵀ`; `Matrix.secondDifferenceNN`. ★'''
+deps = ["Matrix.secondDifferenceNN"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.9)'
+
+[[node]]
+id = "equation_4_8_10"
+kind = "theorem"
+desc = '''(4.8.10): `𝒯^{(P)}_n = 𝒯^{(DD)}_n − e_1 e_nᵀ − e_n e_1ᵀ`; `Matrix.secondDifferencePeriodic`. ★'''
+deps = ["Matrix.secondDifferencePeriodic"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.10)'
+
+[[node]]
+id = "poisson2D_eq_kroneckerSum"
+kind = "theorem"
+desc = '''§4.8.4, the five-point system: with `h_x = h_y = h`, grid values `u : Fin (m₂ − 1) → Fin (m₁ − 1) → ℝ`
+(interior points, row index `j` for `y`, column `i` for `x`), boundary data `g` and the equations
+`4u(P) − u(N) − u(E) − u(S) − u(W) = h² F(P)` (neighbours on the boundary moved to the right-hand
+side), the system is `(𝒯^{(DD)}_{m₂−1} ⊕ₖ 𝒯^{(DD)}_{m₁−1}) *ᵥ vec U = vec B` — the book's
+`A = I_{m₂−1} ⊗ 𝒯^{(DD)}_{m₁−1} + 𝒯^{(DD)}_{m₂−1} ⊗ I_{m₁−1}` with `B` collecting `h² F` and the
+boundary values. Surface helper definition `fivePointRhs`; entrywise with
+`Matrix.kroneckerSum_apply`. ★★'''
+deps = ["Matrix.kroneckerSum", "Matrix.symmTridiagonalToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.4, Display'
+
+[[node]]
+id = "equation_4_8_12"
+kind = "theorem"
+desc = '''(4.8.12) reshaped: `(I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}) u = b` with `u = vec U`, `b = vec B` iff
+`A₁ U + U A₂ᵀ = B`; `Matrix.kroneckerSum_mulVec_vec` (`Matrix.vec_inj`). ★'''
+deps = ["Matrix.kroneckerSum_mulVec_vec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.12)'
+
+[[node]]
+id = "fastPoisson_transformed"
+kind = "theorem"
+desc = '''§4.8.4: under (4.8.13)–(4.8.14) (`V⁻¹A₁V = D₁`, `W⁻¹A₂W = D₂`), `A₁ U + U A₂ᵀ = B` iff
+`D₁ Ũ + Ũ D₂ = B̃` with `Ũ = V⁻¹ U W⁻ᵀ`, `B̃ = V⁻¹ B W⁻ᵀ`, and when no `λ_i + μ_j` vanishes the unique
+solution is `ũ_ij = b̃_ij/(λ_i + μ_j)`; `FastPoisson.kroneckerSum_mulVec_vec_eq_iff` (its diagonals are `ν`, `μ`:
+`D₁ = diagonal ν` in Lean, `λ` being a keyword; the diagonal solve itself is the backbone `Sylvester` one). ★'''
+deps = ["FastPoisson.kroneckerSum_mulVec_vec_eq_iff", "equation_4_8_12"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.4, Display'
+
+[[node]]
+id = "algorithm_4_8_2"
+kind = "definition"
+desc = '''Algorithm 4.8.2 (fast Poisson solver framework), D4: inputs `V⁻¹`, `W⁻¹`, `V`, `W` as matrices (the book's
+fast transforms, given as their matrix–vector products), `λ : Fin n₁ → ℝ`, `μ : Fin n₂ → ℝ`,
+`b : Fin n₂ × Fin n₁ → ℝ` (the `vec` of `B`); `B̃ ← ((W⁻¹ (V⁻¹ B)ᵀ)ᵀ` by rounded matrix–vector
+products (columns of `B` through `V⁻¹`, rows through `W⁻¹`), `ũ_ij ← rnd (b̃_ij / rnd (λ i + μ j))`,
+`U ← (W (V Ũ)ᵀ)ᵀ` likewise, return `vec U`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
+
+[[node]]
+id = "algorithm_4_8_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.8.2: if `V⁻¹A₁V = diag λ`, `W⁻¹A₂W = diag μ`, the transform inputs are the
+true inverses, and `A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular (equivalently all `λ_i + μ_j ≠ 0`),
+then `(A₂ ⊕ₖ A₁) *ᵥ Id.run (algorithm_4_8_2 pure …) = b`; `fastPoisson_transformed`. ★★'''
+deps = ["algorithm_4_8_2", "fastPoisson_transformed"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.8.2'
+
+[[node]]
+id = "poisson2D_posDef_bandwidth"
+kind = "theorem"
+desc = '''§4.8.4: for `A₁ = 𝒯^{(DD)}_{n₁}`, `A₂ = 𝒯^{(DD)}_{n₂}`, the matrix `A` is symmetric positive definite with
+bandwidth `n₁ + 1` (lower and upper bandwidth `n₁` in the `Fin (n₂ n₁)` layout);
+`Matrix.posDef_kroneckerSum`, `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`,
+`Matrix.kroneckerSum_hasBandwidth`. ★'''
+deps = ["Matrix.posDef_kroneckerSum", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two", "Matrix.kroneckerSum_hasBandwidth"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.4, Display'
+
+[[node]]
+id = "dst_block_identities"
+kind = "theorem"
+desc = '''§4.8.5: with `C = C_{m−1}`, `S = S_{m−1}`, `e`, `v` as in Theorem 1.4.1, comparing blocks of
+`2m I = F̄_{2m} F_{2m}`: `0 = 2Ce + e + v`, `2m I = 2C² + 2S² + eeᵀ + vvᵀ`, `0 = 2Cv + e + (−1)^m v`,
+`0 = 2C² − 2S² + eeᵀ + vvᵀ`; hence `2S² = m I` and `2C² = m I − eeᵀ − vvᵀ`. From ch01's block form of
+`F_{2m}` (`GolubVanLoan.Chapter01.theorem_1_4_1`) and `dft_conjTranspose_mul_self`; the consequence
+`2S² = mI` is also `Matrix.dst1_mul_self` (at `r = m − 1`). ★★'''
+deps = ["dft_conjTranspose_mul_self", "Matrix.dst1_mul_self", "GolubVanLoan.Chapter01.theorem_1_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.5, Display'
+
+[[node]]
+id = "dst_inv"
+kind = "theorem"
+desc = '''§4.8.5: `V = DST(m − 1) ⇒ V⁻¹ = (2/m) DST(m − 1)` (`S_{m−1}⁻¹ = (2/m) S_{m−1}`, `m ≥ 1`);
+`Matrix.dst1_mul_self` (at `r = m − 1`), `Matrix.inv_eq_left_inv`. ★'''
+deps = ["Matrix.dst1_mul_self"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.5, Display'
+
+[[node]]
+id = "dct_inv"
+kind = "theorem"
+desc = '''§4.8.5: `V = DCT(m + 1) ⇒ V⁻¹ = (2/m) DCT(m + 1)` (`m ≥ 1`); `Matrix.dct1_mul_self`. ★'''
+deps = ["Matrix.dct1_mul_self"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.5, Display'
+
+[[node]]
+id = "equation_4_8_16"
+kind = "theorem"
+desc = '''(4.8.16): `𝒯^{(DD)}_n s(θ) = λ s(θ) + s_{n+1} e_n`, `λ = 4 sin²(θ/2)`;
+`Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec` at `a = −1`, `b = 2`
+(`2 − 2cos θ = 4 sin²(θ/2)`, `Real.cos_sq_half`-type identity). ★'''
+deps = ["Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.16)'
+
+[[node]]
+id = "equation_4_8_17"
+kind = "theorem"
+desc = '''(4.8.17): `𝒯^{(DD)}_n c(θ) = λ c(θ) + c_1 e_1 + c_n e_n`; `Matrix.symmTridiagonalToeplitz_mulVec_cosAngleVec`. ★'''
+deps = ["Matrix.symmTridiagonalToeplitz_mulVec_cosAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.17)'
+
+[[node]]
+id = "equation_4_8_18"
+kind = "theorem"
+desc = '''(4.8.18): `𝒯^{(DN)}_n s(θ) = λ s(θ) + (s_{n+1} − s_{n−1}) e_n`; `Matrix.secondDifferenceDN_mulVec_sinAngleVec`. ★'''
+deps = ["Matrix.secondDifferenceDN_mulVec_sinAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.18)'
+
+[[node]]
+id = "equation_4_8_19"
+kind = "theorem"
+desc = '''(4.8.19): `𝒯^{(NN)}_n c(θ) = λ c(θ) + (c_n − c_{n−2}) e_n`; `Matrix.secondDifferenceNN_mulVec_cosAngleVec`. ★'''
+deps = ["Matrix.secondDifferenceNN_mulVec_cosAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.19)'
+
+[[node]]
+id = "equation_4_8_20"
+kind = "theorem"
+desc = '''(4.8.20): `𝒯^{(P)}_n s(θ) = λ s(θ) − s_n e_1 + (s_{n+1} − s_1) e_n`;
+`Matrix.secondDifferencePeriodic_mulVec_sinAngleVec`. ★'''
+deps = ["Matrix.secondDifferencePeriodic_mulVec_sinAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.20)'
+
+[[node]]
+id = "equation_4_8_21"
+kind = "theorem"
+desc = '''(4.8.21): `𝒯^{(P)}_n c(θ) = λ c(θ) + (c_1 − c_{n−1}) e_1 + (c_n − 1) e_n`;
+`Matrix.secondDifferencePeriodic_mulVec_sinAngleVec` (its cosine half). ★'''
+deps = ["Matrix.secondDifferencePeriodic_mulVec_sinAngleVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.21)'
+
+[[node]]
+id = "lemma_4_8_3"
+kind = "theorem"
+desc = '''Lemma 4.8.3: the conjunction of (4.8.16)–(4.8.21) for real `n`-vectors `s(θ)`, `c(θ)` (4.8.15),
+`λ = 4 sin²(θ/2)` (`2 ≤ n`). ★'''
+deps = ["equation_4_8_16", "equation_4_8_17", "equation_4_8_18", "equation_4_8_19", "equation_4_8_20", "equation_4_8_21"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 4.8.3'
+
+[[node]]
+id = "dd_eigen"
+kind = "theorem"
+desc = '''§4.8.6, the Dirichlet–Dirichlet matrix: for `θ_j = jπ/(n + 1)`, `j = 1 … n`,
+`𝒯^{(DD)}_n s(θ_j) = 4 sin²(θ_j/2) s(θ_j)`; the eigenvector matrix `[V^{(DD)}]_{kj} = sin(kjπ/(n+1))` is
+`DST(n) = Matrix.dst1 n` (nonsingular, `dst_inv`), so `𝒯^{(DD)}_n` has the decomposition
+`V⁻¹ 𝒯 V = diag(4 sin²(jπ/(2(n+1))))`. `Matrix.symmTridiagonalToeplitz_mulVec_sineVec`
+(`2 − 2 cos θ = 4 sin²(θ/2)`). ★'''
+deps = ["Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "dst_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.6, Display'
+
+[[node]]
+id = "dn_eigen"
+kind = "theorem"
+desc = '''§4.8.6, the Dirichlet–Neumann matrix: for `θ_j = (2j − 1)π/(2n)`, `𝒯^{(DN)}_n s(θ_j) = 4 sin²(θ_j/2) s(θ_j)`,
+`[V^{(DN)}]_{kj} = sin(k(2j − 1)π/(2n))`, `V^{(DN)}_n = DST2(n) = Matrix.dst2 n`, nonsingular,
+and `(V^{(DN)})⁻¹ 𝒯^{(DN)} V^{(DN)} = diag(4 sin²((2j − 1)π/(4n)))`;
+`Matrix.secondDifferenceDN_mulVec_dst2_col`. (The book's pointer "(1.4.13)" is (1.4.12).) ★'''
+deps = ["Matrix.secondDifferenceDN_mulVec_dst2_col", "Matrix.dst2"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.6, Display'
+
+[[node]]
+id = "nn_eigen"
+kind = "theorem"
+desc = '''§4.8.6, the Neumann–Neumann matrix: for `θ_j = (j − 1)π/(n − 1)`, `𝒯^{(NN)}_n c(θ_j) = 4 sin²(θ_j/2) c(θ_j)`;
+the eigenvector matrix `[V^{(NN)}]_{kj} = cos((k − 1)(j − 1)π/(n − 1))` equals `DCT(n) diag(2, I_{n−2}, 2)`
+(ch01's `Matrix.dct1 (n − 1)`); `Matrix.secondDifferenceNN_mulVec_dct1_col`. (The book twice writes
+`𝒯^{(DN)}`/`V^{(DN)}` for `𝒯^{(NN)}`/`V^{(NN)}` in this paragraph — Doubts.) ★'''
+deps = ["Matrix.secondDifferenceNN_mulVec_dct1_col"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.6, Display'
+
+[[node]]
+id = "periodic_eigen"
+kind = "theorem"
+desc = '''§4.8.6, the periodic matrix: `𝒯^{(P)}_n` is the circulant with first column `(2, −1, 0, …, 0, −1)` (`n ≥ 3`), so
+`F_n⁻¹ 𝒯^{(P)}_n F_n = diag(λ)` with `λ = F̄_n (2, −1, 0, …, −1)ᵀ = 2F̄(:,1) − F̄(:,2) − F̄(:,n)` and
+`λ_j = 4 sin²((j − 1)π/n)` ("It can be shown that"); `Matrix.secondDifferencePeriodic_eq_circulant`,
+`Matrix.inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft`, `theorem_4_8_2`. ★'''
+deps = ["Matrix.secondDifferencePeriodic_eq_circulant", "Matrix.inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft", "theorem_4_8_2"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.6, Display'
+
+[[node]]
+id = "equation_4_8_22"
+kind = "theorem"
+desc = '''(4.8.22): `λ_j = λ_{n+2−j}` for `j = 2 … n` (the periodic eigenvalues); part of
+`Matrix.inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft`. ★'''
+deps = ["Matrix.inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.22)'
+
+[[node]]
+id = "equation_4_8_23"
+kind = "theorem"
+desc = '''(4.8.23): `F̄_n(:, j) = F_n(:, n + 2 − j)` for `j = 2 … n` (`ω^{n−k} = ω̄^k`), with `F_n` chapter 1's
+`GolubVanLoan.Chapter01.fourierMatrix n`; `fourierMatrix_apply`. ★'''
+deps = ["GolubVanLoan.Chapter01.fourierMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.23)'
+
+[[node]]
+id = "equation_4_8_25"
+kind = "theorem"
+desc = '''(4.8.24)–(4.8.25): with `m = ⌈(n + 1)/2⌉` and `V^{(P)}_n = [Re F_n(:, 1:m) | Im F_n(:, m+1:n)]`,
+`𝒯^{(P)}_n V^{(P)}_n(:, j) = λ_j V^{(P)}_n(:, j)` for `j = 1 … n`;
+`Matrix.secondDifferencePeriodic_mulVec_realDftCol`. ★'''
+deps = ["Matrix.secondDifferencePeriodic_mulVec_realDftCol"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.8.25)'
+
+[[node]]
+id = "dn_symmetrizable"
+kind = "theorem"
+desc = '''§4.8.7: with `D = diag(I_{n−1}, √2)`, `D⁻¹ 𝒯^{(DN)}_n D` is symmetric (`2 ≤ n`): the only asymmetric pair
+`(−1 at (n−1, n), −2 at (n, n−1))` becomes `(−√2, −√2)`. Entrywise; `Matrix.inv_diagonal`. ★'''
+deps = ["Matrix.secondDifferenceDN"]
+source = 'Golub–Van Loan, Matrix Computations, §4.8.7, Display'

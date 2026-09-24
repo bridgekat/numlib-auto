@@ -1,0 +1,409 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.3, the full-rank least-squares problem: the normal equations and the gradient (§5.3.1), the
+SVD expansion (5.3.2)–(5.3.3), the method of normal equations (Algorithm 5.3.1) and its accuracy
+(5.3.4), the QR solution (§5.3.3, Algorithm 5.3.2) and its backward stability (5.3.6)–(5.3.8), MGS on
+the augmented matrix (§5.3.5), the perturbation theory (5.3.9)–(5.3.16) with Theorem 5.3.1, the
+augmented system and iterative improvement (§5.3.8, (5.3.20)), and the cross-product nearness
+problems of §5.3.9 ((5.3.21)–(5.3.29)).
+
+Vectors in the least-squares statements are `EuclideanSpace ℝ (Fin m)` (the backbone's
+`Matrix.IsLeastSquaresSolution`, `toEuclideanLin`); algorithms work on `Fin m → ℝ` and their specs
+convert with `WithLp.toLp 2`. Matrix 2-norms under `open scoped Matrix.Norms.L2Operator` in their
+own sections (the scoped-instance lesson of `notes/lessons.md`). `σ_n(A)` is
+`⨅ i, A.singularValues i`, `κ₂` is `kappa2` (§5.2).
+
+**Rigour.** Theorem 5.3.1 is planned in the exact form of `Numlib/Conditioning/LeastSquares`
+(`σ_n(A) - ‖δA‖₂` in place of `σ_n(A)`, no `O(ε²)`), and the book's first-order form as a
+corollary. (5.3.18)–(5.3.19) are heuristic readings (`≈`) with no rigorous content beyond (5.3.11)
+and are not formalized; the numerical examples of §5.3.1 and §5.3.2 (`fl(AᵀA)` singular) are not
+nodes; nor is Björck's "`k(t - q)` correct digits" (§5.3.8); Lawson–Hanson's printed first-order
+constants in (5.3.7)–(5.3.8) are replaced by explicit `γ` expressions (`equation_5_3_6`–`equation_5_3_8`).
+
+Book slips carried (report, Doubts): (5.3.3)'s upper summation limit is printed `2` (read `m`);
+(5.3.26)–(5.3.29) need non-parallel lines (`r ≠ 0`) and non-collinear points (`v ≠ 0`); the proof
+of Theorem 5.3.1 cites "Theorem 2.5.2" for the full rank of `A + tE` — it is Corollary 2.4.4; and
+Algorithm 5.3.2 as printed fails when Algorithm 5.2.1's `house` returned `β = 0`
+(`algorithm_5_3_2_counterexample`). Algorithm 5.3.2 rebuilds its reflectors as `β = 2/vᵀv` because the
+book prints it so; it is the one program of the section that does (convention 13's exception for
+the book's own recomputing displays), and its spec carries the nondegeneracy hypothesis.
+
+Also not formalized: (5.3.17), the first-order expansion `‖r̂ − r‖/‖r‖ = ε‖ṙ(0)‖/‖r‖ + O(ε²)` inside
+the proof of Theorem 5.3.1 (an intermediate `O(ε²)` step; its rigorous content is `theorem_5_3_1_b`).
+'''
+
+[[node]]
+id = "isLeastSquaresSolution_iff_normalEquations"
+kind = "theorem"
+desc = '''§5.3.1: `x` minimizes `‖Ax - b‖₂` iff `Aᵀ(Ax - b) = 0` (the normal equations
+`AᵀA x = Aᵀb`); if `x` and `x + αz` are both minimizers then `Az = 0`; for full column rank the
+minimizer `x_LS` is unique and `AᵀA` is positive definite. Three clauses, backbone
+`Matrix.isLeastSquaresSolution_iff_normalEquations`,
+`Matrix.IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero`, `Matrix.existsUnique_isLeastSquaresSolution`,
+`Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`. ★'''
+deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero", "Matrix.existsUnique_isLeastSquaresSolution", "Matrix.posDef_conjTranspose_mul_self_of_linearIndependent"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.1'
+
+[[node]]
+id = "gradient_leastSquaresObjective"
+kind = "theorem"
+desc = '''§5.3.1: `φ(x) = ½‖Ax - b‖₂²` has `∇φ(x) = Aᵀ(Ax - b)`, so "solving the normal equations is
+tantamount to solving the gradient equation". Backbone `Matrix.hasGradientAt_leastSquaresObjective`. ★'''
+deps = ["Matrix.hasGradientAt_leastSquaresObjective"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.1'
+
+[[node]]
+id = "equation_5_3_2"
+kind = "theorem"
+desc = '''(5.3.2): if `Uᵀ A V = Σ` is an SVD of a full-column-rank `A ∈ ℝ^{m×n}` (`m ≥ n`), then
+`x_LS = ∑_{i<n} (u_iᵀ b / σ_i) v_i`. Chapter 6's backbone `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD`
+(with `Matrix.IsSVD`; all `σ_i > 0` for `i < n`) and
+`Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent`. ★'''
+deps = ["Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD", "Matrix.IsSVD", "Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.2)'
+
+[[node]]
+id = "equation_5_3_3"
+kind = "theorem"
+desc = '''(5.3.3): `ρ_LS² = ‖A x_LS - b‖₂² = ∑_{i=n+1}^{m} (u_iᵀ b)²` (the book prints the upper limit as
+`2`). Backbone `Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD` with `r = n`. ★'''
+deps = ["Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD", "equation_5_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.3)'
+
+[[node]]
+id = "algorithm_5_3_1"
+kind = "definition"
+desc = '''Algorithm 5.3.1 (normal equations): `C = AᵀA` (lower triangle; entrywise dot products,
+chapter 1's Algorithm 1.1.1; the upper triangle filled by symmetry, an assignment), `d = Aᵀb`,
+`G ← GolubVanLoan.Chapter04.algorithm_4_2_1 rnd C` (gaxpy Cholesky, `C = GGᵀ`),
+`y ← GolubVanLoan.Chapter03.algorithm_3_1_1 rnd G d` (forward substitution), `x ←
+GolubVanLoan.Chapter03.algorithm_3_1_2 rnd Gᵀ y` (back substitution). ★'''
+deps = [
+  "GolubVanLoan.Chapter01.algorithm_1_1_1",
+  "GolubVanLoan.Chapter04.algorithm_4_2_1",
+  "GolubVanLoan.Chapter03.algorithm_3_1_1",
+  "GolubVanLoan.Chapter03.algorithm_3_1_2",
+]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.1'
+
+[[node]]
+id = "algorithm_5_3_1_spec"
+kind = "theorem"
+desc = '''For full-column-rank `A`: `IsLeastSquaresSolution A b (toLp 2 (Id.run (algorithm_5_3_1 pure A b)))`.
+The specs of the three called algorithms (Cholesky of the positive definite `AᵀA`, the two
+substitutions) and the normal equations. ★'''
+deps = [
+  "algorithm_5_3_1",
+  "isLeastSquaresSolution_iff_normalEquations",
+  "GolubVanLoan.Chapter04.algorithm_4_2_1_spec",
+  "GolubVanLoan.Chapter03.algorithm_3_1_1_spec",
+  "GolubVanLoan.Chapter03.algorithm_3_1_2_spec",
+]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.1'
+
+[[node]]
+id = "equation_5_3_4"
+kind = "theorem"
+desc = '''(5.3.4), rigorous in the form the book derives it: if the computed `x̂_LS` satisfies
+`(AᵀA + E) x̂ = Aᵀb` with `‖E‖₂ ≤ η ‖AᵀA‖₂` ("from what we know about the roundoff properties of the
+Cholesky factorization", §4.2.6, with `η = c u`) and `η κ₂(A)² < 1`, then
+`‖x̂ - x_LS‖₂ / ‖x_LS‖₂ ≤ η κ₂(A)² / (1 - η κ₂(A)²)`, since `κ₂(AᵀA) = κ₂(A)²`. Backbone
+`Matrix.norm_normalEquations_sub_le`, `Matrix.pinvCondNumberLp_two_conjTranspose_mul_self`. The book's "≈" is
+the first-order reading. ★'''
+deps = ["Matrix.norm_normalEquations_sub_le", "Matrix.pinvCondNumberLp_two_conjTranspose_mul_self", "kappa2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.4)'
+
+[[node]]
+id = "equation_5_3_5"
+kind = "theorem"
+desc = '''(5.3.5) and §5.3.3: if `Q` is orthogonal with `QᵀA = [R₁; 0]` (`Matrix.IsQR A Q R`, `n ≤ m`) and
+`Qᵀb = [c; d]`, then `‖Ax - b‖₂² = ‖R₁x - c‖₂² + ‖d‖₂²` for every `x`; for full column rank `x_LS`
+solves `R₁ x_LS = c` and `ρ_LS = ‖d‖₂`. Backbone `Matrix.norm_sub_sq_eq_of_isQR`,
+`Matrix.IsQR.isLeastSquaresSolution`, `Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`. ★'''
+deps = ["Matrix.norm_sub_sq_eq_of_isQR", "Matrix.IsQR.isLeastSquaresSolution", "Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.5)'
+
+[[node]]
+id = "algorithm_5_3_2"
+kind = "definition"
+desc = '''Algorithm 5.3.2 (Householder LS solution), as printed: `A' ← (algorithm_5_2_1 rnd h A).1`
+(the array only — the printed algorithm does not use the `β`s); for `j = 1:n`,
+`v = storedHouseholderVec A' j` (`[1; A'(j+1:m, j)]`), `β = 2/vᵀv` (a rounded dot product over
+`rows j` and a division — the book's recomputation), `b(j:m) ← b(j:m) - β(vᵀ b(j:m)) v` on the index
+list `rows j` (rounded, in the printed association `β(vᵀb)` then times `v`, which is not
+`householderApplyLeft`'s `(βv)(vᵀb)`, so it is written out);
+then `x ← GolubVanLoan.Chapter03.algorithm_3_1_2 rnd (upperPart A')₁₁ b(1:n)`. ★★'''
+deps = ["algorithm_5_2_1", "storedHouseholderVec", "upperPart", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
+
+[[node]]
+id = "algorithm_5_3_2_spec"
+kind = "theorem"
+desc = '''For full-column-rank `A` **and no degenerate Householder step** (`∀ j, (Id.run (algorithm_5_2_1
+pure h A)).2 j ≠ 0`): `IsLeastSquaresSolution A b (toLp 2 (Id.run (algorithm_5_3_2 pure h A b)))`.
+The recomputed reflectors are then the actual ones (`equation_5_1_4_beta`), the `b`-loop computes
+`Qᵀb` (`equation_5_1_4` with `p = 1`), and `equation_5_3_5` with the back substitution's spec.
+Without the hypothesis the statement is false (`algorithm_5_3_2_counterexample`). ★★'''
+deps = ["algorithm_5_3_2", "algorithm_5_2_1_spec", "equation_5_1_4_beta", "equation_5_1_4", "equation_5_3_5", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
+
+[[node]]
+id = "algorithm_5_3_2_counterexample"
+kind = "theorem"
+desc = '''Algorithm 5.3.2 as printed is wrong when `house` returns `β = 0`: for `A = 1 : Matrix (Fin 2) (Fin 2) ℝ`
+and `b = ![1, 0]`, every Householder step meets `σ = 0, x₁ = 1 ≥ 0`, so Algorithm 5.2.1 leaves `A`
+unchanged with `β = 0`, while the printed `β = 2/vᵀv = 2` flips `b` to `![-1, 0]`, and the output is
+`![-1, 0]`, not the least-squares (here exact) solution `![1, 0]`. A `decide`/`norm_num`
+computation at `Id`. Recorded for `notes/book-errata.md`. ★'''
+deps = ["algorithm_5_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
+
+[[node]]
+id = "equation_5_3_6"
+kind = "theorem"
+desc = '''(5.3.6)–(5.3.8), rigorous: under the hypotheses of `algorithm_5_3_2_spec`'s nondegeneracy for
+the *computed* run (every computed `β̂_j ≠ 0`) and `K u` small, every run `x̂` of
+`algorithm_5_3_2 fp.round h A b` solves exactly a nearby problem: `∃ δA δb, IsLeastSquaresSolution
+(A + δA) (b + δb) x̂ ∧ ‖δA‖_F ≤ c_A ‖A‖_F ∧ ‖δb‖₂ ≤ c_b ‖b‖₂` with explicit
+`c_A, c_b = O(n γ_{K'})` from the columnwise QR backward error (`algorithm_5_2_1_rounding`, the same
+reflectors applied to `b`: columnwise Lemma 19.3 on `[A | b]`) and the back substitution's
+`(R̂ + ΔR) x̂ = ĉ`, `|ΔR| ≤ γ_n |R̂|` (chapter 3's bridge `algorithm_3_1_2_rounds` to `FloatingPoint.RoundsBackSubstDot`
+and its backward error `FloatingPoint.exists_roundsBackSubstDot_eq`), `δA := Q[ΔR; 0] + E`. Relation to the printed
+`(6m - 3n + 41) n u + O(u²)` (Lawson–Hanson): same shape, first-order constants replaced by `γ`s
+(Higham Theorem 20.3). ★★★ (~250 lines)'''
+deps = [
+  "algorithm_5_3_2",
+  "algorithm_5_3_2_spec",
+  "algorithm_5_2_1_rounding",
+  "FloatingPoint.exists_eq_prodRev_mul_add",
+  "GolubVanLoan.Chapter03.algorithm_3_1_2_rounds",
+  "FloatingPoint.exists_roundsBackSubstDot_eq",  # staged by ch03
+]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.6)'
+
+[[node]]
+id = "equation_5_3_7"
+kind = "theorem"
+desc = '''(5.3.7): the `δA` of `equation_5_3_6` satisfies `‖δA‖_F ≤ c_A ‖A‖_F` — the first bound clause
+of `equation_5_3_6`, stated on its own; the book's `(6m - 3n + 41) n u + O(u²)` is its first-order
+reading (Lawson–Hanson's constant; ours is the explicit `γ` expression). ★'''
+deps = ["equation_5_3_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.7)'
+
+[[node]]
+id = "equation_5_3_8"
+kind = "theorem"
+desc = '''(5.3.8): the `δb` of `equation_5_3_6` satisfies `‖δb‖₂ ≤ c_b ‖b‖₂` (the book's
+`(6m - 3n + 40) n u + O(u²)`), the second bound clause of `equation_5_3_6`. ★'''
+deps = ["equation_5_3_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.8)'
+
+[[node]]
+id = "mgs_augmented"
+kind = "theorem"
+desc = '''§5.3.5: if MGS is applied to `A₊ = [A | b]` (full column rank `n + 1`), giving
+`A₊ = [Q₁ | q_{n+1}] [R₁ z; 0 ρ]`, then `z = Q₁ᵀ b`, `R₁ x = z` defines `x_LS`, and `|ρ| = ρ_LS`.
+From `algorithm_5_2_6_spec` on `A₊` and uniqueness of the thin factorization of `A` (the leading
+block of `A₊`'s factors is `A`'s); then `equation_5_3_5`. (If `b ∈ ran A`, `A₊` is rank deficient
+and MGS divides by zero; the hypothesis is the book's implicit one.) ★★'''
+deps = ["algorithm_5_2_6_spec", "Matrix.IsThinQR.unique", "equation_5_3_5"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.5'
+
+[[node]]
+id = "equation_5_3_9"
+kind = "theorem"
+desc = '''(5.3.9), for `A ∈ ℝ^{m×n}` of full column rank, `m > n`, `n ≥ 1`:
+`‖A(AᵀA)⁻¹Aᵀ‖₂ = 1`, `‖(AᵀA)⁻¹Aᵀ‖₂ = 1/σ_n(A)`, `‖I - A(AᵀA)⁻¹Aᵀ‖₂ = 1`, `‖(AᵀA)⁻¹‖₂ = 1/σ_n(A)²`.
+With `A⁺ = (AᵀA)⁻¹Aᵀ` (`Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`): backbone
+`Matrix.l2_opNorm_mul_pinv_eq_one` (three of them) and
+`Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues`. ★'''
+deps = ["Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose", "Matrix.l2_opNorm_mul_pinv_eq_one", "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.9)'
+
+[[node]]
+id = "thetaLS"
+kind = "definition"
+desc = '''Theorem 5.3.1's `θ_LS ∈ (0, π/2)` with `sin θ_LS = ‖r_LS‖₂/‖b‖₂` (`Real.arcsin`), and (5.3.10)
+`ν_LS = ‖A x_LS‖₂ / (σ_n(A) ‖x_LS‖₂)` (`nuLS`, second definition in this node), for full-column-rank
+`A` and `b`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.10)'
+
+[[node]]
+id = "equation_5_3_16"
+kind = "theorem"
+desc = '''(5.3.16): for `b ≠ 0`, `r_LS ≠ 0`, `A x_LS ≠ 0`: `cos θ_LS = ‖A x_LS‖₂/‖b‖₂` and
+`tan θ_LS = ‖r_LS‖₂/‖A x_LS‖₂` — from `b = A x_LS + r_LS` with `A x_LS ⊥ r_LS` (the normal equations),
+Pythagoras, and `cos (arcsin t) = √(1 - t²)`. ★'''
+deps = ["thetaLS", "isLeastSquaresSolution_iff_normalEquations"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.16)'
+
+[[node]]
+id = "nuLS_le_kappa2"
+kind = "theorem"
+desc = '''§5.3.6: `ν_LS ≤ κ₂(A)` (`‖A x‖₂ ≤ ‖A‖₂ ‖x‖₂ = σ_1 ‖x‖₂`). ★'''
+deps = ["thetaLS", "kappa2", "equation_5_2_4"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.6'
+
+[[node]]
+id = "theorem_5_3_1_a"
+kind = "theorem"
+desc = '''Theorem 5.3.1, (5.3.11), rigorous: with the hypotheses of the book (`rank A = n`,
+`‖δA‖₂ < σ_n(A)`, `b, r_LS, x_LS ≠ 0`, `ε = max(‖δA‖₂/‖A‖₂, ‖δb‖₂/‖b‖₂)`) and
+`σ' = σ_n(A) - ‖δA‖₂`, `κ' = ‖A‖₂/σ'`, `ν' = ‖A x_LS‖₂/(σ' ‖x_LS‖₂)`:
+`‖x̂_LS - x_LS‖₂ / ‖x_LS‖₂ ≤ ε (ν'/cos θ_LS + [1 + ν' tan θ_LS] κ')` — (5.3.11) exactly, with
+`σ_n(A)` replaced by `σ'` and no `O(ε²)` term. From `Matrix.norm_leastSquares_sub_le` divided by
+`‖x_LS‖` and (5.3.16). ★★'''
+deps = ["Matrix.norm_leastSquares_sub_le", "equation_5_3_16", "thetaLS", "kappa2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
+
+[[node]]
+id = "theorem_5_3_1_b"
+kind = "theorem"
+desc = '''Theorem 5.3.1, (5.3.12), rigorous: under the same hypotheses,
+`‖r̂_LS - r_LS‖₂ / ‖r_LS‖₂ ≤ ε (1/sin θ_LS + [1/(ν tan θ_LS) + 1] κ')` with `κ' = ‖A‖₂/(σ_n - ‖δA‖₂)`
+in the last term (the other terms need no correction). From `Matrix.norm_leastSquares_residual_sub_le`. ★★'''
+deps = ["Matrix.norm_leastSquares_residual_sub_le", "equation_5_3_16", "thetaLS", "kappa2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
+
+[[node]]
+id = "theorem_5_3_1"
+kind = "theorem"
+desc = '''Theorem 5.3.1 as printed, the `+ O(ε²)` reading: for fixed `A` (full column rank) and `b` with
+`b, r_LS, x_LS ≠ 0`, there are `K, ε₀ > 0` such that for all `δA, δb` with `ε ≤ ε₀`
+(`ε` as in the book) the left-hand sides of (5.3.11) and (5.3.12) are at most
+`ε · (the book's bracket) + K ε²`. From `theorem_5_3_1_a`/`_b`: `1/(σ - ε‖A‖) ≤ 1/σ + 2ε‖A‖/σ²` for
+`ε ≤ σ/(2‖A‖)`. ★'''
+deps = ["theorem_5_3_1_a", "theorem_5_3_1_b"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
+
+[[node]]
+id = "equation_5_3_15"
+kind = "theorem"
+desc = '''(5.3.15): with `x(t)` the solution of `(A + tE)ᵀ(A + tE) x(t) = (A + tE)ᵀ(b + tf)` (5.3.13),
+`HasDerivAt x (ẋ 0) 0` with `ẋ(0) = (AᵀA)⁻¹Aᵀ(f - E x_LS) + (AᵀA)⁻¹Eᵀ r_LS`; and the residual's
+`ṙ(0) = (I - A(AᵀA)⁻¹Aᵀ)(f - E x_LS) - A(AᵀA)⁻¹Eᵀ r_LS` (second declaration). Backbone
+`Matrix.hasDerivAt_pinv_mulVec_line`. ★'''
+deps = ["Matrix.hasDerivAt_pinv_mulVec_line"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.15)'
+
+[[node]]
+id = "equation_5_3_20"
+kind = "theorem"
+desc = '''(5.3.20): if `[I_m A; Aᵀ 0][r; x] = [b; 0]` then `‖b - Ax‖₂ = min`; and the augmented matrix
+is nonsingular iff `rank A = n`. Backbone `Matrix.isLeastSquaresSolution_of_augmented` (chapter 6's
+weighted form in `LeastSquares/Weighted`, at weight `M = 1`: its equations `r + A x = b`,
+`Aᵀ r = 0` are the two block rows) and `Matrix.isUnit_augmented_iff` (`Matrix.fromBlocks` over
+`Fin m ⊕ Fin n`). ★'''
+deps = ["Matrix.isLeastSquaresSolution_of_augmented", "Matrix.isUnit_augmented_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.20)'
+
+[[node]]
+id = "augmentedSolve_qr"
+kind = "theorem"
+desc = '''§5.3.8: if `A = QR` (`IsQR`, `R₁ = R(1:n, 1:n)` nonsingular), `Qᵀf = [f₁; f₂]`, and
+`R₁ᵀ h = g`, `R₁ z = f₁ - h`, `p = Q [h; f₂]`, then `[I A; Aᵀ 0][p; z] = [f; g]` (the transformed
+block system `[I_n 0 R₁; 0 I_{m-n} 0; R₁ᵀ 0 0][h; f₂; z] = [f₁; f₂; g]`). Block algebra with
+`Matrix.IsQR.reduced`. ★★'''
+deps = ["Matrix.IsQR.reduced", "equation_5_3_20"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.8'
+
+[[node]]
+id = "lsIterativeImprovement"
+kind = "definition"
+desc = '''§5.3.8, the iterative improvement of the augmented system (displayed, unnumbered):
+`r⁽⁰⁾ = 0, x⁽⁰⁾ = 0`; for `k` (fuel parameter): `[f; g] = [b; 0] - [I A; Aᵀ 0][r; x]` (in the book
+"in higher precision": a second rounding hook `rndHi`), solve `[I A; Aᵀ 0][p; z] = [f; g]` by the
+QR route of `augmentedSolve_qr` (with the working hook), update `[r; x] += [p; z]`. Spec
+(`lsIterativeImprovement_spec`, same node): in exact arithmetic every iterate after the first is the
+exact solution `(r_LS, x_LS)`. Björck's digit-gain claim is not formalized (heuristic). ★★'''
+deps = ["augmentedSolve_qr", "equation_5_3_20"]
+source = 'Golub–Van Loan, Matrix Computations, §5.3.8'
+
+[[node]]
+id = "crossMatrix"
+kind = "definition"
+desc = '''§5.3.9: the skew-symmetric `v^c = !![0, -v 2, v 1; v 2, 0, -v 0; -v 1, v 0, 0]` of
+`v : Fin 3 → ℝ`, with `p ⨯₃ q = p^c q = -q^c p = -(q ⨯₃ p)` (`crossMatrix_mulVec`, second declaration;
+Mathlib `crossProduct`, notation `⨯₃`, `cross_anticomm`). Checked: Mathlib has no matrix form of the
+cross product (`crossProduct`, `cross_apply` only). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.3.9, Definition'
+
+[[node]]
+id = "equation_5_3_21"
+kind = "theorem"
+desc = '''(5.3.21): `p × q ∈ span{p, q}⊥`, i.e. `p ⬝ᵥ (p ⨯₃ q) = 0 ∧ q ⬝ᵥ (p ⨯₃ q) = 0` — Mathlib
+`dot_self_cross`, `dot_cross_self`. ★'''
+deps = ["crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.21)'
+
+[[node]]
+id = "equation_5_3_22"
+kind = "theorem"
+desc = '''(5.3.22): `(p × q) × r = (p^c q)^c r = (q pᵀ - p qᵀ) r = (pᵀr) q - (qᵀr) p` — Mathlib
+`cross_cross_eq_smul_sub_smul'`-type lemma with `crossMatrix_mulVec` and `vecMulVec`. ★'''
+deps = ["crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.22)'
+
+[[node]]
+id = "equation_5_3_23"
+kind = "theorem"
+desc = '''(5.3.23): `(p × q)ᵀ(r × s) = det([p q]ᵀ[r s])` (the Binet–Cauchy/Lagrange identity) —
+Mathlib `cross_dot_cross` and `Matrix.det_fin_two`. ★'''
+deps = ["crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.23)'
+
+[[node]]
+id = "equation_5_3_24"
+kind = "theorem"
+desc = '''(5.3.24): `p^c p^c = p pᵀ - ‖p‖₂² I₃` (`ext i j; fin_cases i <;> fin_cases j; simp; ring`). ★'''
+deps = ["crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.24)'
+
+[[node]]
+id = "equation_5_3_25"
+kind = "theorem"
+desc = '''(5.3.25): `‖p^c q‖₂² = ‖p‖₂² ‖q‖₂² (1 - (pᵀq/(‖p‖₂‖q‖₂))²)` for `p, q ≠ 0` (Lagrange's identity,
+`equation_5_3_23` with `r = p, s = q`). ★'''
+deps = ["equation_5_3_23"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.25)'
+
+[[node]]
+id = "equation_5_3_26"
+kind = "theorem"
+desc = '''(5.3.26), point–line: for `p₁ ≠ p₂`, `v = p₂ - p₁`, `L = {p₁ + τ v}`, the point
+`z = y + (1/vᵀv) v^c v^c (y - p₁)` lies on `L` and minimizes `‖z - y‖₂` over `L` (by (5.3.24),
+`z = p₁ + (vᵀ(y - p₁)/vᵀv) v`, the orthogonal projection). `IsMinOn` on the line, or
+`EuclideanGeometry.orthogonalProjection` on `AffineSubspace.mk' p₁ (span {v})`. ★'''
+deps = ["equation_5_3_24", "crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.26)'
+
+[[node]]
+id = "equation_5_3_27"
+kind = "theorem"
+desc = '''(5.3.27)–(5.3.28), line–line: for lines `L₁ ∋ p₁, p₂` and `L₂ ∋ q₁, q₂`, `v = p₂ - p₁`,
+`w = q₂ - q₁`, `r = v^c w` **assumed nonzero** (non-parallel lines; the book omits it, and for
+`r = 0` the formula divides by zero), `z₁ = p₁ + (1/rᵀr) v wᵀ r^c (q₁ - p₁)` and
+`z₂ = q₁ + (1/rᵀr) w vᵀ r^c (q₁ - p₁)` lie on `L₁`, `L₂` and minimize `‖z₁ - z₂‖₂` (the normal
+equations of the 3 × 2 least-squares problem in `τ`, P5.3.14; the scalars are triple products,
+`triple_product_permutation`). `equation_5_3_28` is the `z₂` clause as its own declaration. ★★'''
+deps = ["equation_5_3_22", "equation_5_3_23", "crossMatrix", "isLeastSquaresSolution_iff_normalEquations"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.27)'
+
+[[node]]
+id = "equation_5_3_28"
+kind = "theorem"
+desc = '''(5.3.28): the `z₂` half of `equation_5_3_27` (same hypotheses, `r ≠ 0`). ★'''
+deps = ["equation_5_3_27"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.28)'
+
+[[node]]
+id = "equation_5_3_29"
+kind = "theorem"
+desc = '''(5.3.29), point–plane: for `p₁, p₂, p₃` **not collinear** (the book says "distinct", which is
+not enough: collinear points give `v = 0`), `v = (p₂ - p₁)^c (p₃ - p₁)`, the point
+`z = p₁ - (1/vᵀv) v^c v^c (y - p₁)` lies on the plane `{x : xᵀv = p₁ᵀv}` and minimizes `‖z - y‖₂`
+over it (by (5.3.24), `z = y - (vᵀ(y - p₁)/vᵀv) v`). ★'''
+deps = ["equation_5_3_24", "equation_5_3_21", "crossMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.29)'

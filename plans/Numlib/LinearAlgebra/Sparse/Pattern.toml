@@ -1,3 +1,9 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Sparse.Pattern` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch11) add a sentence: `Matrix.IsPatternSymm A` ("structurally symmetric", Davis;
+# [golub2013matrix] §11.1.9) says the pattern is symmetric, `A i j ≠ 0 ↔ A j i ≠ 0`; it is preserved
+# by symmetric permutations and implied by symmetry, and for such `A` the digraph and the
+# symmetrized graph carry the same off-diagonal information.
 namespace = "Matrix"
 
 [[node]]
@@ -53,3 +59,34 @@ id = "isPatternIrreducible_iff_exists_pow_pos"
 
 [[node]]
 id = "isPatternIrreducible_iff_nonempty_path"
+
+[[node]]  # staged by ch11
+id = "IsPatternSymm"
+kind = "definition"
+desc = '''
+`def Matrix.IsPatternSymm [Zero R] (A : Matrix n n R) : Prop := ∀ i j, A i j ≠ 0 ↔ A j i ≠ 0` —
+"structurally symmetric" ([golub2013matrix] §11.1.9: `a_ij` and `a_ji` are both zero or both
+nonzero). Named in the `IsPattern…` family of `Matrix.IsPatternIrreducible` so that "pattern" and
+"structural" searches both find it (mention both in the docstring). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.1.9, Definition'
+
+[[node]]  # staged by ch11
+id = "IsPatternSymm.submatrix"
+kind = "theorem"
+desc = '''
+`A.IsPatternSymm → (A.submatrix e e).IsPatternSymm` for any `e : m → n` (in particular a symmetric
+permutation `P A Pᵀ`). One line. ★
+'''
+deps = ["Matrix.IsPatternSymm"]
+
+[[node]]  # staged by ch11
+id = "IsSymm.isPatternSymm"
+kind = "theorem"
+desc = '''
+A symmetric matrix is structurally symmetric; so is `D₁ A D₂` for symmetric `A` and nonsingular
+diagonal `D₁, D₂` (the book's "symmetric matrices whose rows and/or columns are scaled"). ★
+'''
+deps = ["Matrix.IsPatternSymm"]
+source = 'Golub–Van Loan, Matrix Computations, §11.1.9'

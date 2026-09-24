@@ -1,0 +1,492 @@
+namespace = "GolubVanLoan.Chapter03"
+desc = '''
+§3.4, pivoting: interchange permutations and the `piv` encoding (§3.4.1), partial pivoting
+((3.4.1)–(3.4.5), Algorithms 3.4.1–3.4.2), its error analysis and the growth factor
+((3.4.6)–(3.4.9), the `2^{n-1}` example), complete pivoting (Algorithm 3.4.3, Wilkinson's
+(3.4.10), rank revelation), rook pivoting (§3.4.7), underdetermined systems ((3.4.11)) and the
+"LU mentality" algorithms (3.4.12)–(3.4.13) (`solveMultipleRHS`, `solvePowerSystem`).
+
+Backbone: `Matrix.gemPivotStage`, `Matrix.partialPivotRow`, `Matrix.gemFullPivotStage`,
+`Matrix.IsCompletePivot`, `Matrix.growthFactor`, `Matrix.supAbs`, `Matrix.wilkinsonGrowthBound`
+(`Numlib/LinearAlgebra/Matrix/LU/Pivoting`), with ch03's appends there (partial pivoting without a
+nonzero-pivot hypothesis, `IsRookPivot`, the algorithmic `P A Q = L U`, rank revelation, the
+stage-wise Wilkinson bound). A row permutation `σ` acts as `A.submatrix σ id =
+σ.permMatrix ℝ * A`; the book's `P = Π_{n-1} ⋯ Π_1` is `(pivPerm piv).permMatrix ℝ`.
+
+**D4 conventions specific to this section** (on top of the numbered conventions of
+`NumlibSurface/GolubVanLoan`). Pivot searches compare the *exact* absolute values of the computed
+entries (convention 1: `|·|` and comparisons are exact, no `rnd`); the search returns the first maximizing index, so that it agrees with
+`Matrix.partialPivotRow`. The book's `if A(k,k) ≠ 0` guard is kept in the programs. The exact
+specifications of the pivoting algorithms go by an `Id`-level simulation of the backbone stage
+recurrences (`algorithm_3_4_1_eq_gemPivotStage`), not through the exact rounding model: a skipped
+update (zero pivot) is not a `RoundsLU` step. The rounding bridges assume the divisor pivots
+nonzero, so the guard is always taken. In the relational model the computed multipliers of
+partial pivoting are bounded by `1 + u`, not `1` (the model does not know that rounding is monotone
+and fixes `± 1`); every normwise consequence carries the factor `1 + u`.
+'''
+
+[[node]]
+id = "interchange"
+kind = "definition"
+desc = '''§3.4.1, the interchange permutation `Π` swapping `k` and `l`: `interchange k l =
+(Equiv.swap k l).permMatrix ℝ` on `Fin n`; `interchange k l * A` swaps rows `k, l` of `A`,
+`A * interchange k l` swaps columns (`PEquiv.toMatrix_toPEquiv_mul`), and `interchange k l` is
+symmetric and an involution. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.4.1, Definition'
+
+[[node]]
+id = "pivPerm"
+kind = "definition"
+desc = '''§3.4.1, the permutation encoded by `piv`: for `piv : Fin m → Fin n` (`m ≤ n` steps,
+`k ↦ piv k`) the row permutation `σ = swap 0 (piv 0) * ⋯ * swap (m-1) (piv (m-1))` (a
+`List.foldl` over `List.finRange m`), so that `σ.permMatrix ℝ = Π_m ⋯ Π_1`; the same accumulation
+as `Matrix.gemPivotStage`'s second component. ★'''
+deps = ["interchange", "Matrix.gemPivotStage"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.1, Definition'
+
+[[node]]
+id = "applyPiv"
+kind = "definition"
+desc = '''§3.4.1, the loops "`for k = 1:m, x(k) ↔ x(piv(k))`" and "`for k = m:-1:1`": `applyPiv piv x`
+and `applyPivRev piv x`, folds of `x ∘ Equiv.swap k (piv k)` (no arithmetic, a pure function). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.4.1'
+
+[[node]]
+id = "applyPiv_eq"
+kind = "theorem"
+desc = '''§3.4.1: the forward loop overwrites `x` with `P x`, and since every `Π_k` is symmetric the
+reverse loop overwrites `x` with `Pᵀ x = Π₁ ⋯ Π_m x`: `applyPiv piv x = (pivPerm piv).permMatrix ℝ *ᵥ x`,
+`applyPivRev piv x = ((pivPerm piv).permMatrix ℝ)ᵀ *ᵥ x`. Induction over the list;
+`Matrix.permMatrix_mul`-type lemmas. ★★ (~40 lines)'''
+deps = ["applyPiv", "pivPerm"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.1'
+
+[[node]]
+id = "partialPivotStage"
+kind = "definition"
+desc = '''(3.4.1), partial pivoting as a sequence of matrices: after `k` steps,
+`partialPivotStage A k = (Matrix.gemPivotStage A Matrix.partialPivotRow k).1` (the book's
+`M_k Π_k ⋯ M_1 Π_1 A`), with the interchanges `Π_k` those of `Matrix.gemPivotSwap`. An abbrev,
+named by content (naming rule of `NumlibSurface/GolubVanLoan`). ★'''
+deps = ["Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.gemPivotSwap"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.1)'
+
+[[node]]
+id = "equation_3_4_2"
+kind = "theorem"
+desc = '''(3.4.2): `M_{n-1} Π_{n-1} ⋯ M_1 Π_1 A = U` is upper triangular, for every `A`
+(no hypothesis: a zero pivot comes with a zero column, and then `M_k = I`):
+`(partialPivotStage A n).IsUpperTriangular`, with each step
+`partialPivotStage A (k+1) = gaussTransformation τ k * (interchange k (piv k) * partialPivotStage A k)`
+(`Matrix.gemPivotStage_succ_fst_eq_gaussTransform_mul`, `gaussTransformation_gaussVector_eq_gaussTransform`).
+Triangularity from the append `Matrix.gemPivotStage_partialPivotRow_permMatrix_mul_isLU`. ★'''
+deps = ["partialPivotStage", "interchange", "gaussTransformation_gaussVector_eq_gaussTransform", "Matrix.gemPivotStage_succ_fst_eq_gaussTransform_mul", "Matrix.gemPivotStage_partialPivotRow_permMatrix_mul_isLU"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.2)'
+
+[[node]]
+id = "equation_3_4_3"
+kind = "theorem"
+desc = '''(3.4.3): partial pivoting computes `P A = L U` with `P = Π_{n-1} ⋯ Π_1`, `L` unit lower
+triangular with `|l_ij| ≤ 1`, `U` upper triangular — for every `A`:
+`Matrix.IsLU (σ.permMatrix ℝ * A) (Matrix.gemLower (σ.permMatrix ℝ * A)) (partialPivotStage A n)` with
+`σ = (gemPivotStage A partialPivotRow n).2`, and `|gemLower (σ.permMatrix ℝ * A) i j| ≤ 1`.
+`Matrix.gemPivotStage_partialPivotRow_permMatrix_mul_isLU` (append),
+`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`. ★'''
+deps = ["partialPivotStage", "Matrix.gemPivotStage_partialPivotRow_permMatrix_mul_isLU", "Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.3)'
+
+[[node]]
+id = "equation_3_4_5"
+kind = "theorem"
+desc = '''(3.4.5): `M̃_k = (Π_{n-1} ⋯ Π_{k+1}) M_k (Π_{k+1} ⋯ Π_{n-1})` is a Gauss transformation,
+`M̃_k = I - τ̃^{(k)} e_kᵀ` with `τ̃^{(k)} = Π_{n-1} ⋯ Π_{k+1} τ^{(k)}`: `IsGaussTransformation M̃_k k`
+and the formula for `τ̃`. The later interchanges fix the indices `≤ k`
+(`Matrix.gemPivotStage_snd_inv_mul_apply`), so conjugation moves only the entries of `τ` below `k`
+and `e_k` is fixed. ★★ (~50 lines)'''
+deps = ["IsGaussTransformation", "gaussTransformation", "interchange", "Matrix.gemPivotStage_snd_inv_mul_apply"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.5)'
+
+[[node]]
+id = "equation_3_4_4"
+kind = "theorem"
+desc = '''(3.4.4): `M̃_{n-1} ⋯ M̃_1 P A = U`, so that `L = (M̃_{n-1} ⋯ M̃_1)⁻¹` has columns the
+permuted multipliers — the book's answer to "where is `L`?". Algebra from (3.4.2) and (3.4.5)
+(insert `Π_i Π_i = I`); equivalently `Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`
+(the stages on `P A` are the pivoted stages with rows permuted by the later interchanges). ★★
+(~50 lines)'''
+deps = ["equation_3_4_2", "equation_3_4_5", "Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.4)'
+
+[[node]]
+id = "algorithm_3_4_1"
+kind = "definition"
+desc = '''Algorithm 3.4.1 (outer product LU with partial pivoting), D4, as in
+`notes/gvl/ch03/proto/Shapes.lean`: state `(A, piv)`; for `k : Fin n`, `μ` = the first index
+`≥ k` maximizing `|A(μ,k)|` (exact comparisons), `piv(k) = μ`, `A(k,:) ↔ A(μ,:)`
+(`A.submatrix (Equiv.swap k μ) id`), and `if A k k ≠ 0` the two updates of Algorithm 3.2.1. The
+book loops `k = 1:n-1`; the last step `k = n - 1` is a trivial swap and empty updates. ★'''
+deps = ["algorithm_3_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.1'
+
+[[node]]
+id = "algorithm_3_4_1_eq_gemPivotStage"
+kind = "theorem"
+desc = '''The exact run of Algorithm 3.4.1 is the backbone's partial-pivoting recurrence: with
+`(F, piv) = Id.run (algorithm_3_4_1 pure A)`, `pivPerm piv = (gemPivotStage A partialPivotRow n).2`,
+`packedU F = (gemPivotStage A partialPivotRow n).1` and `packedL F = gemLower (P A)`. An `Id`-level
+simulation by induction over the steps (the program's pivot search is `Matrix.partialPivotRow`:
+both return the first maximizing row, `Matrix.partialPivotRow_le`; the swapped rows carry their
+stored multipliers, which is `gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`'s bookkeeping; a
+zero pivot skips the update exactly as `elimStep` with zero multipliers changes nothing). ★★★
+(~250 lines)'''
+deps = ["algorithm_3_4_1", "pivPerm", "packedL", "packedU", "Matrix.gemPivotStage", "Matrix.partialPivotRow_le", "Matrix.le_partialPivotRow", "Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage", "Matrix.gemLower"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.1'
+
+[[node]]
+id = "algorithm_3_4_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.4.1 (the book's "computes `P A = L U` … with `|l_ij| ≤ 1`";
+"always runs to completion"): for every `A`, with `(F, piv) = Id.run (algorithm_3_4_1 pure A)`
+and `P = (pivPerm piv).permMatrix ℝ`, `Matrix.IsLU (P * A) (packedL F) (packedU F)` and
+`|packedL F i j| ≤ 1`. From `algorithm_3_4_1_eq_gemPivotStage` and `equation_3_4_3`. ★'''
+deps = ["algorithm_3_4_1_eq_gemPivotStage", "equation_3_4_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.1'
+
+[[node]]
+id = "algorithm_3_4_1_rounds"
+kind = "theorem"
+desc = '''**The bridge of Algorithm 3.4.1**: for every `(F, piv) ∈ (algorithm_3_4_1 fp.round A).run`
+whose divisor pivots `F j j` (`j + 1 < n`) are nonzero,
+`FloatingPoint.RoundsLU fp (A.submatrix (pivPerm piv) id) (packedL F) (packedU F)` and
+`|packedL F i j| ≤ 1 + fp.u`. The computed factors of partial pivoting are the computed factors of
+elimination without pivoting on `P A` ([higham2002accuracy] §9.3): the invariant of
+`algorithm_3_2_1_rounds` stated for the rows permuted by the interchanges so far, whose later
+interchanges only permute rows `> k` (and move their stored multipliers with them). The multiplier
+bound: `|â_ik| ≤ |â_kk|` by the search, so `|â_ik / â_kk| ≤ 1` and one rounding gives `1 + u`.
+Statement shape checked in `proto/Shapes.lean` (`algorithm_3_4_1_roundsLU`). ★★★ (~350 lines)'''
+deps = ["algorithm_3_4_1", "algorithm_3_2_1_rounds", "pivPerm", "packedL", "packedU", "FloatingPoint.RoundsLU", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind", "FloatingPoint.roundsSumFrom_append_singleton"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.1'
+
+[[node]]
+id = "algorithm_3_4_1_run_nonempty"
+kind = "theorem"
+desc = '''Nonemptiness (review `notes/gvl/review/algo.md` M8): for a total model the run set of GEPP is
+nonempty, `fp.IsTotal → (algorithm_3_4_1 fp.round A).run.Nonempty`, so `algorithm_3_4_1_rounds` and
+the bounds built on it are not vacuous. Every step is binds of `fp.round` and `pure` (the pivot
+search and the swap are pure): `SetM.run_foldlM_nonempty`, `SetM.run_bind_nonempty`,
+`FloatingPoint.RoundingModel.run_round_nonempty`. ★'''
+deps = ["algorithm_3_4_1", "SetM.run_foldlM_nonempty", "SetM.run_bind_nonempty", "FloatingPoint.RoundingModel.run_round_nonempty", "FloatingPoint.RoundingModel.IsTotal"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.1'
+
+[[node]]
+id = "solvePLU"
+kind = "definition"
+desc = '''§3.4.3, solving `A x = b` after Algorithm 3.4.1, D4: "overwrite `b` with `P b`" by
+`applyPiv piv` (no arithmetic), then Algorithm 3.1.1 with `packedL F` and Algorithm 3.1.2 with
+`packedU F` (the §3.1 row versions, as Theorem 3.3.2 uses; the division by the unit diagonal of
+`L` is a rounding the relational model charges, and `RoundsForwardSubstDot` allows it). Also the
+composite `solveGEPP rnd A b` (factor, then `solvePLU`). ★'''
+deps = ["applyPiv", "algorithm_3_1_1", "algorithm_3_1_2", "algorithm_3_4_1", "packedL", "packedU"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.3'
+
+[[node]]
+id = "solvePLU_spec"
+kind = "theorem"
+desc = '''Exact correctness of the GEPP solve: for nonsingular `A`, `A *ᵥ Id.run (solveGEPP pure A b) = b`.
+From `algorithm_3_4_1_spec`, `applyPiv_eq`, `algorithm_3_1_1_spec`, `algorithm_3_1_2_spec` and
+`Matrix.mulVec_luSolve_permMatrix` (`U` has a nonzero diagonal because `P A = L U` is
+nonsingular: `Matrix.IsLU.det_eq_prod_diag`). ★'''
+deps = ["solvePLU", "algorithm_3_4_1_spec", "applyPiv_eq", "algorithm_3_1_1_spec", "algorithm_3_1_2_spec", "Matrix.mulVec_luSolve_permMatrix", "Matrix.IsLU.det_eq_prod_diag"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.3'
+
+[[node]]
+id = "algorithm_3_4_2"
+kind = "definition"
+desc = '''Algorithm 3.4.2 (gaxpy LU with partial pivoting), D4: Algorithm 3.2.2 with, at column `j`,
+`ã = Π_{j-1} ⋯ Π_1 A(:,j)` (applied by the swaps recorded so far), the pivot search on
+`|v(j:n)|`, the swaps `v(j) ↔ v(μ)` and `L(j,1:j-1) ↔ L(μ,1:j-1)`, `U(j,j) = v(j)` and
+`if v(j) ≠ 0` the rounded divisions. Unit forward substitution without division, as in
+`algorithm_3_2_2`. ★'''
+deps = ["algorithm_3_2_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.2'
+
+[[node]]
+id = "algorithm_3_4_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.4.2: its `Id` output is the same `(P, L, U)` as Algorithm
+3.4.1's (both are the backbone's partial-pivoting recurrence; simulation as in
+`algorithm_3_4_1_eq_gemPivotStage`), hence `P A = L U` with `|l_ij| ≤ 1`. ★★★ (~200 lines)'''
+deps = ["algorithm_3_4_2", "algorithm_3_4_1_eq_gemPivotStage", "equation_3_4_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.2'
+
+[[node]]
+id = "algorithm_3_4_2_rounds"
+kind = "theorem"
+desc = '''The bridge of Algorithm 3.4.2: runs with nonzero divisor pivots satisfy
+`FloatingPoint.RoundsLU fp (A.submatrix (pivPerm piv) id) L̂ Û` and `|l̂_ij| ≤ 1 + u`; the
+gaxpy bridge `algorithm_3_2_2_rounds` with the row permutation bookkeeping of
+`algorithm_3_4_1_rounds`. ★★★ (~250 lines)'''
+deps = ["algorithm_3_4_2", "algorithm_3_2_2_rounds", "algorithm_3_4_1_rounds", "FloatingPoint.RoundsLU"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.2'
+
+[[node]]
+id = "equation_3_4_6"
+kind = "theorem"
+desc = '''(3.4.6), rigorous form, stated on returned values only (convention 9, nested as
+`theorem_3_3_2`): for `u < 1`, `3 n u < 1`, every `(F, piv) ∈ (algorithm_3_4_1 fp.round A).run` with
+the returned pivots `F j j` all nonzero, and every `x̂ ∈ (solvePLU fp.round F piv b).run`, satisfy
+`(A + E) x̂ = b` with `|E| ≤ γ_{3n} Pᵀ |L̂| |Û|` entrywise (`P = (pivPerm piv).permMatrix ℝ`,
+`L̂ = packedL F`, `Û = packedU F`; no rounding in the permutation). Theorem 3.3.2's bound for the
+system `(P A) x = P b` (`FloatingPoint.exists_roundsLU_solveDot_eq`), transported by `Pᵀ`
+(`|Pᵀ M| = Pᵀ |M|`). The book's `n u (2|A| + 4 Pᵀ|L̂||Û|) + O(u²)` is implied to first order. ★★
+(~60 lines)'''
+deps = ["solvePLU", "algorithm_3_4_1_rounds", "algorithm_3_1_1_rounds", "algorithm_3_1_2_rounds", "applyPiv_eq", "FloatingPoint.exists_roundsLU_solveDot_eq", "theorem_3_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.6)'
+
+[[node]]
+id = "equation_3_4_7"
+kind = "theorem"
+desc = '''(3.4.7), rigorous form: under (3.4.6)'s hypotheses, `‖E‖_∞ ≤ n (1 + u) γ_{3n} ‖Û‖_∞` (the
+computed multipliers give `‖L̂‖_∞ ≤ n (1 + u)`; `‖Pᵀ‖_∞ = 1`; `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`,
+`Matrix.linfty_opNorm_mul`). The book's `n u (2‖A‖_∞ + 4 n ‖Û‖_∞) + O(u²)` is implied to first order.
+★'''
+deps = ["equation_3_4_6", "algorithm_3_4_1_rounds", "Matrix.linfty_opNorm_le_of_abs_entrywiseLE"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.7)'
+
+[[node]]
+id = "growthFactorStages"
+kind = "definition"
+desc = '''(3.4.8), the growth factor as printed (named by content; the backbone's `Matrix.growthFactor`
+is Wilkinson's): `ρ = max_{i,j,k} |a_ij^{(k)}| / ‖A‖_∞` over the stages
+`A^{(k)} = M_k Π_k ⋯ M_1 Π_1 A` of partial pivoting,
+`growthFactorStages A = (⨆ k : Fin (n+1), supAbs (partialPivotStage A k)) / ‖A‖_∞` (`Matrix.supAbs`,
+the `∞`-operator norm through `Matrix.lpOpNorm ⊤`). Two departures from the letter of the book, both
+recorded in the ch03 report: the stages are the *exact* ones (the book writes the computed
+`Â^{(k)}`; D4 programs expose only their outputs, and [higham2002accuracy] after Theorem 9.5
+explains why only exact stages admit bounds), and the denominator is kept as printed although
+Wilkinson's (and the backbone's `Matrix.growthFactor`) is `max |a_ij|`. ★'''
+deps = ["partialPivotStage", "Matrix.supAbs", "Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.8)'
+
+[[node]]
+id = "growthFactorStages_eq"
+kind = "theorem"
+desc = '''(3.4.8), the book's growth factor against the backbone's: `growthFactorStages A = growthFactor (P A) *
+supAbs A / ‖A‖_∞` with `P` the partial-pivoting permutation, hence `growthFactorStages A ≤ growthFactor (P A)`
+(`supAbs A ≤ ‖A‖_∞`, `Matrix.supAbs_le_linfty_opNorm`). The stages of `P A` without pivoting are
+the pivoted stages with permuted rows (`Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`,
+`Matrix.supAbs_submatrix_equiv`). ★'''
+deps = ["growthFactorStages", "Matrix.growthFactor", "Matrix.supAbs_submatrix_equiv", "Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage", "_root_.Matrix.supAbs_le_linfty_opNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.8)'
+
+[[node]]
+id = "equation_3_4_9"
+kind = "theorem"
+desc = '''(3.4.9), conditional rigorous form (Higham's "illicit manoeuvre" made a hypothesis, as
+`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve` does): under (3.4.6)'s hypotheses, if the
+computed `Û` satisfies `|û_ij| ≤ ρ ‖A‖_∞` for all `i j`, then
+`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞`. With `ρ` the growth factor of `growthFactorStages` this is the
+book's `6 n³ ρ ‖A‖_∞ u + O(u²)` with the better constant `3` (`n² γ_{3n} = 3 n³ u + O(u²)`).
+`FloatingPoint.linfty_opNorm_le_of_abs_le_smul_abs_mul_abs` with `λ = 1 + u`, `c = ρ ‖A‖_∞`. ★'''
+deps = ["equation_3_4_6", "growthFactorStages", "FloatingPoint.linfty_opNorm_le_of_abs_le_smul_abs_mul_abs", "algorithm_3_4_1_rounds"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.9)'
+
+[[node]]
+id = "growthExample"
+kind = "definition"
+desc = '''§3.4.5, the matrix with `a_ij = 1` if `i = j` or `j = n`, `-1` if `i > j`, `0` otherwise
+(0-based: `j = n - 1`): `growthExample n : Matrix (Fin n) (Fin n) ℝ`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.4.5, Definition'
+
+[[node]]
+id = "growthExample_isLU"
+kind = "theorem"
+desc = '''§3.4.5: Gaussian elimination with partial pivoting performs no interchange on
+`growthExample n` (every pivot column has entries `1, -1, …, -1` below and on the diagonal, and
+`partialPivotRow` takes the first maximizing row), and `growthExample n = L U` with `L` unit lower
+triangular with `-1` below the diagonal and `U` the identity except the last column
+`u_in = 2^i` (0-based) — in particular `u_nn = 2^{n-1}`, and the growth factor of the backbone is
+`2^{n-1}` (while `growthFactorStages`, normalized by `‖A‖_∞ = n`, is `2^{n-1}/n`). Induction on the
+stages: stage `k` has last column `2^{min(i,k)}`. ★★ (~100 lines)'''
+deps = ["growthExample", "Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.growthFactor", "growthFactorStages"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.5'
+
+[[node]]
+id = "growthFactor_le_two_pow"
+kind = "theorem"
+desc = '''§3.4.5, "`ρ` can be as large as `2^{n-1}`", the upper half: with partial pivoting the growth
+is at most `2^{n-1}`, `growthFactor (P A) ≤ 2^{n-1}`, and so `growthFactorStages A ≤ 2^{n-1}`;
+`Matrix.growthFactor_le_two_pow_of_partialPivotRow` (P3.4.1 is this argument), `growthFactorStages_eq`.
+Attained by `growthExample_isLU`. ★'''
+deps = ["Matrix.growthFactor_le_two_pow_of_partialPivotRow", "growthFactorStages_eq", "growthExample_isLU"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.5'
+
+[[node]]
+id = "algorithm_3_4_3"
+kind = "definition"
+desc = '''Algorithm 3.4.3 (outer product LU with complete pivoting), D4: state `(A, rowpiv, colpiv)`;
+for `k`, `(μ, λ)` = the first (lexicographically) entry of maximal `|A(i,j)|` over `i, j ≥ k`
+(exact comparisons), the row swap `A(k,:) ↔ A(μ,:)` and column swap `A(:,k) ↔ A(:,λ)`, then
+`if A k k ≠ 0` the updates of Algorithm 3.2.1. ★'''
+deps = ["algorithm_3_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.3'
+
+[[node]]
+id = "algorithm_3_4_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.4.3: with `(F, rowpiv, colpiv)` its `Id` output,
+`P = (pivPerm rowpiv).permMatrix ℝ`, `Q = (pivPerm colpiv).permMatrix ℝ`, `P A Qᵀ = L U` with
+`L = packedL F` (`|l_ij| ≤ 1`) and `U = packedU F` (`|u_ij| ≤ |u_ii|`). Simulation of
+`Matrix.gemFullPivotStage` with the program's search as strategy (an instance of
+`Matrix.IsCompletePivot`), then the append `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`
+through `Matrix.IsCompletePivot.isRookPivot`. ★★★ (~250 lines)'''
+deps = ["algorithm_3_4_3", "pivPerm", "packedL", "packedU", "Matrix.gemFullPivotStage", "Matrix.IsCompletePivot", "Matrix.IsCompletePivot.isRookPivot", "Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU", "algorithm_3_4_1_eq_gemPivotStage"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.4.3'
+
+[[node]]
+id = "solvePLUQ"
+kind = "definition"
+desc = '''§3.4.6, Steps 1–3 after Algorithm 3.4.3, D4: `z` solving `L z = P b` (Algorithm 3.1.1 after
+`applyPiv rowpiv`), `y` solving `U y = z` (Algorithm 3.1.2), `x = Qᵀ y` (`applyPivRev colpiv`);
+and the composite `solveGECP`. ★'''
+deps = ["applyPiv", "algorithm_3_1_1", "algorithm_3_1_2", "algorithm_3_4_3"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
+
+[[node]]
+id = "solvePLUQ_spec"
+kind = "theorem"
+desc = '''Exact correctness of the GECP solve: for nonsingular `A`, `A *ᵥ Id.run (solveGECP pure A b) = b`;
+from `algorithm_3_4_3_spec`, `applyPiv_eq` and the substitution specs. ★'''
+deps = ["solvePLUQ", "algorithm_3_4_3_spec", "applyPiv_eq", "algorithm_3_1_1_spec", "algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
+
+[[node]]
+id = "equation_3_4_10"
+kind = "theorem"
+desc = '''(3.4.10), Wilkinson's bound for complete pivoting in exact arithmetic, **index corrected**:
+the entries of `A^{(k)} = M_k Π_k ⋯ M_1 Π_1 A Γ_1 ⋯ Γ_k` (after `k` steps) satisfy
+`|a_ij^{(k)}| ≤ (k+1)^{1/2} (2 · 3^{1/2} ⋯ (k+1)^{1/k})^{1/2} max |a_ij|`
+(`Matrix.wilkinsonGrowthBound (k + 1) * supAbs A`), for `i, j ≥ k` — and, as a second clause, for
+**all** `i, j`: an entry outside the trailing block was frozen at an earlier stage `k' < k`, where
+the bound `wilkinsonGrowthBound (k' + 1)` holds and `wilkinsonGrowthBound` is monotone (both of its
+factors increase with `k`; a one-line helper). The book prints the bound with
+`k` in place of `k + 1`, which is false for `k = 1` (`!![1, 1; 1, -1]` produces `-2 > 1 = f(1)`);
+with the `(3.2.3)` indexing (`A^{(k)}` after `k - 1` steps) the printed form is right. The ch03
+append `Matrix.abs_gemFullPivotStage_le_wilkinson`. ★'''
+deps = ["Matrix.abs_gemFullPivotStage_le_wilkinson", "Matrix.wilkinsonGrowthBound", "algorithm_3_4_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.10)'
+
+[[node]]
+id = "completePivoting_rank"
+kind = "theorem"
+desc = '''§3.4.6, rank revelation: if `rank A = r < n`, then at the beginning of step `r + 1` of
+complete pivoting `A(r+1:n, r+1:n) = 0`, the first `r` pivots are nonzero, and the remaining steps
+are trivial (`Π_k = Γ_k = M_k = I` for `k > r`); the ch03 append
+`Matrix.gemFullPivotStage_trailing_eq_zero_of_rank`. ★'''
+deps = ["Matrix.gemFullPivotStage_trailing_eq_zero_of_rank", "algorithm_3_4_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
+
+[[node]]
+id = "completePivoting_rank_factorization"
+kind = "theorem"
+desc = '''§3.4.6: consequently `P A Qᵀ = [L₁₁ 0; L₂₁ I_{n-r}] [U₁₁ U₁₂; 0 0]` with `L₁₁`, `U₁₁` of
+order `r` and `U₁₁` nonsingular (`Matrix.fromBlocks` over `Fin r ⊕ Fin (n - r)` after
+`finSumFinEquiv`): the factors of `algorithm_3_4_3_spec` have `u_ij = 0` for `i ≥ r` and
+`l_ij = [i = j]` for `j ≥ r`. ★★ (~60 lines)'''
+deps = ["completePivoting_rank", "algorithm_3_4_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.6'
+
+[[node]]
+id = "rookPivotSearch"
+kind = "definition"
+desc = '''§3.4.7, the rook scan (an unnumbered code fragment, planned because the book states its
+termination): from `(μ, λ) = (k, k)`, `τ = |a_μλ|`, `s = 0`, while
+`τ < ‖A(k:n, λ)‖_∞ ∨ τ < ‖A(μ, k:n)‖_∞`: for even `s` move `μ` to the (first) row maximizing
+`|a_μλ|` in column `λ`, for odd `s` move `λ` in row `μ`; `s = s + 1`. Written with a fuel argument
+(`fuel := (n - k)² + 1` suffices); comparisons exact, no rounding. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.4.7'
+
+[[node]]
+id = "rookPivotSearch_spec"
+kind = "theorem"
+desc = '''§3.4.7, "the value of `τ` is monotone increasing and that ensures termination": each pass
+of the loop strictly increases `τ = |a_μλ|` or exits, so with fuel `(n - k)² + 1` (the number of
+entries of the trailing block) the loop exits, and on exit `(μ, λ)` is a rook pivot — `|a_μλ|` is
+maximal in its column and its row of `A(k:n, k:n)`; hence `rookPivotSearch` is a strategy
+satisfying `Matrix.IsRookPivot`. The book's "`O((n-k)²)` in theory" is this bound; "`O(1)` in
+practice" is not formalized. ★★ (~80 lines)'''
+deps = ["rookPivotSearch", "Matrix.IsRookPivot"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.7'
+
+[[node]]
+id = "rookPivoting_isLU"
+kind = "theorem"
+desc = '''§3.4.7, rook pivoting "computes the factorization `P A Q = L U`": Gaussian elimination with
+the rook strategy `rookPivotSearch` (i.e. `Matrix.gemFullPivotStage A rookPivotSearch n`) gives
+`P A Q = L U` with `|l_ij| ≤ 1` and `|u_ij| ≤ |u_ii|` (the latter is P3.4.2's question, answered
+yes); the append `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`. The claim that
+rook pivoting "induces the same level of reliability as complete pivoting" is not formalized. ★'''
+deps = ["rookPivotSearch_spec", "Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU", "Matrix.gemFullPivotStage"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.7'
+
+[[node]]
+id = "equation_3_4_11"
+kind = "theorem"
+desc = '''(3.4.11): for `A : Matrix (Fin m) (Fin n) ℝ` with `m ≤ n` and `rank A = m` there are
+permutations `P` of `Fin m`, `Q` of `Fin n`, a unit lower triangular `L : Matrix (Fin m) (Fin m) ℝ`
+and `U = [U₁ | U₂]` with `U₁` nonsingular upper triangular such that `P A Qᵀ = L [U₁ | U₂]`
+(`Matrix.fromCols` after `finSumFinEquiv`). Proof at the specification level (the book's "with
+either complete or rook pivoting" is P3.4.5's algorithm, not formalized): `rank A = m` gives `m`
+independent columns (`Matrix.exists_linearIndependent_col`); `Q` moves them first, so `A Qᵀ = [B | C]`
+with `B` nonsingular; `Matrix.exists_permMatrix_mul_isLU` on `B` gives `P B = L U₁`; `U₂ = L⁻¹ P C`.
+★★ (~100 lines)'''
+deps = ["Matrix.exists_linearIndependent_col", "Matrix.exists_permMatrix_mul_isLU", "Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.11)'
+
+[[node]]
+id = "underdetermined_solve"
+kind = "theorem"
+desc = '''§3.4.8, Steps 1–3: with (3.4.11), `A x = b ↔ L (U₁ z₁ + U₂ z₂) = P b` for `Q x = [z₁; z₂]`,
+and for every `z₂` the vector `x = Qᵀ [U₁⁻¹ (y - U₂ z₂); z₂]` with `L y = P b` solves `A x = b`
+("setting `z₂ = 0` is a natural choice"). ★'''
+deps = ["equation_3_4_11"]
+source = 'Golub–Van Loan, Matrix Computations, §3.4.8'
+
+[[node]]
+id = "solveMultipleRHS"
+kind = "definition"
+desc = '''(3.4.12), the multiple right-hand side problem `A X = B`, D4 (a content-named program; its exact
+specification is `equation_3_4_12`): Algorithm 3.4.1 once, then for `k : Fin p` `solvePLU` on the
+column `B(:,k)`; returns `X`. With `B = I` it approximates `A⁻¹`. ★'''
+deps = ["algorithm_3_4_1", "solvePLU"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.12)'
+
+[[node]]
+id = "equation_3_4_12"
+kind = "theorem"
+desc = '''(3.4.12) solves `A X = B`: for nonsingular `A`, `A * Id.run (solveMultipleRHS pure A B) = B`
+(column by column from `solvePLU_spec`), in particular the output for `B = 1` is `A⁻¹`. ★'''
+deps = ["solveMultipleRHS", "solvePLU_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.12)'
+
+[[node]]
+id = "solvePowerSystem"
+kind = "definition"
+desc = '''(3.4.13), solving `A^k x = b` without forming `A^k`, D4 (a content-named program; its exact
+specification is `equation_3_4_13`): Algorithm 3.4.1 once, then `k` times "overwrite `b` with the
+solution of `L y = P b`, then of `U x = b`" (`solvePLU`). ★'''
+deps = ["algorithm_3_4_1", "solvePLU"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.13)'
+
+[[node]]
+id = "equation_3_4_13"
+kind = "theorem"
+desc = '''(3.4.13) solves `A^k x = b`: for nonsingular `A` and `k : ℕ`,
+`A ^ k *ᵥ Id.run (solvePowerSystem pure A k b) = b` (induction on `k`, `solvePLU_spec`,
+`Matrix.pow_succ`, `Matrix.mulVec_mulVec`). ★'''
+deps = ["solvePowerSystem", "solvePLU_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.4.13)'

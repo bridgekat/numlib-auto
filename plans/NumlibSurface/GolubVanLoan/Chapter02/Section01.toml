@@ -1,0 +1,168 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.1, Basic Ideas from Linear Algebra: a review. The numbered items are the inverse identities
+(2.1.1)–(2.1.2), the perturbation identity (2.1.3), Sherman–Morrison–Woodbury (2.1.4)–(2.1.5), the
+orthonormal completion Theorem 2.1.1, the symmetric Schur decomposition (2.1.6) and the Rayleigh
+characterizations (2.1.7)–(2.1.8); the prose facts later chapters lean on (rank–nullity, rank
+deficiency, `ran(A)⊥ = null(Aᵀ)`, the determinant's properties, eigenvalues as roots of `det(A - xI)`,
+similarity, diagonalizability) are nodes named by content. Almost all delegate to Mathlib or to
+`Numlib/LinearAlgebra/Matrix/{NonsingularInverse,Similar,SVD}` and `Numlib/Eigen/MinMax`.
+§2.1.1 (independence, span, basis, dimension) is Mathlib's vocabulary (`LinearIndependent`,
+`Submodule.span`, `Module.finrank`, `DirectSum.IsInternal`) and has no node; §2.1.8 only fixes the
+notation `Ȧ(α)` (the entrywise derivative, Mathlib `hasDerivAt_pi`) and has no node.
+'''
+
+[[node]]
+id = "finrank_ker_add_rank"
+kind = "theorem"
+desc = '''§2.1.2: for `A : Matrix (Fin m) (Fin n) ℝ`, `dim null(A) + rank(A) = n`, i.e.
+`Module.finrank ℝ (LinearMap.ker (Matrix.toEuclideanLin A)) + A.rank = n`, together with `ran(A) =
+span{a₁, …, aₙ}` (`LinearMap.range A.mulVecLin = Submodule.span ℝ (Set.range A.col)`, Mathlib
+`Matrix.range_mulVecLin`) and "rank = maximal number of independent columns (or rows)" (Mathlib
+`Matrix.rank_eq_finrank_span_cols`, `Matrix.rank_transpose`). Mathlib `LinearMap.finrank_range_add_finrank_ker`
+through `Matrix.rank_eq_finrank_range_toLin`; the square case is the backbone
+`Matrix.rank_add_finrank_ker_mulVecLin`. ★'''
+deps = ["Matrix.rank_add_finrank_ker_mulVecLin"]
+source = 'Golub–Van Loan, Matrix Computations, §2.1.2'
+
+[[node]]
+id = "IsRankDeficient"
+kind = "definition"
+desc = '''§2.1.2: `A : Matrix (Fin m) (Fin n) ℝ` is *rank deficient* if `A.rank < min m n`. Used by the
+remark after Theorem 2.4.8 (`σ_min` is the distance to the rank-deficient matrices). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.1.2, Definition'
+
+[[node]]
+id = "equation_2_1_1"
+kind = "theorem"
+desc = '''(2.1.1): `(A B)⁻¹ = B⁻¹ A⁻¹` for `A B : Matrix (Fin n) (Fin n) ℝ` — Mathlib `Matrix.mul_inv_rev`,
+unconditional because of the junk value `A⁻¹ = 0` for singular `A`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.1)'
+
+[[node]]
+id = "equation_2_1_2"
+kind = "theorem"
+desc = '''(2.1.2): `(A⁻¹)ᵀ = (Aᵀ)⁻¹` — Mathlib `Matrix.transpose_nonsing_inv`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.2)'
+
+[[node]]
+id = "equation_2_1_3"
+kind = "theorem"
+desc = '''(2.1.3): for nonsingular `A B : Matrix (Fin n) (Fin n) ℝ`, `B⁻¹ = A⁻¹ - B⁻¹ (B - A) A⁻¹`. Ring
+algebra with `Matrix.nonsing_inv_mul`/`Matrix.mul_nonsing_inv` (the matrix form of Mathlib
+`Ring.inverse_sub_inverse`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.3)'
+
+[[node]]
+id = "equation_2_1_4"
+kind = "theorem"
+desc = '''(2.1.4), Sherman–Morrison–Woodbury: for `A : Matrix (Fin n) (Fin n) ℝ` nonsingular and `U V :
+Matrix (Fin n) (Fin k) ℝ` with `1 + Vᵀ A⁻¹ U` nonsingular, `(A + U Vᵀ)⁻¹ = A⁻¹ - A⁻¹ U (1 + Vᵀ A⁻¹
+U)⁻¹ Vᵀ A⁻¹` (and `A + U Vᵀ` is nonsingular). Backbone `Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add`
+with middle factor `1` (Mathlib's `Matrix.add_mul_mul_inv_eq_sub` is the `C⁻¹ + V A⁻¹ U` form). ★'''
+deps = ["Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.4)'
+
+[[node]]
+id = "equation_2_1_5"
+kind = "theorem"
+desc = '''(2.1.5), Sherman–Morrison: `A` nonsingular, `u v : Fin n → ℝ`, `α = 1 + vᵀ A⁻¹ u ≠ 0` ⇒ `A + u vᵀ`
+nonsingular and `(A + u vᵀ)⁻¹ = A⁻¹ - (1/α) A⁻¹ u vᵀ A⁻¹` — backbone `Matrix.inv_add_vecMulVec`,
+`Matrix.isUnit_add_vecMulVec` (`vecMulVec (A⁻¹ *ᵥ u) (v ᵥ* A⁻¹)`). ★'''
+deps = ["Matrix.inv_add_vecMulVec", "Matrix.isUnit_add_vecMulVec", "equation_2_1_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.5)'
+
+[[node]]
+id = "orthogonal_range_eq_ker_transpose"
+kind = "theorem"
+desc = '''§2.1.5: `ran(A)⊥ = null(Aᵀ)`, i.e. `(LinearMap.range (toEuclideanLin A))ᗮ = LinearMap.ker
+(toEuclideanLin Aᵀ)` for `A : Matrix (Fin m) (Fin n) ℝ`. Mathlib `LinearMap.orthogonal_range`
+(`A.rangeᗮ = A.adjoint.ker`) with the backbone `Matrix.toEuclideanLin_conjTranspose_eq_adjoint`
+(`Aᴴ = Aᵀ` over `ℝ`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.1.5'
+
+[[node]]
+id = "theorem_2_1_1"
+kind = "theorem"
+desc = '''Theorem 2.1.1: if `V₁ : Matrix (Fin n) (Fin r) ℝ` has orthonormal columns (`V₁ᵀ V₁ = 1`), there is
+`V₂ : Matrix (Fin n) (Fin (n - r)) ℝ` with `V = [V₁ | V₂] ∈ Matrix.orthogonalGroup (Fin n) ℝ` (the
+columns glued by `Matrix.fromCols` and reindexed along `finSumFinEquiv` and `r ≤ n`, which follows
+from the hypothesis via `Matrix.rank`), and `ran(V₁)⊥ = ran(V₂)`. Backbone
+`Matrix.exists_mem_unitaryGroup_submatrix_eq` with the placement `Fin.castLE`; the complement clause
+from orthogonality of the columns and a dimension count. The book's proof defers to §5.2 (QR); the
+backbone proof is orthonormal-basis extension. ★★ (the reindexing)'''
+deps = ["Matrix.exists_mem_unitaryGroup_submatrix_eq", "orthogonal_range_eq_ker_transpose"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.1.1'
+
+[[node]]
+id = "determinant_properties"
+kind = "theorem"
+desc = '''§2.1.6: the cofactor expansion along the first row defines `det` (Mathlib
+`Matrix.det_succ_row_zero`), and `det(AB) = det A det B`, `det Aᵀ = det A`, `det(cA) = cⁿ det A`,
+`det A ≠ 0 ↔ A` nonsingular — Mathlib `Matrix.det_mul`, `Matrix.det_transpose`, `Matrix.det_smul`,
+`Matrix.isUnit_iff_isUnit_det`. One conjunction node. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.1.6'
+
+[[node]]
+id = "mem_spectrum_iff_det_sub_eq_zero"
+kind = "theorem"
+desc = '''§2.1.7: for `A : Matrix (Fin n) (Fin n) ℂ`, `λ(A) = {x | det(A - x I) = 0}`: `x ∈ spectrum ℂ A ↔
+(A - x • 1).det = 0`, and `λ ∈ λ(A)` iff there is `x ≠ 0` with `A x = λ x` (Mathlib
+`Matrix.mem_spectrum_iff_isRoot_charpoly`, `Matrix.eval_charpoly`/`det_sub` sign, `Module.End.hasEigenvalue_iff_mem_spectrum`
+through `Matrix.toLin'`); "every `n`-by-`n` matrix has `n` eigenvalues" is `A.charpoly.roots.card = n`
+(Mathlib `Matrix.charpoly_natDegree_eq_dim` and `IsAlgClosed.splits`, `Polynomial.natDegree_eq_card_roots`).
+★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.1.7'
+
+[[node]]
+id = "isSimilar_spectrum_eq"
+kind = "theorem"
+desc = '''§2.1.7: similar matrices (`B = X⁻¹ A X`, `X` nonsingular) have the same eigenvalues — the same
+characteristic polynomial, backbone `Matrix.IsSimilar.charpoly_eq`. ★'''
+deps = ["Matrix.IsSimilar.charpoly_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §2.1.7'
+
+[[node]]
+id = "diagonalizable_of_linearIndependent_eigenvectors"
+kind = "theorem"
+desc = '''§2.1.7: if `A : Matrix (Fin n) (Fin n) ℂ` has `n` linearly independent eigenvectors `x_i`, `A x_i =
+λ_i x_i`, then with `X = [x₁ | … | xₙ]` (nonsingular) `X⁻¹ A X = diagonal λ` — backbone
+`Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. ★'''
+deps = ["Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors"]
+source = 'Golub–Van Loan, Matrix Computations, §2.1.7'
+
+[[node]]
+id = "equation_2_1_6"
+kind = "theorem"
+desc = '''(2.1.6), the symmetric Schur decomposition: for symmetric `A : Matrix (Fin n) (Fin n) ℝ` there is
+`Q ∈ orthogonalGroup (Fin n) ℝ` with `Qᵀ A Q = diagonal λ`, `λ₁ ≥ … ≥ λₙ` the eigenvalues in the book's
+order (0-based: `λ i = hA.eigenvalues₀ i`, antitone — Mathlib `Matrix.IsHermitian.eigenvalues₀_antitone`).
+Mathlib `Matrix.IsHermitian.spectral_theorem` (unsorted `eigenvalues`), reindexed to the sorted
+`eigenvalues₀`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.6)'
+
+[[node]]
+id = "equation_2_1_7"
+kind = "theorem"
+desc = '''(2.1.7): for symmetric `A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ`, `λ_max(A) = max_{x ≠ 0} xᵀAx /
+xᵀx`: `IsGreatest {xᵀ A x / xᵀ x | x ≠ 0} (hA.eigenvalues₀ 0)`. Backbone
+`LinearMap.IsSymmetric.isGreatest_eigenvalues` at index `0` for `toEuclideanLin A` (`Numlib/Eigen/MinMax`).
+★'''
+deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues", "equation_2_1_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.7)'
+
+[[node]]
+id = "equation_2_1_8"
+kind = "theorem"
+desc = '''(2.1.8): `λ_min(A) = min_{x ≠ 0} xᵀAx / xᵀx` for symmetric `A`: `IsLeast {…} (hA.eigenvalues₀ (Fin.last
+n))`. Backbone `LinearMap.IsSymmetric.isLeast_eigenvalues` at the last index. ★'''
+deps = ["LinearMap.IsSymmetric.isLeast_eigenvalues", "equation_2_1_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.8)'

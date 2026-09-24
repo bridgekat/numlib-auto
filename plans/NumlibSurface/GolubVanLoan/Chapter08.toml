@@ -1,0 +1,146 @@
+desc = '''
+Golub–Van Loan, *Matrix Computations* (4th ed.), Chapter 8: symmetric eigenvalue problems — the
+perturbation theory of §8.1, the power, inverse, Rayleigh-quotient and orthogonal iterations of
+§8.2, the symmetric QR algorithm of §8.3, bisection/Sturm and divide and conquer for tridiagonal
+matrices (§8.4), Jacobi methods (§8.5), the SVD algorithm (§8.6), and symmetric-definite pencils,
+the GSVD and the structured quadratic eigenproblem (§8.7). One surface module per section,
+`NumlibSurface/GolubVanLoan/Chapter08/SectionMM.lean`, namespace `GolubVanLoan.Chapter08`.
+
+**Conventions.**
+
+* Real matrices `Matrix (Fin m) (Fin n) ℝ`, vectors `Fin n → ℝ` (`EuclideanSpace ℝ (Fin n)` where
+  norms, angles and subspace distances are the point); "symmetric" is `A.IsSymm`, bridged to
+  Mathlib's `Matrix.IsHermitian` (over `ℝ` the same condition). §8.7.9 is over `ℂ` where `λ`, `x`
+  are complex.
+* Indices are 0-based on `Fin n`; the book's `λ_k(A)` (the `k`-th largest eigenvalue,
+  `λ_n ≤ ⋯ ≤ λ_1`) is `symmEigenvalue hA ⟨k - 1, _⟩` (§8.1), its `σ_k(A)` is
+  `(Matrix.toEuclideanLin A).singularValues (k - 1)` (Mathlib's sorted `LinearMap.singularValues`,
+  as in chapters 2 and 6), its `dist(S₁, S₂)`
+  is chapter 2's `GolubVanLoan.Chapter02.subspaceDist` (the backbone's `Submodule.gap`), its colon
+  submatrices `A(1:r, 1:r)` are
+  `Matrix.submatrix` along `Fin.castLE` (leading) or `Fin.natAdd`/`Fin.succ` (trailing), block
+  partitions `[Q₁ Q₂]` are `Matrix.fromCols` over `Fin r ⊕ Fin s` and `[D₁ 0; 0 D₂]` is
+  `Matrix.fromBlocks` over the same sum type (no reindexing to `Fin (r + s)` unless a statement is
+  about one square matrix, planning brief D2).
+* Norms: `‖·‖₂` is `Matrix.lpOpNorm 2` (`Numlib/Analysis/Matrix/OperatorNorm`, equal to Mathlib's
+  scoped `L2Operator` norm by `lpOpNorm_two`), `‖·‖_F` Mathlib's scoped `Matrix.Norms.Frobenius`;
+  the distance between subspaces `dist(S₁, S₂) = ‖P₁ - P₂‖₂` is the backbone's `Submodule.gap`
+  (`Numlib/Analysis/InnerProductSpace/Projection/Angle`).
+* Rounding: the relational `FloatingPoint.RoundingModel` with `fp.u`, `γ_n = FloatingPoint.gamma`;
+  the book's `≈ u ‖A‖` statements become explicit `γ`-constants where the book (or its source) gives
+  a derivation, and are not formalized otherwise.
+* Algorithms: the numbered conventions 1–14 of `NumlibSurface/GolubVanLoan` (also those of
+  `Numlib/FloatingPoint/Program`) govern every program and supersede any wording in a section group;
+  the shapes are settled by the prototype `notes/gvl/ch08/proto/Jacobi.lean` (it elaborates).
+  `noncomputable` monadic programs `algorithm_8_M_K {M} [Monad M] (rnd : ℝ → M ℝ) …` in the book's
+  operation order: every `+ − × / √` result through `rnd` (`√` is `Real.sqrt` then one `rnd`),
+  including the arithmetic of a test (`δ ← fl(tol · ‖A‖_F)`, `fl(tol · fl(|d_ii| + |d_{i+1,i+1}|))`);
+  negation, `|·|`, `sign`, copies and comparisons exact; `for` loops as `List.foldlM` over
+  `List.finRange` or index lists; `while` loops as `List.foldlM` over `List.range fuel` with a `done`
+  flag, `fuel` the last argument, the spec stating what holds after `min fuel stop` passes; blocks as
+  index lists on the full matrix — the step on an unreduced block (Algorithms 8.3.2 in 8.3.3, 8.6.1 in
+  8.6.2) runs on a **window** of consecutive indices, never on an extracted copy (convention 10).
+  Subroutines the book takes from chapter 5 are called by their surface names (`house` =
+  `GolubVanLoan.Chapter05.houseOn` on the active index list, `givens` =
+  `GolubVanLoan.Chapter05.algorithm_5_1_3`, bidiagonalization = `GolubVanLoan.Chapter05.algorithm_5_4_2`),
+  every rotation is chapter 5's `givensRotation` applied by `givensApplyLeft`/`givensApplyRight`, and
+  Householder data are `List ((Fin n → ℝ) × ℝ)` carrying the returned `β` (convention 13; the chapter
+  defines no helper of its own). In Algorithms 8.7.1 and 8.7.2 the steps of earlier chapters call their
+  programs (Cholesky, substitutions, modified Gram–Schmidt) and only the two steps with no exact
+  program (the symmetric Schur decomposition, the CS decomposition) are monadic function parameters
+  whose specifications the spec theorems assume (convention 5). Exact semantics at `Id`/`pure`;
+  rounding theorems at `SetM`/`fp.round` (`Numlib/FloatingPoint/Program`). Iterative algorithms' specs
+  state the invariants (orthogonal similarity, tridiagonal/bidiagonal form, the deflation perturbation
+  bound, the test at exit); convergence is a node only where the book proves it (the classical Jacobi
+  linear rate).
+* The power method (8.2.3) and orthogonal iteration (8.2.8) are chapter 7's (7.3.3) and (7.3.6) at
+  `𝕜 = ℝ` (`GolubVanLoan.Chapter07.powerMethod`, `GolubVanLoan.Chapter07.IsOrthogonalIteration`); the
+  chapter restates neither (surface review Medium 3).
+
+**Errata** (with the section groups' readings): Theorem 8.6.5 is false for `m > n` as printed — the
+gap must also count the `m - n` extra zero singular values of `A₂₂` (Wedin/Stewart: `δ ≤ σ_min(A₁₁)`);
+`theorem_8_6_5` is stated with that hypothesis and `theorem_8_6_5_counterexample`
+(`A = [[0,0],[0,1],[0,0]]`, `E = ε e₃e₁ᵀ`) records the failure. Theorem 8.1.13 is stated in the paired
+form its proof gives (`∃ σ : Fin r ↪ Fin n`), the unpaired reading as `theorem_8_1_13_weak`.
+
+**Correspondence with the backbone.** Most of §8.1–8.2 is already in `Numlib/Eigen/{MinMax,
+Perturbation,PowerMethod,QRAlgorithm,RayleighQuotientIteration,RayleighRitz}`; §8.4.1–8.4.2 is
+`Numlib/Eigen/Sturm`; §8.5's scalar theory is `Numlib/Eigen/Jacobi`; the pencil vocabulary is
+`Numlib/Eigen/Pencil`. New backbone modules (owner ch08): `Numlib/Eigen/Inertia` (Sylvester's law),
+`Numlib/Eigen/DivideConquer` (secular equation, Lemma 8.4.2, Theorems 8.4.3–8.4.4),
+`Numlib/Eigen/InverseEigenvalue` (the eigenvector–eigenvalue identity and Golub's inverse tridiagonal
+problem, §8.4.6), `Numlib/Eigen/SymmetricPencil` (Theorem 8.7.1, sorted pencil eigenvalues, the
+Crawford number and a corrected Theorem 8.7.3; also `Matrix.crawfordNumber_sub_le`, a definite pair stays definite
+under perturbations `ε < c`), `Numlib/Analysis/InnerProductSpace/SingularValues` (the operator level: Weyl's
+inequality `LinearMap.singularValues_add_le`, Theorems 8.6.1–8.6.3, the Hermitian dilation
+`LinearMap.hermitianDilation`) and `Numlib/Analysis/Matrix/SingularValues` (the matrix level:
+`Matrix.hermitianDilation`, Theorem 8.6.4 `Matrix.sum_sq_sortedSingularValues_sub_le`, Theorem 8.6.5, (8.1.3)). Appends (staged in `notes/gvl/ch08/appends/`): `MinMax`
+(sorted spectral decomposition, Hoffman–Wielandt, two-sided Weyl, low-rank interlacing, trace),
+`Perturbation` (block residual bounds: the paired `√2` form
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` of Theorem 8.1.13 and the unpaired constant-`1`
+form, which is not its corollary), `RayleighRitz` (Theorem 8.1.14), `PowerMethod` (the
+eigenbasis forms of Theorem 8.2.1 and the explicit-constant Theorem 8.2.2), `LinearAlgebra/Matrix/Polar`
+((8.1.7), the nearest orthonormal block as the polar factor), `LinearAlgebra/Matrix/Schur` (Theorem 8.1.9,
+`Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks`), `LinearAlgebra/Matrix/QR` (the rank-two reflection identity),
+`FloatingPoint/Householder` (the rounding model of the symmetric tridiagonalization, restated by
+Fix-A over any reflector formula: `FloatingPoint.RoundsTridiagonalizePert`,
+`FloatingPoint.exists_roundsTridiagonalizePert_eq`, bridged from Algorithm 8.3.1's runs by
+`algorithm_8_3_1_rounds`).
+Cross-chapter: Theorems 8.1.10–8.1.12 restate chapter 7's Theorem 7.2.4, Theorem 8.3.2 its Theorem
+7.4.2, Theorem 8.7.4 chapter 6's Theorem 6.1.1, Algorithm 8.7.2 uses chapter 2's thin CS
+decomposition.
+
+**Not formalized** (by class; each class once):
+
+* operation counts and flop/storage discussion everywhere (the `4n³/3`, `30n`, `6n²` counts,
+  Figure 8.6.1, "stored in a pair of `n`-vectors"), §8.4.5 (the parallel divide-and-conquer tree,
+  Figure 8.4.1), the parallel-computing remarks of §8.5.6–8.5.7 beyond the precise ordering
+  statement, and the Notes and References;
+* convergence results quoted without proof: Wilkinson's cubic convergence of the shifted QR
+  iteration with either shift (§8.3.4; the RQI cubic rate is proved only in the book's `n = 2`
+  computation, which is a node), the Ritz-accelerated rate `O(|λ_{r+1}/λ_i|^k)` (Stewart 1969,
+  §8.3.7), the quadratic convergence of the classical and cyclic Jacobi methods (Henrici,
+  Schönhage, van Kempen, Wilkinson — `notes/frontier.md` blocker 13's "Wilkinson's sweep analysis"),
+  Brent–Luk's `log n` sweeps;
+* backward-error and accuracy claims given without derivation: the computed eigenvalues of
+  Algorithm 8.3.3 (`Q₀ᵀ(A+E)Q₀ = diag(λ̂)`, `‖E‖₂ ≈ u‖A‖₂`), of Algorithm 8.6.2 (`‖E‖₂ ≈ u‖A‖₂`),
+  of Algorithm 8.7.1 (`‖E_i‖₂ ≈ u‖A‖₂‖B⁻¹‖₂`), the relative accuracy of bisection, §8.5.5's
+  Wilkinson and Demmel–Veselić analyses including (8.5.4), and §8.7.6's CS-decomposition accuracy
+  discussion (8.7.9)–(8.7.11) — they rest on rounding models of Givens-based iterations and on
+  perturbation theory the book only cites; the one rigorous rounding result planned is the
+  tridiagonalization bound after Algorithm 8.3.1, whose derivation the backbone's Householder model
+  supports;
+* heuristics and remarks: the `V D^{-1/2}` remedy and the convex-combination conditioning remark
+  of §8.7.2, "usually just one step of inverse iteration is sufficient", the `AᵀA`-then-QR sketch
+  of §8.6.3, the Lagrange-multiplier motivation of §8.4.6;
+* definitions by stationary values only (§8.7.4's characterization of generalized singular values,
+  §8.7.8's product and restricted SVDs), and the overdamping theorem of §8.7.9 (quoted from
+  Duffin/Veselić: "it can be shown that there is `μ > 0` with `A(μ)` positive definite").
+
+**Closes.** No `notes/frontier.md` item: the Givens rounding model (blocker 12's second half) is
+chapter 5's, and Wilkinson's sweep analysis (blocker 13) stays out of scope as above.
+
+**Order of attack.**
+
+Backbone, in dependency order (estimated lines):
+1. `Eigen/MinMax` appends — sorted spectral decomposition (60), trace (20), two-sided Weyl (40),
+   low-rank interlacing (80), Hoffman–Wielandt (200): ~400.
+2. `LinearAlgebra/Matrix/SVD` appends (170), `LinearAlgebra/Matrix/QR` append (20),
+   `Eigen/Perturbation` append (50), `Eigen/RayleighRitz` append (70).
+3. `Eigen/Inertia`: ~250.
+4. `Eigen/PowerMethod` appends: angle bound (90), Rayleigh bound (80), explicit subspace-iteration
+   rate with the graph–gap lemma (300): ~470.
+5. `Eigen/DivideConquer`: ~600. `Eigen/InverseEigenvalue`: ~400 (after `QR`'s Hessenberg reduction).
+6. `Eigen/SymmetricPencil`: ~650. `Analysis/InnerProductSpace/SingularValues`: ~500 without Theorem 8.6.5
+   (+350 after chapter 7's Riccati lemma).
+7. `FloatingPoint/Householder` (symmetric rank-two update, `IsReflectorPert`, the tridiagonalization
+   step and reduction over any reflector formula): ~450, shared with chapter 7's Hessenberg reduction,
+   after chapter 1's `FloatingPoint/Program` for the surface bridge.
+Backbone total ≈ 4 500 lines (+350 blocked).
+
+Surface, by section (estimated lines): §8.1 ~600 (after 1–3; 8.1.10–8.1.12 after chapter 7's
+Theorem 7.2.4), §8.2 ~500 (after 4), §8.4 ~400 (after 3, 5), §8.5 ~700 (independent: can start
+now, the prototype is its skeleton), §8.3 ~2 000 (the three algorithms; after chapter 5's house and
+givens and chapter 7's implicit Q theorem), §8.6 ~1 400 (after §8.3 and 6), §8.7 ~500 (after 6 and
+chapters 2, 6). Surface total ≈ 6 000 lines.
+'''

@@ -1,0 +1,178 @@
+namespace = "GolubVanLoan.Chapter12"
+desc = '''
+§12.5, Tensor decompositions and iterations: the SVD viewpoint (12.5.1)–(12.5.3), the HOSVD (Theorem 12.5.1, (12.5.4)–(12.5.10)),
+truncation and multilinear rank (12.5.11), the Tucker problem (12.5.12)–(12.5.13) and its ALS update, the CP problem
+(12.5.14)–(12.5.21) with the Khatri–Rao normal equations (12.5.20), tensor rank (§12.5.5, definition only), variational
+singular values and symmetric-tensor eigenvalues (12.5.22)–(12.5.24), and tensor trains (12.5.25)–(12.5.29). Backbone:
+`Numlib/LinearAlgebra/Tensor/{HOSVD,Tucker,CP,SingularValue,Train}`, the Ky Fan principle and (12.5.22) staged for `SVD`,
+(12.5.23) for `Numlib/Eigen/MinMax`. (12.5.4), (12.5.5), (12.5.12), (12.5.13), (12.5.14), (12.5.15), (12.5.19), (12.5.21), (12.5.27)
+define objects or problems and have no node of their own; the "Repeat" iterations are specified by the subproblems they solve.
+The book's `σ_i(A_(k))` are sorted singular values, `Matrix.sortedSingularValues` (chapter 2), 0-based.
+'''
+
+[[node]]
+id = "equation_12_5_1"
+kind = "theorem"
+desc = '''(12.5.1)–(12.5.2): for `A ∈ ℝ^{m×n}` with SVD `A = U Σ Vᵀ = ∑ σ_i u_i v_iᵀ`, `Uᵀ A = Σ Vᵀ`, whose rows `σ_i v_iᵀ` are mutually orthogonal and
+nonincreasing in norm. `Matrix.exists_svd` (via the earlier chapter's restatement `GolubVanLoan.Chapter02.theorem_2_4_1`), `Matrix.exists_singularSystem` (via the earlier chapter's restatement `GolubVanLoan.Chapter02.corollary_2_4_7`) (the expansion), the rows by unitarity of `V`. (The book's
+`v_i T` in (12.5.1) is `v_iᵀ`.) ★'''
+deps = ["GolubVanLoan.Chapter02.theorem_2_4_1", "GolubVanLoan.Chapter02.corollary_2_4_7"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.1)'
+
+[[node]]
+id = "equation_12_5_3"
+kind = "theorem"
+desc = '''(12.5.3) and the sentence after it: `max_{QᵀQ = I_r} ‖Qᵀ A‖_F² = σ₁² + ⋯ + σ_r²`, attained at `Q = U(:, 1:r)`. The book writes the maximum of
+`‖QᵀA‖_F` as `σ₁² + ⋯ + σ_r²`, dropping a square (the maximum of the norm is its square root). `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`. ★'''
+deps = ["Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.3)'
+
+[[node]]
+id = "hosvd_modeProduct_slices"
+kind = "theorem"
+desc = '''§12.5.1, before Theorem 12.5.1: with SVDs `U_kᵀ 𝒜_(k) = Σ_k V_kᵀ` (12.5.4) and `ℬ⁽ᵏ⁾ = 𝒜 ×_k U_kᵀ` (the book's (12.5.5) prints `×_k U_k`, which
+does not produce the stated unfoldings), `ℬ⁽ᵏ⁾_(k) = Σ_k V_kᵀ` and `‖ℬ⁽¹⁾(i, :, :)‖_F = σ_i(𝒜_(1))`, `‖ℬ⁽²⁾(:, i, :)‖_F = σ_i(𝒜_(2))`,
+`‖ℬ⁽³⁾(:, :, i)‖_F = σ_i(𝒜_(3))` (order 3 as printed; general `d` in the backbone). The book's displayed unfoldings
+`ℬ⁽¹⁾_(1) = Σ₁ V₁ᵀ (U₃ ⊗ U₂)ᵀ` (and the third one's `Σ₁ V₁ᵀ`) are misprints and are not reproduced. `Tensor.modeProd_hosvdFactor_row`. ★'''
+deps = ["Tensor.modeProd_hosvdFactor_row"]
+source = 'Golub–Van Loan, Matrix Computations, §12.5.1'
+
+[[node]]
+id = "theorem_12_5_1"
+kind = "theorem"
+desc = '''Theorem 12.5.1 (HOSVD), (12.5.6)–(12.5.9), **as printed**: for `𝒜 : RTensor n` and, for every mode `k`, an SVD
+`𝒜_(k) = U_k Σ_k V_kᵀ` of the modal unfolding (`Matrix.IsSVD (Tensor.modeUnfold 𝒜 k) U_k σ_k V_k`, `U_k` orthogonal —
+chapter 2's `GolubVanLoan.Chapter02.theorem_2_4_1` provides one), with `𝒮 = 𝒜 ×₁ U₁ᵀ ⋯ ×_d U_dᵀ`:
+`𝒜 = 𝒮 ×₁ U₁ ⋯ ×_d U_d`, equivalently `𝒜 = ∑_j 𝒮(j) U₁(:, j₁) ∘ ⋯ ∘ U_d(:, j_d)`, `𝒜(i) = ∑_j 𝒮(j) U₁(i₁, j₁) ⋯ U_d(i_d, j_d)`,
+`vec(𝒜) = (U_d ⊗ ⋯ ⊗ U₁) vec(𝒮)`. Proof: `Tensor.multilinearProd_inv` with `Tensor.multilinearProd_multilinearProd`
+(orthogonality of each `U_k` is all that is used); the vec form `Tensor.vecFin_multilinearProd`; the backbone's canonical
+choice is `Tensor.multilinearProd_hosvdFactor_hosvdCore`. Remark (in the docstring, not a separate claim of the book): the
+identities hold verbatim for arbitrary orthogonal `U_k`, since the proof never uses the SVD — the SVD matters only for
+(12.5.10), `theorem_12_5_1_b`. ★'''
+deps = ["Tensor.multilinearProd_inv", "Tensor.vecFin_multilinearProd", "Tensor.multilinearProd_hosvdFactor_hosvdCore", "GolubVanLoan.Chapter02.theorem_2_4_1", "GolubVanLoan.Chapter12.theorem_12_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.5.1'
+
+[[node]]
+id = "theorem_12_5_1_b"
+kind = "theorem"
+desc = '''Theorem 12.5.1, (12.5.10): `‖𝒮_(k)(i, :)‖_F = σ_i(𝒜_(k))` for `i = 1 : rank(𝒜_(k))`, the rows of `𝒮_(k)` being mutually orthogonal, when `U_k` is the
+left singular vector matrix of an SVD of `𝒜_(k)` with sorted `Σ_k` (the book's proof, lines 38260–38275: `𝒮_(k) = Σ_k V_kᵀ (U_d ⊗ ⋯)`); and
+the rows beyond the rank vanish, so the HOSVD sums may stop at `rank_*(𝒜)` (§12.5.2). `Tensor.modeUnfold_hosvdCore_row` transported to
+sorted singular values (`Matrix.exists_equiv_singularValues_eq_sortedSingularValues`). ★★ (~50 lines, the sorting)'''
+deps = ["Tensor.modeUnfold_hosvdCore_row", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues", "GolubVanLoan.Chapter12.theorem_12_5_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.5.1'
+
+[[node]]
+id = "equation_12_5_11"
+kind = "theorem"
+desc = '''(12.5.11), corrected: for `r ≤ rank_*(𝒜)` the truncated HOSVD satisfies `‖𝒜 − 𝒜^{(r)}‖_F² ≤ ∑_{k=1}^{d} ∑_{i=r_k+1}^{rank(𝒜_(k))} σ_i(𝒜_(k))²`. The book
+prints `min_{1≤k≤d}` in place of `∑_{k=1}^{d}`, which is false: every tensor of multilinear rank `≤ r` is at squared distance at least
+`max_k ∑_{i>r_k} σ_i(𝒜_(k))²` from `𝒜` (`Tensor.sum_sq_le_norm_sub_sq_of_multilinearRank_le`), so the printed bound fails whenever one
+tail vanishes and another does not (e.g. `r_1 = n_1` and `r_2 < rank 𝒜_(2)`). Chapter 12 report. `Tensor.norm_sub_truncatedHOSVD_sq_le`. ★'''
+deps = ["Tensor.norm_sub_truncatedHOSVD_sq_le", "Tensor.sum_sq_le_norm_sub_sq_of_multilinearRank_le", "GolubVanLoan.Chapter12.theorem_12_5_1_b"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.11)'
+
+[[node]]
+id = "tucker_best_core"
+kind = "theorem"
+desc = '''§12.5.3: for `U_k ∈ ℝ^{n_k×r_k}` with orthonormal columns, `‖𝒜 − 𝒳‖_F = ‖vec(𝒜) − (U₃ ⊗ U₂ ⊗ U₁) vec(𝒮)‖₂` for `𝒳` of the form (12.5.13); the best
+core is `𝒮 = (U₃ᵀ ⊗ U₂ᵀ ⊗ U₁ᵀ) vec(𝒜)`, and then `‖(I − UUᵀ) vec(𝒜)‖² = ‖vec(𝒜)‖² − ‖Uᵀ vec(𝒜)‖²` with `U = U₃ ⊗ U₂ ⊗ U₁` (order 3 as printed).
+`Tensor.norm_sub_multilinearProd_sq`, `Tensor.vecFin_multilinearProd`. ★'''
+deps = ["Tensor.norm_sub_multilinearProd_sq", "Tensor.vecFin_multilinearProd"]
+source = 'Golub–Van Loan, Matrix Computations, §12.5.3'
+
+[[node]]
+id = "tucker_objective_unfoldings"
+kind = "theorem"
+desc = '''§12.5.3: `‖(U₃ᵀ ⊗ U₂ᵀ ⊗ U₁ᵀ) vec(𝒜)‖ = ‖U₁ᵀ 𝒜_(1) (U₃ ⊗ U₂)‖_F = ‖U₂ᵀ 𝒜_(2) (U₃ ⊗ U₁)‖_F = ‖U₃ᵀ 𝒜_(3) (U₂ ⊗ U₁)‖_F`, and with the other two factors frozen,
+maximizing over `U_k` is the problem (12.5.3) for `𝒜_(k)(⋯ ⊗ ⋯)`, solved by the leading `r_k` left singular vectors — the ALS update, which
+never decreases the objective. `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`, `Tensor.isGreatest_tucker_update`. ★'''
+deps = ["Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold", "Tensor.isGreatest_tucker_update", "GolubVanLoan.Chapter12.equation_12_5_3"]
+source = 'Golub–Van Loan, Matrix Computations, §12.5.3'
+
+[[node]]
+id = "equation_12_5_16"
+kind = "theorem"
+desc = '''(12.5.16)–(12.5.18) with the displays before them: for `𝒳 = ∑_j λ_j F(:, j) ∘ G(:, j) ∘ H(:, j)`, `𝒳_(1) = F diag(λ) (H ⊙ G)ᵀ`, `𝒳_(2) = G diag(λ) (H ⊙
+F)ᵀ`, `𝒳_(3) = H diag(λ) (G ⊙ F)ᵀ` (Khatri–Rao products), and `‖𝒜 − 𝒳‖_F = ‖𝒜_(k) − 𝒳_(k)‖_F` for each `k`; the general-order version
+`𝒳_(k) = F⁽ᵏ⁾ diag(λ) (F⁽ᵈ⁾ ⊙ ⋯ ⊙ F⁽ᵏ⁺¹⁾ ⊙ F⁽ᵏ⁻¹⁾ ⊙ ⋯ ⊙ F⁽¹⁾)ᵀ` (after (12.5.21)) and `vec(𝒳) = (H ⊙ G ⊙ F) λ` (P12.5.6). `Tensor.modeUnfold_cp`,
+`Tensor.vecFin_cp`, `Tensor.frobenius_norm_unfold`, flattened. ★★ (~40 lines, the flattening)'''
+deps = ["Tensor.modeUnfold_cp", "Tensor.vecFin_cp", "Tensor.frobenius_norm_unfold"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.16)'
+
+[[node]]
+id = "equation_12_5_20"
+kind = "theorem"
+desc = '''(12.5.19)–(12.5.20): `z` minimizes `‖(B ⊙ C) z − d‖₂` iff `((BᵀB) .* (CᵀC)) z = (B ⊙ C)ᵀ d`; and the CP-ALS update `F̃` minimizing `‖𝒜_(1) − F̃ (H ⊙ G)ᵀ‖_F` is
+characterized by `F̃ ((HᵀH) .* (GᵀG)) = 𝒜_(1) (H ⊙ G)`. Backbone `Matrix.isMinOn_norm_sub_mul_transpose_iff` (now the plain matrix
+statement over `RCLike`, in `LinearAlgebra/Matrix/LeastSquares`: `F` minimizes `‖A − F * Kᴴ‖` iff `F * (Kᴴ * K) = A * K`) at `ℝ` with
+`K = H ⊙ G` (`Kᴴ = Kᵀ`), combined with the Khatri–Rao Gram identity `Matrix.khatriRao_transpose_mul_self`; the vector case is `A` a
+single row. ★'''
+deps = ["Matrix.isMinOn_norm_sub_mul_transpose_iff", "Matrix.khatriRao_transpose_mul_self"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.20)'
+
+[[node]]
+id = "equation_12_5_22"
+kind = "theorem"
+desc = '''(12.5.22) and the gradient display after it: the singular values of `A ∈ ℝ^{n₁×n₂}` are the stationary values of `ψ_A(u, v) = uᵀAv/(‖u‖₂‖v‖₂)`
+(up to sign) and the stationary vectors are singular vectors: at unit `u, v`, `∇ψ_A = [Av − ψ_A u; Aᵀu − ψ_A v]`.
+`Matrix.abs_critical_bilinearRayleigh_mem_singularValues`. ★'''
+deps = ["Matrix.abs_critical_bilinearRayleigh_mem_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.22)'
+
+[[node]]
+id = "tensor_singular_value"
+kind = "theorem"
+desc = '''§12.5.6: for `𝒜 ∈ ℝ^{n₁×n₂×n₃}`, `ψ_𝒜(u₁, u₂, u₃) = u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)/(‖u₁‖‖u₂‖‖u₃‖) = u₂ᵀ 𝒜_(2) (u₃ ⊗ u₁)/(⋯) = u₃ᵀ 𝒜_(3) (u₂ ⊗ u₁)/(⋯)`, and at unit vectors
+`∇ψ_𝒜 = 0` iff `𝒜_(1)(u₃ ⊗ u₂) = ψ u₁`, `𝒜_(2)(u₃ ⊗ u₁) = ψ u₂`, `𝒜_(3)(u₂ ⊗ u₁) = ψ u₃` — the book's definition of a tensor singular value
+(`Tensor.IsSingularValue`). `Tensor.multilinearForm` (`multilinearForm_eq_modeUnfold`), `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`,
+flattened. ★'''
+deps = ["Tensor.multilinearForm", "Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff", "Tensor.IsSingularValue"]
+source = 'Golub–Van Loan, Matrix Computations, §12.5.6'
+
+[[node]]
+id = "equation_12_5_23"
+kind = "theorem"
+desc = '''(12.5.23): the eigenvalues of a symmetric `C ∈ ℝ^{N×N}` are the stationary values of `φ_C(x) = xᵀCx/xᵀx` and the stationary vectors are eigenvectors.
+`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff` (for `Matrix.toEuclideanLin C`). ★'''
+deps = ["LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.23)'
+
+[[node]]
+id = "equation_12_5_24"
+kind = "theorem"
+desc = '''(12.5.24) and the sentences around it: for a symmetric `𝒞 ∈ ℝ^{N×N×N}` (§12.5.7's definition, `Tensor.IsSymm`) all modal unfoldings are equal,
+`φ_𝒞(x) = ∑_i 𝒞(i) x(i₁)x(i₂)x(i₃)/‖x‖³ = xᵀ 𝒞_(1)(x ⊗ x)/‖x‖³`, and at unit `x`, `∇φ_𝒞(x) = 0` iff `𝒞_(1)(x ⊗ x) = φ_𝒞(x) x` (the book's gradient omits the
+factor `3`, harmless at zero) — the book's tensor eigenvalue. `Tensor.IsSymm.modeUnfold_eq`, `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`,
+flattened. ★'''
+deps = ["Tensor.IsSymm.modeUnfold_eq", "Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.24)'
+
+[[node]]
+id = "equation_12_5_25"
+kind = "theorem"
+desc = '''(12.5.25): the book's tensor train with carriages `𝒢₁ ∈ ℝ^{n₁×r₁}`, `𝒢_k ∈ ℝ^{r_{k−1}×n_k×r_k}`, `𝒢_d ∈ ℝ^{r_{d−1}×n_d}`, `𝒯(i) = ∑_k 𝒢₁(i₁, k₁) 𝒢₂(k₁, i₂, k₂) ⋯
+𝒢_d(k_{d−1}, i_d)`, is `Tensor.tensorTrain` with `r₀ = r_d = 1` and cores `G k i = 𝒢_{k+1}(:, i, :)` (the first and last read as `1 × r₁`, `r_{d−1} × 1`
+matrices); the surface definition `trainOfCarriages` and its equality with the backbone (`Tensor.tensorTrain_apply`). ★'''
+deps = ["Tensor.tensorTrain"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.25)'
+
+[[node]]
+id = "equation_12_5_28"
+kind = "theorem"
+desc = '''(12.5.26)–(12.5.28) (P12.5.11): if the unfolding `C = 𝒞_{[1 2]×[3 4]}` has rank `r₃` and SVD `C = U₃ Σ₃ V₃ᵀ` (`Σ₃ ∈ ℝ^{r₃×r₃}`), then `𝒢₃` and `𝒞̃` defined by
+`vec(𝒢₃) = vec(U₃)`, `vec(𝒞̃) = vec(Σ₃ V₃ᵀ)` satisfy (12.5.26) `𝒞(k₂, i₃, i₄, i₅) = ∑_{k₃} 𝒢₃(k₂, i₃, k₃) 𝒞̃(k₃, i₄, i₅)`; and then `𝒜` is the contraction of
+`ℬ̃` and `𝒞̃` (the display chain before it). `Tensor.exists_ttCore_of_rank` with the thin SVD as the rank factorization (chapter 2's
+`Matrix.exists_thin_svd` (via the earlier chapter's restatement `GolubVanLoan.Chapter02.thin_svd`)). ★'''
+deps = ["Tensor.exists_ttCore_of_rank", "GolubVanLoan.Chapter02.thin_svd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.28)'
+
+[[node]]
+id = "equation_12_5_29"
+kind = "theorem"
+desc = '''(12.5.29), the TT-SVD (Oseledets–Tyrtyshnikov): every `𝒜 : RTensor n` has a tensor-train representation `𝒜(i) = ∑_k 𝒢₁(i₁, k₁) ⋯ 𝒢_d(k_{d−1}, i_d)` whose
+ranks are `r_k = rank(M_k)`, the ranks of the matrices of the procedure, which equal the ranks of the sequential unfoldings `𝒜_{[1:k]×[k+1:d]}`;
+the procedure's successive SVDs produce it. `Tensor.exists_tensorTrain` with `equation_12_5_25`. (The full-rank example `r = (n, n², n², n)`
+for `d = 5` is a count, not a node.) ★'''
+deps = ["Tensor.exists_tensorTrain", "GolubVanLoan.Chapter12.equation_12_5_25", "GolubVanLoan.Chapter12.equation_12_5_28"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.29)'

@@ -1,0 +1,180 @@
+desc = '''
+Hamiltonian and skew-Hamiltonian eigenvalue problems: the eigenvalue pairings, orthogonal symplectic
+transformations, the real Hamiltonian–Schur form and the algebraic Riccati equation, and the two
+condensed forms of Paige–Van Loan and Van Loan ([golub2013matrix] §7.8.1).
+
+Matrices are real, indexed by `l ⊕ l` (`[Fintype l] [DecidableEq l] [LinearOrder l]`; the surface
+takes `l = Fin n`), and `J` is Mathlib's `Matrix.J l ℝ = fromBlocks 0 (-1) 1 0`, which is **minus**
+the book's `J = [0 I; -I 0]`. Every notion used here is invariant under `J ↦ -J`.
+
+The structures themselves live in chapter 1's `Numlib/LinearAlgebra/Matrix/Hamiltonian`:
+`Matrix.IsHamiltonian` (`J M Jᵀ = -Mᵀ`), its block form `Matrix.isHamiltonian_fromBlocks_iff`,
+`Matrix.IsHamiltonian.conj_symplectic`, `Matrix.IsHamiltonian.transpose_mul_J_eq` (`Mᵀ = J M J`); and,
+staged there by ch07 (`notes/gvl/ch07/appends/Numlib/LinearAlgebra/Matrix/Hamiltonian.toml`),
+`Matrix.IsSkewHamiltonian` with its block form and symplectic invariance, the square of a Hamiltonian
+matrix, and the block characterization of orthogonal symplectic matrices. This module is the
+eigenvalue theory on top.
+
+Main results:
+
+* the eigenvalue pairings of [golub2013matrix] §7.8.1 (3)–(4): `λ ∈ σ(M) → -λ ∈ σ(M)` for Hamiltonian
+  `M` (with multiplicities: `M.charpoly.comp (-X) = M.charpoly`, the corollary chapter 1 left here),
+  `λ ∈ σ(S) → λ⁻¹ ∈ σ(S)` for symplectic `S` (spectra of the complexifications);
+* `diag(P, P)` for an orthogonal `P` and a plane rotation in the coordinates `inl i`, `inr i` are
+  orthogonal symplectic; any vector is carried to a multiple of the first basis vector by an orthogonal
+  symplectic matrix;
+* **the real Hamiltonian–Schur form** (7.8.1): a Hamiltonian `M` with no eigenvalue on the imaginary
+  axis has `Qᵀ M Q = fromBlocks T R 0 (-Tᵀ)`, `Q` orthogonal symplectic, `T` quasi upper triangular.
+  Route (Paige–Van Loan 1981, in the invariant-subspace form rather than the book's deflation sketch):
+  the invariant subspace `X` of `M` for the eigenvalues in the open left half-plane has dimension
+  `n` (the eigenvalues pair as `λ`, `-λ`) and is **Lagrangian**: with a basis matrix `X₀`,
+  `W = X₀ᵀ J X₀` satisfies `T₁ᵀ W + W T₁ = 0` for the stable `T₁ = M|_X`, and the Sylvester operator
+  with `σ(T₁ᵀ) ∩ σ(-T₁) = ∅` forces `W = 0` (`Matrix.sylvesterMap_injective_of_isCoprime` over `ℝ`);
+  an orthonormal basis `[Q₁; -Q₂]` of a Lagrangian subspace completes to the orthogonal symplectic
+  `[[Q₁, Q₂], [-Q₂, Q₁]]`; then `Qᵀ M Q` is block upper triangular with Hamiltonian structure, and
+  the real Schur form of the leading block, applied as `diag(U, U)`, finishes;
+* **the Riccati equation** (7.8.2): when `Q₁` is nonsingular, `X = Q₂ Q₁⁻¹` is symmetric, solves
+  `G + X A + Aᵀ X - X F X = 0` and `A - F X = Q₁ T Q₁⁻¹`;
+* the Paige–Van Loan form (7.8.3) and the skew-Hamiltonian Hessenberg form (7.8.4), by one
+  reduction: orthogonal symplectic Householder–Givens–Householder sweeps make the `(1,1)` block upper
+  Hessenberg and the `(2,1)` block diagonal for a Hamiltonian or skew-Hamiltonian matrix; a diagonal
+  skew-symmetric block is `0`, which is (7.8.4); with the real Schur form of `H` this gives the
+  real skew-Hamiltonian Schur form.
+
+Nothing here is in Mathlib beyond `Matrix.J` and `Matrix.symplecticGroup` (grep `Hamiltonian` in
+Mathlib: only graph theory).
+
+Size: the pairings ★ (150), the transformations ★–★★ (200), the Lagrangian lemma ★★ (100),
+Hamiltonian–Schur ★★★ (400), Riccati ★★ (100), the condensed forms ★★★ (500). About 1450 lines.
+'''
+
+[[node]]
+id = "Matrix.IsHamiltonian.charpoly_comp_neg"
+kind = "theorem"
+desc = '''For Hamiltonian `M : Matrix (l ⊕ l) (l ⊕ l) R` over a commutative ring, `M.charpoly.comp (-X) = M.charpoly`
+(the size `2 · card l` is even): `Mᵀ = J M J` with `J² = -1` (`Matrix.IsHamiltonian.transpose_mul_J_eq`)
+makes `Mᵀ` similar to `-M`, so `charpoly M = charpoly Mᵀ = charpoly (-M) = (-1)^{2n} (charpoly M).comp (-X)`
+(`Matrix.charpoly_transpose`, `Matrix.charpoly_units_conj`). The multiplicity form of [golub2013matrix]
+§7.8.1 (3) that chapter 1's module doc leaves to this module. ★'''
+deps = ["Matrix.IsHamiltonian.transpose_mul_J_eq", "Matrix.IsHamiltonian"]
+
+[[node]]
+id = "Matrix.IsHamiltonian.neg_mem_spectrum"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1 (3): for Hamiltonian `M` (real) and `λ ∈ spectrum ℂ M.complexify`,
+`-λ ∈ spectrum ℂ M.complexify` (roots of `charpoly_comp_neg`, `Matrix.charpoly_map`). The book's
+eigenvector map `(u, v) ↦ (v, -u)` for `Mᵀ` is the same fact read through `Mᵀ = J M J`. ★'''
+deps = ["Matrix.IsHamiltonian.charpoly_comp_neg"]
+
+[[node]]
+id = "Matrix.inv_mem_spectrum_of_mem_symplecticGroup"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1 (4): for `S ∈ symplecticGroup l ℝ` and `λ ∈ spectrum ℂ S.complexify`,
+`λ ≠ 0` and `λ⁻¹ ∈ spectrum ℂ S.complexify` (`S⁻¹ = J⁻¹ Sᵀ J` is similar to `Sᵀ`, `symplecticGroup`'s
+inverse formula; `S` is nonsingular since `S J Sᵀ = J`). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.fromBlocks_diagonal_mem_symplecticGroup"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1: for `P ∈ orthogonalGroup l ℝ`, `fromBlocks P 0 0 P` is orthogonal
+symplectic (in particular for a Householder reflector `P = I - 2 v vᵀ`, `Matrix.householder`). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.planeRotation_inl_inr_mem_symplecticGroup"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1: a plane rotation acting in the coordinates `Sum.inl i` and `Sum.inr i`
+(the book's "Givens rotation that involves planes `i` and `i + n`", `Matrix.planeRotation` of
+`Numlib/LinearAlgebra/Matrix/PlaneRotation` on `l ⊕ l`) is orthogonal symplectic: it commutes with
+`J` (`Matrix.mem_orthogonalGroup_symplecticGroup_iff`). ★'''
+deps = ["Matrix.planeRotation", "Matrix.mem_orthogonalGroup_symplecticGroup_iff"]
+
+[[node]]
+id = "Matrix.exists_orthogonalSymplectic_mulVec_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1, the Householder–Givens–Householder reduction of a vector: for
+`x : l ⊕ l → ℝ` there is `Q` orthogonal symplectic with `Qᵀ *ᵥ x = ‖x‖ • Pi.single (Sum.inl i₀) 1`
+(`i₀` the least index of `l`). `diag(P₁, P₁)` annihilates `x(inr ·)` below its first entry
+(`Matrix.householder_mulVec_eq_smul_single`), a rotation in `(inl i₀, inr i₀)` moves the remaining
+bottom entry up, `diag(P₂, P₂)` finishes the top half. ★★'''
+deps = ["Matrix.fromBlocks_diagonal_mem_symplecticGroup", "Matrix.planeRotation_inl_inr_mem_symplecticGroup", "Matrix.householder_mulVec_eq_smul_single"]
+
+[[node]]
+id = "Matrix.IsHamiltonian.isLagrangian_stable_invariant"
+kind = "theorem"
+desc = '''The key lemma of the Hamiltonian–Schur form: if `M` is Hamiltonian, `X₀ : Matrix (l ⊕ l) l ℝ`
+has linearly independent columns with `M * X₀ = X₀ * T₁` and every eigenvalue of `T₁.complexify` has
+negative real part, then `X₀ᵀ * J l ℝ * X₀ = 0` (the column space is Lagrangian). `W = X₀ᵀ J X₀`
+satisfies `T₁ᵀ W + W T₁ = 0` (`Mᵀ J + J M = 0`, `Matrix.isHamiltonian_iff_mem_sp`), `σ(T₁ᵀ)` and
+`σ(-T₁)` are disjoint, so `W = 0` by `Matrix.sylvesterMap_injective_of_isCoprime` and
+`Matrix.isCoprime_charpoly_iff_disjoint_spectrum_complexify`. ★★'''
+deps = ["Matrix.isHamiltonian_iff_mem_sp", "Matrix.sylvesterMap_injective_of_isCoprime", "Matrix.isCoprime_charpoly_iff_disjoint_spectrum_complexify"]
+
+[[node]]
+id = "Matrix.exists_orthogonalSymplectic_hamiltonianSchur"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.1), the real Hamiltonian–Schur decomposition: if `M` is Hamiltonian and
+no eigenvalue of `M.complexify` has zero real part, there is `Q` orthogonal symplectic with
+`Qᵀ * M * Q = fromBlocks T R 0 (-Tᵀ)` and `T.IsQuasiUpperTriangular`; moreover the eigenvalues of `T`
+are the eigenvalues of `M` with negative real part (for the Riccati application). Route in the module
+doc: the stable invariant subspace (the real form of `Krylov.isCompl_iSup_maxGenEigenspace` over the
+complexification, or the invariant subspace of the stable real Schur blocks) has dimension `n` by
+`charpoly_comp_neg`, is Lagrangian (`isLagrangian_stable_invariant`), an orthonormal basis `[Q₁; -Q₂]`
+completes to `fromBlocks Q₁ Q₂ (-Q₂) Q₁` (`Matrix.mem_orthogonalGroup_symplecticGroup_iff`), the
+conjugate is block upper triangular and Hamiltonian (`Matrix.IsHamiltonian.conj_symplectic`,
+`Matrix.isHamiltonian_fromBlocks_iff`), hence of the form `[[T, R], [0, -Tᵀ]]`, and `diag(U, U)` with
+the real Schur `U` of `T` (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`) finishes. ★★★
+(~400 lines).'''
+deps = ["Matrix.IsHamiltonian.isLagrangian_stable_invariant", "Matrix.mem_orthogonalGroup_symplecticGroup_iff", "Matrix.IsHamiltonian.conj_symplectic", "Matrix.isHamiltonian_fromBlocks_iff", "Matrix.IsHamiltonian.charpoly_comp_neg", "Matrix.exists_orthogonal_conj_isQuasiUpperTriangular", "Matrix.fromBlocks_diagonal_mem_symplecticGroup"]
+
+[[node]]
+id = "Matrix.riccati_of_hamiltonianSchur"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.2): let `M = fromBlocks A F G (-Aᵀ)` (the book's (7.8.1) labelling; `F`, `G`
+symmetric) and `Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁` orthogonal symplectic with
+`Qᵀ M Q = fromBlocks T R 0 (-Tᵀ)`. If `Q₁` is nonsingular then `X = Q₂ * Q₁⁻¹` is symmetric,
+`G + X * A + Aᵀ * X - X * F * X = 0`, and `A - F * X = Q₁ * T * Q₁⁻¹`. From the first block column of
+`M Q = Q (Qᵀ M Q)`: `M [Q₁; -Q₂] = [Q₁; -Q₂] T`, i.e. `M [1; -X] = [1; -X] (Q₁ T Q₁⁻¹)`; symmetry of `X`
+is `Q₁ᵀ X Q₁ = Q₁ᵀ Q₂` symmetric (the book attributes it to `Q₁ᵀ Q₁ + Q₂ᵀ Q₂ = I`; it is the other
+condition of `Matrix.mem_orthogonalGroup_symplecticGroup_iff`). ★★'''
+deps = ["Matrix.mem_orthogonalGroup_symplecticGroup_iff"]
+
+[[node]]
+id = "Matrix.exists_orthogonalSymplectic_condensed"
+kind = "theorem"
+desc = '''The common reduction behind (7.8.3) and (7.8.4): for `M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ`
+Hamiltonian or skew-Hamiltonian, there is an orthogonal symplectic `U` with `(Uᵀ M U).toBlocks₁₁`
+upper Hessenberg and `(Uᵀ M U).toBlocks₂₁` diagonal. Proof: for `k = 1, …, n-1`, reduce column `k` of
+the current matrix by the Householder–Givens–Householder pattern of `exists_orthogonalSymplectic_mulVec_eq`
+acting on the trailing coordinates `inl j, inr j` (`j ≥ k`), zeroing the `(2,1)`-block entries below
+the diagonal and the `(1,1)`-block entries below the subdiagonal; the (skew-)symmetry of the `(2,1)`
+block, preserved by `Matrix.IsHamiltonian.conj_symplectic` / `Matrix.IsSkewHamiltonian.conj_symplectic`,
+kills the entries above its diagonal. ★★★ (~450 lines).'''
+deps = ["Matrix.exists_orthogonalSymplectic_mulVec_eq", "Matrix.IsHamiltonian.conj_symplectic", "Matrix.IsSkewHamiltonian.conj_symplectic", "Matrix.isHamiltonian_fromBlocks_iff", "Matrix.isSkewHamiltonian_iff_fromBlocks"]
+
+[[node]]
+id = "Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.3): a Hamiltonian `M` has an orthogonal symplectic `U₀` with
+`U₀ᵀ M U₀ = fromBlocks H R D (-Hᵀ)`, `H` upper Hessenberg and `D` diagonal (the Paige–Van Loan form);
+`exists_orthogonalSymplectic_condensed` plus `Matrix.isHamiltonian_fromBlocks_iff` for the `(2,2)`
+block. ★'''
+deps = ["Matrix.exists_orthogonalSymplectic_condensed", "Matrix.isHamiltonian_fromBlocks_iff"]
+
+[[node]]
+id = "Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.4): a skew-Hamiltonian `N` (in particular `N = M²`,
+`Matrix.IsHamiltonian.isSkewHamiltonian_mul_self`) has an orthogonal symplectic `V₀` with
+`V₀ᵀ N V₀ = fromBlocks H R 0 Hᵀ`, `H` upper Hessenberg: `exists_orthogonalSymplectic_condensed`, and a
+diagonal skew-symmetric block is zero. ★'''
+deps = ["Matrix.exists_orthogonalSymplectic_condensed", "Matrix.isSkewHamiltonian_iff_fromBlocks"]
+
+[[node]]
+id = "Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur"
+kind = "theorem"
+desc = '''The real skew-Hamiltonian Schur form ([golub2013matrix] §7.8.1, the display after (7.8.4)): with
+`Q = V₀ * fromBlocks U 0 0 U`, `U` the real Schur factor of `H`,
+`Qᵀ N Q = fromBlocks T (Uᵀ R U) 0 Tᵀ` with `T` quasi upper triangular. ★'''
+deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg", "Matrix.exists_orthogonal_conj_isQuasiUpperTriangular", "Matrix.fromBlocks_diagonal_mem_symplecticGroup"]

@@ -1,3 +1,10 @@
+# Planned additions (GVL round): the module doc of `Numlib.Approximation.Quadrature` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch10) the Gauss remainder `Quadrature.exists_gauss_error_eq_of_convex` needs
+# `OrthogonalPolynomial.IsWeight`, which excludes the finitely supported spectral measures of the
+# Lanczos quadrature (Golub–Van Loan §10.2). The node below is the finite-measure,
+# arbitrary-multiplicity form; the existing Gauss remainder becomes its instance (refactor proposal
+# R4 of notes/gvl/ch10/report.md).
 namespace = "Quadrature"
 
 [[node]]
@@ -166,3 +173,41 @@ id = "tendsto_of_isExactOnMeasure"
 
 [[node]]
 id = "isExactOnMeasure_comp_equiv"
+
+[[node]]  # staged by ch10
+id = "exists_error_eq_of_hermite"
+kind = "theorem"
+desc = '''The remainder of an interpolatory-type rule through Hermite interpolation, for any finite measure. Let
+`μ` be a finite measure carried by `Icc a b`, `x : Fin n → ℝ` injective nodes in `Icc a b`, multiplicities
+`m : Fin n → ℕ` with `N + 1 = ∑ (m i + 1)`, `ω = ∏ i, (X − C (x i)) ^ (m i + 1)` of constant sign on `Icc a b`
+(`0 ≤ ω` or `ω ≤ 0` there), and a rule `Q f = ∑ i, w i * f (x i)` exact on the polynomials of degree `≤ N`.
+Then for `f` of class `C^{N+1}`: `∃ ξ ∈ Icc a b, (∫ f ∂μ) − Q f = iteratedDeriv (N+1) f ξ / (N+1)! * ∫ ω.eval ∂μ`.
+Gauss: `m i = 1`; Gauss–Radau: `m = 0` at the endpoint, `1` elsewhere; Gauss–Lobatto: `0` at both endpoints.
+Proof as `Quadrature.exists_gauss_error_eq_of_convex`: the rule is exact on the Hermite interpolant
+`Hermite.interpolate x m f` (degree `≤ N`, agrees with `f` at the nodes — only the values enter `Q`),
+`Hermite.exists_sub_interpolate_eq` writes `f − H = f^{(N+1)}(ξ_t)/(N+1)! · ω(t)`, and the intermediate
+value argument on `g = f^{(N+1)}/(N+1)!` against the signed measure `ω dμ`. The one new case: if
+`∫ ω dμ = 0` then `μ` is carried by the roots of `ω` (constant sign), where `f = H`, so the error is `0`
+and any `ξ` works. ★★ (~200 lines, mostly the existing proof)'''
+deps = ["Quadrature.exists_gauss_error_eq_of_convex", "Hermite.exists_sub_interpolate_eq"]
+
+[[node]]
+id = "gauss_le_integral_le_gaussRadau"
+kind = "theorem"
+desc = '''The two-sided Gauss / Gauss–Radau bound for any finite measure ([golub2013matrix] §10.2.2, the
+bounds for `f(λ) = 1/λ²`, and §10.2.6; Golub–Meurant): let `μ` be a finite measure carried by `Icc a b`,
+`k ≥ 1`, a Gauss-type rule `(w, x)` with `x : Fin k → ℝ` injective in `Icc a b` and
+`IsExactOnMeasure μ w x (2k − 1)`, and a Gauss–Radau-type rule `(w', x')` with `x' : Fin (k + 1) → ℝ`
+injective in `Icc a b`, `x' 0 = a` and `IsExactOnMeasure μ w' x' (2k)`. If `f` is `C^{2k+1}` on an open
+set containing `Icc a b` with `0 ≤ iteratedDeriv (2k) f` and `iteratedDeriv (2k + 1) f ≤ 0` on `Icc a b`,
+then `∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i)`. Proof: `Quadrature.exists_error_eq_of_hermite`
+twice — multiplicity `1` at every Gauss node (`ω = ∏ (X − x_i)² ≥ 0`, error `f^{(2k)}(ξ)/(2k)! ∫ ω dμ ≥
+0`), and multiplicity `0` at `a`, `1` at the other Radau nodes (`ω = (X − a) ∏_{i ≥ 1} (X − x'_i)² ≥ 0` on
+`Icc a b`, error `f^{(2k+1)}(ξ)/(2k+1)! ∫ ω dμ ≤ 0`). `f` need only be smooth near `[a, b]` (the book's `x ↦
+x⁻²` on `(0, ∞)`, `0 < a`): state `Quadrature.exists_error_eq_of_hermite` for `ContDiffOn` on such a
+set, or pass to a smooth `g` equal to `f` on `Icc a b` (both sides only see `f` on `Icc a b`). Instances:
+the weight rules of `Quadrature.exists_gauss` / `Quadrature.exists_gaussRadau` (the Golub–Van Loan
+surface's `gauss_le_integral_le_gaussRadau`) and the Lanczos rules for a spectral measure
+(`Lanczos.gauss_le_integral_le_radau`, `Numlib/Krylov/Quadrature`). Planned at the Golub–Van Loan
+review from the surface's backbone-move candidate. ★ (~60 lines)'''
+deps = ["Quadrature.exists_error_eq_of_hermite", "Quadrature.IsExactOnMeasure"]

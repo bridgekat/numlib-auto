@@ -1,0 +1,107 @@
+desc = '''
+The principal square root of a matrix and the iterations that compute it ([golub2013matrix] §9.4.2;
+Higham FOM Ch. 6). `Matrix.principalSqrt A = pfc (fun z : ℂ => z ^ (2⁻¹ : ℂ)) A` with Mathlib's
+principal branch `Complex.cpow` (cut along `(-∞, 0]`, analytic on `Complex.slitPlane`). For `A`
+with no eigenvalue in `(-∞, 0]` it is the unique square root whose eigenvalues have positive real
+part — the book's definition of `A^{1/2}`, whose implicit existence and uniqueness claim is
+`Matrix.existsUnique_sq_eq_of_re_pos`. Newton's iteration (9.4.7) is reduced to the sign iteration
+by `X_k = A^{1/2} S_k`, and the Denman–Beavers iteration (9.4.8) is the sign iteration of the block
+matrix `[0 A; I 0]` over `Fin n ⊕ Fin n` (`Matrix.fromBlocks`).
+'''
+
+[[node]]
+id = "Matrix.principalSqrt"
+kind = "definition"
+desc = '''`Matrix.principalSqrt (A : Matrix n n ℂ) : Matrix n n ℂ := pfc (fun z : ℂ => z ^ (2⁻¹ : ℂ)) A`,
+[golub2013matrix] §9.4.2's `A^{1/2}`. ★'''
+deps = ["pfc"]
+
+[[node]]
+id = "Matrix.principalSqrt_sq"
+kind = "theorem"
+desc = '''If `spectrum ℂ A ⊆ Complex.slitPlane` (no eigenvalue in `(-∞, 0]`) then `principalSqrt A ^ 2 = A`,
+`Commute A (principalSqrt A)`, and every eigenvalue of `principalSqrt A` has positive real part.
+`pfc_mul` with `(z ^ (1/2))² = z` on the slit plane (`Complex.cpow_nat_mul`/`Complex.sq_cpow_two_inv`-type
+lemma; analyticity of `cpow` there, `Mathlib/Analysis/SpecialFunctions/Complex/Analytic`), `pfc_id`,
+`spectrum_pfc` and `0 < (z ^ (1/2 : ℂ)).re` for `z ∈ slitPlane` (from `arg ∈ (-π, π)`:
+`Complex.cpow_def`, `Complex.re_cpow`-type computation). ★'''
+deps = ["Matrix.principalSqrt", "pfc_mul", "pfc_polynomial", "spectrum_pfc", "commute_pfc"]
+
+[[node]]
+id = "Matrix.existsUnique_sq_eq_of_re_pos"
+kind = "theorem"
+desc = '''Existence and uniqueness of the principal square root: if `spectrum ℂ A ⊆ Complex.slitPlane` then
+`∃! F, F ^ 2 = A ∧ ∀ μ ∈ spectrum ℂ F, 0 < μ.re`, and the witness is `principalSqrt A`. Uniqueness
+(Higham FOM Thm 1.29, by a route that avoids simultaneous triangularization): let `F² = A` with
+spectrum in the right half-plane and `G = principalSqrt A = p(A)` (`pfc` is a polynomial in `A`);
+then `G = p(F²) = q(F)` with `q = p ∘ X²`, so `F + G = (X + q)(F)` has spectrum `{μ + q(μ)}`
+(`spectrum.map_polynomial_aeval`), and `q(μ) = p(μ²) = (μ²)^{1/2} = μ` for `re μ > 0` (the interpolant
+agrees with `z ^ (1/2)` at the eigenvalue `μ²` of `A`: `spectrum.map_polynomial_aeval`), so `F + G`
+has eigenvalues `2μ ≠ 0` and is invertible; `(F - G)(F + G) = F² - G² = 0` since `F`, `G` commute
+(`G` is a polynomial in `F`). ★★ (~150 lines)'''
+deps = ["Matrix.principalSqrt_sq", "pfc_eq_aeval_of_isJetInterpolant", "spectrum_pfc"]
+
+[[node]]
+id = "Matrix.newtonSqrtIterate"
+kind = "definition"
+desc = '''Newton's iteration for the square root ([golub2013matrix] (9.4.7)): `X₀ = A`, `X_{k+1} = (X_k +
+X_k⁻¹ A)/2`, as `Matrix.newtonSqrtIterate A k` (Matrix `⁻¹`). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate"
+kind = "theorem"
+desc = '''The substitution `X_k = A^{1/2} S_k` ([golub2013matrix] §9.4.2): if `spectrum ℂ A ⊆ slitPlane`, then
+`newtonSqrtIterate A k = principalSqrt A * newtonSignIterate (principalSqrt A) k` for all `k`, and
+each iterate is invertible and commutes with `A`. Induction: with `R = A^{1/2}`, `X_k = R S_k`,
+`X_k⁻¹ A = S_k⁻¹ R⁻¹ R² = S_k⁻¹ R` (`S_k` a rational function of `R`, hence of `A`:
+`Matrix.isUnit_newtonSignIterate`), so `X_{k+1} = R (S_k + S_k⁻¹)/2`. ★'''
+deps = ["Matrix.newtonSqrtIterate", "Matrix.principalSqrt_sq", "Matrix.isUnit_newtonSignIterate"]
+
+[[node]]
+id = "Matrix.tendsto_newtonSqrtIterate"
+kind = "theorem"
+desc = '''Convergence of Newton's square root iteration: `spectrum ℂ A ⊆ slitPlane →
+Tendsto (newtonSqrtIterate A) atTop (𝓝 (principalSqrt A))`, quadratically. The sign iterates of
+`R = A^{1/2}` converge to `matrixSign R = 1` (spectrum in the right half-plane:
+`Matrix.matrixSign_eq_sum` with no left eigenvalues, `sum = 1`), `Matrix.tendsto_newtonSignIterate`,
+and multiplication by `R` is continuous. ★'''
+deps = ["Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate", "Matrix.tendsto_newtonSignIterate", "Matrix.matrixSign_eq_sum", "Matrix.principalSqrt_sq"]
+
+[[node]]
+id = "Matrix.denmanBeavers"
+kind = "definition"
+desc = '''The Denman–Beavers iteration ([golub2013matrix] (9.4.8)): `Matrix.denmanBeavers A k : Matrix n n ℂ ×
+Matrix n n ℂ`, `(X₀, Y₀) = (A, 1)`, `X_{k+1} = (X_k + Y_k⁻¹)/2`, `Y_{k+1} = (Y_k + X_k⁻¹)/2`. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.newtonSignIterate_fromBlocks"
+kind = "theorem"
+desc = '''The sign iterates of `Ã = fromBlocks 0 A 1 0` are block antidiagonal with the Denman–Beavers blocks
+([golub2013matrix] §9.4.2): if `A` is invertible then `newtonSignIterate (fromBlocks 0 A 1 0) k =
+fromBlocks 0 X_k Y_k 0` with `(X_k, Y_k) = denmanBeavers A k`, all `X_k`, `Y_k` invertible (when
+`spectrum ℂ A ⊆ slitPlane`, via `Matrix.isUnit_newtonSignIterate` for `Ã`, whose eigenvalues `±√λ`
+are off the imaginary axis). Induction with `(fromBlocks 0 X Y 0)⁻¹ = fromBlocks 0 Y⁻¹ X⁻¹ 0`
+(`Matrix.fromBlocks_multiply`, `Matrix.inv_eq_left_inv`). ★★ (~120 lines)'''
+deps = ["Matrix.newtonSignIterate", "Matrix.denmanBeavers", "Matrix.isUnit_newtonSignIterate"]
+
+[[node]]
+id = "Matrix.denmanBeavers_fst_eq_mul_snd"
+kind = "theorem"
+desc = '''(9.4.9)–(9.4.10) of [golub2013matrix]: `X_k = A * Y_k` for all `k` (induction; `X_k`, `Y_k`
+commute with `A` as rational functions of it), hence `X_{k+1} = (X_k + A X_k⁻¹)/2` and `Y_{k+1} =
+(Y_k + A⁻¹ Y_k⁻¹)/2`, and `X_k = newtonSqrtIterate A k` (the two Newton forms agree since `X_k`
+commutes with `A`). ★'''
+deps = ["Matrix.denmanBeavers", "Matrix.newtonSqrtIterate", "Matrix.newtonSignIterate_fromBlocks"]
+
+[[node]]
+id = "Matrix.matrixSign_fromBlocks_zero_one"
+kind = "theorem"
+desc = '''`X_k → A^{1/2}`, `Y_k → A^{-1/2}` (`Matrix.tendsto_denmanBeavers`, from
+`Matrix.denmanBeavers_fst_eq_mul_snd` and `Matrix.tendsto_newtonSqrtIterate`, `Y_k = A⁻¹ X_k`), and
+the identity `matrixSign (fromBlocks 0 A 1 0) = fromBlocks 0 (principalSqrt A) (principalSqrt A)⁻¹ 0`
+for `spectrum ℂ A ⊆ slitPlane` ([golub2013matrix] §9.4.2): limit of `Matrix.newtonSignIterate_fromBlocks`
+under `Matrix.tendsto_newtonSignIterate` for `Ã` (block entries of a limit are limits: `Matrix.fromBlocks`
+is continuous). ★★'''
+deps = ["Matrix.newtonSignIterate_fromBlocks", "Matrix.denmanBeavers_fst_eq_mul_snd", "Matrix.tendsto_newtonSqrtIterate", "Matrix.tendsto_newtonSignIterate"]

@@ -1,0 +1,167 @@
+desc = '''
+The primary functional calculus `pfc f a` of an algebraic element `a` of a `𝕜`-algebra, and its
+algebraic theory: characterization by jet interpolation, the spectral decomposition through the
+spectral idempotents, polynomials, linearity and multiplicativity, the inverse, the spectral mapping
+theorem, and naturality under algebra homomorphisms ([golub2013matrix] (9.1.3)–(9.1.8) in algebra
+form). See the directory group `Numlib/Analysis/Matrix/Function` for why the definition is by
+interpolation. Variables: `{𝕜 A : Type*} [NontriviallyNormedField 𝕜] [Ring A] [Algebra 𝕜 A]`,
+`a : A`, with `ha : IsIntegral 𝕜 a` and `hs : (minpoly 𝕜 a).Splits` where needed (`[CharZero 𝕜]`
+for anything touching derivatives); `m_λ = (minpoly 𝕜 a).rootMultiplicity λ`, the index. The
+matrix forms (similarity, diagonal, block diagonal, Jordan block, Jordan form, transpose, realness)
+are `Numlib/Analysis/Matrix/Function/Basic`. Imports `Numlib/Analysis/Calculus/HermiteInterpolation`
+(and through it `Numlib/RingTheory/Polynomial/HermiteInterpolation`). Prototype
+`notes/gvl/ch09/proto/Function.lean` elaborates every statement shape used here.
+'''
+
+[[node]]
+id = "pfc"
+kind = "definition"
+desc = '''The primary functional calculus: `pfc (f : 𝕜 → 𝕜) (a : A) : A := aeval a
+(Hermite.interpolateJet (minpoly 𝕜 a).roots (Hermite.taylorJet f))` (classical `DecidableEq 𝕜`).
+[golub2013matrix] §9.1's `f(A)`; Higham, *Functions of Matrices*, Definition 1.4. Junk when `a`
+is not integral (`minpoly = 0`, no roots, `pfc f a = aeval a 0`-type value) or `minpoly` does not
+split; every theorem carries `IsIntegral 𝕜 a` and `(minpoly 𝕜 a).Splits`. ★'''
+deps = ["Hermite.interpolateJet", "Hermite.taylorJet"]
+
+[[node]]
+id = "pfc_eq_aeval_of_isJetInterpolant"
+kind = "theorem"
+desc = '''The characterization every other result goes through: if `minpoly 𝕜 a ∣ Hermite.nodalMultiset s`
+(e.g. `s = (minpoly 𝕜 a).roots`, or `s = A.charpoly.roots` for a matrix by
+`Matrix.minpoly_dvd_charpoly`) and `p` interpolates the jets of `f` on `s`
+(`Hermite.IsJetInterpolant s (Hermite.taylorJet f) p`), then `pfc f a = aeval a p`. Proof: `p`
+and the defining interpolant both interpolate on the roots of `minpoly` (restrict with
+`Hermite.IsJetInterpolant.of_le`, since `(minpoly).roots ≤ s` by divisibility), so their difference
+is divisible by `nodalMultiset (minpoly).roots = minpoly` (split, monic:
+`Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C`), and `aeval a (minpoly 𝕜 a) = 0`
+(`minpoly.aeval`). No differentiability anywhere. ★★ (~80 lines)'''
+deps = ["pfc", "Hermite.nodalMultiset_dvd_sub", "Hermite.isJetInterpolant_interpolateJet"]
+
+[[node]]
+id = "pfc_congr"
+kind = "theorem"
+desc = '''`pfc f a` depends only on the jets of `f` at the eigenvalues up to the index: if
+`iteratedDeriv j f λ = iteratedDeriv j g λ` for every root `λ` of `minpoly 𝕜 a` and `j < m_λ`, then
+`pfc f a = pfc g a` (`Hermite.interpolateJet_congr`). In particular `pfc f a` is determined by the
+values of `f` on the spectrum when `minpoly` has simple roots (diagonalizable `a`). This is the
+formal content of "f is defined on the spectrum". ★'''
+deps = ["pfc", "Hermite.interpolateJet_congr"]
+
+[[node]]
+id = "pfc_polynomial"
+kind = "theorem"
+desc = '''Polynomials: `pfc (fun z => p.eval z) a = aeval a p` for `p : 𝕜[X]` (with `ha`, `hs`,
+`[CharZero 𝕜]`): `p` interpolates its own jets on any multiset (`Hermite.taylorJet_polynomial`,
+`Hermite.isJetInterpolant_taylorJet_iff`), then `pfc_eq_aeval_of_isJetInterpolant`. Corollaries
+`pfc_const : pfc (fun _ => c) a = algebraMap 𝕜 A c`, `pfc_id : pfc id a = a`, `pfc_pow`. This is
+[golub2013matrix] §9.1's "substitute A for z" for polynomials, `p(A) = I + A`. ★'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant", "Hermite.isJetInterpolant_taylorJet_iff"]
+
+[[node]]
+id = "pfc_add"
+kind = "theorem"
+desc = '''Linearity: `pfc (f + g) a = pfc f a + pfc g a` and `pfc (c • f) a = c • pfc f a` when `f`, `g`
+are `C^{m_λ - 1}` at every eigenvalue `λ` (`ContDiffAt 𝕜 (m_λ - 1) f λ`), since then
+`iteratedDeriv j (f + g) λ = iteratedDeriv j f λ + iteratedDeriv j g λ` for `j < m_λ`
+(`iteratedDeriv_add`-type lemmas of `Mathlib/Analysis/Calculus/IteratedDeriv/Lemmas`) and
+`Hermite.interpolateJet` is linear in the jet (`Hermite.interpolateJet_congr`). The smoothness is
+needed: with junk derivatives `iteratedDeriv j (f + g)` need not be the sum. `pfc_sub`, `pfc_neg`
+likewise. ★'''
+deps = ["pfc", "pfc_congr", "Hermite.interpolateJet_congr"]
+
+[[node]]
+id = "spectralIdempotent"
+kind = "definition"
+desc = '''The spectral idempotent (Frobenius covariant, Riesz projection) of `a` at `μ`:
+`spectralIdempotent a μ := aeval a (Hermite.interpolateJet (minpoly 𝕜 a).roots (fun λ j => if λ = μ ∧ j = 0 then 1 else 0))`,
+the projection onto the generalized eigenspace of `μ` along the others, as a polynomial in `a`
+(for a matrix: onto `Module.End.maxGenEigenspace` of `toLin' A` at `μ`). Pure algebra over any
+field with split `minpoly`. ★'''
+deps = ["Hermite.interpolateJet"]
+
+[[node]]
+id = "spectralIdempotent_mul_spectralIdempotent"
+kind = "theorem"
+desc = '''The spectral idempotents form a resolution of the identity commuting with `a`: for roots
+`λ, μ` of the split `minpoly 𝕜 a`, `E_λ * E_μ = if λ = μ then E_λ else 0`, `∑_{λ ∈ roots.toFinset}
+E_λ = 1`, `Commute a E_λ`, `E_λ ≠ 0`, and the nilpotency `(a - algebraMap 𝕜 A λ) ^ m_λ * E_λ = 0`
+(and `= 0` for `λ` not a root: `E_λ = 0`). Each is a divisibility statement about the interpolating
+polynomials modulo `minpoly` (`Hermite.nodalMultiset_dvd_sub`): e.g. `e_λ e_μ` and `δ_{λμ} e_λ`
+interpolate the same jets. ★★ (~150 lines)'''
+deps = ["spectralIdempotent", "Hermite.nodalMultiset_dvd_sub", "Hermite.isJetInterpolant_interpolateJet"]
+
+[[node]]
+id = "pfc_eq_sum_spectralIdempotent"
+kind = "theorem"
+desc = '''The spectral decomposition (Sylvester's formula, Higham FOM (1.9)): `pfc f a = ∑_{λ ∈
+(minpoly 𝕜 a).roots.toFinset} ∑_{j < m_λ} Hermite.taylorJet f λ j • (a - algebraMap 𝕜 A λ) ^ j *
+spectralIdempotent a λ` (with `ha`, `hs`). Proof: the right side is `aeval a q` with `q = ∑_λ
+e_λ · jetPoly (taylorJet f λ) λ m_λ`, and `q` interpolates the jets of `f` on the roots
+(`pfc_eq_aeval_of_isJetInterpolant`). The working form for every analytic statement: derivative in
+`t`, power series, multiplicativity, spectral mapping, norms. ★★ (~120 lines)'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant", "spectralIdempotent_mul_spectralIdempotent", "Hermite.jetPoly"]
+
+[[node]]
+id = "commute_pfc"
+kind = "theorem"
+desc = '''`Commute a (pfc f a)` ([golub2013matrix] (9.1.7), `A f(A) = f(A) A`), and more generally
+`Commute b a → Commute b (pfc f a)` (`Commute.pfc_right`) and `Commute (pfc f a) (pfc g a)`: all are
+polynomials in `a` (`Polynomial.Commute.aeval`-type lemmas: `Commute.aeval_right`, check name). No
+hypotheses. ★'''
+deps = ["pfc"]
+
+[[node]]
+id = "AlgHom.map_pfc"
+kind = "theorem"
+desc = '''Naturality: for a `𝕜`-algebra homomorphism `φ : A →ₐ[𝕜] B`, `φ (pfc f a) = pfc f (φ a)`
+(with `ha`, `hs` for `a`). `minpoly 𝕜 (φ a) ∣ minpoly 𝕜 a` (`minpoly.dvd` with `aeval (φ a) =
+φ ∘ aeval a`, `Polynomial.aeval_algHom_apply`), so `(minpoly (φ a)).roots ≤ (minpoly a).roots`
+and the defining interpolant for `a` computes `pfc f (φ a)` by `pfc_eq_aeval_of_isJetInterpolant`;
+integrality and splitting pass to `φ a` (`IsIntegral.map`, `Polynomial.Splits.of_dvd`-type lemma).
+Instances used downstream: conjugation (`Matrix.pfc_conj`), subalgebras (`Subalgebra.val`, so `pfc`
+computed in a subalgebra agrees with `pfc` in `A` — the block triangular matrices of
+`Function/Triangular`), products and projections (block diagonal matrices), `Matrix.diagonalAlgHom`. ★★'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant"]
+
+[[node]]
+id = "pfc_mul"
+kind = "theorem"
+desc = '''Multiplicativity: `pfc (f * g) a = pfc f a * pfc g a` when `f` and `g` are
+`ContDiffAt 𝕜 (m_λ - 1)` at every eigenvalue `λ` (prototype statement in
+`notes/gvl/ch09/proto/Function.lean` with `ContDiffAt 𝕜 m_λ`; either suffices). Proof by
+`pfc_eq_sum_spectralIdempotent`: the product of the two double sums collapses by
+`spectralIdempotent_mul_spectralIdempotent` to `∑_λ ∑_{k} (∑_{i+j=k} f_i g_j) (a - λ)^k E_λ`,
+truncated at `k < m_λ` by nilpotency, and the inner sum is `taylorJet (f * g) λ k` by Leibniz
+(`iteratedDeriv_mul`, `Mathlib/Analysis/Calculus/IteratedDeriv/Lemmas`, needs `ContDiffAt 𝕜 k`).
+Corollaries: `pfc_pow_fun`, the rational functions of [golub2013matrix] §9.1 (`pfc_inv`). ★★ (~150 lines)'''
+deps = ["pfc_eq_sum_spectralIdempotent", "spectralIdempotent_mul_spectralIdempotent"]
+
+[[node]]
+id = "pfc_inv"
+kind = "theorem"
+desc = '''Inverses: if `0 ∉ spectrum 𝕜 a` then `pfc (fun z => z⁻¹) a = Ring.inverse a` and `IsUnit a`;
+more generally if `f` is `C^{m_λ-1}` and nonvanishing at every eigenvalue then `IsUnit (pfc f a)`
+and `pfc (fun z => (f z)⁻¹) a = Ring.inverse (pfc f a)` — from `pfc_mul` with `f · f⁻¹ = 1` on a
+neighbourhood of each eigenvalue (`ContDiffAt.inv`, `pfc_const`). Gives [golub2013matrix] §9.1's
+`r(A) = (I - A/2)⁻¹(I + A/2)` and the chapter introduction's `(I + A)(I - A)⁻¹`. ★'''
+deps = ["pfc_mul", "pfc_polynomial"]
+
+[[node]]
+id = "spectrum_pfc"
+kind = "theorem"
+desc = '''The spectral mapping theorem: `spectrum 𝕜 (pfc f a) = f '' spectrum 𝕜 a` (with `ha`, `hs`,
+`A` nontrivial). `pfc f a = aeval a p` with `p.eval λ = f λ` on the spectrum, and
+`spectrum.map_polynomial_aeval_of_nonempty` (`[IsAlgClosed 𝕜]`, `Mathlib/FieldTheory/IsAlgClosed/Spectrum`);
+for split `minpoly` over a general field use the spectral decomposition instead (the eigenvalue
+`λ` of `a` with eigenvector in `range E_λ`). Also `rootMultiplicity` bounds:
+`(minpoly (pfc f a)).rootMultiplicity (f λ) ≤ max m_λ` over the `λ` with that image. ★★'''
+deps = ["pfc_eq_sum_spectralIdempotent", "pfc_polynomial"]
+
+[[node]]
+id = "pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq"
+kind = "theorem"
+desc = '''Locally constant functions: if for every eigenvalue `λ`, `f =ᶠ[𝓝 λ] fun _ => c λ`, then
+`pfc f a = ∑_λ c λ • spectralIdempotent a λ` (all derivatives of order `≥ 1` vanish:
+`Filter.EventuallyEq.iteratedDeriv_eq`, `iteratedDeriv_const`). The engine of the matrix sign
+function ([golub2013matrix] §9.4.1: "all the derivatives of the sign function are zero"). ★'''
+deps = ["pfc_eq_sum_spectralIdempotent"]

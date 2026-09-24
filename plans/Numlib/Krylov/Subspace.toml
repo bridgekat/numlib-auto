@@ -89,3 +89,35 @@ id = "neg_pow_apply"
 
 [[node]]
 id = "subspace_neg"
+
+[[node]]  # staged by ch11
+id = "subspace_add_algebraMap"
+kind = "theorem"
+desc = '''
+Shift invariance: `subspace (A + algebraMap R _ c) v m = subspace A v m` for every scalar `c` (both
+are `span {v, A v, …, A^{m−1} v}`: `(A + c)^i v` is a combination of `A^j v`, `j ≤ i`, with leading
+coefficient `1`, and conversely with `−c`). Induction on `m` with `Krylov.map_subspace_le`. Companion
+of the existing `Krylov.subspace_neg`. ★
+'''
+deps = ["Krylov.subspace"]
+
+[[node]]  # staged by ch11
+id = "grade_add_algebraMap"
+kind = "theorem"
+desc = '''
+`grade (A + algebraMap K _ c) v = grade A v`: `fullSubspace` is shift invariant by
+`Krylov.subspace_add_algebraMap` and `Krylov.iSup_subspace`. ★
+'''
+deps = ["Krylov.subspace_add_algebraMap", "Krylov.grade", "Krylov.fullSubspace"]
+
+[[node]]  # staged by ch11
+id = "fullSubspace_le_of_mem_invtSubmodule"
+kind = "theorem"
+desc = '''
+`fullSubspace A v` is the least `A`-invariant submodule containing `v`: if `W ∈ Module.End.invtSubmodule A`
+and `v ∈ W` then `fullSubspace A v ≤ W` (every `A^i v ∈ W`). With `Krylov.fullSubspace_mem_invtSubmodule`
+this makes `grade A v` "the dimension of the smallest invariant subspace containing `v`"
+([golub2013matrix] Theorem 11.3.1). ★
+'''
+deps = ["Krylov.fullSubspace", "Krylov.fullSubspace_mem_invtSubmodule"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.1'

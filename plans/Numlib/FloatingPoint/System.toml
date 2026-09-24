@@ -1,3 +1,11 @@
+# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.System` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch02) Add the round-to-nearest model: any nearest element of `𝔽` to an in-range `x` has relative
+# error at most `u` (`System.abs_sub_le_of_forall_abs_sub_le`, [golub2013matrix] §2.7.2 and P2.7.2),
+# so every tie-breaking rule — IEEE's round-half-to-even included — is an instance
+# (`System.nearestModel`, which rounds `0` to `0` and is idempotent, `System.nearestModel_isIdempotent`;
+# Fix-A adds `System.roundingModel_isTotal`/`choppingModel_isTotal`); and the IEEE double and single constants `ε_M`, `x_min`, `x_max`
+# ([golub2013matrix] §2.7.2).
 namespace = "FloatingPoint"
 
 [[node]]
@@ -239,3 +247,107 @@ id = "System.ieeeSingle_unitRoundoff"
 
 [[node]]
 id = "System.ieeeDouble_unitRoundoff"
+
+[[node]]  # staged by ch01
+id = "System.roundingModel_isIdempotent"
+kind = "theorem"
+desc = '''`(s.roundingModel K).IsIdempotent`: `roundingModel_rounds_iff` and `System.round_round` (proved in
+`notes/gvl/ch01/proto/Program.lean`). ★'''
+deps = ["FloatingPoint.System.roundingModel", "FloatingPoint.System.round_round", "FloatingPoint.RoundingModel.IsIdempotent"]
+
+[[node]]  # staged by ch01
+id = "System.chop_chop"
+kind = "theorem"
+desc = '''Chopping is idempotent: `s.chop (s.chop x) = s.chop x` for every `x`. The chopped mantissa is an
+integer in `[β^{t−1}, β^t)` (or `x = 0`), so a second chop truncates an integer and changes nothing;
+chopping never carries into the next binade, so this is simpler than `System.round_round`, on which
+it should be modelled (`round_eq_self_of_abs_eq`). ★★'''
+deps = ["FloatingPoint.System.chop"]
+
+[[node]]  # staged by ch01
+id = "System.choppingModel_isIdempotent"
+kind = "theorem"
+desc = '''`(s.choppingModel K).IsIdempotent`, from `System.chop_chop`. ★'''
+deps = ["FloatingPoint.System.choppingModel", "FloatingPoint.System.chop_chop", "FloatingPoint.RoundingModel.IsIdempotent"]
+
+[[node]]  # staged by ch02
+id = "System.abs_sub_le_of_forall_abs_sub_le"
+kind = "theorem"
+desc = '''**A nearest floating-point number has relative error at most `u`** ([golub2013matrix] §2.7.2 and
+P2.7.2): for `[FloorRing K]`, `xmin ≤ |x| ≤ xmax`, `y ∈ s.numbers K` and `∀ z ∈ s.numbers K, |y - x| ≤
+|z - x|`, we get `|y - x| ≤ s.unitRoundoff K * |x|`. Compare with `z = s.round x`, which is in `𝔽`
+(`System.round_mem_numbers`) and within `u |x|` (`System.abs_round_sub_le`). ★'''
+deps = ["FloatingPoint.System.round_mem_numbers", "FloatingPoint.System.abs_round_sub_le"]
+
+[[node]]  # staged by ch02; restated by Fix-A (GVL review, algo M8)
+id = "System.nearestModel"
+kind = "definition"
+desc = '''The round-to-nearest rounding relation of a system, tie rule unspecified: `u = unitRoundoff`,
+`Rounds x y := (x = 0 ∧ y = 0) ∨ (xmin ≤ |x| ∧ |x| ≤ xmax ∧ y ∈ s.numbers K ∧ ∀ z ∈ s.numbers K,
+|y - x| ≤ |z - x|)`, with `abs_sub_le` from `abs_sub_le_of_forall_abs_sub_le` (the zero branch is
+`|0 - 0| ≤ u · 0`). **Zero rounds to zero**: without the first disjunct an exact zero intermediate
+(`0 · x`, `x - x`, the start `c = 0` of an accumulation fed back through `fl(0 + p)`) would have no
+rounding, the run set of every program computing one would be empty, and every "for every run"
+theorem about such a program vacuous (review `notes/gvl/review/algo.md` M8). Partial otherwise
+(values with `0 < |x| < xmin`, gradual underflow, and `|x| > xmax`, overflow, have no rounding) and
+not functional (ties); IEEE round-half-to-even and the total `System.roundingModel` (whose `Rounds`
+implies this one in range and at `0`) are instances. ★'''
+deps = ["FloatingPoint.System.abs_sub_le_of_forall_abs_sub_le", "FloatingPoint.RoundingModel"]
+
+[[node]]  # Fix-A (GVL review, algo M8)
+id = "System.nearestModel_isIdempotent"
+kind = "theorem"
+desc = '''`(s.nearestModel K).IsIdempotent`: if `Rounds x y` and `Rounds y z` then `z = y`. For `x = 0`,
+`y = 0` and the zero branch gives `z = 0`. In range, `y ∈ 𝔽` and `y ≠ 0` with `xmin ≤ |y| ≤ xmax`
+(`xmin, xmax ∈ 𝔽` are candidates, so `|y - x| ≤ |x| - xmin` and `≤ xmax - |x|`), hence `Rounds y z`
+is the in-range branch and `|z - y| ≤ |y - y| = 0`. ★★'''
+deps = ["FloatingPoint.System.nearestModel", "FloatingPoint.RoundingModel.IsIdempotent"]
+
+[[node]]  # Fix-A (GVL review, algo M8)
+id = "System.roundingModel_isTotal"
+kind = "theorem"
+desc = '''`(s.roundingModel K).IsTotal`: `fun x => ⟨s.round x, rfl⟩` (`roundingModel_rounds_iff`). ★'''
+deps = ["FloatingPoint.System.roundingModel", "FloatingPoint.RoundingModel.IsTotal"]
+
+[[node]]  # Fix-A (GVL review, algo M8)
+id = "System.choppingModel_isTotal"
+kind = "theorem"
+desc = '''`(s.choppingModel K).IsTotal`: `fun x => ⟨s.chop x, rfl⟩`. ★'''
+deps = ["FloatingPoint.System.choppingModel", "FloatingPoint.RoundingModel.IsTotal"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeDouble_machineEps"
+kind = "theorem"
+desc = '''`ieeeDouble.machineEps K = 2 ^ (-52 : ℤ)` ([golub2013matrix] §2.7.2), as `ieeeDouble_unitRoundoff`. ★'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.machineEps"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeDouble_xmin"
+kind = "theorem"
+desc = '''`ieeeDouble.xmin K = 2 ^ (-1022 : ℤ)`, the book's `N_min` ([golub2013matrix] §2.7.2). ★'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.xmin"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeDouble_xmax"
+kind = "theorem"
+desc = '''`ieeeDouble.xmax K = (2 - 2 ^ (-52 : ℤ)) * 2 ^ (1023 : ℤ)`, the book's `N_max`
+([golub2013matrix] §2.7.2): `xmax = 2^1024 (1 - 2^-53)`. ★'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.xmax"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeSingle_machineEps"
+kind = "theorem"
+desc = '''`ieeeSingle.machineEps K = 2 ^ (-23 : ℤ)`, the single-precision twin of `ieeeDouble_machineEps`. ★'''
+deps = ["FloatingPoint.System.ieeeSingle", "FloatingPoint.System.machineEps"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeSingle_xmin"
+kind = "theorem"
+desc = '''`ieeeSingle.xmin K = 2 ^ (-126 : ℤ)`. ★'''
+deps = ["FloatingPoint.System.ieeeSingle", "FloatingPoint.System.xmin"]
+
+[[node]]  # staged by ch02
+id = "System.ieeeSingle_xmax"
+kind = "theorem"
+desc = '''`ieeeSingle.xmax K = (2 - 2 ^ (-23 : ℤ)) * 2 ^ (127 : ℤ)`. ★'''
+deps = ["FloatingPoint.System.ieeeSingle", "FloatingPoint.System.xmax"]

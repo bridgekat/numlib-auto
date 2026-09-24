@@ -1,3 +1,26 @@
+# Planned additions (GVL round): the module doc of `Numlib.Eigen.MinMax` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch08) add to "Main results": the sorted spectral decomposition
+# `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀` (the symmetric Schur
+# decomposition with the eigenvalues in decreasing order, [golub2013matrix] Theorem 8.1.1); the
+# two-sided Weyl bounds `LinearMap.IsSymmetric.eigenvalues_add_mem_Icc` ([golub2013matrix] Theorem
+# 8.1.5); the low-rank interlacing
+# `LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le` (a positive
+# perturbation of rank `≤ r` moves every eigenvalue up by at most `r` places, [golub2013matrix]
+# Theorem 8.1.8 at `r = 1`); and the Hoffman–Wielandt inequality
+# `Matrix.IsHermitian.hoffman_wielandt` ([golub2013matrix] Theorem 8.1.4), the Frobenius-norm companion
+# of Weyl's inequality, proved by Abel summation from Ky Fan's maximum principle (Golub–Van Loan review,
+# eigen item 4).
+# (ch12) Add to the main results: the stationary points of the Rayleigh quotient of a symmetric
+# operator are exactly its eigenvectors
+# (`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`, [golub2013matrix] (12.5.23));
+# Mathlib has only the extremal case (`IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`).
+# (consolidation) with the gradient formula it rests on,
+# `ContinuousLinearMap.hasGradientAt_rayleighQuotient` ([golub2013matrix] (10.1.1), planned by ch10 for
+# `RayleighRitz`, placed here); and Ky Fan's principle `sum_re_inner_le_sum_eigenvalues`, proved from
+# Cauchy interlacing for the compression to the span of the family, is the one source of the
+# trace-maximization results (Hoffman–Wielandt here; its SVD form and von Neumann's trace inequality in
+# `Analysis/Matrix/SingularValues` are corollaries).
 [[node]]
 id = "ContinuousLinearMap.rayleighQuotient_eq_toLinearMap"
 
@@ -98,3 +121,129 @@ id = "LinearMap.IsSymmetric.eigenvalues_neg"
 
 [[node]]
 id = "LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg"
+
+[[node]]  # staged by ch08
+id = "Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀"
+kind = "theorem"
+desc = '''The spectral decomposition with sorted eigenvalues ([golub2013matrix] Theorem 8.1.1 with
+`λ_1 ≥ ⋯ ≥ λ_n`): for a Hermitian `A : Matrix (Fin N) (Fin N) 𝕜` there is
+`U ∈ Matrix.unitaryGroup (Fin N) 𝕜` with `Uᴴ * A * U = diagonal (fun k => (hA.eigenvalues₀
+(Fin.cast (Fintype.card_fin N).symm k) : 𝕜))` and `A *ᵥ U.col k = hA.eigenvalues₀ … k • U.col k`.
+The columns are the (sorted) `eigenvectorBasis` of `toEuclideanLin A`
+(`(isSymmetric_toEuclideanLin_iff.mpr hA).eigenvectorBasis finrank_euclideanSpace`, which Mathlib
+sorts by `eigenvalues_antitone`), turned into a matrix by `OrthonormalBasis.toMatrix`-type
+bookkeeping (`U i k = (b k).ofLp i`, unitary by `OrthonormalBasis.toMatrix_orthonormalBasis_mem_unitary`;
+do not import `Numlib/Eigen/QRAlgorithm` for its `Matrix.euclideanCol`: `QRAlgorithm` imports
+`PowerMethod`, which imports this module); Mathlib's
+`Matrix.IsHermitian.spectral_theorem` is the unsorted form (index `n`, `Fintype.equivOfCardEq`).
+At `𝕜 = ℝ`, `unitaryGroup = orthogonalGroup`. ★★ (~60 lines)'''
+deps = []
+
+[[node]]  # staged by ch08
+id = "Matrix.IsHermitian.trace_eq_sum_eigenvalues₀"
+kind = "theorem"
+desc = '''`trace A = ∑ k, (hA.eigenvalues₀ k : 𝕜)` for Hermitian `A` ([golub2013matrix] P8.1.8: "the
+trace of a square matrix is the sum of its eigenvalues", used for Theorem 8.1.8). Mathlib's
+`Matrix.IsHermitian.trace_eq_sum_eigenvalues` is over the `n`-indexed `eigenvalues`
+`= eigenvalues₀ ∘ equivOfCardEq`; reindex the sum (`Equiv.sum_comp`). ★'''
+deps = []
+
+[[node]]  # staged by ch08
+id = "LinearMap.IsSymmetric.eigenvalues_add_mem_Icc"
+kind = "theorem"
+desc = '''Weyl's two-sided bounds ([golub2013matrix] Theorem 8.1.5): for symmetric `A E` on `E`
+(finite-dimensional, `hn : finrank 𝕜 E = n`, `0 < n` so that `⟨0, _⟩` and `⟨n - 1, _⟩` exist) and
+every `i`, `hA.eigenvalues hn i + hE.eigenvalues hn ⟨n - 1, _⟩ ≤ hAE.eigenvalues hn i` and
+`hAE.eigenvalues hn i ≤ hA.eigenvalues hn i + hE.eigenvalues hn ⟨0, _⟩` (`hAE : (A + E).IsSymmetric`).
+Both are `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le` with `C = λ_max(E)` (resp. with
+the roles of `A` and `A + E` exchanged and `C = -λ_min(E)`), the quadratic-form bounds
+`λ_min(E) ‖x‖² ≤ re ⟪E x, x⟫ ≤ λ_max(E) ‖x‖²` being `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc`.
+★'''
+deps = ["LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le"]
+
+[[node]]  # staged by ch08
+id = "LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le"
+kind = "theorem"
+desc = '''Low-rank interlacing: for symmetric `A B` on a finite-dimensional `E` (`hn`) such that
+`B - A` is positive (`∀ x, 0 ≤ re ⟪(B - A) x, x⟫`) and `finrank (LinearMap.range (B - A)) ≤ r`,
+for every `i` with `i + r < n`, `hB.eigenvalues hn ⟨i + r, _⟩ ≤ hA.eigenvalues hn i`
+(and `hA.eigenvalues hn i ≤ hB.eigenvalues hn i` is `eigenvalues_le_of_re_inner_le`). Proof by
+Courant–Fischer: take the `(i + r + 1)`-dimensional subspace `S` on which the Rayleigh quotient of
+`B` is `≥ λ_{i+r}(B)` (`le_rayleighQuotient_of_mem_eigenvectorSpan_Iic`); `S ⊓ ker (B - A)` has
+dimension `≥ i + 1`, and on it the quadratic forms of `A` and `B` agree; so
+`λ_i(A) ≥ λ_{i+r}(B)` by `LinearMap.IsSymmetric.isGreatest_eigenvalues`. [golub2013matrix]
+Theorem 8.1.8 is `r = 1`, `B - A = τ c cᵀ` (`τ ≥ 0`; `τ ≤ 0` by exchanging `A` and `B`). ★★ (~80 lines)'''
+deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues", "LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le"]
+
+[[node]]  # staged by ch08
+id = "Matrix.IsHermitian.hoffman_wielandt"
+kind = "theorem"
+desc = '''The Hoffman–Wielandt inequality ([golub2013matrix] Theorem 8.1.4, "Wielandt–Hoffman"): for
+Hermitian `A B : Matrix n n 𝕜`,
+`∑ k, (hA.eigenvalues₀ k - hB.eigenvalues₀ k) ^ 2 ≤ ‖A - B‖ ^ 2` with the Frobenius norm (scoped
+`Matrix.Norms.Frobenius`; `‖M‖² = ∑ i j, ‖M i j‖²`, `frobenius_norm_def`). The book gives no proof
+(Wilkinson AEP pp. 104–108, Stewart–Sun, Lax). Proof by Abel summation from Ky Fan (eigen review item
+4; the first plan went through Birkhoff's theorem, ★★★ ~200): `‖A - B‖_F² = ‖A‖_F² + ‖B‖_F² -
+2 re tr(A B)` and `‖A‖_F² = ∑ λ_k²`, `‖B‖_F² = ∑ μ_k²`, so it suffices that
+`re tr(A B) ≤ ∑ k, λ_k μ_k` (sorted decreasingly). Write `B = ∑_{k < N-1} (μ_k - μ_{k+1}) P_k + μ_{N-1} I`
+with `P_k` the orthogonal projection onto the span of the first `k + 1` eigenvectors of `B`
+(`exists_unitary_conj_eq_diagonal_eigenvalues₀`); `re tr(A P_k) ≤ ∑_{i ≤ k} λ_i` is Ky Fan
+(`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues` applied to `toEuclideanLin A` and those
+eigenvectors), the weights `μ_k - μ_{k+1}` are nonnegative, and `tr A = ∑ λ_i`
+(`trace_eq_sum_eigenvalues₀`); summing by parts gives `∑ λ_k μ_k`. Searched Mathlib for `hoffman`,
+`wielandt`, `lidskii`: absent. ★★ (~100 lines)'''
+deps = ["Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀", "LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues", "Matrix.IsHermitian.trace_eq_sum_eigenvalues₀"]
+
+[[node]]  # staged by ch10
+id = "LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues"
+kind = "theorem"
+desc = '''Ky Fan's maximum principle: for symmetric `T` on an `n`-dimensional space (`hT.eigenvalues hn`
+decreasing) and an orthonormal family `x : Fin k → E` (`k ≤ n`),
+`∑ i, re ⟪T (x i), x i⟫ ≤ ∑ i : Fin k, hT.eigenvalues hn ⟨i, _⟩`, with equality at the first `k`
+eigenvectors. Cheap proof (eigen review item 4; the first plan's rearrangement argument, ★★★ ~200, is not
+needed): let `K = span (range x)` (`finrank K = k`, the `x i` an orthonormal basis of it). The left side
+is the real trace of the compression `compression T K` (`Numlib/Analysis/InnerProductSpace/Projection/Compression`,
+imported by this module): `LinearMap.trace_eq_sum_inner` in that basis and `compression.inner_apply`.
+The trace is the sum of the compression's sorted eigenvalues (Mathlib
+`LinearMap.IsSymmetric.re_trace_eq_sum_eigenvalues`, with `compression.isSymmetric`), and each of them
+is at most the corresponding eigenvalue of `T` by Cauchy interlacing,
+`LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry` (second conjunct) along
+`K.subtypeₗᵢ`. The equality case: at `x i = eigenvectorBasis i` each term is `λ_i`. Stays in this
+module (it needs only the interlacing proved here), so `Numlib/Analysis/InnerProductSpace/SingularValues`
+can use it without importing `RayleighRitz`. ★ (~50 lines)'''
+deps = ["LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry"]
+
+[[node]]  # staged by ch10
+id = "LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner"
+kind = "theorem"
+desc = '''Ky Fan's minimum principle, the dual: `∑ i : Fin k, hT.eigenvalues hn ⟨n − k + i, _⟩ ≤ ∑ i, re ⟪T (x i), x i⟫`
+for orthonormal `x : Fin k → E`, equality at the last `k` eigenvectors. From
+`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues` applied to `−T`
+(`LinearMap.IsSymmetric.eigenvalues_neg`). This is the trace-min principle of [golub2013matrix] §10.6.5 for
+`B = I`; the pencil form is the surface's, through a Cholesky factor of `B`. ★'''
+deps = ["LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues", "LinearMap.IsSymmetric.eigenvalues_neg"]
+
+[[node]]  # staged by ch12
+id = "LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff"
+kind = "theorem"
+desc = '''For a symmetric `T : E →ₗ[ℝ] E` on a finite-dimensional real inner product space and `x ≠ 0`: the Fréchet
+derivative of `y ↦ ⟪T y, y⟫ / ‖y‖²` at `x` vanishes iff `T x = (⟪T x, x⟫ / ‖x‖²) • x` ([golub2013matrix] (12.5.23),
+"the eigenvalues are the stationary values of `φ_C` and the stationary vectors are eigenvectors"). The derivative
+is `h ↦ 2 ⟪T x − φ(x) x, h⟫ / ‖x‖²` — the gradient `ContinuousLinearMap.hasGradientAt_rayleighQuotient` (ch10's
+(10.1.1), a different statement: the formula, for a bounded symmetric operator on a real Hilbert space) applied to
+`LinearMap.toContinuousLinearMap T` — and it vanishes iff `T x = φ(x) x`. Consumer:
+`Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff` (its order-2 case). ★ (~30 lines)'''
+deps = ["LinearMap.rayleighQuotient", "ContinuousLinearMap.hasGradientAt_rayleighQuotient"]
+
+[[node]]  # staged by ch10
+id = "ContinuousLinearMap.hasGradientAt_rayleighQuotient"
+kind = "theorem"
+desc = '''The gradient of the Rayleigh quotient ([golub2013matrix] (10.1.1)): on a real Hilbert space `F`, for
+`T : F →L[ℝ] F` symmetric and `x ≠ 0`, `HasGradientAt T.rayleighQuotient ((2 / ‖x‖ ^ 2) • (T x − T.rayleighQuotient x • x)) x`.
+Quotient rule on `⟪T x, x⟫ / ‖x‖²` with Mathlib `LinearMap.IsSymmetric.hasStrictFDerivAt_reApplyInnerSelf`
+(derivative `2 ⟪T x, ·⟫`) and `hasStrictFDerivAt_norm_sq`; `HasGradientAt` via `toDual`. Consequence
+used by the book: the gradient lies in `span {x, T x}`. Planned by ch10 for `Eigen/RayleighRitz`, placed here
+at the Golub–Van Loan consolidation so that the critical-point theorem
+`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff` can use it (`RayleighRitz` imports this
+module). ★★ (~60 lines)'''
+deps = []

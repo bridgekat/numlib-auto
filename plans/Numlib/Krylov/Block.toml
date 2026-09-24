@@ -105,3 +105,20 @@ id = "Krylov.map_blockSubspace_le"
 
 [[node]]
 id = "Krylov.subspace_le_blockSubspace"
+
+[[node]]  # staged by ch10
+id = "BlockArnoldi.coeff_conj_of_isSymmetric"
+kind = "theorem"
+desc = '''For symmetric `A`, `BlockArnoldi.coeff A v i k = conj (BlockArnoldi.coeff A v k i)`
+(`coeff i k = ⟪v_i, A v_k⟫`); `inner_conj_symm` and `hA`. ★'''
+deps = ["BlockArnoldi.coeff"]
+
+[[node]]  # staged by ch10
+id = "BlockArnoldi.coeff_eq_zero_of_isSymmetric"
+kind = "theorem"
+desc = '''For symmetric `A` and `i + p < k`, `BlockArnoldi.coeff A v i k = 0`: with `BlockArnoldi.coeff_eq_zero_of_lt`
+(the lower band) and `BlockArnoldi.coeff_conj_of_isSymmetric`, the square coefficient matrix
+`BlockArnoldi.hessenbergSq A v m` is Hermitian with upper and lower bandwidth `p`
+(`Matrix.HasUpperBandwidth`, `Matrix.HasLowerBandwidth`) — [golub2013matrix] (10.3.7)'s block tridiagonal
+`T̄_k` "has bandwidth p". Stated also as `(BlockArnoldi.hessenbergSq A v m).IsHermitian` in the same node. ★'''
+deps = ["BlockArnoldi.coeff_eq_zero_of_lt", "BlockArnoldi.coeff_conj_of_isSymmetric", "BlockArnoldi.hessenbergSq", "Matrix.HasUpperBandwidth"]

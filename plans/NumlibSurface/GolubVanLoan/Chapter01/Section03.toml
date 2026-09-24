@@ -1,0 +1,155 @@
+namespace = "GolubVanLoan.Chapter01"
+desc = '''
+§1.3, block matrices and algorithms: block multiplication (Theorem 1.3.1), the Kronecker product
+and its properties (1.3.1)–(1.3.5), the vec/reshape identity (1.3.6), Hamiltonian and symplectic
+matrices (§1.3.10), and Strassen's recursive multiplication (Algorithm 1.3.1).
+
+Block partitions with blocks of sizes `m₁, …, m_q` are the `Sigma` types `(i : Fin q) × Fin (m i)`,
+laid out contiguously by Mathlib's `finSigmaFinEquiv : (i : Fin q) × Fin (m i) ≃ Fin (∑ i, m i)`
+(block `A_{αβ}` is `A.submatrix (finSigmaFinEquiv ∘ Sigma.mk α) (finSigmaFinEquiv ∘ Sigma.mk β)`, the
+book's `A(τ+1:τ+m_α, μ+1:μ+n_β)`). The Kronecker product `B ⊗ C ∈ ℝ^{m₁m₂ × n₁n₂}` is the backbone's
+positional `Matrix.kroneckerFin B C` (the `(i, j)` block is `b_ij C`), `vec` is `Matrix.vecFin`,
+`reshape` is `Matrix.reshape`, the perfect shuffle is `Matrix.perfectShuffle`
+(`Numlib/LinearAlgebra/Matrix/Kronecker`). Hamiltonian matrices are the backbone
+`Matrix.IsHamiltonian` on `Fin n ⊕ Fin n` (`Numlib/LinearAlgebra/Matrix/Hamiltonian`); symplectic
+ones are Mathlib's `Matrix.symplecticGroup (Fin n) ℝ`. The book's `J = [0 I; −I 0]` is `−Matrix.J`
+(Mathlib's sign); both defining conditions are invariant under `J ↦ −J`, so the surface states
+them with the book's `J` (`bookJ`) and proves them equivalent to the Mathlib forms. The
+`2n × 2n` matrices of §1.3.10 are kept in their 2 × 2 block form `Matrix (Fin n ⊕ Fin n) (Fin n ⊕
+Fin n) ℝ`; `finSumFinEquiv` relabels to `Fin (n + n)` without changing either condition.
+
+Not nodes: the block-sparse terminology of §1.3.1 (chapter 4 plans block tridiagonal structure),
+§1.3.3's submatrix notation, the unnumbered blocked gaxpys (§1.3.4) and block products (§1.3.5),
+the prose remark that `B ⊗ C` inherits band structure from `B` at the block level, §1.3.8's
+unnumbered multiple-Kronecker reshaping and its `6n⁴` count, §1.3.9's real form of complex
+multiplication (unnumbered display), Strassen's operation counts and `n^{2.807}`.
+'''
+
+[[node]]
+id = "theorem_1_3_1"
+kind = "theorem"
+desc = '''Theorem 1.3.1 (block multiplication). For `A : Matrix (Fin (∑ α, m α)) (Fin (∑ γ, p γ)) ℝ` and `B : Matrix
+(Fin (∑ γ, p γ)) (Fin (∑ β, n β)) ℝ` with `m : Fin q → ℕ`, `p : Fin s → ℕ`, `n : Fin r → ℕ`, and the blocks
+`X_{αβ} := X.submatrix (finSigmaFinEquiv ∘ Sigma.mk α) (finSigmaFinEquiv ∘ Sigma.mk β)`, one has
+`(A * B)_{αβ} = ∑ γ, A_{αγ} * B_{γβ}` for all `α`, `β`. Transport `A`, `B` to the `Sigma` index by
+`reindex finSigmaFinEquiv.symm` (`submatrix_mul_equiv`) and apply the backbone
+`Matrix.mul_submatrix_sigmaMk_eq_sum` (staged for `BlockDiagonal`). ★★ (the `Fin`/`Sigma`
+plumbing)'''
+deps = ["Matrix.mul_submatrix_sigmaMk_eq_sum"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 1.3.1'
+
+[[node]]
+id = "equation_1_3_1"
+kind = "theorem"
+desc = '''(1.3.1): `(B ⊗ C)ᵀ = Bᵀ ⊗ Cᵀ`, i.e. `(Matrix.kroneckerFin B C)ᵀ = Matrix.kroneckerFin Bᵀ Cᵀ`;
+`Matrix.transpose_kroneckerFin`. ★'''
+deps = ["Matrix.transpose_kroneckerFin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.1)'
+
+[[node]]
+id = "equation_1_3_2"
+kind = "theorem"
+desc = '''(1.3.2): `(B ⊗ C)(D ⊗ F) = BD ⊗ CF` for conformable real `Fin` matrices;
+`Matrix.kroneckerFin_mul_kroneckerFin`. ★'''
+deps = ["Matrix.kroneckerFin_mul_kroneckerFin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.2)'
+
+[[node]]
+id = "equation_1_3_3"
+kind = "theorem"
+desc = '''(1.3.3): for nonsingular square `B`, `C` (the book's hypothesis, carried as `IsUnit B.det`, `IsUnit
+C.det` although Lean's inverse makes it unnecessary), `(B ⊗ C)⁻¹ = B⁻¹ ⊗ C⁻¹`;
+`Matrix.inv_kroneckerFin`. The node also records that `B ⊗ C` is then nonsingular
+(`Matrix.det_kronecker` transported). ★'''
+deps = ["Matrix.inv_kroneckerFin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.3)'
+
+[[node]]
+id = "equation_1_3_4"
+kind = "theorem"
+desc = '''(1.3.4): `B ⊗ (C ⊗ D) = (B ⊗ C) ⊗ D`, with the index types `Fin (m₁ * (m₂ * m₃))` and `Fin (m₁ * m₂ *
+m₃)` identified by `finCongr (Nat.mul_assoc _ _ _)`; `Matrix.kroneckerFin_assoc`. ★'''
+deps = ["Matrix.kroneckerFin_assoc"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.4)'
+
+[[node]]
+id = "equation_1_3_5"
+kind = "theorem"
+desc = '''(1.3.5): for `B : Matrix (Fin m₁) (Fin n₁) ℝ`, `C : Matrix (Fin m₂) (Fin n₂) ℝ`, `P = P_{m₁,m₂}`, `Q =
+P_{n₁,n₂}`: `P (B ⊗ C) Qᵀ = C ⊗ B` — `Matrix.perfectShuffle m₁ m₂ * Matrix.kroneckerFin B C *
+(Matrix.perfectShuffle n₁ n₂)ᵀ = Matrix.kroneckerFin C B` (typed without casts);
+`Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose` — [the book's P1.3.6]. ★'''
+deps = ["Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.5)'
+
+[[node]]
+id = "equation_1_3_6"
+kind = "theorem"
+desc = '''(1.3.6): for `B : Matrix (Fin m₁) (Fin n₁) ℝ`, `C : Matrix (Fin m₂) (Fin n₂) ℝ`, `X : Matrix (Fin n₂) (Fin
+n₁) ℝ` and `Y : Matrix (Fin m₂) (Fin m₁) ℝ`: `Y = C * X * Bᵀ ↔ Matrix.vecFin Y = Matrix.kroneckerFin B C
+*ᵥ Matrix.vecFin X`. `Matrix.kroneckerFin_mulVec_vecFin` and `Matrix.vecFin_injective`. The book's
+dimension line "`X ∈ ℝ^{n₁×m₂}`" is a misprint for `ℝ^{n₂×n₁}` (chapter report). ★'''
+deps = ["Matrix.kroneckerFin_mulVec_vecFin", "Matrix.vecFin_injective"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.3.6)'
+
+[[node]]
+id = "bookJ"
+kind = "definition"
+desc = '''§1.3.10: the book's `J = [0 I_n; −I_n 0]`, `bookJ (n : ℕ) : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ :=
+fromBlocks 0 1 (−1) 0`, with `bookJ n = −Matrix.J (Fin n) ℝ` (`bookJ_eq_neg_J`, a one-line helper). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.3.10, Definition'
+
+[[node]]
+id = "isHamiltonian_iff"
+kind = "theorem"
+desc = '''§1.3.10, the two definitions of a Hamiltonian matrix agree: for `M = fromBlocks A G F H`
+(`A F G H : Matrix (Fin n) (Fin n) ℝ`), `(H = −Aᵀ ∧ Fᵀ = F ∧ Gᵀ = G) ↔ bookJ n * M * (bookJ n)ᵀ =
+−Mᵀ`, and both are `M.IsHamiltonian`. `Matrix.isHamiltonian_fromBlocks_iff`, `bookJ_eq_neg_J`
+(`(−J) M (−J)ᵀ = J M Jᵀ`), `Matrix.IsHamiltonian`. ★'''
+deps = ["bookJ", "Matrix.IsHamiltonian", "Matrix.isHamiltonian_fromBlocks_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §1.3.10, Definition'
+
+[[node]]
+id = "isSymplectic_iff"
+kind = "theorem"
+desc = '''§1.3.10: `S` is symplectic in the book's sense, `Sᵀ (bookJ n) S = bookJ n`, iff `S ∈ Matrix.symplecticGroup
+(Fin n) ℝ`; `bookJ_eq_neg_J`, `neg_mul`, `mul_neg`, `neg_inj`, `symplecticGroup.mem_iff'`. ★'''
+deps = ["bookJ"]
+source = 'Golub–Van Loan, Matrix Computations, §1.3.10, Definition'
+
+[[node]]
+id = "symplectic_blocks"
+kind = "theorem"
+desc = '''§1.3.10: if `S = fromBlocks S₁₁ S₁₂ S₂₁ S₂₂` is symplectic then `S₁₁ᵀ S₂₁` and `S₂₂ᵀ S₁₂` are symmetric and
+`S₁₁ᵀ S₂₂ = I_n + S₂₁ᵀ S₁₂` (the book states "it follows that"; the converse also holds and is
+included as an `↔`). Mathlib `Matrix.symplecticGroup.fromBlocks_mem_iff` (`Aᵀ C = Cᵀ A`, `Bᵀ D = Dᵀ
+B`, `Aᵀ D − Cᵀ B = 1`) through `isSymplectic_iff` and `transpose_mul`. ★'''
+deps = ["isSymplectic_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §1.3.10, Definition'
+
+[[node]]
+id = "algorithm_1_3_1"
+kind = "definition"
+desc = '''Algorithm 1.3.1 (Strassen matrix multiplication), D4, by recursion on `q` for `n = 2^q`:
+`algorithm_1_3_1 rnd (d : ℕ) : (q : ℕ) → Matrix (Fin (2 ^ q)) (Fin (2 ^ q)) ℝ → Matrix (Fin (2 ^ q)) (Fin
+(2 ^ q)) ℝ → M (Matrix (Fin (2 ^ q)) (Fin (2 ^ q)) ℝ)`; if `q ≤ d` (`n ≤ n_min = 2^d`) the conventional
+product `algorithm_1_1_5 rnd A B 0`, else split `A`, `B` into `2^{q−1}` blocks along `Fin (2^(q−1) * 2)
+≃ Fin 2^(q−1) ⊕ Fin 2^(q−1)` (`u = 1:m`, `v = m+1:n`), form the seven sums/differences entrywise
+through `rnd` (a helper `roundedAdd rnd X Y` = `Matrix.of`-built entrywise `rnd (X i j + Y i j)`,
+monadically sequenced), recurse seven times, and assemble `C(u,u) = P₁ + P₄ − P₅ + P₇`, `C(u,v) = P₃ +
+P₅`, `C(v,u) = P₂ + P₄`, `C(v,v) = P₁ + P₃ − P₂ + P₆` with rounded additions, in the book's order. ★★
+(the definition's index plumbing)'''
+deps = ["algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.3.1'
+
+[[node]]
+id = "algorithm_1_3_1_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_3_1 pure d q A B) = A * B` for all `d`, `q`. Induction on `q`: the base case is
+`algorithm_1_1_5_spec` with `C = 0`; the step is `Matrix.fromBlocks_multiply` plus Strassen's seven
+identities, which hold in any (noncommutative) ring — `noncomm_ring` on `Matrix (Fin 2^(q−1)) … ℝ`
+(`P₁ + P₄ − P₅ + P₇ = A₁₁B₁₁ + A₁₂B₂₁` etc.; "easily confirmed by substitution"). ★★'''
+deps = ["algorithm_1_3_1", "algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.3.1'
+

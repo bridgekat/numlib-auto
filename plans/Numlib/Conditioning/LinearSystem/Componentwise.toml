@@ -1,3 +1,8 @@
+# Planned additions (GVL round): the module doc of `Numlib.Conditioning.LinearSystem.Componentwise` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch02) Add the Oettli–Prager theorem ([golub2013matrix] (2.6.13); [higham2002accuracy] Theorem
+# 7.3) with the componentwise backward error `Matrix.componentwiseBackwardError` as its least
+# admissible `ω`, and `Matrix.skeelCond_le_condNumberLp_top` (`cond(A) ≤ κ_∞(A)`).
 namespace = "Matrix"
 
 [[node]]
@@ -35,3 +40,41 @@ id = "sub_eq_inv_mulVec_of_mulVec_eq"
 
 [[node]]
 id = "abs_inv_mulVec_abs_le"
+
+[[node]]  # staged by ch02
+id = "skeelCond_le_condNumberLp_top"
+kind = "theorem"
+desc = '''`Matrix.skeelCond A ≤ Matrix.condNumberLp ⊤ A`: `‖|A⁻¹| |A|‖_∞ ≤ ‖|A⁻¹|‖_∞ ‖|A|‖_∞ = ‖A⁻¹‖_∞ ‖A‖_∞`
+(`Matrix.linfty_opNorm_abs`, submultiplicativity `Matrix.linfty_opNorm_mul`, `Matrix.lpOpNorm_top`).
+[golub2013matrix] §2.6.5: the Skeel condition number can be "considerably less than `κ_∞(A)`", never
+more. ★'''
+deps = ["Matrix.skeelCond", "Matrix.condNumberLp", "Matrix.lpOpNorm_top"]
+
+[[node]]  # staged by ch02
+id = "exists_perturbation_iff_abs_residual_le"
+kind = "theorem"
+desc = '''**The Oettli–Prager theorem** ([golub2013matrix] (2.6.13), after Oettli–Prager 1964;
+[higham2002accuracy] Theorem 7.3): for `A E : Matrix n n ℝ`, `b f x : n → ℝ` and `0 ≤ ω`, `(∃ ΔA Δb,
+(A + ΔA) *ᵥ x = b + Δb ∧ ΔA.abs ≤ₑ ω • E.abs ∧ |Δb| ≤ ω • |f|) ↔ |b - A *ᵥ x| ≤ ω • (E.abs *ᵥ |x| +
+|f|)` (prototype elaborates). `→`: `b - A x = ΔA x - Δb` and `Matrix.abs_mulVec_le`. `←`: with `r = b -
+A x` and `s = |E| |x| + |f|`, take `ΔA i j = (r i / s i) * |E i j| * sign (x j)`, `Δb i = -(r i / s i) *
+|f i|` (zero rows where `s i = 0`, where then `r i = 0`). ★★ (~70 lines)'''
+deps = ["Matrix.abs", "Matrix.EntrywiseLE", "Matrix.abs_mul_entrywiseLE"]
+
+[[node]]  # staged by ch02
+id = "componentwiseBackwardError"
+kind = "definition"
+desc = '''The componentwise backward error of `x` for `A x = b` relative to the tolerances `E`, `f`:
+`componentwiseBackwardError A E b f x = ⨆ i, |(b - A *ᵥ x) i| / (E.abs *ᵥ |x| + |f|) i` (real division,
+`0 / 0 = 0`), [golub2013matrix] §2.6.5 `ω_min`, [higham2002accuracy] (7.8). The normwise
+counterpart is the root `backwardError` of `Numlib/Conditioning/LinearSystem` (Rigal–Gaches). ★'''
+deps = ["Matrix.abs"]
+
+[[node]]  # staged by ch02
+id = "isLeast_componentwiseBackwardError"
+kind = "theorem"
+desc = '''`componentwiseBackwardError A E b f x` is the least `ω ≥ 0` admitting a perturbation `(A + ΔA) x
+= b + Δb` with `|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|`, provided every row with `(|E| |x| + |f|) i = 0` has
+zero residual (otherwise no `ω` works — the book's `ω_min = ∞`) (prototype elaborates the `IsLeast`
+statement). From `exists_perturbation_iff_abs_residual_le`, rowwise. ★'''
+deps = ["Matrix.componentwiseBackwardError", "Matrix.exists_perturbation_iff_abs_residual_le"]

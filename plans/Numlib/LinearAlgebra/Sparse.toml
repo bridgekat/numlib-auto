@@ -6,8 +6,12 @@ maximal independent set, the separating property of the distance spheres - is st
 `SimpleGraph` in `Numlib/Combinatorics/SimpleGraph`, so that it can be upstreamed on its own.
 
 `Sparse/Pattern` defines the graph of a matrix and proves the permutation invariance;
-`Sparse/Reordering` turns a graph ordering into a block structure of the permuted matrix. Nothing
-in this directory is about storage formats, sparse matrix-vector products or sparse direct
-solvers: Saad's §3.4–3.7 state no theorem, and they are not planned; the groups under
-`plans/NumlibSurface/SaadSparse/Chapter03/` carry that judgement section by section.
+`Sparse/Reordering` turns a graph ordering into a block structure of the permuted matrix;
+`Sparse/Fill` ([golub2013matrix] §11.1.6–11.1.7) is the symbolic fill of the Cholesky factor
+(`Matrix.IsCholeskyFill`, Parter's rule), the theorem that the factor vanishes off the fill (the rigorous
+half of Golub–Van Loan's "Facts 1 and 2"), and the separator lemma behind nested dissection.
+Storage formats and sparse matrix-vector products are not planned here (Saad §3.4–3.7 state no
+theorem, and the groups under `plans/NumlibSurface/SaadSparse/Chapter03/` carry that judgement
+section by section; Golub–Van Loan's compressed-column format lives in its §11.1 surface); the one
+piece of sparse-direct theory with a theorem, symbolic fill, is `Sparse/Fill`.
 '''

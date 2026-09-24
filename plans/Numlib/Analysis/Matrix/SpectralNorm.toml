@@ -30,3 +30,16 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (4.5), symmetric c
 
 [[node]]
 id = "norm_toEuclideanCLM_le_of_isSymmetricBoundedBy"
+
+[[node]]  # staged by ch10
+id = "l2_opNorm_fromBlocks_le_of_isHermitian"
+kind = "theorem"
+desc = '''The norm of a Hermitian 2×2 block matrix by the norms of its blocks (Kahan–Parlett;
+[golub2013matrix] Lemma 10.3.1): for `M = Matrix.fromBlocks E C Cᴴ D` Hermitian (`E`, `D` Hermitian) with
+`‖E‖ ≤ μ`, `‖D‖ ≤ δ`, `‖C‖ ≤ γ` (scoped `Matrix.Norms.L2Operator`),
+`‖M‖ ≤ (μ + δ + √((μ − δ)² + 4 γ²)) / 2`, the largest eigenvalue of `!![μ, γ; γ, δ]`. Proof: for a
+Hermitian matrix `‖M‖ = sup_{‖z‖=1} |re ⟪M z, z⟫|` (`Matrix.IsHermitian.l2_opNorm_eq` with Courant–Fischer,
+or directly from the spectral theorem); for `z = (x, y)`,
+`|⟪M z, z⟫| ≤ μ‖x‖² + 2γ‖x‖‖y‖ + δ‖y‖²`, the quadratic form of `!![μ, γ; γ, δ]` at `(‖x‖, ‖y‖)`, which
+is at most its largest eigenvalue on the unit circle. ★★ (~150 lines)'''
+deps = ["Matrix.IsHermitian.l2_opNorm_eq"]

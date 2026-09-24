@@ -1,0 +1,81 @@
+desc = '''
+The eigenvalue problem as a nonlinear system, and the Newton corrections behind the Jacobi
+orthogonal component correction, Davidson and Jacobi–Davidson methods ([golub2013matrix] §10.6,
+after Sorensen 2002 and Stewart; [saad2011numerical] Ch. 8 treats the same methods). Only what has a
+precise statement: the residual maps whose zeros are normalized eigenpairs, their derivatives (so
+that "(10.6.5) is the Jacobian system" is a theorem about `HasFDerivAt`, not a remark), the closed form
+of the bordered Newton correction, and the equivalence of the bordered system with the projected
+correction equation of Jacobi–Davidson. The methods themselves are surface algorithms: their
+specifications are Ritz–Galerkin conditions, already `Krylov.IsRitzPair` of `Numlib/Eigen/RayleighRitz`,
+and no convergence theorem is claimed by the book.
+
+Two normalizations, as in the book: a linear one `ℓ x = 1` for a functional `ℓ` (the book's `wᵀ x = 1`;
+here `ℓ : E →L[𝕜] 𝕜`, which covers `x ↦ ⟪w, x⟫` over any `RCLike 𝕜` and `x ↦ x₀` for `w = e₁`), giving
+`ContinuousLinearMap.eigenpairResidual A ℓ (x, λ) = (A x − λ x, ℓ x − 1)`; and the quadratic one
+`(‖x‖² − 1)/2` of (10.6.17), which is not complex-differentiable and is stated over `ℝ`
+(`ContinuousLinearMap.eigenpairResidualSphere`). The closed-form corrections are algebra and are stated at the
+algebraic level (`A : Module.End 𝕜 E`, `ℓ : E →ₗ[𝕜] 𝕜`, over a field), so they hold for the
+approximate operator `M` of (10.6.8)–(10.6.10) by the same lemma.
+
+Names (Golub–Van Loan review): the residual maps are general Newton maps for eigenpairs of any bounded
+operator, not Jacobi–Davidson objects, so they live in the namespace of the type,
+`ContinuousLinearMap.eigenpairResidual` / `…Sphere` (were `JacobiDavidson.eigenResidual` / `…Sphere`);
+the correction lemmas specific to the Jacobi–Davidson projected equation keep `JacobiDavidson`.
+
+Not here: convergence (quadratic for exact Newton, degraded for the approximate one) — the book states
+none; inverse iteration as the exact Newton step (`x₊ ∝ (A − λ_c)⁻¹ x_c`) is a one-line corollary of
+`JacobiDavidson.newtonCorrection_eq` that no book in the corpus states; add it if one does.
+'''
+
+[[node]]
+id = "ContinuousLinearMap.eigenpairResidual"
+kind = "definition"
+desc = '''`ContinuousLinearMap.eigenpairResidual (A : E →L[𝕜] E) (ℓ : E →L[𝕜] 𝕜) : E × 𝕜 → E × 𝕜 := fun p => (A p.1 − p.2 • p.1, ℓ p.1 − 1)`,
+the book's `F([x; λ]) = [A x − λ x; wᵀ x − 1]` ([golub2013matrix] §10.6.1). Its zeros are the eigenpairs
+with `ℓ x = 1`. ★'''
+deps = []
+
+[[node]]
+id = "ContinuousLinearMap.hasFDerivAt_eigenpairResidual"
+kind = "theorem"
+desc = '''`HasFDerivAt (A.eigenpairResidual ℓ) (J A ℓ (x, λ)) (x, λ)` with the bordered Jacobian
+`J (δx, δλ) = (A δx − λ • δx − δλ • x, ℓ δx)` as a continuous linear map on `E × 𝕜`
+([golub2013matrix] (10.6.5): "precisely the Jacobian system that arises if Newton's method is used").
+`HasFDerivAt.prodMk`, `IsBoundedBilinearMap.hasFDerivAt` for `(λ, x) ↦ λ • x`. ★★'''
+deps = ["ContinuousLinearMap.eigenpairResidual"]
+
+[[node]]
+id = "JacobiDavidson.newtonCorrection_eq"
+kind = "theorem"
+desc = '''The bordered correction in closed form ([golub2013matrix] (10.6.6)–(10.6.7), and with `M` for `A`
+(10.6.9)–(10.6.10)): over a field, for `A : Module.End 𝕜 E` with `A − λ • 1` invertible
+(`IsUnit`), `ℓ : E →ₗ[𝕜] 𝕜`, `x` with `ℓ ((A − λ)⁻¹ x) ≠ 0`, and any `r`: the pair
+`δλ = ℓ ((A − λ)⁻¹ r) / ℓ ((A − λ)⁻¹ x)`, `δx = −(A − λ)⁻¹ (r − δλ • x)` is the unique solution of
+`(A − λ) δx − δλ • x = −r`, `ℓ δx = 0` (`∃!`). With `r = A x − λ x` this solves the Newton system
+of `ContinuousLinearMap.hasFDerivAt_eigenpairResidual` when `ℓ x = 1` ((10.6.4)). Pure algebra. ★'''
+deps = []
+
+[[node]]
+id = "ContinuousLinearMap.eigenpairResidualSphere"
+kind = "definition"
+desc = '''Over `ℝ`: `ContinuousLinearMap.eigenpairResidualSphere (A : E →L[ℝ] E) : E × ℝ → E × ℝ := fun p => (A p.1 − p.2 • p.1, (‖p.1‖ ^ 2 − 1) / 2)`,
+the function of [golub2013matrix] (10.6.17). ★'''
+deps = []
+
+[[node]]
+id = "ContinuousLinearMap.hasFDerivAt_eigenpairResidualSphere"
+kind = "theorem"
+desc = '''`HasFDerivAt A.eigenpairResidualSphere J (x, λ)` with `J (δx, δλ) = (A δx − λ δx − δλ x, ⟪x, δx⟫_ℝ)`
+([golub2013matrix] (10.6.17)); `hasStrictFDerivAt_norm_sq`/`HasFDerivAt.norm_sq`. ★★'''
+deps = ["ContinuousLinearMap.eigenpairResidualSphere"]
+
+[[node]]
+id = "JacobiDavidson.newtonStep_iff_projected"
+kind = "theorem"
+desc = '''The Jacobi–Davidson correction equation ([golub2013matrix] (10.6.17) ⇒ (10.6.18), and conversely): over
+`RCLike 𝕜`, for `A : E →ₗ[𝕜] E`, `‖x‖ = 1`, `λ = ⟪x, A x⟫`, `r = A x − λ • x` and `P = 1 − (x ⟪x, ·⟫)`
+(`(𝕜 ∙ x)ᗮ.starProjection`, as an endomorphism): `(∃ δλ, (A − λ) δx − δλ • x = −r ∧ ⟪x, δx⟫ = 0) ↔
+(⟪x, δx⟫ = 0 ∧ P ((A − λ) (P δx)) = −r)`; the `δλ` is `⟪x, (A − λ) δx⟫`. Uses `⟪x, r⟫ = 0` (the
+Rayleigh quotient) and `P δx = δx`. The book derives only `⇒`; its "Thus, the correction δx_c is
+obtained by solving the projected system" needs `⇐`. ★★'''
+deps = []

@@ -1,0 +1,86 @@
+namespace = "Matrix"
+desc = '''
+Block representations of products of Householder reflectors ([golub2013matrix] §5.1.7, Bischof–Van
+Loan 1987; Schreiber–Van Loan 1989): a product `Q = Q₁ ⋯ Q_r` of reflectors
+`Q_j = 1 - β_j v_j v_jᴴ` is a rank-`r` modification of the identity, `Q = 1 - W Yᴴ` (the **WY
+representation**, `Y` the matrix of Householder vectors), and also `Q = 1 - Y T Yᴴ` with `T` upper
+triangular (the **compact WY representation**, the form LAPACK uses). The recursion
+([golub2013matrix] Lemma 5.1.1) is `Q₊ = Q P = 1 - [W | z][Y | v]ᴴ` with `z = β Q v`.
+
+Everything is over a ring for the algebra (`CommRing` suffices for the identities) and over
+`RCLike 𝕜` where orthogonality is asserted; the product is `(List.ofFn fun j => 1 - β j •
+vecMulVec (v j) (star (v j))).prod`, in the order `Q₁ ⋯ Q_r`. Columns are appended with
+`Fin.snoc` on the column index (`Matrix.of fun i => Fin.snoc (W i) (z i)`), which is how the
+surface's Algorithm 5.1.2 grows `W` and `Y`.
+
+`FloatingPoint.prodRev`/`prodFwd` (in `Numlib/FloatingPoint/Householder`) are the same products
+of a sequence of matrices, stated in the floating-point namespace; refactor proposal (report):
+move them to a matrix module and use them here.
+'''
+
+[[node]]
+id = "IsWY"
+kind = "definition"
+desc = '''`def IsWY (Q : Matrix n n R) (W Y : Matrix n (Fin r) R) : Prop := Q = 1 - W * Yᴴ`
+([golub2013matrix] (5.1.6)); over a `StarRing` (`Yᵀ` over `ℝ`). ★'''
+deps = []
+
+[[node]]
+id = "IsWY.mul_one_sub_smul_vecMulVec"
+kind = "theorem"
+desc = '''**[golub2013matrix] Lemma 5.1.1.** If `IsWY Q W Y` and `P = 1 - β • vecMulVec v (star v)`,
+then `IsWY (Q * P) (Matrix.of fun i => Fin.snoc (W i) (z i)) (Matrix.of fun i => Fin.snoc (Y i) (v i))`
+with `z = β • (Q *ᵥ v)`. `Q P = 1 - W Yᴴ - β (Q v) vᴴ`, and
+`[W | z][Y | v]ᴴ = W Yᴴ + z vᴴ` (`Fin.sum_univ_castSucc`). The book assumes `Q` orthogonal; the
+identity needs nothing. ★'''
+deps = ["IsWY"]
+
+[[node]]
+id = "wyW"
+kind = "definition"
+desc = '''The `W` factor of the WY representation, by the recursion of [golub2013matrix] Algorithm 5.1.2
+(tracked, review M7; the first plan defined it inside `isWY_prod`): for `β : Fin r → R` and
+`v : Fin r → n → R`, `wyW β v : Matrix n (Fin r) R` with `W₁ = β₁ v₁` and
+`W_{j+1} = [W_j | β_{j+1} (1 - W_j Y_jᴴ) v_{j+1}]` (`Y_j` the first `j` Householder vectors as columns),
+built by `Fin.snoc` on the column index (structural recursion on `r`, or `Fin.induction`). The
+surface's Algorithm 5.1.2 computes this matrix (its spec `algorithm_5_1_2_spec` reads it off). ★'''
+deps = ["IsWY"]
+
+[[node]]
+id = "isWY_prod"
+kind = "theorem"
+desc = '''Every product of `r` reflectors has a WY representation with `Y` the matrix of the
+Householder vectors: for `β : Fin r → R`, `v : Fin r → n → R`, with `Y = Matrix.of fun i j => v j i`
+and `W = wyW β v` (the recursion of [golub2013matrix] Algorithm 5.1.2),
+`IsWY (List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod (wyW β v) Y`. Induction on
+`r` with `IsWY.mul_one_sub_smul_vecMulVec`. The exact-arithmetic spec of Algorithm 5.1.2. ★★'''
+deps = ["IsWY", "IsWY.mul_one_sub_smul_vecMulVec", "wyW"]
+
+[[node]]
+id = "isWY_prod_unitLowerTrapezoidal"
+kind = "theorem"
+desc = '''"`Y` is merely the matrix of Householder vectors and is therefore unit lower triangular"
+([golub2013matrix] §5.1.7): if `v j i = 0` for `i < j` and `v j j = 1` (the shape (5.1.3) of the
+vectors of a Householder QR, on `n = Fin m` with `r ≤ m`), then `Y i j = 0` for `i < j` and
+`Y j j = 1`; and if every `v j` vanishes on a set of rows `S` then so do `W` and `Y` (a second
+declaration: [golub2013matrix] §5.2.3's "the first `λ - 1` rows of `W_k` and `Y_k` are zero",
+since each `z = β Q v` is a combination of the `v`'s). ★'''
+deps = ["isWY_prod"]
+
+[[node]]
+id = "exists_compactWY"
+kind = "theorem"
+desc = '''The compact WY representation (Schreiber–Van Loan 1989; [golub2013matrix] P5.1.5, not a
+surface node): with `Y` as in `isWY_prod`, there is an upper triangular `T : Matrix (Fin r) (Fin r) R`
+with `(List.ofFn …).prod = 1 - Y * T * Yᴴ`, given by `T₁ = β₁`,
+`T_{j+1} = [T_j, -β_{j+1} T_j Y_jᴴ v_{j+1}; 0, β_{j+1}]`. Foreseeable API for block algorithms
+(LAPACK's `larft`); the surface's blocked Algorithms 5.2.2 need only `isWY_prod`. ★★'''
+deps = ["isWY_prod"]
+
+[[node]]
+id = "one_sub_two_mul_conjTranspose_mem_unitaryGroup"
+kind = "theorem"
+desc = '''Block reflectors ([golub2013matrix] §5.1.7, Schreiber–Parlett 1987): if `Vᴴ V = 1` for
+`V : Matrix n (Fin r) 𝕜`, then `1 - 2 • V * Vᴴ ∈ unitaryGroup n 𝕜` (it is Hermitian and involutive:
+`(1 - 2VVᴴ)² = 1 - 4VVᴴ + 4V(VᴴV)Vᴴ = 1`). ★'''
+deps = []

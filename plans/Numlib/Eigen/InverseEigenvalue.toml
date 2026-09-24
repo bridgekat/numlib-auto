@@ -1,0 +1,104 @@
+desc = '''
+The first-row resolvent of a Hermitian matrix, the eigenvector–eigenvalue identity, and the inverse
+eigenvalue problem for symmetric tridiagonal matrices with prescribed spectra of the matrix and of
+its trailing principal submatrix ([golub2013matrix] §8.4.6, after G. H. Golub, "Some modified
+matrix eigenvalue problems", SIAM Review 15 (1973)).
+
+For a Hermitian `A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜` with eigenvector matrix `Q` (orthonormal
+columns, `A Q = Q Λ`) and `A' = A.submatrix Fin.succ Fin.succ` (the book's `A(2:n, 2:n)`):
+
+* the (0,0) entry of the resolvent is a partial-fraction sum over the first row of `Q`,
+  `((A - λ)⁻¹) 0 0 = ∑ i, ‖Q 0 i‖² / (λ_i - λ)` (the book's (8.4.10)), and by Cramer's rule it is
+  also `det (A' - λ) / det (A - λ)`;
+* equating the two gives the **eigenvector–eigenvalue identity**
+  `‖Q 0 i‖² ∏_{j ≠ i} (λ_j - λ_i) = ∏_j (μ_j - λ_i)` with `μ` the eigenvalues of `A'`
+  (Denton–Parke–Tao–Zhang 2019 call it by that name; it is the book's (8.4.12) read in reverse);
+* for strictly interlacing data `λ_1 > μ_1 > λ_2 > ⋯ > μ_{n-1} > λ_n` ((8.4.7)) the right-hand
+  side of (8.4.12) is positive, so a unit vector `d` with `d_k²` given by (8.4.12) exists, and any
+  orthogonal `Q` with first row `d` that tridiagonalizes `Λ` (a Householder reflector sending
+  `d` to `e₁` followed by the Householder tridiagonalization, which fixes `e₁`) produces a
+  symmetric tridiagonal `T` with `λ(T) = {λ_i}` and `λ(T(2:n,2:n)) = {μ_j}`
+  (`Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace`).
+
+The book indexes the first *column* of `Q` in `Qᵀ Λ Q = T`; with `T = Qᵀ Λ Q` the eigenvectors of
+`T` are the rows of `Q`, so the book's `Q(:,1)` is the first row of the eigenvector matrix of `T`.
+The statements here are phrased on the eigenvector matrix of `A` itself.
+
+Mathlib pieces: `Matrix.inv_apply`/`Matrix.adjugate_apply` and the cofactor
+`Matrix.det_succ_row_zero`-type expansions (for Cramer's rule at the (0,0) entry,
+`Matrix.adjugate_fin_succ_eq_det_submatrix`), `Matrix.IsHermitian.spectral_theorem`,
+`Matrix.IsHermitian.det_eq_prod_eigenvalues`. Searched: `eigenvector_eigenvalue`,
+`inverse eigenvalue`, `Denton` — absent in Mathlib and Numlib.
+
+Order of attack: `resolvent_apply_zero_zero_eq_sum` (★★, ~80), `inv_sub_apply_zero_zero_eq_det_div`
+(★★, ~60), `norm_sq_eigenvector_mul_prod_eq` (★★, ~60), then the existence theorem (★★★, ~200,
+needs the tridiagonalization `Matrix.hessenbergReduce` with first column `e₁` and a Householder
+reflector mapping a unit vector to `e₁`).
+'''
+
+[[node]]
+id = "Matrix.IsHermitian.inv_sub_apply_eq_sum"
+kind = "theorem"
+desc = '''Resolvent entries through an eigenbasis: for Hermitian `A : Matrix n n 𝕜`, a unitary
+`Q` with `Qᴴ A Q = diagonal (fun i => (l i : 𝕜))` and real `λ ∉ Set.range l`,
+`(A - (λ : 𝕜) • 1)⁻¹ j k = ∑ i, Q j i * star (Q k i) / ((l i : 𝕜) - λ)`; at `j = k`,
+`((A - λ)⁻¹) j j = ∑ i, ‖Q j i‖² / (l i - λ)` (the book's (8.4.10), with `j` the first index and
+the sign convention `e₁ᵀ (T - λ)⁻¹ e₁ = ∑ d_i² / (λ_i - λ)`). `A - λ = Q (Λ - λ) Qᴴ`,
+`Matrix.inv_diagonal`. ★★'''
+deps = []
+
+[[node]]
+id = "Matrix.inv_sub_apply_zero_zero_eq_det_div"
+kind = "theorem"
+desc = '''Cramer's rule at the corner: for `A : Matrix (Fin (N + 1)) (Fin (N + 1)) K` over a field
+and `λ` with `det (A - λ • 1) ≠ 0`,
+`(A - λ • 1)⁻¹ 0 0 = det (A.submatrix Fin.succ Fin.succ - λ • 1) / det (A - λ • 1)`.
+`Matrix.inv_def`, `Matrix.adjugate_apply`, and the Laplace expansion of `updateRow … 0 (Pi.single 0 1)`
+along row `0` (`Matrix.det_succ_row_zero`), whose only surviving minor is the trailing one. ★★'''
+deps = []
+
+[[node]]
+id = "Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq"
+kind = "theorem"
+desc = '''**The eigenvector–eigenvalue identity**, first-row form: for Hermitian
+`A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜`, a unitary `Q` with `Qᴴ A Q = diagonal l`, and `μ : Fin N → ℝ`
+the eigenvalues (any order, with multiplicity) of `A.submatrix Fin.succ Fin.succ`, for every `i`:
+`‖Q 0 i‖ ^ 2 * ∏ j ∈ univ.erase i, (l j - l i) = ∏ j, (μ j - l i)`.
+Proof: both sides are polynomial in `λ` after multiplying `inv_sub_apply_eq_sum` at `(0,0)` and
+`inv_sub_apply_zero_zero_eq_det_div` by `∏_j (l_j - λ)`; the two resulting polynomials
+`∑_i ‖Q 0 i‖² ∏_{j≠i} (l_j - λ)` and `det (A' - λ) = ∏_j (μ_j - λ)` agree off the finite set
+`range l`, hence everywhere (`Polynomial.eq_of_infinite_eval_eq`), and evaluate at `λ = l i`.
+This is the book's (8.4.12) solved for `d_i²` when the `l j` are distinct. ★★ (~80 lines)'''
+deps = ["Matrix.IsHermitian.inv_sub_apply_eq_sum", "Matrix.inv_sub_apply_zero_zero_eq_det_div"]
+
+[[node]]
+id = "Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace"
+kind = "theorem"
+desc = '''Positivity of the right-hand side of (8.4.12) ([golub2013matrix] P8.4.7): for
+`l : Fin (N + 1) → ℝ`, `μ : Fin N → ℝ` strictly interlacing,
+`l 0 > μ 0 > l 1 > ⋯ > μ (N-1) > l N` (the book's (8.4.7)), every
+`(∏ j, (μ j - l k)) / ∏ j ∈ univ.erase k, (l j - l k)` is positive, and these numbers sum to `1`.
+Sign count: in the numerator `μ j - l k < 0` iff `j ≥ k`, in the denominator `l j - l k < 0` iff
+`j > k`, so each product has exactly `N - k` negative factors (review correction: not `k`). The sum is the coefficient
+comparison in the book (`α = 1`): the leading coefficients of the two degree-`N` polynomials of
+`norm_sq_eigenvector_mul_prod_eq`, or Lagrange interpolation of `∏_j (μ_j - λ)` at the nodes `l`
+(`Lagrange.interpolate`). ★★'''
+deps = []
+
+[[node]]
+id = "Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace"
+kind = "theorem"
+desc = '''Golub's inverse tridiagonal eigenproblem ([golub2013matrix] §8.4.6, (8.4.7)–(8.4.9)): for
+strictly interlacing `l : Fin (N + 1) → ℝ`, `μ : Fin N → ℝ` as in (8.4.7), there is a real symmetric
+tridiagonal `T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ` (`T.IsSymm`, `T.IsTridiagonal`) whose
+eigenvalues are the `l i` and whose trailing principal submatrix `T.submatrix Fin.succ Fin.succ`
+has eigenvalues the `μ j` (as multisets: `T.charpoly = ∏ (X - C (l i))` and likewise for the
+submatrix). Construction as in the book: `d` with `d k = √(ratio k)` from
+`prod_sub_div_prod_sub_pos_of_strictInterlace` is a unit vector; `P` a Householder reflector with
+`P d = ± e₀` (`Matrix.householder`/`householderVec`); `A = Pᵀ Λ P`; `T = Q₁ᵀ A Q₁` the Householder
+tridiagonalization (`Matrix.hessenbergReduce`, whose `Q₁` fixes `e₀`: `Matrix.hessenbergQ` is a
+product of reflectors acting on coordinates `≥ 1`). Then the first row of the eigenvector matrix of
+`T` is `± d`, and `norm_sq_eigenvector_mul_prod_eq` (read backwards: the polynomial identity
+determines `∏ (μ_j - λ)` from the `d_i²`) gives the spectrum of the trailing submatrix.
+★★★ (~200 lines)'''
+deps = ["Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq", "Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace", "Matrix.hessenbergReduce", "Matrix.hessenbergQ", "Matrix.isTridiagonal_hessenbergReduce_of_isHermitian", "Matrix.householder"]

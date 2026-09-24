@@ -1,0 +1,270 @@
+namespace = "GolubVanLoan.Chapter09"
+desc = '''
+§9.4, the sign, square root and logarithm of a matrix, and the polar decomposition: the sign function
+and its Jordan form, the half-plane projector, Newton's sign iteration ((9.4.1)–(9.4.5)), the
+principal square root with Newton's and the Denman–Beavers iterations ((9.4.7)–(9.4.10)), Theorem
+9.4.1 and Newton's polar iteration ((9.4.11)–(9.4.12)), the sign of `[0 A; Aᵀ 0]`, the Li–Sun bound,
+and the principal logarithm with its series, the (3,3) Padé approximant and inverse scaling and
+squaring. Backbone: `Numlib/Analysis/Matrix/Function/{Sign,Sqrt,Polar,Log}`. `A : Matrix (Fin n)
+(Fin n) ℂ` (the book's `ℂ^{n×n}`) except Theorem 9.4.1, the polar iteration, Li–Sun and the real
+logarithm, which are real. Block matrices `[P Q; R S]` are `Matrix.fromBlocks` over `Fin n ⊕ Fin n`.
+Not nodes: the four square roots of `[4 10; 0 9]` (numerical), the scaled iteration (9.4.6) and its
+`μ_k`, QR with column pivoting (only the range statement is a node), the inverse-scaling loop (only
+its identity is a node), the Problems.
+'''
+
+[[node]]
+id = "matrixSign_eq_conj"
+kind = "theorem"
+desc = '''§9.4.1: if `A` has no purely imaginary eigenvalue and `X⁻¹ A X = [J₁ 0; 0 J₂]` with the eigenvalues
+of `J₁` (size `m₁`) in the open left and those of `J₂` (size `m₂`) in the open right half-plane,
+then `sign(A) = X [-I_{m₁} 0; 0 I_{m₂}] X⁻¹`, `sign(A) = Matrix.matrixSign A`. The book derives it
+"from Theorem 9.1.1" — there is no such theorem; it means the definition (9.1.3)–(9.1.4) with all
+derivatives of the sign function zero. `Matrix.matrixSign_conj_fromBlocks`. ★'''
+deps = ["Matrix.matrixSign_conj_fromBlocks", "Matrix.matrixSign"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.1, display'
+
+[[node]]
+id = "sign_projector"
+kind = "theorem"
+desc = '''§9.4.1: with `X = [X₁ X₂]`, `X⁻ᴴ = [Y₁ Y₂]` partitioned as in `matrixSign_eq_conj`: `sign(A) = X₂ Y₂ᴴ -
+X₁ Y₁ᴴ`, `I_n = X₁ Y₁ᴴ + X₂ Y₂ᴴ`, `X₂ Y₂ᴴ = (I_n + sign(A))/2`, and the range of `(I + sign(A))/2`
+is `ran(X₂)`, the invariant subspace of the right half-plane eigenvalues, of dimension `m₂` (the book's
+conclusion from QR with column pivoting, `ran Q(:, 1:m₂) = ran X₂`, is this range statement).
+`Matrix.range_one_add_matrixSign`. ★'''
+deps = ["Matrix.range_one_add_matrixSign", "matrixSign_eq_conj"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.1, display'
+
+[[node]]
+id = "newtonSign_isUnit"
+kind = "theorem"
+desc = '''§9.4.1, "this iteration is well-defined": for `A` without imaginary eigenvalues, every Newton iterate
+`S_k` ((9.4.1), `Matrix.newtonSignIterate A k`) is nonsingular and has no imaginary eigenvalues,
+since `(a + bi + 1/(a + bi))/2 = (a/2)(1 + 1/(a² + b²)) + (b/2)(1 - 1/(a² + b²)) i`; and `sign(S_k) =
+sign(A)` ("an eigenvalue cannot jump across the imaginary axis"). `Matrix.isUnit_newtonSignIterate`. ★'''
+deps = ["Matrix.isUnit_newtonSignIterate", "Matrix.newtonSignIterate"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.1'
+
+[[node]]
+id = "equation_9_4_2"
+kind = "theorem"
+desc = '''(9.4.2): with `S = sign(A)`, `S_{k+1} - S = ½ S_k⁻¹ (S_k - S)²` (using `S S_k = S_k S` and `S² =
+I`; the book's "`S² = S`" is a misprint). `half_smul_add_inverse_sub_eq_of_commute`,
+`Matrix.matrixSign_eq_sum` (for `S² = 1`), `commute_pfc`. ★'''
+deps = ["half_smul_add_inverse_sub_eq_of_commute", "Matrix.matrixSign_eq_sum", "newtonSign_isUnit"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.2)'
+
+[[node]]
+id = "equation_9_4_3"
+kind = "theorem"
+desc = '''(9.4.3): `S_{k+1} + S = ½ S_k⁻¹ (S_k + S)²`. `half_smul_add_inverse_sub_eq_of_commute`. ★'''
+deps = ["half_smul_add_inverse_sub_eq_of_commute", "newtonSign_isUnit"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.3)'
+
+[[node]]
+id = "isUnit_add_sign"
+kind = "theorem"
+desc = '''§9.4.1: if `sign(M)` is defined (no imaginary eigenvalue of `M`) then `M + sign(M)` is nonsingular,
+its eigenvalues being `λ + sign(λ) ≠ 0`. `Matrix.matrixSign_eq_sum`. ★'''
+deps = ["Matrix.matrixSign_eq_sum"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.1'
+
+[[node]]
+id = "equation_9_4_4"
+kind = "theorem"
+desc = '''(9.4.4): `G_k = (S_k - S)(S_k + S)⁻¹` satisfies `G_{k+1} = G_k²`, hence `G_k = G_0^{2^k}`, and the
+eigenvalues of `G_0 = (A - S)(A + S)⁻¹` are `μ = (λ - sign λ)/(λ + sign λ)`, `|μ| < 1`, for `λ ∈
+λ(A)`. `half_smul_add_inverse_sub_eq_of_commute`, `spectrum_pfc`. ★'''
+deps = ["half_smul_add_inverse_sub_eq_of_commute", "equation_9_4_2", "equation_9_4_3", "isUnit_add_sign", "spectrum_pfc"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.4)'
+
+[[node]]
+id = "newtonSign_tendsto"
+kind = "theorem"
+desc = '''§9.4.1: for `A` without imaginary eigenvalues, `S_k → sign(A)` (`G_k → 0` "from Lemma 7.3.2" — here
+through the backbone's `ρ(G) < 1 ↔ G^k → 0` — and `S_k = S(I + G_k)(I - G_k)⁻¹`), quadratically:
+`‖S_{k+1} - S‖ ≤ ½ ‖S_k⁻¹‖ ‖S_k - S‖²` in the 2-norm (any submultiplicative norm).
+`Matrix.tendsto_newtonSignIterate`, `Matrix.norm_newtonSignIterate_sub_le`. ★'''
+deps = ["Matrix.tendsto_newtonSignIterate", "Matrix.norm_newtonSignIterate_sub_le", "equation_9_4_4"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.1'
+
+[[node]]
+id = "equation_9_4_5"
+kind = "theorem"
+desc = '''(9.4.5), the Newton–Schulz step: `½ (S + S (2I - S²)) = ½ S (3I - S²)` for any matrix `S` (the
+update obtained by replacing `S_k⁻¹` with its Newton approximation `S_k(2I - S_k²)`). `noncomm_ring`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.5)'
+
+[[node]]
+id = "IsPrincipalSqrt"
+kind = "definition"
+desc = '''§9.4.2's definition: `F` is the principal square root of `A` if (a) `F² = A` and (b) every eigenvalue
+of `F` has positive real part: `IsPrincipalSqrt F A : Prop := F ^ 2 = A ∧ ∀ μ ∈ spectrum ℂ F, 0 <
+μ.re`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §9.4.2, Definition'
+
+[[node]]
+id = "principalSqrt_existsUnique"
+kind = "theorem"
+desc = '''§9.4.2, "we designate this matrix by `A^{1/2}`": if no eigenvalue of `A` lies in `(-∞, 0]` then
+`∃! F, IsPrincipalSqrt F A`, and `F = Matrix.principalSqrt A` (the hypothesis, implicit in the book,
+is needed for existence: a principal square root has `λ(A) = {μ² : re μ > 0}`, which avoids
+`(-∞, 0]`). `Matrix.existsUnique_sq_eq_of_re_pos`. ★'''
+deps = ["IsPrincipalSqrt", "Matrix.existsUnique_sq_eq_of_re_pos", "Matrix.principalSqrt"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.2'
+
+[[node]]
+id = "newtonSqrt_tendsto"
+kind = "theorem"
+desc = '''(9.4.7) and §9.4.2: Newton's iteration `X₀ = A`, `X_{k+1} = (X_k + X_k⁻¹ A)/2`
+(`Matrix.newtonSqrtIterate`) satisfies `X_k = A^{1/2} S_k` with `S_k` the Newton sign iterates of
+`A^{1/2}`, and converges (quadratically) to `A^{1/2}` when no eigenvalue of `A` is in `(-∞, 0]`.
+`Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate`, `Matrix.tendsto_newtonSqrtIterate`. ★'''
+deps = ["Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate", "Matrix.tendsto_newtonSqrtIterate", "principalSqrt_existsUnique"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.7)'
+
+[[node]]
+id = "equation_9_4_8"
+kind = "theorem"
+desc = '''(9.4.8): the Newton sign iterates `S̃_k` of `Ã = [0 A; I 0]` have the form `[0 X_k; Y_k 0]` with `X₀ =
+A`, `Y₀ = I`, `X_{k+1} = (X_k + Y_k⁻¹)/2`, `Y_{k+1} = (Y_k + X_k⁻¹)/2` (Denman–Beavers,
+`Matrix.denmanBeavers`), for `A` without eigenvalues in `(-∞, 0]`. `Matrix.newtonSignIterate_fromBlocks`. ★'''
+deps = ["Matrix.newtonSignIterate_fromBlocks", "Matrix.denmanBeavers"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.8)'
+
+[[node]]
+id = "equation_9_4_9"
+kind = "theorem"
+desc = '''(9.4.9): `X_k = A Y_k` for all `k` (the book's P9.4.4). `Matrix.denmanBeavers_fst_eq_mul_snd`. ★'''
+deps = ["Matrix.denmanBeavers_fst_eq_mul_snd", "equation_9_4_8"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.9)'
+
+[[node]]
+id = "equation_9_4_10"
+kind = "theorem"
+desc = '''(9.4.10): `X_{k+1} = (X_k + A X_k⁻¹)/2` and `Y_{k+1} = (Y_k + A⁻¹ Y_k⁻¹)/2`.
+`Matrix.denmanBeavers_fst_eq_mul_snd`. ★'''
+deps = ["Matrix.denmanBeavers_fst_eq_mul_snd", "equation_9_4_9"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.10)'
+
+[[node]]
+id = "sign_block_sqrt"
+kind = "theorem"
+desc = '''§9.4.2: `X_k → A^{1/2}`, `Y_k → A^{-1/2}`, and `sign([0 A; I 0]) = [0 A^{1/2}; A^{-1/2} 0]` for `A`
+without eigenvalues in `(-∞, 0]`. `Matrix.matrixSign_fromBlocks_zero_one`. ★'''
+deps = ["Matrix.matrixSign_fromBlocks_zero_one", "equation_9_4_10"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.2, display'
+
+[[node]]
+id = "theorem_9_4_1"
+kind = "theorem"
+desc = '''Theorem 9.4.1 (polar decomposition): for `A : Matrix (Fin m) (Fin n) ℝ` with `m ≥ n` there are `U :
+Matrix (Fin m) (Fin n) ℝ` with orthonormal columns (`Uᵀ U = 1`) and a symmetric positive
+semidefinite `P : Matrix (Fin n) (Fin n) ℝ` with `A = U P`, i.e. `∃ U P, Matrix.IsPolarDecomposition A U P`
+(fields `Uᴴ U = 1`, `P.PosSemidef`, `A = U P`; `ᴴ = ᵀ` at `ℝ`). `Matrix.exists_isPolarDecomposition` at
+`𝕜 = ℝ` (any `Fintype`s with `card n ≤ card m`; the book's SVD proof). ★'''
+deps = ["Matrix.exists_isPolarDecomposition", "Matrix.IsPolarDecomposition"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 9.4.1'
+
+[[node]]
+id = "polar_factors"
+kind = "theorem"
+desc = '''§9.4.3: in Theorem 9.4.1, `P = (AᵀA)^{1/2}` (the positive semidefinite square root, `CFC.sqrt`
+under `open scoped MatrixOrder`), and if `rank(A) = n` then `U = A (AᵀA)^{-1/2}`, for every `U P` with
+`Matrix.IsPolarDecomposition A U P`. `Matrix.IsPolarDecomposition.eq_cfcSqrt` (and, for the second clause,
+its further declaration). ★'''
+deps = ["Matrix.IsPolarDecomposition.eq_cfcSqrt", "theorem_9_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
+
+[[node]]
+id = "equation_9_4_12"
+kind = "theorem"
+desc = '''(9.4.11)–(9.4.12): for nonsingular `A : Matrix (Fin n) (Fin n) ℝ` with polar decomposition `A = U P`,
+Newton's iteration `X₀ = A`, `X_{k+1} = (X_k + X_k⁻ᵀ)/2` (`Matrix.newtonPolarIterate`; the body of
+(9.4.11) is lost in the source and reconstructed from (9.4.12)) is well defined, `X_k = U P_k` with
+`P₀ = P`, `P_{k+1} = (P_k + P_k⁻¹)/2` positive definite. "Polar decomposition `A = U P`" is the hypothesis
+`Matrix.IsPolarDecomposition A U P`. `Matrix.newtonPolarIterate_eq`. ★'''
+deps = ["Matrix.newtonPolarIterate_eq", "theorem_9_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.12)'
+
+[[node]]
+id = "newtonPolar_tendsto"
+kind = "theorem"
+desc = '''§9.4.3: `‖X_k - U‖₂ = ‖P_k - I‖₂` and `X_k → U` quadratically (the `P_k` are the Newton sign
+iterates of `P`, and `sign(P) = I`), under `Matrix.IsPolarDecomposition A U P`. `Matrix.tendsto_newtonPolarIterate`. ★'''
+deps = ["Matrix.tendsto_newtonPolarIterate", "equation_9_4_12"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
+
+[[node]]
+id = "sign_block_polar"
+kind = "theorem"
+desc = '''§9.4.3: for nonsingular `A : Matrix (Fin n) (Fin n) ℝ` with SVD `A = U_A Σ_A V_Aᵀ`, `Q = (1/√2)
+[U_A 0; 0 V_A] [I I; I -I]` is orthogonal, `Qᵀ [0 A; Aᵀ 0] Q = [Σ_A 0; 0 -Σ_A]`, and `sign([0 A; Aᵀ
+0]) = [0 U; Uᵀ 0]` with `U = U_A V_Aᵀ` the orthogonal polar factor ("nonsingular" is missing in the
+book and needed: a zero singular value is a zero eigenvalue). Through `Matrix.map Complex.ofReal`,
+`Matrix.matrixSign_hermitianDilation`: `matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ` for
+nonsingular `A` with `IsPolarDecomposition A U P`. The surface keeps its `fromBlocks 0 A Aᵀ 0` statement
+and rewrites (`hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0` by unfolding); `U` is a polar factor by
+`Matrix.IsSVD.isPolarDecomposition` (`U = U_A V_Aᵀ`). ★'''
+deps = ["Matrix.matrixSign_hermitianDilation", "Matrix.hermitianDilation", "Matrix.IsSVD.isPolarDecomposition", "theorem_9_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.3, display'
+
+[[node]]
+id = "liSun"
+kind = "theorem"
+desc = '''§9.4.3, the Li–Sun bound: for nonsingular `A, Ã : Matrix (Fin n) (Fin n) ℝ` (`n ≥ 2`) with orthogonal
+polar factors `U`, `Ũ` (hypotheses `Matrix.IsPolarDecomposition A U P`, `IsPolarDecomposition Ã Ũ P̃`),
+`‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (σ_{n-1}(A) + σ_n(A) + σ_{n-1}(Ã) + σ_n(Ã))`, with the book's 1-based `σ_{n-1}`,
+`σ_n` read as the 0-based `A.sortedSingularValues (n - 2)`, `A.sortedSingularValues (n - 1)` (the two
+smallest). `Matrix.frobenius_norm_polar_sub_le` (quoted without proof by the book). ★★★ (in the backbone)'''
+deps = ["Matrix.frobenius_norm_polar_sub_le", "theorem_9_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
+
+[[node]]
+id = "realLog_existsUnique"
+kind = "theorem"
+desc = '''§9.4.4: if the real eigenvalues of `A : Matrix (Fin n) (Fin n) ℝ` are all positive, there is a unique
+real `X` with `e^X = A` and `λ(X) ⊆ {z : -π < Im z < π}` — the principal logarithm `log(A)`.
+`Matrix.existsUnique_real_exp_eq`. ★'''
+deps = ["Matrix.existsUnique_real_exp_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.4'
+
+[[node]]
+id = "log_maclaurin"
+kind = "theorem"
+desc = '''§9.4.4, the Maclaurin approximant `M_q(A) = ∑_{k=1}^{q} (-1)^{k+1} (A - I)^k / k`: if `ρ(A - I) < 1`
+then `M_q(A) → log(A)` (`HasSum` of the series to `Matrix.principalLog A`), and `log(A)` agrees with
+Mathlib's series logarithm `NormedSpace.log A`. `Matrix.hasSum_principalLog`. ★'''
+deps = ["Matrix.hasSum_principalLog"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.4, display'
+
+[[node]]
+id = "log_gregory"
+kind = "theorem"
+desc = '''§9.4.4, the Gregory approximant `G_q(A) = -2 ∑_{k=0}^{q} ((I - A)(I + A)⁻¹)^{2k+1}/(2k + 1)`: if every
+eigenvalue of `A` has positive real part then `G_q(A) → log(A)`. `Matrix.hasSum_principalLog_gregory`. ★'''
+deps = ["Matrix.hasSum_principalLog_gregory"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.4, display'
+
+[[node]]
+id = "logPade33"
+kind = "theorem"
+desc = '''§9.4.4: `r₃₃(x) = N(x)/D(x)` with `D(x) = 60 + 90 x + 36 x² + 3 x³`, `N(x) = 60 x + 60 x² + 11 x³` (the
+book writes them at `x = A - I`) is the `(3,3)` Padé approximant of `log(1 + x)`: `D(x) log(1 + x) -
+N(x) = O(x⁷)`, i.e. the Taylor coefficients of `D(x) log(1 + x)` of order `0, …, 6` are those of `N`
+(a finite computation with the series `∑ (-1)^{k+1} x^k/k`, `Complex.hasSum_taylorSeries_log`;
+`norm_num` on the seven Cauchy-product coefficients), with `D(0) ≠ 0`; hence
+`Asymptotics.IsBigO (𝓝 0) (fun x => N x / D x - Complex.log (1 + x)) (fun x => x ^ 7)`. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §9.4.4, display'
+
+[[node]]
+id = "log_inverse_scaling"
+kind = "theorem"
+desc = '''§9.4.4, inverse scaling and squaring: with `A₀ = A`, `A_k = A_{k-1}^{1/2}` (principal square roots),
+`log(A) = 2^k log(A_k)` for every `k`, when no eigenvalue of `A` lies in `(-∞, 0]`.
+`Matrix.principalLog_principalSqrt`. ★'''
+deps = ["Matrix.principalLog_principalSqrt", "principalSqrt_existsUnique"]
+source = 'Golub–Van Loan, Matrix Computations, §9.4.4'

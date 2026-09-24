@@ -1,0 +1,328 @@
+namespace = "GolubVanLoan.Chapter08"
+desc = '''
+§8.7, generalized eigenvalue problems with symmetry: the symmetric-definite problem (8.7.1)
+(congruence invariance, Theorem 8.7.1, Corollary 8.7.2, the Crawford number (8.7.4) and Theorem
+8.7.3), its Cholesky–QR solution (Algorithm 8.7.1), the generalized Rayleigh quotient and
+orthogonal iterations ((8.7.5)–(8.7.8)), the generalized singular value problem (8.7.2)
+(Theorem 8.7.4, Algorithm 8.7.2, the subspace identity after it), the Kogbetliantz 2 × 2 facts
+(§8.7.7), and the structured quadratic eigenvalue problem ((8.7.12)–(8.7.18)).
+
+Backbone: `Numlib/Eigen/Pencil` (`Matrix.pencilSpectrum`, `Matrix.HasPencilEigenvector`, the
+simultaneous diagonalization) and the new `Numlib/Eigen/SymmetricPencil` (Theorem 8.7.1, sorted
+pencil eigenvalues, Crawford number, the corrected Theorem 8.7.3, (8.7.6)–(8.7.7)). The GSVD is
+chapter 6's (Theorem 6.1.1, `GolubVanLoan.Chapter06.theorem_6_1_1`, backbone
+`Numlib/LinearAlgebra/Matrix/GSVD`), the thin CS decomposition chapter 2's
+(`Numlib/LinearAlgebra/Matrix/CSDecomposition`, Theorem 2.5.2).
+
+Algorithms 8.7.1 and 8.7.2 consist of calls to decompositions computed elsewhere (Cholesky, "the
+symmetric QR algorithm", a QR factorization, "the CS decomposition", a triangular solve). Per the
+`GolubVanLoan` group's convention 5, the steps of earlier chapters call their programs (Cholesky
+`Chapter04.algorithm_4_2_1`, the substitutions `Chapter03.algorithm_3_1_1`/`3_1_2`, the thin QR by
+modified Gram–Schmidt `Chapter05.algorithm_5_2_6`), and the two steps with no exact program — the
+symmetric Schur decomposition (Algorithm 8.3.3 is an iteration that deflates) and the CS
+decomposition (no algorithm in the book) — are monadic function parameters (`schur : Matrix → M
+(Matrix × (Fin n → ℝ))`, `cs`) whose specifications the spec theorem assumes at `Id`; the shape is
+the prototype's `algorithm_8_7_1` (`notes/gvl/ch08/proto/Jacobi.lean`, elaborates). The floating-point
+semantics of such a program is then whatever the subroutines' runs are, and no rounding theorem is
+planned for them (the book's `‖E_i‖₂ ≈ u‖A‖₂‖B⁻¹‖₂` is a quoted heuristic; the backbone's
+two-sided triangular-solve bound `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`
+covers step 2 rigorously should a consumer want it).
+
+Readings and errata. (1) Theorem 8.7.3 as printed is false: `n = 1`, `A = 0`, `B = 1`,
+`E_A = √3/4`, `E_B = -1/4` give `ε = 1/2 < c(A, B) = 1`, `λ = 0`, `μ = 1/√3`, and
+`|arctan λ - arctan μ| = π/6 > arctan(1/2)`; the correct bound (Stewart's chordal-metric form) is
+`sin |arctan λ_i - arctan μ_i| ≤ ε / c`. Its conclusion that the perturbed pencil is
+symmetric-definite (`B + E_B` positive definite) is also false in general (`A = 1`, `B = δ` small,
+`E_B = -2δ`); the corrected node assumes it. (8.7.4) omits the square root that makes `ε / c`
+homogeneous. (2) Algorithm 8.7.1 cites "Algorithm 4.2.2" for the Cholesky factorization; §4.2's
+Cholesky algorithm is 4.2.1 (4.2.2 is the `L D Lᵀ` outer product). (3) Algorithm 8.7.2 assumes
+`null(A) ∩ null(B) = ∅` for `= {0}` and gives `D_B ∈ ℝ^{m₁×n}` for `ℝ^{m₂×n}`. (4) §8.7.7 writes
+`U₁ᵀ F = (U₂ᵀ G) Σ`; from `U₁ᵀ (F G⁻¹) U₂ = Σ` one gets `U₁ᵀ F = Σ (U₂ᵀ G)` (rows scaled, which is
+what "the rows of `U₁ᵀF` are parallel to the rows of `U₂ᵀG`" says). (5) §8.7.9: "the eigenvalues
+[of the gyroscopic problem] are all purely imaginary" needs `K` positive semidefinite (the book
+assumes only `K = Kᵀ`; `M = 1`, `C = 0`, `K = -1` gives `λ = ±1`); planned with the hypothesis and a
+counterexample node.
+'''
+
+[[node]]
+id = "pencil_congruence"
+kind = "theorem"
+desc = '''§8.7.1: `A - λ B` is singular iff `Xᵀ A X - λ Xᵀ B X` is singular, for nonsingular `X`;
+hence `λ(A, B) = λ(Xᵀ A X, Xᵀ B X)` (`λ(A, B) = Matrix.pencilSpectrum A B`, the book's
+`{λ | det(A - λB) = 0}`; eigenvector: `A x = λ B x`, `x ≠ 0`, `Matrix.HasPencilEigenvector`).
+`Matrix.pencilSpectrum_mul_mul_of_isUnit` with `U = Xᵀ`, `Z = X`. ★'''
+deps = ["Matrix.pencilSpectrum", "Matrix.HasPencilEigenvector", "Matrix.pencilSpectrum_mul_mul_of_isUnit"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.1'
+
+[[node]]
+id = "theorem_8_7_1"
+kind = "theorem"
+desc = '''Theorem 8.7.1 with (8.7.3): for symmetric `A`, `B` and `C(μ) = μ A + (1 - μ) B`, if some
+`μ ∈ [0, 1]` has `C(μ)` positive semidefinite and `null(C(μ)) = null(A) ∩ null(B)`, then there is
+a nonsingular `X` with `Xᵀ A X` and `Xᵀ B X` both diagonal.
+`Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination` at `ℝ` (the book's proof). ★'''
+deps = ["Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.1'
+
+[[node]]
+id = "corollary_8_7_2"
+kind = "theorem"
+desc = '''Corollary 8.7.2: if `A - λ B` is symmetric-definite (`A` symmetric, `B` positive definite)
+there is a nonsingular `X = [x₁ | ⋯ | x_n]` with `Xᵀ A X = diagonal a`, `Xᵀ B X = diagonal b`, and
+`A x_i = λ_i B x_i` with `λ_i = a_i / b_i`. `Matrix.exists_simultaneous_diagonalization` (which gives
+`b = 1`) or `theorem_8_7_1` at `μ = 0`, then `Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`
+(`b_i = x_iᵀ B x_i > 0`). ★'''
+deps = ["theorem_8_7_1", "Matrix.exists_simultaneous_diagonalization", "Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 8.7.2'
+
+[[node]]
+id = "crawfordNumber"
+kind = "definition"
+desc = '''(8.7.4), the Crawford number: `crawfordNumber A B := Matrix.crawfordNumber A B` at `ℝ`,
+`min_{‖x‖₂ = 1} √((xᵀAx)² + (xᵀBx)²)` — with the square root the book's display omits (the squared
+quantity is `crawfordNumber A B ^ 2`; the section description explains why the unsquared one is the
+one Theorem 8.7.3 needs). ★'''
+deps = ["Matrix.crawfordNumber"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.4)'
+
+[[node]]
+id = "theorem_8_7_3"
+kind = "theorem"
+desc = '''Theorem 8.7.3, corrected (the printed form is false, `theorem_8_7_3_counterexample`): for a
+symmetric-definite `A - λ B` with eigenvalues `λ_1 ≥ ⋯ ≥ λ_n` (`Matrix.pencilEigenvalues`,
+reindexed to `Fin n`), symmetric `E_A`, `E_B` with `ε² = ‖E_A‖₂² + ‖E_B‖₂² < c(A, B)²` and
+`B + E_B` positive definite, the eigenvalues `μ_1 ≥ ⋯ ≥ μ_n` of `(A + E_A) - λ (B + E_B)` satisfy
+`Real.sin |arctan λ_i - arctan μ_i| ≤ ε / c(A, B)` for `i = 1:n`.
+`Matrix.sin_abs_arctan_pencilEigenvalues_sub_le` at `ℝ`. ★'''
+deps = ["crawfordNumber", "Matrix.pencilEigenvalues", "Matrix.sin_abs_arctan_pencilEigenvalues_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.3'
+
+[[node]]
+id = "theorem_8_7_3_counterexample"
+kind = "theorem"
+desc = '''Theorem 8.7.3 is false as printed: for `n = 1`, `A = 0`, `B = 1`, `E_A = √3/4`,
+`E_B = -1/4`, the hypotheses hold (`ε = 1/2`, `c(A, B) = 1` with or without the square root, so
+`ε² < c` and `ε < c`) and `λ₁ = 0`, `μ₁ = (√3/4)/(3/4) = 1/√3`, but
+`|arctan 0 - arctan (1/√3)| = π/6 > arctan (1/2)` (`Real.arctan_inv_sqrt_three`-type value
+`π/6 ≈ 0.5236`, `arctan (1/2) < 0.4637 + 10⁻⁴`, e.g. from `Real.arctan_lt` bounds or
+`arctan x < x`: `arctan (1/2) < 1/2 < π/6`). Stated as the negation of the printed claim for this
+instance. ★'''
+deps = ["crawfordNumber"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.3'
+
+[[node]]
+id = "algorithm_8_7_1"
+kind = "definition"
+desc = '''Algorithm 8.7.1 (Cholesky + symmetric QR for `A x = λ B x`), per D4 (convention 5 of the
+`GolubVanLoan` group: steps of earlier chapters call their programs, the rest are parameters):
+`algorithm_8_7_1 rnd schur A B : M (Matrix × (Fin n → ℝ))` — `G ← Chapter04.algorithm_4_2_1 rnd B`
+(the lower triangle of the result; the book cites "Algorithm 4.2.2", a misprint for 4.2.1);
+`C ← G⁻¹ A G⁻ᵀ` as two column-by-column forward substitutions (`Chapter03.algorithm_3_1_1`, the
+second on the transpose of the first result; symmetric `A` makes the transpose harmless);
+`(Q, a) ← schur C`; `X ← G⁻ᵀ Q` column by column by back substitution (`Chapter03.algorithm_3_1_2`
+on `Gᵀ`); return `(X, a)`. `schur` stays a monadic parameter: the book's "symmetric QR algorithm"
+is this chapter's Algorithm 8.3.3, an iteration with fuel and tolerance whose exact output is
+diagonal only up to its deflation perturbation, so it cannot meet the exact-diagonalization
+specification the spec assumes. Shape: the prototype's `algorithm_8_7_1`
+(`notes/gvl/ch08/proto/Jacobi.lean`), with `chol` and `trsm` replaced by the calls. ★'''
+deps = ["GolubVanLoan.Chapter04.algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.1'
+
+[[node]]
+id = "algorithm_8_7_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 8.7.1: if `schur C` returns an orthogonal `Q` and `a` with
+`Qᵀ C Q = diagonal a` for symmetric `C`, then for symmetric `A` and positive-definite `B` the
+output `(X, a)` of `Id.run (algorithm_8_7_1 pure schur A B)` has `Xᵀ A X = diagonal a`,
+`Xᵀ B X = 1`. The Cholesky step is `Chapter04.algorithm_4_2_1_spec` (`G = Matrix.cholesky B`, lower
+triangular with positive diagonal, `B = G Gᵀ`), the solves `Chapter03.algorithm_3_1_1_spec` /
+`algorithm_3_1_2_spec` column by column (`G⁻¹ Y`, `G⁻ᵀ Q`). ★'''
+deps = ["algorithm_8_7_1", "Matrix.IsCholesky", "GolubVanLoan.Chapter04.algorithm_4_2_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.1'
+
+[[node]]
+id = "pencil_eq_cholesky_spectrum"
+kind = "theorem"
+desc = '''§8.7.2, after Algorithm 8.7.1: for `B = G Gᵀ` (`G` nonsingular),
+`λ(A, B) = λ(A, G Gᵀ) = λ(G⁻¹ A G⁻ᵀ, I) = λ(C) = {a₁, …, a_n}`: `Matrix.pencilSpectrum A B =
+spectrum ℝ (G⁻¹ * A * G⁻¹ᵀ)` and, with `algorithm_8_7_1_spec`, `= Set.range a`.
+`pencil_congruence` with `X = G⁻ᵀ` and `Matrix.pencilSpectrum_one`. ★'''
+deps = ["pencil_congruence", "algorithm_8_7_1_spec", "Matrix.pencilSpectrum"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.2'
+
+[[node]]
+id = "generalizedRayleighQuotientIteration"
+kind = "definition"
+desc = '''(8.7.5), the generalized Rayleigh quotient iteration: `x₀` with `‖x₀‖₂ = 1`;
+`μ_k = x_kᵀ A x_k / x_kᵀ B x_k`, `(A - μ_k B) z_{k+1} = B x_k`, `x_{k+1} = z_{k+1}/‖z_{k+1}‖₂`
+(with `Matrix.inv`, total). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.5)'
+
+[[node]]
+id = "equation_8_7_7"
+kind = "theorem"
+desc = '''(8.7.6)–(8.7.7): for symmetric `A`, positive-definite `B` and `x ≠ 0`, `λ = xᵀAx / xᵀBx`
+minimizes `f(λ) = ‖A x - λ B x‖_B` with `‖z‖_B² = zᵀ B⁻¹ z`. `Matrix.isMinOn_pencil_residual`
+(`‖·‖_B` monotone in its square). ★'''
+deps = ["generalizedRayleighQuotientIteration", "Matrix.isMinOn_pencil_residual"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.7)'
+
+[[node]]
+id = "equation_8_7_8"
+kind = "theorem"
+desc = '''(8.7.8), the generalized orthogonal iteration (`B Z_k = A Q_{k-1}`, `Z_k = Q_k R_k`) is
+orthogonal iteration (8.2.8) for `B⁻¹ A` (the book: "mathematically equivalent to (7.3.6) with `A`
+replaced by `B⁻¹A`"): a sequence satisfies (8.7.8) iff it satisfies `GolubVanLoan.Chapter07.IsOrthogonalIteration (B⁻¹ * A)`
+(chapter 7's (7.3.6) at `ℝ`, the book's own reference) with the same triangular factors, for nonsingular
+`B`. ★'''
+deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "Matrix.IsOrthogonalIterationStep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.8)'
+
+[[node]]
+id = "theorem_8_7_4"
+kind = "theorem"
+desc = '''Theorem 8.7.4 (GSVD, tall version): for `A : Matrix (Fin m₁) (Fin n) ℝ`,
+`B : Matrix (Fin m₂) (Fin n) ℝ` with `m₁ ≥ n`, `m₂ ≥ n`, there are orthogonal `U₁`, `U₂` and
+nonsingular `X` with `U₁ᵀ A X = rectDiagonal α` and `U₂ᵀ B X = rectDiagonal β`
+(`α, β : ℕ → ℝ`, the book's `diag(α₁, …, α_n)`, `diag(β₁, …, β_n)`). Chapter 6's Theorem 6.1.1
+(`GolubVanLoan.Chapter06.theorem_6_1_1`, `Matrix.IsGSVD A B U₁ U₂ X α β` with
+`D_A = rectDiagonal α`, `D_B = shiftedRectDiagonal p β`) where `r = rank [A; B] ≤ n ≤ m₂` makes
+`p = max(r - m₂, 0) = 0`, so that `D_B = rectDiagonal β` by
+`Matrix.shiftedRectDiagonal_zero`. ★★'''
+deps = ["GolubVanLoan.Chapter06.theorem_6_1_1", "Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.4'
+
+[[node]]
+id = "gsvd_columns_and_pencil"
+kind = "theorem"
+desc = '''§8.7.4, after Theorem 8.7.4 (definitions of the generalized singular values
+`σ(A, B) = {α_k/β_k}` and of the right, left-`A` and left-`B` generalized singular vectors): from
+`U₁ᵀ A X = D_A`, `U₂ᵀ B X = D_B`: `A X(:,k) = α_k U₁(:,k)`, `B X(:,k) = β_k U₂(:,k)`;
+`Xᵀ (AᵀA - λ BᵀB) X = diag(α_k² - λ β_k²)`, so every `X(:,k)` with `β_k ≠ 0` is a generalized
+eigenvector of `AᵀA - λ BᵀB` for `λ = (α_k / β_k)²`, and when all `β_k ≠ 0` the pencil's
+eigenvalues are exactly the squares of the generalized singular values (`pencil_congruence`); and for
+`B = I` an SVD `U₁ᵀ A V = D_A` is a GSVD with `X = U₂ = V`, `D_B = I`. The stationary-value
+characterization of `σ(A, B)` (Chu–Funderlic–Golub) is quoted and not a node. ★'''
+deps = ["theorem_8_7_4", "pencil_congruence"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.4'
+
+[[node]]
+id = "algorithm_8_7_2"
+kind = "definition"
+desc = '''Algorithm 8.7.2 (GSVD, tall full-rank version), per D4 (convention 5 of the `GolubVanLoan`
+group): `algorithm_8_7_2 rnd cs A B : M (Matrix × Matrix × Matrix × (ℕ → ℝ) × (ℕ → ℝ))` —
+`(Q, R) ← Chapter05.algorithm_5_2_6 rnd (fromRows A B)` (modified Gram–Schmidt, the thin QR of the
+stacked `(m₁ + m₂) × n` matrix, `Q = [Q₁; Q₂]`); `(U₁, U₂, V, α, β) ← cs Q₁ Q₂` (the thin CS
+decomposition `U₁ᵀ Q₁ V = diag α`, `U₂ᵀ Q₂ V = diag β`); `X ← R⁻¹ V` column by column by back
+substitution (`Chapter03.algorithm_3_1_2`); return `(U₁, U₂, X, α, β)`. `cs` stays a monadic
+parameter: the book gives no algorithm for the CS decomposition. ★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_2_6", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.2'
+
+[[node]]
+id = "algorithm_8_7_2_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 8.7.2: the QR step is a thin QR factorization with positive (so
+nonzero) diagonal for the full-column-rank stacked input (`Chapter05.algorithm_5_2_6_spec`), and the
+back substitution solves `R X = V` (`Chapter03.algorithm_3_1_2_spec`); if `cs` returns
+a thin CS decomposition of a matrix with orthonormal columns (chapter 2's Theorem 2.5.2,
+`GolubVanLoan.Chapter02.theorem_2_5_2`, backbone `Numlib/LinearAlgebra/Matrix/CSDecomposition`), and
+then for `A`, `B` (`m₁, m₂ ≥ n`) with `null(A) ∩ null(B) = {0}` (so
+`[A; B]` has full column rank; the book writes `= ∅`), the output satisfies `U₁ᵀ A X = D_A`,
+`U₂ᵀ B X = D_B`, `U₁`, `U₂` orthogonal, `X` nonsingular — a GSVD as in Theorem 8.7.4: `A X = Q₁ R X
+= Q₁ V`, `U₁ᵀ Q₁ V = D_A`. ★★'''
+deps = ["algorithm_8_7_2", "theorem_8_7_4", "GolubVanLoan.Chapter02.theorem_2_5_2", "GolubVanLoan.Chapter05.algorithm_5_2_6_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.2'
+
+[[node]]
+id = "gsvd_subspace_via_rq"
+kind = "theorem"
+desc = '''§8.7.5, after Algorithm 8.7.2: if `X = R⁻¹ V` and `T Zᵀ = Vᵀ R` with `Z` orthogonal and `T`
+upper triangular nonsingular, then `Z T⁻¹ = R⁻¹ V = X`, and for every `k`,
+`span{x₁, …, x_k} = span{z₁, …, z_k}` (`X(:,1:k) = Z(:,1:k) T⁻¹(1:k,1:k)`, `T⁻¹` upper triangular —
+`Matrix.IsUpperTriangular.inv`-type). Computing `Z`, `T` is P5.2.2's RQ factorization (not a node).
+★'''
+deps = ["algorithm_8_7_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.5'
+
+[[node]]
+id = "kogbetliantz_twoByTwo"
+kind = "theorem"
+desc = '''§8.7.7: for `F G : Matrix (Fin 2) (Fin 2) ℝ`, `G` nonsingular, and an SVD
+`U₁ᵀ (F G⁻¹) U₂ = Σ = diag(σ₁, σ₂)`: the generalized singular values of `(F, G)` are `σ₁, σ₂`
+(the `α_i/β_i` of any GSVD of `(F, G)` — with `X = G⁻¹ U₂ D` suitably scaled); `U₁ᵀ F = Σ (U₂ᵀ G)`
+(the book prints `(U₂ᵀ G) Σ`; rows of `U₁ᵀF` are multiples of the rows of `U₂ᵀG`); and if `Z` is
+orthogonal with `U₂ᵀ G Z` upper triangular then `U₁ᵀ F Z = Σ (U₂ᵀ G Z)` is upper triangular.
+`F = U₁ Σ U₂ᵀ G`. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §8.7.7'
+
+[[node]]
+id = "equation_8_7_13"
+kind = "theorem"
+desc = '''(8.7.12)–(8.7.14), the quadratic eigenvalue problem: for `M C K : Matrix (Fin n) (Fin n) ℂ`
+(real in the book, read over `ℂ` since `λ` and `x` are complex), `(λ² M + λ C + K) x = 0` implies
+`(xᴴMx) λ² + (xᴴCx) λ + (xᴴKx) = 0` ((8.7.13)); hence, when `xᴴMx ≠ 0`,
+`λ = (-(xᴴCx) ± √((xᴴCx)² - 4 (xᴴMx)(xᴴKx))) / (2 xᴴMx)` for one of the two complex square roots
+((8.7.14), stated as `(2 m λ + c)² = c² - 4 m k`). Left multiplication by `xᴴ`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.13)'
+
+[[node]]
+id = "equation_8_7_15"
+kind = "theorem"
+desc = '''(8.7.15)–(8.7.16), linearizations: for nonsingular `N`, `(λ, x)` solves (8.7.12) with
+`x ≠ 0` iff `(λ, (x, u))` with `u = λ x` solves
+`[0 N; K C] [x; u] = λ [N 0; 0 -M] [x; u]` ((8.7.15)), iff it solves
+`[-K 0; 0 N] [x; u] = λ [C M; N 0] [x; u]` ((8.7.16)); and every eigenvector `(x, u)` of either
+linearization has `u = λ x` (from the `N` row) and `x ≠ 0`. `Matrix.fromBlocks_mulVec`. ★'''
+deps = ["equation_8_7_13"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.15)'
+
+[[node]]
+id = "qep_re_nonpos"
+kind = "theorem"
+desc = '''§8.7.9: if `M`, `C` are real symmetric positive definite and `K` real symmetric positive
+semidefinite, every eigenvalue `λ ∈ ℂ` of (8.7.12) has `re λ ≤ 0`. From (8.7.13) with
+`m = xᴴMx > 0`, `c = xᴴCx > 0`, `k = xᴴKx ≥ 0` real: the roots of `m λ² + c λ + k` have
+nonpositive real part (real roots `≤ 0` when `c² ≥ 4mk`, real part `-c/(2m) < 0` otherwise). ★★'''
+deps = ["equation_8_7_13"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.9'
+
+[[node]]
+id = "gyroscopic_eigenvalues_imaginary"
+kind = "theorem"
+desc = '''§8.7.9, the gyroscopic QEP, corrected: if `M` is symmetric positive definite, `C` skew
+(`Cᵀ = -C`) and `K` symmetric **positive semidefinite** (the hypothesis the book omits), every
+eigenvalue has `re λ = 0`. `xᴴCx` is purely imaginary, `xᴴMx > 0`, `xᴴKx ≥ 0`, so by (8.7.14) the
+discriminant `(xᴴCx)² - 4 m k ≤ 0` is real nonpositive and both roots are imaginary. Also the
+structured linearization `[0 -K; M 0] [u; x] = λ [M C; 0 M] [u; x]` (with `u = λ x`) is equivalent
+to (8.7.12) (as `equation_8_7_15`). ★★'''
+deps = ["equation_8_7_13"]
+source = 'Golub–Van Loan, Matrix Computations, §8.7.9'
+
+[[node]]
+id = "gyroscopic_counterexample"
+kind = "theorem"
+desc = '''The book's gyroscopic claim without `K ⪰ 0` is false: `n = 1`, `M = 1`, `C = 0` (skew),
+`K = -1` (symmetric) give `λ² - 1 = 0`, `λ = ±1`, not purely imaginary. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §8.7.9'
+
+[[node]]
+id = "palindromic_reciprocal"
+kind = "theorem"
+desc = '''§8.7.9, the palindromic QEP `Q(λ) = λ² M + λ C + Mᵀ` with `Cᵀ = C`: for `λ ≠ 0`, `Q(λ)` is
+singular iff `Q(1/λ)` is (`Q(1/λ) = λ⁻² Q(λ)ᵀ`, `det_transpose`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §8.7.9'
+
+[[node]]
+id = "equation_8_7_18"
+kind = "theorem"
+desc = '''(8.7.17) ⇒ (8.7.18) (P8.7.10): if `[Mᵀ Mᵀ; C - M Mᵀ] [y; z] = λ [-M Mᵀ - C; -M -M] [y; z]`
+then `(λ² M + λ C + Mᵀ)(y + z) = 0`. Add and combine the two block rows (a linear-algebra identity;
+`linear_combination` on the block equations after `Matrix.fromBlocks_mulVec`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.18)'

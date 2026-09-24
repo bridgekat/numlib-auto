@@ -1,0 +1,108 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.6, Vandermonde systems: polynomial interpolation `Vᵀ a = f` ((4.6.1)–(4.6.2)), the Björck–Pereyra
+algorithms (Algorithms 4.6.1–4.6.2) and the factorization `V⁻ᵀ = Lᵀ Uᵀ` they compute implicitly.
+Backbone: `Numlib/Direct/Vandermonde` (`BjorckPereyra`), `Numlib/Approximation/NewtonForm`
+(`DividedDifference`), Mathlib `Matrix.vandermonde`, `Lagrange.interpolate`. The book indexes from 0
+in this section, as does the surface: nodes `x : Fin (n + 1) → ℝ`, distinct. The book's
+`V(x₀, …, x_n)` has rows the powers, i.e. it is `(Matrix.vandermonde x)ᵀ` (surface definition
+`vandermonde`). (4.6.3)–(4.6.4) are the two stages of Algorithm 4.6.1 (not separate nodes); the
+accuracy remark and confluent systems are not formalized.
+'''
+
+[[node]]
+id = "vandermonde"
+kind = "definition"
+desc = '''§4.6, Definition: `vandermonde (x : Fin (n + 1) → ℝ) : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
+(Matrix.vandermonde x)ᵀ`, entries `x_j ^ i` (row `i`, column `j`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §4.6, Definition'
+
+[[node]]
+id = "dft_eq_vandermonde"
+kind = "theorem"
+desc = '''§4.6, "the discrete Fourier transform matrix (§1.4.1) is a very special complex Vandermonde matrix":
+`GolubVanLoan.Chapter01.fourierMatrix n = Matrix.vandermonde (fun k => ω̄ ^ (k : ℕ))` with
+`ω = exp(2πi/n)` (symmetric, so also its transpose); chapter 1's `F_n` (`= (Matrix.dft n)ᴴ`) and its
+`fourierMatrix_apply`, `pow_mul`. ★'''
+deps = ["GolubVanLoan.Chapter01.fourierMatrix"]
+source = 'Golub–Van Loan, Matrix Computations, §4.6, Display'
+
+[[node]]
+id = "equation_4_6_1"
+kind = "theorem"
+desc = '''(4.6.1): `(vandermonde x)ᵀ *ᵥ a = f` iff the polynomial `p = ∑_j a_j X^j` satisfies `p(x_i) = f_i` for all
+`i`; `Matrix.vandermonde_mulVec_eq_eval`. ★'''
+deps = ["vandermonde", "Matrix.vandermonde_mulVec_eq_eval"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.6.1)'
+
+[[node]]
+id = "vandermonde_isUnit_iff"
+kind = "theorem"
+desc = '''§4.6.1, "`V` is nonsingular as long as the `x_i` are distinct" (and conversely):
+`IsUnit (vandermonde x) ↔ Function.Injective x`; Mathlib `Matrix.det_vandermonde_ne_zero_iff`
+(`Matrix.det_transpose`). ★'''
+deps = ["vandermonde"]
+source = 'Golub–Van Loan, Matrix Computations, §4.6.1, Display'
+
+[[node]]
+id = "equation_4_6_2"
+kind = "theorem"
+desc = '''(4.6.2): for distinct nodes, the interpolating polynomial of the data `(x_i, f_i)` is
+`p = ∑_{k=0}^{n} c_k ∏_{i<k} (X − x_i)` with `c_k = f[x_0, …, x_k]` (divided differences of any `g` with
+`g (x i) = f i`); `DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal` (or the `Fin` form
+`DividedDifference.interpolate_eq_sum_newton_mul_prefixNodal`). ★'''
+deps = ["DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.6.2)'
+
+[[node]]
+id = "vandermonde_inv_factorization"
+kind = "theorem"
+desc = '''§4.6.2: with the book's `L_k(α)`, `D_k`, `Uᵀ = D_{n−1}⁻¹ L_{n−1}(1) ⋯ D_0⁻¹ L_0(1)` and
+`Lᵀ = L_0(x_0)ᵀ ⋯ L_{n−1}(x_{n−1})ᵀ`: the divided differences are `c = Uᵀ f`, the monomial
+coefficients `a = Lᵀ c`, hence `V⁻ᵀ = Lᵀ Uᵀ` and `V⁻¹ = U L` ("Algorithm 4.6.1 solves `Vᵀ a = f` by
+tacitly computing the UL factorization of `V⁻¹`"). `BjorckPereyra.upperFactorT_mulVec_eq_newtonOn`,
+`BjorckPereyra.lowerFactorT_mulVec_newtonCoeff`, `BjorckPereyra.inv_vandermonde_eq`. ★'''
+deps = ["BjorckPereyra.upperFactorT_mulVec_eq_newtonOn", "BjorckPereyra.lowerFactorT_mulVec_newtonCoeff", "BjorckPereyra.inv_vandermonde_eq", "vandermonde"]
+source = 'Golub–Van Loan, Matrix Computations, §4.6.2, Display'
+
+[[node]]
+id = "algorithm_4_6_1"
+kind = "definition"
+desc = '''Algorithm 4.6.1, D4: `algorithm_4_6_1 (rnd) (x f : Fin (n + 1) → ℝ) : M (Fin (n + 1) → ℝ)`: for `k = 0 … n−1`,
+for `i = n` down to `k + 1`: `f i ← rnd (rnd (f i − f (i − 1)) / rnd (x i − x (i − k − 1)))`; then for
+`k = n − 1` down to `0`, for `i = k … n − 1`: `f i ← rnd (f i − rnd (f (i + 1) * x k))`. (The
+differences of nodes are computed, hence rounded; the loops run over `List.range` with the
+reversed inner orders.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.6.1'
+
+[[node]]
+id = "algorithm_4_6_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.6.1: for distinct nodes, `a := Id.run (algorithm_4_6_1 pure x f)` solves
+`(vandermonde x)ᵀ *ᵥ a = f`, i.e. `Matrix.vandermonde x *ᵥ a = f`. The first loop computes
+`upperFactorT x *ᵥ f` (one factor `D_k⁻¹ L_k(1)` per pass, the downward inner order reading only
+old values), the second `lowerFactorT x *ᵥ ·`; `vandermonde_inv_factorization`. ★★ (~120 lines of
+loop/factor matching)'''
+deps = ["algorithm_4_6_1", "vandermonde_inv_factorization", "BjorckPereyra.upperFactorT", "BjorckPereyra.lowerFactorT"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.6.1'
+
+[[node]]
+id = "algorithm_4_6_2"
+kind = "definition"
+desc = '''Algorithm 4.6.2, D4: for `k = 0 … n−1`, for `i = n` down to `k + 1`: `b i ← rnd (b i − rnd (x k * b (i − 1)))`;
+then for `k = n − 1` down to `0`: for `i = k + 1 … n`: `b i ← rnd (b i / rnd (x i − x (i − k − 1)))`,
+and for `i = k … n − 1`: `b i ← rnd (b i − b (i + 1))`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.6.2'
+
+[[node]]
+id = "algorithm_4_6_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.6.2: for distinct nodes, `z := Id.run (algorithm_4_6_2 pure x b)` solves
+`vandermonde x *ᵥ z = b` (the book's `V z = b`). The first loop applies `L = L_{n−1}(x_{n−1}) ⋯ L_0(x_0)`,
+the second `U = L_0(1)ᵀ D_0⁻¹ ⋯ L_{n−1}(1)ᵀ D_{n−1}⁻¹` (the transposes of the factors of
+`vandermonde_inv_factorization`), so `z = U L b = V⁻¹ b`. ★★ (~120 lines)'''
+deps = ["algorithm_4_6_2", "vandermonde_inv_factorization"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.6.2'

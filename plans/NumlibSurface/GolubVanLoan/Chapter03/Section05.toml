@@ -1,0 +1,193 @@
+namespace = "GolubVanLoan.Chapter03"
+desc = '''
+§3.5, improving and estimating accuracy: the rigorous readings of Heuristic I and (3.5.2), scaling
+((3.5.3), equilibration), iterative improvement ((3.5.4), (3.5.5)), and condition estimation
+((3.5.6) as `backSubstChosenRHS`, Algorithm 3.5.1, the `P A = L U` estimator of §3.5.4). The `∞`-norm is Mathlib's
+`Matrix.Norms.Operator` (`= Matrix.lpOpNorm ⊤`, `Matrix.lpOpNorm_top`), `κ_∞` is
+`Matrix.condNumberLp ⊤`. Heuristics I–III, (3.5.1) and the "correct digits" statements have no
+rigorous reading beyond what is planned here and are listed as not formalized in the chapter group;
+the backbone's rigorous iterative-refinement theorems ([higham2002accuracy] 12.1–12.2,
+`Numlib/Direct/Refinement`) are the formal counterpart of Heuristic III but the book states
+nothing that would make them a node. Condition estimation rests on the new backbone module
+`Numlib/Direct/ConditionEstimation`.
+'''
+
+[[node]]
+id = "heuristic_I"
+kind = "theorem"
+desc = '''Heuristic I, rigorous reading ("Gaussian elimination produces a solution with a relatively
+small residual"): if `(A + E) x̂ = b` then `‖b - A x̂‖_∞ ≤ ‖E‖_∞ ‖x̂‖_∞`; combined with (3.4.9)
+(`equation_3_4_9`) the residual of a GEPP solve is at most `n² (1 + u) γ_{3n} ρ ‖A‖_∞ ‖x̂‖_∞` under
+that node's hypothesis (the rigorous form of "`‖b - A x̂‖_∞ ≈ u ‖A‖_∞ ‖x̂‖_∞`").
+`Matrix.linfty_opNorm_mulVec`. ★'''
+deps = ["equation_3_4_9"]
+source = 'Golub–Van Loan, Matrix Computations, §3.5.1, Heuristic I'
+
+[[node]]
+id = "equation_3_5_2"
+kind = "theorem"
+desc = '''(3.5.2), rigorous reading: if `A x = b`, `b ≠ 0`, `(A + E) x̂ = b`, `‖E‖_∞ ≤ ε ‖A‖_∞` and
+`r = ε κ_∞(A) < 1`, then `‖x̂ - x‖_∞ / ‖x‖_∞ ≤ 2 ε κ_∞(A) / (1 - r)` — Theorem 2.6.2 with `Δb = 0`
+in the `∞`-norm. With `ε` of order `u` (from (3.4.9)) this is the book's
+`‖x̂ - x‖_∞ / ‖x‖_∞ ≈ u κ_∞(A)`; Heuristic II's digit count is not formalized. ★'''
+deps = ["GolubVanLoan.Chapter02.theorem_2_6_2", "Matrix.condNumberLp"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.2)'
+
+[[node]]
+id = "equation_3_5_3"
+kind = "theorem"
+desc = '''(3.5.3), its exact part: for nonsingular (diagonal in the book) `D₁`, `D₂`,
+`A x = b ↔ (D₁⁻¹ A D₂) y = D₁⁻¹ b` with `x = D₂ y` (`Matrix.scaled_mulVec_eq_iff`), and for
+`x̂ = D₂ ŷ` the relative error of `ŷ` is the relative error of `x̂` in the `D₂`-norm:
+`‖D₂⁻¹ (x̂ - x)‖_∞ / ‖D₂⁻¹ x‖_∞ = ‖ŷ - y‖_∞ / ‖y‖_∞`. The `≈ u κ_∞(D₁⁻¹ A D₂)` is
+`equation_3_5_2` for the scaled system; "may be accomplished without roundoff" (powers of `β`) has
+no reading in the relational model. ★'''
+deps = ["Matrix.scaled_mulVec_eq_iff", "equation_3_5_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.3)'
+
+[[node]]
+id = "IsEquilibrated"
+kind = "definition"
+desc = '''§3.5.2, row–column equilibration: `IsEquilibrated β M` for `M : Matrix (Fin n) (Fin n) ℝ` —
+the `∞`-norm (sup norm) of every row and every column of `M` lies in `[1/β, 1]`:
+`∀ i, 1/β ≤ ‖M i‖ ∧ ‖M i‖ ≤ 1` and `∀ j, 1/β ≤ ‖Mᵀ j‖ ∧ ‖Mᵀ j‖ ≤ 1`. The book's objective is to
+choose diagonal `D₁`, `D₂` with `IsEquilibrated β (D₁⁻¹ A D₂)`; P3.5.1 (non-uniqueness) is not a
+node, and "simple row scaling" (rows of *approximately* equal norm) is not formalized. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.5.2, Definition'
+
+[[node]]
+id = "iterativeImprovementStep"
+kind = "definition"
+desc = '''(3.5.4), one step of iterative improvement with `P A = L U`, D4 (a content-named program; its
+exact specification is `equation_3_5_4`): `r = b - A x̂` (row `i`: `rnd (b i - s)` with
+`s ← FloatingPoint.dotAccum rnd (List.finRange n) (A i) x̂ 0`, Algorithm 1.1.1), then `solvePLU`
+with the packed factors (`L y = P r`, `U z = y`), then `x_new = rnd (x̂ + z)` entrywise. ★'''
+deps = ["solvePLU", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.4)'
+
+[[node]]
+id = "equation_3_5_4"
+kind = "theorem"
+desc = '''(3.5.4), "in exact arithmetic `A x_new = A x̂ + A z = (b - r) + r = b`": if `P A = L U` with
+`U` nonsingular (packed as `F`), then `A *ᵥ Id.run (iterativeImprovementStep pure A F piv b x̂) = b`
+for every `x̂`; `solvePLU` exact and `Refinement.step_eq_of_eq_inverse` (the refinement step with the
+exact inverse). The book's rounding discussion (Skeel's `τ` criterion) is not formalized. ★'''
+deps = ["iterativeImprovementStep", "solvePLU_spec", "Refinement.step_eq_of_eq_inverse"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.4)'
+
+[[node]]
+id = "mixedPrecisionImprovement"
+kind = "definition"
+desc = '''(3.5.5), mixed-precision iterative improvement, D4 (a content-named program; its exact
+specification is `equation_3_5_5`) with **two** rounding hooks `rnd rndHi : ℝ → M ℝ` (working
+precision `t`, residual precision `2t`) and an iteration count `k` (the book's "the process can be
+iterated"): `x = 0`; `k` times: `r = b - A x` with every flop through `rndHi` and one final `rnd`,
+then `solvePLU` and `x = rnd (x + z)` with `rnd`. **Modelling choice**: the book says only that the
+residual is computed in `2t`-digit arithmetic; storing it back in working precision (the one `rnd`
+after the `rndHi` flops) is this plan's reading, the usual one of an implementation that keeps `r`
+in a working-precision array (and the shape of the backbone's `Refinement.RoundsStepLUMixed`). At
+`SetM` the two hooks are `fp.round` and `fpHi.round` for two models. ★'''
+deps = ["iterativeImprovementStep", "solvePLU"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.5)'
+
+[[node]]
+id = "equation_3_5_5"
+kind = "theorem"
+desc = '''Exact correctness of (3.5.5): with exact factors of a nonsingular `A` and `k ≥ 1`, the `Id`
+output of `mixedPrecisionImprovement` is `A⁻¹ b` (the first step lands on it and later steps stay:
+`equation_3_5_4`). ★'''
+deps = ["mixedPrecisionImprovement", "equation_3_5_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.5)'
+
+[[node]]
+id = "condEstimate_lowerBound"
+kind = "theorem"
+desc = '''§3.5.4, the implication of Cline, Moler, Stewart and Wilkinson: for nonsingular `A` and
+`A y = d`, `‖A⁻¹‖_∞ ≥ ‖y‖_∞ / ‖d‖_∞`, hence the estimate `κ̂_∞ = ‖A‖_∞ ‖y‖_∞ / ‖d‖_∞ ≤ κ_∞(A)`;
+`Matrix.norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec` and `Matrix.lpCondEstimate_le_condNumberLp`
+at `p = ⊤` (new module `Numlib/Direct/ConditionEstimation`). ★'''
+deps = ["Matrix.norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec", "Matrix.lpCondEstimate_le_condNumberLp"]
+source = 'Golub–Van Loan, Matrix Computations, §3.5.4'
+
+[[node]]
+id = "backSubstChosenRHS"
+kind = "definition"
+desc = '''(3.5.6), column back substitution with the right-hand side chosen on the fly, D4 (a
+content-named program; its exact specification is `equation_3_5_6`): the choice is an argument
+`choose : Fin n → ℝ → ℝ` (`d(k) = choose k (p(k))`, exact — e.g. `-sign`, convention 1); `p = 0`;
+for `k = n-1, …, 0`: `d(k) ← choose k (p k)`, `y(k) = rnd (rnd (d(k) - p(k)) / T(k,k))`,
+`p(0:k-1) = p(0:k-1) + y(k) T(0:k-1, k)` entrywise rounded. Returns `(y, d)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.6)'
+
+[[node]]
+id = "equation_3_5_6"
+kind = "theorem"
+desc = '''(3.5.6) solves the system it builds: with `(y, d) = Id.run (backSubstChosenRHS pure choose T)`
+and `T` upper triangular with nonzero diagonal, `T *ᵥ y = d` (by the invariant
+`p(i) = ∑_{j > k} t_ij y_j`, or by recognizing the exact run as `Matrix.backSubst T d` through
+`algorithm_3_1_4_spec`'s route with `d` fixed after the fact — `d(k)` depends only on the finished
+part). ★★ (~60 lines)'''
+deps = ["backSubstChosenRHS", "Matrix.mulVec_backSubst", "Matrix.backSubst_apply"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.5.6)'
+
+[[node]]
+id = "backSubstChosenRHS_sign"
+kind = "theorem"
+desc = '''§3.5.4, the `± 1` choice `d(k) = -sign(p(k))` (`-1` if `p(k) ≥ 0`, else `+1`): `d` is a sign
+vector, so for nonsingular upper triangular `T` (`n ≥ 1`) the estimate `κ̂_∞ = ‖T‖_∞ ‖y‖_∞`
+satisfies `κ̂_∞ ≤ κ_∞(T)`; `equation_3_5_6` and
+`Matrix.linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq`. ★'''
+deps = ["equation_3_5_6", "Matrix.linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §3.5.4'
+
+[[node]]
+id = "algorithm_3_5_1"
+kind = "definition"
+desc = '''Algorithm 3.5.1 (condition estimator), D4, for upper triangular `T`: `p = 0`; for
+`k = n-1, …, 0`: `y⁺ = rnd (rnd (1 - p k) / T k k)`, `y⁻ = rnd (rnd (-1 - p k) / T k k)`,
+`p⁺(0:k-1) = p(0:k-1) + T(0:k-1,k) y⁺` and `p⁻` likewise (entrywise rounded), the look-ahead
+scores `|y⁺| + ‖p⁺(0:k-1)‖₁` and `|y⁻| + ‖p⁻(0:k-1)‖₁` (convention 1: `|·|` exact, every addition
+of the running sums rounded — arithmetic that only feeds the comparison is still rounded), and
+`(y(k), p) = (y⁺, p⁺)` if the first score is `≥` the second, else `(y⁻, p⁻)`; finally
+`κ = rnd (‖y‖_∞ ‖T‖_∞)` (`‖y‖_∞` a maximum of exact absolute values, `‖T‖_∞` the maximum of
+rounded row sums of `|t_ij|`) and `y = y / ‖y‖_∞` entrywise rounded. Shape elaborated in
+`proto/Shapes.lean` (there with one `rnd` for `(1 - p k)/T k k`; the plan rounds both flops). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.5.1'
+
+[[node]]
+id = "algorithm_3_5_1_spec"
+kind = "theorem"
+desc = '''What Algorithm 3.5.1 provably computes (the book's "`‖T y‖_∞ ≈ 1/‖T⁻¹‖_∞` and
+`κ ≈ κ_∞(T)`" in its rigorous half), for nonsingular upper triangular `T`, `n ≥ 1`, exact
+semantics: before normalization `T y₀ = d` for a sign vector `d` (`d(k) = +1` or `-1` according to
+the look-ahead choice); hence `κ = ‖y₀‖_∞ ‖T‖_∞ ≤ κ_∞(T)`, the returned `y` has `‖y‖_∞ = 1`, and
+`‖T y‖_∞ ≥ 1 / ‖T⁻¹‖_∞`. Proof: the exact run is `backSubstChosenRHS` with the look-ahead as `choose`
+(`equation_3_5_6`), then `Matrix.linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq`.
+The quality of the estimate (how close to `κ_∞(T)`) has no theorem (P3.5.4's counterexample family
+is not a node). ★★ (~80 lines)'''
+deps = ["algorithm_3_5_1", "equation_3_5_6", "Matrix.linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq", "_root_.pi_norm_eq_one_of_forall_norm_eq_one"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.5.1'
+
+[[node]]
+id = "luCondEstimate"
+kind = "definition"
+desc = '''§3.5.4, Steps 1–3, condition estimation from `P A = L U`, D4: Step 1, the lower triangular
+version of Algorithm 3.5.1 on `Uᵀ` (Algorithm 3.5.1 on `Uᵀ` read in the reversed order,
+`Fin.rev`), giving `y` with `Uᵀ y = d`; Step 2, `Lᵀ r = y` (Algorithm 3.1.2 on `Lᵀ`), `L w = P r`,
+`U z = w` (`solvePLU`); Step 3, `κ̂_∞ = rnd (rnd (‖A‖_∞ ‖z‖_∞) / ‖r‖_∞)`. ★'''
+deps = ["algorithm_3_5_1", "algorithm_3_1_2", "solvePLU"]
+source = 'Golub–Van Loan, Matrix Computations, §3.5.4'
+
+[[node]]
+id = "luCondEstimate_le"
+kind = "theorem"
+desc = '''§3.5.4, "note that `‖z‖_∞ ≤ ‖A⁻¹‖_∞ ‖r‖_∞`": in exact arithmetic, for nonsingular `A` with
+`P A = L U`, `A z = r` and hence `κ̂_∞ ≤ κ_∞(A)` for the estimate of `luCondEstimate` — whatever
+Step 1 produced (`Matrix.lpCondEstimate_le_condNumberLp`); and `r` solves `Aᵀ Pᵀ r = d`. The
+heuristics (ill-conditioning of `A` shows in `U`, `r` rich in the left singular direction of
+`σ_min`) are not formalized. ★'''
+deps = ["luCondEstimate", "solvePLU_spec", "Matrix.lpCondEstimate_le_condNumberLp", "algorithm_3_5_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §3.5.4'

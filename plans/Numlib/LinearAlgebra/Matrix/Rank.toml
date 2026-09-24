@@ -1,3 +1,15 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Rank` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch04) add to "Main statements" — "`Matrix.rank_inv_toBlocks₂₁`, `Matrix.rank_inv_toBlocks₁₂`: the
+# nullity theorem for complementary off-diagonal blocks — the `(2,1)` block of `A⁻¹` has the rank of
+# the `(2,1)` block of `A` (Gustafson; Fiedler–Markham; Strang–Nguyen 2004)" — both one-line
+# corollaries of the general nullity theorem `Matrix.rank_toBlock_inv_add_card` below (review fix).
+# (ch12) Add to "Main statements": the rank factorization `Matrix.rank_le_iff_exists_mul` (`rank A ≤
+# r ↔ A = B C` with `r` inner columns), subadditivity `Matrix.rank_add_le`, the support bound
+# `Matrix.rank_le_card_add_card_of_forall_ne_zero` (a matrix vanishing off `s` rows and `t` columns
+# has rank `≤ |s| + |t|`), and the **nullity theorem** (Gustafson 1984, Fiedler–Markham 1986)
+# `Matrix.rank_toBlock_inv_add_card`: `rank (A⁻¹)[α, β] + n = rank A[βᶜ, αᶜ] + |α| + |β|`, the
+# engine of the structured-rank results of `Semiseparable` ([golub2013matrix] §12.2).
 namespace = "Matrix"
 
 [[node]]
@@ -35,3 +47,82 @@ id = "rank_eq_sup_card_det_submatrix_ne_zero"
 
 [[node]]
 id = "isUnit_of_rank_eq_card"
+
+[[node]]  # staged by ch04
+id = "rank_inv_toBlocks₂₁"
+kind = "theorem"
+desc = '''The nullity theorem for the off-diagonal block ([golub2013matrix] §4.3.8, "It can actually be shown that
+`rank(A₂₁) = rank(X₂₁)`", Strang–Nguyen 2004): for a nonsingular `A : Matrix (m ⊕ n) (m ⊕ n) K`
+over a field, `(A⁻¹).toBlocks₂₁.rank = A.toBlocks₂₁.rank`. A one-line corollary of the general nullity
+theorem `Matrix.rank_toBlock_inv_add_card` at `p = Sum.isRight`, `q = Sum.isLeft` (so `¬q` selects the
+`inr` rows and `¬p` the `inl` columns: the block `A[¬q, ¬p]` is `A₂₁`), the cardinalities `|p| + |q| =
+|n| + |m| = |m ⊕ n|` cancelling; the `toBlock` of a `Sum` predicate is reindexed to `toBlocks₂₁` by Mathlib's
+`Matrix.rank_submatrix` with `Equiv.sumCompl`-type equivalences `{i // i.isRight} ≃ n`. No invertibility of
+the diagonal blocks and no limit argument (the book's proof assumes `A₁₁`, `A₂₂` nonsingular and appeals to
+P4.3.11). ★ (~25 lines, most of it the reindexing)'''
+deps = ["Matrix.rank_toBlock_inv_add_card"]
+
+[[node]]  # staged by ch04
+id = "rank_inv_toBlocks₁₂"
+kind = "theorem"
+desc = '''The nullity theorem for the other off-diagonal block: `(A⁻¹).toBlocks₁₂.rank = A.toBlocks₁₂.rank` for
+nonsingular `A : Matrix (m ⊕ n) (m ⊕ n) K`. Same one-liner as `Matrix.rank_inv_toBlocks₂₁`, from
+`Matrix.rank_toBlock_inv_add_card` at `p = Sum.isLeft`, `q = Sum.isRight` (no transpose needed). ★'''
+deps = ["Matrix.rank_toBlock_inv_add_card"]
+
+[[node]]  # staged by ch12
+id = "rank_add_le"
+kind = "theorem"
+desc = '''`(A + B).rank ≤ A.rank + B.rank` for matrices over a field (Mathlib has only
+`LinearMap.rank_add_le`; the matrix form through `Matrix.mulVecLin_add` and
+`Matrix.rank_eq_finrank_range_toLin`). ★'''
+deps = []
+
+[[node]]  # staged by ch12
+id = "rank_le_iff_exists_mul"
+kind = "theorem"
+desc = '''The rank factorization: for `A : Matrix m n K` over a field, `A.rank ≤ r ↔ ∃ (B : Matrix m (Fin r) K) (C :
+Matrix (Fin r) n K), A = B * C`. `←`: Mathlib `Matrix.rank_mul_le_right` and `rank_le_width`. `→`: choose a
+basis of the column space (`Module.finrank_le_iff_exists_linearMap`-type, or `Matrix.exists_linearIndependent_col`
+of this module), pad with zero columns to `r`, and take coordinates. ★★ (~50 lines)'''
+deps = ["Matrix.exists_linearIndependent_col"]
+
+[[node]]  # staged by ch12
+id = "rank_le_iff_exists_mul_transpose"
+kind = "theorem"
+desc = '''The generator form used by displacement structure ([golub2013matrix] (12.1.3)): `A.rank ≤ r ↔ ∃ R : Matrix
+m (Fin r) K, ∃ S : Matrix n (Fin r) K, A = R * Sᵀ`. From `rank_le_iff_exists_mul` with `S = Cᵀ`. ★'''
+deps = ["Matrix.rank_le_iff_exists_mul"]
+
+[[node]]  # staged by ch12
+id = "rank_le_card_add_card_of_forall_ne_zero"
+kind = "theorem"
+desc = '''A matrix supported on `s` rows and `t` columns: if `∀ i j, A i j ≠ 0 → i ∈ s ∨ j ∈ t` (`s : Finset m`, `t :
+Finset n`) then `A.rank ≤ s.card + t.card`. Split `A` into the rows in `s` and the rest (supported on the
+columns `t`); `rank_add_le`, Mathlib `Matrix.rank_le_card_of_support_subset` and its transpose. Every
+displacement-rank bound of [golub2013matrix] (12.1.8)–(12.1.11) is an instance. ★★ (~40 lines)'''
+deps = ["Matrix.rank_add_le"]
+
+[[node]]  # staged by ch12
+id = "finrank_ker_toBlock_inv"
+kind = "theorem"
+desc = '''The nullity theorem, kernel form: for `A : Matrix n n K` invertible and predicates `p q` on `n`, the
+kernels of `(A⁻¹.toBlock p q).mulVecLin` and of `(A.toBlock (fun i => ¬q i) (fun j => ¬p j)).mulVecLin` are
+linearly equivalent, hence have the same `finrank`. The map `x ↦ (A⁻¹ x̄)|_{¬p}` (`x̄` the extension of `x` by
+zero off `q`) with inverse `y ↦ (A ȳ)|_q`: `A⁻¹[p, q] x = 0` says `A⁻¹ x̄` vanishes on `p`, i.e. is `ȳ` for `y` on
+`¬p`, and `A ȳ = x̄` vanishes on `¬q`. Fiedler–Markham (1986); cited by [golub2013matrix] §12.2 through
+Vandebril–Van Barel–Mastronardi. The blocks are rectangular (`{j // q j}` columns, `{i // p i}` rows), so
+the rank–nullity step later uses Mathlib's `LinearMap.finrank_range_add_finrank_ker` directly, not the
+square-only `Matrix.rank_add_finrank_ker_mulVecLin`. ★★ (~80 lines)'''
+deps = []
+
+[[node]]  # staged by ch12
+id = "rank_toBlock_inv_add_card"
+kind = "theorem"
+desc = '''The nullity theorem, rank form: `(A⁻¹.toBlock p q).rank + Fintype.card n = (A.toBlock (fun i => ¬q i)
+(fun j => ¬p j)).rank + Fintype.card {i // p i} + Fintype.card {j // q j}` for invertible `A` (the domain of
+the first block has dimension `|q|`, of the second `|¬p| = n − |p|`; rank–nullity for the rectangular blocks is
+Mathlib's `LinearMap.finrank_range_add_finrank_ker` with `Module.finrank_pi` — the square-only
+`Matrix.rank_add_finrank_ker_mulVecLin` does not apply). The engine of both `Matrix.rank_inv_toBlocks₂₁`/`₁₂`
+(the block form of [golub2013matrix] §4.3.8) and the structured-rank results of [golub2013matrix] §12.2. ★'''
+deps = ["Matrix.finrank_ker_toBlock_inv"]

@@ -1,1 +1,1 @@
-desc = 'Compressions and oblique projections.'
+desc = 'Compressions, oblique projections, angles between subspaces (`Angle`) and the gap between two subspaces with its equal-dimension theory (`Gap`).'

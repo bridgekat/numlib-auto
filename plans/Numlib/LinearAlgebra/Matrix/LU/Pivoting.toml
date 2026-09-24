@@ -1,3 +1,19 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.LU.Pivoting` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch03) add (1) rook pivoting as a third strategy predicate beside partial and complete pivoting,
+# `Matrix.IsRookPivot` ([golub2013matrix] §3.4.7), with complete pivoting an instance; (2) the
+# algorithmic factorizations without a nonzero-pivot hypothesis — partial pivoting `P A = L U` and
+# rook/complete pivoting `P A Q = L U` with `|l_ij| ≤ 1`, `|u_ij| ≤ |u_ii|`, computed by
+# `gemPivotStage`/`gemFullPivotStage` (a zero pivot under these strategies comes with a zero pivot
+# column, so the step is harmless; [golub2013matrix] "Algorithm 3.4.1 always runs to completion");
+# (3) rank revelation by complete pivoting; (4) the stage-wise form of Wilkinson's bound; (5) the
+# tall rectangular `P A = L U` of a block column ((3.6.2)).
+# (ch04) add — "`Matrix.gemPivotStage_partialPivotRow_hasUpperBandwidth` and
+# `Matrix.gemPivotStage_partialPivotRow_gemLower_eq_zero`: Gaussian elimination with partial
+# pivoting on a matrix of lower bandwidth `p` and upper bandwidth `q` produces `U` of upper
+# bandwidth `p + q` and multipliers vanishing more than `p` below the diagonal ([golub2013matrix]
+# Theorem 4.3.2), read off the band invariant
+# `gemPivotStage_partialPivotRow_hasBandwidth_invariant`."
 namespace = "Matrix"
 
 [[node]]
@@ -242,3 +258,119 @@ id = "hasDominantPivots_submatrix_gemFullPivotStage"
 
 [[node]]
 id = "growthFactor_le_wilkinson_of_isCompletePivot"
+
+[[node]]  # staged by ch03
+id = "gemPivotStage_partialPivotRow_permMatrix_mul_isLU"
+kind = "theorem"
+desc = '''**Gaussian elimination with partial pivoting always factors** ([golub2013matrix] §3.4.3,
+"Algorithm 3.4.1 always runs to completion. If `A(k:n,k) = 0` in step `k`, then `M_k = I_n`";
+[quarteroni2000numerical] §3.5): for every `A : Matrix (Fin N) (Fin N) K` over a normed field,
+with `σ = (gemPivotStage A partialPivotRow N).2`,
+`IsLU (σ.permMatrix K * A) (gemLower (σ.permMatrix K * A)) (gemPivotStage A partialPivotRow N).1` —
+`gemPivotStage_permMatrix_mul_isLU` without its hypothesis `hnz`. Proof: `isLU_gemLower_gemStage`
+needs the pivots only to zero the column below them; under partial pivoting a zero pivot means the
+whole column below is zero (`apply_eq_zero_of_partialPivotRow_eq_zero`), so `elimStep` with junk
+multipliers `0/0 = 0` still leaves an upper triangular column and `elimMul_mul_elimStep` (no
+hypothesis) keeps `L_k A^{(k)} = P A`. Re-prove `gemStage_apply_eq_zero_of_lt` in that form
+(`HasDominantPivots.gemStage_apply_eq_zero` is the complete-pivoting precedent). ★★ (~70 lines)'''
+deps = ["Matrix.gemPivotStage_permMatrix_mul_isLU", "Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage", "Matrix.isLU_gemLower_gemStage", "Matrix.partialPivotRow", "Matrix.HasDominantPivots.gemStage_apply_eq_zero"]
+
+[[node]]  # staged by ch03
+id = "IsRookPivot"
+kind = "definition"
+desc = '''**A rook-pivoting strategy** ([golub2013matrix] §3.4.7; [higham2002accuracy] §9.1):
+`piv M k` returns a pair `(r, c)` with `k ≤ r`, `k ≤ c`, whose entry is maximal in modulus both
+in its column and in its row of the trailing block:
+`∀ i, k ≤ i → ‖M i c‖ ≤ ‖M r c‖` and `∀ j, k ≤ j → ‖M r j‖ ≤ ‖M r c‖`. Same signature as
+`IsCompletePivot` (`piv : Matrix n n 𝕜 → n → n × n`). ★'''
+deps = ["Matrix.IsCompletePivot"]
+
+[[node]]  # staged by ch03
+id = "IsCompletePivot.isRookPivot"
+kind = "theorem"
+desc = '''A complete-pivoting strategy is a rook-pivoting strategy (the maximum of the trailing block
+is maximal in its row and its column); hence rook pivots exist
+(`isCompletePivot_completePivotEntry`). ★'''
+deps = ["Matrix.IsRookPivot", "Matrix.IsCompletePivot", "Matrix.isCompletePivot_completePivotEntry"]
+
+[[node]]  # staged by ch03
+id = "gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU"
+kind = "theorem"
+desc = '''**Gaussian elimination with rook (hence complete) pivoting factors `P A Q = L U`**
+([golub2013matrix] Algorithm 3.4.3 and §3.4.7): for a rook strategy `piv`
+(`IsRookPivot piv`) and `(M, σ, ρ) = gemFullPivotStage A piv N`,
+`IsLU (σ.permMatrix K * A * ρ⁻¹.permMatrix K) (gemLower (…)) M`, with `‖L i j‖ ≤ 1` and
+`‖M i j‖ ≤ ‖M i i‖` for all `i j` — the algorithmic counterpart of the existence theorem
+`exists_permMatrix_mul_mul_permMatrix_isLU` (whose conclusions it repeats). Proof: the stages of
+plain elimination on `P A Q` are the pivoted stages with permuted indices
+(`gemStage_submatrix_eq_submatrix_gemFullPivotStage`); column maximality bounds the multipliers
+and makes a zero pivot come with a zero column (so no nonzero-pivot hypothesis), row maximality
+gives `|u_kj| ≤ |u_kk|` (the rows of `U` are the pivot rows of the stages, unchanged later).
+Mind the orientation: [golub2013matrix] writes `P A Qᵀ = L U` in Algorithm 3.4.3 and `P A Q = L U`
+in §3.4.7; the statement uses `ρ⁻¹.permMatrix` so that `Q = ρ⁻¹.permMatrix` is the book's `Qᵀ`.
+★★ (~150 lines)'''
+deps = ["Matrix.IsRookPivot", "Matrix.gemFullPivotStage", "Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage", "Matrix.gemStage_submatrix_apply_self", "Matrix.permMatrix_mul_mul_permMatrix", "Matrix.isLU_gemLower_gemStage", "Matrix.exists_permMatrix_mul_mul_permMatrix_isLU"]
+
+[[node]]  # staged by ch03
+id = "abs_gemFullPivotStage_le_wilkinson"
+kind = "theorem"
+desc = '''**Wilkinson's bound, stage by stage** ([golub2013matrix] (3.4.10) with the index corrected):
+for a complete-pivoting strategy and real `A : Matrix (Fin N) (Fin N) ℝ`, every entry of the
+trailing block of the stage after `k` steps, `(gemFullPivotStage A piv k).1 i j` with
+`k ≤ i, j`, `k < N`, is at most `wilkinsonGrowthBound (k + 1) * supAbs A` in modulus. Proof:
+`hasDominantPivots_submatrix_gemFullPivotStage`, then `HasDominantPivots.abs_gemStage_le`
+(entries of stage `k` below the `k`-th pivot) and `absGemPivot_le_wilkinson` (the `(k+1)`-th pivot
+is at most `f(k + 1) |p₁|`, `|p₁| = supAbs A` under complete pivoting), transported along the
+permutations. The book prints `f(k)` for the stage after `k` steps, which is false at `k = 1`
+(`!![1, 1; 1, -1]`: one step of complete pivoting produces the entry `-2`, while `f(1) = 1`). ★'''
+deps = ["Matrix.hasDominantPivots_submatrix_gemFullPivotStage", "Matrix.absGemPivot_le_wilkinson", "Matrix.wilkinsonGrowthBound", "Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage", "Matrix.supAbs"]
+
+[[node]]  # staged by ch03
+id = "gemFullPivotStage_trailing_eq_zero_of_rank"
+kind = "theorem"
+desc = '''**Complete pivoting reveals the rank** ([golub2013matrix] §3.4.6): for a complete-pivoting
+strategy and `A : Matrix (Fin N) (Fin N) 𝕜` of rank `r`, the stage after `r` steps vanishes on the
+trailing block, `∀ i j, r ≤ i → r ≤ j → (gemFullPivotStage A piv r).1 i j = 0`, and the first `r`
+pivots are nonzero. Proof: the stages have the rank of `A` (row operations by unit lower
+`elimMul` and permutations: `Matrix.rank_mul_le`, `Matrix.rank_of_isUnit`-type equalities); while
+the pivot is nonzero the leading `k × k` block of stage `k` is upper triangular with nonzero
+diagonal, so `rank ≥ k` (`Matrix.card_le_rank_of_det_submatrix_ne_zero`); if the pivot of stage
+`k` is zero, dominance (`HasDominantPivots`) makes the whole trailing block zero and the rank is
+exactly the number `k` of nonzero pivots. Hence the first zero pivot occurs at `k = r`. ★★
+(~120 lines)'''
+deps = ["Matrix.hasDominantPivots_submatrix_gemFullPivotStage", "Matrix.HasDominantPivots.gemStage_apply_eq_zero", "Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage", "Matrix.gemFullPivotStage", "Matrix.card_le_rank_of_det_submatrix_ne_zero"]
+
+[[node]]  # staged by ch03
+id = "exists_permMatrix_mul_isRectLU"
+kind = "theorem"
+desc = '''**Partial pivoting on a tall block column** ([golub2013matrix] (3.6.2)): for
+`W : Matrix (Fin m) (Fin r) 𝕜` with `r ≤ m` over a normed field there are a permutation `σ` of
+`Fin m` and `L : Matrix (Fin m) (Fin r) 𝕜`, `U : Matrix (Fin r) (Fin r) 𝕜` with
+`IsRectLU (σ.permMatrix 𝕜 * W) L U` and `‖L i j‖ ≤ 1`. Proof: pad `W` with `m - r` zero columns
+to a square matrix, apply `exists_permMatrix_mul_isLU`, keep the first `r` columns of `L` and the
+leading `r × r` block of `U` (the first `r` columns of an upper triangular matrix vanish below row
+`r`). ★★ (~80 lines)'''
+deps = ["Matrix.exists_permMatrix_mul_isLU", "Matrix.IsRectLU"]
+
+[[node]]  # staged by ch04
+id = "gemPivotStage_partialPivotRow_hasUpperBandwidth"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 4.3.2, the upper factor: for `A : Matrix (Fin N) (Fin N) ℝ` with
+`A.HasLowerBandwidth p` and `A.HasUpperBandwidth q`, the final stage `U := (gemPivotStage A
+partialPivotRow N).1` has `U.HasUpperBandwidth (p + q)` (no nonsingularity needed). Row `i` is final
+after stage `i + 1`; at stage `i` the pivot row is at most `i + p` (`Matrix.partialPivotRow_le_add`:
+rows below `i + p` are original rows, zero in column `i`), and by
+`Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant` every row `< i + p`, and the original
+row `i + p`, vanish past column `i + p + q`; elimination adds multiples of the pivot row, which
+vanishes there too. ★★ (~100 lines)'''
+deps = ["Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant", "Matrix.partialPivotRow_le_add", "Matrix.gemPivotStage"]
+
+[[node]]  # staged by ch04
+id = "gemPivotStage_partialPivotRow_multiplier_eq_zero"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 4.3.2, the Gauss vectors: under the same hypotheses, the multipliers of stage `j`
+(`α^{(j)}_i`, the column `j` of `Matrix.elimMultipliers` of the stage-`j` matrix after its
+interchange) vanish for `i ≤ j` and for `i > j + p`: the column `j` below row `j + p` of the
+stage-`j` matrix after the swap is zero (original rows, lower bandwidth `p`). Consequently each
+column of the lower factor of `P A = L U` has at most `p + 1` nonzero entries. ★★'''
+deps = ["Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant", "Matrix.elimMultipliers", "Matrix.gemPivotStage"]

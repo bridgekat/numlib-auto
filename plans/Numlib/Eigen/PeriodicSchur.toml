@@ -1,0 +1,127 @@
+desc = '''
+The product eigenvalue problem ([golub2013matrix] §7.8.2): condensed and Schur forms of a product
+`A_{p-1} ⋯ A₁ A₀` computed through the factors, and the block-cyclic matrix that turns it into a
+structured single-matrix problem.
+
+For a family `A : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ` (the book: `p + 1 = 3`, `A = A₃ A₂ A₁`), a
+*periodic* decomposition is a family of orthogonal `U : Fin (p+1) → Matrix …` with
+`U (i+1)ᵀ * A i * U i` upper triangular for `i < p` and `U 0ᵀ * A p * U p` upper Hessenberg
+((7.8.5), "Hessenberg–triangular–triangular") or upper quasi-triangular ((7.8.6), the periodic real
+Schur form). Then `U 0ᵀ (A p ⋯ A 0) U 0` is the product of the transformed factors, Hessenberg
+(resp. quasi-triangular) times upper triangular ones (`Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`,
+`Matrix.IsUpperHessenberg.mul_isUpperTriangular`).
+
+Existence, in two steps (the argument of `Numlib/LinearAlgebra/Matrix/GeneralizedSchur`, which is
+the case `p + 1 = 2` of (7.8.6) with one factor inverted):
+
+* **nonsingular factors** — take `U 0` from the real Schur form (resp. a Hessenberg reduction) of the
+  product, then QR-factor successively: `A 0 U 0 = U 1 T₀`, `A 1 U 1 = U 2 T₁`, …; the last factor is
+  forced, `U 0ᵀ A p U p = (U 0ᵀ Π U 0)(T_{p-1} ⋯ T₀)⁻¹`, quasi-triangular (resp. Hessenberg) times upper
+  triangular;
+* **general factors** — perturb `A i + ε_k I` to nonsingular for `i < p`
+  (`Matrix.exists_forall_isUnit_det_add_smul_one`), extract a convergent subsequence of the
+  orthogonal families (`Matrix.isCompact_orthogonalGroup`, a finite product of compact sets) and of
+  the finitely many block patterns (pigeonhole, as in `Matrix.exists_generalizedRealSchur`); vanishing
+  entries are closed conditions.
+
+The block-cyclic matrix `blockCyclic A` (`A p` in the top-right block, `A i` on the block
+subdiagonal) is conjugated by `blockDiagonal U` into the block-cyclic matrix of the transformed
+factors, and after the perfect shuffle of [golub2013matrix] §1.2.11 (chapter 1's
+`Numlib/LinearAlgebra/Matrix/Kronecker`: the index map `Matrix.finPerfectShuffle`, the matrix
+`Matrix.perfectShuffle`) it is upper Hessenberg: the transformed factors being triangular except one Hessenberg
+factor, a nonzero entry `(i, j)` of block `(b, b')` lands at `(r(i, b), r(j, b'))` with
+`r(i, b) ≤ r(j, b') + 1`.
+
+**The complex periodic Schur form** (`Matrix.exists_unitary_periodicSchur`: over `ℂ`, *all* transformed
+factors upper triangular, Bojanczyk–Golub–Van Dooren 1992) is the natural backbone statement (eigen
+review, Low); the real forms (7.8.5)–(7.8.6) with their one Hessenberg / quasi-triangular factor are
+what real arithmetic can reach, and the book's. Its singular case needs no pattern pigeonhole:
+triangularity is a closed condition on every factor.
+
+The book states the convergence of a product QR iteration ((7.8.7)) without content; nothing is
+planned for it. Mathlib: nothing (grep `periodic` in `LinearAlgebra/Matrix`: none). About 700 lines.
+'''
+
+[[node]]
+id = "Matrix.exists_orthogonal_periodicHessenberg_of_isUnit"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.5), nonsingular factors: for `A : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ` with
+`A i` nonsingular for `i < p`, there are orthogonal `U : Fin (p+1) → Matrix (Fin n) (Fin n) ℝ` with
+`(U i.succ)ᵀ * A i.castSucc * U i.castSucc` upper triangular for `i : Fin p` and
+`(U 0)ᵀ * A (Fin.last p) * U (Fin.last p)` upper Hessenberg. Proof in the module doc (Hessenberg
+reduction of the product, `Matrix.exists_unitary_conj_isUpperHessenberg`, then successive QR
+factorizations, `Matrix.exists_unitary_mul_isUpperTriangular`). ★★'''
+deps = ["Matrix.exists_unitary_conj_isUpperHessenberg", "Matrix.exists_unitary_mul_isUpperTriangular", "Matrix.IsUpperHessenberg.mul_isUpperTriangular"]
+
+[[node]]
+id = "Matrix.exists_orthogonal_periodicHessenberg"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.5) for arbitrary factors (the book's statement; it describes the
+computation "QR factorizations, then Givens with bulge chasing" without proof): the conclusion of
+`exists_orthogonal_periodicHessenberg_of_isUnit` without the nonsingularity hypothesis, by the
+limiting argument of the module doc. ★★ (~200 lines).'''
+deps = ["Matrix.exists_orthogonal_periodicHessenberg_of_isUnit", "Matrix.isCompact_orthogonalGroup", "Matrix.exists_forall_isUnit_det_add_smul_one"]
+
+[[node]]
+id = "Matrix.exists_orthogonal_periodicRealSchur_of_isUnit"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.6), nonsingular factors: as `exists_orthogonal_periodicHessenberg_of_isUnit`
+with `(U 0)ᵀ * A (Fin.last p) * U (Fin.last p)` upper quasi-triangular, starting from the real Schur
+form of the product (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`) and using
+`Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`. ★★'''
+deps = ["Matrix.exists_orthogonal_conj_isQuasiUpperTriangular", "Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular", "Matrix.exists_unitary_mul_isUpperTriangular"]
+
+[[node]]
+id = "Matrix.exists_orthogonal_periodicRealSchur"
+kind = "theorem"
+desc = '''[golub2013matrix] (7.8.6) for arbitrary factors (the periodic real Schur form, quoted by the book
+without proof): limiting argument with the block-pattern pigeonhole of
+`Matrix.exists_generalizedRealSchur` (`p + 1 = 2`, `A 0 = B⁻¹`-free form, is that theorem's shape). ★★★
+(~300 lines, the pattern bookkeeping for `p + 1` factors).'''
+deps = ["Matrix.exists_orthogonal_periodicRealSchur_of_isUnit", "Matrix.isCompact_orthogonalGroup", "Matrix.exists_forall_isUnit_det_add_smul_one", "Matrix.IsQuasiUpperTriangular"]
+
+[[node]]
+id = "Matrix.blockCyclic"
+kind = "definition"
+desc = '''The block-cyclic matrix of a family ([golub2013matrix] §7.8.2):
+`blockCyclic A : Matrix (Fin (p+1) × Fin n) (Fin (p+1) × Fin n) R` with block `(i+1, i)` equal to
+`A i` for `i < p`, block `(0, p)` equal to `A p`, and zero blocks elsewhere (the book's
+`[0 0 A₃; A₁ 0 0; 0 A₂ 0]`). ★'''
+deps = []
+
+[[node]]
+id = "Matrix.blockDiagonal_conj_blockCyclic"
+kind = "theorem"
+desc = '''`(blockDiagonal U)ᵀ * blockCyclic A * blockDiagonal U = blockCyclic A'` with
+`A' i = (U (i+1))ᵀ * A i * U i` (indices mod `p+1`) — the book's restatement of (7.8.5) as `Uᵀ [0 0 A₃;
+A₁ 0 0; 0 A₂ 0] U = H̃`. Block multiplication. ★'''
+deps = ["Matrix.blockCyclic"]
+
+[[node]]
+id = "Matrix.isUpperHessenberg_reindex_blockCyclic"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.2 ("a highly structured upper Hessenberg matrix"): if `A i` is upper
+triangular for `i < p` and `A p` is upper Hessenberg, then `blockCyclic A`, reindexed by
+`finProdFinEquiv.trans (Matrix.finPerfectShuffle (p+1) n) : Fin (p+1) × Fin n ≃ Fin (n * (p+1))`,
+`(b, i) ↦ (p+1) i + b` (the book's `𝒫_{34}` for `p + 1 = 3`, `n = 4`), is upper Hessenberg. Entry bookkeeping: block `(b+1, b)` entry `(i, j)` with `i ≤ j` lands at
+row `(p+1) i + b + 1`, column `(p+1) j + b`; block `(0, p)` entry with `i ≤ j + 1` at row `(p+1) i`,
+column `(p+1) j + p`. The matrix form `𝒫 H̃ 𝒫ᵀ` is the same through `Matrix.perfectShuffle`
+(a permutation matrix of `finPerfectShuffle`). ★★'''
+deps = ["Matrix.blockCyclic", "Matrix.IsUpperHessenberg", "Matrix.finPerfectShuffle", "Matrix.perfectShuffle"]
+
+[[node]]
+id = "Matrix.exists_unitary_periodicSchur"
+kind = "theorem"
+desc = '''The complex periodic Schur decomposition (Bojanczyk, Golub and Van Dooren 1992; the complex
+analogue of [golub2013matrix] (7.8.6)): for any family `A : Fin (p+1) → Matrix (Fin n) (Fin n) 𝕜` over an
+algebraically closed `RCLike 𝕜` (i.e. `ℂ`) there are `U : Fin (p+1) → Matrix (Fin n) (Fin n) 𝕜` with `U i
+∈ unitaryGroup` and `star (U (i + 1)) * A i * U i` upper triangular for **every** `i : Fin (p+1)` (indices
+mod `p + 1`); then `star (U 0) * (A p ⋯ A 0) * U 0` is upper triangular with the eigenvalues of the
+product on its diagonal, the products of the factors' diagonals. Proof: nonsingular `A i` (`i < p`):
+`U 0` from the Schur form of the product (`Matrix.exists_unitary_conj_upperTriangular`), then QR-factor
+successively (`Matrix.exists_unitary_mul_isUpperTriangular`); the last factor is `(Schur form of the
+product) (T_{p-1} ⋯ T₀)⁻¹`, triangular. General factors: perturb `A i + ε_k I`
+(`Matrix.exists_forall_isUnit_det_add_smul_one`), extract a convergent subsequence of the unitary
+families (`Matrix.isCompact_unitaryGroup`, a finite product of compact sets);
+triangularity of each factor is closed. ★★ (~200 lines)'''
+deps = ["Matrix.exists_unitary_conj_upperTriangular", "Matrix.exists_unitary_mul_isUpperTriangular", "Matrix.exists_forall_isUnit_det_add_smul_one", "Matrix.isCompact_unitaryGroup"]

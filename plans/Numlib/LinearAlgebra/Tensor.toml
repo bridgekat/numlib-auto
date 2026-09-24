@@ -1,0 +1,56 @@
+desc = '''
+Concrete tensors: arrays with finitely many modes, their unfoldings, contractions, multilinear
+(Tucker) products, and the decompositions of [golub2013matrix] §12.4–12.5 (HOSVD, Tucker, CP, tensor
+train) with the variational tensor singular values and eigenvalues. Upstreaming candidate as a whole
+(no numerical-analysis layer is imported); Mathlib has the abstract `PiTensorProduct` but no
+arrays-with-indices API.
+
+**Representation (decided by prototype, `notes/gvl/ch12/proto/Tensor.lean`, which elaborates).** A
+tensor with modes `ι` and mode index types `κ : ι → Type*` is
+
+`def Tensor (κ : ι → Type*) (R : Type*) := (∀ i, κ i) → R`,
+
+a `def` (as `Matrix` is) so that no `Pi` sup-norm is found by instance search; its `AddCommGroup`
+and `Module` instances are `Pi`'s, its norm is the Frobenius norm (an `InnerProductSpace` built from
+the `ℓ²` core, `Tensor/Basic`). The book's `ℝ^{n₁ × ⋯ × n_d}` is `Tensor (fun k : Fin d => Fin (n k))
+ℝ`. Three alternatives were rejected:
+
+* iterated arrays `Fin n₁ → Fin n₂ → ⋯ → ℝ` cannot be written for variable order `d`;
+* Mathlib's `⨂[R] i, (κ i → R)` (`PiTensorProduct`) is a quotient with no entries; the book's
+  statements are all about entries, unfoldings and index orderings. The bridge
+  `Tensor.equivPiTensorProduct` (via `PiTensorProduct.ofFinsuppEquiv'`) sends `Tensor.rankOne z` to
+  `⨂ₜ i, z i`, so a future book in abstract multilinear algebra meets this library at one lemma;
+* `Fin`-shapes `n : Fin d → ℕ` as the *only* index form: they force `finCongr` casts into every
+  shape-changing statement; they are kept for the book's flattened (`vec`, `col`) statements only.
+
+**Unfoldings are typed.** The unfolding with row modes `{i | p i}` is `A.unfold p : Matrix (∀ i : {i //
+p i}, κ i) (∀ i : {i // ¬p i}, κ i) R` (through `Equiv.piEquivPiSubtypeProd`), the mode-`k` unfolding
+`A.modeUnfold k : Matrix (κ k) (∀ j : {j // j ≠ k}, κ j) R` (through `Equiv.piSplitAt`). The order in
+which the book lists row and column modes, and its column ordering `col(i, n) = i₁ + (i₂ − 1) n₁ + ⋯`
+(12.4.4), matter only after flattening to `Fin`; `col` is Mathlib's `finPiFinEquiv` (little-endian,
+`∑ i_k ∏_{j<k} n_j`), which is why every book formula carries Kronecker products in the reversed order
+`M_d ⊗ ⋯ ⊗ M_1`. One lemma, `Matrix.piKronecker_reindex_finPiFinEquiv` (staged for chapter 1's
+`Kronecker`), converts typed statements to the book's flattened ones.
+
+**The multilinear product is the primitive.** `Tensor.multilinearProd M S := Matrix.piKronecker M *ᵥ
+S` for a whole family `M : ∀ i, Matrix (μ i) (κ i) R` (shapes change from `κ` to `μ` with no cast);
+Theorem 12.4.1 is `modeUnfold_multilinearProd`. A single *rectangular* mode-`k` product changes the
+shape only at `k`, and in dependent type theory the new family `Function.update κ k μ` is equal to
+`κ` off `k` only propositionally; the backbone therefore has the single-mode product only for
+square matrices (`Tensor.modeProd`, shape-preserving, laws (12.4.16)–(12.4.17) clean), and every
+shape-changing statement (Tucker, HOSVD truncation, the book's (12.4.14) with `M ∈ ℝ^{m × n_k}`) goes
+through `multilinearProd` with identity factors. The surface restates (12.4.14) for `Fin`-shapes with
+`Function.update n k m` and explicit `finCongr` identifications (prototype `GVLProto.modeProduct`,
+elaborates).
+
+**Modules**, in dependency order: `Basic` (the type, norm, rank-one tensors and outer products,
+restriction to fibers/slices, transposition, symmetric tensors, the `Fin`-flattened `vec`, the
+`PiTensorProduct` bridge), `Unfolding` (unfoldings, contractions as products of unfoldings),
+`MultilinearProduct` (multilinear and mode products, Theorem 12.4.1), `HOSVD` (multilinear rank, the
+HOSVD Theorem 12.5.1, truncation bound), `Tucker` (the Tucker approximation problem and its ALS
+step), `CP` (CP format, Khatri–Rao unfoldings, tensor rank, the ALS normal equations),
+`SingularValue` (variational singular values and symmetric-tensor eigenvalues), `Train` (tensor
+trains and the TT-SVD existence theorem). Matrix-level ingredients (`Matrix.piKronecker`,
+`Matrix.khatriRao`, `Matrix.piKhatriRao`) are staged for chapter 1's `Numlib/LinearAlgebra/Matrix/
+Kronecker`; the Ky Fan maximum principle (12.5.3) for `SVD`.
+'''

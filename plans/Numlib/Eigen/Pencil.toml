@@ -1,3 +1,8 @@
+# Planned additions (GVL round): the module doc of `Numlib.Eigen.Pencil` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add to "Main results": the reciprocal eigenvalue relation between `(A, B)` and `(B, A)`,
+# and *deflating subspaces* (Golub–Van Loan §7.7.8): `Matrix.IsDeflatingSubspace A B S`, with the
+# flag of a generalized Schur decomposition as the example.
 namespace = "Matrix"
 
 [[node]]
@@ -119,3 +124,36 @@ id = "mem_spectrum_inv_mul_of_forall_le_mul_of_eq"
 
 [[node]]
 id = "spectrum_inv_mul_subset_Icc_min_div_max_div"
+
+[[node]]  # staged by ch07
+id = "inv_mem_pencilSpectrum_swap"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.7.1: `μ ≠ 0 → μ ∈ pencilSpectrum A B → μ⁻¹ ∈ pencilSpectrum B A`
+(`det (B - μ⁻¹ A) = (-μ⁻¹)^n det (A - μ B)`, `Matrix.det_smul`). ★'''
+deps = ["Matrix.pencilSpectrum", "Matrix.mem_pencilSpectrum_iff_det"]
+
+[[node]]  # staged by ch07
+id = "IsDeflatingSubspace"
+kind = "definition"
+desc = '''A deflating subspace of the pencil `A - λ B` ([golub2013matrix] §7.7.8, Definition): for
+`S : Submodule K (n → K)`, `IsDeflatingSubspace A B S := Module.finrank K ↥(S.map (toLin' A) ⊔
+S.map (toLin' B)) ≤ Module.finrank K ↥S` — the book's "the subspace `{Ax + By : x, y ∈ S}` has dimension
+`k` or less" for `k = dim S`. For `B = 1` it says that `S` is `A`-invariant (`S ⊔ A S` has dimension
+`dim S` iff `A S ≤ S`); `isDeflatingSubspace_one_iff`. ★'''
+deps = []
+
+[[node]]  # staged by ch07
+id = "isDeflatingSubspace_one_iff"
+kind = "theorem"
+desc = '''`IsDeflatingSubspace A 1 S ↔ S.map (toLin' A) ≤ S` (finite dimension:
+`Submodule.eq_of_le_of_finrank_le`). ★'''
+deps = ["Matrix.IsDeflatingSubspace"]
+
+[[node]]  # staged by ch07
+id = "isDeflatingSubspace_span_cols_of_isUpperTriangular"
+kind = "theorem"
+desc = '''The flag of a generalized Schur decomposition ([golub2013matrix] §7.7.8): if `U`, `Z` are
+invertible (e.g. unitary) with `U⁻¹ * A * Z` and `U⁻¹ * B * Z` upper triangular, then for each `k`,
+`span {A z_j | j < k} ≤ span {u_j | j < k}` and the same for `B`, where `z_j`, `u_j` are the columns
+of `Z` and `U`; consequently `span {z_j | j < k}` is a deflating subspace. ★★'''
+deps = ["Matrix.IsDeflatingSubspace"]

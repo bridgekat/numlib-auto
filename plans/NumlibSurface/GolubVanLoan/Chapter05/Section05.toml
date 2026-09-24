@@ -1,0 +1,227 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.5, the rank-deficient least-squares problem: the convex solution set and its minimal-norm element
+(§5.5.1), the solution through a complete orthogonal decomposition, Theorem 5.5.1 ((5.5.1)–(5.5.2));
+the pseudoinverse and its characterizations (§5.5.2, (5.5.3), the Moore–Penrose conditions, the
+projections `AA⁺`, `A⁺A`); sensitivity (§5.5.3: Wedin's bound, the discontinuity example); the
+truncated SVD solution and its error bound (§5.5.4); basic solutions from QR with column pivoting
+((5.5.4)–(5.5.5)); SVD-based subset selection (Theorem 5.5.2, Algorithm 5.5.1, Theorem 5.5.3).
+
+The pseudoinverse is the backbone's `Matrix.pinv` (defined as `(AᴴA)⁺Aᴴ`); the book's definition
+`A⁺ = V Σ⁺ Uᵀ` is the theorem `pseudoinverse_eq_svd` (`Matrix.pinv_eq_of_svd`), and the Penrose
+characterization is `Matrix.pinv_unique`.
+
+Not formalized: the second bound of §5.5.4 (`‖b - A x_r̂‖ ≤ ‖b - A x_LS‖ + (n - r̂)‖b‖ + …` — its
+middle term cannot be right as printed and no derivation is given), the flop table of §5.5.6, the
+`δ`-rank display of §5.5.4 (misprinted; the definition is (5.4.5)), the unstable-subset example
+(numerical), and "column pivoting tends to produce a well-conditioned `R₁₁`" (heuristic).
+Book slips (report, Doubts): "`z ∈ hull(A)`" for `null(A)`; (5.5.3)'s `X ∈ ℝ^{m×n}` for `ℝ^{n×m}`;
+the discontinuity example's `(A + δA)⁺` has a spurious `1` in position `(2,1)`; (5.5.4)'s
+`z ∈ ℝ^{n-2}` for `ℝ^{n-r}`; Theorem 5.5.2's upper bound cites Corollary 2.4.4 (it is 2.4.5, iterated);
+Theorem 5.5.3's proof cites "Theorem 2.6.1" (it is 2.5.1) and its statement says "leading `r`-by-`r`"
+for `r̃`.
+'''
+
+[[node]]
+id = "minNorm_existsUnique"
+kind = "theorem"
+desc = '''§5.5.1: the set `𝒳` of least-squares minimizers is convex (an affine subspace `x + null(A)`), and
+has a unique element of minimal 2-norm, `x_LS = A⁺ b`. Backbone
+`Matrix.convex_setOf_isLeastSquaresSolution`, `Matrix.isMinNormLeastSquaresSolution_pinv`,
+`Matrix.IsMinNormLeastSquaresSolution.unique`; "`x + z` is a minimizer for `z ∈ null(A)`" (printed
+`hull(A)`) is `isLeastSquaresSolution_iff_normalEquations`. ★'''
+deps = ["Matrix.convex_setOf_isLeastSquaresSolution", "Matrix.isMinNormLeastSquaresSolution_pinv", "Matrix.IsMinNormLeastSquaresSolution.unique"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.1'
+
+[[node]]
+id = "minNorm_of_completeOrthogonal"
+kind = "theorem"
+desc = '''§5.5.1: if `Qᵀ A Z = [T₁₁ 0; 0 0]` is a complete orthogonal decomposition (`r = rank A`) and
+`Qᵀb = [c; d]`, then `‖Ax - b‖² = ‖T₁₁ w - c‖² + ‖d‖²` (`Zᵀx = [w; y]`) and
+`x_LS = Z [T₁₁⁻¹ c; 0]`. Backbone `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution`. ★'''
+deps = ["Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution", "equation_5_4_12"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.1'
+
+[[node]]
+id = "equation_5_5_1"
+kind = "theorem"
+desc = '''(5.5.1): for an SVD `Uᵀ A V = Σ` with `r = rank A`, `x_LS = ∑_{i<r} (u_iᵀ b / σ_i) v_i` minimizes
+`‖Ax - b‖₂` and has the smallest 2-norm of all minimizers
+(`IsMinNormLeastSquaresSolution A b (toLp 2 x_LS)`). Chapter 6's backbone `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD` (for `Matrix.IsSVD`),
+`Matrix.isMinNormLeastSquaresSolution_pinv`. ★'''
+deps = ["Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD", "Matrix.IsSVD", "Matrix.isMinNormLeastSquaresSolution_pinv"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.1)'
+
+[[node]]
+id = "equation_5_5_2"
+kind = "theorem"
+desc = '''(5.5.2): `ρ_LS² = ‖A x_LS - b‖₂² = ∑_{i=r+1}^{m} (u_iᵀ b)²`. The residual clause of
+`Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD`. ★'''
+deps = ["Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD", "equation_5_5_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.2)'
+
+[[node]]
+id = "theorem_5_5_1"
+kind = "theorem"
+desc = '''Theorem 5.5.1: the conjunction of (5.5.1) (minimizer of minimal norm) and (5.5.2). The book's
+proof (`‖Ax - b‖² = Σ_{i≤r}(σ_iα_i - u_iᵀb)² + Σ_{i>r}(u_iᵀb)²`, `α = Vᵀx`) is the backbone
+`pinv_eq_of_svd` route. ★'''
+deps = ["equation_5_5_1", "equation_5_5_2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.1'
+
+[[node]]
+id = "pseudoinverse_eq_svd"
+kind = "theorem"
+desc = '''§5.5.2: `A⁺ = V Σ⁺ Uᵀ` with `Σ⁺ = diag(1/σ₁, …, 1/σ_r, 0, …, 0) ∈ ℝ^{n×m}` for any SVD
+(`Matrix.pinv_eq_of_svd`, `rectDiagonal fun i => (σ i)⁻¹`, `0⁻¹ = 0`); `x_LS = A⁺ b`;
+`ρ_LS = ‖(I - AA⁺) b‖₂`; `A⁺ = (AᵀA)⁻¹Aᵀ` if `rank A = n`, `A⁺ = A⁻¹` if `m = n = rank A`
+(`Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`, `Matrix.pinv_eq_inv`). ★'''
+deps = ["Matrix.pinv_eq_of_svd", "Matrix.isMinNormLeastSquaresSolution_pinv", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose", "Matrix.pinv_eq_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.2'
+
+[[node]]
+id = "equation_5_5_3"
+kind = "theorem"
+desc = '''(5.5.3): `A⁺` is the unique minimal-Frobenius-norm solution of `min_{X ∈ ℝ^{n×m}} ‖AX - I_m‖_F`
+(printed `X ∈ ℝ^{m×n}`). Backbone `Matrix.pinv_isMinOn_frobenius`. ★'''
+deps = ["Matrix.pinv_isMinOn_frobenius"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.3)'
+
+[[node]]
+id = "moorePenrose"
+kind = "theorem"
+desc = '''§5.5.2: `A⁺` is the unique `X ∈ ℝ^{n×m}` with (i) `AXA = A`, (ii) `XAX = X`, (iii) `(AX)ᵀ = AX`,
+(iv) `(XA)ᵀ = XA`; and `AA⁺ = U₁U₁ᵀ`, `A⁺A = V₁V₁ᵀ` (`U₁ = U(:, 1:r)`, `V₁ = V(:, 1:r)`), the
+orthogonal projections onto `ran(A)` and `ran(Aᵀ)`. Backbone `Matrix.pinv_unique`,
+`Matrix.mul_pinv_mul_self`, `Matrix.pinv_mul_self_mul_pinv`, `Matrix.mul_pinv_eq_starProjection`,
+with `Matrix.range_mulVecLin_eq_span_of_svd` for the `U₁` description. ★★'''
+deps = ["Matrix.pinv_unique", "Matrix.mul_pinv_mul_self", "Matrix.pinv_mul_self_mul_pinv", "Matrix.mul_pinv_eq_starProjection", "Matrix.range_mulVecLin_eq_span_of_svd"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.2'
+
+[[node]]
+id = "pinv_perturbation"
+kind = "theorem"
+desc = '''§5.5.3 (Wedin 1973, Stewart 1975): `‖(A + δA)⁺ - A⁺‖_F ≤ 2 ‖δA‖_F max{‖A⁺‖₂², ‖(A + δA)⁺‖₂²}`.
+Backbone `Matrix.frobenius_norm_pinv_sub_le`. ★'''
+deps = ["Matrix.frobenius_norm_pinv_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.3'
+
+[[node]]
+id = "pinv_discontinuity"
+kind = "theorem"
+desc = '''§5.5.3's example, "`x_LS` is not even a continuous function of the data": for
+`A = !![1, 0; 0, 0; 0, 0]` and `δA = !![0, 0; 0, ε; 0, 0]`, `A⁺ = !![1, 0, 0; 0, 0, 0]`,
+`(A + δA)⁺ = !![1, 0, 0; 0, 1/ε, 0]` (the book prints a spurious `1` in position `(2,1)`), and
+`‖A⁺ - (A + δA)⁺‖₂ = 1/ε`; hence `Matrix.pinv` is not continuous at `A` (a `¬ ContinuousAt`
+corollary). `Matrix.pinv_unique` on the candidates. ★'''
+deps = ["Matrix.pinv_unique"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.3'
+
+[[node]]
+id = "truncatedSVDSolution"
+kind = "definition"
+desc = '''§5.5.4: for computed factors `Û`, `Σ̂`, `V̂` and an accepted `δ`-rank `r̂`, the truncated SVD solution
+`x_r̂ = ∑_{i<r̂} (û_iᵀ b / σ̂_i) v̂_i`. ★'''
+deps = ["deltaRank"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.4, Definition'
+
+[[node]]
+id = "norm_truncatedSVDSolution_sub_le"
+kind = "theorem"
+desc = '''§5.5.4's bound, under the book's two simplifying assumptions (`r = n`, `ΔA = 0` in (5.4.4), so
+`Σ̂ = Σ = Wᵀ A Z` with `W`, `Z` orthogonal) and `‖w_i - û_i‖₂ ≤ ε`, `‖z_i - v̂_i‖₂ ≤ ε`:
+`‖x_r̂ - x_LS‖₂ ≤ (r̂ / σ_r̂) 2(1 + ε) ε ‖b‖₂ + √(∑_{i=r̂+1}^{n} (w_iᵀ b / σ_i)²)`. The book's
+decomposition of `x_LS - x_r̂` into the two sums, triangle inequality, `‖û_i‖ ≤ 1 + ε`,
+`σ_i ≥ σ_r̂` for `i ≤ r̂`, orthonormality of the `z_i` for the tail. ★★'''
+deps = ["truncatedSVDSolution", "equation_5_5_1"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.4'
+
+[[node]]
+id = "basicSolution"
+kind = "theorem"
+desc = '''§5.5.5: if `A Π = Q R` with `R = [R₁₁ R₁₂; 0 0]` from QR with column pivoting (`r = rank A`,
+`R₁₁` nonsingular) and `Qᵀ b = [c; d]`, then `‖Ax - b‖² = ‖R₁₁ y - (c - R₁₂ z)‖² + ‖d‖²`
+(`Πᵀx = [y; z]`), every minimizer is `Π [R₁₁⁻¹(c - R₁₂ z); z]`, and the basic solution
+`x_B = Π [R₁₁⁻¹ c; 0]` is a minimizer with at most `r` nonzero entries. The hypotheses are the bundle
+`Matrix.IsPivotedQR.IsRankRevealing A Q R Π r` (rows `≥ r` of `R` vanish, `R₁₁` invertible) at `𝕜 = ℝ`.
+Backbone `Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff`. ★'''
+deps = ["Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff", "Matrix.IsPivotedQR.IsRankRevealing", "equation_5_4_6"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.5'
+
+[[node]]
+id = "equation_5_5_4"
+kind = "theorem"
+desc = '''(5.5.4): `‖x_LS‖₂ = min_{z ∈ ℝ^{n-r}} ‖x_B - Π [R₁₁⁻¹R₁₂; -I_{n-r}] z‖₂` (printed `ℝ^{n-2}`); in
+particular `x_B` is the minimal-norm solution iff `R₁₂ = 0` (the preceding claim, a second
+declaration). Backbone `Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf`, under the bundle
+`IsPivotedQR.IsRankRevealing A Q R Π r` as in `basicSolution`. ★'''
+deps = ["Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf", "basicSolution"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.4)'
+
+[[node]]
+id = "equation_5_5_5"
+kind = "theorem"
+desc = '''(5.5.5) (Golub–Pereyra): `1 ≤ ‖x_B‖₂/‖x_LS‖₂ ≤ √(1 + ‖R₁₁⁻¹R₁₂‖₂²)` (for `x_LS ≠ 0`). Backbone
+`Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le`, under the bundle `IsPivotedQR.IsRankRevealing A Q R Π r`. ★'''
+deps = ["Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le", "equation_5_5_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.5)'
+
+[[node]]
+id = "theorem_5_5_2"
+kind = "theorem"
+desc = '''Theorem 5.5.2: with `Uᵀ A V = Σ` an SVD, `P` a permutation, `A P = [B₁ B₂]` (`B₁ ∈ ℝ^{m×r̃}`,
+`1 ≤ r̃ ≤ rank A`), `PᵀV = [Ṽ₁₁ Ṽ₁₂; Ṽ₂₁ Ṽ₂₂]` ((5.5.6)) and `Ṽ₁₁` nonsingular:
+`σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r̃(B₁) ≤ σ_r̃(A)`, stated with the sorted reading (the book's 1-based `σ_r̃` is
+`sortedSingularValues (r̃ - 1)`): `A.sortedSingularValues (r̃ - 1) / ‖Ṽ₁₁⁻¹‖₂ ≤ B₁.sortedSingularValues (r̃ - 1)`
+and `B₁.sortedSingularValues (r̃ - 1) ≤ A.sortedSingularValues (r̃ - 1)`. Lower bound: backbone
+`Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` (over `RCLike`, at `ℝ`; multiplicative form
+`σ_{r̃-1}(A) ≤ ‖Ṽ₁₁⁻¹‖₂ * σ_{r̃-1}(B₁)`, divided by `‖Ṽ₁₁⁻¹‖₂ > 0`). Upper bound:
+`Matrix.sortedSingularValues_submatrix_le` with the embedding `e = (Fin.castLEEmb h).trans π.toEmbedding`
+of the first `r̃` columns of `A P` (the book cites Corollary 2.4.4 — it is Corollary 2.4.5 iterated). ★'''
+deps = ["Matrix.IsSVD.sortedSingularValues_le_mul_submatrix", "Matrix.sortedSingularValues_submatrix_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.2'
+
+[[node]]
+id = "qrcp_V11"
+kind = "theorem"
+desc = '''§5.5.7: if `Qᵀ [V₁₁ᵀ V₂₁ᵀ] P = [R₁₁ R₁₂]` (QR with column pivoting of the `r̃ × n` matrix of the
+first `r̃` right singular vectors, transposed), then `[Ṽ₁₁; Ṽ₂₁] = Pᵀ [V₁₁; V₂₁] = [R₁₁ᵀQᵀ; R₁₂ᵀQᵀ]`,
+`R₁₁` is nonsingular (the rows of `V(:, 1:r̃)ᵀ` are orthonormal, so the pivoted factorization has
+full rank `r̃`), and `‖Ṽ₁₁⁻¹‖₂ = ‖R₁₁⁻¹‖₂` (orthogonal invariance). ★'''
+deps = ["equation_5_4_6", "Matrix.l2_opNorm_unitary_mul"]
+source = 'Golub–Van Loan, Matrix Computations, §5.5.7'
+
+[[node]]
+id = "algorithm_5_5_1"
+kind = "definition"
+desc = '''Algorithm 5.5.1 (subset selection): the SVD step ("compute the SVD and save `V`") and the rank
+decision ("determine `r̃ ≤ rank(A)`") are inputs — `V` and `r̃` are arguments, their properties
+hypotheses of the spec (the book gives no algorithm for them here; the SVD algorithm is §8.6's);
+then Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` for `P`, `A P = [B₁ | B₂]`, and `z` minimizing
+`‖B₁ z - b‖₂` by Algorithm 5.3.2. Returns `(P, z)`. ★'''
+deps = ["algorithm_5_4_1", "algorithm_5_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
+
+[[node]]
+id = "algorithm_5_5_1_spec"
+kind = "theorem"
+desc = '''If `V` is the right-singular-vector matrix of an SVD of `A` and `1 ≤ r̃ ≤ rank A`, then for the
+exact output `(P, z)`: the first `r̃` columns of `A P` are linearly independent (`σ_r̃(B₁) ≥
+σ_r̃(A)/‖R₁₁⁻¹‖₂ > 0` by `theorem_5_5_2` and `qrcp_V11`), and `z` minimizes `‖B₁ z - b‖₂`
+(`algorithm_5_3_2_spec`, under its nondegeneracy hypothesis for `B₁`, carried here). ★★'''
+deps = ["algorithm_5_5_1", "algorithm_5_4_1_spec", "theorem_5_5_2", "qrcp_V11", "algorithm_5_3_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
+
+[[node]]
+id = "theorem_5_5_3"
+kind = "theorem"
+desc = '''Theorem 5.5.3: with `r_{x_r̃} = b - A x_r̃ = (I - U₁U₁ᵀ) b` (`x_r̃` the solution of the nearest
+rank-`r̃` problem) and `r_y = b - A y = (I - B₁B₁⁺) b` (`y = P [z; 0]`), and `Ṽ₁₁` the leading `r̃ × r̃`
+block of `PᵀV` (printed "`r`-by-`r`"):
+`‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃+1}(A)/σ_r̃(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂`, i.e. with 0-based sorted singular values
+`(A.sortedSingularValues r̃ / A.sortedSingularValues (r̃ - 1)) * ‖Ṽ₁₁⁻¹‖₂ * ‖b‖₂`. Backbone
+`Matrix.norm_residual_subset_sub_le` (stated in exactly that 0-based form).
+The closing remark `‖r_{x_r̃} - r_y‖₂ = ‖B₁ y - Σ_{i≤r̃}(u_iᵀb) u_i‖₂` is the identity
+`r_x - r_y = B₁B₁⁺b - U₁U₁ᵀb` (a second declaration). ★'''
+deps = ["Matrix.norm_residual_subset_sub_le", "theorem_5_5_2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.3'

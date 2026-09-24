@@ -1,0 +1,403 @@
+namespace = "GolubVanLoan.Chapter08"
+desc = '''
+§8.1, properties and decompositions of symmetric matrices: the symmetric Schur decomposition, the
+min–max characterization, eigenvalue perturbation (Gershgorin, Wielandt–Hoffman, Weyl,
+interlacing, rank-one updates), invariant subspaces and their perturbation, approximate invariant
+subspaces and Ritz pairs, and Sylvester's law of inertia.
+
+The chapter's notation `λ_k(A)` (the `k`-th largest eigenvalue) is `symmEigenvalue hA`, a
+reindexing of Mathlib's sorted `Matrix.IsHermitian.eigenvalues₀` to `Fin n`; the book's `λ_k` is
+`symmEigenvalue hA ⟨k - 1, _⟩`. Nearly every statement delegates to `Numlib/Eigen/MinMax`
+(Courant–Fischer, Weyl, Cauchy interlacing — already there — and the appended Wielandt–Hoffman,
+two-sided Weyl and low-rank interlacing), `Numlib/Eigen/Perturbation` (the block residual bound
+behind Theorem 8.1.13), `Numlib/Eigen/RayleighRitz` (Theorem 8.1.14), `Numlib/LinearAlgebra/Matrix/SVD`
+((8.1.3), (8.1.7)), and the new `Numlib/Eigen/Inertia` (Theorem 8.1.17). Theorems 8.1.10–8.1.12
+restate chapter 7's invariant-subspace perturbation theorem (Theorem 7.2.4) in the symmetric case,
+where `T₁₂ = 0` and the Sylvester separation equals the eigenvalue gap (8.1.2) (P8.1.9).
+
+Readings. Theorem 8.1.13 is proved with constant `1` in place of `√2` (the printed statement does
+not pair the `μ_k` injectively with the `λ_k(S)`, so the residual argument suffices); the √2 form
+is then immediate. In the proof of Theorem 8.1.16 the book's "`1 − σ_r² = τ`" is not true in
+general (`τ = max_i |1 − σ_i²|`), but (8.1.7)'s conclusion `‖Q − X₁‖₂ ≤ τ` is, since
+`|1 − σ| ≤ |1 − σ²|` for `σ ≥ 0`. P8.1.5 (the derivative proof of Wielandt–Hoffman) is not used.
+'''
+
+[[node]]
+id = "symmEigenvalue"
+kind = "definition"
+desc = '''The book's `λ_k(A)` (§8.1.1: "the `k`th largest eigenvalue", `λ_n(A) ≤ ⋯ ≤ λ_1(A)`): for
+`A : Matrix (Fin n) (Fin n) ℝ` with `hA : A.IsSymm`,
+`symmEigenvalue hA (k : Fin n) : ℝ := (hA_herm).eigenvalues₀ (Fin.cast (Fintype.card_fin n).symm k)`
+where `hA_herm : A.IsHermitian` is the real bridge (`Matrix.IsHermitian` over `ℝ` is `Aᵀ = A`,
+`conjTranspose_eq_transpose_of_trivial`). API in the same node: `antitone_symmEigenvalue`
+(`eigenvalues₀_antitone`), `symmEigenvalue_mem_spectrum`, and the multiset of values is the root
+multiset of `A.charpoly` (`Matrix.IsHermitian.roots_charpoly_eq_eigenvalues₀`). The same
+reindexing as `Sturm.eigenvalues` (`Numlib/Eigen/Sturm`). 0-based: the book's `λ_k` is
+`symmEigenvalue hA ⟨k - 1, _⟩`. ★'''
+deps = ["Sturm.eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, §8.1.1, Definition'
+
+[[node]]
+id = "rayleighQuotient"
+kind = "definition"
+desc = '''The Rayleigh quotient `r(x) = xᵀAx / xᵀx` of §8.1.1 and §8.2.3 (8.2.6):
+`rayleighQuotient A x := (x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ x)` for `A : Matrix (Fin n) (Fin n) ℝ`,
+`x : Fin n → ℝ`. Bridge `rayleighQuotient_eq`: it is
+`(Matrix.toEuclideanLin A).rayleighQuotient (WithLp.toLp 2 x)` of Mathlib (`LinearMap.rayleighQuotient`,
+real `re ⟪T x, x⟫ / ‖x‖²`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §8.1.1, Definition'
+
+[[node]]
+id = "theorem_8_1_1"
+kind = "theorem"
+desc = '''Theorem 8.1.1 (symmetric Schur decomposition): for symmetric `A : Matrix (Fin n) (Fin n) ℝ`
+there is `Q ∈ Matrix.orthogonalGroup (Fin n) ℝ` with `Qᵀ * A * Q = diagonal (symmEigenvalue hA)`
+(the diagonal sorted decreasingly, `Λ = diag(λ_1, …, λ_n)`), and for every `k`,
+`A *ᵥ Q.col k = symmEigenvalue hA k • Q.col k`. From the sorted backbone decomposition at
+`𝕜 = ℝ` (`unitaryGroup (Fin n) ℝ = orthogonalGroup`, `star = transpose`). The book's induction
+proof (Householder deflation) is not followed. ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_eigenvalues₀"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.1'
+
+[[node]]
+id = "l2_opNorm_eq_max_abs_symmEigenvalue"
+kind = "theorem"
+desc = '''§8.1.1, after Theorem 8.1.1: for symmetric `A` with `n > 0`, the singular values of `A` are
+the `|λ_k(A)|` (as multisets: there is `e : Fin n ≃ Fin n` with `Matrix.singularValues A (e k) = |λ_k|`,
+from `Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues`), and
+`lpOpNorm 2 A = max |λ_1(A)| |λ_n(A)|`. The norm identity is `Matrix.IsHermitian.l2_opNorm_eq`
+with `M = max(|λ_1|, |λ_n|)`: every `|λ_k|` is at most it by monotonicity, and it is attained. ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues", "Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, §8.1.1'
+
+[[node]]
+id = "theorem_8_1_2"
+kind = "theorem"
+desc = '''Theorem 8.1.2 (Courant–Fischer): for symmetric `A` and `k : Fin n`,
+`IsGreatest {c | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = k + 1 ∧
+  IsLeast (rayleighQuotient A '' {y | y ∈ S ∧ y ≠ 0}) c} (symmEigenvalue hA k)` —
+`λ_k(A) = max_{dim S = k} min_{0 ≠ y ∈ S} yᵀAy/yᵀy` (book's 1-based `k`). From
+`LinearMap.IsSymmetric.isGreatest_eigenvalues` for `toEuclideanLin A` (whose sorted eigenvalues are
+`eigenvalues₀` by definition), transporting subspaces along `WithLp.linearEquiv 2 ℝ (Fin n → ℝ)`
+and `rayleighQuotient_eq`; the inner min is attained on a nonzero finite-dimensional `S` (the
+Rayleigh quotient is continuous on the unit sphere of `S`). The `min_{dim S = n-k+1} max` twin is
+recorded in the same node as `theorem_8_1_2_minmax` (`LinearMap.IsSymmetric.isLeast_eigenvalues`).
+★★ (bridging, ~60 lines)'''
+deps = ["symmEigenvalue", "rayleighQuotient", "LinearMap.IsSymmetric.isGreatest_eigenvalues", "LinearMap.IsSymmetric.isLeast_eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.2'
+
+[[node]]
+id = "symmEigenvalue_pos_of_posDef"
+kind = "theorem"
+desc = '''§8.1.1, last sentence: if `A` is symmetric positive definite (`A.PosDef`), then
+`0 < λ_n(A)`, hence every `λ_k(A) > 0`. Mathlib `Matrix.PosDef.eigenvalues_pos` through the
+reindexing. ★'''
+deps = ["symmEigenvalue"]
+source = 'Golub–Van Loan, Matrix Computations, §8.1.1'
+
+[[node]]
+id = "theorem_8_1_3"
+kind = "theorem"
+desc = '''Theorem 8.1.3 (Gershgorin, symmetric form): for symmetric `A`, orthogonal `Q`, and
+`Qᵀ A Q = diagonal d + F` with `F i i = 0`, every eigenvalue of `A` lies in
+`⋃ i, Set.Icc (d i - r i) (d i + r i)` with `r i = ∑ j, |F i j|`: `spectrum ℝ A ⊆ ⋃ i, Icc …`.
+Delegates to chapter 7's restatement of Theorem 7.2.1 (`GolubVanLoan.Chapter07.theorem_7_2_1`, README
+layering: not the backbone it rests on) applied to `A.complexify` with `X = Q.complexify`
+(`X⁻¹ = Qᵀ`, so `X⁻¹ A X = diagonal d + F` over `ℂ`): a real eigenvalue of `A` is a complex eigenvalue
+of `A.complexify` (`Matrix.complexify`, `spectrum.algebraMap_mem_iff`-type transfer), and a complex
+closed ball centred at a real `d i` meets `ℝ` in `Icc (d i - r i) (d i + r i)`. The book's proof
+through Lemma 2.3.3 is not needed. ★★'''
+deps = ["GolubVanLoan.Chapter07.theorem_7_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.3'
+
+[[node]]
+id = "theorem_8_1_4"
+kind = "theorem"
+desc = '''Theorem 8.1.4 (Wielandt–Hoffman): for symmetric `A` and `E` (so `A + E` symmetric),
+`∑ k, (λ_k(A + E) - λ_k(A)) ^ 2 ≤ ‖E‖_F ^ 2` (Frobenius norm, scoped `Matrix.Norms.Frobenius`).
+`Matrix.IsHermitian.hoffman_wielandt` at `𝕜 = ℝ` with `A + E` and `A`, reindexed. The book gives no
+proof (Wilkinson AEP, Stewart–Sun, Lax). ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.hoffman_wielandt"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.4'
+
+[[node]]
+id = "theorem_8_1_5"
+kind = "theorem"
+desc = '''Theorem 8.1.5: for symmetric `A`, `E` (`n > 0`) and every `k`,
+`λ_k(A) + λ_n(E) ≤ λ_k(A + E) ≤ λ_k(A) + λ_1(E)`, i.e. with `symmEigenvalue hE ⟨n - 1, _⟩` and
+`symmEigenvalue hE ⟨0, _⟩`. `LinearMap.IsSymmetric.eigenvalues_add_mem_Icc` for the Euclidean
+operators. ★'''
+deps = ["symmEigenvalue", "LinearMap.IsSymmetric.eigenvalues_add_mem_Icc"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.5'
+
+[[node]]
+id = "corollary_8_1_6"
+kind = "theorem"
+desc = '''Corollary 8.1.6 (Weyl): for symmetric `A`, `E` and every `k`,
+`|λ_k(A + E) - λ_k(A)| ≤ lpOpNorm 2 E`. `LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` for
+`toEuclideanCLM`, with `‖toEuclideanCLM E‖ = lpOpNorm 2 E` (the `ℓ²` operator norm; `lpOpNorm_two`
+bridges to Mathlib's scoped `Matrix.Norms.L2Operator`). The book's proof through Theorem 8.1.5 and
+`‖E‖₂ = max(|λ_1(E)|, |λ_n(E)|)` is equally short; either is fine. ★'''
+deps = ["symmEigenvalue", "LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm", "Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 8.1.6'
+
+[[node]]
+id = "theorem_8_1_7"
+kind = "theorem"
+desc = '''Theorem 8.1.7 (interlacing): for symmetric `A : Matrix (Fin n) (Fin n) ℝ` and `r + 1 ≤ n`,
+with `A_r = A.submatrix (Fin.castLE _) (Fin.castLE _)` (the book's `A(1:r, 1:r)`), for every
+`k : Fin r`: `λ_{k+1}(A_{r+1}) ≤ λ_k(A_r) ≤ λ_k(A_{r+1})` (0-based; the book's chain
+`λ_{r+1}(A_{r+1}) ≤ λ_r(A_r) ≤ λ_r(A_{r+1}) ≤ ⋯ ≤ λ_1(A_r) ≤ λ_1(A_{r+1})`).
+`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` with `f = Fin.castLE` (card difference `1`),
+reindexed. ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.eigenvalues₀_submatrix_interlace"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.7'
+
+[[node]]
+id = "theorem_8_1_8"
+kind = "theorem"
+desc = '''Theorem 8.1.8, interlacing part: for symmetric `A`, `c` with `c ⬝ᵥ c = 1`, `τ : ℝ` and
+`B = A + τ • vecMulVec c c`: if `τ ≥ 0` then `λ_i(B) ∈ [λ_i(A), λ_{i-1}(A)]` for `i = 2:n`
+(0-based: `symmEigenvalue hA i ≤ symmEigenvalue hB i ≤ symmEigenvalue hA (i - 1)` for `1 ≤ i`), and
+if `τ ≤ 0` then `λ_i(B) ∈ [λ_{i+1}(A), λ_i(A)]` for `i = 1:n-1`. Lower bounds from
+`LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le` (`τ ccᵀ ⪰ 0`), upper from
+`eigenvalues_le_of_isPositive_sub_of_finrank_range_le` with `r = 1` (`rank (ccᵀ) ≤ 1`); `τ ≤ 0` by
+exchanging `A` and `B`. ★'''
+deps = ["symmEigenvalue", "LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le", "LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.8'
+
+[[node]]
+id = "theorem_8_1_8_b"
+kind = "theorem"
+desc = '''Theorem 8.1.8, last clause: in either case there are `m : Fin n → ℝ`, `m i ≥ 0`,
+`∑ i, m i = 1`, with `λ_i(B) = λ_i(A) + m i * τ` for all `i`. For `τ ≠ 0` take
+`m i = (λ_i(B) - λ_i(A)) / τ`, nonnegative by `theorem_8_1_8`, summing to
+`(tr B - tr A)/τ = tr(ccᵀ) = cᵀc = 1` (P8.1.8, `Matrix.IsHermitian.trace_eq_sum_eigenvalues₀`); for
+`τ = 0` any probability vector (`n > 0`; for `n = 0` the sum condition fails — the book tacitly has
+`n ≥ 1`, which the node assumes). ★★'''
+deps = ["theorem_8_1_8", "Matrix.IsHermitian.trace_eq_sum_eigenvalues₀"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.8'
+
+[[node]]
+id = "theorem_8_1_9"
+kind = "theorem"
+desc = '''Theorem 8.1.9 with (8.1.1): for symmetric `A : Matrix (Fin n) (Fin n) ℝ`, `r + s = n` and
+`Q = Matrix.fromCols Q₁ Q₂ : Matrix (Fin n) (Fin r ⊕ Fin s) ℝ` with `Qᵀ Q = 1`, `Q Qᵀ = 1`, if
+`ran(Q₁)` is invariant (`∀ x ∈ LinearMap.range (toLin' Q₁), A *ᵥ x ∈ LinearMap.range (toLin' Q₁)`)
+then `Qᵀ * A * Q = fromBlocks D₁ 0 0 D₂` with `D₁ = Q₁ᵀ A Q₁`, `D₂ = Q₂ᵀ A Q₂` ((8.1.1)), and
+`spectrum ℝ A = spectrum ℝ D₁ ∪ spectrum ℝ D₂` (with multiplicity: `A.charpoly = D₁.charpoly *
+D₂.charpoly`). Delegates to the backbone `Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks`
+(`Numlib/LinearAlgebra/Matrix/Schur`; over `RCLike`, general index types: the block-diagonal form under `Qᴴ Q = 1`,
+the charpoly factorization under `Q Qᴴ = 1`) at `𝕜 = ℝ` (`ᴴ = ᵀ`, `IsSymm` as `IsHermitian`); the invariance
+hypothesis is turned into `A * Q₁ = Q₁ * M` by choosing `M` column by column (the range of `toLin' Q₁` is
+spanned by its columns; `M = Q₁ᵀ A Q₁` works since `Q₁ᵀ Q₁ = 1`). The book's proof (`Q₂ᵀ A Q₁ = Q₂ᵀ Q₁ M = 0`,
+the `(1,2)` block by symmetry) is the backbone's. ★'''
+deps = ["Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.9'
+
+[[node]]
+id = "sepSymm"
+kind = "definition"
+desc = '''The separation (8.1.2) of the spectra of two symmetric matrices:
+`sepSymm B C := sInf {d | ∃ l ∈ spectrum ℝ B, ∃ m ∈ spectrum ℝ C, d = |l - m|}` for
+`B : Matrix (Fin p) (Fin p) ℝ`, `C : Matrix (Fin q) (Fin q) ℝ` — a minimum of a finite nonempty set
+when `p, q > 0` (`sInf ∅ = 0` otherwise, never used). It equals chapter 7's Sylvester separation
+`Matrix.sep` for symmetric matrices (`sepSymm_eq_sep`, P8.1.9). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.2)'
+
+[[node]]
+id = "sepSymm_eq_sep"
+kind = "theorem"
+desc = '''[The book's P8.1.9], the helper Theorem 8.1.10 needs: for symmetric `B`, `C` (`p, q > 0`),
+`Matrix.sep B C = sepSymm B C`, i.e. `min_{X ≠ 0} ‖B X - X C‖_F / ‖X‖_F = min |λ - μ|` over
+`λ ∈ λ(B)`, `μ ∈ λ(C)`. Delegates to the backbone `Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`
+(`Numlib/LinearAlgebra/Matrix/Sylvester`) at `𝕜 = ℝ`, with the `sInf` over the finite spectra rewritten as
+the `⨅` over the eigenvalue indices (`Matrix.IsHermitian.spectrum_real_eq_range_eigenvalues`). ★'''
+deps = ["sepSymm", "Matrix.sep", "Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.2)'
+
+[[node]]
+id = "theorem_8_1_10"
+kind = "theorem"
+desc = '''Theorem 8.1.10: for symmetric `A`, `E`, `Q = fromCols Q₁ Q₂` orthogonal with `ran Q₁`
+`A`-invariant, `Qᵀ A Q = fromBlocks D₁ 0 0 D₂`, `Qᵀ E Q = fromBlocks E₁₁ E₂₁ᵀ E₂₁ E₂₂`,
+`sepSymm D₁ D₂ > 0` and `‖E‖_F ≤ sepSymm D₁ D₂ / 5`, there is `P : Matrix (Fin s) (Fin r) ℝ` with
+`‖P‖_F ≤ (4 / sepSymm D₁ D₂) * ‖E₂₁‖_F` such that the columns of
+`Q̂₁ = (Q₁ + Q₂ * P) * (CFC.sqrt (1 + Pᵀ * P))⁻¹` are orthonormal and span an `(A + E)`-invariant
+subspace. The symmetric case of chapter 7's Theorem 7.2.4 (Stewart 1973, Thm 4.11), through its
+backbone form `Matrix.exists_invariant_graph_of_sep` at `𝕜 = ℝ` (the surface restatement of
+Theorem 7.2.4 is over `ℂ` and would give a complex `P`): in the coordinates of `Q`, `T₁₂ = 0`
+reduces its hypothesis `‖E‖_F (1 + 5‖T₁₂‖_F / sep) ≤ sep/5` to the book's, `sep = sepSymm` by
+`sepSymm_eq_sep`, the invariant subspace is `ran (fromRows 1 P)`, and pulling back by `Q` and
+orthonormalizing its basis `[I; P]` by `(I + PᵀP)^{-1/2}` gives `Q̂₁`. ★★ (~100 lines)'''
+deps = ["sepSymm", "sepSymm_eq_sep", "Matrix.exists_invariant_graph_of_sep"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.10'
+
+[[node]]
+id = "equation_8_1_3"
+kind = "theorem"
+desc = '''(8.1.3) (P8.1.10): for `P : Matrix (Fin s) (Fin r) ℝ`,
+`lpOpNorm 2 (P * (CFC.sqrt (1 + Pᵀ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖_F`.
+`Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le` at `𝕜 = ℝ` (`Pᴴ = Pᵀ`). ★'''
+deps = ["Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.3)'
+
+[[node]]
+id = "corollary_8_1_11"
+kind = "theorem"
+desc = '''Corollary 8.1.11: under the hypotheses of Theorem 8.1.10, with its `Q̂₁`,
+`GolubVanLoan.Chapter02.subspaceDist (range Q₁) (range Q̂₁) ≤ (4 / sepSymm D₁ D₂) * ‖E₂₁‖_F`
+(chapter 2's `dist`, `= Submodule.gap` of the column spaces in `EuclideanSpace ℝ (Fin n)`). Proof as
+in the book: `dist = ‖Q₂ᵀ Q̂₁‖₂` (chapter 2's Theorem 2.5.1, both matrices completed to orthogonal
+ones), `Q₂ᵀ Q̂₁ = P (I + PᵀP)^{-1/2}`, and (8.1.3). (Chapter 7's `Matrix.gap_range_fromRows_le`
+with `Submodule.gap_map_linearIsometryEquiv` is an equivalent route.) ★★'''
+deps = ["theorem_8_1_10", "equation_8_1_3", "GolubVanLoan.Chapter02.subspaceDist", "GolubVanLoan.Chapter02.theorem_2_5_1"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 8.1.11'
+
+[[node]]
+id = "theorem_8_1_12"
+kind = "theorem"
+desc = '''Theorem 8.1.12 (eigenvector perturbation): for symmetric `A`, `E`, orthogonal
+`Q = fromCols (replicateCol q₁) Q₂` with `A q₁ = λ q₁`, `Qᵀ A Q = fromBlocks !![λ] 0 0 D₂`,
+`Qᵀ E Q = fromBlocks !![ε] eᵀ e E₂₂`, `d = min_{μ ∈ λ(D₂)} |λ - μ| > 0` and `‖E‖_F ≤ d/5`: there
+is `p : Fin (n-1) → ℝ` with `‖p‖₂ ≤ (4/d) ‖e‖₂` such that `q̂₁ = (q₁ + Q₂ p) / √(1 + pᵀp)` is a unit
+eigenvector of `A + E`, and `dist(span{q₁}, span{q̂₁}) = √(1 - (q₁ᵀ q̂₁)²) ≤ (4/d) ‖e‖₂`
+(`dist = GolubVanLoan.Chapter02.subspaceDist`). The case `r = 1` of `theorem_8_1_10` and
+`corollary_8_1_11` (`d = sepSymm !![λ] D₂`, a `1 × 1` invariant block is an eigenvector); the identity
+`gap(span u, span v) = √(1 - (uᵀv)²)` for unit vectors is `Submodule.sinAngle` of a line
+(`Numlib/Analysis/InnerProductSpace/Projection/Angle`). ★★'''
+deps = ["theorem_8_1_10", "corollary_8_1_11", "Submodule.sinAngle", "GolubVanLoan.Chapter02.subspaceDist"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.12'
+
+[[node]]
+id = "theorem_8_1_13"
+kind = "theorem"
+desc = '''Theorem 8.1.13, in the **paired** form the book's proof gives (eigen review item 6; Parlett's use of
+Kahan's theorem needs it): for symmetric `A : Matrix (Fin n) (Fin n) ℝ`, symmetric
+`S : Matrix (Fin r) (Fin r) ℝ` and `Q₁ : Matrix (Fin n) (Fin r) ℝ` with `Q₁ᵀ Q₁ = 1`,
+`E₁ = A Q₁ - Q₁ S`, there is an injection `σ : Fin r ↪ Fin n` with
+`|λ_{σ k}(A) - λ_k(S)| ≤ √2 * lpOpNorm 2 E₁` for all `k` (`symmEigenvalue`; the book's
+"there exist `μ₁, …, μ_r ∈ λ(A)`", read with distinct indices as its proof produces them). Proof as in
+the book: complete `Q₁` to an orthogonal `Q = [Q₁ Q₂]`; `Qᵀ A Q = B + E` with
+`B = diag(S, Q₂ᵀ A Q₂)` and `E = [Q₁ᵀE₁, E₁ᵀQ₂; Q₂ᵀE₁, 0]`, `‖E‖₂ ≤ √2 ‖E₁‖₂` (the block of a
+symmetric matrix with orthonormal `Q`); Weyl (`corollary_8_1_6`) pairs the sorted eigenvalues of
+`A` with those of `B`, and the eigenvalues of `S` are among those of `B` at distinct sorted positions
+(`σ`). That proof is the backbone's: the surface delegates to
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` (`Numlib/Eigen/Perturbation`; over `RCLike`,
+`∃ σ : Fin (card r) ↪o Fin (card n), |λ_{σ k}(A) − λ_k(S)| ≤ √2 ε` with `eigenvalues₀` sorted decreasingly) at
+`𝕜 = ℝ`, `ε = lpOpNorm 2 E₁`, reading `symmEigenvalue` as `eigenvalues₀` (the book's `μ_k := λ_{σ k}(A)`; the order
+embedding is in particular the injection). Kahan's constant `1` for the paired form is later (★★★). ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul", "Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.13'
+
+[[node]]
+id = "theorem_8_1_13_weak"
+kind = "theorem"
+desc = '''The unpaired corollary of Theorem 8.1.13 (the form the first plan stated): under the same
+hypotheses, every eigenvalue `θ` of `S` has some `μ ∈ spectrum ℝ A` with `|μ - θ| ≤ lpOpNorm 2 E₁`
+(constant `1`, no pairing), hence `≤ √2 lpOpNorm 2 E₁`. The backbone
+`Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` at `ℝ` (a unit eigenvector `y` of
+`S` gives `‖A (Q₁ y) - θ Q₁ y‖ ≤ ‖E₁‖₂`). Note: this weak form is **not** a corollary of `theorem_8_1_13` — the
+paired backbone form has constant `√2`, while this one keeps constant `1` with its own one-vector proof, so it
+delegates to its own backbone node rather than to the paired theorem. What the one-vector residual bound after
+Theorem 8.2.1 uses. ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.13'
+
+[[node]]
+id = "theorem_8_1_14"
+kind = "theorem"
+desc = '''Theorem 8.1.14: for symmetric `A` and `Q₁ : Matrix (Fin n) (Fin r) ℝ` with orthonormal
+columns, `IsLeast (Set.range fun S => ‖A * Q₁ - Q₁ * S‖_F) ‖(1 - Q₁ * Q₁ᵀ) * A * Q₁‖_F`, attained at
+`S = Q₁ᵀ A Q₁` (Frobenius norm). `Matrix.isLeast_frobenius_norm_mul_sub_mul` at `𝕜 = ℝ`. ★'''
+deps = ["Matrix.isLeast_frobenius_norm_mul_sub_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.14'
+
+[[node]]
+id = "theorem_8_1_15"
+kind = "theorem"
+desc = '''Theorem 8.1.15: for symmetric `A`, `Q₁` with `Q₁ᵀ Q₁ = 1`, an orthogonal `Z` with
+`Zᵀ (Q₁ᵀ A Q₁) Z = diagonal θ` and `y_k = (Q₁ * Z).col k`: for every `k`,
+`‖A y_k - θ_k y_k‖₂ = ‖(1 - Q₁ Q₁ᵀ) A Q₁ Z e_k‖₂ ≤ lpOpNorm 2 ((1 - Q₁ * Q₁ᵀ) * A * Q₁)`.
+The identity `A y_k - θ_k y_k = (A Q₁ - Q₁ (Q₁ᵀ A Q₁)) Z e_k` and `‖Z e_k‖ = 1`. ★'''
+deps = ["Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.15'
+
+[[node]]
+id = "ritzPair_isRitzPair"
+kind = "theorem"
+desc = '''§8.1.4, after Theorem 8.1.15 (definition of Ritz values, Ritz vectors, Ritz pairs): the
+book's `(θ_k, y_k)` are Ritz pairs of `A` on `ran(Q₁)` in the backbone's sense —
+`Krylov.IsRitzPair (toEuclideanLin A) (LinearMap.range (toEuclideanLin Q₁)) θ_k y_k` (residual
+orthogonal to the subspace: `Q₁ᵀ (A y_k - θ_k y_k) = 0`), and conversely every Ritz pair arises this
+way up to scaling (`Krylov.isRitzPair_iff_hasEigenvector`: an eigenpair of the compression
+`Q₁ᵀ A Q₁`). ★★'''
+deps = ["theorem_8_1_15", "Krylov.IsRitzPair", "Krylov.isRitzPair_iff_hasEigenvector"]
+source = 'Golub–Van Loan, Matrix Computations, §8.1.4, Definition'
+
+[[node]]
+id = "equation_8_1_5"
+kind = "theorem"
+desc = '''(8.1.5): for `A` symmetric, `X₁ : Matrix (Fin n) (Fin r) ℝ`, `S = X₁ᵀ A X₁`,
+`F₁ = A X₁ - X₁ S`, and any `Q` with orthonormal columns, `E₁ = A Q - Q S` satisfies
+`lpOpNorm 2 E₁ ≤ lpOpNorm 2 F₁ + lpOpNorm 2 (Q - X₁) * lpOpNorm 2 A * (1 + lpOpNorm 2 X₁ ^ 2)`.
+`E₁ - F₁ = A (Q - X₁) - (Q - X₁) S` and `‖S‖₂ ≤ ‖X₁‖₂² ‖A‖₂` (submultiplicativity, `‖X₁ᵀ‖₂ = ‖X₁‖₂`).
+★'''
+deps = ["Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.5)'
+
+[[node]]
+id = "equation_8_1_6"
+kind = "theorem"
+desc = '''(8.1.6): if `lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ` then `lpOpNorm 2 X₁ ^ 2 ≤ 1 + τ`.
+`‖X₁‖₂² = ‖X₁ᵀ X₁‖₂` (the `C⋆` identity, Mathlib `Matrix.l2_opNorm_conjTranspose_mul_self`) and the
+triangle inequality. ★'''
+deps = ["Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.6)'
+
+[[node]]
+id = "equation_8_1_7"
+kind = "theorem"
+desc = '''(8.1.7): if `lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ < 1` there is `Q` with `Qᵀ Q = 1` and
+`lpOpNorm 2 (Q - X₁) ≤ τ` (the book's `Q = U Vᵀ` from the thin SVD of `X₁`).
+`Matrix.exists_orthonormal_cols_norm_sub_le` at `𝕜 = ℝ`; the book's intermediate claim
+`1 − σ_r² = τ` is not needed and not true in general (see the section description). The book's `Q = U Vᵀ` is the
+polar factor of `X₁` (`Matrix.IsPolarDecomposition`, `Numlib/LinearAlgebra/Matrix/Polar`, where the backbone node now
+lives, for any `Fintype`s); its second declaration `IsPolarDecomposition.l2_opNorm_sub_le` states the bound for a given
+polar factor. ★'''
+deps = ["Matrix.exists_orthonormal_cols_norm_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.7)'
+
+[[node]]
+id = "theorem_8_1_16"
+kind = "theorem"
+desc = '''Theorem 8.1.16: for symmetric `A`, `X₁ : Matrix (Fin n) (Fin r) ℝ`, `S = X₁ᵀ A X₁`,
+`F₁ = A X₁ - X₁ S`, and `lpOpNorm 2 (X₁ᵀ X₁ - 1) = τ < 1` ((8.1.4)), there is `μ : Fin r → ℝ` with
+`μ k ∈ spectrum ℝ A` and `|μ k - λ_k(S)| ≤ √2 * (lpOpNorm 2 F₁ + τ * (2 + τ) * lpOpNorm 2 A)`.
+Proof as in the book: `Q` from (8.1.7), (8.1.5) with (8.1.6) gives
+`‖A Q - Q S‖₂ ≤ ‖F₁‖₂ + τ (2 + τ) ‖A‖₂`, then Theorem 8.1.13 with this `Q` and the symmetric `S`. ★'''
+deps = ["theorem_8_1_13", "equation_8_1_5", "equation_8_1_6", "equation_8_1_7", "symmEigenvalue"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.16'
+
+[[node]]
+id = "inertia"
+kind = "definition"
+desc = '''§8.1.5, the inertia `(m, z, p)` of a symmetric `A` (numbers of negative, zero and positive
+eigenvalues): `inertia hA := hA_herm.inertia` (`Matrix.IsHermitian.inertia` at `𝕜 = ℝ`), with
+`inertia_eq`: its components are `#{k | λ_k(A) < 0}`, `#{k | λ_k(A) = 0}`, `#{k | 0 < λ_k(A)}`
+(`Matrix.IsHermitian.inertia_eq_eigenvalues₀`). ★'''
+deps = ["symmEigenvalue", "Matrix.IsHermitian.inertia", "Matrix.IsHermitian.inertia_eq_eigenvalues₀"]
+source = 'Golub–Van Loan, Matrix Computations, §8.1.5, Definition'
+
+[[node]]
+id = "theorem_8_1_17"
+kind = "theorem"
+desc = '''Theorem 8.1.17 (Sylvester law of inertia): for symmetric `A` and nonsingular `X`
+(`IsUnit X.det`), `A` and `Xᵀ A X` have the same inertia: `inertia hXAX = inertia hA`
+(`hXAX : (Xᵀ * A * X).IsSymm`). `Matrix.IsHermitian.inertia_conj` at `𝕜 = ℝ`. The book's
+min–max proof (comparing `λ_r(XᵀAX)` with `λ_r(A) σ_n(X)²`) is the same idea in quantitative form;
+the backbone proves the counts by maximal positive subspaces. ★'''
+deps = ["inertia", "Matrix.IsHermitian.inertia_conj"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.17'

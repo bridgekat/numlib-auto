@@ -13,6 +13,12 @@ multigrid, which are model-problem constructions and heuristics; those stay in t
 where they instantiate what is proved here (see the groups under
 `plans/NumlibSurface/SaadSparse/Chapter13/`).
 
+*Amended at the Golub–Van Loan review:* the one-dimensional transfer operators (linear interpolation
+and full weighting) and their action on the discrete sine modes are backbone after all
+(`Numlib/Multigrid/ModelProblem`), because two books (Saad §13.3, Golub–Van Loan §11.6) define the
+same matrices and the mode analysis is the standard two-grid Fourier analysis; the grids of the other
+dimensions, the cycles and algebraic multigrid stay in the surfaces.
+
 The spectra of the model problems, which is what makes the constants of §13.2 concrete, are
 `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and `Numlib/LinearAlgebra/Matrix/KroneckerSum`: no PDE
 theory is used or needed, only the eigen-decomposition of the discrete Laplacean.

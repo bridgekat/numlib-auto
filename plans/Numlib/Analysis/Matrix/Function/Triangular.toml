@@ -1,0 +1,100 @@
+desc = '''
+Functions of (block) upper triangular matrices ([golub2013matrix] §9.1.4–9.1.5, §9.2.2): `pfc f T`
+is block triangular with diagonal blocks `pfc f T_ii`; the commutation `F T = T F` gives the Parlett
+recurrence (9.1.11) and its block form, a Sylvester equation (9.1.12); and the explicit
+divided-difference formula of Theorem 9.1.4, `f_ij = ∑_{s ∈ S_ij} t_{s₀s₁} ⋯ t_{s_{k-1}s_k}
+f[λ_{s₀}, …, λ_{s_k}]`, proved here (the book cites Descloux, Davis, Van Loan) by path expansion of
+the powers of `T` and linearity, with confluent divided differences at repeated eigenvalues
+(`Hermite.divDiff` of `Numlib/Analysis/Calculus/HermiteInterpolation`).
+
+Conventions: triangularity is Mathlib's `Matrix.BlockTriangular T b` (`b = id` and `T : Matrix n n 𝕜`
+over a `LinearOrder n` for upper triangular; Mathlib's abbreviation `Matrix.IsUpperTriangular`). A
+strictly increasing sequence `i = s₀ < s₁ < ⋯ < s_k = j` of `S_ij` is encoded by the finset `s ⊆
+Finset.Ioo i j` of its interior indices (over `Fin n`), with the ordered list `Matrix.path i s j = i
+:: s.sort (· ≤ ·) ++ [j]`; `Matrix.pathProd T l` is the product of `T p q` over consecutive pairs of
+`l`. The diagonal entries along the path form the multiset `(path i s j).map (fun k => T k k)`, the
+nodes of the divided difference.
+'''
+
+[[node]]
+id = "Matrix.BlockTriangular.pfc"
+kind = "theorem"
+desc = '''`T.BlockTriangular b → (pfc f T).BlockTriangular b`: `pfc f T = aeval T p` and block triangular
+matrices form a subalgebra (`Matrix.BlockTriangular.mul`, `.add`, `.smul`, `blockTriangular_one`;
+Mathlib may have `Matrix.blockTriangularSubalgebra`, check). ★'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant"]
+
+[[node]]
+id = "Matrix.BlockTriangular.toBlock_pfc"
+kind = "theorem"
+desc = '''The diagonal blocks of `f(T)` are `f` of the diagonal blocks ([golub2013matrix] §9.1.5, `F_ii =
+f(T_ii)`; P9.1.4): for `T.BlockTriangular b` and a block index `k`,
+`(pfc f T).toBlock (b · = k) (b · = k) = pfc f (T.toBlock (b · = k) (b · = k))`. On the subalgebra
+of `b`-block-triangular matrices, `M ↦ M.toBlock (b · = k) (b · = k)` is an algebra homomorphism
+(block triangularity kills the cross terms of `(M N)_kk`), so `AlgHom.map_pfc` applies, and `pfc`
+computed in the subalgebra is `pfc` in `Matrix n n 𝕜` (`AlgHom.map_pfc` for `Subalgebra.val`).
+Special case `Matrix.pfc_apply_self_of_upperTriangular : (pfc f T) i i = f (T i i)` for upper
+triangular `T` (`b = id`, one-point blocks, `Matrix.pfc_diagonal` in size one). ★★ (~120 lines)'''
+deps = ["Matrix.BlockTriangular.pfc", "AlgHom.map_pfc", "Matrix.pfc_diagonal"]
+
+[[node]]
+id = "Matrix.pfc_apply_eq_parlett"
+kind = "theorem"
+desc = '''The Parlett recurrence ([golub2013matrix] (9.1.11)): for upper triangular `T : Matrix (Fin n)
+(Fin n) 𝕜`, `F = pfc f T`, and `i < j` with `T i i ≠ T j j`: `F i j = T i j * (F j j - F i i) /
+(T j j - T i i) + ∑ k ∈ Finset.Ioo i j, (T i k * F k j - F i k * T k j) / (T j j - T i i)`. From
+the `(i, j)` entry of `F T = T F` (`commute_pfc`), triangularity of `F`
+(`Matrix.BlockTriangular.pfc`) cutting both sums to `i ≤ k ≤ j`, and `F i i = f (T i i)`. ★'''
+deps = ["commute_pfc", "Matrix.BlockTriangular.pfc", "Matrix.BlockTriangular.toBlock_pfc"]
+
+[[node]]
+id = "Matrix.BlockTriangular.pfc_sylvester"
+kind = "theorem"
+desc = '''The block Parlett equations ([golub2013matrix] (9.1.12)): for `T.BlockTriangular b` with
+blocks `T_kl = T.toBlock (b · = k) (b · = l)`, `F = pfc f T` and `k < l`:
+`F_kl * T_ll - T_kk * F_kl = T_kl * F_ll - F_kk * T_kl + ∑_{k < r < l} (T_kr * F_rl - F_kr * T_rl)`
+(block products over the subtypes; `Matrix.toBlock_mul`-type lemmas splitting `(F T)_kl` over the
+block index, then `commute_pfc`). With disjoint spectra of `T_kk` and `T_ll` the block `F_kl` is
+the unique solution of this Sylvester equation — ch07's `Numlib/LinearAlgebra/Matrix/Sylvester`
+(Lemma 7.1.5), consumed in the surface, not here. ★★ (~150 lines)'''
+deps = ["commute_pfc", "Matrix.BlockTriangular.pfc"]
+
+[[node]]
+id = "Matrix.pathProd"
+kind = "definition"
+desc = '''The path product and the path of an increasing index sequence: `Matrix.path (i j : Fin n) (s :
+Finset (Fin n)) : List (Fin n) := i :: s.sort (· ≤ ·) ++ [j]` and `Matrix.pathProd (T : Matrix n n R)
+(l : List n) : R := ((l.zip l.tail).map fun p => T p.1 p.2).prod` (`List.zipWith` form equally good).
+The book's `S_ij` of [golub2013matrix] Theorem 9.1.4 is `{path i s j | s ⊆ Finset.Ioo i j}`, and
+`S_ij^{(r)}` those with `s.card = r - 1`. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.pow_apply_eq_sum_pathProd"
+kind = "theorem"
+desc = '''Path expansion of powers of a triangular matrix. (a) Strictly upper triangular `N : Matrix
+(Fin n) (Fin n) R` (any commutative semiring), `r ≥ 1`, `i < j`: `(N ^ r) i j = ∑ s ∈ (Finset.Ioo i
+j).powersetCard (r - 1), pathProd N (path i s j)`, and `(N ^ r) i j = 0` unless `i + r ≤ j`
+([golub2013matrix] (9.2.2), used there for `|N|`). (b) Upper triangular `T`, `i ≤ j`, any `m`:
+`(T ^ m) i j = ∑ s ⊆ Finset.Ioo i j (with i < j; the diagonal case separately), pathProd T (path i s j) *
+Hermite.divDiff (· ^ m) ((path i s j).map fun k => T k k)`: expand `(T^m)_ij` over weakly
+increasing index walks, group the walks by their set of distinct indices, and sum the loops at
+the diagonal into the complete homogeneous polynomial `h_{m-k}` of the diagonal entries — which is
+the divided difference of `z^m` (`Hermite.divDiff_X_pow`). Induction on `m` with `T^{m+1} = T^m T`
+and the recursion of `Hermite.divDiff_X_pow` is the cleanest route. ★★ (~250 lines)'''
+deps = ["Matrix.pathProd", "Hermite.divDiff_X_pow"]
+
+[[node]]
+id = "Matrix.pfc_apply_eq_sum_divDiff"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 9.1.4: for `T : Matrix (Fin n) (Fin n) 𝕜` upper triangular
+(`IsAlgClosed 𝕜` or split `minpoly`, `[CharZero 𝕜]`), `F = pfc f T`: `F i j = 0` for `i > j`, `F i i
+= f (T i i)`, and for `i < j`, `F i j = ∑ s ⊆ Finset.Ioo i j, pathProd T (path i s j) *
+Hermite.divDiff f ((path i s j).map fun k => T k k)`. No smoothness hypothesis: both sides are read
+through the jets of `f`. Proof: let `p` interpolate the jets of `f` on the multiset of *all*
+diagonal entries (the roots of `T.charpoly`, algebraic multiplicities); `F = aeval T p`
+(`pfc_eq_aeval_of_isJetInterpolant` with `Matrix.minpoly_dvd_charpoly`); expand `p` in monomials
+and apply `Matrix.pow_apply_eq_sum_pathProd` (b), linear in `p`; finally `divDiff p (nodes) =
+divDiff f (nodes)` because the multiset of diagonal entries along one path is a sub-multiset of the
+full diagonal (`Hermite.divDiff_congr`). ★★★ (~350 lines)'''
+deps = ["Matrix.pow_apply_eq_sum_pathProd", "pfc_eq_aeval_of_isJetInterpolant", "Hermite.divDiff_congr", "Matrix.BlockTriangular.pfc", "Matrix.BlockTriangular.toBlock_pfc"]

@@ -1,0 +1,231 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.3, Matrix Norms: the definitions (2.3.1)–(2.3.2) and (2.3.5)–(2.3.6), consistency (2.3.3)–(2.3.4)
+with the book's counterexample, the norm comparisons (2.3.7)–(2.3.13), the 2-norm through `AᵀA`
+(Theorem 2.3.1, Corollary 2.3.2), the Neumann series and the perturbation of the inverse (Lemma
+2.3.3, Theorem 2.3.4), orthogonal invariance (2.3.14)–(2.3.15). Backbone:
+`Numlib/Analysis/Matrix/OperatorNorm` (`Matrix.lpOpNorm`, `Matrix.inducedNorm`, all the comparison
+constants), `Numlib/Analysis/Normed/Ring/Inverse`, `Numlib/LinearAlgebra/Matrix/SVD`. Here `‖A‖_p =
+Matrix.lpOpNorm p A` for `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`, `‖A‖₂ = lpOpNorm 2 A` (`= ‖A‖` in the
+scoped `Matrix.Norms.L2Operator`), `‖A‖_F` the scoped `Matrix.Norms.Frobenius` norm. The proofs the
+book leaves as exercises (P2.3.1–P2.3.6) are the backbone lemmas cited.
+'''
+
+[[node]]
+id = "IsMatrixNorm"
+kind = "definition"
+desc = '''§2.3.1: `f : Matrix (Fin m) (Fin n) ℝ → ℝ` is a matrix norm if it satisfies the three vector-norm
+axioms on `ℝ^{m×n}` (`f A ≥ 0`, `f A = 0 ↔ A = 0`, triangle inequality, absolute homogeneity) — the
+analogue of `IsVectorNorm`, with the same `Seminorm` bridge. ★'''
+deps = ["IsVectorNorm"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.1, Definition'
+
+[[node]]
+id = "equation_2_3_1"
+kind = "theorem"
+desc = '''(2.3.1): `‖A‖_F = √(∑ i, ∑ j, |a_ij|²)` — Mathlib `Matrix.frobenius_norm_def` (scoped
+`Matrix.Norms.Frobenius`), with backbone `Matrix.frobenius_norm_sq_eq_sum_sq`; and `‖·‖_F` is a matrix
+norm (`IsMatrixNorm`, from the normed-group instance). ★'''
+deps = ["IsMatrixNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.1)'
+
+[[node]]
+id = "equation_2_3_2"
+kind = "theorem"
+desc = '''(2.3.2) and the display after it: `‖A‖_p = ⨆_{x ≠ 0} ‖A x‖_p / ‖x‖_p`, and for `n ≥ 1` the sup is a
+max over the unit `p`-sphere, attained. Backbone `Matrix.lpOpNorm_eq_inducedNorm`,
+`Matrix.inducedNorm_eq_iSup_div`, `Matrix.exists_inducedNorm_eq`; `‖·‖_p` is a matrix norm
+(`IsMatrixNorm`). ★'''
+deps = ["Matrix.lpOpNorm_eq_inducedNorm", "Matrix.inducedNorm_eq_iSup_div", "Matrix.exists_inducedNorm_eq", "IsMatrixNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.2)'
+
+[[node]]
+id = "equation_2_3_3"
+kind = "theorem"
+desc = '''(2.3.3): `‖A B‖_p ≤ ‖A‖_p ‖B‖_p` for `A : Matrix (Fin m) (Fin n) ℝ`, `B : Matrix (Fin n) (Fin q)
+ℝ` — backbone `Matrix.lpOpNorm_mul_le` (rectangular). ★'''
+deps = ["Matrix.lpOpNorm_mul_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.3)'
+
+[[node]]
+id = "maxAbs_not_consistent"
+kind = "theorem"
+desc = '''§2.3.1, after (2.3.4): not every matrix norm is consistent. `‖A‖_Δ = max_{i,j} |a_ij|` is a matrix
+norm (`IsMatrixNorm`) on `ℝ^{2×2}`, and for `A = B = !![1, 1; 1, 1]`, `‖A B‖_Δ = 2 > 1 = ‖A‖_Δ ‖B‖_Δ`.
+Mathlib's sup norm `Matrix.normedAddCommGroup` (entrywise) or a direct `Finset.sup'`; `norm_num`/`decide`
+after unfolding. ★'''
+deps = ["IsMatrixNorm"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.1'
+
+[[node]]
+id = "norm_mulVec_le"
+kind = "theorem"
+desc = '''§2.3.1: `‖A x‖_p ≤ ‖A‖_p ‖x‖_p` — backbone `Matrix.lpSeminorm_mulVec_le`. ★'''
+deps = ["Matrix.lpSeminorm_mulVec_le"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.1'
+
+[[node]]
+id = "equation_2_3_5"
+kind = "theorem"
+desc = '''(2.3.5): for vector norms `‖·‖_α` on `ℝⁿ` and `‖·‖_β` on `ℝᵐ` (definite `Seminorm`s, via
+`IsVectorNorm.exists_seminorm`), the subordinate norm `‖A‖_{α,β} = Matrix.inducedNorm β α A` equals
+`⨆_{x ≠ 0} ‖A x‖_β / ‖x‖_α` and satisfies `‖A x‖_β ≤ ‖A‖_{α,β} ‖x‖_α` — backbone
+`Matrix.inducedNorm_eq_iSup_div`, `Matrix.le_inducedNorm_mul`. ★'''
+deps = ["Matrix.inducedNorm", "Matrix.inducedNorm_eq_iSup_div", "Matrix.le_inducedNorm_mul", "IsVectorNorm.exists_seminorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.5)'
+
+[[node]]
+id = "equation_2_3_6"
+kind = "theorem"
+desc = '''(2.3.6): the sup in (2.3.5) is attained, `‖A‖_{α,β} = ‖A x_*‖_β` for some `x_*` with `‖x_*‖_α = 1`
+(`n ≥ 1`) — backbone `Matrix.exists_inducedNorm_eq`. ★'''
+deps = ["Matrix.exists_inducedNorm_eq", "equation_2_3_5"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.6)'
+
+[[node]]
+id = "equation_2_3_7"
+kind = "theorem"
+desc = '''(2.3.7): `‖A‖₂ ≤ ‖A‖_F ≤ √(min m n) ‖A‖₂` — backbone `Matrix.l2_opNorm_le_frobenius_norm`,
+`Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm` (the sharper `√rank` of P2.4.7) and Mathlib
+`Matrix.rank_le_width`, `Matrix.rank_le_height`. ★'''
+deps = ["Matrix.l2_opNorm_le_frobenius_norm", "Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.7)'
+
+[[node]]
+id = "equation_2_3_8"
+kind = "theorem"
+desc = '''(2.3.8): `max_{i,j} |a_ij| ≤ ‖A‖₂ ≤ √(m n) max_{i,j} |a_ij|` — backbone
+`Matrix.norm_entry_le_l2_opNorm`, `Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le`. ★'''
+deps = ["Matrix.norm_entry_le_l2_opNorm", "Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.8)'
+
+[[node]]
+id = "equation_2_3_9"
+kind = "theorem"
+desc = '''(2.3.9): `‖A‖₁ = max_j ∑_i |a_ij|` — backbone `Matrix.lpOpNorm_one_eq_sup_sum_norm`. ★'''
+deps = ["Matrix.lpOpNorm_one_eq_sup_sum_norm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.9)'
+
+[[node]]
+id = "equation_2_3_10"
+kind = "theorem"
+desc = '''(2.3.10): `‖A‖_∞ = max_i ∑_j |a_ij|` — backbone `Matrix.lpOpNorm_top` and Mathlib
+`Matrix.linfty_opNorm_def`. ★'''
+deps = ["Matrix.lpOpNorm_top"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.10)'
+
+[[node]]
+id = "equation_2_3_11"
+kind = "theorem"
+desc = '''(2.3.11): `(1/√n) ‖A‖_∞ ≤ ‖A‖₂ ≤ √m ‖A‖_∞` — backbone
+`Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm` (both halves). ★'''
+deps = ["Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.11)'
+
+[[node]]
+id = "equation_2_3_12"
+kind = "theorem"
+desc = '''(2.3.12): `(1/√m) ‖A‖₁ ≤ ‖A‖₂ ≤ √n ‖A‖₁` — backbone `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`. ★'''
+deps = ["Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.12)'
+
+[[node]]
+id = "equation_2_3_13"
+kind = "theorem"
+desc = '''(2.3.13): for `1 ≤ i₁ ≤ i₂ ≤ m`, `1 ≤ j₁ ≤ j₂ ≤ n`, `‖A(i₁:i₂, j₁:j₂)‖_p ≤ ‖A‖_p`, the block being
+`A.submatrix (fun k : Fin (i₂ - i₁ + 1) => ⟨i₁ - 1 + k, _⟩) (…)` in 0-based form. Backbone
+`Matrix.lpOpNorm_submatrix_le`, which holds for any injective row and column selections (P2.3.2). ★'''
+deps = ["Matrix.lpOpNorm_submatrix_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.13)'
+
+[[node]]
+id = "tendsto_iff_of_isMatrixNorm"
+kind = "theorem"
+desc = '''§2.3.2: convergence of a sequence of matrices does not depend on the norm — for any matrix norm
+`f`, `Tendsto (fun k => f (A k - A)) atTop (𝓝 0) ↔ Tendsto A atTop (𝓝 A)`. As
+`tendsto_iff_of_isVectorNorm` on `ℝ^{m×n}` (backbone `Seminorm.tendsto_apply_iff_tendsto_norm`). ★'''
+deps = ["IsMatrixNorm", "Seminorm.tendsto_apply_iff_tendsto_norm"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.2'
+
+[[node]]
+id = "theorem_2_3_1"
+kind = "theorem"
+desc = '''Theorem 2.3.1: for `A : Matrix (Fin m) (Fin n) ℝ` with `0 < n` there is `z : EuclideanSpace ℝ (Fin
+n)` with `‖z‖ = 1` and `Aᵀ A z = μ² z`, `μ = ‖A‖₂`. The book maximizes `‖Ax‖²/‖x‖²` by a gradient
+computation; the surface takes instead the right singular vector of the largest singular value:
+backbone `Matrix.rightSingularBasis` (eigenvectors of `Aᵀ A` for `σ_i²`,
+`Matrix.toEuclideanLin_conjTranspose_mul_self_rightSingularBasis`) and
+`Matrix.l2_opNorm_eq_iSup_singularValues` with a maximizing index (`Finite.exists_max`). ★★'''
+deps = ["Matrix.rightSingularBasis", "Matrix.l2_opNorm_eq_iSup_singularValues", "Matrix.sq_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.3.1'
+
+[[node]]
+id = "l2_opNorm_eq_sqrt_eigenvalues₀_zero"
+kind = "theorem"
+desc = '''§2.3.3, after Theorem 2.3.1: `‖A‖₂ = √λ_max(Aᵀ A)`, i.e. `lpOpNorm 2 A = √(hAtA.eigenvalues₀ 0)`
+for `0 < n` (`hAtA : (Aᵀ * A).IsHermitian`, Mathlib `Matrix.isHermitian_transpose_mul_self`); in
+particular `‖A‖₂²` is a root of `det(AᵀA - λI)`. Backbone `Matrix.sortedSingularValues_zero_eq_l2_opNorm`
+and the square of a sorted singular value as the sorted eigenvalue (Mathlib
+`LinearMap.sq_singularValues_fin`). ★★'''
+deps = ["Matrix.sortedSingularValues_zero_eq_l2_opNorm", "theorem_2_3_1"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.3'
+
+[[node]]
+id = "corollary_2_3_2"
+kind = "theorem"
+desc = '''Corollary 2.3.2: `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)` — backbone
+`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm` (a weighted Cauchy–Schwarz, not the book's
+eigenvector argument). ★'''
+deps = ["Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.3.2'
+
+[[node]]
+id = "lemma_2_3_3"
+kind = "theorem"
+desc = '''Lemma 2.3.3: for `p : ℝ≥0∞` with `1 ≤ p` (the book's `1 ≤ p ≤ ∞`; `Matrix.lpOpNorm` takes an
+`ENNReal`, and below `1` the `p`-"norm" is not a norm, so the hypothesis `[Fact (1 ≤ p)]` is pinned
+explicitly) and `F : Matrix (Fin n) (Fin n) ℝ` with `‖F‖_p < 1`: `I - F` is nonsingular,
+`HasSum (fun k => F ^ k) (I - F)⁻¹`, and `‖(I - F)⁻¹‖_p ≤ 1 / (1 - ‖F‖_p)` (`n ≥ 1` for the bound;
+for `n = 0` it is `0 ≤ 1`). Backbone `Matrix.isUnit_one_sub_of_inducedNorm_lt_one`,
+`Matrix.hasSum_pow_of_inducedNorm_lt_one`, `Matrix.inducedNorm_inv_one_sub_le` through
+`Matrix.lpOpNorm_eq_inducedNorm`. ★'''
+deps = ["Matrix.isUnit_one_sub_of_inducedNorm_lt_one", "Matrix.hasSum_pow_of_inducedNorm_lt_one", "Matrix.inducedNorm_inv_one_sub_le", "Matrix.lpOpNorm_eq_inducedNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 2.3.3'
+
+[[node]]
+id = "norm_inv_one_sub_sub_one_le"
+kind = "theorem"
+desc = '''§2.3.4, after Lemma 2.3.3: `‖(I - F)⁻¹ - I‖_p ≤ ‖F‖_p / (1 - ‖F‖_p)` — backbone
+`Matrix.inducedNorm_inv_one_sub_sub_one_le`. The book's "`O(ε)` perturbations of `I` induce `O(ε)`
+perturbations of the inverse" is this bound, not a separate node. ★'''
+deps = ["Matrix.inducedNorm_inv_one_sub_sub_one_le", "lemma_2_3_3"]
+source = 'Golub–Van Loan, Matrix Computations, §2.3.4'
+
+[[node]]
+id = "theorem_2_3_4"
+kind = "theorem"
+desc = '''Theorem 2.3.4: `A` nonsingular, `r = ‖A⁻¹ E‖_p < 1` ⇒ `A + E` nonsingular and `‖(A + E)⁻¹ -
+A⁻¹‖_p ≤ ‖E‖_p ‖A⁻¹‖_p² / (1 - r)`. Backbone `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`,
+`NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one` (its second clause, the book's
+`‖t‖ ‖a⁻¹‖² / (1 - r)`; the first clause is the sharper `r ‖a⁻¹‖ / (1 - r)`, which the surface may add as a
+remark) in the operator algebra of `PiLp p`, transported by `Matrix.lpCLM` (`Matrix.isUnit_lpCLM_iff`, `Matrix.ringInverse_lpCLM`,
+`Matrix.lpCLM_mul`, `Matrix.lpCLM_add`). The book's proof writes `A + E = (I + F) A` with `F = -E A⁻¹`
+and claims `‖F‖_p = r`, which is false in general (`‖E A⁻¹‖ ≠ ‖A⁻¹ E‖`); the statement is true
+through `A + E = A (I + A⁻¹ E)` (report, Doubts). ★'''
+deps = ["NormedRing.isUnit_add_of_norm_inverse_mul_lt_one", "NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one", "Matrix.isUnit_lpCLM_iff", "Matrix.ringInverse_lpCLM", "lemma_2_3_3"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.3.4'
+
+[[node]]
+id = "equation_2_3_14"
+kind = "theorem"
+desc = '''(2.3.14): `‖Q A Z‖_F = ‖A‖_F` for `Q ∈ orthogonalGroup (Fin m) ℝ`, `Z ∈ orthogonalGroup (Fin n) ℝ` —
+backbone `Matrix.frobenius_norm_unitary_mul_mul_unitary` (`orthogonalGroup = unitaryGroup` over `ℝ`). ★'''
+deps = ["Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.14)'
+
+[[node]]
+id = "equation_2_3_15"
+kind = "theorem"
+desc = '''(2.3.15): `‖Q A Z‖₂ = ‖A‖₂` — backbone `Matrix.l2_opNorm_unitary_mul_mul_unitary`. ★'''
+deps = ["Matrix.l2_opNorm_unitary_mul_mul_unitary"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.3.15)'

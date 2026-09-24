@@ -1,0 +1,185 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.4, symmetric indefinite systems: the Aasen factorization (4.4.1) through the Parlett–Reid process
+and Aasen's method (4.4.14), the block `L D Lᵀ` of the diagonal pivoting methods (4.4.2), (4.4.15),
+the Bunch–Parlett growth bounds (4.4.16)–(4.4.17) and the parameter `α = (1 + √17)/8`, and the
+equilibrium systems of §4.4.5 ((4.4.18), (4.4.20), (4.4.21)). The section has no numbered theorem
+and no numbered algorithm. Backbone: `Numlib/LinearAlgebra/Matrix/SymmetricIndefinite` (the specifications
+`Matrix.IsAasen`, `Matrix.IsBlockLDL`, their existence theorems, the multiplier bound, the solve chains),
+`Numlib/Direct/SymmetricIndefinite` (the Bunch–Parlett growth bounds and (4.4.21)), and `Matrix.saddleMatrix`
+of `Numlib/LinearAlgebra/Matrix/SchurComplement` (the equilibrium matrix, over `RCLike`). Aasen's method is
+formalized in the book's only form, the unpivoted display (4.4.14), as a D4 program with a spec
+(decision recorded in the ch04 report); (4.4.6)–(4.4.13) are its derivation steps, and the
+pivot strategies (Bunch–Parlett, Bunch–Kaufman) and the stability claims of §4.4.4 are not
+formalized (chapter group). Permutations act as `A.submatrix σ σ` (`= P A Pᵀ`).
+'''
+
+[[node]]
+id = "equation_4_4_1"
+kind = "theorem"
+desc = '''(4.4.1): every symmetric `A : Matrix (Fin n) (Fin n) ℝ` has a permutation `σ`, a unit lower triangular
+`L` with `L(:, 1) = e₁` and `|ℓ_ij| ≤ 1`, and a symmetric tridiagonal `T` with
+`P A Pᵀ = L T Lᵀ` (`Matrix.IsAasen (A.submatrix σ σ) L T`); `Matrix.exists_perm_isAasen`. ★'''
+deps = ["Matrix.exists_perm_isAasen"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.1)'
+
+[[node]]
+id = "equation_4_4_2"
+kind = "theorem"
+desc = '''(4.4.2): every symmetric `A` has a permutation `σ`, a unit lower triangular `L` and a symmetric `D` that is
+a direct sum of `1 × 1` and `2 × 2` blocks with `P A Pᵀ = L D Lᵀ` (`Matrix.IsBlockLDL (A.submatrix σ σ)
+L D`); `Matrix.exists_perm_isBlockLDL`. The book adds "`P` is chosen so that `|ℓ_ij| ≤ 1`", which is
+false for the strategy it then describes; the true bound is the separate clause
+`equation_4_4_2_multipliers`. ★'''
+deps = ["Matrix.exists_perm_isBlockLDL"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.2)'
+
+[[node]]
+id = "equation_4_4_2_multipliers"
+kind = "theorem"
+desc = '''(4.4.2)'s multiplier clause, in its true form (surface review: state the `1/α` bound rather than drop
+the clause): with the Bunch–Parlett pivot choice of §4.4.4 at parameter `0 < α < 1`, the factorization
+of `equation_4_4_2` can be chosen with `|ℓ_ij| ≤ 1/α` in the columns of `1 × 1` pivots and
+`|ℓ_ij| ≤ 1/(1 − α)` in the columns of `2 × 2` pivots, so `|ℓ_ij| ≤ max(1/α, 1/(1 − α))`
+(`≈ 2.78` at the book's `α = (1 + √17)/8`, `bunchParlett_alpha`) — not the printed `1`. `1 × 1`: the
+pivot has `|e| ≥ α μ₀ ≥ α μ₁`, so `|c/e| ≤ 1/α`; `2 × 2`: `|e₁₁|, |e₂₂| ≤ α μ₀`, `|e₂₁| = μ₀`, so
+`|det E| ≥ (1 − α²) μ₀²` and each row of `C E⁻¹` is at most `(1 + α) μ₀² / ((1 − α²) μ₀²)`. Delegates to the
+backbone `Matrix.exists_perm_isBlockLDL_abs_le` (`Numlib/LinearAlgebra/Matrix/SymmetricIndefinite`, beside
+`Matrix.exists_perm_isBlockLDL`: `∀ i j, |L i j| ≤ max α⁻¹ (1 - α)⁻¹`, with the per-pivot-size bounds as its
+second clause) at `K = ℝ`; the numerical value at the book's `α` from `bunchParlett_alpha`. ★'''
+deps = ["equation_4_4_2", "Matrix.exists_perm_isBlockLDL_abs_le", "bunchParlett_alpha"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.2)'
+
+[[node]]
+id = "aasen_solve"
+kind = "theorem"
+desc = '''§4.4, the solve chain for (4.4.1): `P A Pᵀ = L T Lᵀ`, `L z = P b`, `T w = z`, `Lᵀ y = w`, `x = Pᵀ y`
+`⇒ A x = b`; `Matrix.IsAasen.solve`. ★'''
+deps = ["Matrix.IsAasen.solve"]
+source = 'Golub–Van Loan, Matrix Computations, §4.4, Display'
+
+[[node]]
+id = "blockLDL_solve"
+kind = "theorem"
+desc = '''§4.4, the solve chain for (4.4.2): `P A Pᵀ = L D Lᵀ`, `L z = P b`, `D w = z`, `Lᵀ y = w`, `x = Pᵀ y`
+`⇒ A x = b`; `Matrix.IsBlockLDL.solve`. ★'''
+deps = ["Matrix.IsBlockLDL.solve"]
+source = 'Golub–Van Loan, Matrix Computations, §4.4, Display'
+
+[[node]]
+id = "parlettReid_update"
+kind = "theorem"
+desc = '''§4.4.1, the update at the heart of (4.4.3): for symmetric `B` (size `n − k`), `w` and `e₁`,
+`(I − w e₁ᵀ) B (I − w e₁ᵀ)ᵀ = B − w uᵀ − u wᵀ` with `u = B e₁ − (b₁₁/2) w`. Expand;
+`Matrix.vecMulVec` algebra (`noncomm_ring`-free: all terms are rank-one). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §4.4.1, Display'
+
+[[node]]
+id = "equation_4_4_5"
+kind = "theorem"
+desc = '''(4.4.5): if `A = L T Lᵀ` (Aasen, no pivoting), then `H = T Lᵀ` is upper Hessenberg and
+`A(:, j) = L H(:, j) = ∑_{k ≤ j+1} L(:, k) h_k`; `Matrix.IsAasen.isUpperHessenberg_mul_transpose`. ★'''
+deps = ["Matrix.IsAasen.isUpperHessenberg_mul_transpose"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.5)'
+
+[[node]]
+id = "aasenNoPivot"
+kind = "definition"
+desc = '''(4.4.14), Aasen's method without pivoting, D4 (a content-named program; its exact specification is
+`equation_4_4_14`): state `(α, β, L, v)`; `List.foldlM` over `j`: for `j = 0`,
+`α 0 := A 0 0`, `v i := A i 0` (`i ≥ 1`); else `h 0 ← rnd (β 0 * L j 1)`, for `1 ≤ k < j`,
+`h k ← rnd (rnd (rnd (β (k−1) * L j (k−1)) + rnd (α k * L j k)) + rnd (β k * L j (k+1)))`,
+`h j ← ` running difference of `A j j` with `rnd (L j k * h k)`, `k < j`,
+`α j ← rnd (h j − rnd (β (j−1) * L j (j−1)))`, `v i ←` running difference of `A i j` with
+`rnd (L i k * h k)`, `k ≤ j`, for `i > j`; then `β j := v (j+1)` if `j + 1 < n`, and
+`L i (j+1) ← rnd (v i / v (j+1))` for `i ≥ j + 2`. (The book's `h(1) = β₁ ℓ_{j2}` line and its loop
+`k = 2 : j−1` are followed literally, 0-based.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.14)'
+
+[[node]]
+id = "equation_4_4_14"
+kind = "theorem"
+desc = '''(4.4.14) computes Aasen's factorization: for symmetric `A`, if every `v(j+1)` used as a divisor is
+nonzero, the `Id` output of `aasenNoPivot` satisfies `Matrix.IsAasen A L T` with
+`T = tridiag(β, α, β)` (`Matrix.tridiagonalOf`), i.e. `A = L T Lᵀ` with `L(:, 1) = e₁`. Invariant over
+`j`: the columns `≤ j` of `A = L H` hold, with `H = T Lᵀ` computed column by column as in (4.4.5),
+(4.4.9)–(4.4.13). ★★★ (~200 lines)'''
+deps = ["aasenNoPivot", "equation_4_4_5", "Matrix.IsAasen", "Matrix.tridiagonalOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.14)'
+
+[[node]]
+id = "equation_4_4_15"
+kind = "theorem"
+desc = '''(4.4.15) with the displayed factorization: for symmetric `A` and a permutation `P₁` bringing a nonsingular
+symmetric `s × s` pivot `E` (`s ∈ {1, 2}`) to the front, `P₁ A P₁ᵀ = [E Cᵀ; C B] =
+[I 0; C E⁻¹ I] [E 0; 0 B − C E⁻¹ Cᵀ] [I E⁻¹ Cᵀ; 0 I]` (`Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`),
+and such `P₁`, `E` exist whenever `A ≠ 0` (`Matrix.exists_isUnit_principal_pivot`, the book's P4.4.1). ★'''
+deps = ["Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement", "Matrix.exists_isUnit_principal_pivot"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.15)'
+
+[[node]]
+id = "equation_4_4_16"
+kind = "theorem"
+desc = '''(4.4.16): in the Bunch–Parlett strategy with `α ∈ (0, 1)`, if `μ₁ ≥ α μ₀` and the pivot is a diagonal entry of
+modulus `μ₁`, then `|ã_ij| ≤ (1 + α⁻¹) μ₀`; `BunchParlett.abs_schurComplementSingle_le`. ★'''
+deps = ["BunchParlett.abs_schurComplementSingle_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.16)'
+
+[[node]]
+id = "equation_4_4_17"
+kind = "theorem"
+desc = '''(4.4.17): if `μ₁ < α μ₀` and the `2 × 2` pivot contains an off-diagonal entry of modulus `μ₀`, then `E` is
+nonsingular and `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`; `BunchParlett.abs_schurComplement_two_le`. ★'''
+deps = ["BunchParlett.abs_schurComplement_two_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.17)'
+
+[[node]]
+id = "bunchParlett_alpha"
+kind = "theorem"
+desc = '''§4.4.3: equating the growth factor `(1 + α⁻¹)²` of two `s = 1` steps with the factor `(3 − α)/(1 − α)` of one
+`s = 2` step gives `α = (1 + √17)/8` — the unique solution in `(0, 1)`; `BunchParlett.alpha_eq`. (The
+book's "optimum from the standpoint of minimizing the bound on element growth" is this
+equation.) ★'''
+deps = ["BunchParlett.alpha_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §4.4.3, Display'
+
+[[node]]
+id = "equation_4_4_18"
+kind = "theorem"
+desc = '''(4.4.18): if `C : Matrix (Fin n) (Fin n) ℝ` is symmetric positive definite and `B : Matrix (Fin n) (Fin p) ℝ`
+has full column rank, the equilibrium matrix `A = [C B; Bᵀ 0]` is nonsingular ("These conditions
+ensure that `A` is nonsingular"); `Matrix.isUnit_saddleMatrix_zero` at `𝕜 = ℝ`, stated over `RCLike` with
+`Matrix.saddleMatrix C B 0 = fromBlocks C B Bᴴ 0`: the surface keeps the book's `fromBlocks C B Bᵀ 0` and rewrites
+(`saddleMatrix` unfolds to `fromBlocks`; `Matrix.conjTranspose_eq_transpose_of_trivial`). ★'''
+deps = ["Matrix.isUnit_saddleMatrix_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.18)'
+
+[[node]]
+id = "equilibrium_factorization"
+kind = "theorem"
+desc = '''§4.4.5, the tempting factorization: with `C = G Gᵀ` (Cholesky), `G K = B`, `H Hᵀ = Kᵀ K = Bᵀ C⁻¹ B`
+(Cholesky of the positive definite `Bᵀ C⁻¹ B`), `A = [G 0; Kᵀ H] [Gᵀ K; 0 −Hᵀ]`;
+`Matrix.saddleMatrix_zero_eq_mul` (over `RCLike`, at `ℝ`, `fromBlocks C B Bᵀ 0` rewritten to
+`Matrix.saddleMatrix C B 0` as in `equation_4_4_18`) with `theorem_4_2_7` for the two Cholesky factors. ★'''
+deps = ["Matrix.saddleMatrix_zero_eq_mul", "theorem_4_2_7"]
+source = 'Golub–Van Loan, Matrix Computations, §4.4.5, Display'
+
+[[node]]
+id = "equation_4_4_20"
+kind = "theorem"
+desc = '''(4.4.20): for (4.4.19) with `g = 0` (and `C` symmetric positive definite, `B` of full column rank; the book's
+"`C` is diagonal" is not needed), `y = (Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹ f`; `Matrix.saddleMatrix_zero_mulVec_snd_eq` (over `RCLike`,
+at `ℝ`, with the `fromBlocks`/`saddleMatrix` rewrite of `equation_4_4_18`). ★'''
+deps = ["Matrix.saddleMatrix_zero_mulVec_snd_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.20)'
+
+[[node]]
+id = "equation_4_4_21"
+kind = "theorem"
+desc = '''(4.4.21): for `B` of full column rank there is `ψ_B`, independent of `C`, with
+`‖(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹‖₂ ≤ ψ_B` for every positive diagonal `C`; `Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le`
+at `d = C⁻¹`'s diagonal (★★★ in the backbone; the book quotes it). ★'''
+deps = ["Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.21)'

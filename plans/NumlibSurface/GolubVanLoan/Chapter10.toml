@@ -1,0 +1,115 @@
+desc = '''
+Golub–Van Loan, Chapter 10: large sparse eigenvalue problems — the symmetric Lanczos process and its
+convergence (§10.1), Lanczos and Gauss quadrature for `uᵀ f(A) u` (§10.2), practical Lanczos:
+the two-vector implementation, complete and selective reorthogonalization, block Lanczos (§10.3),
+Golub–Kahan and Paige–Saunders bidiagonalization and a CUR sketch (§10.4), Arnoldi, implicit and
+Krylov–Schur restarting, unsymmetric Lanczos (§10.5), and the approximate-Newton family JOCC,
+Davidson, Jacobi–Davidson, trace-min (§10.6).
+
+**Correspondence.** Most of the mathematics is already backbone: `Numlib/Krylov/{Subspace, Arnoldi,
+Lanczos, Block, BiLanczos, Hessenberg, OrthogonalPolynomials}` (Krylov subspaces, the Arnoldi and Lanczos
+vectors as Gram–Schmidt of the Krylov sequence, `T_m`, the Lanczos polynomials, the spectral measure
+and the Gauss rule of the compression), `Numlib/Eigen/{RayleighRitz, KrylovEigen, Perturbation, MinMax}`
+(Ritz pairs, the cheap Arnoldi residual `h_{m+1,m} |y_m|`, Kaniel–Paige–Saad, the symmetric residual
+bound, Courant–Fischer and interlacing), `Numlib/Analysis/InnerProductSpace/GramSchmidt` (modified
+Gram–Schmidt = classical), and the quadrature layer `Numlib/Approximation/{Quadrature, GaussLobatto,
+OrthogonalPolynomial, Hermite}`. The chapter adds five backbone modules, all planned in this round:
+`Numlib/Krylov/Decomposition` (the matrix reading `A Q_k = Q_k H_k + r_k e_kᵀ`, the operator-level
+`Krylov.IsKrylovDecomposition`/`Krylov.IsArnoldiDecomposition` and their uniqueness; the matrix predicates
+`Matrix.IsKrylovDecomposition`/`Matrix.IsArnoldiDecomposition`, with `k + 1` columns, and the one implicit Q
+engine `Matrix.IsArnoldiDecomposition.implicitQ` live in `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`,
+which imports no Krylov module), `Numlib/Krylov/Bidiagonalization` (Golub–Kahan, with
+Paige–Saunders as the dual process and the Jordan–Wielandt connection through the Hermitian dilation
+`LinearMap.hermitianDilation` of `Numlib/Analysis/InnerProductSpace/SingularValues`), `Numlib/Krylov/Quadrature`
+(`uᵀ f(A) u` as an integral, the Golub–Welsch form of the Lanczos Gauss rule, its remainder, the
+Gauss–Radau modification and the two-sided bound, whose measure-level form is
+`Quadrature.gauss_le_integral_le_gaussRadau` in `Numlib/Approximation/Quadrature`), `Numlib/Eigen/ImplicitRestart` (the shifted-QR chain,
+Theorem 10.5.1, implicit restart and Krylov–Schur as transformations of Arnoldi decompositions),
+`Numlib/Eigen/JacobiDavidson` (the eigenproblem as a nonlinear system `ContinuousLinearMap.eigenpairResidual`,
+the bordered Newton correction,
+the projected Jacobi–Davidson equation); and staged appends to `Eigen/{RayleighRitz, KrylovEigen,
+MinMax}`, `Krylov/Block`, `Analysis/Matrix/SpectralNorm`, `Approximation/{Quadrature, GaussLobatto}`
+(`notes/gvl/ch10/appends/`).
+
+**Conventions of the chapter's surface files.**
+
+* Scalars and shapes (D1): the book is real. `A : Matrix (Fin n) (Fin n) ℝ` (`Fin m`, `Fin n` for the
+  rectangular `A ∈ ℝ^{m×n}` of §10.4), symmetric as `hA : A.IsSymm`, acting on
+  `EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanLin`, with `Matrix.IsSymm.isSymmetric_toEuclideanLin`.
+  Krylov-layer statements take the starting vector `q₁ : EuclideanSpace ℝ (Fin n)`; the algorithms take
+  `q₁ : Fin n → ℝ` and the specs convert with `WithLp.toLp 2`/`WithLp.ofLp`.
+* Indices (D2): `0`-based throughout. The book's `q_{j+1}` is `Arnoldi.vec (toEuclideanLin A) q₁ j`,
+  `α_{j+1}` is `Lanczos.alpha _ q₁ j`, `β_{j+1}` is `Lanczos.beta _ q₁ j`, `T_k` is `Lanczos.tridiag _ q₁ k`,
+  `Q_k` is `Arnoldi.basisMatrix A q₁ k`, `H_k` is `Arnoldi.hessenbergSq _ q₁ k`, `r_k` is
+  `(Arnoldi.w _ q₁ (k − 1)).ofLp`, and `e_k` is `Krylov.lastVec 1 k`. Bidiagonalization: `v_{j+1}`,
+  `u_{j+1}`, `α_{j+1}`, `β_{j+1}` are `GolubKahan.rightVec/leftVec/alpha/beta … j`. Submatrices
+  `X(:, 1:j)` are `Matrix.submatrix X id (Fin.castLE _)`.
+* Eigenvalues: the Schur decomposition `Zᵀ A Z = diag(λ_1, …, λ_n)`, `λ_1 ≥ ⋯ ≥ λ_n`, of (10.1.9) is
+  `(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin : Fin n → ℝ` (decreasing) with
+  `eigenvectorBasis` for `z_i` — the convention of the QSS §5.11 surface; the Ritz values
+  `θ_1 ≥ ⋯ ≥ θ_k` are `Lanczos.ritzValues (toEuclideanLin A) q₁ k` (staged in `Eigen/KrylovEigen`).
+  Where the book uses a matrix eigen-decomposition of a small matrix (`S_kᵀ T_k S_k = Θ_k`, (10.1.7),
+  (10.2.11)) the surface uses Mathlib's `Matrix.IsHermitian.eigenvalues`/`eigenvectorBasis`/
+  `eigenvectorUnitary` of that matrix.
+* Norms (D3): `‖·‖₂` of vectors is the `EuclideanSpace` norm; of matrices the scoped
+  `Matrix.Norms.L2Operator` norm; the Frobenius norm (§10.4.5) `Matrix.Norms.Frobenius`.
+* Matrix functions: `f(A)` for symmetric `A` is Mathlib's `cfc f A` (§10.2); chapter 9's general
+  definition must agree with it (chapter 9 owns that bridge).
+* Riemann–Stieltjes integrals (§10.2.1) are read as Lebesgue–Stieltjes integrals against
+  `StieltjesFunction.measure`; for the continuous integrands of §10.2 the two agree, and nothing in the
+  chapter uses a Riemann–Stieltjes sum.
+* Algorithms (D4; the numbered conventions 1–14 of `NumlibSurface/GolubVanLoan` govern, this list only
+  adds the chapter's specifics): every numbered algorithm is a monadic program `algorithm_10_M_K` with a
+  rounding hook, in the book's operation order, with a `_spec` theorem at `M := Id, rnd := pure`; every
+  numbered display that writes out an algorithm is a **content-named** program whose exact-spec theorem
+  carries the display's number (the naming rule of the `GolubVanLoan` group): (10.3.1)
+  `twoVectorLanczos`, (10.3.4) `householderLanczos`, (10.3.8) `blockLanczos`, (10.5.4) `shiftedQrSteps`,
+  (10.5.10) `explicitlyRestartedArnoldi`, (10.5.11) `unsymmetricLanczos`, (10.6.14) `joccIteration`,
+  (10.6.16) `davidson`, with specs `equation_10_3_1`, …, `equation_10_6_16`. Every fuel-bounded program
+  takes `fuel : ℕ` as its last explicit argument; a tolerance `tol` precedes it. Three conventions the prototype
+  `notes/gvl/ch10/proto/Shapes.lean` settled: (i) programs that branch on a real comparison
+  (`while β_k ≠ 0`) are `noncomputable def` (`Real.decidableEq`); (ii) `while` loops run over
+  `List.range fuel` with a `done` flag in the state and a no-op once it is set, and the spec says the
+  number of passes taken is `min fuel (stopping index)` (the `GolubVanLoan` group's convention 3); (iii) the state is a structure with `ℕ`-indexed families updated
+  by `Function.update` (the columns of `Q_k`, the `α`, `β`, …). Inner products and the rows of matrix–vector
+  products are chapter 1's backbone accumulation `FloatingPoint.dotAccum` (Algorithm 1.1.1, and the
+  inner loop of the row gaxpy 1.1.3; `Numlib/FloatingPoint/Program`), collapsed at `Id` by
+  `FloatingPoint.dotAccum_id_finRange`; `‖r‖₂` is `√` of the rounded dot product followed by one `rnd`;
+  vector scaling `r/β` and saxpy updates are one `rnd` per product and per sum, entrywise.
+  The chapter has no rounding-error theorem of its own (Paige's analysis is quoted, see below), so the
+  floating-point semantics is carried by the definitions only.
+
+**Not formalized** (with the reason; the per-item list is `notes/gvl/ch10/inventory.md`):
+operation counts and storage (§10.3.1 `(2ν+8)n` flops, memory traffic, §10.5.1 `O(kn)`); numerical
+examples and the comparison table Figure 10.1.1 with its `L_{k−1}` vs `R_{k−1}` discussion; Notes and
+References; Problems (except P10.5.2, a helper of §10.5.4); prose algorithms without a numbered
+display or a claim (§10.3.7 block Lanczos with restarting, §10.5.6 look-ahead, the trace-min
+iteration); motivation and notation displays that are not propositions ((10.1.2)–(10.1.3), (10.1.5) — the
+matrix `T_k`, (10.2.1), (10.5.3)'s eigen-expansion); the floating-point analysis of §10.3 — (10.3.2)–(10.3.3), (10.3.5)–(10.3.6) and
+the `≈` estimates around them are quoted from Paige (1971, 1976, 1980) without a derivation, and the
+rigorous theorems are research-level (Paige's `‖E_k‖` bound; the interface `Arnoldi.IsPerturbedRelation`
+exists for a future round); the §10.3.2 application of Theorem 8.1.16 (invalid as stated, see the
+report's Doubts); the probabilistic CUR bound of §10.4.5 (Drineas–Kannan–Mahoney, quoted, randomized);
+the exact-shift heuristic (§10.5.3) and the block-size trade-offs (§10.3.6), which are heuristics.
+
+**This chapter closes** no open node (the library had none at `62c8d8db`); it retires the QSS §5.11
+surface glue `lanczosEigenvalues` into the backbone `Lanczos.ritzValues` (refactor proposal R2) and
+adds the Gauss–Radau rule the quadrature layer lacked.
+
+**Order of attack.** Backbone first, in dependency order (estimated lines):
+1. `LinearAlgebra/Matrix/KrylovDecomposition` (the implicit Q engine, shared with chapter 7's Theorem 7.4.2),
+   then `Krylov/Decomposition` (~700 together; the uniqueness is now a corollary of the engine) and the
+   staged `Eigen/KrylovEigen` Ritz-value glue (~40);
+2. `Eigen/ImplicitRestart` (~400; Theorem 10.5.1 itself is chapter 7's staged `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one`) — needs 1;
+3. `Krylov/Bidiagonalization` (~900; the two recurrences and the Jordan–Wielandt identification are
+   ★★★) — needs 1 for the matrix forms;
+4. staged `Approximation/Quadrature` Hermite remainder (~200), `Approximation/GaussLobatto` Radau (~250),
+   then `Krylov/Quadrature` (~800);
+5. `Eigen/JacobiDavidson` (~300);
+6. the remaining staged appends: `Eigen/RayleighRitz` gradient (~60), `Krylov/Block` (~60),
+   `Analysis/Matrix/SpectralNorm` block bound (~150), `Eigen/MinMax` Ky Fan (~250),
+   `Eigen/KrylovEigen` block Kaniel–Paige–Saad (~450).
+Then the surface, section by section: §10.1 (needs 1, ch01's programs), §10.5 (needs 1–2), §10.4
+(needs 3), §10.2 (needs 4), §10.3 (needs 6 and 1), §10.6 (needs 5 and the Ky Fan append). Surface
+estimate ~3 200 lines, of which the algorithm specs are two thirds.
+'''

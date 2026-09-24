@@ -1,0 +1,201 @@
+namespace = "GolubVanLoan.Chapter10"
+desc = '''
+§10.1, the symmetric Lanczos process: the gradient of the Rayleigh quotient (10.1.1), Algorithm 10.1.1
+and Theorem 10.1.1 with (10.1.4) and (10.1.6), Ritz approximations (10.1.7)–(10.1.8) with the residual
+bound and Golub's rank-one modification, the Kaniel–Paige–Saad bounds Theorem 10.1.2, Corollary 10.1.3,
+Theorem 10.1.4, and the power-method comparison (10.1.11). Backbone: `Numlib/Krylov/{Arnoldi, Lanczos,
+Decomposition}`, `Numlib/Eigen/{RayleighRitz, KrylovEigen, Perturbation}`; conventions in the chapter
+group. The monotonicity `M_1 ≤ M_2 ≤ ⋯` of §10.1.1 is `LinearMap.IsSymmetric.eigenvalues_compression_mono`
+and is cited in the module doc, not a node; (10.1.5) only displays the tridiagonal `T_k` (notation, the
+backbone's `Lanczos.tridiag`), not a node; Figure 10.1.1 is numerical.
+'''
+
+[[node]]
+id = "equation_10_1_1"
+kind = "theorem"
+desc = '''(10.1.1): for symmetric `A` and `x ≠ 0` in `EuclideanSpace ℝ (Fin n)`, the Rayleigh quotient
+`r(x) = xᵀAx/xᵀx` (`(toEuclideanCLM A).rayleighQuotient`) has gradient `(2/‖x‖²)(A x − r(x) x)`; and hence
+(the display after (10.1.3)) `∇r(x) ∈ span {x, A x}`. Staged backbone
+`ContinuousLinearMap.hasGradientAt_rayleighQuotient`. ★'''
+deps = ["ContinuousLinearMap.hasGradientAt_rayleighQuotient"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.1.1)'
+
+[[node]]
+id = "algorithm_10_1_1"
+kind = "definition"
+desc = '''Algorithm 10.1.1 (Lanczos tridiagonalization) as a D4 program, `noncomputable def algorithm_10_1_1
+{M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ)
+(fuel : ℕ) : M (LanczosState n)` (`fuel` last, convention 3), where the state structure (a helper of the
+module) carries the step count `k`, the Lanczos vectors `q : ℕ → Fin n → ℝ`, `alpha beta : ℕ → ℝ`, the
+residual `r` and the previous vector. **Indices are 0-based: `q j` is the book's `q_{j+1}`** (and
+`alpha j`, `beta j` are the book's `α_{j+1}`, `β_{j+1}`); the book's `q_0 = 0` is not stored, the previous
+vector starts at `0` (prototype `notes/gvl/ch10/proto/Shapes.lean`, `LanczosState`). Start: `k = 0`,
+`r = q₁`, the first normalization by `‖q₁‖ = 1` (the book's `β_0 = 1`); each of `fuel` passes is a
+no-op once `k > 0` and the last computed `β` is `0` (a comparison on the computed value), and otherwise
+does, in the book's order, the normalization `q k = r / β` (one `rnd` per entry), `k = k+1`,
+`α_k = q_kᵀ(A q_k)` (`A q_k` row by row and the dot product with `FloatingPoint.dotAccum`, i.e. chapter 1's
+Algorithms 1.1.3 and 1.1.1),
+`r_k = (A − α_k I) q_k − β_{k−1} q_{k−1}` (entrywise, rounding each product and difference),
+`β_k = ‖r_k‖₂` (`√` of `FloatingPoint.dotAccum` on `r_k, r_k`, then one `rnd`). The shape (with local
+stand-ins for `dotAccum`) is `notes/gvl/ch10/proto/Shapes.lean` and elaborates. ★★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.1.1'
+
+[[node]]
+id = "algorithm_10_1_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 10.1.1: for symmetric `A` and `‖q₁‖₂ = 1`, with
+`s = Id.run (algorithm_10_1_1 pure A q₁ fuel)`, `T = toEuclideanLin A`, `q = WithLp.toLp 2 q₁`:
+`s.k = min fuel (Krylov.grade T q)` and for `j < s.k`, `s.q j = (Arnoldi.vec T q j).ofLp`,
+`s.alpha j = Lanczos.alpha T q j`, `s.beta j = Lanczos.beta T q j` (so the positive choice `β_k = ‖r_k‖`
+of the book is the backbone's). Induction on the passes with the invariant "`s` is the backbone state at
+step `s.k`": `Lanczos.w_succ_eq` is the residual update, `Arnoldi.vec_succ_eq` the normalization,
+`Lanczos.beta_eq_zero_iff` the exit test (`β_j = 0 ↔ grade ≤ j + 1`); `FloatingPoint.dotAccum_id_finRange` and
+`List.foldl_update_self` collapse the `Id` runs of the dot and matrix–vector loops. Statement shape in
+`notes/gvl/ch10/proto/Shapes.lean`. ★★ (~200 lines)'''
+deps = ["algorithm_10_1_1", "Lanczos.w_succ_eq", "Arnoldi.vec_succ_eq", "Lanczos.beta_eq_zero_iff", "Lanczos.alpha", "Lanczos.beta", "FloatingPoint.dotAccum_id_finRange", "List.foldl_update_self"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.1.1'
+
+[[node]]
+id = "theorem_10_1_1"
+kind = "theorem"
+desc = '''Theorem 10.1.1: Algorithm 10.1.1 runs until `k = m = rank K(A, q₁, n)` — with enough fuel
+(`n ≤ fuel`), `s.k = (Matrix.krylovMatrix A q₁ n).rank` — and for `1 ≤ k ≤ m`: `A Q_k = Q_k T_k + r_k e_kᵀ`
+(10.1.4), `Q_kᵀ Q_k = I_k`, and the columns of `Q_k` span `𝒦(A, q₁, k)`, where `Q_k = [q_1 | ⋯ | q_k]` is
+formed from `s.q` and equals `Arnoldi.basisMatrix A q k`, and `T_k` from `s.alpha`, `s.beta` equals
+`Lanczos.tridiag T q k`. From `algorithm_10_1_1_spec`, `Krylov.grade_eq_rank_krylovMatrix` (`grade ≤ n`
+by `Krylov.grade_le_finrank`), `Lanczos.mul_basisMatrix`, `Arnoldi.conjTranspose_basisMatrix_mul_self`,
+`Arnoldi.range_basisMatrix`. The book's induction (orthogonality from the three-term recurrence) is the
+backbone's Gram–Schmidt definition read backwards. ★★'''
+deps = ["algorithm_10_1_1_spec", "Krylov.grade_eq_rank_krylovMatrix", "Lanczos.mul_basisMatrix", "Arnoldi.conjTranspose_basisMatrix_mul_self", "Arnoldi.range_basisMatrix", "equation_10_1_4"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 10.1.1'
+
+[[node]]
+id = "equation_10_1_4"
+kind = "theorem"
+desc = '''(10.1.4): for symmetric `A`, `A Q_k = Q_k T_k + r_k e_kᵀ` with `Q_k = Arnoldi.basisMatrix A q k`,
+`T_k = Lanczos.tridiag (toEuclideanLin A) q k`, `r_k = (Arnoldi.w _ q (k − 1)).ofLp`, `e_k = Krylov.lastVec 1 k`,
+`1 ≤ k` (at every step; the orthonormality needs `k ≤ grade`, the relation does not). Backbone
+`Lanczos.mul_basisMatrix` at `k − 1 + 1`. ★'''
+deps = ["Lanczos.mul_basisMatrix", "Krylov.lastVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.1.4)'
+
+[[node]]
+id = "equation_10_1_6"
+kind = "theorem"
+desc = '''(10.1.6) and its consequences in the proof of Theorem 10.1.1: for `1 ≤ k ≤ grade`,
+`Q_kᵀ A Q_k = T_k + Q_kᵀ r_k e_kᵀ`, `Q_kᵀ A Q_k = T_k` and `Q_kᵀ r_k = 0` (so `T_{ij} = q_iᵀ A q_j`).
+Backbone `Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix`, `Arnoldi.conjTranspose_basisMatrix_mulVec_w`,
+`Lanczos.hessenbergSq_eq_map_tridiag`. ★'''
+deps = ["equation_10_1_4", "Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix", "Arnoldi.conjTranspose_basisMatrix_mulVec_w", "Lanczos.hessenbergSq_eq_map_tridiag"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.1.6)'
+
+[[node]]
+id = "isRitzPair_lanczos"
+kind = "theorem"
+desc = '''§10.1.4, the claim after (10.1.7): if `S_kᵀ T_k S_k = Θ_k = diag(θ_1, …, θ_k)` (a Schur decomposition,
+Mathlib's `eigenvectorUnitary`/`eigenvalues` of the symmetric `T_k`) and `Y_k = Q_k S_k`, then for every
+`i`, `(θ_i, y_i)` is a Ritz pair of `A` with respect to `𝒦(A, q₁, k)`: `Krylov.IsRitzPair`
+(`y_i ∈ 𝒦`, `y_i ≠ 0`, `A y_i − θ_i y_i ⟂ 𝒦`). `k ≤ grade`. Backbone `Arnoldi.isRitzPair_of_mulVec_eq_smul`
+with `Lanczos.hessenbergSq_eq_map_tridiag`. ★'''
+deps = ["Arnoldi.isRitzPair_of_mulVec_eq_smul", "Krylov.IsRitzPair", "Lanczos.hessenbergSq_eq_map_tridiag"]
+source = 'Golub–Van Loan, Matrix Computations, §10.1.4, Ritz pairs'
+
+[[node]]
+id = "equation_10_1_8"
+kind = "theorem"
+desc = '''(10.1.8): in the setting of `isRitzPair_lanczos`, `A y_i − θ_i y_i = s_{ki} r_k` and
+`‖A y_i − θ_i y_i‖₂ = |β_k| |s_{ki}|` (`β_k = Lanczos.beta _ q (k − 1)`, `s_{ki}` the last entry of the
+`i`-th eigenvector of `T_k`), and `|s_{ki}| ≤ 1`. Backbone `Arnoldi.norm_ritz_residual_eq`
+(`h_{m+1,m} |y_m|`) with `Lanczos.coe_beta`. ★'''
+deps = ["isRitzPair_lanczos", "Arnoldi.norm_ritz_residual_eq", "Lanczos.coe_beta"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.1.8)'
+
+[[node]]
+id = "exists_eigenvalue_dist_le_ritz"
+kind = "theorem"
+desc = '''§10.1.4, the display after (10.1.8): `∃ μ ∈ λ(A), |θ_i − μ| ≤ |β_k| |s_{ki}|`. The book derives it from
+Corollary 8.1.6 with `E = −s_{ki} r_k y_iᵀ`, which is not symmetric, so Corollary 8.1.6 does not apply as
+cited (Doubts); the statement is true by the symmetric residual bound
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` (some eigenvalue within `‖A y − θ y‖/‖y‖`), with
+`equation_10_1_8`. ★'''
+deps = ["equation_10_1_8", "LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le"]
+source = 'Golub–Van Loan, Matrix Computations, §10.1.4, Ritz value error bound'
+
+[[node]]
+id = "golub_rankOne_modification"
+kind = "theorem"
+desc = '''§10.1.4, Golub (1974): with `A Q_k = Q_k T_k + r_k e_kᵀ` (10.1.4), `τ ∈ {±1}`, `w = a q_k + b r_k` and
+`E = τ w wᵀ` (`1 ≤ k ≤ grade`): `(A + E) Q_k = Q_k (T_k + τ a² e_k e_kᵀ) + (1 + τ a b) r_k e_kᵀ`. Proof:
+`wᵀ Q_k = a q_kᵀ Q_k + b r_kᵀ Q_k = a e_kᵀ` (orthonormal columns, `Q_kᵀ r_k = 0`), so
+`E Q_k = τ a w e_kᵀ = τ a² Q_k e_k e_kᵀ + τ a b r_k e_kᵀ`. Hence if `1 + τ a b = 0`, every eigenvalue
+of `T̃_k = T_k + τ a² e_k e_kᵀ` is an eigenvalue of `A + E`. Matrix algebra from `equation_10_1_4` and
+`equation_10_1_6`. ★'''
+deps = ["equation_10_1_4", "equation_10_1_6"]
+source = 'Golub–Van Loan, Matrix Computations, §10.1.4, rank-one modification'
+
+[[node]]
+id = "golub_rankOne_bracket"
+kind = "theorem"
+desc = '''§10.1.4 ("Using Theorem 8.1.8, it can be shown …"): with `1 + τ a b = 0` and `k ≤ grade` (so `T̃_k` is unreduced
+and its eigenvalues are distinct), for `i = 2 : k` the interval `[λ_i(T̃_k), λ_{i−1}(T̃_k)]` contains an
+eigenvalue of `A`. The eigenvalues of `T̃_k` are `k` distinct eigenvalues of `A + E = A + τ w wᵀ`
+(`golub_rankOne_modification`); between two eigenvalues of `A + τ w wᵀ` lies an eigenvalue of `A` by the
+rank-one interlacing of Theorem 8.1.8 (applied to `A = (A + E) − τ w wᵀ` with `c = w/‖w‖`). Also the
+determinant formula `det(T̃_k − λI) = (α_k + τ a² − λ) p_{k−1}(λ) − β_{k−1}² p_{k−2}(λ)` (Laplace expansion
+along the last row, as in the Sturm module). ★★'''
+deps = ["golub_rankOne_modification", "GolubVanLoan.Chapter08.theorem_8_1_8"]
+source = 'Golub–Van Loan, Matrix Computations, §10.1.4, rank-one modification'
+
+[[node]]
+id = "theorem_10_1_2"
+kind = "theorem"
+desc = '''Theorem 10.1.2 (Kaniel–Paige): symmetric `A` with (10.1.9), `k ≥ 1` steps before breakdown
+(`Module.finrank (𝒦(A, q₁, k)) = k`), `θ_1 = λ_1(T_k)` (`Lanczos.ritzValues _ q k 0`), `cos φ_1 = |q₁ᵀ z_1|`
+(`(ℝ ∙ q₁).angle z_1`), `ρ_1 = (λ_1 − λ_2)/(λ_2 − λ_n)` (10.1.10), `c_{k−1} = Polynomial.Chebyshev.T ℝ (k − 1)`:
+`λ_1 ≥ θ_1 ≥ λ_1 − (λ_1 − λ_n) (tan φ_1 / c_{k−1}(1 + 2ρ_1))²`, under `q₁ᵀ z_1 ≠ 0` only (the book's
+implicit condition: `tan φ_1` is finite). **No gap hypothesis**: when `λ_2 = λ_n` (so `ρ_1 = x/0 = 0` in
+Lean) or `λ_2 = λ_1` (`ρ_1 = 0`), `c_{k−1}(1) = 1` and the claim is the `k`-free bound
+`θ_1 ≥ q₁ᵀ A q₁ ≥ λ_1 cos²φ_1 + λ_n sin²φ_1 = λ_1 − (λ_1 − λ_n) sin²φ_1 ≥ λ_1 − (λ_1 − λ_n) tan²φ_1`
+(Ritz values dominate the Rayleigh quotient of `q₁ ∈ 𝒦`, `Lanczos.ritzValues_eq_eigenvalues_compression`
+and Courant–Fischer); otherwise `λ_n < λ_2 < λ_1` and the backbone `Lanczos.kaniel_paige_saad` applies at
+the first index (empty deflation product). The case split is the only addition to the QSS proof. Also
+`Lanczos.ritzValues_eq_eigenvalues_compression`, `Submodule.cosAngle_span_singleton`. The same proof as the
+QSS surface's `property_5_12`, which cannot be imported. ★★'''
+deps = ["Lanczos.kaniel_paige_saad", "Lanczos.ritzValues_eq_eigenvalues_compression", "Submodule.cosAngle_span_singleton"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 10.1.2'
+
+[[node]]
+id = "corollary_10_1_3"
+kind = "theorem"
+desc = '''Corollary 10.1.3: `λ_n ≤ θ_k ≤ λ_n + (λ_1 − λ_n) (tan φ_n / c_{k−1}(1 + 2ρ_n))²` with
+`ρ_n = (λ_{n−1} − λ_n)/(λ_1 − λ_{n−1})`, `cos φ_n = |q₁ᵀ z_n|` (the book omits the absolute value). Theorem 10.1.2
+for `−A`: `Krylov.subspace_neg`, `LinearMap.IsSymmetric.eigenvalues_neg`,
+`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg` (the QSS `property_5_12_min` route). ★★'''
+deps = ["theorem_10_1_2", "Krylov.subspace_neg", "LinearMap.IsSymmetric.eigenvalues_neg", "LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 10.1.3'
+
+[[node]]
+id = "theorem_10_1_4"
+kind = "theorem"
+desc = '''Theorem 10.1.4 (Kaniel–Paige–Saad): for `1 ≤ i ≤ k`, `θ_i = λ_i(T_k)`,
+`λ_i ≥ θ_i ≥ λ_i − (λ_1 − λ_n) (κ_i tan φ_i / c_{k−i}(1 + 2ρ_i))²` with `ρ_i = (λ_i − λ_{i+1})/(λ_{i+1} − λ_n)`,
+`κ_i = ∏_{j<i} (θ_j − λ_n)/(θ_j − λ_i)`, `cos φ_i = |q₁ᵀ z_i|`; hypotheses: `i < n`, `λ_n < λ_{i+1} < λ_i`,
+`θ_j > λ_i` for `j < i` (so `κ_i` is defined), `q₁ᵀ z_i ≠ 0`. Backbone `Lanczos.kaniel_paige_saad` (whose
+`κ_i` is built from the Ritz values exactly as here) with `Lanczos.ritzValues_eq_eigenvalues_compression`.
+The book's proof is a reference (Saad, NMLE p. 201); the backbone proof is Saad's. ★★'''
+deps = ["Lanczos.kaniel_paige_saad", "Lanczos.ritzValues_eq_eigenvalues_compression", "theorem_10_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 10.1.4'
+
+[[node]]
+id = "equation_10_1_11"
+kind = "theorem"
+desc = '''(10.1.11): if `λ_1 ≥ ⋯ ≥ λ_n ≥ 0`, `λ_1 > 0`, `q₁ᵀ z_1 ≠ 0`, `v = A^{k−1} q₁` and `γ_1 = vᵀAv/vᵀv`, then
+`λ_1 ≥ γ_1 ≥ λ_1 − (λ_1 − λ_n) tan²φ_1 (λ_2/λ_1)^{2(k−1)}`. "Set p(x) = x^{k−1} in the proof of Theorem 10.1.2":
+`γ_1 = r(P_S z_1)` for `S = span {v}` (Rayleigh quotients are scale invariant), so
+`LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le` bounds `λ_1 − γ_1` by `(λ_1 − λ_n) tan²θ(z_1, S)`,
+and `Submodule.tanAngle_span_singleton` computes `tan θ(z_1, span {A^{k−1} q₁}) ≤ tan φ_1 (λ_2/λ_1)^{k−1}` from
+the eigen-expansion `A^{k−1} q₁ = ∑ d_i λ_i^{k−1} z_i` and `|λ_i| ≤ λ_2` for `i ≥ 2` (this is where
+`λ_n ≥ 0` is used). Surface proof, ★★ (~100 lines). The comparison with Figure 10.1.1 is not a node. '''
+deps = ["LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le", "Submodule.tanAngle_span_singleton", "Polynomial.aeval_apply_of_apply_eq_smul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.1.11)'

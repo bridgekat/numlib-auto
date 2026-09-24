@@ -1,0 +1,296 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.1, properties and decompositions: the spectrum and its attributes (spectral radius and abscissa,
+numerical radius and range), invariant subspaces, block triangular decoupling (Lemma 7.1.1), the
+unitary reductions (Lemma 7.1.2, the Schur decomposition 7.1.3 with any order of the diagonal, the
+normal matrices 7.1.4, the departure from normality), the nonunitary ones (the Sylvester operator
+7.1.5, block diagonalization 7.1.6, Corollaries 7.1.7–7.1.8, the Jordan decomposition 7.1.9 with its
+uniqueness), the example (7.1.13), and singular values against eigenvalues (§7.1.6).
+
+Complex throughout: `A : Matrix (Fin n) (Fin n) ℂ`, `λ(A) = spectrum ℂ A` (Mathlib's spectrum of a
+matrix in the algebra `Matrix (Fin n) (Fin n) ℂ`), eigenvalues with multiplicity `A.charpoly.roots`,
+unitary `Q ∈ Matrix.unitaryGroup (Fin n) ℂ` with `Qᴴ = star Q`. Block partitions `[T₁₁ T₁₂; 0 T₂₂]`
+with `T₁₁` `p × p` are `Matrix.fromBlocks` on `Fin p ⊕ Fin q`, reindexed by `finSumFinEquiv` where the
+book's matrix is `n × n`, `n = p + q`.
+
+Backbone: `Numlib/LinearAlgebra/Matrix/{Schur,Jordan,Similar,Sylvester}`, `Numlib/Eigen/{Normal,NumericalRange}`.
+'''
+
+[[node]]
+id = "det_eq_prod_eigenvalues"
+kind = "theorem"
+desc = '''§7.1.1: `det A = λ₁ ⋯ λ_n` and `tr A = λ₁ + ⋯ + λ_n` for `A : Matrix (Fin n) (Fin n) ℂ`, the
+eigenvalues counted with multiplicity: `A.det = A.charpoly.roots.prod` and
+`A.trace = A.charpoly.roots.sum` (Mathlib `Matrix.det_eq_prod_roots_charpoly`,
+`Matrix.trace_eq_sum_roots_charpoly`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §7.1.1'
+
+[[node]]
+id = "spectralRadius"
+kind = "definition"
+desc = '''(7.1.1): `spectralRadius A = sSup ((‖·‖) '' spectrum ℂ A)` (`0` for `n = 0`), with the bridge
+`spectralRadius_eq : spectralRadius A = (_root_.spectralRadius ℂ A).toReal` (Mathlib's
+`ℝ≥0∞`-valued spectral radius in the Banach algebra of matrices; any matrix norm instance; finite
+spectrum so the supremum is a maximum). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.1)'
+
+[[node]]
+id = "spectralAbscissa"
+kind = "definition"
+desc = '''(7.1.2): `spectralAbscissa A = sSup (Complex.re '' spectrum ℂ A)`, a maximum for `n ≥ 1`
+(`spectralAbscissa_mem`: `∃ λ ∈ spectrum ℂ A, λ.re = spectralAbscissa A`, finite nonempty
+spectrum). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.2)'
+
+[[node]]
+id = "numericalRange"
+kind = "definition"
+desc = '''(7.1.4): `numericalRange A = {star x ⬝ᵥ (A *ᵥ x) | x : Fin n → ℂ, ‖toLp 2 x‖ = 1}`, with the
+bridge `numericalRange_eq : numericalRange A = LinearMap.numericalRange (toEuclideanLin A)` (the
+backbone's Rayleigh-quotient form over nonzero vectors, `LinearMap.mem_numericalRange`; normalize). ★'''
+deps = ["LinearMap.numericalRange", "LinearMap.mem_numericalRange"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.4)'
+
+[[node]]
+id = "numericalRadius"
+kind = "definition"
+desc = '''(7.1.3): `numericalRadius A = sSup ((‖·‖) '' numericalRange A)`. The book prints
+`max_{λ ∈ λ(A)} {|xᴴ A x| : ‖x‖₂ = 1}` — the subscript `λ ∈ λ(A)` is a misprint for the maximum over
+unit `x` (report, Doubts). A maximum (the unit sphere is compact). ★'''
+deps = ["GolubVanLoan.Chapter07.numericalRange"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.3)'
+
+[[node]]
+id = "spectrum_subset_numericalRange"
+kind = "theorem"
+desc = '''§7.1.1, "the numerical range … obviously includes λ(A)": `spectrum ℂ A ⊆ numericalRange A`
+(a unit eigenvector `x` gives `xᴴ A x = λ`). ★'''
+deps = ["GolubVanLoan.Chapter07.numericalRange"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.1'
+
+[[node]]
+id = "convex_numericalRange"
+kind = "theorem"
+desc = '''§7.1.1, "It can be shown that W(A) is convex" (Toeplitz–Hausdorff): `Convex ℝ (numericalRange A)`,
+from `LinearMap.convex_numericalRange` through `numericalRange_eq`. ★'''
+deps = ["GolubVanLoan.Chapter07.numericalRange", "LinearMap.convex_numericalRange"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.1'
+
+[[node]]
+id = "spectrum_subset_of_mul_eq_mul"
+kind = "theorem"
+desc = '''§7.1.1, invariant subspaces from `A X = X B` (`X : Matrix (Fin n) (Fin k) ℂ`, `B : Matrix (Fin k)
+(Fin k) ℂ`): (a) the column space of `X` is `A`-invariant,
+`LinearMap.range (toLin' X) ∈ (toLin' A).invtSubmodule` (Mathlib's invariant submodules);
+(b) `B *ᵥ y = λ • y → A *ᵥ (X *ᵥ y) = λ • (X *ᵥ y)`; (c) if `X` has full column rank
+(`X.rank = k`) then `spectrum ℂ B ⊆ spectrum ℂ A`; (d) if `k = n` and `X` is nonsingular then
+`spectrum ℂ A = spectrum ℂ B` (`Matrix.IsSimilar.charpoly_eq`). ★'''
+deps = ["Matrix.IsSimilar.charpoly_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.1'
+
+[[node]]
+id = "lemma_7_1_1"
+kind = "theorem"
+desc = '''Lemma 7.1.1: for `T = fromBlocks T₁₁ T₁₂ 0 T₂₂` (`T₁₁ : Matrix (Fin p) (Fin p) ℂ`,
+`T₂₂ : Matrix (Fin q) (Fin q) ℂ`), `spectrum ℂ T = spectrum ℂ T₁₁ ∪ spectrum ℂ T₂₂`, and with
+multiplicity `T.charpoly = T₁₁.charpoly * T₂₂.charpoly` (Mathlib `Matrix.charpoly_fromBlocks_zero₂₁`;
+the book's "same cardinality" argument is the multiset statement). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Lemma 7.1.1'
+
+[[node]]
+id = "lemma_7_1_2"
+kind = "theorem"
+desc = '''Lemma 7.1.2: for `A : Matrix (Fin (p + q)) (Fin (p + q)) ℂ`, `B : Matrix (Fin p) (Fin p) ℂ`,
+`X : Matrix (Fin (p + q)) (Fin p) ℂ` with `A * X = X * B` and `X.rank = p` (7.1.5), there is a unitary
+`Q` with `Qᴴ A Q = fromBlocks T₁₁ T₁₂ 0 T₂₂` (after `reindex finSumFinEquiv.symm`) (7.1.6) and
+`spectrum ℂ T₁₁ = spectrum ℂ A ∩ spectrum ℂ B`. Backbone `Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`
+(which gives `T₁₁` similar to `B`, so `λ(T₁₁) = λ(B) ⊆ λ(A)` by `spectrum_subset_of_mul_eq_mul`). ★'''
+deps = ["Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul", "GolubVanLoan.Chapter07.spectrum_subset_of_mul_eq_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 7.1.2'
+
+[[node]]
+id = "theorem_7_1_3"
+kind = "theorem"
+desc = '''Theorem 7.1.3 (Schur decomposition) (7.1.7): for `A : Matrix (Fin n) (Fin n) ℂ` there is a unitary
+`Q` with `Qᴴ A Q = D + N`, `D = diagonal λ`, `N` strictly upper triangular (i.e. `Qᴴ A Q` upper
+triangular with diagonal `λ`), and "Q can be chosen so that the eigenvalues appear in any order":
+for every `λ : Fin n → ℂ` with `A.charpoly = ∏ i, (X - C (λ i))` such a `Q` exists with
+`(Qᴴ A Q) i i = λ i`. Backbone `Matrix.exists_unitary_conj_upperTriangular_diag_eq`
+(`Matrix.exists_unitary_conj_upperTriangular` is the unordered form). ★'''
+deps = ["Matrix.exists_unitary_conj_upperTriangular_diag_eq", "Matrix.exists_unitary_conj_upperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.1.3'
+
+[[node]]
+id = "equation_7_1_8"
+kind = "theorem"
+desc = '''(7.1.8) and the paragraph after it: if `Qᴴ A Q = T` is upper triangular (a Schur decomposition,
+`q_k = Q.col k`), then (a) `A *ᵥ q_k = T k k • q_k + ∑ i < k, T i k • q_i` (columns of `A Q = Q T`);
+(b) each `S_k = span {q_0, …, q_k}` is `A`-invariant (`LinearMap.exists_orthonormalBasis_forall_mem_span`
+is the operator form); (c) the spectrum of `Q_kᴴ A Q_k` (the leading `k × k` block of `T`) is
+`{T i i | i < k}`; (d) `q_k` is an eigenvector of `A` iff column `k` of the strictly upper part of `T`
+is zero. ★'''
+deps = ["LinearMap.exists_orthonormalBasis_forall_mem_span"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.8)'
+
+[[node]]
+id = "corollary_7_1_4"
+kind = "theorem"
+desc = '''Corollary 7.1.4: `A` is normal (`Aᴴ A = A Aᴴ`, `IsStarNormal A`) iff `∃ Q ∈ unitaryGroup, ∃ d,
+Qᴴ A Q = diagonal d`. Backbone `Matrix.IsStarNormal.spectral_theorem` (the book's route through P7.1.1,
+"an upper triangular normal matrix is diagonal", is not needed). ★'''
+deps = ["Matrix.IsStarNormal.spectral_theorem"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.1.4'
+
+[[node]]
+id = "departureFromNormality"
+kind = "definition"
+desc = '''§7.1.3, Definition (departure from normality): `departureFromNormality A = √(‖A‖_F² - ∑ i, ‖λ_i‖²)`,
+`λ` the roots of `A.charpoly` as a multiset (`(A.charpoly.roots.map (‖·‖ ^ 2)).sum`), Frobenius norm
+from the scoped `Matrix.Norms.Frobenius`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §7.1.3, Definition'
+
+[[node]]
+id = "departureFromNormality_eq"
+kind = "theorem"
+desc = '''§7.1.3: `‖N‖_F` is independent of the Schur decomposition: if `Qᴴ A Q = diagonal d + N` with `Q`
+unitary and `N` strictly upper triangular, then `‖N‖_F² = ‖A‖_F² - ∑ i, ‖d i‖² = departureFromNormality A ^ 2`.
+Unitary invariance of the Frobenius norm (`Matrix.frobenius_norm_unitary_mul_mul_unitary`), orthogonality
+of the diagonal and strictly upper parts in the Frobenius inner product, and `d` listing the roots
+(`Matrix.charpoly_of_isUpperTriangular`). ★'''
+deps = ["GolubVanLoan.Chapter07.departureFromNormality", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.3'
+
+[[node]]
+id = "lemma_7_1_5"
+kind = "theorem"
+desc = '''Lemma 7.1.5, first half: for `T₁₁ : Matrix (Fin p) (Fin p) ℂ`, `T₂₂ : Matrix (Fin q) (Fin q) ℂ`,
+the map `φ X = T₁₁ X - X T₂₂` on `Matrix (Fin p) (Fin q) ℂ` is nonsingular iff
+`spectrum ℂ T₁₁ ∩ spectrum ℂ T₂₂ = ∅`. `Matrix.sylvesterMap_bijective_iff_disjoint_spectrum`. (The
+book's SVD-based proof of "`φ` singular ⇒ common eigenvalue" is replaced by the characteristic
+polynomial argument of the backbone.) ★'''
+deps = ["Matrix.sylvesterMap_bijective_iff_disjoint_spectrum"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 7.1.5'
+
+[[node]]
+id = "lemma_7_1_5_blockDiagonal"
+kind = "theorem"
+desc = '''Lemma 7.1.5, second half: if `φ` is nonsingular and `φ Z = -T₁₂`, then
+`Y = fromBlocks 1 Z 0 1` satisfies `Y⁻¹ * fromBlocks T₁₁ T₁₂ 0 T₂₂ * Y = fromBlocks T₁₁ 0 0 T₂₂`.
+`Matrix.fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one`. ★'''
+deps = ["Matrix.fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one", "GolubVanLoan.Chapter07.lemma_7_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 7.1.5'
+
+[[node]]
+id = "theorem_7_1_6"
+kind = "theorem"
+desc = '''Theorem 7.1.6 (block diagonal decomposition) (7.1.9)–(7.1.10): if `Qᴴ A Q = T` with `Q` unitary and
+`T` block upper triangular for a monotone block index `b : Fin n → Fin q` (square diagonal blocks
+`Tᵢᵢ = T.toBlock (b · = i) (b · = i)`), and `spectrum ℂ Tᵢᵢ ∩ spectrum ℂ Tⱼⱼ = ∅` for `i ≠ j`, then there
+is a nonsingular `Y` with `(Q Y)⁻¹ A (Q Y) = diag(T₁₁, …, T_qq)` (the block diagonal part of `T`).
+The book prints the hypothesis as `λ(T_ij) ∩ λ(T_jj) = ∅` — a misprint for `λ(T_ii)` (report, Doubts).
+Backbone `Matrix.exists_isUnit_conj_eq_blockDiagonalPart` (the book's proof is P7.1.2, induction with
+Lemma 7.1.5). ★'''
+deps = ["Matrix.exists_isUnit_conj_eq_blockDiagonalPart"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.1.6'
+
+[[node]]
+id = "corollary_7_1_7"
+kind = "theorem"
+desc = '''Corollary 7.1.7 (7.1.11): for `A : Matrix (Fin n) (Fin n) ℂ` there are distinct `λ : Fin q → ℂ`,
+sizes `n_i` with `∑ n_i = n`, strictly upper triangular `N_i : Matrix (Fin n_i) (Fin n_i) ℂ` and a
+nonsingular `X` with `X⁻¹ A X = blockDiagonal' fun i => λ i • 1 + N i` (reindexed `(Σ i, Fin n_i) ≃ Fin n`).
+From the grouped Jordan form `Matrix.exists_conj_blockDiagonal'_jordanForm` (each outer block is
+`ν_i • 1 + jordanForm e 0`, strictly upper triangular part `jordanForm e 0`) — a shorter route than
+the book's Theorem 7.1.6 + ordered Schur. ★★'''
+deps = ["Matrix.exists_conj_blockDiagonal'_jordanForm"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.1.7'
+
+[[node]]
+id = "algebraicMultiplicity"
+kind = "definition"
+desc = '''§7.1.4, Definition: the algebraic multiplicity `A.charpoly.rootMultiplicity λ` and the geometric
+multiplicity `Module.finrank ℂ (Module.End.eigenspace (toLin' A) λ)` (`geometricMultiplicity`, same
+node); `λ` is *simple* if the algebraic multiplicity is `1`, *defective* if the geometric multiplicity
+is smaller, and `A` is *defective* if it has a defective eigenvalue (`IsDefective`); nondefective =
+diagonalizable (Corollary 7.1.8). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §7.1.4, Definition'
+
+[[node]]
+id = "corollary_7_1_7_multiplicity"
+kind = "theorem"
+desc = '''§7.1.4, the terms attached to (7.1.11): in a decomposition as in `corollary_7_1_7`, `n_i` is the
+algebraic multiplicity of `λ_i` and `dim null(N_i)` is its geometric multiplicity. Similarity
+invariance (`Matrix.IsSimilar.charpoly_eq`, `Matrix.IsSimilar.finrank_ker_mulVecLin_eq`) and the block
+diagonal charpoly / nullity (`Matrix.BlockTriangular.charpoly`, `Numlib/LinearAlgebra/Matrix/BlockDiagonal`),
+`λ_j - λ_i ≠ 0` making the other blocks invertible. ★★'''
+deps = ["GolubVanLoan.Chapter07.corollary_7_1_7", "GolubVanLoan.Chapter07.algebraicMultiplicity", "Matrix.IsSimilar.charpoly_eq", "Matrix.IsSimilar.finrank_ker_mulVecLin_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.4'
+
+[[node]]
+id = "corollary_7_1_8"
+kind = "theorem"
+desc = '''Corollary 7.1.8 (diagonal form) (7.1.12): `A` is nondefective (every eigenvalue has equal geometric
+and algebraic multiplicity) iff `∃ X, IsUnit X ∧ ∃ d, X⁻¹ * A * X = diagonal d`; and then the columns
+of `X` are right eigenvectors and the rows of `X⁻¹` left eigenvectors (the remark after the proof).
+`Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity`,
+`Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. ★'''
+deps = ["Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity", "Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors", "GolubVanLoan.Chapter07.algebraicMultiplicity"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.1.8'
+
+[[node]]
+id = "theorem_7_1_9"
+kind = "theorem"
+desc = '''Theorem 7.1.9 (Jordan decomposition): there is a nonsingular `X` with `X⁻¹ A X = diag(J₁, …, J_q)`,
+`J_i = jordanBlock n_i λ_i`, `∑ n_i = n`. `Matrix.exists_conj_jordanForm`. ★'''
+deps = ["Matrix.exists_conj_jordanForm"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.1.9'
+
+[[node]]
+id = "theorem_7_1_9_unique"
+kind = "theorem"
+desc = '''The uniqueness remark after Theorem 7.1.9: "The number and dimensions of the Jordan blocks associated
+with each distinct eigenvalue are unique": if `X⁻¹ A X = jordanForm e μ` and `X'⁻¹ A X' = jordanForm e' μ'`
+(positive sizes) then `#{i | μ i = c ∧ e i = k} = #{i | μ' i = c ∧ e' i = k}` for all `c`, `k`.
+`Matrix.card_jordanBlocks_eq_of_isSimilar`. ★'''
+deps = ["Matrix.card_jordanBlocks_eq_of_isSimilar"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.1.9'
+
+[[node]]
+id = "dense_diagonalizable"
+kind = "theorem"
+desc = '''§7.1.5: "The set of n-by-n diagonalizable matrices is dense in ℂ^{n×n}": `Dense {A : Matrix (Fin n)
+(Fin n) ℂ | ∃ X, IsUnit X ∧ ∃ d, X⁻¹ * A * X = diagonal d}`. Schur form `Qᴴ A Q = T`, perturb the
+diagonal of `T` by arbitrarily small amounts to make the diagonal entries distinct; distinct eigenvalues
+give a basis of eigenvectors (`Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`,
+`Module.End.eigenvectors_linearIndependent`). The book's P7.1.5. ★★'''
+deps = ["GolubVanLoan.Chapter07.theorem_7_1_3", "Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.5'
+
+[[node]]
+id = "equation_7_1_13"
+kind = "theorem"
+desc = '''(7.1.13): for `0 < ε`, every `X` diagonalizing `A = !![1 + ε, 1; 0, 1 - ε]` has
+`κ₂(X) ≥ 1 / (2 ε)` — the rigorous reading of "a 2-norm condition of order `1/ε`" (a matching upper
+bound `κ₂(X) ≤ C/ε` holds for the column-normalized `X`, and is stated as a clause). If `X⁻¹ A X` is
+diagonal, the first column `x` of `X` and first row `yᴴ` of `X⁻¹` are right/left eigenvectors with
+`yᴴ x = 1`, so `κ₂(X) = ‖X‖ ‖X⁻¹‖ ≥ ‖x‖ ‖y‖ ≥ 1/s` with `s = |ŷᴴ x̂| = 2ε/√(1 + 4ε²)` for the unit
+eigenvectors `x̂ = e₁`, `ŷ = (2ε, 1)/√(1 + 4ε²)` of `λ = 1 + ε`. ★★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.1.13)'
+
+[[node]]
+id = "sigmaMin_le_norm_eigenvalue"
+kind = "theorem"
+desc = '''§7.1.6: `σ_min(A) ≤ min |λ_i| ≤ max |λ_i| ≤ σ_max(A)`, with `σ_min(A) = ⨅ i, A.singularValues i`
+and `σ_max(A) = ‖A‖₂ = ⨆ i, A.singularValues i` (`Matrix.l2_opNorm_eq_iSup_singularValues`): for a
+unit eigenvector `x`, `σ_min ≤ ‖A x‖ = |λ| ≤ ‖A‖₂` (`Matrix.iInf_singularValues_mul_norm_le`). Also
+the rigorous half of the remark after it: `|λ_i| / |λ_j| ≤ κ₂(A)` for nonsingular `A`
+(`Matrix.condNumber_l2_eq_div_singularValues`). ★'''
+deps = ["Matrix.l2_opNorm_eq_iSup_singularValues", "Matrix.iInf_singularValues_eq_iInf_norm", "Matrix.condNumber_l2_eq_div_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, §7.1.6'

@@ -1,0 +1,69 @@
+namespace = "Matrix"
+desc = '''
+Complete orthogonal decompositions `Uᴴ A V = [T₁₁ 0; 0 0]` with `U`, `V` unitary and `T₁₁` an
+invertible `r × r` block, `r = rank A` ([golub2013matrix] §5.4.7 (5.4.12), §5.5.1; Hanson–Lawson
+1969). The SVD is one (`isCompleteOrthogonal_of_svd`); two QR factorizations produce another
+(`exists_isCompleteOrthogonal`, the book's two-step construction: a rank-revealing pivoted QR
+`Uᴴ A Π = [R₁₁ R₁₂; 0 0]`, then a QR of `[R₁₁ R₁₂]ᴴ`). Any of them exposes `ran A`, `ker A` and the
+minimal-norm least-squares solution `x_LS = V [T₁₁⁻¹ c; 0]`, `Uᴴ b = [c; d]`.
+
+Index conventions: `A : Matrix (Fin M) (Fin N) 𝕜`; the block structure is expressed by
+`∀ i j, (r ≤ i ∨ r ≤ j) → (Uᴴ A V) i j = 0` and the leading block
+`(Uᴴ A V).submatrix (Fin.castLE hM) (Fin.castLE hN)` on `Fin r`, as `IsQR`/`rectDiagonal` do,
+rather than through `fromBlocks` and a reindexing; the book's partitioned statements are read off
+entrywise.
+'''
+
+[[node]]
+id = "IsCompleteOrthogonal"
+kind = "definition"
+desc = '''`structure IsCompleteOrthogonal (A : Matrix (Fin M) (Fin N) 𝕜) (U V) (r : ℕ) : Prop` with
+`U ∈ unitaryGroup`, `V ∈ unitaryGroup`, `hrM : r ≤ M`, `hrN : r ≤ N`,
+`apply_eq_zero : ∀ i j, (r ≤ (i : ℕ) ∨ r ≤ (j : ℕ)) → (Uᴴ * A * V) i j = 0`,
+`isUnit_block : IsUnit ((Uᴴ * A * V).submatrix (Fin.castLE hrM) (Fin.castLE hrN))`.
+[golub2013matrix] (5.4.12). ★'''
+deps = []
+
+[[node]]
+id = "IsCompleteOrthogonal.rank_eq"
+kind = "theorem"
+desc = '''`IsCompleteOrthogonal A U V r → A.rank = r` (rank is invariant under unitary factors,
+`rank_mul_eq_left_of_isUnit_det`-type Mathlib lemmas, and the block matrix has rank `r`). ★★'''
+deps = ["IsCompleteOrthogonal"]
+
+[[node]]
+id = "IsCompleteOrthogonal.range_eq_span"
+kind = "theorem"
+desc = '''[golub2013matrix] §5.4.7: `ran A = span {u_1, …, u_r}` and `ker A = span {v_{r+1}, …, v_n}`
+for the columns `u_i` of `U` and `v_j` of `V` (two declarations, `…_ker_eq_span`). ★★'''
+deps = ["IsCompleteOrthogonal", "IsCompleteOrthogonal.rank_eq"]
+
+[[node]]
+id = "isCompleteOrthogonal_of_svd"
+kind = "theorem"
+desc = '''An SVD is a complete orthogonal decomposition: if `Matrix.IsSVD A U σ V` (chapter 6) and
+`r = A.rank`, then `IsCompleteOrthogonal A U V r`. The leading block of `Uᴴ A V = rectDiagonal σ` is
+`diagonal σ` on `Fin r`, invertible since `σ i = A.sortedSingularValues i > 0` for `i < r`
+(`IsSVD.singularValues_eq`, `Matrix.sortedSingularValues_eq_zero_iff_rank_le`), and the entries outside it
+vanish because `σ i = 0` for `r ≤ i`. (The `σ` of `IsSVD` is sorted, `IsSVD.antitone`; the first plan's
+note that the statement used the column-indexed family "in no particular order" contradicted this and is
+dropped, review M2.) ★'''
+deps = ["IsCompleteOrthogonal", "Matrix.IsSVD", "Matrix.IsSVD.singularValues_eq", "Matrix.sortedSingularValues_eq_zero_iff_rank_le"]
+
+[[node]]
+id = "exists_isCompleteOrthogonal"
+kind = "theorem"
+desc = '''Existence by two QR factorizations ([golub2013matrix] §5.4.7): from
+`exists_isPivotedQR_rank`, `Uᴴ A Π = [R₁₁ R₁₂; 0 0]`; a full QR of `[R₁₁ R₁₂]ᴴ` (an `n × r` matrix of
+full column rank), `Q₂ᴴ [R₁₁ R₁₂]ᴴ = [S₁; 0]`; then `V = Π Q₂` gives `Uᴴ A V = [S₁ᴴ 0; 0 0]`
+with `S₁` invertible. `∃ U V, IsCompleteOrthogonal A U V A.rank`. ★★ (~100 lines)'''
+deps = ["IsCompleteOrthogonal", "Matrix.exists_isPivotedQR_rank", "Matrix.IsPivotedQR.IsRankRevealing", "Matrix.exists_isQR"]
+
+[[node]]
+id = "IsCompleteOrthogonal.isMinNormLeastSquaresSolution"
+kind = "theorem"
+desc = '''The minimal-norm least-squares solution from a complete orthogonal decomposition
+([golub2013matrix] §5.5.1): with `Uᴴ b = [c; d]` and `T₁₁` the leading block,
+`IsMinNormLeastSquaresSolution A b (V [T₁₁⁻¹ c; 0])`, and the minimum is `‖d‖`. From
+`‖A x - b‖² = ‖T₁₁ w - c‖² + ‖d‖²` (`Vᴴ x = [w; y]`) and `‖x‖² = ‖w‖² + ‖y‖²`. ★★'''
+deps = ["IsCompleteOrthogonal", "Matrix.IsMinNormLeastSquaresSolution", "Matrix.isMinNormLeastSquaresSolution_pinv"]

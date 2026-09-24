@@ -1,0 +1,224 @@
+namespace = "GolubVanLoan.Chapter08"
+desc = '''
+§8.5, Jacobi methods: the off-diagonal mass and Jacobi rotations (§8.5.1, (8.5.1)–(8.5.2)), the
+two-by-two symmetric Schur decomposition (§8.5.2, (8.5.3), Algorithm 8.5.1), the classical and
+cyclic-by-row algorithms (Algorithms 8.5.2–8.5.3) with the linear convergence of the classical one,
+the block-Jacobi identity (§8.5.6) and the parallel (round-robin) ordering (§8.5.7).
+
+Backbone: `Numlib/Eigen/Jacobi` (`Matrix.offDiagNormSq` is the book's `off(A)²`, the tangent of the
+smaller root `Matrix.jacobiTanSmall` is the book's `t_min` exactly — same formula, same `τ`,
+same sign convention — and `Matrix.jacobiRotation A p q = Matrix.planeRotation p q c (-s)` for the
+book's `(c, s)`, `Matrix.jacobiRotation_eq_planeRotation_small`); `Numlib/LinearAlgebra/Matrix/PlaneRotation`.
+The book's `J(p, q, θ)` has `+s` at `(p, q)`, the backbone's `planeRotation p q c s` has `-s` there:
+`J(p,q,θ) = planeRotation p q c (-s)`, which is chapter 5's `GolubVanLoan.Chapter05.givensRotation p q c s`
+("Jacobi rotations are no different from Givens rotations", §8.5.1 and §5.1.8): the chapter defines no
+rotation of its own, and the updates `A ← JᵀAJ`, `V ← VJ` are chapter 5's shared helpers
+`givensApplyLeft`/`givensApplyRight` (convention 13).
+
+The algorithms follow D4 as settled by the prototype `notes/gvl/ch08/proto/Jacobi.lean` (it
+elaborates with `lake env lean`): `noncomputable` definitions, the `while off(A) > δ` loop as
+`List.foldlM` over `List.range fuel` with a `done` flag in the state, a step being the identity
+once `done` (convention 3 of the `GolubVanLoan` group; the prototype's top-level structural
+recursion on `fuel`, `cyclicLoop`, is restated to this form — it was chosen only because a `let rec`
+inside `do` does not parse in the needed shape, which the fold avoids; `fuel` is the last argument), the
+rotation update a row pass then a column pass (`givensApplyLeft` then `givensApplyRight`, every product
+and sum rounded), and the test quantities `off(A)`, `‖A‖_F` and `δ = tol · ‖A‖_F` computed with
+rounding (convention 1: arithmetic feeding a test is rounded; the comparison itself is exact).
+
+Not formalized here (recorded in the chapter group): the quadratic convergence of the classical
+and cyclic methods (Henrici 1958, Schönhage 1964, van Kempen 1966, Wilkinson 1962 — quoted without
+proof), Brent–Luk's `log n` sweep heuristic, the error analysis of §8.5.5 including (8.5.4)
+(`≈`-statements quoting Wilkinson and Demmel–Veselić), the flop discussion.
+'''
+
+[[node]]
+id = "off"
+kind = "definition"
+desc = '''§8.5.1, `off(A) = √(∑_{i ≠ j} a_ij²)`, the Frobenius norm of the off-diagonal part:
+`off A := Real.sqrt (Matrix.offDiagNormSq A)` for `A : Matrix (Fin n) (Fin n) ℝ`, with
+`off_sq : off A ^ 2 = Matrix.offDiagNormSq A` and `off_sq_eq : off A ^ 2 = ‖A‖_F² - ∑ i, a_ii²`
+(`Matrix.offDiagNormSq_add_sum_diag_sq_real`). ★'''
+deps = ["Matrix.offDiagNormSq"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.1, Definition'
+
+[[node]]
+id = "equation_8_5_1"
+kind = "theorem"
+desc = '''(8.5.1) and the remark after it: for `B = J(p,q,θ)ᵀ A J(p,q,θ)` (`p ≠ q`), the `2 × 2` block
+`!![b_pp, b_pq; b_qp, b_qq]` is `!![c, s; -s, c]ᵀ * !![a_pp, a_pq; a_qp, a_qq] * !![c, s; -s, c]`, and
+`B` agrees with `A` outside rows and columns `p`, `q`. `Matrix.conj_planeRotation_apply_jj`,
+`_kk`, `_jk`, `_of_ne` with `s ↦ -s`. ★'''
+deps = ["GolubVanLoan.Chapter05.givensRotation", "Matrix.conj_planeRotation_apply_jj", "Matrix.conj_planeRotation_apply_kk", "Matrix.conj_planeRotation_apply_jk", "Matrix.conj_planeRotation_apply_of_ne"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.5.1)'
+
+[[node]]
+id = "equation_8_5_2"
+kind = "theorem"
+desc = '''(8.5.2): for symmetric `A`, `p ≠ q`, `c² + s² = 1` and `B = J(p,q,θ)ᵀ A J(p,q,θ)` with
+`b_pq = 0`: `a_pp² + a_qq² + 2 a_pq² = b_pp² + b_qq²` and `off(B)² = off(A)² - 2 a_pq²`.
+`Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero` (and
+`Matrix.sum_diag_sq_conj_planeRotation_of_apply_eq_zero` for the first identity). ★'''
+deps = ["off", "GolubVanLoan.Chapter05.givensRotation", "Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.5.2)'
+
+[[node]]
+id = "equation_8_5_3"
+kind = "theorem"
+desc = '''(8.5.3) and §8.5.2: `b_pq = a_pq (c² - s²) + (a_pp - a_qq) c s` for symmetric `A`; if
+`a_pq ≠ 0`, with `τ = (a_qq - a_pp)/(2 a_pq)` and `t = s/c`, `b_pq = 0` iff `t² + 2 τ t - 1 = 0`;
+the smaller root `t_min` (`1/(τ + √(1+τ²))` for `τ ≥ 0`, `1/(τ - √(1+τ²))` for `τ < 0`) is
+`Matrix.jacobiTanSmall A p q`, it has `|t_min| ≤ 1` (so `|θ| ≤ π/4`), and
+`c = 1/√(1 + t_min²)`, `s = t_min c` are `Matrix.jacobiCosSmall`, `Matrix.jacobiSinSmall`, with
+`b_pq = 0` (`Matrix.jacobiSmall_annihilate`). ★'''
+deps = ["equation_8_5_1", "Matrix.jacobiTanSmall", "Matrix.jacobiTanSmall_sq", "Matrix.abs_jacobiTanSmall_le_one", "Matrix.jacobiCosSmall", "Matrix.jacobiSinSmall", "Matrix.jacobiSmall_annihilate"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.5.3)'
+
+[[node]]
+id = "jacobi_frobenius_dist"
+kind = "theorem"
+desc = '''§8.5.2: with the rotation of `equation_8_5_3` (`a_pq ≠ 0`, `B = JᵀAJ`, `b_pq = 0`),
+`‖B - A‖_F² = 4 (1 - c) ∑_{i ≠ p, q} (a_ip² + a_iq²) + 2 a_pq² / c²` — which the choice of `t_min`
+(maximal `c`) minimizes. Rows/columns outside `{p, q}`: `(c a_ip - s a_iq - a_ip)² + (s a_ip + c a_iq - a_iq)² = 2(1 - c)(a_ip² + a_iq²)`,
+twice by symmetry; the `2 × 2` block: `b_pp = a_pp - t a_pq`, `b_qq = a_qq + t a_pq`
+(`jacobi_diag_update`) and `2 a_pq² (1 + t²) = 2 a_pq²/c²`. ★★'''
+deps = ["equation_8_5_3", "jacobi_diag_update"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.2'
+
+[[node]]
+id = "algorithm_8_5_1"
+kind = "definition"
+desc = '''Algorithm 8.5.1 (`symSchur2`), per D4: `algorithm_8_5_1 rnd A p q : M (ℝ × ℝ)`; if
+`A p q ≠ 0`: `τ ← fl(fl(a_qq - a_pp) / fl(2 a_pq))`, `t ← fl(1 / fl(τ ± fl(√(fl(1 + fl(τ²))))))`
+by the sign of the computed `τ`, `c ← fl(1 / fl(√(fl(1 + fl(t²)))))`, `s ← fl(t c)`; else `(1, 0)`.
+Written and elaborated in `notes/gvl/ch08/proto/Jacobi.lean`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.1'
+
+[[node]]
+id = "algorithm_8_5_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 8.5.1: `Id.run (algorithm_8_5_1 pure A p q) =
+(Matrix.jacobiCosSmall A p q, Matrix.jacobiSinSmall A p q)`; hence for symmetric `A` and `p < q`,
+`B = J(p,q,θ)ᵀ A J(p,q,θ)` has `b_pq = b_qp = 0` and `J(p,q,θ) = Matrix.jacobiRotation A p q`
+(`Matrix.jacobiRotation_eq_planeRotation_small`). Unfold, `Id.run_bind`, `1/(τ - √(1+τ²)) =
+-1/(-τ + √(1+τ²))`. Statement shape checked in the prototype. ★'''
+deps = ["algorithm_8_5_1", "equation_8_5_3", "Matrix.jacobiRotation_eq_planeRotation_small"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.1'
+
+[[node]]
+id = "jacobi_diag_update"
+kind = "theorem"
+desc = '''§8.5.3: with the rotation of Algorithm 8.5.1 (`a_pq ≠ 0`), `b_pp = a_pp - t a_pq` and
+`b_qq = a_qq + t a_pq`, `t = t_min` — "this precludes interchanging nearly converged diagonal
+entries". `Matrix.jacobiStep_apply_jj_sub`, `Matrix.jacobiStep_apply_kk_sub` translated through
+`t_min = -jacobiTan` (`Matrix.jacobiTanSmall_eq_neg_jacobiTan`). ★'''
+deps = ["Matrix.jacobiStep_apply_jj_sub", "Matrix.jacobiStep_apply_kk_sub", "Matrix.jacobiTanSmall"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.3'
+
+[[node]]
+id = "classicalJacobi_linear"
+kind = "theorem"
+desc = '''§8.5.3, the linear rate of the classical method: for symmetric `A`, `N = n(n-1)/2`, and
+`(p, q)` with `|a_pq| = max_{i ≠ j} |a_ij|`: `off(A)² ≤ N (a_pq² + a_qp²)`; after the Jacobi update
+`off(B)² ≤ (1 - 1/N) off(A)²`; and for the classical iterates `A^{(k)}`,
+`off(A^{(k)})² ≤ (1 - 1/N)^k off(A^{(0)})²`. `Matrix.offDiagNormSq_classicalJacobiIterate_le`
+(`1 - 2/(n² - n) = 1 - 1/N`) and its step lemmas (`Matrix.offDiagNormSq_le_mul_sq`,
+`Matrix.offDiagNormSq_jacobiStep_maxOffDiagPair_le`, not tracked in the plan); the backbone's
+iterate uses `Matrix.jacobiRotation`, which is the book's rotation (`algorithm_8_5_1_spec`). ★'''
+deps = ["off", "Matrix.offDiagNormSq_classicalJacobiIterate_le", "Matrix.classicalJacobiIterate", "algorithm_8_5_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.3'
+
+[[node]]
+id = "algorithm_8_5_2"
+kind = "definition"
+desc = '''Algorithm 8.5.2 (classical Jacobi), per the conventions: `algorithm_8_5_2 rnd tol A fuel : M (Matrix ×
+Matrix)` returning `(A', V)`. `V ← I`, `δ ← fl(tol · fl(√(∑ fl(a_ij²))))` (rounded, convention 1); at most
+`fuel` times: if the computed `off(A) ≤ δ` (a comparison, exact) stop; choose `(p, q)`, `p < q`,
+maximizing the computed `|a_pq|` (`|·|` exact; first maximizer in the row-major order of `cyclicPairs`);
+`(c, s) ← algorithm_8_5_1 rnd A p q`; `A ← JᵀAJ` with `J = GolubVanLoan.Chapter05.givensRotation p q c s`
+(`GolubVanLoan.Chapter05.givensApplyLeft rnd p q c s cols A`, all columns, then `givensApplyRight rnd p q
+c s rows A`, all rows — the prototype's `jacobiUpdate`); `V ← VJ` (`givensApplyRight`, all rows). ★'''
+deps = ["algorithm_8_5_1", "GolubVanLoan.Chapter05.givensRotation", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.2'
+
+[[node]]
+id = "algorithm_8_5_2_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 8.5.2: for symmetric `A`, `tol ≥ 0` and any `fuel`,
+`(A', V) := Id.run (algorithm_8_5_2 pure tol A fuel)` has `V` orthogonal, `A' = Vᵀ A V` symmetric;
+the iterates are those of `Matrix.classicalJacobiIterate` up to the tie-breaking of the pivot
+(any maximizer satisfies the decay); and if the loop exited on its test then
+`off(A') ≤ tol · ‖A‖_F`. ★★'''
+deps = ["algorithm_8_5_2", "algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "equation_8_5_2", "classicalJacobi_linear"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.2'
+
+[[node]]
+id = "algorithm_8_5_2_terminates"
+kind = "theorem"
+desc = '''§8.5.3, termination of Algorithm 8.5.2 in exact arithmetic (from the linear rate): for
+symmetric `A` with `n ≥ 2`, `tol > 0` and `fuel ≥ ⌈2 log(tol) / log(1 - 1/N)⌉₊ + 1` (`N = n(n-1)/2`;
+any `fuel` if `N = 1`, where one step diagonalizes), the loop exits on its test:
+`off(A') ≤ tol ‖A‖_F`. From `off(A^{(k)})² ≤ (1 - 1/N)^k off(A)² ≤ (1 - 1/N)^k ‖A‖_F²`. ★★'''
+deps = ["algorithm_8_5_2_spec", "classicalJacobi_linear"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.3'
+
+[[node]]
+id = "algorithm_8_5_3"
+kind = "definition"
+desc = '''Algorithm 8.5.3 (cyclic Jacobi), per the conventions: `algorithm_8_5_3 rnd tol A fuel : M (Matrix ×
+Matrix)`, the prototype's definition (`notes/gvl/ch08/proto/Jacobi.lean`: `cyclicPairs`, `cyclicSweep`,
+`offComputed`; the prototype's recursive `cyclicLoop` becomes the `List.range fuel` fold with a `done`
+flag of the section's convention, and its `jacobiUpdate` becomes chapter 5's `givensApplyLeft` then
+`givensApplyRight`): `V ← I`, `δ ← fl(tol · fl(√(∑ fl(a_ij²))))`; at most `fuel` sweeps while the
+computed `off(A) > δ`; a sweep runs `p = 1:n-1`, `q = p+1:n`, `(c, s) ← algorithm_8_5_1`, `A ← JᵀAJ`,
+`V ← VJ` with `J = GolubVanLoan.Chapter05.givensRotation p q c s`. ★'''
+deps = ["algorithm_8_5_1", "GolubVanLoan.Chapter05.givensRotation", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.3'
+
+[[node]]
+id = "algorithm_8_5_3_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 8.5.3: for symmetric `A`, `tol ≥ 0`, any `fuel`,
+`(A', V) := Id.run (algorithm_8_5_3 pure tol A fuel)`: `V ∈ orthogonalGroup`, `A' = Vᵀ A V`,
+`A'` symmetric, `off(A') ≤ off(A)` (each rotation removes `2 a_pq²`, `equation_8_5_2`), and
+`off(A') ≤ tol ‖A‖_F` if the loop exited on its test. Statement shape checked in the prototype.
+Quadratic convergence (Wilkinson 1962, van Kempen 1966) is not claimed. ★★'''
+deps = ["algorithm_8_5_3", "algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "equation_8_5_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.3'
+
+[[node]]
+id = "blockJacobi_off"
+kind = "theorem"
+desc = '''§8.5.6, the block-Jacobi identity: for symmetric `A` partitioned into `N × N` blocks of size
+`r` (index `Fin N × Fin r`), `p ≠ q`, an orthogonal `2r × 2r` matrix `V₂ = !![V_pp, V_pq; V_qp, V_qq]`
+diagonalizing the `(p, q)` subproblem (`V₂ᵀ !![A_pp, A_pq; A_qp, A_qq] V₂ = diag(D_pp, D_qq)` with
+diagonal `D`), and `V` the block rotation (identity outside block rows/columns `p`, `q`):
+`off(Vᵀ A V)² = off(A)² - (2 ‖A_pq‖_F² + off(A_pp)² + off(A_qq)²)`. Frobenius invariance on the
+block rows/columns `p, q` (as in (8.5.2)), the diagonal of the diagonalized subproblem, and the
+blocks outside unchanged. ★★ (~80 lines)'''
+deps = ["off"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.6'
+
+[[node]]
+id = "parallelOrdering"
+kind = "definition"
+desc = '''§8.5.7, the parallel (round-robin, "chess tournament") ordering for `2m` players:
+`parallelOrdering m : Fin (2m - 1) → Finset (Fin (2m) × Fin (2m))`, round `k` pairing the players
+seated at the two rows of `m` tables, player `1` fixed and players `2, …, 2m` moving
+merry-go-round between rounds as in the book (rot.set(1) = `{(1,2),(3,4),…}` for `m = 4`). Given
+explicitly by the seating permutation `σ^k` of the positions (the book's tables); each pair stored
+as `(min, max)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §8.5.7, Definition'
+
+[[node]]
+id = "parallelOrdering_spec"
+kind = "theorem"
+desc = '''§8.5.7: each rotation set `parallelOrdering m k` consists of `m` pairs `i < j` whose `2m`
+indices are distinct (nonconflicting subproblems), and the `2m - 1` rotation sets partition the
+`m(2m - 1)` off-diagonal pairs `{(i, j) | i < j}` (every pair occurs in exactly one round). The
+round-robin schedule is a one-factorization of the complete graph `K_{2m}`; proof by computing the
+positions of `i` and `j` in round `k` modulo `2m - 1`. `m = 4` reproduces the book's seven sets
+(`decide`). ★★ (~100 lines)'''
+deps = ["parallelOrdering"]
+source = 'Golub–Van Loan, Matrix Computations, §8.5.7'

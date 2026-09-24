@@ -1,0 +1,191 @@
+namespace = "Matrix"
+desc = '''
+Displacement structure ([golub2013matrix] §12.1; Kailath–Kung–Morf 1979, Gohberg–Kailath–Olshevsky
+1995, Gu 1998): a square matrix `A` is described by two *displacement operators* `F`, `G` and a
+low-rank factorization of its displacement `F A - A G = R Sᵀ`, the generators `R`, `S : Matrix n (Fin
+r) K`.
+
+Upstreaming candidate (natural home: a file beside `Mathlib.LinearAlgebra.Matrix.Kronecker`); no
+numerical-analysis layer is imported.
+
+**Vocabulary reused, not duplicated.** The displacement `F A - A G` is `Matrix.sylvesterMap F G A` of
+`Numlib/LinearAlgebra/Matrix/Sylvester` (chapter 7's module); this module adds no synonym for it, only
+`Matrix.displacementRank F G A := (sylvesterMap F G A).rank`. The Sylvester map's nonsingularity,
+which the book puts into the *definition* of the displacement rank (12.1.2), is a hypothesis only
+where it is used (a matrix is determined by its generators), through
+`sylvesterMap_bijective_iff_disjoint_spectrum` / `sylvesterMap_injective_of_isCoprime`. The entrywise
+facts about diagonal coefficients (`sylvesterMap_diagonal_apply`, the entrywise solve
+`sylvesterMap_diagonal_eq_iff`, the Cauchy-like `apply_eq_of_sylvesterMap_diagonal_eq`) and the change of
+basis `sylvesterMap_conj` were planned here and moved to `Sylvester` at the review of the Golub–Van Loan round
+(they are general Sylvester facts, used by the fast Poisson solver as well). The Cauchy
+matrix is `Matrix.cauchy ω (-ν)` of `Numlib/LinearAlgebra/Matrix/Cauchy` (its entries are `(x i + y
+j)⁻¹`); the book's diagonal displacement operators `Ω`, `Λ` are `diagonal ω`, `diagonal ν` (`λ` is a Lean keyword). Toeplitz matrices are chapter 4's `Matrix.toeplitz`/`Matrix.IsToeplitz`
+(`Numlib/LinearAlgebra/Matrix/Toeplitz`, `A i j = r (j - i)` with `r : ℤ → K`, `Fin m`, `Fin n`
+indices; `isToeplitz_iff` is the entrywise form used here). The DST-I eigenvectors of
+`tridiag(1, 0, 1)` are `Matrix.sineVec` of `TridiagonalToeplitz`.
+
+**The central theorem** is the generator update under one step of Gaussian elimination
+(`sylvesterMap_schurComplement`, [golub2013matrix] Theorem 12.1.1), stated more generally than in the
+book: for `F` whose first row vanishes off the corner and `G` whose first column vanishes off the
+corner (the book's diagonal `Ω`, `Λ`; also the lower shift `Z₀` and every lower/upper triangular
+pair), the Schur complement `A₁ = B - f gᵀ / α` has generators `R₁ - f r₁ᵀ / α`, `S₁ - g s₁ᵀ / α`
+(prototype `notes/gvl/ch12/proto/Structured.lean`, statement elaborates). This is the specification
+the fast LU algorithms of the chapter 12 surface (Algorithms 12.1.1, 12.1.2) are proved against:
+their exact runs produce `IsLU` factors because every recursive call receives correct generators.
+
+**The four displacement operators of §12.1.7.** `cyclicShift n φ` is `Z_φ` (ones on the subdiagonal,
+`φ` in the corner `(0, n-1)`; `Z₁` is the downshift `Matrix.downshift n =
+(finRotate n).symm.permMatrix`, `cyclicShift_one`; both are in `Numlib/LinearAlgebra/Matrix/Permutation`),
+`cornerTridiagonal n γ δ` (in `TridiagonalToeplitz`) is `Y_{γ,δ}` (`tridiag(1, 0, 1)` with `γ`, `δ` in the two
+diagonal corners; `Y₀₀ = symmTridiagonalToeplitz n 1 0`). A Toeplitz matrix has `{Z₁, Z₋₁}`
+displacement supported on the first row and the last column (rank `≤ 2`) and `{Y₀₀, Y₁₁}`
+displacement supported on the border (rank `≤ 4`); a Hankel matrix likewise with `{Z₁ᵀ, Z₋₁}` and
+`{Y₀₀, Y₁₁}`. The rank bounds all come from one support lemma of `Rank`
+(`Matrix.rank_le_card_add_card_of_forall_ne_zero`). The Sylvester maps of the two pairs are
+nonsingular: `Z₁ⁿ = 1` and `Z₋₁ⁿ = -1` give it directly for the `Z` pair ([golub2013matrix] P12.1.1(a)),
+and the disjoint spectra `{2 cos(kπ/(n+1))}` and `{2 cos(kπ/n)}` for the `Y` pair (P12.1.1(b)).
+
+**Fast eigensystems** (12.1.12)–(12.1.13): `Y₀₀` is diagonalized by the DST-I (existing), `Y₁₁` by the
+DCT-II `Matrix.dct2` (`Numlib/Analysis/Fourier/SineCosineTransform`), whose rows `cosineIIVec n k j =
+cos((2j+1)kπ/(2n))` are orthogonal eigenvectors with eigenvalues `2 cos(kπ/n)` (`Matrix.dct1` there is the
+DCT-I of (1.4.10), a different transform). `Y_{γ,δ} = cornerTridiagonal n γ δ`, `cosineIIVec` and its eigen and
+orthogonality lemmas are in `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`, beside the DST-I vectors
+`sineVec` (placed there at the Golub–Van Loan consolidation); this module keeps the Sylvester
+nonsingularity of the `Y` pair.
+
+Hankel matrices (§12.1.7) are `Matrix.hankel`/`IsHankel` of `Numlib/LinearAlgebra/Matrix/Toeplitz`, beside
+`Matrix.toeplitz` (placed there at the consolidation).
+'''
+
+[[node]]
+id = "displacementRank"
+kind = "definition"
+desc = '''The `{F, G}`-displacement rank `displacementRank F G A := (sylvesterMap F G A).rank` of `A :
+Matrix n n K` over a field ([golub2013matrix] (12.1.2)), with `sylvesterMap F G A = F * A - A * G`. No
+nonsingularity hypothesis is built in (the book's definition presupposes one; it is carried where it
+is used). ★'''
+deps = ["Matrix.sylvesterMap"]
+
+[[node]]
+id = "displacementRank_le_iff_exists"
+kind = "theorem"
+desc = '''Generators exist exactly up to the displacement rank ([golub2013matrix] (12.1.3)):
+`displacementRank F G A ≤ r ↔ ∃ R S : Matrix n (Fin r) K, sylvesterMap F G A = R * Sᵀ`. The rank
+factorization `Matrix.rank_le_iff_exists_mul_transpose` of `Rank`. ★'''
+deps = ["Matrix.displacementRank", "Matrix.rank_le_iff_exists_mul_transpose"]
+
+[[node]]
+id = "eq_of_sylvesterMap_eq"
+kind = "theorem"
+desc = '''The generators determine the matrix when the Sylvester map is injective: `Function.Injective
+(sylvesterMap F G) → sylvesterMap F G A = R * Sᵀ → sylvesterMap F G B = R * Sᵀ → A = B`; with
+`sylvesterMap_bijective_iff_disjoint_spectrum` this is the book's "if `λ(F) ∩ λ(G) = ∅`" (printed
+`∪`, see the chapter 12 report). ★'''
+deps = ["Matrix.sylvesterMap", "Matrix.sylvesterMap_bijective_iff_disjoint_spectrum"]
+
+[[node]]
+id = "sylvesterMap_diagonal_cauchy"
+kind = "theorem"
+desc = '''The Cauchy matrix has displacement `e eᵀ` ([golub2013matrix] §12.1.2): if `ω k ≠ ν j` for all `k,
+j` then `sylvesterMap (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = vecMulVec 1 1`, hence
+`displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1` for `n` nonempty (Mathlib
+`Matrix.rank_vecMulVec_le` and a nonzero entry). ★'''
+deps = ["Matrix.sylvesterMap_diagonal_apply", "Matrix.cauchy", "Matrix.displacementRank"]
+
+[[node]]
+id = "sylvesterMap_schurComplement"
+kind = "theorem"
+desc = '''**The generator update under one elimination step** ([golub2013matrix] Theorem 12.1.1,
+generalized). For `F G A : Matrix (Fin (N + 1)) (Fin (N + 1)) K`, `R S : Matrix (Fin (N + 1)) (Fin r)
+K` with `F 0 j.succ = 0`, `G i.succ 0 = 0` for all `i j : Fin N`, `sylvesterMap F G A = R * Sᵀ` and
+`α := A 0 0 ≠ 0`, with `f i = A i.succ 0`, `g j = A 0 j.succ`, `B = A.submatrix succ succ`:
+`sylvesterMap (F.submatrix succ succ) (G.submatrix succ succ) (B - α⁻¹ • vecMulVec f g) = (R.submatrix
+succ id - α⁻¹ • vecMulVec f (R 0)) * (S.submatrix succ id - α⁻¹ • vecMulVec g (S 0))ᵀ` (prototype
+`notes/gvl/ch12/proto/Structured.lean` elaborates this exact statement). Proof as in the book (lines
+35771–35805) with the two extra terms `φ₂ gᵀ` and `f γ₂ᵀ` of the non-diagonal case cancelling: compare
+the four blocks of the hypothesis at `(0,0)`, `(0,succ)`, `(succ,0)`, `(succ,succ)` (`(φ - γ) α = r₁ᵀ s₁`
+from the corner), substitute, `ext` and `ring`-normalize the entries. ★★ (~70 lines)'''
+deps = ["Matrix.sylvesterMap"]
+
+[[node]]
+id = "sylvesterMap_diagonal_schurComplement"
+kind = "theorem"
+desc = '''The book's form of Theorem 12.1.1: `F = diagonal ω`, `G = diagonal ν` (diagonal matrices
+satisfy the corner hypotheses of `sylvesterMap_schurComplement`, and `(diagonal ω).submatrix succ
+succ = diagonal (ω ∘ succ)`), and the consequence `displacementRank (diagonal (ω ∘ succ)) (diagonal
+(ν ∘ succ)) A₁ ≤ r` when `displacementRank (diagonal ω) (diagonal ν) A ≤ r` (the display after the
+proof). ★'''
+deps = ["Matrix.sylvesterMap_schurComplement", "Matrix.displacementRank_le_iff_exists"]
+
+[[node]]
+id = "sylvesterMap_cyclicShift_one_neg_one_injective"
+kind = "theorem"
+desc = '''`Function.Injective (sylvesterMap (cyclicShift n 1) (cyclicShift n (-1)))` over a field with
+`(2 : K) ≠ 0` ([golub2013matrix] P12.1.1(a), the nonsingularity (12.1.2) presupposes for (12.1.8) and
+(12.1.10); the latter uses `Z₁ᵀ`, same argument with `(Z₁ᵀ)ⁿ = 1`): `Z₁ X = X Z₋₁` gives `Z₁ⁿ X = X Z₋₁ⁿ`,
+i.e. `X = -X` by `cyclicShift_pow_card`. The book's "`λ(Z₋₁) ∩ λ(Z₁) = ∅`" is the eigenvalue form (`μⁿ =
+1` versus `μⁿ = -1`). ★'''
+deps = ["Matrix.cyclicShift_pow_card", "Matrix.sylvesterMap"]
+
+[[node]]
+id = "sylvesterMap_cornerTridiagonal_injective"
+kind = "theorem"
+desc = '''`Function.Injective (sylvesterMap (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1))` over `ℝ`
+([golub2013matrix] P12.1.1(b); the book's "`λ(Y₀₀) ∩ λ(Y₁₁) = ∅`"): the eigenvalues are `2 cos((k+1)π/(n+1))`,
+`k < n` (`symmTridiagonalToeplitz_hasEigenvalue_iff`) and `2 cos(kπ/n)`, `k < n`
+(`cornerTridiagonal_one_one_mulVec_cosineIIVec` with the `n` independent eigenvectors of
+`dotProduct_cosineIIVec`), and `(k+1)/(n+1) = l/n` has no solution (`gcd(n, n+1) = 1`); then chapter 7's
+`sylvesterMap_bijective_iff_disjoint_spectrum` (or `sylvesterMap_injective_of_isCoprime` with the
+charpolys split into distinct linear factors). ★★ (~60 lines)'''
+deps = ["Matrix.cornerTridiagonal_one_one_mulVec_cosineIIVec", "Matrix.dotProduct_cosineIIVec", "Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff", "Matrix.sylvesterMap_bijective_iff_disjoint_spectrum"]
+
+[[node]]
+id = "sylvesterMap_cyclicShift_toeplitz_apply"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.1.8), support: for `IsToeplitz T` (`T i j = r (j - i)`),
+`sylvesterMap (cyclicShift n 1) (cyclicShift n (-1)) T i j = 0` whenever `0 < i` and `j < n - 1`
+(`(Z₁T)ᵢⱼ = T_{i-1,j}`, `(T Z₋₁)ᵢⱼ = T_{i,j+1}`, equal on Toeplitz matrices, chapter 4's `Matrix.isToeplitz_iff`). Entry computation with
+`cyclicShift`'s column/row formulas. ★★ (~40 lines)'''
+deps = ["Matrix.cyclicShift", "Matrix.sylvesterMap", "Matrix.IsToeplitz"]
+
+[[node]]
+id = "displacementRank_cyclicShift_toeplitz_le"
+kind = "theorem"
+desc = '''`IsToeplitz T → displacementRank (cyclicShift n 1) (cyclicShift n (-1)) T ≤ 2`
+([golub2013matrix] (12.1.8)): support in row `0` and column `n - 1`,
+`rank_le_card_add_card_of_forall_ne_zero` with `s = {0}`, `t = {n - 1}`. ★'''
+deps = ["Matrix.sylvesterMap_cyclicShift_toeplitz_apply", "Matrix.rank_le_card_add_card_of_forall_ne_zero", "Matrix.displacementRank"]
+
+[[node]]
+id = "sylvesterMap_cornerTridiagonal_toeplitz_apply"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.1.9), support: for real `T : Matrix (Fin n) (Fin n) ℝ` with `IsToeplitz T` (the
+`Y` operators `cornerTridiagonal` are real), `sylvesterMap (cornerTridiagonal n 0 0)
+(cornerTridiagonal n 1 1) T i j = 0` for `0 < i < n - 1` and `0 < j < n - 1` (`T_{i-1,j} + T_{i+1,j} =
+T_{i,j-1} + T_{i,j+1}`). ★★ (~40 lines)'''
+deps = ["Matrix.cornerTridiagonal", "Matrix.sylvesterMap", "Matrix.IsToeplitz"]
+
+[[node]]
+id = "displacementRank_cornerTridiagonal_toeplitz_le"
+kind = "theorem"
+desc = '''`IsToeplitz T → displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) T ≤ 4`
+([golub2013matrix] (12.1.9)): border support, `s = t = {0, n - 1}`. ★'''
+deps = ["Matrix.sylvesterMap_cornerTridiagonal_toeplitz_apply", "Matrix.rank_le_card_add_card_of_forall_ne_zero", "Matrix.displacementRank"]
+
+[[node]]
+id = "sylvesterMap_cyclicShift_hankel_apply"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.1.10), support: for `IsHankel H`, `sylvesterMap (cyclicShift n 1)ᵀ
+(cyclicShift n (-1)) H i j = 0` for `i < n - 1`, `j < n - 1` (`H_{i+1,j} = H_{i,j+1}`); hence
+`displacementRank (cyclicShift n 1)ᵀ (cyclicShift n (-1)) H ≤ 2` (last row and last column). ★★
+(~40 lines)'''
+deps = ["Matrix.cyclicShift", "Matrix.hankel", "Matrix.rank_le_card_add_card_of_forall_ne_zero", "Matrix.displacementRank"]
+
+[[node]]
+id = "sylvesterMap_cornerTridiagonal_hankel_apply"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.1.11): for real `H` with `IsHankel H` the `{Y₀₀, Y₁₁}` displacement vanishes off the border
+(`H_{i-1,j} + H_{i+1,j} = H_{i,j-1} + H_{i,j+1}`), so its rank is `≤ 4`; and for `A = T + H` with `T`
+Toeplitz, `H` Hankel, the displacements add (`sylvesterMap` is linear) and the border support is
+preserved, so `displacementRank Y₀₀ Y₁₁ (T + H) ≤ 4` (the display after (12.1.11)). ★★ (~40 lines)'''
+deps = ["Matrix.cornerTridiagonal", "Matrix.hankel", "Matrix.sylvesterMap_cornerTridiagonal_toeplitz_apply", "Matrix.rank_le_card_add_card_of_forall_ne_zero", "Matrix.displacementRank"]

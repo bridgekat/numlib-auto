@@ -1,0 +1,334 @@
+namespace = "GolubVanLoan.Chapter01"
+desc = '''
+§1.1, basic algorithms and notation: the dot product, saxpy, the two gaxpys and the four
+formulations of `C = C + A B` (Algorithms 1.1.1–1.1.8), each a D4 program with its exact
+specification and — because §2.7 analyses them — its bridge to the backbone's relational
+rounding predicates (`FloatingPoint.dotAccum`, `RoundsDot`, `RoundsMul`), and the outer-product
+expansion (1.1.4).
+
+Every algorithm here is `{M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)` followed by the book's data
+in BLAS order (`a x y` for the saxpy, `A x y` for the gaxpys, `A B C` for the products); the
+monad is `M` because `m` is the book's row count. The state is overwritten as the book overwrites
+it: vectors by `Function.update`, matrices by `Matrix.updateRow C i (Function.update (C i) j c)`
+(prototype `notes/gvl/ch01/proto/Program.lean`). The colon-notation algorithms call the scalar
+ones: Algorithm 1.1.6's `A(i,:)·B(:,j)` is `algorithm_1_1_1`, Algorithm 1.1.7's
+`C(:,j) = C(:,j) + A(:,k) B(k,j)` is `algorithm_1_1_2`. Specifications are Mathlib's: `x ⬝ᵥ y`,
+`y + a • x`, `y + A *ᵥ x`, `C + A * B`.
+
+The run characterizations (`…_mem_run`, an `↔`) and the bridges to backbone relations (`…_rounds`:
+`RoundsDot`, `RoundsMul`) are what chapter 2's §2.7 bounds are proved from (convention 12 of
+`NumlibSurface/GolubVanLoan`); the exact specs (`…_spec`) are their instances at the exact model
+(convention 11: `FloatingPoint.RoundingModel.round_exact`, `FloatingPoint.mem_run_dotAccum_exact_iff`).
+The entry-by-entry equality of the rounding structure of the row- and column-oriented variants
+(`algorithm_1_1_4_mem_run`, `algorithm_1_1_7_mem_run`, `algorithm_1_1_8_mem_run`) is the rigorous
+content of "the same result applies if a gaxpy or outer product based procedure is used"
+((2.7.19)). A loop that writes one entry per step (the saxpy; the `i` loop of the row gaxpy; the
+`i`, `j` loops of the `ijk` product) is `SetM.mem_run_foldlM_update_of_nodup`; a loop whose every
+step acts on every entry independently (the `j` loop of the column gaxpy, the `k` loops of the
+saxpy and outer-product forms) is `SetM.mem_run_foldlM_of_pi`; an accumulation in place into one
+entry is `SetM.mem_run_foldlM_update_self_iff`.
+
+Not nodes: the notation of §1.1.1–1.1.4 and §1.1.7–1.1.8 ((1.1.1)–(1.1.3) are partition notation),
+the unnumbered `jki`/`kij` loops (Algorithms 1.1.7/1.1.8 are their colon forms), Table 1.1.1,
+§1.1.15–1.1.17 (flops, big-Oh, BLAS levels, Table 1.1.2), §1.1.19's complex notation (Mathlib `ᴴ`).
+'''
+
+[[node]]
+id = "algorithm_1_1_1"
+kind = "definition"
+desc = '''Algorithm 1.1.1 (dot product), D4: `algorithm_1_1_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ}
+(x y : Fin n → ℝ) : M ℝ := (List.finRange n).foldlM (fun c k => do rnd (c + (← rnd (x k * y k))))
+0` — `c = 0; for k = 1:n, c = c + x(k) y(k)`, product and sum each rounded. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.1'
+
+[[node]]
+id = "algorithm_1_1_1_eq_dotAccum"
+kind = "theorem"
+desc = '''`algorithm_1_1_1 rnd x y = FloatingPoint.dotAccum rnd (List.finRange n) x y 0`, `rfl`: the book's loop
+is the backbone accumulation, which is how chapters 2–3 reach `RoundsDot`. ★'''
+deps = ["algorithm_1_1_1", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.1'
+
+[[node]]
+id = "algorithm_1_1_1_spec"
+kind = "theorem"
+desc = '''Algorithm 1.1.1 computes `c = xᵀ y`: `Id.run (algorithm_1_1_1 pure x y) = x ⬝ᵥ y`, read off the
+exact model (convention 11): `algorithm_1_1_1_eq_dotAccum`, `FloatingPoint.RoundingModel.round_exact`
+(the exact run is the singleton run set at `RoundingModel.exact`),
+`FloatingPoint.mem_run_dotAccum_exact_iff`, `Fin.sum_univ_def`, `zero_add`. ★'''
+deps = ["algorithm_1_1_1_eq_dotAccum", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.1'
+
+[[node]]
+id = "algorithm_1_1_1_rounds"
+kind = "theorem"
+desc = '''Every run of Algorithm 1.1.1 is a recursive inner product in the relational model when rounding fixes
+its outputs: `fp.IsIdempotent → ∀ s ∈ (algorithm_1_1_1 fp.round x y).run, FloatingPoint.RoundsDot fp
+x y s` (the first addition `0 + fl(x₁y₁)` is exact — the book's (2.7.9) `s₁ = x₁y₁(1 + δ₁)`).
+Without the hypothesis, `FloatingPoint.abs_sub_le_of_mem_run_dotAccum` bounds a run by `γ_{n+1}
+|x|ᵀ|y|`. `FloatingPoint.roundsDot_of_mem_run_dotAccum` with the order `List.finRange n`
+(`List.nodup_finRange`, `List.mem_finRange`). ★'''
+deps = ["algorithm_1_1_1_eq_dotAccum", "FloatingPoint.roundsDot_of_mem_run_dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.1'
+
+[[node]]
+id = "algorithm_1_1_1_run_nonempty"
+kind = "theorem"
+desc = '''Nonemptiness (review `notes/gvl/review/algo.md` M8): for a total model the run set of Algorithm 1.1.1
+is nonempty, `fp.IsTotal → (algorithm_1_1_1 fp.round x y).run.Nonempty`, so the "for every run"
+statements about it are not vacuous. `algorithm_1_1_1_eq_dotAccum`, `FloatingPoint.dotAccum_run_nonempty`. ★'''
+deps = ["algorithm_1_1_1_eq_dotAccum", "FloatingPoint.dotAccum_run_nonempty", "FloatingPoint.RoundingModel.IsTotal"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.1'
+
+[[node]]
+id = "algorithm_1_1_2"
+kind = "definition"
+desc = '''Algorithm 1.1.2 (saxpy), D4: `algorithm_1_1_2 rnd (a : ℝ) (x y : Fin n → ℝ) : M (Fin n → ℝ) :=
+(List.finRange n).foldlM (fun y i => do let p ← rnd (a * x i); let s ← rnd (y i + p); pure
+(Function.update y i s)) y` — `y(i) = y(i) + a x(i)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.2'
+
+[[node]]
+id = "algorithm_1_1_2_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_2 pure a x y) = y + a • x`, read off `algorithm_1_1_2_mem_run` at the exact
+model (convention 11; `FloatingPoint.RoundingModel.round_exact`: each `Rounds` is an equality). ★'''
+deps = ["algorithm_1_1_2", "algorithm_1_1_2_mem_run", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.2'
+
+[[node]]
+id = "algorithm_1_1_2_mem_run"
+kind = "theorem"
+desc = '''The run set of the saxpy, entrywise: `ŷ ∈ (algorithm_1_1_2 fp.round a x y).run ↔ ∀ i, ∃ p,
+fp.Rounds (a * x i) p ∧ fp.Rounds (y i + p) (ŷ i)` (the relation of chapter 2's (2.7.17)). Each
+step writes one entry from its current value: `SetM.mem_run_foldlM_update_of_nodup` over
+`List.finRange n` (`List.nodup_finRange`; the step reads nothing else), `SetM.mem_run_bind`,
+`FloatingPoint.RoundingModel.mem_run_round`. ★'''
+deps = ["algorithm_1_1_2", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_bind", "FloatingPoint.RoundingModel.mem_run_round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.2'
+
+[[node]]
+id = "algorithm_1_1_3"
+kind = "definition"
+desc = '''Algorithm 1.1.3 (row-oriented gaxpy), D4: `algorithm_1_1_3 rnd (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n
+→ ℝ) (y : Fin m → ℝ) : M (Fin m → ℝ)`, outer `foldlM` over `List.finRange m` (`i`), inner over
+`List.finRange n` (`j`) of `do let p ← rnd (A i j * x j); let s ← rnd (y i + p); pure (Function.update
+y i s)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.3'
+
+[[node]]
+id = "algorithm_1_1_3_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_3 pure A x y) = y + A *ᵥ x`, read off `algorithm_1_1_3_mem_run` at the exact
+model with `FloatingPoint.mem_run_dotAccum_exact_iff` (convention 11). ★'''
+deps = ["algorithm_1_1_3", "algorithm_1_1_3_mem_run", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.3'
+
+[[node]]
+id = "algorithm_1_1_3_mem_run"
+kind = "theorem"
+desc = '''The run set of the row gaxpy, entry by entry an accumulation onto `y i`: `ŷ ∈ (algorithm_1_1_3
+fp.round A x y).run ↔ ∀ i, ŷ i ∈ (FloatingPoint.dotAccum fp.round (List.finRange n) (A i) x (y
+i)).run`. The `i` loop writes entry `i` only (`SetM.mem_run_foldlM_update_of_nodup`, the step being
+the whole `j` loop on entry `i`), the `j` loop accumulates in place into entry `i`
+(`SetM.mem_run_foldlM_update_self_iff`). ★★'''
+deps = ["algorithm_1_1_3", "FloatingPoint.dotAccum", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_foldlM_update_self_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.3'
+
+[[node]]
+id = "algorithm_1_1_4"
+kind = "definition"
+desc = '''Algorithm 1.1.4 (column-oriented gaxpy), D4: the loops of Algorithm 1.1.3 interchanged — outer over
+`j`, inner over `i` — with the same body `y(i) = y(i) + A(i,j) x(j)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.4'
+
+[[node]]
+id = "algorithm_1_1_4_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_4 pure A x y) = y + A *ᵥ x` (the same specification as Algorithm 1.1.3), read
+off `algorithm_1_1_4_mem_run` at the exact model with `FloatingPoint.mem_run_dotAccum_exact_iff`
+(convention 11). ★'''
+deps = ["algorithm_1_1_4", "algorithm_1_1_4_mem_run", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.4'
+
+[[node]]
+id = "algorithm_1_1_4_mem_run"
+kind = "theorem"
+desc = '''The column gaxpy rounds exactly as the row gaxpy does: `ŷ ∈ (algorithm_1_1_4 fp.round A x y).run ↔ ∀
+i, ŷ i ∈ (FloatingPoint.dotAccum fp.round (List.finRange n) (A i) x (y i)).run` — the right side of
+`algorithm_1_1_3_mem_run`. Loop interchange in the relational model: the inner `i` loop writes one
+entry per step, so its run set is a product over `i` (`SetM.mem_run_foldlM_update_of_nodup`); the
+outer `j` loop therefore acts on every entry independently, and `SetM.mem_run_foldlM_of_pi` makes
+it, entry by entry, the `j` accumulation. ★★'''
+deps = ["algorithm_1_1_4", "FloatingPoint.dotAccum", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_foldlM_of_pi"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.4'
+
+[[node]]
+id = "algorithm_1_1_5"
+kind = "definition"
+desc = '''Algorithm 1.1.5 (`ijk` matrix multiplication), D4: `algorithm_1_1_5 rnd (A : Matrix (Fin m) (Fin r) ℝ)
+(B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ)`, three
+nested `foldlM` over `finRange m`, `finRange n`, `finRange r` of `do let p ← rnd (A i k * B k j); let c
+← rnd (C i j + p); pure (Matrix.updateRow C i (Function.update (C i) j c))` (elaborates in the
+prototype). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.5'
+
+[[node]]
+id = "algorithm_1_1_5_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_5 pure A B C) = C + A * B`, read off `algorithm_1_1_5_mem_run` at the exact
+model with `FloatingPoint.mem_run_dotAccum_exact_iff`, `Matrix.mul_apply` (convention 11). ★'''
+deps = ["algorithm_1_1_5", "algorithm_1_1_5_mem_run", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.5'
+
+[[node]]
+id = "algorithm_1_1_5_mem_run"
+kind = "theorem"
+desc = '''The run set of the `ijk` product, entry by entry an accumulation onto `C i j`: `Ĉ ∈ (algorithm_1_1_5
+fp.round A B C).run ↔ ∀ i j, Ĉ i j ∈ (FloatingPoint.dotAccum fp.round (List.finRange r) (A i) (fun k
+=> B k j) (C i j)).run` (statement elaborates in the prototype). The `i` loop writes row `i` only and
+the `j` loop entry `j` of it (`SetM.mem_run_foldlM_update_of_nodup` twice), the `k` loop accumulates
+in place (`SetM.mem_run_foldlM_update_self_iff`). ★★'''
+deps = ["algorithm_1_1_5", "FloatingPoint.dotAccum", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_foldlM_update_self_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.5'
+
+[[node]]
+id = "algorithm_1_1_5_rounds"
+kind = "theorem"
+desc = '''With `C = 0` and `fp.IsIdempotent`, every run of Algorithm 1.1.5 is a relational matrix product:
+`∀ Ĉ ∈ (algorithm_1_1_5 fp.round A B 0).run, FloatingPoint.RoundsMul fp A B Ĉ`, hence `|Ĉ − A B| ≤
+γ_r |A||B|` by `abs_sub_entrywiseLE_of_roundsMul` (chapter 2's (2.7.19)). `algorithm_1_1_5_mem_run`
+and `FloatingPoint.roundsDot_of_mem_run_dotAccum` entrywise. ★'''
+deps = ["algorithm_1_1_5_mem_run", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "FloatingPoint.RoundsMul"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.5'
+
+[[node]]
+id = "algorithm_1_1_6"
+kind = "definition"
+desc = '''Algorithm 1.1.6 (dot product matrix multiplication), D4: loops `i`, `j`; body `do let s ←
+algorithm_1_1_1 rnd (A i) (fun k => B k j); let c ← rnd (C i j + s); pure (Matrix.updateRow C i
+(Function.update (C i) j c))` — `C(i,j) = C(i,j) + A(i,:)·B(:,j)`, the dot product formed first (from
+`0`) and then added: a different rounding structure from Algorithm 1.1.5. ★'''
+deps = ["algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.6'
+
+[[node]]
+id = "algorithm_1_1_6_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_6 pure A B C) = C + A * B`, read off `algorithm_1_1_6_mem_run` at the exact
+model with `algorithm_1_1_1_spec` (convention 11). ★'''
+deps = ["algorithm_1_1_6", "algorithm_1_1_6_mem_run", "algorithm_1_1_1_spec", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.6'
+
+[[node]]
+id = "algorithm_1_1_6_mem_run"
+kind = "theorem"
+desc = '''The run set of the dot-product matrix multiplication, entrywise: `Ĉ ∈ (algorithm_1_1_6 fp.round A B
+C).run ↔ ∀ i j, ∃ s ∈ (algorithm_1_1_1 fp.round (A i) (fun k => B k j)).run, fp.Rounds (C i j + s)
+(Ĉ i j)`. The `i` and `j` loops write one entry per step (`SetM.mem_run_foldlM_update_of_nodup`
+twice), `SetM.mem_run_bind`. ★★'''
+deps = ["algorithm_1_1_6", "algorithm_1_1_1", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_bind", "FloatingPoint.RoundingModel.mem_run_round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.6'
+
+[[node]]
+id = "algorithm_1_1_6_rounds"
+kind = "theorem"
+desc = '''With `C = 0` and `fp.IsIdempotent`: `∀ Ĉ ∈ (algorithm_1_1_6 fp.round A B 0).run, FloatingPoint.RoundsMul
+fp A B Ĉ` — each entry is `fl(0 + s)` with `s` a run of Algorithm 1.1.1 (`algorithm_1_1_6_mem_run`),
+`= s` by idempotence, and `s` is a `RoundsDot` by `algorithm_1_1_1_rounds`. ★'''
+deps = ["algorithm_1_1_6_mem_run", "algorithm_1_1_1_rounds", "FloatingPoint.RoundsMul", "FloatingPoint.RoundingModel.IsIdempotent"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.6'
+
+[[node]]
+id = "algorithm_1_1_7"
+kind = "definition"
+desc = '''Algorithm 1.1.7 (saxpy matrix multiplication), D4: loops `j` then `k`, body `C(:,j) = C(:,j) + A(:,k)
+B(k,j)` as a call of the saxpy on column `j`: `do let c ← algorithm_1_1_2 rnd (B k j) (fun i => A i k)
+(fun i => C i j); pure (Matrix.of fun i j' => if j' = j then c i else C i j')` (i.e. `updateCol`).
+★'''
+deps = ["algorithm_1_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.7'
+
+[[node]]
+id = "algorithm_1_1_7_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_7 pure A B C) = C + A * B`, read off `algorithm_1_1_7_mem_run` at the exact
+model with `FloatingPoint.mem_run_dotAccum_exact_iff` (convention 11). ★'''
+deps = ["algorithm_1_1_7", "algorithm_1_1_7_mem_run", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.7'
+
+[[node]]
+id = "algorithm_1_1_7_mem_run"
+kind = "theorem"
+desc = '''The saxpy product rounds entry by entry as the `ijk` product does: the right side of
+`algorithm_1_1_5_mem_run` characterizes the run set of `algorithm_1_1_7`. The `j` loop writes column
+`j` only (`SetM.mem_run_foldlM_update_of_nodup` on the columns, i.e. on the transposed state); each
+`k` step is a saxpy on that column, which acts on every entry independently
+(`algorithm_1_1_2_mem_run`), so the `k` loop is, entry by entry, the `k` accumulation
+(`SetM.mem_run_foldlM_of_pi`). ★★'''
+deps = ["algorithm_1_1_7", "algorithm_1_1_2_mem_run", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_foldlM_of_pi", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.7'
+
+[[node]]
+id = "algorithm_1_1_7_rounds"
+kind = "theorem"
+desc = '''With `C = 0` and `fp.IsIdempotent`, every run of the saxpy product is a `FloatingPoint.RoundsMul`
+(chapter 2's (2.7.19) "for a gaxpy based procedure"): `algorithm_1_1_7_mem_run` and
+`FloatingPoint.roundsDot_of_mem_run_dotAccum` entrywise, as `algorithm_1_1_5_rounds`. ★'''
+deps = ["algorithm_1_1_7_mem_run", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "FloatingPoint.RoundsMul"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.7'
+
+[[node]]
+id = "algorithm_1_1_8"
+kind = "definition"
+desc = '''Algorithm 1.1.8 (outer product matrix multiplication), D4: loop `k`, body `C = C + A(:,k) B(k,:)` as the
+outer-product update of §1.1.9 in its row form (`i` then `j`): `c ← rnd (C i j + (← rnd (A i k * B k
+j)))` written into `(i, j)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.8'
+
+[[node]]
+id = "algorithm_1_1_8_spec"
+kind = "theorem"
+desc = '''`Id.run (algorithm_1_1_8 pure A B C) = C + A * B`, read off `algorithm_1_1_8_mem_run` at the exact
+model with `FloatingPoint.mem_run_dotAccum_exact_iff` (convention 11); (1.1.4) (`equation_1_1_4`)
+is the book's reading of the same identity. ★'''
+deps = ["algorithm_1_1_8", "algorithm_1_1_8_mem_run", "FloatingPoint.mem_run_dotAccum_exact_iff", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.8'
+
+[[node]]
+id = "algorithm_1_1_8_mem_run"
+kind = "theorem"
+desc = '''The outer-product form rounds entry by entry as the `ijk` product does: the right side of
+`algorithm_1_1_5_mem_run` characterizes the run set of `algorithm_1_1_8`. Each `k` step (the rank-one
+update, `i` then `j` loops writing one entry per step: `SetM.mem_run_foldlM_update_of_nodup` twice)
+acts on every entry independently, so the `k` loop is, entry by entry, the `k` accumulation
+(`SetM.mem_run_foldlM_of_pi`); with `r = 1` it is chapter 2's (2.7.18). ★★'''
+deps = ["algorithm_1_1_8", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_foldlM_of_pi", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.8'
+
+[[node]]
+id = "algorithm_1_1_8_rounds"
+kind = "theorem"
+desc = '''With `C = 0` and `fp.IsIdempotent`, every run of the outer-product form is a
+`FloatingPoint.RoundsMul` ((2.7.19) "or outer product based"): `algorithm_1_1_8_mem_run` and
+`FloatingPoint.roundsDot_of_mem_run_dotAccum` entrywise. ★'''
+deps = ["algorithm_1_1_8_mem_run", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "FloatingPoint.RoundsMul"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 1.1.8'
+
+[[node]]
+id = "equation_1_1_4"
+kind = "theorem"
+desc = '''(1.1.4): matrix multiplication is a sum of outer products, `A * B = ∑ k, vecMulVec (fun i => A i k) (B
+k)` for `A : Matrix (Fin m) (Fin r) ℝ`, `B : Matrix (Fin r) (Fin n) ℝ`; `ext; simp [mul_apply,
+vecMulVec_apply, Finset.sum_apply]` — the book's own componentwise verification. Searched Mathlib:
+`Matrix.mul_eq_sum_vecMulVec`, `sum_vecMulVec`, `col_mul_row` — not found (only
+`vecMulVec_eq` with `replicateCol`/`replicateRow`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.1.4)'
+

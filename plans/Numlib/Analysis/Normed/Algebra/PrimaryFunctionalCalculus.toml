@@ -1,0 +1,13 @@
+desc = '''
+The primary functional calculus `pfc f a` of an algebraic element `a` of a `𝕜`-algebra
+(`[NontriviallyNormedField 𝕜]`), defined by Hermite interpolation of `f` on the roots of the minimal
+polynomial of `a` (Higham, *Functions of Matrices*, Definition 1.4; [golub2013matrix] Chapter 9).
+The design, the comparison with the Jordan-form, power-series and Cauchy-integral definitions, and
+the naming conventions are in the directory group `Numlib/Analysis/Matrix/Function`, which holds the
+matrix statements built on this. Modules: `Basic` (the algebraic theory), `Analytic` (power series,
+`exp`, `log`, composition, the derivative along `t • a`, the Taylor truncation bound), `Cauchy` (the
+Cauchy integral over a circle). Placed here at the Golub–Van Loan review: the algebra-level theory
+holds in any `𝕜`-algebra, so it does not belong under `Analysis/Matrix`, and it rests on
+`Numlib/RingTheory/Polynomial/HermiteInterpolation` and `Numlib/Analysis/Calculus/HermiteInterpolation`
+rather than on the numerical `Approximation` layer.
+'''

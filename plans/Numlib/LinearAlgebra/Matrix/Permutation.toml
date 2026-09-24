@@ -1,0 +1,137 @@
+namespace = "Matrix"
+desc = '''
+Named permutation (and shift) matrices of the matrix-computations literature on `Fin n`: the
+exchange matrix `ℰ_n` (`Matrix.exchange`, the reversal), the downshift `𝒟_n` (`Matrix.downshift`,
+the cyclic rotation), the perfect shuffle `Π_{p,r}` (`Matrix.perfectShuffle` over the index map
+`Matrix.finPerfectShuffle`), and the `φ`-cyclic shift `Z_φ` (`Matrix.cyclicShift n φ`, a permutation
+matrix at `φ = 1`, where it is `downshift n`) — [golub2013matrix] §1.2.11, §4.7.1, §4.8.2, (12.1.7).
+
+Each is Mathlib's permutation-matrix API in a numerical name: `exchange n = Fin.revPerm.permMatrix`,
+`downshift n = (finRotate n).symm.permMatrix`, `perfectShuffle p r = (finPerfectShuffle p r).symm
+.toPEquiv.toMatrix` (typed `Matrix (Fin (r * p)) (Fin (p * r)) R` so that `Πᵀ = Π_{r,p}` holds without
+a cast); the lemmas here are their action on vectors and matrices, powers, transposes and
+orthogonality. What uses them stays with its subject: persymmetry and the Toeplitz bordering in
+`Numlib/LinearAlgebra/Matrix/Toeplitz` (with the circulant expansion `circulant_eq_sum_downshift_pow`),
+the commutation of the Kronecker product and the vec-permutation property in
+`Numlib/LinearAlgebra/Matrix/Kronecker`, the displacement structure in
+`Numlib/LinearAlgebra/Matrix/Displacement`.
+
+Gathered at the Golub–Van Loan consolidation (chapter 1's refactor proposal R3) from the plans of
+`Toeplitz` (ch04), `Kronecker` (ch01) and `Displacement` (ch12); the ids did not change. Upstreaming
+candidate (natural home `Mathlib.LinearAlgebra.Matrix.Permutation`). Order: ★ throughout, the
+`cyclicShift` power ★★; about 250 lines.
+'''
+
+[[node]]
+id = "exchange"
+kind = "definition"
+desc = '''The exchange matrix `ℰ_n` ([golub2013matrix] §1.2.11, §4.7.1): `exchange n : Matrix (Fin n) (Fin n) R`,
+`exchange n i j = if j = Fin.rev i then 1 else 0`, for `[Zero R] [One R]`. Prototype
+`notes/gvl/ch04/proto/Shapes.lean` §2. ★'''
+deps = []
+
+[[node]]
+id = "exchange_eq_permMatrix"
+kind = "theorem"
+desc = '''`exchange n = (Fin.revPerm : Equiv.Perm (Fin n)).permMatrix R` over a ring: the exchange matrix is the
+permutation matrix of the reversal, so the permutation-matrix API applies. ★'''
+deps = ["exchange"]
+
+[[node]]
+id = "exchange_mulVec_apply"
+kind = "theorem"
+desc = '''`(exchange n *ᵥ v) i = v (Fin.rev i)` and `(v ᵥ* exchange n) j = v (Fin.rev j)` over a non-assoc
+semiring; companions `exchange_mul_apply : (exchange n * A) i j = A (rev i) j` and
+`mul_exchange_apply : (A * exchange n) i j = A i (rev j)`. `Fintype.sum_eq_single`. ★'''
+deps = ["exchange"]
+
+[[node]]
+id = "exchange_mul_exchange"
+kind = "theorem"
+desc = '''`exchange n * exchange n = 1` and `(exchange n)ᵀ = exchange n` (`Fin.rev_rev`, `Fin.rev_inj`). ★'''
+deps = ["exchange_mulVec_apply"]
+
+[[node]]
+id = "downshift"
+kind = "definition"
+desc = '''The downshift permutation `𝒟_n` ([golub2013matrix] §1.2.11, §4.8.2): `downshift n : Matrix (Fin n) (Fin n) R
+:= (finRotate n).symm.permMatrix R`, so `downshift n i j = 1 ↔ (i : ℕ) = ((j : ℕ) + 1) % n` —
+`𝒟 e_j = e_{j+1}` cyclically; the same matrix as the chapter-1 surface's `downshift` (ch01
+inventory: "`(finRotate n).symm.permMatrix`") and chapter 12's `cyclicShift n 1`, which should be
+restated through it. `downshift_apply` (entry formula) and `downshift_eq_circulant : downshift (n +
+1) = circulant (Pi.single 1 1)` (Mathlib `Matrix.circulant_apply`, `Fin` subtraction). ★'''
+deps = []
+
+[[node]]
+id = "downshift_pow_card"
+kind = "theorem"
+desc = '''`downshift n ^ k = circulant (Pi.single (k : Fin n) 1)` for `n ≠ 0` (induction with
+`Matrix.circulant_mul`), hence `downshift n ^ n = 1` (`Matrix.circulant_single_one`) — the
+book's `𝒟_5⁵ = I_5` and its generalization. ★'''
+deps = ["downshift"]
+
+[[node]]
+id = "finPerfectShuffle"
+kind = "definition"
+desc = '''The perfect-shuffle index map `finPerfectShuffle p r : Fin (p * r) ≃ Fin (r * p) :=
+finProdFinEquiv.symm.trans ((Equiv.prodComm (Fin p) (Fin r)).trans finProdFinEquiv)` — position
+`b r + a` (card `a` of pile `b`, `a < r`, `b < p`) goes to position `a p + b`. In namespace `Matrix`,
+beside `perfectShuffle`, which is its only consumer. ★'''
+deps = []
+
+[[node]]
+id = "finPerfectShuffle_apply"
+kind = "theorem"
+desc = '''`finPerfectShuffle p r (finProdFinEquiv (b, a)) = finProdFinEquiv (a, b)`, and
+`(finPerfectShuffle p r).symm = finPerfectShuffle r p`. ★'''
+deps = ["finPerfectShuffle"]
+
+[[node]]
+id = "perfectShuffle"
+kind = "definition"
+desc = '''The mod-`p` perfect shuffle `Π_{p,r}` ([golub2013matrix] §1.2.11): `perfectShuffle (R) (p r : ℕ) :
+Matrix (Fin (r * p)) (Fin (p * r)) R := (finPerfectShuffle p r).symm.toPEquiv.toMatrix`, so
+`(perfectShuffle p r *ᵥ x) (a p + b) = x (b r + a)`: the deck `x ∈ R^{pr}` is cut into `p` piles of
+`r` cards and reassembled one card from each pile in turn. The two index types have the same size
+`pr`; typing them apart makes the transpose and conjugation identities cast-free. ★'''
+deps = ["finPerfectShuffle"]
+
+[[node]]
+id = "perfectShuffle_mulVec"
+kind = "theorem"
+desc = '''`perfectShuffle p r *ᵥ x = x ∘ (finPerfectShuffle p r).symm` (the book's `y = x(v)`), from
+`PEquiv.toMatrix_toPEquiv_mulVec`-type lemmas (Mathlib `permMatrix_mulVec` is the square case). ★'''
+deps = ["perfectShuffle", "finPerfectShuffle_apply"]
+
+[[node]]
+id = "transpose_perfectShuffle"
+kind = "theorem"
+desc = '''`(perfectShuffle p r)ᵀ = perfectShuffle r p` — [golub2013matrix] (1.2.4) together with its
+[P1.2.12(b)] `Π_{p,r}ᵀ = Π_{r,p}`; `PEquiv.toMatrix_symm`, `finPerfectShuffle_apply`. ★'''
+deps = ["perfectShuffle", "finPerfectShuffle_apply"]
+
+[[node]]
+id = "perfectShuffle_mul_transpose"
+kind = "theorem"
+desc = '''`perfectShuffle p r * (perfectShuffle p r)ᵀ = 1` and `(perfectShuffle p r)ᵀ * perfectShuffle p r = 1`
+(a permutation matrix is orthogonal); `PEquiv.toMatrix_trans`, `Equiv.symm_trans_self`. ★'''
+deps = ["perfectShuffle", "transpose_perfectShuffle"]
+
+[[node]]
+id = "cyclicShift"
+kind = "definition"
+desc = '''`Z_φ` ([golub2013matrix] (12.1.7)): `cyclicShift n φ : Matrix (Fin n) (Fin n) K`, entries `1` at
+`(i + 1, i)` and `φ` at `(0, n - 1)`, `0` elsewhere (`of fun i j => if (i : ℕ) = j + 1 then 1 else if
+(i : ℕ) = 0 ∧ (j : ℕ) + 1 = n then φ else 0`). `cyclicShift_one : cyclicShift n 1 = downshift n`
+(chapter 4's `Matrix.downshift`, the permutation `𝒟_n = (finRotate n).symm.permMatrix` of §1.2.11), and
+`cyclicShift n 0` is the lower shift. ★'''
+deps = ["downshift"]
+
+[[node]]
+id = "cyclicShift_pow_card"
+kind = "theorem"
+desc = '''`cyclicShift n φ ^ n = φ • 1` (for `n ≥ 1`): `Z_φ eⱼ = e_{j+1}` for `j < n - 1` and `Z_φ e_{n-1} =
+φ e₀`, so `Z_φ^n eⱼ = φ eⱼ`. Induction on the power with the column formula
+`cyclicShift_pow_mulVec_single`. Consequence: every eigenvalue `μ` of `Z_φ` satisfies `μ ^ n = φ`
+(`Module.End.HasEigenvalue` pushed through `pow`). ★★ (~50 lines)'''
+deps = ["cyclicShift"]

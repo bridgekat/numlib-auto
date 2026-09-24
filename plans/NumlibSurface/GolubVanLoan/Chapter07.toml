@@ -1,0 +1,172 @@
+desc = '''
+Golub–Van Loan, *Matrix Computations*, Chapter 7: unsymmetric eigenvalue problems. §7.1 properties and
+decompositions (Schur, Jordan, block diagonalization), §7.2 perturbation theory, §7.3 power iterations,
+§7.4 Hessenberg and real Schur forms, §7.5 the practical QR algorithm, §7.6 invariant subspace
+computations, §7.7 the generalized eigenvalue problem and QZ, §7.8 Hamiltonian and product eigenvalue
+problems, §7.9 pseudospectra. One module per section, `NumlibSurface/GolubVanLoan/Chapter07/SectionMM.lean`,
+namespace `GolubVanLoan.Chapter07`; the planning record is `notes/gvl/ch07/` (inventory, report,
+prototype).
+
+## Conventions
+
+* **Scalars.** The theory of §7.1–7.3 and §7.9 is complex, `Matrix (Fin n) (Fin n) ℂ`, `λ(A) = spectrum ℂ A`,
+  eigenvalues with multiplicity `A.charpoly.roots`, unitary `Q ∈ Matrix.unitaryGroup` with `Qᴴ = star Q`.
+  The algorithms of §7.4–7.7 and §7.8 are real, `Matrix (Fin n) (Fin n) ℝ`, `Matrix.orthogonalGroup`, and
+  complex eigenvalues of a real matrix are those of `Matrix.complexify`.
+* **Indices.** The book is 1-based with colon notation; Lean is 0-based on `Fin n`: `H(k+1, k)`,
+  `k = 1:n-1`, is `H ⟨k+1, _⟩ ⟨k, _⟩`, `k < n - 1`; `A(i:j, k:l)` is a list of indices `List.finRange`
+  filtered to `[i-1, j-1]`. Block partitions `[T₁₁ T₁₂; 0 T₂₂]` are `Matrix.fromBlocks` on
+  `Fin p ⊕ Fin q` (reindexed by `finSumFinEquiv` where the book's matrix is one `n × n` array), or a
+  monotone block index `b : Fin n → Fin q` with `Matrix.BlockTriangular` and `Matrix.toBlock` for the
+  `q`-block partitions (7.1.9), (7.6.3); the blocks of a partition given as input data (Algorithm
+  7.6.3) are submatrices over `fun a : Fin n_i => ⟨s_i + a, _⟩`, while the loop-dependent blocks of the
+  QR and QZ algorithms are windows (index lists) on the full matrix (convention 10).
+* **Norms.** `‖·‖₂` is Mathlib's scoped `Matrix.Norms.L2Operator`, `‖·‖_F` the scoped
+  `Matrix.Norms.Frobenius` (never both open in one proof), `‖·‖_p` and `κ_p` the backbone's
+  `Matrix.lpOpNorm`, `Matrix.condNumberLp`; `σ_min(A) = ⨅ i, A.singularValues i`. The distance of two
+  subspaces, `dist(S₁, S₂) = ‖P₁ - P₂‖₂` of §2.5.3, is the backbone's `Submodule.gap`.
+* **Named shapes.** Upper quasi-triangular: `Matrix.IsQuasiUpperTriangular` (staged for `RealSchur`).
+  Unreduced Hessenberg: `Matrix.IsUnreducedUpperHessenberg`. "A QR step for some QR factorization":
+  `Matrix.IsShiftedQrStep μ H H'`; the Francis step's specification: `Matrix.IsFrancisStep s t H H'`
+  (both staged for `Eigen/QRAlgorithm`).
+* **Algorithms (D4).** The numbered conventions 1–14 of `NumlibSurface/GolubVanLoan` (which are also
+  those of `Numlib/FloatingPoint/Program`) govern every program here and supersede any wording in a
+  section group. Every numbered algorithm is a `noncomputable def algorithm_7_M_K {M} [Monad M]
+  (rnd : ℝ → M ℝ) …` in the book's operation order: every `+ − × / √` result through `rnd`, including
+  the arithmetic of a deflation test (`fl(tol · fl(|h_ii| + |h_{i-1,i-1}|))`), negation, `|·|`,
+  `sign`, copies and comparisons exact; loops `List.foldlM`; blocks as index lists on the full matrix
+  (convention 10 — a step on the unreduced block of Algorithms 7.5.2 and 7.7.3 runs Algorithm 7.5.1,
+  7.7.2 or the zero chase on a **window** of consecutive indices, never on an extracted
+  `Fin (n - p - q)` copy); subroutines `givens`, `house`, Householder QR and back substitution from
+  the surfaces of chapters 5 and 3 (`GolubVanLoan.Chapter05.algorithm_5_1_3`, `…houseOn`,
+  `…algorithm_5_2_1`, `GolubVanLoan.Chapter03.algorithm_3_1_2`) and every update through chapter 5's
+  shared helpers (`givensApplyLeft/Right`, `householderApplyLeft/Right`, `forward-`/
+  `backwardAccumulation`, convention 13; the chapter defines no variant of them). Householder data are
+  `List ((Fin n → ℝ) × ℝ)` carrying the `β` `house` returned, never rebuilt as `β = 2/(vᵀv)` (surface
+  review Major 2). `algorithm_7_M_K_spec` is the exact-arithmetic statement (`M := Id`, `rnd := pure`)
+  against the backbone specification. The shape is settled by `notes/gvl/ch07/proto/Shapes.lean`
+  (Algorithm 7.4.1 elaborates at `Id` and `SetM`). The iterations with a convergence test (Algorithms
+  7.5.2, 7.6.1, 7.7.3) take the tolerance and, **last**, `fuel` (convention 3); for 7.5.2 and 7.7.3 the
+  exact specification carries the perturbation of the deflations (`T = Qᵀ (A + E) Q`,
+  `‖E‖_F ≤ ((1 + 2 tol)^{n·fuel} - 1) ‖A‖_F`), since setting a small entry to zero is not a similarity
+  even in exact arithmetic.
+* **Floating point (D8).** The only rounding analysis the book performs or cites with a statement
+  precise enough to prove is Wilkinson's bound for the Hessenberg reduction (§7.4.3):
+  `algorithm_7_4_2_rounds` (every run's successive Hessenberg parts satisfy the backbone relation
+  `FloatingPoint.RoundsHessenbergReducePert`, generic in the reflector formula, under
+  `fp.IsIdempotent`) and `algorithm_7_4_2_rounding` (the bound, from
+  `FloatingPoint.exists_roundsHessenbergReducePert_eq`), with chapter 5's `houseOn_rounds` and
+  `FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert` for its `house`.
+
+## Correspondence with the backbone
+
+* `Numlib/LinearAlgebra/Matrix/Sylvester` (**new**, ch07): the Sylvester operator, unique solvability,
+  block diagonalization (Lemma 7.1.5, Theorem 7.1.6), `sep` (7.2.5) and its properties — §7.1, §7.2,
+  §7.3, §7.6; chapters 9 and 12 consume it.
+* `Numlib/LinearAlgebra/Matrix/UnreducedHessenberg` (**new**, ch07): unreduced Hessenberg matrices,
+  Krylov matrices (7.4.3), geometric multiplicity one (7.4.4), the implicit-shift principle.
+* `Numlib/LinearAlgebra/Matrix/KrylovDecomposition` (**new**, review): the implicit Q theorem
+  (`Matrix.implicitQ`, `…_of_apply_eq_zero`, `…_real`; Theorem 7.4.2, and chapter 8's Theorem 8.3.2), as
+  corollaries of the one engine `Matrix.IsArnoldiDecomposition.implicitQ` shared with chapter 10's
+  Arnoldi decompositions.
+* `Numlib/Eigen/InvariantSubspace` (**new**, ch07): uniqueness of the invariant subspace of a spectral set,
+  Lemma 7.3.2, Stewart's Theorem 7.2.4, the graph gap (7.2.5–7.2.6), Theorem 7.3.1 corrected.
+* `Numlib/Eigen/Pseudospectrum` (**new**, ch07): §7.9 (closed pseudospectrum, the three definitions, the
+  gallery, components, abscissa and radius, (7.9.11)).
+* `Numlib/Eigen/HamiltonianSchur`, `Numlib/Eigen/PeriodicSchur` (**new**, ch07): §7.8, on top of
+  chapter 1's `Numlib/LinearAlgebra/Matrix/Hamiltonian` (`Matrix.IsHamiltonian`), to which ch07 stages
+  `Matrix.IsSkewHamiltonian` and the orthogonal-symplectic block form.
+* Appends (staged in `notes/gvl/ch07/appends/`): `Schur` (ordered Schur form, Lemma 7.1.2), `RealSchur`
+  (`IsQuasiUpperTriangular`), `Jordan` (uniqueness, block counts), `GeneralizedSchur` (compactness of
+  the unitary group, the complex generalized Schur form of any pair), `SVD` (`σ_min` as a minimum),
+  `OperatorNorm` (`‖diag‖_p`), `Eigen/Perturbation` (Bauer–Fike in `p`-norms, Theorem 7.2.3),
+  `Eigen/PowerMethod` (rates with an eigenbasis), `Eigen/QRAlgorithm` (`IsShiftedQrStep`, Theorem 7.5.1,
+  (7.5.7), the real double shift, `IsFrancisStep`), `Eigen/Pencil` (`1/λ`, deflating subspaces), `Hamiltonian` (chapter 1's module:
+  skew-Hamiltonian and orthogonal symplectic matrices).
+* Chapter 2's `Numlib/Analysis/InnerProductSpace/Projection/Gap` supplies (7.3.18)–(7.3.19)
+  (`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, `Matrix.gap_range_sq_add_sortedSingularValues_sq`);
+  chapter 5's surface supplies `givens`, `house` (`houseOn`), the §5.1.4/§5.1.9 updates on index
+  lists and their rounding lemmas, which every algorithm here calls directly.
+* Existing and reused as is: `Matrix.exists_unitary_conj_upperTriangular`, the real Schur form,
+  `Matrix.exists_conj_jordanForm`, `Matrix.IsStarNormal.spectral_theorem`, `Matrix.bauer_fike`,
+  Gershgorin (`Matrix.spectrum_subset_iUnion_closedBall`, `…card_spectrum_of_isolated_gershgorin`),
+  the eigenvalue condition number and its derivative (`Module.End.eigenvalueCondNumber`,
+  `…deriv_eigenvalue_perturbation`), `Krylov.powerIterate`/`inverseIterate`/`subspaceIterate`/
+  `orthogonalIterate`, `Matrix.qrIterate`/`shiftedQrStep`/`doubleShiftQrStep`, the Householder
+  Hessenberg reduction `Matrix.hessenbergReduce` and its rounding analysis (Fix-A: the book's
+  association and Parlett's `house` through `FloatingPoint.RoundsHessenbergReducePert`), the pencil theory
+  (`Matrix.pencilSpectrum`, `…exists_unitary_pencil_isUpperTriangular`, `…exists_generalizedRealSchur`),
+  `LinearMap.numericalRange` and Toeplitz–Hausdorff, `Submodule.gap`.
+
+Quarteroni–Sacco–Saleri Chapter 5 restates much of the same backbone (Gershgorin, Bauer–Fike, power and
+QR iterations, Hessenberg reduction, shifts, pencils); the two surfaces share it and not each other.
+
+## Not formalized (by decision; each section group lists its instances)
+
+* operation counts, flop and level-3/BLAS discussions (§7.4.4 entirely), balancing (§7.5.7);
+* numerical examples, figures and MATLAB-style illustrations (the 7-digit pencil, Kahan/Demmel/Gallery
+  pseudospectra, Figure 7.9.1, the `7 × 7` Jordan example);
+* Notes and References;
+* roundoff claims stated with `≈` and no derivation: (7.1.14)–(7.1.15) (no algorithm fixed for
+  `fl(X⁻¹ A X)`), the backward stability of the QR algorithm (§7.5.6), of Schur reordering and block
+  diagonalization (§7.6.2–7.6.3), of QZ (§7.7.7) — each has a rigorous reading (the analysis of every
+  Francis/QZ step with the iteration count in the constant) that the book does not give;
+* heuristics without a precise claim: the deflation criteria (7.5.2), the `O(ε^{1/p})` sensitivity of
+  defective eigenvalues (whose rigorous content is Theorem 7.2.3), the SVD explanation of one step of
+  inverse iteration, "transient growth" (7.9.4), Stewart's accelerated orthogonal iteration;
+* results quoted without proof and with no construction: Wilkinson's nearest multiple eigenvalue bound
+  (§7.2.2), Stewart's chordal-metric bound (§7.7.3), the Kronecker canonical form (§7.7.1);
+* (7.8.7) and the convergence of the QR, QZ and product iterations (not proved by the book).
+
+## Book errors found (details in `notes/gvl/ch07/report.md`, Doubts)
+
+Theorem 7.5.1 is stated over `ℂ` as printed (the exact shift may be a complex eigenvalue of the real
+`H`; the first plan restricted it to real `μ`). The LR iteration
+(7.3.14) and §7.1.3's `departureFromNormality_eq` stay on the backbone (`Matrix.IsLU.unique`,
+`Matrix.frobenius_norm_unitary_mul_mul_unitary`): the earlier chapters' restatements
+(`GolubVanLoan.Chapter03.theorem_3_2_1_unique`, `GolubVanLoan.Chapter02.equation_2_3_14`) are over
+`ℝ`, these statements over `ℂ`.
+
+Theorem 7.3.1 is false as printed (the hypothesis must bound the distance to `D_r(Aᴴ)`; counterexample
+node `theorem_7_3_1_counterexample`); Theorem 7.1.6's `λ(T_ij)` for `λ(T_ii)`; (7.1.3)'s max index;
+`κ_F(Y_ij) = n_i² + n_j² + ‖Z‖_F²` for `n_i + n_j + ‖Z‖_F²`; the generalized inverse iteration's
+`λ^(k) = qᴴAq/qᴴAq`; the `2 × 2` power bound "for any `ε > 0`" (needs `ε ≤ M`); cross-reference slips
+("Theorem 7.4.3 (the implicit Q theorem)", "Lemma 7.3.1"); typos in the proofs of Lemma 7.3.2 and
+Theorems 7.9.1–7.9.2; the `F`/`G` labelling of (7.8.1) against Figure 7.8.1.
+
+## Order of attack
+
+Backbone, in dependency order (estimated lines):
+
+1. `RealSchur` append (`IsQuasiUpperTriangular`, ~150), `SVD` append (~80), `OperatorNorm` append (~60),
+   `Schur` append (~250), `Jordan` append (~120), `GeneralizedSchur` append (~180) — independent of each
+   other.
+2. `Numlib/LinearAlgebra/Matrix/Sylvester` (~650).
+3. `Numlib/LinearAlgebra/Matrix/UnreducedHessenberg` and `…/KrylovDecomposition` (~600 together; the
+   implicit Q theorem is in the latter) — unblocks chapter 8's Theorem 8.3.2.
+4. `Eigen/Perturbation` append (~300), `Eigen/PowerMethod` append (~150), `Eigen/Pencil` append (~120).
+5. `Eigen/QRAlgorithm` append (~450; needs 3).
+6. `Numlib/Eigen/InvariantSubspace` (~1500; needs 1, 2).
+7. `Numlib/Eigen/Pseudospectrum` (~900; needs the SVD append).
+8. The `Hamiltonian` append (skew-Hamiltonian, orthogonal symplectic, ~150; after chapter 1's module),
+   `Numlib/Eigen/HamiltonianSchur` (~1450; needs 1, 2 and the `Hamiltonian` module),
+   `Numlib/Eigen/PeriodicSchur` (~700; needs 1 and `GeneralizedSchur`'s compactness).
+
+Backbone total ≈ 7 800 lines.
+
+Surface, after the backbone it cites: Sections 1, 2, 9 (theory, mostly ★, ~1 200 lines together);
+Section 3 (~900, Theorem 7.3.1 and the appendix displays); Section 4 (Algorithms 7.4.1–7.4.2, ~700,
+needs chapter 5's shared helpers and their specs; `algorithm_7_4_2_rounds` last, ~150, after chapter 5's
+`houseOn_rounds` and the backbone's `RoundsHessenbergReducePert`, the bound itself a one-liner); Section 5 (~1 400: the Francis step and the QR algorithm
+are the two ★★★ programs); Section 6 (~1 300: Algorithms 7.6.1–7.6.3); Section 7 (~1 800: Algorithms
+7.7.1–7.7.3 and the zero chase); Section 8 (~500). Surface total ≈ 8 000 lines, about 60 % of it in the
+algorithm specifications.
+
+## What this chapter closes
+
+The `Eigen/QRAlgorithm` module doc's "The real-arithmetic Francis implementation is not defined": its
+specification becomes `Matrix.IsFrancisStep` and its implementation Algorithm 7.5.1. The complex
+generalized Schur form of a singular pencil, which the `GeneralizedSchur` doc says "is not written out".
+No `notes/frontier.md` item is closed (the Givens rounding model, the one relevant frontier item, is
+chapter 5's).
+'''

@@ -1,3 +1,10 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.LU` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch03) add the rectangular (trapezoidal) LU factorization `Matrix.IsRectLU` on `Fin` indices,
+# [golub2013matrix] §3.2.10: `A = L U` with `A` `m × n`, `L` `m × p` unit lower trapezoidal and `U`
+# `p × n` upper trapezoidal, `p = min m n`; existence from the leading principal minors by bordering
+# to the square case. Consumers: the rectangular outer-product LU (3.2.8), the block LU algorithms
+# 3.2.3–3.2.4, the pivoted block column (3.6.2).
 namespace = "Matrix"
 
 [[node]]
@@ -188,3 +195,43 @@ id = "strictLeadingPrincipalSubmatrix_transpose"
 
 [[node]]
 id = "det_leadingPrincipalSubmatrix_fin"
+
+[[node]]  # staged by ch03
+id = "IsRectLU"
+kind = "definition"
+desc = '''**The rectangular LU factorization** ([golub2013matrix] §3.2.10): for
+`A : Matrix (Fin m) (Fin n) K`, `L : Matrix (Fin m) (Fin p) K`, `U : Matrix (Fin p) (Fin n) K`,
+`IsRectLU A L U` is the structure with fields `lower : L.HasUpperBandwidthRect 0`
+(`L i j = 0` for `(i : ℕ) < j`), `lower_apply_self : ∀ i j, (i : ℕ) = j → L i j = 1` (unit lower
+trapezoidal), `upper : U.HasLowerBandwidthRect 0` (upper trapezoidal) and `mul_eq : L * U = A`,
+with ch01's rectangular bandwidth predicates (staged for `Hessenberg`), whose index comparisons
+are on `ℕ` values since the index types differ; `p` is a parameter, `min m n` in the existence
+theorem. On `Fin`, not a general linear
+order: a rectangular triangular shape needs the two index sets aligned, and every consumer is on
+`Fin` (the square `Matrix.IsLU` stays the general one). ★'''
+deps = ["Matrix.IsLU", "Matrix.HasUpperBandwidthRect", "Matrix.HasLowerBandwidthRect"]
+
+[[node]]  # staged by ch03
+id = "isRectLU_iff_isLU"
+kind = "theorem"
+desc = '''The square case: for `A L U : Matrix (Fin n) (Fin n) K`, `IsRectLU A L U ↔ IsLU A L U`
+(`Fin` comparisons are `ℕ` comparisons, `Fin.lt_def`; `IsUnitLowerTriangular` and
+`IsUpperTriangular = BlockTriangular id`). ★'''
+deps = ["Matrix.IsRectLU", "Matrix.IsLU", "Matrix.IsUnitLowerTriangular"]
+
+[[node]]  # staged by ch03
+id = "exists_isRectLU_of_forall_isUnit"
+kind = "theorem"
+desc = '''**Existence of the rectangular LU factorization** ([golub2013matrix] §3.2.10: "guaranteed to
+exist if `A(1:k,1:k)` is nonsingular for `k = 1:min{n, r}`"): for `A : Matrix (Fin m) (Fin n) K`
+over a field, if every leading block `A.submatrix (Fin.castLE _) (Fin.castLE _)` of order
+`k + 1 ≤ min m n` has nonzero determinant, then `∃ L U, IsRectLU (p := min m n) A L U`.
+Proof by bordering to the square case: for `m ≥ n` apply
+`exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix` to the `m × m` matrix
+`[A | [0; I_{m-n}]]` (its leading blocks of order `≤ n` are those of `A`, the larger ones are
+block lower triangular with determinant `det A(1:n,1:n) ≠ 0`), keep the first `n` columns of `L`
+and the leading `n × n` block of `U`; for `m < n` border below with `[0 | I_{n-m}]` and keep the
+first `m` rows of `U`. The bordering uses `Matrix.fromBlocks` reindexed by `finSumFinEquiv` and
+`Matrix.det_fromBlocks_zero₁₂`-type determinant lemmas (Mathlib `Matrix.det_fromBlocks_zero₂₁`,
+`Matrix.det_fromBlocks_zero₁₂`). ★★ (~150 lines)'''
+deps = ["Matrix.IsRectLU", "Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix", "Matrix.det_leadingPrincipalSubmatrix_fin", "Matrix.isRectLU_iff_isLU"]

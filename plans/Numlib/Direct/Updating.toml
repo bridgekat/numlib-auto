@@ -1,0 +1,280 @@
+namespace = "Matrix"
+desc = '''
+Updating matrix factorizations ([golub2013matrix] §6.5, after Gill–Golub–Murray–Saunders 1974):
+the QR factorization after a rank-one change, after deleting or inserting a column, after
+inserting or deleting a row; the Cholesky factorization after adding (`A + z zᵀ`, plane rotations)
+or removing (`A − z zᵀ`, hyperbolic rotations) a rank-one term. Real matrices throughout, as the
+book and as `Matrix.planeRotation`.
+
+## Design
+
+* **The backbone states what the updates compute, not how.** Each update is an existence theorem:
+  from `IsQR A Q R` (or `IsCholesky A H`) there are rotations *in adjacent planes* — the structural
+  content that makes the update `O(n²)` — whose product `J` gives `IsQR Ã (Q J) (Jᵀ R')`. The
+  step-by-step procedures of §6.5 are surface definitions (`GolubVanLoan.Chapter06.qrUpdateRankOne`
+  and siblings), written per the D4 convention and proved correct against these theorems.
+* **Two general lemmas carry the QR updates, stated for arbitrary `2 × 2` blocks.**
+  `prod_planeEmbed_mul_apply_eq_zero` ((6.5.2): any product of embeddings in the planes
+  `(0,1), (1,2), …` in increasing order, times an upper trapezoidal matrix, is upper Hessenberg —
+  whatever the blocks) and `upperTrapezoidal_of_adjacentRotations` (a sweep of adjacent-plane
+  rotations, each zeroing its subdiagonal target, triangularizes a rectangular Hessenberg matrix —
+  the rectangular, parameterized form of `Matrix.hessenbergGivensQR_spec`). The zeroing is a
+  hypothesis, not a choice of `(c, s)`, so the surface procedures, which call the book's Givens
+  routine (chapter 5's Algorithm 5.1.3, whose `r` may be negative), instantiate the lemmas
+  directly; `exists_rotations_triangularize_of_hessenberg` is the existence corollary.
+* **Signs.** A Givens or hyperbolic sweep yields a triangular `R` with `RᵀR = Ã` but possibly
+  negative diagonal entries; `isCholesky_diagonal_sign_mul` normalizes. The book's "the updated
+  Cholesky factor is `G̃ = Rᵀ`" holds up to these signs (report, Doubts).
+* Rectangular shapes use chapter 1's `Matrix.HasLowerBandwidthRect` (staged in the `Hessenberg`
+  append): "upper Hessenberg" is `HasLowerBandwidthRect H 1`, "upper trapezoidal" (the `R` of
+  `Matrix.IsQR`) is `HasLowerBandwidthRect R 0`; `IsUpperHessenberg` is square.
+* **Hyperbolic rotations and `J`-orthogonality** (`Matrix.hyperbolicRotation`, `Matrix.hyperbolicPair`,
+  `Matrix.IsJOrthogonal`) are staged as an append to `LinearAlgebra/Matrix/PlaneRotation`, beside
+  `planeRotation` and `givensPair`, of which they are the indefinite counterparts; the signature
+  matrix `S = diag(I_n, −1)` of (6.5.9) is Mathlib's `LieAlgebra.Orthogonal.indefiniteDiagonal`
+  on `n ⊕ Unit`, and the stacked `[Gᵀ; zᵀ]` is `Matrix.fromRows H (replicateRow Unit z)` with the
+  backbone's upper-triangular Cholesky factor `H = Gᵀ` (`Matrix.IsCholesky A H`: `Hᴴ H = A`).
+  Prototype: `notes/gvl/ch06/proto/Shapes.lean` §2.
+
+## Order of attack
+
+(6.5.6)–(6.5.7) and (6.5.10)–(6.5.12) identities (★) → the Hessenberg lemmas (★★, ~250 lines
+together) → the QR updates (★★ each, short once the lemmas exist) → Cholesky update (★★) →
+Theorem 6.5.1 (★★) → Cholesky downdate by induction (★★★, ~200 lines).
+'''
+
+[[node]]
+id = "prod_planeEmbed_mul_apply_eq_zero"
+kind = "theorem"
+desc = '''**Bottom-up rotations of a triangular matrix give a Hessenberg matrix** ([golub2013matrix]
+(6.5.2), and the row deletion of §6.5.3): for `M N : ℕ`, any `G : ℕ → Matrix (Fin 2) (Fin 2) ℝ` and
+`R : Matrix (Fin M) (Fin N) ℝ` with `R.HasLowerBandwidthRect 0` (upper trapezoidal), the product
+`P = ((List.range (M - 1)).map fun k => planeEmbed ⟨k, _⟩ ⟨k + 1, _⟩ (G k)).prod` satisfies
+`(P * R).HasLowerBandwidthRect 1` — the book's `J₁ᵀ ⋯ J_{n−1}ᵀ R`, applied right to left,
+i.e. `J_{n−1}ᵀ` first, is upper Hessenberg whatever the `2 × 2` blocks. Square corollary:
+`IsUpperHessenberg (P * R)` for `IsUpperTriangular R` (`Matrix.isUpperHessenberg_iff_fin`).
+Invariant (downward induction on the first plane index `k`): the partial product `P_k R` is upper
+trapezoidal in rows `≤ k` and Hessenberg; left-multiplying by the embedding in the plane
+`(k − 1, k)` mixes rows `k − 1` and `k`, and row `k − 1` of `P_k R` vanishes before column `k − 1`,
+so row `k` gains nothing left of column `k − 1`. `Matrix.planeEmbed_mul_apply`. ★★'''
+deps = ["Matrix.planeEmbed", "Matrix.planeEmbed_mul_apply", "Matrix.HasLowerBandwidthRect", "Matrix.IsUpperHessenberg", "Matrix.isUpperHessenberg_iff_fin"]
+
+[[node]]
+id = "upperTrapezoidal_of_adjacentRotations"
+kind = "theorem"
+desc = '''**Any zeroing sweep triangularizes a Hessenberg matrix** ([golub2013matrix] §6.5.1–6.5.3,
+"Following Algorithm 5.2.4 [5.2.5], we compute Givens rotations …", `G_{n−1}ᵀ ⋯ G_1ᵀ H₁ = R₁`): let
+`H : Matrix (Fin M) (Fin N) ℝ` with `H.HasLowerBandwidthRect 1`, and moreover `H i j = 0` whenever
+`j < i`, `(j : ℕ) < a` (already triangular in the first `a` columns). Let `G : ℕ → Matrix (Fin 2) (Fin 2) ℝ`
+and `H_a = H`, `H_{j+1} = (planeEmbed j (j + 1) (G j))ᵀ * H_j`, and suppose each step zeroes its
+target, `H_{j+1} (j + 1) j = 0`, for `a ≤ j < L := min N (M − 1)`. Then
+`H_L.HasLowerBandwidthRect 0`. Stated for *arbitrary* blocks with the zeroing as hypothesis, so that any Givens routine —
+the backbone's `givensPair` or the book's Algorithm 5.1.3, whose `r` may be negative — instantiates
+it; the invariant is that of the private `GivensInvariant` behind `Matrix.hessenbergGivensQR_spec`,
+made rectangular and parameterized. The parameter `a` serves column deletion (rotations only from
+column `k` on). ★★ (~150 lines).'''
+deps = ["Matrix.planeEmbed", "Matrix.planeEmbed_mul_apply", "Matrix.HasLowerBandwidthRect", "Matrix.hessenbergGivensQR_spec"]
+
+[[node]]
+id = "exists_rotations_triangularize_of_hessenberg"
+kind = "theorem"
+desc = '''**Givens triangularization of a rectangular Hessenberg matrix exists**: in the setting of
+`upperTrapezoidal_of_adjacentRotations`, there are `c s : ℕ → ℝ` with `c j ^ 2 + s j ^ 2 = 1` such that
+the rotations `planeRotation j (j + 1) (c j) (s j)` (the Givens pair of the current `(j, j)`,
+`(j + 1, j)` entries, `transpose_planeRotation_givensPair_mulVec`) satisfy its hypotheses, so
+`J = ∏_{a ≤ j < L} planeRotation j (j + 1) (c j) (s j)` (increasing order) is orthogonal and
+`(Jᵀ * H).HasLowerBandwidthRect 0`. ★'''
+deps = ["upperTrapezoidal_of_adjacentRotations", "Matrix.givensPair", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.planeRotation_mem_orthogonalGroup"]
+
+[[node]]
+id = "exists_isQR_rankOne_update"
+kind = "theorem"
+desc = '''**QR after a rank-one change** ([golub2013matrix] §6.5.1, (6.5.1)–(6.5.3)): if
+`IsQR A Q R` with `A : Matrix (Fin n) (Fin n) ℝ` and `u v : Fin n → ℝ`, then there are rotations
+`J = J_{n−1} ⋯ J₁` (planes `(k, k+1)`) with `Jᵀ (Qᵀ u) = ±‖Qᵀ u‖ e₀` and rotations
+`G = G₁ ⋯ G_{n−1}` (planes `(k, k+1)`) such that
+`IsQR (A + vecMulVec u v) (Q * J * G) (Gᵀ * Jᵀ * (R + vecMulVec (Qᵀ *ᵥ u) v))`.
+Proof: (6.5.1) `A + uvᵀ = Q(R + wvᵀ)`; `Jᵀ R` is upper Hessenberg
+(`prod_planeEmbed_mul_apply_eq_zero`), `Jᵀ w vᵀ = ±‖w‖ e₀ vᵀ` only touches row `0`, so
+`H₁ = Jᵀ(R + wvᵀ)` is Hessenberg (6.5.3); triangularize by
+`exists_rotations_triangularize_of_hessenberg`. The rotations zeroing `w` bottom-up are the Givens
+pairs of consecutive entries. ★★'''
+deps = ["Matrix.IsQR", "prod_planeEmbed_mul_apply_eq_zero", "exists_rotations_triangularize_of_hessenberg", "Matrix.transpose_planeRotation_givensPair_mulVec"]
+
+[[node]]
+id = "IsQR.conjTranspose_mul_deleteColumn"
+kind = "theorem"
+desc = '''**Deleting a column leaves a Hessenberg matrix** ([golub2013matrix] §6.5.2): if `IsQR A Q R`,
+`A : Matrix (Fin m) (Fin (n + 1)) ℝ`, `k : Fin (n + 1)`, and `Ã = A.submatrix id k.succAbove`
+(the `k`-th column deleted), then `Qᵀ * Ã = R.submatrix id k.succAbove`, which has
+`HasLowerBandwidthRect 1` and vanishes at `(i, j)` whenever `j < i` with `(j : ℕ) < k`. ★'''
+deps = ["Matrix.IsQR", "Matrix.HasLowerBandwidthRect"]
+
+[[node]]
+id = "IsQR.exists_deleteColumn"
+kind = "theorem"
+desc = '''**QR after deleting a column** ([golub2013matrix] §6.5.2, `Q₁ = Q G_k ⋯ G_{n−1}`): in the setting
+of `IsQR.conjTranspose_mul_deleteColumn` there are rotations `G` in the planes `(j, j+1)`,
+`k ≤ j`, with `IsQR Ã (Q * G) (Gᵀ * (R.submatrix id k.succAbove))`. `exists_rotations_triangularize_of_hessenberg`
+with `a = k`. ★★'''
+deps = ["IsQR.conjTranspose_mul_deleteColumn", "exists_rotations_triangularize_of_hessenberg"]
+
+[[node]]
+id = "IsQR.conjTranspose_mul_insertColumn"
+kind = "theorem"
+desc = '''**Inserting a column leaves a spike** ([golub2013matrix] §6.5.2): if `IsQR A Q R`,
+`A : Matrix (Fin m) (Fin n) ℝ`, `z : Fin m → ℝ`, `k : Fin (n + 1)`, and `Ã` is `A` with `z`
+inserted as column `k` (`Matrix.of fun i => Fin.insertNth k (z i) (A i)`), then `Qᵀ * Ã` is `R`
+with `Qᵀ z` inserted as column `k`: upper triangular except in column `k` below the diagonal. ★'''
+deps = ["Matrix.IsQR"]
+
+[[node]]
+id = "IsQR.exists_insertColumn"
+kind = "theorem"
+desc = '''**QR after inserting a column** ([golub2013matrix] §6.5.2, the rotations `J_{m−1}, …, J_{k+1}`):
+in the setting of `IsQR.conjTranspose_mul_insertColumn` there are rotations `J` in the planes
+`(j − 1, j)`, `k < j < m`, applied bottom-up, zeroing the spike below row `k`, with
+`IsQR Ã (Q * J) (Jᵀ * (Qᵀ * Ã))`. The rotations touch rows `> k` only, where `Qᵀ Ã` is zero left of
+column `k + 1` except in column `k`, so no fill-in occurs (the same invariant as
+`prod_planeEmbed_mul_apply_eq_zero`, restricted to one column). ★★'''
+deps = ["IsQR.conjTranspose_mul_insertColumn", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.planeEmbed_mul_apply"]
+
+[[node]]
+id = "IsQR.conjTranspose_mul_insertRow"
+kind = "theorem"
+desc = '''**Inserting a row leaves a Hessenberg matrix** ([golub2013matrix] §6.5.3): if `IsQR A Q R`,
+`A : Matrix (Fin m) (Fin n) ℝ`, `w : Fin n → ℝ`, `k : Fin (m + 1)`, `Ã = Fin.insertNth k w A` (the
+row `w` inserted at position `k`) and `P` the permutation moving row `k` to the top, then
+`blockDiag(1, Qᵀ) * P * Ã = [wᵀ; R]` (`Matrix.of (Fin.cons w R)`), which has
+`HasLowerBandwidthRect 1`. (Named like its siblings `IsQR.conjTranspose_mul_deleteColumn`,
+`IsQR.conjTranspose_mul_insertColumn`: the orthogonal factor applied to the updated matrix; was
+`IsQR.insertRow_hessenberg`.) ★'''
+deps = ["Matrix.IsQR", "Matrix.HasLowerBandwidthRect"]
+
+[[node]]
+id = "IsQR.exists_insertRow"
+kind = "theorem"
+desc = '''**QR after inserting a row** ([golub2013matrix] §6.5.3, `Q₁ = diag(1, Q) J₁ ⋯ J_n`): in the setting
+of `IsQR.conjTranspose_mul_insertRow` there are rotations `J` in the planes `(j, j + 1)`, `j < n`, with
+`IsQR Ã (Pᵀ * blockDiag(1, Q) * J) (Jᵀ * [wᵀ; R])`. `exists_rotations_triangularize_of_hessenberg`
+with `a = 0`. ★★'''
+deps = ["IsQR.conjTranspose_mul_insertRow", "exists_rotations_triangularize_of_hessenberg"]
+
+[[node]]
+id = "IsQR.exists_deleteFirstRow"
+kind = "theorem"
+desc = '''**QR after deleting the first row** ([golub2013matrix] §6.5.3): if `IsQR A Q R` with
+`A : Matrix (Fin (m + 1)) (Fin n) ℝ` and `q = Q 0` (the first row of `Q`), there are rotations
+`G = G_{m} ⋯ G_1` in the planes `(j, j+1)` with `Gᵀ q = α e₀`, `α = ±1`, and then
+`Q * G = blockDiag(α, Q₁)` with `Q₁` orthogonal, `Gᵀ * R = [vᵀ; R₁]` with `R₁.HasLowerBandwidthRect 0`,
+and `IsQR (A.submatrix Fin.succ id) Q₁ R₁`. Proof: `Gᵀ R` is upper Hessenberg (bottom-up
+rotations, `prod_planeEmbed_mul_apply_eq_zero`), so its rows `1..m` are upper
+trapezoidal; the first row of `Q G` is `α e₀ᵀ` and orthogonality forces its first column to be
+`α e₀`. ★★'''
+deps = ["Matrix.IsQR", "prod_planeEmbed_mul_apply_eq_zero", "Matrix.transpose_planeRotation_givensPair_mulVec"]
+
+[[node]]
+id = "IsQR.exists_deleteRow"
+kind = "theorem"
+desc = '''**QR after deleting any row** ([golub2013matrix] §6.5.3, "the case when an arbitrary row is deleted"): if
+`IsQR A Q R` with `A : Matrix (Fin (m + 1)) (Fin n) ℝ` and `k : Fin (m + 1)`, there are `Q₁` orthogonal and `R₁`
+upper trapezoidal with `IsQR (A.submatrix k.succAbove id) Q₁ R₁`, obtained from rotations in adjacent planes
+as in `IsQR.exists_deleteFirstRow`. Proof: the cyclic permutation `P` moving row `k` to the top gives
+`IsQR (P * A) (P * Q) R` (`P` orthogonal, `Matrix.IsQR` of a row permutation), and `(P * A).submatrix Fin.succ id
+= A.submatrix k.succAbove id` (`Fin.cycleRange`/`Fin.succAbove` index identity); then
+`IsQR.exists_deleteFirstRow`. Added at the review of the Golub–Van Loan round so that deleting a row, like
+deleting or inserting a column, is available at every position. ★'''
+deps = ["IsQR.exists_deleteFirstRow", "Matrix.IsQR"]
+
+[[node]]
+id = "isCholesky_diagonal_sign_mul"
+kind = "theorem"
+desc = '''**Sign normalization of a triangular factor** ([golub2013matrix] §6.5.4, "the updated Cholesky
+factor is given by `G̃ = Rᵀ`", up to signs): if `R : Matrix n n ℝ` is upper triangular with nonzero
+diagonal and `Rᵀ * R = A`, then `IsCholesky A (diagonal (fun i => SignType.sign (R i i) : n → ℝ) * R)`
+(`[Fintype n] [LinearOrder n]`). `D² = 1` for the sign matrix `D`, and `D R` has diagonal `|r_ii| > 0`. ★'''
+deps = ["Matrix.IsCholesky"]
+
+[[node]]
+id = "fromRows_rotate_step"
+kind = "theorem"
+desc = '''**One step of a Cholesky update or downdate keeps the triangular shape** ([golub2013matrix]
+§6.5.4, the zeroing sequence `Q₁, Q₂, Q₃` and Theorem 6.5.1's first rotation): for `R : Matrix (Fin n) (Fin n) ℝ`
+upper triangular, `z` with `z j = 0` for `j < k`, and *any* `G : Matrix (Fin 2) (Fin 2) ℝ`, the matrix
+`M' = planeEmbed (Sum.inl k) (Sum.inr ()) G * fromRows R (replicateRow Unit z)` is again
+`fromRows R' (replicateRow Unit z')` with `R'` upper triangular and `z' j = 0` for `j < k`; if the
+step zeroes its target, `z' k = 0`, then `z' j = 0` for `j ≤ k`. Rows `k` and `last` are both zero
+before column `k`. Serves both the Givens (update) and the hyperbolic (downdate) sweeps. ★'''
+deps = ["Matrix.planeEmbed", "Matrix.planeEmbed_mul_apply"]
+
+[[node]]
+id = "transpose_mul_self_fromRows"
+kind = "theorem"
+desc = '''**The stacked Gram matrix** ([golub2013matrix] (6.5.6), (6.5.10)): for `H : Matrix n n ℝ`,
+`z : n → ℝ`, `(fromRows H (replicateRow Unit z))ᵀ * fromRows H (replicateRow Unit z) = Hᵀ * H + vecMulVec z z`,
+and with the signature `S = LieAlgebra.Orthogonal.indefiniteDiagonal n Unit ℝ`,
+`(fromRows H (replicateRow Unit z))ᵀ * S * fromRows H (replicateRow Unit z) = Hᵀ * H − vecMulVec z z`.
+Mathlib's `fromRows_mul_fromCols`-family and `conjTranspose_fromRows_eq_fromCols_conjTranspose`. ★'''
+deps = []
+
+[[node]]
+id = "transpose_mul_self_eq_of_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''**An orthogonal reduction preserves the Gram matrix** ([golub2013matrix] (6.5.7) ⇒ `Ã = RᵀR`):
+if `Q ∈ orthogonalGroup (n ⊕ Unit) ℝ` and `Qᵀ * M = fromRows R 0` then `Mᵀ * M = Rᵀ * R`. (The book
+prints `Ã = RRᵀ`, a typo for `RᵀR`; it concludes `G̃ = Rᵀ` correctly.) ★'''
+deps = []
+
+[[node]]
+id = "exists_choleskyUpdate"
+kind = "theorem"
+desc = '''**Cholesky updating by plane rotations** ([golub2013matrix] §6.5.4, (6.5.5)–(6.5.7)): if
+`IsCholesky A H` (`A : Matrix (Fin n) (Fin n) ℝ`, `H` upper triangular, `Hᵀ H = A`) and
+`z : Fin n → ℝ`, there are rotations `Q_k` in the planes `(inl k, inr ())`, `k = 0, …, n − 1`
+(the book: "The `Q_k` update involves only rows `k` and `n+1`"), with `Q = Q₀ ⋯ Q_{n−1}` orthogonal
+and `Qᵀ * fromRows H (replicateRow Unit z) = fromRows R 0` where `IsCholesky (A + vecMulVec z z) R`.
+The rotation `Q_k` is the Givens pair of the current `(k, k)` and `(last, k)` entries; the diagonal
+of `R` is `√(r_kk² + z_k'²) > 0`, so no sign normalization is needed.
+`transpose_mul_self_fromRows`, `transpose_mul_self_eq_of_mem_orthogonalGroup`. ★★'''
+deps = ["Matrix.IsCholesky", "fromRows_rotate_step", "transpose_mul_self_fromRows", "transpose_mul_self_eq_of_mem_orthogonalGroup", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.planeRotation_mem_orthogonalGroup"]
+
+[[node]]
+id = "transpose_mul_self_sub_eq_of_isJOrthogonal"
+kind = "theorem"
+desc = '''**A `J`-orthogonal reduction downdates the Gram matrix** ([golub2013matrix] (6.5.10)–(6.5.12)):
+with `S = LieAlgebra.Orthogonal.indefiniteDiagonal n Unit ℝ`, if `IsJOrthogonal S Hy` and
+`Hyᵀ * fromRows H (replicateRow Unit z) = fromRows R 0`, then `Hᵀ * H − vecMulVec z z = Rᵀ * R`.
+`(Hyᵀ M)ᵀ S (Hyᵀ M) = Mᵀ (Hy S Hyᵀ) M = Mᵀ S M` and `transpose_mul_self_fromRows`. Prototype:
+`notes/gvl/ch06/proto/Shapes.lean` §2 (the statement elaborates). ★'''
+deps = ["Matrix.IsJOrthogonal", "transpose_mul_self_fromRows"]
+
+[[node]]
+id = "hyperbolicDowndate_step"
+kind = "theorem"
+desc = '''**One hyperbolic downdating step** ([golub2013matrix] Theorem 6.5.1, (6.5.14)–(6.5.15)): write
+`A = [α vᵀ; v B]` on `Unit ⊕ n` with Cholesky factor `Hᵀ`, `H = [g₁₁ g₁ᵀ; 0 G₁ᵀ]` (so
+`g₁₁ = √α`, `g₁ = v/g₁₁`, `G₁G₁ᵀ = B − vvᵀ/α`), and `z = [μ; w]`. If `A` and `A − zzᵀ` are
+positive definite then `α − μ² > 0`, and with `c = √α/√(α − μ²)`, `s = μ/√(α − μ²)`
+(`c² − s² = 1`), the hyperbolic rotation in the plane of the first and last rows maps
+`[g₁₁ g₁ᵀ; 0 G₁ᵀ; μ wᵀ]` to `[g̃₁₁ g̃₁ᵀ; 0 G₁ᵀ; 0 w₁ᵀ]` with `w₁ = −s g₁ + c w`, `g̃₁₁ > 0`, and
+`G₁G₁ᵀ − w₁w₁ᵀ` is positive definite — it is the Schur complement of the `(1,1)` entry `α − μ²`
+of `A − zzᵀ` (the book says "of `α`"). Proof (lines 18245–18270): the displayed expansion of
+`G₁G₁ᵀ − w₁w₁ᵀ` and Mathlib's `Matrix.PosDef.schurComplement`-type lemma (or the existing
+`Numlib/LinearAlgebra/Matrix/SchurComplement`) on `fromBlocks`. ★★'''
+deps = ["Matrix.hyperbolicRotation", "Matrix.hyperbolicPair", "Matrix.IsCholesky"]
+
+[[node]]
+id = "exists_choleskyDowndate"
+kind = "theorem"
+desc = '''**Cholesky downdating by hyperbolic rotations** ([golub2013matrix] §6.5.4, "The theorem provides
+the key step in an induction proof that the factorization (6.5.12) exists"): if `IsCholesky A H`
+(`A : Matrix (Fin n) (Fin n) ℝ`) and `(A − vecMulVec z z).PosDef`, there are `c s : Fin n → ℝ` with
+`c k ^ 2 − s k ^ 2 = 1` such that `Hy = ∏_k hyperbolicRotation (inl k) (inr ()) (c k) (s k)`
+(`k` increasing) satisfies `IsJOrthogonal S Hy` and
+`Hyᵀ * fromRows H (replicateRow Unit z) = fromRows R 0` with `IsCholesky (A − vecMulVec z z) R`.
+Induction on `n` with `hyperbolicDowndate_step` (the first rotation zeroes `z₁`, the trailing
+problem `(G₁G₁ᵀ, w₁)` is again a positive definite downdate), `IsJOrthogonal.mul`,
+`transpose_mul_self_sub_eq_of_isJOrthogonal` and `IsCholesky.unique`. Stated on `Fin n` with the
+recursion through `Fin.cons`/`Matrix.fromBlocks` reindexing (`Fin (n + 1) ≃ Unit ⊕ Fin n`).
+★★★ (~200 lines).'''
+deps = ["hyperbolicDowndate_step", "fromRows_rotate_step", "transpose_mul_self_sub_eq_of_isJOrthogonal", "Matrix.IsJOrthogonal.mul", "Matrix.IsCholesky.unique"]

@@ -1,0 +1,58 @@
+desc = '''
+Agreement of the primary functional calculus `pfc` with Mathlib's continuous functional calculus on
+the matrices where both are defined: normal complex matrices (the C⋆-algebra `Matrix n n ℂ` under
+`open scoped Matrix.Norms.L2Operator`, instance `Matrix.instCStarAlgebra`) and Hermitian matrices
+over any `RCLike` field (Mathlib's unscoped instance `Matrix.IsHermitian.instContinuousFunctionalCalculus`
+of `Mathlib/Analysis/Matrix/HermitianFunctionalCalculus`, real-valued `f : ℝ → ℝ`). The engine is
+the same for both: a normal matrix is diagonalizable, so its minimal polynomial has simple roots
+(`LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace`, `Numlib/Eigen/Normal`), `pfc f A` depends
+only on the values of `f` on the spectrum (`pfc_congr`), and so does `cfc f A` (`cfc_congr`); both
+then equal `aeval A p` for a Lagrange interpolant `p` of `f` on the spectrum (`pfc_polynomial`,
+Mathlib `cfc_polynomial`). No continuity or smoothness hypothesis: the spectrum is finite.
+'''
+
+[[node]]
+id = "Matrix.IsStarNormal.cfc_eq_pfc"
+kind = "theorem"
+desc = '''For `A : Matrix n n ℂ` with `IsStarNormal A` and any `f : ℂ → ℂ`, under `open scoped
+Matrix.Norms.L2Operator`: `cfc f A = pfc f A`. Steps: (1) `minpoly ℂ A` is squarefree — its
+root multiplicities are `1` because the maximal generalized eigenspaces are the eigenspaces
+(`LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace` through `Matrix.isStarNormal_toEuclideanLin_iff`,
+and `Module.End.maxGenEigenspace` versus `minpoly` root multiplicity); (2) take the Lagrange
+interpolant `p` of `f` on `spectrum ℂ A` (`Lagrange.interpolate`); (3) `cfc f A = cfc p.eval A =
+aeval A p` (`cfc_congr`, `cfc_polynomial`); (4) `pfc f A = pfc p.eval A = aeval A p` (`pfc_congr` at
+multiplicity one, `pfc_polynomial`). The continuity side condition of `cfc` is automatic on a
+finite spectrum (`Set.Finite.continuousOn`-type lemma; `Matrix.finite_spectrum`). Cheaper route for
+step (1), avoiding the `maxGenEigenspace`/root-multiplicity link: a normal `A` is unitarily
+diagonalizable (`Matrix.IsStarNormal.spectral_theorem`), so `∏_{μ ∈ σ(A)} (A - μ) = 0`, i.e.
+`minpoly ℂ A ∣ Hermite.nodalMultiset σ(A).val` — exactly the hypothesis under which
+`pfc_eq_aeval_of_isJetInterpolant` evaluates `pfc f A` through the Lagrange interpolant on
+`σ(A)` counted once. Instance: `Matrix.instCStarAlgebra` is a `def` in Mathlib
+(`Mathlib/Analysis/CStarAlgebra/Matrix`), made an instance only by `open scoped
+Matrix.Norms.L2Operator` (a `scoped[…] attribute [instance]`); state the theorem inside that scope
+(a Hermitian bridge stated outside it is usable inside). ★★ (~120 lines)'''
+deps = ["pfc_congr", "pfc_polynomial", "pfc_eq_aeval_of_isJetInterpolant", "Hermite.nodalMultiset", "Matrix.IsStarNormal.spectral_theorem", "LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace", "Matrix.isStarNormal_toEuclideanLin_iff"]
+
+[[node]]
+id = "Matrix.IsHermitian.cfc_eq_pfc"
+kind = "theorem"
+desc = '''For `A : Matrix n n 𝕜` Hermitian over `[RCLike 𝕜]` and `f : ℝ → ℝ`: `cfc f A = pfc (fun z : 𝕜 =>
+((f (RCLike.re z) : ℝ) : 𝕜)) A` (prototype statement in `notes/gvl/ch09/proto/Function.lean`),
+with the Hermitian CFC instance of Mathlib (`Matrix.IsHermitian.cfc_eq`). Same route as
+`Matrix.IsStarNormal.cfc_eq_pfc`: the spectrum is real (`Matrix.IsHermitian.eigenvalues`,
+`spectrum_real_eq_range_eigenvalues`), `minpoly 𝕜 A` splits over `𝕜` with simple roots (even for
+`𝕜 = ℝ`: `IsHermitian.spectral_theorem` diagonalizes), and a real Lagrange interpolant `p` of `f` on
+the eigenvalues gives both sides as `aeval A (p.map (algebraMap ℝ 𝕜))`. Covers real symmetric
+matrices with `𝕜 = ℝ`, where `pfc` is used over `ℝ` directly. ★★'''
+deps = ["pfc_congr", "pfc_polynomial"]
+
+[[node]]
+id = "Matrix.PosSemidef.cfcSqrt_eq_pfc"
+kind = "theorem"
+desc = '''The positive semidefinite square root is the primary one: for `A.PosSemidef` over `[RCLike 𝕜]`
+(`open scoped MatrixOrder`), `CFC.sqrt A = pfc (fun z : 𝕜 => ((Real.sqrt (RCLike.re z) : ℝ) : 𝕜)) A`,
+from `Matrix.IsHermitian.cfc_eq_pfc` with `CFC.sqrt_eq_cfc` and `cfc_nnreal_eq_real` (the route of
+Mathlib's `Matrix.det_sqrt`). For `A` positive definite over `ℂ` this is also `Matrix.principalSqrt A`
+(`Function/Sqrt`), since `Real.sqrt (re λ) = λ ^ (1/2 : ℂ)` for `λ > 0`. Consumer: the symmetric polar
+factor `P = (AᵀA)^{1/2}` of `Function/Polar`. ★'''
+deps = ["Matrix.IsHermitian.cfc_eq_pfc"]

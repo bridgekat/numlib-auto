@@ -1,0 +1,105 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.2, Vector Norms: the book's definition of a vector norm (as the predicate `IsVectorNorm`,
+bridged to Mathlib's definite `Seminorm`), the `p`-norm formula (2.2.1) on `PiLp p`, Hölder (2.2.2)
+and Cauchy–Schwarz (2.2.3), the equivalence of norms (2.2.4) with the explicit constants
+(2.2.5)–(2.2.7), orthogonal invariance of the 2-norm, and convergence (§2.2.4). Backbone:
+`Numlib/Analysis/Normed/Lp/PiLp` (constants, Hölder), `Numlib/Analysis/Normed/Module/NormEquivalence`.
+§2.2.3 (absolute and relative error, "about `p` correct significant digits") only names quantities
+and states a heuristic with `≈`; it has no node (chapter group, Not formalized).
+'''
+
+[[node]]
+id = "IsVectorNorm"
+kind = "definition"
+desc = '''§2.2.1: `f : (Fin n → ℝ) → ℝ` is a vector norm if `f x ≥ 0` with `f x = 0 ↔ x = 0`, `f (x + y) ≤
+f x + f y`, `f (α x) = |α| f x`. A `structure` (or conjunction) in the surface; the bridge
+`IsVectorNorm.exists_seminorm` below turns it into the backbone's vocabulary (a definite
+`Seminorm ℝ (Fin n → ℝ)`, as in `Numlib/Analysis/Normed/Module/NormEquivalence` and
+`Matrix.inducedNorm`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.2.1, Definition'
+
+[[node]]
+id = "IsVectorNorm.exists_seminorm"
+kind = "theorem"
+desc = '''`IsVectorNorm f ↔ ∃ p : Seminorm ℝ (Fin n → ℝ), ⇑p = f ∧ ∀ x, p x = 0 → x = 0` (Mathlib
+`Seminorm.of`); and `‖WithLp.toLp p ·‖` is a vector norm for `1 ≤ p` (the book's "useful class"). ★'''
+deps = ["IsVectorNorm"]
+source = 'Golub–Van Loan, Matrix Computations, §2.2.1'
+
+[[node]]
+id = "equation_2_2_1"
+kind = "theorem"
+desc = '''(2.2.1) and the three special cases: for `1 ≤ p < ∞`, `‖WithLp.toLp p x‖ = (∑ i, |x i| ^ p) ^ (1 / p)`
+(Mathlib `PiLp.norm_eq_sum`); `‖toLp 1 x‖ = ∑ |x i|`, `‖toLp 2 x‖ = √(xᵀ x)` (`EuclideanSpace.norm_eq`,
+`dotProduct_self_eq_norm_sq` of `OperatorNorm`), `‖toLp ∞ x‖ = max_i |x i|` (`PiLp.norm_eq_ciSup`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.1)'
+
+[[node]]
+id = "equation_2_2_2"
+kind = "theorem"
+desc = '''(2.2.2), Hölder: for `p q : ℝ≥0∞` Hölder-conjugate (`1/p + 1/q = 1`, endpoints included),
+`|xᵀ y| ≤ ‖toLp p x‖ ‖toLp q y‖` — backbone `PiLp.norm_dotProduct_le` at `𝕜 = ℝ`. ★'''
+deps = ["PiLp.norm_dotProduct_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.2)'
+
+[[node]]
+id = "equation_2_2_3"
+kind = "theorem"
+desc = '''(2.2.3), Cauchy–Schwarz: `|xᵀ y| ≤ ‖x‖₂ ‖y‖₂` — Mathlib `abs_real_inner_le_norm` on `EuclideanSpace ℝ
+(Fin n)`, or `equation_2_2_2` at `p = q = 2`. ★'''
+deps = ["equation_2_2_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.3)'
+
+[[node]]
+id = "equation_2_2_4"
+kind = "theorem"
+desc = '''(2.2.4), all norms on `ℝⁿ` are equivalent: `IsVectorNorm fα → IsVectorNorm fβ → ∃ c₁ c₂, 0 < c₁
+∧ 0 < c₂ ∧ ∀ x, c₁ * fα x ≤ fβ x ∧ fβ x ≤ c₂ * fα x`. Backbone `Seminorm.exists_bounds` for each norm
+against the sup norm, then divide. ★'''
+deps = ["IsVectorNorm.exists_seminorm", "Seminorm.exists_bounds"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.4)'
+
+[[node]]
+id = "equation_2_2_5"
+kind = "theorem"
+desc = '''(2.2.5): `‖x‖₂ ≤ ‖x‖₁ ≤ √n ‖x‖₂` — backbone `PiLp.norm_toLp_two_le_norm_toLp_one`,
+`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`. ★'''
+deps = ["PiLp.norm_toLp_two_le_norm_toLp_one", "PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.5)'
+
+[[node]]
+id = "equation_2_2_6"
+kind = "theorem"
+desc = '''(2.2.6): `‖x‖_∞ ≤ ‖x‖₂ ≤ √n ‖x‖_∞` — backbone `PiLp.norm_toLp_top_le_norm_toLp_two`,
+`PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`. ★'''
+deps = ["PiLp.norm_toLp_top_le_norm_toLp_two", "PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.6)'
+
+[[node]]
+id = "equation_2_2_7"
+kind = "theorem"
+desc = '''(2.2.7): `‖x‖_∞ ≤ ‖x‖₁ ≤ n ‖x‖_∞` — backbone `PiLp.norm_toLp_top_le_norm_toLp_one`,
+`PiLp.norm_toLp_one_le_card_mul_norm_toLp_top`. ★'''
+deps = ["PiLp.norm_toLp_top_le_norm_toLp_one", "PiLp.norm_toLp_one_le_card_mul_norm_toLp_top"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.2.7)'
+
+[[node]]
+id = "norm_mulVec_of_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''§2.2.2: the 2-norm is orthogonally invariant, `Q ∈ orthogonalGroup (Fin n) ℝ → ‖Q x‖₂ = ‖x‖₂`
+(`‖toLp 2 (Q *ᵥ x)‖ = ‖toLp 2 x‖`): `‖Qx‖² = xᵀ Qᵀ Q x = xᵀ x`, the book's one-line proof; Mathlib
+`Matrix.UnitaryGroup.toLinearIsometryEquiv`-type lemmas or `dotProduct_self_eq_norm_sq` of `OperatorNorm`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §2.2.2'
+
+[[node]]
+id = "tendsto_iff_of_isVectorNorm"
+kind = "theorem"
+desc = '''§2.2.4: for any vector norm `f`, `Tendsto (fun k => f (x k - x)) atTop (𝓝 0) ↔ Tendsto x atTop (𝓝
+x)` — "convergence in any particular norm implies convergence in all norms". Backbone
+`Seminorm.tendsto_apply_iff_tendsto_norm`. ★'''
+deps = ["IsVectorNorm.exists_seminorm", "Seminorm.tendsto_apply_iff_tendsto_norm"]
+source = 'Golub–Van Loan, Matrix Computations, §2.2.4'

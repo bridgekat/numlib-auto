@@ -1,0 +1,456 @@
+namespace = "Matrix"
+desc = '''
+Singular-value inequalities for matrices: the matrix corollaries of the operator theory of
+`Numlib/Analysis/InnerProductSpace/SingularValues`, in the vocabulary of
+`Numlib/LinearAlgebra/Matrix/SVD` and the operator norms of `Numlib/Analysis/Matrix/OperatorNorm`
+([golub2013matrix] §2.4.2 Eckart–Young, §2.4.5 and §5.5 column deletion, §2.5.3 the subspace
+distance, §6.4.1 the trace inequality, §7.3 (7.3.19), §7.9 the least-stretch bound, §8.6
+Mirsky and the perturbation of singular subspace pairs, §12.5 Ky Fan). It mirrors
+`Numlib/Analysis/Matrix/SpectralNorm` (Hermitian matrices as operators) and imports
+`Numlib/Analysis/InnerProductSpace/SingularValues`, `Numlib/Analysis/InnerProductSpace/PrincipalAngles`
+(hence `Projection/Gap`), `Numlib/Eigen/MinMax` (Hoffman–Wielandt, Ky Fan),
+`Numlib/LinearAlgebra/Matrix/SVD`, `Numlib/LinearAlgebra/Matrix/LeastSquares` and `Numlib/Analysis/Matrix/OperatorNorm`. Created at the
+Golub–Van Loan review (H3), which split the singular-value material by rung; the decompositions
+(SVD existence, `Matrix.IsSVD`, `svdTruncation` and its norms) stay in `SVD`, the inequalities that
+use Weyl or Mirsky live here — including both halves of Eckart–Young, which therefore moved out of
+`SVD`. So do the SVD-append nodes that use `OperatorNorm` or `LeastSquares` (both import `SVD`): the
+norm of a truncation residual, the pseudoinverse norms and the rectangular condition number
+`Matrix.pinvCondNumberLp` of [golub2013matrix] (5.2.4), (5.3.4), (5.3.9), and (8.1.3).
+
+## Conventions
+
+* **Sorted singular values are `A.sortedSingularValues i`** (`Numlib/LinearAlgebra/Matrix/SVD`,
+  an `abbrev` for Mathlib's `(toEuclideanLin A).singularValues i`: 0-based, decreasing, zero past
+  the rank), in statements and in names (`sortedSingularValues_…`). The column-indexed, unsorted
+  `Matrix.singularValues` of the proved `SVD` module appears only where a node says why
+  (`iInf_singularValues_sub_le`: `σ_min`/`σ_max` as `⨅`/`⨆` over the columns).
+* Matrices are indexed by arbitrary `Fintype`s wherever the statement does not need `Fin`; the
+  2-norm is the scoped `Matrix.Norms.L2Operator` one (equivalently `lpOpNorm 2`), the Frobenius
+  norm the scoped `Matrix.Norms.Frobenius` one.
+* Every inequality between singular values is a corollary of one operator theorem: Weyl
+  (`LinearMap.singularValues_add_le`), interlacing (`LinearMap.singularValues_domRestrict_interlace`),
+  the stacked-isometry identity, Ky Fan (`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`) or
+  Hoffman–Wielandt (`Matrix.IsHermitian.hoffman_wielandt`) through the dilation.
+
+## Order of attack
+
+The dilation, its bridge and its spectrum (★, ★, ★★), Mirsky (★★), the Eckart–Young halves (★ each,
+the Frobenius equality case ★★★), column deletion (★), the stacked isometry and its tan form (★),
+the subspace distance (★★), Ky Fan's SVD form and von Neumann (★★), the subset-selection bound (★),
+Theorem 8.6.5 last (★★★, blocked on the Riccati lemma). About 1 200 lines.
+'''
+
+[[node]]
+id = "hermitianDilation"
+kind = "definition"
+desc = '''The Hermitian dilation (Jordan–Wielandt matrix) of `A : Matrix m n 𝕜`:
+`hermitianDilation A : Matrix (n ⊕ m) (n ⊕ m) 𝕜 := fromBlocks 0 Aᴴ A 0`, the book's
+`S₃ = [0 Aᵀ; A 0]` of [golub2013matrix] §8.6.1 and `Ã` of (8.6.4); the book's `[0 A; Aᴴ 0]` of (10.4.16)
+and §9.4.3 is `hermitianDilation Aᴴ`. Hermitian (`isHermitian_hermitianDilation`,
+`Matrix.fromBlocks_conjTranspose`), additive (`hermitianDilation_add`) and
+`‖hermitianDilation E‖_F ^ 2 = 2 * ‖E‖_F ^ 2` (`frobenius_norm_hermitianDilation_sq`), three further
+declarations of this node. The operator is `LinearMap.hermitianDilation`, of which this is the matrix
+(`toEuclideanLin_hermitianDilation`), same block order (domain first). Kept as a `fromBlocks`
+definition because the Frobenius computation and the surfaces read blocks. ★'''
+deps = ["LinearMap.hermitianDilation"]
+
+[[node]]
+id = "toEuclideanLin_hermitianDilation"
+kind = "theorem"
+desc = '''The matrix of the Jordan–Wielandt operator: for `A : Matrix m n 𝕜`,
+`toEuclideanLin (hermitianDilation A) = e.symm.toLinearMap ∘ₗ
+LinearMap.hermitianDilation (toEuclideanLin A) (toEuclideanLin Aᴴ) ∘ₗ e.toLinearMap` with
+`e = PiLp.sumPiLpEquivProdLpPiLp 2 _ : EuclideanSpace 𝕜 (n ⊕ m) ≃ₗᵢ[𝕜]
+WithLp 2 (EuclideanSpace 𝕜 n × EuclideanSpace 𝕜 m)`. Both put the domain factor `𝕜ⁿ` first, so no
+role exchange is needed (the earlier plan's bridge to `GolubKahan.jordanWielandt` had to feed it
+`Aᴴ` for `A`; review H1). `ext` on the two blocks, `Matrix.fromBlocks_mulVec`,
+`Matrix.toEuclideanLin_apply`. Moved here from `Numlib/Krylov/Bidiagonalization`. ★'''
+deps = ["hermitianDilation", "LinearMap.hermitianDilation"]
+
+[[node]]
+id = "IsHermitian.eigenvalues₀_hermitianDilation"
+kind = "theorem"
+desc = '''The spectrum of the dilation ([golub2013matrix] (8.6.3)): for `A : Matrix (Fin m) (Fin n) 𝕜`
+with `p = min m n` and `σ_k = A.sortedSingularValues k`, the sorted eigenvalues of
+`hermitianDilation A` (size `n + m`) are `σ_0, …, σ_{p-1}`, then `m + n - 2p` zeros, then
+`-σ_{p-1}, …, -σ_0`: for `k < p`, `eigenvalues₀ k = σ_k` and `eigenvalues₀ (n + m - 1 - k) = -σ_k`,
+the others `0`. Corollary of the operator statement `LinearMap.eigenvalues_hermitianDilation` through
+`toEuclideanLin_hermitianDilation`: `Matrix.IsHermitian.eigenvalues₀` are the sorted eigenvalues of
+the symmetric `toEuclideanLin`, and conjugation by the isometry `e` preserves the characteristic
+polynomial (`LinearMap.charpoly_conj`-type lemma), hence the sorted eigenvalues. The earlier plan's
+★★★ block computation with the unitary `(1/√2)[V V 0; U₁ -U₁ √2 U₂]` is not needed (review H3). ★★
+(~50 lines)'''
+deps = ["hermitianDilation", "toEuclideanLin_hermitianDilation", "LinearMap.eigenvalues_hermitianDilation", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "sum_sq_sortedSingularValues_sub_le"
+kind = "theorem"
+desc = '''**Mirsky's inequality**, the Wielandt–Hoffman theorem for singular values ([golub2013matrix]
+Theorem 8.6.4): for `A E : Matrix (Fin m) (Fin n) 𝕜`,
+`∑ k ∈ Finset.range (min m n), ((A + E).sortedSingularValues k - A.sortedSingularValues k) ^ 2 ≤ ‖E‖ ^ 2`
+(Frobenius norm). The book's proof: `Matrix.IsHermitian.hoffman_wielandt` for the dilations of
+`A + E` and `A`, whose sorted eigenvalue differences are `±(σ_k(A+E) - σ_k(A))` and zeros
+(`IsHermitian.eigenvalues₀_hermitianDilation`), so the left side counted twice is at most
+`‖hermitianDilation E‖_F² = 2 ‖E‖_F²`. Renamed from `sum_sq_singularValues_sub_le` (sorted reading in
+the name). ★★ (~60 lines)'''
+deps = ["Matrix.IsHermitian.hoffman_wielandt", "IsHermitian.eigenvalues₀_hermitianDilation", "hermitianDilation"]
+
+[[node]]
+id = "sortedSingularValues_le_l2_opNorm_sub_of_rank_le"
+kind = "theorem"
+desc = '''**The lower half of Eckart–Young in the 2-norm**: `B.rank ≤ k → A.sortedSingularValues k ≤ ‖A - B‖`
+(scoped `L2Operator`; [golub2013matrix] proof of Theorem 2.4.8). The case `j = k` of Weyl's inequality
+`LinearMap.singularValues_add_le` for `A = (A - B) + B`: `σ_k(A) ≤ σ_0(A - B) + σ_k(B)`, with
+`σ_0(A - B) = ‖A - B‖` (`sortedSingularValues_zero_eq_l2_opNorm`) and `σ_k(B) = 0`
+(`sortedSingularValues_eq_zero_iff_rank_le`). The book's kernel-intersection argument is exactly the
+proof of Weyl's inequality and is not repeated (review H4). Moved here from `SVD` and renamed from
+`singularValues_toEuclideanLin_le_l2_opNorm_sub_of_rank_le`. ★'''
+deps = ["LinearMap.singularValues_add_le", "Matrix.sortedSingularValues_zero_eq_l2_opNorm", "Matrix.sortedSingularValues_eq_zero_iff_rank_le"]
+
+[[node]]
+id = "isLeast_l2_opNorm_sub_of_rank_le"
+kind = "theorem"
+desc = '''**The Eckart–Young theorem in the 2-norm**, `rank ≤ k` form: `IsLeast ((fun B => ‖A - B‖) '' {B |
+B.rank ≤ k}) (A.sortedSingularValues k)` for `A : Matrix (Fin m) (Fin n) 𝕜` (scoped `L2Operator`),
+attained at `svdTruncation` of any SVD. The book's `rank B = k` form ([golub2013matrix] Theorem 2.4.8,
+`k < rank A`) follows because the minimizer has rank exactly `k` (`rank_svdTruncation`); at
+`k = min m n - 1` it says that `σ_min` is the distance to the rank-deficient matrices. Moved here from
+`SVD` (it rests on Weyl). Consumer: `sortedSingularValues_le_l2_opNorm_trailing`. ★'''
+deps = ["sortedSingularValues_le_l2_opNorm_sub_of_rank_le", "Matrix.l2_opNorm_sub_svdTruncation", "Matrix.rank_svdTruncation", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le"
+kind = "theorem"
+desc = '''**The lower half of Eckart–Young–Mirsky in the Frobenius norm** ([golub2013matrix] §2.4, the remark
+after Theorem 2.4.8; used in Theorem 6.3.1): for `C : Matrix (Fin m) (Fin N) 𝕜` and `Ĉ` with
+`Ĉ.rank ≤ r`, `∑ i ∈ Finset.Ico r (min m N), C.sortedSingularValues i ^ 2 ≤ ‖C − Ĉ‖ ^ 2` (Frobenius).
+One line from Mirsky (`sum_sq_sortedSingularValues_sub_le` with `A = Ĉ`, `E = C − Ĉ`): the terms
+`σ_i(Ĉ)` vanish for `i ≥ r` (`sortedSingularValues_eq_zero_iff_rank_le`) and the terms `i < r` are
+dropped (review H4; the earlier plan's own interlacing proof is not needed). The equality case is
+`eq_svdTruncation_of_frobenius_norm_sub_sq_le`. Moved here from `SVD` and renamed from
+`sum_sq_singularValues_le_frobenius_norm_sub_sq_of_rank_le`. ★'''
+deps = ["sum_sq_sortedSingularValues_sub_le", "Matrix.sortedSingularValues_eq_zero_iff_rank_le"]
+
+[[node]]
+id = "isLeast_frobenius_norm_sub_of_rank_le"
+kind = "theorem"
+desc = '''**The Eckart–Young–Mirsky theorem in the Frobenius norm**: `IsLeast ((fun B => ‖A - B‖) '' {B |
+B.rank ≤ k}) √(∑ i ∈ Finset.Ico k (min m n), A.sortedSingularValues i ^ 2)` (scoped
+`Matrix.Norms.Frobenius`) — [golub2013matrix] §2.4.2, the remark after Theorem 2.4.8, stated there
+without proof. Lower bound `sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`; attained at
+`svdTruncation` (`Matrix.frobenius_norm_unitary_mul_mul_unitary`, `Matrix.frobenius_norm_sq_eq_sum_sq`).
+Moved here from `SVD`. ★'''
+deps = ["sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le", "Matrix.frobenius_norm_unitary_mul_mul_unitary", "Matrix.svdTruncation", "Matrix.rank_svdTruncation"]
+
+[[node]]
+id = "eq_svdTruncation_of_frobenius_norm_sub_sq_le"
+kind = "theorem"
+desc = '''**The Frobenius-optimal rank-`r` approximation is unique under a gap** (the equality case of
+Eckart–Young–Mirsky; [golub2013matrix] Theorem 6.3.1, "we may infer that `[E₀ | R₀]` is the unique
+minimizer"): if `IsSVD C U σ V`, `σ (r − 1) > σ r` (`0 < r`), `Ĉ.rank ≤ r` and
+`‖C − Ĉ‖ ^ 2 ≤ ∑ i ∈ Finset.Ico r N, σ i ^ 2`, then `Ĉ = svdTruncation U σ V r`. The one node of the
+family with its own proof (review H4): let `P` project onto `(ker Ĉ)ᗮ` (rank `≤ r`); then
+`‖C − Ĉ‖_F² ≥ ‖(C − Ĉ)(1 − P)‖_F² = ‖C(1 − P)‖_F² = tr((1−P) CᴴC (1−P))`, a sum of `N − rank P`
+eigenvalues of a compression of `CᴴC`, each at least the matching `σ_{i + r}²`
+(`LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry`); equality throughout forces
+`(C − Ĉ) P = 0`, i.e. `Ĉ = C P`, and forces the compression to carry exactly the `N − r` smallest
+eigenvalues, which under the gap `σ_{r-1} > σ_r` makes `range (1 − P)` the span of the trailing right
+singular vectors, so `P` is the projection onto the leading ones and `C P = svdTruncation U σ V r`.
+Moved here from `SVD`. ★★★ (~200 lines).'''
+deps = ["sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le", "Matrix.svdTruncation", "Matrix.IsSVD", "LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry"]
+
+[[node]]
+id = "sortedSingularValues_submatrix_le"
+kind = "theorem"
+desc = '''**Deleting columns or rows does not increase any singular value** ([golub2013matrix] Corollary
+2.4.5 iterated, used by Theorem 5.5.2's upper bound, whose printed citation "Corollary 2.4.4" is off
+by one; and Corollary 8.6.3): for `A : Matrix m n 𝕜` (any `Fintype`s) and embeddings `e : k ↪ n`,
+`f : l ↪ m`, `(A.submatrix id e).sortedSingularValues i ≤ A.sortedSingularValues i` and (second
+declaration `sortedSingularValues_submatrix_rows_le`) `(A.submatrix f id).sortedSingularValues i ≤
+A.sortedSingularValues i`, for all `i`. Columns: the upper half of
+`LinearMap.singularValues_domRestrict_interlace` with `K` the span of the selected coordinates
+(`toEuclideanLin (A.submatrix id e)` is `toEuclideanLin A` composed with the isometric embedding of
+`EuclideanSpace 𝕜 k` along `e`, and composing with an isometry equivalence onto `K` does not change
+singular values, `LinearMap.singularValues_comp_linearIsometryEquiv`). Rows: the column case for `Aᴴ`
+and `LinearMap.singularValues_adjoint` (review M3). Generalized from `Fin` to `Fintype` with
+embeddings, and renamed from `singularValues_submatrix_le` (sorted reading in the name). ★'''
+deps = ["LinearMap.singularValues_domRestrict_interlace", "LinearMap.singularValues_comp_linearIsometryEquiv", "LinearMap.singularValues_adjoint", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "sortedSingularValues_fromCols_left_le"
+kind = "theorem"
+desc = '''**Deleting a trailing column block does not increase singular values** ([golub2013matrix]
+Corollary 8.6.3 iterated, and the step "`σ_n(C) ≥ σ_n(C₁)`" of Theorem 6.3.1): for
+`C₁ : Matrix m n 𝕜`, `C₂ : Matrix m k 𝕜` and every `i`,
+`C₁.sortedSingularValues i ≤ (fromCols C₁ C₂).sortedSingularValues i` — `sortedSingularValues_submatrix_le`
+with `e = Function.Embedding.inl` (`fromCols C₁ C₂` on the column type `n ⊕ k`, no reindexing to
+`Fin (n + k)`; review M3). Renamed from `singularValues_fromCols_left_le`. ★'''
+deps = ["sortedSingularValues_submatrix_le"]
+
+[[node]]
+id = "IsSVD.sortedSingularValues_le_mul_submatrix"
+kind = "theorem"
+desc = '''**The lower bound of subset selection** ([golub2013matrix] Theorem 5.5.2, lower bound, over
+`RCLike 𝕜`; review L1): let `IsSVD A U σ V` with `A : Matrix (Fin M) (Fin N) 𝕜`, `P` the column
+permutation `π : Equiv.Perm (Fin N)`, `0 < r ≤ min M N`, `B₁ = (A.submatrix id π).submatrix id (Fin.castLE _)`
+the first `r` columns of `A P` and `Ṽ₁₁` the leading `r × r` block of `(V.submatrix π id)`
+(= `Pᵀ V`), assumed invertible. Then `A.sortedSingularValues (r - 1) ≤ ‖Ṽ₁₁⁻¹‖ * B₁.sortedSingularValues (r - 1)`
+(scoped `L2Operator`; the book's `σ_r(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r(B₁)`, 1-based). Proof: `σ_{r-1}(B₁)` is the
+least stretch of `B₁` (`LinearMap.isGreatest_singularValues` at the last index); for a unit `w`,
+`‖B₁ w‖² = ‖Σ₁ Ṽ₁₁ᴴ w‖² + ‖Σ₂ Ṽ₁₂ᴴ w‖² ≥ σ_{r-1}(A)² ‖Ṽ₁₁ᴴ w‖² ≥ σ_{r-1}(A)² / ‖Ṽ₁₁⁻¹‖²`. The upper
+bound `σ_r(B₁) ≤ σ_r(A)` is `sortedSingularValues_submatrix_le`. Moved here from `RankRevealing`
+(review M3, the dual of the column-deletion bound) and renamed from `iInf_singularValues_submatrix_ge`,
+whose statement mixed the two readings (review M2). ★'''
+deps = ["Matrix.IsSVD", "Matrix.IsSVD.singularValues_eq", "LinearMap.isGreatest_singularValues", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "sortedSingularValues_le_l2_opNorm_trailing"
+kind = "theorem"
+desc = '''For `R : Matrix (Fin m) (Fin n) 𝕜` block upper triangular with trailing block `R₂₂` (rows and
+columns `≥ k`, i.e. `R i j = 0` for `k ≤ i`, `j < k`): `R.sortedSingularValues k ≤ ‖R₂₂‖`
+([golub2013matrix] §5.4.3 and the `ρ` of (5.4.10)–(5.4.11)). `R - [R₁₁ R₁₂; 0 0] = [0 0; 0 R₂₂]` and
+`rank [R₁₁ R₁₂; 0 0] ≤ k`, so `sortedSingularValues_le_l2_opNorm_sub_of_rank_le` gives it (the norm of a
+matrix with a single nonzero block is the norm of the block); the same for the lower triangular (ULV)
+shape with `R₂₂` → `L₂₂` (second declaration `sortedSingularValues_le_l2_opNorm_trailing_lower`).
+Moved here from `RankRevealing` (review M3) and renamed from `singularValues_le_l2_opNorm_trailing`. ★'''
+deps = ["sortedSingularValues_le_l2_opNorm_sub_of_rank_le", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "iInf_singularValues_sub_le"
+kind = "theorem"
+desc = '''The least stretch is 1-Lipschitz in the 2-norm ([golub2013matrix] Corollary 2.4.4 at the last index):
+`|⨅ i, A.singularValues i - ⨅ i, B.singularValues i| ≤ ‖A - B‖₂` for `A B : Matrix m n 𝕜`, `[Nonempty n]`
+(scoped `Matrix.Norms.L2Operator`). Both infima are least stretches (`Matrix.iInf_singularValues_eq_iInf_norm`),
+i.e. the last sorted singular value `σ_{card n - 1}`, and this is the `k = card n - 1` case of Weyl's bound
+`LinearMap.abs_singularValues_sub_le` with `C = ‖A - B‖₂`. Chapter 7 uses it for Theorem 7.9.8 and the
+continuity of `z ↦ σ_min(z I - A)`. (Column-indexed `Matrix.singularValues` on purpose: the consumers
+state `σ_min` as `⨅ i` over the columns, which for every shape is the least stretch — the square root of
+the least eigenvalue of `Aᴴ A`, indexed by the columns — so no sorted index appears.) ★'''
+deps = ["Matrix.iInf_singularValues_eq_iInf_norm", "LinearMap.abs_singularValues_sub_le"]
+
+[[node]]
+id = "l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues"
+kind = "theorem"
+desc = '''**The stacked-isometry identity for matrices**: for `Q₁ : Matrix k n 𝕜`, `Q₂ : Matrix l n 𝕜` with
+`Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1` (the columns of `[Q₁; Q₂]` are orthonormal) and `n` nonempty,
+`‖Q₂‖ ^ 2 = 1 - Q₁.sortedSingularValues (Fintype.card n - 1) ^ 2` (scoped `L2Operator`): the norm of
+the lower block is determined by the least singular value of the upper one. The matrix instance of
+`LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues` (`‖Q₁ x‖² + ‖Q₂ x‖² = ⟪(Q₁ᴴQ₁
++ Q₂ᴴQ₂) x, x⟫ = ‖x‖²`). It is [golub2013matrix] the proof of Theorem 2.5.1 (`‖Q₂₁‖² = 1 −
+σ_min(Q₁₁)²` for the first block column of a unitary `Q`), and one fact with (7.3.19)
+(`gap_range_sq_add_sortedSingularValues_sq`) and the size of the TLS solution
+(`l2_opNorm_mul_inv_sq_eq`); review H4. Replaces `CSDecomposition`'s `l2_opNorm_toBlocks₂₁_sq`
+(stated for a unitary `Q` with a square leading block and the column-indexed `⨅`). ★'''
+deps = ["LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "l2_opNorm_mul_inv_sq_eq"
+kind = "theorem"
+desc = '''**The tan form of the stacked-isometry identity** ([golub2013matrix] §6.3.1, `‖X‖_τ² =
+‖V₁₂V₂₂⁻¹‖₂² = (1 − σ_k(V₂₂)²)/σ_k(V₂₂)²`): for `V₁₂ : Matrix l k 𝕜`, `V₂₂ : Matrix k k 𝕜` invertible
+with `V₁₂ᴴ * V₁₂ + V₂₂ᴴ * V₂₂ = 1`, `k` nonempty and `s = V₂₂.sortedSingularValues (Fintype.card k - 1)`
+(the smallest, positive), `‖V₁₂ * V₂₂⁻¹‖ ^ 2 = (1 − s ^ 2) / s ^ 2` (scoped `L2Operator`). With
+`y = V₂₂ w`, `‖V₁₂ V₂₂⁻¹ y‖² / ‖y‖² = ‖w‖²/‖V₂₂ w‖² − 1`, whose supremum is `s⁻² − 1` (least stretch
+of `V₂₂`, `LinearMap.isGreatest_singularValues` at the last index, attained). Beside its sine form
+`l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues` (review H4); moved here from `LeastSquares/Total`,
+restated with the sorted reading (the earlier statement used `⨅ i, V₂₂.singularValues i`, the same
+number). ★'''
+deps = ["l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues", "LinearMap.isGreatest_singularValues", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "gap_range_eq_l2_opNorm_conjTranspose_mul"
+kind = "theorem"
+desc = '''**The subspace distance in matrix form** ([golub2013matrix] Theorem 2.5.1). Let `W₁ Z₁ : Matrix n
+k 𝕜` and `Z₂ : Matrix n l 𝕜` have orthonormal columns (`W₁ᴴ W₁ = 1`, `Z₁ᴴ Z₁ = 1`, `Z₂ᴴ Z₂ = 1`) with
+`range Z₂ = (range Z₁)ᗮ` (ranges of `toEuclideanLin`). Then `(range W₁).gap (range Z₁) = ‖W₁ᴴ * Z₂‖`
+(scoped `L2Operator`; prototype `notes/gvl/ch02/proto/Shapes.lean` elaborates this statement).
+Corollary of the coordinate-free theory (review H2): the two ranges have dimension `card k`
+(orthonormal columns are injective), so the gap is the one-sided `‖P_{L⊥} P_K‖`
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`, `K = range W₁`, `L = range Z₁`) and
+`‖P_{L⊥} P_K‖² = 1 − σ_min(P_L|_K)²` (`Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`);
+`P_L|_K` is `Z₁ᴴ W₁` up to the isometries `W₁ : 𝕜ᵏ ≃ K`, `Z₁ : 𝕜ᵏ ≃ L`
+(`Submodule.cosPrincipalAngle_eq_singularValues`); and `Z₁Z₁ᴴ + Z₂Z₂ᴴ = 1` (both are the orthogonal
+projections onto `L`, `Lᗮ`: `toEuclideanLin_mul_conjTranspose_eq_starProjection`) makes
+`[Z₁ᴴ W₁; Z₂ᴴ W₁]` a stacked isometry, so `‖W₁ᴴ Z₂‖² = ‖Z₂ᴴ W₁‖² = 1 − σ_min(Z₁ᴴ W₁)²`
+(`l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`, `Matrix.l2_opNorm_conjTranspose`). Moved here from
+`Projection/Gap`, which no longer imports `CSDecomposition`. ★★ (~80 lines)'''
+deps = ["Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq", "Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues", "Submodule.cosPrincipalAngle_eq_singularValues", "Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection", "l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues", "Submodule.gap"]
+
+[[node]]
+id = "gap_range_sq_add_sortedSingularValues_sq"
+kind = "theorem"
+desc = '''**Distance and least cosine** ([golub2013matrix] (7.3.19), the thin CS decomposition read for two
+subspaces): for `W₁ Z₁ : Matrix n k 𝕜` with orthonormal columns and `k` nonempty,
+`(range W₁).gap (range Z₁) ^ 2 + (W₁ᴴ * Z₁).sortedSingularValues (Fintype.card k - 1) ^ 2 = 1`.
+Coordinate-free (review H2): the two ranges have equal dimension, so `gap = sin θ_max`
+(`Submodule.gap_eq_sin_principalAngle`) and `cos θ_max = σ_min(W₁ᴴ Z₁)`
+(`Submodule.cosPrincipalAngle_eq_singularValues`, with `Submodule.cosPrincipalAngle_comm`), and
+`sin² + cos² = 1`. Consumer: chapter 7's `Numlib/Eigen/InvariantSubspace` (Theorem 7.3.1's appendix
+proof). Moved here from `Projection/Gap` and renamed from `gap_range_sq_add_iInf_singularValues_sq`
+(sorted reading; the column-indexed `⨅` of the earlier statement is the same number, but the
+`Matrix.singularValues` of `SVD` is no longer the spelling of new statements, review M2). ★'''
+deps = ["Submodule.gap_eq_sin_principalAngle", "Submodule.cosPrincipalAngle_eq_singularValues", "Submodule.cosPrincipalAngle_comm", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "isGreatest_frobenius_norm_sq_conjTranspose_mul"
+kind = "theorem"
+desc = '''**Ky Fan's maximum principle, SVD form** ([golub2013matrix] (12.5.3) and the sentence after it, which drops the
+square: the maximum of `‖QᵀA‖_F` is `√(σ₁² + ⋯ + σ_r²)`): for `A : Matrix (Fin m) (Fin n) 𝕜` and `r ≤ m`,
+`IsGreatest ((fun Q => ‖Qᴴ * A‖ ^ 2) '' {Q : Matrix (Fin m) (Fin r) 𝕜 | Qᴴ * Q = 1}) (∑ i ∈ Finset.range r,
+A.sortedSingularValues i ^ 2)` (Frobenius), attained at the first `r` columns of the `U` of any SVD
+(`Matrix.exists_svd`). A corollary of Ky Fan's maximum principle for eigenvalues
+(`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`, `Numlib/Eigen/MinMax`, the one principle)
+applied to `A Aᴴ`: `‖Qᴴ A‖_F² = ∑_i re ⟪A Aᴴ q_i, q_i⟫` over the orthonormal columns `q_i` of `Q`, and the
+sorted eigenvalues of `A Aᴴ` are `σ_i²` (`LinearMap.sq_singularValues_fin` for the adjoint,
+`LinearMap.singularValues_adjoint`). ★★ (~60 lines)'''
+deps = ["Matrix.exists_svd", "Matrix.sortedSingularValues", "Matrix.frobenius_norm_unitary_mul_mul_unitary", "LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues", "LinearMap.singularValues_adjoint"]
+
+[[node]]
+id = "norm_trace_mul_le_sum_sortedSingularValues_mul"
+kind = "theorem"
+desc = '''**Von Neumann's trace inequality** (von Neumann 1937; review L1): for `A : Matrix m n 𝕜`,
+`B : Matrix n m 𝕜`, `‖trace (A * B)‖ ≤ ∑ i ∈ Finset.range (min (card m) (card n)),
+A.sortedSingularValues i * B.sortedSingularValues i`. Proof: from an SVD `B = U Σ Vᴴ`,
+`trace (A B) = ∑_i σ_i(B) ⟪v_i, A u_i⟫`-type expansion; Abel summation with the decreasing weights
+`σ_i(B)` reduces the claim to the partial sums `∑_{i<k} ‖⟪v_i, A u_i⟫‖ ≤ ∑_{i<k} σ_i(A)`, which is
+Ky Fan's principle for the Hermitian dilation: with phases `ω_i` making `ω_i ⟪v_i, A u_i⟫ ≥ 0`, the
+vectors `x_i = (u_i, ω_i v_i)/√2` are orthonormal in `𝕜ⁿ × 𝕜ᵐ`, `re ⟪hermitianDilation A x_i, x_i⟫ =
+‖⟪v_i, A u_i⟫‖`, and `LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues` bounds the sum by the top
+`k` eigenvalues of the dilation, `σ_0(A), …, σ_{k-1}(A)` (`IsHermitian.eigenvalues₀_hermitianDilation`).
+The one-sided Procrustes bound `Matrix.re_trace_mul_le_sum_singularValues` is the case of a unitary
+factor (all `σ_i = 1`). ★★ (~120 lines)'''
+deps = ["LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues", "IsHermitian.eigenvalues₀_hermitianDilation", "Matrix.exists_svd", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "exists_singularSubspacePair_perturbation"
+kind = "theorem"
+desc = '''Perturbation of a singular subspace pair ([golub2013matrix] Theorem 8.6.5; Stewart 1973,
+Theorem 6.4; corrected — the printed statement is false for `m > n`), with the roles of `P` and `Q` as
+the dimensions require (the book swaps them): let `A E : Matrix (Fin m) (Fin n) ℝ`, `m ≥ n`, orthogonal
+`U = [U₁ U₂]` (`r`, `m - r` columns) and `V = [V₁ V₂]` (`r`, `n - r`) with
+`Uᵀ A V = fromBlocks A₁₁ 0 0 A₂₂`, and `δ > 0` with
+* `∀ i < r, ∀ j < n - r, δ ≤ |A₁₁.sortedSingularValues i - A₂₂.sortedSingularValues j|` (the book's
+  separation), and
+* **(Wedin's condition)** `n < m → ∀ i < r, δ ≤ A₁₁.sortedSingularValues i`: when `m > n` the
+  `(m - r) × (n - r)` block `A₂₂` has `m - n` further zero singular values on the left
+  (`A₂₂ A₂₂ᵀ` has `m - n` more zero eigenvalues than `A₂₂ᵀ A₂₂`), and the separation must include
+  them (Wedin 1972, Stewart–Sun Theorem V.4.4).
+If `‖E‖_F ≤ δ / 5` then there are `P : Matrix (Fin (n - r)) (Fin r) ℝ` and
+`Q : Matrix (Fin (m - r)) (Fin r) ℝ` with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that `range (V₁ + V₂ P)`
+and `range (U₁ + U₂ Q)` form a singular subspace pair for `A + E` (`(A+E)` maps the first into the
+second and `(A+E)ᵀ` the second into the first).
+
+**Why the correction.** Counterexample to the printed statement (surface review, Major 1; verified
+numerically): `m = 3`, `n = 2`, `r = 1`, `A = [[0,0],[0,1],[0,0]]`, `U = V = I`: `A₁₁ = [0]`,
+`σ(A₂₂) = {1}`, so the printed `δ = 1`; for `E = ε e₃e₁ᵀ`, `0 < ε ≤ 1/5`, every 1-dimensional
+singular subspace pair of `A + E` is `(span e₁, span e₃)` or `(span e₂, span e₂)`, and neither has
+the form `(range (V₁ + V₂ P), range (U₁ + U₂ Q))`. Wedin's condition excludes it (`σ(A₁₁) = {0}`
+gives `δ ≤ 0`). For `m = n` the condition is vacuous and the statement is the book's.
+
+Blocked: the proof reduces the pair condition to a coupled quadratic (Riccati) equation for
+`(P, Q)` and solves it by a contraction argument whose linear part is the operator
+`(P, Q) ↦ (A₂₂ᵀ Q - P A₁₁ᵀ, A₂₂ P - Q A₁₁)`, with inverse bounded by `1/δ` exactly under the two
+separation conditions (block-diagonalize by the SVDs of `A₁₁`, `A₂₂`: on each pair of singular values
+it is `[[−σ, γ], [γ, −σ]]`-shaped with smallest singular value `|σ − γ|`, and the extra left zero
+singular values of `A₂₂` contribute the scalar blocks `−σ`). The coupled equation is written
+`L x + φ x = g` for `x = (P, Q)` in `F = Matrix (Fin (n - r)) (Fin r) ℝ × Matrix (Fin (m - r)) (Fin r) ℝ`
+(Frobenius norms): `L` is that linear part built from the diagonal blocks `A₁₁ + E₁₁`, `A₂₂ + E₂₂` of
+`Uᵀ (A + E) V` (`‖L⁻¹‖ ≤ 1/(δ − 2‖E‖_F)`, a Weyl-type shift of the separation), `φ` collects the
+bilinear terms `Q E₁₂ P`, `P E₂₁ᵀ Q` (`φ 0 = 0`, `‖φ x − φ y‖ ≤ ‖E‖_F (‖x‖ + ‖y‖) ‖x − y‖`), and `g`
+is built from the off-diagonal blocks `E₂₁`, `E₁₂ᵀ`; the constants `1/5`, `4` come out of the lemma's
+`4γη < δ'²` and `‖x‖ ≤ 2γ/δ'` with `δ' = δ − 2‖E‖_F ≥ 3δ/5` (a sketch, to be
+rechecked). The solvability lemma is chapter 7's
+`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` (`Numlib/Analysis/Normed/Operator/QuadraticEquation`, Stewart's lemma, planned for
+Theorem 7.2.4) — this node waits for it. The constants `1/5`, `4` are the book's and are rechecked
+when the proof is written. Moved here from `Analysis/InnerProductSpace/SingularValues` with the other
+matrix nodes. ★★★ (~350 lines on top of the Riccati lemma)'''
+deps = ["ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic", "Matrix.sortedSingularValues"]
+
+[[node]]  # staged by ch02; moved from SVD (it uses OperatorNorm; review layering)
+id = "l2_opNorm_sub_svdTruncation"
+kind = "theorem"
+desc = '''`IsSVD A U σ V → ‖A - svdTruncation U σ V k‖ = A.sortedSingularValues k` (scoped
+`L2Operator`; [golub2013matrix] proof of Theorem 2.4.8, first paragraph): `Uᴴ (A - A_k) V = rectDiagonal
+(fun i => if i < k then 0 else σ i)`, unitary invariance (`Matrix.l2_opNorm_unitary_mul_mul_unitary`) and
+`l2_opNorm_rectDiagonal`, the sup being `σ_k` by antitonicity (or `0 = σ_k` when `k ≥ min m n`). ★'''
+deps = ["Matrix.svdTruncation", "Matrix.l2_opNorm_rectDiagonal", "Matrix.l2_opNorm_unitary_mul_mul_unitary", "Matrix.IsSVD.singularValues_eq"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "pinvCondNumberLp"
+kind = "definition"
+desc = '''The condition number of a rectangular matrix through its pseudoinverse, in the operator
+`p`-norm: `pinvCondNumberLp p A = lpOpNorm p A * lpOpNorm p A.pinv` (`A : Matrix m n 𝕜`,
+`p : ℝ≥0∞`), beside the square `Matrix.condNumberLp p A = lpOpNorm p A * lpOpNorm p A⁻¹` of
+`Numlib/Analysis/Matrix/OperatorNorm`. The book's rectangular `κ₂(A) = ‖A‖₂ ‖A⁺‖₂` ([golub2013matrix]
+(5.2.4)) is `pinvCondNumberLp 2 A`: for full column rank it is `σ_max/σ_min`
+(`pinvCondNumberLp_two_eq_div_singularValues`), and for an invertible square matrix it is
+`condNumberLp p A` for every `p` (`pinvCondNumberLp_eq_condNumberLp`, through `pinv_eq_inv`).
+Defined through `A⁺` rather than through singular values so that it is the natural `‖A‖‖A⁺‖` of every
+rank (the effective condition number `σ_1/σ_r` at `p = 2`). Renamed from `rectCondNumber`, which named
+neither the norm nor the inverse and was defined through the scoped `L2Operator` instance (review L2).
+Checked names: `Matrix.condNumberLp` (square, `A⁻¹`), `NormedRing.condNumber` (units of a normed ring);
+Mathlib has no rectangular condition number. ★'''
+deps = ["Matrix.pinv", "Matrix.lpOpNorm", "Matrix.condNumberLp"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "l2_opNorm_pinv_eq_inv_iInf_singularValues"
+kind = "theorem"
+desc = '''For full column rank (`LinearIndependent 𝕜 Aᵀ`, `Nonempty n`):
+`‖A.pinv‖₂ = (⨅ i, A.singularValues i)⁻¹` — [golub2013matrix] (5.3.9)'s
+`‖(AᵀA)⁻¹Aᵀ‖₂ = 1/σ_n(A)`. From `pinv_eq_of_svd`/the singular system: `A⁺` has singular values
+`σ_i⁻¹`. The square analogue is `l2_opNorm_inv_eq_inv_iInf_singularValues` (SVD.lean, untracked). ★ (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.pinv", "Matrix.exists_singularSystem", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "pinvCondNumberLp_two_eq_div_singularValues"
+kind = "theorem"
+desc = '''For full column rank and `Nonempty n`:
+`pinvCondNumberLp 2 A = (⨆ i, A.singularValues i) / (⨅ i, A.singularValues i)` ([golub2013matrix]
+(5.2.4)); from the rectangular `‖A‖₂ = σ_max` (`l2_opNorm_eq_iSup_singularValues`-type identity, same
+proof: `norm_toEuclideanLin_le_iSup_singularValues`) and `l2_opNorm_pinv_eq_inv_iInf_singularValues`,
+with `lpOpNorm 2 = ‖·‖` of the scoped `L2Operator` instance (`Matrix.lpOpNorm_two_eq_l2_opNorm`-type
+bridge of `OperatorNorm`). Renamed from `rectCondNumber_eq_div_singularValues`. (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.pinvCondNumberLp", "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues", "Matrix.norm_toEuclideanLin_le_iSup_singularValues", "Matrix.l2_opNorm_eq_iSup_singularValues"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "pinvCondNumberLp_eq_condNumberLp"
+kind = "theorem"
+desc = '''For an invertible square matrix `pinvCondNumberLp p A = condNumberLp p A` (`pinv_eq_inv`), and
+hence (`Matrix.condNumberLp_eq_condNumber`) the `NormedRing.condNumber` of `lpCLM p A`. So the book's `κ₂`
+of Chapters 2–3 and of (5.2.4) agree. Renamed from `rectCondNumber_eq_condNumber`. ★'''
+deps = ["Matrix.pinvCondNumberLp", "Matrix.pinv_eq_inv", "Matrix.condNumberLp"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "l2_opNorm_mul_pinv_eq_one"
+kind = "theorem"
+desc = '''The remaining identities of [golub2013matrix] (5.3.9), for full column rank:
+`‖A A⁺‖₂ = 1` if `A ≠ 0`; `‖1 - A A⁺‖₂ = 1` if `Fintype.card n < Fintype.card m` (the book's
+`m > n`; the projection onto `ran(A)⊥ ≠ 0`); `‖(Aᴴ A)⁻¹‖₂ = (⨅ i, A.singularValues i)⁻¹ ^ 2`.
+Three declarations in one node (`l2_opNorm_mul_pinv_eq_one`, `l2_opNorm_one_sub_mul_pinv_eq_one`,
+`l2_opNorm_inv_conjTranspose_mul_self`); the first two from `mul_pinv_eq_starProjection` (a nonzero
+orthogonal projection has norm 1: `Submodule.norm_starProjection`-type Mathlib lemma — the
+formalizer checks the name), the third from `Aᴴ A = V diag(σ²) Vᴴ`
+(`conjTranspose_mul_self_eq_conj_diagonal`). (Column-indexed `Matrix.singularValues` on purpose: `⨅ i`/`⨆ i` over the columns is the least/greatest stretch `σ_min`/`σ_max` — the square roots of the extreme eigenvalues of `Aᴴ A` — for every shape, with no sorted-index bookkeeping; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) ★'''
+deps = ["Matrix.mul_pinv_eq_starProjection", "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
+id = "pinvCondNumberLp_two_conjTranspose_mul_self"
+kind = "theorem"
+desc = '''For full column rank, `pinvCondNumberLp 2 (Aᴴ * A) = pinvCondNumberLp 2 A ^ 2`
+([golub2013matrix] (5.3.4)'s `κ₂(AᵀA) = κ₂(A)²`): the singular values of `Aᴴ A` are the squares
+(`sq_singularValues`, `Aᴴ A` Hermitian positive definite, `IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues`).
+Renamed from `condNumber_conjTranspose_mul_self`. ★'''
+deps = ["Matrix.pinvCondNumberLp_two_eq_div_singularValues", "Matrix.sq_singularValues", "Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues"]
+
+[[node]]  # staged by ch08; moved from SVD (it uses OperatorNorm; review layering)
+id = "l2_opNorm_mul_inv_sqrt_one_add_gram_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (8.1.3) (and (7.2.6), P8.1.10): for `P : Matrix m n 𝕜`,
+`lpOpNorm 2 (P * (CFC.sqrt (1 + Pᴴ * P))⁻¹) ≤ lpOpNorm 2 P ≤ ‖P‖_F`. With `G = Pᴴ P ≥ 0`,
+`M = (1 + G)^{-1/2}` commutes with `G` and `(P M)ᴴ (P M) = M G M = G (1 + G)⁻¹ = f(G)` for
+`f t = t/(1+t) ≤ t` on `[0, ∞)`; so `‖P M‖₂² = ‖f(G)‖₂ ≤ ‖G‖₂ = ‖P‖₂²` (Hermitian norms are
+spectral radii, `Matrix.IsHermitian.l2_opNorm_eq`; the continuous functional calculus `cfc` for
+the eigenvalue map, or the unitary diagonalization of `G` directly). The second inequality is
+`Matrix.l2_opNorm_le_frobenius_norm`. Chapter 7's (7.2.6) is the same statement over `ℂ`; one node
+serves both. ★★ (~80 lines)'''
+deps = ["Matrix.IsHermitian.l2_opNorm_eq", "Matrix.l2_opNorm_le_frobenius_norm", "Matrix.lpOpNorm"]

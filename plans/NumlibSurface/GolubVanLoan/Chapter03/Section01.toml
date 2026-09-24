@@ -1,0 +1,290 @@
+namespace = "GolubVanLoan.Chapter03"
+desc = '''
+§3.1, triangular systems: the four substitution algorithms (row/dot-product and column/saxpy,
+forward and backward), their rounding analyses (3.1.1)–(3.1.2), the block forward elimination
+(3.1.4) for multiple right-hand sides (`blockForwardElim`, spec `equation_3_1_4`), nonsquare triangular systems (§3.1.6) and the algebra of
+triangular matrices (§3.1.7).
+
+Every algorithm is a D4 program over `ℝ` (`rnd : ℝ → M ℝ`), overwriting `b : Fin n → ℝ` by
+`Function.update`. Backbone specifications: `Matrix.forwardSubst`, `Matrix.backSubst`
+(`Numlib/Direct/Substitution`); relational predicates `FloatingPoint.RoundsForwardSubst`,
+`RoundsBackSubst` (running differences = the column versions 3.1.3–3.1.4) and the new
+`RoundsForwardSubstDot`, `RoundsBackSubstDot` (inner-product order = the row versions 3.1.1–3.1.2)
+of `Numlib/FloatingPoint/Substitution`.
+
+**The proof pattern of every `algorithm_*` triple** (settled by the prototype
+`notes/gvl/ch03/proto/Bridge.lean`, which proves it for Algorithm 3.1.3 in ~150 lines with no
+`sorry`): (1) `_rounds`: every run at `SetM` with `rnd := fp.round` satisfies the relational
+predicate, by a loop invariant over the outer `List.foldlM` ("indices outside the remaining list
+are finished rows; indices inside hold the running difference over the finished ones"), the inner
+saxpy loop handled by `SetM.mem_run_foldlM_update_of_nodup` (`Program`; it generalizes the
+prototype's `mem_saxpy`: each listed index gets one rounded update reading the frozen `b j`, the
+others are unchanged) and `FloatingPoint.roundsSumFrom_append_singleton`; (2) the exact run is a
+run at the exact model: `Id.run (alg pure …) ∈ (alg RoundingModel.exact.round …).run` by
+`rw [exact_round]; simp only [alg, bind_pure_comp, List.foldlM_pure, …]; rfl` (one line);
+(3) `_spec`: (1) at the exact model plus `roundsForwardSubst_exact_iff` (or the `u = 0` instance of
+the backward-error theorem) gives `x = forwardSubst L b`, then `Matrix.mulVec_forwardSubst`.
+'''
+
+[[node]]
+id = "algorithm_3_1_1"
+kind = "definition"
+desc = '''Algorithm 3.1.1 (row-oriented forward substitution), D4:
+`algorithm_3_1_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ)
+(b : Fin n → ℝ) : M (Fin n → ℝ)`, a `List.foldlM` over `List.finRange n` of
+`fun b i => do let t ← (if (i : ℕ) = 0 then pure (b i) else do
+  let s ← FloatingPoint.dotAccum rnd ((List.finRange n).filter (· < i)) (L i) b 0; rnd (b i - s));
+  pure (Function.update b i (← rnd (t / L i i)))`.
+The first row is the book's `b(1) = b(1)/L(1,1)` (one division, no dot product); the dot product
+`L(i,1:i-1) · b(1:i-1)` is Algorithm 1.1.1 on the prefix, which ch01's `Program` provides as
+`FloatingPoint.dotAccum` over an index list (`GolubVanLoan.Chapter01.algorithm_1_1_1` is
+`dotAccum rnd (List.finRange n) x y 0` by `rfl`), so no `Fin.castLE` reindexing is needed. ★'''
+deps = ["FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.1'
+
+[[node]]
+id = "algorithm_3_1_1_rounds"
+kind = "theorem"
+desc = '''The rounding bridge of Algorithm 3.1.1: for `fp : FloatingPoint.RoundingModel ℝ` and every
+`x ∈ (algorithm_3_1_1 fp.round L b).run`, `FloatingPoint.RoundsForwardSubstDot fp L b x`.
+Loop invariant as in the prototype `proto/Bridge.lean` (finished rows below the current index);
+the dot product's run is `RoundsSumFrom fp 0 (products)` by `FloatingPoint.mem_run_dotAccum_iff`;
+the outer loop by `SetM.forall_mem_run_foldlM_finRange` (ch01's Hoare rule). No hypothesis on `L`.
+★★ (~100 lines)'''
+deps = ["algorithm_3_1_1", "FloatingPoint.RoundsForwardSubstDot", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind", "FloatingPoint.mem_run_dotAccum_iff", "SetM.forall_mem_run_foldlM_finRange"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.1'
+
+[[node]]
+id = "algorithm_3_1_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.1.1: `Id.run (algorithm_3_1_1 pure L b) = Matrix.forwardSubst L b`
+for every `L` (junk division included), hence `L *ᵥ Id.run (algorithm_3_1_1 pure L b) = b` when
+`L.IsLowerTriangular` and `∀ i, L i i ≠ 0` (the book's "L is assumed to be nonsingular",
+`Matrix.isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular`). Proof: the pure collapse puts the
+`Id` run among the runs at `FloatingPoint.RoundingModel.exact`; `algorithm_3_1_1_rounds` there and
+`FloatingPoint.roundsForwardSubstDot_exact_iff`; then `Matrix.mulVec_forwardSubst`. ★'''
+deps = ["algorithm_3_1_1_rounds", "FloatingPoint.roundsForwardSubstDot_exact_iff", "Matrix.mulVec_forwardSubst", "Matrix.isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular", "FloatingPoint.RoundingModel.exact"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.1'
+
+[[node]]
+id = "equation_3_1_1"
+kind = "theorem"
+desc = '''(3.1.1), rigorous form: for `L` lower triangular with nonzero diagonal, `u < 1`, `n u < 1`,
+every computed `x̂ ∈ (algorithm_3_1_1 fp.round L b).run` satisfies `(L + F) x̂ = b` with
+`|F i j| ≤ γ_n |L i j|` (`FloatingPoint.gamma fp.u n`). The book's `|F| ≤ n u |L| + O(u²)` is the
+first-order form (`γ_n = n u + O(u²)`). From `algorithm_3_1_1_rounds` and
+`FloatingPoint.exists_roundsForwardSubstDot_eq`. ★'''
+deps = ["algorithm_3_1_1_rounds", "FloatingPoint.exists_roundsForwardSubstDot_eq", "FloatingPoint.gamma"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.1)'
+
+[[node]]
+id = "algorithm_3_1_2"
+kind = "definition"
+desc = '''Algorithm 3.1.2 (row-oriented back substitution), D4: a `List.foldlM` over
+`(List.finRange n).reverse`; row `i = n - 1` divides only (the book's `b(n) = b(n)/U(n,n)`), row
+`i < n - 1` computes `s ← FloatingPoint.dotAccum rnd ((List.finRange n).filter (i < ·)) (U i) b 0`
+(the dot product `U(i,i+1:n) · b(i+1:n)` in increasing `j`, Algorithm 1.1.1), then
+`rnd (b i - s)` and `rnd (t / U i i)`. ★'''
+deps = ["FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.2'
+
+[[node]]
+id = "algorithm_3_1_2_rounds"
+kind = "theorem"
+desc = '''Every run of Algorithm 3.1.2 satisfies `FloatingPoint.RoundsBackSubstDot fp U b x`. Same
+invariant as `algorithm_3_1_1_rounds` with the order reversed (finished rows above the current
+index); proved directly or by transporting the forward bridge along `Fin.revPerm`
+(`algorithm_3_1_2 rnd U b = (algorithm_3_1_1 rnd (U.submatrix rev rev) (b ∘ rev)) ∘ rev` up to the
+reindexing of the dot product's index; ★★ either way). ★★ (~100 lines)'''
+deps = ["algorithm_3_1_2", "FloatingPoint.RoundsBackSubstDot", "FloatingPoint.RoundingModel.round", "FloatingPoint.mem_run_dotAccum_iff", "algorithm_3_1_1_rounds"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.2'
+
+[[node]]
+id = "algorithm_3_1_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.1.2: `Id.run (algorithm_3_1_2 pure U b) = Matrix.backSubst U b`,
+hence `U *ᵥ … = b` for upper triangular `U` with nonzero diagonal; as `algorithm_3_1_1_spec` with
+`FloatingPoint.roundsBackSubstDot_exact_iff` and `Matrix.mulVec_backSubst`. ★'''
+deps = ["algorithm_3_1_2_rounds", "FloatingPoint.roundsBackSubstDot_exact_iff", "Matrix.mulVec_backSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.2'
+
+[[node]]
+id = "equation_3_1_2"
+kind = "theorem"
+desc = '''(3.1.2), rigorous form: for `U` upper triangular with nonzero diagonal, `u < 1`, `n u < 1`,
+every `x̂ ∈ (algorithm_3_1_2 fp.round U b).run` satisfies `(U + F) x̂ = b`, `|F| ≤ γ_n |U|`
+entrywise; `FloatingPoint.exists_roundsBackSubstDot_eq`. First-order form `n u |U| + O(u²)`. ★'''
+deps = ["algorithm_3_1_2_rounds", "FloatingPoint.exists_roundsBackSubstDot_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.2)'
+
+[[node]]
+id = "algorithm_3_1_3"
+kind = "definition"
+desc = '''Algorithm 3.1.3 (column-oriented forward substitution), D4, exactly as in the prototype
+`notes/gvl/ch03/proto/Bridge.lean`: `(List.finRange n).foldlM (fun b j => do
+let bj ← rnd (b j / L j j); ((List.finRange n).filter (j < ·)).foldlM (fun b i => do
+let p ← rnd (b j * L i j); let bi ← rnd (b i - p); pure (Function.update b i bi))
+(Function.update b j bj)) b`. The book's final `b(n) = b(n)/L(n,n)` is the last iteration, whose
+saxpy `b(j+1:n) = b(j+1:n) - b(j) L(j+1:n,j)` is empty. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.3'
+
+[[node]]
+id = "algorithm_3_1_3_rounds"
+kind = "theorem"
+desc = '''**The prototype bridge**: every `x ∈ (algorithm_3_1_3 fp.round L b).run` satisfies
+`FloatingPoint.RoundsForwardSubst fp L b x`, with no hypothesis on `L` (and no `fp.IsIdempotent`:
+the running-difference relation starts from the unrounded `b i`). Proved in full in
+`notes/gvl/ch03/proto/Bridge.lean` (`algorithm_3_1_3_roundsForwardSubst`: `mem_saxpy` for the
+inner loop, the invariant `Inv` and `inv_step` for the outer one, `inv_foldlM` by induction on
+the remaining list, `roundsSumFrom_append_singleton`, and `mul_comm` for the book's product order
+`b(j) · L(i,j)`). The inner saxpy `b(j+1:n) = b(j+1:n) - b(j) L(j+1:n,j)` writes one entry per
+step and reads only the frozen `b j` (`j` is not in the loop's list `[j+1, …, n-1]`), so the
+prototype's `mem_saxpy` is the instance `SetM.mem_run_foldlM_update_of_nodup` of `Program`; it is
+**not** `SetM.mem_run_foldlM_of_pi`, whose steps may not read other entries. ★★ (~150 lines, done)'''
+deps = ["algorithm_3_1_3", "FloatingPoint.RoundsForwardSubst", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.roundsSumFrom_append_singleton"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.3'
+
+[[node]]
+id = "algorithm_3_1_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.1.3: `Id.run (algorithm_3_1_3 pure L b) = Matrix.forwardSubst L b`,
+hence `L *ᵥ … = b` for lower triangular `L` with nonzero diagonal. The prototype proves the second
+form from the bridge at `RoundingModel.exact` and the `u = 0` instance of
+`FloatingPoint.exists_roundsForwardSubst_eq` (`algorithm_3_1_3_spec` there); the first form uses
+`FloatingPoint.roundsForwardSubst_exact_iff`. ★'''
+deps = ["algorithm_3_1_3_rounds", "FloatingPoint.roundsForwardSubst_exact_iff", "Matrix.mulVec_forwardSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.3'
+
+[[node]]
+id = "algorithm_3_1_3_rounding"
+kind = "theorem"
+desc = '''§3.1.3, "the roundoff behavior of these implementations is essentially the same as for the dot
+product versions", rigorous: every computed `x̂` of Algorithm 3.1.3 satisfies `(L + F) x̂ = b`,
+`|F| ≤ γ_n |L|` (same constant as (3.1.1)); `FloatingPoint.exists_roundsForwardSubst_eq`
+([higham2002accuracy] Theorem 8.5, the running-difference order). ★'''
+deps = ["algorithm_3_1_3_rounds", "FloatingPoint.exists_roundsForwardSubst_eq", "equation_3_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, §3.1.3'
+
+[[node]]
+id = "algorithm_3_1_4"
+kind = "definition"
+desc = '''Algorithm 3.1.4 (column-oriented back substitution), D4: `(List.finRange n).reverse.foldlM`
+with `b(j) = b(j)/U(j,j)` then the saxpy `b(i) = b(i) - b(j) U(i,j)` over
+`(List.finRange n).filter (· < j)`, each product and difference rounded. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.4'
+
+[[node]]
+id = "algorithm_3_1_4_rounds"
+kind = "theorem"
+desc = '''Every run of Algorithm 3.1.4 satisfies `FloatingPoint.RoundsBackSubst fp U b x`. Either
+the prototype's invariant with the order reversed, or — cheaper — a reindexing lemma
+`algorithm_3_1_4 rnd U b = (fun x => x ∘ Fin.rev) <$> algorithm_3_1_3 rnd (U.submatrix Fin.rev Fin.rev)
+(b ∘ Fin.rev)` (both programs perform the same operations; `List.finRange_reverse`-type lemmas)
+and `algorithm_3_1_3_rounds` transported through `roundsBackSubst_iff_roundsForwardSubst_toDual`.
+★★ (~80 lines)'''
+deps = ["algorithm_3_1_4", "algorithm_3_1_3_rounds", "FloatingPoint.RoundsBackSubst", "FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.4'
+
+[[node]]
+id = "algorithm_3_1_4_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.1.4: `Id.run (algorithm_3_1_4 pure U b) = Matrix.backSubst U b`,
+hence `U *ᵥ … = b` for upper triangular `U` with nonzero diagonal;
+`FloatingPoint.roundsBackSubst_exact_iff`, `Matrix.mulVec_backSubst`. ★'''
+deps = ["algorithm_3_1_4_rounds", "FloatingPoint.roundsBackSubst_exact_iff", "Matrix.mulVec_backSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.1.4'
+
+[[node]]
+id = "algorithm_3_1_4_rounding"
+kind = "theorem"
+desc = '''The column back substitution has the backward error of (3.1.2): `(U + F) x̂ = b`,
+`|F| ≤ γ_n |U|`; `FloatingPoint.exists_roundsBackSubst_eq`. ★'''
+deps = ["algorithm_3_1_4_rounds", "FloatingPoint.exists_roundsBackSubst_eq", "equation_3_1_2"]
+source = 'Golub–Van Loan, Matrix Computations, §3.1.3'
+
+[[node]]
+id = "blockForwardElim"
+kind = "definition"
+desc = '''(3.1.4), block forward elimination for `L X = B`, D4 (a content-named program; its exact
+specification is `equation_3_1_4`). Blocks are the fibres of a monotone
+labelling `blk : Fin n → Fin N` (the book's square diagonal blocks `L_JJ`, contiguous because
+`blk` is monotone; no divisibility assumption, cf. P3.1.3). Program: for `J` in `List.finRange N`,
+"solve `L_JJ X_J = B_J`" by the column saxpy loops of Algorithm 3.1.3 restricted to the index list
+of the `j` with `blk j = J` (convention 10), applied to every column of `B`; then for every `I > J`
+the block saxpy `B_I = B_I - L_IJ X_J` entrywise as running differences over the indices of block
+`J` (each product and difference rounded). State `B : Matrix (Fin n) (Fin q) ℝ`, updated by
+`Matrix.updateRow`/`Function.update`. ★★'''
+deps = ["algorithm_3_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.4)'
+
+[[node]]
+id = "equation_3_1_4"
+kind = "theorem"
+desc = '''(3.1.4) computes the block solution: for monotone `blk`, `L` lower triangular with nonzero
+diagonal, `L * Id.run (blockForwardElim pure blk L B) = B`. Route: the bridge "every run satisfies
+`FloatingPoint.RoundsForwardSubst fp L (B.col c) (X.col c)` for every column `c`" (row `i` receives
+its subtractions block by block, `j` in earlier blocks first and then `j < i` in its own block —
+all `j < i` by monotonicity, and `RoundsForwardSubst` allows any order), at the exact model with
+`FloatingPoint.roundsForwardSubst_exact_iff` and `Matrix.mulVec_forwardSubst` column by column
+(`Matrix.col`, `Matrix.mul_apply`) — convention 11. The bridge is a helper, not a node: the book
+states no rounding result for (3.1.4). ★★★ (~200 lines: two nested block loops)'''
+deps = ["blockForwardElim", "algorithm_3_1_3_rounds", "FloatingPoint.RoundsForwardSubst", "FloatingPoint.roundsForwardSubst_exact_iff", "Matrix.mulVec_forwardSubst"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.4)'
+
+[[node]]
+id = "nonsquareLower_tall"
+kind = "theorem"
+desc = '''§3.1.6, `m ≥ n`: for `L₁₁ : Matrix (Fin n) (Fin n) ℝ` lower triangular and nonsingular,
+`L₂₁ : Matrix (Fin p) (Fin n) ℝ`, the system `Matrix.fromRows L₁₁ L₂₁ *ᵥ x = Sum.elim b₁ b₂` has a
+solution iff `L₂₁ *ᵥ (L₁₁⁻¹ *ᵥ b₁) = b₂`, and then `x = L₁₁⁻¹ *ᵥ b₁` is the only one (Mathlib
+`Matrix.fromRows_mulVec`, `Matrix.inv_mulVec_eq_vec`). The book's least-squares remark is not part
+of it. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.1.6'
+
+[[node]]
+id = "nonsquareLower_wide"
+kind = "theorem"
+desc = '''§3.1.6, `n > m`: a lower triangular (trapezoidal) `L : Matrix (Fin m) (Fin n) ℝ`
+(`L i j = 0` for `(i : ℕ) < j`) has zero columns beyond `m`, so for `n = m + p`, writing
+`L = Matrix.fromCols L₁ 0` (after `finSumFinEquiv`), `L *ᵥ Sum.elim x₁ x₂ = L₁ *ᵥ x₁`: the solutions
+are exactly `x₁ = L₁⁻¹ b` (for nonsingular `L₁ = L(1:m,1:m)`) with `x₂ = x(m+1:n)` arbitrary. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.1.6'
+
+[[node]]
+id = "triangular_inv"
+kind = "theorem"
+desc = '''§3.1.7: the inverse of an upper (lower) triangular matrix is upper (lower) triangular —
+`U.IsUpperTriangular → U⁻¹.IsUpperTriangular` and the lower counterpart, on
+`Matrix (Fin n) (Fin n) ℝ` (Mathlib's junk inverse makes it unconditional);
+`Matrix.IsUpperTriangular.inv`, `Matrix.IsLowerTriangular.inv`. ★'''
+deps = ["Matrix.IsUpperTriangular.inv", "Matrix.IsLowerTriangular.inv"]
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
+
+[[node]]
+id = "triangular_mul"
+kind = "theorem"
+desc = '''§3.1.7: the product of two upper (lower) triangular matrices is upper (lower) triangular;
+Mathlib `Matrix.BlockTriangular.mul` (with `b = id` and `b = OrderDual.toDual`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
+
+[[node]]
+id = "unitTriangular_inv"
+kind = "theorem"
+desc = '''§3.1.7: the inverse of a unit upper (lower) triangular matrix is unit upper (lower)
+triangular; `Matrix.IsUnitLowerTriangular.inv` and the staged `Matrix.IsUnitUpperTriangular.inv`
+(ch03 append to `Hessenberg`). ★'''
+deps = ["Matrix.IsUnitLowerTriangular.inv", "Matrix.IsUnitUpperTriangular.inv"]
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'
+
+[[node]]
+id = "unitTriangular_mul"
+kind = "theorem"
+desc = '''§3.1.7: the product of two unit upper (lower) triangular matrices is unit upper (lower)
+triangular; `Matrix.IsUnitLowerTriangular.mul`, `Matrix.IsUnitUpperTriangular.mul`. ★'''
+deps = ["Matrix.IsUnitLowerTriangular.mul", "Matrix.IsUnitUpperTriangular.mul"]
+source = 'Golub–Van Loan, Matrix Computations, §3.1.7'

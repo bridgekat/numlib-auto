@@ -1,0 +1,424 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.2, positive definite systems: unsymmetric positive definiteness (Theorems 4.2.1–4.2.6), the
+Cholesky factorization (Theorem 4.2.7) and gaxpy Cholesky (Algorithm 4.2.1) with its stability
+(§4.2.6), the pivoted outer-product `L D Lᵀ` (Algorithm 4.2.2, (4.2.10)), the semidefinite case
+(Theorem 4.2.8, (4.2.11)–(4.2.17)), and block Cholesky (Algorithms 4.2.3–4.2.4, (4.2.18)–(4.2.19)).
+Backbone: `LinearAlgebra/Matrix/{Cholesky,HermitianPart,PosDef,SchurComplement}`,
+`FloatingPoint/LU`. "Positive definite" for an unsymmetric matrix is the surface's
+`IsPositiveDefinite` (chapter conventions); "symmetric positive (semi)definite" is Mathlib's
+`Matrix.PosDef`/`PosSemidef`. The book's lower Cholesky factor `G` is `Matrix.cholesky A`.
+§4.2.4 (square roots), §4.2.10 (packed formats) and the flop discussions are not formalized
+(chapter group). The book's "Algorithm 4.1.2" in §4.2.3 is Algorithm 4.1.1.
+'''
+
+[[node]]
+id = "IsPositiveDefinite"
+kind = "definition"
+desc = '''§4.2, Definition: `A : Matrix (Fin n) (Fin n) ℝ` is *positive definite* if `∀ x ≠ 0, 0 < x ⬝ᵥ (A *ᵥ x)`
+(no symmetry). (The book's "positive semidefinite" and "indefinite" for unsymmetric matrices are
+used nowhere else in the chapter; the symmetric semidefinite notion of §4.2.8 is Mathlib's
+`Matrix.PosSemidef`.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §4.2, Definition'
+
+[[node]]
+id = "isPositiveDefinite_iff"
+kind = "theorem"
+desc = '''`IsPositiveDefinite A ↔ (Matrix.hermitianPart A).PosDef` ("the positive definiteness of a general matrix
+is inherited from its symmetric part", §4.2.2; `xᵀ S x = 0` for the skew part);
+`Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos`, now over `RCLike 𝕜` with the condition
+`∀ x ≠ 0, 0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x))`: at `𝕜 = ℝ`, `star x = x` and `RCLike.re_to_real` give the
+surface's `0 < x ⬝ᵥ (A *ᵥ x)`. For symmetric `A`, also `IsPositiveDefinite A ↔ A.PosDef`. ★'''
+deps = ["IsPositiveDefinite", "Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.2, Display'
+
+[[node]]
+id = "theorem_4_2_1"
+kind = "theorem"
+desc = '''Theorem 4.2.1: if `A` is positive definite (`IsPositiveDefinite A`) and `X : Matrix (Fin n) (Fin k) ℝ` has
+rank `k` (`X.rank = k`, equivalently `Function.Injective X.mulVec`), then `Xᵀ A X` is positive definite.
+The book's proof verbatim (`(Xz)ᵀ A (Xz) > 0` for `z ≠ 0`), or `Matrix.hermitianPart_conjTranspose_mul_mul`
+with `Matrix.PosDef.conjTranspose_mul_mul_same`. ★'''
+deps = ["IsPositiveDefinite", "Matrix.hermitianPart_conjTranspose_mul_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.1'
+
+[[node]]
+id = "corollary_4_2_2"
+kind = "theorem"
+desc = '''Corollary 4.2.2: if `A` is positive definite then every principal submatrix `A(v, v)`, `v` a strictly
+increasing index vector (`A.submatrix e e` for `e : Fin k ↪o Fin n`, or any injective `e`), is
+positive definite; in particular `0 < A i i`. From `theorem_4_2_1` with `X = I(:, v)` (the book's
+proof), or `Matrix.PosDef.submatrix` on the Hermitian part. ★'''
+deps = ["theorem_4_2_1", "IsPositiveDefinite"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 4.2.2'
+
+[[node]]
+id = "theorem_4_2_3"
+kind = "theorem"
+desc = '''Theorem 4.2.3: `A` is positive definite iff the symmetric matrix `T = (A + Aᵀ)/2` has positive
+eigenvalues: `IsPositiveDefinite A ↔ ∀ i, 0 < (Matrix.hermitianPart_isHermitian A).eigenvalues i`.
+`isPositiveDefinite_iff` and Mathlib's `Matrix.IsHermitian.posDef_iff_eigenvalues_pos`. ★'''
+deps = ["isPositiveDefinite_iff", "Matrix.hermitianPart_isHermitian"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.3'
+
+[[node]]
+id = "corollary_4_2_4"
+kind = "theorem"
+desc = '''Corollary 4.2.4: if `A` is positive definite, it has an LU factorization and the diagonal entries of `U`
+are positive: `∃ L U, Matrix.IsLU A L U ∧ ∀ i, 0 < U i i`. `Matrix.exists_isLU_of_posDef_hermitianPart`.
+★'''
+deps = ["isPositiveDefinite_iff", "Matrix.exists_isLU_of_posDef_hermitianPart"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 4.2.4'
+
+[[node]]
+id = "theorem_4_2_5"
+kind = "theorem"
+desc = '''Theorem 4.2.5 with (4.2.1)–(4.2.3): for positive definite `A = [α vᵀ; v B] + [0 −wᵀ; w C]` (`B` symmetric,
+`C` skew; over `Fin 1 ⊕ Fin (n−1)` via `finSumFinEquiv`), (4.2.1) `A = [1 0; (v+w)/α I] [α (v−w)ᵀ;
+0 B₁ + C₁]` with (4.2.2) `B₁ = B − (v vᵀ − w wᵀ)/α` symmetric positive definite and (4.2.3)
+`C₁ = C − (w vᵀ − v wᵀ)/α` skew-symmetric. The identity is block multiplication; definiteness is
+`Matrix.posDef_hermitianPart_schurComplementSingle` (with `hermitianPart (B₁ + C₁) = B₁`). ★★'''
+deps = ["Matrix.posDef_hermitianPart_schurComplementSingle", "isPositiveDefinite_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.5'
+
+[[node]]
+id = "theorem_4_2_6"
+kind = "theorem"
+desc = '''Theorem 4.2.6, (4.2.5): for positive definite `A` with `T = (A + Aᵀ)/2`, `S = (A − Aᵀ)/2` and `A = L U`,
+`‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` (★★★ in the
+backbone: the book gives no proof). ★'''
+deps = ["Matrix.IsLU.frobenius_norm_abs_mul_abs_le", "isPositiveDefinite_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.6'
+
+[[node]]
+id = "equation_4_2_7"
+kind = "theorem"
+desc = '''(4.2.7), rigorous: for positive definite `A`, relational computed factors
+`FloatingPoint.RoundsLU fp A L̂ Û`, `RoundsForwardSubst fp L̂ b y`, `RoundsBackSubst fp Û y x̂` (the
+book's "analysis in §3.3"), the pivots nonzero, and the hypothesis (4.2.6)
+`‖|L̂||Û|‖_F ≤ c ‖|L||U|‖_F` (`L`, `U` the exact factors), then `(A + E) x̂ = b` with
+`‖E‖_F ≤ γ_{3n} c n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. This is stronger than the printed first-order
+`‖E‖_F ≤ u (2n ‖A‖_F + 4 c n² (‖T‖₂ + ‖S T⁻¹ S‖₂)) + O(u²)` (the `2n‖A‖_F` term is not needed and
+`γ_{3n} ≤ 4 n u` for `n u` small). From `FloatingPoint.exists_roundsLU_solve_eq`
+(`|E| ≤ γ_{3n} |L̂||Û|`, Frobenius norm monotone in `|·|`) and `theorem_4_2_6`. ★★'''
+deps = ["FloatingPoint.exists_roundsLU_solve_eq", "theorem_4_2_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.7)'
+
+[[node]]
+id = "l2_opNorm_symmPart_le"
+kind = "theorem"
+desc = '''§4.2.2, "It is easy to show that `‖T‖₂ ≤ ‖A‖₂`" (before (4.2.8)): `‖Matrix.hermitianPart A‖ ≤ ‖A‖`
+in the `L2Operator` norm; `Matrix.l2_opNorm_hermitianPart_le`. ★'''
+deps = ["Matrix.l2_opNorm_hermitianPart_le"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.2, Display'
+
+[[node]]
+id = "theorem_4_2_7"
+kind = "theorem"
+desc = '''Theorem 4.2.7 (Cholesky factorization): if `A` is symmetric positive definite (`A.PosDef`), there is a
+unique lower triangular `G` with positive diagonal and `A = G Gᵀ`:
+`∃! G, G.IsLowerTriangular ∧ (∀ i, 0 < G i i) ∧ A = G * Gᵀ`, and it is `Matrix.cholesky A`.
+`Matrix.existsUnique_isCholesky` with `H = Gᵀ` (`Matrix.cholesky_eq_of_isCholesky`,
+`Matrix.isCholesky_cholesky`). ★'''
+deps = ["Matrix.existsUnique_isCholesky", "Matrix.cholesky_eq_of_isCholesky", "Matrix.isCholesky_cholesky"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.7'
+
+[[node]]
+id = "equation_4_2_9"
+kind = "theorem"
+desc = '''(4.2.9): if `A = G Gᵀ` with `G` lower triangular, then for every `j`,
+`G j j • G(:, j) = A(:, j) − ∑_{k < j} G j k • G(:, k)` (as functions of the row index, entries `≥ j`
+meaningful; the identity holds for all rows). From `A(:, j) = ∑_{k ≤ j} G(j,k) G(:,k)`
+(`Matrix.IsCholesky.apply_eq_sum`, or directly `Matrix.mul_apply` with lower triangularity). ★'''
+deps = ["theorem_4_2_7", "Matrix.IsCholesky.apply_eq_sum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.9)'
+
+[[node]]
+id = "algorithm_4_2_1"
+kind = "definition"
+desc = '''Algorithm 4.2.1 (gaxpy Cholesky), D4: `algorithm_4_2_1 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
+M (Matrix (Fin n) (Fin n) ℝ)`, a `List.foldlM` over `j`: for `i ≥ j`, `A i j ←` the running
+difference of `A i j` with `rnd (A i k * A j k)`, `k < j` (the gaxpy `A(j:n,j) − A(j:n,1:j−1) ·
+A(j,1:j−1)ᵀ`, empty for `j = 0`); then `s ← rnd (Real.sqrt (A j j))` and `A i j ← rnd (A i j / s)` for
+`i ≥ j`, the diagonal included (the book's `A(j:n,j)/sqrt(A(j,j))`). Returns the matrix whose lower
+triangle is `G`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.1'
+
+[[node]]
+id = "algorithm_4_2_1_rounds"
+kind = "theorem"
+desc = '''The rounding bridge of Algorithm 4.2.1, with its hypothesis on the returned diagonal (convention 9;
+the running differences `t_j` before the square root are overwritten and cannot be a hypothesis):
+every `F ∈ (algorithm_4_2_1 fp.round A).run` with `∀ j, F j j ≠ 0` satisfies
+`FloatingPoint.RoundsCholeskyDiv fp A (F − Matrix.strictUpper F)` (the diagonal is `fl(t / fl(√t))`,
+which is why the relation is not `RoundsCholesky`). The hypothesis forces `t_j > 0`, which is what
+the relation's exact root `s_j = √t_j`, `s_j * s_j = t_j` needs: if `t_j ≤ 0` then `√t_j = 0`, its
+rounding is `0` (`fp.Rounds 0 y → y = 0`), and `F j j = fl(t_j / 0) = fl(0) = 0`. The column update
+writes one entry per step, reading only the frozen row `j` (`SetM.mem_run_foldlM_update_of_nodup`).
+★★ (~150 lines)'''
+deps = ["algorithm_4_2_1", "FloatingPoint.RoundsCholeskyDiv", "SetM.mem_run_bind", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.1'
+
+[[node]]
+id = "algorithm_4_2_1_run_nonempty"
+kind = "theorem"
+desc = '''Nonemptiness (review `notes/gvl/review/algo.md` M8): for a total model the run set of gaxpy Cholesky
+is nonempty, `fp.IsTotal → (algorithm_4_2_1 fp.round A).run.Nonempty` (for every `A`, positive
+definite or not: a negative pivot gives `√ = 0` and junk, not an empty run set), so
+`algorithm_4_2_1_rounds` and `cholesky_backward_error` are not vacuous. `SetM.run_foldlM_nonempty`,
+`SetM.run_bind_nonempty`, `FloatingPoint.RoundingModel.run_round_nonempty`. ★'''
+deps = ["algorithm_4_2_1", "SetM.run_foldlM_nonempty", "SetM.run_bind_nonempty", "FloatingPoint.RoundingModel.run_round_nonempty", "FloatingPoint.RoundingModel.IsTotal"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.1'
+
+[[node]]
+id = "algorithm_4_2_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.2.1: for symmetric positive definite `A`,
+`F − Matrix.strictUpper F = Matrix.cholesky A` with `F = Id.run (algorithm_4_2_1 pure A)`. The exact
+run satisfies the recurrence `Matrix.IsCholesky.apply_eq_sum` (the square root of the exact pivot
+is `Matrix.IsCholesky.re_diag_eq_sqrt`); strong induction on the column as in
+`Matrix.cholesky_eq_of_isCholesky`, or the bridge at `RoundingModel.exact`. ★★'''
+deps = ["algorithm_4_2_1", "algorithm_4_2_1_rounds", "Matrix.cholesky_eq_of_isCholesky", "Matrix.IsCholesky.re_diag_eq_sqrt", "theorem_4_2_7"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.1'
+
+[[node]]
+id = "cholesky_entry_bound"
+kind = "theorem"
+desc = '''§4.2.6: for symmetric positive definite `A` with Cholesky factor `G`, `G i j ^ 2 ≤ ∑_{k ≤ i} G i k ^ 2 = A i i`
+("the entries in the Cholesky triangle are nicely bounded"); `Matrix.sq_norm_cholesky_apply_le`. ★'''
+deps = ["Matrix.sq_norm_cholesky_apply_le"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.6, Display'
+
+[[node]]
+id = "l2_opNorm_cholesky_sq"
+kind = "theorem"
+desc = '''§4.2.6: `‖G‖₂² = ‖A‖₂` for the Cholesky factor of a symmetric positive definite `A`;
+`Matrix.l2_opNorm_cholesky_sq`. ★'''
+deps = ["Matrix.l2_opNorm_cholesky_sq"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.6, Display'
+
+[[node]]
+id = "cholesky_backward_error"
+kind = "theorem"
+desc = '''§4.2.6, Wilkinson's bound, rigorous, on returned values only (convention 9, nested as chapter 3's
+`theorem_3_3_2`): let `solveCholesky rnd F b` be the solve stage on a computed factor — "with
+`Ĝ = F − strictUpper F`, `Chapter03.algorithm_3_1_3` with `Ĝ`, then `Chapter03.algorithm_3_1_4` with
+`Ĝᵀ`" (a surface helper definition of this node). For symmetric positive definite `A`,
+`n γ_{n+2} < 1`, `(3n + 2) u < 1`, every `F ∈ (algorithm_4_2_1 fp.round A).run` with
+`∀ j, F j j ≠ 0` (the returned diagonal; it forces every computed pivot positive, see
+`algorithm_4_2_1_rounds` — the first plan's "runs in which the computed pivots are positive" spoke
+of overwritten values), and every `x̂ ∈ (solveCholesky fp.round F b).run`:
+`∃ E, (A + E) x̂ = b ∧ ‖E‖₂ ≤ n γ_{3n+2} ‖A‖₂ / (1 − n γ_{n+2})` — the book's `‖E‖₂ ≤ c_n u ‖A‖₂` with
+an explicit `c_n ≈ 3n²`. Bridges `algorithm_4_2_1_rounds`, `Chapter03.algorithm_3_1_3_rounds`,
+`Chapter03.algorithm_3_1_4_rounds`; then `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv_solve`.
+(The companion claim "if `q_n u κ₂(A) ≤ 1` the process runs to completion" is not formalized —
+chapter group.) ★★'''
+deps = ["algorithm_4_2_1_rounds", "FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv_solve", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.6'
+
+[[node]]
+id = "condNumber_eq_div_eigenvalues"
+kind = "theorem"
+desc = '''§4.2.6: for symmetric positive definite `A`, `κ₂(A) = λ_max(A)/λ_min(A)`;
+`Matrix.PosDef.condNumber_l2_eq_div_eigenvalues` (with chapter 2's `kappa` if it is the surface's
+`κ₂`). ★'''
+deps = ["Matrix.PosDef.condNumber_l2_eq_div_eigenvalues"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.6, Display'
+
+[[node]]
+id = "algorithm_4_2_2"
+kind = "definition"
+desc = '''Algorithm 4.2.2 (outer product `L D Lᵀ` with pivoting), D4: state `(A, piv) : Matrix (Fin n) (Fin n) ℝ ×
+(Fin n → Fin n)`; `List.foldlM` over `k`: `j :=` the first index `≥ k` maximizing `A i i` (exact
+comparison of computed values), `piv k := j`, `A ← A.submatrix (Equiv.swap k j) (Equiv.swap k j)`
+(rows and columns interchanged), `α := A k k`, `v i := A i k` (`i > k`), `A i k ← rnd (v i / α)` and
+`A i l ← rnd (A i l − rnd (rnd (v i * v l) / α))` for `i, l > k` (the update `− v vᵀ/α` in the book's
+order). No guard on `α = 0` (for a semidefinite input the trailing block then vanishes and Lean's
+`x / 0 = 0` is the right value). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
+
+[[node]]
+id = "algorithm_4_2_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.2.2: for symmetric positive semidefinite `A`, with
+`(F, piv) = Id.run (algorithm_4_2_2 pure A)`, `σ := GolubVanLoan.Chapter03.pivPerm piv` (the product
+of the interchanges in the order applied), `L := Chapter03.packedL F`, `d := F.diag`:
+`Matrix.IsLDM (A.submatrix σ σ) L (diagonal d) L`, `0 ≤ d i`, `i ≤ j → d j ≤ d i`, and if `A` is
+positive definite then `0 < d i`. (The book writes `P = P₁ ⋯ P_n` and `d_n > 0` for a semidefinite
+input; the permutation is the product in the order applied and `d_n = 0` when `A` is singular —
+ch04 report, Doubts.) Invariant: after `k` steps `A.submatrix σ_k σ_k = L_k diag(D_k, A_k) L_kᵀ`
+((4.2.16)) with `A_k` positive semidefinite and its diagonal dominated by the previous one
+(`Matrix.PosSemidef.schurComplementSingle`). ★★★ (~250 lines)'''
+deps = ["algorithm_4_2_2", "equation_4_2_16", "GolubVanLoan.Chapter03.pivPerm", "GolubVanLoan.Chapter03.packedL"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
+
+[[node]]
+id = "equation_4_2_10"
+kind = "theorem"
+desc = '''(4.2.10): a symmetric positive definite `A` has a permutation `P`, a unit lower triangular `L` and
+`D = diag(d₁, …, d_n)` with `P A Pᵀ = L D Lᵀ` and `d₁ ≥ d₂ ≥ … ≥ d_n > 0` (the diagonal pivoting
+strategy). From `algorithm_4_2_2_spec`. ★'''
+deps = ["algorithm_4_2_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.10)'
+
+[[node]]
+id = "equation_4_2_11"
+kind = "theorem"
+desc = '''(4.2.11): a symmetric positive semidefinite `A` of rank `r` has exactly `r` positive eigenvalues and the
+others zero: `∀ i, 0 ≤ hA.eigenvalues i` and `Fintype.card {i // hA.eigenvalues i ≠ 0} = r`
+(Mathlib `Matrix.PosSemidef.eigenvalues_nonneg`, `Matrix.IsHermitian.rank_eq_card_non_zero_eigs`);
+the book's ordering is a relabelling (Mathlib's eigenvalues are unordered). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.11)'
+
+[[node]]
+id = "theorem_4_2_8_a"
+kind = "theorem"
+desc = '''Theorem 4.2.8, (4.2.12): for symmetric positive semidefinite `A`, `|a_ij| ≤ (a_ii + a_jj)/2`;
+`Matrix.PosSemidef.norm_apply_le_add_re_diag_div_two`. ★'''
+deps = ["Matrix.PosSemidef.norm_apply_le_add_re_diag_div_two"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
+
+[[node]]
+id = "theorem_4_2_8_b"
+kind = "theorem"
+desc = '''Theorem 4.2.8, (4.2.13): `|a_ij| ≤ √(a_ii a_jj)` (`i ≠ j`, true for all `i j`);
+`Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag` and `Real.le_sqrt`. (The book's proof writes
+`0 < xᵀAx` and "the discriminant must be negative" for a semidefinite matrix: `≤` is meant —
+Doubts.) ★'''
+deps = ["Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
+
+[[node]]
+id = "theorem_4_2_8_c"
+kind = "theorem"
+desc = '''Theorem 4.2.8, (4.2.14): `max_{i,j} |a_ij| = max_i a_ii`, stated as `∀ i j, |A i j| ≤ max (A i i) (A j j)`
+together with `(⨆ i, ⨆ j, |A i j|) = ⨆ i, A i i` for `n ≥ 1`; `Matrix.PosSemidef.norm_apply_le_max_re_diag`.
+★'''
+deps = ["Matrix.PosSemidef.norm_apply_le_max_re_diag"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
+
+[[node]]
+id = "theorem_4_2_8_d"
+kind = "theorem"
+desc = '''Theorem 4.2.8, (4.2.15): `a_ii = 0 → A(i, :) = 0 ∧ A(:, i) = 0`;
+`Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero`. ★'''
+deps = ["Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
+
+[[node]]
+id = "theorem_4_2_8"
+kind = "theorem"
+desc = '''Theorem 4.2.8: the conjunction of (4.2.12)–(4.2.15) for a symmetric positive semidefinite `A`. ★'''
+deps = ["theorem_4_2_8_a", "theorem_4_2_8_b", "theorem_4_2_8_c", "theorem_4_2_8_d"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
+
+[[node]]
+id = "equation_4_2_16"
+kind = "theorem"
+desc = '''(4.2.16): after `k` steps of the pivoted outer-product `L D Lᵀ` on a symmetric positive semidefinite
+`A`, `P̃ A P̃ᵀ = [L₁₁ 0; L₂₁ I] [D_k 0; 0 A_k] [L₁₁ 0; L₂₁ I]ᵀ` with `d₁ ≥ … ≥ d_k ≥ 0`, `A_k`
+positive semidefinite, and `A_k = 0` as soon as `d_k = 0` (by (4.2.15), since the pivot is the
+largest diagonal entry). Stated about the state of `algorithm_4_2_2` at `Id` after `k` iterations
+(the loop invariant of `algorithm_4_2_2_spec`), with the one-step fact
+`Matrix.PosSemidef.schurComplementSingle`. ★★'''
+deps = ["algorithm_4_2_2", "Matrix.PosSemidef.schurComplementSingle", "theorem_4_2_8_d"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.16)'
+
+[[node]]
+id = "equation_4_2_17"
+kind = "theorem"
+desc = '''(4.2.17): a symmetric positive semidefinite `A` of rank `r` satisfies `P A Pᵀ = [L₁₁; L₂₁] D_r [L₁₁ᵀ L₂₁ᵀ]`
+with `D_r = diag(d₁, …, d_r)` positive, `L₁₁` (`r × r`) unit lower triangular, `L₂₁` (`(n−r) × r`);
+the permutation and factors are those of Algorithm 4.2.2 (so `d_{r+1} = … = d_n = 0` and
+`A_r = 0`). `Matrix.PosSemidef.exists_perm_ldl_rank` for existence, `algorithm_4_2_2_spec` +
+`equation_4_2_16` for the algorithm's output. ★★'''
+deps = ["Matrix.PosSemidef.exists_perm_ldl_rank", "algorithm_4_2_2_spec", "equation_4_2_16"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.17)'
+
+[[node]]
+id = "equation_4_2_17_sum"
+kind = "theorem"
+desc = '''§4.2.8, the rank-one expansion after (4.2.17): `P A Pᵀ = ∑_{j < r} d_j ℓ_j ℓ_jᵀ` with `ℓ_j` the `j`-th
+column of `L` ("a relatively cheap alternative to the SVD rank-1 expansion"): `Matrix.mul_eq_sum_vecMulVec`-type
+expansion of `L D Lᵀ` with the vanishing `d_j`, `j ≥ r`. ★'''
+deps = ["equation_4_2_17"]
+source = 'Golub–Van Loan, Matrix Computations, §4.2.8, Display'
+
+[[node]]
+id = "equation_4_2_18"
+kind = "theorem"
+desc = '''(4.2.18) and the three block equations: for symmetric positive definite `A` blocked as `[A₁₁ A₂₁ᵀ; A₂₁ A₂₂]`
+(`A₁₁` of size `r`, `Fin (r + s)` via `finSumFinEquiv`) and `G = [G₁₁ 0; G₂₁ G₂₂]` its Cholesky
+factor: `A₁₁ = G₁₁ G₁₁ᵀ`, `A₂₁ = G₂₁ G₁₁ᵀ`, `A₂₂ = G₂₁ G₂₁ᵀ + G₂₂ G₂₂ᵀ`, and `A₂₂ − G₂₁ G₂₁ᵀ =
+A₂₂ − A₂₁ A₁₁⁻¹ A₂₁ᵀ` (the Schur complement, "Step 3"); with `G₁₁ = cholesky A₁₁` and
+`G₂₂ = cholesky (A₂₂ − A₂₁ A₁₁⁻¹ A₂₁ᵀ)`. `Matrix.cholesky_finSumFin`. ★'''
+deps = ["Matrix.cholesky_finSumFin", "theorem_4_2_7"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.18)'
+
+[[node]]
+id = "algorithm_4_2_3"
+kind = "definition"
+desc = '''Algorithm 4.2.3 (recursive block Cholesky), D4, the shape of `notes/gvl/ch04/proto/Shapes.lean` §4
+(elaborates): `algorithm_4_2_3 (rnd) (r : ℕ) (hr : 0 < r) : (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M
+(Matrix (Fin n) (Fin n) ℝ)` by well-founded recursion on `n`: if `n ≤ r`, the lower part `F − Matrix.strictUpper F` of
+`F ← algorithm_4_2_1 rnd A` (zeroing the untouched upper triangle is exact, not rounded — algo
+review L5: Algorithm 4.2.1's array keeps `A`'s upper triangle, so returning it unmasked would break
+`= Matrix.cholesky A`); else with `e : Fin r ⊕ Fin (n − r) ≃ Fin n` (`finSumFinEquiv` and `finCongr`) and
+`B := A.submatrix e e`: `G₁₁ ←` the lower part of `algorithm_4_2_1 rnd B.toBlocks₁₁`; `G₂₁` row by row by
+`Chapter03.algorithm_3_1_3 rnd G₁₁` (each row `g` of `G₂₁` solves `G₁₁ gᵀ = a`); `Ã ←` entrywise
+`rnd (B₂₂ i j − rnd (G₂₁ i k * G₂₁ j k))` running differences over `k`; `G₂₂ ← algorithm_4_2_3 rnd r hr
+(n − r) Ã`; return `(fromBlocks G₁₁ 0 G₂₁ G₂₂).submatrix e.symm e.symm`. ★'''
+deps = ["algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
+
+[[node]]
+id = "algorithm_4_2_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.2.3: for symmetric positive definite `A` and `0 < r`,
+`Id.run (algorithm_4_2_3 pure r hr n A) = Matrix.cholesky A` (statement elaborates in the prototype).
+Strong induction on `n`: the base case is `algorithm_4_2_1_spec` (whose statement is about the
+lower part `F − strictUpper F`, which the base case returns); the step is `equation_4_2_18`
+with `Chapter03.algorithm_3_1_3_spec` for `G₂₁` (`G₁₁` has positive diagonal) and the induction
+hypothesis on the Schur complement (positive definite, `Matrix.PosDef.schurComplement`). ★★★
+(~200 lines, mostly block reindexing)'''
+deps = ["algorithm_4_2_3", "algorithm_4_2_1_spec", "equation_4_2_18", "GolubVanLoan.Chapter03.algorithm_3_1_3_spec", "Matrix.PosDef.schurComplement"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
+
+[[node]]
+id = "equation_4_2_19"
+kind = "theorem"
+desc = '''(4.2.19) and the block equations below it: for `n = N r`, `A` symmetric positive definite and `G` its
+Cholesky factor, both blocked into `r × r` blocks (`Fin (N * r) ≃ Fin N × Fin r`,
+`finProdFinEquiv`), `A_ij = ∑_{k ≤ j} G_ik G_jkᵀ` for `i ≥ j`; hence with
+`S = A_ij − ∑_{k<j} G_ik G_jkᵀ`: `G_jj = cholesky S` if `i = j` and `G_ij G_jjᵀ = S` if `i > j`.
+Block matrix multiplication (`Matrix.comp`) and `Matrix.cholesky_eq_of_isCholesky` on the diagonal
+blocks. ★★'''
+deps = ["theorem_4_2_7", "Matrix.cholesky_eq_of_isCholesky"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.19)'
+
+[[node]]
+id = "algorithm_4_2_4"
+kind = "definition"
+desc = '''Algorithm 4.2.4 (nonrecursive block Cholesky), D4: for `n = N * r` (the book's `n = N r`; the input is
+`Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, blocks through `finProdFinEquiv`), `List.foldlM` over block
+columns `j : Fin N`, inner `List.foldlM` over `i : Fin N` with `j ≤ i`: `S ←` entrywise running
+differences `rnd (A_ij p q − rnd (G_ik p s * G_jk q s))` over `k < j` and `s`; if `i = j`,
+`G_jj ←` the lower part `F − strictUpper F` of `algorithm_4_2_1 rnd S`, else `G_ij` row by row by
+`Chapter03.algorithm_3_1_3 rnd G_jj`; `A_ij ← G_ij` (overwriting the lower block triangle). ★'''
+deps = ["algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'
+
+[[node]]
+id = "algorithm_4_2_4_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.2.4: for symmetric positive definite `A` with `n = N r`, the lower
+triangle of `Id.run (algorithm_4_2_4 pure N r A)` is `Matrix.cholesky A`. Induction over the block
+columns with `equation_4_2_19` as the invariant (block columns `< j` equal those of `G`),
+`algorithm_4_2_1_spec`, `Chapter03.algorithm_3_1_3_spec`. The book's remark that the algorithm "can
+be easily modified" for `r ∤ n` is not formalized. ★★★ (~200 lines)'''
+deps = ["algorithm_4_2_4", "equation_4_2_19", "algorithm_4_2_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_3_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'

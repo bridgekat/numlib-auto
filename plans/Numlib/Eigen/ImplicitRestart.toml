@@ -1,0 +1,76 @@
+desc = '''
+Implicit restarting of the Arnoldi process (Sorensen 1992; [golub2013matrix] §10.5.2–10.5.4). Two
+ingredients, kept apart because the first is pure algebra:
+
+* **the shifted-QR chain** (in `Numlib/Eigen/QRAlgorithm`, beside `Matrix.IsShiftedQrStep`, since the
+  Golub–Van Loan consolidation). `Matrix.IsShiftedQrChain H V R μ p` bundles the relations
+  `H_i − μ_i I = V_i R_i`, `H_{i+1} = R_i V_i + μ_i I` (`i < p`), the hypothesis of
+  `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` ([golub2013matrix] (7.5.7), which *is* Theorem
+  10.5.1): the loop (10.5.4) with explicit factors, which implicit restarting needs because it keeps
+  the accumulated `V`. With unitary `V_i` and triangular
+  `R_i` each link is chapter 7's `Matrix.IsShiftedQrStep` (`Matrix.IsShiftedQrChain.isShiftedQrStep`).
+  Then `H_0 V = V H_p` and `V R = ∏_{i<p} (H_0 − μ_i I)` with `V = V_0 ⋯ V_{p−1}`, `R = R_{p−1} ⋯ R_0`. With `R_i` upper triangular, the first column of
+  `V` carries the filter polynomial, `R_{00} V e₀ = ∏ (H_0 − μ_i) e₀`; with `V_i` upper Hessenberg, `V`
+  has lower bandwidth `p` (`Matrix.HasLowerBandwidth.mul`) and the `H_i` stay Hessenberg. The existing
+  `Matrix.shiftedQrIterate`/`Matrix.pow_eq_qrAccum_mul_qrTriangle` of `Numlib/Eigen/QRAlgorithm` are the
+  constant-shift and zero-shift cases with the Gram–Schmidt QR (refactor proposal R3 of the ch10
+  report: restate them through this chain).
+* **what the chain does to an Arnoldi decomposition** (the predicates and the change-of-basis and
+  truncation lemmas are `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`; the first-column facts
+  `Numlib/Krylov/Decomposition`). Conjugating an
+  `m`-step decomposition `A Q_c = Q_c H_c + r_c e_mᵀ` by `V` gives a Krylov decomposition with residual
+  row `e_mᵀ V`, which vanishes before column `j = m − p` because of the band; truncating to `j` columns
+  leaves a `j`-step Arnoldi decomposition whose first column is `p(A) q₁ / R_{00}`,
+  `p = ∏ (X − μ_i)` (`Matrix.IsArnoldiDecomposition.implicitRestart`). The book's residual
+  `v_{mj} r_c` misses the term `h⁺_{j+1,j} q⁺_{j+1}` (see the ch10 report, Doubts); the node states the
+  correct residual. Krylov–Schur restarting ([golub2013matrix] §10.5.4) is the same truncation applied to
+  a block-triangular (Schur) change of basis followed by a Hessenberg reduction with prescribed last
+  column (`Matrix.IsArnoldiDecomposition.krylovSchur`).
+
+Existence of chains with orthogonal Hessenberg `V_i` for a real Hessenberg `H_0` and *arbitrary* shifts —
+including exact shifts, where `H − μ I` is singular and Gram–Schmidt QR (`Matrix.qrQ`) need not be
+Hessenberg — comes from the backbone's Givens QR of a Hessenberg matrix, `Matrix.hessenbergGivensQR_spec`
+(no nonsingularity hypothesis): `Matrix.exists_isShiftedQrChain` (also in `Numlib/Eigen/QRAlgorithm`).
+'''
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.implicitRestart"
+kind = "theorem"
+desc = '''Implicit restart ([golub2013matrix] §10.5.3): let `Matrix.IsArnoldiDecomposition A Q H r` with `m + 1`
+columns (the backbone predicate counts `k + 1` columns so that `e_last = Pi.single (Fin.last m) 1`),
+`Matrix.IsShiftedQrChain Hs V R μ p` with `Hs 0 = H`, every `V i` unitary upper Hessenberg and every
+`R i` upper triangular, `p ≤ m`, `j = m − p` (so the book's `m` and `j` are `m + 1` and `j + 1`). Put
+`W = Q * V_{<p}`, `H₊ = Hs p`. Then `Matrix.IsArnoldiDecomposition A W(:, :j+1) H₊(:j+1, :j+1)
+(H₊ (j+1) j • W(:, j+1) + V_{<p} m j • r)` (submatrices by `Matrix.submatrix` with `Fin.castLE`; the
+first term is absent when `p = 0`). Proof: `Matrix.IsKrylovDecomposition.mul_unitary` (this is (10.5.9)),
+the residual row `e_mᵀ V_{<p}` is `V_{<p} (m−1) (j−1) e_j` on the first `j` columns
+(`Matrix.IsShiftedQrChain.hasLowerBandwidth_prod`), then `Matrix.IsKrylovDecomposition.leading` with the
+Hessenberg `H₊` (`Matrix.IsShiftedQrChain.isUpperHessenberg`). The book omits the term
+`H₊ j (j−1) • W(:, j)` (Doubts). ★★ (~150 lines)'''
+deps = ["Matrix.IsArnoldiDecomposition", "Matrix.IsShiftedQrChain.conjTranspose_mul_mul", "Matrix.IsShiftedQrChain.hasLowerBandwidth_prod", "Matrix.IsShiftedQrChain.isUpperHessenberg", "Matrix.IsKrylovDecomposition.mul_unitary", "Matrix.IsKrylovDecomposition.leading"]
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.implicitRestart_first"
+kind = "theorem"
+desc = '''The restarted starting vector is filtered ([golub2013matrix] §10.5.3, `q₊ = p(A) q₁`): in the setting of
+`Matrix.IsArnoldiDecomposition.implicitRestart`, `aeval A (∏_{i<p} (X − C (μ i))) *ᵥ (Q *ᵥ e₀) = (R_{<p} 0 0) • (W *ᵥ e₀)`, `e₀ = Pi.single 0 1 : Fin (m + 1) → 𝕜`
+(well typed because the decomposition has `m + 1 ≥ 1` columns — the review's `k = 0` typing fix).
+`Matrix.IsArnoldiDecomposition.aeval_mulVec_first` (degree `p ≤ m`) and
+`Matrix.IsShiftedQrChain.mulVec_first`. With `Matrix.IsArnoldiDecomposition.range_eq_subspace` (when
+`H₊(:j,:j)` is unreduced) the truncated decomposition is the `j`-step Arnoldi decomposition *started from
+`q₊`*, so the iteration can continue at step `j + 1` without restarting from scratch. ★'''
+deps = ["Matrix.IsArnoldiDecomposition.implicitRestart", "Matrix.IsArnoldiDecomposition.aeval_mulVec_first", "Matrix.IsShiftedQrChain.mulVec_first"]
+
+[[node]]
+id = "Matrix.IsArnoldiDecomposition.krylovSchur"
+kind = "theorem"
+desc = '''Krylov–Schur restarting ([golub2013matrix] §10.5.4, Stewart 2001): let `Matrix.IsArnoldiDecomposition A Q H r`
+with `m + 1 = (j + 1) + p` columns and `U` unitary with `Uᴴ H U` block upper triangular,
+`(Uᴴ H U)(j+1:, :j+1) = 0` (an ordered Schur form; the book ignores complex eigenvalues, the statement
+does not need triangularity at all). With `T₁₁ = (Uᴴ H U)(:j+1, :j+1)` and `u = (U m ·)(:j+1)`:
+(a) `Matrix.IsKrylovDecomposition A (Q U)(:, :j+1) T₁₁ r u` (`Matrix.IsKrylovDecomposition.mul_unitary`,
+`Matrix.IsKrylovDecomposition.leading` with `c = 0`); (b) for `Z` unitary with `Zᴴ T₁₁ Z` upper Hessenberg
+and `Zᴴ u = Pi.single (Fin.last j) τ` (`Matrix.exists_isUpperHessenberg_conj_lastCol`, the book's
+P10.5.2), `Matrix.IsArnoldiDecomposition A ((Q U)(:, :j+1) Z) (Zᴴ T₁₁ Z) (conj τ • r)` — the book's "`τ r_m`" (up to the
+conjugate over `ℂ`). ★★ (~120 lines)'''
+deps = ["Matrix.IsArnoldiDecomposition", "Matrix.IsKrylovDecomposition.mul_unitary", "Matrix.IsKrylovDecomposition.leading", "Matrix.exists_isUpperHessenberg_conj_lastCol"]

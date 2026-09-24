@@ -1,3 +1,8 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Jordan` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add a paragraph "Uniqueness": the number of Jordan blocks of each size for each eigenvalue
+# is a similarity invariant (`Matrix.card_jordanBlocks_eq_of_isSimilar`), read off the nullities of
+# the powers of `A - c` ([golub2013matrix] the remark after Theorem 7.1.9, and §7.6.5).
 namespace = "Matrix"
 
 [[node]]
@@ -121,3 +126,26 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.7"
 [[node]]
 id = "mulVec_eq_of_conj_jordanForm"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.8)"
+
+[[node]]  # staged by ch07
+id = "card_filter_le_jordanBlocks_eq"
+kind = "theorem"
+desc = '''The block count at size `≥ k + 1` ([golub2013matrix] §7.6.5: "`p_i - p_{i-1}` equals the number
+of blocks in C's Jordan form that have dimension `i` or greater"): for a Jordan form with positive
+sizes, `finrank ker (jordanForm e μ - c)^(k+1) - finrank ker (jordanForm e μ - c)^k =
+#{i | μ i = c ∧ k + 1 ≤ e i}` — the difference of two instances of
+`Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow` (`∑ min (e i) (k+1) - ∑ min (e i) k`
+counts the blocks of size `≥ k + 1`). ★'''
+deps = ["Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow"]
+
+[[node]]  # staged by ch07
+id = "card_jordanBlocks_eq_of_isSimilar"
+kind = "theorem"
+desc = '''Uniqueness of the Jordan form up to the order of the blocks ([golub2013matrix] after Theorem
+7.1.9, "the number and dimensions of the Jordan blocks associated with each distinct eigenvalue are
+unique"): if `IsSimilar (jordanForm e μ) (jordanForm e' μ')` with all sizes positive then for every
+`c` and `k`, `#{i | μ i = c ∧ e i = k} = #{i' | μ' i' = c ∧ e' i' = k}`. The counts of blocks of size
+`≥ k` are nullity differences (`card_filter_le_jordanBlocks_eq`), similarity preserves nullities
+of `(· - c)^k` (`Matrix.IsSimilar.sub_smul_one`, `IsSimilar.pow`, `IsSimilar.finrank_ker_mulVecLin_eq`),
+and "size = k" is "size ≥ k" minus "size ≥ k+1". ★★'''
+deps = ["Matrix.card_filter_le_jordanBlocks_eq", "Matrix.IsSimilar.finrank_ker_mulVecLin_eq", "Matrix.IsSimilar.pow", "Matrix.IsSimilar.sub_smul_one"]

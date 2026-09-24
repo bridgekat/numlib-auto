@@ -1,0 +1,122 @@
+namespace = "Matrix"
+desc = '''
+Perturbation theory for least-squares problems: how the least-squares solution `x = A⁺ b` and its
+residual `r = b - A x` of a full-column-rank `A`, and the minimal-norm solution of a
+full-row-rank underdetermined system, move when `A` and `b` are perturbed. [golub2013matrix]
+§5.3.6 (Theorem 5.3.1, after Grcar), §5.3.2 ((5.3.4), the normal equations), §5.6.3
+(Theorem 5.6.1); [higham2002accuracy] Theorem 20.1 is the same material.
+
+**Rigorous, not first-order.** The book states Theorem 5.3.1 and Theorem 5.6.1 with `+ O(ε²)`,
+proved by differentiating `t ↦ x(t)` at `0`. The backbone proves instead exact inequalities from
+exact perturbation identities, e.g. for `Â = A + δA` of full column rank
+
+  `x̂ - x = Â⁺ (δb - δA x) + (Âᴴ Â)⁻¹ δAᴴ r`,
+  `r̂ - r = (1 - Â Â⁺)(δb - δA x) - Â⁺ᴴ δAᴴ r`,
+
+with `‖Â⁺‖₂ ≤ 1/(σ_n(A) - ‖δA‖₂)` from `σ_min(A + E) ≥ σ_min(A) - ‖E‖₂` ([golub2013matrix]
+Corollary 2.4.4, i.e. Weyl's inequality, chapter 8's `LinearMap.abs_singularValues_sub_le`; the
+column-indexed `⨅ i, A.singularValues i` used here is the sorted `σ_{n-1}` (the least stretch), by chapter 2's
+`Matrix.sortedSingularValues_eq_iInf_singularValues`). The book's bounds (5.3.11)–(5.3.12) are these with
+`σ_n(A)` in place of `σ_n(A) - ‖δA‖₂`; their `O(ε²)` form is a one-line corollary on the surface.
+The derivative formulas the book's proofs use ((5.3.15), (5.6.2)) are kept as their own
+theorems, since they are precise statements and the first-order theory other books quote.
+
+Everything is over `RCLike 𝕜` where the proof allows and over `ℝ` where the book's `θ_LS`, `ν_LS`
+enter (surface). Vectors are `EuclideanSpace 𝕜 m` as in `Numlib/LinearAlgebra/Matrix/LeastSquares`;
+matrix norms are the L2 operator norm (`Matrix.Norms.L2Operator`); `σ_n(A)` is
+`⨅ i, A.singularValues i` (the least singular value of a full-column-rank matrix, indexed by the
+columns as `Matrix.singularValues` is).
+'''
+
+[[node]]
+id = "leastSquares_sub_eq"
+kind = "theorem"
+desc = '''The exact perturbation identities of the least-squares solution: if `A` and `Â = A + δA`
+have linearly independent columns, `x = A⁺ b`, `x̂ = Â⁺ (b + δb)`, `r = b - A x`,
+`r̂ = (b + δb) - Â x̂`, then `x̂ - x = Â⁺ (δb - δA x) + (Âᴴ Â)⁻¹ δAᴴ r` and
+`r̂ - r = (1 - Â Â⁺)(δb - δA x) - (Â⁺)ᴴ δAᴴ r` (two declarations). Proof: `Â⁺ Â = 1`,
+`b̂ - Â x = r + δb - δA x`, and `Aᴴ r = 0` so `Âᴴ r = δAᴴ r`. ★★'''
+deps = ["Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose", "Matrix.normalEquations_pinv"]
+
+[[node]]
+id = "norm_leastSquares_sub_le"
+kind = "theorem"
+desc = '''**[golub2013matrix] Theorem 5.3.1 (solution), rigorous form.** With `σ = ⨅ i, A.singularValues i`,
+`A` of full column rank and `‖δA‖₂ < σ`: `A + δA` has full column rank and
+`‖x̂ - x‖ ≤ (‖δb‖ + ‖δA‖₂ ‖x‖) / (σ - ‖δA‖₂) + ‖δA‖₂ ‖r‖ / (σ - ‖δA‖₂) ^ 2`.
+From `leastSquares_sub_eq`, `‖Â⁺‖₂ = 1/σ_min(Â)` (`l2_opNorm_pinv_eq_inv_iInf_singularValues`),
+`‖(ÂᴴÂ)⁻¹‖₂ = 1/σ_min(Â)²`, and `σ_min(Â) ≥ σ - ‖δA‖₂` (Corollary 2.4.4, chapter 2). The book's
+(5.3.11) is the relative form with `ε`, `θ_LS`, `ν_LS` and `σ` for `σ - ‖δA‖₂` (surface). ★★★
+(~150 lines)'''
+deps = [
+  "leastSquares_sub_eq",
+  "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues",
+  "Matrix.l2_opNorm_mul_pinv_eq_one",
+  "LinearMap.abs_singularValues_sub_le",  # ch08 (Weyl; GVL Corollary 2.4.4)
+  "Matrix.sortedSingularValues_eq_iInf_singularValues",  # staged by ch02
+]
+
+[[node]]
+id = "norm_leastSquares_residual_sub_le"
+kind = "theorem"
+desc = '''**[golub2013matrix] Theorem 5.3.1 (residual), rigorous form.** Under the hypotheses of
+`norm_leastSquares_sub_le`: `‖r̂ - r‖ ≤ ‖δb‖ + ‖δA‖₂ ‖x‖ + ‖δA‖₂ ‖r‖ / (σ - ‖δA‖₂)`
+(`‖1 - Â Â⁺‖₂ ≤ 1`, `‖Â⁺ᴴ‖₂ = ‖Â⁺‖₂`). The book's (5.3.12) is its relative form. ★★'''
+deps = ["leastSquares_sub_eq", "norm_leastSquares_sub_le", "Matrix.l2_opNorm_mul_pinv_eq_one"]
+
+[[node]]
+id = "hasDerivAt_pinv_mulVec_line"
+kind = "theorem"
+desc = '''The derivative of the least-squares solution along a line ([golub2013matrix] (5.3.15)):
+for `A` of full column rank, `E`, `f`, the map `t ↦ (A + t E)⁺ (b + t f)` (a real parameter `t`)
+has derivative at `0`
+`(Aᴴ A)⁻¹ Aᴴ (f - E x) + (Aᴴ A)⁻¹ Eᴴ r`, `x = A⁺ b`, `r = b - A x`. Near `0` the columns stay
+independent and `(A + tE)⁺ = ((A+tE)ᴴ(A+tE))⁻¹ (A+tE)ᴴ`; differentiate the normal equations
+(5.3.13) with Mathlib's `HasFDerivAt` of `Ring.inverse` (`hasFDerivAt_ringInverse`) or reuse the
+root-namespace `hasDerivAt_perturbed_solution` of `Conditioning/LinearSystem` on `Aᴴ A`. ★★'''
+deps = ["hasDerivAt_perturbed_solution", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"]
+
+[[node]]
+id = "norm_normalEquations_sub_le"
+kind = "theorem"
+desc = '''The accuracy of the method of normal equations ([golub2013matrix] (5.3.4)), in the form the
+book derives it: if `(Aᴴ A + E) x̂ = Aᴴ b` with `‖E‖₂ ≤ η ‖Aᴴ A‖₂`, `A` of full column rank, `x = A⁺ b`
+and `η κ₂(A)² < 1`, then `‖x̂ - x‖ / ‖x‖ ≤ η κ₂(A)² / (1 - η κ₂(A)²)` (for `x ≠ 0`), `κ₂` the
+`pinvCondNumberLp 2`. The linear-system bound `relative_error_le_of_norm_le_mul` on `Aᴴ A`
+(through `toEuclideanCLM`) with `κ₂(AᴴA) = κ₂(A)²` (`Matrix.pinvCondNumberLp_two_conjTranspose_mul_self`). The
+book's "`≈ u κ₂(A)²`" is this with `η = c u` from the Cholesky backward error (chapter 4). ★★'''
+deps = ["relative_error_le_of_norm_le_mul", "Matrix.pinvCondNumberLp_two_conjTranspose_mul_self"]
+
+[[node]]
+id = "minNorm_sub_eq"
+kind = "theorem"
+desc = '''The exact perturbation identity of the minimal-norm solution of a full-row-rank system:
+if `A` and `Â = A + δA` have linearly independent rows, `x = A⁺ b`, `x̂ = Â⁺ (b + δb)`, then
+`x̂ - x = Â⁺ (δb - δA x) - (1 - Â⁺ Â) δAᴴ (A Aᴴ)⁻¹ b`. Proof: `x = Aᴴ y` with `y = (AAᴴ)⁻¹ b`,
+`(1 - Â⁺Â) Âᴴ = 0`, so `(1 - Â⁺Â) x = -(1 - Â⁺Â) δAᴴ y`, and `Â⁺(b̂ - Âx) = Â⁺Â(x̂ - x)`. ★★'''
+deps = ["Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose", "Matrix.toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose"]
+
+[[node]]
+id = "norm_minNorm_sub_le"
+kind = "theorem"
+desc = '''**[golub2013matrix] Theorem 5.6.1, rigorous form.** For `A : Matrix (Fin M) (Fin N) 𝕜` with
+independent rows (`M ≤ N`), `σ = ⨅ i, Aᴴ.singularValues i` (the least singular value `σ_m`),
+`‖δA‖₂ < σ` and `b ≠ 0`: `A + δA` has independent rows and
+`‖x̂ - x‖ / ‖x‖ ≤ (‖A‖₂ / (σ - ‖δA‖₂)) (ε_A + ε_b) + (if M < N then κ₂(A) ε_A else 0)`
+with `ε_A = ‖δA‖₂/‖A‖₂`, `ε_b = ‖δb‖/‖b‖`. From `minNorm_sub_eq`, `‖Â⁺‖ = 1/σ_min(Â)`,
+`‖1 - Â⁺Â‖₂ ≤ 1` (and `= 0` when `M = N`), `‖(AAᴴ)⁻¹ b‖ ≤ ‖x‖/σ`, `‖b‖ ≤ ‖A‖ ‖x‖`. Its first-order
+form is the book's `κ₂(A)(ε_A min{2, n - m + 1} + ε_b) + O(ε²)`. ★★'''
+deps = [
+  "minNorm_sub_eq",
+  "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues",
+  "LinearMap.abs_singularValues_sub_le",  # ch08 (Weyl; GVL Corollary 2.4.4)
+]
+
+[[node]]
+id = "hasDerivAt_minNorm_line"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.6.2): for `A` with independent rows, `t ↦ (A + tE)ᴴ((A + tE)(A + tE)ᴴ)⁻¹
+(b + t f)` has derivative at `0`
+`(1 - Aᴴ (A Aᴴ)⁻¹ A) Eᴴ (A Aᴴ)⁻¹ b + Aᴴ (A Aᴴ)⁻¹ (f - E x)`. Product rule and
+`hasFDerivAt_ringInverse`. ★★'''
+deps = ["Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose"]

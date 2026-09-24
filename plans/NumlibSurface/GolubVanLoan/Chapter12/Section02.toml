@@ -1,0 +1,276 @@
+namespace = "GolubVanLoan.Chapter12"
+desc = '''
+§12.2, Structured-rank problems: semiseparable and quasiseparable matrices (12.2.1)–(12.2.8), the inverse facts
+of §12.2.3, triangular semiseparable matrices and the `O(n)` product (12.2.9), the LU Algorithm 12.2.1, the
+Givens-vector representation (12.2.11) and the QR Algorithm 12.2.2 with (12.2.14), (12.2.16), the banded
+inverses of §12.2.8, and the orthogonal Hessenberg eigenproblem (12.2.18)–(12.2.19) with the Ammar–Gragg–Reichel
+facts. Backbone: `Numlib/LinearAlgebra/Matrix/Semiseparable` and the nullity theorem staged for `Rank`.
+(12.2.2), (12.2.10), (12.2.12), (12.2.13), (12.2.15), (12.2.17) define objects or write algorithm steps and have
+no node of their own; `B(r) = Matrix.unitBidiagonal n r`, `𝐒(u, v, t, d, p, q, r) = Matrix.quasiseparableOf u v t d p
+q r`, `Qᵀ = G₁ ⋯ G_{n−1} = Matrix.givensChain`. The book lists the arguments of `𝐒` in two orders (`𝐒(u, v, t, …)` in
+(12.2.8), `𝐒(u, t, v, …)` in Algorithm 12.2.1); the surface follows (12.2.8).
+'''
+
+[[node]]
+id = "equation_12_2_1"
+kind = "theorem"
+desc = '''(12.2.1) as a characterization: `A : Matrix (Fin n) (Fin n) ℝ` satisfies "`j₂ ≤ i₁` or `i₂ ≤ j₁` ⇒ `rank A(i₁:i₂, j₁:j₂) ≤ 1`"
+iff `A.IsSemiseparable` (the backbone's maximal-block definition). `Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le`. ★'''
+deps = ["Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.1)'
+
+[[node]]
+id = "equation_12_2_3"
+kind = "theorem"
+desc = '''(12.2.3) and the sentence before it: `B(r)⁻¹` has entries `r_i ⋯ r_{j−1}` on and above the diagonal (`1` on it), zero below,
+and every submatrix of its upper triangular part has rank `≤ 1` (so `B(r)⁻¹` is semiseparable; P12.2.1).
+`Matrix.inv_unitBidiagonal`, `Matrix.isSemiseparable_inv_unitBidiagonal`. ★'''
+deps = ["Matrix.inv_unitBidiagonal", "Matrix.isSemiseparable_inv_unitBidiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.3)'
+
+[[node]]
+id = "unitBidiagonal_introduces_zeros"
+kind = "theorem"
+desc = '''§12.2.1: if `x ∈ ℝⁿ` has `x_1, …, x_{n−1} ≠ 0` and `r = x(2:n) ./ x(1:n−1)`, then `B(r)ᵀ x = x₁ e₁`.
+`Matrix.unitBidiagonal_transpose_mulVec_eq_single`. ★'''
+deps = ["Matrix.unitBidiagonal_transpose_mulVec_eq_single"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.1'
+
+[[node]]
+id = "equation_12_2_4"
+kind = "theorem"
+desc = '''(12.2.4): for `α β γ δ : Fin (n−1) → ℝ`, `M = M₁ ⋯ M_{n−1}` with `M_k = diag(I_{k−1}, [α_k β_k; γ_k δ_k], I_{n−k−1})` has the displayed
+entries (`γ_j` on the subdiagonal, `δ_{i−1} β_i ⋯ β_{j−1} α_j` on and above the diagonal with the conventions at the first
+row and last column, zero below the subdiagonal), and its off-diagonal blocks not meeting the diagonal have rank `≤ 1`
+(it is quasiseparable). `Matrix.givensChain_apply`. ★'''
+deps = ["Matrix.givensChain_apply"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.4)'
+
+[[node]]
+id = "equation_12_2_5"
+kind = "theorem"
+desc = '''(12.2.5) as a characterization: "`j₂ < i₁` or `i₂ < j₁` ⇒ `rank A(i₁:i₂, j₁:j₂) ≤ 1`" iff `A.IsQuasiseparable`; and every
+semiseparable matrix is quasiseparable (the sentence after (12.2.5)). `Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le`
+(its quasiseparable twin), `Matrix.IsSemiseparable.isQuasiseparable`. ★'''
+deps = ["Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le", "Matrix.IsSemiseparable.isQuasiseparable"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.5)'
+
+[[node]]
+id = "equation_12_2_6"
+kind = "theorem"
+desc = '''(12.2.6): the generator representation `tril(u vᵀ, −1) + diag(d) + triu(p qᵀ, 1)` (`Matrix.strictLower (vecMulVec u v) + diagonal d +
+Matrix.strictUpper (vecMulVec p q)`) is quasiseparable, and semiseparable when `d = u .* v = p .* q`.
+`Matrix.quasiseparableOf` (at `t = r = 1`), `Matrix.isQuasiseparable_quasiseparableOf`,
+`Matrix.isSemiseparable_quasiseparableOf`. ★'''
+deps = ["Matrix.quasiseparableOf", "Matrix.isQuasiseparable_quasiseparableOf", "Matrix.isSemiseparable_quasiseparableOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.6)'
+
+[[node]]
+id = "unitBidiagonal_not_generatorRepresentable"
+kind = "theorem"
+desc = '''§12.2.3: for `n ≥ 3` and `r` with nonzero entries, `B(r)` has no generator representation (12.2.6).
+`Matrix.unitBidiagonal_ne_generatorRep` (which needs only `r₁, r₂ ≠ 0`). ★'''
+deps = ["Matrix.unitBidiagonal_ne_generatorRep"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.3'
+
+[[node]]
+id = "equation_12_2_7"
+kind = "theorem"
+desc = '''(12.2.7): the Hadamard product of two quasiseparable matrices is quasiseparable (P12.2.8).
+`Matrix.IsQuasiseparable.hadamard`. ★'''
+deps = ["Matrix.IsQuasiseparable.hadamard"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.7)'
+
+[[node]]
+id = "equation_12_2_8"
+kind = "theorem"
+desc = '''(12.2.8): `A` is quasiseparable iff `A = 𝐒(u, v, t, d, p, q, r)` for some `u, v, d, p, q ∈ ℝⁿ`, `t, r ∈ ℝ^{n−1}` (the "It can be
+shown" before (12.2.8) and P12.2.2), with the displayed entries. `Matrix.exists_quasiseparableOf`. ★'''
+deps = ["Matrix.exists_quasiseparableOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.8)'
+
+[[node]]
+id = "equation_12_2_8_b"
+kind = "theorem"
+desc = '''The specializations listed after (12.2.8): `d = u .* v = p .* q` gives a semiseparable matrix, `t = r = 1` the generator
+representation, `u = q`, `v = p`, `t = r` a symmetric matrix, and `u .* v = p .* q` with free `d` the semiseparable-plus-diagonal
+class (`A − diag(d − u .* v)` semiseparable). `Matrix.isSemiseparable_quasiseparableOf`, `Matrix.transpose_quasiseparableOf`. ★'''
+deps = ["Matrix.isSemiseparable_quasiseparableOf", "Matrix.transpose_quasiseparableOf", "GolubVanLoan.Chapter12.equation_12_2_8"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.8)'
+
+[[node]]
+id = "inv_tridiagonal_isSemiseparable"
+kind = "theorem"
+desc = '''Fact 1 of §12.2.3: the inverse of a nonsingular tridiagonal matrix is semiseparable, and generator-representable when the
+sub- and superdiagonal entries are nonzero. `Matrix.IsTridiagonal.isSemiseparable_inv`,
+`Matrix.IsTridiagonal.inv_eq_generatorRep`. ★'''
+deps = ["Matrix.IsTridiagonal.isSemiseparable_inv", "Matrix.IsTridiagonal.inv_eq_generatorRep"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.3'
+
+[[node]]
+id = "inv_isQuasiseparable"
+kind = "theorem"
+desc = '''Fact 2 of §12.2.3: the inverse of a nonsingular quasiseparable matrix is quasiseparable. `Matrix.IsQuasiseparable.inv`. ★'''
+deps = ["Matrix.IsQuasiseparable.inv"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.3'
+
+[[node]]
+id = "inv_diagonal_add_semiseparable"
+kind = "theorem"
+desc = '''Fact 3 of §12.2.3: if `A = D + S` is nonsingular with `D` diagonal nonsingular and `S` semiseparable, then `A⁻¹ = D⁻¹ + S₁`
+with `S₁` semiseparable. `Matrix.inv_diagonal_add_eq_add`. ★'''
+deps = ["Matrix.inv_diagonal_add_eq_add"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.3'
+
+[[node]]
+id = "triangular_semiseparable_rep"
+kind = "theorem"
+desc = '''§12.2.4: a lower triangular semiseparable `L` is `𝐒(u, v, t, u .* v, 0, 0, 0) = tril(u vᵀ) .* B(t)⁻ᵀ`, an upper triangular
+semiseparable `U` is `𝐒(0, 0, 0, p .* q, p, q, r) = triu(p qᵀ) .* B(r)⁻¹`, for suitable vectors.
+`Matrix.exists_lower_semiseparable_rep`. ★'''
+deps = ["Matrix.exists_lower_semiseparable_rep"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.4'
+
+[[node]]
+id = "equation_12_2_9"
+kind = "theorem"
+desc = '''(12.2.9) and the displays after it: `(triu(p qᵀ) .* B(r)⁻¹) x = p .* (B(r)⁻¹ (q .* x))`, and for `p`, `q` with nonzero entries
+the system `(triu(p qᵀ) .* B(r)⁻¹) x = y` is solved by `x = (B(r)(y ./ p)) ./ q`. `Matrix.vecMulVec_hadamard_inv_unitBidiagonal`. ★'''
+deps = ["Matrix.vecMulVec_hadamard_inv_unitBidiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.9)'
+
+[[node]]
+id = "semiseparable_lu_factors"
+kind = "theorem"
+desc = '''§12.2.5: if the semiseparable `A` has an LU factorization then `U` is semiseparable, and so is `L` when the strict leading
+principal submatrices of `A` are nonsingular (the factorization is then unique). The book's unqualified claim for `L` is
+false for singular `A` (chapter 12 report). `Matrix.IsLU.isSemiseparable_upper`. ★'''
+deps = ["Matrix.IsLU.isSemiseparable_upper"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.5'
+
+[[node]]
+id = "algorithm_12_2_1"
+kind = "definition"
+desc = '''Algorithm 12.2.1, per D4: `algorithm_12_2_1 {M} [Monad M] (rnd : ℝ → M ℝ) (u p : Fin n → ℝ) (t r : ℕ → ℝ) : M ((Fin n → ℝ) ×
+(ℕ → ℝ))`, returning `(p̃, τ)`: `for k = n−1 : −1 : 1`, `τ_k = t_k u_{k+1} / u_k` (two roundings), `p̃_{k+1} = p_{k+1} − p_k τ_k r_k`
+(three roundings, left to right), then `p̃₁ = p₁`; a `List.foldlM` over `(List.finRange (n-1)).reverse` with state
+`(p̃, τ)`. (`v`, `q` are inputs of the specification only.) ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.1'
+
+[[node]]
+id = "algorithm_12_2_1_spec"
+kind = "theorem"
+desc = '''Correctness of Algorithm 12.2.1: for `u v p q : Fin n → ℝ`, `t r : ℕ → ℝ` with `u .* v = p .* q` and `u_k ≠ 0` for `k < n` (the
+divisions, `k = 1 : n − 1` in the book's indexing; its "has an LU factorization" does not ensure them), `Id.run (algorithm_12_2_1 pure u p t r) = (p̃, τ)` and
+`Matrix.IsLU (𝐒(u, v, t, u .* v, p, q, r)) (B(τ)⁻ᵀ) (triu(p̃ qᵀ) .* B(r)⁻¹)`; also the closed forms `τ = (u(2:n) .* t) ./ u(1:n−1)`,
+`p̃ = [p₁; p(2:n) − p(1:n−1) .* τ .* r]` after the algorithm (the loop's updates do not interfere). The text's "`M = B(τ)`"
+should read `M = B(τ)ᵀ`; the spec uses the factors as the algorithm's header states them. `Matrix.isLU_quasiseparableOf`
+after evaluating the fold (`List.foldlM_pure`-style, as the prototype's `dot_id`). ★★ (~60 lines)'''
+deps = ["GolubVanLoan.Chapter12.algorithm_12_2_1", "Matrix.isLU_quasiseparableOf"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.1'
+
+[[node]]
+id = "equation_12_2_11"
+kind = "theorem"
+desc = '''(12.2.11), the Givens-vector representation: a lower triangular semiseparable `A_L` whose first column is reduced to `v₁ e₁`
+by rotations `G₁ ⋯ G_{n−1}` with pairs `(c_k, s_k)` equals `B(s)⁻ᵀ .* tril(c vᵀ)` for weights `v`, `c = [c₁, …, c_{n−1}, 1]` — under the
+hypothesis `(A_L)_{n1} ≠ 0`, which the book's "it is not hard to show" needs (with a zero first column the form forces `A_L`
+diagonal). `Matrix.exists_givensVector_rep`. ★'''
+deps = ["Matrix.exists_givensVector_rep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.11)'
+
+[[node]]
+id = "equation_12_2_14"
+kind = "theorem"
+desc = '''(12.2.14) and the sentences after it: with `Qᵀ = G₁ ⋯ G_{n−1}` from the Givens-vector representation of `tril(A)`, `Qᵀ tril(A) =
+triu((𝒟_n c) vᵀ) .* B(s)⁻¹`, `Qᵀ` is upper Hessenberg, `Qᵀ triu(A, 1)` is upper triangular, so `Qᵀ A = R` is a QR factorization
+(P12.2.9). `Matrix.transpose_givensChain_mul_strictLower_add_diagPart`. ★'''
+deps = ["Matrix.transpose_givensChain_mul_strictLower_add_diagPart"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.14)'
+
+[[node]]
+id = "algorithm_12_2_2"
+kind = "definition"
+desc = '''Algorithm 12.2.2, per D4: `algorithm_12_2_2 {M} [Monad M] (rnd : ℝ → M ℝ) (u v p q : Fin n → ℝ)` returning `(c, s, f, g, h)`:
+`ũ_n = u_n`, `f̃_n = u_n`, `g_n = v_n`, `h_n = 0`; `for k = n−1 : −1 : 1`: the Givens pair of `(u_k, ũ_{k+1})` (`√` then one `rnd`,
+as `Matrix.givensPair` with the sign convention `[c s; −s c]`), `ũ_k`, `f̃_k = s_k f̃_{k+1}`, `f_{k+1} = c_k f̃_{k+1}`, `[h_k; h_{k+1}] = [c s;
+−s c][p_k; h_{k+1}]`, `g_k = (ũ_k v_k − h_k q_k) / f̃_k`; then `f₁ = f̃₁`. The book prints `g_k = (u_k v_k − h_k q_k)/f̃_k`; the
+derivation before it (`g₂ = (ũ₂ v₂ − h̃₂ q₂)/f̃₂`) and correctness need `ũ_k` — the program follows the derivation (chapter 12
+report). ★★'''
+deps = ["Matrix.givensPair"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
+
+[[node]]
+id = "algorithm_12_2_2_spec"
+kind = "theorem"
+desc = '''Correctness of Algorithm 12.2.2: if `u .* v = p .* q` and `u_n ≠ 0`, `A = tril(u vᵀ) + triu(p qᵀ, 1)`, and `(c, s, f, g, h) = Id.run
+(algorithm_12_2_2 pure u v p q)`, then with `Qᵀ = givensChain (fun k => !![c k, s k; −s k, c k])`: `Q` is orthogonal and `Qᵀ A =
+triu(f gᵀ + h qᵀ)` (upper triangular; the book's `R`); and `f̃_k = s_k ⋯ s_{n−1} u_n ≠ 0` (the divisions are defined), since `|ũ_k| =
+‖u(k:n)‖ ≠ 0`. Downward induction on `k` with the invariant of the book's displayed `A⁽ᵏ⁾` (rows `< k` untouched, row `k`
+`[ũ_k vᵀ(1:k−1), f̃_k g(k:n)ᵀ + h̃_k q(k:n)ᵀ]`, rows `> k` already in the final form), one rotation per step
+(`Matrix.planeEmbed_mul_apply`, `Matrix.transpose_planeRotation_givensPair_mulVec`). ★★★ (~200 lines)'''
+deps = ["GolubVanLoan.Chapter12.algorithm_12_2_2", "Matrix.givensChain", "Matrix.planeEmbed_mul_apply", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.givensPair_sq_add_sq"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
+
+[[node]]
+id = "equation_12_2_16"
+kind = "theorem"
+desc = '''(12.2.16): for a semiseparable `A` with generator representation (12.2.15), `R = triu(f gᵀ + h qᵀ)` for some `f, g, h ∈ ℝⁿ` — every
+submatrix of the upper triangular part of `R` has rank `≤ 2` — under the hypothesis `u_n ≠ 0` of Algorithm 12.2.2, whose output
+provides `f, g, h`. `algorithm_12_2_2_spec`. ★'''
+deps = ["GolubVanLoan.Chapter12.algorithm_12_2_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.16)'
+
+[[node]]
+id = "inv_banded_of_generatorRepresentable"
+kind = "theorem"
+desc = '''§12.2.8: a nonsingular `{p, q}`-generator representable matrix (`tril(A, p−1) = tril(U Vᵀ, p−1)`, `triu(A, −q+1) = triu(P Qᵀ, −q+1)`,
+`U, V ∈ ℝ^{n×p}`, `P, Q ∈ ℝ^{n×q}`) has an inverse of lower bandwidth `p` and upper bandwidth `q`.
+`Matrix.IsGeneratorRepresentableOfOrder.hasBandwidth_inv`. ★'''
+deps = ["Matrix.IsGeneratorRepresentableOfOrder.hasBandwidth_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.8'
+
+[[node]]
+id = "equation_12_2_18"
+kind = "theorem"
+desc = '''(12.2.18): an orthogonal upper Hessenberg `H` with positive subdiagonal, `det H = 1` and `n = 2m` even (the cases the text
+deflates away) is `G₁ ⋯ G_{n−1} G_n` with the reflections `G_k = G(φ_k)`, `0 < φ_k < π`, and `G_n = diag(1, …, 1, −1)`; the
+preceding claims (`G_{n−1} ⋯ G₁ H = diag(1, …, 1, −c_n)`, `c_n = ±1`) are its proof. The book assumes a nonzero subdiagonal;
+positivity is reached by a diagonal `±1` similarity. `Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector`. ★'''
+deps = ["Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.18)'
+
+[[node]]
+id = "equation_12_2_19"
+kind = "theorem"
+desc = '''(12.2.19): the eigenvalues of such `H` (`n = 2m`, `det H = 1`) are `cos θ_k ± i sin θ_k`, `k = 1 : m` — `m` conjugate pairs on the unit
+circle (charpoly form over `ℂ`). The surface keeps the book's hypotheses (orthogonal upper Hessenberg, `det H = 1`) and supplies
+`H ∈ Matrix.specialOrthogonalGroup (Fin (2 * m)) ℝ` from the orthogonality and the determinant; the backbone
+`Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup` (`RealSchur`) needs no Hessenberg structure, which plays no role in
+the claim. ★'''
+deps = ["Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.19)'
+
+[[node]]
+id = "orthogonalHessenberg_isQuasiseparable"
+kind = "theorem"
+desc = '''§12.2.10: "(12.2.4) and (12.2.18) tell us that `H` is quasiseparable". `Matrix.orthogonalHessenberg_isQuasiseparable`. ★'''
+deps = ["Matrix.orthogonalHessenberg_isQuasiseparable"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10'
+
+[[node]]
+id = "orthogonalHessenberg_fact_1"
+kind = "theorem"
+desc = '''Fact 1 of §12.2.10: `H = G₁ ⋯ G_n` is similar to `H̃ = H_o H_e`, `H_o = G₁ G₃ ⋯ G_{n−1} = diag(R(φ₁), R(φ₃), …)`, `H_e = G₂ G₄ ⋯ G_n =
+diag(1, R(φ₂), …, R(φ_{n−2}), −1)`. `Matrix.isSimilar_prod_planeReflector_oddEven`. ★'''
+deps = ["Matrix.isSimilar_prod_planeReflector_oddEven"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10'
+
+[[node]]
+id = "orthogonalHessenberg_fact_2"
+kind = "theorem"
+desc = '''Fact 2 of §12.2.10: `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` are symmetric tridiagonal with `λ(C) = {±cos(θ_k/2)}`, `λ(S) =
+{±sin(θ_k/2)}`. `Matrix.eigenvalues_oddEven_half_sum`. ★'''
+deps = ["Matrix.eigenvalues_oddEven_half_sum"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10'

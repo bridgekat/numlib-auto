@@ -1,0 +1,177 @@
+namespace = "Matrix"
+desc = '''
+Toeplitz, persymmetric and circulant matrices on `Fin n`: persymmetry (`Matrix.IsPersymmetric`, symmetry about the antidiagonal), the
+Toeplitz matrix of a two-sided sequence (`Matrix.toeplitz r`, entries `r (j - i)`, and the predicate
+`Matrix.IsToeplitz`), the symmetric Toeplitz matrix `Matrix.symmToeplitz n r = (r_{|i-j|})` with its
+bordering `T_{k+1} = [T_k, ℰ r; rᵀ ℰ, r₀]` (the engine of the Levinson–Durbin–Trench theory of
+`Numlib/Direct/Levinson`), Hankel matrices (`Matrix.hankel`, `Matrix.IsHankel`), the expansion of
+Mathlib's `Matrix.circulant` in the powers of the downshift, and the facts that a circulant and the periodic
+second difference `Matrix.secondDifferencePeriodic` are Toeplitz/circulant. The diagonalization of a circulant
+by the discrete Fourier transform is in `Numlib/Analysis/Fourier/Circulant` (moved there at the review of the
+Golub–Van Loan round, so that this module, `Displacement` and `Levinson` do not import the DFT and, through it,
+`Numlib/Approximation/TrapezoidExactness`).
+
+Design. Everything is on `Fin n`, entrywise: `IsPersymmetric A := ∀ i j, A (rev j) (rev i) = A i j`,
+with the matrix form `ℰ A ℰ = Aᵀ` as a theorem; the Toeplitz matrix is rectangular and indexed by an
+integer-valued offset so that unsymmetric Toeplitz matrices (`r_{j-i}` above, `p_{i-j}` below,
+[golub2013matrix] §4.7.8) need no second definition. The exchange matrix `ℰ_n` (`Matrix.exchange`)
+and the downshift `𝒟_n` (`Matrix.downshift`) are in `Numlib/LinearAlgebra/Matrix/Permutation`
+(moved there at the Golub–Van Loan consolidation, ids unchanged), which this module imports;
+the Toeplitz/persymmetric facts are over any commutative ring or field as their proofs need.
+
+Relation to existing modules. Mathlib has `Matrix.circulant` and its algebra
+(`Matrix.circulant_mul`, `Matrix.Fin.circulant_isSymm_iff`, `Matrix.circulant_single_one`) but no
+Toeplitz, persymmetric, exchange or downshift matrices and no diagonalization of circulants.
+`Numlib/FiniteDifference/VonNeumann` proves the diagonalization in the *opposite* convention
+(`FiniteDifference.periodicScheme_mulVec_fourierMode`, `…_eq_dft_mul_diagonal`: eigenvectors the
+columns of `Matrix.dft N`); refactor task R12 moves those facts to `Numlib/Analysis/Fourier/Circulant`
+and makes both conventions corollaries of its one eigenvector lemma. Searched and not found: `Toeplitz`,
+`persymmetric`, `exchangeMatrix`/`reverse` permutation matrix (`Equiv.Perm.permMatrix Fin.revPerm`
+exists and is the same matrix — `Matrix.exchange_eq_permMatrix` records it), `downshift`/`shiftMatrix`.
+
+The tridiagonal Toeplitz matrices of `TridiagonalToeplitz` (which this module imports) are Toeplitz
+(`symmTridiagonalToeplitz_eq_toeplitz`).
+
+Consumers: `Numlib/Direct/Levinson` (all of §4.7), `Numlib/Analysis/Fourier/Circulant` (the periodic
+second difference is a circulant), `LinearAlgebra/Matrix/Displacement` of ch12 (Toeplitz as
+displacement rank 2).
+
+Order: ★ except where marked; about 350 lines.
+'''
+
+[[node]]
+id = "IsPersymmetric"
+kind = "definition"
+desc = '''Persymmetry, symmetry about the antidiagonal ([golub2013matrix] §4.7.1): for `A : Matrix (Fin n) (Fin n) R`,
+`IsPersymmetric A := ∀ i j, A (Fin.rev j) (Fin.rev i) = A i j`. ★'''
+deps = []
+
+[[node]]
+id = "isPersymmetric_iff_exchange_mul_mul_exchange"
+kind = "theorem"
+desc = '''`A.IsPersymmetric ↔ exchange n * A * exchange n = Aᵀ` over a semiring — the book's definition
+`ℰ_n B ℰ_n = Bᵀ`. From `exchange_mul_apply`, `mul_exchange_apply`, `Fin.rev_rev`. ★'''
+deps = ["IsPersymmetric", "exchange_mulVec_apply", "exchange_mul_exchange"]
+
+[[node]]
+id = "IsPersymmetric.isSymm_exchange_mul"
+kind = "theorem"
+desc = '''A persymmetric `A` has `exchange n * A` symmetric ("`ℰ_n B` is symmetric", [golub2013matrix] §4.7.1);
+conversely `(exchange n * A).IsSymm → A.IsPersymmetric` (`isPersymmetric_iff_isSymm_exchange_mul`). ★'''
+deps = ["isPersymmetric_iff_exchange_mul_mul_exchange"]
+
+[[node]]
+id = "IsPersymmetric.inv"
+kind = "theorem"
+desc = '''Over a commutative ring, `A.IsPersymmetric → A⁻¹.IsPersymmetric` (Mathlib's junk inverse included): the
+book's `ℰ B⁻¹ ℰ = (ℰ B ℰ)⁻¹ = (Bᵀ)⁻¹ = (B⁻¹)ᵀ`, i.e. `Matrix.inv_transpose` (transpose_nonsing_inv),
+`Matrix.mul_inv_rev` and `exchange_mul_exchange`. ★'''
+deps = ["isPersymmetric_iff_exchange_mul_mul_exchange", "exchange_mul_exchange"]
+
+[[node]]
+id = "toeplitz"
+kind = "definition"
+desc = '''The Toeplitz matrix of a two-sided sequence: `toeplitz (r : ℤ → R) : Matrix (Fin m) (Fin n) R`,
+`toeplitz r i j = r ((j : ℤ) - i)` ([golub2013matrix] §4.7: `a_ij = r_{j-i}`). Rectangular, so
+that the embeddings of P4.8.4 and the unsymmetric `T` of §4.7.8 are instances. Prototype
+`notes/gvl/ch04/proto/Shapes.lean`. ★'''
+deps = []
+
+[[node]]
+id = "IsToeplitz"
+kind = "definition"
+desc = '''`A.IsToeplitz := ∃ r : ℤ → R, A = toeplitz r`, "constant along each diagonal"; the entrywise
+characterization `isToeplitz_iff : A.IsToeplitz ↔ ∀ i j k l, (j : ℤ) - i = l - k → A i j = A k l`
+(forwards immediate; backwards choose `r d := A i j` for any witness with offset `d`, `0` if none). ★'''
+deps = ["toeplitz"]
+
+[[node]]
+id = "IsToeplitz.isPersymmetric"
+kind = "theorem"
+desc = '''A square Toeplitz matrix is persymmetric: `(rev j) - (rev i) = j - i` in `ℤ` (`Fin.val_rev`, `omega`);
+proved in the prototype `notes/gvl/ch04/proto/Shapes.lean` (§2, the first `example`). ★'''
+deps = ["IsToeplitz", "IsPersymmetric"]
+
+[[node]]
+id = "symmTridiagonalToeplitz_eq_toeplitz"
+kind = "theorem"
+desc = '''The tridiagonal Toeplitz matrices of `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` are Toeplitz in the
+sense of this module: `symmTridiagonalToeplitz n a b = toeplitz (fun d : ℤ => if d = 0 then b else if |d| = 1
+then a else 0)` (hence `(symmTridiagonalToeplitz n a b).IsToeplitz`), and the same for the unsymmetric
+`tridiagonalToeplitz` with its three diagonals read off `Matrix.tridiagonalToeplitz_apply`
+(`tridiagonalToeplitz_eq_toeplitz`, same node). Entrywise: the `(j : ℤ) - i ∈ {-1, 0, 1}` cases (`omega`). ★'''
+deps = ["toeplitz", "IsToeplitz", "Matrix.symmTridiagonalToeplitz", "Matrix.tridiagonalToeplitz_apply", "Matrix.symmTridiagonalToeplitz_eq_tridiagonalToeplitz"]
+
+[[node]]
+id = "symmToeplitz"
+kind = "definition"
+desc = '''The symmetric Toeplitz matrix `symmToeplitz n (r : ℕ → R) : Matrix (Fin n) (Fin n) R`,
+`symmToeplitz n r i j = r ((i : ℤ) - j).natAbs` ([golub2013matrix] §4.7.2, `T = (r_{|i-j|})`; the
+book normalizes `r 0 = 1`). With `symmToeplitz_eq_toeplitz`, `symmToeplitz_isSymm`,
+`symmToeplitz_isToeplitz`, `symmToeplitz_isPersymmetric`. ★'''
+deps = ["toeplitz", "IsToeplitz", "IsPersymmetric"]
+
+[[node]]
+id = "exchange_mul_symmToeplitz"
+kind = "theorem"
+desc = '''`exchange n * symmToeplitz n r = symmToeplitz n r * exchange n` (a symmetric persymmetric matrix commutes
+with `ℰ`), and for a nonsingular one `(symmToeplitz n r)⁻¹ * exchange n = exchange n *
+(symmToeplitz n r)⁻¹` — the step "`T_k⁻¹ ℰ_k = ℰ_k T_k⁻¹`" of [golub2013matrix] §4.7.3. ★'''
+deps = ["symmToeplitz", "IsPersymmetric.inv", "exchange_mul_exchange"]
+
+[[node]]
+id = "leadingPrincipal_symmToeplitz"
+kind = "theorem"
+desc = '''The leading `k × k` block of `T_n` is `T_k`: `(symmToeplitz n r).submatrix (Fin.castLE h) (Fin.castLE h) =
+symmToeplitz k r` for `h : k ≤ n` (the nesting of the `T_k` of [golub2013matrix] §4.7.2). `rfl` up
+to `Fin.coe_castLE`. ★'''
+deps = ["symmToeplitz"]
+
+[[node]]
+id = "symmToeplitz_succ_eq_fromBlocks"
+kind = "theorem"
+desc = '''The bordering of [golub2013matrix] §4.7.3: `T_{k+1} = [T_k, ℰ_k r; rᵀ ℰ_k, r₀]` with `r = (r₁, …, r_k)`,
+stated as `symmToeplitz (k + 1) ρ = (fromBlocks (symmToeplitz k ρ) (replicateCol (Fin 1) (exchange k
+*ᵥ fun i => ρ (i + 1))) (replicateRow (Fin 1) (fun i => ρ (i + 1)) ᵥ* exchange k)) (fun _ _ => ρ 0))
+.submatrix e e` with `e := finSumFinEquiv.symm : Fin (k + 1) ≃ Fin k ⊕ Fin 1` (Mathlib's
+`Matrix.replicateCol`/`replicateRow`; the formalizer may choose the column/row constructor that
+makes `Matrix.fromBlocks_multiply` most convenient, keeping this name). Entrywise: the last column
+is `ρ_{k - i} = (ℰ r)_i`. ★'''
+deps = ["symmToeplitz", "exchange_mulVec_apply"]
+
+[[node]]
+id = "circulant_eq_sum_downshift_pow"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.8.3): `circulant z = ∑ k : Fin n, z k • downshift n ^ (k : ℕ)` over a semiring,
+`n ≠ 0`. From `downshift_pow_card` and `Matrix.circulant_add`/`circulant_smul` with
+`z = ∑ k, z k • Pi.single k 1`. ★'''
+deps = ["downshift_pow_card"]
+
+[[node]]
+id = "isToeplitz_circulant"
+kind = "theorem"
+desc = '''A circulant over `Fin n` is Toeplitz: `(circulant v).IsToeplitz` with `r d := v (-(d : Fin n))`
+(`Int.cast` into `Fin n`, `n ≠ 0`; the `n = 0` case is empty). "A circulant matrix is a Toeplitz
+matrix with wraparound", [golub2013matrix] §4.8.2. ★'''
+deps = ["IsToeplitz"]
+
+[[node]]
+id = "secondDifferencePeriodic_eq_circulant"
+kind = "theorem"
+desc = '''For `3 ≤ n`, `secondDifferencePeriodic n = Matrix.circulant (fun k : Fin n => if (k : ℕ) = 0 then 2 else if
+(k : ℕ) = 1 ∨ (k : ℕ) + 1 = n then -1 else 0)` — "`𝒯^{(P)}_n` is a circulant matrix" with first column
+`(2, −1, 0, …, 0, −1)` ([golub2013matrix] §4.8.6). Entrywise with `Matrix.circulant_apply` and `Fin`
+subtraction (`Fin.coe_sub`); with `isToeplitz_circulant` it is Toeplitz as well. (For `n = 2` the two corrections coincide with the off-diagonal and
+the claim fails — `𝒯^{(P)}_2 = [2 −2; −2 2]` is not the circulant `[2 −1; −1 2]`; record, not a
+book error since the book's examples have `n ≥ 5`.) ★'''
+deps = ["secondDifferencePeriodic"]
+
+[[node]]
+id = "hankel"
+kind = "definition"
+desc = '''The Hankel matrix `hankel h : Matrix (Fin m) (Fin n) K`, `(i, j) ↦ h (i + j)` for `h : ℕ → K`
+(constant along antidiagonals, [golub2013matrix] §12.1.7), and `IsHankel A := ∃ h, A = hankel h`.
+`exchange_mul_isHankel : IsHankel A → IsToeplitz (exchange n * A)` (the book's "`ℰ_n H` is Toeplitz",
+`exchange`/`IsToeplitz`) as its first lemma. Planned by chapter 12 in `Displacement`, placed here beside
+`toeplitz` at the Golub–Van Loan consolidation. ★'''
+deps = ["exchange", "IsToeplitz"]

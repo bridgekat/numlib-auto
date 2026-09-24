@@ -1,3 +1,15 @@
+# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.Substitution` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch03) add a bullet for the dot-product (row-oriented) evaluation order. The module has the
+# running-difference (column/saxpy) order `RoundsForwardSubst`; the new
+# `FloatingPoint.RoundsForwardSubstDot` is the inner-product order of [golub2013matrix] Algorithms
+# 3.1.1–3.1.2 (the dot product `c = 0; c = fl(c + fl(l_ij x_j))` as written in Algorithm 1.1.1, then
+# one rounded subtraction from `b_i` and one rounded division, the first row divided only), for
+# which the bound is still `γ_n` (the extra roundings land on the diagonal with order 2 ≤ n, or on
+# terms with order `i ≤ n`). Also: the exact-model characterizations `roundsForwardSubst_exact_iff`
+# etc., through which a D4 algorithm's exact specification is read off its rounding bridge. The
+# sentence of the module doc saying `Numlib/FloatingPoint/LU` "uses that order for the Doolittle
+# recurrence" is stale: `RoundsLU` uses running differences.
 namespace = "FloatingPoint"
 
 [[node]]
@@ -35,3 +47,101 @@ id = "abs_sub_le_of_mulVec_eq_of_abs_le"
 
 [[node]]
 id = "abs_sub_apply_le_of_mulVec_eq_of_abs_le"
+
+[[node]]  # staged by ch03
+id = "exists_rounds_sub_dotFrom_div_eq"
+kind = "theorem"
+desc = '''**The scalar core of the inner-product order** (the analogue of [higham2002accuracy]
+Lemma 8.4 for "dot product, then subtract, then divide"): if `s` is obtained from `0` by adding
+the rounded products `p_j = fl(a_j b_j)`, `j ∈ o`, one rounding per addition
+(`RoundsSumFrom m 0 (o.map p) s`, the evaluation of [golub2013matrix] Algorithm 1.1.1 including
+the rounding of `0 + p_{o₀}`, which the relational model cannot know to be exact), `t` rounds
+`c - s` and `y` rounds `t / d` with `d ≠ 0`, then
+`d y (1 + θ₀) = c - ∑_{j ∈ o} a_j b_j (1 + θ_j)` with `|θ₀| ≤ γ₂` and `|θ_j| ≤ γ_{k+1}`, `k` the
+number of terms, provided `(k + 1) u < 1`. Proof: `exists_roundsSumFrom_map_eq` on the sum
+(order `k` on each term), one more rounding for the product (`abs_one_add_mul_one_add_sub_one_le_gamma`),
+the subtraction and division moved to the left as `(1 + δ₁)⁻¹ (1 + δ₂)⁻¹`
+(`abs_prod_one_add_sub_one_le_gamma` with `n = 2`). ★★ (~70 lines)'''
+deps = ["FloatingPoint.exists_roundsSumFrom_map_eq", "FloatingPoint.abs_one_add_mul_one_add_sub_one_le_gamma", "FloatingPoint.abs_prod_one_add_sub_one_le_gamma", "FloatingPoint.RoundsSumFrom"]
+
+[[node]]  # staged by ch03
+id = "RoundsForwardSubstDot"
+kind = "definition"
+desc = '''**Forward substitution in the inner-product order** ([golub2013matrix] Algorithm 3.1.1,
+[higham2002accuracy] §8.1's "inner product form"): `RoundsForwardSubstDot m T b x̂` says that for
+every `i`, if no index lies below `i` then `x̂ i` rounds `b i / T i i`; otherwise there are an order
+`o` of `{j | j < i}` (`o.Nodup`, `∀ j, j ∈ o ↔ j < i`), rounded products
+`m.Rounds (T i j * x̂ j) (p j)`, a sum `RoundsSumFrom m 0 (o.map p) s`, a rounded difference
+`m.Rounds (b i - s) t` and `m.Rounds (t / T i i) (x̂ i)`. Stated over `[Fintype n] [LinearOrder n]`
+like `RoundsForwardSubst`. ★'''
+deps = ["FloatingPoint.RoundsForwardSubst", "FloatingPoint.RoundsSumFrom"]
+
+[[node]]  # staged by ch03
+id = "RoundsBackSubstDot"
+kind = "definition"
+desc = '''Backward substitution in the inner-product order ([golub2013matrix] Algorithm 3.1.2):
+`RoundsForwardSubstDot` on the dual order, `RoundsForwardSubstDot (n := nᵒᵈ) m U b x̂`, spelled
+out with `i < j` in place of `j < i` exactly as `RoundsBackSubst` is. ★'''
+deps = ["FloatingPoint.RoundsForwardSubstDot", "FloatingPoint.RoundsBackSubst"]
+
+[[node]]  # staged by ch03
+id = "roundsBackSubstDot_iff_roundsForwardSubstDot_toDual"
+kind = "theorem"
+desc = '''`RoundsBackSubstDot m U b x̂ ↔ RoundsForwardSubstDot (n := nᵒᵈ) m U b x̂`, the dual-order
+bridge, as `roundsBackSubst_iff_roundsForwardSubst_toDual`. ★'''
+deps = ["FloatingPoint.RoundsBackSubstDot", "FloatingPoint.RoundsForwardSubstDot", "FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual"]
+
+[[node]]  # staged by ch03
+id = "exists_roundsForwardSubstDot_eq"
+kind = "theorem"
+desc = '''**Backward error of forward substitution in the inner-product order**: if `T` is lower
+triangular with nonzero diagonal, `u < 1`, `n u < 1` (`n = Fintype.card n`) and
+`RoundsForwardSubstDot m T b x̂`, then `∃ ΔT, (∀ i j, |ΔT i j| ≤ γ_n |T i j|) ∧ (T + ΔT) x̂ = b` —
+the same constant as `exists_roundsForwardSubst_eq`. Row `i` is
+`exists_rounds_sub_dotFrom_div_eq` with `k = #{j < i} ≤ n - 1` terms (order `k + 1 ≤ n`) and the
+diagonal of order `2 ≤ n` when row `i` has terms (so `n ≥ 2`); a row without terms has one rounded
+division (order `1`). `gamma_mono` unifies the orders. This is the rigorous form of
+[golub2013matrix] (3.1.1). ★★ (~80 lines, copying `exists_roundsForwardSubst_eq`)'''
+deps = ["FloatingPoint.RoundsForwardSubstDot", "FloatingPoint.exists_rounds_sub_dotFrom_div_eq", "FloatingPoint.gamma_mono", "FloatingPoint.exists_roundsForwardSubst_eq"]
+
+[[node]]  # staged by ch03
+id = "exists_roundsBackSubstDot_eq"
+kind = "theorem"
+desc = '''The upper triangular case of `exists_roundsForwardSubstDot_eq` ([golub2013matrix] (3.1.2)):
+`U` upper triangular with nonzero diagonal and `RoundsBackSubstDot m U b x̂` give
+`(U + ΔU) x̂ = b`, `|ΔU| ≤ γ_n |U|`, through the dual order as `exists_roundsBackSubst_eq`. ★'''
+deps = ["FloatingPoint.exists_roundsForwardSubstDot_eq", "FloatingPoint.roundsBackSubstDot_iff_roundsForwardSubstDot_toDual", "Matrix.IsUpperTriangular.isLowerTriangular_orderDual"]
+
+[[node]]  # staged by ch03
+id = "roundsForwardSubst_exact_iff"
+kind = "theorem"
+desc = '''**Exact-model characterization**: `RoundsForwardSubst exact T b x ↔ x = Matrix.forwardSubst T b`,
+with no hypothesis on `T` (both sides are the same recurrence, junk division by a zero diagonal
+entry included). `→` by `WellFoundedLT.induction` with `roundsSumFrom_exact_iff` and
+`Matrix.forwardSubst_apply` (the sum over an order `o` of `{j < i}` is the `Finset` sum,
+`List.sum_toFinset`); `←` by choosing `o` a sorted enumeration of `{j < i}`. This is how the exact
+specification of every substitution algorithm of [golub2013matrix] §3.1 is read off its rounding
+bridge (prototype `notes/gvl/ch03/proto/Bridge.lean` does it through the `u = 0` instance of
+`exists_roundsForwardSubst_eq` instead, which needs the nonzero diagonal). ★★ (~60 lines)'''
+deps = ["FloatingPoint.RoundsForwardSubst", "Matrix.forwardSubst", "Matrix.forwardSubst_apply", "FloatingPoint.roundsSumFrom_exact_iff"]
+
+[[node]]  # staged by ch03
+id = "roundsBackSubst_exact_iff"
+kind = "theorem"
+desc = '''`RoundsBackSubst exact U b x ↔ x = Matrix.backSubst U b`, the dual of
+`roundsForwardSubst_exact_iff` through `roundsBackSubst_iff_roundsForwardSubst_toDual` and
+`Matrix.backSubst_eq_forwardSubst_toDual`. ★'''
+deps = ["FloatingPoint.roundsForwardSubst_exact_iff", "FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual", "Matrix.backSubst_eq_forwardSubst_toDual"]
+
+[[node]]  # staged by ch03
+id = "roundsForwardSubstDot_exact_iff"
+kind = "theorem"
+desc = '''`RoundsForwardSubstDot exact T b x ↔ x = Matrix.forwardSubst T b`, as
+`roundsForwardSubst_exact_iff` (`0 + ∑` and `b - ∑` are exact at `u = 0`). ★'''
+deps = ["FloatingPoint.RoundsForwardSubstDot", "Matrix.forwardSubst_apply", "FloatingPoint.roundsSumFrom_exact_iff"]
+
+[[node]]  # staged by ch03
+id = "roundsBackSubstDot_exact_iff"
+kind = "theorem"
+desc = '''`RoundsBackSubstDot exact U b x ↔ x = Matrix.backSubst U b`, by duality. ★'''
+deps = ["FloatingPoint.roundsForwardSubstDot_exact_iff", "FloatingPoint.roundsBackSubstDot_iff_roundsForwardSubstDot_toDual", "Matrix.backSubst_eq_forwardSubst_toDual"]

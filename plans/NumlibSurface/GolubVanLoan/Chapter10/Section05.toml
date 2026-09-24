@@ -1,0 +1,299 @@
+namespace = "GolubVanLoan.Chapter10"
+desc = '''
+§10.5, Krylov methods for unsymmetric problems: Algorithm 10.5.1 (Arnoldi with the modified Gram–Schmidt
+inner loop), (10.5.1)–(10.5.2) and the definition of a `k`-step Arnoldi decomposition, the Ritz pair and its
+backward error, restarting (10.5.3) and implicit restarting (10.5.4)–(10.5.10) with Theorem 10.5.1, the
+Krylov–Schur restart, the unsymmetric Lanczos process (10.5.11)–(10.5.13) with its breakdowns, and the
+block biorthogonality step (10.5.14)–(10.5.16). Backbone: `Numlib/Krylov/{Arnoldi, Decomposition, BiLanczos}`,
+`Numlib/LinearAlgebra/Matrix/KrylovDecomposition` (the matrix predicates `Matrix.IsKrylovDecomposition`,
+`Matrix.IsArnoldiDecomposition` and the implicit Q engine `Matrix.IsArnoldiDecomposition.implicitQ`),
+`Numlib/Eigen/{RayleighRitz, ImplicitRestart}`, `Numlib/Analysis/InnerProductSpace/GramSchmidt`. The
+filter-polynomial eigen-expansion of §10.5.2, the exact-shift heuristic, the look-ahead idea of §10.5.6
+and the remark that no unsymmetric Kaniel–Paige–Saad theory exists are prose. Real matrices throughout,
+as in the book; the backbone statements are over `RCLike`.
+'''
+
+[[node]]
+id = "algorithm_10_5_1"
+kind = "definition"
+desc = '''Algorithm 10.5.1 (Arnoldi process) as a D4 program with fuel: `k = 0, r_0 = q₁, h_{10} = 1`; while `h_{k+1,k} ≠ 0`:
+`q_{k+1} = r_k/h_{k+1,k}`, `k = k+1`, `r_k = A q_k`, then for `i = 1 : k` (a `List.foldlM` over `List.finRange k`)
+`h_{ik} = q_iᵀ r_k`, `r_k = r_k − h_{ik} q_i` (modified Gram–Schmidt: each `h_{ik}` is taken against the
+*current* `r_k`), and `h_{k+1,k} = ‖r_k‖₂`; `t = k`. State: `k`, `q : ℕ → Fin n → ℝ`, `h : ℕ → ℕ → ℝ`, `r`.
+`noncomputable def`. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.5.1'
+
+[[node]]
+id = "algorithm_10_5_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 10.5.1: for `‖q₁‖ = 1` the run stops after `t = min fuel (grade (toEuclideanLin A) q₁)`
+passes and for `j < t`: `q_{j+1} = Arnoldi.vec _ q₁ j`, `h_{i+1,j+1} = Arnoldi.coeff _ q₁ i j` (`i ≤ j + 1`). The
+inner loop is `InnerProductSpace.modifiedGramSchmidtSweep`, equal to the classical sum against the orthonormal
+`q_i` (`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`, which also shows `h_{ik} = q_iᵀ A q_k`), then
+`Arnoldi.w`, `Arnoldi.coeff_succ_self` and `Arnoldi.vec_succ_eq`; the exit test is
+`Arnoldi.coeff_succ_self_eq_zero_iff`. The same identification as the Saad surface's `arnoldiMGS_eq_arnoldiCGS`,
+through the backbone (no surface import). "P10.5.1" (orthonormality) is the backbone's `Arnoldi.orthonormal`. ★★
+(~200 lines)'''
+deps = ["algorithm_10_5_1", "InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum", "Arnoldi.w", "Arnoldi.coeff_succ_self", "Arnoldi.vec_succ_eq", "Arnoldi.coeff_succ_self_eq_zero_iff", "Arnoldi.coeff"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.5.1'
+
+[[node]]
+id = "equation_10_5_1"
+kind = "theorem"
+desc = '''(10.5.1): `span {q_1, …, q_k} = span {q_1, A q_1, …, A^{k−1} q_1}` for the Arnoldi vectors. Backbone `Arnoldi.span_vec`
+(with `Matrix.range_krylovMatrix` for the right side as a span of the powers). ★'''
+deps = ["Arnoldi.span_vec", "Matrix.range_krylovMatrix", "algorithm_10_5_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.1)'
+
+[[node]]
+id = "equation_10_5_2"
+kind = "theorem"
+desc = '''(10.5.2): after `k` steps, `A Q_k = Q_k H_k + r_k e_kᵀ`, `Q_k = Arnoldi.basisMatrix A q₁ k`,
+`H_k = Arnoldi.hessenbergSq _ q₁ k` (upper Hessenberg), `r_k = (Arnoldi.w _ q₁ (k−1)).ofLp`. Backbone `Arnoldi.mul_basisMatrix`. ★'''
+deps = ["Arnoldi.mul_basisMatrix", "Krylov.lastVec", "algorithm_10_5_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.2)'
+
+[[node]]
+id = "IsArnoldiDecomposition"
+kind = "definition"
+desc = '''§10.5.1, the definition after (10.5.2): `A Q_k = Q_k H_k + r_k e_kᵀ` is a `k`-step Arnoldi decomposition if
+`Q_k ∈ ℝ^{n×k}` has orthonormal columns (`Q_kᵀ Q_k = I`), `H_k ∈ ℝ^{k×k}` is upper Hessenberg and `Q_kᵀ r_k = 0` —
+the four conditions written out for real matrices, with the book's `k` columns: `Q : Matrix (Fin n) (Fin k) ℝ`,
+`H : Matrix (Fin k) (Fin k) ℝ`, `e_kᵀ = Krylov.lastVec 1 k` (meaningful for `k ≥ 1`, the book's case). ★'''
+deps = ["Matrix.IsUpperHessenberg", "Krylov.lastVec"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.1, Definition'
+
+[[node]]
+id = "isArnoldiDecomposition_iff"
+kind = "theorem"
+desc = '''The surface definition is the backbone one. The backbone `Matrix.IsArnoldiDecomposition` counts `k + 1` columns
+(`Q : Matrix n (Fin (k + 1)) 𝕜`, last unit vector `Pi.single (Fin.last k) 1`; the review's `k = 0` typing fix), so the
+book's `k`-step decomposition is the backbone one at `k − 1`: for `Q : Matrix (Fin n) (Fin (k + 1)) ℝ`,
+`IsArnoldiDecomposition A Q H r ↔ Matrix.IsArnoldiDecomposition A Q H r` (`conjTranspose = transpose` over `ℝ`, and
+`Krylov.lastVec 1 (k + 1) = Pi.single (Fin.last k) 1` by `Krylov.lastVec_succ`). Algorithm 10.5.1's output after
+`k + 1` steps is one below the grade (`Arnoldi.isArnoldiDecomposition`, residual `(Arnoldi.w _ q₁ k).ofLp`). ★'''
+deps = ["IsArnoldiDecomposition", "Matrix.IsArnoldiDecomposition", "Krylov.lastVec_succ", "Arnoldi.isArnoldiDecomposition", "algorithm_10_5_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.1, Definition'
+
+[[node]]
+id = "arnoldi_ritzPair_backwardError"
+kind = "theorem"
+desc = '''§10.5.1, after the definition: if `H_k y = λ y` with `‖y‖₂ = 1` and `x = Q_k y`, then `(A − λI) x = (e_kᵀ y) r_k`, `(λ, x)` is a
+Ritz pair for `A` with respect to `𝒦(A, q₁, k)` (`Krylov.IsRitzPair`), and `(A + E) x = λ x` for `E = −v xᵀ`,
+`v = (e_kᵀ y) r_k`, with `‖E‖₂ = |y_k| ‖r_k‖₂` (rank-one norm `‖v xᵀ‖₂ = ‖v‖ ‖x‖`, `‖x‖ = 1`). Real eigenpairs of `H_k`
+(the book's statement is real). Backbone `Arnoldi.isRitzPair_of_mulVec_eq_smul`, `Arnoldi.apply_sub_smul_sum_eq`,
+`Arnoldi.norm_ritz_residual_eq`; the rank-one 2-norm via `Matrix.l2_opNorm` of `vecMulVec` (Mathlib, or a two-line
+Cauchy–Schwarz). ★★'''
+deps = ["equation_10_5_2", "Arnoldi.isRitzPair_of_mulVec_eq_smul", "Arnoldi.apply_sub_smul_sum_eq", "Arnoldi.norm_ritz_residual_eq", "Krylov.IsRitzPair"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.1, Ritz pairs and backward error'
+
+[[node]]
+id = "shiftedQrSteps"
+kind = "definition"
+desc = '''(10.5.4), `p` steps of the shifted QR iteration on an upper Hessenberg `H_c ∈ ℝ^{m×m}` with shifts `μ_1, …, μ_p`, as a
+D4 program: `H^{(0)} = H_c`; for `i = 1 : p` (the book prints `i = 0 : p`), form `H^{(i−1)} − μ_i I`, factor it
+`V_i R_i` by Givens rotations (chapter 5's Algorithm 5.2.5, which returns the rotation pairs of its
+Algorithm 5.1.3 calls; `V_i = G_1 ⋯ G_{m−1}` formed from them with chapter 5's rotation matrix
+`GolubVanLoan.Chapter05.givensRotation`), `H^{(i)} = R_i V_i + μ_i I`; accumulate `V = V_1 ⋯ V_p`.
+Returns `H₊ = H^{(p)}`, the `V_i`, `R_i` and `V`. ★★'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.algorithm_5_2_5", "GolubVanLoan.Chapter05.givensRotation"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.4)'
+
+[[node]]
+id = "equation_10_5_4"
+kind = "theorem"
+desc = '''Exact semantics of (10.5.4): the run's `H^{(i)}`, `V_i`, `R_i` form a `Matrix.IsShiftedQrChain` with every `V_i` orthogonal and
+upper Hessenberg and every `R_i` upper triangular (so every `H^{(i)}` is upper Hessenberg, the book's "recall from
+§7.4.2"). From chapter 5's `algorithm_5_2_5_spec` (Hessenberg QR by Givens rotations, `Q` upper Hessenberg, no
+nonsingularity hypothesis — the backbone's `Matrix.hessenbergGivensQR_spec` up to signs) and
+`Matrix.IsShiftedQrChain.isUpperHessenberg`. ★★'''
+deps = ["shiftedQrSteps", "Matrix.IsShiftedQrChain", "Matrix.IsShiftedQrChain.isUpperHessenberg", "Matrix.exists_isShiftedQrChain", "GolubVanLoan.Chapter05.algorithm_5_2_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.4)'
+
+[[node]]
+id = "equation_10_5_6"
+kind = "theorem"
+desc = '''(10.5.6): `H₊ = Vᵀ H_c V` with `V = V_1 ⋯ V_p` (10.5.5). Backbone `Matrix.IsShiftedQrChain.conjTranspose_mul_mul`. ★'''
+deps = ["equation_10_5_4", "Matrix.IsShiftedQrChain.conjTranspose_mul_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.6)'
+
+[[node]]
+id = "theorem_10_5_1"
+kind = "theorem"
+desc = '''Theorem 10.5.1: with `V = V_1 ⋯ V_p` and `R = R_p ⋯ R_1` from (10.5.4), `V R = (H_c − μ_1 I) ⋯ (H_c − μ_p I)` (10.5.7) —
+for any factorizations satisfying the two lines of (10.5.4) (`Matrix.IsShiftedQrChain`), not only Givens ones.
+Backbone `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` of `Numlib/Eigen/QRAlgorithm` (chapter 7's (7.5.7),
+P7.5.5 — the same identity; a list product with `List.reverse` for `R`). ★'''
+deps = ["Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one", "equation_10_5_4"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 10.5.1'
+
+[[node]]
+id = "filter_firstColumn"
+kind = "theorem"
+desc = '''§10.5.3, after Theorem 10.5.1: `R` is upper triangular and `V(:, 1) = p(H_c) e₁ / R(1, 1)` with the filter polynomial
+`p(λ) = (λ − μ_1) ⋯ (λ − μ_p)` (10.5.3) — stated as `R(1,1) · V(:, 1) = p(H_c) e₁`, which needs no `R(1,1) ≠ 0`; the book's
+`c = 1/R(1,1)` assumes it. Backbone `Matrix.IsShiftedQrChain.mulVec_first`. ★'''
+deps = ["theorem_10_5_1", "Matrix.IsShiftedQrChain.mulVec_first"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, the filter in the first column'
+
+[[node]]
+id = "equation_10_5_9"
+kind = "theorem"
+desc = '''(10.5.9): if `A Q_c = Q_c H_c + r_c e_mᵀ` (10.5.8) and (10.5.4) is applied to `H_c`, then `A Q₊ = Q₊ H₊ + r_c e_mᵀ V` with
+`Q₊ = Q_c V`, and `Q₊` has orthonormal columns. Backbone `Matrix.IsKrylovDecomposition.mul_unitary`. ★'''
+deps = ["equation_10_5_6", "Matrix.IsKrylovDecomposition.mul_unitary", "IsArnoldiDecomposition", "isArnoldiDecomposition_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.9)'
+
+[[node]]
+id = "restart_firstColumn_eq"
+kind = "theorem"
+desc = '''§10.5.3, after (10.5.9): `(A − μ I) Q_c e₁ = Q_c (H_c − μ I) e₁` for every `μ` (`m ≥ 2`), and
+`q₊ = Q₊(:, 1) = c (A − μ_1 I) ⋯ (A − μ_p I) q₁ = p(A) q₁ · c` (`p < m`), in the division-free form
+`R(1,1) · q₊ = p(A) q₁`. Backbone `Matrix.IsArnoldiDecomposition.implicitRestart_first` (with
+`Matrix.IsArnoldiDecomposition.aeval_mulVec_first` for the first display), whose decomposition has `m + 1`
+columns: the book's `m` is the backbone's `m + 1`, and `e₁ = Pi.single 0 1 : Fin (m + 1) → ℝ`. ★'''
+deps = ["Matrix.IsArnoldiDecomposition.implicitRestart_first", "Matrix.IsArnoldiDecomposition.aeval_mulVec_first", "filter_firstColumn", "equation_10_5_9"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, the restarted starting vector'
+
+[[node]]
+id = "explicitlyRestartedArnoldi"
+kind = "definition"
+desc = '''(10.5.10), explicitly restarted Arnoldi as a D4 program: `cycles` repetitions of — `m` steps of Algorithm 10.5.1 from `q₁`
+(giving `Q_c`, `H_c`), filter values `μ_1, …, μ_p := shifts H_c` for a caller-supplied function
+`shifts : Matrix (Fin m) (Fin m) ℝ → Fin p → ℝ` (the book leaves the choice to heuristics), `p` steps of
+(10.5.4) on `H_c`, `q₁ := (Q_c V)(:, 1)`. ★'''
+deps = ["algorithm_10_5_1", "shiftedQrSteps"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.10)'
+
+[[node]]
+id = "equation_10_5_10"
+kind = "theorem"
+desc = '''Exact semantics of (10.5.10): after each cycle the new starting vector is a unit vector, a nonzero multiple of
+`p_ℓ(A) q₁^{(ℓ)}` whenever `R_{ℓ}(1,1) ≠ 0`, with `p_ℓ` the cycle's filter polynomial; hence after `L` cycles
+`q₁^{(L)} ∈ span {p_{L−1}(A) ⋯ p_0(A) q₁}`. From `algorithm_10_5_1_spec`, `equation_10_5_4`,
+`restart_firstColumn_eq`, before breakdown (`m ≤ grade` in every cycle). ★★'''
+deps = ["explicitlyRestartedArnoldi", "algorithm_10_5_1_spec", "equation_10_5_4", "restart_firstColumn_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.10)'
+
+[[node]]
+id = "implicitRestart_isArnoldiDecomposition"
+kind = "theorem"
+desc = '''§10.5.3, the implicit restart: `V` has lower bandwidth `p`, so `V(m, 1 : m−p−1) = 0`, and with `j = m − p ≥ 1`,
+`A Q₊(:, 1:j) = Q₊(:, 1:j) H₊(1:j, 1:j) + r₊ e_jᵀ` is a `j`-step Arnoldi decomposition (`IsArnoldiDecomposition`), where
+`r₊ = h⁺_{j+1,j} Q₊(:, j+1) + v_{mj} r_c`. The book writes the residual as `v_{mj} r_c` and in the loop "Replace r_c
+with v_{mj} r_c", dropping the Hessenberg term `h⁺_{j+1,j} q⁺_{j+1}` (Doubts; Sorensen 1992 has it). Backbone
+`Matrix.IsShiftedQrChain.hasLowerBandwidth_prod`, `Matrix.IsArnoldiDecomposition.implicitRestart`, restated with
+`m + 1` / `j + 1` columns: the book's `m`, `j` are the backbone's `m + 1`, `j + 1` (`j = m − p` in both), the
+book's 1-based `Q₊(:, 1:j)` is `W.submatrix id (Fin.castLE _)` on `Fin (j + 1)`, and `v_{mj}` is `V_{<p} m j`
+(0-based). ★'''
+deps = ["equation_10_5_9", "Matrix.IsShiftedQrChain.hasLowerBandwidth_prod", "Matrix.IsArnoldiDecomposition.implicitRestart", "isArnoldiDecomposition_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, the truncated Arnoldi decomposition'
+
+[[node]]
+id = "implicitlyRestartedArnoldi"
+kind = "definition"
+desc = '''§10.5.3, the modified framework (the second displayed loop, unnumbered): `m` Arnoldi steps from `q₁`, then `cycles` repetitions
+of — choose `μ_1, …, μ_p` (caller-supplied `shifts`), (10.5.4) on `H_c`, replace `Q_c` by `(Q_c V)(:, 1:j)`, `H_c` by
+`H₊(1:j, 1:j)`, `r_c` by the residual of `implicitRestart_isArnoldiDecomposition` (the corrected one), then Arnoldi
+steps `j+1, …, m` continuing from that decomposition (Algorithm 10.5.1's loop body started from a state). A D4
+program; `noncomputable def`. ★★'''
+deps = ["algorithm_10_5_1", "shiftedQrSteps"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, implicitly restarted Arnoldi'
+
+[[node]]
+id = "implicitlyRestartedArnoldi_spec"
+kind = "theorem"
+desc = '''Exact semantics: after every cycle the state is an `m`-step Arnoldi decomposition of `A` (while no breakdown occurs) whose first
+column is the unit vector in the direction of `p_ℓ(A)` applied to the previous first column — i.e. the same
+subspaces as explicit restarting (10.5.10) with the same shifts, obtained without restarting from step 1.
+`implicitRestart_isArnoldiDecomposition`, `restart_firstColumn_eq`, the uniqueness
+`Matrix.IsArnoldiDecomposition.eq_basisMatrix` (the continued steps are the Arnoldi process of `q₊`, by
+`Matrix.IsArnoldiDecomposition.range_eq_subspace` when `H₊(1:j,1:j)` is unreduced), and `algorithm_10_5_1_spec`.
+Index translation as in `implicitRestart_isArnoldiDecomposition` (the backbone's decompositions have `k + 1`
+columns). The uniqueness is now a corollary of the implicit Q engine `Matrix.IsArnoldiDecomposition.implicitQ`
+(`Numlib/LinearAlgebra/Matrix/KrylovDecomposition`), so the surface proof is bookkeeping of the loop. ★★
+(~200 lines)'''
+deps = ["implicitlyRestartedArnoldi", "implicitRestart_isArnoldiDecomposition", "restart_firstColumn_eq", "Matrix.IsArnoldiDecomposition.eq_basisMatrix", "Matrix.IsArnoldiDecomposition.range_eq_subspace", "algorithm_10_5_1_spec", "equation_10_5_10"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, implicitly restarted Arnoldi'
+
+[[node]]
+id = "krylovSchur_isArnoldiDecomposition"
+kind = "theorem"
+desc = '''§10.5.4 (Krylov–Schur): from `A Q_m = Q_m H_m + r_m e_mᵀ` and an orthogonal `U` with `Uᵀ H_m U = [T₁₁ T₁₂; 0 T₂₂]`, `T₁₁ ∈ ℝ^{j×j}`
+(the book's "Schur decomposition of A" means of `H_m`; real Schur form with the wanted eigenvalues leading, the book
+ignoring complex pairs): (a) `A Q₊(:, 1:j) = Q₊(:, 1:j) T₁₁ + r_m uᵀ`, `Q₊ = Q_m U`, `uᵀ = U(m, 1:j)` (the book's first display
+has `r_c c_mᵀ U` for `r_m e_mᵀ U`); (b) with `Z` orthogonal, `Zᵀ T₁₁ Z` upper Hessenberg and `Zᵀ u = τ e_j` (P10.5.2),
+`A (Q₊ Z) = (Q₊ Z)(Zᵀ T₁₁ Z) + τ r_m e_jᵀ` is a `j`-step Arnoldi decomposition. Backbone
+`Matrix.IsArnoldiDecomposition.krylovSchur`, `Matrix.exists_isUpperHessenberg_conj_lastCol`, restated with
+`m + 1 = (j + 1) + p` columns (the book's `m`, `j` are the backbone's `m + 1`, `j + 1`); the Krylov–Schur last
+vector is `Zᵀ u = Pi.single (Fin.last j) τ` (the book's `τ e_j`), and at `ℝ` `conj τ = τ`. ★'''
+deps = ["Matrix.IsArnoldiDecomposition.krylovSchur", "Matrix.exists_isUpperHessenberg_conj_lastCol", "isArnoldiDecomposition_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.4, the Krylov–Schur restart'
+
+[[node]]
+id = "unsymmetricLanczos"
+kind = "definition"
+desc = '''(10.5.11), the unsymmetric Lanczos tridiagonalization with the canonical scaling `β_k = ‖r_k‖₂`, as a D4 program with fuel:
+`q₁, q̃₁` given (unit, `q̃₁ᵀ q₁ ≠ 0`), `k = 0, q_0 = 0, r_0 = q₁, q̃_0 = 0, r̃_0 = q̃₁` (the book's `s_0`); while
+`r_k ≠ 0 ∧ r̃_k ≠ 0 ∧ r̃_kᵀ r_k ≠ 0`: `β_k = ‖r_k‖₂`, `γ_k = r̃_kᵀ r_k / β_k`, `q_{k+1} = r_k/β_k`, `q̃_{k+1} = r̃_k/γ_k`,
+`k = k+1`, `α_k = q̃_kᵀ A q_k`, `r_k = (A − α_k I) q_k − γ_{k−1} q_{k−1}`, `r̃_k = (A − α_k I)ᵀ q̃_k − β_{k−1} q̃_{k−1}`. Note the
+first pass rescales `q̃₁` to `q̃₁/(q̃₁ᵀ q₁)`, which is what makes `q̃₁ᵀ q₁ = 1`. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.11)'
+
+[[node]]
+id = "equation_10_5_11"
+kind = "theorem"
+desc = '''Exact semantics of (10.5.11), against the backbone's two-sided Lanczos (whose normalization is Saad's
+`δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`): as long as the loop runs (no breakdown, `k` passes), the computed families are
+biorthonormal (`Q̃_kᵀ Q_k = I_k`), `span {q_1..q_j} = 𝒦(A, q₁, j)`, `span {q̃_1..q̃_j} = 𝒦(Aᵀ, q̃₁, j)`, and
+`Q̃_kᵀ A Q_k = T_k` (tridiagonal with `α`, `β` below, `γ` above). Proof: each `q_j` is a nonzero multiple `c_j` of
+`BiLanczos.vec A Aᵀ q₁ (q̃₁/(q̃₁ᵀq₁)) (j−1)` and each `q̃_j` the multiple `1/c̄_j` of `BiLanczos.dualVec` (induction on
+the recurrences, the scalars being fixed by the two normalizations), then `BiLanczos.inner_dualVec_vec`,
+`BiLanczos.span_vec`, `BiLanczos.span_dualVec`, `BiLanczos.inner_dualVec_apply_vec`. ★★★ (~300 lines)'''
+deps = ["unsymmetricLanczos", "BiLanczos.vec", "BiLanczos.dualVec", "BiLanczos.inner_dualVec_vec", "BiLanczos.span_vec", "BiLanczos.span_dualVec", "BiLanczos.inner_dualVec_apply_vec", "BiLanczos.NoBreakdown"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.11)'
+
+[[node]]
+id = "equation_10_5_12"
+kind = "theorem"
+desc = '''(10.5.12): at the bottom of the loop, `A [q_1 | ⋯ | q_k] = [q_1 | ⋯ | q_k] T_k + r_k e_kᵀ`. Column by column from the
+recurrence (`r_k` as computed). ★'''
+deps = ["equation_10_5_11"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.12)'
+
+[[node]]
+id = "equation_10_5_13"
+kind = "theorem"
+desc = '''(10.5.13): `Aᵀ [q̃_1 | ⋯ | q̃_k] = [q̃_1 | ⋯ | q̃_k] T_kᵀ + r̃_k e_kᵀ`. ★'''
+deps = ["equation_10_5_11"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.13)'
+
+[[node]]
+id = "unsymmetricLanczos_invariant"
+kind = "theorem"
+desc = '''§10.5.5, after (10.5.13): if `r_k = 0` then `span {q_1, …, q_k}` is `A`-invariant; if `r̃_k = 0` then `span {q̃_1, …, q̃_k}` is
+`Aᵀ`-invariant. From (10.5.12)–(10.5.13) directly (or backbone
+`BiLanczos.subspace_succ_mem_invtSubmodule_of_vhat_eq_zero` and its dual). ★'''
+deps = ["equation_10_5_12", "equation_10_5_13", "BiLanczos.subspace_succ_mem_invtSubmodule_of_vhat_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.5, termination'
+
+[[node]]
+id = "IsSeriousBreakdown"
+kind = "definition"
+desc = '''§10.5.5: the process has a *serious breakdown* at step `k` if `r_k ≠ 0`, `r̃_k ≠ 0` and `r̃_kᵀ r_k = 0` (stated on the
+exact run of (10.5.11)). Bridge (in the same node's docstring or a one-line lemma): it is the negation, at that
+step, of the backbone's `BiLanczos.NoSeriousBreakdown` condition for the rescaled process. ★'''
+deps = ["unsymmetricLanczos", "BiLanczos.NoSeriousBreakdown"]
+source = 'Golub–Van Loan, Matrix Computations, §10.5.5, Definition'
+
+[[node]]
+id = "equation_10_5_16"
+kind = "theorem"
+desc = '''(10.5.15)–(10.5.16), the block step of (10.5.14): with `R_k = A Q_k − Q_k M_k − Q_{k−1} C_{k−1}ᵀ`,
+`S_k = Aᵀ Q̃_k − Q̃_k M_kᵀ − Q̃_{k−1} B_{k−1}ᵀ`, if `S_kᵀ R_k` is nonsingular and `B_k, C_k ∈ ℝ^{p×p}` satisfy
+`C_kᵀ B_k = S_kᵀ R_k` (so both are nonsingular), then `Q_{k+1} = R_k B_k⁻¹` and `Q̃_{k+1} = S_k C_k⁻¹` satisfy
+`Q̃_{k+1}ᵀ Q_{k+1} = I_p`. `C_k⁻ᵀ (S_kᵀ R_k) B_k⁻¹ = I`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.16)'

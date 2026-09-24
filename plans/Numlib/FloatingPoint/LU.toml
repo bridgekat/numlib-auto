@@ -1,3 +1,23 @@
+# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.LU` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch03) add to the results list: `exists_roundsLU_mul_eq_add_of_pivot_ne_zero` (only the pivots
+# that are divisors need be nonzero, which is [golub2013matrix] Theorem 3.3.1's "no zero pivots are
+# encountered"), `roundsLU_exact_iff` (the exact model pins the Doolittle factors, junk division
+# included — the route from a D4 algorithm's rounding bridge to its exact specification), the
+# combination step `exists_add_mulVec_eq_of_lu_errors` factored out of `exists_roundsLU_solve_eq`
+# and its instance `exists_roundsLU_solveDot_eq` for the inner-product substitutions
+# ([golub2013matrix] Theorem 3.3.2), and the normwise `linfty_opNorm_le_of_abs_le_smul_abs_mul_abs`
+# with arbitrary entry bounds on the factors ([golub2013matrix] (3.4.9), where the computed
+# multipliers are only bounded by `1 + u`).
+# (ch04) add to the list of results — "`FloatingPoint.RoundsLDL` (the `L D Lᵀ` recurrence of
+# [golub2013matrix] Algorithm 4.1.1, with the products `v_k = fl(ℓ_jk d_k)` rounded once and reused
+# along column `j`), `exists_roundsLDL_mul_eq_add` (`L̂ D̂ L̂ᵀ = A + ΔA`, `|ΔA| ≤ γ_{n+1}
+# |L̂||D̂||L̂ᵀ|`) and `exists_roundsLDL_solve_eq` (`γ_{3n+2}`, the rigorous (4.1.4));
+# `FloatingPoint.RoundsCholeskyDiv`, the Cholesky recurrence in the operation order of
+# [golub2013matrix] Algorithm 4.2.1 (the whole column, diagonal included, divided by the rounded
+# square root of the pivot), with `exists_roundsCholeskyDiv_eq_add` (`γ_{n+2}`), the solve
+# (`γ_{3n+2}`) and the normwise `‖ΔA‖₂ ≤ n γ_{3n+2} ‖A‖₂ / (1 − n γ_{n+2})` — the rigorous form of
+# Wilkinson's `c_n u ‖A‖₂`."
 namespace = "FloatingPoint"
 
 [[node]]
@@ -80,3 +100,163 @@ id = "RoundsThomas.abs_beta_mul_alpha_sub_le"
 
 [[node]]
 id = "abs_lowerBidiagonalOf_mul_upperBidiagonalOf"
+
+[[node]]  # staged by ch03
+id = "exists_roundsLU_mul_eq_add_of_pivot_ne_zero"
+kind = "theorem"
+desc = '''`exists_roundsLU_mul_eq_add` with the hypothesis on the pivots weakened to the pivots that
+are divisors: `hd : ∀ j i, j < i → U j j ≠ 0` (the last pivot is never a divisor). Same proof:
+`RoundsLU.abs_mul_sub_apply_le` uses `U j j ≠ 0` only in the branch `j < i`. Conclusion
+`∃ ΔA, ΔA.abs ≤ₑ γ_n • (L.abs * U.abs) ∧ L * U = A + ΔA`. (Alternatively weaken the existing
+theorems in place — see the ch03 report's refactor proposals.) ★'''
+deps = ["FloatingPoint.exists_roundsLU_mul_eq_add", "FloatingPoint.RoundsLU.abs_mul_sub_apply_le"]
+
+[[node]]  # staged by ch03
+id = "roundsLU_exact_iff"
+kind = "theorem"
+desc = '''**Exact-model characterization of the computed LU factors**:
+`RoundsLU RoundingModel.exact A L U ↔ L = Matrix.luLower A ∧ U = Matrix.luUpper A`, with no
+hypothesis on `A` (both sides are the Doolittle recurrence with Lean's junk division). `→` by
+`WellFoundedLT.induction` on `min i j` as in `Matrix.luPacked_eq`, with
+`roundsSumFrom_exact_iff` turning each running difference into `a_ij - ∑_{r} l_ir u_rj`;
+`←` by the sorted enumerations of `{r < i}`. Consequently every exact run of an LU algorithm
+whose rounding bridge lands in `RoundsLU` is `(luLower A, luUpper A)`, and
+`Matrix.isLU_luLower_luUpper` is its exact specification. ★★ (~90 lines)'''
+deps = ["FloatingPoint.RoundsLU", "Matrix.luLower", "Matrix.luUpper", "Matrix.luPacked_of_le", "Matrix.luPacked_of_lt", "FloatingPoint.roundsSumFrom_exact_iff", "FloatingPoint.RoundingModel.exact"]
+
+[[node]]  # staged by ch03
+id = "exists_add_mulVec_eq_of_lu_errors"
+kind = "theorem"
+desc = '''**The combination step of [higham2002accuracy] Theorem 9.4**, factored out of
+`exists_roundsLU_solve_eq` so that any pair of substitution predicates can use it: if
+`L U = A + ΔA₁` with `|ΔA₁| ≤ γ |L| |U|`, `(L + ΔL) y = b` with `|ΔL| ≤ γ |L|` and
+`(U + ΔU) x = y` with `|ΔU| ≤ γ |U|`, `0 ≤ γ`, then `(A + ΔA) x = b` with
+`|ΔA| ≤ (3γ + γ²) |L| |U|`; with `γ = γ_n` and `3 n u < 1` the constant is `≤ γ_{3n}`
+(`three_mul_gamma_add_sq_le`). Proof: the existing one, `abs_add_mul_add_mul_add_mul_entrywiseLE`.
+★'''
+deps = ["FloatingPoint.abs_add_mul_add_mul_add_mul_entrywiseLE", "FloatingPoint.three_mul_gamma_add_sq_le", "FloatingPoint.exists_roundsLU_solve_eq"]
+
+[[node]]  # staged by ch03
+id = "exists_roundsLU_solveDot_eq"
+kind = "theorem"
+desc = '''[higham2002accuracy] Theorem 9.4 for the inner-product substitutions: `RoundsLU m A L U`
+with the divisor pivots nonzero and `U j j ≠ 0` for the back substitution (all `j`),
+`RoundsForwardSubstDot m L b y`, `RoundsBackSubstDot m U y x`, `u < 1`, `3 n u < 1` give
+`∃ ΔA, ΔA.abs ≤ₑ γ_{3n} • (L.abs * U.abs) ∧ (A + ΔA) *ᵥ x = b`. This is the rigorous form of
+[golub2013matrix] Theorem 3.3.2 (whose triangular solves are Algorithms 3.1.1–3.1.2). From
+`exists_roundsLU_mul_eq_add_of_pivot_ne_zero`, `exists_roundsForwardSubstDot_eq`,
+`exists_roundsBackSubstDot_eq`, `exists_add_mulVec_eq_of_lu_errors`. ★'''
+deps = ["FloatingPoint.exists_roundsLU_mul_eq_add_of_pivot_ne_zero", "FloatingPoint.exists_roundsForwardSubstDot_eq", "FloatingPoint.exists_roundsBackSubstDot_eq", "FloatingPoint.exists_add_mulVec_eq_of_lu_errors"]
+
+[[node]]  # staged by ch03
+id = "linfty_opNorm_le_of_abs_le_smul_abs_mul_abs"
+kind = "theorem"
+desc = '''The normwise consequence of an entrywise factor bound with arbitrary entry bounds on the
+factors: for real `n × n` matrices, if `|ΔA| ≤ γ |L| |U|` entrywise, `|L i j| ≤ λ` and
+`|U i j| ≤ c` for all `i j`, `0 ≤ γ`, then `‖ΔA‖_∞ ≤ n² γ λ c` (row sums of `|L| |U|` are at most
+`n · n · λ c`; `Matrix.linfty_opNorm_le_of_forall_sum_le`). `linfty_opNorm_le_of_roundsLU_solve`
+is the case `λ = 1`, `c = ρ max |a_ij|`; [golub2013matrix] (3.4.9) needs `λ = 1 + u` (the computed
+multipliers of partial pivoting in the relational model) and `c = ρ ‖A‖_∞`. ★'''
+deps = ["Matrix.linfty_opNorm_le_of_forall_sum_le", "FloatingPoint.linfty_opNorm_le_of_roundsLU_solve"]
+
+[[node]]  # staged by ch04
+id = "RoundsLDL"
+kind = "definition"
+desc = '''**The `L D Lᵀ` factorization in floating-point arithmetic**, in the operation order of [golub2013matrix]
+Algorithm 4.1.1: `RoundsLDL m A L D` for `A L D : Matrix n n K` (`[Fintype n] [LinearOrder n]`) holds
+when `L` is unit lower triangular, `D` is diagonal, and there is `V : Matrix n n K` (the vectors `v`
+of the algorithm, one per column `j`: `V j k` for `k < j`) with
+`∀ j k, k < j → m.Rounds (L j k * D k k) (V j k)`, the pivot `D j j` a running difference of `A j j`
+and the rounded products `L j k * V j k`, `k < j` (in some order: `∃ o p, o.Nodup ∧ (∀ k, k ∈ o ↔ k <
+j) ∧ (∀ k ∈ o, m.Rounds (L j k * V j k) (p k)) ∧ RoundsSumFrom m (A j j) (o.map (−p ·)) (D j j)`), and
+`L i j`, `j < i`, one rounding of `t / D j j` with `t` the running difference of `A i j` and the
+rounded `L i k * V j k`, `k < j`. The shape of `FloatingPoint.RoundsLU`/`RoundsCholesky`; the matrix–
+vector products of the book are read as running differences from the entry of `A` (saxpy order). ★'''
+deps = ["FloatingPoint.RoundsSumFrom", "FloatingPoint.RoundsLU"]
+
+[[node]]  # staged by ch04
+id = "exists_roundsLDL_mul_eq_add"
+kind = "theorem"
+desc = '''The backward error of the computed `L D Lᵀ` factors: if `RoundsLDL m A L D`, `m.u < 1`,
+`(card n + 1) u < 1` and the pivots that are divisors are nonzero, then
+`∃ ΔA, ΔA.abs ≤ₑ gamma m.u (card n + 1) • (L.abs * D.abs * Lᵀ.abs) ∧ L * D * Lᵀ = A + ΔA`.
+Entry `(i, j)`, `j ≤ i`: `(L D Lᵀ)_ij = ∑_{k ≤ j} ℓ_ik d_k ℓ_jk`, and the recurrence computes it with the
+running-difference error of `FloatingPoint.exists_rounds_sub_dot_div_eq` (the scalar Lemma 8.4 of
+Higham) on the products `ℓ_ik V j k`, each `V j k = ℓ_jk d_k (1 + ε)` — one extra rounding, hence
+`γ_{j+1} ≤ γ_{n+1}`; symmetric entries by symmetry of `L D Lᵀ`. The proof of
+`exists_roundsCholesky_eq_add` is the template. ★★ (~150 lines)'''
+deps = ["FloatingPoint.RoundsLDL", "FloatingPoint.exists_rounds_sub_dot_div_eq", "FloatingPoint.exists_roundsCholesky_eq_add"]
+
+[[node]]  # staged by ch04
+id = "exists_add_mulVec_eq_of_ldl_errors"
+kind = "theorem"
+desc = '''The combination step for three factors (the `L D Lᵀ` analogue of ch03's
+`FloatingPoint.exists_add_mulVec_eq_of_lu_errors`): if `L D Lᵀ = A + ΔA₁` with `|ΔA₁| ≤ γ |L||D||Lᵀ|`,
+`(L + ΔL₁) z = b`, `(D + ΔD) y = z`, `(Lᵀ + ΔL₂) x = y` with `|ΔL₁| ≤ γ' |L|`, `|ΔD| ≤ u |D|`,
+`|ΔL₂| ≤ γ' |Lᵀ|`, then `(A + ΔA) x = b` with `|ΔA| ≤ (γ + (1 + γ')²(1 + u) − 1) |L||D||Lᵀ|`; with
+`γ = γ_{n+1}`, `γ' = γ_n` the constant is `≤ γ_{3n+2}` (`FloatingPoint.gamma_add_gamma_add_mul_le`).
+Expand the product and bound the seven error terms entrywise, as in
+`abs_add_mul_add_mul_add_mul_entrywiseLE`. ★'''
+deps = ["FloatingPoint.gamma_add_gamma_add_mul_le", "FloatingPoint.abs_add_mul_add_mul_add_mul_entrywiseLE"]
+
+[[node]]  # staged by ch04
+id = "exists_roundsLDL_solve_eq"
+kind = "theorem"
+desc = '''**[golub2013matrix] (4.1.4), rigorous**: `RoundsLDL m A L D`, `RoundsForwardSubst m L b z` (unit lower `L`),
+`y i` an admissible rounding of `z i / D i i`, `RoundsBackSubst m Lᵀ y x`, the pivots nonzero and
+`(3 card n + 2) u < 1` give `∃ E, E.abs ≤ₑ gamma m.u (3 card n + 2) • (L.abs * D.abs * Lᵀ.abs) ∧
+(A + E) *ᵥ x = b`. This implies the book's first-order bound `|E| ≤ n u (2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)`
+for `n ≥ 2` (`(3n + 2) u ≤ 4 n u`); the book's `2|A|` term is not needed. From
+`exists_roundsLDL_mul_eq_add`, `exists_roundsForwardSubst_eq`, `exists_roundsBackSubst_eq` and
+`exists_add_mulVec_eq_of_ldl_errors`. ★★'''
+deps = ["FloatingPoint.exists_roundsLDL_mul_eq_add", "FloatingPoint.exists_roundsForwardSubst_eq", "FloatingPoint.exists_roundsBackSubst_eq", "FloatingPoint.exists_add_mulVec_eq_of_ldl_errors"]
+
+[[node]]  # staged by ch04
+id = "RoundsCholeskyDiv"
+kind = "definition"
+desc = '''**Cholesky in the operation order of [golub2013matrix] Algorithm 4.2.1** (gaxpy Cholesky: the column
+`A(j:n, j)` is updated by running differences and then divided, *diagonal included*, by
+`s = fl(√A(j,j))`): `RoundsCholeskyDiv m A G` for lower triangular `G` holds when for each `j` there
+are `t_j` (the running difference of `A j j` and the rounded `G j k * G j k`, `k < j`), an exact root
+`0 ≤ s`, `s * s = t_j`, its rounding `ŝ_j` (`m.Rounds s ŝ_j`), `G j j` an admissible rounding of
+`t_j / ŝ_j`, and for `j < i`, `G i j` an admissible rounding of `t_ij / ŝ_j` with `t_ij` the running
+difference of `A i j` and the rounded `G i k * G j k`, `k < j`. Differs from
+`FloatingPoint.RoundsCholesky` (whose diagonal is `fl(√t)`) exactly in the diagonal:
+`fl(t / fl(√t)) = √t (1 + δ₂)/(1 + δ₁)`. ★'''
+deps = ["FloatingPoint.RoundsSumFrom", "FloatingPoint.RoundsCholesky"]
+
+[[node]]  # staged by ch04
+id = "exists_roundsCholeskyDiv_eq_add"
+kind = "theorem"
+desc = '''`RoundsCholeskyDiv m A G`, `∀ j, G j j ≠ 0` and `(card n + 2) u < 1` give
+`∃ ΔA, ΔA.abs ≤ₑ gamma m.u (card n + 2) • (G.abs * Gᵀ.abs) ∧ G * Gᵀ = A + ΔA`. As
+`exists_roundsCholesky_eq_add` with one more rounding on the diagonal: `ĝ_jj² = t_j (1 + θ₂)`,
+`|θ₂| ≤ γ₂`, and off the diagonal `ĝ_ij ĝ_jj = t_ij (1 + θ)` with the two roundings of `ŝ_j` and
+the quotient. The hypothesis is on the returned diagonal, not on the intermediate roots (convention 9
+of `Numlib/FloatingPoint/Program`): `G j j ≠ 0` forces `ŝ_j ≠ 0` (else `G j j = fl(t_j / 0) = fl(0) = 0`)
+and then `t_j > 0` (`ŝ_j` rounds `√t_j`, and `√t_j = 0` for `t_j ≤ 0`). ★★ (~120 lines, reusing
+`RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le`)'''
+deps = ["FloatingPoint.RoundsCholeskyDiv", "FloatingPoint.RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le"]
+
+[[node]]  # staged by ch04
+id = "exists_roundsCholeskyDiv_solve_eq"
+kind = "theorem"
+desc = '''The Cholesky solve: `RoundsCholeskyDiv m A G`, `RoundsForwardSubst m G b y`, `RoundsBackSubst m Gᵀ y x`,
+the diagonal of `G` nonzero, `(3 card n + 2) u < 1` give `∃ E, E.abs ≤ₑ gamma m.u (3 card n + 2) •
+(G.abs * Gᵀ.abs) ∧ (A + E) *ᵥ x = b` (Higham Theorem 10.4 with the book's operation order). From
+`exists_roundsCholeskyDiv_eq_add`, the substitution theorems and ch03's
+`exists_add_mulVec_eq_of_lu_errors` with `L = G`, `U = Gᵀ`. ★'''
+deps = ["FloatingPoint.exists_roundsCholeskyDiv_eq_add", "FloatingPoint.exists_roundsForwardSubst_eq", "FloatingPoint.exists_roundsBackSubst_eq", "FloatingPoint.exists_add_mulVec_eq_of_lu_errors"]
+
+[[node]]  # staged by ch04
+id = "l2_opNorm_le_of_roundsCholeskyDiv_solve"
+kind = "theorem"
+desc = '''**Wilkinson's normwise bound, rigorous** ([golub2013matrix] §4.2.6: "`(A + E) x̂ = b`, `‖E‖₂ ≤ c_n u ‖A‖₂`"):
+over `ℝ`, under the hypotheses of `exists_roundsCholeskyDiv_solve_eq` and `n γ_{n+2} < 1`, the `E`
+there satisfies `‖E‖₂ ≤ n γ_{3n+2} ‖A‖₂ / (1 − n γ_{n+2})`. Chain: `‖ |G| |Gᵀ| ‖₂ ≤ ‖ |G| ‖_F² =
+‖G‖_F² ≤ n ‖G‖₂² = n ‖G Gᵀ‖₂` (`Matrix.l2_opNorm_le_frobenius_norm`,
+`Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`, monotonicity of `‖·‖₂` on entrywise
+nonnegative matrices), `‖E‖₂ ≤ ‖ |E| ‖₂` and `G Gᵀ = A + ΔA` with the same bound for `ΔA`, solved for
+`‖G‖₂²`. ★★ (~120 lines; the entrywise-monotonicity of the spectral norm on nonnegative matrices,
+`‖B‖₂ ≤ ‖C‖₂` for `|B| ≤ C`, is a lemma of its own if `Numlib/LinearAlgebra/Matrix/Order` lacks it)'''
+deps = ["FloatingPoint.exists_roundsCholeskyDiv_solve_eq", "Matrix.l2_opNorm_le_frobenius_norm", "Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm"]

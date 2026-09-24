@@ -1,0 +1,141 @@
+desc = '''
+Golub–Van Loan, Chapter 3: general linear systems — triangular systems (§3.1), the LU factorization
+and its algorithms (§3.2), their rounding errors (§3.3), pivoting (§3.4), improving and estimating
+accuracy (§3.5), parallel LU (§3.6, precise statements only). Real square systems
+`A : Matrix (Fin n) (Fin n) ℝ`, `b : Fin n → ℝ`; rectangular `Matrix (Fin m) (Fin n) ℝ` in §3.1.6,
+§3.2.10, (3.4.11), §3.6.
+
+**Conventions.**
+
+* Indices are 0-based: the book's `A(i:j, k:l)` is a `Matrix.submatrix`/`Matrix.toBlock`, its
+  "`A(1:k,1:k)` nonsingular for `k = 1:n-1`" is `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`
+  (`k = 0` is the empty block), its step `k = 1:n-1` is `k : Fin n` with a harmless empty last step,
+  and its `A^{(k)}` is `Matrix.gemStage A (k - 1)` in (3.2.3) but the stage after `k` steps in
+  §3.4 (the book changes convention; see (3.4.10)). Block partitions are `Matrix.fromBlocks` over
+  `Fin r ⊕ Fin s` read on `Fin (r + s)` through `finSumFinEquiv`; `n = N r` blocks through
+  `finProdFinEquiv`.
+* Norms: `‖·‖_∞` is Mathlib's scoped `Matrix.Norms.Operator` (`= Matrix.lpOpNorm ⊤`,
+  `Matrix.lpOpNorm_top`); `κ_∞ = Matrix.condNumberLp ⊤`; entrywise `|·|` and `≤` on matrices are
+  `Matrix.abs` and `≤ₑ` of `Numlib/LinearAlgebra/Matrix/Order`.
+* Floating point: the book's `fl`, `u` are `fp : FloatingPoint.RoundingModel ℝ` and `fp.u`; its
+  first-order bounds `c n u (…) + O(u²)` are stated in the rigorous `γ` forms
+  (`FloatingPoint.gamma fp.u k`), which imply them; every such node's `desc` says how.
+* **Algorithms (D4)** follow the numbered **Algorithm conventions** of `NumlibSurface/GolubVanLoan`
+  (the same list heads `Numlib/FloatingPoint/Program`). Every numbered algorithm is a definition
+  `{M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) … : M _` in the book's operation order; every
+  numbered display that writes out a complete procedure is a **content-named program** whose exact
+  specification theorem is the display's `equation_N_M_K` (naming rule of `NumlibSurface/GolubVanLoan`):
+  `blockForwardElim` (3.1.4), `tallOuterProductLU` (3.2.8), `solveMultipleRHS` (3.4.12),
+  `solvePowerSystem` (3.4.13), `iterativeImprovementStep` (3.5.4), `mixedPrecisionImprovement`
+  (3.5.5), `backSubstChosenRHS` (3.5.6); the definitional displays are content-named definitions
+  (`gaussStage` (3.2.3), `partialPivotStage` (3.4.1), `growthFactorStages` (3.4.8)). Accompanying
+  theorems (convention 12): `_rounds`, the bridge "every run at `SetM` with `rnd := fp.round`
+  satisfies the backbone relational predicate" (`RoundsForwardSubst(Dot)`, `RoundsBackSubst(Dot)`,
+  `RoundsLU` on `P A`); `_spec`, the exact specification of the `Id` run; `_rounding` or the
+  numbered display, the book's backward-error bound, bridge plus backbone theorem. **The exact
+  specification is read off the bridge** (convention 11): the `Id` run is a run at the exact model
+  `FloatingPoint.RoundingModel.exact` (`u = 0`, `Rounds x y ↔ y = x`, `RoundingModel.round_exact`)
+  by a one-line pure collapse (`simp only [alg, bind_pure_comp, List.foldlM_pure, map_pure]; rfl`,
+  through `if`s with `ite_pure`), and the exact-model characterizations
+  `FloatingPoint.roundsForwardSubst_exact_iff`, `roundsLU_exact_iff` identify it with
+  `Matrix.forwardSubst`, `Matrix.luLower`/`luUpper`. One proof per algorithm instead of two.
+  Prototype: `notes/gvl/ch03/proto/Bridge.lean` proves the whole chain for Algorithm 3.1.3 (bridge,
+  pure collapse, exact spec) with no `sorry`, ~150 lines of proof; `proto/Shapes.lean` elaborates
+  Algorithms 3.2.1, 3.4.1, 3.5.1 with matrix and tuple state and checks their pure collapses. The
+  pivoting algorithms 3.4.1–3.4.3 are the exception: their exact specification is an `Id`-level
+  simulation of the backbone recurrences `Matrix.gemPivotStage`/`gemFullPivotStage`, because a
+  guarded skip (`if A(k,k) ≠ 0`) is not a `RoundsLU` step. A rounding theorem's hypotheses are on
+  the values the program returns (convention 9: the packed factors' pivots `F j j`, not an
+  overwritten intermediate), composites nested as `theorem_3_3_2`.
+* Chapter-specific readings of the conventions: a pivot search compares exact absolute values of
+  computed entries (convention 1: `|·|` and comparisons are exact), while arithmetic feeding a test
+  is rounded (Algorithm 3.5.1's look-ahead sums); unit triangular solves inside factorizations do
+  not divide by the unit diagonal (convention 2; §3.1.7, and a rounded division by `1` would not be
+  a `RoundsLU` step); `fp.IsIdempotent` is never assumed here — the inner-product relations
+  `RoundsForwardSubstDot`/`RoundsBackSubstDot` absorb the `0 + p` rounding (convention 6); the
+  relational model bounds computed multipliers of partial pivoting by `1 + u`, not `1`.
+
+**Backbone correspondence.** Specifications: `Matrix.IsLU`, `leadingPrincipalSubmatrix`,
+`strictLeadingPrincipalSubmatrix`, `IsBlockLU` (`Numlib/LinearAlgebra/Matrix/LU`); `elimStep`,
+`gaussTransform`, `gemStage`, `gemLower`, `luPacked`/`luLower`/`luUpper`
+(`…/LU/Elimination`); `partialPivotRow`, `IsCompletePivot`, `gemPivotStage`, `gemFullPivotStage`,
+`growthFactor`, `supAbs`, `wilkinsonGrowthBound` (`…/LU/Pivoting`); `forwardSubst`, `backSubst`,
+`luSolve` (`Numlib/Direct/Substitution`); `Refinement.step`, `scaled_mulVec_eq_iff`
+(`Numlib/Direct/Refinement`). Rounding: `RoundsForwardSubst`, `RoundsBackSubst`, Higham Theorem 8.5
+(`Numlib/FloatingPoint/Substitution`), `RoundsLU`, Higham Theorems 9.3–9.4 and the conditional
+Wilkinson bound (`Numlib/FloatingPoint/LU`). New (ch03): the module `Numlib/Direct/ConditionEstimation`
+(lower bounds of `‖A⁻¹‖` and `κ` from a solve), and staged appends — `FloatingPoint/Substitution`
+(the inner-product order `RoundsForwardSubstDot`/`RoundsBackSubstDot` with its `γ_n` theorem, the
+exact-model characterizations), `FloatingPoint/LU` (divisor-pivot hypothesis, `roundsLU_exact_iff`,
+the solve with inner-product substitutions, normwise bound with general entry bounds),
+`FloatingPoint/InnerProduct` (`roundsSumFrom_append_singleton`), `LinearAlgebra/Matrix/LU`
+(`IsRectLU` and its existence), `LU/Pivoting` (partial pivoting without a pivot hypothesis,
+`IsRookPivot`, algorithmic `P A Q = L U`, rank revelation, stage-wise Wilkinson, tall pivoted
+`IsRectLU`), `Hessenberg` (`IsUnitUpperTriangular`). Program infrastructure from ch01's
+`Numlib/FloatingPoint/Program` (planned there): `FloatingPoint.RoundingModel.round`,
+`RoundingModel.mem_run_round`, `RoundingModel.round_exact`, `SetM.mem_run_bind`,
+`SetM.mem_run_pure`, the loop rules `SetM.forall_mem_run_foldlM_finRange`,
+`SetM.mem_run_foldlM_update_of_nodup` (one entry per step: every saxpy and rank-one update of this
+chapter, generalizing the prototype's `mem_saxpy`), `SetM.mem_run_foldlM_update_self_iff`,
+`SetM.mem_run_foldlM_of_pi`, and `FloatingPoint.dotAccum` with
+`mem_run_dotAccum_iff` (Algorithm 1.1.1 over an index list, used for every dot product here); the
+exact model `FloatingPoint.RoundingModel.exact` is ch01's append to `Model`; `ite_pure` (`Program`) serves the pure collapse through guards;
+`SetM.run_foldlM_nonempty` and `RoundingModel.IsTotal` give `algorithm_3_4_1_run_nonempty`.
+
+**Overlap with Quarteroni–Sacco–Saleri Chapter 3** (`plans/NumlibSurface/QuarteroniSaccoSaleri/Chapter03*`):
+the same backbone serves both. Theorem 3.2.1 = QSS Theorem 3.4; (3.2.6) = QSS (3.39); Theorems
+3.3.1–3.3.2 = QSS (3.40), (3.64) (QSS's solves are the running-difference order; GVL's row
+solves need the inner-product order, a ch03 append); (3.4.3) = QSS
+(3.52); (3.4.8)–(3.4.9) = QSS (3.66)–(3.67); (3.4.10) = QSS §3.10's Wilkinson bound; §3.5 ≈ QSS
+§3.11–3.12. GVL adds the algorithms as programs (QSS's MATLAB programs are not nodes), the row/
+column distinction, rook pivoting, rank revelation, rectangular and block LU, and the LINPACK
+estimator.
+
+**Not formalized** (each class once):
+* operation counts, flop tables, level-3 fractions (§3.1.5, §3.2.11, §3.4), memory traffic and the
+  right-/left-looking discussion;
+* numerical examples and their tables: the 3×3 matrix without LU (§3.2.5), the `ε` and 3-digit
+  examples of §3.3.2 and §3.4.3, the `u`-table of §3.5.1, P-problems;
+* the proof-internal displays (3.3.3)–(3.3.13) (the backbone proves Higham 9.3 entrywise), and the
+  rectangular remark after Theorem 3.3.1 (no rectangular rounding relation is planned);
+* heuristics with no rigorous reading beyond the planned nodes: (3.5.1) as an approximation, Heuristics
+  II and III ("`d - q` correct digits", "`min{d, k(d - q)}` digits" — the rigorous counterpart of III
+  is the backbone's `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`, not planned as a node
+  because the book states nothing it would prove; a bridge from (3.5.5)'s runs would also need
+  a sign-symmetric rounding model, since `b - A x` is not `RoundsAffineStep m (-A) b x`), the
+  Forsythe–Moler estimate `u κ ≈ ‖z‖/‖x‖`, the average-case growth `n^{2/3}`, "`ρ = 10`", "rook
+  pivoting induces the same reliability as complete pivoting" and "`O(1)` rook iterations in
+  practice", the conditioning of `L` versus `U`, Skeel's `τ` criterion, simple row scaling;
+* the "LU mentality" Example 3 (`cᵀ A⁻¹ d`, unnumbered and a composition of planned nodes) and the
+  vocabulary of §3.4.10 (problem, instance, stable, backward stable — "small" has no definition);
+  backward stability of GECP (asserted "in the sense of (2.7.21)");
+* the five unwritten loop orders of §3.2.9 (only `kij` is displayed; it is Algorithm 3.2.1's
+  program) and P3.4.5's rectangular complete pivoting algorithm behind (3.4.11);
+* §3.6 except (3.6.2), (3.6.5) and the assembled factorization: block-cyclic distribution,
+  processor grids, (3.6.6), Figures 3.6.1–3.6.5, tournament pivoting (§3.6.3, no proposition).
+
+**Closes / touches.** No `notes/frontier.md` item. Makes algorithmic the existence-only complete
+pivoting of `LU/Pivoting` (`gemFullPivotStage` had no factorization theorem), removes the
+nonzero-pivot hypothesis from partial pivoting's algorithmic factorization, and gives the
+condition-estimation material of `Direct/Refinement` a home.
+
+**Order of attack.**
+1. Program infrastructure (ch01's `FloatingPoint/Program` and its `Model` append: `round`,
+   `SetM.mem_run_bind`, the loop rules, `dotAccum`, the exact model) — prerequisite of everything
+   algorithmic.
+2. `FloatingPoint/InnerProduct` append (`roundsSumFrom_append_singleton`, ~20 lines, done in the
+   prototype).
+3. `FloatingPoint/Substitution` appends (~250 lines): `exists_rounds_sub_dotFrom_div_eq`, the Dot
+   predicates and their `γ_n` theorems, the four `_exact_iff`.
+4. `FloatingPoint/LU` appends (~200 lines): `exists_roundsLU_mul_eq_add_of_pivot_ne_zero`,
+   `roundsLU_exact_iff` (★★, ~90), `exists_add_mulVec_eq_of_lu_errors`, `exists_roundsLU_solveDot_eq`,
+   `linfty_opNorm_le_of_abs_le_smul_abs_mul_abs`.
+5. `Hessenberg` append (~40), `LU` append `IsRectLU` (~170), `LU/Pivoting` appends (~500:
+   partial pivoting ~70, rook/complete `P A Q = L U` ~150, rank ~120, Wilkinson stage-wise ~30,
+   tall rectangular ~80), `Direct/ConditionEstimation` (~100). Independent of 1–4.
+6. Surface §3.1 (~700 lines: four bridges, the block `blockForwardElim` (3.1.4) ~200), then §3.2 (~1600: the 3.2.1 and
+   3.2.2 bridges ~450, block algorithms ~650 with the `Fin` splitting as the main risk — prototype
+   the recursive split first), §3.3 (~100), §3.4 (~2000: the GEPP bridge ~350 and the three
+   pivoting simulations ~700 dominate), §3.5 (~500), §3.6 (~150). Surface total ≈ 5000 lines,
+   backbone ≈ 1300.
+'''

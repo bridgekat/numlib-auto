@@ -1,0 +1,128 @@
+namespace = "Matrix"
+desc = '''
+Hamiltonian matrices, the infinitesimal companions of Mathlib's symplectic group.
+
+Upstreaming candidate (natural home `Mathlib.LinearAlgebra.SymplecticGroup`). Mathlib has the
+canonical skew form `Matrix.J l R = fromBlocks 0 (-1) 1 0` on `l ⊕ l`, the symplectic group
+`Matrix.symplecticGroup l R` (`A J Aᵀ = J`, equivalently `Aᵀ J A = J` by `symplecticGroup.mem_iff'`,
+with the block characterization `symplecticGroup.fromBlocks_mem_iff`), and the symplectic Lie
+algebra `LieAlgebra.Symplectic.sp l R` of `J`-skew-adjoint matrices — which *are* the
+Hamiltonian matrices, but under a name and in a form no numerical text uses. This module gives
+the predicate its numerical name and its two textbook characterizations, and the facts the
+Hamiltonian eigenvalue problem needs (Golub–Van Loan §1.3.10, §7.8).
+
+`Matrix.IsHamiltonian M` is stated in [golub2013matrix]'s own form `J M Jᵀ = -Mᵀ`. The sign of `J`
+is immaterial: [golub2013matrix] writes `J = [0 I; -I 0] = -Matrix.J`, and both the condition
+`J M Jᵀ = -Mᵀ` and the symplectic condition `Sᵀ J S = J` are invariant under `J ↦ -J`, so the
+surface uses Mathlib's `J` throughout and says so once.
+
+Beside them, the rest of Golub–Van Loan's Figure 7.8.1: *skew-Hamiltonian* matrices (`J N`
+skew-symmetric; block form `[A G; F Aᵀ]` with `G`, `F` skew-symmetric), their invariance under
+symplectic similarity, the square of a Hamiltonian matrix (skew-Hamiltonian), and the block form
+`[Q₁ Q₂; -Q₂ Q₁]` of orthogonal symplectic matrices (Figure 7.8.1, fourth row; the book's P2.5.4).
+The eigenvalue theory built on them is `Numlib/Eigen/HamiltonianSchur`.
+
+Everything is over a `CommRing R` with `[DecidableEq l] [Fintype l]`; the real surface
+instantiates `R = ℝ`, `l = Fin n`.
+
+Searched: `Matrix.IsHamiltonian`, `IsHamiltonian` (Mathlib has only
+`SimpleGraph.IsHamiltonian`), `LieAlgebra.Symplectic.sp` (reused), `Matrix.J` (reused).
+'''
+
+[[node]]
+id = "IsHamiltonian"
+kind = "definition"
+desc = '''`def IsHamiltonian (M : Matrix (l ⊕ l) (l ⊕ l) R) : Prop := J l R * M * (J l R)ᵀ = -Mᵀ`
+([golub2013matrix] §1.3.10, the "equivalent definition" `J M Jᵀ = -Mᵀ`). ★'''
+deps = []
+
+[[node]]
+id = "isHamiltonian_iff_isSymm_J_mul"
+kind = "theorem"
+desc = '''`M.IsHamiltonian ↔ (J l R * M).IsSymm`: multiply `J M Jᵀ = -Mᵀ` on the right by `J`
+(`J_transpose`, `J_squared`). The form in which Hamiltonian = "`J M` symmetric". ★'''
+deps = ["IsHamiltonian"]
+
+[[node]]
+id = "isHamiltonian_iff_mem_sp"
+kind = "theorem"
+desc = '''`M.IsHamiltonian ↔ M ∈ LieAlgebra.Symplectic.sp l R`, i.e. `Mᵀ * J = J * (-M)`
+(`mem_skewAdjointMatricesLieSubalgebra`, `mem_skewAdjointMatricesSubmodule`,
+`Matrix.IsSkewAdjoint`, `Matrix.IsAdjointPair`). Gives closure under `+`, `•`, `-` and the
+commutator for free. ★'''
+deps = ["IsHamiltonian"]
+
+[[node]]
+id = "isHamiltonian_fromBlocks_iff"
+kind = "theorem"
+desc = '''The block form ([golub2013matrix] §1.3.10's definition): `(fromBlocks A G F H).IsHamiltonian ↔ H =
+-Aᵀ ∧ Fᵀ = F ∧ Gᵀ = G` for `A F G H : Matrix l l R`. `J`, `fromBlocks_multiply`,
+`fromBlocks_transpose`, `fromBlocks_inj`, then `neg_eq_iff_eq_neg`. ★'''
+deps = ["IsHamiltonian"]
+
+[[node]]
+id = "IsHamiltonian.lie"
+kind = "theorem"
+desc = '''Hamiltonian matrices form a Lie algebra: `M.IsHamiltonian → N.IsHamiltonian → (M * N - N *
+M).IsHamiltonian`, together with `.add`, `.neg`, `.smul`, `isHamiltonian_zero` (one node for the
+algebraic API); from `isHamiltonian_iff_mem_sp` and the `LieSubalgebra` structure. ★'''
+deps = ["isHamiltonian_iff_mem_sp"]
+
+[[node]]
+id = "IsHamiltonian.conj_symplectic"
+kind = "theorem"
+desc = '''Symplectic similarity preserves Hamiltonian structure: `S ∈ symplecticGroup l R → M.IsHamiltonian →
+(S⁻¹ * M * S).IsHamiltonian` ([golub2013matrix] P2.1.10(b), the reason the Hamiltonian eigenvalue
+problem is solved by symplectic similarities, §7.8). `symplecticGroup.inv_eq_symplectic_inv`
+(`S⁻¹ = -J Sᵀ J`) and `isHamiltonian_iff_isSymm_J_mul`: `J S⁻¹ M S = -(J Sᵀ J) … = Sᵀ (J M) S`
+up to sign bookkeeping, a congruence of the symmetric `J M`. ★★'''
+deps = ["isHamiltonian_iff_isSymm_J_mul"]
+
+[[node]]
+id = "IsHamiltonian.transpose_mul_J_eq"
+kind = "theorem"
+desc = '''`M.IsHamiltonian → Mᵀ = J * M * J` (equivalently `J⁻¹ Mᵀ J = -M`): `Mᵀ` is similar to `-M`,
+hence `charpoly Mᵀ = charpoly (-M)` and the spectrum of a Hamiltonian matrix is symmetric about the
+imaginary axis — the fact chapter 7 (§7.8.1) builds the Hamiltonian–Schur form on. The
+characteristic-polynomial corollary `IsHamiltonian.charpoly_neg` (`M.charpoly.comp (-X) = (-1)^{2n}
+M.charpoly`) is left to ch07's plan. ★'''
+deps = ["IsHamiltonian"]
+
+[[node]]  # staged by ch07
+id = "IsSkewHamiltonian"
+kind = "definition"
+desc = '''Skew-Hamiltonian ([golub2013matrix] Figure 7.8.1): `N : Matrix (l ⊕ l) (l ⊕ l) R` with
+`J l R * N * (J l R)ᵀ = Nᵀ` (equivalently `J N` skew-symmetric; the twin of `IsHamiltonian`'s
+`J M Jᵀ = -Mᵀ`; independent of the sign convention for `J`). ★'''
+deps = ["Matrix.IsHamiltonian"]
+
+[[node]]  # staged by ch07
+id = "isSkewHamiltonian_iff_fromBlocks"
+kind = "theorem"
+desc = '''Figure 7.8.1, second row: `(fromBlocks A G F H).IsSkewHamiltonian ↔ H = Aᵀ ∧ Fᵀ = -F ∧ Gᵀ = -G`
+(the twin of `isHamiltonian_fromBlocks_iff`, same computation). ★'''
+deps = ["Matrix.IsSkewHamiltonian", "Matrix.isHamiltonian_fromBlocks_iff"]
+
+[[node]]  # staged by ch07
+id = "IsSkewHamiltonian.conj_symplectic"
+kind = "theorem"
+desc = '''Symplectic similarity preserves skew-Hamiltonian structure: `S ∈ symplecticGroup l R →
+N.IsSkewHamiltonian → (S⁻¹ * N * S).IsSkewHamiltonian` ([golub2013matrix] §7.8.1, before (7.8.4)); the
+proof of `IsHamiltonian.conj_symplectic` with a skew-symmetric congruence. ★'''
+deps = ["Matrix.IsSkewHamiltonian", "Matrix.IsHamiltonian.conj_symplectic"]
+
+[[node]]  # staged by ch07
+id = "IsHamiltonian.isSkewHamiltonian_mul_self"
+kind = "theorem"
+desc = '''[golub2013matrix] §7.8.1 (2): the square of a Hamiltonian matrix is skew-Hamiltonian
+(`J M² = (J M Jᵀ)(J M) = -Mᵀ (J M)ᵀ = -(J M²)ᵀ`). ★'''
+deps = ["Matrix.IsSkewHamiltonian", "Matrix.isHamiltonian_iff_isSymm_J_mul"]
+
+[[node]]  # staged by ch07
+id = "mem_orthogonalGroup_symplecticGroup_iff"
+kind = "theorem"
+desc = '''Figure 7.8.1, fourth row ([golub2013matrix] P2.5.4): for `Q ∈ orthogonalGroup (l ⊕ l) ℝ`,
+`Q ∈ symplecticGroup l ℝ ↔ J l ℝ * Q = Q * J l ℝ ↔ ∃ Q₁ Q₂, Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁`, and then
+`Q₁ᵀ Q₂` is symmetric and `Q₁ᵀ Q₁ + Q₂ᵀ Q₂ = 1` (`Q J Qᵀ = J ⇔ Q J = J Q` using `Qᵀ = Q⁻¹`; the block
+form of a matrix commuting with `J`). ★★'''
+deps = []

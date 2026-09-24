@@ -1,0 +1,109 @@
+desc = '''
+The matrix sign function and Newton's iteration for it ([golub2013matrix] §9.4.1; Higham FOM Ch. 5).
+`Matrix.matrixSign A = pfc (fun z : ℂ => (SignType.sign z.re : ℂ)) A` for `A : Matrix n n ℂ` with
+no eigenvalue on the imaginary axis (junk otherwise). The scalar function is locally constant off
+the axis, so `pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq` computes it as `∑ ±E_λ`: minus the
+spectral projector of the open left half-plane plus that of the right. The Newton iteration
+`S₀ = A`, `S_{k+1} = (S_k + S_k⁻¹)/2` ((9.4.1)) is `Matrix.newtonSignIterate A k` (Mathlib's matrix
+inverse `⁻¹`, junk `0` at a singular matrix, never reached under the hypothesis). The algebraic
+identities (9.4.2)–(9.4.4) hold in any ring for commuting elements and are stated there; convergence
+(`Tendsto` in the matrix topology, no norm needed) goes through `spectralRadius_lt_one_iff_tendsto_pow`
+(`Numlib/Analysis/Normed/Algebra/SpectralRadius`, under a local `NormedRing` instance on matrices) —
+the book's "Lemma 7.3.2" step. Prototype of the iteration's shape: `notes/gvl/ch09/proto/Exp.lean`.
+'''
+
+[[node]]
+id = "Matrix.matrixSign"
+kind = "definition"
+desc = '''`Matrix.matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ := pfc (fun z : ℂ => ((SignType.sign z.re :
+SignType) : ℂ)) A`, [golub2013matrix] §9.4.1's `sign(A)`. Named `matrixSign`, not `sign`, to avoid
+the root `SignType.sign` under `open Matrix`. ★'''
+deps = ["pfc"]
+
+[[node]]
+id = "Matrix.matrixSign_eq_sum"
+kind = "theorem"
+desc = '''If no eigenvalue of `A` is purely imaginary (`∀ λ ∈ spectrum ℂ A, λ.re ≠ 0`), then
+`matrixSign A = ∑_{λ, re λ > 0} E_λ - ∑_{λ, re λ < 0} E_λ` (`spectralIdempotent`), hence
+`matrixSign A ^ 2 = 1`, `Commute A (matrixSign A)`, `matrixSign (P * A * P⁻¹) = P * matrixSign A *
+P⁻¹`, `spectrum ℂ (matrixSign A) ⊆ {-1, 1}`, and `IsUnit (A + matrixSign A)` (eigenvalues `λ + sign λ ≠
+0`, `spectrum_pfc` for `z + sign z`) — the last is the book's "`M + sign(M)` is nonsingular". From
+`pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq` (the sign is locally constant off the axis:
+`isOpen_lt continuous_const Complex.continuous_re`) and `spectralIdempotent_mul_spectralIdempotent`. ★'''
+deps = ["Matrix.matrixSign", "pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq", "spectralIdempotent_mul_spectralIdempotent", "spectrum_pfc", "Matrix.pfc_conj"]
+
+[[node]]
+id = "Matrix.matrixSign_conj_fromBlocks"
+kind = "theorem"
+desc = '''The Jordan-ordered form ([golub2013matrix] §9.4.1): if `X⁻¹ A X = fromBlocks J₁ 0 0 J₂` (reindexed to
+`Fin n` by `finSumFinEquiv`), `IsUnit X`, every eigenvalue of `J₁` in the open left half-plane and
+every eigenvalue of `J₂` in the open right half-plane, then `matrixSign A = X * fromBlocks (-1) 0 0 1 *
+X⁻¹`. `Matrix.pfc_conj`, `Matrix.pfc_blockDiagonal'` (`fromBlocks` form), and on each block the sign
+function is constant on a neighbourhood of the spectrum (`pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq`
+with all `c λ` equal, `sum_spectralIdempotent = 1`). No Jordan structure of `J₁`, `J₂` is used. ★'''
+deps = ["Matrix.matrixSign", "Matrix.pfc_conj", "Matrix.pfc_blockDiagonal'", "pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq", "spectralIdempotent_mul_spectralIdempotent"]
+
+[[node]]
+id = "Matrix.range_one_add_matrixSign"
+kind = "theorem"
+desc = '''`(1 + matrixSign A)/2` is the spectral projector onto the invariant subspace of the right half-plane
+eigenvalues ([golub2013matrix] §9.4.1, `X₂ Y₂ᴴ = (I + sign A)/2`): it is idempotent, and in the
+setting of `Matrix.matrixSign_conj_fromBlocks` with `X = [X₁ X₂]`, `X⁻ᴴ = [Y₁ Y₂]`:
+`matrixSign A = X₂ Y₂ᴴ - X₁ Y₁ᴴ`, `1 = X₁ Y₁ᴴ + X₂ Y₂ᴴ`, `(1 + matrixSign A)/2 = X₂ Y₂ᴴ`, so
+`LinearMap.range (toLin' ((1 + matrixSign A)/2)) = span (columns of X₂)` of dimension `m₂`
+(`fromColumns`/`fromRows` block products, `Matrix.fromBlocks_multiply`). ★★ (~120 lines)'''
+deps = ["Matrix.matrixSign_conj_fromBlocks", "Matrix.matrixSign_eq_sum"]
+
+[[node]]
+id = "Matrix.newtonSignIterate"
+kind = "definition"
+desc = '''Newton's iteration for the sign ([golub2013matrix] (9.4.1)): `newtonSignIterate A 0 = A`,
+`newtonSignIterate A (k+1) = (2 : ℂ)⁻¹ • (S + S⁻¹)` with `S = newtonSignIterate A k`
+(Matrix `⁻¹` = `Ring.inverse`). Over `Matrix n n ℂ` (the prototype `notes/gvl/ch09/proto/Exp.lean`
+has the Banach-algebra shape with `Ring.inverse`; either works). ★'''
+deps = []
+
+[[node]]
+id = "half_smul_add_inverse_sub_eq_of_commute"
+kind = "theorem"
+desc = '''The algebraic core of (9.4.2)–(9.4.4), in any ring `R` that is a `ℂ`-algebra (or where `2` is
+a unit): for `s` a unit and `S` with `S * S = 1`, `Commute s S`: with `s' = ½(s + s⁻¹)`,
+`s' - S = ½ s⁻¹ (s - S)²` ((9.4.2)) and `s' + S = ½ s⁻¹ (s + S)²` ((9.4.3)); hence if `s + S` and
+`s' + S` are units, `(s' - S)(s' + S)⁻¹ = ((s - S)(s + S)⁻¹)²` ((9.4.4), `G_{k+1} = G_k²`), and
+`s = S (1 + G)(1 - G)⁻¹` for `G = (s - S)(s + S)⁻¹`. Pure `noncomm_ring` with `Commute` rewriting. ★'''
+deps = []
+
+[[node]]
+id = "Matrix.isUnit_newtonSignIterate"
+kind = "theorem"
+desc = '''Well-definedness and invariance of the sign ([golub2013matrix] §9.4.1): if no eigenvalue of `A` is
+purely imaginary then for every `k`, `S_k = newtonSignIterate A k` is a rational function of `A`,
+`S_k = pfc r_k A` with `r_0 = id`, `r_{k+1} = (r_k + 1/r_k)/2` (`pfc_add`, `pfc_inv`, `pfc_mul`;
+each `r_k` analytic and nonvanishing off the imaginary axis), `IsUnit S_k`, no eigenvalue of `S_k`
+is imaginary, and `matrixSign S_k = matrixSign A`: the map `z ↦ (z + 1/z)/2` preserves the sign of
+the real part, `re ((z + z⁻¹)/2) = (re z / 2)(1 + 1/|z|²)` (the book's computation), and
+`matrixSign (pfc r A) = pfc (sign ∘ r) A = matrixSign A` (`pfc_comp`, `pfc_congr`). ★★ (~150 lines)'''
+deps = ["Matrix.newtonSignIterate", "pfc_add", "pfc_inv", "pfc_mul", "pfc_comp", "spectrum_pfc", "Matrix.matrixSign"]
+
+[[node]]
+id = "Matrix.tendsto_newtonSignIterate"
+kind = "theorem"
+desc = '''Convergence ([golub2013matrix] §9.4.1): if no eigenvalue of `A` is purely imaginary then
+`Tendsto (newtonSignIterate A) atTop (𝓝 (matrixSign A))`. With `S = matrixSign A` and `G_k = (S_k -
+S)(S_k + S)⁻¹` (`S_k + S` is a unit: `Matrix.matrixSign_eq_sum` applied to `S_k`, whose sign is `S`),
+`G_{k+1} = G_k²` (`half_smul_add_inverse_sub_eq_of_commute`, `S_k` commutes with `S`, both
+functions of `A`), so `G_k = G_0^{2^k}`; `G_0 = pfc g A` with `g(z) = (z - sign z)/(z + sign z)`,
+`|g| < 1` off the axis, so `ρ(G_0) < 1` (`spectrum_pfc`) and `G_0^m → 0`
+(`spectralRadius_lt_one_iff_tendsto_pow` with a local norm, e.g. `Matrix.linftyOpNormedRing`);
+then `S_k = S (1 + G_k)(1 - G_k)⁻¹ → S` (continuity of the inverse at `1`,
+`NormedRing.inverse_continuousAt`). ★★ (~200 lines)'''
+deps = ["Matrix.isUnit_newtonSignIterate", "half_smul_add_inverse_sub_eq_of_commute", "Matrix.matrixSign_eq_sum", "spectrum_pfc", "spectralRadius_lt_one_iff_tendsto_pow"]
+
+[[node]]
+id = "Matrix.norm_newtonSignIterate_sub_le"
+kind = "theorem"
+desc = '''Quadratic convergence ([golub2013matrix] §9.4.1): for any submultiplicative matrix norm (a
+`NormedRing (Matrix n n ℂ)` instance, e.g. the scoped L2 one) and `A` without imaginary eigenvalues,
+`‖S_{k+1} - S‖ ≤ ½ ‖S_k⁻¹‖ ‖S_k - S‖²`, from (9.4.2) (`half_smul_add_inverse_sub_eq_of_commute`)
+and `norm_mul_le`. ★'''
+deps = ["half_smul_add_inverse_sub_eq_of_commute", "Matrix.isUnit_newtonSignIterate"]

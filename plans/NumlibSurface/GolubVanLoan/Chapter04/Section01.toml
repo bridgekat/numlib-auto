@@ -1,0 +1,123 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.1, diagonal dominance and symmetry: LU without pivoting for column diagonally dominant
+matrices (Theorem 4.1.1, the step (4.1.2)), the dominance bound on `‖A⁻¹‖₁` (Theorem 4.1.2), the
+`L D Lᵀ` factorization (Theorem 4.1.3) with its three-step solve, Algorithm 4.1.1 and its backward
+error (4.1.4). Backbone: `LinearAlgebra/Matrix/{DiagDominant,LU,Cholesky}`, `FloatingPoint/LU`.
+(4.1.1) and (4.1.3) are definitions (`Matrix.IsDiagDominant`, `IsColDiagDominant`, their strict
+forms; the margin `δ` is a hypothesis). The book's references to an "Algorithm 4.1.2" (twice) point
+at Algorithm 4.1.1.
+'''
+
+[[node]]
+id = "theorem_4_1_1"
+kind = "theorem"
+desc = '''Theorem 4.1.1: if `A : Matrix (Fin n) (Fin n) ℝ` is nonsingular and column diagonally dominant
+(`A.IsColDiagDominant`, weak), then `∃ L U, IsLU A L U ∧ ∀ i j, |L i j| ≤ 1`. Exactly
+`Matrix.exists_isLU_of_isColDiagDominant` (its `‖·‖` is `|·|` over `ℝ`). The book's proof writes a
+strict inequality in its chain although the hypothesis is weak (ch04 report, Doubts); the backbone
+proof is the weak one. ★'''
+deps = ["Matrix.exists_isLU_of_isColDiagDominant"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.1.1'
+
+[[node]]
+id = "equation_4_1_2"
+kind = "theorem"
+desc = '''(4.1.2): for `A = [α wᵀ; v C]` with `α ≠ 0` (the reindexing `Fin (n+1) ≃ Fin 1 ⊕ Fin n` of
+`finSumFinEquiv`), `A = [1 0; v/α I] [1 0; 0 B] [α wᵀ; 0 I]` with `B = C − (1/α) v wᵀ`; as a
+`fromBlocks` identity, from `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement` (whose middle
+factor is `fromBlocks α 0 0 B`; rescale the first row) or directly by `Matrix.fromBlocks_multiply`.
+★'''
+deps = ["Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.1.2)'
+
+[[node]]
+id = "theorem_4_1_2"
+kind = "theorem"
+desc = '''Theorem 4.1.2: if `δ := min_j (|a_jj| − ∑_{i ≠ j} |a_ij|) > 0` (stated as: `0 < δ` and
+`∀ j, δ ≤ |A j j| − ∑ i ∈ univ.erase j, |A i j|`), then `A` is nonsingular and
+`Matrix.lpOpNorm 1 A⁻¹ ≤ 1 / δ`. From `Matrix.IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec`
+(`δ ‖x‖₁ ≤ ‖A x‖₁`, the book's proof) at `x = A⁻¹ y`, and chapter 2's column-sum formula (2.3.9)
+for `‖·‖₁` (`GolubVanLoan.Chapter02.equation_2_3_9`, the restatement of
+`Matrix.lpOpNorm_one_eq_sup_sum_norm`).
+`Matrix.IsStrictColDiagDominant.isUnit` for nonsingularity. ★'''
+deps = ["Matrix.IsStrictColDiagDominant.mul_sum_norm_le_sum_norm_mulVec", "GolubVanLoan.Chapter02.equation_2_3_9", "Matrix.IsStrictColDiagDominant.isUnit", "Matrix.lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.1.2'
+
+[[node]]
+id = "theorem_4_1_3"
+kind = "theorem"
+desc = '''Theorem 4.1.3 (`L D Lᵀ`): if `A` is symmetric and `A(1:k,1:k)` is nonsingular for `k = 1:n−1`
+(`∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`), there are a unit lower triangular `L` and a
+diagonal `D` with `A = L D Lᵀ`, and they are unique:
+`∃! LD : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ, Matrix.IsLDM A LD.1 LD.2 LD.1`. From
+`Matrix.existsUnique_isLDM_conjTranspose_of_isHermitian` (`Lᴴᵀ = L` over `ℝ`,
+`Matrix.isHermitian_iff_isSymm`-type bridge). ★'''
+deps = ["Matrix.existsUnique_isLDM_conjTranspose_of_isHermitian"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 4.1.3'
+
+[[node]]
+id = "ldlt_solve"
+kind = "theorem"
+desc = '''§4.1.2, the three-step solve: if `A = L D Lᵀ`, `L z = b`, `D y = z`, `Lᵀ x = y`, then `A x = b`
+("This works because `Ax = L(D(Lᵀx)) = L(Dy) = Lz = b`"). `Matrix.mulVec_mulVec`. ★'''
+deps = ["Matrix.IsLDM"]
+source = 'Golub–Van Loan, Matrix Computations, §4.1.2, Display'
+
+[[node]]
+id = "algorithm_4_1_1"
+kind = "definition"
+desc = '''Algorithm 4.1.1 (LDLT), D4: `algorithm_4_1_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ}
+(A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`, a `List.foldlM` over `j ∈ List.finRange
+n` of: `v : Fin n → ℝ` with `v i ← rnd (A j i * A i i)` for `i < j` (a `foldlM` building `v` by
+`Function.update`); `A j j ← ` running difference `rnd (t − rnd (A j i * v i))` over `i < j` from
+`A j j`; for each `i > j`, `A i j ←` the running difference of `A i j` with `rnd (A i k * v k)`,
+`k < j`, then `rnd (· / A j j)` (the new diagonal). Output: the packed matrix (strict lower `L`,
+diagonal `D`, upper triangle untouched). The book's `A(j, 1:j−1) · v(1:j−1)` and
+`A(j+1:n, 1:j−1) · v(1:j−1)` are read as running differences (chapter convention). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.1.1'
+
+[[node]]
+id = "algorithm_4_1_1_rounds"
+kind = "theorem"
+desc = '''The rounding bridge of Algorithm 4.1.1: for `fp : FloatingPoint.RoundingModel ℝ` and every
+`F ∈ (algorithm_4_1_1 fp.round A).run`, `FloatingPoint.RoundsLDL fp A (GolubVanLoan.Chapter03.packedL F)
+(Matrix.diagonal F.diag)`. Loop invariant over `j` (columns `< j` final, row `j` of `v` as in the
+relation); `SetM.mem_run_bind`, `SetM.mem_run_foldlM_iff_foldlRel` (ch01's Program), the loops
+building `v` and the column `A(j+1:n, j)` writing one entry per step and reading only frozen
+entries (`SetM.mem_run_foldlM_update_of_nodup`), with the inner running differences landing in
+`FloatingPoint.RoundsSumFrom`. No hypothesis on `A`. ★★ (~150 lines)'''
+deps = ["algorithm_4_1_1", "FloatingPoint.RoundsLDL", "GolubVanLoan.Chapter03.packedL", "SetM.mem_run_bind", "SetM.mem_run_foldlM_iff_foldlRel", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.1.1'
+
+[[node]]
+id = "algorithm_4_1_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 4.1.1 ("If `A` is symmetric and has an LU factorization, this algorithm
+computes … `A = L D Lᵀ`"): for symmetric `A` with `A(1:k,1:k)` nonsingular for `k = 1:n−1`, with
+`F = Id.run (algorithm_4_1_1 pure A)`, `Matrix.IsLDM A (Chapter03.packedL F) (diagonal F.diag)
+(Chapter03.packedL F)`. Route: the bridge at `RoundingModel.exact` (`round_exact`) gives the exact
+recurrences, which every `L D Lᵀ` factor satisfies entrywise; conclude by uniqueness
+(`theorem_4_1_3`) after checking the pivots used as divisors are nonzero (they are the LU pivots,
+`Matrix.IsLU.diag_upper_ne_zero_of_lt`). ★★'''
+deps = ["algorithm_4_1_1_rounds", "FloatingPoint.RoundingModel.round_exact", "theorem_4_1_3", "Matrix.IsLU.diag_upper_ne_zero_of_lt"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.1.1'
+
+[[node]]
+id = "equation_4_1_4"
+kind = "theorem"
+desc = '''(4.1.4), rigorous, on returned values only (convention 9, nested as chapter 3's `theorem_3_3_2`):
+let `solveLDLT rnd F b` be the solve stage on a packed factor `F` — "`L z = b` by
+`Chapter03.algorithm_3_1_3` (column forward substitution with the unit lower `packedL F`), then
+`y i ← rnd (z i / F i i)`, then `Lᵀ x = y` by `Chapter03.algorithm_3_1_4`" (a surface helper
+definition of this node). For `(3n + 2) u < 1`, every `F ∈ (algorithm_4_1_1 fp.round A).run` with
+nonzero returned pivots `∀ j, F j j ≠ 0`, and every `x ∈ (solveLDLT fp.round F b).run`, with
+`L̂ = packedL F`, `D̂ = diagonal F.diag`: `∃ E, |E| ≤ γ_{3n+2} |L̂||D̂||L̂ᵀ| ∧ (A + E) x = b`
+(entrywise). (The first plan quantified over runs of the composite, whose factor `L̂` the program
+does not return — algo review H3.) This implies the printed first-order bound
+`|E| ≤ n u (2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)` for `n ≥ 2`. Bridges `algorithm_4_1_1_rounds`,
+`Chapter03.algorithm_3_1_3_rounds`, `Chapter03.algorithm_3_1_4_rounds`, then
+`FloatingPoint.exists_roundsLDL_solve_eq`. ★★'''
+deps = ["algorithm_4_1_1_rounds", "FloatingPoint.exists_roundsLDL_solve_eq", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds", "GolubVanLoan.Chapter03.packedL"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.1.4)'

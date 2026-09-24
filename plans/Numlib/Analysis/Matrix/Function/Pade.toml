@@ -1,0 +1,95 @@
+desc = '''
+Padé approximation of the exponential and the scaling-and-squaring method ([golub2013matrix] §9.3.1;
+Moler–Van Loan, "Nineteen dubious ways…", SIAM Rev. 20 (1978), Appendix 1). The approximants are
+polynomials over any field (`Pade.expNum K p q`, `Pade.expDen K p q`, prototype
+`notes/gvl/ch09/proto/Exp.lean`); their values at an element of a complete normed algebra `𝔸` over
+`𝕂 = ℝ` or `ℂ` (`[RCLike 𝕂] [NormedRing 𝔸] [NormedAlgebra 𝕂 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸]`)
+are `aeval`, and `Pade.expApprox p q a = Ring.inverse (aeval a D_pq) * aeval a N_pq`. The book's
+algorithm uses the `∞`-norm (`Matrix.Norms.Operator`); every statement here holds for any
+submultiplicative norm with `‖1‖ = 1`. Searched for existing Padé material: none in Mathlib or
+Numlib (`grep -ri pade`).
+'''
+
+[[node]]
+id = "Pade.expNum"
+kind = "definition"
+desc = '''The Padé numerator `N_pq(z) = ∑_{k ≤ p} (p + q - k)! p! / ((p + q)! k! (p - k)!) z^k` as
+`Pade.expNum (K : Type*) [Field K] (p q : ℕ) : K[X]` (coefficients cast from `ℕ`, meaningful in
+characteristic `0`). And `Pade.expDen K p q = (expNum K q p).comp (-X)`, i.e. `D_pq(z) = N_qp(-z) =
+∑_{k ≤ q} (p + q - k)! q! / ((p + q)! k! (q - k)!) (-z)^k` — for the diagonal `D_qq(z) = N_qq(-z)`,
+which is the even/odd splitting `N = U + AV`, `D = U - AV` of [golub2013matrix] §9.3.1. Prototype
+`notes/gvl/ch09/proto/Exp.lean`. ★'''
+deps = []
+
+[[node]]
+id = "Pade.expApprox"
+kind = "definition"
+desc = '''`Pade.expApprox p q (a : 𝔸) : 𝔸 := Ring.inverse (aeval a (expDen 𝕂 p q)) * aeval a (expNum 𝕂 p q)`,
+[golub2013matrix]'s `R_pq(A) = D_pq(A)⁻¹ N_pq(A)` (the two factors commute). With
+`Pade.expNum_zero_right`: `expDen K p 0 = 1` and `expNum K p 0 = ∑_{k ≤ p} X^k / k!`, so `R_p0` is
+the Taylor polynomial of order `p`. ★'''
+deps = ["Pade.expNum"]
+
+[[node]]
+id = "Pade.isUnit_aeval_expDen"
+kind = "theorem"
+desc = '''`‖a‖ < Real.log 2 → IsUnit (aeval a (expDen 𝕂 p q))`, with `‖Ring.inverse (aeval a D_pq)‖ ≤ 1 /
+(2 - Real.exp ‖a‖)`: the coefficients of `D_pq - 1` are bounded by `1/k!`
+(`(p+q-k)! q!/((p+q)!(q-k)!) ≤ 1`), so `‖D_pq(a) - 1‖ ≤ e^{‖a‖} - 1 < 1`, then
+`NormedRing.inverse_one_sub`/`Units.oneSub` and the Neumann bound. In particular for `‖a‖ ≤ 1/2`. ★★'''
+deps = ["Pade.expNum"]
+
+[[node]]
+id = "Pade.exp_eq_expApprox_add"
+kind = "theorem"
+desc = '''[golub2013matrix] (9.3.1), the Padé remainder: if `aeval a D_pq` is a unit (𝕂 = ℝ),
+`exp a = expApprox p q a + ((-1) ^ q / (p + q)!) • (a ^ (p + q + 1) * Ring.inverse (aeval a D_pq) *
+∫ u in 0..1, (u ^ p * (1 - u) ^ q) • exp ((1 - u) • a))` (prototype statement in
+`notes/gvl/ch09/proto/Exp.lean`, elaborates). Equivalent, after multiplying by the commuting unit
+`D_pq(a)`, to `D_pq(a) exp a - N_pq(a) = c a^{p+q+1} ∫₀¹ u^p (1-u)^q e^{(1-u)a} du`; both sides
+are power series in `a` with scalar coefficients: the right side by exchanging the integral with
+the exponential series (`intervalIntegral.hasSum_integral_of_dominated_convergence`) and the Beta
+integrals `∫₀¹ u^p (1-u)^{q+k} du = p!(q+k)!/(p+q+k+1)!` (Mathlib `Complex.betaIntegral`,
+`Mathlib/Analysis/SpecialFunctions/Gamma/Beta`, or induction with integration by parts); the
+coefficient identity is the scalar (9.3.1) (Varga 1961), proved for `a ∈ ℂ` by `q`-fold integration
+by parts and transferred through uniqueness of power-series coefficients
+(`HasFPowerSeriesAt.eq_formalMultilinearSeries`), or checked directly as a finite hypergeometric
+identity. ★★★ (~300 lines)'''
+deps = ["Pade.expApprox", "Pade.isUnit_aeval_expDen"]
+
+[[node]]
+id = "Pade.errorBound"
+kind = "definition"
+desc = '''`Pade.errorBound p q : ℝ := 2 ^ (3 - (p + q : ℤ)) * p! q! / ((p + q)! (p + q + 1)!)`,
+[golub2013matrix]'s `ε(p, q)` (the Moler–Van Loan constant, `8 (1/2)^{p+q} p!q!/((p+q)!(p+q+1)!)`). ★'''
+deps = []
+
+[[node]]
+id = "Pade.exists_exp_add_eq_expApprox_pow"
+kind = "theorem"
+desc = '''The Moler–Van Loan backward error bound ([golub2013matrix] §9.3.1, quoted from Moler–Van Loan
+(1978)): over `𝕂 = ℝ` or `ℂ`, if `‖a‖ ≤ 2 ^ j / 2` (i.e. `‖a / 2^j‖ ≤ 1/2`) then there is `e : 𝔸`
+with `Commute a e`, `‖e‖ ≤ errorBound p q * ‖a‖`, and `expApprox p q (2⁻¹ ^ j • a) ^ (2 ^ j) = exp (a +
+e)`. Proof: with `a' = 2^{-j} a`, (9.3.1) multiplied by `exp (-a')` gives `exp (-a') R(a') = 1 + h`,
+`h = -c a'^{p+q+1} D(a')⁻¹ ∫₀¹ u^p (1-u)^q e^{-u a'} du` and `‖h‖ ≤ ‖a'‖^{p+q+1} p!q! e^{‖a'‖} /
+((p+q)! (p+q+1)! (2 - e^{‖a'‖}))` (`Pade.isUnit_aeval_expDen`, Beta integral) `< 1`; `e' = log (1 +
+h)` (`NormedSpace.log`) satisfies `exp e' = 1 + h` (`NormedSpace.exp_log_of_norm_sub_one_lt`),
+`‖e'‖ ≤ -log(1 - ‖h‖)` (`NormedSpace.norm_log_le`) and commutes with `a` (`Commute.log`); so
+`R(a') = exp (a' + e')` (`exp_add_of_commute`) and `R(a')^{2^j} = exp (a + 2^j e')`; the constant
+bookkeeping `2^j ‖e'‖ ≤ 8 (1/2)^{p+q} p!q!/((p+q)!(p+q+1)!) ‖a‖` uses `‖a'‖ ≤ 1/2` and `-log(1 -
+x) ≤ x/(1 - x)`. **Case split on `p + q`** (review finding): the route works for `p + q ≥ 1`, where
+`‖h‖ ≤ (1/2)^{p+q+1} p!q! e^{1/2}/((p+q)!(p+q+1)!(2 - e^{1/2}))` is small enough that the `-log(1 -
+‖h‖)` bound fits under the constant `8`. At `p = q = 0` (`R = 1`) the route's bound on `‖h‖` is
+`(1/2) e^{1/2}/(2 - e^{1/2}) ≈ 2.35 > 1`, so `log (1 + h)` is not available; the statement is still
+true there, directly: `e = -a` satisfies `exp (a + e) = 1 = R(a')^{2^j}`, commutes with `a`, and `‖e‖
+= ‖a‖ ≤ errorBound 0 0 ‖a‖ = 8 ‖a‖`. ★★★ (~350 lines)'''
+deps = ["Pade.exp_eq_expApprox_add", "Pade.isUnit_aeval_expDen", "Pade.errorBound", "NormedSpace.exp_log_of_norm_sub_one_lt", "NormedSpace.norm_log_le"]
+
+[[node]]
+id = "Pade.norm_exp_sub_expApprox_pow_le"
+kind = "theorem"
+desc = '''The relative error ([golub2013matrix] §9.3.1): under the hypotheses of
+`Pade.exists_exp_add_eq_expApprox_pow`, `‖exp a - F‖ ≤ ε ‖a‖ e^{ε ‖a‖} ‖exp a‖` for `F = expApprox p
+q (2⁻¹^j • a) ^ 2^j`, `ε = errorBound p q`: `F - e^a = e^a (e^e - 1)` (commuting), `‖e^e - 1‖ ≤
+‖e‖ e^{‖e‖}` (`NormedSpace.norm_exp_sub_one_le`-type bound, or the series). ★'''
+deps = ["Pade.exists_exp_add_eq_expApprox_pow"]

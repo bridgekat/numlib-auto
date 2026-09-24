@@ -1,0 +1,221 @@
+namespace = "Matrix"
+desc = '''
+Constrained least squares ([golub2013matrix] §6.2): least squares with a quadratic inequality
+constraint (LSQI, `min ‖Ax − b‖` subject to `‖Bx − d‖ ≤ α`) and with linear equality constraints
+(LSE, `min ‖Ax − b‖` subject to `Bx = d`), solved through the SVD and the secular equation, the
+QR factorization of `Bᴴ`, the augmented system, the GSVD, and the method of weighting.
+
+## Design
+
+* **Two predicates** in the style of `IsLeastSquaresSolution`: `Matrix.IsLSQISolution A b B d α x`
+  (feasible and at least as good as every feasible point; (6.2.5), with (6.2.1) its `B = 1`,
+  `d = 0` case) and `Matrix.IsLSESolution A b B d x` ((6.2.9)); `isLSQISolution_zero_iff` is the
+  book's "LSE is LSQI with `α = 0`".
+* **The sphere problem is solved without Lagrange multipliers.** The book's route (a multiplier
+  for `‖x‖² ≤ α²`) would use `Constrained.exists_kkt_of_convexOn_of_slater` of
+  `Numlib/Optimization/Constrained`; the direct route is shorter: a ridge solution with
+  `‖x(λ)‖ = α` beats every feasible `y` because `‖Ay − b‖² + λ‖y‖² ≥ ‖Ax − b‖² + λα²`
+  (`isLSQISolution_tikhonov`), and the root `λ₊` exists and is unique by the monotonicity and limits
+  of `LeastSquares/Regularized` and the intermediate value theorem.
+* **The GSVD statements** are in Theorem 6.1.1's block order (`IsGSVD`): the book's (6.2.7),
+  (6.2.8), (6.2.12), (6.2.14) are printed in the third edition's order (`β`s first) and (6.2.14)
+  is garbled; the corrected forms are stated here and the discrepancy is recorded in the chapter
+  report.
+* **The method of weighting** is `Matrix.penaltyLSE A B b d λ = (AᴴA + λBᴴB)⁻¹(Aᴴb + λBᴴd)`, the
+  solution of the stacked problem (6.2.13) — named for what it is, a penalty method (in this library
+  "weighted" means row weights, `LeastSquares/Weighted`; review L2 renamed the first plan's
+  `weightedLSE`); its limit is proved from the GSVD expansion (6.2.14),
+  not from the penalty theorem `Constrained.tendsto_penalty_of_unique`, which would need an a
+  priori bound on the iterates.
+
+## Order of attack
+
+Predicates and the elementary facts (★) → sphere LSQI (★★, after `Regularized`) → LSE by QR,
+existence/uniqueness, the augmented system (★★) → the GSVD forms (★–★★, after `GSVD`) →
+weighting (★★).
+'''
+
+[[node]]
+id = "IsLSQISolution"
+kind = "definition"
+desc = '''**Least squares with a quadratic inequality constraint** ([golub2013matrix] (6.2.1), (6.2.5)):
+for `A : Matrix m n 𝕜`, `B : Matrix p n 𝕜`, `b`, `d`, `α : ℝ`, `x` is a solution when
+`‖toEuclideanLin B x − d‖ ≤ α` and `∀ y, ‖toEuclideanLin B y − d‖ ≤ α →
+‖toEuclideanLin A x − b‖ ≤ ‖toEuclideanLin A y − b‖`. The sphere problem (6.2.1) is `B = 1`,
+`d = 0`. ★'''
+deps = []
+
+[[node]]
+id = "IsLSESolution"
+kind = "definition"
+desc = '''**Least squares with linear equality constraints** ([golub2013matrix] (6.2.9)): `x` is a
+solution when `toEuclideanLin B x = d` and `∀ y, toEuclideanLin B y = d →
+‖toEuclideanLin A x − b‖ ≤ ‖toEuclideanLin A y − b‖`. ★'''
+deps = []
+
+[[node]]
+id = "isLSQISolution_zero_iff"
+kind = "theorem"
+desc = '''**LSE is LSQI with `α = 0`** ([golub2013matrix] §6.2.3): `IsLSQISolution A b B d 0 x ↔
+IsLSESolution A b B d x` (`‖v‖ ≤ 0 ↔ v = 0`). ★'''
+deps = ["IsLSQISolution", "IsLSESolution"]
+
+[[node]]
+id = "isLSQISolution_of_isLeastSquaresSolution"
+kind = "theorem"
+desc = '''**A feasible least-squares solution solves LSQI** ([golub2013matrix] §6.2.1, "if … `x_LS`
+satisfies `‖x_LS‖₂ ≤ α`, then it obviously solves (6.2.1)"): `IsLeastSquaresSolution A b x →
+‖toEuclideanLin B x − d‖ ≤ α → IsLSQISolution A b B d α x`. ★'''
+deps = ["IsLSQISolution", "Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "IsLSQISolution.norm_eq_of_lt"
+kind = "theorem"
+desc = '''**The LSQI solution lies on the sphere** ([golub2013matrix] (6.2.3) and "it follows that the
+solution to (6.2.1) is on the boundary of the constraint sphere"): if
+`α < ‖toEuclideanLin A.pinv b‖` and `IsLSQISolution A b 1 0 α x` then `‖x‖ = α`.
+Proof: if `‖x‖ < α`, `x` minimizes the convex function `y ↦ ‖Ay − b‖²` on a neighbourhood, hence
+globally (convexity: for any `y`, the segment from `x` towards `y` stays feasible for a short
+time), so `x` is a least-squares solution, and `‖x‖ ≥ ‖A⁺b‖ > α`
+(`IsMinNormLeastSquaresSolution` / `norm_pinv_le_of_normalEquations`), a contradiction. ★★'''
+deps = ["IsLSQISolution", "Matrix.norm_pinv_le_of_normalEquations", "Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]
+id = "isLSQISolution_tikhonov"
+kind = "theorem"
+desc = '''**A ridge solution of norm `α` solves the sphere problem** ([golub2013matrix] §6.2.1, "It
+follows that `x(λ₊)` solves (6.2.1)"): for `0 < λ` and `‖toEuclideanLin (A.tikhonov λ) b‖ = α`,
+`IsLSQISolution A b 1 0 α (toEuclideanLin (A.tikhonov λ) b)`. For feasible `y`:
+`‖Ay − b‖² ≥ ‖Ax − b‖² + λ(‖x‖² − ‖y‖²) = ‖Ax − b‖² + λ(α² − ‖y‖²) ≥ ‖Ax − b‖²`
+(`tikhonov_mulVec_eq_iff_isMinOn`). This is the sufficiency half of the Lagrange conditions
+`(AᴴA + λI)x = Aᴴb`, `λ ≥ 0`, `λ(‖x‖² − α²) = 0`, proved without the multiplier theorem. ★'''
+deps = ["IsLSQISolution", "Matrix.tikhonov_mulVec_eq_iff_isMinOn"]
+
+[[node]]
+id = "existsUnique_norm_tikhonov_mulVec_eq"
+kind = "theorem"
+desc = '''**The secular equation has a unique positive root** ([golub2013matrix] §6.2.1: "`f(0) > 0`
+… `f'(λ) < 0` for `λ ≥ 0` … `f` has a unique positive root `λ₊`"): for
+`0 < α < ‖toEuclideanLin A.pinv b‖`, `∃! λ, 0 < λ ∧ ‖toEuclideanLin (A.tikhonov λ) b‖ = α`.
+Existence: the intermediate value theorem on `Ioi 0` between the limits `‖A⁺b‖` at `0⁺`
+(`tendsto_tikhonov_pinv`) and `0` at `∞` (`tendsto_norm_tikhonov_mulVec_atTop`), with continuity
+of `λ ↦ (λ + AᴴA)⁻¹` on `Ioi 0`; uniqueness: `antitoneOn_norm_tikhonov_mulVec` (strict, since
+`A⁺b ≠ 0` forces `Aᴴb ≠ 0`). ★★'''
+deps = ["Matrix.tendsto_tikhonov_pinv", "Matrix.tendsto_norm_tikhonov_mulVec_atTop", "Matrix.antitoneOn_norm_tikhonov_mulVec"]
+
+[[node]]
+id = "isLSQISolution_iff_of_isGSVD"
+kind = "theorem"
+desc = '''**LSQI in GSVD coordinates** ([golub2013matrix] (6.2.6), and (6.2.11) at `α = 0`): if
+`IsGSVD A B U₁ U₂ X α' β'` then `IsLSQISolution A b B d α x ↔ IsLSQISolution D_A (star U₁ *ᵥ b)
+D_B (star U₂ *ᵥ d) α (X⁻¹ *ᵥ x)` with `D_A = star U₁ * A * X`, `D_B = star U₂ * B * X`. Unitary
+invariance of the norm and the bijection `y = X⁻¹ x`. ★'''
+deps = ["IsLSQISolution", "Matrix.IsGSVD"]
+
+[[node]]
+id = "isLSESolution_of_isQR"
+kind = "theorem"
+desc = '''**LSE through the QR factorization of `Bᴴ`** ([golub2013matrix] §6.2.3, the derivation of
+Algorithm 6.2.2): let `B : Matrix (Fin p) (Fin n) 𝕜` with `p ≤ n` and `LinearIndependent 𝕜 B`
+(full row rank), `IsQR Bᴴ Q R`, `Q = [Q₁ Q₂]` split `p | n − p`, `R₁ = firstRows R`. Put
+`y = (R₁ᴴ)⁻¹ d` and let `z` be any least-squares solution of `(A Q₂) z ≈ b − A Q₁ y`. Then
+`IsLSESolution A b B d (Q₁ y + Q₂ z)`. Proof: `B Q = [R₁ᴴ 0]`, so the feasible set is
+`{Q₁ y + Q₂ z' : z'}` and the objective is `‖A Q₂ z' − (b − A Q₁ y)‖`. ★★'''
+deps = ["IsLSESolution", "Matrix.IsQR", "Matrix.IsQR.firstColumns_mul_firstRows", "Matrix.IsQR.isUnit_firstRows_of_linearIndependent", "Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "existsUnique_isLSESolution"
+kind = "theorem"
+desc = '''**Existence and uniqueness of the LSE solution** ([golub2013matrix] §6.2.3–6.2.5): if
+`d ∈ LinearMap.range B.mulVecLin` then an LSE solution exists, and if moreover
+`ker A ⊓ ker B = ⊥` it is unique. Existence: minimize the continuous coercive-on-the-quotient
+function over the affine subspace `{x : Bx = d}` (reduce to least squares on `x₀ + ker B` with a
+basis of `ker B`, `existsUnique_isLeastSquaresSolution`/`isLeastSquaresSolution_pinv`);
+uniqueness: two solutions differ by `z ∈ ker B` with `Az = 0` (strict convexity of `‖·‖²`). ★★'''
+deps = ["IsLSESolution", "Matrix.isLeastSquaresSolution_pinv", "Matrix.existsUnique_isLeastSquaresSolution"]
+
+[[node]]
+id = "IsLSESolution.add_of_mem"
+kind = "theorem"
+desc = '''**Non-uniqueness** ([golub2013matrix] §6.2.3, "if `null(A) ∩ null(B) ≠ {0}` … the LSE solution
+is not unique"): if `IsLSESolution A b B d x` and `z ∈ ker A ⊓ ker B` then
+`IsLSESolution A b B d (x + z)`. ★'''
+deps = ["IsLSESolution"]
+
+[[node]]
+id = "augmentedLSE"
+kind = "definition"
+desc = '''**The augmented matrix of the LSE problem** ([golub2013matrix] (6.2.10)): for
+`A : Matrix m n 𝕜`, `B : Matrix p n 𝕜`, the symmetric indefinite matrix
+`[0 Aᴴ Bᴴ; A I 0; B 0 0]` on the index type `n ⊕ m ⊕ p`, built with `Matrix.fromBlocks`
+(`fromBlocks 0 (fromCols Aᴴ Bᴴ) (fromRows A B) (fromBlocks 1 0 0 0)`). ★'''
+deps = []
+
+[[node]]
+id = "isLSESolution_of_augmented"
+kind = "theorem"
+desc = '''**The augmented system solves LSE** ([golub2013matrix] §6.2.4, (6.2.10)): if
+`augmentedLSE A B *ᵥ Sum.elim x (Sum.elim r λ) = Sum.elim 0 (Sum.elim b d)` then
+`IsLSESolution A b B d x`. The rows say `Aᴴr + Bᴴλ = 0`, `Ax + r = b`, `Bx = d`; for feasible
+`y`, `‖Ay − b‖² = ‖Ax − b‖² + ‖A(y − x)‖² + 2 re⟪A(y−x), Ax − b⟫` and
+`⟪A(y − x), Ax − b⟫ = −⟪y − x, Aᴴ r⟫ = ⟪B(y − x), λ⟫ = 0` (the first row is the book's gradient
+condition `AᵀAx − Aᵀb − Bᵀλ = 0` with `r = b − Ax`). ★'''
+deps = ["augmentedLSE", "IsLSESolution"]
+
+[[node]]
+id = "isUnit_augmentedLSE"
+kind = "theorem"
+desc = '''**The augmented system is nonsingular for full-rank data** ([golub2013matrix] §6.2.4, "This
+system is nonsingular if both `A` and `B` have full rank"): if `LinearIndependent 𝕜 Aᵀ` (full column
+rank) and `LinearIndependent 𝕜 B` (full row rank) then `IsUnit (augmentedLSE A B)`. Kernel
+argument: from `Aᴴr + Bᴴλ = 0`, `Ax + r = 0`, `Bx = 0` get
+`‖r‖² = −⟪r, Ax⟫ = −⟪Aᴴr, x⟫ = ⟪Bᴴλ, x⟫ = ⟪λ, Bx⟫ = 0`, so `r = 0`, `Ax = 0`, `x = 0`,
+`Bᴴλ = 0`, `λ = 0`; `Matrix.isUnit_iff_isUnit_det` via injectivity
+(`Matrix.mulVec_injective_iff_isUnit`). The weaker hypothesis `ker A ⊓ ker B = ⊥` suffices for the
+first half; the statement keeps the book's. ★★'''
+deps = ["augmentedLSE"]
+
+[[node]]
+id = "isLSESolution_sum_of_isGSVD"
+kind = "theorem"
+desc = '''**LSE through the GSVD** ([golub2013matrix] (6.2.12), restated in Theorem 6.1.1's block order):
+if `IsGSVD A B U₁ U₂ X α β`, `B : Matrix (Fin p) (Fin n) 𝕜` has full row rank and
+`ker A ⊓ ker B = ⊥` — so `r = n`, `p' := n − p` columns are pure-`A` (`α = 1, β = 0`) and the
+remaining `p` have `β_i > 0` — then
+`x = ∑_{i < n − p} b̃_i • x_i + ∑_{n − p ≤ i < n} (d̃_{i − (n − p)} / β_i) • x_i`
+is the unique LSE solution, `b̃ = U₁ᴴ b`, `d̃ = U₂ᴴ d`, `x_i = X.col i`. (The book's
+`∑_{i ≤ m₂} (d̃_i/β_i) x_i + ∑_{i > m₂} (b̃_i/α_i) x_i` is the third edition's block order; with
+Theorem 6.1.1's normalization the pure-`A` columns have `α_i = 1`.) In GSVD coordinates the
+constraint fixes `y_i = d̃_{i−p'}/β_i` on the mixed columns and the objective is minimized by
+`y_i = b̃_i` on the pure ones. ★★'''
+deps = ["isLSQISolution_iff_of_isGSVD", "isLSQISolution_zero_iff", "existsUnique_isLSESolution", "Matrix.IsGSVD.ker_inf_ker"]
+
+[[node]]
+id = "penaltyLSE"
+kind = "definition"
+desc = '''**The method of weighting** ([golub2013matrix] §6.2.6): the solution of the stacked problem
+(6.2.13), `penaltyLSE A B b d λ = toEuclideanLin (Aᴴ * A + (λ : 𝕜) • (Bᴴ * B))⁻¹
+(toEuclideanLin Aᴴ b + (λ : 𝕜) • toEuclideanLin Bᴴ d)`. ★'''
+deps = ["Matrix.isLeastSquaresSolution_fromRows_iff"]
+
+[[node]]
+id = "penaltyLSE_sub_eq_sum_of_isGSVD"
+kind = "theorem"
+desc = '''**The error of the method of weighting** ([golub2013matrix] (6.2.14), corrected): in the
+setting of `isLSESolution_sum_of_isGSVD`, with `x` the LSE solution and `0 < λ`,
+`penaltyLSE A B b d λ − x = ∑_{n − p ≤ i < n} (α_i (β_i b̃_i − α_i d̃_{i−(n−p)}) / (β_i (α_i² + λ β_i²))) • x_i`.
+The book prints `λ²` for `λ`, `u_iᵀb`, `v_iᵀd` for `b̃_i`, `d̃_i`, and sums to `p`; the
+derivation: in GSVD coordinates `y_i(λ) = (α_i b̃_i + λ β_i d̃_i)/(α_i² + λβ_i²)` on the mixed
+columns and `y_i(λ) = b̃_i` on the pure ones (`IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`). ★★'''
+deps = ["penaltyLSE", "isLSESolution_sum_of_isGSVD", "Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul"]
+
+[[node]]
+id = "tendsto_penaltyLSE"
+kind = "theorem"
+desc = '''**The method of weighting converges** ([golub2013matrix] §6.2.6, "`x(λ) → x` as `λ → ∞`"):
+if `B` has full row rank, `ker A ⊓ ker B = ⊥` and `IsLSESolution A b B d x`, then
+`Filter.Tendsto (penaltyLSE A B b d) Filter.atTop (nhds x)`. From
+`penaltyLSE_sub_eq_sum_of_isGSVD` (each coefficient is `O(1/λ)`) and `exists_isGSVD`
+(`n ≤ m₁` is not needed for this corollary if one stacks `A` with zero rows; the statement keeps
+the book's `m₁ ≥ n₁`). ★★'''
+deps = ["penaltyLSE_sub_eq_sum_of_isGSVD", "Matrix.exists_isGSVD"]

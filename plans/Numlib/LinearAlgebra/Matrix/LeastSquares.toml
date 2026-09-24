@@ -1,3 +1,26 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.LeastSquares` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch05) add to "Main results" the column-prefix spans of a QR factorization and the orthogonal
+# complement of the range ([golub2013matrix] Theorem 5.2.2), the geometry of the least-squares
+# objective (gradient, convexity of the solution set, differences of solutions in the null space —
+# [golub2013matrix] §5.3.1, §5.5.1), the nonsingularity of the augmented system `[I A; Aᴴ 0]`
+# ([golub2013matrix] (5.3.20); its least-squares half is ch06's weighted
+# `Matrix.isLeastSquaresSolution_of_augmented` in `LeastSquares/Weighted`, at `M = 1`), and the
+# minimal-norm solution of a full-row-rank system through a QR factorization of `Aᴴ`
+# ([golub2013matrix] Algorithm 5.6.2).
+# (ch06) this file is also the group file of the directory `LeastSquares/` (Golub–Van Loan chapter
+# 6); add to the module doc: "The children refine the problem:
+# `LeastSquares/Weighted` (row and column weights, the augmented system, Paige's generalized least
+# squares), `LeastSquares/Regularized` (ridge regression and general-form Tikhonov,
+# cross-validation), `LeastSquares/Constrained` (LSQI and LSE), `LeastSquares/Total` (total least
+# squares) — [golub2013matrix] §6.1–6.3."
+# (Golub–Van Loan review) Add to "Main definitions" `Matrix.IsPivotedQR` (QR with column pivoting,
+# `IsQR` of `A Π`), moved here from `RankRevealing` to sit beside `IsQR`; and to "Main results" the
+# minimal-Frobenius characterization of `A⁺` ([golub2013matrix] (5.5.3), `pinv_isMinOn_frobenius`),
+# the orthonormal-column projector `V Vᴴ = P_{ran V}` (`toEuclideanLin_mul_conjTranspose_eq_starProjection`,
+# the case `V⁺ = Vᴴ` of `mul_pinv_eq_starProjection`), and least squares with a matrix unknown
+# `F ↦ ‖A − F Kᴴ‖_F` (`isMinOn_norm_sub_mul_transpose_iff`, moved from `Tensor/CP`); these were staged in `SVD` or
+# `Tensor` but use this module's pseudoinverse lemmas.
 namespace = "Matrix"
 
 [[node]]
@@ -122,3 +145,127 @@ id = "norm_sub_sq_eq_of_isQR"
 
 [[node]]
 id = "norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution"
+
+[[node]]  # staged by ch05
+id = "IsQR.isThinQR"
+kind = "theorem"
+desc = '''The reduced factors of a full QR factorization form a thin one: for `N ≤ M`,
+`IsQR A Q R → IsThinQR A (firstColumns Q h) (firstRows R h)` (`IsQR.reduced` repackaged). ★'''
+deps = ["Matrix.IsQR.reduced", "Matrix.IsThinQR"]
+
+[[node]]  # staged by ch05
+id = "IsQR.span_col_prefix_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.2.1): if `IsQR A Q R` and the columns of `A : Matrix (Fin M) (Fin N) 𝕜`
+are linearly independent, then for every `k ≤ N`
+`span 𝕜 {Aᵀ j | (j : ℕ) < k} = span 𝕜 {Qᵀ i | (i : ℕ) < k}` (column sets as `Set (Fin M → 𝕜)`) and
+`R ⟨k, _⟩ ⟨k, _⟩ ≠ 0` for `k < N`. Proof: `a_k = Σ_{i ≤ k} r_ik q_i` ((5.2.3)) gives `⊆`; the
+dimension count (`linearIndependent` of the prefix, `finrank_span_eq_card`) gives equality and
+forces `r_kk ≠ 0`. `IsQR.span_firstColumns_eq` is the case `k = N`. ★★'''
+deps = ["Matrix.IsQR", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent"]
+
+[[node]]  # staged by ch05
+id = "IsQR.range_orthogonal_eq_span_lastColumns"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 5.2.2, `ran(A)⊥ = ran(Q₂)`: if `IsQR A Q R`, `N ≤ M` and the
+columns of `A` are independent, then
+`(LinearMap.range (toEuclideanLin A))ᗮ = span 𝕜 (Set.range fun i : {i : Fin M // N ≤ (i : ℕ)} =>
+toLp 2 (Qᵀ i))`. The columns of `Q` are orthonormal, the first `N` span the range
+(`IsQR.span_firstColumns_eq`), so the others span its complement (dimension `M - N`). ★★'''
+deps = ["Matrix.IsQR", "Matrix.IsQR.span_firstColumns_eq"]
+
+[[node]]  # staged by ch05
+id = "hasGradientAt_leastSquaresObjective"
+kind = "theorem"
+desc = '''[golub2013matrix] §5.3.1: for `A : Matrix m n ℝ` and `b`, the function
+`φ x = ‖toEuclideanLin A x - b‖ ^ 2 / 2` on `EuclideanSpace ℝ n` has gradient
+`toEuclideanLin Aᵀ (toEuclideanLin A x - b)` at every `x` (`HasGradientAt`; from
+`HasFDerivAt` of the squared norm, `hasStrictFDerivAt_norm_sq`, composed with the affine map), so
+the normal equations are `∇φ = 0`. The expansion
+`‖A(x + αz) - b‖² = ‖Ax - b‖² + 2α zᵀAᵀ(Ax - b) + α²‖Az‖²` is `norm_add_sq_real` on the way. ★'''
+deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]  # staged by ch05
+id = "IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero"
+kind = "theorem"
+desc = '''Two least-squares solutions differ by a null vector ([golub2013matrix] §5.3.1 "if `x` and
+`x + αz` are LS minimizers, then `z ∈ null(A)`"): `IsLeastSquaresSolution A b x →
+IsLeastSquaresSolution A b y → toEuclideanLin A (y - x) = 0` (the Pythagorean identity
+`norm_toEuclideanLin_sub_sq_eq_of_normalEquations` with both norms minimal). ★'''
+deps = ["Matrix.IsLeastSquaresSolution", "Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.norm_toEuclideanLin_sub_sq_eq_of_normalEquations"]
+
+[[node]]  # staged by ch05
+id = "convex_setOf_isLeastSquaresSolution"
+kind = "theorem"
+desc = '''The set of least-squares solutions is convex ([golub2013matrix] §5.5.1), indeed an affine
+subspace `x₀ + ker A`: `Convex ℝ {x | IsLeastSquaresSolution A b x}` (from the normal-equations
+characterization, a preimage of a point under a linear map). ★'''
+deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]  # staged by ch05
+id = "isUnit_augmented_iff"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.3.20), second half: `IsUnit (fromBlocks 1 A Aᴴ 0) ↔
+LinearIndependent 𝕜 Aᵀ` ("the augmented system is nonsingular if `rank(A) = n`", and conversely).
+`det (fromBlocks 1 A Aᴴ 0) = det (0 - Aᴴ * 1⁻¹ * A) = (-1)^n det (Aᴴ A)` (Mathlib
+`Matrix.det_fromBlocks_one₁₁`), and `Aᴴ A` is nonsingular iff the columns are independent
+(`posDef_conjTranspose_mul_self_of_linearIndependent`, and the kernel argument for the converse). ★★'''
+deps = ["Matrix.posDef_conjTranspose_mul_self_of_linearIndependent"]
+
+[[node]]  # staged by ch05
+id = "pinv_eq_of_isThinQR_conjTranspose"
+kind = "theorem"
+desc = '''Minimal-norm solutions of a full-row-rank system through a QR factorization of `Aᴴ`
+([golub2013matrix] §5.6.2, Algorithm 5.6.2): if `IsThinQR Aᴴ Q R` with `R` nonsingular, then
+`A.pinv = Q * (Rᴴ)⁻¹`; hence for every `b`, `x = Q (Rᴴ)⁻¹ b` solves `A x = b` and is the
+minimal-norm solution (`IsMinNormLeastSquaresSolution`). Via
+`pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose` (`A⁺ = Aᴴ (A Aᴴ)⁻¹`, `A Aᴴ = Rᴴ R`). ★★'''
+deps = ["Matrix.IsThinQR", "Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose", "Matrix.isMinNormLeastSquaresSolution_pinv"]
+
+[[node]]  # moved from Projection/Gap (Golub–Van Loan review); moved from SVD (it uses LeastSquares' pinv lemmas)
+id = "toEuclideanLin_mul_conjTranspose_eq_starProjection"
+kind = "theorem"
+desc = '''A matrix `V : Matrix n k 𝕜` with orthonormal columns (`Vᴴ * V = 1`) gives the orthogonal
+projection onto its range: `toEuclideanLin (V * Vᴴ) = ((LinearMap.range (toEuclideanLin V)).starProjection
+: _ →ₗ[𝕜] _)` ([golub2013matrix] §2.5.1: "`P = V Vᵀ` is the unique orthogonal projection onto `S`").
+The case `V⁺ = Vᴴ` of `mul_pinv_eq_starProjection` (`pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`
+with `Vᴴ V = 1`): one range-projector proof in the library (review H4; the first plan proved this one
+separately in `Projection/Gap`, whence it moved). ★'''
+deps = ["Matrix.mul_pinv_eq_starProjection", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"]
+
+[[node]]  # staged by ch05; moved from SVD (it uses LeastSquares' pinv lemmas)
+id = "pinv_isMinOn_frobenius"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.5.3): `A⁺` is the unique minimal-Frobenius-norm solution of
+`min_X ‖A X - I_m‖_F` (the book writes `X ∈ ℝ^{m×n}`; it is `n × m`). Statement: for all
+`X : Matrix n m 𝕜`, `‖A * A.pinv - 1‖_F ≤ ‖A * X - 1‖_F`, and if equality holds then
+`‖A.pinv‖_F ≤ ‖X‖_F` with equality only for `X = A.pinv`. Columnwise: column `j` of `X` is a
+least-squares problem with right-hand side `e_j`, whose minimal-norm solution is `A⁺ e_j`
+(`isMinNormLeastSquaresSolution_pinv`, `IsMinNormLeastSquaresSolution.unique`); the Frobenius
+norm squared is the sum over columns (`frobenius_norm_sq_eq_sum_col`-type lemma). ★★'''
+deps = ["Matrix.isMinNormLeastSquaresSolution_pinv", "Matrix.IsMinNormLeastSquaresSolution.unique", "Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf"]
+
+[[node]]  # staged by ch05 in RankRevealing; moved beside IsQR (Golub–Van Loan review M5)
+id = "IsPivotedQR"
+kind = "definition"
+desc = '''QR factorization with column pivoting: for `A : Matrix (Fin M) (Fin N) 𝕜`, `σ : Equiv.Perm (Fin N)`,
+`structure IsPivotedQR A Q R σ : Prop := isQR : IsQR (A.submatrix id σ) Q R` (column `k` of `A Π`
+is column `σ k` of `A`; [golub2013matrix] `A Π = Q R`, `A Π = [a_{c₁} | ⋯ | a_{cₙ}]`). A structure
+rather than an abbreviation so that the rank-revealing lemmas can be dot-notation on it; its
+rank-revealing refinement `IsPivotedQR.IsRankRevealing` is in `RankRevealing`. Beside `IsQR`, and
+moves with it to `QR` (beside `IsThinQR`) under the recorded refactor task R4. ★'''
+deps = ["Matrix.IsQR"]
+
+[[node]]  # staged by ch12 as `Tensor.isMinOn_norm_sub_mul_transpose_iff`; moved and generalized (review L3)
+id = "isMinOn_norm_sub_mul_transpose_iff"
+kind = "theorem"
+desc = '''**Least squares with a matrix unknown on the left** (the normal equations of one CP-ALS update,
+[golub2013matrix] (12.5.16)–(12.5.20), which are a matrix fact): for `A : Matrix m N 𝕜` and
+`K : Matrix N r 𝕜` (Frobenius norms), `F : Matrix m r 𝕜` minimizes `F ↦ ‖A − F * Kᴴ‖` iff
+`F * (Kᴴ * K) = A * K`; a minimizer exists. Row by row it is `Matrix.IsLeastSquaresSolution` of `K̄`
+(`‖A − F Kᴴ‖_F² = ∑_i ‖a_i − K̄ f_i‖²` with `a_i`, `f_i` the rows) and the normal-equation
+characterization `isLeastSquaresSolution_iff_normalEquations`; existence from
+`isLeastSquaresSolution_pinv`. The book's real statement is `𝕜 = ℝ`, `Kᴴ = Kᵀ`; the Khatri–Rao Gram
+identity `(B ⊙ C)ᵀ(B ⊙ C) = (BᵀB) .* (CᵀC)` it combines with is `Matrix.khatriRao_transpose_mul_self`
+(`Kronecker`). Moved here from `Tensor/CP` (review L3) and generalized to `RCLike`. ★ (~50 lines)'''
+deps = ["Matrix.IsLeastSquaresSolution", "Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.isLeastSquaresSolution_pinv", "Matrix.frobenius_norm_sq_eq_sum_sq"]

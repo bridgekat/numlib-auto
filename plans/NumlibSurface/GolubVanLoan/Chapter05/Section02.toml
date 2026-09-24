@@ -1,0 +1,409 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.2, the QR factorization: existence (Theorem 5.2.1), the range of the factors (Theorem 5.2.2,
+(5.2.1)–(5.2.3)), uniqueness of the thin factorization and its Cholesky reading (Theorem 5.2.3),
+the rectangular condition number (5.2.4); Householder QR (Algorithm 5.2.1), block Householder
+(5.2.2), recursive block QR (5.2.3), Givens QR (5.2.4) with its two unnumbered reorderings,
+Hessenberg QR (5.2.5), classical Gram–Schmidt (unnumbered), modified Gram–Schmidt (5.2.6); the
+complex Householder QR of §5.2.10; and the backward stability of the computed `R` of Algorithms
+5.2.1 and 5.2.4/5.2.5 (§5.2.2 "`Zᵀ(A + E) = R̂`", §5.3.3 "similar results hold if Givens QR is
+used"), rigorous.
+
+Specifications: the full factorization is the backbone `Matrix.IsQR A Q R` (`Q` orthogonal, `R`
+zero below the diagonal, `QR = A`) over `ℝ`; the thin one `Matrix.IsThinQR`. An algorithm that
+overwrites `A` is specified through `upperPart A'` (the upper triangle of the output, `i ≤ j`) and,
+for the Householder algorithms, the factored form `factoredQ β A' = householderProduct
+(storedReflectors A' β)` built from the stored vectors **and the returned `β`**. Algorithm 5.2.1
+returns the `β_j` alongside the array, because the factored form of §5.1.6 *is* "the Householder
+vectors and the corresponding `β_j`" and the stored vectors alone do not determine `β_j` when
+`house` returned `β = 0` (`equation_5_1_4_beta`; convention 13). Loops run over `List.finRange`;
+a Householder step on `A(j:m, j:n)` is chapter 5's `houseOn` and `householderApplyLeft` on the full
+array with the index lists `rows j = [j, …, m-1]`, `cols j = [j, …, n-1]` (convention 10; the
+prototype `notes/gvl/ch05/proto/Chapter05.lean` used a `Fin (m - 1 - j + 1)` copy, which the index
+lists replace); a Givens step is `givensApplyLeft` on its column list.
+
+Not formalized here: Stewart's `O(ε κ₂(A))` perturbation of the QR factors (§5.2.1, cited without
+statement), the roundoff claims for Algorithm 5.2.2 ("essentially the same") and for Gram–Schmidt
+(§5.2.9, Björck's `‖Q̂ᵀQ̂ - I‖ ≈ u κ₂(A)` and the Householder `≈ u` for an explicitly accumulated
+`Q̂`, `‖A - Q̂R̂‖ ≈ u‖A‖`: quoted without derivation; the rigorous MGS analysis is Björck–Paige 1992,
+Higham Theorem 19.13 — several hundred lines on a model this round does not plan), flop counts,
+level-3 fractions, parallel Givens orderings (P5.2.15).
+'''
+
+[[node]]
+id = "theorem_5_2_1"
+kind = "theorem"
+desc = '''Theorem 5.2.1 (QR factorization): for `A : Matrix (Fin m) (Fin n) ℝ` there are
+`Q ∈ orthogonalGroup (Fin m) ℝ` and `R` upper triangular (`R i j = 0` for `j < i`) with `A = Q R`,
+i.e. `∃ Q R, Matrix.IsQR A Q R` with the unitary group read as the orthogonal group
+(`Matrix.orthogonalGroup` = `unitaryGroup` over `ℝ`). Backbone `Matrix.exists_isQR`; the book's
+inductive proof by Householder matrices is the backbone's `exists_unitary_mul_upperTriangular`. ★'''
+deps = ["Matrix.exists_isQR", "Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.2.1'
+
+[[node]]
+id = "equation_5_2_3"
+kind = "theorem"
+desc = '''(5.2.3): if `A = Q R` with `R` upper triangular, the `k`-th column is
+`a_k = ∑_{i ≤ k} r_ik q_i` (`Matrix.mul_apply` and `R i k = 0` for `k < i`). ★'''
+deps = ["Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.3)'
+
+[[node]]
+id = "equation_5_2_1"
+kind = "theorem"
+desc = '''(5.2.1): for a QR factorization of a full-column-rank `A`, `span{a_1, …, a_k} = span{q_1, …, q_k}`
+for `k = 1:n`, and `r_kk ≠ 0`. Backbone `Matrix.IsQR.span_col_prefix_eq`. ★'''
+deps = ["equation_5_2_3", "Matrix.IsQR.span_col_prefix_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.1)'
+
+[[node]]
+id = "equation_5_2_2"
+kind = "theorem"
+desc = '''(5.2.2), the thin QR factorization: with `Q₁ = Q(1:m, 1:n)`, `R₁ = R(1:n, 1:n)` (`n ≤ m`),
+`A = Q₁ R₁` — `Matrix.IsQR.firstColumns_mul_firstRows`; `IsThinQR A Q₁ R₁` by `IsQR.isThinQR`. ★'''
+deps = ["Matrix.IsQR.firstColumns_mul_firstRows", "Matrix.IsQR.isThinQR"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.2)'
+
+[[node]]
+id = "theorem_5_2_2"
+kind = "theorem"
+desc = '''Theorem 5.2.2: if `A = Q R` is a QR factorization of a full-column-rank `A ∈ ℝ^{m×n}`, then
+(5.2.1) and `r_kk ≠ 0` for all `k`; `ran(A) = ran(Q₁)`; `ran(A)⊥ = ran(Q₂)` (`Q₂ = Q(1:m, n+1:m)`);
+and `A = Q₁ R₁` (5.2.2). The conjunction of `equation_5_2_1`, `Matrix.IsQR.span_firstColumns_eq`,
+`Matrix.IsQR.range_orthogonal_eq_span_lastColumns`, `equation_5_2_2`. ★'''
+deps = ["equation_5_2_1", "equation_5_2_2", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.range_orthogonal_eq_span_lastColumns"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.2.2'
+
+[[node]]
+id = "theorem_5_2_3"
+kind = "theorem"
+desc = '''Theorem 5.2.3 (thin QR factorization): for full-column-rank `A`, the thin factorization
+`A = Q₁ R₁` with `Q₁ᵀQ₁ = I` and `R₁` upper triangular with positive diagonal exists and is unique,
+and `R₁ = Gᵀ` for `G` the (lower triangular) Cholesky factor of `AᵀA`: existence
+`Matrix.exists_isThinQR`, uniqueness `Matrix.IsThinQR.unique`, and `Matrix.IsThinQR.isCholesky`
+(the backbone's `IsCholesky (Aᵀ A) R₁` is `Aᵀ A = R₁ᵀ R₁`, the book's `G Gᵀ` with `G = R₁ᵀ`). The
+book's proof via uniqueness of the Cholesky factor is chapter 4's Theorem 4.2.7. ★'''
+deps = ["Matrix.exists_isThinQR", "Matrix.IsThinQR.unique", "Matrix.IsThinQR.isCholesky", "GolubVanLoan.Chapter04.theorem_4_2_7"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 5.2.3'
+
+[[node]]
+id = "kappa2"
+kind = "definition"
+desc = '''(5.2.4): the 2-norm condition number of a rectangular matrix, `κ₂(A) = σ_max(A)/σ_min(A)`,
+defined as the backbone's `Matrix.pinvCondNumberLp 2 A` (`= lpOpNorm 2 A * lpOpNorm 2 A.pinv`, i.e.
+`‖A‖₂ ‖A⁺‖₂`; through `Matrix.lpOpNorm 2`, not the scoped `L2Operator` norm — the values are equal). ★'''
+deps = ["Matrix.pinvCondNumberLp"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.4)'
+
+[[node]]
+id = "equation_5_2_4"
+kind = "theorem"
+desc = '''(5.2.4) as stated: for full-column-rank `A` (`n ≥ 1`),
+`kappa2 A = (⨆ i, A.singularValues i) / (⨅ i, A.singularValues i)`; and for square nonsingular
+`A` it is the `κ₂` of §2.6.2: `Matrix.pinvCondNumberLp_eq_condNumberLp` concludes
+`kappa2 A = Matrix.condNumberLp 2 A`, which is chapter 2's `kappa 2 A = ENNReal.ofReal (condNumberLp 2 A)`
+by `if_pos`, and the `NormedRing.condNumber` of `lpCLM 2 A` by the (proved, untracked)
+`Matrix.condNumberLp_eq_condNumber`. ★'''
+deps = ["kappa2", "Matrix.pinvCondNumberLp_two_eq_div_singularValues", "Matrix.pinvCondNumberLp_eq_condNumberLp", "GolubVanLoan.Chapter02.kappa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.4)'
+
+[[node]]
+id = "upperPart"
+kind = "definition"
+desc = '''The upper triangle of an overwritten array, `upperPart A i j = if (i : ℕ) ≤ j then A i j else 0`
+("the upper triangular part of `A` is overwritten by the upper triangular part of `R`"). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.2.2'
+
+[[node]]
+id = "algorithm_5_2_1"
+kind = "definition"
+desc = '''Algorithm 5.2.1 (Householder QR), `n ≤ m`: state `(A, β) : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)`;
+for `j : Fin n`, with `rows j = (List.finRange m).filter (fun i => (j : ℕ) ≤ i)` and
+`cols j = (List.finRange n).filter (fun q => j ≤ q)` (convention 10):
+`(v, β_j) ← houseOn rnd (rows j) (A.col j)` (the book's `house(A(j:m, j))`);
+`A ← householderApplyLeft rnd v β_j (rows j) (cols j) A` (the book's `(I - βvvᵀ) A(j:m, j:n)`,
+implemented as §5.1.4 prescribes); `A i j ← v i` for `i ∈ (rows j).tail` (copies, no rounding). Returns
+the array and `β`; the reflector data are `storedReflectors A' β` (convention 13). ★★'''
+deps = ["houseOn", "householderApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.1'
+
+[[node]]
+id = "algorithm_5_2_1_spec"
+kind = "theorem"
+desc = '''With `(A', β) := Id.run (algorithm_5_2_1 pure h A)`: `Matrix.IsQR A (factoredQ β A') (upperPart A')`
+— `Q = H₁ ⋯ H_n = householderProduct (storedReflectors A' β)` from the stored vectors and the
+**returned** `β` (no nondegeneracy hypothesis), `Qᵀ A = R` upper triangular — and
+`β j = 0 ∨ β j * (v ⬝ᵥ v) = 2` for `v = storedHouseholderVec A' j`. Loop invariant after `j` steps:
+`H_j ⋯ H_1 A` has zeros below the diagonal in columns `< j`, its rows `< j` are final, and the
+stored columns `< j` hold the essential parts; each `H_j` acts on rows `≥ j` only
+(`householderApplyLeft_spec`, `houseOn_spec`). ★★★ (~250 lines)'''
+deps = ["algorithm_5_2_1", "houseOn_spec", "householderApplyLeft_spec", "factoredQ", "upperPart", "Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.1'
+
+[[node]]
+id = "equation_5_1_4_beta"
+kind = "theorem"
+desc = '''The retrieval formula `β_j = 2/(1 + ‖A(j+1:m, j)‖²)` (after (5.1.4) and after Algorithm 5.2.1),
+in its correct form: with `(A', β) := Id.run (algorithm_5_2_1 pure h A)`,
+`β j ≠ 0 → β j = recomputedBeta A' j`; `β j = 0` exactly when `house` met `σ = 0, x₁ ≥ 0`, where the
+formula yields `2` (report, Doubts); hence
+`(∀ j, β j ≠ 0) → factoredQ β A' = factoredQ (recomputedBeta A') A'`. The one place the book's
+recomputation is linked to the returned data (convention 13). ★'''
+deps = ["algorithm_5_2_1_spec", "factoredQ", "recomputedBeta", "houseOn_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.4)'
+
+[[node]]
+id = "algorithm_5_2_1_rounding"
+kind = "theorem"
+desc = '''§5.2.2 "the computed `R̂` is the exact `R` for a nearby `A`: `Zᵀ(A + E) = R̂`, `‖E‖₂ ≈ u‖A‖₂`",
+rigorous ([higham2002accuracy] Theorem 19.4's columnwise form): for `fp.IsIdempotent` and every run
+`(A', β̂) ∈ (algorithm_5_2_1 fp.round h A).run`, with `R̂ = upperPart A'`, there are
+`Z ∈ orthogonalGroup` (the product of the exact reflectors of the *computed* intermediate columns,
+`houseOn_rounding`) and `E` with `Z * R̂ = A + E` and `‖E.col q‖₂ ≤ ((1 + ε)^n - 1 + ε') ‖A.col q‖₂`
+for every column, `ε = 3 γ_{3K+m+3}` (`householderApplyLeft_rounding`, `K = 18m + 31`) and `ε'` the
+discarded sub-diagonal junk of each column (`≤ ε` per step; GVL overwrites it with `v`). All
+hypotheses are on the inputs (convention 9). Accumulation: `FloatingPoint.exists_eq_prodRev_mul_add`
+(columnwise Lemma 19.3); `‖E‖_F`, `‖E‖₂` corollaries. ★★★ (~200 lines)'''
+deps = ["algorithm_5_2_1", "algorithm_5_2_1_spec", "houseOn_rounding", "householderApplyLeft_rounding", "FloatingPoint.exists_eq_prodRev_mul_add"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.2'
+
+[[node]]
+id = "algorithm_5_2_1_run_nonempty"
+kind = "theorem"
+desc = '''The rounding theorems of Algorithm 5.2.1 are not vacuous: `fp.IsTotal →
+(algorithm_5_2_1 fp.round h A).run.Nonempty` (every rounding has an admissible value, so the
+program has a run). `SetM.run_foldlM_nonempty` over the column loop with
+`SetM.run_bind_nonempty`, `FloatingPoint.RoundingModel.run_round_nonempty` for each rounding and
+`FloatingPoint.dotAccum_run_nonempty` for the inner products of `houseOn` and
+`householderApplyLeft`. ★'''
+deps = ["algorithm_5_2_1", "SetM.run_foldlM_nonempty", "SetM.run_bind_nonempty", "FloatingPoint.RoundingModel.run_round_nonempty", "FloatingPoint.dotAccum_run_nonempty"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.1'
+
+[[node]]
+id = "algorithm_5_2_2"
+kind = "definition"
+desc = '''Algorithm 5.2.2 (block Householder QR), block size `r ≥ 1`: `Q = I_m; λ = 1`; while `λ ≤ n`:
+`τ = min(λ + r - 1, n)`; Algorithm 5.2.1's loop body for `j = λ:τ` on the full array with the column
+lists restricted to the panel (`houseOn rnd (rows j) (A.col j)`, `householderApplyLeft rnd v β_j (rows j)
+[j, …, τ] A`; convention 10 — no copy of `A(λ:m, λ:τ)`), collecting the panel's reflector data
+`data_k` (full-length vectors, the returned `β`); Algorithm 5.1.2 on `data_k` for
+`I - W_k Y_kᵀ = H_λ ⋯ H_τ` (`W_k`, `Y_k` full-length, zero above `λ`);
+`A(λ:m, τ+1:n) = (I - W_k Y_kᵀ)ᵀ A(λ:m, τ+1:n)` (two rounded matrix products, chapter 1's matrix
+multiplication, on the columns `τ+1:n`); `Q(:, λ:m) = Q(:, λ:m)(I - W_k Y_kᵀ)`; `λ = τ + 1`. The `while`
+loop is a fold over the `⌈n/r⌉` panel starts (`(List.range ((n + r - 1) / r)).map (· * r)`), `n ≤ m`.
+Returns `(Q, A)`. ★★'''
+deps = ["houseOn", "householderApplyLeft", "algorithm_5_1_2", "GolubVanLoan.Chapter01.algorithm_1_1_5"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.2'
+
+[[node]]
+id = "algorithm_5_2_2_spec"
+kind = "theorem"
+desc = '''With `(Q, A') := Id.run (algorithm_5_2_2 pure r A)`: `Matrix.IsQR A Q (upperPart A')` — the same
+specification as Algorithm 5.2.1. The panel's WY form equals the product of its reflectors
+(`algorithm_5_1_2_spec`), so the blocked update equals the unblocked sequence of reflector
+applications; an invariant over panels. ★★★ (~200 lines)'''
+deps = ["algorithm_5_2_2", "algorithm_5_2_1_spec", "algorithm_5_1_2_spec", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.2'
+
+[[node]]
+id = "algorithm_5_2_3"
+kind = "definition"
+desc = '''Algorithm 5.2.3 (recursive block QR, `BlockQR(A, n, n_b)`), `A : Matrix (Fin m) (Fin n) ℝ`:
+if `n ≤ n_b`, the thin factorization from Algorithm 5.2.1 (thin `Q` accumulated from its reflector
+data `storedReflectors A' β` by `backwardAccumulation`, first `n` columns — the returned `β`, not
+(5.1.5)'s recomputation); else `n₁ = n / 2`, recurse on `A(:, 1:n₁)`, `R₁₂ = Q₁ᵀ A(:, n₁+1:n)`,
+`A(:, n₁+1:n) -= Q₁ R₁₂`, recurse on it, assemble `Q = [Q₁ | Q₂]`, `R = [R₁₁ R₁₂; 0 R₂₂]`.
+Well-founded recursion on `n` (`n₁ < n`, `n - n₁ < n` for `n > n_b ≥ 1`), over `Fin n₁ ⊕ Fin n₂` with
+`finSumFinEquiv` for the assembly — a genuinely recursive algorithm (convention 3), whose column
+blocks are recursion arguments, not loop-dependent copies. ★★'''
+deps = ["algorithm_5_2_1", "backwardAccumulation", "storedReflectors"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.3'
+
+[[node]]
+id = "algorithm_5_2_3_spec"
+kind = "theorem"
+desc = '''For full-column-rank `A` and `n_b ≥ 1`: `Matrix.IsThinQR A Q R` for
+`(Q, R) := Id.run (algorithm_5_2_3 pure n_b A)` (no sign condition on the diagonal of `R` — the base
+case's Householder diagonal is `‖x‖ ≥ 0`, so in fact `R` has positive diagonal and by
+`IsThinQR.unique` the result is independent of `n_b`; stated as a second declaration). Strong
+induction on `n` with the block identities `Q₁R₁₁ = A₁`, `R₁₂ = Q₁ᵀA₂`, `Q₂R₂₂ = A₂ - Q₁R₁₂`, and
+`Q₁ᵀQ₂ = 0` because `ran Q₂ = ran(A₂ - Q₁R₁₂) ⊥ ran Q₁`. ★★★ (~200 lines)'''
+deps = ["algorithm_5_2_3", "algorithm_5_2_1_spec", "backwardAccumulation_spec", "Matrix.IsThinQR", "Matrix.IsThinQR.unique"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.3'
+
+[[node]]
+id = "algorithm_5_2_4"
+kind = "definition"
+desc = '''Algorithm 5.2.4 (Givens QR), `n ≤ m`: for `j : Fin n`, for `i = m-1, m-2, …, j+1` (0-based,
+`((List.finRange m).filter (j < ·)).reverse`): `(c, s) ← algorithm_5_1_3 rnd (A (i-1) j) (A i j)`;
+`A ← givensApplyLeft rnd (i-1) i c s (cols j) A` with `cols j = [j, …, n-1]` (the update touches only
+those columns, so column `< j` entries are not recomputed). Returns the array (the rotations are
+not stored; the spec's `Q` is existential, and the §5.1.11 encoding is optional). ★★'''
+deps = ["algorithm_5_1_3", "givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.4'
+
+[[node]]
+id = "algorithm_5_2_4_spec"
+kind = "theorem"
+desc = '''`∃ Q, Matrix.IsQR A Q (Id.run (algorithm_5_2_4 pure h A))` with `Q = G₁ ⋯ G_t` a product of the
+rotations used — the output itself is upper triangular in exact arithmetic (each rotation sets its
+entry to `s a + c b = 0` by `algorithm_5_1_3_spec`). Invariant: after `(j, i)` the entries of
+column `j` in rows `≥ i` are zero and columns `< j` are final; a rotation of rows `i-1, i` on
+columns `≥ j` preserves the zeros of columns `< j` because both rows are zero there. ★★★
+(~200 lines)'''
+deps = ["algorithm_5_2_4", "algorithm_5_1_3_spec", "givensApplyLeft_spec", "givensRotation", "Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.4'
+
+[[node]]
+id = "algorithm_5_2_4_rounding"
+kind = "theorem"
+desc = '''§5.3.3 "similar results hold if Givens QR is used" / §5.1.11, for Algorithm 5.2.4, rigorous:
+every run `A'` satisfies `∃ Q ∈ orthogonalGroup, ∃ E, Q * A' = A + E` with
+`‖E.col q‖₂ ≤ ((1 + √2 γ₁₅)^t - 1) ‖A.col q‖₂`, `t = ∑_{j<n} (m - 1 - j)` the number of rotations,
+and `R̂ = upperPart A'` differs from `A'` by the computed sub-diagonal junk, each entry bounded by
+`√2 γ₁₅` times its column's norm (the exact result there is `0`). Bridge per rotation
+(`algorithm_5_1_3_rounding`, `givensApplyLeft_rounding` on the columns `≥ j` — the columns
+`< j` of rows `i-1, i` are zero, so skipping them is exact), then
+`FloatingPoint.exists_eq_prodRev_mul_add`. Higham's `γ̃_{m+n}` (disjoint rotations grouped,
+Lemma 19.9) is sharper; not planned. ★★★ (~150 lines on top of the spec's invariant)'''
+deps = ["algorithm_5_2_4", "algorithm_5_2_4_spec", "algorithm_5_1_3_rounding", "givensApplyLeft_rounding", "FloatingPoint.exists_eq_prodRev_mul_add"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.4'
+
+[[node]]
+id = "givensQRDiagonalPivot"
+kind = "definition"
+desc = '''§5.2.5, the first reordering: Algorithm 5.2.4 with the inner body replaced by
+`[c, s] = givens(A(j, j), A(i, j))`, `A([j i], j:n) = [c s; -s c]ᵀ A([j i], j:n)` (rotations in the
+planes `(j, i)`: `givensApplyLeft rnd j i c s (cols j) A`). "and still emerge with the QR
+factorization". ★'''
+deps = ["algorithm_5_1_3", "givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.5'
+
+[[node]]
+id = "givensQRByRow"
+kind = "definition"
+desc = '''§5.2.5, the second reordering: the row-wise order `for i = 2:m, for j = 1:i-1` with the body of
+`givensQRDiagonalPivot` (`givensApplyLeft rnd j i c s (cols j) A`). ★'''
+deps = ["algorithm_5_1_3", "givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.5'
+
+[[node]]
+id = "givensQRDiagonalPivot_spec"
+kind = "theorem"
+desc = '''The first reordering computes a QR factorization: `∃ Q, Matrix.IsQR A Q (Id.run (givensQRDiagonalPivot
+pure A))`. The same invariant pattern as `algorithm_5_2_4_spec`. ★★'''
+deps = ["givensQRDiagonalPivot", "algorithm_5_1_3_spec", "givensApplyLeft_spec", "Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.5'
+
+[[node]]
+id = "givensQRByRow_spec"
+kind = "theorem"
+desc = '''The row-wise order computes a QR factorization: `∃ Q, Matrix.IsQR A Q (Id.run (givensQRByRow pure A))`
+(the zeros introduced in row `i` survive later steps because later rotations combine rows `j < i'`
+only with rows whose earlier entries are already zero). ★★'''
+deps = ["givensQRByRow", "algorithm_5_1_3_spec", "givensApplyLeft_spec", "Matrix.IsQR"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.5'
+
+[[node]]
+id = "algorithm_5_2_5"
+kind = "definition"
+desc = '''Algorithm 5.2.5 (Hessenberg QR): for `j = 1:n-1`, `[c, s] = givens(A(j, j), A(j+1, j))`,
+`A(j:j+1, j:n) = [c s; -s c]ᵀ A(j:j+1, j:n)` (`givensApplyLeft rnd j (j+1) c s (cols j) A`); returns the
+array and the pairs `(c_j, s_j)` (the book's `Q = G₁ ⋯ G_{n-1}`, `G_j = givensRotation j (j+1) c_j s_j`). ★'''
+deps = ["algorithm_5_1_3", "givensApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.5'
+
+[[node]]
+id = "algorithm_5_2_5_spec"
+kind = "theorem"
+desc = '''For upper Hessenberg `A` (`Matrix.IsUpperHessenberg`): with `(R, cs) := Id.run (algorithm_5_2_5 pure A)`
+and `Q = ∏_j givensRotation j (j+1) (cs j).1 (cs j).2`: `Matrix.IsQR A Q R`, and `Q` is upper Hessenberg.
+The backbone's `Matrix.hessenbergGivensQR_spec` proves the same shape for `givensPair`-rotations;
+here the rotations differ by signs (Algorithm 5.1.3 does not fix the sign of `r`), so the invariant
+is re-run (or transported: each `G_j` is `± diag` times the backbone's). ★★'''
+deps = ["algorithm_5_2_5", "algorithm_5_1_3_spec", "givensApplyLeft_spec", "givensRotation", "Matrix.hessenbergGivensQR_spec", "Matrix.IsUpperHessenberg"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.5'
+
+[[node]]
+id = "algorithm_5_2_5_rounding"
+kind = "theorem"
+desc = '''The backward error of the computed Hessenberg QR, rigorous: every run `(R̂', ĉs)` gives
+`Q * R̂' = A + E` with `Q` the product of the exact rotations of the computed pairs and
+`‖E‖_F ≤ ((1 + √2 γ₁₅)^{n-1} - 1) ‖A‖_F` (the `n - 1` rotations; `upperPart` junk as in
+`algorithm_5_2_4_rounding`). The piece of the QR iteration's analysis that
+`notes/frontier.md`'s Givens item waits for (chapters 7–8 consume it for the Francis step). ★★'''
+deps = ["algorithm_5_2_5", "algorithm_5_2_5_spec", "algorithm_5_1_3_rounding", "givensApplyLeft_rounding", "FloatingPoint.exists_eq_prodRev_mul_add"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.5'
+
+[[node]]
+id = "classicalGramSchmidt"
+kind = "definition"
+desc = '''§5.2.7, classical Gram–Schmidt (displayed, unnumbered): `R(1,1) = ‖A(:,1)‖₂`,
+`Q(:,1) = A(:,1)/R(1,1)`; for `k = 2:n`: `R(1:k-1, k) = Q(:, 1:k-1)ᵀ A(:, k)` (dot products),
+`z = A(:, k) - Q(:, 1:k-1) R(1:k-1, k)` (a gaxpy), `R(k,k) = ‖z‖₂`, `Q(:, k) = z/R(k,k)`. The `k = 1`
+step is the `k`-loop's body with an empty `1:k-1` range, so the program is one fold over
+`Fin n`. ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.7'
+
+[[node]]
+id = "classicalGramSchmidt_spec"
+kind = "theorem"
+desc = '''For full-column-rank `A`: with `(Q, R) := Id.run (classicalGramSchmidt pure A)`,
+`Matrix.IsThinQR A Q R ∧ ∀ j, 0 < R j j`, and the columns of `Q` are
+`InnerProductSpace.gramSchmidtNormed ℝ` of the columns of `A` (Mathlib's `gramSchmidt` *is* CGS:
+`gramSchmidt_def`, `gramSchmidtNormed`). Also (5.2.3)'s `q_k = (a_k - Σ_{i<k} r_ik q_i)/r_kk`,
+`r_ik = q_iᵀ a_k`. ★★'''
+deps = ["classicalGramSchmidt", "Matrix.IsThinQR", "Matrix.exists_qr"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.7'
+
+[[node]]
+id = "mgs_remainder_eq"
+kind = "theorem"
+desc = '''§5.2.8, the derivation of MGS: with `A = Q₁R₁` (thin, columns `q_i`, rows `r_iᵀ` of `R₁`),
+`A - ∑_{i<k} q_i r_iᵀ = ∑_{i≥k} q_i r_iᵀ`, whose columns `< k` vanish (`[0 | A^{(k)}]`), and for
+`A^{(k)} = [z | B]`: `r_kk = ‖z‖₂`, `q_k = z/r_kk`, `[r_{k,k+1} ⋯ r_{kn}] = q_kᵀ B`. ★'''
+deps = ["Matrix.IsThinQR"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.8'
+
+[[node]]
+id = "algorithm_5_2_6"
+kind = "definition"
+desc = '''Algorithm 5.2.6 (modified Gram–Schmidt): state `(A, Q, R)`; for `k : Fin n`:
+`R(k,k) ← rnd √(dot of A(:,k) with itself)`, `Q(:,k) ← rnd (A(:,k)/R(k,k))`; for `j > k`:
+`R(k,j) ← dot (Q(:,k), A(:,j))`, `A(:,j) ← rnd (A(:,j) - rnd (Q(:,k) R(k,j)))`. Returns `(Q, R)`.
+Prototype `notes/gvl/ch05/proto/Chapter05.lean` (elaborates; the plan calls chapter 1's dot
+product for the inner products). ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.6'
+
+[[node]]
+id = "algorithm_5_2_6_spec"
+kind = "theorem"
+desc = '''For `rank A = n`: `Matrix.IsThinQR A Q R ∧ ∀ j, 0 < R j j` for
+`(Q, R) := Id.run (algorithm_5_2_6 pure A)` (statement elaborated in the prototype). Invariant:
+after step `k`, column `j > k` of the working array is `(I - Σ_{i≤k} q_i q_iᵀ) a_j`
+(`Matrix.prod_one_sub_vecMulVec_of_orthonormal`), which is nonzero by independence. ★★'''
+deps = ["algorithm_5_2_6", "mgs_remainder_eq", "Matrix.prod_one_sub_vecMulVec_of_orthonormal", "Matrix.IsThinQR"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.2.6'
+
+[[node]]
+id = "algorithm_5_2_6_eq_classicalGramSchmidt"
+kind = "theorem"
+desc = '''In exact arithmetic MGS and CGS compute the same `Q₁` and `R₁` ("a rearrangement of the
+calculation"): for full-column-rank `A`, `Id.run (algorithm_5_2_6 pure A) = Id.run (classicalGramSchmidt pure A)`
+— by `Matrix.IsThinQR.unique` from the two specs. ★'''
+deps = ["algorithm_5_2_6_spec", "classicalGramSchmidt_spec", "Matrix.IsThinQR.unique"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.8'
+
+[[node]]
+id = "complexHouseholderQR"
+kind = "theorem"
+desc = '''§5.2.10: for `A : Matrix (Fin m) (Fin n) ℂ` there are unitary `Q = Q₁ ⋯ Q_n` (complex Householder
+matrices, each making `Q_j A` upper triangular through its first `j` columns) and upper triangular
+`R` with `A = Q R`: `∃ Q R, Matrix.IsQR A Q R` over `ℂ`. Backbone `Matrix.exists_isQR` (over `RCLike`),
+through `exists_unitary_mul_upperTriangular`, whose construction is exactly the loop of §5.2.10. ★'''
+deps = ["Matrix.exists_isQR", "complexHouseholder"]
+source = 'Golub–Van Loan, Matrix Computations, §5.2.10'

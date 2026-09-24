@@ -1,0 +1,385 @@
+namespace = "Matrix"
+desc = '''
+Structured-rank matrices ([golub2013matrix] §12.2; Vandebril–Van Barel–Mastronardi 2008): matrices
+whose blocks below (above) the diagonal have small rank, their generator/quasiseparable
+representations, and the facts about inverses and LU/QR factors that make `O(n)` algorithms
+possible.
+
+Upstreaming candidate apart from the orthogonal-Hessenberg section (natural home: a file beside
+`Mathlib.LinearAlgebra.Matrix.Rank`).
+
+**Definitions by maximal blocks.** `IsSemiseparable A` (blocks that do not cross the diagonal have
+rank `≤ 1`, [golub2013matrix] (12.2.1)) and `IsQuasiseparable A` (blocks strictly below/above,
+(12.2.5)) are stated on `[Fintype n] [LinearOrder n]` through the *maximal* blocks `A.toBlock (k ≤ ·)
+(· ≤ k)`, `A.toBlock (· ≤ k) (k ≤ ·)` (strict `<` for the quasiseparable case) — every block of the
+book's form is a sub-block of one of them, so the book's formulation is a theorem
+(`isSemiseparable_iff_forall_rank_toBlock_Icc_le`), and the maximal-block form is the one the
+nullity theorem speaks to (prototype `notes/gvl/ch12/proto/Structured.lean`). Index arithmetic
+(the bidiagonal `B(r)`, the representation `𝐒(u,v,t,d,p,q,r)`) is on `Fin n` with the
+`n − 1`-vectors `t`, `r` taken as `ℕ → K` (the backbone's `ℕ`-indexed recursion convention of
+`notes/backbone.md` §1.7), products running over `Finset.Ico j i`.
+
+**Inverses through the nullity theorem.** Facts 1–3 of [golub2013matrix] §12.2.3 and the banded
+inverse of §12.2.8 are all instances of the nullity theorem `Matrix.rank_toBlock_inv_add_card`
+(staged for `Rank`): `rank (A⁻¹)[α, β] = rank A[βᶜ, αᶜ] + |α| + |β| − n`. For a tridiagonal `A` the
+complementary block of a maximal block of `A⁻¹` is zero; for a quasiseparable `A` it is again a
+maximal block; the diagonal-plus-semiseparable case applies the theorem to a `2n × 2n` bordered
+matrix.
+
+**Algorithm specifications.** The exact-arithmetic content of Algorithms 12.2.1–12.2.2 (the book's
+`O(n)` LU and QR of a semiseparable matrix) is here as closed-form factorizations
+(`isLU_quasiseparableOf`, `transpose_givensChain_mul_strictLower_add_diagPart`); the surface
+algorithms are proved against them. Plane rotations are `Matrix.planeEmbed` of `PlaneRotation`.
+
+**Orthogonal Hessenberg matrices** (§12.2.10): the factorization into `n − 1` plane reflections
+(12.2.18), the eigenvalue structure (12.2.19) and the Ammar–Gragg–Reichel facts. Not upstreaming
+material in the same sense; a relocation to `Numlib/Eigen/` is proposed in the chapter 12 report.
+'''
+
+[[node]]
+id = "IsSemiseparable"
+kind = "definition"
+desc = '''`A.IsSemiseparable` for `A : Matrix n n K`, `[Fintype n] [LinearOrder n]`: `∀ k, (A.toBlock (k ≤ ·) (·
+≤ k)).rank ≤ 1 ∧ (A.toBlock (· ≤ k) (k ≤ ·)).rank ≤ 1` ([golub2013matrix] (12.2.1)). Prototype
+`notes/gvl/ch12/proto/Structured.lean`. ★'''
+deps = []
+
+[[node]]
+id = "IsQuasiseparable"
+kind = "definition"
+desc = '''`A.IsQuasiseparable`: `∀ k, (A.toBlock (k < ·) (· ≤ k)).rank ≤ 1 ∧ (A.toBlock (· ≤ k) (k <
+·)).rank ≤ 1` ([golub2013matrix] (12.2.5)). ★'''
+deps = []
+
+[[node]]
+id = "isSemiseparable_iff_forall_rank_toBlock_Icc_le"
+kind = "theorem"
+desc = '''The book's formulation (12.2.1): `A.IsSemiseparable ↔ ∀ i₁ i₂ j₁ j₂, j₂ ≤ i₁ ∨ i₂ ≤ j₁ → (A.toBlock
+(· ∈ Set.Icc i₁ i₂) (· ∈ Set.Icc j₁ j₂)).rank ≤ 1`; and the quasiseparable twin
+`isQuasiseparable_iff_forall_rank_toBlock_Icc_le` with `j₂ < i₁ ∨ i₂ < j₁` (12.2.5). `→`: the block
+is a sub-block of the maximal block at `k = i₁` (resp. `j₁`), `Matrix.rank_submatrix_le`. `←`: the
+maximal block is a block of the book's form with extreme endpoints (empty `n` trivial). ★★ (~50
+lines)'''
+deps = ["Matrix.IsSemiseparable", "Matrix.IsQuasiseparable"]
+
+[[node]]
+id = "IsSemiseparable.isQuasiseparable"
+kind = "theorem"
+desc = '''Semiseparable matrices are quasiseparable ([golub2013matrix] §12.2.2, "the class of semiseparable
+matrices is a subset of the class of quasiseparable matrices"): the strict maximal block is a
+sub-block of the non-strict one. ★'''
+deps = ["Matrix.IsSemiseparable", "Matrix.IsQuasiseparable"]
+
+[[node]]
+id = "IsSemiseparable.transpose"
+kind = "theorem"
+desc = '''Both classes are closed under transposition and row/column scaling by diagonal matrices
+(`diagonal a * A * diagonal b`), and the quasiseparable class under addition of a diagonal matrix:
+`toBlock` commutes with these operations up to rank-preserving factors (Mathlib
+`Matrix.rank_transpose`, `Matrix.rank_mul_le_left/right`). One node for the five closure lemmas
+(`IsSemiseparable.transpose`, `IsQuasiseparable.transpose`, `IsSemiseparable.diagonal_mul_mul_diagonal`,
+`IsQuasiseparable.diagonal_mul_mul_diagonal`, `IsQuasiseparable.add_diagonal`). ★'''
+deps = ["Matrix.IsSemiseparable", "Matrix.IsQuasiseparable"]
+
+[[node]]
+id = "unitBidiagonal"
+kind = "definition"
+desc = '''`B(r)` ([golub2013matrix] (12.2.2)): `unitBidiagonal n r : Matrix (Fin n) (Fin n) K` for `r : ℕ → K`,
+`1` on the diagonal, `-r i` at `(i, i + 1)`, `0` elsewhere. ★'''
+deps = []
+
+[[node]]
+id = "inv_unitBidiagonal"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.3): `(unitBidiagonal n r)⁻¹ = of fun i j => if i ≤ j then ∏ l ∈ Finset.Ico
+(i : ℕ) j, r l else 0`. Check `unitBidiagonal n r * X = 1` for the right side (row `i`: `X i j - r i *
+X (i+1) j = ∏_{Ico i j} - r i ∏_{Ico (i+1) j} = 0` for `i < j`, `Finset.prod_eq_prod_Ico_succ_bot`), then
+`Matrix.inv_eq_right_inv`. ★★ (~50 lines)'''
+deps = ["Matrix.unitBidiagonal"]
+
+[[node]]
+id = "isSemiseparable_inv_unitBidiagonal"
+kind = "theorem"
+desc = '''`(unitBidiagonal n r)⁻¹.IsSemiseparable` ([golub2013matrix] P12.2.1, the claim after (12.2.3)
+that every submatrix of the upper triangular part has rank `≤ 1`): an upper maximal block at `k` is
+`vecMulVec (fun i => ∏_{Ico i k} r) (fun j => ∏_{Ico k j} r)` (`Finset.prod_Ico_consecutive`); a lower
+maximal block has the single nonzero entry `1` at `(k, k)`. Mathlib `Matrix.rank_vecMulVec_le`. ★'''
+deps = ["Matrix.inv_unitBidiagonal", "Matrix.IsSemiseparable"]
+
+[[node]]
+id = "unitBidiagonal_transpose_mulVec_eq_single"
+kind = "theorem"
+desc = '''`B(r)ᵀ x = x₀ e₀` when `r l = x (l + 1) / x l` and `x l ≠ 0` for `l + 1 < n` ([golub2013matrix]
+§12.2.1, "`B(r)` can be used to introduce zeros into a vector"): row `j ≥ 1` of `B(r)ᵀ x` is `x j - r
+(j-1) x (j-1) = 0`. ★'''
+deps = ["Matrix.unitBidiagonal"]
+
+[[node]]
+id = "quasiseparableOf"
+kind = "definition"
+desc = '''The quasiseparable representation `𝐒(u, v, t, d, p, q, r)` ([golub2013matrix] (12.2.8)), for `u v d
+p q : Fin n → K`, `t r : ℕ → K`: `quasiseparableOf u v t d p q r i j = if j < i then u i * (∏ l ∈
+Finset.Ico (j : ℕ) i, t l) * v j else if i = j then d i else p i * (∏ l ∈ Finset.Ico (i : ℕ) j, r l) * q
+j`, i.e. `tril(u vᵀ, −1) .* B(t)⁻ᵀ + diag(d) + triu(p qᵀ, 1) .* B(r)⁻¹` (`quasiseparableOf_eq`, from
+`inv_unitBidiagonal`). With `t = r = 1` it is the generator representation (12.2.6)
+`strictLower (vecMulVec u v) + diagonal d + strictUpper (vecMulVec p q)` (`quasiseparableOf_one_one`,
+`Matrix.strictLower`/`strictUpper` of `Hessenberg`). ★'''
+deps = ["Matrix.inv_unitBidiagonal", "Matrix.strictLower", "Matrix.strictUpper"]
+
+[[node]]
+id = "isQuasiseparable_quasiseparableOf"
+kind = "theorem"
+desc = '''`(quasiseparableOf u v t d p q r).IsQuasiseparable` ([golub2013matrix] §12.2.3, "(12.2.6) is
+quasiseparable" and the claim for (12.2.8)): the strictly lower maximal block at `k` is
+`vecMulVec (fun i => u i * ∏_{Ico k i} t) (fun j => (∏_{Ico j k} t) * v j)` (`Finset.prod_Ico_consecutive`
+for `j ≤ k < i`), symmetrically above. `Matrix.rank_vecMulVec_le`. ★★ (~40 lines)'''
+deps = ["Matrix.quasiseparableOf", "Matrix.IsQuasiseparable"]
+
+[[node]]
+id = "isSemiseparable_quasiseparableOf"
+kind = "theorem"
+desc = '''If `d = u * v = p * q` (pointwise, the book's `d = u.*v = p.*q`) then `(quasiseparableOf u v t d p q
+r).IsSemiseparable` ([golub2013matrix] §12.2.3): with the diagonal included the lower maximal block
+at `k` is still a `vecMulVec`, because `d k = u k * (∏_{Ico k k} t) * v k`. ★'''
+deps = ["Matrix.isQuasiseparable_quasiseparableOf", "Matrix.IsSemiseparable"]
+
+[[node]]
+id = "transpose_quasiseparableOf"
+kind = "theorem"
+desc = '''`(quasiseparableOf u v t d p q r)ᵀ = quasiseparableOf q p r d v u t`; in particular the
+representation with `u = q`, `v = p`, `t = r` is symmetric ([golub2013matrix] §12.2.3). ★'''
+deps = ["Matrix.quasiseparableOf"]
+
+[[node]]
+id = "unitBidiagonal_ne_generatorRep"
+kind = "theorem"
+desc = '''`B(r)` has no generator representation when `n ≥ 3` and `r 0`, `r 1` are nonzero ([golub2013matrix]
+§12.2.3, "not every quasiseparable matrix has a generator representation"): `p₀ q₁ = -r₀ ≠ 0` and `p₀ q₂
+= 0` force `q₂ = 0`, contradicting `p₁ q₂ = -r₁ ≠ 0`. ★'''
+deps = ["Matrix.unitBidiagonal", "Matrix.quasiseparableOf"]
+
+[[node]]
+id = "IsQuasiseparable.hadamard"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.7): `A.IsQuasiseparable → B.IsQuasiseparable → (A ⊙ B).IsQuasiseparable`
+(and the semiseparable twin): `toBlock` commutes with `⊙`, and `rank (X ⊙ Y) ≤ rank X * rank Y`
+(`Matrix.rank_hadamard_le`, staged for chapter 1's `Kronecker`). ★'''
+deps = ["Matrix.IsQuasiseparable", "Matrix.IsSemiseparable", "Matrix.rank_hadamard_le"]
+
+[[node]]
+id = "exists_quasiseparableOf"
+kind = "theorem"
+desc = '''**Every quasiseparable matrix has a quasiseparable representation** ([golub2013matrix] §12.2.3, "It
+can be shown…", P12.2.2): `A.IsQuasiseparable ↔ ∃ u v t d p q r, A = quasiseparableOf u v t d p q r`
+for `A : Matrix (Fin n) (Fin n) K`. `←` is `isQuasiseparable_quasiseparableOf`. `→` (Eidelman–Gohberg's
+construction, order one): factor each strictly lower maximal block `H_k = A[k+1:, :k+1]` as `x_k y_kᵀ`
+(rank `≤ 1`, `Matrix.rank_le_iff_exists_mul`); the overlap `H_k[1:, :] = H_{k+1}[:, :k+1]` gives a
+transfer scalar `t_{k+1}` relating consecutive row factors (choose `t = 0` and fresh factors when a
+block vanishes); set `u_i = x_{i-1} 0`, `v_j = y_j j`. Upper part by transposition
+(`transpose_quasiseparableOf`), `d = diag A`. The degenerate zero-block cases are the work. ★★★ (~180
+lines)'''
+deps = ["Matrix.isQuasiseparable_quasiseparableOf", "Matrix.transpose_quasiseparableOf", "Matrix.rank_le_iff_exists_mul"]
+
+[[node]]
+id = "exists_lower_semiseparable_rep"
+kind = "theorem"
+desc = '''Triangular semiseparable matrices ([golub2013matrix] §12.2.4): a lower triangular semiseparable `L`
+is `quasiseparableOf u v t (u * v) 0 0 0` for some `u v t` (the book's `tril(u vᵀ) .* B(t)⁻ᵀ`), an upper
+triangular one is `quasiseparableOf 0 0 0 (p * q) p q r`. The construction of `exists_quasiseparableOf`
+run on the non-strict maximal blocks (which include the diagonal). ★★★ (~80 lines on top of
+`exists_quasiseparableOf`)'''
+deps = ["Matrix.exists_quasiseparableOf", "Matrix.IsSemiseparable"]
+
+[[node]]
+id = "vecMulVec_hadamard_inv_unitBidiagonal"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.9): `vecMulVec p q ⊙ (unitBidiagonal n r)⁻¹ = diagonal p * (unitBidiagonal n
+r)⁻¹ * diagonal q` (the `triu` of the book is redundant, `B(r)⁻¹` being upper triangular), hence `(triu(p
+qᵀ) .* B(r)⁻¹) x = p .* (B(r)⁻¹ (q .* x))` and, for nonzero `p`, `q`, the solve `x = (B(r) (y ./ p)) ./
+q`. ★'''
+deps = ["Matrix.inv_unitBidiagonal"]
+
+[[node]]
+id = "IsLU.isSemiseparable_upper"
+kind = "theorem"
+desc = '''LU factors of a semiseparable matrix ([golub2013matrix] §12.2.5, "both `L` and `U` are semiseparable"):
+`IsLU A L U → A.IsSemiseparable → U.IsSemiseparable`, and `IsLU.isSemiseparable_lower`: with moreover
+`∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`, `L.IsSemiseparable`. Upper blocks of `U = L⁻¹ A`
+are `L⁻¹[:k, :k] A[:k, k:]` (triangularity of `L⁻¹`); lower blocks of `L` are `A[k:, :k] U[:k, :k]⁻¹`
+(leading blocks of `U` invertible below the last pivot, `IsLU.toBlock_le`); the remaining blocks are
+triangular with one nonzero entry. The book's claim is false for `L` without the hypothesis when `A`
+is singular (a `3 × 3` counterexample is in the chapter 12 report). ★★ (~80 lines)'''
+deps = ["Matrix.IsLU", "Matrix.IsSemiseparable", "Matrix.IsLU.toBlock_le", "Matrix.strictLeadingPrincipalSubmatrix"]
+
+[[node]]
+id = "isLU_quasiseparableOf"
+kind = "theorem"
+desc = '''The closed-form LU of a semiseparable representation — the exact content of [golub2013matrix]
+Algorithm 12.2.1. For `u v p q : Fin n → K`, `t r : ℕ → K` with `u * v = p * q` and `u k ≠ 0` for `k + 1 <
+n`, let `τ k = t k * u (k+1) / u k` and `p̃ 0 = p 0`, `p̃ (k+1) = p (k+1) - p k * τ k * r k`: `IsLU
+(quasiseparableOf u v t (u * v) p q r) ((unitBidiagonal n τ)ᵀ)⁻¹ (vecMulVec p̃ q ⊙ (unitBidiagonal n
+r)⁻¹)`. Proof: `(unitBidiagonal n τ)ᵀ * A` is the upper factor, checked entrywise (row `k+1` minus `τ k`
+times row `k`: the lower part cancels because `d = u .* v`, the upper part becomes `p̃ (k+1)` times the
+`r`-products); then `inv_unitBidiagonal` for the unit lower factor. The book's hypothesis "has an LU
+factorization" is not what the algorithm needs (`u k ≠ 0` is). ★★ (~100 lines)'''
+deps = ["Matrix.quasiseparableOf", "Matrix.inv_unitBidiagonal", "Matrix.IsLU", "Matrix.vecMulVec_hadamard_inv_unitBidiagonal"]
+
+[[node]]
+id = "IsTridiagonal.isSemiseparable_inv"
+kind = "theorem"
+desc = '''Fact 1 of [golub2013matrix] §12.2.3, first half: `IsUnit A → A.IsTridiagonal →
+A⁻¹.IsSemiseparable`. The nullity theorem `rank_toBlock_inv_add_card` at the maximal block `α = {i ≥
+k}`, `β = {j ≤ k}`: the complementary block `A[{j > k}, {i < k}]` of a tridiagonal `A` is zero and `|α|
++ |β| − n = 1`. Symmetric for the upper blocks. ★★ (~40 lines)'''
+deps = ["Matrix.rank_toBlock_inv_add_card", "Matrix.IsTridiagonal", "Matrix.IsSemiseparable"]
+
+[[node]]
+id = "IsTridiagonal.inv_eq_generatorRep"
+kind = "theorem"
+desc = '''Fact 1, second half: if moreover all sub- and superdiagonal entries of `A : Matrix (Fin n) (Fin n) K`
+are nonzero, then `A⁻¹ = quasiseparableOf u v 1 (u * v) p q 1` with `u * v = p * q` (generator
+representable). `(A⁻¹) (n-1) 0 ≠ 0` because its cofactor is the product of the subdiagonal
+(`Matrix.inv_def`; the minor of a tridiagonal matrix without row `0` and column `n-1` is lower
+triangular); then every lower `2 × 2` minor on rows `i, n−1` and columns `0, j` vanishes
+(`IsTridiagonal.isSemiseparable_inv`), giving `A⁻¹ i j = (A⁻¹ i 0 / A⁻¹ (n-1) 0) * A⁻¹ (n-1) j` for `j ≤
+i`; upper part by transposition. ★★ (~90 lines)'''
+deps = ["Matrix.IsTridiagonal.isSemiseparable_inv", "Matrix.quasiseparableOf"]
+
+[[node]]
+id = "IsQuasiseparable.inv"
+kind = "theorem"
+desc = '''Fact 2 of [golub2013matrix] §12.2.3: `IsUnit A → A.IsQuasiseparable → A⁻¹.IsQuasiseparable`. Nullity
+theorem at `α = {i > k}`, `β = {j ≤ k}`: the complementary block is `A[{j > k}, {i ≤ k}]`, a strictly
+lower maximal block of `A`, and `|α| + |β| − n = 0`. ★'''
+deps = ["Matrix.rank_toBlock_inv_add_card", "Matrix.IsQuasiseparable"]
+
+[[node]]
+id = "inv_diagonal_add_eq_add"
+kind = "theorem"
+desc = '''Fact 3 of [golub2013matrix] §12.2.3: for `D = diagonal δ` with every `δ i ≠ 0`, `S.IsSemiseparable`
+and `IsUnit (D + S)`: `∃ S₁, S₁.IsSemiseparable ∧ (D + S)⁻¹ = D⁻¹ + S₁`. Reduce to `D = 1`: `D + S = D (1 +
+D⁻¹ S)` with `D⁻¹ S` semiseparable (`IsSemiseparable.diagonal_mul_mul_diagonal`) and `(1 + S')⁻¹ D⁻¹ =
+D⁻¹ + S₂ D⁻¹`. For `D = 1`: `B := (1 + S')⁻¹ − 1` is the lower-right block of the inverse of the `2n × 2n`
+matrix `M = [[S', 1], [1, −1]]` (`M⁻¹ = [[B + 1, B + 1], [B + 1, B]]`, `Matrix.fromBlocks`); the nullity
+theorem for `M` at the maximal block of `B` has complementary block `[[S', E₁], [E₂, 0]]` with `E₁`, `E₂`
+selection matrices, of rank `≤ (n − 1) + rank S'[k:, :k+1] ≤ n`, so the block of `B` has rank `≤ 1`.
+★★★ (~130 lines)'''
+deps = ["Matrix.rank_toBlock_inv_add_card", "Matrix.IsSemiseparable", "Matrix.IsSemiseparable.transpose"]
+
+[[node]]
+id = "IsGeneratorRepresentableOfOrder"
+kind = "definition"
+desc = '''The `{p, q}`-generator representable matrices of [golub2013matrix] §12.2.8: `A : Matrix (Fin n)
+(Fin n) K` with `U V : Matrix (Fin n) (Fin p) K`, `P Q : Matrix (Fin n) (Fin q) K` such that `A i j = (U
+* Vᵀ) i j` whenever `(j : ℕ) < i + p` (the book's `tril(A, p − 1) = tril(U Vᵀ, p − 1)`) and `A i j = (P *
+Qᵀ) i j` whenever `(i : ℕ) < j + q` (`triu(A, −q + 1) = triu(P Qᵀ, −q + 1)`). The book's
+`{p, q}`-semiseparable definition beside it has a misprinted second condition (`i₂ > j₁ + q` for
+`i₂ < j₁ + q`) and no result attached; it is not formalized. ★'''
+deps = []
+
+[[node]]
+id = "IsGeneratorRepresentableOfOrder.hasBandwidth_inv"
+kind = "theorem"
+desc = '''[golub2013matrix] §12.2.8: `IsUnit A → A.IsGeneratorRepresentableOfOrder p q →
+A⁻¹.HasLowerBandwidth p ∧ A⁻¹.HasUpperBandwidth q`. Nullity theorem at `α = {i ≥ k}`, `β = {j < k +
+p}`: that block of `A` is a block of `U Vᵀ`, rank `≤ p`, and `|α| + |β| − n = p`, so the complementary
+block `A⁻¹[{j ≥ k + p}, {i < k}]` has rank `0`; that is the lower bandwidth (`hasLowerBandwidth_iff_fin`
+of `Hessenberg`). Transpose for `q`. ★★ (~70 lines)'''
+deps = ["Matrix.IsGeneratorRepresentableOfOrder", "Matrix.rank_toBlock_inv_add_card", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
+
+[[node]]
+id = "givensChain"
+kind = "definition"
+desc = '''The product `G₀ G₁ ⋯ G_{n−2}` of adjacent plane embeddings ([golub2013matrix] (12.2.12)–(12.2.13), the
+book's `Qᵀ = G₁ ⋯ G_{n−1}`): `givensChain M = ((List.finRange N).map fun k => planeEmbed k.castSucc k.succ
+(M k)).prod : Matrix (Fin (N + 1)) (Fin (N + 1)) K` for `M : Fin N → Matrix (Fin 2) (Fin 2) K` (size
+`N + 1` avoids `n − 1` casts). With `M k = !![c k, s k; −s k, c k]` it is the book's rotation product;
+with `M k = !![α k, β k; γ k, δ k]` it is the `M = M₁ ⋯ M_{n−1}` of (12.2.4). ★'''
+deps = ["Matrix.planeEmbed"]
+
+[[node]]
+id = "givensChain_apply"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.4): the entries of `givensChain (fun k => !![α k, β k; γ k, δ k])`: `(i, j) ↦ 0`
+for `i > j + 1`, `γ j` for `i = j + 1`, and `(if i = 0 then 1 else δ (i-1)) * (∏_{l ∈ Ico i j} β l) * (if
+j = N then 1 else α j)` for `i ≤ j`; in particular it is quasiseparable (`givensChain_isQuasiseparable`,
+the book's "off-diagonal blocks have unit rank or less"; the representation asked by P12.2.4 is read
+off) and upper Hessenberg. Induction on the number of factors with `Matrix.mul_planeEmbed_apply`. ★★
+(~80 lines)'''
+deps = ["Matrix.givensChain", "Matrix.mul_planeEmbed_apply", "Matrix.isQuasiseparable_quasiseparableOf", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "exists_givensVector_rep"
+kind = "theorem"
+desc = '''The Givens-vector representation ([golub2013matrix] (12.2.11)): a lower triangular semiseparable `A :
+Matrix (Fin n) (Fin n) ℝ` with `A (n-1) 0 ≠ 0` has `c s : ℕ → ℝ` with `c k ^ 2 + s k ^ 2 = 1`, `s k ≠ 0`,
+and weights `v` with `A i j = if j ≤ i then c' i * (∏_{l ∈ Ico j i} s l) * v j else 0`, `c' i = c i` for `i <
+n − 1`, `c' (n−1) = 1`; the `(c k, s k)` are the Givens pairs that reduce the first column to a multiple of
+`e₀` (`Matrix.givensPair`, bottom up). The book's "there exist weights" needs the hypothesis: with a zero
+first column this form forces `A` diagonal (chapter 12 report). Column `j` below the diagonal is
+proportional to `A[j:, 0]` (the maximal block at `j` has rank one and a nonzero first column). ★★★
+(~120 lines)'''
+deps = ["Matrix.IsSemiseparable", "Matrix.givensPair", "Matrix.givensPair_sq_add_sq"]
+
+[[node]]
+id = "transpose_givensChain_mul_strictLower_add_diagPart"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.14) (P12.2.9): with the Givens-vector representation of `tril A` (as in
+`exists_givensVector_rep`) and `Qᵀ = givensChain (fun k => !![c k, s k; −s k, c k])`: `Qᵀ * (strictLower A
++ diagPart A) = vecMulVec c₊ v ⊙ (unitBidiagonal n s)⁻¹` with `c₊ 0 = 1`, `c₊ (i+1) = c i` (the book's
+`triu((𝒟_n c) vᵀ) .* B(s)⁻¹`, `𝒟_n` the downshift, `c (n−1) = 1` wrapping to the top); and `Qᵀ * strictUpper
+A` is upper triangular because `Qᵀ` is upper Hessenberg (`givensChain_apply`) — so `Qᵀ A` is upper
+triangular and `(Q, Qᵀ A)` is a QR factorization. Induction over the rotations applied from `G_{n−2}`
+down, the invariant being the book's displayed `A⁽ᵏ⁾`. ★★★ (~150 lines)'''
+deps = ["Matrix.givensChain_apply", "Matrix.exists_givensVector_rep", "Matrix.inv_unitBidiagonal", "Matrix.strictLower", "Matrix.strictUpper", "Matrix.diagPart", "Matrix.IsUpperHessenberg.mul_isUpperTriangular"]
+
+[[node]]
+id = "planeReflector"
+kind = "definition"
+desc = '''The `2 × 2` reflection `R(φ) = !![−cos φ, sin φ; sin φ, cos φ]` of [golub2013matrix] §12.2.10, embedded
+as `G_k = planeEmbed k (k+1) (planeReflector φ_k)`; `planeReflector_mul_self : R φ * R φ = 1`, symmetric,
+`det = −1`. ★'''
+deps = ["Matrix.planeEmbed"]
+
+[[node]]
+id = "exists_orthogonalHessenberg_eq_prod_planeReflector"
+kind = "theorem"
+desc = '''[golub2013matrix] (12.2.18): an orthogonal upper Hessenberg `H : Matrix (Fin n) (Fin n) ℝ` with
+positive subdiagonal and `det H = 1`, `n` even, is `G₀ ⋯ G_{n−2} · diagonal (1, …, 1, −1)` for some `φ :
+Fin (n − 1) → ℝ` with `0 < φ k < π` (reflectors `planeReflector`). Givens QR by reflections (the book's
+`G_{n−1} ⋯ G₁ H = diag(1, …, 1, −c_n)`): an orthogonal upper triangular matrix is diagonal with entries
+`±1`, the determinant count fixes the last sign, and the positive subdiagonal fixes `sin φ_k > 0`. The
+book assumes only a nonzero subdiagonal ("without loss of generality"); positivity is what makes `φ_k ∈
+(0, π)` and is reached by a diagonal `±1` similarity. ★★★ (~150 lines)'''
+deps = ["Matrix.planeReflector", "Matrix.IsUpperHessenberg", "Matrix.givensChain"]
+
+[[node]]
+id = "orthogonalHessenberg_isQuasiseparable"
+kind = "theorem"
+desc = '''An orthogonal upper Hessenberg matrix of the form (12.2.18) is quasiseparable ([golub2013matrix]
+§12.2.10, "(12.2.4) and (12.2.18) tell us that `H` is quasiseparable"): `givensChain_apply` and right
+multiplication by a diagonal matrix (`IsQuasiseparable.diagonal_mul_mul_diagonal`). ★'''
+deps = ["Matrix.givensChain_apply", "Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector", "Matrix.IsSemiseparable.transpose"]
+
+[[node]]
+id = "isSimilar_prod_planeReflector_oddEven"
+kind = "theorem"
+desc = '''Fact 1 of [golub2013matrix] §12.2.10 (Ammar–Gragg–Reichel): `G₀ G₁ ⋯ G_{n−1}` (with `G_{n−1} =
+diagonal(1, …, 1, −1)`) is similar to `H_o H_e`, `H_o = G₀ G₂ ⋯`, `H_e = G₁ G₃ ⋯` (`Matrix.IsSimilar` of
+`Numlib/LinearAlgebra/Matrix/Similar`). The factors `G_k`, `G_l` commute for `|k − l| ≥ 2`; any two
+orderings of the product of the generators of a path are conjugate (cyclic shift `X Y ∼ Y X` plus
+commutations; the Coxeter-element argument, induction on `n`). ★★★ (~120 lines)'''
+deps = ["Matrix.planeReflector", "Matrix.IsSimilar"]
+
+[[node]]
+id = "eigenvalues_oddEven_half_sum"
+kind = "theorem"
+desc = '''Fact 2 of [golub2013matrix] §12.2.10: `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` are symmetric
+tridiagonal, and with `θ` from `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup` (`RealSchur`; `H ∈
+specialOrthogonalGroup`) the eigenvalues of `C` are `± cos(θ_k/2)`
+and those of `S` are `± sin(θ_k/2)` (charpoly form, as in (12.2.19)). Symmetric tridiagonal: block
+structure of `H_o`, `H_e` (`planeReflector` symmetric). Spectrum: `H_o`, `H_e` are symmetric involutions,
+so `C² = (2 + H̃ + H̃ᵀ)/4` and `S² = (2 − H̃ − H̃ᵀ)/4` with `H̃ = H_o H_e` similar to `H` (Fact 1), giving `cos²(θ/2)`
+and `sin²(θ/2)`; `C S = −S C` (from `H_o² = H_e² = 1`) exchanges the `±` eigenspaces of `C`. The book gives no
+proof (P12.2.13 asks to check `n = 8`). ★★★ (~150 lines)'''
+deps = ["Matrix.isSimilar_prod_planeReflector_oddEven", "Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup", "Matrix.IsTridiagonal"]

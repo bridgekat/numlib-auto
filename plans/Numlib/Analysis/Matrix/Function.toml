@@ -1,0 +1,93 @@
+desc = '''
+Functions of matrices, and of algebraic elements of any algebra: `f(A)` for a scalar function `f`
+and a square matrix `A`. First consumer: Golub–Van Loan, *Matrix Computations*, Chapter 9
+([golub2013matrix]); the design is Higham, *Functions of Matrices* (2008), Definition 1.4.
+
+**The definition (decided in the GVL planning round, prototype `notes/gvl/ch09/proto/Function.lean`,
+which elaborates).** For a field `𝕜` with derivatives (`[NontriviallyNormedField 𝕜]`, in practice
+`ℂ`, and `ℝ` for real spectra), a `𝕜`-algebra `A` and `a : A`,
+
+  `pfc f a = aeval a (Hermite.interpolateJet (minpoly 𝕜 a).roots (Hermite.taylorJet f))`,
+
+the *primary functional calculus*: evaluate at `a` the Hermite interpolant of `f` on the eigenvalues
+of `a`, each to its multiplicity as a root of the minimal polynomial (its *index*), the jets being
+the Taylor coefficients `f⁽ʲ⁾(λ)/j!` (`Numlib/RingTheory/Polynomial/HermiteInterpolation` and
+`Numlib/Analysis/Calculus/HermiteInterpolation`). The name
+parallels Mathlib's `cfc`. It is total and algebraic; all hypotheses live in the theorems:
+`IsIntegral 𝕜 a` and `(minpoly 𝕜 a).Splits` (both automatic for `Matrix n n ℂ`), and `ContDiffAt`
+or `AnalyticAt` at the eigenvalues where a Leibniz or chain rule is used. Where `f` is not
+differentiable, Mathlib's junk `iteratedDeriv = 0` enters, consistently on both sides of every
+identity, so that e.g. `pfc f A` for a diagonalizable `A` depends only on the values of `f` at the
+eigenvalues, with no smoothness assumption.
+
+Why this and not the alternatives the brief named:
+* *Jordan form* (the book's "base" definition (9.1.3)): a definition would need a choice of Jordan
+  basis and then the theorem that the result does not depend on it — the hard half of the theory,
+  paid before the first lemma; Numlib's Jordan form exists only for `Fin`-indexed matrices over an
+  algebraically closed field; and every naturality statement would go through basis changes. Here
+  it is the theorem `Matrix.pfc_conj_jordanForm`, from naturality and `Matrix.pfc_jordanBlock`.
+* *Power series on a disk* (Theorem 9.1.2): covers only functions analytic on one disk containing the
+  whole spectrum — not `log`, `√·` or `sign` on a spectrum straddling a branch point or the
+  imaginary axis — and needs a norm even for polynomial identities. Here it is the theorem
+  `tendsto_sum_pfc`, by continuity of the linear map `jet ↦ aeval a (interpolateJet s jet)` on a
+  finite-dimensional space.
+* *Cauchy integral* (9.2.8): Mathlib integrates only over circles, and the definition would not be
+  algebraic. Here it is the theorem `pfc_eq_circleIntegral`.
+The interpolation definition makes `f(A)` a polynomial in `A` by construction, so commutation (9.1.7),
+similarity (9.1.8), block structure, triangularity and naturality under algebra maps are one-line
+consequences of the corresponding facts about `aeval`; and it agrees with `NormedSpace.exp`
+(`pfc_exp_eq_normedSpace_exp`), with Mathlib's `NormedSpace.log` near `1`, and with the continuous
+functional calculus of normal and Hermitian matrices (`Function/CFC`), as the brief requires.
+
+**Layout** (dependency order, estimated lines). *Placement (Golub–Van Loan review):* the
+algebra-level theory of `pfc` — everything that holds for an algebraic element of any `𝕜`-algebra —
+lives in `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/{Basic,Analytic,Cauchy}`, on top
+of the multiset Hermite interpolation of `Numlib/RingTheory/Polynomial/HermiteInterpolation` and the
+jets and divided differences of `Numlib/Analysis/Calculus/HermiteInterpolation`; nothing here imports
+the numerical `Approximation` layer except the Simpson bound of `Function/Approximation`, which rests
+on the composite Simpson rule. Only matrix statements stay under `Analysis/Matrix/Function`:
+* `PrimaryFunctionalCalculus/Basic` (~550): `pfc`, its characterization by any jet interpolant, the
+  spectral decomposition `pfc f a = ∑_λ ∑_{j<m_λ} f⁽ʲ⁾(λ)/j! (a - λ)ʲ E_λ` with the spectral
+  idempotents `spectralIdempotent a λ`, polynomials, linearity, multiplicativity, inverse, spectral
+  mapping, naturality.
+* `PrimaryFunctionalCalculus/Analytic` (~900): Theorem 9.1.2 (partial sums and `HasSum`), agreement
+  with `exp`, `log`, the composition rule `pfc_comp` for analytic functions, the derivative of
+  `t ↦ pfc f (t • a)`, the Taylor truncation bound (Theorem 9.2.3).
+* `PrimaryFunctionalCalculus/Cauchy` (~350): the Cauchy integral over a circle (9.2.8).
+* `Function/Basic` (~250): the matrix forms (similarity, diagonal, block diagonal, Jordan block,
+  Jordan form, transpose) and realness for real matrices.
+* `Function/CFC` (~250): agreement with `cfc` for normal (ℂ, scoped C⋆-norm) and Hermitian (`RCLike`,
+  `f : ℝ → ℝ`) matrices and with `CFC.sqrt` on positive semidefinite matrices.
+* `Function/Triangular` (~900): block triangular structure, the Parlett recurrence (9.1.11), the
+  block Sylvester identity (9.1.12), path expansions of powers, the divided-difference formula
+  (Theorem 9.1.4).
+* `Function/Approximation` (~600): Theorems 9.2.1–9.2.2 and the Simpson bound (9.2.7).
+* `Function/Exp` (~550): the Schur bound (9.3.2), the relative perturbation bound, normal matrices
+  (9.3.4), `ν(A, t)` for normal `A`; on top of the Banach-algebra
+  `Numlib/Analysis/Normed/Algebra/Exponential` (~450: the variation-of-constants identity, the ODE
+  characterization, the Fréchet derivative `NormedSpace.expFrechet` and the exponential condition
+  number built on it, the equality case `ν(a, t) = t‖a‖` when `‖e^{sa}‖ = e^{cs}`, the resolvent bound
+  behind (9.3.6)). [golub2013matrix] §9.3.2's "equality for all `t ≥ 0` iff `A` is normal" is false in
+  the `⇒` direction (`A = [1] ⊕ [[0,1],[0,0]]` has `ν(A, t) = t‖A‖₂` for every `t ≥ 0`); only `⇐` is
+  planned (`Matrix.expCondNumber_eq_of_isStarNormal`).
+* `Function/Sign` (~700): the matrix sign function, the Newton iteration and its convergence.
+* `Function/Sqrt` (~600): the principal square root, the Newton and Denman–Beavers iterations.
+* `Function/Log` (~550): the principal logarithm, real logarithms, the series; on top of the
+  Banach-algebra `Numlib/Analysis/Normed/Algebra/Logarithm` (~250: `exp (log x) = x`, the TODO of
+  Mathlib's `Mathlib/Analysis/Normed/Algebra/Logarithm`).
+* `Function/Pade` (~900): Padé approximants of `exp`, the remainder (9.3.1), the Moler–Van Loan
+  backward error of scaling and squaring.
+* `Function/Polar` (~950): the polar factor as a primary square root, Newton's polar iteration, the
+  Li–Sun bound; existence and uniqueness of the polar decomposition are
+  `Numlib/LinearAlgebra/Matrix/Polar` (~200).
+
+**Namespaces.** `pfc` and the algebra-level lemmas in the root namespace (as Mathlib's `cfc`);
+matrix-level lemmas in `Matrix`; the three named matrix functions are `Matrix.matrixSign`,
+`Matrix.principalSqrt`, `Matrix.principalLog` (not `Matrix.sign`, which would collide with the root
+`SignType.sign` under `open Matrix`); Padé polynomials in `Pade`; Banach-algebra facts about
+`NormedSpace.exp`/`NormedSpace.log` in `NormedSpace`.
+
+**Real matrices.** Over `ℝ`, `pfc` applies when the spectrum is real (symmetric matrices); in general
+a real matrix is read in `ℂ` through `A.map Complex.ofReal`, and `Matrix.pfc_map_conj` shows `pfc f`
+of it is real when `f (conj z) = conj (f z)`.
+'''

@@ -1,3 +1,7 @@
+# Planned additions (GVL review): the module doc of `Numlib.Eigen.Sturm` is the group description; when the
+# node staged below is formalized, add to it: "unreduced" here (`∀ i, b i ≠ 0`) is the tridiagonal case of
+# `Matrix.IsUnreducedUpperHessenberg` (`Numlib/LinearAlgebra/Matrix/UnreducedHessenberg`), by
+# `Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`.
 [[node]]
 id = "Matrix.symmTridiagonalOf"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
@@ -207,3 +211,16 @@ id = "Sturm.eigenvalues_mem_bisectionIterate"
 
 [[node]]
 id = "Sturm.signChanges_gershgorin"
+
+[[node]]
+id = "Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff"
+kind = "theorem"
+desc = '''The Sturm-sequence notion of "unreduced" is the Hessenberg one (dense review, M8): for `d b : ℕ → R`
+over a ring with `0`, `(Matrix.symmTridiagonalOf d b n).IsUnreducedUpperHessenberg ↔ ∀ i, i + 1 < n → b i ≠
+0` — `symmTridiagonalOf` is tridiagonal, hence upper Hessenberg, and its subdiagonal entry `(i + 1, i)`
+is `b i` (`Matrix.isUnreducedUpperHessenberg_iff_fin`). So the hypothesis `∀ i, b i ≠ 0` of the Sturm
+theorems (`Sturm.eigenvalues_simple`, `Sturm.eigenvalues_strictInterlace`, …) implies
+`IsUnreducedUpperHessenberg`, and the implicit Q theorem of `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`
+and the geometric simplicity `Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one` apply to it.
+★'''
+deps = ["Matrix.symmTridiagonalOf", "Matrix.IsUnreducedUpperHessenberg", "Matrix.isUnreducedUpperHessenberg_iff_fin"]

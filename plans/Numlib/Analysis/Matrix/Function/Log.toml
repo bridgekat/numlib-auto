@@ -1,0 +1,84 @@
+desc = '''
+Matrix logarithms ([golub2013matrix] §9.4.4; Higham FOM Ch. 11). The Banach-algebra layer —
+`exp (log x) = x` for `‖x - 1‖ < 1` and `‖log x‖ ≤ -log(1 - ‖x - 1‖)` for Mathlib's `NormedSpace.log`,
+which the Moler–Van Loan backward-error theorem of `Function/Pade` also consumes — is
+`Numlib/Analysis/Normed/Algebra/Logarithm` (placed there at the Golub–Van Loan consolidation), which
+this module imports.
+
+* **Matrices.** `Matrix.principalLog A = pfc Complex.log A`; for `A` with no eigenvalue in `(-∞, 0]`
+  it is the unique logarithm with eigenvalues in the strip `|Im z| < π`, real when `A` is real; its
+  Maclaurin and Gregory series; the inverse scaling-and-squaring identity `log A = 2^k log A^{1/2^k}`.
+'''
+
+[[node]]
+id = "Matrix.principalLog"
+kind = "definition"
+desc = '''`Matrix.principalLog (A : Matrix n n ℂ) : Matrix n n ℂ := pfc Complex.log A`, [golub2013matrix]
+§9.4.4's principal `log(A)` (Mathlib's principal branch, analytic on `Complex.slitPlane`:
+`analyticAt_clog`). ★'''
+deps = ["pfc"]
+
+[[node]]
+id = "Matrix.exp_principalLog"
+kind = "theorem"
+desc = '''If `spectrum ℂ A ⊆ Complex.slitPlane` then `NormedSpace.exp (principalLog A) = A` and every
+eigenvalue `μ` of `principalLog A` has `|μ.im| < π`: `pfc_exp_eq_normedSpace_exp`, `pfc_comp` with
+`exp ∘ log = id` on the slit plane (`Complex.exp_log`), `pfc_id`, `spectrum_pfc` and `Complex.log_im`
+in `(-π, π)` off the cut (`Complex.neg_pi_lt_log_im`, `Complex.log_im_lt_pi`-type bounds). ★'''
+deps = ["Matrix.principalLog", "pfc_comp", "pfc_exp_eq_normedSpace_exp", "spectrum_pfc", "pfc_polynomial"]
+
+[[node]]
+id = "Matrix.existsUnique_exp_eq_of_abs_im_lt"
+kind = "theorem"
+desc = '''The principal logarithm is unique: if `spectrum ℂ A ⊆ Complex.slitPlane` then `∃! X : Matrix n n
+ℂ, NormedSpace.exp X = A ∧ ∀ μ ∈ spectrum ℂ X, |μ.im| < π`, the witness being `principalLog A`.
+Uniqueness: `exp X = pfc exp X = r(X)` for a polynomial `r` (`pfc_exp_eq_normedSpace_exp`,
+`pfc_eq_aeval_of_isJetInterpolant`), so `L = principalLog A = p(A) = q(X)`, `q = p ∘ r`; `X - L =
+(X - q)(X)` has spectrum `{μ - log(e^μ)} = {0}` (the strip is where `log ∘ exp = id`:
+`Complex.log_exp`), so it is nilpotent; `X` and `L` commute and `exp X = exp L`, so `exp (X - L) =
+1` (`NormedSpace.exp_sub_of_commute`-type lemma); a nilpotent `N` with `exp N = 1` is `0` (`exp N - 1 =
+N · u` with `u = pfc ((e^z - 1)/z) N` unipotent, hence a unit). ★★★ (~250 lines)'''
+deps = ["Matrix.exp_principalLog", "pfc_exp_eq_normedSpace_exp", "pfc_eq_aeval_of_isJetInterpolant", "spectrum_pfc", "pfc_mul"]
+
+[[node]]
+id = "Matrix.existsUnique_real_exp_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] §9.4.4: if every real eigenvalue of `A : Matrix n n ℝ` is positive (equivalently
+`spectrum ℂ (A.map Complex.ofReal) ⊆ Complex.slitPlane`) then there is a unique real `X` with
+`NormedSpace.exp X = A` and `|μ.im| < π` for every `μ ∈ spectrum ℂ (X.map ofReal)`. Existence: the
+complex principal logarithm is real (`Matrix.pfc_map_conj`, `Complex.log_conj` off the cut), and
+`NormedSpace.map_exp` moves `exp` between `ℝ` and `ℂ`; uniqueness from the complex statement
+`Matrix.existsUnique_exp_eq_of_abs_im_lt` and injectivity of `Matrix.map ofReal`. ★★'''
+deps = ["Matrix.existsUnique_exp_eq_of_abs_im_lt", "Matrix.pfc_map_conj", "pfc_exp_eq_normedSpace_exp"]
+
+[[node]]
+id = "Matrix.hasSum_principalLog"
+kind = "theorem"
+desc = '''The Maclaurin series ([golub2013matrix] §9.4.4, `M_q(A)`): if every eigenvalue satisfies `‖λ - 1‖ <
+1` (`ρ(A - I) < 1`) then `HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1))
+(principalLog A)` — `hasSum_pfc` at `z₀ = 1`, `r = 1`; and `principalLog A = NormedSpace.log A` there
+(`pfc_log_eq_normedSpace_log`). ★'''
+deps = ["Matrix.principalLog", "hasSum_pfc", "pfc_log_eq_normedSpace_log"]
+
+[[node]]
+id = "Matrix.hasSum_principalLog_gregory"
+kind = "theorem"
+desc = '''The Gregory series ([golub2013matrix] §9.4.4, `G_q(A)`): if every eigenvalue of `A` has positive
+real part then, with `C = (1 - A)(1 + A)⁻¹`, `HasSum (fun k => (-2 / (2k + 1) : ℂ) • C ^ (2k + 1))
+(principalLog A)`. `C = pfc c A` for the Cayley map `c(z) = (1 - z)/(1 + z)`, which sends the right
+half-plane into the unit disk (`pfc_mul`, `pfc_inv`); the scalar identity `log z = -2 artanh (c z) =
+-2 ∑ c(z)^{2k+1}/(2k+1)` for `re z > 0` (Mathlib: `Complex.hasSum_taylorSeries_log`-type series of
+`log ((1+w)/(1-w))`, check `Mathlib/Analysis/SpecialFunctions/Complex/Arctan`/`LogBounds`); then
+`hasSum_pfc` for the power series `g(w) = -2 ∑ w^{2k+1}/(2k+1)` at `C`, and `pfc_comp` (`g ∘ c = log`
+on the half-plane). ★★'''
+deps = ["Matrix.principalLog", "hasSum_pfc", "pfc_comp", "pfc_inv", "pfc_mul"]
+
+[[node]]
+id = "Matrix.principalLog_principalSqrt"
+kind = "theorem"
+desc = '''Inverse scaling and squaring ([golub2013matrix] §9.4.4): if `spectrum ℂ A ⊆ slitPlane` then
+`principalLog (principalSqrt A) = (2⁻¹ : ℂ) • principalLog A`, hence `principalLog A = 2 ^ k •
+principalLog A_k` with `A_0 = A`, `A_{k+1} = principalSqrt A_k` (each `A_k` has spectrum in the
+right half-plane ⊆ slit plane, `Matrix.principalSqrt_sq`). `pfc_comp` with `log (z ^ (1/2)) = ½ log z`
+on the slit plane (`Complex.log_cpow`-type identity valid for `arg z ∈ (-π, π)`) and `pfc_add`. ★★'''
+deps = ["Matrix.principalLog", "Matrix.principalSqrt", "Matrix.principalSqrt_sq", "pfc_comp", "pfc_add"]

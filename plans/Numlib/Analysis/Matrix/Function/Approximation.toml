@@ -1,0 +1,76 @@
+desc = '''
+How well `g(A)` approximates `f(A)` ([golub2013matrix] §9.2): the Jordan bound (Theorem 9.2.1), the
+Schur bound (Theorem 9.2.2), and quadrature of `t ↦ f(tA)` by the composite Simpson rule ((9.2.7)).
+The Taylor truncation bound (Theorem 9.2.3, `norm_pfc_sub_sum_le`) holds in any complete normed
+algebra and is in `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/Analytic` (Golub–Van Loan
+review). This module is the one place under `Analysis/Matrix/Function` that imports the numerical
+`Approximation` layer (the composite Simpson rule of `Numlib/Approximation/CompositeQuadrature`). Norms: the spectral norm is Mathlib's scoped
+`Matrix.Norms.L2Operator` (`Numlib/Analysis/Matrix/OperatorNorm` states its facts with it), the
+Frobenius norm the scoped `Matrix.Norms.Frobenius`. Theorems 9.2.3 and (9.2.7) are stated in any
+complete normed algebra (resp. normed space), which removes the book's factor `n` — it came from the
+entrywise argument `‖E‖₂ ≤ n max |e_ij|` ((2.3.8)); the book's forms are surface corollaries.
+'''
+
+[[node]]
+id = "Matrix.l2_opNorm_pfc_jordanBlock_le"
+kind = "theorem"
+desc = '''`‖pfc h (jordanBlock m μ)‖₂ ≤ m * ⨆ r < m, ‖iteratedDeriv r h μ‖ / r !` (as a `Finset.sup'`
+over `range m`, or with an explicit bound `M`): the entries are `h⁽ʲ⁻ⁱ⁾(μ)/(j-i)!`
+(`Matrix.pfc_jordanBlock`), and `Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le` with `√(m·m)
+= m`. [golub2013matrix] Theorem 9.2.1's inner step ("using Theorem 9.1.2 and (2.3.8)"). ★'''
+deps = ["Matrix.pfc_jordanBlock", "Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le"]
+
+[[node]]
+id = "Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 9.2.1: let `P⁻¹ A P = reindex σ σ (jordanForm e μ)` over `ℂ`
+(`IsUnit P`, blocks `J_i` of sizes `e i` at `μ i`) and `f`, `g` analytic on an open set containing
+the spectrum. Then `‖pfc f A - pfc g A‖₂ ≤ ‖P‖₂ ‖P⁻¹‖₂ · max_{i, r < e i} e i · ‖f⁽ʳ⁾(μ i) -
+g⁽ʳ⁾(μ i)‖ / r!`. Proof: `pfc f A - pfc g A = pfc (f - g) A` (`pfc_add`), the Jordan expression
+(`Matrix.pfc_conj_jordanForm`), submultiplicativity, `Matrix.l2_opNorm_blockDiagonal'` (staged append
+to OperatorNorm; the reindexing is a permutation similarity, `Matrix.l2_opNorm_unitary_mul_mul_unitary`),
+`Matrix.l2_opNorm_pfc_jordanBlock_le`. ★★'''
+deps = ["pfc_add", "Matrix.pfc_conj_jordanForm", "Matrix.l2_opNorm_pfc_jordanBlock_le", "Matrix.l2_opNorm_blockDiagonal'"]
+
+[[node]]
+id = "Matrix.frobenius_norm_pfc_sub_le"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 9.2.2: let `Q ∈ unitaryGroup`, `Qᴴ A Q = T = diagonal (diag T) + N`
+upper triangular (`Matrix.exists_unitary_conj_upperTriangular`), `Ω ⊆ ℂ` convex with `spectrum ℂ A
+⊆ interior Ω` (only `⊆ Ω` is used), `f`, `g` analytic on a neighbourhood of `Ω`, and `δ r ≥
+‖(f - g)⁽ʳ⁾ z‖` on `Ω`. Then, in the Frobenius norm, `‖pfc f A - pfc g A‖_F ≤ ∑ r ∈ range n, δ r *
+‖|N| ^ r‖_F / r!`, with `|N| = N.map (‖·‖)` (a real matrix; `|N|^0 = 1`). Proof: unitary invariance
+(`Matrix.frobenius_norm_unitary_mul_mul_unitary`, `Matrix.pfc_conj` with `Q⁻¹ = Qᴴ`); entrywise,
+Theorem 9.1.4 (`Matrix.pfc_apply_eq_sum_divDiff` for `h = f - g`) and the divided-difference bound
+(9.2.1) (`Hermite.norm_divDiff_le`) give `‖h(T)_ij‖ ≤ ∑_{r} δ r / r! (|N|^r)_ij` by the path
+expansion (`Matrix.pow_apply_eq_sum_pathProd` (a) for `|N|`); then monotonicity of the Frobenius
+norm in the absolute entries and the triangle inequality. Stated with bounds `δ r` as hypotheses, so no
+compactness of `Ω` is needed; the book's reading `δ_r = sup_{z ∈ Ω} …` is
+`Matrix.frobenius_norm_pfc_sub_le_of_isCompact`. ★★ (~200 lines)'''
+deps = ["pfc_add", "Matrix.pfc_conj", "Matrix.pfc_apply_eq_sum_divDiff", "Hermite.norm_divDiff_le", "Matrix.pow_apply_eq_sum_pathProd", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+
+[[node]]
+id = "Matrix.frobenius_norm_pfc_sub_le_of_isCompact"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 9.2.2 with the book's `δ_r = sup_{z ∈ Ω} |f⁽ʳ⁾(z) - g⁽ʳ⁾(z)|`, under
+`IsCompact Ω` (the book says only "closed convex"; for an unbounded `Ω` the supremum may be infinite, and
+Lean's `sSup` of an unbounded set of reals is `0`, which would make the bound false — erratum recorded in
+the Golub–Van Loan surface): in the setting of `Matrix.frobenius_norm_pfc_sub_le` with `Ω` compact and
+convex, `‖pfc f A - pfc g A‖_F ≤ ∑ r ∈ range n, sSup ((fun z => ‖iteratedDeriv r (f - g) z‖) '' Ω) *
+‖|N| ^ r‖_F / r!`. The derivatives are continuous on the compact `Ω` (analytic on a neighbourhood), so
+the image is bounded above (`IsCompact.bddAbove_image`) and `le_csSup` gives the hypothesis `δ r ≥ ‖…‖`
+of `Matrix.frobenius_norm_pfc_sub_le`. ★'''
+deps = ["Matrix.frobenius_norm_pfc_sub_le"]
+
+[[node]]
+id = "Matrix.norm_integral_pfc_smul_sub_simpsonSum_le"
+kind = "theorem"
+desc = '''The Simpson bound of [golub2013matrix] §9.2.6, corrected: for `A` in a finite-dimensional
+complete normed `ℂ`-algebra (matrices with the scoped L2 norm), `f` analytic on an open set
+containing `t • spectrum A` for `t ∈ [a, b]`, and the composite Simpson sum `S` on `N` panels of
+width `2h = (b - a)/N` (the book's `m = 2N` subintervals of width `h` with weights `1, 4, 2, …, 4,
+1`): `‖∫ t in a..b, pfc f (t • A) - S‖ ≤ h⁴ (b - a)/180 · ⨆ t ∈ Icc a b, ‖A ^ 4 * pfc
+(iteratedDeriv 4 f) (t • A)‖`. The factor `A⁴` is missing from the printed (9.2.7): `d⁴/dt⁴
+f(At) = A⁴ f⁽⁴⁾(At)` (`hasDerivAt_pfc_smul` iterated). Proof: `Quadrature.norm_sub_simpsonSum_le`
+(staged append to `Numlib/Approximation/CompositeQuadrature`) with `(2h)⁴/2880 = h⁴/180`. ★★'''
+deps = ["hasDerivAt_pfc_smul", "Quadrature.norm_sub_simpsonSum_le"]

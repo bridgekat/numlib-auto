@@ -4,11 +4,18 @@ Algorithms*, with the finite-precision Lanczos theory of Paige and Greenbaum (Me
 §4–5) and Higham Ch. 17–18 as consumers. The interface is a *relational* rounding
 model with unit roundoff `u`, so that every error analysis is stated once for any rounding that
 satisfies it; `System` is its first concrete instance, the number system `𝔽(β, t, L, U)` of
-Quarteroni–Sacco–Saleri §2.5 with rounding to nearest and chopping as total functions; the `γ_n`
+Quarteroni–Sacco–Saleri §2.5 with rounding to nearest and chopping as total functions.
+`Householder` and `Givens` are the two orthogonal transformations' rounding models
+([higham2002accuracy] §19.3 and §19.6): a computed reflector or rotation, its application, and the
+accumulation Lemma 19.3; `Givens` states its relations in the numerical sign convention
+`G = [c s; -s c]` of every source, so that the book algorithms' runs reach them literally.
+`Program` gives an algorithm written as a monadic program with a rounding hook its exact and its
+relational floating-point meaning ([golub2013matrix]'s algorithms are written this way). The `γ_n`
 calculus; componentwise
 statements first, with normwise corollaries through the entrywise order of
 `Numlib/LinearAlgebra/Matrix/Order`; results about algorithms stated for an explicit evaluation
 order, never for "the" floating-point sum; and the scalar field kept abstract, so that a concrete
-IEEE model (flean, FloatSpec) can instantiate the model later. Gaussian elimination, Cholesky and
-QR error analysis (Higham Ch. 8–10, 19) are surface material over this backbone.
+IEEE model (flean, FloatSpec) can instantiate the model later. The per-factorization relations
+(`RoundsLU`, `RoundsCholesky`, …) and the per-transformation models are backbone; the loop-level
+analyses of the textbooks' particular QR algorithms are surface material over them.
 '''

@@ -1,0 +1,88 @@
+namespace = "Matrix"
+desc = '''
+Condition estimation for `A x = b`: the one provable property of every estimator that solves a
+system `A y = d` with a well-chosen right-hand side, namely that `‖y‖ / ‖d‖` is a **lower bound**
+for `‖A⁻¹‖` and `‖A‖ ‖y‖ / ‖d‖` a lower bound for the condition number
+([golub2013matrix] §3.5.4, the implication `A y = d ⇒ ‖A⁻¹‖_∞ ≥ ‖y‖_∞ / ‖d‖_∞` of Cline, Moler,
+Stewart and Wilkinson; [quarteroni2000numerical] §3.11; [higham2002accuracy] Chapter 15). How good
+the lower bound is depends on the heuristic choice of `d` and has no theorem; the choice itself
+(the LINPACK look-ahead of [golub2013matrix] Algorithm 3.5.1, the `± 1` greedy of (3.5.6)) is an
+algorithm, and algorithms live in the surface (backbone §1.2) until a second source uses one in
+identical form.
+
+The statements are for square matrices over `RCLike 𝕜` in the induced `p`-norms of
+`Numlib/Analysis/Matrix/OperatorNorm` (`Matrix.lpOpNorm`, `Matrix.lpSeminorm`,
+`Matrix.condNumberLp`), with the `∞`-norm forms that the book uses as corollaries: a sign vector
+`d` (`|d i| = 1`) has `‖d‖_∞ = 1`, so `κ̂ = ‖T‖_∞ ‖y‖_∞ ≤ κ_∞(T)` for `T y = d`.
+
+**One proof, not two.** The operator-level forerunners `norm_apply_div_le_norm_inverse` (any normed
+space: `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖` for `A : E ≃L[𝕜] E`), `condEstimate` and `condEstimate_le_condNumber`
+(Quarteroni–Sacco–Saleri §3.11, on a Hilbert space with the adjoint probe) are proved in
+`Numlib/Direct/Refinement` today; refactor task R1 (`notes/gvl/consolidation.md` §R) moves them into this
+module, ahead of the nodes below. The matrix `p`-norm statements here are **instances** of them, read
+through `Matrix.lpEquiv p hA : PiLp p ≃L[𝕜] PiLp p` (`Matrix.lpEquiv_symm_apply`: its inverse is `A⁻¹`,
+`Matrix.coe_lpEquiv`: it is `lpCLM p A`) and `Matrix.condNumberLp_eq_condNumber` (`κ_p(A)` is the
+`NormedRing.condNumber` of `lpCLM p A`); no inequality is re-derived from `lpSeminorm_mulVec_le`. Until R1
+is done the dependency simply points into `Refinement` (which this module then imports; it imports nothing
+that imports it).
+
+Order: `norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec` first; everything else is a corollary.
+~60 lines, all ★.
+'''
+
+[[node]]
+id = "norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec"
+kind = "theorem"
+desc = '''**The basic inequality of condition estimation**: for `A : Matrix n n 𝕜` with `IsUnit A`
+and any `y : n → 𝕜`, `lpSeminorm p y ≤ lpOpNorm p A⁻¹ * lpSeminorm p (A *ᵥ y)` — i.e. if
+`A y = d` then `‖y‖_p ≤ ‖A⁻¹‖_p ‖d‖_p`. An instance of the operator-level
+`norm_apply_div_le_norm_inverse` at `Matrix.lpEquiv p hA` and `d = toLp p (A *ᵥ y)`:
+`(lpEquiv p hA).symm d = toLp p y` (`Matrix.lpEquiv_symm_apply`, `Matrix.nonsing_inv_mul`,
+`Matrix.mulVec_mulVec`), `‖((lpEquiv p hA).symm : _ →L[𝕜] _)‖ = lpOpNorm p A⁻¹` (the inverse of
+`lpEquiv` is `lpCLM p A⁻¹`; `Matrix.ringInverse_lpCLM`), and `div_le_iff₀` (the `d = 0` case is
+`y = 0`). The `[golub2013matrix] §3.5.4` form `‖A⁻¹‖_∞ ≥ ‖y‖_∞ / ‖d‖_∞` is the `p = ∞` case
+(`Matrix.lpOpNorm_top`). ★'''
+deps = ["norm_apply_div_le_norm_inverse", "lpEquiv", "ringInverse_lpCLM", "lpOpNorm", "lpSeminorm", "lpOpNorm_top"]
+
+[[node]]
+id = "lpCondEstimate"
+kind = "definition"
+desc = '''The condition estimate from a probe: for a square `A` and `r : n → 𝕜`,
+`lpCondEstimate p A r = lpOpNorm p A * lpSeminorm p (A⁻¹ *ᵥ r) / lpSeminorm p r`
+(`= ‖A‖_p ‖z‖_p / ‖r‖_p` with `A z = r`; [golub2013matrix] §3.5.4 Step 3 with `p = ∞`,
+[quarteroni2000numerical] (3.70) with the probe already transformed). Junk `0` for `r = 0`. ★'''
+deps = ["lpOpNorm", "lpSeminorm"]
+
+[[node]]
+id = "lpCondEstimate_le_condNumberLp"
+kind = "theorem"
+desc = '''`lpCondEstimate p A r ≤ condNumberLp p A` for every probe `r`, when `IsUnit A`
+(for `r = 0` both sides are `≥ 0`). The argument of `condEstimate_le_condNumber` (the probe estimate is
+`‖A‖` times `norm_apply_div_le_norm_inverse`) in the `p`-norm: `norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec`
+at `y = A⁻¹ r`, multiplied by `lpOpNorm p A ≥ 0`; `condNumberLp p A = lpOpNorm p A * lpOpNorm p A⁻¹`
+by definition, or `Matrix.condNumberLp_eq_condNumber` to read the bound as `condEstimate_le_condNumber`'s
+`≤ κ (lpCLM p A)`. (The Hilbert-space `condEstimate` probes with `A⁻ᴴ d`; `lpCondEstimate` takes the
+already transformed probe `r`, so at `p = 2` it is `condEstimate` at `d = Aᴴ r`-type probes — no
+separate bridge is planned.) ★'''
+deps = ["lpCondEstimate", "condNumberLp", "norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec", "condEstimate_le_condNumber"]
+
+[[node]]
+id = "_root_.pi_norm_eq_one_of_forall_norm_eq_one"
+kind = "theorem"
+desc = '''A vector all of whose entries have norm one has sup norm one: for `[Nonempty ι]` and
+`f : ι → E` with `∀ i, ‖f i‖ = 1`, `‖f‖ = 1` (the `Pi` sup norm; `pi_norm_le_iff_of_nonneg` and
+`norm_le_pi_norm`). Mathlib has the constant case `pi_norm_const'` only. The sign vectors
+`d ∈ {±1}ⁿ` of [golub2013matrix] (3.5.6) and Algorithm 3.5.1 are the use. ★'''
+deps = []
+
+[[node]]
+id = "linfty_opNorm_mul_norm_le_condNumberLp_top_of_mulVec_eq"
+kind = "theorem"
+desc = '''**The sign-vector estimate is a lower bound for `κ_∞`** ([golub2013matrix] §3.5.4, the
+estimate `κ̂_∞ = ‖T‖_∞ ‖y‖_∞` of (3.5.6) with `d(k) = ± 1` and of Algorithm 3.5.1): for real
+`T : Matrix n n ℝ` with `IsUnit T`, `[Nonempty n]`, and `T *ᵥ y = d` with `∀ i, |d i| = 1`,
+`lpOpNorm ⊤ T * ‖y‖ ≤ condNumberLp ⊤ T` (`‖y‖` the sup norm). From
+`norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec` at `p = ∞` and `pi_norm_eq_one_of_forall_norm_eq_one`.
+Also the normalized form used by Algorithm 3.5.1's output: `y ≠ 0 →
+1 ≤ lpOpNorm ⊤ T⁻¹ * ‖T *ᵥ (‖y‖⁻¹ • y)‖`, i.e. `‖T y/‖y‖‖_∞ ≥ 1/‖T⁻¹‖_∞`. ★'''
+deps = ["norm_le_lpOpNorm_inv_mul_lpSeminorm_mulVec", "_root_.pi_norm_eq_one_of_forall_norm_eq_one", "condNumberLp", "lpOpNorm_top"]

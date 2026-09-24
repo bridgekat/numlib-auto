@@ -1,0 +1,141 @@
+desc = '''
+Golub–Van Loan, Chapter 4: special linear systems — diagonal dominance and symmetry (§4.1),
+positive definite systems (§4.2), banded systems (§4.3), symmetric indefinite systems (§4.4), block
+tridiagonal systems (§4.5), Vandermonde systems (§4.6), Toeplitz systems (§4.7), circulant and
+discrete Poisson systems (§4.8). Source lines 8281–12468; planned by agent ch04, report
+`notes/gvl/ch04/report.md`, inventory `notes/gvl/ch04/inventory.md`.
+
+## Conventions of the chapter's surface files
+
+* **Scalars and shapes.** Real square systems, `A : Matrix (Fin n) (Fin n) ℝ`, vectors `Fin n → ℝ`;
+  §4.8.1–4.8.2 (the DFT and circulants) and Algorithm 4.8.1 are over `ℂ`. Indices are 0-based:
+  the book's `A(i, j)` is `A ⟨i − 1, _⟩ ⟨j − 1, _⟩`, its `A(i:j, k:l)` a `submatrix` along
+  `Fin.castLE`/`Fin.natAdd` or a `toBlock`, the leading principal submatrix `A(1:k,1:k)` is
+  `Matrix.leadingPrincipalSubmatrix`/`strictLeadingPrincipalSubmatrix` (LU). §4.6 is already
+  0-based in the book (`x(0:n)`), and the surface keeps its indices.
+* **Bands.** "Upper bandwidth `q`" is `Matrix.HasUpperBandwidth A q`, "lower bandwidth `p`" is
+  `Matrix.HasLowerBandwidth A p` (both in `Numlib/LinearAlgebra/Matrix/Hessenberg`, with the `Fin`
+  readings `hasUpperBandwidth_iff_fin`: `a_ij = 0` for `j > i + q`).
+* **Norms.** `‖·‖₁` of a matrix is `Matrix.lpOpNorm 1` (`Numlib/Analysis/Matrix/OperatorNorm`), `‖·‖₂`
+  the scoped `Matrix.Norms.L2Operator` norm, `‖·‖_F` the scoped `Matrix.Norms.Frobenius` norm.
+* **Factorization specifications** (planning brief D5): `Matrix.IsLU`, `Matrix.IsLDM` (the book's
+  `L D Lᵀ` is `IsLDM A L D Lᵀ`, `Lᴴᵀ = L` over `ℝ`), `Matrix.IsCholesky A H` with the *upper* factor
+  `H = Gᵀ` (the book's lower `G` is `Matrix.cholesky A = Hᴴ`), the new `Matrix.IsAasen`,
+  `Matrix.IsBlockLDL` (`Numlib/LinearAlgebra/Matrix/SymmetricIndefinite`); a permutation `P` acts as
+  `A.submatrix σ σ = P A Pᵀ` or through ch03's `GolubVanLoan.Chapter03.pivPerm`.
+* **Positive definite** for an unsymmetric real matrix (§4.2) is the surface definition
+  `IsPositiveDefinite A := ∀ x ≠ 0, 0 < x ⬝ᵥ (A *ᵥ x)`, bridged to
+  `(Matrix.hermitianPart A).PosDef` (the book's symmetric part `T = (A + Aᵀ)/2` is
+  `Matrix.hermitianPart A`, `S = A − T`); "symmetric positive definite" is Mathlib's
+  `Matrix.PosDef` (which includes symmetry).
+* **Structured matrices.** Toeplitz: `Matrix.toeplitz r` (`a_ij = r_{j−i}`, `r : ℤ → ℝ`) and
+  `Matrix.IsToeplitz`; symmetric Toeplitz with unit diagonal `T_k = Matrix.symmToeplitz k r`,
+  `r 0 = 1`; the exchange matrix `ℰ_n = Matrix.exchange n`; the downshift `𝒟_n = Matrix.downshift n`
+  (all `Numlib/LinearAlgebra/Matrix/Toeplitz`, which also serves the chapter-1 surface); the book's
+  `V(x₀, …, x_n)` is `(Matrix.vandermonde x)ᵀ` (Mathlib's rows are the nodes); the DFT matrix `F_n`
+  is `(Matrix.dft n)ᴴ` (the backbone's `ω = e^{+2πi/n}`; ch01's surface `fourierMatrix`); block
+  tridiagonal matrices are `Matrix.blockTridiagonal` (a `tridiagonalOf` over the block ring,
+  flattened by `Matrix.comp`); the second-difference matrices are `𝒯^{(DD)}_n =
+  Matrix.symmTridiagonalToeplitz n (-1) 2` and `Matrix.secondDifferenceDN/NN/Periodic n` (namespace `Matrix`,
+  `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`); the DST/DCT matrices are the one scheme `Matrix.dst1`,
+  `Matrix.dst2`, `Matrix.dct1`, `Matrix.dct2` of `Numlib/Analysis/Fourier/SineCosineTransform`; the equilibrium
+  matrix `[C B; Bᵀ 0]` is `Matrix.saddleMatrix C B 0` (`Numlib/LinearAlgebra/Matrix/SchurComplement`, over
+  `RCLike`). In Lean-ish statements the fast-Poisson diagonal is named `ν` (`λ` is a Lean keyword), as in
+  `FastPoisson.kroneckerSum_mulVec_vec_eq_iff`.
+* **Algorithms (planning brief D4)** follow the numbered **Algorithm conventions** of
+  `NumlibSurface/GolubVanLoan` (every `+ − × / √` result through `rnd`, `√` as `rnd (Real.sqrt t)`;
+  negation, `|·|`, copies and comparisons exact; loops `List.foldlM` over `List.finRange n` or
+  index lists — book ranges become `filter`ed lists; suffixes `_spec`/`_rounds`/`_rounding`;
+  hypotheses of rounding theorems on returned values, composites nested). Chapter-specific:
+  **binder types of `foldlM` lambdas must be written** (`fun t (j : Fin n) => …`: an ascription
+  `(j : ℕ)` in the body otherwise fixes `j : ℕ` — prototype `notes/gvl/ch04/proto/Shapes.lean`);
+  matrix–vector products inside a column update are evaluated as running differences from the
+  entry of `A` (saxpy order), dot products through ch01's `FloatingPoint.dotAccum` where the book
+  writes a dot product. The exact meaning is `Id.run (algorithm_4_M_K pure …)`;
+  `algorithm_4_M_K_spec` states it meets the backbone specification; where the book analyses
+  rounding errors (only (4.1.4) and §4.2.6 here) a bridge `algorithm_4_M_K_rounds` (every `SetM`
+  run satisfies the backbone relation) is followed by the rounding theorem, stated nested
+  (`∀ F ∈ (factor fp.round A).run, (∀ j, F j j ≠ 0) → ∀ x ∈ (solve fp.round F b).run, …`, convention
+  9). `algorithm_4_2_1_run_nonempty` shows the Cholesky run set is nonempty for a total model. An
+  algorithm-shaped display is a content-named program whose exact spec is its `equation_N_M_K`
+  (`aasenNoPivot`, spec `equation_4_4_14`). The packed outputs use ch03's
+  `packedL F = 1 + F.strictLower` and `packedU F = F − F.strictLower`; a packed lower triangle is
+  `F − F.strictUpper` (`Matrix.strictUpper`, Hessenberg).
+
+## Backbone correspondence
+
+New modules (all planned by ch04; placement as amended at the review):
+`Numlib/LinearAlgebra/Matrix/{Toeplitz,BlockTridiagonal,SymmetricIndefinite}` (the last holds the `IsAasen`/`IsBlockLDL`
+specifications, their existence theorems and the Bunch–Parlett multiplier bound `Matrix.exists_perm_isBlockLDL_abs_le`),
+`Numlib/Direct/{SymmetricIndefinite,Vandermonde,Levinson,CyclicReduction,FastPoisson}` (`Direct/SymmetricIndefinite`
+keeps the growth bounds and (4.4.21); the bordered secular function of §4.7.7 is `Matrix.borderedSecularFunction` of
+`Numlib/Eigen/DivideConquer`; the second-difference matrices and their eigensystems moved to `TridiagonalToeplitz`,
+`SineCosineTransform` and `Analysis/Fourier/Circulant`). Staged
+appends (`notes/gvl/ch04/appends/`): `LinearAlgebra/Matrix/{Cholesky,DiagDominant,TridiagonalToeplitz,
+KroneckerSum,HermitianPart,Rank,LU/Pivoting}`, `FloatingPoint/LU`, `Nonlinear/ScalarNewton`, and a
+description amendment of `Direct`. Existing backbone carrying numbered results unchanged: Theorem
+4.1.1 (`Matrix.exists_isLU_of_isColDiagDominant`), Theorem 4.2.7 (`Matrix.existsUnique_isCholesky`),
+(4.2.13) (`Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag`), Theorem 4.3.1
+(`Matrix.IsLU.hasUpperBandwidth`, `hasLowerBandwidth`), the DD eigensystem
+(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec`), the DFT facts of §4.8.1 (`Numlib/Analysis/Fourier/DFT`).
+
+## Not formalized (by class; reasons in the report)
+
+* Operation counts, flop and comparison counts, level-3 fractions, storage and memory counts
+  (everywhere), and the "fast eigenvalue decomposition" notion of §4.8 insofar as it is a
+  complexity notion.
+* Storage schemes: §4.2.10 (packed and mixed packed formats (4.2.20)–(4.2.22), PackedBlockCholesky,
+  TriSol, SymUpdate), band storage of §4.3.1/4.3.5; §4.3.7 (vectorization of bidiagonal solves).
+* Numerical examples and 2 × 2 illustrations (§4.2 `[ε m; −m ε]`, §4.4's opening examples, the
+  `m = 5` discretization displays of §4.8.3, Figure 4.8.1).
+* Quoted results without derivation and heuristic statements: Wilkinson's completion criterion
+  `q_n u κ₂(A) ≤ 1` (§4.2.6), the numerical-rank threshold (§4.2.8), Bunch's stability of diagonal
+  pivoting and the stability of pivoted Aasen (§4.4.2, §4.4.4), the Bunch–Kaufman strategy (a
+  strategy with no stated property), `κ(C)` vs `κ(A)` (§4.4.5), Vavasis's method, Buneman's stable
+  cyclic reduction, Cybenko's residual and Trench-error approximations (`≈`, §4.7.6), the
+  `O(log n)` Newton count (§4.7.7), lookahead (§4.7.8), banded matrices with banded inverses
+  (§4.3.9, (4.3.3): "assuming `N` is not too big", Strang's converse quoted), the SPIKE framework
+  (§4.5.4 beyond the block scaling (4.5.14): figures lost in conversion, parallel method), band
+  `L D Lᵀ` ("left to the reader"), confluent Vandermonde systems, the accuracy remark on
+  Björck–Pereyra, the square-root remark §4.2.4 (chapter 9 owns matrix square roots).
+* Displays that write out an algorithm step (rule 3): (4.4.3)–(4.4.4), (4.4.6)–(4.4.13) (their
+  content is `equation_4_4_14`), (4.5.4)–(4.5.5) (the recurrence is the backbone
+  `Matrix.tridiagonalLUPivot`; the substitution is not a node), (4.6.3)–(4.6.4) (the stages of
+  Algorithm 4.6.1, content in `BjorckPereyra`), (4.7.1)'s loop (its recurrence is `Durbin.sol`),
+  (4.7.11)'s loop (its invariant is `equation_4_7_11`); definitions displayed with numbers
+  ((4.1.1), (4.1.3), (4.2.6), (4.2.8), (4.5.1)–(4.5.2), (4.5.9), (4.5.13), (4.7.2), (4.7.8)–(4.7.9)
+  as hypotheses, (4.8.1), (4.8.5), (4.8.7), (4.8.11), (4.8.13)–(4.8.15), (4.8.24)).
+* Problems are not nodes; P4.1.2, P4.3.11, P4.4.1, P4.4.6, P4.5.1, P4.7.2/P4.7.12, P4.7.11,
+  P4.8.11 enter as backbone helpers named by content (see the report).
+
+## Cross-references
+
+Earlier chapters: ch01's `FloatingPoint.RoundingModel.round`, `SetM.mem_run_bind`,
+`FloatingPoint.RoundingModel.round_exact`, `FloatingPoint.dotAccum` (Program), `Matrix.dst1`,
+`Matrix.dct1` (DST/DCT), `GolubVanLoan.Chapter01.algorithm_1_4_1` (FFT, cited only); ch03's
+`GolubVanLoan.Chapter03.{packedL, packedU, pivPerm, algorithm_3_1_3, algorithm_3_1_3_rounds,
+algorithm_3_1_4, algorithm_3_1_4_rounds, algorithm_3_1_1}` and its staged
+`FloatingPoint.exists_add_mulVec_eq_of_lu_errors`. Later chapters consume `Matrix.exchange`,
+`Matrix.toeplitz`, `Matrix.IsToeplitz` (ch12 Displacement), `Matrix.isUnit_saddleMatrix_zero`
+(ch11 §11.5.10), `Matrix.blockTridiagonal` (ch11), the second-difference matrices and `FastPoisson` (ch11 model
+problems).
+
+## Order of attack
+
+Backbone, in dependency order (estimated lines):
+1. `LinearAlgebra/Matrix/Toeplitz` (~350) — no new dependencies.
+2. Appends to `HermitianPart` (~60), `DiagDominant` (~60), `Rank` (~100), `TridiagonalToeplitz`
+   (~120), `KroneckerSum` (~80), `LU/Pivoting` (~150), `Nonlinear/ScalarNewton` (~100).
+3. Appends to `Cholesky` (~900: the strict `L D Lᴴ`, Corollary 4.2.4, Theorem 4.2.5, the
+   semidefinite bounds, the pivoted rank factorization ★★★, the block form; Theorem 4.2.6 ★★★ last).
+4. `LinearAlgebra/Matrix/BlockTridiagonal` (~400).
+5. `Direct/Levinson` (~900; `Durbin.lpOpNorm_one_inv_le` ★★★ last), `Direct/Vandermonde` (~350),
+   `Direct/CyclicReduction` (~200), `Direct/FastPoisson` (~700), `LinearAlgebra/Matrix/SymmetricIndefinite`
+   (~850; the two existence theorems and the multiplier bound ★★★) with `Direct/SymmetricIndefinite` (~400;
+   (4.4.21) ★★★) — mutually independent apart from the last pair.
+6. Appends to `FloatingPoint/LU` (~600), after ch03's staged `FloatingPoint/LU` nodes.
+
+Surface, after the backbone each section needs: §4.1 (~350), §4.3 (~700), §4.2 (~1400: five
+algorithms), §4.5 (~200), §4.6 (~400), §4.7 (~900), §4.4 (~400), §4.8 (~900). Total surface
+~5 250 lines; backbone ≈ 5 970 lines.
+'''

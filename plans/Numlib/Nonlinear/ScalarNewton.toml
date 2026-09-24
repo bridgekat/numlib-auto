@@ -1,3 +1,8 @@
+# Planned additions (GVL round): the module doc of `Numlib.Nonlinear.ScalarNewton` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch04) add — "`Newton.tendsto_iterate_scalarStep_of_concaveOn`: for a decreasing concave function
+# started to the right of its root, the Newton iterates decrease monotonically to the root
+# (Fourier's condition; [golub2013matrix] (4.7.10), the minimum eigenvalue of a Toeplitz matrix)."
 namespace = "Newton"
 
 [[node]]
@@ -62,3 +67,17 @@ id = "tendsto_multiplicityEstimate"
 
 [[node]]
 id = "adaptiveStep"
+
+[[node]]  # staged by ch04
+id = "tendsto_iterate_scalarStep_of_concaveOn"
+kind = "theorem"
+desc = '''Monotone convergence of Newton's method (Fourier's condition, the case used by [golub2013matrix] (4.7.10)):
+let `f : ℝ → ℝ` be differentiable on `[α, x₀]` with derivative `f'` (`HasDerivAt f (f' x) x`),
+`f' x < 0` and `f'` antitone there (`f` decreasing and concave), `f α = 0`, `α ≤ x₀`. Then the
+iterates `x_k = (Newton.scalarStep f f')^[k] x₀` satisfy `α ≤ x_{k+1} ≤ x_k` and tend to `α`. Step:
+`f(x_k) ≤ 0` and `f' < 0` give `x_{k+1} ≤ x_k`; concavity, `0 = f(α) ≤ f(x_k) + f'(x_k)(α − x_k)`,
+gives `x_{k+1} ≥ α`; the limit `ℓ` satisfies `ℓ = ℓ − f(ℓ)/f'(ℓ)` by continuity (`f'` is bounded
+away from `0` on the compact interval), so `f(ℓ) = 0`, `ℓ = α` by strict monotonicity.
+`ConcaveOn.le_slope`-type lemmas (`ConcaveOn` from `Antitone` derivative: `antitoneOn_deriv…`),
+`tendsto_atTop_ciInf`. ★★ (~100 lines)'''
+deps = ["Newton.scalarStep"]

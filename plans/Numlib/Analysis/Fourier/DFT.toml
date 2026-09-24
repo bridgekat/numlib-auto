@@ -1,3 +1,13 @@
+# Planned additions (GVL round): the module doc of `Numlib.Analysis.Fourier.DFT` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch01) add "The entries of the transform matrix `F_n = (dft n)ᴴ` in real form, `cos(2πkj/n) − i
+# sin(2πkj/n)` ([golub2013matrix] (1.4.5)), and its two index symmetries — the reflection `j ↦ n −
+# j` conjugates, the half shift `j ↦ j + n/2` multiplies by `(−1)^k` — are what the block structure
+# of `F_{2m}` ([golub2013matrix] Theorem 1.4.1) and the DST/DCT identities of
+# `Numlib/Analysis/Fourier/SineCosineTransform` are proved from."
+# (review) The diagonalization of circulants by `F_n = (dft n)ᴴ` ([golub2013matrix] Theorem 4.8.2) is in the
+# sibling `Numlib/Analysis/Fourier/Circulant`, not in `LinearAlgebra/Matrix/Toeplitz` (whose layer must not
+# import this module, which imports `Numlib/Approximation/TrapezoidExactness`).
 namespace = "Matrix"
 
 [[node]]
@@ -41,3 +51,25 @@ id = "_root_.DFT.coeff_eq_dft_mulVec"
 
 [[node]]
 id = "_root_.DFT.coeff_eq_tsum_fourierCoeff"
+
+[[node]]  # staged by ch01
+id = "conjTranspose_dft_apply_eq_cos_sub_sin"
+kind = "theorem"
+desc = '''`(dft n)ᴴ k j = (Real.cos (2 * π * k * j / n) : ℂ) - Complex.I * (Real.sin (2 * π * k * j / n) : ℂ)`
+([golub2013matrix] (1.4.5) with `n = 2m`: `cos(kjπ/m) − i sin(kjπ/m)`); `conjTranspose_dft_apply`,
+`exp` of `−2πi kj/n`, `Complex.exp_mul_I`, `Complex.ofReal_cos`, `Complex.ofReal_sin`. ★'''
+deps = ["Matrix.dft"]
+
+[[node]]  # staged by ch01
+id = "dft_apply_sub_eq_conj"
+kind = "theorem"
+desc = '''Reflection: for `0 < (j : ℕ)`, `dft n k ⟨n − j, _⟩ = conj (dft n k j)` (`ω^{k(n−j)} = ω^{−kj}` since
+`ω^n = 1` and `|ω| = 1`); the same for `(dft n)ᴴ` through `conjTranspose_dft_apply`. ★'''
+deps = ["Matrix.dft"]
+
+[[node]]  # staged by ch01
+id = "dft_two_mul_apply_add"
+kind = "theorem"
+desc = '''Half shift: `dft (2 * m) k ⟨m + j, _⟩ = (−1) ^ (k : ℕ) * dft (2 * m) k ⟨j, _⟩` (`ω_{2m}^m = −1`,
+`Complex.exp_pi_mul_I`); the same for `(dft (2 * m))ᴴ`. ★'''
+deps = ["Matrix.dft"]

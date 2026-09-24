@@ -1,0 +1,87 @@
+namespace = "GolubVanLoan.Chapter04"
+desc = '''
+§4.5, block tridiagonal systems: the block LU factorization (4.5.3) with its recurrence (4.5.4),
+block diagonal dominance (4.5.6)–(4.5.8), block cyclic reduction (§4.5.3), and the block scaling
+(4.5.14) of the SPIKE framework. The section has no numbered theorem and no numbered algorithm.
+Backbone: `LinearAlgebra/Matrix/BlockTridiagonal`, `Direct/CyclicReduction`. The matrix (4.5.2) with
+`q × q` blocks `D_1, …, D_N` (diagonal), `E_1, …, E_{N−1}` (sub), `F_1, …, F_{N−1}` (super) is
+`Matrix.blockTridiagonal E D F : Matrix (Fin N × Fin q) (Fin N × Fin q) ℝ` (0-based blocks;
+`N = N' + 1`). The block substitution (4.5.5), the flop count of cyclic reduction and the rest of
+SPIKE are not formalized (chapter group).
+'''
+
+[[node]]
+id = "equation_4_5_3"
+kind = "theorem"
+desc = '''(4.5.3) with (4.5.4): if the block pivots `U_1 = D_1`, `U_i = D_i − L_{i−1} F_{i−1}` (`L_{i−1} U_{i−1} = E_{i−1}`)
+are nonsingular for `i < N`, then `A = L U` with `L` block unit lower bidiagonal (subdiagonal blocks
+`L_i`) and `U` block upper bidiagonal (diagonal `U_i`, superdiagonal `F_i`) — "the procedure is
+defined as long as the `U_i` are nonsingular". In the block ring
+`Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`, flattened by `Matrix.compRingEquiv`
+(`Matrix.blockTridiagonal`). ★'''
+deps = ["Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot", "Matrix.blockTridiagonal", "Matrix.tridiagonalLUPivot", "Matrix.tridiagonalLUMultiplier"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.3)'
+
+[[node]]
+id = "equation_4_5_6"
+kind = "theorem"
+desc = '''(4.5.6): under block diagonal dominance, `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1` (`E_N ≡ F_0 ≡ 0`,
+the book's condition in `E, D, F` form), the factorization (4.5.3) exists (all `U_i` nonsingular) and `A` is
+nonsingular (the book's P4.5.1(a)). The backbone predicate is the general strict block column diagonal dominance
+`Matrix.IsStrictBlockColDiagDominant` of any square block matrix over the block ring; the three consequence
+theorems take `(tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i)).IsStrictBlockColDiagDominant`,
+and the book's `E, D, F` form (4.5.6) is `Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`;
+`Matrix.IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot`,
+`Matrix.IsStrictBlockColDiagDominant.isUnit_blockTridiagonal`. ★'''
+deps = ["Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff", "Matrix.IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot", "Matrix.IsStrictBlockColDiagDominant.isUnit_blockTridiagonal", "equation_4_5_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.6)'
+
+[[node]]
+id = "equation_4_5_7"
+kind = "theorem"
+desc = '''(4.5.7): under (4.5.6), `‖L_i‖₁ ≤ 1`; `Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le`,
+its hypothesis obtained from (4.5.6) by `Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`. ★'''
+deps = ["Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le", "Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.7)'
+
+[[node]]
+id = "equation_4_5_8"
+kind = "theorem"
+desc = '''(4.5.8): under (4.5.6), `‖U_i‖₁ ≤ ‖A‖₁` — the printed right-hand side `‖A_n‖₁` has no referent in the
+section and is read as the `1`-norm of the whole matrix (ch04 report, Doubts);
+`Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le` (hypothesis via
+`Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`). ★'''
+deps = ["Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le", "Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.8)'
+
+[[node]]
+id = "cyclicReduction_step"
+kind = "theorem"
+desc = '''§4.5.3, one step of block cyclic reduction for (4.5.9) (`D F = F D`, `N = 2M + 1`): the even-indexed unknowns
+(1-based `x_2, x_4, …`) satisfy the block tridiagonal system of the same form with
+`D⁽¹⁾ = 2F² − D²`, `F⁽¹⁾ = F²` (which commute) and `b⁽¹⁾_j = F (b_{2j−1} + b_{2j+1}) − D b_{2j}`
+(the book's `N = 7` computation, in general). `CyclicReduction.constBlockTridiagonal_reduce`,
+`CyclicReduction.commute_reduced`; iterated to the single `q × q` system for `N = 2^k − 1` by
+`CyclicReduction.constBlockTridiagonal_iterate_reduce`. ★'''
+deps = ["CyclicReduction.constBlockTridiagonal_reduce", "CyclicReduction.commute_reduced", "CyclicReduction.constBlockTridiagonal_iterate_reduce"]
+source = 'Golub–Van Loan, Matrix Computations, §4.5.3, Display'
+
+[[node]]
+id = "cyclicReduction_back"
+kind = "theorem"
+desc = '''§4.5.3, back substitution: once the even unknowns are known, the odd ones solve `D x_{2j+1} =
+b_{2j+1} − F (x_{2j} + x_{2j+2})` ("we use the first, third, fifth, and seventh equations");
+`CyclicReduction.constBlockTridiagonal_odd_eq`. ★'''
+deps = ["CyclicReduction.constBlockTridiagonal_odd_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §4.5.3, Display'
+
+[[node]]
+id = "equation_4_5_14"
+kind = "theorem"
+desc = '''(4.5.13)→(4.5.14), the SPIKE scaling: if the diagonal blocks `D_i` are nonsingular, then
+`blockDiagonal (D_i⁻¹) * blockTridiagonal E D F = blockTridiagonal Ẽ 1 F̃` with `D_i F̃_i = F_i`,
+`D_{i+1} Ẽ_i = E_i`, and `A x = b ⟺ (blockDiagonal D⁻¹ A) x = b̃` with `D_i b̃_i = b_i`. In the block
+ring: `diagonal (D⁻¹) * tridiagonalOf E D F = tridiagonalOf (D_{i+1}⁻¹ E_i) 1 (D_i⁻¹ F_i)`
+(`Matrix.tridiagonalOf_apply_mul_eq`). ★'''
+deps = ["Matrix.blockTridiagonal", "Matrix.tridiagonalOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.5.14)'

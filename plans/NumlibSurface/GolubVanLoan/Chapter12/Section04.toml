@@ -1,0 +1,214 @@
+namespace = "GolubVanLoan.Chapter12"
+desc = '''
+§12.4, Tensor unfoldings and contractions: order-`d` tensors, subtensors and the Frobenius norm (§12.4.2), `vec`
+(12.4.2)–(12.4.5), transposition (§12.4.4), modal and general unfoldings (12.4.6), (12.4.8), outer products and
+rank-one tensors (12.4.9)–(12.4.10), contractions (12.4.11)–(12.4.13), modal and multilinear products
+(12.4.14)–(12.4.19) and Theorem 12.4.1. Backbone: `Numlib/LinearAlgebra/Tensor/{Basic,Unfolding,MultilinearProduct}`.
+The surface abbreviation `RTensor n := Tensor (fun k : Fin d => Fin (n k)) ℝ` is the book's `ℝ^{n₁×⋯×n_d}`; flattened
+statements use `Tensor.vecFin` (the book's `col`, 0-based) and chapter 1's `Matrix.kroneckerFin`. (12.4.1) and (12.4.12)
+are loop/defining displays, (12.4.3) and (12.4.18) definitions, (12.4.7) an example; no nodes of their own.
+'''
+
+[[node]]
+id = "RTensor"
+kind = "definition"
+desc = '''§12.4, the book's order-`d` tensor space: `abbrev RTensor {d : ℕ} (n : Fin d → ℕ) := Tensor (fun k : Fin d => Fin (n k)) ℝ`; with
+it the definitions of §12.4.2 as surface definitions over `Tensor.restrict`: `fiber A k c` (order-1 extraction, the book's
+`𝒜(1, :, 2, 4)`), `slice A k l c` (order-2), and colon subtensors `𝒜(L:R)` (restriction to index intervals). ★'''
+deps = ["_root_.Tensor", "Tensor.restrict"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.2, Definition'
+
+[[node]]
+id = "frobenius_norm_tensor"
+kind = "theorem"
+desc = '''§12.4.2: `‖𝒜‖_F = √(∑_{i=1}^{n} 𝒜(i)²)` for `𝒜 : RTensor n` (the global Frobenius norm of `Tensor`). `Tensor.frobenius_norm_def`. ★'''
+deps = ["Tensor.frobenius_norm_def", "GolubVanLoan.Chapter12.RTensor"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.2'
+
+[[node]]
+id = "equation_12_4_4"
+kind = "theorem"
+desc = '''(12.4.4)–(12.4.5): with `col(i, n) = i₁ + (i₂ − 1) n₁ + ⋯ + (i_d − 1) n₁ ⋯ n_{d−1}` (1-based), `a = vec(𝒜)` satisfies `a(col(i, n)) =
+𝒜(i)`; 0-based, `col(i, n) − 1 = finPiFinEquiv i` (Mathlib `finPiFinEquiv_apply`) and `vecFin A (finPiFinEquiv i) = A i`.
+`Tensor.vecFin`. ★'''
+deps = ["Tensor.vecFin"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.4)'
+
+[[node]]
+id = "equation_12_4_2"
+kind = "theorem"
+desc = '''(12.4.2)–(12.4.3): `vec(𝒜) = [vec(𝒜⁽¹⁾); ⋯; vec(𝒜⁽ⁿᵈ⁾)]` with `𝒜⁽ᵏ⁾(i₁, …, i_{d−1}) = 𝒜(i₁, …, i_{d−1}, k)`, and this recursive definition agrees
+with (12.4.4)–(12.4.5) (P12.4.2). `Tensor.finPiFinEquiv_snoc` (`vecFin_snoc`). ★'''
+deps = ["Tensor.finPiFinEquiv_snoc", "GolubVanLoan.Chapter12.equation_12_4_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.2)'
+
+[[node]]
+id = "tensorTranspose_apply"
+kind = "theorem"
+desc = '''§12.4.4, Definition and its defining property: for a permutation `p` of `1:d`, the `p`-transpose `𝒜^{<p>} ∈ ℝ^{n_{p₁}×⋯×n_{p_d}}` satisfies
+`𝒜^{<p>}(j(p)) = 𝒜(j)`; `𝒜^{<p>} = Tensor.permute p A` and `Tensor.permute_apply`. (The book's example formula `vec(𝒜^{<[3 2 1]>}) =
+(𝒫_{n₁,n₂} ⊗ I_{n₃}) 𝒫_{n₁n₂,n₃} vec(𝒜)` is misprinted — both factors are transposed; the correct one is `(𝒫_{n₂,n₁} ⊗ I_{n₃}) 𝒫_{n₃,n₁n₂}` —
+and is not a node; chapter 12 report.) ★'''
+deps = ["Tensor.permute"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.4, Definition'
+
+[[node]]
+id = "modalUnfolding"
+kind = "definition"
+desc = '''The book's mode-`k` unfolding (12.4.6) on `Fin`: `modalUnfolding A k : Matrix (Fin (n k)) (Fin (∏ j : Fin (d−1), n (k.succAbove j))) ℝ :=
+(A.modeUnfold k).reindex (Equiv.refl _) e` with `e` the column-order flattening `(∀ j : {j // j ≠ k}, Fin (n j)) ≃ (∀ j : Fin (d−1),
+Fin (n (k.succAbove j))) ≃ Fin (∏ …)` (`Fin.succAbove`, then `finPiFinEquiv`) — fibers ordered "left to right according to the vec
+ordering". ★'''
+deps = ["Tensor.modeUnfold", "GolubVanLoan.Chapter12.RTensor"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.5, Definition'
+
+[[node]]
+id = "equation_12_4_6"
+kind = "theorem"
+desc = '''(12.4.6): `𝒜_(k)(i_k, col(ĩ_k, ñ_k)) = 𝒜(i)` with `ĩ_k`, `ñ_k` the index and size vectors without their `k`-th entry: `modalUnfolding A k (i
+k) (finPiFinEquiv (fun j => i (k.succAbove j))) = A i`. `Tensor.modeUnfold_apply` and the definition of the flattening. ★'''
+deps = ["GolubVanLoan.Chapter12.modalUnfolding", "Tensor.modeUnfold"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.6)'
+
+[[node]]
+id = "generalUnfolding"
+kind = "definition"
+desc = '''The book's general unfolding (12.4.8) on `Fin`: for a permutation `p` of `Fin d` and `e ≤ d`, row modes `r = p(1:e)`, column modes `c = p(e+1:d)`,
+`generalUnfolding A p e : Matrix (Fin (∏ j : Fin e, n (p …))) (Fin (∏ j : Fin (d−e), n (p …))) ℝ`, the typed `Tensor.unfold (· ∈ r)` with
+rows and columns flattened by `finPiFinEquiv` *in the listed order of `r` and `c`* (`Equiv.piCongrLeft` along `p`). ★★ (~40 lines, the
+index-type plumbing)'''
+deps = ["Tensor.unfold", "GolubVanLoan.Chapter12.RTensor"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.6, Definition'
+
+[[node]]
+id = "equation_12_4_8"
+kind = "theorem"
+desc = '''(12.4.8): `𝒜_{r×c}(col(i, n(r)), col(j, n(c))) = 𝒜(i, j)` for `generalUnfolding`; and its special cases (the sentences after (12.4.8)): `r =
+[k]`, `c = [1, …, k−1, k+1, …, d]` gives `modalUnfolding`, `r = 1:d`, `c = ∅` gives `vec` (a one-column matrix). Unfolding the
+definitions (`Tensor.unfold_apply`). ★★ (~40 lines)'''
+deps = ["GolubVanLoan.Chapter12.generalUnfolding", "GolubVanLoan.Chapter12.modalUnfolding", "GolubVanLoan.Chapter12.equation_12_4_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.8)'
+
+[[node]]
+id = "outer_kronecker"
+kind = "theorem"
+desc = '''§12.4.7: for matrices `B`, `C` (order-2 tensors) and `𝒜 = B ∘ C` (`𝒜(i₁, i₂, j₁, j₂) = B(i₁, i₂) C(j₁, j₂)`, `Tensor.outer`), `𝒜_{[3 1]×[4 2]} = B ⊗
+C` — the Kronecker product of two matrices is their outer product as tensors. Flattened `generalUnfolding` equals chapter 1's
+`Matrix.kroneckerFin B C` (note the listed order `[3 1]`: `j₁` fast, `i₁` slow, matching the big-endian Kronecker layout).
+`Tensor.unfold_outer_eq_kronecker`. ★★ (~40 lines)'''
+deps = ["Tensor.unfold_outer_eq_kronecker", "GolubVanLoan.Chapter12.generalUnfolding"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.7'
+
+[[node]]
+id = "equation_12_4_9"
+kind = "theorem"
+desc = '''(12.4.9): for `𝒜 = z⁽¹⁾ ∘ ⋯ ∘ z⁽ᵈ⁾`, `𝒜_(k) = z⁽ᵏ⁾ (z⁽ᵈ⁾ ⊗ ⋯ ⊗ z⁽ᵏ⁺¹⁾ ⊗ z⁽ᵏ⁻¹⁾ ⊗ ⋯ ⊗ z⁽¹⁾)ᵀ` (a rank-one matrix); in particular `vec(u ∘ v ∘ w) = w ⊗
+v ⊗ u` (the example before it). `Tensor.unfold_rankOne` flattened by `Matrix.piKronecker_reindex_finPiFinEquiv` (a vector is a
+one-column matrix). ★★ (~40 lines)'''
+deps = ["Tensor.unfold_rankOne", "Matrix.piKronecker_reindex_finPiFinEquiv", "GolubVanLoan.Chapter12.modalUnfolding"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.9)'
+
+[[node]]
+id = "equation_12_4_10"
+kind = "theorem"
+desc = '''(12.4.10): for a rank-one `𝒜` and row/column modes `r = p(1:e)`, `c = p(e+1:d)`, `𝒜_{r×c} = (z⁽ᵖᵉ⁾ ⊗ ⋯ ⊗ z⁽ᵖ¹⁾)(z⁽ᵖᵈ⁾ ⊗ ⋯ ⊗
+z⁽ᵖᵉ⁺¹⁾)ᵀ` (the book writes `∘` for the vector Kronecker products). `Tensor.unfold_rankOne`, flattened. ★'''
+deps = ["Tensor.unfold_rankOne", "GolubVanLoan.Chapter12.generalUnfolding", "GolubVanLoan.Chapter12.equation_12_4_9"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.10)'
+
+[[node]]
+id = "eq_sum_rankOne"
+kind = "theorem"
+desc = '''§12.4.8, last display: `𝒜 = ∑_{i=1}^{n} 𝒜(i) I_{n₁}(:, i₁) ∘ ⋯ ∘ I_{n_d}(:, i_d)`. `Tensor.eq_sum_rankOne_single`. ★'''
+deps = ["Tensor.eq_sum_rankOne_single"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.8'
+
+[[node]]
+id = "equation_12_4_11"
+kind = "theorem"
+desc = '''(12.4.11) and the slice form after it: the contraction `𝒜(i, j, α₃, α₄, β₃, β₄, β₅) = ∑_k ℬ(i, k, α₃, α₄) 𝒞(k, j, β₃, β₄, β₅)` is, at
+every fixed `(α, β)`, the matrix product `𝒜(:, :, α, β) = ℬ(:, :, α) 𝒞(:, :, β)` (`Matrix.mul_apply`; the slices are `Tensor.restrict`). ★'''
+deps = ["Tensor.restrict"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.11)'
+
+[[node]]
+id = "equation_12_4_13"
+kind = "theorem"
+desc = '''(12.4.12)–(12.4.13) and the display after it: the contraction `𝒜(i, j) = ∑_{k=1}^{t} ℬ(i, k) 𝒞(k, j)` over a multi-index `k` satisfies
+`𝒜_{[1 2]×[3 4 5]} = ℬ_{[1 2]×[3 4]} · 𝒞_{[1 2]×[3 4 5]}`. Typed: `Tensor.contract_apply` and `Tensor.sumUnfold_contract` (the book's two free
+modes of `ℬ`, two contracted modes, three free modes of `𝒞` as `Sum`-indexed families); flattened with `generalUnfolding`. ★'''
+deps = ["Tensor.contract", "GolubVanLoan.Chapter12.generalUnfolding"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.13)'
+
+[[node]]
+id = "modeProduct"
+kind = "definition"
+desc = '''The book's mode-`k` product (12.4.14) with a rectangular `M ∈ ℝ^{m×n_k}`: `modeProduct n S k M : Tensor (fun i => Fin (Function.update n k m
+i)) ℝ := Tensor.multilinearProd (modeFamily n k M) S`, `modeFamily` being `M` at `k` and the identity elsewhere, each transported by
+`finCongr` along `Function.update_self`/`Function.update_of_ne` (prototype `GVLProto.modeProduct`, `notes/gvl/ch12/proto/Tensor.lean`,
+elaborates). For square `M` it agrees with `Tensor.modeProd` (`modeProduct_eq_modeProd`, `m = n k` with the `update_eq_self`
+cast). ★★ (~40 lines, the `finCongr` bookkeeping)'''
+deps = ["Tensor.multilinearProd", "Tensor.modeProd", "GolubVanLoan.Chapter12.RTensor"]
+source = 'Golub–Van Loan, Matrix Computations, §12.4.10, Definition'
+
+[[node]]
+id = "equation_12_4_14"
+kind = "theorem"
+desc = '''(12.4.14) and the entry formula after it: `(𝒮 ×_k M)_(k) = M 𝒮_(k)`, i.e. `(modeProduct n S k M).modeUnfold k = (M * S.modeUnfold k).reindex
+(finCongr _) (Equiv.piCongrRight fun j => finCongr _)` (statement elaborates in the prototype), and `𝒜(α₁, …, i, …, α_d) = ∑_j M(i, j) 𝒮(α₁, …, j,
+…, α_d)`. `Tensor.modeUnfold_multilinearProd` with identity factors (`Matrix.piKronecker` of identities is `1`). ★★ (~40 lines)'''
+deps = ["GolubVanLoan.Chapter12.modeProduct", "Tensor.modeUnfold_multilinearProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.14)'
+
+[[node]]
+id = "equation_12_4_15"
+kind = "theorem"
+desc = '''(12.4.15): `vec(𝒮 ×_k M) = (I_{n_{k+1}⋯n_d} ⊗ M ⊗ I_{n₁⋯n_{k−1}}) vec(𝒮)`, flattened with chapter 1's `Matrix.kroneckerFin` (up to `finCongr` of
+the size products). `Tensor.vecFin_multilinearProd` with identity factors. ★★ (~40 lines)'''
+deps = ["GolubVanLoan.Chapter12.modeProduct", "Tensor.vecFin_multilinearProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.15)'
+
+[[node]]
+id = "equation_12_4_16"
+kind = "theorem"
+desc = '''(12.4.16): `(𝒮 ×_k F) ×_j G = (𝒮 ×_j G) ×_k F` for `j ≠ k` and rectangular `F`, `G`, the two sides' shapes identified along
+`Function.update_comm` (a `finCongr` reindexing); for square factors it is `Tensor.modeProd_comm` without transport.
+`Tensor.multilinearProd_multilinearProd`. ★★ (~40 lines)'''
+deps = ["GolubVanLoan.Chapter12.modeProduct", "Tensor.modeProd_comm", "Tensor.multilinearProd_multilinearProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.16)'
+
+[[node]]
+id = "equation_12_4_17"
+kind = "theorem"
+desc = '''(12.4.17), corrected: `(𝒮 ×_k F) ×_k G = 𝒮 ×_k (G F)` — the book prints `𝒮 ×_k (F G)`, which is false (`(𝒮 ×_k F)_(k) = F 𝒮_(k)`, so the second product
+gives `G F 𝒮_(k)`; the printed form does not even typecheck for rectangular `F`, `G`). `Tensor.modeProd_comm` (square) and
+`Tensor.multilinearProd_multilinearProd` (rectangular, with the `finCongr` of `Function.update_idem`). ★'''
+deps = ["GolubVanLoan.Chapter12.modeProduct", "Tensor.modeProd_comm", "Tensor.multilinearProd_multilinearProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.17)'
+
+[[node]]
+id = "equation_12_4_19"
+kind = "theorem"
+desc = '''(12.4.18) ⇔ (12.4.19), order 4: `𝒜(i) = ∑_j 𝒮(j) M₁(i₁, j₁) M₂(i₂, j₂) M₃(i₃, j₃) M₄(i₄, j₄)` iff `vec(𝒜) = (M₄ ⊗ M₃ ⊗ M₂ ⊗ M₁) vec(𝒮)`; and the
+table: the multilinear product is the sequence of the four mode products, in any order (`𝒮 ×₁ M₁ ×₂ M₂ ×₃ M₃ ×₄ M₄ = 𝒮 ×₄ M₄ ×₁ M₁ ×₂ M₂ ×₃
+M₃`). `Tensor.multilinearProd_apply` (in the `multilinearProd` node), `Tensor.vecFin_multilinearProd` at `d = 4`,
+`Tensor.multilinearProd_eq_modeProd` (square factors; rectangular through `modeProduct`). ★★ (~40 lines)'''
+deps = ["Tensor.multilinearProd", "Tensor.vecFin_multilinearProd", "Tensor.multilinearProd_eq_modeProd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.19)'
+
+[[node]]
+id = "theorem_12_4_1"
+kind = "theorem"
+desc = '''Theorem 12.4.1: for `𝒮 : RTensor n`, `M_k ∈ ℝ^{m_k×n_k}` and `𝒜 = 𝒮 ×₁ M₁ ⋯ ×_d M_d` (`Tensor.multilinearProd M S`), `𝒜_(k) = M_k 𝒮_(k) (M_d ⊗ ⋯ ⊗
+M_{k+1} ⊗ M_{k−1} ⊗ ⋯ ⊗ M₁)ᵀ` for the book's flattened unfoldings (`modalUnfolding`); the typed form `Tensor.modeUnfold_multilinearProd`
+reindexed by `Matrix.piKronecker_reindex_finPiFinEquiv` (on the `d − 1` modes `k.succAbove`). (P12.4.5.) ★★ (~50 lines, the
+flattening)'''
+deps = ["Tensor.modeUnfold_multilinearProd", "Matrix.piKronecker_reindex_finPiFinEquiv", "GolubVanLoan.Chapter12.modalUnfolding"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.4.1'
+
+[[node]]
+id = "theorem_12_4_1_b"
+kind = "theorem"
+desc = '''Theorem 12.4.1, second statement: if `M₁, …, M_d` are all nonsingular then `𝒮 = 𝒜 ×₁ M₁⁻¹ ⋯ ×_d M_d⁻¹`. `Tensor.multilinearProd_inv`. ★'''
+deps = ["Tensor.multilinearProd_inv", "GolubVanLoan.Chapter12.theorem_12_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 12.4.1'

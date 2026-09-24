@@ -1,0 +1,132 @@
+namespace = "Matrix"
+desc = '''
+The generalized singular value decomposition of a pair `A : Matrix (Fin m₁) (Fin n) 𝕜`,
+`B : Matrix (Fin m₂) (Fin n) 𝕜` ([golub2013matrix] Theorem 6.1.1, after Van Loan 1976 and
+Paige–Saunders 1981): unitary `U₁`, `U₂` and an invertible `X` with `U₁ᴴ A X = D_A`,
+`U₂ᴴ B X = D_B`, where `D_A` is rectangular diagonal and `D_B` is rectangular diagonal *shifted*
+by `p` columns, `r = rank [A; B]`, `p = r − m₂` (truncated, i.e. `max (r − m₂) 0`), and the pairs
+`(α_i, β_i)` are cosine–sine pairs.
+
+Upstreaming candidate: nothing here is numerical. Natural home beside the SVD,
+`Mathlib.Analysis.InnerProductSpace.SingularValues` or a `Matrix.GSVD` file.
+
+## Design
+
+* **The specification is a predicate** `Matrix.IsGSVD A B U₁ U₂ X α β` with `α β : ℕ → ℝ`,
+  in the vocabulary of `Numlib/LinearAlgebra/Matrix/SVD`: `D_A = rectDiagonal α` and
+  `D_B = shiftedRectDiagonal p β` (the latter staged as an append to `SVD`, beside
+  `rectDiagonal`). The book's block pictures (6.1.22)–(6.1.23) read, 0-based:
+  `α_i = 1, β_i = 0` for `i < p`; `α_i² + β_i² = 1`, `α_i, β_i ≥ 0` for `p ≤ i < r`;
+  `α_i = β_i = 0` for `i ≥ r` (the zero columns `n − r`). `D_B` carries `β_j` at the entry
+  `(j − p, j)`, i.e. in its first `r − p` rows; the book's printed row labels for `D_B`
+  (`p, r − p, m₂ − r`) are a conversion error for `r − p, m₂ − r + p` (see
+  `notes/gvl/ch06/report.md`, Doubts).
+* **Scalars** `[RCLike 𝕜]` with `unitaryGroup`; the book's real case is `𝕜 = ℝ`, where
+  `unitaryGroup = orthogonalGroup`. Shapes are `Fin` because the rectangular diagonal is
+  `Fin`-indexed; the hypothesis `n ≤ m₁` is the book's `m₁ ≥ n₁`.
+* **Proof route** (the book's): an SVD of the stacked matrix `fromRows A B` (reindexed to
+  `Fin (m₁ + m₂)`), whose first `r` left singular vectors `[Q₁₁; Q₂₁]` have orthonormal columns,
+  then the *thin* CS decomposition of `[Q₁₁; Q₂₁]` (chapter 2's `CSDecomposition`), then
+  `X = Z · blockDiag((V₁ᴴ Σ_r)⁻¹, I)`. The thin CS decomposition needed is Theorem 2.5.2
+  **without** its hypothesis `m₂ ≥ n₁`: when `m₂ < r` the sine block is a shifted rectangular
+  diagonal and at least `r − m₂` cosines equal `1` — the printed proof of Theorem 2.5.2 gives
+  this verbatim (the columns of `W₂` are `r − t` orthogonal nonzero vectors of `𝕜^{m₂}`, so
+  `t ≥ r − m₂`). Chapter 2's `CSDecomposition` states exactly this
+  general form, as the specification `Matrix.IsThinCSD` (`θ` monotone, `sin`-block
+  `shiftedRectDiagonal (n₁ − min n₁ m₂)`) with existence `Matrix.exists_isThinCSD`.
+
+Consumers: the regularization and constrained least-squares modules
+(`LeastSquares/{Regularized,Constrained}`: (6.1.26), (6.2.6), (6.2.12), (6.2.14)) and the
+symmetric-definite pencil of chapter 8 §8.7.4 (`Matrix.IsGSVD.gram_mulVec_col`, the
+`AᴴA x = μ² BᴴB x` connection).
+
+## Order of attack
+
+`IsGSVD` and its four consequences are ★ once the predicate exists; `exists_isGSVD` is the one
+★★★ node (~250 lines, mostly `Fin r ⊕ Fin (n − r)` block bookkeeping) and waits for the thin CS
+decomposition.
+'''
+
+[[node]]
+id = "IsGSVD"
+kind = "definition"
+desc = '''**The generalized singular value decomposition** ([golub2013matrix] Theorem 6.1.1,
+(6.1.22)–(6.1.23)), as a predicate. For `A : Matrix (Fin m₁) (Fin n) 𝕜`,
+`B : Matrix (Fin m₂) (Fin n) 𝕜`, `U₁ U₂ X` and `α β : ℕ → ℝ`, with `r := (fromRows A B).rank`
+and `p := r - m₂` (natural subtraction): a structure with fields
+`mem_unitaryGroup_left : U₁ ∈ unitaryGroup (Fin m₁) 𝕜`,
+`mem_unitaryGroup_right : U₂ ∈ unitaryGroup (Fin m₂) 𝕜`, `isUnit : IsUnit X`,
+`of_lt_p : ∀ i < p, α i = 1 ∧ β i = 0`,
+`sq_add_sq : ∀ i, p ≤ i → i < r → α i ^ 2 + β i ^ 2 = 1`, `nonneg : ∀ i, 0 ≤ α i ∧ 0 ≤ β i`,
+`of_le_r : ∀ i, r ≤ i → α i = 0 ∧ β i = 0`,
+`star_mul_mul_left : star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜)`,
+`star_mul_mul_right : star U₂ * B * X = shiftedRectDiagonal p fun i => ((β i : ℝ) : 𝕜)`.
+The columns of `X` are the book's `x_1, …, x_n` (`X.col i`, 0-based). Prototype:
+`notes/gvl/ch06/proto/Shapes.lean` §3 (the statement elaborates). ★'''
+deps = ["Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
+
+[[node]]
+id = "exists_isGSVD"
+kind = "theorem"
+desc = '''**Existence of the GSVD** ([golub2013matrix] Theorem 6.1.1): for `n ≤ m₁`,
+`A : Matrix (Fin m₁) (Fin n) 𝕜`, `B : Matrix (Fin m₂) (Fin n) 𝕜`,
+`∃ U₁ U₂ X α β, IsGSVD A B U₁ U₂ X α β`.
+
+Proof ([golub2013matrix] lines 16521–16560): let `M = fromRows A B`, reindexed to
+`Fin (m₁ + m₂)` by `finSumFinEquiv`, and `M = Q diag(Σ_r, 0) Zᴴ` its SVD (`Matrix.exists_isSVD`,
+`r = rank M`, `Σ_r` invertible). The first `r` columns of `Q` split as `[Q₁₁; Q₂₁]` with
+orthonormal columns; the thin CS decomposition `Matrix.exists_isThinCSD` (with `n₁ := r ≤ m₁`) gives
+`IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ`: unitary `U₁`, `U₂`, `V₁` and a monotone `θ` with `U₁ᴴ Q₁₁ V₁ = rectDiagonal (cos ∘ θ)`,
+`U₂ᴴ Q₂₁ V₁ = shiftedRectDiagonal p (sin ∘ θ)`, `θ i = 0` for `i < p = r − min r m₂ = r − m₂`
+(truncated); set `α_i = cos θ_i`, `β_i = sin θ_i` for `i < r`. Then
+`blockDiag(U₁, U₂)ᴴ M Z = [D_A(:, 1:r) 0; D_B(:, 1:r) 0] · blockDiag(V₁ᴴ Σ_r, I_{n−r})` and
+`X := Z · blockDiag(V₁ᴴ Σ_r, I)⁻¹`. The normalization `α_i = 1, β_i = 0` for `i < p` comes from
+the CS decomposition's unit cosines (at least `p` of them); extend `α`, `β` by `0` beyond `r`.
+Rank bookkeeping: `Matrix.rank` of `fromRows` and invariance of rank under unitary factors.
+★★★ (~250 lines).'''
+deps = ["IsGSVD", "Matrix.exists_isSVD", "Matrix.exists_isThinCSD", "Matrix.IsThinCSD"]
+
+[[node]]
+id = "IsGSVD.gram_mulVec_col"
+kind = "theorem"
+desc = '''**The GSVD diagonalizes the pencil `AᴴA − μ² BᴴB`** ([golub2013matrix] §6.1.6, the
+remark relating the GSVD to `AᵀA x = μ² BᵀB x`, which §8.7.4 takes up): if
+`IsGSVD A B U₁ U₂ X α β` then for every column `x_i = X.col i`,
+`((β i ^ 2 : ℝ) : 𝕜) • (Aᴴ * A) *ᵥ x_i = ((α i ^ 2 : ℝ) : 𝕜) • (Bᴴ * B) *ᵥ x_i`.
+Proof: `Aᴴ A X = X⁻ᴴ D_Aᴴ D_A` and `Bᴴ B X = X⁻ᴴ D_Bᴴ D_B`, and `D_Aᴴ D_A = diagonal α²`,
+`D_Bᴴ D_B = diagonal β²` (the shift disappears in `D_Bᴴ D_B`: `conjTranspose_rectDiagonal_mul_self`
+and its shifted analogue). ★'''
+deps = ["IsGSVD", "Matrix.conjTranspose_rectDiagonal_mul_self"]
+
+[[node]]
+id = "IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul"
+kind = "theorem"
+desc = '''**The GSVD diagonalizes `AᴴA + λ BᴴB`** ([golub2013matrix] §6.1.6, the display before
+(6.1.26), and §6.2.6): if `IsGSVD A B U₁ U₂ X α β` then for every `λ : ℝ`,
+`Xᴴ * (Aᴴ * A + (λ : 𝕜) • (Bᴴ * B)) * X = diagonal fun i : Fin n => ((α i ^ 2 + λ * β i ^ 2 : ℝ) : 𝕜)`.
+From `Xᴴ Aᴴ A X = D_Aᴴ D_A` (`U₁` unitary) and likewise for `B`. ★'''
+deps = ["IsGSVD", "Matrix.conjTranspose_rectDiagonal_mul_self"]
+
+[[node]]
+id = "IsGSVD.ker_inf_ker"
+kind = "theorem"
+desc = '''The common kernel in GSVD coordinates: if `IsGSVD A B U₁ U₂ X α β` and
+`r = (fromRows A B).rank`, then
+`LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = Submodule.span 𝕜 (X.col '' {i | r ≤ (i : ℕ)})`.
+The columns `x_i`, `i ≥ r`, are killed by both (`α i = β i = 0`); conversely
+`ker A ⊓ ker B = ker (fromRows A B)` has dimension `n − r` (rank–nullity) and the `x_i` are
+independent (`X` invertible). Used for (6.1.21) and (6.2.12): `null(A) ∩ null(B) = {0}` iff
+`r = n`. ★★'''
+deps = ["IsGSVD"]
+
+[[node]]
+id = "IsGSVD.svd_of_eq_one"
+kind = "theorem"
+desc = '''**The GSVD of `(A, I)` is an SVD of `A`** ([golub2013matrix] §6.1.6, "if `B = I_{n₁}` …
+we obtain the SVD of `A`", made precise): if `IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β`
+then `p = 0`, `r = n`, `0 < β i` for `i < n`, and
+`star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜)` — an SVD of `A` with singular
+values `α_i / β_i` (unsorted). Proof: `U₂ᴴ X = D_B = diagonal β` is invertible, so `X = U₂ D_B`
+and `U₁ᴴ A U₂ = D_A D_B⁻¹`. The book's "set `X = U₂`" is loose: `X` itself is `U₂ D_B`
+(recorded in the chapter report's Doubts). ★'''
+deps = ["IsGSVD", "Matrix.rectDiagonal_mul_rectDiagonal"]

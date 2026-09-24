@@ -1,0 +1,51 @@
+namespace = "Tensor"
+desc = '''
+Tensor trains ([golub2013matrix] §12.5.8, (12.5.25)–(12.5.29); Oseledets–Tyrtyshnikov 2009). A train
+with mode sizes `n : ℕ → ℕ` and ranks `r : ℕ → ℕ` (`r 0 = r d = 1`) is given by cores `G k : Fin (n k)
+→ Matrix (Fin (r k)) (Fin (r (k + 1))) R` (the book's carriages `𝒢_k ∈ ℝ^{r_{k−1} × n_k × r_k}` read as
+matrix-valued functions of the middle index; the first and last carriages are the `r 0 = 1`,
+`r d = 1` cases); the entry `𝒯(i)` is the `1 × 1` product `G 0 (i 0) ⋯ G (d−1) (i (d−1))`. The partial
+products are defined by recursion on `d` with `Fin.castSucc`/`Fin.last`, which reduces definitionally
+(prototype `notes/gvl/ch12/proto/Tensor.lean`, `ttPartial`/`tensorTrain` elaborate). The existence
+theorem is the TT-SVD (12.5.29), with ranks the ranks of the sequential unfoldings
+`A_{[0,k) × [k,d)}`. The storage count and the low-rank truncation remarks are not formalized.
+'''
+
+[[node]]
+id = "ttPartial"
+kind = "definition"
+desc = '''`ttPartial G : ∀ d, (∀ k : Fin d, Fin (n k)) → Matrix (Fin (r 0)) (Fin (r d)) R`, `ttPartial G 0 _ = 1`,
+`ttPartial G (d + 1) i = ttPartial G d (fun k => i k.castSucc) * G d (i (Fin.last d))` (the book's left
+partial contraction `ℬ̃`, §12.5.8). ★'''
+deps = []
+
+[[node]]
+id = "tensorTrain"
+kind = "definition"
+desc = '''The tensor train ([golub2013matrix] (12.5.25)): `tensorTrain d h0 hd G : Tensor (fun k : Fin d => Fin (n k))
+R := fun i => ttPartial G d i (Fin.cast h0.symm 0) (Fin.cast hd.symm 0)` for `h0 : r 0 = 1`, `hd : r d = 1`;
+`tensorTrain_apply` unfolds it to the book's `∑_k 𝒢₁(i₁, k₁) 𝒢₂(k₁, i₂, k₂) ⋯ 𝒢_d(k_{d−1}, i_d)` (induction on
+`d`, `Matrix.mul_apply`). ★'''
+deps = ["Tensor.ttPartial", "_root_.Tensor"]
+
+[[node]]
+id = "exists_ttCore_of_rank"
+kind = "theorem"
+desc = '''One step of the construction ([golub2013matrix] (12.5.26)–(12.5.28), P12.5.11): a matrix `C : Matrix (Fin p ×
+Fin m) N R` (rows: the previous rank index and the next mode) of rank `s` factors as `C = G' * C'` with `G' :
+Matrix (Fin p × Fin m) (Fin s) R`, `C' : Matrix (Fin s) N R` (the book takes `G' = U₃`, `C' = Σ₃ V₃ᵀ` from the
+SVD; any rank factorization works, `Matrix.rank_le_iff_exists_mul`), and then `C (k, i) c = ∑ k', G (i) k
+k' * C' k' c` with `G i := of fun k k' => G' (k, i) k'` — the core. ★'''
+deps = ["Matrix.rank_le_iff_exists_mul"]
+
+[[node]]
+id = "exists_tensorTrain"
+kind = "theorem"
+desc = '''**Every tensor is a tensor train** with the TT-ranks of its sequential unfoldings ([golub2013matrix] (12.5.29),
+Oseledets–Tyrtyshnikov): for `A : Tensor (fun k : Fin d => Fin (n k)) R` there are `r : ℕ → ℕ` with `r 0 = 1`,
+`r d = 1`, `r k = (A.unfold (fun i : Fin d => (i : ℕ) < k)).rank` for `0 < k < d`, and cores `G` with `A =
+tensorTrain d h0 hd G`. Induction on `k` (the book's loop): after `k` steps `A_{[0,k)×[k,d)} = P_k * M_k` with
+`P_k` the flattened `ttPartial` (full column rank `r k`) and `M_k` of rank `r k`; reshape `M_k` to rows `(r k,
+n k)` — its rank is `r (k+1)` because `P_k` has full column rank — and apply `exists_ttCore_of_rank`. ★★★
+(~200 lines, most of it the reshaping of `M_k` between the index types)'''
+deps = ["Tensor.tensorTrain", "Tensor.exists_ttCore_of_rank", "Tensor.unfold"]

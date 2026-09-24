@@ -1,0 +1,235 @@
+namespace = "GolubVanLoan.Chapter09"
+desc = '''
+§9.3, the matrix exponential: Padé approximants and the remainder (9.3.1), the Moler–Van Loan
+backward error of scaling and squaring and Algorithm 9.3.1, the ODE characterization and
+perturbation theory of `e^{At}` ((9.3.2), the spectral abscissa (9.3.3), the relative bound,
+`ν(A, t)`), normal matrices (9.3.4), the `2 × 2` example (9.3.5), the pseudospectral lower bound
+(9.3.6), and the normal case of §9.3.4. Backbone: `Numlib/Analysis/Matrix/Function/{Pade,Exp,Log}` and
+`Numlib/Analysis/Normed/Algebra/Exponential` (`NormedSpace.expFrechet`, `NormedSpace.expCondNumber`,
+`NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`, `norm_resolvent_le_of_norm_exp_smul_le`);
+`Matrix.isStarNormal_iff_strictUpper_eq_zero` is in `Numlib/LinearAlgebra/Matrix/Schur`.
+`e^{At}` is `NormedSpace.exp (t • A)`; real `A : Matrix (Fin n) (Fin n) ℝ` where the book is real
+(§9.3.1, the start of §9.3.2), complex where it uses the Schur form; the `∞`-norm of §9.3.1 is the
+scoped `Matrix.Norms.Operator`, the 2-norm the scoped `Matrix.Norms.L2Operator`. Not nodes: flop
+counts, Figure 9.3.1 and `α_{.01}(A)/.01 ≈ 216`, the heuristic claims of §9.3.2 ("a matrix `E` for
+which … `≈`") and §9.3.4 (the rounding estimate `γ`, "numerical experiments suggest").
+'''
+
+[[node]]
+id = "pade_def"
+kind = "theorem"
+desc = '''The Padé functions of §9.3.1: `R_pq(z) = D_pq(z)⁻¹ N_pq(z)` with the book's coefficient formulas
+are the backbone's `Pade.expNum ℝ p q`, `Pade.expDen ℝ p q` (coefficientwise: `(expNum ℝ p q).coeff k
+= (p+q-k)! p!/((p+q)! k! (p-k)!)` for `k ≤ p`, `(expDen ℝ p q).coeff k = (-1)^k (p+q-k)! q!/((p+q)! k!
+(q-k)!)` for `k ≤ q`), and `R_p0(z) = 1 + z + ⋯ + z^p/p!` is the Taylor polynomial
+(`Pade.expApprox`, `expNum_zero_right`). ★'''
+deps = ["Pade.expNum", "Pade.expApprox"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.1, Definition'
+
+[[node]]
+id = "equation_9_3_1"
+kind = "theorem"
+desc = '''(9.3.1): for `A : Matrix (Fin n) (Fin n) ℝ` with `D_pq(A)` nonsingular, `e^A = R_pq(A) + ((-1)^q
+/ (p + q)!) A^{p+q+1} D_pq(A)⁻¹ ∫₀¹ u^p (1 - u)^q e^{A(1-u)} du` (integral in the scoped `∞`-norm
+normed space; any norm gives the same Bochner integral on this finite-dimensional space).
+`Pade.exp_eq_expApprox_add` in the Banach algebra `Matrix (Fin n) (Fin n) ℝ` with `Matrix.linftyOpNormedAlgebra`. ★'''
+deps = ["Pade.exp_eq_expApprox_add", "pade_def"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.1)'
+
+[[node]]
+id = "molerVanLoan"
+kind = "theorem"
+desc = '''The Moler–Van Loan bound quoted in §9.3.1: if `‖A‖_∞ / 2^j ≤ 1/2` then there is `E : Matrix (Fin n)
+(Fin n) ℝ` with `F_pq = (R_pq(A/2^j))^{2^j} = e^{A+E}`, `A E = E A` and `‖E‖_∞ ≤ ε(p, q) ‖A‖_∞`,
+`ε(p,q) = 2^{3-(p+q)} p! q!/((p+q)! (p+q+1)!)`; and consequently (the book's "easy to establish"
+inequality) `‖e^A - F_pq‖_∞ / ‖e^A‖_∞ ≤ ε(p,q) ‖A‖_∞ e^{ε(p,q) ‖A‖_∞}`.
+`Pade.exists_exp_add_eq_expApprox_pow`, `Pade.norm_exp_sub_expApprox_pow_le`, `Pade.errorBound`
+(for real matrices, with `𝕂 = ℝ`: `E` is real). ★'''
+deps = ["Pade.exists_exp_add_eq_expApprox_pow", "Pade.norm_exp_sub_expApprox_pow_le", "Pade.errorBound", "pade_def"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.1'
+
+[[node]]
+id = "algorithm_9_3_1"
+kind = "definition"
+desc = '''Algorithm 9.3.1 (scaling and squaring), D4: `algorithm_9_3_1 {M} [Monad M] (rnd : ℝ → M ℝ) (δ : ℝ)
+(A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`, as printed: compute `ν = ‖A‖_∞` (row
+sums of `|a_ij|` rounded, `max` exact), `j = max 0 (1 + Int.log 2 ν)` (an exact discrete choice on a
+computed value), `A ← A / 2^j` entrywise through `rnd`; `q = Nat.find (∃ q, Pade.errorBound q q ≤ δ)`
+(a parameter fixed by the input `δ`, exact); `D = N = X = I`, `c = 1`; for `k = 1, …, q`: `c ← rnd (rnd
+(c * (q - k + 1)) / ((2q - k + 1) k))` (integer factors exact), `X ← algorithm_1_1_5 rnd A X 0`, `N ← N
++ c X`, `D ← D + (-1)^k c X` entrywise through `rnd`; solve `D F = N` by chapter 3's Gaussian
+elimination with partial pivoting column by column (`GolubVanLoan.Chapter03.algorithm_3_4_1`, then
+`algorithm_3_1_1` with the unit lower factor and `algorithm_3_1_2`); then `F ← F²` `j` times
+(`algorithm_1_1_5 rnd F F 0`). ★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5", "GolubVanLoan.Chapter03.algorithm_3_4_1", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2", "Pade.errorBound"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "algorithm_9_3_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 9.3.1: with `j` and `q` as the algorithm computes them from `A` and
+`δ` (`δ > 0`), if `D_qq(A/2^j)` is nonsingular then `Id.run (algorithm_9_3_1 pure δ A) =
+Pade.expApprox q q (2⁻¹ ^ j • A) ^ 2 ^ j`. The loop computes `c_k = (2q-k)! q!/((2q)! k! (q-k)!)`,
+so `N = N_qq(A/2^j)`, `D = D_qq(A/2^j)` (`pade_def`); the solve returns `D⁻¹ N` (chapter 3's exact
+specs); the squarings give the `2^j`-th power. ★★ (~150 lines)'''
+deps = ["algorithm_9_3_1", "pade_def", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec", "GolubVanLoan.Chapter03.algorithm_3_4_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "algorithm_9_3_1_spec_backward"
+kind = "theorem"
+desc = '''The book's claim for Algorithm 9.3.1, "computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`", holds
+whenever the scaling achieves `‖A‖_∞ / 2^j ≤ 1/2`: then `D_qq(A/2^j)` is nonsingular
+(`Pade.isUnit_aeval_expDen`) and `molerVanLoan` with `ε(q,q) ≤ δ` gives `E` with `A E = E A`. As
+printed, `j = max{0, 1 + ⌊log₂ ‖A‖_∞⌋}` only gives `‖A‖_∞/2^j < 1` (e.g. `‖A‖_∞ = 3`, `j = 2`,
+ratio `3/4`), so the hypothesis is stated explicitly; it holds for the corrected choice `j = max{0,
+2 + ⌊log₂ ‖A‖_∞⌋}` (Moler–Van Loan's `expm` demo: `s = max(0, e + 1)` with MATLAB's `log2`
+exponent `e = ⌊log₂‖A‖⌋ + 1`). Erratum recorded in the report. ★'''
+deps = ["algorithm_9_3_1_spec", "molerVanLoan", "Pade.isUnit_aeval_expDen"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
+
+[[node]]
+id = "pade_even_odd"
+kind = "theorem"
+desc = '''§9.3.1's evaluation with fewer products: `N_qq(A) = U + A V` and `D_qq(A) = U - A V` with `U`, `V`
+the even and odd parts, `U = ∑_k c_{2k} A^{2k}`, `V = ∑_k c_{2k+1} A^{2k}` (for `q = 8` the book's
+explicit `U`, `V`). From `D_qq(z) = N_qq(-z)` (`Pade.expNum`'s definition of `expDen`) and splitting a
+polynomial into even and odd parts. ★'''
+deps = ["Pade.expNum", "pade_def"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.1, display'
+
+[[node]]
+id = "exp_unique_ode"
+kind = "theorem"
+desc = '''§9.3.2: `X(t) = e^{At}` is the unique solution of `Ẋ(t) = A X(t)`, `X(0) = I`, for `A : Matrix
+(Fin n) (Fin n) ℝ` (derivatives in any of the equivalent norms). `NormedSpace.eq_exp_smul_of_hasDerivAt`. ★'''
+deps = ["NormedSpace.eq_exp_smul_of_hasDerivAt"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2'
+
+[[node]]
+id = "exp_perturbation_integral"
+kind = "theorem"
+desc = '''§9.3.2: `e^{(A+E)t} - e^{At} = ∫₀ᵗ e^{A(t-s)} E e^{(A+E)s} ds`, and for `t ≥ 0` the relative bound
+`‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ (‖E‖₂ / ‖e^{At}‖₂) ∫₀ᵗ ‖e^{A(t-s)}‖₂ ‖e^{(A+E)s}‖₂ ds`.
+`NormedSpace.exp_smul_add_sub_exp_smul` and its norm form. ★'''
+deps = ["NormedSpace.exp_smul_add_sub_exp_smul"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2, display'
+
+[[node]]
+id = "equation_9_3_3"
+kind = "theorem"
+desc = '''(9.3.3), the spectral abscissa `α(A) = max {Re λ : λ ∈ λ(A)}`: for `A : Matrix (Fin n) (Fin n) ℂ`
+with `n ≥ 1`, `spectralAbscissa A` is attained by an eigenvalue and bounds the real part of every
+eigenvalue (`re_le_spectralAbscissa`, staged append to `SpectralRadius`). ★'''
+deps = ["spectralAbscissa", "re_le_spectralAbscissa"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.3)'
+
+[[node]]
+id = "equation_9_3_2"
+kind = "theorem"
+desc = '''(9.3.2): if `Qᴴ A Q = diag(λ_i) + N` is a Schur decomposition, then for `t ≥ 0`, `‖e^{At}‖₂ ≤
+e^{α(A) t} M_S(t)` with `M_S(t) = ∑_{k=0}^{n-1} ‖N t‖₂^k / k!`. The printed `e^{α(A) t M_S(t)}` is a
+typesetting slip for `e^{α(A)t} M_S(t)` (Van Loan 1977; with `M_S` in the exponent the bound fails
+for `α(A) < 0`, `N ≠ 0`). `Matrix.l2_opNorm_exp_smul_le_of_schur`. ★'''
+deps = ["Matrix.l2_opNorm_exp_smul_le_of_schur", "equation_9_3_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.2)'
+
+[[node]]
+id = "exp_perturbation_schur"
+kind = "theorem"
+desc = '''§9.3.2, "with a little manipulation": `‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ t ‖E‖₂ M_S(t)² exp (t
+M_S(t) ‖E‖₂)` for `t ≥ 0`. `Matrix.l2_opNorm_exp_smul_add_sub_le`. ★'''
+deps = ["Matrix.l2_opNorm_exp_smul_add_sub_le", "equation_9_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2, display'
+
+[[node]]
+id = "schurDeparture_eq_one_iff"
+kind = "theorem"
+desc = '''§9.3.2: `M_S(t) = 1` for all `t > 0` iff `A` is normal (`N = 0` in any Schur decomposition iff
+`IsStarNormal A`). `Matrix.isStarNormal_iff_strictUpper_eq_zero`. ★'''
+deps = ["Matrix.isStarNormal_iff_strictUpper_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2'
+
+[[node]]
+id = "expCondNumber_ge"
+kind = "theorem"
+desc = '''§9.3.2: Van Loan's condition number `ν(A, t) = max_{‖E‖₂ ≤ 1} ‖∫₀ᵗ e^{A(t-s)} E e^{As} ds‖₂ ·
+‖A‖₂/‖e^{At}‖₂` satisfies `ν(A, t) ≥ t ‖A‖₂` for `t ≥ 0`. The backbone's `NormedSpace.expCondNumber` (in the
+2-norm) is defined as `‖NormedSpace.expFrechet A t‖ * ‖A‖ / ‖exp (t • A)‖`, the operator norm of the
+Fréchet derivative `E ↦ ∫₀ᵗ e^{A(t-s)} E e^{As} ds`; the book's `max_{‖E‖₂ ≤ 1}` is that operator norm as a
+supremum over the unit ball (`ContinuousLinearMap.opNorm`, e.g. `ContinuousLinearMap.sSup_unit_ball_eq_norm`),
+so if the surface writes `ν` with the book's `max` it proves the equality with the backbone that way.
+`NormedSpace.mul_norm_le_expCondNumber`. ★'''
+deps = ["NormedSpace.expCondNumber", "NormedSpace.expFrechet", "NormedSpace.mul_norm_le_expCondNumber"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2'
+
+[[node]]
+id = "expCondNumber_eq_of_isStarNormal"
+kind = "theorem"
+desc = '''§9.3.2, the true half of "equality holding for all nonnegative `t` if and only if the matrix `A`
+is normal": if `A` is normal then `ν(A, t) = t ‖A‖₂` for every `t ≥ 0`. Fix-B's backbone
+`Matrix.expCondNumber_eq_of_isStarNormal` (from the Banach-level
+`NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq` and (9.3.4), `equation_9_3_4`). The converse
+is false (`expCondNumber_eq_iff_counterexample`; errata in the chapter group). ★'''
+deps = ["expCondNumber_ge", "equation_9_3_4", "Matrix.expCondNumber_eq_of_isStarNormal"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2'
+
+[[node]]
+id = "expCondNumber_eq_iff_counterexample"
+kind = "theorem"
+desc = '''§9.3.2, the book's "only if" is false: for the `3 × 3` real matrix
+`A = [1] ⊕ [[0, 1], [0, 0]]` (block diagonal, `Matrix.fromBlocks` reindexed to `Fin 3`), `A` is not
+normal (`¬ IsStarNormal A`: `A Aᵀ ≠ Aᵀ A` in the nilpotent block) and yet `ν(A, t) = t ‖A‖₂` for
+every `t ≥ 0`. Proof (review `notes/gvl/review/eigen.md` item 1): `‖e^{sA}‖₂ = e^s` for `s ≥ 0` (it
+is `≥` the spectral radius `e^s`, and `‖I + sN‖₂ ≤ 1 + s ≤ e^s` on the nilpotent block), which is the
+hypothesis of the backbone `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq` with `c = 1`; it gives
+`ν(A, t) = t ‖A‖₂` directly (its proof is the estimate `‖∫₀ᵗ e^{A(t-s)} E e^{As} ds‖₂ ≤ t e^t ‖E‖₂`
+together with `expCondNumber_ge`). Equality holds whenever the numerical abscissa
+equals the spectral abscissa; a counterexample needs `n ≥ 3` (every `2 × 2` non-normal example has a
+strict gap). ★★'''
+deps = ["expCondNumber_ge", "NormedSpace.expCondNumber", "NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.2'
+
+[[node]]
+id = "equation_9_3_4"
+kind = "theorem"
+desc = '''(9.3.4): if `A` is normal then `‖e^{At}‖₂ = e^{α(A) t}` for `t ≥ 0` (the book's "as a function of
+time"; for `t < 0` the minimum real part enters instead). `Matrix.l2_opNorm_exp_smul_of_isStarNormal`. ★'''
+deps = ["Matrix.l2_opNorm_exp_smul_of_isStarNormal", "equation_9_3_3"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.4)'
+
+[[node]]
+id = "equation_9_3_5"
+kind = "theorem"
+desc = '''(9.3.5): for `A = !![-1, 1000; 0, -1]`, `e^{At} = e^{-t} !![1, 1000 t; 0, 1]` for all real `t`
+(`A = -I + N` with `N² = 0` commuting with `-I`: `NormedSpace.exp_add_of_commute`, the exponential
+series of a square-zero matrix terminating, `NormedSpace.exp_smul` of a scalar matrix). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.5)'
+
+[[node]]
+id = "equation_9_3_6"
+kind = "theorem"
+desc = '''(9.3.6): for `ε > 0`, `sup_{t > 0} ‖e^{At}‖₂ ≥ α_ε(A)/ε`, for `A : Matrix (Fin n) (Fin n) ℂ`
+(`n ≥ 1`; a real `A` through its complexification), with chapter 7's ε-pseudospectrum
+`Chapter07.pseudospectrum ε A` (the backbone `ContinuousLinearMap.closedPseudospectrum`), whose
+resolvent form `z ∈ Λ_ε(A) ↔ z ∈ λ(A) ∨ ‖(zI - A)⁻¹‖₂ ≥ 1/ε` is `Chapter07.equation_7_9_6`, and
+chapter 7's pseudospectral abscissa `α_ε(A) = Chapter07.pseudospectralAbscissa ε A` ((7.9.8), which
+the book cites as "(7.8.8)"; backbone `Matrix.pseudospectralAbscissa`). Stated without `sup` junk:
+if `‖e^{At}‖₂ ≤ M` for all `t > 0` then `Chapter07.pseudospectralAbscissa ε A ≤ ε M`. The maximum is
+attained (`Matrix.exists_eq_pseudospectralAbscissa_radius`) at some `z ∈ Λ_ε`; if `Re z > 0`, then
+`z ∉ λ(A)` and `1/ε ≤ ‖(z - A)⁻¹‖₂ ≤ M / Re z` (`equation_7_9_6`,
+`norm_resolvent_le_of_norm_exp_smul_le`); if `Re z ≤ 0` the claim is trivial since `M ≥ 1`
+(`t → 0⁺`). ★'''
+deps = ["norm_resolvent_le_of_norm_exp_smul_le", "GolubVanLoan.Chapter07.pseudospectrum", "GolubVanLoan.Chapter07.equation_7_9_6", "GolubVanLoan.Chapter07.pseudospectralAbscissa", "Matrix.exists_eq_pseudospectralAbscissa_radius"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.6)'
+
+[[node]]
+id = "normal_squaring"
+kind = "theorem"
+desc = '''§9.3.4: if `A` is normal then so is `G = R_qq(A/2^j)` (a rational function of `A`), and `‖G^m‖₂ =
+‖G‖₂^m` for every `m` (for normal `G`, `‖G‖₂ = ρ(G)` and `ρ(G^m) = ρ(G)^m`:
+`Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal`, `spectralRadius_pow`). The consequence the book
+draws for rounding errors is heuristic and not formalized. ★'''
+deps = ["Pade.expApprox", "Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal", "spectralRadius_pow", "Matrix.IsStarNormal.exists_aeval_eq_conjTranspose"]
+source = 'Golub–Van Loan, Matrix Computations, §9.3.4'

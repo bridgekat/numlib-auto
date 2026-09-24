@@ -1,3 +1,12 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Schur` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch07) add to "Main results": the Schur form with a prescribed order of the diagonal
+# (`Matrix.exists_unitary_conj_upperTriangular_diag_eq`) and the reduction to block triangular form
+# from a known invariant subspace (`Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`).
+# (ch09, placed at the GVL review) add: normality is diagonality of the Schur form
+# (`Matrix.isStarNormal_iff_strictUpper_eq_zero`, [golub2013matrix] §9.3.2), and the Hermitian
+# splitting by an invariant subspace (`Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks`,
+# [golub2013matrix] Theorem 8.1.9).
 namespace = "Matrix"
 
 [[node]]
@@ -36,3 +45,63 @@ id = "IsUpperTriangular.schurEigenvector_ne_zero"
 [[node]]
 id = "IsUpperTriangular.mulVec_schurEigenvector"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.56)"
+
+[[node]]  # staged by ch07
+id = "exists_unitary_conj_upperTriangular_diag_eq"
+kind = "theorem"
+desc = '''Schur's theorem with the eigenvalues in any prescribed order ([golub2013matrix] Theorem 7.1.3,
+"Q can be chosen so that the eigenvalues λ_i appear in any order along the diagonal"): over an
+algebraically closed `RCLike 𝕜`, for `A : Matrix (Fin N) (Fin N) 𝕜` and any `μ : Fin N → 𝕜` with
+`A.charpoly = ∏ i, (X - C (μ i))`, there is `Q ∈ unitaryGroup` with `star Q * A * Q` upper
+triangular and `(star Q * A * Q) i i = μ i` for all `i`. Proof: the induction of
+`LinearMap.exists_orthonormalBasis_upperTriangular` (private `exists_orthonormalBasis_forall_inner_eq_zero`)
+appends the new basis vector *last*, and its diagonal entry is `⟪w, A w⟫ = ν` for the eigenvector
+`w` of the adjoint with `A† w = conj ν • w`; choose `ν = μ (N-1)` (an eigenvalue of `A`, so
+`conj ν` is one of `A†`), recurse on the invariant hyperplane `(𝕜 ∙ w)ᗮ` with the remaining list,
+whose characteristic polynomial is `A.charpoly / (X - C ν)`. ★★ (~150 lines, mostly re-running the
+existing induction with the list threaded through).'''
+deps = ["Matrix.exists_unitary_conj_upperTriangular"]
+
+[[node]]  # staged by ch07
+id = "exists_unitary_conj_fromBlocks_of_mul_eq_mul"
+kind = "theorem"
+desc = '''[golub2013matrix] Lemma 7.1.2: for `A : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜`, `B : Matrix (Fin p)
+(Fin p) 𝕜`, `X : Matrix (Fin (p + q)) (Fin p) 𝕜` with `A * X = X * B` and `X.rank = p`, there is a
+unitary `Q` such that `(star Q * A * Q).reindex finSumFinEquiv.symm finSumFinEquiv.symm =
+fromBlocks T₁₁ T₁₂ 0 T₂₂` with `T₁₁` similar to `B` (so `spectrum 𝕜 T₁₁ = spectrum 𝕜 B =
+spectrum 𝕜 A ∩ spectrum 𝕜 B`). Proof: a QR factorization `X = Q (R₁; 0)` with `R₁` nonsingular
+(`Matrix.exists_qr` on the columns, completed to a unitary by `Matrix.exists_unitary_mul_upperTriangular`
+applied to `X`), then `T₂₁ R₁ = 0` and `T₁₁ R₁ = R₁ B`. ★★'''
+deps = ["Matrix.exists_unitary_mul_upperTriangular", "Matrix.exists_qr"]
+
+[[node]]
+id = "isStarNormal_iff_strictUpper_eq_zero"
+kind = "theorem"
+desc = '''Normality is diagonality of the Schur form ([golub2013matrix] §9.3.2, "`M_S(t) ≡ 1` iff `A` is
+normal", and P7.1.1): for `A : Matrix n n 𝕜` over `[RCLike 𝕜]`, `[LinearOrder n]`, `Q ∈
+unitaryGroup n 𝕜` with `T = Qᴴ A Q` upper triangular (`T.BlockTriangular id`), `IsStarNormal A ↔
+T = diagonal (fun i => T i i)`. `←`: a diagonal matrix is normal and normality is invariant under
+unitary similarity. `→`: `T` is normal (unitary similarity) and upper triangular; by strong
+induction along the order of `n`, compare the `(i, i)` entries of `Tᴴ T = T Tᴴ`: `∑_{k ≤ i} |t_ki|² =
+∑_{k ≥ i} |t_ik|²`, and the entries above row `i` in column `i` vanish by induction, so `∑_{k > i}
+|t_ik|² = 0`. Elementary (no spectral theorem, no Frobenius norm), which keeps this module free of
+`Numlib/Eigen`. Consumer: the Schur bound of `Numlib/Analysis/Matrix/Function/Exp` (`M_S(t) = 1` for all
+`t > 0` iff `N = 0`) and its surface. Moved here from `Function/Exp` at the Golub–Van Loan review.
+★★ (~100 lines)'''
+deps = []
+
+[[node]]
+id = "IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks"
+kind = "theorem"
+desc = '''An invariant subspace of a Hermitian matrix splits it ([golub2013matrix] Theorem 8.1.9 and
+(8.1.1), the symmetric counterpart of Lemma 7.1.2 `Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`):
+for Hermitian `A : Matrix n n 𝕜` over `[RCLike 𝕜]`, `Q₁ : Matrix n r 𝕜`, `Q₂ : Matrix n s 𝕜` with `Q =
+fromCols Q₁ Q₂` satisfying `Qᴴ * Q = 1` (so `Q₁ᴴ Q₂ = 0`), if `A * Q₁ = Q₁ * M` for some `M` (the
+columns of `Q₁` span an `A`-invariant subspace) then `Qᴴ * A * Q = fromBlocks (Q₁ᴴ * A * Q₁) 0 0 (Q₂ᴴ
+* A * Q₂)`; if moreover `Q * Qᴴ = 1` (square `Q`, `Fintype.card n = card r + card s`), `A.charpoly =
+(Q₁ᴴ * A * Q₁).charpoly * (Q₂ᴴ * A * Q₂).charpoly` (the spectrum with multiplicities is the union).
+Proof: `Q₂ᴴ A Q₁ = Q₂ᴴ Q₁ M = 0`, and the `(1,2)` block is its conjugate transpose (`A` Hermitian) —
+the matrix form of Mathlib's `LinearMap.IsSymmetric.orthogonalComplement_mem_invtSubmodule`; then
+`Matrix.charpoly_fromBlocks_zero₁₂` and similarity invariance across the index types `n` and `r ⊕ s` (`Matrix.charpoly_reindex`, `Matrix.charpoly_units_conj`;
+lemma, `Qᴴ = Q⁻¹`). ★ (~50 lines)'''
+deps = []

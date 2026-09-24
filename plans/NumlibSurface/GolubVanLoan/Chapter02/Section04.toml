@@ -1,0 +1,171 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.4, The Singular Value Decomposition: existence (Theorem 2.4.1), its corollaries 2.4.2–2.4.7 and
+(2.4.1)–(2.4.2), the Eckart–Young theorem 2.4.8 with (2.4.3)–(2.4.4) and the two remarks after it
+(distance to rank deficiency, the Frobenius-norm version), the thin SVD (§2.4.3) and the complex SVD
+(§2.4.4). Backbone: `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.exists_svd`; staged this round:
+`Matrix.sortedSingularValues`, `Matrix.svdTruncation`, Eckart–Young by chapter 2, `Matrix.IsSVD` and
+`LinearMap.singularValues_adjoint` by chapter 6) and chapter 8's `Numlib/Analysis/InnerProductSpace/SingularValues`
+(Weyl). The book's `σ_i(A)` (1-based, `i ≤ p = min m n`) is `A.sortedSingularValues (i - 1)` (an
+`abbrev` for Mathlib's sorted `(toEuclideanLin A).singularValues`); `σ_max`/`σ_min` are the surface
+definitions below. "An SVD of `A`" in a hypothesis is `Matrix.IsSVD A U σ V` (`U`, `V` orthogonal,
+`Uᵀ A V = rectDiagonal σ`, `σ` antitone and nonnegative), whence `σ i = A.sortedSingularValues i` for
+`i < p` (`Matrix.IsSVD.singularValues_eq`); `u_i`, `v_i` are the columns `U.col i`, `V.col i`. The
+hyperellipsoid picture after Corollary 2.4.2 is prose.
+'''
+
+[[node]]
+id = "sigmaMax"
+kind = "definition"
+desc = '''§2.4.1: `σ_max(A) = A.sortedSingularValues 0`, the largest singular value of `A : Matrix (Fin m)
+(Fin n) ℝ`. ★'''
+deps = ["Matrix.sortedSingularValues"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.1, Definition'
+
+[[node]]
+id = "sigmaMin"
+kind = "definition"
+desc = '''§2.4.1: `σ_min(A) = A.sortedSingularValues (min m n - 1)`, the smallest of the `p = min m n`
+singular values of `A : Matrix (Fin m) (Fin n) ℝ` (`0` when `A` is rank deficient). ★'''
+deps = ["Matrix.sortedSingularValues"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.1, Definition'
+
+[[node]]
+id = "theorem_2_4_1"
+kind = "theorem"
+desc = '''Theorem 2.4.1 (SVD): for `A : Matrix (Fin m) (Fin n) ℝ` there are `U ∈ orthogonalGroup (Fin m) ℝ`,
+`V ∈ orthogonalGroup (Fin n) ℝ` with `Uᵀ * A * V = rectDiagonal σ`, `σ = A.sortedSingularValues`
+antitone and nonnegative (`σ₁ ≥ … ≥ σ_p ≥ 0`): `∃ U V, Matrix.IsSVD A U A.sortedSingularValues V`.
+Backbone `Matrix.exists_isSVD` at `𝕜 = ℝ` (`star = transpose`). The book's inductive proof through
+`‖A‖₂` is not the backbone's (eigenbasis of `AᵀA`). ★'''
+deps = ["Matrix.exists_isSVD", "Matrix.IsSVD", "Matrix.sortedSingularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.4.1'
+
+[[node]]
+id = "corollary_2_4_2"
+kind = "theorem"
+desc = '''Corollary 2.4.2: `IsSVD A U σ V`, `m ≥ n`, `i < n` ⇒ `A *ᵥ V.col i = σ i • U.col i` and `Aᵀ *ᵥ U.col i =
+σ i • V.col i` — compare columns of `A V = U Σ` and `Aᵀ U = V Σᵀ` (`Matrix.eq_mul_mul_star_of_star_mul_mul_eq`,
+`Matrix.rectDiagonal_mulVec`, `Matrix.rectDiagonal_transpose`). ★'''
+deps = ["theorem_2_4_1", "Matrix.eq_mul_mul_star_of_star_mul_mul_eq", "Matrix.rectDiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.2'
+
+[[node]]
+id = "equation_2_4_1"
+kind = "theorem"
+desc = '''(2.4.1): `Aᵀ A v_i = σ_i² v_i` for `i < n` (SVD, `m ≥ n`) — two applications of Corollary 2.4.2. ★'''
+deps = ["corollary_2_4_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.4.1)'
+
+[[node]]
+id = "equation_2_4_2"
+kind = "theorem"
+desc = '''(2.4.2): `A Aᵀ u_i = σ_i² u_i` for `i < n` (SVD, `m ≥ n`) — Corollary 2.4.2. ★'''
+deps = ["corollary_2_4_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.4.2)'
+
+[[node]]
+id = "corollary_2_4_3"
+kind = "theorem"
+desc = '''Corollary 2.4.3: `‖A‖₂ = σ₁` and `‖A‖_F = √(σ₁² + ⋯ + σ_p²)`, i.e. `lpOpNorm 2 A = A.sortedSingularValues
+0` and `‖A‖_F = √(∑ i ∈ range (min m n), A.sortedSingularValues i ^ 2)`. Backbone
+`Matrix.sortedSingularValues_zero_eq_l2_opNorm`, `Matrix.frobenius_norm_sq_eq_sum_sq_singularValues`
+(column-indexed) with `Matrix.exists_equiv_singularValues_eq_sortedSingularValues` and the vanishing
+past the rank (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). ★★'''
+deps = ["Matrix.sortedSingularValues_zero_eq_l2_opNorm", "Matrix.frobenius_norm_sq_eq_sum_sq_singularValues", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues", "Matrix.sortedSingularValues_eq_zero_iff_rank_le"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.3'
+
+[[node]]
+id = "corollary_2_4_4"
+kind = "theorem"
+desc = '''Corollary 2.4.4: `σ_max(A + E) ≤ σ_max(A) + ‖E‖₂` and `σ_min(A + E) ≥ σ_min(A) - ‖E‖₂` for `A E : Matrix
+(Fin m) (Fin n) ℝ`. The indices `0` and `min m n - 1` of Weyl's inequality for singular values, chapter 8's
+backbone `LinearMap.abs_singularValues_sub_le` with `C = ‖E‖₂` (`‖E x‖ ≤ ‖E‖₂ ‖x‖`). The book's proof
+(`σ_min ‖x‖ ≤ ‖A x‖ ≤ σ_max ‖x‖`) covers only `m ≥ n`; Weyl has no shape restriction. ★'''
+deps = ["sigmaMax", "sigmaMin", "LinearMap.abs_singularValues_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.4'
+
+[[node]]
+id = "corollary_2_4_5"
+kind = "theorem"
+desc = '''Corollary 2.4.5: for `A : Matrix (Fin m) (Fin n) ℝ`, `m > n`, `z : Fin m → ℝ` and `Ã = [A | z] =
+Matrix.of fun i => Fin.snoc (A i) (z i) : Matrix (Fin m) (Fin (n + 1)) ℝ`: `σ_max(Ã) ≥ σ_max(A)` and
+`σ_min(Ã) ≤ σ_min(A)`. First: `A = Ã.submatrix id Fin.castSucc`, `Matrix.l2_opNorm_submatrix_le` and
+`Matrix.sortedSingularValues_zero_eq_l2_opNorm`. Second: both are tall (`n + 1 ≤ m`), so `σ_min`
+is the least stretch (`Matrix.sortedSingularValues_eq_iInf_singularValues`, which needs no shape
+hypothesis, and `Matrix.iInf_singularValues_eq_iInf_norm`) and `Ã [x; 0] = A x`. (The backbone
+`Matrix.sortedSingularValues_fromCols_left_le`, stated on the column type `Fin n ⊕ Fin 1` with no
+reindexing, gives every index at once after transporting `Ã` along `finSumFinEquiv`.) ★★'''
+deps = ["sigmaMax", "sigmaMin", "Matrix.l2_opNorm_submatrix_le", "Matrix.sortedSingularValues_zero_eq_l2_opNorm", "Matrix.sortedSingularValues_eq_iInf_singularValues", "Matrix.iInf_singularValues_eq_iInf_norm"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.5'
+
+[[node]]
+id = "corollary_2_4_6"
+kind = "theorem"
+desc = '''Corollary 2.4.6: `IsSVD A U σ V` with exactly `r` positive singular values (`σ i > 0 ↔ i < r`, `i < p`) ⇒
+`A.rank = r`, `null(A) = span {v_{r+1}, …, v_n}` and `ran(A) = span {u₁, …, u_r}` (0-based: columns `i ≥ r`
+of `V`, `i < r` of `U`, as `Submodule`s of `EuclideanSpace ℝ`). Backbone `Matrix.ker_mulVecLin_eq_span_of_svd`,
+`Matrix.range_mulVecLin_eq_span_of_svd`, `Matrix.sortedSingularValues_eq_zero_iff_rank_le`. ★★'''
+deps = ["theorem_2_4_1", "Matrix.ker_mulVecLin_eq_span_of_svd", "Matrix.range_mulVecLin_eq_span_of_svd", "Matrix.sortedSingularValues_eq_zero_iff_rank_le"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.6'
+
+[[node]]
+id = "corollary_2_4_7"
+kind = "theorem"
+desc = '''Corollary 2.4.7: `IsSVD A U σ V` and `r = A.rank` ⇒ `A = ∑ i : Fin r, σ i • vecMulVec (U.col i) (V.col i)`.
+`A = U Σ Vᵀ` (`Matrix.eq_mul_mul_star_of_star_mul_mul_eq`) expanded by columns, the terms `i ≥ r`
+vanishing (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`); the operator form is
+`Matrix.exists_singularSystem`. ★★'''
+deps = ["theorem_2_4_1", "Matrix.eq_mul_mul_star_of_star_mul_mul_eq", "Matrix.sortedSingularValues_eq_zero_iff_rank_le", "Matrix.exists_singularSystem"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 2.4.7'
+
+[[node]]
+id = "theorem_2_4_8"
+kind = "theorem"
+desc = '''Theorem 2.4.8 (Eckart–Young), with (2.4.3)–(2.4.4): for `IsSVD A U σ V`, `k < r = A.rank` and `A_k =
+Matrix.svdTruncation U σ V k` (= `∑_{i<k} σ_i u_i v_iᵀ`, (2.4.3)): `A_k.rank = k`, `‖A - A_k‖₂ = σ_{k+1}`
+(0-based `A.sortedSingularValues k`), and `IsLeast ((fun B => ‖A - B‖₂) '' {B | B.rank = k})
+(A.sortedSingularValues k)` ((2.4.4)). Backbone `Matrix.rank_svdTruncation`,
+`Matrix.l2_opNorm_sub_svdTruncation`, `Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le`
+(the book's dimension argument). ★'''
+deps = ["theorem_2_4_1", "Matrix.svdTruncation", "Matrix.rank_svdTruncation", "Matrix.l2_opNorm_sub_svdTruncation", "Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 2.4.8'
+
+[[node]]
+id = "sigmaMin_eq_dist_rankDeficient"
+kind = "theorem"
+desc = '''§2.4.2, after Theorem 2.4.8: `σ_min(A)` is the 2-norm distance from `A` to the rank-deficient matrices:
+`IsLeast ((fun B => ‖A - B‖₂) '' {B | IsRankDeficient B}) (sigmaMin A)` (`m, n ≥ 1`). Backbone
+`Matrix.isLeast_l2_opNorm_sub_of_rank_le` at `k = min m n - 1`. ★'''
+deps = ["sigmaMin", "IsRankDeficient", "Matrix.isLeast_l2_opNorm_sub_of_rank_le"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.2'
+
+[[node]]
+id = "svdTruncation_isLeast_frobenius"
+kind = "theorem"
+desc = '''§2.4.2, after Theorem 2.4.8: `A_k` of (2.4.3) is the closest matrix of rank `≤ k` in the Frobenius norm,
+at distance `√(σ_{k+1}² + ⋯ + σ_p²)` (stated without proof in the book; Mirsky). Backbone
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le`, attained at `svdTruncation`. Chapters 6 (Theorem 6.3.1) and
+10 cite it. ★'''
+deps = ["Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.svdTruncation", "theorem_2_4_8"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.2'
+
+[[node]]
+id = "thin_svd"
+kind = "theorem"
+desc = '''§2.4.3, the thin SVD: for `m ≥ n`, `A = U₁ Σ₁ Vᵀ` with `U₁ = U(:, 1:n) : Matrix (Fin m) (Fin n) ℝ`
+having orthonormal columns and `Σ₁ = diag(σ₁, …, σₙ)` — backbone `Matrix.exists_thin_svd`. ★'''
+deps = ["Matrix.exists_thin_svd"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.3'
+
+[[node]]
+id = "complex_svd"
+kind = "theorem"
+desc = '''§2.4.4: for `A : Matrix (Fin m) (Fin n) ℂ` there are `U V` with `Matrix.IsSVD A U σ V` over `ℂ`
+(`Uᴴ A V = rectDiagonal (fun i => (σ i : ℂ))`, `σ` real, antitone, nonnegative); unitary transformations
+preserve the 2-norm and the Frobenius norm. Backbone `Matrix.exists_isSVD` at `𝕜 = ℂ`,
+`Matrix.l2_opNorm_unitary_mul_mul_unitary`, `Matrix.frobenius_norm_unitary_mul_mul_unitary`. "All of the
+real SVD properties have obvious complex analogs" is the `RCLike` generality of the backbone, not
+restated. ★'''
+deps = ["Matrix.exists_isSVD", "Matrix.l2_opNorm_unitary_mul_mul_unitary", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+source = 'Golub–Van Loan, Matrix Computations, §2.4.4'

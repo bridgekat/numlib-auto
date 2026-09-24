@@ -1,0 +1,112 @@
+namespace = "Matrix"
+desc = '''
+The polar decomposition `A = U P` of a matrix ([golub2013matrix] §9.4.3, Theorem 9.4.1; §6.4.1): the
+specification `Matrix.IsPolarDecomposition A U P` (`U` with orthonormal columns, `Uᴴ U = 1`; `P`
+positive semidefinite; `A = U P`), its existence for `A : Matrix m n 𝕜` with `card n ≤ card m` over
+`[RCLike 𝕜]` (any `Fintype`s), the dual `A = P V` for wide matrices, the symmetric factor as
+`CFC.sqrt (Aᴴ A)` — for square `A` this is Mathlib's `CFC.abs A` — with uniqueness for a nonsingular
+square `A`, the passage from an SVD (`IsSVD.isPolarDecomposition`), and the nearest orthonormal block
+of [golub2013matrix] (8.1.7).
+
+**One polar factor.** The unitary factor `U Vᴴ` of an SVD is built once, here
+(`IsSVD.isPolarDecomposition`); the orthogonal Procrustes solution
+(`Numlib/LinearAlgebra/Matrix/Procrustes`) and the nearest orthonormal block
+(`exists_orthonormal_cols_norm_sub_le`) are stated as properties of the polar factor rather than
+rebuilding it from an SVD (Golub–Van Loan review H4), and the function-of-matrices consumers
+(`Numlib/Analysis/Matrix/Function/Polar`: Newton's iteration, the sign of the dilation, the Li–Sun
+bound) take an `IsPolarDecomposition` hypothesis, which names "the polar factor `U`" (review H5; the
+earlier plan's `Matrix.exists_polar` also collided in searches with the convex-analysis
+`Numlib/Analysis/Convex/Duality/Polar*`).
+
+A decomposition theorem, so it sits beside `SVD` (decision D6 of the Golub–Van Loan round; the ch09
+report's refactor proposal R3, accepted at the consolidation): chapter 9 planned it in
+`Numlib/Analysis/Matrix/Function/Polar`, which keeps what is about functions of matrices and imports
+this module. Consumers: chapter 9's Theorem 9.4.1, the orthogonal Procrustes problem ([golub2013matrix]
+§6.4.1), chapter 8's (8.1.7).
+
+Searched: Mathlib has no polar decomposition of matrices or of C⋆-algebra elements (`grep -ri polar`
+over `Mathlib/Analysis` finds none for operators; `CFC.abs` exists, `Mathlib/Analysis/SpecialFunctions/
+ContinuousFunctionalCalculus/Abs.lean`, `CFC.abs a = CFC.sqrt (star a * a)`), and Numlib has none.
+Order: `IsPolarDecomposition` (★), `IsSVD.isPolarDecomposition` (★★, ~100),
+`exists_isPolarDecomposition` (★), the dual (★), `eq_cfcSqrt` (★, ~60), (8.1.7) (★★, ~60).
+'''
+
+[[node]]
+id = "IsPolarDecomposition"
+kind = "definition"
+desc = '''**A polar decomposition, as a specification** ([golub2013matrix] Theorem 9.4.1, §6.4.1): for
+`A U : Matrix m n 𝕜` and `P : Matrix n n 𝕜` (any `Fintype`s, `[RCLike 𝕜]`), a structure with fields
+`conjTranspose_mul_self : Uᴴ * U = 1`, `posSemidef : P.PosSemidef`, `eq_mul : A = U * P`. For square `A`
+the factor `U` is unitary (`IsPolarDecomposition.mem_unitaryGroup`, a further declaration: `Uᴴ U = 1`
+on a square matrix gives `U Uᴴ = 1`, `Matrix.mul_eq_one_comm`). The book's real case is `𝕜 = ℝ`. ★'''
+deps = []
+
+[[node]]
+id = "IsSVD.isPolarDecomposition"
+kind = "theorem"
+desc = '''**The polar decomposition from an SVD** ([golub2013matrix] Theorem 9.4.1's proof, and §6.4.1
+"`A = UΣVᴴ` gives `A = (UVᴴ)(VΣVᴴ)`"): for `A : Matrix (Fin m) (Fin n) 𝕜` with `n ≤ m` and
+`IsSVD A W σ V` (`W` unitary `m × m`), with `W₁ = W.submatrix id (Fin.castLE h)` its first `n`
+columns, `IsPolarDecomposition A (W₁ * Vᴴ) (V * diagonal (fun i => (σ i : 𝕜)) * Vᴴ)`; for `m = n` the
+factor is `W * Vᴴ`. `Uᴴ U = V W₁ᴴ W₁ Vᴴ = 1`, `P` is positive semidefinite (`σ ≥ 0`,
+`Matrix.PosSemidef.conjTranspose_mul_mul_same`-type), and `U P = W₁ diag(σ) Vᴴ = W Σ Vᴴ = A`
+(`Matrix.rectDiagonal` with `n ≤ m` is `diag(σ)` stacked on zeros; `IsSVD.star_mul_mul`,
+`eq_mul_mul_star_of_star_mul_mul_eq`). The one place the library builds the polar factor from
+singular vectors (review H4). ★★ (~100 lines)'''
+deps = ["IsPolarDecomposition", "Matrix.IsSVD", "Matrix.eq_mul_mul_star_of_star_mul_mul_eq", "Matrix.rectDiagonal"]
+
+[[node]]
+id = "exists_isPolarDecomposition"
+kind = "theorem"
+desc = '''[golub2013matrix] Theorem 9.4.1 over `RCLike`: for `A : Matrix m n 𝕜` with
+`Fintype.card n ≤ Fintype.card m`, `∃ U P, IsPolarDecomposition A U P`. Reindex to `Fin` along
+`Fintype.equivFin` (the property is invariant under reindexing both index types), then
+`Matrix.exists_isSVD` and `IsSVD.isPolarDecomposition`. Renamed from `exists_polar` (review H5) and
+generalized from `Fin` (review L1). ★'''
+deps = ["IsPolarDecomposition", "IsSVD.isPolarDecomposition", "Matrix.exists_isSVD"]
+
+[[node]]
+id = "exists_isPolarDecomposition_conjTranspose"
+kind = "theorem"
+desc = '''**The left polar decomposition** `A = P V` of a wide matrix (review L1; [golub2013matrix] §9.4.3 for
+`m ≤ n` by transposition): for `A : Matrix m n 𝕜` with `Fintype.card m ≤ Fintype.card n`,
+`∃ V P, IsPolarDecomposition Aᴴ V P`, i.e. `A = P * Vᴴ` with `Vᴴ` having orthonormal rows
+(`Vᴴ (Vᴴ)ᴴ = 1`) and `P = CFC.sqrt (A * Aᴴ)` positive semidefinite (`IsPolarDecomposition.eq_cfcSqrt`
+for `Aᴴ`). `exists_isPolarDecomposition` for `Aᴴ` and `conjTranspose` of the product
+(`Matrix.conjTranspose_mul`, `P` Hermitian). ★'''
+deps = ["exists_isPolarDecomposition", "IsPolarDecomposition"]
+
+[[node]]
+id = "IsPolarDecomposition.eq_cfcSqrt"
+kind = "theorem"
+desc = '''The symmetric polar factor is `(Aᴴ A)^{1/2}` ([golub2013matrix] §9.4.3): if
+`IsPolarDecomposition A U P` then `P = CFC.sqrt (Aᴴ * A)` (`open scoped MatrixOrder`): `P * P = Pᴴ Uᴴ U P
+= Aᴴ A` and `CFC.sqrt_unique`. Further declarations of this node:
+`IsPolarDecomposition.eq_cfcAbs` — for square `A`, `P = CFC.abs A` (Mathlib's `CFC.abs A =
+CFC.sqrt (star A * A)`, `star A = Aᴴ` for matrices); if moreover `A` has rank `card n` (`Aᴴ A` positive
+definite), `U = A * (CFC.sqrt (Aᴴ * A))⁻¹` ([golub2013matrix] `U = A (AᵀA)^{-1/2}`); and
+`IsPolarDecomposition.unique` — for a nonsingular square `A` the decomposition is unique (`P` by the
+first part, `U = A P⁻¹`; P9.4.8 of the book is this fact, not cited in the main text). That the factor
+is also the primary square root is `Matrix.IsPolarDecomposition.eq_pfc_sqrt` of
+`Numlib/Analysis/Matrix/Function/Polar`, which imports this module. Renamed from `polar_eq_cfcSqrt`
+(review H5). ★ (~60 lines)'''
+deps = ["IsPolarDecomposition"]
+
+[[node]]
+id = "exists_orthonormal_cols_norm_sub_le"
+kind = "theorem"
+desc = '''**Nearest orthonormal block** ([golub2013matrix] (8.1.7) in the proof of Theorem 8.1.16; P8.1.4):
+for `X : Matrix n r 𝕜` (`card r ≤ card n`) with `lpOpNorm 2 (Xᴴ * X - 1) ≤ τ < 1` there is `Q` with
+`Qᴴ * Q = 1`, `LinearMap.range (toLin' Q) = LinearMap.range (toLin' X)` and `lpOpNorm 2 (Q - X) ≤ τ` — any
+polar factor of `X` (`exists_isPolarDecomposition`) is one, which a second declaration
+`IsPolarDecomposition.l2_opNorm_sub_le` states for a given `IsPolarDecomposition X Q P`. Proof from the
+polar factor (review H4; the earlier plan rebuilt `U Vᴴ` from a thin SVD):
+`Q - X = Q (1 - P)` and `‖Q M‖₂ = ‖M‖₂` (`Qᴴ Q = 1`), so `‖Q - X‖₂ = ‖1 - P‖₂`; `1 - P` and
+`1 - P² = 1 - Xᴴ X` are commuting Hermitian functions of `P ⪰ 0` with eigenvalues `1 - s` and
+`1 - s²`, and `|1 - s| ≤ |1 - s| (1 + s) = |1 - s²|` for `s ≥ 0`, so `‖1 - P‖₂ ≤ ‖1 - Xᴴ X‖₂ ≤ τ`
+(`Matrix.IsHermitian.l2_opNorm_eq`, the spectral radius of a Hermitian matrix, applied in a common
+eigenbasis of `P`); `τ < 1` makes `P` positive definite, hence invertible, whence
+`range Q = range (X P⁻¹) = range X`. (The book's intermediate "`1 - σ_r² = τ`" holds only when the
+smallest singular value is the one farthest from `1`; the conclusion does not need it.) Moved here
+from `SVD`. ★★ (~60 lines)'''
+deps = ["IsPolarDecomposition", "exists_isPolarDecomposition", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.lpOpNorm"]

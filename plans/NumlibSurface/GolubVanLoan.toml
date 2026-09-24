@@ -1,0 +1,134 @@
+desc = '''
+The surface of Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, Johns
+Hopkins University Press, 2013 ([golub2013matrix]); one chapter group per chapter and one module
+per section, `NumlibSurface/GolubVanLoan/ChapterNN/SectionMM.lean`, namespace
+`GolubVanLoan.ChapterNN`.
+
+Scope (decided by the user, 2026-09-24; the planning brief is `notes/gvl/planning-brief.md`):
+
+* every Theorem, Lemma and Corollary is a node;
+* **every numbered Algorithm is a node**, loop-order, blocked and recursive variants included:
+  a definition `algorithm_N_M_K`, written once as a monadic program in which every arithmetic
+  result passes through a rounding hook `rnd : ℝ → M ℝ`, and a theorem `algorithm_N_M_K_spec`
+  stating its exact-arithmetic correctness (`M := Id`, `rnd := pure`) against a backbone
+  specification; where the book analyses the algorithm's rounding errors, that is a theorem about
+  its runs in the relational model (`M := SetM`, `rnd := fp.round`), proved through the
+  backbone's relational predicates. The infrastructure is `Numlib/FloatingPoint/Program`;
+* numbered displays `(N.M.K)` are nodes when they assert a precise proposition;
+* Problems are not nodes; a Problem the text cites for a proof step becomes a helper;
+* operation counts, §1.5–1.6 (except Cannon's identity (1.6.16)) and §3.6's parallel and
+  architecture material, storage and BLAS discussion, numerical examples and the Notes and
+  References are not formalized, and each chapter group says so once.
+
+**Naming** (review round, `notes/gvl/review/decisions.md`; brief §2–§3):
+
+* Theorems, Lemmas, Corollaries and Algorithms are `theorem_N_M_K`, `lemma_N_M_K`,
+  `corollary_N_M_K`, `algorithm_N_M_K` (+ suffixes, convention 12 below); a propositional
+  numbered display is `equation_N_M_K`, always a **theorem**.
+* **A definition-kind node is named by its content, never `equation_N_M_K`**, and keeps
+  `source = 'Golub–Van Loan, Matrix Computations, Equation (N.M.K)'` so the number stays
+  searchable: pure notation (`modelEigenvalues`, `twoGridErrorOperator`, `rotationCode`) as much as
+  a prose definition (`growthFactor`).
+* **An algorithm-shaped numbered display** (a loop the book writes as a display rather than as a
+  numbered Algorithm) is a content-named program — `gaussSeidelSweep`, `blockLanczos`,
+  `factoredQTransposeMul` — and its exact-semantics theorem is `equation_N_M_K` (the proposition the
+  display asserts: "this loop computes …"); its bridge and bound follow convention 12
+  (`gaussSeidelSweep_rounds`, `…_rounding`).
+* Later chapters use earlier chapters' restatements rather than reaching past them to the
+  backbone or Mathlib (README layering): a dep on a backbone node that an earlier chapter restates
+  goes to the restatement.
+
+The book is real, `Matrix (Fin m) (Fin n) ℝ`, 1-based in its colon notation; the surface is
+0-based on `Fin n`, and each chapter group states the translation. Complex statements (Chapter 7's
+decompositions, §7.9, parts of Chapter 9) are over `ℂ`.
+
+**Singular values.** The book's sorted `σ_k` is `A.sortedSingularValues (k - 1)` (Mathlib's
+`LinearMap.singularValues` of `toEuclideanLin A`); `σ_min(A)` and `σ_max(A)` of an `m × n` matrix
+with `n ≤ m` may be read as `⨅ i, A.singularValues i` / `⨆ i, A.singularValues i` over the backbone's
+column-indexed `Matrix.singularValues` — a convention of the whole surface, stated here once (the
+backbone nodes that use the column-indexed reading say why individually).
+
+**Shared helper programs** (convention 13; all in `GolubVanLoan.Chapter05`, §5.1, each with its own
+`_spec` and, where the book analyses it, `_rounds`/`_rounding`; every later chapter calls them and
+defines no variant):
+
+* `houseOn rnd (o : List (Fin m)) (x : Fin m → ℝ) : M ((Fin m → ℝ) × ℝ)` — Algorithm 5.1.1 on the
+  entries of `x` listed by `o` (pivot `o.head`, the book's `x(1)`; the tail sum by Algorithm 1.1.1
+  over `o.tail`), returning `(v, β)` with `v` zero off `o` and `1` at the pivot;
+  `algorithm_5_1_1 rnd x := houseOn rnd (List.finRange (k+1)) x`.
+* `householderApplyLeft rnd v β rows cols A` (`A(rows, cols) ← (I − βvvᵀ) A(rows, cols)`, the book's
+  `A − (βv)(vᵀA)`) and `householderApplyRight rnd v β rows cols A`
+  (`A(rows, cols) ← A(rows, cols)(I − βvvᵀ)`, `A − (Av)(βv)ᵀ`), in place on the full matrix.
+* `givensRotation i k c s := Matrix.planeRotation i k c (-s)` (the book's matrix `G(i, k, θ)`, (5.1.7));
+  `algorithm_5_1_3` is the book's `givens`, computing `(c, s)`; `givensApplyLeft rnd i k c s cols A`
+  (`A([i,k], cols) ← G(i,k,θ)ᵀ A([i,k], cols)`) and `givensApplyRight rnd i k c s rows A`
+  (`A(rows, [i,k]) ← A(rows, [i,k]) G(i,k,θ)`).
+* Householder data `List ((Fin m → ℝ) × ℝ)` (convention 13), `householderProduct data = Q₁ ⋯ Q_r`,
+  and `forwardAccumulation rnd data` / `backwardAccumulation rnd data` (§5.1.6), each `= householderProduct
+  data` at `Id`.
+
+**Algorithm conventions** (final, for every chapter; the same list, same numbers, heads the
+description of `Numlib/FloatingPoint/Program`, and a chapter group that words them differently is
+superseded by this list):
+
+1. **What is rounded.** *Exact* (not passed through `rnd`): unary negation, `|·|`, `sign` and
+   copysign, copying, comparisons (a comparison stores nothing and acts on the values the program
+   holds). *Rounded* (exactly one `rnd` after each): the result of every `+`, `−`, `×`, `/` and
+   `√` (`√` is `Real.sqrt` followed by one `rnd`), **including arithmetic whose only use is a
+   test** — `fl(tol · fl(|h_ii| + |h_{i-1,i-1}|))`, `δ ← fl(tol · ‖A‖_F)`, the `fl(1 − fl(α²))` of a
+   positivity check. IEEE negation, `abs` and copysign are exact, and the relational model does not
+   know `Rounds x x`, so rounding them would only add spurious error.
+2. A division by a unit diagonal inside a factorization is not performed.
+3. Loops are `List.foldlM` over `List.finRange n` or an explicit index list, never `for … in
+   [a:b]`. A `while` loop is `List.foldlM` over `List.range fuel` with a `done : Bool` field in the
+   state: once `done`, a step is the identity; the spec theorem states what holds after
+   `min fuel stop` passes (`stop` the book's exit index). The fuel parameter is named `fuel : ℕ` and
+   is the **last** explicit argument. Structural or well-founded recursion is reserved for
+   genuinely recursive algorithms (Strassen, the FFT, recursive block LU/Cholesky/QR, `LUdisp`).
+4. A program that branches on a real test is a `noncomputable def` (through `Real.decidableEq`,
+   `Real.decidableLT`).
+5. A step the book delegates to an algorithm of a *later* chapter ("compute the SVD", "find
+   `λ₊`") is a monadic function parameter, and the spec theorem assumes its specification; a step
+   delegated to an *earlier* chapter calls that chapter's program.
+6. `fp.IsIdempotent` is assumed **only when the stated constant needs it**: a program whose
+   accumulation starts from `0` and whose bound is the book's `γ_n` through a relation that starts
+   from the unrounded first term (`RoundsDot`, `RoundsSum`) needs it (the `0 + p` paragraph below);
+   a relation that itself absorbs the `0 + p` rounding (`RoundsForwardSubstDot`) needs nothing.
+7. The monad variable is `M` (`{M : Type → Type} [Monad M]`), never `m`, which is the book's row
+   count.
+8. Breakdown is not checked in the program (`x / 0 = 0`); the spec theorem carries the
+   hypotheses (nonzero pivots, nonsingular leading submatrices, …). Overwrites are state updates
+   (`Function.update`, `Matrix.updateRow`); a multi-output state is a structure or a tuple.
+9. **Hypotheses of a rounding theorem are about the inputs and the values the program returns**,
+   never about intermediate values a run overwrites (a computed pivot `t_j` that is then replaced
+   by `√t_j`, a packed factor the program does not return). A composite (factor, then solve) is
+   stated nested, one program per quantifier:
+   `∀ F ∈ (alg₁ fp.round A).run, hyp F → ∀ x ∈ (alg₂ fp.round F b).run, concl` (the shape of
+   `GolubVanLoan.Chapter03.theorem_3_3_2`).
+10. **Submatrices are index lists.** A block `A(j:m, k:n)` of the book is the full matrix together
+    with the filtered index lists of its rows and columns (`rows : List (Fin m)`,
+    `cols : List (Fin n)`), never a copy typed by a loop-dependent `Fin (m - j)`; a subvector
+    `x(j:m)` is the full vector with its list of active indices. Helpers operate in place on the
+    full matrix over such lists (`GolubVanLoan.Chapter05.houseOn rnd o x`,
+    `householderApplyLeft/Right`, `givensApplyLeft/Right`), and a vector-level book algorithm is
+    its helper at the full list (`algorithm_5_1_1 rnd x = houseOn rnd (List.finRange (k+1)) x` by
+    `rfl`). The backbone relations read such a block through the subtype `{i // i ∈ rows}` or a
+    pivot `i : ι` of the full index type.
+11. **Exact specs are read off bridges.** When a bridge "every run satisfies the backbone relation
+    `R`" exists, the exact spec `_spec` is its instance at `RoundingModel.exact` (`round_exact`
+    and `R`'s exact characterization, e.g. `roundsLU_exact_iff`, `mem_run_dotAccum_exact_iff`),
+    not a second proof at `Id`.
+12. **Node suffixes.** `algorithm_N_M_K` is the program; `_spec` its exact semantics; `_rounds`
+    says every run satisfies a backbone relation (`∀ out ∈ run, FloatingPoint.RoundsX …`, the
+    bridge); `_mem_run` characterizes the run set (an `↔`) when no backbone relation exists;
+    `_rounding` is the book's error bound for every run. A node proving the bound through a
+    bridge depends on the `_rounds` node.
+13. **One helper family, one reflector-data type.** Updates shared by several algorithms are
+    defined once (for Golub–Van Loan: chapter 5), in symmetric pairs `…Left`/`…Right` on index
+    lists; Householder data are `List ((Fin m → ℝ) × ℝ)` — pairs `(v, β)` in order of
+    application, `v` full length and zero off its active rows — carrying the `β` the program
+    returned. A reflector is **never** rebuilt as `β = 2/(vᵀv)` from a stored `v` (when `house`
+    returns `β = 0`, the rebuilt `I − 2e₁e₁ᵀ` is not the identity it applied).
+14. **Symmetric pairs are separate nodes** (`…Left` and `…Right`, `…_col` and `…_row`, forward and
+    backward accumulation), each with its own `_spec`; consumers depend on the half they use.
+'''

@@ -1,0 +1,180 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.2, perturbation theory: Gershgorin for a similarity transform (Theorem 7.2.1), Bauer–Fike in
+every `p`-norm (7.2.2), the Schur-form bound (7.2.3), the condition `1/s(λ)` of a simple eigenvalue
+((7.2.2) and its first-order derivation), the `2 × 2` repeated-eigenvalue example, `sep` (7.2.5),
+Stewart's invariant subspace perturbation theorem (7.2.4) with Corollaries 7.2.5–7.2.6 and (7.2.6).
+
+Complex, `Matrix (Fin n) (Fin n) ℂ`; the 2-norm is the scoped `Matrix.Norms.L2Operator`, the
+Frobenius norm the scoped `Matrix.Norms.Frobenius` (never both open in one proof — the lesson of
+2026-09-14 agent/norms), the `p`-norms `Matrix.lpOpNorm p`, `κ_p(X) = Matrix.condNumberLp p X`.
+`dist(S₁, S₂)` of subspaces is the backbone's `Submodule.gap` (`= ‖P₁ - P₂‖₂`, [golub2013matrix]
+§2.5.3). Block partitions are `fromBlocks` on `Fin r ⊕ Fin (n - r)`.
+
+Not formalized here: Wilkinson's nearest-multiple-eigenvalue bound `‖E‖₂/‖A‖₂ ≤ s(λ)/√(1 - s(λ)²)`
+(quoted from Wilkinson 1972 without proof, and the construction of `E` is not given); the heuristic
+"`O(ε)` perturbations can move a defective eigenvalue by `O(ε^{1/p})`" (its rigorous content is
+Theorem 7.2.3's `θ^{1/p}`); the "wobbly eigenvectors" discussion.
+
+Backbone: `Numlib/Eigen/{Perturbation,InvariantSubspace}`, `Numlib/LinearAlgebra/Matrix/Sylvester`.
+'''
+
+[[node]]
+id = "theorem_7_2_1"
+kind = "theorem"
+desc = '''Theorem 7.2.1 (Gershgorin): if `X⁻¹ A X = diagonal d + F` with `X` nonsingular and `F` of zero
+diagonal, then `spectrum ℂ A ⊆ ⋃ i, closedBall (d i) (∑ j, ‖F i j‖)`. Similarity invariance of the
+spectrum (`spectrum.units_conjugate`) and `Matrix.spectrum_subset_iUnion_closedBall` applied to
+`X⁻¹ A X` (whose diagonal is `d` and off-diagonal is `F`). ★'''
+deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.1'
+
+[[node]]
+id = "gershgorin_isolated"
+kind = "theorem"
+desc = '''§7.2.1, "if the Gershgorin disk `D_i` is isolated from the other disks, then it contains precisely
+one eigenvalue of A": with the notation of `theorem_7_2_1`, if `D_i` is disjoint from `⋃_{j ≠ i} D_j`
+then `D_i` contains exactly one root of `A.charpoly` counted with multiplicity
+(`Polynomial.countRootsIn (D i) A.charpoly = 1`). `Matrix.card_spectrum_of_isolated_gershgorin`
+for `X⁻¹ A X` and `Matrix.IsSimilar.charpoly_eq`. ★'''
+deps = ["Matrix.card_spectrum_of_isolated_gershgorin", "Matrix.IsSimilar.charpoly_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §7.2.1'
+
+[[node]]
+id = "theorem_7_2_2"
+kind = "theorem"
+desc = '''Theorem 7.2.2 (Bauer–Fike): for `1 ≤ p` (`p : ℝ≥0∞`), `X⁻¹ A X = diagonal λ` and
+`μ ∈ spectrum ℂ (A + E)`: `∃ i, ‖λ i - μ‖ ≤ condNumberLp p X * lpOpNorm p E` (the book's
+`min_{λ ∈ λ(A)} |λ - μ| ≤ κ_p(X) ‖E‖_p`). `Matrix.bauer_fike_lpOpNorm` with `A = X D X⁻¹`. ★'''
+deps = ["Matrix.bauer_fike_lpOpNorm"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.2'
+
+[[node]]
+id = "equation_7_2_1"
+kind = "theorem"
+desc = '''(7.2.1), the step shared by the three theorems: if `μ ∈ spectrum ℂ (A + E)` and `μ ∉ spectrum ℂ A`
+then `1 ≤ ‖(μ I - A)⁻¹ E‖₂ ≤ ‖(μ I - A)⁻¹‖₂ ‖E‖₂` (the book's appeal to its Lemma 2.3.3).
+`Matrix.one_le_norm_mul_of_mem_spectrum_add`. ★'''
+deps = ["Matrix.one_le_norm_mul_of_mem_spectrum_add"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.1)'
+
+[[node]]
+id = "theorem_7_2_3"
+kind = "theorem"
+desc = '''Theorem 7.2.3: let `Qᴴ A Q = D + N` be a Schur decomposition ((7.1.7): `Q` unitary, `D` diagonal,
+`N` strictly upper triangular), `μ ∈ spectrum ℂ (A + E)`, and `p` the smallest positive integer with
+`|N|^p = 0` (entrywise absolute value). Then `min_{λ ∈ λ(A)} |λ - μ| ≤ max(θ, θ^{1/p})` with
+`θ = ‖E‖₂ ∑_{k=0}^{p-1} ‖N‖₂^k`. Stated with `∃ i, ‖D i i - μ‖ ≤ max θ (θ ^ (1/p : ℝ))` for any
+`p ≥ 1` with `(N.map (‖·‖))^p = 0` (the minimality of `p` only improves the bound). Backbone
+`Matrix.infDist_spectrum_le_of_schur`. ★'''
+deps = ["Matrix.infDist_spectrum_le_of_schur", "GolubVanLoan.Chapter07.equation_7_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.3'
+
+[[node]]
+id = "eigenvalueSensitivity"
+kind = "definition"
+desc = '''(7.2.2): `s(λ) = |yᴴ x|` for unit right and left eigenvectors `x`, `y` of a simple eigenvalue `λ`
+(`A x = λ x`, `yᴴ A = λ yᴴ`, `‖x‖₂ = ‖y‖₂ = 1`), defined as `eigenvalueSensitivity x y =
+‖star y ⬝ᵥ x‖`; "the condition of `λ`" is `1/s(λ)`, and for unit vectors this is the backbone's
+`Module.End.eigenvalueCondNumber` (`eigenvalueSensitivity_eq_inv_eigenvalueCondNumber`, same node,
+`Module.End.eigenvalueCondNumber_smul` for the normalization). Well defined for a simple eigenvalue
+because `x`, `y` are then unique up to unimodular factors. ★'''
+deps = ["Module.End.eigenvalueCondNumber", "Module.End.eigenvalueCondNumber_smul"]
+source = 'Golub–Van Loan, Matrix Computations, §7.2.2, Definition'
+
+[[node]]
+id = "inner_ne_zero_of_simple"
+kind = "theorem"
+desc = '''§7.2.2: for a simple eigenvalue `λ` (algebraic multiplicity one) with right and left eigenvectors
+`x`, `y`, `yᴴ x ≠ 0`, so `s(λ) > 0`. The book's argument through the Jordan form is replaced by
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one` (the generalized eigenspace of a simple
+eigenvalue is a line). ★'''
+deps = ["Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one", "GolubVanLoan.Chapter07.algebraicMultiplicity"]
+source = 'Golub–Van Loan, Matrix Computations, §7.2.2'
+
+[[node]]
+id = "equation_7_2_2"
+kind = "theorem"
+desc = '''§7.2.2, the derivation of (7.2.2), rigorous: for a simple eigenvalue `λ` of `A` with unit `x`, `y`
+and `‖F‖₂ = 1`, there are differentiable `λ(ε)`, `x(ε)` near `0` with `(A + ε F) x(ε) = λ(ε) x(ε)`,
+`λ(0) = λ`, `x(0) = x` (`Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one`), and
+`λ'(0) = yᴴ F x / yᴴ x`, so `|λ'(0)| ≤ 1/s(λ)` (`Module.End.deriv_eigenvalue_perturbation`,
+`Module.End.norm_deriv_eigenvalue_perturbation_le`); the bound is attained for `F = y xᴴ`
+(a clause of this node). ★★'''
+deps = ["Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one", "Module.End.deriv_eigenvalue_perturbation", "Module.End.norm_deriv_eigenvalue_perturbation_le", "GolubVanLoan.Chapter07.eigenvalueSensitivity","GolubVanLoan.Chapter07.inner_ne_zero_of_simple"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.2)'
+
+[[node]]
+id = "repeated_eigenvalue_example"
+kind = "theorem"
+desc = '''§7.2.3: for `A = !![1, a; 0, 1]`, `F = !![0, 0; 1, 0]` and `ε : ℂ`, `spectrum ℂ (A + ε F) =
+{z | (z - 1) ^ 2 = ε * a}` (the book's `{1 ± √(εa)}`), and for `a ≠ 0` no branch of eigenvalues is
+differentiable at `ε = 0` (the rigorous "rate of change at the origin is infinite": `|z(ε) - 1| =
+√|ε a|` is not `O(|ε|)`). `Matrix.det_fin_two`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §7.2.3'
+
+[[node]]
+id = "equation_7_2_5"
+kind = "theorem"
+desc = '''(7.2.5): `sep(T₁₁, T₂₂) = min_{X ≠ 0} ‖T₁₁ X - X T₂₂‖_F / ‖X‖_F` — the backbone's `Matrix.sep`
+(least value on the Frobenius unit sphere) equals the book's minimum over nonzero `X`, and the minimum
+is attained (`Matrix.exists_sep_eq`); it is the smallest singular value of `X ↦ T₁₁ X - X T₂₂`
+(the paragraph before (7.2.5)). ★'''
+deps = ["Matrix.sep", "Matrix.exists_sep_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.5)'
+
+[[node]]
+id = "theorem_7_2_4"
+kind = "theorem"
+desc = '''Theorem 7.2.4 (Stewart): let `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (7.2.3) with `Q = [Q₁ Q₂]` unitary (7.2.4),
+`T₁₁` of size `r`, and for `E` let `Qᴴ E Q = [E₁₁ E₁₂; E₂₁ E₂₂]`. If `sep(T₁₁, T₂₂) > 0` and
+`‖E‖_F (1 + 5 ‖T₁₂‖_F / sep) ≤ sep / 5`, there is `P : Matrix (Fin (n - r)) (Fin r) ℂ` with
+`‖P‖_F ≤ 4 ‖E₂₁‖_F / sep` such that the columns of `Q̃₁ = (Q₁ + Q₂ P)(I + Pᴴ P)^{-1/2}` are an
+orthonormal basis of an `(A + E)`-invariant subspace. The inverse square root is
+`(CFC.sqrt (1 + Pᴴ * P))⁻¹` (positive definite, scoped `Matrix.Norms.L2Operator` for the C*-algebra
+instance); orthonormality is `Q̃₁ᴴ Q̃₁ = S⁻¹ (I + Pᴴ P) S⁻¹ = I`. Backbone
+`Matrix.exists_invariant_graph_of_sep` in the coordinates of `Q` (`Frobenius` unitary invariance of
+`E`'s blocks). ★★'''
+deps = ["Matrix.exists_invariant_graph_of_sep", "Matrix.sep_unitary_conj", "GolubVanLoan.Chapter07.equation_7_2_5"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.4'
+
+[[node]]
+id = "equation_7_2_6"
+kind = "theorem"
+desc = '''(7.2.6): for `P : Matrix (Fin k) (Fin r) ℂ`, `‖P (I + Pᴴ P)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F`. Singular
+values of `P (I + PᴴP)^{-1/2}` are `σ_i/√(1 + σ_i²) ≤ σ_i` (SVD `Matrix.exists_svd`, or the CFC:
+`(P S⁻¹)ᴴ (P S⁻¹) = S⁻¹ Pᴴ P S⁻¹ ≤ Pᴴ P` in the Loewner order since `S⁻² ≤ I` commutes with `PᴴP`),
+and `Matrix.l2_opNorm_le_frobenius_norm`. ★★'''
+deps = ["Matrix.l2_opNorm_le_frobenius_norm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.6)'
+
+[[node]]
+id = "corollary_7_2_5"
+kind = "theorem"
+desc = '''Corollary 7.2.5: under the hypotheses of Theorem 7.2.4, `dist(ran Q₁, ran Q̃₁) ≤ 4 ‖E₂₁‖_F / sep(T₁₁, T₂₂)`,
+with `dist = Submodule.gap` of the column spaces in `EuclideanSpace ℂ (Fin n)`. Backbone
+`Matrix.gap_range_fromRows_le` (`gap ≤ ‖P‖₂ ≤ ‖P‖_F`) transported by `Q`
+(`Submodule.gap_map_linearIsometryEquiv`). The book's "the required distance is the 2-norm of
+`Q₂ᴴ Q̃₁`" is chapter 2's Theorem 2.5.1; the backbone route avoids it. ★'''
+deps = ["GolubVanLoan.Chapter07.theorem_7_2_4", "Matrix.gap_range_fromRows_le", "Submodule.gap_map_linearIsometryEquiv", "GolubVanLoan.Chapter07.equation_7_2_6"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.2.5'
+
+[[node]]
+id = "sep_one_eq_sigmaMin"
+kind = "theorem"
+desc = '''§7.2.5: `sep(λ, T₂₂) = σ_min(T₂₂ - λ I) ≤ min_{μ ∈ λ(T₂₂)} |μ - λ|` (the display after Corollary
+7.2.6; the observation in its proof). `Matrix.sep_eq_iInf_singularValues` and `Matrix.sep_le_norm_sub`. ★'''
+deps = ["Matrix.sep_eq_iInf_singularValues", "Matrix.sep_le_norm_sub"]
+source = 'Golub–Van Loan, Matrix Computations, §7.2.5'
+
+[[node]]
+id = "corollary_7_2_6"
+kind = "theorem"
+desc = '''Corollary 7.2.6: with `Q = [q₁ | Q₂]` unitary, `Qᴴ A Q = [λ vᴴ; 0 T₂₂]`, `Qᴴ E Q = [ε γᴴ; δ E₂₂]`,
+`σ = σ_min(T₂₂ - λ I) > 0` and `‖E‖_F (1 + 5 ‖v‖₂ / σ) ≤ σ / 5`, there is `p` with `‖p‖₂ ≤ 4 ‖δ‖₂ / σ`
+such that `q̃₁ = (q₁ + Q₂ p)/√(1 + pᴴ p)` is a unit eigenvector of `A + E`, and
+`dist(span{q₁}, span{q̃₁}) ≤ 4 ‖δ‖₂ / σ`. `r = 1` in Theorem 7.2.4 and Corollary 7.2.5 with
+`sep_one_eq_sigmaMin` (a one-dimensional invariant subspace is spanned by an eigenvector). ★'''
+deps = ["GolubVanLoan.Chapter07.theorem_7_2_4", "GolubVanLoan.Chapter07.corollary_7_2_5", "GolubVanLoan.Chapter07.sep_one_eq_sigmaMin"]
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.2.6'

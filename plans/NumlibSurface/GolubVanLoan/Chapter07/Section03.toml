@@ -1,0 +1,271 @@
+namespace = "GolubVanLoan.Chapter07"
+desc = '''
+§7.3, power iterations: the QR iteration (7.3.1)–(7.3.2) as a unitary similarity, the power method
+(7.3.3) with its rates (the dist display and (7.3.5)) and backward error, orthogonal iteration (7.3.6)
+and the dominant invariant subspace, **Theorem 7.3.1 (corrected)** with its appendix (Lemma 7.3.2
+and the proof displays (7.3.18)–(7.3.26)), the QR iteration as orthogonal iteration ((7.3.11) and the
+derivation after it), and the LR iteration (7.3.14).
+
+Complex, `Matrix (Fin n) (Fin n) ℂ`, vectors in `EuclideanSpace ℂ (Fin n)` where norms matter. The two
+iterations chapter 8 also uses — the power method (7.3.3) and orthogonal iteration (7.3.6) — are
+stated over any `[RCLike 𝕜]` so that chapter 8's (8.2.3) and (8.2.8) are their instances at `ℝ`
+(surface review Medium 3: one definition, restated once); orthogonal iteration is a sequence of the
+backbone's `Matrix.IsOrthogonalIterationStep` (`Numlib/Eigen/QRAlgorithm`). "Some QR
+factorization" is `Matrix.IsShiftedQrStep 0` (backbone `Eigen/QRAlgorithm`), so the statements hold
+for every choice of factorization, as the book's do; the backbone's canonical `Matrix.qrQ`/`qrR` is
+one choice. Subspace distance is `Submodule.gap`.
+
+**Theorem 7.3.1 is false as printed** (report, Doubts): its hypothesis (7.3.9) bounds the distance of
+`ran Q₀` to `D_r(A)`, but the proof — and the sentence after the theorem, "no vector in the span of
+`Q₀`'s columns is orthogonal to `D_r(Aᴴ)`" — need the distance to `D_r(Aᴴ)`. Counterexample:
+`A = [[2, 1], [0, 1]]`, `r = 1`, `Q₀ = (1, -1)ᵀ/√2` (an eigenvector for `1`): `d₀ = 1/√2 < 1`,
+`Q_k = ±Q₀`, `d_k = 1/√2`, while (7.3.10) forces `d_k → 0`. `theorem_7_3_1` states the corrected
+form (the last factor `d₀/√(1 - d̃₀²)` with `d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1`) and
+`theorem_7_3_1_counterexample` records the failure. (7.3.11) for the QR iteration already uses
+`D_i(Aᴴ)` correctly.
+
+Not formalized here: Stewart's accelerated orthogonal iteration (`≈` rates, no algorithm given);
+the heuristic `|λ^(k) - λ₁| ≈ ‖r^(k)‖₂ / s(λ₁)` and `s(λ₁) ≈ |w^(k)ᴴ q^(k)|` (first-order, no
+derivation beyond (7.2.2)); "under reasonable assumptions the `T_k` converge to upper triangular form"
+for the LR iteration (no statement; pivoting needed); the proof-internal (7.3.17), (7.3.21)–(7.3.23)
+(identities of the appendix whose content is Theorem 7.3.1; (7.3.23) is a Cholesky factorization
+used as notation); the flop remark "a single QR iteration is `O(n³)`".
+
+Backbone: `Numlib/Eigen/{PowerMethod,QRAlgorithm,InvariantSubspace}`.
+'''
+
+[[node]]
+id = "equation_7_3_2"
+kind = "theorem"
+desc = '''(7.3.1)–(7.3.2): if `T₀ = U₀ᴴ A U₀` with `U₀` unitary and `T_k` is obtained from `T_{k-1}` by a QR
+step for some QR factorization `T_{k-1} = U_k R_k`, `T_k = R_k U_k` (`Matrix.IsShiftedQrStep 0 T_{k-1}
+T_k` with the factor `U_k` recorded), then `T_k = (U₀ U₁ ⋯ U_k)ᴴ A (U₀ U₁ ⋯ U_k)`. Stated for sequences
+`T U R : ℕ → Matrix …` with the recurrence as hypotheses. Induction with
+`Matrix.IsShiftedQrStep.eq_conj`'s computation `R U = Uᴴ (U R) U`. ★'''
+deps = ["Matrix.IsShiftedQrStep", "Matrix.IsShiftedQrStep.eq_conj"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.2)'
+
+[[node]]
+id = "powerMethod"
+kind = "definition"
+desc = '''(7.3.3), the power method, over any `[RCLike 𝕜]` (the book states it for `ℂ`; chapter 8's (8.2.3) is the
+instance `𝕜 = ℝ`): for `A : Matrix (Fin n) (Fin n) 𝕜` and `q₀ : EuclideanSpace 𝕜 (Fin n)`,
+`powerMethod A q₀ : ℕ → EuclideanSpace 𝕜 (Fin n) × 𝕜`, `q^(0) = q₀`, `z^(k) = A q^(k-1)`,
+`q^(k) = z^(k) / ‖z^(k)‖₂`, `λ^(k) = q^(k)ᴴ A q^(k)`, by recursion on `k`, with the bridge
+`powerMethod_fst : (powerMethod A q₀ k).1 = Krylov.powerIterate (toEuclideanLin A) q₀ k` for unit `q₀`
+(`Krylov.eq_powerIterate_of_recurrence`; the convention `0⁻¹ = 0` agrees). ★'''
+deps = ["Krylov.powerIterate", "Krylov.eq_powerIterate_of_recurrence"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.3)'
+
+[[node]]
+id = "powerMethod_dist"
+kind = "theorem"
+desc = '''§7.3.1, `dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`, rigorous: if `X⁻¹ A X = diagonal λ` with
+unit columns `x_i`, `|λ₁| > |λ₂| ≥ ⋯ ≥ |λ_n|` (index `0` dominant) and `q₀ = ∑ a_i x_i` with `a₁ ≠ 0`
+(7.3.4), there is `C` with `gap (span{q^(k)}) (span{x₁}) ≤ C (|λ₂| / |λ₁|)^k` for all `k`.
+`Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis` with `ρ = |λ₂|`, and the gap of two lines
+is the sine of the angle (`Submodule.sinAngle_le_gap`-direction: for lines, `gap = sinAngle`, a small
+lemma). ★★'''
+deps = ["GolubVanLoan.Chapter07.powerMethod", "Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis", "Submodule.gap"]
+source = 'Golub–Van Loan, Matrix Computations, §7.3.1'
+
+[[node]]
+id = "equation_7_3_5"
+kind = "theorem"
+desc = '''(7.3.5), rigorous: under the hypotheses of `powerMethod_dist`, there is `C` with
+`|λ₁ - λ^(k)| ≤ C (|λ₂| / |λ₁|)^k` for all `k`. `Krylov.exists_norm_inner_powerIterate_sub_le_of_eigenbasis`.
+(For a symmetric `A` the rate squares, `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`;
+chapter 8.) ★'''
+deps = ["GolubVanLoan.Chapter07.powerMethod", "Krylov.exists_norm_inner_powerIterate_sub_le_of_eigenbasis"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.5)'
+
+[[node]]
+id = "powerMethod_backwardError"
+kind = "theorem"
+desc = '''§7.3.1: with `r^(k) = A q^(k) - λ^(k) q^(k)` and `E^(k) = -r^(k) q^(k)ᴴ`, `(A + E^(k)) q^(k) =
+λ^(k) q^(k)` and `‖E^(k)‖₂ = ‖r^(k)‖₂` (unit `q^(k)`), so `λ^(k)` is an eigenvalue of a matrix within
+`‖r^(k)‖₂` of `A`. `isLeast_eigen_backwardError` (the rank-one perturbation attains the least norm). ★'''
+deps = ["GolubVanLoan.Chapter07.powerMethod", "isLeast_eigen_backwardError"]
+source = 'Golub–Van Loan, Matrix Computations, §7.3.1'
+
+[[node]]
+id = "orthogonalIteration"
+kind = "definition"
+desc = '''(7.3.6), orthogonal iteration, as a relation over any `[RCLike 𝕜]` (chapter 8's (8.2.8) is the instance
+`𝕜 = ℝ`): `IsOrthogonalIteration A Q : Prop` for `A : Matrix (Fin n) (Fin n) 𝕜`,
+`Q : ℕ → Matrix (Fin n) (Fin r) 𝕜` — `Q 0` has orthonormal columns and
+`∀ k, Matrix.IsOrthogonalIterationStep A (Q k) (Q (k+1))` (the backbone predicate: there is an upper
+triangular `R` with `A * Q k = Q (k+1) * R` and `Q (k+1)` has orthonormal columns — some thin QR
+factorization of `Z_k = A Q_{k-1}`, as the book's "(QR factorization)"). The eigenvalue estimates are
+`spectrum 𝕜 ((Q k)ᴴ * A * Q k)`. Canonical instance: the Gram–Schmidt iterates `Krylov.orthogonalIterate`
+(`orthogonalIteration_exists`, same node); for `r ≤ n` an iteration from any orthonormal `Q₀` exists by
+iterating `Matrix.exists_isOrthogonalIterationStep` (no rank hypothesis). ★'''
+deps = ["Matrix.IsOrthogonalIterationStep", "Matrix.exists_isOrthogonalIterationStep", "Krylov.orthogonalIterate", "Krylov.orthonormal_orthogonalIterate"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.6)'
+
+[[node]]
+id = "orthogonalIteration_range"
+kind = "theorem"
+desc = '''§7.3.2 (over any `[RCLike 𝕜]`, as `orthogonalIteration`): for an orthogonal iteration, if `A^k Q₀` has full column rank then
+`ran (Q k) = Krylov.subspaceIterate A (ran Q₀) k = A^k (ran Q₀)` (the triangular factors are then
+nonsingular), and `A^k Q₀ = Q_k (R_k ⋯ R_1)` for the triangular factors `R_k` of the steps (chosen from
+`Matrix.IsOrthogonalIterationStep`; the first display of the appendix proof); with `r = 1`
+the first column is the power method, `Q_k e₁ = ± q^(k)` up to a unimodular factor ("the sequence
+`{Q_k e₁}` is precisely the sequence produced by the power iteration"). The range clause is
+`Matrix.IsOrthogonalIterationStep.range_eq` (`ran Q' = A ran Q` under full rank) iterated;
+`Krylov.span_orthogonalIterate` for the canonical instance. ★★'''
+deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "Matrix.IsOrthogonalIterationStep.range_eq", "Krylov.subspaceIterate", "Krylov.span_orthogonalIterate", "GolubVanLoan.Chapter07.powerMethod"]
+source = 'Golub–Van Loan, Matrix Computations, §7.3.2'
+
+[[node]]
+id = "dominantInvariantSubspace_unique"
+kind = "theorem"
+desc = '''§7.3.2: with the Schur decomposition (7.3.7)–(7.3.8) and `|λ_r| > |λ_{r+1}|`, the dominant invariant
+subspace `D_r(A) = ran Q_α` (the first `r` Schur vectors) "is the unique invariant subspace associated
+with the eigenvalues `λ₁, …, λ_r`": it equals `⨆_{i < r} maxGenEigenspace (toLin' A) λ_i`, and every
+`A`-invariant subspace of dimension `r` on which `A` has eigenvalues among `λ₁, …, λ_r` equals it.
+`Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj`, `Module.End.invtSubmodule_eq_iSup_maxGenEigenspace`. ★'''
+deps = ["Matrix.span_cols_eq_iSup_maxGenEigenspace_of_conj", "Module.End.invtSubmodule_eq_iSup_maxGenEigenspace"]
+source = 'Golub–Van Loan, Matrix Computations, §7.3.2'
+
+[[node]]
+id = "lemma_7_3_2"
+kind = "theorem"
+desc = '''Lemma 7.3.2: let `Qᴴ A Q = T = D + N` be a Schur decomposition, `λ_max`, `λ_min` the eigenvalues of
+largest and smallest modulus, `μ ≥ 0`. (a) (7.3.15) `‖A^k‖₂ ≤ (1+μ)^{n-1} (|λ_max| + ‖N‖_F/(1+μ))^k` for
+all `k`; (b) (7.3.16) if `A` is nonsingular and `(1+μ)|λ_min| > ‖N‖_F`,
+`‖A^{-k}‖₂ ≤ (1+μ)^{n-1} (1 / (|λ_min| - ‖N‖_F/(1+μ)))^k`. One node, the conjunction. Backbone
+`Matrix.l2_opNorm_pow_le_of_schur`, `Matrix.l2_opNorm_inv_pow_le_of_schur` (the proof's last display
+has `|μ|` for `|λ_min|`, a misprint). ★'''
+deps = ["Matrix.l2_opNorm_pow_le_of_schur", "Matrix.l2_opNorm_inv_pow_le_of_schur"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 7.3.2'
+
+[[node]]
+id = "theorem_7_3_1"
+kind = "theorem"
+desc = '''Theorem 7.3.1, corrected (see the group desc): let the Schur decomposition be (7.3.7)–(7.3.8) with
+`n ≥ 2`, `|λ_r| > |λ_{r+1}|`, `μ ≥ 0` with `(1 + μ)|λ_r| > ‖N‖_F`, `Q₀` with orthonormal columns,
+`d_k = dist(D_r(A), ran Q_k)` for an orthogonal iteration `Q_k` (7.3.6), and
+`d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1` (in place of the printed (7.3.9)). Then
+`d_k ≤ (1+μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂)) ((|λ_{r+1}| + ‖N‖_F/(1+μ)) / (|λ_r| - ‖N‖_F/(1+μ)))^k
+· d₀ / √(1 - d̃₀²)`. `D_r(Aᴴ)` is the dominant invariant subspace of `Aᴴ`, which is the orthogonal
+complement of the complementary invariant subspace of `A`. Backbone
+`Matrix.gap_subspaceIterate_le_of_schur` with `orthogonalIteration_range` (full rank of `A^k Q₀` is a
+consequence of `d̃₀ < 1`, as in the book's proof). ★★'''
+deps = ["Matrix.gap_subspaceIterate_le_of_schur", "GolubVanLoan.Chapter07.orthogonalIteration_range", "GolubVanLoan.Chapter07.dominantInvariantSubspace_unique", "GolubVanLoan.Chapter07.lemma_7_3_2"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.3.1'
+
+[[node]]
+id = "theorem_7_3_1_counterexample"
+kind = "theorem"
+desc = '''The printed Theorem 7.3.1 is false: for `A = !![2, 1; 0, 1]` (Schur form with `Q = 1`, `N = !![0, 1;
+0, 0]`, `‖N‖_F = 1`), `r = 1`, `μ = 3` (so `(1+μ)|λ₁| = 8 > 1`) and `Q₀ = (1, -1)ᵀ/√2`: every orthogonal
+iteration has `ran Q_k = ran Q₀` (`A Q₀ = Q₀`), so `d_k = 1/√2` for all `k`, while the printed right-hand
+side `(1 + 1/1)(5/4 / 7/4)^k (1/√2)/√(1/2)` tends to `0` (`sep(2, 1) = 1`). The hypothesis that fails is
+`d̃₀ < 1`: `ran Q₀ ⊥ D₁(Aᴴ) = span{(1, 1)}`, so `d̃₀ = 1`. ★'''
+deps = ["GolubVanLoan.Chapter07.orthogonalIteration"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.3.1'
+
+[[node]]
+id = "equation_7_3_11"
+kind = "theorem"
+desc = '''(7.3.11) and the conclusion drawn from it (§7.3.3): if `|λ₁| > ⋯ > |λ_n|`, the Schur vectors are
+`q_i`, and `dist(D_i(Aᴴ), span{q₁^(0), …, q_i^(0)}) < 1` for `i = 1:n`, then for an orthogonal iteration
+with `r = n`, `dist(span{q₁^(k), …, q_i^(k)}, span{q₁, …, q_i}) → 0` for every `i`, and the matrices
+`T_k = Q_kᴴ A Q_k` converge to upper triangular form (their strictly lower entries tend to `0`).
+Theorem 7.3.1 (corrected) for each `r = i`, and the entries `(T_k)_{jl}`, `j > l`, bounded by the
+gaps (`Krylov.norm_inner_le_of_gap`). ★★'''
+deps = ["GolubVanLoan.Chapter07.theorem_7_3_1", "Krylov.norm_inner_le_of_gap"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.11)'
+
+[[node]]
+id = "orthogonalIteration_qr_step"
+kind = "theorem"
+desc = '''§7.3.3, the derivation of the QR iteration from orthogonal iteration, over any `[RCLike 𝕜]` (chapter 8's
+§8.2.5 node is the instance `𝕜 = ℝ`): for an orthogonal iteration with `r = n` (square unitary `Q_k`) and
+`T_k = Q_kᴴ A Q_k`, with `R_k` the triangular factor of the step `k - 1 → k`
+(`Matrix.IsOrthogonalIterationStep`), `T_{k-1} = (Q_{k-1}ᴴ Q_k) R_k` and `T_k = R_k (Q_{k-1}ᴴ Q_k)`, i.e.
+`Matrix.IsShiftedQrStep 0 (T (k-1)) (T k)` with unitary factor `Q_{k-1}ᴴ Q_k`. From `A Q_{k-1} = Q_k R_k`
+and `Q_kᴴ Q_k = 1`: backbone `Matrix.IsOrthogonalIterationStep.isShiftedQrStep` (a square step is
+`IsShiftedQrStep 0` with unitary factor `Qᴴ Q'`). For the canonical choice this is
+`Matrix.qrIterate_eq_conj_orthogonalIterate`. ★'''
+deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "Matrix.IsOrthogonalIterationStep", "Matrix.IsOrthogonalIterationStep.isShiftedQrStep", "Matrix.IsShiftedQrStep", "Matrix.qrIterate_eq_conj_orthogonalIterate"]
+source = 'Golub–Van Loan, Matrix Computations, §7.3.3'
+
+[[node]]
+id = "equation_7_3_14"
+kind = "theorem"
+desc = '''(7.3.12)–(7.3.14), the LR iteration is treppeniteration: let `G₀ = L₀` be unit lower triangular and
+nonsingular, `G_k` the treppeniteration (7.3.12) (`A G_{k-1} = G_k R_k`, `G_k` unit lower triangular,
+`R_k` upper triangular — an LU factorization, `Matrix.IsLU`), and `T_k` the LR iterates (7.3.14)
+(`T₀ = L₀⁻¹ A L₀`, `T_{k-1} = L_k R_k` LU, `T_k = R_k L_k`), all LU factorizations assumed to exist.
+Then `T_k = G_k⁻¹ A G_k` (7.3.13), with `G_k = L₀ L₁ ⋯ L_k`. Induction: `A G_{k-1} = G_{k-1} T_{k-1} =
+(G_{k-1} L_k) R_k` and uniqueness of the LU factorization of a nonsingular matrix
+(`Matrix.IsLU.unique`, the book's P7.3.8). The
+statement needs `G₀` unit lower triangular for the LU of `A G₀` to have `G₁ = G₀ L₁`; the book's
+"`G₀ ∈ ℂ^{n×r}` of rank `r`" with `r = n` and `L₀ = G₀` is read that way (report, Doubts). ★★'''
+deps = ["Matrix.IsLU", "Matrix.IsLU.unique"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.14)'
+
+[[node]]
+id = "equation_7_3_18"
+kind = "theorem"
+desc = '''(7.3.18): with `Q = [Q_α Q_β]` unitary (Schur vectors) and `Q_k` with orthonormal columns,
+`dist(D_r(A), ran Q_k) = ‖Q_βᴴ Q_k‖₂` — the book's §2.5.3 characterization of the distance of two
+equal-dimensional subspaces by orthonormal bases: chapter 2's `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`
+(their Theorem 2.5.1, `Numlib/Analysis/InnerProductSpace/Projection/Gap`) with `W₁ = Q_α`,
+`Z₁ = Q_k`, and the roles exchanged by `Submodule.gap_comm`. ★'''
+deps = ["Submodule.gap", "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.18)'
+
+[[node]]
+id = "equation_7_3_19"
+kind = "theorem"
+desc = '''(7.3.19): in the same setting, `1 = d_k² + σ_min(V_k)²` with `V_k = Q_αᴴ Q_k` — from the thin CS
+decomposition (Theorem 2.5.2) of the unitary `[V_k; W_k]`-columns: `V_kᴴ V_k + W_kᴴ W_k = I` and
+`σ_min(V_k)² = 1 - ‖W_k‖₂²`. Backbone `Matrix.gap_range_sq_add_sortedSingularValues_sq`
+(`Numlib/Analysis/Matrix/SingularValues`): `gap² + (W₁ᴴ * Z₁).sortedSingularValues (card k - 1) ^ 2 = 1`;
+the surface's `σ_min(V_k)` is `V_k.sortedSingularValues (k - 1)` (square `k × k`), or, if the surface keeps
+the column-indexed `⨅ i, V_k.singularValues i`, rewrite by
+`Matrix.sortedSingularValues_eq_iInf_singularValues`. ★'''
+deps = ["GolubVanLoan.Chapter07.equation_7_3_18", "Matrix.gap_range_sq_add_sortedSingularValues_sq", "Matrix.sortedSingularValues_eq_iInf_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.19)'
+
+[[node]]
+id = "equation_7_3_20"
+kind = "theorem"
+desc = '''(7.3.20): if `λ(T₁₁) ∩ λ(T₂₂) = ∅` the Sylvester equation `T₁₁ X - X T₂₂ = -T₁₂` has a solution
+(Lemma 7.1.5) and `‖X‖_F ≤ ‖T₁₂‖_F / sep(T₁₁, T₂₂)`. `Matrix.existsUnique_sylvesterMap_eq`,
+`Matrix.frobenius_norm_le_div_sep` (positivity of `sep` from `Matrix.sep_pos_iff`). ★'''
+deps = ["Matrix.existsUnique_sylvesterMap_eq", "Matrix.frobenius_norm_le_div_sep", "Matrix.sep_pos_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.20)'
+
+[[node]]
+id = "equation_7_3_24"
+kind = "theorem"
+desc = '''(7.3.23)–(7.3.24): for any `X`, `I + X Xᴴ` is Hermitian positive definite, and any `G` with
+`G Gᴴ = I + X Xᴴ` (e.g. its Cholesky factor) has `σ_min(G) ≥ 1` (`‖Gᴴ v‖² = ‖v‖² + ‖Xᴴ v‖² ≥ ‖v‖²`, and
+`σ_min(G) = σ_min(Gᴴ)` for square `G`). ★'''
+deps = ["Matrix.iInf_singularValues_eq_iInf_norm"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.24)'
+
+[[node]]
+id = "equation_7_3_25"
+kind = "theorem"
+desc = '''(7.3.25): with `X` from (7.3.20), `Aᴴ (Q_α - Q_β Xᴴ) = (Q_α - Q_β Xᴴ) T₁₁ᴴ`, so the columns of
+`Z = (Q_α - Q_β Xᴴ) G^{-H}` are an orthonormal basis of `D_r(Aᴴ)` (the dominant invariant subspace of
+`Aᴴ`); equivalently `D_r(Aᴴ)ᗮ = ran (Q_α X + Q_β)` is the complementary invariant subspace of `A`
+(the columns of `Q [X; I]` span it: `T [X; I] = [X; I] T₂₂` by the Sylvester equation). Block computation from `Aᴴ Q = Q Tᴴ` and the Sylvester equation. ★★'''
+deps = ["GolubVanLoan.Chapter07.equation_7_3_20", "GolubVanLoan.Chapter07.equation_7_3_24"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.25)'
+
+[[node]]
+id = "equation_7_3_26"
+kind = "theorem"
+desc = '''(7.3.26), corrected: `V₀ - X W₀ = G (Zᴴ Q₀)` is nonsingular and
+`‖(V₀ - X W₀)⁻¹‖₂ ≤ ‖G⁻¹‖₂ ‖(Zᴴ Q₀)⁻¹‖₂ ≤ 1 / √(1 - d̃₀²)` with `d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1`
+(`σ_min(Zᴴ Q₀)² = 1 - d̃₀²` by (7.3.19) for the pair `(D_r(Aᴴ), ran Q₀)`). The book's chain equates this
+with `1 - d₀²` through the claim `ran(Q_β) = D_r(Aᴴ)ᗮ`, which is false unless `T₁₂ = 0` — the source of
+the error in Theorem 7.3.1. ★★'''
+deps = ["GolubVanLoan.Chapter07.equation_7_3_25", "GolubVanLoan.Chapter07.equation_7_3_19", "GolubVanLoan.Chapter07.equation_7_3_24"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.26)'

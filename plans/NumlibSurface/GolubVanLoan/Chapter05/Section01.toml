@@ -1,0 +1,727 @@
+namespace = "GolubVanLoan.Chapter05"
+desc = '''
+§5.1, Householder and Givens transformations: the reflector `P = I - β v vᵀ` and its defining
+property (5.1.2); `house` (Algorithm 5.1.1) and the premultiplication/postmultiplication updates
+of §5.1.4; the factored form (5.1.3)–(5.1.5) and the WY representation (Lemma 5.1.1,
+Algorithm 5.1.2); Givens rotations (5.1.7)–(5.1.8), `givens` (Algorithm 5.1.3) and the row/column
+updates of §5.1.9; Stewart's one-number encoding (5.1.9)–(5.1.10); the rounding claims of
+§5.1.5, §5.1.10, §5.1.12 and (5.1.11) in their rigorous relational form; the complex reflector and
+rotation of §5.1.13.
+
+**The shared helper family** (conventions 10, 13, 14 of `NumlibSurface/GolubVanLoan`; every later
+chapter calls these and defines no variant): `houseOn` (Algorithm 5.1.1 on the entries listed by
+an index list; `algorithm_5_1_1` is its instance at the full list), `householderApplyLeft` /
+`householderApplyRight` (§5.1.4, in place on the full matrix over row and column index lists),
+`givensRotation` (the matrix `G(i, k, θ)`), `givensApplyLeft` / `givensApplyRight` (§5.1.9, rows
+`i, k` over a column list / columns `i, k` over a row list), and for reflector data of type
+`List ((Fin m → ℝ) × ℝ)` (pairs `(v, β)` in order of application, `v` full length, zero off its
+active rows, with the `β` that `house` returned) `householderProduct`, `forwardAccumulation`,
+`backwardAccumulation`. A submatrix `A(j:m, k:n)` is never copied into a `Fin (m - j)`-typed
+array: the helpers take the full matrix and the index lists `rows`, `cols`. Each symmetric pair is
+two nodes with two specs. Each helper's exact spec is read off its bridge at the exact model where
+a bridge exists (convention 11).
+
+Conventions (see `Chapter05.toml`): vectors `Fin m → ℝ`, 0-based (`x 0` is the book's `x(1)`, `e₁`
+is `Pi.single 0 1`); `P = 1 - β • vecMulVec v v`; the book's `G(i, k, θ)` is
+`givensRotation i k c s := Matrix.planeRotation i k c (-s)` (the backbone's plane rotation is in the
+Jacobi sign convention). Algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan`;
+the shapes of `algorithm_5_1_1` and `algorithm_5_1_3` and of the backbone relations they bridge to
+are settled in `notes/gvl/ch05/proto/Chapter05.lean` (there with `x : Fin (k+1) → ℝ`; `houseOn` is
+the same program over an index list).
+
+**Errata carried by the formalization** (report, Doubts): Algorithm 5.1.1's `σ = 0 & x(1) < 0`
+branch sets `β = 2` (the book prints `β = -2`, which makes `P` non-orthogonal); the retrieval
+`β_j = 2/(1 + ‖A(j+1:m, j)‖²)` of (5.1.4)/(5.1.5) is wrong when `house` returned `β = 0`, so the
+factored-form displays are specified against the recomputed `β` (`recomputedBeta`) and the link to
+Algorithm 5.2.1's actual `β` is a separate node (`equation_5_1_4_beta`); everywhere else reflector
+data carry the returned `β` and are never rebuilt as `2/(vᵀv)` (convention 13).
+
+Not formalized here: the 2-by-2 preview's geometry (§5.1.1, prose), flop counts, the level-2/3
+discussion of §5.1.7, P5.1.x.
+'''
+
+[[node]]
+id = "householderMatrix"
+kind = "definition"
+desc = '''§5.1.2, (5.1.1): for `v : Fin m → ℝ`, `householderMatrix v = 1 - (2 / (v ⬝ᵥ v)) • vecMulVec v v`,
+the Householder reflection with Householder vector `v` (reflection in `span{v}⊥` for `v ≠ 0`).
+Equal to the backbone's `Matrix.reflector v` (`rfl` over `ℝ` up to `star_trivial`). ★'''
+deps = ["Matrix.reflector", "Matrix.reflector_eq_householder"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.2, Definition'
+
+[[node]]
+id = "householderMatrix_isSymm"
+kind = "theorem"
+desc = '''§5.1.2 "Householder matrices are symmetric and orthogonal": `(householderMatrix v)ᵀ =
+householderMatrix v` and `householderMatrix v ∈ orthogonalGroup (Fin m) ℝ` (two declarations;
+`reflector_mem_unitaryGroup` over `ℝ`). ★'''
+deps = ["householderMatrix", "Matrix.reflector_mem_unitaryGroup"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.2'
+
+[[node]]
+id = "equation_5_1_2"
+kind = "theorem"
+desc = '''(5.1.2): for `x : Fin (k+1) → ℝ` nonzero and `α = ‖x‖₂` or `α = -‖x‖₂` with
+`v = x + α • e₁ ≠ 0`: `householderMatrix v *ᵥ x = -α • e₁` ("`v = x ± ‖x‖₂ e₁ ⇒ P x = ∓‖x‖₂ e₁`").
+`Matrix.reflector_mulVec_eq_of_sq` at `𝕜 = ℝ`. The derivation above it (`v ∈ span{x, e₁}`,
+`vᵀx = xᵀx + αx₁`, `vᵀv = xᵀx + 2αx₁ + α²`) is the backbone proof. ★'''
+deps = ["householderMatrix", "Matrix.reflector_mulVec_eq_of_sq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.2)'
+
+[[node]]
+id = "parlett_formula"
+kind = "theorem"
+desc = '''§5.1.3, Parlett's formula: if `x₁ + ‖x‖₂ ≠ 0` then
+`x₁ - ‖x‖₂ = -(x₂² + ⋯ + x_m²) / (x₁ + ‖x‖₂)` (0-based: `x 0 - ‖x‖ = -(∑ i, x i.succ ^ 2) / (x 0 + ‖x‖)`),
+the cancellation-free form of `v₁ = x₁ - ‖x‖₂` when `x₁ > 0`. `‖x‖² = x₁² + Σ x_{i+1}²`,
+`EuclideanSpace.norm_sq_eq`, `Fin.sum_univ_succ`, `field_simp`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.1.3'
+
+[[node]]
+id = "houseOn"
+kind = "definition"
+desc = '''Algorithm 5.1.1 (`house`, printed "hose") on the entries of `x` listed by an index list —
+convention 10's form of the book's `house(A(j:m, j))`:
+`noncomputable def houseOn {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m : ℕ} (o : List (Fin m))
+(x : Fin m → ℝ) : M ((Fin m → ℝ) × ℝ)`. With `p := o.head` (the book's `x(1)`; for `o = []` it
+returns `(0, 0)`) and `t := o.tail`: `σ ← FloatingPoint.dotAccum rnd t x x 0` (Algorithm 1.1.1 over
+the tail); `v :=` `1` at `p`, `x i` for `i ∈ t`, `0` off `o`; if `σ = 0 ∧ 0 ≤ x p` return `(v, 0)`;
+if `σ = 0 ∧ x p < 0` return `(v, 2)` (**erratum: printed `-2`**); else
+`μ ← rnd √(← rnd (← rnd (x p * x p) + σ))`, `v₀ ← if x p ≤ 0 then rnd (x p - μ) else
+rnd (-σ / (← rnd (x p + μ)))` (negation exact, convention 1), `q ← rnd (v₀ * v₀)` (the square
+computed once), `β ← rnd ((← rnd (2 * q)) / (← rnd (σ + q)))`, and `v i ← rnd (x i / v₀)` for
+`i ∈ t` (the `t`-loop by `Function.update`). Comparisons act on computed values (convention 1). ★★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.1'
+
+[[node]]
+id = "houseOn_rounds"
+kind = "theorem"
+desc = '''The bridge (convention 12): for `fp.IsIdempotent`, `o.Nodup` and `o ≠ []`, every run
+`(v̂, β̂) ∈ (houseOn fp.round o x).run` has `v̂ i = 0` for `i ∉ o` and its restriction to
+`{i // i ∈ o}` satisfies `FloatingPoint.RoundsHouseholderVectorParlett fp (fun i => x i) ⟨o.head, _⟩
+(fun i => v̂ i) β̂`. Unfold with `SetM.mem_run_bind`; the tail sum is a `RoundsDot` over `o.tail` by
+`FloatingPoint.roundsDot_of_mem_run_dotAccum` (any duplicate-free order covering the indices;
+`fp.IsIdempotent` for the `0 + p` start, convention 6) transported to `{j : {i // i ∈ o} // j ≠ head}`
+by `FloatingPoint.roundsDot_comp_equiv_iff`; the `t`-loop by `SetM.mem_run_foldlM_update_of_nodup`
+(each step writes `v i` from the frozen `v₀`). ★★'''
+deps = ["houseOn", "SetM.mem_run_bind", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "FloatingPoint.roundsDot_comp_equiv_iff", "FloatingPoint.RoundsHouseholderVectorParlett", "FloatingPoint.RoundingModel.IsIdempotent"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.1'
+
+[[node]]
+id = "houseOn_spec"
+kind = "theorem"
+desc = '''Exact semantics of `houseOn` (read off the bridge, convention 11): for `o.Nodup`, `o ≠ []`,
+`p = o.head` and `(v, β) := Id.run (houseOn pure o x)`: `v p = 1`, `v i = 0` for `i ∉ o`,
+`(1 - β • vecMulVec v v) ∈ orthogonalGroup`, `(1 - β • vecMulVec v v) *ᵥ x = y` with `y p = ‖x|_o‖₂`,
+`y i = 0` for `i ∈ o.tail` and `y i = x i` for `i ∉ o` (the reflector acts on the coordinates of `o`
+only), and `β = 0 ∨ β * (v ⬝ᵥ v) = 2` (so `1 - β vvᵀ` is `1` or `householderMatrix v`). Proof:
+`houseOn_rounds` at `RoundingModel.exact` (`round_exact`, `isIdempotent_exact`), then
+`FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert` at `u = 0`, where every
+`IsRelPert 0 K` is an equality, so the exact data of `IsReflectorPert` are the computed ones; the
+`β` dichotomy and the support from the relation's three branches. The underlying identities
+(Parlett's formula, `equation_5_1_2` with `α = -‖x‖`) are proved once in the backbone lemma. ★★'''
+deps = ["houseOn_rounds", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.isIdempotent_exact", "FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert", "equation_5_1_2", "parlett_formula"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.1'
+
+[[node]]
+id = "houseOn_rounding"
+kind = "theorem"
+desc = '''§5.1.5, first claim, rigorous ("house produces a Householder vector `v̂` very close to the
+exact `v`"), for a list: with `n = o.length`, `K = 18 n + 31`, `K u < 1`, `fp.IsIdempotent`,
+`o.Nodup`, `o ≠ []`: every run `(v̂, β̂)` of `houseOn fp.round o x` has
+`FloatingPoint.IsReflectorPert fp.u K (x|_o) ⟨o.head, _⟩ ‖x|_o‖₂ (v̂|_o) β̂` (on the subtype
+`{i // i ∈ o}`) — exact reflector data `(v, β)` sending `x|_o` to `‖x|_o‖₂ e_head` with
+`IsRelPert u K β β̂`, `IsRelPert u K (v i) (v̂ i)`, `|β| (vᵀv) ≤ 2` — and `v̂` vanishes off `o`.
+`houseOn_rounds` and `FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert`. The book's
+`O(u)` is `γ_K` (Wilkinson's constant is smaller; this one is the relational calculus's). This is
+the form chapters 7 and 8 feed to `FloatingPoint.RoundsHessenbergStepPert` /
+`RoundsTridiagonalizeStepPert`. ★'''
+deps = ["houseOn_rounds", "FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert", "FloatingPoint.IsReflectorPert"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
+
+[[node]]
+id = "algorithm_5_1_1"
+kind = "definition"
+desc = '''Algorithm 5.1.1 (`house`): `noncomputable def algorithm_5_1_1 (rnd : ℝ → M ℝ) {k : ℕ}
+(x : Fin (k+1) → ℝ) : M ((Fin (k+1) → ℝ) × ℝ) := houseOn rnd (List.finRange (k+1)) x` — the helper
+at the full list (convention 10; the equation is `rfl`), so the pivot is `x 0` and the tail sum is
+Algorithm 1.1.1 on `x ∘ Fin.succ` in order. ★'''
+deps = ["houseOn"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.1'
+
+[[node]]
+id = "algorithm_5_1_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of `house`: with `(v, β) := Id.run (algorithm_5_1_1 pure x)`,
+`v 0 = 1`, `(1 - β • vecMulVec v v) ∈ orthogonalGroup`, `(1 - β • vecMulVec v v) *ᵥ x = ‖x‖₂ • e₁`,
+and `β = 0 ∨ β * (v ⬝ᵥ v) = 2` (so `1 - β vvᵀ` is `1` or `householderMatrix v`). `houseOn_spec` at
+`o = List.finRange (k+1)` (`List.nodup_finRange`). The cases of the book: `σ = 0` (`x = x₁ e₁`;
+`β = 0` for `x₁ ≥ 0`, `P = I - 2e₁e₁ᵀ` for `x₁ < 0`); otherwise `v = (x - ‖x‖ e₁)/(x₁ - ‖x‖)`
+(`parlett_formula` for `x₁ > 0`). Statement elaborated in the prototype. ★'''
+deps = ["algorithm_5_1_1", "houseOn_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.1'
+
+[[node]]
+id = "algorithm_5_1_1_rounding"
+kind = "theorem"
+desc = '''§5.1.5, first claim, for the book's `house` on a whole vector: with `K = 18(k+1) + 31`,
+`K u < 1` and `fp.IsIdempotent`, every run `(v̂, β̂) ∈ (algorithm_5_1_1 fp.round x).run` satisfies
+`FloatingPoint.IsReflectorPert fp.u K x 0 ‖x‖₂ v̂ β̂`: the exact `(v, β)` of
+`algorithm_5_1_1_spec` satisfy `IsRelPert u K β β̂` and `IsRelPert u K (v i) (v̂ i)` for all `i`.
+`houseOn_rounding` at the full list (the subtype `{i // i ∈ List.finRange (k+1)}` is `Fin (k+1)`,
+`Equiv.subtypeUnivEquiv`). ★'''
+deps = ["algorithm_5_1_1", "houseOn_rounding", "algorithm_5_1_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
+
+[[node]]
+id = "householderApplyLeft"
+kind = "definition"
+desc = '''§5.1.4, premultiplication `PA = A - (βv)(vᵀA)` as the book prescribes it ("a matrix-vector
+product and a rank-1 update"), in place on a block given by index lists (convention 10):
+`householderApplyLeft (rnd : ℝ → M ℝ) {m n : ℕ} (v : Fin m → ℝ) (β : ℝ) (rows : List (Fin m))
+(cols : List (Fin n)) (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ)`, the book's
+`A(rows, cols) = (I - β v vᵀ) A(rows, cols)`: `w i ← rnd (β * v i)` once for `i ∈ rows`; for each
+`q ∈ cols`: `s ← FloatingPoint.dotAccum rnd rows v (A.col q) 0` (Algorithm 1.1.1 over `rows`), then
+`A i q ← rnd (A i q - (← rnd (w i * s)))` for `i ∈ rows`; entries outside `rows × cols` untouched.
+Used by Algorithms 5.2.1, 5.2.2, 5.4.1, 5.4.2, (5.1.4), (5.1.5), and chapters 6–8, 10. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyLeft_rounds"
+kind = "theorem"
+desc = '''The bridge: for `rows.Nodup`, `cols.Nodup`, `fp.IsIdempotent`, every run
+`B ∈ (householderApplyLeft fp.round v β rows cols A).run` equals `A` outside `rows × cols`, and for
+every `q ∈ cols` the restriction of `B.col q` to `{i // i ∈ rows}` is a
+`FloatingPoint.RoundsHouseholderApplyScaled fp β (v|_rows) (A.col q|_rows)`. The column loop by
+`SetM.mem_run_foldlM_update_of_nodup`-type reasoning on columns (each column read and written once),
+the inner product by `FloatingPoint.roundsDot_of_mem_run_dotAccum` (convention 6). ★★'''
+deps = ["householderApplyLeft", "FloatingPoint.RoundsHouseholderApplyScaled", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyLeft_spec"
+kind = "theorem"
+desc = '''Exact semantics (read off the bridge at the exact model, convention 11): for duplicate-free
+`rows`, `cols` and `v` vanishing off `rows`, `Id.run (householderApplyLeft pure v β rows cols A)`
+equals `(1 - β • vecMulVec v v) * A` in the columns of `cols` and `A` elsewhere; for `cols` all
+columns it is `(1 - β • vecMulVec v v) * A`. `householderApplyLeft_rounds` at `RoundingModel.exact`
+with `RoundsHouseholderApplyScaled` at `u = 0` (every rounding an equality; the rank-one identity
+`FloatingPoint.one_sub_smul_vecMulVec_mulVec_apply`), and the reflector acting as the identity off
+`rows`. ★'''
+deps = ["householderApplyLeft_rounds", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.isIdempotent_exact"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyLeft_rounding"
+kind = "theorem"
+desc = '''§5.1.5, second claim, rigorous: `fl(P̂ A) = P (A + E)`. If `(v̂, β̂)` are `IsRelPert u K` of an
+exact `(v, β)` with `|β| (vᵀv) ≤ 2` (e.g. the data of `houseOn_rounding`), `v`, `v̂` vanish off
+`rows`, and `fp.IsIdempotent`, then every run `B ∈ (householderApplyLeft fp.round v̂ β̂ rows cols A).run`
+satisfies, with `P = 1 - β • vecMulVec v v` (orthogonal, the identity off `rows`) and `E := Pᵀ B' - A`
+on the block (`B'` = `B` on `rows × cols`), columnwise `‖E.col q‖₂ ≤ 3 γ_{3K+|rows|+3} ‖A.col q‖₂`
+for `q ∈ cols` and `‖E‖_F ≤ 3 γ_{3K+|rows|+3} ‖A(rows, cols)‖_F`. The book's `‖E‖₂ = O(u ‖A‖₂)`
+follows with a `√p` factor. `householderApplyLeft_rounds` and
+`FloatingPoint.frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col`. ★★'''
+deps = ["householderApplyLeft_rounds", "householderApplyLeft_spec", "FloatingPoint.frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
+
+[[node]]
+id = "householderApplyRight"
+kind = "definition"
+desc = '''§5.1.4, postmultiplication `AP = A - (Av)(βv)ᵀ`, in place on a block:
+`householderApplyRight (rnd : ℝ → M ℝ) {m n : ℕ} (v : Fin n → ℝ) (β : ℝ) (rows : List (Fin m))
+(cols : List (Fin n)) (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ)`, the book's
+`A(rows, cols) = A(rows, cols)(I - β v vᵀ)`: `w j ← rnd (β * v j)` once for `j ∈ cols`; for each
+`r ∈ rows`: `s ← FloatingPoint.dotAccum rnd cols (A r) v 0`, then `A r j ← rnd (A r j - (← rnd (s * w j)))`
+for `j ∈ cols`; entries outside `rows × cols` untouched. The symmetric twin of
+`householderApplyLeft` (convention 14). ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyRight_rounds"
+kind = "theorem"
+desc = '''The bridge, rowwise: for duplicate-free lists and `fp.IsIdempotent`, every run
+`B ∈ (householderApplyRight fp.round v β rows cols A).run` equals `A` outside `rows × cols`, and for
+every `r ∈ rows` the restriction of `B r` to `{j // j ∈ cols}` is a
+`FloatingPoint.RoundsHouseholderApplyScaled fp β (v|_cols) ((A r)|_cols)` (the relation's `w_i s`
+products commute: `fl(s w_j)` is `fl(w_j s)`). As `householderApplyLeft_rounds`. ★★'''
+deps = ["householderApplyRight", "FloatingPoint.RoundsHouseholderApplyScaled", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "SetM.mem_run_foldlM_update_of_nodup", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyRight_spec"
+kind = "theorem"
+desc = '''Exact semantics: for duplicate-free lists and `v` vanishing off `cols`,
+`Id.run (householderApplyRight pure v β rows cols A)` equals `A * (1 - β • vecMulVec v v)` in the
+rows of `rows` and `A` elsewhere. `householderApplyRight_rounds` at `RoundingModel.exact`, as
+`householderApplyLeft_spec`. ★'''
+deps = ["householderApplyRight_rounds", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundingModel.isIdempotent_exact"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.4'
+
+[[node]]
+id = "householderApplyRight_rounding"
+kind = "theorem"
+desc = '''§5.1.5, the post-multiplication form `fl(A P̂) = (A + E) P`: under the hypotheses of
+`householderApplyLeft_rounding` with `v`, `v̂` vanishing off `cols`, every run `B` satisfies rowwise
+`‖E.row r‖₂ ≤ 3 γ_{3K+|cols|+3} ‖A.row r‖₂` for `r ∈ rows` and the Frobenius bound, `E := B' Pᵀ - A`
+on the block. `householderApplyRight_rounds` and
+`FloatingPoint.frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row`. ★★'''
+deps = ["householderApplyRight_rounds", "householderApplyRight_spec", "FloatingPoint.frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
+
+[[node]]
+id = "householderMatrix_computed_sub_le"
+kind = "theorem"
+desc = '''§5.1.5 "`P̂ = I - 2v̂v̂ᵀ/v̂ᵀv̂` satisfies `‖P̂ - P‖₂ = O(u)`", rigorous: for a run `(v̂, β̂)` of
+`algorithm_5_1_1 fp.round x` with `σ ≠ 0` and `γ_K ≤ 1/2`,
+`‖householderMatrix v̂ - householderMatrix v‖₂ ≤ 8 γ_K` for the exact `v`
+(`FloatingPoint.l2_opNorm_reflector_sub_le` with `algorithm_5_1_1_rounding`). With
+`FloatingPoint.l2_opNorm_transpose_mul_self_sub_one_le` this is §5.1.12's "the matrices defined by
+the floating point output of house … are orthogonal to working precision". ★'''
+deps = ["algorithm_5_1_1_rounding", "householderMatrix", "FloatingPoint.l2_opNorm_reflector_sub_le", "FloatingPoint.l2_opNorm_transpose_mul_self_sub_one_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
+
+[[node]]
+id = "householderProduct"
+kind = "definition"
+desc = '''The orthogonal matrix of reflector data (convention 13): for
+`data : List ((Fin m → ℝ) × ℝ)` (pairs `(v, β)` in order of application),
+`householderProduct data := (data.map fun p => 1 - p.2 • vecMulVec p.1 p.1).prod`, the book's
+`Q = Q₁ Q₂ ⋯ Q_r` (§5.1.6). Orthogonal whenever each `β = 0 ∨ β vᵀv = 2`
+(`householderProduct_mem_orthogonalGroup`, same node; `Matrix.reflector_mem_unitaryGroup`). ★'''
+deps = ["householderMatrix", "Matrix.reflector_mem_unitaryGroup"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
+
+[[node]]
+id = "storedHouseholderVec"
+kind = "definition"
+desc = '''The Householder vector `v^{(j)}` read from a factored-form array ((5.1.3), §5.1.6):
+for `A : Matrix (Fin m) (Fin n) ℝ` and `j : Fin n`, `storedHouseholderVec A j i = if i < j then 0
+else if i = j then 1 else A i j` (indices compared as naturals): zeros above `j`, `1` at `j`, the
+essential part `A(j+1:m, j)` below. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.3)'
+
+[[node]]
+id = "storedReflectors"
+kind = "definition"
+desc = '''The reflector data held by a factored-form array ((5.1.3), §5.1.6: "the Householder vectors
+and the corresponding `β_j`"): for `A : Matrix (Fin m) (Fin n) ℝ` and `β : Fin n → ℝ`,
+`storedReflectors A β : List ((Fin m → ℝ) × ℝ) := List.ofFn fun j => (storedHouseholderVec A j, β j)`
+— the vectors read from the array, the `β` the program **returned** (convention 13). ★'''
+deps = ["storedHouseholderVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.3)'
+
+[[node]]
+id = "factoredQ"
+kind = "definition"
+desc = '''(5.1.3), the factored form: `factoredQ β A := householderProduct (storedReflectors A β)
+= Q₁ ⋯ Q_n` with `Q_j = 1 - β j • vecMulVec (storedHouseholderVec A j) (storedHouseholderVec A j)`.
+(Named by content, source kept: the display defines notation, `NumlibSurface/GolubVanLoan` naming
+rule.) ★'''
+deps = ["storedReflectors", "householderProduct"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.3)'
+
+[[node]]
+id = "recomputedBeta"
+kind = "definition"
+desc = '''The `β` that (5.1.4), (5.1.5) and Algorithm 5.3.2 recompute from a stored vector:
+`recomputedBeta A j := 2 / (storedHouseholderVec A j ⬝ᵥ storedHouseholderVec A j)` (the book's
+`2/(1 + ‖A(j+1:m, j)‖²)`). It is the returned `β j` exactly when that is nonzero
+(`equation_5_1_4_beta`); the book's displays are specified against it, every other consumer uses
+the returned `β` (convention 13). ★'''
+deps = ["storedHouseholderVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.4)'
+
+[[node]]
+id = "factoredQTransposeMul"
+kind = "definition"
+desc = '''(5.1.4) as a program (the display is a loop; named by content per the naming rule, its
+correctness theorem is `equation_5_1_4`): overwriting `C` with `Qᵀ C` from the factored form:
+for `j = 1:n`, `v = storedHouseholderVec A j` (`[1; A(j+1:m, j)]` on rows `j:m`),
+`β_j ← rnd (2 / (← rnd (1 + (← dotAccum rnd (rows j).tail v v 0))))` (the book's recomputation: a
+rounded dot product, `1 +`, a division), then
+`C ← householderApplyLeft rnd v β_j (rows j) (List.finRange p) C` with
+`rows j = (List.finRange m).filter (j ≤ ·)` (convention 10).
+`noncomputable def factoredQTransposeMul (rnd) (A : Matrix (Fin m) (Fin n) ℝ)
+(C : Matrix (Fin m) (Fin p) ℝ) : M (Matrix (Fin m) (Fin p) ℝ)`, `n ≤ m`. ★'''
+deps = ["householderApplyLeft", "storedHouseholderVec", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.4)'
+
+[[node]]
+id = "equation_5_1_4"
+kind = "theorem"
+desc = '''(5.1.4) computes `Qᵀ C`: `Id.run (factoredQTransposeMul pure A C) = (factoredQ (recomputedBeta A) A)ᵀ * C`
+— unconditionally, for the reflectors with the *recomputed* `β`. Induction over `j` with
+`householderApplyLeft_spec`; the reflector `Q_j` acts on rows `≥ j` only. ★★'''
+deps = ["factoredQTransposeMul", "factoredQ", "recomputedBeta", "householderApplyLeft_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.4)'
+
+[[node]]
+id = "factoredQFirstColumns"
+kind = "definition"
+desc = '''(5.1.5) as a program (named by content; its correctness theorem is `equation_5_1_5`),
+backward accumulation of `Q(:, 1:k)`: `Q = I_m(:, 1:k)`; for `j = n:-1:1`,
+`v = storedHouseholderVec A j`, `β_j` recomputed as in `factoredQTransposeMul`,
+`Q ← householderApplyLeft rnd v β_j (rows j) (cols j) Q` with `cols j` the columns `j:k` (the book's
+economy: the columns `< j` of the partial product are still those of the identity there). The loop
+runs over `(List.finRange n).reverse`. ★'''
+deps = ["householderApplyLeft", "storedHouseholderVec", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5)'
+
+[[node]]
+id = "equation_5_1_5"
+kind = "theorem"
+desc = '''(5.1.5) computes the first `k` columns of `Q`:
+`Id.run (factoredQFirstColumns pure A k) = (factoredQ (recomputedBeta A) A).submatrix id (Fin.castLE hk)`.
+The restriction to columns `j:k` is justified by the invariant that after processing `j`, the
+partial product `Q_j ⋯ Q_n` agrees with the identity on rows/columns `< j`. ★★'''
+deps = ["factoredQFirstColumns", "factoredQ", "recomputedBeta", "householderApplyLeft_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5)'
+
+[[node]]
+id = "forwardAccumulation"
+kind = "definition"
+desc = '''§5.1.6, forward accumulation `Q = I; for j = 1:r, Q = Q Q_j` over reflector data
+`data : List ((Fin m → ℝ) × ℝ)` (convention 13): `data.foldlM (fun Q (v, β) =>
+householderApplyRight rnd v β (List.finRange m) (List.finRange m) Q) 1`. ★'''
+deps = ["householderApplyRight"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
+
+[[node]]
+id = "backwardAccumulation"
+kind = "definition"
+desc = '''§5.1.6, backward accumulation `Q = I; for j = r:-1:1, Q = Q_j Q` (the one the book
+recommends, exploiting the zeros of the early `Q_j`): `data.reverse.foldlM (fun Q (v, β) =>
+householderApplyLeft rnd v β (List.finRange m) (List.finRange m) Q) 1`. The symmetric twin of
+`forwardAccumulation` (convention 14). ★'''
+deps = ["householderApplyLeft"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
+
+[[node]]
+id = "forwardAccumulation_spec"
+kind = "theorem"
+desc = '''`Id.run (forwardAccumulation pure data) = householderProduct data` (induction on the list with
+`householderApplyRight_spec`, `List.prod_append`). ★'''
+deps = ["forwardAccumulation", "householderProduct", "householderApplyRight_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
+
+[[node]]
+id = "backwardAccumulation_spec"
+kind = "theorem"
+desc = '''`Id.run (backwardAccumulation pure data) = householderProduct data` (induction on the reversed
+list with `householderApplyLeft_spec`; associativity). ★'''
+deps = ["backwardAccumulation", "householderProduct", "householderApplyLeft_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
+
+[[node]]
+id = "equation_5_1_6"
+kind = "theorem"
+desc = '''(5.1.6): a product `Q = Q₁ ⋯ Q_r` of `m × m` Householder matrices is a rank-`r` modification
+of the identity, `∃ W Y : Matrix (Fin m) (Fin r) ℝ, Q = 1 - W * Yᵀ`. Backbone `Matrix.isWY_prod`. ★'''
+deps = ["Matrix.isWY_prod"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.6)'
+
+[[node]]
+id = "lemma_5_1_1"
+kind = "theorem"
+desc = '''Lemma 5.1.1: if `Q = I - W Yᵀ` (orthogonal, `W, Y ∈ ℝ^{m×j}`), `P = I - β v vᵀ` and `z = β Q v`,
+then `Q P = I - W₊ Y₊ᵀ` with `W₊ = [W | z]`, `Y₊ = [Y | v]` (columns appended with `Fin.snoc`).
+Backbone `Matrix.IsWY.mul_one_sub_smul_vecMulVec` at `ℝ` (orthogonality not needed). ★'''
+deps = ["Matrix.IsWY.mul_one_sub_smul_vecMulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 5.1.1'
+
+[[node]]
+id = "algorithm_5_1_2"
+kind = "definition"
+desc = '''Algorithm 5.1.2 (WY from factored form), on reflector data `data : List ((Fin m → ℝ) × ℝ)` of
+length `r` (convention 13): `Y = v^{(1)}; W = β₁ v^{(1)}`; for `j = 2:r`,
+`z = β_j (I_m - W Yᵀ) v^{(j)}` (computed as `v - W (Yᵀ v)`: a gaxpy with rounded dot products, then
+the scaling), `W = [W | z]`, `Y = [Y | v^{(j)}]`. The growing widths are handled by keeping `W`, `Y`
+as `Matrix (Fin m) (Fin r) ℝ` with the not-yet-filled columns zero (the column `j` is written at
+step `j`), which leaves `W Yᵀ` unchanged. ★★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.2'
+
+[[node]]
+id = "algorithm_5_1_2_spec"
+kind = "theorem"
+desc = '''With `(W, Y) := Id.run (algorithm_5_1_2 pure data)`: `householderProduct data = 1 - W * Yᵀ` and
+the columns of `Y` are the vectors of `data`; if they have the shape (5.1.3), `Y` is unit lower
+trapezoidal ("`Y` is merely the matrix of Householder vectors and is therefore unit lower
+triangular"). Backbone `Matrix.isWY_prod`, `Matrix.isWY_prod_unitLowerTrapezoidal` (the program's
+`W` is the backbone's `wyW`). ★★'''
+deps = ["algorithm_5_1_2", "householderProduct", "Matrix.isWY_prod", "Matrix.isWY_prod_unitLowerTrapezoidal"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.2'
+
+[[node]]
+id = "blockReflector_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''§5.1.7 "True block reflectors have the form `Q = I - 2VVᵀ` where `VᵀV = I_r`": such a `Q` is
+orthogonal. Backbone `Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup`. ★'''
+deps = ["Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.7'
+
+[[node]]
+id = "givensRotation"
+kind = "definition"
+desc = '''(5.1.7), the Givens rotation matrix `G(i, k, θ)` (`c` at `(i,i)` and `(k,k)`, `s` at `(i,k)`, `-s`
+at `(k,i)`): `givensRotation (i k : Fin m) (c s : ℝ) := Matrix.planeRotation i k c (-s)` (the
+backbone's rotation has rows `(c, -s)`, `(s, c)`). Named `givensRotation` because the book's
+`givens` is Algorithm 5.1.3, which computes `(c, s)`. ★'''
+deps = ["Matrix.planeRotation"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.7)'
+
+[[node]]
+id = "givensRotation_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''§5.1.8 "Givens rotations are clearly orthogonal" (`c² + s² = 1`, `i ≠ k`), and the action of
+`G(i, k, θ)ᵀ`: `y_i = c x_i - s x_k`, `y_k = s x_i + c x_k`, `y_j = x_j` otherwise (second
+declaration `givensRotation_transpose_mulVec_apply`). `Matrix.planeRotation_mem_orthogonalGroup`,
+`Matrix.transpose_planeRotation_mulVec_apply`. ★'''
+deps = ["givensRotation", "Matrix.planeRotation_mem_orthogonalGroup", "Matrix.transpose_planeRotation_mulVec_apply"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.8'
+
+[[node]]
+id = "equation_5_1_8"
+kind = "theorem"
+desc = '''(5.1.8): with `c = x_i/√(x_i² + x_k²)`, `s = -x_k/√(x_i² + x_k²)` (`(x_i, x_k) ≠ 0`),
+`y = G(i, k, θ)ᵀ x` has `y_k = 0` (and `y_i = √(x_i² + x_k²)`). The backbone's
+`transpose_planeRotation_givensPair_mulVec` after `givensRotation i k c s = planeRotation i k c (-s)`
+and `(c, -s) = givensPair x_i x_k`. ★'''
+deps = ["givensRotation", "Matrix.givensPair", "Matrix.transpose_planeRotation_givensPair_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.8)'
+
+[[node]]
+id = "algorithm_5_1_3"
+kind = "definition"
+desc = '''Algorithm 5.1.3 (`givens`): `if b = 0 then (1, 0) else if |b| > |a| then τ ← rnd (-a/b);
+s ← rnd (1 / (← rnd √(← rnd (1 + (← rnd (τ * τ)))))); c ← rnd (s * τ) else` the same with
+`τ ← rnd (-b/a)` and the roles of `c`, `s` exchanged. Prototype
+`notes/gvl/ch05/proto/Chapter05.lean` (elaborates as `noncomputable def`). ★'''
+deps = ["FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.3'
+
+[[node]]
+id = "algorithm_5_1_3_rounds"
+kind = "theorem"
+desc = '''The bridge: every run `(ĉ, ŝ) ∈ (algorithm_5_1_3 fp.round a b).run` satisfies
+`FloatingPoint.RoundsGivensPair fp a b ĉ ŝ` (prototype-checked statement; `SetM.mem_run_bind`
+through the three branches — the comparisons `b = 0`, `|b| > |a|` are exact, convention 1). ★'''
+deps = ["algorithm_5_1_3", "FloatingPoint.RoundsGivensPair", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.3'
+
+[[node]]
+id = "algorithm_5_1_3_spec"
+kind = "theorem"
+desc = '''With `(c, s) := Id.run (algorithm_5_1_3 pure a b)`: `c ^ 2 + s ^ 2 = 1` and
+`[c s; -s c]ᵀ [a; b] = [r; 0]`, i.e. `s * a + c * b = 0`, with `r = c a - s b` and `|r| = √(a² + b²)`
+(the sign of `r` is not controlled — P5.1.11). Read off the bridge (convention 11):
+`algorithm_5_1_3_rounds` at `RoundingModel.exact`, then `FloatingPoint.RoundsGivensPair.exists_isRelPert`
+at `u = 0` (its exact pair equals the computed one when `b ≠ 0`; `b = 0` gives `(1, 0)` directly);
+`r² = (c² + s²)(a² + b²) - (s a + c b)²`. ★'''
+deps = ["algorithm_5_1_3_rounds", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.RoundsGivensPair.exists_isRelPert"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.1.3'
+
+[[node]]
+id = "algorithm_5_1_3_rounding"
+kind = "theorem"
+desc = '''§5.1.10, "the computed `ĉ`, `ŝ` satisfy `ĉ = c(1 + ε_c)`, `ŝ = s(1 + ε_s)`, `ε = O(u)`",
+rigorous: for `13 u < 1`, every run `(ĉ, ŝ) ∈ (algorithm_5_1_3 fp.round a b).run` has exact `c, s`
+with `c² + s² = 1`, `s a + c b = 0`, `IsRelPert u 13 c ĉ`, `IsRelPert u 13 s ŝ`; when `b ≠ 0` these
+are the exact-arithmetic output (`algorithm_5_1_3_spec`). `algorithm_5_1_3_rounds` and
+`FloatingPoint.RoundsGivensPair.exists_isRelPert`. ★'''
+deps = ["algorithm_5_1_3_rounds", "algorithm_5_1_3_spec", "FloatingPoint.RoundsGivensPair.exists_isRelPert"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.10'
+
+[[node]]
+id = "givensApplyLeft"
+kind = "definition"
+desc = '''§5.1.9, the row update `A([i, k], cols) = G(i, k, θ)ᵀ A([i, k], cols)` in place on the full
+matrix (conventions 10, 13): `givensApplyLeft (rnd : ℝ → M ℝ) {m n : ℕ} (i k : Fin m) (c s : ℝ)
+(cols : List (Fin n)) (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ)`: for `j ∈ cols`,
+`τ₁ = A i j`, `τ₂ = A k j`, `A i j ← rnd (rnd (c τ₁) - rnd (s τ₂))`,
+`A k j ← rnd (rnd (s τ₁) + rnd (c τ₂))`. Used by Algorithms 5.2.4, 5.2.5, §5.4.5, §6.5 and chapters
+7, 8, 10, 11. ★'''
+deps = ["givensRotation", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.9'
+
+[[node]]
+id = "givensApplyRight"
+kind = "definition"
+desc = '''§5.1.9, the column update `A(rows, [i, k]) = A(rows, [i, k]) G(i, k, θ)`:
+`givensApplyRight (rnd : ℝ → M ℝ) {m n : ℕ} (i k : Fin n) (c s : ℝ) (rows : List (Fin m))
+(A : Matrix (Fin m) (Fin n) ℝ)`: for `r ∈ rows`, `τ₁ = A r i`, `τ₂ = A r k`,
+`A r i ← rnd (rnd (c τ₁) - rnd (s τ₂))`, `A r k ← rnd (rnd (s τ₁) + rnd (c τ₂))`. The symmetric
+twin of `givensApplyLeft` (convention 14). ★'''
+deps = ["givensRotation", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.9'
+
+[[node]]
+id = "givensApplyLeft_spec"
+kind = "theorem"
+desc = '''For `i ≠ k` and `cols.Nodup`: `Id.run (givensApplyLeft pure i k c s cols A)` equals
+`(givensRotation i k c s)ᵀ * A` in the columns of `cols` and `A` elsewhere; for `cols` all columns it
+is `(givensRotation i k c s)ᵀ * A`. Read off the bridge (convention 11): `givensApplyLeft_rounds` at
+`RoundingModel.exact`, where `RoundsGivensApply` is the exact two-entry update, then
+`Matrix.transpose_planeRotation_mul_apply`. ★'''
+deps = ["givensApplyLeft_rounds", "FloatingPoint.RoundingModel.round_exact", "Matrix.transpose_planeRotation_mul_apply"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.9'
+
+[[node]]
+id = "givensApplyRight_spec"
+kind = "theorem"
+desc = '''For `i ≠ k` and `rows.Nodup`: `Id.run (givensApplyRight pure i k c s rows A)` equals
+`A * givensRotation i k c s` in the rows of `rows` and `A` elsewhere. Read off `givensApplyRight_rounds`
+at `RoundingModel.exact`, then `Matrix.mul_planeRotation_apply`. ★'''
+deps = ["givensApplyRight_rounds", "FloatingPoint.RoundingModel.round_exact", "Matrix.mul_planeRotation_apply"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.9'
+
+[[node]]
+id = "givensApplyLeft_rounds"
+kind = "theorem"
+desc = '''The bridge: for `cols.Nodup`, every run `B ∈ (givensApplyLeft fp.round i k c s cols A).run`
+equals `A` outside the columns of `cols` and on rows other than `i, k`, and its restriction to the
+columns `{q // q ∈ cols}` is a `FloatingPoint.RoundsGivensRowUpdate fp c s i k` of that of `A`
+(`SetM.mem_run_foldlM_update_of_nodup`-type column loop; the relation's signs are the book's). ★'''
+deps = ["givensApplyLeft", "FloatingPoint.RoundsGivensRowUpdate", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.10'
+
+[[node]]
+id = "givensApplyRight_rounds"
+kind = "theorem"
+desc = '''The bridge, rowwise: for `rows.Nodup`, every run of `givensApplyRight fp.round i k c s rows A`
+equals `A` outside the rows of `rows` and on columns other than `i, k`, and its restriction to the
+rows `{r // r ∈ rows}` is a `FloatingPoint.RoundsGivensColUpdate fp c s i k` of that of `A`. ★'''
+deps = ["givensApplyRight", "FloatingPoint.RoundsGivensColUpdate", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.10'
+
+[[node]]
+id = "givensApplyLeft_rounding"
+kind = "theorem"
+desc = '''§5.1.10, "`fl[Ĝ(i,k,θ)ᵀ A] = G(i,k,θ)ᵀ (A + E)`, `‖E‖₂ ≈ u ‖A‖₂`", rigorous: if `(ĉ, ŝ)` are
+`IsRelPert u n` of an exact `(c, s)` with `c² + s² = 1`, every run
+`B ∈ (givensApplyLeft fp.round i k ĉ ŝ cols A).run` satisfies `B = (givensRotation i k c s)ᵀ (A + E)`
+on the columns of `cols` with `‖E.col q‖₂ ≤ √2 γ_{n+2} ‖A.col q‖₂` for every `q ∈ cols` and
+`‖E‖_F ≤ √2 γ_{n+2} ‖A‖_F` (`E` zero outside `cols`). `givensApplyLeft_rounds`,
+`FloatingPoint.RoundsGivensRowUpdate.col_norm_sub_le`, `.frobenius_norm_sub_le`; `E := G B - A` and
+unitary invariance. With the data of `algorithm_5_1_3_rounding` (`n = 13`) the constant is `√2 γ₁₅`. ★★'''
+deps = ["givensApplyLeft_rounds", "FloatingPoint.RoundsGivensRowUpdate.col_norm_sub_le", "FloatingPoint.RoundsGivensRowUpdate.frobenius_norm_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.10'
+
+[[node]]
+id = "givensApplyRight_rounding"
+kind = "theorem"
+desc = '''§5.1.10, the column form: under the hypotheses of `givensApplyLeft_rounding`, every run of
+`givensApplyRight fp.round i k ĉ ŝ rows A` is `(A + E) G(i,k,θ)` on the rows of `rows` with rowwise
+`‖E.row r‖₂ ≤ √2 γ_{n+2} ‖A.row r‖₂` and the Frobenius bound. `givensApplyRight_rounds`,
+`FloatingPoint.RoundsGivensColUpdate.row_norm_sub_le`, `.frobenius_norm_sub_le`. ★★'''
+deps = ["givensApplyRight_rounds", "FloatingPoint.RoundsGivensColUpdate.row_norm_sub_le", "FloatingPoint.RoundsGivensColUpdate.frobenius_norm_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.10'
+
+[[node]]
+id = "rotationCode"
+kind = "definition"
+desc = '''(5.1.9), Stewart's encoding of `Z = [c s; -s c]`: `rotationCode c s : ℝ := if c = 0 then 1
+else if |s| < |c| then SignType.sign c * s / 2 else 2 * SignType.sign s / c` (an exact function; the
+book stores it in the `(i, k)` entry). Named by content (the display defines notation). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.9)'
+
+[[node]]
+id = "rotationDecode"
+kind = "definition"
+desc = '''(5.1.10), the reconstruction: `rotationDecode ρ : ℝ × ℝ := if ρ = 1 then (0, 1) else if |ρ| < 1
+then (√(1 - (2ρ)²), 2ρ) else (2/ρ, √(1 - (2/ρ)²))`. Named by content. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.10)'
+
+[[node]]
+id = "rotationDecode_rotationCode"
+kind = "theorem"
+desc = '''§5.1.11 "it is possible to reconstruct `Z` (or `-Z`)": for `c² + s² = 1`,
+`rotationDecode (rotationCode c s) = (c, s) ∨ rotationDecode (rotationCode c s) = (-c, -s)`.
+Cases: `c = 0` gives `ρ = 1` and `s = ±1`; `|s| < |c|` gives `|ρ| = |s|/2 < 1/2` and
+`(|c|, sign(c) s) = sign(c)(c, s)`; otherwise `|c| ≤ 1/√2`, `|ρ| = 2/|c| ≥ 2√2 > 1`, and
+`(sign(s) c, |s|) = sign(s)(c, s)`; the branches of the decoder are thereby disjoint. ★'''
+deps = ["rotationCode", "rotationDecode"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.10)'
+
+[[node]]
+id = "orthogonalToWorkingPrecision"
+kind = "definition"
+desc = '''§5.1.12: `Q̂ : Matrix (Fin m) (Fin m) ℝ` is orthogonal to working precision `ε` if
+`∃ Q ∈ orthogonalGroup (Fin m) ℝ, ‖Q̂ - Q‖₂ ≤ ε` (the book's `‖Q̂ - Q‖ = O(u)` with the `O(u)` made
+an explicit parameter). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §5.1.12, Definition'
+
+[[node]]
+id = "orthogonalToWorkingPrecision_transpose_mul_self"
+kind = "theorem"
+desc = '''§5.1.12 "A corollary of this is that `‖Q̂ᵀQ̂ - I_m‖ = O(u)`": `orthogonalToWorkingPrecision ε Q̂ →
+‖Q̂ᵀ * Q̂ - 1‖₂ ≤ 2 ε + ε ^ 2`. Backbone `FloatingPoint.l2_opNorm_transpose_mul_self_sub_one_le`. ★'''
+deps = ["orthogonalToWorkingPrecision", "FloatingPoint.l2_opNorm_transpose_mul_self_sub_one_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
+
+[[node]]
+id = "givensRotation_orthogonalToWorkingPrecision"
+kind = "theorem"
+desc = '''§5.1.12 "The matrices defined by the floating point output of house and givens are
+orthogonal to working precision", the Givens half: for a run `(ĉ, ŝ)` of `algorithm_5_1_3 fp.round a b`,
+`orthogonalToWorkingPrecision γ₁₃ (givensRotation i k ĉ ŝ)` (`FloatingPoint.l2_opNorm_planeRotation_sub_le`);
+the house half is `householderMatrix_computed_sub_le` (`8 γ_K`). ★'''
+deps = ["orthogonalToWorkingPrecision", "algorithm_5_1_3_rounding", "givensRotation", "FloatingPoint.l2_opNorm_planeRotation_sub_le", "householderMatrix_computed_sub_le"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
+
+[[node]]
+id = "equation_5_1_11"
+kind = "theorem"
+desc = '''(5.1.11), rigorous. Let `A₀ = A ∈ ℝ^{m×n}` and `A_k` a sequence in which each `A_k` is a run of
+one of the four computed updates (`householderApplyLeft/Right`, `givensApplyLeft/Right`) applied
+to `A_{k-1}` with computed data that are `IsRelPert` of exact orthogonal `Q_k` (left) or `Z_k`
+(right) — the transformations determined by the *computed* data, which is the only reading under
+which the claim holds (report, Doubts: the book's "the orthogonal matrices that would be produced
+in the absence of roundoff" cannot be meant literally). If each step satisfies
+`‖A_k - Q_k A_{k-1} Z_k‖_F ≤ ε ‖A_{k-1}‖_F` (`Z_k = 1` or `Q_k = 1`; the four `…_rounding` nodes give
+`ε`), then `B = A_p = (Q_p ⋯ Q_1)(A + E)(Z_1 ⋯ Z_p)` with `‖E‖_F ≤ ((1 + ε)^p - 1) ‖A‖_F ≤ γ_p(ε) ‖A‖_F`
+and so `‖E‖₂ ≤ √(min m n) γ_p(ε) ‖A‖₂` — the book's `c u ‖A‖₂`, `c` depending "mildly" on
+`m, n, p`. Backbone `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`,
+`FloatingPoint.one_add_pow_sub_one_le_gamma`. ★★'''
+deps = ["householderApplyLeft_rounding", "householderApplyRight_rounding", "givensApplyLeft_rounding", "givensApplyRight_rounding", "FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect", "FloatingPoint.one_add_pow_sub_one_le_gamma"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.11)'
+
+[[node]]
+id = "complexHouseholder"
+kind = "theorem"
+desc = '''§5.1.13, the complex Householder transformation: for `0 ≠ x ∈ ℂ^m` with `x₁ = r e^{iθ}` and
+`v = x ± e^{iθ} ‖x‖₂ e₁`, `P = I - (2 / vᴴv) v vᴴ` is unitary and `P x = ∓ e^{iθ} ‖x‖₂ e₁`
+(`e^{iθ}` is `Matrix.phase x₁`, `1` at `x₁ = 0`). Backbone `Matrix.reflector_mulVec_eq_of_sq` over
+`ℂ` with `α = ± phase x₁ ‖x‖`, `Matrix.reflector_mem_unitaryGroup`. ★'''
+deps = ["Matrix.reflector_mulVec_eq_of_sq", "Matrix.reflector_mem_unitaryGroup", "Matrix.phase"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.13'
+
+[[node]]
+id = "complexGivens_mem_unitaryGroup"
+kind = "theorem"
+desc = '''§5.1.13: `Q = [cos θ, sin θ e^{iφ}; -sin θ e^{-iφ}, cos θ]` is unitary for real `θ, φ`
+(as `!![c, s; -star s, c] ∈ unitaryGroup (Fin 2) ℂ` for real `c`, `c² + |s|² = 1`), and so is its
+embedding `Matrix.planeEmbed i k` in `ℂ^{m×m}` (`planeEmbed_mem_unitaryGroup_iff`). ★'''
+deps = ["Matrix.planeEmbed", "Matrix.planeEmbed_mem_unitaryGroup_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §5.1.13'
+
+[[node]]
+id = "equation_5_1_12"
+kind = "theorem"
+desc = '''(5.1.12): for `u, v ∈ ℂ`, with `(c_α, s_α)`, `(c_β, s_β)`, `(c_θ, s_θ)` the outputs of
+`algorithm_5_1_3` (exact) on `(u₁, u₂)`, `(v₁, v₂)`, `(r_u, r_v)`,
+`e^{iφ} = (c_α c_β + s_α s_β) + i (c_α s_β - c_β s_α)`, `c = c_θ`, `s = s_θ e^{iφ}`:
+`[c s; -s̄ c]ᴴ [u; v] = [r; 0]`, i.e. `conj s * u + c * v = 0`. The book's verification:
+`u = r_u e^{-iα}`, `v = r_v e^{-iβ}` (from `algorithm_5_1_3_spec`), so
+`s̄ u + c v = e^{-iβ}(s_θ r_u + c_θ r_v) = 0`. ★★'''
+deps = ["algorithm_5_1_3_spec", "complexGivens_mem_unitaryGroup"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.12)'

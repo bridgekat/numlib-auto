@@ -1,0 +1,52 @@
+namespace = "GolubVanLoan.Chapter01"
+desc = '''
+§1.6, parallel matrix multiplication: formalized only in its one precise statement, Cannon's
+identity (1.6.16) with the shift relations `A^{(k+1)} = A^{(k)} Pᵀ`, `B^{(k+1)} = P B^{(k)}`; the rest
+of the section is not formalized (planning brief, rule 5).
+
+The block matrices of §1.6.8 are `N × N` arrays of `n₁ × n₁` blocks, `Matrix (Fin N) (Fin N) (Matrix (Fin
+n₁) (Fin n₁) ℝ)` (Mathlib's `Matrix.comp` identifies them with `Matrix (Fin N × Fin n₁) …`), and block
+indices are taken modulo `N` with `Fin N`'s own wrap-around `+`/`−` (`[NeZero N]`). The book's
+`A^{(1)}, …, A^{(4)}` for `N = 4` are the general `A^{(k)}_{ij} = A_{i, i + j − k}`, `B^{(k)}_{ij} =
+B_{i + j − k, j}` (0-based `k`), which is how [the book's P1.6.6] asks for the general `N`.
+
+Not formalized: the model computation and its blockings (1.6.1)–(1.6.2) as a *parallel* program; the
+load-balancing ratios (1.6.3)–(1.6.4) (`O(p̃)`, `1 + O(p̃/M̃)`); the time model (1.6.5)–(1.6.6) and the
+communication ratios (1.6.7)–(1.6.15); barrier synchronization and the shared- and distributed-memory
+paradigms (§1.6.5–1.6.7); the update sequence (1.6.17)–(1.6.20) and the toroidal message passing as
+communication patterns. All are cost models or statements about processors, not about the
+computed matrices.
+'''
+
+[[node]]
+id = "cannonA"
+kind = "definition"
+desc = '''§1.6.8: the skewed block matrices of Cannon's algorithm, `cannonA (A : Matrix (Fin N) (Fin N) (Matrix (Fin
+n₁) (Fin n₁) ℝ)) (k : Fin N) : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ) := of fun i j => A i (i +
+j − k)` and `cannonB B k := of fun i j => B (i + j − k) j` (one node for the pair; `Fin N` arithmetic
+mod `N`). For `N = 4`, `k = 0, 1, 2, 3` they are the book's displayed `A^{(1)}, …, A^{(4)}` and `B^{(1)}, …,
+B^{(4)}`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.6.8, Definition'
+
+[[node]]
+id = "equation_1_6_16"
+kind = "theorem"
+desc = '''(1.6.16): for `C = A B` (block product, Mathlib's `Matrix` multiplication over the ring `Matrix (Fin n₁)
+(Fin n₁) ℝ`), `C_ij = ∑_k A^{(k)}_ij B^{(k)}_ij`: `(A * B) i j = ∑ k, cannonA A k i j * cannonB B k i j`.
+Reindex the sum `∑ l, A i l * B l j` by `l = i + j − k` (`Equiv.subLeft (i + j)`,
+`Fintype.sum_equiv`). ★'''
+deps = ["cannonA"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (1.6.16)'
+
+[[node]]
+id = "cannon_succ"
+kind = "theorem"
+desc = '''§1.6.8, "observe that `A^{(k+1)} = A^{(k)} Pᵀ` and `B^{(k+1)} = P B^{(k)}`" with the block downshift `P`:
+the shift `A`-blocks one column right and `B`-blocks one row down, with wrap-around —
+`cannonA A (k + 1) = (cannonA A k).submatrix id (finRotate N).symm` and `cannonB B (k + 1) =
+(cannonB B k).submatrix (finRotate N).symm id` (right multiplication by the block permutation
+`Pᵀ` is `submatrix`, the permutation being `downshift`'s). `Fin` arithmetic: `i + j − (k + 1) = i + (j −
+1) − k`. ★'''
+deps = ["cannonA", "downshift"]
+source = 'Golub–Van Loan, Matrix Computations, §1.6.8, Definition'

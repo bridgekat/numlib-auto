@@ -1,0 +1,143 @@
+namespace = "Matrix"
+desc = '''
+Approximation by Kronecker products ([golub2013matrix] §12.3.6–12.3.9; Van Loan–Pitsianis 1993): the
+rearrangement `𝓡` that turns Kronecker products into rank-one matrices, the Kronecker product SVD, the
+nearest (sum of) Kronecker product(s) in the Frobenius norm, and the two structured nearest-rank
+lemmas behind the nearest `X ⊗ X` and `X ⊗ Y − Y ⊗ X`.
+
+Upstreaming candidate (natural home beside `Mathlib.LinearAlgebra.Matrix.Kronecker`).
+
+**Typed indices.** Mathlib's Kronecker product is `B ⊗ₖ C : Matrix (m₁ × m₂) (n₁ × n₂) K` and its
+`vec X : n × m → K` (for `X : Matrix m n K`) is column-major; both flatten to the book's layouts by
+`finProdFinEquiv` (chapter 1's `Matrix.kroneckerFin`, `Matrix.vecFin`). The rearrangement is typed
+the same way: for `A : Matrix (m₁ × m₂) (n₁ × n₂) K`, `kroneckerRearrange A : Matrix (n₁ × m₁) (n₂ ×
+m₂) K`, `(j, i), (l, k) ↦ A (i, k) (j, l)` — row `(j, i)` is the block `A_{ij}` in the book's
+column-major block order (`Ã₁` first, (12.3.16)), column `(l, k)` indexes `vec A_{ij}`. Then
+`kroneckerRearrange (B ⊗ₖ C) = vecMulVec (vec B) (vec C)` holds by `simp`
+(`notes/gvl/ch12/proto/Tensor.lean`, proved there), `𝓡` is a linear isometry for the Frobenius norm
+(it permutes entries), and every statement of §12.3.6 is the Eckart–Young–Mirsky theorem for
+`𝓡(A)` pulled back: chapter 2's `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (staged for `SVD`)
+with `Matrix.sortedSingularValues`. `Matrix.unvec`, the typed inverse of `vec` (the book's
+`reshape`), is in `Numlib/LinearAlgebra/Matrix/Kronecker` beside the positional `Matrix.reshape`, with
+the bridge `Matrix.reshape_eq_unvec`.
+
+**Kronecker product rank** is `rank 𝓡(A)`, and a matrix is a sum of `r` Kronecker products iff its
+Kronecker rank is `≤ r` (`kroneckerRank_le_iff`).
+'''
+
+[[node]]
+id = "kroneckerRearrange"
+kind = "definition"
+desc = '''The Van Loan–Pitsianis rearrangement `𝓡(A)` ([golub2013matrix] §12.3.6, (12.3.16) and the
+display after it), typed: `kroneckerRearrange A : Matrix (n₁ × m₁) (n₂ × m₂) K := of fun ji lk => A
+(ji.2, lk.2) (ji.1, lk.1)` for `A : Matrix (m₁ × m₂) (n₁ × n₂) K`; row `(j, i)` is `vec (A_{ij})ᵀ` with
+`A_{ij} = A.submatrix (i, ·) (j, ·)`. `kroneckerRearrangeLinearEquiv` bundles it. Prototype
+`notes/gvl/ch12/proto/Tensor.lean`. ★'''
+deps = []
+
+[[node]]
+id = "kroneckerRearrange_kronecker"
+kind = "theorem"
+desc = '''`kroneckerRearrange (B ⊗ₖ C) = vecMulVec (vec B) (vec C)` ([golub2013matrix] §12.3.6: `φ(B, C) = ‖𝓡(A)
+- vec(B) vec(C)ᵀ‖_F` rests on it). `ext ⟨j, i⟩ ⟨l, k⟩; simp [kroneckerRearrange, vec, vecMulVec,
+kroneckerMap_apply]` — proved in the prototype. ★'''
+deps = ["Matrix.kroneckerRearrange"]
+
+[[node]]
+id = "frobenius_norm_kroneckerRearrange"
+kind = "theorem"
+desc = '''`‖kroneckerRearrange A‖ = ‖A‖` in the Frobenius norm (scoped `Matrix.Norms.Frobenius`, `[RCLike
+𝕜]`): the entries are permuted by the equivalence `((i, k), (j, l)) ↦ ((j, i), (l, k))`
+(`Matrix.frobenius_norm_def`, `Equiv.sum_comp`). Hence `‖A − B ⊗ₖ C‖_F = ‖𝓡(A) − vecMulVec (vec B) (vec
+C)‖_F` (the display after (12.3.14)) and likewise for any combination of Kronecker products, which is
+(12.3.20) and (12.3.21). ★'''
+deps = ["Matrix.kroneckerRearrange", "Matrix.kroneckerRearrange_kronecker"]
+
+[[node]]
+id = "eq_sum_kronecker_iff"
+kind = "theorem"
+desc = '''`A = ∑ k, σ k • (unvec (u k) ⊗ₖ unvec (v k)) ↔ kroneckerRearrange A = ∑ k, σ k • vecMulVec (u k)
+(v k)` over any finite index of terms: `𝓡` is a linear equivalence and `kroneckerRearrange_kronecker`
+with `vec_unvec`. This is the proof of [golub2013matrix] Theorem 12.3.1 (lines 37225–37240). ★'''
+deps = ["Matrix.kroneckerRearrange_kronecker", "Matrix.unvec"]
+
+[[node]]
+id = "exists_kroneckerSVD"
+kind = "theorem"
+desc = '''**The Kronecker product SVD** ([golub2013matrix] Theorem 12.3.1), existence form for `A : Matrix (Fin
+m₁ × Fin m₂) (Fin n₁ × Fin n₂) 𝕜`: with `r = (kroneckerRearrange A).rank` there are `U : Fin r → Matrix (Fin
+m₁) (Fin n₁) 𝕜`, `V : Fin r → Matrix (Fin m₂) (Fin n₂) 𝕜`, Frobenius-orthonormal families (`Orthonormal`
+of their `vec`s in `EuclideanSpace`), and `σ k = sortedSingularValues (kroneckerRearrange A) k > 0` with
+`A = ∑ k, (σ k : 𝕜) • (U k ⊗ₖ V k)`. The singular system of `𝓡(A)` (`Matrix.exists_singularSystem`, sorted
+by `exists_equiv_singularValues_eq_sortedSingularValues`, chapter 2) pulled back by `eq_sum_kronecker_iff`. ★★ (~60
+lines, the reindexing between the column-indexed and the sorted singular values)'''
+deps = ["Matrix.eq_sum_kronecker_iff", "Matrix.exists_singularSystem", "Matrix.sortedSingularValues", "exists_equiv_singularValues_eq_sortedSingularValues"]
+
+[[node]]
+id = "kroneckerRank"
+kind = "definition"
+desc = '''The Kronecker product rank ([golub2013matrix] §12.3.6, "the integer `r` in the theorem is the
+Kronecker product rank of `A`"): `kroneckerRank A = (kroneckerRearrange A).rank`. ★'''
+deps = ["Matrix.kroneckerRearrange"]
+
+[[node]]
+id = "kroneckerRank_le_iff"
+kind = "theorem"
+desc = '''`kroneckerRank A ≤ r ↔ ∃ (B : Fin r → Matrix m₁ n₁ K) (C : Fin r → Matrix m₂ n₂ K), A = ∑ k, B k ⊗ₖ C k`:
+the rank factorization `Matrix.rank_le_iff_exists_mul` of `𝓡(A)` (a product of `n × r` and `r × m`
+matrices is a sum of `r` `vecMulVec`s, `Matrix.mul_eq_sum_vecMulVec`-type) and `eq_sum_kronecker_iff`. ★'''
+deps = ["Matrix.kroneckerRank", "Matrix.rank_le_iff_exists_mul", "Matrix.eq_sum_kronecker_iff"]
+
+[[node]]
+id = "isLeast_frobenius_norm_sub_sum_kronecker"
+kind = "theorem"
+desc = '''**The nearest sum of `r̃` Kronecker products** ([golub2013matrix] (12.3.14)–(12.3.15) for `r̃ = 1`, the
+NKP problem, and (12.3.19)): `IsLeast ((fun X => ‖A − X‖) '' {X | kroneckerRank X ≤ r̃}) √(∑ i ∈ Finset.Ico r̃
+(min (n₁ m₁) (n₂ m₂)), sortedSingularValues (kroneckerRearrange A) i ^ 2)` (Frobenius, `𝕜`), attained at the
+truncated Kronecker SVD `∑_{k < r̃} σ_k U_k ⊗ V_k` (for `r̃ = 1`: `vec B_opt = √σ₀ u₀`, `vec C_opt = √σ₀
+v₀`, and `α B_opt`, `C_opt / α` equally optimal). Chapter 2's Eckart–Young–Mirsky
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le` for `𝓡(A)`, transported by the isometry
+`frobenius_norm_kroneckerRearrange` and `kroneckerRank_le_iff`. ★★ (~60 lines)'''
+deps = ["Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.frobenius_norm_kroneckerRearrange", "Matrix.kroneckerRank_le_iff", "Matrix.exists_kroneckerSVD", "Matrix.svdTruncation"]
+
+[[node]]
+id = "norm_sub_smul_vecMulVec_self_sq"
+kind = "theorem"
+desc = '''The identity behind [golub2013matrix] Lemma 12.3.2 (P12.3.11's hint): for `M : Matrix n n ℝ`, `x`
+with `‖x‖ = 1`, `α : ℝ`: `‖M − α • vecMulVec x x‖² = ‖M‖² − 2 α (x ⬝ᵥ (T *ᵥ x)) + α²` (Frobenius), `T = (M +
+Mᵀ)/2`. Expand `frobenius_norm_sq_eq_trace`-style (`Matrix.frobenius_norm_sq_eq_sum_sq`), `xᵀ M x = xᵀ T x`.
+★'''
+deps = ["Matrix.frobenius_norm_sq_eq_sum_sq"]
+
+[[node]]
+id = "isMinOn_frobenius_norm_sub_symm_rank_le_one"
+kind = "theorem"
+desc = '''[golub2013matrix] Lemma 12.3.2: for `M : Matrix n n ℝ`, `T = (M + Mᵀ)/2` with orthonormal eigenvectors
+`q` and eigenvalues `α` (`hT.eigenvectorBasis`, `hT.eigenvalues` of Mathlib's `Matrix.IsHermitian`), and
+`k` with `|α k|` maximal: `Z_opt = α k • vecMulVec (q k) (q k)` minimizes `‖M − Z‖_F` over `{Z | Z.IsSymm ∧
+Z.rank ≤ 1}`. Every such `Z` is `β x xᵀ` with `‖x‖ = 1` (`Matrix.rank_le_iff_exists_mul` and symmetry);
+by `norm_sub_smul_vecMulVec_self_sq` the value is `‖M‖² − (xᵀ T x)²` at the best `β`, and `|xᵀ T x| ≤ max
+|α|` (Rayleigh quotient bounds, `LinearMap.IsSymmetric.rayleighQuotient_le_of_forall` and its twin of
+`Numlib/Eigen/MinMax`). The book's "`rank(Z) = 1`" fails when `T = 0` (the infimum `‖M‖` is then not
+attained); `rank ≤ 1` is the correct reading and agrees with it when `T ≠ 0`. ★★ (~80 lines)'''
+deps = ["Matrix.norm_sub_smul_vecMulVec_self_sq", "Matrix.rank_le_iff_exists_mul"]
+
+[[node]]
+id = "norm_sub_skew_sq"
+kind = "theorem"
+desc = '''The identity behind [golub2013matrix] Lemma 12.3.3 (P12.3.12's hint): `‖M − (vecMulVec x y −
+vecMulVec y x)‖² = ‖M‖² + 2‖x‖²‖y‖² − 2(x ⬝ᵥ y)² − 4 (x ⬝ᵥ (S *ᵥ y))` with `S = (M − Mᵀ)/2` (Frobenius, real).
+Expansion as in `norm_sub_smul_vecMulVec_self_sq`. ★'''
+deps = ["Matrix.frobenius_norm_sq_eq_sum_sq"]
+
+[[node]]
+id = "isMinOn_frobenius_norm_sub_skew_rank_le_two"
+kind = "theorem"
+desc = '''[golub2013matrix] Lemma 12.3.3: for `M : Matrix n n ℝ`, `S = (M − Mᵀ)/2`, orthonormal `u v` with `S *ᵥ u
+= −μ • v`, `S *ᵥ v = μ • u` (the book's `S[u|v] = [u|v][0 μ; −μ 0]`) and `μ = ‖S‖₂` (scoped `L2Operator`;
+the book's `ρ(S)`, equal to `‖S‖₂` for the normal `S` — the surface states the bridge), `Z_opt = μ •
+(vecMulVec u v − vecMulVec v u)` minimizes `‖M − Z‖_F` over `{Z | Zᵀ = −Z ∧ Z.rank ≤ 2}`. Every such `Z` is
+`x yᵀ − y xᵀ` with `x ⊥ y` (a rank-two skew matrix has an orthonormal basis of its range on which it acts
+as `[0 a; −a 0]`; Gram–Schmidt in the plane), then `norm_sub_skew_sq` and `x ⬝ᵥ S y ≤ ‖S‖₂ ‖x‖ ‖y‖`. The
+book's "rank-2" is `rank ≤ 2` for the same reason as in Lemma 12.3.2 (`S = 0`). ★★★ (~150 lines)'''
+deps = ["Matrix.norm_sub_skew_sq", "Matrix.rank_le_iff_exists_mul"]

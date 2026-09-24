@@ -1,0 +1,84 @@
+namespace = "Matrix"
+desc = '''
+Numerical facts about symmetric indefinite factorizations ([golub2013matrix] §4.4; [higham2002accuracy]
+Ch. 11): the element-growth bounds of the Bunch–Parlett pivot choice ((4.4.16), (4.4.17), the parameter
+`α = (1 + √17)/8`) and the Stewart–Todd bound (4.4.21) on the scaled pseudoinverse of the equilibrium system.
+
+**Moved out at the review of the Golub–Van Loan round** (ids unchanged unless noted): the specifications
+`Matrix.IsAasen`, `Matrix.IsBlockLDL`, `Matrix.IsPivotBlockDiagonal`, their existence theorems and solve chains
+are in `Numlib/LinearAlgebra/Matrix/SymmetricIndefinite`; the equilibrium matrix `[C B; Bᵀ 0]` of §4.4.5 is
+`Matrix.saddleMatrix` of `Numlib/LinearAlgebra/Matrix/SchurComplement`, with (4.4.18)–(4.4.20) restated over
+`RCLike` there (`isUnit_saddleMatrix_zero`, `saddleMatrix_zero_eq_mul`, `saddleMatrix_zero_mulVec_snd_eq`).
+The rest of this text is the original design note of the whole topic.
+
+Specifications, not algorithms (README; planning brief D4, D5). `Matrix.IsAasen A L T` and
+`Matrix.IsBlockLDL A L D` are `Prop`-valued specifications in the style of `Matrix.IsLU`/`IsLDM`
+(`Numlib/LinearAlgebra/Matrix/LU`); the permutation is a `σ : Equiv.Perm (Fin n)` acting as
+`A.submatrix σ σ` (`= P A Pᵀ` with `P = σ.permMatrix`), as in `Matrix.exists_permMatrix_mul_isLU`
+of `LU/Pivoting`. The existence theorems carry the book's multiplier bounds where they are true
+(Aasen with partial pivoting: `|l_ij| ≤ 1`); the Bunch–Parlett step bounds are about one Schur
+complement, over `ℝ`. The algorithms themselves (Parlett–Reid, Aasen (4.4.14), the pivot
+strategies) are surface material of `NumlibSurface/GolubVanLoan/Chapter04/Section04`.
+
+The `D` of a block `L D Lᵀ` factorization is "block diagonal with `1 × 1` and `2 × 2` blocks":
+on `Fin n` that is a symmetric tridiagonal matrix no two consecutive subdiagonal entries of which
+are nonzero (`Matrix.IsPivotBlockDiagonal`), and the unit lower triangular `L` has the identity
+in each `2 × 2` diagonal block (`L (i+1) i = 0` where `D (i+1) i ≠ 0`). This avoids a sigma-typed
+block structure and keeps the statement on `Fin n` where `L D Lᵀ` is an ordinary product.
+
+The equilibrium facts (4.4.18), (4.4.20), (4.4.21) are about `fromBlocks C B Bᵀ 0` over
+`Fin n ⊕ Fin p`; (4.4.21) (Stewart 1989, O'Leary 1990, Todd 1990: the scaled pseudoinverse is
+bounded independently of the positive diagonal scaling) is the one deep node. Consumers: the ch11
+surface §11.5.10 (saddle point systems; report).
+
+Searched and not found (Mathlib, Numlib, LeanSearch "symmetric indefinite factorization",
+"Bunch Kaufman", "Aasen tridiagonal"): nothing. Size about 900 lines, most of it the two
+existence proofs and (4.4.21).
+'''
+
+[[node]]
+id = "_root_.BunchParlett.abs_schurComplementSingle_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.16), the `1 × 1` Bunch–Parlett step: for symmetric `A : Matrix n n ℝ`,
+`0 < α ≤ 1`, `μ₀ = max |a_ij|`, `μ₁ = max |a_ii|` attained at `p` with `μ₁ ≥ α μ₀ > 0`, every entry
+of the Schur complement `schurComplementSingle A p` (`Ã = B − v vᵀ / a_pp`) satisfies
+`|ã_ij| ≤ (1 + α⁻¹) μ₀`: `|a_ij − a_ip a_pj / a_pp| ≤ μ₀ + μ₀² / μ₁ ≤ μ₀ + μ₀/α`. ★
+(the book's P4.4.6, first half)'''
+deps = ["Matrix.schurComplementSingle"]
+
+[[node]]
+id = "_root_.BunchParlett.abs_schurComplement_two_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.17), the `2 × 2` Bunch–Parlett step: for symmetric `A`, `0 < α < 1`, `μ₁ < α μ₀`,
+and a `2 × 2` pivot `E = A{p,q}` with `|a_qp| = μ₀`, `E` is nonsingular (`det E = a_pp a_qq − μ₀² ≤
+μ₁² − μ₀² < 0`) and every entry of `Ã = B − C E⁻¹ Cᵀ` satisfies `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`.
+Write `E⁻¹` by the adjugate: an entry of `C adj(E) Cᵀ` is a sum of four products bounded by
+`μ₀² (μ₁ + μ₀ + μ₀ + μ₁)`, and `|det E| ≥ μ₀² − μ₁²`, so `|(C E⁻¹ Cᵀ)_ij| ≤ 2 μ₀² (μ₀ + μ₁)/(μ₀² −
+μ₁²) = 2 μ₀²/(μ₀ − μ₁) ≤ 2 μ₀/(1 − α)`, hence `|ã_ij| ≤ μ₀ + 2μ₀/(1 − α) = (3 − α)/(1 − α) μ₀`. The Schur complement is
+`Matrix.schurComplement` of the block reindexing `{p, q} ⊕ rest`. ★★ (~100 lines; P4.4.6)'''
+deps = ["Matrix.schurComplement"]
+
+[[node]]
+id = "_root_.BunchParlett.alpha_eq"
+kind = "theorem"
+desc = '''The Bunch–Parlett parameter: `α = (1 + √17)/8` is the unique `α ∈ (0, 1)` with `(1 + α⁻¹)² = (3 − α)/(1 − α)`
+("equating the growth factor of two `s = 1` steps with that of one `s = 2` step"). Clearing
+denominators, `(1 + α)²(1 − α) = α²(3 − α)`, i.e. `4α² − α − 1 = 0` after cancelling the cubic
+terms; `Real.sq_sqrt`, `nlinarith`. ★'''
+deps = []
+
+[[node]]
+id = "exists_forall_l2_opNorm_weightedLeastSquaresOp_le"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.21) (Stewart 1989; O'Leary 1990; Todd 1990): for `B : Matrix n p ℝ` of full column
+rank there is `ψ_B` with `‖weightedLeastSquaresOp (diagonal d) B‖₂ ≤ ψ_B` (that is,
+`‖(Bᵀ * diagonal d * B)⁻¹ * Bᵀ * diagonal d‖₂ ≤ ψ_B`) for every `d : n → ℝ`
+with `∀ i, 0 < d i` (the book's `C⁻¹` with `C` positive diagonal; `d = C⁻¹`'s diagonal). Proof
+route (Dikin/Ben-Tal–Teboulle): by the Cauchy–Binet formula, `(BᵀDB)⁻¹BᵀD = ∑_J λ_J(d) B_J⁻¹ Π_J`
+over the `p`-element row sets `J` with `B_J` nonsingular, where `Π_J` selects the rows `J` and the
+weights `λ_J(d) = (∏_{i∈J} d_i) det(B_J)² / ∑_{J'} (∏_{i∈J'} d_i) det(B_{J'})²` are a convex
+combination; hence `ψ_B = max_J ‖B_J⁻¹‖₂` works. Needs Cauchy–Binet for `det (Bᵀ D B)` and for the
+adjugate entries (search Mathlib: `Matrix.det_mul` has no rectangular form; check
+`Matrix.det_mul_of_rectangular`/`BinetCauchy` at the pin — if absent, it is a ★★★ lemma of its own,
+~200 lines). ★★★ (~350 lines)'''
+deps = ["weightedLeastSquaresOp"]

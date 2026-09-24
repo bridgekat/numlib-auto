@@ -1,3 +1,18 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Hessenberg` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch01) in "Bandwidths and the named shapes", add: "`Matrix.HasLowerBandwidthRect` and
+# `Matrix.HasUpperBandwidthRect` are the same conditions for a rectangular `Matrix (Fin m) (Fin n)
+# R`, where the index difference is taken in `ℕ` — [golub2013matrix] §1.2.1 defines bandwidth for `m
+# × n` matrices (Table 1.2.1), and the bidiagonal and banded shapes of the SVD and band-LU chapters
+# are rectangular; on a square `Fin n` they agree with the order-theoretic predicates
+# (`hasLowerBandwidthRect_iff`)."
+# (review) add to "Bandwidths and the named shapes": "`Matrix.isUpperHessenbergRect_iff_hasLowerBandwidthRect_one`:
+# the rectangular Hessenberg shape is lower bandwidth `1` in the rectangular vocabulary (the bidiagonal
+# rectangular shapes `IsUpperBidiagonalRect`/`IsLowerBidiagonalRect` are in `Bidiagonal`, with the same
+# characterizations)."
+# (ch03) add `Matrix.IsUnitUpperTriangular`, the dual of `Matrix.IsUnitLowerTriangular` (symmetry;
+# [golub2013matrix] §3.1.7 lists the unit upper facts beside the unit lower ones, and the `U L`
+# factorization of its P3.2.5 and the unit upper factors of later chapters use it).
 namespace = "Matrix"
 
 [[node]]
@@ -163,3 +178,73 @@ id = "mul_apply_eq_zero_of_lt"
 
 [[node]]
 id = "isUpperHessenberg_iff_fin"
+
+[[node]]  # staged by ch01
+id = "HasLowerBandwidthRect"
+kind = "definition"
+desc = '''`def HasLowerBandwidthRect [Zero R] (A : Matrix (Fin m) (Fin n) R) (p : ℕ) : Prop := ∀ i j, (j : ℕ) + p
+< i → A i j = 0` — lower bandwidth `p` of a rectangular matrix ([golub2013matrix] §1.2.1:
+`a_ij = 0` whenever `i > j + p`; the condition reads the same in 0- and 1-based indexing). ★'''
+deps = []
+
+[[node]]  # staged by ch01
+id = "HasUpperBandwidthRect"
+kind = "definition"
+desc = '''`def HasUpperBandwidthRect [Zero R] (A : Matrix (Fin m) (Fin n) R) (q : ℕ) : Prop := ∀ i j, (i : ℕ) + q
+< j → A i j = 0` ([golub2013matrix] §1.2.1: `j > i + q ⇒ a_ij = 0`). ★'''
+deps = []
+
+[[node]]  # staged by ch01
+id = "hasUpperBandwidthRect_transpose_iff"
+kind = "theorem"
+desc = '''`Aᵀ.HasUpperBandwidthRect q ↔ A.HasLowerBandwidthRect q`, and the mirror statement
+(`hasLowerBandwidthRect_transpose_iff`, same node); unfold, `transpose_apply`. ★'''
+deps = ["Matrix.HasLowerBandwidthRect", "Matrix.HasUpperBandwidthRect"]
+
+[[node]]  # staged by ch01
+id = "hasLowerBandwidthRect_iff"
+kind = "theorem"
+desc = '''On a square `Fin n` the rectangular and the order-theoretic predicates agree:
+`A.HasLowerBandwidthRect p ↔ A.HasLowerBandwidth p`, and `A.HasUpperBandwidthRect q ↔
+A.HasUpperBandwidth q` (`hasUpperBandwidthRect_iff`, same node); from `hasLowerBandwidth_iff_fin`
+and `hasUpperBandwidth_iff_fin`. ★'''
+deps = ["Matrix.HasLowerBandwidthRect", "Matrix.HasUpperBandwidthRect", "Matrix.hasLowerBandwidth_iff_fin", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
+
+[[node]]  # staged by ch03
+id = "IsUnitUpperTriangular"
+kind = "definition"
+desc = '''`U.IsUnitUpperTriangular`: `U` is upper triangular (`Matrix.IsUpperTriangular`, i.e.
+`BlockTriangular id`) with ones on the diagonal — the structure dual to
+`Matrix.IsUnitLowerTriangular` (fields `isUpperTriangular`, `diag_eq_one`). ★'''
+deps = ["Matrix.IsUnitLowerTriangular"]
+
+[[node]]  # staged by ch03
+id = "isUnitUpperTriangular_transpose_iff"
+kind = "theorem"
+desc = '''`Uᵀ.IsUnitLowerTriangular ↔ U.IsUnitUpperTriangular` (and the dual), from
+`Matrix.BlockTriangular.transpose`; the bridge through which the upper facts are proved from the
+lower ones. ★'''
+deps = ["Matrix.IsUnitUpperTriangular", "Matrix.IsUnitLowerTriangular"]
+
+[[node]]  # staged by ch03
+id = "IsUnitUpperTriangular.mul"
+kind = "theorem"
+desc = '''The product of two unit upper triangular matrices is unit upper triangular; by transposition
+from `IsUnitLowerTriangular.mul`. ★'''
+deps = ["Matrix.isUnitUpperTriangular_transpose_iff", "Matrix.IsUnitLowerTriangular.mul"]
+
+[[node]]  # staged by ch03
+id = "IsUnitUpperTriangular.inv"
+kind = "theorem"
+desc = '''The inverse of a unit upper triangular matrix is unit upper triangular; by transposition
+(`Matrix.transpose_nonsing_inv`) from `IsUnitLowerTriangular.inv`. ★'''
+deps = ["Matrix.isUnitUpperTriangular_transpose_iff", "Matrix.IsUnitLowerTriangular.inv"]
+
+[[node]]
+id = "isUpperHessenbergRect_iff_hasLowerBandwidthRect_one"
+kind = "theorem"
+desc = '''The two spellings of "rectangular upper Hessenberg" agree: for `H : Matrix (Fin (m + 1)) (Fin m) R`,
+`H.IsUpperHessenbergRect ↔ H.HasLowerBandwidthRect 1` (both say `(j : ℕ) + 1 < i → H i j = 0`; `Iff.rfl` up to
+unfolding). Added at the review of the Golub–Van Loan round so that the Arnoldi `H̄ₘ` and the band vocabulary
+of [golub2013matrix] §1.2.1 are one notion. ★'''
+deps = ["Matrix.IsUpperHessenbergRect", "Matrix.HasLowerBandwidthRect"]

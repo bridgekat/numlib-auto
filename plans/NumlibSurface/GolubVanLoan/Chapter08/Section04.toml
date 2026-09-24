@@ -1,0 +1,226 @@
+namespace = "GolubVanLoan.Chapter08"
+desc = '''
+§8.4, more methods for tridiagonal problems: the characteristic-polynomial recurrence (8.4.2) and
+bisection, the Sturm sequence property (Theorem 8.4.1) and the bisection for `λ_k(T)` (8.4.3), the
+`L D Lᵀ` inertia count, the eigensystem of a diagonal-plus-rank-one matrix (Lemma 8.4.2, Theorems
+8.4.3–8.4.4), the tearing and merging of divide and conquer ((8.4.5)–(8.4.6), §8.4.4), and the
+inverse tridiagonal eigenproblem ((8.4.7)–(8.4.12), §8.4.6).
+
+The tridiagonal matrix (8.4.1) is the backbone's `Matrix.symmTridiagonalOf α β n`
+(`Numlib/Eigen/Sturm`) with `ℕ`-indexed data: the book's `α_r` is `α (r - 1)` and `β_r` is
+`β (r - 1)`. The Sturm sequence, the sign convention at a zero, the sign-change count `a(λ)` and
+Givens' bisection are `Sturm.seq`, `Sturm.sign`, `Sturm.signChanges`, `Sturm.bisectionIterate`.
+The secular equation is `Numlib/Eigen/DivideConquer`, the inverse problem
+`Numlib/Eigen/InverseEigenvalue`, the inertia count `Numlib/Eigen/Inertia`.
+
+Readings and errata. (1) Theorem 8.4.1: with the book's own convention (a vanishing `p_r(λ)` takes
+the sign opposite to `p_{r-1}(λ)`), `a(λ)` counts the eigenvalues `≤ λ`, not `< λ` — they differ
+exactly when `λ` is an eigenvalue (for `n = 1`, `λ = α₁`: the sequence `1, 0` has one sign change).
+Quarteroni–Sacco–Saleri Property 5.11 has the same slip; the backbone's
+`Sturm.signChanges_eq_count` is the `≤` statement. (2) The bisection (8.4.3) for the `k`-th largest
+eigenvalue tests `a(x) ≥ n - k`; the correct test is `a(x) ≥ n - k + 1` (`λ_k ≤ x` iff at least
+`n - k + 1` eigenvalues are `≤ x`): with the printed test and `n = k = 1` the loop always sets
+`z = x` and converges to the initial `y`. (3) The first bisection loop of §8.4.1 "is guaranteed to
+terminate" is false in exact arithmetic when the bracketed zero is `0`: the stopping test
+`|y - z| ≤ tol (|y| + |z|)` never holds for `y = 0 < z` with `tol < 1`; the node states the bracket
+invariant and the halving, not termination. (4) (8.4.12)'s denominator runs over `j ≠ k` up to
+`n`, not `n - 1`. (5) (8.4.6)–(8.4.7) print `a_m`, `ã_m` for the `α_m` of (8.4.1) and a stray
+`λ'_{n-1}`.
+'''
+
+[[node]]
+id = "equation_8_4_2"
+kind = "theorem"
+desc = '''(8.4.2): with `p_r(x) = det(T_r - x I)` for the leading `r × r` principal submatrix `T_r` of
+the tridiagonal (8.4.1) and `p₀ = 1`, `p_r(x) = (α_r - x) p_{r-1}(x) - β_{r-1}² p_{r-2}(x)` for
+`r = 2:n` (and `p₁ = α₁ - x`). `Sturm.seq_add_two` and `Sturm.seq_eq_det` (with
+`Matrix.symmTridiagonalOf_submatrix_castSucc` for the leading submatrices). ★'''
+deps = ["Sturm.seq", "Sturm.seq_add_two", "Sturm.seq_eq_det", "Matrix.symmTridiagonalOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.2)'
+
+[[node]]
+id = "bisection_bracket"
+kind = "theorem"
+desc = '''§8.4.1, the bisection loop on `p_n`: if `p_n(y) p_n(z) < 0` and `y < z`, each step
+(`x = (y + z)/2`; `z = x` if `p_n(x) p_n(y) < 0`, else `y = x`) keeps `y ≤ z`, halves `z - y`, and
+keeps a zero of `p_n` (an eigenvalue of `T`) in `[y, z]`. The backbone bisection
+`Bisection.iterate` (`Numlib/Nonlinear/Bisection`: `Bisection.bracket_sub`, `bracket_mul_nonpos`)
+with the continuous `x ↦ p_n(x)`; its zero is an eigenvalue by `equation_8_4_2`
+(`p_n = det(T - x I)`). Termination under the book's relative test is not claimed (false at a
+zero eigenvalue; see the section description). ★'''
+deps = ["equation_8_4_2", "Bisection.iterate", "Bisection.bracket_sub", "Bisection.bracket_mul_nonpos"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.1'
+
+[[node]]
+id = "theorem_8_4_1"
+kind = "theorem"
+desc = '''Theorem 8.4.1 (Sturm sequence property), interlacing: if `β_i ≠ 0` for all `i`, the
+eigenvalues of `T_{r-1}` strictly separate those of `T_r`:
+`λ_r(T_r) < λ_{r-1}(T_{r-1}) < λ_{r-1}(T_r) < ⋯ < λ_1(T_{r-1}) < λ_1(T_r)`.
+`Sturm.eigenvalues_strictInterlace` (proof as the book's: weak interlacing from Theorem 8.1.7,
+strictness because consecutive `p_r` have no common root, `Sturm.eval_ne_zero_or_eval_ne_zero`). ★'''
+deps = ["Sturm.eigenvalues_strictInterlace", "theorem_8_1_7"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.4.1'
+
+[[node]]
+id = "theorem_8_4_1_b"
+kind = "theorem"
+desc = '''Theorem 8.4.1, the count, with the correction of the section description: if `β_i ≠ 0` for
+all `i`, the number `a(λ) = Sturm.signChanges α β n λ` of sign changes in `p₀(λ), …, p_n(λ)` (the
+book's convention at a zero) equals the number of eigenvalues of `T` that are `≤ λ`
+(`Sturm.signChanges_eq_count`), and hence, when `λ` is not an eigenvalue of `T`, the number that are
+`< λ` — the printed statement, which holds exactly off the spectrum. The book defers the proof to
+Wilkinson (AEP pp. 300–301). ★'''
+deps = ["Sturm.signChanges", "Sturm.signChanges_eq_count", "Sturm.count"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.4.1'
+
+[[node]]
+id = "gershgorin_bracket"
+kind = "theorem"
+desc = '''§8.4.2: every eigenvalue of the tridiagonal `T` lies in `[y, z]` with
+`y = min_i (α_i - |β_i| - |β_{i-1}|)`, `z = max_i (α_i + |β_i| + |β_{i-1}|)` (`β₀ = β_n = 0`), by
+Gershgorin (Theorem 8.1.3 with `Q = I`). `Sturm.spectrum_subset_Icc`. ★'''
+deps = ["Sturm.spectrum_subset_Icc", "theorem_8_1_3"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.2'
+
+[[node]]
+id = "equation_8_4_3"
+kind = "theorem"
+desc = '''(8.4.3), bisection for `λ_k(T)`, with the test corrected to `a(x) ≥ n - k + 1` (see the
+section description): for unreduced `T` (`β_i ≠ 0`), `1 ≤ k ≤ n`, and the Gershgorin bracket
+`[y, z]` of `gershgorin_bracket` (or any `[y, z]` with `a(y) ≤ n - k < a(z)`), the iterates of
+`Sturm.bisectionIterate n k` stay nested, halve in length (`Sturm.bisectionIterate_length`), and
+always contain `λ_k(T)` in `(y, z]` (`Sturm.eigenvalues_mem_bisectionIterate`). The backbone's
+step uses the count `≤ x`, for which `n - k + 1 ≤ a(x)` is exactly `λ_k ≤ x`. The book's loop runs
+`while |z - y| > u(|y| + |z|)`; the node states the invariant for every number of steps. ★★'''
+deps = ["gershgorin_bracket", "Sturm.bisectionIterate", "Sturm.bisectionIterate_length", "Sturm.eigenvalues_mem_bisectionIterate", "theorem_8_4_1_b"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.3)'
+
+[[node]]
+id = "ldlt_inertia_count"
+kind = "theorem"
+desc = '''§8.4.2, last paragraph: for symmetric `A`, `μ : ℝ` and an `L D Lᵀ` factorization
+`A - μ I = L D Lᵀ` (`Matrix.IsLDM (A - μ • 1) L (diagonal d) L`, `L` unit lower triangular), the
+number of negative `d_i` equals the number of eigenvalues `λ_i(A) < μ`.
+`Matrix.IsHermitian.card_eigenvalues_lt_eq_card_neg_of_isLDM` (Sylvester's law, Theorem 8.1.17,
+for the congruence by `L`). ★'''
+deps = ["Matrix.IsHermitian.card_eigenvalues_lt_eq_card_neg_of_isLDM", "theorem_8_1_17", "symmEigenvalue"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.2'
+
+[[node]]
+id = "lemma_8_4_2"
+kind = "theorem"
+desc = '''Lemma 8.4.2: for `D = diagonal d` with `d_1 > ⋯ > d_n` (`StrictAnti d`, or merely injective),
+`ρ ≠ 0`, `z` with no zero component, and `(D + ρ z zᵀ) v = λ v` with `v ≠ 0`: `zᵀ v ≠ 0` and
+`D - λ I` is nonsingular. `Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne` at `ℝ`. ★'''
+deps = ["Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 8.4.2'
+
+[[node]]
+id = "equation_8_4_4"
+kind = "theorem"
+desc = '''(8.4.4): `(D + ρ z zᵀ) v = λ v` iff `(D - λ I) v + ρ (zᵀ v) z = 0`. `Matrix.add_mulVec`,
+`vecMulVec_mulVec`-type rewriting. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.4)'
+
+[[node]]
+id = "secularFunction"
+kind = "definition"
+desc = '''§8.4.3, the book's `f(λ) = 1 + ρ zᵀ (D - λ I)⁻¹ z = 1 + ρ ∑ z_i² / (d_i - λ)`:
+`secularFunction d ρ z := Matrix.secularFunction d ρ z` at `𝕜 = ℝ` (`‖z_i‖² = z_i²`), with the
+book's second form `Matrix.secularFunction_eq_inner_resolvent` and derivative
+`f'(λ) = ρ ∑ z_i² / (d_i - λ)²` (`Matrix.hasDerivAt_secularFunction`). ★'''
+deps = ["Matrix.secularFunction", "Matrix.secularFunction_eq_inner_resolvent", "Matrix.hasDerivAt_secularFunction"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.3, Definition'
+
+[[node]]
+id = "theorem_8_4_3"
+kind = "theorem"
+desc = '''Theorem 8.4.3 (a) and (c): for `D = diagonal d` with `StrictAnti d`, `ρ ≠ 0`, `z` with no
+zero component, and orthogonal `V` with `Vᵀ (D + ρ z zᵀ) V = diagonal λ`, `λ` decreasing:
+(a) the `λ_i` are the `n` zeros of `f` (`secularFunction d ρ z (λ i) = 0`, `λ i ∉ range d`, and every
+zero of `f` off `range d` is some `λ i`); (c) each `V.col i` is a multiple of `(D - λ_i I)⁻¹ z`.
+`Matrix.hasEigenvalue_iff_secularFunction_eq_zero`, `Matrix.hasEigenvector_diagonal_add_rankOne_resolvent`. ★'''
+deps = ["secularFunction", "lemma_8_4_2", "equation_8_4_4", "Matrix.hasEigenvalue_iff_secularFunction_eq_zero", "Matrix.hasEigenvector_diagonal_add_rankOne_resolvent"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.4.3'
+
+[[node]]
+id = "theorem_8_4_3_b"
+kind = "theorem"
+desc = '''Theorem 8.4.3 (b), strict interlacing: in the setting of `theorem_8_4_3`, if `ρ > 0` then
+`λ_1 > d_1 > λ_2 > ⋯ > λ_n > d_n`; if `ρ < 0` then `d_1 > λ_1 > d_2 > ⋯ > d_n > λ_n`.
+`Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace` at `ℝ` (the `λ` of the statement are the
+sorted eigenvalues, `symmEigenvalue`). ★'''
+deps = ["theorem_8_4_3", "Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace", "symmEigenvalue"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.4.3'
+
+[[node]]
+id = "theorem_8_4_4"
+kind = "theorem"
+desc = '''Theorem 8.4.4: for `D = diagonal d` and `z`, there is an orthogonal `V₁` with
+`V₁ᵀ D V₁ = diagonal μ`, `μ_1 > ⋯ > μ_r ≥ μ_{r+1} ≥ ⋯ ≥ μ_n`, and `w = V₁ᵀ z` with `w_i ≠ 0` for
+`i ≤ r` and `w_i = 0` for `i > r`. `Matrix.exists_orthogonal_deflation`. ★'''
+deps = ["Matrix.exists_orthogonal_deflation"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 8.4.4'
+
+[[node]]
+id = "equation_8_4_6"
+kind = "theorem"
+desc = '''(8.4.5)–(8.4.6), tearing: for the tridiagonal `T` of (8.4.1) with `n = 2m`, `θ ∈ {-1, 1}`,
+`ρ = θ β_m` (the book's `ρθ = β_m`, so `ρ = β_m θ` as `θ² = 1`) and
+`v = (e_m^{(m)}, θ e_1^{(m)})`, `T = fromBlocks T₁ 0 0 T₂ + ρ v vᵀ` (reindexed along
+`finSumFinEquiv : Fin m ⊕ Fin m ≃ Fin (m + m)`), where `T₁`, `T₂` are the `m × m` tridiagonal halves
+with `α̃_m = α_m - ρ` and `α̃_{m+1} = α_{m+1} - ρ θ²`: `T - ρ v vᵀ` differs from `T` only in the
+middle four entries. Entrywise. ★★'''
+deps = ["Matrix.symmTridiagonalOf"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.6)'
+
+[[node]]
+id = "divideConquer_merge"
+kind = "theorem"
+desc = '''§8.4.4, the merge: with `T = fromBlocks T₁ 0 0 T₂ + ρ v vᵀ` as in `equation_8_4_6` and
+orthogonal `Q₁`, `Q₂` with `Qᵢᵀ Tᵢ Qᵢ = Dᵢ` diagonal, `U = fromBlocks Q₁ 0 0 Q₂` is orthogonal and
+`Uᵀ T U = diagonal (Sum.elim d₁ d₂) + ρ z zᵀ` with `z = (Q₁ᵀ e_m, θ Q₂ᵀ e_1)`; so an orthogonal `V`
+diagonalizing `D + ρ z zᵀ` (Theorems 8.4.3–8.4.4) gives the Schur decomposition (8.4.5) of `T`
+with `Q = U V`. `Matrix.conj_fromBlocks_add_rankOne_eq`. ★'''
+deps = ["equation_8_4_6", "Matrix.conj_fromBlocks_add_rankOne_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.4'
+
+[[node]]
+id = "equation_8_4_10"
+kind = "theorem"
+desc = '''(8.4.10): for symmetric `T` with `T = Qᵀ Λ Q`, `Λ = diagonal λ`, `Q` orthogonal,
+`d = Q.col 0` ((8.4.11)) and `λ ∉ {λ_i}`: `e₁ᵀ (T - λ I)⁻¹ e₁ = ∑ i, d_i² / (λ_i - λ)`; and the
+zeros of this function are the eigenvalues of `T(2:n, 2:n)` that are not eigenvalues of `T`
+(Cramer: `e₁ᵀ (T - λ I)⁻¹ e₁ = det(T(2:n,2:n) - λ I) / det(T - λ I)`).
+`Matrix.IsHermitian.inv_sub_apply_eq_sum` (the eigenvector matrix of `T` is `Qᵀ`, whose first row
+is `d`) and `Matrix.inv_sub_apply_zero_zero_eq_det_div`. The book's derivation by Lagrange
+multipliers is motivation only. ★'''
+deps = ["Matrix.IsHermitian.inv_sub_apply_eq_sum", "Matrix.inv_sub_apply_zero_zero_eq_det_div"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.10)'
+
+[[node]]
+id = "equation_8_4_12"
+kind = "theorem"
+desc = '''(8.4.12), with the denominator's range corrected to `j ≠ k`, `j = 1:n`: if (8.4.7)
+`λ_1 > λ̃_1 > λ_2 > ⋯ > λ̃_{n-1} > λ_n` holds and `T = Qᵀ Λ Q` has `λ(T(2:n,2:n)) = {λ̃_j}`, then
+the first column `d = Q(:,1)` satisfies
+`d_k² = ∏_{j=1}^{n-1} (λ̃_j - λ_k) / ∏_{j ≠ k} (λ_j - λ_k)` for `k = 1:n`, and these quotients are
+positive and sum to `1` (P8.4.7). `Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq` solved for
+`d_k²` (distinct `λ_j`) and `Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`. ★'''
+deps = ["equation_8_4_10", "Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq", "Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (8.4.12)'
+
+[[node]]
+id = "inverseTridiagonal_exists"
+kind = "theorem"
+desc = '''§8.4.6, the inverse problem (8.4.7)–(8.4.9) (Golub 1973): for strictly interlacing
+`λ_1 > λ̃_1 > ⋯ > λ̃_{n-1} > λ_n` there is a symmetric tridiagonal `T` with `λ(T) = {λ_1, …, λ_n}`
+(8.4.8) and `λ(T(2:n, 2:n)) = {λ̃_1, …, λ̃_{n-1}}` (8.4.9), with multiplicity (characteristic
+polynomials). Constructed as the book's Steps 1–3: `d` from (8.4.12), a Householder `P` with
+`P d = ± e₁`, `A = Pᵀ Λ P`, `T = Q₁ᵀ A Q₁` by Algorithm 8.3.1 (`Q₁ e₁ = e₁`), `Q = P Q₁`.
+`Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace` at `ℝ`; the exact-arithmetic
+Algorithm 8.3.1 may replace the backbone's `hessenbergReduce` via `algorithm_8_3_1_spec`. ★'''
+deps = ["equation_8_4_12", "Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace"]
+source = 'Golub–Van Loan, Matrix Computations, §8.4.6'

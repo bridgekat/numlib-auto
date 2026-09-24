@@ -1,0 +1,403 @@
+desc = '''
+Algorithms as monadic programs with a rounding hook: the semantics that lets one definition of a
+numerical algorithm carry both its exact and its floating-point meaning.
+
+An algorithm is written once, in the book's operation order, generic in a monad `M` and a hook
+`rnd : K → M K`. **The conventions (final; Golub–Van Loan consolidation `notes/gvl/consolidation.md` C1, revised by
+the review round `notes/gvl/review/decisions.md` — every surface algorithm follows them; the same list,
+same numbers, heads the description of `NumlibSurface/GolubVanLoan`):**
+
+1. **What is rounded.** *Exact* (not passed through `rnd`): unary negation, `|·|`, `sign` and
+   copysign, copying, comparisons (a comparison stores nothing and acts on the values the program
+   holds). *Rounded* (exactly one `rnd` after each): the result of every `+`, `−`, `×`, `/` and
+   `√` (`√` is `Real.sqrt` followed by one `rnd`), **including arithmetic whose only use is a
+   test** — `fl(tol · fl(|h_ii| + |h_{i-1,i-1}|))`, `δ ← fl(tol · ‖A‖_F)`, the `fl(1 − fl(α²))` of a
+   positivity check. IEEE negation, `abs` and copysign are exact, and the relational model does not
+   know `Rounds x x`, so rounding them would only add spurious error.
+2. A division by a unit diagonal inside a factorization is not performed.
+3. Loops are `List.foldlM` over `List.finRange n` or an explicit index list, never `for … in
+   [a:b]`. A `while` loop is `List.foldlM` over `List.range fuel` with a `done : Bool` field in the
+   state: once `done`, a step is the identity; the spec theorem states what holds after
+   `min fuel stop` passes (`stop` the book's exit index). The fuel parameter is named `fuel : ℕ` and
+   is the **last** explicit argument. Structural or well-founded recursion is reserved for
+   genuinely recursive algorithms (Strassen, the FFT, recursive block LU/Cholesky/QR, `LUdisp`).
+4. A program that branches on a real test is a `noncomputable def` (through `Real.decidableEq`,
+   `Real.decidableLT`).
+5. A step the book delegates to an algorithm of a *later* chapter ("compute the SVD", "find
+   `λ₊`") is a monadic function parameter, and the spec theorem assumes its specification; a step
+   delegated to an *earlier* chapter calls that chapter's program.
+6. `fp.IsIdempotent` is assumed **only when the stated constant needs it**: a program whose
+   accumulation starts from `0` and whose bound is the book's `γ_n` through a relation that starts
+   from the unrounded first term (`RoundsDot`, `RoundsSum`) needs it (the `0 + p` paragraph below);
+   a relation that itself absorbs the `0 + p` rounding (`RoundsForwardSubstDot`) needs nothing.
+7. The monad variable is `M` (`{M : Type → Type} [Monad M]`), never `m`, which is the book's row
+   count.
+8. Breakdown is not checked in the program (`x / 0 = 0`); the spec theorem carries the
+   hypotheses (nonzero pivots, nonsingular leading submatrices, …). Overwrites are state updates
+   (`Function.update`, `Matrix.updateRow`); a multi-output state is a structure or a tuple.
+9. **Hypotheses of a rounding theorem are about the inputs and the values the program returns**,
+   never about intermediate values a run overwrites (a computed pivot `t_j` that is then replaced
+   by `√t_j`, a packed factor the program does not return). A composite (factor, then solve) is
+   stated nested, one program per quantifier:
+   `∀ F ∈ (alg₁ fp.round A).run, hyp F → ∀ x ∈ (alg₂ fp.round F b).run, concl` (the shape of
+   `GolubVanLoan.Chapter03.theorem_3_3_2`).
+10. **Submatrices are index lists.** A block `A(j:m, k:n)` of the book is the full matrix together
+    with the filtered index lists of its rows and columns (`rows : List (Fin m)`,
+    `cols : List (Fin n)`), never a copy typed by a loop-dependent `Fin (m - j)`; a subvector
+    `x(j:m)` is the full vector with its list of active indices. Helpers operate in place on the
+    full matrix over such lists (`GolubVanLoan.Chapter05.houseOn rnd o x`,
+    `householderApplyLeft/Right`, `givensApplyLeft/Right`), and a vector-level book algorithm is
+    its helper at the full list (`algorithm_5_1_1 rnd x = houseOn rnd (List.finRange (k+1)) x` by
+    `rfl`). The backbone relations read such a block through the subtype `{i // i ∈ rows}` or a
+    pivot `i : ι` of the full index type.
+11. **Exact specs are read off bridges.** When a bridge "every run satisfies the backbone relation
+    `R`" exists, the exact spec `_spec` is its instance at `RoundingModel.exact` (`round_exact`
+    and `R`'s exact characterization, e.g. `roundsLU_exact_iff`, `mem_run_dotAccum_exact_iff`),
+    not a second proof at `Id`.
+12. **Node suffixes.** `algorithm_N_M_K` is the program; `_spec` its exact semantics; `_rounds`
+    says every run satisfies a backbone relation (`∀ out ∈ run, FloatingPoint.RoundsX …`, the
+    bridge); `_mem_run` characterizes the run set (an `↔`) when no backbone relation exists;
+    `_rounding` is the book's error bound for every run. A node proving the bound through a
+    bridge depends on the `_rounds` node.
+13. **One helper family, one reflector-data type.** Updates shared by several algorithms are
+    defined once (for Golub–Van Loan: chapter 5), in symmetric pairs `…Left`/`…Right` on index
+    lists; Householder data are `List ((Fin m → ℝ) × ℝ)` — pairs `(v, β)` in order of
+    application, `v` full length and zero off its active rows — carrying the `β` the program
+    returned. A reflector is **never** rebuilt as `β = 2/(vᵀv)` from a stored `v` (when `house`
+    returns `β = 0`, the rebuilt `I − 2e₁e₁ᵀ` is not the identity it applied).
+14. **Symmetric pairs are separate nodes** (`…Left` and `…Right`, `…_col` and `…_row`, forward and
+    backward accumulation), each with its own `_spec`; consumers depend on the half they use.
+
+* **Exact semantics**: `M := Id`, `rnd := pure`. `List.idRun_foldlM` (core) turns the program into
+  a `List.foldl`, and the lemmas here turn folds into sums (`List.foldl_add_eq_add_sum_map`) and
+  entrywise loops into per-entry folds (`List.foldl_apply_of_pi`, `List.foldl_update_self`).
+* **Floating-point semantics**: `M := SetM`, `rnd := fp.round` for `fp : RoundingModel K`, where
+  `fp.round x = {y | fp.Rounds x y}`: the run set of the program is the set of all results of all
+  admissible rounding choices, and a rounding theorem quantifies over it
+  (`∀ out ∈ (alg fp.round …).run, …`). `SetM.mem_run_bind` is "some admissible choice at each
+  step"; `SetM.mem_run_foldlM_iff_foldlRel` turns a loop's run set into a relational fold, which
+  is the shape of the backbone's relational predicates (`RoundsSumFrom` is literally a
+  `List.FoldlRel`); `SetM.forall_mem_run_foldlM_finRange` is the Hoare rule of a `finRange` loop;
+  `SetM.mem_run_foldlM_update_of_nodup` is the workhorse of every loop that writes one entry per
+  step (a saxpy, the inner loop of column-oriented substitution, a rank-one update's column): over a
+  duplicate-free index list whose step `a` rewrites only entry `a` from `y a` and entries outside
+  the list, the run set is the product of the per-entry run sets; `SetM.mem_run_foldlM_of_pi` is
+  loop interchange for the rarer loops whose every step acts on every entry independently.
+  The preferred route from a book algorithm to an error bound is a
+  *bridge* "every run satisfies the backbone relation" (`RoundsDot`, `RoundsForwardSubst`,
+  `RoundsLU`, `RoundsCholesky`, …) followed by the backbone theorem about the relation.
+* **The exact model** `RoundingModel.exact K` (`u = 0`, `Rounds x y ↔ y = x`, `round = pure`)
+  lets an exact specification be read off a bridge proved for every model.
+
+The one accumulation every chapter uses is here: `dotAccum rnd o x y c` computes `c + ∑_{k ∈ o}
+x k * y k` as `c ← fl(c + fl(x k * y k))` (Golub–Van Loan Algorithm 1.1.1 with `c = 0`, the inner
+loops of the row gaxpy and of the `ijk` product with `c = y i`, resp. `c = C i j`).
+
+**The `0 + p` mismatch (decided).** The book's `c = 0; c = c + x₁y₁` rounds `0 + fl(x₁y₁)`, while
+`RoundsSum` starts from the unrounded first term. The relational model cannot know that `0 + p`
+rounds to `p`. Both readings are provided:
+
+* unconditionally, a run of `dotAccum` from any start `c` is within `γ_{n+1} (|c| + ∑|x_k||y_k|)`
+  of `c + ∑ x_k y_k` (`abs_sub_le_of_mem_run_dotAccum`), the `Numlib/FloatingPoint/Substitution`
+  precedent of paying one extra rounding;
+* under `fp.IsIdempotent` (rounding fixes its own outputs, `Rounds x y → Rounds y z → z = y`; true
+  of every concrete format — `System.roundingModel_isIdempotent`, `System.choppingModel_isIdempotent`,
+  `System.nearestModel_isIdempotent`), a run from `c = 0` over any duplicate-free order covering
+  the indices is a `RoundsDot` (`roundsDot_of_mem_run_dotAccum`), so the book's `n u` bound is Higham's `γ_n`
+  (`abs_sub_le_of_roundsDot`). This is the rigorous reading of Golub–Van Loan (2.7.9), where
+  `s₁ = x₁y₁(1 + δ₁)` silently assumes the first addition exact.
+
+**Nonempty run sets.** A "for every run" theorem is vacuous if the run set is empty, which happens
+exactly when some rounding has no admissible value. `RoundingModel.IsTotal` (every `x` has a
+rounding; the exact model and `System.roundingModel`/`choppingModel` are total, the partial
+`System.nearestModel` is not — it models no overflow) with `SetM.run_foldlM_nonempty` gives
+`dotAccum_run_nonempty`; the surface proves nonemptiness for its headline algorithms
+(`…_run_nonempty`).
+
+The `SetM` and `List` lemmas are upstreaming candidates (natural homes `Mathlib.Data.Set.Functor`
+and `Mathlib.Data.List.*`); they live here until a second module needs them.
+
+Complex algorithms (the FFT of Golub–Van Loan §1.4) take `rnd : ℂ → M ℂ` with the same exact
+semantics; there is no complex rounding model in the backbone and none of chapter 1 needs one.
+
+Prototype: `notes/gvl/ch01/proto/Program.lean` (elaborates; `mem_run_dotAccum_iff`,
+`mem_run_foldlM_iff_foldlRel`, `dotAccum_id`, `System.roundingModel_isIdempotent`,
+`List.foldl_update_self` proved there), after `notes/gvl/proto/Algorithm.lean`.
+'''
+
+[[node]]
+id = "FloatingPoint.RoundingModel.round"
+kind = "definition"
+desc = '''The rounding hook of the relational model: `def RoundingModel.round (fp : RoundingModel K) (x : K) :
+SetM K := {y | fp.Rounds x y}` over `[Field K] [LinearOrder K] [IsStrictOrderedRing K]`, the set of
+admissible roundings of `x` in Mathlib's `SetM` monad (`Mathlib.Data.Set.Functor`). An algorithm
+written with a hook `rnd : K → M K` has floating-point semantics at `M := SetM`, `rnd := fp.round`.
+★'''
+deps = ["FloatingPoint.RoundingModel"]
+
+[[node]]
+id = "FloatingPoint.RoundingModel.mem_run_round"
+kind = "theorem"
+desc = '''`@[simp] y ∈ (fp.round x).run ↔ fp.Rounds x y`; `Iff.rfl`. ★'''
+deps = ["FloatingPoint.RoundingModel.round"]
+
+[[node]]
+id = "FloatingPoint.RoundingModel.round_exact"
+kind = "theorem"
+desc = '''`(RoundingModel.exact K).round = pure`: in the exact model (`u = 0`, `Rounds x y ↔ y = x`, staged
+for `FloatingPoint/Model`) the hook is `pure`, so a bridge proved for every model specializes to
+the exact run, whose run set is a singleton. `rfl` after `funext`/`Set.ext`. ★'''
+deps = ["FloatingPoint.RoundingModel.round", "FloatingPoint.RoundingModel.exact"]
+
+[[node]]
+id = "FloatingPoint.RoundingModel.run_round_nonempty"
+kind = "theorem"
+desc = '''`fp.IsTotal → (fp.round x).run.Nonempty` (`RoundingModel.IsTotal`, `FloatingPoint/Model`: every
+`x` has an admissible rounding); `mem_run_round`. ★'''
+deps = ["FloatingPoint.RoundingModel.round", "FloatingPoint.RoundingModel.mem_run_round", "FloatingPoint.RoundingModel.IsTotal"]
+
+[[node]]
+id = "SetM.mem_run_pure"
+kind = "theorem"
+desc = '''`b ∈ (pure a : SetM α).run ↔ b = a`, universe-polymorphic; `Iff.rfl`. Upstreaming candidate
+(natural home `Mathlib.Data.Set.Functor`). Searched: `SetM.mem_run_pure`, `Set.mem_pure`,
+`SetM.run_pure` — Mathlib has `Set.mem_pure` only for the non-`SetM` `Set.monad`. ★'''
+deps = []
+
+[[node]]
+id = "SetM.mem_run_bind"
+kind = "theorem"
+desc = '''`b ∈ (s >>= f).run ↔ ∃ a ∈ s.run, b ∈ (f a).run` for `s : SetM α`, `f : α → SetM β`: the
+floating-point reading of a program is "some admissible choice at each step". Proof: `change b ∈ ⋃ i
+∈ SetM.run s, SetM.run (f i) ↔ _; simp` (prototype). This is the lemma the planning brief calls
+`FloatingPoint.mem_bind_setM`; it is a fact about `SetM`, so it takes Mathlib's namespace. ★'''
+deps = []
+
+[[node]]
+id = "SetM.mem_run_map"
+kind = "theorem"
+desc = '''`b ∈ (f <$> s).run ↔ ∃ a ∈ s.run, f a = b`; from `bind_pure_comp` and the two lemmas above
+(prototype). Needed because `do`-notation elaborates a final `pure (g x)` after a bind into `<$>`
+in some shapes. ★'''
+deps = ["SetM.mem_run_bind", "SetM.mem_run_pure"]
+
+[[node]]
+id = "SetM.run_bind_nonempty"
+kind = "theorem"
+desc = '''`s.run.Nonempty → (∀ a ∈ s.run, (f a).run.Nonempty) → (s >>= f).run.Nonempty`; from
+`mem_run_bind`. With `run_foldlM_nonempty` it shows that a program all of whose roundings have an
+admissible value has a run, so its "for every run" theorems are not vacuous. ★'''
+deps = ["SetM.mem_run_bind"]
+
+[[node]]
+id = "SetM.run_foldlM_nonempty"
+kind = "theorem"
+desc = '''`(∀ b a, a ∈ l → (f b a).run.Nonempty) → (l.foldlM f b₀).run.Nonempty` for `f : β → α → SetM β`;
+induction on `l` with `run_bind_nonempty`. ★'''
+deps = ["SetM.run_bind_nonempty", "SetM.mem_run_pure"]
+
+[[node]]
+id = "ite_pure"
+kind = "theorem"
+desc = '''`(if c then pure a else pure b) = pure (if c then a else b)` for `[Pure f] [Decidable c]`;
+`(apply_ite pure c a b).symm`. The exact-semantics collapse of a program that branches on a
+computed value (a pivot choice, a deflation test): with `List.idRun_foldlM` and `map_pure` it lets
+`simp` reduce an `if` inside a `foldlM` body at `M := Id` (requested by Golub–Van Loan chapter 3
+for its pivoting algorithms). Searched: `ite_pure`, `pure_ite` (neither in core, Batteries or
+Mathlib) and `apply_ite` (general, not a `simp` lemma in this direction). Upstreaming candidate. ★'''
+deps = []
+
+[[node]]
+id = "List.FoldlRel"
+kind = "definition"
+desc = '''The relational left fold: `inductive List.FoldlRel (R : β → α → β → Prop) : β → List α → β → Prop`
+with `nil (b) : FoldlRel R b [] b` and `cons (h : R b a c) (t : FoldlRel R c l d) : FoldlRel R b (a
+:: l) d` — `d` is reachable from `b` by stepping through `l` with `R`. `FloatingPoint.RoundsSumFrom m
+s l t` is `FoldlRel (fun s x t => m.Rounds (s + x) t) s l t` (an `Iff` lemma
+`roundsSumFrom_iff_foldlRel` is foreseeable API). Searched Mathlib: `List.foldlRel`, `List.Chain`
+(a different notion: consecutive pairs), `Relation.ReflTransGen` (no list index) — no relational
+fold. Upstreaming candidate. ★'''
+deps = []
+
+[[node]]
+id = "List.FoldlRel.append"
+kind = "theorem"
+desc = '''`FoldlRel R a (l₁ ++ l₂) b ↔ ∃ c, FoldlRel R a l₁ c ∧ FoldlRel R c l₂ b`; induction on `l₁`. The
+tool for splitting a loop at a prefix (`List.finRange (n+1) = (finRange n).map castSucc ++ [last
+n]`), as in ch03's `roundsSumFrom_append_singleton`. ★'''
+deps = ["List.FoldlRel"]
+
+[[node]]
+id = "SetM.mem_run_foldlM_iff_foldlRel"
+kind = "theorem"
+desc = '''`b ∈ (l.foldlM f a).run ↔ List.FoldlRel (fun c x c' => c' ∈ (f c x).run) a l b` for `f : β → α →
+SetM β`: the run set of a loop is the relational fold of its body. Induction on `l` with
+`List.foldlM_cons`, `SetM.mem_run_bind` (proved in the prototype). ★'''
+deps = ["List.FoldlRel", "SetM.mem_run_bind", "SetM.mem_run_pure"]
+
+[[node]]
+id = "SetM.forall_mem_run_foldlM"
+kind = "theorem"
+desc = '''The Hoare rule of a loop, invariant indexed by the processed prefix: for `f : β → α → SetM β`, `I :
+List α → β → Prop`, if `I [] a` and for every split `l = p ++ x :: q` and every `c` with `I p c`,
+every `c' ∈ (f c x).run` has `I (p ++ [x]) c'`, then every `b ∈ (l.foldlM f a).run` has `I l b`.
+Induction on `l` generalizing the prefix, through `mem_run_foldlM_iff_foldlRel`. ★'''
+deps = ["SetM.mem_run_foldlM_iff_foldlRel"]
+
+[[node]]
+id = "SetM.forall_mem_run_foldlM_finRange"
+kind = "theorem"
+desc = '''The Hoare rule of a `finRange` loop with the invariant indexed by the step count: for `f : β → Fin n
+→ SetM β`, `I : ℕ → β → Prop`, `I 0 a` and `∀ (k : Fin n) c, I k c → ∀ c' ∈ (f c k).run, I (k + 1)
+c'` give `∀ b ∈ ((List.finRange n).foldlM f a).run, I n b`. From `forall_mem_run_foldlM` with the
+invariant `fun p c => I p.length c` and `List.finRange` indexing (the element after a prefix of
+length `k` is `⟨k, _⟩`: `List.getElem_finRange`). Statement elaborates (prototype). ★★'''
+deps = ["SetM.forall_mem_run_foldlM"]
+
+[[node]]
+id = "SetM.mem_run_foldlM_of_pi"
+kind = "theorem"
+desc = '''Loop interchange in the relational model. If every step of a loop over a state `ι → β` acts
+entrywise with independent roundings — `hf : ∀ y a y', y' ∈ (f y a).run ↔ ∀ i, y' i ∈ (g a i (y
+i)).run` for some `g : α → ι → β → SetM β` — then `y ∈ (l.foldlM f y₀).run ↔ ∀ i, y i ∈ (l.foldlM
+(fun b a => g a i b) (y₀ i)).run`. Induction on `l` with `List.foldlM_cons`, `SetM.mem_run_bind`;
+the `←` direction chooses the intermediate state entrywise (`choose`). Proved in 8 lines in
+`notes/gvl/review/algo/OfPi.lean`. It needs every step to act on every entry *independently*
+(step `a` on entry `i` reads only `y i`), so it does **not** apply to a loop whose update of one
+entry reads another (column-oriented substitution, where the update of `b i` reads `b j`; every
+LU/Cholesky rank-one update): those use `SetM.mem_run_foldlM_update_of_nodup`. ★'''
+deps = ["SetM.mem_run_bind", "SetM.mem_run_pure"]
+
+[[node]]
+id = "SetM.mem_run_foldlM_update_self_iff"
+kind = "theorem"
+desc = '''A loop that rewrites a single index `i` of a state `ι → β` (`[DecidableEq ι]`), each time from
+its current value: `y ∈ (l.foldlM (fun y a => do let b ← g a (y i); pure (Function.update y i b))
+y₀).run ↔ y = Function.update y₀ i (y i) ∧ y i ∈ (l.foldlM (fun b a => g a b) (y₀ i)).run`. Induction
+on `l`. The relational twin of `List.foldl_update_self` (hence the name), used for the innermost
+loop of the `ijk` product (entry `(i, j)` accumulated in place). ★'''
+deps = ["SetM.mem_run_bind", "SetM.mem_run_pure"]
+
+[[node]]
+id = "SetM.mem_run_foldlM_update_of_nodup"
+kind = "theorem"
+desc = '''**One entry per step.** For `[DecidableEq ι]`, a duplicate-free `l : List ι` (`hl : l.Nodup`) and a
+step `g : ι → β → (ι → β) → SetM β` whose entry `a ∈ l` reads the state only outside `l`
+(`hg : ∀ a ∈ l, ∀ b y y', (∀ i ∉ l, y i = y' i) → g a b y = g a b y'`):
+`y ∈ (l.foldlM (fun (y : ι → β) a => do let b ← g a (y a) y; pure (Function.update y a b)) y₀).run ↔
+(∀ i ∉ l, y i = y₀ i) ∧ ∀ i ∈ l, y i ∈ (g i (y₀ i) y₀).run` — entry `a` is written once, from its
+initial value and the frozen entries, so the run set is the product of the per-entry run sets. It
+generalizes chapter 3's `mem_saxpy`. Uses (with the loop index list as `l`): the saxpy and the
+column gaxpy/outer-product inner loops of Golub–Van Loan §1.1 (Algorithms 1.1.2, 1.1.4, 1.1.5,
+1.1.7, 1.1.8 and the band versions of §1.2), the inner loop of column-oriented substitution
+(Algorithms 3.1.3–3.1.4, `l = [j+1, …, n-1]`, reading the frozen `b j`), the rank-one updates of
+the LU and Cholesky loops (§3.2, Algorithms 4.1.1, 4.2.1, §4.3). Proved in
+`notes/gvl/fixA/proto/UpdateNodup.lean` (≈ 45 lines, through an auxiliary form with a frozen set
+`S ⊇ l` so that the induction hypothesis applies to the tail). ★★'''
+deps = ["SetM.mem_run_bind", "SetM.mem_run_pure"]
+
+[[node]]
+id = "List.foldl_apply_of_pi"
+kind = "theorem"
+desc = '''Exact-arithmetic loop interchange: if `hf : ∀ y a i, f y a i = g a i (y i)` for `f : (ι → β) → α →
+(ι → β)`, then `l.foldl f y₀ i = l.foldl (fun b a => g a i b) (y₀ i)`. Induction, `simp [ih, hf]`
+(proved in the prototype). ★'''
+deps = []
+
+[[node]]
+id = "List.foldl_update_self"
+kind = "theorem"
+desc = '''`l.foldl (fun y k => Function.update y i (h k (y i))) y = Function.update y i (l.foldl (fun b k => h k b)
+(y i))`: a loop that only rewrites index `i` is one update of `i`. Induction, `simp [ih]`
+(prototype). With `List.foldl_apply_of_pi` it reduces every in-place matrix loop at `Id` to one
+fold per entry. ★'''
+deps = []
+
+[[node]]
+id = "List.foldl_add_eq_add_sum_map"
+kind = "theorem"
+desc = '''`l.foldl (fun c k => c + f k) c = c + (l.map f).sum` in an `AddCommMonoid`; induction (prototype).
+Searched: `List.foldl_add`, `List.sum_eq_foldl` (core, needs `Std.Associative` and starts from
+`0`), `List.foldl_map` — none gives the running-sum form directly. With `Fin.sum_univ_def` it turns
+a `finRange` accumulation into `∑ k, f k`. ★'''
+deps = []
+
+[[node]]
+id = "FloatingPoint.dotAccum"
+kind = "definition"
+desc = '''The inner-product accumulation, generic in the monad: `def dotAccum {M : Type → Type} [Monad M] (rnd :
+K → M K) {ι : Type} (o : List ι) (x y : ι → K) (c : K) : M K := o.foldlM (fun c k => do rnd (c +
+(← rnd (x k * y k)))) c` — `c ← fl(c + fl(x k y k))` for `k` in the order `o`. Golub–Van Loan
+Algorithm 1.1.1 is `dotAccum rnd (List.finRange n) x y 0` by `rfl`; the row gaxpy and the `ijk`
+product run it on `c = y i`, resp. `c = C i j`. It is backbone because the bridge theorems below
+need it (backbone §1.2's rule). ★'''
+deps = []
+
+[[node]]
+id = "FloatingPoint.dotAccum_id"
+kind = "theorem"
+desc = '''`Id.run (dotAccum (M := Id) pure o x y c) = c + (o.map fun k => x k * y k).sum`, over any `[Field K]`
+(omit the order instances); `List.idRun_foldlM` + `List.foldl_add_eq_add_sum_map` (prototype). ★'''
+deps = ["FloatingPoint.dotAccum", "List.foldl_add_eq_add_sum_map"]
+
+[[node]]
+id = "FloatingPoint.dotAccum_id_finRange"
+kind = "theorem"
+desc = '''`Id.run (dotAccum (M := Id) pure (List.finRange n) x y c) = c + x ⬝ᵥ y`; `dotAccum_id`, `dotProduct`,
+`Fin.sum_univ_def` (import `Mathlib.Algebra.BigOperators.Fin`). ★'''
+deps = ["FloatingPoint.dotAccum_id"]
+
+[[node]]
+id = "FloatingPoint.dotAccum_run_nonempty"
+kind = "theorem"
+desc = '''`fp.IsTotal → (dotAccum fp.round o x y c).run.Nonempty`; `SetM.run_foldlM_nonempty`,
+`SetM.run_bind_nonempty`, `RoundingModel.run_round_nonempty`. The model of the surface's headline
+nonemptiness lemmas (`…_run_nonempty`). ★'''
+deps = ["FloatingPoint.dotAccum", "SetM.run_foldlM_nonempty", "SetM.run_bind_nonempty", "FloatingPoint.RoundingModel.run_round_nonempty"]
+
+[[node]]
+id = "FloatingPoint.mem_run_dotAccum_iff"
+kind = "theorem"
+desc = '''The bridge from a run of the accumulation to the relational sum: `s ∈ (dotAccum fp.round o x y
+c).run ↔ ∃ ps : List K, List.Forall₂ (fun k p => fp.Rounds (x k * y k) p) o ps ∧ RoundsSumFrom fp c
+ps s` — the rounded products, one per occurrence in `o` (so `o` may repeat indices), accumulated
+onto the unrounded start `c`. Induction on `o` with `SetM.mem_run_bind`, `mem_run_round`,
+`List.forall₂_cons_left_iff` (proved in the prototype). ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.mem_run_round", "SetM.mem_run_bind", "SetM.mem_run_pure", "FloatingPoint.RoundsSumFrom"]
+
+[[node]]
+id = "FloatingPoint.mem_run_dotAccum_exact_iff"
+kind = "theorem"
+desc = '''The accumulation in the exact model: `s ∈ (dotAccum (RoundingModel.exact K).round o x y c).run ↔
+s = c + (o.map fun k => x k * y k).sum`. `RoundingModel.round_exact` turns the run into the `Id`
+run (a singleton), then `dotAccum_id`. The lemma that lets every exact spec of a program built on
+`dotAccum` be read off its bridge (convention 11) — chapter 1's `_spec` nodes become ★. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round_exact", "FloatingPoint.dotAccum_id", "SetM.mem_run_pure"]
+
+[[node]]
+id = "FloatingPoint.roundsDot_of_mem_run_dotAccum"
+kind = "theorem"
+desc = '''The book's order is Higham's inner product when rounding fixes its outputs, for **any
+duplicate-free order covering the indices**: `(hfp : fp.IsIdempotent) (ho : o.Nodup) (hmem : ∀ i,
+i ∈ o) (h : s ∈ (dotAccum fp.round o x y 0).run) : RoundsDot fp x y s` over `[Fintype ι]`
+(`List.finRange n` is the instance `List.nodup_finRange`, `List.mem_finRange`; chapter 5's `house`
+accumulates its tail over the list of the non-pivot indices). From `mem_run_dotAccum_iff`: for `o
+= []`, `ps = []`, `s = 0`; otherwise `ps = p₀ :: ps'` and the first step `fp.Rounds (0 + p₀) t` with
+`fp.Rounds (x o₀ * y o₀) p₀` forces `t = p₀` (`zero_add`, `hfp`), so `RoundsSum fp (p₀ :: ps') s`;
+`RoundsDot` takes the order existentially, so `o` is its witness, and the product function is read
+off the `Forall₂` along `o` (`p i := ps[o.idxOf i]`, `List.forall₂_iff_get`, `List.Nodup`
+indexing). Consequently `|s - x ⬝ᵥ y| ≤ γ_n |x| ⬝ᵥ |y|` by `abs_sub_le_of_roundsDot` — the rigorous
+form of Golub–Van Loan (2.7.11)–(2.7.12). ★★'''
+deps = ["FloatingPoint.mem_run_dotAccum_iff", "FloatingPoint.RoundingModel.IsIdempotent", "FloatingPoint.RoundsDot", "FloatingPoint.RoundsSum"]
+
+[[node]]
+id = "FloatingPoint.abs_sub_le_of_mem_run_dotAccum"
+kind = "theorem"
+desc = '''Unconditional bound for an accumulation onto any start: `fp.u < 1`, `((o.length + 1 : ℕ) : K) * fp.u <
+1`, `s ∈ (dotAccum fp.round o x y c).run` give `|s - (c + (o.map fun k => x k * y k).sum)| ≤
+gamma fp.u (o.length + 1) * (|c| + (o.map fun k => |x k| * |y k|).sum)` — Higham's `fl(c + xᵀy)`,
+and with `c = 0` the `γ_{n+1}` price of not knowing that `0 + p` is exact. From
+`mem_run_dotAccum_iff`, `abs_sub_le_of_roundsSumFrom` (order `n` on `|c| + ∑ |p_k|`), `|p_k| ≤ (1 +
+u)|x_k y_k|` and `|∑ p_k - ∑ x_k y_k| ≤ u ∑ |x_k y_k|`, combined by `gamma_mul_one_add_add_le` and
+`gamma_mono` exactly as in `abs_sub_le_of_roundsDot`. ★★ (≈ 50 lines, copying that proof)'''
+deps = ["FloatingPoint.mem_run_dotAccum_iff", "FloatingPoint.abs_sub_le_of_roundsSumFrom", "FloatingPoint.gamma_mul_one_add_add_le", "FloatingPoint.gamma_mono"]

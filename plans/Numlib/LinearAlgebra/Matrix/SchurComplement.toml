@@ -1,3 +1,10 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.SchurComplement` is the group
+# description; when the nodes staged below are formalized, extend it as follows.
+# (review) add a section "Saddle-point matrices": `Matrix.saddleMatrix A B D = fromBlocks A B Bᴴ D`
+# ([golub2013matrix] §4.4.5, Saad §8.4) with its block equations, the definiteness of the Schur complement
+# `Bᴴ A⁻¹ B`, the nonsingularity for positive definite `A` and full-column-rank `B` ([golub2013matrix]
+# (4.4.18)), the triangular factorization of §4.4.5 and the reduced equation (4.4.20). One backbone
+# definition for both the Golub–Van Loan and the Saad surfaces.
 namespace = "Matrix"
 
 [[node]]
@@ -92,3 +99,65 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.6"
 
 [[node]]
 id = "schurComplementSingle_transpose"
+
+[[node]]
+id = "saddleMatrix"
+kind = "definition"
+desc = '''The saddle-point (equilibrium, KKT) matrix `saddleMatrix A B D : Matrix (n ⊕ p) (n ⊕ p) 𝕜 := fromBlocks A B
+Bᴴ D` for `A : Matrix n n 𝕜`, `B : Matrix n p 𝕜`, `D : Matrix p p 𝕜` over a star ring (`RCLike 𝕜` for the
+theorems) — [golub2013matrix] §4.4.5 `[C B; Bᵀ 0]` (`D = 0`, real); Saad, Iterative Methods for Sparse Linear
+Systems, (8.30) `[A B; Bᴴ D]` with `D = 0` the saddle point matrix itself and `D = ρ C` its regularization.
+Backbone form of the proved surface definition `NumlibSurface.SaadSparse.Chapter08.saddleMatrix` (general index
+types here; `Fin n ⊕ Fin m` there); planned at the review of the Golub–Van Loan round so that both surfaces
+delegate (the Saad side is a refactor task, `notes/gvl/consolidation.md` §R).
+`saddleMatrix_conjTranspose : (saddleMatrix A B D)ᴴ = saddleMatrix Aᴴ B Dᴴ` (Hermitian when `A`, `D` are;
+same node). ★'''
+deps = []
+
+[[node]]
+id = "saddleMatrix_mulVec_elim"
+kind = "theorem"
+desc = '''Block equations read off: `saddleMatrix A B D *ᵥ Sum.elim x y = Sum.elim b c ↔ A *ᵥ x + B *ᵥ y = b ∧ Bᴴ *ᵥ x +
+D *ᵥ y = c` (Mathlib `Matrix.fromBlocks_mulVec`, `Sum.elim` injectivity). The `EuclideanSpace` form of the Saad
+surface (`saddleMatrix_mulVec_iff`) is this through `WithLp.ofLp`. ★'''
+deps = ["saddleMatrix"]
+
+[[node]]
+id = "PosDef.conjTranspose_mul_inv_mul"
+kind = "theorem"
+desc = '''The Schur complement of a saddle-point matrix is definite: `A.PosDef → Function.Injective B.mulVec →
+(Bᴴ * A⁻¹ * B).PosDef` (`B : Matrix n p 𝕜` of full column rank). One line from Mathlib:
+`Matrix.PosDef.inv` and `Matrix.PosDef.conjTranspose_mul_mul_same`. The Saad surface lemma `schur_posDef` and
+the nonsingularity (4.4.18) below rest on it; `schurComplement`-wise, the complement of `A` in
+`saddleMatrix A B 0` is `-(Bᴴ * A⁻¹ * B)` (`Matrix.schurComplement_fromBlocks`). ★'''
+deps = []
+
+[[node]]
+id = "isUnit_saddleMatrix_zero"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.18), over `RCLike 𝕜`: for `A : Matrix n n 𝕜` positive definite and `B : Matrix n p 𝕜`
+with `Function.Injective B.mulVec` (full column rank), the equilibrium matrix `saddleMatrix A B 0` is
+nonsingular. Its Schur complement with respect to the invertible `A` is `−Bᴴ A⁻¹ B`, negative definite
+(`PosDef.conjTranspose_mul_inv_mul`), hence nonsingular; `Matrix.isUnit_of_isUnit_schurComplement`. The real
+statement of the book (`fromBlocks C B Bᵀ 0`) is this at `𝕜 = ℝ` (`Matrix.conjTranspose_eq_transpose_of_trivial`).
+Restated from the real `Matrix.isUnit_fromBlocks_posDef_zero` of `Direct/SymmetricIndefinite` at the review of the
+Golub–Van Loan round. ★★'''
+deps = ["saddleMatrix", "PosDef.conjTranspose_mul_inv_mul", "isUnit_of_isUnit_schurComplement", "schurComplement_fromBlocks"]
+
+[[node]]
+id = "saddleMatrix_zero_eq_mul"
+kind = "theorem"
+desc = '''The triangular factorization of [golub2013matrix] §4.4.5: with `A = G Gᴴ` (Cholesky), `G K = B` and `H Hᴴ = Kᴴ K
+= Bᴴ A⁻¹ B`, `saddleMatrix A B 0 = fromBlocks G 0 Kᴴ H * fromBlocks Gᴴ K 0 (-Hᴴ)`. Block multiplication
+(`Matrix.fromBlocks_multiply`) and the three defining equations; no definiteness is needed for the identity
+itself. (Was the real `Matrix.fromBlocks_posDef_zero_eq_mul`.) ★'''
+deps = ["saddleMatrix"]
+
+[[node]]
+id = "saddleMatrix_zero_mulVec_snd_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (4.4.20): under the hypotheses of `isUnit_saddleMatrix_zero`, if `saddleMatrix A B 0 *ᵥ
+Sum.elim x y = Sum.elim f 0` then `y = (Bᴴ * A⁻¹ * B)⁻¹ *ᵥ (Bᴴ * A⁻¹ *ᵥ f)`: from `A x + B y = f`, `Bᴴ x = 0`
+(`saddleMatrix_mulVec_elim`), eliminate `x = A⁻¹(f − B y)`; `Bᴴ A⁻¹ B` is positive definite
+(`PosDef.conjTranspose_mul_inv_mul`), hence invertible. (Was the real `Matrix.fromBlocks_mulVec_snd_eq`.) ★'''
+deps = ["saddleMatrix_mulVec_elim", "PosDef.conjTranspose_mul_inv_mul"]

@@ -1,0 +1,463 @@
+namespace = "GolubVanLoan.Chapter11"
+desc = '''
+Golub–Van Loan §11.4, *Other Krylov Methods*: MINRES and SYMMLQ ((11.4.1)–(11.4.5)), LSQR and LSMR
+((11.4.6)–(11.4.7)), GMRES ((11.4.8)–(11.4.11), Algorithm 11.4.2), the polynomial view (§11.4.4), and
+BiCG, CGS, BiCGstab, QMR ((11.4.12)–(11.4.14), Figure 11.4.1).
+
+There is no Algorithm 11.4.1 in the source: §11.4.1 describes MINRES and SYMMLQ in prose and the
+first numbered algorithm of the section is 11.4.2 (Doubts; either a numbering gap of the book or a
+header lost in conversion, and nothing in the text around it reads as an algorithm).
+
+Backbone: the specifications are `Krylov.IsMinResidualIterate` (MINRES, GMRES),
+`Krylov.IsGalerkinIterate`, `Krylov.IsMinErrorIterate` in `Numlib/Krylov/Iterate`; the Lanczos,
+Arnoldi and two-sided Lanczos relations and the Givens least-squares layer are
+`Numlib/Krylov/{Lanczos,Arnoldi,Hessenberg,BiLanczos,QuasiMinRes,Singular}`; the normal-equation
+methods `Numlib/Krylov/NormalEquations`; monotonicity `Numlib/Krylov/Monotonicity`. The
+Golub–Kahan / Paige–Saunders bidiagonalization is ch10's new `Numlib/Krylov/Bidiagonalization`
+(`GolubKahan.rightVec := Arnoldi.vec (Aᴴ ∘ A)`, `GolubKahan.span_leftVec`); the Paige–Saunders process
+is its instance for the pair `(Aᵀ, A)` (ch10's `algorithm_10_4_2_spec`).
+
+The transpose-free methods (CGS, BiCGstab) exist today only in the Saad surface
+(`SaadSparse.Chapter07.cgs`, `bicgstab`, `cgs_residual_eq`, `bicgstab_residual_eq`, and the BiCG
+polynomials `bcgResidualPoly`, `bcg_residual_eq_aeval`), in recurrences *identical* to Figure 11.4.1
+(checked line by line: `μ, q, x₊, r₊, τ, u₊, p₊` of CGS are Saad Alg 7.6's `α, q, x, r, β, u, p`;
+BiCGstab's are Alg 7.7's). By `notes/backbone.md` §1.2 (two sources in identical form) they belong
+in the backbone, and the Golub–Van Loan consolidation planned them there: `Numlib/Krylov/TransposeFree`
+(`BCG.residualPoly`, `BCG.residual_eq_aeval`, `CGS.iterate`, `CGS.residual_eq_aeval_sq`,
+`BiCGSTAB.iterate`, `BiCGSTAB.residual_eq`, for an operator `A` with adjoint `B`). The Figure 11.4.1
+nodes here identify the exact runs of the D4 programs with those iterations and delegate.
+
+Conventions as in §11.3 (`T = Matrix.toEuclideanLin A`, `r₀ = b − Ax₀`, 0-based Krylov indices).
+The book's `𝒦(A, b, k)` in the first line of §11.4.3 means `𝒦(A, r₀, k)` (Doubts).
+'''
+
+[[node]]
+id = "energyFunctional_unbounded_of_indefinite"
+kind = "theorem"
+desc = '''
+§11.4.1: for symmetric `A` with a negative eigenvalue (`A x = λ_min x`, `λ_min < 0`, `x ≠ 0`),
+`φ(α x) → −∞` as `α → ∞`, so `φ` has no lower bound (the book's `φ(αx) = α²λ_min − αxᵀb` omits the
+factor `½‖x‖²`). Quadratic in `α` with negative leading coefficient. ★
+'''
+deps = ["energyFunctional"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.1'
+
+[[node]]
+id = "equation_11_4_2"
+kind = "theorem"
+desc = '''
+(11.4.2)–(11.4.3): after `k < grade` Lanczos steps, `A Q_k = Q_{k+1} H_k` with `H_k ∈ ℝ^{(k+1)×k}`
+the tridiagonal-plus-row matrix `Lanczos.tridiagExt T r₀ k` (the printed first row `α₁ β₂` should be
+`α₁ β₁`; Doubts). Delegates to `Arnoldi.apply_sum` with `Lanczos.hessenberg_eq_map_tridiagExt`. ★
+'''
+deps = ["Arnoldi.apply_sum", "Lanczos.hessenberg_eq_map_tridiagExt", "Lanczos.tridiagExt"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.2)'
+
+[[node]]
+id = "minres_reduction"
+kind = "theorem"
+desc = '''
+§11.4.1: `‖A(x₀ + Q_k y) − b‖₂ = ‖H_k y − β₀e₁‖₂` for `y ∈ ℝ^k`, `k ≤ grade`, `ran Q_k = 𝒦(A, r₀, k)`.
+`Krylov.norm_residual_eq_norm_firstVec_sub_mulVec` (Arnoldi coordinates) with `equation_11_4_2`. ★
+'''
+deps = ["Krylov.norm_residual_eq_norm_firstVec_sub_mulVec", "equation_11_4_2", "Arnoldi.span_vec"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.1'
+
+[[node]]
+id = "equation_11_4_1"
+kind = "theorem"
+desc = '''
+(11.4.1) solved by Givens QR: with `G_k ⋯ G_1` the rotations triangularizing `H_k` (`Krylov.givensQ`,
+`Krylov.rotated`), `R_k y_k = p_k` and `x_k = x₀ + Q_k y_k`: `Krylov.IsMinResidualIterate T b x₀ k x_k`
+(the minimum of `‖b − Ax‖₂` over `x₀ + 𝒦(A, r₀, k)` is attained at `x_k`) and
+`‖b − A x_k‖₂ = |ρ_k|`. From `minres_reduction`, `Krylov.isMinResidualIterate_iff_isMinOn` and
+`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma` (`ρ_k` is the backbone's `Krylov.gamma`). ★
+'''
+deps = ["minres_reduction", "Krylov.isMinResidualIterate_iff_isMinOn",
+  "Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma", "Krylov.givensQ", "Krylov.gamma"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.1)'
+
+[[node]]
+id = "minres_givens_update"
+kind = "theorem"
+desc = '''
+§11.4.1: the transition `{H_{k−1}, R_{k−1}, p_{k−1}, ρ_{k−1}} → {H_k, R_k, p_k, ρ_k}` needs one new
+rotation: `R_{k−1}` is the leading block of `R_k`, `p_{k−1}` the leading part of `p_k`
+(`Krylov.rotated_eq_of_le`, prefix stability of the ℕ-indexed rotations), and `R_k` has upper
+bandwidth 2 (the rotated tridiagonal: `R_k i j = 0` for `j > i + 2`). The bandwidth clause is new
+content: induction on the rotations, each touching two adjacent rows of a matrix whose column `j`
+is supported on rows `j−1, j, j+1`. The `O(1)` flop count is not formalized. ★★ (~50 lines)
+'''
+deps = ["Krylov.rotated_eq_of_le", "Krylov.rotated", "equation_11_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.1'
+
+[[node]]
+id = "equation_11_4_5"
+kind = "theorem"
+desc = '''
+(11.4.5), SYMMLQ: if `y_k ∈ ℝ^k` solves `H_{k−1}ᵀ y_k = β₀e₁` and `x_k = x₀ + Q_k y_k`, then
+`Q_{k−1}ᵀ r_k = 0` (`r_k = b − Ax_k` is orthogonal to `q₁, …, q_{k−1}`). From `equation_11_4_2`
+transposed (`Q_{k−1}ᵀA = H_{k−1}ᵀQ_kᵀ`). The printed derivation writes `r_k = r₀ − AQ_{k−1}y_k` for
+`r₀ − AQ_k y_k` (Doubts). ★
+'''
+deps = ["equation_11_4_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.5)'
+
+[[node]]
+id = "symmlq_minNorm_solution"
+kind = "theorem"
+desc = '''
+§11.4.1: for `k ≤ grade` (all `β_j > 0`), `H_{k−1}ᵀ ∈ ℝ^{(k−1)×k}` has full row rank; with the Givens
+rotations of the QR of `H_{k−1}`, `H_{k−1}ᵀ G₁⋯G_{k−1} = [L_{k−1} | 0]` with `L_{k−1}` lower
+triangular, nonsingular and of lower bandwidth 2; and `y_k = G₁⋯G_{k−1} [w; 0]` with
+`L_{k−1} w = β₀e₁` is the minimum-norm solution of (11.4.5). Transpose of the Givens QR of the
+Hessenberg `H_{k−1}` (`Krylov.givensQ_mul_hessenbergOf`; the triangular factor is nonsingular by
+the Lean lemmas `Krylov.isUnit_hessenbergSqOf_rotated`), plus the minimum-norm characterization
+(`y ⟂ ker H_{k−1}ᵀ`). ★★ (~80 lines)
+'''
+deps = ["equation_11_4_5", "Krylov.givensQ_mul_hessenbergOf", "minres_givens_update"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.1'
+
+[[node]]
+id = "equation_11_4_6"
+kind = "theorem"
+desc = '''
+(11.4.6): after `k` steps of the Paige–Saunders bidiagonalization (Algorithm 10.4.2) from
+`u₁ = r₀/β₀`, with `p_k ≠ 0`, `A V_k = U_{k+1} B̃_k` with `B̃_k ∈ ℝ^{(k+1)×k}` lower bidiagonal
+(`α_j` on the diagonal, `β_j` below), `V_k`, `U_{k+1}` orthonormal columns. Restates ch10's (10.4.19)
+(`GolubVanLoan.Chapter10.equation_10_4_19`) with `p_k = β_k u_{k+1}`. ★
+'''
+deps = ["GolubVanLoan.Chapter10.equation_10_4_19"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.6)'
+
+[[node]]
+id = "lsqr_span_eq"
+kind = "theorem"
+desc = '''
+§11.4.2, "it can be shown that `span{v₁, …, v_k} = 𝒦(AᵀA, Aᵀr₀, k)`": the Paige–Saunders process
+from `u₁ = r₀/β₀` is ch10's Golub–Kahan process of the pair `(Aᵀ, A)` (`algorithm_10_4_2_spec`), whose
+left vectors are `Arnoldi.vec (AᵀA) (Aᵀu₁)`; the span is `GolubKahan.span_leftVec` (via the earlier chapter's restatement `GolubVanLoan.Chapter10.equation_10_4_12`)
+(`Numlib/Krylov/Bidiagonalization`, ch10). ★
+'''
+deps = ["GolubVanLoan.Chapter10.equation_10_4_12", "GolubVanLoan.Chapter10.algorithm_10_4_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.2'
+
+[[node]]
+id = "equation_11_4_7"
+kind = "theorem"
+desc = '''
+(11.4.7), LSQR: `x_k = x₀ + V_k y_k` with `y_k` minimizing `‖B̃_k y − β₀e₁‖₂` (solved by Givens QR,
+`R_k y_k = p_k`) solves `min_{x ∈ x₀ + 𝒦(AᵀA, Aᵀr₀, k)} ‖Ax − b‖₂`: from `equation_11_4_6`
+(`‖A(x₀ + V_k y) − b‖ = ‖B̃_k y − β₀e₁‖`, `U_{k+1}` orthonormal) and `lsqr_span_eq`; it is the CGNR
+iterate (`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`, `equation_11_3_28`). The printed
+`β₁e₁` in the Givens display is the `β₀e₁` of the least-squares problem (Doubts). ★
+'''
+deps = ["equation_11_4_6", "lsqr_span_eq", "equation_11_3_28", "Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.7)'
+
+[[node]]
+id = "IsLSMRIterate"
+kind = "definition"
+desc = '''
+§11.4.2, LSMR as the book defines it ("mathematically equivalent to MINRES applied to the normal
+equations"): `IsLSMRIterate A b x₀ k x := Krylov.IsMinResidualIterate (T† ∘ T) (T† b) x₀ k x`,
+`T = toEuclideanLin A`, `A ∈ ℝ^{m×n}` (the Krylov space is `𝒦(AᵀA, Aᵀr₀, k)`). ★
+'''
+deps = ["Krylov.IsMinResidualIterate"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.2, Definition'
+
+[[node]]
+id = "lsmr_norm_residual_antitone"
+kind = "theorem"
+desc = '''
+§11.4.2: along a sequence of LSMR iterates, `‖Aᵀ r_k‖₂` and `‖r_k‖₂` (`r_k = b − Ax_k`) are
+nonincreasing, the second for `A` of full column rank. The first is
+`Krylov.IsMinResidualIterate.norm_residual_antitone` (nested spaces). The second is Fong–Saunders:
+`‖r_k‖² = ‖r_*‖² + ‖x_k − x_LS‖²_{AᵀA}` (Pythagoras, `r_* ⟂ ran A`) and the energy error of MINRES on
+the SPD system `AᵀA x = Aᵀb` is nonincreasing (`Krylov.IsMinResidualIterate.energyNorm_error_antitone`,
+stated from `x₀ = 0`; translate by `x₀`). ★★ (~50 lines)
+'''
+deps = ["IsLSMRIterate", "Krylov.IsMinResidualIterate.norm_residual_antitone",
+  "Krylov.IsMinResidualIterate.energyNorm_error_antitone"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.2'
+
+[[node]]
+id = "equation_11_4_8"
+kind = "theorem"
+desc = '''
+(11.4.8) and the two displays after it: after `k < grade` Arnoldi steps from `q₁ = r₀/β₀`,
+`A Q_k = Q_{k+1} H̃_k` with `H̃_k ∈ ℝ^{(k+1)×k}` upper Hessenberg (`Arnoldi.hessenberg`), `Q_{k+1}`
+orthonormal columns, and `span{q₁, …, q_k} = 𝒦(A, r₀, k)`. `Arnoldi.apply_sum`, `Arnoldi.span_vec`;
+ch10's (10.5.2) (`GolubVanLoan.Chapter10.equation_10_5_2`) is the square form. ★
+'''
+deps = ["Arnoldi.apply_sum", "Arnoldi.span_vec", "Arnoldi.hessenberg"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.8)'
+
+[[node]]
+id = "gmres_reduction"
+kind = "theorem"
+desc = '''
+§11.4.3: `‖A(x₀ + Q_k y) − b‖₂ = ‖H̃_k y − β₀e₁‖₂`, and the `k`-th GMRES iterate `x₀ + Q_k y_k` (with
+`y_k` the least-squares solution) is `Krylov.IsMinResidualIterate T b x₀ k`.
+`Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`, `Krylov.isMinResidualIterate_iff_isMinOn`. ★
+'''
+deps = ["equation_11_4_8", "Krylov.norm_residual_eq_norm_firstVec_sub_mulVec", "Krylov.isMinResidualIterate_iff_isMinOn"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.3'
+
+[[node]]
+id = "equation_11_4_9"
+kind = "theorem"
+desc = '''
+(11.4.9): the Givens rotations `G₁, …, G_k` of the backbone (`Krylov.givensQ`) make
+`G_kᵀ⋯G₁ᵀ H̃_k = [R_k; 0]` with `R_k` upper triangular. `Krylov.givensQ_mul_hessenbergOf` and the
+Lean lemma `Krylov.hessenbergSqOf_rotated_isUpperTriangular`. ★
+'''
+deps = ["Krylov.givensQ_mul_hessenbergOf", "Krylov.givensQ", "equation_11_4_8"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.9)'
+
+[[node]]
+id = "equation_11_4_10"
+kind = "theorem"
+desc = '''
+(11.4.10) and the line after: with `G_kᵀ⋯G₁ᵀ(β₀e₁) = [p_k; ρ_k]`, `R_k y_k = p_k` gives the GMRES
+iterate, and `|ρ_k| = ‖A x_k − b‖₂`. `Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma`
+(`ρ_k = Krylov.gamma`), `Krylov.gvec`. ★
+'''
+deps = ["equation_11_4_9", "gmres_reduction", "Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma",
+  "Krylov.gvec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.10)'
+
+[[node]]
+id = "gmres_givens_prefix"
+kind = "theorem"
+desc = '''
+§11.4.3: `R_{k−1} = R_k(1:k−1, 1:k−1)` and `p_k(1:k−1) = p_{k−1}` — one new rotation per step.
+Prefix stability of the ℕ-indexed rotations (`Krylov.rotated_eq_of_le`, and the `gvec` analogue). ★
+'''
+deps = ["equation_11_4_10", "Krylov.rotated_eq_of_le", "Krylov.gvec"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.3'
+
+[[node]]
+id = "algorithm_11_4_2"
+kind = "definition"
+desc = '''
+Algorithm 11.4.2 (`m`-step GMRES), D4 program: `r₀ = b − Ax₀`, `β₀ = ‖r₀‖₂`; while `β_k > 0` and
+`k < m`: `q_{k+1} = r_k/β_k`, `k ← k+1`, `r_k = Aq_k`, the modified Gram–Schmidt loop (11.4.11)
+`h_ik = q_iᵀr_k`, `r_k ← r_k − h_ik q_i` (`i = 1:k`, in order, `r_k` updated in place), `β_k = ‖r_k‖₂`,
+`h_{k+1,k} = β_k`, apply `G₁, …, G_{k−1}` to `H(1:k, k)` and determine `G_k` by ch05's Algorithm 5.1.3,
+update `p_k`, `ρ_k`; after the loop solve `R_k y_k = p_k` (back substitution, ch03's Algorithm 3.1.2)
+and return `x̃ = x₀ + Q_k y_k`. (11.4.11) is a step of this program and not a separate node. ★★
+'''
+deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter03.algorithm_3_1_2",
+  "GolubVanLoan.Chapter01.algorithm_1_1_1"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.4.2'
+
+[[node]]
+id = "algorithm_11_4_2_spec"
+kind = "theorem"
+desc = '''
+Exact semantics for nonsingular `A`: the run takes `k = min m (Krylov.grade T r₀)` steps; the
+`q_j`, `h_ij` are the Arnoldi vectors and coefficients (`Arnoldi.vec`, `Arnoldi.coeff`: MGS and the
+backbone's Gram–Schmidt agree in exact arithmetic, ch10's spec of Algorithm 10.5.1), the rotations
+and `p_k, ρ_k` are the backbone's (`Krylov.givensQ`, `Krylov.gvec`, `Krylov.gamma`), and
+`Krylov.IsMinResidualIterate T b x₀ k x̃`; if the loop stopped with `β_k = 0` then `A x̃ = b`
+(`Krylov.IsMinResidualIterate.apply_eq_of_grade_le`). This is the book's "either `x̃` solves `Ax = b`
+or minimizes `‖Ax − b‖₂` over `x₀ + 𝒦(A, r₀, m)`". ★★★ (~150 lines: MGS = Arnoldi, the Givens state,
+back substitution)
+'''
+deps = ["algorithm_11_4_2", "equation_11_4_10", "gmres_givens_prefix", "Arnoldi.vec", "Arnoldi.coeff",
+  "Krylov.IsMinResidualIterate.apply_eq_of_grade_le", "GolubVanLoan.Chapter10.algorithm_10_5_1_spec",
+  "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.4.2'
+
+[[node]]
+id = "krylov_eq_aeval"
+kind = "theorem"
+desc = '''
+§11.4.4: if the columns of `Q_k` span `𝒦(A, q₁, k)` then every `Q_k y` is `φ(A) q₁` for a polynomial
+`φ` of degree `≤ k−1` (and conversely). `Krylov.mem_subspace_iff_exists_aeval`. ★
+'''
+deps = ["Krylov.mem_subspace_iff_exists_aeval"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.4'
+
+[[node]]
+id = "minResidual_eq_iInf_poly"
+kind = "theorem"
+desc = '''
+§11.4.4, the three-line display: `min_{x ∈ x₀+𝒦(A,r₀,k)} ‖b − Ax‖₂ = min_{φ ∈ ℙ_{k−1}} ‖(I − Aφ(A)) r₀‖₂
+= min_{ψ ∈ ℙ_k, ψ(0) = 1} ‖ψ(A) r₀‖₂` (as `⨅`, attained). `Krylov.IsMinResidualIterate.norm_residual_eq_iInf`
+and `Krylov.exists_residual_poly`. The printed middle term `‖b − A(x₀ + φ(A))r₀‖` misplaces a
+parenthesis. ★
+'''
+deps = ["Krylov.IsMinResidualIterate.norm_residual_eq_iInf", "Krylov.exists_residual_poly", "krylov_eq_aeval"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.4'
+
+[[node]]
+id = "equation_11_4_12"
+kind = "theorem"
+desc = '''
+(11.4.12)–(11.4.13), two-sided Lanczos: with `q₁ = r₀/β₀` and a shadow vector `r̃₀`, `r₀ᵀr̃₀ ≠ 0`
+(scaled so that `q̃₁ᵀq₁ = 1`, the backbone's normalization), and no serious breakdown through step
+`k`: `A Q_k = Q_k T_k + r_k e_kᵀ`, `Q̃_kᵀ r_k = 0`, `Aᵀ Q̃_k = Q̃_k T_kᵀ + r̃_k e_kᵀ`, `Q_kᵀ r̃_k = 0`,
+`Q̃_kᵀQ_k = I_k`, `Q̃_kᵀ A Q_k = T_k` tridiagonal, `ran Q_k = 𝒦(A, r₀, k)`, `ran Q̃_k = 𝒦(Aᵀ, r̃₀, k)`.
+Delegates to `BiLanczos.inner_vec_dualVec`, `BiLanczos.inner_dualVec_apply_vec`,
+`BiLanczos.hessenbergRelation`, `BiLanczos.span_vec`, `BiLanczos.span_dualVec`; ch10's (10.5.11)
+is the algorithm. Covers (11.4.13) (`equation_11_4_13`). ★★ (~40 lines: the book scales `q₁` by
+`‖r₀‖₂` and puts the normalization in `q̃₁`)
+'''
+deps = ["BiLanczos.inner_vec_dualVec", "BiLanczos.inner_dualVec_apply_vec", "BiLanczos.hessenbergRelation",
+  "BiLanczos.vec", "BiLanczos.dualVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.12)'
+
+[[node]]
+id = "equation_11_4_13"
+kind = "theorem"
+desc = '''
+(11.4.13): the dual relation `Aᵀ Q̃_k = Q̃_k T_kᵀ + r̃_k e_kᵀ`, `Q_kᵀ r̃_k = 0`. Clause of
+`equation_11_4_12`. ★
+'''
+deps = ["equation_11_4_12"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.13)'
+
+[[node]]
+id = "bicg_residual_orthogonal"
+kind = "theorem"
+desc = '''
+§11.4.5, BiCG: if `T_k y_k = Q̃_kᵀ r₀` and `x_k = x₀ + Q_k y_k` then `Q̃_kᵀ (b − A x_k) = 0` (the residual
+is orthogonal to `𝒦(Aᵀ, r̃₀, k)`), a Petrov–Galerkin iterate; and with `T_k = L_k U_k`,
+`x_k = x₀ + (Q_k U_k⁻¹)(L_k⁻¹ Q̃_kᵀ r₀)`. From `equation_11_4_12`; `BCG.isPetrovGalerkin` is the backbone
+statement for the recurrence. ★
+'''
+deps = ["equation_11_4_12", "BCG.isPetrovGalerkin"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "bicg"
+kind = "definition"
+desc = '''
+The BiCG column of Figure 11.4.1, D4 program with fuel: `p = r = r₀`, `p̃ = r̃ = r̃₀`;
+`μ = r̃_cᵀr_c/p̃_cᵀAp_c`, `x₊ = x_c + μp_c`, `r₊ = r_c − μAp_c`, `r̃₊ = r̃_c − μAᵀp̃_c`,
+`τ = r̃₊ᵀr₊/r̃_cᵀr_c`, `p₊ = r₊ + τp_c`, `p̃₊ = r̃₊ + τp̃_c`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.4.1'
+
+[[node]]
+id = "bicg_spec"
+kind = "theorem"
+desc = '''
+The exact run of `bicg` is the backbone's `BCG.iterate` (Saad Alg 7.3, identical recurrence, real
+case with `B = Aᵀ`), hence its residuals are biorthogonal (`BCG.inner_residual_dualResidual_eq_zero`),
+its directions `A`-biconjugate (`BCG.inner_dualDirection_apply_direction_eq_zero`) and its iterate is
+the Petrov–Galerkin iterate of `bicg_residual_orthogonal`. ★★ (~40 lines)
+'''
+deps = ["bicg", "BCG.iterate", "BCG.inner_residual_dualResidual_eq_zero", "BCG.inner_dualDirection_apply_direction_eq_zero",
+  "bicg_residual_orthogonal"]
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.4.1'
+
+[[node]]
+id = "bicg_eq_cg"
+kind = "theorem"
+desc = '''
+§11.4.5: "BiCG collapses to CG if `A` is symmetric positive definite and `r̃₀ = r₀`": then
+`r̃_k = r_k`, `p̃_k = p_k` for all `k` and the `x, r, p` of `bicg` are those of Algorithm 11.3.3
+(`CG.iterate`). Induction: the starred recurrence is the unstarred one when `Aᵀ = A`. ★
+'''
+deps = ["bicg_spec", "algorithm_11_3_3_spec", "CG.iterate"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "equation_11_4_14"
+kind = "theorem"
+desc = '''
+(11.4.14): for the BiCG run there are polynomials `ψ_k, φ_k` of degree `≤ k` with `r_k = ψ_k(A)r₀`,
+`p_k = φ_k(A)r₀`, `r̃_k = ψ_k(Aᵀ)r̃₀`, `p̃_k = φ_k(Aᵀ)r̃₀` and `ψ_k(0) = 1`. The printed `φ_k(0) = 1` is
+false (`φ₁ = ψ₁ + τ₀`, `φ₁(0) = 1 + τ₀`; Doubts) and is not part of the statement. The polynomials
+are defined by the recurrences `ψ_{k+1} = ψ_k − μ_k X φ_k`, `φ_{k+1} = ψ_{k+1} + τ_k φ_k`: the backbone
+`BCG.residualPoly`, `BCG.directionPoly` of `Numlib/Krylov/TransposeFree` for `T = toEuclideanLin A`,
+`B = toEuclideanLin Aᵀ`, and the theorem is `BCG.residual_eq_aeval` through `bicg_spec` (over `ℝ`
+the conjugated polynomials are the polynomials themselves). ★
+'''
+deps = ["bicg_spec", "BCG.residualPoly", "BCG.directionPoly", "BCG.residual_eq_aeval"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.4.14)'
+
+[[node]]
+id = "bicg_inner_eq_poly"
+kind = "theorem"
+desc = '''
+§11.4.5: `r̃_kᵀr_k = r̃₀ᵀ(ψ_k(A)² r₀)` and `p̃_kᵀAp_k = r̃₀ᵀ(A φ_k(A)² r₀)` — transposing a polynomial
+across the inner product (`(p(Aᵀ)u)ᵀv = uᵀp(A)v`). From `equation_11_4_14`. ★
+'''
+deps = ["equation_11_4_14"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "cgs"
+kind = "definition"
+desc = '''
+The CGS column of Figure 11.4.1, D4 program with fuel: `p = r = u = r₀`; `μ = r̃₀ᵀr_c/r̃₀ᵀAp_c`,
+`q_c = u_c − μAp_c`, `x₊ = x_c + μ(u_c + q_c)`, `r₊ = r_c − μA(u_c + q_c)`, `τ = r̃₀ᵀr₊/r̃₀ᵀr_c`,
+`u₊ = r₊ + τq_c`, `p₊ = u₊ + τ(q_c + τp_c)` (Saad Alg 7.6 line by line). The printed initial condition
+`r̃₀ᵀr̃₀ ≠ 0` should be `r̃₀ᵀr₀ ≠ 0` (Doubts). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.4.1'
+
+[[node]]
+id = "cgs_residual_eq"
+kind = "theorem"
+desc = '''
+§11.4.5 (Sonneveld): the exact CGS run has `r_k = ψ_k(A)² r₀` with `ψ_k` the BiCG residual polynomial
+of (11.4.14), and `p_k = φ_k(A)² r₀`, using only products with `A`. The exact run of `cgs` is the
+backbone `CGS.iterate` of `Numlib/Krylov/TransposeFree` (identical recurrence; a fold-to-iterate
+induction like `bicg_spec`), and the statement is `CGS.residual_eq_aeval_sq`. ★★ (~40 lines)
+'''
+deps = ["cgs", "equation_11_4_14", "CGS.iterate", "CGS.residual_eq_aeval_sq"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "bicgstab"
+kind = "definition"
+desc = '''
+The BiCGstab column of Figure 11.4.1, D4 program with fuel: `p = r = r₀`; `μ = r̃₀ᵀr_c/r̃₀ᵀAp_c`,
+`s_c = r_c − μAp_c`, `ω = s_cᵀAs_c/(As_c)ᵀ(As_c)`, `x₊ = x_c + μp_c + ωs_c`, `r₊ = s_c − ωAs_c`,
+`τ = (r̃₀ᵀr₊)μ/((r̃₀ᵀr_c)ω)`, `p₊ = r₊ + τ(p_c − ωAp_c)` (Saad Alg 7.7). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Figure 11.4.1'
+
+[[node]]
+id = "bicgstab_residual_eq"
+kind = "theorem"
+desc = '''
+§11.4.5 (van der Vorst): the exact BiCGstab run has `r_k = (1 − ω_kA)⋯(1 − ω₁A) ψ_k(A) r₀` with `ψ_k`
+the BiCG residual polynomial, provided BiCG does not break down and no `ω_j` vanishes (the two
+hypotheses of the backbone `BiCGSTAB.residual_eq` of `Numlib/Krylov/TransposeFree`, to which the exact
+run of `bicgstab` — the backbone `BiCGSTAB.iterate`, identical recurrence — delegates); and each
+`ω_k` minimizes `‖s_k − ωAs_k‖₂` over `ω` ([the book's P11.4.2]; `Projection.minResStep`,
+`Projection.norm_residual_minResStep_sq_eq`). ★★ (~60 lines)
+'''
+deps = ["bicgstab", "equation_11_4_14", "Projection.minResStep", "BiCGSTAB.iterate", "BiCGSTAB.residual_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "qmr_residual_eq"
+kind = "theorem"
+desc = '''
+§11.4.5, QMR: with `A Q_k = Q_{k+1} T̃_k` (two-sided Lanczos, `T̃_k ∈ ℝ^{(k+1)×k}` tridiagonal),
+`b − A(x₀ + Q_k y) = Q_{k+1}(β₀e₁ − T̃_k y)`; QMR chooses `y` minimizing `‖β₀e₁ − T̃_k y‖₂`
+(`QMR.IsQuasiMinResidual`). `Krylov.HessenbergRelation₂.residual_eq` for `BiLanczos.hessenbergRelation`. ★
+'''
+deps = ["Krylov.HessenbergRelation₂.residual_eq", "BiLanczos.hessenbergRelation", "QMR.IsQuasiMinResidual"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'
+
+[[node]]
+id = "qmr_eq_gmres_of_orthonormal"
+kind = "theorem"
+desc = '''
+§11.4.5, "GMRES minimizes the same quantity because `Q_{k+1}` has orthonormal columns in Arnoldi":
+when the residual basis is the Arnoldi basis, the quasi-minimal-residual iterate is the
+minimal-residual (GMRES) iterate. `Krylov.isQuasiMinResidualIterate_iff_isMinResidualIterate`. ★
+'''
+deps = ["Krylov.isQuasiMinResidualIterate_iff_isMinResidualIterate", "qmr_residual_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §11.4.5'

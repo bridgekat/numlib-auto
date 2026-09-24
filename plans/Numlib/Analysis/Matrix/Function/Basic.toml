@@ -1,0 +1,88 @@
+desc = '''
+The matrix forms of the primary functional calculus `pfc` (whose algebraic theory is
+`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/Basic`): similarity, diagonal and block
+diagonal matrices, Jordan blocks and the Jordan form ([golub2013matrix] (9.1.3)–(9.1.8), Corollary
+9.1.3), the transpose, and realness of `pfc f` on real matrices read in `ℂ`. See the directory group
+`Numlib/Analysis/Matrix/Function` for why the definition is by interpolation. Matrix lemmas over
+`Matrix n n 𝕜`, `[Fintype n] [DecidableEq n]`, `[IsAlgClosed 𝕜]` or the splitting hypothesis
+(`Matrix.isIntegral`-type integrality is automatic: `Algebra.IsIntegral.isIntegral` from finite
+dimension). Prototype `notes/gvl/ch09/proto/Function.lean` elaborates every statement shape used here.
+'''
+
+[[node]]
+id = "Matrix.pfc_conj"
+kind = "theorem"
+desc = '''Similarity: for `P : Matrix n n 𝕜` with `IsUnit P`, `pfc f (P * A * P⁻¹) = P * pfc f A * P⁻¹`
+([golub2013matrix] (9.1.8), printed there with `X` and `X⁻¹` exchanged). `AlgHom.map_pfc` with the
+inner automorphism `MulAut.conj`/`Units.conj` made an `AlgEquiv` (`Matrix` has `AlgEquiv.ofLinearEquiv`-style
+constructors; or `(Units.map …).conj`), splitting automatic over an algebraically closed `𝕜`. ★'''
+deps = ["AlgHom.map_pfc"]
+
+[[node]]
+id = "Matrix.pfc_diagonal"
+kind = "theorem"
+desc = '''Diagonal matrices: `pfc f (diagonal d) = diagonal (f ∘ d)` for `d : n → 𝕜` (no hypotheses;
+`minpoly` of a diagonal matrix has simple roots `d '' univ`). Through `Pi.pfc_apply : pfc f d = f ∘ d`
+in the product algebra `n → 𝕜` (`minpoly` squarefree, `pfc_congr`, `Pi.evalAlgHom`) and
+`AlgHom.map_pfc` with `Matrix.diagonalAlgHom`. ★'''
+deps = ["AlgHom.map_pfc", "pfc_congr"]
+
+[[node]]
+id = "Matrix.pfc_blockDiagonal'"
+kind = "theorem"
+desc = '''Block diagonal matrices: `pfc f (blockDiagonal' M) = blockDiagonal' (fun i => pfc f (M i))`
+for `M : ∀ i, Matrix (m i) (m i) 𝕜` (splitting hypotheses per block, automatic over `ℂ`), and the
+two-block form `Matrix.pfc_fromBlocks_zero : pfc f (fromBlocks B 0 0 C) = fromBlocks (pfc f B) 0 0
+(pfc f C)`; also `Matrix.pfc_reindex : pfc f (reindex e e A) = reindex e e (pfc f A)`. Naturality
+for the product algebra `∀ i, Matrix (m i) (m i) 𝕜` (`Pi.algHom`, projections `Pi.evalAlgHom`) and the
+injective algebra map `blockDiagonal'` — Mathlib has only the ring hom `Matrix.blockDiagonal'RingHom`
+(no `blockDiagonal'AlgHom`), so build the `AlgHom` from it (`AlgHom.mk'`/`{ … with commutes' := … }`,
+scalars commute through `Matrix.blockDiagonal'_smul`; one `def` local to the proof); `reindex` is
+`Matrix.reindexAlgEquiv`. ★'''
+deps = ["AlgHom.map_pfc"]
+
+[[node]]
+id = "Matrix.pfc_jordanBlock"
+kind = "theorem"
+desc = '''A Jordan block ([golub2013matrix] (9.1.6)): `pfc f (jordanBlock m μ) = ∑ j ∈ range m,
+Hermite.taylorJet f μ j • (jordanBlock m 0) ^ j`, with the entrywise form
+`Matrix.pfc_jordanBlock_apply : pfc f (jordanBlock m μ) i j = if i ≤ j then iteratedDeriv (j - i) f μ
+/ (j - i)! else 0` ((9.1.4)). No hypothesis on `f`. `minpoly (jordanBlock m μ) = (X - C μ)^m` (from
+`Matrix.charpoly_jordanBlock` and `(jordanBlock m 0)^{m-1} ≠ 0`, `Matrix.jordanBlock_zero_pow_apply`),
+`jetPoly (taylorJet f μ) μ m` interpolates, and `jordanBlock m μ = μ • 1 + jordanBlock m 0`
+(`Matrix.jordanBlock_eq_add_smul_one`). Prototype statement in `notes/gvl/ch09/proto/Function.lean`. ★'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant", "Matrix.jordanBlock", "Matrix.charpoly_jordanBlock", "Matrix.jordanBlock_eq_add_smul_one", "Matrix.jordanBlock_zero_pow_apply"]
+
+[[node]]
+id = "Matrix.pfc_conj_jordanForm"
+kind = "theorem"
+desc = '''The Jordan-form expression ([golub2013matrix] (9.1.3)), the book's definition as a theorem:
+if `P⁻¹ * A * P = reindex σ σ (jordanForm e μ)` with `IsUnit P` (the shape of
+`Matrix.exists_conj_jordanForm`), then `pfc f A = P * reindex σ σ (blockDiagonal' fun i => pfc f
+(jordanBlock (e i) (μ i))) * P⁻¹`, each block given by `Matrix.pfc_jordanBlock`. In particular the
+right side does not depend on the chosen Jordan decomposition. `Matrix.pfc_conj`,
+`Matrix.pfc_blockDiagonal'`, `Matrix.jordanForm` unfolded (`Matrix.jordanForm_def`). ★'''
+deps = ["Matrix.pfc_conj", "Matrix.pfc_blockDiagonal'", "Matrix.pfc_jordanBlock", "Matrix.jordanForm", "Matrix.exists_conj_jordanForm"]
+
+[[node]]
+id = "Matrix.pfc_transpose"
+kind = "theorem"
+desc = '''`pfc f Aᵀ = (pfc f A)ᵀ`: `aeval Aᵀ p = (aeval A p)ᵀ` (`Matrix.transpose_aeval`, check
+name; the transpose is an anti-automorphism but polynomials in one element commute) and
+`minpoly 𝕜 Aᵀ = minpoly 𝕜 A` (`Matrix.minpoly_transpose`-type lemma, or via `transposeAlgEquiv` to
+`Matrixᵐᵒᵖ`). ★'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant"]
+
+[[node]]
+id = "Matrix.pfc_map_conj"
+kind = "theorem"
+desc = '''Realness: for `A : Matrix n n ℂ`, `pfc f (A.map (starRingEnd ℂ)) = (pfc (conj ∘ f ∘ conj) A).map
+(starRingEnd ℂ)`; hence if `f (conj z) = conj (f z)` near the spectrum (e.g. `exp`, `sin`, `cos`,
+`Complex.log` and `z ^ (1/2)` off `(-∞, 0]`, the sign `SignType.sign z.re`) and `A = B.map ofReal`
+is real, then `pfc f A` is real: `∃ C : Matrix n n ℝ, pfc f (B.map ofReal) = C.map ofReal`
+(`Matrix.pfc_map_ofReal_of_conj`). Conjugation is a ring automorphism (not `ℂ`-linear): `(aeval A p).map
+conj = aeval (A.map conj) (p.map conj)`, `minpoly ℂ (A.map conj) = (minpoly ℂ A).map conj`
+(`minpoly.map`-type argument through the semilinear equivalence), and `iteratedDeriv j (conj ∘ f ∘
+conj) (conj λ) = conj (iteratedDeriv j f λ)` (`HasDerivAt.conj_conj`, `Mathlib/Analysis/Complex/RealDeriv`;
+junk `0` on both sides where `f` is not differentiable). ★★ (~150 lines)'''
+deps = ["pfc_eq_aeval_of_isJetInterpolant"]

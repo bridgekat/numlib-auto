@@ -1,0 +1,316 @@
+namespace = "GolubVanLoan.Chapter02"
+desc = '''
+§2.7, Finite Precision Matrix Computations: the 3-digit calculator and the IEEE double format as
+instances of `FloatingPoint.System` (§2.7.1–2.7.2, (2.7.2)–(2.7.3)), the model (2.7.4)–(2.7.6),
+non-associativity (Maxim 1), storage (2.7.7), the dot product analysis (2.7.9)–(2.7.12) with Lemma
+2.7.1, the basic operations (2.7.15)–(2.7.20), the 2-by-2 backward error example (§2.7.9), the
+nonnegative-product remark (§2.7.10), and the ideal equation solver (2.7.21)–(2.7.22).
+
+Conventions. `fp : FloatingPoint.RoundingModel ℝ` is the book's arithmetic, `u = fp.u`; `fl(x op y)`
+is any `z` with `fp.Rounds (x op y) z`. Algorithm results are *runs*: `∀ s ∈ (alg fp.round …).run`
+with chapter 1's algorithms (`GolubVanLoan.Chapter01.algorithm_1_1_1` etc., D4 of the brief) and chapter
+1's program semantics `Numlib/FloatingPoint/Program` (`FloatingPoint.RoundingModel.round`,
+`SetM.mem_run_bind`, `SetM.mem_run_foldlM_update_of_nodup`, `SetM.mem_run_foldlM_of_pi`; Algorithm 1.1.1 is `FloatingPoint.dotAccum rnd
+(List.finRange n) x y 0` by `rfl`). The display (2.7.8) *is* Algorithm 1.1.1 and has no node of its own.
+The book's analysis starts the accumulation from `s₁ = x₁ y₁ (1 + δ₁)`, i.e. it treats `fl(0 + p) = p`
+as exact, while the program rounds `0 + p₁` too. Chapter 1 decided (Program's module description):
+the run statements below carry the hypothesis `fp.IsIdempotent` (rounding fixes its own outputs; true of
+every `FloatingPoint.System`), under which a run is a `FloatingPoint.RoundsDot`
+(`FloatingPoint.roundsDot_of_mem_run_dotAccum`) and the book's constants hold; without it the
+unconditional `FloatingPoint.abs_sub_le_of_mem_run_dotAccum` pays `γ_{n+1}`, which the descriptions
+mention where relevant. First-order bounds `… + O(u²)` are stated in the rigorous `γ_n` form of
+`FloatingPoint.gamma`, or with the `u²` term explicit where the book's derivation gives it.
+'''
+
+[[node]]
+id = "calculator3"
+kind = "definition"
+desc = '''§2.7.1: the toy calculator `± d₀.d₁d₂ × 10^e`, `1 ≤ d₀ ≤ 9`, `-9 ≤ e ≤ 9`, is `FloatingPoint.System` with
+`β = 10`, `t = 3`, `L = -8`, `U = 10` (the backbone's mantissa convention `0.d₀d₁d₂ × 10^{e+1}` shifts
+the exponent range by one): `⟨10, 3, -8, 10, by norm_num, by norm_num, by norm_num⟩` (prototype
+`notes/gvl/ch02/proto/Shapes.lean` elaborates it). ★'''
+deps = ["FloatingPoint.System"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.1, Definition'
+
+[[node]]
+id = "calculator3_card"
+kind = "theorem"
+desc = '''§2.7.1: the calculator has `2 × 9 × 10 × 10 × 19 + 1 = 34201` floating point numbers:
+`((calculator3.finset ℚ).card : ℤ) = 34201` — `rw [FloatingPoint.System.card_finset]; norm_num
+[calculator3]` (checked in the prototype). ★'''
+deps = ["calculator3", "FloatingPoint.System.card_finset"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.1'
+
+[[node]]
+id = "calculator3_range"
+kind = "theorem"
+desc = '''§2.7.1: `N_min = 1.00 × 10⁻⁹` and `N_max = 9.99 × 10⁹`, i.e. `calculator3.xmin ℝ = 10 ^ (-9 : ℤ)` and
+`calculator3.xmax ℝ = 999 / 100 * 10 ^ 9`, and between `1.00 × 10^e` and `1.00 × 10^{e+1}` (`-9 ≤ e ≤ 9`) the
+numbers are exactly `m × 10^{e-2}`, `100 ≤ m ≤ 999` (spacing `10^{e-2}`) — `FloatingPoint.System.xmin`,
+`FloatingPoint.System.xmax` unfolded, `FloatingPoint.System.numbers_inter_Ico`. ★'''
+deps = ["calculator3", "FloatingPoint.System.xmin", "FloatingPoint.System.xmax", "FloatingPoint.System.numbers_inter_Ico"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.1'
+
+[[node]]
+id = "equation_2_7_2"
+kind = "theorem"
+desc = '''(2.7.2): the normalized IEEE doubles are the values `± (1.b₁…b₅₂)₂ × 2^{E - 1023}` with `1 ≤ E ≤ 2046`:
+`{x | ∃ (σ : ℤˣ) (b : Fin 52 → Bool) (E : ℕ), 1 ≤ E ∧ E ≤ 2046 ∧ x = σ * (1 + ∑ i, (b i).toNat * 2 ^
+(-(i + 1 : ℤ))) * 2 ^ ((E : ℤ) - 1023)} = FloatingPoint.System.numbers ieeeDouble ℝ \ {0}` (the backbone's
+`𝔽(2, 53, -1021, 1024)`: mantissa `m = 2^52 + ∑ b_i 2^{51-i}`, exponent `e = E - 1022`). Binary digit
+bookkeeping (Mathlib `Nat.ofDigits`/`Finset.sum` over `Fin 52`). ★★ (~60 lines)'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.numbers"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.2)'
+
+[[node]]
+id = "equation_2_7_3"
+kind = "theorem"
+desc = '''(2.7.3): the zero and subnormal doubles are `± (0.b₁…b₅₂)₂ × 2^{-1022}`: that set equals
+`FloatingPoint.System.denormalized ieeeDouble ℝ ∪ {0}` (the backbone's `± m 2^{L-t} = ± m 2^{-1074}`,
+`1 ≤ m < 2^52`), and it is uniformly spaced between `-N_min` and `N_min`. ★★'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.denormalized", "equation_2_7_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.3)'
+
+[[node]]
+id = "ieeeDouble_constants"
+kind = "theorem"
+desc = '''§2.7.2: for the double format the machine epsilon (gap between `1` and the next double) is `2^{-52}`,
+`N_min = 2^{-1022}` and `N_max = (2 - 2^{-52}) 2^{1023}` — backbone
+`FloatingPoint.System.ieeeDouble_machineEps`, `…_xmin`, `…_xmax`, and `FloatingPoint.System.isLeast_machineEps`
+for "gap between 1 and the next". ★'''
+deps = ["FloatingPoint.System.ieeeDouble_machineEps", "FloatingPoint.System.ieeeDouble_xmin", "FloatingPoint.System.ieeeDouble_xmax", "FloatingPoint.System.isLeast_machineEps"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.2'
+
+[[node]]
+id = "ieeeDouble_round_nearest"
+kind = "theorem"
+desc = '''§2.7.2: round-to-nearest in the normalized range has relative error at most `2^{-53}`: if `N_min ≤ |x| ≤
+N_max` and `y` is a double nearest to `x`, then `|y - x| / |x| ≤ 2^{-53}`. The book's round-half-to-even
+(the `lsb` rule) is one choice of nearest `y`, so it is covered without modelling bits. Backbone
+`FloatingPoint.System.abs_sub_le_of_forall_abs_sub_le` and `FloatingPoint.System.ieeeDouble_unitRoundoff`. ★'''
+deps = ["FloatingPoint.System.abs_sub_le_of_forall_abs_sub_le", "FloatingPoint.System.ieeeDouble_unitRoundoff", "ieeeDouble_constants"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.2'
+
+[[node]]
+id = "equation_2_7_4"
+kind = "theorem"
+desc = '''(2.7.4): `fl(x) = x (1 + δ)`, `|δ| ≤ u` — for the relational model `FloatingPoint.RoundingModel.Rounds.exists_delta`,
+and concretely for a system's rounding `FloatingPoint.System.exists_round_eq_mul_one_add`. ★'''
+deps = ["FloatingPoint.RoundingModel.Rounds.exists_delta"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.4)'
+
+[[node]]
+id = "equation_2_7_5"
+kind = "theorem"
+desc = '''(2.7.5): `u = ½ × (gap between 1 and the next larger floating point number)`: for a system with `t ≥ 2`,
+`L ≤ 1 ≤ U`, `s.unitRoundoff K = s.machineEps K / 2` and `IsLeast {δ | 0 < δ ∧ 1 + δ ∈ s.numbers K}
+(s.machineEps K)` — backbone `FloatingPoint.System.unitRoundoff_eq_machineEps_div_two`,
+`FloatingPoint.System.isLeast_machineEps`; "about `10⁻⁷` (single), `10⁻¹⁶` (double)" is
+`ieeeSingle_unitRoundoff = 2⁻²⁴`, `ieeeDouble_unitRoundoff = 2⁻⁵³`. ★'''
+deps = ["FloatingPoint.System.unitRoundoff_eq_machineEps_div_two", "FloatingPoint.System.isLeast_machineEps", "FloatingPoint.System.ieeeDouble_unitRoundoff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.5)'
+
+[[node]]
+id = "equation_2_7_6"
+kind = "theorem"
+desc = '''(2.7.6), the fundamental axiom: for floating point `x`, `y` and `op ∈ {+, -, ×, /}`, `fl(x op y) = (x op y)(1
++ δ)`, `|δ| ≤ u`, and the relative-error form for `x op y ≠ 0` — backbone
+`FloatingPoint.System.exists_op_eq_mul_one_add` (a system), `FloatingPoint.RoundingModel.Rounds.exists_delta`
+applied to `fp.round (x op y)` (the model). ★'''
+deps = ["FloatingPoint.System.exists_op_eq_mul_one_add", "FloatingPoint.RoundingModel.Rounds.exists_delta"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.6)'
+
+[[node]]
+id = "calculator3_add_not_assoc"
+kind = "theorem"
+desc = '''§2.7.4, Maxim 1: floating point addition is not associative. In `calculator3` with `x = 1.24`, `y = -1.23`,
+`z = 1.00 × 10⁻³`: `fl(fl(x + y) + z) = 1.10 × 10⁻²` but `fl(x + fl(y + z)) = 1.00 × 10⁻²`
+(`FloatingPoint.System.add` over `ℚ`; `rw [FloatingPoint.System.round_eq_of_le_of_lt (e := …)]; norm_num`,
+the recipe of `notes/lessons.md` "the floating-point number system"). ★'''
+deps = ["calculator3", "FloatingPoint.System.round_eq_of_le_of_lt"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.4'
+
+[[node]]
+id = "equation_2_7_7"
+kind = "theorem"
+desc = '''(2.7.7), storing a matrix: if `∀ i j, fp.Rounds (A i j) (Â i j)` then `|Â - A| ≤ u |A|` entrywise
+(`(Â - A).abs ≤ₑ fp.u • A.abs`) and `‖Â - A‖₁ ≤ u ‖A‖₁` (`lpOpNorm 1`). `RoundingModel.abs_sub_le` entrywise;
+the norm form by the monotonicity of the column-sum norm in `|·|` (`Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE`
+on the transpose, `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`). ★'''
+deps = ["FloatingPoint.RoundingModel", "Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.7)'
+
+[[node]]
+id = "equation_2_7_9"
+kind = "theorem"
+desc = '''(2.7.9): every run `s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run` of the dot product (2.7.8) has
+partial sums `s_p` with `s_1 = x₁ y₁ (1 + δ₁)` and `s_p = (s_{p-1} + x_p y_p (1 + δ_p))(1 + ε_p)`, `|δ_p|,
+|ε_p| ≤ u`, `s = s_n`, assuming `fp.IsIdempotent` (which makes the first addition `0 + p₁` exact).
+Chapter 1's `FloatingPoint.mem_run_dotAccum_iff` (a run is a list of rounded products and a `RoundsSumFrom`
+from `0`), then `FloatingPoint.RoundingModel.Rounds.exists_delta` at each step. ★★'''
+deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_1_eq_dotAccum", "FloatingPoint.mem_run_dotAccum_iff", "FloatingPoint.RoundingModel.IsIdempotent", "FloatingPoint.RoundingModel.Rounds.exists_delta"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.9)'
+
+[[node]]
+id = "equation_2_7_10"
+kind = "theorem"
+desc = '''(2.7.10): every run `s` of Algorithm 1.1.1 satisfies `s = ∑ k, x k * y k * (1 + γ_k)` with `1 + γ_k =
+(1 + δ_k) ∏_{j ≥ k} (1 + ε_j)` (`ε₁ = 0`), hence `|s - xᵀ y| ≤ ∑ k, |x k * y k| * |γ_k|` and `|γ_k| ≤ (1 + u)^n
+- 1` (the book's `γ_k` is not `FloatingPoint.gamma`). Backbone
+`FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot` through chapter 1's bridge
+`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds` (hypothesis `fp.IsIdempotent`). ★★'''
+deps = ["equation_2_7_9", "FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot", "GolubVanLoan.Chapter01.algorithm_1_1_1_rounds"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.10)'
+
+[[node]]
+id = "lemma_2_7_1"
+kind = "theorem"
+desc = '''Lemma 2.7.1: if `1 + α = ∏_{k=1}^n (1 + α_k)` with `|α_k| ≤ u` and `n u ≤ 0.01`, then `|α| ≤ 1.01 n u` —
+backbone `FloatingPoint.abs_prod_one_add_sub_one_le_of_mul_le` at `K = ℝ`. The book cites Higham for the
+proof; note that the `γ_n` bound `FloatingPoint.abs_prod_one_add_sub_one_le_gamma` does *not* imply it
+(`γ_n = n u / 0.99 > 1.01 n u` at `n u = 0.01`); the backbone goes through `(1 + u)^n - 1 ≤ n u + (n u)²`. ★'''
+deps = ["FloatingPoint.abs_prod_one_add_sub_one_le_of_mul_le"]
+source = 'Golub–Van Loan, Matrix Computations, Lemma 2.7.1'
+
+[[node]]
+id = "equation_2_7_11"
+kind = "theorem"
+desc = '''(2.7.11): for every run `s` of Algorithm 1.1.1 with `fp.IsIdempotent` and `n u ≤ 0.01`, `|s - xᵀ y| ≤ 1.01 n u |x|ᵀ |y|`
+(`|x| ⬝ᵥ |y|`). Backbone `FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot` and the constant of
+`lemma_2_7_1` (`FloatingPoint.one_add_pow_sub_one_le_mul_add_sq`), through (2.7.10). ★★'''
+deps = ["equation_2_7_10", "lemma_2_7_1", "FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot", "FloatingPoint.one_add_pow_sub_one_le_mul_add_sq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.11)'
+
+[[node]]
+id = "equation_2_7_12"
+kind = "theorem"
+desc = '''(2.7.12), rigorous form: for every run `s` of Algorithm 1.1.1 with `fp.IsIdempotent` and `n u < 1`,
+`|s - xᵀ y| ≤ γ_n |x|ᵀ |y|` (without `IsIdempotent`: `γ_{n+1}`, `FloatingPoint.abs_sub_le_of_mem_run_dotAccum`),
+`γ_n = FloatingPoint.gamma u n = n u / (1 - n u) = n u + O(u²)`; the printed `n u |x|ᵀ|y| + O(u²)` has no
+content beyond this. Backbone `FloatingPoint.abs_sub_le_of_roundsDot` after `FloatingPoint.roundsDot_of_mem_run_dotAccum`. (2.7.13)–(2.7.14) ("`φ(n)` a modest
+function", "`c` of order unity") are styles of writing the same bound and have no node. ★'''
+deps = ["FloatingPoint.abs_sub_le_of_roundsDot", "GolubVanLoan.Chapter01.algorithm_1_1_1_rounds", "FloatingPoint.abs_sub_le_of_mem_run_dotAccum", "FloatingPoint.gamma"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.12)'
+
+[[node]]
+id = "equation_2_7_15"
+kind = "theorem"
+desc = '''(2.7.15): if `∀ i j, fp.Rounds (α * A i j) (C i j)` then `C = α A + E` with `|E| ≤ u |α A|` entrywise —
+`RoundingModel.abs_sub_le`. ★'''
+deps = ["FloatingPoint.RoundingModel"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.15)'
+
+[[node]]
+id = "equation_2_7_16"
+kind = "theorem"
+desc = '''(2.7.16): if `∀ i j, fp.Rounds (A i j + B i j) (C i j)` then `C = (A + B) + E` with `|E| ≤ u |A + B|`. ★'''
+deps = ["FloatingPoint.RoundingModel"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.16)'
+
+[[node]]
+id = "equation_2_7_17"
+kind = "theorem"
+desc = '''(2.7.17), rigorous form: every run `ŷ` of the saxpy `Chapter01.algorithm_1_1_2 fp.round a x y` satisfies
+`ŷ = y + a x + z` with `|z| ≤ u |y| + (2u + u²) |a x|` entrywise (the book: `u (|y| + 2|a x|) + O(u²)`).
+Each entry is one rounded update (chapter 1's `GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run`), then
+backbone `FloatingPoint.abs_sub_le_of_rounds_add_mul`. No `IsIdempotent` needed. ★'''
+deps = ["FloatingPoint.abs_sub_le_of_rounds_add_mul", "GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.17)'
+
+[[node]]
+id = "equation_2_7_18"
+kind = "theorem"
+desc = '''(2.7.18), rigorous form: the outer product update `C + u vᵀ` computed entrywise as `fl(c_ij + fl(u_i v_j))`
+— a run of `Chapter01.algorithm_1_1_8` with inner dimension `r = 1` — satisfies `Ĉ = C + u vᵀ + E`, `|E| ≤
+u |C| + (2u + u²) |u vᵀ|`. Backbone `FloatingPoint.abs_sub_le_of_rounds_add_mul` entrywise. ★★'''
+deps = ["FloatingPoint.abs_sub_le_of_rounds_add_mul", "GolubVanLoan.Chapter01.algorithm_1_1_8_mem_run"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.18)'
+
+[[node]]
+id = "equation_2_7_19"
+kind = "theorem"
+desc = '''(2.7.19), rigorous form: for `A : Matrix (Fin m) (Fin r) ℝ`, `B : Matrix (Fin r) (Fin n) ℝ`, `r u < 1`,
+every run `Ĉ` of the dot-product matrix multiplication `Chapter01.algorithm_1_1_6 fp.round A B 0` (started
+at `C = 0`) satisfies `|Ĉ - A B| ≤ γ_r |A| |B|` entrywise (`(Ĉ - A * B).abs ≤ₑ gamma u r • (A.abs * B.abs)`; the
+book's `n u |A||B| + O(u²)`, `n` the inner dimension), under `fp.IsIdempotent`: each entry is `fl(0 + s)`
+with `s` a run of Algorithm 1.1.1, so the run is a `RoundsMul` (chapter 1's
+`GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`), and backbone
+`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★'''
+deps = ["FloatingPoint.abs_sub_entrywiseLE_of_roundsMul", "GolubVanLoan.Chapter01.algorithm_1_1_6_rounds", "equation_2_7_12"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
+
+[[node]]
+id = "equation_2_7_19_saxpy"
+kind = "theorem"
+desc = '''(2.7.19) for the gaxpy/saxpy-based product ("the same result applies if a gaxpy … procedure is used"):
+with `fp.IsIdempotent` and `r u < 1`, every run of `Chapter01.algorithm_1_1_7 fp.round A B 0` satisfies the
+same bound `|Ĉ - A B| ≤ γ_r |A||B|`. Every loop order accumulates each `c_ij` over `k = 1, …, r` in
+increasing order, one rounded product and one rounded addition per step, so each entry is a run of
+`FloatingPoint.dotAccum` from `0` (chapter 1's `algorithm_1_1_7_mem_run`), a `RoundsDot` under
+`fp.IsIdempotent`: the run is a `RoundsMul` (`GolubVanLoan.Chapter01.algorithm_1_1_7_rounds`), then
+`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★'''
+deps = ["equation_2_7_19", "GolubVanLoan.Chapter01.algorithm_1_1_7_rounds", "FloatingPoint.abs_sub_entrywiseLE_of_roundsMul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
+
+[[node]]
+id = "equation_2_7_19_outer"
+kind = "theorem"
+desc = '''(2.7.19) for the outer-product-based product: with `fp.IsIdempotent` and `r u < 1` (the hypotheses of
+`equation_2_7_19_saxpy`; without idempotence the constant is `γ_{r+1}`), every run of
+`Chapter01.algorithm_1_1_8 fp.round A B 0` satisfies `|Ĉ - A B| ≤ γ_r |A||B|`, by the same per-entry
+argument: the run is a `RoundsMul` (`GolubVanLoan.Chapter01.algorithm_1_1_8_rounds`), then
+`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★'''
+deps = ["equation_2_7_19", "GolubVanLoan.Chapter01.algorithm_1_1_8_rounds", "FloatingPoint.abs_sub_entrywiseLE_of_roundsMul"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
+
+[[node]]
+id = "equation_2_7_20"
+kind = "theorem"
+desc = '''(2.7.20), rigorous form: for the runs of (2.7.19), `‖Ĉ - A B‖₁ ≤ γ_r ‖A‖₁ ‖B‖₁` (`lpOpNorm 1`). From
+(2.7.19), monotonicity of `‖·‖₁` in `|·|` and `‖|A||B|‖₁ ≤ ‖|A|‖₁ ‖|B|‖₁ = ‖A‖₁ ‖B‖₁`
+(`Matrix.lpOpNorm_mul_le`, `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`, `Matrix.linfty_opNorm_abs`). ★'''
+deps = ["equation_2_7_19", "Matrix.lpOpNorm_mul_le", "Matrix.linfty_opNorm_le_of_abs_entrywiseLE"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.20)'
+
+[[node]]
+id = "triangular_mul_two_backward"
+kind = "theorem"
+desc = '''§2.7.9, backward error of the `2 × 2` upper triangular product: if `ε₁, …, ε₅` have `|ε_i| ≤ u` and
+`Ĉ = !![a₁₁ b₁₁ (1 + ε₁), (a₁₁ b₁₂ (1 + ε₂) + a₁₂ b₂₂ (1 + ε₃))(1 + ε₄); 0, a₂₂ b₂₂ (1 + ε₅)]` (the book's
+display for `fl(AB)`), then `Ĉ = Â B̂` with `Â = !![a₁₁, a₁₂ (1 + ε₃)(1 + ε₄); 0, a₂₂ (1 + ε₅)]`, `B̂ =
+!![b₁₁ (1 + ε₁), b₁₂ (1 + ε₂)(1 + ε₄); 0, b₂₂]`, and `|Â - A| ≤ γ₂ |A|`, `|B̂ - B| ≤ γ₂ |B|` entrywise (the
+book's `2u |A| + O(u²)`; `(1 + ε)(1 + ε') - 1` is bounded by `FloatingPoint.abs_prod_one_add_sub_one_le_gamma`).
+The book's "it can be shown that `fl(AB)` = …" — every run of `Chapter01.algorithm_1_2_1` at `n = 2`, `C =
+0`, has this form — holds under `fp.IsIdempotent` (the first addition onto `0` is then exact) and is a
+second clause through `GolubVanLoan.Chapter01.algorithm_1_2_1` (its runs are the per-entry
+`FloatingPoint.dotAccum` runs over the abbreviated index ranges; at `n = 2` entry `(1,2)` accumulates two
+products, entries `(1,1)`, `(2,2)` one each). ★★'''
+deps = ["FloatingPoint.abs_prod_one_add_sub_one_le_gamma", "FloatingPoint.gamma", "GolubVanLoan.Chapter01.algorithm_1_2_1", "FloatingPoint.RoundingModel.IsIdempotent"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.9'
+
+[[node]]
+id = "abs_sub_le_gamma_mul_abs_of_nonneg"
+kind = "theorem"
+desc = '''§2.7.10: for entrywise nonnegative `A`, `B` (`A.EntrywiseNonneg`, `B.EntrywiseNonneg`), every run `Ĉ`
+of (2.7.19) has small componentwise relative error, `|Ĉ - C| ≤ γ_r |C|` with `C = A B` (`|A||B| = AB`).
+The book's contrast with Strassen's method is not formalized (chapter group, Not formalized). ★'''
+deps = ["equation_2_7_19", "Matrix.abs"]
+source = 'Golub–Van Loan, Matrix Computations, §2.7.10'
+
+[[node]]
+id = "equation_2_7_21"
+kind = "theorem"
+desc = '''(2.7.21): if `fl(A) = A + E` and `fl(b) = b + e` are entrywise roundings (`fp.Rounds (A i j) (Â i j)`,
+`fp.Rounds (b i) (b̂ i)`), then `‖E‖_∞ ≤ u ‖A‖_∞` and `‖e‖_∞ ≤ u ‖b‖_∞`. From (2.7.7) entrywise and
+`Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE`, `Matrix.norm_le_norm_of_abs_le` (vectors). ★'''
+deps = ["equation_2_7_7", "Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE", "Matrix.norm_le_norm_of_abs_le"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.21)'
+
+[[node]]
+id = "equation_2_7_22"
+kind = "theorem"
+desc = '''(2.7.22): the ideal solver. `A` nonsingular, `A x = b`, `b ≠ 0`, `(A + E) x̂ = b + e` with (2.7.21)'s bounds
+and `u κ_∞(A) ≤ 1/2` ⇒ `‖x - x̂‖_∞ / ‖x‖_∞ ≤ 4 u κ_∞(A)`. Theorem 2.6.2 at `ε = u`, `r = u κ_∞ ≤ 1/2`:
+`2u / (1 - r) · κ ≤ 4 u κ`. "Best possible" is prose. ★'''
+deps = ["theorem_2_6_2", "equation_2_7_21"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.22)'

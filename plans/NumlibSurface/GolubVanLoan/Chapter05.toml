@@ -1,0 +1,124 @@
+desc = '''
+Golub–Van Loan, *Matrix Computations*, Chapter 5: Orthogonalization and Least Squares
+(§5.1 Householder and Givens transformations, §5.2 the QR factorization, §5.3 the full-rank
+least-squares problem, §5.4 other orthogonal factorizations, §5.5 the rank-deficient least-squares
+problem, §5.6 square and underdetermined systems). Real throughout (`Matrix (Fin m) (Fin n) ℝ`),
+with the complex reflector, rotation and QR of §5.1.13 and §5.2.10 over `ℂ`.
+
+**Conventions of the chapter's surface files.**
+
+* Indices are 0-based on `Fin n`: the book's `x(1)` is `x 0`, `e₁` is `Pi.single 0 1`, `A(j:m, j)`
+  at 1-based `j` is the subcolumn from row `j - 1`. A block `A(j:m, k:n)` is the full matrix with the
+  index lists of its rows and columns, never a `Fin (m - j)`-typed copy (convention 10 of
+  `NumlibSurface/GolubVanLoan`): a Householder step on `A(j:m, j)` is `houseOn rnd (rows j) (A.col j)`
+  followed by `householderApplyLeft … (rows j) (cols j) A`, in place.
+* Vectors of algorithms are `Fin m → ℝ`; least-squares statements are on `EuclideanSpace ℝ (Fin m)`
+  (the backbone's `Matrix.IsLeastSquaresSolution`, `Matrix.IsMinNormLeastSquaresSolution`,
+  `Matrix.toEuclideanLin`), converted with `WithLp.toLp 2`.
+* `P = I - β v vᵀ` is `1 - β • vecMulVec v v`; the book's Householder matrix `I - 2vvᵀ/vᵀv` is
+  `householderMatrix v`, the backbone's `Matrix.reflector v` (new, `Numlib/LinearAlgebra/Matrix/QR`).
+* The book's Givens rotation `G(i, k, θ)` (`c` at `(i,i)`,`(k,k)`, `s` at `(i,k)`, `-s` at `(k,i)`)
+  is `givensRotation i k c s = Matrix.planeRotation i k c (-s)` (the book's `givens` is Algorithm 5.1.3,
+  which computes `(c, s)`): the backbone's plane rotation has the Jacobi
+  sign convention. The rounding relations of `Numlib/FloatingPoint/Givens` are stated in the book's
+  (= Higham's) convention, signs inside the rounded expressions, so that runs reach them literally.
+* Orthogonal is `Matrix.orthogonalGroup (Fin m) ℝ`; the full QR factorization is `Matrix.IsQR`, the
+  thin one `Matrix.IsThinQR` (new), pivoted QR `Matrix.IsPivotedQR` (new), complete orthogonal
+  decompositions `Matrix.IsCompleteOrthogonal` (new), bidiagonalization `Matrix.IsBidiagonalization`
+  (new). Overwritten arrays are read back through `upperPart` and the factored form `factoredQ β A' =
+  householderProduct (storedReflectors A' β)`, with the `β` the program returned (convention 13).
+* Norms: the 2-norm of a matrix through the scoped `Matrix.Norms.L2Operator`, the Frobenius norm
+  through `Matrix.Norms.Frobenius`, each in its own section. `σ_min` of a full-column-rank matrix is
+  `⨅ i, A.singularValues i` (the backbone's column-indexed singular values); the book's sorted `σ_k`
+  is chapter 2's `A.sortedSingularValues (k - 1)` (Mathlib's `LinearMap.singularValues`); an SVD is
+  chapter 6's specification `Matrix.IsSVD A U σ V`; `dist(S₁, S₂)` is `Submodule.gap`; `κ₂(A) = σ_max/σ_min` (5.2.4) is
+  `kappa2 = Matrix.pinvCondNumberLp 2` (`‖A‖₂ ‖A⁺‖₂`, new).
+* Algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan` (the same list heads
+  `Numlib/FloatingPoint/Program`); this chapter owns the **shared helper family** of convention 13
+  (§5.1: `houseOn`, `householderApplyLeft`/`Right`, `givensRotation`, `givensApplyLeft`/`Right`,
+  `householderProduct`, `forwardAccumulation`/`backwardAccumulation`, reflector data
+  `List ((Fin m → ℝ) × ℝ)`), which every later chapter calls. Node suffixes per convention 12:
+  `_spec` (exact, read off the bridge at `RoundingModel.exact` where one exists, convention 11),
+  `_rounds` (every run satisfies the backbone relation: `RoundsHouseholderVectorParlett`,
+  `RoundsHouseholderApplyScaled`, `RoundsGivensPair`, `RoundsGivensRowUpdate`/`ColUpdate`),
+  `_rounding` (the book's bound). Wherever a program accumulates a dot product from `c = 0`
+  (Algorithm 1.1.1, `FloatingPoint.dotAccum`), the bridge carries `fp.IsIdempotent` (convention 6),
+  under which the run is Higham's `RoundsDot` (`FloatingPoint.roundsDot_of_mem_run_dotAccum`, any
+  duplicate-free order); without it the same statements hold with one more rounding
+  (`FloatingPoint.abs_sub_le_of_mem_run_dotAccum`). Called algorithms of earlier chapters are
+  called, not re-implemented: chapter 1's dot product (Algorithm 1.1.1), chapter 3's substitutions
+  (3.1.1, 3.1.2), chapter 4's Cholesky (4.2.1). The shapes are checked in
+  `notes/gvl/ch05/proto/Chapter05.lean` (with `Fin`-typed subvectors, which the index lists replace).
+
+**Design.** The chapter's backbone is mostly present: Householder reflectors, the tail reflector,
+Hessenberg reduction, the Givens QR of a Hessenberg matrix and Golub–Kahan bidiagonalization
+(`Numlib/LinearAlgebra/Matrix/QR`), plane rotations and `givensPair`
+(`…/PlaneRotation`), least squares, the full QR factorization and the pseudoinverse
+(`…/LeastSquares`, `…/SVD`), the Householder rounding model and Lemma 19.3
+(`Numlib/FloatingPoint/Householder`). This round adds:
+
+* `Numlib/FloatingPoint/Givens` — **the Givens rounding model** (`RoundsGivensPair` for
+  Algorithm 5.1.3's `τ`-formula, `RoundsGivensPairDirect` for (5.1.8), `RoundsGivensApply` and the
+  row/column updates, Lemma 19.8's `√2 γ` bound, working-precision orthogonality). This closes the
+  item "the Givens rounding model" of `notes/frontier.md` (header; blocker 12's Givens half), which
+  gates QSS §5.8–§5.9's stability notes (`qrCholesky_stability`, `golubKahan_svd_stability`) — those
+  still need their own loop-level assembly (a computed shifted QR step), which chapters 7–8 plan.
+* `FloatingPoint/Householder` appends: GVL's `house` (Parlett's formula, `v₁ = 1`) as its own
+  relation with a Lemma 19.1 analogue; the book's association `A - (βv)(vᵀA)`; the rectangular
+  two-sided accumulation for (5.1.11); `‖P̂ - P‖₂ ≤ 8γ`.
+* `Numlib/Conditioning/LeastSquares` — Theorem 5.3.1 and Theorem 5.6.1 as exact inequalities (the
+  book's `O(ε²)` forms are corollaries), (5.3.15), (5.6.2), (5.3.4).
+* `Numlib/LinearAlgebra/Matrix/{RankRevealing, CompleteOrthogonal, Bidiagonal, WY}` — pivoted QR
+  and its bounds (Theorem 5.4.1, `σ_{k+1}(R) ≤ ‖R₂₂‖`, the URV/ULV gap bounds (5.4.10)–(5.4.11), basic
+  solutions (5.5.4)–(5.5.5), subset selection Theorems 5.5.2–5.5.3); complete orthogonal
+  decompositions (5.4.12); the named bidiagonalization and `R`-bidiagonalization; WY and compact WY
+  (Lemma 5.1.1).
+* Appends to `QR` (`reflector`, `IsThinQR` with uniqueness and the Cholesky reading of Theorem
+  5.2.3, the MGS projector identity), `LeastSquares` (prefix spans (5.2.1), `ran(A)⊥`, gradient,
+  convexity, the augmented system (5.3.20), the minimal-norm solution through a QR of `Aᵀ`), `SVD`
+  (`pinvCondNumberLp`, now in `Analysis/Matrix/SingularValues`; (5.3.9), the projections `AA⁺`, `A⁺A`, (5.5.3), the SVD expansions
+  (5.3.2)–(5.3.3)/(5.5.1)–(5.5.2), Wedin's bound).
+
+**Correspondence** (book → node): Theorem 5.2.1 → `Matrix.exists_isQR`; 5.2.2 →
+`Matrix.IsQR.span_col_prefix_eq`, `.range_orthogonal_eq_span_lastColumns`; 5.2.3 →
+`Matrix.IsThinQR.unique`, `.isCholesky`; Lemma 5.1.1 → `Matrix.IsWY.mul_one_sub_smul_vecMulVec`;
+Theorem 5.3.1 → `Matrix.norm_leastSquares_sub_le`, `…_residual_sub_le`; 5.4.1 →
+`Matrix.exists_perm_isQR_abs_le`; 5.5.1 → chapter 6's `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD` with
+`Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD`; 5.5.2 →
+`Matrix.IsSVD.sortedSingularValues_le_mul_submatrix`, `Matrix.sortedSingularValues_submatrix_le`; 5.5.3 →
+`Matrix.norm_residual_subset_sub_le`; 5.6.1 → `Matrix.norm_minNorm_sub_le`. Overlap with
+[quarteroni2000numerical] §3.13 and §5.6 (least squares, Householder, Givens QR of a Hessenberg
+matrix) is total at the backbone level; QSS's surface `equation_5_38` is `Matrix.reflector` (a
+restatement candidate).
+
+**Not formalized, by class** (each recorded once; details in the section groups):
+operation counts, flop tables (Figures 5.5.1, 5.6.1), level-2/level-3 fractions, storage and the
+BLAS discussion; the numerical examples (§5.3.1 sensitivity, `fl(AᵀA)` singular, `Kah₃₀₀(.99)`'s
+`σ₃₀₀`, the unstable subset in §5.5.7); heuristic statements with no rigorous content beyond the
+theorems they paraphrase ((5.3.18), (5.3.19), (5.4.2), (5.4.3), "column pivoting tends to produce a
+well-conditioned `R₁₁`", "small trailing `R`-submatrices almost always emerge", Björck's digit gain
+of §5.3.8); rounding claims quoted without derivation whose rigorous proofs are research-length
+(MGS's `‖Q̂ᵀQ̂ - I‖ ≈ u κ₂(A)` and `‖A - Q̂R̂‖ ≈ u‖A‖`, §5.2.9, Björck 1967 / Björck–Paige 1992;
+Stewart's `O(ε κ₂)` perturbation of the QR factors, §5.2.1; the backward stability (5.4.4) of the
+Golub–Kahan–Reinsch SVD, a Chapter 8 algorithm, used only as a hypothesis; "the roundoff properties
+of Algorithm 5.2.2 are essentially the same"); the garbled second bound of §5.5.4; the prose of
+§5.1.1 and §5.6.1; Problems and Notes and References. The rounding claims the book quotes for
+Householder and Givens transformations (§5.1.5, §5.1.10, §5.1.12, (5.1.11), §5.2.2, (5.3.6)–(5.3.8),
+§5.3.3's Givens remark) *are* formalized, rigorously, with the constants of the relational `γ`
+calculus in place of the book's `O(u)`.
+
+**Order of attack.** Backbone, in dependency order (estimated Lean lines):
+1. `Numlib/FloatingPoint/Givens` (~640) — needs only `Model`, `Householder`, `PlaneRotation`.
+2. `QR` appends (~300): `reflector`, `IsThinQR`, `IsThinQR.isCholesky`, the MGS projector identity.
+3. `FloatingPoint/Householder` appends (~510): `RoundsHouseholderVectorParlett` (★★★),
+   `…ApplyScaled`, the rectangular accumulation, `l2_opNorm_reflector_sub_le`.
+4. `LeastSquares` appends (~440), then `SVD` appends (~840; Wedin's bound ★★★ last).
+5. `WY` (~250) and `Bidiagonal` (~200) — independent of 3–4.
+6. `RankRevealing` (~1300) — after chapter 2's Eckart–Young (every `k`) and Theorem 2.5.1 nodes.
+7. `CompleteOrthogonal` (~350).
+8. `Conditioning/LeastSquares` (~640) — after chapter 2's Corollary 2.4.4 node.
+Surface, after chapter 1's `Program` and Algorithm 1.1.1 (and chapters 3–4's substitution and
+Cholesky algorithms for §5.3, §5.6): §5.1 (~1500), §5.2 (~2500; the invariant proofs of
+Algorithms 5.2.1–5.2.4 are the bulk), §5.3 (~1300), §5.4 (~1800), §5.5 (~700), §5.6 (~400).
+Backbone ≈ 5 400 lines, surface ≈ 8 200 lines.
+'''

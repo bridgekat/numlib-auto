@@ -1,0 +1,292 @@
+namespace = "GolubVanLoan.Chapter06"
+desc = '''
+§6.1, Weighting and Regularization: row weighting and its normal equations (6.1.1)–(6.1.5), the
+generalized least-squares problem and Paige's method (6.1.6)–(6.1.10), column weighting (§6.1.3),
+ridge regression and cross-validation (6.1.11)–(6.1.19), Tikhonov regularization (6.1.20)–(6.1.21),
+and the generalized singular value decomposition (Theorem 6.1.1, (6.1.22)–(6.1.26)).
+Backbone: `Numlib/LinearAlgebra/Matrix/LeastSquares/{Weighted,Regularized}`,
+`Numlib/LinearAlgebra/Matrix/GSVD`, and `Matrix.tikhonov` of `SVD`. No numbered algorithm.
+Not nodes: (6.1.6) (a statistical model), (6.1.13) (recalls the SVD), (6.1.15) (defines `x_k(λ)`,
+the definition `ridgeDeleted`), (6.1.24)–(6.1.25) (proof steps of Theorem 6.1.1), van der Sluis's
+"approximately minimized", Paige's stability claim and the minimization of `C(λ)` (quoted).
+'''
+
+[[node]]
+id = "IsWeightedLeastSquaresSolution"
+kind = "definition"
+desc = '''§6.1.1, the weighted least-squares problem (6.1.1): for `d : Fin m → ℝ` (the book's
+`D = diag(d₁, …, d_m)`, nonsingular), `A : Matrix (Fin m) (Fin n) ℝ`, `b : EuclideanSpace ℝ (Fin m)`,
+`IsWeightedLeastSquaresSolution d A b x := Matrix.IsLeastSquaresSolution (diagonal d * A)
+(toEuclideanLin (diagonal d) b) x` — "`x_D` … minimizes `‖Ãx − b̃‖₂` where `Ã = DA`, `b̃ = Db`". ★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.1, Definition'
+
+[[node]]
+id = "equation_6_1_1"
+kind = "theorem"
+desc = '''(6.1.1): `‖D(Ax − b)‖₂² = ∑ᵢ dᵢ² (aᵢᵀx − bᵢ)²`, so `x` minimizes the weighted sum iff
+`IsWeightedLeastSquaresSolution d A b x`. `EuclideanSpace.norm_sq_eq`, `diagonal_mulVec`. ★'''
+deps = ["IsWeightedLeastSquaresSolution"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.1)'
+
+[[node]]
+id = "equation_6_1_2"
+kind = "theorem"
+desc = '''(6.1.2): for `A` of full column rank and `d` nowhere zero, `AᵀD²A` is positive definite and
+`IsWeightedLeastSquaresSolution d A b x ↔ (Aᵀ * D² * A) *ᵥ x = Aᵀ * D² *ᵥ b`, whose solution is
+`Matrix.weightedLeastSquaresOp (D²) A *ᵥ b`. `Matrix.isLeastSquaresSolution_iff_normalEquations` for `(DA, Db)`,
+`Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`, `Matrix.isLeastSquaresSolution_weightedLeastSquaresOp`. ★'''
+deps = ["IsWeightedLeastSquaresSolution", "Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.posDef_conjTranspose_mul_self_of_linearIndependent", "Matrix.isLeastSquaresSolution_weightedLeastSquaresOp"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.2)'
+
+[[node]]
+id = "equation_6_1_3"
+kind = "theorem"
+desc = '''(6.1.3): `x_D − x_LS = (AᵀD²A)⁻¹ Aᵀ (D² − I)(b − A x_LS)` for `A` of full column rank,
+`x_D` the weighted and `x_LS` the ordinary solution. `Matrix.weightedLeastSquaresOp_mulVec_sub_pinv_mulVec` with
+`W = D²`. ★'''
+deps = ["equation_6_1_2", "Matrix.weightedLeastSquaresOp_mulVec_sub_pinv_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.3)'
+
+[[node]]
+id = "equation_6_1_4"
+kind = "theorem"
+desc = '''(6.1.4): with `D(δ) = diag(d₁, …, d_k √(1+δ), …, d_m)`, `δ > −1`, and
+`r_k(δ) = e_kᵀ(b − A x(δ))`, `d r_k/dδ = −d_k² (a_kᵀ (Aᵀ D(δ)² A)⁻¹ a_k) r_k(δ)` (for `A` of full
+column rank, `d` nowhere zero). `Matrix.hasDerivAt_weightedResidual` at the weight
+`d_k²(1 + δ)` composed with `HasDerivAt` of `δ ↦ d_k² (1 + δ)` (derivative `d_k²`). ★'''
+deps = ["Matrix.hasDerivAt_weightedResidual", "Matrix.weightedResidual"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.4)'
+
+[[node]]
+id = "abs_weightedResidual_antitoneOn"
+kind = "theorem"
+desc = '''§6.1.1, "`|r_k(δ)|` is a monotone decreasing function of `δ`": `AntitoneOn (fun δ => |r_k(δ)|)
+(Set.Ioi (−1))`. `Matrix.antitoneOn_abs_weightedResidual` composed with the increasing map
+`δ ↦ d_k²(1 + δ)`. The book's derivation claims `d/dδ [r_k(δ)²] < 0`, which fails when `a_k = 0` or
+`r_k(δ) = 0` (then `r_k ≡ 0`); the non-strict form is the theorem (report, Doubts). ★'''
+deps = ["equation_6_1_4", "Matrix.antitoneOn_abs_weightedResidual"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.1'
+
+[[node]]
+id = "equation_6_1_5"
+kind = "theorem"
+desc = '''(6.1.5): if `[D⁻² A; Aᵀ 0][r; x] = [b; 0]` then `x` minimizes (6.1.1), i.e.
+`IsWeightedLeastSquaresSolution d A b x`. `Matrix.isLeastSquaresSolution_of_augmented` with
+`M = D`. ★'''
+deps = ["IsWeightedLeastSquaresSolution", "Matrix.isLeastSquaresSolution_of_augmented"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.5)'
+
+[[node]]
+id = "equation_6_1_8"
+kind = "theorem"
+desc = '''(6.1.7)–(6.1.8): for `B : Matrix (Fin m) (Fin m) ℝ` nonsingular (`W = BBᵀ`), `x` solves
+`min ‖B⁻¹(Ax − b)‖₂` (6.1.7) iff `(x, B⁻¹(b − Ax))` solves the generalized problem
+`min_{b = Ax + Bv} vᵀv` (6.1.8): `Matrix.isGeneralizedLeastSquaresSolution_iff`. ★'''
+deps = ["Matrix.IsGeneralizedLeastSquaresSolution", "Matrix.isGeneralizedLeastSquaresSolution_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.8)'
+
+[[node]]
+id = "equation_6_1_9"
+kind = "theorem"
+desc = '''(6.1.9)–(6.1.10), Paige's method: with `QᵀA = [R₁; 0]`, `(Q₂ᵀB) Z = [0 S]` (`S` upper
+triangular), `Su = Q₂ᵀb`, `v = Z₂u` and `R₁x = Q₁ᵀb − Q₁ᵀBZ₂u`, the pair `(x, v)` solves (6.1.8),
+for `A` of full column rank and `B` nonsingular. `Matrix.isGeneralizedLeastSquaresSolution_of_paige`. ★'''
+deps = ["Matrix.isGeneralizedLeastSquaresSolution_of_paige", "equation_6_1_8"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.9)'
+
+[[node]]
+id = "equation_6_1_10"
+kind = "theorem"
+desc = '''(6.1.10), the simplification: for `v = Z₂u` (so `Z₁ᵀv = 0`, `Z₂ᵀv = u`),
+`Q₁ᵀb − (Q₁ᵀBZ₁Z₁ᵀ + Q₁ᵀBZ₂Z₂ᵀ) v = Q₁ᵀb − Q₁ᵀBZ₂u`, the block rows of `ZᵀZ = I`. ★'''
+deps = ["equation_6_1_9"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.10)'
+
+[[node]]
+id = "isLeastSquaresSolution_columnWeighting"
+kind = "theorem"
+desc = '''§6.1.3: for `G` nonsingular, if `y_LS` minimizes `‖(AG⁻¹)y − b‖₂` then `x_G = G⁻¹ y_LS` minimizes
+`‖Ax − b‖₂`. `Matrix.isLeastSquaresSolution_mul_inv_iff`. ★'''
+deps = ["Matrix.isLeastSquaresSolution_mul_inv_iff"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.3'
+
+[[node]]
+id = "norm_columnWeighting_le"
+kind = "theorem"
+desc = '''§6.1.3: if `y_LS` is the minimum 2-norm solution of `min ‖(AG⁻¹)y − b‖₂`, then within the set
+of minimizers of `‖Ax − b‖₂`, `x_G = G⁻¹y_LS` has the smallest `G`-norm `‖z‖_G = ‖Gz‖₂`.
+`Matrix.IsMinNormLeastSquaresSolution.norm_le_of_mul_inv`. (The book says "if `rank(A) < n`"; the
+statement holds for every rank.) ★'''
+deps = ["isLeastSquaresSolution_columnWeighting", "Matrix.IsMinNormLeastSquaresSolution.norm_le_of_mul_inv"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.3'
+
+[[node]]
+id = "equation_6_1_11"
+kind = "theorem"
+desc = '''(6.1.11): `‖[A; √λ I] x − [b; 0]‖₂² = ‖Ax − b‖₂² + λ‖x‖₂²` for `λ ≥ 0`, so the ridge problem is
+the least-squares problem of the stacked matrix. `Matrix.norm_fromRows_sub_sq`,
+`Matrix.isLeastSquaresSolution_fromRows_iff` with `B = 1`, `d = 0`. ★'''
+deps = ["Matrix.norm_fromRows_sub_sq", "Matrix.isLeastSquaresSolution_fromRows_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.11)'
+
+[[node]]
+id = "equation_6_1_12"
+kind = "theorem"
+desc = '''(6.1.12): for `λ > 0`, `x` minimizes (6.1.11) iff `(AᵀA + λI)x = Aᵀb`, iff
+`x = A.tikhonov λ *ᵥ b` — the ridge solution `x(λ)` is the backbone's Tikhonov regularization.
+`Matrix.tikhonov_mulVec_eq_iff_isMinOn` (and the untracked `Matrix.tikhonov_unique`). ★'''
+deps = ["equation_6_1_11", "Matrix.tikhonov", "Matrix.tikhonov_mulVec_eq_iff_isMinOn"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.12)'
+
+[[node]]
+id = "equation_6_1_14"
+kind = "theorem"
+desc = '''(6.1.14): if `A = UΣVᵀ` is an SVD (`Matrix.IsSVD A U σ V`) of rank `r`, then
+`x(λ) = ∑_{i ≤ r} (σᵢ uᵢᵀb/(σᵢ² + λ)) vᵢ` for `λ > 0`. `Matrix.tikhonov_mulVec_eq_sum_of_isSVD`
+(its sum over `i < min m n` drops the zero singular values). ★'''
+deps = ["equation_6_1_12", "Matrix.tikhonov_mulVec_eq_sum_of_isSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.14)'
+
+[[node]]
+id = "tendsto_ridge_leastSquares"
+kind = "theorem"
+desc = '''§6.1.4, "`lim_{λ→0} x(λ) = x_LS`": `Tendsto (fun λ => A.tikhonov λ *ᵥ b) (𝓝[>] 0) (𝓝 (A.pinv *ᵥ b))`,
+`x_LS` being the minimum-norm least-squares solution of §5.5. `Matrix.tendsto_tikhonov_pinv`. ★'''
+deps = ["equation_6_1_12", "Matrix.tendsto_tikhonov_pinv"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.4'
+
+[[node]]
+id = "norm_ridge_antitoneOn"
+kind = "theorem"
+desc = '''§6.1.4, "`‖x(λ)‖₂` is a monotone decreasing function of `λ`": `AntitoneOn (fun λ => ‖x(λ)‖₂)
+(Set.Ioi 0)`, strictly when `Aᵀb ≠ 0`. `Matrix.antitoneOn_norm_tikhonov_mulVec`. ★'''
+deps = ["equation_6_1_12", "Matrix.antitoneOn_norm_tikhonov_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.4'
+
+[[node]]
+id = "ridgeDeleted"
+kind = "definition"
+desc = '''§6.1.4, (6.1.15): `x_k(λ)`, the solution of `min ‖D_k(Ax − b)‖₂² + λ‖x‖₂²` with
+`D_k = I − e_k e_kᵀ` (the `k`-th equation deleted): `ridgeDeleted A b λ k =
+(D_k * A).tikhonov λ *ᵥ (D_k *ᵥ b)`, `D_k = diagonal (Function.update 1 k 0)`. ★'''
+deps = ["Matrix.tikhonov"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.4, Definition'
+
+[[node]]
+id = "equation_6_1_16"
+kind = "theorem"
+desc = '''(6.1.16): for `λ > 0`, `x_k(λ) = x(λ) + ((a_kᵀx(λ) − b_k)/(1 − z_kᵀa_k)) z_k` with
+`z_k = (AᵀA + λI)⁻¹a_k`, and the denominator is positive. `Matrix.tikhonov_deleteRow_eq`,
+`Matrix.one_sub_dotProduct_inv_gram_pos`. (The book's companion identity
+`‖Ax_k − b‖² = ‖D_k(Ax_k − b)‖² + (a_kᵀx_k − b_k)²` is a coordinate split and is not a node.) ★'''
+deps = ["ridgeDeleted", "Matrix.tikhonov_deleteRow_eq", "Matrix.one_sub_dotProduct_inv_gram_pos"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.16)'
+
+[[node]]
+id = "equation_6_1_17"
+kind = "theorem"
+desc = '''(6.1.17): `b_k − a_kᵀx_k(λ) = e_kᵀ(I − A(AᵀA + λI)⁻¹Aᵀ)b / e_kᵀ(I − A(AᵀA + λI)⁻¹Aᵀ)e_k`.
+`Matrix.tikhonov_deleteRow_residual_eq`. ★'''
+deps = ["equation_6_1_16", "Matrix.tikhonov_deleteRow_residual_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.17)'
+
+[[node]]
+id = "crossValidationError"
+kind = "definition"
+desc = '''§6.1.4, the cross-validation weighted square error:
+`crossValidationError w A b λ = (1/m) ∑_k w k * (A k ⬝ᵥ ridgeDeleted A b λ k − b k) ^ 2` for weights
+`w : Fin m → ℝ` (nonnegative in the book). ★'''
+deps = ["ridgeDeleted"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.4, Definition'
+
+[[node]]
+id = "equation_6_1_18"
+kind = "theorem"
+desc = '''(6.1.18): with `r = (I − A(AᵀA + λI)⁻¹Aᵀ) b` (the ridge residual) and `∂r_k/∂b_k = (I − H)_kk`,
+`crossValidationError w A b λ = (1/m) ∑_k w_k (r_k / (∂r_k/∂b_k))²`. From `equation_6_1_17`; the
+partial derivative is the diagonal entry because `r` is linear in `b` (stated as the entry, with
+the derivative form `HasDerivAt (fun t => ((1 − H) *ᵥ Function.update b k t) k) ((1 − H) k k) (b k)`
+as a one-line remark). ★'''
+deps = ["crossValidationError", "equation_6_1_17"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.18)'
+
+[[node]]
+id = "equation_6_1_19"
+kind = "theorem"
+desc = '''(6.1.19): with an SVD `A = UΣVᵀ` of rank `r` and `b̃ = Uᵀb`,
+`C(λ) = (1/m) ∑_k w_k [(b_k − ∑_{j ≤ r} u_kj b̃_j σ_j²/(σ_j² + λ)) / (1 − ∑_{j ≤ r} u_kj² σ_j²/(σ_j² + λ))]²`.
+From `equation_6_1_18` and `A(AᵀA + λI)⁻¹Aᵀ = U diag(σ_j²/(σ_j² + λ)) Uᵀ`
+(`Matrix.tikhonov_mulVec_eq_sum_of_isSVD`). The book prints `b̃_k` in the numerator; the correct
+entry is `b_k` (as `λ → ∞` the numerator must tend to `b_k`): report, Doubts. ★★'''
+deps = ["equation_6_1_18", "Matrix.tikhonov_mulVec_eq_sum_of_isSVD", "Matrix.IsSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.19)'
+
+[[node]]
+id = "equation_6_1_20"
+kind = "theorem"
+desc = '''(6.1.20): `‖[A; √λ B] x − [b; 0]‖₂² = ‖Ax − b‖₂² + λ‖Bx‖₂²`. `Matrix.norm_fromRows_sub_sq`. ★'''
+deps = ["Matrix.norm_fromRows_sub_sq", "Matrix.isLeastSquaresSolution_fromRows_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.20)'
+
+[[node]]
+id = "equation_6_1_21"
+kind = "theorem"
+desc = '''(6.1.21): for `λ > 0`, the normal equations `(AᵀA + λBᵀB)x = Aᵀb` of (6.1.20) characterize its
+minimizers, and the system is nonsingular if (indeed iff) `null(A) ∩ null(B) = {0}`.
+`Matrix.posDef_gram_add_smul_gram_iff`, `Matrix.generalFormTikhonov_mulVec_eq_iff_isMinOn`. ★'''
+deps = ["equation_6_1_20", "Matrix.posDef_gram_add_smul_gram_iff", "Matrix.generalFormTikhonov_mulVec_eq_iff_isMinOn"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.21)'
+
+[[node]]
+id = "theorem_6_1_1"
+kind = "theorem"
+desc = '''Theorem 6.1.1 (Generalized Singular Value Decomposition), with (6.1.22)–(6.1.23): for
+`A : Matrix (Fin m₁) (Fin n₁) ℝ`, `B : Matrix (Fin m₂) (Fin n₁) ℝ`, `m₁ ≥ n₁`,
+`r = rank [A; B]`, `p = max(r − m₂, 0)`, there are orthogonal `U₁`, `U₂` and invertible `X` with
+`U₁ᵀAX = D_A`, `U₂ᵀBX = D_B`: `∃ U₁ U₂ X α β, Matrix.IsGSVD A B U₁ U₂ X α β`
+(`unitaryGroup = orthogonalGroup` over `ℝ`). The blocks of (6.1.22): `D_A = rectDiagonal α` with
+`α = (1, …, 1 [p], α_{p+1}, …, α_r, 0, …)`; of (6.1.23): `D_B = shiftedRectDiagonal p β`, `β_{p+1}, …,
+β_r` in rows `1 … r − p`. The unprinted clause `α_i² + β_i² = 1` is `theorem_6_1_1_b`. The printed row labels of `D_B`
+(`p, r − p, m₂ − r`) are a conversion error for `r − p, m₂ − r + p` (report, Doubts); the proof cites
+"(6.1.21) and (6.1.22)" for "(6.1.22) and (6.1.23)". `Matrix.exists_isGSVD`. ★'''
+deps = ["Matrix.IsGSVD", "Matrix.exists_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.1.1'
+
+[[node]]
+id = "theorem_6_1_1_b"
+kind = "theorem"
+desc = '''The clause Theorem 6.1.1 leaves implicit: the decomposition can be chosen with
+`α_i² + β_i² = 1` for `i = p+1 … r` (the cosine–sine pairs of the proof's CS decomposition of the
+orthonormal basis of `ran [A; B]`; true, not printed — a separate clause so that `theorem_6_1_1`
+states exactly what the book prints). `Matrix.exists_isGSVD` (whose construction gives the pairs). ★'''
+deps = ["theorem_6_1_1", "Matrix.IsGSVD", "Matrix.exists_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 6.1.1'
+
+[[node]]
+id = "gsvd_one"
+kind = "theorem"
+desc = '''§6.1.6, "if `B = I_{n₁}` … we obtain the SVD of `A`": the GSVD of `(A, I)` gives
+`U₁ᵀ A U₂ = diag(α_i/β_i)`, an SVD of `A` (the book's "set `X = U₂`" is loose; `X = U₂ D_B`).
+`Matrix.IsGSVD.svd_of_eq_one`. ★'''
+deps = ["theorem_6_1_1", "Matrix.IsGSVD.svd_of_eq_one"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.6'
+
+[[node]]
+id = "gsvd_generalizedEigen"
+kind = "theorem"
+desc = '''§6.1.6, "The GSVD is related to the generalized eigenvalue problem `AᵀAx = μ²BᵀBx`": for each
+column `x_i` of `X`, `β_i² AᵀA x_i = α_i² BᵀB x_i`, so `x_i` is a generalized eigenvector with
+`μ_i = α_i/β_i` when `β_i ≠ 0`. `Matrix.IsGSVD.gram_mulVec_col`. ★'''
+deps = ["theorem_6_1_1", "Matrix.IsGSVD.gram_mulVec_col"]
+source = 'Golub–Van Loan, Matrix Computations, §6.1.6'
+
+[[node]]
+id = "equation_6_1_26"
+kind = "theorem"
+desc = '''(6.1.26) and the display before it: for `B` square and nonsingular and `λ > 0`,
+`D_AᵀD_A + λD_BᵀD_B = diag(α₁² + λβ₁², …, α_n² + λβ_n²)` and the solution of (6.1.20) is
+`x(λ) = ∑_k (α_k b̃_k/(α_k² + λβ_k²)) x_k`, `b̃ = U₁ᵀb`. `Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`,
+`Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD`. ★'''
+deps = ["theorem_6_1_1", "equation_6_1_21", "Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul", "Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (6.1.26)'

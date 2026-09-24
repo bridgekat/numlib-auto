@@ -1,3 +1,15 @@
+# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.Model` is the group description;
+# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
+# (ch01) add to the module description: "Two properties a concrete model may have are named here for
+# the program semantics of `Numlib/FloatingPoint/Program`: the exact model `RoundingModel.exact K`
+# (`u = 0`, `Rounds x y ↔ y = x`), and `RoundingModel.IsIdempotent` (rounding fixes its own
+# outputs), which is what makes the first addition `0 + fl(x₁y₁)` of a textbook inner-product loop
+# exact and so gives the book's `γ_n` rather than `γ_{n+1}`."
+# (Fix-A, GVL review) and `RoundingModel.IsTotal` (every value has a rounding), the hypothesis under
+# which a program's run set is nonempty, so that "for every run" theorems are not vacuous.
+# (ch02) Add the sharp product bound `|∏ (1 + δ_i) - 1| ≤ (1 + u)^n - 1` and Wilkinson's `1.01 n u`
+# constant ([golub2013matrix] Lemma 2.7.1; [higham2002accuracy] Lemma 3.1's classical form): `γ_n`
+# alone does not give `1.01 n u` at `n u = 0.01`, since `γ_n = n u / 0.99 > 1.01 n u`.
 namespace = "FloatingPoint"
 
 [[node]]
@@ -41,3 +53,73 @@ id = "gamma_mul_one_add_add_le"
 
 [[node]]
 id = "gamma_le_two_mul"
+
+[[node]]  # staged by ch01
+id = "RoundingModel.exact"
+kind = "definition"
+desc = '''The exact model: `def RoundingModel.exact (K) : RoundingModel K` with `u := 0`, `Rounds x y := y = x`
+(`abs_sub_le` by `simp`). Every theorem proved for all models specializes to exact arithmetic;
+in the program semantics of `Numlib/FloatingPoint/Program` its hook is `pure`
+(`RoundingModel.round_exact`). Prototype: `notes/gvl/ch01/proto/Program.lean` (and ch03's
+`notes/gvl/ch03/proto/Bridge.lean`, where the idea arose). ★'''
+deps = ["FloatingPoint.RoundingModel"]
+
+[[node]]  # staged by ch01
+id = "RoundingModel.IsIdempotent"
+kind = "definition"
+desc = '''`def RoundingModel.IsIdempotent (m : RoundingModel K) : Prop := ∀ ⦃x y z : K⦄, m.Rounds x y →
+m.Rounds y z → z = y` — an admissible rounding is fixed by rounding (floating-point numbers round to
+themselves). True of every concrete format (`System.roundingModel_isIdempotent`); not implied by
+the model's relative-error bound. Its use: in `x ← fl(0 + fl(a b))` the addition is exact, which is
+the unstated assumption of every textbook inner-product analysis that starts from `s = 0`
+([golub2013matrix] (2.7.9): `s₁ = x₁y₁(1 + δ₁)`). ★'''
+deps = ["FloatingPoint.RoundingModel"]
+
+[[node]]  # staged by ch01
+id = "RoundingModel.isIdempotent_exact"
+kind = "theorem"
+desc = '''`(RoundingModel.exact K).IsIdempotent`; `rintro x y z rfl rfl; rfl`. ★'''
+deps = ["FloatingPoint.RoundingModel.exact", "FloatingPoint.RoundingModel.IsIdempotent"]
+
+[[node]]  # Fix-A (GVL review, algo M8)
+id = "RoundingModel.IsTotal"
+kind = "definition"
+desc = '''`def RoundingModel.IsTotal (m : RoundingModel K) : Prop := ∀ x : K, ∃ y, m.Rounds x y` — every value
+has an admissible rounding. A "for every run" theorem of `Numlib/FloatingPoint/Program` is vacuous
+for a model that is not total on the values a program computes (its run set is empty); the exact
+model and the round-to-nearest and chopping models of a system (`System.roundingModel`,
+`System.choppingModel`, no overflow modelled) are total, the in-range model `System.nearestModel`
+is not. ★'''
+deps = ["FloatingPoint.RoundingModel"]
+
+[[node]]  # Fix-A (GVL review, algo M8)
+id = "RoundingModel.isTotal_exact"
+kind = "theorem"
+desc = '''`(RoundingModel.exact K).IsTotal`; `fun x => ⟨x, rfl⟩`. ★'''
+deps = ["FloatingPoint.RoundingModel.exact", "FloatingPoint.RoundingModel.IsTotal"]
+
+[[node]]  # staged by ch02
+id = "abs_prod_one_add_sub_one_le_one_add_pow_sub_one"
+kind = "theorem"
+desc = '''For `0 ≤ u` and `δ : Fin n → K` with `|δ i| ≤ u`: `|∏ i, (1 + δ i) - 1| ≤ (1 + u) ^ n - 1`
+(ordered field `K`, no `n u < 1` needed; prototype elaborates). Induction on `n`: `|(1 + α)(1 + δ) -
+1| ≤ |α| (1 + u) + u`. The lower side `1 - (1 - u)^n ≤ (1 + u)^n - 1` is Bernoulli. ★'''
+deps = ["FloatingPoint.abs_prod_one_add_sub_one_le_gamma"]
+
+[[node]]  # staged by ch02
+id = "one_add_pow_sub_one_le_mul_add_sq"
+kind = "theorem"
+desc = '''For `0 ≤ u` and `n u ≤ 1`: `(1 + u) ^ n - 1 ≤ n u + (n u) ^ 2` (prototype elaborates).
+Induction: `a_{n+1} = (1 + u) a_n + u`, and the step reduces to `n² u³ ≤ n u² + u²`, true when `n u ≤
+1`. ★'''
+deps = []
+
+[[node]]  # staged by ch02
+id = "abs_prod_one_add_sub_one_le_of_mul_le"
+kind = "theorem"
+desc = '''**Wilkinson's constant** ([golub2013matrix] Lemma 2.7.1): if `1 + α = ∏_{k<n} (1 + α_k)` with
+`|α_k| ≤ u` and `n u ≤ 1/100`, then `|α| ≤ (101/100) n u`. From
+`abs_prod_one_add_sub_one_le_one_add_pow_sub_one` and `one_add_pow_sub_one_le_mul_add_sq` (`n u + (n
+u)² ≤ 1.01 n u` for `n u ≤ 0.01`). Not a consequence of `abs_prod_one_add_sub_one_le_gamma`: at `n u =
+0.01`, `γ_n = n u / 0.99 ≈ 1.0101 n u`. ★'''
+deps = ["FloatingPoint.abs_prod_one_add_sub_one_le_one_add_pow_sub_one", "FloatingPoint.one_add_pow_sub_one_le_mul_add_sq"]

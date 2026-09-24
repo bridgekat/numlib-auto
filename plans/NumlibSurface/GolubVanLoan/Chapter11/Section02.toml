@@ -1,0 +1,590 @@
+namespace = "GolubVanLoan.Chapter11"
+desc = '''
+Golub–Van Loan §11.2, *The Classical Iterations*: Jacobi, Gauss–Seidel and their block forms,
+splittings and Theorem 11.2.1, the diagonal-dominance and positive-definiteness theorems
+11.2.2–11.2.3, the Poisson model problem (11.2.10)–(11.2.17) with its ADI variant, SOR/SSOR and
+Theorem 11.2.4, and the Chebyshev semi-iterative method (11.2.28)–(11.2.30).
+
+Everything here already exists in the backbone `Numlib/Stationary/*` (from Saad Ch. 4 and QSS
+Ch. 4) and `Numlib/LinearAlgebra/Matrix/{TridiagonalToeplitz,KroneckerSum,Complexify}`; the section
+is correspondence. Conventions: the book's `L_A, D_A, U_A` are `strictLower A`, `diagPart A`,
+`strictUpper A` (Saad's `E = −L_A`, `F = −U_A`); a splitting `A = M − N` is
+`Stationary.Splitting A` (determined by `M`, `N := M − A`), its iteration matrix `G = M⁻¹N` is
+`s.iterationOperator`, one step `M x⁺ = N x + b` is `s.mulVecStep b x`; `ρ(G)` is
+`Matrix.complexSpectralRadius G` (the spectral radius of the complexification, an `ℝ≥0∞`; the real
+spectrum is the wrong object for convergence, `notes/backbone.md` §1.1). The book's SOR splitting
+(11.2.18) is `Matrix.sorSplitting` (`M_ω = ω⁻¹ D + L`), SSOR is `Matrix.ssorSplitting`.
+
+The componentwise loops (11.2.2), (11.2.3), (11.2.20) and the backward SOR loop are D4 programs
+(every product, sum and quotient through `rnd`); their exact semantics is the backbone sweep
+(`Matrix.jorSweep`, `Matrix.sorSweep`, `Matrix.backwardSorSweep`), whose matrix forms are the
+`…_eq_mulVecStep` theorems of `Numlib/Stationary/Sweep`.
+
+Model problem: `T_m = tridiag(−1, 2, −1)` is `Matrix.symmTridiagonalToeplitz m (−1) 2`,
+`E_m = tridiag(1, 0, 1)` is `Matrix.symmTridiagonalToeplitz m 1 0`, and `I_{n₁} ⊗ T_{n₂} + T_{n₁} ⊗
+I_{n₂}` is the Kronecker sum `Matrix.kroneckerSum (T n₁) (T n₂)` on `Fin n₁ × Fin n₂` (lexicographic
+order = the book's row-by-row grid order). The sine transform matrix `S_m` of (11.2.13) is ch01's backbone `Matrix.dst1 m`
+(`Numlib/Analysis/Fourier/SineCosineTransform`, entries `sin((k+1)(j+1)π/(m+1))`, 0-based, columns
+`Matrix.sineVec`, `S_m S_m = ((m+1)/2) I` by `Matrix.dst1_mul_self`).
+'''
+
+[[node]]
+id = "jacobiSweep"
+kind = "definition"
+desc = '''
+The Jacobi sweep (11.2.2), D4 program: `def jacobiSweep {M} [Monad M] (rnd : ℝ → M ℝ)
+(A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) : M (Fin n → ℝ)`; for `i` in `List.finRange n`,
+`s ← b i`, then `s ← rnd (s − rnd (a_ij x_j))` over `j < i` and over `j > i` in increasing order, then
+`x⁺ i ← rnd (s / a_ii)`; every `x_j` read is the *old* vector. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.2)'
+
+[[node]]
+id = "gaussSeidelSweep"
+kind = "definition"
+desc = '''
+The Gauss–Seidel sweep (11.2.3), D4 program with the same arithmetic as `jacobiSweep` but
+updating `x` in place (`Function.update`), so that `x_j`, `j < i`, is already the new value. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.3)'
+
+[[node]]
+id = "equation_11_2_4"
+kind = "theorem"
+desc = '''
+(11.2.4): if `IsUnit (diagPart A)` (all `a_ii ≠ 0`), the exact Jacobi sweep is the step of the
+Jacobi splitting `M_J = D_A`, `N_J = −(L_A + U_A)`:
+`Id.run (jacobiSweep pure A b x) = (Matrix.jacobiSplitting A h).mulVecStep b x`, and
+`(jacobiSplitting A h).m = diagPart A`, `.n = −(strictLower A + strictUpper A)`. Proof: the program
+at `Id` is `Matrix.jorSweep A 1` (componentwise), then `Matrix.jorSweep_one_eq_mulVecStep`. ★
+'''
+deps = ["jacobiSweep", "Matrix.jorSweep", "Matrix.jorSweep_one_eq_mulVecStep",
+  "Matrix.jacobiSplitting"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.4)'
+
+[[node]]
+id = "equation_11_2_5"
+kind = "theorem"
+desc = '''
+(11.2.5): with `a_ii ≠ 0`, the exact Gauss–Seidel sweep is the step of `M_GS = D_A + L_A`,
+`N_GS = −U_A`: `Id.run (gaussSeidelSweep pure A b x) = (Matrix.gaussSeidelSplitting A h).mulVecStep
+b x`. Proof: induction along `List.finRange n` identifies the program with the componentwise
+recursion `Matrix.sorSweep_apply` at `ω = 1`; then `Matrix.sorSweep_one_eq_mulVecStep`. ★★
+(~40 lines)
+'''
+deps = ["gaussSeidelSweep", "Matrix.sorSweep", "Matrix.sorSweep_apply",
+  "Matrix.sorSweep_one_eq_mulVecStep", "Matrix.gaussSeidelSplitting"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.5)'
+
+[[node]]
+id = "blockJacobi_eq"
+kind = "theorem"
+desc = '''
+§11.2.2, block Jacobi: for a block labelling `π : Fin n → Fin p` with invertible diagonal blocks
+(`IsUnit (Matrix.blockDiagPart π A)`), `x⁺` satisfies the book's block equations
+`A_ii x⁺_i = b_i − ∑_{j ≠ i} A_ij x_j` for every block `i` iff `x⁺` is the step of
+`Matrix.blockJacobiSplitting`. Delegates to `Numlib/Stationary/Block`. ★
+'''
+deps = ["Matrix.blockJacobiSplitting", "Matrix.blockDiagPart", "Stationary.Splitting.mulVecStep"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.2'
+
+[[node]]
+id = "blockGaussSeidel_eq"
+kind = "theorem"
+desc = '''
+§11.2.2, block Gauss–Seidel: as `blockJacobi_eq`, with `A_ii x⁺_i = b_i − ∑_{j < i} A_ij x⁺_j −
+∑_{j > i} A_ij x_j`, the step of `Matrix.blockGaussSeidelSplitting`. ★
+'''
+deps = ["Matrix.blockGaussSeidelSplitting", "Matrix.blockDiagPart", "Stationary.Splitting.mulVecStep"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.2'
+
+[[node]]
+id = "equation_11_2_7"
+kind = "theorem"
+desc = '''
+(11.2.6)–(11.2.7): for a splitting `s` of `A` (`M` nonsingular), `A x = b`, and the iterates
+`x⁽ᵏ⁾ = (s.mulVecStep b)^[k] x⁽⁰⁾` of (11.2.6): `x⁽ᵏ⁾ − x = G^k (x⁽⁰⁾ − x)` with
+`G = s.iterationOperator`. From `Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add`
+and `Stationary.step_iterate_sub` (or a two-line induction). ★
+'''
+deps = ["Stationary.Splitting.mulVecStep", "Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add",
+  "Stationary.step_iterate_sub", "Stationary.Splitting.iterationOperator"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.7)'
+
+[[node]]
+id = "equation_11_2_8"
+kind = "theorem"
+desc = '''
+(11.2.8): `!![λ, α; 0, λ] ^ k = !![λ^k, k α λ^(k−1); 0, λ^k]` for `k ≥ 1` (over any commutative
+ring; the book prints `α λ^{k−1}` for the corner, which is wrong for `k ≥ 2` — the corner is
+`k α λ^{k−1}`; recorded in the chapter's Doubts). Induction on `k`. The conclusion drawn — `G^k → 0`
+iff `|λ| < 1` — is the case of Theorem 11.2.1. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.8)'
+
+[[node]]
+id = "theorem_11_2_1"
+kind = "theorem"
+desc = '''
+Theorem 11.2.1: `A = M − N` a splitting (`s : Stationary.Splitting A`) of a nonsingular
+`A ∈ ℝ^{n×n}`; then `(∀ x⁽⁰⁾, Tendsto (fun k => (s.mulVecStep b)^[k] x⁽⁰⁾) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
+Matrix.complexSpectralRadius s.iterationOperator < 1`. Proof: by `equation_11_2_7` convergence
+for all `x⁽⁰⁾` is `G^k e → 0` for all `e`, which is `G^k → 0`
+(`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`), which is `ρ(G) < 1`
+(`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). The book's proof through the Schur form
+and (11.2.9) is the quantitative bound `equation_11_2_9`, not needed here. ★
+'''
+deps = ["equation_11_2_7", "Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero",
+  "Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one", "Matrix.complexSpectralRadius"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.1'
+
+[[node]]
+id = "equation_11_2_9"
+kind = "theorem"
+desc = '''
+(11.2.9): for `G ∈ ℂ^{n×n}` with Schur form `Qᴴ G Q = T = D + E` (`D` diagonal, `E` strictly upper;
+`Matrix.exists_unitary_conj_upperTriangular`) and `ρ(G) < 1`:
+`‖G^k‖₂ ≤ (1 + 2‖E‖_F/(1 − ρ(G)))^{n−1} ((1 + ρ(G))/2)^k`. From Lemma 7.3.2 (7.3.15) with
+`μ = 2‖E‖_F/(1 − ρ)`, since `‖E‖_F/(1+μ) ≤ (1−ρ)/2`. The book writes `E = A − D` (should be
+`T − D`) and `μ = 2‖E‖₂/(1−ρ)` (with `‖E‖₂` the displayed bound does not follow; `‖E‖_F` is needed):
+both recorded in Doubts; the statement uses `‖E‖_F`. Norms: scoped `Matrix.Norms.L2Operator` and
+`Matrix.Norms.Frobenius`. ★
+'''
+deps = ["GolubVanLoan.Chapter07.lemma_7_3_2", "Matrix.exists_unitary_conj_upperTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.9)'
+
+[[node]]
+id = "theorem_11_2_2"
+kind = "theorem"
+desc = '''
+Theorem 11.2.2: `A ∈ ℝ^{n×n}` strictly (row) diagonally dominant (`Matrix.IsStrictDiagDominant A`)
+⇒ the Jacobi iteration (11.2.4) converges to `A⁻¹ b` from every `x⁽⁰⁾`. From
+`Matrix.jacobi_complexSpectralRadius_lt_one` and `theorem_11_2_1` (`A` is nonsingular:
+`Matrix.IsStrictDiagDominant.isUnit`). ★
+'''
+deps = ["theorem_11_2_1", "Matrix.jacobi_complexSpectralRadius_lt_one", "Matrix.IsStrictDiagDominant",
+  "equation_11_2_4"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.2'
+
+[[node]]
+id = "jacobi_linfty_opNorm_lt_one"
+kind = "theorem"
+desc = '''
+The display in the proof of Theorem 11.2.2: `‖G_J‖_∞ = max_i ∑_{j≠i} |a_ij/a_ii| < 1` under strict
+diagonal dominance (scoped `Matrix.Norms.Operator`). Delegates to
+`Matrix.linfty_opNorm_jacobi_iterMatrix` and `Matrix.IsStrictDiagDominant.jacobiContraction_lt_one`.
+The book's "no eigenvalue of `A` can be bigger than `‖A‖_∞`" means `G_J` (Doubts). ★
+'''
+deps = ["Matrix.linfty_opNorm_jacobi_iterMatrix", "Matrix.IsStrictDiagDominant.jacobiContraction_lt_one",
+  "Matrix.jacobiContraction"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.2'
+
+[[node]]
+id = "theorem_11_2_3"
+kind = "theorem"
+desc = '''
+Theorem 11.2.3: `A` symmetric positive definite (`A.PosDef`) ⇒ Gauss–Seidel (11.2.5) converges from
+every `x⁽⁰⁾`. From `Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef` (the
+Householder–John theorem with `M + Mᵀ − A = D` positive definite) and `theorem_11_2_1`. The book's
+proof (the eigenvalue computation `|λ|² = (a² + b²)/(1 + 2a + a² + b²)`) is not replayed. ★
+'''
+deps = ["theorem_11_2_1", "Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef",
+  "equation_11_2_5"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.3'
+
+[[node]]
+id = "modelT"
+kind = "definition"
+desc = '''
+(11.2.11): `T_m = tridiag(−1, 2, −1) ∈ ℝ^{m×m}`, an `abbrev` for
+`Matrix.symmTridiagonalToeplitz m (−1) 2`. Also `E_m := Matrix.symmTridiagonalToeplitz m 1 0`
+(`modelE`, the display before (11.2.12)), with `T_m = 2I − E_m`. Chapter 4 writes the same matrix `𝒯^{(DD)}_m` directly as the backbone `Matrix.symmTridiagonalToeplitz`
+(its (4.8.6), `GolubVanLoan.Chapter04.equation_4_8_6`, is the difference-equation identity, not a definition), so there is no
+earlier surface definition to depend on; the ch04 facts about it are used through `GolubVanLoan.Chapter04.dd_eigen`. ★
+'''
+deps = ["Matrix.symmTridiagonalToeplitz"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.11)'
+
+[[node]]
+id = "poissonMatrix"
+kind = "definition"
+desc = '''
+(11.2.10): the model matrix `I_{n₁} ⊗ T_{n₂} + T_{n₁} ⊗ I_{n₂}` as
+`Matrix.kroneckerSum (T n₁) (T n₂) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ` (named
+`poissonMatrix n₁ n₂`). The book's claim that the system is symmetric positive definite is
+`poissonMatrix_posDef`. ★
+'''
+deps = ["modelT", "Matrix.kroneckerSum"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.10)'
+
+[[node]]
+id = "poissonMatrix_posDef"
+kind = "theorem"
+desc = '''
+§11.2.6: `(poissonMatrix n₁ n₂).PosDef`. From `Matrix.posDef_kroneckerSum` and
+`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. ★
+'''
+deps = ["poissonMatrix", "Matrix.posDef_kroneckerSum", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.6'
+
+[[node]]
+id = "poissonJacobiArray_eq"
+kind = "theorem"
+desc = '''
+§11.2.6, the array form of Jacobi: for a grid array `U : Fin (n₁+2) → Fin (n₂+2) → ℝ` with fixed
+boundary rows and columns, the update `U(i,j) ← (V(i−1,j) + V(i,j+1) + V(i+1,j) + V(i,j−1))/4` on the
+interior, with `V` the old array, is one Jacobi step (11.2.4) for `poissonMatrix n₁ n₂ u = b`, where
+`u` is the interior of `U` and `b(i,j)` is the sum of the boundary neighbours of `(i,j)` (the book's
+reformulation fixes `f = 0`, the Laplace case; with a source term `b` gains `h² f`). The array
+update is a D4 program `poissonJacobiArray`; the statement is at `Id`. From `equation_11_2_4`: the
+diagonal of `poissonMatrix` is `4` and each off-diagonal `−1` entry is a grid neighbour. ★★
+(~60 lines)
+'''
+deps = ["poissonMatrix", "equation_11_2_4"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.6'
+
+[[node]]
+id = "poissonGaussSeidelArray_eq"
+kind = "theorem"
+desc = '''
+§11.2.6, the array form of Gauss–Seidel: the in-place update loop over `i = 1:n₁`, `j = 1:n₂` is one
+Gauss–Seidel step (11.2.5) for `poissonMatrix n₁ n₂` with the same `b` as in
+`poissonJacobiArray_eq`, because the row-major loop order is the lexicographic order of
+`Fin n₁ × Fin n₂` and the neighbours `(i−1, j)`, `(i, j−1)` precede `(i, j)` in it. ★★ (~60 lines)
+'''
+deps = ["poissonMatrix", "equation_11_2_5", "poissonJacobiArray_eq"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.6'
+
+[[node]]
+id = "equation_11_2_12"
+kind = "theorem"
+desc = '''
+(11.2.12): `poissonMatrix n₁ n₂ = 4 • 1 − (1 ⊗ₖ E_{n₂}) − (E_{n₁} ⊗ₖ 1)`; hence the Jacobi splitting
+has `M_J = 4I`, `N_J = I ⊗ E_{n₂} + E_{n₁} ⊗ I` (the two displays after (11.2.12)). Entrywise
+(`Matrix.kroneckerSum_apply`, `Matrix.symmTridiagonalToeplitz_apply`). ★
+'''
+deps = ["poissonMatrix", "modelT", "Matrix.jacobiSplitting"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.12)'
+
+[[node]]
+id = "modelEEigenvalues"
+kind = "definition"
+desc = '''
+(11.2.14): `μ_k^{(m)} = 2 cos(kπ/(m+1))`, `k = 1:m` (0-based: `2 cos((k+1)π/(m+1))`), as a function
+`Fin m → ℝ`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.14)'
+
+[[node]]
+id = "equation_11_2_13"
+kind = "theorem"
+desc = '''
+(11.2.13): `(Matrix.dst1 m)⁻¹ * E_m * Matrix.dst1 m = diagonal (modelEEigenvalues m)`. Column by column
+from `Matrix.symmTridiagonalToeplitz_mulVec_sineVec` (via the earlier chapter's restatement `GolubVanLoan.Chapter04.dd_eigen`) at `a = 1`, `b = 0` (eigenvalue
+`2 cos((k+1)π/(m+1))`) and `Matrix.dst1_apply_eq_sineVec`, `Matrix.dst1_mul_self` (via the earlier chapter's restatement `GolubVanLoan.Chapter04.dst_inv`) (nonsingularity). [the book's P11.2.7] asks for exactly
+this proof. ★
+'''
+deps = ["Matrix.dst1", "Matrix.dst1_apply_eq_sineVec", "GolubVanLoan.Chapter04.dst_inv", "modelEEigenvalues",
+  "modelT", "GolubVanLoan.Chapter04.dd_eigen"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.13)'
+
+[[node]]
+id = "jacobi_poisson_diagonal"
+kind = "theorem"
+desc = '''
+§11.2.6, the display after (11.2.14): with `S = Matrix.dst1 n₁ ⊗ₖ Matrix.dst1 n₂`,
+`S⁻¹ (M_J⁻¹ N_J) S = (1 ⊗ₖ D_{n₂} + D_{n₁} ⊗ₖ 1)/4`, `D_m = diagonal (μ^{(m)})`. From
+`equation_11_2_12`, `equation_11_2_13` and the mixed-product rule `Matrix.mul_kronecker_mul`
+(Mathlib), `(S₁ ⊗ S₂)⁻¹ = S₁⁻¹ ⊗ S₂⁻¹` (`Matrix.inv_kronecker`). ★
+'''
+deps = ["equation_11_2_12", "equation_11_2_13", "Matrix.dst1"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.6'
+
+[[node]]
+id = "equation_11_2_15"
+kind = "theorem"
+desc = '''
+(11.2.15): `ρ(M_J⁻¹ N_J) = (2 cos(π/(n₁+1)) + 2 cos(π/(n₂+1)))/4` for the Jacobi splitting of
+`poissonMatrix n₁ n₂` (`n₁, n₂ ≥ 1`). From `jacobi_poisson_diagonal`, `Matrix.complexSpectralRadius_conj`
+and `Matrix.complexSpectralRadius_diagonal` (staged append to `Complexify`): the maximum of
+`|μ_i + μ_j|/4` is at `i = j = 1` because `cos` is decreasing on `[0, π]` and
+`μ_{n+1−k} = −μ_k`. [the book's P11.2.8]. ★★ (~40 lines)
+'''
+deps = ["jacobi_poisson_diagonal", "Matrix.complexSpectralRadius_conj", "Matrix.complexSpectralRadius_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.15)'
+
+[[node]]
+id = "adiStep"
+kind = "definition"
+desc = '''
+(11.2.16), the alternating-direction step for the model problem: the splittings
+`M_x = 4I − (1 ⊗ₖ E_{n₂})`, `N_x = E_{n₁} ⊗ₖ 1`, `M_y = 4I − (E_{n₁} ⊗ₖ 1)`, `N_y = 1 ⊗ₖ E_{n₂}` of
+`poissonMatrix` (as `Stationary.Splitting`s; `M_x`, `M_y` are nonsingular being strictly
+diagonally dominant) and the double step `u ↦ M_y⁻¹ (N_y (M_x⁻¹ (N_x u + b)) + b)`. Stated as an
+exact map (the book solves two linear systems and fixes no operation order). ★
+'''
+deps = ["poissonMatrix", "equation_11_2_12", "Stationary.Splitting.mulVecStep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.16)'
+
+[[node]]
+id = "adi_error_eq"
+kind = "theorem"
+desc = '''
+§11.2.6: the iterates of (11.2.16) satisfy `u⁽ᵏ⁾ − x = G^k (u⁽⁰⁾ − x)` with
+`G = (M_y⁻¹ N_y)(M_x⁻¹ N_x)` and the diagonalization
+`(S_{n₁} ⊗ S_{n₂})⁻¹ G (S_{n₁} ⊗ S_{n₂}) = (4I − D_{n₁} ⊗ I)⁻¹ (I ⊗ D_{n₂}) (4I − I ⊗ D_{n₂})⁻¹ (D_{n₁} ⊗ I)`
+(diagonal). Composition of two `equation_11_2_7`s; the diagonalization as in
+`jacobi_poisson_diagonal`. It is the Peaceman–Rachford structure of `Numlib/Stationary/ADI`, but
+the book's parameters (`r = 0` shift, the `4I` split between the two halves) make the direct proof
+shorter than instantiating `Stationary.peacemanRachford`. ★★ (~50 lines)
+'''
+deps = ["adiStep", "equation_11_2_7", "jacobi_poisson_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.6'
+
+[[node]]
+id = "equation_11_2_17"
+kind = "theorem"
+desc = '''
+(11.2.17): `ρ(G) = cos(π/(n₁+1)) cos(π/(n₂+1)) / ((2 − cos(π/(n₁+1)))(2 − cos(π/(n₂+1)))) < 1`.
+From `adi_error_eq`'s diagonalization: the diagonal entries are `c_i c_j/((2 − c_i)(2 − c_j))`,
+`c_i = cos(iπ/(n₁+1))`, and `t ↦ |t|/(2 − t)` on `[−1, 1]` is maximal at the largest `t`
+(`c/(2−c)` increasing, and `|c|/(2+|c|) ≤ |c|/(2−|c|)`). Numerically confirmed during planning.
+[the book's P11.2.9]; the printed "`ρ(G) = =`" is a typo. ★★ (~40 lines)
+'''
+deps = ["adi_error_eq", "Matrix.complexSpectralRadius_conj", "Matrix.complexSpectralRadius_diagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.17)'
+
+[[node]]
+id = "equation_11_2_18"
+kind = "theorem"
+desc = '''
+(11.2.18): for `ω ≠ 0` and `a_ii ≠ 0`, the SOR splitting `A = M_ω − N_ω` has
+`(Matrix.sorSplitting A h hω).m = ω⁻¹ • diagPart A + strictLower A` and
+`.n = (ω⁻¹ − 1) • diagPart A − strictUpper A`. The book prints `N_ω = (ω⁻¹ − 1) D_A + U_A` in (11.2.18)
+and (11.2.19), inconsistent with `A = M_ω − N_ω` (Doubts); the node states the correct `− U_A`
+(the book itself has `− L_Aᵀ` in (11.2.22)). Unfolding the definition. ★
+'''
+deps = ["Matrix.sorSplitting"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.18)'
+
+[[node]]
+id = "sorSweep"
+kind = "definition"
+desc = '''
+The componentwise SOR sweep ("at the component level", §11.2.7; the display carries no tag in the
+source, and is taken to be the lost (11.2.20) — see Doubts), D4 program:
+`x_i ← rnd (rnd (ω · rnd ((b_i − ∑_{j<i} a_ij x_j − ∑_{j>i} a_ij x_j)/a_ii)) + rnd ((1 − ω) x_i))`
+in increasing `i`, in place, the sums accumulated as in `gaussSeidelSweep`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.20)'
+
+[[node]]
+id = "equation_11_2_19"
+kind = "theorem"
+desc = '''
+(11.2.19): with `a_ii ≠ 0`, `ω ≠ 0`, the exact SOR sweep is the step of `Matrix.sorSplitting`:
+`Id.run (sorSweep pure A ω b x) = (Matrix.sorSplitting A h hω).mulVecStep b x`, i.e.
+`(ω⁻¹ D_A + L_A) x⁺ = ((ω⁻¹ − 1) D_A − U_A) x + b`. Induction identifies the program with the
+recursion `Matrix.sorSweep_apply`, then `Matrix.sorSweep_eq_mulVecStep`. At `ω = 1` it is
+`equation_11_2_5` (`Matrix.sorSplitting_one`). ★★ (~40 lines)
+'''
+deps = ["sorSweep", "equation_11_2_18", "Matrix.sorSweep_apply", "Matrix.sorSweep_eq_mulVecStep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.19)'
+
+[[node]]
+id = "backwardSorSweep"
+kind = "definition"
+desc = '''
+The backward SOR sweep of §11.2.7 ("from bottom to top"), D4 program: as `sorSweep` with
+`i` running over `(List.finRange n).reverse`. ★
+'''
+deps = ["sorSweep"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.7'
+
+[[node]]
+id = "equation_11_2_21"
+kind = "theorem"
+desc = '''
+(11.2.21): the exact backward sweep is the step of `Matrix.backwardSorSplitting`,
+`(ω⁻¹ D_A + U_A) x⁺ = ((ω⁻¹ − 1) D_A − L_A) x + b` (the book again prints `+ L_A`; Doubts). From
+`Matrix.backwardSorSweep_eq_mulVecStep` after the componentwise identification. ★★ (~30 lines,
+mirroring `equation_11_2_19`)
+'''
+deps = ["backwardSorSweep", "Matrix.backwardSorSweep_eq_mulVecStep", "Matrix.backwardSorSplitting"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.21)'
+
+[[node]]
+id = "ssorSweep"
+kind = "definition"
+desc = '''
+One SSOR step (11.2.22)–(11.2.23), D4 program: `do let y ← sorSweep rnd A ω b x;
+backwardSorSweep rnd A ω b y`. ★
+'''
+deps = ["sorSweep", "backwardSorSweep"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.22)'
+
+[[node]]
+id = "equation_11_2_22"
+kind = "theorem"
+desc = '''
+(11.2.22)–(11.2.23): for symmetric `A` (`U_A = L_Aᵀ`), the exact SSOR step `x⁺` and its half-step `y`
+satisfy `(ω⁻¹ D + L) y = ((ω⁻¹ − 1) D − Lᵀ) x + b` and `(ω⁻¹ D + Lᵀ) x⁺ = ((ω⁻¹ − 1) D − L) y + b`.
+`equation_11_2_19` and `equation_11_2_21` with `U_A = L_Aᵀ`. ★
+'''
+deps = ["ssorSweep", "equation_11_2_19", "equation_11_2_21"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.22)'
+
+[[node]]
+id = "equation_11_2_24"
+kind = "theorem"
+desc = '''
+(11.2.24) and the claims after it: for symmetric `A` with positive diagonal and `0 < ω < 2`,
+`M_SSOR := (ω/(2−ω)) (ω⁻¹ D + L) D⁻¹ (ω⁻¹ D + Lᵀ)` equals `(Matrix.ssorSplitting A h hω hω2).m`
+(`= (ω(2−ω))⁻¹ (D + ωL) D⁻¹ (D + ωLᵀ)`), is symmetric (`Matrix.ssorSplitting_m_isSymm`) and positive
+definite (`Matrix.ssorSplitting_m_posDef_of_diag_pos`, staged: the existing
+`Matrix.ssorSplitting_m_posDef` assumes `A.PosDef`, while the book needs only positive diagonal).
+Scalar algebra for the equality. ★
+'''
+deps = ["Matrix.ssorSplitting", "Matrix.ssorSplitting_m_isSymm", "Matrix.ssorSplitting_m_posDef_of_diag_pos"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.24)'
+
+[[node]]
+id = "equation_11_2_25"
+kind = "theorem"
+desc = '''
+(11.2.25): for symmetric `A` with `a_ii ≠ 0` and `ω ≠ 0, 2`, the exact SSOR step is
+`x⁺ = x + M_SSOR⁻¹ (b − A x)`. From `ssorSweep` = forward then backward sweep,
+`Matrix.ssorSweep_eq_mulVecStep` and `Stationary.Splitting.mulVecStep_eq_add_inv_mulVec`.
+[the book's P11.2.10]. ★
+'''
+deps = ["ssorSweep", "equation_11_2_24", "Matrix.ssorSweep_eq_mulVecStep",
+  "Stationary.Splitting.mulVecStep_eq_add_inv_mulVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.25)'
+
+[[node]]
+id = "theorem_11_2_4"
+kind = "theorem"
+desc = '''
+Theorem 11.2.4: `A` symmetric positive definite, `0 < ω < 2`, `M_ω = ω⁻¹ D + L`,
+`N_ω = (ω⁻¹ − 1) D − Lᵀ`, `G = M_ω⁻ᵀ N_ωᵀ M_ω⁻¹ N_ω`. Then `G` has real eigenvalues — stated as
+`spectrum ℂ (complexify G) ⊆ Complex.ofReal '' Set.Ico 0 1` (the book's proof shows `0 ≤ λ < 1`) —
+and `ρ(G) < 1`. `G` is the SSOR iteration matrix (`Matrix.ssorSplitting_iterationOperator_eq_mul`),
+so `ρ(G) < 1` is `Matrix.ssorSplitting_complexSpectralRadius_lt_one`, and the spectral inclusion is
+`Stationary.Splitting.spectrum_complexify_iterationOperator_subset` (staged append to
+`Stationary/SPD`) with `M_SSOR − A ⪰ 0` (`Matrix.ssorSplitting_iterationOperator_posSemidef_energy`
+gives `A G ⪰ 0`). ★★ (~40 lines, mostly the identification of `G`)
+'''
+deps = ["Matrix.ssorSplitting_iterationOperator_eq_mul", "Matrix.ssorSplitting_complexSpectralRadius_lt_one",
+  "Stationary.Splitting.spectrum_complexify_iterationOperator_subset",
+  "Matrix.ssorSplitting_iterationOperator_posSemidef_energy", "equation_11_2_22"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.4'
+
+[[node]]
+id = "equation_11_2_26"
+kind = "theorem"
+desc = '''
+(11.2.26): the SSOR iterates satisfy `x⁽ᵏ⁾ − x = G^k (x⁽⁰⁾ − x)` with `G` as in Theorem 11.2.4, from
+`equation_11_2_22` (the two error equations `y − x = M_ω⁻¹ N_ω (x⁽ᵏ⁻¹⁾ − x)`,
+`x⁽ᵏ⁾ − x = M_ω⁻ᵀ N_ωᵀ (y − x)`) by induction. ★
+'''
+deps = ["equation_11_2_22", "theorem_11_2_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.26)'
+
+[[node]]
+id = "equation_11_2_27"
+kind = "theorem"
+desc = '''
+(11.2.27), from the proof of Theorem 11.2.4: with `D = D₁²`, `L₁ = D₁⁻¹ L D₁⁻¹`, `G₁ = D₁ G D₁⁻¹ =
+(I + ωL₁ᵀ)⁻¹ (I + ωL₁)⁻¹ ((1−ω)I − ωL₁)((1−ω)I − ωL₁ᵀ)`, and a real unit eigenvector `G₁ v = λ v`:
+`λ = ‖(1−ω)v − ωL₁ᵀv‖² / ‖v + ωL₁ᵀv‖² = 1 − ω(2−ω)(1 + 2vᵀL₁ᵀv)/‖v + ωL₁ᵀv‖²`. The first equality:
+multiply `G₁ v = λ v` by `(I + ωL₁)(I + ωL₁ᵀ)`, the factors `(I + ωL₁)⁻¹` and `(1−ω)I − ωL₁` commuting
+(both are polynomials in `L₁`), and take the inner product with `v`; the second is expansion with
+`‖v‖ = 1`. ★★ (~50 lines)
+'''
+deps = ["theorem_11_2_4"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.27)'
+
+[[node]]
+id = "semiIterativeCombination"
+kind = "definition"
+desc = '''
+(11.2.28): the semi-iterative combination `y⁽ᵏ⁾ = ∑_{j=0}^{k} ν_j(k) x⁽ʲ⁾` of the iterates of a
+splitting, as a function of the coefficient array `ν : Fin (k+1) → ℝ` (equivalently the polynomial
+`p_k(z) = ∑ ν_j z^j`). ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.28)'
+
+[[node]]
+id = "semiIterative_sub_eq"
+kind = "theorem"
+desc = '''
+§11.2.8: if `p_k(1) = ∑ ν_j = 1` then `y⁽ᵏ⁾ − x = p_k(G) e⁽⁰⁾`, `G = M⁻¹N`, `e⁽⁰⁾ = x⁽⁰⁾ − x`. From
+`equation_11_2_7` and linearity (`Polynomial.aeval`). ★
+'''
+deps = ["semiIterativeCombination", "equation_11_2_7"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
+
+[[node]]
+id = "equation_11_2_29"
+kind = "theorem"
+desc = '''
+(11.2.29): `‖y⁽ᵏ⁾ − x‖₂ ≤ ‖p_k(G)‖₂ ‖e⁽⁰⁾‖₂`. `semiIterative_sub_eq` and the operator-norm bound
+(scoped `Matrix.Norms.L2Operator`, `Matrix.l2_opNorm_mulVec`). ★
+'''
+deps = ["semiIterative_sub_eq"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.29)'
+
+[[node]]
+id = "chebyshevSemiIterative_norm_le"
+kind = "theorem"
+desc = '''
+§11.2.8: for symmetric `G` with spectrum in `[α, β]`, `−1 < α < β < 1` ((11.2.30)), and
+`p_k(z) = c_k(−1 + 2(z−α)/(β−α)) / c_k(μ)`, `μ = −1 + 2(1−α)/(β−α) = 1 + 2(1−β)/(β−α) > 1`,
+`c_k = Polynomial.Chebyshev.T k`: `p_k(1) = 1`, `|p_k| ≤ 1/|c_k(μ)|` on `[α, β]`, and so
+`‖y⁽ᵏ⁾ − x‖₂ ≤ ‖x − x⁽⁰⁾‖₂ / |c_k(μ)|`. From `equation_11_2_29`, the spectral bound for a symmetric
+matrix `‖p(G)‖₂ = max_{λ∈σ(G)} |p(λ)|` (`LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le` via
+`Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`) and Mathlib's
+`Polynomial.Chebyshev.abs_eval_T_real_le_one`. The book writes `λ_i ∈ λ(A)` for `λ(G)` (Doubts). ★★
+(~40 lines)
+'''
+deps = ["equation_11_2_29", "LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le",
+  "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
+
+[[node]]
+id = "chebyshevSemiIterative"
+kind = "definition"
+desc = '''
+The Chebyshev semi-iterative recurrence of §11.2.8 (case `α = −β`), D4 program with fuel and
+tolerance: `c₀ = 1`, `c₁ = 1/β`, `y⁽⁰⁾ = x⁽⁰⁾`, `M y⁽¹⁾ = N y⁽⁰⁾ + b`, then while `‖r⁽ᵏ⁾‖₂ > tol` (the norm computed as `rnd (√(rnd (rᵀr)))` and compared exactly with `tol`;
+`fuel` the last argument):
+`c_{k+1} = (2/β) c_k − c_{k−1}`, `ω_{k+1} = 1 + c_{k−1}/c_{k+1}`, `M z⁽ᵏ⁾ = r⁽ᵏ⁾`,
+`y⁽ᵏ⁺¹⁾ = y⁽ᵏ⁻¹⁾ + ω_{k+1}(y⁽ᵏ⁾ + z⁽ᵏ⁾ − y⁽ᵏ⁻¹⁾)`, `r⁽ᵏ⁺¹⁾ = b − A y⁽ᵏ⁺¹⁾`. The `M`-solves are a
+parameter `solveM : (Fin n → ℝ) → M (Fin n → ℝ)` (a preconditioner routine; exact semantics
+`M⁻¹`), everything else through `rnd`. ★
+'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
+
+[[node]]
+id = "chebyshevSemiIterative_spec"
+kind = "theorem"
+desc = '''
+Exact semantics (fuel large enough, `tol = 0`, `solveM = M⁻¹`): `y⁽ᵏ⁾ − x = p_k(G)(x⁽⁰⁾ − x)` with
+`p_k(z) = c_k(z/β)/c_k(1/β)`, the `α = −β` case of `chebyshevSemiIterative_norm_le`'s polynomial;
+in particular `y⁽⁰⁾ = x⁽⁰⁾`, `y⁽¹⁾ = x⁽¹⁾`, and the bound of `chebyshevSemiIterative_norm_le` holds.
+Proof: induction with the three-term recurrence `T_{k+1} = 2X T_k − T_{k−1}`
+(`Polynomial.Chebyshev.T_add_two`); `ω_{k+1} c_{k+1} = (2/β) c_k` gives the polynomial recurrence
+`p_{k+1}(z) = ω_{k+1} z p_k(z) + (1 − ω_{k+1}) p_{k−1}(z)`, which is the `y` update since
+`y + z − ... = G y + M⁻¹ b`. Same content as the backbone's `Preconditioner.Chebyshev` (Saad
+Alg 12.1, residual `shifted` polynomial) applied to `M⁻¹A` on `[1−β, 1+β]`, but the recurrence is
+written differently, so the identification is by the polynomial, not the state. ★★ (~80 lines)
+'''
+deps = ["chebyshevSemiIterative", "semiIterative_sub_eq", "chebyshevSemiIterative_norm_le"]
+source = 'Golub–Van Loan, Matrix Computations, §11.2.8'

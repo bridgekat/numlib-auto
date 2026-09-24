@@ -1,0 +1,444 @@
+namespace = "GolubVanLoan.Chapter03"
+desc = '''
+§3.2, the LU factorization: Gauss transformations and their rounding (§3.2.1–3.2.3), Gaussian
+elimination as `A = L U` ((3.2.3)–(3.2.7), Theorem 3.2.1), the outer-product and gaxpy
+algorithms 3.2.1–3.2.2 with their rounding bridges into `FloatingPoint.RoundsLU`, the rectangular
+factorization (§3.2.10, (3.2.8)), the Schur complement (3.2.9) and the block algorithms
+3.2.3–3.2.4.
+
+Backbone: `Matrix.IsLU`, `leadingPrincipalSubmatrix`, `strictLeadingPrincipalSubmatrix`
+(`Numlib/LinearAlgebra/Matrix/LU`), `elimStep`/`gaussTransform`/`gemStage`/`gemLower`/`luLower`/
+`luUpper` (`…/LU/Elimination`), the new `Matrix.IsRectLU` (ch03 append to `LU`), and
+`FloatingPoint.RoundsLU` (`Numlib/FloatingPoint/LU`), whose running-difference entries are exactly
+what Algorithms 3.2.1 and 3.2.2 compute (the subtraction order is quantified away). Indices are
+0-based: the book's step `k = 1:n-1` is `k : Fin n` with the empty last step included, its
+`A^{(k)}` (after `k - 1` steps in (3.2.3)) is `Matrix.gemStage A (k - 1)`, and "`A(1:k,1:k)`
+nonsingular for `k = 1:n-1`" is `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`.
+
+The packed output convention of Algorithms 3.2.1, 3.4.x ("`A(i,i:n)` is overwritten by
+`U(i,i:n)`, `A(i+1:n,i)` by `L(i+1:n,i)`") is `packedL F = 1 + F.strictLower`,
+`packedU F = F - F.strictLower` (`Matrix.strictLower` of `Numlib/LinearAlgebra/Matrix/Hessenberg`).
+Programs overwrite one entry by `A.updateRow i (Function.update (A i) j a)`; prototype
+`notes/gvl/ch03/proto/Shapes.lean` elaborates Algorithms 3.2.1, 3.4.1 and 3.5.1 in this form and
+checks the one-line pure collapse (for 3.4.1 through its `if`, with an `ite_pure`-type lemma).
+'''
+
+[[node]]
+id = "equation_3_2_1"
+kind = "theorem"
+desc = '''(3.2.1): if `A = L * U`, `L *ᵥ y = b` and `U *ᵥ x = y`, then `A *ᵥ x = b`
+(`Matrix.mulVec_mulVec`). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.1)'
+
+[[node]]
+id = "gaussVector"
+kind = "definition"
+desc = '''§3.2.1, the Gauss vector of `v` at `k`: `gaussVector v k i = if k < i then v i / v k else 0`
+(`τ_i = v_i / v_k` for `i > k`, zero in the first `k + 1` places, 0-based). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1, Definition'
+
+[[node]]
+id = "gaussTransformation"
+kind = "definition"
+desc = '''§3.2.1 and (3.2.2), the matrix `M_k = I_n - τ e_kᵀ`:
+`gaussTransformation τ k = 1 - Matrix.vecMulVec τ (Pi.single k 1)` for any `τ : Fin n → ℝ`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1, Definition'
+
+[[node]]
+id = "IsGaussTransformation"
+kind = "definition"
+desc = '''§3.2.1: "a matrix of the form `M_k = I_n - τ e_kᵀ` is a Gauss transformation if the first
+`k` components of `τ` are zero": `IsGaussTransformation M k ↔ ∃ τ, (∀ i, i ≤ k → τ i = 0) ∧
+M = gaussTransformation τ k` (0-based, so `τ_k = 0` too); the entries `τ(k+1:n)` are the
+*multipliers*, `τ` the *Gauss vector*. ★'''
+deps = ["gaussTransformation"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1, Definition'
+
+[[node]]
+id = "gaussTransformation_gaussVector_mulVec"
+kind = "theorem"
+desc = '''§3.2.1, the display after (3.2.2): if `v k ≠ 0` then
+`gaussTransformation (gaussVector v k) k *ᵥ v = fun i => if i ≤ k then v i else 0`. ★'''
+deps = ["gaussTransformation", "gaussVector"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1'
+
+[[node]]
+id = "isUnitLowerTriangular_gaussTransformation"
+kind = "theorem"
+desc = '''§3.2.1, "such a matrix is unit lower triangular": `IsGaussTransformation M k →
+M.IsUnitLowerTriangular` (`Matrix.IsUnitLowerTriangular` of `Hessenberg`). ★'''
+deps = ["IsGaussTransformation", "Matrix.IsUnitLowerTriangular"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1'
+
+[[node]]
+id = "gaussTransformation_mul"
+kind = "theorem"
+desc = '''§3.2.2, the outer-product update: `gaussTransformation τ k * C = C - Matrix.vecMulVec τ (C k)`
+for `C : Matrix (Fin n) (Fin r) ℝ` (the book's `C - τ C(k,:)`); when `τ i = 0` for `i ≤ k`, only
+the rows below `k` change. ★'''
+deps = ["gaussTransformation"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.2'
+
+[[node]]
+id = "gaussTransformation_inv"
+kind = "theorem"
+desc = '''§3.2.5, "if `M_k = I_n - τ e_kᵀ` then its inverse is `I_n + τ e_kᵀ`": when `τ k = 0`,
+`gaussTransformation τ k * gaussTransformation (-τ) k = 1` (both orders), since
+`(τ e_kᵀ)² = τ (e_kᵀ τ) e_kᵀ = 0`; hence `(gaussTransformation τ k)⁻¹ = gaussTransformation (-τ) k`.
+★'''
+deps = ["gaussTransformation"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.5'
+
+[[node]]
+id = "gaussTransformation_gaussVector_eq_gaussTransform"
+kind = "theorem"
+desc = '''The book's `M_k` built from the `k`-th column of `M` is the backbone's Gaussian transformation:
+`gaussTransformation (gaussVector (fun i => M i k) k) k = Matrix.gaussTransform M k`
+(`Matrix.elimMultipliers_apply`), so that `M_k M = Matrix.elimStep M k`
+(`Matrix.gaussTransform_mul`). The bridge through which (3.2.3)–(3.2.7) are the backbone's
+statements. ★'''
+deps = ["gaussTransformation", "gaussVector", "Matrix.gaussTransform", "Matrix.gaussTransform_mul"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.1'
+
+[[node]]
+id = "gaussUpdate"
+kind = "definition"
+desc = '''§3.2.2–3.2.3, applying a computed Gauss transformation, D4: from the pivot column `v`
+(`v k ≠ 0` not checked) compute `τ̂_i ← rnd (v i / v k)` for `i > k`, then for `i > k` the rows
+`C(i,:) = C(i,:) - τ̂_i C(k,:)` entrywise, `rnd (C i j - rnd (τ̂ i * C k j))` ("the update can be
+computed row by row"); returns `(τ̂, Ĉ)`. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §3.2.2'
+
+[[node]]
+id = "gaussVector_rounding"
+kind = "theorem"
+desc = '''§3.2.3, "`τ̂ = τ + e`, `|e| ≤ u |τ|`": every run of `gaussUpdate fp.round v k C` returns
+`τ̂` with `|τ̂ i - gaussVector v k i| ≤ fp.u * |gaussVector v k i|` — one rounded division,
+`FloatingPoint.RoundingModel.abs_sub_le`; exact, no `O(u²)`. ★'''
+deps = ["gaussUpdate", "gaussVector", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.3'
+
+[[node]]
+id = "gaussUpdate_rounding"
+kind = "theorem"
+desc = '''§3.2.3, rounding of a Gauss transform update, rigorous: with `τ = gaussVector v k`,
+`v k ≠ 0`, every run of `gaussUpdate fp.round v k C` returns `Ĉ = gaussTransformation τ k * C + E`
+with `|E i j| ≤ u |C i j| + γ₃ |τ i| |C k j|` (`u < 1`, `3u < 1`), and `E i j = 0` for `i ≤ k`.
+Entry `(i, j)`: `ĉ = (c - τ (1+δ₀) c_k (1+δ₁))(1+δ₂)`, so `E = δ₂ c - τ c_k ((1+δ₀)(1+δ₁)(1+δ₂) - 1)`,
+bounded by `FloatingPoint.abs_prod_one_add_sub_one_le_gamma` with three factors; each `(1+δ)` from
+chapter 2's restatement (2.7.4) of the model, `GolubVanLoan.Chapter02.equation_2_7_4`. The book's
+`|E| ≤ 3u(|C| + |τ||C(k,:)|) + O(u²)` follows (`u ≤ 3u`, `γ₃ = 3u + O(u²)`). A direct scalar proof;
+no backbone predicate (no second consumer). ★★ (~60 lines)'''
+deps = ["gaussUpdate", "gaussTransformation_mul", "FloatingPoint.abs_prod_one_add_sub_one_le_gamma", "GolubVanLoan.Chapter02.equation_2_7_4", "SetM.mem_run_bind"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.3'
+
+[[node]]
+id = "gaussStage"
+kind = "definition"
+desc = '''(3.2.3), Gaussian elimination by Gauss transformations as a sequence of matrices: the book's
+`A^{(k+1)} = M_k A^{(k)}` (1-based, `A^{(1)} = A`) is `gaussStage A k = Matrix.gemStage A k`
+(0-based: the stage after `k` steps). A restatement (abbrev) of the backbone object, named by
+content (naming rule of `NumlibSurface/GolubVanLoan`); the display's proposition is
+`equation_3_2_3`; `pivot` below names its pivots. ★'''
+deps = ["Matrix.gemStage"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.3)'
+
+[[node]]
+id = "equation_3_2_3"
+kind = "theorem"
+desc = '''(3.2.3), the step: for `k < n`, `gaussStage A (k + 1) = gaussTransformation τ k * gaussStage A k`
+with `τ = gaussVector (fun i => gaussStage A k i k) k`, the multipliers `τ_i = a_ik^{(k)} / a_kk^{(k)}`;
+from `Matrix.gemStage_succ_eq_gaussTransform_mul` and
+`gaussTransformation_gaussVector_eq_gaussTransform`. ★'''
+deps = ["gaussStage", "Matrix.gemStage_succ_eq_gaussTransform_mul", "gaussTransformation_gaussVector_eq_gaussTransform"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.3)'
+
+[[node]]
+id = "pivot"
+kind = "definition"
+desc = '''§3.2.4, "these quantities are called pivots": `pivot A k = Matrix.gemStage A k k k`, the
+`(k+1)`-st pivot `a_{k+1,k+1}^{(k+1)}` in the book's 1-based notation. ★'''
+deps = ["Matrix.gemStage"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.4, Definition'
+
+[[node]]
+id = "equation_3_2_4"
+kind = "theorem"
+desc = '''(3.2.4)–(3.2.5): if the pivots `pivot A k`, `k + 1 < n`, are nonzero, then `A = L U` with
+`U = gaussStage A n` upper triangular and `L = M₀⁻¹ ⋯ M_{n-2}⁻¹` unit lower triangular:
+`Matrix.IsLU A (Matrix.gemLower A) (Matrix.gemStage A n)`; `Matrix.isLU_gemLower_gemStage`. ★'''
+deps = ["pivot", "gaussStage", "Matrix.isLU_gemLower_gemStage", "Matrix.gemLower"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.4)'
+
+[[node]]
+id = "equation_3_2_5"
+kind = "theorem"
+desc = '''(3.2.5) with §3.2.6: `L = M₁⁻¹ ⋯ M_{n-1}⁻¹ = I + ∑_k τ^{(k)} e_kᵀ`: the list product
+`((List.finRange n).map fun k => (gaussTransformation τ⁽ᵏ⁾ k)⁻¹).prod = Matrix.gemLower A`
+(no pivot hypothesis needed for the product identity itself); by induction with
+`Matrix.gemLowerStage_mul_gemStage`-type bookkeeping (`gemLowerStage (k+1) = gemLowerStage k *
+elimMul`) and `gaussTransformation_inv`. ★★ (~50 lines)'''
+deps = ["gaussTransformation_inv", "equation_3_2_3", "Matrix.gemLower", "Matrix.gemLowerStage", "Matrix.gemLowerStage_mul_gemStage"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.5)'
+
+[[node]]
+id = "theorem_3_2_1"
+kind = "theorem"
+desc = '''Theorem 3.2.1, existence: if `det (A(1:k,1:k)) ≠ 0` for `k = 1:n-1`
+(`∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`), there are unit lower triangular `L` and
+upper triangular `U` with `A = L U`;
+`Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix`. ★'''
+deps = ["Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix", "Matrix.strictLeadingPrincipalSubmatrix"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 3.2.1'
+
+[[node]]
+id = "theorem_3_2_1_unique"
+kind = "theorem"
+desc = '''Theorem 3.2.1, uniqueness: under the same hypothesis and `A` nonsingular, two LU
+factorizations coincide; `Matrix.IsLU.unique` (which needs only the leading-minor hypothesis —
+the book's extra "A nonsingular" is carried for faithfulness and unused;
+`set_option linter.unusedVariables false in`). ★'''
+deps = ["Matrix.IsLU.unique"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 3.2.1'
+
+[[node]]
+id = "theorem_3_2_1_det"
+kind = "theorem"
+desc = '''Theorem 3.2.1, determinant: if `A = L U` is an LU factorization then
+`det A = u₁₁ ⋯ u_nn`; `Matrix.IsLU.det_eq_prod_diag`. ★'''
+deps = ["Matrix.IsLU.det_eq_prod_diag"]
+source = 'Golub–Van Loan, Matrix Computations, Theorem 3.2.1'
+
+[[node]]
+id = "equation_3_2_6"
+kind = "theorem"
+desc = '''(3.2.6): if the first `k` pivots are nonzero, `det (A(1:k+1,1:k+1)) = ∏_{m ≤ k} a_mm^{(k)}` —
+`(A.leadingPrincipalSubmatrix k).det = ∏ i : {i // i ≤ k}, gaussStage A k i i`; from
+`Matrix.isLU_leadingPrincipalSubmatrix_gemStage` and `Matrix.IsLU.det_eq_prod_diag` (the pivots
+of stage `k` do not change later, `Matrix.gemStage_apply_of_le`). Hence "the `k`-th pivot is
+zero if `A(1:k,1:k)` is singular" (`Matrix.gemStage_pivots_ne_zero_iff`). ★'''
+deps = ["gaussStage", "Matrix.isLU_leadingPrincipalSubmatrix_gemStage", "Matrix.IsLU.det_eq_prod_diag", "Matrix.gemStage_apply_of_le", "Matrix.gemStage_pivots_ne_zero_iff"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.6)'
+
+[[node]]
+id = "equation_3_2_7"
+kind = "theorem"
+desc = '''(3.2.7): the `k`-th column of `L` below the diagonal holds the multipliers of step `k`:
+`Matrix.gemLower A i k = gaussVector (fun i => gaussStage A k i k) k i` for `k < i`
+(definition of `Matrix.gemLower`). ★'''
+deps = ["Matrix.gemLower", "gaussVector", "gaussStage"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.7)'
+
+[[node]]
+id = "outerProduct_decomposition"
+kind = "theorem"
+desc = '''§3.2.7: with `A = [α wᵀ; z B]` (first index split off, `Matrix.fromBlocks` over
+`Fin 1 ⊕ Fin (n-1)` reindexed by `finSumFinEquiv`) and `α ≠ 0`,
+`A = [1 0; z/α I] [1 0; 0 (B - z wᵀ/α)] [α wᵀ; 0 I]`, and if `B - z wᵀ/α = L₁ U₁` then
+`A = [1 0; z/α L₁] [α wᵀ; 0 U₁]` is an LU factorization. Backbone
+`Matrix.isLU_luLowerOfSchur_luUpperOfSchur` (the same bordering at the first index, on a general
+index type) and `Matrix.isBlockLU_fromBlocks_schurComplement`. ★★ (~50 lines, reindexing)'''
+deps = ["Matrix.isLU_luLowerOfSchur_luUpperOfSchur", "Matrix.isBlockLU_fromBlocks_schurComplement"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.7'
+
+[[node]]
+id = "packedL"
+kind = "definition"
+desc = '''The unit lower factor stored below the diagonal of a packed matrix (§3.2.8's overwriting
+convention): `packedL F = 1 + F.strictLower`. Also used for the packed outputs of Algorithms
+3.4.1–3.4.3. ★'''
+deps = ["Matrix.strictLower"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.8, Definition'
+
+[[node]]
+id = "packedU"
+kind = "definition"
+desc = '''The upper factor stored on and above the diagonal of a packed matrix: `packedU F = F - F.strictLower`. ★'''
+deps = ["Matrix.strictLower"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.8, Definition'
+
+[[node]]
+id = "algorithm_3_2_1"
+kind = "definition"
+desc = '''Algorithm 3.2.1 (outer product LU), D4, exactly as in `notes/gvl/ch03/proto/Shapes.lean`:
+`(List.finRange n).foldlM` over `k`, with `ρ = (List.finRange n).filter (k < ·)`: first
+`A(ρ,k) = A(ρ,k)/A(k,k)` (one rounded division per entry), then `A(ρ,ρ) = A(ρ,ρ) - A(ρ,k) A(k,ρ)`
+row by row (`i ∈ ρ`, then `j ∈ ρ`: `rnd (A i j - rnd (A i k * A k j))`) — the `kij` display of
+§3.2.9, which is the same set of roundings in another order. Returns the packed matrix. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.1'
+
+[[node]]
+id = "algorithm_3_2_1_rounds"
+kind = "theorem"
+desc = '''**The bridge of Algorithm 3.2.1**: every `F ∈ (algorithm_3_2_1 fp.round A).run` satisfies
+`FloatingPoint.RoundsLU fp A (packedL F) (packedU F)`, with no hypothesis (zero pivots give junk
+divisions that `RoundsLU` also allows). Invariant after the steps `k' < k`: rows and columns
+`< k` are finished (`û_ij` for `i ≤ j`, `i < k`: running difference of `a_ij` over `r < i`;
+`l̂_ij` for `j < i`, `j < k`: running difference over `r < j`, then the rounded division), and the
+trailing block `i, j ≥ k` holds the running difference of `a_ij` over `r < k` in increasing `r`.
+Step: `roundsSumFrom_append_singleton`. The column division and the trailing update write one
+entry per step, reading only the frozen pivot row and column: `SetM.mem_run_foldlM_update_of_nodup`
+over `ρ` (the division), then over the rows `i ∈ ρ` and within a row over `j ∈ ρ` (the update, reading
+`A i k`, `A k j` outside the written row). ★★★ (~250 lines)'''
+deps = ["algorithm_3_2_1", "packedL", "packedU", "FloatingPoint.RoundsLU", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.roundsSumFrom_append_singleton"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.1'
+
+[[node]]
+id = "algorithm_3_2_1_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.2.1: with `F = Id.run (algorithm_3_2_1 pure A)`,
+`packedL F = Matrix.luLower A` and `packedU F = Matrix.luUpper A` for every `A`; hence, when
+`A(1:k,1:k)` is nonsingular for `k = 1:n-1`, `Matrix.IsLU A (packedL F) (packedU F)`. Route: the
+pure collapse (one `simp only`, checked in `proto/Shapes.lean`), `algorithm_3_2_1_rounds` at
+`RoundingModel.exact`, `FloatingPoint.roundsLU_exact_iff`, `Matrix.isLU_luLower_luUpper`. ★'''
+deps = ["algorithm_3_2_1_rounds", "FloatingPoint.roundsLU_exact_iff", "Matrix.isLU_luLower_luUpper", "Matrix.luLower", "Matrix.luUpper"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.1'
+
+[[node]]
+id = "algorithm_3_2_2"
+kind = "definition"
+desc = '''Algorithm 3.2.2 (gaxpy LU), D4, with separate arrays `L` (initially `1`) and `U` (initially
+`0`) as the book writes it. For each column `j`: `ã = A(:,j)`; "solve `L(1:j-1,1:j-1) z = ã(1:j-1)`"
+by the column saxpy loops of Algorithm 3.1.3 **without the division by the unit diagonal** (§3.1.7:
+unit triangular systems "pose no difficulty"; a rounded division by `1` would add a rounding the
+relational model cannot know to be exact and break the match with `RoundsLU`); `U(1:j-1,j) = z`;
+`v(j:n) = ã(j:n) - L(j:n,1:j-1) z` as a gaxpy, i.e. running subtractions of `rnd (L i r * z r)`
+in increasing `r`; `U(j,j) = v(j)`; `L(j+1:n,j) = v(j+1:n)/v(j)` rounded. ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.2'
+
+[[node]]
+id = "algorithm_3_2_2_rounds"
+kind = "theorem"
+desc = '''The bridge of Algorithm 3.2.2: every run `(L̂, Û)` satisfies `FloatingPoint.RoundsLU fp A L̂ Û`
+(each `û_ij`, `i < j`, is the running difference of `a_ij` over `r < i` produced by the unit
+forward substitution; `û_jj` and `l̂_ij` come from the gaxpy over `r < j`, the latter divided).
+Invariant over the column loop: columns `< j` finished; the inner saxpy and gaxpy loops write
+one entry per step (`SetM.mem_run_foldlM_update_of_nodup`). ★★★ (~200 lines)'''
+deps = ["algorithm_3_2_2", "FloatingPoint.RoundsLU", "FloatingPoint.RoundingModel.round", "SetM.mem_run_bind", "SetM.mem_run_foldlM_update_of_nodup", "FloatingPoint.roundsSumFrom_append_singleton"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.2'
+
+[[node]]
+id = "algorithm_3_2_2_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.2.2: its `Id` output is `(Matrix.luLower A, Matrix.luUpper A)`,
+an LU factorization when `A(1:k,1:k)` is nonsingular for `k = 1:n-1`; as
+`algorithm_3_2_1_spec`. ★'''
+deps = ["algorithm_3_2_2_rounds", "FloatingPoint.roundsLU_exact_iff", "Matrix.isLU_luLower_luUpper"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.2'
+
+[[node]]
+id = "rectangularLU_exists"
+kind = "theorem"
+desc = '''§3.2.10: "the LU factorization of `A ∈ ℝ^{n×r}` is guaranteed to exist if `A(1:k,1:k)` is
+nonsingular for `k = 1:min{n, r}`": `∃ L U, Matrix.IsRectLU A L U` (with `p = min n r`);
+`Matrix.exists_isRectLU_of_forall_isUnit`. ★'''
+deps = ["Matrix.exists_isRectLU_of_forall_isUnit", "Matrix.IsRectLU"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.10'
+
+[[node]]
+id = "tallOuterProductLU"
+kind = "definition"
+desc = '''(3.2.8), the outer product LU of a tall `A : Matrix (Fin n) (Fin r) ℝ` (`r ≤ n`), D4 (a
+content-named program; its exact specification is `equation_3_2_8`): for
+`k : Fin r`, `A(ρ,k) = A(ρ,k)/A(k,k)` with `ρ = k+1:n`, and if `k + 1 < r`,
+`A(ρ,μ) = A(ρ,μ) - A(ρ,k) A(k,μ)` with `μ = k+1:r`, entrywise rounded as in Algorithm 3.2.1
+(`ρ`, `μ` index lists, convention 10). The factors are read off by the rectangular analogues of
+`packedL`/`packedU` (untracked helpers: `L` is `n × r` unit lower trapezoidal, `U` the upper
+`r × r` part). ★'''
+deps = ["algorithm_3_2_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
+
+[[node]]
+id = "equation_3_2_8"
+kind = "theorem"
+desc = '''(3.2.8) computes a rectangular LU factorization: if `A(1:k,1:k)` is nonsingular for `k = 1:r`,
+the unpacked `Id` output of `tallOuterProductLU` is a rectangular LU factorization,
+`Matrix.IsRectLU A L U`. Proof: embed `A` as the first `r` columns of the square `[A | [0; I]]` (the
+bordering of `Matrix.exists_isRectLU_of_forall_isUnit`) and compare with `algorithm_3_2_1_spec`: the
+first `r` steps of Algorithm 3.2.1 on the bordered matrix perform the operations of (3.2.8) on its
+first `r` columns (a simulation lemma at `Id`). ★★★ (~150 lines)'''
+deps = ["tallOuterProductLU", "algorithm_3_2_1_spec", "Matrix.exists_isRectLU_of_forall_isUnit", "Matrix.IsRectLU"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
+
+[[node]]
+id = "equation_3_2_9"
+kind = "theorem"
+desc = '''(3.2.9), the Schur complement: for `A = [A₁₁ A₁₂; A₂₁ A₂₂]` (`Matrix.fromBlocks` over
+`Fin r ⊕ Fin (n-r)`), a factorization `[A₁₁; A₂₁] = [L₁₁; L₂₁] U₁₁` with `L₁₁` unit lower and
+`U₁₁` nonsingular upper triangular, and `L₁₁ U₁₂ = A₁₂`: then
+`A = [L₁₁ 0; L₂₁ I] [I 0; 0 Ã] [U₁₁ U₁₂; 0 I]` with `Ã = A₂₂ - L₂₁ U₁₂ = A₂₂ - A₂₁ A₁₁⁻¹ A₁₂`.
+Block multiplication `Matrix.fromBlocks_multiply`; the second form of `Ã` because
+`A₁₁ = L₁₁ U₁₁` is invertible and `L₂₁ U₁₂ = A₂₁ U₁₁⁻¹ L₁₁⁻¹ A₁₂`. Mathlib
+`Matrix.fromBlocks_eq_of_invertible₁₁` is the same identity with `A₁₁` unfactored. ★★
+(~50 lines)'''
+deps = ["Matrix.isBlockLU_fromBlocks_schurComplement"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.9)'
+
+[[node]]
+id = "blockLU_of_schur"
+kind = "theorem"
+desc = '''§3.2.11, after (3.2.9): if moreover `Ã = L₂₂ U₂₂` is an LU factorization, then
+`A = [L₁₁ 0; L₂₁ L₂₂] [U₁₁ U₁₂; 0 U₂₂]` is the LU factorization of `A`
+(`Matrix.IsLU` after reindexing by `finSumFinEquiv`); the step of Algorithm 3.2.3's recursion.
+`Matrix.isBlockLU_fromBlocks_schurComplement`, `Matrix.isBlockLU_fromBlocks`. ★★ (~40 lines)'''
+deps = ["equation_3_2_9", "Matrix.isBlockLU_fromBlocks_schurComplement", "Matrix.isBlockLU_fromBlocks", "Matrix.IsLU"]
+source = 'Golub–Van Loan, Matrix Computations, §3.2.11'
+
+[[node]]
+id = "algorithm_3_2_3"
+kind = "definition"
+desc = '''Algorithm 3.2.3 (recursive block LU), D4: `algorithm_3_2_3 rnd (r : ℕ) (hr : 0 < r) :
+{n : ℕ} → Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)` by
+well-founded recursion on `n`: if `n ≤ r`, Algorithm 3.2.1 (unpacked); else (3.2.8) (`tallOuterProductLU`) on
+`A(:,1:r)`, "solve `L₁₁ U₁₂ = A(1:r,r+1:n)`" by Algorithm 3.1.3 column by column, `Ã = A₂₂ - L₂₁ U₁₂`
+entrywise (`rnd (a_ij - s)` with `s ← FloatingPoint.dotAccum rnd (List.finRange r) (L₂₁ i)
+(U₁₂ᵀ j) 0`, the dot-product form of the book's level-3 product, whose rounding the book does not
+analyse), the recursive call on `Ã : Matrix (Fin (n-r)) …`, and
+the block assembly through `Fin.castAdd`/`Fin.natAdd` and `Fin.cast (Nat.add_sub_cancel' _)`.
+The dependent-type bookkeeping of the split `Fin n ≃ Fin r ⊕ Fin (n-r)` is the risk; prototype it
+before writing the spec. ★★'''
+deps = ["algorithm_3_2_1", "tallOuterProductLU", "algorithm_3_1_3", "FloatingPoint.dotAccum"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.3'
+
+[[node]]
+id = "algorithm_3_2_3_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.2.3: if `A(1:k,1:k)` is nonsingular for `k = 1:n-1` (the
+book's precondition "A has an LU factorization" is weaker and does not prevent a zero pivot, e.g.
+`!![0, 1; 0, 1]`, on which the algorithm divides `0/0`; see the ch03 report's Doubts), the `Id`
+output `(L, U)` satisfies `Matrix.IsLU A L U`. Strong induction on `n`: `equation_3_2_8` for
+the block column, `algorithm_3_1_3_spec` for `U₁₂`, `blockLU_of_schur` for the assembly, and the
+strict leading principal submatrices of `Ã` nonsingular (they are Schur complements of leading
+blocks of `A`: `Matrix.det_fromBlocks₁₁`). ★★★ (~250 lines)'''
+deps = ["algorithm_3_2_3", "equation_3_2_8", "algorithm_3_1_3_spec", "blockLU_of_schur", "algorithm_3_2_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.3'
+
+[[node]]
+id = "algorithm_3_2_4"
+kind = "definition"
+desc = '''Algorithm 3.2.4 (nonrecursive block LU), D4, for `n = N r` ("for clarity" in the book):
+`A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ` read in `r × r` blocks through
+`finProdFinEquiv : Fin N × Fin r ≃ Fin (N * r)` (lexicographic, block index major). For `k : Fin N`:
+rectangular Gaussian elimination (3.2.8), `tallOuterProductLU`, on the block column `A(k:N, k)`; the multiple right-hand
+side solve `L_kk [U_{k,k+1} | … | U_kN] = [A_{k,k+1} | … | A_kN]` by Algorithm 3.1.3 per column;
+the level-3 updates `A_ij = A_ij - L_ik U_kj` for `i, j > k`, entrywise as in Algorithm 3.2.3.
+Returns the packed matrix. ★★'''
+deps = ["tallOuterProductLU", "algorithm_3_1_3", "algorithm_3_2_3"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'
+
+[[node]]
+id = "algorithm_3_2_4_spec"
+kind = "theorem"
+desc = '''Exact correctness of Algorithm 3.2.4: under the leading-minor hypothesis,
+`Matrix.IsLU A (packedL F) (packedU F)` for its `Id` output `F`. Invariant over `k`: the block
+rows and columns `< k` hold the finished factors and the trailing block the Schur complement of
+the leading `k r × k r` block (`equation_3_2_9`, `blockLU_of_schur`); equivalently, the output is
+`(luLower A, luUpper A)` by uniqueness (`theorem_3_2_1_unique`). ★★★ (~250 lines)'''
+deps = ["algorithm_3_2_4", "equation_3_2_8", "algorithm_3_1_3_spec", "equation_3_2_9", "blockLU_of_schur", "theorem_3_2_1_unique"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'

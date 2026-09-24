@@ -1,0 +1,252 @@
+namespace = "GolubVanLoan.Chapter10"
+desc = '''
+§10.4, large sparse SVD frameworks: the upper bidiagonal form (10.4.1) and its column equations
+(10.4.2)–(10.4.7), Algorithm 10.4.1 (Golub–Kahan) with (10.4.8)–(10.4.12), Ritz approximations
+(10.4.13)–(10.4.15), the tridiagonal–bidiagonal connection (10.4.16)–(10.4.17), the lower form (10.4.18)
+and Algorithm 10.4.2 (Paige–Saunders) with (10.4.19), and the deterministic identities of the CUR sketch
+(10.4.20)–(10.4.24). `A : Matrix (Fin m) (Fin n) ℝ`, vectors of `EuclideanSpace ℝ (Fin n)` and
+`EuclideanSpace ℝ (Fin m)`; the backbone is `Numlib/Krylov/Bidiagonalization` (namespace `GolubKahan`, one
+process for both forms: Paige–Saunders is Golub–Kahan of `Aᵀ`), instantiated with
+`toEuclideanLin A`, `toEuclideanLin Aᵀ` and `hadj` from `Matrix.toEuclideanLin_conjTranspose_inner_left`.
+The randomized sampling of §10.4.5 and its probabilistic bound are not formalized (chapter group); the
+4 × 3 permutation example of §10.4.3 is an illustration.
+'''
+
+[[node]]
+id = "equation_10_4_1"
+kind = "theorem"
+desc = '''(10.4.1): for `A ∈ ℝ^{m×n}`, `m ≥ n`, there are orthogonal `U`, `V` (`Matrix.orthogonalGroup`) with `Uᵀ A V = B`
+upper bidiagonal (`Matrix.IsUpperBidiagonal` of the leading `n × n` block, zero below); and `A`, `B` have the same
+singular values (`Matrix.singularValues` is invariant under orthogonal equivalence). Backbone
+`Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal` (QSS (5.57); over `ℝ` its unitary groups are the
+orthogonal groups); chapter 5's Algorithm 5.4.2 is the algorithm. ★'''
+deps = ["Matrix.IsUpperBidiagonal", "Matrix.singularValues", "Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.1)'
+
+[[node]]
+id = "equation_10_4_2"
+kind = "theorem"
+desc = '''(10.4.2): if `A V = U B` with `B` as in (10.4.1) (entries `α_k`, `β_k`), then `A v_k = α_k u_k + β_{k−1} u_{k−1}` for
+`k = 1 : n` (`β_0 u_0 = 0`): column `k` of `A V = U B`. ★'''
+deps = ["equation_10_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.2)'
+
+[[node]]
+id = "equation_10_4_3"
+kind = "theorem"
+desc = '''(10.4.3): with `Aᵀ U = V Bᵀ` (from (10.4.1), `U`, `V` orthogonal), `Aᵀ u_k = α_k v_k + β_k v_{k+1}` for `k = 1 : n`
+(`β_n v_{n+1} = 0`). Column `k` of `Aᵀ U = V Bᵀ`. ★'''
+deps = ["equation_10_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.3)'
+
+[[node]]
+id = "equation_10_4_6"
+kind = "theorem"
+desc = '''(10.4.6): in the setting of (10.4.2), `A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k)` for every `k ≤ n` (the book prints
+`A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)`, which does not typecheck; and it attributes the identity to `β_k = 0`,
+which only (10.4.7) needs — Doubts). ★'''
+deps = ["equation_10_4_2"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.6)'
+
+[[node]]
+id = "equation_10_4_7"
+kind = "theorem"
+desc = '''(10.4.7): if `β_k = 0`, `Aᵀ V(:, 1:k)`… read correctly, `Aᵀ U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)ᵀ` (the book's
+`Aᵀ V(:, 1:k) = U(:, 1:k) …` swaps `U` and `V`); and then `Aᵀ A V(:, 1:k) = V(:, 1:k) B(1:k,1:k)ᵀ B(1:k,1:k)`. From
+(10.4.3) at `j ≤ k` with `β_k = 0`, and `equation_10_4_6`. ★'''
+deps = ["equation_10_4_3", "equation_10_4_6"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.7)'
+
+[[node]]
+id = "singularValues_bidiag_subset"
+kind = "theorem"
+desc = '''§10.4.1, after (10.4.7): if `β_k = 0` then `σ(B(1:k, 1:k)) ⊆ σ(A)`: every singular value of `B(1:k,1:k)` is a singular
+value of `A`. `ran V(:, 1:k)` is `AᵀA`-invariant with `AᵀA` acting as `B_kᵀB_k` in the orthonormal basis, so the
+eigenvalues of `B_kᵀB_k` are eigenvalues of `AᵀA` (restriction to an invariant subspace), and singular values
+are square roots of those (`Matrix.sq_singularValues` for both). ★★'''
+deps = ["equation_10_4_7", "Matrix.singularValues", "Matrix.sq_singularValues"]
+source = 'Golub–Van Loan, Matrix Computations, §10.4.1, singular values of B(1:k,1:k)'
+
+[[node]]
+id = "algorithm_10_4_1"
+kind = "definition"
+desc = '''Algorithm 10.4.1 (Golub–Kahan bidiagonalization) as a D4 program with fuel: `k = 0, p_0 = v_c, β_0 = 1, u_0 = 0`; while
+`β_k ≠ 0`: `v_{k+1} = p_k/β_k`, `k = k+1`, `r_k = A v_k − β_{k−1} u_{k−1}`, `α_k = ‖r_k‖₂`, `u_k = r_k/α_k`,
+`p_k = Aᵀ u_k − α_k v_k`, `β_k = ‖p_k‖₂` (chapter 1's programs for `A v`, `Aᵀ u`, the dot products). State:
+`k`, `u v : ℕ → Fin _ → ℝ`, `alpha beta : ℕ → ℝ`, `p`. `noncomputable def`. ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.4.1'
+
+[[node]]
+id = "algorithm_10_4_1_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 10.4.1: for `A` of full column rank and `‖v_c‖ = 1`, with `g = grade (AᵀA) v_c`
+(`GolubKahan` on `toEuclideanLin A`, `toEuclideanLin Aᵀ`): the run stops after `min fuel g` passes, and for `j`
+below that, `v_{j+1} = GolubKahan.rightVec … j`, `u_{j+1} = GolubKahan.leftVec … j`, `α_{j+1} = GolubKahan.alpha … j > 0`,
+`β_{j+1} = GolubKahan.beta … j`. Full column rank makes `AᵀA` invertible, so no `α` vanishes before the last `β`
+(`GolubKahan.grade_comp_adjoint`). Invariant induction with `GolubKahan.apply_rightVec`,
+`GolubKahan.adjoint_apply_leftVec`, `GolubKahan.alpha_nonneg` (the algorithm's norms are the backbone's
+coefficients). ★★ (~200 lines)'''
+deps = ["algorithm_10_4_1", "GolubKahan.apply_rightVec", "GolubKahan.adjoint_apply_leftVec", "GolubKahan.alpha_nonneg", "GolubKahan.grade_comp_adjoint"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.4.1'
+
+[[node]]
+id = "equation_10_4_9"
+kind = "theorem"
+desc = '''(10.4.9): after the `k`-th pass (with `α_k > 0`), `A V_k = U_k B_k`, `B_k` of (10.4.8) = `GolubKahan.bidiag … k`.
+Backbone `GolubKahan.mul_rightMatrix` through `algorithm_10_4_1_spec`. ★'''
+deps = ["GolubKahan.mul_rightMatrix", "GolubKahan.bidiag", "algorithm_10_4_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.9)'
+
+[[node]]
+id = "equation_10_4_10"
+kind = "theorem"
+desc = '''(10.4.10): `Aᵀ U_k = V_k B_kᵀ + p_k e_kᵀ`, with `p_k = β_k v_{k+1}`. Backbone `GolubKahan.conjTranspose_mul_leftMatrix`
+(`V_{k+1} B̄_k` split into its first `k` columns and the last). ★'''
+deps = ["GolubKahan.conjTranspose_mul_leftMatrix", "algorithm_10_4_1_spec", "Krylov.lastVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.10)'
+
+[[node]]
+id = "equation_10_4_11"
+kind = "theorem"
+desc = '''(10.4.11): `span {v_1, …, v_k} = 𝒦(AᵀA, v_c, k)`. Backbone `GolubKahan.span_rightVec`. ★'''
+deps = ["GolubKahan.span_rightVec", "algorithm_10_4_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.11)'
+
+[[node]]
+id = "equation_10_4_12"
+kind = "theorem"
+desc = '''(10.4.12): `span {u_1, …, u_k} = 𝒦(AAᵀ, A v_c, k)`. Backbone `GolubKahan.span_leftVec`. ★'''
+deps = ["GolubKahan.span_leftVec", "algorithm_10_4_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.12)'
+
+[[node]]
+id = "bidiag_transpose_mul_bidiag"
+kind = "theorem"
+desc = '''§10.4.1, "the symmetric Lanczos convergence theory … can be applied": `B_kᵀ B_k = T_k(AᵀA, v_c)`, the Lanczos
+tridiagonal matrix of `AᵀA` from `v_c`, so the squared singular values of `B_k` are the Ritz values of `AᵀA` on
+`𝒦(AᵀA, v_c, k)` and Theorems 10.1.2–10.1.4 bound them. Backbone `GolubKahan.bidiag_conjTranspose_mul_bidiag`
+with `Lanczos.ritzValues_eq_eigenvalues_compression`. ★'''
+deps = ["GolubKahan.bidiag_conjTranspose_mul_bidiag", "Lanczos.ritzValues_eq_eigenvalues_compression", "theorem_10_1_4"]
+source = 'Golub–Van Loan, Matrix Computations, §10.4.1, the Lanczos connection'
+
+[[node]]
+id = "equation_10_4_14"
+kind = "theorem"
+desc = '''(10.4.14): with the SVD `F_kᵀ B_k G_k = Γ = diag(γ_1, …, γ_k)` (10.4.13) (chapter 2's SVD in the book's form, or
+`Matrix.exists_svd`), `Y_k = V_k G_k`, `Z_k = U_k F_k`: `A Y_k = Z_k Γ`, i.e. `A y_i = γ_i z_i`. From
+`equation_10_4_9`. ★'''
+deps = ["equation_10_4_9", "Matrix.exists_svd"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.14)'
+
+[[node]]
+id = "equation_10_4_15"
+kind = "theorem"
+desc = '''(10.4.15): `Aᵀ Z_k = Y_k Γ + p_k e_kᵀ F_k`, i.e. `Aᵀ z_i = γ_i y_i + [F_k]_{ki} p_k`. From `equation_10_4_10`. ★'''
+deps = ["equation_10_4_10", "equation_10_4_14"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.15)'
+
+[[node]]
+id = "isRitzPair_gram"
+kind = "theorem"
+desc = '''§10.4.2, after (10.4.15): `AᵀA y_i = γ_i² y_i + γ_i [F_k]_{ki} p_k` (the book prints `γ_i² z_i + [F_k]_{ki} p_k`), and
+`(γ_i², y_i)` is a Ritz pair of `AᵀA` with respect to `ran(V_k)` (the book writes `{γ_i, y_i}`): `Krylov.IsRitzPair`,
+the residual being a multiple of `p_k ⟂ ran V_k`. Doubts records both corrections. ★'''
+deps = ["equation_10_4_14", "equation_10_4_15", "Krylov.IsRitzPair"]
+source = 'Golub–Van Loan, Matrix Computations, §10.4.2, Ritz pairs of AᵀA'
+
+[[node]]
+id = "lanczos_jordanWielandt"
+kind = "theorem"
+desc = '''§10.4.3 with (10.4.16)–(10.4.17): Algorithm 10.1.1 applied to `C = [0 A; Aᵀ 0]` (`Matrix.fromBlocks 0 A Aᵀ 0`
+reindexed to `Fin (m + n)`) from `q₁ = [0; v_c]` produces, after `2k` steps (before breakdown), a `T_{2k}` with zero
+diagonal and subdiagonal `(α_1, β_1, α_2, β_2, …, β_{k−1}, α_k)`. Backbone `GolubKahan.lanczos_jordanWielandt`,
+which concerns the Hermitian dilation `LinearMap.hermitianDilation A Astar` on `WithLp 2 (E × F)` (domain
+factor first, `(x, y) ↦ (Astar y, A x)`) started at `(v, 0)`, with `Arnoldi.vec (2j) = (rightVec j, 0)` and
+`Arnoldi.vec (2j+1) = (0, leftVec j)`. The book's `C` on `F × E` from `[0; v_c]` is the same operator with the
+two factors exchanged, so the transport isometry `WithLp 2 (E × F) ≃ₗᵢ EuclideanSpace ℝ (Fin m ⊕ Fin n)` must
+swap the factors (`WithLp.prodComm`-type isometry composed with the two coordinate isometries); then
+`Arnoldi.vec_conj_linearIsometryEquiv` carries the Lanczos vectors across and the tridiagonal conclusion
+is unchanged. (Alternatively restate with `Matrix.hermitianDilation A = fromBlocks 0 Aᵀ A 0` on
+`Fin n ⊕ Fin m`, which needs no swap, and start from `[v_c; 0]`.) ★★'''
+deps = ["GolubKahan.lanczos_jordanWielandt", "LinearMap.hermitianDilation", "Arnoldi.vec_conj_linearIsometryEquiv", "algorithm_10_1_1_spec"]
+source = 'Golub–Van Loan, Matrix Computations, §10.4.3, the tridiagonal–bidiagonal connection'
+
+[[node]]
+id = "equation_10_4_18"
+kind = "theorem"
+desc = '''(10.4.18): for `A ∈ ℝ^{m×n}` with `m > n` there are orthogonal `U`, `V` with `Uᵀ A V = B` lower bidiagonal with
+`n + 1` nonzero rows (`α_1, …, α_n` on the diagonal, `β_2, …, β_{n+1}` below): `B.IsLowerBidiagonalRect` for the
+whole `m × n` `B` (the rectangular `Matrix.IsLowerBidiagonalRect`: entries only at `(i, i)` and `(i+1, i)`, so
+rows `≥ n + 1` vanish automatically). The transpose of the bidiagonalization of the wide `Aᵀ`: backbone
+`Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` holds for every shape (entries only at `(i, i)` and
+`(i, i+1)`), and for `Aᵀ` its transpose has entries only at `(i, i)` and `(i+1, i)`. ★'''
+deps = ["Matrix.IsLowerBidiagonalRect", "Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.18)'
+
+[[node]]
+id = "algorithm_10_4_2"
+kind = "definition"
+desc = '''Algorithm 10.4.2 (Paige–Saunders bidiagonalization) as a D4 program with fuel: `k = 1, p_0 = u_c, β_1 = 1, v_0 = 0`;
+while `β_k > 0`: `u_k = p_{k−1}/β_k`, `r_k = Aᵀ u_k − β_k v_{k−1}`, `α_k = ‖r_k‖₂`, `v_k = r_k/α_k`,
+`p_k = A v_k − α_k u_k`, `β_{k+1} = ‖p_k‖₂`, `k = k+1`. `u_c ∈ ℝ^m` (the book writes `ℝ^n`, Doubts). ★'''
+deps = ["FloatingPoint.dotAccum", "FloatingPoint.RoundingModel.round"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.4.2'
+
+[[node]]
+id = "algorithm_10_4_2_spec"
+kind = "theorem"
+desc = '''Exact semantics of Algorithm 10.4.2: it is Algorithm 10.4.1 for `Aᵀ` started from `u_c` — the Golub–Kahan
+process of the pair `(toEuclideanLin Aᵀ, toEuclideanLin A)`: `u_j = GolubKahan.rightVec Aᵀ A u_c (j−1)`,
+`v_j = GolubKahan.leftVec Aᵀ A u_c (j−1)`, `α_j = GolubKahan.alpha … (j−1)`, `β_{j+1} = GolubKahan.beta … (j−1)`
+for `j` up to the stopping index, which is `min fuel (grade (A Aᵀ) u_c)` when `α` does not vanish first. The
+book's hypothesis "`A(1:n, 1:n)` nonsingular" is not what the algorithm needs (Doubts); the spec assumes
+full column rank of `A` (so `α_j > 0` as long as `β_j > 0`). Same invariant induction as
+`algorithm_10_4_1_spec`. ★★'''
+deps = ["algorithm_10_4_2", "algorithm_10_4_1_spec", "GolubKahan.apply_rightVec", "GolubKahan.adjoint_apply_leftVec"]
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.4.2'
+
+[[node]]
+id = "equation_10_4_19"
+kind = "theorem"
+desc = '''(10.4.19): after `k` passes, `A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k) + p_k e_kᵀ` (`p_k = β_{k+1} u_{k+1}`), the lower
+bidiagonal relation `A V_k = U_{k+1} B̄_k`. Backbone `GolubKahan.conjTranspose_mul_leftMatrix` for `Aᵀ` (with
+`(Aᵀ)ᵀ = A`). ★'''
+deps = ["algorithm_10_4_2_spec", "GolubKahan.conjTranspose_mul_leftMatrix", "Krylov.lastVec"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.19)'
+
+[[node]]
+id = "equation_10_4_20"
+kind = "theorem"
+desc = '''(10.4.20): with the SVD `A = Z̃ Σ̃ Ỹᵀ` and `k < rank A`, `Ã_k = Z̃₁ Σ̃₁ Ỹ₁ᵀ = Z̃₁ Z̃₁ᵀ A` (from `Z̃₁ᵀ A = Σ̃₁ Ỹ₁ᵀ`), and `Ã_k`
+is a closest rank-`k` matrix to `A` in the 2-norm (chapter 2's Theorem 2.4.8, Eckart–Young) and in the Frobenius
+norm (chapter 2's `svdTruncation_isLeast_frobenius`, the Eckart–Young–Mirsky remark after Theorem 2.4.8; backbone
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le`). `Ã_k` is chapter 2's `Matrix.svdTruncation` of the SVD. ★'''
+deps = ["GolubVanLoan.Chapter02.theorem_2_4_8", "GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.20)'
+
+[[node]]
+id = "equation_10_4_22"
+kind = "theorem"
+desc = '''(10.4.22): for `C ∈ ℝ^{m×c}` with SVD `C = Z Σ Yᵀ = Z₁Σ₁Y₁ᵀ + Z₂Σ₂Y₂ᵀ` (`Y` orthogonal, `Σ₁ = Σ(1:k, 1:k)` invertible,
+`k ≤ rank C`) and `Φ = Y₁ Σ₁⁻² Y₁ᵀ`: `C Φ = Z₁ Σ₁⁻¹ Y₁ᵀ`. Uses `Y₁ᵀY₁ = I`, `Y₂ᵀY₁ = 0`. Surface algebra with
+`Matrix.fromBlocks`/`Matrix.submatrix`. ★'''
+deps = ["GolubVanLoan.Chapter02.theorem_2_4_1"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.22)'
+
+[[node]]
+id = "equation_10_4_23"
+kind = "theorem"
+desc = '''(10.4.23): with `row : Fin r → Fin m`, `D_R` diagonal, `R = D_R A(row, :)`, `Ψ = D_R C(row, :)`:
+`Ψᵀ R = (D_R (Z₁(row,:) Σ₁ Y₁ᵀ + Z₂(row,:) Σ₂ Y₂ᵀ))ᵀ D_R A(row, :)` — the book's left side is printed `Ψᵀ R`
+here but `Ψ R` in (10.4.24). Substitution of the SVD rows. ★'''
+deps = ["equation_10_4_22"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.23)'
+
+[[node]]
+id = "equation_10_4_24"
+kind = "theorem"
+desc = '''(10.4.24): with `U = Φ Ψᵀ`, `C U R = (C Φ)(Ψᵀ R) = Z₁ (D_R Z₁(row, :))ᵀ (D_R A(row, :))` — the book prints
+`(CΦ)(ΨR)` and omits the transpose (Doubts). From `equation_10_4_22`, `equation_10_4_23` and `Y₁ᵀY₂ = 0`. ★★'''
+deps = ["equation_10_4_22", "equation_10_4_23"]
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.24)'
