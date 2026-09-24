@@ -1,6 +1,4 @@
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.RingTheory.Polynomial.DegreeLT
+import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Approximation.Interpolation
 
 /-!
@@ -18,6 +16,12 @@ and multiplicities `m i`, the Hermite interpolant is the polynomial of degree le
 * `Hermite.interpolate x m f` is the interpolant itself, with `Hermite.degree_interpolate_lt`,
   `Hermite.eval_iterate_derivative_interpolate` and `Hermite.eq_interpolate` for its defining
   properties, and `Hermite.interpolate_zero_eq_lagrange` for the simple-node case.
+* `Hermite.nodeMultiset x m = ∑ i, (m i + 1) • {x i}` is the multiset of nodes. The multiset
+  Hermite interpolation over any field (`Hermite.interpolateJet`,
+  `Numlib/RingTheory/Polynomial/HermiteInterpolation`) and the jets and divided differences of
+  functions on a nontrivially normed field (`Hermite.taylorJet`, `Hermite.divDiff`,
+  `Numlib/Analysis/Calculus/HermiteInterpolation`) generalize this module's real interpolant, which
+  is their instance: `Hermite.interpolate_eq_interpolateJet`, `Hermite.nodal_eq_nodalMultiset`.
 
 ## Main results
 
@@ -26,18 +30,18 @@ and multiplicities `m i`, the Hermite interpolant is the polynomial of degree le
   order `N + 1` somewhere in `[a, b]`. It strengthens the
   `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of `Numlib/Approximation/Interpolation`, which is
   the case of simple zeros, and it is the only real work of the module.
-* `Hermite.isUnisolvent` is unique solvability of the Hermite problem. Injectivity of the problem is
-  that a nonzero polynomial cannot have more roots, counted with multiplicity, than its degree;
-  surjectivity is then a dimension count, the data space and the polynomials of degree less than `∑
-  (m i + 1)` having the same finite dimension.
+* `Hermite.isUnisolvent` is unique solvability of the Hermite problem, the instance of
+  `Hermite.existsUnique_isJetInterpolant` (the Chinese remainder theorem in `ℝ[X]`) at the multiset
+  of nodes.
 * `Hermite.exists_sub_interpolate_eq` is the error formula `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t -
   x i)^{m i + 1}`, proved from the Rolle theorem exactly as the Lagrange error formula is proved
   from the simple one.
 
 ## Implementation notes
 
-Divided-difference forms of the error and the Newton form of the interpolant are not developed:
-nothing downstream uses them.
+Divided-difference forms of the error and the Newton form of the interpolant are not developed
+here: the classical divided difference is `DividedDifference.newtonOn`
+(`Numlib/Approximation/NewtonForm`), and at repeated nodes `Hermite.divDiff`.
 -/
 
 open scoped Polynomial
@@ -306,77 +310,90 @@ section Unisolvent
 
 variable {n : ℕ}
 
-/-- **A polynomial of degree less than `∑ (m i + 1)` vanishing to order `m i + 1` at each node is
-zero.** This is the injectivity half of unisolvence: the nodal polynomial would divide it, and the
-nodal polynomial has degree `∑ (m i + 1)`. -/
-theorem eq_zero_of_forall_eval_iterate_derivative_eq_zero {M : ℕ} {x : Fin n → ℝ}
-    (hx : Function.Injective x) {m : Fin n → ℕ} (hM : ∑ i, (m i + 1) = M) {p : ℝ[X]}
-    (hdeg : p.degree < (M : WithBot ℕ))
-    (hzero : ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] p).eval (x i) = 0) : p = 0 := by
-  by_contra hp0
-  have hdvd : nodal x m ∣ p := by
-    rw [nodal]
-    refine Fintype.prod_dvd_of_coprime (fun i j hij => ?_) fun i => ?_
-    · exact ((Polynomial.pairwise_coprime_X_sub_C hx) hij).pow
-    · exact (Polynomial.le_rootMultiplicity_iff hp0).mp
-        (Polynomial.lt_rootMultiplicity_of_isRoot_iterate_derivative hp0 fun j hj => hzero i j hj)
-  have hnodal : (nodal x m).degree = (M : WithBot ℕ) := by
-    rw [Polynomial.degree_eq_natDegree (monic_nodal x m).ne_zero, natDegree_nodal, hM]
-  exact absurd (hnodal ▸ Polynomial.degree_le_of_dvd hdvd hp0) (not_le.mpr hdeg)
+/-- The nodes `x i` with multiplicities `m i + 1`, as a multiset: the bridge from this module's
+`Fin`-indexed data to the multiset Hermite interpolation of
+`Numlib/RingTheory/Polynomial/HermiteInterpolation`. -/
+noncomputable def nodeMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) : Multiset ℝ :=
+  ∑ i, (m i + 1) • {x i}
 
-/-- The Hermite data of a polynomial of degree less than `M`: the values at `x i` of its derivatives
-of order `j ≤ m i`, as a linear map. -/
-private noncomputable def dataMap (x : Fin n → ℝ) (m : Fin n → ℕ) (M : ℕ) :
-    Polynomial.degreeLT ℝ M →ₗ[ℝ] ((i : Fin n) × Fin (m i + 1)) → ℝ where
-  toFun p k := (Polynomial.derivative^[(k.2 : ℕ)] (p : ℝ[X])).eval (x k.1)
-  map_add' p q := by
-    funext k
-    simp
-  map_smul' c p := by
-    funext k
-    simp [Polynomial.iterate_derivative_smul]
+@[simp]
+theorem card_nodeMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) :
+    Multiset.card (nodeMultiset x m) = ∑ i, (m i + 1) := by
+  simp [nodeMultiset, Multiset.card_sum]
 
-private theorem dataMap_bijective {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x)
-    {m : Fin n → ℕ} (hM : ∑ i, (m i + 1) = M) : Function.Bijective (dataMap x m M) := by
-  have hinj : Function.Injective (dataMap x m M) := by
-    rw [injective_iff_map_eq_zero]
-    intro p hp
-    refine Subtype.ext (eq_zero_of_forall_eval_iterate_derivative_eq_zero hx hM
-      (Polynomial.mem_degreeLT.mp p.2) fun i j hj => ?_)
-    exact congrFun hp ⟨i, ⟨j, by omega⟩⟩
-  have hdim : Module.finrank ℝ (Polynomial.degreeLT ℝ M)
-      = Module.finrank ℝ (((i : Fin n) × Fin (m i + 1)) → ℝ) := by
-    rw [Module.finrank_eq_card_basis (Polynomial.degreeLT.basis ℝ M),
-      Module.finrank_fintype_fun_eq_card, Fintype.card_fin, Fintype.card_sigma]
-    simpa using hM.symm
-  exact ⟨hinj, (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).mp hinj⟩
+theorem mem_nodeMultiset {x : Fin n → ℝ} {m : Fin n → ℕ} {t : ℝ} :
+    t ∈ nodeMultiset x m ↔ ∃ i, x i = t := by
+  simp [nodeMultiset, Multiset.mem_sum, Multiset.mem_nsmul, eq_comm]
+
+theorem count_nodeMultiset {x : Fin n → ℝ} (hx : Function.Injective x) (m : Fin n → ℕ)
+    (i : Fin n) : (nodeMultiset x m).count (x i) = m i + 1 := by
+  classical
+  rw [nodeMultiset, Multiset.count_sum', Finset.sum_eq_single i]
+  · simp
+  · intro k _ hk
+    rw [Multiset.count_nsmul, Multiset.count_singleton, ite_eq_right (fun h => hk (hx h).symm),
+      mul_zero]
+  · simp
+
+/-- The nodal polynomial is the nodal polynomial of the multiset of nodes. -/
+theorem nodal_eq_nodalMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) :
+    nodal x m = Hermite.nodalMultiset (nodeMultiset x m) := by
+  simp [nodal, nodeMultiset, nodalMultiset_sum, nodalMultiset_nsmul]
+
+/-- Jet interpolation on the multiset of nodes, in this module's terms: the Taylor coefficients of
+order `j ≤ m i` at `x i` are prescribed. -/
+theorem isJetInterpolant_nodeMultiset_iff {x : Fin n → ℝ} (hx : Function.Injective x)
+    {m : Fin n → ℕ} {y : ℝ → ℕ → ℝ} {p : ℝ[X]} :
+    IsJetInterpolant (nodeMultiset x m) y p ↔
+      ∀ i, ∀ j ≤ m i, (Polynomial.taylor (x i) p).coeff j = y (x i) j := by
+  classical
+  rw [isJetInterpolant_iff_coeff_taylor]
+  constructor
+  · intro h i j hj
+    exact h (x i) (mem_nodeMultiset.mpr ⟨i, rfl⟩) j (by rw [count_nodeMultiset hx]; omega)
+  · intro h t ht j hj
+    obtain ⟨i, rfl⟩ := mem_nodeMultiset.mp ht
+    rw [count_nodeMultiset hx] at hj
+    exact h i j (by omega)
 
 /-- **Unisolvence of the Hermite interpolation problem**: for distinct nodes `x i` with
 multiplicities `m i` summing to `M`, and prescribed values `y i j`, there is exactly one polynomial
 of degree less than `M` whose `j`-th derivative takes the value `y i j` at `x i` for every `j ≤ m
 i`.
 
-Injectivity is `eq_zero_of_forall_eval_iterate_derivative_eq_zero`; existence is then the equality
-of dimensions of the polynomials of degree less than `M` and of the data.
+This is the instance of `Hermite.existsUnique_isJetInterpolant` at the multiset
+`nodeMultiset x m`, with the jets `y i j / j!`.
 
 Reference: [han2009theoretical], §3.2.2 and (3.2.6). -/
 theorem isUnisolvent {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) {m : Fin n → ℕ}
     (hM : ∑ i, (m i + 1) = M) (y : Fin n → ℕ → ℝ) :
     ∃! p : ℝ[X], p.degree < (M : WithBot ℕ) ∧
       ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] p).eval (x i) = y i j := by
-  obtain ⟨q, hq⟩ := (dataMap_bijective hx hM).2 fun k => y k.1 k.2
-  refine ⟨(q : ℝ[X]), ⟨Polynomial.mem_degreeLT.mp q.2, fun i j hj => ?_⟩, ?_⟩
-  · exact congrFun hq ⟨i, ⟨j, by omega⟩⟩
-  · rintro p ⟨hpdeg, hpval⟩
-    have hqval : ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] (q : ℝ[X])).eval (x i) = y i j :=
-      fun i j hj => congrFun hq ⟨i, ⟨j, by omega⟩⟩
-    have hsub : p - (q : ℝ[X]) = 0 := by
-      refine eq_zero_of_forall_eval_iterate_derivative_eq_zero hx hM
-        (lt_of_le_of_lt (Polynomial.degree_sub_le _ _)
-          (max_lt hpdeg (Polynomial.mem_degreeLT.mp q.2))) fun i j hj => ?_
-      rw [Polynomial.iterate_derivative_sub, Polynomial.eval_sub, hpval i j hj, hqval i j hj]
-      simp
-    exact sub_eq_zero.mp hsub
+  classical
+  set yJ : ℝ → ℕ → ℝ := fun t j =>
+    if h : ∃ i, x i = t then y h.choose j / j.factorial else 0
+  have hyJ : ∀ i j, yJ (x i) j = y i j / j.factorial := fun i j => by
+    have h : ∃ k, x k = x i := ⟨i, rfl⟩
+    simp only [yJ, h, ↓reduceDIte, hx h.choose_spec]
+  have hiff : ∀ p : ℝ[X], IsJetInterpolant (nodeMultiset x m) yJ p ↔
+      ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] p).eval (x i) = y i j := fun p => by
+    rw [isJetInterpolant_nodeMultiset_iff hx]
+    refine forall_congr' fun i => forall₂_congr fun j _ => ?_
+    have hj : (j.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr j.factorial_ne_zero
+    rw [coeff_taylor_eq_eval_iterate_derivative_div, hyJ, div_left_inj' hj]
+  obtain ⟨p, ⟨hpdeg, hp⟩, huniq⟩ := existsUnique_isJetInterpolant (nodeMultiset x m) yJ
+  rw [card_nodeMultiset, hM] at hpdeg
+  refine ⟨p, ⟨hpdeg, (hiff p).mp hp⟩, fun q ⟨hqdeg, hq⟩ => huniq q ⟨?_, (hiff q).mpr hq⟩⟩
+  rwa [card_nodeMultiset, hM]
+
+/-- **A polynomial of degree less than `∑ (m i + 1)` vanishing to order `m i + 1` at each node is
+zero**: the uniqueness half of `Hermite.isUnisolvent`, at zero data. -/
+theorem eq_zero_of_forall_eval_iterate_derivative_eq_zero {M : ℕ} {x : Fin n → ℝ}
+    (hx : Function.Injective x) {m : Fin n → ℕ} (hM : ∑ i, (m i + 1) = M) {p : ℝ[X]}
+    (hdeg : p.degree < (M : WithBot ℕ))
+    (hzero : ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] p).eval (x i) = 0) : p = 0 :=
+  (isUnisolvent hx hM fun _ _ => 0).unique ⟨hdeg, hzero⟩
+    ⟨by simp, fun i j _ => by simp⟩
 
 end Unisolvent
 
@@ -389,36 +406,38 @@ variable {n : ℕ} {x : Fin n → ℝ} {m : Fin n → ℕ} {f : ℝ → ℝ}
 open scoped Classical in
 /-- **The Hermite interpolant** of `f` at the nodes `x` with multiplicities `m`: the unique
 polynomial of degree less than `∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree at `x i`
-with those of `f`. For `m = 0` it is `Lagrange.interpolate`
-(`Hermite.interpolate_zero_eq_lagrange`).
+with those of `f`. It is the multiset interpolant `Hermite.interpolateJet` of the jets of `f` at
+the multiset of nodes (`Hermite.interpolate_eq_interpolateJet`), and for `m = 0` it is
+`Lagrange.interpolate` (`Hermite.interpolate_zero_eq_lagrange`).
 
 It is junk (namely `0`) when the nodes are not distinct, in which case the interpolation problem is
 not solvable in general.
 
 Reference: [han2009theoretical], §3.2.2. -/
 noncomputable def interpolate (x : Fin n → ℝ) (m : Fin n → ℕ) (f : ℝ → ℝ) : ℝ[X] :=
-  if h : Function.Injective x then
-    (isUnisolvent h (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)).choose
-  else 0
+  if Function.Injective x then interpolateJet (nodeMultiset x m) (taylorJet f) else 0
 
-private theorem interpolate_spec (hx : Function.Injective x) (m : Fin n → ℕ) (f : ℝ → ℝ) :
-    (interpolate x m f).degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ) ∧
-      ∀ i, ∀ j ≤ m i,
-        (Polynomial.derivative^[j] (interpolate x m f)).eval (x i) = iteratedDeriv j f (x i) := by
+/-- **The real Hermite interpolant is the multiset one**: at distinct nodes `x i` with
+multiplicities `m i + 1`, `Hermite.interpolate x m f` interpolates the jets of `f` on the multiset
+`∑ i, (m i + 1) • {x i}`. -/
+theorem interpolate_eq_interpolateJet (hx : Function.Injective x) (m : Fin n → ℕ) (f : ℝ → ℝ) :
+    interpolate x m f = interpolateJet (nodeMultiset x m) (taylorJet f) := by
   classical
-  rw [interpolate, dite_eq_left hx]
-  exact (isUnisolvent hx (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)).choose_spec.1
+  rw [interpolate, ite_eq_left_iff.mpr fun h => absurd hx h]
 
 /-- The Hermite interpolant has degree less than the number of interpolation conditions. -/
 theorem degree_interpolate_lt (hx : Function.Injective x) (m : Fin n → ℕ) (f : ℝ → ℝ) :
-    (interpolate x m f).degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ) :=
-  (interpolate_spec hx m f).1
+    (interpolate x m f).degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ) := by
+  rw [interpolate_eq_interpolateJet hx, ← card_nodeMultiset]
+  exact degree_interpolateJet_lt _ _
 
 /-- The Hermite interpolant matches `f` and its first `m i` derivatives at the node `x i`. -/
 theorem eval_iterate_derivative_interpolate (hx : Function.Injective x) (i : Fin n) {j : ℕ}
     (hj : j ≤ m i) :
-    (Polynomial.derivative^[j] (interpolate x m f)).eval (x i) = iteratedDeriv j f (x i) :=
-  (interpolate_spec hx m f).2 i j hj
+    (Polynomial.derivative^[j] (interpolate x m f)).eval (x i) = iteratedDeriv j f (x i) := by
+  rw [interpolate_eq_interpolateJet hx]
+  exact isJetInterpolant_taylorJet_iff.mp (isJetInterpolant_interpolateJet _ _) (x i)
+    (mem_nodeMultiset.mpr ⟨i, rfl⟩) j (by rw [count_nodeMultiset hx]; omega)
 
 /-- The Hermite interpolant is the only polynomial of degree less than `∑ (m i + 1)` matching `f`
 and its derivatives at the nodes. -/
@@ -426,10 +445,10 @@ theorem eq_interpolate (hx : Function.Injective x) {p : ℝ[X]}
     (hdeg : p.degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ))
     (hval : ∀ i, ∀ j ≤ m i,
       (Polynomial.derivative^[j] p).eval (x i) = iteratedDeriv j f (x i)) :
-    p = interpolate x m f := by
-  have h := isUnisolvent hx (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)
-  exact (h.unique ⟨hdeg, hval⟩ ⟨degree_interpolate_lt hx m f,
-    fun i j hj => eval_iterate_derivative_interpolate hx i hj⟩)
+    p = interpolate x m f :=
+  (isUnisolvent hx (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)).unique
+    ⟨hdeg, hval⟩
+    ⟨degree_interpolate_lt hx m f, fun _ _ hj => eval_iterate_derivative_interpolate hx _ hj⟩
 
 /-- **At simple nodes the Hermite interpolant is the Lagrange interpolant.** -/
 theorem interpolate_zero_eq_lagrange (hx : Function.Injective x) (f : ℝ → ℝ) :

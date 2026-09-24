@@ -1,109 +1,29 @@
-desc = '''
-The analytic theory of the primary functional calculus `pfc`: power series ([golub2013matrix]
-Theorem 9.1.2 and Lemma 9.1.1), agreement with Mathlib's `NormedSpace.exp` and `NormedSpace.log`,
-the composition rule for analytic functions, the derivative of `t ↦ pfc f (t • a)`, and the Taylor
-truncation bound ([golub2013matrix] Theorem 9.2.3, without the book's factor `n`). Everything is
-proved from the spectral decomposition `pfc_eq_sum_spectralIdempotent` of
-`PrimaryFunctionalCalculus/Basic`: a statement about `pfc f a` becomes finitely many statements about
-the scalar jets `f⁽ʲ⁾(λ)/j!`, `j < m_λ`. No norm on `A` is needed for the series statements (`HasSum`
-in any Hausdorff topological algebra with continuous operations, e.g. the Pi topology of
-`Matrix n n ℂ`); the analytic input is Mathlib's power-series calculus (`HasFPowerSeriesOnBall`,
-`hasSum_iteratedFDeriv`, `AnalyticAt.analyticOrderAt` API). Realness of `pfc f` on real matrices is
-the matrix lemma `Matrix.pfc_map_conj` of `Numlib/Analysis/Matrix/Function/Basic`.
-'''
-
 [[node]]
 id = "hasSum_pfc"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 9.1.2, general form: let `f` have the power series `p` on the ball
-`Metric.eball z₀ r` (`HasFPowerSeriesOnBall f p z₀ r`, `𝕜 = ℂ` or any `RCLike`), let `a` be integral with
-split `minpoly` and every eigenvalue in that ball; then `HasSum (fun k => p.coeff k • (a -
-algebraMap 𝕜 A z₀) ^ k) (pfc f a)` in any `[TopologicalSpace A] [IsTopologicalRing A]
-[ContinuousSMul 𝕜 A] [T2Space A]`; the partial-sum form `tendsto_sum_pfc` (prototype statement in
-`notes/gvl/ch09/proto/Function.lean`) follows by `HasSum.tendsto_sum_nat`. Proof: by the binomial
-theorem for the commuting pair `(λ - z₀)`, `N_λ = a - λ` and nilpotency,
-`(a - z₀)^k E_λ = ∑_{j<m_λ} C(k,j) (λ - z₀)^{k-j} N_λ^j E_λ`, so the series is the finite
-combination `∑_λ ∑_{j<m_λ} (∑_k p.coeff k C(k,j)(λ - z₀)^{k-j}) N_λ^j E_λ`, and each scalar series
-sums to `f⁽ʲ⁾(λ)/j!` (derivatives of a power series inside its ball:
-`HasFPowerSeriesOnBall.hasSum_iteratedFDeriv`, `Mathlib/Analysis/Calculus/FDeriv/Analytic`, read for
-`iteratedDeriv`); conclude with `pfc_eq_sum_spectralIdempotent`. Lemma 9.1.1 is the case of a
-Jordan block. ★★ (~250 lines)'''
-deps = ["pfc_eq_sum_spectralIdempotent", "spectralIdempotent_mul_spectralIdempotent"]
 
 [[node]]
 id = "pfc_exp_eq_normedSpace_exp"
-kind = "theorem"
-desc = '''Agreement with Mathlib's exponential: `pfc Complex.exp a = NormedSpace.exp a` for integral
-`a` (split automatically) in a Hausdorff topological `ℂ`-algebra with continuous operations; in
-particular `Matrix.pfc_exp : pfc Complex.exp A = NormedSpace.exp A` for `A : Matrix n n ℂ` with its
-Pi topology, no norm needed (prototype statement in `notes/gvl/ch09/proto/Function.lean`). Proof:
-`hasSum_pfc` at `z₀ = 0`, `r = ⊤` with `Complex.exp`'s series (`NormedSpace.exp_eq_tsum`,
-`Complex.exp_eq_exp_ℂ`, `NormedSpace.expSeries`), and `HasSum.tsum_eq`. Also the real form: for
-`A : Matrix n n ℝ`, `(NormedSpace.exp A).map Complex.ofReal = pfc Complex.exp (A.map Complex.ofReal)`
-(`NormedSpace.map_exp` for the continuous ring hom `Complex.ofRealHom`). ★'''
-deps = ["hasSum_pfc"]
 
 [[node]]
 id = "pfc_log_eq_normedSpace_log"
-kind = "theorem"
-desc = '''Agreement with Mathlib's series logarithm near `1`: if every eigenvalue satisfies `‖λ - 1‖ <
-1` then `pfc Complex.log a = NormedSpace.log a` (`Mathlib/Analysis/Normed/Algebra/Logarithm`,
-`NormedSpace.log_eq_tsum`), by `hasSum_pfc` at `z₀ = 1`, `r = 1` with the scalar series
-`Complex.hasSum_taylorSeries_log` (`Mathlib/Analysis/SpecialFunctions/Complex/LogBounds`; the
-`log (1 + z)` series; check the exact name next to `hasSum_taylorSeries_neg_log`). ★'''
-deps = ["hasSum_pfc"]
 
 [[node]]
 id = "pfc_comp"
-kind = "theorem"
-desc = '''The composition rule (Higham FOM Theorem 1.17): over `ℂ`, if `f` is analytic at every eigenvalue
-of `a` and `g` is analytic at every `f λ`, then `pfc (g ∘ f) a = pfc g (pfc f a)` (prototype statement
-in `notes/gvl/ch09/proto/Function.lean`). Proof: write `b = pfc f a = ∑_λ (f λ + M_λ) E_λ` with
-`M_λ = ∑_{1≤j<m_λ} f_j N_λ^j E_λ` nilpotent; the spectral data of `b` are `μ = f λ` with idempotent
-`∑_{f λ = μ} E_λ` (`spectrum_pfc`, uniqueness of the spectral decomposition); so `pfc g b = ∑_λ
-∑_k g_k(f λ) M_λ^k E_λ`, and the claim is that the jets of `g ∘ f` at `λ` to order `m_λ` are the
-truncated composition of the jets — Faà di Bruno in its formal form. For analytic functions this is
-`HasFPowerSeriesAt.comp` (`Mathlib/Analysis/Analytic/Composition`): the power series of `g ∘ f` at
-`λ` is `q.comp p`, and its first `m_λ` coefficients depend only on the first `m_λ` of `p` and `q`;
-equivalently, with `Asymptotics`: `g (f (λ + h)) = P(h) + O(h^{m_λ})` for the truncated composite
-polynomial `P`, and an analytic function's Taylor coefficients are determined by such an expansion
-(`HasFPowerSeriesAt.eq_formalMultilinearSeries`). Consumers: `exp (principalLog A) = A`,
-`principalSqrt A ^ 2 = A` via `pfc_mul`, `log (A^{1/2}) = ½ log A`, `cos (2A) = 2 cos² A - I`. ★★★
-(~350 lines)'''
-deps = ["pfc_eq_sum_spectralIdempotent", "spectralIdempotent_mul_spectralIdempotent", "spectrum_pfc", "pfc_congr"]
 
 [[node]]
 id = "hasDerivAt_pfc_smul"
-kind = "theorem"
-desc = '''The derivative along a ray: for `f` analytic on an open `U ⊆ 𝕜` containing `t • spectrum a`,
-`HasDerivAt (fun s : 𝕜 => pfc f (s • a)) (a * pfc (deriv f) (t • a)) t` (for `t ≠ 0` directly;
-at `t = 0` too, `pfc f (0 • a) = f 0 • 1`), in a finite-dimensional normed `𝕜`-algebra (or any
-topological algebra with continuous operations). Proof: for `s ≠ 0` the spectral idempotents of `s •
-a` are those of `a` at `s λ` and the index is unchanged, so `pfc f (s • a) = ∑_λ ∑_{j<m_λ}
-f⁽ʲ⁾(sλ) sʲ/j! N_λ^j E_λ` is an explicit smooth function of `s`; differentiate termwise and
-reassemble `a * pfc f' (s • a) = ∑ (λ + N_λ) f⁽ʲ⁺¹⁾(sλ) sʲ/j! N_λ^j E_λ` (index shift); at `s = 0`
-use the power series of `f` at `0` (`hasSum_pfc`) if `U` contains a disk, or continuity. Iterated:
-`iteratedDeriv k (fun s => pfc f (s • a)) t = a ^ k * pfc (iteratedDeriv k f) (t • a)`. Consumers:
-Theorem 9.2.3 (Taylor remainder), (9.2.7) (Simpson), the variation-of-constants arguments of §9.3. ★★
-(~200 lines)'''
-deps = ["pfc_eq_sum_spectralIdempotent", "hasSum_pfc"]
 
 [[node]]
 id = "norm_pfc_sub_sum_le"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 9.2.3 without the factor `n`: in a finite-dimensional complete normed
-`ℂ`-algebra `A` (for matrices: the scoped L2 instance), let `f` have the power series `∑ α_k z^k` on
-`Metric.ball 0 r` (`HasFPowerSeriesOnBall f p 0 r`, `α_k = p.coeff k`) and `spectrum ℂ a ⊆ ball 0 r`.
-Then `‖pfc f a - ∑ k ∈ range (q + 1), α_k • a ^ k‖ ≤ (q + 1)!⁻¹ * ⨆ s ∈ Icc 0 1, ‖a ^ (q + 1) *
-pfc (iteratedDeriv (q + 1) f) (s • a)‖` (state with an explicit bound `M` on the supremum). Proof:
-`G s = pfc f (s • a)` on `[0, 1]`, `G⁽ᵏ⁾ s = a^k pfc f⁽ᵏ⁾ (s • a)` (`hasDerivAt_pfc_smul`; the
-spectrum of `s • a` stays in the ball since it is centred at `0`), `G⁽ᵏ⁾ 0 = k! α_k a^k`
-(`pfc_const`), and Taylor's theorem with the integral remainder, `taylor_integral_remainder`
-(`Mathlib/Analysis/Calculus/Taylor`, vector-valued `f : ℝ → F` into a complete space): `G 1 -
-∑_{k≤q} G⁽ᵏ⁾(0)/k! = ∫ t in 0..1, ((1 - t)^q / q!) • G⁽q+1⁾ t`, bounded by
-`intervalIntegral.norm_integral_le_integral_norm` and `∫₀¹ (1 - t)^q/q! dt = 1/(q+1)!`. Do **not**
-use `taylor_mean_remainder_bound`: for vector-valued `f` it gives `C (x - a)^{q+1}/q!`, a factor
-`q + 1` weaker than the book's `1/(q+1)!`. The vector-valued route is also why the book's
-mean-value form with points `ε_ij` (false for complex-valued entries; see its (9.2.4)) is not
-needed. ★★ (~200 lines)'''
-deps = ["hasDerivAt_pfc_smul", "pfc_polynomial", "hasSum_pfc"]
+
+[[node]]
+id = "tendsto_sum_pfc"
+
+[[node]]
+id = "HasFPowerSeriesOnBall.hasSum_taylorJet"
+
+[[node]]
+id = "iteratedDeriv_comp_congr"
+
+[[node]]
+id = "pfc_zero_smul"

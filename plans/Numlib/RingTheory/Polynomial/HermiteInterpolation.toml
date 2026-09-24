@@ -1,99 +1,34 @@
 namespace = "Hermite"
-desc = '''
-Hermite interpolation on a multiset of nodes over any field — the algebraic half of Hermite
-interpolation, beside Mathlib's `Lagrange` (`Mathlib/LinearAlgebra/Lagrange`). A node of
-multiplicity `m` in the multiset `s` carries a jet `y x : ℕ → K` of `m` Taylor coefficients;
-`Hermite.jetPoly y x m = ∑_{j<m} y j (X - x)ʲ` is its Taylor polynomial, `Hermite.nodalMultiset s =
-∏_{x ∈ s} (X - x)` the nodal polynomial, and `Hermite.IsJetInterpolant s y p` the divisibility
-statement `(X - x)^{count x s} ∣ p - jetPoly (y x) x (count x s)` for every node (no
-characteristic assumption). Unisolvence by the Chinese remainder theorem, the interpolant
-`Hermite.interpolateJet s y` of degree `< card s`, the congruence of two interpolants modulo the
-nodal polynomial, restriction to a sub-multiset, and linearity in the data.
 
-Consumers: the analytic jets and divided differences of `Numlib/Analysis/Calculus/HermiteInterpolation`
-(`Hermite.taylorJet`, `Hermite.divDiff`), and through them the primary functional calculus
-`pfc` of `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus` ([golub2013matrix] Chapter 9)
-and the real Hermite interpolation of `Numlib/Approximation/Hermite`
-(`Hermite.interpolate_eq_interpolateJet`). Placed here at the Golub–Van Loan review: it was staged in
-`Numlib/Approximation/Hermite`, a numerical layer below which the functional calculus must not
-sit. Upstreaming candidate (natural home `Mathlib/LinearAlgebra/Lagrange` or a sibling file; Mathlib's
-`Polynomial.hermite` is the unrelated probabilists' Hermite polynomial, so the namespace `Hermite`
-would need renaming there). Imports Mathlib only. Order: `jetPoly`, `nodalMultiset`,
-`IsJetInterpolant` (★), unisolvence (★★, ~120), the rest (★).
-'''
-
-[[node]]  # staged by ch09
+[[node]]
 id = "jetPoly"
-kind = "definition"
-desc = '''The Taylor polynomial of a jet: for `y : ℕ → K`, `x : K`, `m : ℕ`, `jetPoly y x m = ∑ j ∈
-Finset.range m, C (y j) * (X - C x) ^ j` over any `[Field K]` (in fact any commutative ring). With
-`Polynomial.taylor` it is the truncation of `taylor x` read backwards: `(taylor x (jetPoly y x
-m)).coeff j = if j < m then y j else 0`. ★'''
-deps = []
 
-[[node]]  # staged by ch09
+[[node]]
 id = "nodalMultiset"
-kind = "definition"
-desc = '''The nodal polynomial of a multiset of nodes, `nodalMultiset s = (s.map fun x => X - C x).prod`,
-monic of degree `card s`, equal to `∏ x ∈ s.toFinset, (X - C x) ^ s.count x`
-(`Multiset.prod_map` over `Multiset.toFinset_sum_count_nsmul_eq`). Companion of the module's
-`Hermite.nodal` (indexed by `Fin n` with multiplicities `m i + 1`); a split polynomial `p` over a
-field is `C p.leadingCoeff * nodalMultiset p.roots` (Mathlib `Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C`). ★'''
-deps = []
 
-[[node]]  # staged by ch09
+[[node]]
 id = "IsJetInterpolant"
-kind = "definition"
-desc = '''`IsJetInterpolant s y p : Prop := ∀ x ∈ s, (X - C x) ^ s.count x ∣ p - jetPoly (y x) x (s.count x)`
-for `s : Multiset K`, `y : K → ℕ → K` (the jet at each node), `p : K[X]`, over `[Field K]
-[DecidableEq K]`. The divisibility form needs no characteristic hypothesis; in characteristic `0`
-it is equivalent to agreement of derivatives (`Hermite.isJetInterpolant_taylorJet_iff`).
-Prototype: `notes/gvl/ch09/proto/Function.lean`. ★'''
-deps = ["Hermite.jetPoly"]
 
-[[node]]  # staged by ch09
+[[node]]
 id = "existsUnique_isJetInterpolant"
-kind = "theorem"
-desc = '''Unisolvence of Hermite interpolation on a multiset: `∃! p : K[X], p.degree < card s ∧
-IsJetInterpolant s y p`. Existence by the Chinese remainder theorem for the pairwise coprime ideals
-`span {(X - C x) ^ count x s}`, `x ∈ s.toFinset` (`Ideal.quotientInfRingEquivPiQuotient`, coprimality
-from `Polynomial.pairwise_coprime_X_sub_C` and `IsCoprime.pow`), then reduce `%ₘ nodalMultiset s`
-(`Polynomial.modByMonic_add_div`); uniqueness because the difference of two interpolants is
-divisible by every `(X - C x) ^ count x s`, hence by their product `nodalMultiset s`
-(`Fintype.prod_dvd_of_coprime` / `Finset.prod_dvd_of_coprime`), of degree `card s`. ★★ (~120 lines)'''
-deps = ["Hermite.IsJetInterpolant", "Hermite.nodalMultiset"]
 
-[[node]]  # staged by ch09
+[[node]]
 id = "interpolateJet"
-kind = "definition"
-desc = '''The Hermite interpolant of jet data `y` on the multiset `s`: the unique polynomial of degree
-`< card s` with `IsJetInterpolant s y p`, chosen from `Hermite.existsUnique_isJetInterpolant`. ★'''
-deps = ["Hermite.existsUnique_isJetInterpolant"]
 
-[[node]]  # staged by ch09
+[[node]]
 id = "isJetInterpolant_interpolateJet"
-kind = "theorem"
-desc = '''`(interpolateJet s y).degree < card s` and `IsJetInterpolant s y (interpolateJet s y)`, with
-the uniqueness form `Hermite.eq_interpolateJet`: any `p` of degree `< card s` interpolating is
-`interpolateJet s y`. ★'''
-deps = ["Hermite.interpolateJet"]
 
-[[node]]  # staged by ch09
-id = "nodalMultiset_dvd_sub"
-kind = "theorem"
-desc = '''Two interpolants of the same jets on `s` differ by a multiple of the nodal polynomial:
-`IsJetInterpolant s y p → IsJetInterpolant s y q → nodalMultiset s ∣ p - q`; and restriction,
-`s ≤ t → IsJetInterpolant t y p → IsJetInterpolant s y p` (`Hermite.IsJetInterpolant.of_le`,
-since `(X - C x)^{count x s}` divides `(X - C x)^{count x t}` and the two `jetPoly`s differ by a
-multiple of the smaller power). These are the two facts behind `pfc_eq_aeval_of_isJetInterpolant`. ★'''
-deps = ["Hermite.IsJetInterpolant", "Hermite.nodalMultiset"]
+[[node]]
+id = "IsJetInterpolant.nodalMultiset_dvd_sub"
 
-[[node]]  # staged by ch09
+[[node]]
 id = "interpolateJet_congr"
-kind = "theorem"
-desc = '''The interpolant depends only on the jets it uses: if `y x j = y' x j` for `x ∈ s` and `j <
-count x s`, then `interpolateJet s y = interpolateJet s y'` (the `jetPoly`s agree). Also linearity,
-`Hermite.interpolateJet_add`, `Hermite.interpolateJet_smul` (by uniqueness), so that `y ↦
-interpolateJet s y` is a linear map from the finite-dimensional data space — the continuity used in
-the power-series theorem of `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/Analytic`. ★'''
-deps = ["Hermite.isJetInterpolant_interpolateJet"]
+
+[[node]]
+id = "IsJetInterpolant.of_le"
+
+[[node]]
+id = "eq_interpolateJet"
+
+[[node]]
+id = "interpolateJet_cons_sub"

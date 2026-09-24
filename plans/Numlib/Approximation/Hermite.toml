@@ -1,13 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Approximation.Hermite` is the group description;
-# when the Golub–Van Loan node staged below is formalized, extend it as follows.
-# (ch09, placed at the GVL review) add a sentence: "The multiset Hermite interpolation over any field
-# (`Hermite.interpolateJet`, `Numlib/RingTheory/Polynomial/HermiteInterpolation`) and the jets and
-# divided differences of functions on a nontrivially normed field (`Hermite.taylorJet`,
-# `Hermite.divDiff`, `Numlib/Analysis/Calculus/HermiteInterpolation`) generalize this module's real
-# interpolant: `Hermite.interpolate_eq_interpolateJet`." (The field-level nodes were first staged in
-# this module; they moved down so that the primary functional calculus does not import the numerical
-# `Approximation` layer. Restating `nodal`, `isUnisolvent`, `interpolate` over a field through the
-# bridge is refactor task R13.)
 namespace = "Hermite"
 
 [[node]]
@@ -29,12 +19,8 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2.2"
 [[node]]
 id = "nodal"
 
-[[node]]  # staged by ch09
+[[node]]
 id = "interpolate_eq_interpolateJet"
-kind = "theorem"
-desc = '''The module's real interpolant is the multiset one: for injective `x : Fin n → ℝ`,
-`interpolate x m f = interpolateJet (∑ i, (m i + 1) • {x i}) (taylorJet f)`, by
-`Hermite.eq_interpolate` and `Hermite.isJetInterpolant_taylorJet_iff`. Makes the old API an instance
-of the new (D9 refactor proposal: restate `nodal`, `isUnisolvent`, `interpolate` over `[Field K]`
-through this). ★★'''
-deps = ["Hermite.isJetInterpolant_taylorJet_iff", "Hermite.isJetInterpolant_interpolateJet", "Hermite.interpolate", "Hermite.isUnisolvent"]
+
+[[node]]
+id = "nodal_eq_nodalMultiset"

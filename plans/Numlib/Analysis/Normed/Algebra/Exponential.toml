@@ -1,118 +1,29 @@
-desc = '''
-The exponential of a Banach algebra beyond Mathlib's `NormedSpace.exp`: the variation-of-constants
-identity `e^{t(a+e)} - e^{ta} = ∫₀ᵗ e^{(t-s)a} e e^{s(a+e)} ds` with its norm bound, the ODE
-characterization of `t ↦ e^{ta}` as the unique solution of `X' = a X`, `X(0) = 1`, the Fréchet
-derivative `NormedSpace.expFrechet a t` of `a ↦ e^{ta}` (as an integral), Van Loan's condition number
-`ν(a, t) = ‖L(a, t)‖ ‖a‖ / ‖e^{ta}‖` built on it, its lower bound `ν(a, t) ≥ t ‖a‖` and the equality
-criterion `‖e^{sa}‖ = e^{cs}` on `[0, t]` ⇒ `ν(a, t) = t ‖a‖`, and the Laplace-transform resolvent bound
-`‖(z - a)⁻¹‖ ≤ M / Re z` from `‖e^{ta}‖ ≤ M` — in a complete normed `ℝ`-algebra (`[NormedRing 𝔸]
-[NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]`; complex matrices are an `ℝ`-algebra through
-`NormedAlgebra.complexToReal`), the resolvent bound in a complex one.
-
-Consumers: the perturbation theory of the matrix exponential in
-`Numlib/Analysis/Matrix/Function/Exp` ([golub2013matrix] §9.3.2–9.3.3: the Schur bound, the relative
-bound, the normal case) and the pseudospectral lower bound ([golub2013matrix] (9.3.6)). Planned by
-Golub–Van Loan chapter 9 inside `Function/Exp` and placed here at the consolidation (the ch09 report's
-refactor proposal R2) and the review (`expFrechet`, the equality criterion, the resolvent bound). The
-Fréchet-derivative definition makes the condition number the standard one of Higham, *Functions of
-Matrices*, §3.1 (`κ_exp(a) = ‖L_exp(a)‖ ‖a‖ / ‖e^a‖`), so that a later Higham surface can reuse it.
-Upstreaming candidate (natural home `Mathlib/Analysis/Normed/Algebra/Exponential`, whose name this
-module mirrors). Order: `exp_smul_add_sub_exp_smul` (★★, ~100), `eq_exp_smul_of_hasDerivAt` (★★,
-~60), `expFrechet` and `hasFDerivAt_exp_smul` (★★, ~120), `expCondNumber` and its two bounds (★,
-~80), the resolvent bound (★★, ~180).
-'''
-
 [[node]]
 id = "NormedSpace.exp_smul_add_sub_exp_smul"
-kind = "theorem"
-desc = '''The variation-of-constants identity: for `a e : 𝔸` and `t : ℝ`, `exp (t • (a + e)) - exp (t •
-a) = ∫ s in 0..t, exp ((t - s) • a) * e * exp (s • (a + e))` (prototype statement in
-`notes/gvl/ch09/proto/Exp.lean`). The integrand is `d/ds [exp ((t - s) • a) * exp (s • (a + e))]`
-(`hasDerivAt_exp_smul_const'`, `Mathlib/Analysis/SpecialFunctions/Exponential`, and the product
-rule `HasDerivAt.mul` in a noncommutative algebra: `-a e^{…} e^{…} + e^{…} (a + e) e^{…}`, the
-`a`-terms cancelling because `a` commutes with `exp ((t - s) • a)`), then
-`intervalIntegral.integral_eq_sub_of_hasDerivAt`. With the norm bound
-`NormedSpace.norm_exp_smul_add_sub_exp_smul_le`: `‖…‖ ≤ ‖e‖ ∫₀ᵗ ‖e^{a(t-s)}‖ ‖e^{(a+e)s}‖ ds` for
-`t ≥ 0` (`intervalIntegral.norm_integral_le_integral_norm`). ★★ (~100 lines)'''
-deps = []
+
+[[node]]
+id = "NormedSpace.norm_exp_smul_add_sub_exp_smul_le"
 
 [[node]]
 id = "NormedSpace.eq_exp_smul_of_hasDerivAt"
-kind = "theorem"
-desc = '''`e^{At}` is the unique solution of `X' = A X`, `X(0) = I` ([golub2013matrix] §9.3.2): if `X : ℝ
-→ 𝔸` satisfies `HasDerivAt X (a * X t) t` for all `t` and `X 0 = 1`, then `X t = exp (t • a)`; and
-`exp (t • a)` is a solution (`hasDerivAt_exp_smul_const'`). Uniqueness: `d/dt (exp (-t • a) * X t)
-= 0` (`is_const_of_deriv_eq_zero`), or `ODE_solution_unique` (`Mathlib/Analysis/ODE/Gronwall`) with
-the Lipschitz field `x ↦ a * x`. ★★'''
-deps = []
 
 [[node]]
 id = "NormedSpace.expFrechet"
-kind = "definition"
-desc = '''The Fréchet derivative of `a ↦ exp (t • a)`: `expFrechet a t : 𝔸 →L[ℝ] 𝔸`, `e ↦ ∫ s in 0..t,
-exp ((t - s) • a) * e * exp (s • a)`. Linear in `e` (`intervalIntegral.integral_add`, `integral_smul`)
-and bounded by `|t| · sup_{s ∈ [0,t]} ‖e^{(t-s)a}‖ ‖e^{sa}‖` (continuous integrand on a compact
-interval), so `LinearMap.mkContinuous`. Its value at `e = 1` is `t • exp (t • a)` (the integrand is
-constant: `exp_add_of_commute`). [golub2013matrix] §9.3.2 (the first-order term of the
-variation-of-constants identity); Higham, *Functions of Matrices*, (10.15). ★'''
-deps = []
 
 [[node]]
 id = "NormedSpace.hasFDerivAt_exp_smul"
-kind = "theorem"
-desc = '''`HasFDerivAt (fun a => exp (t • a)) (expFrechet a t) a` in a complete normed `ℝ`-algebra.
-Proof from the variation-of-constants identity: `exp (t • (a + e)) - exp (t • a) - expFrechet a t e
-= ∫ s in 0..t, exp ((t - s) • a) * e * (exp (s • (a + e)) - exp (s • a))`, and by the identity
-again `‖exp (s • (a + e)) - exp (s • a)‖ ≤ C ‖e‖` uniformly for `s ∈ [0, t]`, `‖e‖ ≤ 1` (the norm
-bound of `NormedSpace.exp_smul_add_sub_exp_smul` with `‖exp (r • b)‖ ≤ Real.exp (|r| ‖b‖)`,
-`NormedSpace.norm_exp_le`-type bound), so the remainder is `O(‖e‖²)`
-(`HasFDerivAt.of_isLittleO`/`hasFDerivAt_iff_isLittleO_nhds_zero`). ★★ (~100 lines)'''
-deps = ["NormedSpace.expFrechet", "NormedSpace.exp_smul_add_sub_exp_smul"]
 
 [[node]]
 id = "NormedSpace.expCondNumber"
-kind = "definition"
-desc = '''Van Loan's condition number of the exponential ([golub2013matrix] §9.3.2): `expCondNumber a t
-= ‖expFrechet a t‖ * ‖a‖ / ‖exp (t • a)‖` (operator norm of the Fréchet derivative). The book's
-`max_{‖E‖ ≤ 1} ‖∫₀ᵗ e^{A(t-s)} E e^{As} ds‖` is this operator norm (`ContinuousLinearMap.opNorm`
-as the supremum over the unit ball, `ContinuousLinearMap.sSup_unit_ball_eq_norm`-type lemma, in a
-nontrivial algebra). Defined through `expFrechet` (review decision) so that it is the relative
-condition number of `a ↦ e^{ta}` in the sense of Higham, *Functions of Matrices*, §3.1. ★'''
-deps = ["NormedSpace.expFrechet"]
 
 [[node]]
 id = "NormedSpace.mul_norm_le_expCondNumber"
-kind = "theorem"
-desc = '''`t ‖a‖ ≤ expCondNumber a t` for `t ≥ 0` in a normed algebra with `‖1‖ = 1` (`NormOneClass`):
-`‖expFrechet a t‖ ≥ ‖expFrechet a t 1‖ / ‖1‖ = t ‖exp (t • a)‖` (`ContinuousLinearMap.le_opNorm`, the
-value at `1` from `NormedSpace.expFrechet`), then divide (if `exp (t • a) = 0` the algebra is
-trivial, excluded by `NormOneClass`). [golub2013matrix] §9.3.2, "`ν(A,t) ≥ t‖A‖₂`". ★'''
-deps = ["NormedSpace.expCondNumber", "NormedSpace.expFrechet"]
 
 [[node]]
 id = "NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq"
-kind = "theorem"
-desc = '''The equality case of Van Loan's condition number: in a complete normed `ℝ`-algebra with
-`NormOneClass`, if `0 ≤ t` and `‖exp (s • a)‖ = Real.exp (c * s)` for all `s ∈ Set.Icc 0 t` (some
-`c : ℝ`), then `expCondNumber a t = t * ‖a‖`. `≥` is `NormedSpace.mul_norm_le_expCondNumber`; `≤`:
-`‖expFrechet a t e‖ ≤ ∫₀ᵗ ‖e^{(t-s)a}‖ ‖e‖ ‖e^{sa}‖ ds = ∫₀ᵗ e^{c(t-s)} e^{cs} ‖e‖ ds = t e^{ct} ‖e‖`
-(`intervalIntegral.norm_integral_le_integral_norm`, `norm_mul_le`), so `‖expFrechet a t‖ ≤ t e^{ct} =
-t ‖exp (t • a)‖` (`ContinuousLinearMap.opNorm_le_bound`). The hypothesis says the numerical abscissa
-equals the growth rate `c` on `[0, t]`; it holds for normal matrices with `c` the spectral abscissa
-([golub2013matrix] (9.3.4), `Matrix.expCondNumber_eq_of_isStarNormal`), and also for some non-normal
-ones (`[1] ⊕ [[0,1],[0,0]]`), which is why [golub2013matrix] §9.3.2's "iff `A` is normal" fails. ★
-(~40 lines)'''
-deps = ["NormedSpace.expCondNumber", "NormedSpace.expFrechet", "NormedSpace.mul_norm_le_expCondNumber"]
 
 [[node]]
 id = "norm_resolvent_le_of_norm_exp_smul_le"
-kind = "theorem"
-desc = '''The Laplace-transform resolvent bound behind [golub2013matrix] (9.3.6): in a complex Banach algebra
-(`[NormedRing 𝔸] [NormedAlgebra ℂ 𝔸] [CompleteSpace 𝔸] [NormOneClass 𝔸]`), if `‖exp (t • a)‖ ≤ M` for
-all real `t ≥ 0` and `0 < z.re`, then `z ∉ spectrum ℂ a` and `‖Ring.inverse (algebraMap ℂ 𝔸 z -
-a)‖ ≤ M / z.re`. Proof: `R(T) = ∫₀ᵀ e^{-zt} e^{at} dt` satisfies `R(T) (z - a) = 1 - e^{-zT} e^{aT}`
-(FTC, `hasDerivAt_exp_smul_const'`) and `‖e^{-zT}e^{aT}‖ ≤ M e^{-T re z} → 0`, so `R(T)` converges
-(dominated by `M e^{-t re z}`, `intervalIntegral` → improper integral `MeasureTheory.integral_Ioi_of_hasDerivAt_of_tendsto`-type
-lemmas) to a two-sided inverse of `z - a` with norm `≤ M / re z`. Hence, with `Λ_ε(A) = {z :
-‖(z - A)⁻¹‖₂ ≥ 1/ε}`, `sup_{t>0} ‖e^{At}‖₂ ≥ α_ε(A)/ε` (the surface form). ★★ (~180 lines)'''
-deps = []
+
+[[node]]
+id = "NormedSpace.expFrechet_apply_of_commute"

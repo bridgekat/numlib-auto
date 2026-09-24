@@ -62,6 +62,10 @@ sum and the Leibniz formula, and `prefixNodal v k = ∏_{j < k} (X - x_j)` is th
 * `continuous_confluent` and `exists_confluent_eq_iteratedDeriv_div` — for `f` of class `C^m` the
   confluent divided difference is continuous on the nondecreasing tuples, and it is again
   `f^{(m)}(ξ)/m!` for a `ξ` between the extreme nodes.
+* `newtonOn_eq_divDiff` and `confluent_eq_divDiff` — both are instances of the divided difference
+  `Hermite.divDiff f s` at a multiset of possibly repeated nodes
+  (`Numlib/Analysis/Calculus/HermiteInterpolation`), the leading coefficient of the Hermite
+  interpolant: at distinct nodes, and at a nondecreasing tuple respectively.
 
 ## References
 
@@ -497,6 +501,33 @@ theorem newtonOn_inv_sub (hvs : Set.InjOn v s) (hne : s.Nonempty) {z : F}
       linear_combination hprod
 
 end Finset
+
+/-! ### The divided difference at a multiset of nodes -/
+
+section Multiset
+
+variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [DecidableEq 𝕜] {ι : Type*} [DecidableEq ι]
+
+/-- **At distinct nodes the multiset divided difference is the classical one**: for injective
+nodes, `newtonOn s v f` is `Hermite.divDiff f` at the multiset of nodes `v i`, `i ∈ s`. Both are the
+coefficient of `X^{#s - 1}` of the interpolant of degree `< #s`, and at simple nodes jet
+interpolation is Lagrange interpolation. -/
+theorem newtonOn_eq_divDiff {s : Finset ι} {v : ι → 𝕜} (hvs : Set.InjOn v s) (f : 𝕜 → 𝕜) :
+    newtonOn s v f = Hermite.divDiff f (s.val.map v) := by
+  have hnd : (s.val.map v).Nodup := s.nodup.map_on fun i hi j hj h => hvs hi hj h
+  have hcard : Multiset.card (s.val.map v) = s.card := by simp
+  have hP : Lagrange.interpolate s v (fun i => f (v i))
+      = Hermite.interpolateJet (s.val.map v) (Hermite.taylorJet f) := by
+    refine Hermite.eq_interpolateJet (by rw [hcard]; exact Lagrange.degree_interpolate_lt _ hvs)
+      (Hermite.isJetInterpolant_iff_coeff_taylor.mpr fun z hz j hj => ?_)
+    rw [Multiset.count_eq_one_of_mem hnd hz, Nat.lt_one_iff] at hj
+    subst hj
+    obtain ⟨i, hi, rfl⟩ := Multiset.mem_map.mp hz
+    rw [taylor_coeff_zero, Hermite.taylorJet_zero,
+      Lagrange.eval_interpolate_at_node _ hvs (Finset.mem_def.mpr hi)]
+  rw [newtonOn_eq_coeff hvs, hP, Hermite.divDiff, hcard]
+
+end Multiset
 
 /-! ### The `Fin`-indexed statements -/
 
@@ -941,6 +972,58 @@ theorem confluent_const (f : ℝ → ℝ) (x : ℝ) :
   cases m with
   | zero => simp
   | succ m => rw [confluent_succ, ite_eq_left rfl]
+
+private theorem univ_val_map_eq_ofFn {n : ℕ} (v : Fin n → ℝ) :
+    (Finset.univ : Finset (Fin n)).val.map v = (List.ofFn v : Multiset ℝ) := by
+  rw [Fin.univ_def, List.ofFn_eq_map]
+  rfl
+
+/-- The multiset of the last `m + 1` nodes of `m + 2`. -/
+private theorem univ_val_map_tail (v : Fin (m + 2) → ℝ) :
+    (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.tail v)
+      = v (Fin.last _) ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
+  rw [univ_val_map_eq_ofFn, List.ofFn_succ', List.concat_eq_append,
+    Multiset.coe_eq_coe.mpr (List.perm_append_singleton _ _), ← Multiset.cons_coe]
+  simp only [Fin.tail, Fin.succ_last, Fin.succ_castSucc]
+
+/-- The multiset of the first `m + 1` nodes of `m + 2`. -/
+private theorem univ_val_map_init (v : Fin (m + 2) → ℝ) :
+    (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.init v)
+      = v 0 ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
+  rw [univ_val_map_eq_ofFn, List.ofFn_succ]
+  simp only [Fin.init, Fin.castSucc_zero]
+  rfl
+
+/-- **Confluent divided differences are the multiset divided differences**: at a nondecreasing
+tuple of nodes, `confluent f v` is `Hermite.divDiff f` at the multiset of the nodes. No smoothness
+of `f` is needed, since both sides read only the jets of `f` at the nodes; the two recursions are
+`Hermite.divDiff_replicate` and `Hermite.divDiff_cons_cons`. -/
+theorem confluent_eq_divDiff (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Monotone v) :
+    confluent f v = Hermite.divDiff f ((Finset.univ : Finset (Fin (m + 1))).val.map v) := by
+  induction m with
+  | zero =>
+    rw [confluent_zero, univ_val_map_eq_ofFn, List.ofFn_succ, List.ofFn_zero]
+    exact (Hermite.divDiff_singleton f (v 0)).symm
+  | succ m ih =>
+    have hmap : (Finset.univ : Finset (Fin (m + 2))).val.map v
+        = v (Fin.last _) ::ₘ v 0 ::ₘ
+          (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
+      rw [univ_val_map_eq_ofFn, List.ofFn_succ, ← Multiset.cons_coe]
+      change v 0 ::ₘ (List.ofFn (Fin.tail v) : Multiset ℝ) = _
+      rw [← univ_val_map_eq_ofFn, univ_val_map_tail, Multiset.cons_swap]
+    rw [confluent_succ]
+    split_ifs with h
+    · have hc : ∀ i, v i = v 0 := fun i =>
+        le_antisymm (h ▸ hv (Fin.le_last i)) (hv (Fin.zero_le i))
+      have hrep : (Finset.univ : Finset (Fin (m + 2))).val.map v
+          = Multiset.replicate (m + 2) (v 0) := by
+        refine Multiset.eq_replicate.mpr ⟨by simp, fun b hb => ?_⟩
+        obtain ⟨i, -, rfl⟩ := Multiset.mem_map.mp hb
+        exact hc i
+      rw [hrep, Hermite.divDiff_replicate, Hermite.taylorJet]
+    · rw [ih (v := Fin.tail v) (hv.comp Fin.strictMono_succ.monotone),
+        ih (v := Fin.init v) (hv.comp Fin.strictMono_castSucc.monotone), univ_val_map_tail,
+        univ_val_map_init, hmap, Hermite.divDiff_cons_cons f (Ne.symm h)]
 
 /-- Continuity of `confluent f` at a nondecreasing tuple whose extreme nodes differ. There the
 recursion of `confluent` takes its second branch on a whole neighbourhood — `v 0 ≠ v (last)` is an

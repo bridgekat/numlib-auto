@@ -1,8 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Analysis.Normed.Algebra.SpectralRadius` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch09) add the spectral abscissa `spectralAbscissa a = sup {Re λ : λ ∈ σ(a)}` (the half-plane
-# analogue of the spectral radius; [golub2013matrix] (9.3.3)) to the module doc, with
-# `re_le_spectralAbscissa` and the attained maximum for a finite nonempty spectrum.
 [[node]]
 id = "exists_norm_pow_le_of_spectralRadius_lt"
 
@@ -80,23 +75,14 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
 id = "spectralRadius_eq_iSup_diff_singleton_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
 
-[[node]]  # staged by ch09
+[[node]]
 id = "spectralAbscissa"
-kind = "definition"
-desc = '''The spectral abscissa of an element of a complex algebra, `spectralAbscissa a : ℝ := sSup
-((fun z : ℂ => z.re) '' spectrum ℂ a)` (junk `sSup ∅ = 0` for an empty spectrum; in a nontrivial
-complex Banach algebra, and for matrices of positive size, the spectrum is nonempty and compact, so
-the supremum is attained). [golub2013matrix] (9.3.3), `α(A) = max {Re λ : λ ∈ λ(A)}`; the name
-parallels Mathlib's `spectralRadius`. Searched: `abscissa` occurs in Mathlib only for L-series and
-in Numlib only for the Laplace transform. Prototype: `notes/gvl/ch09/proto/Exp.lean`. ★'''
-deps = []
 
-[[node]]  # staged by ch09
+[[node]]
 id = "re_le_spectralAbscissa"
-kind = "theorem"
-desc = '''`λ ∈ spectrum ℂ a → λ.re ≤ spectralAbscissa a` when the spectrum is bounded
-(`spectrum.isBounded` in a complex Banach algebra; `Set.Finite` for an algebraic element), and
-`exists_mem_spectrum_re_eq_spectralAbscissa`: for a nonempty compact (e.g. finite) spectrum some
-eigenvalue attains it (`IsCompact.exists_isMaxOn` / `Set.Finite.exists_maximal_wrt`). Also
-`spectralAbscissa_le_spectralRadius`-type bound `spectralAbscissa a ≤ ‖a‖` (`spectrum.norm_le_norm_of_mem`). ★'''
-deps = ["spectralAbscissa"]
+
+[[node]]
+id = "exists_mem_spectrum_re_eq_spectralAbscissa"
+
+[[node]]
+id = "spectralAbscissa_le_norm"

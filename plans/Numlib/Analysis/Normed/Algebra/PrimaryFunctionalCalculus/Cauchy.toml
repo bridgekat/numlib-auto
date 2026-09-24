@@ -1,27 +1,8 @@
-desc = '''
-The Cauchy integral representation of the primary functional calculus ([golub2013matrix] (9.2.8)),
-for contours that are circles — the only contours Mathlib integrates over (`circleIntegral`,
-`Mathlib/MeasureTheory/Integral/CircleIntegral`); a general closed contour enclosing the spectrum is
-not formalized (it needs winding numbers). In a complete normed `ℂ`-algebra `A`, for an integral
-element `a` (for matrices: any norm, e.g. the scoped `Matrix.Norms.L2Operator`).
-'''
-
 [[node]]
 id = "pfc_eq_circleIntegral"
-kind = "theorem"
-desc = '''If `f` is differentiable on a neighbourhood of `Metric.closedBall c R` (`DifferentiableOn ℂ f
-(closedBall c R)` plus continuity, as Mathlib's Cauchy formulas take) and `spectrum ℂ a ⊆ ball c R`,
-then `pfc f a = (2 * π * I)⁻¹ • ∮ z in C(c, R), f z • Ring.inverse (algebraMap ℂ A z - a)`. Route
-(avoiding contour deformation): (1) with the minimal polynomial `μ`, `(z - a)⁻¹ = μ(z)⁻¹ • q(z, a)`
-for `z ∉ σ(a)`, where `μ(z) - μ(a) = (z - a) q(z, a)` (`Polynomial.sub_dvd_eval_sub`-type factor
-theorem in two variables, `minpoly.aeval`); (2) with `p` the interpolant of `f`, `(f - p)/μ` has
-removable singularities at the roots (`f - p` vanishes to order `m_λ`: Mathlib
-`Complex.differentiableOn_update_limUnder_of_bddAbove`/`analyticOrderAt`), so `∮ (f - p)(z) q(z,a)/μ(z)
-= 0` (`Complex.circleIntegral_eq_zero_of_differentiable_on_off_countable`); (3) for the polynomial
-`p`, `p(z)(z - a)⁻¹ = p(a)(z - a)⁻¹ + r(z, a)` with `r` polynomial in `z`, and `∮ (z - a)⁻¹ =
-2πi · 1`: on the annulus between `C(c, R)` and a large circle the integrand is holomorphic
-(`Complex.circleIntegral_sub_center_inv_smul_eq_of_differentiable_on_annulus_off_countable`), and
-on a circle of radius `> ‖a - c‖` expand the Neumann series `∑ (a - c)^k/(z - c)^{k+1}`
-(`NormedRing.inverse_one_sub`) and integrate termwise (`circleIntegral.integral_sub_zpow_of_ne`).
-★★★ (~350 lines)'''
-deps = ["pfc_eq_aeval_of_isJetInterpolant", "pfc_polynomial"]
+
+[[node]]
+id = "inverse_sub_eq_sum_spectralIdempotent"
+
+[[node]]
+id = "circleIntegral_div_sub_pow"

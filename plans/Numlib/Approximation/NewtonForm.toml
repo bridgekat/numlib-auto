@@ -156,14 +156,8 @@ id = "continuous_confluent"
 [[node]]
 id = "exists_confluent_eq_iteratedDeriv_div"
 
-[[node]]  # staged by ch09
+[[node]]
 id = "newtonOn_eq_divDiff"
-kind = "theorem"
-desc = '''At distinct nodes the multiset divided difference of `Numlib/Analysis/Calculus/HermiteInterpolation` is the
-classical one: for `[Field]`-valued data on a nontrivially normed field of characteristic `0`,
-`Set.InjOn v s → newtonOn s v f = Hermite.divDiff f (s.val.map v)`. Both are the leading
-coefficient of the interpolant of degree `< card s` (`DividedDifference.newtonOn_eq_coeff`,
-`Hermite.isJetInterpolant_interpolateJet`), and at simple nodes `IsJetInterpolant` is Lagrange
-interpolation (`Hermite.isJetInterpolant_taylorJet_iff` with multiplicity `1`). Keeps the two
-divided-difference APIs one object (CONTRIBUTING: symmetry). ★★'''
-deps = ["DividedDifference.newtonOn", "DividedDifference.newtonOn_eq_coeff", "Hermite.divDiff", "Hermite.isJetInterpolant_taylorJet_iff"]
+
+[[node]]
+id = "confluent_eq_divDiff"

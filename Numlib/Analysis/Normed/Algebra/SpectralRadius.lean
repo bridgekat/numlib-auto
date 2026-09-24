@@ -40,7 +40,11 @@ classical consequences of Gelfand's formula for the spectral radius, which Mathl
 * `isUnit_one_sub_of_algebraNorm_lt_one` with `AlgebraNorm.norm_inverse_one_sub_le_of_lt_one` and
   `AlgebraNorm.one_div_one_add_le_norm_inverse_one_sub`, the two-sided bound
   `1 / (1 + N a) ≤ N ((1 - a)⁻¹) ≤ 1 / (1 - N a)` for an arbitrary unital algebra norm with
-  `N a < 1`, [quarteroni2000numerical] (1.26).
+  `N a < 1`, [quarteroni2000numerical] (1.26);
+* `spectralAbscissa a = sup {Re λ : λ ∈ σ(a)}`, the half-plane analogue of the spectral radius
+  ([golub2013matrix] (9.3.3)), with `re_le_spectralAbscissa`, the attained maximum
+  `exists_mem_spectrum_re_eq_spectralAbscissa` for a nonempty compact spectrum, and
+  `spectralAbscissa_le_norm`.
 -/
 
 open Filter Topology
@@ -281,6 +285,52 @@ theorem spectralRadius_pow (a : A) (n : ℕ) :
     spectralRadius ℂ (a ^ n) = spectralRadius ℂ a ^ n :=
   have : Nontrivial A := NormOneClass.nontrivial
   spectralRadius_pow_of_nonempty (spectrum.nonempty a) n
+
+/-! ### The spectral abscissa -/
+
+section Abscissa
+
+variable {B : Type*} [Ring B] [Algebra ℂ B]
+
+/-- The **spectral abscissa** `α(a) = sup {Re λ : λ ∈ σ(a)}` of an element of a complex algebra
+([golub2013matrix] (9.3.3)), the half-plane analogue of the spectral radius. The junk value for an
+empty (or unbounded) spectrum is `sSup ∅ = 0`; in a nontrivial complex Banach algebra, and for
+matrices of positive size, the spectrum is nonempty and compact and the supremum is attained
+(`exists_mem_spectrum_re_eq_spectralAbscissa`). -/
+noncomputable def spectralAbscissa (a : B) : ℝ :=
+  sSup ((fun z : ℂ => z.re) '' spectrum ℂ a)
+
+theorem bddAbove_re_spectrum {a : B} (hb : Bornology.IsBounded (spectrum ℂ a)) :
+    BddAbove ((fun z : ℂ => z.re) '' spectrum ℂ a) := by
+  obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.mp hb
+  exact ⟨C, by
+    rintro _ ⟨z, hz, rfl⟩
+    exact (Complex.re_le_norm z).trans (hC z hz)⟩
+
+/-- Every eigenvalue lies in the half plane `Re z ≤ α(a)` when the spectrum is bounded. -/
+theorem re_le_spectralAbscissa {a : B} (hb : Bornology.IsBounded (spectrum ℂ a)) {z : ℂ}
+    (hz : z ∈ spectrum ℂ a) : z.re ≤ spectralAbscissa a :=
+  le_csSup (bddAbove_re_spectrum hb) ⟨z, hz, rfl⟩
+
+/-- For a nonempty compact spectrum (e.g. a finite one) some eigenvalue attains the spectral
+abscissa. -/
+theorem exists_mem_spectrum_re_eq_spectralAbscissa {a : B} (hc : IsCompact (spectrum ℂ a))
+    (hne : (spectrum ℂ a).Nonempty) : ∃ z ∈ spectrum ℂ a, z.re = spectralAbscissa a := by
+  obtain ⟨z, hz, hmax⟩ := hc.exists_isMaxOn hne Complex.continuous_re.continuousOn
+  have hg : IsGreatest ((fun w : ℂ => w.re) '' spectrum ℂ a) z.re := by
+    refine ⟨⟨z, hz, rfl⟩, ?_⟩
+    rintro _ ⟨w, hw, rfl⟩
+    exact hmax hw
+  exact ⟨z, hz, hg.csSup_eq.symm⟩
+
+end Abscissa
+
+/-- In a complex Banach algebra the spectral abscissa is at most the norm. -/
+theorem spectralAbscissa_le_norm (a : A) : spectralAbscissa a ≤ ‖a‖ := by
+  have : Nontrivial A := NormOneClass.nontrivial
+  refine csSup_le ((spectrum.nonempty a).image _) ?_
+  rintro _ ⟨z, hz, rfl⟩
+  exact (Complex.re_le_norm z).trans (spectrum.norm_le_norm_of_mem hz)
 
 /-! ### An arbitrary algebra norm bounds the spectral radius
 

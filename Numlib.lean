@@ -8,6 +8,7 @@ import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.Deriv.Slope
 import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.Gradient
+import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
 import Numlib.Analysis.Calculus.IteratedFDeriv
@@ -193,6 +194,11 @@ import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.MeanInequalities
+import Numlib.Analysis.Normed.Algebra.Exponential
+import Numlib.Analysis.Normed.Algebra.Logarithm
+import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic
+import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic
+import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Lp.PiLp
@@ -536,6 +542,7 @@ import Numlib.Projection.Optimality
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+import Numlib.RingTheory.Polynomial.HermiteInterpolation
 import Numlib.RingTheory.Polynomial.Horner
 import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.RingTheory.Polynomial.RuleOfSigns

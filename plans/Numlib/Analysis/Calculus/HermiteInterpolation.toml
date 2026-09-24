@@ -1,76 +1,34 @@
 namespace = "Hermite"
-desc = '''
-Jets and divided differences of functions on a nontrivially normed field, on top of the
-field-level Hermite interpolation of `Numlib/RingTheory/Polynomial/HermiteInterpolation`:
-`Hermite.taylorJet f x j = f⁽ʲ⁾(x)/j!`, the equivalence of `IsJetInterpolant s (taylorJet f) p` with
-agreement of derivatives in characteristic `0`, the divided difference `Hermite.divDiff f s` at
-possibly repeated nodes (the leading coefficient of the Hermite interpolant), its congruence and
-monomial formulas, and the complex Hermite–Genocchi bound ([golub2013matrix] (9.2.1)).
 
-Placed here at the Golub–Van Loan review, out of the staged append to `Numlib/Approximation/Hermite`:
-`taylorJet` needs `iteratedDeriv` (analysis, so it cannot sit in `RingTheory`), and the primary
-functional calculus (`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus`) and the matrix
-functions (`Numlib/Analysis/Matrix/Function/*`) must not import the numerical `Approximation` layer.
-The real, `Fin`-indexed Hermite interpolation of `Numlib/Approximation/Hermite` is related to this by
-`Hermite.interpolate_eq_interpolateJet` there. Imports
-`Numlib/RingTheory/Polynomial/HermiteInterpolation` and Mathlib. Order: `taylorJet` and its
-interpolation characterization (★★), `divDiff` and `divDiff_congr` (★), `divDiff_X_pow` (★★),
-`norm_divDiff_le` (★★★, ~400).
-'''
-
-[[node]]  # staged by ch09
+[[node]]
 id = "taylorJet"
-kind = "definition"
-desc = '''The Taylor coefficients of a function on a nontrivially normed field: `taylorJet f x j =
-iteratedDeriv j f x / j !`. Total: where `f` is not differentiable the Mathlib junk value `0` of
-`iteratedDeriv` enters, and every consumer carries the smoothness it needs as a hypothesis. ★'''
-deps = []
 
-[[node]]  # staged by ch09
+[[node]]
 id = "isJetInterpolant_taylorJet_iff"
-kind = "theorem"
-desc = '''In characteristic `0` (`[NontriviallyNormedField 𝕜] [CharZero 𝕜]`), `IsJetInterpolant s
-(taylorJet f) p ↔ ∀ x ∈ s, ∀ j < count x s, (derivative^[j] p).eval x = iteratedDeriv j f x`: the
-Taylor coefficients of `p` at `x` are `(derivative^[j] p).eval x / j!` (`Polynomial.taylor_coeff`,
-`Polynomial.hasseDeriv`), and `(X - C x)^m ∣ q` iff the first `m` Taylor coefficients of `q` at `x`
-vanish (`Polynomial.taylor`, `X_pow_dvd_iff`). Also `Hermite.taylorJet_polynomial`: for `f = p.eval`
-the jet is `(taylor x p).coeff` (`Polynomial.iteratedDeriv_eval`-type lemma; check the Mathlib name
-of `iteratedDeriv (fun z => p.eval z) = fun z => (derivative^[j] p).eval z`). ★★'''
-deps = ["Hermite.IsJetInterpolant", "Hermite.taylorJet"]
 
-[[node]]  # staged by ch09
+[[node]]
+id = "taylorJet_polynomial"
+
+[[node]]
+id = "taylorJet_mul"
+
+[[node]]
 id = "divDiff"
-kind = "definition"
-desc = '''The divided difference of `f` at a multiset of possibly repeated nodes in a nontrivially normed
-field: `divDiff f s = (interpolateJet s (taylorJet f)).coeff (card s - 1)`, the leading coefficient
-of the Hermite interpolant ([golub2013matrix] §9.1.4's `f[λ_{s₀}, …, λ_{s_k}]`, confluent where
-eigenvalues repeat). At distinct nodes it is `DividedDifference.newtonOn`
-(`DividedDifference.newtonOn_eq_divDiff`, NewtonForm). ★'''
-deps = ["Hermite.interpolateJet", "Hermite.taylorJet"]
 
-[[node]]  # staged by ch09
+[[node]]
 id = "divDiff_congr"
-kind = "theorem"
-desc = '''`divDiff` depends only on the jets it uses: if `taylorJet f x j = taylorJet g x j` for `x ∈ s`,
-`j < count x s`, then `divDiff f s = divDiff g s` (`Hermite.interpolateJet_congr`). And for a
-polynomial interpolant: if `IsJetInterpolant t (taylorJet f) p` and `s ≤ t` then `divDiff f s =
-divDiff (fun z => p.eval z) s` (`Hermite.IsJetInterpolant.of_le`, `Hermite.taylorJet_polynomial`). ★'''
-deps = ["Hermite.divDiff", "Hermite.interpolateJet_congr", "Hermite.nodalMultiset_dvd_sub", "Hermite.isJetInterpolant_taylorJet_iff"]
 
-[[node]]  # staged by ch09
+[[node]]
+id = "IsJetInterpolant.divDiff_eq"
+
+[[node]]
+id = "divDiff_replicate"
+
+[[node]]
+id = "divDiff_cons_cons"
+
+[[node]]
 id = "divDiff_X_pow"
-kind = "theorem"
-desc = '''The divided differences of monomials are complete homogeneous symmetric polynomials: for
-`s : Multiset K` with `card s = k + 1`, `divDiff (· ^ m) s = ∑ over multisets t of size m - k on the
-elements of s … ` — stated as `divDiff (fun z => z ^ m) s = (MvPolynomial.hsymm …)` evaluated at the
-nodes, or recursively: `divDiff (· ^ (m+1)) (x ::ₘ s) = x * divDiff (· ^ m) (x ::ₘ s) + divDiff (· ^ m) s`
-(the recursion is what the path-counting proof of Theorem 9.1.4 consumes; pick the form that proof
-needs). Proof: `X^m ≡ X^m mod nodal`, leading coefficient of `X^m %ₘ nodalMultiset s` —
-`X^{m+1} = X · X^m` and `(X - x)·q` bookkeeping. Mathlib: `MvPolynomial.hsymm`
-(`Mathlib/RingTheory/MvPolynomial/Symmetric/…`), check the name. Also `Hermite.divDiff_replicate`:
-`divDiff f (Multiset.replicate (k+1) x) = taylorJet f x k`, and linearity `divDiff_add`,
-`divDiff_smul` (for smooth `f`, `g`). ★★ (~150 lines)'''
-deps = ["Hermite.divDiff", "Hermite.isJetInterpolant_interpolateJet"]
 
 [[node]]  # staged by ch09
 id = "norm_divDiff_le"
@@ -87,5 +45,13 @@ recursion `newtonOn_eq_sub_div`, extend to repeated nodes by continuity of both 
 Hermite interpolant in the nodes for analytic `f` — or directly, by proving the formula for
 `divDiff` from its defining divisibility, which avoids limits: the right side `I(s)` satisfies the
 same recursion and `I(replicate (k+1) x) = taylorJet f x k`). Simplex volume `1/r!` bounds it.
-★★★ (~400 lines)'''
+★★★ (~400 lines)
+
+Blocked (agent fn1, GVL wave 1): not attempted beyond design. The module now has the algebraic
+recursion `Hermite.divDiff_cons_cons` (valid at repeated nodes) and `Hermite.divDiff_replicate`, so
+the missing piece is purely analytic: either the Hermite–Genocchi integral over the simplex with its
+own recursion, or the reduction `f[x₀ :: s] = g[s]` for `g z = ∫₀¹ f'(x₀ + t(z - x₀)) dt` (the
+jets of `g` from `g (z - x₀) = f z - f x₀`, via `analyticOrderAt`) plus differentiation of `g` under
+the integral sign `r - 1` times (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`). Estimate
+~400 lines; no Mathlib gap blocks it.'''
 deps = ["Hermite.divDiff", "Hermite.divDiff_congr", "Hermite.divDiff_X_pow"]
