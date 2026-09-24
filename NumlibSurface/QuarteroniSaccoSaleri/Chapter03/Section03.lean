@@ -440,7 +440,8 @@ theorem equation_3_40 [NeZero n] (hn : (n : ℝ) * m.u < 1) (h : RoundsLU m A L 
   have hu : m.u < 1 := by
     have h1 : (1 : ℝ) ≤ n := by exact_mod_cast Nat.one_le_iff_ne_zero.2 (NeZero.ne n)
     nlinarith [m.u_nonneg]
-  obtain ⟨δA, hδA, hLU⟩ := exists_roundsLU_mul_eq_add hu (by rwa [Fintype.card_fin]) h hd
+  obtain ⟨δA, hδA, hLU⟩ := exists_roundsLU_mul_eq_add hu (by rwa [Fintype.card_fin]) h
+    fun j _ _ => hd j
   refine ⟨δA, ?_, hLU⟩
   rwa [Fintype.card_fin, gamma_def] at hδA
 
@@ -456,7 +457,7 @@ theorem equation_3_41 [NeZero n] (hn : 2 * ((n : ℝ) * m.u) < 1) (h : RoundsLU 
     have h1 : (1 : ℝ) ≤ n := by exact_mod_cast Nat.one_le_iff_ne_zero.2 (NeZero.ne n)
     nlinarith [m.u_nonneg]
   obtain ⟨δA, hδA, hLU⟩ := abs_le_of_roundsLU_of_entrywiseNonneg hu (by rwa [Fintype.card_fin])
-    h hd hL hU
+    h (fun j _ _ => hd j) hL hU
   refine ⟨δA, ?_, hLU⟩
   rwa [Fintype.card_fin] at hδA
 

@@ -71,7 +71,7 @@ the solve with inner-product substitutions, normwise bound with general entry bo
 `FloatingPoint/InnerProduct` (`roundsSumFrom_append_singleton`), `LinearAlgebra/Matrix/LU`
 (`IsRectLU` and its existence), `LU/Pivoting` (partial pivoting without a pivot hypothesis,
 `IsRookPivot`, algorithmic `P A Q = L U`, rank revelation, stage-wise Wilkinson, tall pivoted
-`IsRectLU`), `Hessenberg` (`IsUnitUpperTriangular`). Program infrastructure from ch01's
+`IsRectLU`), `Triangular` (`IsUnitUpperTriangular`). Program infrastructure from ch01's
 `Numlib/FloatingPoint/Program` (planned there): `FloatingPoint.RoundingModel.round`,
 `RoundingModel.mem_run_round`, `RoundingModel.round_exact`, `SetM.mem_run_bind`,
 `SetM.mem_run_pure`, the loop rules `SetM.forall_mem_run_foldlM_finRange`,
@@ -127,8 +127,8 @@ condition-estimation material of `Direct/Refinement` a home.
    prototype).
 3. `FloatingPoint/Substitution` appends (~250 lines): `exists_rounds_sub_dotFrom_div_eq`, the Dot
    predicates and their `γ_n` theorems, the four `_exact_iff`.
-4. `FloatingPoint/LU` appends (~200 lines): `exists_roundsLU_mul_eq_add_of_pivot_ne_zero`,
-   `roundsLU_exact_iff` (★★, ~90), `exists_add_mulVec_eq_of_lu_errors`, `exists_roundsLU_solveDot_eq`,
+4. `FloatingPoint/LU` appends (~200 lines; the divisor-pivot weakening of
+   `exists_roundsLU_mul_eq_add` was done in place by refactor R2): `roundsLU_exact_iff` (★★, ~90), `exists_add_mulVec_eq_of_lu_errors`, `exists_roundsLU_solveDot_eq`,
    `linfty_opNorm_le_of_abs_le_smul_abs_mul_abs`.
 5. `Hessenberg` append (~40), `LU` append `IsRectLU` (~170), `LU/Pivoting` appends (~500:
    partial pivoting ~70, rook/complete `P A Q = L U` ~150, rank ~120, Wilkinson stage-wise ~30,

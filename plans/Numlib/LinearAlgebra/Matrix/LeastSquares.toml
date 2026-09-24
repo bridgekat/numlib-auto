@@ -1,7 +1,7 @@
 # Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.LeastSquares` is the group description;
 # when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch05) add to "Main results" the column-prefix spans of a QR factorization and the orthogonal
-# complement of the range ([golub2013matrix] Theorem 5.2.2), the geometry of the least-squares
+# (ch05) add to "Main results" the orthogonal complement of the range through a QR factorization
+# ([golub2013matrix] Theorem 5.2.2), the geometry of the least-squares
 # objective (gradient, convexity of the solution set, differences of solutions in the null space —
 # [golub2013matrix] §5.3.1, §5.5.1), the nonsingularity of the augmented system `[I A; Aᴴ 0]`
 # ([golub2013matrix] (5.3.20); its least-squares half is ch06's weighted
@@ -14,8 +14,7 @@
 # squares), `LeastSquares/Regularized` (ridge regression and general-form Tikhonov,
 # cross-validation), `LeastSquares/Constrained` (LSQI and LSE), `LeastSquares/Total` (total least
 # squares) — [golub2013matrix] §6.1–6.3."
-# (Golub–Van Loan review) Add to "Main definitions" `Matrix.IsPivotedQR` (QR with column pivoting,
-# `IsQR` of `A Π`), moved here from `RankRevealing` to sit beside `IsQR`; and to "Main results" the
+# (Golub–Van Loan review) Add to "Main results" the
 # minimal-Frobenius characterization of `A⁺` ([golub2013matrix] (5.5.3), `pinv_isMinOn_frobenius`),
 # the orthonormal-column projector `V Vᴴ = P_{ran V}` (`toEuclideanLin_mul_conjTranspose_eq_starProjection`,
 # the case `V⁺ = Vᴴ` of `mul_pinv_eq_starProjection`), and least squares with a matrix unknown
@@ -93,48 +92,6 @@ id = "toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose"
 id = "isLeastSquaresSolution_of_qr"
 
 [[node]]
-id = "IsQR"
-
-[[node]]
-id = "exists_isQR"
-
-[[node]]
-id = "firstColumns"
-
-[[node]]
-id = "firstRows"
-
-[[node]]
-id = "firstColumns_apply"
-
-[[node]]
-id = "firstRows_apply"
-
-[[node]]
-id = "IsQR.apply_eq_zero_of_le"
-
-[[node]]
-id = "IsQR.firstColumns_mul_firstRows"
-
-[[node]]
-id = "IsQR.conjTranspose_firstColumns_mul_self"
-
-[[node]]
-id = "IsQR.isUpperTriangular_firstRows"
-
-[[node]]
-id = "IsQR.reduced"
-
-[[node]]
-id = "IsQR.isUnit_firstRows_of_linearIndependent"
-
-[[node]]
-id = "IsQR.firstRows_diag_ne_zero_of_linearIndependent"
-
-[[node]]
-id = "IsQR.span_firstColumns_eq"
-
-[[node]]
 id = "IsQR.isLeastSquaresSolution"
 
 [[node]]
@@ -145,24 +102,6 @@ id = "norm_sub_sq_eq_of_isQR"
 
 [[node]]
 id = "norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution"
-
-[[node]]  # staged by ch05
-id = "IsQR.isThinQR"
-kind = "theorem"
-desc = '''The reduced factors of a full QR factorization form a thin one: for `N ≤ M`,
-`IsQR A Q R → IsThinQR A (firstColumns Q h) (firstRows R h)` (`IsQR.reduced` repackaged). ★'''
-deps = ["Matrix.IsQR.reduced", "Matrix.IsThinQR"]
-
-[[node]]  # staged by ch05
-id = "IsQR.span_col_prefix_eq"
-kind = "theorem"
-desc = '''[golub2013matrix] (5.2.1): if `IsQR A Q R` and the columns of `A : Matrix (Fin M) (Fin N) 𝕜`
-are linearly independent, then for every `k ≤ N`
-`span 𝕜 {Aᵀ j | (j : ℕ) < k} = span 𝕜 {Qᵀ i | (i : ℕ) < k}` (column sets as `Set (Fin M → 𝕜)`) and
-`R ⟨k, _⟩ ⟨k, _⟩ ≠ 0` for `k < N`. Proof: `a_k = Σ_{i ≤ k} r_ik q_i` ((5.2.3)) gives `⊆`; the
-dimension count (`linearIndependent` of the prefix, `finrank_span_eq_card`) gives equality and
-forces `r_kk ≠ 0`. `IsQR.span_firstColumns_eq` is the case `k = N`. ★★'''
-deps = ["Matrix.IsQR", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent"]
 
 [[node]]  # staged by ch05
 id = "IsQR.range_orthogonal_eq_span_lastColumns"
@@ -244,17 +183,6 @@ least-squares problem with right-hand side `e_j`, whose minimal-norm solution is
 (`isMinNormLeastSquaresSolution_pinv`, `IsMinNormLeastSquaresSolution.unique`); the Frobenius
 norm squared is the sum over columns (`frobenius_norm_sq_eq_sum_col`-type lemma). ★★'''
 deps = ["Matrix.isMinNormLeastSquaresSolution_pinv", "Matrix.IsMinNormLeastSquaresSolution.unique", "Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf"]
-
-[[node]]  # staged by ch05 in RankRevealing; moved beside IsQR (Golub–Van Loan review M5)
-id = "IsPivotedQR"
-kind = "definition"
-desc = '''QR factorization with column pivoting: for `A : Matrix (Fin M) (Fin N) 𝕜`, `σ : Equiv.Perm (Fin N)`,
-`structure IsPivotedQR A Q R σ : Prop := isQR : IsQR (A.submatrix id σ) Q R` (column `k` of `A Π`
-is column `σ k` of `A`; [golub2013matrix] `A Π = Q R`, `A Π = [a_{c₁} | ⋯ | a_{cₙ}]`). A structure
-rather than an abbreviation so that the rank-revealing lemmas can be dot-notation on it; its
-rank-revealing refinement `IsPivotedQR.IsRankRevealing` is in `RankRevealing`. Beside `IsQR`, and
-moves with it to `QR` (beside `IsThinQR`) under the recorded refactor task R4. ★'''
-deps = ["Matrix.IsQR"]
 
 [[node]]  # staged by ch12 as `Tensor.isMinOn_norm_sub_mul_transpose_iff`; moved and generalized (review L3)
 id = "isMinOn_norm_sub_mul_transpose_iff"

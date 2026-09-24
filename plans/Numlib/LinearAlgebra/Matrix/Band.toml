@@ -1,0 +1,46 @@
+namespace = "Matrix"
+
+[[node]]
+id = "HasLowerBandwidth"
+
+[[node]]
+id = "HasUpperBandwidth"
+
+[[node]]
+id = "hasLowerBandwidth_zero_iff"
+
+[[node]]
+id = "hasUpperBandwidth_zero_iff"
+
+[[node]]
+id = "isDiag_iff_hasBandwidth_zero"
+
+[[node]]
+id = "hasLowerBandwidth_iff_fin"
+
+[[node]]
+id = "HasLowerBandwidth.add"
+
+[[node]]
+id = "HasLowerBandwidth.mul"
+
+[[node]]
+id = "HasUpperBandwidth.mul"
+
+[[node]]
+id = "HasLowerBandwidthRect"
+
+[[node]]
+id = "HasUpperBandwidthRect"
+
+[[node]]
+id = "hasUpperBandwidthRect_transpose_iff"
+
+[[node]]
+id = "hasLowerBandwidthRect_iff"
+
+[[node]]
+id = "hasLowerBandwidthRect_transpose_iff"
+
+[[node]]
+id = "hasUpperBandwidthRect_iff"

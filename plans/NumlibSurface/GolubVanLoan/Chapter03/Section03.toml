@@ -19,11 +19,12 @@ desc = '''Theorem 3.3.1, rigorous form: for `fp : FloatingPoint.RoundingModel �
 `n u < 1`, and every `F ∈ (algorithm_3_2_1 fp.round A).run` whose pivots `F j j`, `j + 1 < n`,
 are nonzero ("no zero pivots are encountered"), `L̂ Û = A + H` with
 `|H| ≤ γ_n |L̂| |Û|` entrywise (`L̂ = packedL F`, `Û = packedU F`). From `algorithm_3_2_1_rounds`
-and `FloatingPoint.exists_roundsLU_mul_eq_add_of_pivot_ne_zero`. The book's (3.3.2),
+and `FloatingPoint.exists_roundsLU_mul_eq_add` (which asks only the divisor pivots to be nonzero).
+The book's (3.3.2),
 `|H| ≤ 2(n-1)u(|A| + |L̂||Û|) + O(u²)`, is implied to first order; for `n = 1` the rigorous bound
 `γ₁|a|` is slightly weaker than the book's `0` (the model rounds nothing there, but the backbone
 lemma charges `γ_n` uniformly — harmless). ★'''
-deps = ["algorithm_3_2_1_rounds", "FloatingPoint.exists_roundsLU_mul_eq_add_of_pivot_ne_zero", "packedL", "packedU", "FloatingPoint.gamma"]
+deps = ["algorithm_3_2_1_rounds", "FloatingPoint.exists_roundsLU_mul_eq_add", "packedL", "packedU", "FloatingPoint.gamma"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 3.3.1'
 
 [[node]]
@@ -31,8 +32,8 @@ id = "theorem_3_3_1_gaxpy"
 kind = "theorem"
 desc = '''§3.3.1, "the error bounds that we derive also apply to the gaxpy formulation (Algorithm
 3.2.2)": Theorem 3.3.1 for the runs of `algorithm_3_2_2`; `algorithm_3_2_2_rounds` and
-`FloatingPoint.exists_roundsLU_mul_eq_add_of_pivot_ne_zero`. ★'''
-deps = ["algorithm_3_2_2_rounds", "FloatingPoint.exists_roundsLU_mul_eq_add_of_pivot_ne_zero", "theorem_3_3_1"]
+`FloatingPoint.exists_roundsLU_mul_eq_add`. ★'''
+deps = ["algorithm_3_2_2_rounds", "FloatingPoint.exists_roundsLU_mul_eq_add", "theorem_3_3_1"]
 source = 'Golub–Van Loan, Matrix Computations, §3.3.1'
 
 [[node]]

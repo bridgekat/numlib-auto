@@ -1,4 +1,5 @@
 import Numlib.FloatingPoint.LU
+import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
@@ -35,8 +36,9 @@ every statement quantifies over all admissible roundings at once:
   matrix form `exists_eq_prodRev_mul_add`; and the two-sided Frobenius form
   `exists_eq_prodRev_mul_add_mul_prodFwd` for `A_{k+1} ≈ L_k A_k R_k`, which is the analogue
   Higham's §19.10 attributes to Ortega and Wilkinson, with its reflector (symmetric) specialization
-  `exists_eq_transpose_mul_add_mul_prodFwd`. The products are `FloatingPoint.prodRev P r =
-  P_{r-1} ⋯ P_0` and `FloatingPoint.prodFwd P r = P_0 ⋯ P_{r-1}`.
+  `exists_eq_transpose_mul_add_mul_prodFwd`. The products are `Matrix.prodRev P r =
+  P_{r-1} ⋯ P_0` and `Matrix.prodFwd P r = P_0 ⋯ P_{r-1}` of
+  `Numlib/LinearAlgebra/Matrix/Products`.
 * The Householder reduction to Hessenberg form in floating-point arithmetic,
   `FloatingPoint.RoundsHessenbergStep` and `FloatingPoint.RoundsHessenbergReduce`
   ([quarteroni2000numerical] §5.6.2, Program 29, as [higham2002accuracy] Theorem 19.4 models
@@ -61,10 +63,9 @@ every statement quantifies over all admissible roundings at once:
   iteration itself (Givens rotations, [higham2002accuracy] §19.6) is not here, so the book's
   `λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` stays a surface note.
 
-The scalar calculus of the constants is that of `Numlib/FloatingPoint/Model`; the lemmas
-`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`, `IsRelPert.rounds`, `IsRelPert.sqrt`,
-`isRelPert_of_abs_sub_le` here extend it by the forms a Householder computation needs (one more
-rounding as a multiplication or a division, a square root, a bound turned into a perturbation).
+The scalar calculus of the constants is that of `Numlib/FloatingPoint/Model`, including the
+one-step forms a Householder computation needs (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
+`IsRelPert.rounds`, `IsRelPert.sqrt`, `isRelPert_of_abs_sub_le`).
 Everything is over `ℝ`, since the statements need the Euclidean and Frobenius norms.
 -/
 
@@ -73,96 +74,6 @@ open Finset Matrix WithLp
 open scoped Matrix
 
 namespace FloatingPoint
-
-section Scalar
-
-variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-
-/-- Rounding `0` gives `0`. -/
-theorem RoundingModel.Rounds.eq_zero_of_zero {m : RoundingModel K} {y : K} (h : m.Rounds 0 y) :
-    y = 0 := by
-  have := m.abs_sub_le h
-  rw [sub_zero, abs_zero, mul_zero] at this
-  exact abs_nonpos_iff.1 this
-
-/-- A bound `|y - x| ≤ γ_n |x|` is a relative perturbation of order `n`. -/
-theorem isRelPert_of_abs_sub_le {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) {x y : K}
-    (h : |y - x| ≤ gamma u n * |x|) : IsRelPert u n x y := by
-  rcases eq_or_ne x 0 with rfl | hx
-  · rw [sub_zero, abs_zero, mul_zero] at h
-    exact ⟨0, by simpa using hγ, by simp [abs_nonpos_iff.1 h]⟩
-  · refine ⟨(y - x) / x, ?_, ?_⟩
-    · rw [abs_div, div_le_iff₀ (abs_pos.2 hx)]
-      exact h
-    · field_simp
-      ring
-
-/-- The error of a relative perturbation, `|y - x| ≤ γ_n |x|`. -/
-theorem IsRelPert.abs_sub_le {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) :
-    |y - x| ≤ gamma u n * |x| := by
-  obtain ⟨θ, hθ, rfl⟩ := h
-  rw [show x * (1 + θ) - x = θ * x by ring, abs_mul]
-  exact mul_le_mul_of_nonneg_right hθ (abs_nonneg _)
-
-omit [IsStrictOrderedRing K] in
-/-- A relative perturbation is unchanged by a common factor. -/
-theorem IsRelPert.const_mul {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) (c : K) :
-    IsRelPert u n (c * x) (c * y) := by
-  obtain ⟨θ, hθ, rfl⟩ := h
-  exact ⟨θ, hθ, by ring⟩
-
-/-- A relative perturbation of `0` is `0`. -/
-theorem IsRelPert.zero {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) : IsRelPert u n (0 : K) 0 :=
-  ⟨0, by simpa using hγ, by simp⟩
-
-/-- Multiplying a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
-order `k + 1`. -/
-theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
-    (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
-    IsRelPert u (k + 1) x (y * (1 + δ)) := by
-  obtain ⟨θ, hθ, rfl⟩ := h
-  exact ⟨(1 + θ) * (1 + δ) - 1, abs_one_add_mul_one_add_sub_one_le_gamma hu hu1 hk hθ hδ,
-    by ring⟩
-
-/-- Dividing a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
-order `k + 1`. -/
-theorem IsRelPert.div_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
-    (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
-    IsRelPert u (k + 1) x (y / (1 + δ)) := by
-  obtain ⟨θ, hθ, rfl⟩ := h
-  refine ⟨(1 + θ) / (1 + δ) - 1, abs_one_add_div_one_add_sub_one_le_gamma hu hk hθ hδ, ?_⟩
-  rw [show (1 : K) + ((1 + θ) / (1 + δ) - 1) = (1 + θ) / (1 + δ) by ring, mul_div_assoc]
-
-/-- One more rounding raises the order of a relative perturbation by one. -/
-theorem IsRelPert.rounds {m : RoundingModel K} (hu : m.u < 1) {k : ℕ}
-    (hk : ((k + 1 : ℕ) : K) * m.u < 1) {x y z : K} (h : IsRelPert m.u k x y)
-    (hz : m.Rounds y z) : IsRelPert m.u (k + 1) x z := by
-  obtain ⟨δ, hδ, rfl⟩ := hz.exists_delta
-  exact h.mul_one_add m.u_nonneg hu hk hδ
-
-end Scalar
-
-/-- `|√(1 + θ) - 1| ≤ |θ|` for `θ ≥ -1`. -/
-theorem abs_sqrt_one_add_sub_one_le {θ : ℝ} (h : -1 ≤ θ) : |√(1 + θ) - 1| ≤ |θ| := by
-  have h0 : 0 ≤ 1 + θ := by linarith
-  have hs : 0 ≤ √(1 + θ) := Real.sqrt_nonneg _
-  have hsq : √(1 + θ) ^ 2 = 1 + θ := Real.sq_sqrt h0
-  have key : (√(1 + θ) - 1) * (√(1 + θ) + 1) = θ := by nlinarith
-  have hpos : 1 ≤ √(1 + θ) + 1 := by linarith
-  calc |√(1 + θ) - 1| ≤ |√(1 + θ) - 1| * (√(1 + θ) + 1) :=
-        le_mul_of_one_le_right (abs_nonneg _) hpos
-    _ = |(√(1 + θ) - 1) * (√(1 + θ) + 1)| := by
-        rw [abs_mul, abs_of_pos (by linarith : (0 : ℝ) < √(1 + θ) + 1)]
-    _ = |θ| := by rw [key]
-
-/-- The square root of a relative perturbation of order `n` is one of order `n`, when `γ_n ≤ 1`.
--/
-theorem IsRelPert.sqrt {u : ℝ} {n : ℕ} (hγ : gamma u n ≤ 1) {x y : ℝ} (hx : 0 ≤ x)
-    (h : IsRelPert u n x y) : IsRelPert u n (√x) (√y) := by
-  obtain ⟨θ, hθ, rfl⟩ := h
-  have hθ1 : -1 ≤ θ := by linarith [neg_le_of_abs_le hθ]
-  refine ⟨√(1 + θ) - 1, (abs_sqrt_one_add_sub_one_le hθ1).trans hθ, ?_⟩
-  rw [Real.sqrt_mul hx, add_sub_cancel]
 
 /-- The real phase (sign) squares to one. -/
 theorem phase_mul_phase (z : ℝ) : phase z * phase z = 1 := by
@@ -597,58 +508,7 @@ theorem norm_sub_le_of_roundsHouseholderApply {m : RoundingModel ℝ} {k : ℕ}
   nlinarith [mul_le_mul_of_nonneg_right hug hb0]
 
 
-/-! ### Products of orthogonal transformations -/
-
-/-- `P (r-1) * ⋯ * P 1 * P 0`: the product of the first `r` transformations of a sequence,
-each new one multiplying on the left. -/
-def prodRev (P : ℕ → Matrix ι ι ℝ) : ℕ → Matrix ι ι ℝ
-  | 0 => 1
-  | r + 1 => P r * prodRev P r
-
-/-- `P 0 * P 1 * ⋯ * P (r-1)`: the product of the first `r` transformations of a sequence,
-each new one multiplying on the right. -/
-def prodFwd (P : ℕ → Matrix ι ι ℝ) : ℕ → Matrix ι ι ℝ
-  | 0 => 1
-  | r + 1 => prodFwd P r * P r
-
-/-- The empty product is the identity. -/
-@[simp]
-theorem prodRev_zero (P : ℕ → Matrix ι ι ℝ) : prodRev P 0 = 1 := rfl
-
-/-- One more transformation on the left. -/
-theorem prodRev_succ (P : ℕ → Matrix ι ι ℝ) (r : ℕ) : prodRev P (r + 1) = P r * prodRev P r :=
-  rfl
-
-/-- The empty product is the identity. -/
-@[simp]
-theorem prodFwd_zero (P : ℕ → Matrix ι ι ℝ) : prodFwd P 0 = 1 := rfl
-
-/-- One more transformation on the right. -/
-theorem prodFwd_succ (P : ℕ → Matrix ι ι ℝ) (r : ℕ) : prodFwd P (r + 1) = prodFwd P r * P r :=
-  rfl
-
-/-- The product of orthogonal matrices is orthogonal. -/
-theorem prodRev_mem_orthogonalGroup {P : ℕ → Matrix ι ι ℝ}
-    (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) (r : ℕ) :
-    prodRev P r ∈ Matrix.orthogonalGroup ι ℝ := by
-  induction r with
-  | zero => exact one_mem _
-  | succ r ih => exact mul_mem (hP r) ih
-
-/-- The product of orthogonal matrices is orthogonal. -/
-theorem prodFwd_mem_orthogonalGroup {P : ℕ → Matrix ι ι ℝ}
-    (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) (r : ℕ) :
-    prodFwd P r ∈ Matrix.orthogonalGroup ι ℝ := by
-  induction r with
-  | zero => exact one_mem _
-  | succ r ih => exact mul_mem ih (hP r)
-
-/-- The transpose of `prodFwd P r` is `prodRev Pᵀ r`. -/
-theorem transpose_prodFwd (P : ℕ → Matrix ι ι ℝ) (r : ℕ) :
-    (prodFwd P r)ᵀ = prodRev (fun k => (P k)ᵀ) r := by
-  induction r with
-  | zero => simp
-  | succ r ih => rw [prodFwd_succ, transpose_mul, ih, prodRev_succ]
+/-! ### Orthogonal transformations of vectors -/
 
 /-- An orthogonal matrix preserves the Euclidean norm. -/
 theorem norm_toLp_mulVec_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}

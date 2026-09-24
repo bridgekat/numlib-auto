@@ -56,7 +56,7 @@ and kernel of §1.5 (`LinearMap.range`, `LinearMap.ker` of `Matrix.mulVecLin`). 
 
 Indices are `0`-based (`Fin n`). The book's `ℝⁿ` is `Fin n → ℝ` and `A x` is `A *ᵥ x`. The
 backbone's bandwidth predicates are for square matrices over a linearly ordered index type
-(`Numlib/LinearAlgebra/Matrix/Hessenberg`), which is where the book uses them; the rectangular
+(`Numlib/LinearAlgebra/Matrix/Band`), which is where the book uses them; the rectangular
 trapezoidal shapes of §1.6.2 are stated directly.
 -/
 
@@ -413,7 +413,7 @@ theorem isUnitTriangular_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
 
 /-- **§1.6.3, banded matrices.** A square matrix `A` has *lower band* `p` when `aᵢⱼ = 0` for
 `i > j + p` and *upper band* `q` when `aᵢⱼ = 0` for `j > i + q` (the backbone's
-`Matrix.HasLowerBandwidth`/`Matrix.HasUpperBandwidth` of `Numlib/LinearAlgebra/Matrix/Hessenberg`,
+`Matrix.HasLowerBandwidth`/`Matrix.HasUpperBandwidth` of `Numlib/LinearAlgebra/Matrix/Band`,
 through `Matrix.hasLowerBandwidth_iff_fin`); the named shapes are: diagonal `(p, q) = (0, 0)`;
 lower triangular `q = 0` and upper triangular `p = 0`; tridiagonal `(1, 1)`; upper bidiagonal
 `(0, 1)` and lower bidiagonal `(1, 0)`; upper Hessenberg `p = 1` and lower Hessenberg (the

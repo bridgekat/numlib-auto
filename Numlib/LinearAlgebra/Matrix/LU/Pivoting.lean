@@ -56,7 +56,8 @@ could not be checked against its source. Nothing in the corpus consumes it, so i
 
 ## Main definitions
 
-* `Matrix.partialPivotRow M k`: the first row `r ≥ k` maximizing `‖M r k‖`.
+* `Matrix.IsPartialPivot`, `Matrix.partialPivotRow M k`: choosing a row `r ≥ k` maximizing
+  `‖M r k‖`, the strategy of partial pivoting, with `Matrix.partialPivotRow` the first such row.
 * `Matrix.IsCompletePivot`, `Matrix.completePivotEntry M k`: choosing an entry of maximal modulus
   in the trailing block from `k` on, the strategy of complete pivoting.
 * `Matrix.gemPivotStage A piv k`: `k` stages of Gaussian elimination with the pivoting strategy
@@ -352,7 +353,17 @@ end Existence
 
 section PartialPivot
 
-variable {n : Type*} [LinearOrder n] [Fintype n] {𝕜 : Type*} [NormedField 𝕜]
+variable {n : Type*} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
+
+/-- **A partial-pivoting strategy** ([quarteroni2000numerical] §3.5, [golub2013matrix] §3.4.3):
+`piv M k` returns a row `r` at or after `k` at which `‖M r k‖` is maximal among the rows from `k`
+on. `Matrix.partialPivotRow` is one (`Matrix.isPartialPivot_partialPivotRow`); the interchanges
+such a strategy produces are run by `Matrix.gemPivotStage`. The column counterpart of
+`Matrix.IsCompletePivot`. -/
+def IsPartialPivot (piv : Matrix n n 𝕜 → n → n) : Prop :=
+  ∀ (M : Matrix n n 𝕜) (k : n), k ≤ piv M k ∧ ∀ r, k ≤ r → ‖M r k‖ ≤ ‖M (piv M k) k‖
+
+variable [Fintype n]
 
 /-- Some row `r ≥ k` maximizes `‖M r k‖` among the rows `≥ k`. -/
 theorem exists_partialPivotRow (M : Matrix n n 𝕜) (k : n) :
@@ -404,6 +415,11 @@ theorem partialPivotRow_eq_self_of_forall_eq_zero (h : ∀ r, k ≤ r → M r k 
     partialPivotRow M k = k :=
   le_antisymm (partialPivotRow_le M k le_rfl fun r' hr' => by rw [h r' hr', h k le_rfl])
     (le_partialPivotRow M k)
+
+/-- `Matrix.partialPivotRow` is a partial-pivoting strategy. -/
+theorem isPartialPivot_partialPivotRow :
+    IsPartialPivot (partialPivotRow : Matrix n n 𝕜 → n → n) :=
+  fun M k => ⟨le_partialPivotRow M k, fun _ hr => norm_apply_le_partialPivotRow M k hr⟩
 
 end PartialPivot
 

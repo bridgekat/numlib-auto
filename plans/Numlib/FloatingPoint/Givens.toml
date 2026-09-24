@@ -35,7 +35,7 @@ program is literal.
 
 **What is proved.** The computed pair is a relative perturbation of an exact rotation that does
 the job (`RoundsGivensPair.exists_isRelPert`: order `13`, from the scalar calculus
-`IsRelPert.rounds`/`.mul`/`.div`/`.sqrt` and `IsRelPert.add_of_nonneg`, staged by this round in `Householder`'s scalar section; the direct formula
+`IsRelPert.rounds`/`.mul`/`.div`/`.sqrt` and `IsRelPert.add_of_nonneg`, in `Numlib/FloatingPoint/Model`; the direct formula
 has order `7`); an update with such data is the exact rotation up to `√2 γ_{n+2}` in the 2-norm
 (`norm_sub_le_of_roundsGivensApply`, [higham2002accuracy] Lemma 19.8's normwise form), hence up to
 `√2 γ_{n+2}` columnwise / rowwise and in the Frobenius norm for the matrix updates; the computed

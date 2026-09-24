@@ -28,9 +28,6 @@ the componentwise error analysis of substitution ([quarteroni2000numerical] §3.
 * `Matrix.mulVec_forwardSubst`, `Matrix.mulVec_backSubst`: substitution solves a triangular system
   with nowhere-zero diagonal, and `Matrix.forwardSubst_eq_of_mulVec_eq`,
   `Matrix.backSubst_eq_of_mulVec_eq`: it is the only solution.
-* `Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular` (and the lower version): a
-  triangular matrix is nonsingular exactly when its diagonal has no zero, the sentence opening
-  [quarteroni2000numerical] §3.2.
 * `Matrix.mulVec_luSolve`, `Matrix.mulVec_luSolve_of_mul`, `Matrix.mulVec_luSolve_permMatrix`:
   the LU solve, plain and with a row permutation `P A = L U` (§3.5: solve `L y = P b`, `U x = y`).
 * `Matrix.inv_col_eq_backSubst` ((3.26)), `Matrix.inv_toBlock_le_of_isUpperTriangular` ((3.27)),
@@ -50,7 +47,10 @@ The index type is any `[Fintype n] [LinearOrder n]`, never `Fin N`; "`j < i`" is
 uses, and counts of indices such as `#{k | i ≤ k ∧ k < j}` replace the differences `j - i` of the
 book (on `Fin N` they agree, `Matrix.card_filter_le_lt_fin`). Backward substitution is *defined*
 as forward substitution on `nᵒᵈ`, so that every fact about it is the dual instance of the forward
-one; `Matrix.IsUpperTriangular.isLowerTriangular_orderDual` is the bridge.
+one; `Matrix.IsUpperTriangular.isLowerTriangular_orderDual` is the bridge. It and the
+nonsingularity criterion `Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular` (a triangular
+matrix is nonsingular exactly when its diagonal has no zero, the sentence opening
+[quarteroni2000numerical] §3.2) live in `Numlib/LinearAlgebra/Matrix/Triangular`.
 
 The two Higham lemmas are over a linearly ordered field with the entrywise absolute value
 `Matrix.abs` of `Numlib/LinearAlgebra/Matrix/Order`, which is where their floating-point consumers
@@ -180,39 +180,6 @@ theorem sum_filter_ge_eq_add {M : Type*} [AddCommMonoid M] (f : n → M) (i : n)
 end Counts
 
 variable {K : Type*} [Field K]
-
-/-! ### Nonsingularity of triangular matrices -/
-
-section IsUnit
-
-variable {U L : Matrix n n K}
-
-/-- An upper triangular matrix is nonsingular exactly when its diagonal has no zero entry
-([quarteroni2000numerical] §3.2, first sentence): its determinant is the product of the diagonal. -/
-theorem isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular (hU : U.IsUpperTriangular) :
-    IsUnit U ↔ ∀ i, U i i ≠ 0 := by
-  rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hU, isUnit_iff_ne_zero,
-    Finset.prod_ne_zero_iff]
-  simp
-
-/-- A lower triangular matrix is nonsingular exactly when its diagonal has no zero entry. -/
-theorem isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular (hL : L.IsLowerTriangular) :
-    IsUnit L ↔ ∀ i, L i i ≠ 0 := by
-  rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular L hL, isUnit_iff_ne_zero,
-    Finset.prod_ne_zero_iff]
-  simp
-
-omit [Fintype n] in
-/-- An upper triangular matrix on `n` is a lower triangular matrix on the dual order `nᵒᵈ`. -/
-theorem IsUpperTriangular.isLowerTriangular_orderDual (hU : U.IsUpperTriangular) :
-    IsLowerTriangular (m := nᵒᵈ) U := fun i j h => hU (i := i) (j := j) h
-
-omit [Fintype n] in
-/-- A lower triangular matrix on `n` is an upper triangular matrix on the dual order `nᵒᵈ`. -/
-theorem IsLowerTriangular.isUpperTriangular_orderDual (hL : L.IsLowerTriangular) :
-    IsUpperTriangular (m := nᵒᵈ) L := fun i j h => hL (i := i) (j := j) h
-
-end IsUnit
 
 /-! ### Forward substitution -/
 

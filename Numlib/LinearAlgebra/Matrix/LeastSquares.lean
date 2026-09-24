@@ -23,9 +23,6 @@ that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] �
 * `Matrix.IsLeastSquaresSolution A b x`: `x` minimizes `‖A y - b‖` over `y`,
   [quarteroni2000numerical] (3.73).
 * `Matrix.IsMinNormLeastSquaresSolution A b x`: a least-squares solution of least norm, (3.76).
-* `Matrix.IsQR A Q R`: the full QR factorization `A = Q R` of an `M × N` matrix, `Q` unitary and `R`
-  upper trapezoidal ([quarteroni2000numerical] Definition 3.1); `Matrix.firstColumns`,
-  `Matrix.firstRows`: the reduced factors `Q̃ = Q(1:m, 1:n)`, `R̃ = R(1:n, 1:n)` of (3.48).
 
 ## Main results
 
@@ -39,14 +36,10 @@ that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] �
   `Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`,
   `Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent`: for full column rank the
   normal equations are positive definite, the solution is unique, and it is `(Aᴴ A)⁻¹ Aᴴ b = A⁺ b`.
-* `Matrix.exists_isQR`, `Matrix.IsQR.reduced`: the full QR factorization exists, from the
-  Householder triangularization `Matrix.exists_unitary_mul_upperTriangular`, and yields the reduced
-  factorization `A = Q̃ R̃`, `Q̃ᴴ Q̃ = 1`, `R̃` upper triangular ([quarteroni2000numerical]
-  Property 3.3), whose columns span the column space of `A` when `A` has full column rank.
-* `Matrix.isLeastSquaresSolution_of_qr`, `Matrix.norm_sub_sq_eq_of_isQR`,
-  `Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`: [quarteroni2000numerical] Theorem 3.8,
-  the solution `R̃⁻¹ Q̃ᴴ b` through any reduced factorization and the value of the minimum,
-  `∑_{i ≥ n} |(Qᴴ b)_i|²`.
+* `Matrix.isLeastSquaresSolution_of_qr`, `Matrix.IsQR.isLeastSquaresSolution`,
+  `Matrix.norm_sub_sq_eq_of_isQR`, `Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`:
+  [quarteroni2000numerical] Theorem 3.8, the solution `R̃⁻¹ Q̃ᴴ b` through any reduced
+  factorization and the value of the minimum, `∑_{i ≥ n} |(Qᴴ b)_i|²`.
 * `Matrix.isMinNormLeastSquaresSolution_pinv`, `Matrix.IsMinNormLeastSquaresSolution.eq_pinv`:
   [quarteroni2000numerical] Theorem 3.9, the least-squares solution of least norm is `A⁺ b`, and
   only it.
@@ -58,11 +51,8 @@ that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] �
 Vectors are `EuclideanSpace 𝕜 m`, never `m → 𝕜`, because the norm is the point; the
 `Matrix.toEuclideanLin_*` glue of `Numlib/Analysis/Matrix/ToEuclideanLin` moves between the two.
 The index types are arbitrary `Fintype`s wherever the statement makes sense; `Fin M`, `Fin N` enter
-only with the *full* QR factorization, whose reduced factors are the first `N` columns and rows.
-The full QR factorization asks for nothing beyond `Q` unitary and `R` vanishing below the
-diagonal, and the reduced factorization is stated for `N ≤ M`; uniqueness, which
-[quarteroni2000numerical] Property 3.3 claims, holds only with a normalization of the diagonal of
-`R̃` and is `Matrix.qr_unique` of `Numlib/LinearAlgebra/Matrix/QR`.
+only with the *full* QR factorization `Matrix.IsQR` of `Numlib/LinearAlgebra/Matrix/QR`, whose
+reduced factors are the first `N` columns and rows.
 
 ## References
 
@@ -345,125 +335,12 @@ theorem isLeastSquaresSolution_of_qr {A Q : Matrix m o 𝕜} {R : Matrix o o �
 
 end QRSolve
 
-/-! ### The full QR factorization and its reduced form -/
+/-! ### Least squares through a full QR factorization -/
 
 section FullQR
 
-variable {M N : ℕ}
-
-/-- **The full QR factorization**, [quarteroni2000numerical] Definition 3.1: `A = Q R` with `Q`
-unitary (`M × M`) and `R` upper trapezoidal (`M × N`, zero below the diagonal, so that its rows from
-the `N`-th on vanish when `N ≤ M`). -/
-structure IsQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin M) 𝕜)
-    (R : Matrix (Fin M) (Fin N) 𝕜) : Prop where
-  /-- The orthogonal factor is unitary. -/
-  mem_unitaryGroup : Q ∈ Matrix.unitaryGroup (Fin M) 𝕜
-  /-- The triangular factor vanishes below the diagonal. -/
-  apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (j : ℕ) < i → R i j = 0
-  /-- The factors multiply to `A`. -/
-  mul_eq : Q * R = A
-
-/-- **Every matrix has a full QR factorization**, by Householder triangularization
-(`Matrix.exists_unitary_mul_upperTriangular`): `P A = R` with `P` unitary, so `A = Pᴴ R`. -/
-theorem exists_isQR (A : Matrix (Fin M) (Fin N) 𝕜) : ∃ Q R, IsQR A Q R := by
-  obtain ⟨P, hP, hPA⟩ := exists_unitary_mul_upperTriangular A
-  refine ⟨star P, P * A, Unitary.star_mem hP, hPA, ?_⟩
-  rw [← Matrix.mul_assoc, Unitary.star_mul_self_of_mem hP, Matrix.one_mul]
-
-variable {α : Type*} {m' n' : Type*}
-
-/-- The first `N` columns of a matrix with `M ≥ N` columns, the `Q̃ = Q(1:m, 1:n)` of
-[quarteroni2000numerical] (3.48). -/
-def firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) : Matrix m' (Fin N) α :=
-  Q.submatrix id (Fin.castLE h)
-
-/-- The first `N` rows of a matrix with `M ≥ N` rows, the `R̃ = R(1:n, 1:n)` of
-[quarteroni2000numerical] (3.48). -/
-def firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) : Matrix (Fin N) n' α :=
-  R.submatrix (Fin.castLE h) id
-
-/-- The entries of the first columns. -/
-@[simp]
-theorem firstColumns_apply (Q : Matrix m' (Fin M) α) (h : N ≤ M) (i : m') (j : Fin N) :
-    firstColumns Q h i j = Q i (Fin.castLE h j) := rfl
-
-/-- The entries of the first rows. -/
-@[simp]
-theorem firstRows_apply (R : Matrix (Fin M) n' α) (h : N ≤ M) (i : Fin N) (j : n') :
-    firstRows R h i j = R (Fin.castLE h i) j := rfl
-
-variable {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
+variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
 variable {R : Matrix (Fin M) (Fin N) 𝕜}
-
-/-- The rows of the trapezoidal factor from the `N`-th on vanish. -/
-theorem IsQR.apply_eq_zero_of_le (h : IsQR A Q R) {i : Fin M} (hi : N ≤ i) (j : Fin N) :
-    R i j = 0 :=
-  h.apply_eq_zero i j (j.2.trans_le hi)
-
-/-- The product of the reduced factors is `A`: the trailing rows of `R` are zero, so only the
-first `N` columns of `Q` contribute ([quarteroni2000numerical] (3.47)). -/
-theorem IsQR.firstColumns_mul_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
-    firstColumns Q hNM * firstRows R hNM = A := by
-  rw [← h.mul_eq]
-  ext i j
-  simp only [mul_apply, firstColumns_apply, firstRows_apply]
-  refine Finset.sum_bij_ne_zero (fun k _ _ => Fin.castLE hNM k) (fun _ _ _ => mem_univ _)
-    (fun _ _ _ _ _ _ hk => Fin.castLE_injective hNM hk) (fun k _ hk => ?_) fun _ _ _ => rfl
-  by_cases hkN : (k : ℕ) < N
-  · exact ⟨⟨k, hkN⟩, mem_univ _, by simpa using hk, Fin.ext rfl⟩
-  · exact absurd (by rw [h.apply_eq_zero_of_le (not_lt.1 hkN), mul_zero]) hk
-
-/-- The reduced orthogonal factor has orthonormal columns: `Q̃ᴴ Q̃ = 1`, being a block of
-`Qᴴ Q = 1`. -/
-theorem IsQR.conjTranspose_firstColumns_mul_self (h : IsQR A Q R) (hNM : N ≤ M) :
-    (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 := by
-  have hQ : star Q * Q = 1 := Unitary.star_mul_self_of_mem h.mem_unitaryGroup
-  ext i j
-  have := congrFun (congrFun hQ (Fin.castLE hNM i)) (Fin.castLE hNM j)
-  simp only [mul_apply, star_apply] at this
-  simp only [mul_apply, conjTranspose_apply, firstColumns_apply, this, one_apply, Fin.castLE_inj]
-
-/-- The reduced triangular factor is upper triangular. -/
-theorem IsQR.isUpperTriangular_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
-    (firstRows R hNM).IsUpperTriangular := fun _ _ hij =>
-  h.apply_eq_zero _ _ hij
-
-/-- **The reduced QR factorization**, [quarteroni2000numerical] Property 3.3 and (3.47)–(3.48):
-from a full factorization `A = Q R`, `N ≤ M`, the first `N` columns `Q̃` of `Q` and the first `N`
-rows `R̃` of `R` satisfy `A = Q̃ R̃`, `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular. -/
-theorem IsQR.reduced (h : IsQR A Q R) (hNM : N ≤ M) :
-    firstColumns Q hNM * firstRows R hNM = A ∧
-      (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 ∧ (firstRows R hNM).IsUpperTriangular :=
-  ⟨h.firstColumns_mul_firstRows hNM, h.conjTranspose_firstColumns_mul_self hNM,
-    h.isUpperTriangular_firstRows hNM⟩
-
-/-- For `A` of full column rank the reduced triangular factor is nonsingular: `A = Q̃ R̃` is
-injective on vectors, hence so is `R̃`. -/
-theorem IsQR.isUnit_firstRows_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
-    (hA : LinearIndependent 𝕜 Aᵀ) : IsUnit (firstRows R hNM) := by
-  rw [← mulVec_injective_iff_isUnit]
-  have hinj := mulVec_injective_of_linearIndependent_transpose hA
-  rw [← h.firstColumns_mul_firstRows hNM] at hinj
-  intro x y hxy
-  apply hinj
-  simp only [← mulVec_mulVec, hxy]
-
-/-- The diagonal of the reduced triangular factor is nowhere zero when `A` has full column rank. -/
-theorem IsQR.firstRows_diag_ne_zero_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
-    (hA : LinearIndependent 𝕜 Aᵀ) (i : Fin N) : firstRows R hNM i i ≠ 0 :=
-  (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular (h.isUpperTriangular_firstRows hNM)).1
-    (h.isUnit_firstRows_of_linearIndependent hNM hA) i
-
-/-- [quarteroni2000numerical] Property 3.3, the range clause: for `A` of full column rank the
-columns of `Q̃` span the column space of `A`, since `A = Q̃ R̃` with `R̃` nonsingular. -/
-theorem IsQR.span_firstColumns_eq (h : IsQR A Q R) (hNM : N ≤ M) (hA : LinearIndependent 𝕜 Aᵀ) :
-    Submodule.span 𝕜 (Set.range (firstColumns Q hNM)ᵀ) = Submodule.span 𝕜 (Set.range Aᵀ) := by
-  have hR := h.isUnit_firstRows_of_linearIndependent hNM hA
-  rw [show Set.range Aᵀ = Set.range A.col from rfl,
-    show Set.range (firstColumns Q hNM)ᵀ = Set.range (firstColumns Q hNM).col from rfl,
-    ← range_mulVecLin, ← range_mulVecLin, ← h.firstColumns_mul_firstRows hNM,
-    mulVecLin_mul, LinearMap.range_comp_of_range_eq_top]
-  exact LinearMap.range_eq_top.2 (mulVec_surjective_iff_isUnit.2 hR)
 
 /-- **[quarteroni2000numerical] Theorem 3.8**, through a full QR factorization with `N ≤ M`: the
 least-squares solution of `A x = b` is `R̃⁻¹ Q̃ᴴ b`, for `A` of full column rank. -/

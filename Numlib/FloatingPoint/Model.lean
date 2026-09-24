@@ -1,6 +1,7 @@
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Algebra.Order.Ring.Pow
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
@@ -22,6 +23,14 @@ The bookkeeping constants are those of [higham2002accuracy]: `gamma u n = n u / 
 every error analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma
 u n` (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
 orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`).
+
+The calculus is completed by the steps an algorithm takes one operation at a time: one more
+rounding as a multiplication or a division (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
+`IsRelPert.rounds`), a sum of nonnegative terms (`IsRelPert.add_of_nonneg`), a square root
+(`IsRelPert.sqrt`, over `ℝ`), a common factor
+(`IsRelPert.const_mul`), and the passage between a perturbation and an error bound
+(`isRelPert_of_abs_sub_le`, `IsRelPert.abs_sub_le`) — the forms the Householder, Givens and
+Cholesky analyses of `Numlib/FloatingPoint` need.
 -/
 
 open Finset
@@ -413,5 +422,120 @@ theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ
   calc |θ - δ| ≤ gamma u k + u := hnum
     _ ≤ gamma u (k + 1) * (1 - u) := hscalar
     _ ≤ gamma u (k + 1) * (1 + δ) := mul_le_mul_of_nonneg_left hlow hg1
+
+/-! ### Relative perturbations, one operation at a time -/
+
+section Steps
+
+/-- Rounding `0` gives `0`. -/
+theorem RoundingModel.Rounds.eq_zero_of_zero {m : RoundingModel K} {y : K} (h : m.Rounds 0 y) :
+    y = 0 := by
+  have := m.abs_sub_le h
+  rw [sub_zero, abs_zero, mul_zero] at this
+  exact abs_nonpos_iff.1 this
+
+/-- A bound `|y - x| ≤ γ_n |x|` is a relative perturbation of order `n`. -/
+theorem isRelPert_of_abs_sub_le {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) {x y : K}
+    (h : |y - x| ≤ gamma u n * |x|) : IsRelPert u n x y := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · rw [sub_zero, abs_zero, mul_zero] at h
+    exact ⟨0, by simpa using hγ, by simp [abs_nonpos_iff.1 h]⟩
+  · refine ⟨(y - x) / x, ?_, ?_⟩
+    · rw [abs_div, div_le_iff₀ (abs_pos.2 hx)]
+      exact h
+    · field_simp
+      ring
+
+/-- The error of a relative perturbation, `|y - x| ≤ γ_n |x|`. -/
+theorem IsRelPert.abs_sub_le {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) :
+    |y - x| ≤ gamma u n * |x| := by
+  obtain ⟨θ, hθ, rfl⟩ := h
+  rw [show x * (1 + θ) - x = θ * x by ring, abs_mul]
+  exact mul_le_mul_of_nonneg_right hθ (abs_nonneg _)
+
+omit [IsStrictOrderedRing K] in
+/-- A relative perturbation is unchanged by a common factor. -/
+theorem IsRelPert.const_mul {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) (c : K) :
+    IsRelPert u n (c * x) (c * y) := by
+  obtain ⟨θ, hθ, rfl⟩ := h
+  exact ⟨θ, hθ, by ring⟩
+
+/-- A relative perturbation of `0` is `0`. -/
+theorem IsRelPert.zero {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) : IsRelPert u n (0 : K) 0 :=
+  ⟨0, by simpa using hγ, by simp⟩
+
+/-- Multiplying a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
+order `k + 1`. -/
+theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
+    (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
+    IsRelPert u (k + 1) x (y * (1 + δ)) := by
+  obtain ⟨θ, hθ, rfl⟩ := h
+  exact ⟨(1 + θ) * (1 + δ) - 1, abs_one_add_mul_one_add_sub_one_le_gamma hu hu1 hk hθ hδ,
+    by ring⟩
+
+/-- Dividing a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
+order `k + 1`. -/
+theorem IsRelPert.div_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
+    (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
+    IsRelPert u (k + 1) x (y / (1 + δ)) := by
+  obtain ⟨θ, hθ, rfl⟩ := h
+  refine ⟨(1 + θ) / (1 + δ) - 1, abs_one_add_div_one_add_sub_one_le_gamma hu hk hθ hδ, ?_⟩
+  rw [show (1 : K) + ((1 + θ) / (1 + δ) - 1) = (1 + θ) / (1 + δ) by ring, mul_div_assoc]
+
+/-- One more rounding raises the order of a relative perturbation by one. -/
+theorem IsRelPert.rounds {m : RoundingModel K} (hu : m.u < 1) {k : ℕ}
+    (hk : ((k + 1 : ℕ) : K) * m.u < 1) {x y z : K} (h : IsRelPert m.u k x y)
+    (hz : m.Rounds y z) : IsRelPert m.u (k + 1) x z := by
+  obtain ⟨δ, hδ, rfl⟩ := hz.exists_delta
+  exact h.mul_one_add m.u_nonneg hu hk hδ
+
+/-- The sum of two nonnegative quantities perturbed to the same relative order is perturbed to
+that order: the perturbation of the sum is the convex combination `(x₁ θ₁ + x₂ θ₂) / (x₁ + x₂)` of
+the two perturbations. The step of `1 + τ²`, `a² + b²` and the like in the Givens and Householder
+analyses. -/
+theorem IsRelPert.add_of_nonneg {u : K} {k : ℕ} {x₁ x₂ y₁ y₂ : K} (hx₁ : 0 ≤ x₁) (hx₂ : 0 ≤ x₂)
+    (h₁ : IsRelPert u k x₁ y₁) (h₂ : IsRelPert u k x₂ y₂) :
+    IsRelPert u k (x₁ + x₂) (y₁ + y₂) := by
+  obtain ⟨θ₁, hθ₁, rfl⟩ := h₁
+  obtain ⟨θ₂, hθ₂, rfl⟩ := h₂
+  rcases (add_nonneg hx₁ hx₂).eq_or_lt with h | h
+  · obtain rfl : x₁ = 0 := by linarith
+    obtain rfl : x₂ = 0 := by linarith
+    exact ⟨0, by simpa using (abs_nonneg θ₁).trans hθ₁, by simp⟩
+  · refine ⟨(x₁ * θ₁ + x₂ * θ₂) / (x₁ + x₂), ?_, ?_⟩
+    · rw [abs_div, abs_of_pos h, div_le_iff₀ h]
+      calc |x₁ * θ₁ + x₂ * θ₂| ≤ x₁ * |θ₁| + x₂ * |θ₂| := by
+            refine (abs_add_le _ _).trans ?_
+            rw [abs_mul, abs_mul, abs_of_nonneg hx₁, abs_of_nonneg hx₂]
+        _ ≤ x₁ * gamma u k + x₂ * gamma u k := by gcongr
+        _ = gamma u k * (x₁ + x₂) := by ring
+    · field_simp
+      ring
+
+end Steps
+
+/-! ### Square roots -/
+
+/-- `|√(1 + θ) - 1| ≤ |θ|` for `θ ≥ -1`. -/
+theorem abs_sqrt_one_add_sub_one_le {θ : ℝ} (h : -1 ≤ θ) : |√(1 + θ) - 1| ≤ |θ| := by
+  have h0 : 0 ≤ 1 + θ := by linarith
+  have hs : 0 ≤ √(1 + θ) := Real.sqrt_nonneg _
+  have hsq : √(1 + θ) ^ 2 = 1 + θ := Real.sq_sqrt h0
+  have key : (√(1 + θ) - 1) * (√(1 + θ) + 1) = θ := by nlinarith
+  have hpos : 1 ≤ √(1 + θ) + 1 := by linarith
+  calc |√(1 + θ) - 1| ≤ |√(1 + θ) - 1| * (√(1 + θ) + 1) :=
+        le_mul_of_one_le_right (abs_nonneg _) hpos
+    _ = |(√(1 + θ) - 1) * (√(1 + θ) + 1)| := by
+        rw [abs_mul, abs_of_pos (by linarith : (0 : ℝ) < √(1 + θ) + 1)]
+    _ = |θ| := by rw [key]
+
+/-- The square root of a relative perturbation of order `n` is one of order `n`, when `γ_n ≤ 1`.
+-/
+theorem IsRelPert.sqrt {u : ℝ} {n : ℕ} (hγ : gamma u n ≤ 1) {x y : ℝ} (hx : 0 ≤ x)
+    (h : IsRelPert u n x y) : IsRelPert u n (√x) (√y) := by
+  obtain ⟨θ, hθ, rfl⟩ := h
+  have hθ1 : -1 ≤ θ := by linarith [neg_le_of_abs_le hθ]
+  refine ⟨√(1 + θ) - 1, (abs_sqrt_one_add_sub_one_le hθ1).trans hθ, ?_⟩
+  rw [Real.sqrt_mul hx, add_sub_cancel]
 
 end FloatingPoint

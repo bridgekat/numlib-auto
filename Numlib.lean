@@ -426,6 +426,9 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.Assembly
+import Numlib.LinearAlgebra.Matrix.Band
+import Numlib.LinearAlgebra.Matrix.Bidiagonal
+import Numlib.LinearAlgebra.Matrix.Block
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Cholesky
@@ -449,6 +452,7 @@ import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
 import Numlib.LinearAlgebra.Matrix.PosDef
+import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.RealSchur
@@ -456,6 +460,7 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Similar
+import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern

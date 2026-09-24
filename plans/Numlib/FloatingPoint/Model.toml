@@ -123,3 +123,25 @@ desc = '''**Wilkinson's constant** ([golub2013matrix] Lemma 2.7.1): if `1 + α =
 u)² ≤ 1.01 n u` for `n u ≤ 0.01`). Not a consequence of `abs_prod_one_add_sub_one_le_gamma`: at `n u =
 0.01`, `γ_n = n u / 0.99 ≈ 1.0101 n u`. ★'''
 deps = ["FloatingPoint.abs_prod_one_add_sub_one_le_one_add_pow_sub_one", "FloatingPoint.one_add_pow_sub_one_le_mul_add_sq"]
+
+[[node]]
+id = "isRelPert_of_abs_sub_le"
+
+[[node]]
+id = "IsRelPert.abs_sub_le"
+
+[[node]]
+id = "IsRelPert.mul_one_add"
+
+[[node]]
+id = "IsRelPert.div_one_add"
+
+[[node]]
+id = "IsRelPert.rounds"
+
+[[node]]
+id = "IsRelPert.sqrt"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, proof of Lemma 19.1"
+
+[[node]]
+id = "IsRelPert.add_of_nonneg"

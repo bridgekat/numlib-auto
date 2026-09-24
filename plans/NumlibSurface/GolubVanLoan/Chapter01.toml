@@ -42,8 +42,7 @@ chapter's dependency), `Numlib/LinearAlgebra/Matrix/Kronecker` (§1.2.11, §1.3.
 appends: `FloatingPoint/{Model,System,InnerProduct}` (exact model, idempotence), `Hessenberg`
 (rectangular bandwidth), `BlockDiagonal` (block multiplication over `Sigma`, Theorem 1.3.1), `DFT`
 ((1.4.5) and the index symmetries of `F_n`). Reused as they are: `Matrix.HasLowerBandwidth`/
-`HasUpperBandwidth` and the shape iff-lemmas of `Hessenberg` (Table 1.2.1; the planned
-`LinearAlgebra/Matrix/Band` module is not needed), `Matrix.dft` with `dft_radix_two` (the FFT's
+`HasUpperBandwidth` of `Band` and the shape iff-lemmas of `Hessenberg` (Table 1.2.1), `Matrix.dft` with `dft_radix_two` (the FFT's
 correctness), `Matrix.sineVec`/`dotProduct_sineVec` (`TridiagonalToeplitz`), Mathlib's `Matrix.vec`,
 `kronecker_mulVec_vec`, `inv_kronecker`, `kronecker_assoc`, `Matrix.symplecticGroup`,
 `symplecticGroup.fromBlocks_mem_iff`, `LieAlgebra.Symplectic.sp`, `Equiv.Perm.permMatrix`,
@@ -82,7 +81,7 @@ semantics (D4) the other eleven chapters use.
    (≈ 45, prototype `notes/gvl/fixA/proto/UpdateNodup.lean`), `roundsDot_of_mem_run_dotAccum`
    (≈ 40), `abs_sub_le_of_mem_run_dotAccum` (≈ 50).
 2. `Numlib/LinearAlgebra/Matrix/Kronecker` — ≈ 300 lines (`kroneckerFin_assoc` and (1.3.5) ★★).
-3. `Hessenberg` (rectangular bandwidth, ≈ 40) and `BlockDiagonal` (≈ 15) appends.
+3. `Band` (rectangular bandwidth) and `Block` (block multiplication): done by refactor R3.
 4. `Numlib/LinearAlgebra/Matrix/Hamiltonian` — ≈ 150 lines.
 5. `DFT` appends (≈ 60), then `Numlib/Analysis/Fourier/SineCosineTransform` — ≈ 250 lines (the two
    pairing identities ★★, ≈ 60 each).

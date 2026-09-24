@@ -19,8 +19,9 @@ recurrence (the book's Program 2), and it is the evaluation order for which the 
 Theorem 8.5 is exactly `γ_n`. An implementation that first accumulates the inner product and then
 subtracts it from `b i` (Program 1) performs the same roundings except for the first row, where it
 rounds `b i - 0`; the relational model cannot know that this rounding is exact, so that order is
-covered by the same theorems with `γ_n` replaced by `γ_{n+1}` (`Numlib/FloatingPoint/LU` uses
-that order for the Doolittle recurrence, where the extra rounding costs nothing).
+covered by the same theorems with `γ_n` replaced by `γ_{n+1}`. The Doolittle recurrence of
+`Numlib/FloatingPoint/LU` (`FloatingPoint.RoundsLU`) is computed by the same running differences,
+which is why its constant is `γ_n` as well.
 
 The scalar core is [higham2002accuracy] Lemma 8.4 (`FloatingPoint.exists_rounds_sub_dot_div_eq`):
 `d ŷ (1 + θ₀) = c - ∑_i a_i b_i (1 + θ_i)` with every `|θ| ≤ γ_{k+1}`, `k` the number of terms. It

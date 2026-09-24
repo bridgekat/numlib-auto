@@ -35,7 +35,8 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 * `Matrix.envelope A`, the lower envelope of a matrix; `Matrix.tridiagonalOfNat a b c N`, the
   tridiagonal matrix with diagonals `a`, `b`, `c`; `Matrix.thomasAlpha`, `Matrix.thomasBeta`,
   `Matrix.thomasGamma`, the recurrences of the Thomas algorithm, and its factors
-  `Matrix.thomasLower`, `Matrix.thomasUpper`.
+  `Matrix.thomasLower`, `Matrix.thomasUpper`, which are the bidiagonal matrices
+  `Matrix.lowerBidiagonalOf`, `Matrix.upperBidiagonalOf` of the multipliers and the pivots.
 
 ## Main results
 
@@ -1487,6 +1488,50 @@ noncomputable def thomasLower (N : ℕ) : Matrix (Fin N) (Fin N) K :=
 and the superdiagonal `c` of the matrix. -/
 noncomputable def thomasUpper (N : ℕ) : Matrix (Fin N) (Fin N) K :=
   of fun i j => if i = j then thomasAlpha a b c i else if (i : ℕ) + 1 = j then c i else 0
+
+/-- The unit lower bidiagonal matrix with subdiagonal `β` (`β i` at `(i, i - 1)`), the shape of
+the lower Thomas factor: `Matrix.thomasLower a b c N` is `lowerBidiagonalOf (thomasBeta a b c) N`
+(`Matrix.thomasLower_eq`), and the computed factor of the floating-point Thomas algorithm is
+`lowerBidiagonalOf β̂ N`. -/
+def lowerBidiagonalOf [Zero R] [One R] (β : ℕ → R) (N : ℕ) : Matrix (Fin N) (Fin N) R :=
+  of fun i j => if i = j then 1 else if (j : ℕ) + 1 = i then β i else 0
+
+/-- The upper bidiagonal matrix with diagonal `α` and superdiagonal `c`, the shape of the upper
+Thomas factor: `Matrix.thomasUpper a b c N` is `upperBidiagonalOf (thomasAlpha a b c) c N`
+(`Matrix.thomasUpper_eq`). -/
+def upperBidiagonalOf [Zero R] (α c : ℕ → R) (N : ℕ) : Matrix (Fin N) (Fin N) R :=
+  of fun i j => if i = j then α i else if (i : ℕ) + 1 = j then c i else 0
+
+/-- The exact Thomas lower factor is the bidiagonal matrix of the exact multipliers. -/
+theorem thomasLower_eq (N : ℕ) :
+    thomasLower a b c N = lowerBidiagonalOf (thomasBeta a b c) N := rfl
+
+/-- The exact Thomas upper factor is the bidiagonal matrix of the exact pivots. -/
+theorem thomasUpper_eq (N : ℕ) :
+    thomasUpper a b c N = upperBidiagonalOf (thomasAlpha a b c) c N := rfl
+
+/-- Left multiplication by the lower bidiagonal matrix adds `β_i` times the previous row. -/
+theorem lowerBidiagonalOf_mul_apply [NonAssocSemiring R] {N : ℕ} (β : ℕ → R)
+    (M : Matrix (Fin N) (Fin N) R) (i j : Fin N) :
+    (lowerBidiagonalOf β N * M) i j =
+      M i j + if h : 0 < (i : ℕ) then β i * M ⟨i - 1, by omega⟩ j else 0 := by
+  rw [mul_apply]
+  have hterm : ∀ r : Fin N, lowerBidiagonalOf β N i r * M r j =
+      (if r = i then M i j else 0) + if _h : (r : ℕ) + 1 = i then β i * M r j else 0 := by
+    intro r
+    simp only [lowerBidiagonalOf, of_apply]
+    by_cases hri : r = i
+    · subst hri
+      simp
+    · simp only [Ne.symm hri, hri, ite_false, zero_add]
+      split_ifs <;> simp
+  simp only [hterm, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true,
+    sum_dite_val_add_one_eq]
+
+/-- An entry of the upper bidiagonal matrix off its two diagonals vanishes. -/
+theorem upperBidiagonalOf_apply_eq_zero [Zero R] {N : ℕ} {α c : ℕ → R} {i j : Fin N}
+    (h1 : (i : ℕ) ≠ j) (h2 : (i : ℕ) + 1 ≠ j) : upperBidiagonalOf α c N i j = 0 := by
+  simp [upperBidiagonalOf, Fin.ext_iff, h1, h2]
 
 /-- The lower Thomas factor is lower bidiagonal. -/
 theorem isLowerBidiagonal_thomasLower (N : ℕ) : (thomasLower a b c N).IsLowerBidiagonal := by

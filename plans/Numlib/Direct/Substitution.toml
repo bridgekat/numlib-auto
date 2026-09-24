@@ -19,18 +19,6 @@ id = "card_filter_le_eq_card_filter_lt_add_one"
 id = "sum_filter_ge_eq_add"
 
 [[node]]
-id = "isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"
-
-[[node]]
-id = "isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular"
-
-[[node]]
-id = "IsUpperTriangular.isLowerTriangular_orderDual"
-
-[[node]]
-id = "IsLowerTriangular.isUpperTriangular_orderDual"
-
-[[node]]
 id = "forwardSubst"
 
 [[node]]

@@ -107,9 +107,10 @@ theorem RoundsLU.abs_mul_abs_apply (h : RoundsLU m A L U) (i j : n) :
 /-- **One entry of [higham2002accuracy] Theorem 9.3**: `|(L U)_ij - a_ij| ≤ γ_n (|L| |U|)_ij`.
 Above the diagonal the entry `u_ij` carries the running differences; below it, `l_ij u_jj`
 carries them together with the division. In both cases the perturbation is charged to the terms
-`l_ir u_rj`, `r ≤ min i j`. -/
+`l_ir u_rj`, `r ≤ min i j`. Only the pivots that are divisors must be nonzero, those `u_jj` with
+some row `i > j` below them: the last pivot divides nothing. -/
 theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : K) * m.u < 1)
-    (h : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0) (i j : n) :
+    (h : RoundsLU m A L U) (hd : ∀ j i, j < i → U j j ≠ 0) (i j : n) :
     |(L * U) i j - A i j| ≤ gamma m.u (Fintype.card n) * (L.abs * U.abs) i j := by
   have hγ := gamma_nonneg m.u_nonneg hcard
   rw [h.isLU_mul.apply_eq_sum i j, h.abs_mul_abs_apply i j]
@@ -174,7 +175,7 @@ theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : 
     have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card j
     have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard
-    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hp (hd j) ht hx hlu
+    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hp (hd j i hji) ht hx hlu
     have hmono := gamma_mono m.u_nonneg hle hcard
     rw [min_eq_right hji.le, Matrix.sum_filter_le_eq_add, Matrix.sum_filter_le_eq_add, ← hset]
     have hkey : ∑ r ∈ o.toFinset, L i r * U r j + L i j * U j j - A i j =
@@ -203,10 +204,11 @@ theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : 
 
 /-- **[higham2002accuracy] Theorem 9.3**, [quarteroni2000numerical] (3.40): the computed LU
 factors satisfy `L̂ Û = A + ΔA` with `|ΔA| ≤ γ_n |L̂| |Û|` entrywise, `n` the order of the matrix.
-The pivots `û_jj` must be nonzero, since the model rounds `t / û_jj` with the junk value
-`t / 0 = 0`. -/
+The pivots `û_jj` that are divisors, those with some row `i > j` below them, must be nonzero,
+since the model rounds `t / û_jj` with the junk value `t / 0 = 0`; the last pivot divides nothing
+and may vanish. -/
 theorem exists_roundsLU_mul_eq_add (hu : m.u < 1) (hcard : (Fintype.card n : K) * m.u < 1)
-    (h : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0) :
+    (h : RoundsLU m A L U) (hd : ∀ j i, j < i → U j j ≠ 0) :
     ∃ ΔA : Matrix n n K, ΔA.abs ≤ₑ gamma m.u (Fintype.card n) • (L.abs * U.abs) ∧
       L * U = A + ΔA :=
   ⟨L * U - A, fun i j => h.abs_mul_sub_apply_le hu hcard hd i j, by abel⟩
@@ -276,7 +278,9 @@ theorem abs_add_mul_add_mul_add_mul_entrywiseLE {ΔA ΔL ΔU : Matrix n n K} {γ
 /-- **[higham2002accuracy] Theorem 9.4**: factoring `A = L̂ Û` and solving the two triangular
 systems by substitution yields a computed `x̂` with `(A + ΔA) x̂ = b`, `|ΔA| ≤ γ_{3n} |L̂| |Û|`.
 This is the rigorous form of [quarteroni2000numerical] (3.64), whose `n u (3|A| + 5|L̂||Û|) +
-O(u²)` is the first-order form of Golub and Van Loan. -/
+O(u²)` is the first-order form of Golub and Van Loan. Unlike the factorization alone
+(`FloatingPoint.exists_roundsLU_mul_eq_add`), back substitution divides by every pivot, so all of
+them must be nonzero. -/
 theorem exists_roundsLU_solve_eq (hu : m.u < 1) (hcard : ((3 * Fintype.card n : ℕ) : K) * m.u < 1)
     (h : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0) {b y x : n → K}
     (hy : RoundsForwardSubst m L b y) (hx : RoundsBackSubst m U y x) :
@@ -287,7 +291,7 @@ theorem exists_roundsLU_solve_eq (hu : m.u < 1) (hcard : ((3 * Fintype.card n : 
       push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) (Fintype.card n)) m.u_nonneg]
     linarith
   have hγ := gamma_nonneg m.u_nonneg hcard'
-  obtain ⟨ΔA₁, hΔA₁, hLU⟩ := exists_roundsLU_mul_eq_add hu hcard' h hd
+  obtain ⟨ΔA₁, hΔA₁, hLU⟩ := exists_roundsLU_mul_eq_add hu hcard' h fun j _ _ => hd j
   obtain ⟨ΔL, hΔL, hyL⟩ := exists_roundsForwardSubst_eq hu hcard'
     h.isLU_mul.isUnitLowerTriangular.isLowerTriangular
     (fun i => by rw [h.lower_diag]; exact one_ne_zero) hy
@@ -348,8 +352,8 @@ variable {m : RoundingModel K} {A L U : Matrix n n K}
 factors are entrywise nonnegative, the backward error is small relative to `A` itself,
 `|ΔA| ≤ (n u / (1 - 2 n u)) |A|`, since then `|L̂| |Û| = |L̂ Û| = |A + ΔA|`. -/
 theorem abs_le_of_roundsLU_of_entrywiseNonneg (hu : m.u < 1)
-    (hcard : 2 * ((Fintype.card n : K) * m.u) < 1) (h : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)
-    (hL : L.EntrywiseNonneg) (hU : U.EntrywiseNonneg) :
+    (hcard : 2 * ((Fintype.card n : K) * m.u) < 1) (h : RoundsLU m A L U)
+    (hd : ∀ j i, j < i → U j j ≠ 0) (hL : L.EntrywiseNonneg) (hU : U.EntrywiseNonneg) :
     ∃ ΔA : Matrix n n K,
       ΔA.abs ≤ₑ ((Fintype.card n : K) * m.u / (1 - 2 * ((Fintype.card n : K) * m.u))) • A.abs ∧
         L * U = A + ΔA := by
@@ -637,28 +641,10 @@ end Cholesky
 
 section Thomas
 
+open Matrix (lowerBidiagonalOf upperBidiagonalOf lowerBidiagonalOf_mul_apply
+  upperBidiagonalOf_apply_eq_zero)
+
 variable {m : RoundingModel K} {N : ℕ}
-
-/-- The unit lower bidiagonal matrix with subdiagonal `β`: `Matrix.thomasLower a b c N` is
-`lowerBidiagonalOf (Matrix.thomasBeta a b c) N` (`FloatingPoint.thomasLower_eq`). -/
-def lowerBidiagonalOf (β : ℕ → K) (N : ℕ) : Matrix (Fin N) (Fin N) K :=
-  Matrix.of fun i j => if i = j then 1 else if (j : ℕ) + 1 = i then β i else 0
-
-/-- The upper bidiagonal matrix with diagonal `α` and superdiagonal `c`:
-`Matrix.thomasUpper a b c N` is `upperBidiagonalOf (Matrix.thomasAlpha a b c) c N`
-(`FloatingPoint.thomasUpper_eq`). -/
-def upperBidiagonalOf (α c : ℕ → K) (N : ℕ) : Matrix (Fin N) (Fin N) K :=
-  Matrix.of fun i j => if i = j then α i else if (i : ℕ) + 1 = j then c i else 0
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The exact Thomas lower factor is the bidiagonal matrix of the exact multipliers. -/
-theorem thomasLower_eq (a b c : ℕ → K) (N : ℕ) :
-    Matrix.thomasLower a b c N = lowerBidiagonalOf (Matrix.thomasBeta a b c) N := rfl
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The exact Thomas upper factor is the bidiagonal matrix of the exact pivots. -/
-theorem thomasUpper_eq (a b c : ℕ → K) (N : ℕ) :
-    Matrix.thomasUpper a b c N = upperBidiagonalOf (Matrix.thomasAlpha a b c) c N := rfl
 
 /-- The entrywise absolute value of the lower bidiagonal matrix. -/
 theorem abs_lowerBidiagonalOf (β : ℕ → K) (N : ℕ) :
@@ -673,30 +659,6 @@ theorem abs_upperBidiagonalOf (α c : ℕ → K) (N : ℕ) :
   ext i j
   simp only [Matrix.abs_apply, upperBidiagonalOf, Matrix.of_apply]
   split_ifs <;> simp
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- Left multiplication by the lower bidiagonal matrix adds `β_i` times the previous row. -/
-theorem lowerBidiagonalOf_mul_apply (β : ℕ → K) (M : Matrix (Fin N) (Fin N) K) (i j : Fin N) :
-    (lowerBidiagonalOf β N * M) i j =
-      M i j + if h : 0 < (i : ℕ) then β i * M ⟨i - 1, by omega⟩ j else 0 := by
-  rw [Matrix.mul_apply]
-  have hterm : ∀ r : Fin N, lowerBidiagonalOf β N i r * M r j =
-      (if r = i then M i j else 0) + if _h : (r : ℕ) + 1 = i then β i * M r j else 0 := by
-    intro r
-    simp only [lowerBidiagonalOf, Matrix.of_apply]
-    by_cases hri : r = i
-    · subst hri
-      simp
-    · simp only [Ne.symm hri, hri, ite_false, zero_add]
-      split_ifs <;> simp
-  simp only [hterm, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true,
-    Matrix.sum_dite_val_add_one_eq]
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- An entry of the upper bidiagonal matrix off its two diagonals vanishes. -/
-theorem upperBidiagonalOf_apply_eq_zero {α c : ℕ → K} {i j : Fin N} (h1 : (i : ℕ) ≠ j)
-    (h2 : (i : ℕ) + 1 ≠ j) : upperBidiagonalOf α c N i j = 0 := by
-  simp [upperBidiagonalOf, Fin.ext_iff, h1, h2]
 
 /-- The entries of the upper bidiagonal matrix of absolute values are nonnegative. -/
 theorem upperBidiagonalOf_abs_nonneg (α c : ℕ → K) (i j : Fin N) :

@@ -1,0 +1,103 @@
+namespace = "Matrix"
+
+[[node]]
+id = "diagPart"
+
+[[node]]
+id = "diagPart_add_strictLower_add_strictUpper"
+
+[[node]]
+id = "diagPart_sub_neg_strictLower_sub_neg_strictUpper"
+
+[[node]]
+id = "isUnit_diagPart_iff"
+
+[[node]]
+id = "strictLower"
+
+[[node]]
+id = "strictLower_blockTriangular"
+
+[[node]]
+id = "strictUpper"
+
+[[node]]
+id = "strictUpper_blockTriangular"
+
+[[node]]
+id = "IsUnitLowerTriangular"
+
+[[node]]
+id = "IsUnitLowerTriangular.mul"
+
+[[node]]
+id = "IsUnitLowerTriangular.det_eq_one"
+
+[[node]]
+id = "IsUnitLowerTriangular.isUnit"
+
+[[node]]
+id = "IsUnitLowerTriangular.inv"
+
+[[node]]
+id = "IsUpperTriangular.inv"
+
+[[node]]
+id = "IsLowerTriangular.inv"
+
+[[node]]
+id = "charpoly_of_isLowerTriangular"
+
+[[node]]
+id = "strictLower_transpose"
+
+[[node]]
+id = "strictUpper_transpose"
+
+[[node]]
+id = "diagPart_transpose"
+
+[[node]]
+id = "diagPart_mulVec_apply"
+
+[[node]]
+id = "strictLower_mulVec_apply"
+
+[[node]]
+id = "strictUpper_mulVec_apply"
+
+[[node]]
+id = "mulVec_apply_eq_add_sum_erase"
+
+[[node]]
+id = "IsUnitUpperTriangular"
+
+[[node]]
+id = "isUnitUpperTriangular_transpose_iff"
+
+[[node]]
+id = "IsUnitUpperTriangular.mul"
+
+[[node]]
+id = "IsUnitUpperTriangular.inv"
+
+[[node]]
+id = "isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"
+
+[[node]]
+id = "isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular"
+
+[[node]]
+id = "IsUpperTriangular.isLowerTriangular_orderDual"
+
+[[node]]
+id = "IsLowerTriangular.isUpperTriangular_orderDual"
+
+[[node]]
+id = "isUnitLowerTriangular_transpose_iff"
+
+[[node]]
+id = "IsUnitUpperTriangular.det_eq_one"
+
+[[node]]
+id = "IsUnitUpperTriangular.isUnit"

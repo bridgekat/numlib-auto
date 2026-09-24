@@ -1,10 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.BlockDiagonal` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch01) the module is about block matrices generally, not only block diagonal ones; add a paragraph
-# "Block multiplication over a `Sigma` index: for `A : Matrix (Σ a, m a) (Σ c, p c) R` and `B :
-# Matrix (Σ c, p c) (Σ b, n b) R`, the `(a, b)` block of `A * B` is `∑ c, A_{ac} B_{cb}`
-# (`Matrix.mul_submatrix_sigmaMk_eq_sum`, [golub2013matrix] Theorem 1.3.1); Mathlib has the `2 × 2`
-# case `fromBlocks_multiply` and the uniform-block case `Matrix.compRingEquiv` only."
 namespace = "Matrix"
 
 [[node]]
@@ -24,16 +17,3 @@ id = "blockDiagonal'_sub_smul_one"
 
 [[node]]
 id = "blockDiagonal'_mulVec"
-
-[[node]]  # staged by ch01
-id = "mul_submatrix_sigmaMk_eq_sum"
-kind = "theorem"
-desc = '''Block multiplication with blocks of arbitrary sizes: for `[Fintype ι] [∀ c, Fintype (p c)]`,
-`A : Matrix (Σ a, m a) (Σ c : ι, p c) R`, `B : Matrix (Σ c : ι, p c) (Σ b, n b) R` over a
-`NonUnitalNonAssocSemiring`, `(A * B).submatrix (Sigma.mk a) (Sigma.mk b) = ∑ c, A.submatrix
-(Sigma.mk a) (Sigma.mk c) * B.submatrix (Sigma.mk c) (Sigma.mk b)` ([golub2013matrix] Theorem 1.3.1,
-"a tedious exercise in subscripting"). `ext i j; simp [mul_apply, Fintype.sum_sigma,
-Matrix.sum_apply]`. Searched Mathlib: `Matrix.blockDiagonal'_mul` (diagonal only),
-`fromBlocks_multiply` (`2 × 2`), `Matrix.comp`/`compRingEquiv` (uniform square blocks) — no general
-statement. ★'''
-deps = []

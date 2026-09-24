@@ -123,7 +123,7 @@ Finset.Ico (j : ℕ) i, t l) * v j else if i = j then d i else p i * (∏ l ∈ 
 j`, i.e. `tril(u vᵀ, −1) .* B(t)⁻ᵀ + diag(d) + triu(p qᵀ, 1) .* B(r)⁻¹` (`quasiseparableOf_eq`, from
 `inv_unitBidiagonal`). With `t = r = 1` it is the generator representation (12.2.6)
 `strictLower (vecMulVec u v) + diagonal d + strictUpper (vecMulVec p q)` (`quasiseparableOf_one_one`,
-`Matrix.strictLower`/`strictUpper` of `Hessenberg`). ★'''
+`Matrix.strictLower`/`strictUpper` of `Triangular`). ★'''
 deps = ["Matrix.inv_unitBidiagonal", "Matrix.strictLower", "Matrix.strictUpper"]
 
 [[node]]
@@ -284,7 +284,7 @@ desc = '''[golub2013matrix] §12.2.8: `IsUnit A → A.IsGeneratorRepresentableOf
 A⁻¹.HasLowerBandwidth p ∧ A⁻¹.HasUpperBandwidth q`. Nullity theorem at `α = {i ≥ k}`, `β = {j < k +
 p}`: that block of `A` is a block of `U Vᵀ`, rank `≤ p`, and `|α| + |β| − n = p`, so the complementary
 block `A⁻¹[{j ≥ k + p}, {i < k}]` has rank `0`; that is the lower bandwidth (`hasLowerBandwidth_iff_fin`
-of `Hessenberg`). Transpose for `q`. ★★ (~70 lines)'''
+of `Band`). Transpose for `q`. ★★ (~70 lines)'''
 deps = ["Matrix.IsGeneratorRepresentableOfOrder", "Matrix.rank_toBlock_inv_add_card", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
 
 [[node]]

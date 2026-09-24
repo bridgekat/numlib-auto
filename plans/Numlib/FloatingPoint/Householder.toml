@@ -26,25 +26,6 @@
 namespace = "FloatingPoint"
 
 [[node]]
-id = "isRelPert_of_abs_sub_le"
-
-[[node]]
-id = "IsRelPert.abs_sub_le"
-
-[[node]]
-id = "IsRelPert.mul_one_add"
-
-[[node]]
-id = "IsRelPert.div_one_add"
-
-[[node]]
-id = "IsRelPert.rounds"
-
-[[node]]
-id = "IsRelPert.sqrt"
-source = "Higham, Accuracy and Stability of Numerical Algorithms, proof of Lemma 19.1"
-
-[[node]]
 id = "norm_toLp_le_of_abs_le_add"
 
 [[node]]
@@ -81,18 +62,6 @@ source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2"
 [[node]]
 id = "norm_sub_le_of_roundsHouseholderApply"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2"
-
-[[node]]
-id = "prodRev"
-
-[[node]]
-id = "prodFwd"
-
-[[node]]
-id = "prodRev_mem_orthogonalGroup"
-
-[[node]]
-id = "prodFwd_mem_orthogonalGroup"
 
 [[node]]
 id = "one_add_pow_sub_one_le_gamma"
@@ -165,20 +134,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2 (QR�
 [[node]]
 id = "frobenius_norm_sub_le_of_roundsTwoSidedSolve"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2; Golub–Van Loan, Matrix Computations, §8.7.2"
-
-[[node]]  # staged by ch05
-id = "IsRelPert.add_of_nonneg"
-kind = "theorem"
-desc = '''The sum of two nonnegative quantities perturbed to the same relative order is perturbed to
-that order: `0 ≤ x₁ → 0 ≤ x₂ → IsRelPert u k x₁ y₁ → IsRelPert u k x₂ y₂ →
-IsRelPert u k (x₁ + x₂) (y₁ + y₂)` (the perturbation of the sum is the convex combination
-`(x₁ θ₁ + x₂ θ₂)/(x₁ + x₂)`; the case `x₁ + x₂ = 0` forces both to be `0`). The step that the
-`1 + τ²` of Algorithm 5.1.3, the `a² + b²` of (5.1.8) and the `x₁² + σ` of Algorithm 5.1.1 need;
-[higham2002accuracy] uses it silently. A scalar lemma of the calculus of
-`Numlib/FloatingPoint/Model`; placed in `Householder`'s scalar section beside the other extensions
-(`IsRelPert.mul_one_add`, `.div_one_add`, `.rounds`, `.sqrt`) until that calculus is consolidated
-(report: refactor proposal); `Givens` imports it from there. ★'''
-deps = ["FloatingPoint.IsRelPert", "FloatingPoint.gamma"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "IsReflectorPert"
@@ -303,7 +258,7 @@ invariance `Matrix.frobenius_norm_unitary_mul_mul_unitary`; [golub2013matrix] (5
 instance. `prodRev`/`prodFwd` need their index type generalized only in the sense that `R`'s
 product is over `κ`. Refactor proposal (report): make the square theorem the `κ = ι` instance.
 ★ (~60 lines)'''
-deps = ["FloatingPoint.prodRev", "FloatingPoint.prodFwd", "FloatingPoint.prodRev_mem_orthogonalGroup", "FloatingPoint.prodFwd_mem_orthogonalGroup", "FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
+deps = ["Matrix.prodRev", "Matrix.prodFwd", "Matrix.prodRev_mem_orthogonalGroup", "Matrix.prodFwd_mem_orthogonalGroup", "FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd", "Matrix.frobenius_norm_unitary_mul_mul_unitary"]
 
 [[node]]  # staged by ch05
 id = "l2_opNorm_reflector_sub_le"
@@ -356,7 +311,7 @@ exact symmetric orthogonal transformation within `ε` —
 `exists_eq_transpose_mul_add_mul_prodFwd`; `Q = prodFwd P r` (`prodFwd_mem_orthogonalGroup`). The
 one lemma both reductions below — and any Householder reduction whose step bound is proved
 separately — end with. Proved in `notes/gvl/fixA/proto/StepPert.lean` (12 lines). ★'''
-deps = ["FloatingPoint.exists_eq_transpose_mul_add_mul_prodFwd", "FloatingPoint.prodFwd", "FloatingPoint.prodFwd_mem_orthogonalGroup"]
+deps = ["FloatingPoint.exists_eq_transpose_mul_add_mul_prodFwd", "Matrix.prodFwd", "Matrix.prodFwd_mem_orthogonalGroup"]
 
 [[node]]  # Fix-A (GVL review, algo H1/M4)
 id = "RoundsHessenbergStepPert"

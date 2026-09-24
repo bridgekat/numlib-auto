@@ -14,7 +14,7 @@ discrete Poisson systems (§4.8). Source lines 8281–12468; planned by agent ch
   `Matrix.leadingPrincipalSubmatrix`/`strictLeadingPrincipalSubmatrix` (LU). §4.6 is already
   0-based in the book (`x(0:n)`), and the surface keeps its indices.
 * **Bands.** "Upper bandwidth `q`" is `Matrix.HasUpperBandwidth A q`, "lower bandwidth `p`" is
-  `Matrix.HasLowerBandwidth A p` (both in `Numlib/LinearAlgebra/Matrix/Hessenberg`, with the `Fin`
+  `Matrix.HasLowerBandwidth A p` (both in `Numlib/LinearAlgebra/Matrix/Band`, with the `Fin`
   readings `hasUpperBandwidth_iff_fin`: `a_ij = 0` for `j > i + q`).
 * **Norms.** `‖·‖₁` of a matrix is `Matrix.lpOpNorm 1` (`Numlib/Analysis/Matrix/OperatorNorm`), `‖·‖₂`
   the scoped `Matrix.Norms.L2Operator` norm, `‖·‖_F` the scoped `Matrix.Norms.Frobenius` norm.

@@ -8,7 +8,7 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 preservation `Matrix.IsLU.hasLowerBandwidth`, `Matrix.IsLU.hasUpperBandwidth`, the tridiagonal
 matrix `Matrix.tridiagonalOfNat` and the Thomas recurrences `Matrix.thomasAlpha`,
 `Matrix.thomasBeta`, `Matrix.thomasGamma` with the factors `Matrix.thomasLower`,
-`Matrix.thomasUpper`), `Numlib/LinearAlgebra/Matrix/Hessenberg` (the bandwidths),
+`Matrix.thomasUpper`), `Numlib/LinearAlgebra/Matrix/Band` (the bandwidths),
 `Numlib/Direct/Substitution` and `Numlib/FloatingPoint/LU` (the rounding-error analysis of the
 Thomas algorithm, `FloatingPoint.RoundsThomas`).
 
@@ -25,8 +25,8 @@ tridiagonal matrix of §3.7.1 with diagonal `a`, subdiagonal `b` and superdiagon
 lower, subdiagonal `β`) and `thomasUpper a b c n` (diagonal `α`, superdiagonal `c`). The
 computed Thomas coefficients are an admissible `FloatingPoint.RoundsThomas m a b c α̂ β̂` of the
 relational model, the recurrence (3.53) with its three roundings per step, and the computed
-factors are the bidiagonal matrices `FloatingPoint.lowerBidiagonalOf β̂ n`,
-`FloatingPoint.upperBidiagonalOf α̂ c n` of those coefficients.
+factors are the bidiagonal matrices `Matrix.lowerBidiagonalOf β̂ n`,
+`Matrix.upperBidiagonalOf α̂ c n` of those coefficients.
 
 ## Contents
 

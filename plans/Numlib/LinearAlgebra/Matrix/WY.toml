@@ -13,9 +13,9 @@ vecMulVec (v j) (star (v j))).prod`, in the order `Q₁ ⋯ Q_r`. Columns are ap
 `Fin.snoc` on the column index (`Matrix.of fun i => Fin.snoc (W i) (z i)`), which is how the
 surface's Algorithm 5.1.2 grows `W` and `Y`.
 
-`FloatingPoint.prodRev`/`prodFwd` (in `Numlib/FloatingPoint/Householder`) are the same products
-of a sequence of matrices, stated in the floating-point namespace; refactor proposal (report):
-move them to a matrix module and use them here.
+`Matrix.prodRev`/`prodFwd` (in `Numlib/LinearAlgebra/Matrix/Products`, moved there from the
+floating-point namespace by refactor R4) are the same products of a sequence of matrices; import
+that module and use them here (`Q₁ ⋯ Q_r = prodFwd Q r`).
 '''
 
 [[node]]

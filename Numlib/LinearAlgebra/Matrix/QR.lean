@@ -36,9 +36,10 @@ The second half of the file is the Householder and Givens machinery of the eigen
 of [quarteroni2000numerical] §5.6 and §5.8: the **tail reflector** `Matrix.householderTail x p`,
 which keeps the coordinates before a pivot `p` and annihilates those after it; the **Householder
 reduction to Hessenberg form** `Matrix.hessenbergReduce`, a unitary similarity `Qᴴ A Q` by `N - 2`
-tail reflectors, tridiagonal for a Hermitian `A`; the **Givens `QR` factorization of a Hessenberg
-matrix** `Matrix.hessenbergGivensQR`, by `N - 1` plane rotations, whose `Q` is again Hessenberg;
-and the **Golub–Kahan bidiagonalization**, tail reflectors alternating on the two sides.
+tail reflectors, tridiagonal for a Hermitian `A`; and the **Givens `QR` factorization of a
+Hessenberg matrix** `Matrix.hessenbergGivensQR`, by `N - 1` plane rotations, whose `Q` is again
+Hessenberg. The tail reflectors alternating on the two sides also give the Golub–Kahan
+bidiagonalization, which is in `Numlib/LinearAlgebra/Matrix/Bidiagonal`.
 
 Nothing here is numerical: no stability, no operation count, no pivoting.
 
@@ -56,6 +57,9 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
 * `Matrix.hessenbergReduce`, `Matrix.hessenbergQ`: the Householder reduction to Hessenberg form
   and its unitary matrix, built from `Matrix.hessenbergStep`.
 * `Matrix.hessenbergGivensQR`: the Givens `QR` factorization of a real Hessenberg matrix.
+* `Matrix.IsQR A Q R`: the full QR factorization `A = Q R` of an `M × N` matrix, `Q` unitary and `R`
+  upper trapezoidal ([quarteroni2000numerical] Definition 3.1); `Matrix.firstColumns`,
+  `Matrix.firstRows`: the reduced factors `Q̃ = Q(1:m, 1:n)`, `R̃ = R(1:n, 1:n)` of (3.48).
 
 ## Main results
 
@@ -69,15 +73,18 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
   columns, and its converse `Matrix.linearIndependent_of_qr`.
 * `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so all three
   constructions compute the same pair.
+* `Matrix.exists_isQR`, `Matrix.IsQR.reduced`: the full QR factorization exists, from the
+  Householder triangularization, and yields the reduced factorization `A = Q̃ R̃`,
+  `Q̃ᴴ Q̃ = 1`, `R̃` upper triangular ([quarteroni2000numerical] Property 3.3), whose columns
+  span the column space of `A` when `A` has full column rank
+  (`Matrix.IsQR.span_firstColumns_eq`). Uniqueness, which Property 3.3 also claims, holds only
+  with a normalization of the diagonal of `R̃` (`Matrix.qr_unique`).
 * `Matrix.hessenbergReduce_eq_conj`, `Matrix.isUpperHessenberg_hessenbergReduce`,
   `Matrix.exists_unitary_conj_isUpperHessenberg`: the Householder reduction is a unitary
   similarity to upper Hessenberg form, tridiagonal for Hermitian input
   (`Matrix.isTridiagonal_hessenbergReduce_of_isHermitian`).
 * `Matrix.hessenbergGivensQR_spec`: the Givens factorization of a Hessenberg matrix is a `QR`
   factorization with a Hessenberg `Q`.
-* `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` and
-  `Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`: the Golub–Kahan
-  bidiagonalization.
 * `Matrix.norm_det_le_prod_sqrt_sum_norm_sq`: **Hadamard's determinant inequality**, a corollary
   of the triangularization, with `Matrix.norm_det_le_of_forall_norm_le` its entrywise form.
 
@@ -957,6 +964,129 @@ theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
 
 end GramSchmidt
 
+/-! ### The full QR factorization and its reduced form -/
+
+section FullQR
+
+variable {M N : ℕ}
+
+/-- **The full QR factorization**, [quarteroni2000numerical] Definition 3.1: `A = Q R` with `Q`
+unitary (`M × M`) and `R` upper trapezoidal (`M × N`, zero below the diagonal, so that its rows from
+the `N`-th on vanish when `N ≤ M`). -/
+structure IsQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin M) 𝕜)
+    (R : Matrix (Fin M) (Fin N) 𝕜) : Prop where
+  /-- The orthogonal factor is unitary. -/
+  mem_unitaryGroup : Q ∈ Matrix.unitaryGroup (Fin M) 𝕜
+  /-- The triangular factor vanishes below the diagonal. -/
+  apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (j : ℕ) < i → R i j = 0
+  /-- The factors multiply to `A`. -/
+  mul_eq : Q * R = A
+
+/-- **Every matrix has a full QR factorization**, by Householder triangularization
+(`Matrix.exists_unitary_mul_upperTriangular`): `P A = R` with `P` unitary, so `A = Pᴴ R`. -/
+theorem exists_isQR (A : Matrix (Fin M) (Fin N) 𝕜) : ∃ Q R, IsQR A Q R := by
+  obtain ⟨P, hP, hPA⟩ := exists_unitary_mul_upperTriangular A
+  refine ⟨star P, P * A, Unitary.star_mem hP, hPA, ?_⟩
+  rw [← Matrix.mul_assoc, Unitary.star_mul_self_of_mem hP, Matrix.one_mul]
+
+variable {α : Type*} {m' n' : Type*}
+
+/-- The first `N` columns of a matrix with `M ≥ N` columns, the `Q̃ = Q(1:m, 1:n)` of
+[quarteroni2000numerical] (3.48). -/
+def firstColumns (Q : Matrix m' (Fin M) α) (h : N ≤ M) : Matrix m' (Fin N) α :=
+  Q.submatrix id (Fin.castLE h)
+
+/-- The first `N` rows of a matrix with `M ≥ N` rows, the `R̃ = R(1:n, 1:n)` of
+[quarteroni2000numerical] (3.48). -/
+def firstRows (R : Matrix (Fin M) n' α) (h : N ≤ M) : Matrix (Fin N) n' α :=
+  R.submatrix (Fin.castLE h) id
+
+/-- The entries of the first columns. -/
+@[simp]
+theorem firstColumns_apply (Q : Matrix m' (Fin M) α) (h : N ≤ M) (i : m') (j : Fin N) :
+    firstColumns Q h i j = Q i (Fin.castLE h j) := rfl
+
+/-- The entries of the first rows. -/
+@[simp]
+theorem firstRows_apply (R : Matrix (Fin M) n' α) (h : N ≤ M) (i : Fin N) (j : n') :
+    firstRows R h i j = R (Fin.castLE h i) j := rfl
+
+variable {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
+variable {R : Matrix (Fin M) (Fin N) 𝕜}
+
+/-- The rows of the trapezoidal factor from the `N`-th on vanish. -/
+theorem IsQR.apply_eq_zero_of_le (h : IsQR A Q R) {i : Fin M} (hi : N ≤ i) (j : Fin N) :
+    R i j = 0 :=
+  h.apply_eq_zero i j (j.2.trans_le hi)
+
+/-- The product of the reduced factors is `A`: the trailing rows of `R` are zero, so only the
+first `N` columns of `Q` contribute ([quarteroni2000numerical] (3.47)). -/
+theorem IsQR.firstColumns_mul_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
+    firstColumns Q hNM * firstRows R hNM = A := by
+  rw [← h.mul_eq]
+  ext i j
+  simp only [mul_apply, firstColumns_apply, firstRows_apply]
+  refine Finset.sum_bij_ne_zero (fun k _ _ => Fin.castLE hNM k) (fun _ _ _ => Finset.mem_univ _)
+    (fun _ _ _ _ _ _ hk => Fin.castLE_injective hNM hk) (fun k _ hk => ?_) fun _ _ _ => rfl
+  by_cases hkN : (k : ℕ) < N
+  · exact ⟨⟨k, hkN⟩, Finset.mem_univ _, by simpa using hk, Fin.ext rfl⟩
+  · exact absurd (by rw [h.apply_eq_zero_of_le (not_lt.1 hkN), mul_zero]) hk
+
+/-- The reduced orthogonal factor has orthonormal columns: `Q̃ᴴ Q̃ = 1`, being a block of
+`Qᴴ Q = 1`. -/
+theorem IsQR.conjTranspose_firstColumns_mul_self (h : IsQR A Q R) (hNM : N ≤ M) :
+    (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 := by
+  have hQ : star Q * Q = 1 := Unitary.star_mul_self_of_mem h.mem_unitaryGroup
+  ext i j
+  have := congrFun (congrFun hQ (Fin.castLE hNM i)) (Fin.castLE hNM j)
+  simp only [mul_apply, star_apply] at this
+  simp only [mul_apply, conjTranspose_apply, firstColumns_apply, this, one_apply, Fin.castLE_inj]
+
+/-- The reduced triangular factor is upper triangular. -/
+theorem IsQR.isUpperTriangular_firstRows (h : IsQR A Q R) (hNM : N ≤ M) :
+    (firstRows R hNM).IsUpperTriangular := fun _ _ hij =>
+  h.apply_eq_zero _ _ hij
+
+/-- **The reduced QR factorization**, [quarteroni2000numerical] Property 3.3 and (3.47)–(3.48):
+from a full factorization `A = Q R`, `N ≤ M`, the first `N` columns `Q̃` of `Q` and the first `N`
+rows `R̃` of `R` satisfy `A = Q̃ R̃`, `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular. -/
+theorem IsQR.reduced (h : IsQR A Q R) (hNM : N ≤ M) :
+    firstColumns Q hNM * firstRows R hNM = A ∧
+      (firstColumns Q hNM)ᴴ * firstColumns Q hNM = 1 ∧ (firstRows R hNM).IsUpperTriangular :=
+  ⟨h.firstColumns_mul_firstRows hNM, h.conjTranspose_firstColumns_mul_self hNM,
+    h.isUpperTriangular_firstRows hNM⟩
+
+/-- For `A` of full column rank the reduced triangular factor is nonsingular: `A = Q̃ R̃` is
+injective on vectors, hence so is `R̃`. -/
+theorem IsQR.isUnit_firstRows_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
+    (hA : LinearIndependent 𝕜 Aᵀ) : IsUnit (firstRows R hNM) := by
+  rw [← mulVec_injective_iff_isUnit]
+  have hinj : Function.Injective A.mulVec := mulVec_injective_iff.2 hA
+  rw [← h.firstColumns_mul_firstRows hNM] at hinj
+  intro x y hxy
+  apply hinj
+  simp only [← mulVec_mulVec, hxy]
+
+/-- The diagonal of the reduced triangular factor is nowhere zero when `A` has full column rank. -/
+theorem IsQR.firstRows_diag_ne_zero_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
+    (hA : LinearIndependent 𝕜 Aᵀ) (i : Fin N) : firstRows R hNM i i ≠ 0 :=
+  (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular (h.isUpperTriangular_firstRows hNM)).1
+    (h.isUnit_firstRows_of_linearIndependent hNM hA) i
+
+/-- [quarteroni2000numerical] Property 3.3, the range clause: for `A` of full column rank the
+columns of `Q̃` span the column space of `A`, since `A = Q̃ R̃` with `R̃` nonsingular. -/
+theorem IsQR.span_firstColumns_eq (h : IsQR A Q R) (hNM : N ≤ M) (hA : LinearIndependent 𝕜 Aᵀ) :
+    Submodule.span 𝕜 (Set.range (firstColumns Q hNM)ᵀ) = Submodule.span 𝕜 (Set.range Aᵀ) := by
+  have hR := h.isUnit_firstRows_of_linearIndependent hNM hA
+  rw [show Set.range Aᵀ = Set.range A.col from rfl,
+    show Set.range (firstColumns Q hNM)ᵀ = Set.range (firstColumns Q hNM).col from rfl,
+    ← range_mulVecLin, ← range_mulVecLin, ← h.firstColumns_mul_firstRows hNM,
+    mulVecLin_mul, LinearMap.range_comp_of_range_eq_top]
+  exact LinearMap.range_eq_top.2 (mulVec_surjective_iff_isUnit.2 hR)
+
+end FullQR
+
+
 /-! ### Reduction to Hessenberg form by Householder reflectors -/
 
 section HessenbergReduction
@@ -1351,133 +1481,6 @@ theorem hessenbergGivensQR_spec {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpper
   exact hinv.colsR i l (by have := i.isLt; omega) hli'
 
 end GivensQR
-
-/-! ### The Golub–Kahan bidiagonalization -/
-
-section Bidiagonal
-
-variable {M N : ℕ}
-
-/-- The left half-step of the bidiagonalization: the tail reflector of column `k` with pivot `k`
-clears that column below the diagonal, keeps the rows before `k` and the columns already cleared. -/
-private theorem bidiag_left_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (hk : k < N)
-    (hB : ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k) → (i : ℕ) ≠ j →
-      (i : ℕ) + 1 ≠ j → B i j = 0) :
-    ∃ P : Matrix (Fin M) (Fin M) 𝕜, P.IsHermitian ∧ P ∈ Matrix.unitaryGroup (Fin M) 𝕜 ∧
-      ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k + 1) → (i : ℕ) ≠ j →
-        (i : ℕ) + 1 ≠ j → (P * B) i j = 0 := by
-  refine ⟨householder (householderTail (fun i => B i ⟨k, hk⟩) k), isHermitian_householder _,
-    householder_householderTail_mem_unitaryGroup _ _, fun i j hij hne1 hne2 => ?_⟩
-  rcases hij with hi | hj
-  · rw [householder_mul_apply_of_apply_eq_zero (householderTail_apply_of_lt _ hi)]
-    exact hB i j (Or.inl hi) hne1 hne2
-  rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hjk | hjk
-  · rw [householder_mul_apply, householder_mulVec_eq_self_of_apply_eq_zero fun r hr => ?_]
-    · exact hB i j (Or.inr hjk) hne1 hne2
-    · have hkr : k ≤ (r : ℕ) := not_lt.1 fun hrk => hr (householderTail_apply_of_lt _ hrk)
-      exact hB r j (Or.inr hjk) (by omega) (by omega)
-  · have hjκ : j = ⟨k, hk⟩ := Fin.ext hjk
-    subst hjκ
-    rw [householder_mul_apply]
-    rcases lt_or_gt_of_ne hne1 with hik | hik
-    · rw [householder_householderTail_mulVec_apply_of_lt _ hik]
-      exact hB i _ (Or.inl hik) hne1 hne2
-    · exact householder_householderTail_mulVec_apply_of_gt _ hik
-
-/-- The right half-step of the bidiagonalization: the reflector of the conjugate tail axis of row
-`k` with pivot `k + 1` clears that row beyond the superdiagonal, keeps the columns `≤ k` and the
-rows already cleared. -/
-private theorem bidiag_right_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (hk : k < M)
-    (hB : ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k + 1) → (i : ℕ) ≠ j →
-      (i : ℕ) + 1 ≠ j → B i j = 0) :
-    ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
-      ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k + 1 ∨ (j : ℕ) < k + 1) → (i : ℕ) ≠ j →
-        (i : ℕ) + 1 ≠ j → (B * V) i j = 0 := by
-  refine ⟨householder (star (householderTail (fun j => B ⟨k, hk⟩ j) (k + 1))),
-    householder_star_householderTail_mem_unitaryGroup _ _, fun i j hij hne1 hne2 => ?_⟩
-  rcases hij with hi | hj
-  swap
-  · rw [mul_householder_apply_of_apply_eq_zero
-      (by rw [Pi.star_apply, householderTail_apply_of_lt _ hj, star_zero])]
-    exact hB i j (Or.inr hj) hne1 hne2
-  rw [mul_householder_star_apply]
-  rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hik | hik
-  · rw [householder_mulVec_eq_self_of_apply_eq_zero fun r hr => ?_]
-    · exact hB i j (Or.inl hik) hne1 hne2
-    · have hkr : k + 1 ≤ (r : ℕ) := not_lt.1 fun hrk => hr (householderTail_apply_of_lt _ hrk)
-      exact hB i r (Or.inl hik) (by omega) (by omega)
-  · have hiκ : i = ⟨k, hk⟩ := Fin.ext hik
-    subst hiκ
-    rcases lt_or_gt_of_ne hne2 with hjk | hjk
-    · exact householder_householderTail_mulVec_apply_of_gt _ hjk
-    · rw [householder_householderTail_mulVec_apply_of_lt _ hjk]
-      exact hB _ j (Or.inr hjk) hne1 hne2
-
-/-- **The Golub–Kahan bidiagonalization**, entrywise ([quarteroni2000numerical] (5.57);
-[golub1989matrix] §5.4.3): any rectangular matrix is carried by a unitary matrix on each side to
-one whose only nonzero entries lie on the diagonal and the first superdiagonal. Alternating tail
-reflectors on the left (column `k`, pivot `k`) and on the right (row `k`, pivot `k + 1`); the
-right reflector's axis vanishes on the columns `≤ k`, so the zeros already created survive. -/
-theorem exists_unitary_mul_mul_unitary_apply_eq_zero (A : Matrix (Fin M) (Fin N) 𝕜) :
-    ∃ U ∈ Matrix.unitaryGroup (Fin M) 𝕜, ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
-      ∀ (i : Fin M) (j : Fin N), (i : ℕ) ≠ j → (i : ℕ) + 1 ≠ j → (Uᴴ * A * V) i j = 0 := by
-  suffices h : ∀ k : ℕ, ∃ U ∈ Matrix.unitaryGroup (Fin M) 𝕜, ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
-      ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k) → (i : ℕ) ≠ j → (i : ℕ) + 1 ≠ j →
-        (Uᴴ * A * V) i j = 0 by
-    obtain ⟨U, hU, V, hV, h⟩ := h N
-    exact ⟨U, hU, V, hV, fun i j => h i j (Or.inr j.isLt)⟩
-  intro k
-  induction k with
-  | zero => exact ⟨1, one_mem _, 1, one_mem _, fun i j hij => absurd hij (by simp)⟩
-  | succ k ih =>
-    obtain ⟨U, hU, V, hV, hB⟩ := ih
-    by_cases hkN : k < N
-    swap
-    · refine ⟨U, hU, V, hV, fun i j hij => hB i j ?_⟩
-      rcases hij with hi | hj
-      · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | hi
-        · exact Or.inl hi
-        · exact Or.inr (by have := j.isLt; omega)
-      · exact Or.inr (by have := j.isLt; omega)
-    obtain ⟨P, hPh, hPu, hPB⟩ := bidiag_left_step (Uᴴ * A * V) hkN hB
-    have hUP : (U * P)ᴴ * A * V = P * (Uᴴ * A * V) := by
-      rw [conjTranspose_mul, hPh.eq]
-      simp only [Matrix.mul_assoc]
-    by_cases hkM : k < M
-    swap
-    · refine ⟨U * P, mul_mem hU hPu, V, hV, fun i j hij hne1 hne2 => ?_⟩
-      rw [hUP]
-      refine hPB i j ?_ hne1 hne2
-      rcases hij with hi | hj
-      · exact Or.inl (by have := i.isLt; omega)
-      · exact Or.inr hj
-    obtain ⟨W, hWu, hWB⟩ := bidiag_right_step (P * (Uᴴ * A * V)) hkM hPB
-    refine ⟨U * P, mul_mem hU hPu, V * W, mul_mem hV hWu, fun i j hij hne1 hne2 => ?_⟩
-    rw [← Matrix.mul_assoc, hUP]
-    exact hWB i j hij hne1 hne2
-
-/-- **The Golub–Kahan bidiagonalization** ([quarteroni2000numerical] (5.57); [golub1989matrix]
-§5.4.3): for `A : Matrix (Fin M) (Fin N) 𝕜` with `N ≤ M` there are unitary `U`, `V` with
-`Uᴴ A V = (B; 0)`, zero below row `N` and upper bidiagonal on top. This is the first phase of the
-Golub–Kahan–Reinsch computation of the singular value decomposition. -/
-theorem exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal (h : N ≤ M)
-    (A : Matrix (Fin M) (Fin N) 𝕜) :
-    ∃ U ∈ Matrix.unitaryGroup (Fin M) 𝕜, ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
-      (∀ (i : Fin M) (j : Fin N), N ≤ (i : ℕ) → (Uᴴ * A * V) i j = 0) ∧
-        ((Uᴴ * A * V).submatrix (Fin.castLE h) id).IsUpperBidiagonal := by
-  obtain ⟨U, hU, V, hV, hB⟩ := exists_unitary_mul_mul_unitary_apply_eq_zero A
-  refine ⟨U, hU, V, hV, fun i j hi =>
-    hB i j (by have := j.isLt; omega) (by have := j.isLt; omega), ?_⟩
-  intro i j hij
-  rw [submatrix_apply, id]
-  rcases hij with hji | ⟨l, hil, hlj⟩
-  · have h1 := Fin.lt_def.1 hji
-    exact hB _ _ (by simp; omega) (by simp; omega)
-  · have h1 := Fin.lt_def.1 hil
-    have h2 := Fin.lt_def.1 hlj
-    exact hB _ _ (by simp; omega) (by simp; omega)
-
-end Bidiagonal
 
 /-! ### Hadamard's determinant inequality -/
 

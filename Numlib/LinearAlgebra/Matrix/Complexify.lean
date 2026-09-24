@@ -67,7 +67,7 @@ corollaries at the end of the file.
 Complexification is a ring homomorphism, and the algebraic lemmas at the top of the file say so
 operation by operation (`Matrix.complexify_add`, `Matrix.complexify_mul`, `Matrix.complexify_inv`,
 …).  It also commutes with the diagonal, strictly lower and strictly upper parts of
-`Numlib/LinearAlgebra/Matrix/Hessenberg.lean` (`Matrix.complexify_diagPart` and its companions),
+`Numlib/LinearAlgebra/Matrix/Triangular.lean` (`Matrix.complexify_diagPart` and its companions),
 which is what lets the classical splittings of a real matrix be formed before or after passing to
 `ℂ`.
 -/

@@ -25,8 +25,8 @@ book and as `Matrix.planeRotation`.
 * **Signs.** A Givens or hyperbolic sweep yields a triangular `R` with `RᵀR = Ã` but possibly
   negative diagonal entries; `isCholesky_diagonal_sign_mul` normalizes. The book's "the updated
   Cholesky factor is `G̃ = Rᵀ`" holds up to these signs (report, Doubts).
-* Rectangular shapes use chapter 1's `Matrix.HasLowerBandwidthRect` (staged in the `Hessenberg`
-  append): "upper Hessenberg" is `HasLowerBandwidthRect H 1`, "upper trapezoidal" (the `R` of
+* Rectangular shapes use chapter 1's `Matrix.HasLowerBandwidthRect` (in
+  `Numlib/LinearAlgebra/Matrix/Band`): "upper Hessenberg" is `HasLowerBandwidthRect H 1`, "upper trapezoidal" (the `R` of
   `Matrix.IsQR`) is `HasLowerBandwidthRect R 0`; `IsUpperHessenberg` is square.
 * **Hyperbolic rotations and `J`-orthogonality** (`Matrix.hyperbolicRotation`, `Matrix.hyperbolicPair`,
   `Matrix.IsJOrthogonal`) are staged as an append to `LinearAlgebra/Matrix/PlaneRotation`, beside

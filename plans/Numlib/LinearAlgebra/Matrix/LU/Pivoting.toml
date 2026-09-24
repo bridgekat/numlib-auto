@@ -374,3 +374,9 @@ interchange) vanish for `i ≤ j` and for `i > j + p`: the column `j` below row 
 stage-`j` matrix after the swap is zero (original rows, lower bandwidth `p`). Consequently each
 column of the lower factor of `P A = L U` has at most `p + 1` nonzero entries. ★★'''
 deps = ["Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant", "Matrix.elimMultipliers", "Matrix.gemPivotStage"]
+
+[[node]]
+id = "IsPartialPivot"
+
+[[node]]
+id = "isPartialPivot_partialPivotRow"

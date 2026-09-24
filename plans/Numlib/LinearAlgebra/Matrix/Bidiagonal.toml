@@ -1,28 +1,27 @@
+# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Bidiagonal` is the group
+# description; it holds the two existence theorems, moved here from `QR` (refactor R4). When the open
+# nodes below are formalized, extend it as the plan's description before the move says:
+# Orthogonal bidiagonalization of a rectangular matrix, `Uᴴ A V = B` with `B` upper bidiagonal
+# ([golub2013matrix] §5.4.8 (5.4.13), §5.4.9; Golub–Kahan 1965; [quarteroni2000numerical] §5.8.3),
+# the first stage of every SVD algorithm (Chapter 8) and the matrix form of the Golub–Kahan
+# bidiagonalization of `Numlib/Krylov/Bidiagonalization` (chapter 10).
+#
+# The square shapes `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal` live in
+# `Numlib/LinearAlgebra/Matrix/Hessenberg`, the rectangular bandwidths in `Band`; the rectangular shapes here are `Matrix.IsUpperBidiagonalRect` and
+# `Matrix.IsLowerBidiagonalRect` on `Fin M × Fin N` (entries zero unless `j = i` or `j = i + 1`, resp.
+# `i = j + 1`, as natural numbers), matching `Matrix.rectDiagonal`. Naming follows the rectangular
+# vocabulary of `Hessenberg` — the `Rect` suffix last, as in `IsUpperHessenbergRect`,
+# `HasLowerBandwidthRect` (the review of the Golub–Van Loan round renamed the earlier
+# `IsRectUpperBidiagonal`) — and each shape has its bandwidth characterization
+# (`isUpperBidiagonalRect_iff_hasBandwidthRect`, `isLowerBidiagonalRect_iff_hasBandwidthRect`), the Hessenberg
+# one being `Matrix.isUpperHessenbergRect_iff_hasLowerBandwidthRect_one`. The lower shape is the `(k+1) × k`
+# matrix `B_k` of the Golub–Kahan lower bidiagonalization (`Numlib/Krylov/Bidiagonalization`) and of
+# [golub2013matrix] (10.4.18). The existence theorems
+# (`exists_unitary_mul_mul_unitary_apply_eq_zero`, `exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`,
+# by tail reflectors on alternating sides) are here; the module then names the factorization
+# (`Matrix.IsBidiagonalization`), restates existence through it, adds the `R`-bidiagonalization
+# (QR first, then bidiagonalize the square `R₁`), and the link to tridiagonalization of `Aᴴ A`.
 namespace = "Matrix"
-desc = '''
-Orthogonal bidiagonalization of a rectangular matrix, `Uᴴ A V = B` with `B` upper bidiagonal
-([golub2013matrix] §5.4.8 (5.4.13), §5.4.9; Golub–Kahan 1965; [quarteroni2000numerical] §5.8.3),
-the first stage of every SVD algorithm (Chapter 8) and the matrix form of the Golub–Kahan
-bidiagonalization of `Numlib/Krylov/Bidiagonalization` (chapter 10).
-
-The square shapes `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal` live in
-`Numlib/LinearAlgebra/Matrix/Hessenberg`; the rectangular shapes here are `Matrix.IsUpperBidiagonalRect` and
-`Matrix.IsLowerBidiagonalRect` on `Fin M × Fin N` (entries zero unless `j = i` or `j = i + 1`, resp.
-`i = j + 1`, as natural numbers), matching `Matrix.rectDiagonal`. Naming follows the rectangular
-vocabulary of `Hessenberg` — the `Rect` suffix last, as in `IsUpperHessenbergRect`,
-`HasLowerBandwidthRect` (the review of the Golub–Van Loan round renamed the earlier
-`IsRectUpperBidiagonal`) — and each shape has its bandwidth characterization
-(`isUpperBidiagonalRect_iff_hasBandwidthRect`, `isLowerBidiagonalRect_iff_hasBandwidthRect`), the Hessenberg
-one being `Matrix.isUpperHessenbergRect_iff_hasLowerBandwidthRect_one`. The lower shape is the `(k+1) × k`
-matrix `B_k` of the Golub–Kahan lower bidiagonalization (`Numlib/Krylov/Bidiagonalization`) and of
-[golub2013matrix] (10.4.18). The existence
-theorem already exists in `Numlib/LinearAlgebra/Matrix/QR`
-(`exists_unitary_mul_mul_unitary_apply_eq_zero`, `exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`,
-by tail reflectors on alternating sides); this module names the factorization
-(`Matrix.IsBidiagonalization`), restates existence through it, adds the `R`-bidiagonalization
-(QR first, then bidiagonalize the square `R₁`), and the link to tridiagonalization of `Aᴴ A`.
-Refactor proposal (report): move the two existence theorems here, where their name is.
-'''
 
 [[node]]
 id = "IsUpperBidiagonalRect"
@@ -43,7 +42,7 @@ deps = ["IsUpperBidiagonalRect", "Matrix.IsUpperBidiagonal"]
 id = "isUpperBidiagonalRect_iff_hasBandwidthRect"
 kind = "theorem"
 desc = '''`B.IsUpperBidiagonalRect ↔ B.HasLowerBandwidthRect 0 ∧ B.HasUpperBandwidthRect 1` for `B : Matrix (Fin M)
-(Fin N) R` (`Matrix.HasLowerBandwidthRect`, `Matrix.HasUpperBandwidthRect` of `Hessenberg`): "upper bidiagonal"
+(Fin N) R` (`Matrix.HasLowerBandwidthRect`, `Matrix.HasUpperBandwidthRect` of `Band`): "upper bidiagonal"
 is "lower bandwidth 0, upper bandwidth 1" ([golub2013matrix] Table 1.2.1). Unfold, `omega`. ★'''
 deps = ["IsUpperBidiagonalRect", "Matrix.HasLowerBandwidthRect", "Matrix.HasUpperBandwidthRect"]
 
@@ -99,3 +98,11 @@ desc = '''"The bidiagonalization of `A` is related to the tridiagonalization of 
 ([golub2013matrix] §5.4.8, §8.3.1): if `IsBidiagonalization A U V B` with `N ≤ M`, then
 `Vᴴ (Aᴴ A) V = Bᴴ B` and `Bᴴ B` is tridiagonal (`Matrix.IsTridiagonal` on `Fin N`). ★'''
 deps = ["IsBidiagonalization"]
+
+[[node]]
+id = "exists_unitary_mul_mul_unitary_apply_eq_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
+
+[[node]]
+id = "exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'

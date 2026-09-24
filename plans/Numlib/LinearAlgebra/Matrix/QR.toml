@@ -8,6 +8,10 @@
 # results" the Gram–Schmidt projector identity behind modified Gram–Schmidt
 # (`Matrix.prod_one_sub_vecMulVec_of_orthonormal`) and the Cholesky reading of the thin factor
 # (`Matrix.IsThinQR.isCholesky`, [golub2013matrix] Theorem 5.2.3).
+# (ch05, GVL review M5, refactors R4/R16) add to "Main definitions" `Matrix.IsPivotedQR` (QR with
+# column pivoting, `IsQR` of `A Π`) beside `Matrix.IsQR` and `Matrix.IsThinQR`, and to "Main results"
+# the column-prefix spans of a full QR factorization ([golub2013matrix] (5.2.1),
+# `Matrix.IsQR.span_col_prefix_eq`) and the thin factors of a full one (`Matrix.IsQR.isThinQR`).
 # (ch08) add to the Householder paragraph: the symmetric two-sided application of a reflector in the
 # `(β, v)` form is a rank-two update, `Matrix.conj_one_sub_smul_vecMulVec_eq_sub` ([golub2013matrix]
 # §8.3.1), the identity the tridiagonalization and its rounding analysis use.
@@ -240,14 +244,6 @@ id = "hessenbergGivensQR_spec"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
 
 [[node]]
-id = "exists_unitary_mul_mul_unitary_apply_eq_zero"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
-
-[[node]]
-id = "exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
-
-[[node]]
 id = "householder_mul_self"
 
 [[node]]
@@ -372,3 +368,74 @@ normalization is needed, and `β = 0` is allowed — the case `house` returns fo
 tridiagonalization analysis uses it. `Matrix.ext`, then `ring`-level algebra with
 `Matrix.star_dotProduct`/`Matrix.dotProduct_mulVec`. ★'''
 deps = ["Matrix.householder"]
+
+[[node]]
+id = "IsQR"
+
+[[node]]
+id = "exists_isQR"
+
+[[node]]
+id = "firstColumns"
+
+[[node]]
+id = "firstRows"
+
+[[node]]
+id = "firstColumns_apply"
+
+[[node]]
+id = "firstRows_apply"
+
+[[node]]
+id = "IsQR.apply_eq_zero_of_le"
+
+[[node]]
+id = "IsQR.firstColumns_mul_firstRows"
+
+[[node]]
+id = "IsQR.conjTranspose_firstColumns_mul_self"
+
+[[node]]
+id = "IsQR.isUpperTriangular_firstRows"
+
+[[node]]
+id = "IsQR.reduced"
+
+[[node]]
+id = "IsQR.isUnit_firstRows_of_linearIndependent"
+
+[[node]]
+id = "IsQR.firstRows_diag_ne_zero_of_linearIndependent"
+
+[[node]]
+id = "IsQR.span_firstColumns_eq"
+
+[[node]]  # staged by ch05
+id = "IsQR.isThinQR"
+kind = "theorem"
+desc = '''The reduced factors of a full QR factorization form a thin one: for `N ≤ M`,
+`IsQR A Q R → IsThinQR A (firstColumns Q h) (firstRows R h)` (`IsQR.reduced` repackaged). ★'''
+deps = ["Matrix.IsQR.reduced", "Matrix.IsThinQR"]
+
+[[node]]  # staged by ch05
+id = "IsQR.span_col_prefix_eq"
+kind = "theorem"
+desc = '''[golub2013matrix] (5.2.1): if `IsQR A Q R` and the columns of `A : Matrix (Fin M) (Fin N) 𝕜`
+are linearly independent, then for every `k ≤ N`
+`span 𝕜 {Aᵀ j | (j : ℕ) < k} = span 𝕜 {Qᵀ i | (i : ℕ) < k}` (column sets as `Set (Fin M → 𝕜)`) and
+`R ⟨k, _⟩ ⟨k, _⟩ ≠ 0` for `k < N`. Proof: `a_k = Σ_{i ≤ k} r_ik q_i` ((5.2.3)) gives `⊆`; the
+dimension count (`linearIndependent` of the prefix, `finrank_span_eq_card`) gives equality and
+forces `r_kk ≠ 0`. `IsQR.span_firstColumns_eq` is the case `k = N`. ★★'''
+deps = ["Matrix.IsQR", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent"]
+
+[[node]]  # staged by ch05 in RankRevealing; moved beside IsQR (Golub–Van Loan review M5)
+id = "IsPivotedQR"
+kind = "definition"
+desc = '''QR factorization with column pivoting: for `A : Matrix (Fin M) (Fin N) 𝕜`, `σ : Equiv.Perm (Fin N)`,
+`structure IsPivotedQR A Q R σ : Prop := isQR : IsQR (A.submatrix id σ) Q R` (column `k` of `A Π`
+is column `σ k` of `A`; [golub2013matrix] `A Π = Q R`, `A Π = [a_{c₁} | ⋯ | a_{cₙ}]`). A structure
+rather than an abbreviation so that the rank-revealing lemmas can be dot-notation on it; its
+rank-revealing refinement `IsPivotedQR.IsRankRevealing` is in `RankRevealing`. Beside `IsQR` and
+`IsThinQR` (moved with `IsQR` from `LeastSquares` by the refactor tasks R4/R16). ★'''
+deps = ["Matrix.IsQR"]

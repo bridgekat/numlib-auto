@@ -17,7 +17,7 @@ nonsingular for `k = 1:n-1`" is `∀ k, IsUnit (A.strictLeadingPrincipalSubmatri
 
 The packed output convention of Algorithms 3.2.1, 3.4.x ("`A(i,i:n)` is overwritten by
 `U(i,i:n)`, `A(i+1:n,i)` by `L(i+1:n,i)`") is `packedL F = 1 + F.strictLower`,
-`packedU F = F - F.strictLower` (`Matrix.strictLower` of `Numlib/LinearAlgebra/Matrix/Hessenberg`).
+`packedU F = F - F.strictLower` (`Matrix.strictLower` of `Numlib/LinearAlgebra/Matrix/Triangular`).
 Programs overwrite one entry by `A.updateRow i (Function.update (A i) j a)`; prototype
 `notes/gvl/ch03/proto/Shapes.lean` elaborates Algorithms 3.2.1, 3.4.1 and 3.5.1 in this form and
 checks the one-line pure collapse (for 3.4.1 through its `if`, with an `ite_pure`-type lemma).
@@ -69,7 +69,7 @@ source = 'Golub–Van Loan, Matrix Computations, §3.2.1'
 id = "isUnitLowerTriangular_gaussTransformation"
 kind = "theorem"
 desc = '''§3.2.1, "such a matrix is unit lower triangular": `IsGaussTransformation M k →
-M.IsUnitLowerTriangular` (`Matrix.IsUnitLowerTriangular` of `Hessenberg`). ★'''
+M.IsUnitLowerTriangular` (`Matrix.IsUnitLowerTriangular` of `Triangular`). ★'''
 deps = ["IsGaussTransformation", "Matrix.IsUnitLowerTriangular"]
 source = 'Golub–Van Loan, Matrix Computations, §3.2.1'
 

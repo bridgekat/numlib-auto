@@ -204,7 +204,7 @@ desc = '''**The rectangular LU factorization** ([golub2013matrix] §3.2.10): for
 `IsRectLU A L U` is the structure with fields `lower : L.HasUpperBandwidthRect 0`
 (`L i j = 0` for `(i : ℕ) < j`), `lower_apply_self : ∀ i j, (i : ℕ) = j → L i j = 1` (unit lower
 trapezoidal), `upper : U.HasLowerBandwidthRect 0` (upper trapezoidal) and `mul_eq : L * U = A`,
-with ch01's rectangular bandwidth predicates (staged for `Hessenberg`), whose index comparisons
+with ch01's rectangular bandwidth predicates (`Numlib/LinearAlgebra/Matrix/Band`), whose index comparisons
 are on `ℕ` values since the index types differ; `p` is a parameter, `min m n` in the existence
 theorem. On `Fin`, not a general linear
 order: a rectangular triangular shape needs the two index sets aligned, and every consumer is on
@@ -235,3 +235,18 @@ first `m` rows of `U`. The bordering uses `Matrix.fromBlocks` reindexed by `finS
 `Matrix.det_fromBlocks_zero₁₂`-type determinant lemmas (Mathlib `Matrix.det_fromBlocks_zero₂₁`,
 `Matrix.det_fromBlocks_zero₁₂`). ★★ (~150 lines)'''
 deps = ["Matrix.IsRectLU", "Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix", "Matrix.det_leadingPrincipalSubmatrix_fin", "Matrix.isRectLU_iff_isLU"]
+
+[[node]]
+id = "lowerBidiagonalOf"
+
+[[node]]
+id = "upperBidiagonalOf"
+
+[[node]]
+id = "thomasLower_eq"
+
+[[node]]
+id = "thomasUpper_eq"
+
+[[node]]
+id = "lowerBidiagonalOf_mul_apply"

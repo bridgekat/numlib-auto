@@ -1,0 +1,10 @@
+namespace = "Matrix"
+
+[[node]]
+id = "BlockTriangular.mul_apply_self_of_injective"
+
+[[node]]
+id = "mul_apply_eq_zero_of_lt"
+
+[[node]]
+id = "mul_submatrix_sigmaMk_eq_sum"
