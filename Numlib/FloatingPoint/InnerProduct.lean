@@ -30,6 +30,14 @@ The uniform bound `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` is `abs_
 with row sums and an entrywise bound on `x` rather than with norms, since the scalar field here
 carries an order but no norm.
 
+The sharp product form of a computed inner product, `fl(xᵀy) = ∑ xᵢ yᵢ (1 + θᵢ)` with `|θᵢ| ≤ (1 +
+u)^n - 1` (`exists_eq_sum_mul_one_add_of_roundsDot`, [golub2013matrix] (2.7.10)), needs no
+hypothesis on `n u` and gives the classical `1.01 n u` constant of [golub2013matrix] (2.7.11)
+through `abs_sub_le_one_add_pow_sub_one_of_roundsDot`. Also here: the error of one rounded update
+`fl(y + fl(a x))` (`abs_sub_le_of_rounds_add_mul`), the invariance of `RoundsDot` under
+reindexing (`roundsDot_comp_equiv_iff`), and the running sum one term at a time
+(`roundsSumFrom_append_singleton`) and in the exact model (`roundsSumFrom_exact_iff`).
+
 Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is `γ_k (1 + u)
 + u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
 -/
@@ -138,6 +146,70 @@ theorem abs_sub_le_of_roundsSum {m : RoundingModel K} (hu : m.u < 1) {l : List K
     simp only [List.length_cons, Nat.add_sub_cancel] at hlu ⊢
     simpa using abs_sub_le_of_roundsSumFrom hu (roundsSum_cons.1 h) hlu
 
+/-- **Appending one term to a running sum**: the step lemma of every loop invariant that grows a
+running sum one term at a time. -/
+theorem roundsSumFrom_append_singleton {m : RoundingModel K} {s x r : K} {l : List K} :
+    RoundsSumFrom m s (l ++ [x]) r ↔ ∃ t, RoundsSumFrom m s l t ∧ m.Rounds (t + x) r := by
+  induction l generalizing s with
+  | nil =>
+    constructor
+    · rintro (_ | ⟨ht, hr⟩)
+      cases hr
+      exact ⟨s, .nil s, ht⟩
+    · rintro ⟨t, ht, hr⟩
+      cases ht
+      exact .cons hr (.nil _)
+  | cons y l ih =>
+    constructor
+    · rintro (_ | ⟨ht, hr⟩)
+      obtain ⟨t', h1, h2⟩ := ih.1 hr
+      exact ⟨t', .cons ht h1, h2⟩
+    · rintro ⟨t, (_ | ⟨ht, hr⟩), h2⟩
+      exact .cons ht (ih.2 ⟨t, hr, h2⟩)
+
+/-- **A running sum in the exact model** (`RoundingModel.exact`) is the sum. -/
+theorem roundsSumFrom_exact_iff {c t : K} {l : List K} :
+    RoundsSumFrom (RoundingModel.exact K) c l t ↔ t = c + l.sum := by
+  induction l generalizing c with
+  | nil =>
+    refine ⟨fun h => by cases h; simp, fun h => ?_⟩
+    rw [h, List.sum_nil, add_zero]
+    exact .nil c
+  | cons x l ih =>
+    constructor
+    · rintro (_ | ⟨ht, hr⟩)
+      rw [RoundingModel.exact_rounds_iff] at ht
+      subst ht
+      rw [ih.1 hr, List.sum_cons, add_assoc]
+    · intro h
+      exact .cons (RoundingModel.exact_rounds_iff.2 rfl)
+        (ih.2 (by rw [h, List.sum_cons, add_assoc]))
+
+/-! ### One rounded update -/
+
+/-- **One rounded update** `fl(y + fl(a x))` ([golub2013matrix] (2.7.17)–(2.7.18), with the
+second-order term displayed): its error is at most `u |y| + (2u + u²) |a x|`. -/
+theorem abs_sub_le_of_rounds_add_mul {m : RoundingModel K} {a x y p s : K}
+    (hp : m.Rounds (a * x) p) (hs : m.Rounds (y + p) s) :
+    |s - (y + a * x)| ≤ m.u * |y| + (2 * m.u + m.u ^ 2) * |a * x| := by
+  obtain ⟨δ, hδ, rfl⟩ := hp.exists_delta
+  obtain ⟨ε, hε, rfl⟩ := hs.exists_delta
+  have hu := m.u_nonneg
+  have heq : (y + a * x * (1 + δ)) * (1 + ε) - (y + a * x)
+      = ε * y + a * x * (δ + ε + δ * ε) := by ring
+  rw [heq]
+  calc |ε * y + a * x * (δ + ε + δ * ε)|
+      ≤ |ε| * |y| + |a * x| * (|δ| + |ε| + |δ| * |ε|) := by
+        refine (abs_add_le _ _).trans ?_
+        rw [abs_mul, abs_mul (a * x)]
+        gcongr
+        refine (abs_add_le _ _).trans ?_
+        rw [abs_mul]
+        gcongr
+        exact abs_add_le _ _
+    _ ≤ m.u * |y| + |a * x| * (m.u + m.u + m.u * m.u) := by gcongr
+    _ = m.u * |y| + (2 * m.u + m.u ^ 2) * |a * x| := by ring
+
 /-! ### Inner products -/
 
 variable {ι : Type*}
@@ -149,6 +221,60 @@ computed as the recursive summation, in some order `o` of the indices, of the ro
 def RoundsDot (m : RoundingModel K) (x y : ι → K) (s : K) : Prop :=
   ∃ (o : List ι) (p : ι → K), o.Nodup ∧ (∀ i, i ∈ o) ∧ (∀ i, m.Rounds (x i * y i) (p i)) ∧
     RoundsSum m (o.map p) s
+
+/-- One direction of `roundsDot_comp_equiv_iff`: the order and the rounded products are carried
+along the equivalence. -/
+private theorem roundsDot_of_comp_equiv {κ : Type*} {m : RoundingModel K} (e : κ ≃ ι)
+    {x y : ι → K} {s : K} (h : RoundsDot m (x ∘ e) (y ∘ e) s) : RoundsDot m x y s := by
+  obtain ⟨o, p, ho, hfull, hp, hsum⟩ := h
+  refine ⟨o.map e, p ∘ e.symm, ho.map e.injective, fun i => ?_, fun i => ?_, ?_⟩
+  · exact List.mem_map.2 ⟨e.symm i, hfull _, e.apply_symm_apply i⟩
+  · simpa using hp (e.symm i)
+  · rwa [List.map_map, Function.comp_assoc, Equiv.symm_comp_self, Function.comp_id]
+
+/-- **`RoundsDot` is invariant under reindexing**: an inner product computed over one index type
+is one computed over any equivalent index type, the summation order being carried along. -/
+theorem roundsDot_comp_equiv_iff {κ : Type*} {m : RoundingModel K} (e : κ ≃ ι) {x y : ι → K}
+    {s : K} : RoundsDot m (x ∘ e) (y ∘ e) s ↔ RoundsDot m x y s := by
+  refine ⟨roundsDot_of_comp_equiv e, fun h => roundsDot_of_comp_equiv e.symm ?_⟩
+  have hx : (x ∘ e) ∘ e.symm = x := by ext; simp
+  have hy : (y ∘ e) ∘ e.symm = y := by ext; simp
+  rwa [hx, hy]
+
+/-- The product form of a running sum over a duplicate-free list of indices: every term, and the
+start, carry a factor `1 + θ` with `|θ| ≤ (1 + u)^k - 1`, `k` the number of additions. -/
+private theorem exists_eq_of_roundsSumFrom_map {m : RoundingModel K} {l : List ι} (hl : l.Nodup)
+    {v : ι → K} {a t : K} (h : RoundsSumFrom m a (l.map v) t) :
+    ∃ (φ : K) (θ : ι → K), t = a * (1 + φ) + (l.map fun i => v i * (1 + θ i)).sum ∧
+      |φ| ≤ (1 + m.u) ^ l.length - 1 ∧ ∀ i ∈ l, |θ i| ≤ (1 + m.u) ^ l.length - 1 := by
+  classical
+  induction l generalizing a with
+  | nil =>
+    cases h
+    exact ⟨0, 0, by simp, by simp, by simp⟩
+  | cons i l ih =>
+    rcases List.nodup_cons.1 hl with ⟨hi, hl'⟩
+    rcases h with _ | ⟨ht, hr⟩
+    obtain ⟨φ, θ, rfl, hφ, hθ⟩ := ih hl' hr
+    obtain ⟨δ, hδ, hδt⟩ := ht.exists_delta
+    have hψ := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one hφ hδ
+    have hmono : (1 + m.u) ^ l.length - 1 ≤ (1 + m.u) ^ (l.length + 1) - 1 := by
+      have := pow_le_pow_right₀ (by linarith [m.u_nonneg] : (1 : K) ≤ 1 + m.u)
+        (by omega : l.length ≤ l.length + 1)
+      linarith
+    refine ⟨(1 + φ) * (1 + δ) - 1, Function.update θ i ((1 + φ) * (1 + δ) - 1), ?_, hψ,
+      fun j hj => ?_⟩
+    · rw [List.map_cons, List.sum_cons, Function.update_self]
+      have hmap : (l.map fun j => v j * (1 + Function.update θ i ((1 + φ) * (1 + δ) - 1) j))
+          = l.map fun j => v j * (1 + θ j) :=
+        List.map_congr_left fun j hj => by
+          rw [Function.update_of_ne fun (e : j = i) => hi (e ▸ hj)]
+      rw [hmap, hδt]
+      ring
+    · rcases List.mem_cons.1 hj with rfl | hj
+      · rwa [Function.update_self]
+      · rw [Function.update_of_ne fun (e : j = i) => hi (e ▸ hj)]
+        exact (hθ j hj).trans hmono
 
 variable [Fintype ι]
 
@@ -279,6 +405,70 @@ theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
     rfl
   rw [hexp, hsum]
   ring
+
+/-- **The product form of a computed inner product** ([golub2013matrix] (2.7.10);
+[higham2002accuracy] (3.2)): a computed inner product of two vectors of length `n` is
+`∑ x_i y_i (1 + θ_i)` with `|θ_i| ≤ (1 + u)^n - 1`, whatever the order of accumulation. No
+hypothesis on `n u` is needed. -/
+theorem exists_eq_sum_mul_one_add_of_roundsDot {m : RoundingModel K} {x y : ι → K} {s : K}
+    (h : RoundsDot m x y s) :
+    ∃ θ : ι → K, s = ∑ i, x i * y i * (1 + θ i) ∧
+      ∀ i, |θ i| ≤ (1 + m.u) ^ Fintype.card ι - 1 := by
+  classical
+  obtain ⟨o, p, hnodup, hfull, hp, hsum⟩ := h
+  have huniv : o.toFinset = (univ : Finset ι) :=
+    Finset.eq_univ_iff_forall.2 fun i => List.mem_toFinset.2 (hfull i)
+  have hlen : o.length = Fintype.card ι := by
+    rw [← List.toFinset_card_of_nodup hnodup, huniv, Finset.card_univ]
+  choose δ hδ hpδ using fun i => (hp i).exists_delta
+  have hsumo : ∀ f : ι → K, ∑ i, f i = (o.map f).sum := fun f => by
+    rw [← List.sum_toFinset f hnodup, huniv]
+  cases o with
+  | nil =>
+    cases hsum
+    exact ⟨0, by rw [hsumo]; simp, fun i => absurd (hfull i) List.not_mem_nil⟩
+  | cons k o =>
+    rcases List.nodup_cons.1 hnodup with ⟨hk, ho⟩
+    obtain ⟨φ, θ, hs, hφ, hθ⟩ := exists_eq_of_roundsSumFrom_map ho hsum
+    rw [List.length_cons] at hlen
+    refine ⟨Function.update (fun j => (1 + θ j) * (1 + δ j) - 1) k ((1 + φ) * (1 + δ k) - 1),
+      ?_, fun i => ?_⟩
+    · rw [hsumo, List.map_cons, List.sum_cons, Function.update_self, hs]
+      have hmap : (o.map fun j => x j * y j *
+            (1 + Function.update (fun j => (1 + θ j) * (1 + δ j) - 1) k
+              ((1 + φ) * (1 + δ k) - 1) j))
+          = o.map fun j => p j * (1 + θ j) :=
+        List.map_congr_left fun j hj => by
+          rw [Function.update_of_ne fun (e : j = k) => hk (e ▸ hj), hpδ j]
+          ring
+      rw [hmap, hpδ k]
+      ring
+    · rw [← hlen]
+      by_cases hik : i = k
+      · subst hik
+        rw [Function.update_self]
+        exact abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one hφ (hδ i)
+      · rw [Function.update_of_ne hik]
+        have hi : i ∈ o := (List.mem_cons.1 (hfull i)).resolve_left hik
+        exact abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one (hθ i hi) (hδ i)
+
+/-- **The sharp inner-product bound** behind [golub2013matrix] (2.7.11): a computed inner product
+of vectors of length `n` satisfies `|fl(xᵀy) - xᵀy| ≤ ((1 + u)^n - 1) |x|ᵀ|y|`. With
+`abs_prod_one_add_sub_one_le_of_mul_le` this gives the book's `1.01 n u |x|ᵀ|y|` for `n u ≤
+0.01`. -/
+theorem abs_sub_le_one_add_pow_sub_one_of_roundsDot {m : RoundingModel K} {x y : ι → K} {s : K}
+    (h : RoundsDot m x y s) :
+    |s - x ⬝ᵥ y| ≤ ((1 + m.u) ^ Fintype.card ι - 1) * (|x| ⬝ᵥ |y|) := by
+  obtain ⟨θ, rfl, hθ⟩ := exists_eq_sum_mul_one_add_of_roundsDot h
+  set c := (1 + m.u) ^ Fintype.card ι - 1
+  have hsub : ∑ i, x i * y i * (1 + θ i) - x ⬝ᵥ y = ∑ i, x i * y i * θ i := by
+    rw [dotProduct, ← Finset.sum_sub_distrib]
+    exact Finset.sum_congr rfl fun i _ => by ring
+  have hdot : |x| ⬝ᵥ |y| = ∑ i, |x i| * |y i| := rfl
+  rw [hsub, hdot, Finset.mul_sum]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun i _ => ?_)
+  rw [abs_mul, abs_mul, mul_comm c]
+  exact mul_le_mul_of_nonneg_left (hθ i) (by positivity)
 
 /-! ### Matrix–vector and matrix–matrix products -/
 

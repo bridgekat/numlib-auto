@@ -35,7 +35,17 @@ Consequently `System.roundingModel s K : RoundingModel K` (`Rounds x y := y = ro
 unitRoundoff`) is total and functional, and every theorem of `Numlib/FloatingPoint/InnerProduct`
 and `Numlib/FloatingPoint/Stationary` specializes to the computed values of `𝔽` with no side
 conditions; overflow is the separate statement `System.round_notMem_numbers`.
-`System.choppingModel` is the same with `u = machineEps`.
+`System.choppingModel` is the same with `u = machineEps`. Both are idempotent — a rounded value
+rounds to itself (`System.round_round`, `System.chop_chop`) — and total, the two properties the
+program semantics of `Numlib/FloatingPoint/Program` asks of a model.
+
+**Rounding to a nearest number.** Any number of `𝔽` nearest to an in-range `x` has relative error
+at most `u` (`System.abs_sub_le_of_forall_abs_sub_le`, [golub2013matrix] §2.7.2), so
+`System.nearestModel` — `Rounds x y` when `x = y = 0` or when `x_min ≤ |x| ≤ x_max` and `y` is a
+nearest number of `𝔽` — is a rounding model whatever the tie rule; IEEE round-half-to-even is
+one choice within it. Zero rounds to zero, so exact zero intermediates have a rounding; the
+model is partial (underflow and overflow have none) and idempotent
+(`System.nearestModel_isIdempotent`).
 
 **Machine operations** are `System.op s f x y = round (f (round x) (round y))` for an exact
 operation `f`, with `add`, `sub`, `mul`, `div` as abbreviations. On machine numbers `op f x y =
@@ -47,7 +57,8 @@ about hardware and has no counterpart here: in this idealization the exact resul
 
 Also here: the density of finite positional expansions (`exists_int_mul_zpow_sub_abs_lt`,
 [quarteroni2000numerical] §2.5.1), the IEC 559 / IEEE 754 parameter sets `System.ieeeSingle`
-and `System.ieeeDouble` ([quarteroni2000numerical] §2.5.4), and the monotonicity of Mathlib's
+and `System.ieeeDouble` ([quarteroni2000numerical] §2.5.4) with their constants `ε_M`, `x_min`
+and `x_max` ([golub2013matrix] §2.7.2), and the monotonicity of Mathlib's
 `round` (`FloatingPoint.monotone_round`), which Mathlib lacks.
 
 Searched and not reused: Mathlib's `Mathlib/Data/FP/Basic.lean` (an `unsafe`, theorem-free
@@ -1078,6 +1089,113 @@ theorem exists_chop_eq_mul_one_add (x : K) :
     ∃ δ : K, |δ| ≤ s.machineEps K ∧ s.chop x = x * (1 + δ) :=
   RoundingModel.Rounds.exists_delta (m := s.choppingModel K) rfl
 
+/-! ### Idempotence and totality of the models -/
+
+/-- The rounding model is idempotent: a rounded value rounds to itself (`System.round_round`). -/
+theorem roundingModel_isIdempotent : (s.roundingModel K).IsIdempotent := by
+  intro x y z hxy hyz
+  rw [roundingModel_rounds_iff] at hxy hyz
+  rw [hyz, hxy, round_round]
+
+/-- The rounding model is total: every value has the rounding `round x`. -/
+theorem roundingModel_isTotal : (s.roundingModel K).IsTotal := fun x => ⟨s.round x, rfl⟩
+
+/-- `|chop x| = ⌊mantissa x⌋ · β^(exponent x - t)`. -/
+theorem abs_chop (x : K) :
+    |s.chop x| = (⌊s.mantissa x⌋ : K) * (s.β : K) ^ (s.exponent x - s.t) := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  · have h0 : (0 : K) ≤ (⌊s.mantissa x⌋ : K) :=
+      Int.cast_nonneg (Int.floor_nonneg.2 (s.mantissa_nonneg x))
+    rw [chop, mul_assoc, abs_mul, abs_of_nonneg (mul_nonneg h0 (s.zpow_β_nonneg _))]
+    rcases lt_or_gt_of_ne hx with h | h <;> simp [sign_pos, sign_neg, h]
+
+/-- The chopped mantissa of a nonzero number is at least `β^(t-1)`. -/
+theorem zpow_le_floor_mantissa {x : K} (hx : x ≠ 0) :
+    ((s.β ^ (s.t - 1) : ℕ) : ℤ) ≤ ⌊s.mantissa x⌋ :=
+  Int.le_floor.2 (by rw [Int.cast_natCast, s.natCast_pow_t_sub_one]; exact s.zpow_le_mantissa hx)
+
+/-- The chopped mantissa is less than `β^t`. -/
+theorem floor_mantissa_lt (x : K) : ⌊s.mantissa x⌋ < ((s.β ^ s.t : ℕ) : ℤ) :=
+  Int.floor_lt.2 (by rw [Int.cast_natCast, s.natCast_pow_t]; exact s.mantissa_lt_zpow x)
+
+/-- A number whose mantissa is already an integer in `[β^(t-1), β^t)` is fixed by chopping. -/
+theorem chop_eq_self_of_abs_eq {x : K} {m e : ℤ} (hm1 : ((s.β ^ (s.t - 1) : ℕ) : ℤ) ≤ m)
+    (hm2 : m < ((s.β ^ s.t : ℕ) : ℤ)) (hx : |x| = m * (s.β : K) ^ (e - s.t)) : s.chop x = x := by
+  have hm1' : (s.β : K) ^ ((s.t : ℤ) - 1) ≤ m := by
+    rw [← s.natCast_pow_t_sub_one]; exact_mod_cast hm1
+  have hm2' : (m : K) < (s.β : K) ^ (s.t : ℤ) := by
+    rw [← s.natCast_pow_t]; exact_mod_cast hm2
+  rw [chop, s.mantissa_eq_of_abs_eq hm1' hm2' hx, s.exponent_eq_of_abs_eq hm1' hm2' hx,
+    Int.floor_intCast, mul_assoc, ← hx, sign_mul_abs]
+
+/-- **Chopping is idempotent**: the chopped mantissa is an integer in `[β^(t-1), β^t)`, and a
+second chop truncates an integer. Unlike rounding, chopping never carries into the next binade. -/
+theorem chop_chop (x : K) : s.chop (s.chop x) = s.chop x := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  · exact s.chop_eq_self_of_abs_eq (s.zpow_le_floor_mantissa hx) (s.floor_mantissa_lt x)
+      (s.abs_chop x)
+
+/-- The chopping model is idempotent (`System.chop_chop`). -/
+theorem choppingModel_isIdempotent : (s.choppingModel K).IsIdempotent := by
+  intro x y z hxy hyz
+  rw [choppingModel_rounds_iff] at hxy hyz
+  rw [hyz, hxy, chop_chop]
+
+/-- The chopping model is total: every value has the rounding `chop x`. -/
+theorem choppingModel_isTotal : (s.choppingModel K).IsTotal := fun x => ⟨s.chop x, rfl⟩
+
+/-! ### Rounding to a nearest number -/
+
+/-- **A nearest floating-point number has relative error at most `u`** ([golub2013matrix] §2.7.2):
+if `x_min ≤ |x| ≤ x_max` and no number of `𝔽` is closer to `x` than `y`, then
+`|y - x| ≤ u |x|`. Compare with `round x`, which lies in `𝔽` (`System.round_mem_numbers`) within
+`u |x|` of `x` (`System.abs_round_sub_le`). -/
+theorem abs_sub_le_of_forall_abs_sub_le {x y : K} (h1 : s.xmin K ≤ |x|) (h2 : |x| ≤ s.xmax K)
+    (hnear : ∀ z ∈ s.numbers K, |y - x| ≤ |z - x|) : |y - x| ≤ s.unitRoundoff K * |x| :=
+  (hnear _ (s.round_mem_numbers h1 h2)).trans (s.abs_round_sub_le x)
+
+/-- **Rounding to nearest, tie rule unspecified**: `y` is an admissible rounding of `x` when `x = y
+= 0`, or when `x` lies in the range `[x_min, x_max]` of `𝔽` in absolute value and `y` is a number
+of `𝔽` nearest to `x`, with `u = ½ β^(1-t)`. Every tie-breaking rule, IEEE round-half-to-even
+included, is a choice within this relation. Zero rounds to zero, so an exact zero intermediate
+has a rounding; values in the underflow gap `0 < |x| < x_min` and beyond `x_max` have none — this
+model is partial (not `IsTotal`), unlike the total `System.roundingModel`. -/
+noncomputable def nearestModel (s : System) (K : Type*) [Field K] [LinearOrder K]
+    [IsStrictOrderedRing K] [FloorRing K] : RoundingModel K where
+  u := s.unitRoundoff K
+  u_nonneg := s.unitRoundoff_nonneg
+  Rounds x y := (x = 0 ∧ y = 0) ∨
+    (s.xmin K ≤ |x| ∧ |x| ≤ s.xmax K ∧ y ∈ s.numbers K ∧ ∀ z ∈ s.numbers K, |y - x| ≤ |z - x|)
+  abs_sub_le := by
+    rintro x y (⟨rfl, rfl⟩ | ⟨h1, h2, -, h⟩)
+    · simp
+    · exact s.abs_sub_le_of_forall_abs_sub_le h1 h2 h
+
+/-- The unit roundoff of the round-to-nearest model is `u = ½ β^(1-t)`. -/
+@[simp] theorem nearestModel_u : (s.nearestModel K).u = s.unitRoundoff K := rfl
+
+/-- The rounding relation of the round-to-nearest model. -/
+theorem nearestModel_rounds_iff {x y : K} :
+    (s.nearestModel K).Rounds x y ↔ (x = 0 ∧ y = 0) ∨
+      (s.xmin K ≤ |x| ∧ |x| ≤ s.xmax K ∧ y ∈ s.numbers K ∧
+        ∀ z ∈ s.numbers K, |y - x| ≤ |z - x|) := Iff.rfl
+
+/-- The round-to-nearest model is idempotent: every admissible rounding lies in `𝔽`, and a number
+of `𝔽` is its own unique nearest number. -/
+theorem nearestModel_isIdempotent : (s.nearestModel K).IsIdempotent := by
+  intro x y z hxy hyz
+  have hy : y ∈ s.numbers K := by
+    rcases hxy with ⟨-, rfl⟩ | ⟨-, -, hy, -⟩
+    · exact s.zero_mem_numbers
+    · exact hy
+  rcases hyz with ⟨rfl, rfl⟩ | ⟨-, -, -, h⟩
+  · rfl
+  · have := h y hy
+    rw [sub_self, abs_zero] at this
+    exact sub_eq_zero.1 (abs_nonpos_iff.1 this)
+
 /-! ### Machine operations -/
 
 /-- The **machine operation** attached to an exact operation `f`: `x ∘ y = fl(f (fl x) (fl y))`
@@ -1225,6 +1343,35 @@ theorem ieeeDouble_unitRoundoff : ieeeDouble.unitRoundoff K = 2 ^ (-53 : ℤ) :=
   rw [unitRoundoff, show (-53 : ℤ) = -1 + (1 - (53 : ℕ)) by norm_num, zpow_add₀ two_ne_zero,
     zpow_neg_one]
   simp [ieeeDouble]
+
+/-- The machine epsilon of double precision is `2^(-52)` ([golub2013matrix] §2.7.2). -/
+theorem ieeeDouble_machineEps : ieeeDouble.machineEps K = 2 ^ (-52 : ℤ) := by
+  norm_num [machineEps, ieeeDouble]
+
+/-- The smallest positive normalized number of double precision is `2^(-1022)`, the `N_min` of
+[golub2013matrix] §2.7.2. -/
+theorem ieeeDouble_xmin : ieeeDouble.xmin K = 2 ^ (-1022 : ℤ) := by
+  norm_num [xmin, ieeeDouble]
+
+/-- The largest number of double precision is `(2 - 2^(-52)) 2^1023 = 2^1024 (1 - 2^(-53))`, the
+`N_max` of [golub2013matrix] §2.7.2. -/
+theorem ieeeDouble_xmax : ieeeDouble.xmax K = (2 - 2 ^ (-52 : ℤ)) * 2 ^ (1023 : ℤ) := by
+  norm_num [xmax, ieeeDouble]
+  rw [show (2 : K) ^ 1024 = 2 * 2 ^ 1023 from pow_succ' 2 1023]
+  generalize (2 : K) ^ 1023 = c
+  ring
+
+/-- The machine epsilon of single precision is `2^(-23)`. -/
+theorem ieeeSingle_machineEps : ieeeSingle.machineEps K = 2 ^ (-23 : ℤ) := by
+  norm_num [machineEps, ieeeSingle]
+
+/-- The smallest positive normalized number of single precision is `2^(-126)`. -/
+theorem ieeeSingle_xmin : ieeeSingle.xmin K = 2 ^ (-126 : ℤ) := by
+  norm_num [xmin, ieeeSingle]
+
+/-- The largest number of single precision is `(2 - 2^(-23)) 2^127 = 2^128 (1 - 2^(-24))`. -/
+theorem ieeeSingle_xmax : ieeeSingle.xmax K = (2 - 2 ^ (-23 : ℤ)) * 2 ^ (127 : ℤ) := by
+  norm_num [xmax, ieeeSingle]
 
 end System
 

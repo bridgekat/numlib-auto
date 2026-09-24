@@ -1,3 +1,4 @@
+import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Algebra.Order.Ring.Pow
@@ -18,11 +19,22 @@ theorem proved in the model therefore holds for *every* rounding rule meeting th
 the theorem is about an algorithm, for every evaluation order that its statement spells out. A
 concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
 
+Three properties a model may have are named here for the program semantics of
+`Numlib/FloatingPoint/Program`: the exact model `RoundingModel.exact K` (`u = 0`, `Rounds x y ↔ y =
+x`), whose rounding hook is `pure`, so that an exact specification can be read off a theorem proved
+for every model; `RoundingModel.IsIdempotent` (rounding fixes its own outputs), which is what makes
+the first addition `0 + fl(x₁ y₁)` of a textbook inner-product loop exact and so gives the book's
+`γ_n` rather than `γ_{n+1}`; and `RoundingModel.IsTotal` (every value has a rounding), under which
+the run set of a program is nonempty, so that theorems about every run are not vacuous.
+
 The bookkeeping constants are those of [higham2002accuracy]: `gamma u n = n u / (1 - n u)`, and
 `IsRelPert u n x y` says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive
 every error analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma
 u n` (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
-orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`).
+orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`). The sharp form of the first fact,
+`|∏ (1 + δ_i) - 1| ≤ (1 + u)^n - 1` (`abs_prod_one_add_sub_one_le_one_add_pow_sub_one`), needs no
+hypothesis on `n u` and gives Wilkinson's classical constant `1.01 n u` for `n u ≤ 0.01`
+(`abs_prod_one_add_sub_one_le_of_mul_le`, [golub2013matrix] Lemma 2.7.1), which `γ_n` does not.
 
 The calculus is completed by the steps an algorithm takes one operation at a time: one more
 rounding as a multiplication or a division (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
@@ -71,6 +83,50 @@ theorem RoundingModel.Rounds.exists_delta {m : RoundingModel K} {x y : K} (h : m
       simpa [mul_comm] using m.abs_sub_le h
     · field_simp
       ring
+
+/-! ### The exact model, idempotence and totality -/
+
+namespace RoundingModel
+
+/-- **The exact model**: unit roundoff `0`, and the only admissible rounding of `x` is `x` itself.
+Every theorem proved for all rounding models specializes to exact arithmetic here; in the program
+semantics of `Numlib/FloatingPoint/Program` its rounding hook is `pure`. -/
+def exact (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] : RoundingModel K where
+  u := 0
+  u_nonneg := le_rfl
+  Rounds x y := y = x
+  abs_sub_le := by rintro x y rfl; simp
+
+/-- The unit roundoff of the exact model is `0`. -/
+@[simp] theorem exact_u : (exact K).u = 0 := rfl
+
+/-- The rounding relation of the exact model is equality. -/
+@[simp] theorem exact_rounds_iff {x y : K} : (exact K).Rounds x y ↔ y = x := Iff.rfl
+
+/-- A rounding model is **idempotent** when rounding fixes its own outputs: an admissible rounding
+`y` of any `x` rounds only to itself. Every concrete floating-point format has this property
+(floating-point numbers round to themselves), but it does not follow from the relative-error bound
+of the model. It is what makes the first addition `fl(0 + fl(x₁ y₁))` of an inner-product loop
+started at `0` exact, the unstated assumption of the textbook analyses that start from `s = 0`
+([golub2013matrix] (2.7.9)). -/
+def IsIdempotent (m : RoundingModel K) : Prop :=
+  ∀ ⦃x y z : K⦄, m.Rounds x y → m.Rounds y z → z = y
+
+/-- The exact model is idempotent. -/
+theorem isIdempotent_exact : (exact K).IsIdempotent := by
+  rintro x y z rfl rfl
+  rfl
+
+/-- A rounding model is **total** when every value has an admissible rounding. A statement about
+every run of a program in a model is vacuous when the run set is empty, which happens exactly when
+some value the program rounds has no admissible rounding; over a total model every run set is
+nonempty (`Numlib/FloatingPoint/Program`). -/
+def IsTotal (m : RoundingModel K) : Prop := ∀ x : K, ∃ y, m.Rounds x y
+
+/-- The exact model is total. -/
+theorem isTotal_exact : (exact K).IsTotal := fun x => ⟨x, rfl⟩
+
+end RoundingModel
 
 /-! ### The constants `γ_n` -/
 
@@ -198,6 +254,64 @@ theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu 
     exact div_nonneg (sq_nonneg _) hppos.le
   rw [abs_le]
   exact ⟨by linarith, by linarith⟩
+
+/-- One more rounding factor in the sharp form: if `|α| ≤ (1 + u)^k - 1` and `|δ| ≤ u`, then
+`|(1 + α)(1 + δ) - 1| ≤ (1 + u)^(k+1) - 1`. -/
+theorem abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one {u : K} {k : ℕ} {α δ : K}
+    (hα : |α| ≤ (1 + u) ^ k - 1) (hδ : |δ| ≤ u) :
+    |(1 + α) * (1 + δ) - 1| ≤ (1 + u) ^ (k + 1) - 1 := by
+  have h1 : |1 + δ| ≤ 1 + u := (abs_add_le 1 δ).trans (by rw [abs_one]; linarith)
+  calc |(1 + α) * (1 + δ) - 1| = |α * (1 + δ) + δ| := by ring_nf
+    _ ≤ |α| * |1 + δ| + |δ| := by rw [← abs_mul]; exact abs_add_le _ _
+    _ ≤ ((1 + u) ^ k - 1) * (1 + u) + u :=
+        add_le_add (mul_le_mul hα h1 (abs_nonneg _) ((abs_nonneg _).trans hα)) hδ
+    _ = (1 + u) ^ (k + 1) - 1 := by ring
+
+/-- **The sharp product bound** ([golub2013matrix] proof of Lemma 2.7.1): a product of `n`
+factors `1 + δ_i` with `|δ_i| ≤ u` differs from `1` by at most `(1 + u)^n - 1`. No hypothesis on
+`n u` is needed; compare `abs_prod_one_add_sub_one_le_gamma`, whose `γ_n` is larger. -/
+theorem abs_prod_one_add_sub_one_le_one_add_pow_sub_one {u : K} {n : ℕ} {δ : Fin n → K}
+    (hδ : ∀ i, |δ i| ≤ u) : |∏ i, (1 + δ i) - 1| ≤ (1 + u) ^ n - 1 := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Fin.prod_univ_castSucc]
+    have hα := ih (δ := fun i => δ (Fin.castSucc i)) fun i => hδ _
+    have h := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one hα (hδ (Fin.last n))
+    rwa [add_sub_cancel] at h
+
+/-- `(1 + u)^n - 1 ≤ n u + (n u)^2` when `n u ≤ 1`. The step `n → n + 1` reduces to
+`n² u³ ≤ n u² + u²`, which holds when `n u ≤ 1`. -/
+theorem one_add_pow_sub_one_le_mul_add_sq {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u ≤ 1) :
+    (1 + u) ^ n - 1 ≤ n * u + (n * u) ^ 2 := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    push_cast at h ⊢
+    have hn0 : (0 : K) ≤ n := n.cast_nonneg
+    have hnu0 : 0 ≤ (n : K) * u := mul_nonneg hn0 hu
+    have hnu : (n : K) * u ≤ 1 := by nlinarith
+    have ih := ih hnu
+    -- `(1 + u)^(n+1) - 1 = (1 + u) ((1 + u)^n - 1) + u`
+    have hrec : (1 + u) ^ (n + 1) - 1 = (1 + u) * ((1 + u) ^ n - 1) + u := by ring
+    rw [hrec]
+    have hstep : (1 + u) * ((1 + u) ^ n - 1) + u ≤ (1 + u) * (n * u + (n * u) ^ 2) + u := by
+      gcongr
+    refine hstep.trans ?_
+    -- the remaining gap is `u² (n + 1 - n² u) ≥ u²`
+    have hgap : (n : K) * ((n : K) * u) ≤ n := by nlinarith
+    nlinarith [mul_nonneg (mul_nonneg hu hu) (sub_nonneg.2 hgap)]
+
+/-- **Wilkinson's constant** ([golub2013matrix] Lemma 2.7.1): if `1 + α = ∏_{k<n} (1 + α_k)` with
+`|α_k| ≤ u` and `n u ≤ 0.01`, then `|α| ≤ 1.01 n u`. This does not follow from
+`abs_prod_one_add_sub_one_le_gamma`: at `n u = 0.01`, `γ_n = n u / 0.99 > 1.01 n u`. -/
+theorem abs_prod_one_add_sub_one_le_of_mul_le {u : K} (hu : 0 ≤ u) {n : ℕ} {δ : Fin n → K}
+    (hδ : ∀ i, |δ i| ≤ u) (h : (n : K) * u ≤ 1 / 100) :
+    |∏ i, (1 + δ i) - 1| ≤ 101 / 100 * (n * u) := by
+  have hnu0 : 0 ≤ (n : K) * u := mul_nonneg n.cast_nonneg hu
+  refine (abs_prod_one_add_sub_one_le_one_add_pow_sub_one hδ).trans ?_
+  refine (one_add_pow_sub_one_le_mul_add_sq hu (by linarith)).trans ?_
+  nlinarith
 
 /-! ### Relative perturbations -/
 

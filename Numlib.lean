@@ -396,6 +396,7 @@ import Numlib.FloatingPoint.Householder
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.LU
 import Numlib.FloatingPoint.Model
+import Numlib.FloatingPoint.Program
 import Numlib.FloatingPoint.Stationary
 import Numlib.FloatingPoint.Substitution
 import Numlib.FloatingPoint.System

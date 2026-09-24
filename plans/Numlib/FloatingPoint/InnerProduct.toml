@@ -1,8 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.FloatingPoint.InnerProduct` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch02) Add the product-form representation of a computed inner product with the sharp constant `(1
-# + u)^n - 1` (what Wilkinson's `1.01 n u` of [golub2013matrix] (2.7.11) needs), and the one-step
-# error of a rounded update `fl(y + fl(a x))` ([golub2013matrix] (2.7.17)–(2.7.18)).
 namespace = "FloatingPoint"
 
 [[node]]
@@ -41,66 +36,29 @@ source = "Higham, Accuracy and Stability of Numerical Algorithms, (3.12)–(3.13
 id = "abs_sub_entrywiseLE_of_roundsMul"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, (3.13)"
 
-[[node]]  # staged by ch01
+[[node]]
 id = "RoundsSumFrom"
 
-[[node]]  # staged by ch01
+[[node]]
 id = "abs_sub_le_of_roundsSumFrom"
 
-[[node]]  # staged by ch02
+[[node]]
 id = "exists_eq_sum_mul_one_add_of_roundsDot"
-kind = "theorem"
-desc = '''**The product form of a computed inner product** ([golub2013matrix] (2.7.10); [higham2002accuracy]
-(3.2)): if `RoundsDot m x y s` (index type `ι`, `n = card ι`), then `∃ θ : ι → K, s = ∑ i, x i * y i *
-(1 + θ i) ∧ ∀ i, |θ i| ≤ (1 + m.u) ^ n - 1` (prototype elaborates). Induction along the summation
-order `o` (a `RoundsSumFrom` induction as in `abs_sub_le_of_roundsSumFrom`), carrying each term's
-factor `(1 + δ_i) ∏ (1 + ε_j)` of at most `n` roundings, then
-`abs_prod_one_add_sub_one_le_one_add_pow_sub_one`. No `n u < 1` hypothesis. ★★ (~60 lines)'''
-deps = ["FloatingPoint.RoundsDot", "FloatingPoint.abs_prod_one_add_sub_one_le_one_add_pow_sub_one"]
+source = "Golub and Van Loan, Matrix Computations, (2.7.10)"
 
-[[node]]  # staged by ch02
+[[node]]
 id = "abs_sub_le_one_add_pow_sub_one_of_roundsDot"
-kind = "theorem"
-desc = '''`RoundsDot m x y s → |s - x ⬝ᵥ y| ≤ ((1 + m.u) ^ card ι - 1) * (|x| ⬝ᵥ |y|)`, the sharp form
-behind [golub2013matrix] (2.7.11). From `exists_eq_sum_mul_one_add_of_roundsDot`. ★'''
-deps = ["FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot"]
+source = "Golub and Van Loan, Matrix Computations, (2.7.11)"
 
-[[node]]  # staged by ch02
+[[node]]
 id = "abs_sub_le_of_rounds_add_mul"
-kind = "theorem"
-desc = '''**One rounded update** ([golub2013matrix] (2.7.17)–(2.7.18), rigorous form): `m.Rounds (a * x) p
-→ m.Rounds (y + p) s → |s - (y + a * x)| ≤ m.u * |y| + (2 * m.u + m.u ^ 2) * |a * x|` (prototype
-elaborates). `s = (y + a x (1 + δ))(1 + ε)` (`RoundingModel.Rounds.exists_delta`), so `s - (y + a x) =
-ε y + a x (δ + ε + δ ε)`. The book's `u (|y| + 2|a x|) + O(u²)` is this with the `u²` term displayed. ★'''
-deps = ["FloatingPoint.RoundingModel.Rounds.exists_delta"]
+source = "Golub and Van Loan, Matrix Computations, (2.7.17)-(2.7.18)"
 
-[[node]]  # staged by ch03
+[[node]]
 id = "roundsSumFrom_append_singleton"
-kind = "theorem"
-desc = '''Appending one term to a running sum:
-`RoundsSumFrom m s (l ++ [x]) r ↔ ∃ t, RoundsSumFrom m s l t ∧ m.Rounds (t + x) r`. Induction on
-`l`. This is the step lemma of every loop invariant that grows a running sum one term at a time —
-the saxpy loops of [golub2013matrix] Algorithms 3.1.3–3.1.4, 3.2.1–3.2.2, 3.4.1–3.4.2. Proved in
-`notes/gvl/ch03/proto/Bridge.lean` (18 lines). ★'''
-deps = ["FloatingPoint.RoundsSumFrom"]
 
-[[node]]  # staged by ch03; moved here from `Substitution` by Fix-A (GVL review, algo L3)
+[[node]]
 id = "roundsSumFrom_exact_iff"
-kind = "theorem"
-desc = '''At the exact rounding model (`FloatingPoint.RoundingModel.exact`, `Numlib/FloatingPoint/Model`:
-`u = 0`, `Rounds x y ↔ y = x`), a running sum is the sum: `RoundsSumFrom exact c l t ↔ t = c + l.sum`.
-Induction on `l`. The exact-model characterization every `…_exact_iff` of `Substitution`, `LU` and
-`Program` (`mem_run_dotAccum_exact_iff`) is built on. ★'''
-deps = ["FloatingPoint.RoundsSumFrom", "FloatingPoint.RoundingModel.exact"]
 
-[[node]]  # Fix-A (GVL review, algo L1)
+[[node]]
 id = "roundsDot_comp_equiv_iff"
-kind = "theorem"
-desc = '''`RoundsDot` is invariant under reindexing: for `e : κ ≃ ι` (both `Fintype`),
-`RoundsDot m (x ∘ e) (y ∘ e) s ↔ RoundsDot m x y s`. The order witness is mapped by `e`
-(`List.Nodup.map`, `List.map_map`), the product function composed with `e`. Needed wherever a
-program accumulates over one index type and the relation lives on another — [golub2013matrix]
-Algorithm 5.1.1's tail inner product runs over `Fin k` (the program's `x ∘ Fin.succ`) while
-`RoundsHouseholderVectorParlett` reads it over `{j // j ≠ 0}`, and a block `A(j:m, k)` read through
-`{i // i ∈ rows}`. ★'''
-deps = ["FloatingPoint.RoundsDot"]
