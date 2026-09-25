@@ -371,8 +371,12 @@ import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
 import Numlib.Data.ENNReal.Real
 import Numlib.Direct.ConditionEstimation
+import Numlib.Direct.CyclicReduction
+import Numlib.Direct.FastPoisson
+import Numlib.Direct.Levinson
 import Numlib.Direct.Refinement
 import Numlib.Direct.Substitution
+import Numlib.Direct.Vandermonde
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
@@ -454,6 +458,7 @@ import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Companion
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.DiagDominant
+import Numlib.LinearAlgebra.Matrix.Displacement
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
 import Numlib.LinearAlgebra.Matrix.GeneralizedSchur

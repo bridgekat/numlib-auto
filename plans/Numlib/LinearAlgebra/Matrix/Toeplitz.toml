@@ -1,12 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.Toeplitz` is the group description.
-# Still open, blocked on `Numlib/LinearAlgebra/Matrix/Permutation` (agent kron1, written in parallel): the
-# exchange-matrix forms of persymmetry (`isPersymmetric_iff_exchange_mul_mul_exchange`,
-# `IsPersymmetric.isSymm_exchange_mul`), `exchange_mul_symmToeplitz`, the bordering
-# `symmToeplitz_succ_eq_fromBlocks`, `exchange_mul_isHankel`, and the downshift expansion
-# `circulant_eq_sum_downshift_pow`. When they are written, add `import Numlib.LinearAlgebra.Matrix.Permutation`
-# to the module and extend its doc with "the exchange matrix `ℰ_n` and the downshift `𝒟_n` are
-# `Matrix.exchange`, `Matrix.downshift` of `Permutation`; `ℰ A ℰ = Aᵀ` is `isPersymmetric_iff_submatrix_rev`
-# read through `exchange_mul_apply`/`mul_exchange_apply`".
 namespace = "Matrix"
 
 [[node]]
@@ -14,21 +5,9 @@ id = "IsPersymmetric"
 
 [[node]]
 id = "isPersymmetric_iff_exchange_mul_mul_exchange"
-kind = "theorem"
-desc = '''`A.IsPersymmetric ↔ exchange n * A * exchange n = Aᵀ` over a semiring — the book's definition
-`ℰ_n B ℰ_n = Bᵀ`. From `exchange_mul_apply`, `mul_exchange_apply`, `Fin.rev_rev`. ★
-
-Blocked: `Matrix.exchange` and its API (`exchange_mulVec_apply`, `exchange_mul_apply`, `mul_exchange_apply`, `exchange_mul_exchange`) are in `Numlib/LinearAlgebra/Matrix/Permutation`, open and written in parallel by agent kron1 (not importable from this branch). Once it exists: `exchange n * A * exchange n` has entries `A (rev i) (rev j)` (`exchange_mul_apply`, `mul_exchange_apply`), so this is `isPersymmetric_iff_submatrix_rev` (proved) up to `ext`; ~10 lines.'''
-deps = ["IsPersymmetric", "exchange_mulVec_apply", "exchange_mul_exchange"]
 
 [[node]]
 id = "IsPersymmetric.isSymm_exchange_mul"
-kind = "theorem"
-desc = '''A persymmetric `A` has `exchange n * A` symmetric ("`ℰ_n B` is symmetric", [golub2013matrix] §4.7.1);
-conversely `(exchange n * A).IsSymm → A.IsPersymmetric` (`isPersymmetric_iff_isSymm_exchange_mul`). ★
-
-Blocked: needs `Matrix.exchange` (Permutation, agent kron1, open). Route once it exists: `(exchange n * A) i j = A (rev i) j` and persymmetry `A (rev j) (rev i) = A i j` with `Fin.rev_rev`; ~10 lines.'''
-deps = ["isPersymmetric_iff_exchange_mul_mul_exchange"]
 
 [[node]]
 id = "IsPersymmetric.inv"
@@ -50,40 +29,15 @@ id = "symmToeplitz"
 
 [[node]]
 id = "exchange_mul_symmToeplitz"
-kind = "theorem"
-desc = '''`exchange n * symmToeplitz n r = symmToeplitz n r * exchange n` (a symmetric persymmetric matrix commutes
-with `ℰ`), and for a nonsingular one `(symmToeplitz n r)⁻¹ * exchange n = exchange n *
-(symmToeplitz n r)⁻¹` — the step "`T_k⁻¹ ℰ_k = ℰ_k T_k⁻¹`" of [golub2013matrix] §4.7.3. ★
-
-Blocked: needs `Matrix.exchange` (Permutation, agent kron1, open). The reversal form is proved: `Matrix.symmToeplitz_submatrix_rev` (`T.submatrix rev rev = T`); the commutation is it read through `exchange_mul_apply`/`mul_exchange_apply`, and the inverse form follows from `IsPersymmetric.inv` (proved) with `symmToeplitz_isSymm`; ~20 lines.'''
-deps = ["symmToeplitz", "IsPersymmetric.inv", "exchange_mul_exchange"]
 
 [[node]]
 id = "leadingPrincipal_symmToeplitz"
 
 [[node]]
 id = "symmToeplitz_succ_eq_fromBlocks"
-kind = "theorem"
-desc = '''The bordering of [golub2013matrix] §4.7.3: `T_{k+1} = [T_k, ℰ_k r; rᵀ ℰ_k, r₀]` with `r = (r₁, …, r_k)`,
-stated as `symmToeplitz (k + 1) ρ = (fromBlocks (symmToeplitz k ρ) (replicateCol (Fin 1) (exchange k
-*ᵥ fun i => ρ (i + 1))) (replicateRow (Fin 1) (fun i => ρ (i + 1)) ᵥ* exchange k)) (fun _ _ => ρ 0))
-.submatrix e e` with `e := finSumFinEquiv.symm : Fin (k + 1) ≃ Fin k ⊕ Fin 1` (Mathlib's
-`Matrix.replicateCol`/`replicateRow`; the formalizer may choose the column/row constructor that
-makes `Matrix.fromBlocks_multiply` most convenient, keeping this name). Entrywise: the last column
-is `ρ_{k - i} = (ℰ r)_i`. ★
-
-Blocked: the statement uses `exchange k *ᵥ` (Permutation, agent kron1, open). Entrywise once it exists: the last column of `T_{k+1}` is `ρ (k - i) = (exchange k *ᵥ fun i => ρ (i + 1)) i` (`exchange_mulVec_apply`, `Fin.val_rev`); ~30 lines.'''
-deps = ["symmToeplitz", "exchange_mulVec_apply"]
 
 [[node]]
 id = "circulant_eq_sum_downshift_pow"
-kind = "theorem"
-desc = '''[golub2013matrix] (4.8.3): `circulant z = ∑ k : Fin n, z k • downshift n ^ (k : ℕ)` over a semiring,
-`n ≠ 0`. From `downshift_pow_card` and `Matrix.circulant_add`/`circulant_smul` with
-`z = ∑ k, z k • Pi.single k 1`. ★
-
-Blocked: needs `Matrix.downshift` and `downshift_pow_card` (Permutation, agent kron1, open). Route once they exist: `downshift n ^ k = circulant (Pi.single k 1)`, so the sum is `circulant (∑ k, z k • Pi.single k 1) = circulant z` by `Matrix.circulant_add`/`circulant_smul`-type linearity (Mathlib has `circulant_add`, `circulant_smul`? else entrywise with `Finset.sum_ite_eq`); ~20 lines.'''
-deps = ["downshift_pow_card"]
 
 [[node]]
 id = "isToeplitz_circulant"
@@ -111,12 +65,24 @@ id = "IsHankel.isToeplitz_submatrix_rev"
 
 [[node]]
 id = "exchange_mul_isHankel"
-kind = "theorem"
-desc = '''"`ℰ_n H` is Toeplitz" ([golub2013matrix] §12.1.7): `A.IsHankel → (exchange m * A).IsToeplitz` for
-`A : Matrix (Fin m) (Fin n) K`. Split off the `hankel` node (whose desc named it its first lemma) at the
-formalization of the Golub–Van Loan round: the reversal form `IsHankel.isToeplitz_submatrix_rev` is proved, and
-`exchange m * A = A.submatrix Fin.rev id` (`exchange_mul_apply`) makes this a corollary. ★
 
-Blocked: `Matrix.exchange` is in `Numlib/LinearAlgebra/Matrix/Permutation`, open and written in parallel by agent
-kron1 (not importable from this branch); ~5 lines once it exists.'''
-deps = ["IsHankel.isToeplitz_submatrix_rev", "exchange"]
+[[node]]
+id = "exchange_mul_eq_submatrix"
+
+[[node]]
+id = "exchange_mul_mul_exchange_eq_submatrix"
+
+[[node]]
+id = "isPersymmetric_iff_isSymm_exchange_mul"
+
+[[node]]
+id = "IsPersymmetric.exchange_mul_eq_mul_exchange"
+
+[[node]]
+id = "transpose_toeplitz"
+
+[[node]]
+id = "toeplitz_mulVec_apply"
+
+[[node]]
+id = "symmToeplitz_mulVec_apply"

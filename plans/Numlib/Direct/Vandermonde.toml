@@ -1,114 +1,40 @@
 namespace = "BjorckPereyra"
-desc = '''
-Vandermonde systems and the Björck–Pereyra factorization ([golub2013matrix] §4.6; Björck and
-Pereyra 1970; [higham2002accuracy] §22.2).
-
-Conventions. Mathlib's `Matrix.vandermonde x : Matrix (Fin n) (Fin n) R` has entries `x i ^ j`
-(rows are the nodes); the book's `V(x₀, …, x_n)` is its transpose. So the interpolation system
-`Vᵀ a = f` of the book is `vandermonde x *ᵥ a = f`, and the dual system `V z = b` is
-`(vandermonde x)ᵀ *ᵥ z = b`. Nodes are `x : Fin (n + 1) → K` over a field, distinct
-(`Function.Injective x`); `Matrix.det_vandermonde_ne_zero_iff` is the nonsingularity.
-
-Content. The system `vandermonde x *ᵥ a = f` is polynomial interpolation
-(`Matrix.vandermonde_mulVec_eq_eval`), so its solution is the coefficient vector of the Lagrange
-interpolant; Björck–Pereyra compute it in two sweeps. The first sweep is the divided-difference
-table: the vector `c = Uᵀ f` with `c_k = f[x₀, …, x_k]` (`DividedDifference.newtonOn` of
-`Numlib/Approximation/NewtonForm` at the prefix `Finset.Iic k`, `f` read as a function through any
-extension of the data, e.g. the interpolant itself); the second sweep converts the Newton form
-`∑ c_k ∏_{i<k}(X − x_i)` (`DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal`) to monomial
-coefficients by the nested multiplication `p_k = c_k + (X − x_k) p_{k+1}`, which is `a = Lᵀ c`. The
-factors are the products of the book's elementary bidiagonal matrices `L_k(α)` and diagonal
-matrices `D_k`, defined here explicitly (`BjorckPereyra.lowerBidiag`, `BjorckPereyra.diffScale`,
-`BjorckPereyra.upperFactorT`, `BjorckPereyra.lowerFactorT`), and the main theorem is
-`V⁻ᵀ = Lᵀ Uᵀ` (`BjorckPereyra.inv_vandermonde_eq`), whose transpose `V⁻¹ = U L` is what Algorithm
-4.6.2 applies. The surface Algorithms 4.6.1–4.6.2 are proved against these.
-
-Why a separate namespace: the factorization is specific to the Björck–Pereyra method (backbone
-§1.4: numerical-analysis-specific theories take short topical namespaces), while the one
-Mathlib-shaped fact, `Matrix.vandermonde_mulVec_eq_eval`, is in `Matrix`. Searched and not found:
-`vandermonde_mulVec`, `vandermonde_inv`, "Björck Pereyra" (LeanSearch), any Newton-to-monomial
-conversion in `NewtonForm`/`Horner` (`Numlib/RingTheory/Polynomial/Horner` evaluates, it does not
-convert bases).
-
-About 350 lines, mostly `upperFactorT_mulVec_eq_newtonOn` (the divided-difference table as a
-product of bidiagonal factors) and the index bookkeeping of the products.
-'''
 
 [[node]]
 id = "_root_.Matrix.vandermonde_mulVec_eq_eval"
-kind = "theorem"
-desc = '''`(Matrix.vandermonde x *ᵥ a) i = (∑ j, Polynomial.C (a j) * Polynomial.X ^ (j : ℕ)).eval (x i)` over a
-commutative ring — [golub2013matrix] (4.6.1): `Vᵀ a = f` iff the polynomial with coefficients `a`
-interpolates the data. `Polynomial.eval_finset_sum`, `Matrix.mulVec`, `dotProduct`. ★'''
-deps = []
 
 [[node]]
 id = "lowerBidiag"
-kind = "definition"
-desc = '''The book's `L_k(α)`: `lowerBidiag (n k : ℕ) (α : K) : Matrix (Fin (n + 1)) (Fin (n + 1)) K`, the identity
-with `-α` on the subdiagonal positions `(i + 1, i)` for `i ≥ k`:
-`of fun i j => if i = j then 1 else if (i : ℕ) = j + 1 ∧ k ≤ (j : ℕ) then -α else 0`. ★'''
-deps = []
+
+[[node]]
+id = "lowerBidiag_mulVec_apply"
+
+[[node]]
+id = "vecMul_transpose_lowerBidiag_apply"
 
 [[node]]
 id = "diffScale"
-kind = "definition"
-desc = '''The book's `D_k = diag(1, …, 1, x_{k+1} − x_0, …, x_n − x_{n−k−1})` (`k + 1` ones):
-`diffScale (x : Fin (n + 1) → K) (k : ℕ) : Matrix (Fin (n + 1)) (Fin (n + 1)) K :=
-diagonal fun i => if (i : ℕ) ≤ k then 1 else x i - x ⟨i - k - 1, _⟩`. Nonsingular for distinct
-nodes. ★'''
-deps = []
+
+[[node]]
+id = "inv_diffScale"
 
 [[node]]
 id = "upperFactorT"
-kind = "definition"
-desc = '''`Uᵀ = D_{n−1}⁻¹ L_{n−1}(1) ⋯ D_0⁻¹ L_0(1)`: `upperFactorT x := ((List.range n).map fun k =>
-(diffScale x k)⁻¹ * lowerBidiag n k 1).reverse.prod` (the product with `k = n − 1` leftmost).
-Lower triangular (a product of lower triangular factors); its transpose is the book's upper
-triangular `U`. ★'''
-deps = ["lowerBidiag", "diffScale"]
 
 [[node]]
 id = "lowerFactorT"
-kind = "definition"
-desc = '''`Lᵀ = L_0(x_0)ᵀ ⋯ L_{n−1}(x_{n−1})ᵀ`: `lowerFactorT x := ((List.range n).map fun k => (lowerBidiag n k
-(x k))ᵀ).prod`. Unit upper triangular; its transpose is the book's unit lower triangular `L`. ★'''
-deps = ["lowerBidiag"]
 
 [[node]]
 id = "upperFactorT_mulVec_eq_newtonOn"
-kind = "theorem"
-desc = '''The divided-difference sweep is `c = Uᵀ f` ([golub2013matrix] §4.6.2, "it is easy to verify from (4.6.3)"):
-for distinct nodes and any `g : K → K` with `g (x i) = f i`, `(upperFactorT x *ᵥ f) k =
-DividedDifference.newtonOn (Finset.Iic k) x g`. Induction on the number of applied factors with
-the invariant "after the factors `0, …, k − 1`, entry `i ≥ k` holds `g[x_{i−k}, …, x_i]` and entry
-`i < k` holds `g[x_0, …, x_i]`": one factor `D_k⁻¹ L_k(1)` performs
-`c_i ← (c_i − c_{i−1})/(x_i − x_{i−k−1})` for `i > k`, which is `DividedDifference.newtonOn_eq_sub_div`
-on consecutive windows (`Finset.Icc` windows reindexed through `DividedDifference.newtonOn_map`).
-★★★ (~150 lines)'''
-deps = ["upperFactorT", "DividedDifference.newtonOn", "DividedDifference.newtonOn_eq_sub_div", "DividedDifference.newtonOn_map"]
+
+[[node]]
+id = "pow_vecMul_lowerFactorT"
+
+[[node]]
+id = "vandermonde_mul_lowerFactorT"
 
 [[node]]
 id = "lowerFactorT_mulVec_newtonCoeff"
-kind = "theorem"
-desc = '''The Newton-to-monomial sweep is `a = Lᵀ c` ([golub2013matrix] (4.6.4) and the recursion
-`p_k = c_k + (x − x_k) p_{k+1}` before it): for any `c : Fin (n + 1) → K`,
-`∑ j, C ((lowerFactorT x *ᵥ c) j) * X ^ (j : ℕ) = ∑ k, C (c k) * ∏ i : Fin k, (X − C (x i))`
-(the prefix nodal polynomials `∏_{i<k}(X − x_i)`). Induction on the factors from the right: one
-factor `L_k(x_k)ᵀ` performs `a_i ← a_i − x_k a_{i+1}` for `i ≥ k`, which multiplies the tail
-polynomial `p_{k+1}` by `(X − x_k)` and adds `c_k` (`Polynomial.coeff_mul_X_sub_C`). ★★ (~100
-lines)'''
-deps = ["lowerFactorT"]
 
 [[node]]
 id = "inv_vandermonde_eq"
-kind = "theorem"
-desc = '''**[golub2013matrix] §4.6.2, `V⁻ᵀ = Lᵀ Uᵀ`**: for distinct nodes `x : Fin (n + 1) → K`,
-`(Matrix.vandermonde x)⁻¹ = lowerFactorT x * upperFactorT x` (the book's `V = vandermondeᵀ`, so
-`V⁻ᵀ = vandermonde⁻¹`), hence `((Matrix.vandermonde x)ᵀ)⁻¹ = (upperFactorT x)ᵀ * (lowerFactorT
-x)ᵀ` (`V⁻¹ = U L`). Proof: for every `f`, `a := lowerFactorT x *ᵥ (upperFactorT x *ᵥ f)` has
-`vandermonde x *ᵥ a = f` — by `lowerFactorT_mulVec_newtonCoeff` the polynomial with coefficients
-`a` is the Newton form with coefficients `g[x_0, …, x_k]`, which is the interpolant
-(`DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal`), and it takes the values `f i`
-(`Lagrange.eval_interpolate_at_node`); then `Matrix.inv_eq_right_inv`. ★★'''
-deps = ["upperFactorT_mulVec_eq_newtonOn", "lowerFactorT_mulVec_newtonCoeff", "_root_.Matrix.vandermonde_mulVec_eq_eval", "DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal"]

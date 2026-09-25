@@ -1,47 +1,7 @@
 namespace = "FastPoisson"
-desc = '''
-The fast Poisson solver framework ([golub2013matrix] §4.8.3–4.8.7; Van Loan, *Computational Frameworks for
-the Fast Fourier Transform*, §4.3–4.5; Strang 1999): `(I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}) vec U = vec B` solved in the
-eigenvector bases of `A₁` and `A₂`.
-
-**Where the pieces are** (after the review of the Golub–Van Loan round, which moved everything but the
-solver out of this module). The four second-difference matrices: `𝒯^{(DD)}_n =
-Matrix.symmTridiagonalToeplitz n (-1) 2` and its low-rank adjustments (4.8.8)–(4.8.10)
-`Matrix.secondDifferenceDN`, `Matrix.secondDifferenceNN`, `Matrix.secondDifferencePeriodic` with the six
-residual identities of Lemma 4.8.3, all in `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` (the
-corner-modified `Y_{γ,δ}` of §12.1 lives there too and is a different family: `2 • 1 − Y₀₀ = 𝒯^{(DD)}`, but
-no scaling relates `𝒯^{(DN)}`, `𝒯^{(NN)}` to it). Their eigensystems: `DD` is the existing
-`Matrix.symmTridiagonalToeplitz_mulVec_sineVec` (DST-I, `Matrix.dst1`), `DN` by the DST-II `Matrix.dst2`
-(`Matrix.secondDifferenceDN_mulVec_dst2_col`), `NN` by the DCT-I `Matrix.dct1`
-(`Matrix.secondDifferenceNN_mulVec_dct1_col`), all in `Numlib/Analysis/Fourier/SineCosineTransform` with the
-inversion formulas `Matrix.dst1_mul_self`, `Matrix.dct1_mul_self`; the periodic matrix is a circulant
-(`Matrix.secondDifferencePeriodic_eq_circulant`, `Toeplitz`), diagonalized by `F_n` in
-`Numlib/Analysis/Fourier/Circulant` (`Matrix.inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft`,
-with a real eigenbasis (4.8.24)–(4.8.25)).
-
-**The solver.** `(I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}) vec U = vec B` is the Kronecker sum `A₂ ⊕ₖ A₁` of
-`LinearAlgebra/Matrix/KroneckerSum` acting on Mathlib's column-major `Matrix.vec`
-(`Matrix.kroneckerSum_mulVec_vec`: it is `A₁ U + U A₂ᵀ`, a Sylvester equation), and with eigenvector
-matrices `V`, `W` the solution is `U = V ((V⁻¹ B W⁻ᵀ) ⊘ (λ_i + μ_j)) Wᵀ`
-(`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`, a corollary of the diagonal Sylvester solve
-`Matrix.sylvesterMap_diagonal_eq_iff` and `Matrix.sylvesterMap_conj`) — the specification Algorithm 4.8.2 is
-proved against. "Fast" (the `O(n log n)` operation counts) is not formalized.
-
-About 60 lines.
-'''
 
 [[node]]
 id = "kroneckerSum_mulVec_vec_eq_iff"
-kind = "theorem"
-desc = '''**The fast Poisson solver framework** ([golub2013matrix] §4.8.4, Algorithm 4.8.2's specification): let
-`A₁ : Matrix (Fin n₁) (Fin n₁) K`, `A₂ : Matrix (Fin n₂) (Fin n₂) K` over a field, `V`, `W`
-nonsingular with `V⁻¹ * A₁ * V = diagonal ν`, `W⁻¹ * A₂ * W = diagonal μ` ((4.8.13)–(4.8.14)), and
-`ν i + μ j ≠ 0` for all `i j`. Then for `U B : Matrix (Fin n₁) (Fin n₂) K`,
-`(A₂ ⊕ₖ A₁) *ᵥ vec U = vec B ↔ U = V * (of fun i j => (V⁻¹ * B * W⁻¹ᵀ) i j / (ν i + μ j)) * Wᵀ`
-(the book's `Ũ = V⁻¹ U W⁻ᵀ`, `D₁ Ũ + Ũ D₂ = B̃`, `ũ_ij = b̃_ij/(λ_i + μ_j)`), and `A₂ ⊕ₖ A₁` is
-nonsingular. A corollary of the diagonal Sylvester solve of `Numlib/LinearAlgebra/Matrix/Sylvester`:
-`Matrix.kroneckerSum_mulVec_vec` turns the equation into `A₁ U + U A₂ᵀ = B`, i.e.
-`sylvesterMap A₁ (-A₂ᵀ) U = B`; `Matrix.sylvesterMap_conj` with `P = V⁻¹`, `Q = Wᵀ` (so `-A₂ᵀ` becomes
-`-diagonal μ`) gives `sylvesterMap (diagonal ν) (diagonal (-μ)) Ũ = B̃`, and `Matrix.sylvesterMap_diagonal_eq_iff`
-solves it entrywise (`ν i - (-μ j) ≠ 0`; the book's `λ_i` is `ν i`, `λ` being a Lean keyword); `vec` is injective. No elimination is re-derived here. ★'''
-deps = ["Matrix.kroneckerSum_mulVec_vec", "Matrix.kroneckerSum", "Matrix.sylvesterMap_conj", "Matrix.sylvesterMap_diagonal_eq_iff"]
+
+[[node]]
+id = "isUnit_kroneckerSum"

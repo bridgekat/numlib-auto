@@ -1,82 +1,49 @@
 namespace = "CyclicReduction"
-desc = '''
-Block cyclic reduction ([golub2013matrix] §4.5.3; Buzbee–Golub–Nielson 1970) for the block
-tridiagonal system with constant commuting blocks
-`D x_1 + F x_2 = b_1`, `F x_{i−1} + D x_i + F x_{i+1} = b_i`, `F x_{N−1} + D x_N = b_N`, `D F = F D`
-((4.5.9); the discrete Poisson matrix of §4.8.4 is the case `D = 𝒯^{(DD)} + 2I`, `F = −I`).
 
-One reduction step eliminates the odd-indexed unknowns (1-based): multiplying equations
-`2j − 1`, `2j`, `2j + 1` by `F`, `−D`, `F` and adding leaves, for the even unknowns, a system of the
-same form with `D⁽¹⁾ = 2F² − D²`, `F⁽¹⁾ = F²` (commuting again), right-hand side
-`b⁽¹⁾_j = F (b_{2j−1} + b_{2j+1}) − D b_{2j}`; the odd unknowns are recovered from
-`D x_{2j+1} = b_{2j+1} − F (x_{2j} + x_{2j+2})`. For `N = 2^k − 1` the reduced system has
-`2^{k−1} − 1` unknowns, so iterating reaches one `q × q` system.
-
-Setting. Blocks `D F : Matrix (Fin q) (Fin q) K` over a commutative ring `K`, unknowns and data
-`x b : Fin N → Fin q → K`; the operator is written directly,
-`CyclicReduction.constBlockTridiagonal D F x i = D *ᵥ x i + F *ᵥ x (i−1) + F *ᵥ x (i+1)` with missing neighbours
-zero, rather than through `Matrix.blockTridiagonal` (`LinearAlgebra/Matrix/BlockTridiagonal`), to
-which it is bridged by `constBlockTridiagonal_eq_blockTridiagonal_mulVec`. 0-based: the book's even unknowns
-`x_2, x_4, …` are `x 1, x 3, …`, i.e. `x (2j+1)`, `j < M`, for `N = 2M + 1`.
-
-Stability (Buneman's variant) and the operation count are not formalized (report). About 200
-lines.
-'''
+[[node]]
+id = "extend"
 
 [[node]]
 id = "constBlockTridiagonal"
-kind = "definition"
-desc = '''The constant-block tridiagonal operator (4.5.9): `CyclicReduction.constBlockTridiagonal (D F : Matrix (Fin q) (Fin q) K)
-(x : Fin N → Fin q → K) (i : Fin N) : Fin q → K := D *ᵥ x i + F *ᵥ (prev x i) + F *ᵥ (next x i)`
-where `prev x i := if h : 0 < (i : ℕ) then x ⟨i - 1, _⟩ else 0` and `next` likewise.
-`constBlockTridiagonal_eq_blockTridiagonal_mulVec`: it is `Matrix.blockTridiagonal (fun _ => F) (fun _ => D)
-(fun _ => F) *ᵥ` the flattened `x` (`Matrix.comp`), for `N = N' + 1`. Was `CyclicReduction.apply` (renamed at
-the review of the Golub–Van Loan round: an operator named `apply` cannot be found by search). ★'''
-deps = ["Matrix.blockTridiagonal"]
+
+[[node]]
+id = "constBlockTridiagonal_eq_iff"
+
+[[node]]
+id = "constBlockTridiagonal_eq_blockTridiagonal_mulVec"
 
 [[node]]
 id = "reducedDiag"
-kind = "definition"
-desc = '''`reducedDiag D F := 2 • (F * F) − D * D` and `reducedOff F := F * F` (the book's `D⁽¹⁾`, `F⁽¹⁾`), and
-`reducedRhs D F b j := F *ᵥ (b (2j) + b (2j+2)) − D *ᵥ b (2j+1)` for `b : Fin (2M+1) → Fin q → K`,
-`j : Fin M`. ★'''
-deps = []
+
+[[node]]
+id = "reducedOff"
+
+[[node]]
+id = "reducedRhs"
 
 [[node]]
 id = "commute_reduced"
-kind = "theorem"
-desc = '''If `D * F = F * D` then `reducedDiag D F * reducedOff F = reducedOff F * reducedDiag D F` ("`D⁽¹⁾` and
-`F⁽¹⁾` commute", [golub2013matrix] §4.5.3), so the reduction can be repeated. `noncomm_ring`-style
-rewriting with the commutation. ★'''
-deps = ["reducedDiag"]
+
+[[node]]
+id = "extend_odd"
 
 [[node]]
 id = "constBlockTridiagonal_reduce"
-kind = "theorem"
-desc = '''**One cyclic reduction step** ([golub2013matrix] §4.5.3): if `D * F = F * D` and `constBlockTridiagonal D F x = b` on
-`Fin (2M + 1)`, then the even unknowns `x' j := x (2j + 1)`, `j : Fin M`, satisfy
-`constBlockTridiagonal (reducedDiag D F) (reducedOff F) x' = reducedRhs D F b`. For `j`: `F (eq_{2j}) − D (eq_{2j+1})
-+ F (eq_{2j+2})`; the odd unknowns cancel because `F D = D F` (the book's worked `N = 7` case
-generalized). ★★ (~80 lines, boundary indices)'''
-deps = ["constBlockTridiagonal", "reducedDiag"]
 
 [[node]]
 id = "constBlockTridiagonal_odd_eq"
-kind = "theorem"
-desc = '''The back substitution of cyclic reduction: if `constBlockTridiagonal D F x = b` on `Fin (2M + 1)` then for every `j ≤ M`,
-`D *ᵥ x (2j) = b (2j) − F *ᵥ (x (2j − 1) + x (2j + 1))` with the out-of-range neighbours zero — the
-odd unknowns (1-based) are determined by the even ones through `q × q` systems with matrix `D`
-(the book's "we use the first, third, fifth, and seventh equations"). A restatement of the
-equation `2j`. ★'''
-deps = ["constBlockTridiagonal"]
+
+[[node]]
+id = "size"
+
+[[node]]
+id = "size_eq"
+
+[[node]]
+id = "diagIter"
+
+[[node]]
+id = "rhsIter"
 
 [[node]]
 id = "constBlockTridiagonal_iterate_reduce"
-kind = "theorem"
-desc = '''Iterating: for `N = 2^k − 1`, `D F` commuting and `constBlockTridiagonal D F x = b`, after `p ≤ k − 1` steps the unknowns
-`x (2^p (j + 1) − 1)`, `j < 2^{k−p} − 1`, satisfy the system `constBlockTridiagonal D_p F_p x_p = b_p` with
-`(D_{p+1}, F_{p+1}) = (reducedDiag D_p F_p, reducedOff F_p)`; at `p = k − 1` this is the single
-system `D_{k−1} x_{2^{k−1}−1} = b_{k−1}` ("we are left with a single `q × q` system for
-`x_{2^{k−1}}`"). Induction with `constBlockTridiagonal_reduce` and `commute_reduced`; `2(2^p(j+1)) − 1` index
-arithmetic. ★★'''
-deps = ["constBlockTridiagonal_reduce", "commute_reduced"]
