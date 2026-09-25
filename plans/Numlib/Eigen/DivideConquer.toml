@@ -36,20 +36,6 @@ id = "Matrix.hasDerivAt_borderedSecularFunction"
 
 [[node]]
 id = "Matrix.tendsto_newton_borderedSecularFunction"
-kind = "theorem"
-desc = '''[golub2013matrix] (4.7.9)–(4.7.10): let `λ* := λ_min(T)` with `λ* < λ_min(B)` ((4.7.8)); if
-`λ* ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton iterates `λ⁽ᵏ⁺¹⁾ = Newton.scalarStep (borderedSecularFunction r B) (deriv
-(borderedSecularFunction r B)) λ⁽ᵏ⁾` are antitone, bounded below by `λ*`, and tend to `λ*` ("monotonically from the
-right"). From `Newton.tendsto_iterate_scalarStep_of_concaveOn` on `[λ*, λ⁽⁰⁾]` with the sign facts
-of `Matrix.hasDerivAt_borderedSecularFunction` and `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq` at `λ*` (`borderedSecularFunction r B` has the unique zero
-`λ*` below `λ_min(B)`). ★★
-
-Blocked: needs `Newton.tendsto_iterate_scalarStep_of_concaveOn` (group `Nonlinear/ScalarNewton`, open,
-not in wave 1). The inputs on this side are proved: `Matrix.hasDerivAt_borderedSecularFunction`
-(first and second derivative at every non-eigenvalue), `Matrix.borderedSecularFunction_deriv_nonpos`
-(`f' ≤ -1`, `f'' ≤ 0` below the spectrum of `B`) and `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`.
-Once the Newton lemma exists this is ~40 lines (eig1, wave 1).'''
-deps = ["Matrix.hasDerivAt_borderedSecularFunction", "Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq", "Newton.tendsto_iterate_scalarStep_of_concaveOn", "Newton.scalarStep"]
 
 [[node]]
 id = "Matrix.borderedSecularFunction_eq_secularFunction_sub"

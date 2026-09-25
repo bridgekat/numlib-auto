@@ -38,10 +38,18 @@ form.
   (10.5.4)).
 * `Matrix.IsFrancisStep s t H H'`: the specification of the implicit double-shift (Francis) step,
   `H' = Zᵀ H Z` Hessenberg with `Zᵀ (H² − s H + t I)` upper triangular.
+* `Matrix.IsOrthogonalIterationStep A Q Q'`: one step `A Q = Q' R` of orthogonal iteration for
+  *some* thin QR factorization ([golub2013matrix] (7.3.6), (8.2.8)).
 
 ## Main results
 
 * `Krylov.span_orthogonalIterate`: the orthogonal iterates span the iterated subspaces.
+* `Matrix.exists_isOrthogonalIterationStep`, `Matrix.IsOrthogonalIterationStep.range_eq`,
+  `Matrix.exists_pow_mul_eq_mul_of_isOrthogonalIterationStep`,
+  `Matrix.range_eq_subspaceIterate_of_isOrthogonalIterationStep`: orthogonal iteration for any
+  factorization exists, and under full column rank computes `A^k (ran Q₀)` with
+  `A^k Q₀ = Q_k (R_k ⋯ R_1)`; `Matrix.IsOrthogonalIterationStep.isShiftedQrStep`: a square step is
+  an unshifted QR step of `Qᴴ A Q` ([golub2013matrix] §7.3.3).
 * `Matrix.qrQ_mul_qrR`: `A = Q R`, with `Matrix.qrQ_mem_unitaryGroup` and
   `Matrix.isUpperTriangular_qrR`.
 * `Matrix.euclideanCol_eq_gramSchmidtNormed_of_eq_mul`: **uniqueness of the QR decomposition** in
@@ -783,6 +791,145 @@ theorem IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last {N : ℕ}
     exact (ite_eq_right_iff.2 fun h => absurd h hj).symm
 
 end ShiftedStep
+
+/-! ### Orthogonal iteration for arbitrary thin QR factorizations
+
+`Krylov.orthogonalIterate` fixes one orthonormalization, Gram–Schmidt. The textbook statement of
+orthogonal iteration ([golub2013matrix] (7.3.6), (8.2.8)) factors `Z_k = A Q_{k-1} = Q_k R_k` by
+*some* thin QR factorization, so its specification is a relation between consecutive blocks:
+`Matrix.IsOrthogonalIterationStep A Q Q'`. Such a step always exists
+(`Matrix.exists_isOrthogonalIterationStep`); under full column rank it iterates subspaces
+(`Matrix.IsOrthogonalIterationStep.range_eq`,
+`Matrix.range_eq_subspaceIterate_of_isOrthogonalIterationStep`), and a square step is one
+unshifted QR step (`Matrix.IsOrthogonalIterationStep.isShiftedQrStep`). -/
+
+section OrthogonalIteration
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m : Type*} [Fintype m] {r : ℕ}
+
+/-- **One step of orthogonal (simultaneous, subspace) iteration** for *some* thin QR factorization
+([golub2013matrix] (7.3.6) and (8.2.8)): `Q'` is the orthonormal factor of a thin QR factorization
+`A Q = Q' R` (`Q'ᴴ Q' = 1`, `R` upper triangular). Every choice of factorization is allowed
+(Gram–Schmidt, Householder, Givens, any signs); the Gram–Schmidt iterates
+`Krylov.orthogonalIterate` are one instance. A sequence `Q : ℕ → Matrix m (Fin r) 𝕜` is an
+orthogonal iteration when `(Q 0)ᴴ Q 0 = 1` and every consecutive pair is a step. -/
+def IsOrthogonalIterationStep (A : Matrix m m 𝕜) (Q Q' : Matrix m (Fin r) 𝕜) : Prop :=
+  ∃ R, IsThinQR (A * Q) Q' R
+
+/-- **Every block has a next step of orthogonal iteration**, with no rank assumption on `A Q`: the
+full QR factorization of `A Q` exists (`Matrix.exists_isQR`), and its first `r` columns and rows
+are a thin one (`Matrix.IsQR.isThinQR`). Hence an orthogonal iteration exists from every `Q₀` with
+orthonormal columns. -/
+theorem exists_isOrthogonalIterationStep {n : ℕ} (A : Matrix (Fin n) (Fin n) 𝕜)
+    (Q : Matrix (Fin n) (Fin r) 𝕜) (hr : r ≤ n) : ∃ Q', IsOrthogonalIterationStep A Q Q' := by
+  obtain ⟨Q₀, R₀, h⟩ := exists_isQR (A * Q)
+  exact ⟨_, _, h.isThinQR hr⟩
+
+/-- A thin QR factorization of a matrix of full column rank has a nonsingular triangular factor:
+`B = Q R` injective forces `R` injective. -/
+private theorem isUnit_of_isThinQR_of_linearIndependent {N : ℕ} {B Q : Matrix m (Fin N) 𝕜}
+    {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR B Q R) (hB : LinearIndependent 𝕜 Bᵀ) :
+    IsUnit R := by
+  rw [← mulVec_injective_iff_isUnit]
+  intro x y hxy
+  apply mulVec_injective_iff.2 hB
+  rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hxy]
+
+/-- A nonsingular matrix acts surjectively. -/
+private theorem range_toEuclideanLin_eq_top_of_isUnit {N : ℕ} {S : Matrix (Fin N) (Fin N) 𝕜}
+    (hS : IsUnit S) : LinearMap.range (toEuclideanLin S) = ⊤ :=
+  LinearMap.range_eq_top.2 fun z => ⟨_, toEuclideanLin_mul_nonsing_inv_apply hS z⟩
+
+variable [DecidableEq m]
+
+/-- **Orthogonal iteration iterates subspaces** ([golub2013matrix] §7.3.2, "`ran(Q_k) = A
+ran(Q_{k-1})`"): if `Q'` is a step of orthogonal iteration from `Q` and `A Q` has linearly
+independent columns, then `ran Q' = A (ran Q)`. The triangular factor `R` of `A Q = Q' R` is then
+nonsingular, so `ran Q' = ran (Q' R) = ran (A Q)`. -/
+theorem IsOrthogonalIterationStep.range_eq {A : Matrix m m 𝕜} {Q Q' : Matrix m (Fin r) 𝕜}
+    (h : IsOrthogonalIterationStep A Q Q') (hAQ : LinearIndependent 𝕜 (A * Q)ᵀ) :
+    LinearMap.range (toEuclideanLin Q') =
+      (LinearMap.range (toEuclideanLin Q)).map (toEuclideanLin A) := by
+  obtain ⟨R, hR⟩ := h
+  rw [← LinearMap.range_comp, ← toEuclideanLin_mul, ← hR.mul_eq, toEuclideanLin_mul,
+    LinearMap.range_comp_of_range_eq_top _
+      (range_toEuclideanLin_eq_top_of_isUnit (isUnit_of_isThinQR_of_linearIndependent hR hAQ))]
+
+/-- **The accumulated triangular factor of orthogonal iteration** (the first display of the
+appendix proof of [golub2013matrix] Theorem 7.3.1): if `Q` is an orthogonal iteration for `A` and
+`A^K Q₀` has linearly independent columns, then `A^K Q₀ = Q_K S` with `S` nonsingular and upper
+triangular — the product `R_K ⋯ R_1` of the triangular factors of the steps. Each step's
+`A Q_k = A^{k+1} Q₀ S_k⁻¹` has full column rank, which makes its factor `R_{k+1}` nonsingular. -/
+theorem exists_pow_mul_eq_mul_of_isOrthogonalIterationStep {A : Matrix m m 𝕜}
+    {Q : ℕ → Matrix m (Fin r) 𝕜} (hQ : ∀ k, IsOrthogonalIterationStep A (Q k) (Q (k + 1)))
+    {K : ℕ} (hK : LinearIndependent 𝕜 (A ^ K * Q 0)ᵀ) :
+    ∃ S : Matrix (Fin r) (Fin r) 𝕜, IsUnit S ∧ S.IsUpperTriangular ∧ A ^ K * Q 0 = Q K * S := by
+  have hinj : ∀ j ≤ K, Function.Injective (A ^ j * Q 0).mulVec := fun j hj x y hxy => by
+    have h := mulVec_injective_iff.2 hK
+    rw [← Nat.sub_add_cancel hj, pow_add, Matrix.mul_assoc] at h
+    apply h
+    simp only [← mulVec_mulVec] at hxy ⊢
+    rw [hxy]
+  have key : ∀ k ≤ K, ∃ S : Matrix (Fin r) (Fin r) 𝕜,
+      IsUnit S ∧ S.IsUpperTriangular ∧ A ^ k * Q 0 = Q k * S := by
+    intro k
+    induction k with
+    | zero =>
+      intro _
+      exact ⟨1, isUnit_one, blockTriangular_one, by rw [pow_zero, Matrix.one_mul, Matrix.mul_one]⟩
+    | succ k ih =>
+      intro hk
+      obtain ⟨S, hS, hSt, hSeq⟩ := ih (by omega)
+      obtain ⟨R, hR⟩ := hQ k
+      have hAQS : A * Q k * S = A ^ (k + 1) * Q 0 := by
+        rw [Matrix.mul_assoc, ← hSeq, ← Matrix.mul_assoc, ← pow_succ']
+      have hRu : IsUnit R := by
+        refine isUnit_of_isThinQR_of_linearIndependent hR (mulVec_injective_iff.1 ?_)
+        intro x y hxy
+        obtain ⟨x', rfl⟩ := mulVec_surjective_iff_isUnit.2 hS x
+        obtain ⟨y', rfl⟩ := mulVec_surjective_iff_isUnit.2 hS y
+        suffices x' = y' by rw [this]
+        apply hinj (k + 1) hk
+        rw [← hAQS]
+        simp only [← mulVec_mulVec] at hxy ⊢
+        exact hxy
+      refine ⟨R * S, hRu.mul hS, BlockTriangular.mul hR.isUpperTriangular hSt, ?_⟩
+      rw [← hAQS, ← hR.mul_eq, Matrix.mul_assoc]
+  exact key K le_rfl
+
+/-- **Orthogonal iteration computes the iterated subspace** ([golub2013matrix] §7.3.2): if `Q` is
+an orthogonal iteration for `A` and `A^K Q₀` has linearly independent columns, then
+`ran Q_K = A^K (ran Q₀)`, the `K`-th subspace iterate `Krylov.subspaceIterate` of `ran Q₀`
+(`Krylov.span_orthogonalIterate` for the Gram–Schmidt iterates). -/
+theorem range_eq_subspaceIterate_of_isOrthogonalIterationStep {A : Matrix m m 𝕜}
+    {Q : ℕ → Matrix m (Fin r) 𝕜} (hQ : ∀ k, IsOrthogonalIterationStep A (Q k) (Q (k + 1)))
+    {K : ℕ} (hK : LinearIndependent 𝕜 (A ^ K * Q 0)ᵀ) :
+    LinearMap.range (toEuclideanLin (Q K)) =
+      Krylov.subspaceIterate (toEuclideanLin A) (LinearMap.range (toEuclideanLin (Q 0))) K := by
+  obtain ⟨S, hS, -, hSeq⟩ := exists_pow_mul_eq_mul_of_isOrthogonalIterationStep hQ hK
+  rw [Krylov.subspaceIterate, ← LinearMap.range_comp, ← toEuclideanLin_pow, ← toEuclideanLin_mul,
+    hSeq, toEuclideanLin_mul,
+    LinearMap.range_comp_of_range_eq_top _ (range_toEuclideanLin_eq_top_of_isUnit hS)]
+
+/-- **A square step of orthogonal iteration is an unshifted QR step** ([golub2013matrix] §7.3.3,
+(7.3.1) derived from (7.3.6); §8.2.5): if `Q` is unitary and `A Q = Q' R` is a step, then
+`T = Qᴴ A Q` and `T' = Q'ᴴ A Q'` satisfy `T = (Qᴴ Q') R` and `T' = R (Qᴴ Q')`, so `T'` is one QR
+step of `T` with the unitary factor `Qᴴ Q'`. (`Q'` is unitary, being square with orthonormal
+columns.) -/
+theorem IsOrthogonalIterationStep.isShiftedQrStep {n : ℕ} {A Q Q' : Matrix (Fin n) (Fin n) 𝕜}
+    (hQ : Q ∈ unitaryGroup (Fin n) 𝕜) (h : IsOrthogonalIterationStep A Q Q') :
+    IsShiftedQrStep 0 (Qᴴ * A * Q) (Q'ᴴ * A * Q') := by
+  obtain ⟨R, hR⟩ := h
+  have hQ' : Q' ∈ unitaryGroup (Fin n) 𝕜 := mem_unitaryGroup_iff'.2 hR.conjTranspose_mul_self
+  have hQQ : Q * Qᴴ = 1 := mem_unitaryGroup_iff.1 hQ
+  have hA : A = Q' * R * Qᴴ := by rw [hR.mul_eq, Matrix.mul_assoc, hQQ, Matrix.mul_one]
+  refine ⟨Qᴴ * Q', Submonoid.mul_mem _ (Unitary.star_mem hQ) hQ', R, hR.isUpperTriangular, ?_, ?_⟩
+  · rw [zero_smul, sub_zero, Matrix.mul_assoc, ← hR.mul_eq, Matrix.mul_assoc]
+  · rw [zero_smul, add_zero, hA]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc Q'ᴴ Q', hR.conjTranspose_mul_self, Matrix.one_mul]
+
+end OrthogonalIteration
 
 section Chain
 

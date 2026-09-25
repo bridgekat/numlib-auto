@@ -1,9 +1,3 @@
-# Planned additions (GVL round, still open): extend the "orthogonal iteration" part of the module doc
-# with `Matrix.IsOrthogonalIterationStep A Q Q'` (one step for *some* thin QR factorization,
-# `∃ R, IsThinQR (A * Q) Q' R`), its existence for every orthonormal block, the range identity
-# `ran Q_k = A^k ran Q₀` under full rank, and the identification of a square step with an unshifted
-# `IsShiftedQrStep` — the one vocabulary both Golub–Van Loan chapters 7 and 8 restate. Blocked on
-# `Matrix.IsThinQR` (group `LinearAlgebra/Matrix/QR`).
 namespace = "Krylov"
 
 [[node]]
@@ -273,70 +267,21 @@ id = "_root_.Matrix.IsShiftedQrChain.isShiftedQrStep"
 
 [[node]]
 id = "_root_.Matrix.IsOrthogonalIterationStep"
-kind = "definition"
-desc = '''One step of orthogonal (simultaneous, subspace) iteration for *some* thin QR factorization
-([golub2013matrix] (7.3.6) and (8.2.8)): for `A : Matrix m m 𝕜` (`[RCLike 𝕜] [Fintype m]
-[DecidableEq m]`) and `Q Q' : Matrix m (Fin r) 𝕜`, `IsOrthogonalIterationStep A Q Q' : Prop := ∃ R,
-Matrix.IsThinQR (A * Q) Q' R` — i.e. there is an upper triangular `R` with `A * Q = Q' * R` and `Q'`
-has orthonormal columns (`Q'ᴴ * Q' = 1`). The book's "(QR factorization)" step `Z_k = A Q_{k-1}`,
-`Q_k R_k = Z_k`, for every choice of factorization (Gram–Schmidt, Householder, Givens, any signs); the
-canonical Gram–Schmidt iterates `Krylov.orthogonalIterate` (above) are one instance. The single
-backbone vocabulary both Golub–Van Loan chapters restate (surface review, Medium 3: chapters 7 and 8
-had two differently shaped definitions). A sequence `Q : ℕ → Matrix m (Fin r) 𝕜` is an orthogonal
-iteration when `(Q 0)ᴴ * Q 0 = 1` and `∀ k, IsOrthogonalIterationStep A (Q k) (Q (k + 1))`; the
-surface names that sequence predicate. ★
-
-Blocked: needs `Matrix.IsThinQR` (and `Matrix.exists_isQR`/`Matrix.IsQR.isThinQR` for existence)
-of the `LinearAlgebra/Matrix/QR` group (agent fac1), open when this module was extended; the
-statement and proof sketch above are ready to be written once `IsThinQR` exists.'''
-deps = ["Matrix.IsThinQR"]
 
 [[node]]
 id = "_root_.Matrix.exists_isOrthogonalIterationStep"
-kind = "theorem"
-desc = '''Every orthonormal block has a next step: for `A : Matrix (Fin n) (Fin n) 𝕜`, `Q : Matrix (Fin n) (Fin r)
-𝕜` and `r ≤ n`, `∃ Q', Matrix.IsOrthogonalIterationStep A Q Q'` — with no rank assumption on `A Q`
-(the full QR factorization always exists, `Matrix.exists_isQR`, and its first `r` columns and rows
-are a thin one, `Matrix.IsQR.isThinQR`). Hence an orthogonal iteration exists from every `Q₀` with
-orthonormal columns (`Nat.rec`). When `A Q` has full column rank the step can be taken with `R` of
-positive diagonal (`Matrix.exists_isThinQR`), and then it is unique (`Matrix.IsThinQR.unique`) and
-equal to the Gram–Schmidt step. ★
-
-Blocked: needs `Matrix.IsThinQR` (and `Matrix.exists_isQR`/`Matrix.IsQR.isThinQR` for existence)
-of the `LinearAlgebra/Matrix/QR` group (agent fac1), open when this module was extended; the
-statement and proof sketch above are ready to be written once `IsThinQR` exists.'''
-deps = ["Matrix.IsOrthogonalIterationStep", "Matrix.exists_isQR", "Matrix.IsQR.isThinQR"]
 
 [[node]]
 id = "_root_.Matrix.IsOrthogonalIterationStep.range_eq"
-kind = "theorem"
-desc = '''Orthogonal iteration iterates subspaces ([golub2013matrix] §7.3.2, "`ran(Q_k) = A^k ran(Q₀)`"): if
-`IsOrthogonalIterationStep A Q Q'` with factor `R` and `A * Q` has linearly independent columns, then
-`R` is invertible and `LinearMap.range (toEuclideanLin Q') = (LinearMap.range (toEuclideanLin
-Q)).map (toEuclideanLin A)`; iterated, for an orthogonal iteration `Q` with `A^k Q₀` of full column
-rank, `range (Q k) = Krylov.subspaceIterate (toEuclideanLin A) (range (Q 0)) k` and `A^k * Q 0 = Q k *
-(R_k ⋯ R_1)` (the first display of the book's appendix proof of Theorem 7.3.1). For the canonical
-iterates this is `Krylov.span_orthogonalIterate`. ★★ (~80 lines)
 
-Blocked: needs `Matrix.IsThinQR` (and `Matrix.exists_isQR`/`Matrix.IsQR.isThinQR` for existence)
-of the `LinearAlgebra/Matrix/QR` group (agent fac1), open when this module was extended; the
-statement and proof sketch above are ready to be written once `IsThinQR` exists.'''
-deps = ["Matrix.IsOrthogonalIterationStep", "Krylov.subspaceIterate"]
+[[node]]  # lo1: the iterated form asked for by the §7.3.2 surface (`A^k Q₀ = Q_k (R_k ⋯ R_1)`)
+id = "_root_.Matrix.exists_pow_mul_eq_mul_of_isOrthogonalIterationStep"
+
+[[node]]  # lo1: `ran Q_k = A^k ran Q₀` for any orthogonal iteration
+id = "_root_.Matrix.range_eq_subspaceIterate_of_isOrthogonalIterationStep"
 
 [[node]]
 id = "_root_.Matrix.IsOrthogonalIterationStep.isShiftedQrStep"
-kind = "theorem"
-desc = '''Orthogonal iteration with a full orthonormal block is the (unshifted) QR iteration
-([golub2013matrix] §7.3.3, (7.3.1) derived from (7.3.6); §8.2.5): for `Q Q' ∈ unitaryGroup (Fin n) 𝕜`
-with `IsOrthogonalIterationStep A Q Q'` (factor `R`), `T = Qᴴ * A * Q` and `T' = Q'ᴴ * A * Q'`,
-`T = (Qᴴ * Q') * R` and `T' = R * (Qᴴ * Q')`, so `Matrix.IsShiftedQrStep 0 T T'` with the unitary factor
-`Qᴴ * Q'`. From `A Q = Q' R` and `Q'ᴴ Q' = 1`. The canonical case is
-`Matrix.qrIterate_eq_conj_orthogonalIterate`. ★
-
-Blocked: needs `Matrix.IsThinQR` (and `Matrix.exists_isQR`/`Matrix.IsQR.isThinQR` for existence)
-of the `LinearAlgebra/Matrix/QR` group (agent fac1), open when this module was extended; the
-statement and proof sketch above are ready to be written once `IsThinQR` exists.'''
-deps = ["Matrix.IsOrthogonalIterationStep", "Matrix.IsShiftedQrStep"]
 
 [[node]]
 id = "_root_.Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup"

@@ -139,18 +139,6 @@ id = "exists_eq_prodRev_mul_add_mul_prodFwd_rect"
 
 [[node]]  # staged by ch05
 id = "l2_opNorm_reflector_sub_le"
-kind = "theorem"
-desc = '''The computed reflector is close to the exact one ([golub2013matrix] §5.1.5 "‖P̂ - P‖₂ =
-O(u)", §5.1.12 "orthogonal to working precision"): if `v ≠ 0` and `∀ j, IsRelPert u K (v j) (v̂ j)`
-with `γ_K ≤ 1/2`, then `‖Matrix.reflector v̂ - Matrix.reflector v‖₂ ≤ 8 γ_K`. With
-`w = v/‖v‖`, `ŵ = v̂/‖v̂‖`: `‖v̂ - v‖ ≤ γ_K ‖v‖` gives `‖ŵ - w‖ ≤ 2 γ_K`, then
-`‖ŵŵᵀ - wwᵀ‖ ≤ 2 ‖ŵ - w‖`, and `reflector v = 1 - 2 w wᵀ` (`Matrix.reflector_eq_householder`). ★★
-
-Blocked: `Matrix.reflector` and `Matrix.reflector_eq_householder` are open nodes of
-`LinearAlgebra/Matrix/QR` (agent fac1's group in the GVL wave 2); the statement cannot be written
-before the definition exists. Nothing else is missing: once they land, the proof is the sketch above
-(~60 lines, the unit-vector estimate plus `Matrix.l2_opNorm_vecMulVec`-type bounds).'''
-deps = ["Matrix.reflector", "Matrix.reflector_eq_householder", "FloatingPoint.IsRelPert"]
 
 [[node]]  # staged by ch08
 id = "RoundsSymmRankTwoUpdate"

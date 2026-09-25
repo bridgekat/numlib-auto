@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Data.Fin.Tuple.Sort
 import Numlib.Eigen.InverseEigenvalue
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
+import Numlib.Nonlinear.ScalarNewton
 
 /-!
 # Diagonal plus rank-one matrices and the secular equation
@@ -44,7 +45,9 @@ Setting: `d : n → ℝ`, `ρ : ℝ`, `z : n → 𝕜` over `[RCLike 𝕜]`, and
   orthogonal similarity turning `diag(T₁, T₂) + ρ v vᵀ` into a diagonal-plus-rank-one matrix.
 * `Matrix.borderedSecularFunction` ([golub2013matrix] §4.7.7, Cybenko and Van Loan 1986): the
   secular function `1 - λ - rᵀ (B - λ)⁻¹ r` of a bordered symmetric matrix `[1 rᵀ; r B]`, with its
-  zero at an eigenvalue and its bridge to `Matrix.secularFunction` in an eigenbasis of `B`.
+  zero at an eigenvalue and its bridge to `Matrix.secularFunction` in an eigenbasis of `B`;
+  `Matrix.tendsto_newton_borderedSecularFunction` ([golub2013matrix] (4.7.10)): Newton's method
+  converges monotonically from the right to its zero below the spectrum of `B`.
 
 ## Implementation notes
 
@@ -815,6 +818,49 @@ theorem borderedSecularFunction_deriv_nonpos {r : Fin m → ℝ} {B : Matrix (Fi
     have : 0 ≤ ∑ i, (Qᵀ *ᵥ r) i ^ 2 / (hB.eigenvalues i - t) ^ 3 :=
       Finset.sum_nonneg fun i _ => div_nonneg (sq_nonneg _) (pow_nonneg (by linarith [ht i]) 3)
     linarith
+
+open Filter Topology Set in
+/-- **Newton's method for the smallest eigenvalue of a bordered matrix converges monotonically
+from the right** ([golub2013matrix] (4.7.9)–(4.7.10), Cybenko and Van Loan 1986): let `B` be
+real symmetric and `α` a zero of the bordered secular function `f` below the spectrum of `B` — under
+(4.7.8) `λ_min(T) < λ_min(B)` of `T = [1 rᵀ; r B]` this is `λ_min(T)`
+(`Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`). If `α ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton
+iterates `λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ - f(λ⁽ᵏ⁾) / f'(λ⁽ᵏ⁾)` satisfy `α ≤ λ⁽ᵏ⁺¹⁾ ≤ λ⁽ᵏ⁾` and tend to `α`. Below
+the spectrum of `B`, `f' ≤ -1` and `f'' ≤ 0`
+(`Matrix.borderedSecularFunction_deriv_nonpos`), so `f` is decreasing and concave there and
+`Newton.tendsto_iterate_scalarStep_of_concaveOn` applies. -/
+theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
+    (hB : B.IsHermitian) {α x₀ : ℝ} (hα : borderedSecularFunction r B α = 0) (hαx : α ≤ x₀)
+    (hx₀ : ∀ i, x₀ < hB.eigenvalues i) :
+    (∀ k, α ≤ (Newton.scalarStep (borderedSecularFunction r B)
+          (deriv (borderedSecularFunction r B)))^[k + 1] x₀ ∧
+        (Newton.scalarStep (borderedSecularFunction r B)
+          (deriv (borderedSecularFunction r B)))^[k + 1] x₀ ≤
+        (Newton.scalarStep (borderedSecularFunction r B)
+          (deriv (borderedSecularFunction r B)))^[k] x₀) ∧
+      Tendsto (fun k => (Newton.scalarStep (borderedSecularFunction r B)
+        (deriv (borderedSecularFunction r B)))^[k] x₀) atTop (𝓝 α) := by
+  have hlt : ∀ x ∈ Icc α x₀, ∀ i, x < hB.eigenvalues i := fun x hx i =>
+    hx.2.trans_lt (hx₀ i)
+  have hd : ∀ x ∈ Icc α x₀, HasDerivAt (borderedSecularFunction r B)
+      (deriv (borderedSecularFunction r B) x) x ∧
+        deriv (borderedSecularFunction r B) x ≤ -1 ∧
+        HasDerivAt (deriv (borderedSecularFunction r B))
+          (-2 * (r ⬝ᵥ ((B - x • 1)⁻¹ ^ 3 *ᵥ r))) x ∧
+        -2 * (r ⬝ᵥ ((B - x • 1)⁻¹ ^ 3 *ᵥ r)) ≤ 0 := fun x hx => by
+    obtain ⟨h1, h2⟩ := hasDerivAt_borderedSecularFunction (r := r) hB fun i =>
+      (hlt x hx i).ne'
+    obtain ⟨n1, n2⟩ := borderedSecularFunction_deriv_nonpos (r := r) hB (hlt x hx)
+    exact ⟨h1.differentiableAt.hasDerivAt, h1.deriv ▸ n1, h2, n2⟩
+  have hanti : AntitoneOn (deriv (borderedSecularFunction r B)) (Icc α x₀) := by
+    refine antitoneOn_of_deriv_nonpos (convex_Icc α x₀)
+      (fun x hx => (hd x hx).2.2.1.continuousAt.continuousWithinAt)
+      (fun x hx => (hd x (interior_subset hx)).2.2.1.differentiableAt.differentiableWithinAt)
+      fun x hx => ?_
+    rw [(hd x (interior_subset hx)).2.2.1.deriv]
+    exact (hd x (interior_subset hx)).2.2.2
+  exact Newton.tendsto_iterate_scalarStep_of_concaveOn hαx (fun x hx => (hd x hx).1)
+    (fun x hx => (hd x hx).2.1.trans_lt (by norm_num)) hanti hα
 
 end Bordered
 

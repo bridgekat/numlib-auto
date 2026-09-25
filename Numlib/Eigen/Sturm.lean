@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.Eigen.MinMax
-import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 import Numlib.Topology.Algebra.Polynomial
 
 /-!
@@ -56,7 +56,9 @@ sequence** whose sign changes count the eigenvalues below any given point
 
 *Unreduced* is the hypothesis `∀ j, j + 1 < n → b j ≠ 0` on the off-diagonal entries that actually
 occur in `T_n`; a statement about `T_i` and `T_{i+1}` takes it at order `i + 1`. Nothing is assumed
-about the entries `b j` with `j + 1 ≥ n`, which `symmTridiagonalOf d b n` does not read.
+about the entries `b j` with `j + 1 ≥ n`, which `symmTridiagonalOf d b n` does not read. The
+hypothesis says exactly that `symmTridiagonalOf d b n` is an unreduced upper Hessenberg matrix
+(`Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`).
 
 The sorted eigenvalues of Mathlib, `Matrix.IsHermitian.eigenvalues₀`, are indexed by
 `Fin (Fintype.card (Fin i))`; `Sturm.eigenvalues d b i` is `Matrix.IsHermitian.sortedEigenvalues`
@@ -130,6 +132,20 @@ theorem isSymm_symmTridiagonalOf (n : ℕ) : (symmTridiagonalOf d b n).IsSymm :=
 theorem isHermitian_symmTridiagonalOf (d b : ℕ → ℝ) (n : ℕ) :
     (symmTridiagonalOf d b n).IsHermitian :=
   isHermitian_iff_isSymm.mpr (isSymm_symmTridiagonalOf d b n)
+
+/-- **The Sturm notion of "unreduced" is the Hessenberg one**: `symmTridiagonalOf d b n` is an
+unreduced upper Hessenberg matrix exactly when the off-diagonal entries it reads are nonzero,
+`∀ i, i + 1 < n → b i ≠ 0`. It is tridiagonal, hence upper Hessenberg, and its subdiagonal entry
+`(i + 1, i)` is `b i`. So the hypothesis of the Sturm theorems below is
+`Matrix.IsUnreducedUpperHessenberg`, to which the implicit Q theorem and the geometric simplicity
+of the eigenvalues of an unreduced Hessenberg matrix apply. -/
+theorem isUnreducedUpperHessenberg_symmTridiagonalOf_iff (n : ℕ) :
+    (symmTridiagonalOf d b n).IsUnreducedUpperHessenberg ↔ ∀ i, i + 1 < n → b i ≠ 0 := by
+  rw [isUnreducedUpperHessenberg_iff_fin]
+  refine ⟨fun h i hi => ?_, fun h =>
+    ⟨(isTridiagonal_symmTridiagonalOf d b n).isUpperHessenberg, fun k hk => ?_⟩⟩
+  · simpa [symmTridiagonalOf_apply, show i + 1 + 1 ≠ i by omega] using h.2 i hi
+  · simpa [symmTridiagonalOf_apply, show k + 1 + 1 ≠ k by omega] using h k hk
 
 end Matrix
 
