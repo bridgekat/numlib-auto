@@ -26,6 +26,13 @@ import NumlibSurface.GolubVanLoan.Chapter09.Section01
 import NumlibSurface.GolubVanLoan.Chapter09.Section02
 import NumlibSurface.GolubVanLoan.Chapter09.Section03
 import NumlibSurface.GolubVanLoan.Chapter09.Section04
+import NumlibSurface.GolubVanLoan.Chapter10
+import NumlibSurface.GolubVanLoan.Chapter10.Section01
+import NumlibSurface.GolubVanLoan.Chapter10.Section02
+import NumlibSurface.GolubVanLoan.Chapter10.Section03
+import NumlibSurface.GolubVanLoan.Chapter10.Section04
+import NumlibSurface.GolubVanLoan.Chapter10.Section05
+import NumlibSurface.GolubVanLoan.Chapter10.Section06
 
 /-!
 # Golub and Van Loan, *Matrix Computations*
