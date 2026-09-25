@@ -391,10 +391,12 @@ import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
 import Numlib.Eigen.DivideConquer
 import Numlib.Eigen.HamiltonianSchur
+import Numlib.Eigen.ImplicitRestart
 import Numlib.Eigen.Inertia
 import Numlib.Eigen.InvariantSubspace
 import Numlib.Eigen.InverseEigenvalue
 import Numlib.Eigen.Jacobi
+import Numlib.Eigen.JacobiDavidson
 import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
@@ -437,6 +439,7 @@ import Numlib.IntegralEquations.SecondKind
 import Numlib.IntegralEquations.WeaklySingular
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.BiLanczos
+import Numlib.Krylov.Bidiagonalization
 import Numlib.Krylov.Block
 import Numlib.Krylov.CG
 import Numlib.Krylov.CGW
@@ -454,6 +457,7 @@ import Numlib.Krylov.NormalEquations
 import Numlib.Krylov.OrthogonalPolynomials
 import Numlib.Krylov.Perturbed
 import Numlib.Krylov.Preconditioned
+import Numlib.Krylov.Quadrature
 import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Singular
