@@ -191,6 +191,14 @@ import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.Matrix.Function.Basic
+import Numlib.Analysis.Matrix.Function.CFC
+import Numlib.Analysis.Matrix.Function.Exp
+import Numlib.Analysis.Matrix.Function.Log
+import Numlib.Analysis.Matrix.Function.Pade
+import Numlib.Analysis.Matrix.Function.Sign
+import Numlib.Analysis.Matrix.Function.Sqrt
+import Numlib.Analysis.Matrix.Function.Triangular
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
