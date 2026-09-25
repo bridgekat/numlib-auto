@@ -382,7 +382,9 @@ import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
 import Numlib.Eigen.DivideConquer
+import Numlib.Eigen.HamiltonianSchur
 import Numlib.Eigen.Inertia
+import Numlib.Eigen.InvariantSubspace
 import Numlib.Eigen.InverseEigenvalue
 import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
@@ -390,6 +392,7 @@ import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
 import Numlib.Eigen.NumericalRange
 import Numlib.Eigen.Pencil
+import Numlib.Eigen.PeriodicSchur
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.Pseudospectrum
@@ -398,6 +401,7 @@ import Numlib.Eigen.RayleighQuotientIteration
 import Numlib.Eigen.RayleighRitz
 import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm
+import Numlib.Eigen.SymmetricPencil
 import Numlib.FiniteDifference.BoundaryValue
 import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.Hyperbolic

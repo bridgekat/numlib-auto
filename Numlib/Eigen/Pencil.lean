@@ -55,6 +55,16 @@ preconditioned matrix `P⁻¹ A` is really about ([quarteroni2000numerical] Rema
   generalized eigenvalues, they are real, they lie in `[lmin, lmax]` when the generalized Rayleigh
   quotient `(A x, x)/(P x, x)` does, and they are enclosed by
   `λ_min(A)/λ_max(P) ≤ λ ≤ λ_max(A)/λ_min(P)`.
+* `Matrix.inv_mem_pencilSpectrum_swap`: the nonzero eigenvalues of `(B, A)` are the reciprocals of
+  those of `(A, B)` ([golub2013matrix] §7.7.1).
+* `Matrix.IsDeflatingSubspace A B S`: a **deflating subspace** ([golub2013matrix] §7.7.8), one with
+  `dim (A S + B S) ≤ dim S` — for `B = 1` exactly an invariant subspace
+  (`Matrix.isDeflatingSubspace_one_iff`); the leading columns of the right factor of a
+  generalized Schur decomposition span deflating subspaces
+  (`Matrix.isDeflatingSubspace_span_cols_of_isUpperTriangular`).
+
+The ordered eigenvalues of a symmetric-definite pencil, their min–max characterization and their
+perturbation theory are in `Numlib/Eigen/SymmetricPencil`.
 
 ## Implementation notes
 
@@ -619,5 +629,99 @@ theorem re_pos_of_mem_pencilSpectrum_of_posDef {A B : Matrix n n 𝕜} (hA : A.P
   exact (mul_pos_iff_of_pos_right hb.1).mp (h ▸ ha.1)
 
 end SymmetricDefinite
+
+section Deflating
+/-! ### Reversed pencils and deflating subspaces -/
+
+variable {K : Type*} [Field K]
+
+/-- **Reciprocal eigenvalues of the reversed pencil** ([golub2013matrix] §7.7.1): a nonzero
+eigenvalue `μ` of `(A, B)` gives the eigenvalue `μ⁻¹` of `(B, A)`, since
+`B - μ⁻¹ A = -μ⁻¹ (A - μ B)`. -/
+theorem inv_mem_pencilSpectrum_swap {A B : Matrix n n K} {μ : K} (hμ : μ ≠ 0)
+    (h : μ ∈ pencilSpectrum A B) : μ⁻¹ ∈ pencilSpectrum B A := by
+  rw [mem_pencilSpectrum_iff_det] at h ⊢
+  have heq : B - μ⁻¹ • A = (-μ⁻¹) • (A - μ • B) := by
+    simp only [smul_sub, smul_smul, neg_mul, inv_mul_cancel₀ hμ, neg_smul, one_smul]
+    abel
+  rw [heq, det_smul, h, mul_zero]
+
+/-- A **deflating subspace** of the pencil `A - λ B` ([golub2013matrix] §7.7.8): a subspace `S`
+such that `{A x + B y | x, y ∈ S} = A S + B S` has dimension at most `dim S`. For `B = 1` it says
+that `S` is `A`-invariant (`Matrix.isDeflatingSubspace_one_iff`). -/
+def IsDeflatingSubspace (A B : Matrix n n K) (S : Submodule K (n → K)) : Prop :=
+  Module.finrank K ↥(S.map A.mulVecLin ⊔ S.map B.mulVecLin) ≤ Module.finrank K S
+
+/-- A deflating subspace of `A - λ I` is an invariant subspace of `A`. -/
+theorem isDeflatingSubspace_one_iff {A : Matrix n n K} {S : Submodule K (n → K)} :
+    IsDeflatingSubspace A 1 S ↔ S.map A.mulVecLin ≤ S := by
+  rw [IsDeflatingSubspace, mulVecLin_one, Submodule.map_id]
+  constructor
+  · intro h
+    have heq : S.map A.mulVecLin ⊔ S = S :=
+      (Submodule.eq_of_le_of_finrank_le le_sup_right h).symm
+    exact le_sup_left.trans heq.le
+  · intro h
+    rw [sup_eq_right.2 h]
+
+variable [LinearOrder n]
+
+/-- **The flag of a generalized Schur decomposition is deflating** ([golub2013matrix] §7.7.8): if
+`U`, `Z` are invertible with `U⁻¹ A Z` and `U⁻¹ B Z` upper triangular, then for every `k` the
+images under `A` and `B` of the leading columns `z_j` (`j ≤ k`) of `Z` lie in the span of the
+leading columns `u_j` of `U`, and consequently `span {z_j | j ≤ k}` is a deflating subspace. -/
+theorem isDeflatingSubspace_span_cols_of_isUpperTriangular {A B U Z : Matrix n n K}
+    (hU : IsUnit U) (hZ : IsUnit Z) (hA : (U⁻¹ * A * Z).IsUpperTriangular)
+    (hB : (U⁻¹ * B * Z).IsUpperTriangular) (k : n) :
+    (Submodule.span K (Set.range fun j : Set.Iic k => A *ᵥ Z.col j) ≤
+        Submodule.span K (Set.range fun j : Set.Iic k => U.col j)) ∧
+      (Submodule.span K (Set.range fun j : Set.Iic k => B *ᵥ Z.col j) ≤
+        Submodule.span K (Set.range fun j : Set.Iic k => U.col j)) ∧
+      IsDeflatingSubspace A B (Submodule.span K (Set.range fun j : Set.Iic k => Z.col j)) := by
+  have hUd : IsUnit U.det := (isUnit_iff_isUnit_det U).1 hU
+  have hZd : IsUnit Z.det := (isUnit_iff_isUnit_det Z).1 hZ
+  -- the columns of `M Z` are combinations of leading columns of `U`
+  have hcol : ∀ M : Matrix n n K, (U⁻¹ * M * Z).IsUpperTriangular →
+      Submodule.span K (Set.range fun j : Set.Iic k => M *ᵥ Z.col j) ≤
+        Submodule.span K (Set.range fun j : Set.Iic k => U.col j) := by
+    intro M hM
+    rw [Submodule.span_le]
+    rintro _ ⟨⟨j, hj⟩, rfl⟩
+    set T := U⁻¹ * M * Z
+    have hMZ : M * Z = U * T := by
+      simp only [T, ← Matrix.mul_assoc, mul_nonsing_inv U hUd, Matrix.one_mul]
+    have hcolj : M *ᵥ Z.col j = ∑ i, T i j • U.col i := by
+      ext r
+      have := congrFun (congrFun hMZ r) j
+      simp only [mul_apply] at this
+      simp only [mulVec, dotProduct, col_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+      rw [this]
+      exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+    simp only at hcolj ⊢
+    rw [SetLike.mem_coe, hcolj]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    by_cases hij : i ≤ j
+    · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨⟨i, hij.trans hj⟩, rfl⟩)
+    · rw [hM (lt_of_not_ge hij), zero_smul]
+      exact Submodule.zero_mem _
+  refine ⟨hcol A hA, hcol B hB, ?_⟩
+  set Zk := Submodule.span K (Set.range fun j : Set.Iic k => Z.col j)
+  set Uk := Submodule.span K (Set.range fun j : Set.Iic k => U.col j)
+  have hmap : ∀ M : Matrix n n K, Zk.map M.mulVecLin =
+      Submodule.span K (Set.range fun j : Set.Iic k => M *ᵥ Z.col j) := fun M => by
+    rw [Submodule.map_span, ← Set.range_comp]
+    rfl
+  have hle : Zk.map A.mulVecLin ⊔ Zk.map B.mulVecLin ≤ Uk := by
+    rw [hmap, hmap]; exact sup_le (hcol A hA) (hcol B hB)
+  have hUli : LinearIndependent K fun j : Set.Iic k => U.col j :=
+    (linearIndependent_cols_of_det_ne_zero hUd.ne_zero).comp _ Subtype.val_injective
+  have hZli : LinearIndependent K fun j : Set.Iic k => Z.col j :=
+    (linearIndependent_cols_of_det_ne_zero hZd.ne_zero).comp _ Subtype.val_injective
+  unfold IsDeflatingSubspace
+  calc Module.finrank K ↥(Zk.map A.mulVecLin ⊔ Zk.map B.mulVecLin) ≤ Module.finrank K Uk :=
+        Submodule.finrank_mono hle
+    _ = Module.finrank K Zk := by rw [finrank_span_eq_card hUli, finrank_span_eq_card hZli]
+
+end Deflating
 
 end Matrix
