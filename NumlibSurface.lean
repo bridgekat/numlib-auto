@@ -151,6 +151,11 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section03
 import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter02.Section06
 import NumlibSurface.GolubVanLoan.Chapter02.Section07
+import NumlibSurface.GolubVanLoan.Chapter09
+import NumlibSurface.GolubVanLoan.Chapter09.Section01
+import NumlibSurface.GolubVanLoan.Chapter09.Section02
+import NumlibSurface.GolubVanLoan.Chapter09.Section03
+import NumlibSurface.GolubVanLoan.Chapter09.Section04
 import NumlibSurface.QuarteroniSaccoSaleri
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Basics
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section07
