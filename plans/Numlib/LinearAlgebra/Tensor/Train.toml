@@ -9,16 +9,6 @@ id = "tensorTrain"
 
 [[node]]
 id = "exists_ttCore_of_rank"
-kind = "theorem"
-desc = '''One step of the construction ([golub2013matrix] (12.5.26)–(12.5.28), P12.5.11): a matrix `C : Matrix (Fin p ×
-Fin m) N R` (rows: the previous rank index and the next mode) of rank `s` factors as `C = G' * C'` with `G' :
-Matrix (Fin p × Fin m) (Fin s) R`, `C' : Matrix (Fin s) N R` (the book takes `G' = U₃`, `C' = Σ₃ V₃ᵀ` from the
-SVD; any rank factorization works, `Matrix.rank_le_iff_exists_mul`), and then `C (k, i) c = ∑ k', G (i) k
-k' * C' k' c` with `G i := of fun k k' => G' (k, i) k'` — the core. ★
-
-Blocked: needs the rank factorization `Matrix.rank_le_iff_exists_mul` (agent cond1, `Rank`, not on
-this branch's base); with it the core is a reindexing, ~20 lines.'''
-deps = ["Matrix.rank_le_iff_exists_mul"]
 
 [[node]]
 id = "exists_tensorTrain"

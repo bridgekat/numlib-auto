@@ -34,14 +34,6 @@ id = "kroneckerRank"
 
 [[node]]
 id = "kroneckerRank_le_iff"
-kind = "theorem"
-desc = '''`kroneckerRank A ≤ r ↔ ∃ (B : Fin r → Matrix m₁ n₁ K) (C : Fin r → Matrix m₂ n₂ K), A = ∑ k, B k ⊗ₖ C k`:
-the rank factorization `Matrix.rank_le_iff_exists_mul` of `𝓡(A)` (a product of `n × r` and `r × m`
-matrices is a sum of `r` `vecMulVec`s, `Matrix.mul_eq_sum_vecMulVec`-type) and `eq_sum_kronecker_iff`. ★
-
-Blocked: needs the rank factorization `Matrix.rank_le_iff_exists_mul` (cond1, `Rank`, not on this
-branch's base); with it, `eq_sum_kronecker_iff` (proved) gives the statement in ~15 lines.'''
-deps = ["Matrix.kroneckerRank", "Matrix.rank_le_iff_exists_mul", "Matrix.eq_sum_kronecker_iff"]
 
 [[node]]
 id = "isLeast_frobenius_norm_sub_sum_kronecker"
