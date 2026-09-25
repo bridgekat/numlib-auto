@@ -206,16 +206,17 @@ desc = '''§4.2.6, Wilkinson's bound, rigorous, on returned values only (convent
 `theorem_3_3_2`): let `solveCholesky rnd F b` be the solve stage on a computed factor — "with
 `Ĝ = F − strictUpper F`, `Chapter03.algorithm_3_1_3` with `Ĝ`, then `Chapter03.algorithm_3_1_4` with
 `Ĝᵀ`" (a surface helper definition of this node). For symmetric positive definite `A`,
-`n γ_{n+2} < 1`, `(3n + 2) u < 1`, every `F ∈ (algorithm_4_2_1 fp.round A).run` with
+`n γ_{n+3} < 1`, `(3n + 3) u < 1`, every `F ∈ (algorithm_4_2_1 fp.round A).run` with
 `∀ j, F j j ≠ 0` (the returned diagonal; it forces every computed pivot positive, see
 `algorithm_4_2_1_rounds` — the first plan's "runs in which the computed pivots are positive" spoke
 of overwritten values), and every `x̂ ∈ (solveCholesky fp.round F b).run`:
-`∃ E, (A + E) x̂ = b ∧ ‖E‖₂ ≤ n γ_{3n+2} ‖A‖₂ / (1 − n γ_{n+2})` — the book's `‖E‖₂ ≤ c_n u ‖A‖₂` with
+`∃ E, (A + E) x̂ = b ∧ ‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 − n γ_{n+3})` — the book's `‖E‖₂ ≤ c_n u ‖A‖₂` with
 an explicit `c_n ≈ 3n²`. Bridges `algorithm_4_2_1_rounds`, `Chapter03.algorithm_3_1_3_rounds`,
-`Chapter03.algorithm_3_1_4_rounds`; then `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv_solve`.
+`Chapter03.algorithm_3_1_4_rounds`; then `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv` (the constants are γ_{n+3}/γ_{3n+3}: the
+diagonal `fl(t / fl(√t))` carries four roundings, see agent fp3's report).
 (The companion claim "if `q_n u κ₂(A) ≤ 1` the process runs to completion" is not formalized —
 chapter group.) ★★'''
-deps = ["algorithm_4_2_1_rounds", "FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv_solve", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds"]
+deps = ["algorithm_4_2_1_rounds", "FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds"]
 source = 'Golub–Van Loan, Matrix Computations, §4.2.6'
 
 [[node]]
