@@ -5,7 +5,9 @@ Natural home: `Mathlib.Analysis.InnerProductSpace.LeastSquares`, beside the pseu
 `Numlib/LinearAlgebra/Matrix/SVD`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
+import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Direct.Substitution
 import Numlib.LinearAlgebra.Matrix.QR
@@ -45,6 +47,22 @@ that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] �
   only it.
 * `Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose`: for full row rank
   `A⁺ = Aᴴ (A Aᴴ)⁻¹`, the minimal-norm solution of an underdetermined system.
+* The geometry of the problem ([golub2013matrix] §5.3.1, §5.5.1): the gradient of `‖A x - b‖²/2`
+  is `Aᵀ (A x - b)` (`Matrix.hasGradientAt_leastSquaresObjective`), the solutions form a convex set
+  (`Matrix.convex_setOf_isLeastSquaresSolution`) and differ by null vectors
+  (`Matrix.IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero`); the augmented system
+  `[1 A; Aᴴ 0]` is nonsingular exactly for full column rank (`Matrix.isUnit_augmented_iff`,
+  [golub2013matrix] (5.3.20)); `ran(A)⊥` is spanned by the trailing columns of a QR factor
+  (`Matrix.IsQR.range_orthogonal_eq_span_lastColumns`, [golub2013matrix] Theorem 5.2.2); a matrix
+  with orthonormal columns projects onto its range
+  (`Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection`).
+* `Matrix.isMinOn_norm_sub_mul_transpose_iff`: least squares with a matrix unknown on the left,
+  `F ↦ ‖A - F Kᴴ‖_F`, row by row ([golub2013matrix] (12.5.16)–(12.5.20)).
+
+The children refine the problem: `LeastSquares/Weighted` (row and column weights, the augmented
+system, Paige's generalized least squares), `LeastSquares/Regularized` (ridge regression and
+general-form Tikhonov, cross-validation), `LeastSquares/Constrained` (LSQI and LSE),
+`LeastSquares/Total` (total least squares) — [golub2013matrix] §6.1–6.3.
 
 ## Implementation notes
 
@@ -56,7 +74,7 @@ reduced factors are the first `N` columns and rows.
 
 ## References
 
-* [quarteroni2000numerical] §3.4.3, §3.13.
+* [quarteroni2000numerical] §3.4.3, §3.13; [golub2013matrix] §5.2–5.3, §5.5.
 -/
 
 open Finset
@@ -411,5 +429,410 @@ theorem norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution (h : IsQR A Q R) (hNM :
     sub_self, norm_zero, zero_pow two_ne_zero, zero_add]
 
 end FullQR
+
+/-! ### More on the set of least-squares solutions -/
+
+section Solutions
+
+variable {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
+
+/-- **Two least-squares solutions differ by a null vector** ([golub2013matrix] §5.3.1): both
+differ from `A⁺ b` by an element of the kernel
+(`Matrix.toEuclideanLin_sub_pinv_eq_zero_of_normalEquations`). -/
+theorem IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero {y : EuclideanSpace 𝕜 n}
+    (hx : IsLeastSquaresSolution A b x) (hy : IsLeastSquaresSolution A b y) :
+    toEuclideanLin A (y - x) = 0 := by
+  classical
+  have h1 := toEuclideanLin_sub_pinv_eq_zero_of_normalEquations
+    (isLeastSquaresSolution_iff_normalEquations.1 hx)
+  have h2 := toEuclideanLin_sub_pinv_eq_zero_of_normalEquations
+    (isLeastSquaresSolution_iff_normalEquations.1 hy)
+  rw [map_sub] at h1 h2 ⊢
+  rw [sub_eq_zero] at h1 h2
+  rw [h1, h2, sub_self]
+
+/-- **The least-squares solutions form a convex set** ([golub2013matrix] §5.5.1), indeed the
+affine subspace of solutions of the normal equations. -/
+theorem convex_setOf_isLeastSquaresSolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
+    Convex ℝ {x | IsLeastSquaresSolution A b x} := by
+  classical
+  intro x hx y hy a c ha hc hac
+  simp only [Set.mem_ofPred_eq, isLeastSquaresSolution_iff_normalEquations] at hx hy ⊢
+  rw [map_add, LinearMap.map_smul_of_tower, LinearMap.map_smul_of_tower, hx, hy, ← add_smul,
+    hac, one_smul]
+
+open scoped ComplexOrder in
+/-- **The augmented system is nonsingular exactly for full column rank** ([golub2013matrix]
+(5.3.20)): `det [1 A; Aᴴ 0] = (-1)^n det (Aᴴ A)`, and `Aᴴ A` is nonsingular iff the columns of `A`
+are independent. -/
+theorem isUnit_augmented_iff [DecidableEq m] (A : Matrix m n 𝕜) :
+    IsUnit (fromBlocks 1 A Aᴴ 0) ↔ LinearIndependent 𝕜 Aᵀ := by
+  rw [isUnit_iff_isUnit_det, det_fromBlocks_one₁₁, zero_sub, det_neg, IsUnit.mul_iff,
+    ← isUnit_iff_isUnit_det]
+  simp only [((isUnit_one.neg).pow _ : IsUnit ((-1 : 𝕜) ^ Fintype.card n)), true_and]
+  constructor
+  · intro h
+    have hinj : Function.Injective A.mulVec := fun x y hxy => by
+      have : (Aᴴ * A) *ᵥ x = (Aᴴ * A) *ᵥ y := by rw [← mulVec_mulVec, hxy, mulVec_mulVec]
+      exact (mulVec_injective_iff_isUnit (A := Aᴴ * A)).2 h this
+    exact mulVec_injective_iff.1 hinj
+  · intro h
+    exact (posDef_conjTranspose_mul_self_of_linearIndependent h).isUnit
+
+/-- **A matrix with orthonormal columns gives the orthogonal projection onto its range**,
+`V Vᴴ` ([golub2013matrix] §2.5.1): the case `V⁺ = Vᴴ` of `Matrix.mul_pinv_eq_starProjection`. -/
+theorem toEuclideanLin_mul_conjTranspose_eq_starProjection {k : Type*} [Fintype k]
+    [DecidableEq k] [DecidableEq m] {V : Matrix m k 𝕜} (hV : Vᴴ * V = 1) :
+    toEuclideanLin (V * Vᴴ) = ((LinearMap.range (toEuclideanLin V)).starProjection :
+      EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 m) := by
+  have hp : V.pinv = Vᴴ := by
+    rw [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit
+      (by rw [hV]; exact isUnit_one), hV, inv_one, Matrix.one_mul]
+  rw [← hp, mul_pinv_eq_starProjection]
+
+omit [Fintype m] in
+/-- The dimension of the range of `toEuclideanLin A` is the rank of `A`. -/
+theorem finrank_range_toEuclideanLin [Finite m] (A : Matrix m n 𝕜) :
+    Module.finrank 𝕜 (LinearMap.range (toEuclideanLin A)) = A.rank := by
+  classical
+  cases nonempty_fintype m
+  rw [rank_eq_finrank_range_toLin A (EuclideanSpace.basisFun m 𝕜).toBasis
+      (EuclideanSpace.basisFun n 𝕜).toBasis, ← toEuclideanLin_eq_toLin_orthonormal]
+
+end Solutions
+
+section Gradient
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n] [DecidableEq m]
+
+/-- **The gradient of the least-squares objective** ([golub2013matrix] §5.3.1): over `ℝ`, the
+function `x ↦ ‖A x - b‖² / 2` has gradient `Aᵀ (A x - b)`, so the normal equations say that the
+gradient vanishes. -/
+theorem hasGradientAt_leastSquaresObjective (A : Matrix m n ℝ) (b : EuclideanSpace ℝ m)
+    (x : EuclideanSpace ℝ n) :
+    HasGradientAt (fun y => ‖toEuclideanLin A y - b‖ ^ 2 / 2)
+      (toEuclideanLin Aᵀ (toEuclideanLin A x - b)) x := by
+  rw [hasGradientAt_iff_hasFDerivAt]
+  set L := LinearMap.toContinuousLinearMap (toEuclideanLin A) with hL
+  have hf : HasFDerivAt (fun y => toEuclideanLin A y - b) L x := L.hasFDerivAt.sub_const b
+  have h1 : HasFDerivAt (fun y => ‖toEuclideanLin A y - b‖ ^ 2)
+      (2 • (innerSL ℝ (toEuclideanLin A x - b)).comp L) x := hf.norm_sq
+  have h2 := h1.mul_const (1 / 2 : ℝ)
+  have hfun : (fun y => ‖toEuclideanLin A y - b‖ ^ 2 / 2)
+      = fun y => ‖toEuclideanLin A y - b‖ ^ 2 * (1 / 2 : ℝ) := by
+    funext y; ring
+  rw [hfun]
+  convert h2 using 1
+  ext v
+  have := toEuclideanLin_conjTranspose_inner_left A v (toEuclideanLin A x - b)
+  rw [conjTranspose_eq_transpose_of_trivial] at this
+  rw [InnerProductSpace.toDual_apply_apply, this]
+  simp only [_root_.smul_apply, ContinuousLinearMap.comp_apply, innerSL_apply_apply,
+    hL, LinearMap.coe_toContinuousLinearMap', smul_eq_mul, nsmul_eq_mul]
+  rw [real_inner_comm]
+  ring
+
+end Gradient
+
+/-! ### The orthogonal complement of the range through a QR factorization -/
+
+section RangeComplement
+
+variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
+  {R : Matrix (Fin M) (Fin N) 𝕜}
+
+/-- **`ran(A)⊥` is spanned by the trailing columns of `Q`** ([golub2013matrix] Theorem 5.2.2): for
+a full QR factorization of `A` with independent columns, the columns `q_i`, `i ≥ N`, are
+orthogonal to the range (`Aᴴ q_i = Rᴴ e_i = 0`), and they are `M - N` independent vectors in a
+complement of dimension `M - N`. -/
+theorem IsQR.range_orthogonal_eq_span_lastColumns (h : IsQR A Q R) (hNM : N ≤ M)
+    (hA : LinearIndependent 𝕜 Aᵀ) :
+    (LinearMap.range (toEuclideanLin A))ᗮ
+      = Submodule.span 𝕜 (Set.range fun i : {i : Fin M // N ≤ (i : ℕ)} =>
+          (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M))) := by
+  have hQ : Qᴴ * Q = 1 := by
+    rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 h.mem_unitaryGroup
+  have hq := orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one hQ
+  set T := Submodule.span 𝕜 (Set.range fun i : {i : Fin M // N ≤ (i : ℕ)} =>
+    (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M))) with hT
+  have hle : T ≤ (LinearMap.range (toEuclideanLin A))ᗮ := by
+    rw [hT, Submodule.span_le]
+    rintro _ ⟨i, rfl⟩
+    rw [SetLike.mem_coe, Submodule.mem_orthogonal]
+    rintro _ ⟨x, rfl⟩
+    have hzero : toEuclideanLin Aᴴ (WithLp.toLp 2 (Qᵀ i)) = 0 := by
+      rw [← h.mul_eq, conjTranspose_mul, toEuclideanLin_mul_apply]
+      have hsingle : toEuclideanLin Qᴴ (WithLp.toLp 2 (Qᵀ (i : Fin M)))
+          = WithLp.toLp 2 (Pi.single (i : Fin M) 1) := by
+        rw [toEuclideanLin_toLp]
+        congr 1
+        have : Qᵀ (i : Fin M) = Q *ᵥ Pi.single (i : Fin M) 1 := by
+          rw [mulVec_single_one]; rfl
+        rw [this, mulVec_mulVec, hQ, one_mulVec]
+      rw [hsingle, toEuclideanLin_toLp]
+      ext j
+      have hR := h.apply_eq_zero_of_le i.2 j
+      simp [hR]
+    change inner 𝕜 (toEuclideanLin A x) (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M)) = 0
+    rw [← inner_conj_symm, ← toEuclideanLin_conjTranspose_inner_left, hzero, inner_zero_left,
+      map_zero]
+  have hrank : A.rank = N := by
+    rw [rank_eq_finrank_span_cols]
+    exact (finrank_span_eq_card hA).trans (Fintype.card_fin N)
+  have h1 : Module.finrank 𝕜 (LinearMap.range (toEuclideanLin A))ᗮ = M - N := by
+    have := (LinearMap.range (toEuclideanLin A)).finrank_add_finrank_orthogonal
+    rw [finrank_range_toEuclideanLin, hrank, finrank_euclideanSpace_fin] at this
+    omega
+  have h2 : Module.finrank 𝕜 T = M - N := by
+    rw [hT, show (fun i : {i : Fin M // N ≤ (i : ℕ)} =>
+        (WithLp.toLp 2 (Qᵀ i) : EuclideanSpace 𝕜 (Fin M)))
+        = (fun j => (WithLp.toLp 2 (Qᵀ j) : EuclideanSpace 𝕜 (Fin M))) ∘ Subtype.val from rfl,
+      finrank_span_eq_card (hq.comp _ Subtype.val_injective).linearIndependent,
+      Fintype.card_subtype]
+    have := Fin.card_filter_val_lt (n := M) (m := N)
+    have hc := Finset.card_filter_add_card_filter_not (s := Finset.univ)
+      (p := fun i : Fin M => (i : ℕ) < N)
+    simp only [Finset.card_univ, Fintype.card_fin, not_lt] at hc
+    omega
+  exact (Submodule.eq_of_le_of_finrank_eq hle (h2.trans h1.symm)).symm
+
+end RangeComplement
+
+
+/-! ### Matrix least-squares problems -/
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+variable {p q : Type*} [Fintype p] [Fintype q]
+
+/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the columns. -/
+theorem frobenius_norm_sq_eq_sum_norm_sq_col (M : Matrix p q 𝕜) :
+    ‖M‖ ^ 2 = ∑ j, ‖(WithLp.toLp 2 fun i => M i j : EuclideanSpace 𝕜 p)‖ ^ 2 := by
+  rw [frobenius_norm_sq_eq_sum_sq, Finset.sum_comm]
+  exact Finset.sum_congr rfl fun j _ => by simp [EuclideanSpace.norm_sq_eq]
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+
+/-- **The pseudoinverse solves the matrix least-squares problem `min_X ‖A X - I‖_F` with least
+Frobenius norm** ([golub2013matrix] (5.5.3), where `X` is `n × m`): `‖A A⁺ - I‖_F ≤ ‖A X - I‖_F`
+for every `X`, and among the minimizers `A⁺` is the unique one of least Frobenius norm. Column
+`j` of `X` is a least-squares problem with right-hand side `e_j`, whose minimal-norm solution is
+`A⁺ e_j`. -/
+theorem pinv_isMinOn_frobenius (A : Matrix m n 𝕜) :
+    (∀ X : Matrix n m 𝕜, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
+      ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ = ‖A * A.pinv - 1‖ →
+        ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) := by
+  set e : m → EuclideanSpace 𝕜 m := fun j => EuclideanSpace.single j 1 with he
+  have hcol : ∀ (X : Matrix n m 𝕜) j,
+      (WithLp.toLp 2 fun i => (A * X - 1 : Matrix m m 𝕜) i j : EuclideanSpace 𝕜 m)
+        = toEuclideanLin A (WithLp.toLp 2 fun i => X i j) - e j := by
+    intro X j
+    ext i
+    simp [he, mulVec, dotProduct, mul_apply, one_apply, eq_comm]
+  have hpinv : ∀ j, (WithLp.toLp 2 fun i => A.pinv i j : EuclideanSpace 𝕜 n)
+      = toEuclideanLin A.pinv (e j) := by
+    intro j
+    ext i
+    simp [he, mulVec, dotProduct, Pi.single_apply]
+  have hsq : ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ ^ 2
+      = ∑ j, ‖toEuclideanLin A (WithLp.toLp 2 fun i => X i j) - e j‖ ^ 2 := fun X => by
+    rw [frobenius_norm_sq_eq_sum_norm_sq_col]
+    exact Finset.sum_congr rfl fun j _ => by rw [hcol]
+  have hterm : ∀ (X : Matrix n m 𝕜) j,
+      ‖toEuclideanLin A (WithLp.toLp 2 fun i => A.pinv i j) - e j‖ ^ 2
+        ≤ ‖toEuclideanLin A (WithLp.toLp 2 fun i => X i j) - e j‖ ^ 2 := fun X j => by
+    rw [hpinv]
+    exact pow_le_pow_left₀ (norm_nonneg _) (A.norm_toEuclideanLin_pinv_sub_le _ _) 2
+  have hmin : ∀ X : Matrix n m 𝕜, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖ := fun X => by
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+    rw [hsq, hsq]
+    exact Finset.sum_le_sum fun j _ => hterm X j
+  refine ⟨hmin, fun X hX => ?_⟩
+  -- every column of a minimizer is a least-squares solution
+  have hls : ∀ j, IsLeastSquaresSolution A (e j) (WithLp.toLp 2 fun i => X i j) := by
+    have heq : ∑ j, ‖toEuclideanLin A (WithLp.toLp 2 fun i => A.pinv i j) - e j‖ ^ 2
+        = ∑ j, ‖toEuclideanLin A (WithLp.toLp 2 fun i => X i j) - e j‖ ^ 2 := by
+      rw [← hsq, ← hsq, hX]
+    have hj := (Finset.sum_eq_sum_iff_of_le fun j _ => hterm X j).1 heq
+    intro j y
+    have h1 := hj j (Finset.mem_univ _)
+    rw [hpinv] at h1
+    have h2 := pow_le_pow_left₀ (norm_nonneg _) (A.norm_toEuclideanLin_pinv_sub_le (e j) y) 2
+    rw [h1] at h2
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h2
+  have hnorm : ∀ j, ‖toEuclideanLin A.pinv (e j)‖ ≤ ‖(WithLp.toLp 2 fun i => X i j :
+      EuclideanSpace 𝕜 n)‖ := fun j =>
+    A.norm_pinv_le_of_normalEquations _ (isLeastSquaresSolution_iff_normalEquations.1 (hls j))
+  have hnormsq : ∀ Y : Matrix n m 𝕜, ‖Y‖ ^ 2
+      = ∑ j, ‖(WithLp.toLp 2 fun i => Y i j : EuclideanSpace 𝕜 n)‖ ^ 2 :=
+    frobenius_norm_sq_eq_sum_norm_sq_col
+  have hle : ∀ j ∈ (Finset.univ : Finset m),
+      ‖(WithLp.toLp 2 fun i => A.pinv i j : EuclideanSpace 𝕜 n)‖ ^ 2
+        ≤ ‖(WithLp.toLp 2 fun i => X i j : EuclideanSpace 𝕜 n)‖ ^ 2 := fun j _ => by
+    rw [hpinv]; exact pow_le_pow_left₀ (norm_nonneg _) (hnorm j) 2
+  refine ⟨(pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_, fun hXn => ?_⟩
+  · rw [hnormsq, hnormsq]
+    exact Finset.sum_le_sum hle
+  · have heq : ∑ j, ‖(WithLp.toLp 2 fun i => A.pinv i j : EuclideanSpace 𝕜 n)‖ ^ 2
+        = ∑ j, ‖(WithLp.toLp 2 fun i => X i j : EuclideanSpace 𝕜 n)‖ ^ 2 := by
+      rw [← hnormsq, ← hnormsq, hXn]
+    have hj := (Finset.sum_eq_sum_iff_of_le hle).1 heq
+    ext i j
+    have hmn : IsMinNormLeastSquaresSolution A (e j) (WithLp.toLp 2 fun i => X i j) := by
+      refine ⟨hls j, fun y hy => ?_⟩
+      have h1 := hj j (Finset.mem_univ _)
+      rw [hpinv] at h1
+      have h2 := A.norm_pinv_le_of_normalEquations _
+        (isLeastSquaresSolution_iff_normalEquations.1 hy)
+      have h3 := (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h1
+      rw [← h3]
+      exact h2
+    have h := congrArg (fun w : EuclideanSpace 𝕜 n => w i) hmn.eq_pinv
+    rw [← hpinv] at h
+    simpa using h
+
+end Frobenius
+
+section MatrixUnknown
+
+open scoped Matrix.Norms.Frobenius
+
+variable {r : Type*} [Fintype r] [DecidableEq r]
+
+omit [DecidableEq n] in
+/-- The squared Frobenius norm is the sum of the squared Euclidean norms of the rows. -/
+theorem frobenius_norm_sq_eq_sum_norm_toLp_row_sq (M : Matrix m n 𝕜) :
+    ‖M‖ ^ 2 = ∑ i, ‖(WithLp.toLp 2 (M i) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
+  rw [frobenius_norm_sq_eq_sum_sq]
+  exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
+
+omit [Fintype m] [Fintype r] [DecidableEq r] in
+/-- The rows of `A - F Kᴴ` are the residuals `a_i - K̄ f_i`, with `K̄ = K.map star`. -/
+private theorem toLp_sub_mul_conjTranspose_row (A : Matrix m r 𝕜) (K : Matrix r n 𝕜)
+    (F : Matrix m n 𝕜) (i : m) :
+    (WithLp.toLp 2 ((A - F * Kᴴ) i) : EuclideanSpace 𝕜 r)
+      = -(toEuclideanLin (K.map star) (WithLp.toLp 2 (F i)) - WithLp.toLp 2 (A i)) := by
+  classical
+  rw [neg_sub, toEuclideanLin_toLp]
+  congr 1
+  funext j
+  simp only [sub_apply, mul_apply, conjTranspose_apply, Pi.sub_apply]
+  congr 1
+  exact Finset.sum_congr rfl fun l _ => mul_comm _ _
+
+omit [DecidableEq r] in
+/-- The squared Frobenius residual splits into row least-squares residuals. -/
+private theorem norm_sub_mul_conjTranspose_sq (A : Matrix m r 𝕜) (K : Matrix r n 𝕜)
+    (F : Matrix m n 𝕜) :
+    ‖A - F * Kᴴ‖ ^ 2 = ∑ i, ‖toEuclideanLin (K.map star) (WithLp.toLp 2 (F i))
+      - WithLp.toLp 2 (A i)‖ ^ 2 := by
+  classical
+  rw [frobenius_norm_sq_eq_sum_norm_toLp_row_sq]
+  exact Finset.sum_congr rfl fun i _ => by rw [toLp_sub_mul_conjTranspose_row, norm_neg]
+
+omit [DecidableEq n] [DecidableEq r] in
+/-- **Least squares with a matrix unknown on the left** (the normal equations of one CP-ALS update,
+[golub2013matrix] (12.5.16)–(12.5.20)): `F` minimizes `F ↦ ‖A - F Kᴴ‖_F` iff
+`F (Kᴴ K) = A K`. Row by row, `‖A - F Kᴴ‖_F² = ∑_i ‖K̄ f_i - a_i‖²` with `K̄ = K.map star`, and each
+row is an ordinary least-squares problem (`Matrix.isLeastSquaresSolution_iff_normalEquations`);
+a row that is not optimal can be replaced alone. -/
+theorem isMinOn_norm_sub_mul_transpose_iff (A : Matrix m r 𝕜)
+    (K : Matrix r n 𝕜) (F : Matrix m n 𝕜) :
+    (∀ G : Matrix m n 𝕜, ‖A - F * Kᴴ‖ ≤ ‖A - G * Kᴴ‖) ↔ F * (Kᴴ * K) = A * K := by
+  classical
+  set Kb : Matrix r n 𝕜 := K.map star with hKb
+  have hrow : ∀ i, IsLeastSquaresSolution Kb (WithLp.toLp 2 (A i)) (WithLp.toLp 2 (F i)) ↔
+      (F * (Kᴴ * K)) i = (A * K) i := by
+    intro i
+    rw [isLeastSquaresSolution_iff_normalEquations]
+    simp only [toEuclideanLin_toLp]
+    rw [(WithLp.toLp_injective 2).eq_iff]
+    have h1 : Kbᴴ * Kb = (Kᴴ * K)ᵀ := by
+      rw [hKb, transpose_mul]
+      ext a c
+      simp [mul_apply, conjTranspose_apply]
+    have h2 : Kbᴴ = Kᵀ := by ext a c; simp [hKb]
+    rw [h1, h2, mulVec_transpose, mulVec_transpose]
+    constructor <;> intro h <;> funext j <;>
+      simpa [vecMul, dotProduct, mul_apply] using congrFun h j
+  have hsum := norm_sub_mul_conjTranspose_sq A K
+  constructor
+  · intro h
+    ext i
+    refine congrFun ((hrow i).1 fun y => ?_) _
+    by_contra hlt
+    push Not at hlt
+    set G := F.updateRow i (WithLp.ofLp y) with hG
+    have hGF : ∀ j, j ≠ i → G j = F j := fun j hj => updateRow_ne hj
+    have hGi : G i = WithLp.ofLp y := updateRow_self
+    have hlt2 := h G
+    have hsq := pow_le_pow_left₀ (norm_nonneg _) hlt2 2
+    rw [hsum, hsum, ← Finset.add_sum_erase _ _ (Finset.mem_univ i),
+      ← Finset.add_sum_erase _ _ (Finset.mem_univ i)] at hsq
+    have heq : ∑ j ∈ Finset.univ.erase i, ‖toEuclideanLin Kb (WithLp.toLp 2 (G j))
+        - WithLp.toLp 2 (A j)‖ ^ 2 = ∑ j ∈ Finset.univ.erase i,
+        ‖toEuclideanLin Kb (WithLp.toLp 2 (F j)) - WithLp.toLp 2 (A j)‖ ^ 2 :=
+      Finset.sum_congr rfl fun j hj => by rw [hGF j (Finset.ne_of_mem_erase hj)]
+    rw [heq, hGi, WithLp.toLp_ofLp] at hsq
+    have := pow_lt_pow_left₀ hlt (norm_nonneg _) two_ne_zero
+    linarith
+  · intro h G
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+    rw [hsum, hsum]
+    refine Finset.sum_le_sum fun i _ => ?_
+    exact pow_le_pow_left₀ (norm_nonneg _) (((hrow i).2 (congrFun h i)) _) 2
+
+omit [DecidableEq n] [DecidableEq r] [Fintype m] in
+/-- **The matrix least-squares problem `min_F ‖A - F Kᴴ‖_F` has a solution**: row `i` of `F` is
+`K̄⁺ a_i`, the pseudoinverse solution of its row problem. -/
+theorem exists_mul_conjTranspose_mul_self_eq [Finite m] (A : Matrix m r 𝕜)
+    (K : Matrix r n 𝕜) : ∃ F : Matrix m n 𝕜, F * (Kᴴ * K) = A * K := by
+  classical
+  cases nonempty_fintype m
+  refine ⟨Matrix.of fun i => WithLp.ofLp (toEuclideanLin (K.map star).pinv
+    (WithLp.toLp 2 (A i))), ?_⟩
+  refine (isMinOn_norm_sub_mul_transpose_iff A K _).1 fun G => ?_
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  rw [norm_sub_mul_conjTranspose_sq A K, norm_sub_mul_conjTranspose_sq A K]
+  refine Finset.sum_le_sum fun i _ => pow_le_pow_left₀ (norm_nonneg _) ?_ 2
+  exact
+    isLeastSquaresSolution_pinv (K.map star) (WithLp.toLp 2 (A i)) (WithLp.toLp 2 (G i))
+
+end MatrixUnknown
+
+/-! ### Underdetermined systems through a QR factorization of `Aᴴ` -/
+
+section ThinQR
+
+variable {N : ℕ} [DecidableEq m]
+
+/-- **Minimal-norm solutions of a full-row-rank system through a QR factorization of `Aᴴ`**
+([golub2013matrix] §5.6.2, Algorithm 5.6.2): if `Aᴴ = Q R` is a thin QR factorization with `R`
+nonsingular, then `A⁺ = Q (Rᴴ)⁻¹`, so `x = Q (Rᴴ)⁻¹ b` is the minimal-norm solution of `A x = b`
+(`Matrix.isMinNormLeastSquaresSolution_pinv`). With `A = Rᴴ Qᴴ`, `A (Q (Rᴴ)⁻¹) = 1` and
+`Q (Rᴴ)⁻¹ A = Q Qᴴ`, so the four Penrose conditions hold. -/
+theorem pinv_eq_of_isThinQR_conjTranspose {A : Matrix (Fin N) m 𝕜} {Q : Matrix m (Fin N) 𝕜}
+    {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR Aᴴ Q R) (hR : IsUnit R) :
+    A.pinv = Q * (Rᴴ)⁻¹ := by
+  have hA : A = Rᴴ * Qᴴ := by
+    rw [← conjTranspose_mul, h.mul_eq, conjTranspose_conjTranspose]
+  have hRd : IsUnit Rᴴ.det := by
+    rw [det_conjTranspose]
+    exact ((isUnit_iff_isUnit_det R).1 hR).star
+  have hAB : A * (Q * (Rᴴ)⁻¹) = 1 := by
+    rw [hA, Matrix.mul_assoc, ← Matrix.mul_assoc Qᴴ, h.conjTranspose_mul_self, Matrix.one_mul,
+      mul_nonsing_inv _ hRd]
+  have hBA : Q * (Rᴴ)⁻¹ * A = Q * Qᴴ := by
+    rw [hA, Matrix.mul_assoc, ← Matrix.mul_assoc (Rᴴ)⁻¹, nonsing_inv_mul _ hRd, Matrix.one_mul]
+  refine (pinv_unique A ?_ ?_ ?_ ?_).symm
+  · rw [hAB, Matrix.one_mul]
+  · rw [Matrix.mul_assoc, hAB, Matrix.mul_one]
+  · rw [hAB]; exact isHermitian_one
+  · rw [hBA, IsHermitian, conjTranspose_mul, conjTranspose_conjTranspose]
+
+end ThinQR
+
 
 end Matrix
