@@ -1,71 +1,28 @@
 namespace = "GolubVanLoan.Chapter02"
-desc = '''
-§2.5, Subspace Metrics: orthogonal projections as matrices (§2.5.1) and the SVD projections (§2.5.2),
-the distance between equal-dimensional subspaces (2.5.1) and Theorem 2.5.1, and the CS decomposition
-(Theorems 2.5.2–2.5.3). Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(A)` is
-`LinearMap.range (Matrix.toEuclideanLin A)`. The book's `dist(S₁, S₂) = ‖P₁ - P₂‖₂` is the backbone's
-`Submodule.gap` (`Numlib/Analysis/InnerProductSpace/Projection/Gap`), restated as `subspaceDist`;
-the book defines it only for `dim S₁ = dim S₂`, and the theorems carry that hypothesis. Backbone:
-`Numlib/Analysis/InnerProductSpace/Projection/Gap`, `Numlib/Analysis/Matrix/SingularValues` (the matrix
-form of Theorem 2.5.1), `Numlib/LinearAlgebra/Matrix/CSDecomposition`
-(both new this round). (2.5.2) only names `Q = Wᵀ Z` inside the proof of Theorem 2.5.1 and has no
-node; the two illustrative 7-by-7 and 5-by-5 CS patterns after Theorem 2.5.3 are examples.
-'''
 
 [[node]]
 id = "IsOrthogonalProjection"
-kind = "definition"
-desc = '''§2.5.1: `P : Matrix (Fin n) (Fin n) ℝ` is the orthogonal projection onto `S` if `ran(P) = S`, `P * P =
-P` and `Pᵀ = P`. A surface definition (conjunction); `IsOrthogonalProjection.iff_toEuclideanLin_eq`
-identifies it with Mathlib's `S.starProjection`. ★'''
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1, Definition'
 
 [[node]]
 id = "IsOrthogonalProjection.iff_toEuclideanLin_eq"
-kind = "theorem"
-desc = '''`IsOrthogonalProjection P S ↔ toEuclideanLin P = (S.starProjection : _ →ₗ[ℝ] _)`; in particular `P x
-∈ S` and `x - P x ∈ Sᗮ` for every `x` (the book's "easy to show"). Mathlib
-`LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range` with `Matrix.isHermitian_iff_isSymmetric`
-(`Pᵀ = P` over `ℝ`) and `IsIdempotentElem` of `P * P = P`; `Submodule.starProjection_apply_mem`,
-`Submodule.sub_starProjection_mem_orthogonal`. ★★'''
-deps = ["IsOrthogonalProjection"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
 
 [[node]]
 id = "norm_sq_sub_mulVec_eq"
-kind = "theorem"
-desc = '''§2.5.1, the display: for orthogonal projections `P₁`, `P₂` and any `z`, `‖(P₁ - P₂) z‖₂² = (P₁ z)ᵀ (I -
-P₂) z + (P₂ z)ᵀ (I - P₁) z`. Backbone `Submodule.norm_starProjection_sub_apply_sq` through
-`IsOrthogonalProjection.iff_toEuclideanLin_eq`. ★'''
-deps = ["Submodule.norm_starProjection_sub_apply_sq", "IsOrthogonalProjection.iff_toEuclideanLin_eq"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
 
 [[node]]
 id = "IsOrthogonalProjection.unique"
-kind = "theorem"
-desc = '''§2.5.1: the orthogonal projection onto a subspace is unique — `IsOrthogonalProjection P₁ S →
-IsOrthogonalProjection P₂ S → P₁ = P₂`; the book's proof is the display `norm_sq_sub_mulVec_eq` (both
-terms vanish); also immediate from `iff_toEuclideanLin_eq` and injectivity of `toEuclideanLin`. ★'''
-deps = ["norm_sq_sub_mulVec_eq", "IsOrthogonalProjection.iff_toEuclideanLin_eq"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
 
 [[node]]
 id = "isOrthogonalProjection_mul_transpose"
-kind = "theorem"
-desc = '''§2.5.1: if the columns of `V : Matrix (Fin n) (Fin k) ℝ` are an orthonormal basis of `S` (`Vᵀ V = 1`,
-`ran V = S`), then `IsOrthogonalProjection (V * Vᵀ) S`. Backbone
-`Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection`. ★'''
-deps = ["Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection", "IsOrthogonalProjection.iff_toEuclideanLin_eq"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
 
 [[node]]
 id = "isOrthogonalProjection_vecMulVec"
-kind = "theorem"
-desc = '''§2.5.1: for `v ≠ 0`, `IsOrthogonalProjection ((1 / (v ⬝ᵥ v)) • vecMulVec v v) (ℝ ∙ v)`. The `k = 1`
-case of `isOrthogonalProjection_mul_transpose` with `v / ‖v‖`; backbone
-`Matrix.smul_vecMulVec_mulVec_self` (`OperatorNorm`) supplies `P v = v`. ★'''
-deps = ["isOrthogonalProjection_mul_transpose"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
 
 [[node]]
@@ -75,18 +32,14 @@ desc = '''§2.5.2: for an SVD `Uᵀ A V = Σ` of `A : Matrix (Fin m) (Fin n) ℝ
 blocks `U_r = U(:, 1:r)`, `Ũ_r = U(:, r+1:m)`, `V_r`, `Ṽ_r`: `V_r V_rᵀ` is the orthogonal projection
 onto `null(A)⊥ = ran(Aᵀ)`, `Ṽ_r Ṽ_rᵀ` onto `null(A)`, `U_r U_rᵀ` onto `ran(A)`, `Ũ_r Ũ_rᵀ` onto `ran(A)⊥
 = null(Aᵀ)` (four clauses). From Corollary 2.4.6 (the spans), `isOrthogonalProjection_mul_transpose`,
-and `orthogonal_range_eq_ker_transpose` of §2.1 (for `A` and `Aᵀ`). ★★'''
+and `orthogonal_range_eq_ker_transpose` of §2.1 (for `A` and `Aᵀ`). ★★
+
+Blocked: waits for `corollary_2_4_6` (§2.4), itself blocked on `Matrix.IsSVD` and `Matrix.sortedSingularValues_eq_zero_iff_rank_le`, not on this branch (surf2, base 1914bd7e). Once it lands: `isOrthogonalProjection_mul_transpose` on the four column blocks and `orthogonal_range_eq_ker_transpose` for `A` and `Aᵀ` (~50 lines).'''
 deps = ["corollary_2_4_6", "isOrthogonalProjection_mul_transpose", "orthogonal_range_eq_ker_transpose"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.2'
 
 [[node]]
 id = "subspaceDist"
-kind = "definition"
-desc = '''(2.5.1): `dist(S₁, S₂) = ‖P₁ - P₂‖₂` for subspaces of `ℝⁿ`; `subspaceDist S₁ S₂ = S₁.gap S₂` (backbone
-`Submodule.gap`, the operator norm of the difference of the orthogonal projections, which is the
-`2`-norm of the difference of the projection matrices). The book's precondition `dim S₁ = dim S₂` is
-carried by the theorems, not the definition. ★'''
-deps = ["Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.5.1)'
 
 [[node]]
@@ -97,31 +50,22 @@ likewise `Z₁`, `Z₂`; `submatrix id` along `Fin.castLE` and `Fin.natAdd`-type
 `S₂ = ran Z₁`: `subspaceDist S₁ S₂ = ‖W₁ᵀ Z₂‖₂ = ‖Z₁ᵀ W₂‖₂`. Backbone
 `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` twice (the second with `W`, `Z` exchanged and
 `Submodule.gap_comm`), after checking that the column blocks of an orthogonal matrix have orthonormal
-columns and complementary ranges. ★★'''
+columns and complementary ranges. ★★
+
+Blocked: the backbone `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` (module `Numlib/Analysis/Matrix/SingularValues`, which does not exist on this branch) is missing. Once it lands: two applications with the column blocks of `W`, `Z` (orthonormal columns and complementary ranges, from orthogonality) and `Submodule.gap_comm` (~40 lines).'''
 deps = ["subspaceDist", "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul", "Submodule.gap_comm"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.5.1'
 
 [[node]]
 id = "subspaceDist_mem_Icc"
-kind = "theorem"
-desc = '''§2.5.3: `0 ≤ dist(S₁, S₂) ≤ 1` — backbone `Submodule.gap_nonneg` (untracked) and
-`Submodule.gap_le_one`; no dimension hypothesis is needed. ★'''
-deps = ["subspaceDist", "Submodule.gap_le_one"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.3'
 
 [[node]]
 id = "subspaceDist_eq_zero"
-kind = "theorem"
-desc = '''§2.5.3: `dist(S₁, S₂) = 0 → S₁ = S₂` (in fact `↔`) — backbone `Submodule.gap_eq_zero_iff`. ★'''
-deps = ["subspaceDist", "Submodule.gap_eq_zero_iff"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.3'
 
 [[node]]
 id = "subspaceDist_eq_one"
-kind = "theorem"
-desc = '''§2.5.3: for `dim S₁ = dim S₂`, `dist(S₁, S₂) = 1 → S₁ ⊓ S₂ᗮ ≠ ⊥` (in fact `↔`) — backbone
-`Submodule.gap_eq_one_iff_of_finrank_eq`. ★'''
-deps = ["subspaceDist", "Submodule.gap_eq_one_iff_of_finrank_eq"]
 source = 'Golub–Van Loan, Matrix Computations, §2.5.3'
 
 [[node]]
@@ -136,7 +80,9 @@ rectangular-diagonal equations, `θ` monotone in `[0, π/2]`) and destructures t
 `mem_unitaryGroup_left₁/left₂/right`, `monotone`, `mem_Icc`, `star_mul_mul_left`, `star_mul_mul_right` are
 the book's clauses (`unitaryGroup = orthogonalGroup` and `star = transpose` at `ℝ`); since `m₂ ≥ n₁` the
 shift `p = n₁ - min n₁ m₂` is `0` and the sine block is `rectDiagonal` by `Matrix.shiftedRectDiagonal_zero`.
-(The book's display writes `[C; S]` and defines `C₀`, `S₀`; they are the same matrices.) ★'''
+(The book's display writes `[C; S]` and defines `C₀`, `S₀`; they are the same matrices.) ★
+
+Blocked: `Numlib/LinearAlgebra/Matrix/CSDecomposition` (`Matrix.IsThinCSD`, `Matrix.exists_isThinCSD`) is not on this branch (surf2, base 1914bd7e). Destructuring the predicate at `𝕜 = ℝ` once it lands (~20 lines).'''
 deps = ["Matrix.exists_isThinCSD", "Matrix.IsThinCSD"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.5.2'
 
@@ -150,6 +96,16 @@ Backbone `Matrix.exists_isCSD` at `𝕜 = ℝ`, which concludes `∃ U₁ U₂ V
 the predicate's description gives the corrected block layout (the printed matrix is mangled; report,
 Doubts). The surface states the book's block form and reads it off the predicate's four block-pattern
 fields (with the unitary-group fields as orthogonal-group memberships at `ℝ`). Block-diagonal `U`, `V` are
-`Matrix.fromBlocks U₁ 0 0 U₂`. ★'''
+`Matrix.fromBlocks U₁ 0 0 U₂`. ★
+
+Blocked: `Numlib/LinearAlgebra/Matrix/CSDecomposition` (`Matrix.IsCSD`, `Matrix.exists_isCSD`) is not on this branch (surf2, base 1914bd7e). Reading the block form off the predicate once it lands (~40 lines).'''
 deps = ["Matrix.exists_isCSD", "Matrix.IsCSD"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.5.3'
+
+[[node]]
+id = "IsOrthogonalProjection.mem_and_sub_mem_orthogonal"
+source = 'Golub–Van Loan, Matrix Computations, §2.5.1'
+
+[[node]]
+id = "subspaceDist_eq_lpOpNorm_sub"
+source = 'Golub–Van Loan, Matrix Computations, Equation (2.5.1)'
