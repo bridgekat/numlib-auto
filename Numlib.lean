@@ -467,6 +467,8 @@ import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.Kronecker
+import Numlib.LinearAlgebra.Matrix.Kronecker.Spectral
+import Numlib.LinearAlgebra.Matrix.KroneckerApprox
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.KrylovDecomposition
 import Numlib.LinearAlgebra.Matrix.LU
@@ -498,6 +500,14 @@ import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearAlgebra.Subspace
+import Numlib.LinearAlgebra.Tensor.Basic
+import Numlib.LinearAlgebra.Tensor.CP
+import Numlib.LinearAlgebra.Tensor.HOSVD
+import Numlib.LinearAlgebra.Tensor.MultilinearProduct
+import Numlib.LinearAlgebra.Tensor.SingularValue
+import Numlib.LinearAlgebra.Tensor.Train
+import Numlib.LinearAlgebra.Tensor.Tucker
+import Numlib.LinearAlgebra.Tensor.Unfolding
 import Numlib.MeasureTheory.Constructions.Pi
 import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import Numlib.MeasureTheory.Function.EssSupport

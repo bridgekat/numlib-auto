@@ -1,78 +1,22 @@
 namespace = "Tensor"
-desc = '''
-Unfoldings (matricizations) of a tensor and contractions as products of unfoldings ([golub2013matrix]
-§12.4.5–12.4.9). Typed: rows and columns of an unfolding are indexed by the tensor's index tuples
-restricted to the row modes and to the column modes; the book's ordering of those modes and its
-`col` numbering matter only for the flattened statements of the surface (group description of
-`Tensor`). Prototype `notes/gvl/ch12/proto/Tensor.lean` (`modeUnfold`, `unfold`, `modeUnfold_apply`
-proved).
-'''
 
 [[node]]
 id = "unfold"
-kind = "definition"
-desc = '''The unfolding with row modes `{i | p i}` ([golub2013matrix] (12.4.8), the book's `𝒜_{r×c}` with `r` the
-modes satisfying `p`): `unfold p A : Matrix (∀ i : {i // p i}, κ i) (∀ i : {i // ¬p i}, κ i) R := of fun r c
-=> A ((Equiv.piEquivPiSubtypeProd p κ).symm (r, c))`; `unfold_apply`, and the linear equivalence
-`unfoldLinearEquiv p : Tensor κ R ≃ₗ[R] Matrix …` (so every unfolding determines the tensor). `unfold
-(fun _ => True)` is the tensor as a column (`vec`, up to `Unique` reindexing) and `unfold (· = k)` the
-mode-`k` unfolding (`modeUnfold_eq_unfold`). ★'''
-deps = ["_root_.Tensor"]
 
 [[node]]
 id = "modeUnfold"
-kind = "definition"
-desc = '''The mode-`k` unfolding ([golub2013matrix] (12.4.6)): `modeUnfold A k : Matrix (κ k) (∀ j : {j // j ≠
-k}, κ j) R := of fun a c => A ((Equiv.piSplitAt k κ).symm (a, c))`, whose columns are the mode-`k` fibers
-(`restrict (· = k)`); `modeUnfold_apply : A.modeUnfold k (a k) (fun j => a j) = A a` (proved in the
-prototype), `modeUnfold_eq_unfold` (reindexing `{i // i = k} → κ i ≃ κ k`). ★'''
-deps = ["_root_.Tensor", "Tensor.unfold", "Tensor.restrict"]
 
 [[node]]
 id = "frobenius_norm_unfold"
-kind = "theorem"
-desc = '''Unfoldings are isometries: `‖A.unfold p‖ = ‖A‖` and `‖A.modeUnfold k‖ = ‖A‖` (Frobenius, scoped
-`Matrix.Norms.Frobenius` on the left, `Tensor.frobenius_norm_def` on the right; the entries are the same
-family reindexed by `Equiv.piEquivPiSubtypeProd`). The book uses it silently in §12.5.3 and §12.5.4 (`‖𝒜
-− 𝒳‖_F = ‖𝒜_(k) − 𝒳_(k)‖_F`). ★'''
-deps = ["Tensor.unfold", "Tensor.modeUnfold", "Tensor.frobenius_norm_def"]
 
 [[node]]
 id = "unfold_rankOne"
-kind = "theorem"
-desc = '''Unfoldings of a rank-one tensor are rank-one matrices ([golub2013matrix] (12.4.9)–(12.4.10), typed):
-`(rankOne z).unfold p = vecMulVec (rankOne fun i : {i // p i} => z i) (rankOne fun i : {i // ¬p i} => z
-i)` and `(rankOne z).modeUnfold k = vecMulVec (z k) (rankOne fun j : {j // j ≠ k} => z j)`; hence `rank ≤
-1` (Mathlib `Matrix.rank_vecMulVec_le`). The book's Kronecker products of the `z`'s in reversed order are
-the `Fin`-flattening of `rankOne` (`vecFin_rankOne`, surface). ★'''
-deps = ["Tensor.unfold", "Tensor.modeUnfold", "Tensor.rankOne"]
 
 [[node]]
 id = "unfold_outer_eq_kronecker"
-kind = "theorem"
-desc = '''The Kronecker product of two matrices is an unfolding of their outer product ([golub2013matrix]
-§12.4.7, `𝒜_{[3 1] × [4 2]} = B ⊗ C`): viewing `B : Matrix m₁ n₁ R`, `C : Matrix m₂ n₂ R` as order-2
-tensors (`Tensor.ofMatrix`), the unfolding of `outer (ofMatrix B) (ofMatrix C)` whose rows are the two row modes and columns the two column modes
-is `B ⊗ₖ C` after the reindexing `Equiv.piFinTwo`-type identifications of the mode tuples with `m₁ × m₂`,
-`n₁ × n₂`. ★★ (~40 lines, the reindexing)'''
-deps = ["Tensor.unfold", "Tensor.outer", "Tensor.ofMatrix"]
 
 [[node]]
 id = "sumUnfold"
-kind = "definition"
-desc = '''The unfolding of a tensor whose modes are a disjoint union: `sumUnfold : Tensor (Sum.elim κ₁ κ₂) R ≃ₗ[R]
-Matrix (∀ i, κ₁ i) (∀ j, κ₂ j) R`, `A ↦ of fun r c => A (Equiv.sumPiEquivProdPi _ |>.symm (r, c))` — the
-form in which a contraction is a matrix product. `sumUnfold_eq_unfold` relates it to `unfold
-Sum.isLeft`. ★'''
-deps = ["_root_.Tensor", "Tensor.unfold"]
 
 [[node]]
 id = "contract"
-kind = "definition"
-desc = '''Tensor contraction ([golub2013matrix] (12.4.12)–(12.4.13)): for `B : Tensor (Sum.elim κ₁ κ₂) R` (free
-modes `ι₁`, contracted modes `ι₂`) and `C : Tensor (Sum.elim κ₂ κ₃) R`, `contract B C : Tensor (Sum.elim κ₁
-κ₃) R := sumUnfold.symm (sumUnfold B * sumUnfold C)`. `contract_apply` is (12.4.12)/(12.4.13): `contract B C
-(i, j) = ∑ k, B (i, k) * C (k, j)` over the multi-index `k : ∀ l, κ₂ l`; `sumUnfold_contract` (the
-unfolding form after (12.4.13)) is `rfl`. Contractions whose contracted modes sit anywhere reduce to this
-one by `permute` (the book's second example of §12.4.9). ★'''
-deps = ["Tensor.sumUnfold", "Tensor.permute"]

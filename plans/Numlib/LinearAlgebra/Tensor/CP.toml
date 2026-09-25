@@ -1,47 +1,13 @@
 namespace = "Tensor"
-desc = '''
-The CP (CANDECOMP/PARAFAC) format and tensor rank ([golub2013matrix] §12.5.4–12.5.5): sums of `r`
-rank-one tensors with weights, their unfoldings through the Khatri–Rao product, the normal equations
-of one ALS update (a matrix least-squares fact, `Matrix.isMinOn_norm_sub_mul_transpose_iff` of
-`Numlib/LinearAlgebra/Matrix/LeastSquares`, with `Matrix.khatriRao_transpose_mul_self` for the Gram
-matrix), and the definition of tensor rank. The ALS iteration is the book's unnumbered
-"Repeat" framework; what is specified is the least-squares problem each update solves. The
-"complications" of §12.5.5 (NP-hardness, typical ranks, degeneracy, real versus complex rank,
-non-nestedness) are cited results without proof and are not formalized (chapter 12 group).
-`Matrix.khatriRao` and the multi-factor `Matrix.piKhatriRao` are staged for chapter 1's `Kronecker`.
-'''
 
 [[node]]
 id = "cp"
-kind = "definition"
-desc = '''The CP tensor ([golub2013matrix] (12.5.15), (12.5.21)): `cp λ F := ∑ j, λ j • rankOne (fun i => fun a => F i
-a j)` for `λ : Fin r → R`, `F : ∀ i, Matrix (κ i) (Fin r) R` (the book's `F⁽ᵏ⁾` with unit columns; the
-normalization is a constraint of the approximation problem, not of the format). `cp_apply`. ★'''
-deps = ["Tensor.rankOne"]
 
 [[node]]
 id = "modeUnfold_cp"
-kind = "theorem"
-desc = '''The unfoldings of a CP tensor ([golub2013matrix] the displays before (12.5.16) and after (12.5.21)):
-`(cp λ F).modeUnfold k = F k * diagonal λ * (Matrix.piKhatriRao fun j : {j // j ≠ k} => F j)ᵀ`; the book's
-`F diag(λ) (H ⊙ G)ᵀ` (three modes) is its `Fin 3` instance flattened (reversed order, as always).
-`unfold_rankOne` term by term and `Matrix.piKhatriRao_apply`. ★★ (~40 lines)'''
-deps = ["Tensor.cp", "Tensor.unfold_rankOne", "Matrix.piKhatriRao"]
 
 [[node]]
 id = "vecFin_cp"
-kind = "theorem"
-desc = '''`vec 𝒳 = (F⁽ᵈ⁾ ⊙ ⋯ ⊙ F⁽¹⁾) λ` for a `Fin`-shaped CP tensor ([golub2013matrix] P12.5.6, the vector form of
-(12.5.14)–(12.5.15)): `vecFin (cp λ F) = ((Matrix.piKhatriRao F).reindex finPiFinEquiv (Equiv.refl _)) *ᵥ λ`.
-★'''
-deps = ["Tensor.cp", "Tensor.vecFin", "Matrix.piKhatriRao"]
 
 [[node]]
 id = "tensorRank"
-kind = "definition"
-desc = '''The rank of a tensor ([golub2013matrix] §12.5.5): the least `r` such that `A = cp λ F` for some `λ :
-Fin r → R` and `F`, `tensorRank A := sInf {r | ∃ λ F, A = cp λ F}` (nonempty by
-`eq_sum_rankOne_single`); `tensorRank_le_iff : tensorRank A ≤ r ↔ ∃ λ F, A = cp (r := r) λ F`, and
-`IsRankOne A ↔ tensorRank A ≤ 1`. For `ι = Fin 2` it is the matrix rank (`tensorRank (ofMatrix M) = M.rank`, `tensorRank_ofMatrix`, rank
-factorization `Matrix.rank_le_iff_exists_mul`). ★★ (~50 lines)'''
-deps = ["Tensor.cp", "Tensor.eq_sum_rankOne_single", "Matrix.rank_le_iff_exists_mul", "Tensor.ofMatrix"]

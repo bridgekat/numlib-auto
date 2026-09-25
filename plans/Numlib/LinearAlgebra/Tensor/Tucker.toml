@@ -1,43 +1,13 @@
 namespace = "Tensor"
-desc = '''
-The Tucker approximation problem ([golub2013matrix] §12.5.3, (12.5.12)–(12.5.13)): approximate `A` by
-`multilinearProd U S` with `U k : Matrix (κ k) (Fin (r k)) 𝕜` having orthonormal columns and a core
-`S : Tensor (fun k => Fin (r k)) 𝕜`. The results are the reduction the book derives — the best core
-for given factors is `multilinearProd Uᴴ A`, and the problem becomes the maximization of `‖A ×₁ U₁ᴴ ⋯ ×_d
-U_dᴴ‖` — and the optimality of each alternating (ALS) update, which is the Ky Fan maximum principle
-(12.5.3) for one unfolding. The iteration itself is not an algorithm of the book (unnumbered "Repeat"
-framework) and has no convergence theorem; the monotonicity of the objective along the iteration is
-the specification recorded here. That the truncated HOSVD does not solve the Tucker problem is stated
-in the book without an example and is not formalized (chapter 12 group).
-'''
 
 [[node]]
 id = "multilinearRank_le_iff"
-kind = "theorem"
-desc = '''Tucker format and multilinear rank: `(∀ k, multilinearRank A k ≤ r k) ↔ ∃ (U : ∀ k, Matrix (κ k) (Fin (r
-k)) 𝕜) (S : Tensor (fun k => Fin (r k)) 𝕜), (∀ k, (U k)ᴴ * U k = 1) ∧ A = multilinearProd U S` (when `r k ≤
-card (κ k)`). `→`: orthonormal bases of the column spaces of the unfoldings (padded), `S :=
-multilinearProd Uᴴ A`, and `A = multilinearProd (U Uᴴ) A` because each `U k (U k)ᴴ` fixes the range of `A_(k)`
-(`modeUnfold_multilinearProd` mode by mode). `←`: `modeUnfold_multilinearProd` and `Matrix.rank_mul_le`. ★★
-(~80 lines)'''
-deps = ["Tensor.multilinearRank", "Tensor.modeUnfold_multilinearProd", "Tensor.multilinearProd_multilinearProd"]
 
 [[node]]
 id = "norm_sub_multilinearProd_sq"
-kind = "theorem"
-desc = '''The best core ([golub2013matrix] §12.5.3, "the best `𝒮` given any triplet `{U₁, U₂, U₃}`" and the display
-after it): for `U k` with orthonormal columns, `‖A − multilinearProd U S‖² = ‖A‖² − ‖multilinearProd (fun k
-=> (U k)ᴴ) A‖² + ‖S − multilinearProd (fun k => (U k)ᴴ) A‖²`. `P := piKronecker U` has orthonormal columns,
-`A − P S = (A − P Pᴴ A) + P (Pᴴ A − S)` is an orthogonal decomposition. ★★ (~50 lines)'''
-deps = ["Tensor.multilinearProd", "Tensor.frobenius_norm_multilinearProd_of_orthonormal", "Matrix.conjTranspose_piKronecker"]
 
 [[node]]
 id = "norm_multilinearProd_conjTranspose_eq_modeUnfold"
-kind = "theorem"
-desc = '''The objective read through any unfolding ([golub2013matrix] §12.5.3, the three-line display): `‖multilinearProd
-(fun k => (U k)ᴴ) A‖ = ‖(U k)ᴴ * A.modeUnfold k * (piKronecker fun j : {j // j ≠ k} => (U j)ᴴ)ᵀ‖` (Frobenius),
-for every `k` — `modeUnfold_multilinearProd` and `frobenius_norm_unfold`. ★'''
-deps = ["Tensor.modeUnfold_multilinearProd", "Tensor.frobenius_norm_unfold"]
 
 [[node]]
 id = "isGreatest_tucker_update"
@@ -49,5 +19,11 @@ Vᴴ * V = 1} (∑ i < r k, W.sortedSingularValues i ^ 2)`, attained by the firs
 `W`; hence the objective `‖A − multilinearProd U (multilinearProd Uᴴ A)‖` does not increase along the
 alternating iteration (`tucker_update_norm_sub_le`). The Ky Fan principle
 `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` (`Numlib/Analysis/InnerProductSpace/SingularValues`) with
-`norm_multilinearProd_conjTranspose_eq_modeUnfold` and `norm_sub_multilinearProd_sq`. ★'''
+`norm_multilinearProd_conjTranspose_eq_modeUnfold` and `norm_sub_multilinearProd_sq`. ★
+
+Blocked: needs the Ky Fan principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`,
+still an open plan node of `Analysis/Matrix/SingularValues` (that module does not exist on main at
+7430f1fc), and its statement is in `Matrix.sortedSingularValues` (ls1). With
+`norm_multilinearProd_conjTranspose_eq_modeUnfold` and `norm_sub_multilinearProd_sq` (both proved)
+it is ~20 lines.'''
 deps = ["Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul", "Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold", "Tensor.norm_sub_multilinearProd_sq"]

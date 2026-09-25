@@ -1,97 +1,28 @@
 namespace = "Tensor"
-desc = '''
-The multilinear product `𝒮 ×₁ M₁ ⋯ ×_d M_d` and the (square) mode-`k` product ([golub2013matrix]
-§12.4.10–12.4.11, Theorem 12.4.1). The multilinear product of a whole family `M : ∀ i, Matrix (μ i)
-(κ i) R` is the primitive: `multilinearProd M S := Matrix.piKronecker M *ᵥ S`, so the vec formulas
-(12.4.15), (12.4.19) are definitional in typed form and shapes change without casts. The mode-`k`
-product is defined only for square `M : Matrix (κ k) (κ k) R` (shape-preserving; its laws are clean);
-the rectangular one is a multilinear product with identity factors (group description of `Tensor`).
-Prototype `notes/gvl/ch12/proto/Tensor.lean`: every statement below elaborates.
-'''
 
 [[node]]
 id = "multilinearProd"
-kind = "definition"
-desc = '''`multilinearProd (M : ∀ i, Matrix (μ i) (κ i) R) (S : Tensor κ R) : Tensor μ R := Matrix.piKronecker M
-*ᵥ S` ([golub2013matrix] (12.4.18)–(12.4.19), §12.4.11); `multilinearProd_apply : multilinearProd M S a = ∑
-b, (∏ i, M i (a i) (b i)) * S b` is (12.4.18) (proved in the prototype). ★'''
-deps = ["_root_.Tensor", "Matrix.piKronecker"]
 
 [[node]]
 id = "multilinearProd_multilinearProd"
-kind = "theorem"
-desc = '''`multilinearProd N (multilinearProd M S) = multilinearProd (fun i => N i * M i) S` and
-`multilinearProd (fun i => 1) S = S`: `Matrix.mulVec_mulVec` and `Matrix.piKronecker_mul_piKronecker`. The
-general form of (12.4.16)–(12.4.17) for families. ★'''
-deps = ["Tensor.multilinearProd", "Matrix.piKronecker_mul_piKronecker"]
 
 [[node]]
 id = "modeUnfold_multilinearProd"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 12.4.1, first part, typed: `(multilinearProd M S).modeUnfold k = M k *
-S.modeUnfold k * (Matrix.piKronecker fun j : {j // j ≠ k} => M j)ᵀ` (statement elaborates in the
-prototype), and the general-unfolding version `unfold_multilinearProd : (multilinearProd M S).unfold p =
-piKronecker (fun i : {i // p i} => M i) * S.unfold p * (piKronecker fun i : {i // ¬p i} => M i)ᵀ` (P12.4.9's
-unfolding identity). Entrywise: split the product over `i` at `k` (`Fintype.prod_eq_mul_prod_compl`) and
-the sum over `b` along `Equiv.piSplitAt` (`Fintype.sum_equiv`, `Fintype.sum_prod_type`). The book's
-flattened form with `(M_d ⊗ ⋯ ⊗ M_{k+1} ⊗ M_{k−1} ⊗ ⋯ ⊗ M_1)ᵀ` is the surface's, through
-`Matrix.piKronecker_reindex_finPiFinEquiv`. ★★ (~60 lines)'''
-deps = ["Tensor.multilinearProd", "Tensor.modeUnfold", "Tensor.unfold"]
 
 [[node]]
 id = "multilinearProd_inv"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 12.4.1, second part: if every `M i : Matrix (κ i) (κ i) R` is invertible (`IsUnit
-(M i)`) and `A = multilinearProd M S` then `S = multilinearProd (fun i => (M i)⁻¹) A`
-(`multilinearProd_multilinearProd`, `Matrix.nonsing_inv_mul`). For unitary/orthogonal factors, `(M i)⁻¹ =
-(M i)ᴴ`, the form the HOSVD uses. ★'''
-deps = ["Tensor.multilinearProd_multilinearProd"]
 
 [[node]]
 id = "modeProd"
-kind = "definition"
-desc = '''The mode-`k` product with a square matrix ([golub2013matrix] (12.4.14), shape-preserving case):
-`modeProd S k M := multilinearProd (Function.update (fun i => (1 : Matrix (κ i) (κ i) R)) k M) S` for `M :
-Matrix (κ k) (κ k) R` (the dependent `Function.update` of a family of matrices; elaborates in the
-prototype). `modeUnfold_modeProd : (S.modeProd k M).modeUnfold k = M * S.modeUnfold k` is (12.4.14), and
-`modeProd_apply` the entry formula after it. ★'''
-deps = ["Tensor.multilinearProd", "Tensor.modeUnfold_multilinearProd"]
 
 [[node]]
 id = "modeProd_comm"
-kind = "theorem"
-desc = '''[golub2013matrix] (12.4.16) and (12.4.17): `j ≠ k → (S.modeProd k F).modeProd j G = (S.modeProd j
-G).modeProd k F`, and `(S.modeProd k F).modeProd k G = S.modeProd k (G * F)` — the book prints `S ×_k (F
-G)`, which is wrong: `(𝒮 ×_k F)_(k) = F 𝒮_(k)`, so a second product with `G` gives `G F 𝒮_(k)`. Both from
-`multilinearProd_multilinearProd` (`Function.update` evaluated, `Function.update_comm`). ★'''
-deps = ["Tensor.modeProd", "Tensor.multilinearProd_multilinearProd"]
 
 [[node]]
 id = "multilinearProd_eq_modeProd"
-kind = "theorem"
-desc = '''The multilinear product is the composite of the `d` mode products, in any order ([golub2013matrix]
-§12.4.11, the table and "their order is immaterial"): for square factors `M i : Matrix (κ i) (κ i) R` and
-every list `l : List ι` with `l.Nodup` and `∀ i, i ∈ l`, `multilinearProd M S = l.foldl (fun T k =>
-T.modeProd k (M k)) S`. Induction on `l`, generalizing over the family with `M` replaced by `1` off the
-remaining modes (`multilinearProd_multilinearProd`, `Function.update`). ★★ (~40 lines)'''
-deps = ["Tensor.modeProd_comm", "Tensor.multilinearProd_multilinearProd"]
 
 [[node]]
 id = "frobenius_norm_multilinearProd_of_orthonormal"
-kind = "theorem"
-desc = '''Multilinear products by matrices with orthonormal columns are isometries: if `(U i)ᴴ * U i = 1` for all
-`i` then `‖multilinearProd U S‖ = ‖S‖`; and `multilinearProd (fun i => (U i)ᴴ) (multilinearProd U S) = S`.
-`Matrix.piKronecker` of such matrices has orthonormal columns (`Matrix.conjTranspose_piKronecker`,
-`Matrix.piKronecker_mul_piKronecker`), and `‖Q x‖ = ‖x‖` for `Qᴴ Q = 1`. Used by §12.5.3 ("since `U₃ ⊗ U₂ ⊗
-U₁` has orthonormal columns"). ★'''
-deps = ["Tensor.multilinearProd_multilinearProd", "Tensor.frobenius_norm_def", "Matrix.conjTranspose_piKronecker"]
 
 [[node]]
 id = "vecFin_multilinearProd"
-kind = "theorem"
-desc = '''[golub2013matrix] (12.4.15) and (12.4.19), flattened: for `Fin`-shaped tensors `vecFin (multilinearProd M
-S) = ((Matrix.piKronecker M).reindex finPiFinEquiv finPiFinEquiv) *ᵥ vecFin S`, and through
-`Matrix.piKronecker_reindex_finPiFinEquiv` the flattened `piKronecker` is the book's `M_d ⊗ ⋯ ⊗ M_1`
-(chapter 1's `Matrix.kroneckerFin`, reversed order because `col` is little-endian). For a mode product:
-`I_{n_{k+1} ⋯ n_d} ⊗ M ⊗ I_{n_1 ⋯ n_{k−1}}` (12.4.15). ★★ (~50 lines)'''
-deps = ["Tensor.multilinearProd", "Tensor.vecFin", "Matrix.piKronecker_reindex_finPiFinEquiv"]

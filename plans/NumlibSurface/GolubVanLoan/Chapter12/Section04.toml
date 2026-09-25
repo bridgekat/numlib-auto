@@ -38,8 +38,8 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.4)'
 id = "equation_12_4_2"
 kind = "theorem"
 desc = '''(12.4.2)–(12.4.3): `vec(𝒜) = [vec(𝒜⁽¹⁾); ⋯; vec(𝒜⁽ⁿᵈ⁾)]` with `𝒜⁽ᵏ⁾(i₁, …, i_{d−1}) = 𝒜(i₁, …, i_{d−1}, k)`, and this recursive definition agrees
-with (12.4.4)–(12.4.5) (P12.4.2). `Tensor.finPiFinEquiv_snoc` (`vecFin_snoc`). ★'''
-deps = ["Tensor.finPiFinEquiv_snoc", "GolubVanLoan.Chapter12.equation_12_4_4"]
+with (12.4.4)–(12.4.5) (P12.4.2). `Tensor.vecFin_snoc`. ★'''
+deps = ["Tensor.vecFin_snoc", "GolubVanLoan.Chapter12.equation_12_4_4"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.4.2)'
 
 [[node]]

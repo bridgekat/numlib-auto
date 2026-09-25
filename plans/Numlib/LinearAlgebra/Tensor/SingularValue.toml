@@ -1,28 +1,7 @@
 namespace = "Tensor"
-desc = '''
-Variational singular values of tensors and eigenvalues of symmetric tensors ([golub2013matrix]
-§12.5.6–12.5.7; Lim 2005, Qi 2005), real case. The multilinear Rayleigh quotient `ψ_𝒜(u₁, …, u_d) =
-𝒜(u₁, …, u_d) / ∏ ‖u_k‖` is smooth away from zero; its critical points are characterized by the
-equations `𝒜_(k) (⊗_{j≠k} u_j) = ψ u_k` at unit vectors, which the book takes as the *definition* of a
-tensor singular value. For `d = 2` the characterization is the matrix statement (12.5.22) (stationary
-values are `±` singular values: `Matrix.abs_critical_bilinearRayleigh_mem_singularValues`, staged for
-`SVD` with a direct proof) and, for symmetric tensors of order `2`, the symmetric eigenproblem (12.5.23)
-(`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`, staged for `MinMax`). The higher-order power iteration and the shifted symmetric power method (Kolda–Mayo) are
-unnumbered iterations with no theorem in the book; not formalized. Calculus: `HasFDerivAt` on the
-Euclidean spaces `EuclideanSpace ℝ (κ k)` (Mathlib `HasFDerivAt.div`, `HasFDerivAt.mul`,
-`hasStrictFDerivAt_norm_sq`).
-'''
 
 [[node]]
 id = "multilinearForm"
-kind = "definition"
-desc = '''The multilinear form of a tensor: `multilinearForm A u := ∑ a, A a * ∏ i, u i (a i)` for `u : ∀ i, κ i → ℝ`
-(the numerator of the book's `ψ_𝒜`), and `multilinearRayleigh A u := multilinearForm A u / ∏ i, ‖u i‖`
-(Euclidean norms). `multilinearForm_eq_modeUnfold : multilinearForm A u = u k ⬝ᵥ (A.modeUnfold k *ᵥ
-rankOne (fun j : {j // j ≠ k} => u j))` — the book's three expressions `u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)` etc. (§12.5.6,
-typed; flattened on the surface). For `d = 2` and `A` a matrix, `multilinearForm A ![u, v] = u ⬝ᵥ A *ᵥ v`
-(the book's `ψ_A`, (12.5.22)). ★'''
-deps = ["Tensor.modeUnfold", "Tensor.rankOne"]
 
 [[node]]
 id = "hasFDerivAt_multilinearRayleigh_eq_zero_iff"
@@ -32,25 +11,19 @@ for `u` with every `u i ≠ 0`, the Fréchet derivative of `multilinearRayleigh 
 ℝ (κ i)`) vanishes iff `∀ k, A.modeUnfold k *ᵥ rankOne (fun j : {j // j ≠ k} => û j) = multilinearRayleigh A u
 • û k`, `û i = ‖u i‖⁻¹ • u i`. The partial derivative in `u k` of the quotient is `(∏ ‖u_j‖)⁻¹ (A_(k) (⊗ u_j) −
 ψ ‖u_k‖⁻¹ û_k)` at unit vectors (`HasFDerivAt.div`, the numerator linear in `u k`, `‖·‖ ^ 2` differentiable); homogeneity
-reduces to unit vectors. ★★★ (~150 lines)'''
+reduces to unit vectors. ★★★ (~150 lines)
+
+Blocked: not attempted for effort (★★★, ~150 lines of Fréchet calculus on
+`∀ i, EuclideanSpace ℝ (κ i)`). The algebraic ingredient, `multilinearForm_eq_modeUnfold` (the
+partial derivative in `u k` of the numerator is `u ↦ u ⬝ᵥ A_(k) (⊗_{j ≠ k} u_j)`), is proved, and
+`IsSingularValue` with `IsSingularValue.exists_eq_multilinearRayleigh` is stated without it.'''
 deps = ["Tensor.multilinearForm", "Tensor.modeUnfold"]
 
 [[node]]
 id = "IsSingularValue"
-kind = "definition"
-desc = '''A tensor singular value ([golub2013matrix] §12.5.6, "we will call `ψ_𝒜(u₁, u₂, u₃)` a singular value of the
-tensor"): `A.IsSingularValue σ := ∃ u, (∀ i, ‖u i‖ = 1) ∧ (∀ k, A.modeUnfold k *ᵥ rankOne (fun j ≠ k => u j) = σ
-• u k)` (then `σ = multilinearRayleigh A u`, `isSingularValue_iff_exists_critical`). ★'''
-deps = ["Tensor.multilinearForm", "Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff"]
 
 [[node]]
 id = "IsSymm.modeUnfold_eq"
-kind = "theorem"
-desc = '''All modal unfoldings of a symmetric tensor agree ([golub2013matrix] §12.5.7, "if `𝒞` is a symmetric tensor,
-then all its modal unfoldings are the same"): for `C.IsSymm` and modes `k l`, `C.modeUnfold l =
-(C.modeUnfold k).reindex (Equiv.refl _) e` for the equivalence `e` of the column index types induced by the
-transposition `Equiv.swap k l` (the book's equality after flattening). ★★ (~40 lines)'''
-deps = ["Tensor.IsSymm", "Tensor.modeUnfold"]
 
 [[node]]
 id = "hasFDerivAt_symmetricRayleigh_eq_zero_iff"
@@ -64,5 +37,8 @@ numerator is the same (`d · C_(1)(x ⊗ ⋯ ⊗ x)`), and the quotient rule giv
 stationary points are exactly eigenvectors (`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`,
 staged for `Numlib/Eigen/MinMax`, which this theorem generalizes). The
 book's gradient omits the factor `d`, harmless at zero. `IsEigenvalue` (the book's definition, Lim 2005 /
-Qi 2005) is defined from the right-hand side. ★★★ (~120 lines)'''
+Qi 2005) is defined from the right-hand side. ★★★ (~120 lines)
+
+Blocked: not attempted for effort (★★★, ~120 lines); `IsSymm.modeUnfold_eq` (proved) supplies the
+symmetry step, the calculus is that of `hasFDerivAt_multilinearRayleigh_eq_zero_iff`.'''
 deps = ["Tensor.IsSymm.modeUnfold_eq", "Tensor.multilinearForm"]

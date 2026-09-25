@@ -63,6 +63,7 @@ free of it.
   `Matrix.kroneckerFin_mulVec_vecFin`: [golub2013matrix] (1.3.2)–(1.3.4), (1.3.6).
 * `Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose`: [golub2013matrix] (1.3.5).
 * `Matrix.piKronecker_mul_piKronecker`, `Matrix.khatriRao_transpose_mul_self`.
+* `finPiFinEquiv_snoc`: the recursion of Mathlib's little-endian flattening `finPiFinEquiv`.
 * `Matrix.rank_kronecker`: `rank (B ⊗ C) = rank B · rank C` over a field.
 
 ## References
@@ -413,8 +414,8 @@ end PiUnitary
 section PiFin
 
 /-- The recursion of the little-endian flattening `finPiFinEquiv`: the last index carries the
-largest weight. -/
-private theorem val_finPiFinEquiv_snoc {d : ℕ} {s : Fin (d + 1) → ℕ}
+largest weight, `col(i, x) = col(i) + (∏_{k < d} s_k) x`. -/
+theorem _root_.finPiFinEquiv_snoc {d : ℕ} {s : Fin (d + 1) → ℕ}
     (i : ∀ k : Fin d, Fin (s k.castSucc)) (x : Fin (s (Fin.last d))) :
     (finPiFinEquiv (Fin.snoc (α := fun k => Fin (s k)) i x) : ℕ)
       = finPiFinEquiv i + (∏ k : Fin d, s k.castSucc) * x := by
@@ -444,7 +445,7 @@ theorem piKronecker_reindex_finPiFinEquiv [CommMonoid R] {d : ℕ} {m n : Fin (d
     ext
     rw [finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val]
     conv_lhs => rw [← Fin.snoc_init_self a]
-    exact val_finPiFinEquiv_snoc _ _
+    exact finPiFinEquiv_snoc _ _
   ext I J
   obtain ⟨a, rfl⟩ := finPiFinEquiv.surjective I
   obtain ⟨b, rfl⟩ := finPiFinEquiv.surjective J

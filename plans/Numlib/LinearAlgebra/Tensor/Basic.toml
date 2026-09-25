@@ -1,127 +1,38 @@
 namespace = "Tensor"
-desc = '''
-The type `Tensor κ R` of arrays `(∀ i, κ i) → R` over a finite family of finite index types, with its
-module structure, the Frobenius inner product, rank-one tensors and outer products, restriction to
-fibers and slices, transposition of modes, symmetric tensors, the book's column-ordered `vec` on
-`Fin`-shapes, and the bridge to Mathlib's `PiTensorProduct` ([golub2013matrix] §12.4.1–12.4.4,
-§12.4.7–12.4.8, §12.5.7). Representation and conventions: the group description
-(`plans/Numlib/LinearAlgebra/Tensor.toml`) and `notes/gvl/ch12/proto/Tensor.lean`.
-'''
 
 [[node]]
 id = "_root_.Tensor"
-kind = "definition"
-desc = '''`def Tensor {ι : Type*} (κ : ι → Type*) (R : Type*) := (∀ i, κ i) → R`, with `Tensor.of` (the
-identification with arrays), `CoeFun`, `@[ext] Tensor.ext`, and the `AddCommGroup`/`Module R` instances
-of `Pi` (`inferInstanceAs`). The book's order-`d` tensor `𝒜 ∈ ℝ^{n₁ × ⋯ × n_d}` ([golub2013matrix] §12.4)
-is `Tensor (fun k : Fin d => Fin (n k)) ℝ`; entries `𝒜(i)` with a subscript vector `i` are `A i` for `i :
-∀ k, Fin (n k)` (0-based). Prototype `notes/gvl/ch12/proto/Tensor.lean`. ★'''
 deps = []
 
 [[node]]
 id = "frobenius_norm_def"
-kind = "theorem"
-desc = '''The Frobenius structure ([golub2013matrix] §12.4.2, `‖𝒜‖_F = √(∑_i 𝒜(i)²)`): for `[RCLike 𝕜]` a
-global `InnerProductSpace 𝕜 (Tensor κ 𝕜)` with `⟪A, B⟫ = ∑ a, conj (A a) * B a`, built with
-`InnerProductSpace.ofCore` (the `WithLp` structure wrapper prevents reusing `EuclideanSpace`'s instance
-by defeq); `frobenius_norm_def : ‖A‖ = √(∑ a, ‖A a‖ ^ 2)`, `inner_def`, and the linear isometry
-equivalence `Tensor.toEuclidean : Tensor κ 𝕜 ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 (∀ i, κ i)`. No competing norm
-exists on tensors in the corpus, so the instance is global (unlike `Matrix`'s scoped ones). ★★ (~60
-lines)'''
-deps = ["_root_.Tensor"]
 
 [[node]]
 id = "rankOne"
-kind = "definition"
-desc = '''The rank-one (elementary) tensor `rankOne z := fun a => ∏ i, z i (a i)` for `z : ∀ i, κ i → R`, the
-book's `z⁽¹⁾ ∘ ⋯ ∘ z⁽ᵈ⁾` ([golub2013matrix] §12.4.8), and `IsRankOne A := ∃ z, A = rankOne z` (the book's
-definition of a rank-1 tensor). `rankOne_apply`, multilinearity in each `z i`
-(`rankOne_update_add`, `rankOne_update_smul`). ★'''
-deps = ["_root_.Tensor"]
 
 [[node]]
 id = "outer"
-kind = "definition"
-desc = '''The outer product ([golub2013matrix] §12.4.7): for `B : Tensor κ₁ R`, `C : Tensor κ₂ R` (modes `ι₁`,
-`ι₂`), `outer B C : Tensor (Sum.elim κ₁ κ₂) R := fun a => B (fun i => a (.inl i)) * C (fun j => a (.inr
-j))` — the book's `𝒜(i, j) = ℬ(i) ∘ 𝒞(j)`; `outer_apply`, associativity up to `Equiv.sumAssoc`, and
-`rankOne_eq_outer` (a rank-one tensor on `ι₁ ⊕ ι₂` is the outer product of its two halves). ★'''
-deps = ["_root_.Tensor", "Tensor.rankOne"]
 
 [[node]]
 id = "eq_sum_rankOne_single"
-kind = "theorem"
-desc = '''Every tensor is a sum of rank-one tensors ([golub2013matrix] §12.4.8, last display): `A = ∑ a, A a •
-rankOne (fun i => Pi.single (a i) 1)` (the book's `∑_i 𝒜(i) I(:, i₁) ∘ ⋯ ∘ I(:, i_d)`). `ext`,
-`Finset.prod_ite_eq`, `Finset.sum_ite_eq`. ★'''
-deps = ["Tensor.rankOne"]
 
 [[node]]
 id = "restrict"
-kind = "definition"
-desc = '''Subtensors obtained by fixing some modes ([golub2013matrix] §12.4.2, fibers and slices): `restrict p c
-A : Tensor (fun i : {i // p i} => κ i) R := fun r => A ((Equiv.piEquivPiSubtypeProd p κ).symm (r, c))` for
-`c : ∀ i : {i // ¬p i}, κ i`. A *fiber* is `restrict (· = k)`, a *slice* `restrict (· ∈ {k, l})`; the book's
-colon subtensors `𝒜(L:R)` are restrictions of index ranges (surface only). `restrict_apply`. ★'''
-deps = ["_root_.Tensor"]
 
 [[node]]
 id = "permute"
-kind = "definition"
-desc = '''Tensor transposition ([golub2013matrix] §12.4.4): for `σ : ι' ≃ ι`, `permute σ A : Tensor (κ ∘ σ) R :=
-fun b => A (Equiv.piCongrLeft κ σ b)`; `permute_apply : permute σ A (fun k => a (σ k)) = A a` is the book's
-`𝒜^{<p>}(j(p)) = 𝒜(j)` (with `σ = p`), `permute_refl`, `permute_trans` (P12.4.10's composition rule, stated
-because it costs one line), `frobenius_norm_permute`. ★'''
-deps = ["_root_.Tensor", "Tensor.frobenius_norm_def"]
 
 [[node]]
 id = "ofMatrix"
-kind = "definition"
-desc = '''**A matrix as an order-2 tensor** (review M8: used by `IsSymm`, `vecFin`, `unfold_outer_eq_kronecker`,
-`tensorRank` and the `d = 2` cases of `SingularValue`, and untracked in the first plan):
-`Tensor.ofMatrix : Matrix m n R ≃ₗ[R] Tensor ![m, n] R`, `ofMatrix M a = M (a 0) (a 1)` (the mode index
-types `![m, n] : Fin 2 → Type*`; inverse `fun A i j => A ![i, j]`, through `Fin.consEquiv`/
-`piFinTwoEquiv`-type identifications). Frobenius norms agree (`norm_ofMatrix`, a further declaration:
-`‖ofMatrix M‖ = ‖M‖` with the scoped `Matrix.Norms.Frobenius`), and `(ofMatrix M).modeUnfold 0` is `M`
-up to the reindexing of the one-element column-mode tuple (`modeUnfold_ofMatrix`, stated in `Unfolding`).
-The `d = 2` bridges of the other nodes (`IsSymm` ↔ `Matrix.IsSymm`, `vecFin_ofMatrix`,
-`tensorRank_ofMatrix`) are stated through it. ★'''
-deps = ["_root_.Tensor", "Tensor.frobenius_norm_def"]
 
 [[node]]
 id = "IsSymm"
-kind = "definition"
-desc = '''Symmetric tensors ([golub2013matrix] §12.5.7): for `A : Tensor (fun _ : ι => ν) R`, `A.IsSymm := ∀
-(σ : Equiv.Perm ι) a, A (a ∘ σ) = A a`; `IsSymm (ofMatrix M) ↔ M.IsSymm` for square `M` (`isSymm_ofMatrix`, a further declaration). ★'''
-deps = ["_root_.Tensor", "Tensor.ofMatrix"]
 
 [[node]]
 id = "vecFin"
-kind = "definition"
-desc = '''The book's `vec` of a `Fin`-shaped tensor ([golub2013matrix] (12.4.4)–(12.4.5)): `vecFin A : Fin (∏ k,
-n k) → R := fun t => A (finPiFinEquiv.symm t)` for `A : Tensor (fun k : Fin d => Fin (n k)) R`;
-`vecFin_apply : vecFin A (finPiFinEquiv i) = A i` is (12.4.5), and Mathlib's `finPiFinEquiv_apply`
-(`∑ k, i k * ∏ j : Fin k, n j`) is the book's `col(i, n) − 1` with 0-based indices (12.4.4). Proved in the
-prototype. For `d = 2` it agrees with chapter 1's `Matrix.vecFin` of the corresponding matrix
-(`vecFin_ofMatrix`, a further declaration, through `Tensor.ofMatrix`). ★'''
-deps = ["_root_.Tensor", "Tensor.ofMatrix"]
 
 [[node]]
-id = "finPiFinEquiv_snoc"
-kind = "theorem"
-desc = '''The recursion of the column ordering: `(finPiFinEquiv (Fin.snoc i x) : ℕ) = finPiFinEquiv i + (∏ k, n
-(Fin.castSucc k)) * x` for `i : ∀ k : Fin d, Fin (n k.castSucc)`, `x : Fin (n (Fin.last d))` — so `vecFin`
-of an order-`(d+1)` tensor is the stacking of the `vecFin`s of its last-mode slices ([golub2013matrix]
-(12.4.2)–(12.4.3), P12.4.2): `vecFin_snoc`. `Fin.sum_univ_castSucc`, `Fin.prod_univ_castSucc`.
-Mathlib-shaped (belongs beside `finPiFinEquiv`). ★★ (~40 lines)'''
-deps = ["Tensor.vecFin"]
+id = "vecFin_snoc"
 
 [[node]]
 id = "equivPiTensorProduct"
-kind = "definition"
-desc = '''The bridge to Mathlib's abstract tensor product: `Tensor κ R ≃ₗ[R] ⨂[R] i, (κ i → R)` for
-`[CommRing R]`, finite `ι` and `κ i`, composed from `PiTensorProduct.ofFinsuppEquiv'` (`(⨂[R] i, (κ i →₀
-R)) ≃ₗ ((∀ i, κ i) →₀ R)`) and `Finsupp.linearEquivFunOnFinite`, with `equivPiTensorProduct_rankOne :
-equivPiTensorProduct (rankOne z) = ⨂ₜ[R] i, z i`. Not used by the book; it records why the concrete type
-was chosen and makes `IsRankOne`/`tensorRank` agree with the abstract notions. ★★ (~50 lines)'''
-deps = ["Tensor.rankOne"]

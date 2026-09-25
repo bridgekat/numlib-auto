@@ -1,71 +1,16 @@
 namespace = "Matrix"
-desc = '''
-Norms, eigenvalues, singular values and triangular factors of Kronecker products ([golub2013matrix]
-§12.3.1): `‖B ⊗ C‖_F = ‖B‖_F ‖C‖_F`, `‖B ⊗ C‖₂ = ‖B‖₂ ‖C‖₂`, the singular values and the eigenvalues of
-`B ⊗ C` are the pairwise products, and the Kronecker product of upper triangular (LU, Cholesky) factors is
-the corresponding factor of `B ⊗ C` in the book's positional layout.
-
-Split off from `Numlib/LinearAlgebra/Matrix/Kronecker` at the review of the Golub–Van Loan round: these
-statements need `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.singularValues`,
-`Matrix.l2_opNorm_eq_iSup_singularValues`), `Numlib/Analysis/Matrix/OperatorNorm`,
-`Numlib/LinearAlgebra/Matrix/Schur` and the `LU`/`Cholesky` specifications, and `Kronecker` itself — imported
-by `Numlib/LinearAlgebra/Tensor/Basic` and by the chapter 1 surface — should stay light. The node ids did not
-change. This module imports `Kronecker`, `KroneckerSum` (`kroneckerVec`, `kroneckerOrthonormalBasis`) and the
-modules above; nothing in `Kronecker` imports it.
-
-Singular values: the column-indexed `Matrix.singularValues` in `singularValues_kronecker`, on purpose — the
-statement is a multiset identity up to a permutation of the column index `n₁ × n₂`, with no order to keep.
-About 330 lines.
-'''
 
 [[node]]  # staged by ch12
 id = "frobenius_norm_kronecker"
-kind = "theorem"
-desc = '''`‖B ⊗ₖ C‖ = ‖B‖ * ‖C‖` in the Frobenius norm (scoped `Matrix.Norms.Frobenius`; [golub2013matrix] §12.3.1):
-`∑ |b c|² = (∑ |b|²)(∑ |c|²)`, `Finset.sum_mul_sum`, `Real.sqrt_mul`. ★'''
-deps = ["Matrix.frobenius_norm_sq_eq_sum_sq"]
 
 [[node]]  # staged by ch12
 id = "l2_opNorm_kronecker"
-kind = "theorem"
-desc = '''`‖B ⊗ₖ C‖ = ‖B‖ * ‖C‖` in the spectral norm (scoped `Matrix.Norms.L2Operator`; [golub2013matrix] §12.3.1). `≤`:
-`B ⊗ C = (B ⊗ 1)(1 ⊗ C)` (`Matrix.mul_kronecker_mul`) and `‖B ⊗ₖ 1‖ = ‖B‖` (a reindexed block-diagonal
-matrix, `Matrix.l2_opNorm_blockDiagonal`-type, or the orthonormal basis `kroneckerOrthonormalBasis`); `≥`: the
-test vector `kroneckerVec x y` for norm-attaining `x`, `y` (`Matrix.exists_…_norm_eq` via the top singular
-vectors). ★★ (~70 lines)'''
-deps = ["Matrix.kroneckerVec", "Matrix.kroneckerOrthonormalBasis", "Matrix.l2_opNorm_eq_iSup_singularValues"]
 
 [[node]]  # staged by ch12
 id = "singularValues_kronecker"
-kind = "theorem"
-desc = '''The singular values of `B ⊗ₖ C` are the products `σ_i(B) σ_j(C)` ([golub2013matrix] §12.3.1, `σ(B ⊗ C) = {β_i γ_j}`,
-via (12.3.4)): `(B ⊗ₖ C).singularValues (j₁, j₂) = B.singularValues j₁ * C.singularValues j₂` up to a
-permutation of the column index `n₁ × n₂` (the column-indexed singular values are defined through a choice
-of eigenbasis, so the statement is `∃ e : n₁ × n₂ ≃ n₁ × n₂, ∀ j, (B ⊗ₖ C).singularValues (e j) = …`).
-`(B ⊗ C)ᴴ(B ⊗ C) = BᴴB ⊗ CᴴC` (`Matrix.conjTranspose_kronecker`, `Matrix.mul_kronecker_mul`), whose eigenbasis
-is `kroneckerOrthonormalBasis` of the two eigenbases with eigenvalues the products; the eigenvalue multiset
-of a Hermitian matrix is determined by any orthonormal eigenbasis. ★★ (~80 lines)'''
-deps = ["Matrix.singularValues", "Matrix.kroneckerOrthonormalBasis", "Matrix.sq_singularValues"]
 
 [[node]]  # staged by ch12
 id = "charpoly_kronecker"
-kind = "theorem"
-desc = '''The eigenvalues of `B ⊗ₖ C` are the products `β_i γ_j` ([golub2013matrix] §12.3.1 via (12.3.3)): over an
-algebraically closed field (`ℂ`), `(B ⊗ₖ C).charpoly = ∏ i, ∏ j, (X − C (β i * γ j))` where `B.charpoly = ∏
-(X − C (β i))`, `C.charpoly = ∏ (X − C (γ j))`. Schur triangularization (`Matrix.exists_unitary_conj_upperTriangular`
-of `Numlib/LinearAlgebra/Matrix/Schur`, over `ℂ`) and `IsUpperTriangular.kronecker_lex` (the Kronecker product of
-upper triangular matrices is upper triangular for the lexicographic order on `m × n`), `Matrix.det_of_upperTriangular`.
-★★ (~80 lines)'''
-deps = ["Matrix.exists_unitary_conj_upperTriangular", "Matrix.IsUpperTriangular.kroneckerFin"]
 
 [[node]]  # staged by ch12
 id = "IsUpperTriangular.kroneckerFin"
-kind = "theorem"
-desc = '''Triangular structure survives the Kronecker product in the book's layout ([golub2013matrix] §12.3.1, the
-LU/Cholesky/QR/Schur factorizations of `B ⊗ C`): `B.IsUpperTriangular → C.IsUpperTriangular →
-(kroneckerFin B C).IsUpperTriangular` (chapter 1's `Matrix.kroneckerFin`; `finProdFinEquiv` is order-preserving
-for the lexicographic order), the lower and unit-lower twins, and the consequences `IsLU.kroneckerFin :
-IsLU B L_B U_B → IsLU C L_C U_C → IsLU (kroneckerFin B C) (kroneckerFin L_B L_C) (kroneckerFin U_B U_C)` and
-`IsCholesky.kroneckerFin` (Mathlib `Matrix.mul_kronecker_mul`, `Matrix.conjTranspose_kronecker`). ★★ (~60
-lines)'''
-deps = ["Matrix.IsLU", "Matrix.IsCholesky"]

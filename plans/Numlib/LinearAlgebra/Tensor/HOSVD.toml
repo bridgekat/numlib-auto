@@ -1,90 +1,25 @@
 namespace = "Tensor"
-desc = '''
-The higher-order SVD ([golub2013matrix] §12.5.1–12.5.2, Theorem 12.5.1; De Lathauwer–De Moor–Vandewalle
-2000), multilinear rank, and truncation. Over `[RCLike 𝕜]`; the real book reads `ᴴ` as `ᵀ`.
-
-**Canonical factors.** The mode-`k` factor is `hosvdFactor A k := (A.modeUnfold k)ᴴ.rightSingularUnitary`
-(`Numlib/LinearAlgebra/Matrix/SVD`): its columns are an orthonormal eigenbasis of `A_(k) A_(k)ᴴ`, i.e.
-left singular vectors of `A_(k)`, paired index by index with `((A.modeUnfold k)ᴴ).singularValues`. The
-core is `hosvdCore A := multilinearProd (fun k => (hosvdFactor A k)ᴴ) A`. The HOSVD is then a
-theorem about these definitions rather than an existence statement, and the book's sorted version
-(`σ₁ ≥ σ₂ ≥ ⋯`, 1-based) is the surface's, by reindexing through
-`Matrix.exists_equiv_singularValues_eq_sortedSingularValues` (chapter 2's append to `SVD`).
-
-**The truncation bound (12.5.11) is misprinted**: the book has `min_k`, which is false (a tensor
-truncated in one mode only has `min_k = 0` and a nonzero error); the true bound, proved here, has `∑_k`,
-and `sum_sq_le_norm_sub_sq_of_multilinearRank_le` gives the matching lower bound `max_k` for every
-tensor of multilinear rank `≤ r`.
-'''
 
 [[node]]
 id = "multilinearRank"
-kind = "definition"
-desc = '''`multilinearRank A : ι → ℕ := fun k => (A.modeUnfold k).rank` ([golub2013matrix] §12.5.2, `rank_*(𝒜)`,
-the vector of modal unfolding ranks). ★'''
-deps = ["Tensor.modeUnfold"]
 
 [[node]]
 id = "hosvdFactor"
-kind = "definition"
-desc = '''`hosvdFactor A k : Matrix (κ k) (κ k) 𝕜 := (A.modeUnfold k)ᴴ.rightSingularUnitary`, a unitary matrix
-(`Matrix.rightSingularUnitary_mem_unitaryGroup`) whose columns are left singular vectors of `A_(k)`, and
-`hosvdCore A := multilinearProd (fun k => (hosvdFactor A k)ᴴ) A`, the book's core tensor `𝒮 = 𝒜 ×₁ U₁ᵀ ⋯ ×_d
-U_dᵀ`. (Column-indexed `Matrix.singularValues` on purpose: the statement is about the singular values as a family indexed by the columns, in no particular order, which the unsorted family gives without a sorting permutation.) ★'''
-deps = ["Tensor.modeUnfold", "Tensor.multilinearProd", "Matrix.singularValues"]
 
 [[node]]
 id = "multilinearProd_hosvdFactor_hosvdCore"
-kind = "theorem"
-desc = '''**The HOSVD** ([golub2013matrix] Theorem 12.5.1, (12.5.6)): `A = multilinearProd (hosvdFactor A)
-(hosvdCore A)`; with `multilinearProd_apply` this is (12.5.8), with `vecFin_multilinearProd` (12.5.9),
-and with `eq_sum_rankOne_single` applied to the core the rank-one expansion (12.5.7) `A = ∑ j, hosvdCore
-A j • rankOne (fun k => fun i => hosvdFactor A k i (j k))` (`hosvd_eq_sum_rankOne`).
-`multilinearProd_inv`/`frobenius_norm_multilinearProd_of_orthonormal` with unitary factors. ★'''
-deps = ["Tensor.hosvdFactor", "Tensor.multilinearProd_inv", "Tensor.frobenius_norm_multilinearProd_of_orthonormal", "Tensor.eq_sum_rankOne_single"]
 
 [[node]]
 id = "modeUnfold_hosvdCore_row"
-kind = "theorem"
-desc = '''[golub2013matrix] (12.5.10), all-orthogonality: the rows of `(hosvdCore A).modeUnfold k` are pairwise
-orthogonal and `‖(hosvdCore A).modeUnfold k i‖ = ((A.modeUnfold k)ᴴ).singularValues i` (Euclidean norm of
-the row). By `modeUnfold_multilinearProd`, `𝒮_(k) = U_kᴴ A_(k) W` with `W = (piKronecker fun j ≠ k =>
-U_jᴴ)ᵀ` unitary, so `𝒮_(k) 𝒮_(k)ᴴ = U_kᴴ A_(k) A_(k)ᴴ U_k = diagonal σ²`
-(`Matrix.conjTranspose_mul_self_eq_conj_diagonal` of `SVD` applied to `A_(k)ᴴ`). In particular the core
-entries vanish on indices `j` with `j k` carrying a zero singular value (the book's "summation upper
-bounds can be replaced by `rank_*(𝒜)`": `hosvdCore_eq_zero_of_singularValues_eq_zero`). ★ (Column-indexed `Matrix.singularValues` on purpose: the statement is about the singular values as a family indexed by the columns, in no particular order, which the unsorted family gives without a sorting permutation.) ★ (~70 lines)'''
-deps = ["Tensor.hosvdFactor", "Tensor.modeUnfold_multilinearProd", "Matrix.singularValues", "Matrix.sq_singularValues"]
 
 [[node]]
 id = "modeProd_hosvdFactor_row"
-kind = "theorem"
-desc = '''The single-mode statement of [golub2013matrix] §12.5.1: `ℬ⁽ᵏ⁾ = 𝒜 ×_k U_kᴴ` (the book prints `×_k U_k`,
-which does not give the displayed unfoldings; with `U_kᵀ` it does) has `ℬ⁽ᵏ⁾_(k) = U_kᴴ A_(k) = Σ_k V_kᴴ`, so its
-mode-`k` slices (the rows of its mode-`k` unfolding) have Frobenius norms `σ_i(A_(k))`: `‖(A.modeProd k
-(hosvdFactor A k)ᴴ).modeUnfold k i‖ = ((A.modeUnfold k)ᴴ).singularValues i`. (The book's further display
-`ℬ⁽¹⁾_(1) = Σ₁ V₁ᵀ (U₃ ⊗ U₂)ᵀ` wrongly carries the Kronecker factor of a full multilinear product; not
-reproduced.) (Column-indexed `Matrix.singularValues` on purpose: the statement is about the singular values as a family indexed by the columns, in no particular order, which the unsorted family gives without a sorting permutation.) ★'''
-deps = ["Tensor.modeProd", "Tensor.hosvdFactor", "Tensor.modeUnfold_hosvdCore_row"]
 
 [[node]]
 id = "truncatedHOSVD"
-kind = "definition"
-desc = '''The truncated HOSVD ([golub2013matrix] §12.5.2, `𝒜^{(r)}`): for `s : ∀ k, Finset (κ k)` (the kept
-singular directions; the book's `1 ≤ j_k ≤ r_k` after sorting), `truncatedHOSVD A s := multilinearProd
-(fun k => hosvdFactor A k * diagonal (fun i => if i ∈ s k then 1 else 0) * (hosvdFactor A k)ᴴ) A`, the
-multilinear product by the orthogonal projections onto the kept left singular vectors;
-`truncatedHOSVD_eq_sum` is the book's `∑_{j ≤ r} 𝒮(j) U₁(:, j₁) ∘ ⋯ ∘ U_d(:, j_d)`. ★'''
-deps = ["Tensor.hosvdFactor", "Tensor.multilinearProd_hosvdFactor_hosvdCore"]
 
 [[node]]
 id = "norm_sub_truncatedHOSVD_sq_le"
-kind = "theorem"
-desc = '''The truncation error of the HOSVD ([golub2013matrix] (12.5.11), corrected): `‖A − truncatedHOSVD A s‖² ≤ ∑
-k, ∑ i ∈ (s k)ᶜ, ((A.modeUnfold k)ᴴ).singularValues i ^ 2`. The book prints `min_k` in place of `∑_k`, which is
-false (chapter 12 report). Proof: `A − 𝒜^{(r)} = ∑_{j ∉ ∏ s} 𝒮(j) ⊗_k u_{j_k}` is an orthogonal expansion, so
-its squared norm is `∑_{j ∉ ∏ s} |𝒮(j)|² ≤ ∑_k ∑_{j : j_k ∉ s_k} |𝒮(j)|² = ∑_k ∑_{i ∉ s_k} ‖𝒮_(k)(i, :)‖² = ∑_k ∑_{i ∉
-s_k} σ_i²` (`modeUnfold_hosvdCore_row`). ★ (Column-indexed `Matrix.singularValues` on purpose: the statement is about the singular values as a family indexed by the columns, in no particular order, which the unsorted family gives without a sorting permutation.) ★ (~100 lines)'''
-deps = ["Tensor.truncatedHOSVD", "Tensor.modeUnfold_hosvdCore_row", "Tensor.frobenius_norm_multilinearProd_of_orthonormal"]
 
 [[node]]
 id = "sum_sq_le_norm_sub_sq_of_multilinearRank_le"
@@ -94,5 +29,10 @@ desc = '''The matching lower bound: if `multilinearRank B k ≤ r k` then for ev
 `Matrix.isLeast_frobenius_norm_sub_of_rank_le` for the unfolding, and `frobenius_norm_unfold`). With
 `norm_sub_truncatedHOSVD_sq_le` the truncated HOSVD is within a factor `d` of the best approximation of
 multilinear rank `r` (in squared norm), and the book's `min_k` bound is refuted by any `A` whose
-truncation is trivial in one mode. ★'''
+truncation is trivial in one mode. ★
+
+Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` and
+`Matrix.sortedSingularValues` (agent ls1, `LinearAlgebra/Matrix/SVD`, not on this branch's base
+626b9681). Everything else is in place: `frobenius_norm_modeUnfold` transports the bound; ~15 lines
+once the two nodes exist.'''
 deps = ["Tensor.multilinearRank", "Tensor.frobenius_norm_unfold", "Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.sortedSingularValues"]
