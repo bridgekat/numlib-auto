@@ -12,31 +12,6 @@ id = "Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace"
 
 [[node]]
 id = "Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace"
-kind = "theorem"
-desc = '''Golub's inverse tridiagonal eigenproblem ([golub2013matrix] §8.4.6, (8.4.7)–(8.4.9)): for
-strictly interlacing `l : Fin (N + 1) → ℝ`, `μ : Fin N → ℝ` as in (8.4.7), there is a real symmetric
-tridiagonal `T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ` (`T.IsSymm`, `T.IsTridiagonal`) whose
-eigenvalues are the `l i` and whose trailing principal submatrix `T.submatrix Fin.succ Fin.succ`
-has eigenvalues the `μ j` (as multisets: `T.charpoly = ∏ (X - C (l i))` and likewise for the
-submatrix). Construction as in the book: `d` with `d k = √(ratio k)` from
-`prod_sub_div_prod_sub_pos_of_strictInterlace` is a unit vector; `P` a Householder reflector with
-`P d = ± e₀` (`Matrix.householder`/`householderVec`); `A = Pᵀ Λ P`; `T = Q₁ᵀ A Q₁` the Householder
-tridiagonalization (`Matrix.hessenbergReduce`, whose `Q₁` fixes `e₀`: `Matrix.hessenbergQ` is a
-product of reflectors acting on coordinates `≥ 1`). Then the first row of the eigenvector matrix of
-`T` is `± d`, and `norm_sq_eigenvector_mul_prod_eq` (read backwards: the polynomial identity
-determines `∏ (μ_j - λ)` from the `d_i²`) gives the spectrum of the trailing submatrix.
-★★★ (~200 lines)
-
-Blocked (effort, not a missing node): the inputs on this side are proved —
-`Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace` (the `d_k²` are positive and sum to `1`) and
-`Matrix.mul_star_mul_prod_eq_det_submatrix` (the determinant form of the eigenvector–eigenvalue
-identity, which read backwards gives `det (T(2:n,2:n) - λ) = ∑ d_i² ∏_{j≠i} (λ_j - λ)`, a polynomial
-identity in `λ` once the adjugate form `Matrix.adjugate_sub_smul_one_apply_eq_sum` is used). Missing:
-a unitary with prescribed first row (a Householder reflector `P d = ±e₀`), and the fact that the
-Householder tridiagonalization `Matrix.hessenbergQ` fixes `e₀` (its first column is `e₀`), which
-`Numlib/LinearAlgebra/Matrix/QR` does not state (rf1's module). Not attempted in wave 1 (eig1);
-estimate ~200 lines once those two facts exist.'''
-deps = ["Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq", "Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace", "Matrix.hessenbergReduce", "Matrix.hessenbergQ", "Matrix.isTridiagonal_hessenbergReduce_of_isHermitian", "Matrix.householder"]
 
 [[node]]  # added by eig1: the general form of (8.4.10), any unitary diagonalization, no symmetry
 id = "Matrix.inv_sub_smul_one_apply_eq_sum"
@@ -52,3 +27,6 @@ id = "Matrix.IsHermitian.det_sub_smul_one_eq_prod"
 
 [[node]]  # added by eig1: unitary conjugation commutes with the adjugate
 id = "Matrix.adjugate_mul_mul_star_of_mem_unitaryGroup"
+
+[[node]]  # added by lo2: a unitary matrix with a prescribed column (a scaled Householder reflector)
+id = "Matrix.exists_mem_unitaryGroup_mulVec_single_eq"

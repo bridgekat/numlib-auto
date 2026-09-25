@@ -4,6 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: a file beside `Mathlib.LinearAlgebra.Matrix.Rank`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.Analysis.Matrix.Spectrum
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.LU
@@ -64,6 +67,15 @@ algorithms possible.
   `Matrix.orthogonalHessenberg_isQuasiseparable`, and Fact 1 of §12.2.10,
   `Matrix.isSimilar_prod_planeReflector_oddEven`, from the general reordering
   `Matrix.isSimilar_prodFwd_evenOdd` of a product of generators of a path.
+* Fact 2 of §12.2.10, `Matrix.eigenvalues_oddEven_half_sum`: `C = (H_o + H_e)/2` and
+  `S = (H_o − H_e)/2` are symmetric tridiagonal (`Matrix.isTridiagonal_oddEven_half_sum`, from
+  `Matrix.prodFwd_eq_one_add_sum_sub_one`: a product of disjointly supported factors is the
+  identity plus the sum of their departures), with eigenvalues `± cos(θ_k/2)` and `± sin(θ_k/2)`
+  (`Matrix.charpoly_oddEven_half_sum`). The spectral half is the general
+  `Matrix.charpoly_half_add_of_involutive` for two symmetric involutions of trace zero, whose
+  inputs are `Matrix.trace_add_pow_odd_eq_zero` (odd powers of `A + B` are traceless) and
+  `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd` (a Hermitian matrix with traceless odd
+  powers has a spectrum symmetric about `0`, through `map_neg_eq_of_sum_pow_odd`).
 
 ## Implementation notes
 
@@ -2409,5 +2421,700 @@ theorem isSimilar_prod_planeReflector_oddEven (φ : ℕ → ℝ) :
     exact commute_planeEmbed_diagonal (by simp; omega) (by simp; omega) _
 
 end ReflectorProduct
+
+end Matrix
+
+open Polynomial
+
+namespace Matrix
+
+/-! ### Two involutions of trace zero -/
+
+section Involution
+
+variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n] {A B : Matrix n n R}
+
+/-- The key step for `Matrix.trace_add_pow_odd_eq_zero`: with `Z = (A + B)²`, which commutes with
+`A` and `B`, and `D = AB − BA`, which anticommutes with `A` and commutes with `Z`,
+`tr (A Zʲ D²) = tr (D A Zʲ D) = −tr (A Zʲ D²)` vanishes; since `D² = Z² − 4Z`, the traces
+`tr (A Zʲ)` satisfy `t_{j+2} = 4 t_{j+1}`, and `t₀ = tr A`, `t₁ = 2 tr A + 2 tr B` vanish. -/
+private theorem trace_mul_sq_pow_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A * A = 1)
+    (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) (j : ℕ) :
+    trace (A * ((A + B) * (A + B)) ^ j) = 0 := by
+  have hA' : ∀ M, A * (A * M) = M := fun M => by rw [← Matrix.mul_assoc, hA, Matrix.one_mul]
+  have hB' : ∀ M, B * (B * M) = M := fun M => by rw [← Matrix.mul_assoc, hB, Matrix.one_mul]
+  obtain ⟨Z, hZ⟩ : ∃ Z, Z = (A + B) * (A + B) := ⟨_, rfl⟩
+  obtain ⟨D, hD⟩ : ∃ D, D = A * B - B * A := ⟨_, rfl⟩
+  rw [← hZ]
+  have hZA : Commute Z A := by
+    rw [Commute, SemiconjBy, hZ]
+    simp only [add_mul, mul_add, Matrix.mul_assoc, hA, hB, hA', Matrix.mul_one, Matrix.one_mul]
+    abel
+  have hZB : Commute Z B := by
+    rw [Commute, SemiconjBy, hZ]
+    simp only [add_mul, mul_add, Matrix.mul_assoc, hA, hB, hB', Matrix.mul_one, Matrix.one_mul]
+    abel
+  have hDZ : Commute D Z := hD ▸ (hZA.symm.mul_left hZB.symm).sub_left
+    (hZB.symm.mul_left hZA.symm)
+  have hDA : D * A = -(A * D) := by
+    rw [hD]
+    simp only [sub_mul, mul_sub, Matrix.mul_assoc, hA, hA', Matrix.mul_one]
+    abel
+  have hDD : D * D = Z * Z - 4 • Z := by
+    rw [hD, hZ]
+    simp only [sub_mul, mul_sub, add_mul, mul_add, Matrix.mul_assoc, hA, hB, hA', hB',
+      Matrix.mul_one, Matrix.one_mul]
+    abel
+  have hrec : ∀ j, trace (A * Z ^ (j + 2)) = 4 • trace (A * Z ^ (j + 1)) := fun j => by
+    have h0 : trace (A * Z ^ j * (D * D)) = 0 := by
+      have e : D * (A * Z ^ j * D) = -(A * Z ^ j * (D * D)) := by
+        calc D * (A * Z ^ j * D) = D * A * Z ^ j * D := by simp only [Matrix.mul_assoc]
+          _ = -(A * (D * Z ^ j) * D) := by
+            rw [hDA]
+            simp only [Matrix.neg_mul, Matrix.mul_assoc]
+          _ = -(A * Z ^ j * (D * D)) := by
+            rw [(hDZ.pow_right j).eq]
+            simp only [Matrix.mul_assoc]
+      have e' : trace (A * Z ^ j * (D * D)) = -trace (A * Z ^ j * (D * D)) := by
+        rw [← trace_neg, ← e, ← Matrix.mul_assoc, trace_mul_comm]
+      exact self_eq_neg.mp e'
+    rw [hDD, Matrix.mul_sub, trace_sub, Matrix.mul_smul, trace_smul, sub_eq_zero] at h0
+    rw [pow_succ, pow_succ, show A * (Z ^ j * Z * Z) = A * Z ^ j * (Z * Z) by
+      simp only [Matrix.mul_assoc], h0, Matrix.mul_assoc]
+  have hAZ : trace (A * Z) = 0 := by
+    rw [hZ]
+    simp only [add_mul, mul_add, hA, hB, hA', Matrix.mul_one, trace_add]
+    rw [trace_mul_comm A (B * A), Matrix.mul_assoc, hA, Matrix.mul_one, htA, htB]
+    simp
+  have h2 : ∀ j, trace (A * Z ^ j) = 0 ∧ trace (A * Z ^ (j + 1)) = 0 := fun j => by
+    induction j with
+    | zero => exact ⟨by rw [pow_zero, Matrix.mul_one, htA], by rw [zero_add, pow_one, hAZ]⟩
+    | succ j ih => exact ⟨ih.2, by rw [hrec, ih.2, smul_zero]⟩
+  exact (h2 j).1
+
+/-- **Odd powers of a sum of two involutions of trace zero are traceless**: if `A² = B² = 1` and
+`tr A = tr B = 0` then `tr (A + B)^{2j+1} = 0`. Expanded, every odd word in `A` and `B` reduces
+cyclically to a single letter; the proof runs instead through `Z = (A + B)²`, which commutes with
+`A` and `B`, and the anticommutator `AB − BA` (`Matrix.trace_mul_sq_pow_eq_zero`). -/
+theorem trace_add_pow_odd_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A * A = 1)
+    (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) (j : ℕ) :
+    trace ((A + B) ^ (2 * j + 1)) = 0 := by
+  rw [pow_succ', pow_mul, sq, add_mul, trace_add, trace_mul_sq_pow_eq_zero hA hB htA htB,
+    add_comm A B, trace_mul_sq_pow_eq_zero hB hA htB htA, add_zero]
+
+end Involution
+
+end Matrix
+
+/-! ### Symmetric spectra from odd power sums -/
+
+section PowerSum
+
+variable {ι K : Type*} [Fintype ι] [Field K]
+
+/-- If the odd power sums of `μ` vanish, then every polynomial has the same sum over `μ` and over
+`-μ`: its odd part sums to zero on both. -/
+theorem sum_eval_neg_eq_of_sum_pow_odd {μ : ι → K} (h : ∀ j, ∑ i, μ i ^ (2 * j + 1) = 0)
+    (p : K[X]) : ∑ i, p.eval (-μ i) = ∑ i, p.eval (μ i) := by
+  simp only [eval_eq_sum_range]
+  refine Finset.sum_comm.trans ((Finset.sum_congr rfl fun k _ => ?_).trans Finset.sum_comm)
+  rw [← Finset.mul_sum, ← Finset.mul_sum]
+  congr 1
+  rcases Nat.even_or_odd k with hk | ⟨j, rfl⟩
+  · simp only [hk.neg_pow]
+  · simp only [Odd.neg_pow ⟨j, rfl⟩, Finset.sum_neg_distrib, h j, neg_zero]
+
+/-- Summing a polynomial vanishing on `T` except at `v` over a family with values in `T` counts
+the members equal to `v`. -/
+private theorem sum_eval_prod_erase [DecidableEq K] {T : Finset K} (v : K) {ν : ι → K}
+    (hν : ∀ i, ν i ∈ T) :
+    ∑ i, (∏ w ∈ T.erase v, (X - C w)).eval (ν i) =
+      #(univ.filter fun i => v = ν i) • ∏ w ∈ T.erase v, (v - w) := by
+  have h : ∀ i, (∏ w ∈ T.erase v, (X - C w)).eval (ν i) =
+      if v = ν i then ∏ w ∈ T.erase v, (v - w) else 0 := fun i => by
+    rw [eval_prod]
+    split_ifs with hv
+    · simp [hv]
+    · exact Finset.prod_eq_zero (mem_erase.2 ⟨Ne.symm hv, hν i⟩) (by simp)
+  rw [Finset.sum_congr rfl fun i _ => h i, Finset.sum_ite, Finset.sum_const, Finset.sum_const_zero,
+    add_zero]
+
+/-- **A family whose odd power sums vanish is symmetric**: over a field of characteristic zero,
+if `∑ μ_i^{2j+1} = 0` for every `j`, then the multiset of the `-μ_i` is that of the `μ_i`. Each
+multiplicity is read off by summing a polynomial that vanishes at every other value of `±μ`
+(`sum_eval_neg_eq_of_sum_pow_odd`). -/
+theorem map_neg_eq_of_sum_pow_odd [CharZero K] {μ : ι → K}
+    (h : ∀ j, ∑ i, μ i ^ (2 * j + 1) = 0) :
+    univ.val.map (fun i => -μ i) = univ.val.map μ := by
+  classical
+  refine Multiset.ext' fun v => ?_
+  obtain ⟨T, hT⟩ : ∃ T : Finset K, T = univ.image μ ∪ univ.image fun i => -μ i := ⟨_, rfl⟩
+  have hne : ∏ w ∈ T.erase v, (v - w) ≠ 0 :=
+    prod_ne_zero_iff.2 fun w hw => sub_ne_zero.2 (Ne.symm (ne_of_mem_erase hw))
+  have key := sum_eval_neg_eq_of_sum_pow_odd h (∏ w ∈ T.erase v, (X - C w))
+  rw [sum_eval_prod_erase v (ν := fun i => -μ i) fun i => hT ▸ mem_union_right _
+      (mem_image_of_mem _ (mem_univ i)),
+    sum_eval_prod_erase v (ν := μ) fun i => hT ▸ mem_union_left _
+      (mem_image_of_mem _ (mem_univ i)), nsmul_eq_mul, nsmul_eq_mul] at key
+  rw [Multiset.count_map, Multiset.count_map]
+  exact_mod_cast mul_right_cancel₀ hne key
+
+end PowerSum
+
+namespace Matrix
+
+namespace IsHermitian
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
+
+/-- The trace of a power of a Hermitian matrix is the power sum of its eigenvalues. -/
+theorem trace_pow_eq_sum (hA : A.IsHermitian) (k : ℕ) :
+    trace (A ^ k) = ∑ i, (hA.eigenvalues i : 𝕜) ^ k := by
+  conv_lhs => rw [hA.spectral_theorem]
+  rw [← map_pow, Unitary.conjStarAlgAut_apply, trace_mul_comm, ← Matrix.mul_assoc,
+    Unitary.coe_star_mul_self, Matrix.one_mul, diagonal_pow, trace_diagonal]
+  simp
+
+/-- **A Hermitian matrix whose odd powers are traceless has a spectrum symmetric about `0`**:
+`charpoly (-A) = charpoly A`. The odd power sums of the eigenvalues vanish
+(`Matrix.IsHermitian.trace_pow_eq_sum`), so the eigenvalue multiset is symmetric
+(`map_neg_eq_of_sum_pow_odd`). -/
+theorem charpoly_neg_of_trace_pow_odd (hA : A.IsHermitian)
+    (h : ∀ j, trace (A ^ (2 * j + 1)) = 0) : (-A).charpoly = A.charpoly := by
+  have hs : univ.val.map (fun i => -hA.eigenvalues i) = univ.val.map hA.eigenvalues :=
+    map_neg_eq_of_sum_pow_odd fun j => by
+      have := h j
+      rw [hA.trace_pow_eq_sum] at this
+      exact_mod_cast this
+  conv_lhs => rw [hA.spectral_theorem]
+  rw [← map_neg, Unitary.conjStarAlgAut_apply, charpoly_mul_comm, ← Matrix.mul_assoc,
+    Unitary.coe_star_mul_self, Matrix.one_mul, diagonal_neg, charpoly_diagonal, hA.charpoly_eq,
+    Finset.prod_eq_multiset_prod, Finset.prod_eq_multiset_prod]
+  have := congrArg (Multiset.map fun x : ℝ => (X - C (x : 𝕜))) hs
+  simp only [Multiset.map_map, Function.comp_def] at this
+  simpa using congrArg Multiset.prod this
+
+end IsHermitian
+
+end Matrix
+
+namespace Matrix
+
+/-! ### The half-sum of two symmetric involutions -/
+
+section HalfSum
+
+open Complex in
+/-- The factor identity behind `Matrix.charpoly_half_add_of_involutive`: if `r₁ r₂ = 1` and
+`r₁ + r₂ = 4z² − 2`, then with `a = e^{iθ}`, `b = e^{−iθ}` (so `ab = 1`,
+`a + b = 4 cos²(θ/2) − 2`), `(r₁ − a)(r₁ − b)(r₂ − a)(r₂ − b) = 16 (z² − cos²(θ/2))²`. -/
+private theorem prod_sub_exp_mul_prod_sub_exp (θ : ℝ) {z r₁ r₂ : ℂ} (h12 : r₁ * r₂ = 1)
+    (hs : r₁ + r₂ = 4 * z ^ 2 - 2) :
+    (r₁ - exp (θ * I)) * (r₁ - exp (-θ * I)) * ((r₂ - exp (θ * I)) * (r₂ - exp (-θ * I))) =
+      16 * ((z - (Real.cos (θ / 2) : ℂ)) * (z + (Real.cos (θ / 2) : ℂ))) ^ 2 := by
+  obtain ⟨a, ha⟩ : ∃ a, a = exp (θ * I) := ⟨_, rfl⟩
+  obtain ⟨b, hb⟩ : ∃ b, b = exp (-θ * I) := ⟨_, rfl⟩
+  rw [← ha, ← hb]
+  have hab : a * b = 1 := by
+    rw [ha, hb, ← Complex.exp_add, neg_mul, add_neg_cancel, Complex.exp_zero]
+  have hc : a + b = 4 * (Real.cos (θ / 2) : ℂ) ^ 2 - 2 := by
+    have h2 : (θ : ℂ) = 2 * ((θ / 2 : ℝ) : ℂ) := by push_cast; ring
+    rw [ha, hb, ← Complex.two_cos, h2, Complex.cos_two_mul, Complex.ofReal_cos]
+    ring
+  have hP : (r₁ - a) * (r₂ - a) = 1 - a * (4 * z ^ 2 - 2) + a ^ 2 := by
+    linear_combination h12 - a * hs
+  have hQ : (r₁ - b) * (r₂ - b) = 1 - b * (4 * z ^ 2 - 2) + b ^ 2 := by
+    linear_combination h12 - b * hs
+  calc (r₁ - a) * (r₁ - b) * ((r₂ - a) * (r₂ - b))
+      = ((r₁ - a) * (r₂ - a)) * ((r₁ - b) * (r₂ - b)) := by ring
+    _ = (1 - a * (4 * z ^ 2 - 2) + a ^ 2) * (1 - b * (4 * z ^ 2 - 2) + b ^ 2) := by rw [hP, hQ]
+    _ = (a + b - (4 * z ^ 2 - 2)) ^ 2 := by
+      linear_combination ((4 * z ^ 2 - 2) ^ 2 - (a + b) * (4 * z ^ 2 - 2) + (a * b - 1)) * hab
+    _ = _ := by rw [hc]; ring
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- A matrix whose characteristic polynomial is a product of `m` monic quadratics has order
+`2m`. -/
+theorem card_eq_of_charpoly_eq_prod {K : Type*} [Field K] {M : Matrix n n K} {m : ℕ}
+    {a b : Fin m → K} (h : M.charpoly = ∏ k, (X - C (a k)) * (X - C (b k))) :
+    Fintype.card n = 2 * m := by
+  have h' := congrArg natDegree h
+  rw [charpoly_natDegree_eq_dim, natDegree_prod_of_monic _ _ fun k _ =>
+    (monic_X_sub_C _).mul (monic_X_sub_C _)] at h'
+  simp only [natDegree_mul (X_sub_C_ne_zero _) (X_sub_C_ne_zero _), natDegree_X_sub_C,
+    sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at h'
+  omega
+
+open Complex in
+/-- **The spectrum of the half-sum of two symmetric involutions of trace zero**
+(Ammar–Gragg–Reichel; [golub2013matrix] §12.2.10, Fact 2): if `A`, `B` are real symmetric with
+`A² = B² = 1` and `tr A = tr B = 0`, and the eigenvalues of `AB` are the `m` pairs `e^{±iθ_k}`,
+then the eigenvalues of `(A + B)/2` are the `m` pairs `± cos(θ_k/2)`.
+
+The spectrum of `C = (A + B)/2` is symmetric about `0`: its odd powers are traceless
+(`Matrix.trace_add_pow_odd_eq_zero`, `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`), so
+`p_C(z)² = p_C(z) p_{−C}(z) = det (z² − C²)`. For `r₁ r₂ = 1`, `r₁ + r₂ = 4z² − 2`,
+`4 (z² − C²) AB = −(r₁ − AB)(r₂ − AB)`, which gives `det (z² − C²)` from the characteristic
+polynomial of `AB` at `r₁`, `r₂` (`det AB = 1`), and so `p_C² = ∏ (X² − cos²(θ_k/2))²`; both being
+monic, `p_C = ∏ (X² − cos²(θ_k/2))`. -/
+theorem charpoly_half_add_of_involutive {A B : Matrix n n ℝ} (hAs : A.IsSymm) (hBs : B.IsSymm)
+    (hA : A * A = 1) (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) {m : ℕ}
+    (θ : Fin m → ℝ)
+    (hθ : ((A * B).map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I)))) :
+    ((1 / 2 : ℝ) • (A + B)).charpoly =
+      ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2))) := by
+  have hn := card_eq_of_charpoly_eq_prod hθ
+  have hneg1 : ∀ M : Matrix n n ℂ, det (-M) = det M := fun M => by
+    rw [det_neg, hn, pow_mul, neg_one_sq, one_pow, one_mul]
+  have hsc : ∀ w : ℂ, scalar n w = w • (1 : Matrix n n ℂ) := fun w => by
+    rw [scalar_apply, smul_one_eq_diagonal]
+  obtain ⟨Cm, hCm⟩ : ∃ Cm : Matrix n n ℝ, Cm = (1 / 2 : ℝ) • (A + B) := ⟨_, rfl⟩
+  rw [← hCm]
+  have hCh : Cm.IsHermitian := by
+    rw [IsHermitian, conjTranspose_eq_transpose_of_trivial, hCm, transpose_smul, transpose_add,
+      hAs.eq, hBs.eq]
+  have hsym : (-Cm).charpoly = Cm.charpoly := hCh.charpoly_neg_of_trace_pow_odd fun j => by
+    rw [hCm, smul_pow, trace_smul, trace_add_pow_odd_eq_zero hA hB htA htB, smul_zero]
+  obtain ⟨p, hp⟩ : ∃ p, p = Cm.charpoly := ⟨_, rfl⟩
+  obtain ⟨r, hr⟩ : ∃ r : ℝ[X],
+      r = ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2))) := ⟨_, rfl⟩
+  rw [← hp, ← hr]
+  -- the complexified matrices
+  obtain ⟨Ac, hAc⟩ : ∃ Ac, Ac = A.map (algebraMap ℝ ℂ) := ⟨_, rfl⟩
+  obtain ⟨Bc, hBc⟩ : ∃ Bc, Bc = B.map (algebraMap ℝ ℂ) := ⟨_, rfl⟩
+  have hMc : (A * B).map (algebraMap ℝ ℂ) = Ac * Bc := by rw [hAc, hBc, Matrix.map_mul]
+  have hAA : Ac * Ac = 1 := by
+    rw [hAc, ← Matrix.map_mul, hA, Matrix.map_one _ (map_zero _) (map_one _)]
+  have hBB : Bc * Bc = 1 := by
+    rw [hBc, ← Matrix.map_mul, hB, Matrix.map_one _ (map_zero _) (map_one _)]
+  have hAA' : ∀ M, Ac * (Ac * M) = M := fun M => by rw [← Matrix.mul_assoc, hAA, Matrix.one_mul]
+  have hCc : Cm.map (algebraMap ℝ ℂ) = (1 / 2 : ℂ) • (Ac + Bc) := by
+    ext i j
+    simp [hCm, hAc, hBc]
+    ring
+  have hCneg : (-Cm).map (algebraMap ℝ ℂ) = -((1 / 2 : ℂ) • (Ac + Bc)) := by
+    rw [← hCc]
+    ext i j
+    simp
+  have hev : ∀ w : ℂ, det (w • 1 - Ac * Bc) =
+      ∏ k, (w - exp (θ k * I)) * (w - exp (-θ k * I)) := fun w => by
+    have h := congrArg (eval w) hθ
+    rw [eval_charpoly, eval_prod, hsc, hMc] at h
+    simpa using h
+  have hdet : det (Ac * Bc) = 1 := by
+    have h := hev 0
+    rw [zero_smul, zero_sub, hneg1] at h
+    rw [h]
+    refine Finset.prod_eq_one fun k _ => ?_
+    rw [zero_sub, zero_sub, neg_mul_neg, ← Complex.exp_add, neg_mul, add_neg_cancel,
+      Complex.exp_zero]
+  have hpt : ∀ z : ℂ, (p.map (algebraMap ℝ ℂ)).eval z ^ 2 =
+      (r.map (algebraMap ℝ ℂ)).eval z ^ 2 := fun z => by
+    obtain ⟨d, hd⟩ := IsAlgClosed.exists_eq_mul_self ((4 * z ^ 2 - 2) ^ 2 - 4)
+    have h12 : (4 * z ^ 2 - 2 + d) / 2 * ((4 * z ^ 2 - 2 - d) / 2) = 1 := by
+      linear_combination (1 / 4 : ℂ) * hd
+    have hs : (4 * z ^ 2 - 2 + d) / 2 + (4 * z ^ 2 - 2 - d) / 2 = 4 * z ^ 2 - 2 := by ring
+    generalize (4 * z ^ 2 - 2 + d) / 2 = r₁ at h12 hs
+    generalize (4 * z ^ 2 - 2 - d) / 2 = r₂ at h12 hs
+    -- `p_C(z)² = det (z² − C²)`
+    have e1 : (p.map (algebraMap ℝ ℂ)).eval z = det (z • 1 - (1 / 2 : ℂ) • (Ac + Bc)) := by
+      rw [hp, ← charpoly_map, eval_charpoly, hsc, hCc]
+    have e2 : (p.map (algebraMap ℝ ℂ)).eval z = det (z • 1 + (1 / 2 : ℂ) • (Ac + Bc)) := by
+      rw [hp, ← hsym, ← charpoly_map, eval_charpoly, hsc, hCneg, sub_neg_eq_add]
+    have eX : (z • 1 - (1 / 2 : ℂ) • (Ac + Bc)) * (z • 1 + (1 / 2 : ℂ) • (Ac + Bc)) =
+        (4 : ℂ)⁻¹ • ((4 * z ^ 2 - 2) • 1 - (Ac * Bc + Bc * Ac)) := by
+      simp only [sub_mul, mul_add, add_mul, smul_mul_assoc, mul_smul_comm,
+        Matrix.one_mul, Matrix.mul_one, smul_add, hAA, hBB]
+      module
+    -- `4 (z² − C²) AB = −(r₁ − AB)(r₂ − AB)`
+    have eY : ((4 * z ^ 2 - 2) • 1 - (Ac * Bc + Bc * Ac)) * (Ac * Bc) =
+        -((r₁ • 1 - Ac * Bc) * (r₂ • 1 - Ac * Bc)) := by
+      have e : (r₁ • 1 - Ac * Bc) * (r₂ • 1 - Ac * Bc) =
+          (r₁ * r₂) • 1 - (r₁ + r₂) • (Ac * Bc) + Ac * Bc * (Ac * Bc) := by
+        simp only [sub_mul, mul_sub, smul_mul_assoc, mul_smul_comm, Matrix.one_mul,
+          Matrix.mul_one, add_smul]
+        module
+      rw [e, h12, hs]
+      simp only [sub_mul, add_mul, smul_mul_assoc, Matrix.one_mul, Matrix.mul_assoc, hAA', hBB]
+      module
+    have key : (4 : ℂ)⁻¹ ^ Fintype.card n * ((∏ k, (r₁ - exp (θ k * I)) * (r₁ - exp (-θ k * I))) *
+        ∏ k, (r₂ - exp (θ k * I)) * (r₂ - exp (-θ k * I))) =
+        (p.map (algebraMap ℝ ℂ)).eval z ^ 2 := by
+      rw [← hev, ← hev, ← det_mul, ← hneg1, ← eY, det_mul, hdet, mul_one, ← det_smul, ← eX,
+        det_mul, ← e1, ← e2, sq]
+    rw [← key, ← prod_mul_distrib,
+      Finset.prod_congr rfl fun k _ => prod_sub_exp_mul_prod_sub_exp (θ k) h12 hs, prod_mul_distrib,
+      prod_const, card_univ, Fintype.card_fin, prod_pow, hr, Polynomial.map_prod, eval_prod, hn,
+      pow_mul, ← mul_assoc, ← mul_pow]
+    norm_num
+  have hsq : p ^ 2 = r ^ 2 :=
+    Polynomial.map_injective _ (RingHom.injective (algebraMap ℝ ℂ)) <| Polynomial.funext fun z => by
+      simp only [Polynomial.map_pow, eval_pow, hpt]
+  rcases sq_eq_sq_iff_eq_or_eq_neg.1 hsq with h | h
+  · exact h
+  · have h1 : p.leadingCoeff = 1 := hp ▸ charpoly_monic Cm
+    have h2 : r.Monic := hr ▸ monic_prod_of_monic _ _ fun k _ =>
+      (monic_X_sub_C _).mul (monic_X_add_C _)
+    rw [h, leadingCoeff_neg, h2.leadingCoeff] at h1
+    norm_num at h1
+
+end HalfSum
+
+end Matrix
+
+namespace Matrix
+
+/-! ### Disjointly supported factors -/
+
+section Disjoint
+
+variable {ι R : Type*} [Fintype ι] [DecidableEq ι] [CommRing R]
+
+/-- A forward product of factors with pairwise disjoint supports is the identity plus the sum of
+their departures from it: `∏ (1 + E_k) = 1 + ∑ E_k` when `E_k E_l = 0` for `k < l`. -/
+theorem prodFwd_eq_one_add_sum_sub_one {f : ℕ → Matrix ι ι R} {m : ℕ}
+    (h : ∀ k l, k < l → l < m → (f k - 1) * (f l - 1) = 0) :
+    prodFwd f m = 1 + ∑ k ∈ range m, (f k - 1) := by
+  induction m with
+  | zero => simp [prodFwd_zero]
+  | succ m ih =>
+    have hS : (∑ k ∈ range m, (f k - 1)) * (f m - 1) = 0 := by
+      rw [Finset.sum_mul]
+      exact sum_eq_zero fun k hk => h k m (mem_range.1 hk) (lt_add_one m)
+    rw [prodFwd_succ, ih fun k l hkl hl => h k l hkl (by omega), sum_range_succ]
+    calc (1 + ∑ k ∈ range m, (f k - 1)) * f m
+        = (1 + ∑ k ∈ range m, (f k - 1)) * (1 + (f m - 1)) := by congr 1; abel
+      _ = _ := by
+        rw [mul_add, mul_one, add_mul (1 : Matrix ι ι R), Matrix.one_mul, hS]
+        abel
+
+/-- Two matrices whose departures from the identity annihilate each other in both orders
+commute: both products are `a + b − 1`. -/
+theorem commute_of_sub_one_mul_sub_one {a b : Matrix ι ι R} (h₁ : (a - 1) * (b - 1) = 0)
+    (h₂ : (b - 1) * (a - 1) = 0) : Commute a b := by
+  calc a * b = (a - 1) * (b - 1) + a + b - 1 := by noncomm_ring
+    _ = (b - 1) * (a - 1) + a + b - 1 := by rw [h₁, h₂]
+    _ = b * a := by noncomm_ring
+
+/-- A forward product of commuting involutions is an involution. -/
+private theorem prodFwd_mul_self {f : ℕ → Matrix ι ι R} {m : ℕ}
+    (hc : ∀ k l, k < l → l < m → Commute (f k) (f l)) (hf : ∀ k < m, f k * f k = 1) :
+    prodFwd f m * prodFwd f m = 1 := by
+  induction m with
+  | zero => simp [prodFwd_zero]
+  | succ m ih =>
+    have hP : Commute (prodFwd f m) (f m) :=
+      commute_prodFwd fun k hk => hc k m hk (lt_add_one m)
+    rw [prodFwd_succ, Matrix.mul_assoc, ← Matrix.mul_assoc (f m), ← hP.eq, Matrix.mul_assoc,
+      hf m (lt_add_one m), Matrix.mul_one, ih (fun k l hkl hl => hc k l hkl (by omega))
+        fun k hk => hf k (by omega)]
+
+end Disjoint
+
+/-! ### Fact 2 of §12.2.10: the odd–even half-sums -/
+
+section HalfSums
+
+variable {N : ℕ}
+
+/-- The factors of (12.2.18) differ from the identity only in the rows and columns `k`, `k + 1`. -/
+private theorem reflectorFactor_sub_one_apply_eq_zero (φ : ℕ → ℝ) {k : ℕ} (hk : k ≤ N)
+    {p q : Fin (N + 1)}
+    (h : ¬((k ≤ (p : ℕ) ∧ (p : ℕ) ≤ k + 1) ∧ (k ≤ (q : ℕ) ∧ (q : ℕ) ≤ k + 1))) :
+    (reflectorFactor N φ k - 1) p q = 0 := by
+  rw [sub_apply, one_apply]
+  rcases hk.lt_or_eq with hk | rfl
+  · rw [reflectorFactor, ite_eq_left hk, givensFactor, dite_eq_left hk]
+    by_cases hp : k ≤ (p : ℕ) ∧ (p : ℕ) ≤ k + 1
+    · have hq : ¬(k ≤ (q : ℕ) ∧ (q : ℕ) ≤ k + 1) := fun hq => h ⟨hp, hq⟩
+      rw [planeEmbed_apply_of_ne_right _ _ (fun e => hq (by simp [Fin.ext_iff] at e; omega))
+        (fun e => hq (by simp [Fin.ext_iff] at e; omega)), sub_self]
+    · rw [planeEmbed_apply_of_ne_left _ (fun e => hp (by simp [Fin.ext_iff] at e; omega))
+        (fun e => hp (by simp [Fin.ext_iff] at e; omega)), sub_self]
+  · rw [reflectorFactor, ite_eq_right (lt_irrefl k), diagonal_apply]
+    split_ifs with hpq hp <;> first | simp | (subst hpq; exfalso; exact h (by omega))
+
+/-- Factors of (12.2.18) in planes at distance two or more have disjoint supports. -/
+private theorem reflectorFactor_sub_one_mul_sub_one (φ : ℕ → ℝ) {k l : ℕ} (hkl : k + 2 ≤ l)
+    (hl : l ≤ N) :
+    (reflectorFactor N φ k - 1) * (reflectorFactor N φ l - 1) = 0 ∧
+      (reflectorFactor N φ l - 1) * (reflectorFactor N φ k - 1) = 0 := by
+  constructor <;> ext p q <;> rw [mul_apply, zero_apply] <;> refine sum_eq_zero fun r _ => ?_
+  · by_cases hr : (r : ℕ) ≤ k + 1
+    · rw [reflectorFactor_sub_one_apply_eq_zero (k := l) (p := r) (q := q) φ hl (by omega),
+        mul_zero]
+    · rw [reflectorFactor_sub_one_apply_eq_zero (k := k) (p := p) (q := r) φ (by omega)
+        (by omega), zero_mul]
+  · by_cases hr : (r : ℕ) ≤ k + 1
+    · rw [reflectorFactor_sub_one_apply_eq_zero (k := l) (p := p) (q := r) φ hl (by omega),
+        zero_mul]
+    · rw [reflectorFactor_sub_one_apply_eq_zero (k := k) (p := r) (q := q) φ (by omega)
+        (by omega), mul_zero]
+
+/-- The factors of (12.2.18) are symmetric. -/
+private theorem reflectorFactor_transpose (φ : ℕ → ℝ) (k : ℕ) :
+    (reflectorFactor N φ k)ᵀ = reflectorFactor N φ k := by
+  unfold reflectorFactor
+  split_ifs
+  · exact givensFactor_planeReflector_transpose φ k
+  · exact diagonal_transpose _
+
+/-- Every factor of (12.2.18) up to `G_N` has trace `n − 2`: a plane reflection has trace `0`,
+and `diag(1, …, 1, −1)` has trace `n − 2`. -/
+private theorem trace_reflectorFactor_sub_one (φ : ℕ → ℝ) {k : ℕ} (hk : k ≤ N) :
+    trace (reflectorFactor N φ k - 1) = -2 := by
+  rw [trace]
+  simp only [diag_apply]
+  rcases hk.lt_or_eq with hk | rfl
+  · have hne : (⟨k, by omega⟩ : Fin (N + 1)) ≠ ⟨k + 1, by omega⟩ := by simp [Fin.ext_iff]
+    rw [Finset.sum_eq_add_of_mem (⟨k, by omega⟩ : Fin (N + 1)) (⟨k + 1, by omega⟩ : Fin (N + 1))
+      (mem_univ _) (mem_univ _) hne fun c _ hc =>
+        reflectorFactor_sub_one_apply_eq_zero (k := k) φ hk.le (by
+          have h1 : (c : ℕ) ≠ k := fun e => hc.1 (Fin.ext e)
+          have h2 : (c : ℕ) ≠ k + 1 := fun e => hc.2 (Fin.ext e)
+          omega)]
+    simp [reflectorFactor, hk, givensFactor, planeEmbed_apply, planeReflector,
+      Fin.ext_iff]
+    ring
+  · rw [Finset.sum_eq_single (⟨k, by omega⟩ : Fin (k + 1)) (fun c _ hc =>
+      reflectorFactor_sub_one_apply_eq_zero (k := k) φ le_rfl (by
+        have h1 : (c : ℕ) ≠ k := fun e => hc (Fin.ext e)
+        have h2 := c.isLt
+        omega)) (fun h => absurd (mem_univ _) h)]
+    simp [reflectorFactor]
+    norm_num
+
+/-- The masked products `H_o`, `H_e` of (12.2.18) as the identity plus their departures. -/
+private theorem prodFwd_mask_eq (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
+    (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
+    prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) =
+      1 + ∑ k ∈ range (N + 1), if P k then reflectorFactor N φ k - 1 else 0 := by
+  rw [prodFwd_eq_one_add_sum_sub_one fun k l hkl hl => ?_]
+  · refine congrArg _ (sum_congr rfl fun k _ => ?_)
+    split_ifs <;> simp
+  · split_ifs with hk hl'
+    · exact (reflectorFactor_sub_one_mul_sub_one φ (hP k l hk hl' hkl) (by omega)).1
+    all_goals simp
+
+private theorem even_add_two_le {k l : ℕ} (hk : Even k) (hl : Even l) (hkl : k < l) :
+    k + 2 ≤ l := by
+  obtain ⟨a, rfl⟩ := hk
+  obtain ⟨b, rfl⟩ := hl
+  omega
+
+private theorem odd_add_two_le {k l : ℕ} (hk : Odd k) (hl : Odd l) (hkl : k < l) :
+    k + 2 ≤ l := by
+  obtain ⟨a, rfl⟩ := hk
+  obtain ⟨b, rfl⟩ := hl
+  omega
+
+/-- `H_o = G₁ G₃ ⋯` as the identity plus the departures of its factors. -/
+private theorem prodFwdEven_reflectorFactor_eq (φ : ℕ → ℝ) :
+    prodFwdEven (reflectorFactor N φ) (N + 1) =
+      1 + ∑ k ∈ range (N + 1), if Even k then reflectorFactor N φ k - 1 else 0 :=
+  prodFwd_mask_eq φ Even fun _ _ => even_add_two_le
+
+/-- `H_e = G₂ G₄ ⋯` as the identity plus the departures of its factors. -/
+private theorem prodFwdOdd_reflectorFactor_eq (φ : ℕ → ℝ) :
+    prodFwdOdd (reflectorFactor N φ) (N + 1) =
+      1 + ∑ k ∈ range (N + 1), if Odd k then reflectorFactor N φ k - 1 else 0 :=
+  prodFwd_mask_eq φ Odd fun _ _ => odd_add_two_le
+
+/-- A masked product of (12.2.18) is symmetric. -/
+private theorem transpose_prodFwd_mask (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
+    (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
+    (prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1))ᵀ =
+      prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) := by
+  rw [prodFwd_mask_eq φ P hP, transpose_add, transpose_one, transpose_sum]
+  refine congrArg _ (sum_congr rfl fun k _ => ?_)
+  split_ifs
+  · rw [transpose_sub, transpose_one, reflectorFactor_transpose]
+  · exact transpose_zero
+
+/-- A masked product of (12.2.18) is tridiagonal. -/
+private theorem prodFwd_mask_apply_eq_zero (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
+    (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) {i j : Fin (N + 1)}
+    (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) :
+    prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) i j = 0 := by
+  rw [prodFwd_mask_eq φ P hP, add_apply, one_apply_ne (fun h => by subst h; omega), zero_add,
+    sum_apply]
+  refine sum_eq_zero fun k hk => ?_
+  split_ifs
+  · exact reflectorFactor_sub_one_apply_eq_zero (k := k) φ (by have := mem_range.1 hk; omega)
+      (by omega)
+  · rfl
+
+/-- A masked product of (12.2.18) with commuting factors is an involution. -/
+private theorem prodFwd_mask_mul_self (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
+    (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
+    prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) *
+      prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) = 1 := by
+  refine prodFwd_mul_self (fun k l hkl hl => ?_) fun k _ => ?_
+  · split_ifs with hk hl'
+    · have h := reflectorFactor_sub_one_mul_sub_one (N := N) φ (hP k l hk hl' hkl) (by omega)
+      exact commute_of_sub_one_mul_sub_one h.1 h.2
+    all_goals first | exact Commute.one_left _ | exact Commute.one_right _
+  · split_ifs
+    · exact reflectorFactor_mul_self φ k
+    · exact Matrix.one_mul 1
+
+/-- The number of even (and of odd) `k < 2m` is `m`. -/
+private theorem sum_range_two_mul_ite (c : ℝ) (m : ℕ) :
+    ∑ k ∈ range (2 * m), (if Even k then c else 0) = m * c ∧
+      ∑ k ∈ range (2 * m), (if Odd k then c else 0) = m * c := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have h1 : Even (2 * m) := even_two_mul m
+    have h2 : ¬Even (2 * m + 1) := Nat.not_even_two_mul_add_one m
+    have h3 : ¬Odd (2 * m) := Nat.not_odd_iff_even.2 h1
+    have h4 : Odd (2 * m + 1) := odd_two_mul_add_one m
+    rw [show 2 * (m + 1) = 2 * m + 1 + 1 by ring, sum_range_succ, sum_range_succ, sum_range_succ,
+      sum_range_succ, ih.1, ih.2]
+    simp only [h1, h2, h3, h4, ite_true, ite_false]
+    push_cast
+    constructor <;> ring
+
+/-- The masked products of (12.2.18) of even order are traceless: each has `m` factors of
+trace `n − 2`. -/
+private theorem trace_prodFwd_mask {m : ℕ} (hN : N + 1 = 2 * m) (φ : ℕ → ℝ) :
+    trace (prodFwdEven (reflectorFactor N φ) (N + 1)) = 0 ∧
+      trace (prodFwdOdd (reflectorFactor N φ) (N + 1)) = 0 := by
+  have hs : ∀ (P : ℕ → Prop) [DecidablePred P],
+      trace (1 + ∑ k ∈ range (N + 1), if P k then reflectorFactor N φ k - 1 else 0) =
+        ((N + 1 : ℕ) : ℝ) + ∑ k ∈ range (N + 1), if P k then (-2 : ℝ) else 0 := fun P _ => by
+    rw [trace_add, trace_one, Fintype.card_fin, trace_sum]
+    refine congrArg _ (sum_congr rfl fun k hk => ?_)
+    split_ifs
+    · exact trace_reflectorFactor_sub_one (k := k) φ (by have := mem_range.1 hk; omega)
+    · exact trace_zero _ _
+  rw [prodFwdEven_reflectorFactor_eq, prodFwdOdd_reflectorFactor_eq, hs, hs, hN,
+    (sum_range_two_mul_ite (-2) m).1, (sum_range_two_mul_ite (-2) m).2]
+  push_cast
+  constructor <;> ring
+
+/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `C = (H_o + H_e)/2` and
+`S = (H_o − H_e)/2` are symmetric tridiagonal. Each of `H_o`, `H_e` is the identity plus the
+departures of its factors, which live in disjoint `2 × 2` diagonal blocks
+(`Matrix.prodFwd_eq_one_add_sum_sub_one`). -/
+theorem isTridiagonal_oddEven_half_sum (φ : ℕ → ℝ) :
+    ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal := by
+  have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
+  have hO : (prodFwdOdd (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
+  have tE := fun (i j : Fin (N + 1)) (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) =>
+    prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij
+  have tO := fun (i j : Fin (N + 1)) (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) =>
+    prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij
+  refine ⟨(hE.add hO).smul _, isTridiagonal_iff_fin.2 fun i j hij => ?_, (hE.sub hO).smul _,
+    isTridiagonal_iff_fin.2 fun i j hij => ?_⟩
+  · rw [smul_apply, add_apply, prodFwdEven, prodFwdOdd, tE i j hij, tO i j hij, add_zero,
+      smul_zero]
+  · rw [smul_apply, sub_apply, prodFwdEven, prodFwdOdd, tE i j hij, tO i j hij, sub_zero,
+      smul_zero]
+
+open Complex in
+/-- **Fact 2 of [golub2013matrix] §12.2.10, the spectrum**: if the eigenvalues of the product
+`H = G₁ ⋯ G_n` of (12.2.18) are the `m` pairs `e^{±iθ_k}` ((12.2.19)), then the eigenvalues of
+`C = (H_o + H_e)/2` are `± cos(θ_k/2)` and those of `S = (H_o − H_e)/2` are `± sin(θ_k/2)`.
+`H_o`, `H_e` are symmetric involutions of trace `0` and `H_o H_e` is similar to `H`
+(`Matrix.isSimilar_prod_planeReflector_oddEven`), so `Matrix.charpoly_half_add_of_involutive`
+applies to `(H_o, H_e)` and to `(H_o, −H_e)`, whose product `−H_o H_e` has the eigenvalues
+`e^{±i(θ_k + π)}`. -/
+theorem charpoly_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → ℝ)
+    (hθ : ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I)))) :
+    ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+        ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2))) ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+        ∏ k, (X - C (Real.sin (θ k / 2))) * (X + C (Real.sin (θ k / 2))) := by
+  have hN : N + 1 = 2 * m := by simpa using card_eq_of_charpoly_eq_prod hθ
+  obtain ⟨A, hA⟩ : ∃ A, A = prodFwdEven (reflectorFactor N φ) (N + 1) := ⟨_, rfl⟩
+  obtain ⟨B, hB⟩ : ∃ B, B = prodFwdOdd (reflectorFactor N φ) (N + 1) := ⟨_, rfl⟩
+  rw [← hA, ← hB]
+  have hAs : A.IsSymm := hA ▸ transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
+  have hBs : B.IsSymm := hB ▸ transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
+  have hAA : A * A = 1 := hA ▸ prodFwd_mask_mul_self φ Even fun _ _ => even_add_two_le
+  have hBB : B * B = 1 := hB ▸ prodFwd_mask_mul_self φ Odd fun _ _ => odd_add_two_le
+  obtain ⟨htA, htB⟩ := trace_prodFwd_mask hN φ
+  rw [← hA] at htA
+  rw [← hB] at htB
+  have hAB : ((A * B).map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I))) := by
+    rw [charpoly_map, hA, hB, ← (isSimilar_prod_planeReflector_oddEven φ).charpoly_eq,
+      ← charpoly_map, hθ]
+  refine ⟨charpoly_half_add_of_involutive hAs hBs hAA hBB htA htB θ hAB, ?_⟩
+  -- `S = (A + (−B))/2`, and `A (−B) = −AB` has the eigenvalues `e^{±i(θ_k + π)}`
+  have hneg : ((A * -B).map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (exp ((θ k + Real.pi : ℝ) * I))) * (X - C (exp (-(θ k + Real.pi : ℝ) * I))) := by
+    have hcard : Fintype.card (Fin (N + 1)) = 2 * m := by rw [Fintype.card_fin, hN]
+    refine Polynomial.funext fun w => ?_
+    have h := congrArg (eval (-w)) hAB
+    rw [eval_charpoly, eval_prod] at h
+    rw [eval_charpoly, eval_prod, mul_neg, Matrix.map_neg _ (map_neg _),
+      show scalar (Fin (N + 1)) w - -(A * B).map (algebraMap ℝ ℂ) =
+        -(scalar (Fin (N + 1)) (-w) - (A * B).map (algebraMap ℝ ℂ)) by
+        rw [map_neg]
+        abel,
+      det_neg, hcard, pow_mul, neg_one_sq, one_pow, one_mul, h]
+    refine prod_congr rfl fun k _ => ?_
+    have e1 : exp ((θ k + Real.pi : ℝ) * I) = -exp (θ k * I) := by
+      push_cast
+      rw [add_mul, Complex.exp_add, Complex.exp_pi_mul_I, mul_neg_one]
+    have e2 : exp (-(θ k + Real.pi : ℝ) * I) = -exp (-θ k * I) := by
+      push_cast
+      rw [neg_add, add_mul, Complex.exp_add, neg_mul (Real.pi : ℂ), Complex.exp_neg,
+        Complex.exp_pi_mul_I]
+      norm_num
+    simp only [eval_mul, eval_sub, eval_X, eval_C, e1, e2]
+    ring
+  have hS := charpoly_half_add_of_involutive hAs
+    (show (-B).IsSymm by rw [IsSymm, transpose_neg, hBs.eq]) hAA
+    (by rw [neg_mul_neg, hBB]) htA (by rw [trace_neg, htB, neg_zero]) _ hneg
+  rw [← sub_eq_add_neg] at hS
+  rw [hS]
+  refine prod_congr rfl fun k _ => ?_
+  rw [show (θ k + Real.pi) / 2 = θ k / 2 + Real.pi / 2 by ring, Real.cos_add_pi_div_two, C_neg]
+  ring
+
+/-- **Fact 2 of [golub2013matrix] §12.2.10** (Ammar–Gragg–Reichel): `C = (H_o + H_e)/2` and
+`S = (H_o − H_e)/2` are symmetric tridiagonal, and if the eigenvalues of `H = G₁ ⋯ G_n`
+(12.2.18) are the `m` pairs `e^{±iθ_k}` (12.2.19), those of `C` are `± cos(θ_k/2)` and those of
+`S` are `± sin(θ_k/2)`, as characteristic polynomials. The shape is
+`Matrix.isTridiagonal_oddEven_half_sum`, the spectrum `Matrix.charpoly_oddEven_half_sum`. -/
+theorem eigenvalues_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → ℝ)
+    (hθ : ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (Complex.exp (θ k * Complex.I))) * (X - C (Complex.exp (-θ k * Complex.I)))) :
+    (((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+        ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2)))) ∧
+    (((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
+      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+        ∏ k, (X - C (Real.sin (θ k / 2))) * (X + C (Real.sin (θ k / 2)))) := by
+  obtain ⟨h₁, h₂, h₃, h₄⟩ := isTridiagonal_oddEven_half_sum (N := N) φ
+  obtain ⟨h₅, h₆⟩ := charpoly_oddEven_half_sum φ θ hθ
+  exact ⟨⟨h₁, h₂, h₅⟩, h₃, h₄, h₆⟩
+
+end HalfSums
 
 end Matrix

@@ -120,33 +120,7 @@ id = "isSimilar_prod_planeReflector_oddEven"
 
 [[node]]
 id = "eigenvalues_oddEven_half_sum"
-kind = "theorem"
-desc = '''Fact 2 of [golub2013matrix] §12.2.10: `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` are symmetric
-tridiagonal, and with `θ` from `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup` (`RealSchur`; `H ∈
-specialOrthogonalGroup`) the eigenvalues of `C` are `± cos(θ_k/2)`
-and those of `S` are `± sin(θ_k/2)` (charpoly form, as in (12.2.19)). Symmetric tridiagonal: block
-structure of `H_o`, `H_e` (`planeReflector` symmetric). Spectrum: `H_o`, `H_e` are symmetric involutions,
-so `C² = (2 + H̃ + H̃ᵀ)/4` and `S² = (2 − H̃ − H̃ᵀ)/4` with `H̃ = H_o H_e` similar to `H` (Fact 1), giving `cos²(θ/2)`
-and `sin²(θ/2)`; `C S = −S C` (from `H_o² = H_e² = 1`) exchanges the `±` eigenspaces of `C`. The book gives no
-proof (P12.2.13 asks to check `n = 8`). ★★★ (~150 lines)
-
-Blocked (effort, band1): the product form, Fact 1 (`isSimilar_prod_planeReflector_oddEven`) and the
-spectrum of `H` (`exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`) are proved. The sketch above
-is incomplete where it matters: `C² = (2 + H̃ + H̃ᵀ)/4` gives the eigenvalues of `C²` only through a
-spectral-mapping theorem for the charpoly of a polynomial in the normal `H̃` (not in Numlib; Schur
-triangularization over `ℂ` would give it), and `C S = −S C` pairs the eigenspaces `±μ` of `C` only where
-`S² = 1 − C²` is invertible, i.e. for `μ² ≠ 1`. The eigenvalues `±1` need Halmos' two-projection
-decomposition of `C = P + Q − 1` (`P = (1 + H_o)/2`, `Q = (1 + H_e)/2`, both of rank `n/2`, which forces
-`dim(ran P ∩ ran Q) = dim(ker P ∩ ker Q)`). A shorter route found but not formalized: with `A = H_o`,
-`B = H_e` involutions of trace `0`, every odd word in `A, B` reduces cyclically to a single letter, so
-`tr C^{2j+1} = 0` for all `j`, whence the eigenvalue multiset of the symmetric `C` is symmetric under
-`μ ↦ −μ` (power sums, or `∑ h(μ_i) = ∑ h(−μ_i)` for all polynomials `h`); then
-`p_C(x)² = p_C(x) p_C(−x) = det(x² − C²)`, and `det(x² − C²)` is computed from the charpoly of
-`T = H_o H_e ∼ H` at the roots of `a² − (4x² − 2) a + 1`, giving `∏ (x² − cos²(θ_k/2))²`. The
-symmetric–tridiagonal half is routine (a two-step induction on the masked products
-`prodFwdEven`/`prodFwdOdd`, whose columns beyond the current block are those of the identity).
-Estimate: ~300 lines; worth splitting the node into the shape half (★) and the spectral half (★★★).'''
-deps = ["Matrix.isSimilar_prod_planeReflector_oddEven", "Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup", "Matrix.IsTridiagonal"]
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
 
 [[node]]
 id = "rank_toBlock_mono"
@@ -212,3 +186,38 @@ id = "reflectorFactor"
 
 [[node]]
 id = "givensChain_mul_diagonal_eq_prodFwd"
+
+[[node]]  # added by lo2: the shape half of eigenvalues_oddEven_half_sum
+id = "isTridiagonal_oddEven_half_sum"
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
+
+[[node]]  # added by lo2: the spectral half of eigenvalues_oddEven_half_sum
+id = "charpoly_oddEven_half_sum"
+source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
+
+[[node]]  # added by lo2: the general spectral theorem behind Fact 2 (two symmetric involutions)
+id = "charpoly_half_add_of_involutive"
+
+[[node]]  # added by lo2: odd powers of a sum of two trace-zero involutions are traceless
+id = "trace_add_pow_odd_eq_zero"
+
+[[node]]  # added by lo2: power sums and trace of powers
+id = "IsHermitian.trace_pow_eq_sum"
+
+[[node]]  # added by lo2: symmetric spectrum from traceless odd powers
+id = "IsHermitian.charpoly_neg_of_trace_pow_odd"
+
+[[node]]  # added by lo2: vanishing odd power sums give a symmetric family
+id = "_root_.map_neg_eq_of_sum_pow_odd"
+
+[[node]]  # added by lo2
+id = "_root_.sum_eval_neg_eq_of_sum_pow_odd"
+
+[[node]]  # added by lo2
+id = "card_eq_of_charpoly_eq_prod"
+
+[[node]]  # added by lo2: products of disjointly supported factors
+id = "prodFwd_eq_one_add_sum_sub_one"
+
+[[node]]  # added by lo2
+id = "commute_of_sub_one_mul_sub_one"

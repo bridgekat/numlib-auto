@@ -1485,6 +1485,31 @@ theorem hessenbergQ_mem_orthogonalGroup (A : Matrix (Fin N) (Fin N) ℝ) :
 theorem hessenbergReduce_eq_conj : hessenbergReduce A = (hessenbergQ A)ᴴ * A * hessenbergQ A :=
   hessenbergIter_eq_conj A _
 
+/-- The accumulated reflector product has first column `e₀`: every reflector of the reduction is
+the identity or a tail reflector with pivot `≥ 1`, whose axis vanishes at `0`, and right
+multiplication by such a reflector leaves column `0` alone
+(`Matrix.mul_householder_apply_of_apply_eq_zero`). -/
+theorem hessenbergQIter_apply_zero {M : ℕ} (B : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜) (k : ℕ)
+    (i : Fin (M + 1)) :
+    hessenbergQIter B k i 0 = (1 : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜) i 0 := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [hessenbergQIter_succ]
+    by_cases hk : k < M + 1
+    · rw [hessenbergReflector_of_lt _ hk,
+        mul_householder_apply_of_apply_eq_zero
+          (householderTail_apply_of_lt (p := k + 1) (i := (0 : Fin (M + 1))) _ (by simp)), ih]
+    · rw [hessenbergReflector_of_le _ (not_lt.1 hk), Matrix.mul_one, ih]
+
+/-- **The Householder reduction fixes `e₀`** ([golub2013matrix] §8.4.6, Step 2: "`Q₁(:, 1) = e₁`,
+observed from the implementation"): the first column of the unitary `Q` of the reduction
+`Qᴴ A Q = H` is the first coordinate vector. So a unitary `W` and `Qᴴ W` have the same first
+row. -/
+theorem hessenbergQ_apply_zero {M : ℕ} (B : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜)
+    (i : Fin (M + 1)) : hessenbergQ B i 0 = (1 : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜) i 0 :=
+  hessenbergQIter_apply_zero B _ i
+
 /-- The invariant of the reduction: step `k` clears column `k` below the first subdiagonal by the
 tail reflector, and leaves the columns already cleared alone, because the reflector's axis
 vanishes on the rows `≤ k` where those columns live. -/

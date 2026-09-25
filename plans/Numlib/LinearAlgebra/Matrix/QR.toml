@@ -173,6 +173,12 @@ id = "hessenbergQ_mem_orthogonalGroup"
 id = "hessenbergReduce_eq_conj"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
 
+[[node]]  # added by lo2: the accumulated reflector product has first column e₀
+id = "hessenbergQIter_apply_zero"
+
+[[node]]  # added by lo2: the Householder reduction fixes e₀ (GVL §8.4.6 Step 2)
+id = "hessenbergQ_apply_zero"
+
 [[node]]
 id = "hessenbergIter_apply_eq_zero"
 
