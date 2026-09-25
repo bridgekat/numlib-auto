@@ -8,6 +8,7 @@ import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.Deriv.Slope
 import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.Gradient
+import Numlib.Analysis.Calculus.HermiteGenocchi
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments

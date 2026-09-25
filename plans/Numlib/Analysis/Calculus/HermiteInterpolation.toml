@@ -29,29 +29,3 @@ id = "divDiff_cons_cons"
 
 [[node]]
 id = "divDiff_X_pow"
-
-[[node]]  # staged by ch09
-id = "norm_divDiff_le"
-kind = "theorem"
-desc = '''The complex Hermite–Genocchi bound ([golub2013matrix] (9.2.1)): for `Ω ⊆ ℂ` convex, `f`
-analytic on a neighbourhood of `Ω` (`AnalyticOnNhd ℂ f Ω` suffices) and a multiset `s` of `r + 1`
-nodes in `Ω`, `‖divDiff f s‖ ≤ (⨆ z ∈ Ω, ‖iteratedDeriv r f z‖) / r !` (state with an explicit
-bound `M`: `(∀ z ∈ Ω, ‖iteratedDeriv r f z‖ ≤ M) → ‖divDiff f s‖ ≤ M / r!`). Route: the
-Hermite–Genocchi formula `f[z₀, …, z_r] = ∫_{Σ_r} f⁽ʳ⁾(∑ tᵢ zᵢ) dt` over the standard simplex, as
-iterated interval integrals `∫₀¹∫₀^{t₁}⋯` (the order-1 and order-2 cases are the module
-`DividedDifference.firstOrder`/`secondOrder`); prove it at distinct nodes by induction through the
-recursion `newtonOn_eq_sub_div`, extend to repeated nodes by continuity of both sides in the nodes
-(the left side via `divDiff` = limit of distinct-node divided differences: continuity of the
-Hermite interpolant in the nodes for analytic `f` — or directly, by proving the formula for
-`divDiff` from its defining divisibility, which avoids limits: the right side `I(s)` satisfies the
-same recursion and `I(replicate (k+1) x) = taylorJet f x k`). Simplex volume `1/r!` bounds it.
-★★★ (~400 lines)
-
-Blocked (agent fn1, GVL wave 1): not attempted beyond design. The module now has the algebraic
-recursion `Hermite.divDiff_cons_cons` (valid at repeated nodes) and `Hermite.divDiff_replicate`, so
-the missing piece is purely analytic: either the Hermite–Genocchi integral over the simplex with its
-own recursion, or the reduction `f[x₀ :: s] = g[s]` for `g z = ∫₀¹ f'(x₀ + t(z - x₀)) dt` (the
-jets of `g` from `g (z - x₀) = f z - f x₀`, via `analyticOrderAt`) plus differentiation of `g` under
-the integral sign `r - 1` times (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`). Estimate
-~400 lines; no Mathlib gap blocks it.'''
-deps = ["Hermite.divDiff", "Hermite.divDiff_congr", "Hermite.divDiff_X_pow"]
