@@ -50,3 +50,11 @@ the shift `A`-blocks one column right and `B`-blocks one row down, with wrap-aro
 1) − k`. ★'''
 deps = ["cannonA", "downshift"]
 source = 'Golub–Van Loan, Matrix Computations, §1.6.8, Definition'
+
+[[node]]
+id = "cannonB"
+kind = "definition"
+desc = '''§1.6.8: the skewed block matrices `B^{(k)}_{ij} = B_{i + j − k, j}` of Cannon's algorithm, the
+twin of `cannonA` (split off it as a separate node by convention 14, symmetric pairs). ★'''
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §1.6.8, Definition'

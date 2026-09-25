@@ -136,6 +136,14 @@ import NumlibSurface.FongSaunders.Section02
 import NumlibSurface.FongSaunders.Section03
 import NumlibSurface.FongSaunders.Section04
 import NumlibSurface.FongSaunders.Section05
+import NumlibSurface.GolubVanLoan
+import NumlibSurface.GolubVanLoan.Chapter01
+import NumlibSurface.GolubVanLoan.Chapter01.Section01
+import NumlibSurface.GolubVanLoan.Chapter01.Section02
+import NumlibSurface.GolubVanLoan.Chapter01.Section03
+import NumlibSurface.GolubVanLoan.Chapter01.Section04
+import NumlibSurface.GolubVanLoan.Chapter01.Section05
+import NumlibSurface.GolubVanLoan.Chapter01.Section06
 import NumlibSurface.QuarteroniSaccoSaleri
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Basics
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section07
