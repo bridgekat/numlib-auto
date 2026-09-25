@@ -31,8 +31,8 @@ desc = '''The matching lower bound: if `multilinearRank B k ≤ r k` then for ev
 multilinear rank `r` (in squared norm), and the book's `min_k` bound is refuted by any `A` whose
 truncation is trivial in one mode. ★
 
-Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` and
-`Matrix.sortedSingularValues` (agent ls1, `LinearAlgebra/Matrix/SVD`, not on this branch's base
-626b9681). Everything else is in place: `frobenius_norm_modeUnfold` transports the bound; ~15 lines
-once the two nodes exist.'''
+Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (or its lower half
+`sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`), an open node of
+`Analysis/Matrix/SingularValues` (agent sv2); `Matrix.sortedSingularValues` is now available. With
+`frobenius_norm_modeUnfold` it is ~15 lines.'''
 deps = ["Tensor.multilinearRank", "Tensor.frobenius_norm_unfold", "Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.sortedSingularValues"]

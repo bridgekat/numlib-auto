@@ -15,19 +15,6 @@ id = "eq_sum_kronecker_iff"
 
 [[node]]
 id = "exists_kroneckerSVD"
-kind = "theorem"
-desc = '''**The Kronecker product SVD** ([golub2013matrix] Theorem 12.3.1), existence form for `A : Matrix (Fin
-m₁ × Fin m₂) (Fin n₁ × Fin n₂) 𝕜`: with `r = (kroneckerRearrange A).rank` there are `U : Fin r → Matrix (Fin
-m₁) (Fin n₁) 𝕜`, `V : Fin r → Matrix (Fin m₂) (Fin n₂) 𝕜`, Frobenius-orthonormal families (`Orthonormal`
-of their `vec`s in `EuclideanSpace`), and `σ k = sortedSingularValues (kroneckerRearrange A) k > 0` with
-`A = ∑ k, (σ k : 𝕜) • (U k ⊗ₖ V k)`. The singular system of `𝓡(A)` (`Matrix.exists_singularSystem`, sorted
-by `exists_equiv_singularValues_eq_sortedSingularValues`, chapter 2) pulled back by `eq_sum_kronecker_iff`. ★★ (~60
-lines, the reindexing between the column-indexed and the sorted singular values)
-
-Blocked: needs `Matrix.sortedSingularValues` and
-`Matrix.exists_equiv_singularValues_eq_sortedSingularValues` (ls1, `SVD`, not on this branch's
-base); the pull-back `eq_sum_kronecker_iff` and `Matrix.exists_singularSystem` are available.'''
-deps = ["Matrix.eq_sum_kronecker_iff", "Matrix.exists_singularSystem", "Matrix.sortedSingularValues", "exists_equiv_singularValues_eq_sortedSingularValues"]
 
 [[node]]
 id = "kroneckerRank"
@@ -46,9 +33,9 @@ v₀`, and `α B_opt`, `C_opt / α` equally optimal). Chapter 2's Eckart–Young
 `Matrix.isLeast_frobenius_norm_sub_of_rank_le` for `𝓡(A)`, transported by the isometry
 `frobenius_norm_kroneckerRearrange` and `kroneckerRank_le_iff`. ★★ (~60 lines)
 
-Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (ls1) and
-`kroneckerRank_le_iff` (blocked on cond1's rank factorization); the isometry
-`frobenius_norm_kroneckerRearrange` is proved.'''
+Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le`, an open node of
+`Analysis/Matrix/SingularValues` (agent sv2). `kroneckerRank_le_iff`, `exists_kroneckerSVD` and the
+isometry `frobenius_norm_kroneckerRearrange` are proved; ~60 lines once Eckart–Young exists.'''
 deps = ["Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.frobenius_norm_kroneckerRearrange", "Matrix.kroneckerRank_le_iff", "Matrix.exists_kroneckerSVD", "Matrix.svdTruncation"]
 
 [[node]]
