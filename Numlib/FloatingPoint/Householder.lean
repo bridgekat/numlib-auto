@@ -1827,27 +1827,6 @@ def RoundsSymmRankTwoUpdate (m : RoundingModel ℝ) (β : ℝ) (v : ι → ℝ) 
       m.Rounds (B r s - a) b ∧ m.Rounds (what r * v s) c ∧ m.Rounds (b - c) (B' i j)) ∧
     ∀ i j, B' j i = B' i j
 
-/-- The two-sided reflection as a symmetric rank-two update ([golub2013matrix] §8.3.1):
-`(1 - β v vᵀ) B (1 - β v vᵀ) = B - v wᵀ - w vᵀ` for a symmetric `B`, `p = β B v` and
-`w = p - (β (vᵀ p) / 2) v`, whatever `β`. (Over `ℝ`; the planned `StarRing` form is
-`Matrix.conj_one_sub_smul_vecMulVec_eq_sub` of `Numlib/LinearAlgebra/Matrix/QR`.) -/
-private theorem one_sub_smul_vecMulVec_mul_mul_eq {B : Matrix ι ι ℝ} (hB : Bᵀ = B) (β : ℝ)
-    (v : ι → ℝ) :
-    (1 - β • vecMulVec v v) * B * (1 - β • vecMulVec v v) =
-      B - vecMulVec v (β • (B *ᵥ v) - (β * (v ⬝ᵥ β • (B *ᵥ v)) / 2) • v) -
-        vecMulVec (β • (B *ᵥ v) - (β * (v ⬝ᵥ β • (B *ᵥ v)) / 2) • v) v := by
-  have hvB : v ᵥ* B = B *ᵥ v := by
-    conv_lhs => rw [← hB]
-    exact vecMul_transpose B v
-  have h1 : vecMulVec v v * B = vecMulVec v (B *ᵥ v) := by rw [vecMulVec_mul, hvB]
-  have h2 : B * vecMulVec v v = vecMulVec (B *ᵥ v) v := mul_vecMulVec B v v
-  have h3 : vecMulVec v (B *ᵥ v) * vecMulVec v v = ((B *ᵥ v) ⬝ᵥ v) • vecMulVec v v := by
-    rw [vecMulVec_mul_vecMulVec, vecMulVec_smul]
-  simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one, Matrix.smul_mul,
-    Matrix.mul_smul, h1, h2, h3, vecMulVec_sub, sub_vecMulVec, vecMulVec_smul, smul_vecMulVec,
-    dotProduct_smul, smul_eq_mul, dotProduct_comm v (B *ᵥ v)]
-  module
-
 /-- `|∑ y - ∑ x| ≤ γ_K ∑ |x|` when every `y j` is a relative perturbation of order `K` of
 `x j`. -/
 private theorem abs_sum_sub_sum_le {κ : Type*} [Fintype κ] {u : ℝ} {K : ℕ} {x y : κ → ℝ}
@@ -2193,7 +2172,6 @@ theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ}
   -- the Frobenius norm
   have hPBP : (1 - β • vecMulVec v v) * B * (1 - β • vecMulVec v v) =
       B - vecMulVec v w - vecMulVec w v := by
-    rw [one_sub_smul_vecMulVec_mul_mul_eq hB]
     have hweq' : β • (B *ᵥ v) - (β * (v ⬝ᵥ β • (B *ᵥ v)) / 2) • v = w := by
       funext i
       simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, hw_def, hp_def, htv_def, mulVec,
@@ -2201,7 +2179,10 @@ theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ}
       congr 1
       · exact Finset.sum_congr rfl fun j _ => by ring
       · exact Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun b _ => by ring
-    rw [hweq']
+    have h := Matrix.conj_one_sub_smul_vecMulVec_eq_sub (R := ℝ) two_ne_zero
+      (B := B) (by rwa [conjTranspose_eq_transpose_of_trivial]) v (β := β) (star_trivial β)
+      (p := β • (B *ᵥ v)) (w := w) rfl (by rw [star_trivial]; exact hweq'.symm)
+    simpa only [star_trivial] using h
   have hE : ‖B' - (1 - β • vecMulVec v v) * B * (1 - β • vecMulVec v v)‖ ≤
       gamma m.u L * (‖B‖ + 2 * (‖(toLp 2 (fun i => |v i|) : EuclideanSpace ℝ ι)‖ *
         ‖(toLp 2 W : EuclideanSpace ℝ ι)‖)) := by

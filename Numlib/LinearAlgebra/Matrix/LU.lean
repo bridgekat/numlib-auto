@@ -32,6 +32,9 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 * `Matrix.IsBlockUnitLowerTriangular b L`, `Matrix.IsBlockLU b A L U`: block unit lower
   triangularity and block LU along a labelling `b : n → α` of the indices by a linear order, built
   on Mathlib's `Matrix.BlockTriangular`; `b = id` is `Matrix.IsLU` (`Matrix.isBlockLU_id_iff`).
+* `Matrix.IsRectLU A L U`: the rectangular (trapezoidal) LU factorization of an `M × N` matrix
+  on `Fin` indices ([golub2013matrix] §3.2.10), which is `Matrix.IsLU` on a square matrix
+  (`Matrix.isRectLU_iff_isLU`).
 * `Matrix.envelope A`, the lower envelope of a matrix; `Matrix.tridiagonalOfNat a b c N`, the
   tridiagonal matrix with diagonals `a`, `b`, `c`; `Matrix.thomasAlpha`, `Matrix.thomasBeta`,
   `Matrix.thomasGamma`, the recurrences of the Thomas algorithm, and its factors
@@ -55,6 +58,9 @@ Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 * `Matrix.IsLU.det_leadingPrincipalSubmatrix`, `Matrix.IsLU.det_eq_prod_diag`,
   `Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`: the leading principal minors are the
   products of the pivots, and the pivots are ratios of consecutive minors ((3.39)).
+* `Matrix.exists_isRectLU_of_forall_isUnit`: a rectangular matrix whose leading blocks of order
+  at most `min M N` are nonsingular has a rectangular LU factorization, by bordering with zeros to
+  a square matrix and the block LU factorization along the labelling `i ↦ min i (min M N)`.
 * `Matrix.existsUnique_isLDM` (Theorem 3.5, [golub2013matrix] Theorem 4.1.3, with the *strict*
   leading principal minors, the last pivot free to vanish), `Matrix.IsLDM.eq_of_isSymm`
   (`L D Lᵀ`), `Matrix.IsLDM.diag_pos_of_posDef`.
@@ -976,6 +982,128 @@ theorem existsUnique_isLU_iff (A : Matrix n n K) :
 
 end Theorem34
 
+/-! ### The rectangular LU factorization -/
+
+section RectLU
+
+variable {M N P : ℕ}
+
+/-- The two halves of `Fin (s + m)` under `finSumFinEquiv`: an index below `s` comes from the left
+summand, an index from `s` on from the right one, shifted by `s`. -/
+theorem _root_.finSumFinEquiv_symm_cases {s m : ℕ} (i : Fin (s + m)) :
+    (∃ hi : (i : ℕ) < s, finSumFinEquiv.symm i = Sum.inl ⟨i, hi⟩) ∨
+      ∃ hi : s ≤ (i : ℕ), finSumFinEquiv.symm i = Sum.inr ⟨i - s, by omega⟩ := by
+  by_cases hi : (i : ℕ) < s
+  · refine Or.inl ⟨hi, finSumFinEquiv.symm_apply_eq.2 ?_⟩
+    rw [finSumFinEquiv_apply_left]
+    exact Fin.ext rfl
+  · refine Or.inr ⟨not_lt.1 hi, finSumFinEquiv.symm_apply_eq.2 ?_⟩
+    rw [finSumFinEquiv_apply_right]
+    exact Fin.ext (by simp; omega)
+
+/-- **The rectangular LU factorization** ([golub2013matrix] §3.2.10): `A = L U` with
+`A : Matrix (Fin M) (Fin N) R`, `L : Matrix (Fin M) (Fin P) R` unit lower trapezoidal and
+`U : Matrix (Fin P) (Fin N) R` upper trapezoidal. The index comparisons are on the `ℕ` values,
+since the index types differ (the rectangular band vocabulary of
+`Numlib/LinearAlgebra/Matrix/Band`); on a square `Fin N` it is `Matrix.IsLU`
+(`Matrix.isRectLU_iff_isLU`). -/
+structure IsRectLU [Semiring R] (A : Matrix (Fin M) (Fin N) R) (L : Matrix (Fin M) (Fin P) R)
+    (U : Matrix (Fin P) (Fin N) R) : Prop where
+  /-- The lower factor is lower trapezoidal: `L i j = 0` for `i < j`. -/
+  lower : L.HasUpperBandwidthRect 0
+  /-- The lower factor has ones on its diagonal. -/
+  lower_apply_self : ∀ (i : Fin M) (j : Fin P), (i : ℕ) = j → L i j = 1
+  /-- The upper factor is upper trapezoidal: `U i j = 0` for `j < i`. -/
+  upper : U.HasLowerBandwidthRect 0
+  /-- The factors multiply to `A`. -/
+  mul_eq : L * U = A
+
+/-- On a square `Fin N` the rectangular LU factorization is the LU factorization. -/
+theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
+    IsRectLU A L U ↔ IsLU A L U := by
+  constructor
+  · intro h
+    refine ⟨⟨fun i j hij => h.lower i j ?_, fun i => h.lower_apply_self i i rfl⟩,
+      fun i j hij => h.upper i j ?_, h.mul_eq⟩
+    · rw [add_zero]; exact OrderDual.toDual_lt_toDual.1 hij
+    · rw [add_zero]; exact hij
+  · intro h
+    refine ⟨fun i j hij => h.isUnitLowerTriangular.isLowerTriangular ?_,
+      fun i j hij => ?_, fun i j hij => h.isUpperTriangular ?_, h.mul_eq⟩
+    · rw [add_zero] at hij; exact OrderDual.toDual_lt_toDual.2 hij
+    · rw [Fin.ext hij, h.isUnitLowerTriangular.diag_eq_one]
+    · rw [add_zero] at hij; exact hij
+
+/-- The bordered square matrix of the rectangular existence proof: `A` in the leading `M × N`
+corner of a `max M N` square, zero elsewhere. -/
+private def rectBorder [Zero R] (A : Matrix (Fin M) (Fin N) R) :
+    Matrix (Fin (max M N)) (Fin (max M N)) R :=
+  fun i j => if h : (i : ℕ) < M ∧ (j : ℕ) < N then A ⟨i, h.1⟩ ⟨j, h.2⟩ else 0
+
+variable {K : Type*} [Field K]
+
+/-- **Existence of the rectangular LU factorization** ([golub2013matrix] §3.2.10, "guaranteed to
+exist if `A(1:k, 1:k)` is nonsingular for `k = 1:min{m, n}`"): if every leading block of `A` of
+order at most `min M N` is nonsingular, `A` has a rectangular LU factorization with
+`P = min M N`. Proof: the matrix bordered by zeros to a `max M N` square has a block LU
+factorization along the labelling `i ↦ min i (min M N)` (singletons, then one trailing block),
+whose strict leading blocks are the leading blocks of `A`; the leading `M × P` part of the lower
+factor and `P × N` part of the upper factor are the rectangular factors. -/
+theorem exists_isRectLU_of_forall_isUnit {A : Matrix (Fin M) (Fin N) K}
+    (hA : ∀ k (hk : k + 1 ≤ min M N),
+      (A.submatrix (Fin.castLE (hk.trans (min_le_left _ _)))
+        (Fin.castLE (hk.trans (min_le_right _ _)))).det ≠ 0) :
+    ∃ L U, IsRectLU (P := min M N) A L U := by
+  set p := min M N with hp
+  let b : Fin (max M N) → ℕ := fun i => min (i : ℕ) p
+  have hblock : ∀ a ∈ Set.range b,
+      IsUnit ((rectBorder A).toBlock (b · < a) (b · < a)) := by
+    rintro _ ⟨i₀, rfl⟩
+    set k := b i₀
+    have hk : k ≤ p := min_le_right _ _
+    clear_value k
+    have hlt : ∀ i : Fin (max M N), b i < k ↔ (i : ℕ) < k := fun i => by
+      simp only [b]; omega
+    let e : Fin k ≃ {i : Fin (max M N) // b i < k} :=
+      { toFun := fun a => ⟨⟨a, by omega⟩, (hlt _).2 a.2⟩
+        invFun := fun i => ⟨i.1, (hlt _).1 i.2⟩
+        left_inv := fun a => rfl
+        right_inv := fun i => rfl }
+    rw [isUnit_iff_isUnit_det, ← det_submatrix_equiv_self e, isUnit_iff_ne_zero]
+    cases k with
+    | zero => rw [det_isEmpty]; exact one_ne_zero
+    | succ k' =>
+    convert hA k' hk using 2
+    ext x y
+    simp only [submatrix_apply, toBlock_apply, rectBorder, e, Equiv.coe_fn_mk]
+    rw [dite_eq_left_of_eq_true (eq_true ⟨by omega, by omega⟩)]
+    rfl
+  obtain ⟨L, U, h⟩ := exists_isBlockLU_of_forall_isUnit hblock
+  refine ⟨of fun i j => L ⟨i, by omega⟩ ⟨j, by omega⟩, of fun i j => U ⟨i, by omega⟩ ⟨j, by omega⟩,
+    ⟨fun i j hij => ?_, fun i j hij => ?_, fun i j hij => ?_, ?_⟩⟩
+  · exact h.isBlockUnitLowerTriangular.blockTriangular (by
+      simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b]; omega)
+  · change L ⟨i, _⟩ ⟨j, _⟩ = 1
+    rw [show (⟨j, _⟩ : Fin (max M N)) = ⟨i, by omega⟩ from Fin.ext hij.symm]
+    exact (h.isBlockUnitLowerTriangular.apply_eq_one_of_eq _ _ rfl).trans (one_apply_eq _)
+  · exact h.blockTriangular (by simp only [b]; omega)
+  · ext i j
+    have := congrFun (congrFun h.mul_eq ⟨i, by omega⟩) ⟨j, by omega⟩
+    rw [rectBorder, dite_eq_left_of_eq_true (eq_true ⟨i.2, j.2⟩), mul_apply] at this
+    simp only [mul_apply, of_apply]
+    rw [← this]
+    refine Fintype.sum_of_injective (fun r : Fin p => (⟨r, by omega⟩ : Fin (max M N)))
+      (fun r s hrs => Fin.ext (Fin.mk.inj_iff.1 hrs)) _ _ (fun r hr => ?_) (fun r => rfl)
+    have hrp : p ≤ (r : ℕ) := by
+      by_contra hcon
+      exact hr ⟨⟨r, by omega⟩, rfl⟩
+    by_cases hi : (i : ℕ) < p
+    · rw [h.isBlockUnitLowerTriangular.blockTriangular (by
+        simp only [Function.comp_apply, OrderDual.toDual_lt_toDual, b]; omega), zero_mul]
+    · rw [h.blockTriangular (by simp only [b]; omega), mul_zero]
+
+end RectLU
+
 /-! ### The `L D Mᵀ` and `L D Lᵀ` factorizations -/
 
 section LDM
@@ -1015,13 +1143,6 @@ theorem IsLDM.isLU [Semiring R] {A L D M : Matrix n n R} (h : IsLDM A L D M) :
     by rw [← Matrix.mul_assoc, h.mul_eq]⟩
 
 variable {K : Type*} [Field K]
-
-/-- If every leading principal submatrix of `A = L U` is nonsingular, the pivots are nonzero. -/
-theorem IsLU.diag_upper_ne_zero_of_forall_isUnit {A L U : Matrix n n K} (h : IsLU A L U)
-    (hA : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) (i : n) : U i i ≠ 0 := by
-  have := isUnit_iff_ne_zero.1 ((isUnit_iff_isUnit_det _).1 (hA i))
-  rw [h.det_leadingPrincipalSubmatrix, Finset.prod_ne_zero_iff] at this
-  exact this i (mem_filter.2 ⟨mem_univ _, le_rfl⟩)
 
 /-- **[quarteroni2000numerical] Theorem 3.5**, at the generality of [golub2013matrix]
 Theorem 4.1.3: if every *strict* leading principal submatrix of `A` is nonsingular, then `A` has a
@@ -1128,36 +1249,6 @@ theorem sum_eq_add_sum_subtype_ne {M : Type*} [AddCommMonoid M] (p : n) (f : n �
     ∑ j, f j = f p + ∑ j : {j // j ≠ p}, f j := by
   rw [Fintype.sum_eq_add_sum_compl p, Finset.sum_subtype (p := (· ≠ p)) {p}ᶜ (fun x => by simp) f]
 
-/-- Nonsingularity passes to the one-step Schur complement at a nonzero pivot: a kernel vector of
-the complement extends, by the pivot row, to a kernel vector of the whole matrix. -/
-theorem isUnit_schurComplementSingle_of_isUnit {A : Matrix n n K} {p : n} (hp : A p p ≠ 0)
-    (hA : IsUnit A) : IsUnit (A.schurComplementSingle p) := by
-  rw [← mulVec_injective_iff_isUnit] at hA ⊢
-  change Function.Injective (A.schurComplementSingle p).mulVecLin
-  refine (injective_iff_map_eq_zero _).2 fun y hy => ?_
-  rw [mulVecLin_apply] at hy
-  set s := ∑ j : {j // j ≠ p}, A p j * y j with hs
-  set x : n → K := fun i => if h : i = p then -((A p p)⁻¹ * s) else y ⟨i, h⟩ with hx
-  have hx0 : A *ᵥ x = 0 := by
-    ext i
-    rw [mulVec, dotProduct, Pi.zero_apply, sum_eq_add_sum_subtype_ne p]
-    have hxp : x p = -((A p p)⁻¹ * s) := by simp [hx]
-    have hxj : ∀ j : {j // j ≠ p}, x j = y j := fun j => by simp [hx, j.2]
-    simp only [hxj, hxp]
-    rcases eq_or_ne i p with rfl | hi
-    · rw [mul_neg, ← mul_assoc, mul_inv_cancel₀ hp, one_mul, hs, neg_add_cancel]
-    · have hS := congrFun hy ⟨i, hi⟩
-      rw [mulVec, dotProduct, Pi.zero_apply] at hS
-      simp only [schurComplementSingle_apply, sub_mul] at hS
-      rw [Finset.sum_sub_distrib] at hS
-      rw [hs, Finset.mul_sum, mul_neg, Finset.mul_sum]
-      simp only [mul_assoc] at hS ⊢
-      linear_combination hS
-  have hx0' : x = 0 := hA (by rw [hx0, mulVec_zero])
-  ext j
-  have := congrFun hx0' j.1
-  simpa [hx, j.2] using this
-
 /-- The unit lower factor of `A` bordered from the lower factor `L'` of the Schur complement of
 `A` at the pivot `p`: the identity row at `p`, the multipliers `a_ip / a_pp` in column `p`, and
 `L'` elsewhere. -/
@@ -1248,7 +1339,7 @@ theorem exists_isLU_of_isDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N : 
     hN ▸ Fintype.card_subtype_lt (x := p) (not_not.2 rfl)
   -- `convert` reconciles the two `DecidableEq {i // i ≠ p}` instances behind `IsUnit`
   obtain ⟨L', U', h⟩ := ih _ hcard (A.schurComplementSingle p) rfl
-    (by convert isUnit_schurComplementSingle_of_isUnit hpp hu)
+    (by convert isUnit_schurComplementSingle hu hpp)
     (by convert hA.schurComplementSingle hpp)
   exact ⟨_, _, isLU_luLowerOfSchur_luUpperOfSchur hp hpp h⟩
 
@@ -1278,7 +1369,7 @@ theorem exists_isLU_of_isColDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N
   have hcard : Fintype.card {i // i ≠ p} < N :=
     hN ▸ Fintype.card_subtype_lt (x := p) (not_not.2 rfl)
   obtain ⟨L', U', h, hL'⟩ := ih _ hcard (A.schurComplementSingle p) rfl
-    (by convert isUnit_schurComplementSingle_of_isUnit hpp hu)
+    (by convert isUnit_schurComplementSingle hu hpp)
     (by convert hA.schurComplementSingle hpp)
   refine ⟨_, _, isLU_luLowerOfSchur_luUpperOfSchur hp hpp h, fun i j => ?_⟩
   simp only [luLowerOfSchur, of_apply]

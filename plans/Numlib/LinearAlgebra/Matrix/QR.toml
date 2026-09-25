@@ -1,27 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.LinearAlgebra.Matrix.QR` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch05) add to "Main definitions" `Matrix.reflector v`, the Householder reflector `1 - (2 / vᴴv) v
-# vᴴ` of an unnormalized axis (the form of [golub2013matrix] (5.1.1), [quarteroni2000numerical]
-# (5.38) and [higham2002accuracy] (19.1)), with `Matrix.householder` its unit-axis form; and
-# `Matrix.IsThinQR`, the thin factorization `A = Q R`, `Qᴴ Q = 1`, `R` upper triangular, which
-# `Matrix.exists_qr` and `Matrix.qr_unique` already speak about without a name. Add to "Main
-# results" the Gram–Schmidt projector identity behind modified Gram–Schmidt
-# (`Matrix.prod_one_sub_vecMulVec_of_orthonormal`) and the Cholesky reading of the thin factor
-# (`Matrix.IsThinQR.isCholesky`, [golub2013matrix] Theorem 5.2.3).
-# (ch05, GVL review M5, refactors R4/R16) add to "Main definitions" `Matrix.IsPivotedQR` (QR with
-# column pivoting, `IsQR` of `A Π`) beside `Matrix.IsQR` and `Matrix.IsThinQR`, and to "Main results"
-# the column-prefix spans of a full QR factorization ([golub2013matrix] (5.2.1),
-# `Matrix.IsQR.span_col_prefix_eq`) and the thin factors of a full one (`Matrix.IsQR.isThinQR`).
-# (ch08) add to the Householder paragraph: the symmetric two-sided application of a reflector in the
-# `(β, v)` form is a rank-two update, `Matrix.conj_one_sub_smul_vecMulVec_eq_sub` ([golub2013matrix]
-# §8.3.1), the identity the tridiagonalization and its rounding analysis use.
-# (Golub–Van Loan review M7) Say once, in the Householder paragraph, how the three spellings of a
-# reflector relate: `Matrix.householder u` (unit axis), `Matrix.reflector v` (any axis,
-# `β = 2 / vᴴv`, the identity at `v = 0`) and the `(β, v)` form `1 - β • vecMulVec v (star v)` that
-# programs produce (Algorithms 5.1.1, 7.4.2, 8.3.1 return `β`, possibly `0`). Every identity about
-# products or conjugations of reflectors (`conj_one_sub_smul_vecMulVec_eq_sub`, the WY lemmas of
-# `Numlib/LinearAlgebra/Matrix/WY`) is stated in the `(β, v)` form over a `StarRing`, and
-# `reflector v` is its instance at `β = 2 / (star v ⬝ᵥ v)` by `rfl`; no statement rebuilds `β` from `v`.
 namespace = "Matrix"
 
 [[node]]
@@ -264,110 +240,32 @@ id = "norm_det_le_of_forall_norm_le"
 [[node]]
 id = "householderAxis_ne_zero"
 
-[[node]]  # staged by ch05
+[[node]]
 id = "reflector"
-kind = "definition"
-desc = '''The Householder reflector of an axis `v : n → 𝕜` (not necessarily unit):
-`reflector v = 1 - (2 / (star v ⬝ᵥ v)) • vecMulVec v (star v)`, the identity at `v = 0`
-(`2 / 0 = 0`). [golub2013matrix] (5.1.1) `P = I - β v vᵀ, β = 2/vᵀv`;
-[quarteroni2000numerical] (5.38) (its surface `equation_5_38` is this definition over `ℝ`, a
-restatement candidate); [higham2002accuracy] (19.1). Placed beside `Matrix.householder` (unit
-axis), of which it is the normalization-free form. ★'''
-deps = ["Matrix.householder"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "reflector_eq_householder"
-kind = "theorem"
-desc = '''For `v ≠ 0`, `reflector v = householder ((‖toLp 2 v‖ : 𝕜)⁻¹ • v)` (the private `normalize`
-of `QR.lean`, made public or inlined). Consequently `reflector v` is Hermitian and involutive
-(`isHermitian_reflector`, `reflector_mul_self` as two further declarations of this node) and
-unitary (`reflector_mem_unitaryGroup`), and over `ℝ` it is
-`1 - (2 / (v ⬝ᵥ v)) • vecMulVec v v` (`reflector_eq_one_sub_smul_vecMulVec`, `rfl` up to
-`star_trivial`). ★'''
-deps = ["Matrix.reflector", "Matrix.householder_mul_self", "Matrix.householder_mem_unitaryGroup"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "reflector_mem_unitaryGroup"
-kind = "theorem"
-desc = '''`reflector v ∈ Matrix.unitaryGroup n 𝕜` for every `v` (the identity at `v = 0`); the
-orthogonal-group form over `ℝ`. [golub2013matrix] §5.1.2 "Householder matrices are symmetric and
-orthogonal". ★'''
-deps = ["Matrix.reflector_eq_householder"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "reflector_mulVec_eq_of_sq"
-kind = "theorem"
-desc = '''The defining property with either sign ([golub2013matrix] (5.1.2), and its complex form
-§5.1.13): for `x : n → 𝕜`, an index `i`, and `α : 𝕜` with `star α * α = ‖toLp 2 x‖ ^ 2` and
-`star α * x i` real (`α = ± phase (x i) ‖x‖`), if `v = x + α • Pi.single i 1 ≠ 0` then
-`reflector v *ᵥ x = -α • Pi.single i 1`. Over `ℝ`: `α = ±‖x‖₂`, `P x = ∓‖x‖₂ e_i`. Proof:
-`vᴴ x = ‖x‖² + ᾱ x_i` and `vᴴ v = 2 (‖x‖² + Re(ᾱ x_i))`, equal up to the factor 2 under the
-hypotheses, so `P x = x - v = -α e_i`. Generalizes `householder_mulVec_eq_smul_single` (the sign
-`+ phase ‖x‖`), which becomes a corollary. ★'''
-deps = ["Matrix.reflector", "Matrix.phase", "Matrix.householder_mulVec_eq_smul_single"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "IsThinQR"
-kind = "definition"
-desc = '''The thin (reduced) QR factorization of `A : Matrix m (Fin N) 𝕜` (any `Fintype m`):
-`structure IsThinQR A Q R : Prop` with `mul_eq : Q * R = A`,
-`conjTranspose_mul_self : Qᴴ * Q = 1`, `isUpperTriangular : R.IsUpperTriangular`
-(`Q : Matrix m (Fin N) 𝕜`, `R : Matrix (Fin N) (Fin N) 𝕜`). No sign condition: uniqueness is
-`IsThinQR.unique` under a positive diagonal. [golub2013matrix] (5.2.2) and Theorem 5.2.3; the
-specification of Algorithms 5.2.3 and 5.2.6 and of classical Gram–Schmidt. `IsQR` (full, in
-`LeastSquares`) gives one through `IsQR.isThinQR`. ★'''
-deps = ["Matrix.exists_qr"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "exists_isThinQR"
-kind = "theorem"
-desc = '''For linearly independent columns, `∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j` — `exists_qr`
-repackaged. ★'''
-deps = ["Matrix.IsThinQR", "Matrix.exists_qr"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "IsThinQR.unique"
-kind = "theorem"
-desc = '''`IsThinQR A Q₁ R₁ → IsThinQR A Q₂ R₂ → (∀ j, 0 < R₁ j j) → (∀ j, 0 < R₂ j j) →
-Q₁ = Q₂ ∧ R₁ = R₂` — `qr_unique` repackaged ([golub2013matrix] Theorem 5.2.3). ★'''
-deps = ["Matrix.IsThinQR", "Matrix.qr_unique"]
 
-[[node]]  # staged by ch05
-id = "IsThinQR.isCholesky"
-kind = "theorem"
-desc = '''The triangular factor of a thin QR factorization with positive diagonal is the Cholesky
-factor of the Gram matrix: `IsThinQR A Q R → (∀ j, 0 < R j j) → IsCholesky (Aᴴ * A) R`
-(`Aᴴ A = Rᴴ Qᴴ Q R = Rᴴ R`). [golub2013matrix] Theorem 5.2.3 "`R₁ = Gᵀ` where `G` is the lower
-triangular Cholesky factor of `AᵀA`"; with `IsCholesky.unique` this is a second proof of
-`IsThinQR.unique`. ★'''
-deps = ["Matrix.IsThinQR", "Matrix.IsCholesky", "Matrix.IsCholesky.unique"]
-
-[[node]]  # staged by ch05
+[[node]]
 id = "prod_one_sub_vecMulVec_of_orthonormal"
-kind = "theorem"
-desc = '''The projector identity behind modified Gram–Schmidt: for an orthonormal family
-`q : Fin k → (n → 𝕜)` (`star (q i) ⬝ᵥ q j = if i = j then 1 else 0`),
-`(List.ofFn fun i => 1 - vecMulVec (q i) (star (q i))).prod = 1 - ∑ i, vecMulVec (q i) (star (q i))`
-(in any order; the cross terms vanish). So MGS's successive deflations `A^{(k+1)} = B - q_k r_kᵀ`
-([golub2013matrix] §5.2.8) compute, in exact arithmetic, the same vectors `a_j - Σ_{i<k} (q_iᴴ a_j) q_i`
-as classical Gram–Schmidt, i.e. `InnerProductSpace.gramSchmidt`. ★'''
-deps = []
 
-[[node]]  # staged by ch08
+[[node]]
 id = "conj_one_sub_smul_vecMulVec_eq_sub"
-kind = "theorem"
-desc = '''The symmetric rank-two form of a two-sided reflection ([golub2013matrix] §8.3.1, over a `StarRing`
-as review M7 asks): for a field `R` with a star structure (`[Field R] [StarRing R]`, `(2 : R) ≠ 0`), a
-Hermitian `B : Matrix n n R` (`Bᴴ = B`), `v : n → R` and a self-adjoint `β : R` (`star β = β`; no
-normalization is needed, and `β = 0` is allowed — the case `house` returns for `x = 0`), with
-`P = 1 - β • vecMulVec v (star v)`, `p = β • (B *ᵥ v)` and `w = p - ((β * (star v ⬝ᵥ p)) / 2) • v`, one has
-`P * B * P = B - vecMulVec v (star w) - vecMulVec w (star v)`. Expand:
-`P B P = B - v pᴴ - p vᴴ + β (vᴴ p) v vᴴ` (`Bᴴ = B` and `star β = β` give `β v vᴴ B = v pᴴ`), and
-`v wᴴ + w vᴴ = v pᴴ + p vᴴ - β (vᴴ p) v vᴴ` because `vᴴ p = β (vᴴ B v)` is self-adjoint. Over `ℝ`
-(`star` trivial) it is the book's `P B P = B - v wᵀ - w vᵀ`, which is how `FloatingPoint/Householder`'s
-tridiagonalization analysis uses it. `Matrix.ext`, then `ring`-level algebra with
-`Matrix.star_dotProduct`/`Matrix.dotProduct_mulVec`. ★'''
-deps = ["Matrix.householder"]
 
 [[node]]
 id = "IsQR"
@@ -411,31 +309,11 @@ id = "IsQR.firstRows_diag_ne_zero_of_linearIndependent"
 [[node]]
 id = "IsQR.span_firstColumns_eq"
 
-[[node]]  # staged by ch05
+[[node]]
 id = "IsQR.isThinQR"
-kind = "theorem"
-desc = '''The reduced factors of a full QR factorization form a thin one: for `N ≤ M`,
-`IsQR A Q R → IsThinQR A (firstColumns Q h) (firstRows R h)` (`IsQR.reduced` repackaged). ★'''
-deps = ["Matrix.IsQR.reduced", "Matrix.IsThinQR"]
 
-[[node]]  # staged by ch05
+[[node]]
 id = "IsQR.span_col_prefix_eq"
-kind = "theorem"
-desc = '''[golub2013matrix] (5.2.1): if `IsQR A Q R` and the columns of `A : Matrix (Fin M) (Fin N) 𝕜`
-are linearly independent, then for every `k ≤ N`
-`span 𝕜 {Aᵀ j | (j : ℕ) < k} = span 𝕜 {Qᵀ i | (i : ℕ) < k}` (column sets as `Set (Fin M → 𝕜)`) and
-`R ⟨k, _⟩ ⟨k, _⟩ ≠ 0` for `k < N`. Proof: `a_k = Σ_{i ≤ k} r_ik q_i` ((5.2.3)) gives `⊆`; the
-dimension count (`linearIndependent` of the prefix, `finrank_span_eq_card`) gives equality and
-forces `r_kk ≠ 0`. `IsQR.span_firstColumns_eq` is the case `k = N`. ★★'''
-deps = ["Matrix.IsQR", "Matrix.IsQR.span_firstColumns_eq", "Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent"]
 
-[[node]]  # staged by ch05 in RankRevealing; moved beside IsQR (Golub–Van Loan review M5)
+[[node]]
 id = "IsPivotedQR"
-kind = "definition"
-desc = '''QR factorization with column pivoting: for `A : Matrix (Fin M) (Fin N) 𝕜`, `σ : Equiv.Perm (Fin N)`,
-`structure IsPivotedQR A Q R σ : Prop := isQR : IsQR (A.submatrix id σ) Q R` (column `k` of `A Π`
-is column `σ k` of `A`; [golub2013matrix] `A Π = Q R`, `A Π = [a_{c₁} | ⋯ | a_{cₙ}]`). A structure
-rather than an abbreviation so that the rank-revealing lemmas can be dot-notation on it; its
-rank-revealing refinement `IsPivotedQR.IsRankRevealing` is in `RankRevealing`. Beside `IsQR` and
-`IsThinQR` (moved with `IsQR` from `LeastSquares` by the refactor tasks R4/R16). ★'''
-deps = ["Matrix.IsQR"]

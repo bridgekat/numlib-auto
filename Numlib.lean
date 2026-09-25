@@ -489,6 +489,7 @@ import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Similar
 import Numlib.LinearAlgebra.Matrix.Sylvester
+import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz

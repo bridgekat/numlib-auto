@@ -50,6 +50,8 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
 ## Main definitions
 
 * `Matrix.householder`: the reflector `1 - 2 w wᴴ` in the hyperplane orthogonal to `w`.
+* `Matrix.reflector`: the reflector `1 - (2 / vᴴ v) v vᴴ` of an unnormalized axis `v`, the
+  `P = I - β v vᵀ` of [golub2013matrix] (5.1.1).
 * `Matrix.phase`: the unit-modulus phase of a scalar, `1` at zero; [saad2003iterative] `sign`.
 * `Matrix.householderAxis`, `Matrix.householderVec`: the axis `x + sign(x i) ‖x‖ eᵢ` of the
   reflector that annihilates every entry of `x` but the `i`-th, and its normalization.
@@ -60,11 +62,19 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
 * `Matrix.IsQR A Q R`: the full QR factorization `A = Q R` of an `M × N` matrix, `Q` unitary and `R`
   upper trapezoidal ([quarteroni2000numerical] Definition 3.1); `Matrix.firstColumns`,
   `Matrix.firstRows`: the reduced factors `Q̃ = Q(1:m, 1:n)`, `R̃ = R(1:n, 1:n)` of (3.48).
+* `Matrix.IsThinQR A Q R`: the thin factorization `A = Q R`, `Qᴴ Q = 1`, `R` upper triangular
+  ([golub2013matrix] (5.2.2)); `Matrix.IsPivotedQR A Q R σ`: QR with column pivoting,
+  `A Π = Q R`.
 
 ## Main results
 
 * `Matrix.householder_mulVec_eq_smul_single`: one reflector annihilates every entry of a vector but
   one; `Matrix.householder_tail_mulVec` is the same for the tail of a vector.
+* `Matrix.reflector_mulVec_eq_of_sq`: the reflector of `x + α eᵢ`, `ᾱ α = ‖x‖²`, `ᾱ xᵢ` real,
+  sends `x` to `-α eᵢ` — the defining property with either sign ([golub2013matrix] (5.1.2));
+  `Matrix.reflector_eq_householder`, `Matrix.reflector_mem_unitaryGroup`.
+* `Matrix.conj_one_sub_smul_vecMulVec_eq_sub`: `P B P = B - v wᴴ - w vᴴ` for Hermitian `B`, the
+  rank-two form of a two-sided reflection ([golub2013matrix] §8.3.1), over any field with a star.
 * `Matrix.householder_mul_eq_sub_vecMulVec`, `Matrix.mul_householder_eq_sub_vecMulVec`: applying
   a reflector is a rank-one update.
 * `Matrix.exists_unitary_mul_upperTriangular`: a product of reflectors triangularizes any matrix;
@@ -79,6 +89,12 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
   span the column space of `A` when `A` has full column rank
   (`Matrix.IsQR.span_firstColumns_eq`). Uniqueness, which Property 3.3 also claims, holds only
   with a normalization of the diagonal of `R̃` (`Matrix.qr_unique`).
+* `Matrix.exists_isThinQR`, `Matrix.IsThinQR.unique`, `Matrix.IsQR.isThinQR`: the thin
+  factorization ([golub2013matrix] Theorem 5.2.3); `Matrix.IsQR.span_col_prefix_eq`: the leading
+  columns of `A` and `Q` span the same spaces ((5.2.1)).
+* `Matrix.prod_one_sub_vecMulVec_of_orthonormal`: the product of the deflations
+  `1 - qᵢ qᵢᴴ` of pairwise orthogonal vectors is `1 - ∑ qᵢ qᵢᴴ`, the identity behind modified
+  Gram–Schmidt ([golub2013matrix] §5.2.8).
 * `Matrix.hessenbergReduce_eq_conj`, `Matrix.isUpperHessenberg_hessenbergReduce`,
   `Matrix.exists_unitary_conj_isUpperHessenberg`: the Householder reduction is a unitary
   similarity to upper Hessenberg form, tridiagonal for Hermitian input
@@ -344,6 +360,104 @@ theorem householder_mulVec_eq_smul_single {x : n → 𝕜} (hx : x ≠ 0) (i : n
     householderAxis]
   module
 
+/-! ### Householder reflectors of an unnormalized axis -/
+
+/-- **The Householder reflector of an axis** `v`, not necessarily of unit length:
+`reflector v = 1 - (2 / vᴴ v) v vᴴ` ([golub2013matrix] (5.1.1) `P = I - β v vᵀ`, `β = 2 / vᵀ v`;
+[higham2002accuracy] (19.1)). It is the identity at `v = 0` (`2 / 0 = 0`), and the
+normalization-free form of `Matrix.householder` (`Matrix.reflector_eq_householder`). -/
+noncomputable def reflector (v : n → 𝕜) : Matrix n n 𝕜 :=
+  1 - (2 / (star v ⬝ᵥ v)) • vecMulVec v (star v)
+
+/-- The reflector of the zero axis is the identity. -/
+@[simp]
+theorem reflector_zero : reflector (0 : n → 𝕜) = 1 := by simp [reflector]
+
+/-- For a nonzero axis the reflector is the Householder reflector of the normalized axis. -/
+theorem reflector_eq_householder {v : n → 𝕜} (hv : v ≠ 0) :
+    reflector v =
+      householder (((‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ : 𝕜))⁻¹ • v) := by
+  have hN := ofReal_norm_toLp_ne_zero hv
+  rw [reflector, householder, star_dotProduct_self, star_smul, vecMulVec_smul, smul_vecMulVec,
+    smul_smul, smul_smul, RCLike.star_def, RCLike.conj_inv, RCLike.conj_ofReal]
+  congr 2
+  field_simp
+
+/-- A reflector is Hermitian. -/
+theorem isHermitian_reflector (v : n → 𝕜) : (reflector v).IsHermitian := by
+  rcases eq_or_ne v 0 with rfl | hv
+  · rw [reflector_zero]
+    exact isHermitian_one
+  · rw [reflector_eq_householder hv]
+    exact isHermitian_householder _
+
+/-- A reflector is involutive. -/
+theorem reflector_mul_self (v : n → 𝕜) : reflector v * reflector v = 1 := by
+  rcases eq_or_ne v 0 with rfl | hv
+  · rw [reflector_zero, Matrix.one_mul]
+  · rw [reflector_eq_householder hv]
+    exact householder_mul_self (star_dotProduct_normalize_self hv)
+
+/-- **A reflector is unitary** ([golub2013matrix] §5.1.2, "Householder matrices are symmetric and
+orthogonal"), whatever the axis. -/
+theorem reflector_mem_unitaryGroup (v : n → 𝕜) : reflector v ∈ Matrix.unitaryGroup n 𝕜 := by
+  rw [mem_unitaryGroup_iff']
+  have hs : (star (reflector v) : Matrix n n 𝕜) = reflector v := isHermitian_reflector v
+  rw [hs, reflector_mul_self]
+
+/-- Over `ℝ` a reflector is orthogonal. -/
+theorem reflector_mem_orthogonalGroup (v : n → ℝ) : reflector v ∈ Matrix.orthogonalGroup n ℝ :=
+  reflector_mem_unitaryGroup v
+
+/-- Over `ℝ` the reflector is `1 - (2 / vᵀ v) v vᵀ`. -/
+theorem reflector_eq_one_sub_smul_vecMulVec (v : n → ℝ) :
+    reflector v = 1 - (2 / (v ⬝ᵥ v)) • vecMulVec v v := by
+  simp [reflector]
+
+/-- The reflector acts by `x ↦ x - (2 vᴴ x / vᴴ v) v`. -/
+theorem reflector_mulVec (v x : n → 𝕜) :
+    reflector v *ᵥ x = x - (2 / (star v ⬝ᵥ v) * (star v ⬝ᵥ x)) • v := by
+  rw [reflector, sub_mulVec, one_mulVec, smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul,
+    smul_smul]
+
+/-- **The defining property of a reflector, with either sign** ([golub2013matrix] (5.1.2) and
+its complex form §5.1.13): if `ᾱ α = ‖x‖₂²` and `ᾱ xᵢ` is real (`α = ± phase (x i) ‖x‖₂`), then
+the reflector of the axis `v = x + α eᵢ` sends `x` to `-α eᵢ`. Indeed `vᴴ x = ‖x‖² + ᾱ xᵢ` and
+`vᴴ v = 2 (‖x‖² + ᾱ xᵢ)`, so `P x = x - v`. Over `ℝ`: `α = ±‖x‖₂`, `P x = ∓‖x‖₂ eᵢ`. -/
+theorem reflector_mulVec_eq_of_sq {x : n → 𝕜} {i : n} {α : 𝕜}
+    (hα : star α * α = ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2)
+    (hreal : star (star α * x i) = star α * x i)
+    (hv : x + α • Pi.single i 1 ≠ 0) :
+    reflector (x + α • Pi.single i 1) *ᵥ x = -α • Pi.single i 1 := by
+  set v := x + α • (Pi.single i 1 : n → 𝕜) with hvdef
+  have hxx : star x ⬝ᵥ x = ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2 :=
+    star_dotProduct_self x
+  have hsingle : star (Pi.single i 1 : n → 𝕜) = Pi.single i 1 := by
+    funext r
+    rcases eq_or_ne r i with rfl | h
+    · simp
+    · simp [Pi.single_eq_of_ne h]
+  have hvx : star v ⬝ᵥ x = star x ⬝ᵥ x + star α * x i := by
+    rw [hvdef, star_add, add_dotProduct, star_smul, smul_dotProduct, hsingle, single_dotProduct,
+      one_mul, smul_eq_mul]
+  have hvv : star v ⬝ᵥ v = 2 * (star v ⬝ᵥ x) := by
+    have hvi : star v ⬝ᵥ (Pi.single i 1 : n → 𝕜) = star (x i) + star α := by
+      rw [dotProduct_single, mul_one, hvdef]
+      simp
+    have hreal' : star α * x i = α * star (x i) := by
+      rw [← hreal, star_mul', star_star, mul_comm]
+    rw [show star v ⬝ᵥ v = star v ⬝ᵥ x + α * (star v ⬝ᵥ (Pi.single i 1 : n → 𝕜)) by
+      rw [hvdef, dotProduct_add, dotProduct_smul, smul_eq_mul]]
+    rw [hvi, hvx, hxx]
+    linear_combination hα - hreal'
+  have hvv0 : star v ⬝ᵥ v ≠ 0 := by
+    rw [star_dotProduct_self]
+    exact pow_ne_zero 2 (ofReal_norm_toLp_ne_zero hv)
+  have hvx0 : star v ⬝ᵥ x ≠ 0 := fun h0 => hvv0 (by rw [hvv, h0, mul_zero])
+  rw [reflector_mulVec, hvv, show 2 / (2 * (star v ⬝ᵥ x)) * (star v ⬝ᵥ x) = 1 by
+    field_simp, one_smul, hvdef]
+  module
+
 /-! ### Reflectors as rank-one updates, and the coordinates they fix -/
 
 section RankOne
@@ -416,6 +530,51 @@ theorem star_dotProduct_star_self {u : n → 𝕜} (hu : star u ⬝ᵥ u = 1) :
   rw [star_star, dotProduct_comm, hu]
 
 end RankOne
+
+/-! ### The two-sided reflection as a rank-two update -/
+
+section ConjReflector
+
+variable {R : Type*} [Field R] [StarRing R]
+
+omit [DecidableEq n] in
+/-- A Hermitian quadratic form takes self-adjoint values: `star (vᴴ B v) = vᴴ B v`. -/
+theorem star_dotProduct_mulVec_self_of_conjTranspose_eq {B : Matrix n n R} (hB : Bᴴ = B)
+    (v : n → R) : star (star v ⬝ᵥ (B *ᵥ v)) = star v ⬝ᵥ (B *ᵥ v) := by
+  conv_rhs => rw [star_dotProduct, star_mulVec, hB, ← dotProduct_mulVec]
+
+/-- **The two-sided reflection as a symmetric rank-two update** ([golub2013matrix] §8.3.1): for
+a Hermitian `B` (`Bᴴ = B`), an axis `v` and a self-adjoint `β` (no normalization is needed, and
+`β = 0` is allowed), with `P = 1 - β v vᴴ`, `p = β B v` and `w = p - (β vᴴ p / 2) v`,
+`P B P = B - v wᴴ - w vᴴ`. Over `ℝ` it is the book's `P B P = B - v wᵀ - w vᵀ`. -/
+theorem conj_one_sub_smul_vecMulVec_eq_sub (h2 : (2 : R) ≠ 0) {B : Matrix n n R} (hB : Bᴴ = B)
+    (v : n → R) {β : R} (hβ : star β = β) {p w : n → R} (hp : p = β • (B *ᵥ v))
+    (hw : w = p - ((β * (star v ⬝ᵥ p)) / 2) • v) :
+    (1 - β • vecMulVec v (star v)) * B * (1 - β • vecMulVec v (star v)) =
+      B - vecMulVec v (star w) - vecMulVec w (star v) := by
+  set s := star v ⬝ᵥ (B *ᵥ v) with hs
+  have hss : star s = s := star_dotProduct_mulVec_self_of_conjTranspose_eq hB v
+  have e1 : vecMulVec v (star v) * B = vecMulVec v (star (B *ᵥ v)) := by
+    rw [vecMulVec_mul, star_mulVec, hB]
+  have e2 : B * vecMulVec v (star v) = vecMulVec (B *ᵥ v) (star v) := mul_vecMulVec _ _ _
+  have e3 : vecMulVec v (star (B *ᵥ v)) * vecMulVec v (star v) = s • vecMulVec v (star v) := by
+    rw [vecMulVec_mul_vecMulVec, vecMulVec_smul, star_mulVec, hB, ← dotProduct_mulVec]
+  have hexp : (1 - β • vecMulVec v (star v)) * B * (1 - β • vecMulVec v (star v)) =
+      B - β • vecMulVec v (star (B *ᵥ v)) - β • vecMulVec (B *ᵥ v) (star v) +
+        (β * β * s) • vecMulVec v (star v) := by
+    simp only [sub_mul, mul_sub, one_mul, mul_one, smul_mul_assoc, mul_smul_comm, e1, e2, e3,
+      smul_smul]
+    module
+  rw [hexp]
+  subst hw hp
+  ext i j
+  simp only [sub_apply, add_apply, smul_apply, vecMulVec_apply, Pi.star_apply, Pi.sub_apply,
+    Pi.smul_apply, smul_eq_mul, star_sub, star_mul', hβ, dotProduct_smul, ← hs, star_div₀,
+    star_ofNat, hss]
+  field_simp
+  ring
+
+end ConjReflector
 
 /-! ### Triangularization by a product of reflectors -/
 
@@ -1085,6 +1244,128 @@ theorem IsQR.span_firstColumns_eq (h : IsQR A Q R) (hNM : N ≤ M) (hA : LinearI
   exact LinearMap.range_eq_top.2 (mulVec_surjective_iff_isUnit.2 hR)
 
 end FullQR
+
+/-! ### The thin and the pivoted QR factorizations -/
+
+section ThinQR
+
+variable {m : Type*} [Fintype m] {M N : ℕ}
+
+/-- **The thin (reduced) QR factorization** ([golub2013matrix] (5.2.2), Theorem 5.2.3): `A = Q R`
+with `A : Matrix m (Fin N) 𝕜`, `Q : Matrix m (Fin N) 𝕜` of orthonormal columns (`Qᴴ Q = 1`) and
+`R` upper triangular `N × N`. No sign condition: uniqueness (`Matrix.IsThinQR.unique`) asks for a
+positive diagonal. The specification of classical and modified Gram–Schmidt; the full
+factorization `Matrix.IsQR` gives one (`Matrix.IsQR.isThinQR`). -/
+structure IsThinQR (A : Matrix m (Fin N) 𝕜) (Q : Matrix m (Fin N) 𝕜)
+    (R : Matrix (Fin N) (Fin N) 𝕜) : Prop where
+  /-- The factors multiply to `A`. -/
+  mul_eq : Q * R = A
+  /-- The columns of `Q` are orthonormal. -/
+  conjTranspose_mul_self : Qᴴ * Q = 1
+  /-- The triangular factor is upper triangular. -/
+  isUpperTriangular : R.IsUpperTriangular
+
+open scoped ComplexOrder in
+/-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
+columns: `Matrix.exists_qr` repackaged. -/
+theorem exists_isThinQR (A : Matrix (Fin M) (Fin N) 𝕜) (hA : LinearIndependent 𝕜 Aᵀ) :
+    ∃ Q R, IsThinQR A Q R ∧ ∀ j, 0 < R j j := by
+  obtain ⟨Q, R, hX, hQ, hR, hd⟩ := exists_qr A hA
+  exact ⟨Q, R, ⟨hX.symm, hQ, hR⟩, hd⟩
+
+open scoped ComplexOrder in
+/-- **Uniqueness of the thin QR factorization** with a positive diagonal ([golub2013matrix]
+Theorem 5.2.3): `Matrix.qr_unique` repackaged. -/
+theorem IsThinQR.unique {A Q₁ Q₂ : Matrix (Fin M) (Fin N) 𝕜} {R₁ R₂ : Matrix (Fin N) (Fin N) 𝕜}
+    (h₁ : IsThinQR A Q₁ R₁) (h₂ : IsThinQR A Q₂ R₂) (hd₁ : ∀ j, 0 < R₁ j j)
+    (hd₂ : ∀ j, 0 < R₂ j j) : Q₁ = Q₂ ∧ R₁ = R₂ :=
+  qr_unique h₁.mul_eq.symm h₂.mul_eq.symm h₁.conjTranspose_mul_self h₂.conjTranspose_mul_self
+    h₁.isUpperTriangular h₂.isUpperTriangular hd₁ hd₂
+
+/-- The reduced factors of a full QR factorization form a thin one (`Matrix.IsQR.reduced`
+repackaged). -/
+theorem IsQR.isThinQR {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
+    {R : Matrix (Fin M) (Fin N) 𝕜} (h : IsQR A Q R) (hNM : N ≤ M) :
+    IsThinQR A (firstColumns Q hNM) (firstRows R hNM) :=
+  ⟨(h.reduced hNM).1, (h.reduced hNM).2.1, (h.reduced hNM).2.2⟩
+
+/-- **The leading columns of `A` and `Q` span the same spaces** ([golub2013matrix] (5.2.1)): if
+`A = Q R` is a full QR factorization of `A` with linearly independent columns, then for every
+`k ≤ N` the first `k` columns of `A` and of `Q` span the same subspace, and the diagonal entries
+of `R` are nonzero. The inclusion is `a_j = ∑_{i ≤ j} r_ij q_i` ((5.2.3)); equality is the
+dimension count. -/
+theorem IsQR.span_col_prefix_eq {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
+    {R : Matrix (Fin M) (Fin N) 𝕜} (h : IsQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) (hNM : N ≤ M)
+    {k : ℕ} (hk : k ≤ N) :
+    Submodule.span 𝕜 (Set.range fun j : Fin k => A.col (Fin.castLE hk j)) =
+        Submodule.span 𝕜 (Set.range fun i : Fin k => Q.col (Fin.castLE (hk.trans hNM) i)) ∧
+      ∀ (i : Fin M) (j : Fin N), (i : ℕ) = j → R i j ≠ 0 := by
+  refine ⟨Submodule.eq_of_le_of_finrank_le ?_ ?_, fun i j hij => ?_⟩
+  · refine Submodule.span_le.2 ?_
+    rintro _ ⟨c, rfl⟩
+    have hcol : A.col (Fin.castLE hk c) = ∑ i : Fin M, R i (Fin.castLE hk c) • Q.col i := by
+      funext r
+      rw [Finset.sum_apply]
+      simp only [Pi.smul_apply, smul_eq_mul]
+      change A r _ = ∑ i, R i _ * Q r i
+      rw [← h.mul_eq, mul_apply]
+      exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+    change A.col (Fin.castLE hk c) ∈ _
+    rw [hcol]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    by_cases hi : (i : ℕ) < k
+    · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨⟨i, hi⟩, congrArg _ (Fin.ext rfl)⟩)
+    · rw [h.apply_eq_zero i _ (by simp only [Fin.val_castLE]; omega), zero_smul]
+      exact Submodule.zero_mem _
+  · have hli : LinearIndependent 𝕜 fun j : Fin k => A.col (Fin.castLE hk j) :=
+      hA.comp _ (Fin.castLE_injective hk)
+    rw [finrank_span_eq_card hli]
+    exact (finrank_range_le_card _).trans (by simp)
+  · have := h.firstRows_diag_ne_zero_of_linearIndependent hNM hA j
+    rwa [firstRows_apply, show Fin.castLE hNM j = i from Fin.ext hij.symm] at this
+
+/-- **QR factorization with column pivoting** ([golub2013matrix] §5.4.2): `A Π = Q R` with
+`Π` the permutation matrix of `σ`, i.e. column `k` of `A Π` is column `σ k` of `A`. A structure
+rather than an abbreviation, so that its rank-revealing refinements are dot notation on it. -/
+structure IsPivotedQR (A : Matrix (Fin M) (Fin N) 𝕜) (Q : Matrix (Fin M) (Fin M) 𝕜)
+    (R : Matrix (Fin M) (Fin N) 𝕜) (σ : Equiv.Perm (Fin N)) : Prop where
+  /-- The column-permuted matrix has the full QR factorization `Q R`. -/
+  isQR : IsQR (A.submatrix id σ) Q R
+
+end ThinQR
+
+/-! ### The projector of modified Gram–Schmidt -/
+
+section GramSchmidtProjector
+
+variable {R : Type*} [CommRing R] [StarRing R]
+
+/-- **The projector identity behind modified Gram–Schmidt** ([golub2013matrix] §5.2.8): for
+pairwise orthogonal vectors `q i` (`q iᴴ q j = 0` for `i ≠ j`), the product of the deflations
+`1 - q i q iᴴ` is `1 - ∑ i, q i q iᴴ`, since the cross terms vanish. So the successive deflations
+of modified Gram–Schmidt compute, in exact arithmetic, the vectors `a - ∑ i (q iᴴ a) q i` of
+classical Gram–Schmidt. -/
+theorem prod_one_sub_vecMulVec_of_orthonormal :
+    ∀ {k : ℕ} (q : Fin k → n → R), (∀ i j, i ≠ j → star (q i) ⬝ᵥ q j = 0) →
+      (List.ofFn fun i => 1 - vecMulVec (q i) (star (q i))).prod =
+        1 - ∑ i, vecMulVec (q i) (star (q i))
+  | 0, q, _ => by simp
+  | k + 1, q, hq => by
+    rw [List.ofFn_succ, List.prod_cons,
+      prod_one_sub_vecMulVec_of_orthonormal (fun i => q i.succ)
+        (fun i j hij => hq _ _ (fun h => hij (Fin.succ_injective _ h))),
+      Fin.sum_univ_succ]
+    have h0 : vecMulVec (q 0) (star (q 0)) * ∑ i : Fin k, vecMulVec (q i.succ) (star (q i.succ))
+        = 0 := by
+      rw [Finset.mul_sum]
+      refine Finset.sum_eq_zero fun i _ => ?_
+      rw [vecMulVec_mul_vecMulVec, hq 0 i.succ (Fin.succ_ne_zero i).symm, zero_smul,
+        vecMulVec_zero]
+    have e : ∀ P S : Matrix n n R, (1 - P) * (1 - S) = 1 - (P + S) + P * S := fun P S => by
+      noncomm_ring
+    rw [e, h0, add_zero]
+
+end GramSchmidtProjector
 
 
 /-! ### Reduction to Hessenberg form by Householder reflectors -/

@@ -179,6 +179,33 @@ theorem posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos (A : Matrix n n �
   simp only [hermitianPart_isHermitian, true_and, star_dotProduct_hermitianPart_mulVec,
     RCLike.ofReal_pos]
 
+omit [DecidableEq n] in
+/-- A matrix with positive definite Hermitian part has a positive real quadratic form, the
+"positive definite" of [golub2013matrix] §4.2 for unsymmetric matrices. -/
+theorem re_dotProduct_mulVec_pos_of_posDef_hermitianPart {A : Matrix n n 𝕜}
+    (hA : (hermitianPart A).PosDef) {x : n → 𝕜} (hx : x ≠ 0) :
+    0 < RCLike.re (star x ⬝ᵥ (A *ᵥ x)) := by
+  have := hA.dotProduct_mulVec_pos hx
+  rwa [star_dotProduct_hermitianPart_mulVec, RCLike.ofReal_pos] at this
+
+/-- A matrix whose Hermitian part is positive definite is nonsingular (the `RCLike` form of
+`Matrix.isUnit_of_posDef_add_transpose`). -/
+theorem isUnit_of_posDef_hermitianPart {A : Matrix n n 𝕜}
+    (hA : (hermitianPart A).PosDef) : IsUnit A := by
+  rw [← mulVec_injective_iff_isUnit]
+  intro x y hxy
+  by_contra hne
+  have h := re_dotProduct_mulVec_pos_of_posDef_hermitianPart hA (sub_ne_zero.2 hne)
+  rw [mulVec_sub, hxy, sub_self, dotProduct_zero, map_zero] at h
+  exact lt_irrefl _ h
+
+omit [Fintype n] [DecidableEq n] in
+/-- Taking the Hermitian part commutes with taking a principal submatrix. -/
+theorem hermitianPart_submatrix {m : Type*} (A : Matrix n n 𝕜) (e : m → n) :
+    hermitianPart (A.submatrix e e) = (hermitianPart A).submatrix e e := by
+  ext i j
+  simp
+
 open scoped Matrix.Norms.L2Operator in
 /-- The spectral norm of the Hermitian part is at most that of the matrix ([golub2013matrix]
 §4.2.2): `‖(A + Aᴴ)/2‖₂ ≤ (‖A‖₂ + ‖Aᴴ‖₂)/2 = ‖A‖₂`. -/

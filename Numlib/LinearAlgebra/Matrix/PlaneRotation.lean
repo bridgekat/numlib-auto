@@ -8,7 +8,10 @@ import Mathlib.Analysis.Real.Sqrt
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.UnitaryGroup
+import Mathlib.Basic.Sign.Defs
+import Mathlib.LinearAlgebra.SymplecticGroup
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.LinearCombination
 
 /-!
 # Plane embeddings and plane rotations
@@ -26,11 +29,22 @@ one-parameter family that every rotation-based algorithm is built from. The **Gi
 `Matrix.givensPair a b` is the cosine and sine of the rotation whose transpose sends `(a, b)` to
 `(√(a² + b²), 0)`, the elementary step of every Givens `QR` factorization.
 
+The **hyperbolic rotation** `Matrix.hyperbolicRotation j k c s = planeEmbed j k !![c, -s; -s, c]`
+with `c² − s² = 1` is the indefinite counterpart of `planeRotation`: it is `J`-orthogonal
+(`H J Hᵀ = J`, `Matrix.IsJOrthogonal`) for any signature `J = diagonal ε` with `ε j = 1`,
+`ε k = −1`, and the **hyperbolic pair** `Matrix.hyperbolicPair a b` ([golub2013matrix] (6.5.13))
+makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and nothing does when
+`|x j| ≤ |x k|`, `x k ≠ 0`. `J`-orthogonality with Mathlib's symplectic form is membership in
+`Matrix.symplecticGroup` (`Matrix.isJOrthogonal_iff_mem_symplecticGroup`).
+
 ## Main definitions
 
 * `Matrix.planeEmbed j k G`: the `2 × 2` matrix `G` placed in the `(j, k)` coordinate plane.
 * `Matrix.planeRotation j k c s`: the rotation of the `(j, k)`-plane with cosine `c` and sine `s`.
 * `Matrix.givensPair a b`: the pair `(c, s) = (a, b) / √(a² + b²)`, and `(1, 0)` when `a = b = 0`.
+* `Matrix.IsJOrthogonal J H`: `H J Hᵀ = J` ([golub2013matrix] (6.5.11), "`S`-orthogonal").
+* `Matrix.hyperbolicRotation j k c s`, `Matrix.hyperbolicPair a b`: the hyperbolic rotation and
+  the pair `(c, s)` that makes it introduce a zero ([golub2013matrix] §6.5.4).
 
 ## Main results
 
@@ -488,5 +502,206 @@ theorem transpose_planeRotation_givensPair_mulVec (hjk : j ≠ k) (x : n → ℝ
   · rw [transpose_planeRotation_mulVec_apply hjk, ite_eq_right hjk.symm, ite_eq_left rfl, h2]
   · rw [transpose_planeRotation_mulVec_apply hjk, ite_eq_left rfl, h1]
   · rw [transpose_planeRotation_mulVec_apply hjk, ite_eq_right hqj, ite_eq_right hqk]
+
+/-! ### `J`-orthogonal matrices and hyperbolic rotations -/
+
+section JOrthogonal
+
+variable [CommRing R]
+
+/-- **`J`-orthogonality** ([golub2013matrix] (6.5.11), "`S`-orthogonal"; Higham, "J-orthogonal
+matrices", SIAM Review 2003): `H J Hᵀ = J`. For `J = 1` it is membership in the orthogonal group
+(`Matrix.isJOrthogonal_one_iff_mem_orthogonalGroup`), for Mathlib's symplectic form `J l R`
+membership in the symplectic group (`Matrix.isJOrthogonal_iff_mem_symplecticGroup`). -/
+def IsJOrthogonal (J H : Matrix n n R) : Prop := H * J * Hᵀ = J
+
+/-- The identity is `J`-orthogonal. -/
+theorem isJOrthogonal_one (J : Matrix n n R) : IsJOrthogonal J 1 := by
+  simp [IsJOrthogonal]
+
+omit [DecidableEq n] in
+/-- **Products of `J`-orthogonal matrices are `J`-orthogonal** ([golub2013matrix] §6.5.4). -/
+theorem IsJOrthogonal.mul {J H₁ H₂ : Matrix n n R} (h₁ : IsJOrthogonal J H₁)
+    (h₂ : IsJOrthogonal J H₂) : IsJOrthogonal J (H₁ * H₂) := by
+  unfold IsJOrthogonal at *
+  calc H₁ * H₂ * J * (H₁ * H₂)ᵀ = H₁ * (H₂ * J * H₂ᵀ) * H₁ᵀ := by
+        rw [transpose_mul]
+        simp only [Matrix.mul_assoc]
+    _ = J := by rw [h₂, h₁]
+
+/-- For an involutive signature, `H J Hᵀ = J` gives `Hᵀ J H = J`: `J Hᵀ J` is a right, hence a
+left, inverse of `H`. -/
+private theorem transpose_mul_mul_eq_of_isJOrthogonal {J H : Matrix n n R} (hJ : J * J = 1)
+    (h : IsJOrthogonal J H) : Hᵀ * J * H = J := by
+  have h1 : H * (J * Hᵀ * J) = 1 := by
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc]
+    rw [IsJOrthogonal] at h
+    rw [h, hJ]
+  have h2 : J * Hᵀ * J * H = 1 := mul_eq_one_comm.1 h1
+  calc Hᵀ * J * H = J * J * (Hᵀ * J * H) := by rw [hJ, Matrix.one_mul]
+    _ = J * (J * Hᵀ * J * H) := by simp only [Matrix.mul_assoc]
+    _ = J := by rw [h2, Matrix.mul_one]
+
+/-- For an involutive signature (`J * J = 1`), the transpose of a `J`-orthogonal matrix is
+`J`-orthogonal: `H J Hᵀ = J` gives `Hᵀ J H = J`, the form of [golub2013matrix] P6.5.5. -/
+theorem IsJOrthogonal.transpose {J H : Matrix n n R} (hJ : J * J = 1) (h : IsJOrthogonal J H) :
+    IsJOrthogonal J Hᵀ := by
+  change Hᵀ * J * Hᵀᵀ = J
+  rw [transpose_transpose]
+  exact transpose_mul_mul_eq_of_isJOrthogonal hJ h
+
+/-- For an involutive signature, `H` is `J`-orthogonal iff `Hᵀ` is. -/
+theorem isJOrthogonal_transpose_iff {J H : Matrix n n R} (hJ : J * J = 1) :
+    IsJOrthogonal J Hᵀ ↔ IsJOrthogonal J H :=
+  ⟨fun h => by simpa using h.transpose hJ, fun h => h.transpose hJ⟩
+
+/-- For `J = 1`, `J`-orthogonality is orthogonality. -/
+theorem isJOrthogonal_one_iff_mem_orthogonalGroup {H : Matrix n n R} :
+    IsJOrthogonal 1 H ↔ H ∈ Matrix.orthogonalGroup n R := by
+  rw [IsJOrthogonal, Matrix.mul_one, mem_orthogonalGroup_iff]
+
+/-- **The bridge to Mathlib's symplectic group**: for Mathlib's `J l R`, `J`-orthogonality is
+membership in `Matrix.symplecticGroup l R`, whose carrier is literally `A J Aᵀ = J`. -/
+theorem isJOrthogonal_iff_mem_symplecticGroup {l : Type*} [DecidableEq l] [Fintype l]
+    {A : Matrix (l ⊕ l) (l ⊕ l) R} :
+    IsJOrthogonal (Matrix.J l R) A ↔ A ∈ Matrix.symplecticGroup l R :=
+  SymplecticGroup.mem_iff.symm
+
+end JOrthogonal
+
+section Hyperbolic
+
+/-- **The hyperbolic rotation** ([golub2013matrix] §6.5.4, `H_k(θ)`): `!![c, -s; -s, c]` in the
+`(j, k)`-plane. With `c = cosh θ`, `s = sinh θ` it is `J`-orthogonal for the signature that is
+`+1` at `j` and `-1` at `k` (`Matrix.isJOrthogonal_hyperbolicRotation`). -/
+def hyperbolicRotation (j k : n) (c s : ℝ) : Matrix n n ℝ := planeEmbed j k !![c, -s; -s, c]
+
+omit [Fintype n] in
+/-- A hyperbolic rotation is symmetric. -/
+theorem hyperbolicRotation_transpose {j k : n} (hjk : j ≠ k) (c s : ℝ) :
+    (hyperbolicRotation j k c s)ᵀ = hyperbolicRotation j k c s := by
+  rw [hyperbolicRotation, planeEmbed_transpose _ hjk]
+  congr 1
+  ext a b
+  fin_cases a <;> fin_cases b <;> rfl
+
+/-- **Hyperbolic rotations are `J`-orthogonal** ([golub2013matrix] §6.5.4, "the `S`-orthogonality
+of this matrix follows from `cosh(θ)² − sinh(θ)² = 1`"): for a signature `ε` with `ε j = 1` and
+`ε k = -1`, and `c² - s² = 1`, `H (diagonal ε) Hᵀ = diagonal ε`. -/
+theorem isJOrthogonal_hyperbolicRotation {j k : n} (hjk : j ≠ k) {ε : n → ℝ} (hj : ε j = 1)
+    (hk : ε k = -1) {c s : ℝ} (hcs : c ^ 2 - s ^ 2 = 1) :
+    IsJOrthogonal (diagonal ε) (hyperbolicRotation j k c s) := by
+  rw [IsJOrthogonal, hyperbolicRotation_transpose hjk, Matrix.mul_assoc]
+  ext p q
+  rw [hyperbolicRotation, planeEmbed_mul_apply _ hjk]
+  simp only [diagonal_mul, planeEmbed_apply, diagonal_apply, of_apply, cons_val', cons_val_zero,
+    cons_val_one, empty_val', cons_val_fin_one, Fin.isValue]
+  by_cases hpj : p = j
+  · subst hpj
+    by_cases hqp : q = p
+    · subst hqp
+      simp [hjk.symm, hj, hk]
+      linear_combination hcs
+    by_cases hqk : q = k
+    · subst hqk
+      simp [hqp, hjk, hj, hk]
+      ring
+    · simp [hqp, hqk, Ne.symm hqp]
+  by_cases hpk : p = k
+  · subst hpk
+    by_cases hqj : q = j
+    · subst hqj
+      simp [hjk.symm, hj, hk]
+      ring
+    by_cases hqp : q = p
+    · subst hqp
+      simp [hj, hk, hqj]
+      nlinarith [hcs]
+    · simp [hqp, hqj, Ne.symm hqp]
+  · by_cases hqj : q = j
+    · subst hqj
+      simp [hpj, hpk]
+    by_cases hqk : q = k
+    · subst hqk
+      simp [hpj, hpk]
+    · by_cases hpq : p = q
+      · subst hpq
+        simp [hpj, hpk]
+      · simp [hpj, hpk, hpq]
+
+end Hyperbolic
+
+/-- **The hyperbolic pair** ([golub2013matrix] (6.5.13)): `(c, s) = (c, c τ)` with `τ = b / a`,
+`c = 1 / √(1 - τ²)`; meaningful when `|b| < |a|`. The hyperbolic counterpart of
+`Matrix.givensPair`. -/
+noncomputable def hyperbolicPair (a b : ℝ) : ℝ × ℝ :=
+  (1 / √(1 - (b / a) ^ 2), 1 / √(1 - (b / a) ^ 2) * (b / a))
+
+/-- The ratio `τ = b / a` of a hyperbolic pair has `τ² < 1` when `|b| < |a|`. -/
+private theorem one_sub_div_sq_pos {a b : ℝ} (h : |b| < |a|) : 0 < 1 - (b / a) ^ 2 := by
+  have ha : a ≠ 0 := fun ha => by
+    rw [ha, abs_zero] at h
+    exact absurd h (not_lt.2 (abs_nonneg b))
+  have hab : b ^ 2 < a ^ 2 := sq_lt_sq.2 h
+  rw [div_pow, sub_pos, div_lt_one (by positivity)]
+  exact hab
+
+/-- **The hyperbolic pair is hyperbolic** ([golub2013matrix] (6.5.13)): `c² - s² = 1`, `c > 0`. -/
+theorem hyperbolicPair_sq_sub_sq {a b : ℝ} (h : |b| < |a|) :
+    (hyperbolicPair a b).1 ^ 2 - (hyperbolicPair a b).2 ^ 2 = 1 ∧ 0 < (hyperbolicPair a b).1 := by
+  have hpos := one_sub_div_sq_pos h
+  have hr : 0 < √(1 - (b / a) ^ 2) := Real.sqrt_pos.2 hpos
+  have hsq : √(1 - (b / a) ^ 2) ^ 2 = 1 - (b / a) ^ 2 := Real.sq_sqrt hpos.le
+  refine ⟨?_, by simp only [hyperbolicPair]; positivity⟩
+  simp only [hyperbolicPair]
+  generalize b / a = τ at hpos hsq ⊢
+  rw [mul_pow, div_pow, one_pow, hsq]
+  field_simp [hpos.ne']
+
+/-- **Hyperbolic rotations introduce zeros** ([golub2013matrix] §6.5.4, (6.5.13)): if
+`|x k| < |x j|` and `(c, s)` is the hyperbolic pair of `(x j, x k)`, the hyperbolic rotation
+annihilates the `k`-th entry of `x` and puts `sign (x j) √(x j² - x k²)` in the `j`-th; the other
+entries are unchanged (`Matrix.planeEmbed_mulVec_apply_of_ne`). -/
+theorem hyperbolicRotation_hyperbolicPair_mulVec {j k : n} (hjk : j ≠ k)
+    {x : n → ℝ} (h : |x k| < |x j|) :
+    (hyperbolicRotation j k (hyperbolicPair (x j) (x k)).1 (hyperbolicPair (x j) (x k)).2 *ᵥ x) k
+        = 0 ∧
+      (hyperbolicRotation j k (hyperbolicPair (x j) (x k)).1 (hyperbolicPair (x j) (x k)).2 *ᵥ x) j
+        = SignType.sign (x j) * √(x j ^ 2 - x k ^ 2) := by
+  have ha : x j ≠ 0 := fun ha => by
+    rw [ha, abs_zero] at h
+    exact absurd h (not_lt.2 (abs_nonneg _))
+  have hD : 0 < x j ^ 2 - x k ^ 2 := sub_pos.2 (sq_lt_sq.2 h)
+  have hsqrt : √(1 - (x k / x j) ^ 2) = √(x j ^ 2 - x k ^ 2) / |x j| := by
+    rw [show 1 - (x k / x j) ^ 2 = (x j ^ 2 - x k ^ 2) / |x j| ^ 2 by
+      rw [sq_abs]; field_simp, Real.sqrt_div' _ (sq_nonneg _), Real.sqrt_sq (abs_nonneg _)]
+  have hr : 0 < √(x j ^ 2 - x k ^ 2) := Real.sqrt_pos.2 hD
+  have hrr : √(x j ^ 2 - x k ^ 2) ^ 2 = x j ^ 2 - x k ^ 2 := Real.sq_sqrt hD.le
+  rw [hyperbolicRotation, planeEmbed_mulVec_apply _ hjk, planeEmbed_mulVec_apply _ hjk]
+  simp only [hjk.symm, ite_true, ite_false, hyperbolicPair, hsqrt, of_apply, cons_val',
+    cons_val_zero, cons_val_one, empty_val', cons_val_fin_one, Fin.isValue]
+  refine ⟨?_, ?_⟩
+  · field_simp
+    ring
+  · rcases lt_or_gt_of_ne ha with hneg | hpos
+    · rw [abs_of_neg hneg, sign_neg hneg, SignType.coe_neg_one]
+      field_simp
+      linear_combination hrr
+    · rw [abs_of_pos hpos, sign_pos hpos, SignType.coe_one]
+      field_simp
+      linear_combination -hrr
+
+/-- **The hyperbolic pair may not exist** ([golub2013matrix] §6.5.4, "there is no real solution
+to `−s x₁ + c x₂ = 0` if `|x₂| > |x₁|`"): if `|x₁| ≤ |x₂|` and `x₂ ≠ 0` no `c² - s² = 1` solves
+it (the book states the strict inequality; equality fails as well). -/
+theorem not_exists_hyperbolic_of_abs_le {x₁ x₂ : ℝ} (h : |x₁| ≤ |x₂|) (hx₂ : x₂ ≠ 0) :
+    ¬ ∃ c s : ℝ, c ^ 2 - s ^ 2 = 1 ∧ -s * x₁ + c * x₂ = 0 := by
+  rintro ⟨c, s, hcs, hz⟩
+  have h12 : x₁ ^ 2 ≤ x₂ ^ 2 := sq_le_sq.2 h
+  have hx : 0 < x₂ ^ 2 := by positivity
+  have hsq : c ^ 2 * x₂ ^ 2 = s ^ 2 * x₁ ^ 2 := by
+    have : c * x₂ = s * x₁ := by linarith
+    rw [← mul_pow, ← mul_pow, this]
+  nlinarith [mul_le_mul_of_nonneg_left h12 (sq_nonneg s)]
 
 end Matrix

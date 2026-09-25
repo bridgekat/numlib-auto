@@ -7,7 +7,10 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Matrix.LDL
 import Mathlib.Analysis.Matrix.PosDef
 import Numlib.Direct.Substitution
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.LU
+import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
 # The Cholesky factorization and positive definite matrices
@@ -55,6 +58,20 @@ bounds of positive (semi)definite matrices; and the bridge to Mathlib's `Matrix.
 * `Matrix.isCholesky_conjTranspose_mul_self_of_qr`, `Matrix.cholesky_conjTranspose_mul_self_of_qr`:
   the triangular factor of a reduced QR factorization `X = Q R` is the Cholesky factor of `Xᴴ X`
   ([quarteroni2000numerical] Property 3.3, last clause).
+
+* `Matrix.IsThinQR.isCholesky`: the triangular factor of a thin QR factorization is the Cholesky
+  factor of the Gram matrix ([golub2013matrix] Theorem 5.2.3).
+* [golub2013matrix] §4.2 for unsymmetric matrices with positive definite Hermitian part:
+  `Matrix.exists_isLU_of_posDef_hermitianPart` (Corollary 4.2.4) and
+  `Matrix.posDef_hermitianPart_schurComplementSingle` (Theorem 4.2.5), both through
+  `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`: the quadratic form of a one-step
+  Schur complement is a quadratic form of the matrix.
+* Semidefinite matrices: `Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero` ((4.2.15)),
+  `Matrix.PosSemidef.schurComplementSingle` ((4.2.16)) and the rank-revealing pivoted `L D Lᴴ`,
+  `Matrix.PosSemidef.exists_perm_ldl_rank` ((4.2.17)).
+* The factor: `Matrix.cholesky_finSumFin` (the block form (4.2.18)),
+  `Matrix.cholesky_hasLowerBandwidth` (§4.3.5), `Matrix.sq_norm_cholesky_apply_le` and
+  `Matrix.l2_opNorm_cholesky_sq` (§4.2.6).
 
 ## Implementation notes
 
@@ -635,6 +652,15 @@ theorem cholesky_conjTranspose_mul_self_of_qr {X Q : Matrix m n 𝕜} {R : Matri
     cholesky (Xᴴ * X) = Rᴴ :=
   cholesky_eq_of_isCholesky (isCholesky_conjTranspose_mul_self_of_qr hX hQ hR hd)
 
+/-- **The triangular factor of a thin QR factorization is the Cholesky factor of the Gram
+matrix** ([golub2013matrix] Theorem 5.2.3, "`R₁ = Gᵀ` where `G` is the lower triangular Cholesky
+factor of `AᵀA`"): if `A = Q R` is thin with a positive diagonal, `Aᴴ A = Rᴴ R`. With
+`Matrix.IsCholesky.unique` this is a second proof of `Matrix.IsThinQR.unique`. -/
+theorem IsThinQR.isCholesky {N : ℕ} {A Q : Matrix m (Fin N) 𝕜} {R : Matrix (Fin N) (Fin N) 𝕜}
+    (h : IsThinQR A Q R) (hd : ∀ j, 0 < R j j) : IsCholesky (Aᴴ * A) R :=
+  isCholesky_conjTranspose_mul_self_of_qr h.mul_eq.symm h.conjTranspose_mul_self
+    h.isUpperTriangular hd
+
 end QR
 
 /-! ### Mathlib's `LDL` factorization -/
@@ -697,5 +723,504 @@ theorem LDL.lower_eq_of_isLDM {L D : Matrix n n 𝕜} (h : IsLDM S L D Lᴴᵀ) 
   exact ⟨this.1, this.2.1⟩
 
 end LDL
+
+/-! ### Unsymmetric positive definite and semidefinite matrices -/
+
+section Unsymmetric
+
+/-- **[golub2013matrix] Corollary 4.2.4**: if the Hermitian part of `A` is positive definite
+(the book's "`A` positive definite" for unsymmetric `A`), then `A` has an LU factorization and
+its pivots have positive real part. The strict leading principal submatrices inherit a positive
+definite Hermitian part, hence are nonsingular; and `u_ii = yᴴ A y` for `y` the conjugate of the
+`i`-th row of `L⁻¹`, since `U L⁻ᴴ = L⁻¹ A L⁻ᴴ` has the diagonal of `U`. -/
+theorem exists_isLU_of_posDef_hermitianPart {A : Matrix n n 𝕜}
+    (hA : (hermitianPart A).PosDef) : ∃ L U, IsLU A L U ∧ ∀ i, 0 < RCLike.re (U i i) := by
+  obtain ⟨L, U, h⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix fun k => by
+    have hk : (hermitianPart (A.strictLeadingPrincipalSubmatrix k)).PosDef := by
+      change (hermitianPart (A.submatrix Subtype.val Subtype.val)).PosDef
+      rw [hermitianPart_submatrix]
+      exact hA.submatrix Subtype.val_injective
+    exact isUnit_of_posDef_hermitianPart hk
+  refine ⟨L, U, h, fun i => ?_⟩
+  have hLi := h.isUnitLowerTriangular.inv
+  have hUeq : U = L⁻¹ * A := by
+    rw [← h.mul_eq, ← Matrix.mul_assoc,
+      nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 h.isUnitLowerTriangular.isUnit),
+      Matrix.one_mul]
+  set y : n → 𝕜 := fun l => star (L⁻¹ i l) with hy
+  have hy0 : y ≠ 0 := fun h0 => by
+    have := congrFun h0 i
+    simp [hy, hLi.diag_eq_one] at this
+  have e1 : (U * (L⁻¹)ᴴ) i i = U i i := by
+    rw [mul_apply, Finset.sum_eq_single i]
+    · rw [conjTranspose_apply, hLi.diag_eq_one, star_one, mul_one]
+    · intro b _ hbi
+      rcases lt_or_gt_of_ne hbi with hb | hb
+      · rw [h.isUpperTriangular hb, zero_mul]
+      · rw [conjTranspose_apply, hLi.isLowerTriangular (OrderDual.toDual_lt_toDual.2 hb),
+          star_zero, mul_zero]
+    · simp
+  have key : U i i = star y ⬝ᵥ (A *ᵥ y) := by
+    rw [← e1, hUeq]
+    simp only [mul_apply, conjTranspose_apply, dotProduct, mulVec, hy, star_star, Pi.star_apply,
+      Finset.sum_mul, Finset.mul_sum]
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun b _ => by ring
+  rw [key]
+  exact re_dotProduct_mulVec_pos_of_posDef_hermitianPart hA hy0
+
+end Unsymmetric
+
+section SchurStep
+
+variable {A : Matrix n n 𝕜} {p : n}
+
+/-- One elimination step reproduces `A x` off the pivot row when `(A x)_p = 0`.
+(Local copy; `Matrix.schurComplementSingle_mulVec_of_apply_eq_zero` of
+`Numlib/LinearAlgebra/Matrix/SchurComplement` states the same.) -/
+private theorem schurComplementSingle_mulVec_apply' (hpp : A p p ≠ 0) {X : n → 𝕜}
+    (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
+    (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
+  have hp : A p p * X p + ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = 0 := by
+    rw [← hX, mulVec, dotProduct, sum_eq_add_sum_subtype_ne p]
+  have hsum : ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 = -(A p p * X p) := by
+    linear_combination hp
+  rw [mulVec, dotProduct, mulVec, dotProduct, sum_eq_add_sum_subtype_ne p (fun j => A i.1 j * X j)]
+  simp only [schurComplementSingle_apply, sub_mul, Finset.sum_sub_distrib]
+  have : ∑ j : {x : n // x ≠ p}, A i.1 p * (A p p)⁻¹ * A p j.1 * X j.1 =
+      A i.1 p * (A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * X j.1 := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun j _ => by ring
+  rw [this, hsum]
+  field_simp
+  ring
+
+/-- **The quadratic form of one elimination step**: for `A p p ≠ 0` and any `z` off the pivot,
+the extension `X` of `z` with `X p = -(A p p)⁻¹ ∑_j A p j z j` has `(A X)_p = 0`, and
+`zᴴ S z = Xᴴ A X` for the Schur complement `S = schurComplementSingle A p`. -/
+theorem exists_star_dotProduct_schurComplementSingle_mulVec (hpp : A p p ≠ 0)
+    (z : {x : n // x ≠ p} → 𝕜) :
+    ∃ X : n → 𝕜, (∀ t : {x : n // x ≠ p}, X t.1 = z t) ∧
+      star z ⬝ᵥ (A.schurComplementSingle p *ᵥ z) = star X ⬝ᵥ (A *ᵥ X) := by
+  classical
+  set X : n → 𝕜 := fun t =>
+    if h : t = p then -((A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * z j) else z ⟨t, h⟩ with hXd
+  have hXz : ∀ t : {x : n // x ≠ p}, X t.1 = z t := fun t => by simp [hXd, t.2]
+  have hzX : z = fun t : {x : n // x ≠ p} => X t.1 := funext fun t => (hXz t).symm
+  have hXp : X p = -((A p p)⁻¹ * ∑ j : {x : n // x ≠ p}, A p j.1 * z j) := by simp [hXd]
+  have hAX : (A *ᵥ X) p = 0 := by
+    rw [mulVec, dotProduct, sum_eq_add_sum_subtype_ne p, hXp]
+    simp only [hXz]
+    field_simp
+    ring
+  refine ⟨X, hXz, ?_⟩
+  conv_rhs => rw [dotProduct, sum_eq_add_sum_subtype_ne p, hAX, mul_zero, zero_add]
+  rw [dotProduct]
+  refine Finset.sum_congr rfl fun t _ => ?_
+  rw [hzX, schurComplementSingle_mulVec_apply' hpp hAX t]
+  rfl
+
+end SchurStep
+
+omit [Fintype n] in
+/-- **[golub2013matrix] Theorem 4.2.5**: if the Hermitian part of `A` is positive definite, so is
+the Hermitian part of the Schur complement of one elimination step (the book's `B₁ + C₁` of
+(4.2.1)). By the extension of `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`, the
+quadratic form of the Schur complement is a quadratic form of `A`. -/
+theorem posDef_hermitianPart_schurComplementSingle [Finite n] {A : Matrix n n 𝕜}
+    (hA : (hermitianPart A).PosDef) (p : n) :
+    (hermitianPart (A.schurComplementSingle p)).PosDef := by
+  have : Fintype n := Fintype.ofFinite n
+  have hpp : A p p ≠ 0 := by
+    intro h0
+    have := re_dotProduct_mulVec_pos_of_posDef_hermitianPart hA (x := Pi.single p 1)
+      (Pi.single_ne_zero_iff.2 one_ne_zero)
+    simp [h0] at this
+  refine posDef_iff_dotProduct_mulVec.2 ⟨hermitianPart_isHermitian _, fun z hz => ?_⟩
+  rw [star_dotProduct_hermitianPart_mulVec, RCLike.ofReal_pos]
+  obtain ⟨X, hXz, hq⟩ := exists_star_dotProduct_schurComplementSingle_mulVec hpp z
+  rw [hq]
+  refine re_dotProduct_mulVec_pos_of_posDef_hermitianPart hA fun h0 => hz (funext fun t => ?_)
+  rw [← hXz t, h0]
+  rfl
+
+section Semidefinite
+
+variable {A : Matrix n n 𝕜}
+
+omit [Fintype n] [LinearOrder n] in
+/-- **[golub2013matrix] (4.2.15)**: a zero diagonal entry of a positive semidefinite matrix has a
+zero row and a zero column, by `‖a_ij‖² ≤ a_ii a_jj`. -/
+theorem PosSemidef.apply_eq_zero_of_diag_eq_zero (hA : A.PosSemidef) {i : n} (hi : A i i = 0)
+    (j : n) : A i j = 0 ∧ A j i = 0 := by
+  have h1 := hA.norm_apply_sq_le_mul_re_diag i j
+  have h2 := hA.norm_apply_sq_le_mul_re_diag j i
+  rw [hi, map_zero, zero_mul] at h1
+  rw [hi, map_zero, mul_zero] at h2
+  exact ⟨norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h1 (sq_nonneg _))),
+    norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h2 (sq_nonneg _)))⟩
+
+omit [Fintype n] in
+/-- **One step of the outer-product `L D Lᴴ` on a positive semidefinite matrix**
+([golub2013matrix] (4.2.16)): if `A` is positive semidefinite and `A p p ≠ 0`, the Schur
+complement of one elimination step is positive semidefinite and its diagonal is dominated by that
+of `A`, the book's `Ã = B − v vᵀ/α`. The semidefinite analogue of
+`Matrix.PosDef.schurComplement`. -/
+theorem PosSemidef.schurComplementSingle [Finite n] (hA : A.PosSemidef) {p : n} (hpp : A p p ≠ 0) :
+    (A.schurComplementSingle p).PosSemidef ∧
+      ∀ i, RCLike.re ((A.schurComplementSingle p) i i) ≤ RCLike.re (A i.1 i.1) := by
+  have : Fintype n := Fintype.ofFinite n
+  have hstar : ∀ a b, star (A a b) = A b a := fun a b => hA.1.apply b a
+  have hαr : ((RCLike.re (A p p) : ℝ) : 𝕜) = A p p :=
+    RCLike.conj_eq_iff_re.1 (by rw [← RCLike.star_def, hstar])
+  have hαpos : 0 < RCLike.re (A p p) := by
+    have h0 : (0 : 𝕜) ≤ A p p := hA.diag_nonneg
+    have h1 := (RCLike.le_iff_re_im.1 h0).1
+    rw [map_zero] at h1
+    refine lt_of_le_of_ne h1 fun h => hpp ?_
+    rw [← hαr, ← h, RCLike.ofReal_zero]
+  refine ⟨posSemidef_iff_dotProduct_mulVec.2 ⟨?_, fun z => ?_⟩, fun i => ?_⟩
+  · ext i j
+    simp only [conjTranspose_apply, schurComplementSingle_apply, star_sub, star_mul', star_inv₀,
+      hstar]
+    ring
+  · obtain ⟨X, -, hq⟩ := exists_star_dotProduct_schurComplementSingle_mulVec hpp z
+    rw [hq]
+    exact hA.dotProduct_mulVec_nonneg X
+  · rw [schurComplementSingle_apply, map_sub]
+    refine sub_le_self _ ?_
+    have : A i.1 p * (A p p)⁻¹ * A p i.1 =
+        ((‖A i.1 p‖ ^ 2 / RCLike.re (A p p) : ℝ) : 𝕜) := by
+      rw [← hstar i.1 p, ← hαr, RCLike.star_def, mul_comm (A i.1 p), mul_assoc, RCLike.mul_conj]
+      push_cast
+      field_simp
+    rw [this, RCLike.ofReal_re]
+    positivity
+
+end Semidefinite
+
+section Factor
+
+variable {A : Matrix n n 𝕜}
+
+/-- **The Cholesky factor has the lower bandwidth of the matrix** ([golub2013matrix] §4.3.5):
+`cholesky A = Hᴴ` is `L D` for the LU factorization `A = (Hᴴ D⁻¹) (D H)`, whose lower factor keeps
+the lower bandwidth of `A` (`Matrix.IsLU.hasLowerBandwidth`), and right multiplication by a
+nonsingular diagonal changes no zero pattern. -/
+theorem cholesky_hasLowerBandwidth (hA : A.PosDef) {p : ℕ} (hp : A.HasLowerBandwidth p) :
+    (cholesky A).HasLowerBandwidth p := by
+  have hc := isCholesky_cholesky hA
+  have hL := hc.isLU.hasLowerBandwidth hA.isUnit_strictLeadingPrincipalSubmatrix hp
+  intro i j hij
+  have := hL i j hij
+  rw [conjTranspose_conjTranspose, mul_diagonal] at this
+  exact (mul_eq_zero.1 this).resolve_right (inv_ne_zero (hc.diag_ne_zero j))
+
+/-- **The entries of the Cholesky factor are bounded by the diagonal** ([golub2013matrix] §4.2.6,
+"`g_ij² ≤ ∑_{k ≤ i} g_ik² = a_ii`"): the diagonal of `A = G Gᴴ`. -/
+theorem sq_norm_cholesky_apply_le (hA : A.PosDef) (i j : n) :
+    ‖cholesky A i j‖ ^ 2 ≤ RCLike.re (A i i) := by
+  have hc := isCholesky_cholesky hA
+  have hsum : RCLike.re (A i i) = ∑ k, ‖cholesky A i k‖ ^ 2 := by
+    conv_lhs => rw [← hc.conjTranspose_mul_self]
+    rw [conjTranspose_conjTranspose, mul_apply, map_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [conjTranspose_apply, RCLike.star_def, RCLike.mul_conj, ← RCLike.ofReal_pow,
+      RCLike.ofReal_re]
+  rw [hsum]
+  exact Finset.single_le_sum (f := fun k => ‖cholesky A i k‖ ^ 2) (fun k _ => sq_nonneg _)
+    (Finset.mem_univ j)
+
+open scoped Matrix.Norms.L2Operator in
+/-- **`‖G‖₂² = ‖A‖₂`** for the Cholesky factor ([golub2013matrix] §4.2.6): Mathlib's C⋆-identity
+`‖Bᴴ B‖ = ‖B‖²` at `B = Gᴴ`, since `A = G Gᴴ`. -/
+theorem l2_opNorm_cholesky_sq (hA : A.PosDef) : ‖cholesky A‖ ^ 2 = ‖A‖ := by
+  have hc := isCholesky_cholesky hA
+  conv_rhs => rw [← hc.conjTranspose_mul_self]
+  rw [l2_opNorm_conjTranspose_mul_self, l2_opNorm_conjTranspose, sq]
+
+end Factor
+
+/-! ### The rank-revealing pivoted `L D Lᴴ` of a semidefinite matrix -/
+
+section PivotedLDL
+
+/-- For a unit lower triangular `L`, the entry of `L D Lᴴ` at a least index `i` is `d i`. -/
+private theorem mul_diagonal_mul_conjTranspose_apply_of_le {n : ℕ}
+    {L : Matrix (Fin n) (Fin n) 𝕜} (hL : L.IsUnitLowerTriangular) (d : Fin n → 𝕜) {i : Fin n}
+    (hi : ∀ k, i ≤ k) : (L * diagonal d * Lᴴ) i i = d i := by
+  rw [mul_apply, Finset.sum_eq_single i]
+  · rw [mul_diagonal, conjTranspose_apply, hL.diag_eq_one, star_one, mul_one, one_mul]
+  · intro k _ hki
+    rw [mul_diagonal, hL.isLowerTriangular (OrderDual.toDual_lt_toDual.2
+      (lt_of_le_of_ne (hi k) (Ne.symm hki))), zero_mul, zero_mul]
+  · simp
+
+/-- **The pivoted `L D Lᴴ` factorization of a positive semidefinite matrix**, before the rank
+count: with the largest remaining diagonal entry as pivot at every step, a positive semidefinite
+`A` on `Fin n` has a symmetric permutation `A.submatrix σ σ = L D Lᴴ` with `L` unit lower
+triangular and `D = diag d` real, nonnegative and nonincreasing. -/
+theorem PosSemidef.exists_perm_ldl_antitone :
+    ∀ {n : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}, A.PosSemidef →
+      ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin n) 𝕜) (d : Fin n → ℝ),
+        L.IsUnitLowerTriangular ∧ A.submatrix σ σ = L * diagonal (fun i => (d i : 𝕜)) * Lᴴ ∧
+          Antitone d ∧ ∀ i, 0 ≤ d i
+  | 0, A, _ => ⟨1, 1, 0, isUnitLowerTriangular_one, Subsingleton.elim _ _,
+      fun _ _ _ => le_rfl, fun _ => le_rfl⟩
+  | m + 1, A, hA => by
+    have hdiag : ∀ i, ((RCLike.re (A i i) : ℝ) : 𝕜) = A i i := fun i =>
+      RCLike.conj_eq_iff_re.1 (by rw [← RCLike.star_def]; exact hA.1.apply i i)
+    have hre0 : ∀ i, 0 ≤ RCLike.re (A i i) := fun i => (RCLike.nonneg_iff.1 hA.diag_nonneg).1
+    obtain ⟨p, -, hp⟩ := Finset.exists_max_image univ (fun i => RCLike.re (A i i)) univ_nonempty
+    rcases (hre0 p).eq_or_lt with h0 | hpos
+    · -- the largest diagonal entry vanishes, so `A = 0`
+      have hz : ∀ i, A i i = 0 := fun i => by
+        rw [← hdiag i, RCLike.ofReal_eq_zero]
+        exact le_antisymm (h0 ▸ hp i (mem_univ _)) (hre0 i)
+      have hA0 : A = 0 := by
+        ext i j
+        exact (hA.apply_eq_zero_of_diag_eq_zero (hz i) j).1
+      refine ⟨1, 1, 0, isUnitLowerTriangular_one, ?_, fun _ _ _ => le_rfl, fun _ => le_rfl⟩
+      rw [hA0]
+      simp
+    -- pivot at the largest diagonal entry
+    set α := RCLike.re (A p p) with hα
+    have hαne : (α : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 hpos.ne'
+    set B := A.submatrix (Equiv.swap 0 p) (Equiv.swap 0 p) with hBd
+    have hB : B.PosSemidef := hA.submatrix _
+    have hB00 : B 0 0 = (α : 𝕜) := by
+      simp [hBd, hα, hdiag]
+    have hBstar : ∀ a b, star (B a b) = B b a := fun a b => hB.1.apply b a
+    have hBle : ∀ y, RCLike.re (B y y) ≤ α := fun y => hp _ (mem_univ _)
+    set e : Fin m → {i : Fin (m + 1) // i ≠ 0} := fun i => ⟨i.succ, Fin.succ_ne_zero i⟩ with he
+    have hSchur := hB.schurComplementSingle (p := 0) (by rw [hB00]; exact hαne)
+    set S := (B.schurComplementSingle 0).submatrix e e with hSd
+    have hS : S.PosSemidef := hSchur.1.submatrix e
+    obtain ⟨σ', L', d', hL', heq, hanti, hnn⟩ := PosSemidef.exists_perm_ldl_antitone hS
+    set c : Fin m → 𝕜 := fun x => B (σ' x).succ 0 with hc
+    set L : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 := of fun i j =>
+      Fin.cases (motive := fun _ => 𝕜) (Fin.cases (motive := fun _ => 𝕜) 1 (fun _ => 0) j)
+        (fun i' => Fin.cases (motive := fun _ => 𝕜) (c i' / α) (fun j' => L' i' j') j) i with hLd
+    have hd0 : ∀ (h : 0 < m), d' ⟨0, h⟩ ≤ α := fun h => by
+      have e1 := congrFun (congrFun heq ⟨0, h⟩) ⟨0, h⟩
+      rw [mul_diagonal_mul_conjTranspose_apply_of_le hL' _
+        (fun k => Fin.le_def.2 (Nat.zero_le _))] at e1
+      have e2 : RCLike.re ((d' ⟨0, h⟩ : ℝ) : 𝕜) = RCLike.re (S (σ' ⟨0, h⟩) (σ' ⟨0, h⟩)) := by
+        rw [← e1]
+        rfl
+      rw [RCLike.ofReal_re] at e2
+      rw [e2]
+      exact (hSchur.2 _).trans (hBle _)
+    refine ⟨Equiv.Perm.decomposeFin.symm (p, σ'), L, Fin.cons α d',
+      ⟨fun i j hij => ?_, fun i => ?_⟩, ?_, fun i j hij => ?_, fun i => ?_⟩
+    · have hij' : i < j := OrderDual.toDual_lt_toDual.1 hij
+      induction i using Fin.cases with
+      | zero =>
+        induction j using Fin.cases with
+        | zero => exact absurd hij' (lt_irrefl _)
+        | succ j' => simp [hLd]
+      | succ i' =>
+        induction j using Fin.cases with
+        | zero => exact absurd hij' (not_lt.2 (Fin.le_def.2 (Nat.zero_le _)))
+        | succ j' =>
+          simp only [hLd, of_apply, Fin.cases_succ]
+          exact hL'.isLowerTriangular (OrderDual.toDual_lt_toDual.2 (Fin.succ_lt_succ_iff.1 hij'))
+    · induction i using Fin.cases with
+      | zero => simp [hLd]
+      | succ i' => simp [hLd, hL'.diag_eq_one]
+    · ext i j
+      rw [mul_apply, Fin.sum_univ_succ]
+      simp only [submatrix_apply, conjTranspose_apply, mul_diagonal, Fin.cons_zero, Fin.cons_succ]
+      induction i using Fin.cases with
+      | zero =>
+        induction j using Fin.cases with
+        | zero =>
+          simp [hLd, Equiv.Perm.decomposeFin_symm_apply_zero, hα, hdiag]
+        | succ j' =>
+          simp only [hLd, of_apply, Fin.cases_zero, Fin.cases_succ, zero_mul, Finset.sum_const_zero,
+            add_zero, one_mul, Equiv.Perm.decomposeFin_symm_apply_zero,
+            Equiv.Perm.decomposeFin_symm_apply_succ, star_div₀, hc, hBstar]
+          rw [RCLike.star_def, RCLike.conj_ofReal]
+          have : A p ((Equiv.swap 0 p) (σ' j').succ) = B 0 (σ' j').succ := by
+            simp [hBd]
+          rw [this]
+          field_simp
+      | succ i' =>
+        induction j using Fin.cases with
+        | zero =>
+          simp only [hLd, of_apply, Fin.cases_zero, Fin.cases_succ, star_zero, mul_zero,
+            Finset.sum_const_zero, add_zero, star_one, mul_one,
+            Equiv.Perm.decomposeFin_symm_apply_zero, Equiv.Perm.decomposeFin_symm_apply_succ, hc]
+          have : A ((Equiv.swap 0 p) (σ' i').succ) p = B (σ' i').succ 0 := by
+            simp [hBd]
+          rw [this]
+          field_simp
+        | succ j' =>
+          have e1 := congrFun (congrFun heq i') j'
+          rw [mul_apply] at e1
+          simp only [conjTranspose_apply, mul_diagonal] at e1
+          simp only [hLd, of_apply, Fin.cases_succ, Fin.cases_zero,
+            Equiv.Perm.decomposeFin_symm_apply_succ, hc]
+          rw [← e1]
+          simp only [submatrix_apply, hSd, he, schurComplementSingle_apply]
+          have : A ((Equiv.swap 0 p) (σ' i').succ) ((Equiv.swap 0 p) (σ' j').succ) =
+              B (σ' i').succ (σ' j').succ := rfl
+          rw [this, hB00, star_div₀, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.star_def,
+            hBstar]
+          field_simp
+          ring
+    · induction i using Fin.cases with
+      | zero =>
+        induction j using Fin.cases with
+        | zero => exact le_rfl
+        | succ j' =>
+          simp only [Fin.cons_zero, Fin.cons_succ]
+          exact (hanti (Fin.le_def.2 (Nat.zero_le _) : (⟨0, Fin.pos j'⟩ : Fin m) ≤ j')).trans
+            (hd0 (Fin.pos j'))
+      | succ i' =>
+        induction j using Fin.cases with
+        | zero => exact absurd hij (not_le.2 (Fin.succ_pos _))
+        | succ j' =>
+          simp only [Fin.cons_succ]
+          exact hanti (Fin.succ_le_succ_iff.1 hij)
+    · induction i using Fin.cases with
+      | zero => exact hpos.le
+      | succ i' => exact hnn i'
+
+/-- On `Fin n`, a nonnegative nonincreasing `d` is positive exactly on the first `k` indices,
+`k` the number of its nonzero values. -/
+private theorem pos_iff_lt_card_of_antitone {n : ℕ} {d : Fin n → ℝ} (hanti : Antitone d)
+    (hnn : ∀ i, 0 ≤ d i) (i : Fin n) : 0 < d i ↔ (i : ℕ) < #{j | d j ≠ 0} := by
+  constructor
+  · intro hi
+    have hsub : univ.filter (fun j : Fin n => (j : ℕ) < i + 1) ⊆ univ.filter (fun j => d j ≠ 0) :=
+      fun j hj => by
+        simp only [mem_filter, mem_univ, true_and] at hj ⊢
+        exact (lt_of_lt_of_le hi (hanti (Fin.le_def.2 (Nat.lt_succ_iff.1 hj)))).ne'
+    have := card_le_card hsub
+    rw [Fin.card_filter_val_lt] at this
+    omega
+  · intro hi
+    by_contra hcon
+    have hdi : d i = 0 := le_antisymm (not_lt.1 hcon) (hnn i)
+    have hsub : univ.filter (fun j => d j ≠ 0) ⊆ univ.filter (fun j : Fin n => (j : ℕ) < i) :=
+      fun j hj => by
+        simp only [mem_filter, mem_univ, true_and] at hj ⊢
+        by_contra hji
+        exact hj (le_antisymm (hdi ▸ hanti (Fin.le_def.2 (not_lt.1 hji))) (hnn j))
+    have := card_le_card hsub
+    rw [Fin.card_filter_val_lt] at this
+    omega
+
+/-- **[golub2013matrix] (4.2.17), the rank-revealing pivoted factorization**: a positive
+semidefinite `A` on `Fin n` of rank `r` has a symmetric permutation `A.submatrix σ σ = L D Lᴴ` with
+`L` unit lower triangular and `D = diag d` real and nonincreasing, `d i > 0` for `i < r` and
+`d i = 0` for `i ≥ r`: only the first `r` columns of `L` carry the factorization. The pivot is the
+largest remaining diagonal entry (`Matrix.PosSemidef.exists_perm_ldl_antitone`); `A` is congruent
+to `D`, so its rank is the number of nonzero pivots. -/
+theorem PosSemidef.exists_perm_ldl_rank {n : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}
+    (hA : A.PosSemidef) :
+    ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin n) 𝕜) (d : Fin n → ℝ),
+      L.IsUnitLowerTriangular ∧ A.submatrix σ σ = L * diagonal (fun i => (d i : 𝕜)) * Lᴴ ∧
+        Antitone d ∧ (∀ i : Fin n, (i : ℕ) < A.rank → 0 < d i) ∧
+          ∀ i : Fin n, A.rank ≤ i → d i = 0 := by
+  classical
+  obtain ⟨σ, L, d, hL, heq, hanti, hnn⟩ := hA.exists_perm_ldl_antitone
+  have hLu : IsUnit L.det := (isUnit_iff_isUnit_det _).1 hL.isUnit
+  have hLHu : IsUnit Lᴴ.det := by
+    rw [det_conjTranspose]
+    exact hLu.star
+  have hrank : A.rank = #{j | d j ≠ 0} := by
+    rw [← rank_submatrix A σ σ, heq, rank_mul_eq_left_of_isUnit_det _ _ hLHu,
+      rank_mul_eq_right_of_isUnit_det _ _ hLu, rank_diagonal, Fintype.card_subtype]
+    simp only [ne_eq, RCLike.ofReal_eq_zero]
+  refine ⟨σ, L, d, hL, heq, hanti, fun i hi => ?_, fun i hi => ?_⟩
+  · rw [hrank] at hi
+    exact (pos_iff_lt_card_of_antitone hanti hnn i).2 hi
+  · rw [hrank] at hi
+    exact le_antisymm (not_lt.1 fun h => absurd ((pos_iff_lt_card_of_antitone hanti hnn i).1 h)
+      (not_lt.2 hi)) (hnn i)
+
+end PivotedLDL
+
+/-! ### The block form of the Cholesky factor -/
+
+section Block
+
+/-- **The block form of the Cholesky factor** ([golub2013matrix] (4.2.18), the specification of the
+block Cholesky algorithms 4.2.3–4.2.4): for positive definite `A` on `Fin (r + s)`, read as
+`A' = [A₁₁ A₁₂; A₂₁ A₂₂]` along `finSumFinEquiv`, the lower Cholesky factor is
+`[G₁₁ 0; G₂₁ G₂₂]` with `G₁₁` the factor of `A₁₁`, `G₂₁ = A₂₁ G₁₁⁻ᴴ` (the book's `G₂₁ G₁₁ᵀ = A₂₁`)
+and `G₂₂` the factor of the Schur complement `A₂₂ - A₂₁ A₁₁⁻¹ A₁₂`. By uniqueness of the Cholesky
+factor: the block matrix is lower triangular with positive diagonal in the order of `Fin (r + s)`,
+and its product with its conjugate transpose is `A'`. -/
+theorem cholesky_finSumFin {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) 𝕜} (hA : A.PosDef) :
+    (cholesky A).submatrix finSumFinEquiv finSumFinEquiv =
+      fromBlocks (cholesky (A.submatrix finSumFinEquiv finSumFinEquiv).toBlocks₁₁) 0
+        ((A.submatrix finSumFinEquiv finSumFinEquiv).toBlocks₂₁ *
+          (cholesky (A.submatrix finSumFinEquiv finSumFinEquiv).toBlocks₁₁)ᴴ⁻¹)
+        (cholesky (A.submatrix finSumFinEquiv finSumFinEquiv).schurComplement) := by
+  set e : Fin r ⊕ Fin s ≃ Fin (r + s) := finSumFinEquiv with he
+  set A' := A.submatrix e e with hA'd
+  have hA' : A'.PosDef := hA.submatrix e.injective
+  have h11 : A'.toBlocks₁₁.PosDef := hA'.submatrix Sum.inl_injective
+  have hS : A'.schurComplement.PosDef := hA'.schurComplement
+  set G₁ := cholesky A'.toBlocks₁₁ with hG₁
+  set G₂ := cholesky A'.schurComplement with hG₂
+  have c1 := isCholesky_cholesky h11
+  have c2 := isCholesky_cholesky hS
+  have hG1 : G₁ * G₁ᴴ = A'.toBlocks₁₁ := by
+    simpa using c1.conjTranspose_mul_self
+  have hG2 : G₂ * G₂ᴴ = A'.schurComplement := by
+    simpa using c2.conjTranspose_mul_self
+  have hu : IsUnit G₁ᴴ.det := (isUnit_iff_isUnit_det _).1 c1.isUnit
+  have hu' : IsUnit G₁.det := by
+    rw [← conjTranspose_conjTranspose G₁, det_conjTranspose]
+    exact hu.star
+  have h12 : A'.toBlocks₁₂ = A'.toBlocks₂₁ᴴ := by
+    ext i j
+    exact (hA'.1.apply (Sum.inl i) (Sum.inr j)).symm
+  set K := fromBlocks G₁ 0 (A'.toBlocks₂₁ * G₁ᴴ⁻¹) G₂ with hK
+  have hKK : K * Kᴴ = A' := by
+    rw [hK, fromBlocks_conjTranspose, fromBlocks_multiply]
+    conv_rhs => rw [← fromBlocks_toBlocks A']
+    have hinv : (G₁ᴴ⁻¹)ᴴ = G₁⁻¹ := by
+      rw [conjTranspose_nonsing_inv, conjTranspose_conjTranspose]
+    congr 1 <;> simp only [conjTranspose_mul, hinv, conjTranspose_zero, Matrix.mul_zero,
+      Matrix.zero_mul, add_zero, Matrix.mul_assoc]
+    · exact hG1
+    · rw [← Matrix.mul_assoc, mul_nonsing_inv _ hu', Matrix.one_mul, h12]
+    · rw [nonsing_inv_mul _ hu, Matrix.mul_one]
+    · rw [hG2, schurComplement_eq, h12, ← hG1, Matrix.mul_inv_rev]
+      simp only [Matrix.mul_assoc]
+      abel
+  have hc : cholesky A = K.submatrix e.symm e.symm := by
+    refine (cholesky_eq_of_isCholesky (H := (K.submatrix e.symm e.symm)ᴴ) ⟨?_, ?_, ?_⟩).trans
+      (conjTranspose_conjTranspose _)
+    · intro i j hij
+      have hij' : (j : ℕ) < i := hij
+      rw [conjTranspose_apply, submatrix_apply]
+      rcases finSumFinEquiv_symm_cases i with ⟨hi, ei⟩ | ⟨hi, ei⟩ <;>
+        rcases finSumFinEquiv_symm_cases j with ⟨hj, ej⟩ | ⟨hj, ej⟩ <;> rw [ei, ej]
+      · rw [hK, fromBlocks_apply₁₁, hG₁, isLowerTriangular_cholesky _
+          (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simpa using hij'))), star_zero]
+      · omega
+      · rw [hK, fromBlocks_apply₁₂, zero_apply, star_zero]
+      · rw [hK, fromBlocks_apply₂₂, hG₂, isLowerTriangular_cholesky _
+          (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simp; omega))), star_zero]
+    · intro i
+      rw [conjTranspose_apply, submatrix_apply]
+      rcases finSumFinEquiv_symm_cases i with ⟨hi, ei⟩ | ⟨hi, ei⟩ <;> rw [ei]
+      · rw [hK, fromBlocks_apply₁₁, ← conjTranspose_apply]
+        exact c1.diag_pos _
+      · rw [hK, fromBlocks_apply₂₂, ← conjTranspose_apply]
+        exact c2.diag_pos _
+    · rw [conjTranspose_conjTranspose, conjTranspose_submatrix, submatrix_mul_equiv, hKK, hA'd,
+        submatrix_submatrix]
+      simp
+  rw [hc, submatrix_submatrix]
+  simp
+
+end Block
 
 end Matrix

@@ -88,9 +88,9 @@ met in the recursion are the pivots of Gaussian elimination and are nonzero exac
 (algorithm_12_1_1 pure N ω λ R S) = (L, U)` with `Matrix.IsLU A L U`. Induction on `N`: the computed `a`, `g` are the
 first column and row of `A` (`Matrix.apply_eq_of_sylvesterMap_diagonal_eq`), the recursive call receives correct
 generators of the Schur complement (`theorem_12_1_1`), whose strict leading minors are those of `A` divided by `α`
-(`Matrix.isUnit_schurComplementSingle_of_isUnit` of `LU`), and `[1 0; f/α L₁][α gᵀ; 0 U₁] = A` block by block
+(`Matrix.isUnit_schurComplementSingle` of `SchurComplement`), and `[1 0; f/α L₁][α gᵀ; 0 U₁] = A` block by block
 (`Matrix.isLU_luLowerOfSchur_luUpperOfSchur'`-shaped assembly). ★★★ (~150 lines)'''
-deps = ["GolubVanLoan.Chapter12.algorithm_12_1_1", "FloatingPoint.dotAccum_id", "GolubVanLoan.Chapter12.theorem_12_1_1", "GolubVanLoan.Chapter12.equation_12_1_4", "Matrix.IsLU", "Matrix.isUnit_schurComplementSingle_of_isUnit", "Matrix.strictLeadingPrincipalSubmatrix"]
+deps = ["GolubVanLoan.Chapter12.algorithm_12_1_1", "FloatingPoint.dotAccum_id", "GolubVanLoan.Chapter12.theorem_12_1_1", "GolubVanLoan.Chapter12.equation_12_1_4", "Matrix.IsLU", "Matrix.isUnit_schurComplementSingle", "Matrix.strictLeadingPrincipalSubmatrix"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.1.1'
 
 [[node]]

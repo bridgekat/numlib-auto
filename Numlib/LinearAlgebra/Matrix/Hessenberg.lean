@@ -17,7 +17,8 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
 * `Matrix.IsUpperHessenberg`, `Matrix.IsTridiagonal`: zero below the first subdiagonal, and zero
   outside the three central diagonals. Both are stated over a bare `LinearOrder` on the index type,
   as "no index lies strictly between the two", which on `Fin n` is the usual condition on the
-  difference of the indices (`Matrix.isUpperHessenberg_iff_fin`).
+  difference of the indices (`Matrix.isUpperHessenberg_iff_fin`,
+  `Matrix.isTridiagonal_iff_fin`).
 * `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
   the matrix `H̄ₘ` of the Arnoldi process; it is lower bandwidth `1` in the rectangular vocabulary
   of `Numlib/LinearAlgebra/Matrix/Band`
@@ -177,6 +178,13 @@ theorem isTridiagonal_iff_hasBandwidth_one :
   simp only [HasLowerBandwidth, HasUpperBandwidth, one_lt_card_filter_le_lt_iff]
   exact ⟨fun h => ⟨fun i j hij => h i j (Or.inl hij), fun i j hij => h i j (Or.inr hij)⟩,
     fun h i j hij => hij.elim (h.1 i j) (h.2 i j)⟩
+
+/-- On `Fin N`, tridiagonal is the condition `A i j = 0` for `j + 1 < i` or `i + 1 < j`. -/
+theorem isTridiagonal_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
+    A.IsTridiagonal ↔ ∀ i j : Fin N, (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j → A i j = 0 := by
+  rw [isTridiagonal_iff_hasBandwidth_one, hasLowerBandwidth_iff_fin, hasUpperBandwidth_iff_fin]
+  exact ⟨fun h i j hij => hij.elim (h.1 i j) (h.2 i j),
+    fun h => ⟨fun i j hij => h i j (Or.inl hij), fun i j hij => h i j (Or.inr hij)⟩⟩
 
 /-- A lower bidiagonal matrix has bandwidths `1` and `0`. -/
 theorem IsLowerBidiagonal.hasBandwidth (hB : A.IsLowerBidiagonal) :
