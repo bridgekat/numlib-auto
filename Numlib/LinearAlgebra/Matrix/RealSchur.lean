@@ -7,11 +7,13 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.SpecialFunctions.Complex.Arg
 import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Mathlib.LinearAlgebra.Matrix.DotProduct
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
@@ -48,6 +50,11 @@ two*, and that is exactly where the `2 × 2` blocks come from.
   eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
   It rests on `LinearMap.exists_invariant_finrank_eq_one_or_two`: an operator with an eigenvector
   has an invariant line, and one without has no eigenvector on any invariant plane either.
+* `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`: the eigenvalues of a real
+  orthogonal matrix of even order `2m` with determinant `1` are `m` conjugate pairs `e^{±iθ_k}`
+  ([golub2013matrix] (12.2.19), stated there for orthogonal Hessenberg matrices). The roots of the
+  complexified characteristic polynomial have modulus one, come in conjugate pairs, and have
+  product `det = 1`, which pairs up the real roots `±1`; no Schur form is needed.
 
 ## Implementation notes
 
@@ -770,5 +777,178 @@ theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, (Qᵀ * A * Q).IsQuasiUpperTriangular := by
   obtain ⟨Q, hQ, p, hmono, hcard, htri⟩ := exists_orthogonal_conj_quasiUpperTriangular A
   exact ⟨Q, hQ, p, hmono, hcard, htri⟩
+
+
+/-! ### The spectrum of a special orthogonal matrix -/
+
+section SpecialOrthogonal
+
+open Complex Polynomial
+
+/-- The pair `{e^{iθ}, e^{−iθ}}` of conjugate points of the unit circle. -/
+private noncomputable def circlePair (θ : ℝ) : Multiset ℂ := {exp (θ * I), exp (-θ * I)}
+
+open scoped ComplexOrder in
+/-- The eigenvalues of a real orthogonal matrix lie on the unit circle: `A v = z v` with `A`
+unitary gives `|z|² ‖v‖² = ‖v‖²`. -/
+private theorem norm_eq_one_of_mem_roots_charpoly {N : ℕ} {H : Matrix (Fin N) (Fin N) ℝ}
+    (hH : H ∈ orthogonalGroup (Fin N) ℝ) {z : ℂ}
+    (hz : z ∈ (H.map (algebraMap ℝ ℂ)).charpoly.roots) : ‖z‖ = 1 := by
+  set A := H.map (algebraMap ℝ ℂ) with hA
+  have hAA : Aᴴ * A = 1 := by
+    rw [hA, ← conjTranspose_map _ (fun _ => by simp), ← Matrix.map_mul,
+      conjTranspose_eq_transpose_of_trivial, (mem_orthogonalGroup_iff' (Fin N) ℝ).1 hH,
+      Matrix.map_one _ (map_zero _) (map_one _)]
+  have hroot := (mem_roots (A.charpoly_monic.ne_zero)).1 hz
+  rw [IsRoot, eval_charpoly] at hroot
+  obtain ⟨v, hv, hAv⟩ := exists_mulVec_eq_zero_iff.2 hroot
+  have hsc : scalar (Fin N) z *ᵥ v = z • v := by
+    ext i
+    rw [scalar_apply, mulVec_diagonal]
+    rfl
+  have hAv' : A *ᵥ v = z • v := by
+    rw [sub_mulVec, sub_eq_zero, hsc] at hAv
+    exact hAv.symm
+  have hvv : star v ⬝ᵥ v ≠ 0 := fun h => hv (dotProduct_star_self_eq_zero.1 h)
+  have key : star (A *ᵥ v) ⬝ᵥ (A *ᵥ v) = star v ⬝ᵥ v := by
+    rw [star_mulVec, ← dotProduct_mulVec, mulVec_mulVec, hAA, one_mulVec]
+  rw [hAv', star_smul, smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul,
+    ← mul_assoc] at key
+  have hzz : star z * z = 1 := by
+    exact mul_right_cancel₀ hvv (key.trans (one_mul _).symm)
+  have hn : ‖z‖ ^ 2 = 1 := by
+    rw [← Complex.ofReal_inj, Complex.ofReal_pow, ← Complex.mul_conj', mul_comm]
+    simpa using hzz
+  have := norm_nonneg z
+  nlinarith [hn]
+
+/-- The roots of the complexification of a real polynomial are closed under conjugation. -/
+private theorem roots_map_conj {p : ℝ[X]} :
+    (p.map (algebraMap ℝ ℂ)).roots.map (starRingEnd ℂ) = (p.map (algebraMap ℝ ℂ)).roots := by
+  rw [roots_map_of_injective_of_card_eq_natDegree (starRingEnd ℂ).injective
+    (splits_iff_card_roots.1 (IsAlgClosed.splits _)), Polynomial.map_map]
+  congr 2
+  exact RingHom.ext fun x => by simp
+
+/-- A conjugation-invariant multiset of unit complex numbers with even size and product `1` is a
+union of conjugate pairs `{e^{iθ}, e^{−iθ}}`. -/
+private theorem exists_circlePairs (s : Multiset ℂ) (hconj : s.map (starRingEnd ℂ) = s)
+    (hnorm : ∀ z ∈ s, ‖z‖ = 1) (hprod : s.prod = 1) (hcard : Even (Multiset.card s)) :
+    ∃ T : Multiset ℝ, 2 * Multiset.card T = Multiset.card s ∧ s = T.bind circlePair := by
+  induction hk : Multiset.card s using Nat.strong_induction_on generalizing s with
+  | _ k ih =>
+  by_cases hreal : ∃ z ∈ s, z.im ≠ 0
+  · obtain ⟨z, hzs, hzi⟩ := hreal
+    have hcz : starRingEnd ℂ z ≠ z := fun h => hzi (Complex.conj_eq_iff_im.1 h)
+    have hczs : starRingEnd ℂ z ∈ s.erase z := by
+      rw [Multiset.mem_erase_of_ne hcz, ← hconj]
+      exact Multiset.mem_map_of_mem _ hzs
+    set s' := (s.erase z).erase (starRingEnd ℂ z) with hs'
+    have hs : s = z ::ₘ starRingEnd ℂ z ::ₘ s' := by
+      rw [hs', Multiset.cons_erase hczs, Multiset.cons_erase hzs]
+    have hzz : z * starRingEnd ℂ z = 1 := by
+      rw [Complex.mul_conj', hnorm z hzs]
+      simp
+    have hconj' : s'.map (starRingEnd ℂ) = s' := by
+      have := hconj
+      rw [hs, Multiset.map_cons, Multiset.map_cons, Complex.conj_conj, Multiset.cons_swap] at this
+      exact (Multiset.cons_inj_right _).1 ((Multiset.cons_inj_right _).1 this)
+    have hcard' : Multiset.card s' + 2 = k := by rw [← hk, hs]; simp
+    obtain ⟨T, hT, hTs⟩ := ih (Multiset.card s') (by omega) s' hconj'
+      (fun w hw => hnorm w (by rw [hs]; simp [hw]))
+      (by rw [hs, Multiset.prod_cons, Multiset.prod_cons, ← mul_assoc, hzz, one_mul] at hprod
+          exact hprod)
+      (by rw [hk] at hcard; obtain ⟨t, ht⟩ := hcard; exact ⟨t - 1, by omega⟩) rfl
+    refine ⟨arg z ::ₘ T, by simp; omega, ?_⟩
+    have h1 : exp (arg z * I) = z := by
+      simpa [hnorm z hzs] using norm_mul_exp_arg_mul_I z
+    have h2 : exp (-arg z * I) = starRingEnd ℂ z := by
+      conv_rhs => rw [← h1]
+      rw [← exp_conj, map_mul, conj_ofReal, conj_I, mul_neg, neg_mul]
+    rw [Multiset.cons_bind, ← hTs, circlePair, h1, h2, hs, Multiset.insert_eq_cons,
+      Multiset.cons_add, Multiset.singleton_add]
+  · push Not at hreal
+    have hpm : ∀ z ∈ s, z = 1 ∨ z = -1 := fun z hz => by
+      have hzr : z = (z.re : ℂ) := Complex.ext rfl (by simp [hreal z hz])
+      have hn := hnorm z hz
+      rw [hzr, Complex.norm_real, Real.norm_eq_abs] at hn
+      rcases abs_eq (zero_le_one) |>.1 hn with h | h
+      · left; rw [hzr, h]; simp
+      · right; rw [hzr, h]; simp
+    set a := Multiset.card (s.filter (· = 1)) with ha
+    set b := Multiset.card (s.filter (fun z => ¬ z = 1)) with hb
+    have hfa : s.filter (· = 1) = Multiset.replicate a 1 :=
+      Multiset.eq_replicate.2 ⟨rfl, fun z hz => (Multiset.mem_filter.1 hz).2⟩
+    have hfb : s.filter (fun z => ¬ z = 1) = Multiset.replicate b (-1) :=
+      Multiset.eq_replicate.2 ⟨rfl, fun z hz => by
+        obtain ⟨hzs, hz1⟩ := Multiset.mem_filter.1 hz
+        exact (hpm z hzs).resolve_left hz1⟩
+    have hsab : s = Multiset.replicate a 1 + Multiset.replicate b (-1) := by
+      rw [← hfa, ← hfb, Multiset.filter_add_not]
+    have hbeven : Even b := by
+      rw [hsab, Multiset.prod_add, Multiset.prod_replicate, Multiset.prod_replicate, one_pow,
+        one_mul] at hprod
+      exact (neg_one_pow_eq_one_iff_even (by norm_num)).1 hprod
+    have haeven : Even a := by
+      rw [hsab, Multiset.card_add, Multiset.card_replicate, Multiset.card_replicate] at hcard
+      exact (Nat.even_add.1 hcard).2 hbeven
+    obtain ⟨a', ha'⟩ := haeven
+    obtain ⟨b', hb'⟩ := hbeven
+    refine ⟨Multiset.replicate a' 0 + Multiset.replicate b' Real.pi, ?_, ?_⟩
+    · rw [← hk, hsab]
+      simp
+      omega
+    · have hc0 : circlePair 0 = Multiset.replicate 2 1 := by
+        simp [circlePair, Multiset.replicate_succ]
+      have hcpi : circlePair Real.pi = Multiset.replicate 2 (-1) := by
+        simp [circlePair, Multiset.replicate_succ, neg_mul, exp_neg_pi_mul_I, exp_pi_mul_I]
+      have hrb : ∀ (t : ℕ) (x : ℝ) (w : ℂ), circlePair x = Multiset.replicate 2 w →
+          (Multiset.replicate t x).bind circlePair = Multiset.replicate (t + t) w := by
+        intro t x w hx
+        induction t with
+        | zero => simp
+        | succ t ih =>
+          rw [Multiset.replicate_succ, Multiset.cons_bind, ih, hx, ← Multiset.replicate_add]
+          congr 1
+          omega
+      rw [Multiset.add_bind, hrb a' 0 1 hc0, hrb b' Real.pi (-1) hcpi, hsab, ← ha', ← hb']
+
+/-- **The spectrum of a special orthogonal matrix** ([golub2013matrix] (12.2.19), stated there
+for orthogonal upper Hessenberg matrices; true for all): the eigenvalues of `H` orthogonal of
+even order `2m` with `det H = 1` are `m` conjugate pairs `e^{±iθ_k}` on the unit circle, the real
+eigenvalues `±1` included in pairs. The roots of the characteristic polynomial have modulus one
+(`H` is unitary over `ℂ`), come in conjugate pairs (the polynomial is real), and the eigenvalue
+`−1` has even multiplicity because their product is `det H = 1`; so does `1`, the order being
+even. -/
+theorem exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup {m : ℕ}
+    {H : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ} (hH : H ∈ specialOrthogonalGroup (Fin (2 * m)) ℝ) :
+    ∃ θ : Fin m → ℝ, (H.map (algebraMap ℝ ℂ)).charpoly =
+      ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I))) := by
+  obtain ⟨hO, hdet⟩ := mem_specialOrthogonalGroup_iff.1 hH
+  set A := H.map (algebraMap ℝ ℂ) with hA
+  have hmap : A.charpoly = H.charpoly.map (algebraMap ℝ ℂ) := charpoly_map H _
+  have hsplit : Multiset.card A.charpoly.roots = A.charpoly.natDegree :=
+    splits_iff_card_roots.1 (IsAlgClosed.splits _)
+  have hconj : A.charpoly.roots.map (starRingEnd ℂ) = A.charpoly.roots := by
+    rw [hmap]
+    exact roots_map_conj
+  have hprod : A.charpoly.roots.prod = 1 := by
+    rw [← det_eq_prod_roots_charpoly, hA, ← RingHom.mapMatrix_apply, ← RingHom.map_det, hdet,
+      map_one]
+  have hcard : Multiset.card A.charpoly.roots = 2 * m := by
+    rw [hsplit, charpoly_natDegree_eq_dim, Fintype.card_fin]
+  obtain ⟨T, hT, hTs⟩ := exists_circlePairs A.charpoly.roots hconj
+    (fun z hz => norm_eq_one_of_mem_roots_charpoly hO hz) hprod ⟨m, by omega⟩
+  have hTm : Multiset.card T = m := by omega
+  set l := T.toList with hl
+  have hlen : l.length = m := by rw [hl, Multiset.length_toList, hTm]
+  refine ⟨fun k => l[(k : ℕ)]'(by rw [hlen]; exact k.2), ?_⟩
+  rw [← prod_multiset_X_sub_C_of_monic_of_roots_card_eq A.charpoly_monic hsplit, hTs,
+    Multiset.map_bind, Multiset.prod_bind, ← Multiset.coe_toList T, ← hl, Multiset.map_coe,
+    Multiset.prod_coe, ← List.ofFn_getElem_eq_map, List.prod_ofFn]
+  refine Fintype.prod_equiv (finCongr hlen) _ _ fun k => ?_
+  simp [circlePair]
+
+end SpecialOrthogonal
 
 end Matrix

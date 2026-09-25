@@ -1,7 +1,3 @@
-# Planned addition (review of the GVL round): when `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`
-# is formalized, add to the module doc's "Main results": the eigenvalues of a real orthogonal matrix of even size with
-# determinant `1` are `m` conjugate pairs `e^{±iθ_k}` ([golub2013matrix] (12.2.19), stated there for orthogonal
-# Hessenberg matrices; true for all).
 [[node]]
 id = "LinearMap.exists_invariant_finrank_le_two"
 
@@ -45,27 +41,6 @@ id = "Matrix.exists_orthogonal_conj_isQuasiUpperTriangular"
 
 [[node]]
 id = "Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup"
-kind = "theorem"
-desc = '''The spectrum of a special orthogonal matrix of even size ([golub2013matrix] (12.2.19), which states it for an
-orthogonal upper Hessenberg `H`; the Hessenberg structure plays no role): for `H ∈ Matrix.specialOrthogonalGroup
-(Fin (2 * m)) ℝ` (Mathlib; orthogonal with `det H = 1`), `∃ θ : Fin m → ℝ, (H.map (algebraMap ℝ ℂ)).charpoly = ∏ k,
-(X − C (exp (θ k * I))) * (X − C (exp (−θ k * I)))` — its eigenvalues are `m` conjugate pairs on the unit circle,
-the real eigenvalues `±1` included in pairs. Route: by `Matrix.exists_orthogonal_conj_quasiUpperTriangular` the
-matrix is orthogonally similar to a quasi-upper-triangular `T`, which is orthogonal, hence normal, hence block
-diagonal (a normal block upper triangular matrix has zero off-diagonal blocks, Frobenius-norm count); each `2 × 2`
-block is a rotation by some `θ` (`e^{±iθ}`), each `1 × 1` block is `±1`, and `det H = 1` makes the number of
-`−1` blocks even, so the `±1` blocks pair up as `θ = 0`, `θ = π`. (Alternatively: roots of modulus one,
-conjugation pairing of the real charpoly, and the parity count on `−1` and `1`.) Replaces the Hessenberg-only
-`Matrix.charpoly_orthogonalHessenberg_eq_prod` of `Semiseparable` (review of the Golub–Van Loan round). ★★★ (~180
-lines)
-
-Blocked (effort): not attempted in wave 1 (eig1). The shape lemmas it needs are proved
-(`Matrix.IsQuasiUpperTriangular`, `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`); the
-missing pieces are "a normal block upper triangular matrix is block diagonal" (the block version of
-`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` in `Schur`) and the classification of `2 × 2`
-real orthogonal blocks. The alternative route (roots of modulus one, conjugate pairing of a real
-charpoly, the parity of `-1` from `det = 1`) avoids the Schur form and may be shorter.'''
-deps = ["Matrix.exists_orthogonal_conj_quasiUpperTriangular"]
 
 [[node]]  # added by eig1: the triangular factor is block triangular for any monotone index
 id = "Matrix.IsUpperTriangular.blockTriangular_of_monotone"

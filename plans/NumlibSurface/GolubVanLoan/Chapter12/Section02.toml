@@ -85,8 +85,12 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.7)'
 id = "equation_12_2_8"
 kind = "theorem"
 desc = '''(12.2.8): `A` is quasiseparable iff `A = 𝐒(u, v, t, d, p, q, r)` for some `u, v, d, p, q ∈ ℝⁿ`, `t, r ∈ ℝ^{n−1}` (the "It can be
-shown" before (12.2.8) and P12.2.2), with the displayed entries. `Matrix.exists_quasiseparableOf`. ★'''
-deps = ["Matrix.exists_quasiseparableOf"]
+shown" before (12.2.8) and P12.2.2), with the displayed entries — **as printed this is false for n ≥ 3**
+(`Matrix.unitBidiagonal_ne_quasiseparableOf`: `B(r)` with `r₀ r₁ ≠ 0` is quasiseparable, yet every (12.2.8)
+representation has `a₀₁ a₁₂ = a₀₂ p₁ q₁`; see `notes/book-errata.md`). State the corrected reading with the
+Eidelman–Gohberg transfer products `t_{j+1} ⋯ t_{i−1}`: `A` quasiseparable iff `A = Matrix.quasiseparableRep …`,
+`Matrix.exists_quasiseparableRep`; record the book's form as the counterexample. ★'''
+deps = ["Matrix.exists_quasiseparableRep", "Matrix.unitBidiagonal_ne_quasiseparableOf"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.8)'
 
 [[node]]
