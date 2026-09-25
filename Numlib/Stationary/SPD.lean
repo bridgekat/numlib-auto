@@ -1413,6 +1413,49 @@ theorem exists_pos_ofReal_eq_of_mem_spectrum_inv_mul {A P : Matrix n n ℝ} (hA 
     simp only [star_trivial] at this
     linarith
 
+/-- **The iteration matrix of a splitting that dominates `A` has its eigenvalues in `[0, 1)`**: for
+a real splitting `A = M - N` with `A` positive definite and `M - A` positive semidefinite (so `M` is
+symmetric positive definite), every eigenvalue of `G = M⁻¹ N` is real, nonnegative and below `1`
+([golub2013matrix] Theorem 11.2.4 for the SSOR splitting, where `M - A` is
+`Matrix.ssorSplitting_m_sub_posSemidef`).
+
+`G = 1 - M⁻¹ A`, and every eigenvalue of `M⁻¹ A` is the generalized Rayleigh quotient
+`(x ⬝ A x + y ⬝ A y) / (x ⬝ M x + y ⬝ M y)` of the real and imaginary parts of an eigenvector, which
+lies in `(0, 1]` because `0 < x ⬝ A x ≤ x ⬝ M x`. -/
+theorem _root_.Stationary.Splitting.spectrum_complexify_iterationOperator_subset {A : Matrix n n ℝ}
+    (s : Splitting A) (hA : A.PosDef) (hmA : (s.m - A).PosSemidef) :
+    spectrum ℂ (complexify s.iterationOperator) ⊆ Complex.ofReal '' Set.Ico 0 1 := by
+  have hM : s.m.PosDef := by
+    simpa using hA.add_posSemidef hmA
+  have hG : s.iterationOperator = (1 : ℝ) • 1 + (-1 : ℝ) • (s.m⁻¹ * A) := by
+    rw [Splitting.iterationOperator, ← nonsing_inv_eq_ringInverse]
+    module
+  rw [hG, spectrum_complexify_affine _ (by norm_num : (-1 : ℝ) ≠ 0)]
+  rintro _ ⟨μ, hμ, rfl⟩
+  obtain ⟨x, y, hxy, hp, rfl⟩ := exists_eq_div_of_mem_spectrum_inv_mul hA.1 hM hμ
+  have hAx : 0 ≤ x ⬝ᵥ (A *ᵥ x) := by simpa using hA.posSemidef.dotProduct_mulVec_nonneg x
+  have hAy : 0 ≤ y ⬝ᵥ (A *ᵥ y) := by simpa using hA.posSemidef.dotProduct_mulVec_nonneg y
+  have hApos : 0 < x ⬝ᵥ (A *ᵥ x) + y ⬝ᵥ (A *ᵥ y) := by
+    rcases hxy with hx | hy
+    · have := hA.dotProduct_mulVec_pos hx
+      simp only [star_trivial] at this
+      linarith
+    · have := hA.dotProduct_mulVec_pos hy
+      simp only [star_trivial] at this
+      linarith
+  have hdx : 0 ≤ x ⬝ᵥ ((s.m - A) *ᵥ x) := by simpa using hmA.dotProduct_mulVec_nonneg x
+  have hdy : 0 ≤ y ⬝ᵥ ((s.m - A) *ᵥ y) := by simpa using hmA.dotProduct_mulVec_nonneg y
+  rw [sub_mulVec, dotProduct_sub] at hdx hdy
+  set a := x ⬝ᵥ (A *ᵥ x) + y ⬝ᵥ (A *ᵥ y)
+  set b := x ⬝ᵥ (s.m *ᵥ x) + y ⬝ᵥ (s.m *ᵥ y)
+  refine ⟨1 - a / b, ⟨?_, ?_⟩, ?_⟩
+  · rw [sub_nonneg, div_le_one hp]
+    linarith
+  · have : 0 < a / b := div_pos hApos hp
+    linarith
+  · push_cast
+    ring
+
 omit [Fintype n] in
 /-- The diagonal part of a positive definite matrix is positive definite. -/
 theorem _root_.Matrix.PosDef.diagPart {A : Matrix n n ℝ} (hA : A.PosDef) :

@@ -35,6 +35,10 @@ A symmetric permutation is a relabelling of all three: `Matrix.adjDigraph_submat
 packaged form `Matrix.adjGraphIso`. A nonsymmetric one is not, which is the book's warning and the
 reason its reorderings are always `A.submatrix σ σ`.
 
+`Matrix.IsPatternSymm A` says that the pattern is symmetric — the matrix is *structurally
+symmetric* in the words of [golub2013matrix] §11.1.9 — which symmetric matrices and their diagonal
+scalings are, and which symmetric permutations preserve.
+
 ## Irreducibility
 
 `Matrix.IsPatternIrreducible A` is [saad2003iterative] irreducibility (§3.3.4): the adjacency
@@ -215,6 +219,41 @@ theorem preconnected_adjGraph_submatrix_iff (A : Matrix n n R) (σ : Equiv.Perm 
   (adjGraphIso A σ).preconnected_iff
 
 end Submatrix
+
+/-! ### Structural symmetry -/
+
+section PatternSymm
+
+variable [Zero R]
+
+/-- A square matrix is **structurally symmetric**, or has a **symmetric pattern**, when `A i j`
+and `A j i` are zero or nonzero together ([golub2013matrix] §11.1.9): its adjacency digraph is
+symmetric. Symmetric matrices are structurally symmetric (`Matrix.IsSymm.isPatternSymm`), and so are
+their row and column scalings (`Matrix.IsPatternSymm.diagonal_mul_mul_diagonal`). -/
+def IsPatternSymm (A : Matrix n n R) : Prop := ∀ i j, A i j ≠ 0 ↔ A j i ≠ 0
+
+/-- Structural symmetry survives the restriction to rows and columns picked by the same map; in
+particular a symmetric permutation `P A Pᵀ` of a structurally symmetric matrix is structurally
+symmetric. -/
+theorem IsPatternSymm.submatrix {A : Matrix n n R} (h : A.IsPatternSymm) {m : Type*}
+    (e : m → n) : (A.submatrix e e).IsPatternSymm :=
+  fun i j => h (e i) (e j)
+
+/-- A symmetric matrix is structurally symmetric. -/
+theorem IsSymm.isPatternSymm {A : Matrix n n R} (h : A.IsSymm) : A.IsPatternSymm :=
+  fun i j => by rw [h.apply i j]
+
+/-- A structurally symmetric matrix scaled by nonsingular diagonal matrices on both sides is
+structurally symmetric: the book's "symmetric matrices whose rows and/or columns are scaled". -/
+theorem IsPatternSymm.diagonal_mul_mul_diagonal {R : Type*} [Semiring R] [NoZeroDivisors R]
+    [Fintype n] [DecidableEq n] {A : Matrix n n R} (h : A.IsPatternSymm) {d₁ d₂ : n → R}
+    (hd₁ : ∀ i, d₁ i ≠ 0) (hd₂ : ∀ i, d₂ i ≠ 0) :
+    (diagonal d₁ * A * diagonal d₂).IsPatternSymm := by
+  intro i j
+  simp only [mul_diagonal, diagonal_mul, ne_eq, mul_eq_zero, hd₁, hd₂, false_or, or_false]
+  exact h i j
+
+end PatternSymm
 
 section PermMatrix
 

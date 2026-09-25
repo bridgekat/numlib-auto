@@ -1,4 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.Matrix.Normed
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Analysis.Normed.Ring.Inverse
 
@@ -9,6 +11,11 @@ Instead of factoring `A`, minimize `‖1 - A M‖` over sparse `M` and use `M` i
 preconditioner ([saad2003iterative], §10.5). The algorithms of §10.5 are dropping strategies with no
 theorem attached; what has content is here:
 
+* the Frobenius objective decouples into one least-squares problem per column of `M`
+  (`Preconditioner.frobenius_sq_mul_sub_one_eq_sum`), and a column constrained to a support `J` only
+  sees the rows where `A(:, J)` is nonzero (`Preconditioner.isMinOn_submatrix_iff`), which is how
+  [saad2003iterative] §10.5.2 and [golub2013matrix] §11.5.5 compute sparse approximate inverses
+  column by column;
 * the derivative of the least-squares objective, stated in the general Hilbert-space form `d/dm ‖c -
   T m‖² = -2 ⟪c - T m, T ·⟫`, of which [saad2003iterative] `G = -2 Aᵀ R` for the Frobenius inner
   product is the instance — nothing about matrices is needed for the proof, and Mathlib does not
@@ -148,5 +155,84 @@ theorem apply_ne_zero_of_abs_lt {n : Type*} [Fintype n] [DecidableEq n] {A B M :
     rw [mul_comm] at hlt
     linarith
   exact fun h0 => absurd h0 (abs_pos.mp hpos)
+
+/-! ### Column decoupling and reduced least squares -/
+
+section Columns
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **The Frobenius objective decouples into columns** ([golub2013matrix] §11.5.5,
+[saad2003iterative] §10.5.2): `‖A M - 1‖_F² = ∑_k ‖A m_k - e_k‖₂²`, with `m_k` the `k`-th column of
+`M`. So minimizing `‖A M - 1‖_F` over the matrices with a prescribed pattern is `n` independent
+least-squares problems, one per column. -/
+theorem frobenius_sq_mul_sub_one_eq_sum (A M : Matrix n n 𝕜) :
+    ‖A * M - 1‖ ^ 2 = ∑ k, ‖WithLp.toLp 2 (A *ᵥ (fun i => M i k) - Pi.single k 1)‖ ^ 2 := by
+  have h : ‖A * M - 1‖ ^ 2 = ∑ i, ∑ j, ‖(A * M - 1) i j‖ ^ 2 := by
+    rw [Matrix.frobenius_norm_def, ← Real.sqrt_eq_rpow, Real.sq_sqrt (by positivity)]
+    simp_rw [Real.rpow_two]
+  rw [h, Finset.sum_comm]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [EuclideanSpace.norm_sq_eq]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.one_apply, Pi.single_apply]
+
+/-- The residual of a vector supported in `J` splits into the residual of the reduced problem on
+the rows `I` and the part of the right side outside `I`, when every row reached by a column of `J`
+is in `I`. -/
+private theorem norm_sq_mulVec_sub_eq {A : Matrix n n 𝕜} {c : n → 𝕜} {I J : Finset n}
+    (hI : ∀ i, ∀ j ∈ J, A i j ≠ 0 → i ∈ I) {x : n → 𝕜} (hx : ∀ j ∉ J, x j = 0) :
+    ‖WithLp.toLp 2 (A *ᵥ x - c)‖ ^ 2 =
+      ‖WithLp.toLp 2 (A.submatrix ((↑) : I → n) ((↑) : J → n) *ᵥ (fun j : J => x j) -
+        fun i : I => c i)‖ ^ 2 + ∑ i ∈ Iᶜ, ‖c i‖ ^ 2 := by
+  have hAx : ∀ i, (A *ᵥ x) i = ∑ j : J, A i j * x j := by
+    intro i
+    rw [Matrix.mulVec, dotProduct, Finset.sum_coe_sort J (fun j => A i j * x j)]
+    exact (Finset.sum_subset (Finset.subset_univ J) fun j _ hj => by rw [hx j hj, mul_zero]).symm
+  have hout : ∀ i ∉ I, (A *ᵥ x) i = 0 := by
+    intro i hi
+    rw [hAx]
+    exact Finset.sum_eq_zero fun j _ => by
+      rw [show A i j = 0 by by_contra h; exact hi (hI i j j.2 h), zero_mul]
+  rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, ← Finset.sum_add_sum_compl I]
+  congr 1
+  · rw [← Finset.sum_coe_sort I]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have hi := hAx i
+    simp only [Matrix.mulVec, dotProduct] at hi
+    simp only [Pi.sub_apply, Matrix.mulVec, dotProduct, Matrix.submatrix_apply, hi]
+  · refine Finset.sum_congr rfl fun i hi => ?_
+    rw [PiLp.toLp_apply, Pi.sub_apply, hout i (Finset.mem_compl.mp hi), zero_sub, norm_neg]
+
+/-- **Reduced least squares** ([golub2013matrix] §11.5.5, [saad2003iterative] §10.5.2): let `J` be
+the allowed support of a column and `I` a set of rows containing every row `i` with `A i j ≠ 0` for
+some `j ∈ J`. Then `τ` minimizes the small problem `‖A(I, J) τ - c(I)‖₂` exactly when its extension
+by zero minimizes `‖A x - c‖₂` over the vectors `x` supported in `J`: the two objectives differ by
+the constant `‖c(Iᶜ)‖₂²`. -/
+theorem isMinOn_submatrix_iff {A : Matrix n n 𝕜} {c : n → 𝕜} {I J : Finset n}
+    (hI : ∀ i, ∀ j ∈ J, A i j ≠ 0 → i ∈ I) {τ : J → 𝕜} :
+    IsMinOn (fun σ : J → 𝕜 => ‖WithLp.toLp 2 (A.submatrix ((↑) : I → n) ((↑) : J → n) *ᵥ σ -
+        fun i : I => c i)‖) Set.univ τ ↔
+      IsMinOn (fun x : n → 𝕜 => ‖WithLp.toLp 2 (A *ᵥ x - c)‖) {x | ∀ j ∉ J, x j = 0}
+        (fun j => if h : j ∈ J then τ ⟨j, h⟩ else 0) := by
+  set ext : (J → 𝕜) → n → 𝕜 := fun σ j => if h : j ∈ J then σ ⟨j, h⟩ else 0 with hext
+  have hsupp : ∀ σ, ∀ j ∉ J, ext σ j = 0 := fun σ j hj => by simp [hext, hj]
+  have hres : ∀ σ, (fun j : J => ext σ j) = σ := fun σ => funext fun j => by simp [hext]
+  simp only [isMinOn_iff, Set.mem_univ, Set.mem_ofPred_eq, forall_const]
+  constructor
+  · intro h x hx
+    rw [← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _), norm_sq_mulVec_sub_eq hI (hsupp τ),
+      norm_sq_mulVec_sub_eq hI hx, hres]
+    gcongr
+    exact h _
+  · intro h σ
+    have h' := h (ext σ) (hsupp σ)
+    rw [← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _), norm_sq_mulVec_sub_eq hI (hsupp τ),
+      norm_sq_mulVec_sub_eq hI (hsupp σ), hres, hres] at h'
+    rw [← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)]
+    linarith
+
+end Columns
 
 end Preconditioner

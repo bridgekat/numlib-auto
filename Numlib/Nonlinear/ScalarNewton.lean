@@ -22,6 +22,10 @@ Exercise 6.2; [kress1998numerical] §6.2; [han2009theoretical] §5.4):
   `exists_ball_abs_modifiedScalarStep_sub_le`, Exercise 6.2), and the adaptive Newton method
   (`adaptiveStep`), which estimates `m` from the increment ratios (`multiplicityEstimate`,
   `tendsto_multiplicityEstimate`, the book's (6.40)).
+* monotone convergence under Fourier's condition: for a decreasing concave function started to the
+  right of its root, the iterates decrease monotonically to the root
+  (`tendsto_iterate_scalarStep_of_concaveOn`; [golub2013matrix] (4.7.10), the smallest eigenvalue
+  of a Toeplitz matrix).
 
 Multiplicity is `IsRootOfMultiplicity f α m` of `Numlib/Analysis/Calculus/RootMultiplicity`; every
 multiple-root proof writes `f x = (x - α)^m h x` with `h` `C¹` at `α`, `h α = f^{(m)}(α) / m!` and
@@ -343,5 +347,108 @@ noncomputable def adaptiveStep (f f' : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : �
   (s.2.1, s.2.2, s.2.2 - (s.2.1 - s.1) / (2 * s.2.1 - s.2.2 - s.1) * (f s.2.2 / f' s.2.2))
 
 end Adaptive
+
+section Monotone
+
+variable {f f' : ℝ → ℝ} {α x₀ : ℝ}
+
+/-- One Newton step from a point `y ∈ [α, x₀]` of a decreasing function with antitone derivative
+and root `α` stays in `[α, y]`: `f y ≤ 0` and `f' y < 0` give `y - f y / f' y ≤ y`, and the tangent
+line at `y` lies above the graph, `0 = f α ≤ f y + f' y (α - y)`, which gives `α ≤ y - f y / f' y`.
+Both come from the mean value theorem on `[α, y]`. -/
+private theorem scalarStep_mem_Icc (hf : ∀ x ∈ Icc α x₀, HasDerivAt f (f' x) x)
+    (hneg : ∀ x ∈ Icc α x₀, f' x < 0) (hanti : AntitoneOn f' (Icc α x₀)) (hα : f α = 0)
+    {y : ℝ} (hy : y ∈ Icc α x₀) : scalarStep f f' y ∈ Icc α y := by
+  rcases hy.1.eq_or_lt with rfl | hlt
+  · rw [scalarStep_apply_of_eq_zero f f' hα]
+    exact ⟨le_rfl, le_rfl⟩
+  have hsub : Icc α y ⊆ Icc α x₀ := Icc_subset_Icc le_rfl hy.2
+  obtain ⟨ξ, hξ, hξeq⟩ := exists_hasDerivAt_eq_slope f f' hlt
+    (fun x hx => (hf x (hsub hx)).continuousAt.continuousWithinAt)
+    (fun x hx => hf x (hsub (Ioo_subset_Icc_self hx)))
+  have hξmem : ξ ∈ Icc α x₀ := hsub (Ioo_subset_Icc_self hξ)
+  have hfy : f y = f' ξ * (y - α) := by
+    rw [hξeq, hα, sub_zero, div_mul_cancel₀ _ (sub_pos.mpr hlt).ne']
+  have hy' := hneg y hy
+  have hmono : f' y ≤ f' ξ := hanti hξmem hy hξ.2.le
+  have hfy_nonpos : f y ≤ 0 := by
+    rw [hfy]
+    exact mul_nonpos_of_nonpos_of_nonneg (hneg ξ hξmem).le (sub_pos.mpr hlt).le
+  rw [scalarStep]
+  constructor
+  · -- `f y / f' y ≤ y - α`, dividing `f y ≥ f' y (y - α)` by `f' y < 0`
+    have h : f' y * (y - α) ≤ f y := by
+      rw [hfy]
+      exact mul_le_mul_of_nonneg_right hmono (sub_pos.mpr hlt).le
+    have h' : f y / f' y ≤ y - α := by
+      rw [div_le_iff_of_neg hy']
+      linarith
+    linarith
+  · have : 0 ≤ f y / f' y := div_nonneg_of_nonpos hfy_nonpos hy'.le
+    linarith
+
+/-- **Monotone convergence of Newton's method** (Fourier's condition): let `f` be differentiable on
+`[α, x₀]` with a negative, antitone derivative `f'` there — `f` is decreasing and concave — and let
+`α ≤ x₀` be a root of `f`. Then the Newton iterates `x_k` started at `x₀` decrease monotonically,
+`α ≤ x_{k+1} ≤ x_k`, and converge to `α`. This is the argument behind [golub2013matrix] (4.7.10),
+Newton's method for the smallest eigenvalue of a symmetric positive definite Toeplitz matrix.
+
+Each step stays in `[α, x_k]` by the mean value theorem and concavity; the iterates, decreasing and
+bounded below, converge to some `ℓ ∈ [α, x₀]`; `f (x_k) = f'(x_k) (x_k - x_{k+1})` with `f'`
+bounded by `|f'(x₀)|` (it is antitone) forces `f ℓ = 0`, and `f` has no root in `(α, x₀]`. -/
+theorem tendsto_iterate_scalarStep_of_concaveOn (hαx : α ≤ x₀)
+    (hf : ∀ x ∈ Icc α x₀, HasDerivAt f (f' x) x) (hneg : ∀ x ∈ Icc α x₀, f' x < 0)
+    (hanti : AntitoneOn f' (Icc α x₀)) (hα : f α = 0) :
+    (∀ k, α ≤ (scalarStep f f')^[k + 1] x₀ ∧
+      (scalarStep f f')^[k + 1] x₀ ≤ (scalarStep f f')^[k] x₀) ∧
+      Tendsto (fun k => (scalarStep f f')^[k] x₀) atTop (𝓝 α) := by
+  set x : ℕ → ℝ := fun k => (scalarStep f f')^[k] x₀ with hxdef
+  have hxsucc : ∀ k, x (k + 1) = scalarStep f f' (x k) := fun k => by
+    simp only [hxdef, Function.iterate_succ_apply']
+  have hmem : ∀ k, x k ∈ Icc α x₀ := by
+    intro k
+    induction k with
+    | zero => exact ⟨hαx, le_rfl⟩
+    | succ k ih =>
+      have h := scalarStep_mem_Icc hf hneg hanti hα ih
+      rw [hxsucc]
+      exact ⟨h.1, h.2.trans ih.2⟩
+  have hstep : ∀ k, α ≤ x (k + 1) ∧ x (k + 1) ≤ x k := fun k => by
+    rw [hxsucc]
+    exact scalarStep_mem_Icc hf hneg hanti hα (hmem k)
+  refine ⟨hstep, ?_⟩
+  -- the iterates converge to their infimum `ℓ`
+  have hanti_x : Antitone x := antitone_nat_of_succ_le fun k => (hstep k).2
+  have hbdd : BddBelow (Set.range x) := ⟨α, by rintro _ ⟨k, rfl⟩; exact (hmem k).1⟩
+  set ℓ := ⨅ k, x k with hℓ
+  have hlim : Tendsto x atTop (𝓝 ℓ) := tendsto_atTop_ciInf hanti_x hbdd
+  have hℓmem : ℓ ∈ Icc α x₀ :=
+    ⟨le_ciInf fun k => (hmem k).1, (ciInf_le hbdd 0).trans (hmem 0).2⟩
+  -- `f (x_k) → 0`
+  have hfx : ∀ k, f (x k) = f' (x k) * (x k - x (k + 1)) := fun k => by
+    rw [hxsucc, scalarStep, sub_sub_cancel, mul_div_cancel₀ _ (hneg _ (hmem k)).ne]
+  have hdiff : Tendsto (fun k => x k - x (k + 1)) atTop (𝓝 0) := by
+    simpa using hlim.sub (hlim.comp (tendsto_add_atTop_nat 1))
+  have hf0 : Tendsto (fun k => f (x k)) atTop (𝓝 0) := by
+    refine squeeze_zero_norm (a := fun k => -f' x₀ * (x k - x (k + 1))) (fun k => ?_) ?_
+    · rw [hfx, norm_mul, Real.norm_eq_abs, Real.norm_eq_abs, abs_of_neg (hneg _ (hmem k)),
+        abs_of_nonneg (sub_nonneg.mpr (hstep k).2)]
+      exact mul_le_mul_of_nonneg_right (neg_le_neg (hanti (hmem k) ⟨hαx, le_rfl⟩ (hmem k).2))
+        (sub_nonneg.mpr (hstep k).2)
+    · simpa using hdiff.const_mul (-f' x₀)
+  have hfℓ : f ℓ = 0 :=
+    tendsto_nhds_unique (((hf ℓ hℓmem).continuousAt.tendsto).comp hlim) hf0
+  -- the only root in `[α, x₀]` is `α`
+  suffices hℓα : ℓ = α by rwa [hℓα] at hlim
+  by_contra hne
+  have hlt : α < ℓ := lt_of_le_of_ne hℓmem.1 (Ne.symm hne)
+  have hsub : Icc α ℓ ⊆ Icc α x₀ := Icc_subset_Icc le_rfl hℓmem.2
+  obtain ⟨ξ, hξ, hξeq⟩ := exists_hasDerivAt_eq_slope f f' hlt
+    (fun y hy => (hf y (hsub hy)).continuousAt.continuousWithinAt)
+    (fun y hy => hf y (hsub (Ioo_subset_Icc_self hy)))
+  rw [hfℓ, hα, sub_zero, zero_div] at hξeq
+  exact (hneg ξ (hsub (Ioo_subset_Icc_self hξ))).ne hξeq
+
+end Monotone
 
 end Newton

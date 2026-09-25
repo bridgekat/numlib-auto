@@ -48,6 +48,8 @@ continuity bound, and the mean value form of the composite trapezoidal error.
   `Quadrature.abs_sub_simpson_le` is the one-panel bound `M (β - α)⁵/2880` that follows from it,
   and `Quadrature.integral_eq_simpson_of_natDegree_le` the exactness of Simpson's rule on
   polynomials of degree at most three.
+* `Quadrature.norm_sub_simpsonSum_le`, the composite Simpson bound `M h⁴ (b - a)/2880` for an
+  integrand with values in a real Banach space, by duality from the scalar mean value form.
 
 ## References
 
@@ -1244,8 +1246,64 @@ theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p
     le_antisymm (by simpa using hmem.2) (by simpa using hmem.1)
   linarith [hzero]
 
-
 end SimpsonError
+
+section SimpsonVector
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+
+/-- **The composite Simpson error bound for a vector-valued integrand.** Let `g : ℝ → E` take
+values in a real Banach space and have four derivatives on `[a, b]`, the fourth one continuous with
+`‖g⁗‖ ≤ M` there. On the uniform mesh `h = (b - a)/N`,
+
+`‖∫_a^b g - ∑_{j < N} (h/6) (g(x_j) + 4 g(x_j + h/2) + g(x_{j+1}))‖ ≤ M h⁴ (b - a) / 2880`,
+
+with `x_j = a + j h`: the constant of the scalar bound, with no factor depending on `E`. Every
+continuous linear functional `φ` turns the error into the scalar error of `φ ∘ g`, which
+`Quadrature.sub_composite_simpson_eq` bounds by `‖φ‖ M h⁴ (b - a) / 2880`, and the Hahn–Banach
+theorem (`NormedSpace.norm_le_dual_bound`) returns the bound to the norm. The matrix-valued Simpson
+bound of [golub2013matrix] (9.2.7) is the instance `E = ℂ^{n×n}` with the spectral norm (the book's
+panel width is `h/2`); the entrywise argument of the book loses a factor `n`. -/
+theorem norm_sub_simpsonSum_le {a b h M : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N)
+    (hh : h = (b - a) / N) {g g' g'' g₃ g₄ : ℝ → E}
+    (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.Icc a b, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.Icc a b, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc a b))
+    (hM : ∀ t ∈ Set.Icc a b, ‖g₄ t‖ ≤ M) :
+    ‖(∫ t in a..b, g t) - ∑ j ∈ Finset.range N, (h / 6) • (g (a + j * h) +
+      (4 : ℝ) • g (a + j * h + h / 2) + g (a + (j + 1) * h))‖ ≤ M * h ^ 4 * (b - a) / 2880 := by
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM a ⟨le_rfl, hab.le⟩)
+  have hhpos : 0 < h := by
+    rw [hh]; exact div_pos (by linarith) (Nat.cast_pos.mpr hN)
+  have hba : 0 < b - a := by linarith
+  have hgint : IntervalIntegrable g volume a b := by
+    refine ContinuousOn.intervalIntegrable fun y hy => ?_
+    rw [Set.uIcc_of_le hab.le] at hy
+    exact (hg y hy).continuousAt.continuousWithinAt
+  refine NormedSpace.norm_le_dual_bound ℝ _ (by positivity) fun φ => ?_
+  have hd : ∀ u u' : ℝ → E, (∀ x ∈ Set.Icc a b, HasDerivAt u (u' x) x) →
+      ∀ x ∈ Set.Icc a b, HasDerivAt (fun t => φ (u t)) (φ (u' x)) x :=
+    fun u u' hu x hx => φ.hasFDerivAt.comp_hasDerivAt x (hu x hx)
+  obtain ⟨ξ, hξ, heq⟩ := sub_composite_simpson_eq hab hN hh (hd _ _ hg) (hd _ _ hg')
+    (hd _ _ hg'') (hd _ _ hg₃) (φ.continuous.comp_continuousOn hc₄)
+  have hφ : φ ((∫ t in a..b, g t) - ∑ j ∈ Finset.range N, (h / 6) • (g (a + j * h) +
+      (4 : ℝ) • g (a + j * h + h / 2) + g (a + (j + 1) * h)))
+      = (∫ t in a..b, φ (g t)) - simpsonSum (fun t => φ (g t)) a h N := by
+    rw [map_sub, φ.intervalIntegral_comp_comm hgint, map_sum, simpsonSum]
+    congr 1
+    refine Finset.sum_congr rfl fun j _ => ?_
+    simp only [map_add, map_smul, smul_eq_mul]
+  rw [hφ, heq, Real.norm_eq_abs, abs_mul, abs_neg,
+    abs_of_pos (by positivity : 0 < h ^ 4 * (b - a) / 2880)]
+  have hφg : |φ (g₄ ξ)| ≤ ‖φ‖ * M := by
+    rw [← Real.norm_eq_abs]
+    exact (φ.le_opNorm _).trans (mul_le_mul_of_nonneg_left (hM ξ hξ) (norm_nonneg _))
+  calc h ^ 4 * (b - a) / 2880 * |φ (g₄ ξ)| ≤ h ^ 4 * (b - a) / 2880 * (‖φ‖ * M) :=
+        mul_le_mul_of_nonneg_left hφg (by positivity)
+    _ = M * h ^ 4 * (b - a) / 2880 * ‖φ‖ := by ring
+
+end SimpsonVector
 
 section Circle
 

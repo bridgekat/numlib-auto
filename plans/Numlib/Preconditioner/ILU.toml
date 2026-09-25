@@ -1,10 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Preconditioner.ILU` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch11) add to "Existence for M-matrices" the symmetric case: an incomplete Cholesky factor with
-# positive diagonal exists for every symmetric zero pattern avoiding the diagonal
-# (`Matrix.IsStieltjes.exists_isIC`, after [meijerink1977iterative]), by the Stieltjes elimination
-# step `Matrix.IsStieltjes.isStieltjes_sub_drop` ([golub2013matrix] Theorem 11.5.2) of
-# `Numlib/LinearAlgebra/Matrix/MMatrix`.
 namespace = "Matrix"
 
 [[node]]
@@ -72,21 +65,15 @@ id = "IsIC.isILU"
 [[node]]
 id = "IsIC.eq_of_diag_pos"
 
-[[node]]  # staged by ch11
+[[node]]
 id = "IsStieltjes.exists_isIC"
-kind = "theorem"
-desc = '''
-Incomplete Cholesky exists for Stieltjes matrices (Meijerink–van der Vorst 1977, symmetric case;
-[golub2013matrix] §11.5.8): for `A.IsStieltjes` over a finite linear order `n` and a symmetric zero
-pattern `P` with `(i, i) ∉ P`, there is a lower triangular `L` with positive diagonal and
-`Matrix.IsIC P A L`. Proof: induction on `Fintype.card n` by the recursion of the book's `incChol`:
-pivot at the least index, keep the entries of the pivot column off `P`, form `B̃` (Stieltjes by
-`Matrix.IsStieltjes.isStieltjes_sub_drop`), zero its entries on `P` (Stieltjes by
-`Matrix.IsStieltjes.of_entrywiseLE`), recurse, and assemble `L = [√α 0; w L₁]`; `L Lᵀ` agrees with `A`
-off `P` by the bordered identity. Uniqueness is `Matrix.IsIC.eq_of_diag_pos`. The surface's
-`incChol_spec` is the same induction run on the program; the formalizer should share the step
-lemma. ★★★ (~120 lines)
-'''
-deps = ["Matrix.IsStieltjes.isStieltjes_sub_drop", "Matrix.IsStieltjes.of_entrywiseLE", "Matrix.IsIC",
-  "Matrix.IsIC.eq_of_diag_pos", "Matrix.IsStieltjes.submatrix"]
 source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
+
+[[node]]
+id = "IsMMatrix.exists_isILU_isMMatrix"
+
+[[node]]
+id = "IsILU.eq_of_diag_ne_zero"
+
+[[node]]
+id = "IsILU.eq_diagonal_mul_transpose"

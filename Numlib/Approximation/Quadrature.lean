@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Tactic.Positivity.Finset
 import Mathlib.Topology.ContinuousMap.Weierstrass
@@ -65,11 +66,18 @@ degree of exactness, the discrete inner product of a rule and the Gauss remainde
 * `Quadrature.interpolate_eq_sum_discreteInner_smul`: for a rule exact to degree `2n - 1` the
   interpolant at its `n + 1` nodes is the discrete truncation `∑ (f, p_k)_n / (p_k, p_k)_n · p_k`
   of the orthogonal expansion — the discrete Chebyshev and Legendre transforms are its instances.
+* `Quadrature.exists_error_eq_of_hermite_of_convex` is the **remainder through Hermite
+  interpolation** `f^{(N+1)}(ξ)/(N+1)! · ∫ ω ∂μ`, for any measure carried by a convex set with
+  finite moments and any rule exact to degree `N` whose nodal polynomial `ω` with multiplicities
+  has constant sign on the carrier: the error is `∫ (f - H) ∂μ` for the Hermite interpolant `H`,
+  and `f - H - c ω` integrates to zero, so `f^{(N+1)}/(N+1)!` cannot stay strictly on one side of
+  `c` on the carrier, and the intermediate value theorem produces `ξ`.
+  `Quadrature.exists_error_eq_of_hermite` is the case of a finite measure on a compact interval,
+  and `Quadrature.gauss_le_integral_le_gaussRadau` the two-sided bound it gives for an integrand
+  with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}`.
 * `Quadrature.exists_gauss_error_eq_of_convex` is the **Gauss remainder**
   `f^{(2n)}(ξ)/(2n)! · ∫ p_n² ∂μ`, for a weight carried by any convex set and with no bound asked
-  of `f^{(2n)}`, proved through the Hermite interpolant with double nodes: the error minus
-  `c · ∫ p_n² ∂μ` integrates to zero, so `f^{(2n)}/(2n)!` cannot stay strictly on one side of `c`
-  on the carrier, and the intermediate value theorem produces `ξ`.
+  of `f^{(2n)}`: the case of double nodes, whose nodal polynomial is `p_n²`.
   `Quadrature.exists_gauss_error_eq` is the special case of a weight carried by a compact interval,
   where the integrability of the integrand is automatic; the Laguerre weight on `(0, ∞)` and the
   Hermite weight on `ℝ` need the general form.
@@ -1137,28 +1145,197 @@ private theorem integrable_of_continuous_of_compl_eq_zero [IsFiniteMeasure μ] {
   filter_upwards [hae] with t ht
   exact hC _ ⟨t, ht, rfl⟩
 
-/-- A function that is nonnegative on a carrier `s` of the weight `μ` and vanishes there only at
-roots of a nonzero polynomial `p` has nonzero integral against `μ`: were the integral zero, the
-function would vanish `μ`-almost everywhere, so the complement of the finite root set of `p` would
-be `μ`-null, which no weight allows. -/
-private theorem integral_ne_zero_of_ne_zero_off_roots (hw : IsWeight μ) {s : Set ℝ}
-    (hsupp : μ sᶜ = 0) {p : ℝ[X]} (hp : p ≠ 0) {g : ℝ → ℝ} (hgint : Integrable g μ)
-    (hg : ∀ t ∈ s, 0 ≤ g t) (hgne : ∀ t ∈ s, p.eval t ≠ 0 → g t ≠ 0) :
-    ∫ t, g t ∂μ ≠ 0 := by
-  intro h0
+/-- A function of constant sign on a carrier `s` of `μ` whose integral vanishes is `μ`-almost
+everywhere zero. -/
+private theorem ae_eq_zero_of_integral_eq_zero {s : Set ℝ} (hsupp : μ sᶜ = 0) {g : ℝ → ℝ}
+    (hg : Integrable g μ) (hsign : (∀ t ∈ s, 0 ≤ g t) ∨ ∀ t ∈ s, g t ≤ 0)
+    (h0 : ∫ t, g t ∂μ = 0) : g =ᵐ[μ] 0 := by
   have hae : ∀ᵐ t ∂μ, t ∈ s := by
     rw [MeasureTheory.ae_iff]; exact hsupp
-  have hae0 : 0 ≤ᵐ[μ] g := by filter_upwards [hae] with t ht using hg t ht
-  have hzero : g =ᵐ[μ] 0 := (integral_eq_zero_iff_of_nonneg_ae hae0 hgint).mp h0
-  have hmeas : μ {t | g t ≠ 0} = 0 := by
-    have hz := hzero
-    rw [Filter.EventuallyEq, MeasureTheory.ae_iff] at hz
-    simpa using hz
-  refine hw.measure_compl_ne_zero (Polynomial.finite_setOfPred_isRoot hp) ?_
-  refine measure_mono_null (fun t ht => ?_) (measure_union_null hmeas hsupp)
-  by_cases hts : t ∈ s
-  · exact Or.inl (hgne t hts ht)
-  · exact Or.inr hts
+  rcases hsign with hs | hs
+  · exact (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hae] with t ht using hs t ht)
+      hg).mp h0
+  · have h := (integral_eq_zero_iff_of_nonneg_ae (f := fun t => -g t)
+      (by filter_upwards [hae] with t ht using neg_nonneg.mpr (hs t ht)) hg.neg).mp
+      (by rw [integral_neg, h0, neg_zero])
+    filter_upwards [h] with t ht
+    simpa using ht
+
+/-- **A mean value theorem for integrals with a moving point.** Let `ω` be of constant sign on a
+convex carrier `s` of `μ`, and let `e` be such that every `t ∈ s` has some `ξ_t ∈ s` with
+`e t = D ξ_t * ω t`, for a function `D` continuous on `s`. Then `∫ e ∂μ = D ξ * ∫ ω ∂μ` for one
+`ξ ∈ s`.
+
+For `e = D * ω` with `ξ_t = t` this is the first mean value theorem for integrals; the point of the
+statement is that `t ↦ ξ_t` need not be measurable, which is the situation of every interpolation
+remainder. If `∫ ω ∂μ = 0` then `ω`, and with it `e`, vanishes almost everywhere, and any `ξ`
+works. Otherwise put `c = ∫ e ∂μ / ∫ ω ∂μ`: were `D - c` of one strict sign on `s`, the function
+`e - c ω = (D ξ_t - c) ω` would be of constant sign with zero integral, hence almost everywhere
+zero, and so would `ω` be; so `D` takes values on both sides of `c` on `s`, and the intermediate
+value theorem finishes. -/
+private theorem exists_integral_eq_mul_integral {s : Set ℝ} (hs : Convex ℝ s) (hne : s.Nonempty)
+    (hsupp : μ sᶜ = 0) {e ω D : ℝ → ℝ} (he : Integrable e μ) (hω : Integrable ω μ)
+    (hD : ContinuousOn D s) (hsign : (∀ t ∈ s, 0 ≤ ω t) ∨ ∀ t ∈ s, ω t ≤ 0)
+    (hpt : ∀ t ∈ s, ∃ ξ ∈ s, e t = D ξ * ω t) :
+    ∃ ξ ∈ s, ∫ t, e t ∂μ = D ξ * ∫ t, ω t ∂μ := by
+  have hae : ∀ᵐ t ∂μ, t ∈ s := by
+    rw [MeasureTheory.ae_iff]; exact hsupp
+  choose! ξ hξ heq using hpt
+  by_cases hI : ∫ t, ω t ∂μ = 0
+  · obtain ⟨t₀, ht₀⟩ := hne
+    refine ⟨t₀, ht₀, ?_⟩
+    rw [hI, mul_zero]
+    refine integral_eq_zero_of_ae ?_
+    filter_upwards [ae_eq_zero_of_integral_eq_zero hsupp hω hsign hI, hae] with t ht hts
+    simp only [heq t hts, ht, Pi.zero_apply, mul_zero]
+  set c : ℝ := (∫ t, e t ∂μ) / ∫ t, ω t ∂μ with hc
+  have hce : ∫ t, e t ∂μ = c * ∫ t, ω t ∂μ := by rw [hc, div_mul_cancel₀ _ hI]
+  -- `D - c` cannot keep one strict sign `σ` on `s`
+  have key : ∀ σ : ℝ, (∀ ξ' ∈ s, 0 < σ * (D ξ' - c)) → False := by
+    intro σ hpos
+    have hg : Integrable (fun t => σ * (e t - c * ω t)) μ :=
+      (he.sub (hω.const_mul c)).const_mul σ
+    have hg0 : ∫ t, σ * (e t - c * ω t) ∂μ = 0 := by
+      rw [integral_const_mul, integral_sub he (hω.const_mul c), integral_const_mul, hce, sub_self,
+        mul_zero]
+    have hgt : ∀ t ∈ s, σ * (e t - c * ω t) = σ * (D (ξ t) - c) * ω t := fun t ht => by
+      rw [heq t ht]; ring
+    have hgsign : (∀ t ∈ s, 0 ≤ σ * (e t - c * ω t)) ∨ ∀ t ∈ s, σ * (e t - c * ω t) ≤ 0 := by
+      rcases hsign with h | h
+      · exact Or.inl fun t ht => by
+          rw [hgt t ht]; exact mul_nonneg (hpos _ (hξ t ht)).le (h t ht)
+      · exact Or.inr fun t ht => by
+          rw [hgt t ht]; exact mul_nonpos_of_nonneg_of_nonpos (hpos _ (hξ t ht)).le (h t ht)
+    refine hI (integral_eq_zero_of_ae ?_)
+    filter_upwards [ae_eq_zero_of_integral_eq_zero hsupp hg hgsign hg0, hae] with t ht hts
+    have h := hgt t hts
+    rw [ht, Pi.zero_apply] at h
+    rw [Pi.zero_apply]
+    exact (mul_eq_zero.mp h.symm).resolve_left (hpos _ (hξ t hts)).ne'
+  have hA : ∃ ξ₁ ∈ s, D ξ₁ ≤ c := by
+    by_contra h
+    push Not at h
+    exact key 1 fun ξ' hξ' => by linarith [h ξ' hξ']
+  have hB : ∃ ξ₂ ∈ s, c ≤ D ξ₂ := by
+    by_contra h
+    push Not at h
+    exact key (-1) fun ξ' hξ' => by linarith [h ξ' hξ']
+  obtain ⟨ξ₁, hξ₁, h₁⟩ := hA
+  obtain ⟨ξ₂, hξ₂, h₂⟩ := hB
+  have hsub : Set.uIcc ξ₁ ξ₂ ⊆ s := hs.ordConnected.uIcc_subset hξ₁ hξ₂
+  obtain ⟨ξ₀, hξ₀, hξ₀eq⟩ :=
+    intermediate_value_uIcc (hD.mono hsub) (Set.mem_uIcc.mpr (Or.inl ⟨h₁, h₂⟩))
+  exact ⟨ξ₀, hsub hξ₀, by rw [hce, hξ₀eq]⟩
+
+/-- Finitely many nodes of a convex set `s`, together with a point `t` of `s`, lie in a compact
+interval contained in `s`. -/
+private theorem exists_Icc_subset_of_convex {s : Set ℝ} (hs : Convex ℝ s) {n : ℕ} [NeZero n]
+    {x : Fin n → ℝ} (hxmem : ∀ i, x i ∈ s) {t : ℝ} (ht : t ∈ s) :
+    ∃ a b : ℝ, Set.Icc a b ⊆ s ∧ t ∈ Set.Icc a b ∧ ∀ i, x i ∈ Set.Icc a b := by
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_mem_eq_inf' Finset.univ_nonempty x
+  obtain ⟨i₁, -, hi₁⟩ := Finset.exists_mem_eq_sup' Finset.univ_nonempty x
+  refine ⟨min t (x i₀), max t (x i₁), hs.ordConnected.out ?_ ?_,
+    ⟨min_le_left _ _, le_max_left _ _⟩, fun i => ⟨le_trans (min_le_right _ _) ?_,
+      le_trans ?_ (le_max_right _ _)⟩⟩
+  · rcases min_cases t (x i₀) with ⟨h, -⟩ | ⟨h, -⟩ <;> rw [h]
+    exacts [ht, hxmem i₀]
+  · rcases max_cases t (x i₁) with ⟨h, -⟩ | ⟨h, -⟩ <;> rw [h]
+    exacts [ht, hxmem i₁]
+  · rw [← hi₀]; exact Finset.inf'_le _ (Finset.mem_univ i)
+  · rw [← hi₁]; exact Finset.le_sup' _ (Finset.mem_univ i)
+
+/-- **The remainder of a rule through Hermite interpolation, on an arbitrary interval.** Let `μ` be
+a measure carried by a convex set `s ⊆ ℝ` (`μ sᶜ = 0`) against which every polynomial is
+integrable, `x : Fin n → ℝ` distinct nodes in `s` with multiplicities `m`, `∑ i, (m i + 1) = N + 1`,
+whose nodal polynomial `ω = ∏ i, (X - x i) ^ (m i + 1)` (`Hermite.nodal x m`) has constant sign on
+`s`, and `w` weights whose rule is exact on the polynomials of degree at most `N`. Then for a
+`μ`-integrable `f` of class `C^{N+1}`
+
+`(∫ f ∂μ) - ∑ i, w i * f (x i) = f^{(N+1)}(ξ) / (N+1)! * ∫ ω ∂μ`
+
+for some `ξ ∈ s`. The Gauss rule is the case `m i = 1`
+(`Quadrature.exists_gauss_error_eq_of_convex`), the Gauss–Radau rule `m = 0` at the fixed endpoint
+and `1` elsewhere, the Gauss–Lobatto rule `m = 0`
+at both endpoints and `1` elsewhere.
+
+Only the values of `f` at the nodes enter the rule, and the Hermite interpolant `H` of `f` has the
+same values and degree at most `N`, so the error is `∫ (f - H) ∂μ`;
+`Hermite.exists_sub_interpolate_eq`, on a compact interval of `s` holding `t` and the nodes, writes
+`f t - H t = f^{(N+1)}(ξ_t) / (N+1)! · ω(t)`, and the mean value theorem with a moving point
+(`exists_integral_eq_mul_integral`) finishes. No positivity of `μ` beyond the sign of `ω` is
+needed: if `∫ ω ∂μ = 0` the measure is carried by the nodes, where `f = H`, and the error is `0`.
+
+Reference: [golub2013matrix] §10.2.2; [quarteroni2000numerical] (10.41)–(10.42). -/
+theorem exists_error_eq_of_hermite_of_convex {s : Set ℝ} (hs : Convex ℝ s) (hsupp : μ sᶜ = 0)
+    (hpoly : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {N n : ℕ} {w x : Fin n → ℝ}
+    (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ s) {m : Fin n → ℕ}
+    (hsum : ∑ i, (m i + 1) = N + 1)
+    (hsign : (∀ t ∈ s, 0 ≤ (Hermite.nodal x m).eval t) ∨
+      ∀ t ∈ s, (Hermite.nodal x m).eval t ≤ 0)
+    (hexact : IsExactOnMeasure μ w x N) {f : ℝ → ℝ}
+    (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) (hfint : Integrable f μ) :
+    ∃ ξ ∈ s, (∫ t, f t ∂μ) - ∑ i, w i * f (x i) =
+      iteratedDeriv (N + 1) f ξ / (N + 1).factorial * ∫ t, (Hermite.nodal x m).eval t ∂μ := by
+  classical
+  have hn : n ≠ 0 := by
+    rintro rfl
+    simp at hsum
+  have : NeZero n := ⟨hn⟩
+  set H : ℝ[X] := Hermite.interpolate x m f with hH
+  have hHdeg : H.degree ≤ N := by
+    have hd := Hermite.degree_interpolate_lt hx m f
+    rw [hsum] at hd
+    exact degree_lt_succ_iff.mp hd
+  have hsumH : ∑ i, w i * f (x i) = ∫ t, H.eval t ∂μ := by
+    rw [← hexact H hHdeg]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have hi := Hermite.eval_iterate_derivative_interpolate (f := f) hx i (Nat.zero_le (m i))
+    simp only [Function.iterate_zero, id_eq, iteratedDeriv_zero] at hi
+    rw [hi]
+  have hpt : ∀ t ∈ s, ∃ ξ ∈ s, f t - H.eval t =
+      iteratedDeriv (N + 1) f ξ / (N + 1).factorial * (Hermite.nodal x m).eval t := by
+    intro t ht
+    obtain ⟨a, b, hab, hta, hxab⟩ := exists_Icc_subset_of_convex hs hxmem ht
+    obtain ⟨ξ, hξ, hξeq⟩ := Hermite.exists_sub_interpolate_eq hf hx hxab hsum hta
+    exact ⟨ξ, hab hξ, by rw [hξeq, Hermite.eval_nodal]⟩
+  rw [hsumH, ← integral_sub hfint (hpoly H)]
+  exact exists_integral_eq_mul_integral hs ⟨x 0, hxmem 0⟩ hsupp (hfint.sub (hpoly H))
+    (hpoly _) ((hf.continuous_iteratedDeriv _ le_rfl).div_const _).continuousOn hsign hpt
+
+/-- **The remainder of a rule through Hermite interpolation, for a finite measure on a compact
+interval.** Let `μ` be a finite measure carried by `[a, b]`, `x : Fin n → ℝ` distinct nodes in
+`[a, b]` with multiplicities `m`, `∑ i, (m i + 1) = N + 1`, whose nodal polynomial
+`ω = ∏ i, (X - x i) ^ (m i + 1)` (`Hermite.nodal x m`) has constant sign on `[a, b]`, and `w`
+weights whose rule is exact on the polynomials of degree at most `N`. Then for `f` of class
+`C^{N+1}`
+
+`(∫ f ∂μ) - ∑ i, w i * f (x i) = f^{(N+1)}(ξ) / (N+1)! * ∫ ω ∂μ`
+
+for some `ξ ∈ [a, b]`. Unlike the Gauss remainder, `μ` need not be a weight: a finitely supported
+measure, such as the spectral measure of a symmetric matrix, is allowed.
+
+The case `s = [a, b]` of `Quadrature.exists_error_eq_of_hermite_of_convex`, where the integrability
+of `f` and of the polynomials is automatic.
+
+Reference: [golub2013matrix] §10.2.2 and §10.2.6. -/
+theorem exists_error_eq_of_hermite [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {N n : ℕ} {w x : Fin n → ℝ} (hx : Function.Injective x)
+    (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hsum : ∑ i, (m i + 1) = N + 1)
+    (hsign : (∀ t ∈ Set.Icc a b, 0 ≤ (Hermite.nodal x m).eval t) ∨
+      ∀ t ∈ Set.Icc a b, (Hermite.nodal x m).eval t ≤ 0)
+    (hexact : IsExactOnMeasure μ w x N) {f : ℝ → ℝ}
+    (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) :
+    ∃ ξ ∈ Set.Icc a b, (∫ t, f t ∂μ) - ∑ i, w i * f (x i) =
+      iteratedDeriv (N + 1) f ξ / (N + 1).factorial * ∫ t, (Hermite.nodal x m).eval t ∂μ :=
+  exists_error_eq_of_hermite_of_convex (convex_Icc a b) hsupp
+    (fun p => integrable_of_continuous_of_compl_eq_zero hsupp p.continuous) hx hxmem hsum hsign
+    hexact hf (integrable_of_continuous_of_compl_eq_zero hsupp hf.continuous)
+
+/-- The nodal polynomial with double nodes is the square of the simple one, so it is
+nonnegative. -/
+private theorem eval_nodal_one {n : ℕ} (x : Fin n → ℝ) (t : ℝ) :
+    (Hermite.nodal x fun _ => 1).eval t = (Lagrange.nodal Finset.univ x).eval t ^ 2 := by
+  rw [Hermite.eval_nodal, Lagrange.eval_nodal, ← Finset.prod_pow]
 
 /-- **The Gauss remainder on an arbitrary interval.** Let `μ` be a weight carried by a convex set
 `s ⊆ ℝ` (`μ sᶜ = 0`), let `x : Fin n → ℝ` be distinct nodes in `s` and `w` weights whose rule is
@@ -1171,16 +1348,10 @@ for some `ξ ∈ s`, where `p_n = family μ n` is the nodal polynomial of the ru
 
 `Quadrature.exists_gauss_error_eq` is the special case of a compact carrier `[a, b]`, where the
 integrability of `f` comes for free; here neither the carrier nor `f^{(2n)}` need be bounded, which
-is what the Laguerre weight on `(0, ∞)` and the Hermite weight on `ℝ` require. The rule is exact
-on the Hermite
-interpolant `H` of `f` with double nodes at the `x i`, whose degree is less than `2n` and which
-agrees with `f` at the nodes, so the error is `∫ (f - H) ∂μ`; and
-`Hermite.exists_sub_interpolate_eq`, applied on the compact interval spanned by `t` and the nodes,
-writes `f t - H t = f^{(2n)}(ξ_t)/(2n)! · p_n(t)²` for `t ∈ s`. Writing `c` for the error divided
-by `∫ p_n² ∂μ`, the function `f - H - c p_n²` has zero integral; if `f^{(2n)}/(2n)!` were
-everywhere above `c` on `s` that function would be nonnegative on `s` and nonzero off the roots of
-`p_n`, which `integral_ne_zero_of_ne_zero_off_roots` forbids, and symmetrically below `c`. The
-intermediate value theorem on the interval joining the two witnesses produces `ξ`.
+is what the Laguerre weight on `(0, ∞)` and the Hermite weight on `ℝ` require. For `n ≥ 1` this is
+`Quadrature.exists_error_eq_of_hermite_of_convex` with every multiplicity `1`: the nodal polynomial
+with double nodes is `p_n²`, since by Jacobi's theorem the nodes of an exact rule are the roots of
+`p_n`. For `n = 0` it is the first mean value theorem for integrals.
 
 Reference: [quarteroni2000numerical] (10.41)–(10.42); [kress1998numerical] §9.3. -/
 theorem exists_gauss_error_eq_of_convex (hw : IsWeight μ) {s : Set ℝ} (hs : Convex ℝ s)
@@ -1192,131 +1363,31 @@ theorem exists_gauss_error_eq_of_convex (hw : IsWeight μ) {s : Set ℝ} (hs : C
     ∃ ξ ∈ s, (∫ t, f t ∂μ) - ∑ i, w i * f (x i) =
       iteratedDeriv (2 * n) f ξ / (2 * n).factorial * normSq μ n := by
   classical
-  have := hw.isFiniteMeasure
-  set D : ℝ → ℝ := fun ξ => iteratedDeriv (2 * n) f ξ / (2 * n).factorial with hD
-  have hDcont : Continuous D := (hf.continuous_iteratedDeriv (2 * n) le_rfl).div_const _
-  set H : ℝ[X] := Hermite.interpolate x (fun _ => 1) f with hH
-  have hHdeg : H.degree < ((2 * n : ℕ) : WithBot ℕ) := by
-    have hd := Hermite.degree_interpolate_lt hx (fun _ => 1) f
-    simpa [Finset.sum_const, mul_comm] using hd
-  have hHnode : ∀ i, H.eval (x i) = f (x i) := by
-    intro i
-    have hi := Hermite.eval_iterate_derivative_interpolate (f := f) (m := fun _ => 1) hx i
-      (Nat.zero_le 1)
-    simpa using hi
-  have hint_H : Integrable (fun t => H.eval t) μ := hw.integrable_eval H
-  have hIpos : 0 < normSq μ n := normSq_pos hw n
-  -- the error is the integral of `f - H`
-  have hsum : ∑ i, w i * f (x i) = ∫ t, H.eval t ∂μ := by
-    rw [← hexact H hHdeg]
-    exact Finset.sum_congr rfl fun i _ => by rw [hHnode i]
-  have hint_fH : Integrable (fun t => f t - H.eval t) μ := hfint.sub hint_H
-  have hEeq : (∫ t, f t ∂μ) - ∑ i, w i * f (x i) = ∫ t, (f t - H.eval t) ∂μ := by
-    rw [hsum, ← integral_sub hfint hint_H]
-  set c : ℝ := ((∫ t, f t ∂μ) - ∑ i, w i * f (x i)) / normSq μ n with hcdef
-  have hc : (∫ t, f t ∂μ) - ∑ i, w i * f (x i) = c * normSq μ n := by
-    rw [hcdef, div_mul_cancel₀ _ hIpos.ne']
-  -- the pointwise error formula, on the compact interval spanned by `t` and the nodes
-  have hpt : ∀ t ∈ s, ∃ ξ ∈ s, f t - H.eval t = D ξ * (family μ n).eval t ^ 2 := by
-    intro t ht
-    cases n with
-    | zero =>
-      refine ⟨t, ht, ?_⟩
-      have hH0 : H = 0 := by
-        rw [← degree_eq_bot]
-        exact Nat.WithBot.lt_zero_iff.mp (by simpa using hHdeg)
-      simp [hH0, hD]
-    | succ m =>
-      obtain ⟨i₀, -, hi₀⟩ := Finset.exists_mem_eq_inf' Finset.univ_nonempty x
-      obtain ⟨i₁, -, hi₁⟩ := Finset.exists_mem_eq_sup' Finset.univ_nonempty x
-      set a : ℝ := min t (x i₀) with ha
-      set b : ℝ := max t (x i₁) with hb
-      have hamem : a ∈ s := by
-        rcases min_cases t (x i₀) with ⟨h, -⟩ | ⟨h, -⟩ <;> rw [ha, h]
-        · exact ht
-        · exact hxmem i₀
-      have hbmem : b ∈ s := by
-        rcases max_cases t (x i₁) with ⟨h, -⟩ | ⟨h, -⟩ <;> rw [hb, h]
-        · exact ht
-        · exact hxmem i₁
-      have hsub : Set.Icc a b ⊆ s := hs.ordConnected.out hamem hbmem
-      have htmem : t ∈ Set.Icc a b := ⟨min_le_left _ _, le_max_left _ _⟩
-      have hxmem' : ∀ i, x i ∈ Set.Icc a b := by
-        intro i
-        refine ⟨le_trans (min_le_right _ _) ?_, le_trans ?_ (le_max_right _ _)⟩
-        · rw [← hi₀]; exact Finset.inf'_le _ (Finset.mem_univ i)
-        · rw [← hi₁]; exact Finset.le_sup' _ (Finset.mem_univ i)
-      have hf' : ContDiff ℝ ((2 * m + 1 + 1 : ℕ) : WithTop ℕ∞) f := by
-        rw [show 2 * m + 1 + 1 = 2 * (m + 1) by ring]; exact hf
-      obtain ⟨ξ, hξ, hξeq⟩ := Hermite.exists_sub_interpolate_eq (N := 2 * m + 1) hf' hx hxmem'
-        (m := fun _ => 1) (by simp; ring) htmem
-      refine ⟨ξ, hsub hξ, ?_⟩
-      have hnodal : Lagrange.nodal Finset.univ x = family μ (m + 1) :=
-        ((isExactOnMeasure_two_mul_add_one_iff hw hx w).mp
-          (isExactOnMeasure_iff_forall_degree_lt.mpr
-            (by rw [show 2 * m + 1 + 1 = 2 * (m + 1) by ring]; exact hexact))).1
-      rw [hξeq, ← hnodal, Lagrange.eval_nodal, hD]
-      simp only [show 2 * m + 1 + 1 = 2 * (m + 1) by ring, Finset.prod_pow]
-  -- the error minus `c` times `∫ p_n²` integrates to zero
-  have hsqint : Integrable (fun t => c * (family μ n).eval t ^ 2) μ :=
-    (hw.integrable_eval_sq _).const_mul c
-  have hgint : Integrable (fun t => f t - H.eval t - c * (family μ n).eval t ^ 2) μ :=
-    hint_fH.sub hsqint
-  have hIeq : ∫ t, c * (family μ n).eval t ^ 2 ∂μ = c * normSq μ n := by
-    rw [integral_const_mul]; rfl
-  have hgzero : ∫ t, (f t - H.eval t - c * (family μ n).eval t ^ 2) ∂μ = 0 := by
-    rw [integral_sub hint_fH hsqint, hIeq, ← hEeq, hc, sub_self]
-  -- the scaled top derivative takes values on both sides of `c`
-  have hA : ∃ ξ ∈ s, D ξ ≤ c := by
-    by_contra hcon
-    push Not at hcon
-    refine integral_ne_zero_of_ne_zero_off_roots hw hsupp (family_ne_zero μ n) hgint ?_ ?_ hgzero
-    · intro t ht
-      obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
-      have h1 : 0 ≤ (D ξ - c) * (family μ n).eval t ^ 2 :=
-        mul_nonneg (by linarith [hcon ξ hξ]) (sq_nonneg _)
-      rw [sub_mul] at h1
-      rw [hξeq]
-      linarith
-    · intro t ht hnz
-      obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
-      have h1 : 0 < (D ξ - c) * (family μ n).eval t ^ 2 :=
-        mul_pos (by linarith [hcon ξ hξ])
-          (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 hnz)))
-      rw [sub_mul] at h1
-      rw [hξeq]
-      exact ne_of_gt (by linarith)
-  have hB : ∃ ξ ∈ s, c ≤ D ξ := by
-    by_contra hcon
-    push Not at hcon
-    have hgzero' : ∫ t, -(f t - H.eval t - c * (family μ n).eval t ^ 2) ∂μ = 0 := by
-      rw [integral_neg, hgzero, neg_zero]
-    have hgintneg : Integrable (fun t => -(f t - H.eval t - c * (family μ n).eval t ^ 2)) μ :=
-      hgint.neg
-    refine integral_ne_zero_of_ne_zero_off_roots hw hsupp (family_ne_zero μ n) hgintneg ?_ ?_
-      hgzero'
-    · intro t ht
-      obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
-      have h1 : 0 ≤ (c - D ξ) * (family μ n).eval t ^ 2 :=
-        mul_nonneg (by linarith [hcon ξ hξ]) (sq_nonneg _)
-      rw [sub_mul] at h1
-      rw [hξeq]
-      linarith
-    · intro t ht hnz
-      obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
-      have h1 : 0 < (c - D ξ) * (family μ n).eval t ^ 2 :=
-        mul_pos (by linarith [hcon ξ hξ])
-          (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 hnz)))
-      rw [sub_mul] at h1
-      rw [hξeq]
-      exact ne_of_gt (by linarith)
-  obtain ⟨ξ₁, hξ₁, hle₁⟩ := hA
-  obtain ⟨ξ₂, hξ₂, hle₂⟩ := hB
-  have hmem : c ∈ Set.uIcc (D ξ₁) (D ξ₂) := Set.mem_uIcc.mpr (Or.inl ⟨hle₁, hle₂⟩)
-  obtain ⟨ξ, hξmem, hξeq⟩ := intermediate_value_uIcc hDcont.continuousOn hmem
-  refine ⟨ξ, hs.ordConnected.uIcc_subset hξ₁ hξ₂ hξmem, ?_⟩
-  change _ = D ξ * normSq μ n
-  rw [hξeq, hcdef, div_mul_cancel₀ _ hIpos.ne']
+  cases n with
+  | zero =>
+    -- the empty rule: the first mean value theorem for integrals
+    have hne : s.Nonempty := by
+      rw [Set.nonempty_iff_ne_empty]
+      rintro rfl
+      exact hw.measure_compl_ne_zero Set.finite_empty hsupp
+    obtain ⟨ξ, hξ, heq⟩ := exists_integral_eq_mul_integral (D := f) hs hne hsupp hfint
+      (hw.integrable_eval_sq (family μ 0)) hf.continuous.continuousOn
+      (Or.inl fun t _ => sq_nonneg _) fun t ht => ⟨t, ht, by simp⟩
+    exact ⟨ξ, hξ, by simpa [normSq] using heq⟩
+  | succ k =>
+    have hexact' : IsExactOnMeasure μ w x (2 * k + 1) := isExactOnMeasure_iff_forall_degree_lt.mpr
+      (by rw [show 2 * k + 1 + 1 = 2 * (k + 1) by ring]; exact hexact)
+    have hnodal : Lagrange.nodal Finset.univ x = family μ (k + 1) :=
+      ((isExactOnMeasure_two_mul_add_one_iff hw hx w).mp hexact').1
+    have hf' : ContDiff ℝ ((2 * k + 1 + 1 : ℕ) : WithTop ℕ∞) f := by
+      rw [show 2 * k + 1 + 1 = 2 * (k + 1) by ring]; exact hf
+    obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite_of_convex hs hsupp hw.integrable_eval hx
+      hxmem (m := fun _ => 1) (by simp; ring)
+      (Or.inl fun t _ => by rw [eval_nodal_one]; exact sq_nonneg _) hexact' hf' hfint
+    refine ⟨ξ, hξ, ?_⟩
+    rw [heq, show 2 * k + 1 + 1 = 2 * (k + 1) by ring]
+    congr 1
+    simp only [eval_nodal_one, hnodal, normSq]
 
 /-- **The Gauss remainder on a compact interval.** For a weight carried by `[a, b]`, an `n`-point
 rule at distinct nodes of `[a, b]` exact on the polynomials of degree less than `2n` — the Gauss
@@ -1339,6 +1410,132 @@ theorem exists_gauss_error_eq (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Ic
   have := hw.isFiniteMeasure
   exact exists_gauss_error_eq_of_convex hw (convex_Icc a b) hsupp hx hxmem hexact hf
     (integrable_of_continuous_of_compl_eq_zero hsupp hf.continuous)
+
+/-- A function of class `C^k` on an open set containing `[a, b]` agrees near every point of
+`[a, b]` with a function of class `C^k` on all of `ℝ`: multiply it by a smooth bump equal to `1`
+near `[a, b]` and supported inside the open set. -/
+private theorem exists_contDiff_eventuallyEq {U : Set ℝ} (hU : IsOpen U) {a b : ℝ} (hab : a ≤ b)
+    (hsub : Set.Icc a b ⊆ U) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiffOn ℝ (k : WithTop ℕ∞) f U) :
+    ∃ g : ℝ → ℝ, ContDiff ℝ (k : WithTop ℕ∞) g ∧ ∀ t ∈ Set.Icc a b, g =ᶠ[𝓝 t] f := by
+  obtain ⟨ε₁, hε₁, h₁⟩ := Metric.isOpen_iff.mp hU a (hsub ⟨le_rfl, hab⟩)
+  obtain ⟨ε₂, hε₂, h₂⟩ := Metric.isOpen_iff.mp hU b (hsub ⟨hab, le_rfl⟩)
+  set ε : ℝ := min ε₁ ε₂ / 2 with hε
+  have hεpos : 0 < ε := by positivity
+  have hε₁' : ε < ε₁ := by linarith [min_le_left ε₁ ε₂]
+  have hε₂' : ε < ε₂ := by linarith [min_le_right ε₁ ε₂]
+  have hbig : Set.Icc (a - ε) (b + ε) ⊆ U := by
+    rintro y ⟨hy₁, hy₂⟩
+    by_cases hya : y < a
+    · exact h₁ (by rw [Metric.mem_ball, Real.dist_eq, abs_sub_lt_iff]; constructor <;> linarith)
+    by_cases hyb : b < y
+    · exact h₂ (by rw [Metric.mem_ball, Real.dist_eq, abs_sub_lt_iff]; constructor <;> linarith)
+    exact hsub ⟨not_lt.mp hya, not_lt.mp hyb⟩
+  let φ : ContDiffBump ((a + b) / 2) :=
+    ⟨(b - a) / 2 + ε / 3, (b - a) / 2 + 2 * ε / 3, by linarith, by linarith⟩
+  have hrOut : φ.rOut = (b - a) / 2 + 2 * ε / 3 := rfl
+  refine ⟨fun y => φ y * f y, ?_, fun t ht => ?_⟩
+  · refine contDiff_iff_contDiffAt.mpr fun y => ?_
+    by_cases hy : y ∈ U
+    · exact φ.contDiffAt.mul (hf.contDiffAt (hU.mem_nhds hy))
+    · have hyφ : y ∉ tsupport φ := by
+        rw [φ.tsupport_eq]
+        intro hy'
+        rw [Metric.mem_closedBall, Real.dist_eq, abs_le] at hy'
+        rw [hrOut] at hy'
+        exact hy (hbig ⟨by linarith [hy'.1], by linarith [hy'.2]⟩)
+      refine (contDiffAt_const (c := (0 : ℝ))).congr_of_eventuallyEq ?_
+      filter_upwards [notMem_tsupport_iff_eventuallyEq.mp hyφ] with z hz
+      rw [hz, Pi.zero_apply, zero_mul]
+  · have hball : Metric.ball ((a + b) / 2) ((b - a) / 2 + ε / 3) ∈ 𝓝 t :=
+      Metric.isOpen_ball.mem_nhds (by
+        rw [Metric.mem_ball, Real.dist_eq, abs_lt]; constructor <;> linarith [ht.1, ht.2])
+    filter_upwards [hball] with z hz
+    rw [φ.one_of_mem_closedBall (Metric.ball_subset_closedBall hz), one_mul]
+
+/-- **The two-sided Gauss / Gauss–Radau bound.** Let `μ` be a finite measure carried by
+`[a, b]`, `k ≥ 1`, `(w, x)` a `k`-point rule at distinct nodes of `[a, b]` exact on the polynomials
+of degree at most `2k - 1` (a Gauss rule), and `(w', x')` a `(k + 1)`-point rule at distinct nodes
+of `[a, b]` with `x' 0 = a`, exact on the polynomials of degree at most `2k` (a Gauss–Radau rule
+with the fixed node at the left end). If `f` is of class `C^{2k+1}` on an open set containing
+`[a, b]` with `f^{(2k)} ≥ 0` and `f^{(2k+1)} ≤ 0` on `[a, b]`, then the Gauss rule is a lower and
+the Gauss–Radau rule an upper bound for `∫ f ∂μ`.
+
+Both are `Quadrature.exists_error_eq_of_hermite`: with every multiplicity `1` the nodal polynomial
+`∏ (X - x i)²` is nonnegative and the Gauss error is `f^{(2k)}(ξ)/(2k)! ∫ ω ∂μ ≥ 0`; with
+multiplicity `0` at `a` and `1` at the other nodes it is `(X - a) ∏_{i ≥ 1} (X - x' i)²`, again
+nonnegative on `[a, b]`, and the Gauss–Radau error is `f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ ≤ 0`. Since
+both sides see `f` only on `[a, b]`, `f` is first replaced by a function of class `C^{2k+1}` on all
+of `ℝ` agreeing with it near `[a, b]`.
+
+The instances are the Gauss and Gauss–Radau rules of a weight (`Quadrature.exists_gauss`,
+`Quadrature.exists_gaussRadau`) and the Lanczos rules of the spectral measure of a symmetric
+matrix, for `f(λ) = 1/λ²` on `0 < a`.
+
+Reference: [golub2013matrix] §10.2.2 and §10.2.6. -/
+theorem gauss_le_integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ k) {w x : Fin k → ℝ}
+    (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
+    (hexact : IsExactOnMeasure μ w x (2 * k - 1)) {w' x' : Fin (k + 1) → ℝ}
+    (hx' : Function.Injective x') (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = a)
+    (hexact' : IsExactOnMeasure μ w' x' (2 * k)) {U : Set ℝ} (hU : IsOpen U)
+    (hUsub : Set.Icc a b ⊆ U) {f : ℝ → ℝ}
+    (hf : ContDiffOn ℝ ((2 * k + 1 : ℕ) : WithTop ℕ∞) f U)
+    (heven : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k) f t)
+    (hodd : ∀ t ∈ Set.Icc a b, iteratedDeriv (2 * k + 1) f t ≤ 0) :
+    ∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ ∧ ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) := by
+  classical
+  have hab : a ≤ b := hx'0 ▸ (hx'mem 0).2
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]; exact hsupp
+  obtain ⟨g, hg, hgf⟩ := exists_contDiff_eventuallyEq hU hab hUsub hf
+  have hval : ∀ t ∈ Set.Icc a b, f t = g t := fun t ht => (hgf t ht).eq_of_nhds.symm
+  have hder : ∀ j, ∀ t ∈ Set.Icc a b, iteratedDeriv j g t = iteratedDeriv j f t :=
+    fun j t ht => (hgf t ht).iteratedDeriv_eq j
+  have hint : ∫ t, f t ∂μ = ∫ t, g t ∂μ :=
+    integral_congr_ae (by filter_upwards [hae] with t ht using hval t ht)
+  have hQ : ∑ i, w i * f (x i) = ∑ i, w i * g (x i) :=
+    Finset.sum_congr rfl fun i _ => by rw [hval _ (hxmem i)]
+  have hQ' : ∑ i, w' i * f (x' i) = ∑ i, w' i * g (x' i) :=
+    Finset.sum_congr rfl fun i _ => by rw [hval _ (hx'mem i)]
+  rw [hint, hQ, hQ']
+  constructor
+  · -- the Gauss rule: every node double
+    obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+    rw [show 2 * (j + 1) - 1 = 2 * j + 1 by omega] at hexact
+    obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite hsupp hx hxmem (m := fun _ => 1)
+      (by simp; ring) (Or.inl fun t _ => by rw [eval_nodal_one]; exact sq_nonneg _) hexact
+      (hg.of_le (by exact_mod_cast (by omega : 2 * j + 1 + 1 ≤ 2 * (j + 1) + 1)))
+    have hω : 0 ≤ ∫ t, (Hermite.nodal x fun _ => 1).eval t ∂μ :=
+      integral_nonneg fun t => by rw [eval_nodal_one]; exact sq_nonneg _
+    have hD : 0 ≤ iteratedDeriv (2 * j + 1 + 1) g ξ / (2 * j + 1 + 1).factorial := by
+      refine div_nonneg ?_ (Nat.cast_nonneg _)
+      rw [hder _ ξ hξ, show 2 * j + 1 + 1 = 2 * (j + 1) by ring]
+      exact heven ξ hξ
+    nlinarith [mul_nonneg hD hω]
+  · -- the Gauss–Radau rule: simple at `a`, double elsewhere
+    set m' : Fin (k + 1) → ℕ := fun i => if i = 0 then 0 else 1 with hm'
+    have hsum' : ∑ i, (m' i + 1) = 2 * k + 1 := by
+      rw [Fin.sum_univ_succ]
+      simp only [hm', Fin.succ_ne_zero, ite_true, ite_false, Finset.sum_const, Finset.card_univ,
+        Fintype.card_fin, smul_eq_mul]
+      ring
+    have hω : ∀ t ∈ Set.Icc a b, 0 ≤ (Hermite.nodal x' m').eval t := by
+      intro t ht
+      rw [Hermite.eval_nodal]
+      refine Finset.prod_nonneg fun i _ => ?_
+      by_cases hi : i = 0
+      · subst hi
+        simp only [hm', ite_true, zero_add, pow_one, hx'0]
+        linarith [ht.1]
+      · simp only [hm', hi, ite_false]
+        exact even_two.pow_nonneg _
+    obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite hsupp hx' hx'mem hsum' (Or.inl hω) hexact'
+      hg
+    have hωint : 0 ≤ ∫ t, (Hermite.nodal x' m').eval t ∂μ :=
+      integral_nonneg_of_ae (by filter_upwards [hae] with t ht using hω t ht)
+    have hD : iteratedDeriv (2 * k + 1) g ξ / (2 * k + 1).factorial ≤ 0 :=
+      div_nonpos_of_nonpos_of_nonneg (by rw [hder _ ξ hξ]; exact hodd ξ hξ) (Nat.cast_nonneg _)
+    nlinarith [mul_nonpos_of_nonpos_of_nonneg hD hωint]
 
 end GaussError
 

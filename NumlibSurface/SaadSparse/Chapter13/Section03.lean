@@ -1,5 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.Multigrid.Basic
+import Numlib.Multigrid.ModelProblem
 
 /-!
 # Saad §13.3: inter-grid operations
@@ -68,13 +69,10 @@ carrying the `m` interior coarse values to the `2 m + 1` interior fine values.
 Column `q` is the stencil `½ [1 2 1]` on the fine rows `2 q`, `2 q + 1`, `2 q + 2`: the fine point
 `2 q + 1` is the coarse point `q` and takes its value, and the two fine points either side of it
 take the average of their coarse neighbours (a coarse neighbour outside `Fin m` being the boundary
-value `0`). For `m = 3` this is Saad's displayed `7 × 3` matrix. -/
+value `0`). For `m = 3` this is Saad's displayed `7 × 3` matrix. It is the backbone's
+`Multigrid.linearInterpolation m`. -/
 noncomputable def prolongation1D (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin m) ℝ :=
-  Matrix.of fun i j =>
-    if (i : ℕ) = 2 * (j : ℕ) + 1 then 1
-    else if (i : ℕ) = 2 * (j : ℕ) then 1 / 2
-    else if (i : ℕ) = 2 * (j : ℕ) + 2 then 1 / 2
-    else 0
+  Multigrid.linearInterpolation m
 
 /-- The entries of the interpolation matrix, read off its definition. -/
 theorem prolongation1D_apply (m : ℕ) (i : Fin (2 * m + 1)) (j : Fin m) :
@@ -83,7 +81,7 @@ theorem prolongation1D_apply (m : ℕ) (i : Fin (2 * m + 1)) (j : Fin m) :
       else if (i : ℕ) = 2 * (j : ℕ) then 1 / 2
       else if (i : ℕ) = 2 * (j : ℕ) + 2 then 1 / 2
       else 0 :=
-  rfl
+  Multigrid.linearInterpolation_apply i j
 
 /-- Saad (13.32): the one-dimensional **restriction by injection** `I_h^{2h}`, which reads off the
 fine value at the fine point `2 q + 1` that carries the coarse point `q`. -/
@@ -100,13 +98,10 @@ theorem injection1D_apply (m : ℕ) (j : Fin m) (i : Fin (2 * m + 1)) :
 
 Row `q` is the stencil `¼ [1 2 1]` on the fine columns `2 q`, `2 q + 1`, `2 q + 2`, the middle one
 being the fine point that carries the coarse point `q`. Unlike interpolation, this needs no
-boundary convention: all three fine indices are interior for every `q : Fin m`. -/
+boundary convention: all three fine indices are interior for every `q : Fin m`. It is the
+backbone's `Multigrid.fullWeighting m`. -/
 noncomputable def restriction1D (m : ℕ) : Matrix (Fin m) (Fin (2 * m + 1)) ℝ :=
-  Matrix.of fun j i =>
-    if (i : ℕ) = 2 * (j : ℕ) + 1 then 1 / 2
-    else if (i : ℕ) = 2 * (j : ℕ) then 1 / 4
-    else if (i : ℕ) = 2 * (j : ℕ) + 2 then 1 / 4
-    else 0
+  Multigrid.fullWeighting m
 
 /-- The entries of the full-weighting matrix, read off its definition. -/
 theorem restriction1D_apply (m : ℕ) (j : Fin m) (i : Fin (2 * m + 1)) :
@@ -115,7 +110,7 @@ theorem restriction1D_apply (m : ℕ) (j : Fin m) (i : Fin (2 * m + 1)) :
       else if (i : ℕ) = 2 * (j : ℕ) then 1 / 4
       else if (i : ℕ) = 2 * (j : ℕ) + 2 then 1 / 4
       else 0 :=
-  rfl
+  Multigrid.fullWeighting_apply j i
 
 /-! ### How the one-dimensional operators act -/
 
@@ -220,11 +215,8 @@ theorem injective_prolongation1D (m : ℕ) :
 /-- **Saad (13.35)**: in one dimension full weighting is the scaled transpose of linear
 interpolation, `I_h^{2h} = 2^{-d} (I_{2h}^h)ᵀ` with `d = 1`. Both stencils are `[1 2 1]`, and the
 scaling is the only difference between them: `¼[1 2 1]` against `½[1 2 1]`. -/
-theorem equation_13_35 (m : ℕ) : restriction1D m = (1 / 2 : ℝ) • (prolongation1D m)ᵀ := by
-  ext j i
-  rw [Matrix.smul_apply, Matrix.transpose_apply, prolongation1D_apply, restriction1D_apply,
-    smul_eq_mul]
-  split_ifs <;> norm_num
+theorem equation_13_35 (m : ℕ) : restriction1D m = (1 / 2 : ℝ) • (prolongation1D m)ᵀ :=
+  rfl
 
 /-- Saad (13.35) with the scaling on the other side, `I_{2h}^h = 2^d (I_h^{2h})ᵀ` at `d = 1`. -/
 theorem prolongation1D_eq_smul_transpose (m : ℕ) :

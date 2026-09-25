@@ -234,45 +234,15 @@ theorem two_mul_theta_coarseIndex (m : ℕ) (k : Fin m) :
 the sine wave of the same frequency on the coarse grid, scaled by `cos²(θ_k/2)`:
 `(I_h^{2h} w_k^h)_j = cos²(θ_k/2) sin(2 j θ_k)`.
 
-The computation is the `¼[1 2 1]` stencil against the three-term identity
-`sin((2j-1)θ) + sin((2j+1)θ) = 2 sin(2jθ) cos θ`, followed by the half-angle formula
+This is the backbone's `Multigrid.fullWeighting_mulVec_sineVec_apply`: the `¼[1 2 1]` stencil
+against `sin((2j-1)θ) + sin((2j+1)θ) = 2 sin(2jθ) cos θ`, followed by the half-angle formula
 `(1 + cos θ)/2 = cos²(θ/2)`. -/
 theorem example_13_7 (m : ℕ) (k : Fin (2 * m + 1)) (q : Fin m) :
     (restriction1D m *ᵥ sineVec (2 * m + 1) k) q
       = Real.cos (theta (2 * m + 1) k / 2) ^ 2
         * Real.sin (2 * (((q : ℕ) : ℝ) + 1) * theta (2 * m + 1) k) := by
-  have hq := q.isLt
-  obtain ⟨a, ha⟩ : ∃ a : Fin (2 * m + 1), (a : ℕ) = 2 * (q : ℕ) :=
-    ⟨⟨2 * (q : ℕ), by omega⟩, rfl⟩
-  obtain ⟨b, hb⟩ : ∃ b : Fin (2 * m + 1), (b : ℕ) = 2 * (q : ℕ) + 1 :=
-    ⟨⟨2 * (q : ℕ) + 1, by omega⟩, rfl⟩
-  obtain ⟨c, hc⟩ : ∃ c : Fin (2 * m + 1), (c : ℕ) = 2 * (q : ℕ) + 2 :=
-    ⟨⟨2 * (q : ℕ) + 2, by omega⟩, rfl⟩
-  have hsine : ∀ j : Fin (2 * m + 1),
-      sineVec (2 * m + 1) k j = Real.sin ((((j : ℕ) : ℝ) + 1) * theta (2 * m + 1) k) :=
-    fun j => by rw [sineVec_apply, theta]
-  have ha' : ((a : ℕ) : ℝ) + 1 = 2 * ((q : ℕ) : ℝ) + 1 := by rw [ha]; push_cast; ring
-  have hb' : ((b : ℕ) : ℝ) + 1 = 2 * ((q : ℕ) : ℝ) + 2 := by rw [hb]; push_cast; ring
-  have hc' : ((c : ℕ) : ℝ) + 1 = 2 * ((q : ℕ) : ℝ) + 3 := by rw [hc]; push_cast; ring
-  have hrhs : 2 * (((q : ℕ) : ℝ) + 1) * theta (2 * m + 1) k
-      = (2 * ((q : ℕ) : ℝ) + 2) * theta (2 * m + 1) k := by ring
-  have hcos : Real.cos (theta (2 * m + 1) k / 2) ^ 2
-      = (1 + Real.cos (theta (2 * m + 1) k)) / 2 := by
-    have h := Real.cos_sq (theta (2 * m + 1) k / 2)
-    rw [show 2 * (theta (2 * m + 1) k / 2) = theta (2 * m + 1) k by ring] at h
-    linarith
-  have hsum : Real.sin ((2 * ((q : ℕ) : ℝ) + 1) * theta (2 * m + 1) k)
-        + Real.sin ((2 * ((q : ℕ) : ℝ) + 3) * theta (2 * m + 1) k)
-      = 2 * Real.sin ((2 * ((q : ℕ) : ℝ) + 2) * theta (2 * m + 1) k)
-        * Real.cos (theta (2 * m + 1) k) := by
-    rw [show (2 * ((q : ℕ) : ℝ) + 1) * theta (2 * m + 1) k
-        = (2 * ((q : ℕ) : ℝ) + 2) * theta (2 * m + 1) k - theta (2 * m + 1) k by ring,
-      show (2 * ((q : ℕ) : ℝ) + 3) * theta (2 * m + 1) k
-        = (2 * ((q : ℕ) : ℝ) + 2) * theta (2 * m + 1) k + theta (2 * m + 1) k by ring,
-      Real.sin_sub, Real.sin_add]
-    ring
-  rw [restriction1D_mulVec m _ q ha hb hc, hsine, hsine, hsine, ha', hb', hc', hrhs, hcos]
-  linear_combination hsum / 4
+  rw [theta]
+  exact Multigrid.fullWeighting_mulVec_sineVec_apply k q
 
 /-- **Saad Example 13.7**: a fine mode whose index is that of a coarse mode restricts to exactly
 that coarse mode, damped by `cos²(θ_k/2)`: `I_h^{2h} w_k^h = cos²(θ_k/2) w_k^{2h}`. -/

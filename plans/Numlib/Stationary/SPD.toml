@@ -1,8 +1,3 @@
-# Planned additions (GVL round): the module doc of `Numlib.Stationary.SPD` is the group description;
-# when the Golub–Van Loan nodes staged below are formalized, extend it as follows.
-# (ch11) in the SSOR bullet, replace "so its eigenvalues are real and lie in `[0, 1)`" (prose only
-# today) by a reference to `Stationary.Splitting.spectrum_complexify_iterationOperator_subset`.
-# (The positive diagonal form `Matrix.ssorSplitting_m_posDef_of_diag_pos` is in the module since R2.)
 [[node]]
 id = "Stationary.Splitting.richardson_complexSpectralRadius_eq"
 
@@ -219,22 +214,8 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
 id = "Matrix.complexSpectralRadius_sorSplitting_of_isLowerTriangular"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
 
-[[node]]  # staged by ch11
+[[node]]
 id = "Stationary.Splitting.spectrum_complexify_iterationOperator_subset"
-kind = "theorem"
-desc = '''
-For a real splitting `s : Stationary.Splitting A` with `A.PosDef`, `s.m` symmetric and `s.m − A`
-positive semidefinite: `spectrum ℂ (Matrix.complexify s.iterationOperator) ⊆ Complex.ofReal '' Set.Ico 0 1`
-— the eigenvalues of `G = M⁻¹N` are real, nonnegative and below `1` ([golub2013matrix] Theorem 11.2.4
-for SSOR; [quarteroni2000numerical] Property 4.5 read correctly). Real and nonnegative: `A G` is
-symmetric positive semidefinite (`Stationary.Splitting.mul_iterationOperator_posSemidef`), so `G` is
-self-adjoint and positive semidefinite in the `A`-inner product
-(`Stationary.Splitting.isSelfAdjoint_energyIterationOperator` on `Stationary.Splitting.euclidean`);
-below `1`: `M + Mᵀ − A = M + (M − A)` is positive definite, so
-`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`. ★★ (~50 lines)
-'''
-deps = ["Stationary.Splitting.mul_iterationOperator_posSemidef", "Stationary.Splitting.euclidean",
-  "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Matrix.complexSpectralRadius"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 11.2.4'
 
 [[node]]

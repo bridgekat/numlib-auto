@@ -15,10 +15,12 @@ splitting of `A` whose `M` factor is cheap to apply, and `R` is supported in `P`
 `Matrix.IsILU P A L U` states exactly the five constraints above, and not an algorithm.
 [saad2003iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such factors,
 proves that two of them agree, and observes before Algorithm 10.4 that the factors are in general
-not unique. Each loop order produces factors satisfying `Matrix.IsILU`, every downstream statement
-of §10.3–10.5 uses only these constraints, and no uniqueness is available to be exploited; so the
-constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-diagonal zero pattern
-`Matrix.zeroPattern A` of `A` itself, is the level-zero factorization `ILU(0)`.
+not unique. Each loop order produces factors satisfying `Matrix.IsILU`, and every downstream
+statement of §10.3–10.5 uses only these constraints; so the constraints are the definition here.
+Once the pivots are nonzero the factors are in fact determined
+(`Matrix.IsILU.eq_of_diag_ne_zero`); the non-uniqueness is that of a vanishing pivot.
+`Matrix.IsILU0`, taking `P` to be the off-diagonal zero pattern `Matrix.zeroPattern A` of `A`
+itself, is the level-zero factorization `ILU(0)`.
 
 `Matrix.IsMILU` is the *modified* variant of §10.3.5: the constraints hold off the diagonal, and the
 diagonal is chosen so that the row sums of `L U` and of `A` agree, which is what makes the
@@ -28,9 +30,9 @@ preconditioner exact on constant vectors.
 `L Lᵀ` agreeing off `P` with a symmetric matrix `B` — the incomplete Cholesky factorization used
 in §10.8.2 to precondition the normal equations. It is normalized by a *positive* diagonal rather
 than by a unit one, so it is not literally an incomplete `LU` factorization;
-`Matrix.IsIC.isILU` rescales it into one, `B = (L D⁻¹) (D Lᵀ)`. Unlike incomplete `LU` factors, an
-incomplete Cholesky factor is unique (`Matrix.IsIC.eq_of_diag_pos`), which is what lets a theorem
-speak of *the* `L` factor of `B`.
+`Matrix.IsIC.isILU` rescales it into one, `B = (L D⁻¹) (D Lᵀ)`. An incomplete Cholesky factor with
+a positive diagonal is unique (`Matrix.IsIC.eq_of_diag_pos`), which is what lets a theorem speak of
+*the* `L` factor of `B`.
 
 ## Existence for M-matrices
 
@@ -44,6 +46,13 @@ theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatri
 makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the matrix
 up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal entries is
 again an M-matrix.
+
+The symmetric case is `Matrix.IsStieltjes.exists_isIC`: a Stieltjes matrix has an incomplete
+Cholesky factor with a positive diagonal for every symmetric zero pattern avoiding the diagonal
+([meijerink1977iterative]; [golub2013matrix] §11.5.8). The incomplete `LU` factorization of a
+symmetric matrix with nonzero pivots is symmetric, `U = D Lᵀ`
+(`Matrix.IsILU.eq_diagonal_mul_transpose`), and the pivots are positive because the last working
+matrix is an M-matrix (`Matrix.IsMMatrix.exists_isILU_isMMatrix`), so `L D^{1/2}` is the factor.
 
 The elimination step is taken in the form `Matrix.elimStep` of
 `Numlib/LinearAlgebra/Matrix/LU/Elimination`, which keeps the index type fixed: it is `G⁻¹ A` for
@@ -690,25 +699,12 @@ private structure ILUState (P : Set (n × n)) (A : Matrix n n ℝ) (rank : n →
   /-- The residual is supported in the zero pattern. -/
   res_pattern : ∀ i j, (i, j) ∉ P → (L * M - A) i j = 0
 
-/-- **[meijerink1977iterative] and van der Vorst's theorem** ([saad2003iterative], Theorem 10.2): a
-real M-matrix has an incomplete `LU` factorization for every zero pattern avoiding the diagonal, no
-pivot vanishes, and the resulting splitting `A = L U - R` is regular — the product `L U` is
-nonsingular with a nonnegative inverse, and the residual is entrywise nonnegative.
-
-The induction is over the pivots in increasing order. At each step the working matrix is eliminated
-below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by [fan1960note] theorem
-(`Matrix.IsMMatrix.isMMatrix_elimStep`), and the entries in the zero pattern are then dropped, which
-moves it *up* in the entrywise order and so keeps it an M-matrix by the comparison theorem
-`Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor `L` differs from the identity only in the
-columns already eliminated, which is what makes the dropped mass pass through it unchanged and makes
-the residual a sum of nonnegative matrices.
-
-See `Matrix.IsILU.isRegular` for the reading of the conclusion as a
-`Stationary.Splitting.IsRegular`, and hence for the convergence of the iteration it defines. -/
-theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set (n × n))
+/-- The upper factor produced by the proof of `Matrix.IsMMatrix.exists_isILU` is itself an
+M-matrix; in particular its pivots are positive. -/
+theorem IsMMatrix.exists_isILU_isMMatrix {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set (n × n))
     (hP : ∀ i, (i, i) ∉ P) :
-    ∃ L U : Matrix n n ℝ, IsILU P A L U ∧ IsUnit (L * U) ∧ ((L * U)⁻¹).EntrywiseNonneg ∧
-      (L * U - A).EntrywiseNonneg := by
+    ∃ L U : Matrix n n ℝ, IsILU P A L U ∧ U.IsMMatrix ∧ IsUnit (L * U) ∧
+      ((L * U)⁻¹).EntrywiseNonneg ∧ (L * U - A).EntrywiseNonneg := by
   classical
   obtain ⟨e⟩ : Nonempty (n ≃o Fin (Fintype.card n)) := ⟨(monoEquivOfFin n rfl).symm⟩
   have hlt : ∀ i j : n, i < j ↔ (e i : ℕ) < (e j : ℕ) := fun i j =>
@@ -862,8 +858,8 @@ theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set 
   have hupper : ∀ i j : n, j < i → U i j = 0 := fun i j hji =>
     hst.m_lower i j hji (e j).isLt
   have hLU : IsUnit (L * U) := hst.l_unit.mul hst.m_mmatrix.isUnit
-  refine ⟨L, U, ⟨⟨hst.l_diag, hst.l_upper, hupper, hst.l_pattern, hst.m_pattern⟩, ?_⟩, hLU, ?_,
-    hst.res_nonneg⟩
+  refine ⟨L, U, ⟨⟨hst.l_diag, hst.l_upper, hupper, hst.l_pattern, hst.m_pattern⟩, ?_⟩,
+    hst.m_mmatrix, hLU, ?_, hst.res_nonneg⟩
   · intro i j hij
     have := hst.res_pattern i j hij
     rw [Matrix.sub_apply, sub_eq_zero] at this
@@ -871,7 +867,150 @@ theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set 
   · rw [Matrix.mul_inv_rev]
     exact hst.m_mmatrix.inv_entrywiseNonneg.mul hst.l_inv_nonneg
 
+/-- **[meijerink1977iterative] and van der Vorst's theorem** ([saad2003iterative], Theorem 10.2): a
+real M-matrix has an incomplete `LU` factorization for every zero pattern avoiding the diagonal, no
+pivot vanishes, and the resulting splitting `A = L U - R` is regular — the product `L U` is
+nonsingular with a nonnegative inverse, and the residual is entrywise nonnegative.
+
+The induction is over the pivots in increasing order. At each step the working matrix is eliminated
+below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by [fan1960note] theorem
+(`Matrix.IsMMatrix.isMMatrix_elimStep`), and the entries in the zero pattern are then dropped, which
+moves it *up* in the entrywise order and so keeps it an M-matrix by the comparison theorem
+`Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor `L` differs from the identity only in the
+columns already eliminated, which is what makes the dropped mass pass through it unchanged and makes
+the residual a sum of nonnegative matrices.
+
+See `Matrix.IsILU.isRegular` for the reading of the conclusion as a
+`Stationary.Splitting.IsRegular`, and hence for the convergence of the iteration it defines. -/
+theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set (n × n))
+    (hP : ∀ i, (i, i) ∉ P) :
+    ∃ L U : Matrix n n ℝ, IsILU P A L U ∧ IsUnit (L * U) ∧ ((L * U)⁻¹).EntrywiseNonneg ∧
+      (L * U - A).EntrywiseNonneg := by
+  obtain ⟨L, U, h, -, hu, hinv, hres⟩ := exists_isILU_isMMatrix hA P hP
+  exact ⟨L, U, h, hu, hinv, hres⟩
+
 end Existence
+
+/-! ### Uniqueness of incomplete `LU` factors, and incomplete Cholesky for Stieltjes matrices -/
+
+section ICExistence
+
+variable [Fintype n] [LinearOrder n] [DecidableEq n] {P : Set (n × n)}
+
+omit [DecidableEq n] in
+/-- **Incomplete `LU` factors with nonzero pivots are unique.** Two incomplete `LU` factorizations
+of the same matrix for the same zero pattern agree as soon as the pivots `U₁ i i` of one of them are
+nonzero: row by row, and within a row from left to right, the constraint at `(i, j)` determines
+`U i j` for `i ≤ j` and `L i j U j j` for `j < i` from entries already known. -/
+theorem IsILU.eq_of_diag_ne_zero {A L₁ U₁ L₂ U₂ : Matrix n n ℝ} (h₁ : IsILU P A L₁ U₁)
+    (h₂ : IsILU P A L₂ U₂) (hd : ∀ i, U₁ i i ≠ 0) : L₁ = L₂ ∧ U₁ = U₂ := by
+  classical
+  have key : ∀ i j, L₁ i j = L₂ i j ∧ U₁ i j = U₂ i j := by
+    intro i
+    induction i using WellFoundedLT.induction with
+    | ind i ihrow =>
+      intro j
+      induction j using WellFoundedLT.induction with
+      | ind j ihcol =>
+        by_cases hmem : (i, j) ∈ P
+        · exact ⟨by rw [h₁.l_eq_zero_of_mem i j hmem, h₂.l_eq_zero_of_mem i j hmem],
+            by rw [h₁.u_eq_zero_of_mem i j hmem, h₂.u_eq_zero_of_mem i j hmem]⟩
+        have e₁ := h₁.agree i j hmem
+        have e₂ := h₂.agree i j hmem
+        rw [← e₂, Matrix.mul_apply, Matrix.mul_apply] at e₁
+        rcases lt_or_ge j i with hji | hij
+        · -- below the diagonal: `U` vanishes, and `L i j` is forced by the pivot `U j j`
+          refine ⟨?_, by rw [h₁.u_eq_zero_of_gt i j hji, h₂.u_eq_zero_of_gt i j hji]⟩
+          rw [← Finset.sum_erase_add _ _ (Finset.mem_univ j),
+            ← Finset.sum_erase_add _ _ (Finset.mem_univ j)] at e₁
+          have hrest : ∑ k ∈ Finset.univ.erase j, L₁ i k * U₁ k j
+              = ∑ k ∈ Finset.univ.erase j, L₂ i k * U₂ k j :=
+            Finset.sum_congr rfl fun k hk => by
+              rcases lt_or_gt_of_ne (Finset.ne_of_mem_erase hk) with hk' | hk'
+              · rw [(ihcol k hk').1, (ihrow k (hk'.trans hji) j).2]
+              · rw [h₁.u_eq_zero_of_gt k j hk', h₂.u_eq_zero_of_gt k j hk', mul_zero, mul_zero]
+          rw [hrest, add_left_cancel_iff, ← (ihrow j hji j).2] at e₁
+          exact mul_right_cancel₀ (hd j) e₁
+        · -- on and above the diagonal: `L i i = 1`, and `U i j` is forced
+          refine ⟨?_, ?_⟩
+          · rcases hij.lt_or_eq with hij' | rfl
+            · rw [h₁.l_eq_zero_of_lt i j hij', h₂.l_eq_zero_of_lt i j hij']
+            · rw [h₁.l_diag, h₂.l_diag]
+          rw [← Finset.sum_erase_add _ _ (Finset.mem_univ i),
+            ← Finset.sum_erase_add _ _ (Finset.mem_univ i), h₁.l_diag, h₂.l_diag, one_mul,
+            one_mul] at e₁
+          have hrest : ∑ k ∈ Finset.univ.erase i, L₁ i k * U₁ k j
+              = ∑ k ∈ Finset.univ.erase i, L₂ i k * U₂ k j :=
+            Finset.sum_congr rfl fun k hk => by
+              rcases lt_or_gt_of_ne (Finset.ne_of_mem_erase hk) with hk' | hk'
+              · rw [(ihcol k (hk'.trans_le hij)).1, (ihrow k hk' j).2]
+              · rw [h₁.l_eq_zero_of_lt i k hk', h₂.l_eq_zero_of_lt i k hk', zero_mul, zero_mul]
+          rw [hrest] at e₁
+          exact add_left_cancel e₁
+  exact ⟨Matrix.ext fun i j => (key i j).1, Matrix.ext fun i j => (key i j).2⟩
+
+/-- **The incomplete `LU` factorization of a symmetric matrix is symmetric**: for a symmetric `A`, a
+symmetric zero pattern and nonzero pivots, the upper factor is the diagonal times the transpose of
+the lower one, `U = D Lᵀ` with `D = diag(U)`. The pair `(Uᵀ D⁻¹, D Lᵀ)` is again an incomplete `LU`
+factorization of `Aᵀ = A`, so `Matrix.IsILU.eq_of_diag_ne_zero` applies. -/
+theorem IsILU.eq_diagonal_mul_transpose {A L U : Matrix n n ℝ} (h : IsILU P A L U)
+    (hA : A.IsSymm) (hP : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hd : ∀ i, U i i ≠ 0) :
+    U = diagonal (fun i => U i i) * Lᵀ := by
+  have h' : IsILU P A (Uᵀ * diagonal fun i => (U i i)⁻¹) (diagonal (fun i => U i i) * Lᵀ) :=
+   { l_diag := fun i => by rw [mul_diagonal, transpose_apply, mul_inv_cancel₀ (hd i)]
+     l_eq_zero_of_lt := fun i j hij => by
+      rw [mul_diagonal, transpose_apply, h.u_eq_zero_of_gt j i hij, zero_mul]
+     u_eq_zero_of_gt := fun i j hij => by
+      rw [diagonal_mul, transpose_apply, h.l_eq_zero_of_lt j i hij, mul_zero]
+     l_eq_zero_of_mem := fun i j hij => by
+      rw [mul_diagonal, transpose_apply, h.u_eq_zero_of_mem j i (hP i j hij), zero_mul]
+     u_eq_zero_of_mem := fun i j hij => by
+      rw [diagonal_mul, transpose_apply, h.l_eq_zero_of_mem j i (hP i j hij), mul_zero]
+     agree := fun i j hij => by
+      have hji : (j, i) ∉ P := fun h => hij (hP j i h)
+      have e : (Uᵀ * diagonal fun i => (U i i)⁻¹) * (diagonal (fun i => U i i) * Lᵀ)
+          = (L * U)ᵀ := by
+        rw [Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _), diagonal_mul_diagonal,
+          show (fun i => (U i i)⁻¹ * U i i) = fun _ => (1 : ℝ) from
+            funext fun i => inv_mul_cancel₀ (hd i),
+          diagonal_one, Matrix.one_mul, transpose_mul]
+      rw [e, transpose_apply, h.agree j i hji, hA.apply i j] }
+  exact (h.eq_of_diag_ne_zero h' hd).2
+
+omit [DecidableEq n] in
+/-- **Incomplete Cholesky exists for Stieltjes matrices** ([meijerink1977iterative], the symmetric
+case; [golub2013matrix] §11.5.8): a Stieltjes matrix `A` has, for every symmetric zero pattern `P`
+avoiding the diagonal, an incomplete Cholesky factor `L` with a positive diagonal — unique by
+`Matrix.IsIC.eq_of_diag_pos`.
+
+A Stieltjes matrix is an M-matrix, so it has an incomplete `LU` factorization whose upper factor
+has positive pivots `d_i` (`Matrix.IsMMatrix.exists_isILU_isMMatrix`); by symmetry `U = D Lᵀ`
+(`Matrix.IsILU.eq_diagonal_mul_transpose`), and `L D^{1/2}` is the incomplete Cholesky factor. The
+book's recursive `incChol`, which keeps each Schur complement Stieltjes by
+`Matrix.IsStieltjes.isStieltjes_sub_drop`, computes the same factor. -/
+theorem IsStieltjes.exists_isIC {A : Matrix n n ℝ} (hA : A.IsStieltjes)
+    (hPs : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hP : ∀ i, (i, i) ∉ P) :
+    ∃ L : Matrix n n ℝ, IsIC P A L ∧ ∀ i, 0 < L i i := by
+  classical
+  obtain ⟨L, U, h, hU, -⟩ := hA.isMMatrix.exists_isILU_isMMatrix P hP
+  have hpos : ∀ i, 0 < U i i := hU.diag_pos
+  have hUeq := h.eq_diagonal_mul_transpose hA.isSymm hPs fun i => (hpos i).ne'
+  refine ⟨L * diagonal fun i => Real.sqrt (U i i), ⟨fun i j hij => ?_, fun i j hij => ?_,
+    fun i j hij => ?_⟩, fun i => ?_⟩
+  · rw [mul_diagonal, h.l_eq_zero_of_lt i j hij, zero_mul]
+  · rw [mul_diagonal, h.l_eq_zero_of_mem i j hij, zero_mul]
+  · have e : (L * diagonal fun i => Real.sqrt (U i i)) *
+        (L * diagonal fun i => Real.sqrt (U i i))ᵀ = L * U := by
+      rw [transpose_mul, diagonal_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _),
+        diagonal_mul_diagonal,
+        show (fun i => Real.sqrt (U i i) * Real.sqrt (U i i)) = fun i => U i i from
+          funext fun i => Real.mul_self_sqrt (hpos i).le, ← hUeq]
+    rw [e]
+    exact h.agree i j hij
+  · rw [mul_diagonal, h.l_diag, one_mul]
+    exact Real.sqrt_pos.2 (hpos i)
+
+end ICExistence
 
 section Regular
 

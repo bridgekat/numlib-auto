@@ -496,6 +496,7 @@ import Numlib.LinearAlgebra.Matrix.Toeplitz
 import Numlib.LinearAlgebra.Matrix.Triangular
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
+import Numlib.LinearAlgebra.Sparse.Fill
 import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
@@ -525,6 +526,7 @@ import Numlib.MeasureTheory.Integral.SetIntegralCLM
 import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
+import Numlib.Multigrid.ModelProblem
 import Numlib.Multigrid.TwoGrid
 import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.CompletelyContinuous

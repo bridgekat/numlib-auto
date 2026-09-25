@@ -26,6 +26,13 @@ recovered by expanding it in the orthogonal family (`Quadrature.lobattoNodal_eq_
 conversely any such combination vanishing at `±1` is `ω̄`
 (`Quadrature.eq_lobattoNodal_of_eval_eq_zero`).
 
+The Gauss–Radau rule, with one node fixed at the left end `a` of the interval carrying the weight
+and exact to degree `2n`, is the one-endpoint sibling (`Quadrature.exists_gaussRadau`): its nodal
+polynomial is `(X - a) q_n` with `q_n` orthogonal for the modified weight `(x - a) μ`
+(`OrthogonalPolynomial.radauMeasure`). Both modified weights are weights by one lemma,
+`OrthogonalPolynomial.isWeight_withDensity_eval`: a nonzero polynomial density that is nonnegative
+on the carrier keeps a weight a weight.
+
 ## The weights
 
 All closed-form weights come from one identity. For an interpolatory rule whose nodal polynomial is
@@ -102,49 +109,85 @@ theorem lobattoMeasure_jacobiMeasure (α β : ℝ) :
   congr 1
   ring
 
-/-- **The modified weight is a weight.** Its moments are moments of `μ`, and its density is
-positive on `(-1, 1)`, where `μ` puts positive mass outside every finite set once the endpoints are
-added to that set. -/
+/-- **A polynomial density keeps a weight a weight.** If `q ≠ 0` is `μ`-almost everywhere
+nonnegative, the measure `q dμ` is again a weight: its moments are moments of `μ`, and if it gave no
+mass to the complement of a finite set `s`, then `μ` would give none to the complement of `s`
+together with the finitely many roots of `q`. -/
+theorem isWeight_withDensity_eval (hw : IsWeight μ) {q : ℝ[X]} (hq : q ≠ 0)
+    (hnn : ∀ᵐ x ∂μ, 0 ≤ q.eval x) :
+    IsWeight (μ.withDensity fun x => ENNReal.ofReal (q.eval x)) := by
+  have hmeas : AEMeasurable (fun x => ENNReal.ofReal (q.eval x)) μ :=
+    (ENNReal.measurable_ofReal.comp q.continuous.measurable).aemeasurable
+  constructor
+  · intro n
+    rw [integrable_withDensity_ofReal_iff q.continuous.measurable hnn]
+    exact (hw.integrable_eval (q * X ^ n)).congr (Eventually.of_forall fun x => by simp)
+  · intro s hs h
+    rw [withDensity_apply_eq_zero' hmeas] at h
+    have hneg : μ {x | ¬0 ≤ q.eval x} = 0 := ae_iff.mp hnn
+    refine hw.measure_compl_ne_zero ((Polynomial.finite_setOfPred_isRoot hq).union hs) ?_
+    refine measure_mono_null (fun x hx => ?_) (measure_union_null h hneg)
+    simp only [mem_compl_iff, mem_union, Set.mem_ofPred_eq, not_or, IsRoot.def] at hx
+    rcases lt_or_gt_of_ne hx.1 with hlt | hgt
+    · exact Or.inr (not_le.mpr hlt)
+    · exact Or.inl ⟨(ENNReal.ofReal_pos.mpr hgt).ne', hx.2⟩
+
+/-- **The modified weight is a weight**: `isWeight_withDensity_eval` with the density `1 - x²`,
+nonnegative on `[-1, 1]`. -/
 theorem isWeight_withDensity_one_sub_sq (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     IsWeight (μ.withDensity fun x => ENNReal.ofReal (1 - x ^ 2)) := by
   have hae : ∀ᵐ x ∂μ, x ∈ Icc (-1 : ℝ) 1 := by
     rw [ae_iff]
     exact hsupp
-  have hnn : ∀ᵐ x ∂μ, 0 ≤ 1 - x ^ 2 := by
+  have hq : (1 - X ^ 2 : ℝ[X]) ≠ 0 := fun h => by
+    simpa using congrArg (eval 0) h
+  have h := isWeight_withDensity_eval hw hq (by
     filter_upwards [hae] with x hx
-    nlinarith [hx.1, hx.2]
-  constructor
-  · intro n
-    rw [integrable_withDensity_ofReal_iff (by fun_prop) hnn]
-    exact (hw.integrable_eval ((1 - X ^ 2) * X ^ n)).congr
-      (Eventually.of_forall fun x => by simp)
-  · intro s hs h
-    rw [withDensity_apply_eq_zero' (by fun_prop)] at h
-    have hsub : Icc (-1 : ℝ) 1 ∩ (({-1, 1} : Set ℝ) ∪ s)ᶜ ⊆
-        {x | ENNReal.ofReal (1 - x ^ 2) ≠ 0} ∩ sᶜ := by
-      rintro x ⟨hx, hx'⟩
-      simp only [mem_compl_iff, mem_union, mem_insert_iff, mem_singleton_iff, not_or] at hx'
-      refine ⟨fun h0 => ?_, hx'.2⟩
-      have h1 : x ≠ -1 := hx'.1.1
-      have h2 : x ≠ 1 := hx'.1.2
-      have hlt : 0 < 1 - x ^ 2 := by
-        have ha : -1 < x := lt_of_le_of_ne hx.1 (Ne.symm h1)
-        have hb : x < 1 := lt_of_le_of_ne hx.2 h2
-        nlinarith
-      exact absurd (ENNReal.ofReal_eq_zero.mp h0) (not_le.mpr hlt)
-    have h1 : μ (Icc (-1 : ℝ) 1 ∩ (({-1, 1} : Set ℝ) ∪ s)ᶜ) = 0 := measure_mono_null hsub h
-    have hfin : (({-1, 1} : Set ℝ) ∪ s).Finite := (Set.toFinite _).union hs
-    refine hw.measure_compl_ne_zero hfin ?_
-    have hsplit := measure_inter_add_sdiff (μ := μ) ((({-1, 1} : Set ℝ) ∪ s)ᶜ)
-      (measurableSet_Icc (a := (-1 : ℝ)) (b := 1))
-    rw [inter_comm, h1, zero_add] at hsplit
-    rw [← hsplit]
-    exact measure_mono_null (fun x hx => hx.2) hsupp
+    simp only [eval_sub, eval_one, eval_pow, eval_X]
+    nlinarith [hx.1, hx.2])
+  simpa only [eval_sub, eval_one, eval_pow, eval_X] using h
 
 /-- The modified weight of a weight carried by `[-1, 1]` is a weight. -/
 theorem isWeight_lobattoMeasure (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     IsWeight (lobattoMeasure μ) :=
   isWeight_withDensity_one_sub_sq hw hsupp
+
+/-! ### The modified weight `(x - a) μ` -/
+
+/-- The weight `(x - a) μ` whose orthogonal polynomials supply the interior Gauss–Radau nodes of
+`μ` with the fixed node `a`: the one-endpoint sibling of `OrthogonalPolynomial.lobattoMeasure`. For
+a weight carried by `[a, b]` it is again a weight carried by `[a, b]`
+(`OrthogonalPolynomial.isWeight_radauMeasure`). -/
+abbrev radauMeasure (μ : Measure ℝ) (a : ℝ) : Measure ℝ :=
+  μ.withDensity fun x => ENNReal.ofReal (x - a)
+
+/-- An integral against the modified weight, for a weight carried by `[a, b]`. -/
+theorem integral_radauMeasure {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (f : ℝ → ℝ) :
+    ∫ x, f x ∂radauMeasure μ a = ∫ x, (x - a) * f x ∂μ := by
+  refine integral_withDensity_ofReal (by fun_prop) ?_ f
+  have hae : ∀ᵐ x ∂μ, x ∈ Icc a b := by
+    rw [ae_iff]
+    exact hsupp
+  filter_upwards [hae] with x hx
+  linarith [hx.1]
+
+/-- The modified weight is carried by `[a, b]` when `μ` is. -/
+theorem radauMeasure_compl_Icc {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) :
+    radauMeasure μ a (Icc a b)ᶜ = 0 :=
+  withDensity_absolutelyContinuous μ _ hsupp
+
+/-- The modified weight `(x - a) μ` of a weight carried by `[a, b]` is a weight:
+`isWeight_withDensity_eval` with the density `x - a`, nonnegative on `[a, b]`. -/
+theorem isWeight_radauMeasure (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) :
+    IsWeight (radauMeasure μ a) := by
+  have hae : ∀ᵐ x ∂μ, x ∈ Icc a b := by
+    rw [ae_iff]
+    exact hsupp
+  have h := isWeight_withDensity_eval hw (X_sub_C_ne_zero a) (by
+    filter_upwards [hae] with x hx
+    simp only [eval_sub, eval_X, eval_C]
+    linarith [hx.1])
+  simpa only [eval_sub, eval_X, eval_C] using h
 
 end OrthogonalPolynomial
 
@@ -689,6 +732,141 @@ theorem exists_gaussLobatto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ
           rw [hp, h']
           simp [Lagrange.eval_nodal_at_node (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ j⟩)]
   exact ⟨x, w, hxinj, hx0, hxlast, hxmem, hpos, hexact, hnodal, hint⟩
+
+/-- **Gauss–Radau quadrature.** For a weight `μ` carried by `[a, b]` and any `n` there are `n + 1`
+distinct nodes in `[a, b]`, the first being `a`, and positive weights, such that the rule is exact
+on the polynomials of degree at most `2n`; the nodal polynomial is `(X - a) q_n` with `q_n` the
+`n`-th monic orthogonal polynomial of the modified weight `(x - a) μ`
+(`OrthogonalPolynomial.radauMeasure`), and the rule is interpolatory.
+
+The interior nodes are the `n` roots of `q_n`, which lie in `(a, b)`; exactness is Jacobi's theorem
+`Quadrature.isExactOnMeasure_add_iff` at `m = n`, since `∫ (x - a) q_n p ∂μ = ∫ q_n p ∂((x - a) μ)`
+vanishes for `deg p < n`; positivity of the weights is `Quadrature.pos_of_isExactOnMeasure` with the
+test polynomials `q_n²` at `a` and `(X - a) (q_n / (X - x_i))²` at the interior nodes. The rule with
+the fixed node at the right end is this one for the reflected weight
+(`Quadrature.isExactOnMeasure_map_affine` along `x ↦ -x`).
+
+Reference: [golub2013matrix] (10.2.8); [quarteroni2000numerical] §10.2. -/
+theorem exists_gaussRadau (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (n : ℕ) :
+    ∃ x w : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = a ∧ (∀ i, x i ∈ Icc a b) ∧
+      (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w x (2 * n) ∧
+        Lagrange.nodal Finset.univ x = (X - C a) * family (radauMeasure μ a) n ∧
+          IsInterpolatoryMeasure μ w x := by
+  classical
+  have hw' := isWeight_radauMeasure hw hsupp
+  have hsupp' := radauMeasure_compl_Icc (a := a) hsupp
+  have hae : ∀ᵐ t ∂μ, t ∈ Icc a b := by
+    rw [ae_iff]
+    exact hsupp
+  have hab : a ≤ b := by
+    by_contra h
+    refine hw.measure_compl_ne_zero Set.finite_empty ?_
+    rwa [← Icc_eq_empty h]
+  -- the interior nodes
+  obtain ⟨y, hyinj, hyprod⟩ := exists_injective_family_eq_prod hw' n
+  have hymem : ∀ i, y i ∈ Ioo a b := fun i =>
+    root_family_mem_Ioo hw' hsupp' (by
+      rw [hyprod, eval_prod]
+      exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp))
+  have hq : Lagrange.nodal Finset.univ y = family (radauMeasure μ a) n := by
+    rw [Lagrange.nodal_eq, hyprod]
+  -- the nodes
+  set x : Fin (n + 1) → ℝ := Fin.cons a y with hx
+  have hx0 : x 0 = a := Fin.cons_zero _ _
+  have hxs : ∀ i : Fin n, x i.succ = y i := fun i => Fin.cons_succ _ _ _
+  have hxmem : ∀ k, x k ∈ Icc a b := by
+    intro k
+    rcases Fin.eq_zero_or_eq_succ k with rfl | ⟨i, rfl⟩
+    · rw [hx0]; exact ⟨le_rfl, hab⟩
+    · rw [hxs]; exact Ioo_subset_Icc_self (hymem i)
+  have hxinj : Function.Injective x := by
+    rw [hx, Fin.cons_injective_iff]
+    exact ⟨fun ⟨i, hi⟩ => (hymem i).1.ne' hi, hyinj⟩
+  -- the nodal polynomial
+  have hnodal : Lagrange.nodal Finset.univ x = (X - C a) * family (radauMeasure μ a) n := by
+    rw [Lagrange.nodal_eq, Fin.prod_univ_succ, hx0, ← hq, Lagrange.nodal_eq]
+    simp only [hxs]
+  -- the weights
+  set w : Fin (n + 1) → ℝ := fun i => ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ with hw_def
+  have hint : IsInterpolatoryMeasure μ w x := fun i => rfl
+  -- exactness
+  have hexact : IsExactOnMeasure μ w x (2 * n) := by
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hxinj).mp hint
+    · rw [two_mul, isExactOnMeasure_add_iff hw hn hxinj]
+      refine ⟨hint, fun p hp => ?_⟩
+      have h := integral_family_mul_of_degree_lt hw' (n := n) (q := p)
+        (hp.trans_lt (by exact_mod_cast (by omega : n - 1 < n)))
+      rw [integral_radauMeasure hsupp] at h
+      rw [← h, hnodal]
+      refine integral_congr_ae (Eventually.of_forall fun t => ?_)
+      simp only [eval_mul, eval_sub, eval_X, eval_C]
+      ring
+  -- positivity of the weights
+  have hqnat : (Lagrange.nodal Finset.univ y).natDegree = n := by
+    rw [Lagrange.natDegree_nodal, Finset.card_univ, Fintype.card_fin]
+  have hqy : ∀ i, (Lagrange.nodal Finset.univ y).eval (y i) = 0 := fun i =>
+    Lagrange.eval_nodal_at_node (Finset.mem_univ i)
+  have hqa : (Lagrange.nodal Finset.univ y).eval a ≠ 0 := by
+    rw [Lagrange.eval_nodal]
+    exact Finset.prod_ne_zero_iff.mpr fun i _ => sub_ne_zero.mpr (hymem i).1.ne
+  have hpos : ∀ k, 0 < w k := by
+    intro k
+    rcases Fin.eq_zero_or_eq_succ k with rfl | ⟨i, rfl⟩
+    · -- the node `a`: test polynomial `q²`
+      set p : ℝ[X] := Lagrange.nodal Finset.univ y ^ 2 with hp
+      have hval : 0 < p.eval (x 0) := by
+        rw [hp, hx0, eval_pow]
+        positivity
+      have hp0 : p ≠ 0 := fun h => by
+        rw [h, eval_zero] at hval
+        exact lt_irrefl _ hval
+      refine pos_of_isExactOnMeasure hw hexact ?_ hp0 ?_ 0 ?_ hval
+      · refine degree_le_of_natDegree_le ?_
+        rw [hp]
+        exact natDegree_pow_le.trans (by rw [hqnat])
+      · exact Eventually.of_forall fun t => by rw [hp, eval_pow]; positivity
+      · intro k' hk'
+        rcases Fin.eq_zero_or_eq_succ k' with rfl | ⟨j, rfl⟩
+        · exact absurd rfl hk'
+        · rw [hp, hxs, eval_pow, hqy, zero_pow two_ne_zero]
+    · -- an interior node `y i`: test polynomial `(X - a) (q / (X - y i))²`
+      set p : ℝ[X] := (X - C a) * Lagrange.nodal (Finset.univ.erase i) y ^ 2 with hp
+      have hEnat : (Lagrange.nodal (Finset.univ.erase i) y).natDegree = n - 1 := by
+        rw [Lagrange.natDegree_nodal, Finset.card_erase_of_mem (Finset.mem_univ i),
+          Finset.card_univ, Fintype.card_fin]
+      have hEval : (Lagrange.nodal (Finset.univ.erase i) y).eval (y i) ≠ 0 := by
+        rw [Lagrange.eval_nodal]
+        refine Finset.prod_ne_zero_iff.mpr fun j hj => sub_ne_zero.mpr fun h => ?_
+        exact (Finset.mem_erase.mp hj).1 (hyinj h).symm
+      have hval : 0 < p.eval (x i.succ) := by
+        rw [hp, hxs]
+        simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+        have h1 : 0 < y i - a := sub_pos.mpr (hymem i).1
+        positivity
+      have hp0 : p ≠ 0 := fun h => by
+        rw [h, eval_zero] at hval
+        exact lt_irrefl _ hval
+      refine pos_of_isExactOnMeasure hw hexact ?_ hp0 ?_ i.succ ?_ hval
+      · refine degree_le_of_natDegree_le ?_
+        rw [hp]
+        refine natDegree_mul_le.trans ?_
+        have h1 : (X - C a : ℝ[X]).natDegree ≤ 1 := (natDegree_X_sub_C a).le
+        have h2 : (Lagrange.nodal (Finset.univ.erase i) y ^ 2).natDegree ≤ 2 * (n - 1) :=
+          natDegree_pow_le.trans (by rw [hEnat])
+        have hn : 1 ≤ n := Nat.succ_le_of_lt (Fin.pos i)
+        omega
+      · filter_upwards [hae] with t ht
+        simp only [hp, eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+        exact mul_nonneg (by linarith [ht.1]) (sq_nonneg _)
+      · intro k' hk'
+        rcases Fin.eq_zero_or_eq_succ k' with rfl | ⟨j, rfl⟩
+        · rw [hp, hx0]
+          simp
+        · have hji : j ≠ i := fun h => hk' (by rw [h])
+          rw [hp, hxs]
+          simp [Lagrange.eval_nodal_at_node (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ j⟩)]
+  exact ⟨x, w, hxinj, hx0, hxmem, hpos, hexact, hnodal, hint⟩
 
 /-! ### The classical Gauss weights -/
 
