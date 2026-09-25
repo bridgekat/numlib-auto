@@ -385,6 +385,8 @@ import Numlib.Direct.FastPoisson
 import Numlib.Direct.Levinson
 import Numlib.Direct.Refinement
 import Numlib.Direct.Substitution
+import Numlib.Direct.SymmetricIndefinite
+import Numlib.Direct.Updating
 import Numlib.Direct.Vandermonde
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
@@ -473,6 +475,7 @@ import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Companion
+import Numlib.LinearAlgebra.Matrix.CompleteOrthogonal
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.Displacement
@@ -493,6 +496,7 @@ import Numlib.LinearAlgebra.Matrix.LU.Elimination
 import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
+import Numlib.LinearAlgebra.Matrix.LeastSquares.Total
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -504,6 +508,7 @@ import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Rank
+import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
