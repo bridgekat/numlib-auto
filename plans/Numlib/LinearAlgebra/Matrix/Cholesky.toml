@@ -172,21 +172,20 @@ gives `ℓ_k = (v + w)/α`, `u_k = (α, v − w)`, and the claim to prove is
 handle). Estimate ★★★ (~400 lines); if the per-step inequality fails, record the counterexample
 and mark the node `wrong` with the bound that was proved.
 
-Blocked (agent fac1, GVL wave 2): not attempted in Lean beyond analysis; the per-step inequality is
-where the route above breaks. What does work: at the first step, with `ℓ = A e₁/α`, `u = Aᵀ e₁`,
-`‖A e₁‖ ‖Aᵀ e₁‖ ≤ (‖A e₁‖² + ‖Aᵀ e₁‖²)/2 = ‖T e₁‖² + ‖S e₁‖²` (the cross terms cancel because
-`Sᵀ = -S`), and `‖T e₁‖² ≤ ‖T‖ α`, `‖S e₁‖² ≤ ‖S T⁻¹ Sᵀ‖ α`, so `‖ℓ‖ ‖u‖ ≤ ‖T‖ + ‖S T⁻¹ S‖`.
-The recursion is the gap: the Hermitian part of the Schur complement is `B − (v vᵀ − w wᵀ)/α`,
-which can have larger norm than `T` (`T = I₂`, `S = [0 -w; w 0]` gives `T₁ = 1 + w²`), so
-`‖T_k‖ ≤ ‖T‖` fails and the monotonicity of the sum `‖T_k‖ + ‖S_k T_k⁻¹ S_k‖` was not settled.
-The property that *is* inherited is
-`P(c) : ∀ x, ‖A x‖² ≤ c xᵀ A x ∧ ‖Aᵀ x‖² ≤ c xᵀ A x` (extend `z` by the pivot row, resp. column,
-as in `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec` and its transpose), and `A`
-satisfies it with `c = (√‖T‖ + √‖S T⁻¹ S‖)² ≤ 2 (‖T‖ + ‖S T⁻¹ S‖)`, which would give the bound with
-`2 n` in place of `n`
-(~250 lines on top of the Schur-recursion form of the LU factors). The sharp constant needs the
-original paper (Golub–Van Loan, "Unsymmetric positive definite linear systems", 1979), which is not
-among the references. Estimate: ★★★, 1–2 days for `2 n`; unknown for `n`.'''
+Blocked (agent bb2, GVL wave 5): the `2 n` form is proved as
+`Matrix.IsLU.frobenius_norm_abs_mul_abs_le_two_mul` (in fact with `n (√‖T‖₂ + √‖S T⁻¹ S‖₂)²`), with
+no Schur-complement recursion: for the `k`-th row `y` of `L⁻¹` and `k`-th column `x` of `U⁻¹`,
+`u_k = Aᵀ y`, `ℓ_k = A x`, `yᵀ A y = u_kk`, `xᵀ A x = 1/u_kk`, and
+`Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` bounds `‖A x‖²`, `‖Aᵀ x‖²` by
+`(√‖T‖ + √‖S T⁻¹ S‖)² xᵀ A x`. The book's constant `n` is **not** refuted: a random search
+(2·10⁵ real `A` of order 2–5, large skew parts) gave ratios up to 0.99974 of the bound and never
+above it, and even the per-term bound `‖ℓ_k‖ ‖u_k‖ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` held (max ratio
+0.99999999999). At `k = 0` the per-term bound is fac1's `(‖A e‖² + ‖Aᵀ e‖²)/2 = ‖T e‖² + ‖S e‖²`;
+for `k > 0` the vectors `x`, `y` above differ. The natural recursion fails too: `m(B) = sup_x
+(‖T_B x‖² + ‖S_B x‖²)/xᵀ T_B x` (which bounds the per-term quantity of the Schur complement) is
+not monotone along one elimination step (numerically `m(B)/m(A)` up to 1.94), so the sharp route
+needs the argument of Golub–Van Loan (1979), which is not among the references. Estimate: unknown (the missing idea), then ~150 lines on top of
+the proved per-term machinery.'''
 deps = ["Matrix.posDef_hermitianPart_schurComplementSingle", "Matrix.IsLU"]
 
 [[node]]
@@ -219,3 +218,9 @@ id = "cholesky_finSumFin"
 [[node]]
 id = "IsThinQR.isCholesky"
 source = 'Golub–Van Loan, Matrix Computations (4th ed.), Theorem 5.2.3'
+
+[[node]]
+id = "dotProduct_mulVec_self_le_of_posDef_hermitianPart"
+
+[[node]]
+id = "IsLU.frobenius_norm_abs_mul_abs_le_two_mul"

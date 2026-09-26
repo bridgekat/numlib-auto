@@ -48,17 +48,7 @@ id = "isMinOn_frobenius_norm_sub_symm_rank_le_one"
 id = "norm_sub_skew_sq"
 
 [[node]]
-id = "isMinOn_frobenius_norm_sub_skew_rank_le_two"
-kind = "theorem"
-desc = '''[golub2013matrix] Lemma 12.3.3: for `M : Matrix n n ℝ`, `S = (M − Mᵀ)/2`, orthonormal `u v` with `S *ᵥ u
-= −μ • v`, `S *ᵥ v = μ • u` (the book's `S[u|v] = [u|v][0 μ; −μ 0]`) and `μ = ‖S‖₂` (scoped `L2Operator`;
-the book's `ρ(S)`, equal to `‖S‖₂` for the normal `S` — the surface states the bridge), `Z_opt = μ •
-(vecMulVec u v − vecMulVec v u)` minimizes `‖M − Z‖_F` over `{Z | Zᵀ = −Z ∧ Z.rank ≤ 2}`. Every such `Z` is
-`x yᵀ − y xᵀ` with `x ⊥ y` (a rank-two skew matrix has an orthonormal basis of its range on which it acts
-as `[0 a; −a 0]`; Gram–Schmidt in the plane), then `norm_sub_skew_sq` and `x ⬝ᵥ S y ≤ ‖S‖₂ ‖x‖ ‖y‖`. The
-book's "rank-2" is `rank ≤ 2` for the same reason as in Lemma 12.3.2 (`S = 0`). ★★★ (~150 lines)
+id = "exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two"
 
-Blocked: not attempted for effort (★★★, ~150 lines): needs the normal form of a rank-≤2 real skew
-matrix (`x yᵀ − y xᵀ` with `x ⊥ y`), which goes through `Matrix.rank_le_iff_exists_mul` (cond1)
-or a spectral argument. The identity `norm_sub_skew_sq` is proved.'''
-deps = ["Matrix.norm_sub_skew_sq", "Matrix.rank_le_iff_exists_mul"]
+[[node]]
+id = "isMinOn_frobenius_norm_sub_skew_rank_le_two"

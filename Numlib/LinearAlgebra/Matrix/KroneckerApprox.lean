@@ -40,6 +40,9 @@ The two structured nearest-rank lemmas of §12.3.8 (Lemmas 12.3.2–12.3.3) rest
 * `Matrix.kroneckerRank_le_iff`: the Kronecker rank is the least number of Kronecker terms.
 * `Matrix.exists_kroneckerSVD`: the Kronecker product SVD ([golub2013matrix] Theorem 12.3.1).
 * `Matrix.isMinOn_frobenius_norm_sub_symm_rank_le_one`: [golub2013matrix] Lemma 12.3.2.
+* `Matrix.exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two`: a skew-symmetric matrix of rank at
+  most two is `x yᵀ − y xᵀ`.
+* `Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`: [golub2013matrix] Lemma 12.3.3.
 
 ## References
 
@@ -443,5 +446,127 @@ theorem isMinOn_frobenius_norm_sub_symm_rank_le_one (M : Matrix n n ℝ) {k : n}
   nlinarith [sq_nonneg (β - x ⬝ᵥ (M *ᵥ x))]
 
 end Lemma1232
+
+/-! ### Lemma 12.3.3: the nearest skew-symmetric matrix of rank at most two -/
+
+section Lemma1233
+
+open scoped Matrix.Norms.Frobenius
+
+variable {n : Type*} [Fintype n]
+
+/-- **The normal form of a skew-symmetric matrix of rank at most two**: over a field in which
+`2 ≠ 0`, `Zᵀ = −Z` and `rank Z ≤ 2` give `Z = x yᵀ − y xᵀ`. If `c = Z i j ≠ 0`, the `3 × 3` minors
+on rows `i, j, l` and columns `i, j, k` vanish, which reads `c Z = zᵢ zⱼᵀ − zⱼ zᵢᵀ` for the
+columns `zᵢ, zⱼ` of `Z`. -/
+theorem exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two {K : Type*} [Field K] [NeZero (2 : K)]
+    {Z : Matrix n n K} (hZ : Zᵀ = -Z) (hr : Z.rank ≤ 2) :
+    ∃ x y : n → K, Z = vecMulVec x y - vecMulVec y x := by
+  have hs : ∀ i j, Z i j = -Z j i := fun i j => by
+    simpa using congrFun (congrFun hZ j) i
+  have hd : ∀ i, Z i i = 0 := fun i => by
+    have h2 : (2 : K) * Z i i = 0 := by linear_combination hs i i
+    exact (mul_eq_zero.1 h2).resolve_left two_ne_zero
+  by_cases h0 : ∀ i j, Z i j = 0
+  · exact ⟨0, 0, by ext i j; simp [h0]⟩
+  push Not at h0
+  obtain ⟨i, j, hij⟩ := h0
+  have key : ∀ l k, Z i j * Z l k = Z i k * Z l j - Z j k * Z l i := by
+    intro l k
+    by_contra hne
+    have hdet : (Z.submatrix ![i, j, l] ![i, j, k]).det ≠ 0 := by
+      have e : (Z.submatrix ![i, j, l] ![i, j, k]).det
+          = Z i j * (Z i j * Z l k - (Z i k * Z l j - Z j k * Z l i)) := by
+        rw [det_fin_three]
+        simp only [submatrix_apply, cons_val_zero, cons_val_one, cons_val_two, head_cons, tail_cons,
+          hd]
+        rw [hs j i]
+        ring
+      rw [e]
+      exact mul_ne_zero hij (sub_ne_zero.2 hne)
+    have := card_le_rank_of_det_submatrix_ne_zero Z hdet
+    omega
+  refine ⟨(Z i j)⁻¹ • fun l => Z l i, fun l => Z l j, ?_⟩
+  ext l k
+  simp only [sub_apply, vecMulVec_apply, Pi.smul_apply, smul_eq_mul]
+  field_simp
+  linear_combination key l k + Z l j * hs i k - Z l i * hs j k
+
+variable [DecidableEq n]
+
+/-- `xᵀ A y ≤ ‖A‖₂ ‖x‖₂ ‖y‖₂` for a real matrix. -/
+private theorem dotProduct_mulVec_le_lpOpNorm_two (A : Matrix n n ℝ) (x y : n → ℝ) :
+    x ⬝ᵥ (A *ᵥ y) ≤ lpOpNorm 2 A * (‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖) := by
+  have h1 : x ⬝ᵥ (A *ᵥ y) = inner ℝ (WithLp.toLp 2 x) (WithLp.toLp 2 (A *ᵥ y)) := by
+    rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+  have h2 := lpSeminorm_mulVec_le 2 A y
+  simp only [lpSeminorm_apply] at h2
+  rw [h1]
+  calc inner ℝ (WithLp.toLp 2 x) (WithLp.toLp 2 (A *ᵥ y))
+      ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 (A *ᵥ y)‖ := real_inner_le_norm _ _
+    _ ≤ ‖WithLp.toLp 2 x‖ * (lpOpNorm 2 A * ‖WithLp.toLp 2 y‖) :=
+        mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
+    _ = _ := by ring
+
+omit [DecidableEq n] in
+/-- `‖x‖₂² = xᵀ x` for a real vector. -/
+private theorem norm_toLp_sq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
+  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
+
+omit [DecidableEq n] in
+/-- `xᵀ M y − yᵀ M x = 2 xᵀ S y` for the skew-symmetric part `S = (M − Mᵀ)/2`. -/
+private theorem dotProduct_mulVec_sub_dotProduct_mulVec (M : Matrix n n ℝ) (x y : n → ℝ) :
+    x ⬝ᵥ (M *ᵥ y) - y ⬝ᵥ (M *ᵥ x) = 2 * (x ⬝ᵥ (((1 / 2 : ℝ) • (M - Mᵀ)) *ᵥ y)) := by
+  rw [smul_mulVec, sub_mulVec, dotProduct_smul, dotProduct_sub, dotProduct_mulVec x Mᵀ,
+    vecMul_transpose, dotProduct_comm (M *ᵥ x) y, smul_eq_mul]
+  ring
+
+/-- **[golub2013matrix] Lemma 12.3.3**: with `S = (M − Mᵀ)/2`, `μ = ‖S‖₂` and orthonormal `u, v`
+with `S v = μ u` (the book's `S [u | v] = [u | v] [0 μ; −μ 0]`, whose other half `S u = −μ v`
+is not needed), the matrix `μ (u vᵀ − v uᵀ)` is a nearest skew-symmetric matrix of rank at most
+two to `M` in the Frobenius norm. Every competitor is `x yᵀ − y xᵀ` with `x ⊥ y`
+(`Matrix.exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two`, then Gram–Schmidt), its distance is
+`‖M‖² + 2 ‖x‖² ‖y‖² − 4 xᵀ S y` (`Matrix.norm_sub_skew_sq`), and `xᵀ S y ≤ μ ‖x‖ ‖y‖`. (The
+book's "rank 2" fails when `S = 0`, as in Lemma 12.3.2; `rank ≤ 2` is the correct reading.) -/
+theorem isMinOn_frobenius_norm_sub_skew_rank_le_two (M : Matrix n n ℝ) {u v : n → ℝ} {μ : ℝ}
+    (hu : u ⬝ᵥ u = 1) (hv : v ⬝ᵥ v = 1) (huv : u ⬝ᵥ v = 0)
+    (hSv : ((1 / 2 : ℝ) • (M - Mᵀ)) *ᵥ v = μ • u)
+    (hμ : μ = lpOpNorm 2 ((1 / 2 : ℝ) • (M - Mᵀ))) :
+    IsMinOn (fun Z => ‖M - Z‖) {Z | Zᵀ = -Z ∧ Z.rank ≤ 2}
+      (μ • (vecMulVec u v - vecMulVec v u)) := by
+  have hμ0 : 0 ≤ μ := hμ ▸ lpOpNorm_nonneg _ _
+  have hopt : ‖M - μ • (vecMulVec u v - vecMulVec v u)‖ ^ 2 = ‖M‖ ^ 2 - 2 * μ ^ 2 := by
+    have e : μ • (vecMulVec u v - vecMulVec v u)
+        = vecMulVec (μ • u) v - vecMulVec v (μ • u) := by
+      rw [smul_sub, smul_vecMulVec, vecMulVec_smul]
+    rw [e, norm_sub_skew_sq, dotProduct_mulVec_sub_dotProduct_mulVec, hSv]
+    simp only [dotProduct_smul, smul_dotProduct, smul_eq_mul, hu, hv, huv]
+    ring
+  rintro Z ⟨hZs, hZr⟩
+  obtain ⟨x, y, rfl⟩ := exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two hZs hZr
+  -- Gram–Schmidt: replace `y` by its component orthogonal to `x`.
+  set y' := y - (x ⬝ᵥ y / x ⬝ᵥ x) • x with hy'
+  have hZ' : vecMulVec x y - vecMulVec y x = vecMulVec x y' - vecMulVec y' x := by
+    rw [hy', vecMulVec_sub, sub_vecMulVec, vecMulVec_smul, smul_vecMulVec]
+    abel
+  have hxy' : x ⬝ᵥ y' = 0 := by
+    rw [hy', dotProduct_sub, dotProduct_smul, smul_eq_mul]
+    by_cases hx : x ⬝ᵥ x = 0
+    · rw [dotProduct_self_eq_zero.1 hx]
+      simp
+    · field_simp
+      ring
+  have hb := dotProduct_mulVec_le_lpOpNorm_two ((1 / 2 : ℝ) • (M - Mᵀ)) x y'
+  rw [← hμ] at hb
+  set a := ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y'‖
+  have ha : a ^ 2 = (x ⬝ᵥ x) * (y' ⬝ᵥ y') := by
+    rw [mul_pow, norm_toLp_sq, norm_toLp_sq]
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  change ‖M - μ • (vecMulVec u v - vecMulVec v u)‖ ^ 2
+    ≤ ‖M - (vecMulVec x y - vecMulVec y x)‖ ^ 2
+  rw [hopt, hZ', norm_sub_skew_sq, dotProduct_mulVec_sub_dotProduct_mulVec, hxy']
+  nlinarith [sq_nonneg (a - μ)]
+
+end Lemma1233
 
 end Matrix

@@ -4,20 +4,13 @@ namespace = "Tensor"
 id = "multilinearForm"
 
 [[node]]
-id = "hasFDerivAt_multilinearRayleigh_eq_zero_iff"
-kind = "theorem"
-desc = '''Critical points of the multilinear Rayleigh quotient ([golub2013matrix] §12.5.6, "the equation `∇ψ_𝒜 = 0`"):
-for `u` with every `u i ≠ 0`, the Fréchet derivative of `multilinearRayleigh A` at `u` (on `∀ i, EuclideanSpace
-ℝ (κ i)`) vanishes iff `∀ k, A.modeUnfold k *ᵥ rankOne (fun j : {j // j ≠ k} => û j) = multilinearRayleigh A u
-• û k`, `û i = ‖u i‖⁻¹ • u i`. The partial derivative in `u k` of the quotient is `(∏ ‖u_j‖)⁻¹ (A_(k) (⊗ u_j) −
-ψ ‖u_k‖⁻¹ û_k)` at unit vectors (`HasFDerivAt.div`, the numerator linear in `u k`, `‖·‖ ^ 2` differentiable); homogeneity
-reduces to unit vectors. ★★★ (~150 lines)
+id = "fderiv_multilinearRayleigh_single"
 
-Blocked: not attempted for effort (★★★, ~150 lines of Fréchet calculus on
-`∀ i, EuclideanSpace ℝ (κ i)`). The algebraic ingredient, `multilinearForm_eq_modeUnfold` (the
-partial derivative in `u k` of the numerator is `u ↦ u ⬝ᵥ A_(k) (⊗_{j ≠ k} u_j)`), is proved, and
-`IsSingularValue` with `IsSingularValue.exists_eq_multilinearRayleigh` is stated without it.'''
-deps = ["Tensor.multilinearForm", "Tensor.modeUnfold"]
+[[node]]
+id = "forall_fderiv_multilinearRayleigh_single_eq_zero_iff"
+
+[[node]]
+id = "hasFDerivAt_multilinearRayleigh_eq_zero_iff"
 
 [[node]]
 id = "IsSingularValue"
@@ -26,19 +19,7 @@ id = "IsSingularValue"
 id = "IsSymm.modeUnfold_eq"
 
 [[node]]
-id = "hasFDerivAt_symmetricRayleigh_eq_zero_iff"
-kind = "theorem"
-desc = '''Symmetric-tensor eigenvalues ([golub2013matrix] (12.5.23)–(12.5.24)): for `C.IsSymm` of order `d ≥ 2` on
-`EuclideanSpace ℝ ν`, `φ_C(x) := multilinearForm C (fun _ => x) / ‖x‖ ^ d`, and `x ≠ 0`: the derivative of
-`φ_C` at `x` vanishes iff `C.modeUnfold k *ᵥ rankOne (fun _ => x̂) = φ_C x • x̂` (any `k`, by
-`IsSymm.modeUnfold_eq`), `x̂ = x / ‖x‖`. By symmetry each of the `d` partial terms of the derivative of the
-numerator is the same (`d · C_(1)(x ⊗ ⋯ ⊗ x)`), and the quotient rule gives, at a unit `x`, the gradient
-`d (C_(1)(x^{⊗(d−1)}) − φ_C(x) x)`; homogeneity of degree `0` reduces to unit `x`. The book's `d = 2` statement (12.5.23) is `LinearMap.IsSymmetric`'s Rayleigh quotient:
-stationary points are exactly eigenvectors (`LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`,
-staged for `Numlib/Eigen/MinMax`, which this theorem generalizes). The
-book's gradient omits the factor `d`, harmless at zero. `IsEigenvalue` (the book's definition, Lim 2005 /
-Qi 2005) is defined from the right-hand side. ★★★ (~120 lines)
+id = "symmetricRayleigh"
 
-Blocked: not attempted for effort (★★★, ~120 lines); `IsSymm.modeUnfold_eq` (proved) supplies the
-symmetry step, the calculus is that of `hasFDerivAt_multilinearRayleigh_eq_zero_iff`.'''
-deps = ["Tensor.IsSymm.modeUnfold_eq", "Tensor.multilinearForm"]
+[[node]]
+id = "hasFDerivAt_symmetricRayleigh_eq_zero_iff"

@@ -66,6 +66,11 @@ bounds of positive (semi)definite matrices; and the bridge to Mathlib's `Matrix.
   `Matrix.posDef_hermitianPart_schurComplementSingle` (Theorem 4.2.5), both through
   `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`: the quadratic form of a one-step
   Schur complement is a quadratic form of the matrix.
+* `Matrix.IsLU.frobenius_norm_abs_mul_abs_le_two_mul`: Theorem 4.2.6 with the constant `2 n` for
+  the book's `n`, `‖|L| |U|‖_F ≤ 2 n (‖T‖₂ + ‖S T⁻¹ S‖₂)`, from
+  `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart`
+  (`‖A x‖², ‖Aᵀ x‖² ≤ (√‖T‖₂ + √‖S T⁻¹ S‖₂)² xᵀ A x`) applied to a row of `L⁻¹` and a column of
+  `U⁻¹`.
 * Semidefinite matrices: `Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero` ((4.2.15)),
   `Matrix.PosSemidef.schurComplementSingle` ((4.2.16)) and the rank-revealing pivoted `L D Lᴴ`,
   `Matrix.PosSemidef.exists_perm_ldl_rank` ((4.2.17)).
@@ -1222,5 +1227,289 @@ theorem cholesky_finSumFin {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) �
   simp
 
 end Block
+
+/-! ### The size of `|L| |U|` when the symmetric part is positive definite -/
+
+section UnsymmetricLU
+
+open scoped Matrix.Norms.Frobenius
+
+omit [LinearOrder n] in
+/-- Cauchy–Schwarz for a positive semidefinite real quadratic form:
+`(xᵀ T y)² ≤ (xᵀ T x)(yᵀ T y)`. -/
+private theorem sq_dotProduct_mulVec_le {T : Matrix n n ℝ} (hT : T.PosSemidef) (x y : n → ℝ) :
+    (x ⬝ᵥ (T *ᵥ y)) ^ 2 ≤ (x ⬝ᵥ (T *ᵥ x)) * (y ⬝ᵥ (T *ᵥ y)) := by
+  have hTt : Tᵀ = T := by
+    have := hT.isHermitian.eq
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  have hsymm : y ⬝ᵥ (T *ᵥ x) = x ⬝ᵥ (T *ᵥ y) := by
+    rw [dotProduct_mulVec, ← mulVec_transpose, hTt, dotProduct_comm]
+  have h := discrim_le_zero (a := y ⬝ᵥ (T *ᵥ y)) (b := 2 * (x ⬝ᵥ (T *ᵥ y)))
+    (c := x ⬝ᵥ (T *ᵥ x)) fun t => by
+      have := hT.dotProduct_mulVec_nonneg (x + t • y)
+      simp only [star_trivial, mulVec_add, mulVec_smul, dotProduct_add, add_dotProduct,
+        dotProduct_smul, smul_dotProduct, smul_eq_mul, hsymm] at this
+      linarith
+  rw [discrim] at h
+  nlinarith [h]
+
+omit [LinearOrder n] in
+/-- `0 ≤ vᵀ v` for a real vector. -/
+private theorem dot_self_nonneg (v : n → ℝ) : 0 ≤ v ⬝ᵥ v :=
+  Finset.sum_nonneg fun _ _ => mul_self_nonneg _
+
+/-- `zᵀ M z ≤ ‖M‖₂ ‖z‖²` for a real matrix. -/
+private theorem dotProduct_mulVec_le_norm_mul (M : Matrix n n ℝ) (z : n → ℝ) :
+    z ⬝ᵥ (M *ᵥ z) ≤ ‖toEuclideanCLM (𝕜 := ℝ) M‖ * (z ⬝ᵥ z) := by
+  have h1 : z ⬝ᵥ (M *ᵥ z)
+      = inner ℝ (WithLp.toLp 2 z) (toEuclideanCLM (𝕜 := ℝ) M (WithLp.toLp 2 z)) := by
+    rw [toEuclideanCLM_toLp, EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+  have h2 : ‖WithLp.toLp 2 z‖ ^ 2 = z ⬝ᵥ z := by
+    rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
+  rw [h1, ← h2]
+  calc _ ≤ ‖WithLp.toLp 2 z‖ * ‖toEuclideanCLM (𝕜 := ℝ) M (WithLp.toLp 2 z)‖ :=
+        real_inner_le_norm _ _
+    _ ≤ ‖WithLp.toLp 2 z‖ * (‖toEuclideanCLM (𝕜 := ℝ) M‖ * ‖WithLp.toLp 2 z‖) :=
+        mul_le_mul_of_nonneg_left (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
+    _ = _ := by ring
+
+/-- From `p² ≤ p r` with `p, r ≥ 0`, `p ≤ r`. -/
+private theorem le_of_sq_le_mul {p r : ℝ} (hp : 0 ≤ p) (hr : 0 ≤ r) (h : p ^ 2 ≤ p * r) :
+    p ≤ r := by
+  rcases hp.eq_or_lt with h0 | h0
+  · rw [← h0]; exact hr
+  · nlinarith
+
+/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**: for a real `A` with positive
+definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`, both `‖A x‖²` and `‖Aᵀ x‖²`
+are at most `(√‖T‖₂ + √‖S T⁻¹ S‖₂)² xᵀ A x`. Here `xᵀ A x = xᵀ T x`, `‖T x‖² ≤ ‖T‖₂ xᵀ T x`, and
+`‖S x‖² ≤ ‖S T⁻¹ S‖₂ xᵀ T x` by Cauchy–Schwarz for the form of `T` (with `‖S x‖² = −xᵀ T w`,
+`T w = S (S x)`). -/
+theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
+    (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
+    (A *ᵥ x) ⬝ᵥ (A *ᵥ x) ≤ (√‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
+        + √‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
+          * (A - hermitianPart A))‖) ^ 2 * (x ⬝ᵥ (A *ᵥ x)) ∧
+      (Aᵀ *ᵥ x) ⬝ᵥ (Aᵀ *ᵥ x) ≤ (√‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
+        + √‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
+          * (A - hermitianPart A))‖) ^ 2 * (x ⬝ᵥ (A *ᵥ x)) := by
+  classical
+  set T := hermitianPart A with hTdef
+  set S := A - T with hSdef
+  set a := ‖toEuclideanCLM (𝕜 := ℝ) T‖
+  set b := ‖toEuclideanCLM (𝕜 := ℝ) (S * T⁻¹ * S)‖
+  have hTt : Tᵀ = T := by
+    have := hT.isHermitian.eq
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  have hAT : Aᵀ = T - S := by
+    rw [hSdef, hTdef, hermitianPart, conjTranspose_eq_transpose_of_trivial]
+    ext i j
+    simp only [transpose_apply, sub_apply, smul_apply, add_apply, smul_eq_mul]
+    ring
+  have hSt : Sᵀ = -S := by
+    have e : Sᵀ = Aᵀ - Tᵀ := by rw [hSdef, transpose_sub]
+    rw [e, hAT, hTt]
+    abel
+  have hA : A = T + S := by rw [hSdef]; abel
+  have hTu : IsUnit T.det := (isUnit_iff_isUnit_det T).1 hT.isUnit
+  have hTinvt : (T⁻¹)ᵀ = T⁻¹ := by rw [transpose_nonsing_inv, hTt]
+  have hskew : ∀ v, v ⬝ᵥ (S *ᵥ v) = 0 := fun v => by
+    have h1 : v ⬝ᵥ (S *ᵥ v) = -(v ⬝ᵥ (S *ᵥ v)) := by
+      conv_lhs => rw [dotProduct_mulVec, ← mulVec_transpose, hSt, neg_mulVec, neg_dotProduct,
+        dotProduct_comm]
+    linarith
+  set q := x ⬝ᵥ (T *ᵥ x) with hqdef
+  have hq : x ⬝ᵥ (A *ᵥ x) = q := by
+    rw [hA, add_mulVec, dotProduct_add, hskew, add_zero]
+  have hq0 : 0 ≤ q := by simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
+  have ha : 0 ≤ a := norm_nonneg _
+  have hb : 0 ≤ b := norm_nonneg _
+  -- `‖T x‖² ≤ a q`
+  have hTx : (T *ᵥ x) ⬝ᵥ (T *ᵥ x) ≤ a * q := by
+    have h1 := sq_dotProduct_mulVec_le hT.posSemidef (T *ᵥ x) x
+    have h2 := dotProduct_mulVec_le_norm_mul T (T *ᵥ x)
+    refine le_of_sq_le_mul (dot_self_nonneg _) (mul_nonneg ha hq0) ?_
+    calc ((T *ᵥ x) ⬝ᵥ (T *ᵥ x)) ^ 2 ≤ ((T *ᵥ x) ⬝ᵥ (T *ᵥ (T *ᵥ x))) * q := h1
+      _ ≤ (a * ((T *ᵥ x) ⬝ᵥ (T *ᵥ x))) * q := mul_le_mul_of_nonneg_right h2 hq0
+      _ = _ := by ring
+  -- `‖S x‖² ≤ b q`
+  have hSx : (S *ᵥ x) ⬝ᵥ (S *ᵥ x) ≤ b * q := by
+    set z := S *ᵥ x
+    set w := T⁻¹ *ᵥ (S *ᵥ z)
+    have hTw : T *ᵥ w = S *ᵥ z := by
+      rw [mulVec_mulVec, mul_nonsing_inv T hTu, one_mulVec]
+    have hzz : z ⬝ᵥ z = -(x ⬝ᵥ (T *ᵥ w)) := by
+      rw [hTw]
+      conv_lhs => rw [show z ⬝ᵥ z = z ⬝ᵥ (S *ᵥ x) from rfl, dotProduct_mulVec,
+        ← mulVec_transpose, hSt, neg_mulVec, neg_dotProduct, dotProduct_comm]
+    have hwTw : w ⬝ᵥ (T *ᵥ w) ≤ b * (z ⬝ᵥ z) := by
+      have e : w ⬝ᵥ (T *ᵥ w) = z ⬝ᵥ ((-(S * T⁻¹ * S)) *ᵥ z) := by
+        rw [hTw, dotProduct_comm, show w = T⁻¹ *ᵥ (S *ᵥ z) from rfl, dotProduct_mulVec,
+          ← mulVec_transpose, hTinvt, dotProduct_mulVec, ← mulVec_transpose, hSt, neg_mulVec,
+          neg_mulVec, mulVec_mulVec, mulVec_mulVec]
+        rw [neg_dotProduct, dotProduct_neg, dotProduct_comm]
+      rw [e]
+      have := dotProduct_mulVec_le_norm_mul (-(S * T⁻¹ * S)) z
+      rwa [map_neg, norm_neg] at this
+    have h1 := sq_dotProduct_mulVec_le hT.posSemidef x w
+    refine le_of_sq_le_mul (dot_self_nonneg _) (mul_nonneg hb hq0) ?_
+    calc (z ⬝ᵥ z) ^ 2 = (x ⬝ᵥ (T *ᵥ w)) ^ 2 := by rw [hzz, neg_sq]
+      _ ≤ q * (w ⬝ᵥ (T *ᵥ w)) := h1
+      _ ≤ q * (b * (z ⬝ᵥ z)) := mul_le_mul_of_nonneg_left hwTw hq0
+      _ = _ := by ring
+  -- the two combinations `T x ± S x`
+  have hcs : ∀ u v : n → ℝ, u ⬝ᵥ u ≤ a * q → v ⬝ᵥ v ≤ b * q →
+      (u + v) ⬝ᵥ (u + v) ≤ (√a + √b) ^ 2 * q ∧ (u - v) ⬝ᵥ (u - v) ≤ (√a + √b) ^ 2 * q := by
+    intro u v hu hv
+    have huv := sq_dotProduct_mulVec_le PosSemidef.one u v
+    simp only [one_mulVec] at huv
+    have hu0 := dot_self_nonneg u
+    have hv0 := dot_self_nonneg v
+    have hp : |u ⬝ᵥ v| ≤ √(u ⬝ᵥ u) * √(v ⬝ᵥ v) := by
+      rw [← Real.sqrt_mul hu0, ← Real.sqrt_sq_eq_abs]
+      exact Real.sqrt_le_sqrt huv
+    have hsu : √(u ⬝ᵥ u) ≤ √a * √q := by
+      rw [← Real.sqrt_mul ha]; exact Real.sqrt_le_sqrt hu
+    have hsv : √(v ⬝ᵥ v) ≤ √b * √q := by
+      rw [← Real.sqrt_mul hb]; exact Real.sqrt_le_sqrt hv
+    have hbound : u ⬝ᵥ u + 2 * |u ⬝ᵥ v| + v ⬝ᵥ v ≤ (√a + √b) ^ 2 * q := by
+      have e1 := Real.sq_sqrt hu0
+      have e2 := Real.sq_sqrt hv0
+      have eq : (√a + √b) ^ 2 * q = (√a * √q + √b * √q) ^ 2 := by
+        rw [show (√a * √q + √b * √q) ^ 2 = (√a + √b) ^ 2 * (√q) ^ 2 by ring, Real.sq_sqrt hq0]
+      rw [eq]
+      have hs0 : 0 ≤ √(u ⬝ᵥ u) + √(v ⬝ᵥ v) := by positivity
+      nlinarith [Real.sqrt_nonneg (u ⬝ᵥ u), Real.sqrt_nonneg (v ⬝ᵥ v)]
+    have hle := abs_le.1 (le_refl |u ⬝ᵥ v|)
+    constructor
+    · rw [add_dotProduct, dotProduct_add, dotProduct_add, dotProduct_comm v u]
+      linarith [le_abs_self (u ⬝ᵥ v)]
+    · rw [sub_dotProduct, dotProduct_sub, dotProduct_sub, dotProduct_comm v u]
+      linarith [neg_abs_le (u ⬝ᵥ v)]
+  have hAx : A *ᵥ x = T *ᵥ x + S *ᵥ x := by rw [hA, add_mulVec]
+  have hAtx : Aᵀ *ᵥ x = T *ᵥ x - S *ᵥ x := by rw [hAT, sub_mulVec]
+  obtain ⟨h1, h2⟩ := hcs _ _ hTx hSx
+  rw [hq, hAx, hAtx]
+  exact ⟨h1, h2⟩
+
+/-- **The growth of `|L| |U|` for a positive definite symmetric part** ([golub2013matrix]
+Theorem 4.2.6 with the constant `2 n` in place of the book's `n`): if `A = L U` is real with
+`T = (A + Aᵀ)/2` positive definite and `S = A − T`, then
+`‖|L| |U|‖_F ≤ 2 n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. `|L| |U| = ∑_k |ℓ_k| |u_kᵀ|`, and with `y` the `k`-th
+row of `L⁻¹` and `x` the `k`-th column of `U⁻¹`, `u_k = Aᵀ y`, `ℓ_k = A x`, `yᵀ A y = u_kk` and
+`xᵀ A x = 1/u_kk`, so `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` gives
+`‖ℓ_k‖ ‖u_k‖ ≤ (√‖T‖₂ + √‖S T⁻¹ S‖₂)² ≤ 2 (‖T‖₂ + ‖S T⁻¹ S‖₂)`. -/
+theorem IsLU.frobenius_norm_abs_mul_abs_le_two_mul {A L U : Matrix n n ℝ}
+    (hT : (hermitianPart A).PosDef) (h : IsLU A L U) :
+    ‖L.abs * U.abs‖ ≤ 2 * Fintype.card n * (‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
+      + ‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
+        * (A - hermitianPart A))‖) := by
+  set a := ‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖
+  set b := ‖toEuclideanCLM (𝕜 := ℝ) ((A - hermitianPart A) * (hermitianPart A)⁻¹
+        * (A - hermitianPart A))‖
+  set c := (√a + √b) ^ 2
+  have hc0 : 0 ≤ c := sq_nonneg _
+  have hc2 : c ≤ 2 * (a + b) := by
+    have ha : √a ^ 2 = a := Real.sq_sqrt (norm_nonneg _)
+    have hb : √b ^ 2 = b := Real.sq_sqrt (norm_nonneg _)
+    nlinarith [sq_nonneg (√a - √b)]
+  have hP := dotProduct_mulVec_self_le_of_posDef_hermitianPart hT
+  have hL := h.isUnitLowerTriangular
+  have hLi := hL.inv
+  have hLL : L⁻¹ * L = 1 := nonsing_inv_mul L ((isUnit_iff_isUnit_det L).1 hL.isUnit)
+  have hLU : L⁻¹ * A = U := by rw [← h.mul_eq, ← Matrix.mul_assoc, hLL, Matrix.one_mul]
+  -- the pivots `u_kk = yᵀ A y` with `y` the `k`-th row of `L⁻¹`
+  have hyA : ∀ k, (fun j => L⁻¹ k j) ᵥ* A = fun j => U k j := fun k => by
+    funext j
+    rw [← hLU, mul_apply]
+    rfl
+  have hyAy : ∀ k, (fun j => L⁻¹ k j) ⬝ᵥ (A *ᵥ fun j => L⁻¹ k j) = U k k := fun k => by
+    rw [dotProduct_mulVec, hyA k, dotProduct, Finset.sum_eq_single k]
+    · rw [hLi.diag_eq_one, mul_one]
+    · intro j _ hjk
+      rcases lt_or_gt_of_ne hjk with hj | hj
+      · rw [h.isUpperTriangular hj, zero_mul]
+      · rw [hLi.isLowerTriangular (OrderDual.toDual_lt_toDual.2 hj), mul_zero]
+    · simp
+  have hsym : ∀ v : n → ℝ, v ⬝ᵥ (A *ᵥ v) = v ⬝ᵥ (hermitianPart A *ᵥ v) := fun v => by
+    have e : v ⬝ᵥ (Aᵀ *ᵥ v) = v ⬝ᵥ (A *ᵥ v) := by
+      rw [mulVec_transpose, dotProduct_comm, ← dotProduct_mulVec]
+    rw [hermitianPart, conjTranspose_eq_transpose_of_trivial, smul_mulVec, add_mulVec,
+      dotProduct_smul, dotProduct_add, e, smul_eq_mul]
+    ring
+  have hpos : ∀ k, 0 < U k k := fun k => by
+    rw [← hyAy k]
+    have hy : (fun j => L⁻¹ k j) ≠ 0 := fun h0 => by
+      have := congrFun h0 k
+      simp [hLi.diag_eq_one] at this
+    have h1 := (posDef_iff_dotProduct_mulVec.1 hT).2 hy
+    rw [hsym]
+    simpa using h1
+  -- the rows of `U`
+  have hrow : ∀ k, (fun j => U k j) ⬝ᵥ (fun j => U k j) ≤ c * U k k := fun k => by
+    have := (hP fun j => L⁻¹ k j).2
+    rwa [mulVec_transpose, hyA k, hyAy k] at this
+  -- the columns of `L`, through the columns of `U⁻¹`
+  have hUu : IsUnit U.det := by
+    rw [det_of_isUpperTriangular h.isUpperTriangular]
+    exact (Finset.prod_pos fun k _ => hpos k).ne'.isUnit
+  have hUU : U * U⁻¹ = 1 := mul_nonsing_inv U hUu
+  have hUi := h.isUpperTriangular.inv
+  have hUkk : ∀ k, U⁻¹ k k = (U k k)⁻¹ := fun k => by
+    have := congrFun (congrFun hUU k) k
+    rw [h.isUpperTriangular.mul_apply_self hUi, one_apply_eq] at this
+    exact eq_inv_of_mul_eq_one_right this
+  have hAx : ∀ k, A *ᵥ (fun i => U⁻¹ i k) = fun i => L i k := fun k => by
+    funext i
+    rw [← h.mul_eq, ← mulVec_mulVec]
+    have hUx : U *ᵥ (fun i => U⁻¹ i k) = fun i => (1 : Matrix n n ℝ) i k := by
+      funext i'
+      rw [← hUU, mul_apply]
+      rfl
+    rw [hUx]
+    simp [mulVec, dotProduct, one_apply]
+  have hxAx : ∀ k, (fun i => U⁻¹ i k) ⬝ᵥ (A *ᵥ fun i => U⁻¹ i k) = (U k k)⁻¹ := fun k => by
+    rw [hAx k, dotProduct, Finset.sum_eq_single k]
+    · rw [hL.diag_eq_one, mul_one, hUkk]
+    · intro i _ hik
+      rcases lt_or_gt_of_ne hik with hi | hi
+      · rw [hL.isLowerTriangular (OrderDual.toDual_lt_toDual.2 hi), mul_zero]
+      · rw [hUi hi, zero_mul]
+    · simp
+  have hcol : ∀ k, (fun i => L i k) ⬝ᵥ (fun i => L i k) ≤ c * (U k k)⁻¹ := fun k => by
+    have := (hP fun i => U⁻¹ i k).1
+    rwa [hxAx k, hAx k] at this
+  -- each rank-one term has norm at most `c`
+  have hnorm : ∀ v : n → ℝ, ‖WithLp.toLp 2 (fun i => |v i|)‖ = √(v ⬝ᵥ v) := fun v => by
+    rw [EuclideanSpace.norm_eq, dotProduct]
+    simp [sq]
+  have hterm : ∀ k, ‖WithLp.toLp 2 (fun i => |L i k|)‖ * ‖WithLp.toLp 2 (fun j => |U k j|)‖
+      ≤ c := fun k => by
+    rw [hnorm (fun i => L i k), hnorm (fun j => U k j), ← Real.sqrt_mul (dot_self_nonneg _)]
+    calc √(((fun i => L i k) ⬝ᵥ fun i => L i k) * ((fun j => U k j) ⬝ᵥ fun j => U k j))
+        ≤ √((c * (U k k)⁻¹) * (c * U k k)) :=
+          Real.sqrt_le_sqrt (mul_le_mul (hcol k) (hrow k) (dot_self_nonneg _)
+            (mul_nonneg hc0 (inv_nonneg.2 (hpos k).le)))
+      _ = c := by
+          rw [show c * (U k k)⁻¹ * (c * U k k) = c ^ 2 by field_simp [(hpos k).ne']]
+          exact Real.sqrt_sq hc0
+  -- the outer-product expansion of `|L| |U|`
+  have hsum : L.abs * U.abs = ∑ k, vecMulVec (fun i => |L i k|) (fun j => |U k j|) := by
+    ext i j
+    simp [mul_apply, Matrix.abs, vecMulVec_apply, Matrix.sum_apply]
+  have hvmv : ∀ u v : n → ℝ, ‖vecMulVec u v‖ ≤ ‖WithLp.toLp 2 u‖ * ‖WithLp.toLp 2 v‖ :=
+    fun u v => by
+      rw [vecMulVec_eq Unit]
+      refine (frobenius_norm_mul _ _).trans (le_of_eq ?_)
+      rw [frobenius_norm_replicateCol, frobenius_norm_replicateRow]
+  rw [hsum]
+  calc ‖∑ k, vecMulVec (fun i => |L i k|) (fun j => |U k j|)‖
+      ≤ ∑ k, ‖vecMulVec (fun i => |L i k|) (fun j => |U k j|)‖ := norm_sum_le _ _
+    _ ≤ ∑ _k : n, c := Finset.sum_le_sum fun k _ => (hvmv _ _).trans (hterm k)
+    _ = Fintype.card n * c := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    _ ≤ Fintype.card n * (2 * (a + b)) := mul_le_mul_of_nonneg_left hc2 (Nat.cast_nonneg _)
+    _ = _ := by ring
+
+end UnsymmetricLU
 
 end Matrix

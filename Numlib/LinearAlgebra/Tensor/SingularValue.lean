@@ -4,6 +4,12 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: a new `Mathlib.LinearAlgebra.Tensor` directory beside `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Calculus.Deriv.Add
+import Mathlib.Analysis.Calculus.Deriv.Inv
+import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.FDeriv.Analytic
+import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Numlib.LinearAlgebra.Tensor.Unfolding
 
 /-!
@@ -18,13 +24,19 @@ unit vectors, which the book takes as the definition of a tensor singular value
 
 ## Main definitions
 
-* `Tensor.multilinearForm`, `Tensor.multilinearRayleigh`.
+* `Tensor.multilinearForm`, `Tensor.multilinearRayleigh`, `Tensor.symmetricRayleigh`.
 * `Tensor.IsSingularValue`.
 
 ## Main statements
 
 * `Tensor.multilinearForm_eq_modeUnfold`: the book's `u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)`, typed.
 * `Tensor.IsSymm.modeUnfold_eq`: the modal unfoldings of a symmetric tensor agree.
+* `Tensor.fderiv_multilinearRayleigh_single`: the partial derivatives of `ψ_𝒜`, computed along
+  the line `t ↦ u + t e_k w`, on which the numerator is affine and one norm varies.
+* `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the critical points of `ψ_𝒜` are the
+  singular vectors (normalized).
+* `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`: the critical points of `φ_𝒞` for a symmetric
+  `𝒞` are its eigenvectors; `φ_𝒞 = ψ_𝒞 ∘ diag` and the `d` partial derivatives agree by symmetry.
 
 ## References
 
@@ -138,5 +150,244 @@ theorem IsSymm.modeUnfold_eq {C : Tensor (fun _ : ι => ν) R} (hC : C.IsSymm) (
     · simp [hik, hil, Equiv.swap_apply_of_ne_of_ne hik hil]
 
 end Symm
+
+/-! ### Critical points of the Rayleigh quotients -/
+
+section Critical
+
+variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
+
+/-- The multilinear form of a real tensor as a continuous multilinear map on the Euclidean spaces
+of its modes. -/
+noncomputable def multilinearFormL (A : Tensor κ ℝ) :
+    ContinuousMultilinearMap ℝ (fun i => EuclideanSpace ℝ (κ i)) ℝ :=
+  ∑ a : ∀ i, κ i, A a • (ContinuousMultilinearMap.mkPiAlgebra ℝ ι ℝ).compContinuousLinearMap
+    fun i => EuclideanSpace.proj (a i)
+
+theorem multilinearFormL_apply (A : Tensor κ ℝ) (u : ∀ i, EuclideanSpace ℝ (κ i)) :
+    multilinearFormL A u = multilinearForm A fun i => (u i).ofLp := by
+  simp [multilinearFormL, multilinearForm, ContinuousMultilinearMap.compContinuousLinearMap_apply,
+    ContinuousMultilinearMap.mkPiAlgebra_apply]
+
+theorem multilinearRayleigh_eq (A : Tensor κ ℝ) :
+    multilinearRayleigh A = fun u => multilinearFormL A u / ∏ i, ‖u i‖ := by
+  funext u
+  rw [multilinearRayleigh, multilinearFormL_apply]
+
+/-- The multilinear Rayleigh quotient is differentiable where no vector vanishes. -/
+theorem differentiableAt_multilinearRayleigh (A : Tensor κ ℝ) {u : ∀ i, EuclideanSpace ℝ (κ i)}
+    (hu : ∀ i, u i ≠ 0) : DifferentiableAt ℝ (multilinearRayleigh A) u := by
+  have e : multilinearRayleigh A = fun u => multilinearFormL A u * (∏ i, ‖u i‖)⁻¹ := by
+    rw [multilinearRayleigh_eq]
+    simp only [div_eq_mul_inv]
+  rw [e]
+  exact ((multilinearFormL A).hasFDerivAt u).differentiableAt.mul
+    ((HasFDerivAt.finsetProd (u := Finset.univ) fun i _ =>
+      ((differentiableAt_apply i u).norm ℝ (hu i)).hasFDerivAt).differentiableAt.fun_inv
+      (Finset.prod_ne_zero_iff.2 fun i _ => norm_ne_zero_iff.2 (hu i)))
+
+/-- The multilinear form with the `k`-th vector replaced by `v` is `vᵀ 𝒜_(k) (⊗_{j ≠ k} u_j)`. -/
+private theorem multilinearForm_update (A : Tensor κ ℝ) (u : ∀ i, EuclideanSpace ℝ (κ i)) (k : ι)
+    (v : EuclideanSpace ℝ (κ k)) :
+    multilinearForm A (fun i => (Function.update u k v i).ofLp)
+      = v.ofLp ⬝ᵥ (A.modeUnfold k *ᵥ rankOne fun j : {j // j ≠ k} => (u j).ofLp) := by
+  have h : (fun j : {j // j ≠ k} => (Function.update u k v j).ofLp)
+      = fun j : {j // j ≠ k} => (u j).ofLp :=
+    funext fun j => by rw [Function.update_of_ne j.2]
+  rw [multilinearForm_eq_modeUnfold _ _ k]
+  simp only [Function.update_self, h]
+
+/-- **The partial derivatives of the multilinear Rayleigh quotient** ([golub2013matrix] §12.5.6):
+in the direction `w` of the `k`-th vector, the derivative of `ψ_𝒜` at `u` (no `u i` zero) is
+`wᵀ 𝒜_(k) (⊗_{j ≠ k} u_j) / ∏ ‖u_i‖ − ψ_𝒜(u) ⟪u_k, w⟫ / ‖u_k‖²`. Along the line
+`t ↦ u + t e_k w` the numerator is affine and only the `k`-th norm varies. -/
+theorem fderiv_multilinearRayleigh_single (A : Tensor κ ℝ) {u : ∀ i, EuclideanSpace ℝ (κ i)}
+    (hu : ∀ i, u i ≠ 0) (k : ι) (w : EuclideanSpace ℝ (κ k)) :
+    fderiv ℝ (multilinearRayleigh A) u (Pi.single k w)
+      = w.ofLp ⬝ᵥ (A.modeUnfold k *ᵥ rankOne fun j : {j // j ≠ k} => (u j).ofLp) / ∏ i, ‖u i‖
+        - multilinearRayleigh A u * (inner ℝ (u k) w / ‖u k‖ ^ 2) := by
+  set g := A.modeUnfold k *ᵥ rankOne fun j : {j // j ≠ k} => (u j).ofLp
+  set c := ∏ j : {j // j ≠ k}, ‖u j‖
+  have hc : 0 < c := Finset.prod_pos fun j _ => norm_pos_iff.2 (hu j)
+  have hk : 0 < ‖u k‖ := norm_pos_iff.2 (hu k)
+  have hnorm : ∀ v, ∏ i, ‖Function.update u k v i‖ = ‖v‖ * c := fun v => by
+    rw [Fintype.prod_eq_mul_prod_subtype_ne _ k, Function.update_self]
+    exact congrArg _ (Finset.prod_congr rfl fun j _ => by rw [Function.update_of_ne j.2])
+  have hN : ∏ i, ‖u i‖ = ‖u k‖ * c := by
+    rw [← hnorm, Function.update_eq_self]
+  have hF : multilinearForm A (fun i => (u i).ofLp) = (u k).ofLp ⬝ᵥ g := by
+    rw [← multilinearForm_update, Function.update_eq_self]
+  set e : ∀ i, EuclideanSpace ℝ (κ i) := Pi.single k w with he
+  have hline : ∀ t : ℝ, u + t • e = Function.update u k (u k + t • w) := fun t => by
+    funext j
+    by_cases h : j = k
+    · subst h
+      simp [he]
+    · simp [he, h]
+  have hφ : (fun t : ℝ => multilinearRayleigh A (u + t • e))
+      = fun t => ((u k).ofLp ⬝ᵥ g + t * (w.ofLp ⬝ᵥ g)) / (c * ‖u k + t • w‖) := by
+    funext t
+    rw [hline, multilinearRayleigh, multilinearForm_update, hnorm, WithLp.ofLp_add,
+      WithLp.ofLp_smul, add_dotProduct, smul_dotProduct, smul_eq_mul, mul_comm c]
+  have hL : HasDerivAt (fun t : ℝ => u + t • e) e 0 := by
+    have := HasDerivAt.const_add u (HasDerivAt.smul_const (hasDerivAt_id (0 : ℝ)) e)
+    rw [one_smul] at this
+    exact this
+  have h1 := (differentiableAt_multilinearRayleigh A hu).hasFDerivAt.comp_hasDerivAt_of_eq
+    (0 : ℝ) hL (by simp)
+  have hn2 : HasDerivAt (fun t : ℝ => ‖u k + t • w‖ ^ 2) (2 * inner ℝ (u k) w) 0 := by
+    have := HasDerivAt.norm_sq
+      (HasDerivAt.const_add (u k) (HasDerivAt.smul_const (hasDerivAt_id (0 : ℝ)) w))
+    convert this using 1 <;> simp
+  have hn : HasDerivAt (fun t : ℝ => ‖u k + t • w‖) (inner ℝ (u k) w / ‖u k‖) 0 := by
+    have := hn2.sqrt (by simpa using hu k)
+    convert this using 1
+    · funext t
+      rw [Real.sqrt_sq (norm_nonneg _)]
+    · simp only [zero_smul, add_zero, Real.sqrt_sq (norm_nonneg _)]
+      field_simp
+  have h2 := HasDerivAt.div (HasDerivAt.const_add ((u k).ofLp ⬝ᵥ g)
+    (HasDerivAt.mul_const (hasDerivAt_id (0 : ℝ)) (w.ofLp ⬝ᵥ g))) (HasDerivAt.const_mul c hn)
+    (by rw [zero_smul, add_zero]; exact (mul_pos hc hk).ne')
+  simp only [Function.comp_def] at h1
+  rw [hφ] at h1
+  rw [h1.unique h2, multilinearRayleigh, hF, hN]
+  simp only [id_eq, zero_smul, add_zero, zero_mul, one_mul]
+  field_simp
+
+/-- The rank-one tensor of rescaled vectors. -/
+private theorem rankOne_smul {ι' : Type*} [Fintype ι'] {κ' : ι' → Type*} (c : ι' → ℝ)
+    (z : ∀ i, κ' i → ℝ) : (rankOne fun i => c i • z i) = (∏ i, c i) • rankOne z := by
+  ext a
+  simp [rankOne_apply, Finset.prod_mul_distrib, smul_apply]
+
+/-- The partial derivative of `ψ_𝒜` in the `k`-th vector vanishes iff the `k`-th equation of a
+tensor singular value holds at the normalized vectors `û_i = u_i / ‖u_i‖`. -/
+theorem forall_fderiv_multilinearRayleigh_single_eq_zero_iff (A : Tensor κ ℝ)
+    {u : ∀ i, EuclideanSpace ℝ (κ i)} (hu : ∀ i, u i ≠ 0) (k : ι) :
+    (∀ w, fderiv ℝ (multilinearRayleigh A) u (Pi.single k w) = 0) ↔
+      A.modeUnfold k *ᵥ rankOne (fun j : {j // j ≠ k} => (‖u j‖⁻¹ • u j).ofLp)
+        = multilinearRayleigh A u • (‖u k‖⁻¹ • u k).ofLp := by
+  set g := A.modeUnfold k *ᵥ rankOne fun j : {j // j ≠ k} => (u j).ofLp with hg
+  set c := ∏ j : {j // j ≠ k}, ‖u j‖ with hcdef
+  set ψ := multilinearRayleigh A u
+  have hc : 0 < c := Finset.prod_pos fun j _ => norm_pos_iff.2 (hu j)
+  have hk : 0 < ‖u k‖ := norm_pos_iff.2 (hu k)
+  have hN : ∏ i, ‖u i‖ = ‖u k‖ * c := Fintype.prod_eq_mul_prod_subtype_ne _ k
+  have hlhs : A.modeUnfold k *ᵥ rankOne (fun j : {j // j ≠ k} => (‖u j‖⁻¹ • u j).ofLp)
+      = c⁻¹ • g := by
+    funext a
+    simp only [hg, hcdef, mulVec, dotProduct, Pi.smul_apply, smul_eq_mul, rankOne_apply,
+      WithLp.ofLp_smul, Finset.prod_mul_distrib, Finset.prod_inv_distrib, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun b _ => by ring
+  have hdiff : ∀ w : EuclideanSpace ℝ (κ k),
+      fderiv ℝ (multilinearRayleigh A) u (Pi.single k w)
+        = (‖u k‖⁻¹) * (w.ofLp ⬝ᵥ (c⁻¹ • g - (ψ * ‖u k‖⁻¹) • (u k).ofLp)) := fun w => by
+    rw [fderiv_multilinearRayleigh_single A hu, ← hg, hN,
+      EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct_sub, dotProduct_smul,
+      dotProduct_smul, smul_eq_mul, smul_eq_mul]
+    field_simp
+    ring
+  rw [hlhs, WithLp.ofLp_smul, smul_smul, ← sub_eq_zero]
+  simp only [hdiff, mul_eq_zero, inv_eq_zero, norm_eq_zero, hu k, false_or]
+  constructor
+  · intro h
+    exact dotProduct_self_eq_zero.1 (h (WithLp.toLp 2 (c⁻¹ • g - (ψ * ‖u k‖⁻¹) • (u k).ofLp)))
+  · intro h w
+    rw [h, dotProduct_zero]
+
+/-- **The critical points of the multilinear Rayleigh quotient** ([golub2013matrix] §12.5.6,
+"the equation `∇ψ_𝒜 = 0`"): for `u` with no `u i` zero, the Fréchet derivative of
+`ψ_𝒜(u) = 𝒜(u₁, …, u_d) / ∏ ‖u_i‖` vanishes at `u` iff, with `û_i = u_i / ‖u_i‖`,
+`𝒜_(k) (⊗_{j ≠ k} û_j) = ψ_𝒜(u) û_k` for every mode `k`: the normalized vectors are singular
+vectors in the sense of `Tensor.IsSingularValue`. The partial derivatives are
+`Tensor.fderiv_multilinearRayleigh_single`. -/
+theorem hasFDerivAt_multilinearRayleigh_eq_zero_iff (A : Tensor κ ℝ)
+    {u : ∀ i, EuclideanSpace ℝ (κ i)} (hu : ∀ i, u i ≠ 0) :
+    HasFDerivAt (multilinearRayleigh A) (0 : (∀ i, EuclideanSpace ℝ (κ i)) →L[ℝ] ℝ) u ↔
+      ∀ k, A.modeUnfold k *ᵥ rankOne (fun j : {j // j ≠ k} => (‖u j‖⁻¹ • u j).ofLp)
+        = multilinearRayleigh A u • (‖u k‖⁻¹ • u k).ofLp := by
+  have hd := (differentiableAt_multilinearRayleigh A hu).hasFDerivAt
+  simp only [← forall_fderiv_multilinearRayleigh_single_eq_zero_iff A hu]
+  constructor
+  · intro h k w
+    rw [hd.unique h, _root_.zero_apply]
+  · intro h
+    convert hd using 1
+    refine (ContinuousLinearMap.ext fun v => ?_).symm
+    rw [← Finset.univ_sum_single v, map_sum, _root_.zero_apply]
+    exact Finset.sum_eq_zero fun k _ => h k (v k)
+
+variable {ν : Type*} [Fintype ν]
+
+/-- The Rayleigh quotient of a symmetric tensor ([golub2013matrix] (12.5.24)):
+`φ_𝒞(x) = 𝒞(x, …, x) / ‖x‖ ^ d`. -/
+noncomputable def symmetricRayleigh (C : Tensor (fun _ : ι => ν) ℝ) (x : EuclideanSpace ℝ ν) :
+    ℝ :=
+  multilinearForm C (fun _ => x.ofLp) / ‖x‖ ^ Fintype.card ι
+
+theorem symmetricRayleigh_eq (C : Tensor (fun _ : ι => ν) ℝ) (x : EuclideanSpace ℝ ν) :
+    symmetricRayleigh C x = multilinearRayleigh C fun _ => x := by
+  rw [symmetricRayleigh, multilinearRayleigh, Finset.prod_const, Finset.card_univ]
+
+/-- The unfoldings of a symmetric tensor agree on the rank-one tensors of a repeated vector. -/
+private theorem IsSymm.modeUnfold_mulVec_rankOne {C : Tensor (fun _ : ι => ν) ℝ} (hC : C.IsSymm)
+    (k l : ι) (z : ν → ℝ) :
+    C.modeUnfold l *ᵥ rankOne (fun _ : {j // j ≠ l} => z)
+      = C.modeUnfold k *ᵥ rankOne (fun _ : {j // j ≠ k} => z) := by
+  rw [hC.modeUnfold_eq k l]
+  funext x
+  simp only [mulVec, dotProduct, submatrix_apply, id_eq]
+  refine Fintype.sum_equiv (swapColEquiv k l).symm _ _ fun c => congrArg _ ?_
+  simp only [rankOne_apply, swapColEquiv, Equiv.arrowCongr_symm, Equiv.arrowCongr_apply,
+    Equiv.refl_symm, Equiv.coe_refl, Function.comp_apply, id_eq]
+  exact (Equiv.prod_comp _ fun j => z (c j)).symm
+
+/-- **The critical points of the Rayleigh quotient of a symmetric tensor** ([golub2013matrix]
+(12.5.23)–(12.5.24)): for a symmetric `𝒞` with a mode `k` and `x ≠ 0`, the Fréchet derivative of
+`φ_𝒞(x) = 𝒞(x, …, x) / ‖x‖ ^ d` vanishes at `x` iff, with `x̂ = x / ‖x‖`,
+`𝒞_(k) (x̂ ⊗ ⋯ ⊗ x̂) = φ_𝒞(x) x̂` (all unfoldings agree, `Tensor.IsSymm.modeUnfold_eq`). The
+derivative of `φ_𝒞 = ψ_𝒞 ∘ diag` in the direction `w` is the sum of the `d` partial derivatives
+of `ψ_𝒞` in the direction `w`, which by symmetry are equal. (The book's gradient omits the factor
+`d`, harmless at zero.) -/
+theorem hasFDerivAt_symmetricRayleigh_eq_zero_iff {C : Tensor (fun _ : ι => ν) ℝ}
+    (hC : C.IsSymm) {x : EuclideanSpace ℝ ν} (hx : x ≠ 0) (k : ι) :
+    HasFDerivAt (symmetricRayleigh C) (0 : EuclideanSpace ℝ ν →L[ℝ] ℝ) x ↔
+      C.modeUnfold k *ᵥ rankOne (fun _ : {j // j ≠ k} => (‖x‖⁻¹ • x).ofLp)
+        = symmetricRayleigh C x • (‖x‖⁻¹ • x).ofLp := by
+  set diag : EuclideanSpace ℝ ν →L[ℝ] (ι → EuclideanSpace ℝ ν) :=
+    ContinuousLinearMap.pi fun _ => ContinuousLinearMap.id ℝ _
+  have hu : ∀ i : ι, (fun _ : ι => x) i ≠ 0 := fun _ => hx
+  have hψ := (differentiableAt_multilinearRayleigh C hu).hasFDerivAt
+  have hφ : HasFDerivAt (symmetricRayleigh C)
+      ((fderiv ℝ (multilinearRayleigh C) fun _ => x).comp diag) x := by
+    have e : symmetricRayleigh C = multilinearRayleigh C ∘ diag :=
+      funext fun y => symmetricRayleigh_eq C y
+    rw [e]
+    exact hψ.comp x diag.hasFDerivAt
+  -- the derivative in the direction `w` is `d` times the `k`-th partial derivative
+  have hsum : ∀ w, ((fderiv ℝ (multilinearRayleigh C) fun _ => x).comp diag) w
+      = Fintype.card ι * fderiv ℝ (multilinearRayleigh C) (fun _ => x) (Pi.single k w) := by
+    intro w
+    have hw : diag w = ∑ l, Pi.single l w := (Finset.univ_sum_single fun _ => w).symm
+    rw [ContinuousLinearMap.comp_apply, hw, map_sum, ← Finset.card_univ, ← nsmul_eq_mul,
+      ← Finset.sum_const]
+    refine Finset.sum_congr rfl fun l _ => ?_
+    rw [fderiv_multilinearRayleigh_single C hu, fderiv_multilinearRayleigh_single C hu,
+      hC.modeUnfold_mulVec_rankOne k l]
+  have : Nonempty ι := ⟨k⟩
+  have hcard : (Fintype.card ι : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+  rw [symmetricRayleigh_eq, ← forall_fderiv_multilinearRayleigh_single_eq_zero_iff C hu k]
+  constructor
+  · intro h w
+    have := congrArg (· w) (hφ.unique h)
+    simp only [hsum, _root_.zero_apply] at this
+    exact (mul_eq_zero.1 this).resolve_left hcard
+  · intro h
+    convert hφ using 1
+    refine (ContinuousLinearMap.ext fun w => ?_).symm
+    rw [hsum, h, mul_zero, _root_.zero_apply]
+
+end Critical
 
 end Tensor

@@ -29,58 +29,15 @@ id = "Matrix.riccati_of_hamiltonianSchur"
 
 [[node]]
 id = "Matrix.exists_orthogonalSymplectic_condensed"
-kind = "theorem"
-desc = '''The common reduction behind (7.8.3) and (7.8.4): for `M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ`
-Hamiltonian or skew-Hamiltonian, there is an orthogonal symplectic `U` with `(Uᵀ M U).toBlocks₁₁`
-upper Hessenberg and `(Uᵀ M U).toBlocks₂₁` diagonal. Proof: for `k = 1, …, n-1`, reduce column `k` of
-the current matrix by the Householder–Givens–Householder pattern of `exists_orthogonalSymplectic_mulVec_eq`
-acting on the trailing coordinates `inl j, inr j` (`j ≥ k`), zeroing the `(2,1)`-block entries below
-the diagonal and the `(1,1)`-block entries below the subdiagonal; the (skew-)symmetry of the `(2,1)`
-block, preserved by `Matrix.IsHamiltonian.conj_symplectic` / `Matrix.IsSkewHamiltonian.conj_symplectic`,
-kills the entries above its diagonal. ★★★ (~450 lines).
-
-Blocked: effort. The column-by-column
-Householder–Givens–Householder sweep on the trailing coordinates is ★★★ (~450 lines of index bookkeeping
-on `Fin n ⊕ Fin n`); `Matrix.exists_orthogonalSymplectic_mulVec_eq` (the one-vector step, any `i₀`) is
-proved, the induction over columns (restricting the step to the coordinates `j ≥ k`) is not written.'''
-deps = ["Matrix.exists_orthogonalSymplectic_mulVec_eq", "Matrix.IsHamiltonian.conj_symplectic", "Matrix.IsSkewHamiltonian.conj_symplectic", "Matrix.isHamiltonian_fromBlocks_iff", "Matrix.isSkewHamiltonian_iff_fromBlocks"]
 
 [[node]]
 id = "Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.8.3): a Hamiltonian `M` has an orthogonal symplectic `U₀` with
-`U₀ᵀ M U₀ = fromBlocks H R D (-Hᵀ)`, `H` upper Hessenberg and `D` diagonal (the Paige–Van Loan form);
-`exists_orthogonalSymplectic_condensed` plus `Matrix.isHamiltonian_fromBlocks_iff` for the `(2,2)`
-block. ★
-
-Blocked: on
-`Matrix.exists_orthogonalSymplectic_condensed`.'''
-deps = ["Matrix.exists_orthogonalSymplectic_condensed", "Matrix.isHamiltonian_fromBlocks_iff"]
 
 [[node]]
 id = "Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.8.4): a skew-Hamiltonian `N` (in particular `N = M²`,
-`Matrix.IsHamiltonian.isSkewHamiltonian_mul_self`) has an orthogonal symplectic `V₀` with
-`V₀ᵀ N V₀ = fromBlocks H R 0 Hᵀ`, `H` upper Hessenberg: `exists_orthogonalSymplectic_condensed`, and a
-diagonal skew-symmetric block is zero. ★
-
-Blocked: on
-`Matrix.exists_orthogonalSymplectic_condensed`.'''
-deps = ["Matrix.exists_orthogonalSymplectic_condensed", "Matrix.isSkewHamiltonian_iff_fromBlocks"]
 
 [[node]]
 id = "Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur"
-kind = "theorem"
-desc = '''The real skew-Hamiltonian Schur form ([golub2013matrix] §7.8.1, the display after (7.8.4)): with
-`Q = V₀ * fromBlocks U 0 0 U`, `U` the real Schur factor of `H`,
-`Qᵀ N Q = fromBlocks T (Uᵀ R U) 0 Tᵀ` with `T` quasi upper triangular. ★
-
-Blocked: on `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`, hence on the ★★★
-condensed form `Matrix.exists_orthogonalSymplectic_condensed` (the real Schur form is now on main).
-The Lagrangian route of the Hamiltonian–Schur form does not transfer: for a skew-Hamiltonian `N` and
-`N X = X B`, `W = Xᵀ J X` only satisfies `Bᵀ W = W B`, which does not force `W = 0`.'''
-deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg", "Matrix.exists_orthogonal_conj_isQuasiUpperTriangular", "Matrix.fromBlocks_diagonal_mem_symplecticGroup"]
 
 [[node]]
 id = "Matrix.charpoly_neg"

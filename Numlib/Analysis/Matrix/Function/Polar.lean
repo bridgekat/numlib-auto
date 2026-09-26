@@ -15,7 +15,10 @@ matrices of [golub2013matrix] §9.4.3:
   same iteration started at `P` ((9.4.12)), and `Matrix.tendsto_newtonPolarIterate`:
   `X_k → U`, with `‖X_k − U‖₂ = ‖P_k − 1‖₂` (`Matrix.l2_opNorm_newtonPolarIterate_sub`) and the
   quadratic step `P_{k+1} − 1 = ½ P_k⁻¹ (P_k − 1)²`
-  (`Matrix.newtonPolarIterate_succ_sub_one`).
+  (`Matrix.newtonPolarIterate_succ_sub_one`);
+* `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues`: the complex form of
+  the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
+  Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`.
 
 Every statement about "the polar factor `U`" takes an `IsPolarDecomposition A U P` hypothesis.
 
@@ -285,5 +288,168 @@ theorem tendsto_newtonPolarIterate (hA : IsUnit A) (h : IsPolarDecomposition A U
   exact this.congr fun k => (hform k).symm
 
 end Newton
+
+/-! ### Perturbation of the unitary polar factor -/
+
+section Perturbation
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+open scoped Matrix.Norms.Frobenius
+
+/-- Cauchy–Schwarz for the Frobenius inner product: `re tr(Xᴴ R) ≤ ‖X‖_F ‖R‖_F`. -/
+private theorem re_trace_conjTranspose_mul_le (X R : Matrix n n 𝕜) :
+    RCLike.re (trace (Xᴴ * R)) ≤ ‖X‖ * ‖R‖ := by
+  have h1 : RCLike.re (trace (Xᴴ * R)) ≤ ∑ i, ∑ j, ‖X i j‖ * ‖R i j‖ := by
+    rw [Finset.sum_comm]
+    simp only [trace, diag_apply, mul_apply, conjTranspose_apply, map_sum]
+    refine Finset.sum_le_sum fun j _ => Finset.sum_le_sum fun i _ => ?_
+    refine (RCLike.re_le_norm _).trans (le_of_eq ?_)
+    rw [norm_mul, norm_star]
+  have h2 := Finset.sum_mul_sq_le_sq_mul_sq Finset.univ (fun p : n × n => ‖X p.1 p.2‖)
+    fun p => ‖R p.1 p.2‖
+  simp only [Fintype.sum_prod_type] at h2
+  have h3 : ∑ i, ∑ j, ‖X i j‖ * ‖R i j‖ ≤ ‖X‖ * ‖R‖ := by
+    refine (sq_le_sq₀ (Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => by positivity)
+      (by positivity)).1 ?_
+    rw [mul_pow, frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
+    exact h2
+  exact h1.trans h3
+
+/-- **A Sylvester equation with coefficients bounded below** (the step behind the perturbation
+bound of the polar factor, Li and Sun 2003): if `σ ≤ P` and `τ ≤ Q` in the Loewner order with
+`σ + τ > 0`, the solution of `P X + X Q = R` satisfies `‖X‖_F ≤ ‖R‖_F / (σ + τ)`. Indeed
+`(σ + τ) ‖X‖_F² ≤ re tr(Xᴴ P X) + re tr(X Q Xᴴ) = re tr(Xᴴ R) ≤ ‖X‖_F ‖R‖_F`. -/
+theorem frobenius_norm_le_of_mul_add_mul_eq {P Q X R : Matrix n n 𝕜} {σ τ : ℝ}
+    (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hQ : (Q - (τ : 𝕜) • 1).PosSemidef)
+    (hστ : 0 < σ + τ) (h : P * X + X * Q = R) : ‖X‖ ≤ ‖R‖ / (σ + τ) := by
+  have hX2 := frobenius_norm_sq_eq_trace X
+  have hXX : trace (X * Xᴴ) = trace (Xᴴ * X) := trace_mul_comm X Xᴴ
+  have h1 : σ * ‖X‖ ^ 2 ≤ RCLike.re (trace (Xᴴ * P * X)) := by
+    have h0 := RCLike.nonneg_iff.1 (hP.conjTranspose_mul_mul_same X).trace_nonneg
+    rw [Matrix.mul_sub, Matrix.sub_mul, trace_sub, Matrix.mul_smul, Matrix.smul_mul,
+      Matrix.mul_one, trace_smul, ← hX2, smul_eq_mul, map_sub, ← RCLike.ofReal_mul,
+      RCLike.ofReal_re] at h0
+    linarith [h0.1]
+  have h2 : τ * ‖X‖ ^ 2 ≤ RCLike.re (trace (Xᴴ * X * Q)) := by
+    have h0 := RCLike.nonneg_iff.1 (hQ.mul_mul_conjTranspose_same X).trace_nonneg
+    rw [Matrix.mul_sub, Matrix.sub_mul, trace_sub, Matrix.mul_smul, Matrix.smul_mul,
+      Matrix.mul_one, trace_smul, hXX, ← hX2, smul_eq_mul, map_sub, ← RCLike.ofReal_mul,
+      RCLike.ofReal_re, trace_mul_comm (X * Q), ← Matrix.mul_assoc] at h0
+    linarith [h0.1]
+  have h3 : RCLike.re (trace (Xᴴ * R)) = RCLike.re (trace (Xᴴ * P * X))
+      + RCLike.re (trace (Xᴴ * X * Q)) := by
+    rw [← h, Matrix.mul_add, trace_add, map_add, Matrix.mul_assoc, Matrix.mul_assoc]
+  have h4 := re_trace_conjTranspose_mul_le X R
+  rw [le_div_iff₀ hστ]
+  rcases (norm_nonneg X).eq_or_lt with hX | hX
+  · rw [← hX, zero_mul]
+    exact norm_nonneg R
+  · refine le_of_mul_le_mul_right ?_ hX
+    nlinarith
+
+/-- **The perturbation of the unitary polar factor** (the complex form of the Li–Sun bound,
+[golub2013matrix] §9.4.3; W. Li and W. Sun 2003): if `A = U P` and `Ã = Ũ P'` are polar
+decompositions of square matrices with `σ ≤ P`, `σ̃ ≤ P'` in the Loewner order and `σ + σ̃ > 0`
+(for instance `σ`, `σ̃` the smallest singular values), then
+`‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ + σ̃)`. With `W = Uᴴ Ũ` and `Δ = A − Ã`, `X = 1 − W` solves
+`P X + X P' = Uᴴ Δ − Δᴴ Ũ` (`Matrix.frobenius_norm_le_of_mul_add_mul_eq`), and `‖X‖_F = ‖U − Ũ‖_F`.
+The real refinement with the two smallest singular values is Li and Sun's, and is not formalized. -/
+theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 𝕜}
+    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') {σ σ' : ℝ}
+    (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hP' : (P' - (σ' : 𝕜) • 1).PosSemidef)
+    (hσ : 0 < σ + σ') : ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / (σ + σ') := by
+  have hU' := h'.mem_unitaryGroup
+  have hUs : Uᴴ ∈ unitaryGroup n 𝕜 := by
+    rw [← star_eq_conjTranspose]; exact Unitary.star_mem h.mem_unitaryGroup
+  have hUU : Uᴴ * U = 1 := h.conjTranspose_mul_self
+  have hUU' : Ũᴴ * Ũ = 1 := h'.conjTranspose_mul_self
+  have hPh : Pᴴ = P := h.isHermitian
+  have hPh' : P'ᴴ = P' := h'.isHermitian
+  have hX : ‖Uᴴ * (U - Ũ)‖ = ‖U - Ũ‖ := by
+    have := frobenius_norm_unitary_mul_mul_unitary hUs (U - Ũ) (one_mem (unitaryGroup n 𝕜))
+    rwa [Matrix.mul_one] at this
+  have hsyl : P * (Uᴴ * (U - Ũ)) + Uᴴ * (U - Ũ) * P' = Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ := by
+    have e1 : Uᴴ * (A - Ã) = P - Uᴴ * Ũ * P' := by
+      rw [Matrix.mul_sub, h.eq_mul, h'.eq_mul, ← Matrix.mul_assoc, hUU, Matrix.one_mul,
+        Matrix.mul_assoc]
+    have e2 : (A - Ã)ᴴ * Ũ = P * (Uᴴ * Ũ) - P' := by
+      rw [conjTranspose_sub, Matrix.sub_mul, h.eq_mul, h'.eq_mul, conjTranspose_mul,
+        conjTranspose_mul, hPh, hPh', Matrix.mul_assoc, Matrix.mul_assoc, hUU', Matrix.mul_one]
+    rw [e1, e2]
+    simp only [Matrix.mul_sub, Matrix.sub_mul, hUU, Matrix.mul_one, Matrix.one_mul,
+      Matrix.mul_assoc]
+    abel
+  have hR : ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ 2 * ‖A - Ã‖ := by
+    have h1 : ‖Uᴴ * (A - Ã)‖ = ‖A - Ã‖ := by
+      have := frobenius_norm_unitary_mul_mul_unitary hUs (A - Ã) (one_mem (unitaryGroup n 𝕜))
+      rwa [Matrix.mul_one] at this
+    have h2 : ‖(A - Ã)ᴴ * Ũ‖ = ‖A - Ã‖ := by
+      have := frobenius_norm_unitary_mul_mul_unitary (one_mem (unitaryGroup n 𝕜)) (A - Ã)ᴴ hU'
+      rw [Matrix.one_mul] at this
+      rw [this, frobenius_norm_conjTranspose]
+    calc ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ ‖Uᴴ * (A - Ã)‖ + ‖(A - Ã)ᴴ * Ũ‖ := norm_sub_le _ _
+      _ = 2 * ‖A - Ã‖ := by rw [h1, h2]; ring
+  rw [← hX]
+  calc ‖Uᴴ * (U - Ũ)‖ ≤ ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ / (σ + σ') :=
+        frobenius_norm_le_of_mul_add_mul_eq hP hP' hσ hsyl
+    _ ≤ 2 * ‖A - Ã‖ / (σ + σ') := div_le_div_of_nonneg_right hR hσ.le
+
+/-- The symmetric polar factor dominates the smallest singular value: `σ_min(A) ≤ P` in the
+Loewner order. The eigenvalues of `P` are the stretches `‖A v‖ = ‖P v‖` of its unit
+eigenvectors. -/
+theorem IsPolarDecomposition.posSemidef_sub_iInf_singularValues {A U P : Matrix n n 𝕜}
+    (h : IsPolarDecomposition A U P) :
+    (P - ((⨅ i, A.singularValues i : ℝ) : 𝕜) • 1).PosSemidef := by
+  set c := ⨅ i, A.singularValues i
+  have hP := h.isHermitian
+  set V := (hP.eigenvectorUnitary : Matrix n n 𝕜)
+  have hV : V ∈ unitaryGroup n 𝕜 := hP.eigenvectorUnitary.2
+  have hVV : V * Vᴴ = 1 := by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff.1 hV
+  have hspec : P = V * diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜)) * Vᴴ := by
+    conv_lhs => rw [hP.spectral_theorem]
+    rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose]
+    rfl
+  have hc : ∀ i, c ≤ hP.eigenvalues i := by
+    intro i
+    have : Nonempty n := ⟨i⟩
+    have h1 := A.iInf_singularValues_mul_norm_le (hP.eigenvectorBasis i)
+    have h2 : ‖toEuclideanLin A (hP.eigenvectorBasis i)‖ = hP.eigenvalues i := by
+      rw [toEuclideanLin_apply, h.eq_mul, ← mulVec_mulVec,
+        norm_toLp_mulVec_of_mem_unitaryGroup h.mem_unitaryGroup, hP.mulVec_eigenvectorBasis,
+        WithLp.toLp_smul, WithLp.toLp_ofLp, norm_smul, hP.eigenvectorBasis.orthonormal.1 i,
+        mul_one, Real.norm_eq_abs, abs_of_nonneg (h.posSemidef.eigenvalues_nonneg i)]
+    rw [hP.eigenvectorBasis.orthonormal.1 i, mul_one, h2] at h1
+    exact h1
+  have heq : P - (c : 𝕜) • 1
+      = V * diagonal (fun i => ((hP.eigenvalues i - c : ℝ) : 𝕜)) * Vᴴ := by
+    have hd : diagonal (fun i => ((hP.eigenvalues i - c : ℝ) : 𝕜))
+        = diagonal (fun i => ((hP.eigenvalues i : ℝ) : 𝕜)) - (c : 𝕜) • 1 := by
+      ext i j
+      by_cases hij : i = j
+      · subst hij
+        simp only [sub_apply, smul_apply, diagonal_apply_eq, one_apply_eq, smul_eq_mul, mul_one]
+        push_cast
+        ring
+      · simp only [sub_apply, smul_apply, diagonal_apply_ne _ hij, one_apply_ne hij, smul_zero,
+          sub_zero]
+    rw [hd, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hVV,
+      ← hspec]
+  rw [heq]
+  refine (PosSemidef.diagonal fun i => ?_).mul_mul_conjTranspose_same V
+  exact RCLike.ofReal_nonneg.2 (sub_nonneg.2 (hc i))
+
+/-- **The perturbation of the unitary polar factor by the smallest singular values** (the complex
+Li–Sun bound, [golub2013matrix] §9.4.3): `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`
+when the denominator is positive (for instance when `A` is nonsingular). -/
+theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues
+    {A Ã U Ũ P P' : Matrix n n 𝕜} (h : IsPolarDecomposition A U P)
+    (h' : IsPolarDecomposition Ã Ũ P')
+    (hσ : 0 < (⨅ i, A.singularValues i) + ⨅ i, Ã.singularValues i) :
+    ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / ((⨅ i, A.singularValues i) + ⨅ i, Ã.singularValues i) :=
+  h.frobenius_norm_sub_le h' h.posSemidef_sub_iInf_singularValues
+    h'.posSemidef_sub_iInf_singularValues hσ
+
+end Perturbation
 
 end Matrix

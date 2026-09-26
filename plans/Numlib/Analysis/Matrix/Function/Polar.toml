@@ -47,13 +47,14 @@ controlled through a Sylvester-type equation `S P̃ + P S = …` whose solution 
 matrix's skew part pairs eigenvalues, giving the sum of the two smallest. ★★★ (~600 lines, the proof
 is not in the book)
 
-Blocked (dec1, not attempted beyond analysis): the book quotes the bound without proof. The general
-(complex) bound `‖U − Ũ‖_F ≤ 2‖A − Ã‖_F / (σ_n + σ̃_n)` has a short proof — with `W = Uᴴ Ũ`,
-`X = I − W` solves the Sylvester equation `P X + X P̃ = Uᴴ Δ − Δᴴ Ũ` (`Δ = A − Ã`), whose solution
-operator has norm `≤ 1/(σ_n + σ̃_n)` in eigenbases of `P`, `P̃` (~100 lines) — but the real refinement
-with the two smallest singular values needs Li–Sun's pairing argument for the skew part of a real
-orthogonal `W`, which is research-level material (~600 lines). A good first step would be the complex
-bound as a separate node.'''
+Blocked (dec1, bb2): the book quotes the bound without proof. The complex bound is proved
+separately (agent bb2): `Matrix.IsPolarDecomposition.frobenius_norm_sub_le` (Loewner lower bounds
+`σ ≤ P`, `σ̃ ≤ P̃`) and `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues`
+(`‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`), through the Sylvester bound
+`Matrix.frobenius_norm_le_of_mul_add_mul_eq`. The real refinement (constant 4 over the sum of the
+two smallest singular values of each) needs Li–Sun's pairing argument for the skew part of the real
+orthogonal `W = Uᵀ Ũ` (its eigenvalues come in conjugate pairs, so the Sylvester operator can be
+bounded on `2 × 2` blocks), not in the references; not attempted (~600 lines).'''
 deps = ["Matrix.IsPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.sortedSingularValues"]
 
 [[node]]
@@ -67,3 +68,15 @@ id = "Matrix.newtonPolarIterate_succ_sub_one"
 
 [[node]]
 id = "Matrix.l2_opNorm_newtonPolarIterate_succ_sub_one_le"
+
+[[node]]
+id = "Matrix.frobenius_norm_le_of_mul_add_mul_eq"
+
+[[node]]
+id = "Matrix.IsPolarDecomposition.frobenius_norm_sub_le"
+
+[[node]]
+id = "Matrix.IsPolarDecomposition.posSemidef_sub_iInf_singularValues"
+
+[[node]]
+id = "Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues"

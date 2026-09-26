@@ -54,8 +54,15 @@ symplectic matrices); this module is the eigenvalue theory on top.
   the real Schur form of the stable block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`),
   applied as `diag(U, U)`, finishes.
 
-The skew-Hamiltonian Schur form and the condensed forms (7.8.3)–(7.8.4) of Paige–Van Loan and Van
-Loan need the column-by-column symplectic reduction, which is planned but not yet formalized.
+* **The condensed forms** (`Matrix.exists_orthogonalSymplectic_condensed`): a Hamiltonian or
+  skew-Hamiltonian `M` has an orthogonal symplectic `U` with `(Uᵀ M U)₁₁` upper Hessenberg and
+  `(Uᵀ M U)₂₁` diagonal, by the column sweep of the one-vector reduction on the trailing
+  coordinates (an induction on the number of trailing coordinates; the transformations fix the
+  leading pair). Hence the Paige–Van Loan form (7.8.3)
+  (`Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`), the skew-Hamiltonian
+  Hessenberg form (7.8.4) (`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`) and
+  the real skew-Hamiltonian Schur form
+  (`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`).
 
 Nothing here is in Mathlib beyond `Matrix.J` and `Matrix.symplecticGroup`.
 -/
@@ -783,5 +790,369 @@ theorem exists_orthogonalSymplectic_hamiltonianSchur
       have := charpoly_units_conj' u T₁
       rwa [show ((u : Matrix (Fin n) (Fin n) ℝ)) = U from rfl, hinv] at this
     rwa [hc] at hμ
+
+/-! ### The condensed forms (7.8.3)–(7.8.4) -/
+
+section Condensed
+
+variable {m : ℕ}
+
+/-- The coordinates of `ℝ^{2(m+1)}` split into the leading pair `inl 0`, `inr 0` and the trailing
+pairs `inl (j + 1)`, `inr (j + 1)`. -/
+private def headTail (m : ℕ) : Fin (m + 1) ⊕ Fin (m + 1) ≃ (Fin 1 ⊕ Fin 1) ⊕ (Fin m ⊕ Fin m) where
+  toFun a := match a with
+    | .inl i => Fin.cases (.inl (.inl 0)) (fun j => .inr (.inl j)) i
+    | .inr i => Fin.cases (.inl (.inr 0)) (fun j => .inr (.inr j)) i
+  invFun b := match b with
+    | .inl (.inl _) => .inl 0
+    | .inl (.inr _) => .inr 0
+    | .inr (.inl j) => .inl j.succ
+    | .inr (.inr j) => .inr j.succ
+  left_inv a := by rcases a with i | i <;> cases i using Fin.cases <;> rfl
+  right_inv b := by
+    rcases b with (a | a) | (j | j)
+    · rw [Subsingleton.elim a 0]; rfl
+    · rw [Subsingleton.elim a 0]; rfl
+    · rfl
+    · rfl
+
+/-- The trailing coordinates. -/
+private def trail (m : ℕ) : Fin m ⊕ Fin m → Fin (m + 1) ⊕ Fin (m + 1) :=
+  Sum.map Fin.succ Fin.succ
+
+private theorem headTail_symm_comp_inr : (headTail m).symm ∘ Sum.inr = trail m := by
+  funext b
+  rcases b with j | j <;> rfl
+
+private theorem headTail_trail (a : Fin m ⊕ Fin m) : headTail m (trail m a) = Sum.inr a := by
+  rcases a with j | j <;> rfl
+
+private theorem toBlocks₂₂_submatrix_headTail
+    (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) :
+    (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₂₂
+      = K.submatrix (trail m) (trail m) := by
+  ext (i | i) (j | j) <;> rfl
+
+private theorem toBlocks₂₁_submatrix_headTail
+    (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) (b : Fin m ⊕ Fin m) :
+    (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₂₁ b (Sum.inl 0)
+      = K (trail m b) (Sum.inl 0) := by
+  rcases b with j | j <;> rfl
+
+/-- An orthogonal symplectic transformation of the trailing coordinates, extended by the identity
+on the leading pair. -/
+private def liftOS (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) :
+    Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ :=
+  (fromBlocks 1 0 0 V).submatrix (headTail m) (headTail m)
+
+private theorem liftOS_mul (V W : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) :
+    liftOS (V * W) = liftOS V * liftOS W := by
+  rw [liftOS, liftOS, liftOS, submatrix_mul_equiv, fromBlocks_multiply]
+  simp
+
+private theorem liftOS_transpose (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) :
+    (liftOS V)ᵀ = liftOS Vᵀ := by
+  rw [liftOS, liftOS, transpose_submatrix, fromBlocks_transpose]
+  simp
+
+private theorem liftOS_one : liftOS (1 : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) = 1 := by
+  rw [liftOS, fromBlocks_one, submatrix_one_equiv]
+
+/-- `J` in the leading/trailing splitting of the coordinates. -/
+private theorem J_eq_submatrix_headTail :
+    J (Fin (m + 1)) ℝ
+      = (fromBlocks (J (Fin 1) ℝ) 0 0 (J (Fin m) ℝ)).submatrix (headTail m) (headTail m) := by
+  ext (i | i) (j | j) <;> cases i using Fin.cases <;> cases j using Fin.cases <;>
+    simp [J, headTail, one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
+
+/-- The transpose of an orthogonal symplectic matrix is its inverse. -/
+private theorem transpose_mul_self_of_orthoSymp {P : Matrix (l ⊕ l) (l ⊕ l) ℝ}
+    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ) : Pᵀ * P = 1 :=
+  (mem_orthogonalGroup_iff' _ ℝ).1 hP.1
+
+private theorem liftOS_mem {V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ}
+    (hV : V ∈ orthogonalGroup (Fin m ⊕ Fin m) ℝ ∧ V ∈ symplecticGroup (Fin m) ℝ) :
+    liftOS V ∈ orthogonalGroup (Fin (m + 1) ⊕ Fin (m + 1)) ℝ ∧
+      liftOS V ∈ symplecticGroup (Fin (m + 1)) ℝ := by
+  refine ⟨(mem_orthogonalGroup_iff' _ ℝ).2 ?_, SymplecticGroup.mem_iff.2 ?_⟩
+  · rw [liftOS_transpose, ← liftOS_mul, transpose_mul_self_of_orthoSymp hV, liftOS_one]
+  · have hVJ := SymplecticGroup.mem_iff.1 hV.2
+    rw [liftOS_transpose, J_eq_submatrix_headTail, liftOS, liftOS, submatrix_mul_equiv,
+      submatrix_mul_equiv, fromBlocks_multiply, fromBlocks_multiply]
+    simp [hVJ]
+
+/-- Conjugation by `liftOS V` in the leading/trailing splitting. -/
+private theorem liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
+    (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) :
+    (liftOS V)ᵀ * K * liftOS V = (fromBlocks 1 0 0 Vᵀ * fromBlocks
+      (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₁₁
+      (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₁₂
+      (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₂₁
+      (K.submatrix (headTail m).symm (headTail m).symm).toBlocks₂₂ *
+        fromBlocks 1 0 0 V).submatrix (headTail m) (headTail m) := by
+  have hK : K = (K.submatrix (headTail m).symm (headTail m).symm).submatrix (headTail m)
+      (headTail m) := by
+    rw [submatrix_submatrix, Equiv.symm_comp_self, submatrix_id_id]
+  rw [fromBlocks_toBlocks, liftOS_transpose, liftOS, liftOS]
+  conv_lhs => rw [hK]
+  rw [submatrix_mul_equiv, submatrix_mul_equiv]
+
+/-- The trailing block of a conjugate by `liftOS V`. -/
+private theorem submatrix_trail_liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
+    (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) :
+    ((liftOS V)ᵀ * K * liftOS V).submatrix (trail m) (trail m)
+      = Vᵀ * K.submatrix (trail m) (trail m) * V := by
+  ext a b
+  rw [submatrix_apply, liftOS_conj, submatrix_apply, headTail_trail, headTail_trail,
+    fromBlocks_multiply, fromBlocks_multiply, fromBlocks_apply₂₂, toBlocks₂₂_submatrix_headTail]
+  simp
+
+/-- The trailing part of the first column of a conjugate by `liftOS V`. -/
+private theorem liftOS_conj_trail_inl_zero (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
+    (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ)
+    (a : Fin m ⊕ Fin m) :
+    ((liftOS V)ᵀ * K * liftOS V) (trail m a) (Sum.inl 0)
+      = (Vᵀ *ᵥ fun b => K (trail m b) (Sum.inl 0)) a := by
+  have h0 : headTail m (Sum.inl 0) = Sum.inl (Sum.inl 0) := rfl
+  rw [liftOS_conj, submatrix_apply, headTail_trail, h0, fromBlocks_multiply, fromBlocks_multiply,
+    fromBlocks_apply₂₁]
+  simp only [Matrix.zero_mul, zero_add, Matrix.mul_one, Matrix.mul_zero, add_zero]
+  simp only [mul_apply, mulVec, dotProduct, transpose_apply, toBlocks₂₁_submatrix_headTail]
+
+/-- `liftOS V` fixes the first coordinate vector. -/
+private theorem liftOS_mulVec_single (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) (c : ℝ) :
+    liftOS V *ᵥ Pi.single (Sum.inl 0) c = Pi.single (Sum.inl 0) c := by
+  funext a
+  rw [mulVec_single]
+  obtain ⟨b, rfl⟩ := (headTail m).symm.surjective a
+  rcases b with (b | b) | (b | b) <;>
+    simp [liftOS, headTail, Fin.succ_ne_zero]
+
+/-- The trailing block of a Hamiltonian or skew-Hamiltonian matrix is again one. -/
+private theorem isHam_submatrix_trail
+    {K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ}
+    (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) :
+    (K.submatrix (trail m) (trail m)).IsHamiltonian ∨
+      (K.submatrix (trail m) (trail m)).IsSkewHamiltonian := by
+  have hsub : K.submatrix (trail m) (trail m) = fromBlocks
+      (K.toBlocks₁₁.submatrix Fin.succ Fin.succ) (K.toBlocks₁₂.submatrix Fin.succ Fin.succ)
+      (K.toBlocks₂₁.submatrix Fin.succ Fin.succ) (K.toBlocks₂₂.submatrix Fin.succ Fin.succ) := by
+    ext (i | i) (j | j) <;> rfl
+  rw [← fromBlocks_toBlocks K, isHamiltonian_fromBlocks_iff,
+    isSkewHamiltonian_iff_fromBlocks] at hK
+  rw [hsub, isHamiltonian_fromBlocks_iff, isSkewHamiltonian_iff_fromBlocks]
+  rcases hK with ⟨h1, h2, h3⟩ | ⟨h1, h2, h3⟩
+  · left
+    refine ⟨?_, by rw [transpose_submatrix, h2], by rw [transpose_submatrix, h3]⟩
+    rw [h1]
+    rfl
+  · right
+    refine ⟨?_, by rw [transpose_submatrix, h2]; rfl, by rw [transpose_submatrix, h3]; rfl⟩
+    rw [h1]
+    rfl
+
+/-- Orthogonal symplectic similarity preserves the two structures. -/
+private theorem isHam_conj {P K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
+    (hP : P ∈ orthogonalGroup (l ⊕ l) ℝ ∧ P ∈ symplecticGroup l ℝ)
+    (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) :
+    (Pᵀ * K * P).IsHamiltonian ∨ (Pᵀ * K * P).IsSkewHamiltonian := by
+  have hinv : P⁻¹ = Pᵀ := inv_eq_left_inv (transpose_mul_self_of_orthoSymp hP)
+  rcases hK with hK | hK
+  · left
+    have := hK.conj_symplectic hP.2
+    rwa [hinv] at this
+  · right
+    have := hK.conj_symplectic hP.2
+    rwa [hinv] at this
+
+/-- The `(2,1)` block of a Hamiltonian or skew-Hamiltonian matrix is symmetric or skew-symmetric,
+so its zero pattern is symmetric. -/
+private theorem apply_inr_inl_eq_zero {K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
+    (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) {i j : l} (h : K (Sum.inr j) (Sum.inl i) = 0) :
+    K (Sum.inr i) (Sum.inl j) = 0 := by
+  rw [← fromBlocks_toBlocks K, isHamiltonian_fromBlocks_iff,
+    isSkewHamiltonian_iff_fromBlocks] at hK
+  rcases hK with ⟨-, hF, -⟩ | ⟨-, hF, -⟩
+  · have := congrFun (congrFun hF j) i
+    simp only [transpose_apply, toBlocks₂₁, of_apply] at this
+    rw [this, h]
+  · have := congrFun (congrFun hF j) i
+    simp only [transpose_apply, toBlocks₂₁, of_apply, neg_apply] at this
+    rw [this, h, neg_zero]
+
+/-- The condensed shape, entrywise: the `(1,1)` block upper Hessenberg and the `(2,1)` block
+diagonal. -/
+private def IsCondensed {k : ℕ} (N : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ) : Prop :=
+  (∀ i j : Fin k, (j : ℕ) + 1 < i → N (Sum.inl i) (Sum.inl j) = 0) ∧
+    ∀ i j : Fin k, i ≠ j → N (Sum.inr i) (Sum.inl j) = 0
+
+/-- The column sweep, by induction on the number of trailing coordinates: the transformation
+fixes the leading pair. -/
+private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
+    (M : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ),
+    M.IsHamiltonian ∨ M.IsSkewHamiltonian →
+      ∃ V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ,
+        (V ∈ orthogonalGroup (Fin m ⊕ Fin m) ℝ ∧ V ∈ symplecticGroup (Fin m) ℝ) ∧
+          IsCondensed ((liftOS V)ᵀ * M * liftOS V)
+  | 0, M, _ => by
+    refine ⟨1, ⟨one_mem _, one_mem _⟩, fun i j h => ?_, fun i j h => ?_⟩
+    · have := i.isLt; omega
+    · have := i.isLt
+      have := j.isLt
+      exact absurd (Fin.ext (by omega)) h
+  | m + 1, M, hM => by
+    -- reduce the trailing part of the first column
+    set x : Fin (m + 1) ⊕ Fin (m + 1) → ℝ := fun b => M (trail (m + 1) b) (Sum.inl 0)
+    obtain ⟨Q, hQo, hQs, hQx⟩ := exists_orthogonalSymplectic_mulVec_eq x 0
+    set M₁ := (liftOS Q)ᵀ * M * liftOS Q
+    have hM₁ := isHam_conj (liftOS_mem ⟨hQo, hQs⟩) hM
+    have hcol₁ : (fun b => M₁ (trail (m + 1) b) (Sum.inl 0))
+        = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl 0) 1 := by
+      funext b
+      exact (liftOS_conj_trail_inl_zero Q M b).trans (congrFun hQx b)
+    -- recurse on the trailing block
+    obtain ⟨W, hW, hcond⟩ :=
+      exists_liftOS_isCondensed m (M₁.submatrix (trail (m + 1)) (trail (m + 1)))
+        (isHam_submatrix_trail hM₁)
+    refine ⟨Q * liftOS W, mul_mem_orthoSymp ⟨hQo, hQs⟩ (liftOS_mem hW), ?_⟩
+    have hN : (liftOS (Q * liftOS W))ᵀ * M * liftOS (Q * liftOS W)
+        = (liftOS (liftOS W))ᵀ * M₁ * liftOS (liftOS W) := by
+      rw [liftOS_mul, transpose_mul]
+      simp only [M₁, Matrix.mul_assoc]
+    rw [hN]
+    set N := (liftOS (liftOS W))ᵀ * M₁ * liftOS (liftOS W)
+    have hNham := isHam_conj (liftOS_mem (liftOS_mem hW)) hM₁
+    have hNsub : ∀ a b, N (trail (m + 1) a) (trail (m + 1) b)
+        = ((liftOS W)ᵀ * M₁.submatrix (trail (m + 1)) (trail (m + 1)) * liftOS W) a b :=
+      fun a b => congrFun (congrFun (submatrix_trail_liftOS_conj (liftOS W) M₁) a) b
+    have hNcol : ∀ a, N (trail (m + 1) a) (Sum.inl 0)
+        = (‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl 0) 1 : Fin (m + 1) ⊕ Fin (m + 1) → ℝ) a := by
+      intro a
+      refine (liftOS_conj_trail_inl_zero (liftOS W) M₁ a).trans ?_
+      rw [hcol₁, liftOS_transpose, mulVec_smul, liftOS_mulVec_single]
+    refine ⟨fun i j hij => ?_, fun i j hij => ?_⟩
+    · cases i using Fin.cases with
+      | zero => simp at hij
+      | succ i =>
+        cases j using Fin.cases with
+        | zero =>
+          have h := hNcol (Sum.inl i)
+          have hi : i ≠ 0 := by
+            rintro rfl
+            simp at hij
+          simpa [trail, Pi.single_apply, hi] using h
+        | succ j =>
+          have h := hNsub (Sum.inl i) (Sum.inl j)
+          simp only [trail, Sum.map_inl] at h
+          rw [h]
+          exact hcond.1 i j (by simp only [Fin.val_succ] at hij; omega)
+    · cases j using Fin.cases with
+      | zero =>
+        cases i using Fin.cases with
+        | zero => exact absurd rfl hij
+        | succ i =>
+          have h := hNcol (Sum.inr i)
+          simpa [trail, Pi.single_apply] using h
+      | succ j =>
+        cases i using Fin.cases with
+        | zero =>
+          refine apply_inr_inl_eq_zero hNham ?_
+          have h := hNcol (Sum.inr j)
+          simpa [trail, Pi.single_apply] using h
+        | succ i =>
+          have h := hNsub (Sum.inr i) (Sum.inl j)
+          simp only [trail, Sum.map_inl, Sum.map_inr] at h
+          rw [h]
+          exact hcond.2 i j fun h' => hij (by rw [h'])
+
+/-- **The condensed form behind (7.8.3) and (7.8.4)** ([golub2013matrix] §7.8.1; Paige–Van Loan
+1981, Van Loan 1984): a real Hamiltonian or skew-Hamiltonian `M` has an orthogonal symplectic `U`
+with `(Uᵀ M U)₁₁` upper Hessenberg and `(Uᵀ M U)₂₁` diagonal. Column `k` is reduced by the
+Householder–Givens–Householder transformation (`Matrix.exists_orthogonalSymplectic_mulVec_eq`) of
+the trailing coordinates `inl j`, `inr j`, `j > k`, which fixes the earlier columns; the zeros of
+the `(2,1)` block above its diagonal come from its (skew-)symmetry. -/
+theorem exists_orthogonalSymplectic_condensed {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
+    (hM : M.IsHamiltonian ∨ M.IsSkewHamiltonian) :
+    ∃ U : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, U ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
+      U ∈ symplecticGroup (Fin n) ℝ ∧ (Uᵀ * M * U).toBlocks₁₁.IsUpperHessenberg ∧
+        (Uᵀ * M * U).toBlocks₂₁.IsDiag := by
+  cases n with
+  | zero =>
+    exact ⟨1, one_mem _, one_mem _, fun i => i.elim0, fun i => i.elim0⟩
+  | succ m =>
+    obtain ⟨V, hV, h1, h2⟩ := exists_liftOS_isCondensed m M hM
+    refine ⟨liftOS V, (liftOS_mem hV).1, (liftOS_mem hV).2, fun i j ⟨k, hjk, hki⟩ => ?_,
+      fun i j hij => h2 i j hij⟩
+    exact h1 i j (by rw [Fin.lt_def] at hjk hki; omega)
+
+/-- **The Paige–Van Loan form** ([golub2013matrix] (7.8.3)): a real Hamiltonian `M` has an
+orthogonal symplectic `U₀` with `U₀ᵀ M U₀ = [H R; D -Hᵀ]`, `H` upper Hessenberg and `D`
+diagonal. -/
+theorem IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan
+    {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
+    ∃ U₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, U₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
+      U₀ ∈ symplecticGroup (Fin n) ℝ ∧ ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
+        U₀ᵀ * M * U₀ = fromBlocks H R D (-Hᵀ) ∧ H.IsUpperHessenberg ∧ D.IsDiag := by
+  obtain ⟨U, hUo, hUs, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inl hM)
+  have hN : (Uᵀ * M * U).IsHamiltonian := by
+    have hinv : U⁻¹ = Uᵀ := inv_eq_left_inv ((mem_orthogonalGroup_iff' _ ℝ).1 hUo)
+    have := hM.conj_symplectic hUs
+    rwa [hinv] at this
+  rw [← fromBlocks_toBlocks (Uᵀ * M * U), isHamiltonian_fromBlocks_iff] at hN
+  refine ⟨U, hUo, hUs, (Uᵀ * M * U).toBlocks₁₁, (Uᵀ * M * U).toBlocks₁₂,
+    (Uᵀ * M * U).toBlocks₂₁, ?_, hH, hD⟩
+  conv_lhs => rw [← fromBlocks_toBlocks (Uᵀ * M * U), hN.1]
+
+/-- **The skew-Hamiltonian Hessenberg form** ([golub2013matrix] (7.8.4); Van Loan 1984): a real
+skew-Hamiltonian `N` (for instance the square of a Hamiltonian matrix) has an orthogonal symplectic
+`V₀` with `V₀ᵀ N V₀ = [H R; 0 Hᵀ]`, `H` upper Hessenberg: the diagonal `(2,1)` block of the
+condensed form is skew-symmetric, hence zero. -/
+theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
+    {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
+    ∃ V₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, V₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
+      V₀ ∈ symplecticGroup (Fin n) ℝ ∧ ∃ H R : Matrix (Fin n) (Fin n) ℝ,
+        V₀ᵀ * N * V₀ = fromBlocks H R 0 Hᵀ ∧ H.IsUpperHessenberg := by
+  obtain ⟨V, hVo, hVs, hH, hD⟩ := exists_orthogonalSymplectic_condensed (Or.inr hN)
+  have hS : (Vᵀ * N * V).IsSkewHamiltonian := by
+    have hinv : V⁻¹ = Vᵀ := inv_eq_left_inv ((mem_orthogonalGroup_iff' _ ℝ).1 hVo)
+    have := hN.conj_symplectic hVs
+    rwa [hinv] at this
+  rw [← fromBlocks_toBlocks (Vᵀ * N * V), isSkewHamiltonian_iff_fromBlocks] at hS
+  have h0 : (Vᵀ * N * V).toBlocks₂₁ = 0 := by
+    ext i j
+    by_cases hij : i = j
+    · subst hij
+      have := congrFun (congrFun hS.2.1 i) i
+      rw [transpose_apply, neg_apply] at this
+      simp only [zero_apply]
+      linarith
+    · exact hD hij
+  refine ⟨V, hVo, hVs, (Vᵀ * N * V).toBlocks₁₁, (Vᵀ * N * V).toBlocks₁₂, ?_, hH⟩
+  conv_lhs => rw [← fromBlocks_toBlocks (Vᵀ * N * V), hS.1, h0]
+
+/-- **The real skew-Hamiltonian Schur form** ([golub2013matrix] §7.8.1, after (7.8.4)): a real
+skew-Hamiltonian `N` has an orthogonal symplectic `Q` with `Qᵀ N Q = [T R; 0 Tᵀ]`, `T` upper
+quasi-triangular: `Q = V₀ diag(U, U)` with `V₀` from
+`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` and `U` the real Schur factor of
+`H`. -/
+theorem IsSkewHamiltonian.exists_orthogonalSymplectic_schur
+    {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
+    ∃ Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
+      Q ∈ symplecticGroup (Fin n) ℝ ∧ ∃ T R : Matrix (Fin n) (Fin n) ℝ,
+        Qᵀ * N * Q = fromBlocks T R 0 Tᵀ ∧ T.IsQuasiUpperTriangular := by
+  obtain ⟨V₀, hVo, hVs, H, R, hHR, -⟩ := hN.exists_orthogonalSymplectic_hessenberg
+  obtain ⟨U, hU, hUT⟩ := exists_orthogonal_conj_isQuasiUpperTriangular H
+  have hD := fromBlocks_diagonal_mem_symplecticGroup hU
+  refine ⟨V₀ * fromBlocks U 0 0 U, mul_mem hVo hD.1, mul_mem hVs hD.2, Uᵀ * H * U,
+    Uᵀ * R * U, ?_, hUT⟩
+  have key : (V₀ * fromBlocks U 0 0 U)ᵀ * N * (V₀ * fromBlocks U 0 0 U)
+      = (fromBlocks U 0 0 U)ᵀ * (V₀ᵀ * N * V₀) * fromBlocks U 0 0 U := by
+    rw [transpose_mul]
+    simp only [Matrix.mul_assoc]
+  rw [key, hHR, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
+  simp only [transpose_zero, Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add,
+    transpose_mul, transpose_transpose, Matrix.mul_assoc]
+
+end Condensed
 
 end Matrix
