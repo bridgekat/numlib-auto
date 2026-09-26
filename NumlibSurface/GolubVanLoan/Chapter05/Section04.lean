@@ -1,19 +1,26 @@
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
+import Numlib.LinearAlgebra.Matrix.CompleteOrthogonal
+import Numlib.LinearAlgebra.Matrix.RankRevealing
 import NumlibSurface.GolubVanLoan.Chapter05.Section03
 
 /-!
 # Golub–Van Loan §5.4: other orthogonal factorizations
 
 Surface file for [golub2013matrix] §5.4: numerical rank and the SVD (§5.4.1: the singular value
-perturbation under (5.4.4), the `δ`-rank (5.4.5)); QR with column pivoting (Algorithm 5.4.1) and
-the Kahan matrix (§5.4.3); bidiagonalization ((5.4.13), Algorithm 5.4.2).
+perturbation under (5.4.4), the `δ`-rank (5.4.5)); QR with column pivoting ((5.4.6), the norm
+downdate, Algorithm 5.4.1) and the Kahan matrix (§5.4.3); Chan's Theorem 5.4.1 (§5.4.4); the
+rank-revealing update of §5.4.5; the complete orthogonal decomposition ((5.4.12), §5.4.7);
+bidiagonalization ((5.4.13), Algorithm 5.4.2) and `R`-bidiagonalization (§5.4.9).
 
 ## Conventions
 
 The book's sorted `σ_k` (1-based) is `A.sortedSingularValues (k - 1)` (Mathlib's
 `LinearMap.singularValues` of `toEuclideanLin A`, antitone, 0-based). Programs follow the
 conventions of `NumlibSurface/GolubVanLoan`; a Householder step on a block is `houseOn` and
-`householderApplyLeft`/`Right` over index lists (`indexFrom`). Indices are 0-based.
+`householderApplyLeft`/`Right` over index lists (`indexFrom`). Indices are 0-based. A pivoted
+factorization `A Π = QR` with `R = [R₁₁ R₁₂; 0 0]`, `R₁₁` nonsingular, is the backbone's
+`Matrix.IsPivotedQR.IsRankRevealing A Q R π r` (`A Π = A.submatrix id π`); a complete orthogonal
+decomposition is `Matrix.IsCompleteOrthogonal A U V r` (over `ℝ`, `Uᴴ = Uᵀ`).
 
 ## Book slips carried
 
@@ -163,6 +170,30 @@ end NumericalRank
 /-! ### §5.4.2 QR with column pivoting -/
 
 section ColumnPivoting
+
+/-- **(5.4.6)**: every `A ∈ ℝ^{m×n}` has a QR factorization with column pivoting
+`Qᵀ A Π = [R₁₁ R₁₂; 0 0]` with `r = rank A`, `Q` orthogonal, `R₁₁` (`r × r`) upper triangular and
+nonsingular and `Π` a permutation (`A Π = A.submatrix id σ`; the bundle
+`Matrix.IsPivotedQR.IsRankRevealing`); and for any such factorization
+`ran(A) = span{q₁, …, q_r}`. -/
+theorem equation_5_4_6 (A : Matrix (Fin m) (Fin n) ℝ) :
+    (∃ σ Q R, IsPivotedQR.IsRankRevealing A Q R σ A.rank) ∧
+      ∀ {σ : Equiv.Perm (Fin n)} {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
+        {r : ℕ} (h : IsPivotedQR.IsRankRevealing A Q R σ r),
+        LinearMap.range (toEuclideanLin A) =
+          Submodule.span ℝ (Set.range fun i : Fin r =>
+            (toLp 2 (Q.col (Fin.castLE h.le_rows i)) : EuclideanSpace ℝ (Fin m))) :=
+  ⟨exists_isPivotedQR_rank A, fun h => h.range_eq_span⟩
+
+/-- **§5.4.2, the column-norm update**: for `Q ∈ ℝ^{s×s}` orthogonal and `Qᵀ z = [α; w]`,
+`‖w‖₂² = ‖z‖₂² - α²` — whence Algorithm 5.4.1's downdate `c(i) = c(i) - A(r, i)²` of the squared
+norms of the trailing columns. -/
+theorem norm_sq_tail_eq {s : ℕ} {Q : Matrix (Fin (s + 1)) (Fin (s + 1)) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin (s + 1)) ℝ) (z : Fin (s + 1) → ℝ) :
+    ∑ i : Fin s, (Qᵀ *ᵥ z) i.succ ^ 2 = ∑ i, z i ^ 2 - (Qᵀ *ᵥ z) 0 ^ 2 := by
+  have := norm_sq_tail_eq_of_mem_unitaryGroup hQ z
+  simpa only [Real.norm_eq_abs, sq_abs, conjTranspose_eq_transpose_of_trivial] using this
+
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
@@ -329,25 +360,6 @@ private theorem listMax_const {n : ℕ} (c' : Fin n → ℝ) (l : List (Fin n)) 
     split_ifs
     · rcases hx with rfl | rfl <;> simp [ha]
     · rfl
-
-/-- Updating each index of a duplicate-free list once, from its current value. -/
-private theorem foldl_update_self_eq {ι : Type*} [DecidableEq ι] (g : ι → ℝ → ℝ) (l : List ι)
-    (hl : l.Nodup) (y₀ : ι → ℝ) :
-    l.foldl (fun y k => Function.update y k (g k (y k))) y₀ =
-      fun k => if k ∈ l then g k (y₀ k) else y₀ k := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih (List.nodup_cons.1 hl).2]
-    funext k
-    have ha : a ∉ l := (List.nodup_cons.1 hl).1
-    by_cases hk : k ∈ l
-    · have hka : k ≠ a := fun e => ha (e ▸ hk)
-      simp [hk, hka]
-    · by_cases hka : k = a
-      · subst hka
-        simp [hk]
-      · simp [hk, hka]
 
 /-- The pivot search of Algorithm 5.4.1 returns `j` when the searched predicate is `j ≤ k`. -/
 private theorem head?_getD_filter_eq {n : ℕ} (j : Fin n) (p : Fin n → Bool)
@@ -539,6 +551,66 @@ theorem kahanMatrix_unaltered (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} :
 
 end Kahan
 
+/-! ### §5.4.4 Other rank-revealing ideas: Chan's theorem -/
+
+section Chan
+
+/-- **Theorem 5.4.1** (Chan): "if `A ∈ ℝ^{m×n}` and `v ∈ ℝⁿ` is a unit 2-norm vector, then there
+exists a permutation `Π` so that the QR factorization `A Π = QR` satisfies `|r_nn| ≤ √n σ` where
+`σ = ‖Av‖₂`" (`m ≥ n = k + 1`; every QR factorization of `A Π` does). -/
+theorem theorem_5_4_1 {k : ℕ} (A : Matrix (Fin m) (Fin (k + 1)) ℝ) (hkm : k + 1 ≤ m)
+    (v : EuclideanSpace ℝ (Fin (k + 1))) (hv : ‖v‖ = 1) :
+    ∃ π : Equiv.Perm (Fin (k + 1)), ∀ Q R, IsQR (A.submatrix id π) Q R →
+      |R ⟨k, by omega⟩ (Fin.last k)| ≤ √(k + 1 : ℝ) * ‖toEuclideanLin A v‖ := by
+  simpa only [Real.norm_eq_abs] using exists_perm_isQR_abs_le A hkm v hv
+
+/-- The columns of an SVD's right factor are stretched by the singular values:
+`‖v_j‖₂ = 1` and `‖A v_j‖₂ = σ_j` for `j < m`. -/
+private theorem norm_mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ}
+    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
+    (j : Fin n) (hj : (j : ℕ) < m) :
+    ‖(toLp 2 (V.col j) : EuclideanSpace ℝ (Fin n))‖ = 1 ∧
+      ‖toEuclideanLin A (toLp 2 (V.col j))‖ = σ j := by
+  have hVc : V.col j = V *ᵥ Pi.single j 1 := by
+    funext i
+    simp [mulVec, dotProduct, Pi.single_apply]
+  have hAV : A * V = U * (rectDiagonal fun i => σ i : Matrix (Fin m) (Fin n) ℝ) := by
+    have hA := h.eq_mul_mul_star
+    simp only [RCLike.ofReal_real_eq_id, id] at hA
+    rw [hA, Matrix.mul_assoc, Unitary.star_mul_self_of_mem h.mem_unitaryGroup_right,
+      Matrix.mul_one]
+  have hS : (rectDiagonal fun i => σ i : Matrix (Fin m) (Fin n) ℝ) *ᵥ
+      Pi.single j 1 = Pi.single ⟨j, hj⟩ (σ j) := by
+    funext i
+    rw [mulVec, dotProduct, Finset.sum_eq_single j (fun k _ hk => by
+      rw [Pi.single_eq_of_ne hk, mul_zero]) (by simp), Pi.single_eq_same, mul_one,
+      rectDiagonal_apply]
+    by_cases hi : i = ⟨j, hj⟩
+    · subst hi
+      simp
+    · have : (i : ℕ) ≠ j := fun e => hi (Fin.ext e)
+      simp [this, hi]
+  refine ⟨?_, ?_⟩
+  · rw [hVc, ← toEuclideanLin_toLp,
+      norm_toEuclideanLin_apply_of_mem_unitaryGroup h.mem_unitaryGroup_right,
+      PiLp.toLp_single, PiLp.norm_single, norm_one]
+  · rw [hVc, toEuclideanLin_toLp, mulVec_mulVec, hAV, ← mulVec_mulVec, hS,
+      ← toEuclideanLin_toLp, norm_toEuclideanLin_apply_of_mem_unitaryGroup h.mem_unitaryGroup_left,
+      PiLp.toLp_single, PiLp.norm_single, Real.norm_eq_abs, abs_of_nonneg (h.nonneg _)]
+
+/-- **Theorem 5.4.1, the closing remark**: "if `v = v_n` is the right singular vector
+corresponding to `σ_min(A)`, then `|r_nn| ≤ √n σ_n`" (`σ_n = σ (n - 1)`, 0-based). -/
+theorem theorem_5_4_1_svd {k : ℕ} {A : Matrix (Fin m) (Fin (k + 1)) ℝ}
+    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ}
+    (h : IsSVD A U σ V) (hkm : k + 1 ≤ m) :
+    ∃ π : Equiv.Perm (Fin (k + 1)), ∀ Q R, IsQR (A.submatrix id π) Q R →
+      |R ⟨k, by omega⟩ (Fin.last k)| ≤ √(k + 1 : ℝ) * σ k := by
+  obtain ⟨h1, h2⟩ := norm_mulVec_col_of_isSVD h (Fin.last k) (by simp; omega)
+  have := theorem_5_4_1 A hkm _ h1
+  rwa [h2, Fin.val_last] at this
+
+end Chan
+
 /-! ### §5.4.5 Updating a rank-revealing factorization -/
 
 section RevealUpdate
@@ -578,6 +650,24 @@ end RevealUpdate
 
 section CompleteOrthogonal
 
+/-- **(5.4.12), the complete orthogonal decomposition**: every `A ∈ ℝ^{m×n}` has orthogonal `U`,
+`V` with `Uᵀ A V = [T₁₁ 0; 0 0]`, `T₁₁` nonsingular of order `r = rank A`
+(`Matrix.IsCompleteOrthogonal`); "the SVD is obviously an example"; and for any such
+decomposition, `r = rank A`, `ran(A) = span{u₁, …, u_r}` and `null(A) = span{v_{r+1}, …, v_n}`. -/
+theorem equation_5_4_12 (A : Matrix (Fin m) (Fin n) ℝ) :
+    (∃ U V, IsCompleteOrthogonal A U V A.rank) ∧
+      (∀ {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ},
+        IsSVD A U σ V → IsCompleteOrthogonal A U V A.rank) ∧
+      ∀ {U : Matrix (Fin m) (Fin m) ℝ} {V : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
+        (h : IsCompleteOrthogonal A U V r), A.rank = r ∧
+        LinearMap.range (toEuclideanLin A) = Submodule.span ℝ (Set.range fun i : Fin r =>
+          (toLp 2 (U.col (Fin.castLE h.le_rows i)) : EuclideanSpace ℝ (Fin m))) ∧
+        LinearMap.ker (toEuclideanLin A) = Submodule.span ℝ (Set.range fun j : Fin (n - r) =>
+          (toLp 2 (V.col (tailIdx h.le_cols j)) : EuclideanSpace ℝ (Fin n))) :=
+  ⟨exists_isCompleteOrthogonal A, isCompleteOrthogonal_of_svd,
+    fun h => ⟨h.rank_eq, h.range_eq_span, h.ker_eq_span⟩⟩
+
+
 /-- The column permutation `Π = Π₁ ⋯ Π_n` encoded by Algorithm 5.4.1's `piv` (step `j` swaps
 columns `j` and `piv j`; an untaken step has `piv j = j`): `A Π` is
 `A.submatrix id (pivotPerm piv)`. -/
@@ -607,6 +697,644 @@ noncomputable def completeOrthogonalDecomposition (hnm : n ≤ m) (A : Matrix (F
   pure (U, pivotMatrix st.piv * Q, st.r)
 
 end CompleteOrthogonal
+
+/-! ### §5.4.2 Algorithm 5.4.1 in exact arithmetic -/
+
+section PivotedQRSpec
+
+/-- The running maximum from `x₀` dominates `x₀` and every listed value, and is `x₀` or one of
+them. -/
+private theorem foldl_max_spec (c : Fin n → ℝ) (l : List (Fin n)) (x₀ : ℝ) :
+    x₀ ≤ (l.map c).foldl max x₀ ∧ (∀ q ∈ l, c q ≤ (l.map c).foldl max x₀) ∧
+      ((l.map c).foldl max x₀ = x₀ ∨ ∃ q ∈ l, c q = (l.map c).foldl max x₀) := by
+  induction l generalizing x₀ with
+  | nil => simp
+  | cons a l ih =>
+    obtain ⟨h1, h2, h3⟩ := ih (max x₀ (c a))
+    simp only [List.map_cons, List.foldl_cons, List.mem_cons, forall_eq_or_imp,
+      exists_eq_or_imp]
+    refine ⟨(le_max_left _ _).trans h1, ⟨(le_max_right _ _).trans h1, h2⟩, ?_⟩
+    rcases h3 with h3 | h3
+    · rcases le_total x₀ (c a) with h | h
+      · rw [max_eq_right h] at h3 ⊢
+        exact Or.inr (Or.inl h3.symm)
+      · rw [max_eq_left h] at h3 ⊢
+        exact Or.inl h3
+    · exact Or.inr (Or.inr h3)
+
+/-- `listMax` is nonnegative and dominates the listed values. -/
+private theorem le_listMax (c : Fin n → ℝ) (l : List (Fin n)) :
+    0 ≤ listMax c l ∧ ∀ q ∈ l, c q ≤ listMax c l :=
+  ⟨(foldl_max_spec c l 0).1, (foldl_max_spec c l 0).2.1⟩
+
+/-- A positive `listMax` is attained on the list. -/
+private theorem exists_eq_listMax {c : Fin n → ℝ} {l : List (Fin n)} (h : 0 < listMax c l) :
+    ∃ q ∈ l, c q = listMax c l := by
+  rcases (foldl_max_spec c l 0).2.2 with h0 | h0
+  · exact absurd h0 (ne_of_gt h)
+  · exact h0
+
+/-- The pivot of Algorithm 5.4.1: when `τ = max_{q ≥ j} c(q) > 0`, the first `k ≥ j` with
+`c(k) = τ` exists; the search returns it. -/
+private theorem pivot_spec {c : Fin n → ℝ} {τ : ℝ} (j : Fin n)
+    (hτ : τ = listMax c ((List.finRange n).filter fun i => (j : ℕ) ≤ i)) (hpos : 0 < τ) :
+    j ≤ (((List.finRange n).filter fun k => j ≤ k ∧ c k = τ).head?).getD j ∧
+      c ((((List.finRange n).filter fun k => j ≤ k ∧ c k = τ).head?).getD j) = τ := by
+  obtain ⟨q, hq, hcq⟩ := exists_eq_listMax (hτ ▸ hpos)
+  rw [← hτ] at hcq
+  have hne : ((List.finRange n).filter fun k => j ≤ k ∧ c k = τ) ≠ [] := by
+    refine List.ne_nil_of_mem (a := q) ?_
+    rw [List.mem_filter] at hq ⊢
+    simp only [decide_eq_true_eq] at hq ⊢
+    exact ⟨hq.1, Fin.le_def.2 hq.2, hcq⟩
+  rw [List.head?_eq_some_head hne, Option.getD_some]
+  have := List.head_mem hne
+  rw [List.mem_filter] at this
+  simpa using this.2
+
+/-- The product of the reflectors of the first `k` steps of Algorithm 5.4.1, read from the
+state (the stored vectors and the recorded `β`). -/
+private noncomputable def pcQ (k : ℕ) (st : PivotedQRState m n) : Matrix (Fin m) (Fin m) ℝ :=
+  householderProduct (((List.finRange n).take k).map fun q => (storedHouseholderVec st.A q, st.β q))
+
+/-- The column permutation of the first `k` steps of Algorithm 5.4.1. -/
+private def pcP (k : ℕ) (st : PivotedQRState m n) : Equiv.Perm (Fin n) :=
+  (((List.finRange n).take k).map fun q => Equiv.swap q (st.piv q)).prod
+
+/-- `C = Q_kᵀ A Π_k`, the matrix the first `k` steps of Algorithm 5.4.1 have produced. -/
+private noncomputable def pcC (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) (st : PivotedQRState m n) :
+    Matrix (Fin m) (Fin n) ℝ :=
+  (pcQ k st)ᵀ * A.submatrix id (pcP k st)
+
+/-- The invariant of Algorithm 5.4.1 after `k` steps: the array holds `C = Q_kᵀ A Π_k` on its
+upper part and its unprocessed columns; the processed columns of `C` vanish below a nonzero
+diagonal; the recorded `β` are `0` or `2/vᵀv` (and `0`, with `piv` the identity, on the steps not
+taken); `c` holds the squared norms of the trailing parts of the unprocessed columns and `τ`
+their maximum. -/
+private def pcInv (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) (st : PivotedQRState m n) : Prop :=
+  st.r = k ∧
+    (∀ (i : Fin m) (q : Fin n), ((i : ℕ) ≤ q ∨ k ≤ (q : ℕ)) → st.A i q = pcC A k st i q) ∧
+    (∀ (i : Fin m) (q : Fin n), (q : ℕ) < k → (q : ℕ) < i → pcC A k st i q = 0) ∧
+    (∀ (i : Fin m) (q : Fin n), (q : ℕ) < k → (i : ℕ) = q → pcC A k st i q ≠ 0) ∧
+    (∀ q : Fin n, (q : ℕ) < k → st.β q = 0 ∨
+      st.β q * (storedHouseholderVec st.A q ⬝ᵥ storedHouseholderVec st.A q) = 2) ∧
+    (∀ q : Fin n, k ≤ (q : ℕ) → st.β q = 0 ∧ st.piv q = q) ∧
+    (∀ q : Fin n, k ≤ (q : ℕ) →
+      st.c q = ∑ i ∈ Finset.univ.filter (fun i : Fin m => k ≤ (i : ℕ)), pcC A k st i q ^ 2) ∧
+    st.τ = listMax st.c ((List.finRange n).filter fun i => k ≤ (i : ℕ))
+
+/-- An orthogonal matrix fixing the coordinates below `j` preserves the squared norm of the
+coordinates from `j` on. -/
+private theorem sum_sq_mulVec_filter {j : ℕ} {P : Matrix (Fin m) (Fin m) ℝ}
+    (hP : P ∈ orthogonalGroup (Fin m) ℝ) (y : Fin m → ℝ)
+    (hfix : ∀ l : Fin m, (l : ℕ) < j → (P *ᵥ y) l = y l) :
+    ∑ l ∈ Finset.univ.filter (fun l : Fin m => j ≤ (l : ℕ)), (P *ᵥ y) l ^ 2 =
+      ∑ l ∈ Finset.univ.filter (fun l : Fin m => j ≤ (l : ℕ)), y l ^ 2 := by
+  have h := congrArg (· ^ 2) (norm_toLp_mulVec_of_mem_orthogonalGroup hP y)
+  simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs] at h
+  rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (fun l : Fin m => j ≤ (l : ℕ)),
+    ← Finset.sum_filter_add_sum_filter_not Finset.univ (fun l : Fin m => j ≤ (l : ℕ))
+      (fun l => y l ^ 2)]
+    at h
+  have hlow : ∑ l ∈ Finset.univ.filter (fun l : Fin m => ¬ j ≤ (l : ℕ)), (P *ᵥ y) l ^ 2 =
+      ∑ l ∈ Finset.univ.filter (fun l : Fin m => ¬ j ≤ (l : ℕ)), y l ^ 2 :=
+    Finset.sum_congr rfl fun l hl => by
+      rw [hfix l (by simpa using (Finset.mem_filter.1 hl).2)]
+  linarith
+
+/-- The first `j + 1` indices are the first `j` and then `j`. -/
+private theorem take_succ_finRange (j : Fin n) :
+    (List.finRange n).take ((j : ℕ) + 1) = (List.finRange n).take j ++ [j] := by
+  rw [List.take_succ_eq_append_getElem (by simp)]
+  simp
+
+/-- The reflectors of one more step. -/
+private theorem pcQ_succ (st st' : PivotedQRState m n) (j : Fin n)
+    (hA : ∀ q : Fin n, (q : ℕ) < j → storedHouseholderVec st'.A q = storedHouseholderVec st.A q)
+    (hβ : ∀ q : Fin n, (q : ℕ) < j → st'.β q = st.β q) :
+    pcQ ((j : ℕ) + 1) st' = pcQ j st * (1 - st'.β j • vecMulVec (storedHouseholderVec st'.A j)
+      (storedHouseholderVec st'.A j)) := by
+  rw [pcQ, pcQ, take_succ_finRange, List.map_append, List.map_cons, List.map_nil,
+    householderProduct_concat]
+  congr 2
+  refine List.map_congr_left fun q hq => ?_
+  have := lt_of_mem_take_finRange hq
+  rw [hA q this, hβ q this]
+
+/-- The column permutation of one more step. -/
+private theorem pcP_succ (st st' : PivotedQRState m n) (j : Fin n)
+    (hpiv : ∀ q : Fin n, (q : ℕ) < j → st'.piv q = st.piv q) :
+    pcP ((j : ℕ) + 1) st' = pcP j st * Equiv.swap j (st'.piv j) := by
+  rw [pcP, pcP, take_succ_finRange, List.map_append, List.prod_append, List.map_cons,
+    List.map_nil, List.prod_cons, List.prod_nil, mul_one]
+  congr 2
+  exact List.map_congr_left fun q hq => by rw [hpiv q (lt_of_mem_take_finRange hq)]
+
+/-- `C` of one more step is the new reflector applied to the column-swapped `C`. -/
+private theorem pcC_succ (A : Matrix (Fin m) (Fin n) ℝ) (st st' : PivotedQRState m n)
+    (j : Fin n) {P : Matrix (Fin m) (Fin m) ℝ} {s : Equiv.Perm (Fin n)}
+    (hQ : pcQ ((j : ℕ) + 1) st' = pcQ j st * P) (hPs : Pᵀ = P)
+    (hPi : pcP ((j : ℕ) + 1) st' = pcP j st * s) :
+    pcC A ((j : ℕ) + 1) st' = P * (pcC A j st).submatrix id s := by
+  rw [pcC, pcC, hQ, hPi, transpose_mul, hPs, Matrix.mul_assoc]
+  congr 1
+
+/-- Splitting off the first index of a tail sum. -/
+private theorem sum_filter_le_succ {j : ℕ} (hj : j < m) (f : Fin m → ℝ) :
+    ∑ l ∈ Finset.univ.filter (fun l : Fin m => j ≤ (l : ℕ)), f l =
+      f ⟨j, hj⟩ + ∑ l ∈ Finset.univ.filter (fun l : Fin m => j + 1 ≤ (l : ℕ)), f l := by
+  have : Finset.univ.filter (fun l : Fin m => j ≤ (l : ℕ)) =
+      insert ⟨j, hj⟩ (Finset.univ.filter (fun l : Fin m => j + 1 ≤ (l : ℕ))) := by
+    ext l
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.ext_iff]
+    omega
+  rw [this, Finset.sum_insert (by simp)]
+
+/-- Entry `(i, q)` of `(I - β v vᵀ) M` is the reflector applied to column `q`. -/
+private theorem one_sub_mul_apply' {p : ℕ} (β : ℝ) (v : Fin m → ℝ)
+    (M : Matrix (Fin m) (Fin p) ℝ) (i : Fin m) (q : Fin p) :
+    ((1 - β • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * M) i q =
+      M i q - β * v i * (v ⬝ᵥ fun r => M r q) := by
+  change ((1 - β • vecMulVec v v) *ᵥ fun r => M r q) i = _
+  rw [one_sub_smul_vecMulVec_mulVec_apply]
+
+/-- One step of Algorithm 5.4.1 taken (`τ > 0`) preserves the invariant. -/
+private theorem pcInv_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
+    (st : PivotedQRState m n) (j : Fin n) (hI : pcInv A j st) (hτ : 0 < st.τ) :
+    pcInv A ((j : ℕ) + 1) (Id.run (pivotedQRStep pure hnm st j)) := by
+  obtain ⟨hr, ha, hb, hdiag, hβd, hβp, hc, hτeq⟩ := hI
+  have hjm : (j : ℕ) < m := lt_of_lt_of_le j.isLt hnm
+  have hne := indexFrom_ne_nil hjm
+  obtain ⟨hkj, hck⟩ := pivot_spec j hτeq hτ
+  set k := (((List.finRange n).filter fun k => j ≤ k ∧ st.c k = st.τ).head?).getD j with hk
+  set s := Equiv.swap j k with hs
+  have hs_lt : ∀ q : Fin n, (q : ℕ) < j → s q = q := fun q hq =>
+    Equiv.swap_apply_of_ne_of_ne (fun e => by rw [e] at hq; omega)
+      (fun e => by rw [e] at hq; exact absurd (Fin.le_def.1 hkj) (by omega))
+  have hs_ge : ∀ q : Fin n, (j : ℕ) ≤ q → (j : ℕ) ≤ s q := by
+    intro q hq
+    rw [hs, Equiv.swap_apply_def]
+    split_ifs
+    · exact Fin.le_def.1 hkj
+    · exact le_rfl
+    · exact hq
+  set C := pcC A j st with hC
+  set C' : Matrix (Fin m) (Fin n) ℝ := C.submatrix id s with hC'
+  have hA₁ : ∀ (i : Fin m) (q : Fin n), ((i : ℕ) ≤ q ∨ (j : ℕ) ≤ q) →
+      st.A.submatrix id s i q = C' i q := by
+    intro i q h
+    simp only [submatrix_apply, id, hC']
+    rcases h with h | h
+    · by_cases hq : (q : ℕ) < j
+      · rw [hs_lt q hq]
+        exact ha i q (Or.inl h)
+      · exact ha i (s q) (Or.inr (hs_ge q (not_lt.1 hq)))
+    · exact ha i (s q) (Or.inr (hs_ge q h))
+  set x : Fin m → ℝ := fun i => st.A.submatrix id s i j with hx
+  have hxC : ∀ i, x i = C' i j := fun i => hA₁ i j (Or.inr le_rfl)
+  obtain ⟨hv1, hvout, hdich, hPO, hmul⟩ := houseOn_spec (nodup_indexFrom m j) hne x
+  rw [head_indexFrom hjm hne] at hv1 hmul
+  simp only [pivotedQRStep, hτ, ↓reduceIte, Id.run_bind, Id.run_pure, List.idRun_foldlM]
+  rw [← hk, ← hs]
+  rw [hx] at hv1 hvout hdich hPO hmul
+  generalize Id.run (houseOn pure (indexFrom m ↑j) fun i => st.A.submatrix id s i j) = vβ
+    at hv1 hvout hdich hPO hmul ⊢
+  obtain ⟨v, b⟩ := vβ
+  dsimp only at hv1 hvout hdich hPO hmul ⊢
+  rw [householderApplyLeft_spec (nodup_indexFrom m j) (nodup_indexFrom n j) hvout b]
+  set P : Matrix (Fin m) (Fin m) ℝ := 1 - b • vecMulVec v v with hP
+  set A₁ := st.A.submatrix id s with hA₁def
+  set A₂ : Matrix (Fin m) (Fin n) ℝ :=
+    of fun i q => if q ∈ indexFrom n j then (P * A₁) i q else A₁ i q with hA₂
+  set A₃ := A₂.updateCol j (fun i => if (j : ℕ) < i then v i else A₂ i j) with hA₃
+  set jr : Fin m := Fin.castLE hnm j with hjr
+  have hjr' : jr = ⟨j, hjm⟩ := Fin.ext rfl
+  set l := (List.finRange n).filter fun i => j < i with hl
+  rw [foldl_update_self_eq (fun i y => y - A₃ jr i * A₃ jr i) l ((List.nodup_finRange n).filter _)]
+  -- facts about the reflector
+  have hvlt : ∀ r : Fin m, (r : ℕ) < j → v r = 0 := fun r hr' =>
+    hvout r (by rw [mem_indexFrom]; omega)
+  have hPsymm : Pᵀ = P := transpose_one_sub_smul_vecMulVec b v
+  have hPfix : ∀ (y : Fin m → ℝ) (r : Fin m), (r : ℕ) < j → (P *ᵥ y) r = y r := fun y r hr' => by
+    rw [hP, one_sub_smul_vecMulVec_mulVec_apply, hvlt r hr', mul_zero, zero_mul, sub_zero]
+  have hPM : ∀ (M : Matrix (Fin m) (Fin n) ℝ) i q, (P * M) i q = (P *ᵥ fun r => M r q) i :=
+    fun _ _ _ => rfl
+  -- the columns of the new array
+  have hcol_lt : ∀ q : Fin n, (q : ℕ) < j → ∀ i, A₃ i q = st.A i q := fun q hq i => by
+    have hqj : q ≠ j := fun e => by rw [e] at hq; omega
+    rw [hA₃, updateCol_ne hqj, hA₂, of_apply, ite_eq_right_iff.2 (fun h => absurd
+      (mem_indexFrom.1 h) (by omega)), hA₁def, submatrix_apply, id, hs_lt q hq]
+  have hsvj : storedHouseholderVec A₃ j = v := funext fun i => by
+    simp only [storedHouseholderVec]
+    by_cases hij : (i : ℕ) < j
+    · rw [ite_eq_left_iff.2 (fun h => absurd hij h), hvlt i hij]
+    · rw [ite_eq_right_iff.2 (fun h => absurd h hij)]
+      by_cases hij' : (i : ℕ) = j
+      · rw [ite_eq_left_iff.2 (fun h => absurd hij' h)]
+        have : i = ⟨j, hjm⟩ := Fin.ext hij'
+        rw [this, hv1]
+      · rw [ite_eq_right_iff.2 (fun h => absurd h hij'), hA₃, updateCol_self,
+          ite_eq_left_iff.2 (fun h => absurd (by omega) h)]
+  -- the reflector on the columns of `C'`
+  have hPcol : ∀ q : Fin n, (q : ℕ) < j → ∀ i, (P * C') i q = C' i q := fun q hq i => by
+    have hdot : (v ⬝ᵥ fun r => C' r q) = 0 := Finset.sum_eq_zero fun r _ => by
+      change v r * C' r q = 0
+      by_cases hr' : (r : ℕ) < j
+      · rw [hvlt r hr', zero_mul]
+      · rw [hC', submatrix_apply, id, hs_lt q hq, hb r q hq (by omega), mul_zero]
+    rw [hPM, hP, one_sub_smul_vecMulVec_mulVec_apply, hdot, mul_zero, sub_zero]
+  have hPA : ∀ (q : Fin n), (j : ℕ) ≤ q → ∀ i, (P * A₁) i q = (P * C') i q := fun q hq i => by
+    rw [hPM, hPM]
+    congr 2
+    funext r
+    exact hA₁ r q (Or.inr hq)
+  have hA₃C : ∀ (i : Fin m) (q : Fin n), ((i : ℕ) ≤ q ∨ (j : ℕ) + 1 ≤ q) →
+      A₃ i q = (P * C') i q := by
+    intro i q h
+    rcases lt_trichotomy (q : ℕ) j with hq | hq | hq
+    · have hiq : (i : ℕ) ≤ q := h.resolve_right (by omega)
+      rw [hcol_lt q hq, ha i q (Or.inl hiq), hPcol q hq, hC', submatrix_apply, id, hs_lt q hq]
+    · have hq' : q = j := Fin.ext hq
+      subst hq'
+      have hiq : ¬ (q : ℕ) < i := by omega
+      rw [hA₃, updateCol_self, ite_eq_right_iff.2 (fun h => absurd h hiq), hA₂, of_apply,
+        ite_eq_left_iff.2 (fun h => absurd (mem_indexFrom.2 le_rfl) h), hPA q le_rfl]
+    · have hqj : q ≠ j := fun e => by rw [e] at hq; omega
+      rw [hA₃, updateCol_ne hqj, hA₂, of_apply,
+        ite_eq_left_iff.2 (fun h => absurd (mem_indexFrom.2 (by omega)) h), hPA q (by omega)]
+  have hPx : ∀ i, (P * C') i j = (P *ᵥ fun r => A₁ r j) i := fun i => by
+    rw [hPM]
+    congr 2
+    funext r
+    exact (hA₁ r j (Or.inr le_rfl)).symm
+  have hne_j : ∀ q : Fin n, (q : ℕ) < j → q ≠ j := fun q hq e => by rw [e] at hq; omega
+  have key : ∀ st' : PivotedQRState m n, st'.A = A₃ → st'.β = Function.update st.β j b →
+      st'.piv = Function.update st.piv j k → st'.r = st.r + 1 →
+      (∀ q : Fin n, (j : ℕ) + 1 ≤ q → st'.c q = st.c (s q) - A₃ jr q * A₃ jr q) →
+      st'.τ = listMax st'.c l → pcInv A ((j : ℕ) + 1) st' := by
+    intro st' hA' hβ' hpiv' hr' hc' hτ'
+    have hsv : ∀ q : Fin n, (q : ℕ) < j →
+        storedHouseholderVec st'.A q = storedHouseholderVec st.A q := fun q hq => by
+      rw [hA']
+      exact funext fun i => by simp only [storedHouseholderVec, hcol_lt q hq]
+    have hQ' := pcQ_succ st st' j hsv (fun q hq => by rw [hβ', Function.update_of_ne (hne_j q hq)])
+    rw [hA', hsvj, hβ', Function.update_self] at hQ'
+    have hPi' := pcP_succ st st' j (fun q hq => by rw [hpiv', Function.update_of_ne (hne_j q hq)])
+    rw [hpiv', Function.update_self] at hPi'
+    have hC'' : pcC A ((j : ℕ) + 1) st' = P * C' := pcC_succ A st st' j hQ' hPsymm hPi'
+    refine ⟨by rw [hr', hr], fun i q h => ?_, fun i q hq hqi => ?_, fun i q hq hiq => ?_,
+      fun q hq => ?_, fun q hq => ?_, fun q hq => ?_, ?_⟩
+    · rw [hA', hC'']
+      exact hA₃C i q h
+    · rw [hC'']
+      rcases Nat.lt_succ_iff_lt_or_eq.1 hq with hq | hq
+      · rw [hPcol q hq, hC', submatrix_apply, id, hs_lt q hq]
+        exact hb i q hq hqi
+      · have hq' : q = j := Fin.ext hq
+        subst hq'
+        rw [hPx, hmul]
+        have hi1 : i ≠ ⟨q, hjm⟩ := fun e => by rw [e] at hqi; exact lt_irrefl _ hqi
+        have hi2 : i ∈ indexFrom m q := by rw [mem_indexFrom]; omega
+        simp [hi1, hi2]
+    · rw [hC'']
+      rcases Nat.lt_succ_iff_lt_or_eq.1 hq with hq | hq
+      · rw [hPcol q hq, hC', submatrix_apply, id, hs_lt q hq]
+        exact hdiag i q hq hiq
+      · have hq' : q = j := Fin.ext hq
+        subst hq'
+        have hi : i = ⟨q, hjm⟩ := Fin.ext hiq
+        rw [hPx, hmul]
+        simp only [hi, ↓reduceIte, Ne, norm_eq_zero]
+        intro h0
+        -- the pivot column has a nonzero trailing part
+        have hpos : 0 < st.c k := hck ▸ hτ
+        rw [hc k hkj] at hpos
+        obtain ⟨r, hr, hr0⟩ := Finset.exists_ne_zero_of_sum_ne_zero hpos.ne'
+        have hrq : r ∈ indexFrom m q := mem_indexFrom.2 (Finset.mem_filter.1 hr).2
+        have := congrArg (fun w : EuclideanSpace ℝ {i // i ∈ indexFrom m q} => w ⟨r, hrq⟩) h0
+        simp only [PiLp.zero_apply] at this
+        apply hr0
+        rw [hA₁ r q (Or.inr le_rfl), hC', submatrix_apply, id, hs, Equiv.swap_apply_left] at this
+        rw [this]
+        ring
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hq with hq | hq
+      · rw [hβ', Function.update_of_ne (hne_j q hq), hsv q hq]
+        exact hβd q hq
+      · have hq' : q = j := Fin.ext hq
+        subst hq'
+        rw [hβ', Function.update_self, hA', hsvj]
+        exact hdich
+    · have hqj : q ≠ j := fun e => by rw [e] at hq; omega
+      rw [hβ', hpiv', Function.update_of_ne hqj, Function.update_of_ne hqj]
+      exact hβp q (by omega)
+    · rw [hc' q hq, hC'']
+      have hjq : (j : ℕ) ≤ s q := hs_ge q (by omega)
+      rw [hc (s q) hjq]
+      have hcolq : ∀ r, C r (s q) = C' r q := fun r => rfl
+      simp only [hcolq]
+      have hsum := sum_sq_mulVec_filter hPO (fun r => C' r q) (hPfix _)
+      simp only [← hPM] at hsum
+      rw [← hsum, sum_filter_le_succ hjm, hA₃C jr q (Or.inl (by simp [hjr]; omega)), hjr']
+      ring
+    · rw [hτ']
+      congr 1
+  refine key _ rfl rfl rfl rfl (fun q hq => ?_) rfl
+  have hql : q ∈ l := by
+    rw [hl, List.mem_filter]
+    simp only [List.mem_finRange, true_and, decide_eq_true_eq, Fin.lt_def]
+    omega
+  simp only [hql, ↓reduceIte, Function.comp_apply]
+
+/-- A step not taken (`τ ≤ 0`) leaves the state unchanged. -/
+private theorem pivotedQRStep_of_not_pos (hnm : n ≤ m) (st : PivotedQRState m n) (j : Fin n)
+    (h : ¬ 0 < st.τ) : Id.run (pivotedQRStep pure hnm st j) = st := by
+  simp only [pivotedQRStep, h, ↓reduceIte, Id.run_pure]
+
+/-- The initial state of Algorithm 5.4.1: `c(j)` the squared column norms, `τ` their maximum. -/
+private noncomputable def pcInit (A : Matrix (Fin m) (Fin n) ℝ) : PivotedQRState m n :=
+  ⟨A, 0, id, fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q), 0,
+    listMax (fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q)) (List.finRange n)⟩
+
+/-- The invariant holds initially. -/
+private theorem pcInv_init (A : Matrix (Fin m) (Fin n) ℝ) : pcInv A 0 (pcInit A) := by
+  have hC : pcC A 0 (pcInit A) = A := by
+    simp [pcC, pcQ, pcP]
+  refine ⟨rfl, fun i q _ => by rw [hC]; rfl, fun i q hq => absurd hq (Nat.not_lt_zero _),
+    fun i q hq => absurd hq (Nat.not_lt_zero _), fun q hq => absurd hq (Nat.not_lt_zero _),
+    fun q _ => ⟨rfl, rfl⟩, fun q _ => ?_, ?_⟩
+  · rw [hC, Finset.filter_true_of_mem (fun i _ => Nat.zero_le _)]
+    simp [pcInit, dotProduct, sq]
+  · simp only [pcInit, Nat.zero_le, decide_true, List.filter_true]
+
+/-- The run of Algorithm 5.4.1 at `Id` is the fold of its steps from `pcInit A`. -/
+private theorem algorithm_5_4_1_run (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run (algorithm_5_4_1 pure hnm A) =
+      (List.finRange n).foldl (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A) := by
+  have hc0 : Id.run ((List.finRange n).foldlM (fun (c : Fin n → ℝ) (j : Fin n) => do
+      let d ← Chapter01.algorithm_1_1_1 pure (fun i => A i j) (fun i => A i j)
+      pure (Function.update c j d)) 0) = fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q) := by
+    rw [List.idRun_foldlM]
+    simp only [Id.run_bind, Chapter01.algorithm_1_1_1_spec, Id.run_pure]
+    refine (foldl_update_eq (fun j => (fun i => A i j) ⬝ᵥ (fun i => A i j)) _ _).trans ?_
+    funext q
+    simp only [List.mem_finRange, ↓reduceIte]
+  unfold algorithm_5_4_1
+  rw [Id.run_bind, hc0, List.idRun_foldlM]
+  rfl
+
+/-- The invariant along the fold: after the first `j` indices, `k ≤ j` steps have been taken,
+and if fewer than `j`, the loop has stopped (`τ ≤ 0`). -/
+private theorem pcInv_fold (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    ∀ j ≤ n, ∃ k ≤ j, pcInv A k (((List.finRange n).take j).foldl
+        (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A)) ∧
+      (k < j → (((List.finRange n).take j).foldl
+        (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A)).τ ≤ 0) := by
+  intro j
+  induction j with
+  | zero => intro _; exact ⟨0, le_rfl, pcInv_init A, fun h => absurd h (lt_irrefl _)⟩
+  | succ j ih =>
+    intro hj
+    obtain ⟨k, hkj, hI, hstop⟩ := ih (by omega)
+    have ht := take_succ_finRange (n := n) ⟨j, by omega⟩
+    simp only at ht
+    rw [ht, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    set st := ((List.finRange n).take j).foldl
+      (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A)
+    by_cases hτ : 0 < st.τ
+    · have hk : k = j := by
+        by_contra hne
+        exact absurd (hstop (by omega)) (not_le.2 hτ)
+      subst hk
+      exact ⟨k + 1, le_rfl, pcInv_step hnm A st ⟨k, by omega⟩ hI hτ,
+        fun h => absurd h (lt_irrefl _)⟩
+    · rw [pivotedQRStep_of_not_pos hnm st _ hτ]
+      exact ⟨k, by omega, hI, fun _ => not_lt.1 hτ⟩
+
+/-- The members of `(List.finRange n).drop r` are the indices from `r` on. -/
+private theorem le_of_mem_drop_finRange {r : ℕ} {q : Fin n}
+    (hq : q ∈ (List.finRange n).drop r) : r ≤ (q : ℕ) := by
+  obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hq
+  rw [List.getElem_drop, List.getElem_finRange]
+  change r ≤ r + i
+  omega
+
+/-- A right fold of products from `p₀` is `p₀` times the product. -/
+private theorem foldl_mul_eq_mul_prod {α : Type*} [Monoid α] {ι : Type*} (g : ι → α)
+    (l : List ι) (p₀ : α) : l.foldl (fun p q => p * g q) p₀ = p₀ * (l.map g).prod := by
+  induction l generalizing p₀ with
+  | nil => simp
+  | cons a l ih => rw [List.foldl_cons, ih, List.map_cons, List.prod_cons, mul_assoc]
+
+/-- **Algorithm 5.4.1 computes the factorization (5.4.6)** (exact arithmetic, `m ≥ n`): with
+`(A', β, piv, r)` the output, `Q = H₁ ⋯ H_n` the factored form of the stored vectors and the
+returned `β` (the steps not taken have `β_j = 0`, `H_j = I`), `Π` the product of the
+transpositions `(j, piv j)` and `R` the upper triangle of `A'`, `A Π = QR` is a rank-revealing
+QR factorization: the rows of `R` from the `r`-th on vanish and `R₁₁` is nonsingular; hence
+`r = rank A`. Every `β_j` is `0` or `2/v⁽ʲ⁾ᵀv⁽ʲ⁾`. The invariant (5.4.7): after `k` steps the array
+holds `R⁽ᵏ⁾ = H_k ⋯ H₁ A Π₁ ⋯ Π_k` with `R₁₁⁽ᵏ⁾` upper triangular and nonsingular, and `c(j)`
+the squared norms of the columns of `R₂₂⁽ᵏ⁾` (`norm_sq_tail_eq`); the loop stops exactly when
+`R₂₂⁽ᵏ⁾ = 0`. -/
+theorem algorithm_5_4_1_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    IsPivotedQR.IsRankRevealing A
+        (factoredQ (Id.run (algorithm_5_4_1 pure hnm A)).β (Id.run (algorithm_5_4_1 pure hnm A)).A)
+        (upperPart (Id.run (algorithm_5_4_1 pure hnm A)).A)
+        (pivotPerm (Id.run (algorithm_5_4_1 pure hnm A)).piv)
+        (Id.run (algorithm_5_4_1 pure hnm A)).r ∧
+      (Id.run (algorithm_5_4_1 pure hnm A)).r = A.rank ∧
+      ∀ q, (Id.run (algorithm_5_4_1 pure hnm A)).β q = 0 ∨
+        (Id.run (algorithm_5_4_1 pure hnm A)).β q *
+          (storedHouseholderVec (Id.run (algorithm_5_4_1 pure hnm A)).A q ⬝ᵥ
+            storedHouseholderVec (Id.run (algorithm_5_4_1 pure hnm A)).A q) = 2 := by
+  obtain ⟨r, hrn, hI, hstop⟩ := pcInv_fold hnm A n le_rfl
+  rw [List.take_of_length_le (by simp), ← algorithm_5_4_1_run] at hI hstop
+  generalize Id.run (algorithm_5_4_1 pure hnm A) = out at hI hstop ⊢
+  obtain ⟨hr, ha, hb, hdiag, hβd, hβp, hc, hτ⟩ := hI
+  subst hr
+  set C := pcC A out.r out with hC
+  -- the trailing block vanishes
+  have htrail : ∀ (i : Fin m) (q : Fin n), out.r ≤ (i : ℕ) → out.r ≤ (q : ℕ) → C i q = 0 := by
+    intro i q hi hq
+    have hτ0 := hstop (lt_of_le_of_lt hq q.isLt)
+    have hcq : out.c q ≤ 0 := ((le_listMax out.c _).2 q (by
+      rw [List.mem_filter]
+      simpa using hq)).trans (hτ ▸ hτ0)
+    rw [hc q hq] at hcq
+    have h0 := (Finset.sum_eq_zero_iff_of_nonneg (fun l _ => sq_nonneg (C l q))).1
+      (le_antisymm hcq (Finset.sum_nonneg fun l _ => sq_nonneg _)) i (by simpa using hi)
+    exact pow_eq_zero_iff two_ne_zero |>.1 h0
+  have hdichAll : ∀ q, out.β q = 0 ∨
+      out.β q * (storedHouseholderVec out.A q ⬝ᵥ storedHouseholderVec out.A q) = 2 := fun q => by
+    by_cases hq : (q : ℕ) < out.r
+    · exact hβd q hq
+    · exact Or.inl (hβp q (not_lt.1 hq)).1
+  -- the reflectors and the permutation of the steps taken are those of the whole run
+  have hQ : pcQ out.r out = factoredQ out.β out.A := by
+    have e : pcQ out.r out = (((List.finRange n).take out.r).map fun q =>
+        1 - out.β q • vecMulVec (storedHouseholderVec out.A q)
+          (storedHouseholderVec out.A q)).prod := by
+      simp only [pcQ, householderProduct, List.map_map]
+      rfl
+    have hdrop : (((List.finRange n).drop out.r).map fun q =>
+        1 - out.β q • vecMulVec (storedHouseholderVec out.A q)
+          (storedHouseholderVec out.A q)).prod = 1 := by
+      refine List.prod_eq_one fun M hM => ?_
+      obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hM
+      simp [(hβp q (le_of_mem_drop_finRange hq)).1]
+    rw [e, factoredQ_eq_prod]
+    conv_rhs => rw [← List.take_append_drop out.r (List.finRange n), List.map_append,
+      List.prod_append]
+    rw [hdrop, mul_one]
+  have hP : pcP out.r out = pivotPerm out.piv := by
+    have hdrop : (((List.finRange n).drop out.r).map fun q =>
+        Equiv.swap q (out.piv q)).prod = 1 := by
+      refine List.prod_eq_one fun M hM => ?_
+      obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hM
+      rw [(hβp q (le_of_mem_drop_finRange hq)).2, Equiv.swap_self, ← Equiv.Perm.one_def]
+    rw [pcP, pivotPerm, foldl_mul_eq_mul_prod, one_mul]
+    conv_rhs => rw [← List.take_append_drop out.r (List.finRange n), List.map_append,
+      List.prod_append]
+    rw [hdrop, mul_one]
+  have hR : upperPart out.A = C := by
+    ext i q
+    simp only [upperPart, of_apply]
+    split_ifs with h
+    · exact ha i q (Or.inl h)
+    · by_cases hq : (q : ℕ) < out.r
+      · exact (hb i q hq (by omega)).symm
+      · exact (htrail i q (by omega) (by omega)).symm
+  have hO : factoredQ out.β out.A ∈ orthogonalGroup (Fin m) ℝ := by
+    refine householderProduct_mem_orthogonalGroup fun p hp => ?_
+    obtain ⟨k, rfl⟩ := List.mem_ofFn.1 hp
+    exact hdichAll k
+  have hup : ∀ (i : Fin m) (q : Fin n), (q : ℕ) < i → upperPart out.A i q = 0 :=
+    fun i q hqi => by
+      simp only [upperPart, of_apply]
+      rw [ite_eq_right_iff]
+      intro h
+      omega
+  have hRR : IsPivotedQR.IsRankRevealing A (factoredQ out.β out.A) (upperPart out.A)
+      (pivotPerm out.piv) out.r := by
+    refine ⟨⟨⟨hO, hup, ?_⟩⟩, hrn.trans hnm, hrn, fun i q hi => ?_, ?_⟩
+    · rw [hR, hC, pcC, hQ, hP, mul_transpose_mul_of_mem_orthogonalGroup hO]
+    · simp only [upperPart, of_apply]
+      split_ifs with h
+      · rw [ha i q (Or.inl h)]
+        exact htrail i q hi (by omega)
+      · rfl
+    · have hup' : ((upperPart out.A).submatrix (Fin.castLE (hrn.trans hnm))
+          (Fin.castLE hrn)).IsUpperTriangular := fun i q hqi =>
+        hup (Fin.castLE _ i) (Fin.castLE _ q) hqi
+      refine (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hup').2 fun i => ?_
+      rw [submatrix_apply, hR]
+      exact hdiag _ _ (by simp) (by simp)
+  exact ⟨hRR, hRR.rank_eq.symm, hdichAll⟩
+
+end PivotedQRSpec
+
+/-! ### §5.4.7 The complete orthogonal decomposition in exact arithmetic -/
+
+section CompleteOrthogonalSpec
+
+/-- `A Π = A.submatrix id (pivotPerm piv)` for the permutation matrix `Π = pivotMatrix piv`. -/
+theorem mul_pivotMatrix {p : ℕ} (A : Matrix (Fin p) (Fin n) ℝ) (piv : Fin n → Fin n) :
+    A * pivotMatrix piv = A.submatrix id (pivotPerm piv) := by
+  rw [pivotMatrix, PEquiv.mul_toMatrix_toPEquiv, Equiv.symm_symm]
+
+/-- The permutation matrix `Π` of Algorithm 5.4.1 is orthogonal. -/
+theorem pivotMatrix_mem_orthogonalGroup (piv : Fin n → Fin n) :
+    pivotMatrix piv ∈ orthogonalGroup (Fin n) ℝ := by
+  have h : pivotMatrix piv = (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (pivotPerm piv) := by
+    rw [pivotMatrix, ← Matrix.one_mul (Equiv.toPEquiv _).toMatrix, PEquiv.mul_toMatrix_toPEquiv,
+      Equiv.symm_symm]
+  rw [h]
+  exact one_submatrix_mem_unitaryGroup (𝕜 := ℝ) (pivotPerm piv)
+
+/-- **§5.4.7, the two-step complete orthogonal decomposition is one** (exact arithmetic): the
+output `(U, V, r)` satisfies `Uᵀ A V = [T₁₁ 0; 0 0]` with `U`, `V` orthogonal and `T₁₁`
+nonsingular of order `r = rank A` (`Matrix.IsCompleteOrthogonal`). From `algorithm_5_4_1_spec`
+(`Uᵀ A Π = [R₁₁ R₁₂; 0 0]`), `algorithm_5_2_1_spec` on `[R₁₁ R₁₂]ᵀ = Q [S₁; 0]` (full column rank
+since `R₁₁` is nonsingular, so `S₁` is nonsingular) and backward accumulation
+(`backwardAccumulation_spec`): `Uᵀ A (Π Q) = [S₁ᵀ 0; 0 0]`. -/
+theorem completeOrthogonalDecomposition_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    IsCompleteOrthogonal A (Id.run (completeOrthogonalDecomposition pure hnm A)).1
+        (Id.run (completeOrthogonalDecomposition pure hnm A)).2.1
+        (Id.run (completeOrthogonalDecomposition pure hnm A)).2.2 ∧
+      (Id.run (completeOrthogonalDecomposition pure hnm A)).2.2 = A.rank := by
+  obtain ⟨h1, hrank, -⟩ := algorithm_5_4_1_spec hnm A
+  unfold completeOrthogonalDecomposition
+  simp only [Id.run_bind, Id.run_pure, backwardAccumulation_spec]
+  generalize Id.run (algorithm_5_4_1 pure hnm A) = out at h1 hrank ⊢
+  set T : Matrix (Fin n) (Fin out.r) ℝ := fun i k =>
+    if hk : (k : ℕ) < m then upperPart out.A ⟨k, hk⟩ i else 0 with hT
+  have hrn : out.r ≤ n := h1.le_cols
+  obtain ⟨h2, -⟩ := algorithm_5_2_1_spec hrn T
+  generalize Id.run (algorithm_5_2_1 pure T) = QR at h2 ⊢
+  change IsCompleteOrthogonal A (factoredQ out.β out.A)
+    (pivotMatrix out.piv * factoredQ QR.2 QR.1) out.r ∧ out.r = A.rank
+  set Q₁ := factoredQ out.β out.A with hQ₁
+  set Q₂ := factoredQ QR.2 QR.1 with hQ₂
+  set R := upperPart out.A with hR
+  set S := upperPart QR.1 with hS
+  have hQ₁O : Q₁ ∈ orthogonalGroup (Fin m) ℝ := h1.isQR.mem_unitaryGroup
+  have hQ₂O : Q₂ ∈ orthogonalGroup (Fin n) ℝ := h2.mem_unitaryGroup
+  -- `Q₁ᵀ A Π = R` and `Q₂ᵀ T = S`
+  have hRA : Q₁ᵀ * A.submatrix id (pivotPerm out.piv) = R := by
+    rw [← h1.isQR.mul_eq, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hQ₁O,
+      Matrix.one_mul]
+  have hST : Q₂ᵀ * T = S := by
+    rw [← h2.mul_eq, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hQ₂O, Matrix.one_mul]
+  have hTR : ∀ i (k : Fin out.r), T i k = R (Fin.castLE h1.le_rows k) i := fun i k => by
+    simp only [hT]
+    split_ifs with hk
+    · rfl
+    · exact absurd (lt_of_lt_of_le k.isLt h1.le_rows) hk
+  -- the entries of `Q₁ᵀ A V`
+  have hentry : ∀ (i : Fin m) (j : Fin n), (Q₁ᵀ * A * (pivotMatrix out.piv * Q₂)) i j =
+      if hi : (i : ℕ) < out.r then S j ⟨i, hi⟩ else 0 := by
+    intro i j
+    rw [← Matrix.mul_assoc, Matrix.mul_assoc Q₁ᵀ, mul_pivotMatrix, hRA]
+    split_ifs with hi
+    · rw [← hST, mul_apply, mul_apply]
+      refine Finset.sum_congr rfl fun l _ => ?_
+      rw [transpose_apply, hTR, mul_comm]
+      rfl
+    · rw [mul_apply]
+      exact Finset.sum_eq_zero fun l _ => by rw [h1.apply_eq_zero i l (by omega), zero_mul]
+  -- `T` has independent columns
+  have hTli : LinearIndependent ℝ Tᵀ := by
+    refine mulVec_injective_iff.1 fun g g' hgg => ?_
+    have hB := h1.isUnit_block
+    rw [← sub_eq_zero]
+    have hd : T *ᵥ (g - g') = 0 := by rw [mulVec_sub, hgg, sub_self]
+    have hB' : (R.submatrix (Fin.castLE h1.le_rows) (Fin.castLE h1.le_cols))ᵀ *ᵥ (g - g') = 0 := by
+      funext i
+      have := congrFun hd (Fin.castLE hrn i)
+      simp only [mulVec, dotProduct, Pi.zero_apply] at this ⊢
+      rw [← this]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [transpose_apply, submatrix_apply, hTR]
+    have hBt : IsUnit (R.submatrix (Fin.castLE h1.le_rows) (Fin.castLE h1.le_cols))ᵀ :=
+      (isUnit_transpose _).2 hB
+    exact (mulVec_injective_iff_isUnit.2 hBt) (by rw [hB', mulVec_zero])
+  have hS1 := h2.isUnit_firstRows_of_linearIndependent hrn hTli
+  refine ⟨⟨by simpa using hQ₁O, mul_mem (pivotMatrix_mem_orthogonalGroup out.piv) hQ₂O,
+    h1.le_rows, hrn, fun i j hij => ?_, ?_⟩, hrank⟩
+  · rw [conjTranspose_eq_transpose_of_trivial, hentry]
+    split_ifs with hi
+    · exact h2.apply_eq_zero j ⟨i, hi⟩ (by simp only; omega)
+    · rfl
+  · rw [conjTranspose_eq_transpose_of_trivial]
+    have e : (Q₁ᵀ * A * (pivotMatrix out.piv * Q₂)).submatrix (Fin.castLE h1.le_rows)
+        (Fin.castLE hrn) = (firstRows S hrn)ᵀ := by
+      ext i j
+      rw [submatrix_apply, hentry]
+      split_ifs with hi
+      · rfl
+      · exact absurd (by simp) hi
+    rw [e]
+    exact (isUnit_transpose _).2 hS1
+
+end CompleteOrthogonalSpec
 
 /-! ### §5.4.8 Bidiagonalization -/
 

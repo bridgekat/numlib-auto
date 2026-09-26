@@ -1,6 +1,8 @@
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.LeastSquares
+import NumlibSurface.GolubVanLoan.Chapter02.Section06
 import NumlibSurface.GolubVanLoan.Chapter05.Section01
 
 /-!
@@ -109,6 +111,26 @@ theorem theorem_5_2_3 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent �
   have := h.isCholesky hd
   rwa [conjTranspose_eq_transpose_of_trivial] at this
 
+/-- **(5.2.4), the 2-norm condition number of a rectangular matrix**: "for rectangular matrices `A`
+with full column rank we continue with this definition: `κ₂(A) = σ_max(A)/σ_min(A)`". Defined as
+the backbone's `‖A‖₂ ‖A⁺‖₂` (`Matrix.pinvCondNumberLp 2 A`), which is `σ_max/σ_min` for full column
+rank (`equation_5_2_4`) and the `κ₂` of §2.6.2 for a nonsingular square `A` (`kappa2_eq_kappa`). -/
+noncomputable def kappa2 (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
+  pinvCondNumberLp 2 A
+
+/-- **(5.2.4)**: for `A` of full column rank (`n ≥ 1`), `κ₂(A) = σ_max(A)/σ_min(A)`, the extreme
+singular values read over the columns (`⨆ i, σ_i` and `⨅ i, σ_i`). -/
+theorem equation_5_2_4 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ) :
+    kappa2 A = (⨆ i, A.singularValues i) / ⨅ i, A.singularValues i :=
+  pinvCondNumberLp_two_eq_div_singularValues hA
+
+/-- For a nonsingular square `A`, the `κ₂(A)` of (5.2.4) is that of §2.6.2: the backbone's
+`condNumberLp 2 A = ‖A‖₂ ‖A⁻¹‖₂`, and chapter 2's `kappa 2 A` is its (finite) value. -/
+theorem kappa2_eq_kappa {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
+    kappa2 A = condNumberLp 2 A ∧ Chapter02.kappa 2 A = ENNReal.ofReal (kappa2 A) := by
+  have h : kappa2 A = condNumberLp 2 A := pinvCondNumberLp_eq_condNumberLp 2 hA
+  exact ⟨h, by rw [h, Chapter02.kappa_of_isUnit 2 hA]⟩
+
 end Existence
 
 /-! ### §5.2.2 Householder QR -/
@@ -209,7 +231,7 @@ theorem head_indexFrom {j : ℕ} (hj : j < m) (h : indexFrom m j ≠ []) :
   exact le_antisymm h1 (Fin.mk_le_of_le_val h2)
 
 /-- An element of the first `j` entries of `List.finRange n` is below `j`. -/
-private theorem lt_of_mem_take_finRange {j : ℕ} {k : Fin n}
+theorem lt_of_mem_take_finRange {j : ℕ} {k : Fin n}
     (hk : k ∈ (List.finRange n).take j) : (k : ℕ) < j := by
   obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hk
   simp only [List.length_take, List.length_finRange] at hi

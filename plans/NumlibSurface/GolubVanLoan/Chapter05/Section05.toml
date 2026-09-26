@@ -6,13 +6,6 @@ source = 'Golub–Van Loan, Matrix Computations, §5.5.1'
 
 [[node]]
 id = "minNorm_of_completeOrthogonal"
-kind = "theorem"
-desc = '''§5.5.1: if `Qᵀ A Z = [T₁₁ 0; 0 0]` is a complete orthogonal decomposition (`r = rank A`) and
-`Qᵀb = [c; d]`, then `‖Ax - b‖² = ‖T₁₁ w - c‖² + ‖d‖²` (`Zᵀx = [w; y]`) and
-`x_LS = Z [T₁₁⁻¹ c; 0]`. Backbone `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution`. ★
-
-Blocked: dec2's `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution` is not on this branch (s05, base 55f7ad05). A restatement once it lands.'''
-deps = ["Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution", "equation_5_4_12"]
 source = 'Golub–Van Loan, Matrix Computations, §5.5.1'
 
 [[node]]
@@ -57,80 +50,26 @@ source = 'Golub–Van Loan, Matrix Computations, §5.5.4'
 
 [[node]]
 id = "basicSolution"
-kind = "theorem"
-desc = '''§5.5.5: if `A Π = Q R` with `R = [R₁₁ R₁₂; 0 0]` from QR with column pivoting (`r = rank A`,
-`R₁₁` nonsingular) and `Qᵀ b = [c; d]`, then `‖Ax - b‖² = ‖R₁₁ y - (c - R₁₂ z)‖² + ‖d‖²`
-(`Πᵀx = [y; z]`), every minimizer is `Π [R₁₁⁻¹(c - R₁₂ z); z]`, and the basic solution
-`x_B = Π [R₁₁⁻¹ c; 0]` is a minimizer with at most `r` nonzero entries. The hypotheses are the bundle
-`Matrix.IsPivotedQR.IsRankRevealing A Q R Π r` (rows `≥ r` of `R` vanish, `R₁₁` invertible) at `𝕜 = ℝ`.
-Backbone `Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff`. ★
-
-Blocked: dec2's `Matrix.IsPivotedQR.IsRankRevealing` (and `isLeastSquaresSolution_iff`) and `equation_5_4_6` are not on this branch (s05, base 55f7ad05). A restatement once they land.'''
-deps = ["Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff", "Matrix.IsPivotedQR.IsRankRevealing", "equation_5_4_6"]
 source = 'Golub–Van Loan, Matrix Computations, §5.5.5'
 
 [[node]]
 id = "equation_5_5_4"
-kind = "theorem"
-desc = '''(5.5.4): `‖x_LS‖₂ = min_{z ∈ ℝ^{n-r}} ‖x_B - Π [R₁₁⁻¹R₁₂; -I_{n-r}] z‖₂` (printed `ℝ^{n-2}`); in
-particular `x_B` is the minimal-norm solution iff `R₁₂ = 0` (the preceding claim, a second
-declaration). Backbone `Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf`, under the bundle
-`IsPivotedQR.IsRankRevealing A Q R Π r` as in `basicSolution`. ★
-
-Blocked: dec2's `Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf` and `basicSolution` (s05, base 55f7ad05).'''
-deps = ["Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf", "basicSolution"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.4)'
 
 [[node]]
 id = "equation_5_5_5"
-kind = "theorem"
-desc = '''(5.5.5) (Golub–Pereyra): `1 ≤ ‖x_B‖₂/‖x_LS‖₂ ≤ √(1 + ‖R₁₁⁻¹R₁₂‖₂²)` (for `x_LS ≠ 0`). Backbone
-`Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le`, under the bundle `IsPivotedQR.IsRankRevealing A Q R Π r`. ★
-
-Blocked: dec2's `Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le` and `equation_5_5_4` (s05, base 55f7ad05).'''
-deps = ["Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le", "equation_5_5_4"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.5.5)'
 
 [[node]]
 id = "theorem_5_5_2"
-kind = "theorem"
-desc = '''Theorem 5.5.2: with `Uᵀ A V = Σ` an SVD, `P` a permutation, `A P = [B₁ B₂]` (`B₁ ∈ ℝ^{m×r̃}`,
-`1 ≤ r̃ ≤ rank A`), `PᵀV = [Ṽ₁₁ Ṽ₁₂; Ṽ₂₁ Ṽ₂₂]` ((5.5.6)) and `Ṽ₁₁` nonsingular:
-`σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r̃(B₁) ≤ σ_r̃(A)`, stated with the sorted reading (the book's 1-based `σ_r̃` is
-`sortedSingularValues (r̃ - 1)`): `A.sortedSingularValues (r̃ - 1) / ‖Ṽ₁₁⁻¹‖₂ ≤ B₁.sortedSingularValues (r̃ - 1)`
-and `B₁.sortedSingularValues (r̃ - 1) ≤ A.sortedSingularValues (r̃ - 1)`. Lower bound: backbone
-`Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` (over `RCLike`, at `ℝ`; multiplicative form
-`σ_{r̃-1}(A) ≤ ‖Ṽ₁₁⁻¹‖₂ * σ_{r̃-1}(B₁)`, divided by `‖Ṽ₁₁⁻¹‖₂ > 0`). Upper bound:
-`Matrix.sortedSingularValues_submatrix_le` with the embedding `e = (Fin.castLEEmb h).trans π.toEmbedding`
-of the first `r̃` columns of `A P` (the book cites Corollary 2.4.4 — it is Corollary 2.4.5 iterated). ★
-
-Blocked: dec2's `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` and `Matrix.sortedSingularValues_submatrix_le` are not on this branch (s05, base 55f7ad05). ~20 lines once they land.'''
-deps = ["Matrix.IsSVD.sortedSingularValues_le_mul_submatrix", "Matrix.sortedSingularValues_submatrix_le"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.2'
 
 [[node]]
 id = "qrcp_V11"
-kind = "theorem"
-desc = '''§5.5.7: if `Qᵀ [V₁₁ᵀ V₂₁ᵀ] P = [R₁₁ R₁₂]` (QR with column pivoting of the `r̃ × n` matrix of the
-first `r̃` right singular vectors, transposed), then `[Ṽ₁₁; Ṽ₂₁] = Pᵀ [V₁₁; V₂₁] = [R₁₁ᵀQᵀ; R₁₂ᵀQᵀ]`,
-`R₁₁` is nonsingular (the rows of `V(:, 1:r̃)ᵀ` are orthonormal, so the pivoted factorization has
-full rank `r̃`), and `‖Ṽ₁₁⁻¹‖₂ = ‖R₁₁⁻¹‖₂` (orthogonal invariance). ★
-
-Blocked: waits for `equation_5_4_6` (dec2) (s05, base 55f7ad05).'''
-deps = ["equation_5_4_6", "Matrix.l2_opNorm_unitary_mul"]
 source = 'Golub–Van Loan, Matrix Computations, §5.5.7'
 
 [[node]]
 id = "algorithm_5_5_1"
-kind = "definition"
-desc = '''Algorithm 5.5.1 (subset selection): the SVD step ("compute the SVD and save `V`") and the rank
-decision ("determine `r̃ ≤ rank(A)`") are inputs — `V` and `r̃` are arguments, their properties
-hypotheses of the spec (the book gives no algorithm for them here; the SVD algorithm is §8.6's);
-then Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` for `P`, `A P = [B₁ | B₂]`, and `z` minimizing
-`‖B₁ z - b‖₂` by Algorithm 5.3.2. Returns `(P, z)`. ★
-
-Blocked: waits for `algorithm_5_3_2` (blocked on s03's `GolubVanLoan.Chapter03.algorithm_3_1_2`) (s05, base 55f7ad05); `algorithm_5_4_1` is written.'''
-deps = ["algorithm_5_4_1", "algorithm_5_3_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
 
 [[node]]
@@ -141,7 +80,13 @@ exact output `(P, z)`: the first `r̃` columns of `A P` are linearly independent
 σ_r̃(A)/‖R₁₁⁻¹‖₂ > 0` by `theorem_5_5_2` and `qrcp_V11`), and `z` minimizes `‖B₁ z - b‖₂`
 (`algorithm_5_3_2_spec`, under its nondegeneracy hypothesis for `B₁`, carried here). ★★
 
-Blocked: waits for `algorithm_5_5_1`, `algorithm_5_4_1_spec`, `theorem_5_5_2`, `qrcp_V11` (dec2, s03) (s05, base 55f7ad05).'''
+Blocked (c05, main fca5b833): all the named ingredients are proved, but `algorithm_5_5_1` runs
+Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` padded with zero rows (`padRows`, since Algorithm 5.4.1 is written
+for `m ≥ n`), so its spec gives a rank-revealing factorization of the `n × n` padded array, while
+`qrcp_V11` takes one of the `r̃ × n` matrix itself. Missing: the transfer lemma (the padded `Q` is
+block diagonal `[Q₁ 0; 0 *]` up to the zero rows, or: a rank-`r̃` revealing factorization of
+`padRows W` yields one of `W`, ~80 lines) and the nondegeneracy hypothesis of
+`algorithm_5_3_2_spec` for `B₁`; then ~40 lines. Not reached in the c05 round.'''
 deps = ["algorithm_5_5_1", "algorithm_5_4_1_spec", "theorem_5_5_2", "qrcp_V11", "algorithm_5_3_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
 
@@ -157,6 +102,7 @@ block of `PᵀV` (printed "`r`-by-`r`"):
 The closing remark `‖r_{x_r̃} - r_y‖₂ = ‖B₁ y - Σ_{i≤r̃}(u_iᵀb) u_i‖₂` is the identity
 `r_x - r_y = B₁B₁⁺b - U₁U₁ᵀb` (a second declaration). ★
 
-Blocked: dec2's `Matrix.norm_residual_subset_sub_le` and `theorem_5_5_2` (s05, base 55f7ad05).'''
+Blocked (c05, main fca5b833): `theorem_5_5_2` is proved; `Matrix.norm_residual_subset_sub_le` is
+not on main (agent bb1 is proving it). A restatement once it lands.'''
 deps = ["Matrix.norm_residual_subset_sub_le", "theorem_5_5_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.3'

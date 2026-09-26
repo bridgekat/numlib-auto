@@ -14,27 +14,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.5)'
 
 [[node]]
 id = "equation_5_4_6"
-kind = "theorem"
-desc = '''(5.4.6): every `A ∈ ℝ^{m×n}` has `Qᵀ A Π = [R₁₁ R₁₂; 0 0]` with `r = rank A`, `Q` orthogonal,
-`R₁₁` upper triangular and nonsingular (`r × r`), `Π` a permutation; and then
-`ran(A) = span{q₁, …, q_r}`. Backbone `Matrix.exists_isPivotedQR_rank` at `𝕜 = ℝ`, which concludes
-`∃ σ Q R, Matrix.IsPivotedQR.IsRankRevealing A Q R σ A.rank` (the bundle's fields `apply_eq_zero` — rows
-`≥ r` vanish — and `isUnit_block` — `R₁₁` invertible — are the book's block form), and
-`Matrix.IsPivotedQR.IsRankRevealing.range_eq_span`, which takes the bundle. ★
-
-Blocked: dec2's `Matrix.exists_isPivotedQR_rank`, `Matrix.IsPivotedQR.IsRankRevealing` and `Matrix.IsPivotedQR.IsRankRevealing.range_eq_span` are not on this branch (s05, base 55f7ad05). ~20 lines once they land.'''
-deps = ["Matrix.exists_isPivotedQR_rank", "Matrix.IsPivotedQR.IsRankRevealing", "Matrix.IsPivotedQR.IsRankRevealing.range_eq_span"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.6)'
 
 [[node]]
 id = "norm_sq_tail_eq"
-kind = "theorem"
-desc = '''§5.4.2: for `Q ∈ ℝ^{s×s}` orthogonal, `Qᵀ z = [α; w] ⇒ ‖w‖₂² = ‖z‖₂² - α²`, whence the column
-norm update `‖z_j^{(k)}‖² = ‖z_j^{(k-1)}‖² - r_kj²`. Backbone
-`Matrix.norm_sq_tail_eq_of_mem_unitaryGroup`. ★
-
-Blocked: dec2's `Matrix.norm_sq_tail_eq_of_mem_unitaryGroup` is not on this branch (s05, base 55f7ad05). A restatement once it lands.'''
-deps = ["Matrix.norm_sq_tail_eq_of_mem_unitaryGroup"]
 source = 'Golub–Van Loan, Matrix Computations, §5.4.2'
 
 [[node]]
@@ -43,17 +26,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.1'
 
 [[node]]
 id = "algorithm_5_4_1_spec"
-kind = "theorem"
-desc = '''In exact arithmetic, with `(A', β, piv, r) := Id.run (algorithm_5_4_1 pure A)`: `r = rank A`, and
-with `Π` the product of the transpositions `(j, piv j)`, `Q = factoredQ β A'` (first `r` reflectors,
-the returned `β`)
-and `R = upperPart A'` with rows `≥ r` set to `0`: `Matrix.IsPivotedQR.IsRankRevealing A Q R Π r`
-(so `Matrix.IsPivotedQR A Q R Π` with `R₁₁` nonsingular) — the factorization (5.4.6). Invariant (5.4.7): after `k` steps `R^{(k)} = H_k ⋯ H₁ A Π₁ ⋯ Π_k` with
-`R₁₁^{(k)}` upper triangular nonsingular, and `c(j) = ‖z_j^{(k)}‖²` (`norm_sq_tail_eq`); the loop
-stops exactly when the trailing block `R₂₂^{(k)}` is `0`, i.e. `k = rank A`. ★★★ (~300 lines)
-
-Blocked: waits for `norm_sq_tail_eq` and dec2's `Matrix.IsPivotedQR.IsRankRevealing` (s05, base 55f7ad05). The Householder-step invariant is that of `algorithm_5_2_1_spec` plus the column swaps and the downdated norms (~250 lines once the target predicate exists).'''
-deps = ["algorithm_5_4_1", "houseOn_spec", "householderApplyLeft_spec", "norm_sq_tail_eq", "factoredQ", "upperPart", "Matrix.IsPivotedQR", "Matrix.IsPivotedQR.IsRankRevealing"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.1'
 
 [[node]]
@@ -65,7 +37,9 @@ desc = '''§5.4.3, the termination criterion: if `R̂^{(k)} = [R̂₁₁ R̂₁�
 (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`; the book cites Corollary 2.4.4) and
 `σ_{k+1}(A) ≤ σ_{k+1}(A + E_k) + ‖E_k‖₂` (Weyl, chapter 8's `LinearMap.abs_singularValues_sub_le`). ★★
 
-Blocked: dec2's `Matrix.sortedSingularValues_le_l2_opNorm_trailing` is not on this branch (s05, base 55f7ad05), and `GolubVanLoan.Chapter02.corollary_2_4_4` is open in the Chapter 2 group. ~20 lines once they land.'''
+Blocked (c05, main fca5b833): `Matrix.sortedSingularValues_le_l2_opNorm_trailing` is on main, but
+`GolubVanLoan.Chapter02.corollary_2_4_4` (the chapter restatement the surface must use, being proved
+by agent c0209) is not. ~20 lines once it lands.'''
 deps = [
   "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
   "GolubVanLoan.Chapter02.corollary_2_4_4",
@@ -84,15 +58,6 @@ source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
 
 [[node]]
 id = "theorem_5_4_1"
-kind = "theorem"
-desc = '''Theorem 5.4.1: for `A ∈ ℝ^{m×n}` (`m ≥ n ≥ 1`) and a unit vector `v`, there is a permutation `Π`
-such that the QR factorization `A Π = Q R` satisfies `|r_nn| ≤ √n σ`, `σ = ‖A v‖₂`. Backbone
-`Matrix.exists_perm_isQR_abs_le` (over `RCLike 𝕜`, concluding `‖R last last‖ ≤ √n ‖A v‖₂`) at `𝕜 = ℝ`,
-where `‖·‖ = |·|` (`Real.norm_eq_abs`). The remark "if `v = v_n` then `|r_nn| ≤ √n σ_n`" is the instance
-`‖A v_n‖ = σ_n` (a second declaration). ★
-
-Blocked: dec2's `Matrix.exists_perm_isQR_abs_le` is not on this branch (s05, base 55f7ad05). A restatement once it lands.'''
-deps = ["Matrix.exists_perm_isQR_abs_le"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.4.1'
 
 [[node]]
@@ -116,7 +81,8 @@ The trailing-block step `σ_{k+1}(R) ≤ ‖R₂₂‖₂` is `Matrix.sortedSing
 (its second declaration `…_trailing_lower` is the ULV shape of (5.4.11)).
 Stated without proof by the book. ★
 
-Blocked: dec2's `Matrix.IsURV` and `Matrix.gap_le_of_urv` are not on this branch (s05, base 55f7ad05). A restatement once they land.'''
+Blocked (c05, main fca5b833): `Matrix.IsURV` is on main, `Matrix.gap_le_of_urv` is not (agent bb1
+is proving it). A restatement once it lands.'''
 deps = ["Matrix.gap_le_of_urv", "Matrix.IsURV", "Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.10)'
 
@@ -129,21 +95,13 @@ for `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`, `ρ_L = ‖L₂₂‖₂/σ_m
 hypothesis bundled as `Matrix.IsULV A U L V` (`U`, `V` orthogonal, `Uᵀ A V = L` lower triangular) and
 `σ_min(L₁₁) = L₁₁.sortedSingularValues (k - 1)`. ★
 
-Blocked: dec2's `Matrix.IsULV` and `Matrix.gap_le_of_ulv` are not on this branch (s05, base 55f7ad05). A restatement once they land.'''
+Blocked (c05, main fca5b833): `Matrix.IsULV` is on main, `Matrix.gap_le_of_ulv` is not (agent bb1
+is proving it). A restatement once it lands.'''
 deps = ["Matrix.gap_le_of_ulv", "Matrix.IsULV", "Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.11)'
 
 [[node]]
 id = "equation_5_4_12"
-kind = "theorem"
-desc = '''(5.4.12): every `A ∈ ℝ^{m×n}` has a complete orthogonal decomposition `Uᵀ A V = [T₁₁ 0; 0 0]`
-with `T₁₁` nonsingular `r × r`, `r = rank A`; the SVD is one; and for any such, `ran(A) =
-span{u₁, …, u_r}`, `null(A) = span{v_{r+1}, …, v_n}`. Backbone `Matrix.exists_isCompleteOrthogonal`,
-`Matrix.isCompleteOrthogonal_of_svd`, `Matrix.IsCompleteOrthogonal.range_eq_span`,
-`Matrix.IsCompleteOrthogonal.rank_eq`. ★
-
-Blocked: dec2's `Matrix.IsCompleteOrthogonal` layer (`exists_isCompleteOrthogonal`, `isCompleteOrthogonal_of_svd`, `range_eq_span`, `rank_eq`) is not on this branch (s05, base 55f7ad05). ~20 lines once it lands.'''
-deps = ["Matrix.exists_isCompleteOrthogonal", "Matrix.isCompleteOrthogonal_of_svd", "Matrix.IsCompleteOrthogonal.range_eq_span", "Matrix.IsCompleteOrthogonal.rank_eq"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.12)'
 
 [[node]]
@@ -152,13 +110,6 @@ source = 'Golub–Van Loan, Matrix Computations, §5.4.7'
 
 [[node]]
 id = "completeOrthogonalDecomposition_spec"
-kind = "theorem"
-desc = '''In exact arithmetic, `Matrix.IsCompleteOrthogonal A U V r` for the output (with `r = rank A`),
-from `algorithm_5_4_1_spec` and `algorithm_5_2_1_spec` (the triangular factor of a full-column-rank
-`r`-column matrix has a nonsingular leading block). ★★
-
-Blocked: waits for `algorithm_5_4_1_spec` and dec2's `Matrix.IsCompleteOrthogonal` (s05, base 55f7ad05). The program `completeOrthogonalDecomposition` is written.'''
-deps = ["completeOrthogonalDecomposition", "algorithm_5_4_1_spec", "algorithm_5_2_1_spec", "backwardAccumulation_spec", "Matrix.IsCompleteOrthogonal"]
 source = 'Golub–Van Loan, Matrix Computations, §5.4.7'
 
 [[node]]

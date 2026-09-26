@@ -26,27 +26,10 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 5.2.3'
 
 [[node]]
 id = "kappa2"
-kind = "definition"
-desc = '''(5.2.4): the 2-norm condition number of a rectangular matrix, `κ₂(A) = σ_max(A)/σ_min(A)`,
-defined as the backbone's `Matrix.pinvCondNumberLp 2 A` (`= lpOpNorm 2 A * lpOpNorm 2 A.pinv`, i.e.
-`‖A‖₂ ‖A⁺‖₂`; through `Matrix.lpOpNorm 2`, not the scoped `L2Operator` norm — the values are equal). ★
-
-Blocked: the backbone `Matrix.pinvCondNumberLp` (agent sv2, the conditioning layer) is not on this branch (s05, base 55f7ad05). A one-line definition once it lands.'''
-deps = ["Matrix.pinvCondNumberLp"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.4)'
 
 [[node]]
 id = "equation_5_2_4"
-kind = "theorem"
-desc = '''(5.2.4) as stated: for full-column-rank `A` (`n ≥ 1`),
-`kappa2 A = (⨆ i, A.singularValues i) / (⨅ i, A.singularValues i)`; and for square nonsingular
-`A` it is the `κ₂` of §2.6.2: `Matrix.pinvCondNumberLp_eq_condNumberLp` concludes
-`kappa2 A = Matrix.condNumberLp 2 A`, which is chapter 2's `kappa 2 A = ENNReal.ofReal (condNumberLp 2 A)`
-by `if_pos`, and the `NormedRing.condNumber` of `lpCLM 2 A` by the (proved, untracked)
-`Matrix.condNumberLp_eq_condNumber`. ★
-
-Blocked: waits for `kappa2` and sv2's `Matrix.pinvCondNumberLp_two_eq_div_singularValues`, `Matrix.pinvCondNumberLp_eq_condNumberLp`, not on this branch (s05, base 55f7ad05). ~15 lines once they land.'''
-deps = ["kappa2", "Matrix.pinvCondNumberLp_two_eq_div_singularValues", "Matrix.pinvCondNumberLp_eq_condNumberLp", "GolubVanLoan.Chapter02.kappa"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.2.4)'
 
 [[node]]

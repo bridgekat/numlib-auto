@@ -18,51 +18,14 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.3)'
 
 [[node]]
 id = "algorithm_5_3_1"
-kind = "definition"
-desc = '''Algorithm 5.3.1 (normal equations): `C = AᵀA` (lower triangle; entrywise dot products,
-chapter 1's Algorithm 1.1.1; the upper triangle filled by symmetry, an assignment), `d = Aᵀb`,
-`G ← GolubVanLoan.Chapter04.algorithm_4_2_1 rnd C` (gaxpy Cholesky, `C = GGᵀ`),
-`y ← GolubVanLoan.Chapter03.algorithm_3_1_1 rnd G d` (forward substitution), `x ←
-GolubVanLoan.Chapter03.algorithm_3_1_2 rnd Gᵀ y` (back substitution). ★
-
-Blocked: the chapter 3 and 4 surface programs `GolubVanLoan.Chapter03.algorithm_3_1_1`, `GolubVanLoan.Chapter03.algorithm_3_1_2` (agent s03) and `GolubVanLoan.Chapter04.algorithm_4_2_1` (agent s04) are not on this branch (s05, base 55f7ad05). The program is their composition with the rounded products of Algorithm 1.1.5 (~20 lines once they land).'''
-deps = [
-  "GolubVanLoan.Chapter01.algorithm_1_1_1",
-  "GolubVanLoan.Chapter04.algorithm_4_2_1",
-  "GolubVanLoan.Chapter03.algorithm_3_1_1",
-  "GolubVanLoan.Chapter03.algorithm_3_1_2",
-]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.1'
 
 [[node]]
 id = "algorithm_5_3_1_spec"
-kind = "theorem"
-desc = '''For full-column-rank `A`: `IsLeastSquaresSolution A b (toLp 2 (Id.run (algorithm_5_3_1 pure A b)))`.
-The specs of the three called algorithms (Cholesky of the positive definite `AᵀA`, the two
-substitutions) and the normal equations. ★
-
-Blocked: waits for `algorithm_5_3_1` and the specs of Algorithms 3.1.1, 3.1.2 and 4.2.1 (s03, s04), not on this branch (s05, base 55f7ad05); the exact run is `Matrix.isLeastSquaresSolution_iff_normalEquations` plus the Cholesky and triangular-solve specs (~40 lines).'''
-deps = [
-  "algorithm_5_3_1",
-  "isLeastSquaresSolution_iff_normalEquations",
-  "GolubVanLoan.Chapter04.algorithm_4_2_1_spec",
-  "GolubVanLoan.Chapter03.algorithm_3_1_1_spec",
-  "GolubVanLoan.Chapter03.algorithm_3_1_2_spec",
-]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.1'
 
 [[node]]
 id = "equation_5_3_4"
-kind = "theorem"
-desc = '''(5.3.4), rigorous in the form the book derives it: if the computed `x̂_LS` satisfies
-`(AᵀA + E) x̂ = Aᵀb` with `‖E‖₂ ≤ η ‖AᵀA‖₂` ("from what we know about the roundoff properties of the
-Cholesky factorization", §4.2.6, with `η = c u`) and `η κ₂(A)² < 1`, then
-`‖x̂ - x_LS‖₂ / ‖x_LS‖₂ ≤ η κ₂(A)² / (1 - η κ₂(A)²)`, since `κ₂(AᵀA) = κ₂(A)²`. Backbone
-`Matrix.norm_normalEquations_sub_le`, `Matrix.pinvCondNumberLp_two_conjTranspose_mul_self`. The book's "≈" is
-the first-order reading. ★
-
-Blocked: sv2's `Matrix.norm_normalEquations_sub_le`, `Matrix.pinvCondNumberLp_two_conjTranspose_mul_self` and `kappa2` are not on this branch (s05, base 55f7ad05). ~20 lines once they land.'''
-deps = ["Matrix.norm_normalEquations_sub_le", "Matrix.pinvCondNumberLp_two_conjTranspose_mul_self", "kappa2"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.4)'
 
 [[node]]
@@ -71,43 +34,14 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.5)'
 
 [[node]]
 id = "algorithm_5_3_2"
-kind = "definition"
-desc = '''Algorithm 5.3.2 (Householder LS solution), as printed: `A' ← (algorithm_5_2_1 rnd h A).1`
-(the array only — the printed algorithm does not use the `β`s); for `j = 1:n`,
-`v = storedHouseholderVec A' j` (`[1; A'(j+1:m, j)]`), `β = 2/vᵀv` (a rounded dot product over
-`rows j` and a division — the book's recomputation), `b(j:m) ← b(j:m) - β(vᵀ b(j:m)) v` on the index
-list `rows j` (rounded, in the printed association `β(vᵀb)` then times `v`, which is not
-`householderApplyLeft`'s `(βv)(vᵀb)`, so it is written out);
-then `x ← GolubVanLoan.Chapter03.algorithm_3_1_2 rnd (upperPart A')₁₁ b(1:n)`. ★★
-
-Blocked: the back substitution `GolubVanLoan.Chapter03.algorithm_3_1_2` (agent s03) is not on this branch (s05, base 55f7ad05). The program is `algorithm_5_2_1`, `factoredQTransposeMul` and Algorithm 3.1.2 (~15 lines once it lands).'''
-deps = ["algorithm_5_2_1", "storedHouseholderVec", "upperPart", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 
 [[node]]
 id = "algorithm_5_3_2_spec"
-kind = "theorem"
-desc = '''For full-column-rank `A` **and no degenerate Householder step** (`∀ j, (Id.run (algorithm_5_2_1
-pure h A)).2 j ≠ 0`): `IsLeastSquaresSolution A b (toLp 2 (Id.run (algorithm_5_3_2 pure h A b)))`.
-The recomputed reflectors are then the actual ones (`equation_5_1_4_beta`), the `b`-loop computes
-`Qᵀb` (`equation_5_1_4` with `p = 1`), and `equation_5_3_5` with the back substitution's spec.
-Without the hypothesis the statement is false (`algorithm_5_3_2_counterexample`). ★★
-
-Blocked: waits for `algorithm_5_3_2` and `GolubVanLoan.Chapter03.algorithm_3_1_2_spec` (s03), not on this branch (s05, base 55f7ad05); then `algorithm_5_2_1_spec`, `equation_5_1_4_beta` and `equation_5_3_5` (~50 lines).'''
-deps = ["algorithm_5_3_2", "algorithm_5_2_1_spec", "equation_5_1_4_beta", "equation_5_1_4", "equation_5_3_5", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 
 [[node]]
 id = "algorithm_5_3_2_counterexample"
-kind = "theorem"
-desc = '''Algorithm 5.3.2 as printed is wrong when `house` returns `β = 0`: for `A = 1 : Matrix (Fin 2) (Fin 2) ℝ`
-and `b = ![1, 0]`, every Householder step meets `σ = 0, x₁ = 1 ≥ 0`, so Algorithm 5.2.1 leaves `A`
-unchanged with `β = 0`, while the printed `β = 2/vᵀv = 2` flips `b` to `![-1, 0]`, and the output is
-`![-1, 0]`, not the least-squares (here exact) solution `![1, 0]`. A `decide`/`norm_num`
-computation at `Id`. Recorded for `notes/book-errata.md`. ★
-
-Blocked: waits for `algorithm_5_3_2` (blocked on s03's Algorithm 3.1.2) (s05, base 55f7ad05).'''
-deps = ["algorithm_5_3_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 
 [[node]]
@@ -124,7 +58,13 @@ and its backward error `FloatingPoint.exists_roundsBackSubstDot_eq`), `δA := Q[
 `(6m - 3n + 41) n u + O(u²)` (Lawson–Hanson): same shape, first-order constants replaced by `γ`s
 (Higham Theorem 20.3). ★★★ (~250 lines)
 
-Blocked: waits for `algorithm_5_3_2`, its spec and `GolubVanLoan.Chapter03.algorithm_3_1_2_rounds` (s03), not on this branch (s05, base 55f7ad05). The Householder half is `algorithm_5_2_1_rounding` (proved).'''
+Blocked (c05, main fca5b833): every ingredient is now proved (`algorithm_5_3_2`, its spec,
+`algorithm_5_2_1_rounding`, chapter 3's `algorithm_3_1_2_rounds`), but it was not attempted in the
+c05 round, which closed the other §5.3 nodes first. Missing: a `_rounds` bridge for the `b`-loop
+`householderLSStep` (the recomputed `β = fl(2/fl(vᵀv))` adds a relative error to be folded into
+the reflector perturbation, and the update is in the printed association `(β(vᵀb))v`), the
+columnwise backward error of `[A | b]`, and the composition with the back substitution's
+`(R̂ + ΔR) x̂ = ĉ`. Estimate ★★★, ~300 lines.'''
 deps = [
   "algorithm_5_3_2",
   "algorithm_5_3_2_spec",
@@ -142,7 +82,7 @@ desc = '''(5.3.7): the `δA` of `equation_5_3_6` satisfies `‖δA‖_F ≤ c_A 
 of `equation_5_3_6`, stated on its own; the book's `(6m - 3n + 41) n u + O(u²)` is its first-order
 reading (Lawson–Hanson's constant; ours is the explicit `γ` expression). ★
 
-Blocked: waits for `equation_5_3_6` (s05, base 55f7ad05).'''
+Blocked: waits for `equation_5_3_6` (open, see there; c05, main fca5b833).'''
 deps = ["equation_5_3_6"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.7)'
 
@@ -152,7 +92,7 @@ kind = "theorem"
 desc = '''(5.3.8): the `δb` of `equation_5_3_6` satisfies `‖δb‖₂ ≤ c_b ‖b‖₂` (the book's
 `(6m - 3n + 40) n u + O(u²)`), the second bound clause of `equation_5_3_6`. ★
 
-Blocked: waits for `equation_5_3_6` (s05, base 55f7ad05).'''
+Blocked: waits for `equation_5_3_6` (open, see there; c05, main fca5b833).'''
 deps = ["equation_5_3_6"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.8)'
 
@@ -162,15 +102,6 @@ source = 'Golub–Van Loan, Matrix Computations, §5.3.5'
 
 [[node]]
 id = "equation_5_3_9"
-kind = "theorem"
-desc = '''(5.3.9), for `A ∈ ℝ^{m×n}` of full column rank, `m > n`, `n ≥ 1`:
-`‖A(AᵀA)⁻¹Aᵀ‖₂ = 1`, `‖(AᵀA)⁻¹Aᵀ‖₂ = 1/σ_n(A)`, `‖I - A(AᵀA)⁻¹Aᵀ‖₂ = 1`, `‖(AᵀA)⁻¹‖₂ = 1/σ_n(A)²`.
-With `A⁺ = (AᵀA)⁻¹Aᵀ` (`Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`): backbone
-`Matrix.l2_opNorm_mul_pinv_eq_one` (three of them) and
-`Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues`. ★
-
-Blocked: sv2's `Matrix.l2_opNorm_mul_pinv_eq_one` and `Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues` are not on this branch (s05, base 55f7ad05). ~15 lines once they land.'''
-deps = ["Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose", "Matrix.l2_opNorm_mul_pinv_eq_one", "Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.9)'
 
 [[node]]
@@ -184,61 +115,22 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.16)'
 
 [[node]]
 id = "nuLS_le_kappa2"
-kind = "theorem"
-desc = '''§5.3.6: `ν_LS ≤ κ₂(A)` (`‖A x‖₂ ≤ ‖A‖₂ ‖x‖₂ = σ_1 ‖x‖₂`). ★
-
-Blocked: waits for `kappa2` and `equation_5_2_4` (sv2's conditioning layer) (s05, base 55f7ad05).'''
-deps = ["thetaLS", "kappa2", "equation_5_2_4"]
 source = 'Golub–Van Loan, Matrix Computations, §5.3.6'
 
 [[node]]
 id = "theorem_5_3_1_a"
-kind = "theorem"
-desc = '''Theorem 5.3.1, (5.3.11), rigorous: with the hypotheses of the book (`rank A = n`,
-`‖δA‖₂ < σ_n(A)`, `b, r_LS, x_LS ≠ 0`, `ε = max(‖δA‖₂/‖A‖₂, ‖δb‖₂/‖b‖₂)`) and
-`σ' = σ_n(A) - ‖δA‖₂`, `κ' = ‖A‖₂/σ'`, `ν' = ‖A x_LS‖₂/(σ' ‖x_LS‖₂)`:
-`‖x̂_LS - x_LS‖₂ / ‖x_LS‖₂ ≤ ε (ν'/cos θ_LS + [1 + ν' tan θ_LS] κ')` — (5.3.11) exactly, with
-`σ_n(A)` replaced by `σ'` and no `O(ε²)` term. From `Matrix.norm_leastSquares_sub_le` divided by
-`‖x_LS‖` and (5.3.16). ★★
-
-Blocked: sv2's `Matrix.norm_leastSquares_sub_le` and `kappa2` are not on this branch (s05, base 55f7ad05). A restatement once they land (~20 lines).'''
-deps = ["Matrix.norm_leastSquares_sub_le", "equation_5_3_16", "thetaLS", "kappa2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
 
 [[node]]
 id = "theorem_5_3_1_b"
-kind = "theorem"
-desc = '''Theorem 5.3.1, (5.3.12), rigorous: under the same hypotheses,
-`‖r̂_LS - r_LS‖₂ / ‖r_LS‖₂ ≤ ε (1/sin θ_LS + [1/(ν tan θ_LS) + 1] κ')` with `κ' = ‖A‖₂/(σ_n - ‖δA‖₂)`
-in the last term (the other terms need no correction). From `Matrix.norm_leastSquares_residual_sub_le`. ★★
-
-Blocked: sv2's `Matrix.norm_leastSquares_residual_sub_le` and `kappa2` are not on this branch (s05, base 55f7ad05). A restatement once they land (~20 lines).'''
-deps = ["Matrix.norm_leastSquares_residual_sub_le", "equation_5_3_16", "thetaLS", "kappa2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
 
 [[node]]
 id = "theorem_5_3_1"
-kind = "theorem"
-desc = '''Theorem 5.3.1 as printed, the `+ O(ε²)` reading: for fixed `A` (full column rank) and `b` with
-`b, r_LS, x_LS ≠ 0`, there are `K, ε₀ > 0` such that for all `δA, δb` with `ε ≤ ε₀`
-(`ε` as in the book) the left-hand sides of (5.3.11) and (5.3.12) are at most
-`ε · (the book's bracket) + K ε²`. From `theorem_5_3_1_a`/`_b`: `1/(σ - ε‖A‖) ≤ 1/σ + 2ε‖A‖/σ²` for
-`ε ≤ σ/(2‖A‖)`. ★
-
-Blocked: waits for `theorem_5_3_1_a` and `theorem_5_3_1_b` (sv2) (s05, base 55f7ad05).'''
-deps = ["theorem_5_3_1_a", "theorem_5_3_1_b"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.3.1'
 
 [[node]]
 id = "equation_5_3_15"
-kind = "theorem"
-desc = '''(5.3.15): with `x(t)` the solution of `(A + tE)ᵀ(A + tE) x(t) = (A + tE)ᵀ(b + tf)` (5.3.13),
-`HasDerivAt x (ẋ 0) 0` with `ẋ(0) = (AᵀA)⁻¹Aᵀ(f - E x_LS) + (AᵀA)⁻¹Eᵀ r_LS`; and the residual's
-`ṙ(0) = (I - A(AᵀA)⁻¹Aᵀ)(f - E x_LS) - A(AᵀA)⁻¹Eᵀ r_LS` (second declaration). Backbone
-`Matrix.hasDerivAt_pinv_mulVec_line`. ★
-
-Blocked: sv2's `Matrix.hasDerivAt_pinv_mulVec_line` is not on this branch (s05, base 55f7ad05). ~20 lines once it lands.'''
-deps = ["Matrix.hasDerivAt_pinv_mulVec_line"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.15)'
 
 [[node]]
@@ -251,16 +143,6 @@ source = 'Golub–Van Loan, Matrix Computations, §5.3.8'
 
 [[node]]
 id = "lsIterativeImprovement"
-kind = "definition"
-desc = '''§5.3.8, the iterative improvement of the augmented system (displayed, unnumbered):
-`r⁽⁰⁾ = 0, x⁽⁰⁾ = 0`; for `k` (fuel parameter): `[f; g] = [b; 0] - [I A; Aᵀ 0][r; x]` (in the book
-"in higher precision": a second rounding hook `rndHi`), solve `[I A; Aᵀ 0][p; z] = [f; g]` by the
-QR route of `augmentedSolve_qr` (with the working hook), update `[r; x] += [p; z]`. Spec
-(`lsIterativeImprovement_spec`, same node): in exact arithmetic every iterate after the first is the
-exact solution `(r_LS, x_LS)`. Björck's digit-gain claim is not formalized (heuristic). ★★
-
-Blocked: the QR route of `augmentedSolve_qr` (proved) needs the triangular solves `GolubVanLoan.Chapter03.algorithm_3_1_1`/`algorithm_3_1_2` (agent s03, not on this branch (s05, base 55f7ad05); added to this node's `deps`). With them: a fuel-indexed fold of residual, solve and update steps, and the exact spec from `augmentedSolve_qr` and `equation_5_3_20` (~80 lines).'''
-deps = ["augmentedSolve_qr", "equation_5_3_20", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, §5.3.8'
 
 [[node]]

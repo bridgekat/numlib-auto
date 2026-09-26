@@ -3,17 +3,22 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section04
 /-!
 # Golub–Van Loan §5.5: the rank-deficient least-squares problem
 
-Surface file for [golub2013matrix] §5.5: the convex solution set and its minimal-norm element
-(§5.5.1), the SVD solution (Theorem 5.5.1, (5.5.1)–(5.5.2)), the pseudoinverse and its
-characterizations (§5.5.2, (5.5.3), the Moore–Penrose conditions), its sensitivity (§5.5.3: Wedin's
-bound and the discontinuity example), and the truncated SVD solution (§5.5.4).
+Surface file for [golub2013matrix] §5.5: the convex solution set and its minimal-norm element,
+also through a complete orthogonal decomposition (§5.5.1), the SVD solution (Theorem 5.5.1,
+(5.5.1)–(5.5.2)), the pseudoinverse and its characterizations (§5.5.2, (5.5.3), the Moore–Penrose
+conditions), its sensitivity (§5.5.3: Wedin's bound and the discontinuity example), the truncated
+SVD solution (§5.5.4), basic solutions from QR with column pivoting (§5.5.5, (5.5.4)–(5.5.5)) and
+SVD-based subset selection (§5.5.7, Theorem 5.5.2).
 
 ## Conventions
 
 The pseudoinverse is the backbone's `Matrix.pinv`; the book's definition `A⁺ = V Σ⁺ Uᵀ` is the
 theorem `pseudoinverse_eq_svd`. An SVD is `Matrix.IsSVD A U σ V` (`Uᵀ A V = Σ`, `σ` sorted and
 nonnegative), `u_i`, `v_i` are the columns of `U`, `V`, 0-based. Least-squares statements are on
-`EuclideanSpace ℝ (Fin m)`.
+`EuclideanSpace ℝ (Fin m)`. A QR factorization with column pivoting `A Π = QR`,
+`R = [R₁₁ R₁₂; 0 0]` with `R₁₁` nonsingular, is the backbone's
+`Matrix.IsPivotedQR.IsRankRevealing A Q R π r` (`A Π = A.submatrix id π`), a complete orthogonal
+decomposition is `Matrix.IsCompleteOrthogonal`; `x_B` is `Matrix.pivotedBasicSolution`.
 
 ## Book slips carried
 
@@ -46,6 +51,45 @@ theorem minNorm_existsUnique (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpac
       ∀ x, IsMinNormLeastSquaresSolution A b x → x = toEuclideanLin A.pinv b :=
   ⟨convex_setOf_isLeastSquaresSolution A b, isMinNormLeastSquaresSolution_pinv A b,
     fun _ hx => hx.unique (isMinNormLeastSquaresSolution_pinv A b)⟩
+
+/-- **§5.5.1, least squares through a complete orthogonal decomposition**: if
+`Qᵀ A Z = T = [T₁₁ 0; 0 0]` (`r = rank A`, `T₁₁` nonsingular) and `Qᵀb = [c; d]`, then
+`x_LS = Z [T₁₁⁻¹ c; 0]` is the minimal-norm least-squares solution and `‖A x_LS - b‖₂ = ‖d‖₂`;
+for every `x`, with `Zᵀ x = [w; y]`, `‖Ax - b‖₂² = ‖T₁₁ w - c‖₂² + ‖d‖₂²`. -/
+theorem minNorm_of_completeOrthogonal {A : Matrix (Fin m) (Fin n) ℝ}
+    {Q : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
+    (h : IsCompleteOrthogonal A Q Z r) (b : EuclideanSpace ℝ (Fin m)) :
+    (∀ x : EuclideanSpace ℝ (Fin n), ‖toEuclideanLin A x - b‖ ^ 2 =
+      ∑ i : Fin r, (((Qᵀ * A * Z).submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols) *ᵥ
+          fun k => (Zᵀ *ᵥ ofLp x) (Fin.castLE h.le_cols k)) i -
+        (Qᵀ *ᵥ ofLp b) (Fin.castLE h.le_rows i)) ^ 2 +
+      ∑ j : Fin (m - r), (Qᵀ *ᵥ ofLp b) (tailIdx h.le_rows j) ^ 2) ∧
+    IsMinNormLeastSquaresSolution A b (toLp 2 (Z *ᵥ blockVec h.le_cols
+      (((Qᵀ * A * Z).submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols))⁻¹ *ᵥ
+        fun i => (Qᵀ *ᵥ ofLp b) (Fin.castLE h.le_rows i)) 0)) ∧
+    ‖toEuclideanLin A (toLp 2 (Z *ᵥ blockVec h.le_cols
+      (((Qᵀ * A * Z).submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols))⁻¹ *ᵥ
+        fun i => (Qᵀ *ᵥ ofLp b) (Fin.castLE h.le_rows i)) 0)) - b‖ =
+      ‖(toLp 2 fun j => (Qᵀ *ᵥ ofLp b) (tailIdx h.le_rows j) :
+        EuclideanSpace ℝ (Fin (m - r)))‖ := by
+  have hmin := h.isMinNormLeastSquaresSolution b
+  simp only [conjTranspose_eq_transpose_of_trivial] at hmin
+  refine ⟨fun x => ?_, hmin⟩
+  have hsplit := norm_toEuclideanLin_sub_sq_eq_of_eq_mul h.mem_unitaryGroup_left h.le_rows
+    h.eq_mul (fun i j hi => h.apply_eq_zero i j (Or.inl hi)) b x
+  simp only [conjTranspose_eq_transpose_of_trivial, Real.norm_eq_abs, sq_abs] at hsplit
+  rw [hsplit]
+  have hz : ∀ (i : Fin m) (j : Fin n), r ≤ (j : ℕ) → (Qᵀ * A * Z) i j = 0 := fun i j hj => by
+    simpa only [conjTranspose_eq_transpose_of_trivial] using h.apply_eq_zero i j (Or.inr hj)
+  congr 1
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 2
+  rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx h.le_cols]
+  have htail : ∑ j : Fin (n - r), (Qᵀ * A * Z) (Fin.castLE h.le_rows i) (tailIdx h.le_cols j) *
+      (Zᵀ *ᵥ ofLp x) (tailIdx h.le_cols j) = 0 :=
+    Finset.sum_eq_zero fun j _ => by rw [hz _ _ (by simp), zero_mul]
+  rw [htail, add_zero]
+  rfl
 
 end MinNorm
 
@@ -494,5 +538,196 @@ theorem norm_truncatedSVDSolution_sub_le {A : Matrix (Fin m) (Fin n) ℝ}
   exact (norm_sub_le _ _).trans (add_le_add hfirst le_rfl)
 
 end TruncatedSVD
+
+/-! ### §5.5.5 Basic solutions via QR with column pivoting -/
+
+section Basic
+
+open scoped Matrix.Norms.L2Operator
+
+variable {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
+  {R : Matrix (Fin m) (Fin n) ℝ} {π : Equiv.Perm (Fin n)} {r : ℕ}
+
+/-- **§5.5.5, basic solutions via QR with column pivoting**: if `A Π = QR` with
+`R = [R₁₁ R₁₂; 0 0]`, `R₁₁` nonsingular of order `r = rank A` (the factorization (5.4.6)) and
+`Qᵀb = [c; d]`, then for every `x`, with `Πᵀx = [y; z]`,
+`‖Ax - b‖₂² = ‖R₁₁ y + R₁₂ z - c‖₂² + ‖d‖₂²`; `x` is a least-squares minimizer iff
+`R₁₁ y + R₁₂ z = c`, i.e. `x = Π [R₁₁⁻¹(c - R₁₂ z); z]`; and the basic solution
+`x_B = Π [R₁₁⁻¹ c; 0]` (`Matrix.pivotedBasicSolution`) is a minimizer with at most `r` nonzero
+components. -/
+theorem basicSolution (h : IsPivotedQR.IsRankRevealing A Q R π r)
+    (b : EuclideanSpace ℝ (Fin m)) :
+    (∀ x : EuclideanSpace ℝ (Fin n), ‖toEuclideanLin A x - b‖ ^ 2 =
+      ∑ i : Fin r, ((R *ᵥ (ofLp x ∘ π)) (Fin.castLE h.le_rows i) -
+        (Qᵀ *ᵥ ofLp b) (Fin.castLE h.le_rows i)) ^ 2 +
+      ∑ j : Fin (m - r), (Qᵀ *ᵥ ofLp b) (tailIdx h.le_rows j) ^ 2) ∧
+    (∀ x : EuclideanSpace ℝ (Fin n), IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
+      (R *ᵥ (ofLp x ∘ π)) (Fin.castLE h.le_rows i) = (Qᵀ *ᵥ ofLp b) (Fin.castLE h.le_rows i)) ∧
+    IsLeastSquaresSolution A b (pivotedBasicSolution Q R π h.le_rows h.le_cols b) ∧
+    ∀ j : Fin (n - r), pivotedBasicSolution Q R π h.le_rows h.le_cols b (π (tailIdx h.le_cols j)) =
+      0 := by
+  refine ⟨fun x => ?_, fun x => ?_, (h.isLeastSquaresSolution_basic b).1,
+    (h.isLeastSquaresSolution_basic b).2⟩
+  · have hsplit := norm_toEuclideanLin_sub_sq_eq_of_eq_mul h.isQR.mem_unitaryGroup h.le_rows
+      h.eq_mul h.apply_eq_zero b x
+    simpa only [one_submatrix_mulVec, conjTranspose_eq_transpose_of_trivial, Real.norm_eq_abs,
+      sq_abs] using hsplit
+  · have := h.isLeastSquaresSolution_iff (b := b) (x := x)
+    simpa only [conjTranspose_eq_transpose_of_trivial] using this
+
+/-- **(5.5.4)**: `‖x_LS‖₂ = min_{z ∈ ℝ^{n-r}} ‖x_B - Π [R₁₁⁻¹R₁₂; -I_{n-r}] z‖₂` (printed
+`z ∈ ℝ^{n-2}`), over the factorization of `basicSolution`. -/
+theorem equation_5_5_4 (h : IsPivotedQR.IsRankRevealing A Q R π r)
+    (b : EuclideanSpace ℝ (Fin m)) :
+    ‖toEuclideanLin A.pinv b‖ = ⨅ z : Fin (n - r) → ℝ,
+      ‖pivotedBasicSolution Q R π h.le_rows h.le_cols b - toLp 2 (blockVec h.le_cols
+        (((R.submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols))⁻¹ *
+          R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols)) *ᵥ z) (-z) ∘ π.symm)‖ :=
+  h.norm_minNorm_eq_iInf b
+
+/-- **§5.5.5**, "the basic solution is not the minimal 2-norm solution unless the submatrix `R₁₂`
+is zero" — its converse half: when `R₁₂ = 0`, `x_B = x_LS` for every `b`. -/
+theorem basicSolution_eq_pinv_of_eq_zero (h : IsPivotedQR.IsRankRevealing A Q R π r)
+    (hR : R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols) = 0)
+    (b : EuclideanSpace ℝ (Fin m)) :
+    pivotedBasicSolution Q R π h.le_rows h.le_cols b = toEuclideanLin A.pinv b := by
+  obtain ⟨-, hle⟩ := h.norm_basic_le b
+  rw [hR, Matrix.mul_zero, norm_zero, sq, mul_zero, add_zero, Real.sqrt_one, one_mul] at hle
+  refine IsMinNormLeastSquaresSolution.eq_pinv ⟨(h.isLeastSquaresSolution_basic b).1,
+    fun y hy => hle.trans ?_⟩
+  exact (isMinNormLeastSquaresSolution_pinv A b).2 y hy
+
+/-- **(5.5.5)** (Golub–Pereyra): for `x_LS ≠ 0`,
+`1 ≤ ‖x_B‖₂/‖x_LS‖₂ ≤ √(1 + ‖R₁₁⁻¹R₁₂‖₂²)`. -/
+theorem equation_5_5_5 (h : IsPivotedQR.IsRankRevealing A Q R π r)
+    (b : EuclideanSpace ℝ (Fin m)) (hx : toEuclideanLin A.pinv b ≠ 0) :
+    1 ≤ ‖pivotedBasicSolution Q R π h.le_rows h.le_cols b‖ / ‖toEuclideanLin A.pinv b‖ ∧
+      ‖pivotedBasicSolution Q R π h.le_rows h.le_cols b‖ / ‖toEuclideanLin A.pinv b‖ ≤
+        √(1 + ‖(R.submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols))⁻¹ *
+          R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols)‖ ^ 2) := by
+  have hpos : 0 < ‖toEuclideanLin A.pinv b‖ := norm_pos_iff.2 hx
+  obtain ⟨h1, h2⟩ := h.norm_basic_le b
+  exact ⟨(one_le_div hpos).2 h1, (div_le_iff₀ hpos).2 h2⟩
+
+end Basic
+
+/-! ### §5.5.7 SVD-based subset selection -/
+
+section SubsetSelection
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **Theorem 5.5.2**: let `Uᵀ A V = Σ` be an SVD, `P` a permutation (`A P = A.submatrix id π`),
+`B₁` the first `r̃` columns of `A P` (`1 ≤ r̃ ≤ rank A`), and `Ṽ₁₁` the leading `r̃ × r̃` block of
+`PᵀV` ((5.5.6)), assumed nonsingular. Then `σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r̃(B₁) ≤ σ_r̃(A)` (1-based
+`σ_r̃` is `sortedSingularValues (r̃ - 1)`). The upper bound is Corollary 2.4.5 iterated (the book
+cites Corollary 2.4.4). -/
+theorem theorem_5_5_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (π : Equiv.Perm (Fin n)) {r : ℕ}
+    (hr0 : 0 < r) (hrA : r ≤ A.rank)
+    (hV : IsUnit ((V.submatrix π id).submatrix (Fin.castLE (hrA.trans A.rank_le_width))
+      (Fin.castLE (hrA.trans A.rank_le_width)))) :
+    A.sortedSingularValues (r - 1) /
+        ‖((V.submatrix π id).submatrix (Fin.castLE (hrA.trans A.rank_le_width))
+          (Fin.castLE (hrA.trans A.rank_le_width)))⁻¹‖ ≤
+      ((A.submatrix id π).submatrix id
+        (Fin.castLE (hrA.trans A.rank_le_width))).sortedSingularValues (r - 1) ∧
+    ((A.submatrix id π).submatrix id
+        (Fin.castLE (hrA.trans A.rank_le_width))).sortedSingularValues (r - 1) ≤
+      A.sortedSingularValues (r - 1) := by
+  have hrN : r ≤ n := hrA.trans A.rank_le_width
+  have hrM : r ≤ m := hrA.trans A.rank_le_height
+  have hlow := h.sortedSingularValues_le_mul_submatrix π hr0 hrM hrN hV
+  have hne : Nonempty (Fin r) := ⟨⟨0, hr0⟩⟩
+  have hinv : 0 < ‖((V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN))⁻¹‖ :=
+    norm_pos_iff.2 ((isUnit_nonsing_inv_iff.2 hV).ne_zero)
+  refine ⟨(div_le_iff₀ hinv).2 (by rwa [mul_comm]), ?_⟩
+  have := sortedSingularValues_submatrix_le A ((Fin.castLEEmb hrN).trans π.toEmbedding) (r - 1)
+  exact this
+
+/-- **§5.5.7, QR with column pivoting of `V(:, 1:r̃)ᵀ`**: for `V` orthogonal and `r̃ ≤ n`, let
+`Qᵀ [V₁₁ᵀ V₂₁ᵀ] P = [R₁₁ R₁₂]` be a QR factorization with column pivoting of the `r̃ × n` matrix
+`W = V(:, 1:r̃)ᵀ` (`W P = Q R`, rows of `R` from the `r`-th on zero and its leading `r × r` block
+nonsingular, as (5.4.6) provides). Then `r = r̃` (the rows of `W` are orthonormal),
+`[Ṽ₁₁; Ṽ₂₁] = Pᵀ [V₁₁; V₂₁] = [R₁₁ᵀQᵀ; R₁₂ᵀQᵀ]`, "`R₁₁` is nonsingular", and
+`‖Ṽ₁₁⁻¹‖₂ = ‖R₁₁⁻¹‖₂`. -/
+theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (Fin n) ℝ) {r' r : ℕ}
+    (hr : r ≤ n) {Q : Matrix (Fin r) (Fin r) ℝ} {R : Matrix (Fin r) (Fin n) ℝ}
+    {π : Equiv.Perm (Fin n)}
+    (h : IsPivotedQR.IsRankRevealing (V.submatrix id (Fin.castLE hr))ᵀ Q R π r') :
+    r' = r ∧ (V.submatrix π id).submatrix id (Fin.castLE hr) = Rᵀ * Qᵀ ∧
+      IsUnit (R.submatrix id (Fin.castLE hr)) ∧
+      ‖((V.submatrix π id).submatrix (Fin.castLE hr) (Fin.castLE hr))⁻¹‖ =
+        ‖(R.submatrix id (Fin.castLE hr))⁻¹‖ := by
+  set W := (V.submatrix id (Fin.castLE hr))ᵀ with hW
+  -- the rows of `W` are orthonormal, so `rank W = r`
+  have hWW : W * Wᵀ = 1 := by
+    have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 hV
+    ext i j
+    have := congrFun (congrFun hVV (Fin.castLE hr i)) (Fin.castLE hr j)
+    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
+  have hrank : W.rank = r := by
+    refine le_antisymm (rank_le_height W) ?_
+    have := rank_mul_le_left W Wᵀ
+    rw [hWW, rank_one, Fintype.card_fin] at this
+    exact this
+  have hr' : r' = r := h.rank_eq.symm.trans hrank
+  subst hr'
+  have hQO : Q ∈ orthogonalGroup (Fin r') ℝ := h.isQR.mem_unitaryGroup
+  have hT : (V.submatrix π id).submatrix id (Fin.castLE hr) = Rᵀ * Qᵀ := by
+    rw [← transpose_mul, h.isQR.mul_eq]
+    ext i j
+    rfl
+  have hB : R.submatrix id (Fin.castLE hr) =
+      R.submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols) := by
+    ext i j
+    rfl
+  have hu : IsUnit (R.submatrix id (Fin.castLE hr)) := hB ▸ h.isUnit_block
+  refine ⟨rfl, hT, hu, ?_⟩
+  set B := R.submatrix id (Fin.castLE hr) with hBdef
+  have hV11 : (V.submatrix π id).submatrix (Fin.castLE hr) (Fin.castLE hr) = Bᵀ * Qᵀ := by
+    ext i j
+    have h2 := congrFun (congrFun hT (Fin.castLE hr i)) j
+    simp only [submatrix_apply, id] at h2 ⊢
+    rw [h2]
+    simp [mul_apply, hBdef]
+  have hQinv : (Qᵀ)⁻¹ = Q := inv_eq_left_inv ((mem_orthogonalGroup_iff _ _).1 hQO)
+  rw [hV11, Matrix.mul_inv_rev, hQinv, ← transpose_nonsing_inv, l2_opNorm_unitary_mul hQO,
+    ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose]
+
+end SubsetSelection
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- `A` padded with zero rows to a square `n × n` array (for `m ≤ n`), so that Algorithm 5.4.1,
+written for `m ≥ n`, applies to a wide matrix: the zero rows change neither the pivots nor the
+nonzero rows of `R`. -/
+def padRows (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i j => if hi : (i : ℕ) < m then A ⟨i, hi⟩ j else 0
+
+/-- **Algorithm 5.5.1** (SVD-based subset selection): "Given `A ∈ ℝ^{m×n}` and `b ∈ ℝ^m` the
+following algorithm computes a permutation `P`, a rank estimate `r̃`, and a vector `z ∈ ℝ^r̃` such
+that the first `r̃` columns of `B = AP` are independent and `‖B(:, 1:r̃) z - b‖₂` is minimized":
+```
+Compute the SVD UᵀAV = diag(σ₁, …, σ_n) and save V.
+Determine r̃ ≤ rank(A).
+Apply QR with column pivoting: QᵀV(:, 1:r̃)ᵀP = [R₁₁ | R₁₂] and set AP = [B₁ | B₂].
+Determine z ∈ ℝ^r̃ such that ‖b - B₁z‖₂ = min.
+```
+The SVD (a Chapter 8 algorithm) and the rank decision are inputs: `V` and `r̃` are arguments
+(convention 5). QR with column pivoting is Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` padded with zero rows
+(`padRows`), and the least-squares step is Algorithm 5.3.2 on `B₁`. Returns `(P, z)`. -/
+noncomputable def algorithm_5_5_1 {r : ℕ} (hrn : r ≤ n) (hrm : r ≤ m)
+    (A : Matrix (Fin m) (Fin n) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) (b : Fin m → ℝ) :
+    M (Equiv.Perm (Fin n) × (Fin r → ℝ)) := do
+  let st ← algorithm_5_4_1 rnd le_rfl (padRows (V.submatrix id (Fin.castLE hrn))ᵀ)
+  let z ← algorithm_5_3_2 rnd hrm ((A.submatrix id (pivotPerm st.piv)).submatrix id
+    (Fin.castLE hrn)) b
+  pure (pivotPerm st.piv, z)
+
+end Programs
+
 
 end GolubVanLoan.Chapter05
