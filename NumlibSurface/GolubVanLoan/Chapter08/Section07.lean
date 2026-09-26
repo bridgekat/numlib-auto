@@ -3,6 +3,10 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 import Numlib.Eigen.Pencil
 import Numlib.Eigen.SymmetricPencil
 import Numlib.LinearAlgebra.Matrix.SVD
+import NumlibSurface.GolubVanLoan.Chapter03.Section01
+import NumlibSurface.GolubVanLoan.Chapter04.Section02
+import NumlibSurface.GolubVanLoan.Chapter05.Section02
+import NumlibSurface.GolubVanLoan.Chapter07.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section01
 
 /-!
@@ -21,8 +25,12 @@ has `A` symmetric and `B` positive definite (`Matrix.PosDef`). The quadratic eig
 stated over `ℂ`, where `λ` and `x` live; a real symmetric (skew-symmetric, positive definite)
 matrix is in particular a complex Hermitian (skew-Hermitian, positive definite) one.
 
-Algorithms 8.7.1–8.7.2, `(8.7.8)` and Theorem 8.7.4 call chapter 3–6 programs and restatements; they
-are planned in this group and wait for those chapters' surfaces.
+Algorithms 8.7.1–8.7.2 call the programs of chapters 3–5 (Cholesky, forward and back
+substitution, modified Gram–Schmidt) and take the two steps with no exact program — the symmetric
+Schur decomposition and the CS decomposition — as monadic parameters whose specifications the spec
+theorems assume (convention 5); the triangular solves with a matrix right-hand side run column by
+column. `(8.7.8)` is stated against chapter 7's orthogonal iteration. Theorem 8.7.4 restates
+chapter 6's Theorem 6.1.1 and waits for that chapter's surface.
 
 ## Readings and errata
 
@@ -165,6 +173,172 @@ theorem theorem_8_7_3_counterexample :
   rw [one_div, inv_lt_inv₀ (by norm_num) hs3p]
   nlinarith [hs3]
 
+/-! ### §8.7.2 Methods for the symmetric-definite problem -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- The triangular solves of Algorithms 8.7.1–8.7.2, one right-hand side at a time: column `j` of
+`Y` is overwritten by `solve (Y(:, j))`. -/
+private def solveCols (solve : (Fin n → ℝ) → M (Fin n → ℝ)) (Y : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin n) (Fin n) ℝ) :=
+  (List.finRange n).foldlM (fun (Z : Matrix (Fin n) (Fin n) ℝ) j => do
+    let z ← solve (Y.col j)
+    pure (Z.updateCol j z)) Y
+
+/-- **Algorithm 8.7.1** (symmetric-definite `Ax = λBx`): "Given `A = Aᵀ` and `B = Bᵀ` positive
+definite, the following algorithm computes a nonsingular `X` such that `XᵀAX = diag(a₁, …, a_n)`
+and `XᵀBX = I_n`."
+```
+Compute the Cholesky factorization B = GGᵀ using Algorithm 4.2.1.
+Compute C = G⁻¹AG⁻ᵀ.
+Use the symmetric QR algorithm to compute the Schur decomposition QᵀCQ = diag(a₁, …, a_n).
+Set X = G⁻ᵀQ.
+```
+(The book cites "Algorithm 4.2.2", a misprint.) `G` is the lower triangle of chapter 4's
+Algorithm 4.2.1 (an exact copy); `C` is two column-by-column forward substitutions (chapter 3's
+Algorithm 3.1.1), `Y = G⁻¹ A` and `C = G⁻¹ Yᵀ` (`A` symmetric); `X` is back substitution
+(Algorithm 3.1.2) on `Gᵀ`, column by column. The symmetric Schur decomposition is the monadic
+parameter `schur` (convention 5): Algorithm 8.3.3 returns a diagonal matrix only up to its
+deflation perturbation. -/
+noncomputable def algorithm_8_7_1
+    (schur : Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
+    (A B : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)) := do
+  let F ← Chapter04.algorithm_4_2_1 rnd B
+  let G := F - F.strictUpper
+  let Y ← solveCols (Chapter03.algorithm_3_1_1 rnd G) A
+  let C ← solveCols (Chapter03.algorithm_3_1_1 rnd G) Yᵀ
+  let Qa ← schur C
+  let X ← solveCols (Chapter03.algorithm_3_1_2 rnd Gᵀ) Qa.1
+  pure (X, Qa.2)
+
+end Programs
+
+/-- The column solves in exact arithmetic. -/
+private theorem solveCols_id (solve : (Fin n → ℝ) → Id (Fin n → ℝ))
+    (Y : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (solveCols solve Y) = of fun i j => Id.run (solve (Y.col j)) i := by
+  have key : ∀ (l : List (Fin n)) (Z : Matrix (Fin n) (Fin n) ℝ), l.Nodup →
+      l.foldl (fun Z j => Z.updateCol j (Id.run (solve (Y.col j)))) Z =
+        of fun i j => if j ∈ l then Id.run (solve (Y.col j)) i else Z i j := by
+    intro l
+    induction l with
+    | nil => intro Z _; ext i j; simp
+    | cons a l ih =>
+      intro Z hl
+      rw [List.foldl_cons, ih _ (List.nodup_cons.1 hl).2]
+      ext i j
+      simp only [of_apply, updateCol_apply, List.mem_cons]
+      by_cases hja : j = a
+      · subst hja; simp [(List.nodup_cons.1 hl).1]
+      · simp [hja]
+  unfold solveCols
+  rw [show (fun (Z : Matrix (Fin n) (Fin n) ℝ) j =>
+      (do let z ← solve (Y.col j); pure (Z.updateCol j z) : Id _)) =
+      fun Z j => pure (Z.updateCol j (Id.run (solve (Y.col j)))) from rfl, List.foldlM_pure,
+    key _ _ (List.nodup_finRange n)]
+  ext i j
+  simp
+
+/-- If every column solve inverts `G`, the column solves compute `G⁻¹ Y`: `G X = Y`. -/
+private theorem mul_solveCols {G : Matrix (Fin n) (Fin n) ℝ}
+    {solve : (Fin n → ℝ) → Id (Fin n → ℝ)} (h : ∀ b, G *ᵥ Id.run (solve b) = b)
+    (Y : Matrix (Fin n) (Fin n) ℝ) : G * Id.run (solveCols solve Y) = Y := by
+  ext i j
+  have := congrFun (h (Y.col j)) i
+  rw [solveCols_id]
+  simpa [mul_apply, mulVec, dotProduct] using this
+
+/-- **Algorithm 8.7.1, exact semantics**: if `schur` returns an orthogonal `Q` and `a` with
+`QᵀCQ = diag(a)` for symmetric `C`, then for symmetric `A` and positive definite `B` the output
+`(X, a)` has `XᵀAX = diag(a)` and `XᵀBX = I`. The Cholesky step is chapter 4's Algorithm 4.2.1
+(`G = Matrix.cholesky B`, lower triangular with positive diagonal, `B = GGᵀ`), the solves are
+chapter 3's Algorithms 3.1.1–3.1.2: `GY = A`, `GC = Yᵀ`, `GᵀX = Q`, so `A = GCGᵀ` and
+`XᵀAX = QᵀCQ`, `XᵀBX = QᵀQ`. -/
+theorem algorithm_8_7_1_spec
+    (schur : Matrix (Fin n) (Fin n) ℝ → Id (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
+    (hschur : ∀ C : Matrix (Fin n) (Fin n) ℝ, C.IsSymm →
+      (Id.run (schur C)).1 ∈ orthogonalGroup (Fin n) ℝ ∧
+        (Id.run (schur C)).1ᵀ * C * (Id.run (schur C)).1 = diagonal (Id.run (schur C)).2)
+    {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef) :
+    (Id.run (algorithm_8_7_1 pure schur A B)).1ᵀ * A * (Id.run (algorithm_8_7_1 pure schur A B)).1 =
+        diagonal (Id.run (algorithm_8_7_1 pure schur A B)).2 ∧
+      (Id.run (algorithm_8_7_1 pure schur A B)).1ᵀ * B *
+        (Id.run (algorithm_8_7_1 pure schur A B)).1 = 1 := by
+  obtain ⟨hFG, hBG⟩ := Chapter04.algorithm_4_2_1_spec hB
+  set F := Id.run (Chapter04.algorithm_4_2_1 pure B)
+  set G := F - F.strictUpper with hGdef
+  have hGl : G.IsLowerTriangular := by rw [hFG]; exact isLowerTriangular_cholesky B
+  have hGd : ∀ i, G i i ≠ 0 := fun i => by
+    have := (isCholesky_cholesky hB).diag_pos i
+    rw [hFG]
+    simpa using this.ne'
+  have hGu : IsUnit G := by
+    rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular G hGl]
+    exact isUnit_iff_ne_zero.2 (Finset.prod_ne_zero_iff.2 fun i _ => hGd i)
+  have hGtu : Gᵀ.IsUpperTriangular := hGl.transpose_isUpperTriangular
+  set Y := Id.run (solveCols (Chapter03.algorithm_3_1_1 pure G) A)
+  set C := Id.run (solveCols (Chapter03.algorithm_3_1_1 pure G) Yᵀ)
+  set Qa := Id.run (schur C)
+  set X := Id.run (solveCols (Chapter03.algorithm_3_1_2 pure Gᵀ) Qa.1)
+  have hrun : Id.run (algorithm_8_7_1 pure schur A B) = (X, Qa.2) := rfl
+  rw [hrun]
+  have hY : G * Y = A := mul_solveCols (fun b => Chapter03.algorithm_3_1_1_spec hGl hGd b) A
+  have hC : G * C = Yᵀ := mul_solveCols (fun b => Chapter03.algorithm_3_1_1_spec hGl hGd b) Yᵀ
+  have hX : Gᵀ * X = Qa.1 := mul_solveCols (fun b => Chapter03.algorithm_3_1_2_spec hGtu
+    (fun i => by simpa using hGd i) b) Qa.1
+  have hAGC : A = G * C * Gᵀ := by
+    rw [hC, ← transpose_mul, hY, hA.eq]
+  have hCs : C.IsSymm := by
+    have h1 : G * Cᵀ * Gᵀ = G * C * Gᵀ := by
+      rw [← hAGC]
+      conv_rhs => rw [← hA.eq, hAGC]
+      simp only [transpose_mul, transpose_transpose, Matrix.mul_assoc]
+    have h2 := hGu.mul_left_cancel (by simpa only [Matrix.mul_assoc] using h1)
+    exact ((isUnit_transpose G).2 hGu).mul_right_cancel h2
+  obtain ⟨hQ, hQC⟩ := hschur C hCs
+  have hQQ : Qa.1ᵀ * Qa.1 = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQ
+  refine ⟨?_, ?_⟩
+  · rw [hAGC, show Xᵀ * (G * C * Gᵀ) * X = (Gᵀ * X)ᵀ * C * (Gᵀ * X) by
+      simp only [transpose_mul, transpose_transpose, Matrix.mul_assoc], hX, hQC]
+  · rw [hBG, show Xᵀ * (G * Gᵀ) * X = (Gᵀ * X)ᵀ * (Gᵀ * X) by
+      simp only [transpose_mul, transpose_transpose, Matrix.mul_assoc], hX, hQQ]
+
+/-- **§8.7.2, after Algorithm 8.7.1**: `λ(A, B) = λ(A, GGᵀ) = λ(G⁻¹AG⁻ᵀ, I) = λ(C) =
+{a₁, …, a_n}`: with `G = Matrix.cholesky B` (so `B = GGᵀ`), `λ(A, B)` is the spectrum of
+`G⁻¹ A G⁻ᵀ` (`pencil_congruence` with `X = G⁻ᵀ`), and, for the output `(X, a)` of Algorithm 8.7.1
+with a correct Schur step, the set of the `a_i`. -/
+theorem pencil_eq_cholesky_spectrum
+    (schur : Matrix (Fin n) (Fin n) ℝ → Id (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
+    (hschur : ∀ C : Matrix (Fin n) (Fin n) ℝ, C.IsSymm →
+      (Id.run (schur C)).1 ∈ orthogonalGroup (Fin n) ℝ ∧
+        (Id.run (schur C)).1ᵀ * C * (Id.run (schur C)).1 = diagonal (Id.run (schur C)).2)
+    {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef) :
+    pencilSpectrum A B = spectrum ℝ ((cholesky B)⁻¹ * A * ((cholesky B)⁻¹)ᵀ) ∧
+      pencilSpectrum A B = Set.range (Id.run (algorithm_8_7_1 pure schur A B)).2 := by
+  obtain ⟨hFG, hBG⟩ := Chapter04.algorithm_4_2_1_spec hB
+  rw [hFG] at hBG
+  set G := cholesky B
+  have hGd : IsUnit G.det := by
+    have h := congrArg det hBG
+    rw [det_mul, det_transpose] at h
+    exact isUnit_iff_ne_zero.2 fun h0 => hB.det_pos.ne' (by rw [h, h0, zero_mul])
+  refine ⟨?_, ?_⟩
+  · have hXd : IsUnit (G⁻¹)ᵀ.det := by
+      rw [det_transpose]; exact isUnit_nonsing_inv_det G hGd
+    rw [← pencil_congruence A B hXd, transpose_transpose, hBG,
+      show G⁻¹ * (G * Gᵀ) * G⁻¹ᵀ = (G⁻¹ * G) * (G⁻¹ * G)ᵀ by
+        simp only [transpose_mul, Matrix.mul_assoc],
+      nonsing_inv_mul _ hGd, transpose_one, Matrix.mul_one, pencilSpectrum_one]
+  · obtain ⟨h1, h2⟩ := algorithm_8_7_1_spec schur hschur hA hB
+    set X := (Id.run (algorithm_8_7_1 pure schur A B)).1
+    have hXd : IsUnit X.det := by
+      have h := congrArg det h2
+      rw [det_mul, det_mul, det_transpose, det_one] at h
+      exact IsUnit.of_mul_eq_one (B.det * X.det) (by rw [← h]; ring)
+    rw [← pencil_congruence A B hXd, h1, h2, pencilSpectrum_one, spectrum_diagonal]
+
 /-! ### §8.7.2 The generalized Rayleigh quotient -/
 
 /-- **(8.7.5), the generalized Rayleigh quotient iteration**: `x_0` given; `μ_k = x_kᵀAx_k /
@@ -185,6 +359,28 @@ theorem equation_8_7_7 (A : Matrix (Fin n) (Fin n) ℝ) {B : Matrix (Fin n) (Fin
     IsMinOn (fun μ : ℝ => Real.sqrt ((A *ᵥ x - μ • B *ᵥ x) ⬝ᵥ B⁻¹ *ᵥ (A *ᵥ x - μ • B *ᵥ x)))
       Set.univ ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) :=
   fun _ hμ => Real.sqrt_le_sqrt (isMinOn_pencil_residual (A := A) hB hx hμ)
+
+/-- **(8.7.8), the generalized orthogonal iteration** (`Q₀ᵀQ₀ = I_p`; for `k ≥ 1`: solve
+`B Z_k = A Q_{k-1}`, `Z_k = Q_k R_k` a thin QR factorization) "is mathematically equivalent to
+(7.3.6) with `A` replaced by `B⁻¹A`": for nonsingular `B`, a sequence `Q_k` with triangular factors
+`R_k` satisfies (8.7.8) for some `Z_k` iff each `(Q_k, R_k)` is a thin QR factorization of
+`B⁻¹ A Q_{k-1}`, and then `Q_k` is an orthogonal iteration (chapter 7's (7.3.6)) of `B⁻¹ A`. -/
+theorem equation_8_7_8 {p : ℕ} {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det)
+    (Q : ℕ → Matrix (Fin n) (Fin p) ℝ) (R : ℕ → Matrix (Fin p) (Fin p) ℝ) :
+    ((∃ Z : ℕ → Matrix (Fin n) (Fin p) ℝ, ∀ k,
+        B * Z (k + 1) = A * Q k ∧ IsThinQR (Z (k + 1)) (Q (k + 1)) (R (k + 1))) ↔
+      ∀ k, IsThinQR (B⁻¹ * A * Q k) (Q (k + 1)) (R (k + 1))) ∧
+    ((Q 0)ᵀ * Q 0 = 1 → (∀ k, IsThinQR (B⁻¹ * A * Q k) (Q (k + 1)) (R (k + 1))) →
+      Chapter07.orthogonalIteration (B⁻¹ * A) Q) := by
+  refine ⟨⟨fun ⟨Z, hZ⟩ k => ?_, fun h => ⟨fun k => B⁻¹ * A * Q (k - 1), fun k => ⟨?_, ?_⟩⟩⟩,
+    fun h0 h => ⟨by rwa [conjTranspose_eq_transpose_of_trivial], fun k => ⟨R (k + 1), h k⟩⟩⟩
+  · obtain ⟨h1, h2⟩ := hZ k
+    have hZk : Z (k + 1) = B⁻¹ * A * Q k := by
+      rw [Matrix.mul_assoc, ← h1, ← Matrix.mul_assoc, nonsing_inv_mul _ hB, Matrix.one_mul]
+    rwa [hZk] at h2
+  · simp only [Nat.add_sub_cancel]
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, mul_nonsing_inv _ hB, Matrix.one_mul]
+  · simpa only [Nat.add_sub_cancel] using h k
 
 /-! ### §8.7.4 The generalized singular value problem -/
 
@@ -290,6 +486,114 @@ theorem gsvd_columns_and_pencil {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n)
       exact (mul_eq_zero.1 hdet).resolve_right hXX
 
 /-! ### §8.7.5 Computing the GSVD -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **Algorithm 8.7.2 (GSVD, tall full-rank version).** For `A ∈ ℝ^{m₁×n}`, `B ∈ ℝ^{m₂×n}` with
+`null(A) ∩ null(B) = {0}`: "compute the QR factorization `[A; B] = [Q₁; Q₂] R`; compute the CS
+decomposition `U₁ᵀ Q₁ V = D_A = diag(α₁, …, α_n)`, `U₂ᵀ Q₂ V = D_B = diag(β₁, …, β_n)`; solve
+`R X = V` for `X`." The QR factorization is chapter 5's modified Gram–Schmidt (Algorithm 5.2.6) on
+the stacked `(m₁ + m₂) × n` matrix, `R X = V` is back substitution (chapter 3's Algorithm 3.1.2)
+column by column, and the CS decomposition is the monadic parameter `cs` (convention 5: the book
+gives no algorithm for it), returning `(U₁, U₂, V, α, β)`. -/
+noncomputable def algorithm_8_7_2 {m₁ m₂ : ℕ}
+    (cs : Matrix (Fin m₁) (Fin n) ℝ → Matrix (Fin m₂) (Fin n) ℝ →
+      M (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+        (ℕ → ℝ) × (ℕ → ℝ)))
+    (A : Matrix (Fin m₁) (Fin n) ℝ) (B : Matrix (Fin m₂) (Fin n) ℝ) :
+    M (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+      (ℕ → ℝ) × (ℕ → ℝ)) := do
+  let QR ← Chapter05.algorithm_5_2_6 rnd ((fromRows A B).submatrix finSumFinEquiv.symm id)
+  let out ← cs (QR.1.submatrix (Fin.castAdd m₂) id) (QR.1.submatrix (Fin.natAdd m₁) id)
+  let X ← solveCols (Chapter03.algorithm_3_1_2 rnd QR.2) out.2.2.1
+  pure (out.1, out.2.1, X, out.2.2.2.1, out.2.2.2.2)
+
+end Programs
+
+/-- **Algorithm 8.7.2, exact semantics**: if `cs` returns a thin CS decomposition — for `Q₁`, `Q₂`
+with `Q₁ᵀQ₁ + Q₂ᵀQ₂ = I`, orthogonal `U₁`, `U₂`, `V` with `U₁ᵀ Q₁ V = D_A`, `U₂ᵀ Q₂ V = D_B`
+(chapter 2's Theorem 2.5.2 gives one when `m₁, m₂ ≥ n`) — then for `A`, `B` with
+`null(A) ∩ null(B) = {0}` (the book writes `= ∅`) the output `(U₁, U₂, X, α, β)` satisfies
+`U₁ᵀ A X = D_A`, `U₂ᵀ B X = D_B` with `U₁`, `U₂` orthogonal and `X` nonsingular — a GSVD as in
+Theorem 8.7.4. The stacked matrix has full column rank, so chapter 5's Algorithm 5.2.6 computes a
+thin QR factorization with positive diagonal; `A X = Q₁ R X = Q₁ V`. -/
+theorem algorithm_8_7_2_spec {m₁ m₂ : ℕ}
+    (cs : Matrix (Fin m₁) (Fin n) ℝ → Matrix (Fin m₂) (Fin n) ℝ →
+      Id (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+        (ℕ → ℝ) × (ℕ → ℝ)))
+    (hcs : ∀ (Q₁ : Matrix (Fin m₁) (Fin n) ℝ) (Q₂ : Matrix (Fin m₂) (Fin n) ℝ),
+      Q₁ᵀ * Q₁ + Q₂ᵀ * Q₂ = 1 →
+        (Id.run (cs Q₁ Q₂)).1 ∈ orthogonalGroup (Fin m₁) ℝ ∧
+        (Id.run (cs Q₁ Q₂)).2.1 ∈ orthogonalGroup (Fin m₂) ℝ ∧
+        (Id.run (cs Q₁ Q₂)).2.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧
+        (Id.run (cs Q₁ Q₂)).1ᵀ * Q₁ * (Id.run (cs Q₁ Q₂)).2.2.1 =
+          rectDiagonal (Id.run (cs Q₁ Q₂)).2.2.2.1 ∧
+        (Id.run (cs Q₁ Q₂)).2.1ᵀ * Q₂ * (Id.run (cs Q₁ Q₂)).2.2.1 =
+          rectDiagonal (Id.run (cs Q₁ Q₂)).2.2.2.2)
+    {A : Matrix (Fin m₁) (Fin n) ℝ} {B : Matrix (Fin m₂) (Fin n) ℝ}
+    (hAB : ∀ x, A *ᵥ x = 0 → B *ᵥ x = 0 → x = 0) :
+    (Id.run (algorithm_8_7_2 pure cs A B)).1 ∈ orthogonalGroup (Fin m₁) ℝ ∧
+      (Id.run (algorithm_8_7_2 pure cs A B)).2.1 ∈ orthogonalGroup (Fin m₂) ℝ ∧
+      IsUnit (Id.run (algorithm_8_7_2 pure cs A B)).2.2.1 ∧
+      (Id.run (algorithm_8_7_2 pure cs A B)).1ᵀ * A *
+          (Id.run (algorithm_8_7_2 pure cs A B)).2.2.1 =
+        rectDiagonal (Id.run (algorithm_8_7_2 pure cs A B)).2.2.2.1 ∧
+      (Id.run (algorithm_8_7_2 pure cs A B)).2.1ᵀ * B *
+          (Id.run (algorithm_8_7_2 pure cs A B)).2.2.1 =
+        rectDiagonal (Id.run (algorithm_8_7_2 pure cs A B)).2.2.2.2 := by
+  set S := (fromRows A B).submatrix finSumFinEquiv.symm id with hS
+  have hSA : ∀ x i, (S *ᵥ x) (Fin.castAdd m₂ i) = (A *ᵥ x) i := fun x i => by
+    simp [S, mulVec, dotProduct]
+  have hSB : ∀ x i, (S *ᵥ x) (Fin.natAdd m₁ i) = (B *ᵥ x) i := fun x i => by
+    simp [S, mulVec, dotProduct]
+  have hind : LinearIndependent ℝ Sᵀ := by
+    refine mulVec_injective_iff.1 fun x y hxy => ?_
+    rw [← sub_eq_zero] at hxy ⊢
+    rw [← mulVec_sub] at hxy
+    refine hAB _ (funext fun i => ?_) (funext fun i => ?_)
+    · rw [← hSA, hxy, Pi.zero_apply, Pi.zero_apply]
+    · rw [← hSB, hxy, Pi.zero_apply, Pi.zero_apply]
+  obtain ⟨hQR, hRd⟩ := Chapter05.algorithm_5_2_6_spec S hind
+  set QR := Id.run (Chapter05.algorithm_5_2_6 pure S)
+  set Q₁ := QR.1.submatrix (Fin.castAdd m₂) id
+  set Q₂ := QR.1.submatrix (Fin.natAdd m₁) id
+  set out := Id.run (cs Q₁ Q₂)
+  set X := Id.run (solveCols (Chapter03.algorithm_3_1_2 pure QR.2) out.2.2.1)
+  have hrun : Id.run (algorithm_8_7_2 pure cs A B) =
+      (out.1, out.2.1, X, out.2.2.2.1, out.2.2.2.2) := rfl
+  rw [hrun]
+  have hA1 : A = Q₁ * QR.2 := by
+    ext i j
+    have := congrFun (congrFun hQR.mul_eq (Fin.castAdd m₂ i)) j
+    simp only [S, submatrix_apply, id, finSumFinEquiv_symm_apply_castAdd, fromRows_apply_inl,
+      mul_apply] at this
+    simp only [Q₁, mul_apply, submatrix_apply, id]
+    exact this.symm
+  have hB1 : B = Q₂ * QR.2 := by
+    ext i j
+    have := congrFun (congrFun hQR.mul_eq (Fin.natAdd m₁ i)) j
+    simp only [S, submatrix_apply, id, finSumFinEquiv_symm_apply_natAdd, fromRows_apply_inr,
+      mul_apply] at this
+    simp only [Q₂, mul_apply, submatrix_apply, id]
+    exact this.symm
+  have hQQ : Q₁ᵀ * Q₁ + Q₂ᵀ * Q₂ = 1 := by
+    ext i j
+    have := congrFun (congrFun hQR.conjTranspose_mul_self i) j
+    simp only [mul_apply, conjTranspose_apply, star_trivial, Fin.sum_univ_add] at this
+    simpa [Q₁, Q₂, mul_apply] using this
+  obtain ⟨hU1, hU2, hV, hDA, hDB⟩ := hcs Q₁ Q₂ hQQ
+  have hRX : QR.2 * X = out.2.2.1 := mul_solveCols (fun b =>
+    Chapter03.algorithm_3_1_2_spec hQR.isUpperTriangular (fun i => (hRd i).ne') b) _
+  have hVd : IsUnit out.2.2.1.det :=
+    isUnit_det_of_left_inverse ((mem_orthogonalGroup_iff' _ ℝ).1 hV)
+  refine ⟨hU1, hU2, (isUnit_iff_isUnit_det X).2 (isUnit_of_mul_isUnit_right
+    (by rw [← det_mul, hRX]; exact hVd)), ?_, ?_⟩
+  · rw [hA1, show out.1ᵀ * (Q₁ * QR.2) * X = out.1ᵀ * Q₁ * (QR.2 * X) by
+      simp only [Matrix.mul_assoc], hRX, hDA]
+  · rw [hB1, show out.2.1ᵀ * (Q₂ * QR.2) * X = out.2.1ᵀ * Q₂ * (QR.2 * X) by
+      simp only [Matrix.mul_assoc], hRX, hDB]
 
 /-- **§8.7.5, after Algorithm 8.7.2.** If `X = R⁻¹ V` (`V` orthogonal; the book's `R` is
 nonsingular, which the identity does not need) and

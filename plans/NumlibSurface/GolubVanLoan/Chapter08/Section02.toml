@@ -5,31 +5,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (8.2.2)'
 
 [[node]]
 id = "theorem_8_2_1"
-kind = "theorem"
-desc = '''Theorem 8.2.1, (8.2.4): for symmetric `A`, orthogonal `Q` with `Qᵀ A Q = diagonal lam`,
-`|lam 0| > |lam 1| ≥ ⋯ ≥ |lam (n-1)|` (the book's `|λ₁| > |λ₂| ≥ ⋯`; only `|lam i| ≤ |lam 1| < |lam 0|`
-for `i ≥ 1` is used), a unit `q₀` with `cos θ₀ = |q₁ᵀ q₀| ≠ 0` (`q₁ = Q.col 0`), and
-`q^{(k)} = (GolubVanLoan.Chapter07.powerMethod A q₀ k).1` (chapter 7's (7.3.3) at `𝕜 = ℝ`, `q₀ : EuclideanSpace ℝ (Fin n)`): for all `k`, `sin θ_k ≤ tan θ₀ * |lam 1 / lam 0| ^ k`, where
-`cos θ_k = |q₁ᵀ q^{(k)}|`, `sin θ_k = √(1 - cos² θ_k)`, `tan θ₀ = sin θ₀ / cos θ₀`.
-`Krylov.sinAngle_powerIterate_le_of_eigenbasis` with the orthonormal eigenbasis `Q.col`,
-`i₀ = 0`, `ρ = |lam 1|`; `sinAngle` of the line `span{q₁}` at a unit vector is `√(1 - (q₁ᵀq)²)`.
-★★ (bridging)
-
-Blocked: the iterate is chapter 7's `GolubVanLoan.Chapter07.powerMethod` (README layering), not on main yet (agent s07, running); then a ~40-line bridge to `Krylov.sinAngle_powerIterate_le_of_eigenbasis`.'''
-deps = ["GolubVanLoan.Chapter07.powerMethod", "Krylov.sinAngle_powerIterate_le_of_eigenbasis"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.2.1'
 
 [[node]]
 id = "theorem_8_2_1_b"
-kind = "theorem"
-desc = '''Theorem 8.2.1, (8.2.5): under the hypotheses of `theorem_8_2_1`, for all `k`,
-`|λ^{(k)} - lam 0| ≤ (⨆ i ∈ {i | i ≠ 0}, |lam 0 - lam i|) * tan θ₀ ^ 2 * |lam 1 / lam 0| ^ (2k)`
-(the book's `max_{2≤i≤n} |λ₁ - λ_i|`; stated with `Finset.sup'` over `univ.erase 0`, `n ≥ 2`).
-`Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis` with `δ = max_{i≠0} |lam 0 - lam i|`
-(`tan² θ₀ = (1 - c²)/c²`). ★★ (bridging)
-
-Blocked: as `theorem_8_2_1` (chapter 7's `powerMethod`, agent s07).'''
-deps = ["GolubVanLoan.Chapter07.powerMethod", "theorem_8_2_1", "Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.2.1'
 
 [[node]]
@@ -58,53 +37,14 @@ source = 'Golub–Van Loan, Matrix Computations, §8.2.3'
 
 [[node]]
 id = "equation_8_2_13"
-kind = "theorem"
-desc = '''(8.2.13)–(8.2.14): with the Schur decomposition (8.2.9)–(8.2.10) `Q = fromCols Q_α Q_β`,
-`Qᵀ A Q = fromBlocks D₁ 0 0 D₂`, and `V_k = Q_αᵀ Q_k`, `W_k = Q_βᵀ Q_k` (the book prints `Q₀` in
-both definitions; `Q_k` is meant), an orthogonal iteration
-(`GolubVanLoan.Chapter07.IsOrthogonalIteration A Q` at `ℝ`) with triangular factors `R_k` of its steps
-(`A Q_{k-1} = Q_k R_k`, chosen from `Matrix.IsOrthogonalIterationStep`) satisfies
-`D₁^k V₀ = V_k (R_k ⋯ R₁)` and `D₂^k W₀ = W_k (R_k ⋯ R₁)`. Multiply `A^k Q₀ = Q_k (R_k ⋯ R_1)` (`GolubVanLoan.Chapter07.orthogonalIteration_range`) by
-`Q_αᵀ`, `Q_βᵀ`, using `Q_αᵀ A = D₁ Q_αᵀ`. ★
-
-Blocked: uses chapter 7's `GolubVanLoan.Chapter07.orthogonalIteration`/`orthogonalIteration_range` (agent s07, running).'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "GolubVanLoan.Chapter07.orthogonalIteration_range", "Matrix.IsOrthogonalIterationStep"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.2.13)'
 
 [[node]]
 id = "theorem_8_2_2"
-kind = "theorem"
-desc = '''Theorem 8.2.2: let `A` be symmetric with Schur decomposition (8.2.9)–(8.2.10)
-(`Q = fromCols Q_α Q_β` orthogonal, `Qᵀ A Q = diagonal lam` with `|lam 0| ≥ ⋯ ≥ |lam (n-1)|`,
-`n ≥ 2`, `r` columns in `Q_α`), `|lam (r-1)| > |lam r|` ((8.2.9) and the book's `|λ_r| > |λ_{r+1}|`),
-`D_r(A) = range Q_α`, and `GolubVanLoan.Chapter07.IsOrthogonalIteration A Q'` (chapter 7's (7.3.6) at `ℝ`) with
-`d_k = GolubVanLoan.Chapter02.subspaceDist D_r(A) (range (Q' k))` (`= Submodule.gap`).
-If `d₀ < 1` ((8.2.11)) then for all `k`,
-`d_k ≤ |lam r / lam (r-1)| ^ k * (d₀ / √(1 - d₀ ^ 2))` ((8.2.12)).
-`LinearMap.IsSymmetric.gap_subspaceIterate_le` (now in `Numlib/Eigen/InvariantSubspace`, a ★★ backbone node through
-`Submodule.gap_graph`) with `J = {i | i < r}`, `ρ = |lam (r-1)|`,
-`r' = |lam r|`, after `GolubVanLoan.Chapter07.orthogonalIteration_range` (`A^k Q'₀` has full column rank: `A` is invertible
-on `D_r(A)` and `d₀ < 1` makes `P_{D_r}` injective on `range Q'₀`; the book's argument through
-(8.2.13) and `σ_min(V₀)² = 1 - d₀²`, which is chapter 2's thin CS decomposition, is replaced by the
-backbone's graph argument). ★★ (bridging, ~80 lines)
-
-Blocked: uses chapter 7's `GolubVanLoan.Chapter07.orthogonalIteration`/`orthogonalIteration_range` (agent s07, running); ~80 lines after.'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "GolubVanLoan.Chapter07.orthogonalIteration_range", "equation_8_2_13", "LinearMap.IsSymmetric.gap_subspaceIterate_le", "GolubVanLoan.Chapter02.subspaceDist"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.2.2'
 
 [[node]]
 id = "orthogonalIteration_gap_le_of_forall"
-kind = "theorem"
-desc = '''§8.2.5, (8.2.15): for symmetric `A` with `|lam 0| > |lam 1| > ⋯ > |lam (n-1)|` and an
-orthogonal iteration with square `Q'₀` (`r = n`), if
-`dist(D_i(A), span{q^{(0)}_1, …, q^{(0)}_i}) < 1` for `i = 1:n-1` then for each such `i`
-`dist(span{q^{(k)}_1,…,q^{(k)}_i}, span{q_1,…,q_i}) ≤ C_i |lam i / lam (i-1)|^k` with the explicit
-`C_i = d₀^{(i)}/√(1 - (d₀^{(i)})²)` — the book's `O(|λ_{i+1}/λ_i|^k)`. `theorem_8_2_2` applied to
-the leading `i` columns, which form an orthogonal iteration of their own (upper triangularity of
-`R_k`). ★
-
-Blocked: a corollary of `theorem_8_2_2` (blocked above).'''
-deps = ["theorem_8_2_2"]
 source = 'Golub–Van Loan, Matrix Computations, §8.2.5'
 
 [[node]]
@@ -113,14 +53,4 @@ source = 'Golub–Van Loan, Matrix Computations, §8.2.5'
 
 [[node]]
 id = "orthogonalIteration_qr_step"
-kind = "theorem"
-desc = '''§8.2.5, the QR iteration from orthogonal iteration: for an orthogonal iteration with square
-orthogonal `Q_k` and `T_k = Q_kᵀ A Q_k`, `T_{k-1} = (Q_{k-1}ᵀ Q_k) R_k` and
-`T_k = R_k (Q_{k-1}ᵀ Q_k)` — `T_k` is obtained from `T_{k-1}` by one step of (8.2.1) with the QR
-factorization `U_k = Q_{k-1}ᵀ Q_k`, `R_k`. The instance `𝕜 = ℝ` of chapter 7's
-`GolubVanLoan.Chapter07.orthogonalIteration_qr_step` (§7.3.3), whose `Matrix.IsShiftedQrStep 0` is the
-step of (8.2.1) (`equation_8_2_2`); a delegation, no second proof. ★
-
-Blocked: an instance of chapter 7's `GolubVanLoan.Chapter07.orthogonalIteration_qr_step` (agent s07, running).'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration_qr_step", "equation_8_2_2"]
 source = 'Golub–Van Loan, Matrix Computations, §8.2.5'

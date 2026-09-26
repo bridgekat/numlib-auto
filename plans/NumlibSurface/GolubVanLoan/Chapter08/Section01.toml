@@ -30,19 +30,6 @@ source = 'Golub–Van Loan, Matrix Computations, §8.1.1'
 
 [[node]]
 id = "theorem_8_1_3"
-kind = "theorem"
-desc = '''Theorem 8.1.3 (Gershgorin, symmetric form): for symmetric `A`, orthogonal `Q`, and
-`Qᵀ A Q = diagonal d + F` with `F i i = 0`, every eigenvalue of `A` lies in
-`⋃ i, Set.Icc (d i - r i) (d i + r i)` with `r i = ∑ j, |F i j|`: `spectrum ℝ A ⊆ ⋃ i, Icc …`.
-Delegates to chapter 7's restatement of Theorem 7.2.1 (`GolubVanLoan.Chapter07.theorem_7_2_1`, README
-layering: not the backbone it rests on) applied to `A.complexify` with `X = Q.complexify`
-(`X⁻¹ = Qᵀ`, so `X⁻¹ A X = diagonal d + F` over `ℂ`): a real eigenvalue of `A` is a complex eigenvalue
-of `A.complexify` (`Matrix.complexify`, `spectrum.algebraMap_mem_iff`-type transfer), and a complex
-closed ball centred at a real `d i` meets `ℝ` in `Icc (d i - r i) (d i + r i)`. The book's proof
-through Lemma 2.3.3 is not needed. ★★
-
-Blocked: delegates to chapter 7's restatement `GolubVanLoan.Chapter07.theorem_7_2_1` (README layering), not on main yet (chapter 7 surface, agent s07, running). With it: ~40 lines (complexify, the real part of a complex closed ball).'''
-deps = ["GolubVanLoan.Chapter07.theorem_7_2_1"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.3'
 
 [[node]]
@@ -88,13 +75,6 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.10'
 
 [[node]]
 id = "equation_8_1_3"
-kind = "theorem"
-desc = '''(8.1.3) (P8.1.10): for `P : Matrix (Fin s) (Fin r) ℝ`,
-`lpOpNorm 2 (P * (CFC.sqrt (1 + Pᵀ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖_F`.
-`Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le` at `𝕜 = ℝ` (`Pᴴ = Pᵀ`). ★
-
-Blocked: `Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le` (`Numlib/Analysis/Matrix/SingularValues`, agent sv2, running) is open; a one-line delegation after.'''
-deps = ["Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.3)'
 
 [[node]]
@@ -107,7 +87,7 @@ in the book: `dist = ‖Q₂ᵀ Q̂₁‖₂` (chapter 2's Theorem 2.5.1, both m
 ones), `Q₂ᵀ Q̂₁ = P (I + PᵀP)^{-1/2}`, and (8.1.3). (Chapter 7's `Matrix.gap_range_fromRows_le`
 with `Submodule.gap_map_linearIsometryEquiv` is an equivalent route.) ★★
 
-Blocked: needs `equation_8_1_3` (blocked above) and chapter 2's `GolubVanLoan.Chapter02.theorem_2_5_1` (open on main); ~60 lines after.'''
+Blocked: needs chapter 2's `GolubVanLoan.Chapter02.theorem_2_5_1` (open on main, agent c0209); (8.1.3) is now proved (`equation_8_1_3`). ~60 lines after (c08, 2026-09-26).'''
 deps = ["theorem_8_1_10", "equation_8_1_3", "GolubVanLoan.Chapter02.subspaceDist", "GolubVanLoan.Chapter02.theorem_2_5_1"]
 source = 'Golub–Van Loan, Matrix Computations, Corollary 8.1.11'
 
@@ -124,7 +104,7 @@ eigenvector of `A + E`, and `dist(span{q₁}, span{q̂₁}) = √(1 - (q₁ᵀ q
 `gap(span u, span v) = √(1 - (uᵀv)²)` for unit vectors is `Submodule.sinAngle` of a line
 (`Numlib/Analysis/InnerProductSpace/Projection/Angle`). ★★
 
-Blocked: the case `r = 1` of `theorem_8_1_10` and `corollary_8_1_11` (the latter blocked above).'''
+Blocked: the case `r = 1` of `theorem_8_1_10` and `corollary_8_1_11` (the latter waits for chapter 2's `theorem_2_5_1`, agent c0209) (c08, 2026-09-26).'''
 deps = ["theorem_8_1_10", "corollary_8_1_11", "Submodule.sinAngle", "GolubVanLoan.Chapter02.subspaceDist"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.12'
 
@@ -147,7 +127,7 @@ symmetric matrix with orthonormal `Q`); Weyl (`corollary_8_1_6`) pairs the sorte
 `𝕜 = ℝ`, `ε = lpOpNorm 2 E₁`, reading `symmEigenvalue` as `eigenvalues₀` (the book's `μ_k := λ_{σ k}(A)`; the order
 embedding is in particular the injection). Kahan's constant `1` for the paired form is later (★★★). ★
 
-Blocked: the backbone `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` is open (itself blocked on `Matrix.exists_mem_unitaryGroup_submatrix_eq`); a ~10-line delegation after.'''
+Blocked: the backbone `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul` is still open on main (agent bb1); a ~10-line delegation after (c08, 2026-09-26).'''
 deps = ["symmEigenvalue", "Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul", "Matrix.lpOpNorm"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.13'
 
@@ -177,17 +157,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.6)'
 
 [[node]]
 id = "equation_8_1_7"
-kind = "theorem"
-desc = '''(8.1.7): if `lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ < 1` there is `Q` with `Qᵀ Q = 1` and
-`lpOpNorm 2 (Q - X₁) ≤ τ` (the book's `Q = U Vᵀ` from the thin SVD of `X₁`).
-`Matrix.exists_orthonormal_cols_norm_sub_le` at `𝕜 = ℝ`; the book's intermediate claim
-`1 − σ_r² = τ` is not needed and not true in general (see the section description). The book's `Q = U Vᵀ` is the
-polar factor of `X₁` (`Matrix.IsPolarDecomposition`, `Numlib/LinearAlgebra/Matrix/Polar`, where the backbone node now
-lives, for any `Fintype`s); its second declaration `IsPolarDecomposition.l2_opNorm_sub_le` states the bound for a given
-polar factor. ★
-
-Blocked: `Matrix.exists_orthonormal_cols_norm_sub_le` (`Numlib/LinearAlgebra/Matrix/Polar`, agent dec1, running) is open; a delegation after.'''
-deps = ["Matrix.exists_orthonormal_cols_norm_sub_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.1.7)'
 
 [[node]]
@@ -199,7 +168,7 @@ desc = '''Theorem 8.1.16: for symmetric `A`, `X₁ : Matrix (Fin n) (Fin r) ℝ`
 Proof as in the book: `Q` from (8.1.7), (8.1.5) with (8.1.6) gives
 `‖A Q - Q S‖₂ ≤ ‖F₁‖₂ + τ (2 + τ) ‖A‖₂`, then Theorem 8.1.13 with this `Q` and the symmetric `S`. ★
 
-Blocked: needs `theorem_8_1_13` and `equation_8_1_7` (both blocked above); with them ~30 lines on top of the proved (8.1.5)–(8.1.6).'''
+Blocked: needs `theorem_8_1_13` (blocked above); `equation_8_1_7` is now proved (with `r ≤ n` derived from `τ < 1`). ~30 lines after (c08, 2026-09-26).'''
 deps = ["theorem_8_1_13", "equation_8_1_5", "equation_8_1_6", "equation_8_1_7", "symmEigenvalue"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.1.16'
 

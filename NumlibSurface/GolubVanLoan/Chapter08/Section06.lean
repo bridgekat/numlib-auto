@@ -4,6 +4,7 @@ import Numlib.LinearAlgebra.Matrix.Bidiagonal
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
 import Numlib.LinearAlgebra.Matrix.SVD
+import NumlibSurface.GolubVanLoan.Chapter05.Section04
 import NumlibSurface.GolubVanLoan.Chapter08.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section05
 
@@ -23,10 +24,14 @@ rotations, and the orthogonality of the one-sided Jacobi iterate).
 `LinearMap.singularValues` of `toEuclideanLin A`, 0-based). Bidiagonal matrices are
 `Matrix.IsUpperBidiagonal`.
 
-The Jordan–Wielandt matrix nodes ((8.6.3)–(8.6.4), Theorem 8.6.4), Theorem 8.6.5, and the
-algorithms (8.6.1–8.6.2, which call chapter 5's `givens` and
-bidiagonalization) are planned in this group and wait for `Numlib/Analysis/Matrix/SingularValues`
-and chapter 5's surface.
+The Jordan–Wielandt matrix is the backbone's `Matrix.hermitianDilation` (`[0 Aᵀ; A 0]`, domain
+block first). Theorem 8.6.5 waits for its backbone node
+`Matrix.exists_singularSubspacePair_perturbation`.
+
+Algorithms 8.6.1–8.6.2 follow the conventions of `NumlibSurface/GolubVanLoan`: chapter 5's
+`givens` and Givens updates on index lists, Algorithm 8.6.1 on a window of consecutive indices of
+the `m × n` array with the accumulators `U`, `V`, Algorithm 8.6.2 on chapter 5's
+bidiagonalization (Algorithm 5.4.2) with a `fuel`-bounded loop and a `done` flag.
 
 ## Readings
 
@@ -84,6 +89,95 @@ theorem equation_8_6_1 {A : Matrix (Fin m) (Fin n) ℝ} (hmn : n ≤ m) {U : Mat
     congr 1
     funext i
     split_ifs <;> simp [sq]
+
+/-- The constant block matrix `M = [I I 0; I -I 0; 0 0 √2 I]` of (8.6.3), before the scaling:
+`Mᵀ M = M Mᵀ = 2 I`. -/
+private theorem jw_mul_self {n p : ℕ} :
+    let M : Matrix (Fin n ⊕ (Fin n ⊕ Fin p)) (Fin n ⊕ (Fin n ⊕ Fin p)) ℝ :=
+      fromBlocks 1 (fromCols 1 0) (fromRows 1 0) (fromBlocks (-1) 0 0 (√2 • 1))
+    Mᵀ * M = (2 : ℝ) • 1 ∧ M * Mᵀ = (2 : ℝ) • 1 := by
+  intro M
+  have h2 : √2 * √2 = 2 := Real.mul_self_sqrt (by norm_num)
+  constructor <;>
+  · ext (i | i | i) (j | j | j) <;>
+      first
+      | (simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2]; done)
+      | (rcases eq_or_ne i j with rfl | h <;>
+          [simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2];
+           simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2, h, h.symm]]) <;> norm_num
+
+/-- The Jordan–Wielandt sandwich of (8.6.3): `Mᵀ [0 [Σ 0]; [Σ; 0] 0] M = 2 diag(Σ, -Σ, 0)`. -/
+private theorem jw_conj {n p : ℕ} (σ : Fin n → ℝ) :
+    let M : Matrix (Fin n ⊕ (Fin n ⊕ Fin p)) (Fin n ⊕ (Fin n ⊕ Fin p)) ℝ :=
+      fromBlocks 1 (fromCols 1 0) (fromRows 1 0) (fromBlocks (-1) 0 0 (√2 • 1))
+    Mᵀ * fromBlocks 0 (fromCols (diagonal σ) 0) (fromRows (diagonal σ) 0) 0 * M =
+      (2 : ℝ) • diagonal (Sum.elim σ (Sum.elim (-σ) 0)) := by
+  intro M
+  ext (i | i | i) (j | j | j) <;>
+    first
+    | (simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply]; done)
+    | (rcases eq_or_ne i j with rfl | h <;>
+        [simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply, two_mul];
+         simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply, h]])
+
+/-- **(8.6.3).** Let `Uᵀ A V = [Σ; 0]`, `Σ = diag(σ₁, …, σ_n)`, be an SVD of `A ∈ ℝ^{m×n}` with
+`U = [U₁ U₂]` (`n` and `m - n` columns) and `V` orthogonal. Then
+`Q = (1/√2) [V V 0; U₁ -U₁ √2 U₂]` (block rows `n`, `m`; block columns `n`, `n`, `m - n`) is
+orthogonal (`QᵀQ = QQᵀ = I`) and `Qᵀ [0 Aᵀ; A 0] Q = diag(σ₁, …, σ_n, -σ₁, …, -σ_n, 0, …, 0)`:
+the eigenvalues of the Jordan–Wielandt matrix `Matrix.hermitianDilation A` are the `±σ_i` and
+`m - n` zeros. -/
+theorem equation_8_6_3 {A : Matrix (Fin m) (Fin n) ℝ} {U₁ : Matrix (Fin m) (Fin n) ℝ}
+    {U₂ : Matrix (Fin m) (Fin (m - n)) ℝ} {V : Matrix (Fin n) (Fin n) ℝ}
+    (hU : (fromCols U₁ U₂)ᵀ * fromCols U₁ U₂ = 1) (hU' : fromCols U₁ U₂ * (fromCols U₁ U₂)ᵀ = 1)
+    (hV : V ∈ orthogonalGroup (Fin n) ℝ) {σ : Fin n → ℝ}
+    (hA : (fromCols U₁ U₂)ᵀ * A * V = fromRows (diagonal σ) 0) :
+    let Q : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ (Fin n ⊕ Fin (m - n))) ℝ :=
+      (√2)⁻¹ • fromBlocks V (fromCols V 0) U₁ (fromCols (-U₁) (√2 • U₂))
+    Qᵀ * Q = 1 ∧ Q * Qᵀ = 1 ∧
+      Qᵀ * hermitianDilation A * Q = diagonal (Sum.elim σ (Sum.elim (-σ) 0)) := by
+  intro Q
+  set U := fromCols U₁ U₂ with hUdef
+  set M : Matrix (Fin n ⊕ (Fin n ⊕ Fin (m - n))) (Fin n ⊕ (Fin n ⊕ Fin (m - n))) ℝ :=
+    fromBlocks 1 (fromCols 1 0) (fromRows 1 0) (fromBlocks (-1) 0 0 (√2 • 1)) with hM
+  set W : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ (Fin n ⊕ Fin (m - n))) ℝ := fromBlocks V 0 0 U
+    with hW
+  have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hV
+  have hVV' : V * Vᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hV
+  have hQ : Q = (√2)⁻¹ • (W * M) := by
+    simp only [Q, W, M, U, fromBlocks_multiply, mul_fromCols, fromCols_mul_fromRows,
+      fromCols_mul_fromBlocks, Matrix.mul_one, Matrix.mul_zero, Matrix.zero_mul, add_zero,
+      zero_add, Matrix.mul_neg, Matrix.mul_smul]
+  have hWW : Wᵀ * W = 1 := by
+    rw [hW, fromBlocks_transpose, fromBlocks_multiply, hVV, hU]
+    simp
+  have hWW' : W * Wᵀ = 1 := by
+    rw [hW, fromBlocks_transpose, fromBlocks_multiply, hVV', hU']
+    simp
+  have hD : Wᵀ * hermitianDilation A * W =
+      fromBlocks 0 (fromCols (diagonal σ) 0) (fromRows (diagonal σ) 0) 0 := by
+    have hA' : Vᵀ * Aᵀ * U = fromCols (diagonal σ) 0 := by
+      have := congrArg transpose hA
+      simpa [transpose_mul, Matrix.mul_assoc, transpose_fromRows] using this
+    rw [hW, hermitianDilation, conjTranspose_eq_transpose_of_trivial, fromBlocks_transpose,
+      fromBlocks_multiply, fromBlocks_multiply]
+    simp only [Matrix.zero_mul, Matrix.mul_zero, zero_add, add_zero, transpose_zero]
+    rw [hA', hA]
+  obtain ⟨hMM, hMM'⟩ := jw_mul_self (n := n) (p := m - n)
+  have h2 : (√2)⁻¹ * (√2)⁻¹ = (1 / 2 : ℝ) := by
+    rw [← mul_inv, Real.mul_self_sqrt (by norm_num), one_div]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hQ, transpose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, h2, transpose_mul,
+      Matrix.mul_assoc, ← Matrix.mul_assoc Wᵀ, hWW, Matrix.one_mul, hMM, smul_smul]
+    norm_num
+  · rw [hQ, transpose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, h2, transpose_mul,
+      Matrix.mul_assoc, ← Matrix.mul_assoc M, hMM', Matrix.smul_mul, Matrix.one_mul,
+      Matrix.mul_smul, hWW', smul_smul]
+    norm_num
+  · rw [hQ, transpose_smul, Matrix.smul_mul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, h2,
+      transpose_mul, show Mᵀ * Wᵀ * hermitianDilation A * (W * M) =
+        Mᵀ * (Wᵀ * hermitianDilation A * W) * M by simp only [Matrix.mul_assoc], hD,
+      jw_conj σ, smul_smul]
+    norm_num
 
 /-- The linear equivalence between `ℝⁿ` as `EuclideanSpace` and as functions. -/
 private abbrev euclideanEquiv' (n : ℕ) : EuclideanSpace ℝ (Fin n) ≃ₗ[ℝ] (Fin n → ℝ) :=
@@ -145,6 +239,56 @@ theorem corollary_8_6_2 (A E : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
   refine LinearMap.abs_singularValues_sub_le (norm_nonneg E) (fun x => ?_) k
   rw [map_add, add_sub_cancel_left]
   exact norm_toEuclideanLin_apply_le E x
+
+open scoped Matrix.Norms.L2Operator in
+/-- The Jordan–Wielandt matrix `[0 Eᵀ; E 0]` has the `2`-norm of `E`: at most by the block bound
+`Matrix.l2_opNorm_fromBlocks_le` (zero diagonal blocks), at least because `E` is a submatrix. -/
+private theorem lpOpNorm_hermitianDilation (E : Matrix (Fin m) (Fin n) ℝ) :
+    lpOpNorm 2 (hermitianDilation E) = lpOpNorm 2 E := by
+  apply le_antisymm
+  · rw [lpOpNorm_two, lpOpNorm_two]
+    have h := l2_opNorm_fromBlocks_le (E := (0 : Matrix (Fin n) (Fin n) ℝ)) (C := Eᴴ) (C' := E)
+      (D := (0 : Matrix (Fin m) (Fin m) ℝ)) (μ := 0) (γ := ‖E‖) (δ := 0) (by simp)
+      (by rw [l2_opNorm_conjTranspose]) le_rfl (by simp)
+    have hs : √((0 - 0) ^ 2 + 4 * ‖E‖ ^ 2) = 2 * ‖E‖ := by
+      rw [show ((0 : ℝ) - 0) ^ 2 + 4 * ‖E‖ ^ 2 = (2 * ‖E‖) ^ 2 by ring]
+      exact Real.sqrt_sq (by positivity)
+    rw [hs, zero_add, zero_add, mul_div_cancel_left₀ _ two_ne_zero] at h
+    exact h
+  · have h := lpOpNorm_submatrix_le (p := 2) (hermitianDilation E) Sum.inr_injective
+      Sum.inl_injective
+    have he : (hermitianDilation E).submatrix Sum.inr Sum.inl = E := by
+      ext i j; simp [hermitianDilation]
+    rwa [he] at h
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **(8.6.4)**: the Jordan–Wielandt matrices `Ã = [0 Aᵀ; A 0]` and
+`Ã + Ẽ = [0 (A + E)ᵀ; A + E 0]` differ by `Ẽ = [0 Eᵀ; E 0]` (`Matrix.hermitianDilation`), and
+`‖Ẽ‖_F² = 2 ‖E‖_F²`, `‖Ẽ‖₂ = ‖E‖₂` — the norms that turn Theorem 8.1.4 and Corollary 8.1.6 for
+`Ã` into Theorem 8.6.4 and Corollary 8.6.2. -/
+theorem equation_8_6_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
+    hermitianDilation E = fromBlocks 0 Eᵀ E 0 ∧
+      hermitianDilation (A + E) = hermitianDilation A + hermitianDilation E ∧
+      ‖hermitianDilation E‖ ^ 2 = 2 * ‖E‖ ^ 2 ∧
+      lpOpNorm 2 (hermitianDilation E) = lpOpNorm 2 E :=
+  ⟨by rw [hermitianDilation, conjTranspose_eq_transpose_of_trivial], hermitianDilation_add A E,
+    frobenius_norm_hermitianDilation_sq E, lpOpNorm_hermitianDilation E⟩
+
+/-- **Theorem 8.6.4 (Wielandt–Hoffman for singular values).** For `A, E ∈ ℝ^{m×n}` with `m ≥ n`,
+`∑_{k=1}^n (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`. The backbone's
+`Matrix.sum_sq_sortedSingularValues_sub_le`, whose proof is the book's (Theorem 8.1.4 for the
+matrices (8.6.4)). -/
+theorem theorem_8_6_4 (hmn : n ≤ m) (A E : Matrix (Fin m) (Fin n) ℝ) :
+    ∑ k : Fin n, ((A + E).sortedSingularValues k - A.sortedSingularValues k) ^ 2 ≤ ‖E‖ ^ 2 := by
+  have h := sum_sq_sortedSingularValues_sub_le A E
+  rwa [Fintype.card_fin, Fintype.card_fin, min_eq_right hmn,
+    ← Fin.sum_univ_eq_sum_range (fun k => ((A + E).sortedSingularValues k -
+      A.sortedSingularValues k) ^ 2)] at h
+
+end Frobenius
 
 /-- **Corollary 8.6.3 (interlacing).** For `A = [a_1 | ⋯ | a_n] ∈ ℝ^{m×n}` and `A_r` its first `r`
 columns: `σ_k(A_{r+1}) ≥ σ_k(A_r) ≥ σ_{k+1}(A_{r+1})` for `k < r` (0-based), i.e. the chain
@@ -722,5 +866,176 @@ theorem bidiagonal_decouple :
     · have e : Fin.rev (⟨n - 1, by omega⟩ : Fin n) = ⟨0, h⟩ := Fin.ext (by simp; omega)
       rw [hentry, e]
       exact hrow _
+
+/-! ### §8.6.3 The SVD algorithm: Algorithms 8.6.1–8.6.2 -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- One chasing pair of Algorithm 8.6.1 on `(B, U, V, prev)` at consecutive window indices
+`(a, b)`: `y, z` are `t₁₁ - μ`, `t₁₂` for the first pair (`prev = none`) and `b_{prev,a}`,
+`b_{prev,b}` afterwards (the book's `y = b_{k,k+1}`, `z = b_{k,k+2}`, copies);
+`[c, s] = givens(y, z)` (`[y z] [c s; -s c] = [* 0]`, the same condition `s y + c z = 0`),
+`B = B G(a,b,θ)` over the window's rows, `V = V G(a,b,θ)`; then `y = b_aa`, `z = b_ba`,
+`[c, s] = givens(y, z)`, `B = G(a,b,θ)ᵀ B` over the window's columns, `U = U G(a,b,θ)`. -/
+noncomputable def golubKahanRotate (hnm : n ≤ m) (w : List (Fin n)) (y₀ z₀ : ℝ)
+    (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+      Option (Fin n)) (ab : Fin n × Fin n) :
+    M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+      Option (Fin n)) := do
+  let yz : ℝ × ℝ := st.2.2.2.elim (y₀, z₀) fun pr =>
+    (st.1 (Fin.castLE hnm pr) ab.1, st.1 (Fin.castLE hnm pr) ab.2)
+  let cs ← Chapter05.algorithm_5_1_3 rnd yz.1 yz.2
+  let B₁ ← Chapter05.givensApplyRight rnd ab.1 ab.2 cs.1 cs.2 (w.map (Fin.castLE hnm)) st.1
+  let V₁ ← Chapter05.givensApplyRight rnd ab.1 ab.2 cs.1 cs.2 (List.finRange n) st.2.2.1
+  let cs' ← Chapter05.algorithm_5_1_3 rnd (B₁ (Fin.castLE hnm ab.1) ab.1)
+    (B₁ (Fin.castLE hnm ab.2) ab.1)
+  let B₂ ← Chapter05.givensApplyLeft rnd (Fin.castLE hnm ab.1) (Fin.castLE hnm ab.2) cs'.1 cs'.2
+    w B₁
+  let U₁ ← Chapter05.givensApplyRight rnd (Fin.castLE hnm ab.1) (Fin.castLE hnm ab.2) cs'.1
+    cs'.2 (List.finRange m) st.2.1
+  pure (B₂, U₁, V₁, some ab.1)
+
+/-- **Algorithm 8.6.1 (Golub–Kahan SVD step).** "Given a bidiagonal matrix `B` having no zeros on
+its diagonal or superdiagonal, the following algorithm overwrites `B` with the bidiagonal matrix
+`B̄ = ŪᵀBV̄` where `Ū` and `V̄` are orthogonal and `V̄` is essentially the orthogonal matrix that
+would be obtained by applying Algorithm 8.3.2 to `T = BᵀB`."
+```
+Let μ be the eigenvalue of the trailing 2-by-2 submatrix of T = BᵀB that is closer to t_nn.
+y = t₁₁ - μ;  z = t₁₂
+for k = 1:n-1
+    Determine c, s such that [y z] [c s; -s c] = [* 0];   B = B G(k, k+1, θ)
+    y = b_kk;  z = b_{k+1,k}
+    Determine c, s such that [c s; -s c]ᵀ [y; z] = [*; 0]; B = G(k, k+1, θ)ᵀ B
+    if k < n-1:  y = b_{k,k+1};  z = b_{k,k+2}
+end
+```
+On a window `w` of consecutive column indices of an `m × n` array (`n ≤ m`; the rows of the window
+are the same indices; the book's step is `w = List.finRange n`, the book's "`B ∈ ℝ^{m×n}`" being a
+slip for a square `B`), with the accumulations `U = U Ū`, `V = V V̄` that Algorithm 8.6.2 needs.
+`μ` is computed by the formula of Algorithm 8.3.2 from
+`t_{N-1,N-1} = fl(fl(d²_{N-1}) + fl(f²_{N-2}))`
+(no `f_{N-2}` for `N = 2`), `t_NN = fl(fl(d²_N) + fl(f²_{N-1}))`, `t_{N,N-1} = fl(d_{N-1} f_{N-1})`,
+and `y = fl(fl(d₁²) - μ)`, `z = fl(d₁ f₁)`. For `N ≤ 1` nothing is done. -/
+noncomputable def algorithm_8_6_1 (hnm : n ≤ m) (w : List (Fin n)) (B : Matrix (Fin m) (Fin n) ℝ)
+    (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
+  match w with
+  | f₀ :: f₁ :: rest => do
+    let b : Fin n → Fin n → ℝ := fun i j => B (Fin.castLE hnm i) j
+    let l := (f₁ :: rest).getLast (List.cons_ne_nil _ _)
+    let l' := (f₀ :: f₁ :: rest).dropLast.getLast (by simp)
+    let f₂ : ℝ := match rest with
+      | [] => 0
+      | _ => b ((f₀ :: f₁ :: rest).dropLast.dropLast.getLast?.getD l') l'
+    let tpp ← rnd ((← rnd (b l' l' * b l' l')) + (← rnd (f₂ * f₂)))
+    let tnn ← rnd ((← rnd (b l l * b l l)) + (← rnd (b l' l * b l' l)))
+    let tnp ← rnd (b l' l' * b l' l)
+    let μ ← wilkinsonShiftComputed rnd tpp tnn tnp
+    let y₀ ← rnd ((← rnd (b f₀ f₀ * b f₀ f₀)) - μ)
+    let z₀ ← rnd (b f₀ f₀ * b f₀ f₁)
+    let st ← ((f₀ :: f₁ :: rest).zip (f₁ :: rest)).foldlM
+      (golubKahanRotate rnd hnm (f₀ :: f₁ :: rest) y₀ z₀) (B, U, V, none)
+    pure (st.1, st.2.1, st.2.2.1)
+  | _ => pure (B, U, V)
+
+/-- The deflation pass of Algorithm 8.6.2: for `i = 1:n-1`, set `b_{i,i+1} = 0` if
+`|b_{i,i+1}| ≤ fl(ε · fl(|b_ii| + |b_{i+1,i+1}|))` (the right side rounded; `|·|` and the
+comparison exact). -/
+noncomputable def svdDeflate (hnm : n ≤ m) (ε : ℝ) (B : Matrix (Fin m) (Fin n) ℝ) :
+    M (Matrix (Fin m) (Fin n) ℝ) :=
+  (List.finRange n).foldlM (fun (B : Matrix (Fin m) (Fin n) ℝ) (i : Fin n) => do
+    if h : (i : ℕ) + 1 < n then do
+      let e ← rnd (ε * (← rnd (|B (Fin.castLE hnm i) i| +
+        |B (Fin.castLE hnm ⟨i + 1, h⟩) ⟨i + 1, h⟩|)))
+      if |B (Fin.castLE hnm i) ⟨i + 1, h⟩| ≤ e then
+        pure (of fun r s => if r = Fin.castLE hnm i ∧ s = ⟨i + 1, h⟩ then 0 else B r s)
+      else pure B
+    else pure B) B
+
+open Classical in
+/-- The block `B₂₂` of Algorithm 8.6.2 as a window of consecutive indices: with the largest `q`
+such that `B₃₃` (the last `q` columns) is diagonal and decoupled and the smallest `p` such that
+`B₂₂` has a nonzero superdiagonal, the window `[p, …, n-q-1]`; empty when `q = n`. -/
+noncomputable def bidiagonalWindow (hnm : n ≤ m) (B : Matrix (Fin m) (Fin n) ℝ) : List (Fin n) :=
+  lastRunWindow n fun i => ∃ h : i + 1 < n,
+    B (Fin.castLE hnm ⟨i, by omega⟩) ⟨i + 1, h⟩ ≠ 0
+
+/-- The decoupling rotations of Algorithm 8.6.2 on a window `w` of `B` with a zero diagonal entry
+`b_kk` (`k` the first one), `bidiagonal_decouple` (ii)–(iii): if `k` is not the last index of the
+window, rotations of the rows `(j, k)`, `j = k+1, …` (`[c, s] = givens(b_jj, b_kj)`,
+`B = G(j,k,θ)ᵀ B`, `U = U G(j,k,θ)`) zero row `k`; if it is the last, rotations of the columns
+`(j, k)`, `j = k-1, …, p` (`[c, s] = givens(b_jj, b_jk)`, `B = B G(j,k,θ)`, `V = V G(j,k,θ)`) zero
+column `k`. -/
+noncomputable def zeroDiagonalChase (hnm : n ≤ m) (w : List (Fin n)) (k : Fin n)
+    (B : Matrix (Fin m) (Fin n) ℝ) (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
+  if w.getLast? = some k then
+    ((w.filter (· < k)).reverse).foldlM (fun (st : Matrix (Fin m) (Fin n) ℝ ×
+        Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) j => do
+      let cs ← Chapter05.algorithm_5_1_3 rnd (st.1 (Fin.castLE hnm j) j)
+        (st.1 (Fin.castLE hnm j) k)
+      let B₁ ← Chapter05.givensApplyRight rnd j k cs.1 cs.2 (w.map (Fin.castLE hnm)) st.1
+      let V₁ ← Chapter05.givensApplyRight rnd j k cs.1 cs.2 (List.finRange n) st.2.2
+      pure (B₁, st.2.1, V₁)) (B, U, V)
+  else
+    (w.filter (k < ·)).foldlM (fun (st : Matrix (Fin m) (Fin n) ℝ ×
+        Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) j => do
+      let cs ← Chapter05.algorithm_5_1_3 rnd (st.1 (Fin.castLE hnm j) j)
+        (st.1 (Fin.castLE hnm k) j)
+      let B₁ ← Chapter05.givensApplyLeft rnd (Fin.castLE hnm j) (Fin.castLE hnm k) cs.1 cs.2 w
+        st.1
+      let U₁ ← Chapter05.givensApplyRight rnd (Fin.castLE hnm j) (Fin.castLE hnm k) cs.1 cs.2
+        (List.finRange m) st.2.1
+      pure (B₁, U₁, st.2.2)) (B, U, V)
+
+open Classical in
+/-- One pass of the `until q = n` loop of Algorithm 8.6.2 on `(B, U, V, done)`: deflate, find the
+window of `B₂₂`, stop if it is empty (`q = n`); if `B₂₂` has a zero diagonal entry, decouple by
+`zeroDiagonalChase`, otherwise apply Algorithm 8.6.1 to the window with the accumulators. -/
+noncomputable def svdPass (hnm : n ≤ m) (ε : ℝ)
+    (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
+    M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
+  if st.2.2.2 then pure st else do
+    let B ← svdDeflate rnd hnm ε st.1
+    match bidiagonalWindow hnm B with
+    | [] => pure (B, st.2.1, st.2.2.1, true)
+    | w => do
+      let r ← match w.find? fun k => B (Fin.castLE hnm k) k = 0 with
+        | some k => zeroDiagonalChase rnd hnm w k B st.2.1 st.2.2.1
+        | none => algorithm_8_6_1 rnd hnm w B st.2.1 st.2.2.1
+      pure (r.1, r.2.1, r.2.2, false)
+
+/-- **Algorithm 8.6.2 (the SVD algorithm).** "Given `A ∈ ℝ^{m×n}` (`m ≥ n`) and `ε`, a small
+multiple of the unit roundoff, the following algorithm overwrites `A` with `UᵀAV = D + E`, where
+`U`, `V` are orthogonal, `D` is diagonal, and `E` satisfies `‖E‖₂ ≈ u‖A‖₂`."
+```
+Use Algorithm 5.4.2 to compute the bidiagonalization [B; 0] = (U₁ ⋯ U_n)ᵀ A (V₁ ⋯ V_{n-2})
+until q = n
+    For i = 1:n-1, set b_{i,i+1} to zero if |b_{i,i+1}| ≤ ε(|b_ii| + |b_{i+1,i+1}|)
+    Find the largest q and the smallest p such that B = diag(B₁₁, B₂₂, B₃₃) with B₃₃
+    diagonal (q × q) and B₂₂ with a nonzero superdiagonal
+    if q < n
+        if any diagonal entry in B₂₂ is zero, then zero the superdiagonal entry in the same row
+        else apply Algorithm 8.6.1 to B₂₂:
+            B = diag(I_p, U, I_{q+m-n})ᵀ B diag(I_p, V, I_q)
+    end
+end
+```
+`B` is the bidiagonal part of chapter 5's Algorithm 5.4.2's array, `U` and `V` the forward
+accumulations (§5.1.6) of its stored reflectors with the returned `β`s (convention 13); the loop is
+at most `fuel` passes with a `done` flag (convention 3). The result is `(B, U, V, done)`. -/
+noncomputable def algorithm_8_6_2 (hnm : n ≤ m) (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
+    (fuel : ℕ) :
+    M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
+  let r ← Chapter05.algorithm_5_4_2 rnd hnm A
+  let U ← Chapter05.forwardAccumulation rnd (Chapter05.storedReflectors r.1 r.2.1)
+  let V ← Chapter05.forwardAccumulation rnd
+    (List.ofFn fun k => (Chapter05.storedRowVec hnm r.1 k, r.2.2 k))
+  (List.range fuel).foldlM (fun st _ => svdPass rnd hnm ε st)
+    (Chapter05.bidiagonalPart r.1, U, V, false)
+
+end Programs
 
 end GolubVanLoan.Chapter08

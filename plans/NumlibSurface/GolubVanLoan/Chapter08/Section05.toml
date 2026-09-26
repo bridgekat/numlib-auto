@@ -38,70 +38,22 @@ source = 'Golub–Van Loan, Matrix Computations, §8.5.3'
 
 [[node]]
 id = "algorithm_8_5_2"
-kind = "definition"
-desc = '''Algorithm 8.5.2 (classical Jacobi), per the conventions: `algorithm_8_5_2 rnd tol A fuel : M (Matrix ×
-Matrix)` returning `(A', V)`. `V ← I`, `δ ← fl(tol · fl(√(∑ fl(a_ij²))))` (rounded, convention 1); at most
-`fuel` times: if the computed `off(A) ≤ δ` (a comparison, exact) stop; choose `(p, q)`, `p < q`,
-maximizing the computed `|a_pq|` (`|·|` exact; first maximizer in the row-major order of `cyclicPairs`);
-`(c, s) ← algorithm_8_5_1 rnd A p q`; `A ← JᵀAJ` with `J = GolubVanLoan.Chapter05.givensRotation p q c s`
-(`GolubVanLoan.Chapter05.givensApplyLeft rnd p q c s cols A`, all columns, then `givensApplyRight rnd p q
-c s rows A`, all rows — the prototype's `jacobiUpdate`); `V ← VJ` (`givensApplyRight`, all rows). ★
-
-Blocked: calls chapter 5's shared helpers `GolubVanLoan.Chapter05.givensRotation`/`givensApplyLeft`/`givensApplyRight` (+ `_spec`), which are not on main yet (chapter 5 surface, agent s05, running).'''
-deps = ["algorithm_8_5_1", "GolubVanLoan.Chapter05.givensRotation", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.2'
 
 [[node]]
 id = "algorithm_8_5_2_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.5.2: for symmetric `A`, `tol ≥ 0` and any `fuel`,
-`(A', V) := Id.run (algorithm_8_5_2 pure tol A fuel)` has `V` orthogonal, `A' = Vᵀ A V` symmetric;
-the iterates are those of `Matrix.classicalJacobiIterate` up to the tie-breaking of the pivot
-(any maximizer satisfies the decay); and if the loop exited on its test then
-`off(A') ≤ tol · ‖A‖_F`. ★★
-
-Blocked: on `algorithm_8_5_2` and chapter 5's `givensApplyLeft_spec`/`givensApplyRight_spec` (agent s05).'''
-deps = ["algorithm_8_5_2", "algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "equation_8_5_2", "classicalJacobi_linear"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.2'
 
 [[node]]
 id = "algorithm_8_5_2_terminates"
-kind = "theorem"
-desc = '''§8.5.3, termination of Algorithm 8.5.2 in exact arithmetic (from the linear rate): for
-symmetric `A` with `n ≥ 2`, `tol > 0` and `fuel ≥ ⌈2 log(tol) / log(1 - 1/N)⌉₊ + 1` (`N = n(n-1)/2`;
-any `fuel` if `N = 1`, where one step diagonalizes), the loop exits on its test:
-`off(A') ≤ tol ‖A‖_F`. From `off(A^{(k)})² ≤ (1 - 1/N)^k off(A)² ≤ (1 - 1/N)^k ‖A‖_F²`. ★★
-
-Blocked: on `algorithm_8_5_2_spec` (blocked); the linear rate it uses is `classicalJacobi_linear` (proved).'''
-deps = ["algorithm_8_5_2_spec", "classicalJacobi_linear"]
 source = 'Golub–Van Loan, Matrix Computations, §8.5.3'
 
 [[node]]
 id = "algorithm_8_5_3"
-kind = "definition"
-desc = '''Algorithm 8.5.3 (cyclic Jacobi), per the conventions: `algorithm_8_5_3 rnd tol A fuel : M (Matrix ×
-Matrix)`, the prototype's definition (`notes/gvl/ch08/proto/Jacobi.lean`: `cyclicPairs`, `cyclicSweep`,
-`offComputed`; the prototype's recursive `cyclicLoop` becomes the `List.range fuel` fold with a `done`
-flag of the section's convention, and its `jacobiUpdate` becomes chapter 5's `givensApplyLeft` then
-`givensApplyRight`): `V ← I`, `δ ← fl(tol · fl(√(∑ fl(a_ij²))))`; at most `fuel` sweeps while the
-computed `off(A) > δ`; a sweep runs `p = 1:n-1`, `q = p+1:n`, `(c, s) ← algorithm_8_5_1`, `A ← JᵀAJ`,
-`V ← VJ` with `J = GolubVanLoan.Chapter05.givensRotation p q c s`. ★
-
-Blocked: calls chapter 5's shared helpers `GolubVanLoan.Chapter05.givensRotation`/`givensApplyLeft`/`givensApplyRight` (+ `_spec`), which are not on main yet (chapter 5 surface, agent s05, running).'''
-deps = ["algorithm_8_5_1", "GolubVanLoan.Chapter05.givensRotation", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.3'
 
 [[node]]
 id = "algorithm_8_5_3_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.5.3: for symmetric `A`, `tol ≥ 0`, any `fuel`,
-`(A', V) := Id.run (algorithm_8_5_3 pure tol A fuel)`: `V ∈ orthogonalGroup`, `A' = Vᵀ A V`,
-`A'` symmetric, `off(A') ≤ off(A)` (each rotation removes `2 a_pq²`, `equation_8_5_2`), and
-`off(A') ≤ tol ‖A‖_F` if the loop exited on its test. Statement shape checked in the prototype.
-Quadratic convergence (Wilkinson 1962, van Kempen 1966) is not claimed. ★★
-
-Blocked: on `algorithm_8_5_3` and chapter 5's `givensApplyLeft_spec`/`givensApplyRight_spec` (agent s05).'''
-deps = ["algorithm_8_5_3", "algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "equation_8_5_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.5.3'
 
 [[node]]

@@ -1,3 +1,4 @@
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Analysis.Matrix.SpectralNorm
 import Mathlib.Algebra.Order.Star.Real
 import Numlib.Eigen.DivideConquer
@@ -7,8 +8,10 @@ import Numlib.Eigen.MinMax
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.RayleighRitz
 import Numlib.LinearAlgebra.Matrix.SVD
+import Numlib.LinearAlgebra.Matrix.Polar
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.Sylvester
+import NumlibSurface.GolubVanLoan.Chapter07.Section02
 
 /-!
 # Golub–Van Loan §8.1: properties and decompositions of symmetric matrices
@@ -36,7 +39,9 @@ general; (8.1.7)'s conclusion is. P8.1.5 is not used.
 ## Sources
 
 Backbone `Numlib/Eigen/{MinMax, Perturbation, RayleighRitz, Inertia, InvariantSubspace}`,
-`Numlib/LinearAlgebra/Matrix/{Schur, Sylvester, SVD}`, `Numlib/Analysis/Matrix/SpectralNorm`.
+`Numlib/LinearAlgebra/Matrix/{Polar, Schur, Sylvester, SVD}`,
+`Numlib/Analysis/Matrix/{SingularValues, SpectralNorm}`; chapter 7's Theorem 7.2.1 (Gershgorin) for
+Theorem 8.1.3.
 -/
 
 open Matrix
@@ -245,6 +250,32 @@ theorem symmEigenvalue_pos_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Is
     exact symmEigenvalue_mem_spectrum hA k
   rw [← hi]
   exact hP.eigenvalues_pos i
+
+/-- **Theorem 8.1.3 (Gershgorin).** For orthogonal `Q` with `Qᵀ A Q = D + F`, `D = diag(d)` and `F`
+with zero diagonal, `λ(A) ⊆ ⋃ᵢ [dᵢ - rᵢ, dᵢ + rᵢ]` with `rᵢ = ∑ⱼ |f_ij|`. Chapter 7's Theorem 7.2.1
+for the complexifications, whose discs meet the real line in these intervals. (The book assumes `A`
+symmetric, which makes `λ(A)` real; the inclusion of the real eigenvalues holds for every `A`.) -/
+theorem theorem_8_1_3 {A Q F : Matrix (Fin n) (Fin n) ℝ} {d : Fin n → ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (h : Qᵀ * A * Q = diagonal d + F) (hF : ∀ i, F i i = 0) :
+    spectrum ℝ A ⊆ ⋃ i, Set.Icc (d i - ∑ j, |F i j|) (d i + ∑ j, |F i j|) := by
+  intro μ hμ
+  have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQ
+  have hQu : IsUnit Q := (isUnit_iff_isUnit_det Q).2 (isUnit_det_of_left_inverse hQQ)
+  have hinv : Q⁻¹ = Qᵀ := inv_eq_left_inv hQQ
+  have hc : (complexify Q)⁻¹ * complexify A * complexify Q =
+      diagonal (fun i => (d i : ℂ)) + complexify F := by
+    rw [← complexify_inv, ← complexify_mul, ← complexify_mul, hinv, h, complexify_add]
+    congr 1
+    ext i j
+    by_cases hij : i = j <;> simp [hij]
+  have hsub := GolubVanLoan.Chapter07.theorem_7_2_1 ((isUnit_complexify_iff Q).2 hQu) hc
+    (fun i => by simp [hF i])
+  obtain ⟨i, hi⟩ := Set.mem_iUnion.1 (hsub ((ofReal_mem_spectrum_complexify_iff A μ).2 hμ))
+  rw [Metric.mem_closedBall, Complex.dist_eq, ← Complex.ofReal_sub, Complex.norm_real,
+    Real.norm_eq_abs] at hi
+  simp only [complexify_apply, Complex.norm_real, Real.norm_eq_abs] at hi
+  obtain ⟨h1, h2⟩ := abs_le.1 hi
+  exact Set.mem_iUnion.2 ⟨i, ⟨by linarith, by linarith⟩⟩
 
 /-! ### §8.1.2 Eigenvalue sensitivity -/
 
@@ -606,6 +637,14 @@ theorem theorem_8_1_10 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s :
     simp only [Matrix.mul_assoc]
     rw [← Matrix.mul_assoc S⁻¹ S, hSi, Matrix.one_mul]
 
+open scoped MatrixOrder in
+/-- **(8.1.3)**: for `P ∈ ℝ^{s×r}`, `‖P (I + PᵀP)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F` (the bound used for
+Corollary 8.1.11), the square root being `CFC.sqrt`. -/
+theorem equation_8_1_3 {r s : ℕ} (P : Matrix (Fin s) (Fin r) ℝ) :
+    lpOpNorm 2 (P * (CFC.sqrt (1 + Pᵀ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖ := by
+  have h := l2_opNorm_mul_inv_sqrt_one_add_gram_le P
+  rwa [conjTranspose_eq_transpose_of_trivial] at h
+
 end Frobenius
 
 /-! ### §8.1.4 Approximate invariant subspaces -/
@@ -772,6 +811,35 @@ theorem equation_8_1_6 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
   calc ‖X₁ᵀ * X₁‖ = ‖(X₁ᵀ * X₁ - 1) + 1‖ := by rw [sub_add_cancel]
     _ ≤ ‖X₁ᵀ * X₁ - 1‖ + ‖(1 : Matrix (Fin r) (Fin r) ℝ)‖ := norm_add_le _ _
     _ ≤ 1 + τ := by linarith
+
+/-- If `‖X₁ᵀ X₁ - I_r‖₂ < 1` then `r ≤ n`: otherwise some `v ≠ 0` has `X₁ v = 0`, and
+`(X₁ᵀ X₁ - I) v = -v`. -/
+private theorem le_of_l2_opNorm_transpose_mul_self_sub_one_lt {r : ℕ}
+    {X₁ : Matrix (Fin n) (Fin r) ℝ} (h : lpOpNorm 2 (X₁ᵀ * X₁ - 1) < 1) : r ≤ n := by
+  by_contra hrn
+  have hker : LinearMap.ker (toLin' X₁) ≠ ⊥ := LinearMap.ker_ne_bot_of_finrank_lt (by simp; omega)
+  obtain ⟨v, hv, hv0⟩ := (Submodule.ne_bot_iff _).1 hker
+  rw [LinearMap.mem_ker, toLin'_apply] at hv
+  have hmv : (X₁ᵀ * X₁ - 1) *ᵥ v = -v := by
+    rw [sub_mulVec, ← mulVec_mulVec, hv, mulVec_zero, one_mulVec, zero_sub]
+  have hle := lpSeminorm_mulVec_le (r := 2) (X₁ᵀ * X₁ - 1) v
+  rw [hmv, lpSeminorm_apply, lpSeminorm_apply, WithLp.toLp_neg, norm_neg] at hle
+  have hpos : 0 < ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin r))‖ :=
+    norm_pos_iff.2 (fun h0 => hv0 (by simpa using congrArg WithLp.ofLp h0))
+  nlinarith
+
+/-- **(8.1.7)** (in the proof of Theorem 8.1.16): if `‖X₁ᵀ X₁ - I_r‖₂ = τ < 1` there is `Q` with
+orthonormal columns and `‖Q - X₁‖₂ ≤ τ` — the book's `Q = U Vᵀ` from the thin SVD
+`Uᵀ X₁ V = Σ`, i.e. the polar factor of `X₁` (`Matrix.exists_orthonormal_cols_norm_sub_le`). The
+book's intermediate `1 - σ_r² = τ` is not needed (and holds only when `σ_r` is the singular value
+farthest from `1`). -/
+theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
+    (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
+    ∃ Q : Matrix (Fin n) (Fin r) ℝ, Qᵀ * Q = 1 ∧ lpOpNorm 2 (Q - X₁) ≤ τ := by
+  have hr := le_of_l2_opNorm_transpose_mul_self_sub_one_lt (hτ ▸ hτ1)
+  obtain ⟨Q, hQ, -, hle⟩ := exists_orthonormal_cols_norm_sub_le X₁ (by simpa using hr)
+    (by rw [conjTranspose_eq_transpose_of_trivial, hτ]) hτ1
+  exact ⟨Q, by rwa [conjTranspose_eq_transpose_of_trivial] at hQ, hle⟩
 
 end L2
 

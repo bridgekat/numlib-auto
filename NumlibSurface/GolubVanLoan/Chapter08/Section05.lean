@@ -1,5 +1,6 @@
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Eigen.Jacobi
+import NumlibSurface.GolubVanLoan.Chapter05.Section01
 
 /-!
 # Golub–Van Loan §8.5: Jacobi methods
@@ -30,7 +31,7 @@ including (8.5.4), and the flop counts.
 Backbone `Numlib/Eigen/Jacobi`, `Numlib/LinearAlgebra/Matrix/PlaneRotation`.
 -/
 
-open Matrix
+open Matrix FloatingPoint
 
 namespace GolubVanLoan.Chapter08
 
@@ -338,6 +339,502 @@ theorem classicalJacobi_linear [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA :
     linarith
   · rw [off_sq, off_sq, hN]
     exact offDiagNormSq_classicalJacobiIterate_le hA k
+
+/-! ### §8.5.3–8.5.4 The classical and cyclic Jacobi algorithms -/
+
+/-- All index pairs `(i, j)`, row by row. -/
+def allPairs (n : ℕ) : List (Fin n × Fin n) := List.finRange n ×ˢ List.finRange n
+
+/-- The off-diagonal index pairs `(i, j)`, `i ≠ j`, row by row. -/
+def offDiagPairs (n : ℕ) : List (Fin n × Fin n) := (allPairs n).filter fun ij => ij.1 ≠ ij.2
+
+/-- **§8.5.4, the cyclic-by-row ordering** `(1,2), (1,3), …, (1,n), (2,3), …, (n-1,n)`: the pairs
+`(p, q)`, `p < q`, row by row. -/
+def cyclicPairs (n : ℕ) : List (Fin n × Fin n) := (allPairs n).filter fun pq => pq.1 < pq.2
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- `off(A)` as the algorithms compute it: `fl(√(∑_{i ≠ j} fl(a_ij²)))`, the sum by Algorithm 1.1.1
+from `0` over the off-diagonal pairs, row by row. -/
+noncomputable def offComputed (A : Matrix (Fin n) (Fin n) ℝ) : M ℝ := do
+  rnd √(← dotAccum rnd (offDiagPairs n) (fun ij => A ij.1 ij.2) (fun ij => A ij.1 ij.2) 0)
+
+/-- The threshold `δ = fl(tol · ‖A‖_F)` of Algorithms 8.5.2–8.5.3, with the computed
+`‖A‖_F = fl(√(∑ fl(a_ij²)))`. -/
+noncomputable def jacobiThreshold (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : M ℝ := do
+  rnd (tol * (← rnd √(← dotAccum rnd (allPairs n) (fun ij => A ij.1 ij.2)
+    (fun ij => A ij.1 ij.2) 0)))
+
+/-- One Jacobi update of Algorithms 8.5.2–8.5.3 on `(A, V)`: `[c, s] = symSchur2(A, p, q)`
+(Algorithm 8.5.1), `A = J(p,q,θ)ᵀ A J(p,q,θ)` (chapter 5's `givensApplyLeft` on all columns, then
+`givensApplyRight` on all rows, `J(p,q,θ) = givensRotation p q c s`), `V = V J(p,q,θ)`. -/
+noncomputable def jacobiUpdate (p q : Fin n) (A V : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
+  let cs ← algorithm_8_5_1 rnd A p q
+  let B ← Chapter05.givensApplyLeft rnd p q cs.1 cs.2 (List.finRange n) A
+  let A' ← Chapter05.givensApplyRight rnd p q cs.1 cs.2 (List.finRange n) B
+  let V' ← Chapter05.givensApplyRight rnd p q cs.1 cs.2 (List.finRange n) V
+  pure (A', V')
+
+/-- The pivot of Algorithm 8.5.2, "choose `(p, q)` so `|a_pq| = max_{i ≠ j} |a_ij|`": the first
+pair `p < q`, row by row, with `|a_pq|` maximal (the comparisons are exact; `none` for `n ≤ 1`). -/
+noncomputable def classicalPivot (A : Matrix (Fin n) (Fin n) ℝ) : Option (Fin n × Fin n) :=
+  (cyclicPairs n).argmax fun pq => |A pq.1 pq.2|
+
+/-- One pass of the `while` loop of Algorithm 8.5.2 on the state `(A, V, done)`: if the computed
+`off(A) ≤ δ` the loop stops, otherwise one Jacobi update at the classical pivot. -/
+noncomputable def classicalJacobiStep (δ : ℝ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
+  if st.2.2 then pure st else do
+    let o ← offComputed rnd st.1
+    if o ≤ δ then pure (st.1, st.2.1, true) else
+      (classicalPivot st.1).elim (pure st) fun pq => do
+        let AV ← jacobiUpdate rnd pq.1 pq.2 st.1 st.2.1
+        pure (AV.1, AV.2, false)
+
+/-- **Algorithm 8.5.2 (classical Jacobi).** "Given a symmetric `A` and a positive tolerance
+`tol`, this algorithm overwrites `A` with `VᵀAV` where `V` is orthogonal and
+`off(VᵀAV) ≤ tol · ‖A‖_F`."
+```
+V = I_n, δ = tol · ‖A‖_F
+while off(A) > δ
+    Choose (p, q) so |a_pq| = max_{i ≠ j} |a_ij|
+    [c, s] = symSchur2(A, p, q)
+    A = J(p, q, θ)ᵀ A J(p, q, θ)
+    V = V J(p, q, θ)
+end
+```
+The `while` loop is at most `fuel` passes over `List.range fuel` with a `done` flag
+(convention 3); the result is `(A, V, done)`, `done` recording that the loop exited on its test. -/
+noncomputable def algorithm_8_5_2 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
+  let δ ← jacobiThreshold rnd tol A
+  (List.range fuel).foldlM (fun st _ => classicalJacobiStep rnd δ st) (A, 1, false)
+
+/-- One sweep of Algorithm 8.5.3: the Jacobi updates at all pairs `(p, q)`, `p < q`, row by
+row. -/
+noncomputable def cyclicSweep (A V : Matrix (Fin n) (Fin n) ℝ) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
+  (cyclicPairs n).foldlM (fun AV pq => jacobiUpdate rnd pq.1 pq.2 AV.1 AV.2) (A, V)
+
+/-- One pass of the `while` loop of Algorithm 8.5.3 on `(A, V, done)`: stop if the computed
+`off(A) ≤ δ`, otherwise one sweep. -/
+noncomputable def cyclicJacobiStep (δ : ℝ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
+  if st.2.2 then pure st else do
+    let o ← offComputed rnd st.1
+    if o ≤ δ then pure (st.1, st.2.1, true) else do
+      let AV ← cyclicSweep rnd st.1 st.2.1
+      pure (AV.1, AV.2, false)
+
+/-- **Algorithm 8.5.3 (cyclic Jacobi).** "Given a symmetric `A` and a positive tolerance `tol`,
+this algorithm overwrites `A` with `VᵀAV` where `V` is orthogonal and
+`off(VᵀAV) ≤ tol · ‖A‖_F`."
+```
+V = I_n, δ = tol · ‖A‖_F
+while off(A) > δ
+    for p = 1:n-1, for q = p+1:n
+        [c, s] = symSchur2(A, p, q); A = J(p,q,θ)ᵀ A J(p,q,θ); V = V J(p,q,θ)
+    end
+end
+```
+At most `fuel` sweeps (convention 3); the result is `(A, V, done)`. -/
+noncomputable def algorithm_8_5_3 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
+    M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
+  let δ ← jacobiThreshold rnd tol A
+  (List.range fuel).foldlM (fun st _ => cyclicJacobiStep rnd δ st) (A, 1, false)
+
+end Programs
+
+/-! ### Exact semantics -/
+
+/-- A sum over a duplicate-free list is the sum over the finite set it enumerates. -/
+private theorem sum_map_eq_sum_filter {α : Type*} [Fintype α] {l : List α}
+    (hl : l.Nodup) {P : α → Prop} [DecidablePred P] (hmem : ∀ x, x ∈ l ↔ P x) (g : α → ℝ) :
+    (l.map g).sum = ∑ x ∈ Finset.univ.filter P, g x := by
+  classical
+  rw [← List.sum_toFinset g hl]
+  congr 1
+  ext x
+  simp [hmem]
+
+private theorem nodup_allPairs (n : ℕ) : (allPairs n).Nodup :=
+  (List.nodup_finRange n).product (List.nodup_finRange n)
+
+private theorem mem_allPairs (x : Fin n × Fin n) : x ∈ allPairs n :=
+  List.mem_product.2 ⟨List.mem_finRange _, List.mem_finRange _⟩
+
+private theorem mem_cyclicPairs {x : Fin n × Fin n} : x ∈ cyclicPairs n ↔ x.1 < x.2 := by
+  simp [cyclicPairs, mem_allPairs]
+
+/-- The exact `off(A)` computation. -/
+private theorem offComputed_id (A : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (offComputed pure A) = off A := by
+  have h := dotAccum_id (offDiagPairs n) (fun ij : Fin n × Fin n => A ij.1 ij.2)
+    (fun ij => A ij.1 ij.2) 0
+  have hsum : ((offDiagPairs n).map fun ij : Fin n × Fin n => A ij.1 ij.2 * A ij.1 ij.2).sum =
+      offDiagNormSq A := by
+    rw [sum_map_eq_sum_filter (l := offDiagPairs n) ((nodup_allPairs n).filter _)
+      (P := fun ij => ij.1 ≠ ij.2) (fun x => by simp [offDiagPairs, mem_allPairs]),
+      Finset.sum_filter, Fintype.sum_prod_type,
+      offDiagNormSq]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [← Finset.sum_filter, Finset.filter_ne]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Real.norm_eq_abs, sq_abs, sq]
+  change Real.sqrt (Id.run (dotAccum pure (offDiagPairs n) _ _ 0)) = _
+  rw [h, zero_add, hsum, off]
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- The exact threshold is `tol · ‖A‖_F`. -/
+private theorem jacobiThreshold_id (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (jacobiThreshold pure tol A) = tol * ‖A‖ := by
+  have h := dotAccum_id (allPairs n) (fun ij : Fin n × Fin n => A ij.1 ij.2)
+    (fun ij => A ij.1 ij.2) 0
+  have hsum : ((allPairs n).map fun ij : Fin n × Fin n => A ij.1 ij.2 * A ij.1 ij.2).sum =
+      ‖A‖ ^ 2 := by
+    rw [sum_map_eq_sum_filter (nodup_allPairs n) (P := fun _ => True)
+      (fun x => by simp [mem_allPairs]), Finset.filter_true_of_mem fun _ _ => trivial,
+      Fintype.sum_prod_type,
+      frobenius_norm_sq_eq_sum_sq]
+    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+    rw [Real.norm_eq_abs, sq_abs, sq]
+  change tol * Real.sqrt (Id.run (dotAccum pure (allPairs n) _ _ 0)) = _
+  rw [h, zero_add, hsum, Real.sqrt_sq (norm_nonneg _)]
+
+end Frobenius
+
+/-- The exact Jacobi update is the backbone's Jacobi step `JᵀAJ` with `J = Matrix.jacobiRotation`,
+accumulated into `V J`. -/
+private theorem jacobiUpdate_id {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n}
+    (hpq : p ≠ q) (V : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (jacobiUpdate pure p q A V) = (jacobiStep A p q, V * jacobiRotation A p q) := by
+  obtain ⟨-, hJ, -, -⟩ := algorithm_8_5_1_spec hA hpq
+  have hall : ∀ i : Fin n, i ∈ List.finRange n := List.mem_finRange
+  change (Id.run (Chapter05.givensApplyRight pure p q _ _ (List.finRange n)
+      (Id.run (Chapter05.givensApplyLeft pure p q _ _ (List.finRange n) A))),
+    Id.run (Chapter05.givensApplyRight pure p q _ _ (List.finRange n) V)) = _
+  rw [Chapter05.givensApplyLeft_spec_of_forall_mem hpq _ _ (List.nodup_finRange n) hall,
+    Chapter05.givensApplyRight_spec_of_forall_mem hpq _ _ (List.nodup_finRange n) hall,
+    Chapter05.givensApplyRight_spec_of_forall_mem hpq _ _ (List.nodup_finRange n) hall]
+  have hJ' : planeRotation p q (algorithm_8_5_1 (M := Id) pure A p q).1
+      (-(algorithm_8_5_1 (M := Id) pure A p q).2) =
+      jacobiRotation A p q := hJ
+  simp only [Chapter05.givensRotation]
+  rw [hJ']
+  rfl
+
+/-- The last pass of a fold over `List.range (k + 1)`, in exact arithmetic. -/
+private theorem run_foldlM_range_succ {β : Type} (f : β → ℕ → Id β) (b : β) (k : ℕ) :
+    Id.run ((List.range (k + 1)).foldlM f b) =
+      Id.run (f (Id.run ((List.range k).foldlM f b)) k) := by
+  rw [List.range_succ, List.foldlM_append]
+  rfl
+
+/-- The contraction factor `1 - 1/N`, `N = n(n-1)/2`, of the classical method is in `[0, 1]`. -/
+private theorem jacobi_rate_nonneg (n : ℕ) : 0 ≤ 1 - 1 / ((n : ℝ) * (n - 1) / 2) := by
+  rcases Nat.lt_or_ge n 2 with hn | hn
+  · interval_cases n <;> norm_num
+  · have h2 : (2 : ℝ) ≤ n := by exact_mod_cast hn
+    have hN : 1 ≤ (n : ℝ) * (n - 1) / 2 := by nlinarith
+    have : 1 / ((n : ℝ) * (n - 1) / 2) ≤ 1 := by
+      rw [div_le_one (by linarith)]; exact hN
+    linarith
+
+/-- The classical pivot is a maximal off-diagonal entry of a symmetric matrix. -/
+private theorem classicalPivot_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    {pq : Fin n × Fin n} (h : classicalPivot A = some pq) :
+    pq.1 ≠ pq.2 ∧ ∀ i j, i ≠ j → |A i j| ≤ |A pq.1 pq.2| := by
+  have hmem : pq ∈ cyclicPairs n := List.argmax_mem h
+  refine ⟨(mem_cyclicPairs.1 hmem).ne, fun i j hij => ?_⟩
+  rcases lt_or_gt_of_ne hij with hlt | hgt
+  · exact List.le_of_mem_argmax (f := fun pq : Fin n × Fin n => |A pq.1 pq.2|)
+      (mem_cyclicPairs.2 (show (i, j).1 < (i, j).2 from hlt)) h
+  · rw [hA.apply j i]
+    exact List.le_of_mem_argmax (f := fun pq : Fin n × Fin n => |A pq.1 pq.2|)
+      (mem_cyclicPairs.2 (show (j, i).1 < (j, i).2 from hgt)) h
+
+/-- Without a pivot (`n ≤ 1`) there is no off-diagonal mass. -/
+private theorem off_eq_zero_of_classicalPivot_eq_none {A : Matrix (Fin n) (Fin n) ℝ}
+    (h : classicalPivot A = none) (B : Matrix (Fin n) (Fin n) ℝ) : off B = 0 := by
+  have hnil : cyclicPairs n = [] := List.argmax_eq_none.1 h
+  have hn : n ≤ 1 := by
+    by_contra hn
+    have hmem : ((⟨0, by omega⟩ : Fin n), (⟨1, by omega⟩ : Fin n)) ∈ cyclicPairs n :=
+      mem_cyclicPairs.2 (by simp [Fin.lt_def])
+    rw [hnil] at hmem
+    exact List.not_mem_nil hmem
+  rw [off, offDiagNormSq_eq_zero_of_card_le_one (by simpa using hn), Real.sqrt_zero]
+
+/-- A Jacobi rotation is orthogonal. -/
+private theorem jacobiRotation_mem_orthogonalGroup (A : Matrix (Fin n) (Fin n) ℝ) {p q : Fin n}
+    (hpq : p ≠ q) : jacobiRotation A p q ∈ orthogonalGroup (Fin n) ℝ :=
+  (mem_orthogonalGroup_iff' _ ℝ).2 (transpose_jacobiRotation_mul_self A p q hpq)
+
+/-- A Jacobi step of `Vᵀ A V` is the similarity by `V J`. -/
+private theorem jacobiStep_conj (A V : Matrix (Fin n) (Fin n) ℝ) (p q : Fin n) :
+    jacobiStep (Vᵀ * A * V) p q =
+      (V * jacobiRotation (Vᵀ * A * V) p q)ᵀ * A * (V * jacobiRotation (Vᵀ * A * V) p q) := by
+  rw [jacobiStep, transpose_mul]
+  simp only [Matrix.mul_assoc]
+
+/-- The loop invariant of Algorithm 8.5.2 after `k` passes, with `ρ = 1 - 1/N`: `V` orthogonal,
+`A_k = VᵀAV` symmetric, `off(A_k) ≤ δ` once the loop has stopped and
+`off(A_k)² ≤ ρ^k off(A)²` while it runs. -/
+private def ClassicalInv (A : Matrix (Fin n) (Fin n) ℝ) (δ : ℝ) (k : ℕ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
+  st.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ st.1 = st.2.1ᵀ * A * st.2.1 ∧ st.1.IsSymm ∧
+    (st.2.2 = true → off st.1 ≤ δ) ∧
+    (st.2.2 = false → off st.1 ^ 2 ≤ (1 - 1 / ((n : ℝ) * (n - 1) / 2)) ^ k * off A ^ 2)
+
+private theorem classicalInv_step {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ} {k : ℕ}
+    {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
+    (h : ClassicalInv A δ k st) :
+    ClassicalInv A δ (k + 1) (Id.run (classicalJacobiStep pure δ st)) := by
+  obtain ⟨Ak, V, d⟩ := st
+  obtain ⟨hV, hAk, hs, hdone, hdec⟩ := h
+  have hρ := jacobi_rate_nonneg n
+  simp only at hV hAk hs hdone hdec
+  cases d with
+  | true =>
+    have hrun : Id.run (classicalJacobiStep pure δ (Ak, V, true)) = (Ak, V, true) := rfl
+    rw [hrun]
+    exact ⟨hV, hAk, hs, hdone, fun h => absurd h (by simp)⟩
+  | false =>
+    have hoff := offComputed_id Ak
+    by_cases ht : off Ak ≤ δ
+    · have hrun : Id.run (classicalJacobiStep pure δ (Ak, V, false)) = (Ak, V, true) := by
+        change (if Id.run (offComputed pure Ak) ≤ δ then _ else _) = _
+        rw [hoff, ite_eq_left_of_eq_true _ _ (eq_true ht)]
+        rfl
+      rw [hrun]
+      exact ⟨hV, hAk, hs, fun _ => ht, fun h => absurd h (by simp)⟩
+    · cases hp : classicalPivot Ak with
+      | none =>
+        have hrun : Id.run (classicalJacobiStep pure δ (Ak, V, false)) = (Ak, V, false) := by
+          change (if Id.run (offComputed pure Ak) ≤ δ then _ else _) = _
+          rw [hoff, ite_eq_right_of_eq_false _ _ (eq_false ht), hp]
+          rfl
+        rw [hrun]
+        refine ⟨hV, hAk, hs, fun h => absurd h (by simp), fun _ => ?_⟩
+        rw [off_eq_zero_of_classicalPivot_eq_none hp Ak, zero_pow two_ne_zero]
+        exact mul_nonneg (pow_nonneg hρ _) (sq_nonneg _)
+      | some pq =>
+        obtain ⟨hpq, hmax⟩ := classicalPivot_spec hs hp
+        have hrun : Id.run (classicalJacobiStep pure δ (Ak, V, false)) =
+            (jacobiStep Ak pq.1 pq.2, V * jacobiRotation Ak pq.1 pq.2, false) := by
+          change (if Id.run (offComputed pure Ak) ≤ δ then _ else _) = _
+          rw [hoff, ite_eq_right_of_eq_false _ _ (eq_false ht), hp]
+          change ((Id.run (jacobiUpdate pure pq.1 pq.2 Ak V)).1,
+            (Id.run (jacobiUpdate pure pq.1 pq.2 Ak V)).2, false) = _
+          rw [jacobiUpdate_id hs hpq]
+        rw [hrun]
+        have : NeZero n := ⟨(Fin.pos pq.1).ne'⟩
+        have hlin := (classicalJacobi_linear hs hpq hmax).2.1
+        refine ⟨Submonoid.mul_mem _ hV (jacobiRotation_mem_orthogonalGroup Ak hpq), ?_,
+          isSymm_jacobiStep hs _ _, fun h => absurd h (by simp), fun _ => ?_⟩
+        · rw [hAk]
+          exact jacobiStep_conj A V pq.1 pq.2
+        · calc off (jacobiStep Ak pq.1 pq.2) ^ 2
+              ≤ (1 - 1 / ((n : ℝ) * (n - 1) / 2)) * off Ak ^ 2 := hlin
+            _ ≤ (1 - 1 / ((n : ℝ) * (n - 1) / 2)) *
+                ((1 - 1 / ((n : ℝ) * (n - 1) / 2)) ^ k * off A ^ 2) :=
+              mul_le_mul_of_nonneg_left (hdec rfl) hρ
+            _ = (1 - 1 / ((n : ℝ) * (n - 1) / 2)) ^ (k + 1) * off A ^ 2 := by ring
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **Algorithm 8.5.2, exact semantics**: for symmetric `A`, any `tol` and `fuel`, the output
+`(A', V, done)` has `V` orthogonal and `A' = VᵀAV` symmetric; if the loop exited on its test then
+`off(A') ≤ tol · ‖A‖_F`, and otherwise each of the `fuel` updates, taken at a maximal off-diagonal
+entry, contracted `off²` by `1 - 1/N`, `N = n(n-1)/2`:
+`off(A')² ≤ (1 - 1/N)^fuel off(A)²` (the linear rate of §8.5.3; any maximizer does, so the
+tie-breaking of the pivot does not matter). -/
+theorem algorithm_8_5_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (tol : ℝ)
+    (fuel : ℕ) :
+    (Id.run (algorithm_8_5_2 pure tol A fuel)).2.1 ∈ orthogonalGroup (Fin n) ℝ ∧
+      (Id.run (algorithm_8_5_2 pure tol A fuel)).1 =
+        (Id.run (algorithm_8_5_2 pure tol A fuel)).2.1ᵀ * A *
+          (Id.run (algorithm_8_5_2 pure tol A fuel)).2.1 ∧
+      (Id.run (algorithm_8_5_2 pure tol A fuel)).1.IsSymm ∧
+      ((Id.run (algorithm_8_5_2 pure tol A fuel)).2.2 = true →
+        off (Id.run (algorithm_8_5_2 pure tol A fuel)).1 ≤ tol * ‖A‖) ∧
+      ((Id.run (algorithm_8_5_2 pure tol A fuel)).2.2 = false →
+        off (Id.run (algorithm_8_5_2 pure tol A fuel)).1 ^ 2 ≤
+          (1 - 1 / ((n : ℝ) * (n - 1) / 2)) ^ fuel * off A ^ 2) := by
+  have hrun : Id.run (algorithm_8_5_2 pure tol A fuel) = Id.run ((List.range fuel).foldlM
+      (fun st _ => classicalJacobiStep pure (tol * ‖A‖) st) (A, 1, false)) := by
+    rw [← jacobiThreshold_id]
+    rfl
+  have key : ∀ k, ClassicalInv A (tol * ‖A‖) k (Id.run ((List.range k).foldlM
+      (fun st _ => classicalJacobiStep pure (tol * ‖A‖) st) (A, 1, false))) := by
+    intro k
+    induction k with
+    | zero => exact ⟨one_mem _, by simp, hA, fun h => absurd h (by simp), fun _ => by simp⟩
+    | succ k ih =>
+      rw [run_foldlM_range_succ]
+      exact classicalInv_step ih
+  rw [hrun]
+  exact key fuel
+
+/-- **§8.5.3, termination of Algorithm 8.5.2 in exact arithmetic** (from the linear rate): for
+symmetric `A` with `n ≥ 2`, `tol > 0` and `fuel ≥ ⌈2 log(tol) / log(1 - 1/N)⌉ + 1`
+(`N = n(n-1)/2`; for `N = 1` one update diagonalizes and `fuel ≥ 1` suffices), the output
+satisfies the book's `off(VᵀAV) ≤ tol · ‖A‖_F`: by the test if the loop stopped, and otherwise
+from `off(A^{(k)})² ≤ (1 - 1/N)^k off(A)² ≤ (1 - 1/N)^k ‖A‖_F²`. -/
+theorem algorithm_8_5_2_terminates {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
+    {tol : ℝ} (htol : 0 < tol) {fuel : ℕ}
+    (hfuel : ⌈2 * Real.log tol / Real.log (1 - 1 / ((n : ℝ) * (n - 1) / 2))⌉₊ + 1 ≤ fuel) :
+    off (Id.run (algorithm_8_5_2 pure tol A fuel)).1 ≤ tol * ‖A‖ := by
+  obtain ⟨-, -, -, hdone, hdec⟩ := algorithm_8_5_2_spec hA tol fuel
+  cases hd : (Id.run (algorithm_8_5_2 pure tol A fuel)).2.2 with
+  | true => exact hdone hd
+  | false =>
+    set ρ := 1 - 1 / ((n : ℝ) * (n - 1) / 2) with hρdef
+    have h2 : (2 : ℝ) ≤ n := by exact_mod_cast hn
+    have hN : 1 ≤ (n : ℝ) * (n - 1) / 2 := by nlinarith
+    have hρ0 : 0 ≤ ρ := jacobi_rate_nonneg n
+    have hρ1 : ρ < 1 := by
+      have : 0 < 1 / ((n : ℝ) * (n - 1) / 2) := by positivity
+      linarith
+    have hpow : ρ ^ fuel ≤ tol ^ 2 := by
+      rcases hρ0.eq_or_lt with h0 | hpos
+      · rw [← h0, zero_pow (by omega)]; positivity
+      · rcases le_or_gt 1 tol with ht1 | ht1
+        · calc ρ ^ fuel ≤ 1 := pow_le_one₀ hρ0 hρ1.le
+            _ ≤ tol ^ 2 := by nlinarith
+        · have hlρ : Real.log ρ < 0 := Real.log_neg hpos hρ1
+          have hc : 2 * Real.log tol / Real.log ρ ≤ fuel := by
+            have := Nat.le_ceil (2 * Real.log tol / Real.log ρ)
+            have h' : ((⌈2 * Real.log tol / Real.log ρ⌉₊ : ℕ) : ℝ) ≤ fuel := by
+              exact_mod_cast (Nat.le_succ _).trans hfuel
+            linarith
+          rw [div_le_iff_of_neg hlρ] at hc
+          rw [← Real.log_le_log_iff (pow_pos hpos _) (by positivity), Real.log_pow,
+            Real.log_pow]
+          push_cast
+          linarith
+    have hoffA : off A ^ 2 ≤ ‖A‖ ^ 2 := by
+      rw [off_sq_eq]
+      have : 0 ≤ ∑ i, A i i ^ 2 := Finset.sum_nonneg fun i _ => sq_nonneg _
+      linarith
+    have hsq : off (Id.run (algorithm_8_5_2 pure tol A fuel)).1 ^ 2 ≤ (tol * ‖A‖) ^ 2 := by
+      calc _ ≤ ρ ^ fuel * off A ^ 2 := hdec hd
+        _ ≤ tol ^ 2 * ‖A‖ ^ 2 := mul_le_mul hpow hoffA (sq_nonneg _) (sq_nonneg _)
+        _ = (tol * ‖A‖) ^ 2 := by ring
+    exact (pow_le_pow_iff_left₀ (off_nonneg _) (by positivity) two_ne_zero).1 hsq
+
+end Frobenius
+
+/-- The Jacobi updates of a sweep, over any list of pairs `p ≠ q`, keep `A_k = VᵀAV` symmetric
+with `V` orthogonal and do not increase `off`: each removes `2 a_pq²` from `off²` ((8.5.2)). -/
+private theorem sweep_inv {A : Matrix (Fin n) (Fin n) ℝ} :
+    ∀ (l : List (Fin n × Fin n)), (∀ pq ∈ l, pq.1 ≠ pq.2) →
+      ∀ B V : Matrix (Fin n) (Fin n) ℝ, V ∈ orthogonalGroup (Fin n) ℝ → B = Vᵀ * A * V →
+        B.IsSymm → off B ≤ off A →
+        let r := Id.run (l.foldlM (fun AV pq => jacobiUpdate pure pq.1 pq.2 AV.1 AV.2) (B, V))
+        r.2 ∈ orthogonalGroup (Fin n) ℝ ∧ r.1 = r.2ᵀ * A * r.2 ∧ r.1.IsSymm ∧ off r.1 ≤ off A := by
+  intro l
+  induction l with
+  | nil => intro _ B V hV hB hs hoff; exact ⟨hV, hB, hs, hoff⟩
+  | cons pq l ih =>
+    intro hl B V hV hB hs hoff
+    have hpq := hl pq List.mem_cons_self
+    have hstep : Id.run ((pq :: l).foldlM
+        (fun AV pq => jacobiUpdate pure pq.1 pq.2 AV.1 AV.2) (B, V)) =
+        Id.run (l.foldlM (fun AV pq => jacobiUpdate pure pq.1 pq.2 AV.1 AV.2)
+          (jacobiStep B pq.1 pq.2, V * jacobiRotation B pq.1 pq.2)) := by
+      rw [← jacobiUpdate_id hs hpq]
+      rfl
+    simp only
+    rw [hstep]
+    refine ih (fun x hx => hl x (List.mem_cons_of_mem _ hx)) _ _
+      (Submonoid.mul_mem _ hV (jacobiRotation_mem_orthogonalGroup B hpq))
+      (by rw [hB]; exact jacobiStep_conj A V pq.1 pq.2) (isSymm_jacobiStep hs _ _)
+      (le_trans ?_ hoff)
+    refine Real.sqrt_le_sqrt ?_
+    rw [offDiagNormSq_jacobiStep B hs hpq]
+    nlinarith [sq_nonneg (B pq.1 pq.2)]
+
+/-- The loop invariant of Algorithm 8.5.3. -/
+private def CyclicInv (A : Matrix (Fin n) (Fin n) ℝ) (δ : ℝ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
+  st.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ st.1 = st.2.1ᵀ * A * st.2.1 ∧ st.1.IsSymm ∧
+    off st.1 ≤ off A ∧ (st.2.2 = true → off st.1 ≤ δ)
+
+private theorem cyclicInv_step {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ}
+    {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool} (h : CyclicInv A δ st) :
+    CyclicInv A δ (Id.run (cyclicJacobiStep pure δ st)) := by
+  obtain ⟨Ak, V, d⟩ := st
+  obtain ⟨hV, hAk, hs, hoff, hdone⟩ := h
+  simp only at hV hAk hs hoff hdone
+  cases d with
+  | true =>
+    have hrun : Id.run (cyclicJacobiStep pure δ (Ak, V, true)) = (Ak, V, true) := rfl
+    rw [hrun]
+    exact ⟨hV, hAk, hs, hoff, hdone⟩
+  | false =>
+    have ho := offComputed_id Ak
+    by_cases ht : off Ak ≤ δ
+    · have hrun : Id.run (cyclicJacobiStep pure δ (Ak, V, false)) = (Ak, V, true) := by
+        change (if Id.run (offComputed pure Ak) ≤ δ then _ else _) = _
+        rw [ho, ite_eq_left_of_eq_true _ _ (eq_true ht)]
+        rfl
+      rw [hrun]
+      exact ⟨hV, hAk, hs, hoff, fun _ => ht⟩
+    · have hrun : Id.run (cyclicJacobiStep pure δ (Ak, V, false)) =
+          ((Id.run (cyclicSweep pure Ak V)).1, (Id.run (cyclicSweep pure Ak V)).2, false) := by
+        change (if Id.run (offComputed pure Ak) ≤ δ then _ else _) = _
+        rw [ho, ite_eq_right_of_eq_false _ _ (eq_false ht)]
+        rfl
+      rw [hrun]
+      obtain ⟨h1, h2, h3, h4⟩ := sweep_inv (cyclicPairs n)
+        (fun pq hpq => (mem_cyclicPairs.1 hpq).ne) Ak V hV hAk hs hoff
+      exact ⟨h1, h2, h3, h4, fun h => absurd h (by simp)⟩
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **Algorithm 8.5.3, exact semantics**: for symmetric `A`, any `tol` and `fuel`, the output
+`(A', V, done)` has `V` orthogonal, `A' = VᵀAV` symmetric and `off(A') ≤ off(A)` (each rotation
+removes `2 a_pq²`, (8.5.2)); if the loop exited on its test, `off(A') ≤ tol · ‖A‖_F`. (Quadratic
+convergence is quoted by the book and not claimed.) -/
+theorem algorithm_8_5_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (tol : ℝ)
+    (fuel : ℕ) :
+    (Id.run (algorithm_8_5_3 pure tol A fuel)).2.1 ∈ orthogonalGroup (Fin n) ℝ ∧
+      (Id.run (algorithm_8_5_3 pure tol A fuel)).1 =
+        (Id.run (algorithm_8_5_3 pure tol A fuel)).2.1ᵀ * A *
+          (Id.run (algorithm_8_5_3 pure tol A fuel)).2.1 ∧
+      (Id.run (algorithm_8_5_3 pure tol A fuel)).1.IsSymm ∧
+      off (Id.run (algorithm_8_5_3 pure tol A fuel)).1 ≤ off A ∧
+      ((Id.run (algorithm_8_5_3 pure tol A fuel)).2.2 = true →
+        off (Id.run (algorithm_8_5_3 pure tol A fuel)).1 ≤ tol * ‖A‖) := by
+  have hrun : Id.run (algorithm_8_5_3 pure tol A fuel) = Id.run ((List.range fuel).foldlM
+      (fun st _ => cyclicJacobiStep pure (tol * ‖A‖) st) (A, 1, false)) := by
+    rw [← jacobiThreshold_id]
+    rfl
+  have key : ∀ k, CyclicInv A (tol * ‖A‖) (Id.run ((List.range k).foldlM
+      (fun st _ => cyclicJacobiStep pure (tol * ‖A‖) st) (A, 1, false))) := by
+    intro k
+    induction k with
+    | zero => exact ⟨one_mem _, by simp, hA, le_rfl, fun h => absurd h (by simp)⟩
+    | succ k ih =>
+      rw [run_foldlM_range_succ]
+      exact cyclicInv_step ih
+  rw [hrun]
+  exact key fuel
+
+end Frobenius
 
 /-! ### §8.5.6 Block Jacobi procedures -/
 

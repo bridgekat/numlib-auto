@@ -2,6 +2,8 @@ import Numlib.Eigen.InverseEigenvalue
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.QRAlgorithm
 import Numlib.Eigen.RayleighQuotientIteration
+import NumlibSurface.GolubVanLoan.Chapter02.Section05
+import NumlibSurface.GolubVanLoan.Chapter07.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section01
 
 /-!
@@ -64,6 +66,115 @@ theorem equation_8_2_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
     (isHermitian_conjTranspose_mul_mul (U₀ * ((List.range k).map fun i => U (i + 1)).prod)
       (isHermitian_iff_isSymm.2 hA))
+
+/-- The columns of an orthogonal matrix, as an orthonormal basis of `ℝⁿ`. -/
+private noncomputable def colBasis {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)) :=
+  OrthonormalBasis.mk (orthonormal_euclideanCol (by
+      rw [conjTranspose_eq_transpose_of_trivial]; exact (mem_orthogonalGroup_iff' _ ℝ).1 hQ))
+    (span_range_euclideanCol_eq_top
+      (isUnit_det_of_left_inverse ((mem_orthogonalGroup_iff' _ ℝ).1 hQ))).ge
+
+private theorem colBasis_apply {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (i : Fin n) :
+    colBasis hQ i = (WithLp.toLp 2 (Q.col i) : EuclideanSpace ℝ (Fin n)) := by
+  simp only [colBasis, OrthonormalBasis.coe_mk]
+  rfl
+
+/-- The columns of the Schur factor are eigenvectors. -/
+private theorem toEuclideanLin_colBasis {A Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam)
+    (i : Fin n) : toEuclideanLin A (colBasis hQ i) = lam i • colBasis hQ i := by
+  have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQ
+  have hQu : IsUnit Q := (isUnit_iff_isUnit_det Q).2 (isUnit_det_of_left_inverse hQQ)
+  have h := toEuclideanLin_euclideanCol_of_conj_eq_diagonal hQu
+    (by rwa [inv_eq_left_inv hQQ]) i
+  simp only [colBasis, OrthonormalBasis.coe_mk]
+  exact h
+
+/-- On unit vectors the sine of the angle to a line is `√(1 - (uᵀx)²)`. -/
+private theorem sinAngle_span_singleton_eq {u x : EuclideanSpace ℝ (Fin n)} (hu : ‖u‖ = 1)
+    (hx : ‖x‖ = 1) : (ℝ ∙ u).sinAngle x = √(1 - inner ℝ u x ^ 2) := by
+  have hs := (ℝ ∙ u).sinAngle_mul_norm x
+  rw [hx, mul_one, Submodule.starProjection_singleton, hu] at hs
+  rw [hs, ← Real.sqrt_sq (norm_nonneg _), norm_sub_sq_real, hx, norm_smul, inner_smul_right,
+    real_inner_comm, hu]
+  simp only [one_pow, RCLike.ofReal_real_eq_id, id_eq, div_one, Real.norm_eq_abs, mul_one, sq_abs]
+  ring_nf
+
+/-- **Theorem 8.2.1, (8.2.4).** Let `Qᵀ A Q = diag(λ)` with `Q = [q₁ | ⋯ | q_n]` orthogonal and
+`|λ₁| > |λ₂| ≥ ⋯ ≥ |λ_n|`, and let `q^{(k)}` be the power method (8.2.3) (chapter 7's (7.3.3)) from
+a unit `q^{(0)}` with `cos θ₀ = |q₁ᵀ q^{(0)}| ≠ 0`. Then
+`|sin θ_k| ≤ tan θ₀ |λ₂/λ₁|^k`, where `sin θ_k = √(1 - (q₁ᵀ q^{(k)})²)` and
+`tan θ₀ = √(1 - cos² θ₀) / cos θ₀`. (`A` is symmetric by the hypothesis.) -/
+theorem theorem_8_2_1 {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin (N + 2)) ℝ) {lam : Fin (N + 2) → ℝ}
+    (hQA : Qᵀ * A * Q = diagonal lam) (h01 : |lam 1| < |lam 0|) (hlam : Antitone fun i => |lam i|)
+    {q₀ : EuclideanSpace ℝ (Fin (N + 2))} (hq₀ : ‖q₀‖ = 1)
+    (hc : inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀ ≠ 0) (k : ℕ) :
+    √(1 - inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2)))
+        (Chapter07.powerMethod A q₀ k).1 ^ 2) ≤
+      √(1 - inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀ ^ 2) /
+        |inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀| *
+        |lam 1 / lam 0| ^ k := by
+  have hv := toEuclideanLin_colBasis hQ hQA
+  have hv0 := colBasis_apply hQ 0
+  have hl0 : lam 0 ≠ 0 := fun h => by
+    rw [h, abs_zero] at h01; exact (abs_nonneg _).not_gt h01
+  have hρ : ∀ i, i ≠ 0 → ‖lam i‖ ≤ |lam 1| := fun i hi =>
+    hlam (show (1 : Fin (N + 2)) ≤ i by
+      rw [Fin.le_def, Fin.val_one]; exact Nat.one_le_iff_ne_zero.2 (fun h => hi (Fin.ext h)))
+  have hne : (toEuclideanLin A ^ k) q₀ ≠ 0 := by
+    intro h0
+    have h := Krylov.inner_pow_apply_of_eigenbasis (colBasis hQ) hv k q₀ 0
+    rw [h0, inner_zero_right, hv0] at h
+    exact mul_ne_zero (pow_ne_zero _ hl0) hc h.symm
+  have hunit : ‖(Chapter07.powerMethod A q₀ k).1‖ = 1 := by
+    rw [Chapter07.powerMethod_fst A hq₀]; exact Krylov.norm_powerIterate_of_ne_zero _ _ _ hne
+  have h := Krylov.sinAngle_powerIterate_le_of_eigenbasis (colBasis hQ) hv hl0 hρ hq₀
+    (by rwa [hv0]) k
+  rw [← Chapter07.powerMethod_fst A hq₀, sinAngle_span_singleton_eq ((colBasis hQ).orthonormal.1 0)
+    hunit, hv0] at h
+  simpa only [Real.norm_eq_abs, sq_abs, abs_div] using h
+
+/-- **Theorem 8.2.1, (8.2.5).** Under the hypotheses of Theorem 8.2.1, the eigenvalue estimates
+`λ^{(k)} = q^{(k)ᵀ} A q^{(k)}` of the power method satisfy
+`|λ^{(k)} - λ₁| ≤ max_{2 ≤ i ≤ n} |λ₁ - λ_i| tan(θ₀)² |λ₂/λ₁|^{2k}`. -/
+theorem theorem_8_2_1_b {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin (N + 2)) ℝ) {lam : Fin (N + 2) → ℝ}
+    (hQA : Qᵀ * A * Q = diagonal lam) (h01 : |lam 1| < |lam 0|) (hlam : Antitone fun i => |lam i|)
+    {q₀ : EuclideanSpace ℝ (Fin (N + 2))} (hq₀ : ‖q₀‖ = 1)
+    (hc : inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀ ≠ 0) (k : ℕ) :
+    |(Chapter07.powerMethod A q₀ k).2 - lam 0| ≤
+      (Finset.univ.erase 0).sup' ⟨1, Finset.mem_erase.2 ⟨Fin.zero_lt_one.ne', Finset.mem_univ _⟩⟩
+          (fun i => |lam 0 - lam i|) *
+        (√(1 - inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀ ^ 2) /
+          |inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀|) ^ 2 *
+        |lam 1 / lam 0| ^ (2 * k) := by
+  have hv := toEuclideanLin_colBasis hQ hQA
+  have hv' : ∀ i, toEuclideanLin A (colBasis hQ i) = ((lam i : ℝ) : ℝ) • colBasis hQ i := hv
+  have hv0 := colBasis_apply hQ 0
+  have hl0 : lam 0 ≠ 0 := fun h => by
+    rw [h, abs_zero] at h01; exact (abs_nonneg _).not_gt h01
+  have hρ : ∀ i, i ≠ 0 → |lam i| ≤ |lam 1| := fun i hi =>
+    hlam (show (1 : Fin (N + 2)) ≤ i by
+      rw [Fin.le_def, Fin.val_one]; exact Nat.one_le_iff_ne_zero.2 (fun h => hi (Fin.ext h)))
+  have hδ : ∀ i, i ≠ 0 → |lam 0 - lam i| ≤
+      (Finset.univ.erase 0).sup' ⟨1, Finset.mem_erase.2 ⟨Fin.zero_lt_one.ne', Finset.mem_univ _⟩⟩
+        (fun i => |lam 0 - lam i|) := fun i hi =>
+    Finset.le_sup' (fun i => |lam 0 - lam i|) (Finset.mem_erase.2 ⟨hi, Finset.mem_univ i⟩)
+  have h := Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis (colBasis hQ) hv' hl0 hρ hδ hq₀
+    (by rwa [hv0]) k
+  have hc1 : inner ℝ (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀ ^ 2 ≤ 1 := by
+    have h1 := abs_real_inner_le_norm (WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2))) q₀
+    have hn : ‖(WithLp.toLp 2 (Q.col 0) : EuclideanSpace ℝ (Fin (N + 2)))‖ = 1 := by
+      rw [← hv0]; exact (colBasis hQ).orthonormal.1 0
+    rw [hn, hq₀, one_mul] at h1
+    rw [← sq_abs]
+    exact pow_le_one₀ (abs_nonneg _) h1
+  rw [Chapter07.powerMethod_snd, Chapter07.powerMethod_fst A hq₀, abs_sub_comm, div_pow,
+    Real.sq_sqrt (by linarith), sq_abs]
+  simpa only [hv0, Real.norm_eq_abs, sq_abs, abs_div, RCLike.re_to_real] using h
 
 /-- **§8.2.1, the computable error bound.** For symmetric `A` and a unit `q` with
 `‖A q - (qᵀAq) q‖₂ = δ`, some eigenvalue `λ` of `A` has `|qᵀAq - λ| ≤ δ`, a fortiori the book's
@@ -328,6 +439,200 @@ theorem equation_8_2_7_cubic {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c₀ s₀ : �
           field_simp]
       rw [abs_neg, abs_pow, h4, ← pow_mul, pow_succ]
 
+/-! ### §8.2.4 Orthogonal iteration -/
+
+/-- The product `R_k ⋯ R_1` of the triangular factors of an iteration. -/
+private theorem pow_mul_eq_mul_prod {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+    {Qk : ℕ → Matrix (Fin n) (Fin p) ℝ} {R : ℕ → Matrix (Fin p) (Fin p) ℝ}
+    (hQR : ∀ k, A * Qk k = Qk (k + 1) * R (k + 1)) (k : ℕ) :
+    A ^ k * Qk 0 = Qk k * ((List.range k).reverse.map fun i => R (i + 1)).prod := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [pow_succ', Matrix.mul_assoc, ih, ← Matrix.mul_assoc, hQR, List.range_succ,
+      List.reverse_append, List.map_append, List.prod_append]
+    simp [Matrix.mul_assoc]
+
+/-- **(8.2.13)–(8.2.14).** Let `Q = [Q_α Q_β]` with `Q Qᵀ = I` and `Qᵀ A Q = diag(D₁, D₂)`
+((8.2.9)–(8.2.10)), and let `A Q_{k-1} = Q_k R_k` for all `k` — the relations of orthogonal
+iteration (8.2.8) (chapter 7's (7.3.6), `Chapter07.orthogonalIteration`, with the triangular
+factors of its thin QR steps). With `V_k = Q_αᵀ Q_k` and `W_k = Q_βᵀ Q_k` (the book prints `Q₀`
+in both definitions; `Q_k` is meant): `D₁^k V₀ = V_k (R_k ⋯ R₁)` and `D₂^k W₀ = W_k (R_k ⋯ R₁)`. -/
+theorem equation_8_2_13 {r s p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {Qα : Matrix (Fin n) (Fin r) ℝ}
+    {Qβ : Matrix (Fin n) (Fin s) ℝ} (hQ : fromCols Qα Qβ * (fromCols Qα Qβ)ᵀ = 1)
+    {D₁ : Matrix (Fin r) (Fin r) ℝ} {D₂ : Matrix (Fin s) (Fin s) ℝ}
+    (hAQ : (fromCols Qα Qβ)ᵀ * A * fromCols Qα Qβ = fromBlocks D₁ 0 0 D₂)
+    {Qk : ℕ → Matrix (Fin n) (Fin p) ℝ} {R : ℕ → Matrix (Fin p) (Fin p) ℝ}
+    (hQR : ∀ k, A * Qk k = Qk (k + 1) * R (k + 1)) (k : ℕ) :
+    D₁ ^ k * (Qαᵀ * Qk 0) = Qαᵀ * Qk k * ((List.range k).reverse.map fun i => R (i + 1)).prod ∧
+      D₂ ^ k * (Qβᵀ * Qk 0) =
+        Qβᵀ * Qk k * ((List.range k).reverse.map fun i => R (i + 1)).prod := by
+  -- `Qᵀ A = diag(D₁, D₂) Qᵀ`, read blockwise
+  have hQA : (fromCols Qα Qβ)ᵀ * A = fromBlocks D₁ 0 0 D₂ * (fromCols Qα Qβ)ᵀ := by
+    rw [← hAQ, Matrix.mul_assoc _ (fromCols Qα Qβ), hQ, Matrix.mul_one]
+  rw [transpose_fromCols, fromRows_mul, fromBlocks_mul_fromRows] at hQA
+  simp only [Matrix.zero_mul, add_zero, zero_add] at hQA
+  have hα : Qαᵀ * A = D₁ * Qαᵀ := fromRows_inj hQA |>.1
+  have hβ : Qβᵀ * A = D₂ * Qβᵀ := fromRows_inj hQA |>.2
+  have hpow : ∀ {q : ℕ} {B : Matrix (Fin q) (Fin n) ℝ} {D : Matrix (Fin q) (Fin q) ℝ},
+      B * A = D * B → ∀ k, B * A ^ k = D ^ k * B := fun {q B D} h k => by
+    induction k with
+    | zero => simp
+    | succ k ih => rw [pow_succ, ← Matrix.mul_assoc, ih, Matrix.mul_assoc, h, ← Matrix.mul_assoc,
+        pow_succ]
+  have hk := pow_mul_eq_mul_prod hQR k
+  refine ⟨?_, ?_⟩
+  · rw [← Matrix.mul_assoc, ← hpow hα, Matrix.mul_assoc, hk, Matrix.mul_assoc]
+  · rw [← Matrix.mul_assoc, ← hpow hβ, Matrix.mul_assoc, hk, Matrix.mul_assoc]
+
+/-- The span of the first `r` columns of `Q`, the book's `D_r(A) = ran(Q_α)`. -/
+private theorem span_leading_cols_eq {Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {r : ℕ} (hr : r ≤ n) :
+    Submodule.span ℝ (Set.range fun i : Fin r =>
+        (WithLp.toLp 2 (Q.col (Fin.castLE hr i)) : EuclideanSpace ℝ (Fin n))) =
+      Submodule.span ℝ (colBasis hQ '' {i | (i : ℕ) < r}) := by
+  congr 1
+  ext x
+  simp only [Set.mem_range, Set.mem_image, Set.mem_ofPred_eq, colBasis_apply]
+  constructor
+  · rintro ⟨i, rfl⟩
+    exact ⟨Fin.castLE hr i, i.isLt, rfl⟩
+  · rintro ⟨i, hi, rfl⟩
+    exact ⟨⟨i, hi⟩, rfl⟩
+
+/-- **Theorem 8.2.2.** Let `Qᵀ A Q = diag(λ)` ((8.2.9)) with `Q` orthogonal and
+`|λ₁| ≥ ⋯ ≥ |λ_n|`, `1 ≤ r < n`, `|λ_r| > |λ_{r+1}|`, `D_r(A) = ran(Q_α) = span{q₁, …, q_r}`,
+and let `Q_k` be an orthogonal iteration (8.2.8) (chapter 7's (7.3.6)) with
+`d_k = dist(D_r(A), ran(Q_k))`. If `d₀ < 1` ((8.2.11)) then
+`d_k ≤ |λ_{r+1}/λ_r|^k d₀/√(1 - d₀²)` ((8.2.12); the book's proof prints `1/(1 - d₀²)`). The
+book's argument through (8.2.13) and the thin CS decomposition is replaced by the backbone's graph
+argument (`LinearMap.IsSymmetric.gap_subspaceIterate_le`). (`A` is symmetric by the hypothesis.) -/
+theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalGroup (Fin n) ℝ)
+    {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam) (hlam : Antitone fun i => |lam i|)
+    {r : ℕ} (hr0 : 0 < r) (hrn : r < n) (hgap : |lam ⟨r, hrn⟩| < |lam ⟨r - 1, by omega⟩|)
+    {Qk : ℕ → Matrix (Fin n) (Fin r) ℝ} (hQk : Chapter07.orthogonalIteration A Qk)
+    (hd₀ : Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun i : Fin r =>
+        (WithLp.toLp 2 (Q.col (Fin.castLE hrn.le i)) : EuclideanSpace ℝ (Fin n))))
+      (LinearMap.range (toEuclideanLin (Qk 0))) < 1) (k : ℕ) :
+    Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun i : Fin r =>
+        (WithLp.toLp 2 (Q.col (Fin.castLE hrn.le i)) : EuclideanSpace ℝ (Fin n))))
+      (LinearMap.range (toEuclideanLin (Qk k))) ≤
+    |lam ⟨r, hrn⟩ / lam ⟨r - 1, by omega⟩| ^ k *
+      (Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun i : Fin r =>
+          (WithLp.toLp 2 (Q.col (Fin.castLE hrn.le i)) : EuclideanSpace ℝ (Fin n))))
+        (LinearMap.range (toEuclideanLin (Qk 0))) /
+      √(1 - Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun i : Fin r =>
+          (WithLp.toLp 2 (Q.col (Fin.castLE hrn.le i)) : EuclideanSpace ℝ (Fin n))))
+        (LinearMap.range (toEuclideanLin (Qk 0))) ^ 2)) := by
+  unfold Chapter02.subspaceDist at hd₀ ⊢
+  rw [span_leading_cols_eq hQ hrn.le] at hd₀ ⊢
+  set v := colBasis hQ
+  set D := Submodule.span ℝ (v '' {i | (i : ℕ) < r}) with hD
+  have hv := toEuclideanLin_colBasis hQ hQA
+  have hv' : ∀ i, toEuclideanLin A (v i) = ((lam i : ℝ) : ℝ) • v i := hv
+  have hA : (toEuclideanLin A).IsSymmetric := Krylov.isSymmetric_of_eigenbasis v hv'
+  have hρ : 0 < |lam ⟨r - 1, by omega⟩| := (abs_nonneg _).trans_lt hgap
+  have hJ : ∀ j ∈ {i : Fin n | (i : ℕ) < r}, |lam ⟨r - 1, by omega⟩| ≤ |lam j| := fun j hj =>
+    hlam (Fin.le_def.2 (by have : (j : ℕ) < r := hj; change (j : ℕ) ≤ r - 1; omega))
+  have hJc : ∀ i ∉ {i : Fin n | (i : ℕ) < r}, |lam i| ≤ |lam ⟨r, hrn⟩| := fun i hi =>
+    hlam (Fin.le_def.2 (by have : ¬ (i : ℕ) < r := hi; change r ≤ (i : ℕ); omega))
+  have hdim := D.finrank_eq_of_gap_lt_one _ hd₀
+  have key := hA.gap_subspaceIterate_le v hv' {i | (i : ℕ) < r} hρ hJ hJc hdim.symm hd₀ k
+  -- `A^k Q₀` has independent columns, so `ran(Q_k) = A^k ran(Q₀)`
+  have hk : LinearIndependent ℝ (A ^ k * Qk 0)ᵀ := by
+    refine mulVec_injective_iff.1 fun x y hxy => ?_
+    rw [← sub_eq_zero] at hxy ⊢
+    rw [← mulVec_sub] at hxy
+    set z := x - y
+    set w : EuclideanSpace ℝ (Fin n) := WithLp.toLp 2 (Qk 0 *ᵥ z)
+    have hwS : w ∈ LinearMap.range (toEuclideanLin (Qk 0)) := ⟨WithLp.toLp 2 z, rfl⟩
+    have hAw : (toEuclideanLin A ^ k) w = 0 := by
+      rw [← toEuclideanLin_pow, toEuclideanLin_toLp, mulVec_mulVec, hxy]; rfl
+    have hperp : D.starProjection w = 0 := by
+      rw [Submodule.starProjection_apply_eq_zero_iff, Submodule.mem_orthogonal]
+      intro u hu
+      refine Submodule.span_induction (p := fun u _ => inner ℝ u w = 0) ?_ (by simp)
+        (fun a b _ _ ha hb => by rw [inner_add_left, ha, hb, add_zero])
+        (fun c a _ ha => by rw [inner_smul_left, ha, mul_zero]) hu
+      rintro _ ⟨i, hi, rfl⟩
+      have h := Krylov.inner_pow_apply_of_eigenbasis v hv' k w i
+      rw [hAw, inner_zero_right] at h
+      have hli : lam i ≠ 0 := fun h0 => by
+        have := hJ i hi; rw [h0, abs_zero] at this; exact hρ.not_ge this
+      exact (mul_eq_zero.1 h.symm).resolve_left (pow_ne_zero _ hli)
+    have hw0 := D.eq_zero_of_starProjection_eq_zero_of_gap_lt_one _ hd₀ hwS hperp
+    have hQz : Qk 0 *ᵥ z = 0 := by simpa [w] using congrArg WithLp.ofLp hw0
+    have h1 : (Qk 0)ᵀ *ᵥ (Qk 0 *ᵥ z) = z := by
+      rw [mulVec_mulVec, ← conjTranspose_eq_transpose_of_trivial, hQk.1, one_mulVec]
+    rw [← h1, hQz, mulVec_zero]
+  rw [(Chapter07.orthogonalIteration_range hQk hk).1, abs_div]
+  refine key.trans (le_of_eq ?_)
+  rw [div_pow]
+
+/-- The leading `i` columns of a thin QR factorization form one: `R` is upper triangular. -/
+private theorem isThinQR_leading {m : Type*} [Fintype m] {p i : ℕ} (hi : i ≤ p)
+    {B Q' : Matrix m (Fin p) ℝ} {R : Matrix (Fin p) (Fin p) ℝ} (h : IsThinQR B Q' R) :
+    IsThinQR (B.submatrix id (Fin.castLE hi)) (Q'.submatrix id (Fin.castLE hi))
+      (R.submatrix (Fin.castLE hi) (Fin.castLE hi)) := by
+  refine ⟨?_, ?_, fun a b hab => h.isUpperTriangular ((Fin.castLE_lt_castLE_iff hi).2 hab)⟩
+  · ext a l
+    rw [← h.mul_eq, submatrix_apply, mul_apply, mul_apply]
+    refine Fintype.sum_of_injective (Fin.castLE hi) (Fin.castLE_injective hi) _ _ ?_ (fun j => rfl)
+    intro j hj
+    have hjl : Fin.castLE hi l < j := by
+      rw [Fin.lt_def, Fin.val_castLE]
+      by_contra hle
+      exact hj ⟨⟨j, by omega⟩, Fin.ext rfl⟩
+    exact mul_eq_zero_of_right _ (h.isUpperTriangular hjl)
+  · ext a b
+    have e := congrFun (congrFun h.conjTranspose_mul_self (Fin.castLE hi a)) (Fin.castLE hi b)
+    rw [mul_apply] at e
+    rw [mul_apply]
+    simp only [conjTranspose_apply, submatrix_apply, id] at e ⊢
+    rw [e, one_apply, one_apply]
+    simp only [(Fin.castLE_injective hi).eq_iff]
+
+/-- **§8.2.5, (8.2.15).** For `Qᵀ A Q = diag(λ)` with `Q` orthogonal and
+`|λ₁| > |λ₂| > ⋯ > |λ_n|`, and an orthogonal iteration `Q_k` with `r = n`: if
+`dist(D_i(A), span{q^{(0)}_1, …, q^{(0)}_i}) < 1` for `i = 1:n-1` ((8.2.15)), then for each such
+`i`, `dist(span{q^{(k)}_1, …, q^{(k)}_i}, span{q_1, …, q_i}) ≤ |λ_{i+1}/λ_i|^k C_i` with the
+explicit `C_i = d₀^{(i)}/√(1 - (d₀^{(i)})²)` — the book's `O(|λ_{i+1}/λ_i|^k)`. The leading `i`
+columns of `Q_k` are an orthogonal iteration of their own (the `R_k` are upper triangular), and
+Theorem 8.2.2 applies to them. -/
+theorem orthogonalIteration_gap_le_of_forall {A Q : Matrix (Fin n) (Fin n) ℝ}
+    (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam)
+    (hlam : StrictAnti fun i => |lam i|) {Qk : ℕ → Matrix (Fin n) (Fin n) ℝ}
+    (hQk : Chapter07.orthogonalIteration A Qk)
+    (h₀ : ∀ (i : ℕ) (hi : i < n), 0 < i →
+      Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun j : Fin i =>
+          (WithLp.toLp 2 (Q.col (Fin.castLE hi.le j)) : EuclideanSpace ℝ (Fin n))))
+        (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hi.le)))) < 1)
+    (i : ℕ) (hi : i < n) (hi0 : 0 < i) (k : ℕ) :
+    Chapter02.subspaceDist
+        (LinearMap.range (toEuclideanLin ((Qk k).submatrix id (Fin.castLE hi.le))))
+        (Submodule.span ℝ (Set.range fun j : Fin i =>
+          (WithLp.toLp 2 (Q.col (Fin.castLE hi.le j)) : EuclideanSpace ℝ (Fin n)))) ≤
+      |lam ⟨i, hi⟩ / lam ⟨i - 1, by omega⟩| ^ k *
+        (Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun j : Fin i =>
+            (WithLp.toLp 2 (Q.col (Fin.castLE hi.le j)) : EuclideanSpace ℝ (Fin n))))
+          (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hi.le)))) /
+        √(1 - Chapter02.subspaceDist (Submodule.span ℝ (Set.range fun j : Fin i =>
+            (WithLp.toLp 2 (Q.col (Fin.castLE hi.le j)) : EuclideanSpace ℝ (Fin n))))
+          (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hi.le)))) ^ 2)) := by
+  have hlead : Chapter07.orthogonalIteration A fun k => (Qk k).submatrix id (Fin.castLE hi.le) := by
+    refine ⟨(isThinQR_leading hi.le (B := Qk 0) (R := 1)
+      ⟨Matrix.mul_one _, hQk.1, blockTriangular_one⟩).conjTranspose_mul_self, fun k => ?_⟩
+    obtain ⟨R, hR⟩ := hQk.2 k
+    refine ⟨R.submatrix (Fin.castLE hi.le) (Fin.castLE hi.le), ?_⟩
+    have := isThinQR_leading hi.le hR
+    rwa [show (A * Qk k).submatrix id (Fin.castLE hi.le) =
+      A * (Qk k).submatrix id (Fin.castLE hi.le) by ext; simp [mul_apply]] at this
+  have hgap : |lam ⟨i, hi⟩| < |lam ⟨i - 1, by omega⟩| :=
+    hlam (show (⟨i - 1, by omega⟩ : Fin n) < ⟨i, hi⟩ from Fin.lt_def.2 (by change i - 1 < i; omega))
+  unfold Chapter02.subspaceDist
+  rw [Submodule.gap_comm]
+  exact theorem_8_2_2 hQ hQA hlam.antitone hi0 hi hgap hlead (h₀ i hi hi0) k
+
 /-! ### §8.2.5 The QR iteration and orthogonal iteration -/
 
 /-- **§8.2.5: "the matrices `T_k = Q_kᵀ A Q_k` converge to diagonal form".** For symmetric `A` with
@@ -371,5 +676,20 @@ theorem qrIterate_tendsto_diagonal {A Q : Matrix (Fin n) (Fin n) ℝ} (hA : A.Is
     simp only [hsym]
     exact hconv.1 k j h
   · exact hconv.1 j k h
+
+/-- **§8.2.5, the QR iteration from orthogonal iteration**: for an orthogonal iteration (8.2.8) with
+square `Q_k` and `T_k = Q_kᵀ A Q_k`, the triangular factor `R_k` of the step gives
+`T_{k-1} = (Q_{k-1}ᵀ Q_k) R_k` and `T_k = R_k (Q_{k-1}ᵀ Q_k)` with `Q_{k-1}ᵀ Q_k` orthogonal —
+"`T_k` is determined by computing the QR factorization of `T_{k-1}` and then multiplying the
+factors together in reverse order", one step of (8.2.1). Chapter 7's §7.3.3 at `ℝ`. -/
+theorem orthogonalIteration_qr_step {A : Matrix (Fin n) (Fin n) ℝ}
+    {Qk : ℕ → Matrix (Fin n) (Fin n) ℝ} (hQk : Chapter07.orthogonalIteration A Qk) (k : ℕ) :
+    ∃ R : Matrix (Fin n) (Fin n) ℝ, R.IsUpperTriangular ∧
+      (Qk k)ᵀ * Qk (k + 1) ∈ orthogonalGroup (Fin n) ℝ ∧
+      (Qk k)ᵀ * A * Qk k = ((Qk k)ᵀ * Qk (k + 1)) * R ∧
+      (Qk (k + 1))ᵀ * A * Qk (k + 1) = R * ((Qk k)ᵀ * Qk (k + 1)) ∧
+      IsShiftedQrStep 0 ((Qk k)ᵀ * A * Qk k) ((Qk (k + 1))ᵀ * A * Qk (k + 1)) := by
+  simpa only [conjTranspose_eq_transpose_of_trivial] using
+    Chapter07.orthogonalIteration_qr_step hQk k
 
 end GolubVanLoan.Chapter08

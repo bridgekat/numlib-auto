@@ -25,48 +25,14 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.3'
 
 [[node]]
 id = "algorithm_8_7_1"
-kind = "definition"
-desc = '''Algorithm 8.7.1 (Cholesky + symmetric QR for `A x = λ B x`), per D4 (convention 5 of the
-`GolubVanLoan` group: steps of earlier chapters call their programs, the rest are parameters):
-`algorithm_8_7_1 rnd schur A B : M (Matrix × (Fin n → ℝ))` — `G ← Chapter04.algorithm_4_2_1 rnd B`
-(the lower triangle of the result; the book cites "Algorithm 4.2.2", a misprint for 4.2.1);
-`C ← G⁻¹ A G⁻ᵀ` as two column-by-column forward substitutions (`Chapter03.algorithm_3_1_1`, the
-second on the transpose of the first result; symmetric `A` makes the transpose harmless);
-`(Q, a) ← schur C`; `X ← G⁻ᵀ Q` column by column by back substitution (`Chapter03.algorithm_3_1_2`
-on `Gᵀ`); return `(X, a)`. `schur` stays a monadic parameter: the book's "symmetric QR algorithm"
-is this chapter's Algorithm 8.3.3, an iteration with fuel and tolerance whose exact output is
-diagonal only up to its deflation perturbation, so it cannot meet the exact-diagonalization
-specification the spec assumes. Shape: the prototype's `algorithm_8_7_1`
-(`notes/gvl/ch08/proto/Jacobi.lean`), with `chol` and `trsm` replaced by the calls. ★
-
-Blocked: calls chapter 4's `algorithm_4_2_1` and chapter 3's `algorithm_3_1_1`/`algorithm_3_1_2`, not on main yet (agents s04, s03, running).'''
-deps = ["GolubVanLoan.Chapter04.algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.1'
 
 [[node]]
 id = "algorithm_8_7_1_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.7.1: if `schur C` returns an orthogonal `Q` and `a` with
-`Qᵀ C Q = diagonal a` for symmetric `C`, then for symmetric `A` and positive-definite `B` the
-output `(X, a)` of `Id.run (algorithm_8_7_1 pure schur A B)` has `Xᵀ A X = diagonal a`,
-`Xᵀ B X = 1`. The Cholesky step is `Chapter04.algorithm_4_2_1_spec` (`G = Matrix.cholesky B`, lower
-triangular with positive diagonal, `B = G Gᵀ`), the solves `Chapter03.algorithm_3_1_1_spec` /
-`algorithm_3_1_2_spec` column by column (`G⁻¹ Y`, `G⁻ᵀ Q`). ★
-
-Blocked: on `algorithm_8_7_1` and the chapter 3/4 `_spec`s (agents s03, s04).'''
-deps = ["algorithm_8_7_1", "Matrix.IsCholesky", "GolubVanLoan.Chapter04.algorithm_4_2_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.1'
 
 [[node]]
 id = "pencil_eq_cholesky_spectrum"
-kind = "theorem"
-desc = '''§8.7.2, after Algorithm 8.7.1: for `B = G Gᵀ` (`G` nonsingular),
-`λ(A, B) = λ(A, G Gᵀ) = λ(G⁻¹ A G⁻ᵀ, I) = λ(C) = {a₁, …, a_n}`: `Matrix.pencilSpectrum A B =
-spectrum ℝ (G⁻¹ * A * G⁻¹ᵀ)` and, with `algorithm_8_7_1_spec`, `= Set.range a`.
-`pencil_congruence` with `X = G⁻ᵀ` and `Matrix.pencilSpectrum_one`. ★
-
-Blocked: its second clause reads the spectrum off `algorithm_8_7_1_spec` (blocked); the congruence clause is `pencil_congruence` (proved).'''
-deps = ["pencil_congruence", "algorithm_8_7_1_spec", "Matrix.pencilSpectrum"]
 source = 'Golub–Van Loan, Matrix Computations, §8.7.2'
 
 [[node]]
@@ -80,15 +46,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.7)'
 
 [[node]]
 id = "equation_8_7_8"
-kind = "theorem"
-desc = '''(8.7.8), the generalized orthogonal iteration (`B Z_k = A Q_{k-1}`, `Z_k = Q_k R_k`) is
-orthogonal iteration (8.2.8) for `B⁻¹ A` (the book: "mathematically equivalent to (7.3.6) with `A`
-replaced by `B⁻¹A`"): a sequence satisfies (8.7.8) iff it satisfies `GolubVanLoan.Chapter07.IsOrthogonalIteration (B⁻¹ * A)`
-(chapter 7's (7.3.6) at `ℝ`, the book's own reference) with the same triangular factors, for nonsingular
-`B`. ★
-
-Blocked: states the equivalence with chapter 7's `GolubVanLoan.Chapter07.IsOrthogonalIteration` (agent s07, running).'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "Matrix.IsOrthogonalIterationStep"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.8)'
 
 [[node]]
@@ -103,7 +60,7 @@ nonsingular `X` with `U₁ᵀ A X = rectDiagonal α` and `U₂ᵀ B X = rectDiag
 `p = max(r - m₂, 0) = 0`, so that `D_B = rectDiagonal β` by
 `Matrix.shiftedRectDiagonal_zero`. ★★
 
-Blocked: a restatement of chapter 6's `GolubVanLoan.Chapter06.theorem_6_1_1`; the chapter 6 surface is not assigned yet (and its backbone `Numlib/LinearAlgebra/Matrix/GSVD` is agent dec1's, running).'''
+Blocked: a restatement of chapter 6's `GolubVanLoan.Chapter06.theorem_6_1_1`, not on main yet (agent s06) (c08, 2026-09-26).'''
 deps = ["GolubVanLoan.Chapter06.theorem_6_1_1", "Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.4'
 
@@ -113,34 +70,10 @@ source = 'Golub–Van Loan, Matrix Computations, §8.7.4'
 
 [[node]]
 id = "algorithm_8_7_2"
-kind = "definition"
-desc = '''Algorithm 8.7.2 (GSVD, tall full-rank version), per D4 (convention 5 of the `GolubVanLoan`
-group): `algorithm_8_7_2 rnd cs A B : M (Matrix × Matrix × Matrix × (ℕ → ℝ) × (ℕ → ℝ))` —
-`(Q, R) ← Chapter05.algorithm_5_2_6 rnd (fromRows A B)` (modified Gram–Schmidt, the thin QR of the
-stacked `(m₁ + m₂) × n` matrix, `Q = [Q₁; Q₂]`); `(U₁, U₂, V, α, β) ← cs Q₁ Q₂` (the thin CS
-decomposition `U₁ᵀ Q₁ V = diag α`, `U₂ᵀ Q₂ V = diag β`); `X ← R⁻¹ V` column by column by back
-substitution (`Chapter03.algorithm_3_1_2`); return `(U₁, U₂, X, α, β)`. `cs` stays a monadic
-parameter: the book gives no algorithm for the CS decomposition. ★
-
-Blocked: calls chapter 5's `algorithm_5_2_6` and chapter 3's `algorithm_3_1_2` (agents s05, s03, running).'''
-deps = ["GolubVanLoan.Chapter05.algorithm_5_2_6", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.2'
 
 [[node]]
 id = "algorithm_8_7_2_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.7.2: the QR step is a thin QR factorization with positive (so
-nonzero) diagonal for the full-column-rank stacked input (`Chapter05.algorithm_5_2_6_spec`), and the
-back substitution solves `R X = V` (`Chapter03.algorithm_3_1_2_spec`); if `cs` returns
-a thin CS decomposition of a matrix with orthonormal columns (chapter 2's Theorem 2.5.2,
-`GolubVanLoan.Chapter02.theorem_2_5_2`, backbone `Numlib/LinearAlgebra/Matrix/CSDecomposition`), and
-then for `A`, `B` (`m₁, m₂ ≥ n`) with `null(A) ∩ null(B) = {0}` (so
-`[A; B]` has full column rank; the book writes `= ∅`), the output satisfies `U₁ᵀ A X = D_A`,
-`U₂ᵀ B X = D_B`, `U₁`, `U₂` orthogonal, `X` nonsingular — a GSVD as in Theorem 8.7.4: `A X = Q₁ R X
-= Q₁ V`, `U₁ᵀ Q₁ V = D_A`. ★★
-
-Blocked: on `algorithm_8_7_2`, chapter 2's `theorem_2_5_2` (open on main, CSDecomposition agent dec1) and the chapter 3/5 `_spec`s.'''
-deps = ["algorithm_8_7_2", "theorem_8_7_4", "GolubVanLoan.Chapter02.theorem_2_5_2", "GolubVanLoan.Chapter05.algorithm_5_2_6_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.7.2'
 
 [[node]]
