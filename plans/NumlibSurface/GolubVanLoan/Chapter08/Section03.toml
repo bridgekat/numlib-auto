@@ -1,69 +1,10 @@
 namespace = "GolubVanLoan.Chapter08"
-desc = '''
-§8.3, the symmetric QR algorithm: Householder tridiagonalization (Algorithm 8.3.1) with its
-rounding-error bound, the Krylov-matrix and implicit-Q theorems for the tridiagonal decomposition
-(Theorems 8.3.1–8.3.2), the four facts of §8.3.3, the explicit shifted iteration (8.3.2) with the
-Wilkinson shift (8.3.3), the implicit (bulge-chasing) step (Algorithm 8.3.2), the symmetric QR
-algorithm (Algorithm 8.3.3), the Rayleigh-quotient connection (§8.3.6) and orthogonal iteration
-with Ritz acceleration ((8.3.6), §8.3.7).
-
-Algorithms: the numbered conventions of `NumlibSurface/GolubVanLoan` (monadic programs with a rounding
-hook `rnd : ℝ → M ℝ`, every `+ − × / √` result rounded — including the right side of a deflation
-test — and negation, `|·|`, `sign`, copies and comparisons exact; `noncomputable`; loops `List.foldlM`
-over `List.finRange` or index lists; `while` loops over `List.range fuel` with a `done` flag, `fuel`
-the last argument), shaped as in the prototype `notes/gvl/ch08/proto/Jacobi.lean`. Every update calls
-chapter 5's shared helpers on index lists (convention 13): `house` is
-`GolubVanLoan.Chapter05.houseOn rnd o x` on the tail index list (`P x = ‖x‖₂ e_{pivot}`, `v = 1` at the
-pivot, `v` zero off `o`), `givens` is `GolubVanLoan.Chapter05.algorithm_5_1_3`
-(`[c s; -s c]ᵀ [a; b] = [r; 0]`), a rotation `G(i, k, θ)` of the book is
-`GolubVanLoan.Chapter05.givensRotation i k c s` (`= Matrix.planeRotation i k c (-s)`), applied by
-`givensApplyLeft`/`givensApplyRight`; Householder data are `List ((Fin n → ℝ) × ℝ)` with the returned
-`β`. Tridiagonal matrices are stored as full `Matrix (Fin n) (Fin n) ℝ` (the book's remark that a
-practical code stores two vectors is a storage scheme, not formalized); the unreduced block `D₂₂` of
-Algorithm 8.3.3 is a **window** `w` of consecutive indices of the full matrix on which Algorithm 8.3.2
-runs (convention 10), not an extracted `Matrix.submatrix` copy.
-
-Specifications (D5): `Matrix.IsTridiagonal`, orthogonal similarity, `Matrix.shiftedQrStep` (the
-backbone's explicit shifted QR step, `Numlib/Eigen/QRAlgorithm`) and chapter 7's implicit Q
-theorem (`GolubVanLoan.Chapter07.theorem_7_4_2`; backbone `Matrix.implicitQ_of_apply_eq_zero_real`
-in `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`, whose Hessenberg form specializes
-to tridiagonal matrices). "Unreduced" is `IsUnreducedTridiagonal` below, chapter 7's
-`Matrix.IsUnreducedUpperHessenberg` plus `IsTridiagonal`.
-
-Readings. Algorithm 8.3.1 "overwrites `A` with `T`" only in the band: the entries
-`A(k+2:n, k)` and `A(k, k+2:n)` are never touched (they would hold the Householder vectors in
-practice), so the spec speaks of the band of the output. The book says the trailing update need only
-compute one triangle ("only the upper triangular portion … needs to be computed", by symmetry): the
-program computes `i ≥ j` and mirrors, so every run is symmetric (algo review H1(b)). The subdiagonal
-entry `A(k+1, k) = ‖A(k+1:n, k)‖₂` is the freshly computed norm (Algorithm 1.1.1 on the tail with
-itself, then one rounded square root), not the `μ` inside `house`, which `house` does not return. The Wilkinson shift (8.3.3) needs
-`sign(0) = 1` (with `sign(0) = 0` and `d = 0` the formula returns `a_n`, not an eigenvalue of the
-trailing block); both (8.3.3) and Algorithm 8.3.2's formula are planned with that convention. The
-"preservation of form" fact of §8.3.3 holds for every QR factorization only when `T` is
-nonsingular (for singular `T` the orthogonal factor is not unique: `T = 0 = Q · 0`), and for the
-Givens QR (`Matrix.hessenbergGivensQR`) always; the node states both.
-'''
-
 [[node]]
 id = "equation_8_3_1"
-kind = "theorem"
-desc = '''(8.3.1), the tridiagonal decomposition: for symmetric `A : Matrix (Fin n) (Fin n) ℝ` there
-is `Q ∈ orthogonalGroup` with `Qᵀ A Q` symmetric tridiagonal, and `Q` may be taken with first
-column `e₁` (`Q *ᵥ Pi.single 0 1 = Pi.single 0 1`). `Matrix.hessenbergQ` /
-`Matrix.hessenbergReduce` with `Matrix.isTridiagonal_hessenbergReduce_of_isHermitian`,
-`Matrix.hessenbergQ_mem_orthogonalGroup`; the first-column property because each Householder
-reflector of the reduction acts on coordinates `≥ 1`. ★'''
-deps = ["Matrix.hessenbergQ", "Matrix.hessenbergReduce", "Matrix.isTridiagonal_hessenbergReduce_of_isHermitian", "Matrix.hessenbergQ_mem_orthogonalGroup"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.1)'
 
 [[node]]
 id = "householder_conj_eq_sub_rankTwo"
-kind = "theorem"
-desc = '''§8.3.1, the symmetric update: for symmetric `B`, `P̃ = I - β v vᵀ` (any `β`, in particular
-`β = 2 / vᵀv`), `p = β B v` and `w = p - (β pᵀv / 2) v`, `P̃ B P̃ = B - v wᵀ - w vᵀ`.
-`Matrix.conj_one_sub_smul_vecMulVec_eq_sub` at `ℝ` (stated over a `StarRing` with `Bᴴ = B`, `star β = β`; at `ℝ` the
-`star`s vanish by `star_trivial`, and `β = 0` is allowed). ★'''
-deps = ["Matrix.conj_one_sub_smul_vecMulVec_eq_sub"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.1'
 
 [[node]]
@@ -82,7 +23,9 @@ T_k` of `p` and `v`; `h ← rnd (rnd (β * s) / 2)`; `w_i ← rnd (p_i - rnd (h 
 `ν ← rnd (√ (Algorithm 1.1.1 over T_k of A(·, k) with itself))` — **the fresh norm**, and
 `A(k+1, k) = A(k, k+1) ← ν` (a copy); then for `i, j ∈ T_k` with `i ≥ j` (the lower triangle only, as
 the book says): `A i j ← rnd (rnd (A i j - rnd (v_i * w_j)) - rnd (w_i * v_j))`, and `A j i ← A i j`
-(a copy); append `(v, β)`. The program is `noncomputable`. ★★ (writing it)'''
+(a copy); append `(v, β)`. The program is `noncomputable`. ★★ (writing it)
+
+Blocked: calls chapter 5's `GolubVanLoan.Chapter05.houseOn`/`algorithm_5_1_1` and chapter 1's `algorithm_1_1_1`; chapter 5's surface is not on main yet (agent s05, running).'''
 deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.algorithm_5_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_1", "FloatingPoint.dotAccum"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
@@ -101,7 +44,9 @@ symmetric (lower triangle computed and mirrored), and is tridiagonal through col
 norm the exact subdiagonal entry), `householder_conj_eq_sub_rankTwo`, chapter 1's
 `algorithm_1_1_1_spec`. Convention 11: the bare statement `band A' = Qᵀ A Q` for some orthogonal `Q`
 is `algorithm_8_3_1_rounding` at `FloatingPoint.RoundingModel.exact` (`E = 0`); the identification
-`Q = householderProduct data` with `Q e₁ = e₁` needs the invariant. ★★★ (~300 lines)'''
+`Q = householderProduct data` with `Q e₁ = e₁` needs the invariant. ★★★ (~300 lines)
+
+Blocked: the program `algorithm_8_3_1` and chapter 5's `houseOn_spec`/`householderProduct` (agent s05).'''
 deps = ["algorithm_8_3_1", "householder_conj_eq_sub_rankTwo", "equation_8_3_1", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter01.algorithm_1_1_1_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
@@ -121,7 +66,9 @@ target `+‖x‖₂`, raised to the common order `18 n + 31` by `IsRelPert.mono`
 program are `RoundsDot` by `FloatingPoint.roundsDot_of_mem_run_dotAccum` (over the duplicate-free list
 `T_k`, transported to the subtype by `FloatingPoint.roundsDot_comp_equiv_iff`); the fresh norm is the
 relation's `RoundsDot m x x σ̂ ∧ m.Rounds (√σ̂) ν̂`; the lower-triangle update with its mirror is literally
-`RoundsSymmRankTwoUpdate`. Unfolding by `SetM.forall_mem_run_foldlM_finRange`. ★★ (~200 lines)'''
+`RoundsSymmRankTwoUpdate`. Unfolding by `SetM.forall_mem_run_foldlM_finRange`. ★★ (~200 lines)
+
+Blocked: the program `algorithm_8_3_1` and chapter 5's `houseOn_rounds` (agent s05).'''
 deps = ["algorithm_8_3_1", "GolubVanLoan.Chapter05.houseOn_rounds", "FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert", "FloatingPoint.roundsDot_of_mem_run_dotAccum", "FloatingPoint.roundsDot_comp_equiv_iff", "FloatingPoint.RoundsTridiagonalizePert", "FloatingPoint.RoundingModel.IsIdempotent", "SetM.forall_mem_run_foldlM_finRange"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
@@ -135,30 +82,18 @@ exactly orthogonal, `E` symmetric, `‖E‖_F ≤ c u ‖A‖_F`; Wilkinson AEP 
 `(n - 2) ε < 1`, and symmetric `A`, every run `(A', data) ∈ (algorithm_8_3_1 fp.round A).run` has an
 orthogonal `Q̃` and a symmetric `E` with `‖E‖_F ≤ γ_{n-2}(ε) ‖A‖_F` (`≈ c n² u`) and
 `band A' = Q̃ᵀ (A + E) Q̃`, symmetric tridiagonal. `algorithm_8_3_1_rounds` and
-`FloatingPoint.exists_roundsTridiagonalizePert_eq`. ★'''
+`FloatingPoint.exists_roundsTridiagonalizePert_eq`. ★
+
+Blocked: on `algorithm_8_3_1_rounds` (blocked above).'''
 deps = ["algorithm_8_3_1_rounds", "FloatingPoint.exists_roundsTridiagonalizePert_eq"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
 [[node]]
 id = "IsUnreducedTridiagonal"
-kind = "definition"
-desc = '''§8.3.1, "unreduced": a tridiagonal `T : Matrix (Fin n) (Fin n) ℝ` is unreduced when no
-subdiagonal entry vanishes: `IsUnreducedTridiagonal T := T.IsTridiagonal ∧
-T.IsUnreducedUpperHessenberg` (chapter 7's `Matrix.IsUnreducedUpperHessenberg`,
-`Numlib/LinearAlgebra/Matrix/UnreducedHessenberg`; on `Fin n` it says `T ⟨i+1, _⟩ i ≠ 0`,
-`Matrix.isUnreducedUpperHessenberg_iff_fin`). ★'''
-deps = ["Matrix.IsTridiagonal", "Matrix.IsUnreducedUpperHessenberg"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.1, Definition'
 
 [[node]]
 id = "tridiagonal_spectrum_split"
-kind = "theorem"
-desc = '''§8.3.1, after Algorithm 8.3.1: if `T` is tridiagonal and `t_{k+1,k} = 0` (and, `T`
-symmetric, `t_{k,k+1} = 0`), then `T` is block diagonal and
-`λ(T) = λ(T(1:k,1:k)) ∪ λ(T(k+1:n,k+1:n))`, with multiplicity:
-`T.charpoly = (T.submatrix (Fin.castLE _) (Fin.castLE _)).charpoly * (T.submatrix (Fin.natAdd k) (Fin.natAdd k)).charpoly`
-(`n = k + l` reindexing through `finSumFinEquiv`, `Matrix.charpoly_fromBlocks_zero₁₂`). ★'''
-deps = ["Matrix.IsTridiagonal"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.1'
 
 [[node]]
@@ -173,7 +108,9 @@ if `R` is singular and `k` is the least index with `r_kk = 0`, then `k ≥ 2` an
 index with `t_{k,k-1} = 0`. Proof as in the book: `Qᵀ K = [e₁ | T e₁ | ⋯ | T^{n-1} e₁]`, and
 `T^j e₁` is supported on `{0, …, j}` with `j`-th entry `∏_{i<j} t_{i+1,i}` (induction, tridiagonal).
 Chapter 7's Theorem 7.4.3 is the unreduced-iff-nonsingular half for Hessenberg matrices.
-★★ (~100 lines)'''
+★★ (~100 lines)
+
+Blocked: uses chapter 7's `GolubVanLoan.Chapter07.krylovMatrix`/`theorem_7_4_3` (agent s07, running); ~100 lines after.'''
 deps = ["IsUnreducedTridiagonal", "GolubVanLoan.Chapter07.krylovMatrix", "Matrix.conjTranspose_mul_krylovMatrix", "GolubVanLoan.Chapter07.theorem_7_4_3"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.3.1'
 
@@ -187,97 +124,39 @@ desc = '''Theorem 8.3.2 (implicit Q theorem, tridiagonal form): for symmetric `A
 Theorem 7.4.2 (implicit Q, Hessenberg form: its restatement `GolubVanLoan.Chapter07.theorem_7_4_2`,
 not the backbone it delegates to — README layering) applied to the tridiagonal (hence upper Hessenberg, `Matrix.IsTridiagonal.isUpperHessenberg`)
 `T`, `S`. The book's proof via Theorem 8.3.1 and the uniqueness of the thin QR factorization is
-equivalent. ★'''
+equivalent. ★
+
+Blocked: an instance of chapter 7's `GolubVanLoan.Chapter07.theorem_7_4_2` (agent s07, running).'''
 deps = ["IsUnreducedTridiagonal", "GolubVanLoan.Chapter07.theorem_7_4_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.3.2'
 
 [[node]]
 id = "qr_tridiagonal_preservation"
-kind = "theorem"
-desc = '''§8.3.3, preservation of form: if `T` is symmetric tridiagonal and `T = Q R` is a QR
-factorization (`Q` orthogonal, `R` upper triangular) then — provided `T` is nonsingular, or `Q` is
-the Givens QR `Matrix.hessenbergGivensQR` — `Q` has lower bandwidth `1`
-(`Matrix.HasLowerBandwidth Q 1`), `R` has upper bandwidth `2` (`Matrix.HasUpperBandwidth R 2`), and
-`T₊ = R Q = Qᵀ T Q` is symmetric tridiagonal. The nonsingular case: `Q = T R⁻¹` is Hessenberg
-(`Matrix.IsUpperHessenberg.mul_isUpperTriangular`), `R = Qᵀ T` has upper bandwidth 2 (product of
-bandwidths, `Matrix.HasUpperBandwidth.mul`), `RQ` is Hessenberg and symmetric hence tridiagonal
-(`Matrix.IsUpperHessenberg.isTridiagonal_of_isSymm`). The Givens case from
-`Matrix.hessenbergGivensQR_spec`. For singular `T` and an arbitrary QR the claim is false
-(`T = 0`). ★★'''
-deps = ["Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth", "Matrix.hessenbergGivensQR", "Matrix.hessenbergGivensQR_spec", "Matrix.IsTridiagonal"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.3'
 
 [[node]]
 id = "shifted_qr_tridiagonal"
-kind = "theorem"
-desc = '''§8.3.3, shifts: for symmetric tridiagonal `T`, `s : ℝ` and a QR factorization
-`T - s I = Q R` (with `T - s I` nonsingular or `Q` the Givens QR),
-`T₊ = R Q + s I = Qᵀ T Q` is symmetric tridiagonal. `qr_tridiagonal_preservation` for `T - s I`,
-and `R Q + s I = Qᵀ (T - s I) Q + s I = Qᵀ T Q` (`Matrix.shiftedQrStep_eq_conj` for the canonical
-factorization). ★'''
-deps = ["qr_tridiagonal_preservation", "Matrix.shiftedQrStep_eq_conj"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.3'
 
 [[node]]
 id = "perfect_shift"
-kind = "theorem"
-desc = '''§8.3.3, perfect shifts: if `T` is symmetric tridiagonal and unreduced, then for every `s`
-the first `n - 1` columns of `T - s I` are linearly independent; if moreover `s ∈ spectrum ℝ T` and
-`Q R = T - s I` is any QR factorization, then `r_nn = 0` and the last column of `T₊ = R Q + s I` is
-`s e_n`. Independence is chapter 7's `Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols`
-(with `IsUnreducedUpperHessenberg.sub_smul_one`). Then `R(1:n-1,1:n-1)` is nonsingular (`Q`
-orthogonal), `det (T - s I) = 0` forces `r_nn = 0`, the last row of `R` vanishes, so the last row of
-`R Q` does, and `T₊` is symmetric. ★★'''
-deps = ["IsUnreducedTridiagonal", "Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols", "Matrix.IsUnreducedUpperHessenberg.sub_smul_one"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.3'
 
 [[node]]
 id = "wilkinsonShift"
-kind = "definition"
-desc = '''The Wilkinson shift (8.3.3) of a matrix `T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ` with
-`a_n = T (last) (last)`, `a_{n-1}`, `b_{n-1} = T (last) (last - 1)`:
-`wilkinsonShift T := a_n + d - sgn d * √(d² + b_{n-1}²)` with `d = (a_{n-1} - a_n)/2` and
-`sgn d = if 0 ≤ d then 1 else -1` (the book's `sign`, with `sign(0) = 1`: see the section
-description). ★'''
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.3)'
 
 [[node]]
 id = "equation_8_3_3"
-kind = "theorem"
-desc = '''(8.3.3): `wilkinsonShift T` is the eigenvalue of the trailing `2 × 2` block
-`!![a_{n-1}, b_{n-1}; b_{n-1}, a_n]` closer to `a_n` (a root of `(λ - a_{n-1})(λ - a_n) - b² = 0`,
-and `|μ - a_n| ≤ |μ' - a_n|` for the other root `μ'`), and it equals Algorithm 8.3.2's form
-`a_n - b² / (d + sgn d * √(d² + b²))` (rationalize; the denominator vanishes only when `d = b = 0`,
-where both read `a_n`). ★★'''
-deps = ["wilkinsonShift"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.3)'
 
 [[node]]
 id = "explicitShiftedQR"
-kind = "definition"
-desc = '''The explicit single-shift QR iteration (8.3.2): for a shift rule `shift : Matrix → ℝ`
-(`fun T => T last last` or `wilkinsonShift`), `explicitShiftedQR shift T₀ : ℕ → Matrix` with
-`T_{k+1} = Matrix.shiftedQrStep (shift T_k) T_k` (`R U + μ I` for the canonical
-`Matrix.qrQ`/`Matrix.qrR` of `T_k - μ I`). Each iterate is orthogonally similar to `T₀`
-(`Matrix.shiftedQrStep_eq_conj`) and, `T₀` symmetric tridiagonal with nonsingular shifted matrices,
-symmetric tridiagonal (`shifted_qr_tridiagonal`). Wilkinson's cubic convergence theorem (1968) is
-cited by the book without proof and is not a node. ★'''
-deps = ["Matrix.shiftedQrStep", "Matrix.shiftedQrStep_eq_conj", "shifted_qr_tridiagonal", "wilkinsonShift"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.2)'
 
 [[node]]
 id = "bulgeChase_step"
-kind = "theorem"
-desc = '''§8.3.5, one bulge-chasing update: for a symmetric `4 × 4` block
-`!![a_k, b_k, z_k, 0; b_k, a_p, b_p, 0; z_k, b_p, a_q, b_q; 0, 0, b_q, a_r]` and `(c, s)` with
-`c² + s² = 1` and `b_k s + z_k c = 0`, conjugation by the book's rotation in the `(2,3)` plane
-(`Matrix.planeRotation 1 2 c (-s)`) gives
-`!![a_k, b_k', 0, 0; b_k', a_p', b_p', z_p; 0, b_p', a_q', b_q'; 0, z_p, b_q', a_r]` — the bulge moves
-from `(3,1)` to `(4,2)` and nothing else leaves the band (explicit formulas for the primed entries,
-`z_p = -s b_q`). Embedded in `n × n` at rows/columns `k, k+1, k+2, k+3`: after the rotation the only
-nonzero outside the tridiagonal band is at `(k+3, k+1)`. `Matrix.conj_planeRotation_apply_*`. ★★'''
-deps = ["Matrix.planeRotation", "Matrix.conj_planeRotation_apply_jj", "Matrix.conj_planeRotation_apply_kk", "Matrix.conj_planeRotation_apply_jk", "Matrix.conj_planeRotation_apply_of_ne"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.5'
 
 [[node]]
@@ -294,7 +173,9 @@ exact — convention 1); `x ← fl(t₁₁ - μ)`, `z ← t₂₁`; for `k = 1:N
 `algorithm_5_1_3`); `T ← G_kᵀ T G_k` with `G_k = GolubVanLoan.Chapter05.givensRotation w_{k-1} w_k c s`
 (`givensApplyLeft rnd w_{k-1} w_k c s w T` then `givensApplyRight rnd w_{k-1} w_k c s w T`, rows then
 columns over the window); `Q ← Q G_k` (`givensApplyRight`, all rows); if `k < N-1`: `x ← t_{k+1,k}`,
-`z ← t_{k+2,k}` (copies). For `N ≤ 1` it returns `(T, Q)`. ★★'''
+`z ← t_{k+2,k}` (copies). For `N ≤ 1` it returns `(T, Q)`. ★★
+
+Blocked: calls chapter 5's shared helpers `GolubVanLoan.Chapter05.givensRotation`/`givensApplyLeft`/`givensApplyRight` (+ `_spec`), which are not on main yet (chapter 5 surface, agent s05, running) and chapter 5's `algorithm_5_1_3`.'''
 deps = ["wilkinsonShift", "GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.givensRotation"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.2'
 
@@ -316,7 +197,9 @@ unreduced in its first `n - 1` subdiagonal entries (`T` unreduced; the last may 
 `v_n = ± q_n` by orthogonality). Window form (what Algorithm 8.3.3 uses): for a window on which `T`
 is an unreduced symmetric tridiagonal block decoupled from the rest, the same for that block, `Z` the
 identity off the window. Uses chapter 5's `algorithm_5_1_3_spec`, `givensApplyLeft_spec`,
-`givensApplyRight_spec`. ★★★ (~400 lines)'''
+`givensApplyRight_spec`. ★★★ (~400 lines)
+
+Blocked: on `algorithm_8_3_2` and `theorem_8_3_2` (both blocked).'''
 deps = ["algorithm_8_3_2", "bulgeChase_step", "theorem_8_3_2", "equation_8_3_3", "IsUnreducedTridiagonal", "Matrix.shiftedQrStep", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.2'
 
@@ -332,7 +215,9 @@ accumulation of the **returned** reflector data, never rebuilt). Then at most `f
 (the right side rounded, `|·|` and the comparison exact — convention 1); find the largest `q` and
 smallest `p` with `D₃₃` (last `q`) diagonal and `D₂₂` unreduced (pure index computation, exact); if
 `q = n` stop; else apply `algorithm_8_3_2` to the window `w = [p, …, n-q-1]` of `D` with the
-accumulator `Q` (its columns `w`). ★★'''
+accumulator `Q` (its columns `w`). ★★
+
+Blocked: calls `algorithm_8_3_1`, `algorithm_8_3_2` and chapter 5's `forwardAccumulation` (agent s05).'''
 deps = ["algorithm_8_3_1", "algorithm_8_3_2", "GolubVanLoan.Chapter05.forwardAccumulation"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.3'
 
@@ -349,38 +234,20 @@ at that time, and `‖E_j‖_F ≤ ‖E‖_F`); if the loop stopped before the f
 diagonal. Invariants from `algorithm_8_3_1_spec` with `GolubVanLoan.Chapter05.forwardAccumulation_spec`
 (`Q₀ = householderProduct data`) and the window form of `algorithm_8_3_2_spec` on the unreduced block
 (`Z` the identity off the window, i.e. `diag(I_p, Z, I_q)`), and the deflation bookkeeping. Convergence (that
-some finite fuel suffices) is Wilkinson's theorem and is not claimed. ★★★ (~350 lines)'''
+some finite fuel suffices) is Wilkinson's theorem and is not claimed. ★★★ (~350 lines)
+
+Blocked: on `algorithm_8_3_3` (blocked).'''
 deps = ["algorithm_8_3_3", "algorithm_8_3_1_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec", "algorithm_8_3_2_spec", "tridiagonal_spectrum_split"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.3'
 
 [[node]]
 id = "rayleigh_qr_connection"
-kind = "theorem"
-desc = '''§8.3.6: for a symmetric tridiagonal `T`, the shift `σ = t_nn = e_nᵀ T e_n` and the canonical
-`T - σ I = Q R` (`Matrix.qrQ`, `Matrix.qrR`): `(T - σ I) q_n = r_nn e_n` for the last column `q_n`
-of `Q`; hence, when `σ ∉ spectrum` (so `r_nn ≠ 0`), one step of Rayleigh quotient iteration (8.2.6)
-from `x₀ = e_n` gives `x₁ = ± q_n` (`rayleighQuotient T e_n = t_nn`). The first claim is
-`Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last` with `Tᵀ = T`. ★'''
-deps = ["Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last", "rayleighQuotientIteration", "rayleighQuotient"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.6'
 
 [[node]]
-id = "ritzAcceleration"
-kind = "definition"
-desc = '''Orthogonal iteration with Ritz acceleration (8.3.6), as a predicate on sequences
-`IsRitzAcceleration A Q Q̃ R S U D`: `Q 0` orthonormal columns; for `k ≥ 1`,
-`Matrix.IsOrthogonalIterationStep A Q_{k-1} Q̃_k` (`A Q_{k-1} = Q̃_k R_k`, a thin QR), `S_k = Q̃_kᵀ A Q̃_k`, `U_kᵀ S_k U_k = D_k` diagonal with `U_k` orthogonal
-(Schur), `Q_k = Q̃_k U_k`. ★'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration", "Matrix.IsOrthogonalIterationStep"]
+id = "IsRitzAcceleration"
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.6)'
 
 [[node]]
 id = "ritzAcceleration_residual"
-kind = "theorem"
-desc = '''§8.3.7: for a Ritz-accelerated iteration, `‖A Q_k - Q_k D_k‖_F = ‖A Q̃_k - Q̃_k S_k‖_F`, which is
-`min_S ‖A Q̃_k - Q̃_k S‖_F` (Theorem 8.1.14) — the columns of `Q_k` are the best basis for the
-residual. Right multiplication by the orthogonal `U_k` preserves the Frobenius norm. The book's
-rate `|θ_i^{(k)} - λ_i(A)| = O(|λ_{r+1}/λ_i|^k)` is quoted from Stewart (1969) without proof and is
-not a node. ★'''
-deps = ["ritzAcceleration", "theorem_8_1_14"]
 source = 'Golub–Van Loan, Matrix Computations, §8.3.7'

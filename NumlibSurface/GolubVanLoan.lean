@@ -28,6 +28,14 @@ import NumlibSurface.GolubVanLoan.Chapter04.Section05
 import NumlibSurface.GolubVanLoan.Chapter04.Section06
 import NumlibSurface.GolubVanLoan.Chapter04.Section07
 import NumlibSurface.GolubVanLoan.Chapter04.Section08
+import NumlibSurface.GolubVanLoan.Chapter08
+import NumlibSurface.GolubVanLoan.Chapter08.Section01
+import NumlibSurface.GolubVanLoan.Chapter08.Section02
+import NumlibSurface.GolubVanLoan.Chapter08.Section03
+import NumlibSurface.GolubVanLoan.Chapter08.Section04
+import NumlibSurface.GolubVanLoan.Chapter08.Section05
+import NumlibSurface.GolubVanLoan.Chapter08.Section06
+import NumlibSurface.GolubVanLoan.Chapter08.Section07
 import NumlibSurface.GolubVanLoan.Chapter09
 import NumlibSurface.GolubVanLoan.Chapter09.Section01
 import NumlibSurface.GolubVanLoan.Chapter09.Section02

@@ -1,47 +1,6 @@
 namespace = "GolubVanLoan.Chapter08"
-desc = '''
-§8.6, computing the SVD: the connections (8.6.1)–(8.6.3) with the symmetric eigenproblems of `AᵀA`,
-`AAᵀ` and the Jordan–Wielandt matrix, the perturbation theory of singular values (Theorem 8.6.1,
-Corollaries 8.6.2–8.6.3, Theorem 8.6.4) and of singular subspace pairs (Theorem 8.6.5), the
-Golub–Kahan SVD step (Algorithm 8.6.1) and the SVD algorithm (Algorithm 8.6.2), and the Jacobi SVD
-procedures (§8.6.4).
-
-`σ_k(A)` for `A : Matrix (Fin m) (Fin n) ℝ` is `A.sortedSingularValues (k - 1)` (the backbone `abbrev` for
-`(Matrix.toEuclideanLin A).singularValues (k - 1)`, Mathlib's sorted `LinearMap.singularValues`, 0-based, the values
-`Matrix.exists_svd` puts on the diagonal); chapters 2 and 6 use the same reading and introduce no synonym. The
-Jordan–Wielandt matrix `[0 Aᵀ; A 0]` is `Matrix.hermitianDilation A` (`Numlib/Analysis/Matrix/SingularValues`, the
-matrix of the operator `LinearMap.hermitianDilation` of `Numlib/Analysis/InnerProductSpace/SingularValues`),
-indexed by `Fin n ⊕ Fin m`; `Matrix.hermitianDilation` and `Matrix.IsHermitian.eigenvalues₀_hermitianDilation`
-keep their ids and statements. Theorems 8.6.4–8.6.5 are in `Numlib/Analysis/Matrix/SingularValues`. Bidiagonal matrices are `Matrix.IsUpperBidiagonal`.
-
-The algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan`. Algorithm 8.6.2 calls
-chapter 5's Householder bidiagonalization (`GolubVanLoan.Chapter05.algorithm_5_4_2`, whose returned
-reflector data carry the `β` `house` computed, convention 13) and Algorithm 8.6.1, which calls
-chapter 5's `givens` (`GolubVanLoan.Chapter05.algorithm_5_1_3`) and applies the rotations with
-chapter 5's `givensApplyLeft`/`givensApplyRight`; Algorithm 8.6.1 runs on a **window** of consecutive
-indices of the full bidiagonal matrix (the unreduced block `B₂₂` of Algorithm 8.6.2, convention 10). The spec of Algorithm 8.6.1 is the book's claim that it
-is Algorithm 8.3.2 applied implicitly to `BᵀB`, proved through the implicit Q theorem.
-
-Readings. Algorithm 8.6.1 says "`B ∈ ℝ^{m×n}`" for what is square `n × n`. Theorem 8.6.5 swaps
-`P` and `Q`: the dimensions require `P ∈ ℝ^{(n-r)×r}` with `ran(V₁ + V₂ P)` and
-`Q ∈ ℝ^{(m-r)×r}` with `ran(U₁ + U₂ Q)`; the node states it that way. **Theorem 8.6.5 is false as
-printed for `m > n`** (surface review Major 1; book lines 25739–25770): its gap `δ` is a minimum over
-`σ(A₁₁)` and `σ(A₂₂)` only, but for `m > n` the block `A₂₂ ∈ ℝ^{(m-r)×(n-r)}` has `m - n` further zero
-singular values that the perturbation can couple to. `theorem_8_6_5` adds Wedin/Stewart's condition
-`δ ≤ σ_min(A₁₁)` when `m > n` (for `m = n` it is the printed statement), and
-`theorem_8_6_5_counterexample` records the failure. The "Steps 1–3" route
-through `AᵀA` and QR with column pivoting is a sketch the book immediately discards (not a node),
-and Figure 8.6.1 is an operation count (not formalized).
-'''
-
 [[node]]
 id = "equation_8_6_1"
-kind = "theorem"
-desc = '''(8.6.1)–(8.6.2): if `Uᵀ A V = rectDiagonal σ` is an SVD of `A : Matrix (Fin m) (Fin n) ℝ`,
-`m ≥ n`, then `Vᵀ (AᵀA) V = diagonal (σ_i²)` (`n × n`) and
-`Uᵀ (A Aᵀ) U = diagonal (σ₁², …, σ_n², 0, …, 0)` (`m × m`). `Matrix.rectDiagonal_mul_rectDiagonal`,
-`Matrix.conjTranspose_rectDiagonal_mul_self`. ★'''
-deps = ["Matrix.rectDiagonal", "Matrix.exists_svd"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.6.1)'
 
 [[node]]
@@ -52,31 +11,18 @@ matrix `Q = (1/√2) [V V 0; U₁ -U₁ √2 U₂]` (block rows `n`, `m`; block 
 orthogonal and `Qᵀ [0 Aᵀ; A 0] Q = diag(σ₁, …, σ_n, -σ₁, …, -σ_n, 0, …, 0)`; hence the eigenvalues of
 the Jordan–Wielandt matrix are `±σ_i` and `m - n` zeros
 (`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). Block computation with `Matrix.fromBlocks`
-and `Matrix.fromCols` over the reindexing `Fin n ⊕ Fin n ⊕ Fin (m - n) ≃ Fin n ⊕ Fin m`. ★★'''
+and `Matrix.fromCols` over the reindexing `Fin n ⊕ Fin n ⊕ Fin (m - n) ≃ Fin n ⊕ Fin m`. ★★
+
+Blocked: `Matrix.hermitianDilation`/`Matrix.IsHermitian.eigenvalues₀_hermitianDilation` (`Numlib/Analysis/Matrix/SingularValues`, agent sv2, running) are open.'''
 deps = ["Matrix.hermitianDilation", "Matrix.IsHermitian.eigenvalues₀_hermitianDilation", "equation_8_6_1"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.6.3)'
 
 [[node]]
 id = "theorem_8_6_1"
-kind = "theorem"
-desc = '''Theorem 8.6.1: for `A : Matrix (Fin m) (Fin n) ℝ` and `k < min m n` (book `k = 1:min{m,n}`,
-0-based here), `σ_k(A) = min_{dim S = n-k} max_{x ∈ S, y ∈ ℝ^m} yᵀAx/(‖x‖₂‖y‖₂)`
-(`LinearMap.isLeast_singularValues_bilinear`, the book's `n - k + 1` in 1-based counting) and
-`σ_k(A) = max_{dim S = k+1} min_{x ∈ S} ‖Ax‖₂/‖x‖₂` (`LinearMap.isGreatest_singularValues`), both in
-the `IsLeast`/`IsGreatest` form over subspaces `S` of `ℝⁿ` (`Fin n → ℝ`, transported to
-`EuclideanSpace`). The book proves the right form from Theorem 8.1.2 for `AᵀA` and refers to
-Xiang (2006) for the left. ★★ (bridging)'''
-deps = ["LinearMap.isGreatest_singularValues", "LinearMap.isLeast_singularValues_bilinear", "theorem_8_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.6.1'
 
 [[node]]
 id = "corollary_8_6_2"
-kind = "theorem"
-desc = '''Corollary 8.6.2: for `A E : Matrix (Fin m) (Fin n) ℝ`, `m ≥ n`, and `k < n`,
-`|σ_k(A + E) - σ_k(A)| ≤ σ_0(E) = lpOpNorm 2 E`. `LinearMap.abs_singularValues_sub_le` with
-`C = ‖E‖₂`, and `σ_0(E) = ‖E‖₂` (`Matrix.l2_opNorm_eq_iSup_singularValues`). The book's proof
-applies Corollary 8.1.6 to the Jordan–Wielandt matrices (8.6.4); either route works. ★'''
-deps = ["LinearMap.abs_singularValues_sub_le", "Matrix.l2_opNorm_eq_iSup_singularValues", "Matrix.lpOpNorm"]
 source = 'Golub–Van Loan, Matrix Computations, Corollary 8.6.2'
 
 [[node]]
@@ -84,20 +30,14 @@ id = "equation_8_6_4"
 kind = "theorem"
 desc = '''(8.6.4): `Ã = [0 Aᵀ; A 0]` and `Ã + Ẽ = [0 (A+E)ᵀ; A+E 0]` with `Ẽ = [0 Eᵀ; E 0]`, i.e.
 `Matrix.hermitianDilation (A + E) = hermitianDilation A + hermitianDilation E`, and
-`‖hermitianDilation E‖_F² = 2 ‖E‖_F²`, `lpOpNorm 2 (hermitianDilation E) = lpOpNorm 2 E`. ★'''
+`‖hermitianDilation E‖_F² = 2 ‖E‖_F²`, `lpOpNorm 2 (hermitianDilation E) = lpOpNorm 2 E`. ★
+
+Blocked: `Matrix.hermitianDilation` (agent sv2, running) is open.'''
 deps = ["Matrix.hermitianDilation"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (8.6.4)'
 
 [[node]]
 id = "corollary_8_6_3"
-kind = "theorem"
-desc = '''Corollary 8.6.3: for `A = [a₁ | ⋯ | a_n] : Matrix (Fin m) (Fin n) ℝ`, `m ≥ n`, and
-`A_r = A.submatrix id (Fin.castLE _)` (the first `r` columns), for `r = 1:n-1`:
-`σ_1(A_{r+1}) ≥ σ_1(A_r) ≥ σ_2(A_{r+1}) ≥ ⋯ ≥ σ_r(A_{r+1}) ≥ σ_r(A_r) ≥ σ_{r+1}(A_{r+1})` (0-based:
-`σ_k(A_{r+1}) ≥ σ_k(A_r) ≥ σ_{k+1}(A_{r+1})` for `k < r`). `LinearMap.singularValues_domRestrict_interlace`
-with `K` the span of the first `r` coordinate vectors (`toEuclideanLin A_r` is the restriction). The
-book's "Apply Corollary 8.1.7 to AᵀA" means Theorem 8.1.7. ★★ (bridging)'''
-deps = ["LinearMap.singularValues_domRestrict_interlace", "theorem_8_1_7"]
 source = 'Golub–Van Loan, Matrix Computations, Corollary 8.6.3'
 
 [[node]]
@@ -105,16 +45,14 @@ id = "theorem_8_6_4"
 kind = "theorem"
 desc = '''Theorem 8.6.4 (Wielandt–Hoffman for singular values): for `A E : Matrix (Fin m) (Fin n) ℝ`,
 `m ≥ n`, `∑ k : Fin n, (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`. `Matrix.sum_sq_sortedSingularValues_sub_le` at
-`ℝ` (its proof is the book's: Theorem 8.1.4 for the matrices (8.6.4)). ★'''
+`ℝ` (its proof is the book's: Theorem 8.1.4 for the matrices (8.6.4)). ★
+
+Blocked: `Matrix.sum_sq_sortedSingularValues_sub_le` (agent sv2, running) is open; a delegation after.'''
 deps = ["Matrix.sum_sq_sortedSingularValues_sub_le", "theorem_8_1_4", "equation_8_6_4"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.6.4'
 
 [[node]]
 id = "IsSingularSubspacePair"
-kind = "definition"
-desc = '''§8.6.2: `k`-dimensional subspaces `S ≤ ℝⁿ`, `T ≤ ℝᵐ` form a singular subspace pair for `A`
-if `x ∈ S → A x ∈ T` and `y ∈ T → Aᵀ y ∈ S`: `IsSingularSubspacePair A S T := finrank S = finrank T
-∧ S.map (toEuclideanLin A) ≤ T ∧ T.map (toEuclideanLin Aᵀ) ≤ S`. ★'''
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §8.6.2, Definition'
 
@@ -142,45 +80,14 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 8.6.5'
 
 [[node]]
 id = "theorem_8_6_5_counterexample"
-kind = "theorem"
-desc = '''Theorem 8.6.5 as printed is false for `m > n` (surface review Major 1): `m = 3`, `n = 2`, `r = 1`,
-`A = !![0, 0; 0, 1; 0, 0]`, `U = 1`, `V = 1` (`A₁₁ = [0]`, `A₂₂ = !![1; 0]` with `σ(A₂₂) = {1}`, so the
-printed `δ = 1`), `E = ε • vecMulVec e₃ e₁` (`E 2 0 = ε`, else `0`) with `0 < ε ≤ 1/5` (so
-`‖E‖_F = ε ≤ δ/5`). Every one-dimensional singular subspace pair `(S, T)` of `A + E =
-!![0, 0; 0, 1; ε, 0]` is `(span e₁, span e₃)` or `(span e₂, span e₂)`, and neither has the form
-`(ran (V₁ + V₂ P), ran (U₁ + U₂ Q)) = (span (e₁ + P e₂), span (e₁ + Q₁ e₂ + Q₂ e₃))`: the first pair
-would need `span (e₁ + Q₁ e₂ + Q₂ e₃) = span e₃`, the second `span (e₁ + P e₂) = span e₂`, both impossible
-because the `e₁`-coefficient is `1`. The corrected hypothesis fails here: `σ_min(A₁₁) = 0 < δ`.
-Stated as the negation of the printed conclusion for this instance. The singular subspace pairs of
-`A + E` are found from `(A + E)ᵀ(A + E) = diag(ε², 1)` (distinct eigenvalues for `ε < 1`, so the
-invariant lines are the coordinate axes). ★★'''
-deps = ["IsSingularSubspacePair"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.6.5'
 
 [[node]]
 id = "gram_bidiagonal"
-kind = "theorem"
-desc = '''§8.6.3: for upper bidiagonal `B` with diagonal `d` and superdiagonal `f`, `T = BᵀB` is
-symmetric tridiagonal with `t_ii = d_i² + f_{i-1}²` (`f₀ = 0`) and `t_{i,i+1} = d_i f_i`; in
-particular the trailing block `T(n-1:n, n-1:n) = [d_{n-1}² + f_{n-2}², d_{n-1} f_{n-1}; d_{n-1} f_{n-1},
-d_n² + f_{n-1}²]` (the book prints `d_m f_m` with `m = n - 1`), and `T` is unreduced iff every
-`d_i f_i ≠ 0` (`i < n`). Also: if `Uᵀ A V = [B; 0]` is a bidiagonalization then `Vᵀ(AᵀA)V = BᵀB`
-is a tridiagonal decomposition of `AᵀA` (the section's opening remark). ★'''
-deps = ["Matrix.IsUpperBidiagonal", "IsUnreducedTridiagonal"]
 source = 'Golub–Van Loan, Matrix Computations, §8.6.3'
 
 [[node]]
 id = "bidiagonal_decouple"
-kind = "theorem"
-desc = '''§8.6.3, the decoupling rules: for upper bidiagonal `B` (`n × n`): (i) if `f_k = 0` then
-`B = fromBlocks B₁ 0 0 B₂` (reindexed) and its singular values are those of `B₁` and `B₂` together;
-(ii) if `d_k = 0` for some `k < n`, the row rotations in planes `(k, k+1), …, (k, n)` (each by
-`Matrix.givensPair` of the current `(k, j)` entry and `(j, j)` entry) zero row `k` and keep `B`
-upper bidiagonal; (iii) if `d_n = 0`, the column rotations in planes `(n-1, n), …, (1, n)` zero the
-last column. So the SVD problem decouples whenever `f₁ ⋯ f_{n-1} = 0` or `d₁ ⋯ d_n = 0`. (ii) by
-induction on the chase (the bulge moves one column right per rotation, as in the book's `n = 6`,
-`k = 3` display). ★★ (~120 lines)'''
-deps = ["Matrix.IsUpperBidiagonal", "Matrix.givensPair", "Matrix.transpose_planeRotation_givensPair_mulVec"]
 source = 'Golub–Van Loan, Matrix Computations, §8.6.3'
 
 [[node]]
@@ -198,7 +105,9 @@ closer to `t_NN` (computed from `d_{N-1}, d_N, f_{N-2}, f_{N-1}` by the formula 
 (`GolubVanLoan.Chapter05.givensApplyRight`, rows `w`), `V ← V G` (`givensApplyRight`, all rows),
 `y ← b_kk`, `z ← b_{k+1,k}`, `(c, s) ← givens(y, z)`, `B ← G(w_{k-1}, w_k, θ)ᵀ B` (`givensApplyLeft`,
 columns `w`), `U ← U G` (`givensApplyRight`, all rows), and if `k < N - 1`: `y ← b_{k,k+1}`,
-`z ← b_{k,k+2}` (copies). ★★'''
+`z ← b_{k,k+2}` (copies). ★★
+
+Blocked: calls chapter 5's `algorithm_5_1_3`, `givensApplyLeft`/`givensApplyRight` (agent s05, running).'''
 deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "wilkinsonShift"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.1'
 
@@ -215,7 +124,9 @@ matrix that would be obtained by applying Algorithm 8.3.2 to `T = BᵀB`". Proof
 invariant (one bulge, alternating below the diagonal and right of the superdiagonal); `BᵀB`
 unreduced by `gram_bidiagonal`; the implicit Q theorem (`theorem_8_3_2`) against `algorithm_8_3_2_spec`; `givensApplyLeft_spec`,
 `givensApplyRight_spec` for each rotation. Window form (what Algorithm 8.6.2 uses): the same for a
-bidiagonal block decoupled from the rest, `Ū`, `V̄` the identity off the window. ★★★ (~400 lines)'''
+bidiagonal block decoupled from the rest, `Ū`, `V̄` the identity off the window. ★★★ (~400 lines)
+
+Blocked: on `algorithm_8_6_1`, `theorem_8_3_2` and `algorithm_8_3_2_spec` (all blocked).'''
 deps = ["algorithm_8_6_1", "gram_bidiagonal", "theorem_8_3_2", "algorithm_8_3_2_spec", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.1'
 
@@ -236,7 +147,9 @@ rounded, `|·|` and the comparison exact — convention 1); find the largest `q`
 diagonal entry of `B₂₂` is zero (an exact test), zero the superdiagonal entry in the same row by the
 rotations of `bidiagonal_decouple` (ii)/(iii) (`givensApplyLeft`/`givensApplyRight`); else apply
 `algorithm_8_6_1` to the window `w = [p, …, n-q-1]` with the accumulators `U`, `V` (no extraction; the
-effect is `B = diag(I_p, Ū, I_{q+m-n})ᵀ B diag(I_p, V̄, I_q)`). ★★'''
+effect is `B = diag(I_p, Ū, I_{q+m-n})ᵀ B diag(I_p, V̄, I_q)`). ★★
+
+Blocked: calls chapter 5's `algorithm_5_4_2`, `forwardAccumulation`, `storedReflectors` and the Givens helpers (agent s05), and `algorithm_8_6_1`.'''
 deps = ["algorithm_8_6_1", "bidiagonal_decouple", "GolubVanLoan.Chapter05.algorithm_5_4_2", "GolubVanLoan.Chapter05.forwardAccumulation", "GolubVanLoan.Chapter05.storedReflectors", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.2'
 
@@ -250,29 +163,16 @@ deflated superdiagonal positions with `|e_{i,i+1}| ≤ ε (|b_ii| + |b_{i+1,i+1}
 whence `‖E‖_F ≤ c ε ‖A‖_F / (1 - c ε)` (`c = 2√(n-1)`, as in `algorithm_8_3_3_spec`); and if the
 loop stopped on its test, `D` is diagonal — the book's `Uᵀ A V = D + E`, `‖E‖₂ ≈ u ‖A‖₂` in exact
 arithmetic with the deflation tolerance. Uses chapter 5's `algorithm_5_4_2_spec`,
-`algorithm_8_6_1_spec`, `bidiagonal_decouple`. Convergence is not claimed. ★★★ (~350 lines)'''
+`algorithm_8_6_1_spec`, `bidiagonal_decouple`. Convergence is not claimed. ★★★ (~350 lines)
+
+Blocked: on `algorithm_8_6_2` and `algorithm_8_6_1_spec` (blocked).'''
 deps = ["algorithm_8_6_2", "algorithm_8_6_1_spec", "bidiagonal_decouple", "GolubVanLoan.Chapter05.algorithm_5_4_2_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.2'
 
 [[node]]
 id = "jacobiSVD_twoByTwo"
-kind = "theorem"
-desc = '''§8.6.4, the two-sided Jacobi SVD subproblem (P8.6.5): for any real `2 × 2`
-`M = !![a_pp, a_pq; a_qp, a_qq]` there are `(c₁, s₁)`, `(c₂, s₂)` with `c_i² + s_i² = 1` and
-`!![c₁, s₁; -s₁, c₁]ᵀ * M * !![c₂, s₂; -s₂, c₂] = diagonal ![d_p, d_q]`. Construction: a rotation
-making `M` symmetric (P8.6.5(a)), then `algorithm_8_5_1_spec` on the symmetric result. And the
-two-sided update of an `n × n` `A` in the plane `(p, q)` zeroes `a_pq`, `a_qp` with
-`off(B)² = off(A)² - a_pq² - a_qp²` (P8.6.5(c)). ★★'''
-deps = ["algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensRotation", "off"]
 source = 'Golub–Van Loan, Matrix Computations, §8.6.4'
 
 [[node]]
 id = "oneSidedJacobi_orthogonal"
-kind = "theorem"
-desc = '''§8.6.4, one-sided Jacobi: for `A : Matrix (Fin m) (Fin n) ℝ`, `p ≠ q` and a rotation
-`J = J(p,q,θ)`, columns `p` and `q` of `A J` are orthogonal iff `(Jᵀ (AᵀA) J)_{pq} = 0`; the rotation
-of Algorithm 8.5.1 applied to `AᵀA` achieves it. And if `A V` has orthogonal columns for an
-orthogonal `V`, then `A V = U Σ` with `Σ = diag(‖(AV).col j‖)` and `U` with orthonormal nonzero
-columns (the "column scaling" that finishes the SVD). ★'''
-deps = ["algorithm_8_5_1_spec", "GolubVanLoan.Chapter05.givensRotation"]
 source = 'Golub–Van Loan, Matrix Computations, §8.6.4'
