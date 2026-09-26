@@ -58,6 +58,13 @@ import NumlibSurface.GolubVanLoan.Chapter10.Section03
 import NumlibSurface.GolubVanLoan.Chapter10.Section04
 import NumlibSurface.GolubVanLoan.Chapter10.Section05
 import NumlibSurface.GolubVanLoan.Chapter10.Section06
+import NumlibSurface.GolubVanLoan.Chapter11
+import NumlibSurface.GolubVanLoan.Chapter11.Section01
+import NumlibSurface.GolubVanLoan.Chapter11.Section02
+import NumlibSurface.GolubVanLoan.Chapter11.Section03
+import NumlibSurface.GolubVanLoan.Chapter11.Section04
+import NumlibSurface.GolubVanLoan.Chapter11.Section05
+import NumlibSurface.GolubVanLoan.Chapter11.Section06
 import NumlibSurface.GolubVanLoan.Chapter12
 import NumlibSurface.GolubVanLoan.Chapter12.Section01
 import NumlibSurface.GolubVanLoan.Chapter12.Section02
@@ -173,4 +180,11 @@ The same list, with the same numbers, heads the module documentation of
 | 1.4 | `Chapter01.Section04` | Fast matrix-vector products |
 | 1.5 | `Chapter01.Section05` | Vectorization and locality (no formal content) |
 | 1.6 | `Chapter01.Section06` | Parallel matrix multiplication (Cannon's identity) |
+| **11** | `Chapter11` | *Large Sparse Linear System Problems* |
+| 11.1 | `Chapter11.Section01` | Direct methods |
+| 11.2 | `Chapter11.Section02` | The classical iterations |
+| 11.3 | `Chapter11.Section03` | The conjugate gradient method |
+| 11.4 | `Chapter11.Section04` | Other Krylov methods |
+| 11.5 | `Chapter11.Section05` | Preconditioning |
+| 11.6 | `Chapter11.Section06` | The multigrid framework |
 -/
