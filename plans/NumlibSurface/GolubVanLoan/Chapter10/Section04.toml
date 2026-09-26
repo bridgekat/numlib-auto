@@ -86,14 +86,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.19)'
 
 [[node]]
 id = "equation_10_4_20"
-kind = "theorem"
-desc = '''(10.4.20): with the SVD `A = Z̃ Σ̃ Ỹᵀ` and `k < rank A`, `Ã_k = Z̃₁ Σ̃₁ Ỹ₁ᵀ = Z̃₁ Z̃₁ᵀ A` (from `Z̃₁ᵀ A = Σ̃₁ Ỹ₁ᵀ`), and `Ã_k`
-is a closest rank-`k` matrix to `A` in the 2-norm (chapter 2's Theorem 2.4.8, Eckart–Young) and in the Frobenius
-norm (chapter 2's `svdTruncation_isLeast_frobenius`, the Eckart–Young–Mirsky remark after Theorem 2.4.8; backbone
-`Matrix.isLeast_frobenius_norm_sub_of_rank_le`). `Ã_k` is chapter 2's `Matrix.svdTruncation` of the SVD. ★
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.20)'
 
-Blocked: needs chapter 2's `GolubVanLoan.Chapter02.theorem_2_4_8` and `svdTruncation_isLeast_frobenius` (§2.4 surface, open on main as of 2026-09-26).'''
-deps = ["GolubVanLoan.Chapter02.theorem_2_4_8", "GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius"]
+[[node]]
+id = "equation_10_4_20_frobenius"
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.4.20)'
 
 [[node]]

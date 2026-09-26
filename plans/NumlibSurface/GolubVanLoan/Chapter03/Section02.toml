@@ -133,17 +133,17 @@ id = "tallOuterProductLU"
 source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
 
 [[node]]
-id = "equation_3_2_8"
-kind = "theorem"
-desc = '''(3.2.8) computes a rectangular LU factorization: if `A(1:k,1:k)` is nonsingular for `k = 1:r`,
-the unpacked `Id` output of `tallOuterProductLU` is a rectangular LU factorization,
-`Matrix.IsRectLU A L U`. Proof: embed `A` as the first `r` columns of the square `[A | [0; I]]` (the
-bordering of `Matrix.exists_isRectLU_of_forall_isUnit`) and compare with `algorithm_3_2_1_spec`: the
-first `r` steps of Algorithm 3.2.1 on the bordered matrix perform the operations of (3.2.8) on its
-first `r` columns (a simulation lemma at `Id`). ★★★ (~150 lines)
+id = "tallPackedL"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
 
-Blocked: effort (agent s03). The program `tallOuterProductLU` is written. Route: the invariant `LUStageInv` of Algorithm 3.2.1 transported to rectangular indices (rows `Fin n`, columns `Fin r`, pivot `Fin.castLE hrn k`), then `IsRectLU` from the exact-model recurrences (~200 lines); or a simulation against Algorithm 3.2.1 on the bordered square matrix.'''
-deps = ["tallOuterProductLU", "algorithm_3_2_1_spec", "Matrix.exists_isRectLU_of_forall_isUnit", "Matrix.IsRectLU"]
+[[node]]
+id = "tallPackedU"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
+
+[[node]]
+id = "equation_3_2_8"
 source = 'Golub–Van Loan, Matrix Computations, Equation (3.2.8)'
 
 [[node]]
@@ -160,45 +160,14 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.3'
 
 [[node]]
 id = "algorithm_3_2_3_spec"
-kind = "theorem"
-desc = '''Exact correctness of Algorithm 3.2.3: if `A(1:k,1:k)` is nonsingular for `k = 1:n-1` (the
-book's precondition "A has an LU factorization" is weaker and does not prevent a zero pivot, e.g.
-`!![0, 1; 0, 1]`, on which the algorithm divides `0/0`; see the ch03 report's Doubts), the `Id`
-output `(L, U)` satisfies `Matrix.IsLU A L U`. Strong induction on `n`: `equation_3_2_8` for
-the block column, `algorithm_3_1_3_spec` for `U₁₂`, `blockLU_of_schur` for the assembly, and the
-strict leading principal submatrices of `Ã` nonsingular (they are Schur complements of leading
-blocks of `A`: `Matrix.det_fromBlocks₁₁`). ★★★ (~250 lines)
-
-Blocked: waits on `equation_3_2_8` (open). The program is written (well-founded recursion on `n`); the assembly step is `blockLU_of_schur`, the recursion hypothesis needs the Schur complement's strict leading minors nonzero (`Matrix.det_fromBlocks₁₁`); ~250 lines.'''
-deps = ["algorithm_3_2_3", "equation_3_2_8", "algorithm_3_1_3_spec", "blockLU_of_schur", "algorithm_3_2_1_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.3'
 
 [[node]]
 id = "algorithm_3_2_4"
-kind = "definition"
-desc = '''Algorithm 3.2.4 (nonrecursive block LU), D4, for `n = N r` ("for clarity" in the book):
-`A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ` read in `r × r` blocks through
-`finProdFinEquiv : Fin N × Fin r ≃ Fin (N * r)` (lexicographic, block index major). For `k : Fin N`:
-rectangular Gaussian elimination (3.2.8), `tallOuterProductLU`, on the block column `A(k:N, k)`; the multiple right-hand
-side solve `L_kk [U_{k,k+1} | … | U_kN] = [A_{k,k+1} | … | A_kN]` by Algorithm 3.1.3 per column;
-the level-3 updates `A_ij = A_ij - L_ik U_kj` for `i, j > k`, entrywise as in Algorithm 3.2.3.
-Returns the packed matrix. ★★
-
-Blocked: effort (agent s03): the nonrecursive block program over `Fin (N * r)` (`finProdFinEquiv` blocks, index lists per block) was not written; `algorithm_3_2_3` covers the recursive form of the same factorization.'''
-deps = ["tallOuterProductLU", "algorithm_3_1_3", "algorithm_3_2_3"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'
 
 [[node]]
 id = "algorithm_3_2_4_spec"
-kind = "theorem"
-desc = '''Exact correctness of Algorithm 3.2.4: under the leading-minor hypothesis,
-`Matrix.IsLU A (packedL F) (packedU F)` for its `Id` output `F`. Invariant over `k`: the block
-rows and columns `< k` hold the finished factors and the trailing block the Schur complement of
-the leading `k r × k r` block (`equation_3_2_9`, `blockLU_of_schur`); equivalently, the output is
-`(luLower A, luUpper A)` by uniqueness (`theorem_3_2_1_unique`). ★★★ (~250 lines)
-
-Blocked: waits on `algorithm_3_2_4` (open) and `equation_3_2_8` (open).'''
-deps = ["algorithm_3_2_4", "equation_3_2_8", "algorithm_3_1_3_spec", "equation_3_2_9", "blockLU_of_schur", "theorem_3_2_1_unique"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 3.2.4'
 
 [[node]]

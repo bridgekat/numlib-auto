@@ -40,29 +40,21 @@ deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.15)'
 
 [[node]]
-id = "davidson"
-kind = "definition"
-desc = '''(10.6.16), Davidson's method as a D4 program with fuel and `tol`: `x_1 = e₁`, `λ_1 = x_1ᵀ A x_1`, `r_1 = A x_1 − λ_1 x_1`,
-`V_1 = [e₁]`; while `‖r_k‖ > tol`: solve `(M − λ_k I) δv_k = −r_k` (`M` the diagonal of `A`), `s_{k+1} = (I − V_k V_kᵀ) δv_k`,
-`v_{k+1} = s_{k+1}/‖s_{k+1}‖₂`, `V_{k+1} = [V_k | v_{k+1}]`, compute a Ritz pair `(θ_{k+1}, t_{k+1})` of `V_{k+1}ᵀ A V_{k+1}`
-("a suitably chosen" one: a caller-supplied selector from the eigenpairs of the small symmetric matrix, e.g. the
-largest), `λ_{k+1} = θ_{k+1}`, `x_{k+1} = V_{k+1} t_{k+1}`, `r_{k+1} = A x_{k+1} − λ_{k+1} x_{k+1}`. The orthogonalization is
-modified Gram–Schmidt (the book's remark), i.e. `InnerProductSpace.modifiedGramSchmidtSweep` in exact arithmetic. ★★
+id = "subspaceExpansion"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
 
-Blocked (effort): a D4 program with a growing basis `V_k` (a family of columns), a modified Gram–Schmidt expansion and a caller-supplied Ritz-pair selector; not attempted in this round. Estimate ~150 lines with its spec.'''
+[[node]]
+id = "subspaceExpansion_spec"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
+
+[[node]]
+id = "davidson"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
 
 [[node]]
 id = "equation_10_6_16"
-kind = "theorem"
-desc = '''Exact semantics of (10.6.16) (the claims of §10.6.3): as long as no `s_{k+1}` vanishes, `V_k` has orthonormal columns,
-`(λ_k, x_k)` is a Ritz pair of symmetric `A` on `ran V_k` (`Krylov.IsRitzPair`), and hence `V_kᵀ r_k = 0`. The
-Ritz values are nondecreasing in `k` when the largest is selected (`LinearMap.IsSymmetric.eigenvalues_compression_mono`,
-the Davidson monotonicity; not claimed by the book, stated because it is free). ★★
-
-Blocked: needs `davidson`. The Ritz-pair claim is `Krylov.isRitzPair_iff_hasEigenvector` on `ran V_k` once the program exists (~150 lines).'''
-deps = ["davidson", "Krylov.IsRitzPair", "Krylov.isRitzPair_iff_hasEigenvector", "InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum", "LinearMap.IsSymmetric.eigenvalues_compression_mono"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'
 
 [[node]]
@@ -79,27 +71,16 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.19)'
 
 [[node]]
 id = "jacobiDavidson"
-kind = "definition"
-desc = '''§10.6.4, the Jacobi–Davidson framework: (10.6.16) with the Davidson correction replaced by a correction solver
-`solve : (x λ r) → Fin n → ℝ` supplied by the caller (the book: "various Chapter 11 iterative solvers can be
-applied"), the initial unit vector `x_1` arbitrary. A D4 program. ★
-
-Blocked: the framework reuses `davidson` (not yet written) with a correction solver; `IsJDCorrection` and its link to the Newton step (`isJDCorrection_self_iff`) are proved.'''
-deps = ["davidson", "IsJDCorrection"]
 source = 'Golub–Van Loan, Matrix Computations, §10.6.4, the Jacobi–Davidson framework'
 
 [[node]]
 id = "jacobiDavidson_spec"
-kind = "theorem"
-desc = '''Exact semantics of the framework: if every call of `solve` returns an `IsJDCorrection` (for some `M`), then the
-expansion vectors are orthogonal to the current Ritz vector, `V_k` stays orthonormal as long as no expansion
-vector lies in `ran V_k`, and each `(λ_k, x_k)` is a Ritz pair on `ran V_k` with `V_kᵀ r_k = 0` — the same
-specification as `equation_10_6_16`. ★
-
-Blocked: needs `jacobiDavidson`.'''
-deps = ["jacobiDavidson", "equation_10_6_16", "IsJDCorrection"]
 source = 'Golub–Van Loan, Matrix Computations, §10.6.4, the Jacobi–Davidson framework'
 
 [[node]]
 id = "traceMin"
 source = 'Golub–Van Loan, Matrix Computations, §10.6.5, the trace-min principle'
+
+[[node]]
+id = "davidson_ritzValue_mono"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.6.16)'

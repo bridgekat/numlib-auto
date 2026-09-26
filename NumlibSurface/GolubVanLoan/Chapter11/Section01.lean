@@ -2,6 +2,7 @@ import Mathlib.Data.List.MinMax
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Sparse.Fill
 import Numlib.LinearAlgebra.Sparse.Reordering
+import NumlibSurface.GolubVanLoan.Chapter05.Section02
 
 /-!
 # Golub–Van Loan §11.1: direct methods
@@ -58,6 +59,8 @@ for §11.1.9's "`A⁽¹⁾` is structurally symmetric": true of the predicted pa
 * `profileIndex`, `profile`, `minDegreePivot`, `choleskyWithPivoting`, `equation_11_1_8`.
 * `cholesky_apply_eq`, `cholesky_eq_zero_of_not_isCholeskyFill`, `nestedDissection_cholesky`.
 * `seminormal_cholesky`, `seminormal_normalEquations`, `seminormal_refinement` — §11.1.8.
+* `rowGivensQR`, `equation_11_1_9` — the row-by-row Givens QR (11.1.9), a program calling chapter
+  5's `givens` and row rotation, which computes a QR factorization.
 * `symbolicElim_isPatternSymm`, `symbolicElim_isPatternSymm_counterexample` — §11.1.9.
 
 ## Not formalized here
@@ -66,8 +69,8 @@ The heuristics and "challenges" (choosing `P` to minimize `nnz(G)` is not a stat
 pivoting and the threshold `τ`, the elimination tree (defined in prose, no theorem), the row
 orderings for sparse QR, the complexity claims of §11.1.2 and §11.1.7, Björck's accuracy claim for
 the seminormal equations with one refinement step, the numerical examples ((11.1.5), its profile
-`37 → 25`, the Davis e-tree example) and the Problems. The row-by-row Givens QR (11.1.9) calls
-chapter 5's `givens` and rotation helpers and is not yet written.
+`37 → 25`, the Davis e-tree example), the row orderings that limit fill-in during (11.1.9), and the
+Problems.
 -/
 
 open Matrix Finset
@@ -988,6 +991,85 @@ theorem seminormal_refinement {m n : ℕ} {A Q : Matrix (Fin m) (Fin n) ℝ}
   have h := (seminormal_normalEquations σ hQR hQ hR hd e (b - A *ᵥ x₀)).2 he.symm
   rw [mulVec_add, h, mulVec_sub, ← mulVec_mulVec]
   abel
+
+/-- **The row-by-row Givens QR (11.1.9)**, "introducing zeros into `A ∈ ℝ^{m×n}` one row at a time":
+```
+for i = 2:m
+  for j = 1:min{i − 1, n}
+    if a_ij ≠ 0
+      compute a Givens rotation G with G [a_jj; a_ij] = [×; 0]
+      update the rows j, i of A on the columns j:n by G
+```
+With `n ≤ m` (the least-squares setting of §11.1.8). The rotation is chapter 5's `givens`
+(Algorithm 5.1.3) of `(a_jj, a_ij)` and the update its row helper `givensApplyLeft` on the column
+list `[j, …, n−1]` (conventions 5, 10, 13); the test `a_ij ≠ 0` is an exact comparison on the
+computed entry (convention 1). -/
+noncomputable def rowGivensQR {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m n : ℕ}
+    (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
+  (List.finRange m).foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) =>
+    ((List.finRange n).filter (fun j : Fin n => (j : ℕ) < i)).foldlM
+      (fun (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) =>
+        if A i j ≠ 0 then do
+          let jj : Fin m := Fin.castLE hnm j
+          let cs ← GolubVanLoan.Chapter05.algorithm_5_1_3 rnd (A jj j) (A i j)
+          GolubVanLoan.Chapter05.givensApplyLeft rnd jj i cs.1 cs.2
+            (GolubVanLoan.Chapter05.indexFrom n j) A
+        else pure A) A) A
+
+/-- A skipped rotation (`a_ij = 0`) is the rotation `givens` would have computed: for `b = 0`,
+Algorithm 5.1.3 returns `(c, s) = (1, 0)`, and the exact Givens step is the identity. -/
+private theorem givensStepExact_of_eq_zero {m n : ℕ} {p i : Fin m} (hpi : p ≠ i) (j : Fin n)
+    {B : Matrix (Fin m) (Fin n) ℝ} (h : B i j = 0) :
+    GolubVanLoan.Chapter05.givensStepExact p i j B = B := by
+  have hcs : Id.run (GolubVanLoan.Chapter05.algorithm_5_1_3 pure (B p j) (B i j)) = (1, 0) := by
+    simp only [h, GolubVanLoan.Chapter05.algorithm_5_1_3, ↓reduceIte]
+    rfl
+  rw [GolubVanLoan.Chapter05.givensStepExact, hcs,
+    GolubVanLoan.Chapter05.givensApplyLeft_spec hpi 1 0
+      (GolubVanLoan.Chapter05.nodup_indexFrom n j)]
+  ext r q
+  rw [of_apply]
+  split_ifs
+  · rw [GolubVanLoan.Chapter05.givensRotation_transpose_mul_apply hpi]
+    split_ifs with h1 h2
+    · rw [h1]; ring
+    · rw [h2]; ring
+    · rfl
+  · rfl
+
+/-- In exact arithmetic the test `a_ij ≠ 0` of (11.1.9) changes nothing: the exact run is chapter
+5's row-oriented Givens QR (§5.2.5, the second reordering). -/
+theorem rowGivensQR_run_eq {m n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run (rowGivensQR pure hnm A) =
+      Id.run (GolubVanLoan.Chapter05.givensQRByRow pure hnm A) := by
+  simp only [rowGivensQR, GolubVanLoan.Chapter05.givensQRByRow, List.idRun_foldlM]
+  congr 1
+  funext B i
+  refine List.foldl_ext _ _ _ fun B j hj => ?_
+  have hji : (j : ℕ) < i := by simpa using hj
+  have hpi : Fin.castLE hnm j ≠ i := fun h => by
+    have := congrArg Fin.val h
+    simp only [Fin.val_castLE] at this
+    omega
+  split_ifs with h0
+  · rfl
+  · exact (givensStepExact_of_eq_zero hpi j (not_not.1 h0)).symm
+
+/-- **Exact semantics of (11.1.9)**: for `n ≤ m`, the overwritten array `R` is the triangular
+factor of a QR factorization `A = Q R` (`Q` orthogonal, the product of the plane rotations; `R`
+zero below the diagonal), so `Rᵀ R = Aᵀ A`: its first `n` rows are the `R` of the thin QR
+factorization up to row signs. From `rowGivensQR_run_eq` and chapter 5's `givensQRByRow_spec`. -/
+theorem equation_11_1_9 {m n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    (∃ Q, IsQR A Q (Id.run (rowGivensQR pure hnm A))) ∧
+      (Id.run (rowGivensQR pure hnm A))ᵀ * Id.run (rowGivensQR pure hnm A) = Aᵀ * A := by
+  rw [rowGivensQR_run_eq]
+  obtain ⟨Q, hQ⟩ := GolubVanLoan.Chapter05.givensQRByRow_spec hnm A
+  refine ⟨⟨Q, hQ⟩, ?_⟩
+  have hQQ : Qᵀ * Q = 1 := by
+    have := (mem_unitaryGroup_iff'.1 hQ.mem_unitaryGroup)
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  conv_rhs => rw [← hQ.mul_eq]
+  rw [transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Qᵀ, hQQ, Matrix.one_mul]
 
 /-! ### §11.1.9: sparse LU -/
 

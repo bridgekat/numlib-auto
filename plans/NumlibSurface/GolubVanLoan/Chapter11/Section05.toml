@@ -30,34 +30,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (11.5.2)'
 
 [[node]]
 id = "algorithm_11_5_2"
-kind = "definition"
-desc = '''
-Algorithm 11.5.2 (preconditioned `m`-step GMRES), D4 program: Algorithm 11.4.2 with `r₀` replaced by
-`z₀ = solveM(b − Ax₀)` and `Aq_k` by `z_k = solveM(Aq_k)`, `β₀ = ‖z₀‖₂`; same Givens and back
-substitution. ★
-
-Blocked: `algorithm_11_4_2` (§11.4) is not written — it needs chapter 3's Algorithm 3.1.2 and
-chapter 5's Algorithm 5.1.3, which are not on this branch's base. Estimate once it exists: ~15 lines
-(the same program with the two `M`-solves).
-'''
-deps = ["algorithm_11_4_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.5.2'
 
 [[node]]
 id = "algorithm_11_5_2_spec"
-kind = "theorem"
-desc = '''
-Exact semantics (`A`, `M` nonsingular, `solveM = M⁻¹`): the run is the exact run of Algorithm 11.4.2 for
-the system `(M⁻¹A) x = M⁻¹b`, so `x̃` minimizes `‖M⁻¹(Ax − b)‖₂` over `x₀ + 𝒦(M⁻¹A, M⁻¹r₀, k)`,
-`k = min m (grade)`, solves `Ax = b` on early exit, and `|ρ_k| = ‖M⁻¹(b − Ax_k)‖₂` (the book's last
-remark). From `algorithm_11_4_2_spec` (the program equality is definitional up to computing
-`M⁻¹(b − Ax₀) = M⁻¹b − M⁻¹Ax₀`); `Krylov.exists_aeval_of_isMinResidualIterate_preconditioned` names the
-search space. ★★ (~40 lines)
-
-Blocked: needs `algorithm_11_5_2` and `algorithm_11_4_2_spec` (§11.4, blocked on chapters 3, 5 and 10
-surfaces). Estimate once they exist: ~40 lines.
-'''
-deps = ["algorithm_11_5_2", "algorithm_11_4_2_spec", "Krylov.exists_aeval_of_isMinResidualIterate_preconditioned"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 11.5.2'
 
 [[node]]

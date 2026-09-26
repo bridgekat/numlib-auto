@@ -1,4 +1,5 @@
 import Numlib.Eigen.ImplicitRestart
+import NumlibSurface.GolubVanLoan.Chapter05.Section02
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
@@ -7,8 +8,9 @@ import NumlibSurface.GolubVanLoan.Chapter10.Section01
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.5:
 Algorithm 10.5.1 (Arnoldi with the modified Gram–Schmidt inner loop), (10.5.1)–(10.5.2) and the
 definition of a `k`-step Arnoldi decomposition, the Ritz pair and its backward error, implicit
-restarting (10.5.4)–(10.5.9) with Theorem 10.5.1, the Krylov–Schur restart, and the block
-biorthogonality step (10.5.14)–(10.5.16).
+restarting (10.5.4)–(10.5.9) with Theorem 10.5.1, the restart loops (10.5.10) and the implicitly
+restarted framework, the Krylov–Schur restart, the unsymmetric Lanczos tridiagonalization
+(10.5.11)–(10.5.13), and the block biorthogonality step (10.5.14)–(10.5.16).
 
 ## Conventions
 
@@ -26,9 +28,18 @@ steps (10.5.4) are the backbone's `Matrix.IsShiftedQrChain Hs V R μ p` (the boo
 ## Not formalized
 
 The filter-polynomial eigen-expansion of (10.5.3), the exact-shift heuristic, the look-ahead idea
-of §10.5.6, operation counts. The Givens program (10.5.4) and the restart loops (10.5.10) and
-§10.5.3 wait for chapter 5's Givens QR (Algorithm 5.2.5); the statements about shifted QR chains
-below hold for every chain with the properties the program's run has.
+of §10.5.6, operation counts. The filter values of the restart loops are a caller-supplied
+function of `H_c` (the book leaves them to heuristics).
+
+## Programs
+
+The shifted QR steps (10.5.4) (`shiftedQrSteps`) call chapter 5's Givens QR of a Hessenberg matrix
+(Algorithm 5.2.5) and its rotation updates; the statements about shifted QR chains hold for every
+chain with the properties the program's run has (`equation_10_5_4`). Explicit restarting (10.5.10)
+and the implicitly restarted framework of §10.5.3 run Algorithm 10.5.1, (10.5.4) and chapter 1's
+matrix products; the implicit framework continues the Arnoldi loop body `arnoldiStep` from the
+truncated decomposition, with the residual corrected as in `implicitRestart_isArnoldiDecomposition`.
+The unsymmetric Lanczos process (10.5.11) is analysed directly from its recurrences.
 -/
 
 open scoped Matrix
@@ -616,6 +627,788 @@ theorem algorithm_10_5_1_spec (A : Matrix (Fin n) (Fin n) ℝ) {q₁ : Fin n →
   refine ⟨hk, hvec, fun hpos => ?_⟩
   simp only [hr', hpos.ne', ↓reduceIte]
 
+/-! ### The shifted QR steps (10.5.4) -/
+
+section ShiftedQrProgram
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- One row of `B + μ I`: the diagonal entry `x_r ← fl(x_r + μ)`, the others copied. -/
+def shiftDiagRow {m : ℕ} (μ : ℝ) (r : Fin m) (x : Fin m → ℝ) : M (Fin m → ℝ) := do
+  let d ← rnd (x r + μ)
+  pure (Function.update x r d)
+
+/-- `B + μ I`, each diagonal entry rounded once (`B − μ I` is the shift by `−μ`, negation being
+exact). -/
+def shiftDiag {m : ℕ} (μ : ℝ) (B : Matrix (Fin m) (Fin m) ℝ) : M (Matrix (Fin m) (Fin m) ℝ) :=
+  (List.finRange m).foldlM (fun (B : Fin m → Fin m → ℝ) r => do
+    let b ← shiftDiagRow rnd μ r (B r)
+    pure (Function.update B r b)) B
+
+/-- `B G_1 ⋯ G_k` for the rotations `G_{j+1} = G(j, j+1, θ_j)` given by the pairs
+`cs j = (c_j, s_j)` (as Algorithm 5.2.5 returns them), each applied to all rows by chapter 5's
+column update `givensApplyRight`. -/
+def rotationsApplyRight {k : ℕ} (cs : Fin k → ℝ × ℝ) (B : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :
+    M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :=
+  (List.finRange k).foldlM (fun B j =>
+    Chapter05.givensApplyRight rnd j.castSucc j.succ (cs j).1 (cs j).2 (List.finRange (k + 1)) B) B
+
+end ShiftedQrProgram
+
+/-- The state of the shifted QR steps (10.5.4) on an `(m+1) × (m+1)` matrix: `H i` is the book's
+`H^{(i)}`, `V i` and `R i` are the book's `V_{i+1}` and `R_{i+1}`, and `acc` is `V_1 ⋯ V_i` after
+`i` steps. -/
+structure ShiftedQrState (m : ℕ) where
+  /-- The iterates `H^{(i)}`. -/
+  H : ℕ → Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
+  /-- The orthogonal factors, `0`-based. -/
+  V : ℕ → Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
+  /-- The triangular factors, `0`-based. -/
+  R : ℕ → Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
+  /-- The accumulated product `V = V_1 ⋯ V_i`. -/
+  acc : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
+
+section ShiftedQrProgram
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- Step `i` of (10.5.4): `H^{(i)} − μ_{i+1} I = V_{i+1} R_{i+1}` by chapter 5's Givens QR of a
+Hessenberg matrix (Algorithm 5.2.5, which returns `R` and the rotation pairs), `V_{i+1}` formed from
+the rotations, `H^{(i+1)} = R_{i+1} V_{i+1} + μ_{i+1} I` (the rotations applied to `R` on the
+right), and `V ← V V_{i+1}`. -/
+noncomputable def shiftedQrStep {m : ℕ} (μ : ℕ → ℝ) (st : ShiftedQrState m) (i : ℕ) :
+    M (ShiftedQrState m) := do
+  let B ← shiftDiag rnd (-μ i) (st.H i)
+  let RC ← Chapter05.algorithm_5_2_5 rnd B
+  let Vi ← rotationsApplyRight rnd RC.2 1
+  let RV ← rotationsApplyRight rnd RC.2 RC.1
+  let Hn ← shiftDiag rnd (μ i) RV
+  let acc ← rotationsApplyRight rnd RC.2 st.acc
+  pure { H := Function.update st.H (i + 1) Hn, V := Function.update st.V i Vi,
+         R := Function.update st.R i RC.1, acc := acc }
+
+/-- **(10.5.4), `p` steps of the shifted QR iteration** on an upper Hessenberg `H_c`:
+```
+H^(0) = H_c
+for i = 1:p
+    H^(i−1) − μ_i I = V_i R_i   (Givens QR)
+    H^(i) = R_i V_i + μ_i I
+end
+H₊ = H^(p)
+```
+(the book prints `i = 0 : p`), with `V = V_1 ⋯ V_p` (10.5.5) accumulated. The shifts are
+`μ 0, …, μ (p−1)` (the book's `μ_1, …, μ_p`); the book's `m` is `m + 1` here. -/
+noncomputable def shiftedQrSteps {m : ℕ} (Hc : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ)
+    (μ : ℕ → ℝ) (p : ℕ) : M (ShiftedQrState m) :=
+  (List.range p).foldlM (shiftedQrStep rnd μ)
+    { H := fun _ => Hc, V := fun _ => 1, R := fun _ => 1, acc := 1 }
+
+end ShiftedQrProgram
+
+/-- Exact semantics of the diagonal shift: `B + μ I`. -/
+theorem shiftDiag_spec {m : ℕ} (μ : ℝ) (B : Matrix (Fin m) (Fin m) ℝ) :
+    Id.run (shiftDiag pure μ B) = B + μ • 1 := by
+  ext r c
+  have h := congrFun (idRun_foldlM_update_apply (fun r x => shiftDiagRow (pure : ℝ → Id ℝ) μ r x)
+    (List.finRange m) (List.nodup_finRange m) B r) c
+  rw [ite_eq_left (List.mem_finRange r)] at h
+  refine h.trans ?_
+  simp only [shiftDiagRow, Id.run_bind, Id.run_pure, Function.update_apply, Matrix.add_apply,
+    Matrix.smul_apply, Matrix.one_apply, smul_eq_mul]
+  by_cases hrc : c = r
+  · subst hrc; simp
+  · simp [hrc, Ne.symm hrc]
+
+/-- Exact semantics of the rotation sweep: `B G_1 ⋯ G_k`, the product of chapter 5's rotation
+matrices `G(j, j+1, θ_j)` in increasing order (the `Q` of Algorithm 5.2.5). -/
+theorem rotationsApplyRight_spec {k : ℕ} (cs : Fin k → ℝ × ℝ)
+    (B : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :
+    Id.run (rotationsApplyRight pure cs B) = B * (List.ofFn fun j : Fin k =>
+      Chapter05.givensRotation j.castSucc j.succ (cs j).1 (cs j).2).prod := by
+  rw [List.ofFn_eq_map]
+  unfold rotationsApplyRight
+  generalize List.finRange k = l
+  induction l generalizing B with
+  | nil => simp
+  | cons j l ih =>
+    rw [List.foldlM_cons, Id.run_bind, Chapter05.givensApplyRight_spec_of_forall_mem
+      j.castSucc_lt_succ.ne _ _ (List.nodup_finRange _) (List.mem_finRange), ih,
+      List.map_cons, List.prod_cons, Matrix.mul_assoc]
+
+/-- **Exact semantics of (10.5.4)**: for upper Hessenberg `H_c`, the run's `H^{(i)}`, `V_i`, `R_i`
+form a shifted QR chain (`Matrix.IsShiftedQrChain`) starting at `H_c`, every `V_i` is orthogonal
+and upper Hessenberg and every `R_i` upper triangular (chapter 5's `algorithm_5_2_5_spec`), hence
+every `H^{(i)}` is upper Hessenberg (the book's "recall from §7.4.2",
+`Matrix.IsShiftedQrChain.isUpperHessenberg`), and the accumulated `V` is `V_1 ⋯ V_p`. -/
+theorem equation_10_5_4 {m : ℕ} {Hc : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
+    (hH : Hc.IsUpperHessenberg) (μ : ℕ → ℝ) (p : ℕ) :
+    let st := Id.run (shiftedQrSteps pure Hc μ p)
+    st.H 0 = Hc ∧ Matrix.IsShiftedQrChain st.H st.V st.R μ p ∧
+      (∀ i < p, st.V i ∈ Matrix.orthogonalGroup (Fin (m + 1)) ℝ ∧ (st.V i).IsUpperHessenberg ∧
+        (st.R i).IsUpperTriangular) ∧
+      (∀ i ≤ p, (st.H i).IsUpperHessenberg) ∧ st.acc = ((List.range p).map st.V).prod := by
+  intro st
+  let P : ℕ → ShiftedQrState m → Prop := fun p st =>
+    st.H 0 = Hc ∧ Matrix.IsShiftedQrChain st.H st.V st.R μ p ∧
+      (∀ i < p, st.V i ∈ Matrix.orthogonalGroup (Fin (m + 1)) ℝ ∧ (st.V i).IsUpperHessenberg ∧
+        (st.R i).IsUpperTriangular) ∧ st.acc = ((List.range p).map st.V).prod
+  have hHess : ∀ p st, P p st → ∀ i ≤ p, (st.H i).IsUpperHessenberg := by
+    rintro p st ⟨h0, hc, hVR, -⟩
+    exact hc.isUpperHessenberg (h0 ▸ hH) (fun i hi => (hVR i hi).2.2) (fun i hi => (hVR i hi).2.1)
+  suffices hP : ∀ p, P p (Id.run (shiftedQrSteps pure Hc μ p)) by
+    obtain ⟨h0, hc, hVR, hacc⟩ := hP p
+    exact ⟨h0, hc, hVR, hHess p _ (hP p), hacc⟩
+  intro p
+  induction p with
+  | zero =>
+    refine ⟨rfl, ⟨fun i hi => absurd hi (Nat.not_lt_zero _),
+      fun i hi => absurd hi (Nat.not_lt_zero _)⟩, fun i hi => absurd hi (Nat.not_lt_zero _), rfl⟩
+  | succ p ih =>
+    have hrun : Id.run (shiftedQrSteps pure Hc μ (p + 1)) =
+        Id.run (shiftedQrStep pure μ (Id.run (shiftedQrSteps pure Hc μ p)) p) := by
+      simp only [shiftedQrSteps, List.range_succ, List.foldlM_append, List.foldlM_cons,
+        List.foldlM_nil, bind_pure, Id.run_bind]
+    rw [hrun]
+    set s := Id.run (shiftedQrSteps pure Hc μ p)
+    obtain ⟨h0, hc, hVR, hacc⟩ := ih
+    have hHp : (s.H p).IsUpperHessenberg := hHess p s ⟨h0, hc, hVR, hacc⟩ p le_rfl
+    set B := s.H p + (-μ p) • (1 : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) with hB
+    have hBH : B.IsUpperHessenberg := hHp.add_smul_one _
+    obtain ⟨hQR, hQH⟩ := Chapter05.algorithm_5_2_5_spec B hBH
+    set RC := Id.run (Chapter05.algorithm_5_2_5 pure B)
+    set Q := (List.ofFn fun j : Fin m => Chapter05.givensRotation j.castSucc j.succ
+      (RC.2 j).1 (RC.2 j).2).prod
+    simp only [shiftedQrStep, Id.run_bind, Id.run_pure, shiftDiag_spec, rotationsApplyRight_spec]
+    try rw [← hB]
+    dsimp only [P]
+    simp only [Matrix.one_mul]
+    have hVs : ∀ i < p, Function.update s.V p Q i = s.V i := fun i hi =>
+      Function.update_of_ne hi.ne _ _
+    have hRs : ∀ i < p, Function.update s.R p RC.1 i = s.R i := fun i hi =>
+      Function.update_of_ne hi.ne _ _
+    have hHs : ∀ i ≤ p, Function.update s.H (p + 1) (RC.1 * Q + μ p • 1) i = s.H i :=
+      fun i hi => Function.update_of_ne (by omega) _ _
+    refine ⟨by rw [hHs 0 (Nat.zero_le _)]; exact h0, ⟨fun i hi => ?_, fun i hi => ?_⟩,
+      fun i hi => ?_, ?_⟩
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
+      · rw [hHs i hi.le, hVs i hi, hRs i hi]; exact hc.sub_eq i hi
+      · rw [hHs i le_rfl, Function.update_self, Function.update_self, hQR.mul_eq, hB,
+          neg_smul, sub_eq_add_neg]
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
+      · rw [hHs (i + 1) hi, hVs i hi, hRs i hi]; exact hc.succ_eq i hi
+      · rw [Function.update_self, Function.update_self, Function.update_self]
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
+      · rw [hVs i hi, hRs i hi]; exact hVR i hi
+      · rw [Function.update_self, Function.update_self]
+        exact ⟨hQR.mem_unitaryGroup, hQH, fun a b hab => hQR.apply_eq_zero a b hab⟩
+    · rw [hacc, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+        List.prod_singleton, Function.update_self]
+      congr 1
+      exact congrArg List.prod (List.map_congr_left fun i hi => (hVs i (List.mem_range.1 hi)).symm)
+
+/-! ### Explicit restarting (10.5.10) -/
+
+/-- The first `K` computed Arnoldi vectors of a run as the columns of an `n × K` matrix
+(`Q(:, l) = q_{l+1}`), a copy. -/
+def ArnoldiState.qMatrix (s : ArnoldiState n) (K : ℕ) : Matrix (Fin n) (Fin K) ℝ :=
+  Matrix.of fun i l => s.q l i
+
+/-- The leading `K × K` block `(h_{il})` of the computed Hessenberg entries of a run, a copy. -/
+def ArnoldiState.hMatrix (s : ArnoldiState n) (K : ℕ) : Matrix (Fin K) (Fin K) ℝ :=
+  Matrix.of fun i l => s.h i l
+
+section RestartPrograms
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- One cycle of (10.5.10): `m = j + p + 1` steps of Algorithm 10.5.1 from `q₁` (giving `Q_c`,
+`H_c`), the filter values `μ = shifts H_c`, `p` steps of (10.5.4) on `H_c`, and the new starting
+vector `(Q_c V)(:, 1) = Q_c V(:, 1)` by chapter 1's gaxpy. -/
+noncomputable def explicitRestartCycle (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ) :
+    M (Fin n → ℝ) := do
+  let s ← algorithm_10_5_1 rnd A q₁ (j + p + 1)
+  let st ← shiftedQrSteps rnd (s.hMatrix (j + p + 1)) (shifts (s.hMatrix (j + p + 1))) p
+  algorithm_1_1_3 rnd (s.qMatrix (j + p + 1)) (fun i => st.acc i 0) 0
+
+/-- **(10.5.10), explicitly restarted Arnoldi**:
+```
+Repeat:
+  With starting vector q₁, perform m steps of the Arnoldi iteration obtaining Q_c, H_c.
+  Determine filter values μ_1, …, μ_p.
+  Perform p steps of the shifted QR iteration (10.5.4) obtaining H₊ and V.
+  Replace q₁ with the first column of Q_c V.
+```
+with `m = j + p + 1`, the filter values chosen by a caller-supplied `shifts` (the book leaves the
+choice to heuristics; only `shifts H_c i` for `i < p` are used), and `cycles` repetitions. -/
+noncomputable def explicitlyRestartedArnoldi (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ)
+    (cycles : ℕ) : M (Fin n → ℝ) :=
+  (List.range cycles).foldlM (fun q _ => explicitRestartCycle rnd A j p shifts q) q₁
+
+end RestartPrograms
+
+/-- The coefficients of the modified Gram–Schmidt loop vanish from index `k` on. -/
+private theorem mgsLoop_snd_eq_zero (q : ℕ → Fin n → ℝ) (k : ℕ) (r : Fin n → ℝ) {i : ℕ}
+    (hi : k ≤ i) : (Id.run (mgsLoop pure q k r)).2 i = 0 := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    have h := ih (by omega)
+    simp only [mgsLoop, List.range_succ, List.foldlM_append, List.foldlM_cons, List.foldlM_nil,
+      Id.run_bind, Id.run_pure, bind_pure] at h ⊢
+    rw [Function.update_of_ne (by omega)]
+    exact h
+
+/-- The exact run of Algorithm 10.5.1 has `h_{il} = 0` below the subdiagonal. -/
+private theorem algorithm_10_5_1_h_eq_zero (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ)
+    (t : ℕ) {i l : ℕ} (hil : l + 1 < i) : (Id.run (algorithm_10_5_1 pure A q₁ t)).h i l = 0 := by
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    rw [algorithm_10_5_1_succ]
+    cases hsd : (Id.run (algorithm_10_5_1 pure A q₁ t)).done with
+    | true => simp only [arnoldiStep, hsd, ↓reduceIte, Id.run_pure]; exact ih
+    | false =>
+      simp only [arnoldiStep, hsd, Bool.false_eq_true, ↓reduceIte, Id.run_bind, Id.run_pure]
+      by_cases h1 : l = (Id.run (algorithm_10_5_1 pure A q₁ t)).k
+      · rw [ite_eq_left h1, ite_eq_right (by omega)]
+        exact mgsLoop_snd_eq_zero _ _ _ (by omega)
+      · rw [ite_eq_right h1]; exact ih
+
+/-- Below the grade, the exact run of `K` passes of Algorithm 10.5.1 gives `Q_K`, `H_K` and `r_K`
+of the backbone (`Arnoldi.basisMatrix`, `Arnoldi.hessenbergSq`, `Arnoldi.w`). -/
+theorem algorithm_10_5_1_matrices (A : Matrix (Fin n) (Fin n) ℝ) {q₁ : Fin n → ℝ}
+    (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) {K : ℕ}
+    (hK : K ≤ grade (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁)) :
+    (Id.run (algorithm_10_5_1 pure A q₁ K)).k = K ∧
+      (Id.run (algorithm_10_5_1 pure A q₁ K)).qMatrix K =
+        Arnoldi.basisMatrix A (WithLp.toLp 2 q₁) K ∧
+      (Id.run (algorithm_10_5_1 pure A q₁ K)).hMatrix K =
+        Arnoldi.hessenbergSq (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁) K ∧
+      (0 < K → (Id.run (algorithm_10_5_1 pure A q₁ K)).r =
+        (Arnoldi.w (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁) (K - 1)).ofLp) := by
+  obtain ⟨hk, hvec, hr⟩ := algorithm_10_5_1_spec A hq K
+  have hk' : (Id.run (algorithm_10_5_1 pure A q₁ K)).k = K := by
+    rw [hk]; exact min_eq_left hK
+  refine ⟨hk', ?_, ?_, fun h => (hr (by rw [hk']; exact h)).trans (by rw [hk'])⟩
+  · ext i l
+    simp only [ArnoldiState.qMatrix, Arnoldi.basisMatrix, Matrix.of_apply]
+    rw [(hvec l (by rw [hk']; exact l.isLt)).1]
+  · ext i l
+    simp only [ArnoldiState.hMatrix, Arnoldi.hessenbergSq, Matrix.of_apply]
+    by_cases hil : (i : ℕ) ≤ l + 1
+    · exact (hvec l (by rw [hk']; exact l.isLt)).2 i hil
+    · rw [algorithm_10_5_1_h_eq_zero A q₁ K (by omega),
+        Arnoldi.coeff_eq_zero_of_lt _ _ (by omega)]
+
+/-- A matrix with orthonormal columns maps `e₁` to a unit vector. -/
+private theorem norm_mulVec_single_zero {K : ℕ} {W : Matrix (Fin n) (Fin (K + 1)) ℝ}
+    (hW : Wᵀ * W = 1) :
+    ‖(WithLp.toLp 2 (W *ᵥ Pi.single 0 1) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+  have h := congrFun (congrFun hW 0) 0
+  rw [Matrix.mul_apply, Matrix.one_apply_eq] at h
+  simp only [Matrix.transpose_apply] at h
+  rw [EuclideanSpace.norm_eq, Real.sqrt_eq_one]
+  simpa [Matrix.mulVec_single_one, sq] using h
+
+/-- The first column of `Q_K` is the unit starting vector. -/
+private theorem basisMatrix_mulVec_single_zero (A : Matrix (Fin n) (Fin n) ℝ) {q : Fin n → ℝ}
+    (hq : ‖(WithLp.toLp 2 q : EuclideanSpace ℝ (Fin n))‖ = 1) (K : ℕ) :
+    Arnoldi.basisMatrix A (WithLp.toLp 2 q) (K + 1) *ᵥ Pi.single 0 1 = q := by
+  have hq0 : (WithLp.toLp 2 q : EuclideanSpace ℝ (Fin n)) ≠ 0 := by
+    intro h; rw [h, norm_zero] at hq; exact zero_ne_one hq
+  ext i
+  simp only [Matrix.mulVec_single_one, Matrix.col_apply, Arnoldi.basisMatrix,
+    Matrix.of_apply, Fin.val_zero]
+  rw [Arnoldi.vec_zero _ _ hq0, hq]
+  simp
+
+/-- **One cycle of (10.5.10)** (exact arithmetic, before breakdown: `m = j + p + 1 ≤ grade`): the
+new starting vector `q₊` is a unit vector and `R(1,1) q₊ = p(A) q₁` for the cycle's filter
+polynomial `p(λ) = (λ − μ_1) ⋯ (λ − μ_p)` (§10.5.3, "`q₊ = p(A) q₁`" with `c = 1/R(1,1)`). -/
+theorem explicitRestartCycle_spec (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q : Fin n → ℝ}
+    (hq : ‖(WithLp.toLp 2 q : EuclideanSpace ℝ (Fin n))‖ = 1)
+    (hg : j + p + 1 ≤ grade (Matrix.toEuclideanLin A) (WithLp.toLp 2 q)) :
+    let Hc := Arnoldi.hessenbergSq (Matrix.toEuclideanLin A) (WithLp.toLp 2 q) (j + p + 1)
+    let st := Id.run (shiftedQrSteps pure Hc (shifts Hc) p)
+    let q' := Id.run (explicitRestartCycle pure A j p shifts q)
+    ‖(WithLp.toLp 2 q' : EuclideanSpace ℝ (Fin n))‖ = 1 ∧
+      ((List.range p).reverse.map st.R).prod 0 0 • q' =
+        aeval A (filterPolynomial (shifts Hc) p) *ᵥ q := by
+  intro Hc st q'
+  obtain ⟨-, hQ, hH, -⟩ := algorithm_10_5_1_matrices A hq hg
+  set Q := Arnoldi.basisMatrix A (WithLp.toLp 2 q) (j + p + 1)
+  have hq' : q' = (Q * st.acc) *ᵥ Pi.single 0 1 := by
+    simp only [q', explicitRestartCycle, Id.run_bind, algorithm_1_1_3_spec, zero_add]
+    rw [hQ, hH, ← Matrix.mulVec_mulVec]
+    congr 1
+    ext i
+    simp [st, Hc]
+  have hD := (equation_10_5_2 A (WithLp.toLp 2 q) (k := j + p + 1) (by omega)).2.2 hg
+  obtain ⟨h0, hc, hVR, -, hacc⟩ :=
+    equation_10_5_4 (Arnoldi.hessenbergSq_isUpperHessenberg (Matrix.toEuclideanLin A)
+      (WithLp.toLp 2 q) (j + p + 1)) (shifts Hc) p
+  rw [hq', hacc]
+  refine ⟨norm_mulVec_single_zero (equation_10_5_9 hD hc h0 fun i hi => (hVR i hi).1).2, ?_⟩
+  rw [(restart_firstColumn_eq hD).2 hc h0 fun i hi => (hVR i hi).2.2,
+    basisMatrix_mulVec_single_zero A hq]
+
+/-- The run after `ℓ + 1` cycles is one more cycle. -/
+private theorem explicitlyRestartedArnoldi_succ (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ) (ℓ : ℕ) :
+    Id.run (explicitlyRestartedArnoldi pure A j p shifts q₁ (ℓ + 1)) =
+      Id.run (explicitRestartCycle pure A j p shifts
+        (Id.run (explicitlyRestartedArnoldi pure A j p shifts q₁ ℓ))) := by
+  simp only [explicitlyRestartedArnoldi, List.range_succ, List.foldlM_append, List.foldlM_cons,
+    List.foldlM_nil, bind_pure, Id.run_bind]
+
+/-- **Exact semantics of (10.5.10)**: let `q^{(ℓ)}` be the starting vector after `ℓ` cycles and
+`p_ℓ` the filter polynomial of cycle `ℓ` (the shifts chosen from its `H_c`). If no cycle `ℓ < L`
+breaks down (`m = j + p + 1 ≤ grade (A, q^{(ℓ)})`), then every `q^{(ℓ)}`, `ℓ ≤ L`, is a unit
+vector, `R_ℓ(1,1) q^{(ℓ+1)} = p_ℓ(A) q^{(ℓ)}` (`R_ℓ` the product of the cycle's triangular
+factors), and if every `R_ℓ(1,1) ≠ 0` then `q^{(L)}` is a multiple of `p_{L−1}(A) ⋯ p_0(A) q₁`. -/
+theorem equation_10_5_10 (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q₁ : Fin n → ℝ}
+    (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (L : ℕ) :
+    let q : ℕ → Fin n → ℝ := fun ℓ => Id.run (explicitlyRestartedArnoldi pure A j p shifts q₁ ℓ)
+    let Hc : ℕ → Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ := fun ℓ =>
+      Arnoldi.hessenbergSq (Matrix.toEuclideanLin A) (WithLp.toLp 2 (q ℓ)) (j + p + 1)
+    let ρ : ℕ → ℝ := fun ℓ =>
+      ((List.range p).reverse.map (Id.run (shiftedQrSteps pure (Hc ℓ) (shifts (Hc ℓ)) p)).R).prod
+        0 0
+    (∀ ℓ < L, j + p + 1 ≤ grade (Matrix.toEuclideanLin A) (WithLp.toLp 2 (q ℓ))) →
+      (∀ ℓ ≤ L, ‖(WithLp.toLp 2 (q ℓ) : EuclideanSpace ℝ (Fin n))‖ = 1) ∧
+      (∀ ℓ < L, ρ ℓ • q (ℓ + 1) = aeval A (filterPolynomial (shifts (Hc ℓ)) p) *ᵥ q ℓ) ∧
+      ((∀ ℓ < L, ρ ℓ ≠ 0) → ∃ c : ℝ, q L = c •
+        (aeval A ((List.range L).map fun ℓ => filterPolynomial (shifts (Hc ℓ)) p).prod *ᵥ q₁)) := by
+  intro q Hc ρ hg
+  have hsucc : ∀ ℓ, q (ℓ + 1) = Id.run (explicitRestartCycle pure A j p shifts (q ℓ)) :=
+    explicitlyRestartedArnoldi_succ A j p shifts q₁
+  have hunit : ∀ ℓ ≤ L, ‖(WithLp.toLp 2 (q ℓ) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+    intro ℓ hℓ
+    induction ℓ with
+    | zero => exact hq
+    | succ ℓ ih =>
+      rw [hsucc]
+      exact (explicitRestartCycle_spec A j p shifts (ih (by omega)) (hg ℓ (by omega))).1
+  have hrel : ∀ ℓ < L,
+      ρ ℓ • q (ℓ + 1) = aeval A (filterPolynomial (shifts (Hc ℓ)) p) *ᵥ q ℓ := by
+    intro ℓ hℓ
+    rw [hsucc]
+    exact (explicitRestartCycle_spec A j p shifts (hunit ℓ hℓ.le) (hg ℓ hℓ)).2
+  refine ⟨hunit, hrel, fun hρ => ?_⟩
+  have key : ∀ L' ≤ L, ∃ c : ℝ, q L' = c •
+      (aeval A ((List.range L').map fun ℓ => filterPolynomial (shifts (Hc ℓ)) p).prod *ᵥ q₁) := by
+    intro L' hL'
+    induction L' with
+    | zero => exact ⟨1, by simp [q, explicitlyRestartedArnoldi]⟩
+    | succ L' ih =>
+      obtain ⟨c, hc⟩ := ih (by omega)
+      refine ⟨(ρ L')⁻¹ * c, ?_⟩
+      have h := hrel L' (by omega)
+      rw [← eq_inv_smul_iff₀ (hρ L' (by omega))] at h
+      rw [h, hc, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+        List.prod_singleton, mul_comm, map_mul, ← Matrix.mulVec_mulVec, Matrix.mulVec_smul,
+        smul_smul]
+      rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, ← map_mul, ← map_mul,
+        mul_comm (filterPolynomial (shifts (Hc L')) p), mul_comm c]
+  exact key L le_rfl
+
+/-! ### Implicit restarting (§10.5.3, the modified framework) -/
+
+section ImplicitProgram
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- One cycle of the implicitly restarted framework from an `m`-step state (`m = j + p + 1`): the
+filter values `μ = shifts H_c`, (10.5.4) on `H_c`, `Q₊ = Q_c V` (chapter 1's Algorithm 1.1.5),
+`Q_c ← Q₊(:, 1:j)`, `H_c ← H₊(1:j, 1:j)`, `r_c ← h⁺_{j+1,j} Q₊(:, j+1) + v_{mj} r_c` (the
+residual of `implicitRestart_isArnoldiDecomposition`; the book prints `v_{mj} r_c`),
+`h_{j+1,j} = ‖r_c‖₂`, and
+Arnoldi steps `j + 1, …, m` continuing from that state (`p` passes of Algorithm 10.5.1's loop body
+`arnoldiStep`). The book's `j` is `j + 1` here. -/
+noncomputable def implicitRestartCycle (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (s : ArnoldiState n) :
+    M (ArnoldiState n) := do
+  let st ← shiftedQrSteps rnd (s.hMatrix (j + p + 1)) (shifts (s.hMatrix (j + p + 1))) p
+  let Qp ← algorithm_1_1_5 rnd (s.qMatrix (j + p + 1)) st.acc 0
+  let t ← algorithm_1_1_2 rnd (st.acc (Fin.last (j + p)) ⟨j, by omega⟩) s.r 0
+  let r ← algorithm_1_1_2 rnd
+    (if h : j + 1 < j + p + 1 then st.H p ⟨j + 1, h⟩ ⟨j, by omega⟩ else 0)
+    (fun i => if h : j + 1 < j + p + 1 then Qp i ⟨j + 1, h⟩ else 0) t
+  let b ← vecNorm rnd r
+  (List.range p).foldlM (fun s _ => arnoldiStep rnd A s)
+    { k := j + 1
+      q := fun l i => if h : l < j + p + 1 then Qp i ⟨l, h⟩ else 0
+      h := fun i l => if h : i < j + 1 ∧ l < j + 1 then st.H p ⟨i, by omega⟩ ⟨l, by omega⟩
+        else if i = j + 1 ∧ l = j then b else 0
+      r := r
+      done := decide (b = 0) }
+
+/-- **Implicitly restarted Arnoldi** (§10.5.3, the modification of (10.5.10)):
+```
+With starting vector q₁, perform m steps of the Arnoldi iteration obtaining Q_c, H_c, r_c.
+Repeat:
+  Determine filter values μ_1, …, μ_p.
+  Perform p steps of the shifted QR iteration (10.5.4) applied to H_c obtaining H₊ and V.
+  Replace Q_c with the first j columns of Q_c V, H_c with H₊(1:j, 1:j), r_c with v_{mj} r_c.
+  Starting with A Q_c = Q_c H_c + r_c e_jᵀ, perform steps j+1, …, j+p = m of the Arnoldi
+  iteration obtaining A Q_m = Q_m H_m + r_m e_mᵀ.
+  Set Q_c = Q_m, H_c = H_m, r_c = r_m.
+```
+with `m = j + p + 1` (the book's `j` is `j + 1`), caller-supplied `shifts`, `cycles` repetitions,
+and the residual corrected as in `implicitRestartCycle`. -/
+noncomputable def implicitlyRestartedArnoldi (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ)
+    (cycles : ℕ) : M (ArnoldiState n) := do
+  let s ← algorithm_10_5_1 rnd A q₁ (j + p + 1)
+  (List.range cycles).foldlM (fun s _ => implicitRestartCycle rnd A j p shifts s) s
+
+end ImplicitProgram
+
+/-- The Arnoldi relations of a state, column by column: orthonormal `q_0, …, q_{k−1}`, the residual
+orthogonal to them, `A q_b = Σ_{i<k} h_{ib} q_i (+ r for the last column)`, `h` zero below the
+subdiagonal, `h_{k,k−1} = ‖r‖` and the `done` flag recording `‖r‖ = 0`. -/
+private def ArnoldiInv (A : Matrix (Fin n) (Fin n) ℝ) (s : ArnoldiState n) : Prop :=
+  0 < s.k ∧
+    (∀ a < s.k, ∀ b < s.k, s.q a ⬝ᵥ s.q b = if a = b then 1 else 0) ∧
+    (∀ a < s.k, s.q a ⬝ᵥ s.r = 0) ∧
+    (∀ b < s.k, A *ᵥ s.q b =
+      ∑ i ∈ Finset.range s.k, s.h i b • s.q i + if b + 1 = s.k then s.r else 0) ∧
+    (∀ i l, l + 1 < i → s.h i l = 0) ∧
+    s.h s.k (s.k - 1) = ‖(WithLp.toLp 2 s.r : EuclideanSpace ℝ (Fin n))‖ ∧
+    s.done = decide (‖(WithLp.toLp 2 s.r : EuclideanSpace ℝ (Fin n))‖ = 0)
+
+/-- The modified Gram–Schmidt loop against orthonormal vectors is the classical projection. -/
+private theorem mgsLoop_orthonormal (q : ℕ → Fin n → ℝ) (k : ℕ) (v : Fin n → ℝ)
+    (hq : ∀ a < k, ∀ b < k, q a ⬝ᵥ q b = if a = b then 1 else 0) :
+    Id.run (mgsLoop pure q k v) = (v - ∑ i ∈ Finset.range k, (q i ⬝ᵥ v) • q i,
+      fun i => if i < k then q i ⬝ᵥ v else 0) := by
+  induction k with
+  | zero => simp [mgsLoop]
+  | succ k ih =>
+    have ih' := ih fun a ha b hb => hq a (by omega) b (by omega)
+    simp only [mgsLoop, List.range_succ, List.foldlM_append, List.foldlM_cons, List.foldlM_nil,
+      Id.run_bind, Id.run_pure, bind_pure] at ih' ⊢
+    rw [ih']
+    simp only [algorithm_1_1_1_spec, algorithm_1_1_2_spec]
+    have hc : q k ⬝ᵥ (v - ∑ i ∈ Finset.range k, (q i ⬝ᵥ v) • q i) = q k ⬝ᵥ v := by
+      rw [dotProduct_sub, dotProduct_sum]
+      rw [Finset.sum_eq_zero fun i hi => by
+        rw [dotProduct_smul, hq k (by omega) i (by simp at hi; omega),
+          ite_eq_right (by simp at hi; omega), smul_zero], sub_zero]
+    rw [hc]
+    refine Prod.ext ?_ (funext fun i => ?_)
+    · simp only [Finset.sum_range_succ]
+      rw [neg_smul, ← sub_eq_add_neg, sub_sub]
+    · by_cases hik : i = k
+      · subst hik; simp
+      · simp only [Function.update_of_ne hik]
+        by_cases hi : i < k
+        · rw [ite_eq_left hi, ite_eq_left (by omega)]
+        · rw [ite_eq_right hi, ite_eq_right (by omega)]
+
+/-- The `(k+1) × (k+1)` Arnoldi decomposition of a state, column by column. -/
+private theorem isArnoldiDecomposition_iff_vec (A : Matrix (Fin n) (Fin n) ℝ)
+    (s : ArnoldiState n) (K : ℕ) :
+    IsArnoldiDecomposition A (s.qMatrix (K + 1)) (s.hMatrix (K + 1)) s.r ↔
+      (∀ a < K + 1, ∀ b < K + 1, s.q a ⬝ᵥ s.q b = if a = b then 1 else 0) ∧
+      (∀ a < K + 1, s.q a ⬝ᵥ s.r = 0) ∧
+      (∀ b < K + 1, A *ᵥ s.q b =
+        ∑ i ∈ Finset.range (K + 1), s.h i b • s.q i + if b + 1 = K + 1 then s.r else 0) ∧
+      (∀ i < K + 1, ∀ l < K + 1, l + 1 < i → s.h i l = 0) := by
+  have hQQ : ∀ a b : Fin (K + 1), ((s.qMatrix (K + 1))ᵀ * s.qMatrix (K + 1)) a b =
+      s.q a ⬝ᵥ s.q b := fun a b => by
+    simp [Matrix.mul_apply, ArnoldiState.qMatrix, dotProduct]
+  have hQr : ∀ a : Fin (K + 1), ((s.qMatrix (K + 1))ᵀ *ᵥ s.r) a = s.q a ⬝ᵥ s.r := fun a => by
+    simp [Matrix.mulVec, ArnoldiState.qMatrix, dotProduct]
+  have hcol : ∀ (b : Fin (K + 1)) (x : Fin n),
+      (A * s.qMatrix (K + 1)) x b = (A *ᵥ s.q b) x ∧
+      (s.qMatrix (K + 1) * s.hMatrix (K + 1) +
+          Matrix.vecMulVec s.r (Krylov.lastVec (1 : ℝ) (K + 1))) x b =
+        (∑ i ∈ Finset.range (K + 1), s.h i b • s.q i +
+          if (b : ℕ) + 1 = K + 1 then s.r else 0) x := fun b x => by
+    refine ⟨by simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, ArnoldiState.qMatrix], ?_⟩
+    simp only [Matrix.add_apply, Matrix.mul_apply, ArnoldiState.qMatrix, ArnoldiState.hMatrix,
+      Matrix.of_apply, Matrix.vecMulVec_apply, Krylov.lastVec, Pi.add_apply, Finset.sum_apply,
+      Pi.smul_apply, smul_eq_mul]
+    rw [Fin.sum_univ_eq_sum_range (fun i => s.q i x * s.h i b)]
+    congr 1
+    · exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+    · split_ifs <;> simp
+  constructor
+  · intro h
+    refine ⟨fun a ha b hb => ?_, fun a ha => ?_, fun b hb => ?_, fun i hi l hl hil => ?_⟩
+    · have := congrFun (congrFun h.transpose_mul_self ⟨a, ha⟩) ⟨b, hb⟩
+      rw [hQQ, Matrix.one_apply] at this
+      rw [this]
+      simp [Fin.ext_iff]
+    · have := congrFun h.transpose_mulVec ⟨a, ha⟩
+      rwa [hQr] at this
+    · ext x
+      have := congrFun (congrFun h.mul_eq x) ⟨b, hb⟩
+      rw [(hcol ⟨b, hb⟩ x).1, (hcol ⟨b, hb⟩ x).2] at this
+      exact this
+    · exact h.isUpperHessenberg ⟨i, hi⟩ ⟨l, hl⟩
+        ((GolubVanLoan.Chapter05.exists_between_iff _ _).2 hil)
+  · rintro ⟨h1, h2, h3, h4⟩
+    refine ⟨?_, fun i l hil => ?_, ?_, ?_⟩
+    · ext a b
+      rw [hQQ, h1 a a.isLt b b.isLt, Matrix.one_apply]
+      simp [Fin.ext_iff]
+    · exact h4 i i.isLt l l.isLt ((GolubVanLoan.Chapter05.exists_between_iff _ _).1 hil)
+    · ext a
+      rw [hQr, h2 a a.isLt]
+      rfl
+    · ext x b
+      rw [(hcol b x).1, (hcol b x).2, h3 b b.isLt]
+
+/-- One exact pass of Algorithm 10.5.1's loop body keeps the Arnoldi relations and the first
+vector. -/
+private theorem arnoldiStep_inv (A : Matrix (Fin n) (Fin n) ℝ) {s : ArnoldiState n}
+    (hs : ArnoldiInv A s) :
+    ArnoldiInv A (Id.run (arnoldiStep pure A s)) ∧ (Id.run (arnoldiStep pure A s)).q 0 = s.q 0 ∧
+      s.k ≤ (Id.run (arnoldiStep pure A s)).k := by
+  obtain ⟨hk0, horth, hperp, hrel, hzero, hnorm, hdone⟩ := hs
+  cases hsd : s.done with
+  | true =>
+    have hid : Id.run (arnoldiStep pure A s) = s := by simp [arnoldiStep, hsd]
+    rw [hid]
+    exact ⟨⟨hk0, horth, hperp, hrel, hzero, hnorm, hdone⟩, rfl, le_rfl⟩
+  | false =>
+    set ρ := ‖(WithLp.toLp 2 s.r : EuclideanSpace ℝ (Fin n))‖ with hρ
+    have hρ0 : ρ ≠ 0 := by simpa [hsd] using hdone.symm
+    have hrr : s.r ⬝ᵥ s.r = ρ ^ 2 := by
+      rw [hρ, ← real_inner_self_eq_norm_sq, EuclideanSpace.inner_eq_star_dotProduct,
+        star_trivial]
+    have hhk : (if s.k = 0 then 1 else s.h s.k (s.k - 1)) = ρ := by
+      rw [ite_eq_right (by omega), hnorm]
+    set qk := ρ⁻¹ • s.r with hqk
+    set q' := Function.update s.q s.k qk with hq'
+    have hq'old : ∀ a < s.k, q' a = s.q a := fun a ha => Function.update_of_ne ha.ne _ _
+    have hq'new : q' s.k = qk := Function.update_self _ _ _
+    have horth' : ∀ a < s.k + 1, ∀ b < s.k + 1, q' a ⬝ᵥ q' b = if a = b then 1 else 0 := by
+      have hnew : ∀ a < s.k, q' a ⬝ᵥ q' s.k = 0 := fun a ha => by
+        rw [hq'old a ha, hq'new, hqk, dotProduct_smul, hperp a ha, smul_zero]
+      intro a ha b hb
+      rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+      · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
+        · rw [hq'old a ha, hq'old b hb]; exact horth a ha b hb
+        · rw [hnew a ha, ite_eq_right ha.ne]
+      · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
+        · rw [dotProduct_comm, hnew b hb, ite_eq_right hb.ne']
+        · rw [ite_eq_left rfl, hq'new, hqk, dotProduct_smul, smul_dotProduct, hrr, smul_eq_mul,
+            smul_eq_mul]
+          field_simp
+    have hmgs := mgsLoop_orthonormal q' (s.k + 1) (A *ᵥ qk) horth'
+    set w := A *ᵥ qk - ∑ i ∈ Finset.range (s.k + 1), (q' i ⬝ᵥ A *ᵥ qk) • q' i with hw
+    have hperp' : ∀ a < s.k + 1, q' a ⬝ᵥ w = 0 := by
+      intro a ha
+      rw [hw, dotProduct_sub, dotProduct_sum, Finset.sum_eq_single a (fun i hi hia => by
+        rw [dotProduct_smul, horth' a ha i (Finset.mem_range.1 hi), ite_eq_right (Ne.symm hia),
+          smul_zero]) (fun h => absurd (Finset.mem_range.2 ha) h), dotProduct_smul,
+        horth' a ha a ha, ite_eq_left rfl, smul_eq_mul, mul_one, sub_self]
+    simp only [arnoldiStep, hsd, Bool.false_eq_true, ↓reduceIte, Id.run_bind, Id.run_pure,
+      vecDiv_spec, algorithm_1_1_3_spec, zero_add, vecNorm_spec, hhk]
+    rw [← hqk, ← hq', hmgs]
+    unfold ArnoldiInv
+    dsimp only
+    refine ⟨⟨Nat.succ_pos _, horth', hperp', fun b hb => ?_, fun i l hil => ?_, ?_, ?_⟩,
+      hq'old 0 hk0, Nat.le_succ _⟩
+    · rw [Finset.sum_range_succ]
+      rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
+      · -- an old column
+        rw [Finset.sum_congr rfl (g := fun i => s.h i b • s.q i) fun i hi => by
+          simp only [ite_eq_right hb.ne, hq'old i (Finset.mem_range.1 hi)]]
+        rw [ite_eq_right hb.ne, ite_eq_right (show b + 1 ≠ s.k + 1 by omega), hq'old b hb, hq'new,
+          hrel b hb, add_zero]
+        rcases Nat.lt_or_ge (b + 1) s.k with hbk | hbk
+        · rw [ite_eq_right hbk.ne, hzero s.k b hbk, zero_smul, add_zero]
+        · rw [ite_eq_left (by omega), show b = s.k - 1 by omega, hnorm, hqk, smul_smul,
+            mul_inv_cancel₀ hρ0, one_smul]
+      · -- the new column
+        rw [Finset.sum_congr rfl (g := fun i => (q' i ⬝ᵥ A *ᵥ qk) • q' i) fun i hi => by
+          have := Finset.mem_range.1 hi
+          simp only [↓reduceIte, ite_eq_right (show i ≠ s.k + 1 by omega),
+            ite_eq_left (show i < s.k + 1 by omega)]]
+        simp only [↓reduceIte, ite_eq_right (show s.k ≠ s.k + 1 by omega),
+          ite_eq_left (show s.k < s.k + 1 by omega)]
+        rw [hw, Finset.sum_range_succ, hq'new]
+        abel
+    · -- zeros below the subdiagonal
+      by_cases hl : l = s.k
+      · rw [ite_eq_left hl, ite_eq_right (by omega), ite_eq_right (by omega)]
+      · rw [ite_eq_right hl]; exact hzero i l hil
+    · simp
+    · rfl
+
+/-- `t` exact passes of the loop body keep the Arnoldi relations and the first vector. -/
+private theorem arnoldiSteps_inv (A : Matrix (Fin n) (Fin n) ℝ) (t : ℕ) {s : ArnoldiState n}
+    (hs : ArnoldiInv A s) :
+    ArnoldiInv A (Id.run ((List.range t).foldlM (fun s _ => arnoldiStep pure A s) s)) ∧
+      (Id.run ((List.range t).foldlM (fun s _ => arnoldiStep pure A s) s)).q 0 = s.q 0 := by
+  induction t with
+  | zero => exact ⟨hs, rfl⟩
+  | succ t ih =>
+    simp only [List.range_succ, List.foldlM_append, List.foldlM_cons, List.foldlM_nil,
+      bind_pure, Id.run_bind]
+    obtain ⟨h1, h2, -⟩ := arnoldiStep_inv A ih.1
+    exact ⟨h1, h2.trans ih.2⟩
+
+/-- The exact state from which the continued Arnoldi steps of an implicit restart start:
+`Q₊ = Q_c V` truncated to `j + 1` columns, `H₊` to its leading `(j+1) × (j+1)` block, the corrected
+residual and `h_{j+1,j} = ‖r₊‖`. -/
+private noncomputable def restartState (j p : ℕ) (s : ArnoldiState n)
+    (st : ShiftedQrState (j + p)) :
+    ArnoldiState n :=
+  let Qp := s.qMatrix (j + p + 1) * st.acc
+  let r := st.acc (Fin.last (j + p)) ⟨j, by omega⟩ • s.r +
+    (if h : j + 1 < j + p + 1 then st.H p ⟨j + 1, h⟩ ⟨j, by omega⟩ else 0) •
+      (fun i => if h : j + 1 < j + p + 1 then Qp i ⟨j + 1, h⟩ else 0)
+  { k := j + 1
+    q := fun l i => if h : l < j + p + 1 then Qp i ⟨l, h⟩ else 0
+    h := fun i l => if h : i < j + 1 ∧ l < j + 1 then st.H p ⟨i, by omega⟩ ⟨l, by omega⟩
+      else if i = j + 1 ∧ l = j then ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin n))‖ else 0
+    r := r
+    done := decide (‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin n))‖ = 0) }
+
+/-- The exact cycle is the continued Arnoldi steps from `restartState`. -/
+private theorem implicitRestartCycle_eq (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (s : ArnoldiState n) :
+    Id.run (implicitRestartCycle pure A j p shifts s) =
+      Id.run ((List.range p).foldlM (fun s _ => arnoldiStep pure A s) (restartState j p s
+        (Id.run (shiftedQrSteps pure (s.hMatrix (j + p + 1))
+          (shifts (s.hMatrix (j + p + 1))) p)))) := by
+  simp only [implicitRestartCycle, restartState, Id.run_bind, algorithm_1_1_5_spec,
+    algorithm_1_1_2_spec, vecNorm_spec, zero_add]
+
+/-- **One cycle of the implicitly restarted framework** (exact arithmetic, `p ≥ 1`): if the input
+state is an `m`-step Arnoldi decomposition (`m = j + p + 1`) and the continued Arnoldi steps do not
+break down (the output again has `m` columns), then the output is an `m`-step Arnoldi decomposition
+whose first column `q₊` satisfies `R(1,1) q₊ = p(A) q₁` for the cycle's filter polynomial. -/
+theorem implicitRestartCycle_spec (A : Matrix (Fin n) (Fin n) ℝ) {j p : ℕ} (hp : 0 < p)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {s : ArnoldiState n}
+    (hs : IsArnoldiDecomposition A (s.qMatrix (j + p + 1)) (s.hMatrix (j + p + 1)) s.r) :
+    let Hc := s.hMatrix (j + p + 1)
+    let st := Id.run (shiftedQrSteps pure Hc (shifts Hc) p)
+    let s' := Id.run (implicitRestartCycle pure A j p shifts s)
+    s'.k = j + p + 1 →
+      IsArnoldiDecomposition A (s'.qMatrix (j + p + 1)) (s'.hMatrix (j + p + 1)) s'.r ∧
+      ((List.range p).reverse.map st.R).prod 0 0 • (s'.qMatrix (j + p + 1) *ᵥ Pi.single 0 1) =
+        aeval A (filterPolynomial (shifts Hc) p) *ᵥ (s.qMatrix (j + p + 1) *ᵥ Pi.single 0 1) := by
+  intro Hc st s' hk
+  simp only [s', st, Hc, implicitRestartCycle_eq] at hk ⊢
+  obtain ⟨h0, hc, hVR, hHs, hacc⟩ := equation_10_5_4 (Hc := s.hMatrix (j + p + 1))
+    hs.isUpperHessenberg (shifts (s.hMatrix (j + p + 1))) p
+  generalize Id.run (shiftedQrSteps pure (s.hMatrix (j + p + 1))
+    (shifts (s.hMatrix (j + p + 1))) p) = st at hk h0 hc hVR hHs hacc ⊢
+  have hjp : j + 1 < j + p + 1 := by omega
+  obtain ⟨-, hT⟩ := implicitRestart_isArnoldiDecomposition hs hc h0 (fun i hi => (hVR i hi).1)
+    (fun i hi => (hVR i hi).2.1) (fun i hi => (hVR i hi).2.2) hp
+  rw [← hacc] at hT
+  set s₀ := restartState j p s st with hs₀
+  have hT' : IsArnoldiDecomposition A (s₀.qMatrix (j + 1)) (s₀.hMatrix (j + 1)) s₀.r := by
+    convert hT using 1
+    · ext i l
+      have := l.isLt
+      simp only [s₀, restartState, ArnoldiState.qMatrix, Matrix.of_apply, Matrix.submatrix_apply,
+        id]
+      split_ifs with h
+      · rfl
+      · omega
+    · ext i l
+      have := i.isLt
+      have := l.isLt
+      simp only [s₀, restartState, ArnoldiState.hMatrix, Matrix.of_apply, Matrix.submatrix_apply]
+      split_ifs with h h' <;> first | rfl | exact absurd ⟨by omega, by omega⟩ h
+    · simp only [s₀, restartState, hjp, ↓reduceDIte]
+      rw [add_comm]
+      rfl
+  obtain ⟨h1, h2, h3, -⟩ := (isArnoldiDecomposition_iff_vec A s₀ j).1 hT'
+  have hinv : ArnoldiInv A s₀ := by
+    refine ⟨by simp [s₀, restartState], h1, h2, h3, fun i l hil => ?_, ?_, rfl⟩
+    · simp only [s₀, restartState]
+      split_ifs with h h'
+      · exact (hHs p le_rfl) ⟨i, by omega⟩ ⟨l, by omega⟩
+          ((GolubVanLoan.Chapter05.exists_between_iff _ _).2 hil)
+      · omega
+      · rfl
+    · simp [s₀, restartState]
+  obtain ⟨hinv', hq0⟩ := arnoldiSteps_inv A p hinv
+  obtain ⟨-, i1, i2, i3, i4, -, -⟩ := hinv'
+  rw [hk] at i1 i2 i3
+  refine ⟨(isArnoldiDecomposition_iff_vec A _ (j + p)).2
+    ⟨i1, i2, i3, fun i _ l _ h => i4 i l h⟩, ?_⟩
+  have hfirst : ArnoldiState.qMatrix (Id.run ((List.range p).foldlM
+      (fun s _ => arnoldiStep pure A s) s₀)) (j + p + 1) *ᵥ Pi.single 0 1 =
+      (s.qMatrix (j + p + 1) * ((List.range p).map st.V).prod) *ᵥ Pi.single 0 1 := by
+    ext x
+    simp only [Matrix.mulVec_single_one, Matrix.col_apply, ArnoldiState.qMatrix,
+      Matrix.of_apply, Fin.val_zero, hq0]
+    simp [s₀, restartState, hacc]
+    rfl
+  rw [hfirst]
+  exact (restart_firstColumn_eq hs).2 hc h0 fun i hi => (hVR i hi).2.2
+
+/-- The run after `ℓ + 1` cycles is one more cycle. -/
+private theorem implicitlyRestartedArnoldi_succ (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ) (ℓ : ℕ) :
+    Id.run (implicitlyRestartedArnoldi pure A j p shifts q₁ (ℓ + 1)) =
+      Id.run (implicitRestartCycle pure A j p shifts
+        (Id.run (implicitlyRestartedArnoldi pure A j p shifts q₁ ℓ))) := by
+  simp only [implicitlyRestartedArnoldi, List.range_succ, List.foldlM_append, List.foldlM_cons,
+    List.foldlM_nil, bind_pure, Id.run_bind]
+
+/-- **Exact semantics of implicitly restarted Arnoldi** (`p ≥ 1`, unit `q₁` with
+`m = j + p + 1 ≤ grade`): as long as no continued Arnoldi step breaks down (every state after
+`ℓ ≤ L` cycles has `m` columns), the state after every cycle is an `m`-step Arnoldi decomposition
+`A Q_m = Q_m H_m + r_m e_mᵀ`, and its first column is `R_ℓ(1,1)⁻¹ p_ℓ(A)` applied to the previous
+first column (`p_ℓ` the cycle's filter polynomial, `R_ℓ` the product of its triangular factors) —
+the starting vector explicit restarting (10.5.10) would use, obtained without restarting from step
+1 (by the implicit Q theorem `Matrix.IsArnoldiDecomposition.implicitQ`, an unreduced such
+decomposition is determined by its first column). -/
+theorem implicitlyRestartedArnoldi_spec (A : Matrix (Fin n) (Fin n) ℝ) {j p : ℕ} (hp : 0 < p)
+    (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q₁ : Fin n → ℝ}
+    (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1)
+    (hg : j + p + 1 ≤ grade (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁)) (L : ℕ) :
+    let S : ℕ → ArnoldiState n := fun ℓ =>
+      Id.run (implicitlyRestartedArnoldi pure A j p shifts q₁ ℓ)
+    let H : ℕ → Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ := fun ℓ =>
+      (S ℓ).hMatrix (j + p + 1)
+    let ρ : ℕ → ℝ := fun ℓ =>
+      ((List.range p).reverse.map (Id.run (shiftedQrSteps pure (H ℓ) (shifts (H ℓ)) p)).R).prod
+        0 0
+    (∀ ℓ ≤ L, (S ℓ).k = j + p + 1) →
+      (∀ ℓ ≤ L, IsArnoldiDecomposition A ((S ℓ).qMatrix (j + p + 1)) (H ℓ) (S ℓ).r) ∧
+      (S 0).qMatrix (j + p + 1) *ᵥ Pi.single 0 1 = q₁ ∧
+      ∀ ℓ < L, ρ ℓ • ((S (ℓ + 1)).qMatrix (j + p + 1) *ᵥ Pi.single 0 1) =
+        aeval A (filterPolynomial (shifts (H ℓ)) p) *ᵥ
+          ((S ℓ).qMatrix (j + p + 1) *ᵥ Pi.single 0 1) := by
+  intro S H ρ hk
+  have hsucc : ∀ ℓ, S (ℓ + 1) = Id.run (implicitRestartCycle pure A j p shifts (S ℓ)) :=
+    implicitlyRestartedArnoldi_succ A j p shifts q₁
+  obtain ⟨-, hQ0, hH0, hr0⟩ := algorithm_10_5_1_matrices A hq hg
+  have hS0 : S 0 = Id.run (algorithm_10_5_1 pure A q₁ (j + p + 1)) := by
+    simp [S, implicitlyRestartedArnoldi]
+  have hdec : ∀ ℓ ≤ L, IsArnoldiDecomposition A ((S ℓ).qMatrix (j + p + 1)) (H ℓ) (S ℓ).r := by
+    intro ℓ hℓ
+    induction ℓ with
+    | zero =>
+      simp only [H]
+      rw [hS0, hQ0, hH0, hr0 (by omega)]
+      exact (equation_10_5_2 A (WithLp.toLp 2 q₁) (k := j + p + 1) (by omega)).2.2 hg
+    | succ ℓ ih =>
+      have h := implicitRestartCycle_spec A hp shifts (ih (by omega))
+      simp only [H] at h ⊢
+      rw [hsucc] at ⊢
+      exact (h (by rw [← hsucc]; exact hk (ℓ + 1) hℓ)).1
+  refine ⟨hdec, by rw [hS0, hQ0]; exact basisMatrix_mulVec_single_zero A hq _, fun ℓ hℓ => ?_⟩
+  have h := implicitRestartCycle_spec A hp shifts (hdec ℓ hℓ.le)
+  rw [hsucc]
+  exact (h (by rw [← hsucc]; exact hk (ℓ + 1) hℓ)).2
+
 /-! ### The unsymmetric Lanczos process (§10.5.5) -/
 
 /-- The state of the unsymmetric Lanczos tridiagonalization (10.5.11): the number `k` of Lanczos
@@ -915,6 +1708,288 @@ theorem equation_10_5_13 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
   · by_cases h1 : (j : ℕ) + 1 < st.k
     · simp [h0.ne', h1, show (j : ℕ) + 1 ≠ st.k by omega]
     · simp [h0.ne', show (j : ℕ) + 1 = st.k by omega]
+
+/-- The biorthogonality kept by the exact run of (10.5.11): `q̃_aᵀ q_b = δ_ab`, the residuals are
+orthogonal to the opposite family, the computed `β`, `γ` are nonzero, and the first vectors are
+nonzero multiples of `q₁`, `q̃₁`. -/
+private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
+    (t : ℕ) :
+    let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ t)
+    (∀ a < st.k, ∀ b < st.k, st.qt a ⬝ᵥ st.q b = if a = b then 1 else 0) ∧
+    (∀ a < st.k, st.qt a ⬝ᵥ st.r = 0) ∧ (∀ a < st.k, st.s ⬝ᵥ st.q a = 0) ∧
+    (∀ a < st.k, st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
+    (st.k = 0 → st.r = q₁ ∧ st.s = qt₁) ∧
+    (0 < st.k → st.q 0 = (st.beta 0)⁻¹ • q₁ ∧ st.qt 0 = (st.gamma 0)⁻¹ • qt₁) := by
+  intro st
+  let P : UnsymLanczosState n → Prop := fun st =>
+    (∀ a < st.k, ∀ b < st.k, st.qt a ⬝ᵥ st.q b = if a = b then 1 else 0) ∧
+    (∀ a < st.k, st.qt a ⬝ᵥ st.r = 0) ∧ (∀ a < st.k, st.s ⬝ᵥ st.q a = 0) ∧
+    (∀ a < st.k, st.beta a ≠ 0 ∧ st.gamma a ≠ 0) ∧
+    (st.k = 0 → st.r = q₁ ∧ st.s = qt₁) ∧
+    (0 < st.k → st.q 0 = (st.beta 0)⁻¹ • q₁ ∧ st.qt 0 = (st.gamma 0)⁻¹ • qt₁)
+  suffices hP : ∀ t, P (Id.run (unsymmetricLanczos pure A q₁ qt₁ t)) from hP t
+  intro t
+  induction t with
+  | zero =>
+    refine ⟨fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun _ => ?_,
+      fun h => ?_⟩ <;> simp [unsymmetricLanczos] at *
+  | succ t ih =>
+    have hrelt := unsym_relations A q₁ qt₁ t
+    rw [unsymmetricLanczos_succ]
+    set s0 := Id.run (unsymmetricLanczos pure A q₁ qt₁ t) with hs0
+    obtain ⟨hdone, hrel⟩ := hrelt
+    obtain ⟨I1, I2, I3, I4, I5, I6⟩ := ih
+    cases hsd : s0.done with
+    | true =>
+      simp only [unsymLanczosStep, hsd, ↓reduceIte, Id.run_pure]
+      exact ⟨I1, I2, I3, I4, I5, I6⟩
+    | false =>
+      have htest : ¬ (s0.r = 0 ∨ s0.s = 0 ∨ s0.s ⬝ᵥ s0.r = 0) := by
+        simpa [hsd] using hdone.symm
+      push Not at htest
+      obtain ⟨hr0, -, hsr⟩ := htest
+      simp only [P, unsymLanczosStep, hsd, Bool.false_eq_true, ↓reduceIte, Id.run_bind,
+        Id.run_pure, vecNorm_spec, algorithm_1_1_1_spec, vecDiv_spec, algorithm_1_1_3_spec,
+        algorithm_1_1_2_spec, zero_add]
+      set β := ‖(WithLp.toLp 2 s0.r : EuclideanSpace ℝ (Fin n))‖ with hβ
+      have hβ0 : β ≠ 0 := by
+        rw [hβ, norm_ne_zero_iff]
+        intro h
+        exact hr0 (by simpa using congrArg WithLp.ofLp h)
+      set γ := s0.s ⬝ᵥ s0.r / β with hγ
+      have hγ0 : γ ≠ 0 := div_ne_zero hsr hβ0
+      have hβγ : γ * β = s0.s ⬝ᵥ s0.r := by rw [hγ]; field_simp
+      set qn := β⁻¹ • s0.r with hqn
+      set qtn := γ⁻¹ • s0.s with hqtn
+      set α := qtn ⬝ᵥ A *ᵥ qn with hα
+      set pv := if s0.k = 0 then (0 : Fin n → ℝ) else s0.q (s0.k - 1) with hpv
+      set pvt := if s0.k = 0 then (0 : Fin n → ℝ) else s0.qt (s0.k - 1) with hpvt
+      set q' := Function.update s0.q s0.k qn with hq'
+      set qt' := Function.update s0.qt s0.k qtn with hqt'
+      have hq'o : ∀ a < s0.k, q' a = s0.q a := fun a ha => Function.update_of_ne ha.ne _ _
+      have hqt'o : ∀ a < s0.k, qt' a = s0.qt a := fun a ha => Function.update_of_ne ha.ne _ _
+      have hq'n : q' s0.k = qn := Function.update_self _ _ _
+      have hqt'n : qt' s0.k = qtn := Function.update_self _ _ _
+      -- the new biorthogonality
+      have hqtq_new : ∀ a < s0.k, s0.qt a ⬝ᵥ qn = 0 := fun a ha => by
+        rw [hqn, dotProduct_smul, I2 a ha, smul_zero]
+      have hqtnq : ∀ a < s0.k, qtn ⬝ᵥ s0.q a = 0 := fun a ha => by
+        rw [hqtn, smul_dotProduct, I3 a ha, smul_zero]
+      have hnn : qtn ⬝ᵥ qn = 1 := by
+        rw [hqtn, hqn, smul_dotProduct, dotProduct_smul, ← hβγ, smul_eq_mul, smul_eq_mul]
+        field_simp
+      have J1 : ∀ a < s0.k + 1, ∀ b < s0.k + 1, qt' a ⬝ᵥ q' b = if a = b then 1 else 0 := by
+        intro a ha b hb
+        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+        · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
+          · rw [hqt'o a ha, hq'o b hb]; exact I1 a ha b hb
+          · rw [hqt'o a ha, hq'n, hqtq_new a ha, ite_eq_right ha.ne]
+        · rcases Nat.lt_succ_iff_lt_or_eq.1 hb with hb | rfl
+          · rw [hqt'n, hq'o b hb, hqtnq b hb, ite_eq_right hb.ne']
+          · rw [hqt'n, hq'n, hnn, ite_eq_left rfl]
+      -- products with `A`
+      have hAq : ∀ a < s0.k, s0.qt a ⬝ᵥ A *ᵥ qn = if a + 1 = s0.k then γ else 0 := by
+        intro a ha
+        rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, (hrel a ha).2]
+        simp only [add_dotProduct, smul_dotProduct, smul_eq_mul]
+        have h1 : (if a = 0 then (0 : Fin n → ℝ) else s0.qt (a - 1)) ⬝ᵥ qn = 0 := by
+          split_ifs
+          · simp
+          · exact hqtq_new _ (by omega)
+        rw [h1, hqtq_new a ha, mul_zero, mul_zero, zero_add, zero_add]
+        split_ifs with h2 h3 h3
+        · omega
+        · rw [smul_dotProduct, hqtq_new _ h2, smul_zero]
+        · rw [hqn, dotProduct_smul, smul_eq_mul, hγ]; ring
+        · omega
+      have hAqt : ∀ a < s0.k, qtn ⬝ᵥ A *ᵥ s0.q a = if a + 1 = s0.k then β else 0 := by
+        intro a ha
+        rw [(hrel a ha).1]
+        simp only [dotProduct_add, dotProduct_smul, smul_eq_mul]
+        have h1 : qtn ⬝ᵥ (if a = 0 then (0 : Fin n → ℝ) else s0.q (a - 1)) = 0 := by
+          split_ifs
+          · simp
+          · exact hqtnq _ (by omega)
+        rw [h1, hqtnq a ha, mul_zero, mul_zero, zero_add, zero_add]
+        split_ifs with h2 h3 h3
+        · omega
+        · rw [dotProduct_smul, hqtnq _ h2, smul_zero]
+        · rw [hqtn, smul_dotProduct, smul_eq_mul, ← hβγ]
+          field_simp
+        · omega
+      refine ⟨J1, fun a ha => ?_, fun a ha => ?_, fun a ha => ?_, fun h => by omega,
+        fun _ => ?_⟩
+      · -- `q̃_aᵀ r_{k+1} = 0`
+        simp only [dotProduct_add, dotProduct_smul, smul_eq_mul]
+        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+        · rw [hqt'o a ha, hAq a ha, hqtq_new a ha]
+          have hpv' : s0.qt a ⬝ᵥ pv = if a + 1 = s0.k then 1 else 0 := by
+            rw [hpv, ite_eq_right (by omega), I1 a ha _ (by omega)]
+            split_ifs <;> first | rfl | omega
+          rw [hpv']
+          split_ifs <;> ring
+        · rw [hqt'n, ← hα, hnn]
+          have : qtn ⬝ᵥ pv = 0 := by
+            rw [hpv]; split_ifs
+            · simp
+            · exact hqtnq _ (by omega)
+          rw [this]; ring
+      · -- `r̃_{k+1}ᵀ q_a = 0`
+        simp only [add_dotProduct, smul_dotProduct, smul_eq_mul]
+        rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+        · rw [hq'o a ha, Matrix.mulVec_transpose, ← Matrix.dotProduct_mulVec, hAqt a ha,
+            hqtnq a ha]
+          have hpv' : pvt ⬝ᵥ s0.q a = if a + 1 = s0.k then 1 else 0 := by
+            rw [hpvt, ite_eq_right (by omega), I1 _ (by omega) a ha]
+            split_ifs <;> first | rfl | omega
+          rw [hpv']
+          split_ifs <;> ring
+        · rw [hq'n, Matrix.mulVec_transpose, ← Matrix.dotProduct_mulVec, ← hα, hnn]
+          have : pvt ⬝ᵥ qn = 0 := by
+            rw [hpvt]; split_ifs
+            · simp
+            · exact hqtq_new _ (by omega)
+          rw [this]; ring
+      · rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+        · rw [Function.update_of_ne ha.ne, Function.update_of_ne ha.ne]; exact I4 a ha
+        · rw [Function.update_self, Function.update_self]; exact ⟨hβ0, hγ0⟩
+      · rcases Nat.eq_zero_or_pos s0.k with h0 | h0
+        · obtain ⟨hr, hs⟩ := I5 h0
+          rw [← h0, Function.update_self, Function.update_self, hq'n, hqt'n, hqn, hqtn, hr, hs]
+          exact ⟨rfl, rfl⟩
+        · rw [Function.update_of_ne h0.ne, Function.update_of_ne h0.ne, hq'o 0 h0, hqt'o 0 h0]
+          exact I6 h0
+
+/-- A three-term recurrence spans the Krylov subspaces: if `v_0` is a nonzero multiple of `v₁` and
+`B v_a = c₁_a v_{a−1} + c₂_a v_a + c₃_{a+1} v_{a+1}` with `c₃_{a+1} ≠ 0` for `a + 1 < k`, then
+`span {v_0, …, v_{j−1}} = 𝒦_j(B, v₁)` for `j ≤ k`. -/
+private theorem span_eq_subspace_of_threeTerm {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ)
+    (v : ℕ → Fin n → ℝ) (v₁ : Fin n → ℝ) (k : ℕ) (c c₁ c₂ c₃ : ℕ → ℝ)
+    (h0 : 0 < k → v 0 = c 0 • v₁ ∧ c 0 ≠ 0)
+    (hrel : ∀ a, a + 1 < k → B *ᵥ v a =
+      c₁ a • (if a = 0 then 0 else v (a - 1)) + c₂ a • v a + c₃ (a + 1) • v (a + 1))
+    (hne : ∀ a < k, c₃ a ≠ 0) :
+    ∀ j ≤ k, Submodule.span ℝ (Set.range fun i : Fin j =>
+        (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n))) =
+      Krylov.subspace (Matrix.toEuclideanLin B) (WithLp.toLp 2 v₁) j := by
+  set T := Matrix.toEuclideanLin B
+  set V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n)) := fun j =>
+    Submodule.span ℝ (Set.range fun i : Fin j => (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)))
+  have hmemV : ∀ {i j : ℕ}, i < j → (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)) ∈ V j :=
+    fun {i j} h => Submodule.subset_span ⟨⟨i, h⟩, rfl⟩
+  have hVmono : ∀ {a b : ℕ}, a ≤ b → V a ≤ V b := fun {a b} hab =>
+    Submodule.span_le.2 (by rintro _ ⟨l, rfl⟩; exact hmemV (by omega))
+  have hTv : ∀ a, a + 1 < k → T (WithLp.toLp 2 (v a)) =
+      c₁ a • WithLp.toLp 2 (if a = 0 then 0 else v (a - 1)) + c₂ a • WithLp.toLp 2 (v a) +
+        c₃ (a + 1) • WithLp.toLp 2 (v (a + 1)) := fun a ha => by
+    rw [Matrix.toEuclideanLin_toLp, hrel a ha]
+    simp only [WithLp.toLp_add, WithLp.toLp_smul]
+  -- each `v_i` lies in `𝒦_{i+1}`
+  have hle : ∀ i < k, (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)) ∈
+      Krylov.subspace T (WithLp.toLp 2 v₁) (i + 1) := by
+    intro i
+    induction i using Nat.strong_induction_on with
+    | _ i ih =>
+      intro hi
+      rcases i with _ | i
+      · rw [(h0 hi).1, WithLp.toLp_smul]
+        exact Submodule.smul_mem _ _ (Krylov.self_mem_subspace _ _ (Nat.succ_pos 0))
+      · have hA := hTv i (by omega)
+        have hvi : (WithLp.toLp 2 (v (i + 1)) : EuclideanSpace ℝ (Fin n)) =
+            (c₃ (i + 1))⁻¹ • (T (WithLp.toLp 2 (v i)) - c₁ i • WithLp.toLp 2
+              (if i = 0 then 0 else v (i - 1)) - c₂ i • WithLp.toLp 2 (v i)) := by
+          rw [hA, (by intro x y z; abel : ∀ x y z : EuclideanSpace ℝ (Fin n),
+            x + y + z - x - y = z), smul_smul, inv_mul_cancel₀ (hne (i + 1) hi), one_smul]
+        rw [hvi]
+        have hKi := ih i (by omega) (by omega)
+        refine Submodule.smul_mem _ _ (Submodule.sub_mem _ (Submodule.sub_mem _ ?_ ?_) ?_)
+        · exact Krylov.map_subspace_le T _ (i + 1) ⟨_, hKi, rfl⟩
+        · refine Submodule.smul_mem _ _ ?_
+          split_ifs with h
+          · simp
+          · exact Krylov.subspace_mono T _ (by omega) (ih (i - 1) (by omega) (by omega))
+        · exact Submodule.smul_mem _ _ (Krylov.subspace_mono T _ (by omega) hKi)
+  -- `T` maps `V (i+1)` into `V (i+2)` below `k`
+  have hmap : ∀ i, i + 1 < k → ∀ x ∈ V (i + 1), T x ∈ V (i + 2) := by
+    intro i hi x hx
+    refine Submodule.span_induction (fun y hy => ?_) (by simp) (fun y z _ _ hy hz => by
+      rw [map_add]; exact Submodule.add_mem _ hy hz) (fun a y _ hy => by
+      rw [map_smul]; exact Submodule.smul_mem _ a hy) hx
+    obtain ⟨l, rfl⟩ := hy
+    rw [hTv l (by omega)]
+    refine Submodule.add_mem _ (Submodule.add_mem _ (Submodule.smul_mem _ _ ?_)
+      (Submodule.smul_mem _ _ (hmemV (by omega)))) (Submodule.smul_mem _ _ (hmemV (by omega)))
+    split_ifs with h
+    · simp
+    · exact hmemV (by omega)
+  have hge : ∀ i < k, ((T ^ i) (WithLp.toLp 2 v₁) : EuclideanSpace ℝ (Fin n)) ∈ V (i + 1) := by
+    intro i
+    induction i with
+    | zero =>
+      intro hk
+      obtain ⟨hv0, hc0⟩ := h0 hk
+      have : (WithLp.toLp 2 v₁ : EuclideanSpace ℝ (Fin n)) = (c 0)⁻¹ • WithLp.toLp 2 (v 0) := by
+        rw [hv0, WithLp.toLp_smul, smul_smul, inv_mul_cancel₀ hc0, one_smul]
+      rw [pow_zero, Module.End.one_apply, this]
+      exact Submodule.smul_mem _ _ (hmemV (by omega))
+    | succ i ih =>
+      intro hi
+      rw [pow_succ', Module.End.mul_apply]
+      exact hmap i hi _ (ih (by omega))
+  intro j hj
+  apply le_antisymm
+  · rw [Submodule.span_le]
+    rintro _ ⟨i, rfl⟩
+    exact Krylov.subspace_mono T _ (by omega) (hle i (by omega))
+  · rw [Krylov.subspace, Submodule.span_le]
+    rintro _ ⟨i, rfl⟩
+    exact hVmono (by omega) (hge i (by omega))
+
+/-- **Exact semantics of (10.5.11)**: for any run (the loop stops at breakdown, so every executed
+pass had `r_k ≠ 0`, `r̃_k ≠ 0`, `r̃_kᵀ r_k ≠ 0`), with `k` passes, the computed families are
+biorthonormal, `Q̃_kᵀ Q_k = I_k`; they span the Krylov subspaces,
+`span {q_1, …, q_j} = 𝒦(A, q₁, j)` and `span {q̃_1, …, q̃_j} = 𝒦(Aᵀ, q̃₁, j)` for `j ≤ k`; and
+`Q̃_kᵀ A Q_k = T_k`, the tridiagonal matrix of the computed `α`, `β`, `γ`. Proved directly from the
+recurrences (10.5.12)–(10.5.13) (the book's derivation, whose normalization `β_k = ‖r_k‖₂` differs
+from the backbone `BiLanczos`'s `δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`). -/
+theorem equation_10_5_11 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
+    (fuel : ℕ) :
+    let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ fuel)
+    (unsymQt st st.k)ᵀ * unsymQ st st.k = 1 ∧
+      (∀ j ≤ st.k, Submodule.span ℝ (Set.range fun i : Fin j =>
+          (WithLp.toLp 2 (st.q i) : EuclideanSpace ℝ (Fin n))) =
+        Krylov.subspace (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁) j) ∧
+      (∀ j ≤ st.k, Submodule.span ℝ (Set.range fun i : Fin j =>
+          (WithLp.toLp 2 (st.qt i) : EuclideanSpace ℝ (Fin n))) =
+        Krylov.subspace (Matrix.toEuclideanLin Aᵀ) (WithLp.toLp 2 qt₁) j) ∧
+      (unsymQt st st.k)ᵀ * A * unsymQ st st.k = unsymTridiag st st.k := by
+  intro st
+  obtain ⟨I1, I2, -, I4, -, I6⟩ := unsym_biorth A q₁ qt₁ fuel
+  have hrel := (unsym_relations A q₁ qt₁ fuel).2
+  have hQQ : (unsymQt st st.k)ᵀ * unsymQ st st.k = 1 := by
+    ext a b
+    have := I1 a a.isLt b b.isLt
+    simp only [Matrix.mul_apply, Matrix.transpose_apply, unsymQt, unsymQ, Matrix.of_apply,
+      Matrix.one_apply, Fin.ext_iff]
+    exact this
+  refine ⟨hQQ, span_eq_subspace_of_threeTerm A st.q q₁ st.k (fun _ => (st.beta 0)⁻¹)
+    st.gamma st.alpha st.beta (fun hk => ⟨(I6 hk).1, inv_ne_zero (I4 0 hk).1⟩)
+    (fun a ha => by
+      have h := (hrel a (Nat.lt_of_succ_lt ha)).1
+      rwa [ite_eq_left ha] at h) (fun a ha => (I4 a ha).1),
+    span_eq_subspace_of_threeTerm Aᵀ st.qt qt₁ st.k (fun _ => (st.gamma 0)⁻¹)
+    st.beta st.alpha st.gamma (fun hk => ⟨(I6 hk).2, inv_ne_zero (I4 0 hk).2⟩)
+    (fun a ha => by
+      have h := (hrel a (Nat.lt_of_succ_lt ha)).2
+      rwa [ite_eq_left ha] at h) (fun a ha => (I4 a ha).2), ?_⟩
+  have h12 := equation_10_5_12 A q₁ qt₁ fuel
+  have hQr : (unsymQt st st.k)ᵀ *ᵥ st.r = 0 := by
+    ext a
+    have := I2 a a.isLt
+    simpa [Matrix.mulVec, dotProduct, unsymQt] using this
+  rw [Matrix.mul_assoc, h12, Matrix.mul_add, ← Matrix.mul_assoc, hQQ, Matrix.one_mul,
+    Matrix.mul_vecMulVec, hQr, Matrix.zero_vecMulVec, add_zero]
+
 
 /-- **Termination with an invariant subspace** (§10.5.5, after (10.5.13)): if `r_k = 0` then
 `span {q_1, …, q_k}` is `A`-invariant, and if `r̃_k = 0` then `span {q̃_1, …, q̃_k}` is

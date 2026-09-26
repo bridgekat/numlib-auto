@@ -70,18 +70,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.4)'
 
 [[node]]
 id = "equation_3_1_4"
-kind = "theorem"
-desc = '''(3.1.4) computes the block solution: for monotone `blk`, `L` lower triangular with nonzero
-diagonal, `L * Id.run (blockForwardElim pure blk L B) = B`. Route: the bridge "every run satisfies
-`FloatingPoint.RoundsForwardSubst fp L (B.col c) (X.col c)` for every column `c`" (row `i` receives
-its subtractions block by block, `j` in earlier blocks first and then `j < i` in its own block —
-all `j < i` by monotonicity, and `RoundsForwardSubst` allows any order), at the exact model with
-`FloatingPoint.roundsForwardSubst_exact_iff` and `Matrix.mulVec_forwardSubst` column by column
-(`Matrix.col`, `Matrix.mul_apply`) — convention 11. The bridge is a helper, not a node: the book
-states no rounding result for (3.1.4). ★★★ (~200 lines: two nested block loops)
-
-Blocked: effort (agent s03). The program `blockForwardElim` is written (with `forwardSubstColOn`, Algorithm 3.1.3 on an index list). The spec needs the bridge 'every run satisfies `FloatingPoint.RoundsForwardSubst` column by column' across the two nested block loops: row `i` of a later block receives its subtractions block by block, then within its own block; the column-loop invariant of Section01 (`roundsForwardSubst_of_mem_run_colSubst`) covers one diagonal block, the block saxpy needs a second invariant (~200 lines).'''
-deps = ["blockForwardElim", "algorithm_3_1_3_rounds", "FloatingPoint.RoundsForwardSubst", "FloatingPoint.roundsForwardSubst_exact_iff", "Matrix.mulVec_forwardSubst"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (3.1.4)'
 
 [[node]]

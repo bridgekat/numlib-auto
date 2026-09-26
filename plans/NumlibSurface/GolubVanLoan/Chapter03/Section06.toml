@@ -10,13 +10,8 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (3.6.5)'
 
 [[node]]
 id = "blockLUPivoting"
-kind = "theorem"
-desc = '''§3.6.1, the assembled pivoted block LU factorization: if moreover `P^{new} A^{new} = L^{new} U^{new}`
-and `P^{new} L₂₁ = L̃₂₁`, then `P A = [L₁₁ 0; L̃₂₁ L^{new}] [U₁₁ U₁₂; 0 U^{new}]` with
-`P = [I 0; 0 P^{new}] P₁` (`Matrix.fromBlocks` of the permutation matrices,
-`Equiv.Perm.sumCongr`); by induction on the number of block columns every square `A` (`n = N r`)
-has a pivoted factorization `P A = L U` built this way with `|l_ij| ≤ 1`. ★★ (~80 lines)
+source = 'Golub–Van Loan, Matrix Computations, §3.6.1'
 
-Blocked: effort (agent s03). The algebraic assembly is `equation_3_6_5` with `blockLU_of_schur` and the block permutation `[I 0; 0 P^{new}] P₁`; the induction on the number of block columns (every square `A` with `n = N r` has such a factorization with `|ℓ_ij| ≤ 1`, from `equation_3_6_2`) was not written (~80 lines).'''
-deps = ["equation_3_6_5", "blockLU_of_schur", "Matrix.IsLU"]
+[[node]]
+id = "exists_blockLUPivoting"
 source = 'Golub–Van Loan, Matrix Computations, §3.6.1'

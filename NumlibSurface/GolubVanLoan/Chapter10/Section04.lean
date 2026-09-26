@@ -1,3 +1,4 @@
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Krylov.Bidiagonalization
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
@@ -7,8 +8,8 @@ import NumlibSurface.GolubVanLoan.Chapter10.Section01
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.4:
 the upper bidiagonal form (10.4.1) and its column equations (10.4.2)–(10.4.7), the Golub–Kahan
 relations (10.4.9)–(10.4.12), Ritz approximations (10.4.13)–(10.4.15), the lower form (10.4.18)
-and the Paige–Saunders relation (10.4.19), and the deterministic identities of the CUR sketch
-(10.4.22)–(10.4.24).
+and the Paige–Saunders relation (10.4.19), the truncated SVD of the low-rank approximation
+problem (10.4.20), and the deterministic identities of the CUR sketch (10.4.22)–(10.4.24).
 
 ## Conventions
 
@@ -399,6 +400,86 @@ theorem equation_10_4_19 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (u : Eucli
           (Krylov.lastVec (1 : ℝ) k) := by
   have h := equation_10_4_10 Aᵀ u hk
   rwa [transpose_transpose] at h
+
+/-! ### Randomized low-rank approximation (§10.4.5) -/
+
+/-- `Z̃₁ Z̃₁ᵀ = U P_k Uᵀ` for the first `k` columns `Z̃₁ = U(:, 1:k)` of `U`, `P_k` the diagonal
+projector onto the first `k` coordinates. -/
+private theorem submatrix_castLE_mul_transpose {m k : ℕ} (hkm : k ≤ m)
+    (U : Matrix (Fin m) (Fin m) ℝ) :
+    U.submatrix id (Fin.castLE hkm) * (U.submatrix id (Fin.castLE hkm))ᵀ =
+      U * (rectDiagonal fun i => if i < k then (1 : ℝ) else 0) * Uᵀ := by
+  ext a b
+  simp only [mul_apply, submatrix_apply, id_eq, transpose_apply, rectDiagonal_apply]
+  set F : ℕ → ℝ := fun i => if h : i < m then U a ⟨i, h⟩ * U b ⟨i, h⟩ else 0 with hF
+  have h1 : ∀ j : Fin k, U a (Fin.castLE hkm j) * U b (Fin.castLE hkm j) = F j := fun j => by
+    have hj : (j : ℕ) < m := by omega
+    simp only [hF, hj, ↓reduceDIte]
+    rfl
+  have h2 : ∀ i : Fin m,
+      (∑ l : Fin m, U a l * (if (l : ℕ) = i then (if (l : ℕ) < k then (1 : ℝ) else 0) else 0)) *
+        U b i = (fun i : ℕ => if i < k then F i else 0) i := fun i => by
+    rw [Finset.sum_eq_single i (fun l _ hl => by rw [ite_eq_right (fun h => hl (Fin.ext h)),
+      mul_zero]) (fun h => absurd (Finset.mem_univ i) h)]
+    simp only [hF, i.isLt, ↓reduceDIte, ite_true]
+    split_ifs <;> ring
+  rw [Finset.sum_congr rfl fun j _ => h1 j, Finset.sum_congr rfl fun i _ => h2 i,
+    Fin.sum_univ_eq_sum_range F k,
+    Fin.sum_univ_eq_sum_range (fun i => if i < k then F i else 0) m, ← Finset.sum_filter]
+  congr 1
+  ext i
+  simp only [Finset.mem_range, Finset.mem_filter]
+  omega
+
+open scoped Matrix.Norms.L2Operator in
+/-- **(10.4.20)**: for an SVD `A = Z̃ Σ̃ Ỹᵀ` (`IsSVD A Z̃ σ Ỹ`) and `k ≤ rank A`, the truncation
+`Ã_k = Z̃₁ Σ̃₁ Ỹ₁ᵀ` (`Matrix.svdTruncation`, (2.4.3)) equals `Z̃₁ Z̃₁ᵀ A`, `Z̃₁ = Z̃(:, 1:k)`, has
+rank `k`, and is a closest matrix of rank at most `k` to `A` in the 2-norm (Eckart–Young,
+chapter 2's Theorem 2.4.8; the Frobenius half is `equation_10_4_20_frobenius`). Backbone
+`Matrix.rank_svdTruncation`, `Matrix.l2_opNorm_sub_svdTruncation` and
+`Matrix.isLeast_l2_opNorm_sub_of_rank_le` (chapter 2's §2.4 restatements are not yet written). -/
+theorem equation_10_4_20 {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
+    {k : ℕ} (hk : k ≤ A.rank) :
+    let Z₁ := U.submatrix id
+      (Fin.castLE (hk.trans ((rank_le_card_height A).trans_eq (Fintype.card_fin m))))
+    svdTruncation U σ V k = Z₁ * Z₁ᵀ * A ∧ (svdTruncation U σ V k).rank = k ∧
+      ∀ B : Matrix (Fin m) (Fin n) ℝ, B.rank ≤ k →
+        ‖A - svdTruncation U σ V k‖ ≤ ‖A - B‖ := by
+  intro Z₁
+  have hkm : k ≤ m := hk.trans ((rank_le_card_height A).trans_eq (Fintype.card_fin m))
+  refine ⟨?_, rank_svdTruncation h hk, fun B hB => ?_⟩
+  · have hUU : Uᵀ * U = 1 := by
+      have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
+      rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+    have hPR : (rectDiagonal fun i => if i < k then (1 : ℝ) else 0 : Matrix (Fin m) (Fin m) ℝ) *
+        (rectDiagonal fun i => ((σ i : ℝ) : ℝ) : Matrix (Fin m) (Fin n) ℝ) =
+          rectDiagonal fun i => if i < k then σ i else 0 := by
+      rw [rectDiagonal_mul_rectDiagonal]
+      congr 1
+      funext i
+      split_ifs <;> first | simp | omega
+    simp only [Z₁]
+    rw [submatrix_castLE_mul_transpose hkm]
+    conv_rhs => rw [h.eq_mul_mul_star]
+    simp only [Matrix.mul_assoc, RCLike.ofReal_real_eq_id, id]
+    rw [← Matrix.mul_assoc Uᵀ U, hUU, Matrix.one_mul, ← Matrix.mul_assoc _ _ (star V), hPR]
+    simp only [svdTruncation, Matrix.mul_assoc, RCLike.ofReal_real_eq_id, id]
+  · rw [l2_opNorm_sub_svdTruncation h k]
+    exact (isLeast_l2_opNorm_sub_of_rank_le A k).2 ⟨B, hB, rfl⟩
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(10.4.20), Frobenius half**: the truncation `Ã_k` of an SVD is a closest matrix of rank at
+most `k` to `A` in the Frobenius norm (the Eckart–Young–Mirsky remark after chapter 2's
+Theorem 2.4.8). Backbone `Matrix.frobenius_norm_sub_svdTruncation` and
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le`. -/
+theorem equation_10_4_20_frobenius {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
+    (k : ℕ) (B : Matrix (Fin m) (Fin n) ℝ) (hB : B.rank ≤ k) :
+    ‖A - svdTruncation U σ V k‖ ≤ ‖A - B‖ := by
+  rw [frobenius_norm_sub_svdTruncation h k]
+  have := (isLeast_frobenius_norm_sub_of_rank_le A k).2 ⟨B, hB, rfl⟩
+  simpa only [Fintype.card_fin] using this
 
 /-! ### The CUR identities (§10.4.5) -/
 

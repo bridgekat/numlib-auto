@@ -47,7 +47,8 @@ column versions are one loop over any sorted index list of any linear order
 
 * `algorithm_3_1_1` … `algorithm_3_1_4` with `_rounds` and `_spec`;
 * `equation_3_1_1`, `equation_3_1_2`, `algorithm_3_1_3_rounding`, `algorithm_3_1_4_rounding`;
-* `blockForwardElim`, the block forward elimination (3.1.4);
+* `blockForwardElim`, the block forward elimination (3.1.4), and `equation_3_1_4`, its exact
+  semantics (`L X = B`), through `forwardSubstColOn_exact`;
 * `nonsquareLower_tall`, `nonsquareLower_wide` (§3.1.6);
 * `triangular_inv`, `triangular_mul`, `unitTriangular_inv`, `unitTriangular_mul` (§3.1.7).
 
@@ -755,6 +756,368 @@ noncomputable def blockForwardElim {n N q : ℕ} (blk : Fin n → Fin N)
           pure (B.updateRow i (Function.update (B i) c v))) B) B) B) B
 
 end Block
+
+/-! ### The exact semantics of (3.1.4) -/
+
+section BlockExact
+
+/-- **A loop invariant for `List.foldl`**, indexed by the processed prefix. -/
+theorem foldl_prefix_induction {α σ : Type*} {l : List α} (f : σ → α → σ)
+    (I : List α → σ → Prop) {s₀ : σ} (h0 : I [] s₀)
+    (hstep : ∀ p x q, l = p ++ x :: q → ∀ s, I p s → I (p ++ [x]) (f s x)) :
+    I l (l.foldl f s₀) := by
+  suffices H : ∀ (r p : List α) (s : σ), p ++ r = l → I p s → I l (r.foldl f s) from
+    H l [] s₀ rfl h0
+  intro r
+  induction r with
+  | nil => rintro p s rfl hs; simpa using hs
+  | cons x r ih =>
+    rintro p s rfl hs
+    exact ih (p ++ [x]) (f s x) (by simp) (hstep p x r rfl s hs)
+
+/-- In exact arithmetic, a loop subtracting `b j · L(i,j)` from entry `i` for every listed `i`
+(which does not include `j`) subtracts once from each listed entry. -/
+private theorem foldl_saxpy_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
+    {c : List (Fin n)} (hc : c.Nodup) (hjc : j ∉ c) (b : Fin n → ℝ) (i : Fin n) :
+    c.foldl (fun (b : Fin n → ℝ) i => Function.update b i (b i - b j * L i j)) b i =
+      if i ∈ c then b i - b j * L i j else b i := by
+  induction c generalizing b with
+  | nil => simp
+  | cons a c ih =>
+    rcases List.nodup_cons.1 hc with ⟨ha, hc'⟩
+    have hja : j ≠ a := fun h => hjc (h ▸ List.mem_cons_self)
+    rw [List.foldl_cons, ih hc' (fun h => hjc (List.mem_cons_of_mem _ h)),
+      Function.update_of_ne hja]
+    by_cases hia : i = a
+    · subst hia
+      simp [ha]
+    · simp [hia]
+
+/-- **Column-oriented forward substitution on a sorted index list, in exact arithmetic**: the rows
+off the list keep their values, and every listed row `i` satisfies `∑_{j ∈ o} L(i,j) y(j) = b(i)`
+(for lower triangular `L` with nonzero diagonal on the list). -/
+theorem forwardSubstColOn_exact {n : ℕ} {o : List (Fin n)} (ho : o.Pairwise (· < ·))
+    {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i ∈ o, L i i ≠ 0)
+    (b : Fin n → ℝ) :
+    (∀ i, i ∉ o → Id.run (forwardSubstColOn pure o L b) i = b i) ∧
+      ∀ i ∈ o, (o.map fun j => L i j * Id.run (forwardSubstColOn pure o L b) j).sum = b i := by
+  have hprog : Id.run (forwardSubstColOn pure o L b) = o.foldl (fun (b : Fin n → ℝ) j =>
+      (o.filter (j < ·)).foldl (fun (b : Fin n → ℝ) i => Function.update b i (b i - b j * L i j))
+        (Function.update b j (b j / L j j))) b := by
+    simp only [forwardSubstColOn, List.idRun_foldlM, pure_bind, Id.run_pure]
+  rw [hprog]
+  have hnd : o.Nodup := ho.imp ne_of_lt
+  refine foldl_prefix_induction (l := o) _
+    (fun (p : List (Fin n)) (s : Fin n → ℝ) => (∀ i, i ∉ o → s i = b i) ∧
+      (∀ i ∈ p, (p.map fun j => L i j * s j).sum = b i) ∧
+      ∀ i ∈ o, i ∉ p → s i = b i - (p.map fun j => L i j * s j).sum)
+    ⟨fun _ _ => rfl, by simp, by simp⟩ ?_ |> fun h => ⟨h.1, h.2.1⟩
+  rintro p x q hpq s ⟨h₁, h₂, h₃⟩
+  rw [hpq] at ho hnd
+  have hpx : ∀ j ∈ p, j < x := fun j hj =>
+    (List.pairwise_append.1 ho).2.2 j hj x List.mem_cons_self
+  have hxq : ∀ j ∈ q, x < j := fun j hj =>
+    List.rel_of_pairwise_cons (List.pairwise_append.1 ho).2.1 hj
+  have hxo : x ∈ p ++ x :: q := List.mem_append.2 (Or.inr List.mem_cons_self)
+  have hxp : x ∉ p := fun h => lt_irrefl x (hpx x h)
+  set s₁ := Function.update s x (s x / L x x) with hs₁
+  have hs₂ : ∀ i, ((p ++ x :: q).filter (x < ·)).foldl
+      (fun (b : Fin n → ℝ) i => Function.update b i (b i - b x * L i x)) s₁ i =
+      if i ∈ p ++ x :: q ∧ x < i then s₁ i - s₁ x * L i x else s₁ i := fun i => by
+    rw [foldl_saxpy_apply L x (hnd.filter _) (by simp)]
+    simp only [List.mem_filter, decide_eq_true_eq]
+  simp only [hpq] at h₁ h₃ ⊢
+  have hx₂ : s₁ x = s x / L x x := by rw [hs₁, Function.update_self]
+  have hp₂ : ∀ j ∈ p, (if j ∈ p ++ x :: q ∧ x < j then s₁ j - s₁ x * L j x else s₁ j) = s j :=
+    fun j hj => by
+      rw [ite_eq_right fun h => lt_asymm h.2 (hpx j hj), hs₁,
+        Function.update_of_ne (ne_of_lt (hpx j hj))]
+  have hsum : ∀ i, (p.map fun j => L i j *
+      (if j ∈ p ++ x :: q ∧ x < j then s₁ j - s₁ x * L j x else s₁ j)).sum =
+      (p.map fun j => L i j * s j).sum := fun i => by
+    congr 1
+    exact List.map_congr_left fun j hj => by rw [hp₂ j hj]
+  have hxx : (if x ∈ p ++ x :: q ∧ x < x then s₁ x - s₁ x * L x x else s₁ x) = s x / L x x := by
+    rw [ite_eq_right fun h => lt_irrefl x h.2, hx₂]
+  refine ⟨fun i hi => ?_, fun i hi => ?_, fun i hi hip => ?_⟩
+  · rw [hs₂, ite_eq_right fun h => hi h.1, hs₁,
+      Function.update_of_ne (fun (h : i = x) => hi (h ▸ hxo))]
+    exact h₁ i hi
+  · simp only [hs₂, List.map_append, List.map_cons, List.map_nil, List.sum_append,
+      List.sum_cons, List.sum_nil, add_zero]
+    rw [hsum, hxx]
+    rcases List.mem_append.1 hi with hi | hi
+    · rw [hL (OrderDual.toDual_lt_toDual.2 (hpx i hi)), zero_mul, add_zero]
+      exact h₂ i hi
+    · rw [List.mem_singleton.1 hi, mul_div_cancel₀ _ (hd x (hpq ▸ hxo)),
+        h₃ x hxo hxp]
+      ring
+  · have hip' : i ∉ p := fun h => hip (List.mem_append_left _ h)
+    have hix : i ≠ x := fun h => hip (List.mem_append.2 (Or.inr (h ▸ List.mem_singleton_self x)))
+    have hiq : x < i := by
+      rcases List.mem_append.1 hi with h | h
+      · exact absurd h hip'
+      · rcases List.mem_cons.1 h with h | h
+        · exact absurd h hix
+        · exact hxq i h
+    simp only [hs₂, List.map_append, List.map_cons, List.map_nil, List.sum_append,
+      List.sum_cons, List.sum_nil, add_zero]
+    rw [hsum, hxx, ite_eq_left ⟨hi, hiq⟩, hx₂, hs₁, Function.update_of_ne hix, h₃ i hi hip']
+    ring
+
+
+/-- In exact arithmetic, a loop replacing column `c` by `f` of its current value, over a
+duplicate-free list of columns, replaces every listed column once. -/
+theorem foldl_updateCol_apply_of_col {n q : ℕ} (f : (Fin n → ℝ) → Fin n → ℝ)
+    {cs : List (Fin q)} (hcs : cs.Nodup) (B : Matrix (Fin n) (Fin q) ℝ) (i : Fin n) (c : Fin q) :
+    cs.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c)) B i c =
+      if c ∈ cs then f (fun i => B i c) i else B i c := by
+  induction cs generalizing B with
+  | nil => simp
+  | cons a cs ih =>
+    rcases List.nodup_cons.1 hcs with ⟨ha, hcs'⟩
+    rw [List.foldl_cons, ih hcs']
+    by_cases hca : c = a
+    · subst hca
+      simp [ha]
+    · have hcol : (fun i => B.updateCol a (f fun i => B i a) i c) = fun i => B i c := by
+        ext i; rw [updateCol_ne hca]
+      by_cases hc : c ∈ cs
+      · simp [hc, hcol]
+      · simp [hc, hca]
+
+/-- In exact arithmetic, the innermost loop of the block saxpy of (3.1.4): entry `(i,c)` receives
+`L(i,j) B(j,c)` subtracted for every listed `j` (rows off `i`), every other entry is kept. -/
+private theorem foldl_blockSaxpy_entry {n q : ℕ} (L : Matrix (Fin n) (Fin n) ℝ)
+    {o : List (Fin n)} {i : Fin n} (hi : i ∉ o) (c : Fin q) (B : Matrix (Fin n) (Fin q) ℝ)
+    (r : Fin n) (s : Fin q) :
+    o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+        B.updateRow i (Function.update (B i) c (B i c - L i j * B j c))) B r s =
+      if r = i ∧ s = c then B i c - (o.map fun j => L i j * B j c).sum else B r s := by
+  induction o generalizing B with
+  | nil =>
+    simp only [List.foldl_nil, List.map_nil, List.sum_nil, sub_zero]
+    split_ifs with h
+    · rw [h.1, h.2]
+    · rfl
+  | cons a o ih =>
+    rw [List.foldl_cons, ih (fun h => hi (List.mem_cons_of_mem _ h))]
+    have hB : ∀ j, j ≠ i →
+        (B.updateRow i (Function.update (B i) c (B i c - L i a * B a c))) j c = B j c :=
+      fun j hj => by rw [updateRow_ne hj]
+    have hmap : (o.map fun j => L i j *
+        (B.updateRow i (Function.update (B i) c (B i c - L i a * B a c))) j c) =
+        o.map fun j => L i j * B j c :=
+      List.map_congr_left fun j hj => by
+        rw [hB j fun h => hi (h ▸ List.mem_cons_of_mem _ hj)]
+    rw [hmap]
+    by_cases hr : r = i ∧ s = c
+    · simp only [hr, and_self, ↓reduceIte, updateRow_self, Function.update_self, List.map_cons,
+        List.sum_cons]
+      ring
+    · simp only [hr, ↓reduceIte, updateRow_apply]
+      split_ifs with h
+      · rw [h, Function.update_of_ne fun h' => hr ⟨h, h'⟩]
+      · rfl
+
+/-- The block saxpy of (3.1.4) for one row `i` over a duplicate-free list of columns. -/
+private theorem foldl_blockSaxpy_row {n q : ℕ} (L : Matrix (Fin n) (Fin n) ℝ)
+    {o : List (Fin n)} {i : Fin n} (hi : i ∉ o) {cs : List (Fin q)} (hcs : cs.Nodup)
+    (B : Matrix (Fin n) (Fin q) ℝ) (r : Fin n) (s : Fin q) :
+    cs.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) c =>
+        o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+          B.updateRow i (Function.update (B i) c (B i c - L i j * B j c))) B) B r s =
+      if r = i ∧ s ∈ cs then B i s - (o.map fun j => L i j * B j s).sum else B r s := by
+  induction cs generalizing B with
+  | nil => simp
+  | cons a cs ih =>
+    rcases List.nodup_cons.1 hcs with ⟨ha, hcs'⟩
+    rw [List.foldl_cons, ih hcs']
+    have hB := foldl_blockSaxpy_entry L hi a B
+    by_cases hsa : s = a
+    · subst hsa
+      simp [ha, hB]
+    · have hB' : ∀ r', o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+          B.updateRow i (Function.update (B i) a (B i a - L i j * B j a))) B r' s = B r' s :=
+        fun r' => by simp [hB, hsa]
+      simp only [hB', List.mem_cons, hsa, false_or]
+
+/-- The block saxpy `B_I = B_I - L_IJ X_J` of (3.1.4), in exact arithmetic: over a duplicate-free
+list of rows disjoint from the block `o`, every listed row `r` receives `∑_{j ∈ o} L(r,j) B(j,c)`
+subtracted in every column. -/
+private theorem foldl_blockSaxpy {n q : ℕ} (L : Matrix (Fin n) (Fin n) ℝ)
+    {o R : List (Fin n)} (hR : R.Nodup) (hRo : ∀ r ∈ R, r ∉ o) (B : Matrix (Fin n) (Fin q) ℝ)
+    (r : Fin n) (s : Fin q) :
+    R.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) i => (List.finRange q).foldl
+        (fun (B : Matrix (Fin n) (Fin q) ℝ) c => o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+          B.updateRow i (Function.update (B i) c (B i c - L i j * B j c))) B) B) B r s =
+      if r ∈ R then B r s - (o.map fun j => L r j * B j s).sum else B r s := by
+  induction R generalizing B with
+  | nil => simp
+  | cons a R ih =>
+    rcases List.nodup_cons.1 hR with ⟨ha, hR'⟩
+    rw [List.foldl_cons, ih hR' fun r hr => hRo r (List.mem_cons_of_mem _ hr)]
+    have hao : a ∉ o := hRo a List.mem_cons_self
+    have hB := foldl_blockSaxpy_row L hao (List.nodup_finRange q) B
+    by_cases hra : r = a
+    · subst hra
+      simp [ha, hB]
+    · have hB' : ∀ r', r' ≠ a → (List.finRange q).foldl
+          (fun (B : Matrix (Fin n) (Fin q) ℝ) c => o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+            B.updateRow a (Function.update (B a) c (B a c - L a j * B j c))) B) B r' s = B r' s :=
+        fun r' hr' => by simp [hB, hr']
+      have hmap : (o.map fun j => L r j * ((List.finRange q).foldl
+          (fun (B : Matrix (Fin n) (Fin q) ℝ) c => o.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) j =>
+            B.updateRow a (Function.update (B a) c (B a c - L a j * B j c))) B) B) j s) =
+          o.map fun j => L r j * B j s :=
+        List.map_congr_left fun j hj => by rw [hB' j fun h => hao (h ▸ hj)]
+      rw [hmap, hB' r hra]
+      simp only [List.mem_cons, hra, false_or]
+
+/-- A sum over a filtered `List.finRange` is a sum over the filtered `Finset.univ`, written with an
+indicator. -/
+private theorem sum_map_filter_finRange {n : ℕ} (P : Fin n → Prop) [DecidablePred P]
+    (f : Fin n → ℝ) :
+    (((List.finRange n).filter fun k => decide (P k)).map f).sum =
+      ∑ k, if P k then f k else 0 := by
+  rw [Fin.sum_univ_def]
+  induction (List.finRange n) with
+  | nil => simp
+  | cons a l ih => by_cases h : P a <;> simp [h, ih]
+
+/-- **(3.1.4) computes the block solution**: for a monotone block labelling `blk` (contiguous
+blocks) and lower triangular `L` with nonzero diagonal, the exact run of the block forward
+elimination solves `L X = B`. Invariant after the blocks of a prefix `p`: the rows of those blocks
+are finished (`∑_{blk j ∈ p} L(i,j) X(j,c) = B(i,c)`), every later row holds `B(i,c)` minus the
+contributions of the finished rows. -/
+theorem equation_3_1_4 {n N q : ℕ} {blk : Fin n → Fin N} (hblk : Monotone blk)
+    {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0)
+    (B : Matrix (Fin n) (Fin q) ℝ) : L * Id.run (blockForwardElim pure blk L B) = B := by
+  set o : Fin N → List (Fin n) := fun J => (List.finRange n).filter (blk · = J) with ho
+  set R : Fin N → List (Fin n) := fun J => (List.finRange n).filter (J < blk ·) with hR
+  set Y : Fin N → (Fin n → ℝ) → Fin n → ℝ :=
+    fun J v => Id.run (forwardSubstColOn pure (o J) L v) with hY
+  set F : Matrix (Fin n) (Fin q) ℝ → Fin N → Matrix (Fin n) (Fin q) ℝ :=
+    fun (S : Matrix (Fin n) (Fin q) ℝ) J => (R J).foldl
+        (fun (S : Matrix (Fin n) (Fin q) ℝ) i => (List.finRange q).foldl
+          (fun (S : Matrix (Fin n) (Fin q) ℝ) c => (o J).foldl
+            (fun (S : Matrix (Fin n) (Fin q) ℝ) j =>
+              S.updateRow i (Function.update (S i) c (S i c - L i j * S j c))) S) S)
+        ((List.finRange q).foldl (fun (S : Matrix (Fin n) (Fin q) ℝ) c =>
+          S.updateCol c (Y J fun i => S i c)) S) with hF
+  have hprog : Id.run (blockForwardElim pure blk L B) = (List.finRange N).foldl F B := by
+    simp only [blockForwardElim, List.idRun_foldlM, Id.run_bind, Id.run_pure, pure_bind, ho, hR,
+      hY, hF]
+  have hsorted : ∀ J, (o J).Pairwise (· < ·) := fun J =>
+    ((List.sortedLT_finRange n).pairwise).filter _
+  have hmemo : ∀ J j, j ∈ o J ↔ blk j = J := fun J j => by simp [ho]
+  have hmemR : ∀ J j, j ∈ R J ↔ J < blk j := fun J j => by simp [hR]
+  have hsplit : ∀ (p : List (Fin N)) (x : Fin N), x ∉ p → ∀ g : Fin n → ℝ,
+      (∑ j, if blk j ∈ p ++ [x] then g j else 0) =
+        (∑ j, if blk j ∈ p then g j else 0) + ∑ j, if blk j = x then g j else 0 := by
+    intro p x hx g
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    by_cases hp : blk j ∈ p
+    · have hjx : blk j ≠ x := fun h => hx (h ▸ hp)
+      simp [hp, hjx]
+    · by_cases hjx : blk j = x <;> simp [hp, hjx, hx]
+  rw [hprog]
+  have key := foldl_prefix_induction (l := List.finRange N) (s₀ := B) F
+    (fun (p : List (Fin N)) (S : Matrix (Fin n) (Fin q) ℝ) => ∀ i c,
+      (blk i ∈ p → (∑ j, if blk j ∈ p then L i j * S j c else 0) = B i c) ∧
+      (blk i ∉ p → S i c = B i c - ∑ j, if blk j ∈ p then L i j * S j c else 0))
+    (fun i c => ⟨fun h => absurd h List.not_mem_nil, fun _ => by simp⟩) ?_
+  · ext i c
+    have := (key i c).1 (List.mem_finRange _)
+    simpa [List.mem_finRange, mul_apply] using this
+  rintro p x qs hpq S hI
+  simp only [hF]
+  have hpx : ∀ J ∈ p, J < x := fun J hJ =>
+    (List.pairwise_append.1 (hpq ▸ (List.sortedLT_finRange N).pairwise)).2.2 J hJ x
+      List.mem_cons_self
+  have hxq : ∀ J ∈ qs, x < J := fun J hJ =>
+    List.rel_of_pairwise_cons
+      (List.pairwise_append.1 (hpq ▸ (List.sortedLT_finRange N).pairwise)).2.1 hJ
+  have hxp : x ∉ p := fun h => lt_irrefl x (hpx x h)
+  have hlater : ∀ J, J ∉ p → J ≠ x → x < J := fun J hJp hJx => by
+    have hJ : J ∈ p ++ x :: qs := hpq ▸ List.mem_finRange J
+    rcases List.mem_append.1 hJ with h | h
+    · exact absurd h hJp
+    · rcases List.mem_cons.1 h with h | h
+      · exact absurd h hJx
+      · exact hxq J h
+  set S₁ := (List.finRange q).foldl (fun (S : Matrix (Fin n) (Fin q) ℝ) c =>
+    S.updateCol c (Y x fun i => S i c)) S with hS₁def
+  have hS₁ : ∀ i c, S₁ i c = Y x (fun i => S i c) i := fun i c => by
+    rw [hS₁def, foldl_updateCol_apply_of_col (Y x) (List.nodup_finRange q),
+      ite_eq_left (List.mem_finRange c)]
+  have hS₂ : ∀ i c, (R x).foldl
+        (fun (S : Matrix (Fin n) (Fin q) ℝ) i => (List.finRange q).foldl
+          (fun (S : Matrix (Fin n) (Fin q) ℝ) c => (o x).foldl
+            (fun (S : Matrix (Fin n) (Fin q) ℝ) j =>
+              S.updateRow i (Function.update (S i) c (S i c - L i j * S j c))) S) S) S₁ i c =
+      if x < blk i then S₁ i c - ((o x).map fun j => L i j * S₁ j c).sum else S₁ i c :=
+    fun i c => by
+      rw [foldl_blockSaxpy L ((List.nodup_finRange n).filter _) (fun r hr hro =>
+        lt_irrefl x (((hmemo x r).1 hro) ▸ (hmemR x r).1 hr)), if_congr (hmemR x i) rfl rfl]
+  have hA : ∀ c, (∀ i, i ∉ o x → Y x (fun i => S i c) i = S i c) ∧
+      ∀ i ∈ o x, ((o x).map fun j => L i j * Y x (fun i => S i c) j).sum = S i c :=
+    fun c => forwardSubstColOn_exact (hsorted x) hL (fun i _ => hd i) _
+  have hmapY : ∀ i c, ((o x).map fun j => L i j * S₁ j c).sum =
+      ∑ j, if blk j = x then L i j * Y x (fun i => S i c) j else 0 := fun i c => by
+    rw [ho, List.map_congr_left fun j _ => by rw [hS₁ j c]]
+    exact sum_map_filter_finRange (fun j => blk j = x) _
+  -- values of the new state on the finished rows and on the new block
+  have hold : ∀ j c, blk j ∈ p → (if x < blk j then S₁ j c -
+      ((o x).map fun k => L j k * S₁ k c).sum else S₁ j c) = S j c := fun j c hj => by
+    rw [ite_eq_right (lt_asymm (hpx _ hj)), hS₁, (hA c).1 j fun h => hxp ((hmemo x j).1 h ▸ hj)]
+  have hnew : ∀ j c, blk j = x → (if x < blk j then S₁ j c -
+      ((o x).map fun k => L j k * S₁ k c).sum else S₁ j c) = Y x (fun i => S i c) j :=
+    fun j c hj => by rw [ite_eq_right (hj ▸ lt_irrefl x), hS₁]
+  have hsum_old : ∀ i c, (∑ j, if blk j ∈ p then L i j * (if x < blk j then S₁ j c -
+      ((o x).map fun k => L j k * S₁ k c).sum else S₁ j c) else 0) =
+      ∑ j, if blk j ∈ p then L i j * S j c else 0 := fun i c =>
+    Finset.sum_congr rfl fun j _ => by
+      by_cases hj : blk j ∈ p
+      · rw [ite_eq_left hj, ite_eq_left hj, hold j c hj]
+      · rw [ite_eq_right hj, ite_eq_right hj]
+  have hsum_new : ∀ i c, (∑ j, if blk j = x then L i j * (if x < blk j then S₁ j c -
+      ((o x).map fun k => L j k * S₁ k c).sum else S₁ j c) else 0) =
+      ∑ j, if blk j = x then L i j * Y x (fun i => S i c) j else 0 := fun i c =>
+    Finset.sum_congr rfl fun j _ => by
+      by_cases hj : blk j = x
+      · rw [ite_eq_left hj, ite_eq_left hj, hnew j c hj]
+      · rw [ite_eq_right hj, ite_eq_right hj]
+  intro i c
+  simp only [hS₂]
+  rw [hsplit p x hxp, hsum_old, hsum_new]
+  refine ⟨fun hi => ?_, fun hi => ?_⟩
+  · rcases List.mem_append.1 hi with hi | hi
+    · have hzero : (∑ j, if blk j = x then L i j * Y x (fun i => S i c) j else 0) = 0 :=
+        Finset.sum_eq_zero fun j _ => by
+          split_ifs with hj
+          · have hij : i < j := lt_of_not_ge fun h => by
+              have h' := hblk h
+              rw [hj] at h'
+              exact absurd h' (not_le.2 (hpx _ hi))
+            rw [hL (OrderDual.toDual_lt_toDual.2 hij), zero_mul]
+          · rfl
+      rw [hzero, add_zero]
+      exact (hI i c).1 hi
+    · have hix : blk i = x := List.mem_singleton.1 hi
+      have hsumY : (∑ j, if blk j = x then L i j * Y x (fun i => S i c) j else 0) =
+          ((o x).map fun j => L i j * Y x (fun i => S i c) j).sum :=
+        (sum_map_filter_finRange (fun j => blk j = x) _).symm
+      rw [hsumY, (hA c).2 i ((hmemo x i).2 hix), (hI i c).2 (hix ▸ hxp)]
+      ring
+  · have hip : blk i ∉ p := fun h => hi (List.mem_append_left _ h)
+    have hix : blk i ≠ x := fun h => hi (List.mem_append_right _ (h ▸ List.mem_singleton_self _))
+    rw [ite_eq_left (hlater _ hip hix), hmapY, hS₁, (hA c).1 i fun h => hix ((hmemo x i).1 h),
+      (hI i c).2 hip]
+    ring
+
+end BlockExact
 
 /-! ### Nonsquare triangular systems (§3.1.6) -/
 

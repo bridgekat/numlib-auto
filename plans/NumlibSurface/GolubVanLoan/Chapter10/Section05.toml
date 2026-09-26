@@ -30,29 +30,10 @@ source = 'Golub–Van Loan, Matrix Computations, §10.5.1, Ritz pairs and backwa
 
 [[node]]
 id = "shiftedQrSteps"
-kind = "definition"
-desc = '''(10.5.4), `p` steps of the shifted QR iteration on an upper Hessenberg `H_c ∈ ℝ^{m×m}` with shifts `μ_1, …, μ_p`, as a
-D4 program: `H^{(0)} = H_c`; for `i = 1 : p` (the book prints `i = 0 : p`), form `H^{(i−1)} − μ_i I`, factor it
-`V_i R_i` by Givens rotations (chapter 5's Algorithm 5.2.5, which returns the rotation pairs of its
-Algorithm 5.1.3 calls; `V_i = G_1 ⋯ G_{m−1}` formed from them with chapter 5's rotation matrix
-`GolubVanLoan.Chapter05.givensRotation`), `H^{(i)} = R_i V_i + μ_i I`; accumulate `V = V_1 ⋯ V_p`.
-Returns `H₊ = H^{(p)}`, the `V_i`, `R_i` and `V`. ★★
-
-Blocked: calls chapter 5's Algorithm 5.2.5 (Givens QR of a Hessenberg matrix) and `givensRotation`, whose surface module is not on main (2026-09-26). The statements about shifted QR chains (`theorem_10_5_1`, `equation_10_5_6`, `filter_firstColumn`, `equation_10_5_9`, `restart_firstColumn_eq`, `implicitRestart_isArnoldiDecomposition`) are proved for every chain with the properties the program's run has.'''
-deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.algorithm_5_2_5", "GolubVanLoan.Chapter05.givensRotation"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.4)'
 
 [[node]]
 id = "equation_10_5_4"
-kind = "theorem"
-desc = '''Exact semantics of (10.5.4): the run's `H^{(i)}`, `V_i`, `R_i` form a `Matrix.IsShiftedQrChain` with every `V_i` orthogonal and
-upper Hessenberg and every `R_i` upper triangular (so every `H^{(i)}` is upper Hessenberg, the book's "recall from
-§7.4.2"). From chapter 5's `algorithm_5_2_5_spec` (Hessenberg QR by Givens rotations, `Q` upper Hessenberg, no
-nonsingularity hypothesis — the backbone's `Matrix.hessenbergGivensQR_spec` up to signs) and
-`Matrix.IsShiftedQrChain.isUpperHessenberg`. ★★
-
-Blocked: needs `shiftedQrSteps` (chapter 5's Givens QR, not on main).'''
-deps = ["shiftedQrSteps", "Matrix.IsShiftedQrChain", "Matrix.IsShiftedQrChain.isUpperHessenberg", "Matrix.exists_isShiftedQrChain", "GolubVanLoan.Chapter05.algorithm_5_2_5_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.4)'
 
 [[node]]
@@ -77,26 +58,10 @@ source = 'Golub–Van Loan, Matrix Computations, §10.5.3, the restarted startin
 
 [[node]]
 id = "explicitlyRestartedArnoldi"
-kind = "definition"
-desc = '''(10.5.10), explicitly restarted Arnoldi as a D4 program: `cycles` repetitions of — `m` steps of Algorithm 10.5.1 from `q₁`
-(giving `Q_c`, `H_c`), filter values `μ_1, …, μ_p := shifts H_c` for a caller-supplied function
-`shifts : Matrix (Fin m) (Fin m) ℝ → Fin p → ℝ` (the book leaves the choice to heuristics), `p` steps of
-(10.5.4) on `H_c`, `q₁ := (Q_c V)(:, 1)`. ★
-
-Blocked: needs `shiftedQrSteps` (chapter 5's Givens QR, not on main).'''
-deps = ["algorithm_10_5_1", "shiftedQrSteps"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.10)'
 
 [[node]]
 id = "equation_10_5_10"
-kind = "theorem"
-desc = '''Exact semantics of (10.5.10): after each cycle the new starting vector is a unit vector, a nonzero multiple of
-`p_ℓ(A) q₁^{(ℓ)}` whenever `R_{ℓ}(1,1) ≠ 0`, with `p_ℓ` the cycle's filter polynomial; hence after `L` cycles
-`q₁^{(L)} ∈ span {p_{L−1}(A) ⋯ p_0(A) q₁}`. From `algorithm_10_5_1_spec`, `equation_10_5_4`,
-`restart_firstColumn_eq`, before breakdown (`m ≤ grade` in every cycle). ★★
-
-Blocked: needs `explicitlyRestartedArnoldi`.'''
-deps = ["explicitlyRestartedArnoldi", "algorithm_10_5_1_spec", "equation_10_5_4", "restart_firstColumn_eq"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.10)'
 
 [[node]]
@@ -105,33 +70,10 @@ source = 'Golub–Van Loan, Matrix Computations, §10.5.3, the truncated Arnoldi
 
 [[node]]
 id = "implicitlyRestartedArnoldi"
-kind = "definition"
-desc = '''§10.5.3, the modified framework (the second displayed loop, unnumbered): `m` Arnoldi steps from `q₁`, then `cycles` repetitions
-of — choose `μ_1, …, μ_p` (caller-supplied `shifts`), (10.5.4) on `H_c`, replace `Q_c` by `(Q_c V)(:, 1:j)`, `H_c` by
-`H₊(1:j, 1:j)`, `r_c` by the residual of `implicitRestart_isArnoldiDecomposition` (the corrected one), then Arnoldi
-steps `j+1, …, m` continuing from that decomposition (Algorithm 10.5.1's loop body started from a state). A D4
-program; `noncomputable def`. ★★
-
-Blocked: needs `shiftedQrSteps` (chapter 5's Givens QR, not on main).'''
-deps = ["algorithm_10_5_1", "shiftedQrSteps"]
 source = 'Golub–Van Loan, Matrix Computations, §10.5.3, implicitly restarted Arnoldi'
 
 [[node]]
 id = "implicitlyRestartedArnoldi_spec"
-kind = "theorem"
-desc = '''Exact semantics: after every cycle the state is an `m`-step Arnoldi decomposition of `A` (while no breakdown occurs) whose first
-column is the unit vector in the direction of `p_ℓ(A)` applied to the previous first column — i.e. the same
-subspaces as explicit restarting (10.5.10) with the same shifts, obtained without restarting from step 1.
-`implicitRestart_isArnoldiDecomposition`, `restart_firstColumn_eq`, the uniqueness
-`Matrix.IsArnoldiDecomposition.eq_basisMatrix` (the continued steps are the Arnoldi process of `q₊`, by
-`Matrix.IsArnoldiDecomposition.range_eq_subspace` when `H₊(1:j,1:j)` is unreduced), and `algorithm_10_5_1_spec`.
-Index translation as in `implicitRestart_isArnoldiDecomposition` (the backbone's decompositions have `k + 1`
-columns). The uniqueness is now a corollary of the implicit Q engine `Matrix.IsArnoldiDecomposition.implicitQ`
-(`Numlib/LinearAlgebra/Matrix/KrylovDecomposition`), so the surface proof is bookkeeping of the loop. ★★
-(~200 lines)
-
-Blocked: needs `implicitlyRestartedArnoldi`; the mathematical content (truncation, first column, Arnoldi uniqueness) is proved in `implicitRestart_isArnoldiDecomposition`, `restart_firstColumn_eq` and the backbone `Matrix.IsArnoldiDecomposition.eq_basisMatrix`. Estimate ~200 lines of loop bookkeeping.'''
-deps = ["implicitlyRestartedArnoldi", "implicitRestart_isArnoldiDecomposition", "restart_firstColumn_eq", "Matrix.IsArnoldiDecomposition.eq_basisMatrix", "Matrix.IsArnoldiDecomposition.range_eq_subspace", "algorithm_10_5_1_spec", "equation_10_5_10"]
 source = 'Golub–Van Loan, Matrix Computations, §10.5.3, implicitly restarted Arnoldi'
 
 [[node]]
@@ -144,17 +86,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.11)'
 
 [[node]]
 id = "equation_10_5_11"
-kind = "theorem"
-desc = '''Exact semantics of (10.5.11), against the backbone's two-sided Lanczos (whose normalization is Saad's
-`δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`): as long as the loop runs (no breakdown, `k` passes), the computed families are
-biorthonormal (`Q̃_kᵀ Q_k = I_k`), `span {q_1..q_j} = 𝒦(A, q₁, j)`, `span {q̃_1..q̃_j} = 𝒦(Aᵀ, q̃₁, j)`, and
-`Q̃_kᵀ A Q_k = T_k` (tridiagonal with `α`, `β` below, `γ` above). Proof: each `q_j` is a nonzero multiple `c_j` of
-`BiLanczos.vec A Aᵀ q₁ (q̃₁/(q̃₁ᵀq₁)) (j−1)` and each `q̃_j` the multiple `1/c̄_j` of `BiLanczos.dualVec` (induction on
-the recurrences, the scalars being fixed by the two normalizations), then `BiLanczos.inner_dualVec_vec`,
-`BiLanczos.span_vec`, `BiLanczos.span_dualVec`, `BiLanczos.inner_dualVec_apply_vec`. ★★★ (~300 lines)
-
-Blocked (effort): the program `unsymmetricLanczos`, its recurrences (10.5.12)–(10.5.13) and the invariant-subspace claim are proved (`equation_10_5_12`, `equation_10_5_13`, `unsymmetricLanczos_invariant`). What remains is the identification of the computed families with the backbone `BiLanczos.vec`/`dualVec` up to the scalars fixed by the two normalizations (the backbone uses Saad's `δ_{j+1} = |⟪ŵ, v̂⟫|^{1/2}`), then biorthonormality and the Krylov spans from `BiLanczos.inner_dualVec_vec`, `BiLanczos.span_vec`, `BiLanczos.span_dualVec`. Estimate ~300 lines.'''
-deps = ["unsymmetricLanczos", "BiLanczos.vec", "BiLanczos.dualVec", "BiLanczos.inner_dualVec_vec", "BiLanczos.span_vec", "BiLanczos.span_dualVec", "BiLanczos.inner_dualVec_apply_vec", "BiLanczos.NoBreakdown"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.11)'
 
 [[node]]
@@ -177,3 +108,15 @@ source = 'Golub–Van Loan, Matrix Computations, §10.5.5, Definition'
 id = "equation_10_5_16"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.16)'
+
+[[node]]
+id = "algorithm_10_5_1_matrices"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 10.5.1'
+
+[[node]]
+id = "explicitRestartCycle_spec"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.5.10)'
+
+[[node]]
+id = "implicitRestartCycle_spec"
+source = 'Golub–Van Loan, Matrix Computations, §10.5.3, implicitly restarted Arnoldi'

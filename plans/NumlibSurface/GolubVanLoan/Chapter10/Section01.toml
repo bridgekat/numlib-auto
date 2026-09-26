@@ -42,17 +42,6 @@ source = 'Golub–Van Loan, Matrix Computations, §10.1.4, rank-one modification
 
 [[node]]
 id = "golub_rankOne_bracket"
-kind = "theorem"
-desc = '''§10.1.4 ("Using Theorem 8.1.8, it can be shown …"): with `1 + τ a b = 0` and `k ≤ grade` (so `T̃_k` is unreduced
-and its eigenvalues are distinct), for `i = 2 : k` the interval `[λ_i(T̃_k), λ_{i−1}(T̃_k)]` contains an
-eigenvalue of `A`. The eigenvalues of `T̃_k` are `k` distinct eigenvalues of `A + E = A + τ w wᵀ`
-(`golub_rankOne_modification`); between two eigenvalues of `A + τ w wᵀ` lies an eigenvalue of `A` by the
-rank-one interlacing of Theorem 8.1.8 (applied to `A = (A + E) − τ w wᵀ` with `c = w/‖w‖`). Also the
-determinant formula `det(T̃_k − λI) = (α_k + τ a² − λ) p_{k−1}(λ) − β_{k−1}² p_{k−2}(λ)` (Laplace expansion
-along the last row, as in the Sturm module). ★★
-
-Blocked: needs chapter 8's `GolubVanLoan.Chapter08.theorem_8_1_8` (rank-one interlacing), whose surface module is not on main (2026-09-26). `golub_rankOne_modification` (proved) supplies the eigenvalues of `T̃_k` as eigenvalues of `A + E`; what remains is the interlacing step and the distinctness of the eigenvalues of the unreduced `T̃_k`. Estimate ~80 lines once chapter 8 lands (or via the backbone `Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace` after diagonalizing `A`).'''
-deps = ["golub_rankOne_modification", "GolubVanLoan.Chapter08.theorem_8_1_8"]
 source = 'Golub–Van Loan, Matrix Computations, §10.1.4, rank-one modification'
 
 [[node]]

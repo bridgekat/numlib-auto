@@ -699,14 +699,99 @@ theorem lanczos_gaussRule {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag hA.isSymmetric_toEuclideanLin u
       hk0 hk]
 
+/-- The eigenvector `[x; −1]` of the Gauss–Radau matrix: `T̃ [x; −1] = a [x; −1]` with
+`x = β_k (T_k − a I)⁻¹ e_k` (`x` empty for `k = 0`). The backbone's
+`Lanczos.radauTridiag_hasEigenvalue` builds this vector inside its proof but exports only the
+spectral membership; this is its computation, kept local (a candidate for the backbone). -/
+private theorem radauTridiag_mulVec_snoc {A : Matrix (Fin n) (Fin n) ℝ}
+    (u : EuclideanSpace ℝ (Fin n)) (k : ℕ) {a : ℝ}
+    (ha : IsUnit (Lanczos.tridiag (toEuclideanLin A) u k - a • 1).det) :
+    ∃ x : Fin k → ℝ, Lanczos.radauTridiag (toEuclideanLin A) u k a *ᵥ
+        (Fin.snoc x (-1) : Fin (k + 1) → ℝ) = a • (Fin.snoc x (-1) : Fin (k + 1) → ℝ) := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine ⟨Fin.elim0, ?_⟩
+    ext i
+    fin_cases i
+    simp [Lanczos.radauTridiag, Lanczos.radauCorrection, Matrix.mulVec, dotProduct]
+  set T := Lanczos.tridiag (toEuclideanLin A) u k
+  set R := (T - a • 1)⁻¹
+  set β := Lanczos.beta (toEuclideanLin A) u (k - 1)
+  have hTRm : T * R = 1 + a • R := by
+    have h := Matrix.mul_nonsing_inv _ ha
+    rw [Matrix.sub_mul, Matrix.smul_mul, Matrix.one_mul] at h
+    rw [← h]
+    abel
+  have hTR : ∀ i j, ∑ l, T i l * R l j = (if i = j then 1 else 0) + a * R i j := by
+    intro i j
+    have h := congrFun (congrFun hTRm i) j
+    rw [Matrix.mul_apply, Matrix.add_apply, Matrix.one_apply, Matrix.smul_apply,
+      smul_eq_mul] at h
+    exact h
+  refine ⟨fun i => β * R i ⟨k - 1, by omega⟩, ?_⟩
+  ext i
+  refine Fin.lastCases ?_ (fun i => ?_) i
+  · have hrow : ∀ j : Fin k,
+        Lanczos.radauTridiag (toEuclideanLin A) u k a (Fin.last k) j.castSucc =
+        if (j : ℕ) + 1 = k then Lanczos.beta (toEuclideanLin A) u j else 0 := by
+      intro j
+      rw [Lanczos.radauTridiag_apply_of_ne _ _ _ _ fun h => absurd h.2 (Fin.castSucc_ne_last j),
+        Lanczos.tridiag_apply]
+      simp only [Fin.val_last, Fin.val_castSucc]
+      rw [ite_eq_right (by omega), ite_eq_right (by omega)]
+    have hll : Lanczos.radauTridiag (toEuclideanLin A) u k a (Fin.last k) (Fin.last k) =
+        a + β ^ 2 * R ⟨k - 1, by omega⟩ ⟨k - 1, by omega⟩ := by
+      simp only [Lanczos.radauTridiag, Matrix.of_apply, and_self, ↓reduceIte,
+        Lanczos.radauCorrection, hk, ↓reduceDIte]
+      rfl
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, Fin.snoc_last, Fin.snoc_castSucc,
+      hrow, hll, Pi.smul_apply, smul_eq_mul]
+    rw [Finset.sum_eq_single ⟨k - 1, by omega⟩]
+    · rw [ite_eq_left (by simp; omega)]
+      ring
+    · intro j _ hj
+      rw [ite_eq_right fun h => hj (Fin.ext (by simp; omega)), zero_mul]
+    · simp
+  · have hcol :
+        Lanczos.radauTridiag (toEuclideanLin A) u k a i.castSucc (Fin.last k) =
+        if (i : ℕ) + 1 = k then Lanczos.beta (toEuclideanLin A) u i else 0 := by
+      rw [Lanczos.radauTridiag_apply_of_ne _ _ _ _ fun h => absurd h.1 (Fin.castSucc_ne_last i),
+        Lanczos.tridiag_apply]
+      simp only [Fin.val_last, Fin.val_castSucc]
+      rw [ite_eq_right (by omega)]
+      by_cases h : (i : ℕ) + 1 = k
+      · rw [ite_eq_left h, ite_eq_left h]
+      · rw [ite_eq_right h, ite_eq_right h, ite_eq_right (by omega)]
+    have hin : ∀ j : Fin k,
+        Lanczos.radauTridiag (toEuclideanLin A) u k a i.castSucc j.castSucc = T i j := fun j => by
+      rw [Lanczos.radauTridiag_apply_of_ne _ _ _ _ fun h => absurd h.1 (Fin.castSucc_ne_last i)]
+      rfl
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, Fin.snoc_last, Fin.snoc_castSucc,
+      hcol, hin, Pi.smul_apply, smul_eq_mul]
+    have hs : ∑ j, T i j * (β * R j ⟨k - 1, by omega⟩) =
+        β * ((if i = ⟨k - 1, by omega⟩ then 1 else 0) + a * R i ⟨k - 1, by omega⟩) := by
+      rw [← hTR, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun j _ => by ring
+    rw [hs]
+    by_cases h : (i : ℕ) + 1 = k
+    · have hi : i = ⟨k - 1, by omega⟩ := Fin.ext (by simp; omega)
+      rw [ite_eq_left h, ite_eq_left hi, hi]
+      ring
+    · have hi : i ≠ ⟨k - 1, by omega⟩ := fun h' => h (by rw [h']; simp; omega)
+      rw [ite_eq_right h, ite_eq_right hi]
+      ring
+
 /-- **The Gauss–Radau modification** (§10.2.5): with `T̃_{k+1}` equal to `T_{k+1}` except `α̃_{k+1}
 = a + β_k² e_kᵀ (T_k − a I)⁻¹ e_k` (the book prints `β_{k+1}²`, and its displayed `T̃_{k+1}` omits
-`β_k` above the diagonal), `a` is an eigenvalue of `T̃_{k+1}` whenever `T_k − a I` is nonsingular.
-Backbone `Lanczos.radauTridiag_hasEigenvalue`. -/
+`β_k` above the diagonal), `a` is an eigenvalue of `T̃_{k+1}` whenever `T_k − a I` is nonsingular,
+with the eigenvector of the book's derivation: `T̃_{k+1} [x; −1] = a [x; −1]` for some `x ∈ ℝ^k`
+(namely `x = β_k (T_k − a I)⁻¹ e_k`). Backbone `Lanczos.radauTridiag_hasEigenvalue`. -/
 theorem gaussRadau_tridiag {A : Matrix (Fin n) (Fin n) ℝ} (u : EuclideanSpace ℝ (Fin n)) (k : ℕ)
     {a : ℝ} (ha : IsUnit (Lanczos.tridiag (toEuclideanLin A) u k - a • 1).det) :
-    a ∈ spectrum ℝ (Lanczos.radauTridiag (toEuclideanLin A) u k a) :=
-  Lanczos.radauTridiag_hasEigenvalue (A := toEuclideanLin A) (v := u) (m := k) (a := a) ha
+    a ∈ spectrum ℝ (Lanczos.radauTridiag (toEuclideanLin A) u k a) ∧
+      ∃ x : Fin k → ℝ, Lanczos.radauTridiag (toEuclideanLin A) u k a *ᵥ
+        (Fin.snoc x (-1) : Fin (k + 1) → ℝ) = a • (Fin.snoc x (-1) : Fin (k + 1) → ℝ) :=
+  ⟨Lanczos.radauTridiag_hasEigenvalue (A := toEuclideanLin A) (v := u) (m := k) (a := a) ha,
+    radauTridiag_mulVec_snoc u k ha⟩
 
 /-- **The Gauss–Radau rule via Lanczos** (§10.2.5, "Guided by Gauss quadrature theory …"): for
 `k + 1 ≤ grade` and `T_k − a I` nonsingular, the rule with the eigenvalues `θ̃_j` of `T̃_{k+1}` as

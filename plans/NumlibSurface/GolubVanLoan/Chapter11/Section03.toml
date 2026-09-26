@@ -66,58 +66,14 @@ source = 'Golub–Van Loan, Matrix Computations, §11.3.4'
 
 [[node]]
 id = "preliminaryCG"
-kind = "definition"
-desc = '''
-The preliminary CG (11.3.14), D4 program with fuel: the Lanczos loop of Algorithm 10.1.1 on
-`q₁ = r₀/β₀`, with `T_k y_k = β₀ e₁` solved by a tridiagonal solver passed as an argument
-(`solveT : Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → M (Fin k → ℝ)`; exact semantics `T_k⁻¹`), and
-`x_k = x₀ + Q_k y_k`. The book prints `x_k = Q_k y_k` (correct only for `x₀ = 0`; Doubts); the
-program uses `x₀ + Q_k y_k`. ★
-
-Blocked: the program calls Chapter 10's `GolubVanLoan.Chapter10.algorithm_10_1_1` (convention 5),
-whose surface is not on this branch (agent s10). Once it lands, ~40 lines: the Lanczos state of
-that program plus `x_k = x₀ + Q_ky_k` with the solve `solveT` a routine argument. The mathematical
-pieces are proved here: `equation_11_3_13`, `cg_lanczos_coordinates`, `lanczos_tridiag_posDef`.
-'''
-deps = ["GolubVanLoan.Chapter10.algorithm_10_1_1"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.14)'
 
 [[node]]
 id = "equation_11_3_14"
-kind = "theorem"
-desc = '''
-Exact semantics, SPD `A`, `solveT = T⁻¹`: the run stops with `k = min fuel (Krylov.grade T r₀)` steps,
-and after `k` steps `x_k` is the Galerkin iterate (`cg_lanczos_coordinates`); the test `β_k ≠ 0` fails
-exactly at `k = grade` (`Lanczos.beta_eq_zero_iff`). Uses ch10's spec of Algorithm 10.1.1 for the
-Lanczos part. ★★ (~50 lines)
-
-Blocked: needs `preliminaryCG` (Chapter 10's program and its spec
-`GolubVanLoan.Chapter10.algorithm_10_1_1_spec`). The loop invariant is that of
-`algorithm_11_3_2_spec` (`Lanczos.beta_eq_zero_iff` for the exit, `Arnoldi.vec_succ_eq` for
-`q_{k+1} = r_k/β_k`); ~60 lines once Chapter 10 is available.
-'''
-deps = ["preliminaryCG", "cg_lanczos_coordinates", "GolubVanLoan.Chapter10.algorithm_10_1_1_spec",
-  "Lanczos.beta_eq_zero_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.14)'
 
 [[node]]
 id = "theorem_11_3_1"
-kind = "theorem"
-desc = '''
-Theorem 11.3.1: if `k*` is the dimension of the smallest invariant subspace containing `r₀`, the CG
-iteration (11.3.14) terminates with `x_{k*} = x*`. Formally: `k* = Krylov.grade T r₀`, which is the
-`finrank` of the least `A`-invariant subspace containing `r₀` (`Krylov.fullSubspace_mem_invtSubmodule`
-and `Krylov.fullSubspace_le_of_mem_invtSubmodule`, staged), and the run of `preliminaryCG` with
-`fuel ≥ k*` stops after `k*` steps with `A x = b`. From `equation_11_3_14` and
-`Krylov.IsGalerkinIterate.apply_eq_of_grade_le`. ★
-
-Blocked: stated for the run of `preliminaryCG` ((11.3.14)), which needs Chapter 10's Lanczos
-program. The same conclusion for Algorithms 11.3.2 and 11.3.3 is proved (`algorithm_11_3_2_spec`,
-`algorithm_11_3_3_spec`: `k = min fuel grade` steps and `Ax = b` at the exit); ~15 lines once
-`equation_11_3_14` exists.
-'''
-deps = ["equation_11_3_14", "Krylov.IsGalerkinIterate.apply_eq_of_grade_le", "Krylov.grade",
-  "Krylov.fullSubspace_le_of_mem_invtSubmodule"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.1'
 
 [[node]]

@@ -10,38 +10,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.1)'
 
 [[node]]
 id = "householderLanczos"
-kind = "definition"
-desc = '''(10.3.4), Lanczos with complete reorthogonalization by Householder matrices, as a D4 program over
-`k = 1 : n − 1` (no early exit: "it makes no difference if β_k = 0"), returning the vectors `q_1, …, q_n`,
-the `α`, `β` and the **reflector data it applied** (`List ((Fin n → ℝ) × ℝ)`, convention 13). `H_0` with
-`H_0 q₁ = ±‖q₁‖ e₁` is chapter 5's `houseOn rnd (List.finRange n) q₁` (`GolubVanLoan.Chapter05.houseOn`);
-then `α_k = q_kᵀ A q_k`, `r_k = (A − α_k I) q_k − β_{k−1} q_{k−1}`, `w = (H_{k−1} ⋯ H_0) r_k` (the stored
-reflectors applied in turn, chapter 5's `householderApplyLeft` on a one-column matrix), `H_k` by
-`houseOn rnd T_k w` with `T_k` the index list `[k, …, n−1]` (0-based; `H_k` zeroes `w(k+2 : n)`, so
-`H_k w = [w_1, …, w_k, β_k, 0, …, 0]ᵀ`), `q_{k+1} = H_0 ⋯ H_k e_{k+1}` (the reflectors applied in reverse
-order to `e_{k+1}`). Each `(v, β)` is kept with the `β` that `house` returned; no reflector is rebuilt as
-`2/(vᵀv)` from its vector (surface review Major 2: when `house` returns `β = 0` the rebuilt reflector
-would be `I − 2e₁e₁ᵀ`, not the identity it applied). ★★
-
-Blocked: calls chapter 5's `GolubVanLoan.Chapter05.houseOn` and `householderApplyLeft` (convention 13), whose surface module is not on main (2026-09-26).'''
-deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.householderApplyLeft"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.4)'
 
 [[node]]
 id = "equation_10_3_4"
-kind = "theorem"
-desc = '''Exact semantics of (10.3.4), "the same specification as its canonical form": for symmetric `A`,
-`‖q₁‖ = 1`, the computed `q_1, …, q_n` are orthonormal; for `j < grade (toEuclideanLin A) q₁` each `q_{j+1}` is
-`± Arnoldi.vec _ q₁ j` (Householder sign convention) and the computed `α_j`, `|β_j|` are `Lanczos.alpha`,
-`Lanczos.beta`. The `H_j` are read from the returned data, `H_0 ⋯ H_k =
-GolubVanLoan.Chapter05.householderProduct (data.take (k+1))`, with the returned `β`s. Proof: `H_0 ⋯ H_k` is orthogonal with first `k + 1` columns spanning the flag of
-`r_0, …, r_k`, which is the Krylov flag while `β ≠ 0`; orthonormality of the columns of an orthogonal matrix
-and `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` (flag uniqueness up to unimodular, here
-real, scalars). Past the grade the vectors continue an orthonormal basis (the book's "may safely run until
-k = n − 1"). ★★★ (~350 lines)
-
-Blocked: needs `householderLanczos` (chapter 5's Householder programs, not on main). Estimate ~350 lines once they land (plan desc route).'''
-deps = ["householderLanczos", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed", "Arnoldi.vec", "Lanczos.alpha", "Lanczos.beta"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.4)'
 
 [[node]]
@@ -55,57 +27,52 @@ source = 'Golub–Van Loan, Matrix Computations, Lemma 10.3.1'
 
 [[node]]
 id = "blockLanczos"
-kind = "definition"
-desc = '''(10.3.8), block Lanczos as a D4 program: `X₁ ∈ ℝ^{n×p}` with orthonormal columns, `M₁ = X₁ᵀ A X₁`; for
-`k = 1 : r − 1`: `R_k = A X_k − X_k M_k − X_{k−1} B_{k−1}ᵀ` (`X_0 B_0ᵀ = 0`), `X_{k+1} B_k = R_k` a QR factorization
-(chapter 5's Householder QR, Algorithm 5.2.1, whose reflector data carry the `β`s `house` returned;
-`X_{k+1}` is the first `p` columns of chapter 5's `backwardAccumulation` of that data — never (5.1.5)'s
-recomputed `β = 2/(vᵀv)`, convention 13), `M_{k+1} = X_{k+1}ᵀ A X_{k+1}`. State: the blocks
-`X : ℕ → Matrix (Fin n) (Fin p) ℝ`, `M B : ℕ → Matrix (Fin p) (Fin p) ℝ`. ★★
-
-Blocked: calls chapter 5's Algorithm 5.2.1 and `backwardAccumulation` (convention 13), whose surface module is not on main (2026-09-26).'''
-deps = ["GolubVanLoan.Chapter05.algorithm_5_2_1", "GolubVanLoan.Chapter05.backwardAccumulation"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.8)'
 
 [[node]]
 id = "equation_10_3_8"
-kind = "theorem"
-desc = '''Exact semantics of (10.3.8): for symmetric `A`, as long as no `R_k` (`k < s`) is rank deficient, the
-columns of `[X_1 | ⋯ | X_s]` are orthonormal, span `Krylov.blockSubspace (toEuclideanLin A) (cols X₁) s`,
-and form an `IsBlockArnoldiBasis` (so they agree with `BlockArnoldi.vec` up to unimodular scalars,
-`IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec`); each `B_k` is upper triangular, `M_k = X_kᵀ A X_k`, and
-the coefficient matrix is the block tridiagonal `T̄_s` of (10.3.7), Hermitian with bandwidth `p`
-(staged `BlockArnoldi.coeff_eq_zero_of_isSymmetric`). The book's "argument similar to Theorem 10.1.1". ★★★
-(~300 lines)
-
-Blocked: needs `blockLanczos` (chapter 5's Householder QR, not on main). Estimate ~300 lines once it lands.'''
-deps = ["blockLanczos", "GolubVanLoan.Chapter05.algorithm_5_2_1_spec", "GolubVanLoan.Chapter05.backwardAccumulation_spec", "IsBlockArnoldiBasis", "IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec", "IsBlockArnoldiBasis.span_eq_blockSubspace", "BlockArnoldi.coeff_eq_zero_of_isSymmetric", "Krylov.BandRelation"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.8)'
 
 [[node]]
 id = "equation_10_3_9"
-kind = "theorem"
-desc = '''(10.3.9): at the beginning of the `k`-th pass, `A [X_1 | ⋯ | X_k] = [X_1 | ⋯ | X_k] T̄_k + R_k [0 | ⋯ | 0 | I_p]`,
-`T̄_k` the block tridiagonal matrix of the `M_i`, `B_i`. The band relation `Krylov.BandRelation.apply_sum`
-read in matrix form, from `equation_10_3_8`. ★
-
-Blocked: needs `equation_10_3_8`.'''
-deps = ["equation_10_3_8", "Krylov.BandRelation.apply_sum"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.9)'
 
 [[node]]
 id = "theorem_10_3_2"
-kind = "theorem"
-desc = '''Theorem 10.3.2 (Underwood): `A` symmetric with `Zᵀ A Z = diag(λ_1 ≥ ⋯ ≥ λ_n)`, `μ_1 ≥ ⋯ ≥ μ_p` the `p` largest
-eigenvalues of `T̄_k` after `k` steps of (10.3.8) (before breakdown), `Z₁ = [z_1 … z_p]`,
-`0 < cos φ_p = σ_p(Z₁ᵀ X₁)` (`Matrix.singularValues`, smallest): for `i = 1 : p`,
-`λ_i ≥ μ_i ≥ λ_i − (λ_1 − λ_n) (tan φ_p / c_{k−1}(1 + 2ρ_i))²`, `ρ_i = (λ_i − λ_{p+1})/(λ_{p+1} − λ_n)`, with no
-gap hypothesis, as in the book: the backbone `BlockLanczos.kaniel_paige_saad` takes none (in the degenerate
-cases `ρ_i = 0` in Lean and its proof uses the `k = 1` competitor; unlike the proved single-vector
-`Lanczos.kaniel_paige_saad`, which `theorem_10_1_2` wraps with a case split). The book writes `tan(θ_p)` for `tan(φ_p)` (Doubts). Staged backbone
-`BlockLanczos.kaniel_paige_saad` with `equation_10_3_8` (the eigenvalues of `T̄_k` are those of the
-compression to the block Krylov subspace). ★★
-
-Blocked: the `μ_i` are the eigenvalues of the `T̄_k` computed by (10.3.8) (`equation_10_3_8`, blocked on chapter 5). The backbone `BlockLanczos.kaniel_paige_saad` gives the bound for the compression to the block Krylov subspace with an abstract tangent bound `t`; the remaining work is `t ≤ tan φ_p` from `cos φ_p = σ_p(Z₁ᵀX₁)` (~80 lines) and the identification of `T̄_k` with that compression (from `equation_10_3_8`).'''
-deps = ["BlockLanczos.kaniel_paige_saad", "equation_10_3_8", "Matrix.singularValues"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 10.3.2'
+
+[[node]]
+id = "HouseholderLanczosState"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.4)'
+
+[[node]]
+id = "reflectorApply"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.4)'
+
+[[node]]
+id = "householderLanczosStep"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.4)'
+
+[[node]]
+id = "BlockLanczosState"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.8)'
+
+[[node]]
+id = "blockLanczosStep"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.8)'
+
+[[node]]
+id = "blockResidual"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.8)'
+
+[[node]]
+id = "blockCols"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.9)'
+
+[[node]]
+id = "lastBlockSel"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.9)'
+
+[[node]]
+id = "blockLanczos_blockTridiagonal_isHermitian"
+source = 'Golub–Van Loan, Matrix Computations, Equation (10.3.7)'

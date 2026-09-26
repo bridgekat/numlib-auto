@@ -1032,7 +1032,501 @@ theorem completePivoting_rank (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (hr : A
           (completePivotEntry (gemFullPivotStage A completePivotEntry k).1 ⟨k, hk⟩).2 ≠ 0 :=
   gemFullPivotStage_trailing_eq_zero_of_rank A isCompletePivot_completePivotEntry hr
 
+/-- A zero pivot of complete pivoting comes with a zero trailing block: after `k` steps, a zero
+diagonal entry at `p < k` makes every entry in the rows and columns from `p` on vanish. -/
+private def ZeroPivInv (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ p : Fin n, (p : ℕ) < k → S p p = 0 → ∀ i j : Fin n, p ≤ i → p ≤ j → S i j = 0
+
+/-- One step of Algorithm 3.4.3 keeps `ZeroPivInv`. -/
+private theorem zeroPivInv_step (k : Fin n)
+    (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n))
+    (hst : ZeroPivInv k st.1)
+    (st' : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n))
+    (hst' : st' ∈ (completePivotingStep fp.round k st).run) :
+    ZeroPivInv (k + 1) st'.1 := by
+  obtain ⟨S, rp, cp⟩ := st
+  rw [completePivotingStep] at hst'
+  dsimp only at hst' hst
+  have hpiv := isCompletePivot_completePivotEntry S k
+  set μ := (completePivotEntry S k).1 with hμ
+  set ν := (completePivotEntry S k).2 with hν
+  set S₀ := S.submatrix (Equiv.swap k μ) (Equiv.swap k ν) with hS₀
+  obtain ⟨hfix, hmap⟩ := swap_fix_and_map (k := k) hpiv.1
+  obtain ⟨hfix', hmap'⟩ := swap_fix_and_map (k := k) hpiv.2.1
+  have hpres : ∀ (τ : Equiv.Perm (Fin n)), (∀ r : Fin n, (r : ℕ) < k → τ r = r) →
+      (∀ i : Fin n, (k : ℕ) ≤ i → (k : ℕ) ≤ (τ i : ℕ)) →
+      ∀ p i : Fin n, (p : ℕ) ≤ k → p ≤ i → p ≤ τ i := fun τ hf hm p i hp hi => by
+    by_cases hik : (i : ℕ) < k
+    · rw [hf i hik]; exact hi
+    · exact Fin.le_def.2 (hp.trans (hm i (not_lt.1 hik)))
+  have hmax : ∀ i j : Fin n, k ≤ i → k ≤ j → |S₀ i j| ≤ |S₀ k k| := fun i j hi hj => by
+    simp only [hS₀, submatrix_apply, Equiv.swap_apply_left]
+    have := hpiv.2.2 (Equiv.swap k μ i) (Equiv.swap k ν j)
+      (Fin.le_def.2 (hmap i (Fin.le_def.1 hi))) (Fin.le_def.2 (hmap' j (Fin.le_def.1 hj)))
+    simpa only [Real.norm_eq_abs] using this
+  have hZ₀ : ZeroPivInv (k + 1) S₀ := by
+    intro p hp hpp i j hi hj
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hp with hp | hp
+    · have hSp : S p p = 0 := by
+        simpa only [hS₀, submatrix_apply, hfix p hp, hfix' p hp] using hpp
+      exact hst p hp hSp _ _ (hpres _ hfix hmap p i hp.le hi) (hpres _ hfix' hmap' p j hp.le hj)
+    · have hpk : p = k := Fin.ext hp
+      subst hpk
+      have := hmax i j hi hj
+      rw [hpp, abs_zero] at this
+      exact abs_nonpos_iff.1 this
+  split_ifs at hst' with h0
+  · rw [SetM.mem_run_bind] at hst'
+    obtain ⟨S', hS', hst'⟩ := hst'
+    rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    obtain ⟨h₁, -, -⟩ := mem_run_outerProductStep k hS'
+    change ZeroPivInv ((k : ℕ) + 1) S'
+    intro p hp hpp
+    have hpk : ¬ k < p := fun h => by have := Fin.lt_def.1 h; omega
+    rw [h₁ p p fun h => hpk h.1] at hpp
+    exact absurd (hZ₀ p hp hpp k k (Fin.le_def.2 (Nat.lt_succ_iff.1 hp))
+      (Fin.le_def.2 (Nat.lt_succ_iff.1 hp))) h0
+  · rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    exact hZ₀
+
+/-- The number of indices `i : Fin n` below `p ≤ n` is `p`. -/
+private theorem card_subtype_val_lt {p : ℕ} (hp : p ≤ n) :
+    Fintype.card {i : Fin n // (i : ℕ) < p} = p := by
+  rw [Fintype.card_congr (β := Fin p)
+    ⟨fun i => ⟨i.1, i.2⟩, fun j => ⟨Fin.castLE hp j, j.2⟩, fun _ => rfl, fun _ => rfl⟩,
+    Fintype.card_fin]
+
+/-- The rank of an upper triangular matrix whose first `p` diagonal entries are nonzero and whose
+rows from `p` on vanish is `p`. -/
+private theorem rank_eq_of_upperTriangular {U : Matrix (Fin n) (Fin n) ℝ} {p : ℕ} (hp : p ≤ n)
+    (hU : U.IsUpperTriangular) (hd : ∀ i : Fin n, (i : ℕ) < p → U i i ≠ 0)
+    (hz : ∀ i j : Fin n, p ≤ (i : ℕ) → U i j = 0) : U.rank = p := by
+  refine le_antisymm ?_ ?_
+  · have hDU : diagonal (fun i : Fin n => if (i : ℕ) < p then (1 : ℝ) else 0) * U = U := by
+      ext i j
+      rw [diagonal_mul]
+      split_ifs with hi
+      · rw [one_mul]
+      · rw [zero_mul, hz i j (not_lt.1 hi)]
+    rw [← hDU]
+    refine (rank_mul_le_left _ _).trans ?_
+    rw [rank_diagonal]
+    refine le_of_eq ((Fintype.card_congr (Equiv.subtypeEquivRight fun i => ?_)).trans
+      (card_subtype_val_lt hp))
+    split_ifs with h <;> simp [h]
+  · have hsub : (U.submatrix (Fin.castLE hp) (Fin.castLE hp)).IsUpperTriangular :=
+      fun i j hij => hU (show Fin.castLE hp j < Fin.castLE hp i from hij)
+    have hdet : IsUnit (U.submatrix (Fin.castLE hp) (Fin.castLE hp)) := by
+      rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hsub]
+      exact IsUnit.mk0 _ (Finset.prod_ne_zero_iff.2 fun i _ => hd _ i.2)
+    have := rank_submatrix_le U (Fin.castLE hp) (Fin.castLE hp)
+    rwa [rank_of_isUnit _ hdet, Fintype.card_fin] at this
+
+/-- **§3.4.6, rank revelation by complete pivoting, in factored form**: "consequently
+`P A Qᵀ = [L₁₁ 0; L₂₁ I_{n-r}] [U₁₁ U₁₂; 0 0]`" with `r = rank A`, `L₁₁` and `U₁₁` of order `r`
+and `U₁₁` nonsingular: the factors `L = packedL F`, `U = packedU F` of Algorithm 3.4.3
+(`algorithm_3_4_3_spec`) have `u_ij = 0` for `i ≥ r`, `ℓ_ij = [i = j]` for `j ≥ r`, and nonzero
+`u_ii` for `i < r`. -/
+theorem completePivoting_rank_factorization (A : Matrix (Fin n) (Fin n) ℝ) :
+    (∀ i j : Fin n, A.rank ≤ (i : ℕ) → packedU (Id.run (algorithm_3_4_3 pure A)).1 i j = 0) ∧
+      (∀ i j : Fin n, A.rank ≤ (j : ℕ) →
+        packedL (Id.run (algorithm_3_4_3 pure A)).1 i j = if i = j then 1 else 0) ∧
+      ∀ i : Fin n, (i : ℕ) < A.rank → packedU (Id.run (algorithm_3_4_3 pure A)).1 i i ≠ 0 := by
+  set F := (Id.run (algorithm_3_4_3 pure A)).1 with hF
+  have hZ : ZeroPivInv n F :=
+    SetM.forall_mem_run_foldlM_finRange (fun k st => ZeroPivInv k st.1)
+      (fun _ h => absurd h (Nat.not_lt_zero _))
+      (fun k st hst st' hst' => zeroPivInv_step (fp := RoundingModel.exact ℝ) k st hst st' hst')
+      _ (algorithm_3_4_3_mem_exact A)
+  obtain ⟨hLU, -, -⟩ := algorithm_3_4_3_spec A
+  -- the first zero pivot, or `n`
+  have hex : ∃ m, m = n ∨ ∃ h : m < n, F ⟨m, h⟩ ⟨m, h⟩ = 0 := ⟨n, Or.inl rfl⟩
+  classical
+  set p := Nat.find hex with hpdef
+  have hpn : p ≤ n := Nat.find_min' hex (Or.inl rfl)
+  have hd : ∀ i : Fin n, (i : ℕ) < p → F i i ≠ 0 := fun i hi h0 =>
+    Nat.find_min hex hi (Or.inr ⟨i.2, h0⟩)
+  have hblock : ∀ i j : Fin n, p ≤ (i : ℕ) → p ≤ (j : ℕ) → F i j = 0 := by
+    intro i j hi hj
+    rcases Nat.find_spec hex with h | ⟨hp, h0⟩
+    · have := i.2; omega
+    · exact hZ ⟨p, hp⟩ hp h0 i j (Fin.le_def.2 hi) (Fin.le_def.2 hj)
+  have hUz : ∀ i j : Fin n, p ≤ (i : ℕ) → packedU F i j = 0 := fun i j hi => by
+    rcases le_or_gt i j with hij | hji
+    · rw [packedU_apply_of_le _ hij]
+      exact hblock i j hi (hi.trans (Fin.le_def.1 hij))
+    · exact packedU_apply_of_lt _ hji
+  have hUd : ∀ i : Fin n, (i : ℕ) < p → packedU F i i ≠ 0 := fun i hi => by
+    rw [packedU_apply_of_le _ le_rfl]; exact hd i hi
+  have hrank : A.rank = p := by
+    have hL : IsUnit (packedL F).det := by
+      rw [det_of_isLowerTriangular _ hLU.isUnitLowerTriangular.isLowerTriangular]
+      simp [packedL_apply_self]
+    have h1 := hLU.mul_eq
+    have h2 : ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.1).permMatrix ℝ * A *
+        ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.2)⁻¹).permMatrix ℝ).rank = A.rank := by
+      rw [rank_mul_eq_left_of_isUnit_det _ _ ((isUnit_iff_isUnit_det _).1
+          (isUnit_permMatrix _)),
+        rank_mul_eq_right_of_isUnit_det _ _ ((isUnit_iff_isUnit_det _).1 (isUnit_permMatrix _))]
+    rw [← h2, ← h1, rank_mul_eq_right_of_isUnit_det _ _ hL]
+    exact rank_eq_of_upperTriangular hpn hLU.isUpperTriangular hUd hUz
+  rw [hrank]
+  refine ⟨hUz, fun i j hj => ?_, hUd⟩
+  rcases lt_trichotomy i j with hij | rfl | hji
+  · rw [packedL_apply_of_lt' _ hij, ite_eq_right hij.ne]
+  · rw [packedL_apply_self, ite_eq_left rfl]
+  · rw [packedL_apply_of_lt _ hji, ite_eq_right hji.ne']
+    exact hblock i j (hj.trans (Fin.le_def.1 hji.le)) hj
+
+/-- The bound of (3.4.10) on every entry of the stage after `k` steps of complete pivoting,
+together with the zeros below the diagonal in the eliminated columns. -/
+private theorem frozen_aux (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
+    (∀ i j : Fin n, |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
+        wilkinsonGrowthBound (k + 1) * A.supAbs) ∧
+      ∀ i j : Fin n, (j : ℕ) < k → j < i →
+        (gemFullPivotStage A completePivotEntry k).1 i j = 0 := by
+  induction k with
+  | zero =>
+    refine ⟨fun i j => ?_, fun _ j h => absurd h (Nat.not_lt_zero _)⟩
+    exact abs_gemFullPivotStage_le_wilkinson A isCompletePivot_completePivotEntry
+      (Nat.zero_lt_of_lt i.2) (Nat.zero_le _) (Nat.zero_le _)
+  | succ k ih =>
+    obtain ⟨hb, hz⟩ := ih
+    have hW : wilkinsonGrowthBound (k + 1) * A.supAbs ≤
+        wilkinsonGrowthBound (k + 1 + 1) * A.supAbs :=
+      mul_le_mul_of_nonneg_right (wilkinsonGrowthBound_mono (by omega)) (supAbs_nonneg A)
+    have hnn : 0 ≤ wilkinsonGrowthBound (k + 1 + 1) * A.supAbs :=
+      mul_nonneg (wilkinsonGrowthBound_nonneg _) (supAbs_nonneg A)
+    by_cases hk : k < n
+    · rw [gemFullPivotStage_succ_of_lt A _ hk]
+      dsimp only
+      set S := (gemFullPivotStage A completePivotEntry k).1 with hS
+      set K : Fin n := ⟨k, hk⟩
+      have hpiv := isCompletePivot_completePivotEntry S K
+      set μ := (completePivotEntry S K).1
+      set ν := (completePivotEntry S K).2
+      have hR : gemFullPivotRowSwap A completePivotEntry k hk = Equiv.swap K μ := rfl
+      have hC : gemFullPivotColSwap A completePivotEntry k hk = Equiv.swap K ν := rfl
+      rw [hR, hC]
+      obtain ⟨hfix, hmap⟩ := swap_fix_and_map (k := K) hpiv.1
+      obtain ⟨hfix', hmap'⟩ := swap_fix_and_map (k := K) hpiv.2.1
+      set S' := S.submatrix (Equiv.swap K μ) (Equiv.swap K ν) with hS'
+      -- the pivot dominates column `k` below it
+      have hcolk : ∀ i : Fin n, K ≤ i → |S' i K| ≤ |S' K K| := fun i hi => by
+        simp only [hS', submatrix_apply, Equiv.swap_apply_left]
+        simpa only [Real.norm_eq_abs, Equiv.swap_apply_left] using hpiv.2.2 _ _
+          (Fin.le_def.2 (hmap i (Fin.le_def.1 hi))) (Fin.le_def.2 (hmap' K le_rfl))
+      -- the eliminated columns stay zero below the diagonal after the interchanges
+      have hz' : ∀ i j : Fin n, (j : ℕ) < k → j < i → S' i j = 0 := fun i j hj hji => by
+        simp only [hS', submatrix_apply, hfix' j hj]
+        refine hz _ j hj ?_
+        by_cases hik : (i : ℕ) < k
+        · rw [hfix i hik]; exact hji
+        · exact Fin.lt_def.2 (lt_of_lt_of_le hj (hmap i (not_lt.1 hik)))
+      have hb' : ∀ i j : Fin n, |S' i j| ≤ wilkinsonGrowthBound (k + 1) * A.supAbs :=
+        fun i j => hb _ _
+      -- the new column `k` vanishes below the pivot
+      have hcol0 : ∀ i : Fin n, K < i → elimStep S' K i K = 0 := fun i hi => by
+        rw [elimStep_apply_of_lt _ hi]
+        by_cases h0 : S' K K = 0
+        · have := hcolk i hi.le
+          rw [h0, abs_zero] at this
+          rw [abs_nonpos_iff.1 this, h0]
+          simp
+        · field_simp
+          ring
+      have hzero : ∀ i j : Fin n, (j : ℕ) < k + 1 → j < i → elimStep S' K i j = 0 := by
+        intro i j hj hji
+        rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hj | hj
+        · by_cases hki : K < i
+          · rw [elimStep_apply_of_lt _ hki, hz' i j hj hji,
+              hz' K j hj (Fin.lt_def.2 (by simpa [K] using hj))]
+            ring
+          · rw [elimStep_apply_of_not_lt _ hki]
+            exact hz' i j hj hji
+        · have hjK : j = K := Fin.ext hj
+          subst hjK
+          exact hcol0 i hji
+      refine ⟨fun i j => ?_, hzero⟩
+      by_cases hki : K < i
+      · by_cases hkj : k + 1 ≤ (j : ℕ)
+        · have := abs_gemFullPivotStage_le_wilkinson A isCompletePivot_completePivotEntry
+            (k := k + 1) (lt_of_le_of_lt (Fin.lt_def.1 hki) i.2) (Fin.lt_def.1 hki) hkj
+            (i := i) (j := j)
+          rwa [gemFullPivotStage_succ_of_lt A _ hk, hR, hC] at this
+        · by_cases hji : j < i
+          · rw [hzero i j (by omega) hji, abs_zero]; exact hnn
+          · exact absurd (lt_of_le_of_lt (by omega : (j : ℕ) ≤ k) (Fin.lt_def.1 hki))
+              (fun h => hji (Fin.lt_def.2 h))
+      · rw [elimStep_apply_of_not_lt _ hki]
+        exact (hb' i j).trans hW
+    · rw [gemFullPivotStage_succ_of_le A _ (not_lt.1 hk)]
+      refine ⟨fun i j => (hb i j).trans hW, fun i j hj hji => hz i j ?_ hji⟩
+      have := j.2
+      omega
+
+/-- **(3.4.10), the frozen rows** (the second clause of the book's bound, for every entry and not
+only the trailing block): after `k` steps of complete pivoting every entry satisfies
+`|a_ij^{(k)}| ≤ wilkinsonGrowthBound (k + 1) · max |a_ij|` — an entry outside the trailing block
+is either an eliminated entry (zero; a zero pivot of complete pivoting comes with a zero column)
+or in a row frozen at an earlier step, where the smaller bound holds
+(`Matrix.wilkinsonGrowthBound_mono`). -/
+theorem equation_3_4_10_frozen (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (i j : Fin n) :
+    |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
+      wilkinsonGrowthBound (k + 1) * A.supAbs :=
+  (frozen_aux A k).1 i j
+
 end Complete
+
+/-! ### The exact run of Algorithm 3.4.1 is the backbone's recurrence -/
+
+section Simulation341
+
+variable {n : ℕ}
+
+/-- The partial-pivoting row depends only on the column `k` from row `k` on. -/
+private theorem partialPivotRow_congr {M M' : Matrix (Fin n) (Fin n) ℝ} {k : Fin n}
+    (h : ∀ r, k ≤ r → M r k = M' r k) : partialPivotRow M k = partialPivotRow M' k := by
+  refine le_antisymm (partialPivotRow_le M k (le_partialPivotRow M' k) fun r' hr' => ?_)
+    (partialPivotRow_le M' k (le_partialPivotRow M k) fun r' hr' => ?_)
+  · rw [h r' hr', h _ (le_partialPivotRow M' k)]
+    exact norm_apply_le_partialPivotRow M' k hr'
+  · rw [← h r' hr', ← h _ (le_partialPivotRow M k)]
+    exact norm_apply_le_partialPivotRow M k hr'
+
+/-- Gaussian elimination without pivoting commutes with a permutation of the rows that fixes the
+indices before the stage. -/
+private theorem gemStage_submatrix_of_forall_lt (B : Matrix (Fin n) (Fin n) ℝ)
+    {τ : Equiv.Perm (Fin n)} {c : ℕ} (hτ : ∀ i : Fin n, (i : ℕ) < c → τ i = i) :
+    gemStage (B.submatrix τ id) c = (gemStage B c).submatrix τ id := by
+  induction c with
+  | zero => rfl
+  | succ c ih =>
+    by_cases hc : c < n
+    · rw [gemStage_succ_of_lt _ hc, gemStage_succ_of_lt _ hc, ih fun i hi => hτ i (by omega)]
+      exact elimStep_submatrix_of_forall_le _ fun i hi => hτ i (by
+        have : (i : ℕ) ≤ c := Fin.le_def.1 hi; omega)
+    · rw [gemStage_succ_of_le _ (not_lt.1 hc), gemStage_succ_of_le _ (not_lt.1 hc),
+        ih fun i hi => hτ i (by omega)]
+
+/-- The stages of elimination without pivoting on the matrix with the first `m` interchanges of
+partial pivoting applied are the pivoted stages with their rows permuted by the interchanges
+`c, …, m - 1` (for `m = n` this is `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`). -/
+private theorem gemStage_submatrix_gemPivotStage (A : Matrix (Fin n) (Fin n) ℝ) {m : ℕ}
+    (hm : m ≤ n) {c : ℕ} (hc : c ≤ m) :
+    gemStage (A.submatrix (gemPivotStage A partialPivotRow m).2 id) c =
+      (gemPivotStage A partialPivotRow c).1.submatrix
+        ((gemPivotStage A partialPivotRow c).2⁻¹ * (gemPivotStage A partialPivotRow m).2) id := by
+  have hpiv : ∀ (M : Matrix (Fin n) (Fin n) ℝ) k, k ≤ partialPivotRow M k :=
+    fun M k => le_partialPivotRow M k
+  induction m generalizing c with
+  | zero =>
+    obtain rfl : c = 0 := by omega
+    simp
+  | succ m ih =>
+    have hmn : m < n := by omega
+    have hσ : (gemPivotStage A partialPivotRow (m + 1)).2 =
+        (gemPivotStage A partialPivotRow m).2 * gemPivotSwap A partialPivotRow m hmn := by
+      rw [gemPivotStage_succ_of_lt A partialPivotRow hmn]
+    have hsub : A.submatrix (gemPivotStage A partialPivotRow (m + 1)).2 id =
+        (A.submatrix (gemPivotStage A partialPivotRow m).2 id).submatrix
+          (gemPivotSwap A partialPivotRow m hmn) id := by
+      rw [hσ, submatrix_submatrix, Equiv.Perm.coe_mul]
+      rfl
+    have hfix : ∀ i : Fin n, (i : ℕ) < m → gemPivotSwap A partialPivotRow m hmn i = i :=
+      fun i hi => by
+        have := gemPivotStage_snd_inv_mul_apply A partialPivotRow hpiv (Nat.le_succ m) hi
+        rwa [hσ, ← mul_assoc, inv_mul_cancel, one_mul] at this
+    rcases Nat.lt_succ_iff_lt_or_eq.1 (Nat.lt_succ_of_le hc) with hc' | hc'
+    · rw [hsub, gemStage_submatrix_of_forall_lt _ fun i hi => hfix i (by omega),
+        ih (by omega) (by omega), submatrix_submatrix, hσ, ← mul_assoc]
+      rfl
+    · subst hc'
+      rw [gemStage_succ_of_lt _ hmn, hsub,
+        gemStage_submatrix_of_forall_lt _ fun i hi => hfix i hi, ih (by omega) le_rfl,
+        inv_mul_cancel, gemPivotStage_succ_of_lt A partialPivotRow hmn]
+      simp only [Equiv.Perm.coe_one, submatrix_id_id, inv_mul_cancel]
+
+/-- The simulation invariant of Algorithm 3.4.1 in exact arithmetic after `k` steps: the
+interchanges are those of the backbone's recurrence, the rows and columns from `k` on hold the
+pivoted stage, and the finished multipliers are those of elimination without pivoting on the
+matrix with the interchanges so far applied. -/
+private def Sim341 (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
+    (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) : Prop :=
+  pivPermUpTo st.2 k = (gemPivotStage A partialPivotRow k).2 ∧
+    ∀ i c : Fin n, st.1 i c = if (c : ℕ) < k ∧ c < i then
+      gemLower (A.submatrix (gemPivotStage A partialPivotRow k).2 id) i c
+      else (gemPivotStage A partialPivotRow k).1 i c
+
+/-- One step of Algorithm 3.4.1 in the exact model keeps the simulation invariant. -/
+private theorem sim341_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
+    (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (hst : Sim341 A k st)
+    (st' : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
+    (hst' : st' ∈ (if st.1.submatrix (Equiv.swap k (partialPivotRow st.1 k)) id k k ≠ 0 then do
+      let A ← outerProductStep (RoundingModel.exact ℝ).round k
+        (st.1.submatrix (Equiv.swap k (partialPivotRow st.1 k)) id)
+      pure (A, Function.update st.2 k (partialPivotRow st.1 k))
+    else
+      pure (st.1.submatrix (Equiv.swap k (partialPivotRow st.1 k)) id,
+        Function.update st.2 k (partialPivotRow st.1 k)) : SetM _).run) :
+    Sim341 A (k + 1) st' := by
+  obtain ⟨S, piv⟩ := st
+  obtain ⟨hperm, hent⟩ := hst
+  dsimp only at hst' hperm hent
+  set Gk := (gemPivotStage A partialPivotRow k).1 with hGk
+  have hcolk : ∀ r : Fin n, S r k = Gk r k := fun r => by
+    rw [hent r k, ite_eq_right fun h => lt_irrefl _ h.1]
+  have hμ : partialPivotRow S k = partialPivotRow Gk k :=
+    partialPivotRow_congr fun r _ => hcolk r
+  rw [hμ] at hst'
+  set μ := partialPivotRow Gk k with hμdef
+  set τ := Equiv.swap k μ with hτ
+  have hkμ : k ≤ μ := le_partialPivotRow Gk k
+  obtain ⟨hfix, hmap⟩ := swap_fix_and_map (k := k) hkμ
+  have hswap : gemPivotSwap A partialPivotRow k k.2 = τ := rfl
+  have hG1 : gemPivotStage A partialPivotRow ((k : ℕ) + 1) =
+      (elimStep (Gk.submatrix τ id) k, (gemPivotStage A partialPivotRow k).2 * τ) := by
+    rw [gemPivotStage_succ_of_lt A partialPivotRow k.2, hswap]
+  have hperm' : pivPermUpTo (Function.update piv k μ) ((k : ℕ) + 1) =
+      (gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2 := by
+    rw [pivPermUpTo_update, hperm, hG1]
+  -- the multipliers of the matrix with the interchanges so far applied
+  set B := A.submatrix (gemPivotStage A partialPivotRow k).2 id with hB
+  set B' := A.submatrix (gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2 id with hB'
+  have hBB' : B' = B.submatrix τ id := by
+    rw [hB', hB, hG1, submatrix_submatrix, Equiv.Perm.coe_mul]
+    rfl
+  have hlowold : ∀ i c : Fin n, (c : ℕ) < k → c < i →
+      gemLower B' i c = gemLower B (τ i) c := fun i c hc hci => by
+    have hci' : c < τ i := by
+      by_cases hik : (i : ℕ) < k
+      · rw [hfix i hik]; exact hci
+      · exact Fin.lt_def.2 (lt_of_lt_of_le hc (hmap i (not_lt.1 hik)))
+    have hs : gemStage B' c = (gemStage B c).submatrix τ id := by
+      rw [hBB']
+      exact gemStage_submatrix_of_forall_lt B fun r hr => hfix r (by omega)
+    simp only [gemLower, of_apply, hci, hci', ↓reduceIte, hs, submatrix_apply, id]
+    rw [hfix c hc]
+  have hlowk : ∀ i : Fin n, k < i → gemLower B' i k = Gk (τ i) k / Gk (τ k) k := fun i hi => by
+    have hs : gemStage B' k = Gk.submatrix τ id := by
+      rw [hB', gemStage_submatrix_gemPivotStage A (by have := k.2; omega) (Nat.le_succ _), hG1]
+      congr 1
+      rw [← mul_assoc, inv_mul_cancel, one_mul]
+    simp only [gemLower, of_apply, hi, ↓reduceIte, hs, submatrix_apply, id]
+  -- the column `k` below the pivot, in the zero-pivot case
+  have hzero : Gk (τ k) k = 0 → ∀ i : Fin n, k ≤ i → Gk (τ i) k = 0 := fun h0 i hi => by
+    have := norm_apply_le_partialPivotRow Gk k (r := τ i) (Fin.le_def.2 (hmap i (Fin.le_def.1 hi)))
+    rw [← hμdef, show μ = τ k from (Equiv.swap_apply_left k μ).symm, h0, norm_zero] at this
+    exact norm_le_zero_iff.1 this
+  have hS₀ : ∀ i c : Fin n, S.submatrix τ id i c = S (τ i) c := fun _ _ => rfl
+  refine ⟨?_, ?_⟩
+  · split_ifs at hst' with h0
+    · rw [SetM.mem_run_bind] at hst'
+      obtain ⟨S', -, hst'⟩ := hst'
+      rw [SetM.mem_run_pure] at hst'
+      subst hst'
+      exact hperm'
+    · rw [SetM.mem_run_pure] at hst'
+      subst hst'
+      exact hperm'
+  -- the entries
+  have hmain : ∀ S' : Matrix (Fin n) (Fin n) ℝ,
+      (∀ i c, ¬ (k < i ∧ (c = k ∨ k < c)) → S' i c = S (τ i) c) →
+      (∀ i, k < i → S' i k = Gk (τ i) k / Gk (τ k) k) →
+      (∀ i c, k < i → k < c → S' i c = Gk (τ i) c - S' i k * Gk (τ k) c) →
+      ∀ i c : Fin n, S' i c = if (c : ℕ) < (k : ℕ) + 1 ∧ c < i then gemLower B' i c
+        else (gemPivotStage A partialPivotRow ((k : ℕ) + 1)).1 i c := by
+    intro S' h₁ h₂ h₃ i c
+    rw [hG1]
+    dsimp only
+    by_cases hki : k < i
+    · rcases lt_trichotomy c k with hck | rfl | hkc
+      · rw [ite_eq_left ⟨by have := Fin.lt_def.1 hck; omega, hck.trans hki⟩,
+          h₁ i c fun h => h.2.elim (fun h' => absurd h' (ne_of_lt hck))
+            fun h' => absurd hck (not_lt.2 h'.le),
+          hlowold i c (Fin.lt_def.1 hck) (hck.trans hki)]
+        have hci : c < τ i := by
+          by_cases hik : (i : ℕ) < k
+          · exact absurd hki (not_lt.2 (Fin.le_def.2 hik.le))
+          · exact Fin.lt_def.2 (lt_of_lt_of_le (Fin.lt_def.1 hck) (hmap i (not_lt.1 hik)))
+        rw [hent (τ i) c, ite_eq_left ⟨Fin.lt_def.1 hck, hci⟩]
+      · rw [ite_eq_left ⟨Nat.lt_succ_self _, hki⟩, h₂ i hki, hlowk i hki]
+      · rw [ite_eq_right fun h => absurd (Fin.lt_def.1 hkc) (by omega), h₃ i c hki hkc,
+          h₂ i hki, elimStep_apply_of_lt _ hki]
+        simp only [submatrix_apply, id]
+        ring
+    · rw [h₁ i c fun h => hki h.1]
+      have hτi : ∀ c : Fin n, c < i → c < τ i := fun c hci => by
+        rcases lt_or_eq_of_le (not_lt.1 hki) with hik | rfl
+        · rw [hfix i (Fin.lt_def.1 hik)]; exact hci
+        · rw [Equiv.swap_apply_left]; exact lt_of_lt_of_le hci hkμ
+      by_cases hc : (c : ℕ) < (k : ℕ) + 1 ∧ c < i
+      · have hck : (c : ℕ) < k := lt_of_lt_of_le (Fin.lt_def.1 hc.2) (Fin.le_def.1 (not_lt.1 hki))
+        rw [ite_eq_left hc, hlowold i c hck hc.2, hent (τ i) c, ite_eq_left ⟨hck, hτi c hc.2⟩]
+      · rw [ite_eq_right hc, elimStep_apply_of_not_lt _ hki, submatrix_apply, id, hent (τ i) c,
+          ite_eq_right fun h => ?_]
+        rcases lt_or_eq_of_le (not_lt.1 hki) with hik | rfl
+        · rw [hfix i (Fin.lt_def.1 hik)] at h; exact hc ⟨by omega, h.2⟩
+        · exact hc ⟨by have := h.1; omega, Fin.lt_def.2 h.1⟩
+  split_ifs at hst' with h0
+  · rw [SetM.mem_run_bind] at hst'
+    obtain ⟨S', hS', hst'⟩ := hst'
+    rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    obtain ⟨h₁, h₂, h₃⟩ := mem_run_outerProductStep k hS'
+    simp only [RoundingModel.exact_rounds_iff] at h₂ h₃
+    refine hmain S' (fun i c h => h₁ i c h) (fun i hi => ?_) fun i c hi hc => ?_
+    · rw [h₂ i hi]
+      simp only [submatrix_apply, id, hcolk]
+    · obtain ⟨p, hp, hx⟩ := h₃ i c hi hc
+      rw [hx, hp, h₁ k c fun h => lt_irrefl _ h.1]
+      simp only [submatrix_apply, id]
+      rw [hent (τ i) c, ite_eq_right fun h => absurd (Fin.lt_def.2 h.1) (not_lt.2 hc.le),
+        hent (τ k) c, ite_eq_right fun h => absurd (Fin.lt_def.2 h.1) (not_lt.2 hc.le)]
+  · rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    have h0' : Gk (τ k) k = 0 := by
+      have := not_not.1 h0
+      rwa [submatrix_apply, id, hcolk] at this
+    refine hmain _ (fun _ _ _ => rfl) (fun i hi => ?_) fun i c hi hc => ?_
+    · simp only [submatrix_apply, id, hcolk, h0', div_zero]
+      exact hzero h0' i hi.le
+    · simp only [submatrix_apply, id, hcolk, hzero h0' i hi.le, zero_mul, sub_zero]
+      rw [hent (τ i) c, ite_eq_right fun h => absurd (Fin.lt_def.2 h.1) (not_lt.2 hc.le)]
+
+/-- **The exact run of Algorithm 3.4.1 is the backbone's partial-pivoting recurrence**: with
+`(F, piv)` its output, `P = (pivPerm piv).permMatrix ℝ` is the permutation matrix of
+`Matrix.gemPivotStage A Matrix.partialPivotRow`, the upper factor `packedU F` is its last stage,
+and the unit lower factor `packedL F` is `Matrix.gemLower (P A)`, the multipliers of elimination
+without pivoting on `P A` — the program's search is `Matrix.partialPivotRow`, so the interchanges
+agree, and the stored multipliers move with their rows. -/
+theorem algorithm_3_4_1_eq_gemPivotStage (A : Matrix (Fin n) (Fin n) ℝ) :
+    pivPerm (Id.run (algorithm_3_4_1 pure A)).2 = (gemPivotStage A partialPivotRow n).2 ∧
+      packedU (Id.run (algorithm_3_4_1 pure A)).1 = (gemPivotStage A partialPivotRow n).1 ∧
+      packedL (Id.run (algorithm_3_4_1 pure A)).1 =
+        gemLower ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) := by
+  obtain ⟨hperm, hent⟩ := SetM.forall_mem_run_foldlM_finRange (Sim341 A)
+    ⟨rfl, fun i c => by simp⟩ (fun k st hst st' hst' => sim341_step A k st hst st' hst') _
+    (algorithm_3_4_1_mem_exact A)
+  have hU := (equation_3_4_2 A).2
+  refine ⟨hperm, ?_, ?_⟩
+  · ext i c
+    rcases le_or_gt i c with hic | hci
+    · rw [packedU_apply_of_le _ hic, hent i c, ite_eq_right fun h => absurd h.2 (not_lt.2 hic)]
+    · rw [packedU_apply_of_lt _ hci]
+      exact (hU hci).symm
+  · rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul]
+    ext i c
+    rcases lt_trichotomy c i with hci | rfl | hic
+    · rw [packedL_apply_of_lt _ hci, hent i c, ite_eq_left ⟨c.2, hci⟩]
+    · rw [packedL_apply_self]
+      simp [gemLower]
+    · rw [packedL_apply_of_lt' _ hic]
+      simp [gemLower, not_lt.2 hic.le, hic.ne]
+
+end Simulation341
 
 /-! ### The growth factor (§3.4.5) -/
 
@@ -1269,6 +1763,418 @@ noncomputable def algorithm_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
           st.2.1.updateCol j (fun i => if i ≤ j then v (Equiv.swap j (firstMaxIndex v j) i) else 0),
           Function.update st.2.2 j (firstMaxIndex v j))) (1, 0, fun k => k)
 
+section Alg342Bridge
+
+variable {fp : RoundingModel ℝ}
+
+/-- The invariant of Algorithm 3.4.2 after the columns before `j`, for the matrix `B` with its rows
+permuted by the interchanges so far: the finished columns hold the entries of the Doolittle
+recurrence of `B` (the multipliers dominated by their pivot), the later columns of `L` and `U` are
+still those of the identity and of the zero matrix, and the later `piv` entries are trivial. -/
+def Alg342Core (fp : RoundingModel ℝ) (B : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
+    (L U : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  (∀ i c : Fin n, (c : ℕ) < j → i ≤ c → ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
+    (∀ r, r ∈ o ↔ r < i) ∧ (∀ r ∈ o, fp.Rounds (L i r * U r c) (p r)) ∧
+    RoundsSumFrom fp (B i c) (o.map fun r => -p r) (U i c)) ∧
+  (∀ i c : Fin n, (c : ℕ) < j → c < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧
+    (∀ r, r ∈ o ↔ r < c) ∧ (∀ r ∈ o, fp.Rounds (L i r * U r c) (p r)) ∧
+    RoundsSumFrom fp (B i c) (o.map fun r => -p r) t ∧ |t| ≤ |U c c| ∧
+    fp.Rounds (t / U c c) (L i c)) ∧
+  (∀ i c : Fin n, j ≤ (c : ℕ) → L i c = if i = c then 1 else 0) ∧
+  (∀ i c : Fin n, j ≤ (c : ℕ) → U i c = 0) ∧
+  (∀ i c : Fin n, i < c → L i c = 0) ∧ (∀ i, L i i = 1) ∧
+  (∀ i c : Fin n, c < i → U i c = 0)
+
+/-- The invariant of Algorithm 3.4.2 after `j` columns, or — only in a model that does not round
+every value to itself — a zero pivot already returned. -/
+def Alg342Inv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) : Prop :=
+  (Alg342Core fp (A.submatrix (pivPermUpTo st.2.2 j) id) j st.1 st.2.1 ∧
+      ∀ c : Fin n, j ≤ (c : ℕ) → st.2.2 c = c) ∨
+    ((∃ c : Fin n, (c : ℕ) < j ∧ (c : ℕ) + 1 < n ∧ st.2.1 c c = 0) ∧ ¬ ∀ x, fp.Rounds x x)
+
+/-- With trivial `piv` entries from `j` on, the `piv` loop applies the first `j` interchanges. -/
+theorem applyPiv_eq_comp_pivPermUpTo {piv : Fin n → Fin n} {j : ℕ}
+    (h : ∀ c : Fin n, j ≤ (c : ℕ) → piv c = c) (hj : j ≤ n) (x : Fin n → ℝ) :
+    applyPiv piv x = x ∘ pivPermUpTo piv j := by
+  have hup : ∀ m, j ≤ m → pivPermUpTo piv m = pivPermUpTo piv j := by
+    intro m hm
+    induction m, hm using Nat.le_induction with
+    | base => rfl
+    | succ m hm ih =>
+      simp only [pivPermUpTo]
+      split_ifs with hmn
+      · rw [h ⟨m, hmn⟩ hm, Equiv.swap_self, ← Equiv.Perm.one_def, mul_one, ih]
+      · exact ih
+  rw [(applyPiv_eq piv x).1, permMatrix_mulVec, pivPerm, hup n hj]
+
+/-- One column of Algorithm 3.4.2 keeps its invariant. -/
+theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
+    (hst : Alg342Inv fp A j st)
+    (st' : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
+    (hst' : st' ∈ (do
+      let v ← (List.finRange n).foldlM (fun (v : Fin n → ℝ) i => do
+        let vi ← ((List.finRange n).filter (fun r => r < i ∧ r < j)).foldlM (fun (c : ℝ) r => do
+          let p ← fp.round (st.1 i r * v r)
+          fp.round (c - p)) (applyPiv st.2.2 (fun i => A i j) i)
+        pure (Function.update v i vi)) (applyPiv st.2.2 fun i => A i j)
+      if v (Equiv.swap j (firstMaxIndex v j) j) ≠ 0 then do
+        let L ← ((List.finRange n).filter (j < ·)).foldlM
+          (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
+            let l ← fp.round (v (Equiv.swap j (firstMaxIndex v j) i) /
+              v (Equiv.swap j (firstMaxIndex v j) j))
+            pure (L.updateRow i (Function.update (L i) j l)))
+          (of fun i c => if c < j then st.1 (Equiv.swap j (firstMaxIndex v j) i) c else st.1 i c)
+        pure (L, st.2.1.updateCol j (fun i => if i ≤ j then v (Equiv.swap j (firstMaxIndex v j) i)
+          else 0), Function.update st.2.2 j (firstMaxIndex v j))
+      else
+        pure (of fun i c => if c < j then st.1 (Equiv.swap j (firstMaxIndex v j) i) c else st.1 i c,
+          st.2.1.updateCol j (fun i => if i ≤ j then v (Equiv.swap j (firstMaxIndex v j) i) else 0),
+          Function.update st.2.2 j (firstMaxIndex v j)) : SetM _).run) :
+    Alg342Inv fp A (j + 1) st' := by
+  obtain ⟨L, U, piv⟩ := st
+  dsimp only at hst hst'
+  rw [SetM.mem_run_bind] at hst'
+  obtain ⟨v, hv, hst'⟩ := hst'
+  set μ := firstMaxIndex v j with hμ
+  set σ := Equiv.swap j μ with hσ
+  obtain ⟨hjμ, hvmax⟩ := firstMaxIndex_spec v j
+  obtain ⟨hfix, hmap⟩ := swap_fix_and_map (k := j) hjμ
+  set L₀ : Matrix (Fin n) (Fin n) ℝ := of fun i c => if c < j then L (σ i) c else L i c with hL₀
+  set U' := U.updateCol j (fun i => if i ≤ j then v (σ i) else 0) with hU'
+  have hU'o : ∀ i c, c ≠ j → U' i c = U i c := fun i c hc => by simp [hU', hc]
+  have hU'j : ∀ i, U' i j = if i ≤ j then v (σ i) else 0 := fun i => by simp [hU']
+  -- the column `U` entries are never changed after their step
+  rcases hst with ⟨⟨hU, hL, hLid, hU0, hLlow, hLdiag, hUup⟩, hpiv⟩ | ⟨⟨c, hc, hcn, hc0⟩, hnrefl⟩
+  swap
+  · -- a zero pivot was already returned
+    refine Or.inr ⟨⟨c, by omega, hcn, ?_⟩, hnrefl⟩
+    have hcj : c ≠ j := fun h => by rw [h] at hc; exact lt_irrefl _ hc
+    split_ifs at hst' with h0
+    · rw [SetM.mem_run_bind] at hst'
+      obtain ⟨L', -, hst'⟩ := hst'
+      rw [SetM.mem_run_pure] at hst'
+      subst hst'
+      change U' c c = 0
+      rw [hU'o c c hcj]
+      exact hc0
+    · rw [SetM.mem_run_pure] at hst'
+      subst hst'
+      change U' c c = 0
+      rw [hU'o c c hcj]
+      exact hc0
+  dsimp only at hU hL hLid hU0 hLlow hLdiag hUup hpiv
+  set π := pivPermUpTo piv j with hπ
+  set B := A.submatrix π id with hB
+  have hx₀ : applyPiv piv (fun i => A i j) = fun i => B i j := by
+    rw [applyPiv_eq_comp_pivPermUpTo hpiv j.2.le]
+    rfl
+  rw [hx₀] at hv
+  -- the entries of `v`: running differences over `r < min i j`
+  have hvrow : ∀ i, ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
+      (∀ r, r ∈ o ↔ r < i ∧ r < j) ∧ (∀ r ∈ o, fp.Rounds (L i r * v r) (p r)) ∧
+      RoundsSumFrom fp (B i j) (o.map fun r => -p r) (v i) := by
+    have key := forall_mem_run_foldlM_update_rows (List.nodup_finRange n)
+      (fun i (s : Fin n → ℝ) => ((List.finRange n).filter (fun r => r < i ∧ r < j)).foldlM
+        (fun (c : ℝ) r => do let p ← fp.round (L i r * s r); fp.round (c - p)) (B i j))
+      (fun i s x => ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
+        (∀ r, r ∈ o ↔ r < i ∧ r < j) ∧ (∀ r ∈ o, fp.Rounds (L i r * s r) (p r)) ∧
+        RoundsSumFrom fp (B i j) (o.map fun r => -p r) x)
+      (fun i => B i j) ?_ ?_ v hv
+    · exact fun i => key i (List.mem_finRange i)
+    · rintro p i q hl s - x hx
+      have hnd := (List.nodup_finRange n).filter (fun r => decide (r < i ∧ r < j))
+      obtain ⟨pp, hpp, hsum⟩ := exists_of_mem_run_foldlM_sub hnd hx
+      exact ⟨_, pp, hnd, fun r => by simp, hpp, hsum⟩
+    · rintro p i q hl s s' x hss ⟨o, pp, hnd, ho, hpp, hsum⟩
+      refine ⟨o, pp, hnd, ho, fun r hr => ?_, hsum⟩
+      have hri := ((ho r).1 hr).1
+      have hrp : r ∈ p := mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
+        (List.mem_finRange r) (ne_of_lt hri) (lt_asymm hri)
+      rw [← hss r hrp]
+      exact hpp r hr
+  -- the new permuted matrix
+  have hB' : A.submatrix (pivPermUpTo (Function.update piv j μ) (j + 1)) id =
+      B.submatrix σ id := by
+    rw [pivPermUpTo_update, hB, submatrix_submatrix, Equiv.Perm.coe_mul]
+    rfl
+  have hσlt : ∀ i : Fin n, j < i → j ≤ σ i := fun i hi =>
+    Fin.le_def.2 (hmap i (Fin.le_def.1 hi.le))
+  have hσfix : ∀ i : Fin n, i < j → σ i = i := fun i hi => hfix i (Fin.lt_def.1 hi)
+  have hσj : σ j = μ := Equiv.swap_apply_left j μ
+  -- the swapped `L`
+  have hL₀lt : ∀ i c : Fin n, c < j → L₀ i c = L (σ i) c := fun i c hc => by
+    simp [hL₀, hc]
+  have hL₀ge : ∀ i c : Fin n, ¬ c < j → L₀ i c = L i c := fun i c hc => by
+    simp [hL₀, hc]
+  -- the common part of the new invariant, given the new column `j` of `L`
+  have hcore : ∀ L' : Matrix (Fin n) (Fin n) ℝ, (∀ i c, ¬ (j < i ∧ c = j) → L' i c = L₀ i c) →
+      (∀ i, j < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧
+        (∀ r, r ∈ o ↔ r < j) ∧ (∀ r ∈ o, fp.Rounds (L' i r * U' r j) (p r)) ∧
+        RoundsSumFrom fp (B.submatrix σ id i j) (o.map fun r => -p r) t ∧ |t| ≤ |U' j j| ∧
+        fp.Rounds (t / U' j j) (L' i j)) →
+      Alg342Core fp (B.submatrix σ id) (j + 1) L' U' := by
+    intro L' hL'o hL'j
+    have hLc : ∀ i c, c ≠ j → L' i c = L₀ i c := fun i c hc => hL'o i c fun h => hc h.2
+    have hLrow : ∀ i c, c < j → L' i c = L (σ i) c := fun i c hc => by
+      rw [hLc i c (ne_of_lt hc), hL₀lt i c hc]
+    refine ⟨fun i c hc hic => ?_, fun i c hc hci => ?_, fun i c hc => ?_, fun i c hc => ?_,
+      fun i c hic => ?_, fun i => ?_, fun i c hci => ?_⟩
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hc with hc | hc
+      · have hc' : c < j := Fin.lt_def.2 hc
+        have hij : i < j := lt_of_le_of_lt hic hc'
+        obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hU i c hc hic
+        refine ⟨o, p, hnd, ho, fun r hr => ?_, ?_⟩
+        · have hri := (ho r).1 hr
+          rw [hLrow i r (hri.trans hij), hσfix i hij, hU'o r c (ne_of_lt hc')]
+          exact hp r hr
+        · rw [submatrix_apply, hσfix i hij, hU'o i c (ne_of_lt hc')]
+          exact hsum
+      · have hcj : c = j := Fin.ext hc
+        subst hcj
+        obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvrow (σ i)
+        have hσi : ∀ r : Fin n, r < c → (r < σ i ↔ r < i) := fun r hr => by
+          rcases eq_or_lt_of_le hic with rfl | hic
+          · rw [hσj]
+            exact ⟨fun _ => hr, fun _ => lt_of_lt_of_le hr hjμ⟩
+          · rw [hσfix i hic]
+        refine ⟨o, p, hnd, fun r => (ho r).trans ⟨fun h => (hσi r h.2).1 h.1,
+          fun h => ⟨(hσi r (lt_of_lt_of_le h hic)).2 h, lt_of_lt_of_le h hic⟩⟩,
+          fun r hr => ?_, ?_⟩
+        · have hr' := (ho r).1 hr
+          rw [hLrow i r hr'.2, hU'j r, ite_eq_left hr'.2.le, hσfix r hr'.2]
+          exact hp r hr
+        · rw [hU'j i, ite_eq_left hic, submatrix_apply]
+          exact hsum
+    · rcases Nat.lt_succ_iff_lt_or_eq.1 hc with hc | hc
+      · have hc' : c < j := Fin.lt_def.2 hc
+        have hcσ : c < σ i := by
+          by_cases hij : i < j
+          · rw [hσfix i hij]; exact hci
+          · exact lt_of_lt_of_le hc' (Fin.le_def.2 (hmap i (Fin.le_def.1 (not_lt.1 hij))))
+        obtain ⟨o, p, t, hnd, ho, hp, hsum, hdom, hx⟩ := hL (σ i) c hc hcσ
+        refine ⟨o, p, t, hnd, ho, fun r hr => ?_, ?_, ?_, ?_⟩
+        · have hrc := (ho r).1 hr
+          rw [hLrow i r (hrc.trans hc'), hU'o r c (ne_of_lt hc')]
+          exact hp r hr
+        · rw [submatrix_apply]; exact hsum
+        · rw [hU'o c c (ne_of_lt hc')]; exact hdom
+        · rw [hU'o c c (ne_of_lt hc'), hLrow i c hc']; exact hx
+      · have hcj : c = j := Fin.ext hc
+        subst hcj
+        exact hL'j i hci
+    · have hcj : c ≠ j := fun h => by rw [h] at hc; exact absurd hc (by simp)
+      rw [hLc i c hcj, hL₀ge i c (fun h => by have := Fin.lt_def.1 h; omega)]
+      exact hLid i c (by omega)
+    · have hcj : c ≠ j := fun h => by rw [h] at hc; exact absurd hc (by simp)
+      rw [hU'o i c hcj]
+      exact hU0 i c (by omega)
+    · rw [hL'o i c fun h => by rw [h.2] at hic; exact lt_asymm h.1 hic]
+      by_cases hcj : c < j
+      · rw [hL₀lt i c hcj, hσfix i (hic.trans hcj)]
+        exact hLlow i c hic
+      · rw [hL₀ge i c hcj]
+        exact hLlow i c hic
+    · rw [hL'o i i fun ⟨h1, h2⟩ => by rw [h2] at h1; exact lt_irrefl _ h1]
+      by_cases hij : i < j
+      · rw [hL₀lt i i hij, hσfix i hij]
+        exact hLdiag i
+      · rw [hL₀ge i i hij]
+        exact hLdiag i
+    · by_cases hcj : c = j
+      · subst hcj
+        rw [hU'j i, ite_eq_right (not_le.2 hci)]
+      · rw [hU'o i c hcj]
+        exact hUup i c hci
+  -- the rows of the new column `j` of `L`, from `v`
+  have hvL : ∀ i, j < i → ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧
+      (∀ r, r ∈ o ↔ r < j) ∧ (∀ r ∈ o, fp.Rounds (L₀ i r * U' r j) (p r)) ∧
+      RoundsSumFrom fp (B.submatrix σ id i j) (o.map fun r => -p r) (v (σ i)) := by
+    intro i hi
+    obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvrow (σ i)
+    refine ⟨o, p, hnd, fun r => (ho r).trans ⟨fun h => h.2,
+      fun h => ⟨lt_of_lt_of_le h (hσlt i hi), h⟩⟩, fun r hr => ?_, hsum⟩
+    have hr' := (ho r).1 hr
+    rw [hL₀lt i r hr'.2, hU'j r, ite_eq_left hr'.2.le, hσfix r hr'.2]
+    exact hp r hr
+  have hdomv : ∀ i, j < i → |v (σ i)| ≤ |U' j j| := fun i hi => by
+    rw [hU'j j, ite_eq_left le_rfl, hσj]
+    exact hvmax _ (hσlt i hi)
+  have hpiv' : ∀ c : Fin n, (j : ℕ) + 1 ≤ (c : ℕ) → Function.update piv j μ c = c := fun c hc => by
+    rw [Function.update_of_ne (fun h => by rw [h] at hc; omega)]
+    exact hpiv c (by omega)
+  split_ifs at hst' with h0
+  · rw [SetM.mem_run_bind] at hst'
+    obtain ⟨L', hL', hst'⟩ := hst'
+    rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    -- the entries of `L'`
+    have hL'eq : ((List.finRange n).filter (j < ·)).foldlM
+        (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
+          let l ← fp.round (v (σ i) / v (σ j))
+          pure (L.updateRow i (Function.update (L i) j l))) L₀ =
+        (((List.finRange n).filter (j < ·)).map (·, j)).foldlM
+          (fun (L : Matrix (Fin n) (Fin n) ℝ) a => do
+            let x ← (fun (a : Fin n × Fin n) (_ : ℝ) (_ : Matrix (Fin n) (Fin n) ℝ) =>
+              fp.round (v (σ a.1) / v (σ j))) a (L a.1 a.2) L
+            pure (L.updateRow a.1 (Function.update (L a.1) a.2 x))) L₀ := by
+      rw [List.foldlM_map]
+    have hnd₁ : ((List.finRange n).filter (j < ·)).Nodup := (List.nodup_finRange n).filter _
+    have hl₁ : (((List.finRange n).filter (j < ·)).map (·, j)).Nodup :=
+      hnd₁.map fun _ _ h => (Prod.mk.inj h).1
+    have hl₁mem : ∀ i c, (i, c) ∈ ((List.finRange n).filter (j < ·)).map (·, j) ↔
+        j < i ∧ c = j := fun i c => by
+      simp only [List.mem_map, List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq,
+        Prod.mk.injEq]
+      constructor
+      · rintro ⟨a, ha, rfl, rfl⟩; exact ⟨ha, rfl⟩
+      · rintro ⟨hi, rfl⟩; exact ⟨i, hi, rfl, rfl⟩
+    rw [hL'eq] at hL'
+    obtain ⟨hL'₁, hL'₂⟩ := (mem_run_foldlM_updateEntry _ hl₁
+      (fun a _ (_ : Matrix (Fin n) (Fin n) ℝ) => fp.round (v (σ a.1) / v (σ j)))
+      (fun _ _ _ _ _ _ => rfl) L₀ L').1 hL'
+    have hL'o : ∀ i c, ¬ (j < i ∧ c = j) → L' i c = L₀ i c := fun i c h =>
+      hL'₁ i c fun hm => h ((hl₁mem i c).1 hm)
+    have hL'j : ∀ i, j < i → fp.Rounds (v (σ i) / v (σ j)) (L' i j) := fun i hi =>
+      hL'₂ (i, j) ((hl₁mem i j).2 ⟨hi, rfl⟩)
+    refine Or.inl ⟨?_, hpiv'⟩
+    rw [hB']
+    refine hcore L' hL'o fun i hi => ?_
+    obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvL i hi
+    refine ⟨o, p, v (σ i), hnd, ho, fun r hr => ?_, hsum, hdomv i hi, ?_⟩
+    · rw [hL'o i r fun h => by rw [h.2] at hr; exact lt_irrefl _ ((ho j).1 hr)]
+      exact hp r hr
+    · rw [hU'j j, ite_eq_left le_rfl]
+      exact hL'j i hi
+  · rw [SetM.mem_run_pure] at hst'
+    subst hst'
+    have h0' : v (σ j) = 0 := not_not.1 h0
+    by_cases hc : (∀ x, fp.Rounds x x) ∨ ¬ (j : ℕ) + 1 < n
+    · refine Or.inl ⟨?_, hpiv'⟩
+      rw [hB']
+      refine hcore L₀ (fun _ _ _ => rfl) fun i hi => ?_
+      obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hvL i hi
+      refine ⟨o, p, v (σ i), hnd, ho, hp, hsum, hdomv i hi, ?_⟩
+      have hvi : v (σ i) = 0 := by
+        have := hdomv i hi
+        rw [hU'j j, ite_eq_left le_rfl, h0', abs_zero] at this
+        exact abs_nonpos_iff.1 this
+      rw [hL₀ge i j (lt_irrefl _), hLid i j le_rfl, ite_eq_right (ne_of_gt hi), hvi, zero_div]
+      rcases hc with hc | hc
+      · exact hc 0
+      · exact absurd (by have := Fin.lt_def.1 hi; have := i.2; omega) hc
+    · obtain ⟨hc₁, hc₂⟩ := not_or.1 hc
+      refine Or.inr ⟨⟨j, by simp, not_not.1 hc₂, ?_⟩, hc₁⟩
+      change U' j j = 0
+      rw [hU'j j, ite_eq_left le_rfl]
+      exact h0'
+
+/-- The invariant after all columns. -/
+theorem alg342Inv_of_mem_run (A : Matrix (Fin n) (Fin n) ℝ) :
+    ∀ out ∈ (algorithm_3_4_2 fp.round A).run, Alg342Inv fp A n out :=
+  SetM.forall_mem_run_foldlM_finRange (Alg342Inv fp A)
+    (Or.inl ⟨⟨fun _ _ h => absurd h (Nat.not_lt_zero _),
+      fun _ _ h => absurd h (Nat.not_lt_zero _), fun i c _ => by simp [one_apply],
+      fun _ _ _ => rfl, fun i c h => by simp [one_apply, h.ne], fun i => by simp,
+      fun _ _ _ => rfl⟩, fun _ _ => rfl⟩)
+    fun j st hst st' hst' => alg342Inv_step A j st hst st' hst'
+
+/-- The finished invariant of Algorithm 3.4.2, read on the packed matrix of `L` and `U`: the
+invariant of elimination with partial pivoting after all `n` steps, whose packed factors are `L`
+and `U`. -/
+theorem pivStageInv_of_alg342Core {B L U : Matrix (Fin n) (Fin n) ℝ}
+    (h : Alg342Core fp B n L U) :
+    PivStageInv fp B n (of fun i c => if c < i then L i c else U i c) ∧
+      packedL (of fun i c => if c < i then L i c else U i c) = L ∧
+      packedU (of fun i c => if c < i then L i c else U i c) = U := by
+  obtain ⟨hU, hL, -, -, hLlow, hLdiag, hUup⟩ := h
+  set S : Matrix (Fin n) (Fin n) ℝ := of fun i c => if c < i then L i c else U i c with hS
+  have hSl : ∀ i c : Fin n, c < i → S i c = L i c := fun i c h => by simp [hS, h]
+  have hSu : ∀ i c : Fin n, i ≤ c → S i c = U i c := fun i c h => by simp [hS, not_lt.2 h]
+  refine ⟨⟨fun i j => ⟨fun _ hij => ?_, fun _ hji => ?_, fun hi _ => absurd i.2 (not_lt.2 hi)⟩,
+    fun i j _ hji => ?_⟩, ?_, ?_⟩
+  · obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hU i j j.2 hij
+    refine ⟨o, p, hnd, ho, fun r hr => ?_, ?_⟩
+    · have hri := (ho r).1 hr
+      rw [hSl i r hri, hSu r j (hri.le.trans hij)]
+      exact hp r hr
+    · rw [hSu i j hij]; exact hsum
+  · obtain ⟨o, p, t, hnd, ho, hp, hsum, -, hx⟩ := hL i j j.2 hji
+    refine ⟨o, p, t, hnd, ho, fun r hr => ?_, hsum, ?_⟩
+    · have hrj := (ho r).1 hr
+      rw [hSl i r (hrj.trans hji), hSu r j hrj.le]
+      exact hp r hr
+    · rw [hSu j j le_rfl, hSl i j hji]; exact hx
+  · obtain ⟨o, p, t, hnd, ho, hp, hsum, hd, hx⟩ := hL i j j.2 hji
+    refine ⟨o, p, t, hnd, ho, fun r hr => ?_, hsum, ?_, ?_⟩
+    · have hrj := (ho r).1 hr
+      rw [hSl i r (hrj.trans hji), hSu r j hrj.le]
+      exact hp r hr
+    · rw [hSu j j le_rfl]; exact hd
+    · rw [hSu j j le_rfl, hSl i j hji]; exact hx
+  · ext i c
+    rcases lt_trichotomy c i with hci | rfl | hic
+    · rw [packedL_apply_of_lt _ hci, hSl i c hci]
+    · rw [packedL_apply_self, hLdiag]
+    · rw [packedL_apply_of_lt' _ hic, hLlow i c hic]
+  · ext i c
+    rcases le_or_gt i c with hic | hci
+    · rw [packedU_apply_of_le _ hic, hSu i c hic]
+    · rw [packedU_apply_of_lt _ hci, hUup i c hci]
+
+/-- **The bridge of Algorithm 3.4.2**: every run `(L̂, Û, piv)` whose returned pivots `û_jj`,
+`j + 1 < n`, are nonzero is an admissible computed LU factorization of the permuted matrix `P A`,
+`FloatingPoint.RoundsLU fp (P A) L̂ Û`, with computed multipliers at most `1 + u` in absolute
+value — the gaxpy bridge `algorithm_3_2_2_rounds` for `A` with its rows permuted by the recorded
+interchanges, which move the finished rows of `L` together with the rows of `A`. -/
+theorem algorithm_3_4_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
+    ∀ out ∈ (algorithm_3_4_2 fp.round A).run,
+      (∀ j : Fin n, (j : ℕ) + 1 < n → out.2.1 j j ≠ 0) →
+      RoundsLU fp (A.submatrix (pivPerm out.2.2) id) out.1 out.2.1 ∧
+        ∀ i j, |out.1 i j| ≤ 1 + fp.u := by
+  intro out hout hpiv
+  rcases alg342Inv_of_mem_run A out hout with ⟨h, -⟩ | ⟨⟨j, -, hjn, hj0⟩, -⟩
+  · obtain ⟨⟨hS, hD⟩, hL, hU⟩ := pivStageInv_of_alg342Core h
+    have hR := roundsLU_of_luStageInv hS
+    rw [hL, hU] at hR
+    refine ⟨hR, fun i j => ?_⟩
+    rw [← hL]
+    rcases lt_trichotomy j i with hji | rfl | hij
+    · rw [packedL_apply_of_lt _ hji]
+      exact abs_le_one_add_of_lowerEntryDom (hD i j j.2 hji)
+    · rw [packedL_apply_self, abs_one]
+      linarith [fp.u_nonneg]
+    · rw [packedL_apply_of_lt' _ hij, abs_zero]
+      linarith [fp.u_nonneg]
+  · exact absurd hj0 (hpiv j hjn)
+
+/-- The exact run of Algorithm 3.4.2 is a run of the exact model. -/
+private theorem algorithm_3_4_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (algorithm_3_4_2 pure A) ∈ (algorithm_3_4_2 (RoundingModel.exact ℝ).round A).run := by
+  rw [RoundingModel.round_exact]
+  simp only [algorithm_3_4_2, pure_bind, ite_pure, List.foldlM_pure, SetM.mem_run_pure]
+  rfl
+
+/-- **Exact correctness of Algorithm 3.4.2**: "this algorithm computes the factorization
+`PA = LU` where `P` is a permutation matrix encoded by `piv(1:n-1)`, `L` is unit lower triangular
+with `|ℓ_ij| ≤ 1`, and `U` is upper triangular" — for every `A`: a zero pivot comes with a zero
+`v(j:n)`, and then the skipped division is the division `0/0 = 0`. Read off the invariant of the
+bridge at the exact model. -/
+theorem algorithm_3_4_2_spec (A : Matrix (Fin n) (Fin n) ℝ) :
+    IsLU ((pivPerm (Id.run (algorithm_3_4_2 pure A)).2.2).permMatrix ℝ * A)
+        (Id.run (algorithm_3_4_2 pure A)).1 (Id.run (algorithm_3_4_2 pure A)).2.1 ∧
+      ∀ i j, |(Id.run (algorithm_3_4_2 pure A)).1 i j| ≤ 1 := by
+  rcases alg342Inv_of_mem_run A _ (algorithm_3_4_2_mem_exact A) with ⟨h, -⟩ | ⟨-, hn⟩
+  · obtain ⟨hP, hL, hU⟩ := pivStageInv_of_alg342Core h
+    have := isLU_of_pivStageInv_exact hP
+    rw [hL, hU] at this
+    rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul]
+    exact this
+  · exact absurd (fun x => rfl) hn
+
+end Alg342Bridge
+
 /-- §3.4.5, the matrix of the `2^{n-1}` example: `a_ij = 1` if `i = j` or `j = n`, `-1` if
 `i > j`, `0` otherwise (0-based, `j = n - 1`). -/
 noncomputable def growthExample (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
@@ -1299,6 +2205,166 @@ noncomputable def rookPivotSearch (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (
       else (st.1, firstMaxIndex (fun j => A st.1 j) k, st.2.2.1 + 1, false)
     else (st.1, st.2.1, st.2.2.1, true)) (k, k, 0, false)
   (st.1, st.2.1)
+
+/-- One pass of the rook scan's `while` loop, on the state `(μ, λ, s, done)`. -/
+private noncomputable def rookPass (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
+    (st : Fin n × Fin n × ℕ × Bool) : Fin n × Fin n × ℕ × Bool :=
+  if st.2.2.2 then st
+  else if |A st.1 st.2.1| < |A (firstMaxIndex (fun i => A i st.2.1) k) st.2.1| ∨
+      |A st.1 st.2.1| < |A st.1 (firstMaxIndex (fun j => A st.1 j) k)| then
+    if st.2.2.1 % 2 = 0 then (firstMaxIndex (fun i => A i st.2.1) k, st.2.1, st.2.2.1 + 1, false)
+    else (st.1, firstMaxIndex (fun j => A st.1 j) k, st.2.2.1 + 1, false)
+  else (st.1, st.2.1, st.2.2.1, true)
+
+/-- The rook condition at `(μ, λ)`: in the trailing block, `|a_μλ|` is maximal in its column and
+in its row. -/
+private def IsRookEntry (A : Matrix (Fin n) (Fin n) ℝ) (k μ l : Fin n) : Prop :=
+  k ≤ μ ∧ k ≤ l ∧ (∀ i, k ≤ i → |A i l| ≤ |A μ l|) ∧ ∀ j, k ≤ j → |A μ j| ≤ |A μ l|
+
+/-- The number of entries of the trailing block from `k` on exceeding `τ` in modulus. -/
+private noncomputable def rookPotential (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (τ : ℝ) : ℕ :=
+  ((Finset.Ici k ×ˢ Finset.Ici k).filter fun p : Fin n × Fin n => τ < |A p.1 p.2|).card
+
+private theorem rookPotential_lt_card (A : Matrix (Fin n) (Fin n) ℝ) {k μ l : Fin n}
+    (hμ : k ≤ μ) (hl : k ≤ l) :
+    rookPotential A k |A μ l| < (n - k) ^ 2 := by
+  have hcard : (Finset.Ici k ×ˢ Finset.Ici k).card = (n - k) ^ 2 := by
+    rw [Finset.card_product, Fin.card_Ici, sq]
+  rw [← hcard]
+  refine Finset.card_lt_card (Finset.filter_ssubset.2 ⟨(μ, l), ?_, lt_irrefl _⟩)
+  simp [hμ, hl]
+
+private theorem rookPotential_lt (A : Matrix (Fin n) (Fin n) ℝ) {k μ l : Fin n}
+    (hμ : k ≤ μ) (hl : k ≤ l) {τ : ℝ} (hτ : τ < |A μ l|) :
+    rookPotential A k |A μ l| < rookPotential A k τ := by
+  refine Finset.card_lt_card ⟨fun p hp => ?_, ?_⟩
+  · simp only [Finset.mem_filter] at hp ⊢
+    exact ⟨hp.1, hτ.trans hp.2⟩
+  intro h
+  have hmem : (μ, l) ∈ Finset.Ici k ×ˢ Finset.Ici k := by simp [hμ, hl]
+  have := h (Finset.mem_filter.2 ⟨hmem, hτ⟩)
+  exact lt_irrefl _ (Finset.mem_filter.1 this).2
+
+/-- The invariant of the rook scan after `t` passes. -/
+private def RookInv (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (t : ℕ)
+    (st : Fin n × Fin n × ℕ × Bool) : Prop :=
+  k ≤ st.1 ∧ k ≤ st.2.1 ∧ (st.2.2.2 = true → IsRookEntry A k st.1 st.2.1) ∧
+    (st.2.2.2 = false → st.2.2.1 = t ∧ (1 ≤ t → rookPotential A k |A st.1 st.2.1| + t ≤ (n - k) ^ 2)
+      ∧ (t % 2 = 1 → ∀ i, k ≤ i → |A i st.2.1| ≤ |A st.1 st.2.1|)
+      ∧ (t % 2 = 0 → 1 ≤ t → ∀ j, k ≤ j → |A st.1 j| ≤ |A st.1 st.2.1|))
+
+private theorem rookInv_pass (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (t : ℕ)
+    (st : Fin n × Fin n × ℕ × Bool) (h : RookInv A k t st) :
+    RookInv A k (t + 1) (rookPass A k st) := by
+  obtain ⟨μ, l, s, d⟩ := st
+  obtain ⟨hμ, hl, hdone, hrun⟩ := h
+  simp only at hμ hl hdone hrun
+  cases d with
+  | true => exact ⟨hμ, hl, hdone, fun h => by simp [rookPass] at h⟩
+  | false =>
+    obtain ⟨rfl, hpot, hcol, hrow⟩ := hrun rfl
+    obtain ⟨hcμ, hcmax⟩ := firstMaxIndex_spec (fun i => A i l) k
+    obtain ⟨hrl, hrmax⟩ := firstMaxIndex_spec (fun j => A μ j) k
+    by_cases hv : |A μ l| < |A (firstMaxIndex (fun i => A i l) k) l| ∨
+        |A μ l| < |A μ (firstMaxIndex (fun j => A μ j) k)|
+    · by_cases hs : s % 2 = 0
+      · simp only [rookPass, Bool.false_eq_true, ↓reduceIte, hv, hs]
+        refine ⟨hcμ, hl, fun h => by simp at h, fun _ => ⟨rfl, fun _ => ?_, fun _ => hcmax,
+          fun h => by omega⟩⟩
+        dsimp only
+        rcases Nat.eq_zero_or_pos s with rfl | hs0
+        · have := rookPotential_lt_card A hcμ hl
+          omega
+        · have hc : |A μ l| < |A (firstMaxIndex (fun i => A i l) k) l| := by
+            rcases hv with hv | hv
+            · exact hv
+            · exact absurd (hrow hs hs0 _ hrl) (not_le.2 hv)
+          have := rookPotential_lt A hcμ hl hc
+          have := hpot hs0
+          omega
+      · simp only [rookPass, Bool.false_eq_true, ↓reduceIte, hv, hs]
+        have hs1 : s % 2 = 1 := by omega
+        have hs0 : 1 ≤ s := by omega
+        refine ⟨hμ, hrl, fun h => by simp at h, fun _ => ⟨rfl, fun _ => ?_, fun h => by omega,
+          fun _ _ => hrmax⟩⟩
+        have hr : |A μ l| < |A μ (firstMaxIndex (fun j => A μ j) k)| := by
+          rcases hv with hv | hv
+          · exact absurd (hcol hs1 _ hcμ) (not_le.2 hv)
+          · exact hv
+        dsimp only
+        have := rookPotential_lt A hμ hrl hr
+        have := hpot hs0
+        omega
+    · simp only [rookPass, Bool.false_eq_true, ↓reduceIte, hv]
+      rw [not_or, not_lt, not_lt] at hv
+      refine ⟨hμ, hl, fun _ => ⟨hμ, hl, fun i hi => (hcmax i hi).trans hv.1,
+        fun j hj => (hrmax j hj).trans hv.2⟩, fun h => by simp at h⟩
+
+/-- The state after `t` passes satisfies the invariant. -/
+private theorem rookInv_foldl (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (t : ℕ) :
+    RookInv A k t ((List.range t).foldl (fun st _ => rookPass A k st) (k, k, 0, false)) := by
+  induction t with
+  | zero =>
+    exact ⟨le_rfl, le_rfl, fun h => by simp at h, fun _ => ⟨rfl, fun h => by omega,
+      fun h => by omega, fun _ h => by omega⟩⟩
+  | succ t ih =>
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    exact rookInv_pass A k t _ ih
+
+/-- **§3.4.7, termination and correctness of the rook scan**: "the value of `τ` is monotone
+increasing and that ensures termination". Every pass of the `while` loop after the first strictly
+increases `τ = |a_μλ|` or exits, so with at least `(n - k)² + 1` passes (the number of entries of
+the trailing block, plus one) the loop has exited, and on exit `(μ, λ)` lies in the trailing block
+`A(k:n, k:n)` with `|a_μλ|` maximal in its column and in its row there. Hence
+`fun A k => rookPivotSearch A k ((n - k)² + 1)` is a rook-pivoting strategy
+(`Matrix.IsRookPivot`). -/
+theorem rookPivotSearch_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) {fuel : ℕ}
+    (hfuel : (n - k) ^ 2 + 1 ≤ fuel) :
+    k ≤ (rookPivotSearch A k fuel).1 ∧ k ≤ (rookPivotSearch A k fuel).2 ∧
+      (∀ i, k ≤ i → |A i (rookPivotSearch A k fuel).2| ≤
+        |A (rookPivotSearch A k fuel).1 (rookPivotSearch A k fuel).2|) ∧
+      ∀ j, k ≤ j → |A (rookPivotSearch A k fuel).1 j| ≤
+        |A (rookPivotSearch A k fuel).1 (rookPivotSearch A k fuel).2| := by
+  have hprog : rookPivotSearch A k fuel =
+      (((List.range fuel).foldl (fun st _ => rookPass A k st) (k, k, 0, false)).1,
+        ((List.range fuel).foldl (fun st _ => rookPass A k st) (k, k, 0, false)).2.1) := rfl
+  rw [hprog]
+  obtain ⟨-, -, hdone, hrun⟩ := rookInv_foldl A k fuel
+  cases hd : ((List.range fuel).foldl (fun st _ => rookPass A k st) (k, k, 0, false)).2.2.2 with
+  | true => exact hdone hd
+  | false =>
+    have := ((hrun hd).2.1) (by omega)
+    omega
+
+/-- §3.4.7, the rook-pivoting strategy: the rook scan `rookPivotSearch` from `(k, k)` with
+`(n - k)² + 1` passes, enough for the loop to exit (`rookPivotSearch_spec`). -/
+noncomputable def rookPivot (M : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n × Fin n :=
+  rookPivotSearch M k ((n - k) ^ 2 + 1)
+
+/-- The rook scan is a rook-pivoting strategy in the sense of the backbone. -/
+theorem isRookPivot_rookPivot : IsRookPivot (rookPivot (n := n)) :=
+  fun A k => by
+    simpa only [Real.norm_eq_abs, rookPivot] using rookPivotSearch_spec A k le_rfl
+
+/-- **§3.4.7, rook pivoting "computes the factorization `P A Q = L U`"**: Gaussian elimination
+with the rook strategy (`Matrix.gemFullPivotStage A rookPivot`) gives `P A Q = L U`, `P` and
+`Q = (ρ⁻¹).permMatrix ℝ` the accumulated row and column interchanges, `U` the last pivoted stage
+and `L` the multipliers of elimination without pivoting on `P A Q`, with `|ℓ_ij| ≤ 1` and
+`|u_ij| ≤ |u_ii|` (P3.4.2's question, answered yes). No hypothesis on `A`: column maximality makes
+a zero pivot come with a zero column. The "same level of reliability as complete pivoting" is not
+formalized. -/
+theorem rookPivoting_isLU (A : Matrix (Fin n) (Fin n) ℝ) :
+    IsLU ((gemFullPivotStage A rookPivot n).2.1.permMatrix ℝ * A *
+          ((gemFullPivotStage A rookPivot n).2.2)⁻¹.permMatrix ℝ)
+        (gemLower ((gemFullPivotStage A rookPivot n).2.1.permMatrix ℝ * A *
+          ((gemFullPivotStage A rookPivot n).2.2)⁻¹.permMatrix ℝ))
+        (gemFullPivotStage A rookPivot n).1 ∧
+      (∀ i j, |gemLower ((gemFullPivotStage A rookPivot n).2.1.permMatrix ℝ * A *
+          ((gemFullPivotStage A rookPivot n).2.2)⁻¹.permMatrix ℝ) i j| ≤ 1) ∧
+      ∀ i j, |(gemFullPivotStage A rookPivot n).1 i j| ≤
+        |(gemFullPivotStage A rookPivot n).1 i i| := by
+  simpa only [Real.norm_eq_abs] using
+    gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU A isRookPivot_rookPivot
 
 end MorePivoting
 
@@ -1379,6 +2445,128 @@ theorem growthExample_isLU :
       simp only [growthExampleU, of_apply, hj, ↓reduceIte, mul_ite, mul_one, mul_zero]
       rw [Finset.sum_ite_eq']
       simp
+
+/-- The stage `A^{(k)}` of elimination on the growth example: last column `2^{min(i,k)}`, `1` on
+the diagonal, `-1` below it in the columns `k, …, n-2`, `0` elsewhere. -/
+private noncomputable def growthStage (n k : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i j => if (j : ℕ) = n - 1 then 2 ^ min (i : ℕ) k else if i = j then 1
+    else if (j : ℕ) < i ∧ k ≤ (j : ℕ) then -1 else 0
+
+private theorem growthStage_zero : growthStage n 0 = growthExample n := by
+  ext i j
+  simp only [growthStage, growthExample, of_apply, zero_le, and_true,
+    Fin.lt_def]
+  by_cases hj : (j : ℕ) = n - 1
+  · simp [hj]
+  · by_cases hij : i = j
+    · simp [hij]
+    · simp [hj, hij]
+
+private theorem elimStep_growthStage {k : ℕ} (hk : k < n) :
+    elimStep (growthStage n k) ⟨k, hk⟩ = growthStage n (k + 1) := by
+  ext i j
+  rw [elimStep_apply]
+  by_cases hki : k < (i : ℕ)
+  · rw [ite_eq_left (Fin.lt_def.2 hki)]
+    have hkn : k ≠ n - 1 := by have := i.2; omega
+    have h1 : growthStage n k i ⟨k, hk⟩ = -1 := by
+      simp only [growthStage, of_apply, hkn, ite_false, Fin.ext_iff]
+      rw [ite_eq_right (by omega), ite_eq_left ⟨hki, le_rfl⟩]
+    have h2 : growthStage n k ⟨k, hk⟩ ⟨k, hk⟩ = 1 := by
+      simp [growthStage, hkn]
+    rw [h1, h2]
+    simp only [growthStage, of_apply, Fin.ext_iff]
+    by_cases hj : (j : ℕ) = n - 1
+    · simp only [hj, ite_true, min_self]
+      rw [min_eq_right hki.le, min_eq_right (by omega : k + 1 ≤ (i : ℕ)), pow_succ]
+      ring
+    · simp only [hj, ite_false]
+      by_cases hjk : (j : ℕ) = k
+      · rw [ite_eq_right (by omega), ite_eq_left ⟨by omega, by omega⟩, ite_eq_left hjk.symm,
+          ite_eq_right (by omega), ite_eq_right (by omega)]
+        ring
+      · rw [ite_eq_right (Ne.symm hjk), ite_eq_right (by omega : ¬ ((j : ℕ) < k ∧ k ≤ (j : ℕ)))]
+        by_cases hij : (i : ℕ) = j
+        · simp [hij]
+        · rw [ite_eq_right hij, ite_eq_right hij]
+          by_cases hc : (j : ℕ) < i ∧ k ≤ (j : ℕ)
+          · rw [ite_eq_left hc, ite_eq_left ⟨hc.1, by omega⟩]; ring
+          · rw [ite_eq_right hc, ite_eq_right (fun h => hc ⟨h.1, by omega⟩)]; ring
+  · rw [ite_eq_right (fun h => hki (Fin.lt_def.1 h)), sub_zero]
+    simp only [growthStage, of_apply]
+    rw [min_eq_left (by omega : (i : ℕ) ≤ k), min_eq_left (by omega : (i : ℕ) ≤ k + 1)]
+    rw [ite_eq_right (fun h : (j : ℕ) < i ∧ k ≤ (j : ℕ) => by omega),
+      ite_eq_right (fun h : (j : ℕ) < i ∧ k + 1 ≤ (j : ℕ) => by omega)]
+
+private theorem gemStage_growthExample {k : ℕ} (hk : k ≤ n) :
+    gemStage (growthExample n) k = growthStage n k := by
+  induction k with
+  | zero => exact growthStage_zero.symm
+  | succ k ih =>
+    rw [gemStage_succ_of_lt _ (by omega), ih (by omega), elimStep_growthStage]
+
+/-- On a stage of the growth example, the first maximizing row of column `k` is `k`. -/
+private theorem partialPivotRow_growthStage {k : ℕ} (hk : k < n) :
+    partialPivotRow (growthStage n k) ⟨k, hk⟩ = ⟨k, hk⟩ := by
+  refine le_antisymm (partialPivotRow_le _ _ le_rfl fun r hr => ?_) (le_partialPivotRow _ _)
+  rcases eq_or_lt_of_le hr with rfl | hlt
+  · exact le_rfl
+  have hlt' : k < (r : ℕ) := Fin.lt_def.1 hlt
+  have hkn : k ≠ n - 1 := by have := r.2; omega
+  simp only [growthStage, of_apply, hkn, ite_false]
+  split_ifs <;> norm_num
+
+private theorem gemPivotStage_growthExample {k : ℕ} (hk : k ≤ n) :
+    gemPivotStage (growthExample n) partialPivotRow k = (growthStage n k, 1) := by
+  induction k with
+  | zero => rw [gemPivotStage_zero, growthStage_zero]
+  | succ k ih =>
+    rw [gemPivotStage_succ_of_lt _ _ (by omega), gemPivotSwap, ih (by omega)]
+    simp only [partialPivotRow_growthStage (show k < n by omega), Equiv.swap_self,
+      ← Equiv.Perm.one_def, Equiv.Perm.coe_one, mul_one, submatrix_id_id, elimStep_growthStage]
+
+private theorem abs_growthStage_le (k : ℕ) (i j : Fin n) :
+    |growthStage n k i j| ≤ 2 ^ (n - 1) := by
+  simp only [growthStage, of_apply]
+  have h1 : (1 : ℝ) ≤ 2 ^ (n - 1) := one_le_pow₀ (by norm_num)
+  split_ifs
+  · rw [abs_of_pos (by positivity)]
+    exact pow_le_pow_right₀ (by norm_num) (by have := i.2; omega)
+  · simpa using h1
+  · simpa using h1
+  · simp
+
+/-- **§3.4.5, no interchanges on the growth example**: "there is no swapping of rows during
+Gaussian elimination with partial pivoting" on `growthExample n` — every interchange of
+`Matrix.gemPivotStage (growthExample n) Matrix.partialPivotRow` is trivial — and the growth
+factor is `2^{n-1}` (for `n ≥ 1`): the stage `A^{(k)}` has last column `2^{min(i,k)}`, the entry
+`u_nn = 2^{n-1}` is the largest, and the entries of `A` are at most `1`. -/
+theorem growthExample_noInterchange :
+    (gemPivotStage (growthExample n) partialPivotRow n).2 = 1 ∧
+      (0 < n → growthFactor (growthExample n) = 2 ^ (n - 1)) := by
+  refine ⟨by rw [gemPivotStage_growthExample le_rfl], fun hn => ?_⟩
+  have hsup : (growthExample n).supAbs = 1 := by
+    refine le_antisymm (supAbs_le zero_le_one fun i j => ?_) ?_
+    · simp only [growthExample, of_apply]
+      split_ifs <;> simp
+    · have : |growthExample n ⟨0, hn⟩ ⟨0, hn⟩| = 1 := by simp [growthExample]
+      rw [← this]
+      exact le_ciSup (f := fun p : Fin n × Fin n => |growthExample n p.1 p.2|)
+        (Set.finite_range _).bddAbove (⟨0, hn⟩, ⟨0, hn⟩)
+  have : Nonempty (Fin n × Fin n × Fin n) := ⟨(⟨0, hn⟩, ⟨0, hn⟩, ⟨0, hn⟩)⟩
+  unfold growthFactor
+  rw [hsup, div_one]
+  refine le_antisymm (ciSup_le fun p => ?_) ?_
+  · rw [gemStage_growthExample p.1.2.le]
+    exact abs_growthStage_le _ _ _
+  · have hl : |gemStage (growthExample n) (n - 1) ⟨n - 1, by omega⟩ ⟨n - 1, by omega⟩| =
+        2 ^ (n - 1) := by
+      rw [gemStage_growthExample (by omega)]
+      simp [growthStage]
+    rw [← hl]
+    exact le_ciSup (f := fun p : Fin n × Fin n × Fin n => |gemStage (growthExample n) p.1 p.2.1
+      p.2.2|) (Set.finite_range _).bddAbove (⟨n - 1, by omega⟩, ⟨n - 1, by omega⟩,
+        ⟨n - 1, by omega⟩)
 
 end GrowthExample
 
@@ -1518,6 +2706,83 @@ theorem equation_3_4_5 (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (τ : Fin n 
   refine ⟨⟨_, fun i hi => ?_, heq⟩, heq⟩
   rw [permMatrix_mulVec, Function.comp_apply, hfix i hi]
   exact hτ i hi
+
+/-- §3.4.3, the book's `M̃_k = P' M_k P'ᵀ` (3.4.5) for the Gauss transformation `M_k` of step `k`
+of partial pivoting (as in (3.4.2)) and `P' = Π_{n-1} ⋯ Π_{k+1}` the later interchanges
+(`σ_{k+1}⁻¹ σ_n`). -/
+noncomputable def pivotedGaussTransformation (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
+    Matrix (Fin n) (Fin n) ℝ :=
+  ((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
+      (gemPivotStage A partialPivotRow n).2).permMatrix ℝ *
+    gaussTransformation (gaussVector
+      (fun i => (interchange k (partialPivotRow (partialPivotStage A k) k) *
+        partialPivotStage A k) i k) k) k *
+    (((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
+      (gemPivotStage A partialPivotRow n).2).permMatrix ℝ)ᵀ
+
+/-- **(3.4.4)**: `M̃_{n-1} ⋯ M̃_1 P A = U` with `M̃_k = P' M_k P'ᵀ` (`pivotedGaussTransformation`)
+— the book's answer to "where is `L`?". Each `M̃_k` is the Gauss transformation of step `k` of
+elimination *without* pivoting on `P A`: `M̃_k (P A)^{(k)} = (P A)^{(k+1)}` (so
+`L = (M̃_{n-1} ⋯ M̃_1)⁻¹` is the unit lower factor of `P A`, whose columns are the permuted
+multipliers, `equation_3_4_5`); the product applied to `P A` is the last stage `U` of partial
+pivoting. -/
+theorem equation_3_4_4 (A : Matrix (Fin n) (Fin n) ℝ) :
+    (∀ k : Fin n, pivotedGaussTransformation A k *
+        gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) k =
+      gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) (k + 1)) ∧
+      (List.finRange n).foldl (fun B k => pivotedGaussTransformation A k * B)
+          ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) =
+        partialPivotStage A n := by
+  have hpiv : ∀ (M : Matrix (Fin n) (Fin n) ℝ) k, k ≤ partialPivotRow M k :=
+    fun M k => le_partialPivotRow M k
+  have hsub : ∀ (σ : Equiv.Perm (Fin n)) (B : Matrix (Fin n) (Fin n) ℝ),
+      B.submatrix σ id = σ.permMatrix ℝ * B := fun σ B => by
+    rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul]
+  have hstep : ∀ k : Fin n, pivotedGaussTransformation A k *
+      gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) k =
+      gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) (k + 1) := by
+    intro k
+    have hσ : (gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2 =
+        (gemPivotStage A partialPivotRow k).2 *
+          Equiv.swap k (partialPivotRow (partialPivotStage A k) k) := by
+      rw [gemPivotStage_succ_of_lt A partialPivotRow k.2]
+      rfl
+    have hρ : (gemPivotStage A partialPivotRow k).2⁻¹ * (gemPivotStage A partialPivotRow n).2 =
+        Equiv.swap k (partialPivotRow (partialPivotStage A k) k) *
+          ((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
+            (gemPivotStage A partialPivotRow n).2) := by
+      rw [hσ]
+      group
+    have h3 : (gemPivotStage A partialPivotRow ((k : ℕ) + 1)).1 =
+        gaussTransformation (gaussVector
+          (fun i => (interchange k (partialPivotRow (partialPivotStage A k) k) *
+            partialPivotStage A k) i k) k) k *
+          (interchange k (partialPivotRow (partialPivotStage A k) k) * partialPivotStage A k) :=
+      (equation_3_4_2 A).1 k
+    have hPP : ∀ ρ : Equiv.Perm (Fin n), (ρ.permMatrix ℝ)ᵀ * ρ.permMatrix ℝ = 1 := fun ρ => by
+      rw [transpose_permMatrix, ← permMatrix_mul, mul_inv_cancel, permMatrix_one]
+    rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A partialPivotRow hpiv k,
+      gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A partialPivotRow hpiv ((k : ℕ) + 1),
+      hsub, hsub, h3, hρ, permMatrix_mul]
+    simp only [pivotedGaussTransformation, interchange, Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc (Matrix.transpose _), hPP, Matrix.one_mul]
+  refine ⟨hstep, ?_⟩
+  have hfold : ∀ m ≤ n, ((List.finRange n).take m).foldl
+      (fun B k => pivotedGaussTransformation A k * B)
+      ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) =
+      gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) m := by
+    intro m
+    induction m with
+    | zero => intro _; rfl
+    | succ m ih =>
+      intro hm
+      rw [List.take_succ_eq_append_getElem (by simpa using hm), List.foldl_append,
+        List.foldl_cons, List.foldl_nil, ih (by omega)]
+      have hget : (List.finRange n)[m]'(by simpa using hm) = ⟨m, hm⟩ := by simp
+      rw [hget]
+      exact hstep ⟨m, hm⟩
+  rw [← List.take_length (l := List.finRange n), List.length_finRange, hfold n le_rfl,
+    gemStage_permMatrix_mul_card A partialPivotRow hpiv]
 
 end WhereIsL
 

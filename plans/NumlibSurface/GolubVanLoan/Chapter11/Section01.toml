@@ -82,39 +82,14 @@ source = 'Golub–Van Loan, Matrix Computations, §11.1.8'
 
 [[node]]
 id = "rowGivensQR"
-kind = "definition"
-desc = '''
-Row-by-row Givens QR (11.1.9), D4 program on `A : Matrix (Fin m) (Fin n) ℝ`: for `i = 1 : m`,
-`j = 1 : min(i−1, n)`, if the current `a_ij ≠ 0` (a comparison on the computed value) compute
-`(c, s)` by ch05's Algorithm 5.1.3 (`GolubVanLoan.Chapter05.algorithm_5_1_3`, `givens(a_jj, a_ij)`)
-and rotate rows `j` and `i` on columns `j:n` by chapter 5's shared helper (convention 13)
-`GolubVanLoan.Chapter05.givensApplyLeft rnd j i c s cols A`, `cols` the index list `[j, …, n−1]`
-(convention 10). ★★
-
-Blocked: chapter 5's surface (`algorithm_5_1_3`, `givensApplyLeft`) is not on this branch's base
-(agent s05 writes it); convention 5 requires calling those programs, so the program cannot be
-written before they land. Estimate once they exist: ~20 lines.
-'''
-deps = ["GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.9)'
 
 [[node]]
 id = "equation_11_1_9"
-kind = "theorem"
-desc = '''
-Exact semantics: the result `R' := Id.run (rowGivensQR pure A)` has `R' i j = 0` for `j < i`
-and `R'ᵀ R' = Aᵀ A` (it is `Qᵀ A` for an orthogonal `Q`, the product of the plane rotations);
-in particular its first `n` rows are the `R` factor of a QR factorization of `A` up to row signs.
-Proof: loop invariant `R'ᵀ R' = Aᵀ A` (each rotation is orthogonal: `GolubVanLoan.Chapter05.givensRotation` via
-ch05's spec of Algorithm 5.1.3; `givensApplyLeft_spec` on the columns listed, the columns `< j` of rows
-`j`, `i` being zero) and "rows `< i` are upper triangular in their first `i−1`
-columns, row `i` is zero in columns `< j`" (the rotation zeros `a_ij`, `Matrix.givensPair`). ★★★
-(~150 lines)
+source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.9)'
 
-Blocked: needs `rowGivensQR` and chapter 5's `algorithm_5_1_3_spec`, `givensApplyLeft_spec`,
-`givensRotation` (agent s05, not on this branch's base). Estimate once they exist: ~150 lines.
-'''
-deps = ["rowGivensQR", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensRotation"]
+[[node]]
+id = "rowGivensQR_run_eq"
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.1.9)'
 
 [[node]]

@@ -4,6 +4,9 @@ import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.TransposeFree
 import NumlibSurface.GolubVanLoan.Chapter01.Section04
+import NumlibSurface.GolubVanLoan.Chapter03.Section01
+import NumlibSurface.GolubVanLoan.Chapter05.Section01
+import NumlibSurface.GolubVanLoan.Chapter10.Section05
 
 /-!
 # Golub–Van Loan §11.4: other Krylov methods
@@ -54,6 +57,10 @@ The book's `𝒦(A, b, k)` in the first line of §11.4.3 means `𝒦(A, r₀, k)
 * `IsLSMRIterate`, `lsmr_norm_residual_antitone` — LSMR and its monotone residuals.
 * `equation_11_4_8`, `gmres_reduction`, `equation_11_4_9`, `equation_11_4_10`,
   `gmres_givens_prefix` — GMRES.
+* `algorithm_11_4_2`, `algorithm_11_4_2_spec` — `m`-step GMRES as a program (the Arnoldi pass of
+  chapter 10's Algorithm 10.5.1, chapter 5's `givens` and row rotations, chapter 3's back
+  substitution), whose exact run is the minimal-residual iterate; its loop `gmresCore` takes the
+  operator as a routine (`gmresCore_spec`), which Algorithm 11.5.2 reuses with `M`-solves.
 * `krylov_eq_aeval`, `minResidual_eq_iInf_poly` — §11.4.4.
 * `equation_11_4_12`, `equation_11_4_13`, `bicg_residual_orthogonal` — the unsymmetric Lanczos
   relations and BiCG's Petrov–Galerkin condition.
@@ -66,10 +73,7 @@ The book's `𝒦(A, b, k)` in the first line of §11.4.3 means `𝒦(A, r₀, k)
 The flop counts ("`O(1)` flops", "`O(n)` work", P11.4.1), the prose descriptions of the short
 recurrences of MINRES, SYMMLQ and LSQR that avoid storing all Lanczos vectors, the look-ahead
 remark, "CGS typically outperforms BiCG" (quoted, not a statement), the when-to-use-what advice,
-and the Notes and References. Algorithm 11.4.2 (`m`-step GMRES) is not yet here: its program calls
-chapter 3's back substitution (Algorithm 3.1.2) and chapter 5's `givens` (Algorithm 5.1.3), whose
-surface modules do not exist yet; its mathematics is `equation_11_4_8`–`gmres_givens_prefix`.
-There is no Algorithm 11.4.1 in the source: §11.4.1 describes MINRES
+and the Notes and References. There is no Algorithm 11.4.1 in the source: §11.4.1 describes MINRES
 and SYMMLQ in prose and the first numbered algorithm of the section is 11.4.2.
 
 ## Errata (recorded in the plan)
@@ -794,6 +798,939 @@ theorem gmres_givens_prefix (A : Matrix (Fin n) (Fin n) ℝ) (r₀ : EuclideanSp
     ∀ i : Fin k, (fun l : Fin (k + 1) => gvec (Arnoldi.coeff (toEuclideanLin A) r₀) β₀ l)
         i.castSucc = (fun l : Fin k => gvec (Arnoldi.coeff (toEuclideanLin A) r₀) β₀ l) i :=
   ⟨fun i _ => rotated_succ_of_lt _ i.isLt _, fun _ => rfl⟩
+
+/-! #### Algorithm 11.4.2 -/
+
+/-- The state of Algorithm 11.4.2 (`m`-step GMRES): the state of the Arnoldi loop of
+Algorithm 10.5.1 (the step count `k`, the vectors `q_j`, the Hessenberg entries `h_ij`, the residual
+`r_k`, the `done` flag of `β_k > 0`), the rotated Hessenberg matrix `[R_k; 0]` (columns `0, …, k−1`
+filled, the others zero), the rotated right-hand side `[p_k; ρ_k]` and the rotations `(c_j, s_j)`
+determined so far. -/
+structure GMRESState (n m : ℕ) where
+  /-- The state of the Arnoldi loop. -/
+  arnoldi : GolubVanLoan.Chapter10.ArnoldiState n
+  /-- The rotated Hessenberg matrix `G_kᵀ ⋯ G_1ᵀ H̃_k`, padded with zero columns. -/
+  R : Matrix (Fin (m + 1)) (Fin m) ℝ
+  /-- The rotated right-hand side `G_kᵀ ⋯ G_1ᵀ (β₀ e₁)`. -/
+  g : Fin (m + 1) → ℝ
+  /-- The rotations: `G_{j+1}` acts in the plane `(j, j+1)` with `(c, s) = cs j`. -/
+  cs : Fin m → ℝ × ℝ
+
+section GMRES
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m : ℕ}
+
+/-- A pass of the Arnoldi loop of Algorithm 10.5.1 with the product `A q_k` replaced by a routine
+`op` (a no-op once `done`): `q_{k+1} = r_k/h_{k+1,k}`, `k = k + 1`, `r_k = op(q_k)`, the modified
+Gram–Schmidt loop (chapter 10's `mgsLoop`, the book's (11.4.11)), `h_{k+1,k} = ‖r_k‖₂`. With
+`op q = Aq` (chapter 1's gaxpy) it is chapter 10's `arnoldiStep` (`arnoldiStepOp_gaxpy`, by
+definition); with `op q = M⁻¹(Aq)` it is the pass of the preconditioned GMRES of §11.5. -/
+noncomputable def arnoldiStepOp (op : (Fin n → ℝ) → M (Fin n → ℝ))
+    (s : GolubVanLoan.Chapter10.ArnoldiState n) : M (GolubVanLoan.Chapter10.ArnoldiState n) :=
+  if s.done then pure s else do
+    let hk : ℝ := if s.k = 0 then 1 else s.h s.k (s.k - 1)
+    let qk ← GolubVanLoan.Chapter10.vecDiv rnd s.r hk
+    let q := Function.update s.q s.k qk
+    let v ← op qk
+    let vh ← GolubVanLoan.Chapter10.mgsLoop rnd q (s.k + 1) v
+    let b ← GolubVanLoan.Chapter10.vecNorm rnd vh.1
+    pure
+      { k := s.k + 1
+        q := q
+        h := fun i j => if j = s.k then (if i = s.k + 1 then b else vh.2 i) else s.h i j
+        r := vh.1
+        done := decide (b = 0) }
+
+/-- With the gaxpy as its routine, `arnoldiStepOp` is chapter 10's pass of Algorithm 10.5.1. -/
+theorem arnoldiStepOp_gaxpy (A : Matrix (Fin n) (Fin n) ℝ)
+    (s : GolubVanLoan.Chapter10.ArnoldiState n) :
+    arnoldiStepOp rnd (fun q => GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A q 0) s =
+      GolubVanLoan.Chapter10.arnoldiStep rnd A s := rfl
+
+/-- One pass `j` (`0 ≤ j < m`) of the `while` loop of Algorithm 11.4.2 (a no-op once `β_k = 0`):
+the Arnoldi pass (`arnoldiStepOp`), then the new column `H(1:k+1, k)` is copied into the rotated
+matrix, `G_1, …, G_{k−1}` are applied to it, `G_k` is determined by chapter 5's `givens`
+(Algorithm 5.1.3) from `(r_kk, h_{k+1,k})` and applied to the column and to the right-hand side
+(chapter 5's `givensApplyLeft`, `givensRotateVec`). -/
+noncomputable def gmresStep (op : (Fin n → ℝ) → M (Fin n → ℝ)) (s : GMRESState n m) (j : Fin m) :
+    M (GMRESState n m) :=
+  if s.arnoldi.done then pure s else do
+    let L ← arnoldiStepOp rnd op s.arnoldi
+    let R₀ := s.R.updateCol j fun i => if (i : ℕ) ≤ j + 1 then L.h i j else 0
+    let R₁ ← ((List.finRange m).filter (· < j)).foldlM
+      (fun (R : Matrix (Fin (m + 1)) (Fin m) ℝ) (i : Fin m) =>
+        GolubVanLoan.Chapter05.givensApplyLeft rnd i.castSucc i.succ (s.cs i).1 (s.cs i).2 [j] R)
+      R₀
+    let c ← GolubVanLoan.Chapter05.algorithm_5_1_3 rnd (R₁ j.castSucc j) (R₁ j.succ j)
+    let R₂ ← GolubVanLoan.Chapter05.givensApplyLeft rnd j.castSucc j.succ c.1 c.2 [j] R₁
+    let g ← GolubVanLoan.Chapter05.givensRotateVec rnd j.castSucc j.succ c.1 c.2 s.g
+    pure ⟨L, R₂, g, Function.update s.cs j c⟩
+
+/-- The body of the `m`-step GMRES programs from the initial residual `z₀` (`r₀` for
+Algorithm 11.4.2, `M⁻¹r₀` for Algorithm 11.5.2) and the operator routine `op`: `β₀ = ‖z₀‖₂`,
+`q₁ = z₀/β₀`, the `m` passes `gmresStep`, then `R_k y_k = p_k` by chapter 3's back substitution
+(Algorithm 3.1.2) on the leading `k × k` block of the rotated matrix, and `x̃ = x₀ + Q_k y_k` by
+chapter 1's gaxpy. Returns the final state and `x̃`. -/
+noncomputable def gmresCore (op : (Fin n → ℝ) → M (Fin n → ℝ)) (x₀ z₀ : Fin n → ℝ) (m : ℕ) :
+    M (GMRESState n m × (Fin n → ℝ)) := do
+  let β₀ ← GolubVanLoan.Chapter10.vecNorm rnd z₀
+  let q₁ ← GolubVanLoan.Chapter10.vecDiv rnd z₀ β₀
+  let s ← (List.finRange m).foldlM (gmresStep rnd op)
+    ⟨⟨0, fun _ => 0, fun _ _ => 0, q₁, decide (β₀ = 0)⟩, 0, Krylov.firstVec β₀ (m + 1),
+      fun _ => (1, 0)⟩
+  if h : s.arnoldi.k ≤ m then do
+    let y ← GolubVanLoan.Chapter03.algorithm_3_1_2 rnd
+      (s.R.submatrix (Fin.castLE (Nat.le_succ_of_le h)) (Fin.castLE h))
+      (fun i => s.g (Fin.castLE (Nat.le_succ_of_le h) i))
+    let x ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd
+      (of fun i (l : Fin s.arnoldi.k) => s.arnoldi.q l i) y x₀
+    pure (s, x)
+  else pure (s, x₀)
+
+/-- **Algorithm 11.4.2 (`m`-step GMRES).** "If `A ∈ ℝ^{n×n}` is nonsingular, `b ∈ ℝⁿ`,
+`Ax₀ ≈ b`, and `m` is a positive iteration limit, then this algorithm computes `x̃ ∈ ℝⁿ` where
+either `x̃` solves `Ax = b` or minimizes `‖Ax − b‖₂` over the affine space `x₀ + 𝒦(A, r₀, m)`
+where `r₀ = b − Ax₀`":
+```
+k = 0, r₀ = b − Ax₀, β₀ = ‖r₀‖₂
+while (β_k > 0) and k < m
+  q_{k+1} = r_k/β_k,  k = k + 1,  r_k = Aq_k
+  for i = 1:k: h_ik = q_iᵀr_k, r_k = r_k − h_ik q_i end        (11.4.11)
+  β_k = ‖r_k‖₂,  h_{k+1,k} = β_k
+  apply G_1, …, G_{k−1} to H(1:k, k) and determine G_k, R_k, p_k, ρ_k
+end
+solve R_k y_k = p_k and set x̃ = x₀ + Q_k y_k
+```
+`r₀` by chapter 1's gaxpy, then `gmresCore` with `op q = Aq`: the loop is `m` passes of
+`gmresStep` (the test `k < m` is the length of the pass list), whose Arnoldi part is chapter 10's
+pass of Algorithm 10.5.1 started from `q₁ = r₀/β₀` (its first normalization divides by its
+`h_{10} = 1`). Returns the final state and `x̃`. -/
+noncomputable def algorithm_11_4_2 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (m : ℕ) :
+    M (GMRESState n m × (Fin n → ℝ)) := do
+  let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
+  gmresCore rnd (fun q => GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A q 0) x₀ r₀ m
+
+end GMRES
+
+/-! #### Algorithm 11.4.2: exact semantics -/
+
+section GMRESSpec
+
+variable {m : ℕ}
+
+/-! Rotations in the planes `(i, i + 1)` and their accumulation. -/
+
+/-- The rotation `G_{i+1}` of the GMRES programs, in the plane `(i, i+1)` of `ℝ^{m+1}`. -/
+private noncomputable def gmresRot (c : ℝ × ℝ) (i : Fin m) :
+    Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ :=
+  GolubVanLoan.Chapter05.givensRotation i.castSucc i.succ c.1 c.2
+
+/-- `G_tᵀ ⋯ G_1ᵀ`, the accumulated transposed rotations of the first `t` planes. -/
+private noncomputable def gmresW (cs : Fin m → ℝ × ℝ) : ℕ → Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
+  | 0 => 1
+  | t + 1 => if h : t < m then (gmresRot (cs ⟨t, h⟩) ⟨t, h⟩)ᵀ * gmresW cs t else gmresW cs t
+
+/-- The `j`-th Hessenberg column `H(1:j+2, j+1)` copied by a GMRES pass, padded with zeros. -/
+private def gmresHcol (L : GolubVanLoan.Chapter10.ArnoldiState n) (j : Fin m) :
+    Fin (m + 1) → ℝ :=
+  fun a => if (a : ℕ) ≤ j + 1 then L.h a j else 0
+
+private theorem castSucc_ne_succ (i : Fin m) : i.castSucc ≠ i.succ :=
+  (Fin.castSucc_lt_succ (i := i)).ne
+
+private theorem gmresRot_mulVec_apply (c : ℝ × ℝ) (i : Fin m) (v : Fin (m + 1) → ℝ)
+    (a : Fin (m + 1)) :
+    ((gmresRot c i)ᵀ *ᵥ v) a = if a = i.castSucc then c.1 * v i.castSucc - c.2 * v i.succ
+      else if a = i.succ then c.2 * v i.castSucc + c.1 * v i.succ else v a :=
+  GolubVanLoan.Chapter05.givensRotation_transpose_mulVec_apply (castSucc_ne_succ i) _ _ v a
+
+/-- `G(i, i+1, θ)ᵀ` fixes a vector whose entries `i`, `i + 1` vanish. -/
+private theorem gmresRot_mulVec_of_eq_zero (c : ℝ × ℝ) (i : Fin m) {v : Fin (m + 1) → ℝ}
+    (h1 : v i.castSucc = 0) (h2 : v i.succ = 0) : (gmresRot c i)ᵀ *ᵥ v = v := by
+  ext a
+  rw [gmresRot_mulVec_apply, h1, h2]
+  split_ifs with ha hb
+  · rw [ha, h1]; ring
+  · rw [hb, h2]; ring
+  · rfl
+
+private theorem gmresW_succ (cs : Fin m → ℝ × ℝ) {t : ℕ} (ht : t < m) :
+    gmresW cs (t + 1) = (gmresRot (cs ⟨t, ht⟩) ⟨t, ht⟩)ᵀ * gmresW cs t := by
+  simp only [gmresW, ht, ↓reduceDIte]
+
+private theorem gmresW_succ_of_le (cs : Fin m → ℝ × ℝ) {t : ℕ} (ht : m ≤ t) :
+    gmresW cs (t + 1) = gmresW cs t := by
+  simp only [gmresW, show ¬ t < m by omega, ↓reduceDIte]
+
+/-- The accumulated rotations depend only on the rotations below `t`. -/
+private theorem gmresW_congr {cs cs' : Fin m → ℝ × ℝ} {t : ℕ}
+    (h : ∀ i : Fin m, (i : ℕ) < t → cs i = cs' i) : gmresW cs t = gmresW cs' t := by
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    by_cases ht : t < m
+    · rw [gmresW_succ cs ht, gmresW_succ cs' ht, ih fun i hi => h i (by omega),
+        h ⟨t, ht⟩ (by simp)]
+    · rw [gmresW_succ_of_le cs (by omega), gmresW_succ_of_le cs' (by omega)]
+      exact ih fun i hi => h i (by omega)
+
+/-- The accumulated rotations are orthogonal. -/
+private theorem gmresW_mem {cs : Fin m → ℝ × ℝ} {t : ℕ}
+    (h : ∀ i : Fin m, (i : ℕ) < t → (cs i).1 ^ 2 + (cs i).2 ^ 2 = 1) :
+    gmresW cs t ∈ orthogonalGroup (Fin (m + 1)) ℝ := by
+  induction t with
+  | zero => exact one_mem _
+  | succ t ih =>
+    by_cases ht : t < m
+    · rw [gmresW_succ cs ht]
+      refine mul_mem ?_ (ih fun i hi => h i (by omega))
+      have hG := Unitary.star_mem (GolubVanLoan.Chapter05.givensRotation_mem_orthogonalGroup
+        (castSucc_ne_succ ⟨t, ht⟩) (h ⟨t, ht⟩ (by simp)))
+      rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at hG
+    · rw [gmresW_succ_of_le cs (by omega)]
+      exact ih fun i hi => h i (by omega)
+
+/-- The accumulated rotations of the first `t` planes do not change the entries beyond `t`. -/
+private theorem gmresW_mulVec_apply_of_lt (cs : Fin m → ℝ × ℝ) (t : ℕ) (v : Fin (m + 1) → ℝ)
+    {a : Fin (m + 1)} (ha : t < a) : (gmresW cs t *ᵥ v) a = v a := by
+  induction t with
+  | zero => simp [gmresW]
+  | succ t ih =>
+    by_cases ht : t < m
+    · rw [gmresW_succ cs ht, ← mulVec_mulVec, gmresRot_mulVec_apply,
+        ite_eq_right fun h => by subst h; simp at ha,
+        ite_eq_right fun h => by subst h; simp at ha]
+      exact ih (by omega)
+    · rw [gmresW_succ_of_le cs (by omega)]
+      exact ih (by omega)
+
+/-- The accumulated rotations of the first `t` planes fix a vector vanishing on `0, …, t`. -/
+private theorem gmresW_mulVec_of_eq_zero (cs : Fin m → ℝ × ℝ) (t : ℕ) {v : Fin (m + 1) → ℝ}
+    (hv : ∀ i : Fin (m + 1), (i : ℕ) ≤ t → v i = 0) : gmresW cs t *ᵥ v = v := by
+  induction t with
+  | zero => simp [gmresW]
+  | succ t ih =>
+    by_cases ht : t < m
+    · rw [gmresW_succ cs ht, ← mulVec_mulVec, ih fun i hi => hv i (by omega)]
+      exact gmresRot_mulVec_of_eq_zero _ _ (hv _ (by simp)) (hv _ (by simp))
+    · rw [gmresW_succ_of_le cs (by omega)]
+      exact ih fun i hi => hv i (by omega)
+
+/-- The entries of the accumulated rotations beyond column `t` are those of the identity. -/
+private theorem gmresW_apply_of_lt (cs : Fin m → ℝ × ℝ) (t : ℕ) (a : Fin (m + 1))
+    {c : Fin (m + 1)} (hc : t < c) : gmresW cs t a c = if a = c then 1 else 0 := by
+  have h := congrFun (gmresW_mulVec_of_eq_zero cs t (v := Pi.single c 1)
+    fun i hi => Pi.single_eq_of_ne (by rintro rfl; omega) _) a
+  rw [mulVec_single_one, col_apply, Pi.single_apply] at h
+  exact h
+
+/-! The program's rotation loops at `Id`. -/
+
+/-- Membership in the planes below `t + 1`. -/
+private theorem finRange_filter_lt_succ {t : ℕ} (ht : t < m) :
+    (List.finRange m).filter (fun i : Fin m => (i : ℕ) < t + 1) =
+      (List.finRange m).filter (fun i : Fin m => (i : ℕ) < t) ++ [⟨t, ht⟩] := by
+  have hp := (List.sortedLT_finRange m).pairwise
+  refine List.Pairwise.eq_of_mem_iff (r := (· < ·)) (hp.filter _) ?_ fun a => ?_
+  · rw [List.pairwise_append]
+    refine ⟨hp.filter _, List.pairwise_singleton _ _, fun a ha b hb => ?_⟩
+    simp only [List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq,
+      List.mem_singleton] at ha hb
+    subst hb
+    exact Fin.lt_def.2 ha
+  · simp only [List.mem_append, List.mem_filter, List.mem_finRange, true_and,
+      decide_eq_true_eq, List.mem_singleton]
+    constructor
+    · intro h
+      rcases Nat.lt_succ_iff_lt_or_eq.1 h with h | h
+      · exact Or.inl h
+      · exact Or.inr (Fin.ext h)
+    · rintro (h | rfl)
+      · omega
+      · simp
+
+/-- Applying the rotations of the planes below `t` in order is `gmresW`. -/
+private theorem foldl_rot_eq (cs : Fin m → ℝ × ℝ) (v : Fin (m + 1) → ℝ) {t : ℕ} (ht : t ≤ m) :
+    ((List.finRange m).filter (fun i : Fin m => (i : ℕ) < t)).foldl
+      (fun v i => (gmresRot (cs i) i)ᵀ *ᵥ v) v = gmresW cs t *ᵥ v := by
+  induction t with
+  | zero => simp [gmresW]
+  | succ t ih =>
+    rw [finRange_filter_lt_succ (by omega), List.foldl_append, ih (by omega), List.foldl_cons,
+      List.foldl_nil, gmresW_succ cs (by omega), mulVec_mulVec]
+
+/-- Chapter 5's row rotation on the single column `j`. -/
+private theorem givensApplyLeft_col {p q : Fin (m + 1)} (hpq : p ≠ q) (c s : ℝ) (j : Fin m)
+    (R : Matrix (Fin (m + 1)) (Fin m) ℝ) :
+    Id.run (GolubVanLoan.Chapter05.givensApplyLeft pure p q c s [j] R) =
+      R.updateCol j ((GolubVanLoan.Chapter05.givensRotation p q c s)ᵀ *ᵥ fun a => R a j) := by
+  rw [GolubVanLoan.Chapter05.givensApplyLeft_spec hpq c s (List.nodup_singleton j)]
+  ext a b
+  rw [of_apply, updateCol_apply]
+  by_cases hb : b = j
+  · subst hb
+    simp only [List.mem_singleton, ↓reduceIte]
+    rfl
+  · simp only [List.mem_singleton, hb, ↓reduceIte]
+
+/-- The rotation loop of a GMRES pass on the column `j`. -/
+private theorem foldlM_rot_col (cs : Fin m → ℝ × ℝ) (j : Fin m) :
+    ∀ (l : List (Fin m)) (R₀ : Matrix (Fin (m + 1)) (Fin m) ℝ),
+      Id.run (l.foldlM (fun (R : Matrix (Fin (m + 1)) (Fin m) ℝ) (i : Fin m) =>
+          GolubVanLoan.Chapter05.givensApplyLeft pure i.castSucc i.succ (cs i).1 (cs i).2 [j] R)
+          R₀) =
+        R₀.updateCol j (l.foldl (fun v i => (gmresRot (cs i) i)ᵀ *ᵥ v) fun a => R₀ a j)
+  | [], R₀ => by
+    ext a b
+    rw [List.foldlM_nil, List.foldl_nil, updateCol_apply]
+    split_ifs with h
+    · subst h; rfl
+    · rfl
+  | i :: l, R₀ => by
+    rw [List.foldlM_cons, Id.run_bind, givensApplyLeft_col (castSucc_ne_succ i),
+      foldlM_rot_col cs j l, List.foldl_cons]
+    ext a b
+    simp only [updateCol_apply, ↓reduceIte]
+    split_ifs <;> rfl
+
+/-- Exact semantics of chapter 5's vector rotation. -/
+private theorem givensRotateVec_run {p q : Fin (m + 1)} (hpq : p ≠ q) (c s : ℝ)
+    (x : Fin (m + 1) → ℝ) :
+    Id.run (GolubVanLoan.Chapter05.givensRotateVec pure p q c s x) =
+      (GolubVanLoan.Chapter05.givensRotation p q c s)ᵀ *ᵥ x := by
+  ext r
+  rw [GolubVanLoan.Chapter05.givensRotation_transpose_mulVec_apply hpq]
+  change Function.update (Function.update x p (c * x p - s * x q)) q (s * x p + c * x q) r = _
+  by_cases hrq : r = q
+  · subst hrq
+    rw [Function.update_self, ite_eq_right hpq.symm, ite_eq_left rfl]
+  · rw [Function.update_of_ne hrq]
+    by_cases hrp : r = p
+    · subst hrp; rw [Function.update_self, ite_eq_left rfl]
+    · rw [Function.update_of_ne hrp, ite_eq_right hrp, ite_eq_right hrq]
+
+
+/-! The exact passes. -/
+
+/-- With exact semantics `q ↦ Bq`, the pass `arnoldiStepOp` is chapter 10's pass of
+Algorithm 10.5.1 for `B`. -/
+private theorem arnoldiStepOp_run {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
+    {B : Matrix (Fin n) (Fin n) ℝ} (hop : ∀ q, Id.run (op q) = B *ᵥ q)
+    (s : GolubVanLoan.Chapter10.ArnoldiState n) :
+    Id.run (arnoldiStepOp pure op s) = Id.run (GolubVanLoan.Chapter10.arnoldiStep pure B s) := by
+  have hop' : op = fun q => GolubVanLoan.Chapter01.algorithm_1_1_3 pure B q 0 := by
+    funext q
+    have h2 := GolubVanLoan.Chapter01.algorithm_1_1_3_spec B q 0
+    rw [zero_add] at h2
+    exact (hop q).trans h2.symm
+  rw [hop']
+  rfl
+
+/-- The bookkeeping of a genuine Arnoldi pass: one more step, the earlier Hessenberg columns kept,
+and `done` only when the new subdiagonal entry vanishes. -/
+private theorem arnoldiStepOp_fields (op : (Fin n → ℝ) → Id (Fin n → ℝ))
+    (s : GolubVanLoan.Chapter10.ArnoldiState n) (hd : s.done = false) :
+    (Id.run (arnoldiStepOp pure op s)).k = s.k + 1 ∧
+      (∀ i j, j ≠ s.k → (Id.run (arnoldiStepOp pure op s)).h i j = s.h i j) ∧
+      ((Id.run (arnoldiStepOp pure op s)).done = true →
+        (Id.run (arnoldiStepOp pure op s)).h (s.k + 1) s.k = 0) := by
+  unfold arnoldiStepOp
+  simp only [hd, Bool.false_eq_true, ↓reduceIte]
+  exact ⟨rfl, fun i j hj => ite_eq_right hj,
+    fun h => (ite_eq_left rfl).trans ((ite_eq_left rfl).trans (of_decide_eq_true h))⟩
+
+/-- The vector `G_{j}ᵀ ⋯ G_1ᵀ h_{:,j}` that a genuine pass `j` rotates last. -/
+private noncomputable def gmresV (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (s : GMRESState n m)
+    (j : Fin m) : Fin (m + 1) → ℝ :=
+  gmresW s.cs j *ᵥ gmresHcol (Id.run (arnoldiStepOp pure op s.arnoldi)) j
+
+/-- The rotation `(c, s) = givens(v_j, v_{j+1})` determined by a genuine pass `j`. -/
+private noncomputable def gmresC (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (s : GMRESState n m)
+    (j : Fin m) : ℝ × ℝ :=
+  Id.run (GolubVanLoan.Chapter05.algorithm_5_1_3 pure (gmresV op s j j.castSucc)
+    (gmresV op s j j.succ))
+
+/-- The exact run of a genuine GMRES pass. -/
+private theorem gmresStep_run (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (s : GMRESState n m)
+    (j : Fin m) (hd : s.arnoldi.done = false) :
+    Id.run (gmresStep pure op s j) =
+      ⟨Id.run (arnoldiStepOp pure op s.arnoldi),
+        s.R.updateCol j ((gmresRot (gmresC op s j) j)ᵀ *ᵥ gmresV op s j),
+        (gmresRot (gmresC op s j) j)ᵀ *ᵥ s.g, Function.update s.cs j (gmresC op s j)⟩ := by
+  have hl : (List.finRange m).filter (· < j) =
+      (List.finRange m).filter (fun i : Fin m => (i : ℕ) < j) :=
+    List.filter_congr fun i _ => decide_eq_decide.2 Fin.lt_def
+  unfold gmresStep
+  simp only [hd, Bool.false_eq_true, ↓reduceIte, Id.run_bind, Id.run_pure]
+  rw [hl, foldlM_rot_col, foldl_rot_eq _ _ j.2.le, givensApplyLeft_col (castSucc_ne_succ j),
+    givensRotateVec_run (castSucc_ne_succ j)]
+  simp only [updateCol_self, gmresV, gmresC, gmresRot]
+  congr 1
+  ext a b
+  simp only [updateCol_apply]
+  split_ifs <;> rfl
+
+/-- The Arnoldi part of an exact GMRES pass is chapter 10's pass of Algorithm 10.5.1 for `B`. -/
+private theorem gmresStep_arnoldi {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
+    {B : Matrix (Fin n) (Fin n) ℝ} (hop : ∀ q, Id.run (op q) = B *ᵥ q) (s : GMRESState n m)
+    (j : Fin m) :
+    (Id.run (gmresStep pure op s j)).arnoldi =
+      Id.run (GolubVanLoan.Chapter10.arnoldiStep pure B s.arnoldi) := by
+  cases hd : s.arnoldi.done
+  · rw [gmresStep_run op s j hd]
+    exact arnoldiStepOp_run hop _
+  · simp only [gmresStep, GolubVanLoan.Chapter10.arnoldiStep, hd, ↓reduceIte, Id.run_pure]
+
+/-- The Arnoldi part of the exact GMRES passes iterates chapter 10's pass. -/
+private theorem foldl_gmresStep_arnoldi {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
+    {B : Matrix (Fin n) (Fin n) ℝ} (hop : ∀ q, Id.run (op q) = B *ᵥ q) :
+    ∀ (l : List (Fin m)) (s : GMRESState n m),
+      (l.foldl (fun s j => Id.run (gmresStep pure op s j)) s).arnoldi =
+        (fun L => Id.run (GolubVanLoan.Chapter10.arnoldiStep pure B L))^[l.length] s.arnoldi
+  | [], _ => rfl
+  | j :: l, s => by
+    rw [List.foldl_cons, foldl_gmresStep_arnoldi hop l, gmresStep_arnoldi hop,
+      List.length_cons, Function.iterate_succ_apply]
+
+/-- The exact run of Algorithm 10.5.1 iterates its pass. -/
+private theorem algorithm_10_5_1_run_eq_iterate (B : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ)
+    (t : ℕ) :
+    Id.run (GolubVanLoan.Chapter10.algorithm_10_5_1 pure B q₁ t) =
+      (fun L => Id.run (GolubVanLoan.Chapter10.arnoldiStep pure B L))^[t]
+        { k := 0, q := fun _ => 0, h := fun _ _ => 0, r := q₁, done := false } := by
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    rw [Function.iterate_succ_apply', ← ih]
+    simp only [GolubVanLoan.Chapter10.algorithm_10_5_1, List.range_succ, List.foldlM_append,
+      List.foldlM_cons, List.foldlM_nil, bind_pure, Id.run_bind]
+
+/-- The exact initial state of `gmresCore` from `z₀`. -/
+private noncomputable def gmresInit (z₀ : Fin n → ℝ) (m : ℕ) : GMRESState n m :=
+  ⟨⟨0, fun _ => 0, fun _ _ => 0, (‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖)⁻¹ • z₀,
+      decide (‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ = 0)⟩, 0,
+    Krylov.firstVec ‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ (m + 1), fun _ => (1, 0)⟩
+
+/-- The exact triangular solve and update after the loop of `gmresCore`. -/
+private noncomputable def gmresFinish (x₀ : Fin n → ℝ) (s : GMRESState n m) :
+    GMRESState n m × (Fin n → ℝ) :=
+  if h : s.arnoldi.k ≤ m then
+    (s, x₀ + (of fun i (l : Fin s.arnoldi.k) => s.arnoldi.q l i) *ᵥ
+      Id.run (GolubVanLoan.Chapter03.algorithm_3_1_2 pure
+        (s.R.submatrix (Fin.castLE (Nat.le_succ_of_le h)) (Fin.castLE h))
+        (fun i => s.g (Fin.castLE (Nat.le_succ_of_le h) i))))
+  else (s, x₀)
+
+/-- The exact run of `gmresCore`. -/
+private theorem gmresCore_run (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (x₀ z₀ : Fin n → ℝ) (m : ℕ) :
+    Id.run (gmresCore pure op x₀ z₀ m) =
+      gmresFinish x₀ (Id.run ((List.finRange m).foldlM (gmresStep pure op) (gmresInit z₀ m))) := by
+  simp only [gmresCore, Id.run_bind, GolubVanLoan.Chapter10.vecNorm_spec,
+    GolubVanLoan.Chapter10.vecDiv_spec]
+  unfold gmresFinish gmresInit
+  split_ifs
+  · simp only [Id.run_bind, Id.run_pure, GolubVanLoan.Chapter01.algorithm_1_1_3_spec]
+  · rfl
+
+/-! The invariant of the rotations. -/
+
+/-- The state of the exact GMRES loop after `t` passes: the step count, the exit test, the
+rotations, and the rotated Hessenberg matrix and right-hand side. -/
+private def GInv (β₀ : ℝ) (t : ℕ) (s : GMRESState n m) : Prop :=
+  s.arnoldi.k ≤ t ∧ (s.arnoldi.done = false → s.arnoldi.k = t) ∧
+    (s.arnoldi.done = true → (s.arnoldi.k = 0 ∧ β₀ = 0) ∨
+      (0 < s.arnoldi.k ∧ s.arnoldi.h s.arnoldi.k (s.arnoldi.k - 1) = 0)) ∧
+    (∀ i : Fin m, (i : ℕ) < s.arnoldi.k → (s.cs i).1 ^ 2 + (s.cs i).2 ^ 2 = 1) ∧
+    (∀ b : Fin m, s.arnoldi.k ≤ b → ∀ a, s.R a b = 0) ∧
+    (∀ b : Fin m, (b : ℕ) < s.arnoldi.k → ∀ a,
+      s.R a b = (gmresW s.cs s.arnoldi.k *ᵥ gmresHcol s.arnoldi b) a) ∧
+    (∀ b : Fin m, (b : ℕ) < s.arnoldi.k → ∀ a : Fin (m + 1), (b : ℕ) < a → s.R a b = 0) ∧
+    s.g = gmresW s.cs s.arnoldi.k *ᵥ Krylov.firstVec β₀ (m + 1)
+
+/-- One exact pass keeps the invariant. -/
+private theorem gInv_step (op : (Fin n → ℝ) → Id (Fin n → ℝ)) {β₀ : ℝ} {t : ℕ} (ht : t < m)
+    {s : GMRESState n m} (hs : GInv β₀ t s) :
+    GInv β₀ (t + 1) (Id.run (gmresStep pure op s ⟨t, ht⟩)) := by
+  unfold GInv at hs ⊢
+  obtain ⟨hkt, hnd, hdn, hcs, hR0, hRW, hRlow, hg⟩ := hs
+  cases hd : s.arnoldi.done
+  · have hk : s.arnoldi.k = t := hnd hd
+    obtain ⟨hLk, hLh, hLd⟩ := arnoldiStepOp_fields op s.arnoldi hd
+    rw [gmresStep_run op s ⟨t, ht⟩ hd]
+    set j : Fin m := ⟨t, ht⟩ with hj
+    set L := Id.run (arnoldiStepOp pure op s.arnoldi) with hL
+    set c := gmresC op s j with hc
+    set v := gmresV op s j with hv
+    obtain ⟨hc1, hc2, -⟩ := GolubVanLoan.Chapter05.algorithm_5_1_3_spec (v j.castSucc) (v j.succ)
+    have hcv : c = Id.run (GolubVanLoan.Chapter05.algorithm_5_1_3 pure (v j.castSucc)
+        (v j.succ)) := rfl
+    rw [← hcv] at hc1 hc2
+    have hW : gmresW (Function.update s.cs j c) (t + 1) = (gmresRot c j)ᵀ * gmresW s.cs t := by
+      rw [gmresW_succ _ ht, Function.update_self]
+      congr 1
+      exact gmresW_congr fun i hi => Function.update_of_ne (fun h => by
+        rw [h] at hi; simp [j] at hi) _ _
+    have hLk' : L.k = t + 1 := by rw [hLk, hk]
+    have hcol : ∀ b : Fin m, (b : ℕ) < t → gmresHcol L b = gmresHcol s.arnoldi b := by
+      intro b hb
+      funext a
+      simp only [gmresHcol]
+      rw [hLh _ _ (by omega)]
+    have hvW : v = gmresW s.cs t *ᵥ gmresHcol L j := rfl
+    dsimp only
+    refine ⟨hLk'.le, fun _ => hLk', fun hd' => Or.inr ⟨by omega, ?_⟩,
+      fun i hi => ?_, fun b hb a => ?_, fun b hb a => ?_, fun b hb a hab => ?_, ?_⟩
+    · rw [hLk', Nat.add_sub_cancel, ← hk]
+      exact hLd hd'
+    · simp only [hLk'] at hi
+      by_cases hij : i = j
+      · rw [hij, Function.update_self]; exact hc1
+      · rw [Function.update_of_ne hij]
+        have hne : (i : ℕ) ≠ t := fun h => hij (Fin.ext h)
+        exact hcs i (by omega)
+    · simp only [hLk'] at hb
+      have hbj : b ≠ j := fun h => by rw [h] at hb; simp [j] at hb
+      rw [updateCol_apply, ite_eq_right hbj]
+      exact hR0 b (by omega) a
+    · simp only [hLk'] at hb ⊢
+      rw [hW, ← mulVec_mulVec]
+      by_cases hbj : b = j
+      · subst hbj
+        rw [updateCol_apply, ite_eq_left rfl, hvW]
+      · have hne : (b : ℕ) ≠ t := fun h => hbj (Fin.ext h)
+        have hbt : (b : ℕ) < t := by omega
+        rw [updateCol_apply, ite_eq_right hbj, hcol b hbt, ← hk]
+        have hcolb : gmresW s.cs s.arnoldi.k *ᵥ gmresHcol s.arnoldi b = fun a => s.R a b :=
+          funext fun a => (hRW b (by omega) a).symm
+        rw [hcolb, gmresRot_mulVec_of_eq_zero _ _ (hRlow b (by omega) _ (by simp [j]; omega))
+          (hRlow b (by omega) _ (by simp [j]; omega))]
+    · simp only [hLk'] at hb
+      by_cases hbj : b = j
+      · subst hbj
+        rw [updateCol_apply, ite_eq_left rfl, gmresRot_mulVec_apply]
+        have ha1 : a ≠ j.castSucc := fun h => by rw [h] at hab; simp [j] at hab
+        rw [ite_eq_right ha1]
+        by_cases ha2 : a = j.succ
+        · rw [ite_eq_left ha2]
+          linear_combination hc2
+        · rw [ite_eq_right ha2, hvW, gmresW_mulVec_apply_of_lt _ _ _ (by simp [j] at hab; omega)]
+          simp only [gmresHcol]
+          split_ifs with hle
+          · exfalso
+            apply ha2
+            ext
+            simp [j] at hab hle ⊢
+            omega
+          · rfl
+      · rw [updateCol_apply, ite_eq_right hbj]
+        have hne : (b : ℕ) ≠ t := fun h => hbj (Fin.ext h)
+        exact hRlow b (by omega) a hab
+    · simp only [hLk']
+      rw [hW, ← mulVec_mulVec, ← hk, ← hg]
+  · have hs' : Id.run (gmresStep pure op s ⟨t, ht⟩) = s := by
+      simp only [gmresStep, hd, ↓reduceIte, Id.run_pure]
+    rw [hs']
+    exact ⟨by omega, fun h => absurd (h.symm.trans hd) Bool.false_ne_true, hdn, hcs, hR0, hRW,
+      hRlow, hg⟩
+
+/-- The invariant after the first `t` exact passes. -/
+private theorem gInv_foldl (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (z₀ : Fin n → ℝ) :
+    ∀ t ≤ m, GInv ‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ t
+      (((List.finRange m).take t).foldl (fun s j => Id.run (gmresStep pure op s j))
+        (gmresInit z₀ m)) := by
+  intro t
+  induction t with
+  | zero =>
+    intro _
+    rw [List.take_zero, List.foldl_nil]
+    unfold GInv
+    refine ⟨le_rfl, fun _ => rfl, fun h => Or.inl ⟨rfl, by simpa [gmresInit] using h⟩,
+      fun i hi => absurd hi (Nat.not_lt_zero _), fun b _ a => rfl,
+      fun b hb => absurd hb (Nat.not_lt_zero _), fun b hb => absurd hb (Nat.not_lt_zero _), ?_⟩
+    simp [gmresInit, gmresW]
+  | succ t ih =>
+    intro ht
+    rw [List.take_succ_eq_append_getElem (by simpa using ht), List.foldl_append,
+      List.foldl_cons, List.foldl_nil]
+    have hget : (List.finRange m)[t]'(by simpa using ht) = ⟨t, ht⟩ := by simp
+    rw [hget]
+    exact gInv_step op ht (ih (by omega))
+
+
+/-! Scaling the starting vector. -/
+
+/-- Rescaling the starting vector by a positive number does not change the Arnoldi vectors (both
+sequences satisfy the modified Gram–Schmidt recurrence from `v/‖v‖`). -/
+private theorem vec_smul_of_pos (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
+    (v : EuclideanSpace ℝ (Fin n)) {c : ℝ} (hc : 0 < c) :
+    Arnoldi.vec T (c • v) = Arnoldi.vec T v := by
+  refine Arnoldi.eq_vec_of_modifiedGramSchmidt T v ?_ fun j => ?_
+  · rw [← Arnoldi.mgsVec_eq_vec, Arnoldi.mgsVec_zero]
+    simp only [RCLike.ofReal_real_eq_id, id_eq]
+    rw [norm_smul, Real.norm_of_nonneg hc.le, smul_smul]
+    rcases eq_or_ne ‖v‖ 0 with h | h
+    · simp [h]
+    · rw [mul_inv, mul_comm c⁻¹, mul_assoc, inv_mul_cancel₀ hc.ne', mul_one]
+  · rw [← Arnoldi.mgsVec_eq_vec]
+    exact Arnoldi.mgsVec_succ T (c • v) j
+
+/-- Rescaling the starting vector by a nonzero number does not change the grade. -/
+private theorem grade_smul_of_ne_zero
+    (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
+    (v : EuclideanSpace ℝ (Fin n)) {c : ℝ} (hc : c ≠ 0) : grade T (c • v) = grade T v := by
+  have h : ∀ (d : ℝ) (w : EuclideanSpace ℝ (Fin n)), fullSubspace T (d • w) ≤ fullSubspace T w := by
+    intro d w
+    rw [fullSubspace, Submodule.span_le]
+    rintro _ ⟨i, rfl⟩
+    change (T ^ i) (d • w) ∈ _
+    rw [LinearMap.map_smul]
+    exact Submodule.smul_mem _ d (Submodule.subset_span ⟨i, rfl⟩)
+  have heq : fullSubspace T (c • v) = fullSubspace T v := by
+    refine le_antisymm (h c v) ?_
+    have := h c⁻¹ (c • v)
+    rwa [smul_smul, inv_mul_cancel₀ hc, one_smul] at this
+  unfold grade
+  rw [heq]
+
+/-- A sum over `Fin p` whose terms vanish from index `k` on is the sum over its first `k`
+indices. -/
+private theorem sum_castLE_eq {k p : ℕ} (h : k ≤ p) (f : Fin p → ℝ)
+    (hf : ∀ c : Fin p, k ≤ (c : ℕ) → f c = 0) :
+    ∑ a : Fin k, f (Fin.castLE h a) = ∑ c, f c := by
+  have e1 : ∑ c, f c = ∑ i ∈ Finset.range p, (if hi : i < p then f ⟨i, hi⟩ else 0) := by
+    rw [← Fin.sum_univ_eq_sum_range (fun i => if hi : i < p then f ⟨i, hi⟩ else 0)]
+    exact Finset.sum_congr rfl fun c _ => by rw [dite_eq_left c.2]
+  have e2 : ∑ a : Fin k, f (Fin.castLE h a) =
+      ∑ i ∈ Finset.range k, (if hi : i < p then f ⟨i, hi⟩ else 0) := by
+    rw [← Fin.sum_univ_eq_sum_range (fun i => if hi : i < p then f ⟨i, hi⟩ else 0)]
+    exact Finset.sum_congr rfl fun a _ => by rw [dite_eq_left (lt_of_lt_of_le a.2 h)]; rfl
+  rw [e1, e2]
+  refine Finset.sum_subset (Finset.range_mono h) fun i hi hk => ?_
+  simp only [Finset.mem_range] at hi hk
+  rw [dite_eq_left hi]
+  exact hf ⟨i, hi⟩ (by simpa using hk)
+
+/-- The rows of the accumulated rotations beyond `t` are those of the identity. -/
+private theorem gmresW_apply_of_lt_left (cs : Fin m → ℝ × ℝ) (t : ℕ) {a : Fin (m + 1)}
+    (ha : t < a) (c : Fin (m + 1)) : gmresW cs t a c = if a = c then 1 else 0 := by
+  have h := gmresW_mulVec_apply_of_lt cs t (Pi.single c 1) ha
+  rw [mulVec_single_one, col_apply, Pi.single_apply] at h
+  exact h
+
+/-- The Arnoldi data of the exact GMRES loop: `k = min(m, grade)` steps, the Arnoldi vectors and
+the Hessenberg entries of `z₀`. -/
+private theorem gmres_arnoldi_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
+    {B : Matrix (Fin n) (Fin n) ℝ} (hop : ∀ q, Id.run (op q) = B *ᵥ q) (z₀ : Fin n → ℝ)
+    (m : ℕ) :
+    ((List.finRange m).foldl (fun s j => Id.run (gmresStep pure op s j))
+        (gmresInit z₀ m)).arnoldi.k = min m (grade (toEuclideanLin B) (WithLp.toLp 2 z₀)) ∧
+      ∀ j < ((List.finRange m).foldl (fun s j => Id.run (gmresStep pure op s j))
+          (gmresInit z₀ m)).arnoldi.k,
+        WithLp.toLp 2 (((List.finRange m).foldl (fun s j => Id.run (gmresStep pure op s j))
+            (gmresInit z₀ m)).arnoldi.q j) =
+          Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 z₀) j ∧
+        ∀ i ≤ j + 1, ((List.finRange m).foldl (fun s j => Id.run (gmresStep pure op s j))
+            (gmresInit z₀ m)).arnoldi.h i j =
+          Arnoldi.coeff (toEuclideanLin B) (WithLp.toLp 2 z₀) i j := by
+  rw [foldl_gmresStep_arnoldi hop, List.length_finRange]
+  set β₀ := ‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ with hβ₀
+  by_cases h0 : β₀ = 0
+  · have hfix : ∀ t, (fun L => Id.run (GolubVanLoan.Chapter10.arnoldiStep pure B L))^[t]
+        (gmresInit z₀ m).arnoldi = (gmresInit z₀ m).arnoldi := by
+      intro t
+      induction t with
+      | zero => rfl
+      | succ t ih =>
+        rw [Function.iterate_succ_apply', ih]
+        simp [GolubVanLoan.Chapter10.arnoldiStep, gmresInit, ← hβ₀, h0]
+    rw [hfix]
+    have hz : (WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n)) = 0 := norm_eq_zero.1 h0
+    rw [hz, grade_zero]
+    refine ⟨by simp [gmresInit], fun j hj => absurd hj (by simp [gmresInit])⟩
+  · have hinit : (gmresInit z₀ m).arnoldi =
+        { k := 0, q := fun _ => 0, h := fun _ _ => 0, r := β₀⁻¹ • z₀, done := false } := by
+      simp [gmresInit, ← hβ₀, h0]
+    rw [hinit, ← algorithm_10_5_1_run_eq_iterate]
+    have hβpos : 0 < β₀ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm h0)
+    have hq : (WithLp.toLp 2 (β₀⁻¹ • z₀) : EuclideanSpace ℝ (Fin n)) =
+        β₀⁻¹ • WithLp.toLp 2 z₀ := WithLp.toLp_smul _ _ _
+    have hqn : ‖(WithLp.toLp 2 (β₀⁻¹ • z₀) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+      rw [hq, norm_smul, Real.norm_of_nonneg (inv_nonneg.2 hβpos.le), ← hβ₀,
+        inv_mul_cancel₀ h0]
+    obtain ⟨hk, hvec, -⟩ := GolubVanLoan.Chapter10.algorithm_10_5_1_spec B hqn m
+    have hvs : Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 (β₀⁻¹ • z₀)) =
+        Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 z₀) := by
+      rw [hq]; exact vec_smul_of_pos _ _ (inv_pos.2 hβpos)
+    have hgr : grade (toEuclideanLin B) (WithLp.toLp 2 (β₀⁻¹ • z₀)) =
+        grade (toEuclideanLin B) (WithLp.toLp 2 z₀) := by
+      rw [hq]; exact grade_smul_of_ne_zero _ _ (inv_ne_zero h0)
+    refine ⟨by rw [hk, hgr], fun j hj => ?_⟩
+    obtain ⟨h1, h2⟩ := hvec j hj
+    refine ⟨by rw [h1, WithLp.toLp_ofLp, hvs], fun i hi => ?_⟩
+    rw [h2 i hi, Arnoldi.coeff, Arnoldi.coeff, hvs]
+
+/-- **Exact semantics of the GMRES loop** (`gmresCore`), for an operator routine with exact
+semantics `q ↦ Bq`, `B` nonsingular, and `z₀ = c − Bx₀`: the run makes `k = min(m, grade)`
+Arnoldi steps on `z₀` (`Arnoldi.vec`, `Arnoldi.coeff`: modified Gram–Schmidt is Gram–Schmidt in
+exact arithmetic, chapter 10's `algorithm_10_5_1_spec`); its rotations bring `H̃_k` to `[R_k; 0]`
+with `R_k` upper triangular and nonsingular, so the back substitution solves `R_k y_k = p_k` and
+`x̃ = x₀ + Q_k y_k` is the minimal-residual iterate of `Bx = c` on `x₀ + 𝒦(B, z₀, k)`
+(`Krylov.IsMinResidualIterate`), with residual norm `|ρ_k|`; if the loop stopped on `β_k = 0`,
+`x̃` solves `Bx = c` (`Krylov.IsMinResidualIterate.apply_eq_of_grade_le`). The rotations need not
+be the backbone's (`Krylov.givensQ`): `givens` fixes their signs differently, and the argument
+uses only that they are orthogonal and triangularize `H̃_k`. -/
+theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix (Fin n) (Fin n) ℝ}
+    (hB : IsUnit B) (hop : ∀ q, Id.run (op q) = B *ᵥ q) (c x₀ z₀ : Fin n → ℝ)
+    (hz : z₀ = c - B *ᵥ x₀) (m : ℕ) :
+    (Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.k =
+        min m (grade (toEuclideanLin B) (WithLp.toLp 2 z₀)) ∧
+      (∀ j < (Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.k,
+        WithLp.toLp 2 ((Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.q j) =
+            Arnoldi.vec (toEuclideanLin B) (WithLp.toLp 2 z₀) j ∧
+          ∀ i ≤ j + 1, (Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.h i j =
+            Arnoldi.coeff (toEuclideanLin B) (WithLp.toLp 2 z₀) i j) ∧
+      IsMinResidualIterate (toEuclideanLin B) (WithLp.toLp 2 c) (WithLp.toLp 2 x₀)
+        (Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.k
+        (WithLp.toLp 2 (Id.run (gmresCore pure op x₀ z₀ m)).2) ∧
+      (∀ i : Fin (m + 1), (i : ℕ) = (Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.k →
+        |(Id.run (gmresCore pure op x₀ z₀ m)).1.g i| =
+          ‖WithLp.toLp 2 c -
+            toEuclideanLin B (WithLp.toLp 2 (Id.run (gmresCore pure op x₀ z₀ m)).2)‖) ∧
+      ((Id.run (gmresCore pure op x₀ z₀ m)).1.arnoldi.done = true →
+        B *ᵥ (Id.run (gmresCore pure op x₀ z₀ m)).2 = c) := by
+  rw [gmresCore_run, List.idRun_foldlM]
+  set T := toEuclideanLin B with hT
+  set z : EuclideanSpace ℝ (Fin n) := WithLp.toLp 2 z₀ with hzdef
+  set β₀ := ‖z‖ with hβ₀
+  set s := (List.finRange m).foldl (fun s j => Id.run (gmresStep pure op s j))
+    (gmresInit z₀ m) with hs
+  obtain ⟨hk, hvec⟩ := gmres_arnoldi_spec hop z₀ m
+  rw [← hs] at hk hvec
+  have hGI := gInv_foldl op z₀ m le_rfl
+  rw [List.take_of_length_le (by simp), ← hs] at hGI
+  obtain ⟨hkt, -, hdn, hcs, -, hRW, hRlow, hg⟩ := hGI
+  set k := s.arnoldi.k with hkdef
+  have hkm : k ≤ m := hkt
+  have hkg : k ≤ grade T z := by rw [hk]; exact min_le_right _ _
+  -- the triangular solve and the update
+  set Rk : Matrix (Fin k) (Fin k) ℝ :=
+    s.R.submatrix (Fin.castLE (Nat.le_succ_of_le hkm)) (Fin.castLE hkm) with hRk
+  set pk : Fin k → ℝ := fun i => s.g (Fin.castLE (Nat.le_succ_of_le hkm) i) with hpk
+  set y := Id.run (GolubVanLoan.Chapter03.algorithm_3_1_2 pure Rk pk) with hy
+  have hfin : gmresFinish x₀ s =
+      (s, x₀ + (of fun i (l : Fin k) => s.arnoldi.q l i) *ᵥ y) := by
+    unfold gmresFinish
+    exact dite_eq_left hkm
+  rw [hfin]
+  dsimp only
+  -- the Hessenberg columns
+  set h := Arnoldi.coeff T z with hh
+  have hcolh : ∀ b : Fin m, (b : ℕ) < k →
+      gmresHcol s.arnoldi b = fun a : Fin (m + 1) => h (a : ℕ) (b : ℕ) := by
+    intro b hb
+    funext a
+    simp only [gmresHcol]
+    split_ifs with ha
+    · exact (hvec b hb).2 a ha
+    · exact (Arnoldi.coeff_eq_zero_of_lt T z (by omega)).symm
+  -- the rotations, restricted to the first `k + 1` entries
+  set W := gmresW s.cs k with hW
+  have hWmem : W ∈ orthogonalGroup (Fin (m + 1)) ℝ := gmresW_mem hcs
+  have hk1 : k + 1 ≤ m + 1 := Nat.succ_le_succ hkm
+  set ι : Fin (k + 1) → Fin (m + 1) := Fin.castLE hk1 with hι
+  set κ : Fin k → Fin m := Fin.castLE hkm with hκ
+  set W' : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ := W.submatrix ι ι with hW'
+  set Hk := Arnoldi.hessenberg T z k with hHk
+  set R' : Matrix (Fin (k + 1)) (Fin k) ℝ := s.R.submatrix ι κ with hR'
+  have hWrow : ∀ (a : Fin (k + 1)) (c : Fin (m + 1)), k + 1 ≤ (c : ℕ) → W (ι a) c = 0 := by
+    intro a c hc
+    rw [hW, gmresW_apply_of_lt _ _ _ (by omega)]
+    split_ifs with h'
+    · have := congrArg Fin.val h'
+      simp [ι] at this
+      omega
+    · rfl
+  have hWcol : ∀ (d : Fin (m + 1)) (a : Fin (k + 1)), k + 1 ≤ (d : ℕ) → W d (ι a) = 0 := by
+    intro d a hd
+    rw [hW, gmresW_apply_of_lt_left _ _ (by omega)]
+    split_ifs with h'
+    · have := congrArg Fin.val h'
+      simp [ι] at this
+      omega
+    · rfl
+  have hC1 : W' * Hk = R' := by
+    ext a b
+    rw [mul_apply, hR', submatrix_apply, hRW (κ b) b.2 (ι a), hcolh (κ b) b.2, mulVec,
+      dotProduct]
+    rw [← sum_castLE_eq hk1 (fun c => W (ι a) c * h c (κ b))
+      fun c hc => by rw [hWrow a c hc, zero_mul]]
+    rfl
+  have hWo : W'ᵀ * W' = 1 := by
+    have hWW := (mem_orthogonalGroup_iff' _ _).1 hWmem
+    ext a c
+    rw [mul_apply]
+    have e := congrFun (congrFun hWW (ι a)) (ι c)
+    rw [mul_apply, ← sum_castLE_eq hk1 (fun d => Wᵀ (ι a) d * W d (ι c))
+      fun d hd => by rw [transpose_apply, hWcol d a hd, zero_mul]] at e
+    refine e.trans ?_
+    rw [one_apply, one_apply]
+    simp [ι, Fin.ext_iff]
+  have hW'mem : W' ∈ orthogonalGroup (Fin (k + 1)) ℝ := (mem_orthogonalGroup_iff' _ _).2 hWo
+  have hC3 : (fun a => s.g (ι a)) = W' *ᵥ Krylov.firstVec β₀ (k + 1) := by
+    funext a
+    rw [hg, mulVec, dotProduct, mulVec, dotProduct,
+      ← sum_castLE_eq hk1 (fun c => W (ι a) c * Krylov.firstVec β₀ (m + 1) c)
+        fun c hc => by rw [hWrow a c hc, zero_mul]]
+    rfl
+  have hC4 : ∀ b : Fin k, R' (Fin.last k) b = 0 := fun b =>
+    hRlow (κ b) b.2 (ι (Fin.last k)) (by simp [κ, ι])
+  -- the least-squares identity
+  have hLS : ∀ w : Fin k → ℝ,
+      ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ w) : EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2
+        = ‖(WithLp.toLp 2 (pk - Rk *ᵥ w) : EuclideanSpace ℝ (Fin k))‖ ^ 2 +
+          s.g (ι (Fin.last k)) ^ 2 := by
+    intro w
+    rw [← norm_toLp_mulVec_of_mem_unitaryGroup hW'mem, mulVec_sub, mulVec_mulVec, hC1, ← hC3,
+      EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_castSucc]
+    congr 1
+    all_goals simp only [Pi.sub_apply, mulVec, dotProduct, hC4, zero_mul,
+      Finset.sum_const_zero, sub_zero]
+  -- `R_k` is upper triangular and nonsingular
+  have hRkU : Rk.IsUpperTriangular := fun a b hab => hRlow (κ b) b.2 _ (by simpa [κ] using hab)
+  have hTinj : Function.Injective T := by
+    intro u v huv
+    have h1 : B *ᵥ u.ofLp = B *ᵥ v.ofLp := by
+      have := congrArg WithLp.ofLp huv
+      simpa [hT] using this
+    exact WithLp.ofLp_injective 2 ((mulVec_injective_iff_isUnit.2 hB) h1)
+  have hker : ∀ w : Fin k → ℝ, Rk *ᵥ w = 0 → w = 0 := by
+    intro w hw
+    have hR'w : R' *ᵥ w = 0 := by
+      funext a
+      refine Fin.lastCases ?_ (fun a => ?_) a
+      · simp only [mulVec, dotProduct, hC4, zero_mul, Finset.sum_const_zero, Pi.zero_apply]
+      · have e : (R' *ᵥ w) a.castSucc = (Rk *ᵥ w) a := rfl
+        rw [e, hw]
+        rfl
+    have hHw : Hk *ᵥ w = 0 := by
+      have e : W'ᵀ *ᵥ (W' *ᵥ (Hk *ᵥ w)) = Hk *ᵥ w := by
+        rw [mulVec_mulVec, hWo, one_mulVec]
+      have e2 : W' *ᵥ (Hk *ᵥ w) = 0 := by rw [mulVec_mulVec, hC1, hR'w]
+      rw [← e, e2, mulVec_zero]
+    have hsum : ∑ j, w j • Arnoldi.vec T z j = 0 := by
+      apply hTinj
+      rw [map_zero, Arnoldi.apply_sum, ← hHk, hHw]
+      simp
+    funext i
+    have h1 := congrArg (fun v => inner ℝ (Arnoldi.vec T z i) v) hsum
+    simp only [inner_sum, real_inner_smul_right, inner_zero_right] at h1
+    rw [Finset.sum_eq_single i (fun j _ hji => by
+        rw [Arnoldi.inner_vec_eq_zero _ _ (fun h => hji (Fin.ext h.symm)), mul_zero])
+      (by simp), real_inner_self_eq_norm_sq,
+      Arnoldi.norm_vec_eq_one_of_lt_grade _ _ (i.2.trans_le hkg), one_pow, mul_one] at h1
+    exact h1
+  have hRkunit : IsUnit Rk := mulVec_injective_iff_isUnit.1 fun w w' h' =>
+    sub_eq_zero.1 (hker _ (by rw [mulVec_sub, h', sub_self]))
+  have hdiag : ∀ i, Rk i i ≠ 0 := by
+    have hdet := (isUnit_iff_isUnit_det Rk).1 hRkunit
+    rw [det_of_isUpperTriangular hRkU] at hdet
+    exact fun i => (Finset.prod_ne_zero_iff.1 hdet.ne_zero) i (Finset.mem_univ i)
+  have hyR : Rk *ᵥ y = pk := GolubVanLoan.Chapter03.algorithm_3_1_2_spec hRkU hdiag pk
+  -- the computed iterate in `𝔼`
+  have hxE : WithLp.toLp 2 (x₀ + (of fun i (l : Fin k) => s.arnoldi.q l i) *ᵥ y) =
+      WithLp.toLp 2 x₀ + ∑ j, y j • Arnoldi.vec T z j := by
+    rw [WithLp.toLp_add]
+    congr 1
+    have hq : ∀ j : Fin k, Arnoldi.vec T z j = WithLp.toLp 2 (s.arnoldi.q j) :=
+      fun j => ((hvec j j.2).1).symm
+    simp_rw [hq, ← WithLp.toLp_smul, ← WithLp.toLp_sum]
+    congr 1
+    ext i
+    simp [mulVec, dotProduct, Finset.sum_apply, mul_comm]
+  have hzE : z = WithLp.toLp 2 c - T (WithLp.toLp 2 x₀) := by
+    rw [hzdef, hz, hT, toEuclideanLin_toLp, WithLp.toLp_sub]
+  have hmin : IsMinResidualIterate T (WithLp.toLp 2 c) (WithLp.toLp 2 x₀) k
+      (WithLp.toLp 2 (x₀ + (of fun i (l : Fin k) => s.arnoldi.q l i) *ᵥ y)) := by
+    rw [hxE]
+    have key := isMinResidualIterate_iff_isMinOn (A := T) (b := WithLp.toLp 2 c)
+      (x₀ := WithLp.toLp 2 x₀) (hzE ▸ hkg) y
+    rw [← hzE] at key
+    refine key.2 (isMinOn_iff.2 fun w _ => ?_)
+    have e1 := hLS y
+    have e2 := hLS w
+    rw [hyR, sub_self] at e1
+    simp only [WithLp.toLp_zero, norm_zero] at e1
+    simp only [RCLike.ofReal_real_eq_id, id_eq] at key
+    have hle : ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ y) :
+        EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2 ≤
+        ‖(WithLp.toLp 2 (Krylov.firstVec β₀ (k + 1) - Hk *ᵥ w) :
+          EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2 := by
+      rw [e1, e2]
+      nlinarith [sq_nonneg ‖(WithLp.toLp 2 (pk - Rk *ᵥ w) : EuclideanSpace ℝ (Fin k))‖]
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hle
+  refine ⟨hk, hvec, hmin, fun i hi => ?_, fun hdone => ?_⟩
+  · have hiι : i = ι (Fin.last k) := Fin.ext hi
+    have e1 := hLS y
+    rw [hyR, sub_self, WithLp.toLp_zero, norm_zero] at e1
+    have hres := norm_residual_eq_norm_firstVec_sub_mulVec (A := T) (b := WithLp.toLp 2 c)
+      (x₀ := WithLp.toLp 2 x₀) (hzE ▸ hkg) y
+    rw [← hzE] at hres
+    simp only [RCLike.ofReal_real_eq_id, id_eq] at hres
+    rw [hxE, hres, hiι, ← Real.sqrt_sq (norm_nonneg _), e1, zero_pow two_ne_zero,
+      zero_add, Real.sqrt_sq_eq_abs]
+  · have hgk : grade T z ≤ k := by
+      rcases hdn hdone with ⟨-, hb0⟩ | ⟨hpos, hh0⟩
+      · have hz0 : z = 0 := norm_eq_zero.1 hb0
+        rw [hz0, grade_zero]
+        exact Nat.zero_le _
+      · have e := (hvec (k - 1) (by omega)).2 k (by omega)
+        rw [hh0] at e
+        have e' : Arnoldi.coeff T z (k - 1 + 1) (k - 1) = 0 := by
+          rw [Nat.sub_add_cancel hpos]; exact e.symm
+        have := (Arnoldi.coeff_succ_self_eq_zero_iff T z (k - 1)).1 e'
+        omega
+    have happ := hmin.apply_eq_of_grade_le (hzE ▸ hgk) hTinj.injOn
+    rw [hT, toEuclideanLin_toLp] at happ
+    exact WithLp.toLp_injective 2 happ
+
+/-- **Exact semantics of Algorithm 11.4.2** (`A` nonsingular): the exact run makes
+`k = min(m, grade)` steps on `r₀ = b − Ax₀`; the computed `q_j`, `h_ij` are the Arnoldi vectors
+and coefficients of `r₀` (the modified Gram–Schmidt loop (11.4.11) is Gram–Schmidt in exact
+arithmetic, chapter 10's `algorithm_10_5_1_spec`); `x̃` minimizes `‖b − Ax‖₂` over
+`x₀ + 𝒦(A, r₀, k)` (`Krylov.IsMinResidualIterate`) with `|ρ_k| = ‖Ax̃ − b‖₂`; and if the loop
+stopped on `β_k = 0`, `Ax̃ = b`. This is the book's "either `x̃` solves `Ax = b` or minimizes
+`‖Ax − b‖₂` over the affine space `x₀ + 𝒦(A, r₀, m)`" (when the loop did not stop early, `k = m`).
+The rotations are those of chapter 5's `givens`, whose signs differ from the backbone's
+`Krylov.givensQ`; only their orthogonality and the triangular form they produce are used
+(`gmresCore_spec`). -/
+theorem algorithm_11_4_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b x₀ : Fin n → ℝ)
+    (m : ℕ) :
+    let out := Id.run (algorithm_11_4_2 pure A b x₀ m)
+    let T := toEuclideanLin A
+    let r₀ : EuclideanSpace ℝ (Fin n) := WithLp.toLp 2 b - T (WithLp.toLp 2 x₀)
+    out.1.arnoldi.k = min m (grade T r₀) ∧
+      (∀ j < out.1.arnoldi.k, WithLp.toLp 2 (out.1.arnoldi.q j) = Arnoldi.vec T r₀ j ∧
+        ∀ i ≤ j + 1, out.1.arnoldi.h i j = Arnoldi.coeff T r₀ i j) ∧
+      IsMinResidualIterate T (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) out.1.arnoldi.k
+        (WithLp.toLp 2 out.2) ∧
+      (∀ i : Fin (m + 1), (i : ℕ) = out.1.arnoldi.k →
+        |out.1.g i| = ‖WithLp.toLp 2 b - T (WithLp.toLp 2 out.2)‖) ∧
+      (out.1.arnoldi.done = true → A *ᵥ out.2 = b) := by
+  have hrun : Id.run (algorithm_11_4_2 pure A b x₀ m) =
+      Id.run (gmresCore pure (fun q => GolubVanLoan.Chapter01.algorithm_1_1_3 pure A q 0) x₀
+        (b - A *ᵥ x₀) m) := by
+    simp only [algorithm_11_4_2, Id.run_bind, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
+      mulVec_neg, ← sub_eq_add_neg]
+  have hr₀ : WithLp.toLp 2 b - toEuclideanLin A (WithLp.toLp 2 x₀) =
+      (WithLp.toLp 2 (b - A *ᵥ x₀) : EuclideanSpace ℝ (Fin n)) := by
+    rw [toEuclideanLin_toLp, WithLp.toLp_sub]
+  dsimp only
+  rw [hrun, hr₀]
+  exact gmresCore_spec hA
+    (fun q => (GolubVanLoan.Chapter01.algorithm_1_1_3_spec A q 0).trans (zero_add _))
+    b x₀ (b - A *ᵥ x₀) rfl m
+
+end GMRESSpec
 
 /-! ### §11.4.4: the polynomial point of view -/
 

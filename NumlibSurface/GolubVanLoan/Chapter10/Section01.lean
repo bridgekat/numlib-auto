@@ -4,6 +4,7 @@ import Numlib.Eigen.Sturm
 import Numlib.Krylov.Decomposition
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter01.Section02
+import NumlibSurface.GolubVanLoan.Chapter08.Section04
 
 /-!
 # Golub–Van Loan §10.1: the symmetric Lanczos process
@@ -11,7 +12,8 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section02
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.1:
 the gradient of the Rayleigh quotient (10.1.1), Algorithm 10.1.1 (Lanczos tridiagonalization) and
 Theorem 10.1.1 with (10.1.4) and (10.1.6), Ritz approximations (10.1.7)–(10.1.8) with the residual
-bound and Golub's rank-one modification, the Kaniel–Paige–Saad bounds Theorem 10.1.2,
+bound and Golub's rank-one modification with its bracketing intervals (via chapter 8's
+Theorem 8.1.8), the Kaniel–Paige–Saad bounds Theorem 10.1.2,
 Corollary 10.1.3 and Theorem 10.1.4, and the power-method comparison (10.1.11).
 
 ## Conventions
@@ -46,8 +48,7 @@ definition of the Lanczos process (`Numlib/Krylov/Lanczos`).
 
 (10.1.2)–(10.1.3) (the motivation through `M_k`, `m_k`), (10.1.5) (the display of the tridiagonal
 `T_k`, the backbone's `Lanczos.tridiag`), Figure 10.1.1 and the comparison after (10.1.11)
-(numerical), operation counts. The bracketing claim of Golub's rank-one modification
-(`golub_rankOne_bracket`) waits for chapter 8's Theorem 8.1.8.
+(numerical), operation counts.
 -/
 
 open Matrix Krylov FloatingPoint Polynomial
@@ -533,6 +534,147 @@ theorem golub_rankOne_modification {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
     apply hy0
     have := congrArg (Qᵀ *ᵥ ·) h
     simpa only [mulVec_mulVec, hQ, one_mulVec, mulVec_zero] using this
+
+/-- An eigenvector gives a point of the spectrum: `M v = θ v`, `v ≠ 0` ⟹ `θ ∈ σ(M)`. -/
+private theorem mem_spectrum_of_mulVec_eq_smul {m : ℕ} {M : Matrix (Fin m) (Fin m) ℝ}
+    {v : Fin m → ℝ} {θ : ℝ} (hv : v ≠ 0) (h : M *ᵥ v = θ • v) : θ ∈ spectrum ℝ M := by
+  rw [spectrum.mem_iff, ← Matrix.mulVec_injective_iff_isUnit]
+  intro hinj
+  refine hv (hinj ?_)
+  rw [Matrix.mulVec_zero, Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
+    Matrix.one_mulVec, h, sub_self]
+
+/-- A point of the spectrum has an eigenvector: `θ ∈ σ(M)` ⟹ `M v = θ v` for some `v ≠ 0`. -/
+private theorem exists_mulVec_eq_smul_of_mem_spectrum {m : ℕ} {M : Matrix (Fin m) (Fin m) ℝ}
+    {θ : ℝ} (h : θ ∈ spectrum ℝ M) : ∃ v ≠ 0, M *ᵥ v = θ • v := by
+  rw [spectrum.mem_iff, Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
+    ← Matrix.exists_mulVec_eq_zero_iff] at h
+  obtain ⟨v, hv, hMv⟩ := h
+  refine ⟨v, hv, ?_⟩
+  rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
+    sub_eq_zero] at hMv
+  exact hMv.symm
+
+/-- The diagonal of Golub's modified tridiagonal matrix `T_k + c e_k e_kᵀ`: the Lanczos `α_j`, with
+`c` added to the last one (`0`-based index `k − 1`). -/
+private noncomputable def rankOneDiag (A : Matrix (Fin n) (Fin n) ℝ)
+    (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (c : ℝ) : ℕ → ℝ :=
+  fun j => Lanczos.alpha (toEuclideanLin A) q₁ j + if j + 1 = k then c else 0
+
+/-- `T_k + c e_k e_kᵀ` is the symmetric tridiagonal matrix of `rankOneDiag` and the Lanczos `β`. -/
+private theorem tridiag_add_eq_symmTridiagonalOf (A : Matrix (Fin n) (Fin n) ℝ)
+    (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (c : ℝ) :
+    Lanczos.tridiag (toEuclideanLin A) q₁ k +
+        c • vecMulVec (Krylov.lastVec (1 : ℝ) k) (Krylov.lastVec 1 k) =
+      symmTridiagonalOf (rankOneDiag A q₁ k c) (Lanczos.beta (toEuclideanLin A) q₁) k := by
+  ext i j
+  simp only [Matrix.add_apply, Matrix.smul_apply, vecMulVec_apply, Krylov.lastVec,
+    Lanczos.tridiag_apply, symmTridiagonalOf_apply, rankOneDiag, smul_eq_mul]
+  by_cases hij : (i : ℕ) = j
+  · rw [ite_eq_left hij, ite_eq_left hij, ← hij]
+    by_cases h : (i : ℕ) + 1 = k
+    · rw [ite_eq_left h, ite_eq_left h, mul_one, mul_one]
+    · rw [ite_eq_right h, ite_eq_right h, mul_zero, mul_zero]
+  · rw [ite_eq_right hij, ite_eq_right hij]
+    have h0 : (if (i : ℕ) + 1 = k then (1 : ℝ) else 0) * (if (j : ℕ) + 1 = k then 1 else 0) =
+        0 := by
+      by_cases hi : (i : ℕ) + 1 = k
+      · rw [ite_eq_right (show ¬(j : ℕ) + 1 = k by omega), mul_zero]
+      · rw [ite_eq_right hi, zero_mul]
+    rw [h0, mul_zero, add_zero]
+
+/-- **Golub's bracketing intervals** (§10.1.4, "Using Theorem 8.1.8, it can be shown that the
+interval `[λ_i(T̃_k), λ_{i−1}(T̃_k)]` contains an eigenvalue of `A` for `i = 2 : k`"): with
+`T̃_k = T_k + τ a² e_k e_kᵀ` and `1 + τ a b = 0`, for `1 ≤ k ≤ m` and every `0`-based `i ≥ 1`, some
+eigenvalue `μ` of `A` satisfies `λ_{i+1}(T̃_k) ≤ μ ≤ λ_i(T̃_k)` (`Chapter08.symmEigenvalue`, sorted
+decreasingly). Also the determinant formula `det(T̃_k − λI) = (α_k + τ a² − λ) p_{k−1}(λ) −
+β_{k−1}² p_{k−2}(λ)`, `p_i(λ) = det(T_i − λ I_i)` (`k ≥ 2`). Proof: `T̃_k` is unreduced
+(`β_j ≠ 0` below the grade), so its eigenvalues are simple (`Sturm.strictAnti_eigenvalues`); each is
+an eigenvalue of `A + τ w wᵀ` (`golub_rankOne_modification`), and between two distinct eigenvalues
+of `A + τ w wᵀ` lies an eigenvalue of `A = (A + τ w wᵀ) − τ w wᵀ` by the rank-one interlacing of
+Theorem 8.1.8. The determinant is (8.4.2) (`Chapter08.equation_8_4_2`) for `T̃_k`. -/
+theorem golub_rankOne_bracket {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin A) q₁)
+    (τ a b : ℝ) :
+    let e := Krylov.lastVec (1 : ℝ) k
+    let T' := Lanczos.tridiag (toEuclideanLin A) q₁ k + (τ * a ^ 2) • vecMulVec e e
+    (1 + τ * a * b = 0 → ∀ (hT : T'.IsSymm) (i : Fin k) (hi : 1 ≤ (i : ℕ)),
+      ∃ μ ∈ spectrum ℝ A, Chapter08.symmEigenvalue hT i ≤ μ ∧
+        μ ≤ Chapter08.symmEigenvalue hT ⟨i - 1, by omega⟩) ∧
+    (2 ≤ k → ∀ x : ℝ, (T' - x • 1).det =
+      (Lanczos.alpha (toEuclideanLin A) q₁ (k - 1) + τ * a ^ 2 - x) *
+          (Lanczos.tridiag (toEuclideanLin A) q₁ (k - 1) - x • 1).det -
+        Lanczos.beta (toEuclideanLin A) q₁ (k - 2) ^ 2 *
+          (Lanczos.tridiag (toEuclideanLin A) q₁ (k - 2) - x • 1).det) := by
+  intro e T'
+  have hT'eq : T' = symmTridiagonalOf (rankOneDiag A q₁ k (τ * a ^ 2))
+      (Lanczos.beta (toEuclideanLin A) q₁) k :=
+    tridiag_add_eq_symmTridiagonalOf A q₁ k _
+  refine ⟨fun hab hT i hi => ?_, fun hk2 x => ?_⟩
+  · have hβ : ∀ j, j + 1 < k → Lanczos.beta (toEuclideanLin A) q₁ j ≠ 0 := by
+      intro j hj h
+      have h' := (Lanczos.beta_eq_zero_iff q₁ hA.isSymmetric_toEuclideanLin j).1 h
+      omega
+    have hθ : Chapter08.symmEigenvalue hT =
+        Sturm.eigenvalues (rankOneDiag A q₁ k (τ * a ^ 2)) (Lanczos.beta (toEuclideanLin A) q₁)
+          k := by
+      rw [Chapter08.symmEigenvalue_eq_sortedEigenvalues hT (isHermitian_iff_isSymm.2 hT)]
+      exact IsHermitian.sortedEigenvalues_congr hT'eq _ _
+    have hanti : StrictAnti (Chapter08.symmEigenvalue hT) :=
+      hθ ▸ Sturm.strictAnti_eigenvalues _ _ k hβ
+    have hmod := golub_rankOne_modification hA q₁ hk1 hk τ a b
+    dsimp only at hmod
+    obtain ⟨-, heig⟩ := hmod
+    set w := a • (Arnoldi.basisMatrix A q₁ k *ᵥ Krylov.lastVec (1 : ℝ) k) +
+      b • (Arnoldi.w (toEuclideanLin A) q₁ (k - 1)).ofLp with hw
+    have hB : (A + τ • vecMulVec w w).IsSymm :=
+      hA.add ((Matrix.IsSymm.ext fun i j => by simp only [vecMulVec_apply, mul_comm]).smul τ)
+    have hμ : ∀ j : Fin k,
+        ∃ p, Chapter08.symmEigenvalue hB p = Chapter08.symmEigenvalue hT j := by
+      intro j
+      obtain ⟨y, hy0, hy⟩ :=
+        exists_mulVec_eq_smul_of_mem_spectrum (Chapter08.symmEigenvalue_mem_spectrum hT j)
+      obtain ⟨h1, h2⟩ := heig hab _ y hy0 hy
+      have hmem := mem_spectrum_of_mulVec_eq_smul h2 h1
+      rw [Chapter08.spectrum_eq_range_symmEigenvalue hB] at hmem
+      exact hmem
+    obtain ⟨p, hp⟩ := hμ ⟨i - 1, by omega⟩
+    obtain ⟨q, hq⟩ := hμ i
+    have hlt : Chapter08.symmEigenvalue hT i < Chapter08.symmEigenvalue hT ⟨i - 1, by omega⟩ :=
+      hanti (Fin.lt_def.2 (by simp only; omega))
+    have hpq : (p : ℕ) < q := by
+      by_contra h
+      have h' := Chapter08.antitone_symmEigenvalue hB (Fin.le_def.2 (not_lt.1 h))
+      rw [hp, hq] at h'
+      linarith
+    have h8 := Chapter08.theorem_8_1_8 hA w τ hB
+    rcases le_total 0 τ with hτ | hτ
+    · have hq1 : 1 ≤ (q : ℕ) := by omega
+      refine ⟨Chapter08.symmEigenvalue hA ⟨q - 1, by omega⟩,
+        Chapter08.symmEigenvalue_mem_spectrum hA _, ?_, ?_⟩
+      · rw [← hq]
+        exact (h8.1 hτ q).2 hq1
+      · rw [← hp]
+        exact (h8.1 hτ _).1.trans
+          (Chapter08.antitone_symmEigenvalue hB (Fin.le_def.2 (by simp only; omega)))
+    · have hp1 : (p : ℕ) + 1 < n := by have := q.isLt; omega
+      refine ⟨Chapter08.symmEigenvalue hA ⟨p + 1, hp1⟩,
+        Chapter08.symmEigenvalue_mem_spectrum hA _, ?_, ?_⟩
+      · rw [← hq]
+        exact (Chapter08.antitone_symmEigenvalue hB (Fin.le_def.2 (by simp only; omega))).trans
+          (h8.2 hτ _).1
+      · rw [← hp]
+        exact (h8.2 hτ p).2 hp1
+  · obtain ⟨r, rfl⟩ : ∃ r, k = r + 2 := ⟨k - 2, by omega⟩
+    have hsub : ∀ s ≤ r + 1, symmTridiagonalOf (rankOneDiag A q₁ (r + 2) (τ * a ^ 2))
+        (Lanczos.beta (toEuclideanLin A) q₁) s = Lanczos.tridiag (toEuclideanLin A) q₁ s := by
+      intro s hs
+      ext i j
+      simp only [symmTridiagonalOf_apply, Lanczos.tridiag_apply, rankOneDiag]
+      rw [ite_eq_right (show ¬((i : ℕ) + 1 = r + 2) by omega), add_zero]
+    rw [hT'eq, (Chapter08.equation_8_4_2 _ _).2.2 r x, hsub (r + 1) le_rfl, hsub r (by omega),
+      show r + 2 - 1 = r + 1 by omega, show r + 2 - 2 = r by omega]
+    simp only [rankOneDiag, ite_true]
 
 /-! ### The Kaniel–Paige–Saad bounds (§10.1.5–10.1.6) -/
 

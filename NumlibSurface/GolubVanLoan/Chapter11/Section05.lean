@@ -10,6 +10,7 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter01.Section04
 import NumlibSurface.GolubVanLoan.Chapter11.Section01
 import NumlibSurface.GolubVanLoan.Chapter11.Section02
+import NumlibSurface.GolubVanLoan.Chapter11.Section04
 
 /-!
 # Golub–Van Loan §11.5: preconditioning
@@ -64,8 +65,8 @@ avoids the nonzeros of `A` (`isIncompleteCholesky_of_isIC`).
 §11.5.4 (Toeplitz and circulant preconditioners: T. Chan's and Strang's choices are definitions
 with no claim), the drop-tolerance and `ILU(ℓ)` variants, the HSS saddle-point preconditioner
 (its effectiveness is cited), the cost inequality and Criteria 1–2 of §11.5.1, the heuristic
-choices of `Λ_k` in §11.5.9, and the Problems. Algorithm 11.5.2 (preconditioned GMRES) is
-Algorithm 11.4.2 with `M`-solves, and is written with it.
+choices of `Λ_k` in §11.5.9, and the Problems. Algorithm 11.5.2
+(preconditioned GMRES) is written with the loop of Algorithm 11.4.2 (`gmresCore`) and `M`-solves.
 -/
 
 open Matrix Finset
@@ -1923,5 +1924,79 @@ theorem ddPreconditioner_rank_le {A₁ : Matrix (Fin a) (Fin a) ℝ} {A₂ : Mat
   simp
 
 end DomainDecomposition
+
+/-! ### §11.5.2: preconditioned GMRES -/
+
+section PreconditionedGMRES
+
+open Krylov
+
+variable {n m : ℕ}
+
+/-- **Algorithm 11.5.2 (Preconditioned `m`-step GMRES).** "If `A ∈ ℝ^{n×n}` and `M ∈ ℝ^{n×n}`
+are nonsingular, `b ∈ ℝⁿ`, `Ax₀ ≈ b`, and `m` is a positive iteration limit, then this algorithm
+computes `x̃ ∈ ℝⁿ` where either `x̃` solves `Ax = b` or minimizes `‖M⁻¹(Ax − b)‖₂` over the affine
+space `x₀ + 𝒦(M⁻¹A, M⁻¹r₀, m)` where `r₀ = b − Ax₀`": Algorithm 11.4.2 with `r₀` replaced by
+`z₀`, `M z₀ = r₀`, and `Aq_k` by `z_k`, `M z_k = Aq_k`; the same rotations and back substitution
+(`gmresCore`). The solves with `M` are the routine `solveM`. -/
+noncomputable def algorithm_11_5_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+    (A : Matrix (Fin n) (Fin n) ℝ) (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b x₀ : Fin n → ℝ)
+    (m : ℕ) : M (GMRESState n m × (Fin n → ℝ)) := do
+  let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
+  let z₀ ← solveM r₀
+  gmresCore rnd (fun q => do
+    let w ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A q 0
+    solveM w) x₀ z₀ m
+
+/-- **Exact semantics of Algorithm 11.5.2** (`A`, `M` nonsingular, `solveM = M⁻¹`): the run is
+GMRES on the preconditioned system `(M⁻¹A) x = M⁻¹b` — it makes `k = min(m, grade)` Arnoldi steps
+on `z₀ = M⁻¹r₀`, `x̃` minimizes `‖M⁻¹(b − Ax)‖₂` over `x₀ + 𝒦(M⁻¹A, z₀, k)`
+(`Krylov.IsMinResidualIterate`), `|ρ_k| = ‖M⁻¹(b − Ax̃)‖₂` (the book's closing remark, up to the
+sign of `ρ_k`, which depends on the rotations), and if the loop stopped on `β_k = 0` then
+`Ax̃ = b`. From `gmresCore_spec` with `B = M⁻¹A`. -/
+theorem algorithm_11_5_2_spec {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
+    (hM : IsUnit Mp) (b x₀ : Fin n → ℝ) (m : ℕ) :
+    let out := Id.run (algorithm_11_5_2 pure A (fun r => pure (Mp⁻¹ *ᵥ r)) b x₀ m)
+    let T := toEuclideanLin (Mp⁻¹ * A)
+    let z₀ : EuclideanSpace ℝ (Fin n) := WithLp.toLp 2 (Mp⁻¹ *ᵥ (b - A *ᵥ x₀))
+    out.1.arnoldi.k = min m (grade T z₀) ∧
+      IsMinResidualIterate T (WithLp.toLp 2 (Mp⁻¹ *ᵥ b)) (WithLp.toLp 2 x₀) out.1.arnoldi.k
+        (WithLp.toLp 2 out.2) ∧
+      (∀ i : Fin (m + 1), (i : ℕ) = out.1.arnoldi.k →
+        |out.1.g i| = ‖(WithLp.toLp 2 (Mp⁻¹ *ᵥ (b - A *ᵥ out.2)) : EuclideanSpace ℝ (Fin n))‖) ∧
+      (out.1.arnoldi.done = true → A *ᵥ out.2 = b) := by
+  have hB : IsUnit (Mp⁻¹ * A) := ((Matrix.isUnit_nonsing_inv_iff).2 hM).mul hA
+  have hrun : Id.run (algorithm_11_5_2 pure A (fun r => pure (Mp⁻¹ *ᵥ r)) b x₀ m) =
+      Id.run (gmresCore pure (fun q => pure ((Mp⁻¹ * A) *ᵥ q)) x₀
+        (Mp⁻¹ *ᵥ (b - A *ᵥ x₀)) m) := by
+    have hop' : ∀ q, Id.run (do
+        let w ← GolubVanLoan.Chapter01.algorithm_1_1_3 pure A q 0
+        (pure (Mp⁻¹ *ᵥ w) : Id (Fin n → ℝ))) = (Mp⁻¹ * A) *ᵥ q := fun q => by
+      simp only [Id.run_bind, GolubVanLoan.Chapter01.algorithm_1_1_3_spec, Id.run_pure]
+      rw [zero_add, mulVec_mulVec]
+    have hop : (fun q => (do
+        let w ← GolubVanLoan.Chapter01.algorithm_1_1_3 pure A q 0
+        (pure (Mp⁻¹ *ᵥ w) : Id (Fin n → ℝ)))) = fun q => pure ((Mp⁻¹ * A) *ᵥ q) :=
+      funext fun q => hop' q
+    simp only [algorithm_11_5_2, Id.run_bind, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
+      mulVec_neg, ← sub_eq_add_neg]
+    exact congrArg (fun f => Id.run (gmresCore pure f x₀ (Mp⁻¹ *ᵥ (b - A *ᵥ x₀)) m)) hop
+  have hz : Mp⁻¹ *ᵥ (b - A *ᵥ x₀) = Mp⁻¹ *ᵥ b - (Mp⁻¹ * A) *ᵥ x₀ := by
+    rw [mulVec_sub, mulVec_mulVec]
+  obtain ⟨hk, -, hmin, hg, hdone⟩ := gmresCore_spec (op := fun q => pure ((Mp⁻¹ * A) *ᵥ q)) hB
+    (fun q => rfl) (Mp⁻¹ *ᵥ b) x₀ (Mp⁻¹ *ᵥ (b - A *ᵥ x₀)) hz m
+  have hres : ∀ x : Fin n → ℝ, (WithLp.toLp 2 (Mp⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n)) -
+      toEuclideanLin (Mp⁻¹ * A) (WithLp.toLp 2 x) = WithLp.toLp 2 (Mp⁻¹ *ᵥ (b - A *ᵥ x)) :=
+    fun x => by rw [toEuclideanLin_toLp, ← WithLp.toLp_sub, mulVec_sub, mulVec_mulVec]
+  dsimp only
+  rw [hrun]
+  refine ⟨hk, hmin, fun i hi => by rw [hg i hi, hres], fun hd => ?_⟩
+  have hMA : ∀ x : Fin n → ℝ, Mp *ᵥ ((Mp⁻¹ * A) *ᵥ x) = A *ᵥ x := fun x => by
+    rw [← mulVec_mulVec, mulVec_nonsing_inv_mulVec hM]
+  have h := congrArg (Mp *ᵥ ·) (hdone hd)
+  simp only [hMA, mulVec_nonsing_inv_mulVec hM] at h
+  exact h
+
+end PreconditionedGMRES
 
 end GolubVanLoan.Chapter11
