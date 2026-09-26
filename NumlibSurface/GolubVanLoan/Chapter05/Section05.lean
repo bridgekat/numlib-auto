@@ -1,0 +1,498 @@
+import NumlibSurface.GolubVanLoan.Chapter05.Section04
+
+/-!
+# Golub–Van Loan §5.5: the rank-deficient least-squares problem
+
+Surface file for [golub2013matrix] §5.5: the convex solution set and its minimal-norm element
+(§5.5.1), the SVD solution (Theorem 5.5.1, (5.5.1)–(5.5.2)), the pseudoinverse and its
+characterizations (§5.5.2, (5.5.3), the Moore–Penrose conditions), its sensitivity (§5.5.3: Wedin's
+bound and the discontinuity example), and the truncated SVD solution (§5.5.4).
+
+## Conventions
+
+The pseudoinverse is the backbone's `Matrix.pinv`; the book's definition `A⁺ = V Σ⁺ Uᵀ` is the
+theorem `pseudoinverse_eq_svd`. An SVD is `Matrix.IsSVD A U σ V` (`Uᵀ A V = Σ`, `σ` sorted and
+nonnegative), `u_i`, `v_i` are the columns of `U`, `V`, 0-based. Least-squares statements are on
+`EuclideanSpace ℝ (Fin m)`.
+
+## Book slips carried
+
+"`z ∈ hull(A)`" (§5.5.1) is `z ∈ null(A)`; (5.5.3)'s `X ∈ ℝ^{m×n}` is `ℝ^{n×m}`; the
+discontinuity example's `(A + δA)⁺` has a spurious `1` in position `(2, 1)`.
+
+## Not formalized
+
+The second bound of §5.5.4 (its middle term cannot be right as printed and no derivation is given),
+the flop table of §5.5.6, the `δ`-rank display of §5.5.4 (misprinted; the definition is (5.4.5)),
+the unstable-subset example (numerical), and "column pivoting tends to produce a well-conditioned
+`R₁₁`" (heuristic).
+-/
+
+open Matrix WithLp
+
+namespace GolubVanLoan.Chapter05
+
+variable {m n : ℕ}
+
+/-! ### §5.5.1 The minimum norm solution -/
+
+section MinNorm
+
+/-- **§5.5.1**: the set `𝒳 = {x : ‖Ax - b‖₂ = min}` of least-squares minimizers is convex, and it
+has a unique element of minimum 2-norm, `x_LS = A⁺ b`. -/
+theorem minNorm_existsUnique (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
+    Convex ℝ {x | IsLeastSquaresSolution A b x} ∧
+      IsMinNormLeastSquaresSolution A b (toEuclideanLin A.pinv b) ∧
+      ∀ x, IsMinNormLeastSquaresSolution A b x → x = toEuclideanLin A.pinv b :=
+  ⟨convex_setOf_isLeastSquaresSolution A b, isMinNormLeastSquaresSolution_pinv A b,
+    fun _ hx => hx.unique (isMinNormLeastSquaresSolution_pinv A b)⟩
+
+end MinNorm
+
+/-! ### Theorem 5.5.1 and the pseudoinverse -/
+
+section SVD
+
+variable {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+  {V : Matrix (Fin n) (Fin n) ℝ}
+
+/-- The pseudoinverse from an SVD applied to `b`, for any shape:
+`A⁺ b = ∑_{j < min(m,n)} (u_jᵀ b / σ_j) v_j`. -/
+private theorem pinv_mulVec_eq_sum_dite (h : IsSVD A U σ V) (b : Fin m → ℝ) :
+    A.pinv *ᵥ b = ∑ j : Fin n,
+      (if hj : (j : ℕ) < m then (U.col ⟨j, hj⟩ ⬝ᵥ b) / σ j else 0) • V.col j := by
+  rw [h.pinv_eq, ← mulVec_mulVec, ← mulVec_mulVec]
+  simp only [RCLike.ofReal_real_eq_id, id]
+  have hD : ∀ j : Fin n, ((rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℝ) *ᵥ
+      (star U *ᵥ b)) j = if hj : (j : ℕ) < m then (U.col ⟨j, hj⟩ ⬝ᵥ b) / σ j else 0 := by
+    intro j
+    simp only [mulVec, dotProduct, rectDiagonal, of_apply, ite_mul, zero_mul]
+    split_ifs with hj
+    · rw [Finset.sum_eq_single ⟨j, hj⟩ (fun i _ hi => by
+        rw [ite_eq_right (fun e => hi (Fin.ext e.symm))]) (by simp)]
+      simp only [↓reduceIte, star_apply, star_trivial, col_apply]
+      rw [div_eq_inv_mul]
+    · refine Finset.sum_eq_zero fun i _ => ?_
+      rw [ite_eq_right (fun e => hj (by have := i.isLt; omega))]
+  ext p
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply]
+  change ∑ j, V p j * _ = _
+  simp only [hD, mul_comm]
+
+/-- **(5.5.1)**: if `Uᵀ A V = Σ` is an SVD of `A ∈ ℝ^{m×n}` with `r = rank(A)`, then
+`x_LS = ∑_{i=1}^{r} (u_iᵀ b / σ_i) v_i` minimizes `‖Ax - b‖₂` and has the smallest 2-norm of all
+minimizers; it is `A⁺ b`. -/
+theorem equation_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
+    ∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+        V.col (Fin.castLE (rank_le_width A) i) = A.pinv *ᵥ b ∧
+      IsMinNormLeastSquaresSolution A (toLp 2 b)
+        (toLp 2 (∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+          V.col (Fin.castLE (rank_le_width A) i))) := by
+  have hsum : ∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+      V.col (Fin.castLE (rank_le_width A) i) = A.pinv *ᵥ b := by
+    rw [pinv_mulVec_eq_sum_dite h b]
+    set g : Fin n → Fin n → ℝ := fun j =>
+      (if hj : (j : ℕ) < m then (U.col ⟨j, hj⟩ ⬝ᵥ b) / σ j else 0) • V.col j with hg
+    have h1 : ∀ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+        V.col (Fin.castLE (rank_le_width A) i) = g (Fin.castLE (rank_le_width A) i) := by
+      intro i
+      have hi : ((Fin.castLE (rank_le_width A) i : Fin n) : ℕ) < m :=
+        lt_of_lt_of_le i.isLt (rank_le_height A)
+      simp only [hg, hi, ↓reduceDIte]
+      rfl
+    rw [Finset.sum_congr rfl fun i _ => h1 i, Fin.sum_castLE_eq_sum_ite]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    split_ifs with hjr
+    · rfl
+    · simp only [hg]
+      split_ifs with hjm
+      · rw [h.singularValues_eq hjm j.isLt,
+          (sortedSingularValues_eq_zero_iff_rank_le (A := A) _).2 (not_lt.1 hjr), div_zero,
+          zero_smul]
+      · rw [zero_smul]
+  refine ⟨hsum, ?_⟩
+  rw [hsum, ← toEuclideanLin_toLp]
+  exact isMinNormLeastSquaresSolution_pinv A (toLp 2 b)
+
+/-- **(5.5.2)**: `ρ_LS² = ‖A x_LS - b‖₂² = ∑_{i=r+1}^{m} (u_iᵀ b)²`. -/
+theorem equation_5_5_2 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
+    ‖toEuclideanLin A (toLp 2 (A.pinv *ᵥ b)) - toLp 2 b‖ ^ 2 =
+      ∑ i ∈ Finset.univ.filter (fun i : Fin m => A.rank ≤ (i : ℕ)), (U.col i ⬝ᵥ b) ^ 2 := by
+  rw [← toEuclideanLin_toLp, norm_sub_sq_pinv_eq_sum_of_isSVD h]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [EuclideanSpace.inner_toLp_toLp, Real.norm_eq_abs, sq_abs]
+  simp only [star_trivial, dotProduct_comm]
+  rfl
+
+/-- **Theorem 5.5.1**: for an SVD `Uᵀ A V = Σ` of `A ∈ ℝ^{m×n}` with `r = rank(A)`,
+`x_LS = ∑_{i=1}^{r} (u_iᵀ b / σ_i) v_i` minimizes `‖Ax - b‖₂` and has the smallest 2-norm of all
+minimizers, and `ρ_LS² = ∑_{i=r+1}^{m} (u_iᵀ b)²`. -/
+theorem theorem_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
+    IsMinNormLeastSquaresSolution A (toLp 2 b)
+        (toLp 2 (∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+          V.col (Fin.castLE (rank_le_width A) i))) ∧
+      ‖toEuclideanLin A (toLp 2 (∑ i : Fin A.rank,
+          ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
+            V.col (Fin.castLE (rank_le_width A) i))) - toLp 2 b‖ ^ 2 =
+        ∑ i ∈ Finset.univ.filter (fun i : Fin m => A.rank ≤ (i : ℕ)), (U.col i ⬝ᵥ b) ^ 2 := by
+  obtain ⟨hsum, hmin⟩ := equation_5_5_1 h b
+  exact ⟨hmin, by rw [hsum]; exact equation_5_5_2 h b⟩
+
+/-- **§5.5.2, the pseudoinverse from the SVD**: `A⁺ = V Σ⁺ Uᵀ` with
+`Σ⁺ = diag(1/σ₁, …, 1/σ_r, 0, …, 0) ∈ ℝ^{n×m}` (`1/0 = 0`); `x_LS = A⁺ b` and
+`ρ_LS = ‖(I - AA⁺) b‖₂`; `A⁺ = (AᵀA)⁻¹Aᵀ` if `rank(A) = n`; `A⁺ = A⁻¹` if `A` is square and
+nonsingular. -/
+theorem pseudoinverse_eq_svd (h : IsSVD A U σ V) (b : Fin m → ℝ) :
+    A.pinv = V * (rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℝ) * Uᵀ ∧
+      IsMinNormLeastSquaresSolution A (toLp 2 b) (toLp 2 (A.pinv *ᵥ b)) ∧
+      ‖toEuclideanLin A (toLp 2 (A.pinv *ᵥ b)) - toLp 2 b‖ =
+        ‖(toLp 2 ((1 - A * A.pinv) *ᵥ b) : EuclideanSpace ℝ (Fin m))‖ ∧
+      (LinearIndependent ℝ Aᵀ → A.pinv = (Aᵀ * A)⁻¹ * Aᵀ) := by
+  refine ⟨?_, ?_, ?_, fun hA => ?_⟩
+  · have := h.pinv_eq
+    simpa only [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
+      RCLike.ofReal_real_eq_id, id] using this
+  · rw [← toEuclideanLin_toLp]; exact isMinNormLeastSquaresSolution_pinv A (toLp 2 b)
+  · rw [toEuclideanLin_toLp, ← norm_neg, neg_sub, ← WithLp.toLp_sub, mulVec_mulVec,
+      sub_mulVec, one_mulVec]
+  · have := pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+
+/-- **§5.5.2**: `A⁺ = A⁻¹` if `m = n = rank(A)`. -/
+theorem pseudoinverse_eq_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B) : B.pinv = B⁻¹ :=
+  pinv_eq_inv hB
+
+/-- **(5.5.3)**: `A⁺` is the unique minimal-Frobenius-norm solution of
+`min_{X ∈ ℝ^{n×m}} ‖AX - I_m‖_F` (the book prints `X ∈ ℝ^{m×n}`). -/
+theorem equation_5_5_3 (A : Matrix (Fin m) (Fin n) ℝ) :
+    letI := Matrix.frobeniusNormedAddCommGroup (m := Fin m) (n := Fin m) (α := ℝ)
+    letI := Matrix.frobeniusNormedAddCommGroup (m := Fin n) (n := Fin m) (α := ℝ)
+    (∀ X : Matrix (Fin n) (Fin m) ℝ, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
+      ∀ X : Matrix (Fin n) (Fin m) ℝ,
+        ‖A * X - 1‖ = ‖A * A.pinv - 1‖ → ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) :=
+  pinv_isMinOn_frobenius A
+
+/-- **§5.5.2, the Moore–Penrose conditions**: `A⁺` is the unique `X ∈ ℝ^{n×m}` with
+(i) `AXA = A`, (ii) `XAX = X`, (iii) `(AX)ᵀ = AX`, (iv) `(XA)ᵀ = XA`; and `AA⁺` is the orthogonal
+projection onto `ran(A)`. -/
+theorem moorePenrose (A : Matrix (Fin m) (Fin n) ℝ) :
+    A * A.pinv * A = A ∧ A.pinv * A * A.pinv = A.pinv ∧ (A * A.pinv)ᵀ = A * A.pinv ∧
+      (A.pinv * A)ᵀ = A.pinv * A ∧
+      (∀ X : Matrix (Fin n) (Fin m) ℝ, A * X * A = A → X * A * X = X → (A * X)ᵀ = A * X →
+        (X * A)ᵀ = X * A → X = A.pinv) ∧
+      toEuclideanLin (A * A.pinv) = ((toEuclideanLin A).range.starProjection : _ →ₗ[ℝ] _) := by
+  have h3 : (A * A.pinv)ᵀ = A * A.pinv := by
+    have := (isHermitian_mul_pinv (A := A)).eq
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  have h4 : (A.pinv * A)ᵀ = A.pinv * A := by
+    have := (isHermitian_pinv_mul (A := A)).eq
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  refine ⟨mul_pinv_mul_self A, pinv_mul_self_mul_pinv A, h3, h4, fun X h1 h2 h3' h4' =>
+    pinv_unique A h1 h2 ?_ ?_, mul_pinv_eq_starProjection A⟩
+  · rw [IsHermitian, conjTranspose_eq_transpose_of_trivial]; exact h3'
+  · rw [IsHermitian, conjTranspose_eq_transpose_of_trivial]; exact h4'
+
+end SVD
+
+/-! ### §5.5.3 The perturbation of the pseudoinverse -/
+
+section PinvPerturbation
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **§5.5.3, the perturbation of the pseudoinverse** (Wedin 1973, Stewart 1975):
+`‖(A + δA)⁺ - A⁺‖_F ≤ 2 ‖δA‖_F max{‖A⁺‖₂², ‖(A + δA)⁺‖₂²}`, the spectral norms written as operator
+norms of `toEuclideanLin`. -/
+theorem pinv_perturbation (A δA : Matrix (Fin m) (Fin n) ℝ) :
+    ‖(A + δA).pinv - A.pinv‖ ≤ 2 * ‖δA‖ *
+      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin A.pinv)‖ ^ 2)
+        (‖LinearMap.toContinuousLinearMap (toEuclideanLin (A + δA).pinv)‖ ^ 2) :=
+  frobenius_norm_pinv_sub_le A δA
+
+end PinvPerturbation
+
+/-- The matrix `A = [1 0; 0 0; 0 0]` of §5.5.3's example. -/
+def pinvExampleA : Matrix (Fin 3) (Fin 2) ℝ := !![1, 0; 0, 0; 0, 0]
+
+/-- The perturbation `δA = [0 0; 0 ε; 0 0]` of §5.5.3's example. -/
+def pinvExampleE (ε : ℝ) : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, ε; 0, 0]
+
+/-- The pseudoinverse of `A + δA` in §5.5.3's example, for `ε ≠ 0`. -/
+theorem pinv_pinvExample {ε : ℝ} (hε : ε ≠ 0) :
+    (pinvExampleA + pinvExampleE ε).pinv = !![1, 0, 0; 0, 1 / ε, 0] := by
+  symm
+  refine pinv_unique (A := pinvExampleA + pinvExampleE ε) ?_ ?_ ?_ ?_
+  · ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [pinvExampleA, pinvExampleE, Matrix.mul_apply, Fin.sum_univ_succ, hε]
+  · ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [pinvExampleA, pinvExampleE, Matrix.mul_apply, Fin.sum_univ_succ, hε]
+  · ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [pinvExampleA, pinvExampleE, Matrix.mul_apply, Fin.sum_univ_succ, hε]
+  · ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [pinvExampleA, pinvExampleE, Matrix.mul_apply, Fin.sum_univ_succ, hε]
+
+/-- The pseudoinverse of `A` in §5.5.3's example. -/
+theorem pinv_pinvExampleA : pinvExampleA.pinv = !![1, 0, 0; 0, 0, 0] := by
+  symm
+  refine pinv_unique (A := pinvExampleA) ?_ ?_ ?_ ?_
+  · ext i j
+    fin_cases i <;> fin_cases j <;> simp [pinvExampleA, Matrix.mul_apply, Fin.sum_univ_succ]
+  · ext i j
+    fin_cases i <;> fin_cases j <;> simp [pinvExampleA, Matrix.mul_apply, Fin.sum_univ_succ]
+  · ext i j
+    fin_cases i <;> fin_cases j <;> simp [pinvExampleA, Matrix.mul_apply, Fin.sum_univ_succ]
+  · ext i j
+    fin_cases i <;> fin_cases j <;> simp [pinvExampleA, Matrix.mul_apply, Fin.sum_univ_succ]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **§5.5.3's example, "`x_LS` is not even a continuous function of the data"**: for
+`A = [1 0; 0 0; 0 0]` and `δA = [0 0; 0 ε; 0 0]` (`ε > 0`), `A⁺ = [1 0 0; 0 0 0]`,
+`(A + δA)⁺ = [1 0 0; 0 1/ε 0]` (the book prints a spurious `1` in position `(2,1)`) and
+`‖A⁺ - (A + δA)⁺‖₂ = 1/ε`; so the pseudoinverse is not continuous at `A`. -/
+theorem pinv_discontinuity {ε : ℝ} (hε : 0 < ε) :
+    pinvExampleA.pinv = !![1, 0, 0; 0, 0, 0] ∧
+      (pinvExampleA + pinvExampleE ε).pinv = !![1, 0, 0; 0, 1 / ε, 0] ∧
+      ‖pinvExampleA.pinv - (pinvExampleA + pinvExampleE ε).pinv‖ = 1 / ε ∧
+      ¬ ContinuousAt (fun B : Matrix (Fin 3) (Fin 2) ℝ => B.pinv) pinvExampleA := by
+  refine ⟨pinv_pinvExampleA, pinv_pinvExample hε.ne', ?_, ?_⟩
+  · rw [pinv_pinvExampleA, pinv_pinvExample hε.ne']
+    have hD : (!![1, 0, 0; 0, 0, 0] - !![1, 0, 0; 0, 1 / ε, 0] : Matrix (Fin 2) (Fin 3) ℝ) =
+        !![0, 0, 0; 0, -(1 / ε), 0] := by
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp
+    rw [hD]
+    set M : Matrix (Fin 2) (Fin 3) ℝ := !![0, 0, 0; 0, -(1 / ε), 0] with hM
+    have hMM : Mᴴᴴ * Mᴴ = diagonal ![0, (1 / ε) ^ 2] := by
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [hM, Matrix.mul_apply, Fin.sum_univ_succ, sq]
+    have hsq : ‖M‖ * ‖M‖ = (1 / ε) ^ 2 := by
+      rw [← l2_opNorm_conjTranspose M, ← l2_opNorm_conjTranspose_mul_self, hMM,
+        l2_opNorm_diagonal]
+      refine le_antisymm ((pi_norm_le_iff_of_nonneg (by positivity)).2 fun i => ?_) ?_
+      · fin_cases i <;> simp [sq_nonneg]
+      · have := norm_le_pi_norm (![0, (1 / ε) ^ 2] : Fin 2 → ℝ) 1
+        simpa using this
+    have h0 : 0 ≤ ‖M‖ := norm_nonneg _
+    nlinarith [show 0 < 1 / ε by positivity]
+  · intro hc
+    have hE : ∀ t : ℝ, pinvExampleA + pinvExampleE t =
+        pinvExampleA + t • (!![0, 0; 0, 1; 0, 0] : Matrix (Fin 3) (Fin 2) ℝ) := by
+      intro t
+      congr 1
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [pinvExampleE]
+    have hf : ContinuousAt (fun t : ℝ => (pinvExampleA + pinvExampleE t).pinv 1 1) 0 := by
+      simp only [hE]
+      have hg : Continuous fun t : ℝ =>
+          pinvExampleA + t • (!![0, 0; 0, 1; 0, 0] : Matrix (Fin 3) (Fin 2) ℝ) := by fun_prop
+      have hpt : pinvExampleA + (0 : ℝ) • (!![0, 0; 0, 1; 0, 0] : Matrix (Fin 3) (Fin 2) ℝ) =
+          pinvExampleA := by rw [zero_smul, add_zero]
+      have := ContinuousAt.comp_of_eq hc hg.continuousAt hpt
+      exact ((continuous_apply 1).comp (continuous_apply 1)).continuousAt.comp this
+    rw [Metric.continuousAt_iff] at hf
+    obtain ⟨δ, hδ, hδf⟩ := hf 1 one_pos
+    set t := min (δ / 2) (1 / 2) with ht
+    have ht0 : 0 < t := by positivity
+    have htδ : dist t 0 < δ := by
+      rw [Real.dist_eq, sub_zero, abs_of_pos ht0]
+      exact lt_of_le_of_lt (min_le_left _ _) (by linarith)
+    have := hδf htδ
+    have hE0 : pinvExampleE 0 = 0 := by
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [pinvExampleE]
+    simp only [hE0, add_zero, pinv_pinvExampleA, pinv_pinvExample ht0.ne'] at this
+    simp only [of_apply, cons_val', cons_val_one, cons_val_zero, empty_val',
+      cons_val_fin_one, Real.dist_eq, sub_zero] at this
+    have ht2 : t ≤ 1 / 2 := min_le_right _ _
+    rw [abs_of_pos (by positivity)] at this
+    rw [div_lt_one ht0] at this
+    linarith
+
+/-! ### §5.5.4 The truncated SVD solution -/
+
+section TruncatedSVD
+
+/-- **§5.5.4, the truncated SVD solution**: for computed factors `Û`, `Σ̂ = diag(σ̂_i)`, `V̂` and an
+accepted `δ`-rank `r̂`, "`x_r̂ = ∑_{i=1}^{r̂} (û_iᵀ b / σ̂_i) v̂_i`" (0-based: the indices `i < r̂`;
+indices beyond `min(m, n)` carry no term). -/
+noncomputable def truncatedSVDSolution (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ → ℝ)
+    (V : Matrix (Fin n) (Fin n) ℝ) (r : ℕ) (b : Fin m → ℝ) : Fin n → ℝ :=
+  ∑ i : Fin n, if h : (i : ℕ) < r ∧ (i : ℕ) < m then ((U.col ⟨i, h.2⟩ ⬝ᵥ b) / σ i) • V.col i
+    else 0
+
+/-- The pseudoinverse from an SVD applied to `b` when `n ≤ m`:
+`A⁺ b = ∑_{j<n} (w_jᵀ b / σ_j) z_j`. -/
+private theorem pinv_mulVec_eq_sum_of_le {A : Matrix (Fin m) (Fin n) ℝ}
+    {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
+    (h : IsSVD A W σ Z) (hnm : n ≤ m) (b : Fin m → ℝ) :
+    A.pinv *ᵥ b = ∑ j : Fin n, ((W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j) • Z.col j := by
+  rw [h.pinv_eq, ← mulVec_mulVec, ← mulVec_mulVec]
+  simp only [RCLike.ofReal_real_eq_id, id]
+  have hD : ∀ j : Fin n, ((rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℝ) *ᵥ
+      (star W *ᵥ b)) j = (W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j := by
+    intro j
+    simp only [mulVec, dotProduct, rectDiagonal, of_apply, ite_mul, zero_mul]
+    rw [Finset.sum_eq_single (Fin.castLE hnm j) (fun i _ hi => by
+      rw [ite_eq_right (fun e => (hi (Fin.ext (by simp [Fin.val_castLE, e]))).elim)])
+      (by simp)]
+    simp only [Fin.val_castLE, ↓reduceIte, star_apply, star_trivial, col_apply]
+    rw [div_eq_inv_mul]
+  ext p
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply]
+  change ∑ j, Z p j * _ = _
+  simp only [hD, mul_comm]
+
+/-- Cauchy–Schwarz for the real dot product, with Euclidean norms. -/
+private theorem abs_dotProduct_le_norm {k : ℕ} (x y : Fin k → ℝ) :
+    |x ⬝ᵥ y| ≤
+      ‖(toLp 2 x : EuclideanSpace ℝ (Fin k))‖ * ‖(toLp 2 y : EuclideanSpace ℝ (Fin k))‖ := by
+  have := abs_real_inner_le_norm (toLp 2 x : EuclideanSpace ℝ (Fin k)) (toLp 2 y)
+  simpa [EuclideanSpace.inner_toLp_toLp, dotProduct_comm] using this
+
+/-- The columns of an orthogonal matrix are orthonormal. -/
+private theorem col_dotProduct_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) ℝ}
+    (hQ : Q ∈ unitaryGroup (Fin k) ℝ) (i j : Fin k) :
+    Q.col i ⬝ᵥ Q.col j = (1 : Matrix (Fin k) (Fin k) ℝ) i j := by
+  have := congrFun (congrFun (mem_unitaryGroup_iff'.1 hQ) i) j
+  rw [← this]
+  simp [mul_apply, dotProduct, col_apply]
+
+/-- The columns of an orthogonal matrix have unit Euclidean norm. -/
+private theorem norm_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) ℝ}
+    (hQ : Q ∈ unitaryGroup (Fin k) ℝ) (j : Fin k) :
+    ‖(toLp 2 (Q.col j) : EuclideanSpace ℝ (Fin k))‖ = 1 := by
+  have h1 := col_dotProduct_col_of_mem hQ j j
+  rw [one_apply_eq, dotProduct_self_eq_norm_sq] at h1
+  exact (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).1 h1
+
+/-- **§5.5.4, the error of the truncated SVD solution**: under the book's simplifying assumptions
+(`r = n`, `ΔA = 0` in (5.4.4), so `Σ̂ = Σ = Wᵀ A Z` with `W`, `Z` orthogonal — here an SVD
+`IsSVD A W σ Z` with `n ≤ m`), if the computed singular vectors satisfy `‖w_i - û_i‖₂ ≤ ε` and
+`‖z_i - v̂_i‖₂ ≤ ε` for `i ≤ r̂` and `σ_r̂ > 0`, then
+`‖x_r̂ - x_LS‖₂ ≤ (r̂ / σ_r̂) 2(1 + ε) ε ‖b‖₂ + √(∑_{i=r̂+1}^{n} (w_iᵀ b / σ_i)²)`. -/
+theorem norm_truncatedSVDSolution_sub_le {A : Matrix (Fin m) (Fin n) ℝ}
+    {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
+    (h : IsSVD A W σ Z) (hnm : n ≤ m) {r : ℕ} (hr : r ≤ n) (hσ : 0 < σ (r - 1))
+    {Uh : Matrix (Fin m) (Fin m) ℝ} {Vh : Matrix (Fin n) (Fin n) ℝ} {ε : ℝ} (hε : 0 ≤ ε)
+    (hU : ∀ i : Fin n, (i : ℕ) < r → ‖(toLp 2 (W.col (Fin.castLE hnm i) -
+      Uh.col (Fin.castLE hnm i)) : EuclideanSpace ℝ (Fin m))‖ ≤ ε)
+    (hV : ∀ i : Fin n, (i : ℕ) < r →
+      ‖(toLp 2 (Z.col i - Vh.col i) : EuclideanSpace ℝ (Fin n))‖ ≤ ε)
+    (b : Fin m → ℝ) :
+    ‖(toLp 2 (truncatedSVDSolution Uh σ Vh r b - A.pinv *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
+      r / σ (r - 1) * (2 * (1 + ε) * ε * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖) +
+        √(∑ i ∈ Finset.univ.filter (fun i : Fin n => r ≤ (i : ℕ)),
+          ((W.col (Fin.castLE hnm i) ⬝ᵥ b) / σ i) ^ 2) := by
+  set nb := ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ with hnb
+  set K := 2 * (1 + ε) * ε * nb with hK
+  -- the two sums of the book's decomposition
+  set D : Fin n → Fin n → ℝ := fun j => if (j : ℕ) < r then
+      ((Uh.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j) • Vh.col j -
+        ((W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j) • Z.col j else 0 with hD
+  set a : Fin n → ℝ := fun j => if r ≤ (j : ℕ) then (W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j
+    else 0 with ha
+  have hZa : Z *ᵥ a = ∑ j, a j • Z.col j := by
+    ext p
+    simp only [mulVec, dotProduct, Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply,
+      mul_comm]
+  have hsplit : truncatedSVDSolution Uh σ Vh r b - A.pinv *ᵥ b = ∑ j, D j - Z *ᵥ a := by
+    rw [pinv_mulVec_eq_sum_of_le h hnm b, truncatedSVDSolution, hZa,
+      ← Finset.sum_sub_distrib, ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    have hjm : (j : ℕ) < m := lt_of_lt_of_le j.isLt hnm
+    by_cases hj : (j : ℕ) < r
+    · simp only [hD, ha, hj, hjm, and_self, ↓reduceDIte, ↓reduceIte, not_le.2 hj, zero_smul,
+        sub_zero]
+      rfl
+    · simp only [hD, ha, hj, false_and, ↓reduceDIte, ↓reduceIte, not_lt.1 hj]
+  have hWu := h.mem_unitaryGroup_left
+  have hZu := h.mem_unitaryGroup_right
+  -- each term of the first sum
+  have hDj : ∀ j : Fin n, ‖(toLp 2 (D j) : EuclideanSpace ℝ (Fin n))‖ ≤
+      if (j : ℕ) < r then K / σ (r - 1) else 0 := by
+    intro j
+    by_cases hj : (j : ℕ) < r
+    · simp only [hD, hj, ↓reduceIte]
+      set u := Uh.col (Fin.castLE hnm j)
+      set w := W.col (Fin.castLE hnm j)
+      set v := Vh.col j
+      set z := Z.col j
+      have hσj : σ (r - 1) ≤ σ j := h.antitone (by omega)
+      have hσj0 : 0 < σ (j : ℕ) := lt_of_lt_of_le hσ hσj
+      have hid : ((u ⬝ᵥ b) / σ j) • v - ((w ⬝ᵥ b) / σ j) • z =
+          (σ j)⁻¹ • ((u ⬝ᵥ b) • (v - z) + ((u - w) ⬝ᵥ b) • z) := by
+        rw [sub_dotProduct, smul_sub, sub_smul, div_eq_inv_mul, div_eq_inv_mul, mul_smul,
+          mul_smul, smul_add, smul_sub, smul_sub]
+        abel
+      have hw : ‖(toLp 2 w : EuclideanSpace ℝ (Fin m))‖ = 1 := norm_col_of_mem hWu _
+      have hz : ‖(toLp 2 z : EuclideanSpace ℝ (Fin n))‖ = 1 := norm_col_of_mem hZu _
+      have huw : ‖(toLp 2 (u - w) : EuclideanSpace ℝ (Fin m))‖ ≤ ε := by
+        rw [← neg_sub, toLp_neg, norm_neg]
+        exact hU j hj
+      have hvz : ‖(toLp 2 (v - z) : EuclideanSpace ℝ (Fin n))‖ ≤ ε := by
+        rw [← neg_sub, toLp_neg, norm_neg]
+        exact hV j hj
+      have hu : ‖(toLp 2 u : EuclideanSpace ℝ (Fin m))‖ ≤ 1 + ε := by
+        have : u = w + (u - w) := by abel
+        rw [this, toLp_add]
+        exact (norm_add_le _ _).trans (by rw [hw]; linarith)
+      have hub : |u ⬝ᵥ b| ≤ (1 + ε) * nb :=
+        (abs_dotProduct_le_norm u b).trans
+          (mul_le_mul_of_nonneg_right hu (norm_nonneg _))
+      have huwb : |(u - w) ⬝ᵥ b| ≤ ε * nb :=
+        (abs_dotProduct_le_norm _ b).trans
+          (mul_le_mul_of_nonneg_right huw (norm_nonneg _))
+      rw [hid, toLp_smul, norm_smul, toLp_add, toLp_smul, toLp_smul, Real.norm_eq_abs,
+        abs_inv, abs_of_pos hσj0]
+      have hsum : ‖(toLp 2 ((u ⬝ᵥ b) • (v - z)) : EuclideanSpace ℝ (Fin n)) +
+          toLp 2 (((u - w) ⬝ᵥ b) • z)‖ ≤ K := by
+        refine (norm_add_le _ _).trans ?_
+        rw [toLp_smul, toLp_smul, norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, hz,
+          mul_one]
+        have hnb0 : 0 ≤ nb := norm_nonneg _
+        have h1 : |u ⬝ᵥ b| * ‖(toLp 2 (v - z) : EuclideanSpace ℝ (Fin n))‖ ≤ (1 + ε) * nb * ε :=
+          mul_le_mul hub hvz (norm_nonneg _) (by positivity)
+        have h2 : ε * nb ≤ (1 + ε) * ε * nb := by nlinarith [mul_nonneg hε hnb0]
+        rw [hK]
+        nlinarith
+      have hK0 : 0 ≤ K := by positivity
+      calc (σ j)⁻¹ * ‖(toLp 2 ((u ⬝ᵥ b) • (v - z)) : EuclideanSpace ℝ (Fin n)) +
+            toLp 2 (((u - w) ⬝ᵥ b) • z)‖ ≤ (σ j)⁻¹ * K :=
+            mul_le_mul_of_nonneg_left hsum (inv_nonneg.2 hσj0.le)
+        _ ≤ (σ (r - 1))⁻¹ * K :=
+            mul_le_mul_of_nonneg_right ((inv_le_inv₀ hσj0 hσ).2 hσj) hK0
+        _ = K / σ (r - 1) := by rw [div_eq_inv_mul]
+    · simp [hD, hj]
+  -- the first sum
+  have hfirst : ‖(toLp 2 (∑ j, D j) : EuclideanSpace ℝ (Fin n))‖ ≤ r / σ (r - 1) * K := by
+    rw [toLp_sum]
+    refine (norm_sum_le _ _).trans ((Finset.sum_le_sum fun j _ => hDj j).trans (le_of_eq ?_))
+    rw [← Fin.sum_castLE_eq_sum_ite hr (fun _ => K / σ (r - 1))]
+    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+    ring
+  -- the tail
+  have hZZ : Zᵀ * Z = 1 := by
+    have := mem_unitaryGroup_iff'.1 hZu
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have htail : ‖(toLp 2 (Z *ᵥ a) : EuclideanSpace ℝ (Fin n))‖ =
+      √(∑ i ∈ Finset.univ.filter (fun i : Fin n => r ≤ (i : ℕ)),
+        ((W.col (Fin.castLE hnm i) ⬝ᵥ b) / σ i) ^ 2) := by
+    have h1 : (Z *ᵥ a) ⬝ᵥ (Z *ᵥ a) = a ⬝ᵥ a := by
+      rw [dotProduct_mulVec, ← vecMul_transpose, vecMul_vecMul, hZZ, vecMul_one]
+    have h2 : a ⬝ᵥ a = ∑ i ∈ Finset.univ.filter (fun i : Fin n => r ≤ (i : ℕ)),
+        ((W.col (Fin.castLE hnm i) ⬝ᵥ b) / σ i) ^ 2 := by
+      rw [Finset.sum_filter, dotProduct]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      simp only [ha]
+      split_ifs <;> ring
+    rw [← h2, ← h1, dotProduct_self_eq_norm_sq, Real.sqrt_sq (norm_nonneg _)]
+  rw [hsplit, toLp_sub, ← htail]
+  exact (norm_sub_le _ _).trans (add_le_add hfirst le_rfl)
+
+end TruncatedSVD
+
+end GolubVanLoan.Chapter05
