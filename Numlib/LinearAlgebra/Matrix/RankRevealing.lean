@@ -4,7 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.RankRevealing`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.LinearAlgebra.Matrix.LeastSquares
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Rank
 
 /-!
@@ -35,6 +35,11 @@ Stewart, and the least-squares solutions they produce ([golub2013matrix] §5.4.2
   `…norm_minNorm_eq_iInf`, `…norm_basic_le` ((5.5.4), (5.5.5)) and `…mulVec_basic_eq`
   (Algorithm 5.6.1): the least-squares solutions of a rank-deficient problem read off a
   rank-revealing factorization.
+* `Matrix.gap_le_of_urv`, `Matrix.gap_le_of_ulv` ([golub2013matrix] (5.4.10), (5.4.11), Stewart
+  1993): how close the trailing columns of `V` in a URV or ULV decomposition come to the trailing
+  right singular subspace.
+* `Matrix.norm_residual_subset_sub_le` ([golub2013matrix] Theorem 5.5.3): the residual of SVD-based
+  subset selection against that of the nearest rank-`r` problem.
 
 ## Implementation notes
 
@@ -63,6 +68,11 @@ omit [RCLike 𝕜] in
 /-- The value of a trailing index. -/
 @[simp]
 theorem val_tailIdx (h : r ≤ N) (j : Fin (N - r)) : (tailIdx h j : ℕ) = r + j := rfl
+
+omit [RCLike 𝕜] in
+/-- The trailing indices are distinct. -/
+theorem tailIdx_injective (h : r ≤ N) : Function.Injective (tailIdx h) := fun a b e =>
+  Fin.ext (by have := congrArg Fin.val e; simp only [val_tailIdx] at this; omega)
 
 /-- The vector `[y; z]` on `Fin N`, with `y` on the first `r` indices and `z` on the rest. -/
 def blockVec (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) : Fin N → α :=
@@ -559,6 +569,453 @@ theorem IsPivotedQR.isURV {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) 
 
 end UTV
 
+/-! ### Stewart's bounds for the URV and ULV decompositions -/
+
+section Stewart
+
+open scoped Matrix.Norms.L2Operator
+
+variable {r : ℕ}
+
+omit [RCLike 𝕜] in
+/-- The leading and trailing indices together: `Fin r ⊕ Fin (N − r) ≃ Fin N`. -/
+private def blockEquiv (h : r ≤ N) : Fin r ⊕ Fin (N - r) ≃ Fin N :=
+  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
+
+omit [RCLike 𝕜] in
+private theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
+    blockEquiv h (Sum.inl i) = Fin.castLE h i := Fin.ext rfl
+
+omit [RCLike 𝕜] in
+private theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
+    blockEquiv h (Sum.inr j) = tailIdx h j := Fin.ext rfl
+
+/-- The column blocks of a unitary matrix: `(V_f)ᴴ V_g` is the `(f, g)` block of the identity. -/
+private theorem conjTranspose_submatrix_mul_submatrix {V : Matrix (Fin N) (Fin N) 𝕜}
+    (hV : V ∈ unitaryGroup (Fin N) 𝕜) {p q : Type*} (f : p → Fin N) (g : q → Fin N) :
+    (V.submatrix id f)ᴴ * V.submatrix id g = (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix f g := by
+  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+    ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hV]
+
+/-- The leading `r` columns of a unitary matrix span the orthogonal complement of the span of the
+trailing ones. -/
+private theorem range_submatrix_castLE_eq_orthogonal {V : Matrix (Fin N) (Fin N) 𝕜}
+    (hV : V ∈ unitaryGroup (Fin N) 𝕜) (h : r ≤ N) :
+    LinearMap.range (toEuclideanLin (V.submatrix id (Fin.castLE h))) =
+      (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h))))ᗮ := by
+  have hcross : (V.submatrix id (tailIdx h))ᴴ * V.submatrix id (Fin.castLE h) = 0 := by
+    rw [conjTranspose_submatrix_mul_submatrix hV]
+    ext i j
+    rw [submatrix_apply, zero_apply, one_apply_ne]
+    intro e
+    have := congrArg Fin.val e
+    simp only [val_tailIdx, Fin.val_castLE] at this
+    omega
+  have h1 : (V.submatrix id (Fin.castLE h))ᴴ * V.submatrix id (Fin.castLE h) = 1 := by
+    rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (Fin.castLE_injective h)]
+  have h2 : (V.submatrix id (tailIdx h))ᴴ * V.submatrix id (tailIdx h) = 1 := by
+    rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (tailIdx_injective h)]
+  refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
+  · rintro _ ⟨x, rfl⟩
+    rw [Submodule.mem_orthogonal]
+    rintro _ ⟨y, rfl⟩
+    rw [← toEuclideanLin_conjTranspose_inner_right, ← toEuclideanLin_mul_apply, hcross, map_zero,
+      LinearMap.zero_apply, inner_zero_right]
+  · have hsum := Submodule.finrank_add_finrank_orthogonal
+      (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h))))
+    rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin (V.submatrix id (tailIdx h)))
+        (toEuclideanLinearIsometry h2).injective,
+      finrank_euclideanSpace_fin, finrank_euclideanSpace_fin] at hsum
+    rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin (V.submatrix id (Fin.castLE h)))
+        (toEuclideanLinearIsometry h1).injective,
+      finrank_euclideanSpace_fin]
+    omega
+
+/-- **The gap between trailing column spans** ([golub2013matrix] Theorem 2.5.1): for unitary `V`,
+`Z`, the gap between the spans of their last `N − r` columns is the `2`-norm of the block of
+`Vᴴ Z` in the leading `r` rows and the trailing `N − r` columns. -/
+private theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
+    (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hZ : Z ∈ unitaryGroup (Fin N) 𝕜) (h : r ≤ N) :
+    (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h)))).gap
+        (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx h)))) =
+      ‖(star V * Z).submatrix (Fin.castLE h) (tailIdx h)‖ := by
+  rw [Submodule.gap_comm, gap_range_eq_l2_opNorm_conjTranspose_mul
+    (by rw [conjTranspose_submatrix_mul_submatrix hZ, submatrix_one _ (tailIdx_injective h)])
+    (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (tailIdx_injective h)])
+    (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (Fin.castLE_injective h)])
+    (range_submatrix_castLE_eq_orthogonal hV h),
+    ← l2_opNorm_conjTranspose ((Z.submatrix id (tailIdx h))ᴴ * V.submatrix id (Fin.castLE h)),
+    conjTranspose_mul, conjTranspose_conjTranspose, conjTranspose_submatrix,
+    ← submatrix_mul _ _ _ id _ Function.bijective_id, star_eq_conjTranspose]
+
+/-- **Stewart's setting** ([golub2013matrix] §5.4.6): for `T = Uᴴ A V` with `U`, `V` unitary and
+an SVD `A = W Σ Zᴴ`, let `Y` be the last `N − r` columns of `Vᴴ Z` (the trailing right singular
+vectors of `T`). Then `Tᴴ T Y = Y D` for a diagonal `D` of the squared trailing singular values,
+all at most `σ_r(T)²`; `Y` is an isometry; `‖T Y w‖ ≤ σ_r(T) ‖w‖`; and the gap between the trailing
+column spans of `V` and `Z` is the norm of the leading `r` rows of `Y`. -/
+private theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M) (Fin M) 𝕜}
+    {V Z : Matrix (Fin N) (Fin N) 𝕜} {σ : ℕ → ℝ} (hU : U ∈ unitaryGroup (Fin M) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hT : star U * A * V = T) (hA : IsSVD A W σ Z)
+    (h : r ≤ N) :
+    ∃ D : Matrix (Fin (N - r)) (Fin (N - r)) 𝕜,
+      Tᴴ * T * (star V * Z).submatrix id (tailIdx h) = (star V * Z).submatrix id (tailIdx h) * D ∧
+      (∀ w, ‖toEuclideanLin D w‖ ≤ T.sortedSingularValues r ^ 2 * ‖w‖) ∧
+      (∀ w, ‖toEuclideanLin ((star V * Z).submatrix id (tailIdx h)) w‖ = ‖w‖) ∧
+      (∀ w, ‖toEuclideanLin T (toEuclideanLin ((star V * Z).submatrix id (tailIdx h)) w)‖ ≤
+        T.sortedSingularValues r * ‖w‖) ∧
+      (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h)))).gap
+          (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx h)))) =
+        ‖(star V * Z).submatrix (Fin.castLE h) (tailIdx h)‖ := by
+  obtain ⟨G, hGdef⟩ : ∃ G, G = star V * Z := ⟨_, rfl⟩
+  obtain ⟨P, hPdef⟩ : ∃ P, P = star U * W := ⟨_, rfl⟩
+  have hG : G ∈ unitaryGroup (Fin N) 𝕜 := by
+    rw [hGdef]
+    exact mul_mem (Unitary.star_mem hV) hA.mem_unitaryGroup_right
+  have hP : P ∈ unitaryGroup (Fin M) 𝕜 := by
+    rw [hPdef]
+    exact mul_mem (Unitary.star_mem hU) hA.mem_unitaryGroup_left
+  -- the SVD of `T`
+  have hTsvd : IsSVD T P σ G := by
+    refine ⟨hP, hG, hA.antitone, hA.nonneg, ?_⟩
+    rw [hPdef, hGdef, ← hT, ← hA.star_mul_mul]
+    simp only [star_mul, star_star, Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc U (star U), mem_unitaryGroup_iff.1 hU, Matrix.one_mul,
+      ← Matrix.mul_assoc V (star V), mem_unitaryGroup_iff.1 hV, Matrix.one_mul]
+  have hgap := gap_range_tailIdx_eq hV hA.mem_unitaryGroup_right h
+  rw [← hGdef] at hgap ⊢
+  -- `Tᴴ T G = G Σᴴ Σ`
+  have hPP : Pᴴ * P = 1 := by
+    rw [← star_eq_conjTranspose]
+    exact mem_unitaryGroup_iff'.1 hP
+  have hGG : Gᴴ * G = 1 := by
+    rw [← star_eq_conjTranspose]
+    exact mem_unitaryGroup_iff'.1 hG
+  have hTG : Tᴴ * T * G = G *
+      ((rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin M) (Fin N) 𝕜)ᴴ *
+        rectDiagonal fun i => ((σ i : ℝ) : 𝕜)) := by
+    rw [hTsvd.eq_mul_mul_star, star_eq_conjTranspose]
+    simp only [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc]
+    rw [hGG, Matrix.mul_one, ← Matrix.mul_assoc Pᴴ P, hPP, Matrix.one_mul]
+  rw [conjTranspose_rectDiagonal_mul_self] at hTG
+  set D : Matrix (Fin (N - r)) (Fin (N - r)) 𝕜 := diagonal fun j =>
+    if ((tailIdx h j : ℕ) < M) then star ((σ (tailIdx h j) : ℝ) : 𝕜) * ((σ (tailIdx h j) : ℝ) : 𝕜)
+    else 0 with hD
+  -- the diagonal entries
+  have hdle : ∀ j : Fin (N - r), ‖(if ((tailIdx h j : ℕ) < M) then
+      star ((σ (tailIdx h j) : ℝ) : 𝕜) * ((σ (tailIdx h j) : ℝ) : 𝕜) else 0)‖ ≤
+        T.sortedSingularValues r ^ 2 := by
+    intro j
+    split_ifs with hj
+    · have hrM : r < M := lt_of_le_of_lt (by simp) hj
+      have hrN : r < N := lt_of_le_of_lt (by simp) (tailIdx h j).isLt
+      rw [norm_mul, norm_star, RCLike.norm_ofReal, abs_of_nonneg (hA.nonneg _), ← sq,
+        ← hTsvd.singularValues_eq (i := r) hrM hrN]
+      exact pow_le_pow_left₀ (hA.nonneg _) (hA.antitone (by simp)) 2
+    · rw [norm_zero]
+      positivity
+  have hDw : ∀ w, ‖toEuclideanLin D w‖ ≤ T.sortedSingularValues r ^ 2 * ‖w‖ := by
+    intro w
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _)
+      (mul_nonneg (sq_nonneg _) (norm_nonneg _)) two_ne_zero).1 ?_
+    rw [mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [toEuclideanLin_apply, PiLp.toLp_apply, hD, mulVec_diagonal, norm_mul, mul_pow]
+    exact mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (norm_nonneg _) (hdle j) 2)
+      (sq_nonneg _)
+  have hY : Tᴴ * T * G.submatrix id (tailIdx h) = G.submatrix id (tailIdx h) * D := by
+    have := congrArg (fun X => X.submatrix id (tailIdx h)) hTG
+    refine this.trans ?_
+    ext i j
+    simp only [hD, submatrix_apply, id_eq, mul_diagonal]
+  have hYY : (G.submatrix id (tailIdx h))ᴴ * G.submatrix id (tailIdx h) = 1 := by
+    rw [conjTranspose_submatrix_mul_submatrix hG, submatrix_one _ (tailIdx_injective h)]
+  have hiso : ∀ w, ‖toEuclideanLin (G.submatrix id (tailIdx h)) w‖ = ‖w‖ :=
+    fun w => (toEuclideanLinearIsometry hYY).norm_map w
+  refine ⟨D, hY, hDw, hiso, fun w => ?_, hgap⟩
+  -- `‖T Y w‖² = re ⟪w, D w⟫`
+  set Y := G.submatrix id (tailIdx h) with hYdef
+  have s1 : toEuclideanLin Tᴴ (toEuclideanLin T (toEuclideanLin Y w)) =
+      toEuclideanLin Y (toEuclideanLin D w) := by
+    rw [← toEuclideanLin_mul_apply T Y, ← toEuclideanLin_mul_apply Tᴴ (T * Y),
+      ← Matrix.mul_assoc, hY, toEuclideanLin_mul_apply]
+  have s2 : (inner 𝕜 (toEuclideanLin Y w) (toEuclideanLin Y (toEuclideanLin D w)) : 𝕜) =
+      inner 𝕜 w (toEuclideanLin D w) := by
+    rw [← toEuclideanLin_conjTranspose_inner_right Y, ← toEuclideanLin_mul_apply Yᴴ Y, hYY,
+      toEuclideanLin_one, LinearMap.id_apply]
+  have e1 : (inner 𝕜 (toEuclideanLin T (toEuclideanLin Y w))
+      (toEuclideanLin T (toEuclideanLin Y w)) : 𝕜) = inner 𝕜 w (toEuclideanLin D w) := by
+    rw [← toEuclideanLin_conjTranspose_inner_right T, s1, s2]
+  have e2 : ‖toEuclideanLin T (toEuclideanLin Y w)‖ ^ 2 =
+      RCLike.re (inner 𝕜 w (toEuclideanLin D w)) := by
+    rw [← e1, inner_self_eq_norm_sq]
+  have e3 : RCLike.re (inner 𝕜 w (toEuclideanLin D w)) ≤
+      ‖w‖ * (T.sortedSingularValues r ^ 2 * ‖w‖) :=
+    (RCLike.re_le_norm _).trans ((norm_inner_le_norm _ _).trans
+      (mul_le_mul_of_nonneg_left (hDw w) (norm_nonneg _)))
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _)
+    (mul_nonneg (sortedSingularValues_nonneg _ _) (norm_nonneg _)) two_ne_zero).1 ?_
+  rw [e2, mul_pow]
+  linarith
+
+/-- The least singular value bounds the stretch from below: `σ_{r-1}(B) ‖x‖ ≤ ‖B x‖` for a
+matrix with `r ≥ 1` columns. -/
+private theorem sortedSingularValues_mul_norm_le {p : Type*} [Fintype p] (B : Matrix p (Fin r) 𝕜)
+    (hr : 0 < r) (x : EuclideanSpace 𝕜 (Fin r)) :
+    B.sortedSingularValues (r - 1) * ‖x‖ ≤ ‖toEuclideanLin B x‖ := by
+  have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
+  have := B.iInf_singularValues_mul_norm_le x
+  rwa [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin] at this
+
+/-- The rows above the `r`-th of `T v`: `(T v)₁ = T₁₁ v₁ + T₁₂ v₂`. -/
+private theorem mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (hN : r ≤ N)
+    (v : Fin N → 𝕜) (i : Fin r) :
+    (T *ᵥ v) (Fin.castLE hM i) =
+      (T.submatrix (Fin.castLE hM) (Fin.castLE hN) *ᵥ fun l => v (Fin.castLE hN l)) i +
+        (T.submatrix (Fin.castLE hM) (tailIdx hN) *ᵥ fun l => v (tailIdx hN l)) i := by
+  rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx hN]
+  rfl
+
+/-- The rows above the `r`-th of `Tᴴ u`: `(Tᴴ u)₁ = T₁₁ᴴ u₁ + T₂₁ᴴ u₂`. -/
+private theorem conjTranspose_mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M)
+    (hN : r ≤ N) (u : Fin M → 𝕜) (i : Fin r) :
+    (Tᴴ *ᵥ u) (Fin.castLE hN i) =
+      ((T.submatrix (Fin.castLE hM) (Fin.castLE hN))ᴴ *ᵥ fun l => u (Fin.castLE hM l)) i +
+        ((T.submatrix (tailIdx hM) (Fin.castLE hN))ᴴ *ᵥ fun l => u (tailIdx hM l)) i := by
+  rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx hM]
+  rfl
+
+/-- From `s² y ≤ (s a + t² Y) w` to `y ≤ (a / s + (t / s)² Y) w`. -/
+private theorem le_mul_of_sq_mul_le {y w a t Y s : ℝ} (hs : 0 < s)
+    (h : s ^ 2 * y ≤ (s * a + t ^ 2 * Y) * w) : y ≤ (a / s + (t / s) ^ 2 * Y) * w := by
+  have hs2 : 0 < s ^ 2 := by positivity
+  have hs' : s ≠ 0 := hs.ne'
+  have e : (a / s + (t / s) ^ 2 * Y) * w * s ^ 2 = (s * a + t ^ 2 * Y) * w := by
+    field_simp
+  exact le_of_mul_le_mul_right (by rw [e]; linarith) hs2
+
+/-- From `x ≤ a / s + ρ² x` with `0 ≤ ρ < 1` to `x ≤ a / ((1 − ρ²) s)`. -/
+private theorem le_div_of_le_add_sq_mul {x a s ρ : ℝ} (hs : 0 < s) (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
+    (h : x ≤ a / s + ρ ^ 2 * x) : x ≤ a / ((1 - ρ ^ 2) * s) := by
+  have h1 : 0 < 1 - ρ ^ 2 := by nlinarith
+  rw [le_div_iff₀ (mul_pos h1 hs)]
+  have := mul_le_mul_of_nonneg_left h hs.le
+  rw [mul_add, mul_div_cancel₀ _ hs.ne'] at this
+  nlinarith
+
+/-- **Stewart's bound for a URV decomposition** ([golub2013matrix] (5.4.10), Stewart 1993): let
+`Uᴴ A V = R = [R₁₁ R₁₂; 0 R₂₂]` be a URV decomposition split at `k` (`R₁₁` of size `k × k`),
+`Uᴴ … Z` any SVD of `A` (`hA`), `S` the span of the last `n − k` right singular vectors and `V₂` the
+last `n − k` columns of `V`. If `‖R₂₂‖₂ < σ_min(R₁₁)` (`σ_min(R₁₁) = R₁₁.sortedSingularValues
+(k − 1)`), then with `ρ = ‖R₂₂‖₂ / σ_min(R₁₁)`,
+`gap(ran V₂, S) ≤ ‖R₁₂‖₂ / ((1 − ρ²) σ_min(R₁₁))`. In the coordinates of `R`, with `Y = [Y₁; Y₂]`
+the trailing right singular vectors of `R`, the gap is `‖Y₁‖₂`, and the first block row of
+`Rᴴ R Y = Y Σ₂²` is `R₁₁ᴴ (R₁₁ Y₁ + R₁₂ Y₂) = Y₁ Σ₂²`; with `σ_k(R) ≤ ‖R₂₂‖₂`
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`) this gives
+`σ_min (σ_min ‖Y₁‖ − ‖R₁₂‖) ≤ ‖R₂₂‖² ‖Y₁‖`. -/
+theorem gap_le_of_urv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
+    {R : Matrix (Fin M) (Fin N) 𝕜} {V : Matrix (Fin N) (Fin N) 𝕜} (h : IsURV A U R V)
+    {W : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin N) (Fin N) 𝕜}
+    (hA : IsSVD A W σ Z) {k : ℕ} (hkM : k ≤ M) (hkN : k ≤ N)
+    (hρ : ‖R.submatrix (tailIdx hkM) (tailIdx hkN)‖ <
+      (R.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) :
+    (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx hkN)))).gap
+        (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx hkN)))) ≤
+      ‖R.submatrix (Fin.castLE hkM) (tailIdx hkN)‖ /
+        ((1 - (‖R.submatrix (tailIdx hkM) (tailIdx hkN)‖ /
+            (R.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) ^ 2) *
+          (R.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) := by
+  set R₁₁ := R.submatrix (Fin.castLE hkM) (Fin.castLE hkN) with hR₁₁
+  set R₁₂ := R.submatrix (Fin.castLE hkM) (tailIdx hkN) with hR₁₂
+  set R₂₂ := R.submatrix (tailIdx hkM) (tailIdx hkN) with hR₂₂
+  set s := R₁₁.sortedSingularValues (k - 1) with hs
+  have hs0 : 0 < s := lt_of_le_of_lt (norm_nonneg _) hρ
+  have hk : 0 < k := Nat.pos_of_ne_zero fun hk0 => by
+    have := R₁₁.sortedSingularValues_eq_zero_of_min_le (k := k - 1) (by simp [hk0])
+    linarith
+  obtain ⟨D, hY, hD, hiso, -, hgap⟩ :=
+    stewart_setting h.mem_unitaryGroup_left h.mem_unitaryGroup_right h.star_mul_mul hA hkN
+  set Y := (star V * Z).submatrix id (tailIdx hkN) with hYdef
+  set Y₁ := (star V * Z).submatrix (Fin.castLE hkN) (tailIdx hkN) with hY₁def
+  set Y₂ := (star V * Z).submatrix (tailIdx hkN) (tailIdx hkN) with hY₂def
+  rw [hgap]
+  -- `σ_k(R) ≤ ‖R₂₂‖₂`
+  have hτ : R.sortedSingularValues k ≤ ‖R₂₂‖ := by
+    have hblk : R.submatrix (blockEquiv hkM) (blockEquiv hkN) = fromBlocks R₁₁ R₁₂ 0 R₂₂ := by
+      ext (i | i) (j | j)
+      · rfl
+      · rfl
+      · rw [submatrix_apply, blockEquiv_inr, blockEquiv_inl, fromBlocks_apply₂₁, zero_apply]
+        exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega)
+      · rfl
+    have := sortedSingularValues_le_l2_opNorm_trailing R₁₁ R₁₂ R₂₂
+    rwa [← hblk, sortedSingularValues_submatrix_equiv, Fintype.card_fin] at this
+  -- the first block row of `Rᴴ R Y = Y D`
+  have hrel : ∀ w : EuclideanSpace 𝕜 (Fin (N - k)),
+      toEuclideanLin R₁₁ᴴ (toEuclideanLin R₁₁ (toEuclideanLin Y₁ w) +
+        toEuclideanLin R₁₂ (toEuclideanLin Y₂ w)) = toEuclideanLin Y₁ (toEuclideanLin D w) := by
+    intro w
+    ext i
+    have := congrFun (congrArg (· *ᵥ WithLp.ofLp w) hY) (Fin.castLE hkN i)
+    simp only [← mulVec_mulVec] at this
+    rw [conjTranspose_mulVec_castLE R hkM hkN,
+      show R.submatrix (tailIdx hkM) (Fin.castLE hkN) = 0 by
+        ext a b
+        exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega),
+      conjTranspose_zero, zero_mulVec, Pi.zero_apply, add_zero] at this
+    have e : (fun l => (R *ᵥ (Y *ᵥ WithLp.ofLp w)) (Fin.castLE hkM l)) =
+        R₁₁ *ᵥ (Y₁ *ᵥ WithLp.ofLp w) + R₁₂ *ᵥ (Y₂ *ᵥ WithLp.ofLp w) := by
+      funext l
+      rw [mulVec_castLE R hkM hkN]
+      rfl
+    rw [e] at this
+    exact this
+  -- the pointwise estimate
+  have hkey : ∀ w : EuclideanSpace 𝕜 (Fin (N - k)), ‖toEuclideanLin Y₁ w‖ ≤
+      (‖R₁₂‖ / s + (‖R₂₂‖ / s) ^ 2 * ‖Y₁‖) * ‖w‖ := by
+    intro w
+    have hY₂ : ‖toEuclideanLin Y₂ w‖ ≤ ‖w‖ :=
+      (PiLp.norm_toLp_comp_le 2 (tailIdx_injective hkN) (Y *ᵥ WithLp.ofLp w)).trans (hiso w).le
+    have h1 : s * ‖toEuclideanLin R₁₁ (toEuclideanLin Y₁ w) +
+        toEuclideanLin R₁₂ (toEuclideanLin Y₂ w)‖ ≤ ‖toEuclideanLin R₁₁ᴴ
+          (toEuclideanLin R₁₁ (toEuclideanLin Y₁ w) +
+            toEuclideanLin R₁₂ (toEuclideanLin Y₂ w))‖ := by
+      have := sortedSingularValues_mul_norm_le R₁₁ᴴ hk
+        (toEuclideanLin R₁₁ (toEuclideanLin Y₁ w) + toEuclideanLin R₁₂ (toEuclideanLin Y₂ w))
+      rwa [sortedSingularValues_conjTranspose] at this
+    rw [hrel] at h1
+    have h2 : ‖toEuclideanLin Y₁ (toEuclideanLin D w)‖ ≤ ‖Y₁‖ * (‖R₂₂‖ ^ 2 * ‖w‖) :=
+      (norm_toEuclideanLin_apply_le _ _).trans (mul_le_mul_of_nonneg_left ((hD w).trans
+        (mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (sortedSingularValues_nonneg _ _) hτ 2)
+          (norm_nonneg _))) (norm_nonneg _))
+    have h3 : s * ‖toEuclideanLin Y₁ w‖ ≤ ‖toEuclideanLin R₁₁ (toEuclideanLin Y₁ w)‖ :=
+      sortedSingularValues_mul_norm_le R₁₁ hk (toEuclideanLin Y₁ w)
+    have h4 : ‖toEuclideanLin R₁₂ (toEuclideanLin Y₂ w)‖ ≤ ‖R₁₂‖ * ‖w‖ :=
+      (norm_toEuclideanLin_apply_le _ _).trans (mul_le_mul_of_nonneg_left hY₂ (norm_nonneg _))
+    have h5 := norm_sub_le (toEuclideanLin R₁₁ (toEuclideanLin Y₁ w) +
+      toEuclideanLin R₁₂ (toEuclideanLin Y₂ w)) (toEuclideanLin R₁₂ (toEuclideanLin Y₂ w))
+    rw [add_sub_cancel_right] at h5
+    have hz : s * ‖toEuclideanLin Y₁ w‖ - ‖R₁₂‖ * ‖w‖ ≤ ‖toEuclideanLin R₁₁
+        (toEuclideanLin Y₁ w) + toEuclideanLin R₁₂ (toEuclideanLin Y₂ w)‖ := by
+      linarith
+    have hmain := (mul_le_mul_of_nonneg_left hz hs0.le).trans (h1.trans h2)
+    exact le_mul_of_sq_mul_le hs0 (by linarith)
+  have hY₁ := l2_opNorm_le_of_forall_norm_toEuclideanLin_le Y₁
+    (add_nonneg (div_nonneg (norm_nonneg _) hs0.le) (mul_nonneg (sq_nonneg _) (norm_nonneg _)))
+    hkey
+  exact le_div_of_le_add_sq_mul hs0 (div_nonneg (norm_nonneg _) hs0.le)
+    ((div_lt_one hs0).2 hρ) hY₁
+
+/-- **Stewart's bound for a ULV decomposition** ([golub2013matrix] (5.4.11), Stewart 1993, with the
+book's `L₁₂` read as `L₂₁`, the only nonzero off-diagonal block of the lower triangular `L`): let
+`Uᴴ A V = L = [L₁₁ 0; L₂₁ L₂₂]` be a ULV decomposition split at `k`, and `S`, `V₂` as in
+`Matrix.gap_le_of_urv`. If `‖L₂₂‖₂ < σ_min(L₁₁)`, then with `ρ = ‖L₂₂‖₂ / σ_min(L₁₁)`,
+`gap(ran V₂, S) ≤ ρ ‖L₂₁‖₂ / ((1 − ρ²) σ_min(L₁₁))`. With `Y = [Y₁; Y₂]` the trailing right
+singular vectors of `L`, the first block row of `Lᴴ L Y = Y Σ₂²` is
+`L₁₁ᴴ L₁₁ Y₁ + L₂₁ᴴ (L Y)₂ = Y₁ Σ₂²`, and `‖L Y‖₂ ≤ σ_k(L) ≤ ‖L₂₂‖₂`
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing_lower`), so
+`σ_min² ‖Y₁‖ ≤ ‖L₂₂‖² ‖Y₁‖ + ‖L₂₂‖ ‖L₂₁‖`. -/
+theorem gap_le_of_ulv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
+    {L : Matrix (Fin M) (Fin N) 𝕜} {V : Matrix (Fin N) (Fin N) 𝕜} (h : IsULV A U L V)
+    {W : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin N) (Fin N) 𝕜}
+    (hA : IsSVD A W σ Z) {k : ℕ} (hkM : k ≤ M) (hkN : k ≤ N)
+    (hρ : ‖L.submatrix (tailIdx hkM) (tailIdx hkN)‖ <
+      (L.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) :
+    (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx hkN)))).gap
+        (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx hkN)))) ≤
+      ‖L.submatrix (tailIdx hkM) (tailIdx hkN)‖ /
+          (L.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1) *
+          ‖L.submatrix (tailIdx hkM) (Fin.castLE hkN)‖ /
+        ((1 - (‖L.submatrix (tailIdx hkM) (tailIdx hkN)‖ /
+            (L.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) ^ 2) *
+          (L.submatrix (Fin.castLE hkM) (Fin.castLE hkN)).sortedSingularValues (k - 1)) := by
+  set L₁₁ := L.submatrix (Fin.castLE hkM) (Fin.castLE hkN) with hL₁₁
+  set L₂₁ := L.submatrix (tailIdx hkM) (Fin.castLE hkN) with hL₂₁
+  set L₂₂ := L.submatrix (tailIdx hkM) (tailIdx hkN) with hL₂₂
+  set s := L₁₁.sortedSingularValues (k - 1) with hs
+  have hs0 : 0 < s := lt_of_le_of_lt (norm_nonneg _) hρ
+  have hk : 0 < k := Nat.pos_of_ne_zero fun hk0 => by
+    have := L₁₁.sortedSingularValues_eq_zero_of_min_le (k := k - 1) (by simp [hk0])
+    linarith
+  obtain ⟨D, hY, hD, -, hLY, hgap⟩ :=
+    stewart_setting h.mem_unitaryGroup_left h.mem_unitaryGroup_right h.star_mul_mul hA hkN
+  set Y := (star V * Z).submatrix id (tailIdx hkN) with hYdef
+  set Y₁ := (star V * Z).submatrix (Fin.castLE hkN) (tailIdx hkN) with hY₁def
+  rw [hgap]
+  -- `σ_k(L) ≤ ‖L₂₂‖₂`
+  have hτ : L.sortedSingularValues k ≤ ‖L₂₂‖ := by
+    have hblk : L.submatrix (blockEquiv hkM) (blockEquiv hkN) = fromBlocks L₁₁ 0 L₂₁ L₂₂ := by
+      ext (i | i) (j | j)
+      · rfl
+      · rw [submatrix_apply, blockEquiv_inl, blockEquiv_inr, fromBlocks_apply₁₂, zero_apply]
+        exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega)
+      · rfl
+      · rfl
+    have := sortedSingularValues_le_l2_opNorm_trailing_lower L₁₁ L₂₁ L₂₂
+    rwa [← hblk, sortedSingularValues_submatrix_equiv, Fintype.card_fin] at this
+  -- the first block row of `Lᴴ L Y = Y D`
+  have hrel : ∀ w : EuclideanSpace 𝕜 (Fin (N - k)),
+      toEuclideanLin L₁₁ᴴ (toEuclideanLin L₁₁ (toEuclideanLin Y₁ w)) +
+        toEuclideanLin L₂₁ᴴ (WithLp.toLp 2
+          ((WithLp.ofLp (toEuclideanLin L (toEuclideanLin Y w))) ∘ tailIdx hkM)) =
+        toEuclideanLin Y₁ (toEuclideanLin D w) := by
+    intro w
+    ext i
+    have := congrFun (congrArg (· *ᵥ WithLp.ofLp w) hY) (Fin.castLE hkN i)
+    simp only [← mulVec_mulVec] at this
+    rw [conjTranspose_mulVec_castLE L hkM hkN] at this
+    have e : (fun l => (L *ᵥ (Y *ᵥ WithLp.ofLp w)) (Fin.castLE hkM l)) =
+        L₁₁ *ᵥ (Y₁ *ᵥ WithLp.ofLp w) := by
+      funext l
+      rw [mulVec_castLE L hkM hkN,
+        show L.submatrix (Fin.castLE hkM) (tailIdx hkN) = 0 by
+          ext a b
+          exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega),
+        zero_mulVec, Pi.zero_apply, add_zero]
+      rfl
+    rw [e] at this
+    exact this
+  -- the pointwise estimate
+  have hkey : ∀ w : EuclideanSpace 𝕜 (Fin (N - k)), ‖toEuclideanLin Y₁ w‖ ≤
+      (‖L₂₂‖ / s * ‖L₂₁‖ / s + (‖L₂₂‖ / s) ^ 2 * ‖Y₁‖) * ‖w‖ := by
+    intro w
+    set q := toEuclideanLin L (toEuclideanLin Y w) with hq
+    have hq₂ : ‖(WithLp.toLp 2 ((WithLp.ofLp q) ∘ tailIdx hkM) :
+        EuclideanSpace 𝕜 (Fin (M - k)))‖ ≤ ‖L₂₂‖ * ‖w‖ :=
+      (PiLp.norm_toLp_comp_le 2 (tailIdx_injective hkM) (WithLp.ofLp q)).trans
+        ((hLY w).trans (mul_le_mul_of_nonneg_right hτ (norm_nonneg _)))
+    have h1 : s * ‖toEuclideanLin L₁₁ (toEuclideanLin Y₁ w)‖ ≤
+        ‖toEuclideanLin L₁₁ᴴ (toEuclideanLin L₁₁ (toEuclideanLin Y₁ w))‖ := by
+      have := sortedSingularValues_mul_norm_le L₁₁ᴴ hk
+        (toEuclideanLin L₁₁ (toEuclideanLin Y₁ w))
+      rwa [sortedSingularValues_conjTranspose] at this
+    rw [eq_sub_of_add_eq (hrel w)] at h1
+    have h2 : ‖toEuclideanLin Y₁ (toEuclideanLin D w)‖ ≤ ‖Y₁‖ * (‖L₂₂‖ ^ 2 * ‖w‖) :=
+      (norm_toEuclideanLin_apply_le _ _).trans (mul_le_mul_of_nonneg_left ((hD w).trans
+        (mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (sortedSingularValues_nonneg _ _) hτ 2)
+          (norm_nonneg _))) (norm_nonneg _))
+    have h3 : ‖toEuclideanLin L₂₁ᴴ (WithLp.toLp 2 ((WithLp.ofLp q) ∘ tailIdx hkM))‖ ≤
+        ‖L₂₁‖ * (‖L₂₂‖ * ‖w‖) :=
+      (norm_toEuclideanLin_apply_le _ _).trans (by
+        rw [l2_opNorm_conjTranspose]
+        exact mul_le_mul_of_nonneg_left hq₂ (norm_nonneg _))
+    have h4 := norm_sub_le (toEuclideanLin Y₁ (toEuclideanLin D w))
+      (toEuclideanLin L₂₁ᴴ (WithLp.toLp 2 ((WithLp.ofLp q) ∘ tailIdx hkM)))
+    have h5 : s * ‖toEuclideanLin Y₁ w‖ ≤ ‖toEuclideanLin L₁₁ (toEuclideanLin Y₁ w)‖ :=
+      sortedSingularValues_mul_norm_le L₁₁ hk (toEuclideanLin Y₁ w)
+    have hmain : s * (s * ‖toEuclideanLin Y₁ w‖) ≤
+        ‖Y₁‖ * (‖L₂₂‖ ^ 2 * ‖w‖) + ‖L₂₁‖ * (‖L₂₂‖ * ‖w‖) :=
+      (mul_le_mul_of_nonneg_left h5 hs0.le).trans (h1.trans (h4.trans (add_le_add h2 h3)))
+    have hsa : s * (‖L₂₂‖ / s * ‖L₂₁‖) = ‖L₂₂‖ * ‖L₂₁‖ := by
+      rw [← mul_assoc, mul_div_cancel₀ _ hs0.ne']
+    exact le_mul_of_sq_mul_le hs0 (by rw [hsa]; linarith)
+  have hY₁ := l2_opNorm_le_of_forall_norm_toEuclideanLin_le Y₁
+    (add_nonneg (div_nonneg (mul_nonneg (div_nonneg (norm_nonneg _) hs0.le) (norm_nonneg _))
+      hs0.le) (mul_nonneg (sq_nonneg _) (norm_nonneg _))) hkey
+  exact le_div_of_le_add_sq_mul hs0 (div_nonneg (norm_nonneg _) hs0.le)
+    ((div_lt_one hs0).2 hρ) hY₁
+
+end Stewart
+
 /-! ### Least squares from a rank-revealing factorization -/
 
 section LeastSquares
@@ -762,5 +1219,148 @@ theorem mulVec_basic_eq (h : IsRankRevealing A Q R σ M) (b : EuclideanSpace �
 end IsPivotedQR.IsRankRevealing
 
 end LeastSquares
+
+/-! ### Subset selection -/
+
+section SubsetSelection
+
+open scoped Matrix.Norms.L2Operator
+
+variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ}
+  {V : Matrix (Fin N) (Fin N) 𝕜} {r : ℕ}
+
+/-- **The truncated SVD through the leading left singular vectors**: `U₁ U₁ᴴ A = A_r` for an SVD
+`A = U Σ Vᴴ` and `U₁` the first `r` columns of `U`. -/
+private theorem mul_conjTranspose_mul_eq_svdTruncation (h : IsSVD A U σ V) (hrM : r ≤ M) :
+    U.submatrix id (Fin.castLE hrM) * (U.submatrix id (Fin.castLE hrM))ᴴ * A =
+      svdTruncation U σ V r := by
+  have hUU : (U.submatrix id (Fin.castLE hrM))ᴴ * U =
+      (1 : Matrix (Fin M) (Fin M) 𝕜).submatrix (Fin.castLE hrM) id := by
+    rw [conjTranspose_submatrix, ← mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left,
+      star_eq_conjTranspose]
+    rfl
+  have hdiag : U.submatrix id (Fin.castLE hrM) * (U.submatrix id (Fin.castLE hrM))ᴴ * U =
+      U * diagonal fun i : Fin M => if (i : ℕ) < r then (1 : 𝕜) else 0 := by
+    rw [Matrix.mul_assoc, hUU]
+    ext a j
+    rw [mul_diagonal, mul_apply]
+    change ∑ x : Fin r, U a (Fin.castLE hrM x) *
+      (1 : Matrix (Fin M) (Fin M) 𝕜) (Fin.castLE hrM x) j = _
+    rw [Fin.sum_castLE_eq_sum_ite hrM (fun i => U a i * (1 : Matrix (Fin M) (Fin M) 𝕜) i j),
+      Finset.sum_eq_single j (fun i _ hij => by rw [one_apply_ne hij, mul_zero, ite_self])
+        (fun hj => absurd (Finset.mem_univ j) hj), one_apply_eq, mul_one]
+    split_ifs <;> simp
+  have hmask : (diagonal fun i : Fin M => if (i : ℕ) < r then (1 : 𝕜) else 0) *
+      (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin M) (Fin N) 𝕜) =
+        rectDiagonal fun i => if i < r then ((σ i : ℝ) : 𝕜) else 0 := by
+    ext i j
+    rw [diagonal_mul, rectDiagonal_apply, rectDiagonal_apply]
+    split_ifs <;> simp
+  conv_lhs => rw [h.eq_mul_mul_star]
+  rw [svdTruncation, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hdiag, Matrix.mul_assoc U, hmask]
+
+/-- **[golub2013matrix] Theorem 5.5.3** (subset selection against the nearest rank-`r` problem): in
+the setting of `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` (`IsSVD A U σ V`, a column
+permutation `π`, `B₁` the first `r` columns of `A Π`, `Ṽ₁₁` the leading `r × r` block of `Πᵀ V`,
+assumed invertible) and with `r ≤ rank A`, the residuals `r_x = (1 − U₁ U₁ᴴ) b` of the nearest
+rank-`r` problem (`U₁` the first `r` columns of `U`) and `r_y = (1 − B₁ B₁⁺) b` of the subset
+satisfy `‖r_x − r_y‖₂ ≤ (σ_r(A) / σ_{r-1}(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂` (0-based: the book's
+`σ_{r̃+1}/σ_{r̃}`). The difference is `(P_{B₁} − P_{U₁}) b`, at most the gap between the two
+`r`-dimensional ranges, which is `‖P_{U₁⊥} P_{B₁}‖₂`; on the range of `B₁`,
+`P_{U₁⊥} B₁ z = (A − A_r) Π [z; 0]` has norm at most `σ_r(A) ‖z‖`, and
+`σ_{r-1}(B₁) ‖z‖ ≤ ‖B₁ z‖` with `σ_{r-1}(A) ≤ ‖Ṽ₁₁⁻¹‖₂ σ_{r-1}(B₁)` (Theorem 5.5.2). The rank
+hypothesis, implicit in the book, is needed: for `A = 0` the left side need not vanish. -/
+theorem norm_residual_subset_sub_le (h : IsSVD A U σ V) (π : Equiv.Perm (Fin N)) (hr0 : 0 < r)
+    (hrM : r ≤ M) (hrN : r ≤ N) (hrank : r ≤ A.rank)
+    (hV : IsUnit ((V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN)))
+    (b : EuclideanSpace 𝕜 (Fin M)) :
+    ‖(b - toEuclideanLin (U.submatrix id (Fin.castLE hrM) *
+          (U.submatrix id (Fin.castLE hrM))ᴴ) b) -
+        (b - toEuclideanLin ((A.submatrix id π).submatrix id (Fin.castLE hrN) *
+          ((A.submatrix id π).submatrix id (Fin.castLE hrN)).pinv) b)‖ ≤
+      A.sortedSingularValues r / A.sortedSingularValues (r - 1) *
+        ‖((V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN))⁻¹‖ * ‖b‖ := by
+  have hlow := h.sortedSingularValues_le_mul_submatrix π hr0 hrM hrN hV
+  have hsA0 : 0 < A.sortedSingularValues (r - 1) :=
+    lt_of_le_of_ne (A.sortedSingularValues_nonneg _)
+      (Ne.symm ((A.sortedSingularValues_eq_zero_iff_rank_le _).not.2 (by omega)))
+  have hUU : (U.submatrix id (Fin.castLE hrM))ᴴ * U.submatrix id (Fin.castLE hrM) = 1 := by
+    rw [conjTranspose_submatrix_mul_submatrix h.mem_unitaryGroup_left,
+      submatrix_one _ (Fin.castLE_injective hrM)]
+  have hPA : (1 - U.submatrix id (Fin.castLE hrM) * (U.submatrix id (Fin.castLE hrM))ᴴ) * A =
+      A - svdTruncation U σ V r := by
+    rw [Matrix.sub_mul, Matrix.one_mul, mul_conjTranspose_mul_eq_svdTruncation h hrM]
+  set U₁ := U.submatrix id (Fin.castLE hrM) with hU₁
+  set B₁ := (A.submatrix id π).submatrix id (Fin.castLE hrN) with hB₁
+  set V₁₁ := (V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN) with hV₁₁
+  set sA := A.sortedSingularValues (r - 1) with hsA
+  set sB := B₁.sortedSingularValues (r - 1) with hsB
+  set K := LinearMap.range (toEuclideanLin B₁) with hK
+  set L := LinearMap.range (toEuclideanLin U₁) with hL
+  have hsB0 : 0 < sB := lt_of_le_of_ne (B₁.sortedSingularValues_nonneg _) fun h0 => by
+    rw [← h0, mul_zero] at hlow
+    linarith
+  have hPU : ∀ y, toEuclideanLin (U₁ * U₁ᴴ) y = L.starProjection y := fun y => by
+    rw [LinearMap.congr_fun (toEuclideanLin_mul_conjTranspose_eq_starProjection hUU) y]
+    rfl
+  have hPB : ∀ y, toEuclideanLin (B₁ * B₁.pinv) y = K.starProjection y := fun y => by
+    rw [LinearMap.congr_fun (mul_pinv_eq_starProjection B₁) y]
+    rfl
+  -- both ranges have dimension `r`
+  have hBinj : Function.Injective (toEuclideanLin B₁) := by
+    refine (injective_iff_map_eq_zero _).2 fun z hz => ?_
+    have : sB * ‖z‖ ≤ ‖toEuclideanLin B₁ z‖ := sortedSingularValues_mul_norm_le B₁ hr0 z
+    rw [hz, norm_zero] at this
+    have h0 : ‖z‖ ≤ 0 := by nlinarith [norm_nonneg z]
+    exact norm_eq_zero.1 (le_antisymm h0 (norm_nonneg z))
+  have hfin : Module.finrank 𝕜 K = Module.finrank 𝕜 L := by
+    rw [hK, hL, LinearMap.finrank_range_of_inj hBinj,
+      LinearMap.finrank_range_of_inj (f := toEuclideanLin U₁)
+        (toEuclideanLinearIsometry hUU).injective]
+  -- the one-sided gap
+  have hone : ‖(1 - U₁ * U₁ᴴ) * B₁‖ ≤ A.sortedSingularValues r := by
+    have hsub : (1 - U₁ * U₁ᴴ) * B₁ = ((1 - U₁ * U₁ᴴ) * A).submatrix id
+        (⟨fun i => π (Fin.castLE hrN i), π.injective.comp (Fin.castLE_injective hrN)⟩ :
+          Fin r ↪ Fin N) := rfl
+    rw [hsub, ← sortedSingularValues_zero_eq_l2_opNorm]
+    refine (sortedSingularValues_submatrix_le _ _ 0).trans ?_
+    rw [sortedSingularValues_zero_eq_l2_opNorm, hPA, l2_opNorm_sub_svdTruncation h]
+  have hgap : K.gap L ≤ A.sortedSingularValues r / sB := by
+    rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq K L hfin]
+    refine ContinuousLinearMap.opNorm_le_bound _ (div_nonneg (sortedSingularValues_nonneg _ _)
+      hsB0.le) fun y => ?_
+    set z := toEuclideanLin B₁.pinv y
+    have hKy : K.starProjection y = toEuclideanLin B₁ z := by
+      rw [← hPB, toEuclideanLin_mul_apply]
+    have hz : sB * ‖z‖ ≤ ‖y‖ := by
+      have : sB * ‖z‖ ≤ ‖toEuclideanLin B₁ z‖ := sortedSingularValues_mul_norm_le B₁ hr0 z
+      rw [← hKy] at this
+      exact this.trans (K.norm_starProjection_apply_le y)
+    have hLz : Lᗮ.starProjection (toEuclideanLin B₁ z) =
+        toEuclideanLin ((1 - U₁ * U₁ᴴ) * B₁) z := by
+      rw [Submodule.starProjection_orthogonal_val, ← hPU,
+        toEuclideanLin_mul_apply (1 - U₁ * U₁ᴴ) B₁, map_sub, toEuclideanLin_one,
+        LinearMap.sub_apply, LinearMap.id_apply]
+    change ‖Lᗮ.starProjection (K.starProjection y)‖ ≤ _
+    rw [hKy, hLz]
+    refine (norm_toEuclideanLin_apply_le _ _).trans ?_
+    rw [div_mul_eq_mul_div, le_div_iff₀ hsB0]
+    calc ‖(1 - U₁ * U₁ᴴ) * B₁‖ * ‖z‖ * sB = ‖(1 - U₁ * U₁ᴴ) * B₁‖ * (sB * ‖z‖) := by ring
+      _ ≤ A.sortedSingularValues r * ‖y‖ :=
+        mul_le_mul hone hz (mul_nonneg hsB0.le (norm_nonneg _)) (sortedSingularValues_nonneg _ _)
+  -- the comparison `1 / sB ≤ ‖Ṽ₁₁⁻¹‖ / sA`
+  have hcmp : A.sortedSingularValues r / sB ≤ A.sortedSingularValues r / sA * ‖V₁₁⁻¹‖ := by
+    rw [div_mul_eq_mul_div, div_le_div_iff₀ hsB0 hsA0]
+    have := mul_le_mul_of_nonneg_left hlow (sortedSingularValues_nonneg A r)
+    linarith
+  have hdiff : (b - toEuclideanLin (U₁ * U₁ᴴ) b) - (b - toEuclideanLin (B₁ * B₁.pinv) b) =
+      K.starProjection b - L.starProjection b := by
+    rw [hPU, hPB]
+    abel
+  rw [hdiff]
+  refine (K.norm_starProjection_sub_le_gap_mul L b).trans ?_
+  exact mul_le_mul_of_nonneg_right (hgap.trans hcmp) (norm_nonneg _)
+
+end SubsetSelection
 
 end Matrix

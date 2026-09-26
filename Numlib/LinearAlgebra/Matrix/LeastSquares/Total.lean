@@ -5,7 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.LeastSquares.Total`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Data.Matrix.ColumnRowPartitioned
-import Numlib.LinearAlgebra.Matrix.LeastSquares
+import Numlib.Analysis.Matrix.SingularValues
 
 /-!
 # Total least squares
@@ -27,6 +27,10 @@ the smallest singular value of `C` bounds its size from below.
 
 * `Matrix.isUnit_lowerRightBlock_of_lt` (first part of the proof of [golub2013matrix]
   Theorem 6.3.1): the generic condition `σ_n(C₁) > σ_{n+1}(C)` makes `V₂₂` invertible.
+* `Matrix.existsUnique_isTLSPerturbation`, `Matrix.isTLSPerturbation_iff`,
+  `Matrix.isTLSSolution_iff_eq` ([golub2013matrix] Theorem 6.3.1): under the generic condition the
+  TLS perturbation is unique, `C + D [E₀ | R₀] T` is the rank-`n` truncation of the SVD of `C`, and
+  the unique TLS solution is `X_TLS = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`.
 * `Matrix.isTLSSolution_of_mem_smallest` ([golub2013matrix] §6.3.2): with one right-hand side,
   a unit vector `w = [z; α]` with `‖C w‖ = σ_min(C)` and `α ≠ 0` gives the TLS solution
   `x = −T₁ z / (t_{n+1} α)`, the perturbation being `−C w wᴴ`.
@@ -105,6 +109,32 @@ theorem tlsWeighted_mulVec (d : m → ℝ) (t : n ⊕ k → ℝ) (E : Matrix m n
   have e2 : ((diagonal fun j => (t j : 𝕜)) *ᵥ v) ∘ Sum.inr =
       fun j => (t (Sum.inr j) : 𝕜) * v (Sum.inr j) := funext fun j => mulVec_diagonal _ _ _
   rw [Pi.add_apply, e1, e2]
+
+/-- **Every weighted matrix is `D [E | R] T`** for nonzero weights:
+`E`, `R` are the column blocks of `D⁻¹ M T⁻¹`. -/
+theorem exists_tlsWeighted_eq {d : m → ℝ} {t : n ⊕ k → ℝ} (hd : ∀ i, d i ≠ 0)
+    (ht : ∀ j, t j ≠ 0) (M : Matrix m (n ⊕ k) 𝕜) : ∃ E R, tlsWeighted d t E R = M := by
+  have hd' : ∀ i, (d i : 𝕜) ≠ 0 := fun i => RCLike.ofReal_ne_zero.2 (hd i)
+  have ht' : ∀ j, (t j : 𝕜) ≠ 0 := fun j => RCLike.ofReal_ne_zero.2 (ht j)
+  set ER : Matrix m (n ⊕ k) 𝕜 :=
+    diagonal (fun i => (d i : 𝕜)⁻¹) * M * diagonal (fun j => (t j : 𝕜)⁻¹)
+  refine ⟨ER.toCols₁, ER.toCols₂, ?_⟩
+  rw [tlsWeighted, fromCols_toCols]
+  simp only [ER, ← Matrix.mul_assoc, diagonal_mul_diagonal]
+  rw [Matrix.mul_assoc, diagonal_mul_diagonal]
+  simp [mul_inv_cancel₀ (hd' _), inv_mul_cancel₀ (ht' _)]
+
+/-- **`D [E | R] T` determines `E` and `R`** for nonzero weights. -/
+theorem tlsWeighted_injective {d : m → ℝ} {t : n ⊕ k → ℝ} (hd : ∀ i, d i ≠ 0)
+    (ht : ∀ j, t j ≠ 0) {E E' : Matrix m n 𝕜} {R R' : Matrix m k 𝕜}
+    (h : tlsWeighted d t E R = tlsWeighted d t E' R') : E = E' ∧ R = R' := by
+  have hd' : ∀ i, (d i : 𝕜) ≠ 0 := fun i => RCLike.ofReal_ne_zero.2 (hd i)
+  have ht' : ∀ j, (t j : 𝕜) ≠ 0 := fun j => RCLike.ofReal_ne_zero.2 (ht j)
+  refine fromCols_inj ?_
+  ext i j
+  have := congrFun (congrFun h i) j
+  simp only [tlsWeighted, mul_diagonal, diagonal_mul] at this
+  exact mul_left_cancel₀ (hd' i) (mul_right_cancel₀ (ht' j) this)
 
 end Defs
 
@@ -285,17 +315,11 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
   have ht' : ∀ j, (t j : 𝕜) ≠ 0 := fun j => RCLike.ofReal_ne_zero.2 (ht j)
   set C := tlsWeighted d t A (replicateCol Unit b)
   set ΔC := -vecMulVec (C *ᵥ w) (star w)
-  set ER : Matrix m (n ⊕ Unit) 𝕜 :=
-    diagonal (fun i => (d i : 𝕜)⁻¹) * ΔC * diagonal (fun j => (t j : 𝕜)⁻¹)
-  have hER : tlsWeighted d t ER.toCols₁ ER.toCols₂ = ΔC := by
-    rw [tlsWeighted, fromCols_toCols]
-    simp only [ER, ← Matrix.mul_assoc, diagonal_mul_diagonal]
-    rw [Matrix.mul_assoc, diagonal_mul_diagonal]
-    simp [mul_inv_cancel₀ (hd' _), inv_mul_cancel₀ (ht' _)]
-  refine ⟨ER.toCols₁, ER.toCols₂, hER, ?_⟩
+  obtain ⟨E, R, hER⟩ := exists_tlsWeighted_eq hd ht ΔC
+  refine ⟨E, R, hER, ?_⟩
   -- `C + ΔC` annihilates `w`
   have hww : star w ⬝ᵥ w = 1 := by rw [star_dotProduct_self_eq, hw]; simp
-  have hnull : tlsWeighted d t (A + ER.toCols₁) (replicateCol Unit b + ER.toCols₂) *ᵥ w = 0 := by
+  have hnull : tlsWeighted d t (A + E) (replicateCol Unit b + R) *ᵥ w = 0 := by
     rw [tlsWeighted_add, hER, add_mulVec]
     funext i
     simp only [ΔC, neg_mulVec, Pi.add_apply, Pi.neg_apply, vecMulVec_mulVec_apply, hww, mul_one,
@@ -306,12 +330,12 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
   ext i u
   have hi := congrFun hnull i
   rw [tlsWeighted_mulVec, Pi.zero_apply, mul_eq_zero, or_iff_right (hd' i)] at hi
-  have hB : ((replicateCol Unit b + ER.toCols₂) *ᵥ fun j => (t (Sum.inr j) : 𝕜) * w (Sum.inr j)) i
-      = (replicateCol Unit b + ER.toCols₂) i () * c := by
+  have hB : ((replicateCol Unit b + R) *ᵥ fun j => (t (Sum.inr j) : 𝕜) * w (Sum.inr j)) i
+      = (replicateCol Unit b + R) i () * c := by
     simp [mulVec, dotProduct, c]
   rw [hB] at hi
-  have hA : ((A + ER.toCols₁) * replicateCol Unit (fun j => -((t (Sum.inl j) : 𝕜) *
-      w (Sum.inl j)) / c)) i u = -(((A + ER.toCols₁) *ᵥ fun j => (t (Sum.inl j) : 𝕜) *
+  have hA : ((A + E) * replicateCol Unit (fun j => -((t (Sum.inl j) : 𝕜) *
+      w (Sum.inl j)) / c)) i u = -(((A + E) *ᵥ fun j => (t (Sum.inl j) : 𝕜) *
         w (Sum.inl j)) i) / c := by
     simp only [mul_apply, replicateCol_apply, mulVec, dotProduct, neg_div, Finset.sum_div,
       ← Finset.sum_neg_distrib, mul_div_assoc, mul_neg]
@@ -567,6 +591,451 @@ theorem isUnit_lowerRightBlock_of_lt {C₁ : Matrix (Fin m) (Fin n) 𝕜}
   linarith
 
 end Generic
+
+/-! ### Theorem 6.3.1: several right-hand sides -/
+
+section Feasible
+
+variable {m n k : Type*} [Fintype m] [Fintype n] [Fintype k] [DecidableEq m] [DecidableEq n]
+  [DecidableEq k]
+
+omit [Fintype m] [DecidableEq m] [DecidableEq n] [DecidableEq k] in
+/-- A range inclusion `ran N ⊆ ran M` is the solvability of `M X = N`. -/
+private theorem exists_mul_eq_of_range_le {M : Matrix m n 𝕜} {N : Matrix m k 𝕜}
+    (h : LinearMap.range N.mulVecLin ≤ LinearMap.range M.mulVecLin) : ∃ X, M * X = N := by
+  classical
+  have hc : ∀ j, ∃ x, M *ᵥ x = N *ᵥ Pi.single j 1 := fun j => by
+    obtain ⟨x, hx⟩ := h (LinearMap.mem_range_self N.mulVecLin (Pi.single j 1))
+    exact ⟨x, hx⟩
+  choose x hx using hc
+  refine ⟨of fun i j => x j i, ?_⟩
+  ext r j
+  have := congrFun (hx j) r
+  rw [mulVec_single_one, col_apply] at this
+  rw [← this]
+  rfl
+
+/-- A solvable problem has a weighted matrix of rank at most the number of unknowns:
+`[M | M X] = M [1 | X]`. -/
+private theorem rank_tlsWeighted_le_of_mul_eq {d : m → ℝ} {t : n ⊕ k → ℝ} {M : Matrix m n 𝕜}
+    {N : Matrix m k 𝕜} {X : Matrix n k 𝕜} (h : M * X = N) :
+    (tlsWeighted d t M N).rank ≤ Fintype.card n := by
+  have hMX : fromCols M N = M * fromCols 1 X := by rw [mul_fromCols, Matrix.mul_one, h]
+  rw [tlsWeighted, hMX]
+  calc _ ≤ (diagonal (fun i => (d i : 𝕜)) * (M * fromCols 1 X)).rank := rank_mul_le_left _ _
+    _ ≤ (M * fromCols 1 X).rank := rank_mul_le_right _ _
+    _ ≤ M.rank := rank_mul_le_left _ _
+    _ ≤ Fintype.card n := rank_le_card_width M
+
+/-- The matrix `T⁻¹ [X; −1]` of [golub2013matrix] (6.3.5). -/
+private noncomputable def tlsNull (t : n ⊕ k → ℝ) (X : Matrix n k 𝕜) : Matrix (n ⊕ k) k 𝕜 :=
+  fromRows (diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) * X)
+    (-diagonal fun j => (t (Sum.inr j) : 𝕜)⁻¹)
+
+/-- `D [E | R] T T⁻¹ [X; −1] = D (E X − R)`. -/
+private theorem tlsWeighted_mul_tlsNull {d : m → ℝ} {t : n ⊕ k → ℝ} (ht : ∀ j, t j ≠ 0)
+    (E : Matrix m n 𝕜) (R : Matrix m k 𝕜) (X : Matrix n k 𝕜) :
+    tlsWeighted d t E R * tlsNull t X = diagonal (fun i => (d i : 𝕜)) * (E * X - R) := by
+  have ht' : ∀ j, (t j : 𝕜) ≠ 0 := fun j => RCLike.ofReal_ne_zero.2 (ht j)
+  have hT : diagonal (fun j => (t j : 𝕜)) * tlsNull t X = fromRows X (-1) := by
+    ext (i | i) j
+    · simp [tlsNull, mul_inv_cancel_left₀ (ht' _)]
+    · by_cases hij : i = j
+      · subst hij
+        simp [tlsNull, ht' (Sum.inr i)]
+      · simp [tlsNull, hij]
+  rw [tlsWeighted, Matrix.mul_assoc, hT, Matrix.mul_assoc, fromCols_mul_fromRows, Matrix.mul_neg,
+    Matrix.mul_one, ← sub_eq_add_neg]
+
+/-- **[golub2013matrix] (6.3.5)**: `E X = R` iff `D [E | R] T` annihilates `T⁻¹ [X; −1]`. -/
+private theorem mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero {d : m → ℝ} {t : n ⊕ k → ℝ}
+    (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0) {E : Matrix m n 𝕜} {R : Matrix m k 𝕜}
+    {X : Matrix n k 𝕜} : E * X = R ↔ tlsWeighted d t E R * tlsNull t X = 0 := by
+  rw [tlsWeighted_mul_tlsNull ht]
+  constructor
+  · intro h
+    rw [h, sub_self, Matrix.mul_zero]
+  · intro h
+    rw [← sub_eq_zero]
+    ext i j
+    have := congrFun (congrFun h i) j
+    rw [diagonal_mul, zero_apply] at this
+    exact (mul_eq_zero.1 this).resolve_left (RCLike.ofReal_ne_zero.2 (hd i))
+
+end Feasible
+
+section Theorem631
+
+open scoped Matrix.Norms.Frobenius
+
+variable {m n k : ℕ} {d : Fin m → ℝ} {t : Fin n ⊕ Fin k → ℝ} {A : Matrix (Fin m) (Fin n) 𝕜}
+  {B : Matrix (Fin m) (Fin k) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
+  {V : Matrix (Fin (n + k)) (Fin (n + k)) 𝕜}
+
+/-- Reindexing the columns of a left factor moves to the rows of the right factor. -/
+private theorem submatrix_id_mul_eq {l p q r : Type*} [Fintype p] [Fintype q] (M : Matrix l p 𝕜)
+    (e : q ≃ p) (N : Matrix q r 𝕜) : M.submatrix id e * N = M * N.submatrix e.symm id := by
+  ext i j
+  simp only [mul_apply, submatrix_apply, id_eq]
+  exact Fintype.sum_equiv e _ _ fun x => by rw [Equiv.symm_apply_apply]
+
+/-- The consequences of the generic condition `σ_n(C₁) > σ_{n+1}(C)` of [golub2013matrix]
+Theorem 6.3.1: `1 ≤ n ≤ m`, the gap `σ_{n+1}(C) < σ_n(C)` (column interlacing,
+`Matrix.sortedSingularValues_fromCols_left_le`), and the invertibility of `V₂₂`. -/
+private theorem generic_facts
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
+    0 < n ∧ n ≤ m ∧ σ n < σ (n - 1) ∧ IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n)) := by
+  have hlt : n - 1 < min m n := by
+    by_contra hle
+    rw [(tlsWeighted d t A B).toCols₁.sortedSingularValues_eq_zero_of_min_le
+      (by simpa using not_lt.1 hle)] at hσ
+    exact absurd hσ (not_lt.2 (hC.nonneg n))
+  have hC' : IsSVD ((fromCols (tlsWeighted d t A B).toCols₁
+      (tlsWeighted d t A B).toCols₂).submatrix id finSumFinEquiv.symm) U σ V := by
+    rwa [fromCols_toCols]
+  refine ⟨by omega, by omega, ?_, isUnit_lowerRightBlock_of_lt hC' hσ⟩
+  have h1 : σ (n - 1) = (tlsWeighted d t A B).sortedSingularValues (n - 1) := by
+    rw [hC.singularValues_eq (by omega) (by omega)]
+    exact congrFun (sortedSingularValues_submatrix_equiv (tlsWeighted d t A B) (Equiv.refl _)
+      finSumFinEquiv.symm) _
+  have h2 := sortedSingularValues_fromCols_left_le (tlsWeighted d t A B).toCols₁
+    (tlsWeighted d t A B).toCols₂ (n - 1)
+  rw [fromCols_toCols] at h2
+  linarith
+
+/-- **The null space of a truncated SVD** ([golub2013matrix] proof of Theorem 6.3.1, "the
+nullspace of … is the range of `[V₁₂; V₂₂]`"): if `σ_0, …, σ_{n-1}` are nonzero and `n ≤ m`,
+then `C_n Y = 0` iff the columns of `Y` lie in the span of the last `k` columns `V₂` of `V`, i.e.
+`Y = V₂ V₂ᴴ Y`. -/
+private theorem svdTruncation_mul_eq_zero_iff {M : Matrix (Fin m) (Fin (n + k)) 𝕜}
+    (hC : IsSVD M U σ V) (hnm : n ≤ m) (hpos : ∀ i < n, σ i ≠ 0) {p : Type*}
+    (Y : Matrix (Fin (n + k)) p 𝕜) :
+    svdTruncation U σ V n * Y = 0 ↔
+      Y = V.submatrix id (Fin.natAdd n) * ((V.submatrix id (Fin.natAdd n))ᴴ * Y) := by
+  have hVV : star V * V = 1 := mem_unitaryGroup_iff'.1 hC.mem_unitaryGroup_right
+  have hVV' : V * star V = 1 := mem_unitaryGroup_iff.1 hC.mem_unitaryGroup_right
+  have hUU : star U * U = 1 := mem_unitaryGroup_iff'.1 hC.mem_unitaryGroup_left
+  have hCV : svdTruncation U σ V n * V =
+      U * (rectDiagonal fun i => if i < n then ((σ i : ℝ) : 𝕜) else 0) := by
+    rw [svdTruncation, Matrix.mul_assoc, hVV, Matrix.mul_one]
+  -- `C_n V₂ = 0`
+  have hSig : ((rectDiagonal fun i => if i < n then ((σ i : ℝ) : 𝕜) else 0 :
+      Matrix (Fin m) (Fin (n + k)) 𝕜)).submatrix id (Fin.natAdd n) = 0 := by
+    ext i j
+    simp only [submatrix_apply, id_eq, rectDiagonal_apply, Fin.val_natAdd, zero_apply]
+    split_ifs <;> first | rfl | (exfalso; omega)
+  have hCV₂ : svdTruncation U σ V n * V.submatrix id (Fin.natAdd n) = 0 := by
+    change (svdTruncation U σ V n * V).submatrix id (Fin.natAdd n) = 0
+    rw [hCV]
+    change U * ((rectDiagonal fun i => if i < n then ((σ i : ℝ) : 𝕜) else 0 :
+      Matrix (Fin m) (Fin (n + k)) 𝕜)).submatrix id (Fin.natAdd n) = 0
+    rw [hSig, Matrix.mul_zero]
+  constructor
+  · intro h
+    have hZ : (rectDiagonal fun i => if i < n then ((σ i : ℝ) : 𝕜) else 0 :
+        Matrix (Fin m) (Fin (n + k)) 𝕜) * (star V * Y) = 0 := by
+      have := congrArg (star U * ·) h
+      rw [svdTruncation] at this
+      simpa only [← Matrix.mul_assoc, hUU, Matrix.one_mul, Matrix.mul_zero] using this
+    have hlead : ∀ (i : Fin n) (j : p), (star V * Y) (Fin.castAdd k i) j = 0 := by
+      intro i j
+      have := congrFun (congrFun hZ ⟨i, lt_of_lt_of_le i.isLt hnm⟩) j
+      rw [mul_apply, Finset.sum_eq_single (Fin.castAdd k i) (fun b _ hb => by
+          rw [rectDiagonal_apply, ite_eq_right (fun h => hb (Fin.ext h.symm)), zero_mul])
+          (fun h => absurd (Finset.mem_univ _) h), rectDiagonal_apply,
+        ite_eq_left (show ((⟨i, lt_of_lt_of_le i.isLt hnm⟩ : Fin m) : ℕ) = Fin.castAdd k i
+          from rfl), ite_eq_left i.isLt, zero_apply] at this
+      exact (mul_eq_zero.1 this).resolve_left (RCLike.ofReal_ne_zero.2 (hpos i i.isLt))
+    have hY : Y = V * (star V * Y) := by rw [← Matrix.mul_assoc, hVV', Matrix.one_mul]
+    conv_lhs => rw [hY]
+    ext r j
+    rw [mul_apply, mul_apply, Fin.sum_univ_add]
+    simp only [hlead, mul_zero, Finset.sum_const_zero, zero_add]
+    rfl
+  · intro h
+    rw [h, ← Matrix.mul_assoc, hCV₂, Matrix.zero_mul]
+
+/-- **Reading off `X`** ([golub2013matrix] proof of Theorem 6.3.1): with `V₂₂` invertible,
+`T⁻¹ [X; −1] = V₂ S` for some `S` iff `X = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹` (and then `S = −V₂₂⁻¹ T₂⁻¹`). -/
+private theorem exists_eq_mul_iff (ht : ∀ j, t j ≠ 0)
+    (hV : IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n))) (X : Matrix (Fin n) (Fin k) 𝕜) :
+    (∃ S, (tlsNull t X).submatrix finSumFinEquiv.symm id = V.submatrix id (Fin.natAdd n) * S) ↔
+      X = -(diagonal (fun j => (t (Sum.inl j) : 𝕜)) * V.submatrix (Fin.castAdd k) (Fin.natAdd n) *
+        (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+          (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹) := by
+  have ht' : ∀ j, (t j : 𝕜) ≠ 0 := fun j => RCLike.ofReal_ne_zero.2 (ht j)
+  have hVd := (isUnit_iff_isUnit_det _).1 hV
+  have h11 : diagonal (fun j => (t (Sum.inl j) : 𝕜)) *
+      diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) = 1 := by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    exact congrArg diagonal (funext fun j => mul_inv_cancel₀ (ht' _))
+  have h11' : diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) *
+      diagonal (fun j => (t (Sum.inl j) : 𝕜)) = 1 := by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    exact congrArg diagonal (funext fun j => inv_mul_cancel₀ (ht' _))
+  have h22 : (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹ =
+      diagonal fun j => (t (Sum.inr j) : 𝕜)⁻¹ := inv_eq_left_inv (by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    exact congrArg diagonal (funext fun j => inv_mul_cancel₀ (ht' _)))
+  -- the two block rows
+  have hrows : ∀ Y Z : Matrix (Fin (n + k)) (Fin k) 𝕜, Y = Z ↔
+      Y.submatrix (Fin.castAdd k) id = Z.submatrix (Fin.castAdd k) id ∧
+        Y.submatrix (Fin.natAdd n) id = Z.submatrix (Fin.natAdd n) id := by
+    intro Y Z
+    refine ⟨fun h => h ▸ ⟨rfl, rfl⟩, fun ⟨h1, h2⟩ => ?_⟩
+    ext r j
+    induction r using Fin.addCases with
+    | left i => exact congrFun (congrFun h1 i) j
+    | right i => exact congrFun (congrFun h2 i) j
+  have hW1 : ((tlsNull t X).submatrix finSumFinEquiv.symm id).submatrix (Fin.castAdd k) id =
+      diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) * X := by
+    ext i j
+    simp [tlsNull]
+  have hW2 : ((tlsNull t X).submatrix finSumFinEquiv.symm id).submatrix (Fin.natAdd n) id =
+      -diagonal (fun j => (t (Sum.inr j) : 𝕜)⁻¹) := by
+    ext i j
+    by_cases hij : i = j <;> simp [tlsNull, hij]
+  have hsplit : ∀ S : Matrix (Fin k) (Fin k) 𝕜,
+      (tlsNull t X).submatrix finSumFinEquiv.symm id = V.submatrix id (Fin.natAdd n) * S ↔
+        diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) * X =
+            V.submatrix (Fin.castAdd k) (Fin.natAdd n) * S ∧
+          -diagonal (fun j => (t (Sum.inr j) : 𝕜)⁻¹) =
+            V.submatrix (Fin.natAdd n) (Fin.natAdd n) * S := fun S => by
+    rw [hrows, hW1, hW2]
+    rfl
+  rw [exists_congr hsplit]
+  constructor
+  · rintro ⟨S, h1, h2⟩
+    have hS : S = -((V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+        (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹) := by
+      rw [h22]
+      calc S = (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+            (V.submatrix (Fin.natAdd n) (Fin.natAdd n) * S) := by
+            rw [← Matrix.mul_assoc, nonsing_inv_mul _ hVd, Matrix.one_mul]
+        _ = _ := by rw [← h2, Matrix.mul_neg]
+    calc X = diagonal (fun j => (t (Sum.inl j) : 𝕜)) *
+          (diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) * X) := by
+          rw [← Matrix.mul_assoc, h11, Matrix.one_mul]
+      _ = _ := by rw [h1, hS]; simp only [Matrix.mul_neg, Matrix.mul_assoc]
+  · intro hX
+    refine ⟨-((V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+        (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹), ?_, ?_⟩
+    · rw [hX]
+      simp only [Matrix.mul_neg, ← Matrix.mul_assoc, h11', Matrix.one_mul]
+    · rw [Matrix.mul_neg, ← Matrix.mul_assoc, mul_nonsing_inv _ hVd, Matrix.one_mul, h22]
+
+/-- Under the generic condition the first `n` singular values are nonzero. -/
+private theorem pos_of_generic
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
+    ∀ i < n, σ i ≠ 0 := fun i hi => by
+  obtain ⟨-, -, hgap, -⟩ := generic_facts hC hσ
+  exact (lt_of_le_of_lt (hC.nonneg n) (lt_of_lt_of_le hgap (hC.antitone (by omega)))).ne'
+
+/-- **The solutions of the truncated problem** ([golub2013matrix] proof of Theorem 6.3.1): if
+`C + D [E | R] T` is the truncation `C_n` of the SVD of `C`, then `(A + E) X = B + R` exactly for
+`X = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`. -/
+private theorem add_mul_eq_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
+    {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
+    (h : tlsWeighted d t (A + E) (B + R) =
+      (svdTruncation U σ V n).submatrix id finSumFinEquiv) (X : Matrix (Fin n) (Fin k) 𝕜) :
+    (A + E) * X = B + R ↔
+      X = -(diagonal (fun j => (t (Sum.inl j) : 𝕜)) * V.submatrix (Fin.castAdd k) (Fin.natAdd n) *
+        (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+          (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹) := by
+  obtain ⟨-, hnm, -, hV⟩ := generic_facts hC hσ
+  have h22 : (V.submatrix id (Fin.natAdd n))ᴴ * V.submatrix id (Fin.natAdd n) = 1 := by
+    rw [conjTranspose_submatrix, ← star_eq_conjTranspose,
+      ← submatrix_mul _ _ _ id _ Function.bijective_id,
+      mem_unitaryGroup_iff'.1 hC.mem_unitaryGroup_right,
+      submatrix_one _ fun a b hab => Fin.ext (by simpa [Fin.ext_iff] using hab)]
+  rw [mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero hd ht, h, submatrix_id_mul_eq,
+    svdTruncation_mul_eq_zero_iff hC hnm (pos_of_generic hC hσ), ← exists_eq_mul_iff ht hV]
+  constructor
+  · intro hY
+    exact ⟨_, hY⟩
+  · rintro ⟨S, hS⟩
+    conv_rhs => rw [hS, ← Matrix.mul_assoc (V.submatrix id (Fin.natAdd n))ᴴ, h22, Matrix.one_mul]
+    exact hS
+
+/-- The squared Frobenius norm of `C − C_n` in the notation of the SVD. -/
+private theorem frobenius_norm_sub_svdTruncation_sq
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V) :
+    ‖(tlsWeighted d t A B).submatrix id finSumFinEquiv.symm - svdTruncation U σ V n‖ ^ 2 =
+      ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 := by
+  rw [frobenius_norm_sub_svdTruncation hC,
+    Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  obtain ⟨-, hi⟩ := Finset.mem_Ico.1 hi
+  rw [hC.singularValues_eq (lt_of_lt_of_le hi (min_le_left _ _))
+    (lt_of_lt_of_le hi (min_le_right _ _))]
+
+/-- Reindexing the columns does not change the Frobenius norm of a weighted matrix. -/
+private theorem frobenius_norm_submatrix_finSumFinEquiv (M : Matrix (Fin m) (Fin n ⊕ Fin k) 𝕜) :
+    ‖M.submatrix id finSumFinEquiv.symm‖ = ‖M‖ :=
+  frobenius_norm_submatrix_equiv M (Equiv.refl _) finSumFinEquiv.symm
+
+/-- `C − (C + ΔC) = −ΔC`, reindexed. -/
+private theorem submatrix_sub_tlsWeighted_add (E : Matrix (Fin m) (Fin n) 𝕜)
+    (R : Matrix (Fin m) (Fin k) 𝕜) :
+    (tlsWeighted d t A B).submatrix id finSumFinEquiv.symm -
+        (tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm =
+      (-tlsWeighted d t E R).submatrix id finSumFinEquiv.symm := by
+  rw [tlsWeighted_add]
+  ext i j
+  simp
+
+/-- A solvable perturbed problem has a reindexed weighted matrix of rank at most `n`. -/
+private theorem rank_submatrix_tlsWeighted_le {E : Matrix (Fin m) (Fin n) 𝕜}
+    {R : Matrix (Fin m) (Fin k) 𝕜}
+    (h : LinearMap.range (B + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
+    ((tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm).rank ≤ n := by
+  obtain ⟨X, hX⟩ := exists_mul_eq_of_range_le h
+  rw [show ((tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm).rank =
+    (tlsWeighted d t (A + E) (B + R)).rank from
+      rank_submatrix _ (Equiv.refl _) finSumFinEquiv.symm]
+  simpa using rank_tlsWeighted_le_of_mul_eq (d := d) (t := t) hX
+
+/-- **A feasible perturbation is at least as large as the truncation residual**
+([golub2013matrix] proof of Theorem 6.3.1, by Eckart–Young–Mirsky): if `ran (B + R) ⊆ ran (A + E)`
+then `C + D [E | R] T` has rank at most `n`, so `∑_{i ≥ n} σ_i² ≤ ‖D [E | R] T‖_F²`. -/
+private theorem sum_sq_le_of_range_le
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
+    (h : LinearMap.range (B + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
+    ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 ≤ ‖tlsWeighted d t E R‖ ^ 2 := by
+  have hEY := sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le
+    (C := (tlsWeighted d t A B).submatrix id finSumFinEquiv.symm)
+    (rank_submatrix_tlsWeighted_le (d := d) (t := t) h)
+  rw [submatrix_sub_tlsWeighted_add, frobenius_norm_submatrix_finSumFinEquiv, norm_neg] at hEY
+  refine le_trans (le_of_eq ?_) hEY
+  simp only [Fintype.card_fin]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  obtain ⟨-, hi⟩ := Finset.mem_Ico.1 hi
+  rw [hC.singularValues_eq (lt_of_lt_of_le hi (min_le_left _ _))
+    (lt_of_lt_of_le hi (min_le_right _ _))]
+
+/-- The value of a perturbation that truncates: if `C + D [E | R] T = C_n`, then
+`‖D [E | R] T‖_F² = ∑_{i ≥ n} σ_i²`. -/
+private theorem frobenius_norm_sq_of_tlsWeighted_add_eq
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
+    (h : tlsWeighted d t (A + E) (B + R) = (svdTruncation U σ V n).submatrix id finSumFinEquiv) :
+    ‖tlsWeighted d t E R‖ ^ 2 = ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 := by
+  have hER : tlsWeighted d t E R =
+      (svdTruncation U σ V n).submatrix id finSumFinEquiv - tlsWeighted d t A B := by
+    rw [← h, tlsWeighted_add, add_sub_cancel_left]
+  have : svdTruncation U σ V n - (tlsWeighted d t A B).submatrix id finSumFinEquiv.symm =
+      (tlsWeighted d t E R).submatrix id finSumFinEquiv.symm := by
+    rw [hER]
+    ext i j
+    simp
+  rw [← frobenius_norm_sub_svdTruncation_sq hC, norm_sub_rev, this,
+    frobenius_norm_submatrix_finSumFinEquiv]
+
+/-- **The TLS perturbations of Theorem 6.3.1** ([golub2013matrix] Theorem 6.3.1, (6.3.4)): with
+`m × (n + k)` data `C = D [A | B] T` (columns reindexed to `Fin (n + k)`), nonzero weights, an SVD
+`Uᴴ C V = Σ` and the generic condition `σ_n(C₁) > σ_{n+1}(C)` (`0`-based:
+`C₁.sortedSingularValues (n − 1) > σ n`, `C₁` the first `n` columns of `C`), `(E, R)` is a TLS
+perturbation exactly when `C + D [E | R] T` is the rank-`n` truncation `C_n = U Σ_n Vᴴ`, i.e.
+`D [E | R] T = −U₂ Σ₂ [V₁₂ᴴ | V₂₂ᴴ]`. Every feasible perturbation makes `C + D [E | R] T` of rank
+at most `n` ((6.3.5)), so it is at least `‖C − C_n‖_F` by Eckart–Young–Mirsky; the truncation is
+feasible since its null space is the range of `[V₁₂; V₂₂]` with `V₂₂` invertible
+(`Matrix.isUnit_lowerRightBlock_of_lt`); and it is the only minimizer because the generic condition
+separates `σ_n(C) ≥ σ_n(C₁) > σ_{n+1}(C)` (`Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le`).
+The book's `m ≥ n + k` is not needed. -/
+theorem isTLSPerturbation_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
+    {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜} :
+    IsTLSPerturbation d t A B E R ↔
+      tlsWeighted d t (A + E) (B + R) = (svdTruncation U σ V n).submatrix id finSumFinEquiv := by
+  obtain ⟨-, -, hgap, -⟩ := generic_facts hC hσ
+  -- the truncation is feasible
+  have hfeas : ∀ {E' : Matrix (Fin m) (Fin n) 𝕜} {R' : Matrix (Fin m) (Fin k) 𝕜},
+      tlsWeighted d t (A + E') (B + R') = (svdTruncation U σ V n).submatrix id finSumFinEquiv →
+        LinearMap.range (B + R').mulVecLin ≤ LinearMap.range (A + E').mulVecLin := by
+    intro E' R' h
+    rw [← (add_mul_eq_iff hd ht hC hσ h _).2 rfl, mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+  obtain ⟨E₀, R₀, h₀⟩ := exists_tlsWeighted_eq hd ht
+    ((svdTruncation U σ V n).submatrix id finSumFinEquiv - tlsWeighted d t A B)
+  have h₀' : tlsWeighted d t (A + E₀) (B + R₀) =
+      (svdTruncation U σ V n).submatrix id finSumFinEquiv := by
+    rw [tlsWeighted_add, h₀, add_sub_cancel]
+  constructor
+  · intro h
+    have hle : ‖(tlsWeighted d t A B).submatrix id finSumFinEquiv.symm -
+        (tlsWeighted d t (A + E) (B + R)).submatrix id finSumFinEquiv.symm‖ ^ 2 ≤
+          ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 := by
+      rw [submatrix_sub_tlsWeighted_add, frobenius_norm_submatrix_finSumFinEquiv, norm_neg,
+        ← frobenius_norm_sq_of_tlsWeighted_add_eq hC h₀']
+      exact pow_le_pow_left₀ (norm_nonneg _) (h.norm_le E₀ R₀ (hfeas h₀')) 2
+    have hĈ := eq_svdTruncation_of_frobenius_norm_sub_sq_le hC hgap
+      (rank_submatrix_tlsWeighted_le h.range_le) hle
+    rw [← hĈ]
+    ext i j
+    simp
+  · intro h
+    refine ⟨hfeas h, fun E' R' h' => ?_⟩
+    have := sum_sq_le_of_range_le hC h'
+    rw [← frobenius_norm_sq_of_tlsWeighted_add_eq hC h] at this
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 this
+
+/-- **[golub2013matrix] Theorem 6.3.1, the perturbation**: under the hypotheses of
+`Matrix.isTLSPerturbation_iff` there is exactly one TLS perturbation `(E₀, R₀)`, the one with
+`D [E₀ | R₀] T = −U₂ Σ₂ [V₁₂ᴴ | V₂₂ᴴ]` ((6.3.4)); its size is given by
+`Matrix.IsTLSPerturbation.frobenius_norm_sq_eq`. -/
+theorem existsUnique_isTLSPerturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
+    ∃! ER : Matrix (Fin m) (Fin n) 𝕜 × Matrix (Fin m) (Fin k) 𝕜,
+      IsTLSPerturbation d t A B ER.1 ER.2 := by
+  obtain ⟨E₀, R₀, h₀⟩ := exists_tlsWeighted_eq hd ht
+    ((svdTruncation U σ V n).submatrix id finSumFinEquiv - tlsWeighted d t A B)
+  refine ⟨(E₀, R₀), (isTLSPerturbation_iff hd ht hC hσ).2 (by rw [tlsWeighted_add, h₀,
+    add_sub_cancel]), fun ER h => ?_⟩
+  have h' := (isTLSPerturbation_iff hd ht hC hσ).1 h
+  rw [tlsWeighted_add] at h'
+  obtain ⟨h1, h2⟩ := tlsWeighted_injective hd ht ((eq_sub_of_add_eq' h').trans h₀.symm)
+  exact Prod.ext h1 h2
+
+/-- **The size of the TLS perturbation** ([golub2013matrix] proof of Theorem 6.3.1):
+`‖D [E₀ | R₀] T‖_F² = ∑_{n ≤ i < min(m, n + k)} σ_i²` (`0`-based; the book's
+`σ_{n+1}² + ⋯ + σ_{n+k}²` when `m ≥ n + k`). -/
+theorem IsTLSPerturbation.frobenius_norm_sq_eq (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
+    {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
+    (h : IsTLSPerturbation d t A B E R) :
+    ‖tlsWeighted d t E R‖ ^ 2 = ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 :=
+  frobenius_norm_sq_of_tlsWeighted_add_eq hC ((isTLSPerturbation_iff hd ht hC hσ).1 h)
+
+/-- **[golub2013matrix] Theorem 6.3.1, the solution**: under the hypotheses of
+`Matrix.existsUnique_isTLSPerturbation`, with `T₁ = diag(t₁, …, t_n)`,
+`T₂ = diag(t_{n+1}, …, t_{n+k})` and `V₁₂`, `V₂₂` the blocks of the last `k` columns of `V`, the
+unique TLS solution is `X_TLS = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`. The null space of `C + D [E₀ | R₀] T = C_n` is
+the range of `[V₁₂; V₂₂]`, so `T⁻¹ [X; −1] = [V₁₂; V₂₂] S` and `S = −V₂₂⁻¹ T₂⁻¹`. -/
+theorem isTLSSolution_iff_eq (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
+    (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
+    (X : Matrix (Fin n) (Fin k) 𝕜) :
+    IsTLSSolution d t A B X ↔
+      X = -(diagonal (fun j => (t (Sum.inl j) : 𝕜)) * V.submatrix (Fin.castAdd k) (Fin.natAdd n) *
+        (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ *
+          (diagonal fun j => (t (Sum.inr j) : 𝕜))⁻¹) := by
+  constructor
+  · rintro ⟨E, R, h, hX⟩
+    exact (add_mul_eq_iff hd ht hC hσ ((isTLSPerturbation_iff hd ht hC hσ).1 h) X).1 hX
+  · intro hX
+    obtain ⟨⟨E₀, R₀⟩, h₀, -⟩ := existsUnique_isTLSPerturbation hd ht hC hσ
+    exact ⟨E₀, R₀, h₀,
+      (add_mul_eq_iff hd ht hC hσ ((isTLSPerturbation_iff hd ht hC hσ).1 h₀) X).2 hX⟩
+
+end Theorem631
 
 /-! ### Orthogonal regression -/
 

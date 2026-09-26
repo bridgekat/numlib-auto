@@ -1,4 +1,6 @@
 import Numlib.Analysis.Matrix.Function.CFC
+import Numlib.Analysis.Matrix.Function.Sign
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Polar
 
 /-!
@@ -18,7 +20,9 @@ matrices of [golub2013matrix] §9.4.3:
   (`Matrix.newtonPolarIterate_succ_sub_one`);
 * `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues`: the complex form of
   the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
-  Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`.
+  Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`;
+* `Matrix.matrixSign_hermitianDilation`: the sign of the Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of a
+  nonsingular `A = U P` is `[0 U; Uᴴ 0]`.
 
 Every statement about "the polar factor `U`" takes an `IsPolarDecomposition A U P` hypothesis.
 
@@ -451,5 +455,92 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues
     h'.posSemidef_sub_iInf_singularValues hσ
 
 end Perturbation
+
+/-! ### The sign of the Jordan–Wielandt matrix -/
+
+section Sign
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+open scoped ComplexOrder in
+/-- The eigenvalues of a positive definite matrix lie in the open right half-plane. -/
+private theorem re_pos_of_mem_spectrum_of_posDef {M : Matrix n n ℂ} (hM : M.PosDef) {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ M) : 0 < μ.re := by
+  rw [spectrum.mem_iff, isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
+    ← exists_mulVec_eq_zero_iff] at hμ
+  obtain ⟨v, hv0, hv⟩ := hμ
+  have hMv : M *ᵥ v = μ • v := by
+    rw [sub_mulVec, sub_eq_zero, Algebra.algebraMap_eq_smul_one, smul_mulVec, one_mulVec] at hv
+    exact hv.symm
+  have h1 := hM.dotProduct_mulVec_pos hv0
+  have h2 := PosDef.one.dotProduct_mulVec_pos hv0
+  rw [hMv, dotProduct_smul, smul_eq_mul] at h1
+  rw [one_mulVec] at h2
+  obtain ⟨hre1, him1⟩ := Complex.lt_def.1 h1
+  obtain ⟨hre2, him2⟩ := Complex.lt_def.1 h2
+  simp only [Complex.zero_re, Complex.zero_im, Complex.mul_re] at hre1 hre2 him2
+  rw [← him2, mul_zero, sub_zero] at hre1
+  exact pos_of_mul_pos_left hre1 hre2.le
+
+/-- **The sign of the Jordan–Wielandt matrix** ([golub2013matrix] §9.4.3): for a nonsingular
+`A : Matrix n n ℂ` with polar decomposition `A = U P`, the sign of `[0 A; Aᴴ 0]` (the Hermitian
+dilation of `Aᴴ`, `Matrix.hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0`) is `[0 U; Uᴴ 0]`. With
+`M = U P Uᴴ` (positive definite) and `X = [1 1; −Uᴴ Uᴴ]`, whose inverse is `½ [1 −U; 1 U]`,
+`X⁻¹ [0 A; Aᴴ 0] X = diag(−M, M)`, so `Matrix.matrixSign_conj_fromBlocks` gives
+`X diag(−1, 1) X⁻¹ = [0 U; Uᴴ 0]`. (The book omits "nonsingular", needed so that no eigenvalue
+`±σᵢ` of the dilation is `0`.) -/
+theorem matrixSign_hermitianDilation {A U P : Matrix n n ℂ} (hA : IsUnit A)
+    (h : IsPolarDecomposition A U P) :
+    matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ := by
+  have hUU : Uᴴ * U = 1 := h.conjTranspose_mul_self
+  have hUU' : U * Uᴴ = 1 := mul_eq_one_comm.1 hUU
+  have hUhu : IsUnit Uᴴ := (isUnit_iff_isUnit_det _).2 (isUnit_det_of_right_inverse hUU)
+  have hAh : Aᴴ = P * Uᴴ := by
+    rw [h.eq_mul, conjTranspose_mul, h.isHermitian.eq]
+  -- the positive definite matrix `M = U P Uᴴ = A Uᴴ`
+  set M := U * P * Uᴴ with hMdef
+  have hP : P.PosDef := h.posSemidef.posDef_iff_isUnit.2 (h.isUnit hA)
+  have hM : M.PosDef := by
+    have := hP.conjTranspose_mul_mul_same (mulVec_injective_of_isUnit hUhu)
+    rwa [conjTranspose_conjTranspose] at this
+  have hAU : A * Uᴴ = M := by rw [h.eq_mul]
+  have hUM : Uᴴ * M = P * Uᴴ := by
+    rw [hMdef, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+  -- the eigenvector matrix `X` and its inverse
+  set X : Matrix (n ⊕ n) (n ⊕ n) ℂ := fromBlocks 1 1 (-Uᴴ) Uᴴ with hXdef
+  set Y : Matrix (n ⊕ n) (n ⊕ n) ℂ := (2 : ℂ)⁻¹ • fromBlocks 1 (-U) 1 U with hYdef
+  have hYX : Y * X = 1 := by
+    rw [hYdef, hXdef, Matrix.smul_mul, fromBlocks_multiply, ← fromBlocks_one, fromBlocks_smul]
+    simp only [Matrix.mul_one, Matrix.neg_mul, Matrix.mul_neg, neg_neg, hUU']
+    congr 1 <;> [skip; simp; simp; skip] <;>
+      rw [← two_smul ℂ (1 : Matrix n n ℂ), smul_smul, inv_mul_cancel₀ two_ne_zero, one_smul]
+  have hXinv : X⁻¹ = Y := inv_eq_left_inv hYX
+  have hXu : IsUnit X := (isUnit_iff_isUnit_det _).2 (isUnit_det_of_left_inverse hYX)
+  -- `H X = X diag(−M, M)`
+  have hH : hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0 := by
+    rw [hermitianDilation, conjTranspose_conjTranspose]
+  have hHX : fromBlocks 0 A Aᴴ 0 * X = X * fromBlocks (-M) 0 0 M := by
+    rw [hXdef, fromBlocks_multiply, fromBlocks_multiply]
+    simp only [Matrix.zero_mul, Matrix.mul_zero, Matrix.one_mul, Matrix.mul_one, zero_add,
+      add_zero, Matrix.mul_neg, Matrix.neg_mul, neg_neg, neg_zero, hAU, hUM, hAh]
+  have hconj : X⁻¹ * hermitianDilation Aᴴ * X =
+      reindex (Equiv.refl _) (Equiv.refl _) (fromBlocks (-M) 0 0 M) := by
+    rw [reindex_refl_refl, hH, Matrix.mul_assoc, hHX, ← Matrix.mul_assoc,
+      nonsing_inv_mul _ ((isUnit_iff_isUnit_det X).1 hXu), Matrix.one_mul]
+  have hneg : ∀ μ ∈ spectrum ℂ (-M), μ.re < 0 := fun μ hμ => by
+    rw [← spectrum.neg_eq, Set.mem_neg] at hμ
+    have := re_pos_of_mem_spectrum_of_posDef hM hμ
+    rw [Complex.neg_re] at this
+    linarith
+  rw [matrixSign_conj_fromBlocks (Equiv.refl _) hXu hconj hneg
+    fun μ hμ => re_pos_of_mem_spectrum_of_posDef hM hμ, reindex_refl_refl, hXinv, hYdef,
+    Matrix.mul_smul, hXdef, fromBlocks_multiply, fromBlocks_multiply, fromBlocks_smul,
+    hermitianDilation, conjTranspose_conjTranspose]
+  simp only [Matrix.mul_zero, Matrix.one_mul, Matrix.mul_one, zero_add, add_zero, Matrix.mul_neg,
+    Matrix.neg_mul, neg_neg, hUU, neg_add_cancel]
+  congr 1 <;> [simp; skip; skip; simp] <;>
+    rw [← two_smul ℂ, smul_smul, inv_mul_cancel₀ two_ne_zero, one_smul]
+
+end Sign
 
 end Matrix

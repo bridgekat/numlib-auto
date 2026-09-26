@@ -23,6 +23,7 @@ recorded here.
 * `Tensor.multilinearRank_le_iff`: the Tucker format characterizes the multilinear rank.
 * `Tensor.norm_sub_multilinearProd_sq`: the best core for given factors.
 * `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`: the objective through an unfolding.
+* `Tensor.isGreatest_tucker_update`: one update of the alternating iteration is optimal (Ky Fan).
 
 ## References
 
@@ -124,5 +125,33 @@ theorem norm_multilinearProd_conjTranspose_eq_modeUnfold (U : ∀ k, Matrix (κ 
     ‖multilinearProd (fun k => (U k)ᴴ) A‖
       = ‖(U k)ᴴ * A.modeUnfold k * (piKronecker fun j : {j // j ≠ k} => (U j)ᴴ)ᵀ‖ := by
   rw [← frobenius_norm_modeUnfold, modeUnfold_multilinearProd]
+
+/-- **One update of the alternating iteration is optimal** ([golub2013matrix] §12.5.3, "By freezing
+any two … we can improve the third by solving an optimization problem of the form (12.5.3)"): with
+the factors `U j`, `j ≠ k`, frozen and `W = A_(k) (⊗_{j ≠ k} U_jᴴ)ᵀ`, the largest value of the
+Tucker objective `‖A ×ᵢ U'ᵢᴴ‖²` over the `k`-th factors `U'_k = V` with orthonormal columns is
+`σ_0(W)² + ⋯ + σ_{r_k - 1}(W)²`, attained at the leading left singular vectors of `W`. The
+objective is `‖Vᴴ W‖_F²` (`Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`), and Ky Fan's
+maximum principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` concludes. With the best
+core (`Tensor.norm_sub_multilinearProd_sq`) this is why the error never increases along the
+iteration. -/
+theorem isGreatest_tucker_update (U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜) (A : Tensor κ 𝕜) (k : ι)
+    (hr : r k ≤ Fintype.card (κ k)) :
+    IsGreatest ((fun V => ‖multilinearProd (fun j => (Function.update U k V j)ᴴ) A‖ ^ 2) ''
+        {V | Vᴴ * V = 1})
+      (∑ i ∈ Finset.range (r k), (A.modeUnfold k *
+        (piKronecker fun j : {j // j ≠ k} => (U j)ᴴ)ᵀ).sortedSingularValues i ^ 2) := by
+  have hobj : (fun V => ‖multilinearProd (fun j => (Function.update U k V j)ᴴ) A‖ ^ 2) =
+      fun V => ‖Vᴴ * (A.modeUnfold k * (piKronecker fun j : {j // j ≠ k} => (U j)ᴴ)ᵀ)‖ ^ 2 := by
+    funext V
+    have hP : (piKronecker fun j : {j // j ≠ k} => (Function.update U k V j)ᴴ) =
+        piKronecker fun j : {j // j ≠ k} => (U j)ᴴ := by
+      congr 1
+      funext j
+      rw [Function.update_of_ne j.2]
+    rw [norm_multilinearProd_conjTranspose_eq_modeUnfold, Function.update_self, hP,
+      Matrix.mul_assoc]
+  rw [hobj]
+  exact isGreatest_frobenius_norm_sq_conjTranspose_mul _ hr
 
 end Tensor

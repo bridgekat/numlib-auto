@@ -119,32 +119,6 @@ id = "Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul"
 
 [[node]]
 id = "Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul"
-kind = "theorem"
-desc = '''The paired block residual bound, as [golub2013matrix] Theorem 8.1.13 proves it: for Hermitian `A :
-Matrix n n 𝕜` and `S : Matrix r r 𝕜` (`hA`, `hS`), `Q₁ : Matrix n r 𝕜` with `Q₁ᴴ * Q₁ = 1`, and `ε` with
-`lpOpNorm 2 (A * Q₁ - Q₁ * S) ≤ ε`, there is an order embedding `σ : Fin (card r) ↪o Fin (card n)` with
-`|hA.eigenvalues₀ (σ k) - hS.eigenvalues₀ k| ≤ √2 * ε` for every `k` — distinct eigenvalues of `A`
-(counted with multiplicity) for distinct `k`, which is what Parlett's use of the theorem (Kahan's
-bound for Rayleigh–Ritz) needs; the "each `θ` has some `μ`" form above loses the injectivity. Proof
-(the book's): complete `Q₁` to a unitary `Q = [Q₁ | Q₂]` (`Matrix.exists_mem_unitaryGroup_submatrix_eq`,
-[golub2013matrix] Theorem 2.1.1); `Qᴴ A Q = B + E` with `B = fromBlocks S 0 0 (Q₂ᴴ A Q₂)` and `E =
-fromBlocks (Q₁ᴴ E₁) (E₁ᴴ Q₂) (Q₂ᴴ E₁) 0`, `E₁ = A Q₁ - Q₁ S`; `‖E‖₂ ≤ √2 ‖E₁‖₂` (for `(x, y)`, `‖E (x,
-y)‖ ≤ ‖E₁‖ (‖x‖ + ‖y‖) ≤ √2 ‖E₁‖ ‖(x, y)‖`, the book's last display — the `(1,1)` and `(2,1)` blocks
-together are `Qᴴ E₁`, the `(1,2)` block is `E₁ᴴ Q₂`); Weyl, `|λ_j(A) - λ_j(B)| ≤ ‖E‖₂`
-(`LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` for the Euclidean operators, unitary
-invariance of the eigenvalues); and the sorted eigenvalue list of `S` is a sublist of that of the
-block-diagonal `B` (the eigenvalue multiset of `B` is the sum of those of the blocks,
-`Matrix.charpoly_fromBlocks_zero₁₂`/`Matrix.det_fromBlocks_zero₂₁`; two antitone lists with `l₁ <+~
-l₂` have `l₁ <+ l₂`, Mathlib `List.sublist_of_subperm_of_pairwise`), which gives `σ` with
-`λ_{σ k}(B) = λ_k(S)`. Kahan's sharper constant `1` for the paired form is deferred (★★★; Parlett,
-*The Symmetric Eigenvalue Problem*, Theorem 11.5.1). ★★ (~150 lines)
-
-Blocked: `Matrix.exists_mem_unitaryGroup_submatrix_eq` is now proved, so nothing upstream blocks it;
-sv2 (wave 4) left it for time — the proof is ~250 lines (the sorted-list sublist step, via
-`List.sublist_of_subperm_of_pairwise` and `List.sublist_iff_exists_fin_orderEmbedding_get_eq`,
-and the eigenvalue multiset of `fromBlocks S 0 0 B₂₂` from `Matrix.charpoly_fromBlocks_zero₁₂` are
-the bulk).'''
-deps = ["LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm", "Matrix.exists_mem_unitaryGroup_submatrix_eq", "Matrix.lpOpNorm"]
 
 [[node]]  # added by syl1: the resolvent step, Banach-algebra and p-norm forms
 id = "NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub"

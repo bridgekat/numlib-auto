@@ -14,24 +14,6 @@ id = "Matrix.tendsto_newtonPolarIterate"
 
 [[node]]
 id = "Matrix.matrixSign_hermitianDilation"
-kind = "theorem"
-desc = '''The sign of the Jordan–Wielandt matrix ([golub2013matrix] §9.4.3): for nonsingular
-`A : Matrix n n ℂ` with `IsPolarDecomposition A U P`,
-`matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ`, i.e. the sign of `[0 A; Aᴴ 0]` is
-`[0 U; Uᴴ 0]` (`Matrix.hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0`, the book's block order; the book
-omits "nonsingular", needed so that no eigenvalue `±σᵢ` is `0`). Proof: from an SVD `A = W Σ Vᴴ`
-(`Matrix.exists_isSVD`; `U = W Vᴴ` by `Matrix.IsPolarDecomposition.unique` and
-`Matrix.IsSVD.isPolarDecomposition`), the unitary `Q = (1/√2) fromBlocks W 0 0 V * fromBlocks 1 1 1 (-1)`
-satisfies `Qᴴ (hermitianDilation Aᴴ) Q = fromBlocks Σ 0 0 (-Σ)`; `Matrix.matrixSign_conj_fromBlocks`
-with `X = Q`, `Q⁻¹ = Qᴴ`, then the block product. Renamed from
-`Matrix.matrixSign_fromBlocks_zero_conjTranspose` and restated through the dilation (review H1).
-★★ (~150 lines)
-
-Blocked (dec1): needs `Matrix.hermitianDilation` of `Numlib/Analysis/Matrix/SingularValues`, proved by
-agent sv2 on branch `agent/sv2` (not yet on main when dec1 finished). Everything else is on main
-(`Matrix.matrixSign_conj_fromBlocks`, `Matrix.IsSVD.isPolarDecomposition_of_square`,
-`Matrix.IsPolarDecomposition.unique`). Estimate unchanged (~150 lines).'''
-deps = ["Matrix.hermitianDilation", "Matrix.matrixSign_conj_fromBlocks", "Matrix.IsPolarDecomposition", "Matrix.IsSVD.isPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.exists_isSVD"]
 
 [[node]]
 id = "Matrix.frobenius_norm_polar_sub_le"

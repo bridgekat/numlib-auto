@@ -4,7 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: beside `Mathlib.LinearAlgebra.Matrix.Kronecker`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.Matrix.OperatorNorm
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.Rank
@@ -39,6 +39,8 @@ The two structured nearest-rank lemmas of §12.3.8 (Lemmas 12.3.2–12.3.3) rest
   matrices (the proof of [golub2013matrix] Theorem 12.3.1).
 * `Matrix.kroneckerRank_le_iff`: the Kronecker rank is the least number of Kronecker terms.
 * `Matrix.exists_kroneckerSVD`: the Kronecker product SVD ([golub2013matrix] Theorem 12.3.1).
+* `Matrix.isLeast_frobenius_norm_sub_sum_kronecker`: the nearest sum of `r` Kronecker products
+  ([golub2013matrix] (12.3.14)–(12.3.19)).
 * `Matrix.isMinOn_frobenius_norm_sub_symm_rank_le_one`: [golub2013matrix] Lemma 12.3.2.
 * `Matrix.exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two`: a skew-symmetric matrix of rank at
   most two is `x yᵀ − y xᵀ`.
@@ -257,6 +259,46 @@ theorem exists_kroneckerSVD [Fintype m₂] [Fintype n₁] [Fintype n₂] [Fintyp
     (fun k => ⇑(u k)) (fun k => star ⇑(v k))).2 h
 
 end KroneckerSVD
+
+/-! ### The nearest sum of Kronecker products -/
+
+section Nearest
+
+variable {𝕜 : Type*} [RCLike 𝕜] [Fintype m₁] [Fintype m₂] [Fintype n₁] [Fintype n₂]
+  [DecidableEq m₂] [DecidableEq n₂]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **The nearest sum of `r` Kronecker products** ([golub2013matrix] (12.3.14)–(12.3.15), the NKP
+problem for `r = 1`, and (12.3.19)): the Frobenius distance from `A` to the matrices of Kronecker
+rank at most `r` (sums of `r` Kronecker products, `Matrix.kroneckerRank_le_iff`) is
+`√(σ_r² + σ_{r+1}² + ⋯)`, the singular values being those of the rearrangement `𝓡(A)`, and it is
+attained (at the truncated Kronecker SVD). `𝓡` is a linear Frobenius isometry
+(`Matrix.frobenius_norm_kroneckerRearrange`) carrying Kronecker rank to rank, so this is the
+Eckart–Young–Mirsky theorem `Matrix.isLeast_frobenius_norm_sub_of_rank_le` for `𝓡(A)`. -/
+theorem isLeast_frobenius_norm_sub_sum_kronecker (A : Matrix (m₁ × m₂) (n₁ × n₂) 𝕜) (r : ℕ) :
+    IsLeast ((fun X => ‖A - X‖) '' {X | kroneckerRank X ≤ r})
+      √(∑ i ∈ Finset.Ico r (min (Fintype.card (n₁ × m₁)) (Fintype.card (n₂ × m₂))),
+        (kroneckerRearrange A).sortedSingularValues i ^ 2) := by
+  have himage : (fun X => ‖A - X‖) '' {X | kroneckerRank X ≤ r} =
+      (fun Y => ‖kroneckerRearrange A - Y‖) '' {Y | Y.rank ≤ r} := by
+    ext t
+    constructor
+    · rintro ⟨X, hX, rfl⟩
+      refine ⟨kroneckerRearrange X, hX, ?_⟩
+      change ‖kroneckerRearrange A - kroneckerRearrange X‖ = ‖A - X‖
+      rw [← frobenius_norm_kroneckerRearrange (A - X)]
+      rfl
+    · rintro ⟨Y, hY, rfl⟩
+      refine ⟨kroneckerRearrangeLinearEquiv.symm Y, ?_, ?_⟩
+      · change (kroneckerRearrange (kroneckerRearrangeLinearEquiv.symm Y)).rank ≤ r
+        rwa [← kroneckerRearrangeLinearEquiv_apply, LinearEquiv.apply_symm_apply]
+      · dsimp only
+        rw [← frobenius_norm_kroneckerRearrange, ← kroneckerRearrangeLinearEquiv_apply, map_sub,
+          LinearEquiv.apply_symm_apply, kroneckerRearrangeLinearEquiv_apply]
+  rw [himage]
+  exact isLeast_frobenius_norm_sub_of_rank_le _ r
+
+end Nearest
 
 /-! ### The norm identities behind Lemmas 12.3.2 and 12.3.3 -/
 

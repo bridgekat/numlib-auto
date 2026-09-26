@@ -24,19 +24,6 @@ id = "kroneckerRank_le_iff"
 
 [[node]]
 id = "isLeast_frobenius_norm_sub_sum_kronecker"
-kind = "theorem"
-desc = '''**The nearest sum of `r̃` Kronecker products** ([golub2013matrix] (12.3.14)–(12.3.15) for `r̃ = 1`, the
-NKP problem, and (12.3.19)): `IsLeast ((fun X => ‖A − X‖) '' {X | kroneckerRank X ≤ r̃}) √(∑ i ∈ Finset.Ico r̃
-(min (n₁ m₁) (n₂ m₂)), sortedSingularValues (kroneckerRearrange A) i ^ 2)` (Frobenius, `𝕜`), attained at the
-truncated Kronecker SVD `∑_{k < r̃} σ_k U_k ⊗ V_k` (for `r̃ = 1`: `vec B_opt = √σ₀ u₀`, `vec C_opt = √σ₀
-v₀`, and `α B_opt`, `C_opt / α` equally optimal). Chapter 2's Eckart–Young–Mirsky
-`Matrix.isLeast_frobenius_norm_sub_of_rank_le` for `𝓡(A)`, transported by the isometry
-`frobenius_norm_kroneckerRearrange` and `kroneckerRank_le_iff`. ★★ (~60 lines)
-
-Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le`, an open node of
-`Analysis/Matrix/SingularValues` (agent sv2). `kroneckerRank_le_iff`, `exists_kroneckerSVD` and the
-isometry `frobenius_norm_kroneckerRearrange` are proved; ~60 lines once Eckart–Young exists.'''
-deps = ["Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.frobenius_norm_kroneckerRearrange", "Matrix.kroneckerRank_le_iff", "Matrix.exists_kroneckerSVD", "Matrix.svdTruncation"]
 
 [[node]]
 id = "norm_sub_smul_vecMulVec_self_sq"

@@ -11,19 +11,3 @@ id = "norm_multilinearProd_conjTranspose_eq_modeUnfold"
 
 [[node]]
 id = "isGreatest_tucker_update"
-kind = "theorem"
-desc = '''One ALS update is optimal ([golub2013matrix] §12.5.3, "By freezing any two … we can improve the third by
-solving an optimization problem of the form (12.5.3)"): with the other factors fixed and `W :=
-A.modeUnfold k * (piKronecker fun j ≠ k => (U j)ᴴ)ᵀ`, `IsGreatest {‖Vᴴ * W‖ ^ 2 | V : Matrix (κ k) (Fin (r k)) 𝕜,
-Vᴴ * V = 1} (∑ i < r k, W.sortedSingularValues i ^ 2)`, attained by the first `r k` left singular vectors of
-`W`; hence the objective `‖A − multilinearProd U (multilinearProd Uᴴ A)‖` does not increase along the
-alternating iteration (`tucker_update_norm_sub_le`). The Ky Fan principle
-`Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` (`Numlib/Analysis/InnerProductSpace/SingularValues`) with
-`norm_multilinearProd_conjTranspose_eq_modeUnfold` and `norm_sub_multilinearProd_sq`. ★
-
-Blocked: needs the Ky Fan principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`,
-still an open plan node of `Analysis/Matrix/SingularValues` (that module does not exist on main at
-7430f1fc), and its statement is in `Matrix.sortedSingularValues` (ls1). With
-`norm_multilinearProd_conjTranspose_eq_modeUnfold` and `norm_sub_multilinearProd_sq` (both proved)
-it is ~20 lines.'''
-deps = ["Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul", "Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold", "Tensor.norm_sub_multilinearProd_sq"]

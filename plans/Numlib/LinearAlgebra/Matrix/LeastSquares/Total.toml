@@ -14,46 +14,9 @@ id = "isUnit_lowerRightBlock_of_lt"
 
 [[node]]
 id = "existsUnique_isTLSPerturbation"
-kind = "theorem"
-desc = '''**Theorem 6.3.1, the perturbation** ([golub2013matrix] Theorem 6.3.1, (6.3.4)): with
-`m ≥ n + k`, nonzero weights, `C = diagonal d * fromCols A B * diagonal t`, an SVD
-`IsSVD C U σ V` (columns reindexed to `Fin (n + k)`) and `σ_n(C₁) > σ_{n+1}(C)`, the pair
-`[E₀ | R₀] := diagonal d⁻¹ * (−U₂ Σ₂ [V₁₂ᴴ | V₂₂ᴴ]) * diagonal t⁻¹` is the unique TLS
-perturbation: `∃! ER, IsTLSPerturbation d t A B ER.1 ER.2`, attained there, with
-`‖D [E₀ | R₀] T‖_F² = ∑_{i = n}^{n+k−1} σ_i²` (0-based).
-
-Proof ([golub2013matrix] lines 17182–17200): feasibility of `(E, R)` means `range (B + R) ⊆
-range (A + E)`, i.e. some `X` with `{C + D[E|R]T} T⁻¹ [X; −I_k] = 0` (6.3.5), so
-`rank (C + ΔC) ≤ n`; the Frobenius Eckart–Young–Mirsky bound
-(`Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`) gives
-`‖ΔC‖_F² ≥ ∑_{i ≥ n} σ_i²`; `ΔC₀ = −U₂Σ₂[V₁₂ᴴ | V₂₂ᴴ]` attains it and is feasible because
-`V₂₂` is invertible (`isUnit_lowerRightBlock_of_lt`). Uniqueness is the equality case of
-Mirsky's bound when `σ_n(C) > σ_{n+1}(C)`, which follows from `σ_n(C) ≥ σ_n(C₁) > σ_{n+1}(C)`
-(`Matrix.sortedSingularValues_fromCols_left_le`): an optimal `C + ΔC` is the truncated SVD
-(`Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le`).
-★★ given those two (~150 lines of block bookkeeping).
-
-Blocked: needs `Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`, `Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le` and `Matrix.sortedSingularValues_fromCols_left_le` of `Numlib/Analysis/Matrix/SingularValues` (agent sv2, in progress in parallel; that module does not exist at the base commit of this round, so it cannot be imported here). The generic condition `isUnit_lowerRightBlock_of_lt` is proved; the rest is the block bookkeeping sketched above (~150 lines).'''
-deps = [
-  "IsTLSPerturbation",
-  "isUnit_lowerRightBlock_of_lt",
-  "Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le",
-  "Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le",
-  "Matrix.sortedSingularValues_fromCols_left_le",
-  "Matrix.IsSVD",
-]
 
 [[node]]
 id = "isTLSSolution_iff_eq"
-kind = "theorem"
-desc = '''**Theorem 6.3.1, the solution** ([golub2013matrix] Theorem 6.3.1, `X_TLS`): under the hypotheses
-of `existsUnique_isTLSPerturbation`, with `T₁ = diagonal (t ∘ Sum.inl)`, `T₂ = diagonal (t ∘ Sum.inr)`,
-`IsTLSSolution d t A B X ↔ X = −T₁ * V₁₂ * V₂₂⁻¹ * T₂⁻¹`. Proof (lines 17200–17212): the null space
-of `C + ΔC₀ = U₁ Σ₁ [V₁₁ᴴ | V₂₁ᴴ]` is the range of `[V₁₂; V₂₂]`, so `T⁻¹[X; −I] = [V₁₂; V₂₂] S`
-and `S = −V₂₂⁻¹ T₂⁻¹`; uniqueness of the perturbation leaves no other `(E, R)`. ★★
-
-Blocked: rests on `existsUnique_isTLSPerturbation` (blocked on agent sv2's `Numlib/Analysis/Matrix/SingularValues`); the null-space step is ~60 lines once it lands.'''
-deps = ["existsUnique_isTLSPerturbation", "isUnit_lowerRightBlock_of_lt", "IsTLSSolution"]
 
 [[node]]
 id = "isTLSSolution_of_mem_smallest"

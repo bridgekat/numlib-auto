@@ -16,6 +16,7 @@ import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
 import Numlib.Eigen.PowerMethod
 import Numlib.LinearAlgebra.Matrix.HermitianPart
+import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Topology.Algebra.Polynomial
 
@@ -68,7 +69,9 @@ at most `max θ θ^{1/p}`, `θ = ‖E‖₂ ∑_{k<p} ‖N‖₂^k`, where `p` i
 entrywise absolute value `|N|`. `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul`
 is the block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with constant `1`): an
 orthonormal block `Q₁` and a Hermitian `S` with `‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A`
-within `ε` of every eigenvalue of `S`.
+within `ε` of every eigenvalue of `S`. The book's paired form,
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`, matches the sorted eigenvalues of
+`S` with distinct eigenvalues of `A`, within `√2 ε`.
 
 ## The Gershgorin discs and how many eigenvalues each group of them holds
 
@@ -1334,6 +1337,69 @@ theorem NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub {R : Type*} [Normed
   rw [this]
   exact u.isUnit.mul (Units.oneSub _ hlt).isUnit
 
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E]
+
+/-- **Orthonormal eigenvectors sit in the sorted spectrum**: if a symmetric `T` on an
+`N`-dimensional space has orthonormal eigenvectors `v k`, `T (v k) = s k • v k`, with `s`
+antitone, then `s` is a sublist of the sorted eigenvalues of `T`: some order embedding
+`σ : Fin r ↪o Fin N` has `λ_{σ k}(T) = s k`. Each value `c` occurs among the `s k` at most as
+often as among the eigenvalues, the `v k` with `s k = c` being independent vectors of the span of
+the eigenvectors for `c`; and a sorted sub-multiset of a sorted list is a sublist. -/
+theorem exists_orderEmbedding_eigenvalues_eq {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {N : ℕ}
+    (hN : Module.finrank 𝕜 E = N) {r : ℕ} {v : Fin r → E} (hv : Orthonormal 𝕜 v)
+    {s : Fin r → ℝ} (hs : Antitone s) (hTv : ∀ k, T (v k) = (s k : 𝕜) • v k) :
+    ∃ σ : Fin r ↪o Fin N, ∀ k, hT.eigenvalues hN (σ k) = s k := by
+  classical
+  -- the multiplicities
+  have hcount : ∀ c : ℝ, (Finset.univ.filter fun k => c = s k).card ≤
+      (Finset.univ.filter fun j => c = hT.eigenvalues hN j).card := by
+    intro c
+    have hmem : ∀ k, c = s k → v k ∈ hT.eigenvectorSpan hN
+        (Finset.univ.filter fun j => c = hT.eigenvalues hN j) := by
+      intro k hk
+      rw [hT.mem_eigenvectorSpan_iff hN]
+      intro j hj
+      have hj' : hT.eigenvalues hN j ≠ c := fun h' =>
+        hj (Finset.mem_filter.2 ⟨Finset.mem_univ _, h'.symm⟩)
+      rw [OrthonormalBasis.repr_apply_apply]
+      have h1 := hT (hT.eigenvectorBasis hN j) (v k)
+      rw [hTv, hT.apply_eigenvectorBasis, inner_smul_left, inner_smul_right, RCLike.conj_ofReal,
+        ← hk] at h1
+      have h2 : ((hT.eigenvalues hN j : 𝕜) - c) *
+          inner 𝕜 (hT.eigenvectorBasis hN j) (v k) = 0 := by
+        rw [sub_mul, h1, sub_self]
+      exact (mul_eq_zero.1 h2).resolve_left (sub_ne_zero.2 (by exact_mod_cast hj'))
+    set I := Finset.univ.filter fun k => c = s k with hI
+    have hli : LinearIndependent 𝕜 fun k : (I : Set (Fin r)) => v k :=
+      hv.linearIndependent.comp _ Subtype.val_injective
+    have hle : Submodule.span 𝕜 (Set.range fun k : (I : Set (Fin r)) => v k) ≤
+        hT.eigenvectorSpan hN (Finset.univ.filter fun j => c = hT.eigenvalues hN j) :=
+      Submodule.span_le.2 (by
+        rintro _ ⟨k, rfl⟩
+        exact hmem k (Finset.mem_filter.1 k.2).2)
+    have := Submodule.finrank_mono hle
+    rw [finrank_span_eq_card hli, hT.finrank_eigenvectorSpan hN] at this
+    simpa using this
+  -- a sorted sub-multiset of a sorted list is a sublist
+  have hsub : List.Subperm (List.ofFn s) (List.ofFn (hT.eigenvalues hN)) := by
+    rw [← Multiset.coe_le, ← Fin.univ_val_map, ← Fin.univ_val_map, Multiset.le_iff_count]
+    intro c
+    rw [Multiset.count_map, Multiset.count_map]
+    exact hcount c
+  have hsl := List.sublist_of_subperm_of_sortedGE hsub hs.sortedGE_ofFn
+    (hT.eigenvalues_antitone hN).sortedGE_ofFn
+  obtain ⟨f, hf⟩ := List.sublist_iff_exists_fin_orderEmbedding_get_eq.1 hsl
+  refine ⟨(Fin.castOrderIso (List.length_ofFn (f := s)).symm).toOrderEmbedding.trans
+    (f.trans (Fin.castOrderIso (List.length_ofFn (f := hT.eigenvalues hN))).toOrderEmbedding),
+    fun k => ?_⟩
+  have := hf (Fin.cast (List.length_ofFn (f := s)).symm k)
+  rw [List.get_ofFn, List.get_ofFn] at this
+  simpa using this.symm
+
+end LinearMap.IsSymmetric
+
 namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
@@ -1665,5 +1731,112 @@ theorem IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul {r : Type*} [F
   refine hμle.trans ((norm_toEuclideanLin_apply_le _ _).trans ?_)
   rw [hy1, mul_one, ← lpOpNorm_two]
   exact hε
+
+open scoped Matrix.Norms.L2Operator in
+/-- **The paired block residual bound** ([golub2013matrix] Theorem 8.1.13): let `A` and `S` be
+Hermitian, `Q₁ : Matrix n r 𝕜` have orthonormal columns (`Q₁ᴴ Q₁ = 1`) and
+`‖A Q₁ - Q₁ S‖₂ ≤ ε`. Then the sorted eigenvalues of `S` are within `√2 ε` of distinct eigenvalues
+of `A`, taken in order: some order embedding `σ` has `|λ_{σ k}(A) - λ_k(S)| ≤ √2 ε`. With
+`F = A Q₁ - Q₁ S`, the Hermitian `B = A - F Q₁ᴴ - Q₁ Fᴴ + Q₁ (Fᴴ Q₁) Q₁ᴴ` has `B Q₁ = Q₁ S`, so the
+eigenvectors of `S` carried by `Q₁` are orthonormal eigenvectors of `B` and the sorted eigenvalues
+of `S` are a sublist of those of `B`
+(`LinearMap.IsSymmetric.exists_orderEmbedding_eigenvalues_eq`); and
+`(A - B) x = F Q₁ᴴ x + Q₁ Fᴴ (1 - Q₁ Q₁ᴴ) x` has norm at most `ε (‖P x‖ + ‖(1 - P) x‖) ≤ √2 ε ‖x‖`,
+`P` the projection onto the range of `Q₁` — the book's `‖E‖₂ ≤ √2 ‖E₁‖₂` — so Weyl's inequality
+compares the eigenvalues of `A` and `B` index by index. -/
+theorem IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul {r : Type*} [Fintype r]
+    [DecidableEq r] {A : Matrix n n 𝕜} {S : Matrix r r 𝕜} (hA : A.IsHermitian)
+    (hS : S.IsHermitian) {Q₁ : Matrix n r 𝕜} (hQ : Q₁ᴴ * Q₁ = 1) {ε : ℝ}
+    (hε : lpOpNorm 2 (A * Q₁ - Q₁ * S) ≤ ε) :
+    ∃ σ : Fin (Fintype.card r) ↪o Fin (Fintype.card n),
+      ∀ k, |hA.eigenvalues₀ (σ k) - hS.eigenvalues₀ k| ≤ √2 * ε := by
+  set F := A * Q₁ - Q₁ * S with hF
+  have hε0 : 0 ≤ ε := (lpOpNorm_nonneg 2 F).trans hε
+  have hFn : ‖F‖ ≤ ε := by rw [← lpOpNorm_two]; exact hε
+  -- `Q₁ᴴ F = Fᴴ Q₁ = Q₁ᴴ A Q₁ - S`
+  have e1 : Q₁ᴴ * F = Q₁ᴴ * A * Q₁ - S := by
+    rw [hF, Matrix.mul_sub, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hQ, Matrix.one_mul]
+  have e2 : Fᴴ * Q₁ = Q₁ᴴ * A * Q₁ - S := by
+    rw [hF, conjTranspose_sub, conjTranspose_mul, conjTranspose_mul, hA.eq, hS.eq,
+      Matrix.sub_mul, Matrix.mul_assoc S, hQ, Matrix.mul_one]
+  have hFQ : Q₁ᴴ * F = Fᴴ * Q₁ := e1.trans e2.symm
+  -- the comparison matrix `B`
+  set B := A - F * Q₁ᴴ - Q₁ * Fᴴ + Q₁ * (Fᴴ * Q₁) * Q₁ᴴ with hB
+  have hBh : B.IsHermitian := by
+    have h1 : Bᴴ = A - Q₁ * Fᴴ - F * Q₁ᴴ + Q₁ * (Q₁ᴴ * F) * Q₁ᴴ := by
+      rw [hB]
+      simp only [conjTranspose_add, conjTranspose_sub, conjTranspose_mul,
+        conjTranspose_conjTranspose, hA.eq, Matrix.mul_assoc]
+    change Bᴴ = B
+    rw [h1, hFQ, hB]
+    abel
+  have hBQ : B * Q₁ = Q₁ * S := by
+    rw [hB]
+    simp only [Matrix.add_mul, Matrix.sub_mul, Matrix.mul_assoc, hQ, Matrix.mul_one]
+    rw [hF]
+    abel
+  have hG : A - B = F * Q₁ᴴ + Q₁ * Fᴴ * (1 - Q₁ * Q₁ᴴ) := by
+    rw [hB, Matrix.mul_sub, Matrix.mul_one]
+    simp only [Matrix.mul_assoc]
+    abel
+  -- the perturbation `A - B` is at most `√2 ε`
+  have hAB : ∀ x : EuclideanSpace 𝕜 n,
+      ‖(toEuclideanLin A - toEuclideanLin B) x‖ ≤ √2 * ε * ‖x‖ := by
+    intro x
+    set K := LinearMap.range (toEuclideanLin Q₁) with hK
+    have hP : ∀ y, toEuclideanLin (Q₁ * Q₁ᴴ) y = K.starProjection y := fun y => by
+      rw [LinearMap.congr_fun (toEuclideanLin_mul_conjTranspose_eq_starProjection hQ) y]
+      rfl
+    have hiso : ∀ z, ‖toEuclideanLin Q₁ z‖ = ‖z‖ := fun z =>
+      (toEuclideanLinearIsometry hQ).norm_map z
+    have ha : ‖toEuclideanLin Q₁ᴴ x‖ = ‖K.starProjection x‖ := by
+      rw [← hiso, ← toEuclideanLin_mul_apply, hP]
+    have hb : toEuclideanLin (1 - Q₁ * Q₁ᴴ) x = Kᗮ.starProjection x := by
+      rw [map_sub, LinearMap.sub_apply, toEuclideanLin_one, LinearMap.id_apply, hP,
+        Submodule.starProjection_orthogonal_val]
+    have hpy := Submodule.norm_sq_eq_add_norm_sq_starProjection x K
+    have hsplit : toEuclideanLin (A - B) x = toEuclideanLin F (toEuclideanLin Q₁ᴴ x) +
+        toEuclideanLin Q₁ (toEuclideanLin Fᴴ (toEuclideanLin (1 - Q₁ * Q₁ᴴ) x)) := by
+      rw [hG, map_add, LinearMap.add_apply, toEuclideanLin_mul_apply F Q₁ᴴ,
+        toEuclideanLin_mul_apply (Q₁ * Fᴴ), toEuclideanLin_mul_apply Q₁ Fᴴ]
+    have h1 : ‖toEuclideanLin F (toEuclideanLin Q₁ᴴ x)‖ ≤ ε * ‖K.starProjection x‖ :=
+      (norm_toEuclideanLin_apply_le _ _).trans (by
+        rw [ha]
+        exact mul_le_mul_of_nonneg_right hFn (norm_nonneg _))
+    have h2 : ‖toEuclideanLin Q₁ (toEuclideanLin Fᴴ (toEuclideanLin (1 - Q₁ * Q₁ᴴ) x))‖ ≤
+        ε * ‖Kᗮ.starProjection x‖ := by
+      rw [hiso, hb]
+      refine (norm_toEuclideanLin_apply_le _ _).trans ?_
+      rw [l2_opNorm_conjTranspose]
+      exact mul_le_mul_of_nonneg_right hFn (norm_nonneg _)
+    have hsum : ‖K.starProjection x‖ + ‖Kᗮ.starProjection x‖ ≤ √2 * ‖x‖ := by
+      rw [show √2 * ‖x‖ = √(2 * ‖x‖ ^ 2) by
+        rw [Real.sqrt_mul (by norm_num), Real.sqrt_sq (norm_nonneg _)]]
+      exact Real.le_sqrt_of_sq_le (by
+        nlinarith [sq_nonneg (‖K.starProjection x‖ - ‖Kᗮ.starProjection x‖)])
+    rw [← map_sub, hsplit]
+    have := mul_le_mul_of_nonneg_left hsum hε0
+    calc _ ≤ ‖toEuclideanLin F (toEuclideanLin Q₁ᴴ x)‖ +
+          ‖toEuclideanLin Q₁ (toEuclideanLin Fᴴ (toEuclideanLin (1 - Q₁ * Q₁ᴴ) x))‖ :=
+          norm_add_le _ _
+      _ ≤ √2 * ε * ‖x‖ := by linarith
+  -- the eigenvectors of `S`, carried by `Q₁`, are eigenvectors of `B`
+  have hTA := isSymmetric_toEuclideanLin_iff.mpr hA
+  have hTB := isSymmetric_toEuclideanLin_iff.mpr hBh
+  have hTS := isSymmetric_toEuclideanLin_iff.mpr hS
+  set y := hTS.eigenvectorBasis finrank_euclideanSpace with hy
+  have hv : Orthonormal 𝕜 fun k => toEuclideanLin Q₁ (y k) :=
+    y.orthonormal.comp_linearIsometry (toEuclideanLinearIsometry hQ)
+  have hBv : ∀ k, toEuclideanLin B (toEuclideanLin Q₁ (y k)) =
+      (hTS.eigenvalues finrank_euclideanSpace k : 𝕜) • toEuclideanLin Q₁ (y k) := fun k => by
+    rw [← toEuclideanLin_mul_apply, hBQ, toEuclideanLin_mul_apply,
+      hTS.apply_eigenvectorBasis, map_smul]
+  obtain ⟨σ, hσ⟩ := hTB.exists_orderEmbedding_eigenvalues_eq finrank_euclideanSpace hv
+    (hTS.eigenvalues_antitone finrank_euclideanSpace) hBv
+  refine ⟨σ, fun k => ?_⟩
+  change |hTA.eigenvalues finrank_euclideanSpace (σ k) -
+    hTS.eigenvalues finrank_euclideanSpace k| ≤ _
+  rw [← hσ k]
+  exact hTA.abs_eigenvalues_sub_le hTB finrank_euclideanSpace hAB (σ k)
 
 end Matrix

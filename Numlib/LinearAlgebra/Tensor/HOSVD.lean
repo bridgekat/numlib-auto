@@ -4,7 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: a new `Mathlib.LinearAlgebra.Tensor` directory beside `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.LinearAlgebra.Matrix.SVD
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Tensor.MultilinearProduct
 
 /-!
@@ -36,6 +36,8 @@ proved here, `Tensor.norm_sub_truncatedHOSVD_sq_le`, has `∑_k`.
 * `Tensor.multilinearProd_hosvdFactor_hosvdCore`: [golub2013matrix] Theorem 12.5.1.
 * `Tensor.modeUnfold_hosvdCore_row`: all-orthogonality (12.5.10).
 * `Tensor.norm_sub_truncatedHOSVD_sq_le`: the truncation error, (12.5.11) corrected.
+* `Tensor.sum_sq_le_norm_sub_sq_of_multilinearRank_le`: the matching lower bound for every
+  approximation of multilinear rank at most `r` (Eckart–Young–Mirsky for each unfolding).
 
 ## References
 
@@ -233,5 +235,27 @@ theorem norm_sub_truncatedHOSVD_sq_le (s : ∀ k, Finset (κ k)) :
           · rw [← sum_norm_sq_modeUnfold_hosvdCore A k x]
             rfl
     _ = _ := by rw [Finset.sum_ite_mem, Finset.univ_inter]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **The lower bound for approximations of low multilinear rank**: if the mode-`k` unfolding of
+`B` has rank at most `r k`, then `∑_{r_k ≤ i < n_k} σ_i(A_(k))² ≤ ‖A − B‖²`, `n_k = card (κ k)`.
+Eckart–Young–Mirsky (`Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`) for
+the unfoldings, which are isometries (`Tensor.frobenius_norm_modeUnfold`). Together with
+`Tensor.norm_sub_truncatedHOSVD_sq_le` it puts the truncated HOSVD within a factor `d` (the number
+of modes) of the best approximation of multilinear rank `r` in squared norm, and it refutes the
+`min_k` misprint of [golub2013matrix] (12.5.11) for any `A` truncated in one mode only. -/
+theorem sum_sq_le_norm_sub_sq_of_multilinearRank_le {A B : Tensor κ 𝕜} {r : ι → ℕ} {k : ι}
+    (hB : multilinearRank B k ≤ r k) :
+    ∑ i ∈ Finset.Ico (r k) (Fintype.card (κ k)), (A.modeUnfold k).sortedSingularValues i ^ 2 ≤
+      ‖A - B‖ ^ 2 := by
+  have h := sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le
+    (C := A.modeUnfold k) (Ĉ := B.modeUnfold k) hB
+  have hsub : A.modeUnfold k - B.modeUnfold k = (A - B).modeUnfold k := rfl
+  rw [hsub, frobenius_norm_modeUnfold] at h
+  refine le_trans (le_of_eq ?_) h
+  refine (Finset.sum_subset (Finset.Ico_subset_Ico_right (min_le_left _ _))
+    fun i hi hi' => ?_).symm
+  rw [Finset.mem_Ico] at hi hi'
+  rw [sortedSingularValues_eq_zero_of_min_le _ (by omega), zero_pow two_ne_zero]
 
 end Tensor

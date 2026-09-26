@@ -103,7 +103,23 @@ rechecked). The solvability lemma is chapter 7's
 Theorem 7.2.4) — now proved, so nothing upstream blocks it; sv2 (wave 4) left it for time (the
 `1/δ` bound on `L⁻¹` under Wedin's condition is the new work). The constants `1/5`, `4` are the book's and are rechecked
 when the proof is written. Moved here from `Analysis/InnerProductSpace/SingularValues` with the other
-matrix nodes. ★★★ (~350 lines on top of the Riccati lemma)'''
+matrix nodes. ★★★ (~350 lines on top of the Riccati lemma)
+
+Blocked (bb1, wave 5; paused by the orchestrator before completion): a ~480-line draft exists
+(scratchpad `bb1/Wedin.lean`, not committed). Its route: state the theorem in the coordinates of the
+pair, `U : Matrix m (k ⊕ q) 𝕜`, `V : Matrix n (k ⊕ p) 𝕜` unitary with `(Uᴴ A V).toBlocks₁₂ = 0`,
+`toBlocks₂₁ = 0`, conclusion `∃ P Q, ‖fromRows Q P‖_F ≤ 4‖E‖_F/δ ∧ (∃ M, (A+E) V [1; P] = U [1; Q] M) ∧
+∃ N, (A+E)ᴴ U [1; Q] = V [1; P] N` (no `m ≥ n` needed); the `1/δ` bound on the coupled operator
+`(P, Q) ↦ (B₂₂ᴴ Q − P B₁₁ᴴ, B₂₂ P − Q B₁₁)` is the Sylvester separation of the two Hermitian dilations
+(`sep (hermitianDilation B₂₂) (hermitianDilation B₁₁)` on `fromBlocks P 0 0 Q`, via
+`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub` and `IsHermitian.eigenvalues₀_hermitianDilation`;
+Wedin's condition covers the padding zeros), Weyl in the Frobenius norm gives `δ' = δ − 2‖E‖_F ≥ 3δ/5`,
+and `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` with `γ = η = ‖E‖_F` gives `2‖E‖/δ' ≤ 4‖E‖/δ`.
+The first compile left: a `DecidableEq` instance in a Frobenius helper, a `λ` binder (reserved), one
+case of the spectrum bookkeeping, and two `whnf` heartbeat timeouts (the main theorem, and the
+`nlinarith` Lipschitz estimate of the quadratic part — split into scalar lemmas). Needs the import of
+`Numlib/LinearAlgebra/Matrix/Sylvester` and `…/Normed/Operator/QuadraticEquation` into this module.
+Estimate: ~2 hours.'''
 deps = ["ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic", "Matrix.sortedSingularValues"]
 
 [[node]]  # staged by ch02; moved from SVD (it uses OperatorNorm; review layering)

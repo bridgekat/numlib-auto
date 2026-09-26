@@ -23,16 +23,3 @@ id = "norm_sub_truncatedHOSVD_sq_le"
 
 [[node]]
 id = "sum_sq_le_norm_sub_sq_of_multilinearRank_le"
-kind = "theorem"
-desc = '''The matching lower bound: if `multilinearRank B k ≤ r k` then for every `k`, `∑ i ∈ Finset.Ico (r k) N_k,
-(A.modeUnfold k).sortedSingularValues i ^ 2 ≤ ‖A − B‖²` (Eckart–Young–Mirsky
-`Matrix.isLeast_frobenius_norm_sub_of_rank_le` for the unfolding, and `frobenius_norm_unfold`). With
-`norm_sub_truncatedHOSVD_sq_le` the truncated HOSVD is within a factor `d` of the best approximation of
-multilinear rank `r` (in squared norm), and the book's `min_k` bound is refuted by any `A` whose
-truncation is trivial in one mode. ★
-
-Blocked: needs Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (or its lower half
-`sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`), an open node of
-`Analysis/Matrix/SingularValues` (agent sv2); `Matrix.sortedSingularValues` is now available. With
-`frobenius_norm_modeUnfold` it is ~15 lines.'''
-deps = ["Tensor.multilinearRank", "Tensor.frobenius_norm_unfold", "Matrix.isLeast_frobenius_norm_sub_of_rank_le", "Matrix.sortedSingularValues"]

@@ -29,46 +29,9 @@ id = "IsPivotedQR.isURV"
 
 [[node]]
 id = "gap_le_of_urv"
-kind = "theorem"
-desc = '''**[golub2013matrix] (5.4.10) (Stewart, URV).** Let `IsURV A U R V` with the blocks of `R` split at
-`k` (`R = [R₁₁ R₁₂; 0 R₂₂]`, sizes `k`, `n - k`), `ρ = ‖R₂₂‖₂ / σ_min(R₁₁) < 1` (`σ_min(R₁₁) =
-R₁₁.sortedSingularValues (k - 1)`), `S` the span of the right singular vectors of `A` belonging to its
-`n - k` smallest singular values (for any SVD of `A`), and `V₂` the last `n - k` columns of `V`. Then
-`(LinearMap.range (toEuclideanLin V₂)).gap S ≤ ‖R₁₂‖₂ / ((1 - ρ²) σ_min(R₁₁))`. Proof (in `R`'s
-coordinates): with `Y = [Y₁; Y₂]` an orthonormal basis of the trailing right singular subspace of
-`R`, the gap is `‖Y₁‖₂` (`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`); the first block row of
-`Rᴴ R Y = Y Σ²` gives `R₁₁ Y₁ + R₁₂ Y₂ = R₁₁⁻ᴴ Y₁ Σ²`, hence
-`σ_min(R₁₁) ‖Y₁‖ ≤ ‖R₁₂‖ + σ_{k+1}²/σ_min(R₁₁) ‖Y₁‖`, and `σ_{k+1} ≤ ‖R₂₂‖`
-(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`). The book states it without proof, after Stewart
-(1993). Restated on `IsURV` (review M5). ★★★ (~150 lines)
-
-Blocked: needs `Matrix.sortedSingularValues_le_l2_opNorm_trailing` and `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` of `Numlib/Analysis/Matrix/SingularValues` (agent sv2, in progress in parallel; that module does not exist at the base commit of this round, so it cannot be imported here). Once it lands the proof is as sketched above (~150 lines).'''
-deps = [
-  "IsURV",
-  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
-  "Submodule.gap",
-  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
-]
 
 [[node]]
 id = "gap_le_of_ulv"
-kind = "theorem"
-desc = '''**[golub2013matrix] (5.4.11) (Stewart, ULV)**, with the book's `L₁₂` read as `L₂₁` (`L` is
-lower triangular, `L₁₂ = 0`; report, Doubts). For `IsULV A U L V`, `L = [L₁₁ 0; L₂₁ L₂₂]`,
-`ρ = ‖L₂₂‖₂/σ_min(L₁₁) < 1`: `(LinearMap.range (toEuclideanLin V₂)).gap S ≤
-ρ ‖L₂₁‖₂ / ((1 - ρ²) σ_min(L₁₁))`. Proof: with a full SVD `L = Z Σ Yᴴ`, the trailing blocks satisfy
-`L Y = Z Σ` and `Lᴴ Z = Y Σ`; the first block rows give
-`L₁₁ᴴ L₁₁ Y₁ = Y₁ Σ² - L₂₁ᴴ Z₂ Σ`, so `σ_min(L₁₁)² ‖Y₁‖ ≤ σ_{k+1}² ‖Y₁‖ + σ_{k+1} ‖L₂₁‖`, then
-`σ_{k+1} ≤ ‖L₂₂‖` (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`, lower form) and monotonicity of
-`t ↦ t/(1 - t²)`. Stated without proof in the book. Restated on `IsULV` (review M5). ★★★ (~150 lines)
-
-Blocked: needs `Matrix.sortedSingularValues_le_l2_opNorm_trailing` and `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` of `Numlib/Analysis/Matrix/SingularValues` (agent sv2, in progress in parallel; that module does not exist at the base commit of this round, so it cannot be imported here). Once it lands the proof is as sketched above (~150 lines).'''
-deps = [
-  "IsULV",
-  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
-  "Submodule.gap",
-  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
-]
 
 [[node]]
 id = "blockVec"
@@ -102,20 +65,3 @@ id = "IsPivotedQR.IsRankRevealing.mulVec_basic_eq"
 
 [[node]]
 id = "norm_residual_subset_sub_le"
-kind = "theorem"
-desc = '''**[golub2013matrix] Theorem 5.5.3.** In the setting of `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix`
-(`IsSVD A U σ V`, column permutation `π`, `B₁` the first `r̃` columns of `A Π`, `Ṽ₁₁` invertible),
-with `U₁` the first `r̃` columns of `U`, `r_{x_r̃} = (I - U₁U₁ᴴ) b` and `r_y = b - B₁ B₁⁺ b`:
-`‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃}(A) / σ_{r̃-1}(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂` (0-based sorted singular values; the book's
-`σ_{r̃+1}/σ_{r̃}`). Proof: both are `(I - P) b` for the orthogonal projections onto `ran U₁` and
-`ran B₁`, so the difference is at most `‖U₁U₁ᴴ - Q₁Q₁ᴴ‖₂ ‖b‖ = ‖U₂ᴴ Q₁‖₂ ‖b‖`
-(`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, Theorem 2.5.1; the book cites "Theorem 2.6.1"), and
-`‖U₂ᴴ Q₁‖ ≤ ‖U₂ᴴ B₁‖ ‖(B₁ᴴB₁)^{-1/2}‖ ≤ σ_{r̃}(A) / σ_{r̃-1}(B₁)` with the lower bound of Theorem 5.5.2.
-(The book's hypothesis "leading `r`-by-`r`" means `r̃`.) ★★★ (~120 lines)
-
-Blocked: needs `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` and `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` of `Numlib/Analysis/Matrix/SingularValues` (agent sv2, in progress in parallel; that module does not exist at the base commit of this round, so it cannot be imported here). Once it lands the proof is as sketched above (~150 lines).'''
-deps = [
-  "Matrix.IsSVD.sortedSingularValues_le_mul_submatrix",
-  "Matrix.mul_pinv_eq_starProjection",
-  "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul",
-]

@@ -3,7 +3,7 @@ Upstreaming candidate: general material with no numerical-analysis-specific cont
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside a future SVD.
 -/
-import Numlib.LinearAlgebra.Matrix.SVD
+import Numlib.Analysis.Matrix.SingularValues
 
 /-!
 # The CS decomposition
@@ -559,5 +559,39 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
     exact this
 
 end Full
+
+/-! ### The off-diagonal blocks of a unitary matrix -/
+
+section OffDiagonal
+
+variable {k l : Type*} [Fintype k] [Fintype l] [DecidableEq k] [DecidableEq l]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **The off-diagonal blocks of a unitary matrix with a square leading block have equal
+`2`-norms** ([golub2013matrix] proof of Theorem 2.5.1): for `Q ∈ unitaryGroup (k ⊕ l) 𝕜`,
+`‖Q₂₁‖₂ = ‖Q₁₂‖₂`. The first block column of `Q` and the first block column of `Qᴴ` are stacked
+isometries with the square leading blocks `Q₁₁` and `Q₁₁ᴴ`, so by the stacked-isometry identity
+`Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues` both squared norms are
+`1 − σ_min(Q₁₁)²`, a square matrix and its adjoint having the same singular values. -/
+theorem l2_opNorm_toBlocks₂₁_eq_toBlocks₁₂ {Q : Matrix (k ⊕ l) (k ⊕ l) 𝕜}
+    (hQ : Q ∈ unitaryGroup (k ⊕ l) 𝕜) : ‖Q.toBlocks₂₁‖ = ‖Q.toBlocks₁₂‖ := by
+  cases isEmpty_or_nonempty k with
+  | inl hk =>
+    rw [Subsingleton.elim Q.toBlocks₂₁ 0, Subsingleton.elim Q.toBlocks₁₂ 0, norm_zero,
+      norm_zero]
+  | inr hk =>
+    have h₁ := mem_unitaryGroup_iff'.1 hQ
+    have h₂ := mem_unitaryGroup_iff.1 hQ
+    rw [star_eq_conjTranspose, ← fromBlocks_toBlocks Q, fromBlocks_conjTranspose,
+      fromBlocks_multiply, ← fromBlocks_one, fromBlocks_inj] at h₁ h₂
+    have hcol := l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues h₁.1
+    have hrow := l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues
+      (Q₁ := Q.toBlocks₁₁ᴴ) (Q₂ := Q.toBlocks₁₂ᴴ) (by
+        rw [conjTranspose_conjTranspose, conjTranspose_conjTranspose]
+        exact h₂.1)
+    rw [sortedSingularValues_conjTranspose, l2_opNorm_conjTranspose, ← hcol] at hrow
+    exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hrow.symm
+
+end OffDiagonal
 
 end Matrix
