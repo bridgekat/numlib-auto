@@ -125,6 +125,48 @@ theorem equation_12_5_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
   · exact sq_nonneg _
   · exact le_rfl
 
+open scoped Matrix.Norms.Frobenius in
+/-- **(12.5.3)** and the sentence after it: for `A ∈ ℝ^{m×n}` with an SVD `Uᵀ A V = Σ` and
+`r ≤ min(m, n)`, the largest value of `‖QᵀA‖_F²` over the `Q ∈ ℝ^{m×r}` with `QᵀQ = I_r` is
+`σ₁² + ⋯ + σ_r²`, "and it can be attained by setting `Q = U(:, 1:r)`" (the book writes the maximum
+of `‖QᵀA‖_F` as `σ₁² + ⋯ + σ_r²`, dropping a square). Ky Fan's maximum principle,
+`Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`, with the diagonal of the SVD identified
+with the singular values. -/
+theorem equation_12_5_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hrm : r ≤ m) (hrn : r ≤ n) :
+    IsGreatest ((fun Q : Matrix (Fin m) (Fin r) ℝ => ‖Qᵀ * A‖ ^ 2) '' {Q | Qᵀ * Q = 1})
+        (∑ i ∈ Finset.range r, σ i ^ 2) ∧
+      ‖(U.submatrix id (Fin.castLE hrm))ᵀ * A‖ ^ 2 = ∑ i ∈ Finset.range r, σ i ^ 2 := by
+  have hσ : ∑ i ∈ Finset.range r, σ i ^ 2 =
+      ∑ i ∈ Finset.range r, A.sortedSingularValues i ^ 2 :=
+    Finset.sum_congr rfl fun i hi => by
+      have := Finset.mem_range.1 hi
+      rw [h.singularValues_eq (by omega) (by omega)]
+  have hK := isGreatest_frobenius_norm_sq_conjTranspose_mul A (r := r) (by simpa using hrm)
+  simp only [conjTranspose_eq_transpose_of_trivial] at hK
+  refine ⟨hσ ▸ hK, ?_⟩
+  obtain ⟨-, -, -, -, -, hUA⟩ := isSVD_real_facts h
+  have hQA : (U.submatrix id (Fin.castLE hrm))ᵀ * A =
+      (1 : Matrix (Fin r) (Fin r) ℝ) *
+        ((rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ).submatrix (Fin.castLE hrm) id) * Vᵀ := by
+    have hsub : (U.submatrix id (Fin.castLE hrm))ᵀ * A = (Uᵀ * A).submatrix (Fin.castLE hrm) id :=
+      by ext a b; simp [mul_apply]
+    rw [hsub, hUA, Matrix.one_mul]
+    ext a b
+    simp [mul_apply]
+  have hVT : Vᵀ ∈ unitaryGroup (Fin n) ℝ := by
+    have := Unitary.star_mem h.mem_unitaryGroup_right
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  rw [hQA, frobenius_norm_unitary_mul_mul_unitary (one_mem _) _ hVT, frobenius_norm_sq_eq_sum_sq,
+    ← Fin.sum_univ_eq_sum_range (fun i => σ i ^ 2) r]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [Finset.sum_eq_single ⟨a, lt_of_lt_of_le a.isLt hrn⟩]
+  · simp [rectDiagonal_apply]
+  · intro b _ hb
+    have : (a : ℕ) ≠ b := fun h => hb (Fin.ext h.symm)
+    simp [rectDiagonal_apply, this]
+  · simp
+
 end SVD
 
 /-! ### The higher-order SVD (Theorem 12.5.1, (12.5.4)–(12.5.11)) -/
@@ -481,6 +523,61 @@ theorem equation_12_5_28 {p m s : ℕ} {N : Type*} [Fintype N] (C : Matrix (Fin 
       ∀ k i c, C (k, i) c = (G i * C') k c) := by
   refine ⟨fun U₃ W hC k i c => ?_, Tensor.exists_ttCore_of_rank C⟩
   rw [hC, mul_apply, mul_apply]
+  rfl
+
+/-! ### Tensor singular values and eigenvalues, tensor trains -/
+
+section Variational
+
+variable {d : ℕ} {n : Fin d → ℕ}
+
+/-- **§12.5.6**, tensor singular values: `ψ_𝒜(u) = 𝒜(u₁, …, u_d)/(‖u₁‖ ⋯ ‖u_d‖)` has numerator
+`𝒜(u) = u_kᵀ 𝒜_(k) (⊗_{j ≠ k} u_j)` for every mode `k` (the book's
+`u₁ᵀ 𝒜_(1)(u₃ ⊗ u₂) = u₂ᵀ 𝒜_(2)(u₃ ⊗ u₁) = u₃ᵀ 𝒜_(3)(u₂ ⊗ u₁)` for `d = 3`), and at nonzero `u` the
+equation `∇ψ_𝒜 = 0` holds iff, with `û_i = u_i/‖u_i‖`, `𝒜_(k)(⊗_{j ≠ k} û_j) = ψ_𝒜(u) û_k` for every
+`k` — the book's definition of a singular value of the tensor (`Tensor.IsSingularValue`). The
+unfoldings are the backbone's typed `Tensor.modeUnfold`, whose columns are the tuples of the other
+indices. -/
+theorem tensor_singular_value (A : RTensor n) :
+    (∀ (u : ∀ i, Fin (n i) → ℝ) (k : Fin d), Tensor.multilinearForm A u =
+      u k ⬝ᵥ (A.modeUnfold k *ᵥ Tensor.rankOne fun j : {j // j ≠ k} => u j)) ∧
+    ∀ {u : ∀ i, EuclideanSpace ℝ (Fin (n i))}, (∀ i, u i ≠ 0) →
+      (HasFDerivAt (Tensor.multilinearRayleigh A)
+          (0 : (∀ i, EuclideanSpace ℝ (Fin (n i))) →L[ℝ] ℝ) u ↔
+        ∀ k, A.modeUnfold k *ᵥ Tensor.rankOne (fun j : {j // j ≠ k} => (‖u j‖⁻¹ • u j).ofLp)
+          = Tensor.multilinearRayleigh A u • (‖u k‖⁻¹ • u k).ofLp) :=
+  ⟨fun u k => Tensor.multilinearForm_eq_modeUnfold A u k,
+    fun hu => Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff A hu⟩
+
+/-- **(12.5.24)** and the sentences around it: for a symmetric `𝒞 ∈ ℝ^{N×⋯×N}` (§12.5.7), all
+modal unfoldings are equal (up to the relabelling of their columns by the transposition of the two
+modes), and at `x ≠ 0` the gradient of `φ_𝒞(x) = 𝒞(x, …, x)/‖x‖^d` vanishes iff, with
+`x̂ = x/‖x‖`, `𝒞_(k)(x̂ ⊗ ⋯ ⊗ x̂) = φ_𝒞(x) x̂` — the book's tensor eigenvalue. (The book's
+gradient omits the factor `d`, harmless at zero.) -/
+theorem equation_12_5_24 {N : ℕ} {C : Tensor (fun _ : Fin d => Fin N) ℝ} (hC : C.IsSymm) :
+    (∀ k l, C.modeUnfold l = (C.modeUnfold k).submatrix id (Tensor.swapColEquiv k l).symm) ∧
+    ∀ {x : EuclideanSpace ℝ (Fin N)}, x ≠ 0 → ∀ k,
+      (HasFDerivAt (Tensor.symmetricRayleigh C) (0 : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ) x ↔
+        C.modeUnfold k *ᵥ Tensor.rankOne (fun _ : {j // j ≠ k} => (‖x‖⁻¹ • x).ofLp)
+          = Tensor.symmetricRayleigh C x • (‖x‖⁻¹ • x).ofLp) :=
+  ⟨fun k l => hC.modeUnfold_eq k l,
+    fun hx k => Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff hC hx k⟩
+
+end Variational
+
+/-- **(12.5.29)**, the TT-SVD (Oseledets–Tyrtyshnikov): every tensor `𝒜` of order `d ≥ 1` has a
+tensor-train representation (12.5.25) `𝒜 = trainOfCarriages d 𝒢` whose ranks `r_k` are the ranks of
+the sequential unfoldings `𝒜_{[1:k] × [k+1:d]}`, `0 < k < d`, with `r_0 = r_d = 1` — the ranks of
+the matrices the procedure's successive SVDs factor (`Tensor.exists_tensorTrain_of_ne_zero`, through
+`equation_12_5_25`). For `d = 0` a train is the constant `1`, so `d ≠ 0` is needed. -/
+theorem equation_12_5_29 {n : ℕ → ℕ} {d : ℕ} (hd : d ≠ 0)
+    (A : Tensor (fun k : Fin d => Fin (n k)) ℝ) :
+    ∃ (r : ℕ → ℕ) (_ : r 0 = 1) (_ : r d = 1),
+      (∀ k, 0 < k → k < d → r k = (A.unfold fun i : Fin d => (i : ℕ) < k).rank) ∧
+      ∃ 𝒢 : ∀ k : ℕ, Fin (r k) → Fin (n k) → Fin (r (k + 1)) → ℝ, A = trainOfCarriages d 𝒢 := by
+  obtain ⟨r, h0, hr, hrk, G, hG⟩ := Tensor.exists_tensorTrain_of_ne_zero A hd
+  refine ⟨r, h0, hr, hrk, fun k p x q => G k x p q, ?_⟩
+  rw [equation_12_5_25 d _ h0 hr, hG]
   rfl
 
 end GolubVanLoan.Chapter12

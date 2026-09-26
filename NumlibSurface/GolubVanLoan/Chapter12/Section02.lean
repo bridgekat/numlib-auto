@@ -1,5 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.Semiseparable
 import Numlib.LinearAlgebra.Matrix.RealSchur
+import NumlibSurface.GolubVanLoan.Chapter05.Section01
 import NumlibSurface.GolubVanLoan.Chapter12.Section01
 
 /-!
@@ -20,7 +21,10 @@ whose entries use the products `t_j ⋯ t_{i−1}`; the corrected quasiseparable
 Eidelman–Gohberg transfer products `t_{j+1} ⋯ t_{i−1}` is `Matrix.quasiseparableRep`. MATLAB's
 `tril(A, −1)`, `triu(A, 1)` and `diag` are `Matrix.strictLower`, `Matrix.strictUpper` and
 `Matrix.diagPart`; `.*` is `⊙`. The chain `Qᵀ = G₁ ⋯ G_{n−1}` of `2 × 2` blocks in consecutive
-coordinate planes is `Matrix.givensChain`.
+coordinate planes is `Matrix.givensChain`. Algorithm 12.2.2 follows the algorithm conventions of
+`NumlibSurface/GolubVanLoan`: its Givens pairs are chapter 5's Algorithm 5.1.3, its state the
+structure `SemiseparableQRState`, and its exact specification is a downward induction on the book's
+`A⁽ᵏ⁾`.
 
 ## Not formalized here
 
@@ -320,6 +324,353 @@ theorem equation_12_2_14 {N : ℕ} {c s : ℕ → ℝ} (hcs : ∀ k, c k ^ 2 + s
   have hij' : j < i := hij
   rw [Matrix.add_apply, h2 hij, add_zero, hadamard_apply, inv_unitBidiagonal, of_apply,
     ite_eq_right (not_le.2 hij'), mul_zero]
+
+/-! #### Algorithm 12.2.2 -/
+
+/-- The state of Algorithm 12.2.2 before the step `k` (0-based): `ũ_{k+1}`, `f̃_{k+1}` and the
+arrays `c`, `s`, `f`, `g`, `h` (the entry `h_{k+1}` holding the book's `h̃_{k+1}`). -/
+structure SemiseparableQRState (N : ℕ) where
+  /-- The book's `ũ`. -/
+  ut : ℝ
+  /-- The book's `f̃`. -/
+  ft : ℝ
+  /-- The cosines `c_k`. -/
+  c : ℕ → ℝ
+  /-- The sines `s_k`. -/
+  s : ℕ → ℝ
+  /-- The vector `f`. -/
+  f : Fin (N + 1) → ℝ
+  /-- The vector `g`. -/
+  g : Fin (N + 1) → ℝ
+  /-- The vector `h`. -/
+  h : Fin (N + 1) → ℝ
+
+section QR
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {N : ℕ}
+
+/-- One step of Algorithm 12.2.2 (0-based `k`, the book's `k + 1`): "Determine `c_k` and `s_k`
+so that `[c_k s_k; −s_k c_k] [u_k; ũ_{k+1}] = [ũ_k; 0]`; `f̃_k = s_k f̃_{k+1}`,
+`f_{k+1} = c_k f̃_{k+1}`; `[h_k; h_{k+1}] = [c_k s_k; −s_k c_k] [p_k; h_{k+1}]`;
+`g_k = (ũ_k v_k − h_k q_k)/f̃_k`". The pair is chapter 5's Algorithm 5.1.3 on `(u_k, ũ_{k+1})`,
+whose rotation is the transpose of the book's here (so `s_k` is its sine negated, exactly); `ũ_k`
+is the rotated first entry; `g_k` uses `ũ_k`, as the derivation does (the book's display prints
+`u_k`). Every product, sum and quotient is rounded. -/
+noncomputable def algorithm_12_2_2Step (u v p q : Fin (N + 1) → ℝ) (st : SemiseparableQRState N)
+    (k : Fin N) : M (SemiseparableQRState N) := do
+  let cs ← Chapter05.algorithm_5_1_3 rnd (u k.castSucc) st.ut
+  let cc := cs.1
+  let ss := -cs.2
+  let ut ← rnd ((← rnd (cc * u k.castSucc)) + (← rnd (ss * st.ut)))
+  let ft ← rnd (ss * st.ft)
+  let fk ← rnd (cc * st.ft)
+  let hk ← rnd ((← rnd (cc * p k.castSucc)) + (← rnd (ss * st.h k.succ)))
+  let hk' ← rnd ((← rnd (cc * st.h k.succ)) - (← rnd (ss * p k.castSucc)))
+  let gk ← rnd ((← rnd ((← rnd (ut * v k.castSucc)) - (← rnd (hk * q k.castSucc)))) / ft)
+  pure
+    { ut := ut
+      ft := ft
+      c := Function.update st.c k cc
+      s := Function.update st.s k ss
+      f := Function.update st.f k.succ fk
+      g := Function.update st.g k.castSucc gk
+      h := Function.update (Function.update st.h k.succ hk') k.castSucc hk }
+
+/-- **Algorithm 12.2.2.** "Suppose `u`, `v`, `p` and `q` are `n`-vectors that satisfy `u .* v =
+p .* q` and `u_n ≠ 0`. If `A = tril(u vᵀ) + triu(p qᵀ, 1)`, then this algorithm computes cosine-sine
+pairs `{c₁, s₁}, …, {c_{n−1}, s_{n−1}}` and vectors `f, g, h ∈ ℝⁿ` so that if `Q` is defined by
+(12.2.12) and (12.2.13), then `QᵀA = R = triu(f gᵀ + h qᵀ)`":
+```
+ũ_n = u_n, f̃_n = u_n, g_n = v_n, h_n = 0
+for k = n − 1 : −1 : 1
+    (the step algorithm_12_2_2Step)
+end
+f₁ = f̃₁
+```
+On `Fin (N + 1)` (`n = N + 1`), 0-based; it returns `(c, s, f, g, h)`, the pairs `ℕ`-indexed for
+`Matrix.givensChain`. -/
+noncomputable def algorithm_12_2_2 (u v p q : Fin (N + 1) → ℝ) :
+    M ((ℕ → ℝ) × (ℕ → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ)) := do
+  let st ← (List.finRange N).reverse.foldlM (algorithm_12_2_2Step rnd u v p q)
+    { ut := u (Fin.last N), ft := u (Fin.last N), c := 0, s := 0, f := 0,
+      g := Function.update 0 (Fin.last N) (v (Fin.last N)), h := 0 }
+  pure (st.c, st.s, Function.update st.f 0 st.ft, st.g, st.h)
+
+end QR
+
+/-- A fold satisfies a property of the processed prefix, if every step does. -/
+private theorem foldl_prefix_induction {α β : Type*} (f : β → α → β) (l : List α)
+    (P : List α → β → Prop) {b : β} (h0 : P [] b)
+    (hs : ∀ p a q s, l = p ++ a :: q → P p s → P (p ++ [a]) (f s a)) : P l (l.foldl f b) := by
+  suffices h : ∀ q p s, l = p ++ q → P p s → P l (q.foldl f s) from h l [] b rfl h0
+  intro q
+  induction q with
+  | nil => intro p s hl hp; simpa [hl] using hp
+  | cons a q ih =>
+    intro p s hl hp
+    exact ih (p ++ [a]) (f s a) (by simp [hl]) (hs p a q s hl hp)
+
+/-- A forward product peels off its first factor. -/
+private theorem prodFwd_succ_left {n : ℕ} (f : ℕ → Matrix (Fin n) (Fin n) ℝ) (m : ℕ) :
+    prodFwd f (m + 1) = f 0 * prodFwd (fun k => f (k + 1)) m := by
+  induction m with
+  | zero => simp [prodFwd_succ]
+  | succ m ih => rw [prodFwd_succ, ih, prodFwd_succ, Matrix.mul_assoc]
+
+/-- A forward product only reads its first `m` factors. -/
+private theorem prodFwd_congr' {n : ℕ} {f f' : ℕ → Matrix (Fin n) (Fin n) ℝ} {m : ℕ}
+    (h : ∀ k < m, f k = f' k) : prodFwd f m = prodFwd f' m := by
+  induction m with
+  | zero => rfl
+  | succ m ih => rw [prodFwd_succ, prodFwd_succ, ih fun k hk => h k (by omega), h m (by omega)]
+
+/-- The rotation block of Algorithm 12.2.2, `[c s; −s c]`. -/
+private abbrev rotBlock (c s : ℕ → ℝ) (k : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := !![c k, s k; -s k, c k]
+
+/-- The matrix `A⁽ᵗ⁾ = G_t ⋯ G_{n−1} A` of the book's derivation, from the state before step
+`t − 1`: rows above `t` are those of `A`; row `t` is `ũ_t v_j` left of the diagonal and
+`f̃_t g_j + h̃_t q_j` from it on; rows below `t` are `triu(f gᵀ + h qᵀ)`. -/
+private def stage {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (t : ℕ) (st : SemiseparableQRState N) :
+    Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
+  of fun i j => if (i : ℕ) < t then (if j ≤ i then u i * v j else p i * q j)
+    else if (i : ℕ) = t then (if (j : ℕ) < t then st.ut * v j else st.ft * st.g j + st.h i * q j)
+    else if j < i then 0 else st.f i * st.g j + st.h i * q j
+
+/-- One rotation of the derivation: `G_k A⁽ᵏ⁺¹⁾ = A⁽ᵏ⁾`, for a pair `(c, s)` that annihilates
+`ũ_{k+1}` (`−s u_k + c ũ_{k+1} = 0`) and a nonzero `f̃_k = s f̃_{k+1}`. -/
+private theorem stage_step {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (st : SemiseparableQRState N)
+    (a : Fin N) {c s : ℝ} {c' s' : ℕ → ℝ} (hz : -s * u a.castSucc + c * st.ut = 0)
+    (hft : s * st.ft ≠ 0) :
+    planeEmbed a.castSucc a.succ !![c, s; -s, c] * stage u v p q ((a : ℕ) + 1) st =
+      stage u v p q (a : ℕ)
+        { ut := c * u a.castSucc + s * st.ut, ft := s * st.ft, c := c', s := s',
+          f := Function.update st.f a.succ (c * st.ft),
+          g := Function.update st.g a.castSucc
+            (((c * u a.castSucc + s * st.ut) * v a.castSucc -
+              (c * p a.castSucc + s * st.h a.succ) * q a.castSucc) / (s * st.ft)),
+          h := Function.update (Function.update st.h a.succ (c * st.h a.succ - s * p a.castSucc))
+            a.castSucc (c * p a.castSucc + s * st.h a.succ) } := by
+  have hne : a.castSucc ≠ a.succ := a.castSucc_lt_succ.ne
+  ext i j
+  rw [planeEmbed_mul_apply _ hne]
+  simp only [stage, of_apply, Function.update_apply, Fin.ext_iff, Fin.le_def, Fin.lt_def,
+    Fin.val_castSucc, Fin.val_succ, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.of_apply]
+  split_ifs <;> first
+    | (exfalso; omega)
+    | ring1
+    | skip
+  · have hj : j = a.castSucc := Fin.ext (by assumption)
+    subst hj
+    have hs : s ≠ 0 := left_ne_zero_of_mul hft
+    have hf : st.ft ≠ 0 := right_ne_zero_of_mul hft
+    field_simp
+    ring
+  · linear_combination (v j) * hz
+
+/-- A `givensFactor` only reads its own block. -/
+private theorem givensFactor_congr {N : ℕ} {M M' : ℕ → Matrix (Fin 2) (Fin 2) ℝ} {k : ℕ}
+    (h : M k = M' k) : givensFactor N M k = givensFactor N M' k := by
+  simp only [givensFactor, h]
+
+/-- The factor `G_k` of the chain, `k < N`, is the block in the plane `(k, k + 1)`. -/
+private theorem givensFactor_of_lt {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2) ℝ) (a : Fin N) :
+    givensFactor N M a = planeEmbed a.castSucc a.succ (M a) := by
+  rw [givensFactor, dite_eq_left_of_eq_true (eq_true a.isLt)]
+  rfl
+
+/-- **Correctness of Algorithm 12.2.2**: if `u_n ≠ 0` and `A = tril(u vᵀ) + triu(p qᵀ, 1)`, the
+exact run `(c, s, f, g, h)` gives an orthogonal `Qᵀ = G₁ ⋯ G_{n−1}` ((12.2.12)–(12.2.13), the
+`Matrix.givensChain` of the blocks `[c_k s_k; −s_k c_k]`) with `QᵀA = R = triu(f gᵀ + h qᵀ)`, and
+"the `s_k` are nonzero because `|ũ_k| = ‖u(k:n)‖₂ ≠ 0`", so that every division `/ f̃_k` of the
+algorithm is by `f̃_k = s_k ⋯ s_{n−1} u_n ≠ 0`. The hypothesis `u .* v = p .* q` is not needed.
+Downward induction on the book's `A⁽ᵏ⁾ = G_k ⋯ G_{n−1} A`, one rotation per step
+(`stage_step`). -/
+theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.last N) ≠ 0) :
+    givensChain N (fun k => !![(Id.run (algorithm_12_2_2 pure u v p q)).1 k,
+        (Id.run (algorithm_12_2_2 pure u v p q)).2.1 k;
+        -(Id.run (algorithm_12_2_2 pure u v p q)).2.1 k,
+        (Id.run (algorithm_12_2_2 pure u v p q)).1 k]) ∈ orthogonalGroup (Fin (N + 1)) ℝ ∧
+      givensChain N (fun k => !![(Id.run (algorithm_12_2_2 pure u v p q)).1 k,
+          (Id.run (algorithm_12_2_2 pure u v p q)).2.1 k;
+          -(Id.run (algorithm_12_2_2 pure u v p q)).2.1 k,
+          (Id.run (algorithm_12_2_2 pure u v p q)).1 k]) *
+          (of fun i j => if j ≤ i then u i * v j else p i * q j) =
+        (of fun i j => if i ≤ j then
+          (Id.run (algorithm_12_2_2 pure u v p q)).2.2.1 i *
+            (Id.run (algorithm_12_2_2 pure u v p q)).2.2.2.1 j +
+          (Id.run (algorithm_12_2_2 pure u v p q)).2.2.2.2 i * q j else 0) ∧
+      ∀ k < N, (Id.run (algorithm_12_2_2 pure u v p q)).2.1 k ≠ 0 := by
+  set A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
+    of fun i j => if j ≤ i then u i * v j else p i * q j with hA
+  let st₀ : SemiseparableQRState N :=
+    { ut := u (Fin.last N)
+      ft := u (Fin.last N)
+      c := 0
+      s := 0
+      f := 0
+      g := Function.update 0 (Fin.last N) (v (Fin.last N))
+      h := 0 }
+  -- the exact step
+  have hstep : ∀ (st : SemiseparableQRState N) (a : Fin N),
+      Id.run (algorithm_12_2_2Step pure u v p q st a) =
+        { ut := (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
+            -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut
+          ft := -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft
+          c := Function.update st.c a
+            (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1
+          s := Function.update st.s a
+            (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2)
+          f := Function.update st.f a.succ
+            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.ft)
+          g := Function.update st.g a.castSucc
+            ((((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
+              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut) *
+                v a.castSucc -
+              ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
+                -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+                  st.h a.succ) * q a.castSucc) /
+              (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft))
+          h := Function.update (Function.update st.h a.succ
+              ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.h a.succ -
+                -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+                  p a.castSucc)) a.castSucc
+            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
+              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+                st.h a.succ) } :=
+    fun _ _ => rfl
+  -- the invariant after the steps `N − 1, …, t`
+  let Inv : ℕ → SemiseparableQRState N → Prop := fun t st =>
+    t ≤ N ∧ prodFwd (fun k => givensFactor N (rotBlock st.c st.s) (t + k)) (N - t) * A =
+      stage u v p q t st ∧ st.ut ≠ 0 ∧ st.ft ≠ 0 ∧
+      ∀ k, t ≤ k → k < N → st.c k ^ 2 + st.s k ^ 2 = 1 ∧ st.s k ≠ 0
+  have hfin := foldl_prefix_induction (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k))
+    (List.finRange N).reverse (fun pre st => Inv (N - pre.length) st) (b := st₀) ?h0 ?hs
+  case h0 =>
+    refine ⟨Nat.sub_le _ _, ?_, hu, hu, fun k hk hk' => absurd hk' (by simp at hk; omega)⟩
+    simp only [List.length_nil, Nat.sub_zero, Nat.sub_self, prodFwd_zero, Matrix.one_mul]
+    ext i j
+    simp only [stage, hA, of_apply]
+    by_cases hiN : (i : ℕ) < N
+    · rw [ite_eq_left hiN]
+    · have hiL : i = Fin.last N := Fin.ext (by simp; omega)
+      subst hiL
+      rw [ite_eq_right hiN, ite_eq_left (Fin.val_last N)]
+      by_cases hj : (j : ℕ) < N
+      · rw [ite_eq_left hj, ite_eq_left (Fin.le_last j)]
+      · have hjL : j = Fin.last N := Fin.ext (by simp; omega)
+        subst hjL
+        simp [st₀]
+  case hs =>
+    intro pre a rest st hl hInv
+    have hlen : pre.length < N := by
+      have := congrArg List.length hl
+      simp at this
+      omega
+    have ha : (a : ℕ) = N - 1 - pre.length := by
+      have h1 : (List.finRange N).reverse[pre.length]'(by simpa using hlen) = a := by
+        simp [hl]
+      rw [List.getElem_reverse, List.getElem_finRange] at h1
+      rw [← h1]
+      simp
+    obtain ⟨-, hprod, hut, hft, hcs⟩ := hInv
+    rw [show N - pre.length = (a : ℕ) + 1 by omega] at hprod hcs
+    simp only [List.length_append, List.length_singleton,
+      show N - (pre.length + 1) = (a : ℕ) by omega]
+    obtain ⟨hcs1, hcs2, hcs3⟩ := Chapter05.algorithm_5_1_3_spec (u a.castSucc) st.ut
+    set cs := Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut) with hcsdef
+    have hs0 : cs.2 ≠ 0 := by
+      intro h0
+      rw [h0, zero_mul, zero_add] at hcs2
+      have hc : cs.1 ≠ 0 := by
+        intro hc
+        rw [hc, h0] at hcs1
+        norm_num at hcs1
+      exact hut ((mul_eq_zero.1 hcs2).resolve_left hc)
+    rw [hstep]
+    refine ⟨by omega, ?_, ?_, mul_ne_zero (neg_ne_zero.2 hs0) hft, fun k hk hk' => ?_⟩
+    · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, prodFwd_succ_left,
+        Matrix.mul_assoc]
+      have htail : prodFwd (fun k => givensFactor N (rotBlock (Function.update st.c a cs.1)
+          (Function.update st.s a (-cs.2))) ((a : ℕ) + (k + 1))) (N - ((a : ℕ) + 1)) =
+          prodFwd (fun k => givensFactor N (rotBlock st.c st.s) ((a : ℕ) + 1 + k))
+            (N - ((a : ℕ) + 1)) := by
+        refine prodFwd_congr' fun k _ => ?_
+        rw [show (a : ℕ) + (k + 1) = (a : ℕ) + 1 + k by omega]
+        refine givensFactor_congr ?_
+        have hne : (a : ℕ) + 1 + k ≠ (a : ℕ) := by omega
+        simp only [rotBlock, Function.update_of_ne hne]
+      rw [htail, hprod, add_zero, givensFactor_of_lt]
+      simp only [rotBlock, Function.update_self]
+      exact stage_step u v p q st a (by rw [neg_neg]; linarith)
+        (mul_ne_zero (neg_ne_zero.2 hs0) hft)
+    · -- `|ũ_k| = √(u_k² + ũ_{k+1}²) > 0`
+      intro h0
+      have h2 : cs.1 * u a.castSucc - cs.2 * st.ut = 0 := by linarith
+      rw [h2, abs_zero] at hcs3
+      have := (Real.sqrt_eq_zero (by positivity)).1 hcs3.symm
+      exact hut (by nlinarith [sq_nonneg (u a.castSucc), sq_nonneg st.ut])
+    · rcases eq_or_lt_of_le hk with hk | hk
+      · subst hk
+        simp only [Function.update_self]
+        exact ⟨by rw [neg_sq]; exact hcs1, neg_ne_zero.2 hs0⟩
+      · have hne : k ≠ (a : ℕ) := by omega
+        simp only [Function.update_of_ne hne]
+        exact hcs k (by omega) hk'
+  -- read off the final state
+  obtain ⟨-, hprod, -, -, hcs⟩ := hfin
+  simp only [List.length_reverse, List.length_finRange, Nat.sub_self, zero_add,
+    Nat.sub_zero] at hprod hcs
+  have hrun : Id.run (algorithm_12_2_2 pure u v p q) =
+      (((List.finRange N).reverse.foldl
+          (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).c,
+        ((List.finRange N).reverse.foldl
+          (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).s,
+        Function.update ((List.finRange N).reverse.foldl
+          (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).f 0
+          ((List.finRange N).reverse.foldl
+            (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).ft,
+        ((List.finRange N).reverse.foldl
+          (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).g,
+        ((List.finRange N).reverse.foldl
+          (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀).h) := by
+    rw [algorithm_12_2_2, Id.run_bind, List.idRun_foldlM, Id.run_pure]
+  rw [hrun]
+  generalize (List.finRange N).reverse.foldl
+    (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k)) st₀ = st at hprod hcs ⊢
+  refine ⟨prodFwd_mem_orthogonalGroup (fun k => ?_) N, ?_, fun k hk => (hcs k (Nat.zero_le _) hk).2⟩
+  · by_cases hk : k < N
+    · rw [givensFactor, dite_eq_left_of_eq_true (eq_true hk)]
+      have h := planeRotation_mem_orthogonalGroup (j := (⟨k, by omega⟩ : Fin (N + 1)))
+        (k := ⟨k + 1, by omega⟩) (Fin.ne_of_lt (Fin.mk_lt_mk.2 (Nat.lt_succ_self k)))
+        (c := st.c k) (s := -st.s k) (by rw [neg_sq]; exact (hcs k (Nat.zero_le _) hk).1)
+      rw [planeRotation, neg_neg] at h
+      exact h
+    · rw [givensFactor, dite_eq_right_of_eq_false (eq_false hk)]
+      exact one_mem _
+  · change prodFwd (fun k => givensFactor N (rotBlock st.c st.s) k) N * A = _
+    rw [hprod]
+    ext i j
+    simp only [stage, of_apply, Nat.not_lt_zero, ↓reduceIte, Function.update_apply]
+    by_cases hi : (i : ℕ) = 0
+    · have hi0 : i = 0 := Fin.ext hi
+      subst hi0
+      simp
+    · rw [ite_eq_right hi, ite_eq_right (fun h : i = 0 => hi (by rw [h]; rfl))]
+      by_cases hji : j < i
+      · rw [ite_eq_left hji, ite_eq_right (not_le.2 hji)]
+      · rw [ite_eq_right hji, ite_eq_left (not_lt.1 hji)]
+
+/-- **(12.2.16)**: for `A = tril(u vᵀ) + triu(p qᵀ, 1)` (the generator representation
+(12.2.15)) with `u_n ≠ 0`, "`R` is the upper triangular portion of a rank-2 matrix, i.e.,
+`R = triu(f gᵀ + h qᵀ)`, `f, g, h ∈ ℝⁿ`": some orthogonal `Qᵀ` has `QᵀA = triu(f gᵀ + h qᵀ)` —
+the one of Algorithm 12.2.2 (`algorithm_12_2_2_spec`). -/
+theorem equation_12_2_16 {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.last N) ≠ 0) :
+    ∃ Qt ∈ orthogonalGroup (Fin (N + 1)) ℝ, ∃ f g h : Fin (N + 1) → ℝ,
+      Qt * (of fun i j => if j ≤ i then u i * v j else p i * q j) =
+        of fun i j => if i ≤ j then f i * g j + h i * q j else 0 := by
+  obtain ⟨h1, h2, -⟩ := algorithm_12_2_2_spec u v p q hu
+  exact ⟨_, h1, _, _, _, h2⟩
 
 /-! ### Banded inverses (§12.2.8) -/
 

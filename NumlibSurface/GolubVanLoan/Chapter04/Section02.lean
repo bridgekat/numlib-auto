@@ -1,6 +1,7 @@
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.HermitianPart
+import NumlibSurface.GolubVanLoan.Chapter03.Section04
 import NumlibSurface.GolubVanLoan.Chapter04.Section01
 
 /-!
@@ -9,9 +10,12 @@ import NumlibSurface.GolubVanLoan.Chapter04.Section01
 Surface file for [golub2013matrix] §4.2: positive definiteness of a general (unsymmetric) matrix
 (Theorems 4.2.1–4.2.5 with Corollaries 4.2.2 and 4.2.4), the Cholesky factorization (Theorem
 4.2.7) and gaxpy Cholesky (Algorithm 4.2.1) with its rounding bridge, the facts of §4.2.6 on the
-stability of the Cholesky process, the pivoted outer-product `L D Lᵀ` (Algorithm 4.2.2, (4.2.10)),
-the semidefinite case (Theorem 4.2.8, (4.2.11), (4.2.17)), and the block equations of block
-Cholesky ((4.2.18)–(4.2.19)).
+stability of the Cholesky process (with Wilkinson's backward error bound for the computed factor and
+the two triangular solves), the pivoted outer-product `L D Lᵀ` (Algorithm 4.2.2, (4.2.10)), the
+semidefinite case (Theorem 4.2.8, (4.2.11), (4.2.17)) with the exact specification of Algorithm
+4.2.2 through its invariant (4.2.16), the block equations of block Cholesky
+((4.2.18)–(4.2.19)) and the block algorithms, recursive (Algorithm 4.2.3) and nonrecursive
+(Algorithm 4.2.4), with their exact specifications.
 
 ## Conventions
 
@@ -28,7 +32,14 @@ Algorithm 4.2.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan
 (chapter 4's `runningDiff`), the square root is `Real.sqrt` followed by one rounding, and the
 whole column, diagonal included, is divided by the rounded square root, so the computed diagonal
 is `fl(t / fl(√t))` — the operation order of the backbone relation
-`FloatingPoint.RoundsCholeskyDiv`.
+`FloatingPoint.RoundsCholeskyDiv`. The triangular solves call chapter 3's column-oriented
+substitutions (Algorithms 3.1.3–3.1.4). The block algorithms store the lower triangle of Algorithm
+4.2.1 (`choleskyLower`), solve `X Gᵀ = B` row by row (`solveRowsLower`) and form the updates
+`A₂₂ − G₂₁G₂₁ᵀ`, `A_ij − ∑_{k<j} G_ik G_jkᵀ` by running differences (`mulTransposeDiff`); their
+exact specifications compare the blocks with (4.2.18) and (4.2.19). The exact specification of
+Algorithm 4.2.2 reads the state after `k` steps as `L_k diag(D_k, A_k) L_kᵀ` (`pivotedLower`,
+`pivotedMiddle`); one step is a symmetric interchange (which commutes with both, the pivot being at
+or after `k`) followed by a congruence with the column operator of the multipliers.
 
 ## Sources
 
@@ -570,6 +581,48 @@ theorem algorithm_4_2_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
   rw [algorithm_4_2_1_lower_eq_cholesky]
   exact ⟨rfl, (cholesky_mul_transpose hA).symm⟩
 
+section Solve
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **The solve stage of §4.2.6** on the output `F` of Algorithm 4.2.1: with `Ĝ = F − strictUpper F`
+the computed lower triangle, "`Ĝy = b`, `Ĝᵀx = y`" by chapter 3's column-oriented substitutions,
+Algorithm 3.1.3 and Algorithm 3.1.4. -/
+noncomputable def solveCholesky (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
+    M (Fin n → ℝ) := do
+  let y ← Chapter03.algorithm_3_1_3 rnd (F - F.strictUpper) b
+  Chapter03.algorithm_3_1_4 rnd (F - F.strictUpper)ᵀ y
+
+end Solve
+
+/-- **§4.2.6, Wilkinson's bound**, rigorous form: "if `x̂` is the computed solution to `Ax = b`,
+obtained via the Cholesky process, then `x̂` solves the perturbed system `(A + E)x̂ = b`,
+`‖E‖₂ ≤ c_n u ‖A‖₂`, where `c_n` is a small constant that depends upon `n`". For a symmetric `A`, a
+run `F` of Algorithm 4.2.1 with nonzero returned diagonal (which forces every computed pivot
+positive, `algorithm_4_2_1_rounds`) and a solution `x̂` computed from it by `solveCholesky`:
+`‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 − n γ_{n+3})`, the constant `c_n ≈ 3n²` made explicit. The
+companion claim that the process runs to completion when `q_n u κ₂(A) ≤ 1` is not formalized. -/
+theorem cholesky_backward_error {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
+    (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    (b : Fin n → ℝ) :
+    ∀ F ∈ (algorithm_4_2_1 fp.round A).run, (∀ j, F j j ≠ 0) →
+      ∀ x ∈ (solveCholesky fp.round F b).run,
+        ∃ E : Matrix (Fin n) (Fin n) ℝ, (A + E) *ᵥ x = b ∧
+          lpOpNorm 2 E ≤ n * gamma fp.u (3 * n + 3) * lpOpNorm 2 A /
+            (1 - n * gamma fp.u (n + 3)) := by
+  intro F hF hd x hx
+  have hu : fp.u < 1 := by
+    have h1 : (1 : ℝ) * fp.u ≤ ((3 * n + 3 : ℕ) : ℝ) * fp.u :=
+      mul_le_mul_of_nonneg_right (by norm_cast; omega) fp.u_nonneg
+    linarith
+  simp only [solveCholesky, SetM.mem_run_bind] at hx
+  obtain ⟨y, hy, hx⟩ := hx
+  obtain ⟨E, hE, hAx⟩ := l2_opNorm_le_of_roundsCholeskyDiv hu (by simpa using hn)
+    (by simpa using hγ) hA (algorithm_4_2_1_rounds fp A F hF hd)
+    (fun j => by rw [sub_strictUpper_apply_of_le F le_rfl]; exact hd j)
+    (Chapter03.algorithm_3_1_3_rounds fp _ b y hy) (Chapter03.algorithm_3_1_4_rounds fp _ y x hx)
+  exact ⟨E, hAx, by simpa using hE⟩
+
 /-! ### §4.2.7 The `L D Lᵀ` factorization with symmetric pivoting -/
 
 section Programs
@@ -580,6 +633,28 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 `a_jj = max {a_kk, …, a_nn}` (exact comparisons of the stored values). -/
 noncomputable def diagPivot (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n :=
   ((List.finRange n).filter (k ≤ ·)).foldl (fun (b i : Fin n) => if A b b < A i i then i else b) k
+
+/-- Step `k` of Algorithm 4.2.2, the loop body: the pivot `diagPivot`, the symmetric interchange,
+the multipliers `v/α` and the update of the trailing block (see `algorithm_4_2_2`). -/
+noncomputable def ldltPivotStep (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
+    M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) := do
+  let j := diagPivot st.1 k
+  let A := st.1.submatrix (Equiv.swap k j) (Equiv.swap k j)
+  let α := A k k
+  let v : Fin n → ℝ := fun i => A i k
+  let B ← ((List.finRange n).filter (k < ·)).foldlM
+    (fun (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) => do
+      let l ← rnd (v i / α)
+      pure (B.updateRow i (Function.update (B i) k l))) A
+  let C ← ((List.finRange n).filter (k < ·)).foldlM
+    (fun (C : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
+      ((List.finRange n).filter (k < ·)).foldlM
+        (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) => do
+          let p ← rnd (v i * v l)
+          let q ← rnd (p / α)
+          let c ← rnd (C i l - q)
+          pure (C.updateRow i (Function.update (C i) l c))) C) B
+  pure (C, Function.update st.2 k j)
 
 /-- **Algorithm 4.2.2 (Outer Product `L D Lᵀ` with Pivoting).** "Given a symmetric positive
 semidefinite `A ∈ ℝⁿˣⁿ`, the following algorithm computes a permutation `P`, a unit lower
@@ -602,25 +677,7 @@ v_l)/α))` is in the book's order. No guard on `α = 0` (for a semidefinite inpu
 then vanishes, and `x / 0 = 0`). -/
 noncomputable def algorithm_4_2_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
-  (List.finRange n).foldlM
-    (fun (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) => do
-      let j := diagPivot st.1 k
-      let A := st.1.submatrix (Equiv.swap k j) (Equiv.swap k j)
-      let α := A k k
-      let v : Fin n → ℝ := fun i => A i k
-      let B ← ((List.finRange n).filter (k < ·)).foldlM
-        (fun (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) => do
-          let l ← rnd (v i / α)
-          pure (B.updateRow i (Function.update (B i) k l))) A
-      let C ← ((List.finRange n).filter (k < ·)).foldlM
-        (fun (C : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
-          ((List.finRange n).filter (k < ·)).foldlM
-            (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) => do
-              let p ← rnd (v i * v l)
-              let q ← rnd (p / α)
-              let c ← rnd (C i l - q)
-              pure (C.updateRow i (Function.update (C i) l c))) C) B
-      pure (C, Function.update st.2 k j)) (A, fun i => i)
+  (List.finRange n).foldlM (ldltPivotStep rnd) (A, fun i => i)
 
 end Programs
 
@@ -883,5 +940,1074 @@ theorem equation_4_2_19 {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
       · rw [conjTranspose_eq_transpose_of_trivial, transpose_transpose]
     rw [cholesky_eq_of_isCholesky hc, conjTranspose_eq_transpose_of_trivial, transpose_transpose]
   · rw [hmul i j hji.le, sum_filter_le_eq_add, add_sub_cancel_left]
+
+/-! ### Algorithms 4.2.3–4.2.4: block Cholesky -/
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **The lower triangle of Algorithm 4.2.1**, the Cholesky factor that the block algorithms store:
+`F − strictUpper F` for the output `F` of Algorithm 4.2.1 (zeroing the untouched upper triangle is
+exact). -/
+noncomputable def choleskyLower {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
+    M (Matrix (Fin m) (Fin m) ℝ) := do
+  let F ← algorithm_4_2_1 rnd A
+  pure (F - F.strictUpper)
+
+/-- **The multiple-right-hand-side triangular solve** `X Gᵀ = B` (Step 2 of Algorithm 4.2.3), row
+by row: row `i` of `B` is overwritten by the solution of `G xᵀ = B(i, :)ᵀ`, computed by chapter 3's
+Algorithm 3.1.3. -/
+noncomputable def solveRowsLower {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
+    (B : Matrix (Fin m) (Fin r) ℝ) : M (Matrix (Fin m) (Fin r) ℝ) :=
+  (List.finRange m).foldlM (fun (X : Matrix (Fin m) (Fin r) ℝ) (i : Fin m) => do
+    let x ← Chapter03.algorithm_3_1_3 rnd G (B i)
+    pure (X.updateRow i x)) B
+
+/-- **The block update** `C − X Yᵀ` of block Cholesky (the book's `Ã = A₂₂ − G₂₁G₂₁ᵀ` and
+`S = A_ij − ∑_{k<j} G_ik G_jkᵀ`), entry by entry: the entry `(i, j)` is the running difference of
+`C i j` and the products `X i k * Y j k`, `k` along `o` (`runningDiff`). -/
+noncomputable def mulTransposeDiff {m m' : ℕ} {ι : Type} (o : List ι)
+    (C : Matrix (Fin m) (Fin m') ℝ) (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
+    M (Matrix (Fin m) (Fin m') ℝ) :=
+  (List.finRange m).foldlM (fun (D : Matrix (Fin m) (Fin m') ℝ) (i : Fin m) =>
+    (List.finRange m').foldlM (fun (D : Matrix (Fin m) (Fin m') ℝ) (j : Fin m') => do
+      let t ← runningDiff rnd o (X i) (Y j) (C i j)
+      pure (D.updateRow i (Function.update (D i) j t))) D) C
+
+/-- **Algorithm 4.2.3 (Recursive Block Cholesky).** "Suppose `A ∈ ℝⁿˣⁿ` is symmetric positive
+definite and `r` is a positive integer. The following algorithm computes a lower triangular
+`G ∈ ℝⁿˣⁿ` so `A = GGᵀ`":
+```
+function G = BlockCholesky(A, n, r)
+if n ≤ r
+    Compute the Cholesky factorization A = GGᵀ.
+else
+    Compute the Cholesky factorization A(1:r, 1:r) = G₁₁G₁₁ᵀ.
+    Solve G₂₁G₁₁ᵀ = A(r+1:n, 1:r) for G₂₁.
+    Ã = A(r+1:n, r+1:n) − G₂₁G₂₁ᵀ
+    G₂₂ = BlockCholesky(Ã, n − r, r)
+    G = [G₁₁ 0; G₂₁ G₂₂]
+end
+```
+The Cholesky factorizations are Algorithm 4.2.1, whose lower triangle is returned
+(`choleskyLower`); `G₂₁` is solved row by row by chapter 3's
+Algorithm 3.1.3 (`solveRowsLower`); `Ã` is formed by running differences (`mulTransposeDiff`,
+without exploiting symmetry). The blocks are read along
+`finSumFinEquiv : Fin r ⊕ Fin (n − r) ≃ Fin (r + (n − r))` and `n = r + (n − r)`; the recursion is
+on `n`, which decreases since `0 < r`. -/
+noncomputable def algorithm_4_2_3 (r : ℕ) (hr : 0 < r) :
+    (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ)
+  | n, A =>
+    if h : n ≤ r then choleskyLower rnd A
+    else do
+      let e : Fin r ⊕ Fin (n - r) ≃ Fin n := finSumFinEquiv.trans (finCongr (by omega))
+      let B := A.submatrix e e
+      let G₁₁ ← choleskyLower rnd B.toBlocks₁₁
+      let G₂₁ ← solveRowsLower rnd G₁₁ B.toBlocks₂₁
+      let Ã ← mulTransposeDiff rnd (List.finRange r) B.toBlocks₂₂ G₂₁ G₂₁
+      let G₂₂ ← algorithm_4_2_3 r hr (n - r) Ã
+      pure ((fromBlocks G₁₁ 0 G₂₁ G₂₂).submatrix e.symm e.symm)
+  termination_by n => n
+  decreasing_by omega
+
+end Programs
+
+/-- In exact arithmetic the stored lower triangle of Algorithm 4.2.1 is the Cholesky factor. -/
+theorem choleskyLower_id {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
+    Id.run (choleskyLower (M := Id) pure A) = cholesky A := by
+  rw [choleskyLower, Id.run_bind, Id.run_pure]
+  exact algorithm_4_2_1_lower_eq_cholesky A
+
+/-- In exact arithmetic the row-by-row solve computes forward substitution on every row. -/
+theorem solveRowsLower_id {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
+    (B : Matrix (Fin m) (Fin r) ℝ) :
+    Id.run (solveRowsLower (M := Id) pure G B) = of fun i => G.forwardSubst (B i) := by
+  suffices h : ∀ (l : List (Fin m)) (X : Matrix (Fin m) (Fin r) ℝ),
+      Id.run (l.foldlM (fun (X : Matrix (Fin m) (Fin r) ℝ) (i : Fin m) => do
+        let x ← Chapter03.algorithm_3_1_3 (M := Id) pure G (B i)
+        pure (X.updateRow i x)) X) = of fun i => if i ∈ l then G.forwardSubst (B i) else X i by
+    rw [solveRowsLower, h]
+    ext i j
+    simp
+  intro l
+  induction l with
+  | nil => intro X; ext i j; simp
+  | cons a l ih =>
+    intro X
+    rw [List.foldlM_cons, Id.run_bind, Id.run_bind, Id.run_pure, ih,
+      Chapter03.algorithm_3_1_3_eq_forwardSubst]
+    ext i j
+    by_cases hi : i = a
+    · subst hi
+      by_cases hl : i ∈ l <;> simp [hl]
+    · by_cases hl : i ∈ l <;> simp [hl, hi]
+
+/-- In exact arithmetic the block update computes `C − ∑_{k ∈ o} X i k Y j k` in every entry. -/
+theorem mulTransposeDiff_id {m m' : ℕ} {ι : Type} (o : List ι) (C : Matrix (Fin m) (Fin m') ℝ)
+    (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
+    Id.run (mulTransposeDiff (M := Id) pure o C X Y) =
+      of fun i j => C i j - (o.map fun k => X i k * Y j k).sum := by
+  have inner : ∀ (i : Fin m) (l : List (Fin m')) (D : Matrix (Fin m) (Fin m') ℝ),
+      Id.run (l.foldlM (fun (D : Matrix (Fin m) (Fin m') ℝ) (j : Fin m') => do
+        let t ← runningDiff (M := Id) pure o (X i) (Y j) (C i j)
+        pure (D.updateRow i (Function.update (D i) j t))) D) =
+        of fun a b => if a = i ∧ b ∈ l then C a b - (o.map fun k => X a k * Y b k).sum
+          else D a b := by
+    intro i l
+    induction l with
+    | nil => intro D; ext a b; simp
+    | cons c l ih =>
+      intro D
+      rw [List.foldlM_cons, Id.run_bind, Id.run_bind, Id.run_pure, ih, runningDiff_id]
+      ext a b
+      by_cases ha : a = i
+      · subst ha
+        by_cases hb : b = c
+        · subst hb; by_cases hl : b ∈ l <;> simp [hl]
+        · by_cases hl : b ∈ l <;> simp [hl, hb]
+      · simp [ha]
+  have outer : ∀ (l : List (Fin m)) (D : Matrix (Fin m) (Fin m') ℝ),
+      Id.run (l.foldlM (fun (D : Matrix (Fin m) (Fin m') ℝ) (i : Fin m) =>
+        (List.finRange m').foldlM (fun (D : Matrix (Fin m) (Fin m') ℝ) (j : Fin m') => do
+          let t ← runningDiff (M := Id) pure o (X i) (Y j) (C i j)
+          pure (D.updateRow i (Function.update (D i) j t))) D) D) =
+        of fun a b => if a ∈ l then C a b - (o.map fun k => X a k * Y b k).sum else D a b := by
+    intro l
+    induction l with
+    | nil => intro D; ext a b; simp
+    | cons c l ih =>
+      intro D
+      rw [List.foldlM_cons, Id.run_bind, inner, ih]
+      ext a b
+      by_cases ha : a = c
+      · subst ha; by_cases hl : a ∈ l <;> simp [hl]
+      · by_cases hl : a ∈ l <;> simp [hl, ha]
+  rw [mulTransposeDiff, outer]
+  ext a b
+  simp
+
+/-- Reindexing along a cast of `Fin` commutes with the Cholesky factor. -/
+private theorem cholesky_submatrix_finCongr {m k : ℕ} (h : m = k) (A : Matrix (Fin k) (Fin k) ℝ) :
+    cholesky (A.submatrix (finCongr h) (finCongr h)) =
+      (cholesky A).submatrix (finCongr h) (finCongr h) := by
+  subst h
+  simp
+
+/-- **Exact correctness of Algorithm 4.2.3**: for a symmetric positive definite `A` and `0 < r`,
+the exact run is the Cholesky factor, `G = cholesky A`. By strong induction on `n`: the base case
+is `algorithm_4_2_1_lower_eq_cholesky`; the step compares the blocks with (4.2.18): `G₁₁` is the
+Cholesky factor of `A₁₁`, the rows of `G₂₁` solve `G₁₁ gᵀ = a` (unique, `G₁₁` lower triangular
+with positive diagonal), and `Ã = A₂₂ − G₂₁G₂₁ᵀ` is the positive definite Schur complement. -/
+theorem algorithm_4_2_3_spec {r : ℕ} (hr : 0 < r) {A : Matrix (Fin n) (Fin n) ℝ}
+    (hA : A.PosDef) : Id.run (algorithm_4_2_3 pure r hr n A) = cholesky A := by
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+  rw [algorithm_4_2_3]
+  split_ifs with h
+  · exact choleskyLower_id A
+  have hn : r + (n - r) = n := by omega
+  set A₀ : Matrix (Fin (r + (n - r))) (Fin (r + (n - r))) ℝ :=
+    A.submatrix (finCongr hn) (finCongr hn) with hA₀
+  have hA₀pd : A₀.PosDef := hA.submatrix (finCongr hn).injective
+  set A' := A₀.submatrix finSumFinEquiv finSumFinEquiv with hA'
+  have hA'pd : A'.PosDef := hA₀pd.submatrix finSumFinEquiv.injective
+  have hB : A.submatrix (finSumFinEquiv.trans (finCongr hn)) (finSumFinEquiv.trans (finCongr hn)) =
+      A' := rfl
+  obtain ⟨h12, h11', h21', -, hS, h11, h22⟩ := equation_4_2_18 hA₀pd
+  set G' := (cholesky A₀).submatrix finSumFinEquiv finSumFinEquiv with hG'
+  simp only [Id.run_bind, Id.run_pure]
+  rw [hB, choleskyLower_id, solveRowsLower_id, mulTransposeDiff_id]
+  have h11pd : A'.toBlocks₁₁.PosDef := hA'pd.submatrix Sum.inl_injective
+  -- the rows of `G₂₁` solve `G₁₁ gᵀ = a`
+  have hG21 : (of fun i => (cholesky A'.toBlocks₁₁).forwardSubst (A'.toBlocks₂₁ i)) =
+      G'.toBlocks₂₁ := by
+    ext i j
+    have hx : cholesky A'.toBlocks₁₁ *ᵥ G'.toBlocks₂₁ i = A'.toBlocks₂₁ i := by
+      ext k
+      rw [h21', ← h11]
+      simp only [mulVec, dotProduct, mul_apply, transpose_apply]
+      exact Finset.sum_congr rfl fun l _ => mul_comm _ _
+    rw [of_apply, forwardSubst_eq_of_mulVec_eq _ (isLowerTriangular_cholesky _)
+      (fun k => (cholesky_diag_pos h11pd k).ne') hx]
+  -- the updated block is the Schur complement, which is positive definite
+  have hÃ : (of fun i j => A'.toBlocks₂₂ i j -
+      ((List.finRange r).map fun k => G'.toBlocks₂₁ i k * G'.toBlocks₂₁ j k).sum) =
+      A'.toBlocks₂₂ - G'.toBlocks₂₁ * G'.toBlocks₂₁ᵀ := by
+    ext i j
+    rw [of_apply, ← Fin.sum_univ_def, Matrix.sub_apply, mul_apply]
+    rfl
+  have hsym : A'.toBlocks₁₂ = A'.toBlocks₂₁ᵀ := by
+    ext i j
+    have := hA'pd.1.apply (Sum.inl i) (Sum.inr j)
+    simpa [toBlocks₁₂, toBlocks₂₁] using this.symm
+  have hSpd : (A'.toBlocks₂₂ - A'.toBlocks₂₁ * A'.toBlocks₁₁⁻¹ * A'.toBlocks₂₁ᵀ).PosDef := by
+    have := hA'pd.schurComplement
+    rwa [schurComplement_eq, hsym] at this
+  rw [hG21, hÃ, hS, ih (n - r) (by omega) hSpd, ← h11, ← h22, ← h12, fromBlocks_toBlocks, hG',
+    hA₀, cholesky_submatrix_finCongr]
+  ext i j
+  simp
+
+/-- `updateBlock A i j X` overwrites the `r × r` block `(i, j)` of `A`, in the blocking (4.2.19)
+along `finProdFinEquiv`, with `X`. -/
+def updateBlock {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (i j : Fin N)
+    (X : Matrix (Fin r) (Fin r) ℝ) : Matrix (Fin (N * r)) (Fin (N * r)) ℝ :=
+  of fun a b => if (finProdFinEquiv.symm a).1 = i ∧ (finProdFinEquiv.symm b).1 = j then
+    X (finProdFinEquiv.symm a).2 (finProdFinEquiv.symm b).2 else A a b
+
+section Programs
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- One block of Algorithm 4.2.4, the pair `(i, j)` with `i ≥ j`: "Compute
+`S = A_ij − ∑_{k=1}^{j−1} G_ik G_jkᵀ`. If `i = j` compute the Cholesky factorization
+`S = G_jj G_jjᵀ`, else solve `G_ij G_jjᵀ = S` for `G_ij`. `A_ij = G_ij`". `S` is formed by running
+differences over the pairs `(k, s)`, `k < j`, of the block columns already overwritten
+(`mulTransposeDiff`); the Cholesky factor is `choleskyLower`, the solve is row by row by
+Algorithm 3.1.3 (`solveRowsLower`) with the stored `G_jj`. -/
+noncomputable def blockCholeskyStep {N r : ℕ} (j i : Fin N)
+    (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) : M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) := do
+  let S ← mulTransposeDiff rnd ((List.finRange N).filter (· < j) ×ˢ List.finRange r)
+    (blockOf A i j) (of fun p ks => A (finProdFinEquiv (i, p)) (finProdFinEquiv ks))
+    (of fun q ks => A (finProdFinEquiv (j, q)) (finProdFinEquiv ks))
+  let G ← (if i = j then choleskyLower rnd S else solveRowsLower rnd (blockOf A j j) S)
+  pure (updateBlock A i j G)
+
+/-- **Algorithm 4.2.4 (Nonrecursive Block Cholesky).** "Given a symmetric positive definite
+`A ∈ ℝⁿˣⁿ` with `n = Nr` with blocking (4.2.19), the following algorithm computes a lower
+triangular `G ∈ ℝⁿˣⁿ` such that `A = GGᵀ`. The lower triangular part of `A` is overwritten by the
+lower triangular part of `G`":
+```
+for j = 1:N
+    for i = j:N
+        Compute S = A_ij − ∑_{k=1}^{j−1} G_ik G_jkᵀ.
+        if i = j
+            Compute Cholesky factorization S = G_jj G_jjᵀ.
+        else
+            Solve G_ij G_jjᵀ = S for G_ij.
+        end
+        A_ij = G_ij
+    end
+end
+```
+The input is `Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, its blocks `blockOf A i j` read along
+`finProdFinEquiv`; the loop body is `blockCholeskyStep`. The diagonal blocks store the lower
+triangle of the factor, so their strict upper triangles are zeroed. -/
+noncomputable def algorithm_4_2_4 (N r : ℕ) (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
+    M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :=
+  (List.finRange N).foldlM (fun (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (j : Fin N) =>
+    ((List.finRange N).filter (j ≤ ·)).foldlM
+      (fun (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (i : Fin N) => blockCholeskyStep rnd j i A)
+      A) A
+
+end Programs
+
+/-- A fold satisfies a property of the processed prefix, if every step does. -/
+private theorem foldl_prefix_induction {α β : Type*} (f : β → α → β) (l : List α)
+    (P : List α → β → Prop) {b : β} (h0 : P [] b)
+    (hs : ∀ p a q s, l = p ++ a :: q → P p s → P (p ++ [a]) (f s a)) : P l (l.foldl f b) := by
+  suffices h : ∀ q p s, l = p ++ q → P p s → P l (q.foldl f s) from h l [] b rfl h0
+  intro q
+  induction q with
+  | nil => intro p s hl hp; simpa [hl] using hp
+  | cons a q ih =>
+    intro p s hl hp
+    exact ih (p ++ [a]) (f s a) (by simp [hl]) (hs p a q s hl hp)
+
+/-- The matrix whose blocks `(i, k)` with `P i k` are those of `G`, the others those of `A`. -/
+private def blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
+    (P : Fin N → Fin N → Bool) : Matrix (Fin (N * r)) (Fin (N * r)) ℝ :=
+  of fun a b => if P (finProdFinEquiv.symm a).1 (finProdFinEquiv.symm b).1 then G a b else A a b
+
+private theorem blockMix_apply {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
+    (P : Fin N → Fin N → Bool) (i k : Fin N) (p q : Fin r) :
+    blockMix A G P (finProdFinEquiv (i, p)) (finProdFinEquiv (k, q)) =
+      if P i k then G (finProdFinEquiv (i, p)) (finProdFinEquiv (k, q))
+      else A (finProdFinEquiv (i, p)) (finProdFinEquiv (k, q)) := by
+  simp only [blockMix, of_apply, Equiv.symm_apply_apply]
+
+private theorem blockOf_blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
+    (P : Fin N → Fin N → Bool) (i k : Fin N) :
+    blockOf (blockMix A G P) i k = if P i k then blockOf G i k else blockOf A i k := by
+  ext p q
+  simp only [blockOf, of_apply, blockMix_apply]
+  split_ifs <;> rfl
+
+private theorem updateBlock_blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
+    (P : Fin N → Fin N → Bool) (i j : Fin N) :
+    updateBlock (blockMix A G P) i j (blockOf G i j) =
+      blockMix A G fun a b => P a b || (a == i && b == j) := by
+  ext a b
+  obtain ⟨⟨a₁, a₂⟩, rfl⟩ := finProdFinEquiv.surjective a
+  obtain ⟨⟨b₁, b₂⟩, rfl⟩ := finProdFinEquiv.surjective b
+  simp only [updateBlock, of_apply, Equiv.symm_apply_apply, blockMix_apply, blockOf,
+    Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq]
+  by_cases h : a₁ = i ∧ b₁ = j
+  · obtain ⟨rfl, rfl⟩ := h
+    rw [ite_eq_left ⟨rfl, rfl⟩, ite_eq_left (Or.inr ⟨rfl, rfl⟩)]
+  · rw [ite_eq_right h]
+    by_cases hP : P a₁ b₁ = true
+    · rw [ite_eq_left hP, ite_eq_left (Or.inl hP)]
+    · rw [ite_eq_right hP, ite_eq_right (by tauto)]
+
+/-- One step of Algorithm 4.2.4 in exact arithmetic. -/
+private theorem blockCholeskyStep_id {N r : ℕ} (j i : Fin N)
+    (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
+    Id.run (blockCholeskyStep (M := Id) pure j i A) = updateBlock A i j
+      (if i = j then cholesky (of fun a b => blockOf A i j a b -
+          (((List.finRange N).filter (· < j) ×ˢ List.finRange r).map fun ks =>
+            A (finProdFinEquiv (i, a)) (finProdFinEquiv ks) *
+              A (finProdFinEquiv (j, b)) (finProdFinEquiv ks)).sum)
+        else of fun a => (blockOf A j j).forwardSubst ((of fun a b => blockOf A i j a b -
+          (((List.finRange N).filter (· < j) ×ˢ List.finRange r).map fun ks =>
+            A (finProdFinEquiv (i, a)) (finProdFinEquiv ks) *
+              A (finProdFinEquiv (j, b)) (finProdFinEquiv ks)).sum) a)) := by
+  rw [blockCholeskyStep, Id.run_bind, mulTransposeDiff_id, Id.run_bind, Id.run_pure]
+  congr 1
+  split_ifs
+  · exact choleskyLower_id _
+  · exact solveRowsLower_id _ _
+
+/-- **Exact correctness of Algorithm 4.2.4**: for a symmetric positive definite `A` with
+`n = N r`, the lower triangle of the exact run is the Cholesky factor, `G = cholesky A`. Induction
+over the block columns, and within a column over the block rows, with the invariant that the blocks
+already visited are those of `G`: the block `S` is then `A_ij − ∑_{k<j} G_ik G_jkᵀ`, whose
+Cholesky factor is `G_jj` and for which `G_ij G_jjᵀ = S` (4.2.19), the solution of the triangular
+system being unique. -/
+theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
+    (hA : A.PosDef) :
+    Id.run (algorithm_4_2_4 pure N r A) - (Id.run (algorithm_4_2_4 pure N r A)).strictUpper =
+      cholesky A := by
+  have h19 := equation_4_2_19 hA
+  have hsorted := List.pairwise_lt_finRange N
+  -- the invariant of the column loop
+  have hcol : ∀ (p : List (Fin N)) (j : Fin N) (q : List (Fin N)), List.finRange N = p ++ j :: q →
+      ((List.finRange N).filter (j ≤ ·)).foldl
+        (fun s i => Id.run (blockCholeskyStep (M := Id) pure j i s))
+        (blockMix A (cholesky A) fun i k => decide (k ∈ p ∧ k ≤ i)) =
+        blockMix A (cholesky A) fun i k => decide (k ∈ p ++ [j] ∧ k ≤ i) := by
+    intro p j q hpq
+    have hp : ∀ k, k ∈ p ↔ k < j := fun k => by
+      refine ⟨fun hk => ?_, fun hk => Chapter03.mem_prefix_of_pairwise hsorted hpq
+        (List.mem_finRange k) (ne_of_lt hk) (lt_asymm hk)⟩
+      have hs := hsorted
+      rw [hpq] at hs
+      exact (List.pairwise_append.1 hs).2.2 k hk j List.mem_cons_self
+    set L := (List.finRange N).filter (j ≤ ·) with hLdef
+    have hLmem : ∀ i, i ∈ L ↔ j ≤ i := fun i => by simp [hLdef]
+    have hLsorted : L.Pairwise (· < ·) := hsorted.filter _
+    have hLnodup : L.Nodup := (List.nodup_finRange N).filter _
+    have e0 : (fun i k => decide (k ∈ p ∧ k ≤ i)) =
+        fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ ([] : List (Fin N)))) := by
+      funext i k
+      simp
+    have e1 : (fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ L))) =
+        fun i k => decide (k ∈ p ++ [j] ∧ k ≤ i) := by
+      funext i k
+      simp only [hLmem, List.mem_append, List.mem_singleton, decide_eq_decide]
+      constructor
+      · rintro (⟨hk, hki⟩ | ⟨rfl, hki⟩)
+        · exact ⟨Or.inl hk, hki⟩
+        · exact ⟨Or.inr rfl, hki⟩
+      · rintro ⟨hk | rfl, hki⟩
+        · exact Or.inl ⟨hk, hki⟩
+        · exact Or.inr ⟨rfl, hki⟩
+    rw [e0, ← e1]
+    refine foldl_prefix_induction _ L (fun p' s => s = blockMix A (cholesky A)
+      fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p'))) rfl fun p' i q' s hL hs => ?_
+    subst hs
+    have hiL : j ≤ i := (hLmem i).1 (by rw [hL]; simp)
+    have hip' : i ∉ p' := by
+      have hn := hLnodup
+      rw [hL] at hn
+      exact fun h => (List.nodup_append.1 hn).2.2 i h i List.mem_cons_self rfl
+    -- the entries read by the step
+    have hG : ∀ (a k : Fin N), k < j → j ≤ a → ∀ (x y : Fin r),
+        blockMix A (cholesky A) (fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p')))
+          (finProdFinEquiv (a, x)) (finProdFinEquiv (k, y)) =
+          cholesky A (finProdFinEquiv (a, x)) (finProdFinEquiv (k, y)) := by
+      intro a k hk hja x y
+      rw [blockMix_apply, ite_eq_left]
+      simp [(hp k).2 hk, hk.le.trans hja]
+    have hij : blockOf (blockMix A (cholesky A)
+        fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p'))) i j = blockOf A i j := by
+      rw [blockOf_blockMix, ite_eq_right]
+      simp [hip', hp]
+    have hnd : ((List.finRange N).filter (· < j) ×ˢ List.finRange r).Nodup :=
+      ((List.nodup_finRange N).filter _).product (List.nodup_finRange r)
+    have hfs : ((List.finRange N).filter (· < j) ×ˢ List.finRange r).toFinset =
+        Finset.univ.filter (· < j) ×ˢ Finset.univ := by
+      ext ⟨k, t⟩
+      simp
+    have hS : (of fun a b => blockOf (blockMix A (cholesky A)
+        fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p'))) i j a b -
+          (((List.finRange N).filter (· < j) ×ˢ List.finRange r).map fun ks =>
+            blockMix A (cholesky A) (fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p')))
+              (finProdFinEquiv (i, a)) (finProdFinEquiv ks) *
+            blockMix A (cholesky A) (fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p')))
+              (finProdFinEquiv (j, b)) (finProdFinEquiv ks)).sum) =
+        blockOf A i j - ∑ k ∈ Finset.univ.filter (· < j),
+          blockOf (cholesky A) i k * (blockOf (cholesky A) j k)ᵀ := by
+      rw [hij]
+      ext a b
+      rw [of_apply, ← List.sum_toFinset _ hnd, hfs, Finset.sum_product, Matrix.sub_apply,
+        Matrix.sum_apply]
+      congr 1
+      refine Finset.sum_congr rfl fun k hk => ?_
+      have hkj : k < j := (Finset.mem_filter.1 hk).2
+      rw [mul_apply]
+      refine Finset.sum_congr rfl fun y _ => ?_
+      rw [hG i k hkj hiL a y, hG j k hkj le_rfl b y]
+      simp [blockOf]
+    have e2 : (fun a b => decide ((b ∈ p ∧ b ≤ a) ∨ (b = j ∧ a ∈ p')) || (a == i && b == j)) =
+        fun a b => decide ((b ∈ p ∧ b ≤ a) ∨ (b = j ∧ a ∈ p' ++ [i])) := by
+      funext a b
+      rw [Bool.eq_iff_iff]
+      simp only [Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true, beq_iff_eq,
+        List.mem_append, List.mem_singleton]
+      tauto
+    change _ = blockMix A (cholesky A)
+      fun a b => decide ((b ∈ p ∧ b ≤ a) ∨ (b = j ∧ a ∈ p' ++ [i]))
+    rw [← e2, ← updateBlock_blockMix, blockCholeskyStep_id, hS]
+    congr 1
+    by_cases hij' : i = j
+    · subst hij'
+      rw [ite_eq_left rfl, (h19 i i).2.2.1]
+    · have hji : j < i := lt_of_le_of_ne hiL (Ne.symm hij')
+      have hjp' : j ∈ p' := Chapter03.mem_prefix_of_pairwise hLsorted hL ((hLmem j).2 le_rfl)
+        (Ne.symm hij') (lt_asymm hji)
+      rw [ite_eq_right hij', blockOf_blockMix, ite_eq_left (by simp [hjp'])]
+      have hlow : (blockOf (cholesky A) j j).IsLowerTriangular := by
+        rw [(h19 j j).2.2.1]
+        exact isLowerTriangular_cholesky _
+      have hdiag : ∀ x, blockOf (cholesky A) j j x x ≠ 0 := fun x =>
+        (cholesky_diag_pos hA (finProdFinEquiv (j, x))).ne'
+      ext a b
+      have hx : blockOf (cholesky A) j j *ᵥ blockOf (cholesky A) i j a = (blockOf A i j -
+          ∑ k ∈ Finset.univ.filter (· < j),
+            blockOf (cholesky A) i k * (blockOf (cholesky A) j k)ᵀ) a := by
+        rw [← (h19 i j).2.2.2 hji]
+        ext c
+        simp only [mulVec, dotProduct, mul_apply, transpose_apply]
+        exact Finset.sum_congr rfl fun l _ => mul_comm _ _
+      rw [of_apply, forwardSubst_eq_of_mulVec_eq _ hlow hdiag hx]
+  have hfin : (List.finRange N).foldl (fun s j => ((List.finRange N).filter (j ≤ ·)).foldl
+      (fun s i => Id.run (blockCholeskyStep (M := Id) pure j i s)) s) A =
+      blockMix A (cholesky A) fun i k => decide (k ∈ List.finRange N ∧ k ≤ i) :=
+    foldl_prefix_induction _ (List.finRange N)
+      (fun p s => s = blockMix A (cholesky A) fun i k => decide (k ∈ p ∧ k ≤ i))
+      (by ext a b; simp [blockMix]) fun p j q s hpq hs => by
+        subst hs
+        exact hcol p j q hpq
+  rw [algorithm_4_2_4, List.idRun_foldlM]
+  simp only [List.idRun_foldlM]
+  rw [hfin]
+  ext a b
+  obtain ⟨⟨i, p⟩, rfl⟩ := finProdFinEquiv.surjective a
+  obtain ⟨⟨k, q⟩, rfl⟩ := finProdFinEquiv.surjective b
+  rw [Matrix.sub_apply]
+  by_cases hlt : finProdFinEquiv (i, p) < finProdFinEquiv (k, q)
+  · simp only [strictUpper, of_apply, ite_eq_left hlt, sub_self]
+    exact (isLowerTriangular_cholesky A (OrderDual.toDual_lt_toDual.2 hlt)).symm
+  · simp only [strictUpper, of_apply, ite_eq_right hlt, sub_zero]
+    have hki : k ≤ i := not_lt.1 fun h => hlt (finProdFinEquiv_lt h p q)
+    rw [blockMix_apply, ite_eq_left (by simp [hki])]
+
+/-! ### Algorithm 4.2.2: the exact specification ((4.2.16), (4.2.17)) -/
+
+/-- One elimination step of Algorithm 4.2.2 in exact arithmetic: the multipliers
+`a_ik / a_kk` below the pivot and the update `a_il − a_ik a_lk / a_kk` of the trailing block. -/
+noncomputable def pivotElim (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i l => if k < i ∧ k < l then A i l - A i k * A l k / A k k
+    else if l = k ∧ k < i then A i k / A k k else A i l
+
+/-- A fold writing one entry of a fixed column per row, with values not depending on the state. -/
+private theorem foldl_updateRow_col_const (k : Fin n) (w : Fin n → ℝ) (L : List (Fin n))
+    (D : Matrix (Fin n) (Fin n) ℝ) :
+    L.foldl (fun (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
+        B.updateRow i (Function.update (B i) k (w i))) D =
+      of fun a b => if b = k ∧ a ∈ L then w a else D a b := by
+  induction L generalizing D with
+  | nil => ext a b; simp
+  | cons c L ih =>
+    rw [List.foldl_cons, ih]
+    ext a b
+    by_cases ha : a = c
+    · subst ha
+      by_cases hb : b = k <;> simp [hb]
+    · by_cases hb : b = k <;> simp [hb, ha]
+
+/-- A fold subtracting from the entries `(i, l)`, `l` along a duplicate-free list. -/
+private theorem foldl_updateRow_sub (i : Fin n) (w : Fin n → ℝ) {L : List (Fin n)}
+    (hL : L.Nodup) (D : Matrix (Fin n) (Fin n) ℝ) :
+    L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) =>
+        C.updateRow i (Function.update (C i) l (C i l - w l))) D =
+      of fun a b => if a = i ∧ b ∈ L then D a b - w b else D a b := by
+  induction L generalizing D with
+  | nil => ext a b; simp
+  | cons c L ih =>
+    rcases List.nodup_cons.1 hL with ⟨hc, hL'⟩
+    rw [List.foldl_cons, ih hL']
+    ext a b
+    by_cases ha : a = i
+    · subst ha
+      by_cases hb : b = c
+      · subst hb
+        simp [hc]
+      · by_cases hbL : b ∈ L <;> simp [hb, hbL]
+    · simp [ha]
+
+/-- The rank-one update of the trailing block, rows and columns along a duplicate-free list. -/
+private theorem foldl_foldl_updateRow_sub (w : Fin n → Fin n → ℝ) {L : List (Fin n)}
+    (hL : L.Nodup) (D : Matrix (Fin n) (Fin n) ℝ) :
+    L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
+      L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) =>
+        C.updateRow i (Function.update (C i) l (C i l - w i l))) C) D =
+      of fun a b => if a ∈ L ∧ b ∈ L then D a b - w a b else D a b := by
+  suffices h : ∀ (L' : List (Fin n)), L'.Nodup → ∀ D : Matrix (Fin n) (Fin n) ℝ,
+      L'.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
+        L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) =>
+          C.updateRow i (Function.update (C i) l (C i l - w i l))) C) D =
+        of fun a b => if a ∈ L' ∧ b ∈ L then D a b - w a b else D a b from h L hL D
+  intro L' hL'
+  induction L' with
+  | nil => intro D; ext a b; simp
+  | cons c L' ih =>
+    intro D
+    rcases List.nodup_cons.1 hL' with ⟨hc, hL''⟩
+    rw [List.foldl_cons, foldl_updateRow_sub c (w c) hL, ih hL'']
+    ext a b
+    by_cases ha : a = c
+    · subst ha
+      simp [hc]
+    · simp [ha]
+
+/-- **The exact step of Algorithm 4.2.2**: interchange by the diagonal pivot, then eliminate. -/
+theorem ldltPivotStep_id (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
+    Id.run (ldltPivotStep (M := Id) pure st k) =
+      (pivotElim k (st.1.submatrix (Equiv.swap k (diagPivot st.1 k))
+        (Equiv.swap k (diagPivot st.1 k))), Function.update st.2 k (diagPivot st.1 k)) := by
+  simp only [ldltPivotStep, Id.run_bind, Id.run_pure, List.idRun_foldlM]
+  rw [foldl_updateRow_col_const, foldl_foldl_updateRow_sub _ ((List.nodup_finRange n).filter _)]
+  congr 1
+  ext a b
+  simp only [pivotElim, of_apply, List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq]
+  by_cases hab : k < a ∧ k < b
+  · rw [ite_eq_left hab, ite_eq_left hab, ite_eq_right (fun h => (ne_of_gt hab.2) h.1)]
+  · rw [ite_eq_right hab, ite_eq_right hab]
+
+
+/-- The unit lower triangular `L_k` of the pivoted `L D Lᵀ` after `k` steps ((4.2.16)): the first
+`k` columns of the packed state `S` below the diagonal, and the identity elsewhere. -/
+def pivotedLower (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i j => if (j : ℕ) < k ∧ j < i then S i j else if i = j then 1 else 0
+
+/-- The middle factor `diag(D_k, A_k)` of the pivoted `L D Lᵀ` after `k` steps ((4.2.16)): the
+diagonal `d₁, …, d_k` of the packed state `S` and its trailing block `A_k = S(k+1:n, k+1:n)`. -/
+def pivotedMiddle (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i j => if (i : ℕ) < k ∨ (j : ℕ) < k then (if i = j then S i j else 0) else S i j
+
+/-- `L_k` commutes with a symmetric permutation that fixes the first `k` indices. -/
+private theorem pivotedLower_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) ℝ)
+    (σ : Equiv.Perm (Fin n)) (h1 : ∀ m : Fin n, (m : ℕ) < k → σ m = m)
+    (h2 : ∀ m : Fin n, k ≤ (m : ℕ) → k ≤ (σ m : ℕ)) :
+    pivotedLower k (S.submatrix σ σ) = (pivotedLower k S).submatrix σ σ := by
+  ext i l
+  simp only [pivotedLower, of_apply, submatrix_apply, σ.injective.eq_iff]
+  by_cases hl : (l : ℕ) < k
+  · have hli : l < i ↔ l < σ i := by
+      by_cases hi : (i : ℕ) < k
+      · rw [h1 i hi]
+      · have := h2 i (not_lt.1 hi)
+        simp only [Fin.lt_def]
+        omega
+    rw [h1 l hl]
+    simp only [hli]
+  · have hσl : ¬ ((σ l : ℕ) < k) := not_lt.2 (h2 l (not_lt.1 hl))
+    simp [hl, hσl]
+
+/-- `diag(D_k, A_k)` commutes with a symmetric permutation that fixes the first `k` indices. -/
+private theorem pivotedMiddle_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) ℝ)
+    (σ : Equiv.Perm (Fin n)) (h1 : ∀ m : Fin n, (m : ℕ) < k → σ m = m)
+    (h2 : ∀ m : Fin n, k ≤ (m : ℕ) → k ≤ (σ m : ℕ)) :
+    pivotedMiddle k (S.submatrix σ σ) = (pivotedMiddle k S).submatrix σ σ := by
+  have hk : ∀ m : Fin n, (σ m : ℕ) < k ↔ (m : ℕ) < k := fun m =>
+    ⟨fun h => by_contra fun h' => absurd h (not_lt.2 (h2 m (not_lt.1 h'))),
+      fun h => by rw [h1 m h]; exact h⟩
+  ext i l
+  simp only [pivotedMiddle, of_apply, submatrix_apply, σ.injective.eq_iff, hk]
+
+/-- The interchange of step `k` fixes the indices below `k` and keeps the others at or above `k`. -/
+private theorem swap_fixes {k j : Fin n} (hkj : k ≤ j) :
+    (∀ m : Fin n, (m : ℕ) < k → Equiv.swap k j m = m) ∧
+      ∀ m : Fin n, (k : ℕ) ≤ m → (k : ℕ) ≤ (Equiv.swap k j m : ℕ) := by
+  refine ⟨fun m hm => Equiv.swap_apply_of_ne_of_ne (fun h => by subst h; omega)
+    (fun h => by subst h; exact absurd (Fin.le_def.1 hkj) (by omega)), fun m hm => ?_⟩
+  rw [Equiv.swap_apply_def]
+  split_ifs
+  · exact Fin.le_def.1 hkj
+  · exact le_rfl
+  · exact hm
+
+/-- The column operator of step `k`: the identity plus `w` below the diagonal of column `k`. -/
+private def colOp (k : Fin n) (w : Fin n → ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun i l => if l = k ∧ k < i then w i else if i = l then 1 else 0
+
+private theorem colOp_mul_apply (k : Fin n) (w : Fin n → ℝ) (X : Matrix (Fin n) (Fin n) ℝ)
+    (i b : Fin n) : (colOp k w * X) i b = X i b + if k < i then w i * X k b else 0 := by
+  have h : ∀ a, colOp k w i a * X a b =
+      (if i = a then X a b else 0) + (if a = k then (if k < i then w i * X a b else 0) else 0) := by
+    intro a
+    simp only [colOp, of_apply]
+    by_cases hak : a = k
+    · subst hak
+      by_cases hi : a < i
+      · simp [hi, (ne_of_gt hi)]
+      · by_cases hia : i = a <;> simp [hi, hia]
+    · by_cases hia : i = a <;> simp [hak, hia]
+  rw [mul_apply, Finset.sum_congr rfl fun a _ => h a, Finset.sum_add_distrib, Finset.sum_ite_eq,
+    Finset.sum_ite_eq']
+  simp
+
+private theorem mul_colOp_transpose_apply (k : Fin n) (w : Fin n → ℝ)
+    (X : Matrix (Fin n) (Fin n) ℝ) (i l : Fin n) :
+    (X * (colOp k w)ᵀ) i l = X i l + if k < l then X i k * w l else 0 := by
+  have h := colOp_mul_apply k w Xᵀ l i
+  rw [← transpose_apply (X * (colOp k w)ᵀ), transpose_mul, transpose_transpose, h]
+  simp [transpose_apply, mul_comm]
+
+/-- The inverse of the column operator. -/
+private theorem colOp_neg_mul_colOp (k : Fin n) (w : Fin n → ℝ) :
+    colOp k (-w) * colOp k w = 1 := by
+  ext i l
+  rw [colOp_mul_apply]
+  by_cases hl : l = k
+  · subst hl
+    by_cases hi : l < i
+    · simp [colOp, hi, (ne_of_gt hi), one_apply]
+    · simp [colOp, hi, one_apply]
+  · simp [colOp, hl, Ne.symm hl, one_apply]
+
+/-- The multipliers of step `k`. -/
+private noncomputable def multipliers (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Fin n → ℝ :=
+  fun i => A i k / A k k
+
+/-- (4.2.16), the unit lower factor: `L_{k+1} = L_k E_k` with `E_k` the column operator of the
+multipliers of step `k`. -/
+private theorem pivotedLower_succ (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
+    pivotedLower ((k : ℕ) + 1) (pivotElim k A) =
+      pivotedLower k A * colOp k (multipliers k A) := by
+  ext i l
+  rw [mul_apply]
+  by_cases hl : l = k
+  · subst hl
+    rw [Finset.sum_eq_single i]
+    · by_cases hi : l < i
+      · simp only [pivotedLower, pivotElim, colOp, multipliers, of_apply, lt_irrefl, hi,
+          Nat.lt_succ_self, and_self, and_false, ite_true, ite_false, one_mul]
+      · simp only [pivotedLower, pivotElim, colOp, of_apply, lt_irrefl, hi, and_false,
+          ite_true, ite_false, one_mul]
+    · intro a _ hai
+      by_cases ha : a < l
+      · simp only [colOp, of_apply, lt_asymm ha, ne_of_lt ha, and_false, ite_false, mul_zero]
+      · have ha' : ¬ ((a : ℕ) < l) := fun h => ha (Fin.lt_def.2 h)
+        simp only [pivotedLower, of_apply, ha', false_and, ite_false, Ne.symm hai, zero_mul]
+    · simp
+  · rw [Finset.sum_eq_single l]
+    · have hkl' : (l : ℕ) ≠ k := fun h => hl (Fin.ext h)
+      by_cases hlk : (l : ℕ) < k
+      · have hkl : ¬ k < l := fun h => absurd (Fin.lt_def.1 h) (by omega)
+        have hl1 : (l : ℕ) < k + 1 := by omega
+        simp only [pivotedLower, pivotElim, colOp, of_apply, hl, hlk, hl1, hkl, true_and,
+          false_and, and_false, ite_false, ite_true, mul_one]
+      · have hkl : ¬ (l : ℕ) < k + 1 := by omega
+        simp only [pivotedLower, colOp, of_apply, hl, hlk, hkl, false_and, ite_false, ite_true,
+          mul_one]
+    · intro a _ hal
+      simp only [colOp, of_apply, hl, hal, false_and, ite_false, mul_zero]
+    · simp
+
+/-- (4.2.16), the middle factor: `diag(D_k, A_k) = E_k diag(D_{k+1}, A_{k+1}) E_kᵀ`, provided a zero
+pivot has a zero column below it and the trailing block is symmetric in its first row. -/
+private theorem pivotedMiddle_eq (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ)
+    (h0 : A k k = 0 → ∀ i, k < i → A i k = 0) (hsym : ∀ i, k < i → A k i = A i k) :
+    pivotedMiddle k A = colOp k (multipliers k A) * pivotedMiddle ((k : ℕ) + 1) (pivotElim k A) *
+      (colOp k (multipliers k A))ᵀ := by
+  ext i l
+  rw [mul_colOp_transpose_apply, colOp_mul_apply, colOp_mul_apply]
+  have hk1 : ¬ (k : ℕ) < k := lt_irrefl _
+  have hk2 : (k : ℕ) < k + 1 := Nat.lt_succ_self _
+  rcases lt_trichotomy i k with hi | rfl | hi
+  · have hi' : (i : ℕ) < k := Fin.lt_def.1 hi
+    have hik : ¬ k < i := lt_asymm hi
+    have hne : i ≠ k := ne_of_lt hi
+    simp [pivotedMiddle, pivotElim, hi, hi.le, hik, hne]
+  · rcases lt_trichotomy l i with hl | rfl | hl
+    · have hl' : (l : ℕ) < i := Fin.lt_def.1 hl
+      simp [pivotedMiddle, pivotElim, hl, lt_asymm hl, ne_of_gt hl]
+    · simp [pivotedMiddle, pivotElim]
+    · have hl' : ¬ (l : ℕ) < i + 1 := by have := Fin.lt_def.1 hl; omega
+      have hl'' : ¬ (l : ℕ) < i := by have := Fin.lt_def.1 hl; omega
+      simp only [pivotedMiddle, pivotElim, multipliers, of_apply, hl, hl', hl'', hk1, hk2,
+        lt_irrefl, ne_of_lt hl, and_false, or_false, ↓reduceIte, or_true, zero_add, add_zero]
+      by_cases h : A i i = 0
+      · rw [h, hsym l hl, h0 h l hl]
+        simp
+      · rw [hsym l hl]
+        field_simp
+  · have hi' : ¬ (i : ℕ) < k := by have := Fin.lt_def.1 hi; omega
+    have hi'' : ¬ (i : ℕ) < k + 1 := by have := Fin.lt_def.1 hi; omega
+    rcases lt_trichotomy l k with hl | rfl | hl
+    · have hl' : (l : ℕ) < k := Fin.lt_def.1 hl
+      simp [pivotedMiddle, pivotElim, hl, hl.le, lt_asymm hl, ne_of_gt hl,
+        ne_of_gt (hl.trans hi)]
+    · simp only [pivotedMiddle, pivotElim, multipliers, of_apply, hi, hi', hi'', hk1, hk2,
+        lt_irrefl, ne_of_gt hi, and_false, or_false, ↓reduceIte, or_true, zero_add, add_zero,
+        and_self]
+      by_cases h : A l l = 0
+      · rw [h, h0 h i hi]
+        simp
+      · field_simp
+    · have hl' : ¬ (l : ℕ) < k := by have := Fin.lt_def.1 hl; omega
+      have hl'' : ¬ (l : ℕ) < k + 1 := by have := Fin.lt_def.1 hl; omega
+      simp only [pivotedMiddle, pivotElim, multipliers, of_apply, hi, hl, hi', hi'', hl', hl'',
+        hk2, lt_irrefl, ne_of_gt hi, ne_of_lt hl, and_false, or_false, ↓reduceIte, or_true,
+        zero_add, mul_zero, add_zero, and_self]
+      by_cases h : A k k = 0
+      · simp [h]
+      · field_simp
+        ring
+
+/-- The pivot of step `k` lies at or after `k` and carries the largest diagonal entry there. -/
+private theorem diagPivot_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
+    k ≤ diagPivot A k ∧ ∀ i, k ≤ i → A i i ≤ A (diagPivot A k) (diagPivot A k) := by
+  have key : ∀ (l : List (Fin n)) (b : Fin n), k ≤ b → (∀ i ∈ l, k ≤ i) →
+      k ≤ l.foldl (fun (b i : Fin n) => if A b b < A i i then i else b) b ∧
+        A b b ≤ A (l.foldl (fun (b i : Fin n) => if A b b < A i i then i else b) b)
+          (l.foldl (fun (b i : Fin n) => if A b b < A i i then i else b) b) ∧
+        ∀ i ∈ l, A i i ≤ A (l.foldl (fun (b i : Fin n) => if A b b < A i i then i else b) b)
+          (l.foldl (fun (b i : Fin n) => if A b b < A i i then i else b) b) := by
+    intro l
+    induction l with
+    | nil => intro b hb _; exact ⟨hb, le_rfl, by simp⟩
+    | cons c l ih =>
+      intro b hb hl
+      rw [List.foldl_cons]
+      by_cases h : A b b < A c c
+      · rw [ite_eq_left h]
+        obtain ⟨h1, h2, h3⟩ := ih c (hl c List.mem_cons_self)
+          fun i hi => hl i (List.mem_cons_of_mem _ hi)
+        refine ⟨h1, h.le.trans h2, fun i hi => ?_⟩
+        rcases List.mem_cons.1 hi with rfl | hi
+        · exact h2
+        · exact h3 i hi
+      · rw [ite_eq_right h]
+        obtain ⟨h1, h2, h3⟩ := ih b hb fun i hi => hl i (List.mem_cons_of_mem _ hi)
+        refine ⟨h1, h2, fun i hi => ?_⟩
+        rcases List.mem_cons.1 hi with rfl | hi
+        · exact (not_lt.1 h).trans h2
+        · exact h3 i hi
+  obtain ⟨h1, -, h3⟩ := key ((List.finRange n).filter (k ≤ ·)) k le_rfl
+    fun i hi => by simpa using hi
+  exact ⟨h1, fun i hi => h3 i (by simp [hi])⟩
+
+/-- The invariant (4.2.16) of Algorithm 4.2.2 after the steps of a prefix of `0, …, n − 1`. -/
+private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef)
+    (l : List (Fin n)) (hl : l <+: List.finRange n) :
+    A.submatrix
+        (Chapter03.pivPermUpTo
+          (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i)).2
+          l.length)
+        (Chapter03.pivPermUpTo
+          (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i)).2
+          l.length) =
+      pivotedLower l.length (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+          (A, fun i => i)).1 *
+        pivotedMiddle l.length (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+          (A, fun i => i)).1 *
+        (pivotedLower l.length (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+          (A, fun i => i)).1)ᵀ ∧
+      (pivotedMiddle l.length (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+          (A, fun i => i)).1).PosSemidef ∧
+      ∀ i j : Fin n, (i : ℕ) < l.length → i ≤ j →
+        (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+            (A, fun i => i)).1 j j ≤
+          (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
+            (A, fun i => i)).1 i i := by
+  obtain ⟨rest₀, hrest₀⟩ := hl
+  refine foldl_prefix_induction _ l
+    (fun pre (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) =>
+    A.submatrix (Chapter03.pivPermUpTo st.2 pre.length) (Chapter03.pivPermUpTo st.2 pre.length) =
+      pivotedLower pre.length st.1 * pivotedMiddle pre.length st.1 *
+        (pivotedLower pre.length st.1)ᵀ ∧
+      (pivotedMiddle pre.length st.1).PosSemidef ∧
+      ∀ i j : Fin n, (i : ℕ) < pre.length → i ≤ j → st.1 j j ≤ st.1 i i) ?_ ?_
+  · refine ⟨?_, ?_, fun i j hi => absurd hi (Nat.not_lt_zero _)⟩
+    · have hL : pivotedLower 0 A = 1 := by
+        ext i j
+        simp [pivotedLower, one_apply]
+      have hM : pivotedMiddle 0 A = A := by
+        ext i j
+        simp [pivotedMiddle]
+      simp [Chapter03.pivPermUpTo, hL, hM]
+    · have hM : pivotedMiddle 0 A = A := by
+        ext i j
+        simp [pivotedMiddle]
+      simpa [hM] using hA
+  · intro pre a rest st hpre ⟨hfac, hpsd, hdom⟩
+    -- the step index is the length of the prefix
+    have ha : (a : ℕ) = pre.length := by
+      have hlt : pre.length < (List.finRange n).length := by
+        rw [← hrest₀, hpre]
+        simp
+      have h1 : (List.finRange n)[pre.length]'hlt = a := by
+        simp [← hrest₀, hpre]
+      rw [← h1]
+      simp
+    rw [ldltPivotStep_id, List.length_append, List.length_singleton]
+    obtain ⟨hkj, hmax⟩ := diagPivot_spec st.1 a
+    set j := diagPivot st.1 a with hj
+    set sw := Equiv.swap a j with hsw
+    set A' := st.1.submatrix sw sw with hA'
+    obtain ⟨hfix, hge⟩ := swap_fixes hkj
+    rw [← ha] at hfac hpsd hdom ⊢
+    -- the new permutation
+    have hperm : Chapter03.pivPermUpTo (Function.update st.2 a j) ((a : ℕ) + 1) =
+        Chapter03.pivPermUpTo st.2 a * sw := by
+      rw [Chapter03.pivPermUpTo_succ, Function.update_self,
+        Chapter03.pivPermUpTo_congr (piv' := st.2) fun m hm =>
+          Function.update_of_ne (fun h => by subst h; omega) _ _]
+    -- the factorization, after the interchange
+    have hL' : pivotedLower a A' = (pivotedLower a st.1).submatrix sw sw :=
+      pivotedLower_submatrix st.1 sw hfix hge
+    have hM' : pivotedMiddle a A' = (pivotedMiddle a st.1).submatrix sw sw :=
+      pivotedMiddle_submatrix st.1 sw hfix hge
+    have hpsd' : (pivotedMiddle a A').PosSemidef := by
+      rw [hM']
+      exact hpsd.submatrix sw
+    have hfac' : A.submatrix (Chapter03.pivPermUpTo st.2 a * sw)
+        (Chapter03.pivPermUpTo st.2 a * sw) =
+        pivotedLower a A' * pivotedMiddle a A' * (pivotedLower a A')ᵀ := by
+      rw [Equiv.Perm.coe_mul, ← submatrix_submatrix, hfac, hL', hM', transpose_submatrix,
+        submatrix_mul_equiv _ _ _ sw _, submatrix_mul_equiv _ _ _ sw _]
+    -- the entries of the middle factor at and after the pivot
+    have hmid : ∀ i l : Fin n, a ≤ i → a ≤ l → pivotedMiddle a A' i l = A' i l := by
+      intro i l hi hl
+      have hi' : ¬ (i : ℕ) < a := not_lt.2 (Fin.le_def.1 hi)
+      have hl' : ¬ (l : ℕ) < a := not_lt.2 (Fin.le_def.1 hl)
+      simp [pivotedMiddle, not_lt.2 hi, not_lt.2 hl]
+    have h0 : A' a a = 0 → ∀ i, a < i → A' i a = 0 := by
+      intro h i hi
+      rw [← hmid a a le_rfl le_rfl] at h
+      have := (hpsd'.apply_eq_zero_of_diag_eq_zero h i).2
+      rwa [hmid i a hi.le le_rfl] at this
+    have hsym : ∀ i, a < i → A' a i = A' i a := by
+      intro i hi
+      have := hpsd'.1.apply i a
+      rw [hmid a i le_rfl hi.le, hmid i a hi.le le_rfl] at this
+      simpa using this
+    have hE := pivotedMiddle_eq a A' h0 hsym
+    have hα : 0 ≤ A' a a := by
+      rw [← hmid a a le_rfl le_rfl]
+      exact hpsd'.diag_nonneg
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hperm, hfac', pivotedLower_succ, hE, transpose_mul]
+      simp only [Matrix.mul_assoc]
+    · -- the new middle factor is congruent to the old one
+      have hinv : pivotedMiddle ((a : ℕ) + 1) (pivotElim a A') =
+          colOp a (-multipliers a A') * pivotedMiddle a A' *
+            (colOp a (-multipliers a A'))ᵀ := by
+        rw [hE, ← Matrix.mul_assoc, ← Matrix.mul_assoc, colOp_neg_mul_colOp, Matrix.one_mul,
+          Matrix.mul_assoc, ← transpose_mul, colOp_neg_mul_colOp, transpose_one, Matrix.mul_one]
+      rw [hinv]
+      simpa [conjTranspose_eq_transpose_of_trivial] using
+        hpsd'.mul_mul_conjTranspose_same (colOp a (-multipliers a A'))
+    · -- the pivots dominate the later diagonal
+      have hCdiag : ∀ m : Fin n, pivotElim a A' m m ≤ A' m m := by
+        intro m
+        simp only [pivotElim, of_apply]
+        split_ifs with h1 h2
+        · have : 0 ≤ A' m a * A' m a / A' a a := div_nonneg (mul_self_nonneg _) hα
+          linarith
+        · exact absurd h2.1 (ne_of_gt h2.2)
+        · exact le_rfl
+      have hCle : ∀ m : Fin n, ¬ a < m → pivotElim a A' m m = A' m m := by
+        intro m hm
+        simp [pivotElim, hm]
+      intro i l hi hil
+      dsimp only
+      refine (hCdiag l).trans ?_
+      rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | hi
+      · -- an earlier pivot
+        have hia : i < a := Fin.lt_def.2 hi
+        rw [hCle i (lt_asymm hia)]
+        change st.1 (sw l) (sw l) ≤ st.1 (sw i) (sw i)
+        rw [hfix i hi]
+        refine hdom i (sw l) hi ?_
+        by_cases hl : (l : ℕ) < a
+        · rw [hfix l hl]
+          exact hil
+        · exact Fin.le_def.2 (le_trans (le_of_lt hi) (hge l (not_lt.1 hl)))
+      · -- the pivot just chosen
+        have hia : i = a := Fin.ext hi
+        subst hia
+        rw [hCle i (lt_irrefl i)]
+        change st.1 (sw l) (sw l) ≤ st.1 (sw i) (sw i)
+        rw [hsw, Equiv.swap_apply_left]
+        exact hmax _ (Fin.le_def.2 (hge l (Fin.le_def.1 hil)))
+
+
+/-- **(4.2.16)**: after `k` steps of Algorithm 4.2.2 on a symmetric positive semidefinite `A` (the
+exact run of the first `k` iterations), with `P̃` the product of the interchanges so far,
+`P̃ A P̃ᵀ = [L₁₁ 0; L₂₁ I] [D_k 0; 0 A_k] [L₁₁ 0; L₂₁ I]ᵀ` (`pivotedLower`, `pivotedMiddle`), where
+`diag(D_k, A_k)` is positive semidefinite (so `d₁, …, d_k ≥ 0` and `A_k` is positive semidefinite),
+each pivot dominates every later diagonal entry (so `d₁ ≥ ⋯ ≥ d_k` and `A_k`'s diagonal is at most
+`d_k`), and "`A_k = 0` as soon as `d_k = 0`" (by (4.2.15), since the pivot is the largest diagonal
+entry). -/
+theorem equation_4_2_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) {k : ℕ} (hk : k ≤ n) :
+    let st := ((List.finRange n).take k).foldl
+      (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i)
+    A.submatrix (Chapter03.pivPermUpTo st.2 k) (Chapter03.pivPermUpTo st.2 k) =
+        pivotedLower k st.1 * pivotedMiddle k st.1 * (pivotedLower k st.1)ᵀ ∧
+      (pivotedMiddle k st.1).PosSemidef ∧
+      (∀ i j : Fin n, (i : ℕ) < k → i ≤ j → st.1 j j ≤ st.1 i i) ∧
+      ∀ m : Fin n, (m : ℕ) < k → st.1 m m = 0 →
+        ∀ i l : Fin n, k ≤ (i : ℕ) → k ≤ (l : ℕ) → st.1 i l = 0 := by
+  intro st
+  have hlen : ((List.finRange n).take k).length = k := by simp [hk]
+  have h := ldltPivot_invariant hA _ (List.take_prefix k _)
+  rw [hlen] at h
+  obtain ⟨h1, h2, h3⟩ := h
+  refine ⟨h1, h2, h3, fun m hm hm0 i l hi hl => ?_⟩
+  have hmid : ∀ i l : Fin n, k ≤ (i : ℕ) → k ≤ (l : ℕ) → pivotedMiddle k st.1 i l = st.1 i l := by
+    intro i l hi hl
+    simp [pivotedMiddle, not_lt.2 hi, not_lt.2 hl]
+  have hii : st.1 i i = 0 := by
+    refine le_antisymm ?_ ?_
+    · have := h3 m i hm (Fin.le_def.2 (by omega))
+      rwa [hm0] at this
+    · rw [← hmid i i hi hi]
+      exact h2.diag_nonneg
+  have := (h2.apply_eq_zero_of_diag_eq_zero (i := i) (by rw [hmid i i hi hi]; exact hii) l).1
+  rwa [hmid i l hi hl] at this
+
+/-- The exact run of Algorithm 4.2.2 is the fold of its exact steps. -/
+private theorem algorithm_4_2_2_id (A : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (algorithm_4_2_2 pure A) = (List.finRange n).foldl
+      (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i) := by
+  rw [algorithm_4_2_2, List.idRun_foldlM]
+
+/-- After all `n` steps, `L_n` is the unit lower triangle of the packed state. -/
+private theorem pivotedLower_self (S : Matrix (Fin n) (Fin n) ℝ) :
+    pivotedLower n S = Chapter03.packedL S := by
+  ext i j
+  by_cases hji : j < i
+  · simp [pivotedLower, Chapter03.packedL_apply_of_lt S hji, hji]
+  · rcases eq_or_lt_of_le (not_lt.1 hji) with rfl | hij
+    · simp [pivotedLower, Chapter03.packedL_apply_self]
+    · simp [pivotedLower, Chapter03.packedL_apply_of_lt' S hij, hji, ne_of_lt hij]
+
+/-- After all `n` steps, `diag(D_n, A_n)` is the diagonal of the packed state. -/
+private theorem pivotedMiddle_self (S : Matrix (Fin n) (Fin n) ℝ) :
+    pivotedMiddle n S = diagonal S.diag := by
+  ext i j
+  by_cases hij : i = j
+  · subst hij
+    simp [pivotedMiddle]
+  · simp [pivotedMiddle, hij]
+
+/-- **Exact correctness of Algorithm 4.2.2**: for a symmetric positive semidefinite `A`, the exact
+run `(F, piv)` gives, with `σ = Chapter03.pivPerm piv` (the product of the interchanges in the order
+applied), `L = Chapter03.packedL F` and `d = diag(F)`: `A(σ, σ) = L diag(d) Lᵀ` with `L` unit lower
+triangular, `d ≥ 0`, `d₁ ≥ d₂ ≥ ⋯ ≥ d_n`, and `d > 0` when `A` is positive definite. (The book
+writes `P = P₁ ⋯ P_n` and `d_n > 0` for a semidefinite input; the permutation is the product in the
+order applied and `d_n = 0` when `A` is singular.) By the invariant (4.2.16) of
+`equation_4_2_16`. -/
+theorem algorithm_4_2_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
+    IsLDM (A.submatrix (Chapter03.pivPerm (Id.run (algorithm_4_2_2 pure A)).2)
+        (Chapter03.pivPerm (Id.run (algorithm_4_2_2 pure A)).2))
+      (Chapter03.packedL (Id.run (algorithm_4_2_2 pure A)).1)
+      (diagonal (Id.run (algorithm_4_2_2 pure A)).1.diag)
+      (Chapter03.packedL (Id.run (algorithm_4_2_2 pure A)).1) ∧
+    (∀ i, 0 ≤ (Id.run (algorithm_4_2_2 pure A)).1 i i) ∧
+    (∀ i j, i ≤ j → (Id.run (algorithm_4_2_2 pure A)).1 j j ≤
+      (Id.run (algorithm_4_2_2 pure A)).1 i i) ∧
+    (A.PosDef → ∀ i, 0 < (Id.run (algorithm_4_2_2 pure A)).1 i i) := by
+  have h := ldltPivot_invariant hA (List.finRange n) (List.prefix_refl _)
+  rw [List.length_finRange] at h
+  rw [algorithm_4_2_2_id]
+  generalize (List.finRange n).foldl
+    (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i) = st at h ⊢
+  obtain ⟨h1, h2, h3⟩ := h
+  rw [pivotedLower_self, pivotedMiddle_self] at h1
+  rw [pivotedMiddle_self] at h2
+  have hLu : (Chapter03.packedL st.1).IsUnitLowerTriangular :=
+    ⟨fun i j hij => Chapter03.packedL_apply_of_lt' st.1 (OrderDual.toDual_lt_toDual.1 hij),
+      Chapter03.packedL_apply_self st.1⟩
+  refine ⟨⟨hLu, isDiag_diagonal _, hLu, h1.symm⟩, fun i => ?_,
+    fun i j hij => h3 i j i.isLt hij, fun hPD i => ?_⟩
+  · simpa using h2.diag_nonneg (i := i)
+  · -- the middle factor is congruent to `P A Pᵀ`, positive definite
+    set L := Chapter03.packedL st.1 with hL
+    have hdet : IsUnit L.det := by rw [hLu.det_eq_one]; exact isUnit_one
+    have hX : (A.submatrix (Chapter03.pivPermUpTo st.2 n)
+        (Chapter03.pivPermUpTo st.2 n)).PosDef :=
+      hPD.submatrix (Chapter03.pivPermUpTo st.2 n).injective
+    have hD : diagonal st.1.diag = L⁻¹ * A.submatrix (Chapter03.pivPermUpTo st.2 n)
+        (Chapter03.pivPermUpTo st.2 n) * L⁻¹ᵀ := by
+      rw [h1, ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hdet, Matrix.one_mul,
+        Matrix.mul_assoc, ← transpose_mul, nonsing_inv_mul _ hdet, transpose_one, Matrix.mul_one]
+    have hinj : Function.Injective L⁻¹.vecMul :=
+      vecMul_injective_iff_isUnit.2 ((isUnit_nonsing_inv_iff).2 ((isUnit_iff_isUnit_det L).2 hdet))
+    have hPDD := hX.mul_mul_conjTranspose_same hinj
+    rw [conjTranspose_eq_transpose_of_trivial, ← hD] at hPDD
+    simpa using hPDD.diag_pos (i := i)
+
+/-- **(4.2.17) for the output of Algorithm 4.2.2**: for a symmetric positive semidefinite `A` of
+rank `r`, the exact run returns `d_i > 0` for `i < r` and `d_i = 0` for `i ≥ r`, so that its `P`,
+`L(:, 1:r)` and `D_r = diag(d₁, …, d_r)` realize (4.2.17): `P A Pᵀ = L(:, 1:r) D_r L(:, 1:r)ᵀ`
+(`algorithm_4_2_2_spec`). The rank of `P A Pᵀ = L D Lᵀ` is that of `D`, the number of nonzero
+pivots, and the pivots are nonincreasing and nonnegative. -/
+theorem equation_4_2_17_algorithm {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) (i : Fin n) :
+    ((i : ℕ) < A.rank → 0 < (Id.run (algorithm_4_2_2 pure A)).1 i i) ∧
+      (A.rank ≤ i → (Id.run (algorithm_4_2_2 pure A)).1 i i = 0) := by
+  obtain ⟨hLDM, hnn, hanti, -⟩ := algorithm_4_2_2_spec hA
+  set F := (Id.run (algorithm_4_2_2 pure A)).1
+  set σ := Chapter03.pivPerm (Id.run (algorithm_4_2_2 pure A)).2
+  set L := Chapter03.packedL F
+  have hdet : IsUnit L.det := by
+    rw [hLDM.isUnitLowerTriangular_left.det_eq_one]
+    exact isUnit_one
+  have hdetT : IsUnit Lᵀ.det := by rwa [det_transpose]
+  -- the rank is the number of nonzero pivots
+  have hrank : A.rank = Fintype.card {j // F j j ≠ 0} := by
+    rw [← rank_submatrix A σ σ, ← hLDM.mul_eq, rank_mul_eq_left_of_isUnit_det _ _ hdetT,
+      rank_mul_eq_right_of_isUnit_det _ _ hdet, rank_diagonal]
+    rfl
+  rw [hrank, Fintype.card_subtype]
+  constructor
+  · intro hi
+    refine lt_of_le_of_ne (hnn i) fun h0 => ?_
+    have hsub : Finset.univ.filter (fun j : Fin n => F j j ≠ 0) ⊆
+        Finset.univ.filter (fun j : Fin n => (j : ℕ) < i) := by
+      intro j hj
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj ⊢
+      by_contra hji
+      exact hj (le_antisymm (h0 ▸ hanti i j (Fin.le_def.2 (not_lt.1 hji))) (hnn j))
+    have := Finset.card_le_card hsub
+    rw [Fin.card_filter_val_lt, min_eq_right (Nat.le_of_lt i.isLt)] at this
+    omega
+  · intro hi
+    by_contra h0
+    have hpos : 0 < F i i := lt_of_le_of_ne (hnn i) (Ne.symm h0)
+    have hsub : Finset.univ.filter (fun j : Fin n => (j : ℕ) < i + 1) ⊆
+        Finset.univ.filter (fun j : Fin n => F j j ≠ 0) := by
+      intro j hj
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj ⊢
+      exact (lt_of_lt_of_le hpos (hanti j i (Fin.le_def.2 (by omega)))).ne'
+    have := Finset.card_le_card hsub
+    rw [Fin.card_filter_val_lt, min_eq_right (Nat.succ_le_of_lt i.isLt)] at this
+    omega
 
 end GolubVanLoan.Chapter04

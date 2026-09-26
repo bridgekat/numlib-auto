@@ -6,12 +6,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.1)'
 
 [[node]]
 id = "equation_12_5_3"
-kind = "theorem"
-desc = '''(12.5.3) and the sentence after it: `max_{QᵀQ = I_r} ‖Qᵀ A‖_F² = σ₁² + ⋯ + σ_r²`, attained at `Q = U(:, 1:r)`. The book writes the maximum of
-`‖QᵀA‖_F` as `σ₁² + ⋯ + σ_r²`, dropping a square (the maximum of the norm is its square root). `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`. ★
-
-Blocked: needs the Ky Fan principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` (agent sv2, running in parallel; not on main at 55f7ad05). With it: a restatement at `ℝ` (~15 lines). (agent s12)'''
-deps = ["Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.3)'
 
 [[node]]
@@ -41,7 +35,7 @@ desc = '''§12.5.3: `‖(U₃ᵀ ⊗ U₂ᵀ ⊗ U₁ᵀ) vec(𝒜)‖ = ‖U₁
 maximizing over `U_k` is the problem (12.5.3) for `𝒜_(k)(⋯ ⊗ ⋯)`, solved by the leading `r_k` left singular vectors — the ALS update, which
 never decreases the objective. `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`, `Tensor.isGreatest_tucker_update`. ★
 
-Blocked: the ALS-update half needs `Tensor.isGreatest_tucker_update` (tens1 follow-up, waiting on sv2's Ky Fan) and `equation_12_5_3`; the unfolding identities are `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold` (on main). ~30 lines once they land. (agent s12)'''
+Blocked: the ALS-update half needs `Tensor.isGreatest_tucker_update` (tens1 follow-up, not on main at fca5b833); `equation_12_5_3` is proved (agent c0412) and the unfolding identities are `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold` (on main). ~30 lines once it lands. (agents s12, c0412)'''
 deps = ["Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold", "Tensor.isGreatest_tucker_update", "GolubVanLoan.Chapter12.equation_12_5_3"]
 source = 'Golub–Van Loan, Matrix Computations, §12.5.3'
 
@@ -59,14 +53,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.22)'
 
 [[node]]
 id = "tensor_singular_value"
-kind = "theorem"
-desc = '''§12.5.6: for `𝒜 ∈ ℝ^{n₁×n₂×n₃}`, `ψ_𝒜(u₁, u₂, u₃) = u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)/(‖u₁‖‖u₂‖‖u₃‖) = u₂ᵀ 𝒜_(2) (u₃ ⊗ u₁)/(⋯) = u₃ᵀ 𝒜_(3) (u₂ ⊗ u₁)/(⋯)`, and at unit vectors
-`∇ψ_𝒜 = 0` iff `𝒜_(1)(u₃ ⊗ u₂) = ψ u₁`, `𝒜_(2)(u₃ ⊗ u₁) = ψ u₂`, `𝒜_(3)(u₂ ⊗ u₁) = ψ u₃` — the book's definition of a tensor singular value
-(`Tensor.IsSingularValue`). `Tensor.multilinearForm` (`multilinearForm_eq_modeUnfold`), `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`,
-flattened. ★
-
-Blocked: `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff` (tens1 ★★★) is not on main. (agent s12)'''
-deps = ["Tensor.multilinearForm", "Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff", "Tensor.IsSingularValue"]
 source = 'Golub–Van Loan, Matrix Computations, §12.5.6'
 
 [[node]]
@@ -75,14 +61,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.23)'
 
 [[node]]
 id = "equation_12_5_24"
-kind = "theorem"
-desc = '''(12.5.24) and the sentences around it: for a symmetric `𝒞 ∈ ℝ^{N×N×N}` (§12.5.7's definition, `Tensor.IsSymm`) all modal unfoldings are equal,
-`φ_𝒞(x) = ∑_i 𝒞(i) x(i₁)x(i₂)x(i₃)/‖x‖³ = xᵀ 𝒞_(1)(x ⊗ x)/‖x‖³`, and at unit `x`, `∇φ_𝒞(x) = 0` iff `𝒞_(1)(x ⊗ x) = φ_𝒞(x) x` (the book's gradient omits the
-factor `3`, harmless at zero) — the book's tensor eigenvalue. `Tensor.IsSymm.modeUnfold_eq`, `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`,
-flattened. ★
-
-Blocked: `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff` (tens1 ★★★) is not on main; `Tensor.IsSymm.modeUnfold_eq` is. (agent s12)'''
-deps = ["Tensor.IsSymm.modeUnfold_eq", "Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.24)'
 
 [[node]]
@@ -95,12 +73,4 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.28)'
 
 [[node]]
 id = "equation_12_5_29"
-kind = "theorem"
-desc = '''(12.5.29), the TT-SVD (Oseledets–Tyrtyshnikov): every `𝒜 : RTensor n` has a tensor-train representation `𝒜(i) = ∑_k 𝒢₁(i₁, k₁) ⋯ 𝒢_d(k_{d−1}, i_d)` whose
-ranks are `r_k = rank(M_k)`, the ranks of the matrices of the procedure, which equal the ranks of the sequential unfoldings `𝒜_{[1:k]×[k+1:d]}`;
-the procedure's successive SVDs produce it. `Tensor.exists_tensorTrain` with `equation_12_5_25`. (The full-rank example `r = (n, n², n², n)`
-for `d = 5` is a count, not a node.) ★
-
-Blocked: `Tensor.exists_tensorTrain` (tens1 ★★★) is not on main. (agent s12)'''
-deps = ["Tensor.exists_tensorTrain", "GolubVanLoan.Chapter12.equation_12_5_25", "GolubVanLoan.Chapter12.equation_12_5_28"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.5.29)'

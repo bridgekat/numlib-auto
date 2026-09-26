@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Matrix.Order
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Kronecker.Spectral
 import Numlib.LinearAlgebra.Matrix.KroneckerApprox
@@ -548,6 +549,18 @@ theorem rearrangement_sub (A A' : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂))
     rearrangement (A - A') = rearrangement A - rearrangement A' :=
   rfl
 
+/-- The rearrangement commutes with scalar multiples. -/
+theorem rearrangement_smul (c : ℝ) (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
+    rearrangement (c • A) = c • rearrangement A :=
+  rfl
+
+/-- The rearrangement commutes with finite sums. -/
+theorem rearrangement_sum {ι : Type*} (s : Finset ι)
+    (X : ι → Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
+    rearrangement (∑ k ∈ s, X k) = ∑ k ∈ s, rearrangement (X k) := by
+  ext I J
+  simp [rearrangement, Matrix.sum_apply]
+
 /-- `𝓡(B ⊗ C) = vec(B) vec(C)ᵀ`. -/
 theorem rearrangement_kroneckerFin (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
@@ -655,6 +668,125 @@ theorem theorem_12_3_1 {r : ℕ} (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n�
         _ = (Uᵀ * (U * diagonal σ * Vᵀ) * V).rank := by rw [hD]
         _ ≤ (U * diagonal σ * Vᵀ).rank :=
           (rank_mul_le_left _ _).trans (rank_mul_le_right _ _)
+
+/-- A sum of `r` rank-one matrices has rank at most `r`. -/
+private theorem rank_sum_vecMulVec_le {p q r : ℕ} (x : Fin r → Fin p → ℝ)
+    (y : Fin r → Fin q → ℝ) : (∑ k, vecMulVec (x k) (y k)).rank ≤ r := by
+  have h : (∑ k, vecMulVec (x k) (y k)) =
+      (of fun I k => x k I : Matrix (Fin p) (Fin r) ℝ) * of fun k J => y k J := by
+    ext I J
+    simp [mul_apply, vecMulVec_apply, Matrix.sum_apply]
+  rw [h]
+  exact (rank_mul_le_left _ _).trans ((rank_le_card_width _).trans (by simp))
+
+/-- The rank-`k` truncation of an SVD as the sum `∑_{t<k} σ_t u_t v_tᵀ` of its leading terms, for
+`k` at most both dimensions. -/
+private theorem svdTruncation_eq_sum {p q k : ℕ} (hkp : k ≤ p) (hkq : k ≤ q)
+    (U : Matrix (Fin p) (Fin p) ℝ) (σ : ℕ → ℝ) (V : Matrix (Fin q) (Fin q) ℝ) :
+    svdTruncation U σ V k = ∑ t : Fin k,
+      σ t • vecMulVec (fun I => U I (Fin.castLE hkp t)) (fun J => V J (Fin.castLE hkq t)) := by
+  ext I J
+  let g : Fin p → ℝ := fun a =>
+    if h : (a : ℕ) < k then σ a * U I a * V J ⟨a, lt_of_lt_of_le h hkq⟩ else 0
+  have hR : (∑ t : Fin k, σ t • vecMulVec (fun I => U I (Fin.castLE hkp t))
+      (fun J => V J (Fin.castLE hkq t))) I J = ∑ a, g a := by
+    rw [Matrix.sum_apply, show (∑ a, g a) = ∑ t : Fin k, g (Fin.castLE hkp t) from ?_]
+    · refine Finset.sum_congr rfl fun t _ => ?_
+      simp only [Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, g, Fin.val_castLE, t.isLt,
+        ↓reduceDIte]
+      rw [mul_assoc]
+      rfl
+    · rw [show (∑ t : Fin k, g (Fin.castLE hkp t)) =
+          ∑ a ∈ Finset.univ.map (Fin.castLEEmb hkp), g a from
+          (Finset.sum_map Finset.univ (Fin.castLEEmb hkp) g).symm]
+      refine (Finset.sum_subset (Finset.subset_univ _) fun a _ ha => ?_).symm
+      have hak : ¬ (a : ℕ) < k := fun h =>
+        ha (Finset.mem_map.2 ⟨⟨a, h⟩, Finset.mem_univ _, Fin.ext rfl⟩)
+      simp [g, hak]
+  rw [hR, svdTruncation]
+  simp only [mul_apply, rectDiagonal_apply, star_apply, star_trivial, Finset.sum_mul,
+    RCLike.ofReal_real_eq_id, id]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  by_cases ha : (a : ℕ) < k
+  · rw [Finset.sum_eq_single ⟨a, lt_of_lt_of_le ha hkq⟩]
+    · simp only [g, ha, ↓reduceIte, ↓reduceDIte]
+      ring
+    · intro b _ hb
+      have : (a : ℕ) ≠ b := fun h => hb (Fin.ext h.symm)
+      simp [this]
+    · simp
+  · refine (Finset.sum_eq_zero fun b _ => ?_).trans (by simp [g, ha])
+    by_cases hab : (a : ℕ) = b
+    · simp [← hab, ha]
+    · simp [hab]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(12.3.19)** and the paragraph before it: if `Uᵀ 𝓡(A) V = Σ` is an SVD of the rearrangement
+(12.3.17) and `r̃` is at most both dimensions of `𝓡(A)`, then
+`A_r̃ = ∑_{k=1}^{r̃} σ_k U_k ⊗ V_k`, with `U_k = reshape(U(:, k), m₁, n₁)` and
+`V_k = reshape(V(:, k), m₂, n₂)`, is a closest matrix to `A` in the Frobenius norm among the sums of
+`r̃` Kronecker products: `‖A − A_r̃‖_F ≤ ‖A − ∑_{k=1}^{r̃} B_k ⊗ C_k‖_F`. Through `𝓡`, an isometry,
+this is the Eckart–Young–Mirsky theorem for `𝓡(A)`
+(`Matrix.isLeast_frobenius_norm_sub_of_rank_le`), since `𝓡(∑ B_k ⊗ C_k) = ∑ vec(B_k) vec(C_k)ᵀ` has
+rank at most `r̃` and `𝓡(A_r̃)` is the truncation of the SVD. -/
+theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
+    {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V) {r : ℕ}
+    (hr₁ : r ≤ n₁ * m₁) (hr₂ : r ≤ n₂ * m₂) (B : Fin r → Matrix (Fin m₁) (Fin n₁) ℝ)
+    (C : Fin r → Matrix (Fin m₂) (Fin n₂) ℝ) :
+    ‖A - ∑ k : Fin r, σ k • kroneckerFin (reshapeVec fun I => U I (Fin.castLE hr₁ k))
+        (reshapeVec fun J => V J (Fin.castLE hr₂ k))‖ ≤
+      ‖A - ∑ k, kroneckerFin (B k) (C k)‖ := by
+  rw [← frobenius_norm_rearrangement, rearrangement_sub, rearrangement_sum,
+    ← frobenius_norm_rearrangement (A - _), rearrangement_sub, rearrangement_sum]
+  simp only [rearrangement_smul, rearrangement_kroneckerFin, vecFin_reshapeVec]
+  rw [← svdTruncation_eq_sum hr₁ hr₂, frobenius_norm_sub_svdTruncation h]
+  have := (isLeast_frobenius_norm_sub_of_rank_le (rearrangement A) r).2
+    ⟨_, rank_sum_vecMulVec_le (fun k => vecFin (B k)) (fun k => vecFin (C k)), rfl⟩
+  simpa using this
+
+/-- The Kronecker product is bilinear: scalars pass out of the left factor. -/
+theorem kroneckerFin_smul_left (c : ℝ) (B : Matrix (Fin m₁) (Fin n₁) ℝ)
+    (C : Matrix (Fin m₂) (Fin n₂) ℝ) : kroneckerFin (c • B) C = c • kroneckerFin B C := by
+  simp [kroneckerFin, smul_kronecker, submatrix_smul]
+
+/-- The Kronecker product is bilinear: scalars pass out of the right factor. -/
+theorem kroneckerFin_smul_right (c : ℝ) (B : Matrix (Fin m₁) (Fin n₁) ℝ)
+    (C : Matrix (Fin m₂) (Fin n₂) ℝ) : kroneckerFin B (c • C) = c • kroneckerFin B C := by
+  simp [kroneckerFin, kronecker_smul, submatrix_smul]
+
+/-- `reshape` is linear. -/
+theorem reshapeVec_smul {m n : ℕ} (c : ℝ) (a : Fin (n * m) → ℝ) :
+    reshapeVec (c • a) = c • reshapeVec a := by
+  ext i j
+  simp [reshapeVec]
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(12.3.15)** and the sentence after it: "if `Uᵀ 𝓡(A) V = Σ` is the SVD of `𝓡(A)`, then
+`vec(B_opt) = √σ₁ U(:, 1)`, `vec(C_opt) = √σ₁ V(:, 1)` minimize `φ(B, C) = ‖A − B ⊗ C‖_F`", "and
+so do `α B_opt`, `C_opt/α` for any `α ≠ 0`": the case `r̃ = 1` of (12.3.19) (`equation_12_3_19`),
+`B_opt ⊗ C_opt = σ₁ U₁ ⊗ V₁`. -/
+theorem equation_12_3_15 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
+    {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V)
+    (h₁ : 0 < n₁ * m₁) (h₂ : 0 < n₂ * m₂) {α : ℝ} (hα : α ≠ 0)
+    (B : Matrix (Fin m₁) (Fin n₁) ℝ) (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
+    ‖A - kroneckerFin (α • reshapeVec (√(σ 0) • fun I => U I ⟨0, h₁⟩))
+        (α⁻¹ • reshapeVec (√(σ 0) • fun J => V J ⟨0, h₂⟩))‖ ≤ ‖A - kroneckerFin B C‖ := by
+  have hopt : kroneckerFin (α • reshapeVec (√(σ 0) • fun I => U I ⟨0, h₁⟩))
+      (α⁻¹ • reshapeVec (√(σ 0) • fun J => V J ⟨0, h₂⟩)) =
+      ∑ k : Fin 1, σ k • kroneckerFin (reshapeVec fun I => U I (Fin.castLE h₁ k))
+        (reshapeVec fun J => V J (Fin.castLE h₂ k)) := by
+    rw [Fin.sum_univ_one, kroneckerFin_smul_left, kroneckerFin_smul_right, reshapeVec_smul,
+      reshapeVec_smul, kroneckerFin_smul_left, kroneckerFin_smul_right, smul_smul, smul_smul,
+      smul_smul, mul_assoc, mul_assoc, Real.mul_self_sqrt (h.nonneg 0), ← mul_assoc,
+      mul_inv_cancel₀ hα, one_mul]
+    rfl
+  have hBC : kroneckerFin B C = ∑ k : Fin 1, kroneckerFin ((fun _ => B) k) ((fun _ => C) k) := by
+    rw [Fin.sum_univ_one]
+  rw [hopt, hBC]
+  exact equation_12_3_19 A h h₁ h₂ _ _
 
 /-! ### Lemma 12.3.2 and the nearest `X ⊗ X` (§12.3.8) -/
 
@@ -843,5 +975,49 @@ theorem kronecker_mulVec_reshape {a b c e : ℕ} (P : Matrix (Fin a) (Fin b) ℝ
     reshapeVec (kroneckerFin P Q *ᵥ x) = Q * reshapeVec x * Pᵀ := by
   apply vecFin_injective
   rw [vecFin_reshapeVec, ← kroneckerFin_mulVec_vecFin, vecFin_reshapeVec]
+
+/-! ### Lemma 12.3.3 -/
+
+section Skew
+
+open scoped Matrix.Norms.L2Operator
+
+/-- For a skew-symmetric real `S` (a normal matrix), the spectral radius (of the complexification,
+the eigenvalues `±iμ` being imaginary) is the spectral norm, `ρ(S) = ‖S‖₂`. -/
+theorem complexSpectralRadius_toReal_of_skew {n : ℕ} {S : Matrix (Fin n) (Fin n) ℝ}
+    (hS : Sᵀ = -S) : (complexSpectralRadius S).toReal = lpOpNorm 2 S := by
+  have hstar : star (complexify S) = -complexify S := by
+    rw [star_eq_conjTranspose, ← complexify_conjTranspose, conjTranspose_eq_transpose_of_trivial,
+      hS, complexify_neg]
+  have : IsStarNormal (complexify S) := ⟨by rw [hstar]; exact (Commute.refl _).neg_left⟩
+  rw [complexSpectralRadius, ← l2_opNorm_eq_spectralRadius_of_isStarNormal,
+    l2_opNNNorm_complexify, ENNReal.coe_toReal, coe_nnnorm, lpOpNorm_two]
+
+end Skew
+
+section SkewNearest
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **Lemma 12.3.3.** "Suppose `M ∈ ℝ^{n×n}` and that `S = (M − Mᵀ)/2`. If
+`S [u | v] = [u | v] [0 μ; −μ 0]` where `u, v ∈ ℝⁿ` are orthonormal and `μ = ρ(S)`, then
+`Z_opt = μ (u vᵀ − v uᵀ)` minimizes `‖M − Z‖_F` over all rank-2 skew-symmetric matrices
+`Z ∈ ℝ^{n×n}`." The spectral radius is the complex one (`ρ(S) = ‖S‖₂` for the normal `S`,
+`complexSpectralRadius_toReal_of_skew`), and the competitors are the skew-symmetric matrices of rank
+at most two (with `S = 0` the minimizer `Z_opt = 0` has rank `0`). Of the hypothesis
+`S [u | v] = [u | v] [0 μ; −μ 0]` only the column `S v = μ u` is needed
+(`Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`). -/
+theorem lemma_12_3_3 {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ) {u v : Fin n → ℝ} {μ : ℝ}
+    (hu : u ⬝ᵥ u = 1) (hv : v ⬝ᵥ v = 1) (huv : u ⬝ᵥ v = 0)
+    (hSv : ((1 / 2 : ℝ) • (M - Mᵀ)) *ᵥ v = μ • u)
+    (hμ : μ = (complexSpectralRadius ((1 / 2 : ℝ) • (M - Mᵀ))).toReal) :
+    IsMinOn (fun Z => ‖M - Z‖) {Z | Zᵀ = -Z ∧ Z.rank ≤ 2}
+      (μ • (vecMulVec u v - vecMulVec v u)) := by
+  have hskew : ((1 / 2 : ℝ) • (M - Mᵀ))ᵀ = -((1 / 2 : ℝ) • (M - Mᵀ)) := by
+    rw [transpose_smul, transpose_sub, transpose_transpose, ← smul_neg, neg_sub]
+  rw [complexSpectralRadius_toReal_of_skew hskew] at hμ
+  exact isMinOn_frobenius_norm_sub_skew_rank_le_two M hu hv huv hSv hμ
+
+end SkewNearest
 
 end GolubVanLoan.Chapter12

@@ -22,10 +22,10 @@ Real square matrices `A : Matrix (Fin n) (Fin n) ℝ`, 0-based. "Upper bandwidth
 book's loop bounds `min(k + p, n)` and `max(1, j − q)` are guards on the index in the filtered
 index lists of the programs (algorithm convention 10). "`A(1:k, 1:k)` nonsingular for `k = 1:n−1`"
 is `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`. The packed LU output is read as chapter 3
-reads it (`packedL F = 1 + F.strictLower`, `packedU F = F − F.strictLower`, written out here
-because chapter 3's surface is not available to this file). Tridiagonal matrices are the
-backbone's `Matrix.tridiagonalOf` (diagonal `d`, sub- and superdiagonal) and, for the Thomas
-recurrences, `Matrix.tridiagonalOfNat` of `ℕ`-indexed sequences.
+reads it (`Chapter03.packedL F = 1 + F.strictLower`, `Chapter03.packedU F = F − F.strictLower`).
+Tridiagonal matrices are the backbone's `Matrix.tridiagonalOf` (diagonal `d`, sub- and
+superdiagonal) and, for the Thomas recurrences, `Matrix.tridiagonalOfNat` of `ℕ`-indexed
+sequences.
 
 The algorithms follow the algorithm conventions of `NumlibSurface/GolubVanLoan` (every product,
 difference, quotient and square root through the rounding hook `rnd`; comparisons exact). Their
@@ -1345,17 +1345,15 @@ private theorem gemStage_band {A : Matrix (Fin n) (Fin n) ℝ} {p q : ℕ}
 
 /-- **Exact correctness of Algorithm 4.3.1**: if `A` has lower bandwidth `p`, upper bandwidth `q`
 and `A(1:k, 1:k)` is nonsingular for `k = 1:n−1` ("assuming it exists"), the exact run `F` holds
-the LU factorization: `L = 1 + F.strictLower` (chapter 3's `packedL F`) and `U = F − F.strictLower`
-(chapter 3's `packedU F`). The band loops perform exactly the operations of Gaussian elimination
-on the entries that can be nonzero: by the band structure of its stages (`gemStage_band`), the
-skipped multipliers and updates are zero; the result is the multiplier matrix
-`Matrix.gemLower A` and the last stage `Matrix.gemStage A n`. -/
+the LU factorization: `L = Chapter03.packedL F` and `U = Chapter03.packedU F`. The band loops
+perform exactly the operations of Gaussian elimination on the entries that can be nonzero: by the
+band structure of its stages (`gemStage_band`), the skipped multipliers and updates are zero; the
+result is the multiplier matrix `Matrix.gemLower A` and the last stage `Matrix.gemStage A n`. -/
 theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
-    IsLU A (1 + (Id.run (algorithm_4_3_1 pure p q A)).strictLower)
-      (Id.run (algorithm_4_3_1 pure p q A) -
-        (Id.run (algorithm_4_3_1 pure p q A)).strictLower) := by
+    IsLU A (Chapter03.packedL (Id.run (algorithm_4_3_1 pure p q A)))
+      (Chapter03.packedU (Id.run (algorithm_4_3_1 pure p q A))) := by
   have hpiv := (gemStage_pivots_ne_zero_iff A).2 hA
   have hb := gemStage_band hpiv (hasLowerBandwidth_iff_fin.1 hp) (hasUpperBandwidth_iff_fin.1 hq)
   have hz : ∀ (k : ℕ) (i j : Fin n), (j : ℕ) < k → j < i → gemStage A k i j = 0 :=
@@ -1451,7 +1449,7 @@ theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
                 omega
               rw [(hb k).1 i k hip, zero_mul, zero_mul, sub_zero]
           · rw [ite_eq_right hki, sub_zero])
-  rw [algorithm_4_3_1_id]
+  rw [Chapter03.packedL, Chapter03.packedU, algorithm_4_3_1_id]
   have hL : 1 + ((List.finRange n).foldl (bandGEStepId p q) A).strictLower = gemLower A := by
     ext i j
     by_cases hji : j < i

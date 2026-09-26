@@ -82,42 +82,23 @@ id = "equation_12_2_14"
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.14)'
 
 [[node]]
-id = "algorithm_12_2_2"
-kind = "definition"
-desc = '''Algorithm 12.2.2, per D4: `algorithm_12_2_2 {M} [Monad M] (rnd : ℝ → M ℝ) (u v p q : Fin n → ℝ)` returning `(c, s, f, g, h)`:
-`ũ_n = u_n`, `f̃_n = u_n`, `g_n = v_n`, `h_n = 0`; `for k = n−1 : −1 : 1`: the Givens pair of `(u_k, ũ_{k+1})` (`√` then one `rnd`,
-as `Matrix.givensPair` with the sign convention `[c s; −s c]`), `ũ_k`, `f̃_k = s_k f̃_{k+1}`, `f_{k+1} = c_k f̃_{k+1}`, `[h_k; h_{k+1}] = [c s;
-−s c][p_k; h_{k+1}]`, `g_k = (ũ_k v_k − h_k q_k) / f̃_k`; then `f₁ = f̃₁`. The book prints `g_k = (u_k v_k − h_k q_k)/f̃_k`; the
-derivation before it (`g₂ = (ũ₂ v₂ − h̃₂ q₂)/f̃₂`) and correctness need `ũ_k` — the program follows the derivation (chapter 12
-report). ★★
+id = "SemiseparableQRState"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
 
-Blocked: the Givens step "determine `c_k`, `s_k`" is chapter 5's `GolubVanLoan.Chapter05.algorithm_5_1_3` (conventions 5 and 13: a step delegated to an earlier chapter calls that chapter's program), and the Chapter 5 surface is not on main at 55f7ad05. (agent s12)'''
-deps = ["Matrix.givensPair"]
+[[node]]
+id = "algorithm_12_2_2Step"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
+
+[[node]]
+id = "algorithm_12_2_2"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
 
 [[node]]
 id = "algorithm_12_2_2_spec"
-kind = "theorem"
-desc = '''Correctness of Algorithm 12.2.2: if `u .* v = p .* q` and `u_n ≠ 0`, `A = tril(u vᵀ) + triu(p qᵀ, 1)`, and `(c, s, f, g, h) = Id.run
-(algorithm_12_2_2 pure u v p q)`, then with `Qᵀ = givensChain (fun k => !![c k, s k; −s k, c k])`: `Q` is orthogonal and `Qᵀ A =
-triu(f gᵀ + h qᵀ)` (upper triangular; the book's `R`); and `f̃_k = s_k ⋯ s_{n−1} u_n ≠ 0` (the divisions are defined), since `|ũ_k| =
-‖u(k:n)‖ ≠ 0`. Downward induction on `k` with the invariant of the book's displayed `A⁽ᵏ⁾` (rows `< k` untouched, row `k`
-`[ũ_k vᵀ(1:k−1), f̃_k g(k:n)ᵀ + h̃_k q(k:n)ᵀ]`, rows `> k` already in the final form), one rotation per step
-(`Matrix.planeEmbed_mul_apply`, `Matrix.transpose_planeRotation_givensPair_mulVec`). ★★★ (~200 lines)
-
-Blocked: the Givens step "determine `c_k`, `s_k`" is chapter 5's `GolubVanLoan.Chapter05.algorithm_5_1_3` (conventions 5 and 13: a step delegated to an earlier chapter calls that chapter's program), and the Chapter 5 surface is not on main at 55f7ad05. After it: the ★★★ downward induction on the book's `A⁽ᵏ⁾` (~200 lines). (agent s12)'''
-deps = ["GolubVanLoan.Chapter12.algorithm_12_2_2", "Matrix.givensChain", "Matrix.planeEmbed_mul_apply", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.givensPair_sq_add_sq"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 12.2.2'
 
 [[node]]
 id = "equation_12_2_16"
-kind = "theorem"
-desc = '''(12.2.16): for a semiseparable `A` with generator representation (12.2.15), `R = triu(f gᵀ + h qᵀ)` for some `f, g, h ∈ ℝⁿ` — every
-submatrix of the upper triangular part of `R` has rank `≤ 2` — under the hypothesis `u_n ≠ 0` of Algorithm 12.2.2, whose output
-provides `f, g, h`. `algorithm_12_2_2_spec`. ★
-
-Blocked: waits for `algorithm_12_2_2_spec` (see there). (agent s12)'''
-deps = ["GolubVanLoan.Chapter12.algorithm_12_2_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.2.16)'
 
 [[node]]

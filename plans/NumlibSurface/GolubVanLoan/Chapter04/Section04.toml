@@ -44,38 +44,14 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.15)'
 
 [[node]]
 id = "equation_4_4_16"
-kind = "theorem"
-desc = '''(4.4.16): in the Bunch–Parlett strategy with `α ∈ (0, 1)`, if `μ₁ ≥ α μ₀` and the pivot is a diagonal entry of
-modulus `μ₁`, then `|ã_ij| ≤ (1 + α⁻¹) μ₀`; `BunchParlett.abs_schurComplementSingle_le`. ★
-
-Blocked: waits on the backbone node `BunchParlett.abs_schurComplementSingle_le` (module
-`Numlib/Direct/SymmetricIndefinite`, not yet written); the surface node is a one-line restatement
-once it exists.'''
-deps = ["BunchParlett.abs_schurComplementSingle_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.16)'
 
 [[node]]
 id = "equation_4_4_17"
-kind = "theorem"
-desc = '''(4.4.17): if `μ₁ < α μ₀` and the `2 × 2` pivot contains an off-diagonal entry of modulus `μ₀`, then `E` is
-nonsingular and `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`; `BunchParlett.abs_schurComplement_two_le`. ★
-
-Blocked: waits on the backbone node `BunchParlett.abs_schurComplement_two_le` (module
-`Numlib/Direct/SymmetricIndefinite`, not yet written); a one-line restatement once it exists.'''
-deps = ["BunchParlett.abs_schurComplement_two_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.17)'
 
 [[node]]
 id = "bunchParlett_alpha"
-kind = "theorem"
-desc = '''§4.4.3: equating the growth factor `(1 + α⁻¹)²` of two `s = 1` steps with the factor `(3 − α)/(1 − α)` of one
-`s = 2` step gives `α = (1 + √17)/8` — the unique solution in `(0, 1)`; `BunchParlett.alpha_eq`. (The
-book's "optimum from the standpoint of minimizing the bound on element growth" is this
-equation.) ★
-
-Blocked: waits on the backbone node `BunchParlett.alpha_eq` (module
-`Numlib/Direct/SymmetricIndefinite`, not yet written); a one-line restatement once it exists.'''
-deps = ["BunchParlett.alpha_eq"]
 source = 'Golub–Van Loan, Matrix Computations, §4.4.3, Display'
 
 [[node]]
@@ -92,13 +68,4 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.20)'
 
 [[node]]
 id = "equation_4_4_21"
-kind = "theorem"
-desc = '''(4.4.21): for `B` of full column rank there is `ψ_B`, independent of `C`, with
-`‖(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹‖₂ ≤ ψ_B` for every positive diagonal `C`; `Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le`
-at `d = C⁻¹`'s diagonal (★★★ in the backbone; the book quotes it). ★
-
-Blocked: waits on the backbone node `Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le`
-(★★★, module `Numlib/Direct/SymmetricIndefinite`, not yet written); a restatement at `d = C⁻¹`'s
-diagonal once it exists.'''
-deps = ["Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.4.21)'

@@ -34,26 +34,9 @@ id = "algorithm_4_1_1_spec"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.1.1'
 
 [[node]]
-id = "equation_4_1_4"
-kind = "theorem"
-desc = '''(4.1.4), rigorous, on returned values only (convention 9, nested as chapter 3's `theorem_3_3_2`):
-let `solveLDLT rnd F b` be the solve stage on a packed factor `F` — "`L z = b` by
-`Chapter03.algorithm_3_1_3` (column forward substitution with the unit lower `packedL F`), then
-`y i ← rnd (z i / F i i)`, then `Lᵀ x = y` by `Chapter03.algorithm_3_1_4`" (a surface helper
-definition of this node). For `(3n + 2) u < 1`, every `F ∈ (algorithm_4_1_1 fp.round A).run` with
-nonzero returned pivots `∀ j, F j j ≠ 0`, and every `x ∈ (solveLDLT fp.round F b).run`, with
-`L̂ = packedL F`, `D̂ = diagonal F.diag`: `∃ E, |E| ≤ γ_{3n+2} |L̂||D̂||L̂ᵀ| ∧ (A + E) x = b`
-(entrywise). (The first plan quantified over runs of the composite, whose factor `L̂` the program
-does not return — algo review H3.) This implies the printed first-order bound
-`|E| ≤ n u (2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)` for `n ≥ 2`. Bridges `algorithm_4_1_1_rounds`,
-`Chapter03.algorithm_3_1_3_rounds`, `Chapter03.algorithm_3_1_4_rounds`, then
-`FloatingPoint.exists_roundsLDL_solve_eq`. ★★
+id = "solveLDLT"
+source = 'Golub–Van Loan, Matrix Computations, §4.1.2, Display'
 
-Blocked: the solve stage calls chapter 3's `GolubVanLoan.Chapter03.algorithm_3_1_3` and
-`algorithm_3_1_4` with their bridges `algorithm_3_1_3_rounds`, `algorithm_3_1_4_rounds` (agent s03, not
-on this branch's base). Everything else is in place: `algorithm_4_1_1_rounds` gives
-`RoundsLDL fp A (1 + F.strictLower) (diagonal F.diag)` and the backbone `FloatingPoint.exists_roundsLDL_solve_eq`
-takes the two substitution relations; the node is ~30 lines once chapter 3's programs exist
-(define `solveLDLT`, bridge its three stages, apply the backbone theorem).'''
-deps = ["algorithm_4_1_1_rounds", "FloatingPoint.exists_roundsLDL_solve_eq", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds", "GolubVanLoan.Chapter03.packedL"]
+[[node]]
+id = "equation_4_1_4"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.1.4)'

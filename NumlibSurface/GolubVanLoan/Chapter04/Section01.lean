@@ -3,6 +3,7 @@ import Numlib.FloatingPoint.Program
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.LU
 import NumlibSurface.GolubVanLoan.Chapter02.Section03
+import NumlibSurface.GolubVanLoan.Chapter03.Section02
 
 /-!
 # Golub–Van Loan §4.1: diagonal dominance and symmetry
@@ -25,8 +26,10 @@ and difference passes through the rounding hook `rnd`, and the book's inner prod
 `A(j, 1:j−1) · v(1:j−1)` and `A(j+1:n, 1:j−1) · v(1:j−1)` are running differences from the entry of
 `A` (`runningDiff`), the operation order of the backbone relation `FloatingPoint.RoundsLDL`. The
 packed output holds `L` strictly below the diagonal and `D` on it; its unit lower factor is
-`1 + F.strictLower` (chapter 3's `packedL F`, written out because chapter 3's surface is not yet
-available to this file) and its diagonal factor `Matrix.diagonal F.diag`.
+chapter 3's `Chapter03.packedL F = 1 + F.strictLower` and its diagonal factor
+`Matrix.diagonal F.diag`. The solve stage of (4.1.4) (`solveLDLT`) calls chapter 3's
+column-oriented substitutions, Algorithms 3.1.3 and 3.1.4, with a rounded division by the pivots in
+between.
 
 ## Sources
 
@@ -356,21 +359,21 @@ private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matri
 
 /-- **The rounding bridge of Algorithm 4.1.1**: every run in the relational model is an admissible
 `L D Lᵀ` factorization in the operation order of the algorithm, `FloatingPoint.RoundsLDL`, with
-`L = 1 + F.strictLower` (chapter 3's `packedL F`) and `D = diag(F)`. No hypothesis on `A`. -/
+`L = Chapter03.packedL F` and `D = diag(F)`. No hypothesis on `A`. -/
 theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_4_1_1 fp.round A).run,
-      RoundsLDL fp A (1 + F.strictLower) (diagonal F.diag) := by
+      RoundsLDL fp A (Chapter03.packedL F) (diagonal F.diag) := by
   have hfin := SetM.forall_mem_run_foldlM_finRange (Inv fp A)
     ⟨fun _ _ _ => rfl, fun j hj => absurd hj (Nat.not_lt_zero _)⟩
     (fun j S hS S' hS' => inv_step fp A j S hS S' hS')
   intro F hF
   obtain ⟨-, hdone⟩ := hfin F hF
-  have hL : ∀ i k, k < i → (1 + F.strictLower) i k = F i k := fun i k hki => by
-    simp [strictLower, one_apply_ne (ne_of_gt hki), hki]
+  have hL : ∀ i k, k < i → Chapter03.packedL F i k = F i k := fun i k hki =>
+    Chapter03.packedL_apply_of_lt F hki
   choose v hv hd hcol using fun j : Fin n => hdone j j.isLt
   refine ⟨fun i k hik => ?_, fun i => ?_, isDiag_diagonal _, ⟨of fun j k => v j k, ?_, ?_, ?_⟩⟩
-  · simp [strictLower, one_apply_ne (ne_of_lt hik), not_lt_of_gt hik]
-  · simp [strictLower]
+  · exact Chapter03.packedL_apply_of_lt' F hik
+  · exact Chapter03.packedL_apply_self F i
   · intro j k hkj
     rw [hL j k hkj, diagonal_apply_eq, diag_apply]
     exact hv j k (mem_lt.2 hkj)
@@ -468,22 +471,22 @@ private theorem roundsLDL_exact_diag_ne_zero {A L D : Matrix (Fin n) (Fin n) ℝ
 
 /-- **Exact correctness of Algorithm 4.1.1**: for a symmetric `A` with `A(1:k, 1:k)` nonsingular for
 `k = 1:n−1`, the exact run computes the `L D Lᵀ` factorization of Theorem 4.1.3, with `L` the unit
-lower triangle `1 + F.strictLower` of the packed output `F` and `D` its diagonal. Read off the
+lower triangle `Chapter03.packedL F` of the packed output `F` and `D` its diagonal. Read off the
 bridge at the exact model (convention 11), once the pivots used as divisors are known to be
 nonzero. -/
 theorem algorithm_4_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
-    IsLDM A (1 + (Id.run (algorithm_4_1_1 pure A)).strictLower)
+    IsLDM A (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A)))
       (diagonal (Id.run (algorithm_4_1_1 pure A)).diag)
-      (1 + (Id.run (algorithm_4_1_1 pure A)).strictLower) := by
+      (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A))) := by
   have h := algorithm_4_1_1_rounds (RoundingModel.exact ℝ) A _ (algorithm_4_1_1_mem_exact A)
   have hpiv := roundsLDL_exact_diag_ne_zero h hs hA
-  have hLu : (1 + (Id.run (algorithm_4_1_1 pure A)).strictLower).IsUnitLowerTriangular :=
+  have hLu : (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A))).IsUnitLowerTriangular :=
     ⟨fun i k hik => h.lower_apply_eq_zero i k (OrderDual.toDual_lt_toDual.1 hik), h.lower_diag⟩
   refine ⟨hLu, h.isDiag, hLu, ?_⟩
-  have hsymm : ((1 + (Id.run (algorithm_4_1_1 pure A)).strictLower) *
+  have hsymm : (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A)) *
       diagonal (Id.run (algorithm_4_1_1 pure A)).diag *
-      (1 + (Id.run (algorithm_4_1_1 pure A)).strictLower)ᵀ).IsSymm := by
+      (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A)))ᵀ).IsSymm := by
     rw [IsSymm, transpose_mul, transpose_mul, transpose_transpose, h.isDiag.isSymm.eq,
       Matrix.mul_assoc]
   ext i k
@@ -492,5 +495,57 @@ theorem algorithm_4_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
   · rw [hsymm.apply k i,
       mul_mul_transpose_apply_of_roundsLDL_exact h hik fun hik' => hpiv i k hik']
     exact (hs.apply k i).symm
+
+/-! ### (4.1.4): the backward error of the `L D Lᵀ` solve -/
+
+section Solve
+
+variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
+
+/-- **The solve stage of (4.1.4)** on a packed `L D Lᵀ` factor `F` (the output of Algorithm
+4.1.1): "`Lz = b`, `Dy = z`, `Lᵀx = y`" with `L = Chapter03.packedL F` and `D = diag(F)` — the
+unit lower system by Algorithm 3.1.3, the diagonal system by the rounded quotients
+`y_i = fl(z_i / f_ii)`, the upper system `Lᵀx = y` by Algorithm 3.1.4. -/
+noncomputable def solveLDLT (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
+  let z ← Chapter03.algorithm_3_1_3 rnd (Chapter03.packedL F) b
+  let y ← (List.finRange n).foldlM (fun (y : Fin n → ℝ) (i : Fin n) => do
+    let yi ← rnd (y i / F i i)
+    pure (Function.update y i yi)) z
+  Chapter03.algorithm_3_1_4 rnd (Chapter03.packedL F)ᵀ y
+
+end Solve
+
+/-- **(4.1.4)**, rigorous form: "the computed solution `x̂` to `Ax = b` obtained via Algorithm
+4.1.1 and the usual triangular system solvers of §3.1 can be shown to satisfy a perturbed system
+`(A + E)x̂ = b`, where `|E| ≤ nu(2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)`". For a symmetric `A`, a
+factor `F` computed by Algorithm 4.1.1 with nonzero pivots and a solution `x̂` computed from it by
+the three-step solve (`solveLDLT`), with `L̂ = Chapter03.packedL F` and `D̂ = diag(F)`:
+`(A + E)x̂ = b` with `|E| ≤ γ_{3n+2} |L̂||D̂||L̂ᵀ|` entrywise, which gives the printed first-order
+bound for `n ≥ 2` (`γ_{3n+2} = (3n + 2)u + O(u²)` and `3n + 2 ≤ 4n`). -/
+theorem equation_4_1_4 {fp : RoundingModel ℝ} (hn : ((3 * n + 2 : ℕ) : ℝ) * fp.u < 1)
+    {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (b : Fin n → ℝ) :
+    ∀ F ∈ (algorithm_4_1_1 fp.round A).run, (∀ j, F j j ≠ 0) →
+      ∀ x ∈ (solveLDLT fp.round F b).run,
+        ∃ E : Matrix (Fin n) (Fin n) ℝ, (A + E) *ᵥ x = b ∧
+          E.abs ≤ₑ gamma fp.u (3 * n + 2) • ((Chapter03.packedL F).abs *
+            (diagonal F.diag).abs * (Chapter03.packedL F)ᵀ.abs) := by
+  intro F hF hd x hx
+  have hu : fp.u < 1 := by
+    have h1 : (1 : ℝ) * fp.u ≤ ((3 * n + 2 : ℕ) : ℝ) * fp.u :=
+      mul_le_mul_of_nonneg_right (by norm_cast; omega) fp.u_nonneg
+    linarith
+  simp only [solveLDLT, SetM.mem_run_bind] at hx
+  obtain ⟨z, hz, y, hy, hx⟩ := hx
+  have hy' := (SetM.mem_run_foldlM_update_of_nodup (fun (i : Fin n) (c : ℝ) _ =>
+    fp.round (c / F i i)) (List.finRange n) (List.nodup_finRange n)
+    (fun _ _ _ _ _ _ => rfl) z y).1 hy
+  have hyr : ∀ i, fp.Rounds (z i / (diagonal F.diag) i i) (y i) := fun i => by
+    rw [diagonal_apply_eq, diag_apply]
+    exact RoundingModel.mem_run_round.1 (hy'.2 i (List.mem_finRange i))
+  obtain ⟨E, hE, hAx⟩ := exists_roundsLDL_solve_eq hu (by simpa using hn) hA
+    (algorithm_4_1_1_rounds fp A F hF) (fun j => by rw [diagonal_apply_eq, diag_apply]; exact hd j)
+    (Chapter03.algorithm_3_1_3_rounds fp _ b z hz) hyr
+    (Chapter03.algorithm_3_1_4_rounds fp _ y x hx)
+  exact ⟨E, hAx, by simpa using hE⟩
 
 end GolubVanLoan.Chapter04

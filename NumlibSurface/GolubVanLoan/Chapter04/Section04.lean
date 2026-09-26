@@ -1,6 +1,6 @@
 import Mathlib.Algebra.Order.Star.Real
+import Numlib.Direct.SymmetricIndefinite
 import Numlib.FloatingPoint.Program
-import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import NumlibSurface.GolubVanLoan.Chapter04.Section02
 
@@ -40,9 +40,9 @@ theorems, the Bunch–Parlett multiplier bound, the solve chains) and
 `Numlib/LinearAlgebra/Matrix/SchurComplement` (the block factorization and the saddle-point
 matrix), chapter 4's §4.2 surface for the Cholesky factor. The derivation steps (4.4.3)–(4.4.4),
 (4.4.6)–(4.4.13) (the content of `equation_4_4_14`), the Bunch–Kaufman strategy and
-the stability claims of §4.4.4 are not formalized; the growth bounds (4.4.16)–(4.4.17), the
-parameter `α = (1 + √17)/8` and (4.4.21) wait on the backbone module
-`Numlib/Direct/SymmetricIndefinite`.
+the stability claims of §4.4.4 are not formalized. The growth bounds (4.4.16)–(4.4.17), the
+parameter `α = (1 + √17)/8` and the Stewart–Todd bound (4.4.21) are restatements of the backbone
+module `Numlib/Direct/SymmetricIndefinite`.
 
 ## Readings and errata
 
@@ -642,6 +642,39 @@ theorem equation_4_4_15 {s m : ℕ} {E : Matrix (Fin s) (Fin s) ℝ} (hE : IsUni
     Matrix.zero_mul, add_zero, zero_add, ← Matrix.mul_assoc, hinv]
   rw [Matrix.mul_assoc C E⁻¹ E, hinv', Matrix.mul_one, add_sub_cancel]
 
+/-- **(4.4.16).** In the Bunch–Parlett strategy with `μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, "it is
+easy to verify from (4.4.15) that if `s = 1`, then `|ã_ij| ≤ (1 + α⁻¹) μ₀`": the `1 × 1` pivot
+`a_pp` needs only `α μ₀ ≤ |a_pp|` (the maximal diagonal entry is one such pivot when
+`μ₁ ≥ α μ₀`), and the reduced matrix `Ã = B − v vᵀ / a_pp` is
+`Matrix.schurComplementSingle A p`. -/
+theorem equation_4_4_16 {A : Matrix (Fin n) (Fin n) ℝ} {p : Fin n} {α μ₀ : ℝ} (hα : 0 < α)
+    (hμ₀ : 0 < μ₀) (hA : ∀ i j, |A i j| ≤ μ₀) (hp : α * μ₀ ≤ |A p p|)
+    (i j : {i : Fin n // i ≠ p}) :
+    |A.schurComplementSingle p i j| ≤ (1 + α⁻¹) * μ₀ :=
+  BunchParlett.abs_schurComplementSingle_le hα hμ₀ hA hp i j
+
+/-- **(4.4.17).** "… while `s = 2` implies `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`": for a symmetric `A`
+with `|a_ij| ≤ μ₀`, `α ∈ (0, 1)` and the `2 × 2` pivot block `E` on the indices `p, q` with
+`|a_qp| = μ₀` and `|a_pp|, |a_qq| ≤ α μ₀` (which `μ₁ < α μ₀` gives), `E` is nonsingular and
+every entry of the reduced matrix `Ã = B − C E⁻¹ Cᵀ` (the Schur complement of the reindexing
+`{p, q} ⊕ rest`) is bounded by `(3 − α)/(1 − α) μ₀`. -/
+theorem equation_4_4_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n}
+    {α μ₀ : ℝ} (hα₀ : 0 < α) (hα₁ : α < 1) (hμ₀ : 0 < μ₀) (hAμ : ∀ i j, |A i j| ≤ μ₀)
+    (hqp : |A q p| = μ₀) (hpp : |A p p| ≤ α * μ₀) (hqq : |A q q| ≤ α * μ₀) :
+    IsUnit (A.submatrix ![p, q] ![p, q]) ∧
+      ∀ i j : {i : Fin n // i ≠ p ∧ i ≠ q},
+        |(A.submatrix (Sum.elim ![p, q] Subtype.val)
+          (Sum.elim ![p, q] Subtype.val)).schurComplement i j| ≤ (3 - α) / (1 - α) * μ₀ :=
+  BunchParlett.abs_schurComplement_two_le hA hα₀ hα₁ hμ₀ hAμ hqp hpp hqq
+
+/-- **§4.4.3, the Bunch–Parlett parameter.** "By equating `(1 + α⁻¹)²`, the growth factor that is
+associated with two `s = 1` steps, and `(3 − α)/(1 − α)`, the corresponding `s = 2` factor, Bunch
+and Parlett conclude that `α = (1 + √17)/8` is optimum from the standpoint of minimizing the bound
+on element growth": `(1 + √17)/8` is the unique `α ∈ (0, 1)` equating the two factors. -/
+theorem bunchParlett_alpha :
+    {α : ℝ | 0 < α ∧ α < 1 ∧ (1 + α⁻¹) ^ 2 = (3 - α) / (1 - α)} = {(1 + √17) / 8} :=
+  BunchParlett.alpha_eq
+
 /-! ### §4.4.5 Equilibrium systems -/
 
 /-- The equilibrium matrix `[C B; Bᵀ 0]` is the backbone's saddle-point matrix over `ℝ`. -/
@@ -705,5 +738,23 @@ theorem equation_4_4_20 {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (
   rw [fromBlocks_transpose_zero_eq_saddleMatrix] at h
   simpa only [conjTranspose_eq_transpose_of_trivial] using
     saddleMatrix_zero_mulVec_snd_eq hC hB h
+
+open scoped Matrix.Norms.L2Operator in
+/-- **(4.4.21).** "It can be shown that `‖(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹‖ ≤ ψ_B` where the upper bound `ψ_B`
+is independent of `C`": for `B` of full column rank there is one `ψ_B` bounding the `2`-norm of
+`(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹` for every positive diagonal `C = diag(c)` (Stewart, Todd), the backbone's
+bound on the weighted least-squares operators at the weights `C⁻¹`. -/
+theorem equation_4_4_21 {p : ℕ} {B : Matrix (Fin n) (Fin p) ℝ}
+    (hB : Function.Injective B.mulVec) :
+    ∃ ψ : ℝ, ∀ c : Fin n → ℝ, (∀ i, 0 < c i) →
+      ‖(Bᵀ * (diagonal c)⁻¹ * B)⁻¹ * Bᵀ * (diagonal c)⁻¹‖ ≤ ψ := by
+  obtain ⟨ψ, hψ⟩ := exists_forall_l2_opNorm_weightedLeastSquaresOp_le (mulVec_injective_iff.1 hB)
+  refine ⟨ψ, fun c hc => ?_⟩
+  have hinv : (diagonal c)⁻¹ = diagonal fun i => (c i)⁻¹ := by
+    refine inv_eq_left_inv ?_
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    exact congrArg diagonal (funext fun i => inv_mul_cancel₀ (hc i).ne')
+  simpa only [hinv, weightedLeastSquaresOp_def, conjTranspose_eq_transpose_of_trivial] using
+    hψ (fun i => (c i)⁻¹) fun i => inv_pos.2 (hc i)
 
 end GolubVanLoan.Chapter04

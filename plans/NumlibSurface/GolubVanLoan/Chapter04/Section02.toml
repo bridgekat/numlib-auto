@@ -37,8 +37,9 @@ desc = '''Theorem 4.2.6, (4.2.5): for positive definite `A` with `T = (A + Aᵀ)
 backbone: the book gives no proof). ★
 
 Blocked: waits on the backbone node `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` (open; agent fac1
-found the planned recursion false and estimated ~250 lines for a `2n` version, the sharp `n` needing
-Golub–Van Loan 1979). The surface statement is a one-line specialization once it exists.'''
+found the planned recursion false; agent bb2 proved only a `2n` version, the sharp `n` needing
+Golub–Van Loan 1979, as of main f98735ed). The surface statement is a one-line specialization once
+it exists. (agents s04, c0412)'''
 deps = ["Matrix.IsLU.frobenius_norm_abs_mul_abs_le", "isPositiveDefinite_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.6'
 
@@ -98,35 +99,20 @@ id = "l2_opNorm_cholesky_sq"
 source = 'Golub–Van Loan, Matrix Computations, §4.2.6, Display'
 
 [[node]]
-id = "cholesky_backward_error"
-kind = "theorem"
-desc = '''§4.2.6, Wilkinson's bound, rigorous, on returned values only (convention 9, nested as chapter 3's
-`theorem_3_3_2`): let `solveCholesky rnd F b` be the solve stage on a computed factor — "with
-`Ĝ = F − strictUpper F`, `Chapter03.algorithm_3_1_3` with `Ĝ`, then `Chapter03.algorithm_3_1_4` with
-`Ĝᵀ`" (a surface helper definition of this node). For symmetric positive definite `A`,
-`n γ_{n+3} < 1`, `(3n + 3) u < 1`, every `F ∈ (algorithm_4_2_1 fp.round A).run` with
-`∀ j, F j j ≠ 0` (the returned diagonal; it forces every computed pivot positive, see
-`algorithm_4_2_1_rounds` — the first plan's "runs in which the computed pivots are positive" spoke
-of overwritten values), and every `x̂ ∈ (solveCholesky fp.round F b).run`:
-`∃ E, (A + E) x̂ = b ∧ ‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 − n γ_{n+3})` — the book's `‖E‖₂ ≤ c_n u ‖A‖₂` with
-an explicit `c_n ≈ 3n²`. Bridges `algorithm_4_2_1_rounds`, `Chapter03.algorithm_3_1_3_rounds`,
-`Chapter03.algorithm_3_1_4_rounds`; then `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv` (the constants are γ_{n+3}/γ_{3n+3}: the
-diagonal `fl(t / fl(√t))` carries four roundings, see agent fp3's report).
-(The companion claim "if `q_n u κ₂(A) ≤ 1` the process runs to completion" is not formalized —
-chapter group.) ★★
+id = "solveCholesky"
+source = 'Golub–Van Loan, Matrix Computations, §4.2.6'
 
-Blocked: the solve stage calls chapter 3's surface (agent s03, not on this branch's base) programs
-`GolubVanLoan.Chapter03.algorithm_3_1_3` and `algorithm_3_1_4` with their bridges
-`algorithm_3_1_3_rounds`, `algorithm_3_1_4_rounds`. Everything else is proved here:
-`algorithm_4_2_1_rounds` gives `RoundsCholeskyDiv fp A (F − F.strictUpper)` under the returned-diagonal
-hypothesis, and `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv` takes the two substitution relations;
-~40 lines once chapter 3's programs exist.'''
-deps = ["algorithm_4_2_1_rounds", "FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv", "GolubVanLoan.Chapter03.algorithm_3_1_3_rounds", "GolubVanLoan.Chapter03.algorithm_3_1_4_rounds"]
+[[node]]
+id = "cholesky_backward_error"
 source = 'Golub–Van Loan, Matrix Computations, §4.2.6'
 
 [[node]]
 id = "condNumber_eq_div_eigenvalues"
 source = 'Golub–Van Loan, Matrix Computations, §4.2.6, Display'
+
+[[node]]
+id = "ldltPivotStep"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
 
 [[node]]
 id = "algorithm_4_2_2"
@@ -135,23 +121,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
 
 [[node]]
 id = "algorithm_4_2_2_spec"
-kind = "theorem"
-desc = '''Exact correctness of Algorithm 4.2.2: for symmetric positive semidefinite `A`, with
-`(F, piv) = Id.run (algorithm_4_2_2 pure A)`, `σ := GolubVanLoan.Chapter03.pivPerm piv` (the product
-of the interchanges in the order applied), `L := Chapter03.packedL F`, `d := F.diag`:
-`Matrix.IsLDM (A.submatrix σ σ) L (diagonal d) L`, `0 ≤ d i`, `i ≤ j → d j ≤ d i`, and if `A` is
-positive definite then `0 < d i`. (The book writes `P = P₁ ⋯ P_n` and `d_n > 0` for a semidefinite
-input; the permutation is the product in the order applied and `d_n = 0` when `A` is singular —
-ch04 report, Doubts.) Invariant: after `k` steps `A.submatrix σ_k σ_k = L_k diag(D_k, A_k) L_kᵀ`
-((4.2.16)) with `A_k` positive semidefinite and its diagonal dominated by the previous one
-(`Matrix.PosSemidef.schurComplementSingle`). ★★★ (~250 lines)
-
-Blocked (not attempted in this round, effort): the statement uses
-chapter 3's surface (agent s03, not on this branch's base) `GolubVanLoan.Chapter03.pivPerm` and `packedL`; the proof is the ★★★ invariant (4.2.16)
-(`equation_4_2_16`, open). The program `algorithm_4_2_2` is written (with the pivot choice
-`diagPivot`), and the existence statements it would recover are proved from the backbone
-(`equation_4_2_10`, `equation_4_2_17`). Estimate ~250 lines.'''
-deps = ["algorithm_4_2_2", "equation_4_2_16", "GolubVanLoan.Chapter03.pivPerm", "GolubVanLoan.Chapter03.packedL"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
 
 [[node]]
@@ -184,20 +153,19 @@ id = "theorem_4_2_8"
 source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.8'
 
 [[node]]
-id = "equation_4_2_16"
-kind = "theorem"
-desc = '''(4.2.16): after `k` steps of the pivoted outer-product `L D Lᵀ` on a symmetric positive semidefinite
-`A`, `P̃ A P̃ᵀ = [L₁₁ 0; L₂₁ I] [D_k 0; 0 A_k] [L₁₁ 0; L₂₁ I]ᵀ` with `d₁ ≥ … ≥ d_k ≥ 0`, `A_k`
-positive semidefinite, and `A_k = 0` as soon as `d_k = 0` (by (4.2.15), since the pivot is the
-largest diagonal entry). Stated about the state of `algorithm_4_2_2` at `Id` after `k` iterations
-(the loop invariant of `algorithm_4_2_2_spec`), with the one-step fact
-`Matrix.PosSemidef.schurComplementSingle`. ★★
+id = "pivotElim"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.2'
 
-Blocked (not attempted in this round, effort): the invariant of the
-exact run of `algorithm_4_2_2` after `k` steps, ~150 lines of state bookkeeping through the swaps
-(`Matrix.PosSemidef.schurComplementSingle` for the trailing block). The rank-revealing factorization
-itself is proved from the backbone (`equation_4_2_17`).'''
-deps = ["algorithm_4_2_2", "Matrix.PosSemidef.schurComplementSingle", "theorem_4_2_8_d"]
+[[node]]
+id = "pivotedLower"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.16)'
+
+[[node]]
+id = "pivotedMiddle"
+source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.16)'
+
+[[node]]
+id = "equation_4_2_16"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.16)'
 
 [[node]]
@@ -213,41 +181,23 @@ id = "equation_4_2_18"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.18)'
 
 [[node]]
-id = "algorithm_4_2_3"
-kind = "definition"
-desc = '''Algorithm 4.2.3 (recursive block Cholesky), D4, the shape of `notes/gvl/ch04/proto/Shapes.lean` §4
-(elaborates): `algorithm_4_2_3 (rnd) (r : ℕ) (hr : 0 < r) : (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M
-(Matrix (Fin n) (Fin n) ℝ)` by well-founded recursion on `n`: if `n ≤ r`, the lower part `F − Matrix.strictUpper F` of
-`F ← algorithm_4_2_1 rnd A` (zeroing the untouched upper triangle is exact, not rounded — algo
-review L5: Algorithm 4.2.1's array keeps `A`'s upper triangle, so returning it unmasked would break
-`= Matrix.cholesky A`); else with `e : Fin r ⊕ Fin (n − r) ≃ Fin n` (`finSumFinEquiv` and `finCongr`) and
-`B := A.submatrix e e`: `G₁₁ ←` the lower part of `algorithm_4_2_1 rnd B.toBlocks₁₁`; `G₂₁` row by row by
-`Chapter03.algorithm_3_1_3 rnd G₁₁` (each row `g` of `G₂₁` solves `G₁₁ gᵀ = a`); `Ã ←` entrywise
-`rnd (B₂₂ i j − rnd (G₂₁ i k * G₂₁ j k))` running differences over `k`; `G₂₂ ← algorithm_4_2_3 rnd r hr
-(n − r) Ã`; return `(fromBlocks G₁₁ 0 G₂₁ G₂₂).submatrix e.symm e.symm`. ★
+id = "choleskyLower"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
 
-Blocked: the program calls chapter 3's surface (agent s03, not on this branch's base) `GolubVanLoan.Chapter03.algorithm_3_1_3`
-for the multiple-right-hand-side triangular solve (convention 5: a step delegated to an earlier chapter
-calls that chapter's program). The block equations it implements are proved (`equation_4_2_18`,
-`equation_4_2_19`).'''
-deps = ["algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_3"]
+[[node]]
+id = "solveRowsLower"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
+
+[[node]]
+id = "mulTransposeDiff"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
+
+[[node]]
+id = "algorithm_4_2_3"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
 
 [[node]]
 id = "algorithm_4_2_3_spec"
-kind = "theorem"
-desc = '''Exact correctness of Algorithm 4.2.3: for symmetric positive definite `A` and `0 < r`,
-`Id.run (algorithm_4_2_3 pure r hr n A) = Matrix.cholesky A` (statement elaborates in the prototype).
-Strong induction on `n`: the base case is `algorithm_4_2_1_spec` (whose statement is about the
-lower part `F − strictUpper F`, which the base case returns); the step is `equation_4_2_18`
-with `Chapter03.algorithm_3_1_3_spec` for `G₂₁` (`G₁₁` has positive diagonal) and the induction
-hypothesis on the Schur complement (positive definite, `Matrix.PosDef.schurComplement`). ★★★
-(~200 lines, mostly block reindexing)
-
-Blocked: waits on the program (itself waiting on chapter 3's surface (agent s03, not on this branch's base)
-`algorithm_3_1_3`) and on `GolubVanLoan.Chapter03.algorithm_3_1_3_spec`. The block specification is
-proved (`equation_4_2_18` resp. `equation_4_2_19`) and the base case is `algorithm_4_2_1_spec`.'''
-deps = ["algorithm_4_2_3", "algorithm_4_2_1_spec", "equation_4_2_18", "GolubVanLoan.Chapter03.algorithm_3_1_3_spec", "Matrix.PosDef.schurComplement"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.3'
 
 [[node]]
@@ -255,46 +205,21 @@ id = "equation_4_2_19"
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.19)'
 
 [[node]]
-id = "algorithm_4_2_4"
-kind = "definition"
-desc = '''Algorithm 4.2.4 (nonrecursive block Cholesky), D4: for `n = N * r` (the book's `n = N r`; the input is
-`Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, blocks through `finProdFinEquiv`), `List.foldlM` over block
-columns `j : Fin N`, inner `List.foldlM` over `i : Fin N` with `j ≤ i`: `S ←` entrywise running
-differences `rnd (A_ij p q − rnd (G_ik p s * G_jk q s))` over `k < j` and `s`; if `i = j`,
-`G_jj ←` the lower part `F − strictUpper F` of `algorithm_4_2_1 rnd S`, else `G_ij` row by row by
-`Chapter03.algorithm_3_1_3 rnd G_jj`; `A_ij ← G_ij` (overwriting the lower block triangle). ★
+id = "updateBlock"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'
 
-Blocked: the program calls chapter 3's surface (agent s03, not on this branch's base) `GolubVanLoan.Chapter03.algorithm_3_1_3`
-for the multiple-right-hand-side triangular solve (convention 5: a step delegated to an earlier chapter
-calls that chapter's program). The block equations it implements are proved (`equation_4_2_18`,
-`equation_4_2_19`).'''
-deps = ["algorithm_4_2_1", "GolubVanLoan.Chapter03.algorithm_3_1_3"]
+[[node]]
+id = "blockCholeskyStep"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'
+
+[[node]]
+id = "algorithm_4_2_4"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'
 
 [[node]]
 id = "algorithm_4_2_4_spec"
-kind = "theorem"
-desc = '''Exact correctness of Algorithm 4.2.4: for symmetric positive definite `A` with `n = N r`, the lower
-triangle of `Id.run (algorithm_4_2_4 pure N r A)` is `Matrix.cholesky A`. Induction over the block
-columns with `equation_4_2_19` as the invariant (block columns `< j` equal those of `G`),
-`algorithm_4_2_1_spec`, `Chapter03.algorithm_3_1_3_spec`. The book's remark that the algorithm "can
-be easily modified" for `r ∤ n` is not formalized. ★★★ (~200 lines)
-
-Blocked: waits on the program (itself waiting on chapter 3's surface (agent s03, not on this branch's base)
-`algorithm_3_1_3`) and on `GolubVanLoan.Chapter03.algorithm_3_1_3_spec`. The block specification is
-proved (`equation_4_2_18` resp. `equation_4_2_19`) and the base case is `algorithm_4_2_1_spec`.'''
-deps = ["algorithm_4_2_4", "equation_4_2_19", "algorithm_4_2_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_3_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 4.2.4'
 
 [[node]]
 id = "equation_4_2_17_algorithm"
-kind = "theorem"
-desc = '''(4.2.17) for the output of Algorithm 4.2.2 (split from `equation_4_2_17` by agent s04): for a
-symmetric positive semidefinite `A` of rank `r`, the exact run of `algorithm_4_2_2` returns `d_i > 0`
-for `i < r`, `d_i = 0` and a vanishing trailing block for `i ≥ r`, so its `P`, `L(:, 1:r)` and `D_r`
-realize (4.2.17). From `algorithm_4_2_2_spec` and `equation_4_2_16` (the book's argument: a zero pivot
-means a zero diagonal of `A_k`, hence `A_k = 0` by (4.2.15)). ★★
-
-Blocked: waits on `algorithm_4_2_2_spec` and `equation_4_2_16` (open).'''
-deps = ["algorithm_4_2_2_spec", "equation_4_2_16", "theorem_4_2_8_d", "equation_4_2_17"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.17)'

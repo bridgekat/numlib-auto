@@ -66,13 +66,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.14)'
 
 [[node]]
 id = "equation_12_3_15"
-kind = "theorem"
-desc = '''(12.3.15) and the sentence after it: if `Uᵀ 𝓡(A) V = Σ` is an SVD (chapter 2's Theorem 2.4.1 form), then `vec(B_opt) = √σ₁ U(:,1)`,
-`vec(C_opt) = √σ₁ V(:,1)` minimize `φ`, and so do `α B_opt`, `C_opt/α` for `α ≠ 0`. `Matrix.isLeast_frobenius_norm_sub_sum_kronecker`
-at `r̃ = 1` with `Matrix.kroneckerRank_le_iff`. ★
-
-Blocked: needs chapter 2's Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (agent sv2/ls1, not on main at 55f7ad05) and tens1's follow-up `Matrix.isLeast_frobenius_norm_sub_sum_kronecker`; neither resolves on this branch. Once they land the node is a restatement through `rearrangement`, `equation_12_3_14` and `Matrix.kroneckerRank_le_iff` (~30 lines). (agent s12)'''
-deps = ["GolubVanLoan.Chapter12.equation_12_3_14", "Matrix.isLeast_frobenius_norm_sub_sum_kronecker", "Matrix.kroneckerRank_le_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.15)'
 
 [[node]]
@@ -81,13 +74,6 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 12.3.1'
 
 [[node]]
 id = "equation_12_3_19"
-kind = "theorem"
-desc = '''(12.3.19): for `r̃ ≤ r`, `A_{r̃} = ∑_{k=1}^{r̃} σ_k U_k ⊗ V_k` is the closest matrix to `A` in the Frobenius norm among sums of `r̃` Kronecker
-products. `Matrix.isLeast_frobenius_norm_sub_sum_kronecker` (and `Matrix.kroneckerRank_le_iff` for "sum of `r̃` Kronecker
-products"). ★
-
-Blocked: needs chapter 2's Eckart–Young–Mirsky `Matrix.isLeast_frobenius_norm_sub_of_rank_le` (agent sv2/ls1, not on main at 55f7ad05) and tens1's follow-up `Matrix.isLeast_frobenius_norm_sub_sum_kronecker`; neither resolves on this branch. Once they land the node is a restatement through `rearrangement`, `equation_12_3_14` and `Matrix.kroneckerRank_le_iff` (~30 lines). (agent s12)'''
-deps = ["GolubVanLoan.Chapter12.theorem_12_3_1", "Matrix.isLeast_frobenius_norm_sub_sum_kronecker", "Matrix.kroneckerRank_le_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.19)'
 
 [[node]]
@@ -107,18 +93,11 @@ id = "equation_12_3_21"
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.21)'
 
 [[node]]
-id = "lemma_12_3_3"
-kind = "theorem"
-desc = '''Lemma 12.3.3: for `M ∈ ℝ^{n×n}`, `S = (M − Mᵀ)/2`, and orthonormal `u, v` with `S[u | v] = [u | v][0 μ; −μ 0]`, `μ = ρ(S)`: `Z_opt = μ(u vᵀ − v
-uᵀ)` minimizes `‖M − Z‖_F` over skew-symmetric `Z` of rank `≤ 2` (P12.3.12). The constraint is `rank Z ≤ 2`, not `= 2`:
-`Z_opt` is a difference of two rank-one matrices, of rank exactly `2` when `μ ≠ 0` and equal to `0` when `S = 0` (then `μ = 0`
-and the book's formula gives `Z_opt = 0`, which is indeed the minimizer, `M` being symmetric). `ρ(S) =
-‖S‖₂` for the normal matrix `S` (the surface helper `spectralRadius_skew_eq_l2_opNorm`, through `Matrix.complexify` and the
-singular values of a normal matrix); then `Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`. ★★ (~40 lines, the `ρ = ‖·‖₂`
-helper)
+id = "complexSpectralRadius_toReal_of_skew"
+source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.3'
 
-Blocked: the backbone `Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two` (tens1's ★★★ Lemma 12.3.3) is not on main; the surface further needs `ρ(S) = ‖S‖₂` for skew `S` (~40 lines through `Matrix.complexify`). (agent s12)'''
-deps = ["Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two"]
+[[node]]
+id = "lemma_12_3_3"
 source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.3'
 
 [[node]]
