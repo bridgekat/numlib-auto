@@ -1,61 +1,16 @@
-desc = '''
-The polar decomposition `A = U P` as a function of matrices ([golub2013matrix] §9.4.3): the
-specification `Matrix.IsPolarDecomposition A U P`, its existence (Theorem 9.4.1,
-`Matrix.exists_isPolarDecomposition`), the symmetric factor as `CFC.sqrt (Aᴴ A)` (`CFC.abs A` for
-square `A`) and the uniqueness for nonsingular square `A` (`Matrix.IsPolarDecomposition.eq_cfcSqrt`)
-are the decomposition module `Numlib/LinearAlgebra/Matrix/Polar` (moved there at the Golub–Van Loan
-consolidation, decision D6), which this module imports; here are the factor as the primary square
-root (`Matrix.IsPolarDecomposition.eq_pfc_sqrt`), Newton's iteration `X_{k+1} = (X_k + X_k⁻ᴴ)/2` and
-its quadratic convergence, the sign of the Hermitian dilation, and the Li–Sun perturbation bound.
-Every statement about "the polar factor `U`" takes an `IsPolarDecomposition A U P` hypothesis (review
-H5). The Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of §9.4.3 is `Matrix.hermitianDilation Aᴴ`
-(`Numlib/Analysis/Matrix/SingularValues`, imported). Searched: Mathlib has no polar decomposition of
-matrices or of C⋆-algebra elements (`grep -ri polar` over `Mathlib/Analysis` finds none for operators),
-and Numlib has none.
-'''
 
 [[node]]
 id = "Matrix.IsPolarDecomposition.eq_pfc_sqrt"
-kind = "theorem"
-desc = '''The symmetric polar factor is the primary square root of `Aᴴ A` ([golub2013matrix] §9.4.3, "`P = (AᵀA)^{1/2}`"
-read in chapter 9's functional calculus): if `IsPolarDecomposition A U P`, then
-`P = pfc (fun z : 𝕜 => ((Real.sqrt (RCLike.re z) : ℝ) : 𝕜)) (Aᴴ * A)`. `Matrix.IsPolarDecomposition.eq_cfcSqrt`
-(the `CFC.sqrt` form, `Numlib/LinearAlgebra/Matrix/Polar`) and `Matrix.PosSemidef.cfcSqrt_eq_pfc`.
-Renamed from `Matrix.polar_eq_pfc_sqrt` (review H5). ★'''
-deps = ["Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.PosSemidef.cfcSqrt_eq_pfc"]
 
 [[node]]
 id = "Matrix.newtonPolarIterate"
-kind = "definition"
-desc = '''Newton's polar iteration ([golub2013matrix] (9.4.11), whose body the conversion lost; reconstructed
-from (9.4.12)): `X₀ = A`, `X_{k+1} = (X_k + (X_k⁻¹)ᴴ)/2` for square `A : Matrix n n 𝕜` (`RCLike`;
-`X_k⁻ᵀ` in the real book). ★'''
 deps = []
 
 [[node]]
 id = "Matrix.newtonPolarIterate_eq"
-kind = "theorem"
-desc = '''[golub2013matrix] (9.4.12): for nonsingular square `A` with `IsPolarDecomposition A U P`,
-`X_k = newtonPolarIterate A k = U * P_k` with `P₀ = P`, `P_{k+1} = (P_k + P_k⁻¹)/2`, every `P_k`
-positive definite (`P` is positive definite since `A` is nonsingular; the average of a positive
-definite matrix and its inverse is positive definite: `Matrix.PosDef.inv`, `Matrix.PosDef.add`,
-`smul`), so every `X_k` is nonsingular. Induction: `(U P_k)⁻ᴴ = U⁻ᴴ P_k⁻ᴴ = U P_k⁻¹` (`U` unitary,
-`IsPolarDecomposition.mem_unitaryGroup`; `P_k` Hermitian). Over `ℂ` the `P_k` are the Newton sign
-iterates of `P` (`Matrix.newtonSignIterate P k`). ★★'''
-deps = ["Matrix.newtonPolarIterate", "Matrix.IsPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt"]
 
 [[node]]
 id = "Matrix.tendsto_newtonPolarIterate"
-kind = "theorem"
-desc = '''Quadratic convergence of Newton's polar iteration ([golub2013matrix] §9.4.3): for nonsingular square
-`A` with `IsPolarDecomposition A U P`, `newtonPolarIterate A k → U`, with `‖X_k - U‖₂ = ‖P_k - 1‖₂`
-(unitary invariance, `Matrix.l2_opNorm_unitary_mul_mul_unitary`) and
-`‖P_{k+1} - 1‖₂ ≤ ½ ‖P_k⁻¹‖₂ ‖P_k - 1‖₂²`. Route over `RCLike` without the complex sign machinery:
-`P = V diag(σ) Vᴴ` (`Matrix.IsHermitian.spectral_theorem`), `P_k = V diag(r_k(σᵢ)) Vᴴ` with the
-scalar Newton map `r ↦ (r + 1/r)/2`, which converges to `1` for `r > 0`
-(`(r_{k+1} - 1) = (r_k - 1)²/(2 r_k)`); or over `ℂ` from `Matrix.tendsto_newtonSignIterate` with
-`matrixSign P = 1`. ★★'''
-deps = ["Matrix.newtonPolarIterate_eq", "Matrix.l2_opNorm_unitary_mul_mul_unitary"]
 
 [[node]]
 id = "Matrix.matrixSign_hermitianDilation"

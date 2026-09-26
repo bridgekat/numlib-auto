@@ -31,7 +31,6 @@ source = "Kress, Numerical Analysis, Theorem 5.10"
 id = "tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq"
 source = "Kress, Numerical Analysis, Theorem 5.10"
 
-
 [[node]]  # tracked by ls1 (consolidation R7); moved from SVD
 id = "tikhonov_unique"
 source = "Kress, Numerical Analysis, Theorem 5.7"
@@ -124,19 +123,6 @@ id = "generalFormTikhonov_mulVec_eq_iff_isMinOn"
 
 [[node]]
 id = "generalFormTikhonov_mulVec_eq_sum_of_isGSVD"
-kind = "theorem"
-desc = '''**General-form Tikhonov diagonalized by the GSVD** ([golub2013matrix] (6.1.26) and the display
-before it): for `B : Matrix (Fin n) (Fin n) 𝕜` invertible (the book's "`B` square and
-nonsingular", so `p = 0`, `r = n`, `β_k > 0`), `IsGSVD A B U₁ U₂ X α β` and `0 < λ`,
-`toEuclideanLin (generalFormTikhonov A B λ) b = ∑ k : Fin n, ((α k / (α k ^ 2 + λ * β k ^ 2) : ℝ) : 𝕜) • b̃_k • X.col k`
-with `b̃ = star U₁ *ᵥ b` (`b̃_k` read at `Fin.castLE (n ≤ m₁) k`). From
-`IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`: `(AᴴA + λBᴴB) X = X⁻ᴴ diag(α² + λβ²)` and
-`Xᴴ Aᴴ b = D_Aᴴ b̃`. ★★
-
-Blocked: `Matrix.IsGSVD` and `Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul` (group
-`LinearAlgebra/Matrix/GSVD`) do not exist yet. Once they do, the proof follows
-`Matrix.IsSVD.tikhonov_eq` and `Matrix.toEuclideanLin_mul_rectDiagonal_mul_star_apply` (~60 lines).'''
-deps = ["generalFormTikhonov", "Matrix.IsGSVD", "Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul"]
 
 [[node]]  # staged by ch05; moved from SVD (it uses this module's expansion)
 id = "norm_sub_sq_pinv_eq_sum_of_isSVD"
