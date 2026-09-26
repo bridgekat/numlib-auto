@@ -1,3 +1,4 @@
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Eigen.InvariantSubspace
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.QRAlgorithm
@@ -509,5 +510,526 @@ theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
   refine le_ciInf fun x => ?_
   have h := hGx x
   rwa [x.2] at h
+
+
+/-! ### The rates of §7.3.1–7.3.2 and the appendix displays (7.3.18), (7.3.19), (7.3.26) -/
+
+section Lines
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+
+/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
+`dist(span{q}, span{u}) = sin θ(q, span{u}) = ‖q - ⟪u, q⟫ u‖`. The two lines have the same
+dimension, so the gap is the one-sided `‖P_{u⊥} P_q‖`
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and `P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. -/
+private theorem gap_span_singleton_eq_sinAngle {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
+    (𝕜 ∙ q).gap (𝕜 ∙ u) = (𝕜 ∙ u).sinAngle q := by
+  have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
+  have hu0 : u ≠ 0 := norm_ne_zero_iff.1 (by rw [hu]; exact one_ne_zero)
+  rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq _ _
+    ((finrank_span_singleton hq0).trans (finrank_span_singleton hu0).symm),
+    Submodule.sinAngle, hq, div_one]
+  have hT : ∀ w, ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection) w =
+      (inner 𝕜 q w : 𝕜) • (q - (𝕜 ∙ u).starProjection q) := by
+    intro w
+    change (𝕜 ∙ u)ᗮ.starProjection ((𝕜 ∙ q).starProjection w) = _
+    rw [Submodule.starProjection_singleton, hq, one_pow, RCLike.ofReal_one, div_one, map_smul,
+      Submodule.starProjection_orthogonal_val]
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun w => ?_) ?_
+  · rw [hT, norm_smul, mul_comm]
+    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+    simpa [hq] using norm_inner_le_norm (𝕜 := 𝕜) q w
+  · have h := ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection).le_opNorm q
+    rwa [hT, inner_self_eq_norm_sq_to_K, hq, RCLike.ofReal_one, one_pow, one_smul,
+      mul_one] at h
+
+end Lines
+
+section RCLike
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+/-- **§7.3.1**: "`dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`", rigorous. With unit eigenvectors
+`x_i` of `A` (`A x_i = λ_i x_i`), `λ_{i₀}` dominant (`|λ_i| ≤ ρ < |λ_{i₀}|` for `i ≠ i₀`, the book's
+`ρ = |λ₂|`) and a unit `q^(0) = ∑ a_i x_i` with `a_{i₀} ≠ 0` (7.3.4), there is `C` with
+`dist(span{q^(k)}, span{x_{i₀}}) ≤ C (ρ / |λ_{i₀}|)^k` for all `k`, the distance being the gap.
+For lines the gap is the sine of the angle, which the backbone bounds. -/
+theorem powerMethod_dist {A : Matrix (Fin n) (Fin n) 𝕜} {x : Fin n → EuclideanSpace 𝕜 (Fin n)}
+    {l : Fin n → 𝕜} (hx : ∀ i, toEuclideanLin A (x i) = l i • x i) (hx1 : ∀ i, ‖x i‖ = 1)
+    {i₀ : Fin n} {ρ : ℝ} (hρ0 : 0 ≤ ρ) (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ) (hdom : ρ < ‖l i₀‖)
+    {a : Fin n → 𝕜} (ha : a i₀ ≠ 0) {q₀ : EuclideanSpace 𝕜 (Fin n)} (hq₀ : ‖q₀‖ = 1)
+    (hq : q₀ = ∑ i, a i • x i) :
+    ∃ C : ℝ, ∀ k, (𝕜 ∙ (powerMethod A q₀ k).1).gap (𝕜 ∙ x i₀) ≤ C * (ρ / ‖l i₀‖) ^ k := by
+  have hl₀ : l i₀ ≠ 0 := norm_pos_iff.1 (hρ0.trans_lt hdom)
+  obtain ⟨C, hC⟩ := Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis hx hx1 hl₀ hρ ha hq
+  refine ⟨C, fun k => ?_⟩
+  rw [powerMethod_fst A hq₀ k]
+  rcases eq_or_ne ((toEuclideanLin A ^ k) q₀) 0 with h0 | h0
+  · have hz := (Krylov.powerIterate_eq_zero_iff (toEuclideanLin A) q₀ k).2 h0
+    have h := (hC k).1
+    rw [hz, smul_zero, zero_sub, norm_neg, hx1] at h
+    have hne : (𝕜 ∙ x i₀) ≠ ⊥ := fun h' =>
+      (norm_ne_zero_iff.1 (by rw [hx1]; exact one_ne_zero)) ((Submodule.span_singleton_eq_bot).1 h')
+    rw [hz, Submodule.gap_comm, Submodule.gap_congr _ _ (Submodule.span_zero_singleton 𝕜),
+      Submodule.gap_comm, Submodule.gap_bot_eq_one _ hne]
+    exact h
+  · rw [gap_span_singleton_eq_sinAngle
+      (Krylov.norm_powerIterate_of_ne_zero (toEuclideanLin A) q₀ k h0) (hx1 i₀)]
+    exact (hC k).2
+
+end RCLike
+
+section Blocks
+
+variable {r s : ℕ}
+
+/-- The column blocks of a unitary `Q = [Q_α Q_β]`: orthonormal columns, mutually orthogonal. -/
+private theorem conjTranspose_mul_fromCols_eq {Qα : Matrix (Fin n) (Fin r) ℂ}
+    {Qβ : Matrix (Fin n) (Fin s) ℂ} (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) :
+    Qαᴴ * Qα = 1 ∧ Qβᴴ * Qβ = 1 ∧ Qαᴴ * Qβ = 0 := by
+  rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromRows_mul_fromCols,
+    ← fromBlocks_one] at hQ
+  obtain ⟨h1, h2, -, h4⟩ := fromBlocks_inj.1 hQ
+  exact ⟨h1, h4, h2⟩
+
+/-- For `Q = [Q_α Q_β]` unitary, `ran Q_β = (ran Q_α)ᗮ`. -/
+private theorem range_eq_orthogonal_of_fromCols {Qα : Matrix (Fin n) (Fin r) ℂ}
+    {Qβ : Matrix (Fin n) (Fin s) ℂ} (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1)
+    (hQ' : fromCols Qα Qβ * (fromCols Qα Qβ)ᴴ = 1) :
+    LinearMap.range (toEuclideanLin Qβ) = (LinearMap.range (toEuclideanLin Qα))ᗮ := by
+  obtain ⟨-, -, hαβ⟩ := conjTranspose_mul_fromCols_eq hQ
+  rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromCols_mul_fromRows] at hQ'
+  apply le_antisymm
+  · rintro _ ⟨y, rfl⟩
+    rw [Submodule.mem_orthogonal]
+    rintro _ ⟨z, rfl⟩
+    rw [← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint,
+      ← toEuclideanLin_mul_apply, hαβ, map_zero, LinearMap.zero_apply, inner_zero_right]
+  · intro x hx
+    have h0 : toEuclideanLin Qαᴴ x = 0 := by
+      rw [toEuclideanLin_conjTranspose_eq_adjoint]
+      refine ext_inner_left ℂ fun z => ?_
+      rw [LinearMap.adjoint_inner_right, inner_zero_right]
+      exact (Submodule.mem_orthogonal _ _).1 hx _ ⟨z, rfl⟩
+    refine ⟨toEuclideanLin Qβᴴ x, ?_⟩
+    have h := congrArg (fun M => toEuclideanLin M x) hQ'
+    simp only [map_add, LinearMap.add_apply, toEuclideanLin_mul_apply, h0, map_zero, zero_add,
+      toLpLin_one, LinearMap.id_apply] at h
+    exact h
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **(7.3.18)**: with `Q = [Q_α Q_β]` unitary (the Schur vectors, `D_r(A) = ran Q_α`) and `Q_k`
+with orthonormal columns, `dist(D_r(A), ran Q_k) = ‖W_k‖₂` for `W_k = Q_βᴴ Q_k` — chapter 2's
+characterization of the distance of two equal-dimensional subspaces (Theorem 2.5.1). -/
+theorem equation_7_3_18 {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Matrix (Fin n) (Fin s) ℂ}
+    (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) (hQ' : fromCols Qα Qβ * (fromCols Qα Qβ)ᴴ = 1)
+    {Qk : Matrix (Fin n) (Fin r) ℂ} (hQk : Qkᴴ * Qk = 1) :
+    (LinearMap.range (toEuclideanLin Qα)).gap (LinearMap.range (toEuclideanLin Qk)) =
+      ‖Qβᴴ * Qk‖ := by
+  obtain ⟨hα, hβ, -⟩ := conjTranspose_mul_fromCols_eq hQ
+  rw [Submodule.gap_comm, gap_range_eq_l2_opNorm_conjTranspose_mul hQk hα hβ
+    (range_eq_orthogonal_of_fromCols hQ hQ'), ← l2_opNorm_conjTranspose, conjTranspose_mul,
+    conjTranspose_conjTranspose]
+
+/-- **(7.3.19)**: for `Q_α`, `Q_k` with `r ≥ 1` orthonormal columns and `V_k = Q_αᴴ Q_k`,
+`1 = d_k² + σ_min(V_k)²` with `d_k = dist(ran Q_α, ran Q_k)` — the thin CS decomposition read for
+two subspaces (`σ_min = ⨅ i, σ_i`). -/
+theorem equation_7_3_19 [NeZero r] {Qα Qk : Matrix (Fin n) (Fin r) ℂ} (hα : Qαᴴ * Qα = 1)
+    (hQk : Qkᴴ * Qk = 1) :
+    1 = (LinearMap.range (toEuclideanLin Qα)).gap (LinearMap.range (toEuclideanLin Qk)) ^ 2 +
+      (⨅ i, (Qαᴴ * Qk).singularValues i) ^ 2 := by
+  have : Nonempty (Fin r) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne r)⟩⟩
+  rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin]
+  have h := gap_range_sq_add_sortedSingularValues_sq hα hQk
+  rw [Fintype.card_fin] at h
+  exact h.symm
+
+/-- A square matrix with a positive least singular value is invertible. -/
+private theorem isUnit_of_iInf_singularValues_pos [NeZero r] {B : Matrix (Fin r) (Fin r) ℂ}
+    (h : 0 < ⨅ i, B.singularValues i) : IsUnit B := by
+  have : Nonempty (Fin r) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne r)⟩⟩
+  rw [← mulVec_injective_iff_isUnit]
+  intro v w hvw
+  have h1 := B.iInf_singularValues_mul_norm_le (WithLp.toLp 2 (v - w))
+  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
+  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace ℂ (Fin r))‖ = 0 :=
+    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
+  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
+  simpa [sub_eq_zero] using h3
+
+open scoped ComplexOrder in
+/-- **(7.3.26), corrected.** Let `Q = [Q_α Q_β]` be unitary, `X` any `r × (n - r)` matrix,
+`I + X Xᴴ = G Gᴴ` (7.3.23), and `Z = (Q_α - Q_β Xᴴ) G^{-H}`, whose columns are an orthonormal basis
+of `ran(Q_α - Q_β Xᴴ)` — the dominant invariant subspace `D_r(Aᴴ)` when `X` solves the Sylvester
+equation (7.3.20), by (7.3.25). For `Q₀` with orthonormal columns, `V₀ = Q_αᴴ Q₀`,
+`W₀ = Q_βᴴ Q₀` and `d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1`: `V₀ - X W₀ = G (Zᴴ Q₀)` is nonsingular and
+`‖(V₀ - X W₀)⁻¹‖₂ ≤ ‖G⁻¹‖₂ ‖(Zᴴ Q₀)⁻¹‖₂ ≤ 1/√(1 - d̃₀²)`. The book ends the chain with `d₀`, through
+the claim `ran(Q_β) = D_r(Aᴴ)^⊥`, which is false unless `T₁₂ = 0` — the source of the error in
+Theorem 7.3.1. -/
+theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Matrix (Fin n) (Fin s) ℂ}
+    (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) {X : Matrix (Fin r) (Fin s) ℂ}
+    {G : Matrix (Fin r) (Fin r) ℂ} (hG : G * Gᴴ = 1 + X * Xᴴ) {Z : Matrix (Fin n) (Fin r) ℂ}
+    (hZ : Z = (Qα - Qβ * Xᴴ) * (Gᴴ)⁻¹) {Q₀ : Matrix (Fin n) (Fin r) ℂ} (hQ₀ : Q₀ᴴ * Q₀ = 1)
+    (hd : (LinearMap.range (toEuclideanLin Z)).gap (LinearMap.range (toEuclideanLin Q₀)) < 1) :
+    Zᴴ * Z = 1 ∧ Qαᴴ * Q₀ - X * (Qβᴴ * Q₀) = G * (Zᴴ * Q₀) ∧
+      IsUnit (Qαᴴ * Q₀ - X * (Qβᴴ * Q₀)) ∧
+      ‖(Qαᴴ * Q₀ - X * (Qβᴴ * Q₀))⁻¹‖ ≤ ‖G⁻¹‖ * ‖(Zᴴ * Q₀)⁻¹‖ ∧
+      ‖G⁻¹‖ * ‖(Zᴴ * Q₀)⁻¹‖ ≤ 1 / Real.sqrt (1 -
+        (LinearMap.range (toEuclideanLin Z)).gap (LinearMap.range (toEuclideanLin Q₀)) ^ 2) := by
+  obtain ⟨hα, hβ, hαβ⟩ := conjTranspose_mul_fromCols_eq hQ
+  have hβα : Qβᴴ * Qα = 0 := by
+    rw [← conjTranspose_conjTranspose Qα, ← conjTranspose_mul, hαβ, conjTranspose_zero]
+  obtain ⟨hpd, hσG⟩ := equation_7_3_24 X hG
+  have hGu : IsUnit G.det := by
+    have h := hpd.isUnit
+    rw [← hG, isUnit_iff_isUnit_det, det_mul, det_conjTranspose] at h
+    exact isUnit_of_mul_isUnit_left h
+  have hGhu : IsUnit Gᴴ.det := by rw [det_conjTranspose]; exact hGu.star
+  set Y := Qα - Qβ * Xᴴ with hY
+  have hYY : Yᴴ * Y = 1 + X * Xᴴ := by
+    rw [hY, conjTranspose_sub, conjTranspose_mul, conjTranspose_conjTranspose, Matrix.sub_mul,
+      Matrix.mul_sub, Matrix.mul_sub, hα, Matrix.mul_assoc X, hβα, Matrix.mul_zero,
+      ← Matrix.mul_assoc, hαβ, Matrix.zero_mul, Matrix.mul_assoc X, ← Matrix.mul_assoc Qβᴴ, hβ,
+      Matrix.one_mul]
+    abel
+  have hZG : Z * Gᴴ = Y := by
+    rw [hZ, Matrix.mul_assoc, nonsing_inv_mul _ hGhu, Matrix.mul_one]
+  have hZZ : Zᴴ * Z = 1 := by
+    have hGi : ((Gᴴ)⁻¹)ᴴ = G⁻¹ := by rw [conjTranspose_nonsing_inv, conjTranspose_conjTranspose]
+    rw [hZ, conjTranspose_mul, hGi, Matrix.mul_assoc, ← Matrix.mul_assoc Yᴴ, hYY, ← hG,
+      ← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hGu, Matrix.one_mul,
+      mul_nonsing_inv _ hGhu]
+  have hV : Qαᴴ * Q₀ - X * (Qβᴴ * Q₀) = G * (Zᴴ * Q₀) := by
+    have h1 : G * Zᴴ = Yᴴ := by
+      rw [← hZG, conjTranspose_mul, conjTranspose_conjTranspose]
+    calc Qαᴴ * Q₀ - X * (Qβᴴ * Q₀) = Yᴴ * Q₀ := by
+          rw [hY, conjTranspose_sub, conjTranspose_mul, conjTranspose_conjTranspose,
+            Matrix.sub_mul, Matrix.mul_assoc]
+      _ = G * (Zᴴ * Q₀) := by rw [← h1, Matrix.mul_assoc]
+  -- the least singular value of `Zᴴ Q₀`
+  set d := (LinearMap.range (toEuclideanLin Z)).gap (LinearMap.range (toEuclideanLin Q₀))
+  have hd0 : 0 ≤ d := Submodule.gap_nonneg _ _
+  have hσ := equation_7_3_19 hZZ hQ₀
+  have hσ0 : 0 ≤ ⨅ i, (Zᴴ * Q₀).singularValues i := le_ciInf fun i => singularValues_nonneg _ i
+  have hσeq : ⨅ i, (Zᴴ * Q₀).singularValues i = Real.sqrt (1 - d ^ 2) := by
+    rw [← Real.sqrt_sq hσ0]
+    congr 1
+    linarith
+  have hσpos : 0 < ⨅ i, (Zᴴ * Q₀).singularValues i := by
+    rw [hσeq]
+    exact Real.sqrt_pos.2 (by nlinarith)
+  have hZQu : IsUnit (Zᴴ * Q₀) := isUnit_of_iInf_singularValues_pos hσpos
+  have hZQd : IsUnit (Zᴴ * Q₀).det := (isUnit_iff_isUnit_det _).1 hZQu
+  have hunit : IsUnit (Qαᴴ * Q₀ - X * (Qβᴴ * Q₀)) := by
+    rw [hV]; exact ((isUnit_iff_isUnit_det G).2 hGu).mul hZQu
+  refine ⟨hZZ, hV, hunit, ?_, ?_⟩
+  · rw [hV, Matrix.mul_inv_rev]
+    refine (norm_mul_le _ _).trans (le_of_eq (mul_comm _ _))
+  · have hG1 : ‖G⁻¹‖ ≤ 1 := by
+      rw [l2_opNorm_inv_eq_inv_iInf_singularValues _ hGu]
+      exact inv_le_one_of_one_le₀ hσG
+    rw [l2_opNorm_inv_eq_inv_iInf_singularValues _ hZQd, hσeq, one_div]
+    calc ‖G⁻¹‖ * (Real.sqrt (1 - d ^ 2))⁻¹ ≤ 1 * (Real.sqrt (1 - d ^ 2))⁻¹ :=
+          mul_le_mul_of_nonneg_right hG1 (inv_nonneg.2 (Real.sqrt_nonneg _))
+      _ = (Real.sqrt (1 - d ^ 2))⁻¹ := one_mul _
+
+end Blocks
+
+/-- The norm of a vector of `ℂ²`. -/
+private theorem norm_euclidean_two (v : EuclideanSpace ℂ (Fin 2)) :
+    ‖v‖ = Real.sqrt (‖v 0‖ ^ 2 + ‖v 1‖ ^ 2) := by
+  rw [EuclideanSpace.norm_eq, Fin.sum_univ_two]
+
+/-- `(√2)⁻¹ · (√2)⁻¹ = 1/2`. -/
+private theorem inv_sqrt_two_mul_self : (Real.sqrt 2)⁻¹ * (Real.sqrt 2)⁻¹ = 1 / 2 := by
+  rw [← mul_inv, Real.mul_self_sqrt (by norm_num : (0 : ℝ) ≤ 2), one_div]
+
+/-- The column space of a one-column matrix is the line through its column. -/
+private theorem range_toEuclideanLin_col {m : ℕ} (M : Matrix (Fin m) (Fin 1) ℂ) :
+    LinearMap.range (toEuclideanLin M) = ℂ ∙ WithLp.toLp 2 (fun i => M i 0) := by
+  have happ : ∀ y : EuclideanSpace ℂ (Fin 1),
+      toEuclideanLin M y = y 0 • WithLp.toLp 2 (fun i => M i 0) := by
+    intro y
+    ext i
+    simp [toEuclideanLin_apply, mulVec, dotProduct, mul_comm]
+  ext x
+  rw [LinearMap.mem_range, Submodule.mem_span_singleton]
+  constructor
+  · rintro ⟨y, rfl⟩
+    exact ⟨y 0, (happ y).symm⟩
+  · rintro ⟨a, rfl⟩
+    refine ⟨EuclideanSpace.single 0 a, ?_⟩
+    rw [happ]
+    simp
+
+open scoped Matrix.Norms.Frobenius in
+/-- **Theorem 7.3.1 as printed is false.** For `A = [2 1; 0 1]` (a Schur form with `Q = I`, `r = 1`,
+`D₁(A) = span{e₁}`, `N = [0 1; 0 0]`, `‖N‖_F = 1`, `sep(2, 1) = 1`), `μ = 3` (so
+`(1 + μ)|λ₁| = 8 > ‖N‖_F`) and `Q₀ = (1, -1)ᵀ/√2`, every orthogonal iteration (7.3.6) from `Q₀` has
+`ran Q_k = ran Q₀` (`A Q₀ = Q₀`), so `d_k = dist(D₁(A), ran Q_k) = 1/√2 < 1` for every `k` — the
+printed hypothesis (7.3.9) holds — while the printed right-hand side of (7.3.10),
+`(1 + 1/1) ((1 + 1/4)/(2 - 1/4))^k d₀/√(1 - d₀²)`, tends to `0`. The hypothesis the proof really
+uses fails: `D₁(Aᴴ) = span{(1, 1)}` (`Aᴴ (1, 1) = 2 (1, 1)`) is orthogonal to `ran Q₀`, so
+`d̃₀ = dist(D₁(Aᴴ), ran Q₀) = 1`. -/
+theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
+    (hQ : orthogonalIteration !![(2 : ℂ), 1; 0, 1] Q)
+    (h0 : Q 0 = !![(((Real.sqrt 2)⁻¹ : ℝ) : ℂ); -(((Real.sqrt 2)⁻¹ : ℝ) : ℂ)]) :
+    ‖strictUpper !![(2 : ℂ), 1; 0, 1]‖ = 1 ∧
+      (∀ k, (ℂ ∙ EuclideanSpace.single (0 : Fin 2) (1 : ℂ)).gap
+        (LinearMap.range (toEuclideanLin (Q k))) = (Real.sqrt 2)⁻¹) ∧
+      Tendsto (fun k : ℕ => (1 + 3 : ℝ) ^ (2 - 2) *
+          (1 + ‖!![(1 : ℂ)]‖ / sep !![(2 : ℂ)] !![(1 : ℂ)]) *
+          ((‖(1 : ℂ)‖ + ‖strictUpper !![(2 : ℂ), 1; 0, 1]‖ / (1 + 3)) /
+            (‖(2 : ℂ)‖ - ‖strictUpper !![(2 : ℂ), 1; 0, 1]‖ / (1 + 3))) ^ k *
+          ((ℂ ∙ EuclideanSpace.single (0 : Fin 2) (1 : ℂ)).gap
+              (LinearMap.range (toEuclideanLin (Q 0))) /
+            Real.sqrt (1 - (ℂ ∙ EuclideanSpace.single (0 : Fin 2) (1 : ℂ)).gap
+              (LinearMap.range (toEuclideanLin (Q 0))) ^ 2))) atTop (𝓝 0) ∧
+      (!![(2 : ℂ), 1; 0, 1])ᴴ *ᵥ ![1, 1] = (2 : ℂ) • ![1, 1] ∧
+      (ℂ ∙ WithLp.toLp 2 ![(((Real.sqrt 2)⁻¹ : ℝ) : ℂ), (((Real.sqrt 2)⁻¹ : ℝ) : ℂ)]).gap
+        (LinearMap.range (toEuclideanLin (Q 0))) = 1 := by
+  set A : Matrix (Fin 2) (Fin 2) ℂ := !![(2 : ℂ), 1; 0, 1] with hA
+  set t : ℝ := (Real.sqrt 2)⁻¹ with ht
+  have ht2 : t * t = 1 / 2 := inv_sqrt_two_mul_self
+  have ht0 : 0 < t := inv_pos.2 (Real.sqrt_pos.2 (by norm_num))
+  set Q₀ : Matrix (Fin 2) (Fin 1) ℂ := !![((t : ℝ) : ℂ); -((t : ℝ) : ℂ)] with hQ₀
+  set q₀ : EuclideanSpace ℂ (Fin 2) := WithLp.toLp 2 ![((t : ℝ) : ℂ), -((t : ℝ) : ℂ)] with hq₀
+  -- `A Q₀ = Q₀`, hence `A^k Q₀ = Q₀`
+  have hAQ : A * Q₀ = Q₀ := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [A, Q₀, mul_apply, Fin.sum_univ_two]
+    ring
+  have hpow : ∀ k, A ^ k * Q₀ = Q₀ := by
+    intro k
+    induction k with
+    | zero => rw [pow_zero, Matrix.one_mul]
+    | succ k ih => rw [pow_succ', Matrix.mul_assoc, ih, hAQ]
+  -- `ran Q_k = ran Q₀ = span{q₀}`
+  have hrange0 : LinearMap.range (toEuclideanLin Q₀) = ℂ ∙ q₀ := by
+    rw [range_toEuclideanLin_col]
+    congr 2
+    ext i
+    fin_cases i <;> rfl
+  have hrange : ∀ k, LinearMap.range (toEuclideanLin (Q k)) = ℂ ∙ q₀ := by
+    intro k
+    have hli : LinearIndependent ℂ (A ^ k * Q 0)ᵀ := by
+      rw [h0, hpow]
+      refine linearIndependent_unique_iff.2 fun h => ?_
+      have := congrFun h 0
+      simp [Q₀, ht0.ne'] at this
+    rw [(orthogonalIteration_range hQ hli).1, h0, ← hrange0]
+    ext x
+    rw [Krylov.mem_subspaceIterate]
+    constructor
+    · rintro ⟨y, hy, rfl⟩
+      obtain ⟨z, rfl⟩ := hy
+      refine ⟨z, ?_⟩
+      rw [← toEuclideanLin_pow, ← toEuclideanLin_mul_apply, hpow]
+    · intro hx
+      obtain ⟨z, rfl⟩ := hx
+      refine ⟨toEuclideanLin Q₀ z, ⟨z, rfl⟩, ?_⟩
+      rw [← toEuclideanLin_pow, ← toEuclideanLin_mul_apply, hpow]
+  have hq₀1 : ‖q₀‖ = 1 := by
+    rw [norm_euclidean_two]
+    simp [q₀, Complex.norm_real, abs_of_pos ht0, sq, ht2]
+    norm_num
+  have he1 : ‖EuclideanSpace.single (0 : Fin 2) (1 : ℂ)‖ = 1 := by simp
+  have hc : ((t : ℝ) : ℂ) * ((t : ℝ) : ℂ) = 1 / 2 := by
+    rw [← Complex.ofReal_mul, ht2]
+    push_cast
+    ring
+  have hin : (inner ℂ q₀ (EuclideanSpace.single (0 : Fin 2) (1 : ℂ)) : ℂ) = ((t : ℝ) : ℂ) := by
+    simp [q₀, EuclideanSpace.inner_single_right]
+  -- `d_k = 1/√2`
+  have hd : ∀ k, (ℂ ∙ EuclideanSpace.single (0 : Fin 2) (1 : ℂ)).gap
+      (LinearMap.range (toEuclideanLin (Q k))) = t := by
+    intro k
+    have hv : EuclideanSpace.single (0 : Fin 2) (1 : ℂ) -
+        (inner ℂ q₀ (EuclideanSpace.single (0 : Fin 2) (1 : ℂ)) / ((‖q₀‖ ^ 2 : ℝ) : ℂ)) • q₀ =
+        WithLp.toLp 2 ![((1 / 2 : ℝ) : ℂ), ((1 / 2 : ℝ) : ℂ)] := by
+      rw [hq₀1, hin]
+      ext i
+      fin_cases i
+      · simp [q₀]
+        linear_combination -hc
+      · simp [q₀]
+        linear_combination hc
+    rw [Submodule.gap_congr _ _ (hrange k), gap_span_singleton_eq_sinAngle he1 hq₀1,
+      Submodule.sinAngle, he1, div_one, Submodule.starProjection_singleton]
+    refine (congrArg norm hv).trans ?_
+    rw [norm_euclidean_two]
+    have e0 : ‖(WithLp.toLp 2 ![((1 / 2 : ℝ) : ℂ), ((1 / 2 : ℝ) : ℂ)] :
+        EuclideanSpace ℂ (Fin 2)) 0‖ = 1 / 2 := by
+      simp
+    have e1 : ‖(WithLp.toLp 2 ![((1 / 2 : ℝ) : ℂ), ((1 / 2 : ℝ) : ℂ)] :
+        EuclideanSpace ℂ (Fin 2)) 1‖ = 1 / 2 := by
+      simp
+    rw [e0, e1, ht, ← Real.sqrt_inv]
+    congr 1
+    norm_num
+  -- `‖N‖_F = 1`
+  have hN : ‖strictUpper A‖ = 1 := by
+    have e : strictUpper A = !![0, 1; 0, 0] := by
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [A, strictUpper_apply]
+    rw [e, frobenius_norm_def]
+    simp [Fin.sum_univ_two]
+  refine ⟨hN, fun k => (hd k).trans rfl, ?_, ?_, ?_⟩
+  · rw [hN]
+    have hr : (‖(1 : ℂ)‖ + 1 / (1 + 3)) / (‖(2 : ℂ)‖ - 1 / (1 + 3)) = (5 / 7 : ℝ) := by
+      norm_num
+    rw [hr]
+    have h := (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 5 / 7)
+      (by norm_num)).const_mul ((1 + 3 : ℝ) ^ (2 - 2) *
+        (1 + ‖!![(1 : ℂ)]‖ / sep !![(2 : ℂ)] !![(1 : ℂ)]))
+    rw [mul_zero] at h
+    simpa using h.mul_const ((ℂ ∙ EuclideanSpace.single (0 : Fin 2) (1 : ℂ)).gap
+      (LinearMap.range (toEuclideanLin (Q 0))) / Real.sqrt (1 - (ℂ ∙ EuclideanSpace.single
+        (0 : Fin 2) (1 : ℂ)).gap (LinearMap.range (toEuclideanLin (Q 0))) ^ 2))
+  · ext i
+    fin_cases i <;> simp [A, mulVec, dotProduct, Fin.sum_univ_two, map_ofNat]
+    norm_num
+  · set w : EuclideanSpace ℂ (Fin 2) :=
+      WithLp.toLp 2 ![((t : ℝ) : ℂ), ((t : ℝ) : ℂ)] with hw
+    have hw1 : ‖w‖ = 1 := by
+      rw [norm_euclidean_two]
+      simp [w, Complex.norm_real, abs_of_pos ht0, sq, ht2]
+      norm_num
+    rw [Submodule.gap_congr _ _ (hrange 0), gap_span_singleton_eq_sinAngle hw1 hq₀1,
+      Submodule.sinAngle, hw1, div_one, Submodule.starProjection_singleton]
+    have hinner : (inner ℂ q₀ w : ℂ) = 0 := by
+      simp [q₀, w, PiLp.inner_apply, Fin.sum_univ_two]
+    rw [hinner, zero_div, zero_smul, sub_zero, hw1]
+
+/-- The complementary-subspace identity behind (7.3.25), in the coordinates of a block Schur form
+`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` reindexed along `e`: with `T₁₁ X - X T₂₂ = -T₁₂` and
+`P = Q [I; -Xᴴ]`, the powers satisfy `(Aᴴ)^k P = P (T₁₁ᴴ)^k`. -/
+private theorem conjTranspose_pow_mul_eq {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ}
+    (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (e : Fin n ≃ Fin r ⊕ Fin (n - r))
+    {T₁₁ : Matrix (Fin r) (Fin r) ℂ} {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ}
+    {T₂₂ : Matrix (Fin (n - r)) (Fin (n - r)) ℂ}
+    (hT : (star Q * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂)
+    {X : Matrix (Fin r) (Fin (n - r)) ℂ} (hX : T₁₁ * X - X * T₂₂ = -T₁₂) (k : ℕ) :
+    Aᴴ ^ k * (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id) =
+      Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id * T₁₁ᴴ ^ k := by
+  set B := fromBlocks T₁₁ T₁₂ 0 T₂₂ with hBdef
+  set M := fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ) with hM
+  have hBM : Bᴴ * M = M * T₁₁ᴴ :=
+    (equation_7_3_25 (A := B) (Q := 1) (one_mem _) (by simp [hBdef]) hX).2.1
+  have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.1 hQ
+  have hQQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.1 hQ
+  have hB : star Q * A * Q = B.submatrix e e := by
+    rw [← hT, reindex_apply, submatrix_submatrix, Equiv.symm_comp_self, submatrix_id_id]
+  have hA : A = Q * B.submatrix e e * star Q := by
+    rw [← hB, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hQQ, Matrix.one_mul, Matrix.mul_assoc,
+      hQQ, Matrix.mul_one]
+  have h1 : Aᴴ * (Q * M.submatrix e id) = Q * M.submatrix e id * T₁₁ᴴ := by
+    have hAh : Aᴴ = Q * Bᴴ.submatrix e e * star Q := by
+      rw [hA, conjTranspose_mul, conjTranspose_mul, ← star_eq_conjTranspose (star Q), star_star,
+        conjTranspose_submatrix, star_eq_conjTranspose, Matrix.mul_assoc]
+    rw [hAh, Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_assoc (star Q), hQQ',
+      Matrix.one_mul, submatrix_mul_equiv, hBM,
+      submatrix_mul _ _ _ _ _ Function.bijective_id, submatrix_id_id, Matrix.mul_assoc]
+  induction k with
+  | zero => rw [pow_zero, pow_zero, Matrix.one_mul, Matrix.mul_one]
+  | succ k ih =>
+    rw [pow_succ, Matrix.mul_assoc, h1, ← Matrix.mul_assoc, ih, pow_succ, Matrix.mul_assoc]
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **Theorem 7.3.1, corrected.** Let the Schur decomposition (7.3.7)–(7.3.8) be
+`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (reindexed along `e`, `T₁₁` of size `r`, `0 < r < n`, both diagonal
+blocks upper triangular), `|t_ii| ≥ a` on `T₁₁` and `|t_jj| ≤ b < a` on `T₂₂` (the book's
+`a = |λ_r| > |λ_{r+1}| = b`), `ν ≥ ‖N‖_F` for the strictly upper parts of both blocks (the book's
+`ν = ‖N‖_F`), `μ ≥ 0` with `(1 + μ) a > ν`, and `X` the solution of `T₁₁ X - X T₂₂ = -T₁₂` (7.3.20).
+Let `Q_k` be an orthogonal iteration (7.3.6), `d_k = dist(D_r(A), ran Q_k)` with
+`D_r(A) = ran(Q [I; 0])`, and `d̃₀ = dist(D_r(Aᴴ), ran Q₀)` with `D_r(Aᴴ) = ran(Q [I; -Xᴴ])` (the
+dominant invariant subspace of `Aᴴ`, (7.3.25)). If `d̃₀ < 1` (in place of the printed (7.3.9)),
+`d_k ≤ (1 + μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂)) ((b + ν/(1+μ)) / (a - ν/(1+μ)))^k
+d₀ / √(1 - d̃₀²)` for every `k`. `A^k Q₀` has full column rank (no vector of `ran Q₀` is orthogonal
+to `D_r(Aᴴ)`, and `Aᴴ` is invertible on `D_r(Aᴴ)`), so `ran Q_k = A^k ran Q₀` and the backbone's
+subspace-iteration bound applies. The printed version is false
+(`theorem_7_3_1_counterexample`). -/
+theorem theorem_7_3_1 {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
+    (e : Fin n ≃ Fin r ⊕ Fin (n - r)) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
+    {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ} {T₂₂ : Matrix (Fin (n - r)) (Fin (n - r)) ℂ}
+    (hT : (star Q * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂)
+    (hT₁₁ : T₁₁.IsUpperTriangular) (hT₂₂ : T₂₂.IsUpperTriangular) (hr : 0 < r) (hrn : r < n)
+    {a b ν μ : ℝ} (hμ : 0 ≤ μ) (ha : ∀ i, a ≤ ‖T₁₁ i i‖) (hb : ∀ j, ‖T₂₂ j j‖ ≤ b)
+    (hab : b < a) (hν₁ : ‖strictUpper T₁₁‖ ≤ ν) (hν₂ : ‖strictUpper T₂₂‖ ≤ ν)
+    (hνa : ν < (1 + μ) * a) {X : Matrix (Fin r) (Fin (n - r)) ℂ}
+    (hX : T₁₁ * X - X * T₂₂ = -T₁₂) {Qk : ℕ → Matrix (Fin n) (Fin r) ℂ}
+    (hQk : orthogonalIteration A Qk)
+    (h0 : (LinearMap.range (toEuclideanLin
+      (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap
+        (LinearMap.range (toEuclideanLin (Qk 0))) < 1)
+    (k : ℕ) :
+    (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+        (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap
+        (LinearMap.range (toEuclideanLin (Qk k))) ≤
+      (1 + μ) ^ (n - 2) * (1 + ‖T₁₂‖ / sep T₁₁ T₂₂) *
+        ((b + ν / (1 + μ)) / (a - ν / (1 + μ))) ^ k *
+        ((LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+          (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap
+            (LinearMap.range (toEuclideanLin (Qk 0))) /
+          Real.sqrt (1 - (LinearMap.range (toEuclideanLin
+            (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap
+              (LinearMap.range (toEuclideanLin (Qk 0))) ^ 2)) := by
+  have hconj := conjTranspose_pow_mul_eq hQ e hT hX k
+  have h0' := h0
+  generalize hPdef : Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id = P
+    at h0' hconj
+  set S₀ := LinearMap.range (toEuclideanLin (Qk 0)) with hS₀
+  have hQ0 : (Qk 0)ᴴ * Qk 0 = 1 := hQk.1
+  -- `T₁₁` is invertible
+  have hb0 : 0 ≤ b := (norm_nonneg _).trans (hb ⟨0, by omega⟩)
+  have hT₁₁u : IsUnit T₁₁.det := by
+    rw [det_of_isUpperTriangular hT₁₁, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff]
+    intro i _ h
+    have := ha i
+    rw [h, norm_zero] at this
+    linarith
+  have hTk : IsUnit (T₁₁ᴴ ^ k).det := by
+    rw [det_pow, det_conjTranspose]
+    exact (hT₁₁u.star).pow k
+  -- `A^k` is injective on `ran Q₀`: a killed vector is orthogonal to `D_r(Aᴴ)`
+  have hker : ∀ v ∈ S₀, (toEuclideanLin A ^ k) v = 0 → v = 0 := by
+    intro v hv hAv
+    refine Submodule.eq_zero_of_starProjection_eq_zero_of_gap_lt_one _ S₀ h0' hv ?_
+    refine (Submodule.starProjection_apply_eq_zero_iff _).2 ((Submodule.mem_orthogonal _ _).2 ?_)
+    rintro _ ⟨y, rfl⟩
+    set y' := toEuclideanLin (T₁₁ᴴ ^ k)⁻¹ y
+    have hy : toEuclideanLin P y = toEuclideanLin (Aᴴ ^ k) (toEuclideanLin P y') := by
+      rw [← toEuclideanLin_mul_apply (Aᴴ ^ k), hconj, toEuclideanLin_mul_apply P,
+        ← toEuclideanLin_mul_apply (T₁₁ᴴ ^ k), mul_nonsing_inv _ hTk, toLpLin_one,
+        LinearMap.id_apply]
+    rw [hy, ← conjTranspose_pow, toEuclideanLin_conjTranspose_eq_adjoint,
+      LinearMap.adjoint_inner_left, toEuclideanLin_pow, hAv, inner_zero_right]
+  -- hence `A^k Q₀` has full column rank
+  have hli : LinearIndependent ℂ (A ^ k * Qk 0)ᵀ := by
+    refine mulVec_injective_iff.1 fun c c' hcc => ?_
+    have hd : (A ^ k * Qk 0) *ᵥ (c - c') = 0 := by rw [mulVec_sub, hcc, sub_self]
+    set v := toEuclideanLin (Qk 0) (WithLp.toLp 2 (c - c'))
+    have hv0 : v = 0 := by
+      refine hker v ⟨_, rfl⟩ ?_
+      rw [← toEuclideanLin_pow, ← toEuclideanLin_mul_apply, toEuclideanLin_toLp, hd,
+        WithLp.toLp_zero]
+    have hn : ‖v‖ = ‖(WithLp.toLp 2 (c - c') : EuclideanSpace ℂ (Fin r))‖ :=
+      norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hQ0 _
+    rw [hv0, norm_zero, eq_comm, norm_eq_zero, WithLp.toLp_eq_zero] at hn
+    exact sub_eq_zero.1 hn
+  -- `dim ran Q₀ = r`
+  have hdim : Module.finrank ℂ S₀ = r := by
+    have hinj : Function.Injective (toEuclideanLin (Qk 0)) := by
+      refine (injective_iff_map_eq_zero _).2 fun y hy => ?_
+      have hn := norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hQ0 y
+      rw [hy, norm_zero, eq_comm, norm_eq_zero] at hn
+      exact hn
+    rw [hS₀, LinearMap.finrank_range_of_inj hinj, finrank_euclideanSpace, Fintype.card_fin]
+  subst hPdef
+  have key := gap_subspaceIterate_le_of_schur hQ e hT hT₁₁ hT₂₂ hr hrn hμ ha hb hab hν₁ hν₂ hνa
+    hX hdim h0 k
+  exact (le_of_eq (Submodule.gap_congr _ _ (orthogonalIteration_range hQk hli).1)).trans key
 
 end GolubVanLoan.Chapter07

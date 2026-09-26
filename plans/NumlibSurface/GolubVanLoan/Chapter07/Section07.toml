@@ -30,45 +30,10 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 7.7.2'
 
 [[node]]
 id = "algorithm_7_7_1"
-kind = "definition"
-desc = '''Algorithm 7.7.1 (Hessenberg–triangular reduction), real `A`, `B`: `B = QR` by chapter 5's Algorithm 5.2.1
-(Householder QR; `B` overwritten by `R` above the diagonal and the Householder vectors below, and the
-returned `β`; its reflector data are `GolubVanLoan.Chapter05.storedReflectors B' β` — the stored vectors
-with the `β` that `house` computed), `A` overwritten by
-`Qᵀ A` (each `(v, β)` of the data applied in order with `GolubVanLoan.Chapter05.householderApplyLeft`,
-rows the support of `v`, all columns — never rebuilt from the stored vectors), `B` by its upper
-triangular part; then for `j = 0 .. n-3`, `i = n-1` down to `j+2`: `(c, s) ← givens(A (i-1) j, A i j)`,
-`A(i-1:i, j:n-1) = [c s; -s c]ᵀ A(i-1:i, j:n-1)`, `B(i-1:i, i-1:n-1) = [c s; -s c]ᵀ B(i-1:i, i-1:n-1)`
-(`givensApplyLeft` on the column lists `[j, …]`, `[i-1, …]`), `(c, s) ← givens(-B i i, B i (i-1))` (the
-negation exact), `B(0:i, i-1:i) = B(0:i, i-1:i) [c s; -s c]`, `A(0:n-1, i-1:i) = A(0:n-1, i-1:i) [c s; -s c]`
-(`givensApplyRight` on the row lists `[0, …, i]`, all rows). Returns `(A, B)`. ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.algorithm_5_2_1`,
-`GolubVanLoan.Chapter05.algorithm_5_1_3`, `GolubVanLoan.Chapter05.givensApplyLeft`,
-`GolubVanLoan.Chapter05.givensApplyRight`, `GolubVanLoan.Chapter05.householderApplyLeft`,
-`GolubVanLoan.Chapter05.storedReflectors` are not on main 55f7ad05 (convention 13: every update
-calls chapter 5's shared helpers, which the chapter 5 surface adds; back substitution is chapter
-3's).'''
-deps = ["GolubVanLoan.Chapter05.algorithm_5_2_1", "GolubVanLoan.Chapter05.algorithm_5_1_3", "GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.storedReflectors"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.1'
 
 [[node]]
 id = "algorithm_7_7_1_spec"
-kind = "theorem"
-desc = '''Algorithm 7.7.1, exact semantics: `(A', B') = Id.run (algorithm_7_7_1 pure A B)` satisfies
-`A' = Qᵀ A Z`, `B' = Qᵀ B Z` with `Q`, `Z` orthogonal, `A'` upper Hessenberg and `B'` upper triangular.
-Invariants: after the QR step `B` is upper triangular and `A` is `(householderProduct data)ᵀ A` (`GolubVanLoan.Chapter05.algorithm_5_2_1_spec`, `householderApplyLeft_spec`);
-each row rotation zeroes `A i j` and creates at most the fill-in `B i (i-1)`, which the column rotation
-removes (`givens(-b_ii, b_{i,i-1})` makes `b_{i,i-1} c - b_ii s = 0`), the column rotation touching only
-columns `i-1, i` of `A` below row `j` (the zeros of `A` in columns `< j` are kept). ★★★ (~350 lines).
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.algorithm_5_2_1_spec`,
-`GolubVanLoan.Chapter05.algorithm_5_1_3_spec`, `GolubVanLoan.Chapter05.givensApplyLeft_spec`,
-`GolubVanLoan.Chapter05.givensApplyRight_spec`, `GolubVanLoan.Chapter05.householderApplyLeft_spec`,
-`GolubVanLoan.Chapter05.householderProduct` are not on main 55f7ad05 (convention 13: every update
-calls chapter 5's shared helpers, which the chapter 5 surface adds; back substitution is chapter
-3's); it needs `algorithm_7_7_1` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_7_1", "GolubVanLoan.Chapter05.algorithm_5_2_1_spec", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderProduct"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.1'
 
 [[node]]
@@ -81,60 +46,14 @@ source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
 
 [[node]]
 id = "qzZeroChase"
-kind = "definition"
-desc = '''§7.7.5, zero chasing (unnumbered; needed by Algorithm 7.7.3's "if `B₂₂` is singular, zero
-`a_{n-q, n-q-1}`"): for a Hessenberg–triangular `(A, B)` with `b_kk = 0`, the rotations the book displays —
-for `j = k .. n-2`: a row rotation in rows `(j, j+1)` zeroing `b_{j+1,j+1}` (moving the zero down the
-diagonal), and a column rotation in columns `(j-1, j)` restoring `A`'s Hessenberg form — ending with a
-column rotation in `(n-2, n-1)` that zeroes `a_{n-1,n-2}`. Stated on a window `w` of consecutive indices
-(the unreduced block of Algorithm 7.7.3; the book's display is `w = List.finRange n`), with chapter 5's
-`givensApplyLeft`/`givensApplyRight` on index lists and `givens` (Algorithm 5.1.3); returns
-`(A, B, Q, Z)`. ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.givensApplyLeft`,
-`GolubVanLoan.Chapter05.givensApplyRight`, `GolubVanLoan.Chapter05.algorithm_5_1_3` are not on main
-55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5 surface
-adds; back substitution is chapter 3's).'''
-deps = ["GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_3"]
 source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
 
 [[node]]
 id = "qzZeroChase_spec"
-kind = "theorem"
-desc = '''§7.7.5, "This zero-chasing technique is perfectly general and can be used to zero `a_{n,n-1}` regardless
-of where the zero appears along B's diagonal": for Hessenberg–triangular `(A, B)` with `b_kk = 0`, the
-output is `(Qᵀ A Z, Qᵀ B Z)`, still Hessenberg–triangular, with `(Qᵀ A Z)_{n,n-1} = 0` and `(Qᵀ B Z)_{nn} = 0`
-(`Q`, `Z` orthogonal). ★★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.givensApplyLeft_spec`,
-`GolubVanLoan.Chapter05.givensApplyRight_spec`, `GolubVanLoan.Chapter05.algorithm_5_1_3_spec` are
-not on main 55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the
-chapter 5 surface adds; back substitution is chapter 3's); it needs `qzZeroChase` of this chapter,
-itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.qzZeroChase", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec"]
 source = 'Golub–Van Loan, Matrix Computations, §7.7.5'
 
 [[node]]
 id = "algorithm_7_7_2"
-kind = "definition"
-desc = '''Algorithm 7.7.2 (QZ step) on a window `w` of consecutive indices (the book's is `w = List.finRange n`;
-Algorithm 7.7.3 runs it on its unreduced block), `A` unreduced upper Hessenberg and `B` nonsingular upper
-triangular there (spec hypotheses): `M = A B⁻¹` enters only through `(M - aI)(M - bI) e₁ = [x, y, z, 0, …]ᵀ`
-with `a + b`, `a b` the trace and determinant of `M`'s trailing `2 × 2` block (the design of the group
-desc); for `k = 0 .. N-3` (`o_k = [w_k, w_{k+1}, w_{k+2}]`): `Q_k` from `houseOn rnd o_k` of `[x, y, z]`
-applied to rows `o_k` of `A` and `B` (`householderApplyLeft`); `Z_{k1}` from `houseOn` on the reversed
-list `[w_{k+2}, w_{k+1}, w_k]` of row `w_{k+2}` of `B` applied to columns `o_k` of `A` and `B`
-(`householderApplyRight`); `Z_{k2}` from the reversed list `[w_{k+1}, w_k]` of row `w_{k+1}` of `B` on
-columns `w_k, w_{k+1}`; `x = a_{k+1,k}`, `y = a_{k+2,k}`, `z = a_{k+3,k}` if `k < N-3`; finally `Q_{N-1}`
-from `houseOn` of `[x, y]` on the last two rows and `Z_{N-1}` from the reversed last row of `B` on the last
-two columns. Returns `(A, B)` and the two reflector data lists `List ((Fin n → ℝ) × ℝ)` (convention 13). ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.houseOn`,
-`GolubVanLoan.Chapter05.householderApplyLeft`, `GolubVanLoan.Chapter05.householderApplyRight`,
-`GolubVanLoan.Chapter05.algorithm_5_1_1`, `GolubVanLoan.Chapter03.algorithm_3_1_2` are not on main
-55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5 surface
-adds; back substitution is chapter 3's).'''
-deps = ["GolubVanLoan.Chapter05.houseOn", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
 
 [[node]]
@@ -151,33 +70,21 @@ a Francis QR step were explicitly applied to `A B⁻¹`". Proof: `A' B'⁻¹ = Q
 `Qᵀ p(M)`; the zero-chasing invariant (bulge in `A` below the subdiagonal, in `B` below the diagonal) as in
 `algorithm_7_5_1_spec`. ★★★ (~500 lines).
 
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.householderApplyLeft_spec`,
-`GolubVanLoan.Chapter05.householderApplyRight_spec`, `GolubVanLoan.Chapter05.houseOn_spec`,
-`GolubVanLoan.Chapter05.householderProduct`, `GolubVanLoan.Chapter03.algorithm_3_1_2_spec` are not
-on main 55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5
-surface adds; back substitution is chapter 3's); it needs `algorithm_7_7_2` of this chapter, itself
-blocked.'''
+Blocked (c07 round, paused by the user): `algorithm_7_7_2` is written on a block `p, …, r`
+(`qzShiftVector` computes the needed entries of `M = A B⁻¹` by row forward substitution inline, so
+chapter 3's back substitution is not called). A draft of the bulge-chasing loop invariant
+(`QZStepInv`: equivalence with the reflector data, bulge at `(j+1, j-1)`, `(j+2, j-1)`, `(j+2, j)`,
+`B` triangular, block decoupled, `x, y, z` read from column `j - 1`, first reflector) and its
+one-step preservation `qzStep_inv`, with entry lemmas for `(I - βvvᵀ) M` / `M (I - βvvᵀ)` supported
+on an index list, is in the c07 scratch (`scratchpad/c07/C/QZ1.lean`, `QZ2.lean`), never compiled.
+Missing: compile it, the final `2 × 2` step, the first column `Q e_p ∥ (M - aI)(M - bI) e_p` from
+`qzShiftVector` (a computation with `M` Hessenberg), then `isUpperTriangular_star_mul_aeval` on
+`A B⁻¹`. Estimate ~500 more lines.'''
 deps = ["GolubVanLoan.Chapter07.algorithm_7_7_2", "Matrix.IsFrancisStep", "Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
 
 [[node]]
 id = "algorithm_7_7_3"
-kind = "definition"
-desc = '''Algorithm 7.7.3 (QZ algorithm, Moler–Stewart): `algorithm_7_7_3 rnd ε A B fuel` (fuel last, convention 3)
-returns `(Q, Z, T, S, done)`: `algorithm_7_7_1`; then at most `fuel` passes of: zero every `a_{i,i-1}` with
-`|a_{i,i-1}| ≤ fl(ε · fl(|a_{i-1,i-1}| + |a_ii|))` (right side rounded, `|·|` and the comparison exact —
-convention 1); find the largest `q` and smallest `p` with `A₃₃` quasi-triangular and `A₂₂` unreduced
-Hessenberg (sizes `p, n-p-q, q`; the partition in the book's image, reconstructed from the text); if
-`q = n` stop; with `w = [p, …, n-q-1]` the window of the middle block: if `B₂₂` is singular (a zero on its
-diagonal, an exact test) run `qzZeroChase` on `w`, else `algorithm_7_7_2` on `w`, and apply the returned
-rotations / reflector data to the off-diagonal blocks and to `Q`, `Z` (`householderApplyLeft/Right`,
-`givensApplyLeft/Right` on index lists; `diag(I_p, Q, I_q)ᵀ A diag(I_p, Z, I_q)` etc.). ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.householderApplyLeft`,
-`GolubVanLoan.Chapter05.householderApplyRight` are not on main 55f7ad05 (convention 13: every update
-calls chapter 5's shared helpers, which the chapter 5 surface adds; back substitution is chapter
-3's); it needs `algorithm_7_7_1`, `algorithm_7_7_2`, `qzZeroChase` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_7_1", "GolubVanLoan.Chapter07.algorithm_7_7_2", "GolubVanLoan.Chapter07.qzZeroChase", "GolubVanLoan.Chapter05.householderApplyLeft", "GolubVanLoan.Chapter05.householderApplyRight"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
 
 [[node]]
@@ -190,8 +97,11 @@ form of `(A + E, B)` (Theorem 7.7.2 made constructive up to the deflation pertur
 from `algorithm_7_7_1_spec`, `qzZeroChase_spec`, `algorithm_7_7_2_spec`, `pencil_decouple`. ★★★ (~400
 lines).
 
-Blocked: needs `algorithm_7_7_3`, `algorithm_7_7_1_spec`, `qzZeroChase_spec`, `algorithm_7_7_2_spec`
-of this chapter, itself blocked.'''
+Blocked (c07 round, paused by the user): `algorithm_7_7_3`, `algorithm_7_7_1_spec` and
+`qzZeroChase_spec` are proved, but it needs `algorithm_7_7_2_spec` (open), a spec of `qzDeflate`
+(each zeroing perturbs `A` by at most `ε(|a_{i-1,i-1}| + |a_ii|)`), the choice of `p`, `q` by
+`Nat.findGreatest`, and the accumulation of the block's reflector data into `Q`, `Z`. Estimate ~400
+lines after `algorithm_7_7_2_spec`.'''
 deps = ["GolubVanLoan.Chapter07.algorithm_7_7_3", "GolubVanLoan.Chapter07.algorithm_7_7_1_spec", "GolubVanLoan.Chapter07.qzZeroChase_spec", "GolubVanLoan.Chapter07.algorithm_7_7_2_spec", "GolubVanLoan.Chapter07.pencil_decouple", "Matrix.IsQuasiUpperTriangular"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
 
@@ -210,17 +120,5 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.5)'
 
 [[node]]
 id = "equation_7_7_6"
-kind = "theorem"
-desc = '''(7.7.6), the linearization identity: for `A₀, …, A_d` (`d ≥ 1`) and `P_k(λ) = A_k + λ A_{k+1} + ⋯ + λ^{d-k} A_d`,
-the block matrices `S(λ)` (identity blocks on the diagonal, `-λ I` on the superdiagonal) and `T(λ)`
-(first block row `[0 ⋯ 0 I]`, `-I` on the subdiagonal, last block column `[I; P₁(λ); …; P_{d-1}(λ)]`)
-satisfy `S(λ) diag(P(λ), I_{(d-1)n}) T(λ) = L(λ)` with `L(λ)` the companion-form pencil (first block row
-`[λI 0 ⋯ A₀]`, then `[-I λI ⋯ A₁]`, …, last `[0 ⋯ -I, A_{d-1} + λ A_d]`), and `det S(λ) = 1`,
-`det T(λ) = ±1` for every `λ`: `L(λ)` is a linearization of `P(λ)`. Stated pointwise in `λ : ℂ` on
-`Matrix (Fin d × Fin n) (Fin d × Fin n) ℂ`; induction on `d` along the book's two displayed steps. ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); the
-block-matrix identity `S(λ) diag(P(λ), I) T(λ) = L(λ)` on `Fin d × Fin n` by induction on `d`, with
-`det S = 1`, `det T = ±1`. Estimate ~250 lines.'''
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.7.6)'

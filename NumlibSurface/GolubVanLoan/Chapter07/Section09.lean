@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Normed.Algebra.GelfandFormula
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Eigen.Pseudospectrum
 import NumlibSurface.GolubVanLoan.Chapter07.Section03
 
@@ -6,11 +7,12 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section03
 # Golub–Van Loan §7.9: pseudospectra
 
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.9: matrix powers and the spectral radius ((7.9.1)–(7.9.3)), the
-`ε`-pseudospectrum and its three definitions ((7.9.5)–(7.9.7)), monotonicity and the connected
-components, the elementary properties (Theorems 7.9.1–7.9.8 with Corollaries 7.9.3, 7.9.5,
-7.9.7), computing `σ_min(zI - A)` through a Schur form (§7.9.5), the pseudospectral abscissa and
-radius ((7.9.8)–(7.9.9)), and transient growth (7.9.11).
+[golub2013matrix], §7.9: matrix powers and the spectral radius ((7.9.1)–(7.9.3) and the `2 × 2`
+power bound), the `ε`-pseudospectrum and its three definitions ((7.9.5)–(7.9.7)), monotonicity and
+the connected components, the elementary properties (Theorems 7.9.1–7.9.8 with Corollaries
+7.9.3, 7.9.5, 7.9.7), computing `σ_min(zI - A)` through a Schur form (§7.9.5), the pseudospectral
+abscissa and radius ((7.9.8)–(7.9.9)) with the ray-crossing matrix (7.9.10) and the
+characterization of the largest crossing, and transient growth (7.9.11).
 
 ## Conventions
 
@@ -125,6 +127,89 @@ theorem equation_7_9_3 (l₁ l₂ M : ℂ) (k : ℕ) :
       ring
     · simp [mul_apply, Fin.sum_univ_two]
     · simp [mul_apply, Fin.sum_univ_two, pow_succ']
+
+/-- The strictly upper part of the `2 × 2` upper triangular example. -/
+private theorem strictUpper_two_by_two (l₁ l₂ M : ℂ) :
+    strictUpper !![l₁, M; 0, l₂] = !![0, M; 0, 0] := by
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [strictUpper_apply]
+
+open scoped Matrix.Norms.Frobenius in
+/-- The Frobenius norm of the strictly upper part of `[λ₁ M; 0 λ₂]` is `M` for `M ≥ 0`. -/
+private theorem frobenius_norm_strictUpper_two_by_two (l₁ l₂ : ℂ) {M : ℝ} (hM : 0 ≤ M) :
+    ‖strictUpper !![l₁, (M : ℂ); 0, l₂]‖ = M := by
+  rw [strictUpper_two_by_two, frobenius_norm_def]
+  simp only [of_apply, cons_val', cons_val_fin_one, Real.rpow_ofNat, Fin.sum_univ_two, Fin.isValue,
+    cons_val_zero, cons_val_one, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+    Complex.norm_real, Real.norm_eq_abs, sq_abs, zero_add, add_zero, one_div]
+  rw [← Real.rpow_natCast, ← Real.rpow_mul hM]
+  norm_num
+
+section L2
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **§7.9.1**: for `A = [λ₁ M; 0 λ₂]` with `M > 0`, (a) `‖A^k‖₂ → 0` iff `|λ₁| < 1` and
+`|λ₂| < 1`, and (b) `‖A^k‖₂ ≤ (M/ε)(ρ(A) + ε)^k` for all `k`, with `ρ(A) = max{|λ₁|, |λ₂|}`, for
+every `0 < ε ≤ M` — Lemma 7.3.2 with `n = 2` and `1 + μ = M/ε` (the book cites it as "Lemma
+7.3.1"). The book says "for any `ε > 0`"; at `k = 0` the bound reads `1 ≤ M/ε`, so `ε ≤ M` is
+needed. -/
+theorem two_by_two_power_bound {l₁ l₂ : ℂ} {M : ℝ} (hM : 0 < M) :
+    (Tendsto (fun k : ℕ => ‖!![l₁, (M : ℂ); 0, l₂] ^ k‖) atTop (𝓝 0) ↔
+        ‖l₁‖ < 1 ∧ ‖l₂‖ < 1) ∧
+      ∀ ε : ℝ, 0 < ε → ε ≤ M → ∀ k : ℕ,
+        ‖!![l₁, (M : ℂ); 0, l₂] ^ k‖ ≤ M / ε * (max ‖l₁‖ ‖l₂‖ + ε) ^ k := by
+  set A : Matrix (Fin 2) (Fin 2) ℂ := !![l₁, (M : ℂ); 0, l₂] with hA
+  have hbound : ∀ ε : ℝ, 0 < ε → ε ≤ M → ∀ k : ℕ,
+      ‖A ^ k‖ ≤ M / ε * (max ‖l₁‖ ‖l₂‖ + ε) ^ k := by
+    intro ε hε hεM k
+    have hQ : (1 : Matrix (Fin 2) (Fin 2) ℂ) ∈ unitaryGroup (Fin 2) ℂ := one_mem _
+    have hT : star (1 : Matrix (Fin 2) (Fin 2) ℂ) * A * 1 = A := by simp
+    have hTu : A.IsUpperTriangular := by
+      intro i j h
+      fin_cases i <;> fin_cases j <;> simp_all [A]
+    have hμ : 0 ≤ M / ε - 1 := by
+      rw [sub_nonneg, le_div_iff₀ hε, one_mul]
+      exact hεM
+    have h := (lemma_7_3_2 hQ hT hTu hμ).1 k
+    have hsup : ⨆ i, ‖A i i‖ = max ‖l₁‖ ‖l₂‖ := by
+      refine le_antisymm (ciSup_le fun i => ?_) (max_le ?_ ?_)
+      · fin_cases i <;> simp [A]
+      · exact le_ciSup_of_le (Set.finite_range _).bddAbove 0 (by simp [A])
+      · exact le_ciSup_of_le (Set.finite_range _).bddAbove 1 (by simp [A])
+    rw [lpOpNorm_two, hsup, frobenius_norm_strictUpper_two_by_two l₁ l₂ hM.le] at h
+    have h1 : 1 + (M / ε - 1) = M / ε := by ring
+    have h2 : M / (M / ε) = ε := by field_simp
+    rwa [h1, h2, show 2 - 1 = 1 from rfl, pow_one] at h
+  refine ⟨⟨fun h => ?_, fun ⟨h₁, h₂⟩ => ?_⟩, hbound⟩
+  · have hpow : ∀ k : ℕ, A ^ k = !![l₁ ^ k,
+        (M : ℂ) * ∑ j ∈ Finset.range k, l₂ ^ j * l₁ ^ (k - 1 - j); 0, l₂ ^ k] :=
+      equation_7_9_3 l₁ l₂ M
+    have hlim : ∀ i : Fin 2, Tendsto (fun k : ℕ => ‖(A ^ k) i i‖) atTop (𝓝 0) := fun i =>
+      squeeze_zero (fun _ => norm_nonneg _) (fun k => norm_entry_le_l2_opNorm _ i i) h
+    have e₁ := hlim 0
+    have e₂ := hlim 1
+    simp only [hpow, of_apply, cons_val', cons_val_zero, cons_val_one, empty_val',
+      cons_val_fin_one, norm_pow] at e₁ e₂
+    refine ⟨?_, ?_⟩
+    · have := tendsto_pow_atTop_nhds_zero_iff.1 e₁
+      rwa [abs_norm] at this
+    · have := tendsto_pow_atTop_nhds_zero_iff.1 e₂
+      rwa [abs_norm] at this
+  · set ρ := max ‖l₁‖ ‖l₂‖ with hρ
+    have hρ1 : ρ < 1 := max_lt h₁ h₂
+    have hρ0 : 0 ≤ ρ := le_max_of_le_left (norm_nonneg _)
+    set ε := min M ((1 - ρ) / 2) with hε
+    have hε0 : 0 < ε := lt_min hM (by linarith)
+    have hεM : ε ≤ M := min_le_left _ _
+    have hlt : ρ + ε < 1 := by
+      have : ε ≤ (1 - ρ) / 2 := min_le_right _ _
+      linarith
+    have hgeo : Tendsto (fun k : ℕ => M / ε * (ρ + ε) ^ k) atTop (𝓝 0) := by
+      simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one (by linarith) hlt).const_mul (M / ε)
+    exact squeeze_zero (fun _ => norm_nonneg _) (hbound ε hε0 hεM) hgeo
+
+end L2
 
 /-! ### §7.9.2 Definitions -/
 
@@ -384,6 +469,213 @@ theorem pseudospectralAbscissa_spec [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A 
   obtain ⟨h1, h2⟩ := Matrix.exists_eq_pseudospectralAbscissa_radius hε A
   rw [ha, hr, pseudospectrum_eq]
   exact ⟨rfl, rfl, h1, h2⟩
+
+/-- **(7.9.10), the matrix** `M = [i e^{iθ} Aᴴ, -ε I; ε I, i e^{-iθ} A]` of §7.9.6, whose purely
+imaginary eigenvalues `i r` locate the points `r e^{iθ}` of the ray of angle `θ` at which `ε` is a
+singular value of `A - r e^{iθ} I` (Byers; Mengi and Overton). -/
+noncomputable def rayCrossingMatrix (θ ε : ℝ) (A : Matrix m m ℂ) : Matrix (m ⊕ m) (m ⊕ m) ℂ :=
+  fromBlocks ((Complex.I * Complex.exp (θ * Complex.I)) • Aᴴ) (-(ε : ℂ) • 1) ((ε : ℂ) • 1)
+    ((Complex.I * Complex.exp (-(θ * Complex.I))) • A)
+
+/-- `e^{iθ} e^{-iθ} = 1`. -/
+private theorem exp_mul_exp_neg_mul_I (θ : ℝ) :
+    Complex.exp (θ * Complex.I) * Complex.exp (-(θ * Complex.I)) = 1 := by
+  rw [← Complex.exp_add, add_neg_cancel, Complex.exp_zero]
+
+/-- `(i e^{iθ}) (-(i e^{-iθ})) = 1`. -/
+private theorem I_exp_mul_neg_I_exp (θ : ℝ) :
+    Complex.I * Complex.exp (θ * Complex.I) * -(Complex.I * Complex.exp (-(θ * Complex.I))) =
+      1 := by
+  linear_combination (-Complex.I ^ 2) * exp_mul_exp_neg_mul_I θ - Complex.I_sq
+
+omit [Fintype m] in
+/-- `(A - r e^{iθ} I)ᴴ = Aᴴ - r e^{-iθ} I`. -/
+private theorem conjTranspose_sub_ray (θ r : ℝ) (A : Matrix m m ℂ) :
+    (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ =
+      Aᴴ - ((r : ℂ) * Complex.exp (-(θ * Complex.I))) • 1 := by
+  rw [conjTranspose_sub, conjTranspose_smul, conjTranspose_one, Complex.star_def, map_mul,
+    Complex.conj_ofReal, ← Complex.exp_conj, map_mul, Complex.conj_ofReal, Complex.conj_I,
+    mul_neg]
+
+/-- The eigen-equation `M [f; g] = i r [f; g]` of (7.9.10), block row by block row, in terms of
+`B = A - r e^{iθ} I`: `i e^{iθ} Bᴴ f = ε g` and `ε f = -i e^{-iθ} B g`. -/
+private theorem rayCrossingMatrix_mulVec_eq_iff (θ r ε : ℝ) (A : Matrix m m ℂ) (f g : m → ℂ) :
+    rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g ↔
+      (Complex.I * Complex.exp (θ * Complex.I)) •
+          ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ *ᵥ f) = (ε : ℂ) • g ∧
+        (ε : ℂ) • f = -(Complex.I * Complex.exp (-(θ * Complex.I))) •
+          ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1) *ᵥ g) := by
+  have hcc := exp_mul_exp_neg_mul_I θ
+  rw [conjTranspose_sub_ray, rayCrossingMatrix, fromBlocks_mulVec, Sum.elim_comp_inl,
+    Sum.elim_comp_inr]
+  generalize Complex.exp (θ * Complex.I) = c at hcc ⊢
+  generalize Complex.exp (-(θ * Complex.I)) = c' at hcc ⊢
+  have hs : (Complex.I * r) • Sum.elim f g =
+      Sum.elim ((Complex.I * r) • f) ((Complex.I * r) • g) := by
+    ext (i | i) <;> rfl
+  rw [hs]
+  simp only [smul_mulVec, one_mulVec, sub_mulVec]
+  constructor
+  · intro h
+    have h1 := funext fun i => congrFun h (Sum.inl i)
+    have h2 := funext fun i => congrFun h (Sum.inr i)
+    simp only [Sum.elim_inl, Sum.elim_inr] at h1 h2
+    exact ⟨by linear_combination (norm := module) h1 - (Complex.I * r * hcc) • f,
+      by linear_combination (norm := module) h2 - (Complex.I * r * hcc) • g⟩
+  · rintro ⟨h1, h2⟩
+    have e1 : (Complex.I * c) • (Aᴴ *ᵥ f) + (-(ε : ℂ)) • g = (Complex.I * r) • f := by
+      linear_combination (norm := module) h1 + (Complex.I * r * hcc) • f
+    have e2 : (ε : ℂ) • f + (Complex.I * c') • (A *ᵥ g) = (Complex.I * r) • g := by
+      linear_combination (norm := module) h2 + (Complex.I * r * hcc) • g
+    rw [e1, e2]
+
+/-- If `Bᴴ B g = s² g` for some `g ≠ 0` and `s ≥ 0`, then `s` is a singular value of `B`. -/
+private theorem exists_singularValues_eq_of_mulVec {B : Matrix m m ℂ} {g : m → ℂ} (hg : g ≠ 0)
+    {s : ℝ} (hs : 0 ≤ s) (h : (Bᴴ * B) *ᵥ g = ((s : ℂ) ^ 2) • g) :
+    ∃ i, B.singularValues i = s := by
+  have hspec : ((s ^ 2 : ℝ) : ℂ) ∈ spectrum ℂ (Bᴴ * B) := by
+    rw [← Matrix.spectrum_toLin']
+    apply Module.End.HasEigenvalue.mem_spectrum
+    apply Module.End.hasEigenvalue_of_hasEigenvector (x := g)
+    refine ⟨Module.End.mem_eigenspace_iff.2 ?_, hg⟩
+    rw [toLin'_apply, h]
+    push_cast
+    rfl
+  rw [(isHermitian_conjTranspose_mul_self B).spectrum_eq_image_range] at hspec
+  obtain ⟨_, ⟨i, rfl⟩, hi⟩ := hspec
+  have he : (isHermitian_conjTranspose_mul_self B).eigenvalues i = s ^ 2 :=
+    Complex.ofReal_injective hi
+  refine ⟨i, (sq_eq_sq₀ (singularValues_nonneg _ _) hs).1 ?_⟩
+  rw [sq_singularValues, he]
+
+/-- **(7.9.10)**: "if `i · r` is an eigenvalue of the matrix `M`, then `ε` is a singular value of
+`A - r e^{iθ} I`. To see this, observe that if `M [f; g] = i · r [f; g]`, then
+`(A - r e^{iθ} I)ᴴ (A - r e^{iθ} I) g = ε² g`" — the Gram identity holds for every eigenvector
+`[f; g]` of `M` for `i r`, and for `ε > 0` (where `g = 0` forces `f = 0`) the eigenvalues `i r` of
+`M` are exactly the `r` for which `ε` is a singular value of `A - r e^{iθ} I` (the converse from a
+singular pair). -/
+theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
+    (∀ f g : m → ℂ, rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g →
+      ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ *
+          (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)) *ᵥ g = ((ε : ℂ) ^ 2) • g) ∧
+      (0 < ε → ((∃ v : m ⊕ m → ℂ, v ≠ 0 ∧
+          rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * r) • v) ↔
+        ∃ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i = ε)) := by
+  have hdd := I_exp_mul_neg_I_exp θ
+  have hgram : ∀ f g : m → ℂ,
+      rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g →
+      ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ *
+          (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)) *ᵥ g = ((ε : ℂ) ^ 2) • g := by
+    intro f g h
+    obtain ⟨h1, h2⟩ := (rayCrossingMatrix_mulVec_eq_iff θ r ε A f g).1 h
+    rw [← mulVec_mulVec]
+    generalize A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 = B at h1 h2 ⊢
+    have h3 := congrArg (Bᴴ *ᵥ ·) h2
+    simp only [mulVec_smul] at h3
+    linear_combination (norm := module) (ε : ℂ) • h1 - (Complex.I * Complex.exp (θ * Complex.I)) •
+      h3 - hdd • (Bᴴ *ᵥ (B *ᵥ g))
+  refine ⟨hgram, fun hε => ⟨?_, ?_⟩⟩
+  · rintro ⟨v, hv0, hv⟩
+    rw [← Sum.elim_comp_inl_inr v] at hv hv0
+    have hg : v ∘ Sum.inr ≠ 0 := by
+      intro hg
+      obtain ⟨-, h2⟩ := (rayCrossingMatrix_mulVec_eq_iff θ r ε A _ _).1 hv
+      rw [hg, mulVec_zero, smul_zero, smul_eq_zero] at h2
+      refine hv0 ?_
+      rw [hg, h2.resolve_left (by exact_mod_cast hε.ne')]
+      ext (i | i) <;> rfl
+    exact exists_singularValues_eq_of_mulVec hg hε.le (hgram _ _ hv)
+  · rintro ⟨i, hi⟩
+    set B := A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 with hB
+    obtain ⟨g, hg0, hgB⟩ : ∃ g : m → ℂ, g ≠ 0 ∧ Bᴴ *ᵥ (B *ᵥ g) = ((ε : ℂ) ^ 2) • g := by
+      have h := (isHermitian_conjTranspose_mul_self B).mulVec_eigenvectorBasis i
+      have he : (isHermitian_conjTranspose_mul_self B).eigenvalues i = ε ^ 2 := by
+        rw [← sq_singularValues, hi]
+      rw [he, ← mulVec_mulVec, ← Complex.coe_smul] at h
+      refine ⟨_, fun h0 =>
+        (isHermitian_conjTranspose_mul_self B).eigenvectorBasis.orthonormal.ne_zero i
+          (by ext j; simpa using congrFun h0 j), ?_⟩
+      rw [h]
+      push_cast
+      rfl
+    have hεinv : (ε : ℂ) * (ε : ℂ)⁻¹ = 1 := mul_inv_cancel₀ (by exact_mod_cast hε.ne')
+    set d := Complex.I * Complex.exp (θ * Complex.I) with hd
+    set d' := -(Complex.I * Complex.exp (-(θ * Complex.I))) with hd'
+    refine ⟨Sum.elim (((ε : ℂ)⁻¹ * d') • (B *ᵥ g)) g, fun h0 => hg0 (funext fun j => by
+      simpa using congrFun h0 (Sum.inr j)), ?_⟩
+    refine (rayCrossingMatrix_mulVec_eq_iff θ r ε A _ _).2 ⟨?_, ?_⟩
+    · rw [← hB, mulVec_smul, ← hd]
+      linear_combination (norm := module) (d * (ε : ℂ)⁻¹ * d') • hgB +
+        ((ε : ℂ) * (d * d') * hεinv) • g + ((ε : ℂ) * hdd) • g
+    · rw [← hB, ← hd']
+      linear_combination (norm := module) (d' * hεinv) • (B *ᵥ g)
+
+open scoped Matrix.Norms.L2Operator in
+/-- **§7.9.6**: "It can be shown that if `i r_max` is the largest pure imaginary eigenvalue of `M`,
+then `ε = σ_min(A - r_max e^{iθ} I)`" — for `ε > 0`, with `σ_min = ⨅ i, σ_i`. `≤` is (7.9.10);
+if it were `<`, the continuous `r ↦ σ_min(A - r e^{iθ} I)`, which grows like `|r|`, would take the
+value `ε` at some `r > r_max` (intermediate value theorem), and `i r` would be an eigenvalue of `M`
+by the converse of (7.9.10). So `r_max e^{iθ}` is the farthest point of the ray `{r e^{iθ}}` on the
+boundary of `Λ_ε(A)`. -/
+theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m ℂ}
+    (hmax : ∃ v : m ⊕ m → ℂ, v ≠ 0 ∧ rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * rmax) • v)
+    (hnot : ∀ r : ℝ, rmax < r → ∀ v : m ⊕ m → ℂ,
+      rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * r) • v → v = 0) :
+    ⨅ i, (A - ((rmax : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i = ε := by
+  set s : ℝ → ℝ := fun r =>
+    ⨅ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i with hs
+  obtain ⟨i₀, hi₀⟩ := ((equation_7_9_10 θ rmax ε A).2 hε).1 hmax
+  have : Nonempty m := ⟨i₀⟩
+  have hle : s rmax ≤ ε := hi₀ ▸ ciInf_le (Set.finite_range _).bddBelow i₀
+  change s rmax = ε
+  refine le_antisymm hle (not_lt.1 fun hlt => ?_)
+  have hcont : Continuous s := by
+    have hlip : ∀ r r' : ℝ, dist (s r) (s r') ≤ (‖(1 : Matrix m m ℂ)‖₊ : ℝ) * dist r r' := by
+      intro r r'
+      rw [Real.dist_eq, Real.dist_eq, coe_nnnorm]
+      refine (iInf_singularValues_sub_le _ _).trans (le_of_eq ?_)
+      have e : A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 -
+          (A - ((r' : ℂ) * Complex.exp (θ * Complex.I)) • 1) =
+          (((r' - r : ℝ) : ℂ) * Complex.exp (θ * Complex.I)) • 1 := by
+        push_cast
+        module
+      rw [e, norm_smul, norm_mul, Complex.norm_real, Complex.norm_exp_ofReal_mul_I,
+        Real.norm_eq_abs, abs_sub_comm]
+      ring
+    exact (LipschitzWith.of_dist_le_mul hlip).continuous
+  have hgrow : ∀ r : ℝ, |r| - ‖A‖ ≤ s r := by
+    intro r
+    simp only [hs]
+    rw [iInf_singularValues_eq_iInf_norm]
+    have : Nonempty {x : EuclideanSpace ℂ m // ‖x‖ = 1} :=
+      ⟨⟨EuclideanSpace.single i₀ 1, by simp⟩⟩
+    refine le_ciInf fun x => ?_
+    rw [toEuclideanLin_sub_smul]
+    have h1 := norm_sub_norm_le (((r : ℂ) * Complex.exp (θ * Complex.I)) • (x : EuclideanSpace ℂ m))
+      (toEuclideanCLM (n := m) (𝕜 := ℂ) A x)
+    have h2 : ‖toEuclideanCLM (n := m) (𝕜 := ℂ) A x‖ ≤ ‖A‖ := by
+      have := (toEuclideanCLM (n := m) (𝕜 := ℂ) A).le_opNorm x
+      rwa [x.2, mul_one, l2_opNorm_toEuclideanCLM] at this
+    rw [norm_smul, norm_mul, Complex.norm_real, Complex.norm_exp_ofReal_mul_I, x.2,
+      Real.norm_eq_abs, mul_one, mul_one, norm_sub_rev] at h1
+    linarith
+  set R := |rmax| + ‖A‖ + ε + 1 with hR
+  have hRmax : rmax < R := by
+    have := le_abs_self rmax
+    have := norm_nonneg A
+    linarith
+  have hsR : ε ≤ s R := by
+    have h := hgrow R
+    rw [abs_of_pos (by have := abs_nonneg rmax; have := norm_nonneg A; linarith : 0 < R)] at h
+    have := abs_nonneg rmax
+    linarith
+  obtain ⟨r, ⟨hr1, -⟩, hr⟩ :=
+    intermediate_value_Icc hRmax.le hcont.continuousOn ⟨hlt.le, hsR⟩
+  have hrr : rmax < r := lt_of_le_of_ne hr1 fun h => by rw [← h] at hr; linarith
+  obtain ⟨i, hi⟩ := exists_eq_ciInf_of_finite
+    (f := fun i => (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i)
+  obtain ⟨v, hv0, hv⟩ := ((equation_7_9_10 θ r ε A).2 hε).2 ⟨i, hi.trans hr⟩
+  exact hv0 (hnot r hrr v hv)
 
 section L2
 

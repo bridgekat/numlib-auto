@@ -6,16 +6,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.1)'
 
 [[node]]
 id = "two_by_two_power_bound"
-kind = "theorem"
-desc = '''§7.9.1: for `A = [λ₁ M; 0 λ₂]` with `M > 0`, (a) `‖A^k‖₂ → 0` iff `|λ₁| < 1` and `|λ₂| < 1`; (b)
-`‖A^k‖₂ ≤ (M/ε)(ρ(A) + ε)^k` for all `k` and every `0 < ε ≤ M` — the book says "for any `ε > 0`", but at
-`k = 0` the bound reads `1 ≤ M/ε`, false for `ε > M` (report, Doubts). From Lemma 7.3.2 with `n = 2`,
-`1 + μ = M/ε` (the book cites it as "Lemma 7.3.1"). ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); (b) is Lemma
-7.3.2 at `n = 2` with `1 + μ = M/ε`; (a) needs the limit of `‖A^k‖` from (b) and the diagonal
-entries of `A^k` for the converse. Estimate ~120 lines.'''
-deps = ["GolubVanLoan.Chapter07.lemma_7_3_2", "GolubVanLoan.Chapter07.equation_7_9_1"]
 source = 'Golub–Van Loan, Matrix Computations, §7.9.1'
 
 [[node]]
@@ -93,34 +83,16 @@ id = "pseudospectralRadius"
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.9)'
 
 [[node]]
-id = "equation_7_9_10"
-kind = "theorem"
-desc = '''(7.9.10): for `θ r : ℝ` and `M = [i e^{iθ} Aᴴ, -ε I; ε I, i e^{-iθ} A]`, if `M [f; g] = (i r) [f; g]`
-with `[f; g] ≠ 0` then `(A - r e^{iθ} I)ᴴ (A - r e^{iθ} I) g = ε² g` (the book's computation) and `ε` is a
-singular value of `A - r e^{iθ} I` (for `ε ≠ 0`, `g ≠ 0`; `g = 0` forces `f = 0`); conversely every `r`
-with `ε` a singular value of `A - r e^{iθ} I` gives an eigenvalue `i r` of `M` (from a singular pair). Block
-computation and `Matrix.sq_singularValues`. ★★
+id = "rayCrossingMatrix"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.10)'
 
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); block
-computation of `M [f; g] = i r [f; g]` and the singular pair of `A - r e^{iθ} I`
-(`Matrix.sq_singularValues` via an eigenvector of `Bᴴ B`). Estimate ~150 lines.'''
-deps = ["Matrix.sq_singularValues"]
+[[node]]
+id = "equation_7_9_10"
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.9.10)'
 
 [[node]]
 id = "equation_7_9_10_max"
-kind = "theorem"
-desc = '''§7.9.6, "if `i r_max` is the largest pure imaginary eigenvalue of `M`, then `ε = σ_min(A - r_max e^{iθ} I)`"
-(stated "it can be shown"): for `ε > 0`, if `i r_max` is an eigenvalue of `M` and no `i r` with `r > r_max` is,
-then `σ_min(A - r_max e^{iθ} I) = ε`. Proof: `≤` from `equation_7_9_10`; if `<`, the continuous
-`r ↦ σ_min(A - r e^{iθ} I)` (`Matrix.iInf_singularValues_sub_le`) tends to `∞` and so takes the value `ε`
-at some `r > r_max` (intermediate value theorem), which by the converse of `equation_7_9_10` is an
-eigenvalue `i r` of `M`. Hence the intersection of the ray `{r e^{iθ}}` with the boundary of `Λ_ε(A)`
-farthest out is `r_max e^{iθ}`. ★★
-
-Blocked: needs (7.9.10) of this section (open) and the continuity lemma
-`Matrix.iInf_singularValues_sub_le` (open in the backbone on main 55f7ad05).'''
-deps = ["GolubVanLoan.Chapter07.equation_7_9_10", "Matrix.iInf_singularValues_sub_le"]
 source = 'Golub–Van Loan, Matrix Computations, §7.9.6'
 
 [[node]]

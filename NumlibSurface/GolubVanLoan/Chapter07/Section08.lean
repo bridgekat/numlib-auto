@@ -7,8 +7,10 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section04
 
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
 [golub2013matrix], §7.8: the skew-Hamiltonian and orthogonal symplectic rows of Figure 7.8.1, the
-four facts (1)–(4) of §7.8.1, symplectic Householder and Givens transformations, the real
-Hamiltonian–Schur form (7.8.1) and the algebraic Riccati equation (7.8.2), and the product
+four facts (1)–(4) of §7.8.1, symplectic Householder and Givens transformations, the deflation
+step by a unit eigenvector of a real eigenvalue, the real Hamiltonian–Schur form (7.8.1) and the
+algebraic Riccati equation (7.8.2), the Paige–Van Loan form (7.8.3), the skew-Hamiltonian
+Hessenberg form (7.8.4) of `M²` and its real Schur form, and the product
 decompositions (7.8.5)–(7.8.6) with their block-cyclic restatement and its perfect-shuffle
 Hessenberg form.
 
@@ -141,6 +143,70 @@ theorem symplectic_householder_givens :
     fun i _ _ hcs => planeRotation_inl_inr_mem_symplecticGroup i hcs,
     exists_orthogonalSymplectic_mulVec_eq⟩
 
+/-- A reindexing `Sum.map f f` of a block matrix is the block matrix of the reindexed blocks. -/
+private theorem fromBlocks_submatrix_sum_map {l l' : Type*} (f : l' → l)
+    (A B C D : Matrix l l ℝ) :
+    (fromBlocks A B C D).submatrix (Sum.map f f) (Sum.map f f) =
+      fromBlocks (A.submatrix f f) (B.submatrix f f) (C.submatrix f f) (D.submatrix f f) := by
+  ext (i | i) (j | j) <;> rfl
+
+/-- **§7.8.1, the deflation step displayed before (7.8.1).** If `M` is Hamiltonian, `M x = λ x`
+with `λ` real, and `Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁` (so `‖x‖₂ = 1`), then
+`Q₁ᵀ M Q₁` has first column `λ e₁` and its row `n + 1` is `-λ e_{n+1}ᵀ` — "the 'extra' zeros follow
+from the Hamiltonian structure of `Q₁ᵀ M Q₁`" — and the rows and columns `2:n, n+2:2n` define a
+`(2n-2) × (2n-2)` Hamiltonian submatrix, on which "the process can be repeated". Here `2n = 2(N+1)`
+is indexed by `Fin (N+1) ⊕ Fin (N+1)`, `e₁` is `Sum.inl 0`, row `n + 1` is `Sum.inr 0`, and the
+submatrix is the reindexing by `Sum.map Fin.succ Fin.succ`. -/
+theorem hamiltonian_deflation_structure {N : ℕ}
+    {M Q₁ : Matrix (Fin (N + 1) ⊕ Fin (N + 1)) (Fin (N + 1) ⊕ Fin (N + 1)) ℝ}
+    (hM : M.IsHamiltonian) (hQo : Q₁ ∈ orthogonalGroup (Fin (N + 1) ⊕ Fin (N + 1)) ℝ)
+    (hQs : Q₁ ∈ symplecticGroup (Fin (N + 1)) ℝ) {x : Fin (N + 1) ⊕ Fin (N + 1) → ℝ} {μ : ℝ}
+    (hx : M *ᵥ x = μ • x) (hQx : Q₁ᵀ *ᵥ x = Pi.single (Sum.inl 0) 1) :
+    (∀ i, (Q₁ᵀ * M * Q₁) i (Sum.inl 0) = if i = Sum.inl 0 then μ else 0) ∧
+      (∀ j, (Q₁ᵀ * M * Q₁) (Sum.inr 0) j = if j = Sum.inr 0 then -μ else 0) ∧
+      (Q₁ᵀ * M * Q₁).IsHamiltonian ∧
+      ((Q₁ᵀ * M * Q₁).submatrix (Sum.map Fin.succ Fin.succ)
+        (Sum.map Fin.succ Fin.succ)).IsHamiltonian := by
+  have hQQ : Q₁ * Q₁ᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hQo
+  have hQQ' : Q₁ᵀ * Q₁ = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQo
+  have hH : (Q₁ᵀ * M * Q₁).IsHamiltonian := by
+    have h := hM.conj_symplectic hQs
+    rwa [Matrix.inv_eq_left_inv hQQ'] at h
+  have hcol : ∀ i, (Q₁ᵀ * M * Q₁) i (Sum.inl 0) = if i = Sum.inl 0 then μ else 0 := by
+    have hxe : Q₁ *ᵥ Pi.single (Sum.inl 0) 1 = x := by
+      rw [← hQx, mulVec_mulVec, hQQ, one_mulVec]
+    have hv : (Q₁ᵀ * M * Q₁) *ᵥ Pi.single (Sum.inl 0) 1 =
+        μ • (Pi.single (Sum.inl 0) 1 : Fin (N + 1) ⊕ Fin (N + 1) → ℝ) := by
+      rw [← mulVec_mulVec, hxe, ← mulVec_mulVec, hx, mulVec_smul, hQx]
+    intro i
+    have h := congrFun hv i
+    rw [mulVec_single_one, col_apply] at h
+    rw [h, Pi.smul_apply, Pi.single_apply, smul_eq_mul]
+    split_ifs <;> simp
+  refine ⟨hcol, ?_, hH, ?_⟩
+  · rw [← fromBlocks_toBlocks (Q₁ᵀ * M * Q₁), isHamiltonian_fromBlocks_iff] at hH
+    obtain ⟨hD, hF, -⟩ := hH
+    intro j
+    rcases j with j | j
+    · have h := congrFun (congrFun hF j) 0
+      simp only [transpose_apply, toBlocks₂₁, of_apply] at h
+      rw [h, hcol]
+      simp
+    · have h := congrFun (congrFun hD 0) j
+      simp only [Matrix.neg_apply, transpose_apply, toBlocks₂₂, toBlocks₁₁, of_apply] at h
+      rw [h, hcol]
+      by_cases hj : j = 0
+      · subst hj; simp
+      · simp [hj]
+  · rw [← fromBlocks_toBlocks (Q₁ᵀ * M * Q₁), fromBlocks_submatrix_sum_map,
+      isHamiltonian_fromBlocks_iff]
+    rw [← fromBlocks_toBlocks (Q₁ᵀ * M * Q₁), isHamiltonian_fromBlocks_iff] at hH
+    obtain ⟨hD, hF, hG⟩ := hH
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hD]; rfl
+    · rw [transpose_submatrix, hF]
+    · rw [transpose_submatrix, hG]
+
 /-- **(7.8.1), the real Hamiltonian–Schur decomposition.** If `M` is Hamiltonian with no purely
 imaginary eigenvalue, there is an orthogonal symplectic `Q = [Q₁ Q₂; -Q₂ Q₁]` with
 `Qᵀ M Q = [T R; 0 -Tᵀ]`, `T` upper quasi-triangular with `λ(T)` in the open left half-plane. -/
@@ -178,6 +244,56 @@ theorem equation_7_8_2 {A F G T R Q₁ Q₂ : Matrix (Fin n) (Fin n) ℝ}
       nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hQ₁), Matrix.one_mul]
   ext μ
   simp only [Matrix.mem_spectrum_iff_isRoot_charpoly, hsim.charpoly_eq]
+
+/-- **(7.8.3), the Paige–Van Loan form**: "If `M` is Hamiltonian, then it is easy to compute an
+orthogonal symplectic `U₀` such that `U₀ᵀ M U₀ = [H R; D -Hᵀ]` where `H` is upper Hessenberg and
+`D` is diagonal" — the backbone's `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`
+(the book gives no algorithm). -/
+theorem equation_7_8_3 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
+    ∃ U₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, U₀ ∈ symplecticGroup (Fin n) ℝ ∧
+      ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
+        U₀ᵀ * M * U₀ = fromBlocks H R D (-Hᵀ) ∧ H.IsUpperHessenberg ∧ D.IsDiag := by
+  obtain ⟨U₀, hUo, hUs, H, R, D, h, hH, hD⟩ := hM.exists_orthogonalSymplectic_paigeVanLoan
+  exact ⟨U₀, hUo, hUs, H, R, D, h, hH, hD⟩
+
+/-- **(7.8.4)**: for Hamiltonian `M` there is an orthogonal symplectic `V₀` with
+`V₀ᵀ M² V₀ = [H R; 0 Hᵀ]`, `H` upper Hessenberg: `M²` is skew-Hamiltonian
+(`hamiltonian_sq_skewHamiltonian`), and "because the (2,1) block of a skew-Hamiltonian matrix is
+skew-symmetric, it has a zero diagonal" — the backbone's
+`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`. -/
+theorem equation_7_8_4 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
+    ∃ V₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, V₀ ∈ symplecticGroup (Fin n) ℝ ∧
+      ∃ H R : Matrix (Fin n) (Fin n) ℝ,
+        V₀ᵀ * (M * M) * V₀ = fromBlocks H R 0 Hᵀ ∧ H.IsUpperHessenberg := by
+  obtain ⟨V₀, hVo, hVs, H, R, h, hH⟩ :=
+    (hamiltonian_sq_skewHamiltonian hM).exists_orthogonalSymplectic_hessenberg
+  exact ⟨V₀, hVo, hVs, H, R, h, hH⟩
+
+/-- **§7.8.1, the real skew-Hamiltonian Schur form**: "If `Uᵀ H U = T` is the real Schur form of
+`H` and `Q = V₀ diag(U, U)`, then `Qᵀ M² Q = [T UᵀRU; 0 Tᵀ]`". Two parts: the displayed block
+identity for any `V₀` of (7.8.4) and any orthogonal `U`, and the resulting existence of an
+orthogonal symplectic `Q` with `Qᵀ M² Q = [T R'; 0 Tᵀ]`, `T` upper quasi-triangular
+(`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`). -/
+theorem skewHamiltonian_schur {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
+    (hM : M.IsHamiltonian) :
+    (∀ {V₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} {H R U : Matrix (Fin n) (Fin n) ℝ},
+      V₀ᵀ * (M * M) * V₀ = fromBlocks H R 0 Hᵀ →
+        (V₀ * fromBlocks U 0 0 U)ᵀ * (M * M) * (V₀ * fromBlocks U 0 0 U) =
+          fromBlocks (Uᵀ * H * U) (Uᵀ * R * U) 0 (Uᵀ * H * U)ᵀ) ∧
+    ∃ Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, Q ∈ symplecticGroup (Fin n) ℝ ∧
+      ∃ T R : Matrix (Fin n) (Fin n) ℝ,
+        Qᵀ * (M * M) * Q = fromBlocks T R 0 Tᵀ ∧ T.IsQuasiUpperTriangular := by
+  refine ⟨fun {V₀ H R U} hHR => ?_, ?_⟩
+  · have key : (V₀ * fromBlocks U 0 0 U)ᵀ * (M * M) * (V₀ * fromBlocks U 0 0 U)
+        = (fromBlocks U 0 0 U)ᵀ * (V₀ᵀ * (M * M) * V₀) * fromBlocks U 0 0 U := by
+      rw [transpose_mul]
+      simp only [Matrix.mul_assoc]
+    rw [key, hHR, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
+    simp only [transpose_zero, Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add,
+      transpose_mul, transpose_transpose, Matrix.mul_assoc]
+  · obtain ⟨Q, hQo, hQs, T, R, h, hT⟩ :=
+      (hamiltonian_sq_skewHamiltonian hM).exists_orthogonalSymplectic_schur
+    exact ⟨Q, hQo, hQs, T, R, h, hT⟩
 
 /-! ### §7.8.2 Product eigenvalue problems -/
 

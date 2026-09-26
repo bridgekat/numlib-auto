@@ -10,19 +10,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.3)'
 
 [[node]]
 id = "powerMethod_dist"
-kind = "theorem"
-desc = '''§7.3.1, `dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`, rigorous: if `X⁻¹ A X = diagonal λ` with
-unit columns `x_i`, `|λ₁| > |λ₂| ≥ ⋯ ≥ |λ_n|` (index `0` dominant) and `q₀ = ∑ a_i x_i` with `a₁ ≠ 0`
-(7.3.4), there is `C` with `gap (span{q^(k)}) (span{x₁}) ≤ C (|λ₂| / |λ₁|)^k` for all `k`.
-`Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis` with `ρ = |λ₂|`, and the gap of two lines
-is the sine of the angle (`Submodule.sinAngle_le_gap`-direction: for lines, `gap = sinAngle`, a small
-lemma). ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); needs the
-small lemma "the gap of two lines is the sine of their angle" (`Submodule.gap` of `span{u}`,
-`span{v}` for unit vectors) on top of `Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis`.
-Estimate ~80 lines.'''
-deps = ["GolubVanLoan.Chapter07.powerMethod", "Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis", "Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, §7.3.1'
 
 [[node]]
@@ -51,36 +38,10 @@ source = 'Golub–Van Loan, Matrix Computations, Lemma 7.3.2'
 
 [[node]]
 id = "theorem_7_3_1"
-kind = "theorem"
-desc = '''Theorem 7.3.1, corrected (see the group desc): let the Schur decomposition be (7.3.7)–(7.3.8) with
-`n ≥ 2`, `|λ_r| > |λ_{r+1}|`, `μ ≥ 0` with `(1 + μ)|λ_r| > ‖N‖_F`, `Q₀` with orthonormal columns,
-`d_k = dist(D_r(A), ran Q_k)` for an orthogonal iteration `Q_k` (7.3.6), and
-`d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1` (in place of the printed (7.3.9)). Then
-`d_k ≤ (1+μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂)) ((|λ_{r+1}| + ‖N‖_F/(1+μ)) / (|λ_r| - ‖N‖_F/(1+μ)))^k
-· d₀ / √(1 - d̃₀²)`. `D_r(Aᴴ)` is the dominant invariant subspace of `Aᴴ`, which is the orthogonal
-complement of the complementary invariant subspace of `A`. Backbone
-`Matrix.gap_subspaceIterate_le_of_schur` with `orthogonalIteration_range` (full rank of `A^k Q₀` is a
-consequence of `d̃₀ < 1`, as in the book's proof). ★★
-
-Blocked: the backbone node `Matrix.gap_subspaceIterate_le_of_schur` is still open on main 55f7ad05
-(the corrected statement waits on agent sv2), and so is this section's `orthogonalIteration_range`.'''
-deps = ["Matrix.gap_subspaceIterate_le_of_schur", "GolubVanLoan.Chapter07.orthogonalIteration_range", "GolubVanLoan.Chapter07.dominantInvariantSubspace_unique", "GolubVanLoan.Chapter07.lemma_7_3_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 7.3.1'
 
 [[node]]
 id = "theorem_7_3_1_counterexample"
-kind = "theorem"
-desc = '''The printed Theorem 7.3.1 is false: for `A = !![2, 1; 0, 1]` (Schur form with `Q = 1`, `N = !![0, 1;
-0, 0]`, `‖N‖_F = 1`), `r = 1`, `μ = 3` (so `(1+μ)|λ₁| = 8 > 1`) and `Q₀ = (1, -1)ᵀ/√2`: every orthogonal
-iteration has `ran Q_k = ran Q₀` (`A Q₀ = Q₀`), so `d_k = 1/√2` for all `k`, while the printed right-hand
-side `(1 + 1/1)(5/4 / 7/4)^k (1/√2)/√(1/2)` tends to `0` (`sep(2, 1) = 1`). The hypothesis that fails is
-`d̃₀ < 1`: `ran Q₀ ⊥ D₁(Aᴴ) = span{(1, 1)}`, so `d̃₀ = 1`. ★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); the
-computation `ran Q_k = ran Q₀` is immediate (`A Q₀ = Q₀`), but the value `d_k = 1/√2` needs the gap
-of two lines in `ℂ²` (same lemma as `powerMethod_dist`) and the limit of the printed bound. Estimate
-~80 lines.'''
-deps = ["GolubVanLoan.Chapter07.orthogonalIteration"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 7.3.1'
 
 [[node]]
@@ -93,8 +54,24 @@ with `r = n`, `dist(span{q₁^(k), …, q_i^(k)}, span{q₁, …, q_i}) → 0` f
 Theorem 7.3.1 (corrected) for each `r = i`, and the entries `(T_k)_{jl}`, `j > l`, bounded by the
 gaps (`Krylov.norm_inner_le_of_gap`). ★★
 
-Blocked: needs Theorem 7.3.1 (corrected) of this section, itself blocked on
-`Matrix.gap_subspaceIterate_le_of_schur`.'''
+Blocked: not finished in the c07 round (the round was paused). Theorem 7.3.1 (corrected) is now
+proved. A draft of about 250 lines exists but does not yet compile. It is in the scratchpad of agent
+c07-D (`…/scratchpad/c07/D/S03d.lean`); `notes/` is not reachable from a worktree, so the path is
+only a pointer. The draft has four parts:
+* the partition `schurSplit : Fin n ≃ Fin i ⊕ Fin (n - i)`;
+* the leading `i` columns of an `r = n` orthogonal iteration as an orthogonal iteration (the
+  triangular factor restricted to its leading block);
+* `Q [I; 0] = Q_α`;
+* the constants of Theorem 7.3.1 at `r = i`, with
+  - `a = |t_{i-1,i-1}|` and `b = |t_ii|` from strictly decreasing diagonal moduli;
+  - `ν = ‖N‖_F`, with the block bound from `Matrix.frobenius_norm_submatrix_le`;
+  - `μ = 4ν/(a - b)`, which makes the ratio at most `(a + 3b)/(3a + b) < 1`.
+It then bounds the entries `⟪q_j^(k), A q_l^(k)⟫` for `j > l` by `Krylov.norm_inner_le_of_gap`,
+applied to the invariant `span{q₁, …, q_{l+1}}`. Remaining are three rewrite failures in the helper
+lemmas (a function-coercion motive in `mul_submatrix_castLE`, one `submatrix_mul` direction) and a
+`λ` binder that does not parse. Estimate ~1 hour. The hypothesis `dist(D_i(Aᴴ), …) < 1` is stated
+with `D_i(Aᴴ) = ran(Q [I; -X_iᴴ])` for a Sylvester solution `X_i` of each partition, as in
+`theorem_7_3_1`.'''
 deps = ["GolubVanLoan.Chapter07.theorem_7_3_1", "Krylov.norm_inner_le_of_gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.11)'
 
@@ -108,32 +85,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.14)'
 
 [[node]]
 id = "equation_7_3_18"
-kind = "theorem"
-desc = '''(7.3.18): with `Q = [Q_α Q_β]` unitary (Schur vectors) and `Q_k` with orthonormal columns,
-`dist(D_r(A), ran Q_k) = ‖Q_βᴴ Q_k‖₂` — the book's §2.5.3 characterization of the distance of two
-equal-dimensional subspaces by orthonormal bases: chapter 2's `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`
-(their Theorem 2.5.1, `Numlib/Analysis/InnerProductSpace/Projection/Gap`) with `W₁ = Q_α`,
-`Z₁ = Q_k`, and the roles exchanged by `Submodule.gap_comm`. ★
-
-Blocked: the backbone node `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` (chapter 2's Theorem
-2.5.1) is still open on main 55f7ad05. A short instance once it lands.'''
-deps = ["Submodule.gap", "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.18)'
 
 [[node]]
 id = "equation_7_3_19"
-kind = "theorem"
-desc = '''(7.3.19): in the same setting, `1 = d_k² + σ_min(V_k)²` with `V_k = Q_αᴴ Q_k` — from the thin CS
-decomposition (Theorem 2.5.2) of the unitary `[V_k; W_k]`-columns: `V_kᴴ V_k + W_kᴴ W_k = I` and
-`σ_min(V_k)² = 1 - ‖W_k‖₂²`. Backbone `Matrix.gap_range_sq_add_sortedSingularValues_sq`
-(`Numlib/Analysis/Matrix/SingularValues`): `gap² + (W₁ᴴ * Z₁).sortedSingularValues (card k - 1) ^ 2 = 1`;
-the surface's `σ_min(V_k)` is `V_k.sortedSingularValues (k - 1)` (square `k × k`), or, if the surface keeps
-the column-indexed `⨅ i, V_k.singularValues i`, rewrite by
-`Matrix.sortedSingularValues_eq_iInf_singularValues`. ★
-
-Blocked: the backbone node `Matrix.gap_range_sq_add_sortedSingularValues_sq` is still open on main
-55f7ad05, and so is (7.3.18).'''
-deps = ["GolubVanLoan.Chapter07.equation_7_3_18", "Matrix.gap_range_sq_add_sortedSingularValues_sq", "Matrix.sortedSingularValues_eq_iInf_singularValues"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.19)'
 
 [[node]]
@@ -150,14 +105,4 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.25)'
 
 [[node]]
 id = "equation_7_3_26"
-kind = "theorem"
-desc = '''(7.3.26), corrected: `V₀ - X W₀ = G (Zᴴ Q₀)` is nonsingular and
-`‖(V₀ - X W₀)⁻¹‖₂ ≤ ‖G⁻¹‖₂ ‖(Zᴴ Q₀)⁻¹‖₂ ≤ 1 / √(1 - d̃₀²)` with `d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1`
-(`σ_min(Zᴴ Q₀)² = 1 - d̃₀²` by (7.3.19) for the pair `(D_r(Aᴴ), ran Q₀)`). The book's chain equates this
-with `1 - d₀²` through the claim `ran(Q_β) = D_r(Aᴴ)ᗮ`, which is false unless `T₁₂ = 0` — the source of
-the error in Theorem 7.3.1. ★★
-
-Blocked: needs (7.3.19) of this section, itself blocked on the backbone node
-`Matrix.gap_range_sq_add_sortedSingularValues_sq`.'''
-deps = ["GolubVanLoan.Chapter07.equation_7_3_25", "GolubVanLoan.Chapter07.equation_7_3_19", "GolubVanLoan.Chapter07.equation_7_3_24"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.26)'

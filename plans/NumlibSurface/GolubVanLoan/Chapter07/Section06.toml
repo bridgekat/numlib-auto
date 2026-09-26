@@ -22,42 +22,10 @@ source = 'Golub–Van Loan, Matrix Computations, §7.6.2'
 
 [[node]]
 id = "algorithm_7_6_1"
-kind = "definition"
-desc = '''Algorithm 7.6.1 (reordering the Schur form, no `2 × 2` bumps): `algorithm_7_6_1 rnd Q T Δ fuel` with
-inputs `Q`, upper triangular `T = QᵀAQ`, the target set `Δ : Finset ℝ` and, last, the fuel of the `while`
-loop (convention 3). At most `fuel` passes of: for `k = 0 .. n-2`, if `T k k ∉ Δ` and
-`T (k+1) (k+1) ∈ Δ` (comparisons on the computed diagonal, exact): `(c, s) ← givens(T k (k+1),
-fl(T (k+1) (k+1) - T k k))`, `T(k:k+1, k:n-1) = [c s; -s c]ᵀ T(k:k+1, k:n-1)`
-(`GolubVanLoan.Chapter05.givensApplyLeft rnd k (k+1) c s cols T`, `cols` the indices `≥ k`),
-`T(0:k+1, k:k+1) = T(0:k+1, k:k+1) [c s; -s c]` (`givensApplyRight`, rows `≤ k+1`),
-`Q(:, k:k+1) = Q(:, k:k+1) [c s; -s c]` (`givensApplyRight`, all rows). A pass that finds
-`{t₁₁, …, t_pp} = Δ` (the book's `while` test) sets `done`. Returns `(Q, T)`. ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.givensApplyLeft`,
-`GolubVanLoan.Chapter05.givensApplyRight`, `GolubVanLoan.Chapter05.algorithm_5_1_3` are not on main
-55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5 surface
-adds; back substitution is chapter 3's).'''
-deps = ["GolubVanLoan.Chapter05.givensApplyLeft", "GolubVanLoan.Chapter05.givensApplyRight", "GolubVanLoan.Chapter05.algorithm_5_1_3"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.1'
 
 [[node]]
 id = "algorithm_7_6_1_spec"
-kind = "theorem"
-desc = '''Algorithm 7.6.1, exact semantics: for orthogonal `Q`, upper triangular `T = Qᵀ A Q`, `Δ : Finset ℝ` and
-`fuel ≥ n`, `(Q', S) = Id.run (algorithm_7_6_1 pure Q T Δ fuel)` satisfies `Q' = Q Q_D` with `Q_D` orthogonal,
-`S = Q_Dᵀ T Q_D = Q'ᵀ A Q'` upper triangular, the multiset of diagonal entries unchanged, and with
-`p = #{k | T k k ∈ Δ}`: `S k k ∈ Δ ↔ k < p` — the book's `{s₁₁, …, s_pp} = Δ` (as sets of diagonal
-values; `Δ` is a set of eigenvalues each of which may occur several times). Proof: each swap is
-`swap_two_by_two` embedded in the plane `(k, k+1)` (upper triangularity kept); a pass moves every
-`Δ`-entry that has a non-`Δ` entry above it up by one, so after `n` passes the diagonal is sorted
-(bubble-sort invariant: the number of inversions decreases); at most `(n - p) p` swaps. ★★★ (~400
-lines).
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter05.givensApplyLeft_spec`,
-`GolubVanLoan.Chapter05.givensApplyRight_spec` are not on main 55f7ad05 (convention 13: every update
-calls chapter 5's shared helpers, which the chapter 5 surface adds; back substitution is chapter
-3's); it needs `algorithm_7_6_1` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_6_1", "GolubVanLoan.Chapter07.swap_two_by_two", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.1'
 
 [[node]]
@@ -71,63 +39,18 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.6.5)'
 
 [[node]]
 id = "algorithm_7_6_2"
-kind = "definition"
-desc = '''Algorithm 7.6.2 (Bartels–Stewart), for `C : Matrix (Fin p) (Fin r) ℝ` and upper triangular
-`F : Matrix (Fin p) (Fin p) ℝ`, `G : Matrix (Fin r) (Fin r) ℝ`: for `k = 0 .. r-1`:
-`C(:, k) = C(:, k) + C(:, 0:k-1) G(0:k-1, k)` (each entry `fl(c_ik + ∑_{j<k} c_ij g_jk)` accumulated in order
-`j`), solve `(F - G(k, k) I) z = C(:, k)` by back substitution (chapter 3's `algorithm_3_1_2` on the
-matrix with diagonal `fl(f_ii - g_kk)`), `C(:, k) = z`. Returns `C` (overwritten by `Z`). ★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter03.algorithm_3_1_2` are not on main
-55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5 surface
-adds; back substitution is chapter 3's).'''
-deps = ["GolubVanLoan.Chapter03.algorithm_3_1_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.2'
 
 [[node]]
 id = "algorithm_7_6_2_spec"
-kind = "theorem"
-desc = '''Algorithm 7.6.2 solves the Sylvester equation: for upper triangular `F`, `G` with `λ(F) ∩ λ(G) = ∅`
-(i.e. `F i i ≠ G j j` for all `i`, `j`), `Z = Id.run (algorithm_7_6_2 pure F G C)` satisfies
-`F * Z - Z * G = C`, and it is the unique solution (`Matrix.existsUnique_sylvesterMap_eq`, the spectra
-being the diagonals). Induction over the columns with `equation_7_6_5` (the triangular case) and the
-back-substitution spec `GolubVanLoan.Chapter03.algorithm_3_1_2_spec` (the pivots `f_ii - g_kk` are
-nonzero). ★★
-
-Blocked: the chapter 3/5 surface nodes `GolubVanLoan.Chapter03.algorithm_3_1_2_spec` are not on main
-55f7ad05 (convention 13: every update calls chapter 5's shared helpers, which the chapter 5 surface
-adds; back substitution is chapter 3's); it needs `algorithm_7_6_2` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_6_2", "GolubVanLoan.Chapter07.equation_7_6_5", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec", "Matrix.existsUnique_sylvesterMap_eq"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.2'
 
 [[node]]
 id = "algorithm_7_6_3"
-kind = "definition"
-desc = '''Algorithm 7.6.3 (block diagonalization): inputs `Q`, `T = Qᵀ A Q` and the block sizes (7.6.3). For
-`j = 1 .. q-1`, `i = 0 .. j-1`: `Z ← algorithm_7_6_2 (T_ii, T_jj, -T_ij)` (on the extracted blocks),
-`T_ik = T_ik - Z T_jk` for `k = j+1 .. q-1` (rounded matrix products, entries in order), and
-`Q_kj = Q_ki Z + Q_kj` for all block rows `k` (i.e. `Q(:, block j) += Q(:, block i) Z`). Returns `Q`
-(overwritten by `Q Y`) and `T` (whose zeroed blocks `T_ij` are left unwritten, as in the book). ★
-
-Blocked: needs `algorithm_7_6_2` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_6_2"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.3'
 
 [[node]]
 id = "algorithm_7_6_3_spec"
-kind = "theorem"
-desc = '''Algorithm 7.6.3 block-diagonalizes: for `T = Qᵀ A Q` upper triangular (see the group desc on the
-quasi-triangular case) with the diagonal blocks' spectra pairwise disjoint (diagonal entries of
-different blocks distinct), the output `Q'` of `Id.run (algorithm_7_6_3 pure Q T sizes)` is `Q Y` with
-`Y` block unit upper triangular, nonsingular, and `Y⁻¹ T Y = diag(T₁₁, …, T_qq)` (so
-`(Q Y)⁻¹ A (Q Y)` is block diagonal — Theorem 7.1.6 made constructive). Proof: `Y = ∏ Y_ij` in the loop
-order; after processing `(i, j)` the block `T_ij` of `Y⁻¹ T Y` is zero (`algorithm_7_6_2_spec`,
-`blockDiagonalization_update`), and blocks `T_kj`, `k < i`, stay zero because `T_ki = 0` already
-(columns `i < j` were processed in earlier outer iterations) — the reason the book's loop needs no
-`T_kj` update. ★★★ (~400 lines).
-
-Blocked: needs `algorithm_7_6_3`, `algorithm_7_6_2_spec` of this chapter, itself blocked.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_6_3", "GolubVanLoan.Chapter07.algorithm_7_6_2_spec", "GolubVanLoan.Chapter07.blockDiagonalization_update", "GolubVanLoan.Chapter07.theorem_7_1_6"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.6.3'
 
 [[node]]

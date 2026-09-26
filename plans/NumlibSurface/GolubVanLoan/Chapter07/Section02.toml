@@ -10,14 +10,6 @@ source = 'Golub–Van Loan, Matrix Computations, §7.2.1'
 
 [[node]]
 id = "theorem_7_2_2"
-kind = "theorem"
-desc = '''Theorem 7.2.2 (Bauer–Fike): for `1 ≤ p` (`p : ℝ≥0∞`), `X⁻¹ A X = diagonal λ` and
-`μ ∈ spectrum ℂ (A + E)`: `∃ i, ‖λ i - μ‖ ≤ condNumberLp p X * lpOpNorm p E` (the book's
-`min_{λ ∈ λ(A)} |λ - μ| ≤ κ_p(X) ‖E‖_p`). `Matrix.bauer_fike_lpOpNorm` with `A = X D X⁻¹`. ★
-
-Blocked: the backbone node `Matrix.bauer_fike_lpOpNorm` (Eigen/Perturbation append) is still open
-on main 55f7ad05 (only the 2-norm `Matrix.bauer_fike` exists). A one-line instance once it lands.'''
-deps = ["Matrix.bauer_fike_lpOpNorm"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.2'
 
 [[node]]
@@ -51,72 +43,30 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.5)'
 
 [[node]]
 id = "theorem_7_2_4"
-kind = "theorem"
-desc = '''Theorem 7.2.4 (Stewart): let `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (7.2.3) with `Q = [Q₁ Q₂]` unitary (7.2.4),
-`T₁₁` of size `r`, and for `E` let `Qᴴ E Q = [E₁₁ E₁₂; E₂₁ E₂₂]`. If `sep(T₁₁, T₂₂) > 0` and
-`‖E‖_F (1 + 5 ‖T₁₂‖_F / sep) ≤ sep / 5`, there is `P : Matrix (Fin (n - r)) (Fin r) ℂ` with
-`‖P‖_F ≤ 4 ‖E₂₁‖_F / sep` such that the columns of `Q̃₁ = (Q₁ + Q₂ P)(I + Pᴴ P)^{-1/2}` are an
-orthonormal basis of an `(A + E)`-invariant subspace. The inverse square root is
-`(CFC.sqrt (1 + Pᴴ * P))⁻¹` (positive definite, scoped `Matrix.Norms.L2Operator` for the C*-algebra
-instance); orthonormality is `Q̃₁ᴴ Q̃₁ = S⁻¹ (I + Pᴴ P) S⁻¹ = I`. Backbone
-`Matrix.exists_invariant_graph_of_sep` in the coordinates of `Q` (`Frobenius` unitary invariance of
-`E`'s blocks). ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); needs the CFC
-inverse square root `(CFC.sqrt (1 + Pᴴ P))⁻¹` and its orthonormality identity, plus the transport of
-`Matrix.exists_invariant_graph_of_sep` through `Q` with Frobenius invariance of the blocks of `E`.
-Estimate ~200 lines.'''
-deps = ["Matrix.exists_invariant_graph_of_sep", "Matrix.sep_unitary_conj", "GolubVanLoan.Chapter07.equation_7_2_5"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.4'
 
 [[node]]
 id = "equation_7_2_6"
-kind = "theorem"
-desc = '''(7.2.6): for `P : Matrix (Fin k) (Fin r) ℂ`, `‖P (I + Pᴴ P)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F`. Singular
-values of `P (I + PᴴP)^{-1/2}` are `σ_i/√(1 + σ_i²) ≤ σ_i` (SVD `Matrix.exists_svd`, or the CFC:
-`(P S⁻¹)ᴴ (P S⁻¹) = S⁻¹ Pᴴ P S⁻¹ ≤ Pᴴ P` in the Loewner order since `S⁻² ≤ I` commutes with `PᴴP`),
-and `Matrix.l2_opNorm_le_frobenius_norm`. ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); needs the
-Loewner-order argument `S⁻¹ Pᴴ P S⁻¹ ≤ Pᴴ P` for `S = (1 + Pᴴ P)^{1/2}` (commuting CFC functions of
-`Pᴴ P`). Estimate ~100 lines.'''
-deps = ["Matrix.l2_opNorm_le_frobenius_norm"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.2.6)'
 
 [[node]]
 id = "corollary_7_2_5"
-kind = "theorem"
-desc = '''Corollary 7.2.5: under the hypotheses of Theorem 7.2.4, `dist(ran Q₁, ran Q̃₁) ≤ 4 ‖E₂₁‖_F / sep(T₁₁, T₂₂)`,
-with `dist = Submodule.gap` of the column spaces in `EuclideanSpace ℂ (Fin n)`. Backbone
-`Matrix.gap_range_fromRows_le` (`gap ≤ ‖P‖₂ ≤ ‖P‖_F`) transported by `Q`
-(`Submodule.gap_map_linearIsometryEquiv`). The book's "the required distance is the 2-norm of
-`Q₂ᴴ Q̃₁`" is chapter 2's Theorem 2.5.1; the backbone route avoids it. ★
-
-Blocked: needs Theorem 7.2.4 and (7.2.6) of this section, both open.'''
-deps = ["GolubVanLoan.Chapter07.theorem_7_2_4", "Matrix.gap_range_fromRows_le", "Submodule.gap_map_linearIsometryEquiv", "GolubVanLoan.Chapter07.equation_7_2_6"]
 source = 'Golub–Van Loan, Matrix Computations, Corollary 7.2.5'
 
 [[node]]
 id = "sep_one_eq_sigmaMin"
-kind = "theorem"
-desc = '''§7.2.5: `sep(λ, T₂₂) = σ_min(T₂₂ - λ I) ≤ min_{μ ∈ λ(T₂₂)} |μ - λ|` (the display after Corollary
-7.2.6; the observation in its proof). `Matrix.sep_eq_iInf_singularValues` and `Matrix.sep_le_norm_sub`. ★
-
-Blocked: the backbone node `Matrix.sep_eq_iInf_singularValues` (Sylvester) is still open on main
-55f7ad05; the inequality half is `Matrix.sep_le_norm_sub`. A short instance once it lands.'''
-deps = ["Matrix.sep_eq_iInf_singularValues", "Matrix.sep_le_norm_sub"]
 source = 'Golub–Van Loan, Matrix Computations, §7.2.5'
 
 [[node]]
 id = "corollary_7_2_6"
-kind = "theorem"
-desc = '''Corollary 7.2.6: with `Q = [q₁ | Q₂]` unitary, `Qᴴ A Q = [λ vᴴ; 0 T₂₂]`, `Qᴴ E Q = [ε γᴴ; δ E₂₂]`,
-`σ = σ_min(T₂₂ - λ I) > 0` and `‖E‖_F (1 + 5 ‖v‖₂ / σ) ≤ σ / 5`, there is `p` with `‖p‖₂ ≤ 4 ‖δ‖₂ / σ`
-such that `q̃₁ = (q₁ + Q₂ p)/√(1 + pᴴ p)` is a unit eigenvector of `A + E`, and
-`dist(span{q₁}, span{q̃₁}) ≤ 4 ‖δ‖₂ / σ`. `r = 1` in Theorem 7.2.4 and Corollary 7.2.5 with
-`sep_one_eq_sigmaMin` (a one-dimensional invariant subspace is spanned by an eigenvector). ★
+source = 'Golub–Van Loan, Matrix Computations, Corollary 7.2.6'
 
-Blocked: needs `sep_one_eq_sigmaMin` (itself blocked on `Matrix.sep_eq_iInf_singularValues`) and
-Theorem 7.2.4 / Corollary 7.2.5 of this section.'''
-deps = ["GolubVanLoan.Chapter07.theorem_7_2_4", "GolubVanLoan.Chapter07.corollary_7_2_5", "GolubVanLoan.Chapter07.sep_one_eq_sigmaMin"]
+[[node]]
+id = "stewartBasis"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, Theorem 7.2.4'
+
+[[node]]
+id = "stewartVector"
+deps = []
 source = 'Golub–Van Loan, Matrix Computations, Corollary 7.2.6'

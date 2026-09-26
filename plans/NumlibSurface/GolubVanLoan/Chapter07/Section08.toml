@@ -30,19 +30,6 @@ source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
 
 [[node]]
 id = "hamiltonian_deflation_structure"
-kind = "theorem"
-desc = '''§7.8.1, the displayed deflation step: if `M` is Hamiltonian, `M x = λ x` with `λ` real and `‖x‖₂ = 1`, and
-`Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁`, then `Q₁ᵀ M Q₁` has first column `λ e₁` and row `n + 1`
-equal to `-λ e_{n+1}ᵀ` (the "extra" zeros from Hamiltonian structure: the `(2,1)` block is symmetric and
-the `(2,2)` block is minus the transpose of the `(1,1)` block); the remaining rows/columns
-`2:n, n+2:2n` form a `(2n-2) × (2n-2)` Hamiltonian matrix. Block computation with
-`hamiltonian_symplectic_conj` and `Matrix.isHamiltonian_fromBlocks_iff`. ★★
-
-Blocked: not attempted in the s07 round (session budget went to the unblocked nodes); block
-computation from `hamiltonian_symplectic_conj` and `Matrix.isHamiltonian_fromBlocks_iff`, with the
-reindexing of rows/columns `2:n, n+2:2n` to a `(2n-2) × (2n-2)` Hamiltonian block. Estimate ~150
-lines.'''
-deps = ["GolubVanLoan.Chapter07.hamiltonian_symplectic_conj", "GolubVanLoan.Chapter07.symplectic_householder_givens", "Matrix.isHamiltonian_fromBlocks_iff"]
 source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
 
 [[node]]
@@ -55,39 +42,14 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.2)'
 
 [[node]]
 id = "equation_7_8_3"
-kind = "theorem"
-desc = '''(7.8.3), the Paige–Van Loan form: for Hamiltonian `M` there is an orthogonal symplectic `U₀` with
-`U₀ᵀ M U₀ = [H R; D -Hᵀ]`, `H` upper Hessenberg and `D` diagonal ("it is easy to compute"; the book
-gives no algorithm). `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`. ★
-
-Blocked: the backbone node `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan` is still
-open on main 55f7ad05. A one-line instance once it lands.'''
-deps = ["Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.3)'
 
 [[node]]
 id = "equation_7_8_4"
-kind = "theorem"
-desc = '''(7.8.4): for Hamiltonian `M` there is an orthogonal symplectic `V₀` with `V₀ᵀ M² V₀ = [H R; 0 Hᵀ]`, `H`
-upper Hessenberg (skew-Hamiltonian structure makes the `(2,1)` block zero: "Because the (2,1) block of a
-skew-Hamiltonian matrix is skew-symmetric, it has a zero diagonal").
-`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` with `hamiltonian_sq_skewHamiltonian`. ★
-
-Blocked: the backbone node `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` is
-still open on main 55f7ad05. A short instance (with `hamiltonian_sq_skewHamiltonian`) once it lands.'''
-deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg", "GolubVanLoan.Chapter07.hamiltonian_sq_skewHamiltonian"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.8.4)'
 
 [[node]]
 id = "skewHamiltonian_schur"
-kind = "theorem"
-desc = '''§7.8.1, the real skew-Hamiltonian Schur form: with `Uᵀ H U = T` the real Schur form of `H` in (7.8.4) and
-`Q = V₀ diag(U, U)`, `Qᵀ M² Q = [T UᵀRU; 0 Tᵀ]`. `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`
-(and the displayed block identity for this particular `Q`). ★
-
-Blocked: the backbone node `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur` is still
-open on main 55f7ad05, and so is (7.8.4).'''
-deps = ["Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur", "GolubVanLoan.Chapter07.equation_7_8_4"]
 source = 'Golub–Van Loan, Matrix Computations, §7.8.1'
 
 [[node]]
