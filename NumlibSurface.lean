@@ -174,6 +174,12 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section03
 import NumlibSurface.GolubVanLoan.Chapter05.Section04
 import NumlibSurface.GolubVanLoan.Chapter05.Section05
 import NumlibSurface.GolubVanLoan.Chapter05.Section06
+import NumlibSurface.GolubVanLoan.Chapter06
+import NumlibSurface.GolubVanLoan.Chapter06.Section01
+import NumlibSurface.GolubVanLoan.Chapter06.Section02
+import NumlibSurface.GolubVanLoan.Chapter06.Section03
+import NumlibSurface.GolubVanLoan.Chapter06.Section04
+import NumlibSurface.GolubVanLoan.Chapter06.Section05
 import NumlibSurface.GolubVanLoan.Chapter07
 import NumlibSurface.GolubVanLoan.Chapter07.Section01
 import NumlibSurface.GolubVanLoan.Chapter07.Section02
