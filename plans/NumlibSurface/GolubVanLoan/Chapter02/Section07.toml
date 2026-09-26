@@ -50,28 +50,10 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.7)'
 
 [[node]]
 id = "equation_2_7_9"
-kind = "theorem"
-desc = '''(2.7.9): every run `s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run` of the dot product (2.7.8) has
-partial sums `s_p` with `s_1 = x₁ y₁ (1 + δ₁)` and `s_p = (s_{p-1} + x_p y_p (1 + δ_p))(1 + ε_p)`, `|δ_p|,
-|ε_p| ≤ u`, `s = s_n`, assuming `fp.IsIdempotent` (which makes the first addition `0 + p₁` exact).
-Chapter 1's `FloatingPoint.mem_run_dotAccum_iff` (a run is a list of rounded products and a `RoundsSumFrom`
-from `0`), then `FloatingPoint.RoundingModel.Rounds.exists_delta` at each step. ★★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1`, `…_eq_dotAccum`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas through `FloatingPoint.mem_run_dotAccum_iff` and `Rounds.exists_delta` (~40 lines, an induction over the partial sums).'''
-deps = ["GolubVanLoan.Chapter01.algorithm_1_1_1", "GolubVanLoan.Chapter01.algorithm_1_1_1_eq_dotAccum", "FloatingPoint.mem_run_dotAccum_iff", "FloatingPoint.RoundingModel.IsIdempotent", "FloatingPoint.RoundingModel.Rounds.exists_delta"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.9)'
 
 [[node]]
 id = "equation_2_7_10"
-kind = "theorem"
-desc = '''(2.7.10): every run `s` of Algorithm 1.1.1 satisfies `s = ∑ k, x k * y k * (1 + γ_k)` with `1 + γ_k =
-(1 + δ_k) ∏_{j ≥ k} (1 + ε_j)` (`ε₁ = 0`), hence `|s - xᵀ y| ≤ ∑ k, |x k * y k| * |γ_k|` and `|γ_k| ≤ (1 + u)^n
-- 1` (the book's `γ_k` is not `FloatingPoint.gamma`). Backbone
-`FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot` through chapter 1's bridge
-`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds` (hypothesis `fp.IsIdempotent`). ★★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot`, ~15 lines).'''
-deps = ["equation_2_7_9", "FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot", "GolubVanLoan.Chapter01.algorithm_1_1_1_rounds"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.10)'
 
 [[node]]
@@ -80,26 +62,10 @@ source = 'Golub–Van Loan, Matrix Computations, Lemma 2.7.1'
 
 [[node]]
 id = "equation_2_7_11"
-kind = "theorem"
-desc = '''(2.7.11): for every run `s` of Algorithm 1.1.1 with `fp.IsIdempotent` and `n u ≤ 0.01`, `|s - xᵀ y| ≤ 1.01 n u |x|ᵀ |y|`
-(`|x| ⬝ᵥ |y|`). Backbone `FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot` and the constant of
-`lemma_2_7_1` (`FloatingPoint.one_add_pow_sub_one_le_mul_add_sq`), through (2.7.10). ★★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot` and Lemma 2.7.1's constant, ~15 lines).'''
-deps = ["equation_2_7_10", "lemma_2_7_1", "FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot", "FloatingPoint.one_add_pow_sub_one_le_mul_add_sq"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.11)'
 
 [[node]]
 id = "equation_2_7_12"
-kind = "theorem"
-desc = '''(2.7.12), rigorous form: for every run `s` of Algorithm 1.1.1 with `fp.IsIdempotent` and `n u < 1`,
-`|s - xᵀ y| ≤ γ_n |x|ᵀ |y|` (without `IsIdempotent`: `γ_{n+1}`, `FloatingPoint.abs_sub_le_of_mem_run_dotAccum`),
-`γ_n = FloatingPoint.gamma u n = n u / (1 - n u) = n u + O(u²)`; the printed `n u |x|ᵀ|y| + O(u²)` has no
-content beyond this. Backbone `FloatingPoint.abs_sub_le_of_roundsDot` after `FloatingPoint.roundsDot_of_mem_run_dotAccum`. (2.7.13)–(2.7.14) ("`φ(n)` a modest
-function", "`c` of order unity") are styles of writing the same bound and have no node. ★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.abs_sub_le_of_roundsDot`, `FloatingPoint.abs_sub_le_of_mem_run_dotAccum`, ~10 lines).'''
-deps = ["FloatingPoint.abs_sub_le_of_roundsDot", "GolubVanLoan.Chapter01.algorithm_1_1_1_rounds", "FloatingPoint.abs_sub_le_of_mem_run_dotAccum", "FloatingPoint.gamma"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.12)'
 
 [[node]]
@@ -112,79 +78,26 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.16)'
 
 [[node]]
 id = "equation_2_7_17"
-kind = "theorem"
-desc = '''(2.7.17), rigorous form: every run `ŷ` of the saxpy `Chapter01.algorithm_1_1_2 fp.round a x y` satisfies
-`ŷ = y + a x + z` with `|z| ≤ u |y| + (2u + u²) |a x|` entrywise (the book: `u (|y| + 2|a x|) + O(u²)`).
-Each entry is one rounded update (chapter 1's `GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run`), then
-backbone `FloatingPoint.abs_sub_le_of_rounds_add_mul`. No `IsIdempotent` needed. ★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.abs_sub_le_of_rounds_add_mul` entrywise, ~15 lines).'''
-deps = ["FloatingPoint.abs_sub_le_of_rounds_add_mul", "GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.17)'
 
 [[node]]
 id = "equation_2_7_18"
-kind = "theorem"
-desc = '''(2.7.18), rigorous form: the outer product update `C + u vᵀ` computed entrywise as `fl(c_ij + fl(u_i v_j))`
-— a run of `Chapter01.algorithm_1_1_8` with inner dimension `r = 1` — satisfies `Ĉ = C + u vᵀ + E`, `|E| ≤
-u |C| + (2u + u²) |u vᵀ|`. Backbone `FloatingPoint.abs_sub_le_of_rounds_add_mul` entrywise. ★★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_8_mem_run`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.abs_sub_le_of_rounds_add_mul` entrywise, ~20 lines).'''
-deps = ["FloatingPoint.abs_sub_le_of_rounds_add_mul", "GolubVanLoan.Chapter01.algorithm_1_1_8_mem_run"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.18)'
 
 [[node]]
 id = "equation_2_7_19"
-kind = "theorem"
-desc = '''(2.7.19), rigorous form: for `A : Matrix (Fin m) (Fin r) ℝ`, `B : Matrix (Fin r) (Fin n) ℝ`, `r u < 1`,
-every run `Ĉ` of the dot-product matrix multiplication `Chapter01.algorithm_1_1_6 fp.round A B 0` (started
-at `C = 0`) satisfies `|Ĉ - A B| ≤ γ_r |A| |B|` entrywise (`(Ĉ - A * B).abs ≤ₑ gamma u r • (A.abs * B.abs)`; the
-book's `n u |A||B| + O(u²)`, `n` the inner dimension), under `fp.IsIdempotent`: each entry is `fl(0 + s)`
-with `s` a run of Algorithm 1.1.1, so the run is a `RoundsMul` (chapter 1's
-`GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`), and backbone
-`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`, ~10 lines).'''
-deps = ["FloatingPoint.abs_sub_entrywiseLE_of_roundsMul", "GolubVanLoan.Chapter01.algorithm_1_1_6_rounds", "equation_2_7_12"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
 
 [[node]]
 id = "equation_2_7_19_saxpy"
-kind = "theorem"
-desc = '''(2.7.19) for the gaxpy/saxpy-based product ("the same result applies if a gaxpy … procedure is used"):
-with `fp.IsIdempotent` and `r u < 1`, every run of `Chapter01.algorithm_1_1_7 fp.round A B 0` satisfies the
-same bound `|Ĉ - A B| ≤ γ_r |A||B|`. Every loop order accumulates each `c_ij` over `k = 1, …, r` in
-increasing order, one rounded product and one rounded addition per step, so each entry is a run of
-`FloatingPoint.dotAccum` from `0` (chapter 1's `algorithm_1_1_7_mem_run`), a `RoundsDot` under
-`fp.IsIdempotent`: the run is a `RoundsMul` (`GolubVanLoan.Chapter01.algorithm_1_1_7_rounds`), then
-`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_7_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (~10 lines).'''
-deps = ["equation_2_7_19", "GolubVanLoan.Chapter01.algorithm_1_1_7_rounds", "FloatingPoint.abs_sub_entrywiseLE_of_roundsMul"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
 
 [[node]]
 id = "equation_2_7_19_outer"
-kind = "theorem"
-desc = '''(2.7.19) for the outer-product-based product: with `fp.IsIdempotent` and `r u < 1` (the hypotheses of
-`equation_2_7_19_saxpy`; without idempotence the constant is `γ_{r+1}`), every run of
-`Chapter01.algorithm_1_1_8 fp.round A B 0` satisfies `|Ĉ - A B| ≤ γ_r |A||B|`, by the same per-entry
-argument: the run is a `RoundsMul` (`GolubVanLoan.Chapter01.algorithm_1_1_8_rounds`), then
-`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. ★
-
-Blocked: chapter 1's programs and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_8_rounds`) are not on this branch (surf2, base 1914bd7e) (agent surf1 writes chapter 1 in parallel). Once they land the statement is a direct instance of the cited backbone lemmas (~10 lines).'''
-deps = ["equation_2_7_19", "GolubVanLoan.Chapter01.algorithm_1_1_8_rounds", "FloatingPoint.abs_sub_entrywiseLE_of_roundsMul"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.19)'
 
 [[node]]
 id = "equation_2_7_20"
-kind = "theorem"
-desc = '''(2.7.20), rigorous form: for the runs of (2.7.19), `‖Ĉ - A B‖₁ ≤ γ_r ‖A‖₁ ‖B‖₁` (`lpOpNorm 1`). From
-(2.7.19), monotonicity of `‖·‖₁` in `|·|` and `‖|A||B|‖₁ ≤ ‖|A|‖₁ ‖|B|‖₁ = ‖A‖₁ ‖B‖₁`
-(`Matrix.lpOpNorm_mul_le`, `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`, `Matrix.linfty_opNorm_abs`). ★
-
-Blocked: waits for `equation_2_7_19` (blocked on chapter 1's `GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`, not on this branch (surf2, base 1914bd7e)); then `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`, `Matrix.linfty_opNorm_le_mul_of_abs_entrywiseLE`, `Matrix.lpOpNorm_mul_le` (~25 lines).'''
-deps = ["equation_2_7_19", "Matrix.lpOpNorm_mul_le", "Matrix.linfty_opNorm_le_of_abs_entrywiseLE"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.20)'
 
 [[node]]
@@ -193,13 +106,6 @@ source = 'Golub–Van Loan, Matrix Computations, §2.7.9'
 
 [[node]]
 id = "abs_sub_le_gamma_mul_abs_of_nonneg"
-kind = "theorem"
-desc = '''§2.7.10: for entrywise nonnegative `A`, `B` (`A.EntrywiseNonneg`, `B.EntrywiseNonneg`), every run `Ĉ`
-of (2.7.19) has small componentwise relative error, `|Ĉ - C| ≤ γ_r |C|` with `C = A B` (`|A||B| = AB`).
-The book's contrast with Strassen's method is not formalized (chapter group, Not formalized). ★
-
-Blocked: waits for `equation_2_7_19` (blocked on chapter 1's `GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`, not on this branch (surf2, base 1914bd7e)); then `|A||B| = AB` for nonnegative factors (~10 lines).'''
-deps = ["equation_2_7_19", "Matrix.abs"]
 source = 'Golub–Van Loan, Matrix Computations, §2.7.10'
 
 [[node]]
@@ -212,17 +118,4 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (2.7.22)'
 
 [[node]]
 id = "triangular_mul_two_backward_run"
-kind = "theorem"
-desc = '''§2.7.9, the book's "it can be shown that `fl(AB)` = …": every run of
-`Chapter01.algorithm_1_2_1` at `n = 2`, `C = 0`, on upper triangular `A`, `B`, under
-`fp.IsIdempotent`, is `Ĉ = [a₁₁ b₁₁ (1 + ε₁), (a₁₁ b₁₂ (1 + ε₂) + a₁₂ b₂₂ (1 + ε₃))(1 + ε₄); 0,
-a₂₂ b₂₂ (1 + ε₅)]` for some `|εᵢ| ≤ u` (the entries are `FloatingPoint.dotAccum` runs over the
-abbreviated index ranges: two products for `(1,2)`, one each for `(1,1)` and `(2,2)`); with
-`triangular_mul_two_backward` it gives the backward error statement for the runs. Split off from
-`triangular_mul_two_backward` (now the algebraic part, proved) by surf2.
-
-Blocked: chapter 1's `GolubVanLoan.Chapter01.algorithm_1_2_1` is not on this branch (surf2, base
-1914bd7e; agent surf1 writes chapter 1 in parallel). ~40 lines once it lands (`SetM` run lemmas
-and `Rounds.exists_delta` per entry).'''
-deps = ["triangular_mul_two_backward", "GolubVanLoan.Chapter01.algorithm_1_2_1", "FloatingPoint.RoundingModel.IsIdempotent"]
 source = 'Golub–Van Loan, Matrix Computations, §2.7.9'

@@ -14,54 +14,14 @@ source = 'Golub–Van Loan, Matrix Computations, §9.3.1'
 
 [[node]]
 id = "algorithm_9_3_1"
-kind = "definition"
-desc = '''Algorithm 9.3.1 (scaling and squaring), D4: `algorithm_9_3_1 {M} [Monad M] (rnd : ℝ → M ℝ) (δ : ℝ)
-(A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ)`, as printed: compute `ν = ‖A‖_∞` (row
-sums of `|a_ij|` rounded, `max` exact), `j = max 0 (1 + Int.log 2 ν)` (an exact discrete choice on a
-computed value), `A ← A / 2^j` entrywise through `rnd`; `q = Nat.find (∃ q, Pade.errorBound q q ≤ δ)`
-(a parameter fixed by the input `δ`, exact); `D = N = X = I`, `c = 1`; for `k = 1, …, q`: `c ← rnd (rnd
-(c * (q - k + 1)) / ((2q - k + 1) k))` (integer factors exact), `X ← algorithm_1_1_5 rnd A X 0`, `N ← N
-+ c X`, `D ← D + (-1)^k c X` entrywise through `rnd`; solve `D F = N` by chapter 3's Gaussian
-elimination with partial pivoting column by column (`GolubVanLoan.Chapter03.algorithm_3_4_1`, then
-`algorithm_3_1_1` with the unit lower factor and `algorithm_3_1_2`); then `F ← F²` `j` times
-(`algorithm_1_1_5 rnd F F 0`). ★
-
-Blocked: chapter 3's surface programs (`GolubVanLoan.Chapter03.algorithm_3_4_1`, `algorithm_3_1_1`,
-`algorithm_3_1_2` and their `_spec`s, agent s03) are not on this branch's base, and convention 5
-requires the solve `D F = N` to call them. Once they land: the program as described, ~40 lines.'''
-deps = ["GolubVanLoan.Chapter01.algorithm_1_1_5", "GolubVanLoan.Chapter03.algorithm_3_4_1", "GolubVanLoan.Chapter03.algorithm_3_1_1", "GolubVanLoan.Chapter03.algorithm_3_1_2", "Pade.errorBound"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
 
 [[node]]
 id = "algorithm_9_3_1_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 9.3.1: with `j` and `q` as the algorithm computes them from `A` and
-`δ` (`δ > 0`), if `D_qq(A/2^j)` is nonsingular then `Id.run (algorithm_9_3_1 pure δ A) =
-Pade.expApprox q q (2⁻¹ ^ j • A) ^ 2 ^ j`. The loop computes `c_k = (2q-k)! q!/((2q)! k! (q-k)!)`,
-so `N = N_qq(A/2^j)`, `D = D_qq(A/2^j)` (`pade_def`); the solve returns `D⁻¹ N` (chapter 3's exact
-specs); the squarings give the `2^j`-th power. ★★ (~150 lines)
-
-Blocked: chapter 3's surface programs (`GolubVanLoan.Chapter03.algorithm_3_4_1`, `algorithm_3_1_1`,
-`algorithm_3_1_2` and their `_spec`s, agent s03) are not on this branch's base, and convention 5
-requires the solve `D F = N` to call them. Once they land: ~150 lines as described (the coefficient
-recurrence against `pade_def`, chapter 1's and chapter 3's exact specs).'''
-deps = ["algorithm_9_3_1", "pade_def", "GolubVanLoan.Chapter01.algorithm_1_1_5_spec", "GolubVanLoan.Chapter03.algorithm_3_4_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_1_spec", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
 
 [[node]]
 id = "algorithm_9_3_1_spec_backward"
-kind = "theorem"
-desc = '''The book's claim for Algorithm 9.3.1, "computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`", holds
-whenever the scaling achieves `‖A‖_∞ / 2^j ≤ 1/2`: then `D_qq(A/2^j)` is nonsingular
-(`Pade.isUnit_aeval_expDen`) and `molerVanLoan` with `ε(q,q) ≤ δ` gives `E` with `A E = E A`. As
-printed, `j = max{0, 1 + ⌊log₂ ‖A‖_∞⌋}` only gives `‖A‖_∞/2^j < 1` (e.g. `‖A‖_∞ = 3`, `j = 2`,
-ratio `3/4`), so the hypothesis is stated explicitly; it holds for the corrected choice `j = max{0,
-2 + ⌊log₂ ‖A‖_∞⌋}` (Moler–Van Loan's `expm` demo: `s = max(0, e + 1)` with MATLAB's `log2`
-exponent `e = ⌊log₂‖A‖⌋ + 1`). Erratum recorded in the report. ★
-
-Blocked: on `algorithm_9_3_1_spec` (chapter 3's surface). Once it lands: `molerVanLoan` at
-`p = q` with `Pade.isUnit_aeval_expDen`, ~30 lines.'''
-deps = ["algorithm_9_3_1_spec", "molerVanLoan", "Pade.isUnit_aeval_expDen"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'
 
 [[node]]
@@ -115,25 +75,12 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.5)'
 
 [[node]]
 id = "equation_9_3_6"
-kind = "theorem"
-desc = '''(9.3.6): for `ε > 0`, `sup_{t > 0} ‖e^{At}‖₂ ≥ α_ε(A)/ε`, for `A : Matrix (Fin n) (Fin n) ℂ`
-(`n ≥ 1`; a real `A` through its complexification), with chapter 7's ε-pseudospectrum
-`Chapter07.pseudospectrum ε A` (the backbone `ContinuousLinearMap.closedPseudospectrum`), whose
-resolvent form `z ∈ Λ_ε(A) ↔ z ∈ λ(A) ∨ ‖(zI - A)⁻¹‖₂ ≥ 1/ε` is `Chapter07.equation_7_9_6`, and
-chapter 7's pseudospectral abscissa `α_ε(A) = Chapter07.pseudospectralAbscissa ε A` ((7.9.8), which
-the book cites as "(7.8.8)"; backbone `Matrix.pseudospectralAbscissa`). Stated without `sup` junk:
-if `‖e^{At}‖₂ ≤ M` for all `t > 0` then `Chapter07.pseudospectralAbscissa ε A ≤ ε M`. The maximum is
-attained (`Matrix.exists_eq_pseudospectralAbscissa_radius`) at some `z ∈ Λ_ε`; if `Re z > 0`, then
-`z ∉ λ(A)` and `1/ε ≤ ‖(z - A)⁻¹‖₂ ≤ M / Re z` (`equation_7_9_6`,
-`norm_resolvent_le_of_norm_exp_smul_le`); if `Re z ≤ 0` the claim is trivial since `M ≥ 1`
-(`t → 0⁺`). ★
-
-Blocked: chapter 7's surface (`GolubVanLoan.Chapter07.pseudospectrum`,
-`pseudospectralAbscissa`, `equation_7_9_6`, agent s07) is not on this branch's base. Once it lands:
-~40 lines as described.'''
-deps = ["norm_resolvent_le_of_norm_exp_smul_le", "GolubVanLoan.Chapter07.pseudospectrum", "GolubVanLoan.Chapter07.equation_7_9_6", "GolubVanLoan.Chapter07.pseudospectralAbscissa", "Matrix.exists_eq_pseudospectralAbscissa_radius"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (9.3.6)'
 
 [[node]]
 id = "normal_squaring"
 source = 'Golub–Van Loan, Matrix Computations, §9.3.4'
+
+[[node]]
+id = "updateEntriesM"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.3.1'

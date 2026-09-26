@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Matrix.Function.Triangular
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic
+import NumlibSurface.GolubVanLoan.Chapter07.Section01
 
 /-!
 # Golub–Van Loan §9.1: eigenvalue methods
@@ -12,7 +13,8 @@ Surface file for [golub2013matrix] §9.1: the Jordan-based definition (9.1.1)–
 theorem that the backbone's `pfc f A` has the Jordan-form expression; Lemma 9.1.1 and Theorem 9.1.2
 (Taylor series), the series of `exp`, `log`, `sin`, `cos`; (9.1.6)–(9.1.8); Corollary 9.1.3; the
 Schur approach (Theorem 9.1.4, the Parlett recurrence (9.1.11) and Algorithm 9.1.1); the block
-Parlett equations (9.1.12); and the relative condition number of §9.1.6.
+Parlett equations (9.1.12) with the unique solvability of their Sylvester equations; and the
+relative condition number of §9.1.6.
 
 ## Conventions
 
@@ -34,7 +36,9 @@ index `b : Fin n → Fin p`. Algorithm 9.1.1 follows the algorithm conventions o
 `pfc_mul`, `pfc_inv`, `commute_pfc`) and `Numlib/Analysis/Matrix/Function/{Basic,Triangular}`
 (`Matrix.pfc_conj`, `Matrix.pfc_jordanBlock`, `Matrix.pfc_conj_jordanForm`,
 `Matrix.pfc_apply_eq_sum_divDiff`, `Matrix.pfc_apply_eq_parlett`,
-`Matrix.BlockTriangular.pfc_sylvester`).
+`Matrix.BlockTriangular.pfc_sylvester`); chapter 7's Lemma 7.1.5
+(`GolubVanLoan.Chapter07.lemma_7_1_5`) for the Sylvester equations of §9.1.5, applied on the blocks'
+index types after reindexing to `Fin`.
 
 ## Not formalized
 
@@ -646,6 +650,68 @@ theorem equation_9_1_12 {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin
       blk T i j * blk F j j - blk F i i * blk T i j +
         ∑ k ∈ Ioo i j, (blk T i k * blk F k j - blk F i k * blk T k j) :=
   Matrix.BlockTriangular.pfc_sylvester hT f hij
+
+/-- A Sylvester equation `S D - D R = 0` between square matrices over any finite index types with
+disjoint spectra has only the solution `D = 0`: reindex to `Fin` and apply Lemma 7.1.5. -/
+private theorem eq_zero_of_mul_sub_mul_eq_zero {α β : Type*} [Fintype α] [DecidableEq α]
+    [Fintype β] [DecidableEq β] {S : Matrix α α ℂ} {R : Matrix β β ℂ}
+    (h : spectrum ℂ S ∩ spectrum ℂ R = ∅) {D : Matrix α β ℂ} (hD : S * D - D * R = 0) :
+    D = 0 := by
+  set e₁ := Fintype.equivFin α
+  set e₂ := Fintype.equivFin β
+  have hs₁ : spectrum ℂ (Matrix.reindex e₁ e₁ S) = spectrum ℂ S := by
+    rw [← Matrix.coe_reindexAlgEquiv ℂ ℂ e₁, AlgEquiv.spectrum_eq]
+  have hs₂ : spectrum ℂ (Matrix.reindex e₂ e₂ R) = spectrum ℂ R := by
+    rw [← Matrix.coe_reindexAlgEquiv ℂ ℂ e₂, AlgEquiv.spectrum_eq]
+  have hbij := (Chapter07.lemma_7_1_5 (Matrix.reindex e₁ e₁ S) (Matrix.reindex e₂ e₂ R)).2
+    (by rw [hs₁, hs₂]; exact h)
+  have h0 : Matrix.sylvesterMap (Matrix.reindex e₁ e₁ S) (Matrix.reindex e₂ e₂ R)
+      (Matrix.reindex e₁ e₂ D) = Matrix.sylvesterMap (Matrix.reindex e₁ e₁ S)
+        (Matrix.reindex e₂ e₂ R) 0 := by
+    rw [map_zero, Matrix.sylvesterMap_apply]
+    simp only [Matrix.reindex_apply]
+    rw [Matrix.submatrix_mul_equiv, Matrix.submatrix_mul_equiv]
+    ext a c
+    have := congrFun (congrFun hD (e₁.symm a)) (e₂.symm c)
+    simpa [Matrix.sub_apply] using this
+  have hD' := hbij.1 h0
+  ext a c
+  have := congrFun (congrFun hD' (e₁ a)) (e₂ c)
+  simpa using this
+
+/-- **§9.1.5, the blocks of `F = f(T)` one superdiagonal at a time**: if `T` is block upper
+triangular and `λ(T_ii) ∩ λ(T_jj) = ∅` (as the clustering of §9.1.5 arranges), then `F_ij` is the
+unique solution `X` of the Sylvester equation `X T_jj - T_ii X = C_ij`, `C_ij` the right side of
+(9.1.12) — which involves only blocks of `F` nearer the diagonal. (9.1.12) and chapter 7's
+Lemma 7.1.5 (`X ↦ T_ii X - X T_jj` is nonsingular iff the spectra are disjoint), on the blocks'
+index types. -/
+theorem equation_9_1_12_unique {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin n) ℂ}
+    (hT : T.BlockTriangular b) (f : ℂ → ℂ) {i j : Fin p} (hij : i < j)
+    (hdisj : spectrum ℂ (T.toBlock (b · = i) (b · = i)) ∩
+      spectrum ℂ (T.toBlock (b · = j) (b · = j)) = ∅) :
+    let F := pfc f T
+    let blk := fun (X : Matrix (Fin n) (Fin n) ℂ) (k l : Fin p) => X.toBlock (b · = k) (b · = l)
+    ∀ X : Matrix {a // b a = i} {a // b a = j} ℂ,
+      X * blk T j j - blk T i i * X =
+          blk T i j * blk F j j - blk F i i * blk T i j +
+            ∑ k ∈ Ioo i j, (blk T i k * blk F k j - blk F i k * blk T k j) ↔
+        X = blk F i j := by
+  have h12 := equation_9_1_12 hT f hij
+  dsimp only at h12 ⊢
+  intro X
+  set Ti := T.toBlock (b · = i) (b · = i) with hTi
+  set Tj := T.toBlock (b · = j) (b · = j) with hTj
+  set Fij := (pfc f T).toBlock (b · = i) (b · = j) with hFij
+  constructor
+  · intro hX
+    rw [← h12, ← sub_eq_zero] at hX
+    refine sub_eq_zero.1 (eq_zero_of_mul_sub_mul_eq_zero hdisj ?_)
+    calc Ti * (X - Fij) - (X - Fij) * Tj = -(X * Tj - Ti * X - (Fij * Tj - Ti * Fij)) := by
+          simp only [Matrix.mul_sub, Matrix.sub_mul]
+          abel
+      _ = 0 := by rw [hX, neg_zero]
+  · rintro rfl
+    exact h12
 
 /-! ### Sensitivity of matrix functions -/
 

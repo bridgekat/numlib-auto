@@ -148,6 +148,7 @@ import NumlibSurface.GolubVanLoan.Chapter02
 import NumlibSurface.GolubVanLoan.Chapter02.Section01
 import NumlibSurface.GolubVanLoan.Chapter02.Section02
 import NumlibSurface.GolubVanLoan.Chapter02.Section03
+import NumlibSurface.GolubVanLoan.Chapter02.Section04
 import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter02.Section06
 import NumlibSurface.GolubVanLoan.Chapter02.Section07

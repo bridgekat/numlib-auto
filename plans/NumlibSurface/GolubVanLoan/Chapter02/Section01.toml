@@ -39,17 +39,6 @@ source = 'Golub–Van Loan, Matrix Computations, §2.1.5'
 
 [[node]]
 id = "theorem_2_1_1"
-kind = "theorem"
-desc = '''Theorem 2.1.1: if `V₁ : Matrix (Fin n) (Fin r) ℝ` has orthonormal columns (`V₁ᵀ V₁ = 1`), there is
-`V₂ : Matrix (Fin n) (Fin (n - r)) ℝ` with `V = [V₁ | V₂] ∈ Matrix.orthogonalGroup (Fin n) ℝ` (the
-columns glued by `Matrix.fromCols` and reindexed along `finSumFinEquiv` and `r ≤ n`, which follows
-from the hypothesis via `Matrix.rank`), and `ran(V₁)⊥ = ran(V₂)`. Backbone
-`Matrix.exists_mem_unitaryGroup_submatrix_eq` with the placement `Fin.castLE`; the complement clause
-from orthogonality of the columns and a dimension count. The book's proof defers to §5.2 (QR); the
-backbone proof is orthonormal-basis extension. ★★ (the reindexing)
-
-Blocked: the backbone `Matrix.exists_mem_unitaryGroup_submatrix_eq` (the orthonormal completion, an append to `Numlib/LinearAlgebra/Matrix/SVD` planned with the SVD appends) is not on this branch (surf2, base 1914bd7e). Once it lands the surface proof is the reindexing along `finSumFinEquiv`/`Fin.castLE` plus the complement clause from `orthogonal_range_eq_ker_transpose` (~40 lines).'''
-deps = ["Matrix.exists_mem_unitaryGroup_submatrix_eq", "orthogonal_range_eq_ker_transpose"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 2.1.1'
 
 [[node]]
@@ -82,3 +71,7 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.7)'
 [[node]]
 id = "equation_2_1_8"
 source = 'Golub–Van Loan, Matrix Computations, Equation (2.1.8)'
+
+[[node]]
+id = "orthogonal_range_submatrix_eq"
+source = 'Golub–Van Loan, Matrix Computations, §2.1.5'

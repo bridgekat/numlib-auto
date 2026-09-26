@@ -1,5 +1,6 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.Analysis.Calculus.HermiteGenocchi
+import Numlib.Analysis.Matrix.Function.Approximation
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter09.Section01
@@ -7,10 +8,11 @@ import NumlibSurface.GolubVanLoan.Chapter09.Section01
 /-!
 # Golub–Van Loan §9.2: approximation methods
 
-Surface file for [golub2013matrix] §9.2: the Schur-analysis ingredients (9.2.1) and (9.2.2), Taylor
-truncation (Theorem 9.2.3), the double-angle formulas, Horner's scheme for matrix polynomials
-(Algorithm 9.2.1) and the Paterson–Stockmeyer regrouping (9.2.5), binary powering
-(Algorithm 9.2.2), and the Cauchy integral (9.2.8) over circles.
+Surface file for [golub2013matrix] §9.2: the Jordan analysis (Theorem 9.2.1), the Schur analysis
+(Theorem 9.2.2 with its ingredients (9.2.1) and (9.2.2)), Taylor truncation (Theorem 9.2.3), the
+double-angle formulas, Horner's scheme for matrix polynomials (Algorithm 9.2.1) and the
+Paterson–Stockmeyer regrouping (9.2.5), binary powering (Algorithm 9.2.2), Simpson's rule for
+`∫ f(At) dt` ((9.2.6)–(9.2.7)), and the Cauchy integral (9.2.8) over circles.
 
 ## Conventions
 
@@ -26,7 +28,9 @@ Algorithm 9.2.2 (its binary expansion) are exact.
 `Numlib/Analysis/Calculus/HermiteGenocchi` (`Hermite.norm_divDiff_le`),
 `Numlib/Analysis/Matrix/Function/Triangular` (`Matrix.pow_succ_apply_eq_sum_pathProd`),
 `Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/{Basic,Analytic,Cauchy}` (`pfc_comp`,
-`norm_pfc_sub_sum_le`, `pfc_eq_circleIntegral`).
+`norm_pfc_sub_sum_le`, `pfc_eq_circleIntegral`), `Numlib/Analysis/Matrix/Function/Approximation`
+(`Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`, `Matrix.frobenius_norm_pfc_sub_le_of_isCompact`,
+`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le`).
 
 ## Not formalized
 
@@ -53,6 +57,33 @@ open scoped Nat ENNReal Real
 namespace GolubVanLoan.Chapter09
 
 variable {n : ℕ}
+
+/-! ### A Jordan analysis -/
+
+section Jordan
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **Theorem 9.2.1.** Let `A = X · diag(J₁, …, J_q) · X⁻¹` be a Jordan decomposition of
+`A ∈ ℂ^{n×n}` (as in (9.1.3): `J_i` the `n_i × n_i` Jordan block at `λ_i`), and let `f`, `g` be
+analytic on an open set containing `λ(A)` (analytic at every eigenvalue). Then
+`‖f(A) - g(A)‖₂ ≤ κ₂(X) · max_{1 ≤ i ≤ q, 0 ≤ r ≤ n_i - 1} n_i |f⁽ʳ⁾(λ_i) - g⁽ʳ⁾(λ_i)| / r!`,
+`κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂` (the book's `max` over `1 ≤ i ≤ p` is over `i ≤ q`). Backbone
+`Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`. -/
+theorem theorem_9_2_1 {q : ℕ} (e : Fin q → ℕ) (μ : Fin q → ℂ) (σ : (Σ i, Fin (e i)) ≃ Fin n)
+    {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X)
+    (h : X⁻¹ * A * X = Matrix.reindex σ σ (Matrix.jordanForm e μ)) {f g : ℂ → ℂ}
+    (hf : ∀ z ∈ spectrum ℂ A, AnalyticAt ℂ f z) (hg : ∀ z ∈ spectrum ℂ A, AnalyticAt ℂ g z) :
+    ‖pfc f A - pfc g A‖ ≤ ‖X‖ * ‖X⁻¹‖ * ⨆ i, ⨆ r : Fin (e i),
+      (e i : ℝ) * (‖iteratedDeriv r f (μ i) - iteratedDeriv r g (μ i)‖ / (r : ℕ)!) := by
+  refine Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm σ hX h hf hg
+    (Real.iSup_nonneg fun i => Real.iSup_nonneg fun r => by positivity) fun i r hr => ?_
+  refine le_ciSup_of_le (Set.finite_range _).bddAbove i ?_
+  exact le_ciSup (f := fun r : Fin (e i) => (e i : ℝ) *
+    (‖iteratedDeriv r f (μ i) - iteratedDeriv r g (μ i)‖ / (r : ℕ)!))
+    (Set.finite_range _).bddAbove ⟨r, hr⟩
+
+end Jordan
 
 /-! ### A Schur analysis -/
 
@@ -108,6 +139,34 @@ theorem equation_9_2_2 {N : Matrix (Fin n) (Fin n) ℂ} (hN : ∀ i j, j ≤ i �
     · rw [(hup.pow r) (show id j < id k from lt_of_le_of_lt hji' hik), mul_zero]
 
 /-! ### Taylor approximants -/
+
+section Schur
+
+open scoped Matrix Matrix.Norms.Frobenius
+
+/-- **Theorem 9.2.2.** Let `Qᴴ A Q = T = diag(λ_i) + N` be a Schur decomposition of
+`A ∈ ℂ^{n×n}` (`N` the strictly upper triangular part of `T`). If `f` and `g` are analytic on a
+closed convex set `Ω` whose interior contains `λ(A)`, then
+`‖f(A) - g(A)‖_F ≤ ∑_{r=0}^{n-1} δ_r ‖|N|^r‖_F / r!`,
+`δ_r = sup_{z ∈ Ω} |f⁽ʳ⁾(z) - g⁽ʳ⁾(z)|`. `Ω` is taken **compact**, so that `δ_r` is finite (for an
+unbounded `Ω` the supremum may be `+∞`, and Lean's `sSup` of an unbounded set of reals is `0`).
+Backbone `Matrix.frobenius_norm_pfc_sub_le_of_isCompact`. -/
+theorem theorem_9_2_2 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ)
+    (hT : (Qᴴ * A * Q).IsUpperTriangular) {Ω : Set ℂ} (hΩc : IsCompact Ω) (hΩ : Convex ℝ Ω)
+    (hAΩ : spectrum ℂ A ⊆ interior Ω) {f g : ℂ → ℂ} (hf : AnalyticOnNhd ℂ f Ω)
+    (hg : AnalyticOnNhd ℂ g Ω) :
+    ‖pfc f A - pfc g A‖ ≤ ∑ r ∈ range n,
+      sSup ((fun z => ‖iteratedDeriv r f z - iteratedDeriv r g z‖) '' Ω) *
+        ‖((Qᴴ * A * Q - Matrix.diagonal (Qᴴ * A * Q).diag).map fun z => ‖z‖) ^ r‖ / r ! := by
+  rw [← Matrix.star_eq_conjTranspose] at hT ⊢
+  have h := Matrix.frobenius_norm_pfc_sub_le_of_isCompact hQ hT hΩc hΩ
+    (hAΩ.trans interior_subset) hf hg
+  refine h.trans (le_of_eq (Finset.sum_congr rfl fun r _ => ?_))
+  congr 3
+  refine Set.image_congr fun z hz => ?_
+  rw [iteratedDeriv_sub ((hf z hz).contDiffAt) ((hg z hz).contDiffAt)]
+
+end Schur
 
 section Taylor
 
@@ -449,6 +508,96 @@ theorem algorithm_9_2_2_spec (A : Matrix (Fin n) (Fin n) ℝ) {s : ℕ} (hs : 1 
   rw [show q + (t - q) + 1 = t + 1 by omega, hst]
 
 /-! ### The Cauchy integral formulation -/
+
+/-! ### Integrating matrix functions -/
+
+/-- The composite Simpson weights `w_0, …, w_m = 1, 4, 2, 4, …, 2, 4, 1` of (9.2.6), `m = 2N`,
+regrouped by panels: `∑_{k=0}^{2N} w_k g_k = ∑_{j<N} (g_{2j} + 4 g_{2j+1} + g_{2j+2})`. -/
+private theorem sum_simpsonWeight_smul {M : Type*} [AddCommGroup M] [Module ℝ M] (g : ℕ → M)
+    {N : ℕ} (hN : 1 ≤ N) :
+    ∑ k ∈ range (2 * N + 1),
+        (if k = 0 ∨ k = 2 * N then (1 : ℝ) else if Odd k then 4 else 2) • g k =
+      ∑ j ∈ range N, (g (2 * j) + (4 : ℝ) • g (2 * j + 1) + g (2 * j + 2)) := by
+  induction N, hN using Nat.le_induction with
+  | base =>
+    simp [Finset.sum_range_succ]
+  | succ N hN ih =>
+    have hint : ∀ c : ℕ, 2 * N ≤ c → ∑ k ∈ range (2 * N),
+        (if k = 0 ∨ k = c then (1 : ℝ) else if Odd k then 4 else 2) • g k =
+          ∑ k ∈ range (2 * N), (if k = 0 then (1 : ℝ) else if Odd k then 4 else 2) • g k :=
+      fun c hc => Finset.sum_congr rfl fun k hk => by
+        have hk' : k ≠ c := by have := Finset.mem_range.1 hk; omega
+        simp [hk']
+    rw [Finset.sum_range_succ, hint (2 * N) le_rfl] at ih
+    rw [show 2 * (N + 1) + 1 = 2 * N + 1 + 1 + 1 by ring, Finset.sum_range_succ,
+      Finset.sum_range_succ, Finset.sum_range_succ, hint (2 * (N + 1)) (by omega),
+      Finset.sum_range_succ, ← ih]
+    have h1 : ¬ (2 * N = 0 ∨ 2 * N = 2 * (N + 1)) := by omega
+    have h2 : ¬ (2 * N + 1 = 0 ∨ 2 * N + 1 = 2 * (N + 1)) := by omega
+    have h3 : 2 * N + 1 + 1 = 0 ∨ 2 * N + 1 + 1 = 2 * (N + 1) := Or.inr (by ring)
+    have h4 : ¬ Odd (2 * N) := by simp
+    have h5 : Odd (2 * N + 1) := odd_two_mul_add_one N
+    have h6 : 2 * N = 0 ∨ 2 * N = 2 * N := Or.inr rfl
+    rw [ite_eq_right h1, ite_eq_right h4, ite_eq_right h2, ite_eq_left h5, ite_eq_left h3,
+      ite_eq_left h6]
+    rw [show 2 * N + 1 + 1 = 2 * N + 2 by ring]
+    module
+
+section Simpson
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **(9.2.6)–(9.2.7), corrected.** For `A ∈ ℂ^{n×n}` and `f` analytic at `t μ` for every
+`t ∈ [a, b]` and every eigenvalue `μ` of `A`, `m` even, `h = (b - a)/m` and the Simpson
+approximation `F̃ = (h/3) ∑_{k=0}^m w_k f(A(a + kh))` (`w = 1, 4, 2, …, 2, 4, 1`) of
+`F = ∫_a^b f(At) dt`, `F̃ = F + E` with
+`‖E‖₂ ≤ n h⁴ (b - a)/180 · max_{a ≤ t ≤ b} ‖A⁴ f⁽⁴⁾(At)‖₂`. The book prints `‖f⁽⁴⁾(At)‖₂` without
+the factor `A⁴`, which is false (`n = 1`, `f = exp`, `A = 2`: `d⁴/dt⁴ e^{2t} = 16 e^{2t}`). Backbone
+`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le` (without the factor `n`), on `m/2` panels of
+width `2h`. -/
+theorem equation_9_2_7 (A : Matrix (Fin n) (Fin n) ℂ) {f : ℂ → ℂ} {a b h : ℝ} (hab : a < b)
+    {m : ℕ} (hm : Even m) (hm0 : 0 < m) (hh : h = (b - a) / m)
+    (hf : ∀ t ∈ Set.Icc a b, ∀ μ ∈ spectrum ℂ A, AnalyticAt ℂ f (t * μ)) :
+    ‖(h / 3) • ∑ k ∈ range (m + 1), (if k = 0 ∨ k = m then (1 : ℝ) else if Odd k then 4 else 2) •
+          pfc f (((a + k * h : ℝ) : ℂ) • A) - ∫ t in a..b, pfc f ((t : ℂ) • A)‖ ≤
+      n * h ^ 4 * (b - a) / 180 *
+        sSup ((fun t : ℝ => ‖A ^ 4 * pfc (iteratedDeriv 4 f) ((t : ℂ) • A)‖) '' Set.Icc a b) := by
+  obtain ⟨N, rfl⟩ := hm
+  have hN : 0 < N := by omega
+  rw [← two_mul] at hh ⊢
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · calc _ = (0 : ℝ) := by rw [norm_eq_zero]; exact Subsingleton.elim _ _
+      _ ≤ _ := by simp
+  set S := sSup ((fun t : ℝ => ‖A ^ 4 * pfc (iteratedDeriv 4 f) ((t : ℂ) • A)‖) '' Set.Icc a b)
+  have hS : 0 ≤ S := Real.sSup_nonneg fun x ⟨t, _, ht⟩ => ht ▸ norm_nonneg _
+  have hNr : (N : ℝ) ≠ 0 := by exact_mod_cast hN.ne'
+  have key := Matrix.norm_integral_pfc_smul_sub_simpsonSum_le A hab hN (H := 2 * h)
+    (by rw [hh]; push_cast; field_simp) hf
+  have e : ∀ x y : ℝ, x = y → pfc f ((x : ℂ) • A) = pfc f ((y : ℂ) • A) := fun x y hxy => by
+    rw [hxy]
+  have hF : (h / 3) • ∑ k ∈ range (2 * N + 1),
+      (if k = 0 ∨ k = 2 * N then (1 : ℝ) else if Odd k then 4 else 2) •
+        pfc f (((a + k * h : ℝ) : ℂ) • A) =
+      ∑ j ∈ range N, (2 * h / 6) • (pfc f (((a + j * (2 * h) : ℝ) : ℂ) • A) +
+        (4 : ℝ) • pfc f (((a + j * (2 * h) + 2 * h / 2 : ℝ) : ℂ) • A) +
+          pfc f (((a + (j + 1) * (2 * h) : ℝ) : ℂ) • A)) := by
+    rw [sum_simpsonWeight_smul (fun k : ℕ => pfc f (((a + k * h : ℝ) : ℂ) • A)) hN,
+      Finset.smul_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [show 2 * h / 6 = h / 3 by ring,
+      e (a + ((2 * j : ℕ) : ℝ) * h) (a + j * (2 * h)) (by push_cast; ring),
+      e (a + ((2 * j + 1 : ℕ) : ℝ) * h) (a + j * (2 * h) + 2 * h / 2) (by push_cast; ring),
+      e (a + ((2 * j + 2 : ℕ) : ℝ) * h) (a + (j + 1) * (2 * h)) (by push_cast; ring)]
+  rw [norm_sub_rev, hF]
+  refine key.trans ?_
+  have hq : 0 ≤ h ^ 4 * (b - a) / 180 * S :=
+    mul_nonneg (div_nonneg (mul_nonneg (by positivity) (by linarith)) (by norm_num)) hS
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  calc (2 * h / 2) ^ 4 * (b - a) / 180 * S = h ^ 4 * (b - a) / 180 * S := by ring
+    _ ≤ n * (h ^ 4 * (b - a) / 180 * S) := le_mul_of_one_le_left hq hn1
+    _ = n * h ^ 4 * (b - a) / 180 * S := by ring
+
+end Simpson
 
 section Cauchy
 

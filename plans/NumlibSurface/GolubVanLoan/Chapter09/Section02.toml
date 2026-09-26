@@ -2,18 +2,6 @@ namespace = "GolubVanLoan.Chapter09"
 
 [[node]]
 id = "theorem_9_2_1"
-kind = "theorem"
-desc = '''Theorem 9.2.1: with the Jordan decomposition `A = X · diag(J₁, …, J_q) · X⁻¹` of `equation_9_1_3`
-(`J_i` of size `n_i` at `λ_i`) and `f`, `g` analytic on an open set containing `λ(A)`: `‖pfc f A -
-pfc g A‖₂ ≤ κ₂(X) · max_{1 ≤ i ≤ q, 0 ≤ r ≤ n_i - 1} n_i ‖f⁽ʳ⁾(λ_i) - g⁽ʳ⁾(λ_i)‖ / r!` (the book's
-`max` over `1 ≤ i ≤ p` is a misprint for `q`). `Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm` with
-`κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. ★
-
-Blocked: the backbone `Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`
-(`Numlib/Analysis/Matrix/Function/Approximation`) is open, being done by agent dec1 in parallel and
-not on this branch's base. Once it lands: a direct instance with `equation_9_1_3`'s Jordan data,
-~15 lines.'''
-deps = ["Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm", "equation_9_1_3"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 9.2.1'
 
 [[node]]
@@ -26,23 +14,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.2)'
 
 [[node]]
 id = "theorem_9_2_2"
-kind = "theorem"
-desc = '''Theorem 9.2.2: let `Qᴴ A Q = T = diag(λ_i) + N` be a Schur decomposition (`Q ∈ unitaryGroup`, `T`
-upper triangular, `N` its strictly upper part), `Ω` closed convex with `λ(A) ⊆ interior Ω`, `f`, `g`
-analytic on `Ω` (on a neighbourhood of it), `δ_r = sup_{z ∈ Ω} |f⁽ʳ⁾(z) - g⁽ʳ⁾(z)|`. **`Ω` is assumed
-compact** (`IsCompact Ω`; the book's closed convex `Ω` may be unbounded, and Lean's `⨆` of an
-unbounded set of reals is `0`, which would make the bound false): then `δ_r` is a `sSup` of a
-continuous function on a compact set, attained and finite. (Equivalently one could keep a closed
-`Ω` and read `δ_r` in `ℝ≥0∞`; the compact reading is the one the backbone takes.) Then
-`‖pfc f A - pfc g A‖_F ≤ ∑_{r=0}^{n-1} δ_r ‖|N|^r‖_F / r!`. Backbone
-`Matrix.frobenius_norm_pfc_sub_le_of_isCompact` (the same `IsCompact Ω` hypothesis and `δ_r` as `sSup`),
-itself a corollary of the bound-hypothesis form `Matrix.frobenius_norm_pfc_sub_le`. The
-book's proof cites "Theorem 9.1.3" (meaning Theorem 9.1.4) and sums `r` up to `j - 1` (meaning `j - i`). ★
-
-Blocked: the backbone `Matrix.frobenius_norm_pfc_sub_le_of_isCompact`
-(`Numlib/Analysis/Matrix/Function/Approximation`, agent dec1) is not on this branch's base. Once it
-lands: a direct instance through `equation_9_2_1`/`equation_9_2_2`, ~20 lines.'''
-deps = ["Matrix.frobenius_norm_pfc_sub_le_of_isCompact", "theorem_9_1_4", "equation_9_2_1", "equation_9_2_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 9.2.2'
 
 [[node]]
@@ -76,20 +47,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 9.2.2'
 
 [[node]]
 id = "equation_9_2_7"
-kind = "theorem"
-desc = '''(9.2.6)–(9.2.7), corrected: for `A : Matrix (Fin n) (Fin n) ℂ`, `f` analytic on an open set
-containing `t • λ(A)` for all `t ∈ [a, b]`, `m` even, `h = (b - a)/m`, and `F̃ = (h/3) ∑_{k=0}^{m}
-w_k f(A(a + kh))` with Simpson weights `w = 1, 4, 2, …, 2, 4, 1`: `‖F̃ - ∫_a^b pfc f (t • A) dt‖₂ ≤
-n h⁴ (b - a)/180 · max_{a ≤ t ≤ b} ‖A⁴ f⁽⁴⁾(At)‖₂`. The book prints `max ‖f⁽⁴⁾(At)‖₂` without the factor
-`A⁴`, which is false (`n = 1`, `f = exp`, `A = 2`: the fourth `t`-derivative of `e^{2t}` is `16
-e^{2t}`); its hypothesis line "`(d⁴/dz⁴) f(zt) = f⁽⁴⁾(zt)`" is garbled. From
-`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le` (no factor `n`) and `1 ≤ n`, after identifying
-`F̃` with the backbone's composite Simpson sum on `m/2` panels of width `2h`. ★
-
-Blocked: the backbone `Matrix.norm_integral_pfc_smul_sub_simpsonSum_le`
-(`Numlib/Analysis/Matrix/Function/Approximation`, agent dec1) is not on this branch's base. Once it
-lands: identify the book's weights with the composite Simpson sum, ~40 lines.'''
-deps = ["Matrix.norm_integral_pfc_smul_sub_simpsonSum_le"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (9.2.7)'
 
 [[node]]

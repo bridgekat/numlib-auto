@@ -75,21 +75,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (9.1.12)'
 
 [[node]]
 id = "equation_9_1_12_unique"
-kind = "theorem"
-desc = '''§9.1.5, "a Sylvester system whose unknowns are the elements of the block `F_ij`": if `λ(T_ii) ∩
-λ(T_jj) = ∅` (as the clustering of §9.1.5 arranges) then `F_ij` is the unique `X` with `X T_jj -
-T_ii X = C_ij`, `C_ij` the right side of (9.1.12) — so the blocks can be computed one block
-superdiagonal at a time. `equation_9_1_12` and chapter 7's unique solvability of the Sylvester
-equation (`GolubVanLoan.Chapter07.lemma_7_1_5`: `X ↦ T_ii X - X T_jj` is bijective iff the spectra
-are disjoint; backbone `Matrix.sylvesterMap_bijective_iff_disjoint_spectrum` /
-`Matrix.existsUnique_sylvesterMap_eq` of `Numlib/LinearAlgebra/Matrix/Sylvester`), applied to
-`T_ii`, `T_jj` on their subtype index sets with right side `-C_ij`. ★
-
-Blocked: its dep `GolubVanLoan.Chapter07.lemma_7_1_5` (chapter 7's surface, agent s07) is not on
-this branch's base; proving it through the backbone `Matrix.existsUnique_sylvesterMap_eq` would
-reach past chapter 7's restatement (README layering). Once chapter 7 lands: `equation_9_1_12` plus
-lemma 7.1.5 on the subtype blocks, ~30 lines.'''
-deps = ["equation_9_1_12", "GolubVanLoan.Chapter07.lemma_7_1_5"]
 source = 'Golub–Van Loan, Matrix Computations, §9.1.5'
 
 [[node]]

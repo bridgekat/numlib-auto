@@ -1,5 +1,6 @@
 import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 import Numlib.Analysis.Matrix.Function.Log
+import Numlib.Analysis.Matrix.Function.Polar
 import Numlib.Analysis.Matrix.Function.Sign
 import Numlib.Analysis.Matrix.Function.Sqrt
 import NumlibSurface.GolubVanLoan.Chapter09.Section03
@@ -10,7 +11,8 @@ import NumlibSurface.GolubVanLoan.Chapter09.Section03
 Surface file for [golub2013matrix] §9.4: the matrix sign function, its Jordan-form expression and
 the half-plane projector; Newton's sign iteration (9.4.1) with (9.4.2)–(9.4.4), its convergence and
 the Newton–Schulz step (9.4.5); the principal square root, Newton's square-root iteration (9.4.7)
-and the Denman–Beavers iteration (9.4.8)–(9.4.10) with `sign([0 A; I 0])`; the principal logarithm
+and the Denman–Beavers iteration (9.4.8)–(9.4.10) with `sign([0 A; I 0])`; the polar decomposition
+(Theorem 9.4.1), its factors and Newton's polar iteration (9.4.11)–(9.4.12); the principal logarithm
 with the Maclaurin and Gregory series, the `(3,3)` Padé approximant of `log(1 + x)` and the identity
 behind inverse scaling and squaring.
 
@@ -28,7 +30,9 @@ axis" is `∀ μ ∈ spectrum ℂ A, μ.re ≠ 0`; "no eigenvalue on `(-∞, 0]`
 
 ## Sources
 
-`Numlib/Analysis/Matrix/Function/{Sign,Sqrt,Log}`.
+`Numlib/Analysis/Matrix/Function/{Sign,Sqrt,Log,Polar}`, `Numlib/LinearAlgebra/Matrix/Polar`.
+"A polar decomposition `A = U P`" is the hypothesis `Matrix.IsPolarDecomposition A U P` (`ᴴ = ᵀ`
+over `ℝ`).
 
 ## Not formalized
 
@@ -36,6 +40,9 @@ The four square roots of `[4 10; 0 9]` (a numerical example), the scaled iterati
 choices of `μ_k`, QR with column pivoting on `(I + sign(A))/2` (only the range statement is
 formalized), the inverse-scaling-and-squaring `while` loop (only its identity
 `log(A) = 2^k log(A_k)` is formalized), the Problems.
+
+Planned in this group and still open: the sign of `[0 A; Aᵀ 0]` (`sign_block_polar`) and the
+Li–Sun perturbation bound (`liSun`), which wait for their backbone.
 
 ## Errata
 
@@ -474,5 +481,73 @@ theorem log_inverse_scaling {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) (k : ℕ) :
     Matrix.principalLog A = (2 ^ k : ℂ) • Matrix.principalLog (Matrix.principalSqrt^[k] A) :=
   Matrix.principalLog_eq_two_pow_smul hA k
+
+/-! ### §9.4.3 The polar decomposition -/
+
+open scoped Matrix
+
+/-- **Theorem 9.4.1 (Polar Decomposition).** If `A ∈ ℝ^{m×n}` and `m ≥ n`, then there are
+`U ∈ ℝ^{m×n}` with orthonormal columns and a symmetric positive semidefinite `P ∈ ℝ^{n×n}` with
+`A = U P`: `Matrix.IsPolarDecomposition A U P` (fields `Uᵀ U = I` — `ᴴ = ᵀ` over `ℝ` —, `P ⪰ 0`,
+`A = U P`). The backbone `Matrix.exists_isPolarDecomposition`, from an SVD as in the book. -/
+theorem theorem_9_4_1 {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n ≤ m) :
+    ∃ U P, Matrix.IsPolarDecomposition A U P :=
+  Matrix.exists_isPolarDecomposition A (by simpa using hmn)
+
+open scoped MatrixOrder in
+/-- **§9.4.3, the polar factors**: in a polar decomposition `A = U P` of `A ∈ ℝ^{m×n}`,
+`P = (AᵀA)^{1/2}` (the positive semidefinite square root), and if `rank(A) = n` then
+`U = A (AᵀA)^{-1/2}`. -/
+theorem polar_factors {m : ℕ} {A U : Matrix (Fin m) (Fin n) ℝ} {P : Matrix (Fin n) (Fin n) ℝ}
+    (h : Matrix.IsPolarDecomposition A U P) :
+    P = CFC.sqrt (Aᵀ * A) ∧ (A.rank = n → U = A * (CFC.sqrt (Aᵀ * A))⁻¹) := by
+  have hT : Aᴴ = Aᵀ := Matrix.conjTranspose_eq_transpose_of_trivial A
+  refine ⟨hT ▸ h.eq_cfcSqrt, fun hr => ?_⟩
+  have hunit : IsUnit (Aᴴ * A) := by
+    refine Matrix.isUnit_of_rank_eq_card ?_
+    rw [hT, Matrix.rank_transpose_mul_self, hr, Fintype.card_fin]
+  exact hT ▸ h.eq_mul_inv_cfcSqrt
+    ((Matrix.posSemidef_conjTranspose_mul_self A).posDef_iff_isUnit.2 hunit)
+
+/-- **(9.4.11)–(9.4.12), Newton's polar iteration.** For nonsingular `A ∈ ℝ^{n×n}` with polar
+decomposition `A = U P`, the iteration `X₀ = A`, `X_{k+1} = (X_k + X_k⁻ᵀ)/2`
+(`Matrix.newtonPolarIterate`; the body of (9.4.11) is lost in the source and read off (9.4.12)) is
+well defined — every `X_k` is nonsingular — and `X_k = U P_k`, where `P₀ = P`,
+`P_{k+1} = (P_k + P_k⁻¹)/2` and every `P_k` is positive definite. -/
+theorem equation_9_4_12 {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
+    (h : Matrix.IsPolarDecomposition A U P) (k : ℕ) :
+    Matrix.newtonPolarIterate A (k + 1) =
+        (2 : ℝ)⁻¹ • (Matrix.newtonPolarIterate A k + ((Matrix.newtonPolarIterate A k)⁻¹)ᵀ) ∧
+      IsUnit (Matrix.newtonPolarIterate A k) ∧
+      Matrix.newtonPolarIterate A k = U * Matrix.newtonPolarIterate P k ∧
+      (Matrix.newtonPolarIterate P k).PosDef ∧
+      Matrix.newtonPolarIterate P (k + 1) =
+        (2 : ℝ)⁻¹ • (Matrix.newtonPolarIterate P k + (Matrix.newtonPolarIterate P k)⁻¹) := by
+  obtain ⟨hX, hP⟩ := Matrix.newtonPolarIterate_eq hA h k
+  have hU : IsUnit U := Matrix.isUnit_of_mem_unitaryGroup h.mem_unitaryGroup
+  refine ⟨?_, hX ▸ hU.mul hP.isUnit, hX, hP, ?_⟩
+  · rw [Matrix.newtonPolarIterate_succ, Matrix.conjTranspose_eq_transpose_of_trivial]
+  · rw [Matrix.newtonPolarIterate_succ, hP.inv.isHermitian.eq]
+
+section Newton
+
+open scoped Matrix.Norms.L2Operator
+
+/-- **§9.4.3, convergence of Newton's polar iteration**: for nonsingular `A = U P`,
+`‖X_k - U‖₂ = ‖P_k - I‖₂`, the `P_k` converge quadratically
+(`‖P_{k+1} - I‖₂ ≤ ‖P_k⁻¹‖₂ ‖P_k - I‖₂² / 2`, the Newton sign iteration of `P` with
+`sign(P) = I`), and `X_k → U`. -/
+theorem newtonPolar_tendsto {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
+    (h : Matrix.IsPolarDecomposition A U P) :
+    (∀ k, ‖Matrix.newtonPolarIterate A k - U‖ = ‖Matrix.newtonPolarIterate P k - 1‖) ∧
+      (∀ k, ‖Matrix.newtonPolarIterate P (k + 1) - 1‖ ≤
+        ‖(Matrix.newtonPolarIterate P k)⁻¹‖ * ‖Matrix.newtonPolarIterate P k - 1‖ ^ 2 / 2) ∧
+      Tendsto (Matrix.newtonPolarIterate A) atTop (𝓝 U) :=
+  ⟨Matrix.l2_opNorm_newtonPolarIterate_sub hA h,
+    Matrix.l2_opNorm_newtonPolarIterate_succ_sub_one_le
+      (h.posSemidef.posDef_iff_isUnit.2 (h.isUnit hA)),
+    Matrix.tendsto_newtonPolarIterate hA h⟩
+
+end Newton
 
 end GolubVanLoan.Chapter09

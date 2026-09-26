@@ -68,58 +68,18 @@ source = 'Golub–Van Loan, Matrix Computations, §9.4.2, display'
 
 [[node]]
 id = "theorem_9_4_1"
-kind = "theorem"
-desc = '''Theorem 9.4.1 (polar decomposition): for `A : Matrix (Fin m) (Fin n) ℝ` with `m ≥ n` there are `U :
-Matrix (Fin m) (Fin n) ℝ` with orthonormal columns (`Uᵀ U = 1`) and a symmetric positive
-semidefinite `P : Matrix (Fin n) (Fin n) ℝ` with `A = U P`, i.e. `∃ U P, Matrix.IsPolarDecomposition A U P`
-(fields `Uᴴ U = 1`, `P.PosSemidef`, `A = U P`; `ᴴ = ᵀ` at `ℝ`). `Matrix.exists_isPolarDecomposition` at
-`𝕜 = ℝ` (any `Fintype`s with `card n ≤ card m`; the book's SVD proof). ★
-
-Blocked: the backbone polar decomposition (`Matrix.exists_isPolarDecomposition`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: a direct instance at `𝕜 = ℝ`, ~10 lines.'''
-deps = ["Matrix.exists_isPolarDecomposition", "Matrix.IsPolarDecomposition"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 9.4.1'
 
 [[node]]
 id = "polar_factors"
-kind = "theorem"
-desc = '''§9.4.3: in Theorem 9.4.1, `P = (AᵀA)^{1/2}` (the positive semidefinite square root, `CFC.sqrt`
-under `open scoped MatrixOrder`), and if `rank(A) = n` then `U = A (AᵀA)^{-1/2}`, for every `U P` with
-`Matrix.IsPolarDecomposition A U P`. `Matrix.IsPolarDecomposition.eq_cfcSqrt` (and, for the second clause,
-its further declaration). ★
-
-Blocked: the backbone polar decomposition (`Matrix.IsPolarDecomposition.eq_cfcSqrt`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: a direct instance, ~20 lines.'''
-deps = ["Matrix.IsPolarDecomposition.eq_cfcSqrt", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
 [[node]]
 id = "equation_9_4_12"
-kind = "theorem"
-desc = '''(9.4.11)–(9.4.12): for nonsingular `A : Matrix (Fin n) (Fin n) ℝ` with polar decomposition `A = U P`,
-Newton's iteration `X₀ = A`, `X_{k+1} = (X_k + X_k⁻ᵀ)/2` (`Matrix.newtonPolarIterate`; the body of
-(9.4.11) is lost in the source and reconstructed from (9.4.12)) is well defined, `X_k = U P_k` with
-`P₀ = P`, `P_{k+1} = (P_k + P_k⁻¹)/2` positive definite. "Polar decomposition `A = U P`" is the hypothesis
-`Matrix.IsPolarDecomposition A U P`. `Matrix.newtonPolarIterate_eq`. ★
-
-Blocked: the backbone polar decomposition (`Matrix.newtonPolarIterate_eq`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: a direct instance, ~10 lines.'''
-deps = ["Matrix.newtonPolarIterate_eq", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (9.4.12)'
 
 [[node]]
 id = "newtonPolar_tendsto"
-kind = "theorem"
-desc = '''§9.4.3: `‖X_k - U‖₂ = ‖P_k - I‖₂` and `X_k → U` quadratically (the `P_k` are the Newton sign
-iterates of `P`, and `sign(P) = I`), under `Matrix.IsPolarDecomposition A U P`. `Matrix.tendsto_newtonPolarIterate`. ★
-
-Blocked: the backbone polar decomposition (`Matrix.tendsto_newtonPolarIterate`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: a direct instance, ~10 lines.'''
-deps = ["Matrix.tendsto_newtonPolarIterate", "equation_9_4_12"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
 [[node]]
@@ -134,9 +94,12 @@ nonsingular `A` with `IsPolarDecomposition A U P`. The surface keeps its `fromBl
 and rewrites (`hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0` by unfolding); `U` is a polar factor by
 `Matrix.IsSVD.isPolarDecomposition` (`U = U_A V_Aᵀ`). ★
 
-Blocked: the backbone polar decomposition (`Matrix.matrixSign_hermitianDilation`, `Matrix.IsSVD.isPolarDecomposition`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: the `fromBlocks` restatement through `Matrix.map Complex.ofReal`, ~40 lines.'''
+Blocked (c0209, 2026-09-26): the backbone `Matrix.matrixSign_hermitianDilation`
+(`Numlib/Analysis/Matrix/Function/Polar`) is proved on branch `agent/bb1` (commit 097000eb) but
+not on main (fca5b833); everything else is on main (`Matrix.hermitianDilation`,
+`Matrix.IsSVD.isPolarDecomposition`, `Matrix.exists_isPolarDecomposition`, chapter 9's
+`theorem_9_4_1`). Once it lands: the `fromBlocks` restatement through `Matrix.map Complex.ofReal`
+(`hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0` by unfolding), ~40 lines.'''
 deps = ["Matrix.matrixSign_hermitianDilation", "Matrix.hermitianDilation", "Matrix.IsSVD.isPolarDecomposition", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3, display'
 
@@ -149,9 +112,12 @@ polar factors `U`, `Ũ` (hypotheses `Matrix.IsPolarDecomposition A U P`, `IsPola
 `σ_n` read as the 0-based `A.sortedSingularValues (n - 2)`, `A.sortedSingularValues (n - 1)` (the two
 smallest). `Matrix.frobenius_norm_polar_sub_le` (quoted without proof by the book). ★★★ (in the backbone)
 
-Blocked: the backbone polar decomposition (`Matrix.frobenius_norm_polar_sub_le`, `Numlib/LinearAlgebra/Matrix/Polar` and
-`Numlib/Analysis/Matrix/Function/Polar`) is being done by agent dec1 in parallel and is not on this
-branch's base (not on main at the time of writing). Once it lands: a direct instance, ~15 lines.'''
+Blocked (c0209, 2026-09-26): the backbone `Matrix.frobenius_norm_polar_sub_le` is open
+(dec1 left it at analysis: the book quotes the bound without proof; the real refinement with the
+two smallest singular values needs Li–Sun's pairing argument for the skew part of a real
+orthogonal matrix, ~600 lines, research-level). Everything else is on main (`theorem_9_4_1`,
+`Matrix.IsPolarDecomposition`, `Matrix.sortedSingularValues`). Once the backbone lands: a direct
+instance, ~15 lines.'''
 deps = ["Matrix.frobenius_norm_polar_sub_le", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
