@@ -29,36 +29,6 @@ id = "Krylov.subspaceIterate_graph"
 
 [[node]]
 id = "Matrix.gap_subspaceIterate_le_of_schur"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 7.3.1, corrected (see the module doc for the counterexample to the
-printed hypothesis). Setting: `Q ∈ unitaryGroup (Fin n) ℂ`, `(star Q * A * Q).reindex e e =
-fromBlocks T₁₁ T₁₂ 0 T₂₂` upper triangular with `e : Fin n ≃ Fin r ⊕ Fin (n - r)`, the diagonal ordered
-`|λ₁| ≥ … ≥ |λ_n|` with `|λ_r| > |λ_{r+1}|`; `N` the strictly upper part, `μ ≥ 0` with
-`(1 + μ) |λ_r| > ‖N‖_F`. Let `Dr = span {Q.col i | i < r}` (the dominant invariant subspace),
-`W = ⨆_{i ≥ r} maxGenEigenspace A λ_i` the complementary invariant subspace (the two eigenvalue sets
-are disjoint because `|λ_r| > |λ_{r+1}|`), `Dr' = Wᗮ` (= the book's `D_r(Aᴴ)`), and `S₀` of dimension `r` with `d̃₀ = gap Dr' S₀ < 1`. Then for all `k`,
-`gap Dr (Krylov.subspaceIterate A S₀ k) ≤ (1 + μ) ^ (n - 2) * (1 + ‖T₁₂‖_F / sep T₁₁ T₂₂) *
-((|λ_{r+1}| + ‖N‖_F/(1+μ)) / (|λ_r| - ‖N‖_F/(1+μ))) ^ k * (gap Dr S₀ / √(1 - d̃₀ ^ 2))`.
-Proof: the book's appendix, with its coordinate computation of `W_k` replaced by the graph
-transport — block-diagonalize `T` by the Sylvester solution `X` (`Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero`,
-`‖X‖_F ≤ ‖T₁₂‖_F/sep`), so that `Dr` and `W` are complementary invariant subspaces and `S₀` (with
-`V₀ - X W₀` invertible, from `d̃₀ < 1`) is the graph over `Dr` into `W` of `Z₀ = W₀ (V₀ - X W₀)⁻¹` in
-the basis `Q [I X; 0 I]`; `Krylov.subspaceIterate_graph` gives `A^k S₀ = graph (T₂₂^k Z₀ T₁₁^{-k})` (the
-book's `W_k = T₂₂^k W₀ (V₀ - X W₀)⁻¹ T₁₁^{-k} (V_k - X W_k)`), and the distance is read off by the
-same graph–gap bookkeeping as `Submodule.gap_graph` (`d_k = ‖Q_βᴴ Q_k‖₂`); powers by `l2_opNorm_pow_le_of_schur` and
-`l2_opNorm_inv_pow_le_of_schur` applied to the blocks, and `‖(V₀ - X W₀)⁻¹‖₂ ≤ 1/√(1 - d̃₀²)` from
-`V₀ - X W₀ = G (Zᴴ Q₀)` with `G Gᴴ = I + X Xᴴ` (`σ_min(G) ≥ 1`) and `σ_min(Zᴴ Q₀)² = 1 - d̃₀²`
-(`Matrix.gap_range_sq_add_sortedSingularValues_sq`), `d_k = ‖Q_βᴴ Q_k‖₂`
-(`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`). ★★★ (~400 lines).
-
-Blocked: the planned route reads the distances off the matrix forms
-`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` and `Matrix.gap_range_sq_add_sortedSingularValues_sq`
-of `Numlib/Analysis/Matrix/SingularValues`, both still open (no owner this wave). The coordinate-free
-ingredients are in place (`Krylov.subspaceIterate_graph`, `Submodule.exists_eq_graph_of_gap_lt_one`,
-`Submodule.norm_eq_gap_graph_div`, `Matrix.l2_opNorm_pow_le_of_schur`, `Matrix.l2_opNorm_inv_pow_le_of_schur`);
-what remains is the oblique-graph bookkeeping for `S₀` over `D_r` along `W` (its gap bound carries the
-factor `(1 + ‖T₁₂‖_F/sep)` of the oblique projector) — about 300 lines, not attempted in eig2's time.'''
-deps = ["Krylov.subspaceIterate_graph", "Submodule.gap_graph", "Matrix.l2_opNorm_pow_le_of_schur", "Matrix.l2_opNorm_inv_pow_le_of_schur", "Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero", "Matrix.frobenius_norm_le_div_sep", "Krylov.subspaceIterate", "Submodule.gap", "Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul", "Matrix.gap_range_sq_add_sortedSingularValues_sq"]
 
 [[node]]
 id = "LinearMap.IsSymmetric.gap_subspaceIterate_le"
@@ -79,3 +49,6 @@ id = "LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant"
 [[node]]
 id = "Matrix.frobenius_norm_submatrix_le"
 deps = []
+
+[[node]]  # added by sv2
+id = "Krylov.gap_subspaceIterate_le_of_isCompl"

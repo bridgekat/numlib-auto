@@ -107,19 +107,6 @@ id = "LinearMap.IsSymmetric.mem_orthogonal_eigenvectorSpan_iff"
 
 [[node]]  # staged by ch07
 id = "Matrix.bauer_fike_lpOpNorm"
-kind = "theorem"
-desc = '''Bauer–Fike in every induced `p`-norm ([golub2013matrix] Theorem 7.2.2): for `1 ≤ p`,
-`X` invertible, `d : n → ℂ` and `μ ∈ spectrum ℂ (X * diagonal d * X⁻¹ + E)`,
-`∃ i, ‖μ - d i‖ ≤ condNumberLp p X * lpOpNorm p E`. The proof of `Matrix.bauer_fike` with
-`lpCLM p` in place of `toEuclideanCLM`: if `μ ∉ range d`, `I + (D - μ)⁻¹ X⁻¹ E X` is singular, so
-`1 ≤ ‖(D - μ)⁻¹‖_p ‖X⁻¹‖_p ‖E‖_p ‖X‖_p` (`Matrix.lpOpNorm_mul_le`) and
-`‖(D - μ)⁻¹‖_p = max 1/|d_i - μ|` (`Matrix.lpOpNorm_diagonal`). `Matrix.bauer_fike` is the `p = 2`
-instance (`Matrix.lpOpNorm_two`, `Matrix.condNumberLp` vs `NormedRing.condNumber`). ★★
-
-Blocked: on `Matrix.lpOpNorm_diagonal` (open, `Numlib/Analysis/Matrix/OperatorNorm`, agent cond1).
-The resolvent step is in place (`Matrix.one_le_lpOpNorm_mul_of_mem_spectrum_add`); with
-`‖(μ I - D)⁻¹‖_p = max 1/|μ - d_i|` the rest is the `p = 2` proof of `Matrix.bauer_fike`, ~60 lines.'''
-deps = ["Matrix.bauer_fike", "Matrix.lpOpNorm_diagonal", "Matrix.lpOpNorm_mul_le", "Matrix.condNumberLp"]
 
 [[node]]
 id = "Matrix.one_le_norm_mul_of_mem_spectrum_add"
@@ -152,8 +139,11 @@ l₂` have `l₁ <+ l₂`, Mathlib `List.sublist_of_subperm_of_pairwise`), which
 `λ_{σ k}(B) = λ_k(S)`. Kahan's sharper constant `1` for the paired form is deferred (★★★; Parlett,
 *The Symmetric Eigenvalue Problem*, Theorem 11.5.1). ★★ (~150 lines)
 
-Blocked: on `Matrix.exists_mem_unitaryGroup_submatrix_eq` (open, `Numlib/LinearAlgebra/Matrix/SVD`,
-a group no agent of wave 1 owns): the unitary completion of `Q₁` is the first step of the proof.'''
+Blocked: `Matrix.exists_mem_unitaryGroup_submatrix_eq` is now proved, so nothing upstream blocks it;
+sv2 (wave 4) left it for time — the proof is ~250 lines (the sorted-list sublist step, via
+`List.sublist_of_subperm_of_pairwise` and `List.sublist_iff_exists_fin_orderEmbedding_get_eq`,
+and the eigenvalue multiset of `fromBlocks S 0 0 B₂₂` from `Matrix.charpoly_fromBlocks_zero₁₂` are
+the bulk).'''
 deps = ["LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm", "Matrix.exists_mem_unitaryGroup_submatrix_eq", "Matrix.lpOpNorm"]
 
 [[node]]  # added by syl1: the resolvent step, Banach-algebra and p-norm forms

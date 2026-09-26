@@ -33,20 +33,6 @@ id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add"
 
 [[node]]
 id = "Matrix.mem_closedPseudospectrum_iff_iInf_singularValues"
-kind = "theorem"
-desc = '''[golub2013matrix] (7.9.5) for matrices: for `A : Matrix n n 𝕜` (`[Nonempty n]`),
-`z ∈ (toEuclideanCLM A).closedPseudospectrum ε ↔ (z • 1 - A).sortedSingularValues (Fintype.card n - 1) ≤ ε`
-(the smallest singular value in the sorted reading, dense review M2), equivalently `⨅ i, (z • 1 -
-A).singularValues i ≤ ε` for the column-indexed family (`Matrix.sortedSingularValues_eq_iInf_singularValues`).
-From `mem_closedPseudospectrum_iff_iInf` and `Matrix.iInf_singularValues_eq_iInf_norm` (`σ_min(M) =
-⨅_{‖w‖ = 1} ‖M w‖`). The id keeps `iInf` for the surface's (7.9.5) node. ★
-
-Blocked: on `Matrix.sortedSingularValues`, `Matrix.sortedSingularValues_eq_iInf_singularValues` and
-`Matrix.iInf_singularValues_eq_iInf_norm` (all open, `Numlib/LinearAlgebra/Matrix/SVD`, a group no
-agent of wave 1 owns). The operator side is done: `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf`
-is (7.9.5) with `σ_min` read as `⨅_{‖w‖ = 1} ‖(A - z) w‖`; once the SVD bridge exists this is a
-rewrite, ~15 lines.'''
-deps = ["ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf", "Matrix.iInf_singularValues_eq_iInf_norm", "Matrix.sortedSingularValues_eq_iInf_singularValues", "Matrix.sortedSingularValues"]
 
 [[node]]
 id = "ContinuousLinearMap.isCompact_closedPseudospectrum"

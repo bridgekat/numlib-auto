@@ -200,6 +200,7 @@ import Numlib.Analysis.Matrix.Function.Sign
 import Numlib.Analysis.Matrix.Function.Sqrt
 import Numlib.Analysis.Matrix.Function.Triangular
 import Numlib.Analysis.Matrix.OperatorNorm
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.MeanInequalities
@@ -374,6 +375,7 @@ import Numlib.Combinatorics.Relation.StronglyConnected
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet
+import Numlib.Conditioning.LeastSquares
 import Numlib.Conditioning.LinearSystem
 import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.Conditioning.Method

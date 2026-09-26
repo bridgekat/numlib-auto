@@ -65,21 +65,6 @@ id = "sep_sub_le_sep_add"
 
 [[node]]
 id = "sep_eq_iInf_singularValues"
-kind = "theorem"
-desc = '''The `1 × 1` case ([golub2013matrix] proof of Corollary 7.2.6): for `c : 𝕜` and `T : Matrix n n 𝕜`,
-`sep (of fun _ _ => c : Matrix Unit Unit 𝕜) T = ⨅ i, (T - c • 1).singularValues i` — the smallest
-singular value of `T - c I`. A `1 × n` unknown is a row vector `xᵀ`, `‖c xᵀ - xᵀ T‖ = ‖(c • 1 - T)ᵀ x‖`,
-and the least value of `‖Mᵀ x‖` on the unit sphere is that of `‖M x‖` (`sep_comm`'s adjoint
-argument, or the SVD bridge `Matrix.iInf_singularValues_eq_iInf_norm` staged by ch07 for `SVD`).
-(Column-indexed `Matrix.singularValues` on purpose: `T - c • 1` is square, so the `⨅` over its `n`
-columns is `σ_min` with no sorted-index bookkeeping; in the sorted reading it is
-`(T - c • 1).sortedSingularValues (Fintype.card n - 1)`.) ★
-
-Blocked: on `Matrix.iInf_singularValues_eq_iInf_norm` (open, in `Numlib/LinearAlgebra/Matrix/SVD`, a
-group no agent of wave 1 owns). Everything else is in place: `sep_comm` turns the `1 × n` unknown
-into an `n × 1` column `x` with `‖T x - x c‖_F = ‖(T - c • 1) x‖₂`, and `le_sep`, `sep_le_norm`,
-`exists_sep_eq` match the two infima; about 30 lines once the bridge exists.'''
-deps = ["exists_sep_eq", "sep_comm", "Matrix.iInf_singularValues_eq_iInf_norm"]
 
 [[node]]
 id = "IsHermitian.sep_eq_iInf_abs_eigenvalues_sub"

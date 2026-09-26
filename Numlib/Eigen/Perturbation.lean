@@ -1375,6 +1375,74 @@ theorem one_le_lpOpNorm_mul_of_mem_spectrum_add (p : ENNReal) [Fact (1 ≤ p)]
   rw [this, isUnit_lpCLM_iff]
   exact not_isUnit_sub_sub_of_mem_spectrum_add hμ
 
+/-- **Bauer–Fike in every induced `p`-norm** ([golub2013matrix] Theorem 7.2.2): for `1 ≤ p`, an
+invertible `X`, `d : n → ℂ` and `μ ∈ σ(X diag(d) X⁻¹ + E)`, some `i` has
+`|μ - d i| ≤ κ_p(X) ‖E‖_p`. If `μ` is no `d i`, then `μ ∈ σ(D + X⁻¹ E X)` and `μ ∉ σ(D)`, so the
+resolvent step `Matrix.one_le_lpOpNorm_mul_of_mem_spectrum_add` gives
+`1 ≤ ‖(μ - D)⁻¹‖_p ‖X⁻¹‖_p ‖E‖_p ‖X‖_p` with `‖(μ - D)⁻¹‖_p = max 1/|μ - d_i|`
+(`Matrix.lpOpNorm_diagonal`). `Matrix.bauer_fike` is the case `p = 2`. -/
+theorem bauer_fike_lpOpNorm (p : ENNReal) [Fact (1 ≤ p)] (X : Matrix n n ℂ) (d : n → ℂ)
+    (hX : IsUnit X) (E : Matrix n n ℂ) {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ (X * diagonal d * X⁻¹ + E)) :
+    ∃ i, ‖μ - d i‖ ≤ condNumberLp p X * lpOpNorm p E := by
+  have hne : Nonempty n := by
+    by_contra hn
+    rw [not_nonempty_iff] at hn
+    have : Subsingleton (Matrix n n ℂ) := ⟨fun a b => by ext i; exact isEmptyElim i⟩
+    rw [spectrum.of_subsingleton] at hμ
+    exact hμ
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_min_image Finset.univ (fun i => ‖μ - d i‖)
+    ⟨Classical.arbitrary n, Finset.mem_univ _⟩
+  refine ⟨i₀, ?_⟩
+  have hκ0 : 0 ≤ condNumberLp p X * lpOpNorm p E :=
+    mul_nonneg (mul_nonneg (lpOpNorm_nonneg p X) (lpOpNorm_nonneg p _)) (lpOpNorm_nonneg p E)
+  by_cases hz : μ - d i₀ = 0
+  · rw [hz, norm_zero]
+    exact hκ0
+  have hδ : 0 < ‖μ - d i₀‖ := norm_pos_iff.mpr hz
+  have hne0 : ∀ i, μ - d i ≠ 0 := fun i hi => by
+    have h := hi₀ i (Finset.mem_univ i)
+    rw [hi, norm_zero] at h
+    exact hz (norm_eq_zero.mp (le_antisymm h (norm_nonneg _)))
+  have hXd := (isUnit_iff_isUnit_det X).mp hX
+  -- conjugating by `X` leaves the spectrum unchanged
+  have hsim : X⁻¹ * (X * diagonal d * X⁻¹ + E) * X = diagonal d + X⁻¹ * E * X := by
+    rw [Matrix.mul_add, Matrix.add_mul]
+    congr 1
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, nonsing_inv_mul _ hXd, Matrix.one_mul,
+      Matrix.mul_assoc, nonsing_inv_mul _ hXd, Matrix.mul_one]
+  have hspec : μ ∈ spectrum ℂ (diagonal d + X⁻¹ * E * X) := by
+    rw [← hsim]
+    have h := spectrum.units_conjugate' (R := ℂ) (a := X * diagonal d * X⁻¹ + E) (u := hX.unit)
+    rw [coe_units_inv, IsUnit.unit_spec] at h
+    rwa [h]
+  have hD : μ ∉ spectrum ℂ (diagonal d) := by
+    rw [spectrum_diagonal]
+    rintro ⟨i, hi⟩
+    exact hne0 i (by rw [hi, sub_self])
+  have h1 := one_le_lpOpNorm_mul_of_mem_spectrum_add p hspec hD
+  have hinv : (μ • (1 : Matrix n n ℂ) - diagonal d)⁻¹ = diagonal fun i => (μ - d i)⁻¹ := by
+    refine inv_eq_left_inv ?_
+    rw [smul_one_eq_diagonal, diagonal_sub, diagonal_mul_diagonal]
+    convert diagonal_one (n := n) (α := ℂ) using 2
+    funext i
+    exact inv_mul_cancel₀ (hne0 i)
+  have hN : lpOpNorm p (μ • (1 : Matrix n n ℂ) - diagonal d)⁻¹ ≤ ‖μ - d i₀‖⁻¹ := by
+    rw [hinv, lpOpNorm_diagonal]
+    refine ciSup_le fun i => ?_
+    rw [norm_inv]
+    exact inv_anti₀ hδ (hi₀ i (Finset.mem_univ i))
+  have hmul : lpOpNorm p (X⁻¹ * E * X) ≤ lpOpNorm p X⁻¹ * lpOpNorm p E * lpOpNorm p X :=
+    (lpOpNorm_mul_le p _ _).trans
+      (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le p _ _) (lpOpNorm_nonneg p _))
+  have h2 : 1 ≤ ‖μ - d i₀‖⁻¹ * (lpOpNorm p X⁻¹ * lpOpNorm p E * lpOpNorm p X) :=
+    h1.trans ((lpOpNorm_mul_le p _ _).trans
+      (mul_le_mul hN hmul (lpOpNorm_nonneg p _) (by positivity)))
+  have h3 := mul_le_mul_of_nonneg_left h2 hδ.le
+  rw [mul_one, ← mul_assoc, mul_inv_cancel₀ hδ.ne', one_mul] at h3
+  calc ‖μ - d i₀‖ ≤ lpOpNorm p X⁻¹ * lpOpNorm p E * lpOpNorm p X := h3
+    _ = condNumberLp p X * lpOpNorm p E := by rw [condNumberLp]; ring
+
 /-- Unitary conjugation preserves the spectrum. -/
 private theorem spectrum_star_mul_mul {Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜)
     (M : Matrix n n 𝕜) : spectrum 𝕜 (star Q * M * Q) = spectrum 𝕜 M := by

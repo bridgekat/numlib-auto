@@ -815,6 +815,36 @@ theorem IsHermitian.sep_eq_iInf_abs_eigenvalues_sub [DecidableEq m] [DecidableEq
     sep_diagonal]
   simp only [Function.comp_apply, ← RCLike.ofReal_sub, RCLike.norm_ofReal]
 
+/-- **The separation from a scalar is a least singular value** ([golub2013matrix] proof of
+Corollary 7.2.6): for `c : 𝕜` and `T : Matrix n n 𝕜`, `sep [c] T = σ_min(T - c I)`, the least
+singular value `⨅ i, (T - c • 1).singularValues i`. By `Matrix.sep_comm` the unknown is a column
+`x`, on which the Sylvester operator is `x ↦ (T - c I) x` and the Frobenius norm is the Euclidean
+one; the least stretch is `σ_min` (`Matrix.iInf_singularValues_eq_iInf_norm`). (Column-indexed on
+purpose: `T - c • 1` is square, and `⨅` over its columns is `σ_min`.) -/
+theorem sep_eq_iInf_singularValues [DecidableEq n] (c : 𝕜) (T : Matrix n n 𝕜) :
+    sep (of fun _ _ => c : Matrix Unit Unit 𝕜) T = ⨅ i, (T - c • 1).singularValues i := by
+  rw [sep_comm, iInf_singularValues_eq_iInf_norm, sep]
+  let e : EuclideanSpace 𝕜 n ≃ Matrix n Unit 𝕜 :=
+    { toFun := fun x => replicateCol Unit (WithLp.ofLp x)
+      invFun := fun X => WithLp.toLp 2 fun i => X i ()
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  have hnorm : ∀ x, ‖e x‖ = ‖x‖ := fun x => frobenius_norm_replicateCol _
+  let e' : {x : EuclideanSpace 𝕜 n // ‖x‖ = 1} ≃ {X : Matrix n Unit 𝕜 // ‖X‖ = 1} :=
+    e.subtypeEquiv fun x => by rw [hnorm]
+  conv_lhs => rw [← e'.iInf_comp]
+  refine congrArg _ (funext fun x => ?_)
+  have hv : T * replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) -
+      replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) * of (fun _ _ => c) =
+        replicateCol Unit ((T - c • 1) *ᵥ WithLp.ofLp (x : EuclideanSpace 𝕜 n)) := by
+    ext i j
+    simp only [sub_mulVec, smul_mulVec, one_mulVec]
+    simp [mul_apply, mulVec, dotProduct, mul_comm]
+  change ‖T * replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) -
+      replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) * of (fun _ _ => c)‖ = _
+  rw [hv, frobenius_norm_replicateCol]
+  rfl
+
 end Sep
 
 end Matrix

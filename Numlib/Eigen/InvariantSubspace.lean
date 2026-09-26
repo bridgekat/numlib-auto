@@ -1,5 +1,6 @@
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+import Mathlib.LinearAlgebra.Matrix.ZPow
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Normed.Operator.QuadraticEquation
 import Numlib.Eigen.PowerMethod
@@ -60,7 +61,12 @@ hypothesis `d₀ = dist(D_r(A), ran Q₀) < 1`. That hypothesis is the wrong one
 theorem is false: for `A = [[2, 1], [0, 1]]`, `r = 1` and `Q₀ = (1, -1)/√2` (an eigenvector for
 `λ₂ = 1`), `d₀ = 1/√2 < 1` but `d_k = 1/√2` for all `k`. The corrected statement
 (`Matrix.gap_subspaceIterate_le_of_schur`, with the factor `d₀/√(1 - d̃₀²)`,
-`d̃₀ = dist(D_r(Aᴴ), ran Q₀)`) is planned on the graph transport above.
+`d̃₀ = dist(D_r(Aᴴ), ran Q₀)`) is proved without graphs or a CS decomposition: its
+coordinate-free core `Krylov.gap_subspaceIterate_le_of_isCompl` bounds `gap D (A^k S)` for
+complementary invariant `D`, `W` by the norm of the oblique projection onto `D` along `W`, the
+compression of `A^k` to `Dᗮ` and the inverse of `A^k` on `D`; in Schur coordinates these are
+`1 + ‖X‖₂` (`X` the Sylvester solution, `W = ran [X; I]`), `‖T₂₂^k‖₂` and `‖T₁₁^{-k}‖₂`, bounded by
+Lemma 7.3.2 and `‖X‖_F ≤ ‖T₁₂‖_F/sep`.
 
 Mathlib has invariant submodules (`Module.End.invtSubmodule`) and generalized eigenspaces, nothing
 on their perturbation; `Numlib/Eigen/PowerMethod` has the qualitative convergence of subspace
@@ -1057,6 +1063,140 @@ theorem gap_subspaceIterate_le (hA : A.IsSymmetric) {ι : Type*} [Fintype ι]
 
 end LinearMap.IsSymmetric
 
+namespace Krylov
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [FiniteDimensional 𝕜 E]
+
+/-- **Subspace iteration toward an invariant subspace with an invariant complement** (the
+coordinate-free core of [golub2013matrix] Theorem 7.3.1, corrected): let `D` and `W` be
+complementary `A`-invariant subspaces (not necessarily orthogonal), `S` of the dimension of `D` with
+`d̃₀ = gap Wᗮ S < 1`, and let `c`, `β`, `γ` bound the oblique projection onto `D` along `W`
+(`‖Π x‖ ≤ c ‖x‖`), the compression of `A^k` to `Dᗮ` (`‖P_{Dᗮ} A^k w‖ ≤ β ‖w‖` on `Dᗮ`) and the
+inverse of `A^k` on `D` (`‖u‖ ≤ γ ‖A^k u‖` on `D`). Then
+`gap D (A^k S) ≤ c β γ · gap D S / √(1 - d̃₀²)`.
+
+Write `s₀ ∈ S` as `u₀ + ω₀` along `D ⊕ W`. Then `P_{Wᗮ} s₀ = P_{Wᗮ} u₀`, so
+`√(1 - d̃₀²) ‖s₀‖ ≤ ‖u₀‖`; for `s = A^k s₀` the component along `D` is `A^k u₀`, so
+`‖u₀‖ ≤ γ c ‖s‖`; and `P_{Dᗮ} s = P_{Dᗮ} A^k P_{Dᗮ} s₀` (`D` is invariant), so
+`‖P_{Dᗮ} s‖ ≤ β ‖P_{Dᗮ} s₀‖ ≤ β · gap D S · ‖s₀‖`. The gap of equal-dimensional subspaces is the
+one-sided `‖P_{Dᗮ} P_{A^k S}‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`). No graph
+representation and no CS decomposition are needed. -/
+theorem gap_subspaceIterate_le_of_isCompl {A : E →ₗ[𝕜] E} {D W S : Submodule 𝕜 E}
+    (hD : ∀ x ∈ D, A x ∈ D) (hW : ∀ x ∈ W, A x ∈ W) (hDW : IsCompl D W)
+    (hdim : Module.finrank 𝕜 S = Module.finrank 𝕜 D) (h0 : Wᗮ.gap S < 1) (k : ℕ)
+    {c β γ : ℝ} (hc0 : 0 ≤ c) (hβ0 : 0 ≤ β) (hγ0 : 0 ≤ γ)
+    (hc : ∀ x, ‖Submodule.projection (p := D) (q := W) hDW x‖ ≤ c * ‖x‖)
+    (hβ : ∀ w ∈ Dᗮ, ‖Dᗮ.starProjection ((A ^ k) w)‖ ≤ β * ‖w‖)
+    (hγ : ∀ u ∈ D, ‖u‖ ≤ γ * ‖(A ^ k) u‖) :
+    D.gap (subspaceIterate A S k) ≤
+      c * β * γ * (D.gap S / Real.sqrt (1 - Wᗮ.gap S ^ 2)) := by
+  set d := D.gap S with hd
+  set d' := Wᗮ.gap S with hd'
+  have hd0 : 0 ≤ d := D.gap_nonneg S
+  have hd'0 : 0 ≤ d' := Wᗮ.gap_nonneg S
+  have hsq : 0 < Real.sqrt (1 - d' ^ 2) := Real.sqrt_pos.2 (by nlinarith)
+  set B := c * β * γ * (d / Real.sqrt (1 - d' ^ 2)) with hB
+  have hB0 : 0 ≤ B := by positivity
+  -- the two one-sided gaps of `S`
+  have hS1 : ∀ s ∈ S, ‖Dᗮ.starProjection s‖ ≤ d * ‖s‖ := fun s hs => by
+    have h := (Dᗮ.starProjection * S.starProjection).le_opNorm s
+    rw [mul_apply_eq_comp, Submodule.starProjection_eq_self_iff.2 hs] at h
+    refine h.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
+    rw [hd, Submodule.gap_comm]
+    exact S.norm_orthogonal_mul_le_gap D
+  have hS2 : ∀ s ∈ S, Real.sqrt (1 - d' ^ 2) * ‖s‖ ≤ ‖Wᗮ.starProjection s‖ := fun s hs => by
+    have h := (Wᗮᗮ.starProjection * S.starProjection).le_opNorm s
+    rw [mul_apply_eq_comp, Submodule.starProjection_eq_self_iff.2 hs] at h
+    have h1 : ‖Wᗮᗮ.starProjection s‖ ≤ d' * ‖s‖ := by
+      refine h.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
+      rw [hd', Submodule.gap_comm]
+      exact S.norm_orthogonal_mul_le_gap Wᗮ
+    have h2 := Submodule.norm_sq_eq_add_norm_sq_starProjection s Wᗮ
+    have h3 : (1 - d' ^ 2) * ‖s‖ ^ 2 ≤ ‖Wᗮ.starProjection s‖ ^ 2 := by
+      nlinarith [pow_le_pow_left₀ (norm_nonneg _) h1 2, norm_nonneg s]
+    rw [← Real.sqrt_sq (norm_nonneg (Wᗮ.starProjection s)), ← Real.sqrt_sq (norm_nonneg s),
+      ← Real.sqrt_mul (by nlinarith)]
+    exact Real.sqrt_le_sqrt (by nlinarith)
+  -- the key estimate for `s = A^k s₀`
+  have hkey : ∀ s₀ ∈ S, ‖Dᗮ.starProjection ((A ^ k) s₀)‖ ≤ B * ‖(A ^ k) s₀‖ ∧
+      ‖s₀‖ ≤ γ * c * ‖(A ^ k) s₀‖ / Real.sqrt (1 - d' ^ 2) := by
+    intro s₀ hs₀
+    set u₀ := Submodule.projection (p := D) (q := W) hDW s₀ with hu₀
+    set ω₀ := Submodule.projection (p := W) (q := D) hDW.symm s₀ with hω₀
+    have hu₀D : u₀ ∈ D := Submodule.projection_apply_mem (p := D) (q := W) hDW s₀
+    have hω₀W : ω₀ ∈ W := Submodule.projection_apply_mem (p := W) (q := D) hDW.symm s₀
+    have hsum : u₀ + ω₀ = s₀ :=
+      Submodule.projection_add_projection_eq_self (p := D) (q := W) hDW s₀
+    have hAu : (A ^ k) u₀ ∈ D := Module.End.pow_apply_mem_of_forall_mem k hD u₀ hu₀D
+    have hAω : (A ^ k) ω₀ ∈ W := Module.End.pow_apply_mem_of_forall_mem k hW ω₀ hω₀W
+    -- the component of `A^k s₀` along `D` is `A^k u₀`
+    have hPi : Submodule.projection (p := D) (q := W) hDW ((A ^ k) s₀) = (A ^ k) u₀ := by
+      rw [← hsum, map_add, map_add,
+        Submodule.projection_apply_of_mem_left (p := D) (q := W) hDW hAu,
+        (Submodule.projection_apply_eq_zero_iff (p := D) (q := W) hDW).2 hAω, add_zero]
+    -- `‖u₀‖ ≤ γ c ‖A^k s₀‖`
+    have hu : ‖u₀‖ ≤ γ * c * ‖(A ^ k) s₀‖ := by
+      calc ‖u₀‖ ≤ γ * ‖(A ^ k) u₀‖ := hγ u₀ hu₀D
+        _ ≤ γ * (c * ‖(A ^ k) s₀‖) := by
+            rw [← hPi]; exact mul_le_mul_of_nonneg_left (hc _) hγ0
+        _ = γ * c * ‖(A ^ k) s₀‖ := by ring
+    -- `√(1 - d̃₀²) ‖s₀‖ ≤ ‖u₀‖`
+    have hWu : Wᗮ.starProjection s₀ = Wᗮ.starProjection u₀ := by
+      have hω : Wᗮ.starProjection ω₀ = 0 :=
+        (Submodule.starProjection_apply_eq_zero_iff Wᗮ).2
+          (W.le_orthogonal_orthogonal hω₀W)
+      rw [← hsum, map_add, hω, add_zero]
+    have hsu : Real.sqrt (1 - d' ^ 2) * ‖s₀‖ ≤ ‖u₀‖ :=
+      (hS2 s₀ hs₀).trans (by rw [hWu]; exact Wᗮ.norm_starProjection_apply_le u₀)
+    have hsu' : ‖s₀‖ ≤ γ * c * ‖(A ^ k) s₀‖ / Real.sqrt (1 - d' ^ 2) := by
+      rw [le_div_iff₀ hsq, mul_comm]
+      exact hsu.trans hu
+    refine ⟨?_, hsu'⟩
+    -- `P_{Dᗮ} A^k s₀ = P_{Dᗮ} A^k P_{Dᗮ} s₀`
+    have hsplitD : s₀ = D.starProjection s₀ + Dᗮ.starProjection s₀ := by
+      rw [Submodule.starProjection_orthogonal_val]
+      abel
+    have hAD : (A ^ k) (D.starProjection s₀) ∈ D :=
+      Module.End.pow_apply_mem_of_forall_mem k hD _ (D.starProjection_apply_mem s₀)
+    have hPD : Dᗮ.starProjection ((A ^ k) s₀) =
+        Dᗮ.starProjection ((A ^ k) (Dᗮ.starProjection s₀)) := by
+      conv_lhs => rw [hsplitD]
+      rw [map_add, map_add, (Submodule.starProjection_apply_eq_zero_iff Dᗮ).2
+        (D.le_orthogonal_orthogonal hAD), zero_add]
+    calc ‖Dᗮ.starProjection ((A ^ k) s₀)‖
+        ≤ β * ‖Dᗮ.starProjection s₀‖ := by
+          rw [hPD]; exact hβ _ (Dᗮ.starProjection_apply_mem s₀)
+      _ ≤ β * (d * ‖s₀‖) := mul_le_mul_of_nonneg_left (hS1 s₀ hs₀) hβ0
+      _ ≤ β * (d * (γ * c * ‖(A ^ k) s₀‖ / Real.sqrt (1 - d' ^ 2))) :=
+          mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hsu' hd0) hβ0
+      _ = B * ‖(A ^ k) s₀‖ := by rw [hB]; ring
+  -- `A^k` is injective on `S`, so `A^k S` has the dimension of `D`
+  have hinj : Function.Injective ((A ^ k) ∘ₗ S.subtype) := by
+    intro x y hxy
+    have h1 := (hkey (x - y : S) (x - y : S).2).2
+    rw [Submodule.coe_sub, map_sub] at h1
+    have h2 : (A ^ k) (x : E) - (A ^ k) (y : E) = 0 := sub_eq_zero.2 hxy
+    rw [h2, norm_zero, mul_zero, zero_div] at h1
+    exact sub_eq_zero.1 (Subtype.ext (by
+      simpa using norm_le_zero_iff.1 h1))
+  have hdimk : Module.finrank 𝕜 (subspaceIterate A S k) = Module.finrank 𝕜 D := by
+    have h1 : subspaceIterate A S k = LinearMap.range ((A ^ k) ∘ₗ S.subtype) := by
+      rw [LinearMap.range_comp, Submodule.range_subtype]
+      rfl
+    rw [h1, LinearMap.finrank_range_of_inj hinj, hdim]
+  rw [Submodule.gap_comm, Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq _ D hdimk]
+  refine ContinuousLinearMap.opNorm_le_bound _ hB0 fun x => ?_
+  rw [mul_apply_eq_comp]
+  obtain ⟨s₀, hs₀, hs⟩ :=
+    mem_subspaceIterate.1 ((subspaceIterate A S k).starProjection_apply_mem x)
+  have h := (hkey s₀ hs₀).1
+  rw [hs] at h
+  exact h.trans (mul_le_mul_of_nonneg_left
+    ((subspaceIterate A S k).norm_starProjection_apply_le x) hB0)
+
+end Krylov
+
 namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
@@ -1120,5 +1260,521 @@ theorem gap_range_fromRows_le (P : Matrix n m 𝕜) :
     _ ≤ lpOpNorm 2 P * ‖G.starProjection z‖ := mul_le_mul_of_nonneg_left hxg (lpOpNorm_nonneg _ _)
     _ ≤ lpOpNorm 2 P * ‖z‖ :=
         mul_le_mul_of_nonneg_left (G.norm_starProjection_apply_le z) (lpOpNorm_nonneg _ _)
+
+end Matrix
+
+/-! ### Orthogonal iteration from a Schur form: [golub2013matrix] Theorem 7.3.1, corrected -/
+
+namespace Matrix
+
+section OrthogonalIteration
+
+open scoped Matrix.Norms.Frobenius
+
+variable {r s : ℕ}
+
+/-- A vector of `EuclideanSpace` on `p ⊕ q` from its two blocks. -/
+private noncomputable abbrev blk {p q : Type*} (u : EuclideanSpace ℂ p) (w : EuclideanSpace ℂ q) :
+    EuclideanSpace ℂ (p ⊕ q) :=
+  WithLp.toLp 2 (Sum.elim (WithLp.ofLp u) (WithLp.ofLp w))
+
+/-- The first block of a vector on `p ⊕ q`. -/
+private noncomputable abbrev fstB {p q : Type*} (x : EuclideanSpace ℂ (p ⊕ q)) :
+    EuclideanSpace ℂ p :=
+  WithLp.toLp 2 (WithLp.ofLp x ∘ Sum.inl)
+
+/-- The second block of a vector on `p ⊕ q`. -/
+private noncomputable abbrev sndB {p q : Type*} (x : EuclideanSpace ℂ (p ⊕ q)) :
+    EuclideanSpace ℂ q :=
+  WithLp.toLp 2 (WithLp.ofLp x ∘ Sum.inr)
+
+private theorem blk_fstB_sndB {p q : Type*} (x : EuclideanSpace ℂ (p ⊕ q)) :
+    blk (fstB x) (sndB x) = x := by
+  ext (i | i) <;> rfl
+
+private theorem norm_blk_sq {p q : Type*} [Fintype p] [Fintype q] (u : EuclideanSpace ℂ p)
+    (w : EuclideanSpace ℂ q) : ‖blk u w‖ ^ 2 = ‖u‖ ^ 2 + ‖w‖ ^ 2 := by
+  simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl, Sum.elim_inr]
+
+private theorem norm_fstB_le {p q : Type*} [Fintype p] [Fintype q]
+    (x : EuclideanSpace ℂ (p ⊕ q)) : ‖fstB x‖ ≤ ‖x‖ := by
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  conv_rhs => rw [← blk_fstB_sndB x, norm_blk_sq]
+  nlinarith [sq_nonneg ‖sndB x‖]
+
+private theorem norm_sndB_le {p q : Type*} [Fintype p] [Fintype q]
+    (x : EuclideanSpace ℂ (p ⊕ q)) : ‖sndB x‖ ≤ ‖x‖ := by
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  conv_rhs => rw [← blk_fstB_sndB x, norm_blk_sq]
+  nlinarith [sq_nonneg ‖fstB x‖]
+
+private theorem inner_blk {p q : Type*} [Fintype p] [Fintype q] (u u' : EuclideanSpace ℂ p)
+    (w w' : EuclideanSpace ℂ q) :
+    inner ℂ (blk u w) (blk u' w') = inner ℂ u u' + inner ℂ w w' := by
+  simp only [EuclideanSpace.inner_eq_star_dotProduct, dotProduct, Fintype.sum_sum_type,
+    Sum.elim_inl, Sum.elim_inr]
+  rfl
+
+private theorem blk_add {p q : Type*} (u u' : EuclideanSpace ℂ p) (w w' : EuclideanSpace ℂ q) :
+    blk (u + u') (w + w') = blk u w + blk u' w' := by
+  ext (i | i) <;> rfl
+
+private theorem norm_blk_zero_right {p q : Type*} [Fintype p] [Fintype q]
+    (u : EuclideanSpace ℂ p) : ‖blk u (0 : EuclideanSpace ℂ q)‖ = ‖u‖ := by
+  rw [← Real.sqrt_sq (norm_nonneg (blk u _)), norm_blk_sq, norm_zero, zero_pow two_ne_zero,
+    add_zero, Real.sqrt_sq (norm_nonneg _)]
+
+private theorem norm_blk_zero_left {p q : Type*} [Fintype p] [Fintype q]
+    (w : EuclideanSpace ℂ q) : ‖blk (0 : EuclideanSpace ℂ p) w‖ = ‖w‖ := by
+  rw [← Real.sqrt_sq (norm_nonneg (blk _ w)), norm_blk_sq, norm_zero, zero_pow two_ne_zero,
+    zero_add, Real.sqrt_sq (norm_nonneg _)]
+
+private theorem toEuclideanLin_fromRows_apply {p q k : Type*} [Fintype k] [DecidableEq k]
+    (A₁ : Matrix p k ℂ) (A₂ : Matrix q k ℂ) (y : EuclideanSpace ℂ k) :
+    toEuclideanLin (fromRows A₁ A₂) y = blk (toEuclideanLin A₁ y) (toEuclideanLin A₂ y) := by
+  ext (i | i) <;> rfl
+
+private theorem toEuclideanLin_fromBlocks_apply {p q : Type*} [Fintype p] [Fintype q]
+    [DecidableEq p] [DecidableEq q] (M₁₁ : Matrix p p ℂ) (M₁₂ : Matrix p q ℂ) (M₂₁ : Matrix q p ℂ)
+    (M₂₂ : Matrix q q ℂ) (u : EuclideanSpace ℂ p) (w : EuclideanSpace ℂ q) :
+    toEuclideanLin (fromBlocks M₁₁ M₁₂ M₂₁ M₂₂) (blk u w) =
+      blk (toEuclideanLin M₁₁ u + toEuclideanLin M₁₂ w)
+        (toEuclideanLin M₂₁ u + toEuclideanLin M₂₂ w) := by
+  ext (i | i) <;> simp [toEuclideanLin_apply, fromBlocks_mulVec]
+
+/-- The powers of a block upper triangular matrix are block upper triangular, with the powers
+of the diagonal blocks on the diagonal. -/
+private theorem exists_fromBlocks_pow {p q : Type*} [Fintype p] [Fintype q] [DecidableEq p]
+    [DecidableEq q] (M₁₁ : Matrix p p ℂ) (M₁₂ : Matrix p q ℂ) (M₂₂ : Matrix q q ℂ) (k : ℕ) :
+    ∃ Y, fromBlocks M₁₁ M₁₂ 0 M₂₂ ^ k = fromBlocks (M₁₁ ^ k) Y 0 (M₂₂ ^ k) := by
+  induction k with
+  | zero => exact ⟨0, by rw [pow_zero, pow_zero, pow_zero, fromBlocks_one]⟩
+  | succ k ih =>
+    obtain ⟨Y, hY⟩ := ih
+    refine ⟨M₁₁ ^ k * M₁₂ + Y * M₂₂, ?_⟩
+    rw [pow_succ, hY, fromBlocks_multiply, pow_succ, pow_succ]
+    simp
+
+private theorem norm_toEuclideanLin_le_lpOpNorm {p q : Type*} [Fintype p] [Fintype q]
+    [DecidableEq q] (M : Matrix p q ℂ) (y : EuclideanSpace ℂ q) :
+    ‖toEuclideanLin M y‖ ≤ lpOpNorm 2 M * ‖y‖ :=
+  (lpCLM 2 M).le_opNorm y
+
+/-- A triangular matrix has only its diagonal entries as eigenvalues. -/
+private theorem exists_eq_of_mem_spectrum_of_isUpperTriangular {k : ℕ}
+    {T : Matrix (Fin k) (Fin k) ℂ} (hT : T.IsUpperTriangular) {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ T) : ∃ i, T i i = μ := by
+  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
+    isUnit_iff_ne_zero, not_not] at hμ
+  have htri : (μ • (1 : Matrix (Fin k) (Fin k) ℂ) - T).IsUpperTriangular := fun i j hij => by
+    have hji : j < i := hij
+    rw [sub_apply, smul_apply, one_apply_ne (ne_of_lt hji).symm, hT hji, smul_zero, sub_zero]
+  rw [det_of_isUpperTriangular htri, Finset.prod_eq_zero_iff] at hμ
+  obtain ⟨i, -, hi⟩ := hμ
+  refine ⟨i, ?_⟩
+  simp only [sub_apply, smul_apply, one_apply_eq, smul_eq_mul, mul_one] at hi
+  exact (sub_eq_zero.1 hi).symm
+
+/-- The block form of the corrected Theorem 7.3.1: in `EuclideanSpace ℂ (Fin r ⊕ Fin s)`, for
+`M = [T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` invertible and `X` solving `T₁₁ X - X T₂₂ = -T₁₂`, the ranges
+`D = ran [I; 0]`, `W = ran [X; I]` are complementary invariant subspaces, `Wᗮ = D' = ran [I; -Xᴴ]`,
+and `Krylov.gap_subspaceIterate_le_of_isCompl` applies with `c = 1 + ‖X‖₂`, `β = ‖T₂₂^k‖₂`,
+`γ = ‖T₁₁^{-k}‖₂`. -/
+private theorem gap_subspaceIterate_le_of_blocks {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
+    {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ} (hT₁₁ : IsUnit T₁₁)
+    {X : Matrix (Fin r) (Fin s) ℂ} (hX : T₁₁ * X - X * T₂₂ = -T₁₂)
+    {S : Submodule ℂ (EuclideanSpace ℂ (Fin r ⊕ Fin s))} (hdim : Module.finrank ℂ S = r)
+    (h0 : (LinearMap.range (toEuclideanLin
+      (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)))).gap S < 1) (k : ℕ) :
+    (LinearMap.range (toEuclideanLin
+      (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (0 : Matrix (Fin s) (Fin r) ℂ)))).gap
+        (Krylov.subspaceIterate (toEuclideanLin (fromBlocks T₁₁ T₁₂ 0 T₂₂)) S k) ≤
+      (1 + lpOpNorm 2 X) * lpOpNorm 2 (T₂₂ ^ k) * lpOpNorm 2 (T₁₁⁻¹ ^ k) *
+        ((LinearMap.range (toEuclideanLin
+          (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (0 : Matrix (Fin s) (Fin r) ℂ)))).gap S /
+          Real.sqrt (1 - (LinearMap.range (toEuclideanLin
+            (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)))).gap S ^ 2)) := by
+  set B := toEuclideanLin (fromBlocks T₁₁ T₁₂ 0 T₂₂) with hB
+  set D := LinearMap.range (toEuclideanLin
+    (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (0 : Matrix (Fin s) (Fin r) ℂ))) with hD
+  set W := LinearMap.range (toEuclideanLin
+    (fromRows X (1 : Matrix (Fin s) (Fin s) ℂ))) with hW
+  set D' := LinearMap.range (toEuclideanLin
+    (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ))) with hD'
+  have hXT : T₁₁ * X + T₁₂ = X * T₂₂ := by
+    rw [← sub_eq_zero, show T₁₁ * X + T₁₂ - X * T₂₂ = (T₁₁ * X - X * T₂₂) + T₁₂ by abel, hX,
+      neg_add_cancel]
+  -- membership in `D` and `W`
+  have hmemD : ∀ x, x ∈ D ↔ sndB x = 0 := fun x => by
+    constructor
+    · rintro ⟨y, rfl⟩
+      rw [toEuclideanLin_fromRows_apply, map_zero]
+      rfl
+    · intro hx
+      refine ⟨fstB x, ?_⟩
+      rw [toEuclideanLin_fromRows_apply, toEuclideanLin_one, LinearMap.id_apply,
+        map_zero, LinearMap.zero_apply, ← hx, blk_fstB_sndB]
+  have hblkD : ∀ y, blk y (0 : EuclideanSpace ℂ (Fin s)) ∈ D := fun y =>
+    (hmemD _).2 rfl
+  have hblkW : ∀ z, blk (toEuclideanLin X z) z ∈ W := fun z =>
+    ⟨z, by rw [toEuclideanLin_fromRows_apply, toEuclideanLin_one, LinearMap.id_apply]⟩
+  -- invariance
+  have hBblk : ∀ u w, B (blk u w) = blk (toEuclideanLin T₁₁ u + toEuclideanLin T₁₂ w)
+      (toEuclideanLin T₂₂ w) := fun u w => by
+    rw [hB, toEuclideanLin_fromBlocks_apply, map_zero, LinearMap.zero_apply, zero_add]
+  have hDinv : ∀ x ∈ D, B x ∈ D := fun x hx => by
+    rw [hmemD] at hx ⊢
+    rw [← blk_fstB_sndB x, hx, hBblk, map_zero, map_zero]
+    rfl
+  have hWinv : ∀ x ∈ W, B x ∈ W := by
+    rintro _ ⟨z, rfl⟩
+    refine ⟨toEuclideanLin T₂₂ z, ?_⟩
+    rw [toEuclideanLin_fromRows_apply, toEuclideanLin_fromRows_apply, toEuclideanLin_one,
+      LinearMap.id_apply, LinearMap.id_apply, hBblk, ← toEuclideanLin_mul_apply,
+      ← toEuclideanLin_mul_apply, ← LinearMap.add_apply, ← map_add, hXT]
+  -- the decomposition along `D ⊕ W`
+  have hdec : ∀ x, x = blk (fstB x - toEuclideanLin X (sndB x)) 0 +
+      blk (toEuclideanLin X (sndB x)) (sndB x) := fun x => by
+    rw [← blk_add, sub_add_cancel, zero_add, blk_fstB_sndB]
+  have hDW : IsCompl D W := by
+    constructor
+    · rw [Submodule.disjoint_def]
+      intro x hxD hxW
+      obtain ⟨z, rfl⟩ := hxW
+      rw [hmemD, toEuclideanLin_fromRows_apply, toEuclideanLin_one, LinearMap.id_apply] at hxD
+      have hz : z = 0 := hxD
+      rw [hz, map_zero]
+    · rw [codisjoint_iff, eq_top_iff]
+      intro x _
+      rw [hdec x]
+      exact Submodule.add_mem_sup (hblkD _) (hblkW _)
+  -- `Wᗮ = D'`
+  have hfinW : Module.finrank ℂ W = s := by
+    rw [hW, LinearMap.finrank_range_of_inj, finrank_euclideanSpace_fin]
+    intro z z' h
+    have := congrArg sndB h
+    rwa [toEuclideanLin_fromRows_apply, toEuclideanLin_fromRows_apply, toEuclideanLin_one,
+      LinearMap.id_apply, LinearMap.id_apply] at this
+  have hfinD : Module.finrank ℂ D = r := by
+    rw [hD, LinearMap.finrank_range_of_inj, finrank_euclideanSpace_fin]
+    intro z z' h
+    have := congrArg fstB h
+    rwa [toEuclideanLin_fromRows_apply, toEuclideanLin_fromRows_apply, toEuclideanLin_one,
+      LinearMap.id_apply, LinearMap.id_apply] at this
+  have hfinD' : Module.finrank ℂ D' = r := by
+    rw [hD', LinearMap.finrank_range_of_inj, finrank_euclideanSpace_fin]
+    intro z z' h
+    have := congrArg fstB h
+    rwa [toEuclideanLin_fromRows_apply, toEuclideanLin_fromRows_apply, toEuclideanLin_one,
+      LinearMap.id_apply, LinearMap.id_apply] at this
+  have hWD' : Wᗮ = D' := by
+    symm
+    refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
+    · rintro _ ⟨y, rfl⟩
+      rw [Submodule.mem_orthogonal]
+      rintro _ ⟨z, rfl⟩
+      simp only [toEuclideanLin_fromRows_apply, toEuclideanLin_one, LinearMap.id_apply]
+      rw [inner_blk, map_neg, LinearMap.neg_apply, inner_neg_right,
+        toEuclideanLin_conjTranspose_inner_right, add_neg_cancel]
+    · have h := Submodule.finrank_add_finrank_orthogonal W
+      rw [finrank_euclideanSpace, Fintype.card_sum, Fintype.card_fin, Fintype.card_fin,
+        hfinW] at h
+      rw [hfinD']
+      omega
+  -- the power of `B` on the two blocks
+  obtain ⟨Y, hY⟩ := exists_fromBlocks_pow T₁₁ T₁₂ T₂₂ k
+  have hBk : ∀ u w, (B ^ k) (blk u w) = blk (toEuclideanLin (T₁₁ ^ k) u +
+      toEuclideanLin Y w) (toEuclideanLin (T₂₂ ^ k) w) := fun u w => by
+    rw [hB, ← toEuclideanLin_pow, hY, toEuclideanLin_fromBlocks_apply, map_zero,
+      LinearMap.zero_apply, zero_add]
+  -- the constants
+  have hc : ∀ x, ‖Submodule.projection (p := D) (q := W) hDW x‖ ≤ (1 + lpOpNorm 2 X) * ‖x‖ := by
+    intro x
+    have hPix : Submodule.projection (p := D) (q := W) hDW x =
+        blk (fstB x - toEuclideanLin X (sndB x)) 0 := by
+      conv_lhs => rw [hdec x]
+      rw [map_add, Submodule.projection_apply_of_mem_left (p := D) (q := W) hDW (hblkD _),
+        (Submodule.projection_apply_eq_zero_iff (p := D) (q := W) hDW).2 (hblkW _), add_zero]
+    rw [hPix]
+    rw [norm_blk_zero_right]
+    calc ‖fstB x - toEuclideanLin X (sndB x)‖ ≤ ‖fstB x‖ + lpOpNorm 2 X * ‖sndB x‖ :=
+          (norm_sub_le _ _).trans (add_le_add le_rfl (norm_toEuclideanLin_le_lpOpNorm X _))
+      _ ≤ ‖x‖ + lpOpNorm 2 X * ‖x‖ :=
+          add_le_add (norm_fstB_le x)
+            (mul_le_mul_of_nonneg_left (norm_sndB_le x) (lpOpNorm_nonneg 2 X))
+      _ = (1 + lpOpNorm 2 X) * ‖x‖ := by ring
+  have hprojDo : ∀ x, Dᗮ.starProjection x = blk 0 (sndB x) := fun x => by
+    refine Submodule.eq_starProjection_of_mem_of_inner_eq_zero ?_ fun w hw => ?_
+    · rw [Submodule.mem_orthogonal]
+      intro y hy
+      rw [hmemD] at hy
+      rw [← blk_fstB_sndB y, hy, inner_blk, inner_zero_right, inner_zero_left, add_zero]
+    · have hx : x - blk 0 (sndB x) = blk (fstB x) 0 := by
+        rw [sub_eq_iff_eq_add, ← blk_add, add_zero, zero_add, blk_fstB_sndB]
+      rw [hx]
+      exact Submodule.inner_right_of_mem_orthogonal (hblkD _) hw
+  have hβ : ∀ w ∈ Dᗮ, ‖Dᗮ.starProjection ((B ^ k) w)‖ ≤ lpOpNorm 2 (T₂₂ ^ k) * ‖w‖ := by
+    intro w _
+    have hw : (B ^ k) w = blk (toEuclideanLin (T₁₁ ^ k) (fstB w) + toEuclideanLin Y (sndB w))
+        (toEuclideanLin (T₂₂ ^ k) (sndB w)) := by
+      conv_lhs => rw [← blk_fstB_sndB w]
+      exact hBk _ _
+    rw [hprojDo, hw, norm_blk_zero_left]
+    exact (norm_toEuclideanLin_le_lpOpNorm _ _).trans
+      (mul_le_mul_of_nonneg_left (norm_sndB_le w) (lpOpNorm_nonneg 2 _))
+  have hγ : ∀ u ∈ D, ‖u‖ ≤ lpOpNorm 2 (T₁₁⁻¹ ^ k) * ‖(B ^ k) u‖ := by
+    intro u hu
+    rw [hmemD] at hu
+    have hu' : blk (fstB u) (0 : EuclideanSpace ℂ (Fin s)) = u := by rw [← hu, blk_fstB_sndB]
+    have hBu : (B ^ k) u = blk (toEuclideanLin (T₁₁ ^ k) (fstB u)) 0 := by
+      conv_lhs => rw [← hu']
+      rw [hBk, map_zero, map_zero, add_zero]
+    have hinv : T₁₁⁻¹ ^ k * T₁₁ ^ k = 1 := by
+      rw [inv_pow', nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 (hT₁₁.pow k))]
+    calc ‖u‖ = ‖fstB u‖ := by
+          conv_lhs => rw [← hu']
+          exact norm_blk_zero_right _
+      _ = ‖toEuclideanLin (T₁₁⁻¹ ^ k) (toEuclideanLin (T₁₁ ^ k) (fstB u))‖ := by
+          rw [← toEuclideanLin_mul_apply, hinv, toEuclideanLin_one, LinearMap.id_apply]
+      _ ≤ lpOpNorm 2 (T₁₁⁻¹ ^ k) * ‖toEuclideanLin (T₁₁ ^ k) (fstB u)‖ :=
+          norm_toEuclideanLin_le_lpOpNorm _ _
+      _ = lpOpNorm 2 (T₁₁⁻¹ ^ k) * ‖(B ^ k) u‖ := by rw [hBu, norm_blk_zero_right]
+  have hc0 : 0 ≤ 1 + lpOpNorm 2 X := by linarith [lpOpNorm_nonneg 2 X]
+  have key : ∀ (K K' : Submodule ℂ (EuclideanSpace ℂ (Fin r ⊕ Fin s)))
+      [K.HasOrthogonalProjection] [K'.HasOrthogonalProjection], K = K' → K.gap S = K'.gap S := by
+    intro K K' _ _ h
+    subst h
+    rfl
+  have hgW : Wᗮ.gap S = D'.gap S := key _ _ hWD'
+  have h0' : Wᗮ.gap S < 1 := by rw [hgW]; exact h0
+  refine (Krylov.gap_subspaceIterate_le_of_isCompl hDinv hWinv hDW (hdim.trans hfinD.symm) h0' k
+    hc0 (lpOpNorm_nonneg 2 _) (lpOpNorm_nonneg 2 _) hc hβ hγ).trans (le_of_eq ?_)
+  rw [hgW]
+
+/-- Congruence for the gap, across the orthogonal-projection instances. -/
+private theorem gap_congr' {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+    {K K' L L' : Submodule ℂ E} [K.HasOrthogonalProjection] [K'.HasOrthogonalProjection]
+    [L.HasOrthogonalProjection] [L'.HasOrthogonalProjection] (hK : K = K') (hL : L = L') :
+    K.gap L = K'.gap L' := by
+  subst hK hL
+  rfl
+
+/-- **Orthogonal iteration converges to the dominant invariant subspace** ([golub2013matrix]
+Theorem 7.3.1, corrected). Let `Q` be unitary with `Qᴴ A Q` reindexed along `e` equal to the block
+triangular `[T₁₁ T₁₂; 0 T₂₂]` (`T₁₁` of size `r`, `0 < r < n`), both diagonal blocks upper
+triangular, `|t_ii| ≥ a` on `T₁₁`, `|t_jj| ≤ b < a` on `T₂₂`, the strictly upper parts of both
+blocks of Frobenius norm at most `ν`, `μ ≥ 0` with `ν < (1 + μ) a`, and `X` the solution of
+`T₁₁ X - X T₂₂ = -T₁₂`. Let `D = ran Q [I; 0]` (the dominant invariant subspace `D_r(A)`),
+`D' = ran Q [I; -Xᴴ]` (the book's `D_r(Aᴴ)`, the orthogonal complement of the complementary
+invariant subspace `ran Q [X; I]`), and `S₀` of dimension `r` with `d̃₀ = dist(D', S₀) < 1`. Then
+for every `k`,
+`dist(D, A^k S₀) ≤ (1 + μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂))
+  ((b + ν/(1+μ)) / (a - ν/(1+μ)))^k · dist(D, S₀) / √(1 - d̃₀²)`.
+The book's statement, with `a = |λ_r|`, `b = |λ_{r+1}|`, `ν = ‖N‖_F`, assumes `dist(D, S₀) < 1`
+instead of `d̃₀ < 1` and is false (see the module doc); its proof uses `d̃₀`, and so does this one.
+The block computation is `Matrix.gap_subspaceIterate_le_of_blocks`-shaped: the coordinate-free
+`Krylov.gap_subspaceIterate_le_of_isCompl` with the powers bounded by Lemma 7.3.2
+(`Matrix.l2_opNorm_pow_le_of_schur`, `Matrix.l2_opNorm_inv_pow_le_of_schur`) and
+`‖X‖_F ≤ ‖T₁₂‖_F / sep` (`Matrix.frobenius_norm_le_div_sep`), transported by the isometry
+`y ↦ Q (y ∘ e)` (`Submodule.gap_map_linearIsometryEquiv`). -/
+theorem gap_subspaceIterate_le_of_schur {n r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ}
+    (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (e : Fin n ≃ Fin r ⊕ Fin (n - r))
+    {T₁₁ : Matrix (Fin r) (Fin r) ℂ} {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ}
+    {T₂₂ : Matrix (Fin (n - r)) (Fin (n - r)) ℂ}
+    (hT : (star Q * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂)
+    (hT₁₁ : T₁₁.IsUpperTriangular) (hT₂₂ : T₂₂.IsUpperTriangular) (hr : 0 < r) (hrn : r < n)
+    {a b ν μ : ℝ} (hμ : 0 ≤ μ) (ha : ∀ i, a ≤ ‖T₁₁ i i‖) (hb : ∀ j, ‖T₂₂ j j‖ ≤ b)
+    (hab : b < a) (hν₁ : ‖strictUpper T₁₁‖ ≤ ν) (hν₂ : ‖strictUpper T₂₂‖ ≤ ν)
+    (hνa : ν < (1 + μ) * a) {X : Matrix (Fin r) (Fin (n - r)) ℂ}
+    (hX : T₁₁ * X - X * T₂₂ = -T₁₂) {S₀ : Submodule ℂ (EuclideanSpace ℂ (Fin n))}
+    (hdim : Module.finrank ℂ S₀ = r)
+    (h0 : (LinearMap.range (toEuclideanLin
+      (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap S₀ < 1)
+    (k : ℕ) :
+    (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+        (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap
+        (Krylov.subspaceIterate (toEuclideanLin A) S₀ k) ≤
+      (1 + μ) ^ (n - 2) * (1 + ‖T₁₂‖ / sep T₁₁ T₂₂) *
+        ((b + ν / (1 + μ)) / (a - ν / (1 + μ))) ^ k *
+        ((LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+          (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap S₀ /
+          Real.sqrt (1 - (LinearMap.range (toEuclideanLin
+            (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap S₀ ^ 2)) :=
+    by
+  have hsp0 : 0 < n - r := by omega
+  have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
+  have : Nonempty (Fin (n - r)) := ⟨⟨0, hsp0⟩⟩
+  have h1μ : 0 < 1 + μ := by linarith
+  have hb0 : 0 ≤ b := (norm_nonneg _).trans (hb ⟨0, hsp0⟩)
+  have ha0 : 0 < a := lt_of_le_of_lt hb0 hab
+  -- `T₁₁` is invertible and the spectra are disjoint
+  have hT₁₁u : IsUnit T₁₁ := by
+    rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hT₁₁, isUnit_iff_ne_zero,
+      Finset.prod_ne_zero_iff]
+    intro i _ h
+    have := ha i
+    rw [h, norm_zero] at this
+    linarith
+  have hsep : 0 < sep T₁₁ T₂₂ := by
+    rw [sep_pos_iff_disjoint_spectrum]
+    rw [Set.disjoint_left]
+    intro μ' h₁ h₂
+    obtain ⟨i, hi⟩ := exists_eq_of_mem_spectrum_of_isUpperTriangular hT₁₁ h₁
+    obtain ⟨j, hj⟩ := exists_eq_of_mem_spectrum_of_isUpperTriangular hT₂₂ h₂
+    have := ha i
+    rw [hi, ← hj] at this
+    linarith [hb j]
+  -- the isometry `y ↦ Q (y ∘ e)`
+  set Φ : EuclideanSpace ℂ (Fin r ⊕ Fin (n - r)) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Fin n) :=
+    (LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ e.symm).trans (unitaryLinearIsometryEquiv hQ)
+    with hΦ
+  have hΦapp : ∀ {κ : Type} [Fintype κ] [DecidableEq κ] (M : Matrix (Fin r ⊕ Fin (n - r)) κ ℂ)
+      (y : EuclideanSpace ℂ κ),
+      Φ (toEuclideanLin M y) = toEuclideanLin (Q * M.submatrix e id) y := by
+    intro κ _ _ M y
+    rw [hΦ, LinearIsometryEquiv.trans_apply, unitaryLinearIsometryEquiv_apply,
+      toEuclideanLin_mul_apply]
+    congr 1
+  -- `A` is conjugate to the block matrix
+  have h3 : fromBlocks T₁₁ T₁₂ 0 T₂₂ = (star Q * A * Q).submatrix e.symm e.symm := by
+    rw [← hT]
+    rfl
+  set M := fromBlocks T₁₁ T₁₂ 0 T₂₂ with hM
+  have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.1 hQ
+  have hAQ : A * Q = Q * (star Q * A * Q) := by
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hQQ, Matrix.one_mul]
+  have hconj : ∀ y, toEuclideanLin A (Φ y) = Φ (toEuclideanLin M y) := by
+    intro y
+    have h1 : Φ y = toEuclideanLin Q (WithLp.toLp 2 (WithLp.ofLp y ∘ e)) := by
+      rw [hΦ, LinearIsometryEquiv.trans_apply, unitaryLinearIsometryEquiv_apply]
+      rfl
+    have h2 : Φ (toEuclideanLin M y) =
+        toEuclideanLin Q (WithLp.toLp 2 (WithLp.ofLp (toEuclideanLin M y) ∘ e)) := by
+      rw [hΦ, LinearIsometryEquiv.trans_apply, unitaryLinearIsometryEquiv_apply]
+      rfl
+    rw [h1, h2, ← toEuclideanLin_mul_apply, hAQ, toEuclideanLin_mul_apply]
+    congr 1
+    rw [h3]
+    ext i
+    simp
+    rfl
+  have hconjk : ∀ j y, (toEuclideanLin A ^ j) (Φ y) = Φ ((toEuclideanLin M ^ j) y) := by
+    intro j
+    induction j with
+    | zero => intro y; rfl
+    | succ j ih =>
+      intro y
+      rw [pow_succ', Module.End.mul_apply, ih, hconj, pow_succ', Module.End.mul_apply]
+  -- transport of the subspaces
+  set L : EuclideanSpace ℂ (Fin r ⊕ Fin (n - r)) →ₗ[ℂ] EuclideanSpace ℂ (Fin n) :=
+    (Φ.toLinearEquiv : EuclideanSpace ℂ (Fin r ⊕ Fin (n - r)) →ₗ[ℂ] EuclideanSpace ℂ (Fin n))
+    with hL
+  have hrange : ∀ {κ : Type} [Fintype κ] [DecidableEq κ] (N : Matrix (Fin r ⊕ Fin (n - r)) κ ℂ),
+      LinearMap.range (toEuclideanLin (Q * N.submatrix e id)) =
+        (LinearMap.range (toEuclideanLin N)).map L := by
+    intro κ _ _ N
+    rw [← LinearMap.range_comp]
+    congr 1
+    exact LinearMap.ext fun y => (hΦapp N y).symm
+  set S := S₀.map (Φ.symm.toLinearEquiv :
+    EuclideanSpace ℂ (Fin n) →ₗ[ℂ] EuclideanSpace ℂ (Fin r ⊕ Fin (n - r))) with hSdef
+  have hSmap : S.map L = S₀ := by
+    rw [hSdef, ← Submodule.map_comp]
+    convert Submodule.map_id S₀
+    exact LinearMap.ext fun x => Φ.apply_symm_apply x
+  have hiter : Krylov.subspaceIterate (toEuclideanLin A) S₀ k =
+      (Krylov.subspaceIterate (toEuclideanLin M) S k).map L := by
+    ext x
+    rw [Krylov.mem_subspaceIterate, Submodule.mem_map]
+    constructor
+    · rintro ⟨y, hy, rfl⟩
+      refine ⟨(toEuclideanLin M ^ k) (Φ.symm y), ?_, ?_⟩
+      · rw [Krylov.mem_subspaceIterate]
+        exact ⟨Φ.symm y, ⟨y, hy, rfl⟩, rfl⟩
+      · change Φ _ = _
+        rw [← hconjk k, Φ.apply_symm_apply]
+    · rintro ⟨z, hz, rfl⟩
+      rw [Krylov.mem_subspaceIterate] at hz
+      obtain ⟨t, ⟨y, hy, rfl⟩, rfl⟩ := hz
+      refine ⟨y, hy, ?_⟩
+      change _ = Φ _
+      rw [← hconjk k]
+      exact congrArg _ (Φ.apply_symm_apply y).symm
+  have hdimS : Module.finrank ℂ S = r := by
+    rw [hSdef, LinearEquiv.finrank_map_eq, hdim]
+  -- the gaps in block coordinates
+  have hgap1 : (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+      (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap
+        (Krylov.subspaceIterate (toEuclideanLin A) S₀ k) =
+      (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+        (0 : Matrix (Fin (n - r)) (Fin r) ℂ)))).gap
+        (Krylov.subspaceIterate (toEuclideanLin M) S k) := by
+    exact (gap_congr' (hrange _) hiter).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+  have hgap2 : (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+      (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix e id))).gap S₀ =
+      (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+        (0 : Matrix (Fin (n - r)) (Fin r) ℂ)))).gap S := by
+    exact (gap_congr' (hrange _) hSmap.symm).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+  have hgap3 : (LinearMap.range (toEuclideanLin
+      (Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)).submatrix e id))).gap S₀ =
+      (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)))).gap S := by
+    exact (gap_congr' (hrange _) hSmap.symm).trans (Submodule.gap_map_linearIsometryEquiv Φ _ _)
+  rw [hgap1, hgap2, hgap3]
+  rw [hgap3] at h0
+  refine (gap_subspaceIterate_le_of_blocks hT₁₁u hX hdimS h0 k).trans ?_
+  -- the constants
+  set Qf := (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+    (0 : Matrix (Fin (n - r)) (Fin r) ℂ)))).gap S / Real.sqrt (1 - (LinearMap.range
+      (toEuclideanLin (fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (-Xᴴ)))).gap S ^ 2) with hQf
+  have hQf0 : 0 ≤ Qf := div_nonneg (Submodule.gap_nonneg _ _) (Real.sqrt_nonneg _)
+  have hXn : lpOpNorm 2 X ≤ ‖T₁₂‖ / sep T₁₁ T₂₂ := by
+    refine (l2_opNorm_le_frobenius_norm X).trans ?_
+    have h := frobenius_norm_le_div_sep hsep X
+    rwa [hX, norm_neg] at h
+  set Bs := b + ν / (1 + μ) with hBs
+  set As := a - ν / (1 + μ) with hAs
+  have hAs0 : 0 < As := by
+    rw [hAs, sub_pos, div_lt_iff₀ h1μ]
+    linarith
+  have hν0 : 0 ≤ ν := (norm_nonneg _).trans hν₁
+  have hBs0 : 0 ≤ Bs := add_nonneg hb0 (div_nonneg hν0 h1μ.le)
+  have hβ' : lpOpNorm 2 (T₂₂ ^ k) ≤ (1 + μ) ^ (n - r - 1) * Bs ^ k := by
+    refine (l2_opNorm_pow_le_of_schur (A := T₂₂) (Q := 1) (T := T₂₂)
+      (unitaryGroup (Fin (n - r)) ℂ).one_mem
+      (by simp) hT₂₂ hμ k).trans ?_
+    refine mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (add_nonneg
+      (Real.iSup_nonneg fun _ => norm_nonneg _) (div_nonneg (norm_nonneg _) h1μ.le)) ?_ k)
+      (pow_nonneg h1μ.le _)
+    exact add_le_add (ciSup_le hb) (div_le_div_of_nonneg_right hν₂ h1μ.le)
+  have hinf : a ≤ ⨅ i, ‖T₁₁ i i‖ := le_ciInf ha
+  have hm : ‖strictUpper T₁₁‖ < (1 + μ) * ⨅ i, ‖T₁₁ i i‖ :=
+    lt_of_le_of_lt hν₁ (lt_of_lt_of_le hνa (mul_le_mul_of_nonneg_left hinf h1μ.le))
+  have hγ' : lpOpNorm 2 (T₁₁⁻¹ ^ k) ≤ (1 + μ) ^ (r - 1) * (1 / As) ^ k := by
+    refine (l2_opNorm_inv_pow_le_of_schur (A := T₁₁) (Q := 1) (T := T₁₁)
+      (unitaryGroup (Fin r) ℂ).one_mem
+      (by simp) hT₁₁ hμ hm k).trans ?_
+    refine mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (one_div_pos.2 (sub_pos.2
+      ((div_lt_iff₀ h1μ).2 (by rw [mul_comm]; exact hm)))).le ?_ k) (pow_nonneg h1μ.le _)
+    refine one_div_le_one_div_of_le hAs0 ?_
+    rw [hAs]
+    exact sub_le_sub hinf (div_le_div_of_nonneg_right hν₁ h1μ.le)
+  have hpow : (1 + μ) ^ (n - r - 1) * (1 + μ) ^ (r - 1) = (1 + μ) ^ (n - 2) := by
+    rw [← pow_add]
+    congr 1
+    omega
+  calc (1 + lpOpNorm 2 X) * lpOpNorm 2 (T₂₂ ^ k) * lpOpNorm 2 (T₁₁⁻¹ ^ k) * Qf
+      ≤ (1 + ‖T₁₂‖ / sep T₁₁ T₂₂) * ((1 + μ) ^ (n - r - 1) * Bs ^ k) *
+          ((1 + μ) ^ (r - 1) * (1 / As) ^ k) * Qf := by
+        have hc1 : 0 ≤ 1 + ‖T₁₂‖ / sep T₁₁ T₂₂ := by
+          have := div_nonneg (norm_nonneg T₁₂) hsep.le
+          linarith
+        refine mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul (by linarith) hβ'
+          (lpOpNorm_nonneg _ _) hc1) hγ' (lpOpNorm_nonneg _ _) ?_) hQf0
+        exact mul_nonneg hc1 (mul_nonneg (pow_nonneg h1μ.le _) (pow_nonneg hBs0 _))
+    _ = (1 + μ) ^ (n - 2) * (1 + ‖T₁₂‖ / sep T₁₁ T₂₂) * (Bs / As) ^ k * Qf := by
+        rw [← hpow, div_eq_mul_one_div Bs As, mul_pow]
+        ring
+
+end OrthogonalIteration
 
 end Matrix
