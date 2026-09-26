@@ -219,3 +219,21 @@ if `B` has full row rank, `ker A ⊓ ker B = ⊥` and `IsLSESolution A b B d x`,
 (`n ≤ m₁` is not needed for this corollary if one stacks `A` with zero rows; the statement keeps
 the book's `m₁ ≥ n₁`). ★★'''
 deps = ["penaltyLSE_sub_eq_sum_of_isGSVD", "Matrix.exists_isGSVD"]
+
+[[node]]
+id = "IsLSESolution.eq_of_ker_inf_ker_eq_bot"
+
+[[node]]
+id = "continuousOn_norm_tikhonov_mulVec"
+
+[[node]]
+id = "augmentedLSE_mulVec"
+
+[[node]]
+id = "isLSQISolution_unitary_mul_mul_iff"
+
+[[node]]
+id = "lseGSVDCoeff"
+
+[[node]]
+id = "penaltyGSVDCoeff"

@@ -110,3 +110,24 @@ eigenbasis of `P`); `τ < 1` makes `P` positive definite, hence invertible, when
 smallest singular value is the one farthest from `1`; the conclusion does not need it.) Moved here
 from `SVD`. ★★ (~60 lines)'''
 deps = ["IsPolarDecomposition", "exists_isPolarDecomposition", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.lpOpNorm"]
+
+[[node]]
+id = "IsPolarDecomposition.mem_unitaryGroup"
+
+[[node]]
+id = "IsPolarDecomposition.eq_cfcAbs"
+
+[[node]]
+id = "IsPolarDecomposition.unique"
+
+[[node]]
+id = "IsPolarDecomposition.eq_mul_inv_cfcSqrt"
+
+[[node]]
+id = "IsPolarDecomposition.eq_mul_conjTranspose"
+
+[[node]]
+id = "IsSVD.isPolarDecomposition_of_square"
+
+[[node]]
+id = "IsPolarDecomposition.l2_opNorm_sub_le"

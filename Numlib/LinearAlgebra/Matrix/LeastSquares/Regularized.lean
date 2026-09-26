@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.LinearAlgebra.Matrix.GSVD
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 
 /-!
@@ -44,6 +45,8 @@ Tikhonov regularization of a least-squares problem `A x ≈ b`, for `A : Matrix 
   `Matrix.norm_sq_pinv_mulVec_eq_sum_of_isSVD` ((6.2.3)) and the residuals
   `Matrix.norm_sq_tikhonov_mulVec_sub_eq_sum_of_isSVD` ((6.2.4)),
   `Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD` ((5.3.3)).
+* `Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD`: the general form diagonalized by a
+  generalized SVD `Matrix.IsGSVD` ((6.1.26)).
 * Leave-one-out cross-validation over `ℝ`: `Matrix.tikhonov_deleteRow_eq` and
   `Matrix.tikhonov_deleteRow_residual_eq` ([golub2013matrix] (6.1.16)–(6.1.17)), with the positive
   denominator `Matrix.one_sub_dotProduct_inv_gram_pos`.
@@ -1307,5 +1310,67 @@ theorem norm_sub_sq_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpac
     ring
 
 end IsSVD
+
+/-! ### General-form Tikhonov in GSVD coordinates -/
+
+section IsGSVD
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+
+/-- **General-form Tikhonov diagonalized by the GSVD** ([golub2013matrix] (6.1.26) and the display
+before it): for a square invertible `B`, a GSVD `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B` (then `p = 0`,
+`r = n` and every `β_k > 0`), `n ≤ m` and `0 < λ`,
+`x(λ) = ∑_k (α_k b̃_k / (α_k² + λ β_k²)) x_k` with `b̃ = U₁ᴴ b` and `x_k` the columns of `X`.
+Indeed `Xᴴ (AᴴA + λ BᴴB) X = diag(α² + λβ²)`
+(`Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`), so
+`(AᴴA + λ BᴴB)⁻¹ Aᴴ = X diag(α² + λβ²)⁻¹ D_Aᴴ U₁ᴴ`. -/
+theorem generalFormTikhonov_mulVec_eq_sum_of_isGSVD {A : Matrix (Fin m) (Fin n) 𝕜}
+    {B : Matrix (Fin n) (Fin n) 𝕜} (hB : IsUnit B) {U₁ : Matrix (Fin m) (Fin m) 𝕜}
+    {U₂ X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ} (h : IsGSVD A B U₁ U₂ X α β)
+    (hnm : n ≤ m) {μ : ℝ} (hμ : 0 < μ) (b : Fin m → 𝕜) :
+    generalFormTikhonov A B μ *ᵥ b = ∑ k : Fin n,
+      (((α k / (α k ^ 2 + μ * β k ^ 2) : ℝ) : 𝕜) * (star U₁ *ᵥ b) (Fin.castLE hnm k)) •
+        X.col k := by
+  classical
+  have hr : (fromRows A B).rank - n = 0 := by
+    have := rank_le_card_width (fromRows A B)
+    rw [Fintype.card_fin] at this
+    omega
+  have hDB : star U₂ * B * X = diagonal fun k : Fin n => ((β k : ℝ) : 𝕜) := by
+    rw [h.star_mul_mul_right, hr, shiftedRectDiagonal_zero, rectDiagonal_eq_diagonal]
+  have hβ : ∀ k : Fin n, β k ≠ 0 := by
+    have hu : IsUnit (star U₂ * B * X) :=
+      ((isUnit_of_mem_unitaryGroup (Unitary.star_mem h.mem_unitaryGroup_right)).mul hB).mul
+        h.isUnit
+    rw [hDB, isUnit_iff_isUnit_det, det_diagonal] at hu
+    intro k hk
+    exact hu.ne_zero (Finset.prod_eq_zero (Finset.mem_univ k) (by rw [hk, RCLike.ofReal_zero]))
+  have hd0 : ∀ k : Fin n, α k ^ 2 + μ * β k ^ 2 ≠ 0 := fun k => by
+    have h2 : 0 < β k ^ 2 := lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hβ k)))
+    exact (add_pos_of_nonneg_of_pos (sq_nonneg _) (mul_pos hμ h2)).ne'
+  have hXA : Xᴴ * Aᴴ
+      = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m) 𝕜) * star U₁ := by
+    have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
+      rw [← h.star_mul_mul_left, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+        mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left, Matrix.one_mul]
+    rw [← conjTranspose_mul, hAX, conjTranspose_mul, conjTranspose_rectDiagonal,
+      star_eq_conjTranspose]
+    congr 2
+    funext i
+    simp
+  rw [generalFormTikhonov, h.inv_gram_add_smul_gram_eq hnm μ hd0, Matrix.mul_assoc,
+    Matrix.mul_assoc, hXA, ← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_mulVec]
+  ext i
+  simp only [mulVec, dotProduct, Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [mul_comm (X i k)]
+  congr 1
+  change (diagonal _ *ᵥ (rectDiagonal _ *ᵥ (star U₁ *ᵥ b))) k = _
+  rw [mulVec_diagonal, rectDiagonal_mulVec _ _ _ (lt_of_lt_of_le k.isLt hnm)]
+  simp only [Fin.castLE, mulVec, dotProduct]
+  push_cast
+  ring
+
+end IsGSVD
 
 end Matrix

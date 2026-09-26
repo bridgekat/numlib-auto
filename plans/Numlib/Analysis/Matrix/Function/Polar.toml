@@ -70,7 +70,12 @@ omits "nonsingular", needed so that no eigenvalue `±σᵢ` is `0`). Proof: from
 satisfies `Qᴴ (hermitianDilation Aᴴ) Q = fromBlocks Σ 0 0 (-Σ)`; `Matrix.matrixSign_conj_fromBlocks`
 with `X = Q`, `Q⁻¹ = Qᴴ`, then the block product. Renamed from
 `Matrix.matrixSign_fromBlocks_zero_conjTranspose` and restated through the dilation (review H1).
-★★ (~150 lines)'''
+★★ (~150 lines)
+
+Blocked (dec1): needs `Matrix.hermitianDilation` of `Numlib/Analysis/Matrix/SingularValues`, proved by
+agent sv2 on branch `agent/sv2` (not yet on main when dec1 finished). Everything else is on main
+(`Matrix.matrixSign_conj_fromBlocks`, `Matrix.IsSVD.isPolarDecomposition_of_square`,
+`Matrix.IsPolarDecomposition.unique`). Estimate unchanged (~150 lines).'''
 deps = ["Matrix.hermitianDilation", "Matrix.matrixSign_conj_fromBlocks", "Matrix.IsPolarDecomposition", "Matrix.IsSVD.isPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.exists_isSVD"]
 
 [[node]]
@@ -85,5 +90,25 @@ with `σ_k = sortedSingularValues k` (0-based: the book's `σ_{n-1} + σ_n`, the
 controlled through a Sylvester-type equation `S P̃ + P S = …` whose solution operator has norm
 `≤ 1/(σ_i + σ̃_j)` on the relevant components, and the real case uses that a real orthogonal
 matrix's skew part pairs eigenvalues, giving the sum of the two smallest. ★★★ (~600 lines, the proof
-is not in the book)'''
+is not in the book)
+
+Blocked (dec1, not attempted beyond analysis): the book quotes the bound without proof. The general
+(complex) bound `‖U − Ũ‖_F ≤ 2‖A − Ã‖_F / (σ_n + σ̃_n)` has a short proof — with `W = Uᴴ Ũ`,
+`X = I − W` solves the Sylvester equation `P X + X P̃ = Uᴴ Δ − Δᴴ Ũ` (`Δ = A − Ã`), whose solution
+operator has norm `≤ 1/(σ_n + σ̃_n)` in eigenbases of `P`, `P̃` (~100 lines) — but the real refinement
+with the two smallest singular values needs Li–Sun's pairing argument for the skew part of a real
+orthogonal `W`, which is research-level material (~600 lines). A good first step would be the complex
+bound as a separate node.'''
 deps = ["Matrix.IsPolarDecomposition", "Matrix.IsPolarDecomposition.eq_cfcSqrt", "Matrix.sortedSingularValues"]
+
+[[node]]
+id = "Matrix.PosDef.newtonPolarIterate"
+
+[[node]]
+id = "Matrix.l2_opNorm_newtonPolarIterate_sub"
+
+[[node]]
+id = "Matrix.newtonPolarIterate_succ_sub_one"
+
+[[node]]
+id = "Matrix.l2_opNorm_newtonPolarIterate_succ_sub_one_le"

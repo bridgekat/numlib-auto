@@ -78,3 +78,9 @@ unitary matrix are all `1`), with `re z ≤ ‖z‖` and the multiset bridge
 is why the column-indexed `Matrix.singularValues` is kept here); the equality case is
 `trace (V Uᴴ U Σ Vᴴ) = ∑ σ_i`. ★'''
 deps = ["Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul", "Matrix.exists_equiv_singularValues_eq_sortedSingularValues", "Matrix.IsSVD", "Matrix.IsSVD.singularValues_eq"]
+
+[[node]]
+id = "IsPolarDecomposition.trace_eq_sum_singularValues"
+
+[[node]]
+id = "IsSVD.re_trace_mul_eq_sum"

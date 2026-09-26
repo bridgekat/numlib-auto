@@ -130,3 +130,15 @@ values `α_i / β_i` (unsorted). Proof: `U₂ᴴ X = D_B = diagonal β` is inver
 and `U₁ᴴ A U₂ = D_A D_B⁻¹`. The book's "set `X = U₂`" is loose: `X` itself is `U₂ D_B`
 (recorded in the chapter report's Doubts). ★'''
 deps = ["IsGSVD", "Matrix.rectDiagonal_mul_rectDiagonal"]
+
+[[node]]
+id = "IsGSVD.conjTranspose_mul_gram_left_mul"
+
+[[node]]
+id = "IsGSVD.conjTranspose_mul_gram_right_mul"
+
+[[node]]
+id = "IsGSVD.inv_gram_add_smul_gram_eq"
+
+[[node]]
+id = "ker_inf_ker_eq_ker_fromRows"

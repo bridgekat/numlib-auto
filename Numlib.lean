@@ -191,11 +191,13 @@ import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.Matrix.Function.Approximation
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Matrix.Function.CFC
 import Numlib.Analysis.Matrix.Function.Exp
 import Numlib.Analysis.Matrix.Function.Log
 import Numlib.Analysis.Matrix.Function.Pade
+import Numlib.Analysis.Matrix.Function.Polar
 import Numlib.Analysis.Matrix.Function.Sign
 import Numlib.Analysis.Matrix.Function.Sqrt
 import Numlib.Analysis.Matrix.Function.Triangular
@@ -474,6 +476,7 @@ import Numlib.LinearAlgebra.Matrix.Bidiagonal
 import Numlib.LinearAlgebra.Matrix.Block
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
+import Numlib.LinearAlgebra.Matrix.CSDecomposition
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Companion
@@ -483,6 +486,7 @@ import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.Displacement
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
+import Numlib.LinearAlgebra.Matrix.GSVD
 import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import Numlib.LinearAlgebra.Matrix.Hamiltonian
 import Numlib.LinearAlgebra.Matrix.HermitianPart
@@ -497,6 +501,7 @@ import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
 import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import Numlib.LinearAlgebra.Matrix.LeastSquares
+import Numlib.LinearAlgebra.Matrix.LeastSquares.Constrained
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Total
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
@@ -506,7 +511,9 @@ import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.Permutation
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
+import Numlib.LinearAlgebra.Matrix.Polar
 import Numlib.LinearAlgebra.Matrix.PosDef
+import Numlib.LinearAlgebra.Matrix.Procrustes
 import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Rank

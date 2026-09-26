@@ -111,5 +111,16 @@ applied to the first block column of `Q` and to the first block row (the first b
 with `(1,1)` block `(Q.toBlocks₁₁)ᴴ`): both squared norms are `1 − σ_min(Q₁₁)²`, because a square
 matrix and its adjoint have the same singular values (`LinearMap.singularValues_adjoint`), and
 `‖Mᴴ‖ = ‖M‖` (Mathlib `Matrix.l2_opNorm_conjTranspose`). The case `k` empty is `0 = 0`. Prototype:
-statement elaborates. ★'''
+statement elaborates. ★
+
+Blocked (dec1): the proof is two applications of the stacked-isometry identity
+`Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues` of `Numlib/Analysis/Matrix/SingularValues`,
+which agent sv2 has proved on branch `agent/sv2` (not yet on main when dec1 finished); nothing else is
+missing (`LinearMap.singularValues_adjoint` is proved). Estimate: ~30 lines once sv2 is merged.'''
 deps = ["Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues", "LinearMap.singularValues_adjoint"]
+
+[[node]]
+id = "csdUpperRight"
+
+[[node]]
+id = "IsCSD.isThinCSD"
