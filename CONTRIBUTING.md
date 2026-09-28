@@ -8,11 +8,11 @@ Each section below is an instruction ("agent skill") for one specific task.
 
 To start a formalization project, write a plan specifying its overall shape.
 
-Plans are structured TOML files in the `plans/` directory, with [format specified by the tracker tool](tools/tracker/README.md). Each TOML file corresponds to one Lean module. They should contain:
+Plans are structured TOML files in the `plans/` directory, one for each Lean module, with [format specified by the tracker tool](tools/tracker/README.md). They should contain:
 
-- Overall design notes, in module `desc` fields.
-- A list of key nodes (Lean definitions and theorem statements) in logical progression order. Each backbone node should be placed carefully within the module and namespace hierarchies. Each surface node should be placed in the module `NumlibSurface/<source>/[Chapter<number>]/[Section<number>]`.
-- Brief descriptions of difficult proofs, in node `desc` fields.
+- Overall design notes, in the module plan's `desc` field.
+- A list of planned declarations (the key Lean definitions and theorem statements) in logical progression order. Each backbone declaration should be placed carefully within the module and namespace hierarchies. Each surface declaration should be placed in the module `NumlibSurface.<source>.[Chapter<number>].[Section<number>]`.
+- Brief descriptions of difficult proofs, in the `desc` fields of `[[node]]` tables.
 
 Plans may be automatically extracted from textbooks. In such cases, the agent should:
 
@@ -41,8 +41,8 @@ Treat the review process as a search for better (structures of) proofs. Think ha
 
 The user can prompt an agent to formalize a plan. In such cases, the agent should:
 
-- Estimate the amount of work, focus on one part of the plan at a time. `lake exe tracker ready` lists the groups whose dependencies are all proved, which are the best next steps of formalization.
-- Write the actual Lean proofs according to the corresponding TOML plans, optionally by spawning parallel sub-agents to work on different files. Start each with the output of `tracker show <group>`, tell them to mark `wrong` on problematic plan items and allow them to write their own items. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
+- Estimate the amount of work, focus on one part of the plan at a time. `lake exe tracker ready` lists the modules whose dependencies are all proved, which are the best next steps of formalization.
+- Write the actual Lean proofs according to the corresponding TOML plans, optionally by spawning parallel sub-agents to work on different files. Start each with the output of `tracker show <module>`, tell them to mark `wrong` on problematic planned declarations and allow them to plan their own. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
 - Run `lake exe tracker lint` and remove superseded fields in the plan: the Lean files now become the source of truth.
 - Verify the formalization by compiling the Lean files and running `lake exe tracker check`.
 
@@ -72,8 +72,8 @@ The user can prompt an agent to refactor a formalization. In such cases, the age
 
 - Check existing plans and formalizations for a rough range of contents.
 - Write a new plan for the same contents, as if starting from scratch (see [writing a plan](#writing-a-plan)).
-- Compare the new plan with the old one, mark the removed items as `deprecated` in the old plan, and add new items to the plan.
-- Formalize the new plan in the same way as [formalizing](#formalizing), until `lake exe tracker lint` shows no deprecated items remaining and the new items are finished. Consumers of the refactored parts should be fully migrated to the new interfaces.
+- Compare the new plan with the old one, mark the removed planned declarations as `deprecated` in the old plan, and add the new ones to the plan.
+- Formalize the new plan in the same way as [formalizing](#formalizing), until `lake exe tracker lint` shows no deprecated planned declarations remaining and the new ones are proved. Consumers of the refactored parts should be fully migrated to the new interfaces.
 
 ## General instructions for agents
 

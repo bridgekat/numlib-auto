@@ -39,8 +39,9 @@ jobs:
       # afterwards is built but never published, and the job still goes green.
       #
       # The graph is this commit's, exported here and baked into the page, so the page is
-      # pinned to it rather than waiting for a file to be dropped on it. The tracker reads
-      # the oleans lean-action has just built, and refreshes its cache itself.
+      # pinned to it rather than waiting for a file to be dropped on it: every declaration of
+      # the project, with the planned ones marked. The tracker reads the oleans lean-action
+      # has just built, and refreshes its cache itself.
       - env:
           # An absolute path, since the npm build runs from the explorer's own checkout,
           # and a docs root relative to where the page is published, so that the links
@@ -49,7 +50,7 @@ jobs:
           TRACKER_DOCS: docs
         run: |
           lake exe tracker check
-          lake exe tracker graph > numlib.json
+          lake exe tracker graph --all > numlib.json
           (cd .explorer && npm ci && npm run build)
           mkdir -p docs
           cp .explorer/dist/index.html docs/index.html

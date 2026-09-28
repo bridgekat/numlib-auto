@@ -6,7 +6,7 @@ An LLM-generated numerical analysis library, with two layers: a general **backbo
 
 [Read the full documentation here.](https://bridgekat.github.io/numlib-auto/docs/Numlib.html)
 
-[View the plan graph here.](https://bridgekat.github.io/numlib-auto/)
+[View the dependency graph here.](https://bridgekat.github.io/numlib-auto/)
 
 ## The backbone
 
@@ -25,7 +25,7 @@ Examples that may go into the backbone:
 
 ## The surface
 
-One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement. Every numbered item in a book maps to a node in the plans.
+One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement. Every numbered item in a book maps to a planned declaration.
 
 The proofs here should mostly be *direct uses and specializations* of results in the backbone. Definitions may be created here for semantic alignment, but it is desirable to accompany those with equivalence proofs to the backbone versions, so that results can derive from the equivalence. Within a surface library the dependencies run forwards in the direction of the chapter numbering, and where an earlier chapter has already restated something, later chapters use that restatement rather than reaching past it to the Mathlib or backbone original.
 
