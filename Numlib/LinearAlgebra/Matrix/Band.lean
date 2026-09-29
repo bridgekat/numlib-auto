@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.Order.Interval.Finset.Fin
+import Mathlib.RingTheory.Nilpotent.Basic
 import Numlib.LinearAlgebra.Matrix.Triangular
 
 /-!
@@ -36,6 +37,10 @@ rectangular matrix indexed by `Fin m × Fin n`.
   bidiagonal shapes of `Numlib/LinearAlgebra/Matrix/Hessenberg`.
 * Sums keep the larger band (`Matrix.HasLowerBandwidth.add`) and products add bands
   (`Matrix.HasLowerBandwidth.mul`), which is how `L U` is read back in banded storage.
+* `Matrix.isUnit_one_add_of_potential`: a matrix whose nonzero entries strictly increase a
+  potential `f : Fin n → ℕ` is nilpotent (`Matrix.pow_apply_eq_zero_of_potential`), so `1 + M` is
+  a unit over any ring — the strictly triangular and strictly banded shapes with an index order
+  other than the natural one.
 -/
 
 namespace Matrix
@@ -335,5 +340,39 @@ theorem hasUpperBandwidthRect_iff {A : Matrix (Fin N) (Fin N) R} {q : ℕ} :
   hasUpperBandwidth_iff_fin.symm
 
 end Rect
+
+/-! ### Nilpotency along a potential -/
+
+section Potential
+
+variable {S : Type*} [Ring S] {N : ℕ}
+
+/-- A matrix over a ring whose nonzero entries strictly increase a potential `f` is nilpotent:
+`(M ^ k) i j = 0` as soon as `f j < f i + k`. -/
+theorem pow_apply_eq_zero_of_potential (M : Matrix (Fin N) (Fin N) S) (f : Fin N → ℕ)
+    (hM : ∀ i j, f j ≤ f i → M i j = 0) (k : ℕ) :
+    ∀ i j, f j < f i + k → (M ^ k) i j = 0 := by
+  induction k with
+  | zero =>
+    intro i j h
+    rw [pow_zero, one_apply_ne]
+    rintro rfl
+    omega
+  | succ k ih =>
+    intro i j h
+    rw [pow_succ, mul_apply]
+    refine Finset.sum_eq_zero fun r _ => ?_
+    by_cases hr : f j ≤ f r
+    · rw [hM r j hr, mul_zero]
+    · rw [ih i r (by omega), zero_mul]
+
+/-- `1 + M` is a unit when the nonzero entries of `M` strictly increase a potential. -/
+theorem isUnit_one_add_of_potential (M : Matrix (Fin N) (Fin N) S) (f : Fin N → ℕ)
+    (hf : ∀ i, f i < N) (hM : ∀ i j, f j ≤ f i → M i j = 0) : IsUnit (1 + M) := by
+  refine IsNilpotent.isUnit_one_add ⟨N, ?_⟩
+  ext i j
+  exact pow_apply_eq_zero_of_potential M f hM N i j (by have := hf j; omega)
+
+end Potential
 
 end Matrix

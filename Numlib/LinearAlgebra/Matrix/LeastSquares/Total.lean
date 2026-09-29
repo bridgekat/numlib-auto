@@ -214,13 +214,6 @@ open scoped Matrix.Norms.Frobenius
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
   {d : m → ℝ} {t : n ⊕ Unit → ℝ} {A : Matrix m n 𝕜} {b : m → 𝕜}
 
-/-- `wᴴ w = ‖w‖²`. -/
-private theorem star_dotProduct_self_eq {ι : Type*} [Fintype ι] (w : ι → 𝕜) :
-    star w ⬝ᵥ w = ((‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 ι)‖ ^ 2 : ℝ) : 𝕜) := by
-  rw [EuclideanSpace.norm_sq_eq, dotProduct, RCLike.ofReal_sum]
-  exact Finset.sum_congr rfl fun i _ => by
-    rw [Pi.star_apply, RCLike.star_def, RCLike.conj_mul, RCLike.ofReal_pow]
-
 /-- The Frobenius norm of a rank-one matrix `u wᴴ` is `‖u‖ ‖w‖`. -/
 private theorem frobenius_norm_vecMulVec_star {ι κ : Type*} [Fintype ι] [Fintype κ]
     (u : ι → 𝕜) (w : κ → 𝕜) :
@@ -318,7 +311,7 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
   obtain ⟨E, R, hER⟩ := exists_tlsWeighted_eq hd ht ΔC
   refine ⟨E, R, hER, ?_⟩
   -- `C + ΔC` annihilates `w`
-  have hww : star w ⬝ᵥ w = 1 := by rw [star_dotProduct_self_eq, hw]; simp
+  have hww : star w ⬝ᵥ w = 1 := by rw [star_dotProduct_self, hw]; simp
   have hnull : tlsWeighted d t (A + E) (replicateCol Unit b + R) *ᵥ w = 0 := by
     rw [tlsWeighted_add, hER, add_mulVec]
     funext i

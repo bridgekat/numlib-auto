@@ -310,9 +310,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (3.5)"
 id = "frobenius_norm_vecMulVec_le"
 
 [[node]]
-id = "dotProduct_self_eq_norm_sq"
-
-[[node]]
 id = "frobenius_norm_mul_one_sub_le"
 
 [[node]]

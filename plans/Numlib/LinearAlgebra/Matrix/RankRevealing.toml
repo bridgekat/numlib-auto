@@ -34,9 +34,6 @@ id = "gap_le_of_urv"
 id = "gap_le_of_ulv"
 
 [[node]]
-id = "blockVec"
-
-[[node]]
 id = "rank_eq_of_apply_eq_zero_of_isUnit"
 
 [[node]]

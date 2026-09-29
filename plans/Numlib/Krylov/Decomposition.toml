@@ -29,12 +29,6 @@ id = "Arnoldi.apply_vec_eq_sum_add_lastVec"
 id = "Arnoldi.isArnoldiDecomposition"
 
 [[node]]
-id = "Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal"
-
-[[node]]
-id = "Matrix.conjTranspose_mulVec_eq_zero_iff"
-
-[[node]]
 id = "Matrix.isKrylovDecomposition_iff"
 
 [[node]]

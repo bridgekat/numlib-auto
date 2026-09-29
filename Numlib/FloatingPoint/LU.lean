@@ -366,52 +366,6 @@ end Exact
 
 /-! ### The solve -/
 
-section Combination
-
-variable {l p q : Type*} [Fintype p]
-
-/-- **The error of a product of perturbed factors**: if `|X| ≤ P`, `|ΔX| ≤ a P`, `|Y| ≤ Q` and
-`|ΔY| ≤ b Q` entrywise, `a, b ≥ 0`, then `|(X + ΔX) (Y + ΔY) - X Y| ≤ ((1 + a) (1 + b) - 1) P Q`,
-from `(X + ΔX) (Y + ΔY) - X Y = X ΔY + ΔX Y + ΔX ΔY`. -/
-theorem abs_add_mul_add_sub_mul_entrywiseLE {X ΔX P : Matrix l p K} {Y ΔY Q : Matrix p q K}
-    {a b : K} (ha : 0 ≤ a) (hX : X.abs ≤ₑ P) (hΔX : ΔX.abs ≤ₑ a • P) (hY : Y.abs ≤ₑ Q)
-    (hΔY : ΔY.abs ≤ₑ b • Q) :
-    ((X + ΔX) * (Y + ΔY) - X * Y).abs ≤ₑ ((1 + a) * (1 + b) - 1) • (P * Q) := by
-  have hP : P.EntrywiseNonneg := fun i j => (abs_nonneg (X i j)).trans (hX i j)
-  have haP : (a • P).EntrywiseNonneg := fun i j => (abs_nonneg (ΔX i j)).trans (hΔX i j)
-  have h1 : (X * ΔY).abs ≤ₑ b • (P * Q) :=
-    (Matrix.abs_mul_entrywiseLE X ΔY).trans <|
-      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs ΔY) hX).trans
-        (by rw [← Matrix.mul_smul]; exact Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left hP hΔY)
-  have h2 : (ΔX * Y).abs ≤ₑ a • (P * Q) :=
-    (Matrix.abs_mul_entrywiseLE ΔX Y).trans <|
-      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs Y) hΔX).trans
-        (by
-          rw [Matrix.smul_mul]
-          exact Matrix.EntrywiseLE.smul_of_nonneg ha
-            (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left hP hY))
-  have h3 : (ΔX * ΔY).abs ≤ₑ (a * b) • (P * Q) :=
-    (Matrix.abs_mul_entrywiseLE ΔX ΔY).trans <|
-      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs ΔY) hΔX).trans <|
-        (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left haP hΔY).trans <|
-          Matrix.EntrywiseLE.of_eq (by rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul])
-  have heq : (X + ΔX) * (Y + ΔY) - X * Y = X * ΔY + ΔX * Y + ΔX * ΔY := by
-    rw [Matrix.add_mul, Matrix.mul_add, Matrix.mul_add]
-    abel
-  rw [heq]
-  intro i j
-  have e1 := Matrix.abs_add_entrywiseLE (X * ΔY + ΔX * Y) (ΔX * ΔY) i j
-  have e2 := Matrix.abs_add_entrywiseLE (X * ΔY) (ΔX * Y) i j
-  have a1 := h1 i j
-  have a2 := h2 i j
-  have a3 := h3 i j
-  simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul] at e1 e2 a1 a2 a3 ⊢
-  have hc : ((1 + a) * (1 + b) - 1) * (P * Q) i j =
-      b * (P * Q) i j + a * (P * Q) i j + a * b * (P * Q) i j := by ring
-  linarith
-
-end Combination
-
 omit [LinearOrder n] in
 /-- **The combination step of [higham2002accuracy] Theorem 9.4**: if `L U = A + ΔA₁` with
 `|ΔA₁| ≤ γ_A |L| |U|`, `(L + ΔL) y = b` with `|ΔL| ≤ γ_L |L|` and `(U + ΔU) x = y` with
@@ -427,7 +381,7 @@ theorem exists_add_mulVec_eq_of_lu_errors {A L U ΔA₁ ΔL ΔU : Matrix n n K} 
   refine ⟨ΔA₁ + ((L + ΔL) * (U + ΔU) - L * U), ?_, ?_⟩
   · refine (Matrix.abs_add_entrywiseLE _ _).trans ?_
     rw [add_smul]
-    exact hA.add (abs_add_mul_add_sub_mul_entrywiseLE hγL Matrix.EntrywiseLE.rfl hL
+    exact hA.add (Matrix.abs_add_mul_add_sub_mul_entrywiseLE hγL Matrix.EntrywiseLE.rfl hL
       Matrix.EntrywiseLE.rfl hU)
   · have : A + (ΔA₁ + ((L + ΔL) * (U + ΔU) - L * U)) = (L + ΔL) * (U + ΔU) := by
       rw [hLU]
@@ -860,40 +814,6 @@ end Cholesky
 
 section Symmetric
 
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The entry `(i, j)` of `G Hᵀ` for lower triangular `G` and `H` is `∑_{k ≤ min i j} g_ik h_jk`. -/
-theorem mul_transpose_apply_of_lower {G H : Matrix n n K} (hG : ∀ i j, i < j → G i j = 0)
-    (hH : ∀ i j, i < j → H i j = 0) (i j : n) :
-    (G * Hᵀ) i j = ∑ k ∈ univ.filter (· ≤ min i j), G i k * H j k := by
-  rw [Matrix.mul_apply]
-  refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
-  rw [le_min_iff]
-  by_contra hcon
-  rw [not_and_or, not_le, not_le] at hcon
-  rcases hcon with hik | hjk
-  · exact hk (by rw [hG i k hik, zero_mul])
-  · exact hk (by rw [Matrix.transpose_apply, hH j k hjk, mul_zero])
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The entry `(i, j)` of `L D Lᵀ` for a lower triangular `L` and a diagonal `D` is
-`∑_{k ≤ min i j} l_ik d_k l_jk`. -/
-theorem mul_mul_transpose_apply_of_isDiag {L D : Matrix n n K} (hL : ∀ i j, i < j → L i j = 0)
-    (hD : D.IsDiag) (i j : n) :
-    (L * D * Lᵀ) i j = ∑ k ∈ univ.filter (· ≤ min i j), L i k * D k k * L j k := by
-  have hLD : ∀ i k, (L * D) i k = L i k * D k k := fun i k => by
-    conv_lhs => rw [← hD.diagonal_diag]
-    rw [Matrix.mul_diagonal, Matrix.diag_apply]
-  rw [mul_transpose_apply_of_lower (G := L * D) (H := L)
-    (fun i j hij => by rw [hLD, hL i j hij, zero_mul]) hL]
-  simp only [hLD]
-
-omit [LinearOrder K] [IsStrictOrderedRing K] [LinearOrder n] in
-/-- `L D Lᵀ` is symmetric for a diagonal `D`. -/
-theorem isSymm_mul_mul_transpose_of_isDiag (L : Matrix n n K) {D : Matrix n n K}
-    (hD : D.IsDiag) : (L * D * Lᵀ).IsSymm := by
-  rw [Matrix.IsSymm, Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose,
-    hD.isSymm.eq, Matrix.mul_assoc]
-
 variable {ι : Type*}
 
 /-- **From a perturbed row equation to an entrywise bound**: if
@@ -984,7 +904,7 @@ variable {m : RoundingModel K} {A L D : Matrix n n K}
 theorem RoundsLDL.abs_mul_mul_transpose_abs_apply (h : RoundsLDL m A L D) (i j : n) :
     (L.abs * D.abs * Lᵀ.abs) i j =
       ∑ k ∈ univ.filter (· ≤ min i j), |L i k| * |D k k| * |L j k| :=
-  mul_mul_transpose_apply_of_isDiag (L := L.abs)
+  Matrix.mul_mul_transpose_apply_of_isDiag (L := L.abs)
     (fun i j hij => by simp [h.lower_apply_eq_zero i j hij])
     (h.isDiag.map (f := (|·|)) abs_zero) i j
 
@@ -1000,7 +920,7 @@ theorem RoundsLDL.abs_mul_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
   have hcard' : (Fintype.card n : K) * m.u < 1 :=
     (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) m.u_nonneg).trans_lt hcard
   obtain ⟨V, hV, hdiag, hoff⟩ := h.exists_rounds
-  rw [mul_mul_transpose_apply_of_isDiag h.lower_apply_eq_zero h.isDiag,
+  rw [Matrix.mul_mul_transpose_apply_of_isDiag h.lower_apply_eq_zero h.isDiag,
     h.abs_mul_mul_transpose_abs_apply, min_eq_right hji, Matrix.sum_filter_le_eq_add,
     Matrix.sum_filter_le_eq_add]
   -- the number of terms
@@ -1081,9 +1001,9 @@ theorem exists_roundsLDL_mul_eq_add (hu : m.u < 1)
   simp only [Matrix.abs_apply, Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul]
   rcases le_or_gt j i with hji | hij
   · exact h.abs_mul_mul_transpose_sub_apply_le_of_le hu hcard hd hji
-  · have hS := isSymm_mul_mul_transpose_of_isDiag L h.isDiag
+  · have hS := Matrix.isSymm_mul_mul_transpose_of_isDiag L h.isDiag
     have hS' : (L.abs * D.abs * Lᵀ.abs).IsSymm :=
-      isSymm_mul_mul_transpose_of_isDiag L.abs (h.isDiag.map (f := (|·|)) abs_zero)
+      Matrix.isSymm_mul_mul_transpose_of_isDiag L.abs (h.isDiag.map (f := (|·|)) abs_zero)
     rw [← hS.apply i j, ← hS'.apply i j, ← hA.apply i j]
     exact h.abs_mul_mul_transpose_sub_apply_le_of_le hu hcard hd hij.le
 
@@ -1102,10 +1022,10 @@ theorem exists_add_mulVec_eq_of_ldl_errors {A L D ΔA₁ ΔL₁ ΔD ΔL₂ : Mat
       ΔA.abs ≤ₑ (γA + ((1 + γ₁) * (1 + γ₂) * (1 + γ₃) - 1)) • (L.abs * D.abs * Lᵀ.abs) ∧
         (A + ΔA) *ᵥ x = b := by
   refine ⟨ΔA₁ + ((L + ΔL₁) * (D + ΔD) * (Lᵀ + ΔL₂) - L * D * Lᵀ), ?_, ?_⟩
-  · have h₁ := abs_add_mul_add_sub_mul_entrywiseLE hγ₁ Matrix.EntrywiseLE.rfl hL₁
+  · have h₁ := Matrix.abs_add_mul_add_sub_mul_entrywiseLE hγ₁ Matrix.EntrywiseLE.rfl hL₁
       Matrix.EntrywiseLE.rfl hD
     have hc : 0 ≤ (1 + γ₁) * (1 + γ₂) - 1 := by nlinarith
-    have h₂ := abs_add_mul_add_sub_mul_entrywiseLE hc (Matrix.abs_mul_entrywiseLE L D) h₁
+    have h₂ := Matrix.abs_add_mul_add_sub_mul_entrywiseLE hc (Matrix.abs_mul_entrywiseLE L D) h₁
       Matrix.EntrywiseLE.rfl hL₂
     have e₁ : L * D + ((L + ΔL₁) * (D + ΔD) - L * D) = (L + ΔL₁) * (D + ΔD) := by abel
     have e₂ : (1 + ((1 + γ₁) * (1 + γ₂) - 1)) * (1 + γ₃) - 1 =
@@ -1238,7 +1158,7 @@ variable {m : RoundingModel K} {A G : Matrix n n K}
 theorem RoundsCholeskyDiv.abs_mul_transpose_abs_apply (h : RoundsCholeskyDiv m A G) (i j : n) :
     (G.abs * Gᵀ.abs) i j = ∑ k ∈ univ.filter (· ≤ min i j), |G i k| * |G j k| :=
   have hG : ∀ i j, i < j → G.abs i j = 0 := fun i j hij => by simp [h.apply_eq_zero i j hij]
-  mul_transpose_apply_of_lower hG hG i j
+  Matrix.mul_transpose_apply_of_lower hG hG i j
 
 /-- **One entry of the backward error of Cholesky in the operation order of [golub2013matrix]
 Algorithm 4.2.1**, on or below the diagonal: `|(G Gᵀ)_ij - a_ij| ≤ γ_{n+3} (|G| |Gᵀ|)_ij`. The
@@ -1260,7 +1180,7 @@ theorem RoundsCholeskyDiv.abs_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
   have hs0 : s ≠ 0 := fun h0 => hsh0 (by rw [hshδ, h0, zero_mul])
   have hd₁ : (1 : K) + δ₁ ≠ 0 := by linarith [neg_le_of_abs_le hδ₁]
   have hd₂ : (1 : K) + δ₂ ≠ 0 := by linarith [neg_le_of_abs_le hδ₂]
-  rw [mul_transpose_apply_of_lower h.apply_eq_zero h.apply_eq_zero,
+  rw [Matrix.mul_transpose_apply_of_lower h.apply_eq_zero h.apply_eq_zero,
     h.abs_mul_transpose_abs_apply, min_eq_right hji, Matrix.sum_filter_le_eq_add,
     Matrix.sum_filter_le_eq_add]
   -- the number of terms

@@ -7,6 +7,7 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.KrylovDecomposition
 import Numlib.LinearAlgebra.Matrix.QR
+import Numlib.LinearAlgebra.Matrix.Similar
 
 /-!
 # Orthogonal iteration and the QR algorithm
@@ -665,20 +666,6 @@ theorem IsShiftedQrStep.eq_conj {μ : 𝕜} {H H' : Matrix n n 𝕜} (h : IsShif
   rw [hR, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, h1,
     sub_add_cancel]
 
-/-- A unitary upper triangular matrix is diagonal: its inverse `Uᴴ` is both upper and lower
-triangular. -/
-theorem IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup {U : Matrix n n 𝕜}
-    (hU : U.IsUpperTriangular) (hUu : U ∈ unitaryGroup n 𝕜) : U = diagonal fun i => U i i := by
-  have hinv : U⁻¹ = star U := inv_eq_left_inv ((mem_unitaryGroup_iff').1 hUu)
-  have hst : (star U).IsUpperTriangular := by rw [← hinv]; exact hU.inv
-  ext i j
-  rcases lt_trichotomy i j with hij | rfl | hij
-  · rw [diagonal_apply_ne _ hij.ne]
-    have := hst hij
-    rwa [star_apply, star_eq_zero] at this
-  · rw [diagonal_apply_eq]
-  · rw [diagonal_apply_ne _ hij.ne', hU hij]
-
 /-- For nonsingular `H - μ I` any two shifted QR steps are unitarily *diagonally* similar: the two
 QR factorizations of `H - μ I` differ by a unimodular diagonal (`Q₁ᴴ Q₂ = R₁ R₂⁻¹` is unitary and
 upper triangular, hence diagonal). -/
@@ -825,21 +812,6 @@ theorem exists_isOrthogonalIterationStep {n : ℕ} (A : Matrix (Fin n) (Fin n) �
   obtain ⟨Q₀, R₀, h⟩ := exists_isQR (A * Q)
   exact ⟨_, _, h.isThinQR hr⟩
 
-/-- A thin QR factorization of a matrix of full column rank has a nonsingular triangular factor:
-`B = Q R` injective forces `R` injective. -/
-private theorem isUnit_of_isThinQR_of_linearIndependent {N : ℕ} {B Q : Matrix m (Fin N) 𝕜}
-    {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR B Q R) (hB : LinearIndependent 𝕜 Bᵀ) :
-    IsUnit R := by
-  rw [← mulVec_injective_iff_isUnit]
-  intro x y hxy
-  apply mulVec_injective_iff.2 hB
-  rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hxy]
-
-/-- A nonsingular matrix acts surjectively. -/
-private theorem range_toEuclideanLin_eq_top_of_isUnit {N : ℕ} {S : Matrix (Fin N) (Fin N) 𝕜}
-    (hS : IsUnit S) : LinearMap.range (toEuclideanLin S) = ⊤ :=
-  LinearMap.range_eq_top.2 fun z => ⟨_, toEuclideanLin_mul_nonsing_inv_apply hS z⟩
-
 variable [DecidableEq m]
 
 /-- **Orthogonal iteration iterates subspaces** ([golub2013matrix] §7.3.2, "`ran(Q_k) = A
@@ -853,7 +825,7 @@ theorem IsOrthogonalIterationStep.range_eq {A : Matrix m m 𝕜} {Q Q' : Matrix 
   obtain ⟨R, hR⟩ := h
   rw [← LinearMap.range_comp, ← toEuclideanLin_mul, ← hR.mul_eq, toEuclideanLin_mul,
     LinearMap.range_comp_of_range_eq_top _
-      (range_toEuclideanLin_eq_top_of_isUnit (isUnit_of_isThinQR_of_linearIndependent hR hAQ))]
+      (range_toEuclideanLin_eq_top_of_isUnit (hR.isUnit_of_linearIndependent hAQ))]
 
 /-- **The accumulated triangular factor of orthogonal iteration** (the first display of the
 appendix proof of [golub2013matrix] Theorem 7.3.1): if `Q` is an orthogonal iteration for `A` and
@@ -884,7 +856,7 @@ theorem exists_pow_mul_eq_mul_of_isOrthogonalIterationStep {A : Matrix m m 𝕜}
       have hAQS : A * Q k * S = A ^ (k + 1) * Q 0 := by
         rw [Matrix.mul_assoc, ← hSeq, ← Matrix.mul_assoc, ← pow_succ']
       have hRu : IsUnit R := by
-        refine isUnit_of_isThinQR_of_linearIndependent hR (mulVec_injective_iff.1 ?_)
+        refine hR.isUnit_of_linearIndependent (mulVec_injective_iff.1 ?_)
         intro x y hxy
         obtain ⟨x', rfl⟩ := mulVec_surjective_iff_isUnit.2 hS x
         obtain ⟨y', rfl⟩ := mulVec_surjective_iff_isUnit.2 hS y
@@ -1804,16 +1776,6 @@ theorem isFrancisStep_qrQ {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessen
   · rw [← conjTranspose_eq_transpose_of_trivial, ← qrR_eq]
     exact isUpperTriangular_qrR _
 
-/-- The first column of `M = Z T` with `T` upper triangular is `T₀₀ Z e₀`. -/
-theorem col_zero_eq_smul_of_eq_mul {K : Type*} [CommRing K] {M Z T : Matrix (Fin (N + 1))
-    (Fin (N + 1)) K} (hM : M = Z * T) (hT : T.IsUpperTriangular) : M.col 0 = T 0 0 • Z.col 0 := by
-  ext i
-  rw [hM, col_apply, mul_apply, Finset.sum_eq_single 0, Pi.smul_apply, col_apply, smul_eq_mul,
-    mul_comm]
-  · intro l _ hl
-    rw [hT (Fin.pos_iff_ne_zero.2 hl), mul_zero]
-  · simp
-
 /-- **Essential uniqueness of the Francis step** ([golub2013matrix] §7.5.5: "the implicit Q
 theorem permits us to conclude that … they are essentially equal"): for unreduced upper Hessenberg
 `H` and nonsingular `M = H² − s H + t I`, every Francis step is the explicit one up to a
@@ -1874,14 +1836,6 @@ theorem IsFrancisStep.eq_diagonal_conj {H H' : Matrix (Fin (N + 1)) (Fin (N + 1)
   obtain ⟨d, hd, -, -, hGH⟩ := implicitQ_real (qrQ_mem_unitaryGroup M) hV hG₀
     (by rw [hVHV]; exact hH') hV0
   exact ⟨d, hd, by rw [← hVHV, hGH]⟩
-
-/-- If `μ` is not an eigenvalue of `A`, then `A − μ I` is nonsingular. -/
-theorem isUnit_det_sub_smul_one_of_notMem_spectrum {K : Type*} [Field K] {m : Type*}
-    [Fintype m] [DecidableEq m] {A : Matrix m m K} {μ : K} (h : μ ∉ spectrum K A) :
-    IsUnit (A - μ • 1).det := by
-  rw [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det] at h
-  rw [show A - μ • 1 = -(μ • 1 - A) by abel, det_neg]
-  exact (isUnit_one.neg.pow _).mul h
 
 /-- **The double-shift step of a real matrix is real** ([golub2013matrix] §7.5.4): for real `H` and
 a complex shift `a` that is not an eigenvalue, the two canonical complex steps with shifts `a`,

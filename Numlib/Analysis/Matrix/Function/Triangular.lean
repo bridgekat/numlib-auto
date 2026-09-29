@@ -54,32 +54,6 @@ theorem BlockTriangular.pfc {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (f 
   rw [pfc_def]
   exact hT.aeval _
 
-variable {R : Type*} [CommRing R]
-
-omit [DecidableEq n] in
-/-- The diagonal blocks of a product of block triangular matrices are the products of the diagonal
-blocks. -/
-theorem BlockTriangular.toBlock_mul {M N : Matrix n n R} (hM : M.BlockTriangular b)
-    (hN : N.BlockTriangular b) (k : α) :
-    (M * N).toBlock (b · = k) (b · = k) =
-      M.toBlock (b · = k) (b · = k) * N.toBlock (b · = k) (b · = k) := by
-  classical
-  rw [toBlock_mul_eq_add _ (b · = k), add_eq_left]
-  ext i j
-  simp only [mul_apply, toBlock_apply, zero_apply]
-  refine Finset.sum_eq_zero fun l _ => ?_
-  have hl : b l ≠ k := l.2
-  rcases lt_or_gt_of_ne hl with h | h
-  · rw [hM (by rw [i.2]; exact h), zero_mul]
-  · rw [hN (by rw [j.2]; exact h), mul_zero]
-
-/-- The diagonal blocks of the powers of a block triangular matrix. -/
-theorem BlockTriangular.toBlock_pow {M : Matrix n n R} (hM : M.BlockTriangular b) (k : α)
-    (m : ℕ) : (M ^ m).toBlock (b · = k) (b · = k) = M.toBlock (b · = k) (b · = k) ^ m := by
-  induction m with
-  | zero => ext i j; simp [one_apply, Subtype.ext_iff]
-  | succ m ih => rw [pow_succ, (hM.pow m).toBlock_mul hM, ih, pow_succ]
-
 /-- The diagonal blocks of a polynomial in a block triangular matrix. -/
 theorem BlockTriangular.toBlock_aeval {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (k : α)
     (p : 𝕜[X]) :
@@ -123,25 +97,7 @@ end BlockTriangular
 
 section Upper
 
-variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [LinearOrder n]
-
-/-- An entry of a product of upper triangular matrices is a sum over the indices between. -/
-theorem IsUpperTriangular.mul_apply {M N : Matrix n n R} (hM : M.IsUpperTriangular)
-    (hN : N.IsUpperTriangular) [LocallyFiniteOrder n] (i j : n) :
-    (M * N) i j = ∑ k ∈ Icc i j, M i k * N k j := by
-  rw [Matrix.mul_apply]
-  refine (Finset.sum_subset (Finset.subset_univ _) fun k _ hk => ?_).symm
-  rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hk
-  rcases hk with hk | hk
-  · rw [hM hk, zero_mul]
-  · rw [hN hk, mul_zero]
-
-/-- The diagonal of a power of an upper triangular matrix. -/
-theorem IsUpperTriangular.pow_apply_self {M : Matrix n n R}
-    (hM : M.IsUpperTriangular) (m : ℕ) (i : n) : (M ^ m) i i = M i i ^ m := by
-  induction m with
-  | zero => simp
-  | succ m ih => rw [pow_succ, IsUpperTriangular.mul_apply_self (hM.pow m) hM, ih, pow_succ]
+variable {n : Type*} [Fintype n] [LinearOrder n]
 
 /-- The diagonal of a polynomial in an upper triangular matrix. -/
 theorem IsUpperTriangular.aeval_apply_self {𝕜 : Type*} [Field 𝕜]
@@ -194,35 +150,6 @@ section BlockParlett
 
 variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n]
   {α : Type*} [Fintype α] [LinearOrder α] {b : n → α}
-
-omit [DecidableEq n] in
-/-- A block of a product, summed over the block index. -/
-theorem toBlock_mul_eq_sum (M N : Matrix n n R) (k l : α) :
-    (M * N).toBlock (b · = k) (b · = l) =
-      ∑ r, M.toBlock (b · = k) (b · = r) * N.toBlock (b · = r) (b · = l) := by
-  classical
-  ext i j
-  simp only [toBlock_apply, Matrix.mul_apply, Matrix.sum_apply]
-  rw [← Finset.sum_fiberwise Finset.univ b]
-  refine Finset.sum_congr rfl fun r _ => ?_
-  rw [Finset.sum_subtype (Finset.univ.filter (b · = r)) (p := (b · = r)) (by simp)]
-
-omit [DecidableEq n] [Fintype α] in
-/-- A block of a product of block triangular matrices only involves the block indices between. -/
-theorem BlockTriangular.toBlock_mul_eq_sum_Icc [Finite α] [LocallyFiniteOrder α]
-    {M N : Matrix n n R} (hM : M.BlockTriangular b) (hN : N.BlockTriangular b) (k l : α) :
-    (M * N).toBlock (b · = k) (b · = l) =
-      ∑ r ∈ Icc k l, M.toBlock (b · = k) (b · = r) * N.toBlock (b · = r) (b · = l) := by
-  have := Fintype.ofFinite α
-  rw [toBlock_mul_eq_sum]
-  refine (Finset.sum_subset (Finset.subset_univ _) fun r _ hr => ?_).symm
-  rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hr
-  ext i j
-  simp only [Matrix.mul_apply, toBlock_apply, zero_apply]
-  refine Finset.sum_eq_zero fun x _ => ?_
-  rcases hr with hr | hr
-  · rw [hM (by rw [x.2, i.2]; exact hr), zero_mul]
-  · rw [hN (by rw [x.2, j.2]; exact hr), mul_zero]
 
 omit [Fintype α] in
 /-- **The block Parlett equations** ([golub2013matrix] (9.1.12)): for `T` block triangular with

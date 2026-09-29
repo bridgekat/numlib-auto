@@ -444,7 +444,7 @@ theorem IsUpperTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
     | _ i ih =>
       intro j hij
       have hii := congrFun (congrFun hcomm i) i
-      simp only [mul_apply, star_apply, RCLike.star_def] at hii
+      simp only [Matrix.mul_apply, star_apply, RCLike.star_def] at hii
       have hL : ∑ k, (starRingEnd 𝕜) (T k i) * T k i = (starRingEnd 𝕜) (T i i) * T i i := by
         refine Finset.sum_eq_single i (fun k _ hk => ?_) (by simp)
         rcases lt_or_gt_of_ne hk with h | h

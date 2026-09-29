@@ -1,19 +1,7 @@
 namespace = "Matrix"
 
 [[node]]
-id = "adjacentEmbed"
-
-[[node]]
 id = "adjacentRotationProd"
-
-[[node]]
-id = "prod_planeEmbed_mul_apply_eq_zero"
-
-[[node]]
-id = "hasLowerBandwidthRect_prod_adjacentEmbed_mul"
-
-[[node]]
-id = "upperTrapezoidal_of_adjacentRotations"
 
 [[node]]
 id = "exists_adjacentRotationProd_mulVec_eq_zero"
@@ -35,9 +23,6 @@ id = "IsQR.conjTranspose_mul_insertColumn"
 
 [[node]]
 id = "IsQR.exists_insertColumn"
-
-[[node]]
-id = "consDiag"
 
 [[node]]
 id = "IsQR.conjTranspose_mul_insertRow"

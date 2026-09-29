@@ -1,3 +1,4 @@
+import Numlib.Data.Matrix.Mul
 import Numlib.FloatingPoint.Householder
 
 /-!

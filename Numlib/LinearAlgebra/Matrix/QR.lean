@@ -5,12 +5,14 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.QR`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.Normed.Module.Normalize
 import Mathlib.Data.Fintype.Sort
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
@@ -89,6 +91,10 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
   span the column space of `A` when `A` has full column rank
   (`Matrix.IsQR.span_firstColumns_eq`). Uniqueness, which Property 3.3 also claims, holds only
   with a normalization of the diagonal of `R̃` (`Matrix.qr_unique`).
+* `Matrix.exists_mem_unitaryGroup_mulVec_single_eq`: every unit vector is a column of a unitary
+  matrix, a multiple of a reflector.
+* `Matrix.IsQR.conjTranspose_mul_eq`, `Matrix.isQR_conjTranspose_mul`: `R = Qᴴ A`, and a unitary
+  `Q` with `Qᴴ A` upper trapezoidal gives a full QR factorization.
 * `Matrix.exists_isThinQR`, `Matrix.IsThinQR.unique`, `Matrix.IsQR.isThinQR`: the thin
   factorization ([golub2013matrix] Theorem 5.2.3); `Matrix.IsQR.span_col_prefix_eq`: the leading
   columns of `A` and `Q` span the same spaces ((5.2.1)).
@@ -99,7 +105,10 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
   `Matrix.exists_unitary_conj_isUpperHessenberg`: the Householder reduction is a unitary
   similarity to upper Hessenberg form, tridiagonal for Hermitian input
   (`Matrix.isTridiagonal_hessenbergReduce_of_isHermitian`).
-* `Matrix.hessenbergGivensQR_spec`: the Givens factorization of a Hessenberg matrix is a `QR`
+* `Matrix.upperTrapezoidal_of_adjacentRotations`, `Matrix.prod_planeEmbed_mul_apply_eq_zero`: a
+  sweep of zeroing embeddings in the adjacent planes `(j, j + 1)` triangularizes a (rectangular)
+  Hessenberg matrix, and a product of such embeddings in increasing order is Hessenberg; hence
+  `Matrix.hessenbergGivensQR_spec`: the Givens factorization of a Hessenberg matrix is a `QR`
   factorization with a Hessenberg `Q`.
 * `Matrix.norm_det_le_prod_sqrt_sum_norm_sq`: **Hadamard's determinant inequality**, a corollary
   of the triangularization, with `Matrix.norm_det_le_of_forall_norm_le` its entrywise form.
@@ -119,11 +128,6 @@ namespace Matrix
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
 /-! ### The Euclidean length of a vector of scalars -/
-
-/-- The Euclidean inner square of a vector of scalars: `star x ⬝ᵥ x = ‖x‖²`. -/
-private theorem star_dotProduct_self (x : n → 𝕜) :
-    star x ⬝ᵥ x = ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2 := by
-  rw [← inner_self_eq_norm_sq_to_K (𝕜 := 𝕜), EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
 
 private theorem ofReal_norm_toLp_ne_zero {x : n → 𝕜} (hx : x ≠ 0) :
     ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ≠ 0 := by
@@ -360,6 +364,28 @@ theorem householder_mulVec_eq_smul_single {x : n → 𝕜} (hx : x ≠ 0) (i : n
     householderAxis]
   module
 
+/-- **A unitary matrix with a prescribed column**: every unit vector `x` is the `i`-th column of a
+unitary matrix, the multiple `-α P` of the reflector `P` that sends `x` to `-α eᵢ`, where
+`α = phase (x i)` has modulus one (`Matrix.householder_mulVec_eq_smul_single`). -/
+theorem exists_mem_unitaryGroup_mulVec_single_eq {x : n → 𝕜}
+    (hx : ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ = 1) (i : n) :
+    ∃ U ∈ unitaryGroup n 𝕜, U *ᵥ Pi.single i 1 = x := by
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    simp at hx
+  have hPx : householder (householderVec x i) *ᵥ x = (-phase (x i)) • Pi.single i 1 := by
+    rw [householder_mulVec_eq_smul_single hx0, hx, RCLike.ofReal_one, mul_one]
+  have hPP : householder (householderVec x i) * householder (householderVec x i) = 1 :=
+    householder_mul_self (star_dotProduct_householderVec_self hx0 i)
+  have hstar : star (householder (householderVec x i)) = householder (householderVec x i) :=
+    (isHermitian_householder _).eq
+  have hαα : star (-phase (x i)) * (-phase (x i)) = 1 := by
+    rw [star_neg, neg_mul_neg, RCLike.star_def, RCLike.conj_mul, norm_phase]
+    simp
+  refine ⟨(-phase (x i)) • householder (householderVec x i), ?_, ?_⟩
+  · rw [mem_unitaryGroup_iff', star_smul, hstar, smul_mul_smul_comm, hαα, one_smul, hPP]
+  · rw [smul_mulVec, ← mulVec_smul, ← hPx, mulVec_mulVec, hPP, one_mulVec]
+
 /-! ### Householder reflectors of an unnormalized axis -/
 
 /-- **The Householder reflector of an axis** `v`, not necessarily of unit length:
@@ -419,6 +445,20 @@ theorem reflector_mulVec (v x : n → 𝕜) :
     reflector v *ᵥ x = x - (2 / (star v ⬝ᵥ v) * (star v ⬝ᵥ x)) • v := by
   rw [reflector, sub_mulVec, one_mulVec, smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul,
     smul_smul]
+
+open scoped RealInnerProductSpace in
+/-- The action of `Matrix.reflector v` in the Euclidean picture: `x ↦ x - 2 ⟪w, x⟫ w` for the
+direction `w = v / ‖v‖₂` (`w = 0` when `v = 0`). -/
+theorem toLp_reflector_mulVec (v x : n → ℝ) :
+    (WithLp.toLp 2 (reflector v *ᵥ x) : EuclideanSpace ℝ n) = WithLp.toLp 2 x -
+      (2 * ⟪NormedSpace.normalize (WithLp.toLp 2 v : EuclideanSpace ℝ n), WithLp.toLp 2 x⟫) •
+        NormedSpace.normalize (WithLp.toLp 2 v : EuclideanSpace ℝ n) := by
+  have hvx : v ⬝ᵥ x = ⟪(WithLp.toLp 2 v : EuclideanSpace ℝ n), WithLp.toLp 2 x⟫ := by
+    rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+  rw [reflector_mulVec, star_trivial, dotProduct_self_eq_norm_sq, hvx, WithLp.toLp_sub,
+    WithLp.toLp_smul, NormedSpace.normalize, real_inner_smul_left, smul_smul]
+  congr 2
+  ring
 
 /-- **The defining property of a reflector, with either sign** ([golub2013matrix] (5.1.2) and
 its complex form §5.1.13): if `ᾱ α = ‖x‖₂²` and `ᾱ xᵢ` is real (`α = ± phase (x i) ‖x‖₂`), then
@@ -575,6 +615,36 @@ theorem conj_one_sub_smul_vecMulVec_eq_sub (h2 : (2 : R) ≠ 0) {B : Matrix n n 
   ring
 
 end ConjReflector
+
+/-! ### The matrices `1 - β v vᵀ` over a commutative ring -/
+
+section OneSubSmulVecMulVec
+
+omit [Fintype n] in
+/-- The matrix `1 - β v vᵀ` is symmetric. -/
+theorem transpose_one_sub_smul_vecMulVec {R : Type*} [CommRing R] (β : R)
+    (v : n → R) : (1 - β • vecMulVec v v)ᵀ = 1 - β • vecMulVec v v := by
+  rw [transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
+
+/-- `(1 - β v vᵀ)² = 1 + β (β vᵀv - 2) v vᵀ`. -/
+theorem one_sub_smul_vecMulVec_mul_self {R : Type*} [CommRing R] (β : R) (v : n → R) :
+    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) =
+      1 + (β * (β * (v ⬝ᵥ v) - 2)) • vecMulVec v v := by
+  have hV : vecMulVec v v * vecMulVec v v = (v ⬝ᵥ v) • vecMulVec v v := by
+    rw [vecMulVec_mul_vecMulVec, vecMulVec_smul]
+  simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one, Matrix.smul_mul,
+    Matrix.mul_smul, hV, smul_smul]
+  module
+
+/-- `1 - β v vᵀ` is orthogonal as soon as `β (β vᵀv - 2) = 0`: a reflector (`β vᵀv = 2`) or the
+identity (`β = 0`). -/
+theorem one_sub_smul_vecMulVec_mem_orthogonalGroup {β : ℝ} {v : n → ℝ}
+    (h : β * (β * (v ⬝ᵥ v) - 2) = 0) :
+    (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup n ℝ := by
+  rw [mem_orthogonalGroup_iff, transpose_one_sub_smul_vecMulVec,
+    one_sub_smul_vecMulVec_mul_self, h, zero_smul, add_zero]
+
+end OneSubSmulVecMulVec
 
 /-! ### Triangularization by a product of reflectors -/
 
@@ -1243,6 +1313,24 @@ theorem IsQR.span_firstColumns_eq (h : IsQR A Q R) (hNM : N ≤ M) (hA : LinearI
     mulVecLin_mul, LinearMap.range_comp_of_range_eq_top]
   exact LinearMap.range_eq_top.2 (mulVec_surjective_iff_isUnit.2 hR)
 
+/-- The triangular factor of a full QR factorization is `Qᴴ A`. -/
+theorem IsQR.conjTranspose_mul_eq (h : IsQR A Q R) : Qᴴ * A = R := by
+  rw [← h.mul_eq, ← Matrix.mul_assoc, ← star_eq_conjTranspose,
+    Unitary.star_mul_self_of_mem h.mem_unitaryGroup, Matrix.one_mul]
+
+/-- The triangular factor of a full QR factorization is upper trapezoidal. -/
+theorem IsQR.hasLowerBandwidthRect (h : IsQR A Q R) : R.HasLowerBandwidthRect 0 :=
+  fun i j hij => h.apply_eq_zero i j (by simpa using hij)
+
+/-- A unitary `Q` with `Qᴴ A` upper trapezoidal gives the full QR factorization `A = Q (Qᴴ A)`. -/
+theorem isQR_conjTranspose_mul (hQ : Q ∈ unitaryGroup (Fin M) 𝕜)
+    (hR : (Qᴴ * A).HasLowerBandwidthRect 0) : IsQR A Q (Qᴴ * A) where
+  mem_unitaryGroup := hQ
+  apply_eq_zero i j hij := hR i j (by simpa using hij)
+  mul_eq := by
+    rw [← Matrix.mul_assoc, ← star_eq_conjTranspose, Unitary.mul_star_self_of_mem hQ,
+      Matrix.one_mul]
+
 end FullQR
 
 /-! ### The thin and the pivoted QR factorizations -/
@@ -1264,6 +1352,16 @@ structure IsThinQR (A : Matrix m (Fin N) 𝕜) (Q : Matrix m (Fin N) 𝕜)
   conjTranspose_mul_self : Qᴴ * Q = 1
   /-- The triangular factor is upper triangular. -/
   isUpperTriangular : R.IsUpperTriangular
+
+/-- A thin QR factorization of a matrix of full column rank has a nonsingular triangular factor:
+`A = Q R` injective forces `R` injective. -/
+theorem IsThinQR.isUnit_of_linearIndependent {A Q : Matrix m (Fin N) 𝕜}
+    {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR A Q R) (hA : LinearIndependent 𝕜 Aᵀ) :
+    IsUnit R := by
+  rw [← mulVec_injective_iff_isUnit]
+  intro x y hxy
+  apply mulVec_injective_iff.2 hA
+  rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hxy]
 
 open scoped ComplexOrder in
 /-- **Existence of the thin QR factorization** with a positive diagonal, for linearly independent
@@ -1592,7 +1690,122 @@ theorem exists_unitary_conj_isUpperHessenberg [LinearOrder n] (A : Matrix n n �
     exact isUpperHessenberg_hessenbergReduce _ _ _
       ⟨e.symm l, e.symm.lt_iff_lt.mpr hjl, e.symm.lt_iff_lt.mpr hli⟩
 
+/-- The Householder reduction to Hessenberg form fixes the first unit vector: all its reflectors
+act on the coordinates `≥ 1`. -/
+theorem hessenbergQ_mulVec_single_zero {M : ℕ} (B : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜) :
+    hessenbergQ B *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
+  have hstep : ∀ (C : Matrix (Fin (M + 1)) (Fin (M + 1)) 𝕜) (k : ℕ),
+      hessenbergReflector C k *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
+    intro C k
+    by_cases hk : k < M + 1
+    · rw [hessenbergReflector_of_lt C hk]
+      refine householder_mulVec_eq_self_of_apply_eq_zero fun r hr => ?_
+      have hr0 : r ≠ 0 := by
+        rintro rfl
+        exact hr (householderTail_apply_of_lt _ (by simp))
+      exact Pi.single_eq_of_ne hr0 _
+    · rw [hessenbergReflector_of_le C (not_lt.1 hk), one_mulVec]
+  have hiter : ∀ k, hessenbergQIter B k *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
+    intro k
+    induction k with
+    | zero => rw [hessenbergQIter_zero, one_mulVec]
+    | succ k ih => rw [hessenbergQIter_succ, ← mulVec_mulVec, hstep, ih]
+  exact hiter _
+
 end HessenbergReduction
+
+/-! ### Sweeps of rotations in adjacent planes on a Hessenberg matrix -/
+
+section AdjacentSweep
+
+variable {α : Type*} {M N : ℕ}
+
+/-- **Bottom-up rotations of a triangular matrix give a Hessenberg matrix** ([golub2013matrix]
+(6.5.2), and the row deletion of §6.5.3). For an upper trapezoidal `T : Matrix (Fin M) (Fin N) α`
+and *any* `2 × 2` blocks `G j`, the product `P = E_b E_{b+1} ⋯ E_{b+n-1}` of their embeddings
+`E_j` in the adjacent planes `(j, j + 1)` (the book's `J_1ᵀ ⋯ J_{n-1}ᵀ`, applied right to left)
+makes `P T` vanish at `(i, l)` whenever `l + 1 < i` — `P T` is upper Hessenberg — and whenever
+`l < i` and `l < b`: the columns before the first plane stay triangular. The invariant, by
+induction on `n` from the left: the rows `b`, `b + 1` of `E_{b+1} ⋯ T` both vanish before
+column `b`, so mixing them creates nothing there. -/
+theorem prod_planeEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M) (Fin N) α}
+    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (b n : ℕ) {i : Fin M}
+    {l : Fin N} (h : (l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b) :
+    (((List.range' b n).map fun j =>
+      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T) i l = 0 := by
+  induction n generalizing b i with
+  | zero => simpa using hT i l (by omega)
+  | succ n ih =>
+    rw [List.range'_succ, List.map_cons, List.prod_cons, Matrix.mul_assoc]
+    by_cases hi : (i : ℕ) = b ∨ (i : ℕ) = b + 1
+    · exact adjacentEmbed_mul_apply_eq_zero b (G b) _
+        (fun r hr => ih (b + 1) (by omega)) hi
+    · rw [adjacentEmbed_mul_apply_of_ne b (G b) _ (by omega) (by omega)]
+      exact ih (b + 1) (by omega)
+
+/-- **The square case of (6.5.2)**: a product of embeddings in the planes `(0, 1), (1, 2), …` in
+increasing order, times an upper trapezoidal matrix, is upper Hessenberg. -/
+theorem hasLowerBandwidthRect_prod_adjacentEmbed_mul [Semiring α] {T : Matrix (Fin M) (Fin N) α}
+    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (n : ℕ) :
+    (((List.range n).map fun j =>
+      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T).HasLowerBandwidthRect 1 :=
+  fun _ _ h => by
+    rw [List.range_eq_range']
+    exact prod_planeEmbed_mul_apply_eq_zero hT G 0 n (Or.inl h)
+
+/-- **Any zeroing sweep triangularizes a Hessenberg matrix** ([golub2013matrix] §6.5.1–6.5.3,
+"we compute Givens rotations … `G_{n−1}ᵀ ⋯ G_1ᵀ H₁ = R₁`"). Let `H : Matrix (Fin M) (Fin N) α`
+be upper Hessenberg and already triangular in its first `a` columns, and let a sweep
+`Hs 0 = H`, `Hs (t + 1) = E_{a+t} * Hs t` multiply by embeddings `E_j` of *arbitrary* blocks
+`G j` in the planes `(j, j + 1)`, each step zeroing its target,
+`Hs (t + 1) (a + t + 1) (a + t) = 0`,
+for `a + t < L := min N (M − 1)`. Then `Hs (L − a)` is upper trapezoidal. The zeroing is a
+hypothesis and not a choice of `(c, s)`, so any Givens routine instantiates the lemma; the
+rectangular, parameterized form of the invariant behind `Matrix.hessenbergGivensQR_spec`. -/
+theorem upperTrapezoidal_of_adjacentRotations [NonAssocSemiring α]
+    {H : Matrix (Fin M) (Fin N) α} (hH : H.HasLowerBandwidthRect 1) {a : ℕ}
+    (ha : ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a → H i l = 0)
+    (G : ℕ → Matrix (Fin 2) (Fin 2) α) (Hs : ℕ → Matrix (Fin M) (Fin N) α) (h0 : Hs 0 = H)
+    (hstep : ∀ t, a + t < min N (M - 1) → Hs (t + 1) =
+      (adjacentEmbed (a + t) (G (a + t)) : Matrix (Fin M) (Fin M) α) * Hs t)
+    (hzero : ∀ t, a + t < min N (M - 1) → ∀ (i : Fin M) (l : Fin N), (i : ℕ) = a + t + 1 →
+      (l : ℕ) = a + t → Hs (t + 1) i l = 0) :
+    (Hs (min N (M - 1) - a)).HasLowerBandwidthRect 0 := by
+  have key : ∀ t, t ≤ min N (M - 1) - a → (Hs t).HasLowerBandwidthRect 1 ∧
+      ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a + t → Hs t i l = 0 := by
+    intro t
+    induction t with
+    | zero =>
+      intro _
+      rw [h0]
+      exact ⟨hH, fun i l h₁ h₂ => ha i l h₁ (by omega)⟩
+    | succ t ih =>
+      intro ht
+      obtain ⟨ih₁, ih₂⟩ := ih (by omega)
+      have hlt : a + t < min N (M - 1) := by omega
+      have hz := hzero t hlt
+      rw [hstep t hlt] at hz ⊢
+      refine ⟨fun i l hil => ?_, fun i l hil hla => ?_⟩
+      · by_cases hi : (i : ℕ) = a + t ∨ (i : ℕ) = a + t + 1
+        · exact adjacentEmbed_mul_apply_eq_zero _ _ _
+            (fun r hr => ih₂ r l (by omega) (by omega)) hi
+        · rw [adjacentEmbed_mul_apply_of_ne _ _ _ (by omega) (by omega)]
+          exact ih₁ i l hil
+      · by_cases hi : (i : ℕ) = a + t ∨ (i : ℕ) = a + t + 1
+        · by_cases hl : (l : ℕ) = a + t
+          · exact hz i l (by omega) hl
+          · exact adjacentEmbed_mul_apply_eq_zero _ _ _
+              (fun r hr => ih₂ r l (by omega) (by omega)) hi
+        · rw [adjacentEmbed_mul_apply_of_ne _ _ _ (by omega) (by omega)]
+          by_cases hl : (l : ℕ) < a + t
+          · exact ih₂ i l hil hl
+          · exact ih₁ i l (by omega)
+  intro i l hil
+  have hi := i.isLt
+  have hl := l.isLt
+  exact (key _ le_rfl).2 i l (by omega) (by omega)
+
+end AdjacentSweep
 
 /-! ### The Givens QR factorization of a Hessenberg matrix -/
 
@@ -1637,154 +1850,110 @@ noncomputable def hessenbergGivensQR (H : Matrix (Fin N) (Fin N) ℝ) :
     Matrix (Fin N) (Fin N) ℝ × Matrix (Fin N) (Fin N) ℝ :=
   hessenbergGivensIter H (N - 1)
 
-/-- The invariant of the Givens fold after `j` steps: `Q` is orthogonal, `Q R = H`, `R` is
-Hessenberg and upper triangular in the columns `< j`, and `Q` is Hessenberg and agrees with the
-identity beyond row `j` and beyond column `j`. -/
-private structure GivensInvariant (H : Matrix (Fin N) (Fin N) ℝ) (j : ℕ)
-    (Q R : Matrix (Fin N) (Fin N) ℝ) : Prop where
-  orth : Q ∈ Matrix.orthogonalGroup (Fin N) ℝ
-  mul : Q * R = H
-  hessR : ∀ i l : Fin N, (l : ℕ) + 1 < (i : ℕ) → R i l = 0
-  colsR : ∀ i l : Fin N, (l : ℕ) < j → (l : ℕ) < (i : ℕ) → R i l = 0
-  hessQ : ∀ i l : Fin N, (l : ℕ) + 1 < (i : ℕ) → Q i l = 0
-  rowsQ : ∀ i l : Fin N, j < (i : ℕ) → Q i l = if i = l then 1 else 0
-  colsQ : ∀ i l : Fin N, j < (l : ℕ) → Q i l = if i = l then 1 else 0
+/-- The `2 × 2` block of step `j` of the Givens fold: the rotation `!![c, -s; s, c]` by the Givens
+pair of the entries `(j, j)` and `(j + 1, j)` of the current `R`, and the identity once
+`j + 1 ≥ N`; its adjacent embedding is the rotation of the step
+(`Matrix.hessenbergGivensRotation`). -/
+private noncomputable def givensBlock (H : Matrix (Fin N) (Fin N) ℝ) (j : ℕ) :
+    Matrix (Fin 2) (Fin 2) ℝ :=
+  if h : j + 1 < N then
+    !![(givensPair ((hessenbergGivensIter H j).2 ⟨j, by omega⟩ ⟨j, by omega⟩)
+        ((hessenbergGivensIter H j).2 ⟨j + 1, h⟩ ⟨j, by omega⟩)).1,
+      -(givensPair ((hessenbergGivensIter H j).2 ⟨j, by omega⟩ ⟨j, by omega⟩)
+        ((hessenbergGivensIter H j).2 ⟨j + 1, h⟩ ⟨j, by omega⟩)).2;
+      (givensPair ((hessenbergGivensIter H j).2 ⟨j, by omega⟩ ⟨j, by omega⟩)
+        ((hessenbergGivensIter H j).2 ⟨j + 1, h⟩ ⟨j, by omega⟩)).2,
+      (givensPair ((hessenbergGivensIter H j).2 ⟨j, by omega⟩ ⟨j, by omega⟩)
+        ((hessenbergGivensIter H j).2 ⟨j + 1, h⟩ ⟨j, by omega⟩)).1]
+  else 1
 
-private theorem givensInvariant_zero {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) :
-    GivensInvariant H 0 1 H where
-  orth := one_mem _
-  mul := Matrix.one_mul H
-  hessR := isUpperHessenberg_iff_fin.1 hH
-  colsR := fun _ _ hl => absurd hl (Nat.not_lt_zero _)
-  hessQ := fun _ _ hil => one_apply_ne (Fin.ne_of_val_ne (by omega))
-  rowsQ := fun _ _ _ => one_apply
-  colsQ := fun _ _ _ => one_apply
+private theorem adjacentEmbed_givensBlock (H : Matrix (Fin N) (Fin N) ℝ) {j : ℕ}
+    (h : j + 1 < N) :
+    adjacentEmbed j (givensBlock H j) =
+      hessenbergGivensRotation (hessenbergGivensIter H j).2 j h := by
+  rw [adjacentEmbed_of_lt _ h, givensBlock, dite_eq_left h]
+  rfl
 
-private theorem givensInvariant_step {H : Matrix (Fin N) (Fin N) ℝ} {j : ℕ}
-    {Q R : Matrix (Fin N) (Fin N) ℝ} (hinv : GivensInvariant H j Q R) :
-    GivensInvariant H (j + 1) (hessenbergGivensStep (Q, R) j).1
-      (hessenbergGivensStep (Q, R) j).2 := by
+/-- One step of the Givens fold, as a rotation in the adjacent plane `(j, j + 1)`. -/
+private theorem hessenbergGivensIter_succ (H : Matrix (Fin N) (Fin N) ℝ) (j : ℕ) :
+    hessenbergGivensIter H (j + 1) =
+      ((hessenbergGivensIter H j).1 * adjacentEmbed j (givensBlock H j),
+        adjacentEmbed j (givensBlock H j)ᵀ * (hessenbergGivensIter H j).2) := by
+  rw [← adjacentEmbed_transpose]
+  change hessenbergGivensStep (hessenbergGivensIter H j) j = _
   unfold hessenbergGivensStep
   split_ifs with h
-  swap
-  · exact
-      { orth := hinv.orth
-        mul := hinv.mul
-        hessR := hinv.hessR
-        colsR := fun i l hl hli => hinv.colsR i l (by have := i.isLt; omega) hli
-        hessQ := hinv.hessQ
-        rowsQ := fun i l hi => hinv.rowsQ i l (by omega)
-        colsQ := fun i l hl => hinv.colsQ i l (by omega) }
-  obtain ⟨a, ha⟩ : ∃ a : Fin N, a = ⟨j, by omega⟩ := ⟨_, rfl⟩
-  obtain ⟨b, hb⟩ : ∃ b : Fin N, b = ⟨j + 1, h⟩ := ⟨_, rfl⟩
-  have hav : (a : ℕ) = j := by rw [ha]
-  have hbv : (b : ℕ) = j + 1 := by rw [hb]
-  have hab : a ≠ b := Fin.ne_of_val_ne (by omega)
-  have hG : hessenbergGivensRotation R j h = planeRotation a b
-      (givensPair (R a a) (R b a)).1 (givensPair (R a a) (R b a)).2 := by
-    rw [ha, hb]; rfl
-  have hRb : ∀ l : Fin N, (l : ℕ) < j → R b l = 0 := fun l hl => hinv.hessR b l (by omega)
-  have hRa : ∀ l : Fin N, (l : ℕ) < j → R a l = 0 := fun l hl => hinv.colsR a l hl (by omega)
-  have hGG : hessenbergGivensRotation R j h * (hessenbergGivensRotation R j h)ᵀ = 1 :=
-    (mem_orthogonalGroup_iff (Fin N) ℝ).1 (hessenbergGivensRotation_mem_orthogonalGroup R j h)
-  refine
-    { orth := mul_mem hinv.orth (hessenbergGivensRotation_mem_orthogonalGroup R j h)
-      mul := ?_
-      hessR := ?_
-      colsR := ?_
-      hessQ := ?_
-      rowsQ := ?_
-      colsQ := ?_ }
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (hessenbergGivensRotation R j h), hGG,
-      Matrix.one_mul, hinv.mul]
-  · intro i l hil
-    dsimp only
-    rw [hG, transpose_planeRotation_mul_apply hab]
-    by_cases hia : i = a
-    · have hiv : (i : ℕ) = a := by rw [hia]
-      rw [ite_eq_left hia, hinv.hessR a l (by omega), hinv.hessR b l (by omega)]
-      ring
-    by_cases hib : i = b
-    · have hiv : (i : ℕ) = b := by rw [hib]
-      rw [ite_eq_right hia, ite_eq_left hib, hRa l (by omega), hRb l (by omega)]
-      ring
-    · rw [ite_eq_right hia, ite_eq_right hib]
-      exact hinv.hessR i l hil
-  · intro i l hl hli
-    dsimp only
-    rw [hG, transpose_planeRotation_mul_apply hab]
-    by_cases hia : i = a
-    · have hiv : (i : ℕ) = a := by rw [hia]
-      rw [ite_eq_left hia, hRa l (by omega), hRb l (by omega)]
-      ring
-    by_cases hib : i = b
-    · rw [ite_eq_right hia, ite_eq_left hib]
-      rcases Nat.lt_succ_iff_lt_or_eq.1 hl with hlj | hlj
-      · rw [hRa l hlj, hRb l hlj]
-        ring
-      · have hla : l = a := Fin.ext (by omega)
-        rw [hla]
-        exact (givensPair_fst_mul_add_snd_mul (R a a) (R b a)).2
-    · rw [ite_eq_right hia, ite_eq_right hib]
-      rcases Nat.lt_succ_iff_lt_or_eq.1 hl with hlj | hlj
-      · exact hinv.colsR i l hlj hli
-      · have hia' : (i : ℕ) ≠ j := fun hij => hia (Fin.ext (by omega))
-        have hib' : (i : ℕ) ≠ j + 1 := fun hij => hib (Fin.ext (by omega))
-        exact hinv.hessR i l (by omega)
-  · intro i l hil
-    dsimp only
-    rw [hG, mul_planeRotation_apply hab]
-    by_cases hla : l = a
-    · rw [ite_eq_left hla, hinv.rowsQ i a (by omega), hinv.rowsQ i b (by omega),
-        ite_eq_right (Fin.ne_of_val_ne (by omega : (i : ℕ) ≠ a)),
-        ite_eq_right (Fin.ne_of_val_ne (by omega : (i : ℕ) ≠ b))]
-      ring
-    by_cases hlb : l = b
-    · rw [ite_eq_right hla, ite_eq_left hlb, hinv.rowsQ i a (by omega),
-        hinv.rowsQ i b (by omega), ite_eq_right (Fin.ne_of_val_ne (by omega : (i : ℕ) ≠ a)),
-        ite_eq_right (Fin.ne_of_val_ne (by omega : (i : ℕ) ≠ b))]
-      ring
-    · rw [ite_eq_right hla, ite_eq_right hlb]
-      exact hinv.hessQ i l hil
-  · intro i l hi
-    dsimp only
-    rw [hG, mul_planeRotation_apply hab]
-    have hia : i ≠ a := Fin.ne_of_val_ne (by omega)
-    have hib : i ≠ b := Fin.ne_of_val_ne (by omega)
-    by_cases hla : l = a
-    · rw [ite_eq_left hla, hinv.rowsQ i a (by omega), hinv.rowsQ i b (by omega),
-        ite_eq_right hia, ite_eq_right hib, hla, ite_eq_right hia]
-      ring
-    by_cases hlb : l = b
-    · rw [ite_eq_right hla, ite_eq_left hlb, hinv.rowsQ i a (by omega),
-        hinv.rowsQ i b (by omega), ite_eq_right hia, ite_eq_right hib, hlb, ite_eq_right hib]
-      ring
-    · rw [ite_eq_right hla, ite_eq_right hlb]
-      exact hinv.rowsQ i l (by omega)
-  · intro i l hl
-    dsimp only
-    rw [hG, mul_planeRotation_apply hab, ite_eq_right (Fin.ne_of_val_ne (by omega : (l : ℕ) ≠ a)),
-      ite_eq_right (Fin.ne_of_val_ne (by omega : (l : ℕ) ≠ b))]
-    exact hinv.colsQ i l (by omega)
+  · rw [adjacentEmbed_givensBlock H h]
+  · rw [adjacentEmbed_of_le (M := N) (j := j) _ (by omega), transpose_one, Matrix.mul_one,
+      Matrix.one_mul]
 
-private theorem givensInvariant_iter {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg)
-    (j : ℕ) : GivensInvariant H j (hessenbergGivensIter H j).1 (hessenbergGivensIter H j).2 := by
-  induction j with
-  | zero => exact givensInvariant_zero hH
-  | succ j ih => exact givensInvariant_step ih
+/-- The rotations of the Givens fold are orthogonal. -/
+private theorem adjacentEmbed_givensBlock_mem_orthogonalGroup (H : Matrix (Fin N) (Fin N) ℝ)
+    (j : ℕ) : adjacentEmbed j (givensBlock H j) ∈ Matrix.orthogonalGroup (Fin N) ℝ := by
+  by_cases h : j + 1 < N
+  · rw [adjacentEmbed_givensBlock H h]
+    exact hessenbergGivensRotation_mem_orthogonalGroup _ _ h
+  · rw [adjacentEmbed_of_le (M := N) (j := j) _ (by omega)]
+    exact one_mem _
 
 /-- **The Givens `QR` factorization of a Hessenberg matrix** ([quarteroni2000numerical]
 (5.47)–(5.48), §5.6.3): for `H` upper Hessenberg, the pair `(Q, R) = hessenbergGivensQR H` has `Q`
-orthogonal, `R` upper triangular, `H = Q R`, and `Q` itself upper Hessenberg. -/
+orthogonal, `R` upper triangular, `H = Q R`, and `Q` itself upper Hessenberg. The fold is a sweep
+of rotations in the adjacent planes `(j, j + 1)`, each zeroing the entry `(j + 1, j)`, so `R` is
+triangular by `Matrix.upperTrapezoidal_of_adjacentRotations` and `Q`, a product of adjacent
+rotations in increasing order, is Hessenberg by
+`Matrix.hasLowerBandwidthRect_prod_adjacentEmbed_mul`. -/
 theorem hessenbergGivensQR_spec {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) :
     (hessenbergGivensQR H).1 ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       (hessenbergGivensQR H).2.IsUpperTriangular ∧
       H = (hessenbergGivensQR H).1 * (hessenbergGivensQR H).2 ∧
       (hessenbergGivensQR H).1.IsUpperHessenberg := by
-  have hinv := givensInvariant_iter hH (N - 1)
-  refine ⟨hinv.orth, fun i l hli => ?_, hinv.mul.symm, isUpperHessenberg_iff_fin.2 hinv.hessQ⟩
-  have hli' : (l : ℕ) < i := hli
-  exact hinv.colsR i l (by have := i.isLt; omega) hli'
+  have hQ : ∀ j, (hessenbergGivensIter H j).1 =
+      ((List.range j).map fun t => (adjacentEmbed t (givensBlock H t) :
+        Matrix (Fin N) (Fin N) ℝ)).prod := by
+    intro j
+    induction j with
+    | zero => rfl
+    | succ j ih =>
+      simp only [hessenbergGivensIter_succ]
+      rw [ih, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+        List.prod_singleton]
+  have hmul : ∀ j, (hessenbergGivensIter H j).1 * (hessenbergGivensIter H j).2 = H := by
+    intro j
+    induction j with
+    | zero => exact Matrix.one_mul H
+    | succ j ih =>
+      simp only [hessenbergGivensIter_succ]
+      rw [← adjacentEmbed_transpose, Matrix.mul_assoc,
+        ← Matrix.mul_assoc (adjacentEmbed j (givensBlock H j)),
+        (mem_orthogonalGroup_iff _ ℝ).1 (adjacentEmbed_givensBlock_mem_orthogonalGroup H j),
+        Matrix.one_mul, ih]
+  refine ⟨?_, ?_, (hmul _).symm, ?_⟩
+  · rw [hessenbergGivensQR, hQ]
+    refine Submonoid.list_prod_mem _ fun M hM => ?_
+    obtain ⟨t, -, rfl⟩ := List.mem_map.1 hM
+    exact adjacentEmbed_givensBlock_mem_orthogonalGroup H t
+  · have key := upperTrapezoidal_of_adjacentRotations
+      (fun i l h => isUpperHessenberg_iff_fin.1 hH i l h) (a := 0)
+      (fun _ _ _ h => absurd h (Nat.not_lt_zero _)) (fun t => (givensBlock H t)ᵀ)
+      (fun t => (hessenbergGivensIter H t).2) rfl
+      (fun t _ => by simp only [zero_add, hessenbergGivensIter_succ])
+      (fun t ht i l hi hl => by
+        have h : t + 1 < N := by omega
+        obtain rfl : i = ⟨t + 1, h⟩ := Fin.ext (by simpa using hi)
+        obtain rfl : l = ⟨t, Nat.lt_of_succ_lt h⟩ := Fin.ext (by simpa using hl)
+        simp only [hessenbergGivensIter_succ]
+        rw [adjacentEmbed_mul_apply_succ t _ _ h]
+        simp only [givensBlock, dite_eq_left h, transpose_apply, of_apply, cons_val', cons_val_zero,
+          cons_val_one, cons_val_fin_one]
+        exact (givensPair_fst_mul_add_snd_mul _ _).2)
+    rw [show min N (N - 1) - 0 = N - 1 by omega] at key
+    exact fun i l hli => key i l (by simpa using hli)
+  · have hQH := hasLowerBandwidthRect_prod_adjacentEmbed_mul
+      (T := (1 : Matrix (Fin N) (Fin N) ℝ))
+      (fun i l h => one_apply_ne (Fin.ne_of_val_ne (by omega))) (givensBlock H) (N - 1)
+    rw [Matrix.mul_one, ← hQ] at hQH
+    exact isUpperHessenberg_iff_fin.2 fun i l h => hQH i l h
 
 end GivensQR
 

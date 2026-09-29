@@ -39,6 +39,10 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
   (`Matrix.IsUpperTriangular.mul_isUpperHessenberg`), the `R Q` of the QR iteration.
 * `Matrix.IsUpperHessenberg.isTridiagonal_of_isHermitian`: a Hermitian upper Hessenberg matrix is
   tridiagonal.
+* `Matrix.isUnit_tridiagonalOf_one_zero`, `Matrix.isUnit_tridiagonalOf_zero`: the unit lower and
+  the upper bidiagonal `tridiagonalOf` with unit diagonal are units over any ring.
+* `Matrix.pow_apply_zero_zero_eq_of_isTridiagonal`: the moments `(T^j)₀₀`, `j ≤ 2m`, of a
+  tridiagonal `T` on `Fin (m + 1)` do not see its last diagonal entry.
 
 The triangular vocabulary (the triangular parts `Matrix.strictLower`, `Matrix.strictUpper`,
 `Matrix.diagPart` and the unit triangular matrices) is in `Numlib/LinearAlgebra/Matrix/Triangular`,
@@ -67,6 +71,13 @@ def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
 with its mirror image above the first superdiagonal, so it is the stronger of the two. -/
 theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
     T.IsUpperHessenberg := fun i j h => hT i j (Or.inl h)
+
+/-- A submatrix of an upper Hessenberg matrix along a strictly monotone reindexing is upper
+Hessenberg. -/
+theorem IsUpperHessenberg.submatrix_of_strictMono {m : Type*} [LinearOrder m] [Zero R]
+    {H : Matrix n n R} (hH : H.IsUpperHessenberg) {f : m → n} (hf : StrictMono f) :
+    (H.submatrix f f).IsUpperHessenberg :=
+  fun _ _ ⟨c, hjc, hci⟩ => hH _ _ ⟨f c, hf hjc, hf hci⟩
 
 /-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`). -/
 def IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
@@ -366,6 +377,107 @@ theorem tridiagonalOf_mulVec [NonUnitalNonAssocSemiring S]
     sum_dite_val_eq_add_one]
   split_ifs <;> first | omega | abel
 
+/-- A unit lower bidiagonal matrix over any ring is a unit. -/
+theorem isUnit_tridiagonalOf_one_zero [Ring S] (L : Fin N → S) :
+    IsUnit (tridiagonalOf L 1 0) := by
+  have h : tridiagonalOf L 1 0 = 1 + tridiagonalOf L 0 0 := by
+    ext i j
+    simp only [tridiagonalOf, of_apply, add_apply, one_apply, Pi.one_apply, Pi.zero_apply,
+      Fin.ext_iff]
+    split_ifs <;> simp
+  rw [h]
+  refine isUnit_one_add_of_potential _ (fun i => N - i)
+    (fun i => Nat.lt_succ_of_le (Nat.sub_le _ _)) fun i j hij => ?_
+  simp only [tridiagonalOf, of_apply, Pi.zero_apply]
+  split_ifs <;> first | rfl | (exfalso; omega)
+
+/-- An upper bidiagonal matrix over any ring with unit diagonal entries is a unit. -/
+theorem isUnit_tridiagonalOf_zero [Ring S] (U : Fin (N + 1) → S) (F : Fin N → S)
+    (hU : ∀ i, IsUnit (U i)) : IsUnit (tridiagonalOf 0 U F) := by
+  have hdiag : IsUnit (diagonal U) := by
+    refine ⟨⟨diagonal U, diagonal fun i => Ring.inverse (U i), ?_, ?_⟩, rfl⟩ <;>
+      rw [diagonal_mul_diagonal, ← diagonal_one] <;> congr 1 <;> funext i
+    · exact Ring.mul_inverse_cancel _ (hU i)
+    · exact Ring.inverse_mul_cancel _ (hU i)
+  have h : tridiagonalOf 0 U F
+      = diagonal U * (1 + diagonal (fun i => Ring.inverse (U i)) * tridiagonalOf 0 0 F) := by
+    rw [Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, diagonal_mul_diagonal]
+    have hone : (diagonal fun i => U i * Ring.inverse (U i)) = 1 := by
+      rw [← diagonal_one]
+      congr 1
+      funext i
+      exact Ring.mul_inverse_cancel _ (hU i)
+    rw [hone, Matrix.one_mul]
+    ext i j
+    simp only [tridiagonalOf, of_apply, add_apply, diagonal_apply, Pi.zero_apply, Fin.ext_iff]
+    split_ifs <;> simp
+  rw [h]
+  refine hdiag.mul
+    (isUnit_one_add_of_potential _ (fun i => i) (fun i => i.isLt) fun i j hij => ?_)
+  rw [diagonal_mul]
+  simp only [tridiagonalOf, of_apply, Pi.zero_apply]
+  split_ifs <;> first | simp | (exfalso; omega)
+
 end TridiagonalOf
+
+/-! ### Moments of tridiagonal matrices -/
+
+section Moments
+
+variable {S : Type*} [CommRing S] {m : ℕ}
+
+private theorem pow_mulVec_single_zero_eq {M M' : Matrix (Fin (m + 1)) (Fin (m + 1)) S}
+    (hM : M.IsTridiagonal)
+    (heq : ∀ i j, ¬(i = Fin.last m ∧ j = Fin.last m) → M i j = M' i j) {k : ℕ} (hk : k ≤ m) :
+    M ^ k *ᵥ Pi.single 0 1 = M' ^ k *ᵥ Pi.single 0 1 ∧
+      ∀ l : Fin (m + 1), k < (l : ℕ) → (M ^ k *ᵥ Pi.single 0 1) l = 0 := by
+  induction k with
+  | zero =>
+    refine ⟨by rw [pow_zero, pow_zero], fun l hl => ?_⟩
+    rw [pow_zero, one_mulVec, Pi.single_apply, ite_eq_right (fun h => by subst h; simp at hl)]
+  | succ k ih =>
+    obtain ⟨ih1, ih2⟩ := ih (by omega)
+    have hlast : (M ^ k *ᵥ Pi.single 0 1) (Fin.last m) = 0 := ih2 _ (by rw [Fin.val_last]; omega)
+    have hstep : M *ᵥ (M ^ k *ᵥ Pi.single 0 1) = M' *ᵥ (M ^ k *ᵥ Pi.single 0 1) := by
+      ext i
+      change ∑ j, M i j * (M ^ k *ᵥ Pi.single 0 1) j = ∑ j, M' i j * (M ^ k *ᵥ Pi.single 0 1) j
+      refine Finset.sum_congr rfl fun j _ => ?_
+      by_cases hj : j = Fin.last m
+      · rw [hj, hlast, mul_zero, mul_zero]
+      · rw [heq i j fun h => hj h.2]
+    refine ⟨?_, fun l hl => ?_⟩
+    · rw [pow_succ', ← mulVec_mulVec, pow_succ', ← mulVec_mulVec, hstep, ih1]
+    · rw [pow_succ', ← mulVec_mulVec]
+      change ∑ j, M l j * (M ^ k *ᵥ Pi.single 0 1) j = 0
+      refine Finset.sum_eq_zero fun j _ => ?_
+      by_cases hj : (j : ℕ) ≤ k
+      · rw [hM l j (Or.inl ⟨⟨(j : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp),
+          Fin.lt_def.2 (by simp; omega)⟩), zero_mul]
+      · rw [ih2 j (by omega), mul_zero]
+
+/-- **Low moments do not see the last diagonal entry.** If `M` is tridiagonal and `M'` agrees with
+`M` except possibly at the entry `(m, m)`, then `(M^j)₀₀ = (M'^j)₀₀` for every `j ≤ 2m`: the vector
+`M^i e₀` for `i ≤ m` is supported on the first `i + 1` coordinates and computed from the columns
+`0, …, i − 1` only, and likewise for the row `e₀ᵀ M^i`. This is the moment argument behind the
+Gauss–Radau rule of [golub2013matrix] §10.2.5. -/
+theorem pow_apply_zero_zero_eq_of_isTridiagonal {M M' : Matrix (Fin (m + 1)) (Fin (m + 1)) S}
+    (hM : M.IsTridiagonal)
+    (heq : ∀ i j, ¬(i = Fin.last m ∧ j = Fin.last m) → M i j = M' i j) {j : ℕ} (hj : j ≤ 2 * m) :
+    (M ^ j) 0 0 = (M' ^ j) 0 0 := by
+  have hMt : Mᵀ.IsTridiagonal := fun i k h => hM k i (h.symm)
+  have heqt : ∀ i k, ¬(i = Fin.last m ∧ k = Fin.last m) → Mᵀ i k = M'ᵀ i k :=
+    fun i k h => heq k i fun h' => h ⟨h'.2, h'.1⟩
+  obtain ⟨j₁, j₂, rfl, h₁, h₂⟩ : ∃ j₁ j₂, j = j₁ + j₂ ∧ j₁ ≤ m ∧ j₂ ≤ m :=
+    ⟨j / 2, j - j / 2, by omega, by omega, by omega⟩
+  have hcol := (pow_mulVec_single_zero_eq hM heq h₂).1
+  have hrow := (pow_mulVec_single_zero_eq hMt heqt h₁).1
+  have hsplit : ∀ N : Matrix (Fin (m + 1)) (Fin (m + 1)) S, (N ^ (j₁ + j₂)) 0 0 =
+      (Nᵀ ^ j₁ *ᵥ Pi.single 0 1) ⬝ᵥ (N ^ j₂ *ᵥ Pi.single 0 1) := by
+    intro N
+    rw [pow_add, ← transpose_pow, mulVec_single_one, mulVec_single_one, mul_apply, dotProduct]
+    rfl
+  rw [hsplit, hsplit, hcol, hrow]
+
+end Moments
 
 end Matrix

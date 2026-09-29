@@ -271,46 +271,6 @@ theorem isArnoldiDecomposition (A : E →ₗ[𝕜] E) (b : E)
 
 end Arnoldi
 
-/-! ### The matrix reading -/
-
-namespace Matrix
-
-/-- The range of `toEuclideanLin M` is the span of the columns of `M`. (Belongs with
-`Matrix.toEuclideanLin_apply_eq_sum` in `Numlib/Analysis/Matrix/ToEuclideanLin`.) -/
-theorem range_toEuclideanLin_eq_span_col {n m : Type*} [Fintype m] [DecidableEq m]
-    (M : Matrix n m 𝕜) :
-    LinearMap.range (toEuclideanLin M) =
-      Submodule.span 𝕜 (Set.range fun j => WithLp.toLp 2 (M.col j)) := by
-  apply le_antisymm
-  · rintro _ ⟨x, rfl⟩
-    have hx := toEuclideanLin_apply_eq_sum M (WithLp.ofLp x)
-    simp only [WithLp.toLp_ofLp] at hx
-    rw [hx]
-    exact Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
-  · rw [Submodule.span_le]
-    rintro _ ⟨j, rfl⟩
-    exact ⟨WithLp.toLp 2 (Pi.single j 1), by rw [toEuclideanLin_toLp, mulVec_single_one]⟩
-
-/-- `Qᴴ Q = 1` iff the columns of `Q` are orthonormal in `EuclideanSpace`. -/
-theorem conjTranspose_mul_self_eq_one_iff_orthonormal {n m : Type*} [Fintype n]
-    [DecidableEq m] {Q : Matrix n m 𝕜} :
-    Qᴴ * Q = 1 ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
-  rw [orthonormal_iff_ite, ← Matrix.ext_iff]
-  refine forall_congr' fun i => forall_congr' fun j => ?_
-  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm, one_apply, mul_apply]
-  rfl
-
-/-- `Qᴴ r = 0` iff `r` is orthogonal to the columns of `Q`. -/
-theorem conjTranspose_mulVec_eq_zero_iff {n m : Type*} [Fintype n] {Q : Matrix n m 𝕜}
-    {r : n → 𝕜} :
-    Qᴴ *ᵥ r = 0 ↔ ∀ j, inner 𝕜 (WithLp.toLp 2 (Q.col j)) (WithLp.toLp 2 r) = 0 := by
-  rw [funext_iff]
-  refine forall_congr' fun j => ?_
-  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
-  rfl
-
-end Matrix
-
 section MatrixForm
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
@@ -558,29 +518,6 @@ end MatrixForm
 /-! ### Hessenberg reduction with a prescribed last column -/
 
 section LastCol
-
-/-- The Householder reduction to Hessenberg form fixes the first unit vector: all its reflectors
-act on the coordinates `≥ 1`. (Belongs with `Matrix.hessenbergQ` in
-`Numlib/LinearAlgebra/Matrix/QR`.) -/
-theorem Matrix.hessenbergQ_mulVec_single_zero {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
-    hessenbergQ A *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
-  have hstep : ∀ (B : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) (k : ℕ),
-      hessenbergReflector B k *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
-    intro B k
-    by_cases hk : k < N + 1
-    · rw [hessenbergReflector_of_lt B hk]
-      refine householder_mulVec_eq_self_of_apply_eq_zero fun r hr => ?_
-      have hr0 : r ≠ 0 := by
-        rintro rfl
-        exact hr (householderTail_apply_of_lt _ (by simp))
-      exact Pi.single_eq_of_ne hr0 _
-    · rw [hessenbergReflector_of_le B (not_lt.1 hk), one_mulVec]
-  have hiter : ∀ k, hessenbergQIter A k *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
-    intro k
-    induction k with
-    | zero => rw [hessenbergQIter_zero, one_mulVec]
-    | succ k ih => rw [hessenbergQIter_succ, ← mulVec_mulVec, hstep, ih]
-  exact hiter _
 
 /-- **Hessenberg reduction with a prescribed last column** ([golub2013matrix] P10.5.2, cited in
 §10.5.4): for `C` and `u` there is a unitary `Z` with `Zᴴ C Z` upper Hessenberg and

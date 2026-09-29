@@ -1,4 +1,5 @@
 import Numlib.Algebra.LinearRecurrence
+import Numlib.Algebra.Polynomial.Commute
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
@@ -183,6 +184,7 @@ import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.NormPow
+import Numlib.Analysis.InnerProductSpace.Normalize
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.PrincipalAngles
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
@@ -269,6 +271,7 @@ import Numlib.Analysis.PDE.Heat.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
+import Numlib.Analysis.RCLike.Basic
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.Boundary.ChartGraph
 import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
@@ -383,6 +386,9 @@ import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
 import Numlib.Data.ENNReal.Real
+import Numlib.Data.Fin.Sum
+import Numlib.Data.Fin.Tuple.Sort
+import Numlib.Data.Matrix.Mul
 import Numlib.Direct.ConditionEstimation
 import Numlib.Direct.CyclicReduction
 import Numlib.Direct.FastPoisson

@@ -8,6 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.JointEigenspace
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Lagrange
+import Numlib.Algebra.Polynomial.Commute
 
 /-!
 # Normal operators in finite dimension
@@ -428,12 +429,6 @@ private theorem commute_parts {X Y : E →ₗ[𝕜] E} (h₁ : Commute X Y) (h�
   · exact (h₁.add_right h₂).sub_left (h₃.add_right h₄)
   · exact (h₁.sub_right h₂).sub_left (h₃.sub_right h₄)
 
-omit [FiniteDimensional 𝕜 E] in
-/-- A polynomial in `X` commutes with everything `X` commutes with. -/
-private theorem commute_aeval_of_commute {X Y : E →ₗ[𝕜] E} (h : Commute Y X) (q : 𝕜[X]) :
-    Commute Y (aeval X q) :=
-  Algebra.commute_of_mem_adjoin_singleton_of_commute (aeval_mem_adjoin_singleton 𝕜 X) h
-
 /-- **Commuting normal operators have a common orthonormal eigenbasis** ([quarteroni2000numerical]
 §1.8; the finite-dimensional case of the spectral theorem for commuting normal operators): over an
 algebraically closed `RCLike` field, two normal operators that commute are simultaneously
@@ -463,10 +458,10 @@ theorem IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute [IsAlgClosed
     have := hB.star_comm_self.symm
     rwa [star_eq_adjoint] at this
   have hAB' : Commute A B.adjoint := by
-    have := commute_aeval_of_commute hAB qB
+    have := hAB.aeval_right qB
     rwa [hqB] at this
   have hA'B : Commute A.adjoint B := by
-    have := commute_aeval_of_commute hAB.symm qA
+    have := hAB.symm.aeval_right qA
     rw [hqA] at this
     exact this.symm
   have hA'B' : Commute A.adjoint B.adjoint := by

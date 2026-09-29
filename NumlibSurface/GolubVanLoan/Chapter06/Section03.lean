@@ -320,12 +320,6 @@ theorem trailingColumns_transpose_mul_self {n : ℕ} {V : Matrix (Fin n) (Fin n)
   rw [trailingColumns, transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hVV]
   exact submatrix_one _ fun a b hab => Fin.ext (by simpa using congrArg Fin.val hab)
 
-/-- The squared Euclidean norm of a real vector is its dot product with itself. -/
-private theorem norm_toLp_sq {ι : Type*} [Fintype ι] (x : ι → ℝ) :
-    ‖(WithLp.toLp 2 x : EuclideanSpace ℝ ι)‖ ^ 2 = x ⬝ᵥ x := by
-  rw [EuclideanSpace.norm_sq_eq, dotProduct]
-  simp [sq]
-
 /-- A matrix with orthonormal columns preserves dot products with itself. -/
 private theorem dotProduct_mulVec_self_of_transpose_mul_self {k l : ℕ}
     {W : Matrix (Fin k) (Fin l) ℝ} (hW : Wᵀ * W = 1) (y : Fin l → ℝ) :
@@ -501,7 +495,7 @@ private theorem norm_toLp_comp_equiv {ι κ : Type*} [Fintype ι] [Fintype κ] (
     ‖(WithLp.toLp 2 (v ∘ e.symm) : EuclideanSpace ℝ κ)‖ =
       ‖(WithLp.toLp 2 v : EuclideanSpace ℝ ι)‖ := by
   refine (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
-  rw [norm_toLp_sq, norm_toLp_sq, comp_equiv_symm_dotProduct]
+  rw [← dotProduct_self_eq_norm_sq, ← dotProduct_self_eq_norm_sq, comp_equiv_symm_dotProduct]
   congr 1
   funext i
   simp
@@ -616,9 +610,9 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
       funext x
       simp [hw]
     have hw1 : w ⬝ᵥ w = 1 := by
-      rw [← norm_toLp_sq, ← norm_toLp_comp_equiv e, ← hw'w, hw', one_pow]
+      rw [dotProduct_self_eq_norm_sq, ← norm_toLp_comp_equiv e, ← hw'w, hw', one_pow]
     have hCw : (tlsMatrix d t A b *ᵥ w) ⬝ᵥ (tlsMatrix d t A b *ᵥ w) = σ n ^ 2 * (w ⬝ᵥ w) := by
-      rw [hw1, mul_one, ← norm_toLp_sq, tlsMatrix_mulVec, ← hw'w, hmin, hinf]
+      rw [hw1, mul_one, dotProduct_self_eq_norm_sq, tlsMatrix_mulVec, ← hw'w, hmin, hinf]
     obtain ⟨y, hwy, hy⟩ := exists_eq_trailingColumns_mulVec hV
       (coord_eq_zero_of_mulVec_dotProduct_self hC hmn hgap hCw)
     have h2 := ha y (hy.trans hw1)
@@ -644,13 +638,13 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
     have hunit : ‖(WithLp.toLp 2 (w ∘ e.symm) : EuclideanSpace ℝ (Fin n ⊕ Unit))‖ = 1 := by
       rw [norm_toLp_comp_equiv]
       refine (sq_eq_sq₀ (norm_nonneg _) zero_le_one).1 ?_
-      rw [norm_toLp_sq, hw1, one_pow]
+      rw [← dotProduct_self_eq_norm_sq, hw1, one_pow]
     have hmin : ‖(WithLp.toLp 2 (tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
         (w ∘ e.symm)) : EuclideanSpace ℝ (Fin m))‖ =
           ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues i := by
       rw [hinf, ← tlsMatrix_mulVec]
       refine (sq_eq_sq₀ (norm_nonneg _) (hC.nonneg n)).1 ?_
-      rw [norm_toLp_sq, hCw]
+      rw [← dotProduct_self_eq_norm_sq, hCw]
     obtain ⟨E, R, hP, hsol, hER⟩ := isTLSSolution_of_mem_smallest hd ht' hunit hmin hα
     refine ⟨E, R, hP, ?_, ?_⟩
     · convert hsol using 4
@@ -916,7 +910,7 @@ theorem algorithm_6_3_1_spec (hmn : n < m)
     · rfl
   obtain ⟨hQ, hsub⟩ := householder_tail (V := S.2.2) (r := r)
     (fun i hi => hvoff i (by rw [mem_tailIndices]; omega)) hPorth
-  have hPt : Pᵀ = P := FloatingPoint.transpose_one_sub_smul_vecMulVec _ _
+  have hPt : Pᵀ = P := transpose_one_sub_smul_vecMulVec _ _
   have hrow : ∀ j, (S.2.2 * P) (Fin.last n) j = (P *ᵥ S.2.2 (Fin.last n)) j := by
     intro j
     conv_rhs => rw [← hPt, mulVec_transpose]

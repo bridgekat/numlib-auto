@@ -2674,13 +2674,8 @@ Gauss transformation of the permuted Gauss vector: `P (I - τ e_kᵀ) Pᵀ = I -
 theorem permMatrix_mul_gaussTransformation_mul_transpose {ρ : Equiv.Perm (Fin n)} {k : Fin n}
     (hρ : ∀ r, r ≤ k → ρ r = r) (τ : Fin n → ℝ) :
     ρ.permMatrix ℝ * gaussTransformation τ k * (ρ.permMatrix ℝ)ᵀ =
-      gaussTransformation (ρ.permMatrix ℝ *ᵥ τ) k := by
-  have hk : ∀ j, ρ j = k ↔ j = k := fun j =>
-    ⟨fun h => ρ.injective (h.trans (hρ k le_rfl).symm), fun h => h ▸ hρ k le_rfl⟩
-  rw [transpose_permMatrix, permMatrix_mul_mul_permMatrix, permMatrix_mulVec]
-  ext i j
-  simp only [submatrix_apply, gaussTransformation_apply, one_apply, EmbeddingLike.apply_eq_iff_eq,
-    hk j, Function.comp_apply]
+      gaussTransformation (ρ.permMatrix ℝ *ᵥ τ) k :=
+  permMatrix_mul_one_sub_vecMulVec_single_mul_transpose (hρ k le_rfl) τ
 
 /-- **(3.4.5)**: with `P' = Π_{n-1} ⋯ Π_{k+1}` the interchanges of partial pivoting after step `k`
 (`σ_{k+1}⁻¹ σ_n`, which fix the indices up to `k`), `M̃_k = P' M_k P'ᵀ` is a Gauss transformation,

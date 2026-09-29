@@ -147,3 +147,9 @@ id = "ringInverse_toEuclideanLin"
 
 [[node]]
 id = "toEuclideanCLM_vecMulVec"
+
+[[node]]
+id = "conjTranspose_mul_self_eq_one_iff_orthonormal"
+
+[[node]]
+id = "conjTranspose_mulVec_eq_zero_iff"

@@ -147,66 +147,6 @@ theorem exists_eigenvalues_eq_of_mem_spectrum (hT : T.IsHermitian) {a : ℝ}
 
 end Matrix.IsHermitian
 
-/-! ### Moments of tridiagonal matrices -/
-
-namespace Matrix
-
-variable {R : Type*} [CommRing R] {m : ℕ}
-
-private theorem pow_mulVec_single_zero_eq {M M' : Matrix (Fin (m + 1)) (Fin (m + 1)) R}
-    (hM : M.IsTridiagonal)
-    (heq : ∀ i j, ¬(i = Fin.last m ∧ j = Fin.last m) → M i j = M' i j) {k : ℕ} (hk : k ≤ m) :
-    M ^ k *ᵥ Pi.single 0 1 = M' ^ k *ᵥ Pi.single 0 1 ∧
-      ∀ l : Fin (m + 1), k < (l : ℕ) → (M ^ k *ᵥ Pi.single 0 1) l = 0 := by
-  induction k with
-  | zero =>
-    refine ⟨by rw [pow_zero, pow_zero], fun l hl => ?_⟩
-    rw [pow_zero, one_mulVec, Pi.single_apply, ite_eq_right (fun h => by subst h; simp at hl)]
-  | succ k ih =>
-    obtain ⟨ih1, ih2⟩ := ih (by omega)
-    have hlast : (M ^ k *ᵥ Pi.single 0 1) (Fin.last m) = 0 := ih2 _ (by rw [Fin.val_last]; omega)
-    have hstep : M *ᵥ (M ^ k *ᵥ Pi.single 0 1) = M' *ᵥ (M ^ k *ᵥ Pi.single 0 1) := by
-      ext i
-      change ∑ j, M i j * (M ^ k *ᵥ Pi.single 0 1) j = ∑ j, M' i j * (M ^ k *ᵥ Pi.single 0 1) j
-      refine sum_congr rfl fun j _ => ?_
-      by_cases hj : j = Fin.last m
-      · rw [hj, hlast, mul_zero, mul_zero]
-      · rw [heq i j fun h => hj h.2]
-    refine ⟨?_, fun l hl => ?_⟩
-    · rw [pow_succ', ← mulVec_mulVec, pow_succ', ← mulVec_mulVec, hstep, ih1]
-    · rw [pow_succ', ← mulVec_mulVec]
-      change ∑ j, M l j * (M ^ k *ᵥ Pi.single 0 1) j = 0
-      refine sum_eq_zero fun j _ => ?_
-      by_cases hj : (j : ℕ) ≤ k
-      · rw [hM l j (Or.inl ⟨⟨(j : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp),
-          Fin.lt_def.2 (by simp; omega)⟩), zero_mul]
-      · rw [ih2 j (by omega), mul_zero]
-
-/-- **Low moments do not see the last diagonal entry.** If `M` is tridiagonal and `M'` agrees with
-`M` except possibly at the entry `(m, m)`, then `(M^j)₀₀ = (M'^j)₀₀` for every `j ≤ 2m`: the vector
-`M^i e₀` for `i ≤ m` is supported on the first `i + 1` coordinates and computed from the columns
-`0, …, i − 1` only, and likewise for the row `e₀ᵀ M^i`. This is the moment argument behind the
-Gauss–Radau rule of [golub2013matrix] §10.2.5. -/
-theorem pow_apply_zero_zero_eq_of_isTridiagonal {M M' : Matrix (Fin (m + 1)) (Fin (m + 1)) R}
-    (hM : M.IsTridiagonal)
-    (heq : ∀ i j, ¬(i = Fin.last m ∧ j = Fin.last m) → M i j = M' i j) {j : ℕ} (hj : j ≤ 2 * m) :
-    (M ^ j) 0 0 = (M' ^ j) 0 0 := by
-  have hMt : Mᵀ.IsTridiagonal := fun i k h => hM k i (h.symm)
-  have heqt : ∀ i k, ¬(i = Fin.last m ∧ k = Fin.last m) → Mᵀ i k = M'ᵀ i k :=
-    fun i k h => heq k i fun h' => h ⟨h'.2, h'.1⟩
-  obtain ⟨j₁, j₂, rfl, h₁, h₂⟩ : ∃ j₁ j₂, j = j₁ + j₂ ∧ j₁ ≤ m ∧ j₂ ≤ m :=
-    ⟨j / 2, j - j / 2, by omega, by omega, by omega⟩
-  have hcol := (pow_mulVec_single_zero_eq hM heq h₂).1
-  have hrow := (pow_mulVec_single_zero_eq hMt heqt h₁).1
-  have hsplit : ∀ N : Matrix (Fin (m + 1)) (Fin (m + 1)) R, (N ^ (j₁ + j₂)) 0 0 =
-      (Nᵀ ^ j₁ *ᵥ Pi.single 0 1) ⬝ᵥ (N ^ j₂ *ᵥ Pi.single 0 1) := by
-    intro N
-    rw [pow_add, ← transpose_pow, mulVec_single_one, mulVec_single_one, mul_apply, dotProduct]
-    rfl
-  rw [hsplit, hsplit, hcol, hrow]
-
-end Matrix
-
 /-! ### The Golub–Welsch form of the Gauss rule, and Gauss–Radau -/
 
 namespace Lanczos

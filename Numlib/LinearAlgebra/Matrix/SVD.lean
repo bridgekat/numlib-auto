@@ -18,6 +18,8 @@ import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Data.Fin.Sum
+import Numlib.Data.Fin.Tuple.Sort
 
 /-!
 # The singular value decomposition
@@ -1574,27 +1576,6 @@ similarity `Aᴴ A = V Σᴴ Σ Vᴴ` preserves. -/
 
 section Uniqueness
 
-/-- Two functions on a finite type with the same multiset of values, in a linear order, differ
-by a permutation of the index type: sort both. -/
-theorem _root_.exists_equiv_of_map_univ_val_eq {ι α : Type*} [Fintype ι] [LinearOrder α]
-    {f g : ι → α} (h : Multiset.map f Finset.univ.val = Multiset.map g Finset.univ.val) :
-    ∃ e : ι ≃ ι, ∀ i, f (e i) = g i := by
-  classical
-  set e₀ : Fin (Fintype.card ι) ≃ ι := (Fintype.equivFin ι).symm with he₀
-  have hperm : List.Perm (List.ofFn (f ∘ e₀)) (List.ofFn (g ∘ e₀)) := by
-    rw [← Multiset.coe_eq_coe, ← Fin.univ_val_map, ← Fin.univ_val_map, ← Multiset.map_map,
-      ← Multiset.map_map, Multiset.map_univ_val_equiv, h]
-  set σf := Tuple.sort (f ∘ e₀) with hσf
-  set σg := Tuple.sort (g ∘ e₀) with hσg
-  have hsorted : List.ofFn (f ∘ e₀ ∘ σf) = List.ofFn (g ∘ e₀ ∘ σg) := by
-    refine List.Perm.eq_of_sortedLE (Tuple.monotone_sort (f ∘ e₀)).sortedLE_ofFn
-      (Tuple.monotone_sort (g ∘ e₀)).sortedLE_ofFn ?_
-    exact ((σf.ofFn_comp_perm (f ∘ e₀)).trans hperm).trans (σg.ofFn_comp_perm (g ∘ e₀)).symm
-  have hfun : f ∘ e₀ ∘ σf = g ∘ e₀ ∘ σg := List.ofFn_injective hsorted
-  refine ⟨(e₀.symm.trans σg.symm).trans (σf.trans e₀), fun i => ?_⟩
-  have := congrFun hfun (σg.symm (e₀.symm i))
-  simpa using this
-
 variable {𝕜 : Type*} [RCLike 𝕜]
 
 /-- The `n × n` diagonal matrix of real entries `d` is Hermitian. -/
@@ -1716,26 +1697,6 @@ end Uniqueness
 section Expansion
 
 variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- A sum over `Fin k`, read through `Fin.castLE` into `Fin a` for `k ≤ a`, is the sum over `Fin a`
-of the terms below `k`: the reindexing between `Fin (min m n)` and the indices of a rectangular
-diagonal. -/
-theorem _root_.Fin.sum_castLE_eq_sum_ite {M : Type*} [AddCommMonoid M] {k a : ℕ} (hk : k ≤ a)
-    (g : Fin a → M) :
-    ∑ i : Fin k, g (Fin.castLE hk i) = ∑ i : Fin a, if (i : ℕ) < k then g i else 0 := by
-  classical
-  set g' : ℕ → M := fun j => if h : j < a then g ⟨j, h⟩ else 0 with hg'
-  have h1 : ∀ i : Fin k, g (Fin.castLE hk i) = g' i := fun i => by
-    simp [hg', Fin.castLE, lt_of_lt_of_le i.isLt hk]
-  have h2 : ∀ i : Fin a, (if (i : ℕ) < k then g i else 0) = if (i : ℕ) < k then g' i else 0 :=
-    fun i => by simp [hg', i.isLt]
-  simp_rw [h1, h2]
-  rw [Fin.sum_univ_eq_sum_range (fun i => g' i) k,
-    Fin.sum_univ_eq_sum_range (fun i => if i < k then g' i else 0) a, ← Finset.sum_filter]
-  congr 1
-  ext j
-  simp only [Finset.mem_range, Finset.mem_filter]
-  omega
 
 /-- **Parseval for a finite orthonormal family**: `‖∑ c_i v_i‖² = ∑ |c_i|²`. -/
 theorem _root_.Orthonormal.norm_sum_smul_sq {ι E : Type*} [Fintype ι] [NormedAddCommGroup E]

@@ -279,34 +279,6 @@ theorem prod_sub_div_prod_sub_pos_of_strictInterlace {N : ℕ} {l : Fin (N + 1) 
         add_tsub_cancel_right] using this
     rw [hnum, hden, mul_div_mul_left _ _ (pow_ne_zero _ (by norm_num))]
 
-section InverseProblem
-
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
-
-/-- **A unitary matrix with a prescribed column**: every unit vector `x` is the `i`-th column of a
-unitary matrix, the multiple `-α P` of the reflector `P` that sends `x` to `-α eᵢ`, where
-`α = phase (x i)` has modulus one (`Matrix.householder_mulVec_eq_smul_single`). -/
-theorem exists_mem_unitaryGroup_mulVec_single_eq {x : n → 𝕜}
-    (hx : ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ = 1) (i : n) :
-    ∃ U ∈ unitaryGroup n 𝕜, U *ᵥ Pi.single i 1 = x := by
-  have hx0 : x ≠ 0 := by
-    rintro rfl
-    simp at hx
-  have hPx : householder (householderVec x i) *ᵥ x = (-phase (x i)) • Pi.single i 1 := by
-    rw [householder_mulVec_eq_smul_single hx0, hx, RCLike.ofReal_one, mul_one]
-  have hPP : householder (householderVec x i) * householder (householderVec x i) = 1 :=
-    householder_mul_self (star_dotProduct_householderVec_self hx0 i)
-  have hstar : star (householder (householderVec x i)) = householder (householderVec x i) :=
-    (isHermitian_householder _).eq
-  have hαα : star (-phase (x i)) * (-phase (x i)) = 1 := by
-    rw [star_neg, neg_mul_neg, RCLike.star_def, RCLike.conj_mul, norm_phase]
-    simp
-  refine ⟨(-phase (x i)) • householder (householderVec x i), ?_, ?_⟩
-  · rw [mem_unitaryGroup_iff', star_smul, hstar, smul_mul_smul_comm, hαα, one_smul, hPP]
-  · rw [smul_mulVec, ← mulVec_smul, ← hPx, mulVec_mulVec, hPP, one_mulVec]
-
-end InverseProblem
-
 /-- The unit vector of square roots of the interlacing ratios: under strict interlacing
 ([golub2013matrix] (8.4.7)), `d k = √(∏_j (μ_j - l_k) / ∏_{j ≠ k} (l_j - l_k))` has Euclidean
 length one (`Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`). -/

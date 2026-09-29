@@ -55,69 +55,6 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {M N : ℕ}
 
-/-! ### Block indices -/
-
-section Blocks
-
-variable {α : Type*} {r : ℕ}
-
-/-- The trailing indices `r, r + 1, …, N − 1` of `Fin N`, indexed by `Fin (N − r)`. -/
-def tailIdx (h : r ≤ N) (j : Fin (N - r)) : Fin N := ⟨r + j, by omega⟩
-
-omit [RCLike 𝕜] in
-/-- The value of a trailing index. -/
-@[simp]
-theorem val_tailIdx (h : r ≤ N) (j : Fin (N - r)) : (tailIdx h j : ℕ) = r + j := rfl
-
-omit [RCLike 𝕜] in
-/-- The trailing indices are distinct. -/
-theorem tailIdx_injective (h : r ≤ N) : Function.Injective (tailIdx h) := fun a b e =>
-  Fin.ext (by have := congrArg Fin.val e; simp only [val_tailIdx] at this; omega)
-
-/-- The vector `[y; z]` on `Fin N`, with `y` on the first `r` indices and `z` on the rest. -/
-def blockVec (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) : Fin N → α :=
-  fun k => if hk : (k : ℕ) < r then y ⟨k, hk⟩ else z ⟨k - r, by omega⟩
-
-/-- The head of `[y; z]` is `y`. -/
-@[simp]
-theorem blockVec_castLE (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) (i : Fin r) :
-    blockVec h y z (Fin.castLE h i) = y i := by
-  simp [blockVec]
-
-/-- The tail of `[y; z]` is `z`. -/
-@[simp]
-theorem blockVec_tailIdx (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) (j : Fin (N - r)) :
-    blockVec h y z (tailIdx h j) = z j := by
-  simp [blockVec, tailIdx]
-
-/-- A sum over `Fin N` splits into the leading `r` and the trailing `N − r` indices. -/
-theorem sum_eq_sum_castLE_add_sum_tailIdx {β : Type*} [AddCommMonoid β] (h : r ≤ N)
-    (f : Fin N → β) :
-    ∑ k, f k = ∑ i : Fin r, f (Fin.castLE h i) + ∑ j : Fin (N - r), f (tailIdx h j) := by
-  classical
-  set g : ℕ → β := fun k => if hk : k < N then f ⟨k, hk⟩ else 0 with hg
-  have h1 : ∑ k, f k = ∑ k ∈ Finset.range N, g k := by
-    rw [← Fin.sum_univ_eq_sum_range g N]
-    exact Finset.sum_congr rfl fun k _ => by simp [hg]
-  have h2 : ∑ i : Fin r, f (Fin.castLE h i) = ∑ k ∈ Finset.range r, g k := by
-    rw [← Fin.sum_univ_eq_sum_range g r]
-    exact Finset.sum_congr rfl fun i _ => by simp [hg, Fin.castLE, show (i : ℕ) < N by omega]
-  have h3 : ∑ j : Fin (N - r), f (tailIdx h j) = ∑ k ∈ Finset.range (N - r), g (r + k) := by
-    rw [← Fin.sum_univ_eq_sum_range (fun k => g (r + k)) (N - r)]
-    exact Finset.sum_congr rfl fun j _ => by simp [hg, tailIdx, show r + (j : ℕ) < N by omega]
-  rw [h1, h2, h3, ← Finset.sum_range_add, Nat.add_sub_cancel' h]
-
-/-- Every vector on `Fin N` is the block vector of its head and tail. -/
-theorem blockVec_head_tail (h : r ≤ N) (x : Fin N → α) :
-    blockVec h (fun i => x (Fin.castLE h i)) (fun j => x (tailIdx h j)) = x := by
-  funext k
-  unfold blockVec
-  split_ifs with hk
-  · rfl
-  · exact congrArg x (Fin.ext (by simp; omega))
-
-end Blocks
-
 /-! ### Factorizations `A = U T W` with a revealing block
 
 The rank-revealing pivoted QR factorization (`W = Πᵀ`) and the complete orthogonal decomposition

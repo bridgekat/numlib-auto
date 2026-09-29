@@ -47,6 +47,8 @@ characteristic polynomial as `Matrix.charpoly_units_conj` but has no name for th
 * `Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity`: over an
   algebraically closed field, exactly when no eigenvalue is defective — every geometric
   multiplicity equals the algebraic one.
+* `Matrix.isUnit_det_sub_smul_one_of_notMem_spectrum`: a shift `A - μ I` by a non-eigenvalue is
+  nonsingular.
 
 ## Implementation notes
 
@@ -261,6 +263,13 @@ theorem _root_.Module.End.spectrum_eq_range_of_basis {E : Type*} [AddCommGroup E
     · subst h; simp
     · simp [h, Ne.symm h]
   rw [← AlgEquiv.spectrum_eq (LinearMap.toMatrixAlgEquiv b), hmat, spectrum_diagonal]
+
+/-- If `μ` is not an eigenvalue of `A`, then `A − μ I` is nonsingular. -/
+theorem isUnit_det_sub_smul_one_of_notMem_spectrum {A : Matrix n n K} {μ : K}
+    (h : μ ∉ spectrum K A) : IsUnit (A - μ • 1).det := by
+  rw [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det] at h
+  rw [show A - μ • 1 = -(μ • 1 - A) by abel, det_neg]
+  exact (isUnit_one.neg.pow _).mul h
 
 end Field
 

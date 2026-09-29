@@ -1461,11 +1461,6 @@ theorem frobenius_norm_vecMulVec_le (u v : n → ℝ) :
     ← frobenius_norm_replicateRow (ι := Unit) v]
   exact frobenius_norm_mul _ _
 
-omit [DecidableEq n] in
-/-- `sᵀ s` is the squared Euclidean norm of `s`. -/
-theorem dotProduct_self_eq_norm_sq (s : n → ℝ) : s ⬝ᵥ s = ‖toLp 2 s‖ ^ 2 := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
-
 /-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
 private theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
     ‖A‖ ^ 2 = trace (Aᵀ * A) := by

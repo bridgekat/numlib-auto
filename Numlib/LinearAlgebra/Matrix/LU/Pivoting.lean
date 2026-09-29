@@ -1052,7 +1052,39 @@ theorem permMatrix_mul_mul_permMatrix (σ ρ : Equiv.Perm (Fin N)) :
     PEquiv.mul_toMatrix_toPEquiv, submatrix_submatrix, Function.id_comp, Function.comp_id,
     Equiv.Perm.inv_def, Equiv.symm_symm]
 
+/-- Conjugating an elementary matrix `1 - τ e_kᵀ` by a permutation fixing `k` permutes its vector:
+`P (1 - τ e_kᵀ) Pᵀ = 1 - (P τ) e_kᵀ` — how the Gauss transformations of partial pivoting are
+carried past the later row interchanges ([golub2013matrix] (3.4.5)). -/
+theorem permMatrix_mul_one_sub_vecMulVec_single_mul_transpose {ρ : Equiv.Perm (Fin N)} {k : Fin N}
+    (hk : ρ k = k) (τ : Fin N → K) :
+    ρ.permMatrix K * (1 - vecMulVec τ (Pi.single k 1)) * (ρ.permMatrix K)ᵀ =
+      1 - vecMulVec (ρ.permMatrix K *ᵥ τ) (Pi.single k 1) := by
+  have hk' : ∀ j, ρ j = k ↔ j = k := fun j =>
+    ⟨fun h => ρ.injective (h.trans hk.symm), fun h => h ▸ hk⟩
+  rw [transpose_permMatrix, permMatrix_mul_mul_permMatrix, permMatrix_mulVec]
+  ext i j
+  simp only [submatrix_apply, sub_apply, vecMulVec_apply, Pi.single_apply, one_apply,
+    EmbeddingLike.apply_eq_iff_eq, hk' j, Function.comp_apply]
+
 end FullPivotStages
+
+/-- The permutation matrix of `σ ⊕ τ`, transported to `p` along `e : m ⊕ n ≃ p`, is the block
+diagonal matrix `[P_σ 0; 0 P_τ]` reindexed along `e`: the permutation `[I 0; 0 P]` of a pivoted
+block LU factorization ([golub2013matrix] §3.6.1). -/
+theorem permMatrix_permCongr_sumCongr {R m n p : Type*} [DecidableEq m] [DecidableEq n]
+    [DecidableEq p] [Zero R] [One R] (e : m ⊕ n ≃ p) (σ : Equiv.Perm m) (τ : Equiv.Perm n) :
+    (e.permCongr (Equiv.sumCongr σ τ)).permMatrix R =
+      reindex e e (fromBlocks (σ.permMatrix R) 0 0 (τ.permMatrix R)) := by
+  ext i j
+  obtain ⟨a, rfl⟩ := e.surjective i
+  obtain ⟨b, rfl⟩ := e.surjective j
+  rw [reindex_apply, submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+  simp only [Equiv.Perm.permMatrix, PEquiv.toMatrix_apply, Equiv.toPEquiv_apply,
+    Equiv.permCongr_apply, Equiv.symm_apply_apply, Option.mem_def, Option.some.injEq,
+    EmbeddingLike.apply_eq_iff_eq]
+  rcases a with a | a <;> rcases b with b | b <;>
+    simp [fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂,
+      PEquiv.toMatrix_apply]
 
 /-! ### Nonsingular matrices have nonzero pivots under partial pivoting -/
 

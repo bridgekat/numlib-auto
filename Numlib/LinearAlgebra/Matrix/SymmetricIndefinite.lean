@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.LDL`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.GroupTheory.Perm.Fin
+import Numlib.Data.Fin.Sum
 import Numlib.LinearAlgebra.Matrix.LU
 
 /-!

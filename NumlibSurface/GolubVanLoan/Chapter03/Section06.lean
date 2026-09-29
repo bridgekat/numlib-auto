@@ -43,22 +43,6 @@ theorem equation_3_6_5 {A₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ}
       fromBlocks L₁₁ 0 L₂₁ 1 * fromBlocks 1 0 0 (A₂₂ - L₂₁ * U₁₂) * fromBlocks U₁₁ U₁₂ 0 1 :=
   (equation_3_2_9 A₂₂ h₁₁ h₂₁ h₁₂).1
 
-/-- The permutation `[I 0; 0 P]` of `Fin (r + s)`: the identity on the first `r` indices and `σ`
-on the last `s`. -/
-private theorem permMatrix_permCongr_sumCongr (σ : Equiv.Perm (Fin s)) :
-    (finSumFinEquiv.permCongr (Equiv.sumCongr (Equiv.refl (Fin r)) σ)).permMatrix ℝ =
-      reindex finSumFinEquiv finSumFinEquiv (fromBlocks 1 0 0 (σ.permMatrix ℝ)) := by
-  ext i j
-  obtain ⟨a, rfl⟩ := finSumFinEquiv.surjective i
-  obtain ⟨b, rfl⟩ := finSumFinEquiv.surjective j
-  rw [reindex_apply, submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply]
-  simp only [Equiv.Perm.permMatrix, PEquiv.toMatrix_apply, Equiv.toPEquiv_apply,
-    Equiv.permCongr_apply, Equiv.symm_apply_apply, Option.mem_def, Option.some.injEq,
-    EmbeddingLike.apply_eq_iff_eq]
-  rcases a with a | a <;> rcases b with b | b <;>
-    simp [fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂,
-      one_apply, PEquiv.toMatrix_apply]
-
 /-- **§3.6.1, the assembled pivoted block LU factorization**: with `P₁ A = [Ã₁₁ Ã₁₂; Ã₂₁ Ã₂₂]`
 (3.6.3), the block column factored as `[Ã₁₁; Ã₂₁] = [L₁₁; L₂₁] U₁₁` (3.6.2), `L₁₁ U₁₂ = Ã₁₂`
 (3.6.4), and a pivoted factorization `P^{new} A^{new} = L^{new} U^{new}` of
@@ -86,7 +70,7 @@ theorem blockLUPivoting {A : Matrix (Fin (r + s)) (Fin (r + s)) ℝ}
       (σ₁ * finSumFinEquiv.permCongr (Equiv.sumCongr (Equiv.refl (Fin r)) σ)).permMatrix ℝ =
       reindex finSumFinEquiv finSumFinEquiv (fromBlocks 1 0 0 (σ.permMatrix ℝ)) *
         σ₁.permMatrix ℝ := by
-    rw [permMatrix_mul, permMatrix_permCongr_sumCongr]
+    rw [permMatrix_mul, permMatrix_permCongr_sumCongr, Matrix.permMatrix_refl]
   refine ⟨hP, ?_⟩
   have hPA :
       (σ₁ * finSumFinEquiv.permCongr (Equiv.sumCongr (Equiv.refl (Fin r)) σ)).permMatrix ℝ * A =

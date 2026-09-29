@@ -551,11 +551,6 @@ private theorem dotProduct_mulVec_le_lpOpNorm_two (A : Matrix n n ℝ) (x y : n 
     _ = _ := by ring
 
 omit [DecidableEq n] in
-/-- `‖x‖₂² = xᵀ x` for a real vector. -/
-private theorem norm_toLp_sq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
-
-omit [DecidableEq n] in
 /-- `xᵀ M y − yᵀ M x = 2 xᵀ S y` for the skew-symmetric part `S = (M − Mᵀ)/2`. -/
 private theorem dotProduct_mulVec_sub_dotProduct_mulVec (M : Matrix n n ℝ) (x y : n → ℝ) :
     x ⬝ᵥ (M *ᵥ y) - y ⬝ᵥ (M *ᵥ x) = 2 * (x ⬝ᵥ (((1 / 2 : ℝ) • (M - Mᵀ)) *ᵥ y)) := by
@@ -602,7 +597,7 @@ theorem isMinOn_frobenius_norm_sub_skew_rank_le_two (M : Matrix n n ℝ) {u v : 
   rw [← hμ] at hb
   set a := ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y'‖
   have ha : a ^ 2 = (x ⬝ᵥ x) * (y' ⬝ᵥ y') := by
-    rw [mul_pow, norm_toLp_sq, norm_toLp_sq]
+    rw [mul_pow, ← dotProduct_self_eq_norm_sq, ← dotProduct_self_eq_norm_sq]
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
   change ‖M - μ • (vecMulVec u v - vecMulVec v u)‖ ^ 2
     ≤ ‖M - (vecMulVec x y - vecMulVec y x)‖ ^ 2

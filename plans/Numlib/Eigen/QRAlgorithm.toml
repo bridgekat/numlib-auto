@@ -284,9 +284,6 @@ id = "_root_.Matrix.range_eq_subspaceIterate_of_isOrthogonalIterationStep"
 id = "_root_.Matrix.IsOrthogonalIterationStep.isShiftedQrStep"
 
 [[node]]
-id = "_root_.Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup"
-
-[[node]]
 id = "_root_.Matrix.IsUpperHessenberg.isUpperHessenberg_of_eq_mul"
 
 [[node]]

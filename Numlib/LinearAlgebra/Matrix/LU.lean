@@ -176,6 +176,20 @@ theorem isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit [CommRing R] {A 
 
 end LeadingPrincipal
 
+/-- On `Fin N`, the strict leading principal submatrix `A(< k)` is, up to the reindexing of
+`{i // i < k}` by `Fin k`, the submatrix along `Fin.castLE`: their determinants agree. -/
+theorem det_strictLeadingPrincipalSubmatrix_castLE [CommRing R] {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) R) (k : Fin N) :
+    (A.strictLeadingPrincipalSubmatrix k).det =
+      (A.submatrix (Fin.castLE k.isLt.le) (Fin.castLE k.isLt.le)).det := by
+  let e : Fin k ≃ {i : Fin N // i < k} :=
+    { toFun := fun a => ⟨Fin.castLE k.isLt.le a, Fin.lt_def.2 a.2⟩
+      invFun := fun i => ⟨i.1, Fin.lt_def.1 i.2⟩
+      left_inv := fun a => rfl
+      right_inv := fun i => rfl }
+  rw [← det_submatrix_equiv_self e]
+  rfl
+
 /-! ### The LU specification -/
 
 section IsLU
@@ -987,19 +1001,6 @@ end Theorem34
 section RectLU
 
 variable {M N P : ℕ}
-
-/-- The two halves of `Fin (s + m)` under `finSumFinEquiv`: an index below `s` comes from the left
-summand, an index from `s` on from the right one, shifted by `s`. -/
-theorem _root_.finSumFinEquiv_symm_cases {s m : ℕ} (i : Fin (s + m)) :
-    (∃ hi : (i : ℕ) < s, finSumFinEquiv.symm i = Sum.inl ⟨i, hi⟩) ∨
-      ∃ hi : s ≤ (i : ℕ), finSumFinEquiv.symm i = Sum.inr ⟨i - s, by omega⟩ := by
-  by_cases hi : (i : ℕ) < s
-  · refine Or.inl ⟨hi, finSumFinEquiv.symm_apply_eq.2 ?_⟩
-    rw [finSumFinEquiv_apply_left]
-    exact Fin.ext rfl
-  · refine Or.inr ⟨not_lt.1 hi, finSumFinEquiv.symm_apply_eq.2 ?_⟩
-    rw [finSumFinEquiv_apply_right]
-    exact Fin.ext (by simp; omega)
 
 /-- **The rectangular LU factorization** ([golub2013matrix] §3.2.10): `A = L U` with
 `A : Matrix (Fin M) (Fin N) R`, `L : Matrix (Fin M) (Fin P) R` unit lower trapezoidal and

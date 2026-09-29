@@ -592,7 +592,7 @@ theorem algorithm_7_7_1_spec (A B : Matrix (Fin n) (Fin n) ℝ) :
       exact householderApplyLeft_spec_of_forall_mem (nodup_indexFrom n j) (List.nodup_finRange n)
         List.mem_finRange (fun i hi => storedHouseholderVec_eq_zero qr.1 j hi) _ A
     rw [hf, foldl_mul_eq_transpose_prod_mul _
-      (fun j => FloatingPoint.transpose_one_sub_smul_vecMulVec _ _),
+      (fun j => transpose_one_sub_smul_vecMulVec _ _),
       hQ₀, factoredQ_eq_prod]
   have hQ : Id.run (backwardAccumulation pure (storedReflectors qr.1 qr.2)) = Q₀ :=
     backwardAccumulation_spec _
@@ -851,20 +851,6 @@ theorem qzEntry_of_not_lt (A : Matrix (Fin n) (Fin n) ℝ) {i j : ℕ} (h : ¬ (
   split_ifs
   rfl
 
-/-- Upper Hessenberg on `Fin n`, with the condition `c + 1 < r` on values. -/
-theorem isUpperHessenberg_iff_nat {A : Matrix (Fin n) (Fin n) ℝ} :
-    A.IsUpperHessenberg ↔ ∀ r c : Fin n, (c : ℕ) + 1 < r → A r c = 0 := by
-  constructor
-  · intro h r c hrc
-    exact h r c ⟨⟨c + 1, by omega⟩, Fin.lt_def.2 (by simp), Fin.lt_def.2 (by simpa using hrc)⟩
-  · intro h r c ⟨k, hck, hkr⟩
-    exact h r c (by have := Fin.lt_def.1 hck; have := Fin.lt_def.1 hkr; omega)
-
-/-- Upper triangular on `Fin n`, with the condition `c < r` on values. -/
-theorem isUpperTriangular_iff_nat {A : Matrix (Fin n) (Fin n) ℝ} :
-    A.IsUpperTriangular ↔ ∀ r c : Fin n, (c : ℕ) < r → A r c = 0 :=
-  ⟨fun h _ _ hrc => h (Fin.lt_def.2 hrc), fun h _ _ hrc => h _ _ (Fin.lt_def.1 hrc)⟩
-
 /-- The exact run of a column rotation of the zero chase: a rotation with `c² + s² = 1` zeroing
 `A(t, l)`, applied to `A`, `B` and `Z`. -/
 theorem qzColumnZero_run {l m : Fin n} (hlm : l ≠ m) (t : Fin n) (st : QZArrays n) :
@@ -890,8 +876,8 @@ theorem qzZeroChaseStep_spec {p : ℕ} {j j₁ : Fin n} (hj : (j₁ : ℕ) = j +
       (0 < p → qzEntry (Id.run (qzZeroChaseStep pure p j j₁ st)).A p (p - 1) = 0) ∧
       (∀ r c : Fin n, (j₁ : ℕ) < r → (j₁ : ℕ) ≤ c →
         (Id.run (qzZeroChaseStep pure p j j₁ st)).A r c = st.A r c) := by
-  rw [isUpperHessenberg_iff_nat] at hA ⊢
-  rw [isUpperTriangular_iff_nat] at hB ⊢
+  rw [isUpperHessenberg_iff_fin] at hA ⊢
+  rw [isUpperTriangular_iff_fin] at hB ⊢
   have hjj : j ≠ j₁ := fun e => by rw [e] at hj; omega
   obtain ⟨c, s, hg, hcs, hz⟩ := givens_exact (st.B j j₁) (st.B j₁ j₁)
   set G := givensRotation j j₁ c s with hG
@@ -1139,8 +1125,8 @@ theorem qzZeroChase_spec {p k r : ℕ} (hpk : p ≤ k) (hkr : k ≤ r) (hr : r <
     have hlm : l ≠ m := fun e => by have := congrArg Fin.val e; simp [l, m] at this; omega
     obtain ⟨c, s', hcs, hz, hcz⟩ := qzColumnZero_run hlm m s
     rw [hcz]
-    rw [isUpperHessenberg_iff_nat] at hsA ⊢
-    rw [isUpperTriangular_iff_nat] at hsB ⊢
+    rw [isUpperHessenberg_iff_fin] at hsA ⊢
+    rw [isUpperTriangular_iff_fin] at hsB ⊢
     have hH : ∀ (Y : Matrix (Fin n) (Fin n) ℝ) x y, (Y * givensRotation l m c s') x y =
         if y = l then c * Y x l - s' * Y x m else if y = m then s' * Y x l + c * Y x m
           else Y x y := fun Y x y => mul_givensRotation_apply hlm c s' Y x y
@@ -2085,7 +2071,7 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     exact hrowA₂ i c hi hc
   -- the reflector products
   have hsym : ∀ d : (Fin n → ℝ) × ℝ, (1 - d.2 • vecMulVec d.1 d.1)ᵀ = 1 - d.2 • vecMulVec d.1 d.1 :=
-    fun d => FloatingPoint.transpose_one_sub_smul_vecMulVec _ _
+    fun d => transpose_one_sub_smul_vecMulVec _ _
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, hB₃z, hcol₃, hrow₃, ?_, fun e => by omega, ?_⟩
   · -- `eqA`
     simp only
@@ -2173,8 +2159,8 @@ private theorem qzStepInv_init {p r : ℕ} (hr : r < n) {A B : Matrix (Fin n) (F
     (hA : A.IsUpperHessenberg) (hB : B.IsUpperTriangular)
     (hp : 0 < p → qzEntry A p (p - 1) = 0) (hr₁ : qzEntry A (r + 1) r = 0) (x₀ y₀ z₀ : ℝ) :
     QZStepInv A B p r p x₀ y₀ z₀ ⟨A, B, [], [], x₀, y₀, z₀⟩ := by
-  rw [isUpperHessenberg_iff_nat] at hA
-  rw [isUpperTriangular_iff_nat] at hB
+  rw [isUpperHessenberg_iff_fin] at hA
+  rw [isUpperTriangular_iff_fin] at hB
   refine ⟨by simp [householderProduct_nil], by simp [householderProduct_nil], by simp, by simp,
     by simp, by simp, fun i c hic _ => hA i c hic, hB, fun i c hp0 hc hi => ?_,
     fun i c hi hc => ?_, fun _ _ h => absurd h (lt_irrefl p), fun _ => ⟨rfl, rfl, rfl, rfl⟩,
@@ -2360,7 +2346,7 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
       exact hinv.tri i c hic
   have hsym : ∀ d : (Fin n → ℝ) × ℝ,
       (1 - d.2 • vecMulVec d.1 d.1)ᵀ = 1 - d.2 • vecMulVec d.1 d.1 :=
-    fun d => FloatingPoint.transpose_one_sub_smul_vecMulVec _ _
+    fun d => transpose_one_sub_smul_vecMulVec _ _
   have hβQ : ∀ d ∈ st.dQ ++ [q], d.2 = 0 ∨ d.2 * (d.1 ⬝ᵥ d.1) = 2 := by
     intro d hd
     rcases List.mem_append.1 hd with hd | hd
@@ -2380,7 +2366,7 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
       hinv.eqB]
     simp only [hP₁, hP₂, Matrix.mul_assoc]
   · -- `A₁ P₂` is upper Hessenberg
-    rw [isUpperHessenberg_iff_nat]
+    rw [isUpperHessenberg_iff_fin]
     intro i c hic
     by_cases hco : (c : ℕ) = r - 1 ∨ (c : ℕ) = r
     · have hrow : ∀ l ∈ [r', r₁], A₁ i l = 0 := fun l hl => by
@@ -2394,7 +2380,7 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
     · rw [mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco)]
       exact hA₁z i c hic
   · -- `B₁ P₂` is upper triangular
-    rw [isUpperTriangular_iff_nat]
+    rw [isUpperTriangular_iff_fin]
     intro i c hic
     by_cases hco : (c : ℕ) = r - 1 ∨ (c : ℕ) = r
     · by_cases hi : (i : ℕ) = r
@@ -2442,8 +2428,8 @@ private theorem hess_mul_tri_apply {M B : Matrix (Fin n) (Fin n) ℝ} (hM : M.Is
   split_ifs with h
   · rfl
   · rcases not_and_or.1 h with h | h
-    · rw [isUpperHessenberg_iff_nat.1 hM i k (by omega), zero_mul]
-    · rw [isUpperTriangular_iff_nat.1 hB k c (by omega), mul_zero]
+    · rw [isUpperHessenberg_iff_fin.1 hM i k (by omega), zero_mul]
+    · rw [isUpperTriangular_iff_fin.1 hB k c (by omega), mul_zero]
 
 /-- A sum with one term. -/
 private theorem sum_ite_one {f : Fin n → ℝ} {P : Fin n → Prop} [DecidablePred P] (a : Fin n)
@@ -2650,7 +2636,7 @@ theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N
       (fun e => by have := congrArg Fin.val e; rw [v0, v1] at this; omega) fun k hk => by
         have a : (k : ℕ) ≠ 0 := fun e => hk.1 (Fin.ext e)
         have b : (k : ℕ) ≠ 1 := fun e => hk.2 (Fin.ext e)
-        rw [isUpperHessenberg_iff_nat.1 hMH k i0 (by rw [v0]; omega), mul_zero]]
+        rw [isUpperHessenberg_iff_fin.1 hMH k i0 (by rw [v0]; omega), mul_zero]]
   have hPcol : ∀ i, P i i0 = M i i0 * M i0 i0 + M i i1 * M i1 i0 - s * M i i0 +
       t * (1 : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ) i i0 := fun i => by
     rw [hP, Matrix.add_apply, Matrix.sub_apply, hMM, Matrix.smul_apply, Matrix.smul_apply,
@@ -2676,13 +2662,13 @@ theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N
       rw [ite_eq_left (show (i1 : ℕ) = 0 + 1 by rw [v1])]
       ring
     rw [ite_eq_right (show ¬ (i : ℕ) = 0 + 1 by omega)]
-    have hi0' : M i i0 = 0 := isUpperHessenberg_iff_nat.1 hMH i i0 (by rw [v0]; omega)
+    have hi0' : M i i0 = 0 := isUpperHessenberg_iff_fin.1 hMH i i0 (by rw [v0]; omega)
     by_cases h2 : (i : ℕ) = 2
     · have : i = i2 := Fin.ext h2
       subst this
       rw [ite_eq_left (show (i2 : ℕ) = 0 + 2 by rw [v2]), hi0']
       ring
-    · have hi1' : M i i1 = 0 := isUpperHessenberg_iff_nat.1 hMH i i1 (by rw [v1]; omega)
+    · have hi1' : M i i1 = 0 := isUpperHessenberg_iff_fin.1 hMH i i1 (by rw [v1]; omega)
       rw [ite_eq_right (show ¬ (i : ℕ) = 0 + 2 by omega), hi0', hi1']
       ring
   -- the first column of `Q`
@@ -2692,7 +2678,7 @@ theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N
       householderProduct_mulVec_single fun q hq => hrest q hq i0 rfl]
   have hPP : P₀ * P₀ = 1 := by
     refine one_sub_smul_vecMulVec_mul_self_of_mem
-      (FloatingPoint.one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
+      (one_sub_smul_vecMulVec_mem_orthogonalGroup ?_)
     rcases hβ₀ with hb | hb
     · rw [hb, zero_mul]
     · rw [hb, sub_self, mul_zero]

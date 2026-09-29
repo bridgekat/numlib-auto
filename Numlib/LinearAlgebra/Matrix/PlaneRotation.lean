@@ -40,6 +40,9 @@ makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and nothing
 ## Main definitions
 
 * `Matrix.planeEmbed j k G`: the `2 × 2` matrix `G` placed in the `(j, k)` coordinate plane.
+* `Matrix.adjacentEmbed j G`: its instance in the adjacent plane `(j, j + 1)` of `Fin M`, indexed
+  by `j : ℕ` and the identity when `j + 1 ≥ M`, so that a sweep over the planes is a product over
+  a list of natural numbers.
 * `Matrix.planeRotation j k c s`: the rotation of the `(j, k)`-plane with cosine `c` and sine `s`.
 * `Matrix.givensPair a b`: the pair `(c, s) = (a, b) / √(a² + b²)`, and `(1, 0)` when `a = b = 0`.
 * `Matrix.IsJOrthogonal J H`: `H J Hᵀ = J` ([golub2013matrix] (6.5.11), "`S`-orthogonal").
@@ -51,6 +54,8 @@ makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and nothing
 * `Matrix.planeEmbed_mul_apply`, `Matrix.mul_planeEmbed_apply`, `Matrix.planeEmbed_mulVec_apply`:
   multiplying by an embedding on the left combines the rows `j`, `k`, on the right the columns
   `j`, `k`; every other entry is left alone.
+* `Matrix.planeEmbed_mul_apply_rect`: the same for a rectangular right factor;
+  `Matrix.commute_planeEmbed_planeEmbed`: embeddings in disjoint planes commute.
 * `Matrix.planeEmbed_mul_planeEmbed`, `Matrix.planeEmbed_transpose`,
   `Matrix.planeEmbed_conjTranspose`, `Matrix.det_planeEmbed`,
   `Matrix.planeEmbed_mem_unitaryGroup_iff`: the embedding is a multiplicative,
@@ -250,6 +255,15 @@ theorem planeEmbed_mulVec_apply_of_ne (hjk : j ≠ k) (x : n → R) {p : n} (hpj
     (hpk : p ≠ k) : (planeEmbed j k G *ᵥ x) p = x p := by
   rw [planeEmbed_mulVec_apply G hjk, ite_eq_right hpj, ite_eq_right hpk]
 
+/-- Left multiplication of a rectangular matrix by a plane embedding combines the rows `j` and
+`k`: the rectangular form of `Matrix.planeEmbed_mul_apply`. -/
+theorem planeEmbed_mul_apply_rect {m : Type*} (hjk : j ≠ k) (X : Matrix n m R) (p : n) (q : m) :
+    (planeEmbed j k G * X) p q =
+      if p = j then G 0 0 * X j q + G 0 1 * X k q
+      else if p = k then G 1 0 * X j q + G 1 1 * X k q
+      else X p q :=
+  planeEmbed_mulVec_apply G hjk (fun r => X r q) p
+
 /-- A row vector against an embedded `2 × 2` matrix, the transpose of
 `Matrix.planeEmbed_mulVec_apply`. -/
 theorem vecMul_planeEmbed_apply (hjk : j ≠ k) (x : n → R) (q : n) :
@@ -306,6 +320,28 @@ theorem planeEmbed_mem_unitaryGroup_iff [StarRing R] (hjk : j ≠ k) :
     planeEmbed j k G ∈ unitaryGroup n R ↔ G ∈ unitaryGroup (Fin 2) R := by
   rw [mem_unitaryGroup_iff', mem_unitaryGroup_iff', star_eq_conjTranspose, star_eq_conjTranspose,
     planeEmbed_conjTranspose hjk, planeEmbed_mul_planeEmbed _ hjk, planeEmbed_eq_one_iff _ hjk]
+
+/-- Plane embeddings in disjoint coordinate planes commute. -/
+theorem commute_planeEmbed_planeEmbed {j' k' : n} (hjk : j ≠ k) (h₁ : j ≠ j') (h₂ : j ≠ k')
+    (h₃ : k ≠ j') (h₄ : k ≠ k') (A B : Matrix (Fin 2) (Fin 2) R) :
+    Commute (planeEmbed j k A) (planeEmbed j' k' B) := by
+  have hr := planeEmbed_apply_of_ne_left B h₁ h₂
+  have hr' := planeEmbed_apply_of_ne_left B h₃ h₄
+  have hc := fun p => planeEmbed_apply_of_ne_right B p h₁ h₂
+  have hc' := fun p => planeEmbed_apply_of_ne_right B p h₃ h₄
+  ext p q
+  rw [planeEmbed_mul_apply _ hjk, mul_planeEmbed_apply _ hjk]
+  simp only [hr, hr', hc, hc']
+  have hkj : k ≠ j := Ne.symm hjk
+  by_cases hp : p = j <;> by_cases hp' : p = k <;> by_cases hq : q = j <;>
+    by_cases hq' : q = k <;> simp_all [eq_comm (b := q)]
+
+/-- A plane embedding commutes with a diagonal matrix constant on its plane. -/
+theorem commute_planeEmbed_diagonal {d : n → R} (hj : d j = 1) (hk : d k = 1)
+    (A : Matrix (Fin 2) (Fin 2) R) : Commute (planeEmbed j k A) (diagonal d) := by
+  ext p q
+  rw [mul_diagonal, diagonal_mul, planeEmbed_apply]
+  split_ifs <;> subst_vars <;> simp_all
 
 end CommRing
 
@@ -703,5 +739,113 @@ theorem not_exists_hyperbolic_of_abs_le {x₁ x₂ : ℝ} (h : |x₁| ≤ |x₂|
     have : c * x₂ = s * x₁ := by linarith
     rw [← mul_pow, ← mul_pow, this]
   nlinarith [mul_le_mul_of_nonneg_left h12 (sq_nonneg s)]
+
+/-! ### Embeddings in adjacent planes -/
+
+section AdjacentEmbed
+
+variable {α : Type*} {M : ℕ}
+
+/-- **The embedding in an adjacent plane**: the `2 × 2` block `G` placed in the coordinate plane
+`(j, j + 1)` of `Fin M` (`Matrix.planeEmbed`), and the identity when `j + 1 ≥ M`. Indexing the
+planes by `j : ℕ` makes a sweep over the planes `(j, j + 1)` a product over a list of natural
+numbers, with no bounds to carry. -/
+def adjacentEmbed [Zero α] [One α] (j : ℕ) (G : Matrix (Fin 2) (Fin 2) α) :
+    Matrix (Fin M) (Fin M) α :=
+  if h : j + 1 < M then planeEmbed ⟨j, by omega⟩ ⟨j + 1, h⟩ G else 1
+
+section Basic
+
+variable [Zero α] [One α] {j : ℕ} (G : Matrix (Fin 2) (Fin 2) α)
+
+/-- Inside `Fin M`, the adjacent embedding is the plane embedding. -/
+theorem adjacentEmbed_of_lt (h : j + 1 < M) :
+    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) = planeEmbed ⟨j, by omega⟩ ⟨j + 1, h⟩ G :=
+  dite_eq_left h
+
+/-- Beyond `Fin M`, the adjacent embedding is the identity. -/
+theorem adjacentEmbed_of_le (h : M ≤ j + 1) : (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) = 1 :=
+  dite_eq_right (by omega)
+
+/-- Transposition commutes with the embedding. -/
+theorem adjacentEmbed_transpose :
+    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α)ᵀ = adjacentEmbed j Gᵀ := by
+  unfold adjacentEmbed
+  split_ifs
+  · exact planeEmbed_transpose G (Fin.ne_of_val_ne (by simp))
+  · exact transpose_one
+
+end Basic
+
+section Mul
+
+variable [NonAssocSemiring α] (j : ℕ) (G : Matrix (Fin 2) (Fin 2) α)
+
+/-- Away from the rows `j`, `j + 1` an adjacent embedding leaves a vector alone. -/
+theorem adjacentEmbed_mulVec_apply_of_ne (x : Fin M → α) {i : Fin M} (h₀ : (i : ℕ) ≠ j)
+    (h₁ : (i : ℕ) ≠ j + 1) : (adjacentEmbed j G *ᵥ x) i = x i := by
+  unfold adjacentEmbed
+  split_ifs with h
+  · exact planeEmbed_mulVec_apply_of_ne G (Fin.ne_of_val_ne (by simp)) x (Fin.ne_of_val_ne h₀)
+      (Fin.ne_of_val_ne h₁)
+  · rw [one_mulVec]
+
+/-- The `j`-th entry after an adjacent embedding. -/
+theorem adjacentEmbed_mulVec_apply_self (h : j + 1 < M) (x : Fin M → α) :
+    (adjacentEmbed j G *ᵥ x) ⟨j, by omega⟩ =
+      G 0 0 * x ⟨j, by omega⟩ + G 0 1 * x ⟨j + 1, h⟩ := by
+  rw [adjacentEmbed_of_lt G h, planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)),
+    ite_eq_left rfl]
+
+/-- The `(j + 1)`-th entry after an adjacent embedding. -/
+theorem adjacentEmbed_mulVec_apply_succ (h : j + 1 < M) (x : Fin M → α) :
+    (adjacentEmbed j G *ᵥ x) ⟨j + 1, h⟩ =
+      G 1 0 * x ⟨j, by omega⟩ + G 1 1 * x ⟨j + 1, h⟩ := by
+  rw [adjacentEmbed_of_lt G h, planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)),
+    ite_eq_right (Fin.ne_of_val_ne (by simp)), ite_eq_left rfl]
+
+/-- An adjacent embedding keeps the zeros a vector has in both rows `j`, `j + 1`. -/
+theorem adjacentEmbed_mulVec_apply_eq_zero {x : Fin M → α}
+    (hx : ∀ r : Fin M, (r : ℕ) = j ∨ (r : ℕ) = j + 1 → x r = 0) {i : Fin M}
+    (hi : (i : ℕ) = j ∨ (i : ℕ) = j + 1) : (adjacentEmbed j G *ᵥ x) i = 0 := by
+  unfold adjacentEmbed
+  split_ifs with h
+  · rw [planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)), hx ⟨j, by omega⟩ (Or.inl rfl),
+      hx ⟨j + 1, h⟩ (Or.inr rfl), hx i hi]
+    simp
+  · rw [one_mulVec, hx i hi]
+
+variable {N : ℕ} (X : Matrix (Fin M) (Fin N) α)
+
+/-- Away from the rows `j`, `j + 1` an adjacent embedding leaves a matrix alone. -/
+theorem adjacentEmbed_mul_apply_of_ne {i : Fin M} (h₀ : (i : ℕ) ≠ j) (h₁ : (i : ℕ) ≠ j + 1)
+    (l : Fin N) : ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) i l = X i l :=
+  adjacentEmbed_mulVec_apply_of_ne j G (fun r => X r l) h₀ h₁
+
+/-- The `(j + 1, l)` entry after an adjacent embedding. -/
+theorem adjacentEmbed_mul_apply_succ (h : j + 1 < M) (l : Fin N) :
+    ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) ⟨j + 1, h⟩ l =
+      G 1 0 * X ⟨j, by omega⟩ l + G 1 1 * X ⟨j + 1, h⟩ l :=
+  adjacentEmbed_mulVec_apply_succ j G h (fun r => X r l)
+
+/-- An adjacent embedding keeps the zeros a column has in both rows `j`, `j + 1`. -/
+theorem adjacentEmbed_mul_apply_eq_zero {l : Fin N}
+    (hX : ∀ r : Fin M, (r : ℕ) = j ∨ (r : ℕ) = j + 1 → X r l = 0) {i : Fin M}
+    (hi : (i : ℕ) = j ∨ (i : ℕ) = j + 1) :
+    ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) i l = 0 :=
+  adjacentEmbed_mulVec_apply_eq_zero j G hX hi
+
+end Mul
+
+/-- An adjacent embedding of a unitary block is unitary. -/
+theorem adjacentEmbed_mem_unitaryGroup [CommRing α] [StarRing α] (j : ℕ)
+    {G : Matrix (Fin 2) (Fin 2) α} (hG : G ∈ unitaryGroup (Fin 2) α) :
+    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) ∈ unitaryGroup (Fin M) α := by
+  unfold adjacentEmbed
+  split_ifs
+  · exact (planeEmbed_mem_unitaryGroup_iff G (Fin.ne_of_val_ne (by simp))).2 hG
+  · exact one_mem _
+
+end AdjacentEmbed
 
 end Matrix

@@ -323,3 +323,18 @@ id = "IsQR.span_col_prefix_eq"
 
 [[node]]
 id = "IsPivotedQR"
+
+[[node]]  # added by lo2: a unitary matrix with a prescribed column (a scaled Householder reflector)
+id = "exists_mem_unitaryGroup_mulVec_single_eq"
+
+[[node]]  # fp2: orthogonality of `1 - β v vᵀ`, used by both `isReflectorPert` theorems
+id = "one_sub_smul_vecMulVec_mem_orthogonalGroup"
+
+[[node]]
+id = "prod_planeEmbed_mul_apply_eq_zero"
+
+[[node]]
+id = "upperTrapezoidal_of_adjacentRotations"
+
+[[node]]
+id = "hasLowerBandwidthRect_prod_adjacentEmbed_mul"

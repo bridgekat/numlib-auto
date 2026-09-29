@@ -5,6 +5,8 @@ Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.RCLike.Basic
+import Numlib.Analysis.RCLike.Basic
+import Numlib.Data.Fin.Sum
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 
 /-!
@@ -56,40 +58,7 @@ open Finset
 
 namespace Matrix
 
-/-- A submatrix of an upper Hessenberg matrix along a strictly monotone reindexing is upper
-Hessenberg. (Belongs with `Matrix.IsUpperHessenberg` in `Numlib/LinearAlgebra/Matrix/Hessenberg`.)
--/
-theorem IsUpperHessenberg.submatrix_of_strictMono {n m R : Type*} [LinearOrder n] [LinearOrder m]
-    [Zero R] {H : Matrix n n R} (hH : H.IsUpperHessenberg) {f : m → n} (hf : StrictMono f) :
-    (H.submatrix f f).IsUpperHessenberg :=
-  fun _ _ ⟨c, hjc, hci⟩ => hH _ _ ⟨f c, hf hjc, hf hci⟩
-
-/-- Splitting a sum over `Fin k` at `j`: the leading `j + 1` indices, read through `Fin.castLE`,
-and the indices after `j`. -/
-theorem sum_fin_eq_sum_castLE_add_sum_Ioi {M : Type*} [AddCommMonoid M] {k : ℕ} (j : Fin k)
-    (g : Fin k → M) :
-    ∑ i, g i = ∑ a : Fin (j + 1), g (Fin.castLE j.isLt a) + ∑ i ∈ Ioi j, g i := by
-  rw [← sum_filter_add_sum_filter_not univ (· ≤ j)]
-  congr 1
-  · refine (sum_bij (fun a _ => Fin.castLE j.isLt a) (fun a _ => ?_)
-      (fun a _ b _ hab => Fin.castLE_injective _ hab) (fun i hi => ?_) (fun _ _ => rfl)).symm
-    · simp only [mem_filter, mem_univ, true_and, Fin.le_def, Fin.val_castLE]
-      have := a.isLt
-      omega
-    · simp only [mem_filter, mem_univ, true_and, Fin.le_def] at hi
-      exact ⟨⟨i, by omega⟩, mem_univ _, Fin.ext (by simp)⟩
-  · refine sum_congr ?_ fun _ _ => rfl
-    ext i
-    simp
-
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
-
-/-- A scalar with `star c * c = 1` has norm `1`. -/
-theorem _root_.RCLike.norm_eq_one_of_star_mul_self_eq_one {c : 𝕜} (hc : star c * c = 1) :
-    ‖c‖ = 1 := by
-  have h1 : ‖star c * c‖ = 1 := by rw [hc, norm_one]
-  rw [norm_mul, norm_star] at h1
-  exact (pow_eq_one_iff_of_nonneg (norm_nonneg c) two_ne_zero).1 (by rw [sq]; exact h1)
 
 /-- The entries of `Dᴴ M D` for a diagonal `D = diagonal d`: `star (d i) * M i j * d j`. -/
 theorem star_diagonal_mul_mul_diagonal_apply {m : Type*} [Fintype m] [DecidableEq m]

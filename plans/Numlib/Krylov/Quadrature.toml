@@ -3,8 +3,8 @@
 # through the modified Lanczos matrix, the remainders and the two-sided bound).
 # `Matrix.IsHermitian.star_dotProduct_cfc_mulVec`, `.aeval_apply_self`,
 # `.exists_eigenvalues_eq_of_mem_spectrum`, `.eigenvalues_injective_of_isTridiagonal`,
-# `Matrix.IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq` and
-# `Matrix.pow_apply_zero_zero_eq_of_isTridiagonal` are general matrix facts that would belong in
+# and `Matrix.IsTridiagonal.apply_zero_ne_zero_of_mulVec_eq` are general matrix facts that would
+# belong in
 # `Numlib/Analysis/Matrix/…` /
 # `Numlib/LinearAlgebra/Matrix/…`, and `Quadrature.mem_Icc_of_isExactOnMeasure` belongs in
 # `Numlib/Approximation/Quadrature`; they are tracked here, where they live.
@@ -23,9 +23,6 @@ id = "Matrix.IsHermitian.aeval_apply_self"
 
 [[node]]
 id = "Matrix.IsHermitian.exists_eigenvalues_eq_of_mem_spectrum"
-
-[[node]]
-id = "Matrix.pow_apply_zero_zero_eq_of_isTridiagonal"
 
 [[node]]
 id = "Lanczos.tridiag_isHermitian"

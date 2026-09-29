@@ -152,3 +152,6 @@ id = "hyperbolicRotation_hyperbolicPair_mulVec"
 
 [[node]]
 id = "not_exists_hyperbolic_of_abs_le"
+
+[[node]]
+id = "adjacentEmbed"

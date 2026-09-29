@@ -5,7 +5,9 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Block`, beside `Matrix.IsUpperTriang
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.Order.Interval.Finset.Defs
 import Numlib.LinearAlgebra.Matrix.Block
 
 /-!
@@ -42,6 +44,14 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
   substitution on `nᵒᵈ` (`Numlib/Direct/Substitution`).
 * `Matrix.charpoly_of_isLowerTriangular`: the mirror of Mathlib's
   `Matrix.charpoly_of_isUpperTriangular`.
+* Entries of products: `Matrix.IsUpperTriangular.mul_apply` (a sum over the indices between),
+  `Matrix.IsUpperTriangular.pow_apply_self`, `Matrix.mul_transpose_apply_of_lower` and
+  `Matrix.mul_mul_transpose_apply_of_isDiag` (the entries of `G Hᵀ` and `L D Lᵀ`, sums over
+  `k ≤ min i j`), `Matrix.col_zero_eq_smul_of_eq_mul` (the first column of `Z T`).
+* `Matrix.BlockTriangular.toBlock_mul`, `.toBlock_pow`, `.toBlock_mul_eq_sum_Icc`: the diagonal
+  blocks of products and powers of block triangular matrices, and the blocks of a product.
+* `Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup`: a unitary triangular matrix is
+  diagonal.
 
 ## Implementation notes
 
@@ -232,7 +242,131 @@ theorem IsLowerTriangular.mul_apply_self {M N : Matrix n n R} (hM : M.IsLowerTri
     (hN : N.IsLowerTriangular) (i : n) : (M * N) i i = M i i * N i i :=
   hM.mul_apply_self_of_injective hN OrderDual.toDual.injective i
 
+/-- An entry of a product of upper triangular matrices is a sum over the indices between. -/
+theorem IsUpperTriangular.mul_apply {M N : Matrix n n R} (hM : M.IsUpperTriangular)
+    (hN : N.IsUpperTriangular) [LocallyFiniteOrder n] (i j : n) :
+    (M * N) i j = ∑ k ∈ Finset.Icc i j, M i k * N k j := by
+  rw [Matrix.mul_apply]
+  refine (Finset.sum_subset (Finset.subset_univ _) fun k _ hk => ?_).symm
+  rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hk
+  rcases hk with hk | hk
+  · rw [hM hk, zero_mul]
+  · rw [hN hk, mul_zero]
+
+/-- The entry `(i, j)` of `G Hᵀ` for lower triangular `G` and `H` is `∑_{k ≤ min i j} g_ik h_jk`. -/
+theorem mul_transpose_apply_of_lower {G H : Matrix n n R} (hG : ∀ i j, i < j → G i j = 0)
+    (hH : ∀ i j, i < j → H i j = 0) (i j : n) :
+    (G * Hᵀ) i j = ∑ k ∈ Finset.univ.filter (· ≤ min i j), G i k * H j k := by
+  rw [Matrix.mul_apply]
+  refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
+  rw [le_min_iff]
+  by_contra hcon
+  rw [not_and_or, not_le, not_le] at hcon
+  rcases hcon with hik | hjk
+  · exact hk (by rw [hG i k hik, zero_mul])
+  · exact hk (by rw [Matrix.transpose_apply, hH j k hjk, mul_zero])
+
+/-- The entry `(i, j)` of `L D Lᵀ` for a lower triangular `L` and a diagonal `D` is
+`∑_{k ≤ min i j} l_ik d_k l_jk`. -/
+theorem mul_mul_transpose_apply_of_isDiag {L D : Matrix n n R} (hL : ∀ i j, i < j → L i j = 0)
+    (hD : D.IsDiag) (i j : n) :
+    (L * D * Lᵀ) i j = ∑ k ∈ Finset.univ.filter (· ≤ min i j), L i k * D k k * L j k := by
+  have hLD : ∀ i k, (L * D) i k = L i k * D k k := fun i k => by
+    conv_lhs => rw [← hD.diagonal_diag]
+    rw [Matrix.mul_diagonal, Matrix.diag_apply]
+  rw [mul_transpose_apply_of_lower (G := L * D) (H := L)
+    (fun i j hij => by rw [hLD, hL i j hij, zero_mul]) hL]
+  simp only [hLD]
+
 end Diag
+
+/-- The diagonal of a power of an upper triangular matrix. -/
+theorem IsUpperTriangular.pow_apply_self [Fintype n] [Semiring R] {M : Matrix n n R}
+    (hM : M.IsUpperTriangular) (m : ℕ) (i : n) : (M ^ m) i i = M i i ^ m := by
+  induction m with
+  | zero => simp
+  | succ m ih => rw [pow_succ, IsUpperTriangular.mul_apply_self (hM.pow m) hM, ih, pow_succ]
+
+omit [LinearOrder n] in
+/-- `L D Lᵀ` is symmetric for a diagonal `D`. -/
+theorem isSymm_mul_mul_transpose_of_isDiag [Fintype n] [CommSemiring R] (L : Matrix n n R)
+    {D : Matrix n n R} (hD : D.IsDiag) : (L * D * Lᵀ).IsSymm := by
+  rw [Matrix.IsSymm, Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose,
+    hD.isSymm.eq, Matrix.mul_assoc]
+
+/-- On `Fin N`, upper triangular is the condition `A i j = 0` for `j < i` on values. -/
+theorem isUpperTriangular_iff_fin [Zero R] {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
+    A.IsUpperTriangular ↔ ∀ i j : Fin N, (j : ℕ) < i → A i j = 0 :=
+  ⟨fun h _ _ hij => h (Fin.lt_def.2 hij), fun h _ _ hij => h _ _ (Fin.lt_def.1 hij)⟩
+
+/-- The first column of `M = Z T` with `T` upper triangular is `T₀₀ Z e₀`. -/
+theorem col_zero_eq_smul_of_eq_mul [CommRing R] {N : ℕ} {M Z T : Matrix (Fin (N + 1))
+    (Fin (N + 1)) R} (hM : M = Z * T) (hT : T.IsUpperTriangular) : M.col 0 = T 0 0 • Z.col 0 := by
+  ext i
+  rw [hM, col_apply, mul_apply, Finset.sum_eq_single 0, Pi.smul_apply, col_apply, smul_eq_mul,
+    mul_comm]
+  · intro l _ hl
+    rw [hT (Fin.pos_iff_ne_zero.2 hl), mul_zero]
+  · simp
+
+/-! ### Diagonal blocks of block triangular products -/
+
+section BlockTriangular
+
+variable {m α : Type*} [Fintype m] [LinearOrder α] {b : m → α} [CommRing R]
+
+/-- The diagonal blocks of a product of block triangular matrices are the products of the diagonal
+blocks. -/
+theorem BlockTriangular.toBlock_mul {M N : Matrix m m R} (hM : M.BlockTriangular b)
+    (hN : N.BlockTriangular b) (k : α) :
+    (M * N).toBlock (b · = k) (b · = k) =
+      M.toBlock (b · = k) (b · = k) * N.toBlock (b · = k) (b · = k) := by
+  classical
+  rw [toBlock_mul_eq_add _ (b · = k), add_eq_left]
+  ext i j
+  simp only [mul_apply, toBlock_apply, zero_apply]
+  refine Finset.sum_eq_zero fun l _ => ?_
+  have hl : b l ≠ k := l.2
+  rcases lt_or_gt_of_ne hl with h | h
+  · rw [hM (by rw [i.2]; exact h), zero_mul]
+  · rw [hN (by rw [j.2]; exact h), mul_zero]
+
+/-- The diagonal blocks of the powers of a block triangular matrix. -/
+theorem BlockTriangular.toBlock_pow [DecidableEq m] {M : Matrix m m R} (hM : M.BlockTriangular b)
+    (k : α) (p : ℕ) :
+    (M ^ p).toBlock (b · = k) (b · = k) = M.toBlock (b · = k) (b · = k) ^ p := by
+  induction p with
+  | zero => ext i j; simp [one_apply, Subtype.ext_iff]
+  | succ p ih => rw [pow_succ, (hM.pow p).toBlock_mul hM, ih, pow_succ]
+
+/-- A block of a product, summed over the block index. -/
+theorem toBlock_mul_eq_sum [Fintype α] (M N : Matrix m m R) (k l : α) :
+    (M * N).toBlock (b · = k) (b · = l) =
+      ∑ r, M.toBlock (b · = k) (b · = r) * N.toBlock (b · = r) (b · = l) := by
+  classical
+  ext i j
+  simp only [toBlock_apply, Matrix.mul_apply, Matrix.sum_apply]
+  rw [← Finset.sum_fiberwise Finset.univ b]
+  refine Finset.sum_congr rfl fun r _ => ?_
+  rw [Finset.sum_subtype (Finset.univ.filter (b · = r)) (p := (b · = r)) (by simp)]
+
+/-- A block of a product of block triangular matrices only involves the block indices between. -/
+theorem BlockTriangular.toBlock_mul_eq_sum_Icc [Finite α] [LocallyFiniteOrder α]
+    {M N : Matrix m m R} (hM : M.BlockTriangular b) (hN : N.BlockTriangular b) (k l : α) :
+    (M * N).toBlock (b · = k) (b · = l) =
+      ∑ r ∈ Finset.Icc k l, M.toBlock (b · = k) (b · = r) * N.toBlock (b · = r) (b · = l) := by
+  have := Fintype.ofFinite α
+  rw [toBlock_mul_eq_sum]
+  refine (Finset.sum_subset (Finset.subset_univ _) fun r _ hr => ?_).symm
+  rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hr
+  ext i j
+  simp only [Matrix.mul_apply, toBlock_apply, zero_apply]
+  refine Finset.sum_eq_zero fun x _ => ?_
+  rcases hr with hr | hr
+  · rw [hM (by rw [x.2, i.2]; exact hr), zero_mul]
+  · rw [hN (by rw [x.2, j.2]; exact hr), mul_zero]
+
+end BlockTriangular
 
 section Charpoly
 
@@ -287,6 +421,20 @@ theorem IsLowerTriangular.inv {L : Matrix n n R} (hL : L.IsLowerTriangular) :
     exact blockTriangular_inv_of_blockTriangular hL
   · rw [nonsing_inv_apply_not_isUnit L h]
     exact blockTriangular_zero
+
+/-- A unitary upper triangular matrix is diagonal: its inverse `Uᴴ` is both upper and lower
+triangular. -/
+theorem IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup [StarRing R] {U : Matrix n n R}
+    (hU : U.IsUpperTriangular) (hUu : U ∈ unitaryGroup n R) : U = diagonal fun i => U i i := by
+  have hinv : U⁻¹ = star U := inv_eq_left_inv ((mem_unitaryGroup_iff').1 hUu)
+  have hst : (star U).IsUpperTriangular := by rw [← hinv]; exact hU.inv
+  ext i j
+  rcases lt_trichotomy i j with hij | rfl | hij
+  · rw [diagonal_apply_ne _ hij.ne]
+    have := hst hij
+    rwa [star_apply, star_eq_zero] at this
+  · rw [diagonal_apply_eq]
+  · rw [diagonal_apply_ne _ hij.ne', hU hij]
 
 end Inverse
 

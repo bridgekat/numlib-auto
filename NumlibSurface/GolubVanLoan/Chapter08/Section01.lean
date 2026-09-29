@@ -659,20 +659,8 @@ private theorem subspaceDist_range_mul {ι κ : Type*} [Fintype ι] [DecidableEq
         (LinearMap.range (toEuclideanLin (Q * N))) =
       (LinearMap.range (toEuclideanLin M)).gap (LinearMap.range (toEuclideanLin N)) := by
   have hQh : Qᴴ * Q = 1 := by rwa [conjTranspose_eq_transpose_of_trivial]
-  let e : EuclideanSpace ℝ ι ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin n) :=
-    LinearIsometryEquiv.ofSurjective (toEuclideanLinearIsometry hQh) fun y =>
-      ⟨toEuclideanLin Qᵀ y, by
-        rw [toEuclideanLinearIsometry_apply, ← toEuclideanLin_mul_apply, hQ',
-          toEuclideanLin_one_apply]⟩
-  have hr : ∀ M : Matrix ι κ ℝ, LinearMap.range (toEuclideanLin (Q * M)) =
-      (LinearMap.range (toEuclideanLin M)).map (e.toLinearEquiv : EuclideanSpace ℝ ι →ₗ[ℝ] _) :=
-    fun M => by
-      rw [← LinearMap.range_comp]
-      congr 1
-      exact LinearMap.ext fun y => by
-        rw [toEuclideanLin_mul_apply, LinearMap.comp_apply]
-        rfl
-  simp only [Chapter02.subspaceDist, hr]
+  have hQh' : Q * Qᴴ = 1 := by rwa [conjTranspose_eq_transpose_of_trivial]
+  simp only [Chapter02.subspaceDist, range_mul_eq_map_of_mul_conjTranspose_eq_one hQh hQh']
   rw [Submodule.gap_map_linearIsometryEquiv]
 
 /-- **Corollary 8.1.11.** "If the conditions of the theorem hold, then
@@ -723,21 +711,6 @@ theorem corollary_8_1_11 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s
   rw [← h₁, ← h₂] at hd
   rw [hrange, hd]
   exact (gap_range_fromRows_le P).trans ((equation_8_1_3 P).2.trans hP)
-
-/-- The column space of a one-column matrix is the line through its column. -/
-private theorem range_toEuclideanLin_replicateCol (x : Fin n → ℝ) :
-    LinearMap.range (toEuclideanLin (replicateCol (Fin 1) x)) = ℝ ∙ WithLp.toLp 2 x := by
-  ext y
-  rw [LinearMap.mem_range, Submodule.mem_span_singleton]
-  constructor
-  · rintro ⟨z, rfl⟩
-    refine ⟨z 0, ?_⟩
-    ext i
-    simp [toEuclideanLin_apply, mulVec, dotProduct, mul_comm]
-  · rintro ⟨a, rfl⟩
-    refine ⟨WithLp.toLp 2 fun _ => a, ?_⟩
-    ext i
-    simp [mulVec, dotProduct, mul_comm]
 
 /-- A column `x` with `xᵀ x = 1` is a unit vector. -/
 private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}

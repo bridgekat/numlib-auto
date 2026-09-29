@@ -635,17 +635,6 @@ end Counterexample
 
 /-! ### Some stability issues -/
 
-/-- A matrix commuting with `B` commutes with every polynomial in `B`. -/
-private theorem commute_aeval {X B : Matrix (Fin n) (Fin n) ℂ} (h : Commute X B) (p : ℂ[X]) :
-    Commute X (aeval B p) := by
-  refine Polynomial.induction_on p (fun a => ?_) (fun p q hp hq => ?_) (fun k a ih => ?_)
-  · rw [aeval_C]
-    exact Algebra.commute_algebraMap_right a X
-  · rw [map_add]
-    exact hp.add_right hq
-  · rw [pow_succ, ← mul_assoc, map_mul, aeval_X]
-    exact ih.mul_right h
-
 section Two
 
 open scoped Matrix.Norms.L2Operator
@@ -669,12 +658,12 @@ theorem normal_squaring [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStar
     rw [Pade.expApprox, Matrix.nonsing_inv_eq_ringInverse]
   -- anything commuting with `B` commutes with `G`
   have hcomm : ∀ X : Matrix (Fin n) (Fin n) ℂ, Commute X B → Commute X (Dm⁻¹ * Nm) :=
-    fun X hX => (Matrix.commute_nonsing_inv_right (commute_aeval hX _)).mul_right
-      (commute_aeval hX _)
+    fun X hX => (Matrix.commute_nonsing_inv_right (hX.aeval_right _)).mul_right
+      (hX.aeval_right _)
   have hGB : Commute (Dm⁻¹ * Nm) B := (hcomm B (Commute.refl B)).symm
   have hGsB : Commute (Dm⁻¹ * Nm) (star B) := by
     rw [hsB]
-    exact commute_aeval hGB r
+    exact hGB.aeval_right r
   have hsGB : Commute (star (Dm⁻¹ * Nm)) B := by
     simpa only [star_star] using hGsB.star_star
   have hN : IsStarNormal (Pade.expApprox ℂ q q B) := by

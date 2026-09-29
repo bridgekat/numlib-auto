@@ -14,25 +14,22 @@ or removing (`A − z zᵀ`, hyperbolic rotations) a rank-one term. Real matrice
 The backbone states *what* the updates compute, not how: each update is an existence theorem
 saying that there are rotations in prescribed planes — the structural content that makes the
 update cost `O(n²)` — whose product carries the old factorization to the new one. The step-by-step
-procedures of §6.5 are surface definitions, proved correct against the two general lemmas below.
+procedures of §6.5 are surface definitions, proved correct against the two general sweep lemmas
+of `Numlib/LinearAlgebra/Matrix/QR`: `Matrix.prod_planeEmbed_mul_apply_eq_zero` ((6.5.2), bottom-up
+embeddings keep an upper trapezoidal matrix Hessenberg) and
+`Matrix.upperTrapezoidal_of_adjacentRotations` (a top-down zeroing sweep triangularizes a
+Hessenberg matrix). The adjacent embeddings `Matrix.adjacentEmbed` are in
+`Numlib/LinearAlgebra/Matrix/PlaneRotation` and the block diagonal `Matrix.consDiag a Q` of §6.5.3
+in `Numlib/LinearAlgebra/Matrix/Block`.
 
 ## Main definitions
 
-* `Matrix.adjacentEmbed j G`: a `2 × 2` block in the plane `(j, j + 1)` of `Fin M`, the identity
-  when `j + 1 ≥ M`, so that sweeps are products over lists of natural numbers.
 * `Matrix.adjacentRotationProd a n c s`: the sweep `G_a ⋯ G_{a+n−1}` of rotations in adjacent
   planes; applied on the left it acts bottom-up, its transpose top-down.
-* `Matrix.consDiag a Q`: the block diagonal `diag(a, Q)` of §6.5.3.
 
 ## Main results
 
-* `Matrix.prod_planeEmbed_mul_apply_eq_zero` ((6.5.2)): embeddings of *arbitrary* blocks in the
-  planes `(b, b + 1), (b + 1, b + 2), …`, applied bottom-up to an upper trapezoidal matrix, leave
-  it upper Hessenberg and triangular before column `b`.
-* `Matrix.upperTrapezoidal_of_adjacentRotations`: a top-down sweep of arbitrary blocks, each
-  zeroing its subdiagonal target, triangularizes a rectangular Hessenberg matrix; the zeroing is
-  a hypothesis, so any Givens routine instantiates it.
-  `Matrix.exists_rotations_triangularize_of_hessenberg` and
+* `Matrix.exists_rotations_triangularize_of_hessenberg` and
   `Matrix.exists_adjacentRotationProd_mulVec_eq_zero` are the Givens existence statements.
 * The QR updates: `Matrix.exists_isQR_rankOne_update` (§6.5.1), `Matrix.IsQR.exists_deleteColumn`,
   `Matrix.IsQR.exists_insertColumn` (§6.5.2), `Matrix.IsQR.exists_insertRow`,
@@ -68,126 +65,6 @@ the backbone's `Matrix.givensPair` and `Matrix.hyperbolicPair`, whose diagonal s
 open scoped Matrix
 
 namespace Matrix
-
-/-! ### Embeddings in adjacent planes -/
-
-section AdjacentEmbed
-
-variable {α : Type*} {M : ℕ}
-
-/-- Left multiplication of a rectangular matrix by a plane embedding combines the rows `j` and `k`
-(`Matrix.planeEmbed_mul_apply` for a square right factor). Stated locally; it belongs in
-`Numlib/LinearAlgebra/Matrix/PlaneRotation` as the rectangular form of `planeEmbed_mul_apply`. -/
-private theorem planeEmbed_mul_apply_rect {n m : Type*} [DecidableEq n] [Fintype n]
-    [NonAssocSemiring α] {j k : n} (G : Matrix (Fin 2) (Fin 2) α) (hjk : j ≠ k) (X : Matrix n m α)
-    (p : n) (q : m) :
-    (planeEmbed j k G * X) p q =
-      if p = j then G 0 0 * X j q + G 0 1 * X k q
-      else if p = k then G 1 0 * X j q + G 1 1 * X k q
-      else X p q :=
-  planeEmbed_mulVec_apply G hjk (fun r => X r q) p
-
-/-- **The embedding in an adjacent plane**: the `2 × 2` block `G` placed in the coordinate plane
-`(j, j + 1)` of `Fin M` (`Matrix.planeEmbed`), and the identity when `j + 1 ≥ M`. Indexing the
-planes by `j : ℕ` makes a sweep over the planes `(j, j + 1)` a product over a list of natural
-numbers, with no bounds to carry. -/
-def adjacentEmbed [Zero α] [One α] (j : ℕ) (G : Matrix (Fin 2) (Fin 2) α) :
-    Matrix (Fin M) (Fin M) α :=
-  if h : j + 1 < M then planeEmbed ⟨j, by omega⟩ ⟨j + 1, h⟩ G else 1
-
-section Basic
-
-variable [Zero α] [One α] {j : ℕ} (G : Matrix (Fin 2) (Fin 2) α)
-
-/-- Inside `Fin M`, the adjacent embedding is the plane embedding. -/
-theorem adjacentEmbed_of_lt (h : j + 1 < M) :
-    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) = planeEmbed ⟨j, by omega⟩ ⟨j + 1, h⟩ G :=
-  dite_eq_left h
-
-/-- Beyond `Fin M`, the adjacent embedding is the identity. -/
-theorem adjacentEmbed_of_le (h : M ≤ j + 1) : (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) = 1 :=
-  dite_eq_right (by omega)
-
-/-- Transposition commutes with the embedding. -/
-theorem adjacentEmbed_transpose :
-    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α)ᵀ = adjacentEmbed j Gᵀ := by
-  unfold adjacentEmbed
-  split_ifs
-  · exact planeEmbed_transpose G (Fin.ne_of_val_ne (by simp))
-  · exact transpose_one
-
-end Basic
-
-section Mul
-
-variable [NonAssocSemiring α] (j : ℕ) (G : Matrix (Fin 2) (Fin 2) α)
-
-/-- Away from the rows `j`, `j + 1` an adjacent embedding leaves a vector alone. -/
-theorem adjacentEmbed_mulVec_apply_of_ne (x : Fin M → α) {i : Fin M} (h₀ : (i : ℕ) ≠ j)
-    (h₁ : (i : ℕ) ≠ j + 1) : (adjacentEmbed j G *ᵥ x) i = x i := by
-  unfold adjacentEmbed
-  split_ifs with h
-  · exact planeEmbed_mulVec_apply_of_ne G (Fin.ne_of_val_ne (by simp)) x (Fin.ne_of_val_ne h₀)
-      (Fin.ne_of_val_ne h₁)
-  · rw [one_mulVec]
-
-/-- The `j`-th entry after an adjacent embedding. -/
-theorem adjacentEmbed_mulVec_apply_self (h : j + 1 < M) (x : Fin M → α) :
-    (adjacentEmbed j G *ᵥ x) ⟨j, by omega⟩ =
-      G 0 0 * x ⟨j, by omega⟩ + G 0 1 * x ⟨j + 1, h⟩ := by
-  rw [adjacentEmbed_of_lt G h, planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)),
-    ite_eq_left rfl]
-
-/-- The `(j + 1)`-th entry after an adjacent embedding. -/
-theorem adjacentEmbed_mulVec_apply_succ (h : j + 1 < M) (x : Fin M → α) :
-    (adjacentEmbed j G *ᵥ x) ⟨j + 1, h⟩ =
-      G 1 0 * x ⟨j, by omega⟩ + G 1 1 * x ⟨j + 1, h⟩ := by
-  rw [adjacentEmbed_of_lt G h, planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)),
-    ite_eq_right (Fin.ne_of_val_ne (by simp)), ite_eq_left rfl]
-
-/-- An adjacent embedding keeps the zeros a vector has in both rows `j`, `j + 1`. -/
-theorem adjacentEmbed_mulVec_apply_eq_zero {x : Fin M → α}
-    (hx : ∀ r : Fin M, (r : ℕ) = j ∨ (r : ℕ) = j + 1 → x r = 0) {i : Fin M}
-    (hi : (i : ℕ) = j ∨ (i : ℕ) = j + 1) : (adjacentEmbed j G *ᵥ x) i = 0 := by
-  unfold adjacentEmbed
-  split_ifs with h
-  · rw [planeEmbed_mulVec_apply G (Fin.ne_of_val_ne (by simp)), hx ⟨j, by omega⟩ (Or.inl rfl),
-      hx ⟨j + 1, h⟩ (Or.inr rfl), hx i hi]
-    simp
-  · rw [one_mulVec, hx i hi]
-
-variable {N : ℕ} (X : Matrix (Fin M) (Fin N) α)
-
-/-- Away from the rows `j`, `j + 1` an adjacent embedding leaves a matrix alone. -/
-theorem adjacentEmbed_mul_apply_of_ne {i : Fin M} (h₀ : (i : ℕ) ≠ j) (h₁ : (i : ℕ) ≠ j + 1)
-    (l : Fin N) : ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) i l = X i l :=
-  adjacentEmbed_mulVec_apply_of_ne j G (fun r => X r l) h₀ h₁
-
-/-- The `(j + 1, l)` entry after an adjacent embedding. -/
-theorem adjacentEmbed_mul_apply_succ (h : j + 1 < M) (l : Fin N) :
-    ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) ⟨j + 1, h⟩ l =
-      G 1 0 * X ⟨j, by omega⟩ l + G 1 1 * X ⟨j + 1, h⟩ l :=
-  adjacentEmbed_mulVec_apply_succ j G h (fun r => X r l)
-
-/-- An adjacent embedding keeps the zeros a column has in both rows `j`, `j + 1`. -/
-theorem adjacentEmbed_mul_apply_eq_zero {l : Fin N}
-    (hX : ∀ r : Fin M, (r : ℕ) = j ∨ (r : ℕ) = j + 1 → X r l = 0) {i : Fin M}
-    (hi : (i : ℕ) = j ∨ (i : ℕ) = j + 1) :
-    ((adjacentEmbed j G : Matrix (Fin M) (Fin M) α) * X) i l = 0 :=
-  adjacentEmbed_mulVec_apply_eq_zero j G hX hi
-
-end Mul
-
-/-- An adjacent embedding of a unitary block is unitary. -/
-theorem adjacentEmbed_mem_unitaryGroup [CommRing α] [StarRing α] (j : ℕ)
-    {G : Matrix (Fin 2) (Fin 2) α} (hG : G ∈ unitaryGroup (Fin 2) α) :
-    (adjacentEmbed j G : Matrix (Fin M) (Fin M) α) ∈ unitaryGroup (Fin M) α := by
-  unfold adjacentEmbed
-  split_ifs
-  · exact (planeEmbed_mem_unitaryGroup_iff G (Fin.ne_of_val_ne (by simp))).2 hG
-  · exact one_mem _
-
-end AdjacentEmbed
 
 /-! ### Sweeps of rotations in adjacent planes -/
 
@@ -252,99 +129,6 @@ private theorem rotationBlock_transpose (c s : ℝ) : !![c, -s; s, c]ᵀ = !![c,
   fin_cases i <;> fin_cases j <;> rfl
 
 end AdjacentRotationProd
-
-/-! ### The Hessenberg lemmas -/
-
-section Hessenberg
-
-variable {α : Type*} {M N : ℕ}
-
-/-- **Bottom-up rotations of a triangular matrix give a Hessenberg matrix** ([golub2013matrix]
-(6.5.2), and the row deletion of §6.5.3). For an upper trapezoidal `T : Matrix (Fin M) (Fin N) α`
-and *any* `2 × 2` blocks `G j`, the product `P = E_b E_{b+1} ⋯ E_{b+n-1}` of their embeddings
-`E_j` in the adjacent planes `(j, j + 1)` (the book's `J_1ᵀ ⋯ J_{n-1}ᵀ`, applied right to left)
-makes `P T` vanish at `(i, l)` whenever `l + 1 < i` — `P T` is upper Hessenberg — and whenever
-`l < i` and `l < b`: the columns before the first plane stay triangular. The invariant, by
-induction on `n` from the left: the rows `b`, `b + 1` of `E_{b+1} ⋯ T` both vanish before
-column `b`, so mixing them creates nothing there. -/
-theorem prod_planeEmbed_mul_apply_eq_zero [Semiring α] {T : Matrix (Fin M) (Fin N) α}
-    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (b n : ℕ) {i : Fin M}
-    {l : Fin N} (h : (l : ℕ) + 1 < i ∨ (l : ℕ) < i ∧ (l : ℕ) < b) :
-    (((List.range' b n).map fun j =>
-      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T) i l = 0 := by
-  induction n generalizing b i with
-  | zero => simpa using hT i l (by omega)
-  | succ n ih =>
-    rw [List.range'_succ, List.map_cons, List.prod_cons, Matrix.mul_assoc]
-    by_cases hi : (i : ℕ) = b ∨ (i : ℕ) = b + 1
-    · exact adjacentEmbed_mul_apply_eq_zero b (G b) _
-        (fun r hr => ih (b + 1) (by omega)) hi
-    · rw [adjacentEmbed_mul_apply_of_ne b (G b) _ (by omega) (by omega)]
-      exact ih (b + 1) (by omega)
-
-/-- **The square case of (6.5.2)**: a product of embeddings in the planes `(0, 1), (1, 2), …` in
-increasing order, times an upper trapezoidal matrix, is upper Hessenberg. -/
-theorem hasLowerBandwidthRect_prod_adjacentEmbed_mul [Semiring α] {T : Matrix (Fin M) (Fin N) α}
-    (hT : T.HasLowerBandwidthRect 0) (G : ℕ → Matrix (Fin 2) (Fin 2) α) (n : ℕ) :
-    (((List.range n).map fun j =>
-      (adjacentEmbed j (G j) : Matrix (Fin M) (Fin M) α)).prod * T).HasLowerBandwidthRect 1 :=
-  fun _ _ h => by
-    rw [List.range_eq_range']
-    exact prod_planeEmbed_mul_apply_eq_zero hT G 0 n (Or.inl h)
-
-/-- **Any zeroing sweep triangularizes a Hessenberg matrix** ([golub2013matrix] §6.5.1–6.5.3,
-"we compute Givens rotations … `G_{n−1}ᵀ ⋯ G_1ᵀ H₁ = R₁`"). Let `H : Matrix (Fin M) (Fin N) α`
-be upper Hessenberg and already triangular in its first `a` columns, and let a sweep
-`Hs 0 = H`, `Hs (t + 1) = E_{a+t} * Hs t` multiply by embeddings `E_j` of *arbitrary* blocks
-`G j` in the planes `(j, j + 1)`, each step zeroing its target,
-`Hs (t + 1) (a + t + 1) (a + t) = 0`,
-for `a + t < L := min N (M − 1)`. Then `Hs (L − a)` is upper trapezoidal. The zeroing is a
-hypothesis and not a choice of `(c, s)`, so any Givens routine instantiates the lemma; the
-rectangular, parameterized form of the invariant behind `Matrix.hessenbergGivensQR_spec`. -/
-theorem upperTrapezoidal_of_adjacentRotations [NonAssocSemiring α]
-    {H : Matrix (Fin M) (Fin N) α} (hH : H.HasLowerBandwidthRect 1) {a : ℕ}
-    (ha : ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a → H i l = 0)
-    (G : ℕ → Matrix (Fin 2) (Fin 2) α) (Hs : ℕ → Matrix (Fin M) (Fin N) α) (h0 : Hs 0 = H)
-    (hstep : ∀ t, a + t < min N (M - 1) → Hs (t + 1) =
-      (adjacentEmbed (a + t) (G (a + t)) : Matrix (Fin M) (Fin M) α) * Hs t)
-    (hzero : ∀ t, a + t < min N (M - 1) → ∀ (i : Fin M) (l : Fin N), (i : ℕ) = a + t + 1 →
-      (l : ℕ) = a + t → Hs (t + 1) i l = 0) :
-    (Hs (min N (M - 1) - a)).HasLowerBandwidthRect 0 := by
-  have key : ∀ t, t ≤ min N (M - 1) - a → (Hs t).HasLowerBandwidthRect 1 ∧
-      ∀ (i : Fin M) (l : Fin N), (l : ℕ) < i → (l : ℕ) < a + t → Hs t i l = 0 := by
-    intro t
-    induction t with
-    | zero =>
-      intro _
-      rw [h0]
-      exact ⟨hH, fun i l h₁ h₂ => ha i l h₁ (by omega)⟩
-    | succ t ih =>
-      intro ht
-      obtain ⟨ih₁, ih₂⟩ := ih (by omega)
-      have hlt : a + t < min N (M - 1) := by omega
-      have hz := hzero t hlt
-      rw [hstep t hlt] at hz ⊢
-      refine ⟨fun i l hil => ?_, fun i l hil hla => ?_⟩
-      · by_cases hi : (i : ℕ) = a + t ∨ (i : ℕ) = a + t + 1
-        · exact adjacentEmbed_mul_apply_eq_zero _ _ _
-            (fun r hr => ih₂ r l (by omega) (by omega)) hi
-        · rw [adjacentEmbed_mul_apply_of_ne _ _ _ (by omega) (by omega)]
-          exact ih₁ i l hil
-      · by_cases hi : (i : ℕ) = a + t ∨ (i : ℕ) = a + t + 1
-        · by_cases hl : (l : ℕ) = a + t
-          · exact hz i l (by omega) hl
-          · exact adjacentEmbed_mul_apply_eq_zero _ _ _
-              (fun r hr => ih₂ r l (by omega) (by omega)) hi
-        · rw [adjacentEmbed_mul_apply_of_ne _ _ _ (by omega) (by omega)]
-          by_cases hl : (l : ℕ) < a + t
-          · exact ih₂ i l hil hl
-          · exact ih₁ i l (by omega)
-  intro i l hil
-  have hi := i.isLt
-  have hl := l.isLt
-  exact (key _ le_rfl).2 i l (by omega) (by omega)
-
-end Hessenberg
 
 /-! ### Givens sweeps exist -/
 
@@ -481,27 +265,6 @@ end Givens
 section QR
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
-
-/-- The triangular factor of a full QR factorization is `Qᴴ A`. -/
-theorem IsQR.conjTranspose_mul_eq {A : Matrix (Fin m) (Fin n) 𝕜} {Q R} (h : IsQR A Q R) :
-    Qᴴ * A = R := by
-  rw [← h.mul_eq, ← Matrix.mul_assoc, ← star_eq_conjTranspose,
-    Unitary.star_mul_self_of_mem h.mem_unitaryGroup, Matrix.one_mul]
-
-/-- The triangular factor of a full QR factorization is upper trapezoidal. -/
-theorem IsQR.hasLowerBandwidthRect {A : Matrix (Fin m) (Fin n) 𝕜} {Q R} (h : IsQR A Q R) :
-    R.HasLowerBandwidthRect 0 :=
-  fun i j hij => h.apply_eq_zero i j (by simpa using hij)
-
-/-- A unitary `Q` with `Qᴴ A` upper trapezoidal gives the full QR factorization `A = Q (Qᴴ A)`. -/
-theorem isQR_conjTranspose_mul {A : Matrix (Fin m) (Fin n) 𝕜} {Q : Matrix (Fin m) (Fin m) 𝕜}
-    (hQ : Q ∈ unitaryGroup (Fin m) 𝕜) (hR : (Qᴴ * A).HasLowerBandwidthRect 0) :
-    IsQR A Q (Qᴴ * A) where
-  mem_unitaryGroup := hQ
-  apply_eq_zero i j hij := hR i j (by simpa using hij)
-  mul_eq := by
-    rw [← Matrix.mul_assoc, ← star_eq_conjTranspose, Unitary.mul_star_self_of_mem hQ,
-      Matrix.one_mul]
 
 /-- For real matrices the conjugate transpose of the orthogonal factor is its transpose. -/
 private theorem transpose_mem_orthogonalGroup {P : Matrix (Fin m) (Fin m) ℝ}
@@ -695,17 +458,9 @@ section ConsDiag
 
 variable {α : Type*} {m n p : ℕ}
 
-/-! The tuple lemmas `Fin.cons_zero`, `Fin.cons_succ`, `Fin.insertNth_apply_same` and
-`Fin.insertNth_apply_succAbove` do not fire on a tuple of rows given as a `Matrix`, whose type is
-not syntactically a function type; these are their row forms. -/
-
-@[simp]
-private theorem cons_rows_zero (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α) (j : Fin n) :
-    (Fin.cons w A : Fin (m + 1) → Fin n → α) 0 j = w j := rfl
-
-@[simp]
-private theorem cons_rows_succ (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α) (i : Fin m)
-    (j : Fin n) : (Fin.cons w A : Fin (m + 1) → Fin n → α) i.succ j = A i j := rfl
+/-! The tuple lemmas `Fin.insertNth_apply_same` and `Fin.insertNth_apply_succAbove` do not fire
+on a tuple of rows given as a `Matrix`, whose type is not syntactically a function type; these are
+their row forms (those of `Fin.cons` are `Matrix.cons_rows_zero` and `Matrix.cons_rows_succ`). -/
 
 @[simp]
 private theorem insertNth_rows_same (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
@@ -720,66 +475,6 @@ private theorem insertNth_rows_succAbove (w : Fin n → α) (A : Matrix (Fin m) 
     (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) (k.succAbove i) j = A i j := by
   have h := Fin.insertNth_apply_succAbove (α := fun _ => Fin n → α) k w (fun i => A i) i
   exact congrFun h j
-
-/-- **The block diagonal matrix `diag(a, Q)`** on `Fin (m + 1) × Fin (n + 1)`: `a` in the corner
-`(0, 0)`, `Q` on the trailing block, zero elsewhere ([golub2013matrix] §6.5.3, `diag(1, Q)`). -/
-def consDiag [Zero α] (a : α) (Q : Matrix (Fin m) (Fin n) α) :
-    Matrix (Fin (m + 1)) (Fin (n + 1)) α :=
-  of (Fin.cons (Fin.cons a 0) fun i => Fin.cons 0 (Q i))
-
-section Apply
-
-variable [Zero α] (a : α) (Q : Matrix (Fin m) (Fin n) α)
-
-/-- The corner entry of `diag(a, Q)`. -/
-@[simp] theorem consDiag_zero_zero : consDiag a Q 0 0 = a := rfl
-
-/-- The first row of `diag(a, Q)` vanishes off the corner. -/
-@[simp] theorem consDiag_zero_succ (j : Fin n) : consDiag a Q 0 j.succ = 0 := rfl
-
-/-- The first column of `diag(a, Q)` vanishes off the corner. -/
-@[simp] theorem consDiag_succ_zero (i : Fin m) : consDiag a Q i.succ 0 = 0 := rfl
-
-/-- The trailing block of `diag(a, Q)` is `Q`. -/
-@[simp] theorem consDiag_succ_succ (i : Fin m) (j : Fin n) : consDiag a Q i.succ j.succ = Q i j :=
-  rfl
-
-end Apply
-
-/-- `diag(a, Q) [wᵀ; X] = [a wᵀ; Q X]`. -/
-theorem consDiag_mul_of_cons [NonUnitalNonAssocSemiring α] (a : α) (Q : Matrix (Fin m) (Fin n) α)
-    (w : Fin p → α) (X : Matrix (Fin n) (Fin p) α) :
-    consDiag a Q * of (Fin.cons w X) = of (Fin.cons (a • w) (Q * X)) := by
-  ext i j
-  induction i using Fin.cases <;> simp [mul_apply, Fin.sum_univ_succ]
-
-/-- `diag(a, Q) diag(b, Q') = diag(a b, Q Q')`. -/
-theorem consDiag_mul_consDiag [NonUnitalNonAssocSemiring α] (a b : α)
-    (Q : Matrix (Fin m) (Fin n) α) (Q' : Matrix (Fin n) (Fin p) α) :
-    consDiag a Q * consDiag b Q' = consDiag (a * b) (Q * Q') := by
-  ext i j
-  induction i using Fin.cases <;> induction j using Fin.cases <;>
-    simp [mul_apply, Fin.sum_univ_succ]
-
-/-- `diag(1, 1) = 1`. -/
-@[simp]
-theorem consDiag_one [Zero α] [One α] : consDiag (1 : α) (1 : Matrix (Fin m) (Fin m) α) = 1 := by
-  ext i j
-  induction i using Fin.cases <;> induction j using Fin.cases <;>
-    simp [one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
-
-/-- `diag(a, Q)ᴴ = diag(a⋆, Qᴴ)`. -/
-theorem conjTranspose_consDiag [AddMonoid α] [StarAddMonoid α] (a : α)
-    (Q : Matrix (Fin m) (Fin n) α) : (consDiag a Q)ᴴ = consDiag (star a) Qᴴ := by
-  ext i j
-  induction i using Fin.cases <;> induction j using Fin.cases <;> simp
-
-/-- `diag(a, Q)` is unitary when `a` is and `Q` is. -/
-theorem consDiag_mem_unitaryGroup [CommRing α] [StarRing α] {a : α} (ha : a * star a = 1)
-    {Q : Matrix (Fin m) (Fin m) α} (hQ : Q ∈ unitaryGroup (Fin m) α) :
-    consDiag a Q ∈ unitaryGroup (Fin (m + 1)) α := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, conjTranspose_consDiag, consDiag_mul_consDiag,
-    ha, ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hQ, consDiag_one]
 
 /-- Permuting the rows of a unitary matrix keeps it unitary. -/
 theorem submatrix_mem_unitaryGroup [CommRing α] [StarRing α] {ι : Type*} [Fintype ι]

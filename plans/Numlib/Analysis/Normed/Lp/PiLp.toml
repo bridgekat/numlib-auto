@@ -47,3 +47,6 @@ id = "norm_dotProduct_le"
 
 [[node]]
 id = "norm_toLp_le_mul_norm_toLp"
+
+[[node]]
+id = "_root_.Matrix.dotProduct_self_eq_norm_sq"

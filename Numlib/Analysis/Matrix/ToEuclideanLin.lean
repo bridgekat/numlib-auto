@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.Matrix.Spectrum
+import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.LinearAlgebra.Matrix.Complexify
@@ -36,7 +37,7 @@ It also contains the fact that a unitary matrix acts as an isometry of `Euclidea
 and use that a unitary continuous linear endomorphism of a Hilbert space preserves the norm
 (`ContinuousLinearMap.norm_map_of_mem_unitary`).
 
-Four further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
+Five further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
 transported to the operator picture:
 
 * the *applied* forms of the linear-equivalence laws, `toEuclideanLin (A - B) v =
@@ -49,6 +50,12 @@ transported to the operator picture:
 * the *shift* `A + r I` of a matrix by a multiple of the identity, the shape of a resolvent and of
   every regularized or shifted system, whose image is the shift `toEuclideanCLM A + r • 1` of the
   operator;
+* *column spaces*: `ran A` is the span of the columns (`Matrix.range_toEuclideanLin_eq_span_col`),
+  `Qᴴ Q = 1` says the columns are orthonormal
+  (`Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal`), the two column blocks of a unitary
+  `[Q_α Q_β]` span orthogonal complements (`Matrix.range_eq_orthogonal_of_fromCols`), and a unitary
+  `V` carries `ran M` to `ran (V M)` isometrically
+  (`Matrix.range_mul_eq_map_of_mul_conjTranspose_eq_one`);
 * *injectivity* of `Matrix.toEuclideanCLM` for the coercion its applications use
   (`Matrix.toEuclideanCLM_injective`), because `StarAlgEquiv.injective` speaks about the underlying
   ring equivalence and leaves a goal phrased in `toRingEquiv`.
@@ -183,6 +190,85 @@ theorem toEuclideanLin_apply_eq_sum [Fintype m] [DecidableEq m] (V : Matrix n m 
 
 end Coordinates
 
+section Columns
+
+/-! ### Ranges and orthonormality of columns -/
+
+variable {m : Type*}
+
+omit [Fintype n] [DecidableEq n] in
+/-- The range of `toEuclideanLin M` is the span of the columns of `M`. -/
+theorem range_toEuclideanLin_eq_span_col [Fintype m] [DecidableEq m] (M : Matrix n m 𝕜) :
+    LinearMap.range (toEuclideanLin M) =
+      Submodule.span 𝕜 (Set.range fun j => WithLp.toLp 2 (M.col j)) := by
+  apply le_antisymm
+  · rintro _ ⟨x, rfl⟩
+    have hx := toEuclideanLin_apply_eq_sum M (WithLp.ofLp x)
+    simp only [WithLp.toLp_ofLp] at hx
+    rw [hx]
+    exact Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
+  · rw [Submodule.span_le]
+    rintro _ ⟨j, rfl⟩
+    exact ⟨WithLp.toLp 2 (Pi.single j 1), by rw [toEuclideanLin_toLp, mulVec_single_one]⟩
+
+omit [Fintype n] [DecidableEq n] in
+/-- The column space of a one-column matrix is the line through its column. -/
+theorem range_toEuclideanLin_replicateCol [Fintype m] [DecidableEq m] [Nonempty m] (x : n → 𝕜) :
+    LinearMap.range (toEuclideanLin (replicateCol m x)) = 𝕜 ∙ WithLp.toLp 2 x := by
+  rw [range_toEuclideanLin_eq_span_col]
+  have h : (fun j : m => WithLp.toLp 2 ((replicateCol m x).col j)) = fun _ => WithLp.toLp 2 x :=
+    rfl
+  rw [h, Set.range_const]
+
+omit [DecidableEq n] in
+/-- `Qᴴ Q = 1` iff the columns of `Q` are orthonormal in `EuclideanSpace`. -/
+theorem conjTranspose_mul_self_eq_one_iff_orthonormal [DecidableEq m] {Q : Matrix n m 𝕜} :
+    Qᴴ * Q = 1 ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
+  rw [orthonormal_iff_ite, ← Matrix.ext_iff]
+  refine forall_congr' fun i => forall_congr' fun j => ?_
+  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm, one_apply, mul_apply]
+  rfl
+
+omit [DecidableEq n] in
+/-- `Qᴴ r = 0` iff `r` is orthogonal to the columns of `Q`. -/
+theorem conjTranspose_mulVec_eq_zero_iff {Q : Matrix n m 𝕜} {r : n → 𝕜} :
+    Qᴴ *ᵥ r = 0 ↔ ∀ j, inner 𝕜 (WithLp.toLp 2 (Q.col j)) (WithLp.toLp 2 r) = 0 := by
+  rw [funext_iff]
+  refine forall_congr' fun j => ?_
+  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
+  rfl
+
+/-- For a unitary `Q = [Q_α Q_β]` split into two column blocks, `ran Q_β = (ran Q_α)ᗮ`. -/
+theorem range_eq_orthogonal_of_fromCols {r s : Type*} [Fintype r] [DecidableEq r] [Fintype s]
+    [DecidableEq s] {Qα : Matrix n r 𝕜} {Qβ : Matrix n s 𝕜}
+    (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1)
+    (hQ' : fromCols Qα Qβ * (fromCols Qα Qβ)ᴴ = 1) :
+    LinearMap.range (toEuclideanLin Qβ) = (LinearMap.range (toEuclideanLin Qα))ᗮ := by
+  have hαβ : Qαᴴ * Qβ = 0 := by
+    rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromRows_mul_fromCols,
+      ← fromBlocks_one] at hQ
+    exact (fromBlocks_inj.1 hQ).2.1
+  rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromCols_mul_fromRows] at hQ'
+  apply le_antisymm
+  · rintro _ ⟨y, rfl⟩
+    rw [Submodule.mem_orthogonal]
+    rintro _ ⟨z, rfl⟩
+    rw [← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint,
+      ← toEuclideanLin_mul_apply, hαβ, map_zero, LinearMap.zero_apply, inner_zero_right]
+  · intro x hx
+    have h0 : toEuclideanLin Qαᴴ x = 0 := by
+      rw [toEuclideanLin_conjTranspose_eq_adjoint]
+      refine ext_inner_left 𝕜 fun z => ?_
+      rw [LinearMap.adjoint_inner_right, inner_zero_right]
+      exact (Submodule.mem_orthogonal _ _).1 hx _ ⟨z, rfl⟩
+    refine ⟨toEuclideanLin Qβᴴ x, ?_⟩
+    have h := congrArg (fun M => toEuclideanLin M x) hQ'
+    simp only [map_add, LinearMap.add_apply, toEuclideanLin_mul_apply, h0, map_zero, zero_add,
+      toLpLin_one, LinearMap.id_apply] at h
+    exact h
+
+end Columns
+
 open scoped Matrix.Norms.L2Operator in
 /-- The `2`-operator norm of a matrix is the operator norm of `toEuclideanLin A`. -/
 theorem l2_opNorm_eq_norm_toEuclideanLin (A : Matrix n n 𝕜) :
@@ -279,6 +365,35 @@ noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V
 @[simp]
 theorem toEuclideanLinearIsometry_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
     (y : EuclideanSpace 𝕜 m) : toEuclideanLinearIsometry hV y = toEuclideanLin V y := rfl
+
+/-- A matrix `V` with `Vᴴ V = 1` and `V Vᴴ = 1` (a unitary matrix whose rows and columns are
+indexed by different types) acts as a linear isometry equivalence
+`EuclideanSpace 𝕜 m ≃ₗᵢ EuclideanSpace 𝕜 n`. -/
+noncomputable def toEuclideanLinearIsometryEquiv {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
+    (hV' : V * Vᴴ = 1) : EuclideanSpace 𝕜 m ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 n :=
+  LinearIsometryEquiv.ofSurjective (toEuclideanLinearIsometry hV) fun y =>
+    ⟨toEuclideanLin Vᴴ y, by
+      rw [toEuclideanLinearIsometry_apply, ← toEuclideanLin_mul_apply, hV', toEuclideanLin_one,
+        LinearMap.id_apply]⟩
+
+/-- The isometry equivalence of `Matrix.toEuclideanLinearIsometryEquiv` acts as
+`toEuclideanLin V`. -/
+@[simp]
+theorem toEuclideanLinearIsometryEquiv_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
+    (hV' : V * Vᴴ = 1) (y : EuclideanSpace 𝕜 m) :
+    toEuclideanLinearIsometryEquiv hV hV' y = toEuclideanLin V y := rfl
+
+/-- **Column spaces under a unitary change of coordinates**: for `V` with `Vᴴ V = 1` and
+`V Vᴴ = 1`, `ran (V M)` is the image of `ran M` under the isometry equivalence `V`, so metric
+quantities of column spaces (gaps, angles, distances) are unchanged by `M ↦ V M`. -/
+theorem range_mul_eq_map_of_mul_conjTranspose_eq_one {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
+    (hV' : V * Vᴴ = 1) {k : Type*} [Fintype k] [DecidableEq k] (M : Matrix m k 𝕜) :
+    LinearMap.range (toEuclideanLin (V * M)) =
+      (LinearMap.range (toEuclideanLin M)).map
+        ((toEuclideanLinearIsometryEquiv hV hV').toLinearEquiv :
+          EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 n) := by
+  rw [toEuclideanLin_mul, LinearMap.range_comp]
+  rfl
 
 end Isometry
 
@@ -380,6 +495,11 @@ theorem toEuclideanLin_nonsing_inv_mul_apply {A : Matrix n n 𝕜} (hA : IsUnit 
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A⁻¹ (toEuclideanLin A z) = z := by
   rw [← toEuclideanLin_mul_apply, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA),
     toEuclideanLin_one_apply]
+
+/-- A nonsingular matrix acts surjectively. -/
+theorem range_toEuclideanLin_eq_top_of_isUnit {S : Matrix n n 𝕜} (hS : IsUnit S) :
+    LinearMap.range (toEuclideanLin S) = ⊤ :=
+  LinearMap.range_eq_top.2 fun z => ⟨_, toEuclideanLin_mul_nonsing_inv_apply hS z⟩
 
 end Inverse
 

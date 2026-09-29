@@ -27,6 +27,3 @@ id = "Matrix.IsHermitian.det_sub_smul_one_eq_prod"
 
 [[node]]  # added by eig1: unitary conjugation commutes with the adjugate
 id = "Matrix.adjugate_mul_mul_star_of_mem_unitaryGroup"
-
-[[node]]  # added by lo2: a unitary matrix with a prescribed column (a scaled Householder reflector)
-id = "Matrix.exists_mem_unitaryGroup_mulVec_single_eq"

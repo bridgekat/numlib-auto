@@ -67,3 +67,6 @@ id = "isUpperHessenbergRect_iff_hasLowerBandwidthRect_one"
 
 [[node]]
 id = "isTridiagonal_iff_fin"
+
+[[node]]
+id = "pow_apply_zero_zero_eq_of_isTridiagonal"

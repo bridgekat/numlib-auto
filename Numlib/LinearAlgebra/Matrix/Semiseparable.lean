@@ -114,19 +114,6 @@ has rank at most one ([golub2013matrix] (12.2.5)), asked of the maximal such blo
 def IsQuasiseparable (A : Matrix n n K) : Prop :=
   ∀ k, (A.toBlock (k < ·) (· ≤ k)).rank ≤ 1 ∧ (A.toBlock (· ≤ k) (k < ·)).rank ≤ 1
 
-/-- A block of a block has smaller rank: shrinking the row and column predicates of `toBlock`
-does not increase the rank. -/
-theorem rank_toBlock_mono {m n' : Type*} [Fintype n'] (A : Matrix m n' K) {p p' : m → Prop}
-    {q q' : n' → Prop} [DecidablePred q] [DecidablePred q'] (hp : ∀ i, p i → p' i)
-    (hq : ∀ j, q j → q' j) : (A.toBlock p q).rank ≤ (A.toBlock p' q').rank :=
-  rank_submatrix_le (A.toBlock p' q') (Subtype.map id hp) (Subtype.map id hq)
-
-/-- The rank of a block of the transpose is the rank of the transposed block. -/
-theorem rank_toBlock_transpose {m : Type*} [Fintype m] {n' : Type*} [Fintype n']
-    (A : Matrix m n' K) (p : n' → Prop) (q : m → Prop) [DecidablePred p] [DecidablePred q] :
-    (Aᵀ.toBlock p q).rank = (A.toBlock q p).rank :=
-  rank_transpose (A.toBlock q p)
-
 omit [Fintype n] in
 private theorem exists_top_bot [Finite n] (k : n) : ∃ t b : n, ∀ i, i ≤ t ∧ b ≤ i := by
   have : Nonempty n := ⟨k⟩
@@ -2365,30 +2352,6 @@ theorem givensChain_mul_diagonal_eq_prodFwd (φ : ℕ → ℝ) :
   rw [prodFwd_succ, givensChain, reflectorFactor, ite_eq_right (lt_irrefl N)]
   congr 1
   exact prodFwd_congr fun k hk => by rw [reflectorFactor, ite_eq_left hk]
-
-/-- Plane embeddings in disjoint coordinate planes commute. -/
-private theorem commute_planeEmbed_planeEmbed {ι' R' : Type*} [DecidableEq ι'] [Fintype ι']
-    [CommRing R'] {j k j' k' : ι'} (hjk : j ≠ k) (h₁ : j ≠ j') (h₂ : j ≠ k')
-    (h₃ : k ≠ j') (h₄ : k ≠ k') (A B : Matrix (Fin 2) (Fin 2) R') :
-    Commute (planeEmbed j k A) (planeEmbed j' k' B) := by
-  have hr := planeEmbed_apply_of_ne_left B h₁ h₂
-  have hr' := planeEmbed_apply_of_ne_left B h₃ h₄
-  have hc := fun p => planeEmbed_apply_of_ne_right B p h₁ h₂
-  have hc' := fun p => planeEmbed_apply_of_ne_right B p h₃ h₄
-  ext p q
-  rw [planeEmbed_mul_apply _ hjk, mul_planeEmbed_apply _ hjk]
-  simp only [hr, hr', hc, hc']
-  have hkj : k ≠ j := Ne.symm hjk
-  by_cases hp : p = j <;> by_cases hp' : p = k <;> by_cases hq : q = j <;>
-    by_cases hq' : q = k <;> simp_all [eq_comm (b := q)]
-
-/-- A plane embedding commutes with a diagonal matrix constant on its plane. -/
-private theorem commute_planeEmbed_diagonal {ι' R' : Type*} [DecidableEq ι'] [Fintype ι']
-    [CommRing R'] {j k : ι'} {d : ι' → R'} (hj : d j = 1) (hk : d k = 1)
-    (A : Matrix (Fin 2) (Fin 2) R') : Commute (planeEmbed j k A) (diagonal d) := by
-  ext p q
-  rw [mul_diagonal, diagonal_mul, planeEmbed_apply]
-  split_ifs <;> subst_vars <;> simp_all
 
 /-- The factors of (12.2.18) are involutions. -/
 private theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :

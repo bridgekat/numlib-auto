@@ -182,17 +182,6 @@ private theorem transpose_mul_submatrix_eq_one {k : ℕ} {W : Matrix (Fin n) (Fi
     (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hW]
   exact submatrix_one e he
 
-/-- The range of a matrix is the span of its columns (as vectors of `EuclideanSpace`). -/
-private theorem range_toEuclideanLin_eq_span_col {k : ℕ} (M : Matrix (Fin n) (Fin k) ℝ) :
-    LinearMap.range (toEuclideanLin M) =
-      Submodule.span ℝ (Set.range fun j => toLp 2 (M.col j)) := by
-  refine le_antisymm ?_ (Submodule.span_le.2 ?_)
-  · rintro _ ⟨x, rfl⟩
-    rw [← WithLp.toLp_ofLp 2 x, toEuclideanLin_apply_eq_sum]
-    exact Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
-  · rintro _ ⟨j, rfl⟩
-    exact ⟨toLp 2 (Pi.single j 1), by rw [toEuclideanLin_toLp, mulVec_single_one]⟩
-
 /-- The trailing column block `W(:, k+1:n)`: `Fin (n - k) → Fin n`, `j ↦ k + j`. -/
 private theorem cast_natAdd_injective {k : ℕ} (hk : k ≤ n) :
     Function.Injective (Fin.cast (Nat.add_sub_of_le hk) ∘ Fin.natAdd k : Fin (n - k) → Fin n) :=

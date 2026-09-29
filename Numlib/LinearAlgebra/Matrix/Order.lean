@@ -7,6 +7,9 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.Ring.Abs
 import Mathlib.Data.Matrix.Basic
+import Mathlib.Tactic.Abel
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # The entrywise order and the entrywise absolute value of matrices
@@ -21,7 +24,9 @@ other one is nonnegative (`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and
 and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under sums,
 products, powers and matrix-vector multiplication, and the triangle inequality for a product, `(A *
 B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), which is the matrix form of the
-componentwise bounds of [higham2002accuracy] §3.5.
+componentwise bounds of [higham2002accuracy] §3.5. Its two-factor consequence,
+`Matrix.abs_add_mul_add_sub_mul_entrywiseLE`, bounds `|(X + ΔX) (Y + ΔY) - X Y|` for perturbed
+factors, the step by which the backward errors of the factors of a factorization combine.
 
 ## Notation
 
@@ -270,5 +275,53 @@ theorem abs_mulVec_le [Fintype n] (A : Matrix m n α) (x : n → α) :
     _ = ∑ k, |A i k| * |x k| := by simp [abs_mul]
 
 end Ring
+
+/-! ### Products of perturbed factors -/
+
+section CommRing
+
+variable [CommRing α] [LinearOrder α] [IsStrictOrderedRing α] {p q : Type*} [Fintype p]
+
+/-- **The error of a product of perturbed factors**: if `|X| ≤ P`, `|ΔX| ≤ a P`, `|Y| ≤ Q` and
+`|ΔY| ≤ b Q` entrywise, `a, b ≥ 0`, then `|(X + ΔX) (Y + ΔY) - X Y| ≤ ((1 + a) (1 + b) - 1) P Q`,
+from `(X + ΔX) (Y + ΔY) - X Y = X ΔY + ΔX Y + ΔX ΔY`. -/
+theorem abs_add_mul_add_sub_mul_entrywiseLE {X ΔX P : Matrix l p α} {Y ΔY Q : Matrix p q α}
+    {a b : α} (ha : 0 ≤ a) (hX : X.abs ≤ₑ P) (hΔX : ΔX.abs ≤ₑ a • P) (hY : Y.abs ≤ₑ Q)
+    (hΔY : ΔY.abs ≤ₑ b • Q) :
+    ((X + ΔX) * (Y + ΔY) - X * Y).abs ≤ₑ ((1 + a) * (1 + b) - 1) • (P * Q) := by
+  have hP : P.EntrywiseNonneg := fun i j => (abs_nonneg (X i j)).trans (hX i j)
+  have haP : (a • P).EntrywiseNonneg := fun i j => (abs_nonneg (ΔX i j)).trans (hΔX i j)
+  have h1 : (X * ΔY).abs ≤ₑ b • (P * Q) :=
+    (Matrix.abs_mul_entrywiseLE X ΔY).trans <|
+      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs ΔY) hX).trans
+        (by rw [← Matrix.mul_smul]; exact Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left hP hΔY)
+  have h2 : (ΔX * Y).abs ≤ₑ a • (P * Q) :=
+    (Matrix.abs_mul_entrywiseLE ΔX Y).trans <|
+      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs Y) hΔX).trans
+        (by
+          rw [Matrix.smul_mul]
+          exact Matrix.EntrywiseLE.smul_of_nonneg ha
+            (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left hP hY))
+  have h3 : (ΔX * ΔY).abs ≤ₑ (a * b) • (P * Q) :=
+    (Matrix.abs_mul_entrywiseLE ΔX ΔY).trans <|
+      (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right (Matrix.entrywiseNonneg_abs ΔY) hΔX).trans <|
+        (Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left haP hΔY).trans <|
+          Matrix.EntrywiseLE.of_eq (by rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul])
+  have heq : (X + ΔX) * (Y + ΔY) - X * Y = X * ΔY + ΔX * Y + ΔX * ΔY := by
+    rw [Matrix.add_mul, Matrix.mul_add, Matrix.mul_add]
+    abel
+  rw [heq]
+  intro i j
+  have e1 := Matrix.abs_add_entrywiseLE (X * ΔY + ΔX * Y) (ΔX * ΔY) i j
+  have e2 := Matrix.abs_add_entrywiseLE (X * ΔY) (ΔX * Y) i j
+  have a1 := h1 i j
+  have a2 := h2 i j
+  have a3 := h3 i j
+  simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul] at e1 e2 a1 a2 a3 ⊢
+  have hc : ((1 + a) * (1 + b) - 1) * (P * Q) i j =
+      b * (P * Q) i j + a * (P * Q) i j + a * b * (P * Q) i j := by ring
+  linarith
+
+end CommRing
 
 end Matrix

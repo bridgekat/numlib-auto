@@ -178,6 +178,3 @@ id = "exists_roundsTridiagonalizePert_eq"
 
 [[node]]  # fp2: the shared core of Lemma 19.2 asked for by `norm_sub_le_of_roundsHouseholderApplyScaled`
 id = "norm_sub_le_of_forall_rounds_sub_sum"
-
-[[node]]  # fp2: orthogonality of `1 - β v vᵀ`, used by both `isReflectorPert` theorems
-id = "one_sub_smul_vecMulVec_mem_orthogonalGroup"

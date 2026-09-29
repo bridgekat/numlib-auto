@@ -26,6 +26,8 @@ For `x` in a finite product `PiLp p β` of seminormed groups, the `p`-norms
 * `PiLp.norm_toLp_comp_le` and `PiLp.norm_toLp_extend`: dropping coordinates does not increase
   the `p`-norm, and extending by zero preserves it; together they bound the induced norm of a
   submatrix (`Matrix.lpOpNorm_submatrix_le`).
+* `Matrix.dotProduct_self_eq_norm_sq`, `Matrix.star_dotProduct_self`: `xᵀ x` and `xᴴ x` are the
+  squared Euclidean norm, the bridge from a dot product to `EuclideanSpace`.
 * `PiLp.norm_dotProduct_le`: Hölder's inequality `|x ⬝ᵥ y| ≤ ‖x‖_p ‖y‖_q` for Hölder-conjugate
   exponents, endpoints included ([golub2013matrix] (2.2.2)). Mathlib has it for the sequence
   space `lp` (`lp.norm_dualPairing`) and for finite sums of reals (`Real.inner_le_Lp_mul_Lq`),
@@ -321,3 +323,19 @@ theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
   have : v = 0 := PiLp.ext fun i ↦ by_contra fun h ↦ hcon ⟨i, h⟩
   rw [this, norm_zero] at hv
   exact zero_ne_one hv
+
+/-! ### The Euclidean norm as a dot product -/
+
+namespace Matrix
+
+/-- `sᵀ s` is the squared Euclidean norm of `s`. -/
+theorem dotProduct_self_eq_norm_sq {n : Type*} [Fintype n] (s : n → ℝ) :
+    s ⬝ᵥ s = ‖toLp 2 s‖ ^ 2 := by
+  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
+
+/-- The Euclidean inner square of a vector of scalars: `star x ⬝ᵥ x = ‖x‖²`. -/
+theorem star_dotProduct_self {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] (x : n → 𝕜) :
+    star x ⬝ᵥ x = ((‖(toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2 := by
+  rw [← inner_self_eq_norm_sq_to_K (𝕜 := 𝕜), EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
+
+end Matrix

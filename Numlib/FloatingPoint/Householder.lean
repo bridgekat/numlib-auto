@@ -1,4 +1,6 @@
 import Mathlib.Analysis.Normed.Module.Normalize
+import Numlib.Analysis.InnerProductSpace.Normalize
+import Numlib.Data.Matrix.Mul
 import Numlib.FloatingPoint.LU
 import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
@@ -411,30 +413,6 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
 
 /-! ### Reflector data, whatever the formula that produced them -/
 
-omit [Fintype ι] in
-/-- The matrix `1 - β v vᵀ` is symmetric. -/
-theorem transpose_one_sub_smul_vecMulVec (β : ℝ) (v : ι → ℝ) :
-    (1 - β • vecMulVec v v)ᵀ = 1 - β • vecMulVec v v := by
-  rw [transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
-
-/-- `(1 - β v vᵀ)² = 1 + β (β vᵀv - 2) v vᵀ`. -/
-theorem one_sub_smul_vecMulVec_mul_self (β : ℝ) (v : ι → ℝ) :
-    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) =
-      1 + (β * (β * (v ⬝ᵥ v) - 2)) • vecMulVec v v := by
-  have hV : vecMulVec v v * vecMulVec v v = (v ⬝ᵥ v) • vecMulVec v v := by
-    rw [vecMulVec_mul_vecMulVec, vecMulVec_smul]
-  simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one, Matrix.smul_mul,
-    Matrix.mul_smul, hV, smul_smul]
-  module
-
-/-- `1 - β v vᵀ` is orthogonal as soon as `β (β vᵀv - 2) = 0`: a reflector (`β vᵀv = 2`) or the
-identity (`β = 0`). -/
-theorem one_sub_smul_vecMulVec_mem_orthogonalGroup {β : ℝ} {v : ι → ℝ}
-    (h : β * (β * (v ⬝ᵥ v) - 2) = 0) :
-    (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup ι ℝ := by
-  rw [mem_orthogonalGroup_iff, transpose_one_sub_smul_vecMulVec,
-    one_sub_smul_vecMulVec_mul_self, h, zero_smul, add_zero]
-
 /-- The entries of `(1 - β v vᵀ) b`. -/
 theorem one_sub_smul_vecMulVec_mulVec_apply (β : ℝ) (v b : ι → ℝ) (i : ι) :
     ((1 - β • vecMulVec v v) *ᵥ b) i = b i - β * v i * (v ⬝ᵥ b) := by
@@ -498,70 +476,6 @@ section ReflectorPert
 
 open scoped RealInnerProductSpace
 
-/-- A normalized vector has length at most one (one, or zero for the zero vector). -/
-private theorem norm_normalize_le_one {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    (x : E) : ‖NormedSpace.normalize x‖ ≤ 1 := by
-  rcases eq_or_ne x 0 with rfl | hx
-  · simp
-  · exact (NormedSpace.norm_normalize hx).le
-
-/-- The directions of two nearby vectors are close: `‖b/‖b‖ - a/‖a‖‖ ≤ 2 ‖b - a‖ / ‖a‖`. -/
-private theorem norm_normalize_sub_normalize_le {E : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] {a : E} (ha : a ≠ 0) (b : E) :
-    ‖NormedSpace.normalize b - NormedSpace.normalize a‖ ≤ 2 * ‖b - a‖ / ‖a‖ := by
-  have hpos : 0 < ‖a‖ := norm_pos_iff.2 ha
-  rw [le_div_iff₀ hpos]
-  have key : ‖a‖ • (NormedSpace.normalize b - NormedSpace.normalize a) =
-      (b - a) + (‖a‖ - ‖b‖) • NormedSpace.normalize b := by
-    rw [smul_sub, sub_smul, NormedSpace.norm_smul_normalize, NormedSpace.norm_smul_normalize]
-    abel
-  have h1 : |‖a‖ - ‖b‖| ≤ ‖b - a‖ := by
-    rw [norm_sub_rev]
-    exact abs_norm_sub_norm_le a b
-  have h2 : |‖a‖ - ‖b‖| * ‖NormedSpace.normalize b‖ ≤ ‖b - a‖ :=
-    (mul_le_of_le_one_right (abs_nonneg _) (norm_normalize_le_one b)).trans h1
-  calc ‖NormedSpace.normalize b - NormedSpace.normalize a‖ * ‖a‖ =
-        ‖‖a‖ • (NormedSpace.normalize b - NormedSpace.normalize a)‖ := by
-        rw [norm_smul, norm_norm, mul_comm]
-    _ ≤ ‖b - a‖ + |‖a‖ - ‖b‖| * ‖NormedSpace.normalize b‖ := by
-        rw [key]
-        refine (norm_add_le _ _).trans (le_of_eq ?_)
-        rw [norm_smul, Real.norm_eq_abs]
-    _ ≤ 2 * ‖b - a‖ := by linarith
-
-/-- Two rank-one projections `x ↦ ⟪a, x⟫ a` of vectors of length at most one differ by at most
-`2 ‖b - a‖` in operator norm. -/
-private theorem norm_inner_smul_sub_inner_smul_le {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] {a b : E} (ha : ‖a‖ ≤ 1) (hb : ‖b‖ ≤ 1) (x : E) :
-    ‖⟪b, x⟫ • b - ⟪a, x⟫ • a‖ ≤ 2 * ‖b - a‖ * ‖x‖ := by
-  have hsplit :
-      ⟪b, x⟫ • b - ⟪a, x⟫ • a = ⟪b - a, x⟫ • b + ⟪a, x⟫ • (b - a) := by
-    rw [inner_sub_left, sub_smul, smul_sub]
-    abel
-  have h1 : |⟪b - a, x⟫| * ‖b‖ ≤ ‖b - a‖ * ‖x‖ :=
-    (mul_le_mul (abs_real_inner_le_norm _ _) hb (norm_nonneg _) (by positivity)).trans_eq
-      (mul_one _)
-  have h2 : |⟪a, x⟫| * ‖b - a‖ ≤ ‖x‖ * ‖b - a‖ :=
-    mul_le_mul_of_nonneg_right ((abs_real_inner_le_norm _ _).trans
-      (mul_le_of_le_one_left (norm_nonneg x) ha)) (norm_nonneg _)
-  rw [hsplit]
-  refine (norm_add_le _ _).trans ?_
-  rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
-  linarith
-
-/-- The action of `Matrix.reflector v` in the Euclidean picture: `x ↦ x - 2 ⟪w, x⟫ w` for the
-direction `w = v / ‖v‖₂` (`w = 0` when `v = 0`). -/
-private theorem toLp_reflector_mulVec (v x : ι → ℝ) :
-    (toLp 2 (reflector v *ᵥ x) : EuclideanSpace ℝ ι) = toLp 2 x -
-      (2 * ⟪NormedSpace.normalize (toLp 2 v : EuclideanSpace ℝ ι), toLp 2 x⟫) •
-        NormedSpace.normalize (toLp 2 v : EuclideanSpace ℝ ι) := by
-  have hvx : v ⬝ᵥ x = ⟪(toLp 2 v : EuclideanSpace ℝ ι), toLp 2 x⟫ := by
-    rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
-  rw [reflector_mulVec, star_trivial, dotProduct_self_eq_norm_sq, hvx, toLp_sub, toLp_smul,
-    NormedSpace.normalize, real_inner_smul_left, smul_smul]
-  congr 2
-  ring
-
 open scoped Matrix.Norms.L2Operator in
 /-- **The computed reflector is close to the exact one** ([golub2013matrix] §5.1.5,
 "`‖P̂ - P‖₂ = O(u)`", and §5.1.12, "orthogonal to working precision"): if the axis `v̂` is an
@@ -587,7 +501,7 @@ theorem l2_opNorm_reflector_sub_le {u : ℝ} {K : ℕ} {v vhat : ι → ℝ} (hv
     rwa [zero_mul, zero_add, toLp_sub] at this
   have hw : ‖NormedSpace.normalize (toLp 2 vhat : EuclideanSpace ℝ ι) -
       NormedSpace.normalize (toLp 2 v)‖ ≤ 2 * gamma u K := by
-    refine (norm_normalize_sub_normalize_le hV _).trans ?_
+    refine (NormedSpace.norm_normalize_sub_normalize_le hV _).trans ?_
     rw [div_le_iff₀ hpos]
     linarith
   refine l2_opNorm_le_of_forall_norm_toEuclideanLin_le _ (by positivity) fun z => ?_
@@ -595,8 +509,8 @@ theorem l2_opNorm_reflector_sub_le {u : ℝ} {K : ℕ} {v vhat : ι → ℝ} (hv
     toLp_ofLp, sub_sub_sub_cancel_left, mul_smul, mul_smul, ← smul_sub, norm_smul,
     Real.norm_two, norm_sub_rev]
   have := norm_inner_smul_sub_inner_smul_le
-    (norm_normalize_le_one (toLp 2 v : EuclideanSpace ℝ ι))
-    (norm_normalize_le_one (toLp 2 vhat : EuclideanSpace ℝ ι)) z
+    (NormedSpace.norm_normalize_le_one (toLp 2 v : EuclideanSpace ℝ ι))
+    (NormedSpace.norm_normalize_le_one (toLp 2 vhat : EuclideanSpace ℝ ι)) z
   nlinarith [mul_le_mul_of_nonneg_right hw (norm_nonneg z)]
 
 end ReflectorPert
@@ -1278,22 +1192,6 @@ theorem exists_eq_transpose_mul_add_mul_of_forall_step {A : ℕ → Matrix ι ι
   choose P hP hPs hb using h'
   obtain ⟨E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_prodFwd hP hPs hε r hb
   exact ⟨prodFwd P r, prodFwd_mem_orthogonalGroup hP r, E, hE, hEn⟩
-
-omit [DecidableEq ι] [Fintype κ] [DecidableEq κ] in
-/-- `(B - M A).col q = B.col q - M (A.col q)`. -/
-theorem col_sub_mul (B : Matrix ι κ ℝ) (M : Matrix ι ι ℝ) (A : Matrix ι κ ℝ) (q : κ) :
-    (B - M * A).col q = B.col q - M *ᵥ A.col q := by
-  ext i
-  simp [col_apply, mul_apply, mulVec, dotProduct]
-
-omit [DecidableEq ι] [Fintype κ] [DecidableEq κ] in
-/-- `(B - A M).row r = B.row r - Mᵀ (A.row r)`. -/
-theorem row_sub_mul (B : Matrix κ ι ℝ) (A : Matrix κ ι ℝ) (M : Matrix ι ι ℝ) (r : κ) :
-    (B - A * M).row r = B.row r - Mᵀ *ᵥ A.row r := by
-  ext j
-  simp only [row_apply, Matrix.sub_apply, Pi.sub_apply]
-  rw [show (A * M) r j = (A r ᵥ* M) j from rfl, ← mulVec_transpose]
-  rfl
 
 omit [DecidableEq κ] in
 /-- **The left application of a computed reflector to a matrix**, [golub2013matrix] §5.1.4's

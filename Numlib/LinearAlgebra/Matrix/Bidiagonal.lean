@@ -319,6 +319,21 @@ theorem firstRows_padRows [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) :
   ext i j
   simp [padRows_apply]
 
+/-- `[B; 0]` is the product of the leading columns of the identity with `B`. -/
+theorem padRows_eq_mul [NonAssocSemiring α] (B : Matrix (Fin N) n' α)
+    (h : N ≤ M) : padRows B h = (1 : Matrix (Fin M) (Fin M) α).submatrix id (Fin.castLE h) * B := by
+  ext i j
+  rw [padRows_apply, mul_apply]
+  simp only [submatrix_apply, id_eq, one_apply, ite_mul, one_mul, zero_mul]
+  split_ifs with hi
+  · rw [Finset.sum_eq_single ⟨i, hi⟩]
+    · simp
+    · exact fun k _ hk =>
+        ite_eq_right fun (e : i = Fin.castLE h k) => hk (Fin.ext (congrArg Fin.val e).symm)
+    · simp
+  · exact (Finset.sum_eq_zero fun k _ =>
+      ite_eq_right fun e => hi (by rw [e]; exact k.isLt)).symm
+
 /-- A matrix whose rows from the `N`-th on vanish is `[B; 0]` of its first `N` rows. -/
 theorem padRows_firstRows [Zero α] {R : Matrix (Fin M) n' α} (h : N ≤ M)
     (hR : ∀ (i : Fin M) (j : n'), N ≤ (i : ℕ) → R i j = 0) : padRows (firstRows R h) h = R := by

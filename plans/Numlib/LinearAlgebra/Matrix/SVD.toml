@@ -146,9 +146,6 @@ id = "range_mulVecLin_eq_span_of_svd"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.9"
 
 [[node]]
-id = "_root_.exists_equiv_of_map_univ_val_eq"
-
-[[node]]
 id = "IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.9"
 
@@ -249,9 +246,6 @@ id = "shiftedRectDiagonal_apply"
 
 [[node]]  # added by ls1
 id = "shiftedRectDiagonal_zero"
-
-[[node]]  # added by ls1
-id = "_root_.Fin.sum_castLE_eq_sum_ite"
 
 [[node]]  # added by ls1
 id = "_root_.Orthonormal.norm_sum_smul_sq"

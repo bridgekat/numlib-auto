@@ -8,3 +8,9 @@ id = "mul_apply_eq_zero_of_lt"
 
 [[node]]
 id = "mul_submatrix_sigmaMk_eq_sum"
+
+[[node]]
+id = "blockVec"
+
+[[node]]
+id = "consDiag"

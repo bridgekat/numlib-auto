@@ -1,3 +1,4 @@
+import Numlib.Data.Fin.Sum
 import Numlib.FloatingPoint.LU
 import NumlibSurface.GolubVanLoan.Chapter03.Section01
 
@@ -1676,20 +1677,6 @@ end TallLU
 /-! ### Algorithm 3.2.3: exact semantics -/
 
 section BlockLUSpec
-
-/-- On `Fin n`, the strict leading principal submatrix `A(< k)` is, up to the reindexing of
-`{i // i < k}` by `Fin k`, the submatrix along `Fin.castLE`. -/
-private theorem det_strictLeadingPrincipalSubmatrix_castLE {n : ℕ}
-    (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
-    (A.strictLeadingPrincipalSubmatrix k).det =
-      (A.submatrix (Fin.castLE k.isLt.le) (Fin.castLE k.isLt.le)).det := by
-  let e : Fin k ≃ {i : Fin n // i < k} :=
-    { toFun := fun a => ⟨Fin.castLE k.isLt.le a, Fin.lt_def.2 a.2⟩
-      invFun := fun i => ⟨i.1, Fin.lt_def.1 i.2⟩
-      left_inv := fun a => rfl
-      right_inv := fun i => rfl }
-  rw [← det_submatrix_equiv_self e]
-  rfl
 
 /-- A loop writing column `c` with a vector `g c` fixed in advance sets the listed columns. -/
 private theorem foldl_updateCol_const {m q : ℕ} (g : Fin q → Fin m → ℝ) (l : List (Fin q))

@@ -787,33 +787,10 @@ open scoped Matrix.Norms.L2Operator
 /-- Padding with zero rows is multiplication by the leading columns of the identity. -/
 private theorem padRows_eq_mul {p : ℕ} (hpn : p ≤ n) (X : Matrix (Fin p) (Fin n) ℝ) :
     padRows X = (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X := by
+  rw [← Matrix.padRows_eq_mul X hpn]
   ext i j
-  rw [mul_apply]
-  simp only [padRows, of_apply, submatrix_apply, id_eq, one_apply, ite_mul, one_mul, zero_mul]
-  split_ifs with hi
-  · rw [Finset.sum_eq_single ⟨i, hi⟩]
-    · simp
-    · exact fun k _ hk =>
-        ite_eq_right fun (e : i = Fin.castLE hpn k) => hk (Fin.ext (congrArg Fin.val e).symm)
-    · simp
-  · exact (Finset.sum_eq_zero fun k _ =>
-      ite_eq_right fun e => hi (by rw [e]; exact k.isLt)).symm
-
-/-- The leading columns of the identity are orthonormal. -/
-private theorem transpose_one_submatrix_mul_self {p : ℕ} (hpn : p ≤ n) :
-    ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn))ᵀ *
-      (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) = 1 := by
-  rw [transpose_submatrix, transpose_one, ← submatrix_mul _ _ _ id _ Function.bijective_id,
-    Matrix.one_mul, submatrix_one _ (Fin.castLE_injective hpn)]
-
-/-- Padding with zero rows does not change the rank. -/
-private theorem rank_one_submatrix_mul {p q : ℕ} (hpn : p ≤ n) (X : Matrix (Fin p) (Fin q) ℝ) :
-    ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X).rank = X.rank := by
-  refine le_antisymm (rank_mul_le_right _ _) ?_
-  calc X.rank = (((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn))ᵀ *
-        ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X)).rank := by
-        rw [← Matrix.mul_assoc, transpose_one_submatrix_mul_self, Matrix.one_mul]
-    _ ≤ _ := rank_mul_le_right _ _
+  rw [Matrix.padRows_apply]
+  rfl
 
 /-- **Algorithm 5.5.1 selects independent columns and solves the subset problem** (exact
 arithmetic): if `V` is the right-singular-vector matrix of an SVD `UᵀAV = Σ` and
@@ -861,7 +838,7 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
     have := rank_mul_le_left W Wᵀ
     rwa [hWW, rank_one, Fintype.card_fin] at this
   have hr : st.r = r := by
-    rw [hrank, padRows_eq_mul hrn, rank_one_submatrix_mul, hrankW]
+    rw [hrank, padRows_eq_mul hrn, rank_one_submatrix_mul (Fin.castLE_injective hrn), hrankW]
   have hRR' := hRR
   rw [hr] at hRR'
   -- `[Ṽ₁₁ᵀ; 0] = Q [R₁₁; 0]`, of rank `r̃`
@@ -882,7 +859,8 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
     (isUnit_iff_isUnit_det _).1 (isUnit_of_mem_unitaryGroup hRR'.isQR.mem_unitaryGroup)
   have hVtu : IsUnit Vt := by
     have hrk : Vtᵀ.rank = r := by
-      rw [← rank_one_submatrix_mul hrn, hkey, rank_mul_eq_right_of_isUnit_det _ _ hQdet, hrankT]
+      rw [← rank_one_submatrix_mul (Fin.castLE_injective hrn), hkey,
+        rank_mul_eq_right_of_isUnit_det _ _ hQdet, hrankT]
     exact (isUnit_transpose _).1 (isUnit_of_rank_eq_card (by rw [hrk, Fintype.card_fin]))
   -- Theorem 5.5.2
   have hbound := (theorem_5_5_2 h (pivotPerm st.piv) hr0 hrA hVtu).1

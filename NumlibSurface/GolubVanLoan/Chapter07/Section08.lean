@@ -143,13 +143,6 @@ theorem symplectic_householder_givens :
     fun i _ _ hcs => planeRotation_inl_inr_mem_symplecticGroup i hcs,
     exists_orthogonalSymplectic_mulVec_eq⟩
 
-/-- A reindexing `Sum.map f f` of a block matrix is the block matrix of the reindexed blocks. -/
-private theorem fromBlocks_submatrix_sum_map {l l' : Type*} (f : l' → l)
-    (A B C D : Matrix l l ℝ) :
-    (fromBlocks A B C D).submatrix (Sum.map f f) (Sum.map f f) =
-      fromBlocks (A.submatrix f f) (B.submatrix f f) (C.submatrix f f) (D.submatrix f f) := by
-  ext (i | i) (j | j) <;> rfl
-
 /-- **§7.8.1, the deflation step displayed before (7.8.1).** If `M` is Hamiltonian, `M x = λ x`
 with `λ` real, and `Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁` (so `‖x‖₂ = 1`), then
 `Q₁ᵀ M Q₁` has first column `λ e₁` and its row `n + 1` is `-λ e_{n+1}ᵀ` — "the 'extra' zeros follow

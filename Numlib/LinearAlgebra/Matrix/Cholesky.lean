@@ -4,10 +4,11 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.Cholesky` beside `Mathlib.Analysis.Matrix.LDL`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Matrix.LDL
 import Mathlib.Analysis.Matrix.PosDef
+import Numlib.Data.Fin.Sum
 import Numlib.Direct.Substitution
-import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.QR

@@ -553,21 +553,6 @@ theorem corollary_7_2_5 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
   exact (gap_range_unitary_mul_fromRows_le hQ P).trans
     ((equation_7_2_6 P).2.trans hP)
 
-/-- The range of a one-column matrix is the span of its column. -/
-private theorem range_toEuclideanLin_replicateCol {κ : Type*} (x : κ → ℂ) :
-    LinearMap.range (toEuclideanLin (replicateCol Unit x)) = ℂ ∙ WithLp.toLp 2 x := by
-  ext y
-  rw [LinearMap.mem_range, Submodule.mem_span_singleton]
-  constructor
-  · rintro ⟨z, rfl⟩
-    refine ⟨z (), ?_⟩
-    ext i
-    simp [toEuclideanLin_apply, mulVec, dotProduct, mul_comm]
-  · rintro ⟨a, rfl⟩
-    refine ⟨WithLp.toLp 2 fun _ => a, ?_⟩
-    ext i
-    simp [mulVec, dotProduct, mul_comm]
-
 /-- A one-column matrix `w` with `X w = w M` is an eigenvector: `X w = M₁₁ w`. -/
 private theorem mulVec_eq_smul_of_mul_replicateCol {κ : Type*} [Fintype κ] {X : Matrix κ κ ℂ}
     {w : κ → ℂ} {M : Matrix Unit Unit ℂ} (h : X * replicateCol Unit w = replicateCol Unit w * M) :

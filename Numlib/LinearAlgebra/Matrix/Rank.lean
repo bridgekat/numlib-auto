@@ -36,6 +36,8 @@ classical characterization of the rank as the largest order of a nonvanishing mi
   `Matrix.rank_le_iff_exists_mul` (`rank A ≤ r ↔ A = B C` through `K^r`) with its generator form
   `Matrix.rank_le_iff_exists_mul_transpose`; `Matrix.rank_le_card_add_card_of_forall_ne_zero`, the
   rank bound of a matrix supported on a few rows and columns.
+* `Matrix.rank_toBlock_mono`: a block of a block has smaller rank; `Matrix.rank_one_submatrix_mul`:
+  padding with zero rows does not change the rank.
 * **The nullity theorem** (Fiedler–Markham; Strang–Nguyen): for invertible `A`,
   `Matrix.finrank_ker_toBlock_inv` (the null spaces of `A⁻¹[p, q]` and `A[¬q, ¬p]` have the same
   dimension), its rank form `Matrix.rank_toBlock_inv_add_card`, and the block corollaries
@@ -300,6 +302,43 @@ theorem rank_le_card_add_card_of_forall_ne_zero [Finite m] (A : Matrix m n K)
   exact (rank_add_le A₁ A₂).trans (add_le_add h₁ h₂)
 
 end Factorization
+
+/-! ### Ranks of blocks and of padded matrices -/
+
+section Blocks
+
+variable {m n : Type*}
+
+/-- A block of a block has smaller rank: shrinking the row and column predicates of `toBlock`
+does not increase the rank. -/
+theorem rank_toBlock_mono [Fintype n] (A : Matrix m n K) {p p' : m → Prop}
+    {q q' : n → Prop} [DecidablePred q] [DecidablePred q'] (hp : ∀ i, p i → p' i)
+    (hq : ∀ j, q j → q' j) : (A.toBlock p q).rank ≤ (A.toBlock p' q').rank :=
+  rank_submatrix_le (A.toBlock p' q') (Subtype.map id hp) (Subtype.map id hq)
+
+/-- The rank of a block of the transpose is the rank of the transposed block. -/
+theorem rank_toBlock_transpose [Fintype m] [Fintype n] (A : Matrix m n K) (p : n → Prop)
+    (q : m → Prop) [DecidablePred p] [DecidablePred q] :
+    (Aᵀ.toBlock p q).rank = (A.toBlock q p).rank :=
+  rank_transpose (A.toBlock q p)
+
+/-- Padding with zero rows does not change the rank: `[X; 0]`, written as the product of the
+leading columns of the identity with `X`, has the rank of `X`. -/
+theorem rank_one_submatrix_mul [Finite n] [DecidableEq n] {p q : Type*} [Fintype p]
+    [Fintype q] {f : p → n} (hf : Function.Injective f) (X : Matrix p q K) :
+    ((1 : Matrix n n K).submatrix id f * X).rank = X.rank := by
+  classical
+  have := Fintype.ofFinite n
+  refine le_antisymm (rank_mul_le_right _ _) ?_
+  have h : ((1 : Matrix n n K).submatrix id f)ᵀ * (1 : Matrix n n K).submatrix id f = 1 := by
+    rw [transpose_submatrix, transpose_one, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+      Matrix.one_mul, submatrix_one _ hf]
+  calc X.rank = (((1 : Matrix n n K).submatrix id f)ᵀ *
+        ((1 : Matrix n n K).submatrix id f * X)).rank := by
+        rw [← Matrix.mul_assoc, h, Matrix.one_mul]
+    _ ≤ _ := rank_mul_le_right _ _
+
+end Blocks
 
 /-! ### The nullity theorem -/
 

@@ -593,31 +593,6 @@ private theorem conjTranspose_mul_fromCols_eq {Qα : Matrix (Fin n) (Fin r) ℂ}
   obtain ⟨h1, h2, -, h4⟩ := fromBlocks_inj.1 hQ
   exact ⟨h1, h4, h2⟩
 
-/-- For `Q = [Q_α Q_β]` unitary, `ran Q_β = (ran Q_α)ᗮ`. -/
-private theorem range_eq_orthogonal_of_fromCols {Qα : Matrix (Fin n) (Fin r) ℂ}
-    {Qβ : Matrix (Fin n) (Fin s) ℂ} (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1)
-    (hQ' : fromCols Qα Qβ * (fromCols Qα Qβ)ᴴ = 1) :
-    LinearMap.range (toEuclideanLin Qβ) = (LinearMap.range (toEuclideanLin Qα))ᗮ := by
-  obtain ⟨-, -, hαβ⟩ := conjTranspose_mul_fromCols_eq hQ
-  rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromCols_mul_fromRows] at hQ'
-  apply le_antisymm
-  · rintro _ ⟨y, rfl⟩
-    rw [Submodule.mem_orthogonal]
-    rintro _ ⟨z, rfl⟩
-    rw [← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint,
-      ← toEuclideanLin_mul_apply, hαβ, map_zero, LinearMap.zero_apply, inner_zero_right]
-  · intro x hx
-    have h0 : toEuclideanLin Qαᴴ x = 0 := by
-      rw [toEuclideanLin_conjTranspose_eq_adjoint]
-      refine ext_inner_left ℂ fun z => ?_
-      rw [LinearMap.adjoint_inner_right, inner_zero_right]
-      exact (Submodule.mem_orthogonal _ _).1 hx _ ⟨z, rfl⟩
-    refine ⟨toEuclideanLin Qβᴴ x, ?_⟩
-    have h := congrArg (fun M => toEuclideanLin M x) hQ'
-    simp only [map_add, LinearMap.add_apply, toEuclideanLin_mul_apply, h0, map_zero, zero_add,
-      toLpLin_one, LinearMap.id_apply] at h
-    exact h
-
 open scoped Matrix.Norms.L2Operator
 
 /-- **(7.3.18)**: with `Q = [Q_α Q_β]` unitary (the Schur vectors, `D_r(A) = ran Q_α`) and `Q_k`

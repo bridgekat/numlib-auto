@@ -1,16 +1,17 @@
-import Mathlib.Analysis.Normed.Algebra.Exponential
-import Mathlib.Analysis.SpecialFunctions.Exponential
-import Mathlib.Analysis.SpecificLimits.Normed
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Algebra.Polynomial.AlgebraMap
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
+import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Normed.Algebra.Exponential
+import Mathlib.Analysis.SpecialFunctions.Exponential
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Topology.Algebra.Polynomial
-import Mathlib.Analysis.Complex.ExponentialBounds
-import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Numlib.Algebra.Polynomial.Commute
+import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Normed.Algebra.Logarithm
 import Numlib.Approximation.TriangleQuadrature
-import Numlib.Analysis.Calculus.HermiteInterpolation
 
 /-!
 # Padé approximants of the exponential
@@ -588,15 +589,6 @@ private theorem exp_nsmul' (m : ℕ) (x : 𝔸) : exp (m • x) = exp x ^ m := b
   | succ m ih =>
     rw [succ_nsmul, exp_add_of_commute' ((Commute.refl x).smul_left m), ih, pow_succ]
 
-omit [NormOneClass 𝔸] [CompleteSpace 𝔸] in
-private theorem commute_aeval_of_commute {x a : 𝔸} (h : Commute x a) (P : ℝ[X]) :
-    Commute x (aeval a P) := by
-  induction P using Polynomial.induction_on with
-  | C c => simpa using Algebra.commute_algebraMap_right c x
-  | add p q hp hq => simpa using hp.add_right hq
-  | monomial n c _ => simpa using
-      (Algebra.commute_algebraMap_right c x).mul_right (h.pow_right (n + 1))
-
 omit [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸] in
 private theorem commute_ring_inverse {x D : 𝔸} (hD : IsUnit D) (h : Commute x D) :
     Commute x (Ring.inverse D) := by
@@ -620,7 +612,7 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
   set P := a ^ (p + q + 1)
   have hrem : exp a = expApprox ℝ p q a + c • (P * Dinv * I) := exp_eq_expApprox_add p q a hD
   have hcF : Commute F a := ((Commute.refl a).neg_left).exp_left
-  have hcFD : Commute F Dinv := commute_ring_inverse hD (commute_aeval_of_commute hcF _)
+  have hcFD : Commute F Dinv := commute_ring_inverse hD (hcF.aeval_right _)
   have hcFP : Commute F P := hcF.pow_right _
   have hFE : F * exp a = 1 := by
     rw [← exp_add_of_commute' ((Commute.refl a).neg_left), neg_add_cancel, exp_zero]
@@ -697,7 +689,7 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
     rw [((((Commute.refl a).smul_right u).neg_right).exp_right).eq]
   have hcah : Commute a h :=
     (((((Commute.refl a).pow_right _).mul_right (commute_ring_inverse hD
-      (commute_aeval_of_commute (Commute.refl a) _))).mul_right hcaJ).smul_right c).neg_right
+      ((Commute.refl a).aeval_right _))).mul_right hcaJ).smul_right c).neg_right
   have hce : Commute a e' := ((Commute.one_right a).add_right hcah).log_right
   refine ⟨e', hce, hnorm.trans hlog, ?_⟩
   calc expApprox ℝ p q a = exp a * (F * expApprox ℝ p q a) := by rw [← mul_assoc, hEF, one_mul]
