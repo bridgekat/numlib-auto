@@ -21,6 +21,10 @@ matrices of [golub2013matrix] §9.4.3:
 * `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues`: the complex form of
   the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
   Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`;
+* `Matrix.frobenius_norm_polar_sub_le`: the real Li–Sun bound
+  `‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n-1} + σ_n + σ̃_{n-1} + σ̃_n)` (the two smallest singular values
+  of each) when `det A · det Ã > 0`, from the pairing inequality `Matrix.trace_mul_one_sub_ge`
+  for a rotation `W`: `tr(P (1 - W)) ≥ (σ_{n-1} + σ_n)/2 · tr(1 - W)`;
 * `Matrix.matrixSign_hermitianDilation`: the sign of the Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of a
   nonsingular `A = U P` is `[0 U; Uᴴ 0]`.
 
@@ -33,9 +37,18 @@ then `P_k = V diag(r_k(σ_i)) Vᴴ` with the scalar Newton map `r ↦ (r + 1/r)/
 `1` from every `r > 0` — so no complex sign-function machinery is needed and the statements hold
 over every `RCLike` field.
 
+The real Li–Sun bound is not proved as Li and Sun do. With `W = Uᵀ Ũ` a rotation (this is where
+`det A · det Ã > 0` enters) and `X = 1 − W`, `P X + X P' = R` with `‖R‖_F ≤ 2 ‖A − Ã‖_F`, and
+`X Xᵀ = Xᵀ X = X + Xᵀ` turns `tr(Xᵀ R)` into `2 tr(P X) + 2 tr(P' X)`. Each is bounded below by the
+pairing inequality, which needs only two facts about orthogonal matrices: `tr(R O) ≤ tr R` for
+`R ⪰ 0` (`Matrix.PosSemidef.trace_mul_le_trace`) and `tr O ≤ n − 2` when `det O = −1`
+(`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`), applied to `O = (1 − 2 u uᵀ) W`.
+
 ## References
 
 * [golub2013matrix] §9.4.3.
+* W. Li and W. Sun, *Perturbation bounds of unitary and subunitary polar factors*, SIAM J. Matrix
+  Anal. Appl. 23 (2002) 1183–1193.
 -/
 
 open Filter Topology
@@ -333,17 +346,14 @@ theorem frobenius_norm_le_of_mul_add_mul_eq {P Q X R : Matrix n n 𝕜} {σ τ :
   · refine le_of_mul_le_mul_right ?_ hX
     nlinarith
 
-/-- **The perturbation of the unitary polar factor** (the complex form of the Li–Sun bound,
-[golub2013matrix] §9.4.3; W. Li and W. Sun 2003): if `A = U P` and `Ã = Ũ P'` are polar
-decompositions of square matrices with `σ ≤ P`, `σ̃ ≤ P'` in the Loewner order and `σ + σ̃ > 0`
-(for instance `σ`, `σ̃` the smallest singular values), then
-`‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ + σ̃)`. With `W = Uᴴ Ũ` and `Δ = A − Ã`, `X = 1 − W` solves
-`P X + X P' = Uᴴ Δ − Δᴴ Ũ` (`Matrix.frobenius_norm_le_of_mul_add_mul_eq`), and `‖X‖_F = ‖U − Ũ‖_F`.
-The real refinement with the two smallest singular values is Li and Sun's, and is not formalized. -/
-theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 𝕜}
-    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') {σ σ' : ℝ}
-    (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hP' : (P' - (σ' : 𝕜) • 1).PosSemidef)
-    (hσ : 0 < σ + σ') : ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / (σ + σ') := by
+/-- The Sylvester equation of two polar decompositions (shared by the complex and the real bounds):
+with `X = Uᴴ (U - Ũ)`, `P X + X P' = Uᴴ Δ - Δᴴ Ũ` for `Δ = A - Ã`, whose Frobenius norm is at most
+`2 ‖Δ‖_F`; and `‖X‖_F = ‖U - Ũ‖_F`. -/
+private theorem IsPolarDecomposition.sylvester {A Ã U Ũ P P' : Matrix n n 𝕜}
+    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') :
+    ‖Uᴴ * (U - Ũ)‖ = ‖U - Ũ‖ ∧
+      P * (Uᴴ * (U - Ũ)) + Uᴴ * (U - Ũ) * P' = Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ ∧
+      ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ 2 * ‖A - Ã‖ := by
   have hU' := h'.mem_unitaryGroup
   have hUs : Uᴴ ∈ unitaryGroup n 𝕜 := by
     rw [← star_eq_conjTranspose]; exact Unitary.star_mem h.mem_unitaryGroup
@@ -351,11 +361,10 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 
   have hUU' : Ũᴴ * Ũ = 1 := h'.conjTranspose_mul_self
   have hPh : Pᴴ = P := h.isHermitian
   have hPh' : P'ᴴ = P' := h'.isHermitian
-  have hX : ‖Uᴴ * (U - Ũ)‖ = ‖U - Ũ‖ := by
-    have := frobenius_norm_unitary_mul_mul_unitary hUs (U - Ũ) (one_mem (unitaryGroup n 𝕜))
+  refine ⟨?_, ?_, ?_⟩
+  · have := frobenius_norm_unitary_mul_mul_unitary hUs (U - Ũ) (one_mem (unitaryGroup n 𝕜))
     rwa [Matrix.mul_one] at this
-  have hsyl : P * (Uᴴ * (U - Ũ)) + Uᴴ * (U - Ũ) * P' = Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ := by
-    have e1 : Uᴴ * (A - Ã) = P - Uᴴ * Ũ * P' := by
+  · have e1 : Uᴴ * (A - Ã) = P - Uᴴ * Ũ * P' := by
       rw [Matrix.mul_sub, h.eq_mul, h'.eq_mul, ← Matrix.mul_assoc, hUU, Matrix.one_mul,
         Matrix.mul_assoc]
     have e2 : (A - Ã)ᴴ * Ũ = P * (Uᴴ * Ũ) - P' := by
@@ -365,8 +374,7 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 
     simp only [Matrix.mul_sub, Matrix.sub_mul, hUU, Matrix.mul_one, Matrix.one_mul,
       Matrix.mul_assoc]
     abel
-  have hR : ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ 2 * ‖A - Ã‖ := by
-    have h1 : ‖Uᴴ * (A - Ã)‖ = ‖A - Ã‖ := by
+  · have h1 : ‖Uᴴ * (A - Ã)‖ = ‖A - Ã‖ := by
       have := frobenius_norm_unitary_mul_mul_unitary hUs (A - Ã) (one_mem (unitaryGroup n 𝕜))
       rwa [Matrix.mul_one] at this
     have h2 : ‖(A - Ã)ᴴ * Ũ‖ = ‖A - Ã‖ := by
@@ -375,6 +383,20 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 
       rw [this, frobenius_norm_conjTranspose]
     calc ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ ‖Uᴴ * (A - Ã)‖ + ‖(A - Ã)ᴴ * Ũ‖ := norm_sub_le _ _
       _ = 2 * ‖A - Ã‖ := by rw [h1, h2]; ring
+
+/-- **The perturbation of the unitary polar factor** (the complex form of the Li–Sun bound,
+[golub2013matrix] §9.4.3; W. Li and W. Sun 2002): if `A = U P` and `Ã = Ũ P'` are polar
+decompositions of square matrices with `σ ≤ P`, `σ̃ ≤ P'` in the Loewner order and `σ + σ̃ > 0`
+(for instance `σ`, `σ̃` the smallest singular values), then
+`‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ + σ̃)`. With `W = Uᴴ Ũ` and `Δ = A − Ã`, `X = 1 − W` solves
+`P X + X P' = Uᴴ Δ − Δᴴ Ũ` (`Matrix.frobenius_norm_le_of_mul_add_mul_eq`), and `‖X‖_F = ‖U − Ũ‖_F`.
+The real refinement with the two smallest singular values is
+`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`. -/
+theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 𝕜}
+    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') {σ σ' : ℝ}
+    (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hP' : (P' - (σ' : 𝕜) • 1).PosSemidef)
+    (hσ : 0 < σ + σ') : ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / (σ + σ') := by
+  obtain ⟨hX, hsyl, hR⟩ := h.sylvester h'
   rw [← hX]
   calc ‖Uᴴ * (U - Ũ)‖ ≤ ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ / (σ + σ') :=
         frobenius_norm_le_of_mul_add_mul_eq hP hP' hσ hsyl
@@ -436,6 +458,359 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues
     h'.posSemidef_sub_iInf_singularValues hσ
 
 end Perturbation
+
+/-! ### The real Li–Sun bound -/
+
+section RealPerturbation
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+open scoped Matrix.Norms.Frobenius
+
+/-- The trace of a positive semidefinite matrix is not increased by an orthogonal factor:
+`tr(R O) ≤ tr R`. In an orthonormal eigenbasis of `R`, `tr(R O) = ∑ λᵢ Mᵢᵢ` with `M` orthogonal,
+so `Mᵢᵢ ≤ 1`. -/
+theorem PosSemidef.trace_mul_le_trace {R O : Matrix n n ℝ} (hR : R.PosSemidef)
+    (hO : Oᵀ * O = 1) : trace (R * O) ≤ trace R := by
+  have hRh := hR.isHermitian
+  set V := (hRh.eigenvectorUnitary : Matrix n n ℝ)
+  have hV : V ∈ unitaryGroup n ℝ := hRh.eigenvectorUnitary.2
+  have hVV : Vᵀ * V = 1 := by
+    have := mem_unitaryGroup_iff'.1 hV
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have hVV' : V * Vᵀ = 1 := mul_eq_one_comm.1 hVV
+  have hspec : R = V * diagonal (fun i => hRh.eigenvalues i) * Vᵀ := by
+    conv_lhs => rw [hRh.spectral_theorem]
+    rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
+    rfl
+  set d := fun i => hRh.eigenvalues i
+  set M := Vᵀ * O * V with hMdef
+  have hM : Mᵀ * M = 1 := by
+    calc Mᵀ * M = Vᵀ * (Oᵀ * (V * Vᵀ) * O) * V := by
+          simp only [hMdef, transpose_mul, transpose_transpose, Matrix.mul_assoc]
+      _ = 1 := by rw [hVV', Matrix.mul_one, hO, Matrix.mul_one, hVV]
+  have hdiag : ∀ i, M i i ≤ 1 := fun i => by
+    have h1 : ∑ k, M k i * M k i = 1 := by
+      have := congrFun (congrFun hM i) i
+      simpa [mul_apply] using this
+    have h2 : M i i * M i i ≤ ∑ k, M k i * M k i :=
+      Finset.single_le_sum (f := fun k => M k i * M k i) (fun k _ => mul_self_nonneg _)
+        (Finset.mem_univ i)
+    nlinarith
+  have htr1 : trace (R * O) = ∑ i, d i * M i i := by
+    have : trace (R * O) = trace (diagonal d * M) := by
+      rw [hspec, hMdef]
+      simp only [Matrix.mul_assoc]
+      rw [trace_mul_comm V]
+      simp only [Matrix.mul_assoc]
+    rw [this]
+    simp [trace, diagonal_mul]
+  have htr2 : trace R = ∑ i, d i := by
+    have : trace R = trace (diagonal d * (Vᵀ * V)) := by
+      rw [hspec]
+      simp only [Matrix.mul_assoc]
+      rw [trace_mul_comm V]
+      simp only [Matrix.mul_assoc]
+    rw [this, hVV, Matrix.mul_one, trace_diagonal]
+  rw [htr1, htr2]
+  exact Finset.sum_le_sum fun i _ =>
+    mul_le_of_le_one_right (hR.eigenvalues_nonneg i) (hdiag i)
+
+/-- An improper orthogonal matrix has trace at most `n - 2`: `-1` is an eigenvalue
+(`det(O + 1) = det O det(1 + Oᵀ) = -det(O + 1)`), and on the orthogonal complement of its
+eigenvector the trace is at most the dimension (`Matrix.PosSemidef.trace_mul_le_trace`). -/
+theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ} (hO : Oᵀ * O = 1)
+    (hdet : O.det = -1) : trace O ≤ Fintype.card n - 2 := by
+  have hO' : O * Oᵀ = 1 := mul_eq_one_comm.1 hO
+  have hdet0 : (O + 1).det = 0 := by
+    have e : O + 1 = O * (O + 1)ᵀ := by
+      rw [transpose_add, transpose_one, Matrix.mul_add, hO', Matrix.mul_one, add_comm]
+    have := congrArg det e
+    rw [det_mul, det_transpose, hdet] at this
+    linarith
+  obtain ⟨x, hx0, hx⟩ := exists_mulVec_eq_zero_iff.2 hdet0
+  have hOx : O *ᵥ x = -x := by
+    rw [add_mulVec, one_mulVec] at hx
+    exact eq_neg_of_add_eq_zero_left hx
+  set c := x ⬝ᵥ x with hcdef
+  have hc : c ≠ 0 := fun h0 => hx0 (dotProduct_self_eq_zero.1 h0)
+  set Pr := 1 - c⁻¹ • vecMulVec x x with hPr
+  have hPrt : Prᵀ = Pr := by
+    rw [hPr, transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
+  have hPrPr : Pr * Pr = Pr := by
+    rw [hPr, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one,
+      Matrix.one_mul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, vecMulVec_mul_vecMulVec,
+      vecMulVec_smul, ← hcdef, smul_smul]
+    rw [show c⁻¹ * c⁻¹ * c = c⁻¹ by field_simp]
+    abel
+  have hPrpsd : Pr.PosSemidef := by
+    have := posSemidef_conjTranspose_mul_self Pr
+    rwa [conjTranspose_eq_transpose_of_trivial, hPrt, hPrPr] at this
+  have h1 := hPrpsd.trace_mul_le_trace hO
+  have htPr : trace Pr = Fintype.card n - 1 := by
+    rw [hPr, trace_sub, trace_one, trace_smul, trace_vecMulVec, ← hcdef, smul_eq_mul,
+      inv_mul_cancel₀ hc]
+  have htPrO : trace (Pr * O) = trace O + 1 := by
+    rw [hPr, Matrix.sub_mul, Matrix.one_mul, trace_sub, Matrix.smul_mul, trace_smul,
+      trace_mul_comm, mul_vecMulVec, hOx, trace_vecMulVec, neg_dotProduct, ← hcdef,
+      smul_eq_mul, mul_neg, inv_mul_cancel₀ hc]
+    ring
+  rw [htPr, htPrO] at h1
+  linarith
+
+omit [Fintype n] in
+/-- A symmetric matrix bounded below by `b` off a unit vector `u` and by `a ≤ b` along it is
+symmetric: the hypothesis shape of `Matrix.trace_mul_one_sub_ge`. -/
+private theorem transpose_eq_of_posSemidef_pair {P : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ}
+    (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) : Pᵀ = P := by
+  have h := hP.isHermitian.eq
+  rw [conjTranspose_eq_transpose_of_trivial, transpose_add, transpose_sub, transpose_smul,
+    transpose_smul, transpose_one, transpose_vecMulVec] at h
+  simpa using h
+
+/-- **The pairing inequality** behind the real Li–Sun bound: if `W` is a rotation (`Wᵀ W = 1`,
+`det W = 1`) and the symmetric `P` satisfies `P ⪰ b (1 - u uᵀ) + a u uᵀ` for a unit vector `u` and
+`a ≤ b` (for instance `a`, `b` the two smallest eigenvalues of `P`), then
+`tr(P (1 - W)) ≥ (a + b)/2 · tr(1 - W)`. Write `P - (a + b)/2 = R₀ + (b - a)/2 · H` with `R₀ ⪰ 0`
+and the reflection `H = 1 - 2 u uᵀ`: `tr(R₀ (1 - W)) ≥ 0` because `W` is orthogonal
+(`Matrix.PosSemidef.trace_mul_le_trace`), and `tr(H (1 - W)) = n - 2 - tr(H W) ≥ 0` because `H W`
+is an improper orthogonal matrix (`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`). -/
+theorem trace_mul_one_sub_ge {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hu : u ⬝ᵥ u = 1) (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef)
+    (hW : Wᵀ * W = 1) (hdet : W.det = 1) :
+    (a + b) / 2 * trace (1 - W) ≤ trace (P * (1 - W)) := by
+  set R₀ := P - b • 1 + (b - a) • vecMulVec u u with hR₀
+  set H := 1 - (2 : ℝ) • vecMulVec u u with hH
+  have hHt : Hᵀ = H := by
+    rw [hH, transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
+  have hHH : Hᵀ * H = 1 := by
+    rw [hHt, hH, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one,
+      Matrix.one_mul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, vecMulVec_mul_vecMulVec, hu,
+      one_smul]
+    module
+  have hdetH : H.det = -1 := by
+    have e : H = 1 + replicateCol Unit (-(2 : ℝ) • u) * replicateRow Unit u := by
+      rw [hH, ← vecMulVec_eq, smul_vecMulVec, neg_smul, sub_eq_add_neg]
+    rw [e, det_one_add_replicateCol_mul_replicateRow, dotProduct_smul, dotProduct_comm, hu]
+    norm_num
+  have hHW : (H * W)ᵀ * (H * W) = 1 := by
+    rw [transpose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Hᵀ, hHH, Matrix.one_mul, hW]
+  have h1 : trace (R₀ * W) ≤ trace R₀ := hP.trace_mul_le_trace hW
+  have h2 := trace_le_card_sub_two_of_det_eq_neg_one hHW (by rw [det_mul, hdetH, hdet]; ring)
+  have htu : trace (vecMulVec u u) = 1 := by rw [trace_vecMulVec, hu]
+  have hPe : P = R₀ + b • 1 - (b - a) • vecMulVec u u := by rw [hR₀]; abel
+  have e1 : trace (P * (1 - W)) = (trace R₀ - trace (R₀ * W)) + b * trace (1 - W)
+      - (b - a) * (trace (vecMulVec u u) - trace (vecMulVec u u * W)) := by
+    rw [hPe]
+    simp only [Matrix.add_mul, Matrix.sub_mul, Matrix.mul_sub, Matrix.smul_mul, Matrix.one_mul,
+      Matrix.mul_one, trace_add, trace_sub, trace_smul, smul_eq_mul]
+    ring
+  have e2 : trace (H * W) = trace W - 2 * trace (vecMulVec u u * W) := by
+    rw [hH, Matrix.sub_mul, Matrix.one_mul, trace_sub, Matrix.smul_mul, trace_smul, smul_eq_mul]
+  have e3 : trace (1 - W) = Fintype.card n - trace W := by rw [trace_sub, trace_one]
+  rw [e1, e3, htu]
+  rw [e2] at h2
+  nlinarith [mul_nonneg (sub_nonneg.2 hab)
+    (show 0 ≤ (Fintype.card n - trace W) - 2 * (1 - trace (vecMulVec u u * W)) by linarith)]
+
+/-- **A real Sylvester equation for `1 - W` with `W` a rotation** (the step behind the real
+Li–Sun bound): if `P X + X Q = R` with `X = 1 - W`, `Wᵀ W = 1`, `det W = 1`, and `P`, `Q` bounded
+below as in `Matrix.trace_mul_one_sub_ge` by `a ≤ b` and `a' ≤ b'`, then
+`‖X‖_F ≤ 2 ‖R‖_F / (a + b + a' + b')`. Since `X Xᵀ = Xᵀ X = X + Xᵀ`,
+`tr(Xᵀ R) = 2 tr(P X) + 2 tr(Q X) ≥ (a + b + a' + b') tr X = (a + b + a' + b')/2 · ‖X‖_F²`. -/
+theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {u v : n → ℝ}
+    {a b a' b' : ℝ} (hab : a ≤ b) (hu : u ⬝ᵥ u = 1)
+    (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) (hab' : a' ≤ b')
+    (hv : v ⬝ᵥ v = 1) (hQ : (Q - b' • 1 + (b' - a') • vecMulVec v v).PosSemidef)
+    (hW : Wᵀ * W = 1) (hdet : W.det = 1) (hs : 0 < a + b + a' + b')
+    (h : P * (1 - W) + (1 - W) * Q = R) : ‖1 - W‖ ≤ 2 * ‖R‖ / (a + b + a' + b') := by
+  have hW' : W * Wᵀ = 1 := mul_eq_one_comm.1 hW
+  have hPt := transpose_eq_of_posSemidef_pair hP
+  have hQt := transpose_eq_of_posSemidef_pair hQ
+  set X := 1 - W with hX
+  have hXX : Xᵀ * X = X + Xᵀ := by
+    rw [hX, transpose_sub, transpose_one, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub,
+      Matrix.one_mul, Matrix.mul_one, Matrix.one_mul, hW]
+    abel
+  have hXX' : X * Xᵀ = X + Xᵀ := by
+    rw [hX, transpose_sub, transpose_one, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub,
+      Matrix.one_mul, Matrix.mul_one, Matrix.one_mul, hW']
+    abel
+  have hsymm : ∀ S : Matrix n n ℝ, Sᵀ = S → trace (S * Xᵀ) = trace (S * X) := fun S hS => by
+    rw [← trace_transpose, transpose_mul, transpose_transpose, hS, trace_mul_comm]
+  have hnorm : ‖X‖ ^ 2 = 2 * trace X := by
+    have := frobenius_norm_sq_eq_trace (𝕜 := ℝ) X
+    rw [conjTranspose_eq_transpose_of_trivial, hXX, trace_add, trace_transpose] at this
+    simpa [two_mul] using this
+  have hkey : trace (Xᵀ * R) = 2 * trace (P * X) + 2 * trace (Q * X) := by
+    rw [← h, Matrix.mul_add, trace_add, trace_mul_comm Xᵀ, Matrix.mul_assoc, hXX',
+      ← Matrix.mul_assoc, hXX, trace_mul_comm (X + Xᵀ), Matrix.mul_add, Matrix.mul_add, trace_add,
+      trace_add, hsymm P hPt, hsymm Q hQt]
+    ring
+  have h1 := trace_mul_one_sub_ge hab hu hP hW hdet
+  have h2 := trace_mul_one_sub_ge hab' hv hQ hW hdet
+  have h3 := re_trace_conjTranspose_mul_le X R
+  rw [conjTranspose_eq_transpose_of_trivial, RCLike.re_to_real] at h3
+  rw [le_div_iff₀ hs]
+  rcases (norm_nonneg X).eq_or_lt with hX0 | hX0
+  · rw [← hX0, zero_mul]
+    positivity
+  · refine le_of_mul_le_mul_right ?_ hX0
+    nlinarith
+
+/-- The determinant of a real orthogonal matrix is `±1`: its square is `1`. -/
+private theorem det_sq_eq_one_of_transpose_mul_self {O : Matrix n n ℝ} (hO : Oᵀ * O = 1) :
+    O.det ^ 2 = 1 := by
+  have := congrArg det hO
+  rw [det_mul, det_transpose, det_one] at this
+  rw [sq]; exact this
+
+/-- **The real Li–Sun bound, in Loewner form**: if `A = U P` and `Ã = Ũ P'` are real polar
+decompositions with `det A · det Ã > 0` and `P`, `P'` are bounded below as in
+`Matrix.trace_mul_one_sub_ge` by `a ≤ b` and `a' ≤ b'` (for instance the two smallest singular
+values of `A` and of `Ã`), then `‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (a + b + a' + b')`. The determinant
+condition makes `W = Uᵀ Ũ` a rotation, and `1 - W = Uᵀ (U - Ũ)` solves the Sylvester equation of
+`Matrix.frobenius_norm_one_sub_le_of_mul_add_mul_eq`. -/
+theorem IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos {A Ã U Ũ P P' : Matrix n n ℝ}
+    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P')
+    (hdet : 0 < A.det * Ã.det) {u v : n → ℝ} {a b a' b' : ℝ} (hab : a ≤ b) (hu : u ⬝ᵥ u = 1)
+    (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) (hab' : a' ≤ b')
+    (hv : v ⬝ᵥ v = 1) (hP' : (P' - b' • 1 + (b' - a') • vecMulVec v v).PosSemidef)
+    (hs : 0 < a + b + a' + b') : ‖U - Ũ‖ ≤ 4 * ‖A - Ã‖ / (a + b + a' + b') := by
+  obtain ⟨hX, hsyl, hR⟩ := h.sylvester h'
+  have hUU : Uᵀ * U = 1 := by
+    rw [← conjTranspose_eq_transpose_of_trivial]; exact h.conjTranspose_mul_self
+  have hUU' : Ũᵀ * Ũ = 1 := by
+    rw [← conjTranspose_eq_transpose_of_trivial]; exact h'.conjTranspose_mul_self
+  have hUU'' : U * Uᵀ = 1 := mul_eq_one_comm.1 hUU
+  set W := Uᵀ * Ũ with hWdef
+  have hW : Wᵀ * W = 1 := by
+    rw [hWdef, transpose_mul, transpose_transpose, Matrix.mul_assoc, ← Matrix.mul_assoc U,
+      hUU'', Matrix.one_mul, hUU']
+  have hdetW : W.det = 1 := by
+    have hpos : 0 < U.det * Ũ.det := by
+      have hP0 := h.posSemidef.det_nonneg
+      have hP0' := h'.posSemidef.det_nonneg
+      rw [h.eq_mul, h'.eq_mul, det_mul, det_mul] at hdet
+      by_contra hneg
+      push Not at hneg
+      nlinarith [mul_nonneg hP0 hP0']
+    have hsq : (U.det * Ũ.det) ^ 2 = 1 := by
+      rw [mul_pow, det_sq_eq_one_of_transpose_mul_self hUU,
+        det_sq_eq_one_of_transpose_mul_self hUU', one_mul]
+    rw [hWdef, det_mul, det_transpose]
+    nlinarith
+  have hXW : Uᴴ * (U - Ũ) = 1 - W := by
+    rw [conjTranspose_eq_transpose_of_trivial, Matrix.mul_sub, hUU]
+  rw [hXW] at hX hsyl
+  rw [← hX]
+  calc ‖1 - W‖ ≤ 2 * ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ / (a + b + a' + b') :=
+        frobenius_norm_one_sub_le_of_mul_add_mul_eq hab hu hP hab' hv hP' hW hdetW hs hsyl
+    _ ≤ 2 * (2 * ‖A - Ã‖) / (a + b + a' + b') := by gcongr
+    _ = 4 * ‖A - Ã‖ / (a + b + a' + b') := by ring
+
+/-- **The symmetric polar factor above its two smallest singular values**: for a real polar
+decomposition `A = U P` of order `n ≥ 1` there is a unit vector `u` (a right singular vector for
+`σ_{n-1}`) with `P ⪰ σ_{n-2} (1 - u uᵀ) + σ_{n-1} u uᵀ`, the sorted singular values `σ_k` being
+`Matrix.sortedSingularValues` (0-based). Read off an SVD `A = W diag(σ) Vᵀ`, where
+`P = V diag(σ) Vᵀ` (`Matrix.IsSVD.isPolarDecomposition_of_square` and uniqueness of `P`). -/
+theorem IsPolarDecomposition.exists_posSemidef_sub_sortedSingularValues {m : ℕ}
+    {A U P : Matrix (Fin m) (Fin m) ℝ} (h : IsPolarDecomposition A U P) (hm : m ≠ 0) :
+    ∃ u : Fin m → ℝ, u ⬝ᵥ u = 1 ∧
+      (P - A.sortedSingularValues (m - 2) • 1 +
+        (A.sortedSingularValues (m - 2) - A.sortedSingularValues (m - 1)) •
+          vecMulVec u u).PosSemidef := by
+  obtain ⟨W, σ, V, hs⟩ := exists_isSVD A
+  have hp := hs.isPolarDecomposition_of_square
+  have hVV : Vᵀ * V = 1 := by
+    have := mem_unitaryGroup_iff'.1 hs.mem_unitaryGroup_right
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have hVV' : V * Vᵀ = 1 := mul_eq_one_comm.1 hVV
+  have hPeq : P = V * diagonal (fun i : Fin m => σ i) * Vᵀ := by
+    rw [h.eq_cfcSqrt, ← hp.eq_cfcSqrt, conjTranspose_eq_transpose_of_trivial]
+    rfl
+  rw [← hs.singularValues_eq (by omega) (by omega), ← hs.singularValues_eq (by omega) (by omega)]
+  set l : Fin m := ⟨m - 1, by omega⟩
+  set c := σ (m - 2)
+  set k := σ (m - 2) - σ (m - 1)
+  refine ⟨fun i => V i l, ?_, ?_⟩
+  · have := congrFun (congrFun hVV l) l
+    simpa [mul_apply, dotProduct] using this
+  have hvv : vecMulVec (fun i => V i l) (fun i => V i l) =
+      V * diagonal (Pi.single l 1) * Vᵀ := by
+    ext i j
+    rw [mul_apply]
+    simp [vecMulVec_apply, mul_diagonal, Pi.single_apply]
+  set d : Fin m → ℝ := fun i => σ i - c + k * (Pi.single l 1 : Fin m → ℝ) i with hd
+  have hdiag : diagonal d =
+      diagonal (fun i : Fin m => σ i) - c • 1 + k • diagonal (Pi.single l 1) := by
+    ext i j
+    by_cases hij : i = j <;> simp [hd, hij]
+  have heq : P - c • 1 + k • vecMulVec (fun i => V i l) (fun i => V i l) =
+      V * diagonal d * Vᵀ := by
+    rw [hPeq, hvv, hdiag]
+    simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul,
+      Matrix.smul_mul, Matrix.mul_one, hVV']
+  have hd0 : 0 ≤ d := fun i => by
+    by_cases hi : i = l
+    · subst hi
+      change 0 ≤ σ (m - 1) - σ (m - 2) + (σ (m - 2) - σ (m - 1)) * (Pi.single l 1 : Fin m → ℝ) l
+      rw [Pi.single_eq_same]
+      linarith
+    · have hi' : (i : ℕ) ≤ m - 2 := by
+        have : (i : ℕ) ≠ m - 1 := fun h' => hi (Fin.ext h')
+        omega
+      change 0 ≤ σ i - σ (m - 2) + k * (Pi.single l 1 : Fin m → ℝ) i
+      rw [Pi.single_eq_of_ne hi, mul_zero]
+      linarith [hs.antitone hi']
+  rw [heq]
+  have := (PosSemidef.diagonal hd0).mul_mul_conjTranspose_same V
+  rwa [conjTranspose_eq_transpose_of_trivial] at this
+
+/-- **The Li–Sun perturbation bound for the orthogonal polar factor** ([golub2013matrix] §9.4.3,
+quoted there from W. Li and W. Sun, SIAM J. Matrix Anal. Appl. 23 (2002) 1183–1193): for real
+`A, Ã : Matrix (Fin m) (Fin m) ℝ` with `det A · det Ã > 0` and polar decompositions `A = U P`,
+`Ã = Ũ P'`,
+`‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (σ_{m-2}(A) + σ_{m-1}(A) + σ_{m-2}(Ã) + σ_{m-1}(Ã))`, the sum of the two
+smallest singular values of each (`Matrix.sortedSingularValues`, 0-based).
+
+The determinant condition cannot be dropped: `A = diag(1, ε)`, `Ã = diag(1, -ε)` have
+`‖U - Ũ‖_F = 2` and `‖A - Ã‖_F = 2ε`. Li and Sun assume `‖A - Ã‖₂ < σ_{m-1}(A) + σ_{m-1}(Ã)`, which
+keeps the segment from `A` to `Ã` nonsingular and so implies it. The proof
+(`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`) is not Li and Sun's: with
+`W = Uᵀ Ũ` a rotation, the pairing inequality `Matrix.trace_mul_one_sub_ge` replaces their
+eigenvalue pairing. -/
+theorem frobenius_norm_polar_sub_le {m : ℕ} {A Ã U Ũ P P' : Matrix (Fin m) (Fin m) ℝ}
+    (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P')
+    (hdet : 0 < A.det * Ã.det) :
+    ‖U - Ũ‖ ≤ 4 * ‖A - Ã‖ / (A.sortedSingularValues (m - 2) + A.sortedSingularValues (m - 1) +
+      Ã.sortedSingularValues (m - 2) + Ã.sortedSingularValues (m - 1)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · rw [show U - Ũ = 0 from Subsingleton.elim _ _, norm_zero]
+    refine div_nonneg (by positivity) ?_
+    linarith [A.sortedSingularValues_nonneg (0 - 2), A.sortedSingularValues_nonneg (0 - 1),
+      Ã.sortedSingularValues_nonneg (0 - 2), Ã.sortedSingularValues_nonneg (0 - 1)]
+  obtain ⟨u, hu, hP⟩ := h.exists_posSemidef_sub_sortedSingularValues hm.ne'
+  obtain ⟨v, hv, hP'⟩ := h'.exists_posSemidef_sub_sortedSingularValues hm.ne'
+  have hanti : ∀ B : Matrix (Fin m) (Fin m) ℝ,
+      B.sortedSingularValues (m - 1) ≤ B.sortedSingularValues (m - 2) := fun B =>
+    B.sortedSingularValues_antitone (by omega)
+  have hA : A.det ≠ 0 := fun h0 => by rw [h0, zero_mul] at hdet; exact lt_irrefl 0 hdet
+  have hpos : 0 < A.sortedSingularValues (m - 1) := by
+    refine lt_of_le_of_ne (A.sortedSingularValues_nonneg _) (Ne.symm fun h0 => ?_)
+    have hr := (A.sortedSingularValues_eq_zero_iff_rank_le (m - 1)).1 h0
+    rw [rank_of_isUnit A ((isUnit_iff_isUnit_det A).2 (isUnit_iff_ne_zero.2 hA)),
+      Fintype.card_fin] at hr
+    omega
+  have hs : 0 < A.sortedSingularValues (m - 1) + A.sortedSingularValues (m - 2) +
+      Ã.sortedSingularValues (m - 1) + Ã.sortedSingularValues (m - 2) := by
+    linarith [A.sortedSingularValues_nonneg (m - 2), Ã.sortedSingularValues_nonneg (m - 2),
+      Ã.sortedSingularValues_nonneg (m - 1)]
+  have key := h.frobenius_norm_sub_le_of_det_mul_pos h' hdet (hanti A) hu hP (hanti Ã) hv hP' hs
+  convert key using 2
+  ring
+
+end RealPerturbation
 
 /-! ### The sign of the Jordan–Wielandt matrix -/
 

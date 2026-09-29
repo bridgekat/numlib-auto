@@ -31,34 +31,10 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.5'
 
 [[node]]
 id = "theorem_4_2_6"
-kind = "theorem"
-desc = '''Theorem 4.2.6, (4.2.5): for positive definite `A` with `T = (A + Aᵀ)/2`, `S = (A − Aᵀ)/2` and `A = L U`,
-`‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` (★★★ in the
-backbone: the book gives no proof). ★
-
-Blocked: waits on the backbone node `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` (open; agent fac1
-found the planned recursion false; agent bb2 proved only a `2n` version, the sharp `n` needing
-Golub–Van Loan 1979, as of main f98735ed). The surface statement is a one-line specialization once
-it exists. (agents s04, c0412)'''
-deps = ["Matrix.IsLU.frobenius_norm_abs_mul_abs_le", "isPositiveDefinite_iff"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 4.2.6'
 
 [[node]]
 id = "equation_4_2_7"
-kind = "theorem"
-desc = '''(4.2.7), rigorous: for positive definite `A`, relational computed factors
-`FloatingPoint.RoundsLU fp A L̂ Û`, `RoundsForwardSubst fp L̂ b y`, `RoundsBackSubst fp Û y x̂` (the
-book's "analysis in §3.3"), the pivots nonzero, and the hypothesis (4.2.6)
-`‖|L̂||Û|‖_F ≤ c ‖|L||U|‖_F` (`L`, `U` the exact factors), then `(A + E) x̂ = b` with
-`‖E‖_F ≤ γ_{3n} c n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. This is stronger than the printed first-order
-`‖E‖_F ≤ u (2n ‖A‖_F + 4 c n² (‖T‖₂ + ‖S T⁻¹ S‖₂)) + O(u²)` (the `2n‖A‖_F` term is not needed and
-`γ_{3n} ≤ 4 n u` for `n u` small). From `FloatingPoint.exists_roundsLU_solve_eq`
-(`|E| ≤ γ_{3n} |L̂||Û|`, Frobenius norm monotone in `|·|`) and `theorem_4_2_6`. ★★
-
-Blocked: waits on `theorem_4_2_6` (hence on the backbone
-`Matrix.IsLU.frobenius_norm_abs_mul_abs_le`, open). The rest (`FloatingPoint.exists_roundsLU_solve_eq`,
-Frobenius monotonicity) is in place; ~30 lines once Theorem 4.2.6 exists.'''
-deps = ["FloatingPoint.exists_roundsLU_solve_eq", "theorem_4_2_6"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (4.2.7)'
 
 [[node]]

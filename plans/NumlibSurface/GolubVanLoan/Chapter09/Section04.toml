@@ -84,41 +84,10 @@ source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
 [[node]]
 id = "sign_block_polar"
-kind = "theorem"
-desc = '''§9.4.3: for nonsingular `A : Matrix (Fin n) (Fin n) ℝ` with SVD `A = U_A Σ_A V_Aᵀ`, `Q = (1/√2)
-[U_A 0; 0 V_A] [I I; I -I]` is orthogonal, `Qᵀ [0 A; Aᵀ 0] Q = [Σ_A 0; 0 -Σ_A]`, and `sign([0 A; Aᵀ
-0]) = [0 U; Uᵀ 0]` with `U = U_A V_Aᵀ` the orthogonal polar factor ("nonsingular" is missing in the
-book and needed: a zero singular value is a zero eigenvalue). Through `Matrix.map Complex.ofReal`,
-`Matrix.matrixSign_hermitianDilation`: `matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ` for
-nonsingular `A` with `IsPolarDecomposition A U P`. The surface keeps its `fromBlocks 0 A Aᵀ 0` statement
-and rewrites (`hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0` by unfolding); `U` is a polar factor by
-`Matrix.IsSVD.isPolarDecomposition` (`U = U_A V_Aᵀ`). ★
-
-Blocked (c0209, 2026-09-26): the backbone `Matrix.matrixSign_hermitianDilation`
-(`Numlib/Analysis/Matrix/Function/Polar`) is proved on branch `agent/bb1` (commit 097000eb) but
-not on main (fca5b833); everything else is on main (`Matrix.hermitianDilation`,
-`Matrix.IsSVD.isPolarDecomposition`, `Matrix.exists_isPolarDecomposition`, chapter 9's
-`theorem_9_4_1`). Once it lands: the `fromBlocks` restatement through `Matrix.map Complex.ofReal`
-(`hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0` by unfolding), ~40 lines.'''
-deps = ["Matrix.matrixSign_hermitianDilation", "Matrix.hermitianDilation", "Matrix.IsSVD.isPolarDecomposition", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3, display'
 
 [[node]]
 id = "liSun"
-kind = "theorem"
-desc = '''§9.4.3, the Li–Sun bound: for nonsingular `A, Ã : Matrix (Fin n) (Fin n) ℝ` (`n ≥ 2`) with orthogonal
-polar factors `U`, `Ũ` (hypotheses `Matrix.IsPolarDecomposition A U P`, `IsPolarDecomposition Ã Ũ P̃`),
-`‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (σ_{n-1}(A) + σ_n(A) + σ_{n-1}(Ã) + σ_n(Ã))`, with the book's 1-based `σ_{n-1}`,
-`σ_n` read as the 0-based `A.sortedSingularValues (n - 2)`, `A.sortedSingularValues (n - 1)` (the two
-smallest). `Matrix.frobenius_norm_polar_sub_le` (quoted without proof by the book). ★★★ (in the backbone)
-
-Blocked (c0209, 2026-09-26): the backbone `Matrix.frobenius_norm_polar_sub_le` is open
-(dec1 left it at analysis: the book quotes the bound without proof; the real refinement with the
-two smallest singular values needs Li–Sun's pairing argument for the skew part of a real
-orthogonal matrix, ~600 lines, research-level). Everything else is on main (`theorem_9_4_1`,
-`Matrix.IsPolarDecomposition`, `Matrix.sortedSingularValues`). Once the backbone lands: a direct
-instance, ~15 lines.'''
-deps = ["Matrix.frobenius_norm_polar_sub_le", "theorem_9_4_1"]
 source = 'Golub–Van Loan, Matrix Computations, §9.4.3'
 
 [[node]]

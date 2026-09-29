@@ -8,7 +8,8 @@ import NumlibSurface.GolubVanLoan.Chapter04.Section01
 # Golub–Van Loan §4.2: positive definite systems
 
 Surface file for [golub2013matrix] §4.2: positive definiteness of a general (unsymmetric) matrix
-(Theorems 4.2.1–4.2.5 with Corollaries 4.2.2 and 4.2.4), the Cholesky factorization (Theorem
+(Theorems 4.2.1–4.2.6 with Corollaries 4.2.2 and 4.2.4, and the backward error (4.2.7) of LU
+without pivoting that Theorem 4.2.6 supports), the Cholesky factorization (Theorem
 4.2.7) and gaxpy Cholesky (Algorithm 4.2.1) with its rounding bridge, the facts of §4.2.6 on the
 stability of the Cholesky process (with Wilkinson's backward error bound for the computed factor and
 the two triangular solves), the pivoted outer-product `L D Lᵀ` (Algorithm 4.2.2, (4.2.10)), the
@@ -231,6 +232,77 @@ theorem theorem_4_2_5 {α : ℝ} {v w : Fin n → ℝ} {B C : Matrix (Fin n) (Fi
     ext i j
     simp only [Matrix.sub_apply, Matrix.neg_apply, Matrix.smul_apply, smul_eq_mul]
     ring
+
+/-- The book's `T = (A + Aᵀ)/2` is the backbone's `Matrix.hermitianPart A`. -/
+private theorem half_add_transpose_eq_hermitianPart (A : Matrix (Fin n) (Fin n) ℝ) :
+    (2 : ℝ)⁻¹ • (A + Aᵀ) = hermitianPart A := by
+  rw [hermitianPart, conjTranspose_eq_transpose_of_trivial]
+
+/-- The book's `S = (A − Aᵀ)/2` is `A − T`. -/
+private theorem half_sub_transpose_eq_sub_hermitianPart (A : Matrix (Fin n) (Fin n) ℝ) :
+    (2 : ℝ)⁻¹ • (A - Aᵀ) = A - hermitianPart A := by
+  rw [hermitianPart, conjTranspose_eq_transpose_of_trivial]
+  ext i j
+  simp only [Matrix.smul_apply, Matrix.sub_apply, Matrix.add_apply, smul_eq_mul]
+  ring
+
+open scoped Matrix.Norms.Frobenius in
+/-- **Theorem 4.2.6**, (4.2.5): "Let `A ∈ ℝ^{n×n}` be positive definite and set `T = (A + Aᵀ)/2`
+and `S = (A − Aᵀ)/2`. If `A = LU` is the LU factorization, then
+`‖|L||U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`." The book refers to Golub and Van Loan (1979) for the proof;
+the backbone `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` bounds each rank-one term `|ℓ_k| |u_kᵀ|`
+through `A T⁻¹ Aᵀ = T − S T⁻¹ S`. -/
+theorem theorem_4_2_6 {A L U T S : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveDefinite A)
+    (hT : T = (2 : ℝ)⁻¹ • (A + Aᵀ)) (hS : S = (2 : ℝ)⁻¹ • (A - Aᵀ)) (h : IsLU A L U) :
+    ‖L.abs * U.abs‖ ≤ n * (lpOpNorm 2 T + lpOpNorm 2 (S * T⁻¹ * S)) := by
+  rw [hT, hS, half_add_transpose_eq_hermitianPart, half_sub_transpose_eq_sub_hermitianPart,
+    lpOpNorm_two, lpOpNorm_two]
+  have := IsLU.frobenius_norm_abs_mul_abs_le ((isPositiveDefinite_iff A).1 hA) h
+  rw [Fintype.card_fin] at this
+  exact this
+
+open scoped Matrix.Norms.Frobenius in
+/-- The Frobenius norm is monotone in the absolute values: `|E| ≤ M` entrywise gives
+`‖E‖_F ≤ ‖M‖_F`. -/
+private theorem frobenius_norm_le_of_abs_entrywiseLE {E M : Matrix (Fin n) (Fin n) ℝ}
+    (h : E.abs ≤ₑ M) : ‖E‖ ≤ ‖M‖ := by
+  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
+  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
+  refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
+  rw [Real.norm_eq_abs, Real.norm_eq_abs]
+  exact pow_le_pow_left₀ (abs_nonneg _) ((h i j).trans (le_abs_self _)) 2
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(4.2.7)**, rigorous: "Assume that the computed factors `L̂` and `Û` satisfy
+`‖|L̂||Û|‖_F ≤ c ‖|L||U|‖_F` (4.2.6), where `c` is a constant of modest size. It follows from
+(4.2.1) and the analysis in §3.3 that if these factors are used to compute a solution to
+`Ax = b`, then the computed solution `x̂` satisfies `(A + E) x̂ = b` with
+`‖E‖_F ≤ u (2n ‖A‖_F + 4cn² (‖T‖₂ + ‖S T⁻¹ S‖₂)) + O(u²)`." Here the computed factors and the two
+triangular solves are the relational rounding models `FloatingPoint.RoundsLU`,
+`FloatingPoint.RoundsForwardSubst`, `FloatingPoint.RoundsBackSubst` (primed names for the hats),
+with nonzero pivots, and the bound is the stronger, non-asymptotic
+`‖E‖_F ≤ γ_{3n} c n (‖T‖₂ + ‖S T⁻¹ S‖₂)` (the term `2n ‖A‖_F` is not needed and `γ_{3n} ≤ 4nu`
+when `3nu ≤ 1/4`): `|E| ≤ γ_{3n} |L̂||Û|` (`FloatingPoint.exists_roundsLU_solve_eq`) and
+Theorem 4.2.6. -/
+theorem equation_4_2_7 {fp : RoundingModel ℝ} {A L U L' U' T S : Matrix (Fin n) (Fin n) ℝ}
+    {b y x' : Fin n → ℝ} {c : ℝ} (hA : IsPositiveDefinite A) (hT : T = (2 : ℝ)⁻¹ • (A + Aᵀ))
+    (hS : S = (2 : ℝ)⁻¹ • (A - Aᵀ)) (h : IsLU A L U) (hu : fp.u < 1)
+    (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1) (hLU : RoundsLU fp A L' U') (hd : ∀ j, U' j j ≠ 0)
+    (hy : RoundsForwardSubst fp L' b y) (hx : RoundsBackSubst fp U' y x') (hc0 : 0 ≤ c)
+    (hc : ‖L'.abs * U'.abs‖ ≤ c * ‖L.abs * U.abs‖) :
+    ∃ E : Matrix (Fin n) (Fin n) ℝ, (A + E) *ᵥ x' = b ∧
+      ‖E‖ ≤ gamma fp.u (3 * n) * (c * (n * (lpOpNorm 2 T + lpOpNorm 2 (S * T⁻¹ * S)))) := by
+  obtain ⟨E, hE, hEx⟩ := exists_roundsLU_solve_eq hu (by simpa using hn) hLU hd hy hx
+  rw [Fintype.card_fin] at hE
+  have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
+  refine ⟨E, hEx, ?_⟩
+  calc ‖E‖ ≤ ‖gamma fp.u (3 * n) • (L'.abs * U'.abs)‖ := frobenius_norm_le_of_abs_entrywiseLE hE
+    _ = gamma fp.u (3 * n) * ‖L'.abs * U'.abs‖ := by
+        rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hγ]
+    _ ≤ gamma fp.u (3 * n) * (c * ‖L.abs * U.abs‖) := mul_le_mul_of_nonneg_left hc hγ
+    _ ≤ _ := by
+        gcongr
+        exact theorem_4_2_6 hA hT hS h
 
 /-! ### §4.2.3–4.2.6 The Cholesky factorization -/
 

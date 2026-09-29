@@ -158,35 +158,6 @@ id = "posDef_hermitianPart_schurComplementSingle"
 
 [[node]]
 id = "IsLU.frobenius_norm_abs_mul_abs_le"
-kind = "theorem"
-desc = '''[golub2013matrix] Theorem 4.2.6 (Golub–Van Loan 1979): for real `A : Matrix (Fin n) (Fin n) ℝ` with
-`T := hermitianPart A` positive definite and `S := A − T`, if `IsLU A L U` then
-`‖|L| * |U|‖_F ≤ n * (‖T‖₂ + ‖S * T⁻¹ * S‖₂)` (Frobenius norm of the entrywise absolute values;
-`Matrix.Norms.Frobenius`, `Matrix.Norms.L2Operator`). The book gives no proof ("See Golub and Van
-Loan (1979)"). Route to reconstruct: the outer-product form `|L||U| = ∑_k |ℓ_k| |u_kᵀ|`
-bounds the Frobenius norm by `∑_k ‖ℓ_k‖₂ ‖u_k‖₂` (`n` terms); at step `k` the book's Theorem 4.2.5
-gives `ℓ_k = (v + w)/α`, `u_k = (α, v − w)`, and the claim to prove is
-`‖v + w‖ ‖(α, v − w)‖/α ≤ ‖T_k‖₂ + ‖S_k T_k⁻¹ S_k‖₂ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` along the Schur complements
-(`T_k` the Hermitian part of the `k`-th Schur complement dominates the Schur complement of `T`,
-`posDef_hermitianPart_schurComplementSingle`; the identity `A T⁻¹ Aᵀ = T + S T⁻¹ Sᵀ` is a useful
-handle). Estimate ★★★ (~400 lines); if the per-step inequality fails, record the counterexample
-and mark the node `wrong` with the bound that was proved.
-
-Blocked (agent bb2, GVL wave 5): the `2 n` form is proved as
-`Matrix.IsLU.frobenius_norm_abs_mul_abs_le_two_mul` (in fact with `n (√‖T‖₂ + √‖S T⁻¹ S‖₂)²`), with
-no Schur-complement recursion: for the `k`-th row `y` of `L⁻¹` and `k`-th column `x` of `U⁻¹`,
-`u_k = Aᵀ y`, `ℓ_k = A x`, `yᵀ A y = u_kk`, `xᵀ A x = 1/u_kk`, and
-`Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` bounds `‖A x‖²`, `‖Aᵀ x‖²` by
-`(√‖T‖ + √‖S T⁻¹ S‖)² xᵀ A x`. The book's constant `n` is **not** refuted: a random search
-(2·10⁵ real `A` of order 2–5, large skew parts) gave ratios up to 0.99974 of the bound and never
-above it, and even the per-term bound `‖ℓ_k‖ ‖u_k‖ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` held (max ratio
-0.99999999999). At `k = 0` the per-term bound is fac1's `(‖A e‖² + ‖Aᵀ e‖²)/2 = ‖T e‖² + ‖S e‖²`;
-for `k > 0` the vectors `x`, `y` above differ. The natural recursion fails too: `m(B) = sup_x
-(‖T_B x‖² + ‖S_B x‖²)/xᵀ T_B x` (which bounds the per-term quantity of the Schur complement) is
-not monotone along one elimination step (numerically `m(B)/m(A)` up to 1.94), so the sharp route
-needs the argument of Golub–Van Loan (1979), which is not among the references. Estimate: unknown (the missing idea), then ~150 lines on top of
-the proved per-term machinery.'''
-deps = ["Matrix.posDef_hermitianPart_schurComplementSingle", "Matrix.IsLU"]
 
 [[node]]
 id = "PosSemidef.norm_apply_le_add_re_diag_div_two"
@@ -221,6 +192,3 @@ source = 'Golub–Van Loan, Matrix Computations (4th ed.), Theorem 5.2.3'
 
 [[node]]
 id = "dotProduct_mulVec_self_le_of_posDef_hermitianPart"
-
-[[node]]
-id = "IsLU.frobenius_norm_abs_mul_abs_le_two_mul"

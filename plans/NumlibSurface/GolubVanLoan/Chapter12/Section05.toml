@@ -30,13 +30,6 @@ source = 'Golub–Van Loan, Matrix Computations, §12.5.3'
 
 [[node]]
 id = "tucker_objective_unfoldings"
-kind = "theorem"
-desc = '''§12.5.3: `‖(U₃ᵀ ⊗ U₂ᵀ ⊗ U₁ᵀ) vec(𝒜)‖ = ‖U₁ᵀ 𝒜_(1) (U₃ ⊗ U₂)‖_F = ‖U₂ᵀ 𝒜_(2) (U₃ ⊗ U₁)‖_F = ‖U₃ᵀ 𝒜_(3) (U₂ ⊗ U₁)‖_F`, and with the other two factors frozen,
-maximizing over `U_k` is the problem (12.5.3) for `𝒜_(k)(⋯ ⊗ ⋯)`, solved by the leading `r_k` left singular vectors — the ALS update, which
-never decreases the objective. `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`, `Tensor.isGreatest_tucker_update`. ★
-
-Blocked: the ALS-update half needs `Tensor.isGreatest_tucker_update` (tens1 follow-up, not on main at fca5b833); `equation_12_5_3` is proved (agent c0412) and the unfolding identities are `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold` (on main). ~30 lines once it lands. (agents s12, c0412)'''
-deps = ["Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold", "Tensor.isGreatest_tucker_update", "GolubVanLoan.Chapter12.equation_12_5_3"]
 source = 'Golub–Van Loan, Matrix Computations, §12.5.3'
 
 [[node]]

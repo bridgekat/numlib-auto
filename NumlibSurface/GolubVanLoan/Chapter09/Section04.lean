@@ -41,14 +41,16 @@ choices of `μ_k`, QR with column pivoting on `(I + sign(A))/2` (only the range 
 formalized), the inverse-scaling-and-squaring `while` loop (only its identity
 `log(A) = 2^k log(A_k)` is formalized), the Problems.
 
-Planned in this group and still open: the sign of `[0 A; Aᵀ 0]` (`sign_block_polar`) and the
-Li–Sun perturbation bound (`liSun`), which wait for their backbone.
-
 ## Errata
 
 §9.4.1 derives the Jordan-form expression of `sign(A)` "from Theorem 9.1.1", which does not exist
 (it is the definition (9.1.3)–(9.1.4)), and uses "`S² = S`" for `S² = I`. §9.4.2's principal square
-root needs no eigenvalue of `A` on `(-∞, 0]`, which the book leaves implicit.
+root needs no eigenvalue of `A` on `(-∞, 0]`, which the book leaves implicit. §9.4.3's
+`sign([0 A; Aᵀ 0]) = [0 U; Uᵀ 0]` needs `A` nonsingular. The Li–Sun bound quoted at the end of
+§9.4.3 is false for nonsingular `A`, `Ã` alone: `A = diag(1, ε)`, `Ã = diag(1, −ε)` with
+`0 < ε < 1` have `‖U − Ũ‖_F = 2 > 4 · 2ε/(2 + 2ε)`; it needs `det A · det Ã > 0` (Li and Sun
+assume `‖A − Ã‖₂ < σ_n(A) + σ_n(Ã)`, which implies it), and the book's "(2003)" is SIAM J. Matrix
+Anal. Appl. 23 (2002).
 -/
 
 open Polynomial Finset Filter Topology Asymptotics
@@ -549,5 +551,124 @@ theorem newtonPolar_tendsto {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     Matrix.tendsto_newtonPolarIterate hA h⟩
 
 end Newton
+
+/-! ### `sign([0 A; Aᵀ 0])` and the polar factor -/
+
+section SignBlock
+
+open Matrix
+
+variable {A U V : Matrix (Fin n) (Fin n) ℝ} {σ : ℕ → ℝ}
+
+/-- A real SVD is a complex SVD of the complexified matrix. -/
+private theorem isSVD_complexify (h : IsSVD A U σ V) :
+    IsSVD (complexify A) (complexify U) σ (complexify V) := by
+  have hunit : ∀ {W : Matrix (Fin n) (Fin n) ℝ}, W ∈ unitaryGroup (Fin n) ℝ →
+      complexify W ∈ unitaryGroup (Fin n) ℂ := fun hW => by
+    rw [mem_unitaryGroup_iff, star_eq_conjTranspose, ← complexify_conjTranspose,
+      ← complexify_mul, ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hW, complexify_one]
+  refine ⟨hunit h.mem_unitaryGroup_left, hunit h.mem_unitaryGroup_right, h.antitone, h.nonneg, ?_⟩
+  rw [star_eq_conjTranspose, ← complexify_conjTranspose, ← complexify_mul, ← complexify_mul,
+    ← star_eq_conjTranspose, h.star_mul_mul]
+  ext i j
+  simp only [complexify_apply, rectDiagonal_apply]
+  split_ifs <;> simp
+
+/-- The complexified real Jordan–Wielandt matrix `[0 A; Aᵀ 0]` is `[0 A; Aᴴ 0]`. -/
+private theorem complexify_fromBlocks_zero (A : Matrix (Fin n) (Fin n) ℝ) :
+    complexify (fromBlocks 0 A Aᵀ 0) = fromBlocks 0 (complexify A) (complexify A)ᴴ 0 := by
+  ext (i | i) (j | j) <;> simp [complexify_apply]
+
+private theorem inv_sqrt_two_mul_self : (√2)⁻¹ * (√2)⁻¹ = (2 : ℝ)⁻¹ := by
+  rw [← mul_inv, Real.mul_self_sqrt (by norm_num)]
+
+/-- **§9.4.3, `sign([0 A; Aᵀ 0])`**: if `A = U_A Σ_A V_Aᵀ` is the SVD of `A ∈ ℝ^{n×n}`
+(`Matrix.IsSVD A U_A σ V_A`) and `Q = (1/√2) [U_A 0; 0 V_A] [I_n I_n; I_n −I_n]`, then `Q` is
+orthogonal, `Qᵀ [0 A; Aᵀ 0] Q = [Σ_A 0; 0 −Σ_A]` and `Q [I_n 0; 0 −I_n] Qᵀ = [0 U; Uᵀ 0]`, where
+`U = U_A V_Aᵀ` is the orthogonal polar factor of `A` (with `P = V_A Σ_A V_Aᵀ`); "it follows that"
+`sign([0 A; Aᵀ 0]) = [0 U; Uᵀ 0]` when `A` is nonsingular. The sign of a real matrix is that of its
+complexification (`Matrix.complexify`), and the backbone is
+`Matrix.matrixSign_hermitianDilation`. The book omits "nonsingular", which is needed: a zero
+singular value is a zero eigenvalue of `[0 A; Aᵀ 0]`, where `sign` is not defined. -/
+theorem sign_block_polar {Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (h : IsSVD A U σ V)
+    (hQ : Q = (√2)⁻¹ • (fromBlocks U 0 0 V * fromBlocks 1 1 1 (-1))) :
+    Qᵀ * Q = 1 ∧
+    Qᵀ * fromBlocks 0 A Aᵀ 0 * Q =
+      fromBlocks (diagonal fun i : Fin n => σ i) 0 0 (-diagonal fun i : Fin n => σ i) ∧
+    Q * fromBlocks 1 0 0 (-1) * Qᵀ = fromBlocks 0 (U * Vᵀ) (U * Vᵀ)ᵀ 0 ∧
+    (IsUnit A → matrixSign (complexify (fromBlocks 0 A Aᵀ 0)) =
+      complexify (fromBlocks 0 (U * Vᵀ) (U * Vᵀ)ᵀ 0)) ∧
+    IsPolarDecomposition A (U * Vᵀ) (V * diagonal (fun i : Fin n => σ i) * Vᵀ) := by
+  have hUU : Uᵀ * U = 1 := by
+    have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have hVV : Vᵀ * V = 1 := by
+    have := mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_right
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have hS : Uᵀ * A * V = diagonal fun i : Fin n => σ i := by
+    have := h.star_mul_mul
+    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, rectDiagonal_eq_diagonal]
+      at this
+  have hS' : Vᵀ * Aᵀ * U = diagonal fun i : Fin n => σ i := by
+    rw [← diagonal_transpose, ← hS, transpose_mul, transpose_mul, transpose_transpose,
+      Matrix.mul_assoc]
+  have hpol : IsPolarDecomposition A (U * Vᵀ) (V * diagonal (fun i : Fin n => σ i) * Vᵀ) := by
+    have := h.isPolarDecomposition_of_square
+    simp only [conjTranspose_eq_transpose_of_trivial] at this
+    exact this
+  set B : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ := fromBlocks U 0 0 V with hB
+  set J : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ := fromBlocks 1 1 1 (-1) with hJ
+  have hJt : Jᵀ = J := by simp [hJ, fromBlocks_transpose]
+  have hJJ : J * J = (2 : ℝ) • (1 : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ) := by
+    rw [hJ, fromBlocks_multiply, ← fromBlocks_one, fromBlocks_smul]
+    simp only [Matrix.mul_one, Matrix.mul_neg, neg_neg, add_neg_cancel, smul_zero, two_smul]
+  have hBB : Bᵀ * B = 1 := by
+    rw [hB, fromBlocks_transpose, fromBlocks_multiply]
+    simp [hUU, hVV]
+  have hQQ : ∀ X : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ,
+      Qᵀ * X * Q = (2 : ℝ)⁻¹ • (J * (Bᵀ * X * B) * J) := fun X => by
+    rw [hQ, transpose_smul, transpose_mul, hJt, Matrix.smul_mul, Matrix.smul_mul,
+      Matrix.mul_smul, smul_smul, inv_sqrt_two_mul_self]
+    simp only [Matrix.mul_assoc]
+  refine ⟨?_, ?_, ?_, fun hA => ?_, hpol⟩
+  · have := hQQ 1
+    rwa [Matrix.mul_one, Matrix.mul_one, hBB, Matrix.mul_one, hJJ, smul_smul,
+      inv_mul_cancel₀ two_ne_zero, one_smul] at this
+  · have hM : Bᵀ * fromBlocks 0 A Aᵀ 0 * B =
+        fromBlocks 0 (diagonal fun i : Fin n => σ i) (diagonal fun i : Fin n => σ i) 0 := by
+      rw [hB, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
+      simp [hS, hS']
+    rw [hQQ, hM, hJ, fromBlocks_multiply, fromBlocks_multiply, fromBlocks_smul]
+    ext (i | i) (j | j) <;> by_cases hij : i = j <;> simp [hij] <;> ring
+  · rw [hQ]
+    simp only [transpose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, inv_sqrt_two_mul_self,
+      transpose_mul, hJt]
+    rw [hB, hJ]
+    simp only [fromBlocks_multiply, fromBlocks_transpose, fromBlocks_smul, Matrix.mul_zero,
+      add_zero, zero_add, Matrix.mul_one, Matrix.one_mul, Matrix.mul_neg, Matrix.neg_mul,
+      neg_neg, neg_zero, transpose_zero, transpose_transpose, add_neg_cancel, smul_zero]
+    congr 1 <;> module
+  · have hc := (isSVD_complexify h).isPolarDecomposition_of_square
+    have hs := matrixSign_hermitianDilation ((isUnit_complexify_iff A).2 hA) hc
+    simp only [hermitianDilation, conjTranspose_conjTranspose] at hs
+    have e : complexify (U * Vᵀ) = complexify U * (complexify V)ᴴ := by
+      rw [complexify_mul, ← conjTranspose_eq_transpose_of_trivial, complexify_conjTranspose]
+    rw [complexify_fromBlocks_zero, complexify_fromBlocks_zero, hs, e]
+
+end SignBlock
+
+open scoped Matrix.Norms.Frobenius in
+/-- **§9.4.3, the Li–Sun bound**: "the orthogonal polar factors `U` and `Ũ` for nonsingular
+`A, Ã ∈ ℝ^{n×n}` satisfy
+`‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n−1}(A) + σ_n(A) + σ_{n−1}(Ã) + σ_n(Ã))`", the book's 1-based
+`σ_{n−1}`, `σ_n` being the 0-based `sortedSingularValues (n - 2)`, `sortedSingularValues (n - 1)`
+(the two smallest). "Nonsingular" is strengthened to `det A · det Ã > 0`, without which the bound
+is false (see the errata above); Li and Sun's own hypothesis `‖A − Ã‖₂ < σ_n(A) + σ_n(Ã)` implies
+it. The backbone `Matrix.frobenius_norm_polar_sub_le`. -/
+theorem liSun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolarDecomposition A U P)
+    (h' : Matrix.IsPolarDecomposition Ã Ũ P') (hdet : 0 < A.det * Ã.det) :
+    ‖U - Ũ‖ ≤ 4 * ‖A - Ã‖ / (A.sortedSingularValues (n - 2) + A.sortedSingularValues (n - 1) +
+      Ã.sortedSingularValues (n - 2) + Ã.sortedSingularValues (n - 1)) :=
+  Matrix.frobenius_norm_polar_sub_le h h' hdet
 
 end GolubVanLoan.Chapter09

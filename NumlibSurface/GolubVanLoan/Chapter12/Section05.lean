@@ -333,6 +333,92 @@ theorem tucker_best_core (U : ∀ k, Matrix (Fin (n k)) (Fin (r k)) ℝ) (hU : �
 
 end Tucker
 
+section TuckerALS
+
+variable {d : ℕ} {n r : Fin (d + 1) → ℕ}
+
+open scoped Matrix.Norms.Frobenius in
+/-- The Frobenius norm of a tensor is that of any of its flattened modal unfoldings. -/
+private theorem norm_modalUnfolding (T : RTensor n) (k : Fin (d + 1)) :
+    ‖modalUnfolding T k‖ = ‖T‖ := by
+  rw [modalUnfolding, reindex_apply, frobenius_norm_submatrix_equiv,
+    Tensor.frobenius_norm_modeUnfold]
+
+open scoped Matrix.Norms.Frobenius in
+/-- The Tucker objective read through the flattened mode-`k` unfolding:
+`‖𝒜 ×₁ U₁ᵀ ⋯ ×_d U_dᵀ‖_F = ‖U_kᵀ 𝒜_(k) (U_d ⊗ ⋯ ⊗ U_{k+1} ⊗ U_{k−1} ⊗ ⋯ ⊗ U₁)‖_F`. -/
+private theorem norm_multilinearProd_transpose_eq_modalUnfolding
+    (U : ∀ k, Matrix (Fin (n k)) (Fin (r k)) ℝ) (A : RTensor n) (k : Fin (d + 1)) :
+    ‖Tensor.multilinearProd (fun k => (U k)ᵀ) A‖ =
+      ‖(U k)ᵀ * modalUnfolding A k *
+        (piKronecker fun j : Fin d => U (k.succAbove j)).reindex finPiFinEquiv finPiFinEquiv‖ := by
+  rw [← norm_modalUnfolding _ k, theorem_12_4_1, transpose_reindex]
+  rfl
+
+open scoped Matrix.Norms.Frobenius in
+/-- **§12.5.3**, the Tucker objective and the alternating update, at every order (the book printing
+order 3): for `U_k ∈ ℝ^{n_k×r_k}`,
+`‖(U_dᵀ ⊗ ⋯ ⊗ U₁ᵀ) vec(𝒜)‖ = ‖𝒜 ×₁ U₁ᵀ ⋯ ×_d U_dᵀ‖_F
+= ‖U_kᵀ 𝒜_(k) (U_d ⊗ ⋯ ⊗ U_{k+1} ⊗ U_{k−1} ⊗ ⋯ ⊗ U₁)‖_F` for every `k`; and "by freezing" all
+factors but `U_k`, maximizing the (squared) objective over the `U_k` with orthonormal columns is the
+problem (12.5.3) for `𝒜_(k)(U_d ⊗ ⋯ ⊗ U₁)`, solved by the update of the "Repeat" loop: with the SVD
+`𝒜_(k)(U_d ⊗ ⋯ ⊗ U₁) = Ũ_k Σ_k V_kᵀ`, set `U_k = Ũ_k(:, 1:r_k)`. In particular the update never
+decreases the objective when the old `U_k` has orthonormal columns. The hypothesis
+`r_k ≤ ∏_{j ≠ k} r_j` is (12.5.3)'s `r ≤ min(m, n)` for this matrix. -/
+theorem tucker_objective_unfoldings (U : ∀ k, Matrix (Fin (n k)) (Fin (r k)) ℝ) (A : RTensor n) :
+    ‖WithLp.toLp 2 ((piKronecker fun k => (U k)ᵀ).reindex finPiFinEquiv finPiFinEquiv *ᵥ
+        Tensor.vecFin A)‖ = ‖Tensor.multilinearProd (fun k => (U k)ᵀ) A‖ ∧
+    (∀ k, ‖Tensor.multilinearProd (fun k => (U k)ᵀ) A‖ =
+      ‖(U k)ᵀ * modalUnfolding A k *
+        (piKronecker fun j : Fin d => U (k.succAbove j)).reindex finPiFinEquiv finPiFinEquiv‖) ∧
+    ∀ k {Ũ : Matrix (Fin (n k)) (Fin (n k)) ℝ} {σ : ℕ → ℝ}
+      {V : Matrix (Fin (∏ j : Fin d, r (k.succAbove j))) (Fin (∏ j : Fin d, r (k.succAbove j)))
+        ℝ},
+      IsSVD (modalUnfolding A k *
+        (piKronecker fun j : Fin d => U (k.succAbove j)).reindex finPiFinEquiv finPiFinEquiv)
+        Ũ σ V →
+      ∀ (hrm : r k ≤ n k), r k ≤ ∏ j : Fin d, r (k.succAbove j) →
+      IsGreatest ((fun W => ‖Tensor.multilinearProd (fun j => (Function.update U k W j)ᵀ) A‖ ^ 2) ''
+          {W | Wᵀ * W = 1})
+        (‖Tensor.multilinearProd
+          (fun j => (Function.update U k (Ũ.submatrix id (Fin.castLE hrm)) j)ᵀ) A‖ ^ 2) ∧
+      ((U k)ᵀ * U k = 1 → ‖Tensor.multilinearProd (fun k => (U k)ᵀ) A‖ ≤
+        ‖Tensor.multilinearProd
+          (fun j => (Function.update U k (Ũ.submatrix id (Fin.castLE hrm)) j)ᵀ) A‖) := by
+  refine ⟨?_, norm_multilinearProd_transpose_eq_modalUnfolding U A, ?_⟩
+  · rw [← Tensor.vecFin_multilinearProd, norm_toLp_vecFin]
+  intro k Ũ σ V h hrm hrn
+  set P := (piKronecker fun j : Fin d => U (k.succAbove j)).reindex finPiFinEquiv finPiFinEquiv
+  have hobj : ∀ W : Matrix (Fin (n k)) (Fin (r k)) ℝ,
+      ‖Tensor.multilinearProd (fun j => (Function.update U k W j)ᵀ) A‖ ^ 2 =
+        ‖Wᵀ * (modalUnfolding A k * P)‖ ^ 2 := fun W => by
+    have hP : (piKronecker fun j : Fin d => Function.update U k W (k.succAbove j)) =
+        piKronecker fun j : Fin d => U (k.succAbove j) := by
+      congr 1
+      funext j
+      rw [Function.update_of_ne (Fin.succAbove_ne k j)]
+    rw [norm_multilinearProd_transpose_eq_modalUnfolding _ A k, Function.update_self, hP,
+      Matrix.mul_assoc]
+  have himg : ((fun W => ‖Tensor.multilinearProd (fun j => (Function.update U k W j)ᵀ) A‖ ^ 2) ''
+      {W | Wᵀ * W = 1}) =
+        (fun Q : Matrix (Fin (n k)) (Fin (r k)) ℝ => ‖Qᵀ * (modalUnfolding A k * P)‖ ^ 2) ''
+          {Q | Qᵀ * Q = 1} := by
+    simp only [hobj]
+  obtain ⟨hmax, hval⟩ := equation_12_5_3 h hrm hrn
+  have hgreat : IsGreatest
+      ((fun W => ‖Tensor.multilinearProd (fun j => (Function.update U k W j)ᵀ) A‖ ^ 2) ''
+        {W | Wᵀ * W = 1})
+      (‖Tensor.multilinearProd
+        (fun j => (Function.update U k (Ũ.submatrix id (Fin.castLE hrm)) j)ᵀ) A‖ ^ 2) := by
+    rw [himg, hobj, hval]
+    exact hmax
+  refine ⟨hgreat, fun hU => ?_⟩
+  have hle := hgreat.2 ⟨U k, hU, rfl⟩
+  simp only [Function.update_eq_self] at hle
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hle
+
+end TuckerALS
+
 /-! ### The CP problem (12.5.14)–(12.5.21) -/
 
 section CP
