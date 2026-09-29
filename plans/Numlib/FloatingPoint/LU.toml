@@ -91,55 +91,6 @@ id = "exists_roundsLDL_solve_eq"
 id = "RoundsCholeskyDiv"
 
 [[node]]
-id = "exists_roundsCholeskyDiv_eq_add"
-kind = "theorem"
-desc = '''`RoundsCholeskyDiv m A G`, `∀ j, G j j ≠ 0` and `(card n + 2) u < 1` give
-`∃ ΔA, ΔA.abs ≤ₑ gamma m.u (card n + 2) • (G.abs * Gᵀ.abs) ∧ G * Gᵀ = A + ΔA`. As
-`exists_roundsCholesky_eq_add` with one more rounding on the diagonal: `ĝ_jj² = t_j (1 + θ₂)`,
-`|θ₂| ≤ γ₂`, and off the diagonal `ĝ_ij ĝ_jj = t_ij (1 + θ)` with the two roundings of `ŝ_j` and
-the quotient. The hypothesis is on the returned diagonal, not on the intermediate roots (convention 9
-of `Numlib/FloatingPoint/Program`): `G j j ≠ 0` forces `ŝ_j ≠ 0` (else `G j j = fl(t_j / 0) = fl(0) = 0`)
-and then `t_j > 0` (`ŝ_j` rounds `√t_j`, and `√t_j = 0` for `t_j ≤ 0`). ★★ (~120 lines, reusing
-`RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le`)'''
-deps = ["FloatingPoint.RoundsCholeskyDiv", "FloatingPoint.RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le"]
-wrong = '''False as stated: the diagonal `ĝ_jj = fl(t_j / fl(√t_j)) = √t_j (1 + δ₂)/(1 + δ₁)` gives
-`ĝ_jj² = t_j (1 + δ₂)²/(1 + δ₁)²`, four roundings, not the `(1 + θ₂)`, `|θ₂| ≤ γ₂` of the desc. For
-`n = 1`, `δ₁ = -u`, `δ₂ = u` (admissible in a model with `Rounds x y ↔ |y - x| ≤ u |x|`):
-`ĝ² - a = 4 u a / (1 - u)²` while `γ₃ ĝ² = 3 u a (1 + u)² / ((1 - 3u)(1 - u)²)`, smaller at
-`u = 0.01`. Corrected: `exists_roundsCholeskyDiv_mul_transpose_eq_add` with `γ_{n+3}`.'''
-
-[[node]]
-id = "exists_roundsCholeskyDiv_solve_eq"
-kind = "theorem"
-desc = '''The Cholesky solve: `RoundsCholeskyDiv m A G`, `RoundsForwardSubst m G b y`, `RoundsBackSubst m Gᵀ y x`,
-the diagonal of `G` nonzero, `(3 card n + 2) u < 1` give `∃ E, E.abs ≤ₑ gamma m.u (3 card n + 2) •
-(G.abs * Gᵀ.abs) ∧ (A + E) *ᵥ x = b` (Higham Theorem 10.4 with the book's operation order). From
-`exists_roundsCholeskyDiv_eq_add`, the substitution theorems and ch03's
-`exists_add_mulVec_eq_of_lu_errors` with `L = G`, `U = Gᵀ`. ★'''
-deps = ["FloatingPoint.exists_roundsCholeskyDiv_eq_add", "FloatingPoint.exists_roundsForwardSubst_eq", "FloatingPoint.exists_roundsBackSubst_eq", "FloatingPoint.exists_add_mulVec_eq_of_lu_errors"]
-wrong = '''False as stated (`γ_{3n+2}`): for `n = 1` the computed `x̂ = b / ĝ² (1 + δ₃)(1 + δ₄)`
-carries six roundings, `a x̂ (1 + δ₁)² / ((1 + δ₂)² (1 + δ₃)(1 + δ₄)) = b`, first order `6u |a|` against
-`γ₅ ĝ² ≈ 5u |a|`. Corrected: `exists_roundsCholeskyDiv_add_mulVec_eq` with `γ_{3n+3}`
-(`γ_{n+3} + (1 + γ_n)² - 1 ≤ γ_{3n+3}`).'''
-
-[[node]]
-id = "l2_opNorm_le_of_roundsCholeskyDiv_solve"
-kind = "theorem"
-desc = '''**Wilkinson's normwise bound, rigorous** ([golub2013matrix] §4.2.6: "`(A + E) x̂ = b`, `‖E‖₂ ≤ c_n u ‖A‖₂`"):
-over `ℝ`, under the hypotheses of `exists_roundsCholeskyDiv_solve_eq` and `n γ_{n+2} < 1`, the `E`
-there satisfies `‖E‖₂ ≤ n γ_{3n+2} ‖A‖₂ / (1 − n γ_{n+2})`. Chain: `‖ |G| |Gᵀ| ‖₂ ≤ ‖ |G| ‖_F² =
-‖G‖_F² ≤ n ‖G‖₂² = n ‖G Gᵀ‖₂` (`Matrix.l2_opNorm_le_frobenius_norm`,
-`Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`, monotonicity of `‖·‖₂` on entrywise
-nonnegative matrices), `‖E‖₂ ≤ ‖ |E| ‖₂` and `G Gᵀ = A + ΔA` with the same bound for `ΔA`, solved for
-`‖G‖₂²`. ★★ (~120 lines; the entrywise-monotonicity of the spectral norm on nonnegative matrices,
-`‖B‖₂ ≤ ‖C‖₂` for `|B| ≤ C`, is a lemma of its own if `Numlib/LinearAlgebra/Matrix/Order` lacks it)'''
-deps = ["FloatingPoint.exists_roundsCholeskyDiv_solve_eq", "Matrix.l2_opNorm_le_frobenius_norm", "Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm"]
-wrong = '''False as stated for the same reason as `exists_roundsCholeskyDiv_solve_eq` (at `n = 1`
-the backward error is `6u |a|` to first order, above `γ₅ |a| / (1 - γ₃)`). Corrected:
-`l2_opNorm_le_of_roundsCholeskyDiv`, `‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 - n γ_{n+3})` under
-`n γ_{n+3} < 1`, proved through the Frobenius norm (no spectral monotonicity needed).'''
-
-[[node]]
 id = "abs_add_mul_add_sub_mul_entrywiseLE"
 
 [[node]]

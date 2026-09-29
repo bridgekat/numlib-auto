@@ -49,21 +49,6 @@ id = "unitBidiagonal_ne_generatorRep"
 id = "IsQuasiseparable.hadamard"
 
 [[node]]
-id = "exists_quasiseparableOf"
-kind = "theorem"
-desc = '''**Every quasiseparable matrix has a quasiseparable representation** ([golub2013matrix] §12.2.3, "It
-can be shown…", P12.2.2): `A.IsQuasiseparable ↔ ∃ u v t d p q r, A = quasiseparableOf u v t d p q r`
-for `A : Matrix (Fin n) (Fin n) K`. `←` is `isQuasiseparable_quasiseparableOf`. `→` (Eidelman–Gohberg's
-construction, order one): factor each strictly lower maximal block `H_k = A[k+1:, :k+1]` as `x_k y_kᵀ`
-(rank `≤ 1`, `Matrix.rank_le_iff_exists_mul`); the overlap `H_k[1:, :] = H_{k+1}[:, :k+1]` gives a
-transfer scalar `t_{k+1}` relating consecutive row factors (choose `t = 0` and fresh factors when a
-block vanishes); set `u_i = x_{i-1} 0`, `v_j = y_j j`. Upper part by transposition
-(`transpose_quasiseparableOf`), `d = diag A`. The degenerate zero-block cases are the work. ★★★ (~180
-lines)'''
-deps = ["Matrix.isQuasiseparable_quasiseparableOf", "Matrix.transpose_quasiseparableOf", "Matrix.rank_le_iff_exists_mul"]
-wrong = '''False for `n ≥ 3`: `unitBidiagonal_ne_quasiseparableOf` — the quasiseparable `B(r)` with `r₀ r₁ ≠ 0` has no representation (12.2.8), which carries one transfer factor too many (`a₀₁ a₁₂ = a₀₂ p₁ q₁` in every representation). Corrected: `exists_quasiseparableRep` for the Eidelman–Gohberg representation `quasiseparableRep`.'''
-
-[[node]]
 id = "exists_lower_semiseparable_rep"
 
 [[node]]

@@ -29,27 +29,6 @@ deps = []
 id = "Matrix.crawfordNumber_sub_le"
 
 [[node]]
-id = "Matrix.exists_posDef_rotation_of_crawfordNumber_pos"
-wrong = '''False over `ℝ` (the planned `RCLike 𝕜` statement) for `n = 2`: `A = diag(1, -1)`,
-`B = [[0, 1], [1, 0]]` are symmetric with Crawford number `1` (the real joint numerical range
-`{(x² - y², 2xy)}` is the unit circle, not convex), yet every `sin θ A + cos θ B` has trace `0` and
-is never positive definite. The real statement needs `n ≥ 3` (Brickman/Dines); over `ℂ` it holds for
-every `n` — the corrected node is `Matrix.exists_posDef_rotation_of_crawfordNumber_pos_complex`.'''
-kind = "theorem"
-desc = '''Definite pairs are rotations of pairs with a positive definite second matrix (Crawford 1976;
-Stewart–Sun Theorem VI.1.18): for Hermitian `A B : Matrix n n 𝕜` with `0 < crawfordNumber A B` there is
-`θ : ℝ` with `(Real.sin θ • A + Real.cos θ • B).PosDef` (and then `crawfordNumber` is rotation-invariant,
-`z(x) ↦ e^{-iθ} z(x)`). Proof: the joint numerical range `W = {(re xᴴAx, re xᴴBx) | ‖x‖ = 1}` is convex
-(it is the numerical range of `B + i A`, convex by the Toeplitz–Hausdorff theorem
-`LinearMap.convex_numericalRange` of `Numlib/Eigen/NumericalRange` for `toEuclideanLin` over `ℂ`; over
-`ℝ` through `Matrix.complexify`, the real quadratic forms being the real parts of the complex ones) and
-compact, and misses the disc of radius `c` about `0`; a separating line through the origin
-(`ConvexCone`/`geometric_hahn_banach_point_compact`-type separation in `ℝ²`) gives `θ` with `sin θ · a
-+ cos θ · b > 0` on `W`. Consumer: the extension of the `B`-positive-definite statements of this module
-to definite pairs. ★★ (~150 lines)'''
-deps = ["Matrix.crawfordNumber", "LinearMap.convex_numericalRange"]
-
-[[node]]
 id = "Matrix.exists_posDef_rotation_of_crawfordNumber_pos_complex"
 
 [[node]]

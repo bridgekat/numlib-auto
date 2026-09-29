@@ -89,23 +89,6 @@ id = "IsIncompleteCholesky"
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.5.6)'
 
 [[node]]
-id = "isIncompleteCholesky_iff_isIC"
-kind = "theorem"
-desc = '''
-If `P` is contained in the zero pattern of `A` (`∀ (i,j) ∈ P, a_ij = 0`) and symmetric, then
-`IsIncompleteCholesky P A H ↔ Matrix.IsIC (P ∪ Pᵀ) A H` for lower triangular `H`. Unfolding;
-`Matrix.IsIC.sub_eq_zero_of_notMem`. ★
-'''
-deps = ["IsIncompleteCholesky", "Matrix.IsIC"]
-source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
-wrong = '''
-The `→` direction is false: (11.5.7) constrains `HHᵀ` only at the nonzeros of `A`, while `IsIC`
-also asks `(HHᵀ)_ij = 0` at the zeros of `A` outside `P`. With `P = ∅`, `A = I₂`,
-`H = [1 0; 1/2 √3/2]` satisfies (11.5.6)–(11.5.8) but `(HHᵀ)₂₁ = 1/2 ≠ 0`. The true direction is the
-node `isIncompleteCholesky_of_isIC` (which is all `incChol_spec` needs).
-'''
-
-[[node]]
 id = "isIncompleteCholesky_of_isIC"
 source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
 
@@ -146,24 +129,6 @@ id = "linMoreIC"
 source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
 
 [[node]]
-id = "linMoreIC_nnz_le"
-kind = "theorem"
-desc = '''
-§11.5.8: the number of nonzeros of the Lin–Moré factor is at most `p·n + N₁ + ⋯ + N_n`. Holds for
-every run (any rounding), since column `j` keeps at most `N_j + p` entries: stated for `SetM` runs
-(`∀ H ∈ (linMoreIC fp.round A p).run, …`), a counting argument per column. ★
-'''
-deps = ["linMoreIC"]
-source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
-wrong = '''
-False as printed: the selection keeps `N_j + p` entries of `v(j+1:n)` besides the diagonal `H(j,j)`
-when `v(j)` is not among the `N_j + p` largest of `|v(j:n)|`. For `A = [1 .9 .9; .9 1 0; .9 0 10]`,
-`p = 0`: `N = (3, 1, 1)`, column 2 has `v(2:3) = (.19, −.81)` and keeps `H(3,2)` besides `H(2,2)`,
-so `nnz(H) = 6 > 5` (exact arithmetic; all pivots positive). Corrected node: `linMoreIC_nnz_le_add`,
-bound `p·n + N₁ + ⋯ + N_n + n`.
-'''
-
-[[node]]
 id = "linMoreIC_nnz_le_add"
 source = 'Golub–Van Loan, Matrix Computations, §11.5.8'
 
@@ -194,26 +159,6 @@ source = 'Golub–Van Loan, Matrix Computations, §11.5.10'
 [[node]]
 id = "saddlePoint_splitting"
 source = 'Golub–Van Loan, Matrix Computations, §11.5.10'
-
-[[node]]
-id = "equation_11_5_11"
-kind = "theorem"
-desc = '''
-(11.5.11) and the factorization after it: for the 5×5 block matrix of the nonoverlapping decomposition
-(interior blocks `A₁, A₂, A₃` nonsingular, interface blocks `Q₄, Q₅`, couplings `B, C, D, E, F, G, H, K`
-as printed), `A = L U` with `L` unit block lower triangular (`FA₁⁻¹, HA₂⁻¹, GA₁⁻¹, KA₃⁻¹` below the
-diagonal) and `U` block upper with the Schur complements `S₄ = Q₄ − FA₁⁻¹B − HA₂⁻¹D`,
-`S₅ = Q₅ − GA₁⁻¹C − KA₃⁻¹E` on the diagonal. ★★
-'''
-deps = ["DomainDecomposition.fromBlocks_eq_blockLower_mul"]
-source = 'Golub–Van Loan, Matrix Computations, Equation (11.5.11)'
-wrong = '''
-False as printed: the `(4, 5)` block of `LU` is `FA₁⁻¹C` (row 4 of `L` against column 5 of `U`), while
-that of `A` is `0`; both interfaces touch `Ω₁`. Formal counterexample with all blocks `1 × 1` equal
-to `1`: `equation_11_5_11_counterexample`. Corrected statement `equation_11_5_11_blockLU`: the
-interface block of `U` is the full Schur complement, with diagonal blocks `S₄`, `S₅` and off-diagonal
-blocks `−FA₁⁻¹C`, `−GA₁⁻¹B`.
-'''
 
 [[node]]
 id = "ddInterior"

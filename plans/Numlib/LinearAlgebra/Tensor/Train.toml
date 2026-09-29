@@ -11,22 +11,6 @@ id = "tensorTrain"
 id = "exists_ttCore_of_rank"
 
 [[node]]
-id = "exists_tensorTrain"
-kind = "theorem"
-desc = '''**Every tensor is a tensor train** with the TT-ranks of its sequential unfoldings ([golub2013matrix] (12.5.29),
-Oseledets–Tyrtyshnikov): for `A : Tensor (fun k : Fin d => Fin (n k)) R` there are `r : ℕ → ℕ` with `r 0 = 1`,
-`r d = 1`, `r k = (A.unfold (fun i : Fin d => (i : ℕ) < k)).rank` for `0 < k < d`, and cores `G` with `A =
-tensorTrain d h0 hd G`. Induction on `k` (the book's loop): after `k` steps `A_{[0,k)×[k,d)} = P_k * M_k` with
-`P_k` the flattened `ttPartial` (full column rank `r k`) and `M_k` of rank `r k`; reshape `M_k` to rows `(r k,
-n k)` — its rank is `r (k+1)` because `P_k` has full column rank — and apply `exists_ttCore_of_rank`. ★★★
-(~200 lines, most of it the reshaping of `M_k` between the index types)
-'''
-wrong = '''False for `d = 0`: the tensor train of order `0` is the constant `1` (`ttPartial G 0 = 1`
-and `r 0 = 1`), so the scalar tensor `A = 0` (or any `A ≠ 1`) is not one. Corrected, with `d ≠ 0`,
-by `Tensor.exists_tensorTrain_of_ne_zero` (agent bb2).'''
-deps = ["Tensor.tensorTrain", "Tensor.exists_ttCore_of_rank", "Tensor.unfold"]
-
-[[node]]
 id = "exists_ttPartial_eq_of_mem_span"
 
 [[node]]
