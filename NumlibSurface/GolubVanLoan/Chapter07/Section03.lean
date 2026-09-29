@@ -11,8 +11,9 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section02
 Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
 [golub2013matrix], §7.3: the QR iteration (7.3.1)–(7.3.2) as a unitary similarity, the power method
 (7.3.3) with its rate (7.3.5) and its backward error, orthogonal iteration (7.3.6) and the dominant
-invariant subspace, the QR iteration as orthogonal iteration (§7.3.3), and the appendix: Lemma 7.3.2
-and the proof displays (7.3.20), (7.3.23)–(7.3.24).
+invariant subspace, the QR iteration as orthogonal iteration and the convergence (7.3.11) of
+`T_k = Q_kᴴ A Q_k` to triangular form (§7.3.3), and the appendix: Lemma 7.3.2 and the proof displays
+(7.3.20), (7.3.23)–(7.3.24).
 
 ## Conventions
 
@@ -936,6 +937,95 @@ private theorem conjTranspose_pow_mul_eq {r : ℕ} {A Q : Matrix (Fin n) (Fin n)
   | succ k ih =>
     rw [pow_succ, Matrix.mul_assoc, h1, ← Matrix.mul_assoc, ih, pow_succ, Matrix.mul_assoc]
 
+/-- **The partition (7.3.8)**: `Fin n` split into the first `r` and the last `n - r` indices, the
+reindexing under which `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` of size `r`. -/
+def schurSplit {r : ℕ} (h : r ≤ n) : Fin n ≃ Fin r ⊕ Fin (n - r) :=
+  (finCongr (by omega : n = r + (n - r))).trans finSumFinEquiv.symm
+
+/-- The first `r` indices under the partition (7.3.8). -/
+theorem schurSplit_symm_inl {r : ℕ} (h : r ≤ n) (i : Fin r) :
+    (schurSplit h).symm (Sum.inl i) = Fin.castLE h i := by
+  ext
+  simp [schurSplit]
+
+/-- The last `n - r` indices under the partition (7.3.8). -/
+theorem schurSplit_symm_inr {r : ℕ} (h : r ≤ n) (j : Fin (n - r)) :
+    ((schurSplit h).symm (Sum.inr j) : ℕ) = r + j := by
+  simp [schurSplit]
+
+section Split
+
+variable {r : ℕ} (h : r ≤ n)
+
+/-- Restricting the columns of `P R` to the first `r` for an upper triangular `R`: only the first
+`r` columns of `P` and the leading block of `R` enter. -/
+private theorem mul_submatrix_castLE {m : ℕ} (P : Matrix (Fin m) (Fin n) ℂ)
+    {R : Matrix (Fin n) (Fin n) ℂ} (hR : R.IsUpperTriangular) :
+    (P * R).submatrix id (Fin.castLE h) =
+      P.submatrix id (Fin.castLE h) * R.submatrix (Fin.castLE h) (Fin.castLE h) := by
+  ext p l
+  simp only [submatrix_apply, id, mul_apply]
+  symm
+  refine Fintype.sum_of_injective (Fin.castLE h) (Fin.castLE_injective h) _ _ ?_ fun _ => rfl
+  intro j hj
+  have hjl : Fin.castLE h l < j := by
+    rw [Fin.lt_def, Fin.val_castLE]
+    by_contra hc
+    exact hj ⟨⟨j, by omega⟩, Fin.ext (by simp)⟩
+  exact mul_eq_zero_of_right _ (hR hjl)
+
+/-- The leading `r` columns of an orthogonal iteration with `r = n` are an orthogonal iteration:
+the triangular factors restrict to their leading blocks. -/
+private theorem orthogonalIteration_castLE {A : Matrix (Fin n) (Fin n) ℂ}
+    {Qk : ℕ → Matrix (Fin n) (Fin n) ℂ} (hQk : orthogonalIteration A Qk) :
+    orthogonalIteration A fun k => (Qk k).submatrix id (Fin.castLE h) := by
+  have hsub : ∀ M : Matrix (Fin n) (Fin n) ℂ, Mᴴ * M = 1 →
+      (M.submatrix id (Fin.castLE h))ᴴ * M.submatrix id (Fin.castLE h) = 1 := by
+    intro M hM
+    rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hM]
+    ext i j
+    simp [one_apply, Fin.ext_iff]
+  refine ⟨hsub _ hQk.1, fun k => ?_⟩
+  obtain ⟨R, hR⟩ := hQk.2 k
+  refine ⟨R.submatrix (Fin.castLE h) (Fin.castLE h), ⟨?_, hsub _ hR.conjTranspose_mul_self, ?_⟩⟩
+  · rw [← mul_submatrix_castLE h _ hR.isUpperTriangular, hR.mul_eq,
+      submatrix_mul _ _ _ _ _ Function.bijective_id, submatrix_id_id]
+  · intro i j hij
+    exact hR.isUpperTriangular (show Fin.castLE h j < Fin.castLE h i from hij)
+
+/-- The leading block of the partition (7.3.8) in matrix form: `Q [I; 0]` is `Q_α`, the first `r`
+columns of `Q`. -/
+private theorem mul_fromRows_one_zero_submatrix (Q : Matrix (Fin n) (Fin n) ℂ) :
+    Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+      (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix (schurSplit h) id =
+      Q.submatrix id (Fin.castLE h) := by
+  have e1 : (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
+      (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix (schurSplit h) id =
+      (1 : Matrix (Fin n) (Fin n) ℂ).submatrix id (Fin.castLE h) := by
+    ext j l
+    simp only [submatrix_apply, id]
+    rcases hj : schurSplit h j with a | b
+    · have hja : j = Fin.castLE h a := by
+        rw [← schurSplit_symm_inl h a, ← hj, Equiv.symm_apply_apply]
+      subst hja
+      simp [one_apply, Fin.ext_iff]
+    · have hjb : (j : ℕ) = r + b := by
+        rw [← schurSplit_symm_inr h b, ← hj, Equiv.symm_apply_apply]
+      have hne : j ≠ Fin.castLE h l := fun h' => by
+        rw [h', Fin.val_castLE] at hjb
+        omega
+      simp [one_apply, hne]
+  rw [e1]
+  exact mul_submatrix_one (Equiv.refl _) (Fin.castLE h) Q
+
+end Split
+
+open scoped Matrix.Norms.L2Operator in
+/-- The operator bound in the `L2Operator` norm, as a hypothesis-free constant. -/
+private theorem exists_norm_toEuclideanLin_le (A : Matrix (Fin n) (Fin n) ℂ) :
+    ∃ M : ℝ, 0 ≤ M ∧ ∀ y, ‖toEuclideanLin A y‖ ≤ M * ‖y‖ :=
+  ⟨‖A‖, norm_nonneg _, norm_toEuclideanLin_apply_le A⟩
+
 open scoped Matrix.Norms.Frobenius
 
 /-- **Theorem 7.3.1, corrected.** Let the Schur decomposition (7.3.7)–(7.3.8) be
@@ -1031,5 +1121,209 @@ theorem theorem_7_3_1 {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ u
   have key := gap_subspaceIterate_le_of_schur hQ e hT hT₁₁ hT₂₂ hr hrn hμ ha hb hab hν₁ hν₂ hνa
     hX hdim h0 k
   exact (le_of_eq (Submodule.gap_congr _ _ (orthogonalIteration_range hQk hli).1)).trans key
+
+/-- **(7.3.11) and the conclusion drawn from it (§7.3.3).** Let `Qᴴ A Q = T` be a Schur
+decomposition with `|λ₁| > ⋯ > |λ_n|` (strictly decreasing moduli of the diagonal) and `Q_k` an
+orthogonal iteration (7.3.6) with `r = n`. If for every `i = 1:n-1` the initial iterate is not
+deficient — `dist(D_i(Aᴴ), span{q₁^(0), …, q_i^(0)}) < 1`, where `D_i(Aᴴ) = ran(Q [I; -X_iᴴ])` for
+the solution `X_i` of the Sylvester equation of the partition (7.3.8) at `r = i` (7.3.20), (7.3.25)
+— then `dist(span{q₁^(k), …, q_i^(k)}, span{q₁, …, q_i}) → 0` for every `i`, and the matrices
+`T_k = Q_kᴴ A Q_k` converge to upper triangular form: their strictly lower entries tend to `0`.
+Theorem 7.3.1 (corrected) for each `r = i`, applied to the leading `i` columns of `Q_k` (again an
+orthogonal iteration), and `(T_k)_{jl} = ⟪q_j^(k), A q_l^(k)⟫` bounded by the gap
+(`Krylov.norm_inner_le_of_gap`). (`i = n` is trivial: both spans are the whole space.) -/
+theorem equation_7_3_11 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
+    (hT : (star Q * A * Q).IsUpperTriangular)
+    (hdiag : StrictAnti fun i => ‖(star Q * A * Q) i i‖)
+    {Qk : ℕ → Matrix (Fin n) (Fin n) ℂ} (hQk : orthogonalIteration A Qk)
+    (h0 : ∀ i, 0 < i → ∀ hin : i < n, ∃ X : Matrix (Fin i) (Fin (n - i)) ℂ,
+      ((star Q * A * Q).reindex (schurSplit hin.le) (schurSplit hin.le)).toBlocks₁₁ * X -
+          X * ((star Q * A * Q).reindex (schurSplit hin.le) (schurSplit hin.le)).toBlocks₂₂ =
+        -((star Q * A * Q).reindex (schurSplit hin.le) (schurSplit hin.le)).toBlocks₁₂ ∧
+      (LinearMap.range (toEuclideanLin (Q * (fromRows (1 : Matrix (Fin i) (Fin i) ℂ)
+        (-Xᴴ)).submatrix (schurSplit hin.le) id))).gap
+        (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hin.le)))) < 1) :
+    (∀ i, 0 < i → ∀ hin : i < n, Tendsto (fun k =>
+        (LinearMap.range (toEuclideanLin (Q.submatrix id (Fin.castLE hin.le)))).gap
+          (LinearMap.range (toEuclideanLin ((Qk k).submatrix id (Fin.castLE hin.le)))))
+        atTop (𝓝 0)) ∧
+      ∀ j l : Fin n, l < j → Tendsto (fun k => ((Qk k)ᴴ * A * Qk k) j l) atTop (𝓝 0) := by
+  set T := star Q * A * Q with hTdef
+  have hconv : ∀ i, 0 < i → ∀ hin : i < n, Tendsto (fun k =>
+      (LinearMap.range (toEuclideanLin (Q.submatrix id (Fin.castLE hin.le)))).gap
+        (LinearMap.range (toEuclideanLin ((Qk k).submatrix id (Fin.castLE hin.le)))))
+      atTop (𝓝 0) := by
+    intro i hi hin
+    obtain ⟨X, hX, hgap⟩ := h0 i hi hin
+    set e := schurSplit hin.le with he
+    set B := T.reindex e e with hB
+    -- the blocks
+    have he1 : ∀ a : Fin i, e.symm (Sum.inl a) = Fin.castLE hin.le a :=
+      schurSplit_symm_inl hin.le
+    have he2 : ∀ b : Fin (n - i), ((e.symm (Sum.inr b) : Fin n) : ℕ) = i + b :=
+      schurSplit_symm_inr hin.le
+    have hblk : B = fromBlocks B.toBlocks₁₁ B.toBlocks₁₂ 0 B.toBlocks₂₂ := by
+      conv_lhs => rw [← fromBlocks_toBlocks B]
+      congr 1
+      ext b a
+      simp only [toBlocks₂₁, of_apply, Matrix.zero_apply, hB, reindex_apply, submatrix_apply]
+      refine hT ?_
+      simp only [id_eq, Fin.lt_def, he1, Fin.val_castLE, he2]
+      omega
+    have hT₁₁ : B.toBlocks₁₁.IsUpperTriangular := by
+      intro a a' haa
+      simp only [toBlocks₁₁, of_apply, hB, reindex_apply, submatrix_apply, he1]
+      exact hT (show Fin.castLE hin.le a' < Fin.castLE hin.le a from haa)
+    have hT₂₂ : B.toBlocks₂₂.IsUpperTriangular := by
+      intro b b' hbb
+      simp only [toBlocks₂₂, of_apply, hB, reindex_apply, submatrix_apply]
+      refine hT ?_
+      simp only [id_eq, Fin.lt_def, he2] at hbb ⊢
+      omega
+    -- the constants
+    set a := ‖T ⟨i - 1, by omega⟩ ⟨i - 1, by omega⟩‖ with ha_def
+    set b := ‖T ⟨i, hin⟩ ⟨i, hin⟩‖ with hb_def
+    set ν := ‖strictUpper T‖ with hν_def
+    have ha : ∀ a' : Fin i, a ≤ ‖B.toBlocks₁₁ a' a'‖ := by
+      intro a'
+      simp only [toBlocks₁₁, of_apply, hB, reindex_apply, submatrix_apply, he1]
+      refine hdiag.antitone ?_
+      rw [Fin.le_def, Fin.val_castLE]
+      change (a' : ℕ) ≤ i - 1
+      omega
+    have hb : ∀ b' : Fin (n - i), ‖B.toBlocks₂₂ b' b'‖ ≤ b := by
+      intro b'
+      simp only [toBlocks₂₂, of_apply, hB, reindex_apply, submatrix_apply]
+      refine hdiag.antitone ?_
+      rw [Fin.le_def, he2]
+      change i ≤ i + (b' : ℕ)
+      omega
+    have hab : b < a := hdiag (show (⟨i - 1, by omega⟩ : Fin n) < ⟨i, hin⟩ by
+      rw [Fin.lt_def]; simp only; omega)
+    have hb0 : 0 ≤ b := norm_nonneg _
+    have ha0 : 0 < a := hb0.trans_lt hab
+    have hν0 : 0 ≤ ν := norm_nonneg _
+    have hν₁ : ‖strictUpper B.toBlocks₁₁‖ ≤ ν := by
+      have e1 : strictUpper B.toBlocks₁₁ =
+          (strictUpper T).submatrix (Fin.castLE hin.le) (Fin.castLE hin.le) := by
+        ext a' a''
+        simp only [strictUpper_apply, submatrix_apply, toBlocks₁₁, of_apply, hB, reindex_apply,
+          he1]
+        congr 1
+      rw [e1]
+      exact frobenius_norm_submatrix_le _ (Fin.castLE_injective _) (Fin.castLE_injective _)
+    have hν₂ : ‖strictUpper B.toBlocks₂₂‖ ≤ ν := by
+      have hinj : Function.Injective fun b' : Fin (n - i) => e.symm (Sum.inr b') :=
+        e.symm.injective.comp Sum.inr_injective
+      have e1 : strictUpper B.toBlocks₂₂ =
+          (strictUpper T).submatrix (fun b' => e.symm (Sum.inr b'))
+            (fun b' => e.symm (Sum.inr b')) := by
+        ext b' b''
+        simp only [strictUpper_apply, submatrix_apply, toBlocks₂₂, of_apply, hB, reindex_apply]
+        congr 1
+        refine propext ⟨fun hlt => ?_, fun hlt => ?_⟩
+        · rw [Fin.lt_def, he2, he2]; have := Fin.lt_def.1 hlt; omega
+        · rw [Fin.lt_def, he2, he2] at hlt; rw [Fin.lt_def]; omega
+      rw [e1]
+      exact frobenius_norm_submatrix_le _ hinj hinj
+    set μ := 4 * ν / (a - b) with hμ_def
+    have hμ : 0 ≤ μ := div_nonneg (by positivity) (by linarith)
+    have h1μ : 0 < 1 + μ := by linarith
+    have hc : ν / (1 + μ) ≤ (a - b) / 4 := by
+      rw [div_le_iff₀ h1μ, hμ_def]
+      have hab' : 0 < a - b := by linarith
+      field_simp
+      nlinarith
+    have hνa : ν < (1 + μ) * a := by
+      have h' : ν / (1 + μ) < a := hc.trans_lt (by linarith)
+      rw [div_lt_iff₀ h1μ] at h'
+      linarith [mul_comm a (1 + μ)]
+    set ρ := (b + ν / (1 + μ)) / (a - ν / (1 + μ)) with hρ_def
+    have hden : 0 < a - ν / (1 + μ) := by linarith
+    have hρ0 : 0 ≤ ρ := div_nonneg (by positivity) hden.le
+    have hρ1 : ρ < 1 := by
+      rw [div_lt_one hden]
+      linarith
+    have hbound := fun k => theorem_7_3_1 hQ e hblk hT₁₁ hT₂₂ hi hin hμ ha hb hab
+      hν₁ hν₂ hνa hX (orthogonalIteration_castLE hin.le hQk) hgap k
+    have hQα : Q * (fromRows (1 : Matrix (Fin i) (Fin i) ℂ)
+        (0 : Matrix (Fin (n - i)) (Fin i) ℂ)).submatrix e id = Q.submatrix id (Fin.castLE hin.le) :=
+      mul_fromRows_one_zero_submatrix hin.le Q
+    simp only [hQα] at hbound
+    refine squeeze_zero (fun _ => Submodule.gap_nonneg _ _) hbound ?_
+    have h := ((tendsto_pow_atTop_nhds_zero_of_lt_one hρ0 hρ1).const_mul
+      ((1 + μ) ^ (n - 2) * (1 + ‖B.toBlocks₁₂‖ / sep B.toBlocks₁₁ B.toBlocks₂₂))).mul_const
+      ((LinearMap.range (toEuclideanLin (Q.submatrix id (Fin.castLE hin.le)))).gap
+          (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hin.le)))) /
+        Real.sqrt (1 - (LinearMap.range (toEuclideanLin
+          (Q * (fromRows (1 : Matrix (Fin i) (Fin i) ℂ) (-Xᴴ)).submatrix e id))).gap
+          (LinearMap.range (toEuclideanLin ((Qk 0).submatrix id (Fin.castLE hin.le)))) ^ 2))
+    simpa [mul_assoc] using h
+  refine ⟨hconv, fun j l hlj => ?_⟩
+  have hl : (l : ℕ) + 1 < n := by have := Fin.lt_def.1 hlj; omega
+  have hlt := hconv ((l : ℕ) + 1) (Nat.succ_pos _) hl
+  set f := Fin.castLE hl.le with hf
+  obtain ⟨M, hM0, hM⟩ := exists_norm_toEuclideanLin_le A
+  -- `span{q₁, …, q_{l+1}}` is `A`-invariant
+  have hAQ : A * Q = Q * T := by
+    rw [hTdef, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ, Matrix.one_mul]
+  have hinvM : A * Q.submatrix id f = Q.submatrix id f * T.submatrix f f := by
+    rw [← mul_submatrix_castLE hl.le Q hT, ← hAQ, submatrix_mul _ _ _ _ _ Function.bijective_id,
+      submatrix_id_id]
+  have hinv : ∀ y ∈ LinearMap.range (toEuclideanLin (Q.submatrix id f)),
+      toEuclideanLin A y ∈ LinearMap.range (toEuclideanLin (Q.submatrix id f)) := by
+    rintro _ ⟨z, rfl⟩
+    exact ⟨toEuclideanLin (T.submatrix f f) z, by
+      rw [← toEuclideanLin_mul_apply, ← hinvM, toEuclideanLin_mul_apply]⟩
+  -- the iterates have orthonormal columns
+  have hunit : ∀ k, (Qk k)ᴴ * Qk k = 1 := fun k => by
+    cases k with
+    | zero => exact hQk.1
+    | succ k => exact (hQk.2 k).choose_spec.conjTranspose_mul_self
+  have happ : ∀ (P : Matrix (Fin n) (Fin n) ℂ) (p q : Fin n),
+      (toEuclideanLin P (EuclideanSpace.single q 1)) p = P p q := by
+    intro P p q
+    simp [toEuclideanLin_apply]
+  have hbound : ∀ k, ‖((Qk k)ᴴ * A * Qk k) j l‖ ≤ 2 * M *
+      (LinearMap.range (toEuclideanLin (Q.submatrix id f))).gap
+        (LinearMap.range (toEuclideanLin ((Qk k).submatrix id f))) := by
+    intro k
+    set v := toEuclideanLin (Qk k) (EuclideanSpace.single l 1) with hv
+    set w := toEuclideanLin (Qk k) (EuclideanSpace.single j 1) with hw
+    have hvS : v ∈ LinearMap.range (toEuclideanLin ((Qk k).submatrix id f)) := by
+      refine ⟨EuclideanSpace.single ⟨l, by omega⟩ 1, ?_⟩
+      ext p
+      rw [hv, happ]
+      simp [toEuclideanLin_apply, hf]
+    have hwS : w ∈ (LinearMap.range (toEuclideanLin ((Qk k).submatrix id f)))ᗮ := by
+      refine (Submodule.mem_orthogonal _ _).2 ?_
+      rintro _ ⟨z, rfl⟩
+      rw [hw, ← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint,
+        ← toEuclideanLin_mul_apply, conjTranspose_submatrix,
+        show (Qk k)ᴴ.submatrix f id * Qk k = ((Qk k)ᴴ * Qk k).submatrix f id from rfl, hunit]
+      have h0' : toEuclideanLin ((1 : Matrix (Fin n) (Fin n) ℂ).submatrix f id)
+          (EuclideanSpace.single j 1) = 0 := by
+        ext a
+        have hne : f a ≠ j := fun h' => by
+          have := Fin.val_eq_of_eq h'
+          rw [hf, Fin.val_castLE] at this
+          have := Fin.lt_def.1 hlj
+          omega
+        simp [toEuclideanLin_apply, one_apply, hne]
+      rw [h0', inner_zero_right]
+    have hnv : ‖v‖ ≤ 1 := by
+      rw [hv, norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one (hunit k)]
+      simp
+    have hnw : ‖w‖ ≤ 1 := by
+      rw [hw, norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one (hunit k)]
+      simp
+    have hentry : ((Qk k)ᴴ * A * Qk k) j l = inner ℂ w (toEuclideanLin A v) := by
+      rw [hw, hv, ← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint,
+        ← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply,
+        EuclideanSpace.inner_single_left, map_one, one_mul, happ, Matrix.mul_assoc]
+    rw [hentry]
+    exact Krylov.norm_inner_le_of_gap hM0 hM hinv hvS hnv hwS hnw
+  refine squeeze_zero_norm hbound ?_
+  simpa using hlt.const_mul (2 * M)
 
 end GolubVanLoan.Chapter07

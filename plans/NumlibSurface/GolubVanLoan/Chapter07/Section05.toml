@@ -58,31 +58,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
 
 [[node]]
 id = "algorithm_7_5_2_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 7.5.2 (see the group desc for why the deflations make it a statement with
-a perturbation): for `(Q, T, done) = Id.run (algorithm_7_5_2 pure tol A fuel)` with `0 ≤ tol`:
-`Q ∈ orthogonalGroup` and there is `E` with `T = Qᵀ (A + E) Q`, `‖E‖_F ≤ ((1 + 2 tol)^(n * fuel) - 1) ‖A‖_F`
-(Frobenius norm, each deflation perturbing by at most `tol (|h_ii| + |h_{i-1,i-1}|) ≤ 2 tol ‖H‖_F` and at
-most `n` deflations per pass), `E = 0` if `tol = 0`, `T` upper Hessenberg, and if `done` then
-`T.IsQuasiUpperTriangular` with no `2 × 2` diagonal block having a real eigenvalue (the real Schur form
-of `A + E`). Invariants: `algorithm_7_4_2_spec` with `GolubVanLoan.Chapter05.backwardAccumulation_spec`
-(`Q₀ = householderProduct data`), the window form of `algorithm_7_5_1_spec` for the unreduced `H₂₂`
-(the block partition makes `diag(I, Z, I)` a similarity of the whole `H` that keeps the zero blocks,
-Lemma 7.1.1), `householderApplyLeft_spec`/`householderApplyRight_spec` for the off-diagonal blocks and
-`Q`, and `triangularize2x2_spec`. ★★★ (~450 lines).
-
-Blocked: not attempted (c07-A, paused by the orchestrator after the round). Every ingredient is
-now proved: `algorithm_7_4_2_spec` + `Chapter05.backwardAccumulation_spec` for the start,
-`algorithm_7_5_1_window` (the Francis step on the window `[p, m)` is `blockConj p m Z H` with
-`Z` block-supported and orthogonal, result Hessenberg), `francisOffBlockStep` via
-`householderApplyLeft/Right_spec` (Q, H₁₂, H₂₃; together with the window step they give the full
-similarity `Zᵀ H Z`, `Z = diag(I, Z₂₂, I)`, by `blockConj`/`IsBlockSupported` bookkeeping), and
-`triangularize2x2_spec` for the last step. Missing: the pass invariant through `qrDeflate` (the
-deflation perturbation bound `‖E‖_F ≤ ((1 + 2 tol)^(n·fuel) - 1)‖A‖_F`), the properties of
-`schurTrailingStart` / `unreducedStart` (the partition really has `H₃₃` quasi-triangular and
-`H₂₂` unreduced, needed for `done → IsQuasiUpperTriangular`), and the composition of the block
-similarity with the off-block updates. Estimate ~450 lines.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_5_2", "GolubVanLoan.Chapter07.algorithm_7_4_2_spec", "GolubVanLoan.Chapter05.backwardAccumulation_spec", "GolubVanLoan.Chapter07.algorithm_7_5_1_spec", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec", "GolubVanLoan.Chapter07.triangularize2x2_spec", "Matrix.IsQuasiUpperTriangular", "GolubVanLoan.Chapter07.lemma_7_1_1"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.5.2'
 
 [[node]]

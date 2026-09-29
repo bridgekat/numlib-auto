@@ -58,29 +58,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
 
 [[node]]
 id = "algorithm_7_7_2_spec"
-kind = "theorem"
-desc = '''Algorithm 7.7.2, exact semantics: for `A` unreduced upper Hessenberg and `B` nonsingular upper
-triangular, `(A', B', dQ, dZ) = Id.run (algorithm_7_7_2 pure (List.finRange n) A B)` satisfies `A' = Qᵀ A Z`, `B' = Qᵀ B Z` with
-`Q = householderProduct dQ`, `Z = householderProduct dZ` orthogonal, `A'` upper Hessenberg, `B'` upper triangular, and `Q` has the same first column as the
-Francis step on `M = A B⁻¹`, so `Matrix.IsFrancisStep s t M (A' B'⁻¹)` with `s`, `t` the trace and
-determinant of `M`'s trailing `2 × 2` block — "`Ā B̄⁻¹` is essentially the same matrix that would result if
-a Francis QR step were explicitly applied to `A B⁻¹`". Proof: `A' B'⁻¹ = Qᵀ (A B⁻¹) Q` is upper Hessenberg
-(Hessenberg times triangular), `Q e₁ = Q₀ e₁ ∥ (M - aI)(M - bI) e₁`, so
-`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval` gives the triangularity of
-`Qᵀ p(M)`; the zero-chasing invariant (bulge in `A` below the subdiagonal, in `B` below the diagonal) as in
-`algorithm_7_5_1_spec`. ★★★ (~500 lines).
-
-Blocked (c07 round, paused by the user): `algorithm_7_7_2` is written on a block `p, …, r`
-(`qzShiftVector` computes the needed entries of `M = A B⁻¹` by row forward substitution inline, so
-chapter 3's back substitution is not called). A draft of the bulge-chasing loop invariant
-(`QZStepInv`: equivalence with the reflector data, bulge at `(j+1, j-1)`, `(j+2, j-1)`, `(j+2, j)`,
-`B` triangular, block decoupled, `x, y, z` read from column `j - 1`, first reflector) and its
-one-step preservation `qzStep_inv`, with entry lemmas for `(I - βvvᵀ) M` / `M (I - βvvᵀ)` supported
-on an index list, is in the c07 scratch (`scratchpad/c07/C/QZ1.lean`, `QZ2.lean`), never compiled.
-Missing: compile it, the final `2 × 2` step, the first column `Q e_p ∥ (M - aI)(M - bI) e_p` from
-`qzShiftVector` (a computation with `M` Hessenberg), then `isUpperTriangular_star_mul_aeval` on
-`A B⁻¹`. Estimate ~500 more lines.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_7_2", "Matrix.IsFrancisStep", "Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval", "GolubVanLoan.Chapter05.householderApplyLeft_spec", "GolubVanLoan.Chapter05.householderApplyRight_spec", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter03.algorithm_3_1_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.2'
 
 [[node]]
@@ -89,20 +66,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
 
 [[node]]
 id = "algorithm_7_7_3_spec"
-kind = "theorem"
-desc = '''Algorithm 7.7.3, exact semantics: `Q`, `Z` orthogonal, `S = Qᵀ B Z` upper triangular, `T = Qᵀ (A + E) Z`
-upper Hessenberg with `‖E‖_F ≤ ((1 + 2ε)^(n * fuel) - 1) ‖A‖_F` (`E = 0` when `ε = 0`; the zero chase and the QZ
-steps are exact equivalences), and if `done` then `T` is upper quasi-triangular — the generalized real Schur
-form of `(A + E, B)` (Theorem 7.7.2 made constructive up to the deflation perturbation). Invariants
-from `algorithm_7_7_1_spec`, `qzZeroChase_spec`, `algorithm_7_7_2_spec`, `pencil_decouple`. ★★★ (~400
-lines).
-
-Blocked (c07 round, paused by the user): `algorithm_7_7_3`, `algorithm_7_7_1_spec` and
-`qzZeroChase_spec` are proved, but it needs `algorithm_7_7_2_spec` (open), a spec of `qzDeflate`
-(each zeroing perturbs `A` by at most `ε(|a_{i-1,i-1}| + |a_ii|)`), the choice of `p`, `q` by
-`Nat.findGreatest`, and the accumulation of the block's reflector data into `Q`, `Z`. Estimate ~400
-lines after `algorithm_7_7_2_spec`.'''
-deps = ["GolubVanLoan.Chapter07.algorithm_7_7_3", "GolubVanLoan.Chapter07.algorithm_7_7_1_spec", "GolubVanLoan.Chapter07.qzZeroChase_spec", "GolubVanLoan.Chapter07.algorithm_7_7_2_spec", "GolubVanLoan.Chapter07.pencil_decouple", "Matrix.IsQuasiUpperTriangular"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 7.7.3'
 
 [[node]]

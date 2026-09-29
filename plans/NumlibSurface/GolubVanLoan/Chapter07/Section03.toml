@@ -46,33 +46,6 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 7.3.1'
 
 [[node]]
 id = "equation_7_3_11"
-kind = "theorem"
-desc = '''(7.3.11) and the conclusion drawn from it (§7.3.3): if `|λ₁| > ⋯ > |λ_n|`, the Schur vectors are
-`q_i`, and `dist(D_i(Aᴴ), span{q₁^(0), …, q_i^(0)}) < 1` for `i = 1:n`, then for an orthogonal iteration
-with `r = n`, `dist(span{q₁^(k), …, q_i^(k)}, span{q₁, …, q_i}) → 0` for every `i`, and the matrices
-`T_k = Q_kᴴ A Q_k` converge to upper triangular form (their strictly lower entries tend to `0`).
-Theorem 7.3.1 (corrected) for each `r = i`, and the entries `(T_k)_{jl}`, `j > l`, bounded by the
-gaps (`Krylov.norm_inner_le_of_gap`). ★★
-
-Blocked: not finished in the c07 round (the round was paused). Theorem 7.3.1 (corrected) is now
-proved. A draft of about 250 lines exists but does not yet compile. It is in the scratchpad of agent
-c07-D (`…/scratchpad/c07/D/S03d.lean`); `notes/` is not reachable from a worktree, so the path is
-only a pointer. The draft has four parts:
-* the partition `schurSplit : Fin n ≃ Fin i ⊕ Fin (n - i)`;
-* the leading `i` columns of an `r = n` orthogonal iteration as an orthogonal iteration (the
-  triangular factor restricted to its leading block);
-* `Q [I; 0] = Q_α`;
-* the constants of Theorem 7.3.1 at `r = i`, with
-  - `a = |t_{i-1,i-1}|` and `b = |t_ii|` from strictly decreasing diagonal moduli;
-  - `ν = ‖N‖_F`, with the block bound from `Matrix.frobenius_norm_submatrix_le`;
-  - `μ = 4ν/(a - b)`, which makes the ratio at most `(a + 3b)/(3a + b) < 1`.
-It then bounds the entries `⟪q_j^(k), A q_l^(k)⟫` for `j > l` by `Krylov.norm_inner_le_of_gap`,
-applied to the invariant `span{q₁, …, q_{l+1}}`. Remaining are three rewrite failures in the helper
-lemmas (a function-coercion motive in `mul_submatrix_castLE`, one `submatrix_mul` direction) and a
-`λ` binder that does not parse. Estimate ~1 hour. The hypothesis `dist(D_i(Aᴴ), …) < 1` is stated
-with `D_i(Aᴴ) = ran(Q [I; -X_iᴴ])` for a Sylvester solution `X_i` of each partition, as in
-`theorem_7_3_1`.'''
-deps = ["GolubVanLoan.Chapter07.theorem_7_3_1", "Krylov.norm_inner_le_of_gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (7.3.11)'
 
 [[node]]
