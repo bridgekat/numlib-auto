@@ -1,4 +1,5 @@
 import Numlib.Analysis.InnerProductSpace.SingularValues
+import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Eigen.Jacobi
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
 import Numlib.LinearAlgebra.Matrix.Hessenberg
@@ -25,13 +26,17 @@ rotations, and the orthogonality of the one-sided Jacobi iterate).
 `Matrix.IsUpperBidiagonal`.
 
 The Jordan–Wielandt matrix is the backbone's `Matrix.hermitianDilation` (`[0 Aᵀ; A 0]`, domain
-block first). Theorem 8.6.5 waits for its backbone node
-`Matrix.exists_singularSubspacePair_perturbation`.
+block first). Theorem 8.6.5 is the backbone's Wedin theorem
+`Matrix.exists_singularSubspacePair_perturbation` in the coordinates `V = [V₁ V₂]`, `U = [U₁ U₂]`
+(`Matrix.fromCols`) of the pair.
 
 Algorithms 8.6.1–8.6.2 follow the conventions of `NumlibSurface/GolubVanLoan`: chapter 5's
 `givens` and Givens updates on index lists, Algorithm 8.6.1 on a window of consecutive indices of
 the `m × n` array with the accumulators `U`, `V`, Algorithm 8.6.2 on chapter 5's
-bidiagonalization (Algorithm 5.4.2) with a `fuel`-bounded loop and a `done` flag.
+bidiagonalization (Algorithm 5.4.2) with a `fuel`-bounded loop and a `done` flag. The exact
+semantics of Algorithm 8.6.1 (square `B`, full window) is the chase of one bulge, alternately
+below the diagonal and right of the superdiagonal, with the implicit-shift argument of
+`algorithm_8_3_2_spec` for `BᵀB`.
 
 ## Readings
 
@@ -605,11 +610,92 @@ theorem oneSidedJacobi_orthogonal (A : Matrix (Fin m) (Fin n) ℝ) {p q : Fin n}
             rw [Finset.mul_sum]; exact Finset.sum_congr rfl fun x _ => by ring
         _ = 1 := by rw [hsq, inv_pow, inv_mul_cancel₀ (pow_ne_zero 2 hne)]
 
-/-! ### §8.6.2 The failure of Theorem 8.6.5 for `m > n` -/
+/-! ### §8.6.2 Theorem 8.6.5, and its failure for `m > n` as printed -/
 
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
+
+/-- A basis `W [1; P]` of `W` orthogonal spans an `r`-dimensional subspace. -/
+private theorem finrank_range_mul_fromRows_one {l r s : ℕ}
+    {W : Matrix (Fin l) (Fin r ⊕ Fin s) ℝ} (hW : Wᵀ * W = 1) (P : Matrix (Fin s) (Fin r) ℝ) :
+    Module.finrank ℝ (LinearMap.range
+      (toEuclideanLin (W * fromRows (1 : Matrix (Fin r) (Fin r) ℝ) P))) = r := by
+  have hinj : Function.Injective
+      (toEuclideanLin (W * fromRows (1 : Matrix (Fin r) (Fin r) ℝ) P)) := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro y hy
+    have h1 : (fromRows (1 : Matrix (Fin r) (Fin r) ℝ) P) *ᵥ WithLp.ofLp y = 0 := by
+      have := congrArg (fun v => Wᵀ *ᵥ WithLp.ofLp v) hy
+      simp only [toEuclideanLin_apply, WithLp.ofLp_toLp, mulVec_mulVec, ← Matrix.mul_assoc,
+        hW, Matrix.one_mul, WithLp.ofLp_zero, mulVec_zero] at this
+      exact this
+    ext i
+    have := congrFun h1 (Sum.inl i)
+    rw [fromRows_mulVec, Sum.elim_inl, one_mulVec] at this
+    exact this
+  rw [LinearMap.finrank_range_of_inj hinj, finrank_euclideanSpace, Fintype.card_fin]
+
+/-- **Theorem 8.6.5**, corrected for `m > n` (Wedin's condition): let `V = [V₁ V₂]` (`n × n`) and
+`U = [U₁ U₂]` (`m × m`) be orthogonal, the first `r` columns splitting off `A₁₁`:
+`Uᵀ A V = [A₁₁ 0; 0 A₂₂]`, so that `(ran V₁, ran U₁)` is a singular subspace pair for `A`; let the
+singular values of `A₁₁` and of `A₂₂` be `δ`-separated (`δ ≤ |σ_i(A₁₁) - σ_j(A₂₂)|`, the book's
+`δ = min |σ - γ| > 0`), and, if `m > n`, `δ ≤ σ_min(A₁₁)` (Wedin's condition, see
+`theorem_8_6_5_counterexample`). If `‖E‖_F ≤ δ/5`, there are `P` (`(n - r) × r`) and
+`Q` (`(m - r) × r`) with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that `ran(V₁ + V₂ P)` and
+`ran(U₁ + U₂ Q)` form a singular subspace pair for `A + E`. The book's `P`, `Q` are swapped
+(its `Q` is `(n - r) × r`); the backbone's `Matrix.exists_singularSubspacePair_perturbation`
+(Stewart 1973, Wedin 1972). -/
+theorem theorem_8_6_5 (hmn : n ≤ m) {r : ℕ} {A E : Matrix (Fin m) (Fin n) ℝ}
+    {V₁ : Matrix (Fin n) (Fin r) ℝ} {V₂ : Matrix (Fin n) (Fin (n - r)) ℝ}
+    {U₁ : Matrix (Fin m) (Fin r) ℝ} {U₂ : Matrix (Fin m) (Fin (m - r)) ℝ}
+    (hV : (fromCols V₁ V₂)ᵀ * fromCols V₁ V₂ = 1) (hV' : fromCols V₁ V₂ * (fromCols V₁ V₂)ᵀ = 1)
+    (hU : (fromCols U₁ U₂)ᵀ * fromCols U₁ U₂ = 1) (hU' : fromCols U₁ U₂ * (fromCols U₁ U₂)ᵀ = 1)
+    {A₁₁ : Matrix (Fin r) (Fin r) ℝ} {A₂₂ : Matrix (Fin (m - r)) (Fin (n - r)) ℝ}
+    (hA : (fromCols U₁ U₂)ᵀ * A * fromCols V₁ V₂ = fromBlocks A₁₁ 0 0 A₂₂)
+    {δ : ℝ} (hδ : 0 < δ)
+    (hsep : ∀ i < r, ∀ j < n - r,
+      δ ≤ |A₁₁.sortedSingularValues i - A₂₂.sortedSingularValues j|)
+    (hw : n < m → ∀ i < r, δ ≤ A₁₁.sortedSingularValues i) (hE : ‖E‖ ≤ δ / 5) :
+    ∃ (P : Matrix (Fin (n - r)) (Fin r) ℝ) (Q : Matrix (Fin (m - r)) (Fin r) ℝ),
+      ‖fromRows Q P‖ ≤ 4 * ‖E‖ / δ ∧
+      IsSingularSubspacePair (A + E) (LinearMap.range (toEuclideanLin (V₁ + V₂ * P)))
+        (LinearMap.range (toEuclideanLin (U₁ + U₂ * Q))) := by
+  have hct : ∀ {a b : ℕ} (X : Matrix (Fin a) (Fin b) ℝ), Xᴴ = Xᵀ :=
+    fun X => conjTranspose_eq_transpose_of_trivial X
+  have hA' : (fromCols U₁ U₂)ᴴ * A * fromCols V₁ V₂ = fromBlocks A₁₁ 0 0 A₂₂ := by
+    rw [conjTranspose_eq_transpose_of_trivial]; exact hA
+  obtain ⟨P, Q, hPQ, ⟨M, hM⟩, ⟨N, hN⟩⟩ := exists_singularSubspacePair_perturbation (k := Fin r)
+    (p := Fin (n - r)) (q := Fin (m - r)) (A := A) (E := E)
+    (by rw [conjTranspose_eq_transpose_of_trivial]; exact hU)
+    (by rw [conjTranspose_eq_transpose_of_trivial]; exact hU')
+    (by rw [conjTranspose_eq_transpose_of_trivial]; exact hV)
+    (by rw [conjTranspose_eq_transpose_of_trivial]; exact hV')
+    (by rw [hA', toBlocks_fromBlocks₁₂]) (by rw [hA', toBlocks_fromBlocks₂₁]) hδ
+    (fun i hi j hj => by
+      rw [hA', toBlocks_fromBlocks₁₁, toBlocks_fromBlocks₂₂]
+      simp only [Fintype.card_fin] at hi hj
+      exact hsep i hi j (by omega))
+    (fun hpq i hi => by
+      rw [hA', toBlocks_fromBlocks₁₁]
+      simp only [Fintype.card_fin] at hpq hi
+      exact hw (by omega) i hi) hE
+  have hVP : fromCols V₁ V₂ * fromRows 1 P = V₁ + V₂ * P := by
+    rw [fromCols_mul_fromRows, Matrix.mul_one]
+  have hUQ : fromCols U₁ U₂ * fromRows 1 Q = U₁ + U₂ * Q := by
+    rw [fromCols_mul_fromRows, Matrix.mul_one]
+  rw [hVP] at hM hN
+  rw [hUQ] at hM hN
+  rw [conjTranspose_eq_transpose_of_trivial] at hN
+  refine ⟨P, Q, hPQ, ?_, ?_, ?_⟩
+  · rw [← hVP, ← hUQ, finrank_range_mul_fromRows_one hV, finrank_range_mul_fromRows_one hU]
+  · rintro _ ⟨x, ⟨y, rfl⟩, rfl⟩
+    refine ⟨WithLp.toLp 2 (M *ᵥ WithLp.ofLp y), ?_⟩
+    simp only [toEuclideanLin_apply, mulVec_mulVec, ← hM]
+  · rintro _ ⟨x, ⟨y, rfl⟩, rfl⟩
+    refine ⟨WithLp.toLp 2 (N *ᵥ WithLp.ofLp y), ?_⟩
+    simp only [toEuclideanLin_apply, mulVec_mulVec, ← hN]
+
 
 /-- **Theorem 8.6.5 is false as printed for `m > n`.** For `m = 3`, `n = 2`, `r = 1`,
 `A = [0 0; 0 1; 0 0]`, `U = I₃`, `V = I₂` (so `A₁₁ = [0]`, `A₂₂ = [1; 0]` and the printed gap is
@@ -1037,5 +1123,401 @@ noncomputable def algorithm_8_6_2 (hnm : n ≤ m) (ε : ℝ) (A : Matrix (Fin m)
     (Chapter05.bidiagonalPart r.1, U, V, false)
 
 end Programs
+
+/-! ### Algorithm 8.6.1: exact semantics -/
+
+section GolubKahan
+
+/-- **The zero pattern of the Golub–Kahan chase before the step on the pair `(j, j + 1)`**: upper
+bidiagonal except for the bulge `(j - 1, j + 1)` (none for `j = 0`). -/
+private def IsRowBulge (j : ℕ) (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ i l : Fin n, ((l : ℕ) < i ∨ (i : ℕ) + 1 < l) →
+    ¬ (1 ≤ j ∧ (i : ℕ) + 1 = j ∧ (l : ℕ) = j + 1) → B i l = 0
+
+/-- **The zero pattern after the column rotation of the step on `(j, j + 1)`**: upper bidiagonal
+except for the bulge `(j + 1, j)`. -/
+private def IsColBulge (j : ℕ) (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ i l : Fin n, ((l : ℕ) < i ∨ (i : ℕ) + 1 < l) → ¬ ((i : ℕ) = j + 1 ∧ (l : ℕ) = j) →
+    B i l = 0
+
+/-- The column rotation of the step on `(j, j + 1)`, annihilating the bulge `(j - 1, j + 1)`,
+moves it to `(j + 1, j)`. -/
+private theorem isColBulge_mul {j : ℕ} {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsRowBulge j B)
+    {a b : Fin n} (ha : (a : ℕ) = j) (hb : (b : ℕ) = j + 1) {c s : ℝ}
+    (hz : ∀ pr : Fin n, 1 ≤ j → (pr : ℕ) + 1 = j → s * B pr a + c * B pr b = 0) :
+    IsColBulge j (B * Chapter05.givensRotation a b c s) := by
+  have hab : a ≠ b := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
+  intro i l hil hnb
+  rw [Chapter05.givensRotation, mul_planeRotation_apply hab]
+  by_cases hla : l = a
+  · rw [ite_eq_left hla]
+    subst hla
+    have hi : (i : ℕ) + 2 ≤ j ∨ j + 2 ≤ (i : ℕ) := by omega
+    rw [hB i l (by omega) (by omega), hB i b (by omega) (by omega)]
+    ring
+  rw [ite_eq_right hla]
+  by_cases hlb : l = b
+  · rw [ite_eq_left hlb]
+    subst hlb
+    by_cases hi1 : (i : ℕ) + 1 = j
+    · linear_combination hz i (by omega) hi1
+    · rw [hB i a (by omega) (by omega), hB i l (by omega) (by omega)]
+      ring
+  rw [ite_eq_right hlb]
+  exact hB i l hil (fun h => hlb (Fin.ext (by omega)))
+
+/-- The row rotation of the step on `(j, j + 1)`, annihilating the bulge `(j + 1, j)`, moves it
+to `(j, j + 2)`. -/
+private theorem isRowBulge_mul {j : ℕ} {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsColBulge j B)
+    {a b : Fin n} (ha : (a : ℕ) = j) (hb : (b : ℕ) = j + 1) {c s : ℝ}
+    (hz : s * B a a + c * B b a = 0) :
+    IsRowBulge (j + 1) ((Chapter05.givensRotation a b c s)ᵀ * B) := by
+  have hab : a ≠ b := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
+  intro i l hil hnb
+  rw [Chapter05.givensRotation, transpose_planeRotation_mul_apply hab]
+  by_cases hia : i = a
+  · rw [ite_eq_left hia]
+    subst hia
+    rw [hB i l (by omega) (by omega), hB b l (by omega) (by omega)]
+    ring
+  rw [ite_eq_right hia]
+  by_cases hib : i = b
+  · rw [ite_eq_left hib]
+    subst hib
+    by_cases hla : l = a
+    · subst hla
+      linear_combination hz
+    · have hla' : (l : ℕ) ≠ j := fun h => hla (Fin.ext (by omega))
+      rw [hB a l (by omega) (by omega), hB i l (by omega) (by omega)]
+      ring
+  rw [ite_eq_right hib]
+  exact hB i l hil (fun h => hib (Fin.ext (by omega)))
+
+/-- **One chasing pair of Algorithm 8.6.1 on the full square array, exactly**: with
+`(c, s) = givens(y, z)` for `(y, z)` the first pair `(y₀, z₀)` or the entries
+`(b_{prev,a}, b_{prev,b})`, and `(c', s') = givens` of the new `(b_aa, b_ba)`, the new state is
+`(G'ᵀ B G, U G', V G, a)`. -/
+private theorem golubKahanRotate_pure {a b : Fin n} (hab : a ≠ b) (y₀ z₀ : ℝ)
+    (B U V : Matrix (Fin n) (Fin n) ℝ) (prev : Option (Fin n)) :
+    let yz : ℝ × ℝ := prev.elim (y₀, z₀) fun pr => (B pr a, B pr b)
+    let cs := Id.run (Chapter05.algorithm_5_1_3 pure yz.1 yz.2)
+    let B₁ := B * Chapter05.givensRotation a b cs.1 cs.2
+    let cs' := Id.run (Chapter05.algorithm_5_1_3 pure (B₁ a a) (B₁ b a))
+    Id.run (golubKahanRotate pure le_rfl (List.finRange n) y₀ z₀ (B, U, V, prev) (a, b)) =
+      ((Chapter05.givensRotation a b cs'.1 cs'.2)ᵀ * B₁,
+        U * Chapter05.givensRotation a b cs'.1 cs'.2,
+        V * Chapter05.givensRotation a b cs.1 cs.2, some a) := by
+  intro yz cs B₁ cs'
+  have hrows : ((List.finRange n).map (Fin.castLE (le_refl n))).Nodup :=
+    (List.nodup_finRange n).map (Fin.castLE_injective _)
+  have hall : ∀ r : Fin n, r ∈ (List.finRange n).map (Fin.castLE (le_refl n)) := fun r =>
+    List.mem_map.2 ⟨r, List.mem_finRange r, rfl⟩
+  simp only [golubKahanRotate, Id.run_bind, Id.run_pure, Fin.castLE_refl]
+  rw [Chapter05.givensApplyRight_spec_of_forall_mem hab _ _ hrows hall,
+    Chapter05.givensApplyLeft_spec_of_forall_mem hab _ _ (List.nodup_finRange n)
+      List.mem_finRange,
+    Chapter05.givensApplyRight_spec_of_forall_mem hab _ _ (List.nodup_finRange n)
+      List.mem_finRange,
+    Chapter05.givensApplyRight_spec_of_forall_mem hab _ _ (List.nodup_finRange n)
+      List.mem_finRange]
+
+/-- The loop invariant of Algorithm 8.6.1 on the full square array after `j` chasing pairs: the
+state `(B', U', V', prev)` is `(Ūᵀ B V̄, U Ū, V V̄, j - 1)` for orthogonal `Ū`, `V̄`, `B'` has the
+zero pattern of the chase, and for `j ≥ 1` the first column of `V̄` is that of the first
+rotation `G(0, 1, θ₀)`, `(c₀, s₀) = givens(y₀, z₀)`. -/
+private def GolubKahanInv (B U V : Matrix (Fin n) (Fin n) ℝ) (y₀ z₀ : ℝ) (f₀ f₁ : Fin n) (j : ℕ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ ×
+      Option (Fin n)) : Prop :=
+  ∃ Ub Vb : Matrix (Fin n) (Fin n) ℝ, Ub ∈ orthogonalGroup (Fin n) ℝ ∧
+    Vb ∈ orthogonalGroup (Fin n) ℝ ∧ st.1 = Ubᵀ * B * Vb ∧ st.2.1 = U * Ub ∧
+    st.2.2.1 = V * Vb ∧ IsRowBulge j st.1 ∧
+    st.2.2.2.elim (j = 0) (fun pr => 1 ≤ j ∧ (pr : ℕ) + 1 = j) ∧ (j = 0 → Vb = 1) ∧
+    (1 ≤ j → ∃ c₀ s₀ : ℝ, c₀ ^ 2 + s₀ ^ 2 = 1 ∧ s₀ * y₀ + c₀ * z₀ = 0 ∧
+      Vb *ᵥ Pi.single f₀ 1 = Chapter05.givensRotation f₀ f₁ c₀ s₀ *ᵥ Pi.single f₀ 1)
+
+/-- **The bulge chase of Algorithm 8.6.1**, the loop: the invariant holds after the `n - 1`
+chasing pairs. -/
+private theorem golubKahanInv_run {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsUpperBidiagonal)
+    (U V : Matrix (Fin n) (Fin n) ℝ) (y₀ z₀ : ℝ) (f₀ f₁ : Fin n) (hf₀ : (f₀ : ℕ) = 0)
+    (hf₁ : (f₁ : ℕ) = 1) :
+    GolubKahanInv B U V y₀ z₀ f₀ f₁ (n - 1)
+      (Id.run (((List.finRange n).zip (List.finRange n).tail).foldlM
+        (golubKahanRotate pure le_rfl (List.finRange n) y₀ z₀) (B, U, V, none))) := by
+  have hzlen : ((List.finRange n).zip (List.finRange n).tail).length = n - 1 := by simp
+  rw [← hzlen]
+  refine idRun_foldlM_induction _ _ _ ⟨1, 1, one_mem _, one_mem _, by simp, (Matrix.mul_one U).symm,
+    (Matrix.mul_one V).symm, fun i l hil _ => hB i l ?_, rfl, fun _ => rfl,
+    fun h => absurd h (by omega)⟩ ?_
+  · rcases hil with hil | hil
+    · exact Or.inl (Fin.lt_def.2 hil)
+    · exact Or.inr ⟨⟨(i : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp), Fin.lt_def.2 (by simp; omega)⟩
+  intro j hj ⟨X, Ua, Va, prev⟩ ⟨Ub, Vb, hUo, hVo, hX, hUa, hVa, hXc, hprev, hV1, hcol⟩
+  simp only at hX hUa hVa hXc hprev
+  rw [hzlen] at hj
+  have hpair : ((List.finRange n).zip (List.finRange n).tail)[j]'(by rw [hzlen]; exact hj) =
+      (⟨j, by omega⟩, ⟨j + 1, by omega⟩) := by
+    simp [List.getElem_zip, List.getElem_tail]
+  rw [hpair]
+  set a : Fin n := ⟨j, by omega⟩ with hadef
+  set b : Fin n := ⟨j + 1, by omega⟩ with hbdef
+  have ha : (a : ℕ) = j := rfl
+  have hb : (b : ℕ) = j + 1 := rfl
+  have hab : a ≠ b := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
+  rw [golubKahanRotate_pure hab]
+  set yz : ℝ × ℝ := prev.elim (y₀, z₀) fun pr => (X pr a, X pr b) with hyz
+  obtain ⟨hcs, hzcs, -⟩ := Chapter05.algorithm_5_1_3_spec yz.1 yz.2
+  set cs := Id.run (Chapter05.algorithm_5_1_3 pure yz.1 yz.2)
+  set G := Chapter05.givensRotation a b cs.1 cs.2 with hG
+  obtain ⟨hcs', hzcs', -⟩ := Chapter05.algorithm_5_1_3_spec ((X * G) a a) ((X * G) b a)
+  set cs' := Id.run (Chapter05.algorithm_5_1_3 pure ((X * G) a a) ((X * G) b a))
+  set G' := Chapter05.givensRotation a b cs'.1 cs'.2 with hG'
+  have hGo : G ∈ orthogonalGroup (Fin n) ℝ := Chapter05.givensRotation_mem_orthogonalGroup hab hcs
+  have hG'o : G' ∈ orthogonalGroup (Fin n) ℝ :=
+    Chapter05.givensRotation_mem_orthogonalGroup hab hcs'
+  have hXG : IsColBulge j (X * G) := isColBulge_mul hXc ha hb fun pr hj1 hpr => by
+    cases prev with
+    | none => exact absurd (hprev : j = 0) (Nat.one_le_iff_ne_zero.1 hj1)
+    | some pr' =>
+      have h2 : (pr' : ℕ) + 1 = j := hprev.2
+      have hpr' : pr' = pr := Fin.ext (Nat.add_right_cancel (h2.trans hpr.symm))
+      subst hpr'
+      exact hzcs
+  refine ⟨Ub * G', Vb * G, Submonoid.mul_mem _ hUo hG'o, Submonoid.mul_mem _ hVo hGo, ?_, ?_, ?_,
+    isRowBulge_mul hXG ha hb hzcs', ⟨Nat.succ_pos _, by simp [ha]⟩,
+    fun h => absurd h (Nat.succ_ne_zero _), fun _ => ?_⟩
+  · simp only
+    rw [hX, transpose_mul]
+    simp only [Matrix.mul_assoc]
+  · simp only
+    rw [hUa, Matrix.mul_assoc]
+  · simp only
+    rw [hVa, Matrix.mul_assoc]
+  · rcases Nat.eq_zero_or_pos j with rfl | hj1
+    · cases prev with
+      | some pr => exact absurd hprev.1 (by omega)
+      | none =>
+        have ha' : a = f₀ := Fin.ext (by rw [ha, hf₀])
+        have hb' : b = f₁ := Fin.ext (by rw [hb, hf₁])
+        refine ⟨cs.1, cs.2, hcs, hzcs, ?_⟩
+        rw [hV1 rfl, Matrix.one_mul, hG, ha', hb']
+    · obtain ⟨c₀, s₀, h₀, hz₀, he₀⟩ := hcol hj1
+      refine ⟨c₀, s₀, h₀, hz₀, ?_⟩
+      rw [← mulVec_mulVec, givensRotation_mulVec_single_of_ne hab
+        (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
+
+/-- A matrix with the zero pattern of the chase after the last pair is upper bidiagonal. -/
+private theorem isUpperBidiagonal_of_isRowBulge {B : Matrix (Fin n) (Fin n) ℝ}
+    (h : IsRowBulge (n - 1) B) : B.IsUpperBidiagonal := by
+  rintro i l (hil | ⟨k, h1, h2⟩)
+  · rw [Fin.lt_def] at hil
+    exact h i l (Or.inl hil) (by omega)
+  · rw [Fin.lt_def] at h1 h2
+    exact h i l (Or.inr (by omega)) (by omega)
+
+/-- The exact Wilkinson shift that Algorithm 8.6.1 computes from the entries of an upper
+bidiagonal `B` is the Wilkinson shift (8.3.3) of `T = BᵀB`. -/
+private theorem algorithm_8_6_1_shift {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
+    (hB : B.IsUpperBidiagonal) (f₂ : ℝ)
+    (hf₂ : f₂ = if h : N = 0 then 0 else B ⟨N - 1, by omega⟩ (Fin.last N).castSucc) :
+    Id.run (wilkinsonShiftComputed pure
+      (B (Fin.last N).castSucc (Fin.last N).castSucc * B (Fin.last N).castSucc (Fin.last N).castSucc
+        + f₂ * f₂)
+      (B (Fin.last (N + 1)) (Fin.last (N + 1)) * B (Fin.last (N + 1)) (Fin.last (N + 1)) +
+        B (Fin.last N).castSucc (Fin.last (N + 1)) * B (Fin.last N).castSucc (Fin.last (N + 1)))
+      (B (Fin.last N).castSucc (Fin.last N).castSucc * B (Fin.last N).castSucc (Fin.last (N + 1))))
+      = wilkinsonShift (Bᵀ * B) := by
+  obtain ⟨hTs, -, hdiag, hsup, -⟩ := gram_bidiagonal hB
+  set l := Fin.last (N + 1)
+  set l' := (Fin.last N).castSucc
+  have hl : (l : ℕ) = N + 1 := rfl
+  have hl' : (l' : ℕ) = N := by simp [l']
+  -- the trailing entries of `T = BᵀB`
+  have ha : (Bᵀ * B) l l = B l l * B l l + B l' l * B l' l := by
+    rw [hdiag, Finset.sum_eq_single l', ite_eq_left (by rw [hl, hl'])]
+    · ring
+    · intro j _ hj
+      exact ite_eq_right (fun h => hj (Fin.ext (by rw [hl'] ; rw [hl] at h; omega)))
+    · simp
+  have ha' : (Bᵀ * B) l' l' = B l' l' * B l' l' + f₂ * f₂ := by
+    rw [hdiag, hf₂]
+    rcases Nat.eq_zero_or_pos N with h0 | hN
+    · rw [Finset.sum_eq_zero fun j _ => ite_eq_right (by rw [hl']; omega)]
+      simp only [dite_eq_left h0, mul_zero, add_zero]
+      ring
+    · rw [dite_eq_right (by omega : ¬ N = 0), Finset.sum_eq_single ⟨N - 1, by omega⟩,
+        ite_eq_left (by simp only; rw [hl']; omega)]
+      · ring
+      · intro j _ hj
+        exact ite_eq_right fun h => hj (Fin.ext (by rw [hl'] at h; simp only; omega))
+      · simp
+  have hb : (Bᵀ * B) l l' = B l' l' * B l' l := by
+    rw [hTs.apply l' l, hsup l' l (by rw [hl, hl'])]
+  rw [wilkinsonShiftComputed_pure, (equation_8_3_3 (Bᵀ * B)).2.2]
+  simp only [← ha, ← ha', ← hb]
+  rfl
+
+/-- **Exact semantics of Algorithm 8.6.1** (the Golub–Kahan SVD step: "Given a bidiagonal matrix
+`B` having no zeros on its diagonal or superdiagonal, the following algorithm overwrites `B` with
+the bidiagonal matrix `B̄ = ŪᵀBV̄` where `Ū` and `V̄` are orthogonal and `V̄` is essentially the
+orthogonal matrix that would be obtained by applying Algorithm 8.3.2 to `T = BᵀB`"), for square
+`B` of order `n = N + 2` on the full window: the exact run `(B̄, U', V')` has orthogonal `Ū`,
+`V̄` (the products of the `n - 1` row and column rotations) with `B̄ = Ūᵀ B V̄` upper bidiagonal,
+`U' = U Ū`, `V' = V V̄`, `B̄ᵀ B̄ = V̄ᵀ T V̄`, `V̄ e₁` parallel to `(T - μ I) e₁` for the Wilkinson
+shift `μ` of `T` and `V̄ᵀ (T - μ I)` upper triangular; so when `T - μ I` is nonsingular,
+`B̄ᵀ B̄ = D (Matrix.shiftedQrStep μ T) D` for a `±1` diagonal `D` — the same step as Algorithm
+8.3.2 on `T` (`algorithm_8_3_2_spec`), up to signs. The proof is the chase of one bulge,
+alternately below the diagonal and right of the superdiagonal. -/
+theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
+    (hB : B.IsUpperBidiagonal) (hd : ∀ i, B i i ≠ 0)
+    (hf : ∀ i j : Fin (N + 2), (j : ℕ) = i + 1 → B i j ≠ 0)
+    (U V : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) :
+    let out := Id.run (algorithm_8_6_1 pure le_rfl (List.finRange (N + 2)) B U V)
+    ∃ Ub ∈ orthogonalGroup (Fin (N + 2)) ℝ, ∃ Vb ∈ orthogonalGroup (Fin (N + 2)) ℝ,
+      out.1 = Ubᵀ * B * Vb ∧ out.2.1 = U * Ub ∧ out.2.2 = V * Vb ∧ out.1.IsUpperBidiagonal ∧
+      out.1ᵀ * out.1 = Vbᵀ * (Bᵀ * B) * Vb ∧
+      Vb.col 0 ∈ Submodule.span ℝ {(Bᵀ * B - wilkinsonShift (Bᵀ * B) • 1).col 0} ∧
+      (Vbᵀ * (Bᵀ * B - wilkinsonShift (Bᵀ * B) • 1)).IsUpperTriangular ∧
+      (IsUnit (Bᵀ * B - wilkinsonShift (Bᵀ * B) • 1).det →
+        ∃ d : Fin (N + 2) → ℝ, (∀ i, d i = 1 ∨ d i = -1) ∧
+          out.1ᵀ * out.1 = diagonal d * shiftedQrStep (wilkinsonShift (Bᵀ * B)) (Bᵀ * B) *
+            diagonal d) := by
+  intro out
+  set T := Bᵀ * B with hT
+  set μ := wilkinsonShift T with hμ
+  obtain ⟨hTs, hTt, hdiag, hsup, hunred⟩ := gram_bidiagonal hB
+  have hTu : IsUnreducedTridiagonal T := hunred.2 fun i j hj => mul_ne_zero (hd i) (hf i j hj)
+  -- the window and its trailing pair
+  have hval : ∀ k (hk : k < (List.finRange (N + 2)).length),
+      ((List.finRange (N + 2))[k] : ℕ) = k := fun k hk => by simp
+  have hlen : (List.finRange (N + 2)).length = N + 2 := by simp
+  obtain ⟨f₀, f₁, rest, hw⟩ := exists_cons_cons (List.finRange (N + 2)) (by simp)
+  have hlen' : (f₀ :: f₁ :: rest).length = N + 2 := hw ▸ hlen
+  have hval' : ∀ k (hk : k < (f₀ :: f₁ :: rest).length), ((f₀ :: f₁ :: rest)[k] : ℕ) = k :=
+    fun k hk => by rw [← List.getElem_of_eq hw]; exact hval k (by omega)
+  have hf₀ : f₀ = 0 := Fin.ext (by have := hval' 0 (by simp); simpa using this)
+  have hf₁ : f₁ = 1 := Fin.ext (by have := hval' 1 (by simp); simpa using this)
+  have hl : (f₁ :: rest).getLast (List.cons_ne_nil _ _) = Fin.last (N + 1) := by
+    refine Fin.ext ?_
+    rw [← List.getLast_cons (List.cons_ne_nil f₁ rest) (a := f₀), List.getLast_eq_getElem,
+      hval' _ (by omega), hlen']
+    simp
+  have hl' : (f₀ :: f₁ :: rest).dropLast.getLast (by simp) = (Fin.last N).castSucc := by
+    refine Fin.ext ?_
+    rw [List.getLast_eq_getElem, List.getElem_dropLast, hval' _ (by simp)]
+    simp only [List.length_dropLast, hlen']
+    simp
+  -- the program is the fold of `golubKahanRotate` over the consecutive pairs
+  have key := golubKahanInv_run hB U V (B 0 0 * B 0 0 - μ) (B 0 0 * B 0 1) 0 1 rfl rfl
+  set st := Id.run (((List.finRange (N + 2)).zip (List.finRange (N + 2)).tail).foldlM
+    (golubKahanRotate pure le_rfl (List.finRange (N + 2)) (B 0 0 * B 0 0 - μ) (B 0 0 * B 0 1))
+    (B, U, V, none)) with hst
+  have hout : out = (st.1, st.2.1, st.2.2.1) := by
+    change Id.run (algorithm_8_6_1 pure le_rfl (List.finRange (N + 2)) B U V) = _
+    rw [hst, hw, List.tail_cons]
+    simp only [algorithm_8_6_1, pure_bind, Id.run_bind, Fin.castLE_refl]
+    rw [hl, hl']
+    have hrl : rest.length = N := by simp at hlen'; omega
+    split
+    · have hN : N = 0 := by simp at hlen'; omega
+      rw [algorithm_8_6_1_shift hB 0 (by rw [dite_eq_left hN])]
+      subst hf₀ hf₁
+      rfl
+    · rename_i hr
+      have hN : N ≠ 0 := fun h0 => hr (List.eq_nil_of_length_eq_zero (by omega))
+      have hf₂ : B ((f₀ :: f₁ :: rest).dropLast.dropLast.getLast?.getD (Fin.last N).castSucc)
+          (Fin.last N).castSucc = B ⟨N - 1, by omega⟩ (Fin.last N).castSucc := by
+        congr 1
+        have hne : (f₀ :: f₁ :: rest).dropLast.dropLast ≠ [] := by
+          rcases rest with _ | ⟨r, rest'⟩
+          · exact absurd rfl hr
+          · simp
+        rw [List.getLast?_eq_some_getLast hne, Option.getD_some]
+        refine Fin.ext ?_
+        rw [List.getLast_eq_getElem, List.getElem_dropLast, List.getElem_dropLast,
+          hval' _ (by simp; omega)]
+        simp
+        omega
+      rw [algorithm_8_6_1_shift hB _ (by rw [dite_eq_right hN]; exact hf₂)]
+      subst hf₀ hf₁
+      rfl
+  -- the invariant after the last pair
+  obtain ⟨Ub, Vb, hUo, hVo, h1, h2, h3, hXc, -, -, hcol⟩ := key
+  rw [hout]
+  have hUU : Ub * Ubᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hUo
+  have hVV : Vb * Vbᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hVo
+  have hVV' : Vbᵀ * Vb = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hVo
+  have hbid : st.1.IsUpperBidiagonal := isUpperBidiagonal_of_isRowBulge hXc
+  have hgram : st.1ᵀ * st.1 = Vbᵀ * T * Vb := by
+    rw [h1, hT, transpose_mul, transpose_mul, transpose_transpose]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc Ub Ubᵀ, hUU, Matrix.one_mul]
+  have htri : (Vbᵀ * T * Vb).IsTridiagonal := hgram ▸ (gram_bidiagonal hbid).2.1
+  -- the first column of `V̄`
+  obtain ⟨c₀, s₀, hcs, hz, he⟩ := hcol (by omega)
+  rw [show ((0 : Fin (N + 2)) : Fin (N + 2)) = 0 from rfl,
+    givensRotation_mulVec_single_zero] at he
+  have hT00 : T 0 0 = B 0 0 * B 0 0 := by
+    rw [hT, hdiag, Finset.sum_eq_zero fun j _ => ite_eq_right (by simp)]
+    ring
+  have hT10 : T 1 0 = B 0 0 * B 0 1 := by
+    rw [hT, ← hTs.apply 1 0, hsup 0 1 (by simp)]
+  rw [← hT00, ← hT10] at hz
+  have hsub : T 1 0 ≠ 0 := by
+    have := hTu.2.apply_succ_castSucc_ne_zero (0 : Fin (N + 1))
+    simpa using this
+  have hT0 : (T - μ • 1).col 0 = (T 0 0 - μ) • Pi.single 0 1 + T 1 0 • Pi.single 1 1 := by
+    funext t
+    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, one_apply]
+    by_cases h0 : t = 0
+    · subst h0; simp
+    · by_cases h1 : t = 1
+      · subst h1; simp
+      · have ht : T t 0 = 0 := hTu.1 t 0 (Or.inl ⟨1, by simp, by
+          rw [Fin.lt_def]; have : (t : ℕ) ≠ 0 := fun e => h0 (Fin.ext e)
+          have : (t : ℕ) ≠ 1 := fun e => h1 (Fin.ext e)
+          simp; omega⟩)
+        simp [h0, h1, ht]
+  set r := c₀ * (T 0 0 - μ) - s₀ * T 1 0 with hr
+  have hTr : (T - μ • 1).col 0 = r • Vb.col 0 := by
+    have ex : T 0 0 - μ = r * c₀ := by
+      rw [hr]; linear_combination (-(T 0 0 - μ)) * hcs + s₀ * hz
+    have ez : T 1 0 = -(r * s₀) := by
+      rw [hr]; linear_combination (-(T 1 0)) * hcs + c₀ * hz
+    rw [← mulVec_single_one Vb 0, he, hT0, ex, ez]
+    module
+  have hr0 : r ≠ 0 := by
+    intro h0
+    have := congrFun hTr 1
+    rw [h0, zero_smul, Pi.zero_apply, col_apply, Matrix.sub_apply, Matrix.smul_apply,
+      one_apply_ne (by simp), smul_zero, sub_zero] at this
+    exact hsub this
+  have hcol' : Vb.col 0 ∈ Submodule.span ℝ {(T - μ • 1).col 0} := by
+    have : Vb.col 0 = r⁻¹ • (T - μ • 1).col 0 := by
+      rw [hTr, smul_smul, inv_mul_cancel₀ hr0, one_smul]
+    rw [this]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+  have hstar : star Vb = Vbᵀ := by
+    rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
+  have haeval : Polynomial.aeval T (Polynomial.X - Polynomial.C μ) = T - μ • 1 := by
+    simp [Algebra.algebraMap_eq_smul_one]
+  have hUT : (Vbᵀ * (T - μ • 1)).IsUpperTriangular := by
+    have := IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval hTu.2
+      (Polynomial.X - Polynomial.C μ) hVo (by rw [hstar]; exact htri.isUpperHessenberg)
+      (by rw [haeval, mulVec_single_one]; exact hcol')
+    rwa [haeval, hstar] at this
+  refine ⟨Ub, hUo, Vb, hVo, h1, h2, h3, hbid, hgram, hcol', hUT, fun hdet => ?_⟩
+  have hstep : IsShiftedQrStep μ T (st.1ᵀ * st.1) := by
+    refine ⟨Vb, hVo, Vbᵀ * (T - μ • 1), hUT, ?_, ?_⟩
+    · rw [← Matrix.mul_assoc, hVV, Matrix.one_mul]
+    · rw [hgram, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
+        hVV', sub_add_cancel]
+  obtain ⟨d, hd, hdd⟩ := (isShiftedQrStep_shiftedQrStep μ T).unique_of_isUnit hstep hdet
+  refine ⟨d, fun i => ?_, ?_⟩
+  · have := hd i
+    rw [Real.norm_eq_abs] at this
+    exact (abs_eq zero_le_one).1 this
+  · rw [hdd, star_eq_conjTranspose, diagonal_conjTranspose, star_trivial]
+
+end GolubKahan
 
 end GolubVanLoan.Chapter08

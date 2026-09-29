@@ -4,6 +4,7 @@ import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 import NumlibSurface.GolubVanLoan.Chapter05.Section01
 import NumlibSurface.GolubVanLoan.Chapter07.Section04
+import NumlibSurface.GolubVanLoan.Chapter07.Section05
 import NumlibSurface.GolubVanLoan.Chapter08.Section02
 
 /-!
@@ -26,8 +27,13 @@ The numbered algorithms (8.3.1–8.3.3) call chapter 5's `house`/`givens` helper
 (conventions 10, 13): Algorithm 8.3.1 returns its reflector data, Algorithm 8.3.2 runs on a
 window of consecutive indices with an accumulator, Algorithm 8.3.3 is a `fuel`-bounded loop with a
 `done` flag. Algorithm 8.3.1 has the rounding bridge to the backbone's
-`FloatingPoint.RoundsTridiagonalizePert` and the book's backward-error bound. Theorems 8.3.1–8.3.2
-restate chapter 7's Krylov-matrix and implicit-Q theorems.
+`FloatingPoint.RoundsTridiagonalizePert` and the book's backward-error bound. The exact semantics
+are loop invariants at `Id`: for Algorithm 8.3.1, the cleaned array after step `k` is
+`(P₀ ⋯ P_k)ᵀ A (P₀ ⋯ P_k)` for the returned reflector data (the step bridge identifies no
+reflector, so this is not read off it); for Algorithm 8.3.2, the bulge chase on a window, the
+state being chapter 7's block similarity `blockConj` (`algorithm_8_3_2_window`), and the
+implicit-shift principle for the triangularity of `Zᵀ(T - μI)`. Theorems 8.3.1–8.3.2 restate
+chapter 7's Krylov-matrix and implicit-Q theorems.
 
 ## Readings
 
@@ -524,6 +530,328 @@ theorem algorithm_8_3_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent
   exact this
 
 end Frobenius
+
+/-! ### Algorithm 8.3.1: exact semantics -/
+
+/-- The band of an array is tridiagonal. -/
+theorem isTridiagonal_tridiagonalPart (A : Matrix (Fin n) (Fin n) ℝ) :
+    (tridiagonalPart A).IsTridiagonal := by
+  rintro i j (⟨l, h1, h2⟩ | ⟨l, h1, h2⟩) <;>
+  · rw [Fin.lt_def] at h1 h2
+    simp only [tridiagonalPart, of_apply]
+    exact ite_eq_right_of_eq_false _ _ (eq_false (by omega))
+
+/-- A sum over the members of a duplicate-free list is the sum along the list. -/
+private theorem sum_subtype_mem {l : List (Fin n)} (hl : l.Nodup) (g : Fin n → ℝ) :
+    ∑ j : {j // j ∈ l}, g j = (l.map g).sum := by
+  rw [← List.sum_toFinset g hl, Finset.sum_subtype l.toFinset (fun _ => List.mem_toFinset) g]
+
+/-- **The Hoare rule of a `finRange` loop in `Id`.** -/
+private theorem idRun_foldlM_finRange_induction {β : Type} {N : ℕ} {f : β → Fin N → Id β}
+    {a : β} (I : ℕ → β → Prop) (h0 : I 0 a)
+    (hstep : ∀ (k : Fin N) (c : β), I k c → I (k + 1) (Id.run (f c k))) :
+    I N (Id.run ((List.finRange N).foldlM f a)) := by
+  have hmem : ∀ (l : List (Fin N)) (a : β), Id.run (l.foldlM f a) ∈
+      (l.foldlM (fun c k => (pure (Id.run (f c k)) : SetM β)) a).run := by
+    intro l
+    induction l with
+    | nil => intro a; exact SetM.mem_run_pure.2 rfl
+    | cons x l ih => intro a; rw [List.foldlM_cons, SetM.mem_run_bind]; exact ⟨_, rfl, ih _⟩
+  exact SetM.forall_mem_run_foldlM_finRange I h0 (fun k c hc c' hc' => by
+    rw [SetM.mem_run_pure] at hc'; subst hc'; exact hstep k c hc) _ (hmem _ a)
+
+/-- The exact run of one step of Algorithm 8.3.1, unpacked. -/
+private theorem tridiagonalizeStep_pure (k : Fin n) (hk : (k : ℕ) + 1 < n)
+    (A : Matrix (Fin n) (Fin n) ℝ) :
+    let T := Chapter05.indexFrom n (k + 1)
+    let vβ := Id.run (Chapter05.houseOn pure T (fun i => A i k))
+    ∃ (p w : Fin n → ℝ) (L : Fin n × Fin n → ℝ),
+      (∀ i, p i = if i ∈ T then vβ.2 * (T.map fun j => A i j * vβ.1 j).sum else 0) ∧
+      (∀ i, w i = if i ∈ T then p i - vβ.2 * (T.map fun j => p j * vβ.1 j).sum / 2 * vβ.1 i
+        else 0) ∧
+      (∀ ij, L ij = if ij ∈ lowerPairs T then
+        A ij.1 ij.2 - vβ.1 ij.1 * w ij.2 - w ij.1 * vβ.1 ij.2 else A ij.1 ij.2) ∧
+      Id.run (tridiagonalizeStep pure k hk A) =
+        (tridiagonalizeOut k hk A L √((T.map fun j => A j k * A j k).sum), vβ) := by
+  intro T vβ
+  refine ⟨_, _, _, fun _ => rfl, fun _ => rfl, fun _ => rfl, ?_⟩
+  simp only [tridiagonalizeStep, dotAccum_pure, pure_bind, zero_add, List.foldlM_pure,
+    Chapter05.foldl_update_eq]
+  rfl
+
+/-- **The exact step of Algorithm 8.3.1, as a similarity.** With `C = Â_k` symmetric (the cleaned
+array), `P = I - β v vᵀ` the reflector of `house` on the tail of column `k` (`v` zero off
+`T = [k+1, …, n-1]`, `P x = c e_{k+1}` on `T`), `w = p - (β pᵀv/2) v` with `p = β C v` on `T`,
+the trailing block `L = C - v wᵀ - w vᵀ` (lower triangle) and `ν = c`: the cleaned output of the
+step is `P C P`. -/
+private theorem bandClean_tridiagonalizeOut {k : Fin n} (hk : (k : ℕ) + 1 < n)
+    {A : Matrix (Fin n) (Fin n) ℝ} (hC : (bandClean (k : ℕ) A).IsSymm) {v w : Fin n → ℝ} {β c : ℝ}
+    (hv : ∀ i : Fin n, ¬ (k : ℕ) + 1 ≤ i → v i = 0)
+    (hPx : ∀ i : Fin n, (k : ℕ) + 1 ≤ i →
+      ((1 - β • vecMulVec v v) *ᵥ fun j => A j k) i = if i = ⟨k + 1, hk⟩ then c else 0)
+    (hw : ∀ i : Fin n, (k : ℕ) + 1 ≤ i →
+      w i = (β • (bandClean (k : ℕ) A *ᵥ v) -
+        ((β * (v ⬝ᵥ β • (bandClean (k : ℕ) A *ᵥ v))) / 2) • v) i)
+    {L : Fin n × Fin n → ℝ}
+    (hL : ∀ i j : Fin n, (k : ℕ) + 1 ≤ i → (k : ℕ) + 1 ≤ j → j ≤ i →
+      L (i, j) = A i j - v i * w j - w i * v j) {ν : ℝ} (hν : ν = c) :
+    bandClean ((k : ℕ) + 1) (tridiagonalizeOut k hk A L ν) =
+      (1 - β • vecMulVec v v) * bandClean (k : ℕ) A * (1 - β • vecMulVec v v) := by
+  set C := bandClean (k : ℕ) A with hCdef
+  have hPCP := householder_conj_eq_sub_rankTwo hC v β
+  dsimp only at hPCP
+  rw [hPCP]
+  set wf := β • (C *ᵥ v) - ((β * (v ⬝ᵥ β • (C *ᵥ v))) / 2) • v with hwf
+  have hCA : ∀ i j : Fin n, (k : ℕ) ≤ i → (k : ℕ) ≤ j → C i j = A i j :=
+    fun i j hi hj => bandClean_apply_of_le A hi hj
+  have hC0 : ∀ i j : Fin n, (j : ℕ) < k → (j : ℕ) + 2 ≤ i → C i j = 0 ∧ C j i = 0 := by
+    intro i j hj hji
+    exact ⟨bandClean_apply_eq_zero A (Or.inl ⟨hj, hji⟩),
+      bandClean_apply_eq_zero A (Or.inr ⟨hj, hji⟩)⟩
+  have hsym : ∀ i j, C i j = C j i := fun i j => hC.apply j i
+  -- `C v` at an index `≤ k` only sees column `k`, through the tail
+  have hCv : ∀ s : Fin n, (s : ℕ) ≤ k →
+      (C *ᵥ v) s = if (s : ℕ) = k then v ⬝ᵥ (fun j => A j k) else 0 := by
+    intro s hs
+    rw [mulVec, dotProduct]
+    split_ifs with hsk
+    · rw [dotProduct]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      by_cases hj : (k : ℕ) + 1 ≤ j
+      · rw [hsym, hCA j s (by omega) (by omega), show s = k from Fin.ext hsk, mul_comm]
+      · rw [hv j hj, mul_zero, zero_mul]
+    · refine Finset.sum_eq_zero fun j _ => ?_
+      by_cases hj : (k : ℕ) + 1 ≤ j
+      · rw [(hC0 j s (by omega) (by omega)).2, zero_mul]
+      · rw [hv j hj, mul_zero]
+  have hwfs : ∀ s : Fin n, (s : ℕ) ≤ k →
+      wf s = β * (if (s : ℕ) = k then v ⬝ᵥ (fun j => A j k) else 0) := by
+    intro s hs
+    simp only [hwf, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, hv s (by omega), mul_zero,
+      sub_zero, hCv s hs]
+  ext r s
+  simp only [Matrix.sub_apply, vecMulVec_apply]
+  by_cases hr : (k : ℕ) + 1 ≤ r <;> by_cases hs : (k : ℕ) + 1 ≤ s
+  · -- the trailing block
+    rw [bandClean_apply_of_le _ hr hs, tridiagonalizeOut, of_apply,
+      ite_eq_left_of_eq_true _ _ (eq_true (And.intro hr hs)), ← hw r hr, ← hw s hs,
+      hCA r s (by omega) (by omega)]
+    split_ifs with hsr
+    · rw [hL r s hr hs hsr]
+    · rw [hL s r hs hr (le_of_not_ge hsr), ← hCA r s (by omega) (by omega), hsym,
+        hCA s r (by omega) (by omega)]
+      ring
+  · -- the column block: column `k` becomes `c e_{k+1}`, the others stay `0`
+    rw [hv s hs, mul_zero, sub_zero, hwfs s (by omega)]
+    by_cases hsk : (s : ℕ) = k
+    · have hs' : s = k := Fin.ext hsk
+      subst hs'
+      have h1 := hPx r hr
+      rw [one_sub_smul_vecMulVec_mulVec_apply] at h1
+      rw [ite_eq_left_of_eq_true _ _ (eq_true (rfl : (s : ℕ) = s)), hCA r s (by omega) le_rfl,
+        ← mul_assoc, mul_comm (v r) β, h1]
+      by_cases hrk : r = ⟨s + 1, hk⟩
+      · rw [ite_eq_left_of_eq_true _ _ (eq_true hrk), hrk, tridiagonalizeOut_succ_self, hν]
+      · have hr2 : (s : ℕ) + 2 ≤ r := by
+          have : (r : ℕ) ≠ s + 1 := fun h => hrk (Fin.ext h)
+          omega
+        rw [ite_eq_right_of_eq_false _ _ (eq_false hrk)]
+        exact bandClean_apply_eq_zero (k := (s : ℕ) + 1) (i := r) (j := s) _
+          (Or.inl ⟨Nat.lt_succ_self _, hr2⟩)
+    · rw [ite_eq_right_of_eq_false _ _ (eq_false hsk), mul_zero, mul_zero, sub_zero,
+        (hC0 r s (by omega) (by omega)).1]
+      exact bandClean_apply_eq_zero (k := (k : ℕ) + 1) (i := r) (j := s) _
+        (Or.inl ⟨by omega, by omega⟩)
+  · -- the row block, by symmetry
+    rw [hv r hr, zero_mul, sub_zero, hwfs r (by omega)]
+    by_cases hrk : (r : ℕ) = k
+    · have hr' : r = k := Fin.ext hrk
+      subst hr'
+      have h1 := hPx s hs
+      rw [one_sub_smul_vecMulVec_mulVec_apply] at h1
+      rw [ite_eq_left_of_eq_true _ _ (eq_true (rfl : (r : ℕ) = r)), hsym,
+        hCA s r (by omega) le_rfl, mul_comm (β * _) (v s), ← mul_assoc, mul_comm (v s) β, h1]
+      by_cases hsk : s = ⟨r + 1, hk⟩
+      · rw [ite_eq_left_of_eq_true _ _ (eq_true hsk), hsk, tridiagonalizeOut_self_succ, hν]
+      · have hs2 : (r : ℕ) + 2 ≤ s := by
+          have : (s : ℕ) ≠ r + 1 := fun h => hsk (Fin.ext h)
+          omega
+        rw [ite_eq_right_of_eq_false _ _ (eq_false hsk)]
+        exact bandClean_apply_eq_zero (k := (r : ℕ) + 1) (i := r) (j := s) _
+          (Or.inr ⟨Nat.lt_succ_self _, hs2⟩)
+    · rw [ite_eq_right_of_eq_false _ _ (eq_false hrk), mul_zero, zero_mul, sub_zero,
+        (hC0 s r (by omega) (by omega)).2]
+      exact bandClean_apply_eq_zero (k := (k : ℕ) + 1) (i := r) (j := s) _
+        (Or.inr ⟨by omega, by omega⟩)
+  · -- the leading block is untouched
+    rw [hv r hr, hv s hs, zero_mul, mul_zero, sub_zero, sub_zero]
+    have hnν : ¬ ((r = ⟨k + 1, hk⟩ ∧ s = k) ∨ (r = k ∧ s = ⟨k + 1, hk⟩)) := by
+      rintro (⟨rfl, -⟩ | ⟨-, rfl⟩) <;> simp at hr hs
+    simp only [hCdef, bandClean, tridiagonalizeOut, of_apply]
+    rw [ite_eq_right_of_eq_false _ _
+      (eq_false (show ¬ ((k : ℕ) + 1 ≤ r ∧ (k : ℕ) + 1 ≤ s) by omega)),
+      ite_eq_right_of_eq_false _ _ (eq_false hnν)]
+    split_ifs <;> first | rfl | (exfalso; omega)
+
+/-- **One exact step of Algorithm 8.3.1**: for a symmetric cleaned array `Â_k`, the step returns
+reflector data `(v, β)` with `v` zero off `[k+1, …, n-1]` and `β = 0 ∨ β vᵀv = 2`, and the cleaned
+output array is `P Â_k P`, `P = I - β v vᵀ`. -/
+private theorem tridiagonalizeStep_conj (k : Fin n) (hk : (k : ℕ) + 1 < n)
+    {A : Matrix (Fin n) (Fin n) ℝ} (hC : (bandClean (k : ℕ) A).IsSymm) :
+    bandClean ((k : ℕ) + 1) (Id.run (tridiagonalizeStep pure k hk A)).1 =
+        (1 - (Id.run (tridiagonalizeStep pure k hk A)).2.2 •
+          vecMulVec (Id.run (tridiagonalizeStep pure k hk A)).2.1
+            (Id.run (tridiagonalizeStep pure k hk A)).2.1) * bandClean (k : ℕ) A *
+        (1 - (Id.run (tridiagonalizeStep pure k hk A)).2.2 •
+          vecMulVec (Id.run (tridiagonalizeStep pure k hk A)).2.1
+            (Id.run (tridiagonalizeStep pure k hk A)).2.1) ∧
+      (∀ i : Fin n, ¬ (k : ℕ) + 1 ≤ i → (Id.run (tridiagonalizeStep pure k hk A)).2.1 i = 0) ∧
+      ((Id.run (tridiagonalizeStep pure k hk A)).2.2 = 0 ∨
+        (Id.run (tridiagonalizeStep pure k hk A)).2.2 *
+          ((Id.run (tridiagonalizeStep pure k hk A)).2.1 ⬝ᵥ
+            (Id.run (tridiagonalizeStep pure k hk A)).2.1) = 2) := by
+  obtain ⟨p, w, L, hp, hw, hL, heq⟩ := tridiagonalizeStep_pure k hk A
+  rw [heq]
+  dsimp only
+  set T := Chapter05.indexFrom n (k + 1) with hTdef
+  have hT : T.Nodup := Chapter05.nodup_indexFrom n (k + 1)
+  have hmemT : ∀ i : Fin n, i ∈ T ↔ (k : ℕ) + 1 ≤ i := fun i => Chapter05.mem_indexFrom
+  have hne : T ≠ [] := List.ne_nil_of_mem ((hmemT ⟨k + 1, hk⟩).2 le_rfl)
+  obtain ⟨-, hvT, hβ, -, hPx⟩ := Chapter05.houseOn_spec hT hne (fun i => A i k)
+  rw [head_indexFrom hk hne] at hPx
+  set vβ := Id.run (Chapter05.houseOn pure T (fun i => A i k)) with hvβ
+  set v := vβ.1
+  set β := vβ.2
+  set C := bandClean (k : ℕ) A with hCdef
+  have hv : ∀ i : Fin n, ¬ (k : ℕ) + 1 ≤ i → v i = 0 := fun i hi => hvT i (by rwa [hmemT])
+  have hCA : ∀ i j : Fin n, (k : ℕ) + 1 ≤ i → (k : ℕ) + 1 ≤ j → C i j = A i j :=
+    fun i j hi hj => bandClean_apply_of_le A (by omega) (by omega)
+  -- `p = β C v` on the tail
+  have hCv : ∀ i : Fin n, (k : ℕ) + 1 ≤ i → (C *ᵥ v) i = (T.map fun j => A i j * v j).sum := by
+    intro i hi
+    rw [mulVec, dotProduct, Chapter05.sum_eq_sum_map_of_nodup hT
+      (fun j hj => by rw [hv j (by rwa [← hmemT]), mul_zero])]
+    exact congrArg List.sum (List.map_congr_left fun j hj => by
+      rw [hCA i j hi ((hmemT j).1 hj)])
+  have hpC : ∀ i : Fin n, (k : ℕ) + 1 ≤ i → p i = β * (C *ᵥ v) i := fun i hi => by
+    rw [hp, ite_eq_left_of_eq_true _ _ (eq_true ((hmemT i).2 hi)), hCv i hi]
+  refine ⟨bandClean_tridiagonalizeOut hk hC hv (w := w) (L := L) (c := ‖(WithLp.toLp 2
+      (fun j : {j // j ∈ T} => A j k) : EuclideanSpace ℝ {j // j ∈ T})‖) (fun i hi => ?_)
+    (fun i hi => ?_) (fun i j hi hj hji => ?_) ?_, hv, hβ⟩
+  · rw [hPx]
+    simp only [(hmemT i).2 hi, ite_true]
+  · have hvp : v ⬝ᵥ β • (C *ᵥ v) = (T.map fun j => p j * v j).sum := by
+      rw [dotProduct, Chapter05.sum_eq_sum_map_of_nodup hT
+        (fun j hj => by rw [hv j (by rwa [← hmemT]), zero_mul])]
+      refine congrArg List.sum (List.map_congr_left fun j hj => ?_)
+      rw [hpC j ((hmemT j).1 hj), Pi.smul_apply, smul_eq_mul]
+      ring
+    rw [hw, ite_eq_left_of_eq_true _ _ (eq_true ((hmemT i).2 hi)), hpC i hi]
+    simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
+    rw [← hCdef, hvp]
+  · rw [hL, ite_eq_left_of_eq_true _ _
+      (eq_true (mem_lowerPairs.2 ⟨(hmemT i).2 hi, (hmemT j).2 hj, hji⟩))]
+  · rw [EuclideanSpace.norm_eq]
+    congr 1
+    rw [sum_subtype_mem hT (fun j => ‖A j k‖ ^ 2)]
+    exact congrArg List.sum (List.map_congr_left fun j _ => by
+      rw [Real.norm_eq_abs, sq_abs, sq])
+
+/-- A reflector `I - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
+private theorem one_sub_smul_vecMulVec_mulVec_single {v : Fin n → ℝ} {p : Fin n} (hv : v p = 0)
+    (β : ℝ) : (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
+  funext i
+  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
+
+/-- A product of reflectors whose vectors vanish at `p` fixes `e_p`. -/
+private theorem householderProduct_mulVec_single {data : List ((Fin n → ℝ) × ℝ)} {p : Fin n}
+    (h : ∀ q ∈ data, q.1 p = 0) :
+    Chapter05.householderProduct data *ᵥ Pi.single p 1 = Pi.single p 1 := by
+  induction data with
+  | nil => rw [Chapter05.householderProduct_nil, one_mulVec]
+  | cons q data ih =>
+    rw [Chapter05.householderProduct_cons, ← mulVec_mulVec,
+      ih fun r hr => h r (List.mem_cons_of_mem _ hr),
+      one_sub_smul_vecMulVec_mulVec_single (h q List.mem_cons_self)]
+
+
+/-- The loop invariant of Algorithm 8.3.1 after `j` steps: the cleaned array is `Qᵀ A Q` for the
+product `Q` of the reflector data so far, there are `j` reflectors, the `k`-th vanishing on the
+coordinates `≤ k`, and each is the identity or a Householder matrix. -/
+private def TridiagonalizeInv (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
+    (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) : Prop :=
+  bandClean j st.1 = (Chapter05.householderProduct st.2)ᵀ * A *
+      Chapter05.householderProduct st.2 ∧ st.2.length = j ∧
+    (∀ (k : ℕ) (hk : k < st.2.length) (i : Fin n), (i : ℕ) ≤ k → st.2[k].1 i = 0) ∧
+    ∀ q ∈ st.2, q.2 = 0 ∨ q.2 * (q.1 ⬝ᵥ q.1) = 2
+
+/-- The loop invariant of Algorithm 8.3.1 holds after every step. -/
+private theorem tridiagonalizeInv_run {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
+    TridiagonalizeInv A (n - 2) (Id.run (algorithm_8_3_1 pure A)) := by
+  have hsymm : ∀ Q : Matrix (Fin n) (Fin n) ℝ, (Qᵀ * A * Q).IsSymm := fun Q => by
+    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
+      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+  refine idRun_foldlM_finRange_induction (TridiagonalizeInv A)
+    ⟨by simp [bandClean_zero], rfl, fun k hk => absurd hk (Nat.not_lt_zero _),
+      fun q hq => absurd hq List.not_mem_nil⟩ ?_
+  rintro k st ⟨hband, hlen, hsupp, hβ⟩
+  set k' : Fin n := k.castLE (Nat.sub_le n 2)
+  have hk' : (k' : ℕ) + 1 < n := by simp only [k', Fin.val_castLE]; omega
+  have hband' : bandClean (k' : ℕ) st.1 = (Chapter05.householderProduct st.2)ᵀ * A *
+      Chapter05.householderProduct st.2 := hband
+  have hC : (bandClean (k' : ℕ) st.1).IsSymm := by
+    rw [hband']
+    exact hsymm _
+  obtain ⟨hconj, hv, hβ'⟩ := tridiagonalizeStep_conj k' hk' hC
+  set r := Id.run (tridiagonalizeStep pure k' hk' st.1) with hr
+  change TridiagonalizeInv A (k + 1) (r.1, st.2 ++ [r.2])
+  refine ⟨hconj.trans ?_, ?_, fun l hl i hi => ?_, fun q hq => ?_⟩
+  · rw [hband', Chapter05.householderProduct_concat, transpose_mul,
+      transpose_one_sub_smul_vecMulVec]
+    simp only [Matrix.mul_assoc]
+  · rw [List.length_append, hlen, List.length_singleton]
+  · rw [List.length_append, List.length_singleton] at hl
+    rcases Nat.lt_or_ge l st.2.length with hl' | hl'
+    · rw [List.getElem_append_left hl']
+      exact hsupp l hl' i hi
+    · rw [List.getElem_append_right hl']
+      simp only [List.getElem_singleton]
+      exact hv i (by simp only [k', Fin.val_castLE]; omega)
+  · rcases List.mem_append.1 hq with hq | hq
+    · exact hβ q hq
+    · rw [List.mem_singleton.1 hq]
+      exact hβ'
+
+/-- **Exact semantics of Algorithm 8.3.1.** For symmetric `A` and
+`(A', data) := Id.run (algorithm_8_3_1 pure A)`, with
+`Q = GolubVanLoan.Chapter05.householderProduct data = P₀ ⋯ P_{n-3}` (`P_k = I - β_k v_k v_kᵀ` from
+the **returned** `β_k`): `Q` is orthogonal with `Q e₁ = e₁`, `T := Qᵀ A Q` is symmetric
+tridiagonal, and `A'` agrees with `T` on the band (`tridiagonalPart A' = T`; the entries below
+the subdiagonal are the untouched `A_k(k+2:n, k)`). There are `n - 2` reflectors and `v_k`
+vanishes on the coordinates `≤ k`: `P_k` acts on the coordinates `≥ k + 1`. Loop invariant: after
+step `k` the cleaned array is `(P₀ ⋯ P_k)ᵀ A (P₀ ⋯ P_k)`, each step being `P C P` by
+`householder_conj_eq_sub_rankTwo` with chapter 5's `houseOn_spec` (`P x = ‖x‖₂ e₁`, which makes
+the fresh norm the exact subdiagonal entry). -/
+theorem algorithm_8_3_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
+    let out := Id.run (algorithm_8_3_1 pure A)
+    let Q := Chapter05.householderProduct out.2
+    Q ∈ orthogonalGroup (Fin n) ℝ ∧
+      (∀ h : 0 < n, Q *ᵥ Pi.single ⟨0, h⟩ 1 = Pi.single ⟨0, h⟩ 1) ∧
+      (Qᵀ * A * Q).IsSymm ∧ (Qᵀ * A * Q).IsTridiagonal ∧ tridiagonalPart out.1 = Qᵀ * A * Q ∧
+      out.2.length = n - 2 ∧
+      ∀ (k : ℕ) (hk : k < out.2.length) (i : Fin n), (i : ℕ) ≤ k → out.2[k].1 i = 0 := by
+  intro out Q
+  obtain ⟨hband, hlen, hsupp, hβ⟩ := tridiagonalizeInv_run hA
+  rw [bandClean_eq_tridiagonalPart] at hband
+  refine ⟨Chapter05.householderProduct_mem_orthogonalGroup hβ,
+    fun h => householderProduct_mulVec_single fun q hq => ?_, ?_, ?_, hband, hlen, hsupp⟩
+  · obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hq
+    exact hsupp k hk _ (Nat.zero_le _)
+  · simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
+      (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
+  · rw [← hband]
+    exact isTridiagonal_tridiagonalPart _
+
 /-- **§8.3.1, "unreduced"**: a tridiagonal `T` is unreduced when no subdiagonal entry vanishes. -/
 def IsUnreducedTridiagonal (T : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   T.IsTridiagonal ∧ T.IsUnreducedUpperHessenberg
@@ -1076,6 +1404,1228 @@ noncomputable def algorithm_8_3_3 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (
     (tridiagonalPart Adata.1, Q, false)
 
 end Programs
+
+/-! ### Algorithm 8.3.2: exact semantics -/
+
+section ImplicitQR
+
+open Chapter07 (francisWindow blockConj IsBlockSupported)
+
+/-- **The Hoare rule of a list loop in `Id`**, with the invariant indexed by the step count. -/
+theorem idRun_foldlM_induction {α β : Type} {f : β → α → Id β} :
+    ∀ (l : List α) (I : ℕ → β → Prop) (a : β), I 0 a →
+      (∀ (k : ℕ) (hk : k < l.length) (c : β), I k c → I (k + 1) (Id.run (f c l[k]))) →
+      I l.length (Id.run (l.foldlM f a))
+  | [], _, _, h0, _ => h0
+  | x :: l, I, a, h0, hs =>
+    idRun_foldlM_induction l (fun k c => I (k + 1) c) (Id.run (f a x))
+      (hs 0 (Nat.succ_pos _) a h0) fun k hk c hc => hs (k + 1) (Nat.succ_lt_succ hk) c hc
+
+/-- The length of the window `[p, m)`. -/
+private theorem length_francisWindow {p m : ℕ} (hm : m ≤ n) :
+    (francisWindow n p m).length = m - p := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [francisWindow]
+    omega
+  · have : NeZero n := ⟨hn.ne'⟩
+    rw [Chapter07.francisWindow_eq_map hm, List.length_map, List.length_range]
+
+/-- The `k`-th index of the window `[p, m)` is `p + k`. -/
+private theorem val_getElem_francisWindow {p m : ℕ} (hm : m ≤ n) (k : ℕ)
+    (hk : k < (francisWindow n p m).length) : ((francisWindow n p m)[k] : ℕ) = p + k := by
+  have hk' := hk
+  rw [length_francisWindow hm] at hk'
+  have : NeZero n := ⟨by omega⟩
+  rw [List.getElem_of_eq (Chapter07.francisWindow_eq_map hm) hk]
+  simp only [List.getElem_map, List.getElem_range, Fin.val_ofNat]
+  exact Nat.mod_eq_of_lt (by omega)
+
+/-- A Givens rotation in two window indices acts on the window. -/
+private theorem isBlockSupported_givensRotation {p m : ℕ} {a b : Fin n}
+    (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < m) (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < m) (hab : a ≠ b) (c s : ℝ) :
+    IsBlockSupported p m (Chapter05.givensRotation a b c s) := fun i j hij => by
+  rw [Chapter05.givensRotation, planeRotation_apply hab]
+  have hja : ¬ (j = a ∧ p ≤ (i : ℕ) ∧ (i : ℕ) < m) := fun h => hij ⟨h.2, h.1 ▸ ha⟩
+  have hjb : ¬ (j = b ∧ p ≤ (i : ℕ) ∧ (i : ℕ) < m) := fun h => hij ⟨h.2, h.1 ▸ hb⟩
+  by_cases hj : j = a
+  · subst hj
+    have hi : ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) := fun h => hja ⟨rfl, h⟩
+    have hia : i ≠ j := fun e => hi (e ▸ ha)
+    have hib : i ≠ b := fun e => hi (e ▸ hb)
+    simp [hia, hib, one_apply_ne hia]
+  · by_cases hj' : j = b
+    · subst hj'
+      have hi : ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) := fun h => hjb ⟨rfl, h⟩
+      have hia : i ≠ a := fun e => hi (e ▸ ha)
+      have hib : i ≠ j := fun e => hi (e ▸ hb)
+      simp [hj, hia, hib, one_apply_ne hib]
+    · simp only [hj, hj', ↓reduceIte, one_apply]
+
+/-- A block similarity of a symmetric matrix is symmetric. -/
+private theorem isSymm_blockConj {p m : ℕ} {X : Matrix (Fin n) (Fin n) ℝ} (hX : X.IsSymm)
+    (Z : Matrix (Fin n) (Fin n) ℝ) : (blockConj p m Z X).IsSymm := by
+  have hZ : (Zᵀ * X * Z).IsSymm := by
+    simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
+      (isHermitian_conjTranspose_mul_mul Z (isHermitian_iff_isSymm.2 hX))
+  ext i j
+  simp only [transpose_apply, Chapter07.blockConj, of_apply]
+  by_cases h : (p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)
+  · rw [ite_eq_left h, ite_eq_left ⟨h.2, h.1⟩]
+    exact hZ.apply i j
+  · rw [ite_eq_right h,
+      ite_eq_right (fun h' => h ⟨h'.2, h'.1⟩)]
+    exact hX.apply i j
+
+/-- **The two sweeps of a rotation on a window are a block similarity**: the row update over the
+window's columns followed by the column update over the window's rows is `blockConj p m P X` for
+any `P` acting on the window (the rotation). -/
+private theorem blockConj_eq_of_isBlockSupported {p m : ℕ} {P X : Matrix (Fin n) (Fin n) ℝ}
+    (hP : IsBlockSupported p m P) :
+    (of fun (r q : Fin n) => if p ≤ (r : ℕ) ∧ (r : ℕ) < m then
+        ((of fun (r q : Fin n) => if p ≤ (q : ℕ) ∧ (q : ℕ) < m then (Pᵀ * X) r q else X r q) *
+          P) r q
+      else (of fun (r q : Fin n) => if p ≤ (q : ℕ) ∧ (q : ℕ) < m then (Pᵀ * X) r q
+        else X r q) r q) =
+      blockConj p m P X := by
+  -- `P` is the identity off the window
+  have hPo : ∀ t q : Fin n, ¬ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) → P t q = if t = q then 1 else 0 :=
+    fun t q hq => by rw [hP t q (fun h => hq h.2), one_apply]
+  have hPo' : ∀ t q : Fin n, ¬ (p ≤ (t : ℕ) ∧ (t : ℕ) < m) → P t q = if t = q then 1 else 0 :=
+    fun t q ht => by rw [hP t q (fun h => ht h.1), one_apply]
+  -- `Pᵀ X` agrees with `X` on the rows off the window
+  have hPX : ∀ r q : Fin n, ¬ (p ≤ (r : ℕ) ∧ (r : ℕ) < m) → (Pᵀ * X) r q = X r q := by
+    intro r q hr
+    rw [mul_apply, Finset.sum_eq_single r]
+    · rw [transpose_apply, hPo' r r hr, ite_eq_left rfl, one_mul]
+    · intro t _ htr
+      rw [transpose_apply, hPo t r hr, ite_eq_right htr, zero_mul]
+    · simp
+  ext r q
+  simp only [Chapter07.blockConj, of_apply]
+  by_cases hr : p ≤ (r : ℕ) ∧ (r : ℕ) < m
+  · rw [ite_eq_left hr]
+    by_cases hq : p ≤ (q : ℕ) ∧ (q : ℕ) < m
+    · rw [ite_eq_left ⟨hr, hq⟩, mul_apply, mul_apply]
+      refine Finset.sum_congr rfl fun t _ => ?_
+      rw [of_apply]
+      by_cases ht : p ≤ (t : ℕ) ∧ (t : ℕ) < m
+      · rw [ite_eq_left ht]
+      · rw [ite_eq_right ht, hPo' t q ht, ite_eq_right (fun e : t = q => ht (e ▸ hq)), mul_zero,
+          mul_zero]
+    · rw [ite_eq_right
+        (fun h : (p ≤ (r : ℕ) ∧ (r : ℕ) < m) ∧ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) => hq h.2),
+        mul_apply, Finset.sum_eq_single q]
+      · rw [of_apply, ite_eq_right hq, hPo q q hq, ite_eq_left rfl, mul_one]
+      · intro t _ htq
+        rw [hPo t q hq, ite_eq_right htq, mul_zero]
+      · simp
+  · rw [ite_eq_right hr,
+      ite_eq_right (fun h : (p ≤ (r : ℕ) ∧ (r : ℕ) < m) ∧ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) => hr h.1)]
+    split_ifs
+    · exact hPX r q hr
+    · rfl
+
+/-- **One rotation of Algorithm 8.3.2 on a window, exactly**: with `(c, s) = givens(x, z)` for
+`(x, z)` the first pair `(x₀, z₀)` or the entries `(t_{a,prev}, t_{b,prev})`, the new state is the
+block similarity by `G(a, b, θ)` and the accumulator times `G(a, b, θ)`. -/
+private theorem implicitQRRotate_pure {p m : ℕ} {a b : Fin n}
+    (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < m) (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < m) (hab : a ≠ b)
+    (x₀ z₀ : ℝ) (X Q : Matrix (Fin n) (Fin n) ℝ) (prev : Option (Fin n)) :
+    let xz : ℝ × ℝ := prev.elim (x₀, z₀) fun pr => (X a pr, X b pr)
+    let cs := Id.run (Chapter05.algorithm_5_1_3 pure xz.1 xz.2)
+    Id.run (implicitQRRotate pure (francisWindow n p m) x₀ z₀ (X, Q, prev) (a, b)) =
+      (blockConj p m (Chapter05.givensRotation a b cs.1 cs.2) X,
+        Q * Chapter05.givensRotation a b cs.1 cs.2, some a) := by
+  intro xz cs
+  have hw := Chapter07.nodup_francisWindow n p m
+  change (Id.run (Chapter05.givensApplyRight pure a b cs.1 cs.2 (francisWindow n p m)
+      (Id.run (Chapter05.givensApplyLeft pure a b cs.1 cs.2 (francisWindow n p m) X))),
+    Id.run (Chapter05.givensApplyRight pure a b cs.1 cs.2 (List.finRange n) Q), some a) = _
+  rw [Chapter05.givensApplyLeft_spec hab _ _ hw, Chapter05.givensApplyRight_spec hab _ _ hw,
+    Chapter05.givensApplyRight_spec_of_forall_mem hab _ _ (List.nodup_finRange n)
+      List.mem_finRange]
+  simp only [Chapter07.mem_francisWindow]
+  rw [blockConj_eq_of_isBlockSupported (isBlockSupported_givensRotation ha hb hab _ _)]
+
+/-- **The zero pattern of the bulge chase** on the window `[p, m)` after `j` rotations: the block
+is symmetric-tridiagonal below the diagonal except for the bulge at `(p + j + 1, p + j - 1)`
+(none for `j = 0`). -/
+private def IsChased (p m j : ℕ) (X : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  ∀ i l : Fin n, p ≤ (l : ℕ) → (i : ℕ) < m → (l : ℕ) + 2 ≤ i →
+    ¬ (1 ≤ j ∧ (i : ℕ) = p + j + 1 ∧ (l : ℕ) + 1 = p + j) → X i l = 0
+
+/-- **One bulge-chasing rotation** (§8.3.5): if the block of a symmetric `X` has the zero pattern
+after `j` rotations and the rotation `G(a, b, θ)`, `a = p + j`, `b = a + 1`, annihilates the
+bulge (`s x_{a,a-1} + c x_{b,a-1} = 0`, vacuous for `j = 0`), the block similarity has the zero
+pattern after `j + 1` rotations: the bulge moves one step down. -/
+private theorem isChased_blockConj {p m j : ℕ} {X : Matrix (Fin n) (Fin n) ℝ}
+    (hc : IsChased p m j X) {a b : Fin n} (ha : (a : ℕ) = p + j) (hb : (b : ℕ) = p + j + 1)
+    (hbm : (b : ℕ) < m) {c s : ℝ}
+    (hzero : ∀ pr : Fin n, 1 ≤ j → (pr : ℕ) + 1 = p + j → s * X a pr + c * X b pr = 0) :
+    IsChased p m (j + 1) (blockConj p m (Chapter05.givensRotation a b c s) X) := by
+  intro i l hl him hil hnb
+  have hab : a ≠ b := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
+  simp only [Chapter07.blockConj, of_apply]
+  rw [ite_eq_left ⟨⟨by omega, him⟩, ⟨hl, by omega⟩⟩]
+  change ((planeRotation a b c (-s))ᵀ * X * planeRotation a b c (-s)) i l = 0
+  by_cases hia : i = a
+  · subst hia
+    have hla : l ≠ i := fun e => by rw [e] at hil; omega
+    have hlb : l ≠ b := fun e => by rw [e, hb, ha] at hil; omega
+    rw [conj_planeRotation_apply_row_j hab X hla hlb, hc i l hl (by omega) hil (by omega),
+      hc b l hl hbm (by omega) (by omega)]
+    ring
+  by_cases hib : i = b
+  · subst hib
+    have hla : l ≠ a := fun e => by rw [e, ha] at hil; omega
+    have hlb : l ≠ i := fun e => by rw [e] at hil; omega
+    rw [conj_planeRotation_apply_row_k hab X hla hlb]
+    by_cases hl1 : (l : ℕ) + 1 = p + j
+    · linear_combination hzero l (by omega) hl1
+    · rw [hc a l hl (by omega) (by omega) (by omega), hc i l hl him (by omega) (by omega)]
+      ring
+  by_cases hla : l = a
+  · subst hla
+    rw [conj_planeRotation_apply_col_j hab X hia hib, hc i l hl him (by omega) (by omega),
+      hc i b (by omega) him (by omega) (by omega)]
+    ring
+  by_cases hlb : l = b
+  · subst hlb
+    rw [conj_planeRotation_apply_col_k hab X hia hib, hc i a (by omega) him (by omega) (by omega),
+      hc i l hl him (by omega) (by omega)]
+    ring
+  rw [conj_planeRotation_apply_of_ne hab X hia hib hla hlb]
+  exact hc i l hl him hil fun h => hib (Fin.ext (by omega))
+
+/-- A rotation in two indices other than `q` fixes `e_q`. -/
+theorem givensRotation_mulVec_single_of_ne {a b q : Fin n} (hab : a ≠ b) (hqa : q ≠ a)
+    (hqb : q ≠ b) (c s : ℝ) :
+    Chapter05.givensRotation a b c s *ᵥ Pi.single q 1 = Pi.single q 1 := by
+  funext t
+  rw [mulVec_single_one, col_apply, Chapter05.givensRotation, planeRotation_apply hab]
+  simp only [hqa, hqb, ↓reduceIte, Pi.single_apply]
+
+/-- The loop invariant of Algorithm 8.3.2 on the window `[p, m)` after `j` rotations: the state
+`(X, Q', prev)` is `(blockConj p m Z T, Q Z, a_{j-1})` for an orthogonal `Z` acting on the
+window, `X` is symmetric with the zero pattern of the chase, and for `j ≥ 1` the first column
+`Z e_p` is that of the first rotation `G(p, p+1, θ₀)`, `(c₀, s₀) = givens(x₀, z₀)`. -/
+private def ChaseInv (p m : ℕ) (f₀ f₁ : Fin n) (T Q : Matrix (Fin n) (Fin n) ℝ) (x₀ z₀ : ℝ)
+    (j : ℕ) (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Option (Fin n)) : Prop :=
+  ∃ Z : Matrix (Fin n) (Fin n) ℝ, Z ∈ orthogonalGroup (Fin n) ℝ ∧ IsBlockSupported p m Z ∧
+    st.1 = blockConj p m Z T ∧ st.2.1 = Q * Z ∧ st.1.IsSymm ∧ IsChased p m j st.1 ∧
+    st.2.2.elim (j = 0) (fun pr => 1 ≤ j ∧ (pr : ℕ) + 1 = p + j) ∧ (j = 0 → Z = 1) ∧
+    (1 ≤ j → ∃ c₀ s₀ : ℝ, c₀ ^ 2 + s₀ ^ 2 = 1 ∧ s₀ * x₀ + c₀ * z₀ = 0 ∧
+      Z *ᵥ Pi.single f₀ 1 = Chapter05.givensRotation f₀ f₁ c₀ s₀ *ᵥ Pi.single f₀ 1)
+
+/-- A tridiagonal matrix has the zero pattern of the chase before the first rotation. -/
+private theorem isChased_zero_of_isTridiagonal {p m : ℕ} {T : Matrix (Fin n) (Fin n) ℝ}
+    (hT : T.IsTridiagonal) : IsChased p m 0 T := fun i l _ _ hil _ =>
+  hT i l (Or.inl ⟨⟨(l : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp), Fin.lt_def.2 (by simp; omega)⟩)
+
+/-- **The bulge chase of Algorithm 8.3.2 on a window**, the loop: the invariant `ChaseInv` holds
+after the `m - p - 1` rotations. -/
+private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
+    {T : Matrix (Fin n) (Fin n) ℝ} (hTs : T.IsSymm) (hT : T.IsTridiagonal)
+    (Q : Matrix (Fin n) (Fin n) ℝ) (x₀ z₀ : ℝ) (f₀ f₁ : Fin n) (hf₀ : (f₀ : ℕ) = p)
+    (hf₁ : (f₁ : ℕ) = p + 1) :
+    ChaseInv p m f₀ f₁ T Q x₀ z₀ (m - p - 1)
+      (Id.run (((francisWindow n p m).zip (francisWindow n p m).tail).foldlM
+        (implicitQRRotate pure (francisWindow n p m) x₀ z₀) (T, Q, none))) := by
+  set w := francisWindow n p m with hwdef
+  have hlen : w.length = m - p := length_francisWindow hm
+  have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := val_getElem_francisWindow hm
+  have hzlen : (w.zip w.tail).length = m - p - 1 := by simp [hlen]
+  rw [← hzlen]
+  refine idRun_foldlM_induction _ _ _ ⟨1, one_mem _, Chapter07.isBlockSupported_one p m, ?_,
+    (Matrix.mul_one Q).symm, hTs, isChased_zero_of_isTridiagonal hT, rfl, fun _ => rfl,
+    fun h => absurd h (by omega)⟩ ?_
+  · ext i j
+    simp [Chapter07.blockConj]
+  intro j hj ⟨X, Qa, prev⟩ ⟨Z, hZo, hZb, hX, hQa, hXs, hXc, hprev, hZ1, hcol⟩
+  simp only at hX hQa hXs hXc hprev
+  rw [hzlen] at hj
+  have hja : j < w.length := by omega
+  have hjb : j + 1 < w.length := by omega
+  have hpair : (w.zip w.tail)[j]'(by rw [hzlen]; exact hj) = (w[j], w[j + 1]) := by
+    simp [List.getElem_zip, List.getElem_tail]
+  rw [hpair]
+  set a := w[j] with hadef
+  set b := w[j + 1] with hbdef
+  have ha : (a : ℕ) = p + j := hval j hja
+  have hb : (b : ℕ) = p + j + 1 := hval (j + 1) hjb
+  have hab : a ≠ b := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
+  rw [implicitQRRotate_pure ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ hab]
+  set xz : ℝ × ℝ := prev.elim (x₀, z₀) fun pr => (X a pr, X b pr) with hxz
+  obtain ⟨hcs, hzcs, -⟩ := Chapter05.algorithm_5_1_3_spec xz.1 xz.2
+  set cs := Id.run (Chapter05.algorithm_5_1_3 pure xz.1 xz.2)
+  set G := Chapter05.givensRotation a b cs.1 cs.2 with hG
+  have hGb : IsBlockSupported p m G :=
+    isBlockSupported_givensRotation ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ hab _ _
+  refine ⟨Z * G, Submonoid.mul_mem _ hZo (Chapter05.givensRotation_mem_orthogonalGroup hab hcs),
+    hZb.mul hGb, ?_, ?_, isSymm_blockConj hXs G, ?_, ⟨Nat.succ_pos _, by omega⟩,
+    fun h => absurd h (Nat.succ_ne_zero _), fun _ => ?_⟩
+  · rw [hX, Chapter07.blockConj_blockConj hGb]
+  · rw [hQa, Matrix.mul_assoc]
+  · refine isChased_blockConj hXc ha hb (by omega) fun pr hj1 hpr => ?_
+    cases prev with
+    | none => exact absurd (hprev : j = 0) (Nat.one_le_iff_ne_zero.1 hj1)
+    | some pr' =>
+      have h2 : (pr' : ℕ) + 1 = p + j := hprev.2
+      have hpr' : pr' = pr := Fin.ext (Nat.add_right_cancel (h2.trans hpr.symm))
+      subst hpr'
+      exact hzcs
+  · rcases Nat.eq_zero_or_pos j with rfl | hj1
+    · -- the first rotation
+      cases prev with
+      | some pr => exact absurd hprev.1 (by omega)
+      | none =>
+        have ha' : a = f₀ := Fin.ext (by rw [ha, hf₀]; rfl)
+        have hb' : b = f₁ := Fin.ext (by rw [hb, hf₁])
+        refine ⟨cs.1, cs.2, hcs, hzcs, ?_⟩
+        rw [hZ1 rfl, Matrix.one_mul, hG, ha', hb']
+    · obtain ⟨c₀, s₀, h₀, hz₀, he₀⟩ := hcol hj1
+      refine ⟨c₀, s₀, h₀, hz₀, ?_⟩
+      rw [← mulVec_mulVec, givensRotation_mulVec_single_of_ne hab
+        (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
+
+/-- A list of at least two elements has two heads. -/
+theorem exists_cons_cons {α : Type} :
+    ∀ l : List α, 2 ≤ l.length → ∃ a b t, l = a :: b :: t
+  | a :: b :: t, _ => ⟨a, b, t, rfl⟩
+  | [], h => absurd h (by simp)
+  | [_], h => absurd h (by simp)
+
+/-- The exact Wilkinson shift of Algorithm 8.3.2 is the book's closed form
+`a - b² / (d + sign(d) √(d² + b²))`. -/
+theorem wilkinsonShiftComputed_pure (a' a b : ℝ) :
+    Id.run (wilkinsonShiftComputed pure a' a b) =
+      a - b ^ 2 / ((a' - a) / 2 + (if 0 ≤ (a' - a) / 2 then 1 else -1) *
+        √(((a' - a) / 2) ^ 2 + b ^ 2)) := by
+  change a - b * b / ((a' - a) / 2 + (if 0 ≤ (a' - a) / 2 then √((a' - a) / 2 * ((a' - a) / 2) +
+    b * b) else -√((a' - a) / 2 * ((a' - a) / 2) + b * b))) = _
+  split_ifs <;> ring_nf
+
+/-- A block similarity of a tridiagonal matrix whose block is tridiagonal below the diagonal and
+which is symmetric is tridiagonal. -/
+private theorem isTridiagonal_of_isChased {p m : ℕ} {T Z X : Matrix (Fin n) (Fin n) ℝ}
+    (hT : T.IsTridiagonal) (hX : X = blockConj p m Z T) (hXs : X.IsSymm)
+    (hXc : IsChased p m (m - p - 1) X) : X.IsTridiagonal := by
+  have hlow : ∀ i j : Fin n, (j : ℕ) + 2 ≤ i → X i j = 0 := by
+    intro i j hji
+    by_cases hin : (p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)
+    · exact hXc i j hin.2.1 hin.1.2 hji (by omega)
+    · rw [hX]
+      simp only [Chapter07.blockConj, of_apply]
+      rw [ite_eq_right hin]
+      exact hT i j (Or.inl ⟨⟨(j : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp),
+        Fin.lt_def.2 (by simp; omega)⟩)
+  rintro i j (⟨k, hjk, hki⟩ | ⟨k, hik, hkj⟩)
+  · rw [Fin.lt_def] at hjk hki
+    exact hlow i j (by omega)
+  · rw [Fin.lt_def] at hik hkj
+    rw [← hXs.apply i j]
+    exact hlow j i (by omega)
+
+/-- **Algorithm 8.3.2 on a window** (what Algorithm 8.3.3 runs on its unreduced block `D₂₂`): for a
+symmetric tridiagonal `T` and a window `[p, m)` of at least two indices, the exact run
+`(T', Q')` has an orthogonal `Z` acting on the window only (the product of the `m - p - 1`
+rotations) with `T' = blockConj p m Z T` (`Zᵀ T Z` on the block, `T` elsewhere), `Q' = Q Z`, `T'`
+symmetric tridiagonal, and `Z e_p = G(p, p+1, θ₀) e_p` for the first rotation, `(c₀, s₀)` the
+Givens pair of `(t_pp - μ, t_{p+1,p})` (`s₀ (t_pp - μ) + c₀ t_{p+1,p} = 0`), `μ` the exact Wilkinson
+shift of the block's trailing `2 × 2` block. The proof is the bulge-chasing invariant: after `j`
+rotations the block is tridiagonal but for one bulge at `(p + j + 1, p + j - 1)` (§8.3.5,
+`bulgeChase_step`), which the last rotation pushes out of the block. -/
+theorem algorithm_8_3_2_window {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
+    {T : Matrix (Fin n) (Fin n) ℝ} (hTs : T.IsSymm) (hT : T.IsTridiagonal)
+    (Q : Matrix (Fin n) (Fin n) ℝ) :
+    let out := Id.run (algorithm_8_3_2 pure (francisWindow n p m) T Q)
+    let μ := Id.run (wilkinsonShiftComputed pure (T ⟨m - 2, by omega⟩ ⟨m - 2, by omega⟩)
+      (T ⟨m - 1, by omega⟩ ⟨m - 1, by omega⟩) (T ⟨m - 1, by omega⟩ ⟨m - 2, by omega⟩))
+    ∃ Z ∈ orthogonalGroup (Fin n) ℝ, IsBlockSupported p m Z ∧
+      out.1 = blockConj p m Z T ∧ out.2 = Q * Z ∧ out.1.IsSymm ∧ out.1.IsTridiagonal ∧
+      ∃ c₀ s₀ : ℝ, c₀ ^ 2 + s₀ ^ 2 = 1 ∧
+        s₀ * (T ⟨p, by omega⟩ ⟨p, by omega⟩ - μ) + c₀ * T ⟨p + 1, by omega⟩ ⟨p, by omega⟩ = 0 ∧
+        Z *ᵥ Pi.single ⟨p, by omega⟩ 1 =
+          Chapter05.givensRotation ⟨p, by omega⟩ ⟨p + 1, by omega⟩ c₀ s₀ *ᵥ
+            Pi.single ⟨p, by omega⟩ 1 := by
+  intro out μ
+  have hlen : (francisWindow n p m).length = m - p := length_francisWindow hm
+  have hval : ∀ k (hk : k < (francisWindow n p m).length),
+      ((francisWindow n p m)[k] : ℕ) = p + k := val_getElem_francisWindow hm
+  obtain ⟨f₀, f₁, rest, hw⟩ := exists_cons_cons (francisWindow n p m) (by omega)
+  have hf₀ : (f₀ : ℕ) = p := by
+    have h := hval 0 (by omega)
+    rwa [List.getElem_of_eq hw, List.getElem_cons_zero] at h
+  have hf₁ : (f₁ : ℕ) = p + 1 := by
+    have h := hval 1 (by omega)
+    rwa [List.getElem_of_eq hw, List.getElem_cons_succ, List.getElem_cons_zero] at h
+  have hlen' : (f₀ :: f₁ :: rest).length = m - p := hw ▸ hlen
+  have hval' : ∀ k (hk : k < (f₀ :: f₁ :: rest).length), ((f₀ :: f₁ :: rest)[k] : ℕ) = p + k :=
+    fun k hk => by rw [← List.getElem_of_eq hw]; exact hval k (by omega)
+  -- the trailing pair of the window
+  have hl : (f₁ :: rest).getLast (List.cons_ne_nil _ _) = ⟨m - 1, by omega⟩ := by
+    refine Fin.ext ?_
+    rw [← List.getLast_cons (List.cons_ne_nil f₁ rest) (a := f₀), List.getLast_eq_getElem,
+      hval' _ (by omega), hlen']
+    simp only
+    omega
+  have hl' : (f₀ :: f₁ :: rest).dropLast.getLast (by simp) = ⟨m - 2, by omega⟩ := by
+    refine Fin.ext ?_
+    rw [List.getLast_eq_getElem, List.getElem_dropLast, hval' _ (by simp)]
+    simp only [List.length_dropLast, hlen']
+    omega
+  have hf₀' : f₀ = ⟨p, by omega⟩ := Fin.ext hf₀
+  have hf₁' : f₁ = ⟨p + 1, by omega⟩ := Fin.ext hf₁
+  -- the program is the fold of `implicitQRRotate` over the consecutive pairs
+  have key := chaseInv_run hm hpm hTs hT Q (T f₀ f₀ - μ) (T f₁ f₀) f₀ f₁ hf₀ hf₁
+  set st := Id.run (((francisWindow n p m).zip (francisWindow n p m).tail).foldlM
+    (implicitQRRotate pure (francisWindow n p m) (T f₀ f₀ - μ) (T f₁ f₀)) (T, Q, none)) with hst
+  have hout : out = (st.1, st.2.1) := by
+    change Id.run (algorithm_8_3_2 pure (francisWindow n p m) T Q) = _
+    rw [hst, hw, List.tail_cons]
+    simp only [algorithm_8_3_2]
+    rw [hl, hl']
+    rfl
+  obtain ⟨Z, hZo, hZb, hX, hQa, hXs, hXc, -, -, hcol⟩ := key
+  obtain ⟨c₀, s₀, hcs, hz, he⟩ := hcol (by omega)
+  rw [hout]
+  refine ⟨Z, hZo, hZb, hX, hQa, hXs, isTridiagonal_of_isChased hT hX hXs hXc, c₀, s₀, hcs, ?_,
+    ?_⟩
+  · rw [← hf₀', ← hf₁']
+    exact hz
+  · rw [← hf₀', ← hf₁']
+    exact he
+
+/-- The first column of a Givens rotation `G(0, 1, θ)`: `c e₀ - s e₁`. -/
+theorem givensRotation_mulVec_single_zero {N : ℕ} (c s : ℝ) :
+    Chapter05.givensRotation (0 : Fin (N + 2)) 1 c s *ᵥ Pi.single 0 1 =
+      c • Pi.single 0 1 - s • Pi.single 1 1 := by
+  funext t
+  rw [mulVec_single_one, col_apply, Chapter05.givensRotation,
+    planeRotation_apply (by simp)]
+  by_cases h0 : t = 0
+  · subst h0; simp
+  · by_cases h1 : t = 1
+    · subst h1; simp
+    · simp [h0, h1]
+
+/-- **Exact semantics of Algorithm 8.3.2** ("Given an unreduced symmetric tridiagonal matrix `T`,
+the following algorithm overwrites `T` with `ZᵀTZ`, where `Z = G₁ ⋯ G_{n-1}` is a product of
+Givens rotations with the property that `Zᵀ(T - μI)` is upper triangular and `μ` is that
+eigenvalue of `T`'s trailing 2-by-2 principal submatrix closer to `t_nn`"): for an unreduced
+symmetric tridiagonal `T` of order `n = N + 2`, any `Q`, and
+`(T', Q') := Id.run (algorithm_8_3_2 pure (List.finRange n) T Q)`, with `μ = wilkinsonShift T`
+(8.3.3): there is an orthogonal `Z` (the product of the `n - 1` rotations) with `T' = Zᵀ T Z`,
+`Q' = Q Z`, `T'` symmetric tridiagonal, `Z e₁` parallel to `(T - μ I) e₁` (the book's
+`Z e₁ = U e₁`) and `Zᵀ (T - μ I)` upper triangular. Consequently, when `T - μ I` is nonsingular,
+`T' = D (Matrix.shiftedQrStep μ T) D` for a diagonal `D` with entries `±1`: the implicit step is
+the explicit one (8.3.2) up to signs. The triangularity is the implicit-shift principle
+`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval` (behind Theorem 8.3.2), the
+signs `Matrix.IsShiftedQrStep.unique_of_isUnit`. -/
+theorem algorithm_8_3_2_spec {N : ℕ} {T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
+    (hTs : T.IsSymm) (hT : IsUnreducedTridiagonal T) (Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) :
+    let out := Id.run (algorithm_8_3_2 pure (List.finRange (N + 2)) T Q)
+    ∃ Z ∈ orthogonalGroup (Fin (N + 2)) ℝ, out.1 = Zᵀ * T * Z ∧ out.2 = Q * Z ∧
+      out.1.IsSymm ∧ out.1.IsTridiagonal ∧
+      Z.col 0 ∈ Submodule.span ℝ {(T - wilkinsonShift T • 1).col 0} ∧
+      (Zᵀ * (T - wilkinsonShift T • 1)).IsUpperTriangular ∧
+      (IsUnit (T - wilkinsonShift T • 1).det → ∃ d : Fin (N + 2) → ℝ, (∀ i, d i = 1 ∨ d i = -1) ∧
+        out.1 = diagonal d * shiftedQrStep (wilkinsonShift T) T * diagonal d) := by
+  intro out
+  set μ := wilkinsonShift T with hμ
+  have hwin := algorithm_8_3_2_window (p := 0) (m := N + 2) le_rfl (by omega) hTs hT.1 Q
+  simp only [Chapter07.francisWindow_zero, Chapter07.blockConj_zero] at hwin
+  obtain ⟨Z, hZo, -, h1, h2, hs, htri, c₀, s₀, hcs, hz, he⟩ := hwin
+  -- the computed shift is the Wilkinson shift
+  have hμ' : Id.run (wilkinsonShiftComputed pure (T ⟨N + 2 - 2, by omega⟩ ⟨N + 2 - 2, by omega⟩)
+      (T ⟨N + 2 - 1, by omega⟩ ⟨N + 2 - 1, by omega⟩) (T ⟨N + 2 - 1, by omega⟩
+        ⟨N + 2 - 2, by omega⟩)) = μ := by
+    have e1 : (⟨N + 2 - 1, by omega⟩ : Fin (N + 2)) = Fin.last (N + 1) := Fin.ext (by simp)
+    have e2 : (⟨N + 2 - 2, by omega⟩ : Fin (N + 2)) = (Fin.last N).castSucc := Fin.ext (by simp)
+    rw [e1, e2, wilkinsonShiftComputed_pure, hμ, (equation_8_3_3 T).2.2]
+  rw [hμ'] at hz
+  have e0 : (⟨0, by omega⟩ : Fin (N + 2)) = 0 := rfl
+  have e1 : (⟨0 + 1, by omega⟩ : Fin (N + 2)) = 1 := rfl
+  rw [e0, e1] at hz he
+  rw [givensRotation_mulVec_single_zero] at he
+  -- the first column of `T - μ I`
+  have hsub : T 1 0 ≠ 0 := by
+    have := hT.2.apply_succ_castSucc_ne_zero (0 : Fin (N + 1))
+    simpa using this
+  have hT0 : (T - μ • 1).col 0 = (T 0 0 - μ) • Pi.single 0 1 + T 1 0 • Pi.single 1 1 := by
+    funext t
+    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, one_apply]
+    by_cases h0 : t = 0
+    · subst h0; simp
+    · by_cases h1 : t = 1
+      · subst h1; simp
+      · have ht : T t 0 = 0 := hT.1 t 0 (Or.inl ⟨1, by simp, by
+          rw [Fin.lt_def]; have : (t : ℕ) ≠ 0 := fun e => h0 (Fin.ext e)
+          have : (t : ℕ) ≠ 1 := fun e => h1 (Fin.ext e)
+          simp; omega⟩)
+        simp [h0, h1, ht]
+  set r := c₀ * (T 0 0 - μ) - s₀ * T 1 0 with hr
+  have hTr : (T - μ • 1).col 0 = r • Z.col 0 := by
+    have ex : T 0 0 - μ = r * c₀ := by
+      rw [hr]; linear_combination (-(T 0 0 - μ)) * hcs + s₀ * hz
+    have ez : T 1 0 = -(r * s₀) := by
+      rw [hr]; linear_combination (-(T 1 0)) * hcs + c₀ * hz
+    rw [← mulVec_single_one Z 0, he, hT0, ex, ez]
+    module
+  have hr0 : r ≠ 0 := by
+    intro h0
+    have := congrFun hTr 1
+    rw [h0, zero_smul, Pi.zero_apply, col_apply, Matrix.sub_apply, Matrix.smul_apply,
+      one_apply_ne (by simp), smul_zero, sub_zero] at this
+    exact hsub this
+  have hcol : Z.col 0 ∈ Submodule.span ℝ {(T - μ • 1).col 0} := by
+    have : Z.col 0 = r⁻¹ • (T - μ • 1).col 0 := by
+      rw [hTr, smul_smul, inv_mul_cancel₀ hr0, one_smul]
+    rw [this]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+  have hstar : star Z = Zᵀ := by rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
+  have haeval : Polynomial.aeval T (Polynomial.X - Polynomial.C μ) = T - μ • 1 := by
+    simp [Algebra.algebraMap_eq_smul_one]
+  have hUT : (Zᵀ * (T - μ • 1)).IsUpperTriangular := by
+    have := IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval hT.2
+      (Polynomial.X - Polynomial.C μ) hZo (by rw [hstar, ← h1]; exact htri.isUpperHessenberg)
+      (by rw [haeval, mulVec_single_one]; exact hcol)
+    rwa [haeval, hstar] at this
+  refine ⟨Z, hZo, h1, h2, hs, htri, hcol, hUT, fun hdet => ?_⟩
+  have hZZ : Z * Zᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hZo
+  have hZZ' : Zᵀ * Z = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hZo
+  have hstep : IsShiftedQrStep μ T out.1 := by
+    refine ⟨Z, hZo, Zᵀ * (T - μ • 1), hUT, ?_, ?_⟩
+    · rw [← Matrix.mul_assoc, hZZ, Matrix.one_mul]
+    · rw [h1, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
+        hZZ', sub_add_cancel]
+  obtain ⟨d, hd, hdd⟩ := (isShiftedQrStep_shiftedQrStep μ T).unique_of_isUnit hstep hdet
+  refine ⟨d, fun i => ?_, ?_⟩
+  · have := hd i
+    rw [Real.norm_eq_abs] at this
+    exact (abs_eq zero_le_one).1 this
+  · rw [hdd, star_eq_conjTranspose, diagonal_conjTranspose, star_trivial]
+
+end ImplicitQR
+
+/-! ### Algorithm 8.3.3: exact semantics -/
+
+section SymmetricQR
+
+open Chapter07 (francisWindow blockConj IsBlockSupported)
+
+/-- The test of the deflation of Algorithm 8.3.3 at the coupling `a`, exactly:
+`|d_{a+1,a}| ≤ tol (|d_aa| + |d_{a+1,a+1}|)`. -/
+def IsSmallCoupling (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) (a : ℕ) : Prop :=
+  ∃ h : a + 1 < n, |D ⟨a + 1, h⟩ ⟨a, by omega⟩| ≤
+    tol * (|D ⟨a, by omega⟩ ⟨a, by omega⟩| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|)
+
+/-- `(r, s)` is one of the two entries of a small coupling `a < k`. -/
+def IsDeflatedPair (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (r s : Fin n) : Prop :=
+  ∃ a : ℕ, a < k ∧ ((r : ℕ) = a + 1 ∧ (s : ℕ) = a ∨ (r : ℕ) = a ∧ (s : ℕ) = a + 1) ∧
+    IsSmallCoupling tol D a
+
+open Classical in
+/-- The array after the first `k` tests of the deflation pass of Algorithm 8.3.3, exactly: the
+small couplings among the first `k` set to `0`. -/
+noncomputable def deflateStage (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
+    Matrix (Fin n) (Fin n) ℝ :=
+  of fun r s => if IsDeflatedPair tol D k r s then 0 else D r s
+
+/-- The exact result of the deflation pass of Algorithm 8.3.3: every small coupling set to `0`. -/
+noncomputable def deflated (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  deflateStage tol D n
+
+private theorem isDeflatedPair_succ {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} {k : ℕ}
+    {r s : Fin n} :
+    IsDeflatedPair tol D (k + 1) r s ↔ IsDeflatedPair tol D k r s ∨
+      (((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+        IsSmallCoupling tol D k) := by
+  constructor
+  · rintro ⟨a, ha, hp, hs⟩
+    rcases Nat.lt_succ_iff_lt_or_eq.1 ha with ha | rfl
+    · exact Or.inl ⟨a, ha, hp, hs⟩
+    · exact Or.inr ⟨hp, hs⟩
+  · rintro (⟨a, ha, hp, hs⟩ | ⟨hp, hs⟩)
+    · exact ⟨a, by omega, hp, hs⟩
+    · exact ⟨k, by omega, hp, hs⟩
+
+open Classical in
+private theorem deflateStage_succ_apply {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} {k : ℕ}
+    (r s : Fin n) :
+    deflateStage tol D (k + 1) r s =
+      if ((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+        IsSmallCoupling tol D k then 0 else deflateStage tol D k r s := by
+  simp only [deflateStage, of_apply]
+  by_cases hB : IsDeflatedPair tol D k r s
+  · rw [ite_eq_left (isDeflatedPair_succ.2 (Or.inl hB)), ite_eq_left hB, ite_self]
+  · rw [ite_eq_right hB]
+    by_cases hC : ((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+        IsSmallCoupling tol D k
+    · rw [ite_eq_left (isDeflatedPair_succ.2 (Or.inr hC)), ite_eq_left hC]
+    · rw [ite_eq_right (fun h => (isDeflatedPair_succ.1 h).elim hB hC), ite_eq_right hC]
+
+private theorem not_isDeflatedPair_of {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} {k : ℕ}
+    {r s : Fin n} (h : ¬ ((r : ℕ) = s + 1 ∨ (s : ℕ) = r + 1)) :
+    ¬ IsDeflatedPair tol D k r s := by
+  rintro ⟨a, -, hp, -⟩
+  omega
+
+/-- **The deflation pass of Algorithm 8.3.3, exactly**: every test reads entries no earlier step
+has changed, so the pass zeroes exactly the small couplings of its input. -/
+theorem deflate_pure (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) :
+    Id.run (deflate pure tol D) = deflated tol D := by
+  unfold deflate deflated
+  refine idRun_foldlM_finRange_induction (fun k D' => D' = deflateStage tol D k) ?_ ?_
+  · ext r s
+    simp only [deflateStage, of_apply]
+    rw [ite_eq_right (fun ⟨a, ha, _⟩ => absurd ha (Nat.not_lt_zero a))]
+  · intro k D' hD'
+    have e1 : ∀ i : Fin n, D' i i = D i i := fun i => by
+      rw [hD', deflateStage, of_apply, ite_eq_right (not_isDeflatedPair_of (by omega))]
+    by_cases h : (k : ℕ) + 1 < n
+    · have e2 : D' ⟨k + 1, h⟩ k = D ⟨k + 1, h⟩ k := by
+        rw [hD', deflateStage, of_apply, ite_eq_right]
+        rintro ⟨a, ha, hp, -⟩
+        simp only at hp
+        omega
+      simp only [h, ↓reduceDIte, pure_bind, e1, e2]
+      have hA : ∀ r s : Fin n, ((r = ⟨k + 1, h⟩ ∧ s = k) ∨ (r = k ∧ s = ⟨k + 1, h⟩)) ↔
+          ((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) := fun r s => by
+        simp [Fin.ext_iff]
+      split_ifs with hsm
+      · have hsm' : IsSmallCoupling tol D k := ⟨h, hsm⟩
+        rw [Id.run_pure, hD']
+        ext r s
+        rw [of_apply, deflateStage_succ_apply]
+        by_cases hp : (r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1
+        · rw [ite_eq_left ((hA r s).2 hp), ite_eq_left (And.intro hp hsm')]
+        · have hn : ¬ (((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+              IsSmallCoupling tol D k) := fun h' => hp h'.1
+          rw [ite_eq_right (mt (hA r s).1 hp), ite_eq_right hn]
+      · have hsm' : ¬ IsSmallCoupling tol D k := fun ⟨_, h'⟩ => hsm h'
+        rw [Id.run_pure, hD']
+        ext r s
+        have hn : ¬ (((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+            IsSmallCoupling tol D k) := fun h' => hsm' h'.2
+        rw [deflateStage_succ_apply, ite_eq_right hn]
+    · simp only [h, ↓reduceDIte, Id.run_pure]
+      rw [hD']
+      ext r s
+      have : ¬ IsSmallCoupling tol D k := fun ⟨h', _⟩ => h h'
+      have hn : ¬ (((r : ℕ) = k + 1 ∧ (s : ℕ) = k ∨ (r : ℕ) = k ∧ (s : ℕ) = k + 1) ∧
+          IsSmallCoupling tol D k) := fun h' => this h'.2
+      rw [deflateStage_succ_apply, ite_eq_right hn]
+
+/-- The deflation keeps the entries off the first sub- and superdiagonals. -/
+theorem deflated_apply_of_not {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} {r s : Fin n}
+    (h : ¬ ((r : ℕ) = s + 1 ∨ (s : ℕ) = r + 1)) : deflated tol D r s = D r s := by
+  rw [deflated, deflateStage, of_apply, ite_eq_right (not_isDeflatedPair_of h)]
+
+open Classical in
+/-- The deflation sets the small couplings, and only those, to `0`. -/
+theorem deflated_apply_succ {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} (a : ℕ) (h : a + 1 < n) :
+    deflated tol D ⟨a + 1, h⟩ ⟨a, by omega⟩ =
+        (if IsSmallCoupling tol D a then 0 else D ⟨a + 1, h⟩ ⟨a, by omega⟩) ∧
+      deflated tol D ⟨a, by omega⟩ ⟨a + 1, h⟩ =
+        (if IsSmallCoupling tol D a then 0 else D ⟨a, by omega⟩ ⟨a + 1, h⟩) := by
+  have key : ∀ r s : Fin n, ((r : ℕ) = a + 1 ∧ (s : ℕ) = a ∨ (r : ℕ) = a ∧ (s : ℕ) = a + 1) →
+      (IsDeflatedPair tol D n r s ↔ IsSmallCoupling tol D a) := fun r s hrs => by
+    constructor
+    · rintro ⟨b, -, hp, hs⟩
+      have : b = a := by omega
+      exact this ▸ hs
+    · exact fun hs => ⟨a, by omega, hrs, hs⟩
+  simp only [deflated, deflateStage, of_apply]
+  have k1 := key ⟨a + 1, h⟩ ⟨a, by omega⟩ (Or.inl ⟨rfl, rfl⟩)
+  have k2 := key ⟨a, by omega⟩ ⟨a + 1, h⟩ (Or.inr ⟨rfl, rfl⟩)
+  by_cases hs : IsSmallCoupling tol D a
+  · rw [ite_eq_left (k1.2 hs), ite_eq_left (k2.2 hs)]
+    exact ⟨(ite_eq_left hs).symm, (ite_eq_left hs).symm⟩
+  · rw [ite_eq_right (mt k1.1 hs), ite_eq_right (mt k2.1 hs)]
+    exact ⟨(ite_eq_right hs).symm, (ite_eq_right hs).symm⟩
+
+/-- **The window of the unreduced block** (`lastRunWindow`): empty when no coupling is nonzero,
+and otherwise the window `[p, e + 2)` of a maximal run `p, …, e` of nonzero couplings, preceded by
+a zero coupling (or `p = 0`) and followed only by zero couplings. -/
+theorem lastRunWindow_spec {nz : ℕ → Prop} [DecidablePred nz] (hnz : ∀ i, nz i → i + 1 < n) :
+    (lastRunWindow n nz = [] ∧ ∀ i, ¬ nz i) ∨
+      ∃ p e : ℕ, p ≤ e ∧ e + 1 < n ∧ lastRunWindow n nz = francisWindow n p (e + 2) ∧
+        (∀ i, p ≤ i → i ≤ e → nz i) ∧ (0 < p → ¬ nz (p - 1)) ∧ ∀ i, e < i → ¬ nz i := by
+  unfold lastRunWindow
+  cases hl : ((List.range n).filter fun i => nz i).getLast? with
+  | none =>
+    refine Or.inl ⟨rfl, fun i hi => ?_⟩
+    rw [List.getLast?_eq_none_iff, List.filter_eq_nil_iff] at hl
+    exact hl i (List.mem_range.2 (by have := hnz i hi; omega)) (by simpa using hi)
+  | some e =>
+    right
+    dsimp only
+    have hmem := List.mem_of_getLast? hl
+    rw [List.mem_filter, List.mem_range, decide_eq_true_eq] at hmem
+    obtain ⟨ys, hys⟩ := List.getLast?_eq_some_iff.1 hl
+    have hpw : ((List.range n).filter fun i => nz i).Pairwise (· < ·) :=
+      List.pairwise_lt_range.filter _
+    have hmax : ∀ i, nz i → i ≤ e := fun i hi => by
+      have hi' : i ∈ (List.range n).filter fun i => nz i := by
+        rw [List.mem_filter, List.mem_range, decide_eq_true_eq]
+        exact ⟨by have := hnz i hi; omega, hi⟩
+      rw [hys] at hi' hpw
+      rcases List.mem_append.1 hi' with h | h
+      · exact (List.pairwise_append.1 hpw).2.2 i h e (List.mem_singleton_self _) |>.le
+      · rw [List.mem_singleton.1 h]
+    have he1 := hnz e hmem.2
+    cases hq : ((List.range (e + 1)).filter fun i => ¬ nz i).getLast? with
+    | none =>
+      rw [List.getLast?_eq_none_iff, List.filter_eq_nil_iff] at hq
+      refine ⟨0, e, Nat.zero_le _, he1, ?_, fun i _ hie => ?_, fun h => absurd h (lt_irrefl 0),
+        fun i hi h => absurd (hmax i h) (by omega)⟩
+      · unfold Chapter07.francisWindow
+        refine List.filter_congr fun i _ => ?_
+        show decide _ = decide _
+        rw [decide_eq_decide, Option.elim_none]
+        omega
+      · have := hq i (List.mem_range.2 (by omega))
+        simpa using this
+    | some q =>
+      have hqm := List.mem_of_getLast? hq
+      rw [List.mem_filter, List.mem_range, decide_eq_true_eq] at hqm
+      obtain ⟨zs, hzs⟩ := List.getLast?_eq_some_iff.1 hq
+      have hpw' : ((List.range (e + 1)).filter fun i => ¬ nz i).Pairwise (· < ·) :=
+        List.pairwise_lt_range.filter _
+      have hqmax : ∀ i, i ≤ e → ¬ nz i → i ≤ q := fun i hi h => by
+        have hi' : i ∈ (List.range (e + 1)).filter fun i => ¬ nz i := by
+          rw [List.mem_filter, List.mem_range, decide_eq_true_eq]
+          exact ⟨by omega, h⟩
+        rw [hzs] at hi' hpw'
+        rcases List.mem_append.1 hi' with h | h
+        · exact (List.pairwise_append.1 hpw').2.2 i h q (List.mem_singleton_self _) |>.le
+        · rw [List.mem_singleton.1 h]
+      have hqe : q < e := by
+        rcases Nat.lt_or_ge q e with h | h
+        · exact h
+        · exact absurd hmem.2 (by rw [show e = q by omega]; exact hqm.2)
+      refine ⟨q + 1, e, hqe, he1, ?_, fun i hi hie => ?_, fun _ => ?_,
+        fun i hi h => absurd (hmax i h) (by omega)⟩
+      · unfold Chapter07.francisWindow
+        refine List.filter_congr fun i _ => ?_
+        show decide _ = decide _
+        rw [decide_eq_decide, Option.elim_some]
+        omega
+      · by_contra h
+        have := hqmax i hie h
+        omega
+      · simpa using hqm.2
+
+/-- A block similarity of a matrix decoupled from the rest along the block is the similarity. -/
+theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
+    (hZ : IsBlockSupported p m Z)
+    (hX : ∀ i j : Fin n, (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) →
+      X i j = 0 ∧ X j i = 0) :
+    blockConj p m Z X = Zᵀ * X * Z := by
+  have hZo : ∀ k l : Fin n, ¬ (p ≤ (k : ℕ) ∧ (k : ℕ) < m) ∨ ¬ (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
+      Z k l = if k = l then 1 else 0 := fun k l h => by
+    rw [hZ k l (fun h' => h.elim (fun h1 => h1 h'.1) (fun h2 => h2 h'.2)), one_apply]
+  ext i j
+  simp only [Chapter07.blockConj, of_apply]
+  split_ifs with hin
+  · rfl
+  by_cases hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m
+  · have hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) := fun hj => hin ⟨hi, hj⟩
+    rw [Matrix.mul_assoc, mul_apply, Finset.sum_eq_zero, (hX i j hi hj).1]
+    intro k _
+    rw [transpose_apply, mul_apply, Finset.sum_eq_single j]
+    · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
+      by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
+      · rw [(hX k j hk hj).1, mul_zero]
+      · rw [hZo k i (Or.inl hk), ite_eq_right (fun e : k = i => hk (e ▸ hi)), zero_mul]
+    · intro l _ hlj
+      rw [hZo l j (Or.inr hj), ite_eq_right hlj, mul_zero]
+    · simp
+  · have hrow : ∀ l, (Zᵀ * X) i l = X i l := fun l => by
+      rw [mul_apply, Finset.sum_eq_single i]
+      · rw [transpose_apply, hZo i i (Or.inl hi), ite_eq_left rfl, one_mul]
+      · intro k _ hki
+        rw [transpose_apply, hZo k i (Or.inr hi), ite_eq_right hki, zero_mul]
+      · simp
+    rw [mul_apply]
+    simp only [hrow]
+    rw [Finset.sum_eq_single j]
+    · by_cases hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m
+      · rw [(hX j i hj hi).2, zero_mul]
+      · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
+    · intro l _ hlj
+      by_cases hl : p ≤ (l : ℕ) ∧ (l : ℕ) < m
+      · rw [(hX l i hl hi).2, zero_mul]
+      · rw [hZo l j (Or.inl hl), ite_eq_right hlj, mul_zero]
+    · simp
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- An entry of a matrix is at most its Frobenius norm. -/
+private theorem abs_apply_le_frobenius (D : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
+    |D i j| ≤ ‖D‖ := by
+  have h := frobenius_norm_sq_eq_sum_sq D
+  have h1 : ‖D i j‖ ^ 2 ≤ ∑ j', ‖D i j'‖ ^ 2 :=
+    Finset.single_le_sum (f := fun j' => ‖D i j'‖ ^ 2) (fun _ _ => by positivity)
+      (Finset.mem_univ j)
+  have h2 : ∑ j', ‖D i j'‖ ^ 2 ≤ ∑ i', ∑ j', ‖D i' j'‖ ^ 2 :=
+    Finset.single_le_sum (f := fun i' => ∑ j', ‖D i' j'‖ ^ 2) (fun _ _ => by positivity)
+      (Finset.mem_univ i)
+  rw [← Real.norm_eq_abs]
+  nlinarith [norm_nonneg (D i j), norm_nonneg D]
+
+/-- The part of `D` on the coupling `a`: the entries `(a + 1, a)` and `(a, a + 1)`. -/
+private def couplingPart (D : Matrix (Fin n) (Fin n) ℝ) (a : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
+  of fun r s => if (r : ℕ) = a + 1 ∧ s = a ∨ r = a ∧ (s : ℕ) = a + 1 then D r s else 0
+
+private theorem norm_toLp_single_one' (c : Fin n) :
+    ‖(WithLp.toLp 2 (Pi.single c (1 : ℝ)) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+  have h : ‖(WithLp.toLp 2 (Pi.single c (1 : ℝ)) : EuclideanSpace ℝ (Fin n))‖ ^ 2 = 1 ^ 2 := by
+    rw [← dotProduct_self_eq_norm_sq]
+    simp
+  exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 h
+
+/-- The coupling part of a symmetric matrix has norm at most `2 |d_{a+1,a}|`. -/
+private theorem norm_couplingPart_le {D : Matrix (Fin n) (Fin n) ℝ} (hD : D.IsSymm) (a : Fin n)
+    (h : (a : ℕ) + 1 < n) : ‖couplingPart D a‖ ≤ 2 * |D ⟨a + 1, h⟩ a| := by
+  set b : Fin n := ⟨a + 1, h⟩ with hb
+  have hba : b ≠ a := fun e => by rw [Fin.ext_iff] at e; simp [b] at e
+  have e : couplingPart D a = D b a • (vecMulVec (Pi.single b 1) (Pi.single a 1) +
+      vecMulVec (Pi.single a 1) (Pi.single b 1)) := by
+    ext r s
+    have hr : (r : ℕ) = a + 1 ↔ r = b := by simp [b, Fin.ext_iff]
+    have hs : (s : ℕ) = a + 1 ↔ s = b := by simp [b, Fin.ext_iff]
+    simp only [couplingPart, of_apply, hr, hs, Matrix.smul_apply, Matrix.add_apply,
+      vecMulVec_apply, Pi.single_apply, smul_eq_mul]
+    by_cases h1 : r = b ∧ s = a
+    · obtain ⟨rfl, rfl⟩ := h1
+      simp [hba]
+    · by_cases h2 : r = a ∧ s = b
+      · obtain ⟨rfl, rfl⟩ := h2
+        simp [hba, Ne.symm hba, hD.apply]
+      · rw [ite_eq_right (not_or.2 ⟨h1, h2⟩)]
+        have p1 : (if r = b then (1 : ℝ) else 0) * (if s = a then 1 else 0) = 0 := by
+          by_cases hrb : r = b
+          · rw [ite_eq_right (fun h' => h1 ⟨hrb, h'⟩), mul_zero]
+          · rw [ite_eq_right hrb, zero_mul]
+        have p2 : (if r = a then (1 : ℝ) else 0) * (if s = b then 1 else 0) = 0 := by
+          by_cases hra : r = a
+          · rw [ite_eq_right (fun h' => h2 ⟨hra, h'⟩), mul_zero]
+          · rw [ite_eq_right hra, zero_mul]
+        rw [p1, p2, add_zero, mul_zero]
+  rw [e, norm_smul, Real.norm_eq_abs]
+  have e1 := frobenius_norm_vecMulVec_le (Pi.single b (1 : ℝ)) (Pi.single a 1)
+  have e2 := frobenius_norm_vecMulVec_le (Pi.single a (1 : ℝ)) (Pi.single b 1)
+  rw [norm_toLp_single_one', norm_toLp_single_one', mul_one] at e1 e2
+  have := norm_add_le (vecMulVec (Pi.single b (1 : ℝ)) (Pi.single a 1))
+    (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1))
+  have := abs_nonneg (D b a)
+  nlinarith
+
+open Classical in
+/-- The couplings the deflation of Algorithm 8.3.3 newly sets to zero. -/
+private noncomputable def newZeros (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) : Finset (Fin n) :=
+  Finset.univ.filter fun a => IsSmallCoupling tol D a ∧ ∃ h : (a : ℕ) + 1 < n, D ⟨a + 1, h⟩ a ≠ 0
+
+open Classical in
+/-- The zero couplings `d_{a+1,a} = 0` of `D`. -/
+private noncomputable def zeroCouplings (D : Matrix (Fin n) (Fin n) ℝ) : Finset (Fin n) :=
+  Finset.univ.filter fun a => ∃ h : (a : ℕ) + 1 < n, D ⟨a + 1, h⟩ a = 0
+
+/-- There are at most `n - 1` couplings. -/
+private theorem card_zeroCouplings_le (D : Matrix (Fin n) (Fin n) ℝ) :
+    (zeroCouplings D).card ≤ n - 1 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · exact (Finset.card_le_univ _).trans (by simp)
+  have hsub : zeroCouplings D ⊆ Finset.univ.erase ⟨n - 1, by omega⟩ := fun a ha => by
+    simp only [zeroCouplings, Finset.mem_filter] at ha
+    obtain ⟨-, h, -⟩ := ha
+    refine Finset.mem_erase.2 ⟨fun e => ?_, Finset.mem_univ _⟩
+    rw [e] at h
+    simp at h
+    omega
+  refine (Finset.card_le_card hsub).trans ?_
+  rw [Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ, Fintype.card_fin]
+
+/-- The deflation adds exactly the new zeros to the zero couplings. -/
+private theorem zeroCouplings_deflated (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) :
+    (zeroCouplings (deflated tol D)).card = (zeroCouplings D).card + (newZeros tol D).card := by
+  rw [← Finset.card_union_of_disjoint]
+  · congr 1
+    ext a
+    simp only [zeroCouplings, newZeros, Finset.mem_union, Finset.mem_filter, Finset.mem_univ,
+      true_and]
+    constructor
+    · rintro ⟨h, h0⟩
+      have hd := (deflated_apply_succ (tol := tol) (D := D) a h).1
+      by_cases hs : IsSmallCoupling tol D a
+      · by_cases hz : D ⟨a + 1, h⟩ a = 0
+        · exact Or.inl ⟨h, hz⟩
+        · exact Or.inr ⟨hs, h, hz⟩
+      · rw [ite_eq_right hs] at hd
+        exact Or.inl ⟨h, by rw [← h0]; exact hd.symm⟩
+    · rintro (⟨h, h0⟩ | ⟨hs, h, -⟩)
+      · refine ⟨h, ?_⟩
+        have hd := (deflated_apply_succ (tol := tol) (D := D) a h).1
+        by_cases hs : IsSmallCoupling tol D a
+        · rw [ite_eq_left hs] at hd; exact hd
+        · rw [ite_eq_right hs] at hd; rw [hd]; exact h0
+      · refine ⟨h, ?_⟩
+        have hd := (deflated_apply_succ (tol := tol) (D := D) a h).1
+        rw [ite_eq_left hs] at hd
+        exact hd
+  · rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [zeroCouplings, newZeros, Finset.mem_filter] at ha hb
+    obtain ⟨-, h, h0⟩ := ha
+    obtain ⟨-, -, h', hne⟩ := hb
+    exact hne h0
+
+/-- The deflation removes the coupling parts of the new zeros. -/
+private theorem sub_deflated_eq_sum {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} (hD : D.IsSymm) :
+    D - deflated tol D = ∑ a ∈ newZeros tol D, couplingPart D a := by
+  classical
+  ext r s
+  rw [Matrix.sub_apply, Matrix.sum_apply]
+  by_cases hrs : (r : ℕ) = s + 1 ∨ (s : ℕ) = r + 1
+  swap
+  · rw [deflated_apply_of_not hrs, sub_self]
+    refine (Finset.sum_eq_zero fun a _ => ?_).symm
+    rw [couplingPart, of_apply, ite_eq_right]
+    rintro (⟨h1, rfl⟩ | ⟨rfl, h2⟩) <;> omega
+  -- the coupling `c` of the entry
+  obtain ⟨c, hc, hcr, hcs⟩ : ∃ c : Fin n, ∃ hc : (c : ℕ) + 1 < n,
+      ((r = ⟨c + 1, hc⟩ ∧ s = c) ∨ (r = c ∧ s = ⟨c + 1, hc⟩)) ∧
+        ∀ a : Fin n, ((r : ℕ) = a + 1 ∧ s = a ∨ r = a ∧ (s : ℕ) = a + 1) ↔ a = c := by
+    rcases hrs with hrs | hrs
+    · refine ⟨s, by omega, Or.inl ⟨Fin.ext hrs, rfl⟩, fun a => ⟨?_, ?_⟩⟩
+      · rintro (⟨-, rfl⟩ | ⟨rfl, h2⟩)
+        · rfl
+        · omega
+      · rintro rfl; exact Or.inl ⟨hrs, rfl⟩
+    · refine ⟨r, by omega, Or.inr ⟨rfl, Fin.ext hrs⟩, fun a => ⟨?_, ?_⟩⟩
+      · rintro (⟨h1, rfl⟩ | ⟨rfl, -⟩)
+        · omega
+        · rfl
+      · rintro rfl; exact Or.inr ⟨rfl, hrs⟩
+  have hsum : ∑ a ∈ newZeros tol D, couplingPart D a r s =
+      if c ∈ newZeros tol D then D r s else 0 := by
+    rw [← Finset.sum_ite_eq' (newZeros tol D) c (fun _ => D r s)]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    rw [couplingPart, of_apply]
+    by_cases hac : a = c
+    · rw [ite_eq_left ((hcs a).2 hac), ite_eq_left hac]
+    · rw [ite_eq_right (fun h' => hac ((hcs a).1 h')), ite_eq_right hac]
+  -- the entry of `D` at the coupling, and its deflation
+  have hval : D r s = D ⟨c + 1, hc⟩ c := by
+    rcases hcr with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · rfl
+    · exact hD.apply _ _
+  obtain ⟨hd1, hd2⟩ := deflated_apply_succ (tol := tol) (D := D) c hc
+  have hdef : deflated tol D r s = if IsSmallCoupling tol D c then 0 else D r s := by
+    rcases hcr with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · exact hd1
+    · exact hd2
+  rw [hsum, hdef]
+  have hmem : c ∈ newZeros tol D ↔ IsSmallCoupling tol D c ∧ D r s ≠ 0 := by
+    simp only [newZeros, Finset.mem_filter, Finset.mem_univ, true_and, hval]
+    exact ⟨fun ⟨h1, _, h2⟩ => ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨h1, hc, h2⟩⟩
+  by_cases hs : IsSmallCoupling tol D c
+  · rw [ite_eq_left hs, sub_zero]
+    by_cases hz : D r s = 0
+    · rw [ite_eq_right (fun h' => (hmem.1 h').2 hz), hz]
+    · rw [ite_eq_left (hmem.2 ⟨hs, hz⟩)]
+  · rw [ite_eq_right hs, sub_self, ite_eq_right (fun h' => hs (hmem.1 h').1)]
+
+/-- **The deflation perturbation**: `‖D - deflated D‖_F ≤ 4 tol ‖D‖_F` per new zero. -/
+private theorem norm_sub_deflated_le {tol : ℝ} (htol : 0 ≤ tol) {D : Matrix (Fin n) (Fin n) ℝ}
+    (hD : D.IsSymm) :
+    ‖D - deflated tol D‖ ≤ (newZeros tol D).card * (4 * tol * ‖D‖) := by
+  rw [sub_deflated_eq_sum hD]
+  refine (norm_sum_le _ _).trans ?_
+  rw [← nsmul_eq_mul]
+  refine Finset.sum_le_card_nsmul _ _ _ fun a ha => ?_
+  simp only [newZeros, Finset.mem_filter, Finset.mem_univ, true_and] at ha
+  obtain ⟨⟨h, hsm⟩, -⟩ := ha
+  refine (norm_couplingPart_le hD a h).trans ?_
+  have h1 := abs_apply_le_frobenius D a a
+  have h2 := abs_apply_le_frobenius D ⟨a + 1, h⟩ ⟨a + 1, h⟩
+  have hsm' : |D ⟨a + 1, h⟩ a| ≤ tol * (|D a a| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|) := hsm
+  nlinarith
+
+end Frobenius
+
+/-- The deflation keeps a matrix symmetric. -/
+private theorem isSymm_deflated {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ} (hD : D.IsSymm) :
+    (deflated tol D).IsSymm := by
+  ext i j
+  rw [transpose_apply]
+  by_cases hij : (i : ℕ) = j + 1 ∨ (j : ℕ) = i + 1
+  · rcases hij with hij | hij
+    · have hi : i = ⟨j + 1, by omega⟩ := Fin.ext hij
+      obtain ⟨h1, h2⟩ := deflated_apply_succ (tol := tol) (D := D) j (by omega)
+      simp only [Fin.eta] at h1 h2
+      rw [hi, h1, h2, hD.apply ⟨j + 1, by omega⟩ j]
+    · have hj : j = ⟨i + 1, by omega⟩ := Fin.ext hij
+      obtain ⟨h1, h2⟩ := deflated_apply_succ (tol := tol) (D := D) i (by omega)
+      simp only [Fin.eta] at h1 h2
+      rw [hj, h1, h2, hD.apply ⟨i + 1, by omega⟩ i]
+  · rw [deflated_apply_of_not hij, deflated_apply_of_not (by omega), hD.apply]
+
+/-- The deflation keeps a matrix tridiagonal. -/
+private theorem isTridiagonal_deflated {tol : ℝ} {D : Matrix (Fin n) (Fin n) ℝ}
+    (hD : D.IsTridiagonal) : (deflated tol D).IsTridiagonal := fun i j hij => by
+  have h : ¬ ((i : ℕ) = j + 1 ∨ (j : ℕ) = i + 1) := by
+    rcases hij with ⟨k, h1, h2⟩ | ⟨k, h1, h2⟩ <;> rw [Fin.lt_def] at h1 h2 <;> omega
+  rw [deflated_apply_of_not h]
+  exact hD i j hij
+
+/-- The Hoare rule of a loop in `Id` with an invariant independent of the step. -/
+private theorem idRun_foldlM_inv {α β : Type} {f : β → α → Id β} (P : β → Prop)
+    (hf : ∀ c x, P c → P (Id.run (f c x))) : ∀ (l : List α) (a : β), P a →
+      P (Id.run (l.foldlM f a))
+  | [], _, h => h
+  | x :: l, a, h => idRun_foldlM_inv P hf l (Id.run (f a x)) (hf a x h)
+
+section Frobenius
+
+open scoped Matrix.Norms.Frobenius
+
+/-- The loop invariant of Algorithm 8.3.3 on the state `(D, Q, done)`: `Q` is orthogonal, `D` is
+symmetric tridiagonal, `Qᵀ (A + F) Q = D` for a symmetric `F` (the deflations so far, carried
+back), of norm at most `κ` per zero coupling of `D` (when `κ` is large enough), and `D` is
+diagonal once `done`. -/
+private def SymmetricQRInv (A : Matrix (Fin n) (Fin n) ℝ) (tol κ : ℝ)
+    (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
+  st.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ st.1.IsSymm ∧ st.1.IsTridiagonal ∧
+    (∃ F : Matrix (Fin n) (Fin n) ℝ, Fᵀ = F ∧ st.2.1ᵀ * (A + F) * st.2.1 = st.1 ∧
+      (4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F‖ ≤ κ * (zeroCouplings st.1).card)) ∧
+    (st.2.2 = true → ∀ i j, i ≠ j → st.1 i j = 0)
+
+/-- **One pass of Algorithm 8.3.3 keeps the invariant.** -/
+private theorem symmetricQRPass_inv {A : Matrix (Fin n) (Fin n) ℝ} {tol κ : ℝ} (htol : 0 ≤ tol)
+    (hκ0 : 0 ≤ κ) {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
+    (h : SymmetricQRInv A tol κ st) :
+    SymmetricQRInv A tol κ (Id.run (symmetricQRPass pure tol st)) := by
+  obtain ⟨D, Q, done⟩ := st
+  obtain ⟨hQ, hDs, hDt, ⟨F, hFs, hF, hFn⟩, hdone⟩ := h
+  dsimp only at hQ hDs hDt hF hFn hdone
+  cases done with
+  | true => exact ⟨hQ, hDs, hDt, ⟨F, hFs, hF, hFn⟩, hdone⟩
+  | false =>
+  unfold symmetricQRPass
+  simp only [Bool.false_eq_true, ↓reduceIte, Id.run_bind, deflate_pure]
+  set D₁ := deflated tol D with hD₁
+  have hD₁s : D₁.IsSymm := isSymm_deflated hDs
+  have hD₁t : D₁.IsTridiagonal := isTridiagonal_deflated hDt
+  have hQt : Qᵀ ∈ orthogonalGroup (Fin n) ℝ := by
+    refine (mem_orthogonalGroup_iff' _ ℝ).2 ?_
+    rw [transpose_transpose]
+    exact (mem_orthogonalGroup_iff _ ℝ).1 hQ
+  have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' _ ℝ).1 hQ
+  -- the deflation, carried back
+  set F₁ := F - Q * (D - D₁) * Qᵀ with hF₁
+  have hF₁s : F₁ᵀ = F₁ := by
+    rw [hF₁, transpose_sub, hFs, transpose_mul, transpose_mul, transpose_transpose, transpose_sub,
+      hDs.eq, hD₁s.eq, Matrix.mul_assoc]
+  have hF₁eq : Qᵀ * (A + F₁) * Q = D₁ := by
+    have e : A + F₁ = (A + F) - Q * (D - D₁) * Qᵀ := by rw [hF₁]; abel
+    rw [e, Matrix.mul_sub, Matrix.sub_mul, hF]
+    simp only [← Matrix.mul_assoc, hQQ, Matrix.one_mul]
+    rw [Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ ℝ).1 hQ, Matrix.mul_one]
+    abel
+  have hF₁n : 4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F₁‖ ≤ κ * (zeroCouplings D₁).card := by
+    intro hκ
+    have hFb := hFn hκ
+    have hz := card_zeroCouplings_le D
+    have hDn : ‖D‖ ≤ ‖A‖ + κ * (n - 1 : ℕ) := by
+      rw [← hF, frobenius_norm_unitary_mul_mul_unitary hQt (A + F) hQ]
+      have h1 := hFb.trans (mul_le_mul_of_nonneg_left
+        (Nat.cast_le.2 hz : ((zeroCouplings D).card : ℝ) ≤ ((n - 1 : ℕ) : ℝ)) hκ0)
+      linarith [norm_add_le A F]
+    have hconj : ‖Q * (D - D₁) * Qᵀ‖ = ‖D - D₁‖ :=
+      frobenius_norm_unitary_mul_mul_unitary hQ (D - D₁) hQt
+    have he := norm_sub_deflated_le htol hDs (tol := tol)
+    rw [zeroCouplings_deflated, Nat.cast_add]
+    calc ‖F₁‖ ≤ ‖F‖ + ‖Q * (D - D₁) * Qᵀ‖ := norm_sub_le _ _
+      _ ≤ κ * (zeroCouplings D).card + (newZeros tol D).card * (4 * tol * ‖D‖) := by
+          rw [hconj]; exact add_le_add hFb he
+      _ ≤ κ * (zeroCouplings D).card + (newZeros tol D).card * κ := by
+          gcongr
+          nlinarith
+      _ = κ * ((zeroCouplings D).card + (newZeros tol D).card) := by ring
+  -- the window of the unreduced block
+  have hspec := lastRunWindow_spec (n := n)
+    (nz := fun i => ∃ h : i + 1 < n, D₁ ⟨i + 1, h⟩ ⟨i, by omega⟩ ≠ 0) (fun i ⟨h, _⟩ => h)
+  have hwin : unreducedWindow D₁ = lastRunWindow n
+      (fun i => ∃ h : i + 1 < n, D₁ ⟨i + 1, h⟩ ⟨i, by omega⟩ ≠ 0) := rfl
+  split
+  · -- `q = n`: `D₁` is diagonal
+    rename_i hw
+    rw [Id.run_pure]
+    refine ⟨hQ, hD₁s, hD₁t, ⟨F₁, hF₁s, hF₁eq, hF₁n⟩, fun _ i j hij => ?_⟩
+    change D₁ i j = 0
+    have hnz : ∀ i, ¬ ∃ h : i + 1 < n, D₁ ⟨i + 1, h⟩ ⟨i, by omega⟩ ≠ 0 := by
+      rcases hspec with ⟨-, hno⟩ | ⟨p, e, hpe, he, hw', -⟩
+      · exact hno
+      · rw [← hwin, hw] at hw'
+        have : (⟨p, by omega⟩ : Fin n) ∈ Chapter07.francisWindow n p (e + 2) :=
+          Chapter07.mem_francisWindow.2 ⟨le_rfl, show p < e + 2 by omega⟩
+        rw [← hw'] at this
+        exact absurd this List.not_mem_nil
+    have hsub : ∀ a : Fin n, ∀ h : (a : ℕ) + 1 < n, D₁ ⟨a + 1, h⟩ a = 0 := fun a h => by
+      by_contra h0
+      exact hnz a ⟨h, h0⟩
+    rcases lt_trichotomy (i : ℕ) j with hl | he | hl
+    · by_cases hj : (j : ℕ) = i + 1
+      · rw [← hD₁s.apply, show j = ⟨i + 1, by omega⟩ from Fin.ext hj]
+        exact hsub i (by omega)
+      · exact hD₁t i j (Or.inr ⟨⟨i + 1, by omega⟩, Fin.lt_def.2 (by simp),
+          Fin.lt_def.2 (by simp; omega)⟩)
+    · exact absurd (Fin.ext he) hij
+    · by_cases hi : (i : ℕ) = j + 1
+      · rw [show i = ⟨j + 1, by omega⟩ from Fin.ext hi]
+        exact hsub j (by omega)
+      · exact hD₁t i j (Or.inl ⟨⟨j + 1, by omega⟩, Fin.lt_def.2 (by simp),
+          Fin.lt_def.2 (by simp; omega)⟩)
+  · -- `q < n`: Algorithm 8.3.2 on the window
+    rename_i hne
+    obtain ⟨p, e, hpe, he, hw', hrun, hbefore, hafter⟩ : ∃ p e : ℕ, p ≤ e ∧ e + 1 < n ∧
+        unreducedWindow D₁ = Chapter07.francisWindow n p (e + 2) ∧
+        (∀ i, p ≤ i → i ≤ e → ∃ h : i + 1 < n, D₁ ⟨i + 1, h⟩ ⟨i, by omega⟩ ≠ 0) ∧
+        (0 < p → ¬ ∃ h : p - 1 + 1 < n, D₁ ⟨p - 1 + 1, h⟩ ⟨p - 1, by omega⟩ ≠ 0) ∧
+        ∀ i, e < i → ¬ ∃ h : i + 1 < n, D₁ ⟨i + 1, h⟩ ⟨i, by omega⟩ ≠ 0 := by
+      rcases hspec with ⟨hw0, -⟩ | ⟨p, e, hpe, he, hw', h1, h2, h3⟩
+      · exact absurd (hwin.trans hw0) hne
+      · exact ⟨p, e, hpe, he, hwin.trans hw', h1, h2, h3⟩
+    rw [hw', Id.run_bind, Id.run_pure]
+    obtain ⟨Z, hZo, hZb, h1, h2, hs, ht, -⟩ :=
+      algorithm_8_3_2_window (p := p) (m := e + 2) (by omega) (by omega) hD₁s hD₁t Q
+    -- `D₁` is decoupled along the window
+    have hzl : ∀ i j : Fin n, (j : ℕ) + 1 = i → (i : ℕ) = p → D₁ i j = 0 := by
+      intro i j hji hip
+      have hp : 0 < p := by omega
+      have hp1 : p - 1 + 1 < n := by omega
+      have hp2 : p - 1 < n := by omega
+      have := hbefore hp
+      push Not at this
+      have e1 : i = ⟨p - 1 + 1, hp1⟩ := Fin.ext (by simp only; omega)
+      have e2 : j = ⟨p - 1, hp2⟩ := Fin.ext (by simp only; omega)
+      subst e1 e2
+      exact this hp1
+    have hzr : ∀ i j : Fin n, (i : ℕ) + 1 = j → (i : ℕ) = e + 1 → D₁ i j = 0 := by
+      intro i j hij hie
+      have he2 : e + 1 + 1 < n := by omega
+      have := hafter (e + 1) (by omega)
+      push Not at this
+      have e1 : j = ⟨e + 1 + 1, he2⟩ := Fin.ext (by simp only; omega)
+      have e2 : i = ⟨e + 1, he⟩ := Fin.ext (by simp only; omega)
+      subst e1 e2
+      rw [← hD₁s.apply]
+      exact this he2
+    have hdec : ∀ i j : Fin n, (p ≤ (i : ℕ) ∧ (i : ℕ) < e + 2) →
+        ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < e + 2) → D₁ i j = 0 ∧ D₁ j i = 0 := by
+      intro i j hi hj
+      suffices H : D₁ i j = 0 from ⟨H, by rw [← hD₁s.apply]; exact H⟩
+      by_cases hji : (j : ℕ) + 1 = i
+      · exact hzl i j hji (by omega)
+      by_cases hij : (i : ℕ) + 1 = j
+      · exact hzr i j hij (by omega)
+      rcases lt_trichotomy (i : ℕ) j with hl | hl | hl
+      · exact hD₁t i j (Or.inr ⟨⟨i + 1, by omega⟩, Fin.lt_def.2 (by simp),
+          Fin.lt_def.2 (by simp; omega)⟩)
+      · exact absurd ⟨hl ▸ hi.1, hl ▸ hi.2⟩ hj
+      · exact hD₁t i j (Or.inl ⟨⟨j + 1, by omega⟩, Fin.lt_def.2 (by simp),
+          Fin.lt_def.2 (by simp; omega)⟩)
+    have hconj := blockConj_eq_of_decoupled hZb hdec
+    -- the zero couplings survive
+    have hzero : (zeroCouplings D₁).card ≤
+        (zeroCouplings (Id.run (algorithm_8_3_2 pure (Chapter07.francisWindow n p (e + 2))
+          D₁ Q)).1).card := by
+      refine Finset.card_le_card fun a ha => ?_
+      simp only [zeroCouplings, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+      obtain ⟨h, h0⟩ := ha
+      refine ⟨h, ?_⟩
+      rw [h1]
+      simp only [Chapter07.blockConj, of_apply]
+      rw [ite_eq_right]
+      · exact h0
+      · rintro ⟨⟨-, h2⟩, h3, -⟩
+        obtain ⟨_, hne0⟩ := hrun a h3 (by have h2' : (a : ℕ) + 1 < e + 2 := h2; omega)
+        exact hne0 h0
+    simp only [SymmetricQRInv]
+    refine ⟨by rw [h2]; exact Submonoid.mul_mem _ hQ hZo, hs, ht, ⟨F₁, hF₁s, ?_, fun hκ => ?_⟩,
+      fun h' => absurd h' (by simp)⟩
+    · rw [h1, h2, hconj, ← hF₁eq, transpose_mul]
+      simp only [Matrix.mul_assoc]
+    · exact (hF₁n hκ).trans (mul_le_mul_of_nonneg_left (by exact_mod_cast hzero) hκ0)
+
+/-- **Exact semantics of Algorithm 8.3.3** (the symmetric QR algorithm, "an approximate symmetric
+Schur decomposition `QᵀAQ = D`"): for symmetric `A`, `0 ≤ tol` and any `fuel`, the exact run
+`(D, Q, done)` has `Q` orthogonal, `D` symmetric tridiagonal, and `D = Qᵀ (A + E) Q` for a
+symmetric `E` (the deflations `d_{i+1,i} := 0`, carried back to `A`), with
+`‖E‖_F ≤ c tol ‖A‖_F / (1 - c tol)` for `c = 4 (n - 1)` whenever `c tol < 1`; and if the loop
+stopped on its test (`done`, `q = n`) within the fuel, `D` is diagonal. Each deflation zeroes a
+coupling `|d_{i+1,i}| ≤ tol (|d_ii| + |d_{i+1,i+1}|)` of the current `D`, of Frobenius norm
+`≤ 4 tol ‖D‖_F ≤ 4 tol (‖A‖_F + ‖E‖_F)`, and a zeroed coupling stays zero, so there are at most
+`n - 1` of them. The forward form `QᵀAQ = D + E` with `E` supported on the deflated positions is
+false: a later rotation on a window `[p, …]` mixes a deflated entry at `(p, p - 1)` into
+`(p + 1, p - 1)`. Convergence (that some finite fuel suffices) is Wilkinson's theorem and is not
+claimed. -/
+theorem algorithm_8_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {tol : ℝ}
+    (htol : 0 ≤ tol) (fuel : ℕ) :
+    let out := Id.run (algorithm_8_3_3 pure tol A fuel)
+    out.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ out.1.IsSymm ∧ out.1.IsTridiagonal ∧
+      (∃ E : Matrix (Fin n) (Fin n) ℝ, Eᵀ = E ∧ out.2.1ᵀ * (A + E) * out.2.1 = out.1 ∧
+        (4 * ((n - 1 : ℕ) : ℝ) * tol < 1 →
+          ‖E‖ ≤ 4 * ((n - 1 : ℕ) : ℝ) * tol * ‖A‖ / (1 - 4 * ((n - 1 : ℕ) : ℝ) * tol))) ∧
+      (out.2.2 = true → ∀ i j, i ≠ j → out.1 i j = 0) := by
+  intro out
+  set c : ℝ := 4 * ((n - 1 : ℕ) : ℝ) * tol with hc
+  set κ : ℝ := if c < 1 then 4 * tol * ‖A‖ / (1 - c) else 0 with hκdef
+  have hκ0 : 0 ≤ κ := by
+    rw [hκdef]
+    split_ifs with h
+    · exact div_nonneg (by positivity) (by linarith)
+    · exact le_rfl
+  -- the initial state
+  obtain ⟨hQ₀, -, hsymm₀, htri₀, hband₀, -, -⟩ := algorithm_8_3_1_spec hA
+  have h0 : SymmetricQRInv A tol κ
+      (tridiagonalPart (Id.run (algorithm_8_3_1 pure A)).1,
+        Id.run (Chapter05.forwardAccumulation pure (Id.run (algorithm_8_3_1 pure A)).2),
+        false) := by
+    rw [Chapter05.forwardAccumulation_spec]
+    refine ⟨hQ₀, ?_, ?_, ⟨0, transpose_zero, by rw [add_zero, hband₀], fun _ => ?_⟩,
+      fun h => absurd h (by simp)⟩
+    · rw [hband₀]; exact hsymm₀
+    · rw [hband₀]; exact htri₀
+    · rw [norm_zero]
+      exact mul_nonneg hκ0 (Nat.cast_nonneg _)
+  have key : SymmetricQRInv A tol κ out :=
+    idRun_foldlM_inv (SymmetricQRInv A tol κ) (fun st _ h => symmetricQRPass_inv htol hκ0 h)
+      (List.range fuel) _ h0
+  obtain ⟨hQ, hDs, hDt, ⟨F, hFs, hF, hFn⟩, hdone⟩ := key
+  refine ⟨hQ, hDs, hDt, ⟨F, hFs, hF, fun hc1 => ?_⟩, hdone⟩
+  have hκ : κ = 4 * tol * ‖A‖ / (1 - c) := by rw [hκdef, ite_eq_left hc1]
+  have h1c : 0 < 1 - c := by linarith
+  have hκeq : 4 * tol * (‖A‖ + κ * (n - 1 : ℕ)) = κ := by
+    rw [hκ]
+    field_simp
+    rw [hc]
+    ring
+  have hF' := hFn hκeq.le
+  have hz := card_zeroCouplings_le out.1
+  calc ‖F‖ ≤ κ * (zeroCouplings out.1).card := hF'
+    _ ≤ κ * (n - 1 : ℕ) := mul_le_mul_of_nonneg_left (by exact_mod_cast hz) hκ0
+    _ = c * ‖A‖ / (1 - c) := by rw [hκ, hc]; field_simp
+    _ = _ := by rw [hc]
+
+end Frobenius
+
+end SymmetricQR
 
 /-! ### §8.3.6 The Rayleigh quotient connection -/
 

@@ -13,23 +13,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
 [[node]]
 id = "algorithm_8_3_1_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.3.1: for symmetric `A` and `(A', data) := Id.run
-(algorithm_8_3_1 pure A)`, with `Q = GolubVanLoan.Chapter05.householderProduct data`
-(`= P_0 ⋯ P_{n-3}`, `P_k = 1 - β_k v_k v_kᵀ` from the **returned** `β_k`, acting on coordinates `≥ k+1`):
-`Q` is orthogonal with `Q e₁ = e₁`, `T := Qᵀ A Q` is symmetric tridiagonal, and `A'` agrees with `T` on
-the band (`∀ i j, (i : ℕ) ≤ j + 1 → (j : ℕ) ≤ i + 1 → A' i j = T i j`; the entries outside the band are
-the untouched `A_k(k+2:n, k)`). Loop invariant after step `k`: the current matrix equals
-`(P_0⋯P_k)ᵀ A (P_0⋯P_k)` on rows/columns `≥ k+1` and on the band of the first `k + 1` columns, is
-symmetric (lower triangle computed and mirrored), and is tridiagonal through column `k` (the book's
-`A_{k-1}` display). Uses chapter 5's `houseOn_spec` (`P x = ‖x‖₂ e₁`, which is what makes the fresh
-norm the exact subdiagonal entry), `householder_conj_eq_sub_rankTwo`, chapter 1's
-`algorithm_1_1_1_spec`. Convention 11: the bare statement `band A' = Qᵀ A Q` for some orthogonal `Q`
-is `algorithm_8_3_1_rounding` at `FloatingPoint.RoundingModel.exact` (`E = 0`); the identification
-`Q = householderProduct data` with `Q e₁ = e₁` needs the invariant. ★★★ (~300 lines)
-
-Blocked: not attempted for lack of time (c08, 2026-09-26). The program, its bridge `algorithm_8_3_1_rounds` and `algorithm_8_3_1_rounding` are proved; at the exact model the rounding theorem already gives `band A' = Qᵀ A Q` for some orthogonal `Q` (convention 11). What is missing is the identification `Q = householderProduct data` with `Q e₁ = e₁`: a loop invariant over `tridiagonalizeStep` (the cleaned array after step `k` is `(P_0⋯P_k)ᵀ A (P_0⋯P_k)`, each step being `P C P` by `householder_conj_eq_sub_rankTwo` with `houseOn_spec`). ~250 lines.'''
-deps = ["algorithm_8_3_1", "householder_conj_eq_sub_rankTwo", "equation_8_3_1", "GolubVanLoan.Chapter05.houseOn_spec", "GolubVanLoan.Chapter05.householderProduct", "GolubVanLoan.Chapter01.algorithm_1_1_1_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.1'
 
 [[node]]
@@ -91,26 +74,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.2'
 
 [[node]]
 id = "algorithm_8_3_2_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.3.2: for an unreduced symmetric tridiagonal `T` (`n ≥ 2`),
-any `Q`, and `(T', Q') := Id.run (algorithm_8_3_2 pure (List.finRange n) T Q)`, with `μ = wilkinsonShift T`: there is
-`Z` orthogonal (a product of `n - 1` rotations `GolubVanLoan.Chapter05.givensRotation k (k+1) c_k s_k`) with `T' = Zᵀ T Z`,
-`Q' = Q Z`, `T'` symmetric tridiagonal, `Z e₁ = G₁ e₁` parallel to `(T - μ I) e₁` (the book's
-`Z e₁ = U e₁`), and `Zᵀ (T - μ I)` upper triangular (the book's claim). Consequently, when
-`T - μ I` is nonsingular, `T' = D (Matrix.shiftedQrStep μ T) D` for a diagonal `D` with entries
-`±1` — the implicit step equals the explicit one up to signs. Proof: loop invariant — after step
-`k` the current matrix is tridiagonal except for one bulge at `(k+2, k)` (`bulgeChase_step`), `x, z`
-are its `(k+1,k)`, `(k+2,k)` entries; at the end `T'` is tridiagonal; the first rotation's first
-column is `(t₁₁ - μ, t₂₁)/r`. Upper triangularity of `Zᵀ(T - μ I)` and the sign relation from the
-implicit Q theorem (`theorem_8_3_2`) against the QR factorization of `T - μ I`, whose `QᵀTQ` is
-unreduced in its first `n - 1` subdiagonal entries (`T` unreduced; the last may vanish, and then
-`v_n = ± q_n` by orthogonality). Window form (what Algorithm 8.3.3 uses): for a window on which `T`
-is an unreduced symmetric tridiagonal block decoupled from the rest, the same for that block, `Z` the
-identity off the window. Uses chapter 5's `algorithm_5_1_3_spec`, `givensApplyLeft_spec`,
-`givensApplyRight_spec`. ★★★ (~400 lines)
-
-Blocked: not attempted for lack of time (c08, 2026-09-26); the program `algorithm_8_3_2` (window form, accumulator) and `theorem_8_3_2` are proved. Needs the bulge-chasing invariant over `implicitQRRotate` (`bulgeChase_step`, chapter 5's `givensApplyLeft_spec`/`givensApplyRight_spec`, `algorithm_5_1_3_spec`) and the implicit Q theorem against `Matrix.shiftedQrStep`. ~400 lines.'''
-deps = ["algorithm_8_3_2", "bulgeChase_step", "theorem_8_3_2", "equation_8_3_3", "IsUnreducedTridiagonal", "Matrix.shiftedQrStep", "GolubVanLoan.Chapter05.algorithm_5_1_3_spec", "GolubVanLoan.Chapter05.givensApplyLeft_spec", "GolubVanLoan.Chapter05.givensApplyRight_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.2'
 
 [[node]]
@@ -119,21 +82,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.3'
 
 [[node]]
 id = "algorithm_8_3_3_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.3.3 (an "approximate symmetric Schur decomposition"): for
-symmetric `A`, `0 ≤ tol`, any `fuel`, `(D, Q) := Id.run (algorithm_8_3_3 pure tol A fuel)`: `Q` is
-orthogonal, `D` is symmetric tridiagonal, and `Qᵀ A Q = D + E` with `E` symmetric tridiagonal with
-zero diagonal, nonzero only at deflated positions, and
-`‖E‖_F ≤ c tol ‖A‖_F / (1 - c tol)` for `c = 2 √(2 (n - 1))` whenever `c tol < 1` (each deflated
-entry is `≤ tol (|d_ii| + |d_{i+1,i+1}|) ≤ 2 tol ‖T_j‖_F` for the iterate `T_j = Q_jᵀ A Q_j - E_j`
-at that time, and `‖E_j‖_F ≤ ‖E‖_F`); if the loop stopped before the fuel ran out (`q = n`), `D` is
-diagonal. Invariants from `algorithm_8_3_1_spec` with `GolubVanLoan.Chapter05.forwardAccumulation_spec`
-(`Q₀ = householderProduct data`) and the window form of `algorithm_8_3_2_spec` on the unreduced block
-(`Z` the identity off the window, i.e. `diag(I_p, Z, I_q)`), and the deflation bookkeeping. Convergence (that
-some finite fuel suffices) is Wilkinson's theorem and is not claimed. ★★★ (~350 lines)
-
-Blocked: on `algorithm_8_3_1_spec` and `algorithm_8_3_2_spec` (both open); the program `algorithm_8_3_3` is proved (c08, 2026-09-26). ~350 lines after.'''
-deps = ["algorithm_8_3_3", "algorithm_8_3_1_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec", "algorithm_8_3_2_spec", "tridiagonal_spectrum_split"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.3'
 
 [[node]]
@@ -147,3 +95,7 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (8.3.6)'
 [[node]]
 id = "ritzAcceleration_residual"
 source = 'Golub–Van Loan, Matrix Computations, §8.3.7'
+
+[[node]]
+id = "algorithm_8_3_2_window"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.3.2'
