@@ -62,18 +62,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.2'
 
 [[node]]
 id = "algorithm_8_6_2_spec"
-kind = "theorem"
-desc = '''Exact semantics of Algorithm 8.6.2: for `A : Matrix (Fin m) (Fin n) ℝ`, `m ≥ n`, `ε ≥ 0`,
-any `fuel`, `(D, U, V) := Id.run (algorithm_8_6_2 pure ε A fuel)`: `U`, `V` orthogonal,
-`Uᵀ A V = D + E` with `D` upper bidiagonal (`m × n`, zero below row `n`) and `E` supported on the
-deflated superdiagonal positions with `|e_{i,i+1}| ≤ ε (|b_ii| + |b_{i+1,i+1}|)` at deflation time,
-whence `‖E‖_F ≤ c ε ‖A‖_F / (1 - c ε)` (`c = 2√(n-1)`, as in `algorithm_8_3_3_spec`); and if the
-loop stopped on its test, `D` is diagonal — the book's `Uᵀ A V = D + E`, `‖E‖₂ ≈ u ‖A‖₂` in exact
-arithmetic with the deflation tolerance. Uses chapter 5's `algorithm_5_4_2_spec`,
-`algorithm_8_6_1_spec`, `bidiagonal_decouple`. Convergence is not claimed. ★★★ (~350 lines)
-
-Blocked (w7c, 2026-09-30): `algorithm_8_6_1_spec` is proved for a square `B` on the full window only; the pass of Algorithm 8.6.2 runs Algorithm 8.6.1 on a window of the `m × n` array, so a window form (as `algorithm_8_3_2_window` for Algorithm 8.3.2: the state a block similarity `Ūᵀ B V̄` with `Ū`, `V̄` acting on the window, via chapter 7's `blockConj` generalized to the two index sets `w.map (Fin.castLE hnm)` and `w`) is missing, ~200 lines on the model of `golubKahanInv_run`. The forward form `Uᵀ A V = D + E` with `E` supported on the deflated positions is false for the reason recorded in `algorithm_8_3_3_spec` (a later rotation on a window `[p, …]` mixes a deflated entry next to it into the window's neighbours); state it backward, `Uᵀ (A + E) V = D` with the deflations carried back and `‖E‖_F ≤ c ε ‖A‖_F / (1 - c ε)`, as `algorithm_8_3_3_spec` does (its invariant `SymmetricQRInv` — `‖E‖_F ≤ κ · #zero couplings`, a zeroed coupling staying zero — and its deflation lemmas `deflate_pure`, `lastRunWindow_spec`, `blockConj_eq_of_decoupled` carry over; `svdDeflate` zeroes one entry per coupling, so `c = 2 (n - 1)`). The zero-diagonal branch needs the exact semantics of `zeroDiagonalChase` (the row/column chases of `bidiagonal_decouple`). ~450 lines after the window form.'''
-deps = ["algorithm_8_6_2", "algorithm_8_6_1_spec", "bidiagonal_decouple", "GolubVanLoan.Chapter05.algorithm_5_4_2_spec", "GolubVanLoan.Chapter05.forwardAccumulation_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 8.6.2'
 
 [[node]]
