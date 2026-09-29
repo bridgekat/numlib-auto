@@ -46,9 +46,5 @@ id = "Submodule.norm_eq_gap_graph_div"
 [[node]]
 id = "LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant"
 
-[[node]]
-id = "Matrix.frobenius_norm_submatrix_le"
-deps = []
-
 [[node]]  # added by sv2
 id = "Krylov.gap_subspaceIterate_le_of_isCompl"

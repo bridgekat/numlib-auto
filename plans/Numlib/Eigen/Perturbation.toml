@@ -121,7 +121,4 @@ id = "Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul"
 id = "Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul"
 
 [[node]]  # added by syl1: the resolvent step, Banach-algebra and p-norm forms
-id = "NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub"
-
-[[node]]  # added by syl1: the resolvent step, Banach-algebra and p-norm forms
 id = "Matrix.one_le_lpOpNorm_mul_of_mem_spectrum_add"

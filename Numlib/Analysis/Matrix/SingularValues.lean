@@ -22,6 +22,8 @@ vocabulary of `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.sortedSingularValues`, 
   (`Matrix.toEuclideanLin_hermitianDilation`) and its spectrum
   `Matrix.IsHermitian.eigenvalues₀_hermitianDilation`:
   `σ_0, …, σ_{p-1}, 0, …, 0, -σ_{p-1}, …, -σ_0`.
+* `Matrix.abs_sortedSingularValues_add_sub_le`: **Weyl's perturbation bound**
+  `|σ_i(A + B) − σ_i(A)| ≤ ‖B‖₂`, and its Frobenius form.
 * `Matrix.sum_sq_sortedSingularValues_sub_le`: **Mirsky's inequality**
   `∑ (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`, Hoffman–Wielandt for the dilations.
 * **Eckart–Young**: `Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le` and
@@ -35,6 +37,9 @@ vocabulary of `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.sortedSingularValues`, 
 * `Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul`: **von Neumann's trace inequality**.
 * `Matrix.sortedSingularValues_submatrix_le`: deleting rows or columns does not increase any
   singular value.
+* `Matrix.frobenius_norm_pinv_sub_le`: **Wedin's bound**
+  `‖B⁺ - A⁺‖_F ≤ 2 ‖B - A‖_F max(‖A⁺‖₂², ‖B⁺‖₂²)` with no rank hypothesis, from the three-term
+  decomposition `Matrix.pinv_sub_pinv_eq` ([golub2013matrix] §5.5.3).
 * `Matrix.exists_singularSubspacePair_perturbation`: **the perturbation of a singular subspace
   pair** (Stewart, Wedin), with Wedin's condition for non-square trailing blocks, by Stewart's
   quadratic-equation lemma for the coupled Sylvester operator of the pair.
@@ -128,24 +133,6 @@ theorem sortedSingularValues_submatrix_equiv (A : Matrix m n 𝕜) (e : l ≃ m)
       _ ≤ (A.submatrix e f).sortedSingularValues i :=
           sortedSingularValues_submatrix_rows_le _ e.symm.toEmbedding i
 
-open scoped Matrix.Norms.L2Operator in
-/-- Reindexing does not change the `2`-norm. -/
-theorem l2_opNorm_submatrix_equiv (A : Matrix m n 𝕜) (e : l ≃ m) (f : k ≃ n) :
-    ‖A.submatrix e f‖ = ‖A‖ := by
-  rw [← sortedSingularValues_zero_eq_l2_opNorm, ← sortedSingularValues_zero_eq_l2_opNorm,
-    sortedSingularValues_submatrix_equiv]
-
-omit [DecidableEq n] [DecidableEq k] in
-open scoped Matrix.Norms.Frobenius in
-/-- Reindexing does not change the Frobenius norm. -/
-theorem frobenius_norm_submatrix_equiv (A : Matrix m n 𝕜) (e : l ≃ m) (f : k ≃ n) :
-    ‖A.submatrix e f‖ = ‖A‖ := by
-  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  simp only [submatrix_apply]
-  rw [← e.sum_comp (fun i => ∑ j, ‖A i j‖ ^ 2)]
-  exact Finset.sum_congr rfl fun i _ => f.sum_comp (fun j => ‖A (e i) j‖ ^ 2)
-
 end Submatrix
 
 /-! ### Elementary facts about sorted singular values -/
@@ -218,6 +205,40 @@ theorem frobenius_norm_sq_eq_sum_sq_sortedSingularValues (A : Matrix m n 𝕜) :
   rw [frobenius_norm_sq_eq_sum_sq_colSingularValues, ← e.sum_comp,
     ← Fin.sum_univ_eq_sum_range (fun i => A.sortedSingularValues i ^ 2)]
   exact Finset.sum_congr rfl fun k _ => by rw [he]
+
+/-- **Weyl's perturbation bound** ([golub2013matrix] Corollary 8.6.2):
+`|σ_i(A + B) − σ_i(A)| ≤ σ_0(B) = ‖B‖₂`, from `Matrix.sortedSingularValues_add_le` in both
+directions. -/
+theorem abs_sortedSingularValues_add_sub_le (A B : Matrix m n 𝕜) (i : ℕ) :
+    |(A + B).sortedSingularValues i - A.sortedSingularValues i| ≤ B.sortedSingularValues 0 := by
+  have h1 := sortedSingularValues_add_le A B i 0
+  have h2 := sortedSingularValues_add_le (A + B) (-B) i 0
+  rw [add_zero] at h1
+  rw [add_neg_cancel_right, add_zero] at h2
+  have hneg : (-B).sortedSingularValues 0 = B.sortedSingularValues 0 := by
+    rw [← neg_one_smul 𝕜 B, sortedSingularValues_smul, norm_neg, norm_one, one_mul]
+  rw [hneg] at h2
+  rw [abs_le]
+  constructor <;> linarith
+
+open scoped Matrix.Norms.Frobenius in
+/-- The largest singular value is at most the Frobenius norm, `σ_0(A) = ‖A‖₂ ≤ ‖A‖_F`. -/
+theorem sortedSingularValues_zero_le_frobenius_norm (A : Matrix m n 𝕜) :
+    A.sortedSingularValues 0 ≤ ‖A‖ := by
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | hpos
+  · rw [A.sortedSingularValues_eq_zero_of_min_le (by omega)]
+    exact norm_nonneg _
+  · refine (pow_le_pow_iff_left₀ (A.sortedSingularValues_nonneg 0) (norm_nonneg _)
+      two_ne_zero).1 ?_
+    rw [frobenius_norm_sq_eq_sum_sq_sortedSingularValues]
+    exact Finset.single_le_sum (f := fun i => A.sortedSingularValues i ^ 2)
+      (fun i _ => sq_nonneg _) (Finset.mem_range.2 hpos)
+
+open scoped Matrix.Norms.Frobenius in
+/-- **Weyl's perturbation bound in the Frobenius norm**: `|σ_i(A + B) − σ_i(A)| ≤ ‖B‖_F`. -/
+theorem abs_sortedSingularValues_add_sub_le_frobenius_norm (A B : Matrix m n 𝕜) (i : ℕ) :
+    |(A + B).sortedSingularValues i - A.sortedSingularValues i| ≤ ‖B‖ :=
+  (abs_sortedSingularValues_add_sub_le A B i).trans (sortedSingularValues_zero_le_frobenius_norm B)
 
 end Basic
 
@@ -897,14 +918,6 @@ private theorem starProjection_apply_congr {E : Type*} [NormedAddCommGroup E]
   subst h
   rfl
 
-/-- The range of a matrix with orthonormal columns has dimension the number of columns. -/
-private theorem finrank_range_of_conjTranspose_mul_self_eq_one [DecidableEq k]
-    {W : Matrix n k 𝕜} (hW : Wᴴ * W = 1) :
-    finrank 𝕜 (LinearMap.range (toEuclideanLin W)) = Fintype.card k := by
-  classical
-  rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin W)
-    (toEuclideanLinearIsometry hW).injective, finrank_euclideanSpace]
-
 open scoped Matrix.Norms.L2Operator in
 /-- **The distance between subspaces in matrix form** ([golub2013matrix] Theorem 2.5.1): if `W₁`,
 `Z₁`, `Z₂` have orthonormal columns and `range Z₂ = (range Z₁)ᗮ`, then the gap between the ranges
@@ -1106,6 +1119,178 @@ theorem pinvCondNumberLp_two_conjTranspose_mul_self [Nonempty n] {A : Matrix m n
   ring
 
 end Pinv
+
+/-! ### Wedin's bound: the perturbation of the pseudoinverse -/
+
+section Wedin
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+
+open scoped Matrix.Norms.Frobenius
+
+/-- **Wedin's decomposition** of the difference of two generalized inverses: if `P` and `Q`
+satisfy the four Penrose conditions for `A` and `B` (so `P = A⁺`, `Q = B⁺`), then
+`Q - P = -Q (B - A) P + Q Qᴴ (B - A)ᴴ (1 - A P) + (1 - Q B) (B - A)ᴴ Pᴴ P`. -/
+theorem sub_eq_of_penrose {A B : Matrix m n 𝕜} {P Q : Matrix n m 𝕜} (hA1 : A * P * A = A)
+    (hA2 : P * A * P = P) (hA4 : (P * A)ᴴ = P * A) (hA3 : (A * P)ᴴ = A * P)
+    (hB1 : B * Q * B = B) (hB2 : Q * B * Q = Q) (hB3 : (B * Q)ᴴ = B * Q)
+    (hB4 : (Q * B)ᴴ = Q * B) :
+    Q - P = -(Q * ((B - A) * P)) + Q * (Qᴴ * ((B - A)ᴴ * (1 - A * P)))
+      + (1 - Q * B) * ((B - A)ᴴ * Pᴴ * P) := by
+  have f1 : Aᴴ * (1 - A * P) = 0 := by
+    rw [Matrix.mul_sub, Matrix.mul_one, ← hA3, ← conjTranspose_mul, hA1, sub_self]
+  have f2 : Q * Qᴴ * Bᴴ = Q := by
+    rw [Matrix.mul_assoc, ← conjTranspose_mul, hB3, ← Matrix.mul_assoc, hB2]
+  have f3 : (1 - Q * B) * Bᴴ = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, ← hB4, ← conjTranspose_mul, ← Matrix.mul_assoc, hB1,
+      sub_self]
+  have f4 : Aᴴ * Pᴴ * P = P := by
+    rw [← conjTranspose_mul, hA4, hA2]
+  have T2 : Q * (Qᴴ * ((B - A)ᴴ * (1 - A * P))) = Q * (1 - A * P) := by
+    rw [conjTranspose_sub, Matrix.sub_mul Bᴴ Aᴴ (1 - A * P), f1, sub_zero,
+      ← Matrix.mul_assoc Q Qᴴ (Bᴴ * (1 - A * P)), ← Matrix.mul_assoc (Q * Qᴴ) Bᴴ (1 - A * P), f2]
+  have T3 : (1 - Q * B) * ((B - A)ᴴ * Pᴴ * P) = -((1 - Q * B) * P) := by
+    rw [conjTranspose_sub, Matrix.sub_mul Bᴴ Aᴴ Pᴴ, Matrix.sub_mul (Bᴴ * Pᴴ) (Aᴴ * Pᴴ) P, f4,
+      Matrix.mul_sub (1 - Q * B) (Bᴴ * Pᴴ * P) P, Matrix.mul_assoc Bᴴ Pᴴ P,
+      ← Matrix.mul_assoc (1 - Q * B) Bᴴ (Pᴴ * P), f3, Matrix.zero_mul, zero_sub]
+  rw [T2, T3]
+  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
+  abel
+
+/-- **Wedin's decomposition** of the difference of two pseudoinverses ([golub2013matrix] §5.5.3):
+`B⁺ - A⁺ = -B⁺ (B - A) A⁺ + B⁺ B⁺ᴴ (B - A)ᴴ (1 - A A⁺) + (1 - B⁺ B) (B - A)ᴴ A⁺ᴴ A⁺`. -/
+theorem pinv_sub_pinv_eq (A B : Matrix m n 𝕜) :
+    B.pinv - A.pinv = -(B.pinv * ((B - A) * A.pinv))
+      + B.pinv * (B.pinvᴴ * ((B - A)ᴴ * (1 - A * A.pinv)))
+      + (1 - B.pinv * B) * ((B - A)ᴴ * A.pinvᴴ * A.pinv) :=
+  sub_eq_of_penrose A.mul_pinv_mul_self A.pinv_mul_self_mul_pinv A.isHermitian_pinv_mul
+    A.isHermitian_mul_pinv B.mul_pinv_mul_self B.pinv_mul_self_mul_pinv B.isHermitian_mul_pinv
+    B.isHermitian_pinv_mul
+
+/-- The scalar end of Wedin's bound: three terms, each at most `e max(p², q²)`, whose squares add
+to `d²`, give `d ≤ 2 e max(p², q²)` (as `√3 ≤ 2`). -/
+private theorem wedin_real_bound {d t₁ t₂ t₃ p q e : ℝ}
+    (hsq : d ^ 2 = t₁ ^ 2 + t₂ ^ 2 + t₃ ^ 2)
+    (hd : 0 ≤ d) (h₁ : 0 ≤ t₁) (h₂ : 0 ≤ t₂) (h₃ : 0 ≤ t₃) (he : 0 ≤ e)
+    (b₁ : t₁ ≤ q * (e * p)) (b₂ : t₂ ≤ q * (q * (e * 1))) (b₃ : t₃ ≤ 1 * (e * p * p)) :
+    d ≤ 2 * e * max (p ^ 2) (q ^ 2) := by
+  have hpM : p ^ 2 ≤ max (p ^ 2) (q ^ 2) := le_max_left _ _
+  have hqM : q ^ 2 ≤ max (p ^ 2) (q ^ 2) := le_max_right _ _
+  generalize max (p ^ 2) (q ^ 2) = M at *
+  have hM0 : 0 ≤ M := (sq_nonneg p).trans hpM
+  have hqp : q * p ≤ M := by nlinarith [sq_nonneg (q - p)]
+  have k₁ : t₁ ≤ e * M := b₁.trans (by nlinarith [mul_le_mul_of_nonneg_left hqp he])
+  have k₂ : t₂ ≤ e * M := b₂.trans (by nlinarith [mul_le_mul_of_nonneg_left hqM he])
+  have k₃ : t₃ ≤ e * M := b₃.trans (by nlinarith [mul_le_mul_of_nonneg_left hpM he])
+  have hfin : d ^ 2 ≤ (2 * e * M) ^ 2 := by
+    rw [hsq]
+    nlinarith [pow_le_pow_left₀ h₁ k₁ 2, pow_le_pow_left₀ h₂ k₂ 2, pow_le_pow_left₀ h₃ k₃ 2,
+      sq_nonneg (e * M)]
+  exact (pow_le_pow_iff_left₀ hd (by positivity) two_ne_zero).1 hfin
+
+omit [DecidableEq n] in
+/-- Wedin's bound for generalized inverses satisfying the Penrose conditions; the engine of
+`Matrix.frobenius_norm_pinv_sub_le`. -/
+theorem frobenius_norm_sub_le_of_penrose {A B : Matrix m n 𝕜} {P Q : Matrix n m 𝕜}
+    (hA1 : A * P * A = A) (hA2 : P * A * P = P) (hA4 : (P * A)ᴴ = P * A)
+    (hA3 : (A * P)ᴴ = A * P) (hB1 : B * Q * B = B) (hB2 : Q * B * Q = Q)
+    (hB3 : (B * Q)ᴴ = B * Q) (hB4 : (Q * B)ᴴ = Q * B) :
+    ‖Q - P‖ ≤ 2 * ‖B - A‖ *
+      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ ^ 2)
+        (‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖ ^ 2) := by
+  classical
+  have hdec := sub_eq_of_penrose hA1 hA2 hA4 hA3 hB1 hB2 hB3 hB4
+  generalize B - A = E at hdec ⊢
+  -- the two orthogonal projectors `1 - A P` and `1 - Q B`
+  have h0 : (1 - A * P) * (A * P) = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, ← Matrix.mul_assoc, hA1, sub_self]
+  have hAP2 : (1 - A * P) * (1 - A * P) = 1 - A * P := by
+    rw [Matrix.mul_sub (1 - A * P) 1 (A * P), Matrix.mul_one, h0, sub_zero]
+  have h0' : (1 - Q * B) * (Q * B) = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, ← Matrix.mul_assoc, hB2, sub_self]
+  have hQB2 : (1 - Q * B) * (1 - Q * B) = 1 - Q * B := by
+    rw [Matrix.mul_sub (1 - Q * B) 1 (Q * B), Matrix.mul_one, h0', sub_zero]
+  have hAP : (1 - A * P).IsHermitian := isHermitian_one.sub hA3
+  have hQB : (1 - Q * B).IsHermitian := isHermitian_one.sub hB4
+  -- orthogonality of the first two terms and the third
+  have hO1 : trace ((-(Q * (E * P)) + Q * (Qᴴ * (Eᴴ * (1 - A * P))))ᴴ
+      * ((1 - Q * B) * (Eᴴ * Pᴴ * P))) = 0 := by
+    have hQ : Qᴴ * (1 - Q * B) = 0 := by
+      rw [← hQB.eq, ← conjTranspose_mul, Matrix.sub_mul, Matrix.one_mul, hB2, sub_self,
+        conjTranspose_zero]
+    rw [← Matrix.mul_neg, ← Matrix.mul_add, conjTranspose_mul, Matrix.mul_assoc,
+      ← Matrix.mul_assoc Qᴴ (1 - Q * B), hQ, Matrix.zero_mul, Matrix.mul_zero, trace_zero]
+  -- orthogonality of the first two terms
+  have hO2 : trace ((-(Q * (E * P)))ᴴ * (Q * (Qᴴ * (Eᴴ * (1 - A * P))))) = 0 := by
+    have hPh : Pᴴ = A * P * Pᴴ := by
+      have h : P = P * (A * P) := by rw [← Matrix.mul_assoc, hA2]
+      calc Pᴴ = (P * (A * P))ᴴ := by rw [← h]
+        _ = A * P * Pᴴ := by rw [conjTranspose_mul, hA3]
+    have e1 : (-(Q * (E * P)))ᴴ * (Q * (Qᴴ * (Eᴴ * (1 - A * P))))
+        = -(Pᴴ * (Eᴴ * Qᴴ * Q * Qᴴ * Eᴴ * (1 - A * P))) := by
+      simp only [conjTranspose_neg, conjTranspose_mul, Matrix.neg_mul, Matrix.mul_assoc]
+    rw [e1, trace_neg, hPh, Matrix.mul_assoc (A * P) Pᴴ,
+      trace_mul_comm (A * P), Matrix.mul_assoc Pᴴ _ (A * P),
+      Matrix.mul_assoc (Eᴴ * Qᴴ * Q * Qᴴ * Eᴴ) (1 - A * P) (A * P), h0, Matrix.mul_zero,
+      Matrix.mul_zero, trace_zero, neg_zero]
+  -- the three bounds
+  have hq0 := norm_nonneg (LinearMap.toContinuousLinearMap (toEuclideanLin Q))
+  have hp0 := norm_nonneg (LinearMap.toContinuousLinearMap (toEuclideanLin P))
+  have he0 := norm_nonneg E
+  have hB1' : ‖-(Q * (E * P))‖ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖
+      * (‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖) := by
+    rw [norm_neg]
+    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul Q _).trans
+      (mul_le_mul_of_nonneg_left (frobenius_norm_mul_le_mul_norm_toEuclideanLin E P) hq0)
+  have hB2' : ‖Q * (Qᴴ * (Eᴴ * (1 - A * P)))‖
+      ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖
+        * (‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖ * (‖E‖ * 1)) := by
+    have hEP : ‖Eᴴ * (1 - A * P)‖ ≤ ‖E‖ * 1 := by
+      refine (frobenius_norm_mul_le_mul_norm_toEuclideanLin _ _).trans ?_
+      rw [frobenius_norm_conjTranspose]
+      exact mul_le_mul_of_nonneg_left (norm_toEuclideanLin_le_one_of_isHermitian hAP hAP2) he0
+    have h2 := frobenius_norm_mul_le_norm_toEuclideanLin_mul Qᴴ (Eᴴ * (1 - A * P))
+    rw [norm_toEuclideanLin_conjTranspose] at h2
+    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul Q _).trans
+      (mul_le_mul_of_nonneg_left (h2.trans (mul_le_mul_of_nonneg_left hEP hq0)) hq0)
+  have hB3' : ‖(1 - Q * B) * (Eᴴ * Pᴴ * P)‖
+      ≤ 1 * (‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖
+        * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖) := by
+    have h1 : ‖Eᴴ * Pᴴ‖ ≤ ‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ := by
+      have := frobenius_norm_mul_le_mul_norm_toEuclideanLin Eᴴ Pᴴ
+      rwa [frobenius_norm_conjTranspose, norm_toEuclideanLin_conjTranspose] at this
+    have h2 : ‖Eᴴ * Pᴴ * P‖ ≤ ‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖
+        * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ :=
+      (frobenius_norm_mul_le_mul_norm_toEuclideanLin _ P).trans
+        (mul_le_mul_of_nonneg_right h1 hp0)
+    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul _ _).trans
+      (mul_le_mul (norm_toEuclideanLin_le_one_of_isHermitian hQB hQB2) h2 (norm_nonneg _)
+        zero_le_one)
+  have hsq : ‖Q - P‖ ^ 2 = ‖-(Q * (E * P))‖ ^ 2 + ‖Q * (Qᴴ * (Eᴴ * (1 - A * P)))‖ ^ 2
+      + ‖(1 - Q * B) * (Eᴴ * Pᴴ * P)‖ ^ 2 := by
+    rw [hdec, frobenius_norm_add_sq_of_trace_eq_zero hO1,
+      frobenius_norm_add_sq_of_trace_eq_zero hO2]
+  exact wedin_real_bound hsq (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _)
+    he0 hB1' hB2' hB3'
+
+/-- **Wedin's bound** ([golub2013matrix] §5.5.3, after Wedin (1973) and Stewart (1977)): for
+`A, E : Matrix m n 𝕜`, `‖(A + E)⁺ - A⁺‖_F ≤ 2 ‖E‖_F max(‖A⁺‖₂², ‖(A + E)⁺‖₂²)`, with no rank
+hypothesis. The three terms of Wedin's decomposition `Matrix.pinv_sub_pinv_eq` are mutually
+orthogonal for the Frobenius inner product and bounded by `‖B⁺‖₂ ‖E‖_F ‖A⁺‖₂`, `‖B⁺‖₂² ‖E‖_F`
+and `‖E‖_F ‖A⁺‖₂²`; the constant is `√3 ≤ 2`.
+
+The Frobenius norm is the scoped instance `Matrix.Norms.Frobenius`; the spectral norms are written
+as operator norms of `toEuclideanLin`, which is `‖·‖` under `Matrix.Norms.L2Operator`. -/
+theorem frobenius_norm_pinv_sub_le (A E : Matrix m n 𝕜) :
+    ‖(A + E).pinv - A.pinv‖ ≤ 2 * ‖E‖ *
+      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin A.pinv)‖ ^ 2)
+        (‖LinearMap.toContinuousLinearMap (toEuclideanLin (A + E).pinv)‖ ^ 2) := by
+  have h := frobenius_norm_sub_le_of_penrose A.mul_pinv_mul_self A.pinv_mul_self_mul_pinv
+    A.isHermitian_pinv_mul A.isHermitian_mul_pinv (A + E).mul_pinv_mul_self
+    (A + E).pinv_mul_self_mul_pinv (A + E).isHermitian_mul_pinv (A + E).isHermitian_pinv_mul
+  rwa [add_sub_cancel_left] at h
+
+end Wedin
 
 /-! ### The norm of `P (I + Pᴴ P)^{-1/2}` -/
 
@@ -1588,87 +1773,6 @@ section SingularSubspacePair
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The squared Frobenius norm of a block matrix is the sum over its blocks. -/
-private theorem frobenius_norm_fromBlocks_sq {a b c d : Type*} [Fintype a] [Fintype b]
-    [Fintype c] [Fintype d] (M₁₁ : Matrix a c 𝕜) (M₁₂ : Matrix a d 𝕜) (M₂₁ : Matrix b c 𝕜)
-    (M₂₂ : Matrix b d 𝕜) :
-    ‖fromBlocks M₁₁ M₁₂ M₂₁ M₂₂‖ ^ 2 = ‖M₁₁‖ ^ 2 + ‖M₁₂‖ ^ 2 + ‖M₂₁‖ ^ 2 + ‖M₂₂‖ ^ 2 := by
-  simp only [frobenius_norm_sq_eq_sum_sq, Fintype.sum_sum_type, fromBlocks_apply₁₁,
-    fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂, Finset.sum_add_distrib]
-  ring
-
-/-- The squared Frobenius norm of a stacked matrix is the sum over its row blocks. -/
-private theorem frobenius_norm_fromRows_sq {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
-    (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖fromRows P Q‖ ^ 2 = ‖P‖ ^ 2 + ‖Q‖ ^ 2 := by
-  simp only [frobenius_norm_sq_eq_sum_sq, Fintype.sum_sum_type, fromRows_apply_inl,
-    fromRows_apply_inr]
-
-/-- Swapping the two row blocks of a stacked matrix preserves the Frobenius norm. -/
-private theorem frobenius_norm_fromRows_comm {a b c : Type*} [Fintype a] [Fintype b]
-    [Fintype c] (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖fromRows Q P‖ = ‖fromRows P Q‖ := by
-  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [frobenius_norm_fromRows_sq, frobenius_norm_fromRows_sq, add_comm]
-
-/-- Each row block of a stacked matrix has at most its Frobenius norm. -/
-private theorem frobenius_norm_le_fromRows {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
-    (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖P‖ ≤ ‖fromRows P Q‖ ∧ ‖Q‖ ≤ ‖fromRows P Q‖ := by
-  have h := frobenius_norm_fromRows_sq P Q
-  constructor <;>
-    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
-    rw [h] <;> linarith [sq_nonneg ‖P‖, sq_nonneg ‖Q‖]
-
-/-- The diagonal blocks of a block matrix have at most its Frobenius norm, and the two
-off-diagonal blocks together have at most its squared Frobenius norm. -/
-private theorem frobenius_norm_toBlocks_le {a b c d : Type*} [Fintype a] [Fintype b]
-    [Fintype c] [Fintype d] (M : Matrix (a ⊕ b) (c ⊕ d) 𝕜) :
-    ‖M.toBlocks₁₁‖ ≤ ‖M‖ ∧ ‖M.toBlocks₂₂‖ ≤ ‖M‖ ∧
-      ‖M.toBlocks₁₂‖ ^ 2 + ‖M.toBlocks₂₁‖ ^ 2 ≤ ‖M‖ ^ 2 := by
-  have h := frobenius_norm_fromBlocks_sq M.toBlocks₁₁ M.toBlocks₁₂ M.toBlocks₂₁ M.toBlocks₂₂
-  rw [fromBlocks_toBlocks] at h
-  have h₁₁ := sq_nonneg ‖M.toBlocks₁₁‖
-  have h₁₂ := sq_nonneg ‖M.toBlocks₁₂‖
-  have h₂₁ := sq_nonneg ‖M.toBlocks₂₁‖
-  have h₂₂ := sq_nonneg ‖M.toBlocks₂₂‖
-  refine ⟨?_, ?_, by linarith⟩ <;>
-    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
-    linarith
-
-/-- A factor with orthonormal columns on the left preserves the Frobenius norm. -/
-private theorem frobenius_norm_mul_of_conjTranspose_mul_self {a b c : Type*} [Fintype a]
-    [Fintype b] [Fintype c] [DecidableEq b] {W : Matrix a b 𝕜} (hW : Wᴴ * W = 1)
-    (X : Matrix b c 𝕜) : ‖W * X‖ = ‖X‖ := by
-  have := frobenius_norm_sq_eq_trace (W * X)
-  rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Wᴴ, hW, Matrix.one_mul,
-    ← frobenius_norm_sq_eq_trace] at this
-  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 (by exact_mod_cast this)
-
-/-- The largest singular value is at most the Frobenius norm. -/
-private theorem sortedSingularValues_zero_le_frobenius_norm {a b : Type*} [Fintype a]
-    [Fintype b] [DecidableEq b] (M : Matrix a b 𝕜) : M.sortedSingularValues 0 ≤ ‖M‖ := by
-  rcases Nat.eq_zero_or_pos (Fintype.card b) with h0 | hpos
-  · rw [M.sortedSingularValues_eq_zero_of_min_le (by omega)]
-    exact norm_nonneg _
-  · refine (pow_le_pow_iff_left₀ (M.sortedSingularValues_nonneg 0) (norm_nonneg _)
-      two_ne_zero).1 ?_
-    rw [frobenius_norm_sq_eq_sum_sq_sortedSingularValues]
-    exact Finset.single_le_sum (f := fun i => M.sortedSingularValues i ^ 2)
-      (fun i _ => sq_nonneg _) (Finset.mem_range.2 hpos)
-
-/-- **Weyl's bound in the Frobenius norm**: `|σ_i(M + N) − σ_i(M)| ≤ ‖N‖_F`. -/
-private theorem abs_sortedSingularValues_add_sub_le {a b : Type*} [Fintype a] [Fintype b]
-    [DecidableEq b] (M N : Matrix a b 𝕜) (i : ℕ) :
-    |(M + N).sortedSingularValues i - M.sortedSingularValues i| ≤ ‖N‖ := by
-  have h1 := sortedSingularValues_add_le M N i 0
-  have h2 := sortedSingularValues_add_le (M + N) (-N) i 0
-  rw [add_zero] at h1
-  rw [add_neg_cancel_right, add_zero] at h2
-  have hneg : (-N).sortedSingularValues 0 = N.sortedSingularValues 0 := by
-    rw [← neg_one_smul 𝕜 N, sortedSingularValues_smul, norm_neg, norm_one, one_mul]
-  rw [hneg] at h2
-  have h3 := sortedSingularValues_zero_le_frobenius_norm N
-  rw [abs_le]
-  constructor <;> linarith
-
 /-- A separation survives perturbations of both sides: if `δ ≤ |a − b|`, `|a' − a| ≤ ε₁` and
 `|b' − b| ≤ ε₂`, then `δ − (ε₁ + ε₂) ≤ |a' − b'|`. -/
 private theorem le_abs_sub_of_abs_sub_le {a b a' b' δ ε₁ ε₂ : ℝ} (h : δ ≤ |a - b|)
@@ -2016,9 +2120,9 @@ theorem exists_singularSubspacePair_perturbation {A E : Matrix m n 𝕜}
   set S := Uᴴ * E * V with hS
   have hε0 : 0 ≤ ‖E‖ := norm_nonneg _
   have hSn : ‖S‖ = ‖E‖ := by
-    rw [hS, Matrix.mul_assoc, frobenius_norm_mul_of_conjTranspose_mul_self
+    rw [hS, Matrix.mul_assoc, frobenius_norm_mul_of_conjTranspose_mul_self_eq_one
       (by rw [conjTranspose_conjTranspose]; exact hU'), ← frobenius_norm_conjTranspose (E * V),
-      conjTranspose_mul, frobenius_norm_mul_of_conjTranspose_mul_self
+      conjTranspose_mul, frobenius_norm_mul_of_conjTranspose_mul_self_eq_one
         (by rw [conjTranspose_conjTranspose]; exact hV'), frobenius_norm_conjTranspose]
   obtain ⟨hS₁₁, hS₂₂, hSoff⟩ := frobenius_norm_toBlocks_le S
   rw [hSn] at hS₁₁ hS₂₂ hSoff
@@ -2040,13 +2144,14 @@ theorem exists_singularSubspacePair_perturbation {A E : Matrix m n 𝕜}
         (A'.toBlocks₂₂ + S.toBlocks₂₂).sortedSingularValues j| := by
     intro i hi j hj
     have h := le_abs_sub_of_abs_sub_le (hsep i hi j hj)
-      ((abs_sortedSingularValues_add_sub_le A'.toBlocks₁₁ S.toBlocks₁₁ i).trans hS₁₁)
-      ((abs_sortedSingularValues_add_sub_le A'.toBlocks₂₂ S.toBlocks₂₂ j).trans hS₂₂)
+      ((abs_sortedSingularValues_add_sub_le_frobenius_norm A'.toBlocks₁₁ S.toBlocks₁₁ i).trans hS₁₁)
+      ((abs_sortedSingularValues_add_sub_le_frobenius_norm A'.toBlocks₂₂ S.toBlocks₂₂ j).trans hS₂₂)
     linarith
   have hw' : Fintype.card p ≠ Fintype.card q →
       ∀ i < Fintype.card k, δ - 2 * ‖E‖ ≤ (A'.toBlocks₁₁ + S.toBlocks₁₁).sortedSingularValues i :=
     fun hpq i hi => by
-      have h1 := (abs_sortedSingularValues_add_sub_le A'.toBlocks₁₁ S.toBlocks₁₁ i).trans hS₁₁
+      have h1 := (abs_sortedSingularValues_add_sub_le_frobenius_norm A'.toBlocks₁₁ S.toBlocks₁₁
+        i).trans hS₁₁
       have h2 := hw hpq i hi
       linarith [(abs_le.1 h1).1]
   have hδ' : 3 * δ / 5 ≤ δ - 2 * ‖E‖ := by linarith

@@ -262,17 +262,6 @@ theorem theorem_4_2_6 {A L U T S : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveD
   exact this
 
 open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norm is monotone in the absolute values: `|E| ≤ M` entrywise gives
-`‖E‖_F ≤ ‖M‖_F`. -/
-private theorem frobenius_norm_le_of_abs_entrywiseLE {E M : Matrix (Fin n) (Fin n) ℝ}
-    (h : E.abs ≤ₑ M) : ‖E‖ ≤ ‖M‖ := by
-  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
-  rw [Real.norm_eq_abs, Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) ((h i j).trans (le_abs_self _)) 2
-
-open scoped Matrix.Norms.Frobenius in
 /-- **(4.2.7)**, rigorous: "Assume that the computed factors `L̂` and `Û` satisfy
 `‖|L̂||Û|‖_F ≤ c ‖|L||U|‖_F` (4.2.6), where `c` is a constant of modest size. It follows from
 (4.2.1) and the analysis in §3.3 that if these factors are used to compute a solution to
@@ -296,7 +285,9 @@ theorem equation_4_2_7 {fp : RoundingModel ℝ} {A L U L' U' T S : Matrix (Fin n
   rw [Fintype.card_fin] at hE
   have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
   refine ⟨E, hEx, ?_⟩
-  calc ‖E‖ ≤ ‖gamma fp.u (3 * n) • (L'.abs * U'.abs)‖ := frobenius_norm_le_of_abs_entrywiseLE hE
+  calc ‖E‖ ≤ ‖gamma fp.u (3 * n) • (L'.abs * U'.abs)‖ :=
+        frobenius_norm_le_of_abs_entrywiseLE
+          (hE.trans fun i j => le_abs_self ((gamma fp.u (3 * n) • (L'.abs * U'.abs)) i j))
     _ = gamma fp.u (3 * n) * ‖L'.abs * U'.abs‖ := by
         rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hγ]
     _ ≤ gamma fp.u (3 * n) * (c * ‖L.abs * U.abs‖) := mul_le_mul_of_nonneg_left hc hγ

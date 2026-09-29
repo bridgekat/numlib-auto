@@ -113,11 +113,5 @@ id = "isMinOn_norm_sub_mul_transpose_iff"
 id = "finrank_range_toEuclideanLin"
 
 [[node]]  # added by ls1
-id = "frobenius_norm_sq_eq_sum_norm_sq_col"
-
-[[node]]  # added by ls1
-id = "frobenius_norm_sq_eq_sum_norm_toLp_row_sq"
-
-[[node]]  # added by ls1
 id = "exists_mul_conjTranspose_mul_self_eq"
 source = "Golub–Van Loan, Matrix Computations, (12.5.16)–(12.5.20)"

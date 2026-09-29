@@ -1236,43 +1236,9 @@ section UnsymmetricLU
 open scoped Matrix.Norms.Frobenius
 
 omit [LinearOrder n] in
-/-- Cauchy–Schwarz for a positive semidefinite real quadratic form:
-`(xᵀ T y)² ≤ (xᵀ T x)(yᵀ T y)`. -/
-private theorem sq_dotProduct_mulVec_le {T : Matrix n n ℝ} (hT : T.PosSemidef) (x y : n → ℝ) :
-    (x ⬝ᵥ (T *ᵥ y)) ^ 2 ≤ (x ⬝ᵥ (T *ᵥ x)) * (y ⬝ᵥ (T *ᵥ y)) := by
-  have hTt : Tᵀ = T := by
-    have := hT.isHermitian.eq
-    rwa [conjTranspose_eq_transpose_of_trivial] at this
-  have hsymm : y ⬝ᵥ (T *ᵥ x) = x ⬝ᵥ (T *ᵥ y) := by
-    rw [dotProduct_mulVec, ← mulVec_transpose, hTt, dotProduct_comm]
-  have h := discrim_le_zero (a := y ⬝ᵥ (T *ᵥ y)) (b := 2 * (x ⬝ᵥ (T *ᵥ y)))
-    (c := x ⬝ᵥ (T *ᵥ x)) fun t => by
-      have := hT.dotProduct_mulVec_nonneg (x + t • y)
-      simp only [star_trivial, mulVec_add, mulVec_smul, dotProduct_add, add_dotProduct,
-        dotProduct_smul, smul_dotProduct, smul_eq_mul, hsymm] at this
-      linarith
-  rw [discrim] at h
-  nlinarith [h]
-
-omit [LinearOrder n] in
 /-- `0 ≤ vᵀ v` for a real vector. -/
 private theorem dot_self_nonneg (v : n → ℝ) : 0 ≤ v ⬝ᵥ v :=
   Finset.sum_nonneg fun _ _ => mul_self_nonneg _
-
-/-- `zᵀ M z ≤ ‖M‖₂ ‖z‖²` for a real matrix. -/
-private theorem dotProduct_mulVec_le_norm_mul (M : Matrix n n ℝ) (z : n → ℝ) :
-    z ⬝ᵥ (M *ᵥ z) ≤ ‖toEuclideanCLM (𝕜 := ℝ) M‖ * (z ⬝ᵥ z) := by
-  have h1 : z ⬝ᵥ (M *ᵥ z)
-      = inner ℝ (WithLp.toLp 2 z) (toEuclideanCLM (𝕜 := ℝ) M (WithLp.toLp 2 z)) := by
-    rw [toEuclideanCLM_toLp, EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
-  have h2 : ‖WithLp.toLp 2 z‖ ^ 2 = z ⬝ᵥ z := by
-    rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
-  rw [h1, ← h2]
-  calc _ ≤ ‖WithLp.toLp 2 z‖ * ‖toEuclideanCLM (𝕜 := ℝ) M (WithLp.toLp 2 z)‖ :=
-        real_inner_le_norm _ _
-    _ ≤ ‖WithLp.toLp 2 z‖ * (‖toEuclideanCLM (𝕜 := ℝ) M‖ * ‖WithLp.toLp 2 z‖) :=
-        mul_le_mul_of_nonneg_left (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
-    _ = _ := by ring
 
 /-- From `p² ≤ p r` with `p, r ≥ 0`, `p ≤ r`. -/
 private theorem le_of_sq_le_mul {p r : ℝ} (hp : 0 ≤ p) (hr : 0 ≤ r) (h : p ^ 2 ≤ p * r) :
@@ -1297,8 +1263,10 @@ private theorem dotProduct_mulVec_self_le_of_posDef {T : Matrix n n ℝ} (hT : T
     rw [hTw, dotProduct_mulVec w, vecMul_transpose, dotProduct_comm]
     simp only [hw, mulVec_mulVec, Matrix.mul_assoc]
   have hq0 : 0 ≤ x ⬝ᵥ (T *ᵥ x) := by simpa using hT.posSemidef.dotProduct_mulVec_nonneg x
-  have h1 := sq_dotProduct_mulVec_le hT.posSemidef x w
-  have h2 := dotProduct_mulVec_le_norm_mul (M * T⁻¹ * Mᵀ) y
+  have h1 := hT.posSemidef.sq_dotProduct_mulVec_le x w
+  have h2 : y ⬝ᵥ ((M * T⁻¹ * Mᵀ) *ᵥ y) ≤ ‖toEuclideanCLM (𝕜 := ℝ) (M * T⁻¹ * Mᵀ)‖ * (y ⬝ᵥ y) := by
+    have := dotProduct_mulVec_le_l2_opNorm (M * T⁻¹ * Mᵀ) y y
+    rwa [← sq, ← dotProduct_self_eq_norm_sq, ← l2_opNorm_toEuclideanCLM] at this
   refine le_of_sq_le_mul (dot_self_nonneg _) (mul_nonneg (norm_nonneg _) hq0) ?_
   calc (y ⬝ᵥ y) ^ 2 = (x ⬝ᵥ (T *ᵥ w)) ^ 2 := by rw [hyy]
     _ ≤ (x ⬝ᵥ (T *ᵥ x)) * (w ⬝ᵥ (T *ᵥ w)) := h1

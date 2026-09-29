@@ -607,12 +607,6 @@ open scoped Matrix.Norms.Frobenius
 
 variable {p q : Type*} [Fintype p] [Fintype q]
 
-/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the columns. -/
-theorem frobenius_norm_sq_eq_sum_norm_sq_col (M : Matrix p q 𝕜) :
-    ‖M‖ ^ 2 = ∑ j, ‖(WithLp.toLp 2 fun i => M i j : EuclideanSpace 𝕜 p)‖ ^ 2 := by
-  rw [frobenius_norm_sq_eq_sum_sq, Finset.sum_comm]
-  exact Finset.sum_congr rfl fun j _ => by simp [EuclideanSpace.norm_sq_eq]
-
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 /-- **The pseudoinverse solves the matrix least-squares problem `min_X ‖A X - I‖_F` with least
@@ -700,13 +694,6 @@ section MatrixUnknown
 open scoped Matrix.Norms.Frobenius
 
 variable {r : Type*} [Fintype r] [DecidableEq r]
-
-omit [DecidableEq n] in
-/-- The squared Frobenius norm is the sum of the squared Euclidean norms of the rows. -/
-theorem frobenius_norm_sq_eq_sum_norm_toLp_row_sq (M : Matrix m n 𝕜) :
-    ‖M‖ ^ 2 = ∑ i, ‖(WithLp.toLp 2 (M i) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
-  rw [frobenius_norm_sq_eq_sum_sq]
-  exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
 
 omit [Fintype m] [Fintype r] [DecidableEq r] in
 /-- The rows of `A - F Kᴴ` are the residuals `a_i - K̄ f_i`, with `K̄ = K.map star`. -/

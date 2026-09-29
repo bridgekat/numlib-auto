@@ -20,8 +20,10 @@ estimates for the inverse of a small perturbation of an invertible element, and 
 The one-sided forms `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one` and
 `NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one` measure the perturbation by
 `r = ‖a⁻¹ t‖ ≤ ‖a⁻¹‖ ‖t‖` instead ([golub2013matrix] Theorem 2.3.4), and give
-`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`. They, and `NormedRing.norm_inverse_one_sub_sub_one_le`,
-need neither `‖1‖ = 1` nor completeness beyond summable geometric series.
+`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`; `NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is
+the contrapositive used for eigenvalue perturbation (`‖a⁻¹ b‖ ≥ 1` when `a - b` is singular). They,
+and `NormedRing.norm_inverse_one_sub_sub_one_le`, need neither `‖1‖ = 1` nor completeness beyond
+summable geometric series.
 -/
 
 /-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/
@@ -129,6 +131,18 @@ theorem isUnit_add_of_norm_inverse_mul_lt_one (ha : IsUnit a) (h : ‖Ring.inver
     IsUnit (a + t) := by
   rw [add_eq_mul_one_sub ha]
   exact ha.mul (isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg]))
+
+/-- **The resolvent step**: if `a` is a unit and `a - b` is not, then `‖a⁻¹ b‖ ≥ 1`, since
+otherwise `a - b = a (1 - a⁻¹ b)` would be a unit
+(`NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`). It is the step shared by every
+resolvent-based eigenvalue perturbation bound ([golub2013matrix] (7.2.1), via Lemma 2.3.3): an
+eigenvalue `μ` of `A + E` that is not one of `A` has `‖(μ - A)⁻¹ E‖ ≥ 1`. -/
+theorem one_le_norm_inverse_mul_of_not_isUnit_sub {b : R} (ha : IsUnit a)
+    (hab : ¬IsUnit (a - b)) : 1 ≤ ‖Ring.inverse a * b‖ := by
+  by_contra hlt
+  refine hab ?_
+  rw [sub_eq_add_neg]
+  exact isUnit_add_of_norm_inverse_mul_lt_one ha (by rwa [mul_neg, norm_neg, ← not_le])
 
 /-- `(a + t)⁻¹ = (1 + a⁻¹ t)⁻¹ a⁻¹` when `a` is a unit and `‖a⁻¹ t‖ < 1`. -/
 private theorem inverse_add_eq_mul (ha : IsUnit a) (h : ‖Ring.inverse a * t‖ < 1) :

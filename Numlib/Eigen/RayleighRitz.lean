@@ -1271,49 +1271,7 @@ variable {m n r : Type*} [Fintype m] [Fintype n] [Fintype r]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Pythagoras for the Frobenius norm**: `‖X + Y‖_F² = ‖X‖_F² + ‖Y‖_F²` when the columns of `X`
-are orthogonal to those of `Y`, `Xᴴ Y = 0`. From `‖M‖_F² = tr(Mᴴ M)`
-(`Matrix.frobenius_norm_sq_eq_trace`). A general Frobenius-norm fact, written here for
-`Matrix.frobenius_norm_mul_sub_mul_sq`; its natural home is
-`Numlib/Analysis/Matrix/OperatorNorm`. -/
-theorem frobenius_norm_add_sq_of_conjTranspose_mul_eq_zero {X Y : Matrix m n 𝕜}
-    (h : Xᴴ * Y = 0) : ‖X + Y‖ ^ 2 = ‖X‖ ^ 2 + ‖Y‖ ^ 2 := by
-  have h' : Yᴴ * X = 0 := by rw [← conjTranspose_conjTranspose X, ← conjTranspose_mul, h,
-    conjTranspose_zero]
-  have := frobenius_norm_sq_eq_trace (X + Y)
-  rw [conjTranspose_add, Matrix.add_mul, Matrix.mul_add, Matrix.mul_add, h, h', add_zero,
-    zero_add, trace_add, ← frobenius_norm_sq_eq_trace, ← frobenius_norm_sq_eq_trace] at this
-  exact_mod_cast this
-
-/-- Multiplication by a matrix with orthonormal columns, `Qᴴ Q = 1`, preserves the Frobenius norm.
-Like `Matrix.frobenius_norm_add_sq_of_conjTranspose_mul_eq_zero`, its natural home is
-`Numlib/Analysis/Matrix/OperatorNorm`, beside `Matrix.frobenius_norm_unitary_mul_mul_unitary`. -/
-theorem frobenius_norm_mul_of_conjTranspose_mul_self_eq_one [DecidableEq n] {Q : Matrix m n 𝕜}
-    (hQ : Qᴴ * Q = 1) (Z : Matrix n r 𝕜) : ‖Q * Z‖ = ‖Z‖ := by
-  have := frobenius_norm_sq_eq_trace (Q * Z)
-  rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Qᴴ, hQ, Matrix.one_mul,
-    ← frobenius_norm_sq_eq_trace] at this
-  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 (by exact_mod_cast this)
-
 variable [DecidableEq n] [DecidableEq r]
-
-/-- **The block residual splits orthogonally** ([golub2013matrix] proof of Theorem 8.1.14): for
-`Q` with orthonormal columns, `‖A Q - Q S‖_F² = ‖Qᴴ A Q - S‖_F² + ‖(1 - Q Qᴴ) A Q‖_F²`, the two
-terms being the components of the residual in the range of `Q` and orthogonal to it. -/
-theorem frobenius_norm_mul_sub_mul_sq (A : Matrix n n 𝕜) {Q : Matrix n r 𝕜} (hQ : Qᴴ * Q = 1)
-    (S : Matrix r r 𝕜) :
-    ‖A * Q - Q * S‖ ^ 2 = ‖Qᴴ * A * Q - S‖ ^ 2 + ‖(1 - Q * Qᴴ) * A * Q‖ ^ 2 := by
-  have hdec : A * Q - Q * S = (1 - Q * Qᴴ) * A * Q + Q * (Qᴴ * A * Q - S) := by
-    simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_assoc]
-    abel
-  have horth : ((1 - Q * Qᴴ) * A * Q)ᴴ * (Q * (Qᴴ * A * Q - S)) = 0 := by
-    have hPQ : (1 - Q * Qᴴ)ᴴ * Q = 0 := by
-      rw [conjTranspose_sub, conjTranspose_one, conjTranspose_mul, conjTranspose_conjTranspose,
-        Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hQ, Matrix.mul_one, sub_self]
-    rw [conjTranspose_mul, conjTranspose_mul, Matrix.mul_assoc, Matrix.mul_assoc,
-      ← Matrix.mul_assoc _ Q, hPQ, Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_zero]
-  rw [hdec, frobenius_norm_add_sq_of_conjTranspose_mul_eq_zero horth,
-    frobenius_norm_mul_of_conjTranspose_mul_self_eq_one hQ, add_comm]
 
 /-- **Optimality of the compression** ([golub2013matrix] Theorem 8.1.14): for `A` square and `Q`
 with orthonormal columns, the Frobenius-norm residual `‖A Q - Q S‖_F` over all `S` is least at

@@ -52,27 +52,6 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-section Pad
-
-variable {α : Type*} [NonUnitalNonAssocSemiring α] {l : Type*} {m n : ℕ}
-
-/-- Right multiplication by a rectangular diagonal matrix scales the columns it can see and pads
-with zero columns. -/
-theorem mul_rectDiagonal_apply (M : Matrix l (Fin m) α) (σ : ℕ → α) (i : l) (j : Fin n) :
-    (M * (rectDiagonal σ : Matrix (Fin m) (Fin n) α)) i j
-      = if h : (j : ℕ) < m then M i ⟨j, h⟩ * σ j else 0 := by
-  rw [mul_apply]
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨j, h⟩]
-    · rw [rectDiagonal_apply, ite_eq_left rfl]
-    · intro k _ hk
-      rw [rectDiagonal_apply, ite_eq_right (fun hkj => hk (Fin.ext hkj)), mul_zero]
-    · exact fun h' => absurd (Finset.mem_univ _) h'
-  · refine Finset.sum_eq_zero fun k _ => ?_
-    rw [rectDiagonal_apply, ite_eq_right (fun hkj : (k : ℕ) = j => h (hkj ▸ k.isLt)), mul_zero]
-
-end Pad
-
 section Def
 
 variable {m₁ m₂ n : ℕ}

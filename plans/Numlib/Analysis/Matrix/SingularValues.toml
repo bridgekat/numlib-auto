@@ -110,3 +110,18 @@ id = "l2_opNorm_one_sub_mul_pinv_le_one"
 
 [[node]]  # added by sv2
 id = "pinv_mul_self_of_linearIndependent"
+
+[[node]]  # moved by a2
+id = "sub_eq_of_penrose"
+source = "Golub–Van Loan, Matrix Computations, §5.5.3"
+
+[[node]]  # moved by a2
+id = "pinv_sub_pinv_eq"
+source = "Golub–Van Loan, Matrix Computations, §5.5.3"
+
+[[node]]  # moved by a2
+id = "frobenius_norm_sub_le_of_penrose"
+source = "Golub–Van Loan, Matrix Computations, §5.5.3"
+
+[[node]]  # moved by a2
+id = "frobenius_norm_pinv_sub_le"

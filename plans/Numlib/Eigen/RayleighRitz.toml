@@ -122,5 +122,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.67)'
 [[node]]  # staged by ch08
 id = "Matrix.isLeast_frobenius_norm_mul_sub_mul"
 
-[[node]]  # added by eig1: the Pythagoras identity behind Theorem 8.1.14
-id = "Matrix.frobenius_norm_mul_sub_mul_sq"

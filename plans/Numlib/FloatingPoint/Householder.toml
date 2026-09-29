@@ -92,9 +92,6 @@ id = "exists_roundsHessenbergReduce_eq"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.46); Wilkinson, The Algebraic Eigenvalue Problem, p. 351"
 
 [[node]]
-id = "frobenius_norm_le_of_forall_abs_le"
-
-[[node]]
 id = "frobenius_norm_sub_le_of_forall_roundsForwardSubst_col"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorem 8.5 (columnwise)"
 

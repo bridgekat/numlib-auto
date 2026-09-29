@@ -166,31 +166,6 @@ section SVD
 
 variable {m n : ℕ}
 
-/-- For `n ≤ m`, the product of a square matrix with a tall rectangular diagonal matrix only sees
-the first `n` columns of the square matrix: `W Σ = W₁ diag(σ)`. -/
-theorem mul_rectDiagonal_eq_submatrix_mul_diagonal (hnm : n ≤ m) (W : Matrix (Fin m) (Fin m) 𝕜)
-    (σ : ℕ → 𝕜) :
-    W * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)
-      = W.submatrix id (Fin.castLE hnm) * diagonal fun i : Fin n => σ i := by
-  ext i j
-  rw [mul_apply, mul_apply, Finset.sum_eq_single (Fin.castLE hnm j), Finset.sum_eq_single j]
-  · simp [rectDiagonal_apply, submatrix_apply]
-  · intro l _ hl
-    simp [hl]
-  · simp
-  · intro l _ hl
-    have hl' : (l : ℕ) ≠ j := fun h' => hl (Fin.ext h')
-    simp [rectDiagonal_apply, hl']
-  · simp
-
-/-- The first `n` columns of a unitary matrix are orthonormal. -/
-theorem conjTranspose_submatrix_castLE_mul_self (hnm : n ≤ m) {W : Matrix (Fin m) (Fin m) 𝕜}
-    (hW : W ∈ unitaryGroup (Fin m) 𝕜) :
-    (W.submatrix id (Fin.castLE hnm))ᴴ * W.submatrix id (Fin.castLE hnm) = 1 := by
-  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id,
-    ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hW]
-  exact submatrix_one _ (Fin.castLE_injective hnm)
-
 variable {A : Matrix (Fin m) (Fin n) 𝕜} {W : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) 𝕜}
 

@@ -722,32 +722,6 @@ private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
     simpa [sq] using h00
   exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 (by rw [h2, one_pow])
 
-/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
-`gap(span{q}, span{u}) = sin θ(q, span{u})`. The two lines have the same dimension, so the gap is
-the one-sided `‖P_{u⊥} P_q‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and
-`P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. (A copy of chapter 7's private lemma in `Section03`, over `ℝ`.) -/
-private theorem gap_span_singleton_eq_sinAngle {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
-    (ℝ ∙ q).gap (ℝ ∙ u) = (ℝ ∙ u).sinAngle q := by
-  have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
-  have hu0 : u ≠ 0 := norm_ne_zero_iff.1 (by rw [hu]; exact one_ne_zero)
-  rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq _ _
-    ((finrank_span_singleton hq0).trans (finrank_span_singleton hu0).symm),
-    Submodule.sinAngle, hq, div_one]
-  have hT : ∀ w, ((ℝ ∙ u)ᗮ.starProjection * (ℝ ∙ q).starProjection) w =
-      (inner ℝ q w : ℝ) • (q - (ℝ ∙ u).starProjection q) := by
-    intro w
-    change (ℝ ∙ u)ᗮ.starProjection ((ℝ ∙ q).starProjection w) = _
-    rw [Submodule.starProjection_singleton, hq, one_pow, RCLike.ofReal_one, div_one, map_smul,
-      Submodule.starProjection_orthogonal_val]
-  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun w => ?_) ?_
-  · rw [hT, norm_smul, mul_comm]
-    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
-    simpa [hq] using norm_inner_le_norm (𝕜 := ℝ) q w
-  · have h := ((ℝ ∙ u)ᗮ.starProjection * (ℝ ∙ q).starProjection).le_opNorm q
-    rwa [hT, inner_self_eq_norm_sq_to_K, hq, RCLike.ofReal_one, one_pow, one_smul,
-      mul_one] at h
-
 /-- For unit vectors `q`, `u`, `sin θ(q, span{u}) = √(1 − ⟪u, q⟫²)` (Pythagoras). -/
 private theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
@@ -766,7 +740,7 @@ private theorem subspaceDist_span_singleton {u v : Fin n → ℝ} (hu : ‖WithL
     Chapter02.subspaceDist (ℝ ∙ WithLp.toLp 2 u) (ℝ ∙ WithLp.toLp 2 v) = √(1 - (u ⬝ᵥ v) ^ 2) := by
   have hi : inner ℝ (WithLp.toLp 2 v) (WithLp.toLp 2 u) = u ⬝ᵥ v := by
     rw [EuclideanSpace.inner_toLp_toLp, star_trivial]
-  rw [Chapter02.subspaceDist, gap_span_singleton_eq_sinAngle hu hv,
+  rw [Chapter02.subspaceDist, Submodule.gap_span_singleton_eq_sinAngle hu hv,
     sinAngle_span_singleton_eq hu hv, hi]
 
 /-- **Theorem 8.1.12** (eigenvector perturbation). "Suppose `A` and `A + E` are `n`-by-`n`

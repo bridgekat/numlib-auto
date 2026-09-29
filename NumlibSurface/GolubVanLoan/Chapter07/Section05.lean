@@ -2042,18 +2042,6 @@ section Deflation
 
 open scoped Matrix.Norms.Frobenius
 
-/-- An entry is bounded by the Frobenius norm. -/
-private theorem norm_apply_le_frobenius (H : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
-    ‖H i j‖ ≤ ‖H‖ := by
-  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq]
-  calc ‖H i j‖ ^ 2 ≤ ∑ j', ‖H i j'‖ ^ 2 :=
-        Finset.single_le_sum (f := fun j' => ‖H i j'‖ ^ 2) (fun _ _ => by positivity)
-          (Finset.mem_univ j)
-    _ ≤ ∑ i', ∑ j', ‖H i' j'‖ ^ 2 :=
-        Finset.single_le_sum (f := fun i' => ∑ j', ‖H i' j'‖ ^ 2)
-          (fun _ _ => Finset.sum_nonneg fun _ _ => by positivity) (Finset.mem_univ i)
-
 /-- The Frobenius norm of a matrix with one nonzero entry. -/
 private theorem frobenius_norm_of_eq_zero {F : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n}
     (hF : ∀ r c, ¬ (r = i ∧ c = j) → F r c = 0) : ‖F‖ = ‖F i j‖ := by
@@ -2110,8 +2098,8 @@ theorem qrDeflateStep_spec {tol : ℝ} (htol : 0 ≤ tol) (H : Matrix (Fin n) (F
         rw [Matrix.sub_apply, happ, ite_eq_right hrc, sub_self]]
       rw [Matrix.sub_apply, happ, ite_eq_left ⟨rfl, rfl⟩, zero_sub, norm_neg, Real.norm_eq_abs]
       refine hle.trans ?_
-      have h1 := norm_apply_le_frobenius H i i
-      have h2 := norm_apply_le_frobenius H j j
+      have h1 := norm_entry_le_frobenius_norm H i i
+      have h2 := norm_entry_le_frobenius_norm H j j
       rw [Real.norm_eq_abs] at h1 h2
       nlinarith
     · rw [happ]

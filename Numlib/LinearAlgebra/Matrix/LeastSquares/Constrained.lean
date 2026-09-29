@@ -598,16 +598,6 @@ end GSVD
 
 section GSVDLSE
 
-/-- A shifted rectangular diagonal matrix acts on a vector by scaling the shifted coordinates. -/
-private theorem shiftedRectDiagonal_mulVec {m n : ℕ} (k : ℕ) (σ : ℕ → 𝕜) (x : Fin n → 𝕜)
-    (i : Fin m) (h : (i : ℕ) + k < n) :
-    (shiftedRectDiagonal k σ *ᵥ x) i = σ (i + k) * x ⟨i + k, h⟩ := by
-  rw [mulVec_apply_eq_sum, Finset.sum_eq_single ⟨i + k, h⟩]
-  · simp [shiftedRectDiagonal_apply]
-  · intro j _ hj
-    rw [shiftedRectDiagonal_apply, ite_eq_right (fun hij => hj (Fin.ext hij)), zero_mul]
-  · exact fun h' => absurd (Finset.mem_univ _) h'
-
 /-- The coefficients of the LSE solution in GSVD coordinates ([golub2013matrix] (6.2.12), in
 Theorem 6.1.1's block order): `b̃_i` on the first `n − p` columns (pure `A`, `α_i = 1`), and
 `d̃_{i − (n − p)} / β_i` on the last `p`. -/
@@ -738,23 +728,6 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
     · rw [hy'' ⟨i, hin⟩ (by simp only; omega)]
   · rw [rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin),
       rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin)]
-
-/-- `Σᴴ v` for a shifted rectangular diagonal `Σ`. -/
-private theorem conjTranspose_shiftedRectDiagonal_mulVec {m n : ℕ} (k : ℕ) (σ : ℕ → 𝕜)
-    (v : Fin m → 𝕜) (i : Fin n) :
-    ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ *ᵥ v) i
-      = if h : k ≤ (i : ℕ) ∧ (i : ℕ) - k < m then star (σ i) * v ⟨i - k, h.2⟩ else 0 := by
-  rw [mulVec_apply_eq_sum]
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨i - k, h.2⟩]
-    · rw [conjTranspose_apply, shiftedRectDiagonal_apply, ite_eq_left (by simp only; omega)]
-    · intro j _ hj
-      rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-        ite_eq_right (fun hij => hj (Fin.ext (by simp only; omega))), star_zero, zero_mul]
-    · exact fun h' => absurd (Finset.mem_univ _) h'
-  · refine Finset.sum_eq_zero fun j _ => ?_
-    rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
 
 /-- `∑ yᵢ xᵢ = X y` over the columns `xᵢ` of `X`. -/
 private theorem sum_smul_col_eq_mulVec {n : ℕ} (X : Matrix (Fin n) (Fin n) 𝕜) (y : Fin n → 𝕜) :

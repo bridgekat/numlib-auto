@@ -12,9 +12,11 @@ import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Matrix.DotProduct
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Numlib.Analysis.InnerProductSpace.NormPow
+import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Ring.CondNumber
@@ -87,9 +89,10 @@ every consequence of "an SVD" takes as its hypothesis, since the factors are not
   `Matrix.IsSVD` (`Matrix.IsSVD.pinv_eq`, …, `Matrix.IsSVD.singularValues_eq`);
   `Matrix.IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues` is the Hermitian case
   `σ_i = |λ_i|`.
-* `Matrix.frobenius_norm_pinv_sub_le`: **Wedin's bound**
-  `‖B⁺ - A⁺‖_F ≤ 2 ‖B - A‖_F max(‖A⁺‖₂², ‖B⁺‖₂²)` with no rank hypothesis, from the three-term
-  decomposition `Matrix.pinv_sub_pinv_eq` ([golub2013matrix] §5.5.3).
+* `Matrix.sortedSingularValues_unitary_mul_mul`: the sorted singular values are unitarily
+  invariant; `Matrix.isUnit_of_iInf_colSingularValues_pos` and
+  `Matrix.exists_colSingularValues_eq_of_mulVec`: a positive least singular value makes a square
+  matrix invertible, and an eigenvector of `Aᴴ A` for `s²` makes `s` a singular value.
 * `Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`: the singular values are the
   stationary values of `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` ([golub2013matrix] (12.5.22)).
 
@@ -104,7 +107,9 @@ name `singularValues` for the sorted reading: Mathlib's `LinearMap.singularValue
 truncations, Eckart–Young), and `Matrix.singularValues_eq_of_svd` and
 `Matrix.IsSVD.singularValues_eq` are about it. The coordinate-free facts about it are in
 `Numlib/Analysis/InnerProductSpace/SingularValues`, and the singular-value inequalities (Weyl,
-Mirsky, Eckart–Young) in `Numlib/Analysis/Matrix/SingularValues`.
+Mirsky, Eckart–Young) and Wedin's bound on `‖B⁺ - A⁺‖_F` in `Numlib/Analysis/Matrix/SingularValues`:
+everything measured in the Frobenius norm needs `Numlib/Analysis/Matrix/OperatorNorm`, which
+imports this file.
 
 ## References
 
@@ -141,6 +146,23 @@ theorem colSingularValues_nonneg (i : n) : 0 ≤ A.colSingularValues i := Real.s
 theorem sq_colSingularValues (i : n) :
     A.colSingularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i :=
   Real.sq_sqrt (eigenvalues_conjTranspose_mul_self_nonneg A i)
+
+/-- **An eigenvector of the Gram matrix gives a singular value**: if `Aᴴ A g = s² g` for some
+`g ≠ 0` and `s ≥ 0`, then `s` is one of the singular values of `A`. -/
+theorem exists_colSingularValues_eq_of_mulVec {g : n → 𝕜} (hg : g ≠ 0) {s : ℝ} (hs : 0 ≤ s)
+    (h : (Aᴴ * A) *ᵥ g = ((s : 𝕜) ^ 2) • g) : ∃ i, A.colSingularValues i = s := by
+  have hspec : ((s ^ 2 : ℝ) : 𝕜) ∈ spectrum 𝕜 (Aᴴ * A) := by
+    rw [← Matrix.spectrum_toLin']
+    apply Module.End.HasEigenvalue.mem_spectrum
+    apply Module.End.hasEigenvalue_of_hasEigenvector (x := g)
+    refine ⟨Module.End.mem_eigenspace_iff.2 ?_, hg⟩
+    rw [toLin'_apply, h, RCLike.ofReal_pow]
+  rw [(isHermitian_conjTranspose_mul_self A).spectrum_eq_image_range] at hspec
+  obtain ⟨_, ⟨i, rfl⟩, hi⟩ := hspec
+  have he : (isHermitian_conjTranspose_mul_self A).eigenvalues i = s ^ 2 :=
+    RCLike.ofReal_injective hi
+  refine ⟨i, (sq_eq_sq₀ (colSingularValues_nonneg _ _) hs).1 ?_⟩
+  rw [sq_colSingularValues, he]
 
 /-- The right singular vectors are eigenvectors of `Aᴴ A`, for the squared singular values. -/
 theorem toEuclideanLin_conjTranspose_mul_self_rightSingularBasis (i : n) :
@@ -709,6 +731,18 @@ theorem colSingularValues_pos (hB : IsUnit B.det) (i : n) : 0 < B.colSingularVal
   rw [← hinv, norm_zero] at hone
   exact zero_ne_one hone
 
+/-- **A positive least singular value makes a square matrix invertible**, the converse of
+`Matrix.colSingularValues_pos`: `σ_min ‖x‖ ≤ ‖B x‖` makes `x ↦ B x` injective. -/
+theorem isUnit_of_iInf_colSingularValues_pos (h : 0 < ⨅ i, B.colSingularValues i) : IsUnit B := by
+  rw [← mulVec_injective_iff_isUnit]
+  intro v w hvw
+  have h1 := B.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
+  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
+  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace 𝕜 n)‖ = 0 :=
+    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
+  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
+  simpa [sub_eq_zero] using h3
+
 /-- **The norm of the inverse is the reciprocal of the smallest singular value.** -/
 theorem l2_opNorm_inv_eq_inv_iInf_colSingularValues (hB : IsUnit B.det) :
     ‖B⁻¹‖ = (⨅ i, B.colSingularValues i)⁻¹ := by
@@ -878,6 +912,32 @@ theorem iInf_colSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m �
     norm_toEuclideanLin_apply_of_mem_unitaryGroup hU]
   rfl
 
+/-- **The sorted singular values are unitarily invariant**: `σ_i(U A V) = σ_i(A)` for unitary `U`,
+`V`, the matrix form of `LinearMap.singularValues_comp_linearIsometryEquiv`. -/
+theorem sortedSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m 𝕜}
+    {V : Matrix n n 𝕜} (hU : U ∈ unitaryGroup m 𝕜) (hV : V ∈ unitaryGroup n 𝕜) :
+    (U * A * V).sortedSingularValues = A.sortedSingularValues := by
+  have key : toEuclideanLin (U * A * V) =
+      (unitaryLinearIsometryEquiv hU).toLinearIsometry.toLinearMap ∘ₗ toEuclideanLin A ∘ₗ
+        (unitaryLinearIsometryEquiv hV).toLinearIsometry.toLinearMap := by
+    refine LinearMap.ext fun x => ?_
+    simp only [toEuclideanLin_mul_apply, LinearMap.comp_apply]
+    rfl
+  funext i
+  change (toEuclideanLin (U * A * V)).singularValues i = (toEuclideanLin A).singularValues i
+  rw [key, LinearMap.singularValues_comp_linearIsometryEquiv]
+
+/-- A unitary factor on the left does not change the sorted singular values. -/
+theorem sortedSingularValues_unitary_mul [DecidableEq m] {U : Matrix m m 𝕜}
+    (hU : U ∈ unitaryGroup m 𝕜) : (U * A).sortedSingularValues = A.sortedSingularValues := by
+  simpa using A.sortedSingularValues_unitary_mul_mul hU (one_mem (unitaryGroup n 𝕜))
+
+/-- A unitary factor on the right does not change the sorted singular values. -/
+theorem sortedSingularValues_mul_unitary {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜) :
+    (A * V).sortedSingularValues = A.sortedSingularValues := by
+  classical
+  simpa using A.sortedSingularValues_unitary_mul_mul (one_mem (unitaryGroup m 𝕜)) hV
+
 end Sorted
 
 end Matrix
@@ -989,6 +1049,44 @@ theorem rectDiagonal_mulVec_of_le (σ : ℕ → α) (x : Fin n → α) (i : Fin 
     ite_eq_right (fun hij : (i : ℕ) = j => absurd (lt_of_eq_of_lt hij j.isLt) (not_lt.2 h)),
     zero_mul]
 
+/-- A rectangular diagonal matrix times a matrix reads the rows it can see: the matrix form of
+`Matrix.rectDiagonal_mulVec`. -/
+theorem rectDiagonal_mul_apply {o : Type*} (σ : ℕ → α) (M : Matrix (Fin n) o α)
+    (i : Fin m) (j : o) (h : (i : ℕ) < n) :
+    ((rectDiagonal σ : Matrix (Fin m) (Fin n) α) * M) i j = σ i * M ⟨i, h⟩ j := by
+  rw [mul_apply, Finset.sum_eq_single ⟨i, h⟩]
+  · rw [rectDiagonal_apply, ite_eq_left rfl]
+  · intro k _ hk
+    rw [rectDiagonal_apply, ite_eq_right (fun hik => hk (Fin.ext hik.symm)), zero_mul]
+  · exact fun h' => absurd (Finset.mem_univ _) h'
+
+/-- Right multiplication by a rectangular diagonal matrix scales the columns it can see and pads
+with zero columns. -/
+theorem mul_rectDiagonal_apply {o : Type*} (M : Matrix o (Fin m) α) (σ : ℕ → α) (i : o)
+    (j : Fin n) :
+    (M * (rectDiagonal σ : Matrix (Fin m) (Fin n) α)) i j
+      = if h : (j : ℕ) < m then M i ⟨j, h⟩ * σ j else 0 := by
+  rw [mul_apply]
+  split_ifs with h
+  · rw [Finset.sum_eq_single ⟨j, h⟩]
+    · rw [rectDiagonal_apply, ite_eq_left rfl]
+    · intro k _ hk
+      rw [rectDiagonal_apply, ite_eq_right (fun hkj => hk (Fin.ext hkj)), mul_zero]
+    · exact fun h' => absurd (Finset.mem_univ _) h'
+  · refine Finset.sum_eq_zero fun k _ => ?_
+    rw [rectDiagonal_apply, ite_eq_right (fun hkj : (k : ℕ) = j => h (hkj ▸ k.isLt)), mul_zero]
+
+/-- A shifted rectangular diagonal matrix acts on a vector by scaling the shifted coordinates:
+the shifted form of `Matrix.rectDiagonal_mulVec`. -/
+theorem shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → α) (x : Fin n → α) (i : Fin m)
+    (h : (i : ℕ) + k < n) :
+    (shiftedRectDiagonal k σ *ᵥ x) i = σ (i + k) * x ⟨i + k, h⟩ := by
+  rw [mulVec_apply_eq_sum, Finset.sum_eq_single ⟨i + k, h⟩]
+  · simp [shiftedRectDiagonal_apply]
+  · intro j _ hj
+    rw [shiftedRectDiagonal_apply, ite_eq_right (fun hij => hj (Fin.ext hij)), zero_mul]
+  · exact fun h' => absurd (Finset.mem_univ _) h'
+
 /-- The product of two rectangular diagonal matrices is the rectangular diagonal matrix of the
 products, truncated at the inner dimension. -/
 theorem rectDiagonal_mul_rectDiagonal (σ τ : ℕ → α) :
@@ -1054,6 +1152,67 @@ theorem conjTranspose_shiftedRectDiagonal_mul_self (k : ℕ) (σ : ℕ → 𝕜)
     · have : ¬ (l : ℕ) = i + k := fun h => hjl (Fin.ext (by omega))
       rw [ite_eq_right this, mul_zero]
     · rw [ite_eq_right h1, star_zero, zero_mul]
+
+/-- The adjoint of a shifted rectangular diagonal matrix times a matrix: row `a` of `Σᴴ M` is
+`conj(σ_a)` times row `a - k` of `M` when `k ≤ a < m + k`, and zero otherwise. -/
+theorem conjTranspose_shiftedRectDiagonal_mul_apply {o : Type*} (k : ℕ) (σ : ℕ → 𝕜)
+    (M : Matrix (Fin m) o 𝕜) (a : Fin n) (b : o) :
+    ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * M) a b
+      = if h : k ≤ (a : ℕ) ∧ (a : ℕ) - k < m then star (σ a) * M ⟨a - k, h.2⟩ b else 0 := by
+  rw [mul_apply]
+  split_ifs with h
+  · rw [Finset.sum_eq_single ⟨a - k, h.2⟩]
+    · rw [conjTranspose_apply, shiftedRectDiagonal_apply, ite_eq_left (by simp only; omega)]
+    · intro j _ hj
+      rw [conjTranspose_apply, shiftedRectDiagonal_apply,
+        ite_eq_right (fun hij => hj (Fin.ext (by simp only; omega))), star_zero, zero_mul]
+    · exact fun h' => absurd (Finset.mem_univ _) h'
+  · refine Finset.sum_eq_zero fun j _ => ?_
+    rw [conjTranspose_apply, shiftedRectDiagonal_apply,
+      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
+
+/-- `Σᴴ v` for a shifted rectangular diagonal `Σ`: the vector form of
+`Matrix.conjTranspose_shiftedRectDiagonal_mul_apply`. -/
+theorem conjTranspose_shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → 𝕜) (v : Fin m → 𝕜)
+    (i : Fin n) :
+    ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ *ᵥ v) i
+      = if h : k ≤ (i : ℕ) ∧ (i : ℕ) - k < m then star (σ i) * v ⟨i - k, h.2⟩ else 0 := by
+  rw [mulVec_apply_eq_sum]
+  split_ifs with h
+  · rw [Finset.sum_eq_single ⟨i - k, h.2⟩]
+    · rw [conjTranspose_apply, shiftedRectDiagonal_apply, ite_eq_left (by simp only; omega)]
+    · intro j _ hj
+      rw [conjTranspose_apply, shiftedRectDiagonal_apply,
+        ite_eq_right (fun hij => hj (Fin.ext (by simp only; omega))), star_zero, zero_mul]
+    · exact fun h' => absurd (Finset.mem_univ _) h'
+  · refine Finset.sum_eq_zero fun j _ => ?_
+    rw [conjTranspose_apply, shiftedRectDiagonal_apply,
+      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
+
+/-- For `n ≤ m`, the product of a square matrix with a tall rectangular diagonal matrix only sees
+the first `n` columns of the square matrix: `W Σ = W₁ diag(σ)`. -/
+theorem mul_rectDiagonal_eq_submatrix_mul_diagonal (hnm : n ≤ m) (W : Matrix (Fin m) (Fin m) 𝕜)
+    (σ : ℕ → 𝕜) :
+    W * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)
+      = W.submatrix id (Fin.castLE hnm) * diagonal fun i : Fin n => σ i := by
+  ext i j
+  rw [mul_apply, mul_apply, Finset.sum_eq_single (Fin.castLE hnm j), Finset.sum_eq_single j]
+  · simp [rectDiagonal_apply, submatrix_apply]
+  · intro l _ hl
+    simp [hl]
+  · simp
+  · intro l _ hl
+    have hl' : (l : ℕ) ≠ j := fun h' => hl (Fin.ext h')
+    simp [rectDiagonal_apply, hl']
+  · simp
+
+/-- The first `n` columns of a unitary matrix are orthonormal. -/
+theorem conjTranspose_submatrix_castLE_mul_self (hnm : n ≤ m) {W : Matrix (Fin m) (Fin m) 𝕜}
+    (hW : W ∈ unitaryGroup (Fin m) 𝕜) :
+    (W.submatrix id (Fin.castLE hnm))ᴴ * W.submatrix id (Fin.castLE hnm) = 1 := by
+  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id,
+    ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hW]
+  exact submatrix_one _ (Fin.castLE_injective hnm)
 
 /-- The unitary matrix whose columns are the vectors of an orthonormal basis `b` of a Euclidean
 space: the change-of-basis matrix from the standard basis to `b`, whose `j`-th column is `b j`
@@ -1696,21 +1855,7 @@ end Uniqueness
 
 section Expansion
 
-variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- **Parseval for a finite orthonormal family**: `‖∑ c_i v_i‖² = ∑ |c_i|²`. -/
-theorem _root_.Orthonormal.norm_sum_smul_sq {ι E : Type*} [Fintype ι] [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] {v : ι → E} (hv : Orthonormal 𝕜 v) (c : ι → 𝕜) :
-    ‖∑ i, c i • v i‖ ^ 2 = ∑ i, ‖c i‖ ^ 2 := by
-  have h := hv.inner_sum c c Finset.univ
-  rw [inner_self_eq_norm_sq_to_K] at h
-  have h2 : ((‖∑ i, c i • v i‖ ^ 2 : ℝ) : 𝕜) = ((∑ i, ‖c i‖ ^ 2 : ℝ) : 𝕜) := by
-    push_cast
-    rw [h]
-    exact Finset.sum_congr rfl fun i _ => RCLike.conj_mul (c i)
-  exact_mod_cast h2
-
-variable {m n : ℕ}
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
 /-- The coordinates `Uᴴ b` of a vector in the columns of `U` are the inner products `⟪u_i, b⟫`. -/
 theorem star_mulVec_apply_eq_inner (U : Matrix (Fin m) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin m))
@@ -1909,272 +2054,6 @@ theorem rank_svdTruncation (h : IsSVD A U σ V) {k : ℕ} (hk : k ≤ A.rank) :
     _ = k := by rw [Fintype.card_subtype, Fin.card_filter_val_lt, min_eq_right (by omega)]
 
 end IsSVD
-
-end Matrix
-
-/-! ### Perturbation of the pseudoinverse -/
-
-namespace Matrix
-
-variable {𝕜 : Type*} [RCLike 𝕜]
-
-section Wedin
-
-variable {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
-
-open scoped Matrix.Norms.Frobenius
-
-/-- The Frobenius norm squared is the sum of the squared entries. -/
-private theorem frobenius_norm_sq_eq_sum_sq' (X : Matrix m n 𝕜) :
-    ‖X‖ ^ 2 = ∑ i, ∑ j, ‖X i j‖ ^ 2 := by
-  rw [frobenius_norm_def, ← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
-  norm_num
-
-/-- `‖X‖_F² = tr(Xᴴ X)`. -/
-private theorem frobenius_norm_sq_eq_trace' (X : Matrix m n 𝕜) :
-    ((‖X‖ ^ 2 : ℝ) : 𝕜) = trace (Xᴴ * X) := by
-  rw [frobenius_norm_sq_eq_sum_sq', trace, Finset.sum_comm]
-  push_cast
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [diag_apply, mul_apply]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [conjTranspose_apply, RCLike.star_def, RCLike.conj_mul]
-
-/-- **Pythagoras for the Frobenius norm**: if `tr(Xᴴ Y) = 0`, then
-`‖X + Y‖_F² = ‖X‖_F² + ‖Y‖_F²`. -/
-theorem frobenius_norm_add_sq_of_trace_eq_zero {X Y : Matrix m n 𝕜}
-    (h : trace (Xᴴ * Y) = 0) : ‖X + Y‖ ^ 2 = ‖X‖ ^ 2 + ‖Y‖ ^ 2 := by
-  have h' : trace (Yᴴ * X) = 0 := by
-    rw [← conjTranspose_conjTranspose X, ← conjTranspose_mul, trace_conjTranspose, h, star_zero]
-  have key : ((‖X + Y‖ ^ 2 : ℝ) : 𝕜) = ((‖X‖ ^ 2 + ‖Y‖ ^ 2 : ℝ) : 𝕜) := by
-    rw [frobenius_norm_sq_eq_trace', RCLike.ofReal_add, frobenius_norm_sq_eq_trace',
-      frobenius_norm_sq_eq_trace', conjTranspose_add, Matrix.add_mul, Matrix.mul_add,
-      Matrix.mul_add, trace_add, trace_add, trace_add, h, h']
-    ring
-  exact_mod_cast key
-
-variable [DecidableEq n]
-
-/-- **`‖X Y‖_F ≤ ‖X‖₂ ‖Y‖_F`**: the Frobenius norm of a product is at most the spectral norm of the
-left factor times the Frobenius norm of the right one, column by column. The spectral norm is
-written as the operator norm of `toEuclideanLin X`, which is `‖X‖` under the scoped instance
-`Matrix.Norms.L2Operator` (`Matrix.l2_opNorm_def`). -/
-theorem frobenius_norm_mul_le_norm_toEuclideanLin_mul (X : Matrix m n 𝕜)
-    (Y : Matrix n p 𝕜) :
-    ‖X * Y‖ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ * ‖Y‖ := by
-  classical
-  set c := ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ with hc
-  have hcol : ∀ j : p, ∑ i, ‖(X * Y) i j‖ ^ 2 ≤ c ^ 2 * ∑ k, ‖Y k j‖ ^ 2 := by
-    intro j
-    have h1 := (LinearMap.toContinuousLinearMap (toEuclideanLin X)).le_opNorm
-      (WithLp.toLp 2 (fun k => Y k j) : EuclideanSpace 𝕜 n)
-    have h2 := pow_le_pow_left₀ (norm_nonneg _) h1 2
-    rw [mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq] at h2
-    simpa [toEuclideanLin_toLp, mulVec, dotProduct, mul_apply] using h2
-  have hsq : ‖X * Y‖ ^ 2 ≤ (c * ‖Y‖) ^ 2 := by
-    rw [mul_pow, frobenius_norm_sq_eq_sum_sq', frobenius_norm_sq_eq_sum_sq', Finset.sum_comm,
-      Finset.sum_comm (f := fun k j => ‖Y k j‖ ^ 2), Finset.mul_sum]
-    exact Finset.sum_le_sum fun j _ => hcol j
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
-
-/-- The spectral norm of `Xᴴ` is that of `X`. -/
-theorem norm_toEuclideanLin_conjTranspose [DecidableEq m] (X : Matrix m n 𝕜) :
-    ‖LinearMap.toContinuousLinearMap (toEuclideanLin Xᴴ)‖
-      = ‖LinearMap.toContinuousLinearMap (toEuclideanLin X)‖ := by
-  open scoped Matrix.Norms.L2Operator in exact l2_opNorm_conjTranspose X
-
-omit [DecidableEq n] in
-/-- **`‖X Y‖_F ≤ ‖X‖_F ‖Y‖₂`**, the dual of `Matrix.frobenius_norm_mul_le_norm_toEuclideanLin_mul`
-through the conjugate transpose. -/
-theorem frobenius_norm_mul_le_mul_norm_toEuclideanLin [DecidableEq p] (X : Matrix m n 𝕜)
-    (Y : Matrix n p 𝕜) :
-    ‖X * Y‖ ≤ ‖X‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin Y)‖ := by
-  classical
-  rw [← frobenius_norm_conjTranspose (X * Y), conjTranspose_mul, mul_comm,
-    ← frobenius_norm_conjTranspose X, ← norm_toEuclideanLin_conjTranspose Y]
-  exact frobenius_norm_mul_le_norm_toEuclideanLin_mul Yᴴ Xᴴ
-
-/-- A Hermitian idempotent matrix (an orthogonal projector) has spectral norm at most `1`. -/
-theorem norm_toEuclideanLin_le_one_of_isHermitian {N : Matrix n n 𝕜} (hN : N.IsHermitian)
-    (hNN : N * N = N) : ‖LinearMap.toContinuousLinearMap (toEuclideanLin N)‖ ≤ 1 := by
-  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => ?_
-  rw [LinearMap.coe_toContinuousLinearMap', one_mul]
-  have hin : (inner 𝕜 (toEuclideanLin N x) (toEuclideanLin N x) : 𝕜)
-      = inner 𝕜 x (toEuclideanLin N x) := by
-    rw [← toEuclideanLin_conjTranspose_inner_right, hN.eq, ← toEuclideanLin_mul_apply, hNN]
-  rw [inner_self_eq_norm_sq_to_K] at hin
-  have h1 : ‖toEuclideanLin N x‖ ^ 2 ≤ ‖x‖ * ‖toEuclideanLin N x‖ := by
-    have h2 := norm_inner_le_norm (𝕜 := 𝕜) x (toEuclideanLin N x)
-    rw [← hin] at h2
-    simpa [norm_pow] using h2
-  nlinarith [norm_nonneg x, norm_nonneg (toEuclideanLin N x)]
-
-
-variable [DecidableEq m]
-
-/-- **Wedin's decomposition** of the difference of two generalized inverses: if `P` and `Q`
-satisfy the four Penrose conditions for `A` and `B` (so `P = A⁺`, `Q = B⁺`), then
-`Q - P = -Q (B - A) P + Q Qᴴ (B - A)ᴴ (1 - A P) + (1 - Q B) (B - A)ᴴ Pᴴ P`. -/
-theorem sub_eq_of_penrose {A B : Matrix m n 𝕜} {P Q : Matrix n m 𝕜} (hA1 : A * P * A = A)
-    (hA2 : P * A * P = P) (hA4 : (P * A)ᴴ = P * A) (hA3 : (A * P)ᴴ = A * P)
-    (hB1 : B * Q * B = B) (hB2 : Q * B * Q = Q) (hB3 : (B * Q)ᴴ = B * Q)
-    (hB4 : (Q * B)ᴴ = Q * B) :
-    Q - P = -(Q * ((B - A) * P)) + Q * (Qᴴ * ((B - A)ᴴ * (1 - A * P)))
-      + (1 - Q * B) * ((B - A)ᴴ * Pᴴ * P) := by
-  have f1 : Aᴴ * (1 - A * P) = 0 := by
-    rw [Matrix.mul_sub, Matrix.mul_one, ← hA3, ← conjTranspose_mul, hA1, sub_self]
-  have f2 : Q * Qᴴ * Bᴴ = Q := by
-    rw [Matrix.mul_assoc, ← conjTranspose_mul, hB3, ← Matrix.mul_assoc, hB2]
-  have f3 : (1 - Q * B) * Bᴴ = 0 := by
-    rw [Matrix.sub_mul, Matrix.one_mul, ← hB4, ← conjTranspose_mul, ← Matrix.mul_assoc, hB1,
-      sub_self]
-  have f4 : Aᴴ * Pᴴ * P = P := by
-    rw [← conjTranspose_mul, hA4, hA2]
-  have T2 : Q * (Qᴴ * ((B - A)ᴴ * (1 - A * P))) = Q * (1 - A * P) := by
-    rw [conjTranspose_sub, Matrix.sub_mul Bᴴ Aᴴ (1 - A * P), f1, sub_zero,
-      ← Matrix.mul_assoc Q Qᴴ (Bᴴ * (1 - A * P)), ← Matrix.mul_assoc (Q * Qᴴ) Bᴴ (1 - A * P), f2]
-  have T3 : (1 - Q * B) * ((B - A)ᴴ * Pᴴ * P) = -((1 - Q * B) * P) := by
-    rw [conjTranspose_sub, Matrix.sub_mul Bᴴ Aᴴ Pᴴ, Matrix.sub_mul (Bᴴ * Pᴴ) (Aᴴ * Pᴴ) P, f4,
-      Matrix.mul_sub (1 - Q * B) (Bᴴ * Pᴴ * P) P, Matrix.mul_assoc Bᴴ Pᴴ P,
-      ← Matrix.mul_assoc (1 - Q * B) Bᴴ (Pᴴ * P), f3, Matrix.zero_mul, zero_sub]
-  rw [T2, T3]
-  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
-  abel
-
-/-- **Wedin's decomposition** of the difference of two pseudoinverses ([golub2013matrix] §5.5.3):
-`B⁺ - A⁺ = -B⁺ (B - A) A⁺ + B⁺ B⁺ᴴ (B - A)ᴴ (1 - A A⁺) + (1 - B⁺ B) (B - A)ᴴ A⁺ᴴ A⁺`. -/
-theorem pinv_sub_pinv_eq (A B : Matrix m n 𝕜) :
-    B.pinv - A.pinv = -(B.pinv * ((B - A) * A.pinv))
-      + B.pinv * (B.pinvᴴ * ((B - A)ᴴ * (1 - A * A.pinv)))
-      + (1 - B.pinv * B) * ((B - A)ᴴ * A.pinvᴴ * A.pinv) :=
-  sub_eq_of_penrose A.mul_pinv_mul_self A.pinv_mul_self_mul_pinv A.isHermitian_pinv_mul
-    A.isHermitian_mul_pinv B.mul_pinv_mul_self B.pinv_mul_self_mul_pinv B.isHermitian_mul_pinv
-    B.isHermitian_pinv_mul
-
-/-- The scalar end of Wedin's bound: three terms, each at most `e max(p², q²)`, whose squares add
-to `d²`, give `d ≤ 2 e max(p², q²)` (as `√3 ≤ 2`). -/
-private theorem wedin_real_bound {d t₁ t₂ t₃ p q e : ℝ}
-    (hsq : d ^ 2 = t₁ ^ 2 + t₂ ^ 2 + t₃ ^ 2)
-    (hd : 0 ≤ d) (h₁ : 0 ≤ t₁) (h₂ : 0 ≤ t₂) (h₃ : 0 ≤ t₃) (he : 0 ≤ e)
-    (b₁ : t₁ ≤ q * (e * p)) (b₂ : t₂ ≤ q * (q * (e * 1))) (b₃ : t₃ ≤ 1 * (e * p * p)) :
-    d ≤ 2 * e * max (p ^ 2) (q ^ 2) := by
-  have hpM : p ^ 2 ≤ max (p ^ 2) (q ^ 2) := le_max_left _ _
-  have hqM : q ^ 2 ≤ max (p ^ 2) (q ^ 2) := le_max_right _ _
-  generalize max (p ^ 2) (q ^ 2) = M at *
-  have hM0 : 0 ≤ M := (sq_nonneg p).trans hpM
-  have hqp : q * p ≤ M := by nlinarith [sq_nonneg (q - p)]
-  have k₁ : t₁ ≤ e * M := b₁.trans (by nlinarith [mul_le_mul_of_nonneg_left hqp he])
-  have k₂ : t₂ ≤ e * M := b₂.trans (by nlinarith [mul_le_mul_of_nonneg_left hqM he])
-  have k₃ : t₃ ≤ e * M := b₃.trans (by nlinarith [mul_le_mul_of_nonneg_left hpM he])
-  have hfin : d ^ 2 ≤ (2 * e * M) ^ 2 := by
-    rw [hsq]
-    nlinarith [pow_le_pow_left₀ h₁ k₁ 2, pow_le_pow_left₀ h₂ k₂ 2, pow_le_pow_left₀ h₃ k₃ 2,
-      sq_nonneg (e * M)]
-  exact (pow_le_pow_iff_left₀ hd (by positivity) two_ne_zero).1 hfin
-
-omit [DecidableEq n] in
-/-- Wedin's bound for generalized inverses satisfying the Penrose conditions; the engine of
-`Matrix.frobenius_norm_pinv_sub_le`. -/
-theorem frobenius_norm_sub_le_of_penrose {A B : Matrix m n 𝕜} {P Q : Matrix n m 𝕜}
-    (hA1 : A * P * A = A) (hA2 : P * A * P = P) (hA4 : (P * A)ᴴ = P * A)
-    (hA3 : (A * P)ᴴ = A * P) (hB1 : B * Q * B = B) (hB2 : Q * B * Q = Q)
-    (hB3 : (B * Q)ᴴ = B * Q) (hB4 : (Q * B)ᴴ = Q * B) :
-    ‖Q - P‖ ≤ 2 * ‖B - A‖ *
-      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ ^ 2)
-        (‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖ ^ 2) := by
-  classical
-  have hdec := sub_eq_of_penrose hA1 hA2 hA4 hA3 hB1 hB2 hB3 hB4
-  generalize B - A = E at hdec ⊢
-  -- the two orthogonal projectors `1 - A P` and `1 - Q B`
-  have h0 : (1 - A * P) * (A * P) = 0 := by
-    rw [Matrix.sub_mul, Matrix.one_mul, ← Matrix.mul_assoc, hA1, sub_self]
-  have hAP2 : (1 - A * P) * (1 - A * P) = 1 - A * P := by
-    rw [Matrix.mul_sub (1 - A * P) 1 (A * P), Matrix.mul_one, h0, sub_zero]
-  have h0' : (1 - Q * B) * (Q * B) = 0 := by
-    rw [Matrix.sub_mul, Matrix.one_mul, ← Matrix.mul_assoc, hB2, sub_self]
-  have hQB2 : (1 - Q * B) * (1 - Q * B) = 1 - Q * B := by
-    rw [Matrix.mul_sub (1 - Q * B) 1 (Q * B), Matrix.mul_one, h0', sub_zero]
-  have hAP : (1 - A * P).IsHermitian := isHermitian_one.sub hA3
-  have hQB : (1 - Q * B).IsHermitian := isHermitian_one.sub hB4
-  -- orthogonality of the first two terms and the third
-  have hO1 : trace ((-(Q * (E * P)) + Q * (Qᴴ * (Eᴴ * (1 - A * P))))ᴴ
-      * ((1 - Q * B) * (Eᴴ * Pᴴ * P))) = 0 := by
-    have hQ : Qᴴ * (1 - Q * B) = 0 := by
-      rw [← hQB.eq, ← conjTranspose_mul, Matrix.sub_mul, Matrix.one_mul, hB2, sub_self,
-        conjTranspose_zero]
-    rw [← Matrix.mul_neg, ← Matrix.mul_add, conjTranspose_mul, Matrix.mul_assoc,
-      ← Matrix.mul_assoc Qᴴ (1 - Q * B), hQ, Matrix.zero_mul, Matrix.mul_zero, trace_zero]
-  -- orthogonality of the first two terms
-  have hO2 : trace ((-(Q * (E * P)))ᴴ * (Q * (Qᴴ * (Eᴴ * (1 - A * P))))) = 0 := by
-    have hPh : Pᴴ = A * P * Pᴴ := by
-      have h : P = P * (A * P) := by rw [← Matrix.mul_assoc, hA2]
-      calc Pᴴ = (P * (A * P))ᴴ := by rw [← h]
-        _ = A * P * Pᴴ := by rw [conjTranspose_mul, hA3]
-    have e1 : (-(Q * (E * P)))ᴴ * (Q * (Qᴴ * (Eᴴ * (1 - A * P))))
-        = -(Pᴴ * (Eᴴ * Qᴴ * Q * Qᴴ * Eᴴ * (1 - A * P))) := by
-      simp only [conjTranspose_neg, conjTranspose_mul, Matrix.neg_mul, Matrix.mul_assoc]
-    rw [e1, trace_neg, hPh, Matrix.mul_assoc (A * P) Pᴴ,
-      trace_mul_comm (A * P), Matrix.mul_assoc Pᴴ _ (A * P),
-      Matrix.mul_assoc (Eᴴ * Qᴴ * Q * Qᴴ * Eᴴ) (1 - A * P) (A * P), h0, Matrix.mul_zero,
-      Matrix.mul_zero, trace_zero, neg_zero]
-  -- the three bounds
-  have hq0 := norm_nonneg (LinearMap.toContinuousLinearMap (toEuclideanLin Q))
-  have hp0 := norm_nonneg (LinearMap.toContinuousLinearMap (toEuclideanLin P))
-  have he0 := norm_nonneg E
-  have hB1' : ‖-(Q * (E * P))‖ ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖
-      * (‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖) := by
-    rw [norm_neg]
-    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul Q _).trans
-      (mul_le_mul_of_nonneg_left (frobenius_norm_mul_le_mul_norm_toEuclideanLin E P) hq0)
-  have hB2' : ‖Q * (Qᴴ * (Eᴴ * (1 - A * P)))‖
-      ≤ ‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖
-        * (‖LinearMap.toContinuousLinearMap (toEuclideanLin Q)‖ * (‖E‖ * 1)) := by
-    have hEP : ‖Eᴴ * (1 - A * P)‖ ≤ ‖E‖ * 1 := by
-      refine (frobenius_norm_mul_le_mul_norm_toEuclideanLin _ _).trans ?_
-      rw [frobenius_norm_conjTranspose]
-      exact mul_le_mul_of_nonneg_left (norm_toEuclideanLin_le_one_of_isHermitian hAP hAP2) he0
-    have h2 := frobenius_norm_mul_le_norm_toEuclideanLin_mul Qᴴ (Eᴴ * (1 - A * P))
-    rw [norm_toEuclideanLin_conjTranspose] at h2
-    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul Q _).trans
-      (mul_le_mul_of_nonneg_left (h2.trans (mul_le_mul_of_nonneg_left hEP hq0)) hq0)
-  have hB3' : ‖(1 - Q * B) * (Eᴴ * Pᴴ * P)‖
-      ≤ 1 * (‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖
-        * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖) := by
-    have h1 : ‖Eᴴ * Pᴴ‖ ≤ ‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ := by
-      have := frobenius_norm_mul_le_mul_norm_toEuclideanLin Eᴴ Pᴴ
-      rwa [frobenius_norm_conjTranspose, norm_toEuclideanLin_conjTranspose] at this
-    have h2 : ‖Eᴴ * Pᴴ * P‖ ≤ ‖E‖ * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖
-        * ‖LinearMap.toContinuousLinearMap (toEuclideanLin P)‖ :=
-      (frobenius_norm_mul_le_mul_norm_toEuclideanLin _ P).trans
-        (mul_le_mul_of_nonneg_right h1 hp0)
-    exact (frobenius_norm_mul_le_norm_toEuclideanLin_mul _ _).trans
-      (mul_le_mul (norm_toEuclideanLin_le_one_of_isHermitian hQB hQB2) h2 (norm_nonneg _)
-        zero_le_one)
-  have hsq : ‖Q - P‖ ^ 2 = ‖-(Q * (E * P))‖ ^ 2 + ‖Q * (Qᴴ * (Eᴴ * (1 - A * P)))‖ ^ 2
-      + ‖(1 - Q * B) * (Eᴴ * Pᴴ * P)‖ ^ 2 := by
-    rw [hdec, frobenius_norm_add_sq_of_trace_eq_zero hO1,
-      frobenius_norm_add_sq_of_trace_eq_zero hO2]
-  exact wedin_real_bound hsq (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _)
-    he0 hB1' hB2' hB3'
-
-/-- **Wedin's bound** ([golub2013matrix] §5.5.3, after Wedin (1973) and Stewart (1977)): for
-`A, E : Matrix m n 𝕜`, `‖(A + E)⁺ - A⁺‖_F ≤ 2 ‖E‖_F max(‖A⁺‖₂², ‖(A + E)⁺‖₂²)`, with no rank
-hypothesis. The three terms of Wedin's decomposition `Matrix.pinv_sub_pinv_eq` are mutually
-orthogonal for the Frobenius inner product and bounded by `‖B⁺‖₂ ‖E‖_F ‖A⁺‖₂`, `‖B⁺‖₂² ‖E‖_F`
-and `‖E‖_F ‖A⁺‖₂²`; the constant is `√3 ≤ 2`.
-
-The Frobenius norm is the scoped instance `Matrix.Norms.Frobenius`; the spectral norms are written
-as operator norms of `toEuclideanLin`, which is `‖·‖` under `Matrix.Norms.L2Operator`. -/
-theorem frobenius_norm_pinv_sub_le (A E : Matrix m n 𝕜) :
-    ‖(A + E).pinv - A.pinv‖ ≤ 2 * ‖E‖ *
-      max (‖LinearMap.toContinuousLinearMap (toEuclideanLin A.pinv)‖ ^ 2)
-        (‖LinearMap.toContinuousLinearMap (toEuclideanLin (A + E).pinv)‖ ^ 2) := by
-  have h := frobenius_norm_sub_le_of_penrose A.mul_pinv_mul_self A.pinv_mul_self_mul_pinv
-    A.isHermitian_pinv_mul A.isHermitian_mul_pinv (A + E).mul_pinv_mul_self
-    (A + E).pinv_mul_self_mul_pinv (A + E).isHermitian_mul_pinv (A + E).isHermitian_pinv_mul
-  rwa [add_sub_cancel_left] at h
-
-end Wedin
 
 end Matrix
 

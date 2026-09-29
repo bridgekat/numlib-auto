@@ -332,33 +332,6 @@ theorem IsCSD.isThinCSD {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ :
   ⟨h.mem_unitaryGroup_left₁, h.mem_unitaryGroup_left₂, h.mem_unitaryGroup_right₁, h.monotone,
     h.mem_Icc, h.eq_zero_of_lt, h.star_mul_mul₁₁, h.star_mul_mul₂₁⟩
 
-/-- A rectangular diagonal matrix times a matrix reads the rows it can see. -/
-private theorem rectDiagonal_mul_apply {m n l : ℕ} (τ : ℕ → 𝕜) (M : Matrix (Fin m) (Fin l) 𝕜)
-    (a : Fin n) (b : Fin l) (h : (a : ℕ) < m) :
-    ((rectDiagonal τ : Matrix (Fin n) (Fin m) 𝕜) * M) a b = τ a * M ⟨a, h⟩ b := by
-  rw [mul_apply, Finset.sum_eq_single ⟨a, h⟩]
-  · rw [rectDiagonal_apply, ite_eq_left rfl]
-  · intro k _ hk
-    rw [rectDiagonal_apply, ite_eq_right (fun hak => hk (Fin.ext hak.symm)), zero_mul]
-  · exact fun h' => absurd (Finset.mem_univ _) h'
-
-/-- The adjoint of a shifted rectangular diagonal matrix times a matrix. -/
-private theorem conjTranspose_shiftedRectDiagonal_mul_apply {m n l : ℕ} (k : ℕ) (σ : ℕ → 𝕜)
-    (M : Matrix (Fin m) (Fin l) 𝕜) (a : Fin n) (b : Fin l) :
-    ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * M) a b
-      = if h : k ≤ (a : ℕ) ∧ (a : ℕ) - k < m then star (σ a) * M ⟨a - k, h.2⟩ b else 0 := by
-  rw [mul_apply]
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨a - k, h.2⟩]
-    · rw [conjTranspose_apply, shiftedRectDiagonal_apply, ite_eq_left (by simp only; omega)]
-    · intro j _ hj
-      rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-        ite_eq_right (fun hij => hj (Fin.ext (by simp only; omega))), star_zero, zero_mul]
-    · exact fun h' => absurd (Finset.mem_univ _) h'
-  · refine Finset.sum_eq_zero fun j _ => ?_
-    rw [conjTranspose_apply, shiftedRectDiagonal_apply,
-      ite_eq_right (fun hij => h ⟨by omega, by have := j.isLt; omega⟩), star_zero, zero_mul]
-
 /-- `(Uᴴ X V)(U'ᴴ Y V)ᴴ = Uᴴ (X Yᴴ) U'` for unitary `V`. -/
 private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a) (Fin a) 𝕜)
     (U' : Matrix (Fin b) (Fin b) 𝕜) {V : Matrix (Fin c) (Fin c) 𝕜}

@@ -43,7 +43,8 @@ the latter is the definition taken here, and it is the *symmetric* gap. That the
 * `Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq` and `Submodule.gap_eq_one_iff_of_finrank_eq`:
   for subspaces of equal finite dimension the gap is either one-sided gap (the restricted projection
   and its adjoint `P_K|_L` have the same singular values), and it is `1` exactly when `K` meets `Lᗮ`
-  ([golub2013matrix] §2.5.3).
+  ([golub2013matrix] §2.5.3); for two lines it is the sine of their angle
+  (`Submodule.gap_span_singleton_eq_sinAngle`).
 * `Submodule.graph` and `Submodule.gap_graph`: the gap between `K` and the graph
   `{x + X x | x ∈ K}` of `X : K →L[𝕜] Kᗮ` is `‖X‖ / √(1 + ‖X‖²)`, the computation behind the
   invariant-subspace and subspace-iteration theorems of [golub2013matrix] §7.3 and §8.2.
@@ -528,6 +529,30 @@ theorem gap_eq_one_iff_of_finrank_eq (h : Module.finrank 𝕜 K = Module.finrank
   have : (x : E) ∈ K ⊓ Lᗮ := ⟨x.2, hxL⟩
   rw [hbot, Submodule.mem_bot] at this
   exact this
+
+/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
+`gap(span{q}, span{u}) = sin θ(q, span{u}) = ‖q - ⟪u, q⟫ u‖`. The two lines have the same
+dimension, so the gap is the one-sided `‖P_{u⊥} P_q‖`
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and `P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. -/
+theorem gap_span_singleton_eq_sinAngle {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
+    (𝕜 ∙ q).gap (𝕜 ∙ u) = (𝕜 ∙ u).sinAngle q := by
+  have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
+  have hu0 : u ≠ 0 := norm_ne_zero_iff.1 (by rw [hu]; exact one_ne_zero)
+  rw [gap_eq_norm_orthogonal_mul_of_finrank_eq _ _
+    ((finrank_span_singleton hq0).trans (finrank_span_singleton hu0).symm), sinAngle, hq, div_one]
+  have hT : ∀ w, ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection) w =
+      (inner 𝕜 q w : 𝕜) • (q - (𝕜 ∙ u).starProjection q) := by
+    intro w
+    change (𝕜 ∙ u)ᗮ.starProjection ((𝕜 ∙ q).starProjection w) = _
+    rw [starProjection_singleton, hq, one_pow, RCLike.ofReal_one, div_one, map_smul,
+      starProjection_orthogonal_val]
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun w => ?_) ?_
+  · rw [hT, norm_smul, mul_comm]
+    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+    simpa [hq] using norm_inner_le_norm (𝕜 := 𝕜) q w
+  · have h := ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection).le_opNorm q
+    rwa [hT, inner_self_eq_norm_sq_to_K, hq, RCLike.ofReal_one, one_pow, one_smul,
+      mul_one] at h
 
 end Restrict
 

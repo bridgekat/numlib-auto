@@ -11,6 +11,7 @@ import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Matrix.OperatorNorm
+import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
@@ -1309,9 +1310,10 @@ end LinearMap.IsSymmetric
 
 /-! ### The resolvent step, the Schur-form bound and approximate invariant subspaces
 
-`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is the step shared by every
-resolvent-based perturbation bound ([golub2013matrix] (7.2.1), via Lemma 2.3.3): if `μ` is an
-eigenvalue of `A + E` but not of `A`, then `‖(μ - A)⁻¹ E‖ ≥ 1`, since otherwise
+`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` (in `Numlib/Analysis/Normed/Ring/Inverse`)
+is the step shared by every resolvent-based perturbation bound ([golub2013matrix] (7.2.1), via
+Lemma 2.3.3): if `μ` is an eigenvalue of `A + E` but not of `A`, then `‖(μ - A)⁻¹ E‖ ≥ 1`, since
+otherwise
 `μ - A - E = (μ - A)(1 - (μ - A)⁻¹ E)` would be invertible by the Neumann series.
 `Matrix.infDist_spectrum_le_of_schur` is [golub2013matrix] Theorem 7.2.3, a Henrici-type bound for
 a matrix that need not be diagonalizable: with a Schur form `Qᴴ A Q = D + N`, the resolvent of
@@ -1322,20 +1324,6 @@ entrywise absolute value `|N|`.
 residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1` of the one-vector residual
 bound instead of the book's `√2`): an orthonormal block `Q₁` and a Hermitian `S` with
 `‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A` within `ε` of every eigenvalue of `S`. -/
-
-/-- In a Banach algebra, if `a` is a unit and `a - b` is not, then `‖a⁻¹ b‖ ≥ 1`: otherwise
-`a - b = a (1 - a⁻¹ b)` would be a unit by the Neumann series. -/
-theorem NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub {R : Type*} [NormedRing R]
-    [HasSummableGeomSeries R] {a b : R} (ha : IsUnit a) (hab : ¬IsUnit (a - b)) :
-    1 ≤ ‖Ring.inverse a * b‖ := by
-  by_contra hlt
-  push Not at hlt
-  apply hab
-  obtain ⟨u, rfl⟩ := ha
-  have : (u : R) - b = u * (1 - Ring.inverse (u : R) * b) := by
-    rw [Ring.inverse_unit, mul_sub, mul_one, ← mul_assoc, Units.mul_inv, one_mul]
-  rw [this]
-  exact u.isUnit.mul (Units.oneSub _ hlt).isUnit
 
 namespace LinearMap.IsSymmetric
 

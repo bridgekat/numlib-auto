@@ -210,18 +210,6 @@ theorem frobenius_norm_le_of_forall_row_le {A B : Matrix ι κ ℝ} {c : ℝ} (h
   rw [← mul_pow]
   exact pow_le_pow_left₀ (norm_nonneg _) (h i) 2
 
-open scoped Matrix.Norms.Frobenius in
-/-- An entrywise bound `|A i j| ≤ c |B i j|` gives `‖A‖_F ≤ c ‖B‖_F`. -/
-theorem frobenius_norm_le_of_forall_abs_le {A B : Matrix ι κ ℝ} {c : ℝ} (hc : 0 ≤ c)
-    (h : ∀ i j, |A i j| ≤ c * |B i j|) : ‖A‖ ≤ c * ‖B‖ := by
-  refine le_of_sq_le_sq ?_ (by positivity)
-  rw [mul_pow, frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq, Finset.mul_sum]
-  refine Finset.sum_le_sum fun i _ => ?_
-  rw [Finset.mul_sum]
-  refine Finset.sum_le_sum fun j _ => ?_
-  rw [← mul_pow, Real.norm_eq_abs, Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (h i j) 2
-
 end Norms
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -1690,17 +1678,6 @@ private theorem frobenius_norm_eq_submatrix {M : Matrix ι ι ℝ}
     rfl
   exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
 
-/-- The Frobenius norm of a principal block is at most that of the matrix. -/
-private theorem frobenius_norm_submatrix_le (M : Matrix ι ι ℝ) :
-    ‖M.submatrix (Subtype.val : {i // p i} → ι) (Subtype.val : {i // p i} → ι)‖ ≤ ‖M‖ := by
-  refine le_of_sq_le_sq ?_ (norm_nonneg _)
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq,
-    ← Fintype.sum_subtype_add_sum_subtype p]
-  refine le_add_of_le_of_nonneg (Finset.sum_le_sum fun a _ => ?_)
-    (Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => by positivity)
-  rw [← Fintype.sum_subtype_add_sum_subtype p (fun j => ‖M a j‖ ^ 2)]
-  exact le_add_of_nonneg_right (Finset.sum_nonneg fun _ _ => by positivity)
-
 /-- Conjugation by the extended reflector, off the block in both indices. -/
 private theorem conj_extendByZero_apply_of_not_of_not (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) {i j : ι} (hi : ¬ p i) (hj : ¬ p j) :
@@ -2666,7 +2643,8 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
   have hD₁n : ‖D₁‖ ≤ 9 * gamma m.u (6 * K + 2 * N + 8) * ‖A‖ := by
     rw [frobenius_norm_eq_submatrix (p := fun i : Fin N => k + 1 ≤ (i : ℕ)) hD₁out, hD₁in]
     refine hBT.trans (mul_le_mul (mul_le_mul_of_nonneg_left
-      (gamma_mono hu0 (by omega) hcard) (by norm_num)) (frobenius_norm_submatrix_le A)
+      (gamma_mono hu0 (by omega) hcard) (by norm_num))
+      (Matrix.frobenius_norm_submatrix_le A Subtype.val_injective Subtype.val_injective)
       (norm_nonneg _) (by have := gamma_nonneg hu0 hcard; positivity))
   calc ‖B - P * A * P‖ = ‖D₁ + D₂‖ := by rw [hD₁_def, sub_add_cancel]
     _ ≤ ‖D₁‖ + ‖D₂‖ := norm_add_le _ _

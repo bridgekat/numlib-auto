@@ -221,14 +221,6 @@ private theorem lpOpNorm_eq_zero_of_fin_zero (A : Matrix (Fin 0) (Fin 0) 𝕜) :
     lpOpNorm 1 A = 0 := by
   rw [Subsingleton.elim A 0, lpOpNorm_zero]
 
-/-- A `1`-norm bound from a bound on every column sum. -/
-private theorem lpOpNorm_one_le_of_forall_sum_le {m : Type*} [Fintype m] [DecidableEq m]
-    {M : Matrix m m 𝕜} {C : ℝ} (hC : 0 ≤ C) (h : ∀ c, ∑ k, ‖M k c‖ ≤ C) : lpOpNorm 1 M ≤ C := by
-  rw [lpOpNorm_one_eq_sup_sum_norm]
-  have hle : (univ.sup fun j => ∑ i, ‖M i j‖₊) ≤ ⟨C, hC⟩ := Finset.sup_le fun c _ =>
-    NNReal.coe_le_coe.mp (show ((∑ i, ‖M i c‖₊ : NNReal) : ℝ) ≤ C by push_cast; exact h c)
-  exact NNReal.coe_le_coe.mpr hle
-
 /-- The column sums of a product: `∑_k ‖(L M) k c‖ ≤ ‖L‖₁ ∑_k ‖M k c‖`. -/
 private theorem sum_norm_mul_apply_le {m : Type*} [Fintype m] [DecidableEq m]
     (L M : Matrix m m 𝕜) (c : m) : ∑ k, ‖(L * M) k c‖ ≤ lpOpNorm 1 L * ∑ k, ‖M k c‖ := by

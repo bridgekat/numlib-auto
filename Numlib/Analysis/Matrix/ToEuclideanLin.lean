@@ -53,9 +53,11 @@ transported to the operator picture:
 * *column spaces*: `ran A` is the span of the columns (`Matrix.range_toEuclideanLin_eq_span_col`),
   `Qᴴ Q = 1` says the columns are orthonormal
   (`Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal`), the two column blocks of a unitary
-  `[Q_α Q_β]` span orthogonal complements (`Matrix.range_eq_orthogonal_of_fromCols`), and a unitary
-  `V` carries `ran M` to `ran (V M)` isometrically
-  (`Matrix.range_mul_eq_map_of_mul_conjTranspose_eq_one`);
+  `[Q_α Q_β]` span orthogonal complements (`Matrix.range_eq_orthogonal_of_fromCols`, and
+  `Matrix.range_submatrix_eq_orthogonal` for complementary column selections), a unitary `V`
+  carries `ran M` to `ran (V M)` isometrically
+  (`Matrix.range_mul_eq_map_of_mul_conjTranspose_eq_one`), and orthonormal columns span a space of
+  their number (`Matrix.finrank_range_of_conjTranspose_mul_self_eq_one`);
 * *injectivity* of `Matrix.toEuclideanCLM` for the coercion its applications use
   (`Matrix.toEuclideanCLM_injective`), because `StarAlgEquiv.injective` speaks about the underlying
   ring equivalence and leaves a goal phrased in `toRingEquiv`.
@@ -267,6 +269,25 @@ theorem range_eq_orthogonal_of_fromCols {r s : Type*} [Fintype r] [DecidableEq r
       toLpLin_one, LinearMap.id_apply] at h
     exact h
 
+/-- **Complementary column selections of a unitary matrix span orthogonal complements**: if
+`Sum.elim f g` is a bijection onto the columns of a unitary `V`, then
+`ran V(:, g) = (ran V(:, f))ᗮ` ([golub2013matrix] §2.1.5, after Theorem 2.1.1). The selections
+put side by side are `V` with its columns permuted, so this is
+`Matrix.range_eq_orthogonal_of_fromCols`. -/
+theorem range_submatrix_eq_orthogonal {r s : Type*} [Fintype r] [DecidableEq r] [Fintype s]
+    [DecidableEq s] {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜) {f : r → n} {g : s → n}
+    (hfg : Function.Bijective (Sum.elim f g)) :
+    LinearMap.range (toEuclideanLin (V.submatrix id g))
+      = (LinearMap.range (toEuclideanLin (V.submatrix id f)))ᗮ := by
+  have hW : fromCols (V.submatrix id f) (V.submatrix id g)
+      = V.submatrix id (Equiv.ofBijective _ hfg) := by
+    ext i (j | j) <;> rfl
+  refine range_eq_orthogonal_of_fromCols ?_ ?_ <;> rw [hW]
+  · rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id,
+      ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hV, submatrix_one_equiv]
+  · rw [conjTranspose_submatrix, submatrix_mul_equiv, ← star_eq_conjTranspose,
+      mem_unitaryGroup_iff.1 hV, submatrix_id_id]
+
 end Columns
 
 open scoped Matrix.Norms.L2Operator in
@@ -394,6 +415,14 @@ theorem range_mul_eq_map_of_mul_conjTranspose_eq_one {V : Matrix n m 𝕜} (hV :
           EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 n) := by
   rw [toEuclideanLin_mul, LinearMap.range_comp]
   rfl
+
+omit [DecidableEq n] in
+/-- The range of a matrix with orthonormal columns has dimension the number of columns. -/
+theorem finrank_range_of_conjTranspose_mul_self_eq_one {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
+    Module.finrank 𝕜 (LinearMap.range (toEuclideanLin V)) = Fintype.card m := by
+  classical
+  rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin V)
+    (toEuclideanLinearIsometry hV).injective, finrank_euclideanSpace]
 
 end Isometry
 

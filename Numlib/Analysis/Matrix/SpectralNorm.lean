@@ -42,7 +42,12 @@ reverse bound, so no diagonalization is needed.
 * `Matrix.l2_opNorm_submatrix_le`: a submatrix, for injective row and column selections, has the
   smaller spectral norm, through `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` and the `ℓ^p`
   facts `PiLp.norm_toLp_comp_le`, `PiLp.norm_toLp_extend`; the induced `p`-norm version is
-  `Matrix.lpOpNorm_submatrix_le` in `Numlib/Analysis/Matrix/OperatorNorm`.
+  `Matrix.lpOpNorm_submatrix_le` in `Numlib/Analysis/Matrix/OperatorNorm`; with an equivalence on
+  both sides the norm is unchanged (`Matrix.l2_opNorm_submatrix_equiv`).
+* `Matrix.l2_opNorm_vecMulVec`: the spectral norm of a rank-one matrix `u wᵀ` is `‖u‖₂ ‖w‖₂`;
+  `Matrix.dotProduct_mulVec_le_l2_opNorm` bounds the bilinear form `xᵀ A y` by `‖A‖₂ ‖x‖₂ ‖y‖₂`,
+  and `Matrix.PosSemidef.sq_dotProduct_mulVec_le` is Cauchy–Schwarz for a positive semidefinite
+  form.
 * `Matrix.l2_opNorm_fromBlocks_le`: Kahan's bound on the spectral norm of a `2 × 2` block matrix
   by the norms of its blocks, the largest eigenvalue of `[μ γ; γ δ]` ([golub2013matrix]
   Lemma 10.3.1), with its Hermitian-shaped case `Matrix.l2_opNorm_fromBlocks_le_of_isHermitian`.
@@ -231,7 +236,96 @@ theorem l2_opNorm_submatrix_le {m m' n' : Type*} [Fintype m] [Fintype m'] [Finty
       _ = ‖B‖ * ‖x‖ := by rw [PiLp.norm_toLp_extend 2 hg]
   exact key
 
+/-- Reindexing does not change the spectral norm. -/
+theorem l2_opNorm_submatrix_equiv {m m' n' : Type*} [Fintype m] [Fintype m'] [Fintype n']
+    [DecidableEq n'] (B : Matrix m n 𝕜) (e : m' ≃ m) (f : n' ≃ n) : ‖B.submatrix e f‖ = ‖B‖ := by
+  refine le_antisymm (l2_opNorm_submatrix_le B e.injective f.injective) ?_
+  have h := l2_opNorm_submatrix_le (B.submatrix e f) e.symm.injective f.symm.injective
+  rwa [submatrix_submatrix, e.self_comp_symm, f.self_comp_symm, submatrix_id_id] at h
+
 end Submatrix
+
+/-! ### Rank-one matrices and bilinear forms -/
+
+section RankOne
+
+/-- **The spectral norm of a rank-one matrix**: `‖u wᵀ‖₂ = ‖u‖₂ ‖w‖₂`. The operator is
+`z ↦ ⟪w̄, z⟫ u`, of norm at most `‖w̄‖ ‖u‖` by Cauchy–Schwarz, with equality at `z = w̄`. -/
+theorem l2_opNorm_vecMulVec {m : Type*} [Fintype m] (u : m → 𝕜) (w : n → 𝕜) :
+    ‖vecMulVec u w‖ = ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m)‖ *
+      ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 n)‖ := by
+  have hW : ‖(WithLp.toLp 2 (star w) : EuclideanSpace 𝕜 n)‖ =
+      ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 n)‖ := by
+    simp [EuclideanSpace.norm_eq]
+  have happ : ∀ z : EuclideanSpace 𝕜 n,
+      (WithLp.toLp 2 (vecMulVec u w *ᵥ WithLp.ofLp z) : EuclideanSpace 𝕜 m)
+        = inner 𝕜 (WithLp.toLp 2 (star w) : EuclideanSpace 𝕜 n) z •
+          (WithLp.toLp 2 u : EuclideanSpace 𝕜 m) := by
+    intro z
+    rw [vecMulVec_mulVec, IsCentralScalar.op_smul_eq_smul, WithLp.toLp_smul,
+      EuclideanSpace.inner_eq_star_dotProduct, WithLp.ofLp_toLp, star_star, dotProduct_comm]
+  refine le_antisymm ?_ ?_
+  · rw [l2_opNorm_def]
+    refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun z => ?_
+    change ‖(WithLp.toLp 2 (vecMulVec u w *ᵥ WithLp.ofLp z) : EuclideanSpace 𝕜 m)‖ ≤ _
+    rw [happ, norm_smul, ← hW]
+    calc ‖inner 𝕜 (WithLp.toLp 2 (star w) : EuclideanSpace 𝕜 n) z‖ *
+          ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m)‖
+        ≤ ‖(WithLp.toLp 2 (star w) : EuclideanSpace 𝕜 n)‖ * ‖z‖ *
+          ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m)‖ :=
+          mul_le_mul_of_nonneg_right (norm_inner_le_norm _ _) (norm_nonneg _)
+      _ = _ := by ring
+  · set W : EuclideanSpace 𝕜 n := WithLp.toLp 2 (star w)
+    have h := l2_opNorm_mulVec (vecMulVec u w) W
+    change ‖(WithLp.toLp 2 (vecMulVec u w *ᵥ WithLp.ofLp W) : EuclideanSpace 𝕜 m)‖ ≤ _ at h
+    rw [happ, inner_self_eq_norm_sq_to_K, norm_smul, norm_pow, RCLike.norm_ofReal,
+      abs_norm] at h
+    rw [← hW]
+    rcases eq_or_ne ‖W‖ 0 with h0 | h0
+    · rw [h0, mul_zero]
+      exact norm_nonneg _
+    · have hpos : 0 < ‖W‖ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm h0)
+      nlinarith [norm_nonneg (vecMulVec u w), norm_nonneg (WithLp.toLp 2 u : EuclideanSpace 𝕜 m)]
+
+/-- `xᵀ A y ≤ ‖A‖₂ ‖x‖₂ ‖y‖₂` for a real matrix, by Cauchy–Schwarz. -/
+theorem dotProduct_mulVec_le_l2_opNorm {m : Type*} [Fintype m] (M : Matrix m n ℝ) (x : m → ℝ)
+    (y : n → ℝ) :
+    x ⬝ᵥ (M *ᵥ y) ≤ ‖M‖ * (‖(WithLp.toLp 2 x : EuclideanSpace ℝ m)‖ *
+      ‖(WithLp.toLp 2 y : EuclideanSpace ℝ n)‖) := by
+  have h1 : x ⬝ᵥ (M *ᵥ y)
+      = inner ℝ (WithLp.toLp 2 x : EuclideanSpace ℝ m) (WithLp.toLp 2 (M *ᵥ y)) := by
+    rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
+  have h2 : ‖(WithLp.toLp 2 (M *ᵥ y) : EuclideanSpace ℝ m)‖
+      ≤ ‖M‖ * ‖(WithLp.toLp 2 y : EuclideanSpace ℝ n)‖ :=
+    l2_opNorm_mulVec M (WithLp.toLp 2 y)
+  rw [h1]
+  calc _ ≤ ‖(WithLp.toLp 2 x : EuclideanSpace ℝ m)‖ *
+        ‖(WithLp.toLp 2 (M *ᵥ y) : EuclideanSpace ℝ m)‖ := real_inner_le_norm _ _
+    _ ≤ ‖(WithLp.toLp 2 x : EuclideanSpace ℝ m)‖ *
+        (‖M‖ * ‖(WithLp.toLp 2 y : EuclideanSpace ℝ n)‖) :=
+        mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
+    _ = _ := by ring
+
+omit [DecidableEq n] in
+/-- **Cauchy–Schwarz for a positive semidefinite real quadratic form**:
+`(xᵀ T y)² ≤ (xᵀ T x)(yᵀ T y)`. -/
+theorem PosSemidef.sq_dotProduct_mulVec_le {T : Matrix n n ℝ} (hT : T.PosSemidef) (x y : n → ℝ) :
+    (x ⬝ᵥ (T *ᵥ y)) ^ 2 ≤ (x ⬝ᵥ (T *ᵥ x)) * (y ⬝ᵥ (T *ᵥ y)) := by
+  have hTt : Tᵀ = T := by
+    have := hT.isHermitian.eq
+    rwa [conjTranspose_eq_transpose_of_trivial] at this
+  have hsymm : y ⬝ᵥ (T *ᵥ x) = x ⬝ᵥ (T *ᵥ y) := by
+    rw [dotProduct_mulVec, ← mulVec_transpose, hTt, dotProduct_comm]
+  have h := discrim_le_zero (a := y ⬝ᵥ (T *ᵥ y)) (b := 2 * (x ⬝ᵥ (T *ᵥ y)))
+    (c := x ⬝ᵥ (T *ᵥ x)) fun t => by
+      have := hT.dotProduct_mulVec_nonneg (x + t • y)
+      simp only [star_trivial, mulVec_add, mulVec_smul, dotProduct_add, add_dotProduct,
+        dotProduct_smul, smul_dotProduct, smul_eq_mul, hsymm] at this
+      linarith
+  rw [discrim] at h
+  nlinarith [h]
+
+end RankOne
 
 /-! ### Block matrices -/
 
@@ -267,7 +361,7 @@ private theorem sq_add_sq_le_of_blockBound {μ γ δ a b : ℝ} (hμ : 0 ≤ μ)
 
 /-- The squared `ℓ²` norm of a vector on a sum type is the sum of the squared norms of its two
 parts. -/
-private theorem norm_toLp_sumElim_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (u : m₁ → 𝕜)
+theorem norm_toLp_sumElim_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (u : m₁ → 𝕜)
     (w : m₂ → 𝕜) :
     ‖(WithLp.toLp 2 (Sum.elim u w) : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
       = ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 m₁)‖ ^ 2

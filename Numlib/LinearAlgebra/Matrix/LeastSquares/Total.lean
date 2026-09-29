@@ -214,17 +214,6 @@ open scoped Matrix.Norms.Frobenius
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
   {d : m → ℝ} {t : n ⊕ Unit → ℝ} {A : Matrix m n 𝕜} {b : m → 𝕜}
 
-/-- The Frobenius norm of a rank-one matrix `u wᴴ` is `‖u‖ ‖w‖`. -/
-private theorem frobenius_norm_vecMulVec_star {ι κ : Type*} [Fintype ι] [Fintype κ]
-    (u : ι → 𝕜) (w : κ → 𝕜) :
-    ‖vecMulVec u (star w)‖ = ‖(WithLp.toLp 2 u : EuclideanSpace 𝕜 ι)‖ *
-      ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 κ)‖ := by
-  refine (sq_eq_sq₀ (norm_nonneg _) (by positivity)).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq,
-    Finset.sum_mul_sum]
-  exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by
-    rw [vecMulVec_apply, Pi.star_apply, norm_mul, norm_star, mul_pow]
-
 /-- `(u vᴴ) w = (vᴴ w) u`, entrywise. -/
 private theorem vecMulVec_mulVec_apply {ι κ : Type*} [Fintype κ] (u : ι → 𝕜) (v w : κ → 𝕜)
     (i : ι) : (vecMulVec u v *ᵥ w) i = u i * (v ⬝ᵥ w) := by

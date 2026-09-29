@@ -130,41 +130,13 @@ theorem arnoldi_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSp
     field_simp
 
 open scoped Matrix.Norms.L2Operator in
-/-- The spectral norm of a rank-one matrix: `‖v xᵀ‖₂ = ‖v‖₂ ‖x‖₂`. -/
+/-- The spectral norm of a rank-one matrix: `‖v xᵀ‖₂ = ‖v‖₂ ‖x‖₂` (backbone
+`Matrix.l2_opNorm_vecMulVec`). -/
 theorem l2_opNorm_vecMulVec {m : ℕ} (v : Fin n → ℝ) (x : Fin m → ℝ) :
     ‖Matrix.vecMulVec v x‖ =
       ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin n))‖ *
-        ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m))‖ := by
-  have happ : ∀ z : Fin m → ℝ, Matrix.vecMulVec v x *ᵥ z = (x ⬝ᵥ z) • v := by
-    intro z
-    ext i
-    simp only [Matrix.mulVec, dotProduct, Matrix.vecMulVec_apply, Pi.smul_apply, smul_eq_mul]
-    simp_rw [mul_assoc, ← Finset.mul_sum]
-    ring
-  refine le_antisymm ?_ ?_
-  · rw [Matrix.l2_opNorm_def]
-    refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun z => ?_
-    change ‖(WithLp.toLp 2 (Matrix.vecMulVec v x *ᵥ z.ofLp) : EuclideanSpace ℝ (Fin n))‖ ≤ _
-    rw [happ, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
-    have hcs : |x ⬝ᵥ z.ofLp| ≤ ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m))‖ * ‖z‖ := by
-      have := abs_real_inner_le_norm (WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m)) z
-      rwa [EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct_comm] at this
-    calc |x ⬝ᵥ z.ofLp| * ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin n))‖
-        ≤ ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m))‖ * ‖z‖ *
-            ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin n))‖ :=
-          mul_le_mul_of_nonneg_right hcs (norm_nonneg _)
-      _ = _ := by ring
-  · set X : EuclideanSpace ℝ (Fin m) := WithLp.toLp 2 x
-    have h := Matrix.l2_opNorm_mulVec (Matrix.vecMulVec v x) X
-    have hx : x ⬝ᵥ x = ‖X‖ ^ 2 := by
-      rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_eq_star_dotProduct, star_trivial]
-    change ‖(WithLp.toLp 2 (Matrix.vecMulVec v x *ᵥ x) : EuclideanSpace ℝ (Fin n))‖ ≤ _ at h
-    rw [happ, hx, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)] at h
-    rcases eq_or_ne ‖X‖ 0 with h0 | h0
-    · rw [h0, mul_zero]
-      exact norm_nonneg _
-    · have hpos : 0 < ‖X‖ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm h0)
-      nlinarith [norm_nonneg (Matrix.vecMulVec v x)]
+        ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m))‖ :=
+  Matrix.l2_opNorm_vecMulVec v x
 
 open scoped Matrix.Norms.L2Operator in
 /-- **Ritz pairs of an Arnoldi decomposition and their backward error** (§10.5.1, after the

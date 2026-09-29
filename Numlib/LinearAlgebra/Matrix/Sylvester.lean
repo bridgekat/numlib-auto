@@ -675,21 +675,6 @@ theorem sep_sub_le_sep_add (A E : Matrix m m 𝕜) (B F : Matrix n n 𝕜) :
 
 /-! ### Symmetry of the separation -/
 
-/-- **Cauchy–Schwarz for the Frobenius pairing**: `re tr(Yᴴ X) ≤ ‖Y‖_F ‖X‖_F`. The pairing is the
-inner product of `PiLp 2 (fun _ : m => EuclideanSpace 𝕜 n)`, whose norm is the Frobenius norm. -/
-theorem re_trace_conjTranspose_mul_le (Y X : Matrix m n 𝕜) :
-    RCLike.re (trace (Yᴴ * X)) ≤ ‖Y‖ * ‖X‖ := by
-  let Φ : Matrix m n 𝕜 → PiLp 2 (fun _ : m => EuclideanSpace 𝕜 n) :=
-    fun X => WithLp.toLp 2 fun i => WithLp.toLp 2 (X i)
-  have hΦ : ∀ X, ‖Φ X‖ = ‖X‖ := fun X => rfl
-  have hinner : inner 𝕜 (Φ Y) (Φ X) = trace (Yᴴ * X) := by
-    simp only [Φ, PiLp.inner_apply, RCLike.inner_apply, trace, diag_apply, mul_apply,
-      conjTranspose_apply, RCLike.star_def]
-    rw [Finset.sum_comm]
-    simp only [mul_comm]
-  rw [← hinner, ← hΦ Y, ← hΦ X]
-  exact re_inner_le_norm _ _
-
 /-- The Frobenius adjoint of the Sylvester operator: `tr(Yᴴ (A X - X B)) = tr((Aᴴ Y - Y Bᴴ)ᴴ X)`. -/
 theorem trace_conjTranspose_mul_sylvesterMap (A : Matrix m m 𝕜) (B : Matrix n n 𝕜)
     (X Y : Matrix m n 𝕜) :

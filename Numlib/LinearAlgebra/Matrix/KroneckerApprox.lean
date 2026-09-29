@@ -536,20 +536,6 @@ theorem exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two {K : Type*} [Field K] [
 
 variable [DecidableEq n]
 
-/-- `xᵀ A y ≤ ‖A‖₂ ‖x‖₂ ‖y‖₂` for a real matrix. -/
-private theorem dotProduct_mulVec_le_lpOpNorm_two (A : Matrix n n ℝ) (x y : n → ℝ) :
-    x ⬝ᵥ (A *ᵥ y) ≤ lpOpNorm 2 A * (‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖) := by
-  have h1 : x ⬝ᵥ (A *ᵥ y) = inner ℝ (WithLp.toLp 2 x) (WithLp.toLp 2 (A *ᵥ y)) := by
-    rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
-  have h2 := lpSeminorm_mulVec_le 2 A y
-  simp only [lpSeminorm_apply] at h2
-  rw [h1]
-  calc inner ℝ (WithLp.toLp 2 x) (WithLp.toLp 2 (A *ᵥ y))
-      ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 (A *ᵥ y)‖ := real_inner_le_norm _ _
-    _ ≤ ‖WithLp.toLp 2 x‖ * (lpOpNorm 2 A * ‖WithLp.toLp 2 y‖) :=
-        mul_le_mul_of_nonneg_left h2 (norm_nonneg _)
-    _ = _ := by ring
-
 omit [DecidableEq n] in
 /-- `xᵀ M y − yᵀ M x = 2 xᵀ S y` for the skew-symmetric part `S = (M − Mᵀ)/2`. -/
 private theorem dotProduct_mulVec_sub_dotProduct_mulVec (M : Matrix n n ℝ) (x y : n → ℝ) :
@@ -593,8 +579,8 @@ theorem isMinOn_frobenius_norm_sub_skew_rank_le_two (M : Matrix n n ℝ) {u v : 
       simp
     · field_simp
       ring
-  have hb := dotProduct_mulVec_le_lpOpNorm_two ((1 / 2 : ℝ) • (M - Mᵀ)) x y'
-  rw [← hμ] at hb
+  have hb := dotProduct_mulVec_le_l2_opNorm ((1 / 2 : ℝ) • (M - Mᵀ)) x y'
+  rw [← lpOpNorm_two, ← hμ] at hb
   set a := ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y'‖
   have ha : a ^ 2 = (x ⬝ᵥ x) * (y' ⬝ᵥ y') := by
     rw [mul_pow, ← dotProduct_self_eq_norm_sq, ← dotProduct_self_eq_norm_sq]

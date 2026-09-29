@@ -1049,14 +1049,6 @@ private theorem sum_abs_revSol_col_le {k n : ℕ} (hk : k < n) :
   rw [h2, add_comm]
   exact one_add_sum_abs_sol_le k
 
-/-- A `1`-norm bound from a bound on every column sum. -/
-private theorem lpOpNorm_one_le_of_forall_sum_le {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ} {C : ℝ}
-    (hC : 0 ≤ C) (h : ∀ c, ∑ k, ‖M k c‖ ≤ C) : lpOpNorm 1 M ≤ C := by
-  rw [lpOpNorm_one_eq_sup_sum_norm]
-  have hle : (univ.sup fun j => ∑ i, ‖M i j‖₊) ≤ ⟨C, hC⟩ := Finset.sup_le fun c _ =>
-    NNReal.coe_le_coe.mp (show ((∑ i, ‖M i c‖₊ : NNReal) : ℝ) ≤ C by push_cast; exact h c)
-  exact NNReal.coe_le_coe.mpr hle
-
 /-- `U` is unit upper triangular, so `det U = 1`. -/
 theorem det_unitUpper {K : Type*} [Field K] (r : ℕ → K) (n : ℕ) : (unitUpper r n).det = 1 := by
   rw [det_of_isUpperTriangular]

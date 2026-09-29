@@ -2164,19 +2164,6 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- An entry of a matrix is at most its Frobenius norm. -/
-private theorem abs_apply_le_frobenius (D : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
-    |D i j| ≤ ‖D‖ := by
-  have h := frobenius_norm_sq_eq_sum_sq D
-  have h1 : ‖D i j‖ ^ 2 ≤ ∑ j', ‖D i j'‖ ^ 2 :=
-    Finset.single_le_sum (f := fun j' => ‖D i j'‖ ^ 2) (fun _ _ => by positivity)
-      (Finset.mem_univ j)
-  have h2 : ∑ j', ‖D i j'‖ ^ 2 ≤ ∑ i', ∑ j', ‖D i' j'‖ ^ 2 :=
-    Finset.single_le_sum (f := fun i' => ∑ j', ‖D i' j'‖ ^ 2) (fun _ _ => by positivity)
-      (Finset.mem_univ i)
-  rw [← Real.norm_eq_abs]
-  nlinarith [norm_nonneg (D i j), norm_nonneg D]
-
 /-- The part of `D` on the coupling `a`: the entries `(a + 1, a)` and `(a, a + 1)`. -/
 private def couplingPart (D : Matrix (Fin n) (Fin n) ℝ) (a : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
   of fun r s => if (r : ℕ) = a + 1 ∧ s = a ∨ r = a ∧ (s : ℕ) = a + 1 then D r s else 0
@@ -2351,8 +2338,8 @@ private theorem norm_sub_deflated_le {tol : ℝ} (htol : 0 ≤ tol) {D : Matrix 
   simp only [newZeros, Finset.mem_filter, Finset.mem_univ, true_and] at ha
   obtain ⟨⟨h, hsm⟩, -⟩ := ha
   refine (norm_couplingPart_le hD a h).trans ?_
-  have h1 := abs_apply_le_frobenius D a a
-  have h2 := abs_apply_le_frobenius D ⟨a + 1, h⟩ ⟨a + 1, h⟩
+  have h1 := abs_apply_le_frobenius_norm D a a
+  have h2 := abs_apply_le_frobenius_norm D ⟨a + 1, h⟩ ⟨a + 1, h⟩
   have hsm' : |D ⟨a + 1, h⟩ a| ≤ tol * (|D a a| + |D ⟨a + 1, h⟩ ⟨a + 1, h⟩|) := hsm
   nlinarith
 

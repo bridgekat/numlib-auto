@@ -1,3 +1,4 @@
+import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.Matrix.ToEuclideanLin
 
@@ -54,13 +55,6 @@ open Module
 namespace Submodule
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
-/-- Parseval's identity for a finite orthonormal family. -/
-private theorem norm_sum_smul_sq {ι : Type*} [Fintype ι] {w : ι → E} (hw : Orthonormal 𝕜 w)
-    (a : ι → 𝕜) : ‖∑ i, a i • w i‖ ^ 2 = ∑ i, ‖a i‖ ^ 2 := by
-  rw [← inner_self_eq_norm_sq (𝕜 := 𝕜), hw.inner_sum, map_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.ofReal_re]
 
 variable (F G : Submodule 𝕜 E) [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G]
 
@@ -164,12 +158,12 @@ theorem starProjection_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v �
 theorem norm_sq_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     ‖v‖ ^ 2 = ∑ j, ‖inner 𝕜 (g j) v‖ ^ 2 := by
   conv_lhs => rw [← h.sum_inner_smul_right hv]
-  exact norm_sum_smul_sq h.orthonormal_right _
+  exact h.orthonormal_right.norm_sum_smul_sq _
 
 /-- The squared norm of the projection onto `F` of a vector of `G`, in principal coordinates. -/
 theorem norm_starProjection_sq_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     ‖F.starProjection v‖ ^ 2 = ∑ j, ‖inner 𝕜 (g j) v‖ ^ 2 * F.cosPrincipalAngle G j ^ 2 := by
-  rw [h.starProjection_eq_sum hv, norm_sum_smul_sq h.orthonormal_left]
+  rw [h.starProjection_eq_sum hv, h.orthonormal_left.norm_sum_smul_sq]
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [norm_mul, RCLike.norm_ofReal, abs_of_nonneg (F.cosPrincipalAngle_nonneg G j), mul_pow]
 
@@ -339,7 +333,7 @@ theorem re_inner_zero (hfg : F.IsRecursivePrincipalVectors G f g)
 end IsRecursivePrincipalVectors
 
 /-- Removing a unit vector of a finite-dimensional subspace lowers its dimension by one. -/
-private theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
+theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
     {w : E} (hw : w ∈ K) (hw1 : ‖w‖ = 1) :
     finrank 𝕜 (K ⊓ (𝕜 ∙ w)ᗮ : Submodule 𝕜 E) + 1 = finrank 𝕜 K := by
   have hw0 : w ≠ 0 := norm_ne_zero_iff.1 (by rw [hw1]; norm_num)
@@ -361,7 +355,7 @@ private theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) 
   exact h.symm
 
 /-- The subspace inclusion `K ≤ L` as a linear isometry. -/
-private def inclusionₗᵢ {K L : Submodule 𝕜 E} (h : K ≤ L) : K →ₗᵢ[𝕜] L where
+def inclusionₗᵢ {K L : Submodule 𝕜 E} (h : K ≤ L) : K →ₗᵢ[𝕜] L where
   toLinearMap := Submodule.inclusion h
   norm_map' _ := rfl
 

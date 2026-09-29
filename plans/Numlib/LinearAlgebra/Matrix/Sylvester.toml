@@ -120,9 +120,6 @@ id = "sep_le_norm_of_sylvesterMap_eq_smul"
 [[node]]  # added by syl1: the disjoint-spectrum clause, split off `sep_pos_iff`
 id = "sep_pos_iff_disjoint_spectrum"
 
-[[node]]  # added by syl1: the Frobenius pairing behind `sep_comm`
-id = "re_trace_conjTranspose_mul_le"
-
 [[node]]  # added by syl1
 id = "trace_conjTranspose_mul_sylvesterMap"
 

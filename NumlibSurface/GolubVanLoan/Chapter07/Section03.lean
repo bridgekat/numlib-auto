@@ -515,37 +515,6 @@ theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
 
 /-! ### The rates of §7.3.1–7.3.2 and the appendix displays (7.3.18), (7.3.19), (7.3.26) -/
 
-section Lines
-
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
-/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
-`dist(span{q}, span{u}) = sin θ(q, span{u}) = ‖q - ⟪u, q⟫ u‖`. The two lines have the same
-dimension, so the gap is the one-sided `‖P_{u⊥} P_q‖`
-(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and `P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. -/
-private theorem gap_span_singleton_eq_sinAngle {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
-    (𝕜 ∙ q).gap (𝕜 ∙ u) = (𝕜 ∙ u).sinAngle q := by
-  have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
-  have hu0 : u ≠ 0 := norm_ne_zero_iff.1 (by rw [hu]; exact one_ne_zero)
-  rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq _ _
-    ((finrank_span_singleton hq0).trans (finrank_span_singleton hu0).symm),
-    Submodule.sinAngle, hq, div_one]
-  have hT : ∀ w, ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection) w =
-      (inner 𝕜 q w : 𝕜) • (q - (𝕜 ∙ u).starProjection q) := by
-    intro w
-    change (𝕜 ∙ u)ᗮ.starProjection ((𝕜 ∙ q).starProjection w) = _
-    rw [Submodule.starProjection_singleton, hq, one_pow, RCLike.ofReal_one, div_one, map_smul,
-      Submodule.starProjection_orthogonal_val]
-  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun w => ?_) ?_
-  · rw [hT, norm_smul, mul_comm]
-    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
-    simpa [hq] using norm_inner_le_norm (𝕜 := 𝕜) q w
-  · have h := ((𝕜 ∙ u)ᗮ.starProjection * (𝕜 ∙ q).starProjection).le_opNorm q
-    rwa [hT, inner_self_eq_norm_sq_to_K, hq, RCLike.ofReal_one, one_pow, one_smul,
-      mul_one] at h
-
-end Lines
-
 section RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜]
@@ -574,7 +543,7 @@ theorem powerMethod_dist {A : Matrix (Fin n) (Fin n) 𝕜} {x : Fin n → Euclid
     rw [hz, Submodule.gap_comm, Submodule.gap_congr _ _ (Submodule.span_zero_singleton 𝕜),
       Submodule.gap_comm, Submodule.gap_bot_eq_one _ hne]
     exact h
-  · rw [gap_span_singleton_eq_sinAngle
+  · rw [Submodule.gap_span_singleton_eq_sinAngle
       (Krylov.norm_powerIterate_of_ne_zero (toEuclideanLin A) q₀ k h0) (hx1 i₀)]
     exact (hC k).2
 
@@ -832,7 +801,7 @@ theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
         linear_combination -hc
       · simp [q₀]
         linear_combination hc
-    rw [Submodule.gap_congr _ _ (hrange k), gap_span_singleton_eq_sinAngle he1 hq₀1,
+    rw [Submodule.gap_congr _ _ (hrange k), Submodule.gap_span_singleton_eq_sinAngle he1 hq₀1,
       Submodule.sinAngle, he1, div_one, Submodule.starProjection_singleton]
     refine (congrArg norm hv).trans ?_
     rw [norm_euclidean_two]
@@ -873,7 +842,7 @@ theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
       rw [norm_euclidean_two]
       simp [w, Complex.norm_real, abs_of_pos ht0, sq, ht2]
       norm_num
-    rw [Submodule.gap_congr _ _ (hrange 0), gap_span_singleton_eq_sinAngle hw1 hq₀1,
+    rw [Submodule.gap_congr _ _ (hrange 0), Submodule.gap_span_singleton_eq_sinAngle hw1 hq₀1,
       Submodule.sinAngle, hw1, div_one, Submodule.starProjection_singleton]
     have hinner : (inner ℂ q₀ w : ℂ) = 0 := by
       simp [q₀, w, PiLp.inner_apply, Fin.sum_univ_two]

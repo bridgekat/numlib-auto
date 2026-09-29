@@ -2421,19 +2421,6 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- An entry of an `m × n` matrix is at most its Frobenius norm. -/
-private theorem abs_apply_le_frobenius' (D : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) (j : Fin n) :
-    |D i j| ≤ ‖D‖ := by
-  have h := frobenius_norm_sq_eq_sum_sq D
-  have h1 : ‖D i j‖ ^ 2 ≤ ∑ j', ‖D i j'‖ ^ 2 :=
-    Finset.single_le_sum (f := fun j' => ‖D i j'‖ ^ 2) (fun _ _ => by positivity)
-      (Finset.mem_univ j)
-  have h2 : ∑ j', ‖D i j'‖ ^ 2 ≤ ∑ i', ∑ j', ‖D i' j'‖ ^ 2 :=
-    Finset.single_le_sum (f := fun i' => ∑ j', ‖D i' j'‖ ^ 2) (fun _ _ => by positivity)
-      (Finset.mem_univ i)
-  rw [← Real.norm_eq_abs]
-  nlinarith [norm_nonneg (D i j), norm_nonneg D]
-
 /-- The superdiagonal part of the entry `(a, a + 1)` has the norm of the entry. -/
 private theorem norm_superPart_le (hnm : n ≤ m) (D : Matrix (Fin m) (Fin n) ℝ) (a : Fin n)
     (h : (a : ℕ) + 1 < n) : ‖superPart D a‖ ≤ |D (Fin.castLE hnm a) ⟨a + 1, h⟩| := by
@@ -2463,8 +2450,8 @@ private theorem norm_sub_svdDeflateStage_le (hnm : n ≤ m) {ε : ℝ} (hε : 0 
   simp only [newSupers, Finset.mem_filter, Finset.mem_univ, true_and] at ha
   obtain ⟨⟨h, hsm⟩, -⟩ := ha
   refine (norm_superPart_le hnm D a h).trans ?_
-  have h1 := abs_apply_le_frobenius' D (Fin.castLE hnm a) a
-  have h2 := abs_apply_le_frobenius' D (Fin.castLE hnm ⟨a + 1, h⟩) ⟨a + 1, h⟩
+  have h1 := abs_apply_le_frobenius_norm D (Fin.castLE hnm a) a
+  have h2 := abs_apply_le_frobenius_norm D (Fin.castLE hnm ⟨a + 1, h⟩) ⟨a + 1, h⟩
   have hsm' : |D (Fin.castLE hnm a) ⟨a + 1, h⟩| ≤ ε * (|D (Fin.castLE hnm a) a| +
       |D (Fin.castLE hnm ⟨a + 1, h⟩) ⟨a + 1, h⟩|) := hsm
   nlinarith

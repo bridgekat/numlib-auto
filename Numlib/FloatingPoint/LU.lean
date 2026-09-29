@@ -1306,44 +1306,14 @@ section Wilkinson
 
 open Matrix (lpOpNorm)
 
-open scoped Matrix.Norms.L2Operator in
-/-- The spectral norm of `G Gᵀ` is the square of that of `G` (the C⋆-identity). -/
-private theorem lpOpNorm_two_mul_transpose_self (G : Matrix n n ℝ) :
-    lpOpNorm 2 (G * Gᵀ) = lpOpNorm 2 G ^ 2 := by
-  rw [Matrix.lpOpNorm_two, Matrix.lpOpNorm_two]
-  have h := Matrix.l2_opNorm_conjTranspose_mul_self Gᵀ
-  rw [Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_transpose] at h
-  rw [h, ← Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.l2_opNorm_conjTranspose, sq]
-
-open scoped Matrix.Norms.L2Operator in
-/-- The triangle inequality for the spectral norm. -/
-private theorem lpOpNorm_two_add_le (A B : Matrix n n ℝ) :
-    lpOpNorm 2 (A + B) ≤ lpOpNorm 2 A + lpOpNorm 2 B := by
-  rw [Matrix.lpOpNorm_two, Matrix.lpOpNorm_two, Matrix.lpOpNorm_two]
-  exact norm_add_le A B
-
-open scoped Matrix.Norms.Frobenius in
-/-- An entrywise bound `|A i j| ≤ c |B i j|` gives `‖A‖_F ≤ c ‖B‖_F`. A local copy of
-`FloatingPoint.frobenius_norm_le_of_forall_abs_le` of `Numlib/FloatingPoint/Householder`, which
-imports this file. -/
-private theorem frobenius_norm_le_of_forall_abs_le_mul {A B : Matrix n n ℝ} {c : ℝ} (hc : 0 ≤ c)
-    (h : ∀ i j, |A i j| ≤ c * |B i j|) : ‖A‖ ≤ c * ‖B‖ := by
-  refine le_of_sq_le_sq ?_ (by positivity)
-  rw [mul_pow, Matrix.frobenius_norm_sq_eq_sum_sq, Matrix.frobenius_norm_sq_eq_sum_sq,
-    Finset.mul_sum]
-  refine Finset.sum_le_sum fun i _ => ?_
-  rw [Finset.mul_sum]
-  refine Finset.sum_le_sum fun j _ => ?_
-  rw [← mul_pow, Real.norm_eq_abs, Real.norm_eq_abs]
-  exact pow_le_pow_left₀ (abs_nonneg _) (h i j) 2
-
 open scoped Matrix.Norms.Frobenius in
 /-- **The normwise size of `|G| |Gᵀ|`**: if `|E| ≤ γ |G| |Gᵀ|` entrywise, then
 `‖E‖₂ ≤ γ n ‖G‖₂²`, through `‖E‖₂ ≤ ‖E‖_F ≤ γ ‖|G|‖_F ‖|Gᵀ|‖_F = γ ‖G‖_F² ≤ γ n ‖G‖₂²`. -/
 theorem lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose {E G : Matrix n n ℝ} {γ : ℝ}
     (hγ : 0 ≤ γ) (hE : E.abs ≤ₑ γ • (G.abs * Gᵀ.abs)) :
     lpOpNorm 2 E ≤ γ * Fintype.card n * lpOpNorm 2 G ^ 2 := by
-  have hF : ‖E‖ ≤ γ * ‖G.abs * Gᵀ.abs‖ := frobenius_norm_le_of_forall_abs_le_mul hγ fun i j => by
+  have hF : ‖E‖ ≤ γ * ‖G.abs * Gᵀ.abs‖ :=
+    Matrix.frobenius_norm_le_of_forall_abs_le hγ fun i j => by
     have := hE i j
     simp only [Matrix.abs_apply, Matrix.smul_apply, smul_eq_mul] at this
     rwa [abs_of_nonneg
@@ -1396,8 +1366,10 @@ theorem l2_opNorm_le_of_roundsCholeskyDiv (hu : m.u < 1)
   have hΔ := lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose hγ₁ hΔA
   have hE' := lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose hγ₃ hE
   have hg : lpOpNorm 2 G ^ 2 ≤ lpOpNorm 2 A + lpOpNorm 2 ΔA := by
-    rw [← lpOpNorm_two_mul_transpose_self, hGG]
-    exact lpOpNorm_two_add_le A ΔA
+    have hGG' := Matrix.lpOpNorm_two_mul_conjTranspose_self G
+    rw [Matrix.conjTranspose_eq_transpose_of_trivial, hGG] at hGG'
+    rw [← hGG']
+    exact Matrix.lpOpNorm_add_le 2 A ΔA
   have hpos : 0 < 1 - Fintype.card n * gamma m.u (Fintype.card n + 3) := by linarith
   have hg' : lpOpNorm 2 G ^ 2 ≤
       lpOpNorm 2 A / (1 - Fintype.card n * gamma m.u (Fintype.card n + 3)) := by

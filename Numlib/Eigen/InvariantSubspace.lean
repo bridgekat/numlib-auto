@@ -293,45 +293,6 @@ section Aux
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- Conjugation commutes with powers: `(P X P')^k = P X^k P'` when `P' P = 1`. -/
-private theorem conj_pow_of_mul_eq_one {P P' X : Matrix m m 𝕜} (h : P' * P = 1) (k : ℕ) :
-    (P * X * P') ^ (k + 1) = P * X ^ (k + 1) * P' := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [pow_succ, ih, pow_succ X (k + 1)]
-    simp only [Matrix.mul_assoc]
-    rw [← Matrix.mul_assoc P' P, h, Matrix.one_mul]
-
-/-- The induced norm is subadditive. -/
-private theorem lpOpNorm_add_le' (A B : Matrix m m 𝕜) :
-    lpOpNorm 2 (A + B) ≤ lpOpNorm 2 A + lpOpNorm 2 B := by
-  rw [lpOpNorm, lpCLM_add]; exact norm_add_le _ _
-
-/-- The induced norm of a power. -/
-private theorem lpOpNorm_pow_le' (A : Matrix m m 𝕜) (k : ℕ) :
-    lpOpNorm 2 (A ^ k) ≤ lpOpNorm 2 A ^ k := by
-  induction k with
-  | zero =>
-    rw [pow_zero, pow_zero, lpOpNorm, lpCLM_one]
-    exact ContinuousLinearMap.norm_id_le
-  | succ k ih =>
-    rw [pow_succ, pow_succ]
-    exact (lpOpNorm_mul_le 2 _ _).trans
-      (mul_le_mul_of_nonneg_right ih (lpOpNorm_nonneg _ _))
-
-/-- The `2`-norm of a diagonal matrix is at most any bound on its entries. -/
-private theorem lpOpNorm_diagonal_le {d : m → 𝕜} {c : ℝ} (hc : 0 ≤ c) (hd : ∀ i, ‖d i‖ ≤ c) :
-    lpOpNorm 2 (diagonal d) ≤ c := by
-  rw [lpOpNorm]
-  refine ContinuousLinearMap.opNorm_le_bound _ hc fun x => ?_
-  refine (sq_le_sq₀ (norm_nonneg _) (by positivity)).1 ?_
-  rw [PiLp.norm_sq_eq_of_L2, mul_pow, PiLp.norm_sq_eq_of_L2, Finset.mul_sum]
-  refine Finset.sum_le_sum fun i _ => ?_
-  simp only [lpCLM_apply, PiLp.toLp_apply, mulVec_diagonal, norm_mul, mul_pow]
-  gcongr
-  exact hd i
-
 /-- A diagonal matrix with entries of modulus at least `c` stretches every vector by `c`. -/
 private theorem le_norm_diagonal_apply {d : m → 𝕜} {c : ℝ} (hc : 0 ≤ c) (hd : ∀ i, c ≤ ‖d i‖)
     (x : PiLp 2 fun _ : m => 𝕜) : c * ‖x‖ ≤ ‖lpCLM 2 (diagonal d) x‖ := by
@@ -432,10 +393,10 @@ private theorem schur_scaling {T : Matrix (Fin n) (Fin n) 𝕜} (hTu : T.IsUpper
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · rw [diagonal_mul_diagonal, ← diagonal_one]; congr 1; funext i; exact mul_inv_cancel₀ (hd0 i)
   · rw [diagonal_mul_diagonal, ← diagonal_one]; congr 1; funext i; exact inv_mul_cancel₀ (hd0 i)
-  · refine lpOpNorm_diagonal_le (by positivity) fun i => ?_
+  · refine lpOpNorm_diagonal_le 2 (by positivity) fun i => ?_
     rw [hnd]
     exact pow_le_pow_right₀ h1 (by omega)
-  · refine lpOpNorm_diagonal_le zero_le_one fun i => ?_
+  · refine lpOpNorm_diagonal_le 2 zero_le_one fun i => ?_
     rw [norm_inv, hnd]
     exact inv_le_one_of_one_le₀ (one_le_pow₀ h1)
   · have hT : T = diagPart T + strictUpper T := by
@@ -492,15 +453,15 @@ theorem l2_opNorm_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
   rw [hAk, lpOpNorm_two_unitary_conj hQ]
   have hYn : lpOpNorm 2 Y ≤ (⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ) := by
     rw [hY]
-    refine (lpOpNorm_add_le' _ _).trans (add_le_add ?_ hM)
-    refine lpOpNorm_diagonal_le hsup0 fun i => ?_
+    refine (lpOpNorm_add_le 2 _ _).trans (add_le_add ?_ hM)
+    refine lpOpNorm_diagonal_le 2 hsup0 fun i => ?_
     exact le_ciSup (Finite.bddAbove_range fun i => ‖T i i‖) i
   calc lpOpNorm 2 (Δi * Y ^ (k + 1) * Δ)
       ≤ lpOpNorm 2 Δi * lpOpNorm 2 (Y ^ (k + 1)) * lpOpNorm 2 Δ :=
         (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
           (lpOpNorm_nonneg _ _))
     _ ≤ 1 * ((⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ)) ^ (k + 1) * (1 + μ) ^ (n - 1) := by
-        have hYk := (lpOpNorm_pow_le' Y (k + 1)).trans
+        have hYk := (lpOpNorm_pow_le 2 Y (k + 1)).trans
           (pow_le_pow_left₀ (lpOpNorm_nonneg _ _) hYn (k + 1))
         have hX0 : 0 ≤ (⨆ i, ‖T i i‖) + ‖strictUpper T‖ / (1 + μ) := by positivity
         exact mul_le_mul (mul_le_mul hΔin hYk (lpOpNorm_nonneg _ _) zero_le_one) hΔn
@@ -575,7 +536,7 @@ theorem l2_opNorm_inv_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
         (lpOpNorm_mul_le 2 _ _).trans (mul_le_mul_of_nonneg_right (lpOpNorm_mul_le 2 _ _)
           (lpOpNorm_nonneg _ _))
     _ ≤ 1 * (1 / (m - ‖strictUpper T‖ / (1 + μ))) ^ (k + 1) * (1 + μ) ^ (n - 1) := by
-        have hYk := (lpOpNorm_pow_le' Y⁻¹ (k + 1)).trans
+        have hYk := (lpOpNorm_pow_le 2 Y⁻¹ (k + 1)).trans
           (pow_le_pow_left₀ (lpOpNorm_nonneg _ _) hYinv' (k + 1))
         exact mul_le_mul (mul_le_mul hΔin hYk (lpOpNorm_nonneg _ _) zero_le_one) hΔn
           (lpOpNorm_nonneg _ _) (mul_nonneg zero_le_one (pow_nonneg (one_div_pos.2 hc).le _))
@@ -619,28 +580,6 @@ open scoped Matrix.Norms.Frobenius
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
-
-/-- A sum over the image of an injection is at most the full sum of a nonnegative function. -/
-private theorem sum_comp_le_of_injective {α β : Type*} [Fintype α] [Fintype β] (F : β → ℝ)
-    {h : α → β} (hh : Function.Injective h) (hF : ∀ b, 0 ≤ F b) : ∑ a, F (h a) ≤ ∑ b, F b := by
-  classical
-  rw [← Finset.sum_image (f := F) (fun x _ y _ hxy => hh hxy)]
-  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => hF _
-
-omit [DecidableEq m] [DecidableEq n] in
-/-- A submatrix along injective row and column maps has at most the Frobenius norm of the
-matrix. -/
-theorem frobenius_norm_submatrix_le {m' n' : Type*} [Fintype m'] [Fintype n']
-    (E : Matrix m n 𝕜) {f : m' → m} {g : n' → n} (hf : Function.Injective f)
-    (hg : Function.Injective g) : ‖E.submatrix f g‖ ≤ ‖E‖ := by
-  refine le_of_pow_le_pow_left₀ two_ne_zero (norm_nonneg _) ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  calc ∑ i, ∑ j, ‖E.submatrix f g i j‖ ^ 2 ≤ ∑ i, ∑ t, ‖E (f i) t‖ ^ 2 :=
-        Finset.sum_le_sum fun i _ =>
-          sum_comp_le_of_injective (fun t => ‖E (f i) t‖ ^ 2) hg fun _ => sq_nonneg _
-    _ ≤ ∑ s, ∑ t, ‖E s t‖ ^ 2 :=
-        sum_comp_le_of_injective (fun s => ∑ t, ‖E s t‖ ^ 2) hf
-          fun _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
 
 /-- **Stewart's perturbation theorem for invariant subspaces** ([golub2013matrix] Theorem 7.2.4,
 after G. W. Stewart, SIAM Rev. 15 (1973), Theorem 4.11), in Schur coordinates: for
