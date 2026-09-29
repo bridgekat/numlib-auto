@@ -301,25 +301,6 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- Cauchy–Schwarz for the Frobenius inner product: `re tr(Xᴴ R) ≤ ‖X‖_F ‖R‖_F`. -/
-private theorem re_trace_conjTranspose_mul_le (X R : Matrix n n 𝕜) :
-    RCLike.re (trace (Xᴴ * R)) ≤ ‖X‖ * ‖R‖ := by
-  have h1 : RCLike.re (trace (Xᴴ * R)) ≤ ∑ i, ∑ j, ‖X i j‖ * ‖R i j‖ := by
-    rw [Finset.sum_comm]
-    simp only [trace, diag_apply, mul_apply, conjTranspose_apply, map_sum]
-    refine Finset.sum_le_sum fun j _ => Finset.sum_le_sum fun i _ => ?_
-    refine (RCLike.re_le_norm _).trans (le_of_eq ?_)
-    rw [norm_mul, norm_star]
-  have h2 := Finset.sum_mul_sq_le_sq_mul_sq Finset.univ (fun p : n × n => ‖X p.1 p.2‖)
-    fun p => ‖R p.1 p.2‖
-  simp only [Fintype.sum_prod_type] at h2
-  have h3 : ∑ i, ∑ j, ‖X i j‖ * ‖R i j‖ ≤ ‖X‖ * ‖R‖ := by
-    refine (sq_le_sq₀ (Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => by positivity)
-      (by positivity)).1 ?_
-    rw [mul_pow, frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-    exact h2
-  exact h1.trans h3
-
 /-- **A Sylvester equation with coefficients bounded below** (the step behind the perturbation
 bound of the polar factor, Li and Sun 2003): if `σ ≤ P` and `τ ≤ Q` in the Loewner order with
 `σ + τ > 0`, the solution of `P X + X Q = R` satisfies `‖X‖_F ≤ ‖R‖_F / (σ + τ)`. Indeed

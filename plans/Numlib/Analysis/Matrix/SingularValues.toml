@@ -62,65 +62,6 @@ id = "norm_trace_mul_le_sum_sortedSingularValues_mul"
 
 [[node]]
 id = "exists_singularSubspacePair_perturbation"
-kind = "theorem"
-desc = '''Perturbation of a singular subspace pair ([golub2013matrix] Theorem 8.6.5; Stewart 1973,
-Theorem 6.4; corrected — the printed statement is false for `m > n`), with the roles of `P` and `Q` as
-the dimensions require (the book swaps them): let `A E : Matrix (Fin m) (Fin n) ℝ`, `m ≥ n`, orthogonal
-`U = [U₁ U₂]` (`r`, `m - r` columns) and `V = [V₁ V₂]` (`r`, `n - r`) with
-`Uᵀ A V = fromBlocks A₁₁ 0 0 A₂₂`, and `δ > 0` with
-* `∀ i < r, ∀ j < n - r, δ ≤ |A₁₁.sortedSingularValues i - A₂₂.sortedSingularValues j|` (the book's
-  separation), and
-* **(Wedin's condition)** `n < m → ∀ i < r, δ ≤ A₁₁.sortedSingularValues i`: when `m > n` the
-  `(m - r) × (n - r)` block `A₂₂` has `m - n` further zero singular values on the left
-  (`A₂₂ A₂₂ᵀ` has `m - n` more zero eigenvalues than `A₂₂ᵀ A₂₂`), and the separation must include
-  them (Wedin 1972, Stewart–Sun Theorem V.4.4).
-If `‖E‖_F ≤ δ / 5` then there are `P : Matrix (Fin (n - r)) (Fin r) ℝ` and
-`Q : Matrix (Fin (m - r)) (Fin r) ℝ` with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that `range (V₁ + V₂ P)`
-and `range (U₁ + U₂ Q)` form a singular subspace pair for `A + E` (`(A+E)` maps the first into the
-second and `(A+E)ᵀ` the second into the first).
-
-**Why the correction.** Counterexample to the printed statement (surface review, Major 1; verified
-numerically): `m = 3`, `n = 2`, `r = 1`, `A = [[0,0],[0,1],[0,0]]`, `U = V = I`: `A₁₁ = [0]`,
-`σ(A₂₂) = {1}`, so the printed `δ = 1`; for `E = ε e₃e₁ᵀ`, `0 < ε ≤ 1/5`, every 1-dimensional
-singular subspace pair of `A + E` is `(span e₁, span e₃)` or `(span e₂, span e₂)`, and neither has
-the form `(range (V₁ + V₂ P), range (U₁ + U₂ Q))`. Wedin's condition excludes it (`σ(A₁₁) = {0}`
-gives `δ ≤ 0`). For `m = n` the condition is vacuous and the statement is the book's.
-
-Blocked: the proof reduces the pair condition to a coupled quadratic (Riccati) equation for
-`(P, Q)` and solves it by a contraction argument whose linear part is the operator
-`(P, Q) ↦ (A₂₂ᵀ Q - P A₁₁ᵀ, A₂₂ P - Q A₁₁)`, with inverse bounded by `1/δ` exactly under the two
-separation conditions (block-diagonalize by the SVDs of `A₁₁`, `A₂₂`: on each pair of singular values
-it is `[[−σ, γ], [γ, −σ]]`-shaped with smallest singular value `|σ − γ|`, and the extra left zero
-singular values of `A₂₂` contribute the scalar blocks `−σ`). The coupled equation is written
-`L x + φ x = g` for `x = (P, Q)` in `F = Matrix (Fin (n - r)) (Fin r) ℝ × Matrix (Fin (m - r)) (Fin r) ℝ`
-(Frobenius norms): `L` is that linear part built from the diagonal blocks `A₁₁ + E₁₁`, `A₂₂ + E₂₂` of
-`Uᵀ (A + E) V` (`‖L⁻¹‖ ≤ 1/(δ − 2‖E‖_F)`, a Weyl-type shift of the separation), `φ` collects the
-bilinear terms `Q E₁₂ P`, `P E₂₁ᵀ Q` (`φ 0 = 0`, `‖φ x − φ y‖ ≤ ‖E‖_F (‖x‖ + ‖y‖) ‖x − y‖`), and `g`
-is built from the off-diagonal blocks `E₂₁`, `E₁₂ᵀ`; the constants `1/5`, `4` come out of the lemma's
-`4γη < δ'²` and `‖x‖ ≤ 2γ/δ'` with `δ' = δ − 2‖E‖_F ≥ 3δ/5` (a sketch, to be
-rechecked). The solvability lemma is chapter 7's
-`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` (`Numlib/Analysis/Normed/Operator/QuadraticEquation`, Stewart's lemma, planned for
-Theorem 7.2.4) — now proved, so nothing upstream blocks it; sv2 (wave 4) left it for time (the
-`1/δ` bound on `L⁻¹` under Wedin's condition is the new work). The constants `1/5`, `4` are the book's and are rechecked
-when the proof is written. Moved here from `Analysis/InnerProductSpace/SingularValues` with the other
-matrix nodes. ★★★ (~350 lines on top of the Riccati lemma)
-
-Blocked (bb1, wave 5; paused by the orchestrator before completion): a ~480-line draft exists
-(scratchpad `bb1/Wedin.lean`, not committed). Its route: state the theorem in the coordinates of the
-pair, `U : Matrix m (k ⊕ q) 𝕜`, `V : Matrix n (k ⊕ p) 𝕜` unitary with `(Uᴴ A V).toBlocks₁₂ = 0`,
-`toBlocks₂₁ = 0`, conclusion `∃ P Q, ‖fromRows Q P‖_F ≤ 4‖E‖_F/δ ∧ (∃ M, (A+E) V [1; P] = U [1; Q] M) ∧
-∃ N, (A+E)ᴴ U [1; Q] = V [1; P] N` (no `m ≥ n` needed); the `1/δ` bound on the coupled operator
-`(P, Q) ↦ (B₂₂ᴴ Q − P B₁₁ᴴ, B₂₂ P − Q B₁₁)` is the Sylvester separation of the two Hermitian dilations
-(`sep (hermitianDilation B₂₂) (hermitianDilation B₁₁)` on `fromBlocks P 0 0 Q`, via
-`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub` and `IsHermitian.eigenvalues₀_hermitianDilation`;
-Wedin's condition covers the padding zeros), Weyl in the Frobenius norm gives `δ' = δ − 2‖E‖_F ≥ 3δ/5`,
-and `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` with `γ = η = ‖E‖_F` gives `2‖E‖/δ' ≤ 4‖E‖/δ`.
-The first compile left: a `DecidableEq` instance in a Frobenius helper, a `λ` binder (reserved), one
-case of the spectrum bookkeeping, and two `whnf` heartbeat timeouts (the main theorem, and the
-`nlinarith` Lipschitz estimate of the quadratic part — split into scalar lemmas). Needs the import of
-`Numlib/LinearAlgebra/Matrix/Sylvester` and `…/Normed/Operator/QuadraticEquation` into this module.
-Estimate: ~2 hours.'''
-deps = ["ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic", "Matrix.sortedSingularValues"]
 
 [[node]]  # staged by ch02; moved from SVD (it uses OperatorNorm; review layering)
 id = "l2_opNorm_sub_svdTruncation"

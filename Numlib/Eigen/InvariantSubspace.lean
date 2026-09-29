@@ -590,7 +590,7 @@ that is bounded below: if `δ ‖x‖ ≤ ‖L x‖` then `L` is invertible with
 `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` applies. (Stated for a general `F` so that
 the operator norm is formed on `F`, not on a type with a scoped norm such as the Frobenius norm on
 matrices.) -/
-private theorem exists_apply_add_eq_of_quadratic_of_le_norm {𝕜 F : Type*} [RCLike 𝕜]
+theorem exists_apply_add_eq_of_quadratic_of_le_norm {𝕜 F : Type*} [RCLike 𝕜]
     [NormedAddCommGroup F]
     [NormedSpace 𝕜 F] [FiniteDimensional 𝕜 F] (L : F →ₗ[𝕜] F) {δ γ η : ℝ} (hδ : 0 < δ)
     (hL : ∀ x, δ * ‖x‖ ≤ ‖L x‖) {g : F} (hg : ‖g‖ ≤ γ) {φ : F → F} (hφ0 : φ 0 = 0)

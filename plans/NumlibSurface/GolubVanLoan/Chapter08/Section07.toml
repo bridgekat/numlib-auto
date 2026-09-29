@@ -50,18 +50,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (8.7.8)'
 
 [[node]]
 id = "theorem_8_7_4"
-kind = "theorem"
-desc = '''Theorem 8.7.4 (GSVD, tall version): for `A : Matrix (Fin m₁) (Fin n) ℝ`,
-`B : Matrix (Fin m₂) (Fin n) ℝ` with `m₁ ≥ n`, `m₂ ≥ n`, there are orthogonal `U₁`, `U₂` and
-nonsingular `X` with `U₁ᵀ A X = rectDiagonal α` and `U₂ᵀ B X = rectDiagonal β`
-(`α, β : ℕ → ℝ`, the book's `diag(α₁, …, α_n)`, `diag(β₁, …, β_n)`). Chapter 6's Theorem 6.1.1
-(`GolubVanLoan.Chapter06.theorem_6_1_1`, `Matrix.IsGSVD A B U₁ U₂ X α β` with
-`D_A = rectDiagonal α`, `D_B = shiftedRectDiagonal p β`) where `r = rank [A; B] ≤ n ≤ m₂` makes
-`p = max(r - m₂, 0) = 0`, so that `D_B = rectDiagonal β` by
-`Matrix.shiftedRectDiagonal_zero`. ★★
-
-Blocked: a restatement of chapter 6's `GolubVanLoan.Chapter06.theorem_6_1_1`, not on main yet (agent s06) (c08, 2026-09-26).'''
-deps = ["GolubVanLoan.Chapter06.theorem_6_1_1", "Matrix.rectDiagonal", "Matrix.shiftedRectDiagonal"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 8.7.4'
 
 [[node]]

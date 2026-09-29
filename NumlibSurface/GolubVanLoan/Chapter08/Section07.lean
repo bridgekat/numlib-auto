@@ -6,6 +6,7 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import NumlibSurface.GolubVanLoan.Chapter03.Section01
 import NumlibSurface.GolubVanLoan.Chapter04.Section02
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
+import NumlibSurface.GolubVanLoan.Chapter06.Section01
 import NumlibSurface.GolubVanLoan.Chapter07.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section01
 
@@ -30,7 +31,7 @@ substitution, modified Gram–Schmidt) and take the two steps with no exact prog
 Schur decomposition and the CS decomposition — as monadic parameters whose specifications the spec
 theorems assume (convention 5); the triangular solves with a matrix right-hand side run column by
 column. `(8.7.8)` is stated against chapter 7's orthogonal iteration. Theorem 8.7.4 restates
-chapter 6's Theorem 6.1.1 and waits for that chapter's surface.
+chapter 6's Theorem 6.1.1, whose `p = max(r − m₂, 0)` vanishes for a tall `B`.
 
 ## Readings and errata
 
@@ -383,6 +384,24 @@ theorem equation_8_7_8 {p : ℕ} {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit
   · simpa only [Nat.add_sub_cancel] using h k
 
 /-! ### §8.7.4 The generalized singular value problem -/
+
+/-- **Theorem 8.7.4 (Tall Rectangular Version).** "If `A ∈ ℝ^{m₁×n}` and `B ∈ ℝ^{m₂×n}` have at
+least as many rows as columns, then there exists an orthogonal matrix `U₁ ∈ ℝ^{m₁×m₁}`, an
+orthogonal matrix `U₂ ∈ ℝ^{m₂×m₂}`, and a nonsingular matrix `X ∈ ℝ^{n×n}` such that
+`U₁ᵀAX = diag(α₁, …, α_n)`, `U₂ᵀBX = diag(β₁, …, β_n)`." The diagonals are `rectDiagonal α` and
+`rectDiagonal β`. Chapter 6's Theorem 6.1.1, where `p = max(r − m₂, 0) = 0` because
+`r = rank [A; B] ≤ n ≤ m₂`. -/
+theorem theorem_8_7_4 {m₁ m₂ : ℕ} (hm₁ : n ≤ m₁) (hm₂ : n ≤ m₂) (A : Matrix (Fin m₁) (Fin n) ℝ)
+    (B : Matrix (Fin m₂) (Fin n) ℝ) :
+    ∃ (U₁ : Matrix (Fin m₁) (Fin m₁) ℝ) (U₂ : Matrix (Fin m₂) (Fin m₂) ℝ)
+      (X : Matrix (Fin n) (Fin n) ℝ) (α β : ℕ → ℝ),
+      U₁ ∈ orthogonalGroup (Fin m₁) ℝ ∧ U₂ ∈ orthogonalGroup (Fin m₂) ℝ ∧ IsUnit X.det ∧
+      U₁ᵀ * A * X = rectDiagonal α ∧ U₂ᵀ * B * X = rectDiagonal β := by
+  obtain ⟨U₁, U₂, X, α, β, hU₁, hU₂, hX, hA, hB, -, -⟩ := Chapter06.theorem_6_1_1 hm₁ A B
+  have hp : (fromRows A B).rank - m₂ = 0 :=
+    Nat.sub_eq_zero_of_le (((rank_le_card_width _).trans_eq (Fintype.card_fin n)).trans hm₂)
+  refine ⟨U₁, U₂, X, α, β, hU₁, hU₂, (isUnit_iff_isUnit_det X).1 hX, hA, ?_⟩
+  rwa [hp, shiftedRectDiagonal_zero] at hB
 
 /-- **§8.7.4, after Theorem 8.7.4.** From a GSVD `U₁ᵀ A X = D_A = diag(α)`,
 `U₂ᵀ B X = D_B = diag(β)` (`U₁`, `U₂` orthogonal, `X` nonsingular, `m₁, m₂ ≥ n`):

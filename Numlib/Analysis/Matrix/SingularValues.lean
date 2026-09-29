@@ -3,6 +3,7 @@ import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.Analysis.Matrix.Order
 import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Basic
 import Numlib.Analysis.InnerProductSpace.PrincipalAngles
+import Numlib.Eigen.InvariantSubspace
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 
 /-!
@@ -34,6 +35,9 @@ vocabulary of `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.sortedSingularValues`, 
 * `Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul`: **von Neumann's trace inequality**.
 * `Matrix.sortedSingularValues_submatrix_le`: deleting rows or columns does not increase any
   singular value.
+* `Matrix.exists_singularSubspacePair_perturbation`: **the perturbation of a singular subspace
+  pair** (Stewart, Wedin), with Wedin's condition for non-square trailing blocks, by Stewart's
+  quadratic-equation lemma for the coupled Sylvester operator of the pair.
 
 ## Implementation notes
 
@@ -1576,5 +1580,495 @@ theorem IsSVD.sortedSingularValues_le_mul_submatrix (h : IsSVD A U σ V) (π : E
     linarith
 
 end SubsetSelection
+
+/-! ### Perturbation of a singular subspace pair -/
+
+section SingularSubspacePair
+
+open scoped Matrix.Norms.Frobenius
+
+/-- The squared Frobenius norm of a block matrix is the sum over its blocks. -/
+private theorem frobenius_norm_fromBlocks_sq {a b c d : Type*} [Fintype a] [Fintype b]
+    [Fintype c] [Fintype d] (M₁₁ : Matrix a c 𝕜) (M₁₂ : Matrix a d 𝕜) (M₂₁ : Matrix b c 𝕜)
+    (M₂₂ : Matrix b d 𝕜) :
+    ‖fromBlocks M₁₁ M₁₂ M₂₁ M₂₂‖ ^ 2 = ‖M₁₁‖ ^ 2 + ‖M₁₂‖ ^ 2 + ‖M₂₁‖ ^ 2 + ‖M₂₂‖ ^ 2 := by
+  simp only [frobenius_norm_sq_eq_sum_sq, Fintype.sum_sum_type, fromBlocks_apply₁₁,
+    fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂, Finset.sum_add_distrib]
+  ring
+
+/-- The squared Frobenius norm of a stacked matrix is the sum over its row blocks. -/
+private theorem frobenius_norm_fromRows_sq {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
+    (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖fromRows P Q‖ ^ 2 = ‖P‖ ^ 2 + ‖Q‖ ^ 2 := by
+  simp only [frobenius_norm_sq_eq_sum_sq, Fintype.sum_sum_type, fromRows_apply_inl,
+    fromRows_apply_inr]
+
+/-- Swapping the two row blocks of a stacked matrix preserves the Frobenius norm. -/
+private theorem frobenius_norm_fromRows_comm {a b c : Type*} [Fintype a] [Fintype b]
+    [Fintype c] (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖fromRows Q P‖ = ‖fromRows P Q‖ := by
+  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
+  rw [frobenius_norm_fromRows_sq, frobenius_norm_fromRows_sq, add_comm]
+
+/-- Each row block of a stacked matrix has at most its Frobenius norm. -/
+private theorem frobenius_norm_le_fromRows {a b c : Type*} [Fintype a] [Fintype b] [Fintype c]
+    (P : Matrix a c 𝕜) (Q : Matrix b c 𝕜) : ‖P‖ ≤ ‖fromRows P Q‖ ∧ ‖Q‖ ≤ ‖fromRows P Q‖ := by
+  have h := frobenius_norm_fromRows_sq P Q
+  constructor <;>
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
+    rw [h] <;> linarith [sq_nonneg ‖P‖, sq_nonneg ‖Q‖]
+
+/-- The diagonal blocks of a block matrix have at most its Frobenius norm, and the two
+off-diagonal blocks together have at most its squared Frobenius norm. -/
+private theorem frobenius_norm_toBlocks_le {a b c d : Type*} [Fintype a] [Fintype b]
+    [Fintype c] [Fintype d] (M : Matrix (a ⊕ b) (c ⊕ d) 𝕜) :
+    ‖M.toBlocks₁₁‖ ≤ ‖M‖ ∧ ‖M.toBlocks₂₂‖ ≤ ‖M‖ ∧
+      ‖M.toBlocks₁₂‖ ^ 2 + ‖M.toBlocks₂₁‖ ^ 2 ≤ ‖M‖ ^ 2 := by
+  have h := frobenius_norm_fromBlocks_sq M.toBlocks₁₁ M.toBlocks₁₂ M.toBlocks₂₁ M.toBlocks₂₂
+  rw [fromBlocks_toBlocks] at h
+  have h₁₁ := sq_nonneg ‖M.toBlocks₁₁‖
+  have h₁₂ := sq_nonneg ‖M.toBlocks₁₂‖
+  have h₂₁ := sq_nonneg ‖M.toBlocks₂₁‖
+  have h₂₂ := sq_nonneg ‖M.toBlocks₂₂‖
+  refine ⟨?_, ?_, by linarith⟩ <;>
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_ <;>
+    linarith
+
+/-- A factor with orthonormal columns on the left preserves the Frobenius norm. -/
+private theorem frobenius_norm_mul_of_conjTranspose_mul_self {a b c : Type*} [Fintype a]
+    [Fintype b] [Fintype c] [DecidableEq b] {W : Matrix a b 𝕜} (hW : Wᴴ * W = 1)
+    (X : Matrix b c 𝕜) : ‖W * X‖ = ‖X‖ := by
+  have := frobenius_norm_sq_eq_trace (W * X)
+  rw [conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Wᴴ, hW, Matrix.one_mul,
+    ← frobenius_norm_sq_eq_trace] at this
+  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 (by exact_mod_cast this)
+
+/-- The largest singular value is at most the Frobenius norm. -/
+private theorem sortedSingularValues_zero_le_frobenius_norm {a b : Type*} [Fintype a]
+    [Fintype b] [DecidableEq b] (M : Matrix a b 𝕜) : M.sortedSingularValues 0 ≤ ‖M‖ := by
+  rcases Nat.eq_zero_or_pos (Fintype.card b) with h0 | hpos
+  · rw [M.sortedSingularValues_eq_zero_of_min_le (by omega)]
+    exact norm_nonneg _
+  · refine (pow_le_pow_iff_left₀ (M.sortedSingularValues_nonneg 0) (norm_nonneg _)
+      two_ne_zero).1 ?_
+    rw [frobenius_norm_sq_eq_sum_sq_sortedSingularValues]
+    exact Finset.single_le_sum (f := fun i => M.sortedSingularValues i ^ 2)
+      (fun i _ => sq_nonneg _) (Finset.mem_range.2 hpos)
+
+/-- **Weyl's bound in the Frobenius norm**: `|σ_i(M + N) − σ_i(M)| ≤ ‖N‖_F`. -/
+private theorem abs_sortedSingularValues_add_sub_le {a b : Type*} [Fintype a] [Fintype b]
+    [DecidableEq b] (M N : Matrix a b 𝕜) (i : ℕ) :
+    |(M + N).sortedSingularValues i - M.sortedSingularValues i| ≤ ‖N‖ := by
+  have h1 := sortedSingularValues_add_le M N i 0
+  have h2 := sortedSingularValues_add_le (M + N) (-N) i 0
+  rw [add_zero] at h1
+  rw [add_neg_cancel_right, add_zero] at h2
+  have hneg : (-N).sortedSingularValues 0 = N.sortedSingularValues 0 := by
+    rw [← neg_one_smul 𝕜 N, sortedSingularValues_smul, norm_neg, norm_one, one_mul]
+  rw [hneg] at h2
+  have h3 := sortedSingularValues_zero_le_frobenius_norm N
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- A separation survives perturbations of both sides: if `δ ≤ |a − b|`, `|a' − a| ≤ ε₁` and
+`|b' − b| ≤ ε₂`, then `δ − (ε₁ + ε₂) ≤ |a' − b'|`. -/
+private theorem le_abs_sub_of_abs_sub_le {a b a' b' δ ε₁ ε₂ : ℝ} (h : δ ≤ |a - b|)
+    (ha : |a' - a| ≤ ε₁) (hb : |b' - b| ≤ ε₂) : δ - (ε₁ + ε₂) ≤ |a' - b'| := by
+  have h1 := abs_sub_abs_le_abs_sub (a - b) (a' - b')
+  have h2 : |a - b - (a' - b')| ≤ ε₁ + ε₂ := by
+    rw [abs_le] at ha hb ⊢
+    constructor <;> linarith [ha.1, ha.2, hb.1, hb.2]
+  linarith
+
+/-- `|s − t| ≤ |s + t|` for nonnegative `s`, `t`. -/
+private theorem abs_sub_le_abs_add_of_nonneg {s t : ℝ} (hs : 0 ≤ s) (ht : 0 ≤ t) :
+    |s - t| ≤ |s + t| := by
+  rw [abs_of_nonneg (add_nonneg hs ht)]
+  exact abs_sub_le_iff.2 ⟨by linarith, by linarith⟩
+
+/-- The eigenvalues of the Hermitian dilation of a square matrix are `±` its singular values. -/
+private theorem exists_eigenvalues₀_hermitianDilation_eq {k : Type*} [Fintype k]
+    [DecidableEq k] (B : Matrix k k 𝕜) (h : (hermitianDilation B).IsHermitian)
+    (b : Fin (Fintype.card (k ⊕ k))) : ∃ i < Fintype.card k,
+      h.eigenvalues₀ b = B.sortedSingularValues i ∨
+        h.eigenvalues₀ b = -B.sortedSingularValues i := by
+  have hb := b.isLt
+  have hK : Fintype.card (k ⊕ k) = Fintype.card k + Fintype.card k := Fintype.card_sum
+  rw [IsHermitian.eigenvalues₀_hermitianDilation]
+  by_cases hbk : (b : ℕ) < Fintype.card k
+  · refine ⟨b, hbk, Or.inl ?_⟩
+    rw [B.sortedSingularValues_eq_zero_of_min_le (k := Fintype.card (k ⊕ k) - 1 - b)
+      (by rw [min_self]; omega), sub_zero]
+  · refine ⟨Fintype.card (k ⊕ k) - 1 - b, by omega, Or.inr ?_⟩
+    rw [B.sortedSingularValues_eq_zero_of_min_le (k := (b : ℕ)) (by rw [min_self]; omega),
+      zero_sub]
+
+/-- The eigenvalues of the Hermitian dilation of a rectangular matrix are `±` its singular values,
+or `0` when the matrix is not square. -/
+private theorem eigenvalues₀_hermitianDilation_cases {p q : Type*} [Fintype p] [Fintype q]
+    [DecidableEq p] [DecidableEq q] (B : Matrix q p 𝕜) (h : (hermitianDilation B).IsHermitian)
+    (a : Fin (Fintype.card (p ⊕ q))) :
+    (∃ j < min (Fintype.card q) (Fintype.card p),
+      h.eigenvalues₀ a = B.sortedSingularValues j ∨
+        h.eigenvalues₀ a = -B.sortedSingularValues j) ∨
+      (h.eigenvalues₀ a = 0 ∧ Fintype.card p ≠ Fintype.card q) := by
+  have ha := a.isLt
+  have hPQ : Fintype.card (p ⊕ q) = Fintype.card p + Fintype.card q := Fintype.card_sum
+  rw [IsHermitian.eigenvalues₀_hermitianDilation]
+  by_cases h1 : (a : ℕ) < min (Fintype.card q) (Fintype.card p)
+  · refine Or.inl ⟨a, h1, Or.inl ?_⟩
+    rw [B.sortedSingularValues_eq_zero_of_min_le (k := Fintype.card (p ⊕ q) - 1 - a)
+      (by omega), sub_zero]
+  · by_cases h2 : Fintype.card (p ⊕ q) - 1 - a < min (Fintype.card q) (Fintype.card p)
+    · refine Or.inl ⟨_, h2, Or.inr ?_⟩
+      rw [B.sortedSingularValues_eq_zero_of_min_le (k := (a : ℕ)) (by omega), zero_sub]
+    · refine Or.inr ⟨?_, by omega⟩
+      rw [B.sortedSingularValues_eq_zero_of_min_le (k := (a : ℕ)) (by omega),
+        B.sortedSingularValues_eq_zero_of_min_le (k := Fintype.card (p ⊕ q) - 1 - a)
+          (by omega), sub_self]
+
+/-- **The coupled Sylvester operator of a singular subspace pair is bounded below by the
+separation of the singular values**: if the singular values of the square `B₁` and of `B₂` are
+`c`-separated, and those of `B₁` are at least `c` when `B₂` is not square, then
+`c² (‖P‖² + ‖Q‖²) ≤ ‖B₂ᴴ Q − P B₁ᴴ‖² + ‖B₂ P − Q B₁‖²`. The operator is the Sylvester operator of
+the Hermitian dilations of `B₂` and `B₁` on `fromBlocks P 0 0 Q`, whose separation is the least
+distance between their spectra (`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`), and those
+spectra are `±` the singular values, padded by zeros
+(`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). -/
+private theorem sq_mul_le_of_sortedSingularValues_sep {k p q : Type*} [Fintype k] [Fintype p]
+    [Fintype q] [DecidableEq k] [DecidableEq p] {B₁ : Matrix k k 𝕜}
+    {B₂ : Matrix q p 𝕜} {c : ℝ} (hc : 0 ≤ c)
+    (hsep : ∀ i < Fintype.card k, ∀ j < min (Fintype.card q) (Fintype.card p),
+      c ≤ |B₁.sortedSingularValues i - B₂.sortedSingularValues j|)
+    (hw : Fintype.card p ≠ Fintype.card q →
+      ∀ i < Fintype.card k, c ≤ B₁.sortedSingularValues i)
+    (P : Matrix p k 𝕜) (Q : Matrix q k 𝕜) :
+    c ^ 2 * (‖P‖ ^ 2 + ‖Q‖ ^ 2) ≤ ‖B₂ᴴ * Q - P * B₁ᴴ‖ ^ 2 + ‖B₂ * P - Q * B₁‖ ^ 2 := by
+  classical
+  set X : Matrix (p ⊕ q) (k ⊕ k) 𝕜 := fromBlocks P 0 0 Q with hXdef
+  have hX : ‖X‖ ^ 2 = ‖P‖ ^ 2 + ‖Q‖ ^ 2 := by
+    rw [hXdef, frobenius_norm_fromBlocks_sq, norm_zero, norm_zero]
+    ring
+  have hY : hermitianDilation B₂ * X - X * hermitianDilation B₁ =
+      fromBlocks 0 (B₂ᴴ * Q - P * B₁ᴴ) (B₂ * P - Q * B₁) 0 := by
+    rw [hXdef, hermitianDilation, hermitianDilation, fromBlocks_multiply, fromBlocks_multiply]
+    ext (i | i) (j | j) <;> simp
+  have hZ : ‖hermitianDilation B₂ * X - X * hermitianDilation B₁‖ ^ 2 =
+      ‖B₂ᴴ * Q - P * B₁ᴴ‖ ^ 2 + ‖B₂ * P - Q * B₁‖ ^ 2 := by
+    rw [hY, frobenius_norm_fromBlocks_sq, norm_zero, norm_zero]
+    ring
+  rw [← hX, ← hZ]
+  rcases isEmpty_or_nonempty (p ⊕ q) with hpq | hpq
+  · rw [Subsingleton.elim X 0]
+    simp
+  rcases isEmpty_or_nonempty (k ⊕ k) with hkk | hkk
+  · rw [Subsingleton.elim X 0]
+    simp
+  have h₂ := isHermitian_hermitianDilation B₂
+  have h₁ := isHermitian_hermitianDilation B₁
+  -- the two spectra are `c`-separated
+  have hkey : ∀ (a : Fin (Fintype.card (p ⊕ q))) (b : Fin (Fintype.card (k ⊕ k))),
+      c ≤ |h₂.eigenvalues₀ a - h₁.eigenvalues₀ b| := by
+    intro a b
+    obtain ⟨i, hi, hb⟩ := exists_eigenvalues₀_hermitianDilation_eq B₁ h₁ b
+    have hσ := B₁.sortedSingularValues_nonneg i
+    rcases eigenvalues₀_hermitianDilation_cases B₂ h₂ a with ⟨j, hj, ha⟩ | ⟨ha, hpq'⟩
+    · have hγ := B₂.sortedSingularValues_nonneg j
+      have hs := hsep i hi j hj
+      rcases hb with hb | hb <;> rcases ha with ha | ha <;> rw [hb, ha]
+      · rwa [abs_sub_comm]
+      · rw [show -B₂.sortedSingularValues j - B₁.sortedSingularValues i =
+          -(B₁.sortedSingularValues i + B₂.sortedSingularValues j) by ring, abs_neg]
+        exact hs.trans (abs_sub_le_abs_add_of_nonneg hσ hγ)
+      · rw [sub_neg_eq_add, add_comm]
+        exact hs.trans (abs_sub_le_abs_add_of_nonneg hσ hγ)
+      · rwa [sub_neg_eq_add, neg_add_eq_sub]
+    · rcases hb with hb | hb <;> rw [hb, ha]
+      · rw [zero_sub, abs_neg, abs_of_nonneg hσ]
+        exact hw hpq' i hi
+      · rw [zero_sub, neg_neg, abs_of_nonneg hσ]
+        exact hw hpq' i hi
+  have hsepc : c ≤ sep (hermitianDilation B₂) (hermitianDilation B₁) := by
+    rw [h₂.sep_eq_iInf_abs_eigenvalues_sub h₁]
+    exact le_ciInf fun a => le_ciInf fun b =>
+      hkey ((Fintype.equivOfCardEq (Fintype.card_fin _)).symm a)
+        ((Fintype.equivOfCardEq (Fintype.card_fin _)).symm b)
+  have hmul := sep_mul_norm_le (A := hermitianDilation B₂) (B := hermitianDilation B₁) X
+  calc c ^ 2 * ‖X‖ ^ 2 = (c * ‖X‖) ^ 2 := by ring
+    _ ≤ (sep (hermitianDilation B₂) (hermitianDilation B₁) * ‖X‖) ^ 2 :=
+        pow_le_pow_left₀ (mul_nonneg hc (norm_nonneg _))
+          (mul_le_mul_of_nonneg_right hsepc (norm_nonneg _)) 2
+    _ ≤ _ := pow_le_pow_left₀ (mul_nonneg (sep_nonneg _ _) (norm_nonneg _)) hmul 2
+
+/-- The scalar estimate behind the Lipschitz bound of the quadratic part:
+`(η (a X + b Y))² + (η (b X + a Y))² ≤ (η (X + Y))² (a² + b²)`. -/
+private theorem sq_add_sq_le_of_le_mul {d₁ d₂ a b X Y η : ℝ} (hX : 0 ≤ X) (hY : 0 ≤ Y)
+    (hd₁0 : 0 ≤ d₁) (hd₂0 : 0 ≤ d₂)
+    (hd₁ : d₁ ≤ η * (a * X + b * Y)) (hd₂ : d₂ ≤ η * (b * X + a * Y)) :
+    d₁ ^ 2 + d₂ ^ 2 ≤ (η * (X + Y)) ^ 2 * (a ^ 2 + b ^ 2) := by
+  have h1 := pow_le_pow_left₀ hd₁0 hd₁ 2
+  have h2 := pow_le_pow_left₀ hd₂0 hd₂ 2
+  have h3 : (a * X + b * Y) ^ 2 + (b * X + a * Y) ^ 2 ≤ (a ^ 2 + b ^ 2) * (X + Y) ^ 2 := by
+    have := mul_nonneg (mul_nonneg hX hY) (sq_nonneg (a - b))
+    nlinarith
+  calc d₁ ^ 2 + d₂ ^ 2 ≤ (η * (a * X + b * Y)) ^ 2 + (η * (b * X + a * Y)) ^ 2 :=
+        add_le_add h1 h2
+    _ = η ^ 2 * ((a * X + b * Y) ^ 2 + (b * X + a * Y) ^ 2) := by ring
+    _ ≤ η ^ 2 * ((a ^ 2 + b ^ 2) * (X + Y) ^ 2) := mul_le_mul_of_nonneg_left h3 (sq_nonneg η)
+    _ = _ := by ring
+
+/-- The Frobenius norm of a triple product. -/
+private theorem frobenius_norm_mul_mul_le {a b c d : Type*} [Fintype a] [Fintype b] [Fintype c]
+    [Fintype d] (X : Matrix a b 𝕜) (Y : Matrix b c 𝕜) (Z : Matrix c d 𝕜) :
+    ‖X * Y * Z‖ ≤ ‖X‖ * ‖Y‖ * ‖Z‖ :=
+  (frobenius_norm_mul _ _).trans
+    (mul_le_mul_of_nonneg_right (frobenius_norm_mul _ _) (norm_nonneg _))
+
+/-- `‖X C Y − X' C Y'‖ ≤ η (‖X − X'‖ ‖Y‖ + ‖X'‖ ‖Y − Y'‖)` for `‖C‖ ≤ η`. -/
+private theorem frobenius_norm_mul_mul_sub_le {a b c d : Type*} [Fintype a] [Fintype b]
+    [Fintype c] [Fintype d] {C : Matrix b c 𝕜} {η : ℝ} (hC : ‖C‖ ≤ η) (X X' : Matrix a b 𝕜)
+    (Y Y' : Matrix c d 𝕜) :
+    ‖X * C * Y - X' * C * Y'‖ ≤ η * (‖X - X'‖ * ‖Y‖ + ‖X'‖ * ‖Y - Y'‖) := by
+  have hη : 0 ≤ η := (norm_nonneg _).trans hC
+  rw [show X * C * Y - X' * C * Y' = (X - X') * C * Y + X' * C * (Y - Y') by
+    simp only [Matrix.sub_mul, Matrix.mul_sub]; abel]
+  refine (norm_add_le _ _).trans ?_
+  have e1 := frobenius_norm_mul_mul_le (X - X') C Y
+  have e2 := frobenius_norm_mul_mul_le X' C (Y - Y')
+  have f1 : ‖X - X'‖ * ‖C‖ * ‖Y‖ ≤ ‖X - X'‖ * η * ‖Y‖ :=
+    mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hC (norm_nonneg _)) (norm_nonneg _)
+  have f2 : ‖X'‖ * ‖C‖ * ‖Y - Y'‖ ≤ ‖X'‖ * η * ‖Y - Y'‖ :=
+    mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hC (norm_nonneg _)) (norm_nonneg _)
+  linarith [show η * (‖X - X'‖ * ‖Y‖ + ‖X'‖ * ‖Y - Y'‖) =
+    ‖X - X'‖ * η * ‖Y‖ + ‖X'‖ * η * ‖Y - Y'‖ by ring]
+
+/-- **The quadratic part of the coupled equations is Lipschitz on balls**:
+`[P; Q] ↦ [P C Q; Q D P]` with `‖C‖, ‖D‖ ≤ η` satisfies
+`‖φ x − φ y‖ ≤ η (‖x‖ + ‖y‖) ‖x − y‖` in the Frobenius norm. -/
+private theorem frobenius_norm_fromRows_quadratic_sub_le {k p q : Type*} [Fintype k] [Fintype p]
+    [Fintype q] {C : Matrix k q 𝕜} {D : Matrix k p 𝕜} {η : ℝ} (hC : ‖C‖ ≤ η) (hD : ‖D‖ ≤ η)
+    (P P' : Matrix p k 𝕜) (Q Q' : Matrix q k 𝕜) :
+    ‖fromRows (P * C * Q - P' * C * Q') (Q * D * P - Q' * D * P')‖ ≤
+      η * (‖fromRows P Q‖ + ‖fromRows P' Q'‖) * ‖fromRows (P - P') (Q - Q')‖ := by
+  have hη : 0 ≤ η := (norm_nonneg _).trans hC
+  obtain ⟨hP, hQ⟩ := frobenius_norm_le_fromRows P Q
+  obtain ⟨hP', hQ'⟩ := frobenius_norm_le_fromRows P' Q'
+  have d₁ := frobenius_norm_mul_mul_sub_le hC P P' Q Q'
+  have d₂ := frobenius_norm_mul_mul_sub_le hD Q Q' P P'
+  -- bound the norms of the factors by those of the stacked matrices
+  have g₁ : ‖P - P'‖ * ‖Q‖ + ‖P'‖ * ‖Q - Q'‖ ≤
+      ‖P - P'‖ * ‖fromRows P Q‖ + ‖Q - Q'‖ * ‖fromRows P' Q'‖ := by
+    have := mul_le_mul_of_nonneg_left hQ (norm_nonneg (P - P'))
+    have := mul_le_mul_of_nonneg_right hP' (norm_nonneg (Q - Q'))
+    linarith
+  have g₂ : ‖Q - Q'‖ * ‖P‖ + ‖Q'‖ * ‖P - P'‖ ≤
+      ‖Q - Q'‖ * ‖fromRows P Q‖ + ‖P - P'‖ * ‖fromRows P' Q'‖ := by
+    have := mul_le_mul_of_nonneg_left hP (norm_nonneg (Q - Q'))
+    have := mul_le_mul_of_nonneg_right hQ' (norm_nonneg (P - P'))
+    linarith
+  have s := sq_add_sq_le_of_le_mul (norm_nonneg (fromRows P Q)) (norm_nonneg (fromRows P' Q'))
+    (norm_nonneg _) (norm_nonneg _)
+    (d₁.trans (mul_le_mul_of_nonneg_left g₁ hη)) (d₂.trans (mul_le_mul_of_nonneg_left g₂ hη))
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (mul_nonneg (mul_nonneg hη
+    (add_nonneg (norm_nonneg _) (norm_nonneg _))) (norm_nonneg _)) two_ne_zero).1 ?_
+  rw [frobenius_norm_fromRows_sq, mul_pow, frobenius_norm_fromRows_sq (P - P')]
+  exact s
+
+variable {k p q : Type*} [Fintype k] [Fintype p] [Fintype q]
+
+/-- The coupled Sylvester operator `[P; Q] ↦ [B₂ᴴ Q − P B₁ᴴ; B₂ P − Q B₁]` of a singular subspace
+pair, on stacked matrices. -/
+private def pairSylvester (B₁ : Matrix k k 𝕜) (B₂ : Matrix q p 𝕜) :
+    Matrix (p ⊕ q) k 𝕜 →ₗ[𝕜] Matrix (p ⊕ q) k 𝕜 where
+  toFun x := fromRows (B₂ᴴ * x.toRows₂ - x.toRows₁ * B₁ᴴ) (B₂ * x.toRows₁ - x.toRows₂ * B₁)
+  map_add' x y := by
+    have h₁ : (x + y).toRows₁ = x.toRows₁ + y.toRows₁ := rfl
+    have h₂ : (x + y).toRows₂ = x.toRows₂ + y.toRows₂ := rfl
+    rw [h₁, h₂, Matrix.mul_add, Matrix.add_mul, Matrix.mul_add, Matrix.add_mul]
+    ext (i | i) j <;>
+      simp only [fromRows_apply_inl, fromRows_apply_inr, add_apply, sub_apply] <;> abel
+  map_smul' c x := by
+    have h₁ : (c • x).toRows₁ = c • x.toRows₁ := rfl
+    have h₂ : (c • x).toRows₂ = c • x.toRows₂ := rfl
+    rw [h₁, h₂, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_smul, Matrix.smul_mul]
+    ext (i | i) j <;>
+      simp only [fromRows_apply_inl, fromRows_apply_inr, smul_apply, sub_apply,
+        RingHom.id_apply, smul_sub]
+
+private theorem pairSylvester_fromRows (B₁ : Matrix k k 𝕜) (B₂ : Matrix q p 𝕜)
+    (P : Matrix p k 𝕜) (Q : Matrix q k 𝕜) :
+    pairSylvester B₁ B₂ (fromRows P Q) = fromRows (B₂ᴴ * Q - P * B₁ᴴ) (B₂ * P - Q * B₁) := by
+  change fromRows (B₂ᴴ * (fromRows P Q).toRows₂ - (fromRows P Q).toRows₁ * B₁ᴴ)
+    (B₂ * (fromRows P Q).toRows₁ - (fromRows P Q).toRows₂ * B₁) = _
+  rw [toRows₁_fromRows, toRows₂_fromRows]
+
+/-- The sum of two stacked matrices is stacked blockwise. -/
+private theorem fromRows_add_fromRows {a b c : Type*} (P P' : Matrix a c 𝕜)
+    (Q Q' : Matrix b c 𝕜) : fromRows P Q + fromRows P' Q' = fromRows (P + P') (Q + Q') := by
+  ext (i | i) j <;> rfl
+
+/-- The difference of two stacked matrices is stacked blockwise. -/
+private theorem fromRows_sub_fromRows {a b c : Type*} (P P' : Matrix a c 𝕜)
+    (Q Q' : Matrix b c 𝕜) : fromRows P Q - fromRows P' Q' = fromRows (P - P') (Q - Q') := by
+  ext (i | i) j <;> rfl
+
+/-- **The coupled quadratic equations of a singular subspace pair**: if the singular values of
+`B₁₁` and `B₂₂` are `δ`-separated (and those of `B₁₁` are at least `δ` when `B₂₂` is not square),
+and `‖B₁₂‖² + ‖B₂₁‖² ≤ ε²` with `4 ε² < δ²`, there are `P`, `Q` with `‖[P; Q]‖ ≤ 2 ε / δ` solving
+`B₂₂ᴴ Q − P B₁₁ᴴ − P B₂₁ᴴ Q = −B₁₂ᴴ` and `B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁`. -/
+private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ : Matrix k k 𝕜}
+    {B₁₂ : Matrix k p 𝕜} {B₂₁ : Matrix q k 𝕜} {B₂₂ : Matrix q p 𝕜} {δ ε : ℝ} (hδ : 0 < δ)
+    (hsep : ∀ i < Fintype.card k, ∀ j < min (Fintype.card q) (Fintype.card p),
+      δ ≤ |B₁₁.sortedSingularValues i - B₂₂.sortedSingularValues j|)
+    (hw : Fintype.card p ≠ Fintype.card q →
+      ∀ i < Fintype.card k, δ ≤ B₁₁.sortedSingularValues i)
+    (hoff : ‖B₁₂‖ ^ 2 + ‖B₂₁‖ ^ 2 ≤ ε ^ 2) (hε : 0 ≤ ε) (hεδ : 4 * ε ^ 2 < δ ^ 2) :
+    ∃ (P : Matrix p k 𝕜) (Q : Matrix q k 𝕜), ‖fromRows P Q‖ ≤ 2 * ε / δ ∧
+      B₂₂ᴴ * Q - P * B₁₁ᴴ - P * B₂₁ᴴ * Q = -B₁₂ᴴ ∧
+      B₂₂ * P - Q * B₁₁ - Q * B₁₂ * P = -B₂₁ := by
+  have h₁₂ : ‖B₁₂‖ ≤ ε := (pow_le_pow_iff_left₀ (norm_nonneg _) hε two_ne_zero).1 (by
+    nlinarith [sq_nonneg ‖B₂₁‖])
+  have h₂₁ : ‖B₂₁ᴴ‖ ≤ ε := by
+    rw [frobenius_norm_conjTranspose]
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) hε two_ne_zero).1 (by
+      nlinarith [sq_nonneg ‖B₁₂‖])
+  have hL : ∀ x, δ * ‖x‖ ≤ ‖pairSylvester B₁₁ B₂₂ x‖ := by
+    intro x
+    rw [← fromRows_toRows x, pairSylvester_fromRows]
+    refine (pow_le_pow_iff_left₀ (mul_nonneg hδ.le (norm_nonneg _)) (norm_nonneg _)
+      two_ne_zero).1 ?_
+    rw [mul_pow, frobenius_norm_fromRows_sq, frobenius_norm_fromRows_sq]
+    exact sq_mul_le_of_sortedSingularValues_sep hδ.le hsep hw _ _
+  let φ : Matrix (p ⊕ q) k 𝕜 → Matrix (p ⊕ q) k 𝕜 := fun x =>
+    fromRows (-(x.toRows₁ * B₂₁ᴴ * x.toRows₂)) (-(x.toRows₂ * B₁₂ * x.toRows₁))
+  have hφ₁ : ∀ P Q, φ (fromRows P Q) = fromRows (-(P * B₂₁ᴴ * Q)) (-(Q * B₁₂ * P)) :=
+    fun P Q => by simp only [φ, toRows₁_fromRows, toRows₂_fromRows]
+  have hφ0 : φ 0 = 0 := by
+    rw [← fromRows_zero, hφ₁]
+    simp only [Matrix.zero_mul, neg_zero, fromRows_zero]
+  have hφ : ∀ x y, ‖φ x - φ y‖ ≤ ε * (‖x‖ + ‖y‖) * ‖x - y‖ := by
+    intro x y
+    rw [← fromRows_toRows x, ← fromRows_toRows y, hφ₁, hφ₁, fromRows_sub_fromRows,
+      fromRows_sub_fromRows, neg_sub_neg, neg_sub_neg, ← norm_neg (fromRows _ _),
+      fromRows_neg, neg_sub, neg_sub]
+    exact frobenius_norm_fromRows_quadratic_sub_le h₂₁ h₁₂ _ _ _ _
+  have hg : ‖fromRows (-B₁₂ᴴ) (-B₂₁)‖ ≤ ε := by
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) hε two_ne_zero).1 ?_
+    rw [frobenius_norm_fromRows_sq, norm_neg, norm_neg, frobenius_norm_conjTranspose]
+    exact hoff
+  obtain ⟨x, hx, hxn⟩ := exists_apply_add_eq_of_quadratic_of_le_norm (pairSylvester B₁₁ B₂₂) hδ
+    hL hg hφ0 hφ (by nlinarith)
+  rw [← fromRows_toRows x] at hx hxn
+  rw [pairSylvester_fromRows, hφ₁, fromRows_add_fromRows] at hx
+  obtain ⟨e₁, e₂⟩ := fromRows_inj hx
+  exact ⟨x.toRows₁, x.toRows₂, hxn, by rw [← e₁, sub_eq_add_neg], by rw [← e₂, sub_eq_add_neg]⟩
+
+/-- A solution of the coupled equation makes `[1; P]` map into `[1; Q]`:
+`[B₁₁ B₁₂; B₂₁ B₂₂] [1; P] = [1; Q] (B₁₁ + B₁₂ P)` when `B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁`. -/
+private theorem fromBlocks_mul_fromRows_one_eq {a b c : Type*} [Fintype a] [Fintype c]
+    [DecidableEq a] {B₁₁ : Matrix a a 𝕜} {B₁₂ : Matrix a c 𝕜} {B₂₁ : Matrix b a 𝕜}
+    {B₂₂ : Matrix b c 𝕜} {P : Matrix c a 𝕜} {Q : Matrix b a 𝕜}
+    (h : B₂₂ * P - Q * B₁₁ - Q * B₁₂ * P = -B₂₁) :
+    fromBlocks B₁₁ B₁₂ B₂₁ B₂₂ * fromRows 1 P = fromRows 1 Q * (B₁₁ + B₁₂ * P) := by
+  rw [fromBlocks_mul_fromRows, fromRows_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_one]
+  congr 1
+  rw [Matrix.mul_add, ← Matrix.mul_assoc, ← sub_eq_zero,
+    show B₂₁ + B₂₂ * P - (Q * B₁₁ + Q * B₁₂ * P) =
+      B₂₁ + (B₂₂ * P - Q * B₁₁ - Q * B₁₂ * P) by abel, h, add_neg_cancel]
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [DecidableEq k]
+  [DecidableEq p] [DecidableEq q]
+
+/-- **The perturbation of a singular subspace pair** ([golub2013matrix] Theorem 8.6.5, corrected;
+G. W. Stewart, SIAM Rev. 15 (1973), Theorem 6.4; P.-Å. Wedin, BIT 12 (1972)), in the coordinates
+of the pair: let `U : Matrix m (k ⊕ q) 𝕜` and `V : Matrix n (k ⊕ p) 𝕜` be unitary (`Uᴴ U = 1`,
+`U Uᴴ = 1`, and likewise for `V`) with `Uᴴ A V = [A₁₁ 0; 0 A₂₂]`, i.e. the first columns `V₁`,
+`U₁` span a singular subspace pair of `A`. Let the singular values of `A₁₁` and `A₂₂` be
+`δ`-separated, `δ ≤ |σ_i(A₁₁) − σ_j(A₂₂)|`, and, when `A₂₂` is not square, let
+`δ ≤ σ_i(A₁₁)` (**Wedin's condition**: the `|card p − card q|` further zero singular values of
+`A₂₂` count too; without it the book's statement fails for `m > n`: for `A = [0 0; 0 1; 0 0]`,
+`U = V = 1` with one leading column and `E = ε e₃e₁ᵀ`, `0 < ε ≤ 1/5`, the only one-dimensional
+singular subspace pairs of `A + E` are `(span e₁, span e₃)` and `(span e₂, span e₂)`, neither of
+the form below). If `‖E‖_F ≤ δ / 5`, there are
+`P : Matrix p k 𝕜` and `Q : Matrix q k 𝕜` with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that
+`V₁ + V₂ P = V [1; P]` and `U₁ + U₂ Q = U [1; Q]` span a singular subspace pair of `A + E`:
+`(A + E) V [1; P] = U [1; Q] M` and `(A + E)ᴴ U [1; Q] = V [1; P] N`. No `m ≥ n` is needed.
+
+With `B = Uᴴ (A + E) V`, the two inclusions are the coupled quadratic equations
+`B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁` and `B₂₂ᴴ Q − P B₁₁ᴴ − P B₂₁ᴴ Q = −B₁₂ᴴ` in `x = [P; Q]`, solved
+by Stewart's quadratic-equation lemma (`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`):
+the linear part is bounded below by `δ − 2 ‖E‖_F ≥ 3δ/5` (Weyl's inequality moves each singular
+value of `B₁₁`, `B₂₂` by at most `‖E‖_F`), the quadratic part is `‖E‖_F`-Lipschitz on balls, and
+the right side has norm at most `‖E‖_F`. -/
+theorem exists_singularSubspacePair_perturbation {A E : Matrix m n 𝕜}
+    {U : Matrix m (k ⊕ q) 𝕜} {V : Matrix n (k ⊕ p) 𝕜} (hU : Uᴴ * U = 1) (hU' : U * Uᴴ = 1)
+    (hV : Vᴴ * V = 1) (hV' : V * Vᴴ = 1) (h₁₂ : (Uᴴ * A * V).toBlocks₁₂ = 0)
+    (h₂₁ : (Uᴴ * A * V).toBlocks₂₁ = 0) {δ : ℝ} (hδ : 0 < δ)
+    (hsep : ∀ i < Fintype.card k, ∀ j < min (Fintype.card q) (Fintype.card p),
+      δ ≤ |(Uᴴ * A * V).toBlocks₁₁.sortedSingularValues i -
+        (Uᴴ * A * V).toBlocks₂₂.sortedSingularValues j|)
+    (hw : Fintype.card p ≠ Fintype.card q →
+      ∀ i < Fintype.card k, δ ≤ (Uᴴ * A * V).toBlocks₁₁.sortedSingularValues i)
+    (hE : ‖E‖ ≤ δ / 5) :
+    ∃ (P : Matrix p k 𝕜) (Q : Matrix q k 𝕜), ‖fromRows Q P‖ ≤ 4 * ‖E‖ / δ ∧
+      (∃ M, (A + E) * (V * fromRows 1 P) = U * fromRows 1 Q * M) ∧
+      ∃ N, (A + E)ᴴ * (U * fromRows 1 Q) = V * fromRows 1 P * N := by
+  set A' := Uᴴ * A * V with hA'
+  set S := Uᴴ * E * V with hS
+  have hε0 : 0 ≤ ‖E‖ := norm_nonneg _
+  have hSn : ‖S‖ = ‖E‖ := by
+    rw [hS, Matrix.mul_assoc, frobenius_norm_mul_of_conjTranspose_mul_self
+      (by rw [conjTranspose_conjTranspose]; exact hU'), ← frobenius_norm_conjTranspose (E * V),
+      conjTranspose_mul, frobenius_norm_mul_of_conjTranspose_mul_self
+        (by rw [conjTranspose_conjTranspose]; exact hV'), frobenius_norm_conjTranspose]
+  obtain ⟨hS₁₁, hS₂₂, hSoff⟩ := frobenius_norm_toBlocks_le S
+  rw [hSn] at hS₁₁ hS₂₂ hSoff
+  -- the blocks of `Uᴴ (A + E) V`
+  have hB : Uᴴ * (A + E) * V = fromBlocks (A'.toBlocks₁₁ + S.toBlocks₁₁) S.toBlocks₁₂
+      S.toBlocks₂₁ (A'.toBlocks₂₂ + S.toBlocks₂₂) := by
+    have hA'b : A' = fromBlocks A'.toBlocks₁₁ 0 0 A'.toBlocks₂₂ := by
+      rw [← h₁₂, ← h₂₁, fromBlocks_toBlocks]
+    rw [Matrix.mul_add, Matrix.add_mul, ← hA', ← hS]
+    conv_lhs => rw [hA'b, ← fromBlocks_toBlocks S]
+    rw [fromBlocks_add, zero_add, zero_add]
+  have hAE : A + E = U * (Uᴴ * (A + E) * V) * Vᴴ := by
+    simp only [← Matrix.mul_assoc]
+    rw [hU', Matrix.one_mul, Matrix.mul_assoc, hV', Matrix.mul_one]
+  rw [hB] at hAE
+  -- the perturbed separation `δ' = δ − 2 ‖E‖`
+  have hsep' : ∀ i < Fintype.card k, ∀ j < min (Fintype.card q) (Fintype.card p),
+      δ - 2 * ‖E‖ ≤ |(A'.toBlocks₁₁ + S.toBlocks₁₁).sortedSingularValues i -
+        (A'.toBlocks₂₂ + S.toBlocks₂₂).sortedSingularValues j| := by
+    intro i hi j hj
+    have h := le_abs_sub_of_abs_sub_le (hsep i hi j hj)
+      ((abs_sortedSingularValues_add_sub_le A'.toBlocks₁₁ S.toBlocks₁₁ i).trans hS₁₁)
+      ((abs_sortedSingularValues_add_sub_le A'.toBlocks₂₂ S.toBlocks₂₂ j).trans hS₂₂)
+    linarith
+  have hw' : Fintype.card p ≠ Fintype.card q →
+      ∀ i < Fintype.card k, δ - 2 * ‖E‖ ≤ (A'.toBlocks₁₁ + S.toBlocks₁₁).sortedSingularValues i :=
+    fun hpq i hi => by
+      have h1 := (abs_sortedSingularValues_add_sub_le A'.toBlocks₁₁ S.toBlocks₁₁ i).trans hS₁₁
+      have h2 := hw hpq i hi
+      linarith [(abs_le.1 h1).1]
+  have hδ' : 3 * δ / 5 ≤ δ - 2 * ‖E‖ := by linarith
+  have hδ'0 : 0 < δ - 2 * ‖E‖ := by linarith
+  obtain ⟨P, Q, hPQ, e₁, e₂⟩ := exists_pair_quadratic hδ'0 hsep' hw' hSoff hε0 (by
+    have h1 := pow_le_pow_left₀ (by linarith) hδ' 2
+    have h2 := pow_le_pow_left₀ hε0 hE 2
+    nlinarith)
+  refine ⟨P, Q, ?_, ⟨A'.toBlocks₁₁ + S.toBlocks₁₁ + S.toBlocks₁₂ * P, ?_⟩,
+    ⟨(A'.toBlocks₁₁ + S.toBlocks₁₁)ᴴ + S.toBlocks₂₁ᴴ * Q, ?_⟩⟩
+  · -- the size of the solution
+    rw [frobenius_norm_fromRows_comm]
+    refine hPQ.trans ?_
+    rw [div_le_div_iff₀ hδ'0 hδ]
+    nlinarith [mul_le_mul_of_nonneg_left hδ' hε0]
+  · -- `(A + E) V [1; P] = U [1; Q] M`
+    rw [hAE, Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ, hV, Matrix.one_mul,
+      fromBlocks_mul_fromRows_one_eq e₂, ← Matrix.mul_assoc]
+  · -- `(A + E)ᴴ U [1; Q] = V [1; P] N`
+    rw [hAE, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose,
+      fromBlocks_conjTranspose, Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_assoc Uᴴ, hU,
+      Matrix.one_mul, fromBlocks_mul_fromRows_one_eq e₁, ← Matrix.mul_assoc]
+
+end SingularSubspacePair
 
 end Matrix

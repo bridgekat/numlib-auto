@@ -11,6 +11,7 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Polar
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.Sylvester
+import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter07.Section02
 
 /-!
@@ -32,16 +33,19 @@ the scoped `Matrix.Norms.Frobenius` norm.
 
 ## Readings
 
-Theorem 8.1.13 is planned in the paired form its proof gives; the unpaired constant-`1` form is
-`theorem_8_1_13_weak`. In the proof of Theorem 8.1.16 the book's "`1 − σ_r² = τ`" is not true in
-general; (8.1.7)'s conclusion is. P8.1.5 is not used.
+Theorem 8.1.13 is planned in the paired form its proof gives (`μ_k = λ_{σ(k)}(A)` for an injection
+`σ`); the unpaired constant-`1` form is `theorem_8_1_13_weak`. Theorem 8.1.16 is paired likewise.
+Corollary 8.1.11 and Theorem 8.1.12 bound `dist` in the coordinates of `Q`
+(`Matrix.gap_range_fromRows_le`) rather than through the book's `‖Q₂ᵀ Q̂₁‖₂`. In the proof of
+Theorem 8.1.16 the book's "`1 − σ_r² = τ`" is not true in general; (8.1.7)'s conclusion is. P8.1.5
+is not used.
 
 ## Sources
 
 Backbone `Numlib/Eigen/{MinMax, Perturbation, RayleighRitz, Inertia, InvariantSubspace}`,
 `Numlib/LinearAlgebra/Matrix/{Polar, Schur, Sylvester, SVD}`,
 `Numlib/Analysis/Matrix/{SingularValues, SpectralNorm}`; chapter 7's Theorem 7.2.1 (Gershgorin) for
-Theorem 8.1.3.
+Theorem 8.1.3; chapter 2's `subspaceDist` for Corollary 8.1.11 and Theorem 8.1.12.
 -/
 
 open Matrix
@@ -645,9 +649,265 @@ theorem equation_8_1_3 {r s : ℕ} (P : Matrix (Fin s) (Fin r) ℝ) :
   have h := l2_opNorm_mul_inv_sqrt_one_add_gram_le P
   rwa [conjTranspose_eq_transpose_of_trivial] at h
 
+/-- For a square orthogonal `Q` (rows `Fin n`, columns any `ι`), the distance between the column
+spaces of `Q M` and `Q N` is the gap between those of `M` and `N`: `Q` is an isometry of the
+coordinate spaces. -/
+private theorem subspaceDist_range_mul {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
+    [DecidableEq κ] {Q : Matrix (Fin n) ι ℝ} (hQ : Qᵀ * Q = 1) (hQ' : Q * Qᵀ = 1)
+    (M N : Matrix ι κ ℝ) :
+    Chapter02.subspaceDist (LinearMap.range (toEuclideanLin (Q * M)))
+        (LinearMap.range (toEuclideanLin (Q * N))) =
+      (LinearMap.range (toEuclideanLin M)).gap (LinearMap.range (toEuclideanLin N)) := by
+  have hQh : Qᴴ * Q = 1 := by rwa [conjTranspose_eq_transpose_of_trivial]
+  let e : EuclideanSpace ℝ ι ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin n) :=
+    LinearIsometryEquiv.ofSurjective (toEuclideanLinearIsometry hQh) fun y =>
+      ⟨toEuclideanLin Qᵀ y, by
+        rw [toEuclideanLinearIsometry_apply, ← toEuclideanLin_mul_apply, hQ',
+          toEuclideanLin_one_apply]⟩
+  have hr : ∀ M : Matrix ι κ ℝ, LinearMap.range (toEuclideanLin (Q * M)) =
+      (LinearMap.range (toEuclideanLin M)).map (e.toLinearEquiv : EuclideanSpace ℝ ι →ₗ[ℝ] _) :=
+    fun M => by
+      rw [← LinearMap.range_comp]
+      congr 1
+      exact LinearMap.ext fun y => by
+        rw [toEuclideanLin_mul_apply, LinearMap.comp_apply]
+        rfl
+  simp only [Chapter02.subspaceDist, hr]
+  rw [Submodule.gap_map_linearIsometryEquiv]
+
+/-- **Corollary 8.1.11.** "If the conditions of the theorem hold, then
+`dist(ran(Q₁), ran(Q̂₁)) ≤ (4/sep(D₁, D₂)) ‖E₂₁‖_F`", for the `P` and `Q̂₁ = (Q₁ + Q₂P) S⁻¹` of
+Theorem 8.1.10 (`theorem_8_1_10`, whose conclusions are repeated), `dist` being chapter 2's
+`subspaceDist` of the column spaces. `ran Q̂₁ = ran(Q₁ + Q₂P) = ran(Q [I; P])` and
+`ran Q₁ = ran(Q [I; 0])`; in the coordinates of `Q` their distance is at most `‖P‖₂ ≤ ‖P‖_F`
+(`Matrix.gap_range_fromRows_le` and (8.1.3)), so the book's route through
+`dist = ‖Q₂ᵀ Q̂₁‖₂ = ‖P (I + PᵀP)^{-1/2}‖₂` is not needed. -/
+theorem corollary_8_1_11 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s : ℕ}
+    {Q₁ : Matrix (Fin n) (Fin r) ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
+    (hQ : (fromCols Q₁ Q₂)ᵀ * fromCols Q₁ Q₂ = 1) (hQ' : fromCols Q₁ Q₂ * (fromCols Q₁ Q₂)ᵀ = 1)
+    {D₁ : Matrix (Fin r) (Fin r) ℝ} {D₂ : Matrix (Fin s) (Fin s) ℝ}
+    (hAQ : (fromCols Q₁ Q₂)ᵀ * A * fromCols Q₁ Q₂ = fromBlocks D₁ 0 0 D₂)
+    (hsep : 0 < sepSymm D₁ D₂) (hEsmall : ‖E‖ ≤ sepSymm D₁ D₂ / 5) :
+    ∃ P : Matrix (Fin s) (Fin r) ℝ,
+      ‖P‖ ≤ 4 / sepSymm D₁ D₂ * ‖((fromCols Q₁ Q₂)ᵀ * E * fromCols Q₁ Q₂).toBlocks₂₁‖ ∧
+      (∃ S : Matrix (Fin r) (Fin r) ℝ, S.IsSymm ∧ S * S = 1 + Pᵀ * P) ∧
+      ∀ S : Matrix (Fin r) (Fin r) ℝ, S.IsSymm → S * S = 1 + Pᵀ * P →
+        ((Q₁ + Q₂ * P) * S⁻¹)ᵀ * ((Q₁ + Q₂ * P) * S⁻¹) = 1 ∧
+        (∃ M : Matrix (Fin r) (Fin r) ℝ, (A + E) * ((Q₁ + Q₂ * P) * S⁻¹) =
+          ((Q₁ + Q₂ * P) * S⁻¹) * M) ∧
+        Chapter02.subspaceDist (LinearMap.range (toEuclideanLin Q₁))
+            (LinearMap.range (toEuclideanLin ((Q₁ + Q₂ * P) * S⁻¹))) ≤
+          4 / sepSymm D₁ D₂ * ‖((fromCols Q₁ Q₂)ᵀ * E * fromCols Q₁ Q₂).toBlocks₂₁‖ := by
+  obtain ⟨P, hP, hS, h⟩ := theorem_8_1_10 hA hQ hQ' hAQ hsep hEsmall
+  refine ⟨P, hP, hS, fun S hSs hSS => ⟨(h S hSs hSS).1, (h S hSs hSS).2, ?_⟩⟩
+  -- `S` is invertible, so `ran Q̂₁ = ran(Q₁ + Q₂ P)`
+  have hSu : IsUnit S.det := by
+    have hM : (1 + Pᵀ * P).PosDef := by
+      simpa [conjTranspose_eq_transpose_of_trivial] using
+        PosDef.one.add_posSemidef (posSemidef_conjTranspose_mul_self P)
+    have h2 := (isUnit_iff_isUnit_det _).1 hM.isUnit
+    rw [← hSS, det_mul] at h2
+    exact isUnit_of_mul_isUnit_left h2
+  have hrange : LinearMap.range (toEuclideanLin ((Q₁ + Q₂ * P) * S⁻¹)) =
+      LinearMap.range (toEuclideanLin (Q₁ + Q₂ * P)) := by
+    rw [toEuclideanLin_mul]
+    refine LinearMap.range_comp_of_range_eq_top _ (LinearMap.range_eq_top.2 fun y => ?_)
+    refine ⟨toEuclideanLin S y, ?_⟩
+    rw [← toEuclideanLin_mul_apply, nonsing_inv_mul _ hSu, toEuclideanLin_one_apply]
+  have h₁ : Q₁ = fromCols Q₁ Q₂ * fromRows (1 : Matrix (Fin r) (Fin r) ℝ) 0 := by
+    rw [fromCols_mul_fromRows, Matrix.mul_one, Matrix.mul_zero, add_zero]
+  have h₂ : Q₁ + Q₂ * P = fromCols Q₁ Q₂ * fromRows 1 P := by
+    rw [fromCols_mul_fromRows, Matrix.mul_one]
+  have hd := subspaceDist_range_mul hQ hQ' (fromRows (1 : Matrix (Fin r) (Fin r) ℝ) 0)
+    (fromRows 1 P)
+  rw [← h₁, ← h₂] at hd
+  rw [hrange, hd]
+  exact (gap_range_fromRows_le P).trans ((equation_8_1_3 P).2.trans hP)
+
+/-- The column space of a one-column matrix is the line through its column. -/
+private theorem range_toEuclideanLin_replicateCol (x : Fin n → ℝ) :
+    LinearMap.range (toEuclideanLin (replicateCol (Fin 1) x)) = ℝ ∙ WithLp.toLp 2 x := by
+  ext y
+  rw [LinearMap.mem_range, Submodule.mem_span_singleton]
+  constructor
+  · rintro ⟨z, rfl⟩
+    refine ⟨z 0, ?_⟩
+    ext i
+    simp [toEuclideanLin_apply, mulVec, dotProduct, mul_comm]
+  · rintro ⟨a, rfl⟩
+    refine ⟨WithLp.toLp 2 fun _ => a, ?_⟩
+    ext i
+    simp [mulVec, dotProduct, mul_comm]
+
+/-- A column `x` with `xᵀ x = 1` is a unit vector. -/
+private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
+    (h : (replicateCol (Fin 1) x)ᵀ * replicateCol (Fin 1) x = 1) : ‖WithLp.toLp 2 x‖ = 1 := by
+  have h00 := congrFun (congrFun h 0) 0
+  simp only [mul_apply, transpose_apply, replicateCol_apply, one_apply_eq] at h00
+  have h2 : ‖WithLp.toLp 2 x‖ ^ 2 = 1 := by
+    rw [EuclideanSpace.real_norm_sq_eq]
+    simpa [sq] using h00
+  exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 (by rw [h2, one_pow])
+
+/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
+`gap(span{q}, span{u}) = sin θ(q, span{u})`. The two lines have the same dimension, so the gap is
+the one-sided `‖P_{u⊥} P_q‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and
+`P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. (A copy of chapter 7's private lemma in `Section03`, over `ℝ`.) -/
+private theorem gap_span_singleton_eq_sinAngle {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
+    (ℝ ∙ q).gap (ℝ ∙ u) = (ℝ ∙ u).sinAngle q := by
+  have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
+  have hu0 : u ≠ 0 := norm_ne_zero_iff.1 (by rw [hu]; exact one_ne_zero)
+  rw [Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq _ _
+    ((finrank_span_singleton hq0).trans (finrank_span_singleton hu0).symm),
+    Submodule.sinAngle, hq, div_one]
+  have hT : ∀ w, ((ℝ ∙ u)ᗮ.starProjection * (ℝ ∙ q).starProjection) w =
+      (inner ℝ q w : ℝ) • (q - (ℝ ∙ u).starProjection q) := by
+    intro w
+    change (ℝ ∙ u)ᗮ.starProjection ((ℝ ∙ q).starProjection w) = _
+    rw [Submodule.starProjection_singleton, hq, one_pow, RCLike.ofReal_one, div_one, map_smul,
+      Submodule.starProjection_orthogonal_val]
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun w => ?_) ?_
+  · rw [hT, norm_smul, mul_comm]
+    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+    simpa [hq] using norm_inner_le_norm (𝕜 := ℝ) q w
+  · have h := ((ℝ ∙ u)ᗮ.starProjection * (ℝ ∙ q).starProjection).le_opNorm q
+    rwa [hT, inner_self_eq_norm_sq_to_K, hq, RCLike.ofReal_one, one_pow, one_smul,
+      mul_one] at h
+
+/-- For unit vectors `q`, `u`, `sin θ(q, span{u}) = √(1 − ⟪u, q⟫²)` (Pythagoras). -/
+private theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
+    (ℝ ∙ u).sinAngle q = √(1 - inner ℝ u q ^ 2) := by
+  have hP : (ℝ ∙ u).starProjection q = inner ℝ u q • u := by
+    rw [Submodule.starProjection_singleton, hu, one_pow, RCLike.ofReal_one, div_one]
+  have h := Submodule.norm_starProjection_sq_add_norm_sub_sq (ℝ ∙ u) q
+  rw [hP, norm_smul, hu, mul_one, hq, Real.norm_eq_abs, sq_abs] at h
+  rw [Submodule.sinAngle, hq, div_one, hP,
+    show 1 - inner ℝ u q ^ 2 = ‖q - inner ℝ u q • u‖ ^ 2 by linarith, Real.sqrt_sq (norm_nonneg _)]
+
+/-- **The distance between two lines**: for unit `u`, `v`,
+`dist(span{u}, span{v}) = √(1 − (uᵀv)²)`. -/
+private theorem subspaceDist_span_singleton {u v : Fin n → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1)
+    (hv : ‖WithLp.toLp 2 v‖ = 1) :
+    Chapter02.subspaceDist (ℝ ∙ WithLp.toLp 2 u) (ℝ ∙ WithLp.toLp 2 v) = √(1 - (u ⬝ᵥ v) ^ 2) := by
+  have hi : inner ℝ (WithLp.toLp 2 v) (WithLp.toLp 2 u) = u ⬝ᵥ v := by
+    rw [EuclideanSpace.inner_toLp_toLp, star_trivial]
+  rw [Chapter02.subspaceDist, gap_span_singleton_eq_sinAngle hu hv,
+    sinAngle_span_singleton_eq hu hv, hi]
+
+/-- **Theorem 8.1.12** (eigenvector perturbation). "Suppose `A` and `A + E` are `n`-by-`n`
+symmetric matrices and that `Q = [q₁ | Q₂]` is an orthogonal matrix such that `q₁` is an
+eigenvector for `A`. Partition `QᵀAQ = [λ 0; 0 D₂]`, `QᵀEQ = [ε eᵀ; e E₂₂]`. If
+`d = min_{μ ∈ λ(D₂)} |λ − μ| > 0` and `‖E‖_F ≤ d/5`, then there exists `p ∈ ℝ^{n−1}` satisfying
+`‖p‖₂ ≤ (4/d)‖e‖₂` such that `q̂₁ = (q₁ + Q₂p)/√(1 + pᵀp)` is a unit 2-norm eigenvector for
+`A + E`. Moreover, `dist(span{q₁}, span{q̂₁}) = √(1 − (q₁ᵀq̂₁)²) ≤ (4/d)‖e‖₂`." Here `Q₂` has `s`
+columns, `e` is the first column of the `(2,1)` block of `QᵀEQ` (symmetry of `E` is not needed),
+and `dist` is chapter 2's `subspaceDist`. The case `r = 1` of Theorem 8.1.10 and Corollary 8.1.11,
+where `d = sep((λ), D₂)` and the square root of `1 + pᵀp` is a scalar. -/
+theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : ℕ}
+    {q₁ : Fin n → ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
+    (hQ : (fromCols (replicateCol (Fin 1) q₁) Q₂)ᵀ * fromCols (replicateCol (Fin 1) q₁) Q₂ = 1)
+    (hQ' : fromCols (replicateCol (Fin 1) q₁) Q₂ * (fromCols (replicateCol (Fin 1) q₁) Q₂)ᵀ = 1)
+    {l : ℝ} {D₂ : Matrix (Fin s) (Fin s) ℝ}
+    (hAQ : (fromCols (replicateCol (Fin 1) q₁) Q₂)ᵀ * A * fromCols (replicateCol (Fin 1) q₁) Q₂ =
+      fromBlocks !![l] 0 0 D₂)
+    {e : Fin s → ℝ} (he : replicateCol (Fin 1) e =
+      ((fromCols (replicateCol (Fin 1) q₁) Q₂)ᵀ * E *
+        fromCols (replicateCol (Fin 1) q₁) Q₂).toBlocks₂₁)
+    {d : ℝ} (hd : d = sInf {x | ∃ μ ∈ spectrum ℝ D₂, x = |l - μ|}) (hd0 : 0 < d)
+    (hE : ‖E‖ ≤ d / 5) :
+    ∃ p : Fin s → ℝ, ‖WithLp.toLp 2 p‖ ≤ 4 / d * ‖WithLp.toLp 2 e‖ ∧
+      ∀ qh₁ : Fin n → ℝ, qh₁ = (√(1 + p ⬝ᵥ p))⁻¹ • (q₁ + Q₂ *ᵥ p) →
+        ‖WithLp.toLp 2 qh₁‖ = 1 ∧ (∃ μ : ℝ, (A + E) *ᵥ qh₁ = μ • qh₁) ∧
+        Chapter02.subspaceDist (ℝ ∙ WithLp.toLp 2 q₁) (ℝ ∙ WithLp.toLp 2 qh₁) =
+          √(1 - (q₁ ⬝ᵥ qh₁) ^ 2) ∧
+        √(1 - (q₁ ⬝ᵥ qh₁) ^ 2) ≤ 4 / d * ‖WithLp.toLp 2 e‖ := by
+  -- `d = sep((λ), D₂)`
+  have hl : (!![l] : Matrix (Fin 1) (Fin 1) ℝ).IsSymm := by
+    ext i j
+    fin_cases i; fin_cases j; rfl
+  have hspec : spectrum ℝ (!![l] : Matrix (Fin 1) (Fin 1) ℝ) = {l} := by
+    have h : l = symmEigenvalue hl 0 := by
+      simpa [trace_fin_one] using trace_eq_sum_symmEigenvalue hl
+    rw [spectrum_eq_range_symmEigenvalue hl, Set.range_unique]
+    exact congrArg (fun x : ℝ => ({x} : Set ℝ)) h.symm
+  have hsep : sepSymm !![l] D₂ = d := by
+    rw [hd, sepSymm, hspec]
+    congr 1
+    ext x
+    simp
+  obtain ⟨P, hP, -, h⟩ := corollary_8_1_11 hA hQ hQ' hAQ (by rwa [hsep]) (by rwa [hsep])
+  have hEe : ‖replicateCol (Fin 1) e‖ = ‖WithLp.toLp 2 e‖ := frobenius_norm_replicateCol e
+  rw [hsep, ← he, hEe] at hP
+  set p : Fin s → ℝ := fun i => P i 0 with hp
+  have hPp : P = replicateCol (Fin 1) p := by
+    ext i j
+    rw [Fin.fin_one_eq_zero j]
+    rfl
+  have hPn : ‖P‖ = ‖WithLp.toLp 2 p‖ := by
+    rw [hPp]
+    exact frobenius_norm_replicateCol p
+  refine ⟨p, hPn ▸ hP,
+    fun qh₁ hqh => ?_⟩
+  -- the square root of `1 + PᵀP` is the scalar `c = √(1 + pᵀp)`
+  have hpp : 0 ≤ p ⬝ᵥ p := Finset.sum_nonneg fun i _ => mul_self_nonneg (p i)
+  set c := √(1 + p ⬝ᵥ p) with hc
+  have hc0 : 0 < c := Real.sqrt_pos.2 (by linarith)
+  have hcc : c * c = 1 + p ⬝ᵥ p := Real.mul_self_sqrt (by linarith)
+  have hPP : 1 + Pᵀ * P = (1 + p ⬝ᵥ p) • (1 : Matrix (Fin 1) (Fin 1) ℝ) := by
+    ext i j
+    rw [Fin.fin_one_eq_zero i, Fin.fin_one_eq_zero j]
+    simp [hPp, mul_apply, dotProduct]
+  set S : Matrix (Fin 1) (Fin 1) ℝ := c • 1 with hS
+  have hSs : S.IsSymm := by rw [hS, IsSymm, transpose_smul, transpose_one]
+  have hSS : S * S = 1 + Pᵀ * P := by
+    rw [hPP, hS, Matrix.smul_mul, Matrix.one_mul, smul_smul, hcc]
+  have hSinv : S⁻¹ = c⁻¹ • 1 := inv_eq_left_inv (by
+    rw [hS, Matrix.smul_mul, Matrix.one_mul, smul_smul, inv_mul_cancel₀ hc0.ne', one_smul])
+  have hQh : (replicateCol (Fin 1) q₁ + Q₂ * P) * S⁻¹ = replicateCol (Fin 1) qh₁ := by
+    rw [hSinv, Matrix.mul_smul, Matrix.mul_one, hqh]
+    ext i j
+    simp [hPp, mul_apply, mulVec, dotProduct, mul_add]
+  obtain ⟨horth, ⟨M, hM⟩, hdist⟩ := h S hSs hSS
+  rw [hQh] at horth hM hdist
+  rw [hsep, ← he, hEe, range_toEuclideanLin_replicateCol,
+    range_toEuclideanLin_replicateCol] at hdist
+  -- `q₁` and `qh₁` are unit vectors
+  have hQQ := hQ
+  rw [transpose_fromCols, fromRows_mul_fromCols, ← fromBlocks_one, fromBlocks_inj] at hQQ
+  have hq₁ := norm_toLp_eq_one_of_transpose_mul_self hQQ.1
+  have hqh₁ := norm_toLp_eq_one_of_transpose_mul_self horth
+  have hgap := subspaceDist_span_singleton hq₁ hqh₁
+  refine ⟨hqh₁, ⟨M 0 0, ?_⟩, hgap, hgap ▸ hdist⟩
+  ext i
+  have := congrFun (congrFun hM i) 0
+  simpa [mul_apply, mulVec, dotProduct, mul_comm] using this
+
 end Frobenius
 
 /-! ### §8.1.4 Approximate invariant subspaces -/
+
+/-- **Theorem 8.1.13** (paired form). "Suppose `A ∈ ℝ^{n×n}` and `S ∈ ℝ^{r×r}` are symmetric and
+that `AQ₁ − Q₁S = E₁` where `Q₁ ∈ ℝ^{n×r}` satisfies `Q₁ᵀQ₁ = I_r`. Then there exist
+`μ₁, …, μ_r ∈ λ(A)` such that `|μ_k − λ_k(S)| ≤ √2 ‖E₁‖₂` for `k = 1:r`." The `μ_k` are
+`λ_{σ(k)}(A)` for an injection `σ`, as the book's proof produces them (Weyl's inequality pairs the
+sorted eigenvalues of `A` with those of `B = diag(S, Q₂ᵀAQ₂)`, among which the eigenvalues of `S`
+sit at distinct positions): the backbone's
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`. -/
+theorem theorem_8_1_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
+    {S : Matrix (Fin r) (Fin r) ℝ} (hS : S.IsSymm) {Q₁ : Matrix (Fin n) (Fin r) ℝ}
+    (hQ : Q₁ᵀ * Q₁ = 1) :
+    ∃ σ : Fin r ↪ Fin n, ∀ k, |symmEigenvalue hA (σ k) - symmEigenvalue hS k| ≤
+      √2 * lpOpNorm 2 (A * Q₁ - Q₁ * S) := by
+  obtain ⟨σ, hσ⟩ := (isHermitian_iff_isSymm.2 hA).exists_embedding_abs_sub_le_of_mul_sub_mul
+    (isHermitian_iff_isSymm.2 hS) (by rwa [conjTranspose_eq_transpose_of_trivial]) le_rfl
+  refine ⟨(finCongr (Fintype.card_fin r).symm).toEmbedding.trans
+    (σ.toEmbedding.trans (finCongr (Fintype.card_fin n)).toEmbedding), fun k => ?_⟩
+  have h := hσ (Fin.cast (Fintype.card_fin r).symm k)
+  simp only [symmEigenvalue, IsHermitian.sortedEigenvalues_apply, Function.Embedding.trans_apply,
+    Equiv.coe_toEmbedding, finCongr_apply, Fin.cast_cast, Fin.cast_eq_self]
+  exact h
 
 /-- **Theorem 8.1.13, unpaired form.** For symmetric `A` and `S`, `Q₁` with `Q₁ᵀ Q₁ = I_r`, every
 eigenvalue `θ` of `S` has an eigenvalue `μ` of `A` with `|μ - θ| ≤ ‖A Q₁ - Q₁ S‖₂` (constant `1`,
@@ -842,6 +1102,39 @@ theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
   exact ⟨Q, by rwa [conjTranspose_eq_transpose_of_trivial] at hQ, hle⟩
 
 end L2
+
+/-- The `S = X₁ᵀ A X₁` of Theorem 8.1.16 is symmetric. -/
+theorem isSymm_transpose_mul_mul {r : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    (X₁ : Matrix (Fin n) (Fin r) ℝ) : (X₁ᵀ * A * X₁).IsSymm := by
+  rw [IsSymm, transpose_mul, transpose_mul, transpose_transpose, hA.eq, Matrix.mul_assoc]
+
+/-- **Theorem 8.1.16** (paired form). "Suppose `A ∈ ℝ^{n×n}` is symmetric and that
+`AX₁ − X₁S = F₁` where `X₁ ∈ ℝ^{n×r}` and `S = X₁ᵀAX₁`. If `‖X₁ᵀX₁ − I_r‖₂ = τ < 1` (8.1.4), then
+there exist `μ₁, …, μ_r ∈ λ(A)` such that `|μ_k − λ_k(S)| ≤ √2 (‖F₁‖₂ + τ(2 + τ)‖A‖₂)` for
+`k = 1:r`." As in Theorem 8.1.13 the `μ_k` are `λ_{σ(k)}(A)` for an injection `σ`. The book's
+proof: `Q` with orthonormal columns and `‖Q − X₁‖₂ ≤ τ` from (8.1.7), (8.1.5) with (8.1.6) bounds
+`‖AQ − QS‖₂ ≤ ‖F₁‖₂ + τ(2 + τ)‖A‖₂`, and Theorem 8.1.13 applies to `Q`. -/
+theorem theorem_8_1_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
+    (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ} (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
+    ∃ σ : Fin r ↪ Fin n, ∀ k,
+      |symmEigenvalue hA (σ k) - symmEigenvalue (isSymm_transpose_mul_mul hA X₁) k| ≤
+        √2 * (lpOpNorm 2 (A * X₁ - X₁ * (X₁ᵀ * A * X₁)) + τ * (2 + τ) * lpOpNorm 2 A) := by
+  obtain ⟨Q, hQ, hQX⟩ := equation_8_1_7 X₁ hτ hτ1
+  obtain ⟨σ, hσ⟩ := theorem_8_1_13 hA (isSymm_transpose_mul_mul hA X₁) hQ
+  refine ⟨σ, fun k => (hσ k).trans (mul_le_mul_of_nonneg_left ?_ (Real.sqrt_nonneg 2))⟩
+  have h5 := equation_8_1_5 A X₁ Q
+  have h6 := equation_8_1_6 X₁ hτ
+  have hτ0 : 0 ≤ τ := hτ ▸ lpOpNorm_nonneg _ _
+  have hA0 : 0 ≤ lpOpNorm 2 A := lpOpNorm_nonneg _ _
+  have h7 : lpOpNorm 2 (Q - X₁) * lpOpNorm 2 A * (1 + lpOpNorm 2 X₁ ^ 2) ≤
+      τ * (2 + τ) * lpOpNorm 2 A := by
+    have h8 : 1 + lpOpNorm 2 X₁ ^ 2 ≤ 2 + τ := by linarith
+    calc lpOpNorm 2 (Q - X₁) * lpOpNorm 2 A * (1 + lpOpNorm 2 X₁ ^ 2)
+        ≤ τ * lpOpNorm 2 A * (2 + τ) :=
+          mul_le_mul (mul_le_mul_of_nonneg_right hQX hA0) h8 (by positivity)
+            (mul_nonneg hτ0 hA0)
+      _ = τ * (2 + τ) * lpOpNorm 2 A := by ring
+  linarith
 
 /-! ### §8.1.5 The law of inertia -/
 
