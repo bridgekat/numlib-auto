@@ -136,8 +136,8 @@ decompositions, §7.9, parts of Chapter 9) are over `ℂ`.
 
 **Singular values.** The book's sorted `σ_k` is `A.sortedSingularValues (k - 1)` (Mathlib's
 `LinearMap.singularValues` of `toEuclideanLin A`); `σ_min(A)` and `σ_max(A)` of an `m × n` matrix
-with `n ≤ m` may be read as `⨅ i, A.singularValues i` / `⨆ i, A.singularValues i` over the
-backbone's column-indexed `Matrix.singularValues`.
+with `n ≤ m` may be read as `⨅ i, A.colSingularValues i` / `⨆ i, A.colSingularValues i` over the
+backbone's column-indexed `Matrix.colSingularValues`.
 
 **Shared helper programs** (convention 13; all in `GolubVanLoan.Chapter05`, §5.1, each with its own
 `_spec` and, where the book analyses it, `_rounds`/`_rounding`; every later chapter calls them and

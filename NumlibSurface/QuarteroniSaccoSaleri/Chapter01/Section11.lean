@@ -222,13 +222,13 @@ theorem theorem_1_2 [NeZero n] (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin
     ((‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (Aᴴ * A) ∧
         (‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (A * Aᴴ)) ∧
       (‖A‖ = √(spectralRadius ℂ (Aᴴ * A)).toReal ∧ ‖A‖ = √(spectralRadius ℂ (A * Aᴴ)).toReal) ∧
-      ‖B‖ = ⨆ i, B.singularValues i ∧
+      ‖B‖ = ⨆ i, B.colSingularValues i ∧
       (‖C‖₊ : ℝ≥0∞) ^ 2 = complexSpectralRadius (Cᵀ * C) := by
   have h₁ := l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self A
   have h₂ := l2_opNorm_sq_eq_spectralRadius_self_mul_conjTranspose A
   have hsq : ∀ ρ : ℝ≥0∞, (‖A‖₊ : ℝ≥0∞) ^ 2 = ρ → ‖A‖ = √ρ.toReal := fun ρ h => by
     rw [← h, ENNReal.toReal_pow, ENNReal.coe_toReal, coe_nnnorm, Real.sqrt_sq (norm_nonneg _)]
-  refine ⟨⟨h₁, h₂⟩, ⟨hsq _ h₁, hsq _ h₂⟩, l2_opNorm_eq_iSup_singularValues B, ?_⟩
+  refine ⟨⟨h₁, h₂⟩, ⟨hsq _ h₁, hsq _ h₂⟩, l2_opNorm_eq_iSup_colSingularValues B, ?_⟩
   rw [← conjTranspose_eq_transpose_of_trivial]
   exact l2_opNorm_sq_eq_complexSpectralRadius_conjTranspose_mul_self C
 
@@ -297,12 +297,12 @@ theorem l2_opNorm_le_lpOpNorm_of_isStarNormal (A : Matrix (Fin n) (Fin n) ℂ) [
 open scoped Matrix.Norms.Frobenius in
 /-- **Exercise 16 (cited by §1.11 for Exercise 17's table).** `‖A‖_F² = ∑ᵢ σᵢ(A)²`, the Frobenius
 norm squared is the sum of the squared singular values, and hence
-`‖A‖₂ ≤ ‖A‖_F ≤ √(rank A) ‖A‖₂` (backbone `Matrix.frobenius_norm_sq_eq_sum_sq_singularValues`,
+`‖A‖₂ ≤ ‖A‖_F ≤ √(rank A) ‖A‖₂` (backbone `Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues`,
 `Matrix.l2_opNorm_le_frobenius_norm`, `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`). -/
 theorem exercise_1_16 (A : Matrix (Fin m) (Fin n) ℝ) :
-    ‖A‖ ^ 2 = ∑ i, A.singularValues i ^ 2 ∧ lpOpNorm 2 A ≤ ‖A‖ ∧
+    ‖A‖ ^ 2 = ∑ i, A.colSingularValues i ^ 2 ∧ lpOpNorm 2 A ≤ ‖A‖ ∧
       ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A :=
-  ⟨frobenius_norm_sq_eq_sum_sq_singularValues A, l2_opNorm_le_frobenius_norm A,
+  ⟨frobenius_norm_sq_eq_sum_sq_colSingularValues A, l2_opNorm_le_frobenius_norm A,
     frobenius_norm_le_sqrt_rank_mul_l2_opNorm A⟩
 
 end Spectral

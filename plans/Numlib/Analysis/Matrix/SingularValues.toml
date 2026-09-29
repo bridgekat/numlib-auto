@@ -40,7 +40,7 @@ id = "IsSVD.sortedSingularValues_le_mul_submatrix"
 id = "sortedSingularValues_le_l2_opNorm_trailing"
 
 [[node]]
-id = "iInf_singularValues_sub_le"
+id = "iInf_colSingularValues_sub_le"
 
 [[node]]
 id = "l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues"
@@ -70,10 +70,10 @@ id = "l2_opNorm_sub_svdTruncation"
 id = "pinvCondNumberLp"
 
 [[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
-id = "l2_opNorm_pinv_eq_inv_iInf_singularValues"
+id = "l2_opNorm_pinv_eq_inv_iInf_colSingularValues"
 
 [[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
-id = "pinvCondNumberLp_two_eq_div_singularValues"
+id = "pinvCondNumberLp_two_eq_div_colSingularValues"
 
 [[node]]  # staged by ch05; moved from SVD (it uses OperatorNorm; review layering)
 id = "pinvCondNumberLp_eq_condNumberLp"

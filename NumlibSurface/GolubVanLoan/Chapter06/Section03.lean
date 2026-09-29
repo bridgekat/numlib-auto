@@ -352,10 +352,10 @@ private theorem mulVec_dotProduct_self_eq_of_isSVD {k : ℕ} {C : Matrix (Fin m)
   ring
 
 /-- **The least singular value of a tall matrix** is the last diagonal entry of any SVD. -/
-private theorem iInf_singularValues_eq_of_isSVD {C : Matrix (Fin m) (Fin (n + 1)) ℝ}
+private theorem iInf_colSingularValues_eq_of_isSVD {C : Matrix (Fin m) (Fin (n + 1)) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
-    (h : IsSVD C U σ V) (hmn : n < m) : ⨅ i, C.singularValues i = σ n := by
-  rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin, Nat.add_sub_cancel,
+    (h : IsSVD C U σ V) (hmn : n < m) : ⨅ i, C.colSingularValues i = σ n := by
+  rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin, Nat.add_sub_cancel,
     h.singularValues_eq hmn (Nat.lt_succ_self n)]
 
 /-- **The minimizers of `‖Cw‖` on the unit sphere** (the first half): if `σ_j = σ_n` for
@@ -511,9 +511,9 @@ reindexed `C`, in the backbone's column-indexed reading. -/
 theorem iInf_singularValues_tlsWeighted_eq (hmn : n < m) {d : Fin m → ℝ} {t : Fin (n + 1) → ℝ}
     {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hC : IsSVD (tlsMatrix d t A b) U σ V) :
-    ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).singularValues i = σ n := by
-  rw [← iInf_singularValues_eq_of_isSVD hC hmn, iInf_singularValues_eq_iInf_norm,
-    iInf_singularValues_eq_iInf_norm]
+    ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues i = σ n := by
+  rw [← iInf_colSingularValues_eq_of_isSVD hC hmn, iInf_colSingularValues_eq_iInf_norm,
+    iInf_colSingularValues_eq_iInf_norm]
   set e := finSuccEquivSumUnit n
   let E : {x : EuclideanSpace ℝ (Fin (n + 1)) // ‖x‖ = 1} ≃
       {x : EuclideanSpace ℝ (Fin n ⊕ Unit) // ‖x‖ = 1} :=
@@ -647,7 +647,7 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
       rw [norm_toLp_sq, hw1, one_pow]
     have hmin : ‖(WithLp.toLp 2 (tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
         (w ∘ e.symm)) : EuclideanSpace ℝ (Fin m))‖ =
-          ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).singularValues i := by
+          ⨅ i, (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).colSingularValues i := by
       rw [hinf, ← tlsMatrix_mulVec]
       refine (sq_eq_sq₀ (norm_nonneg _) (hC.nonneg n)).1 ?_
       rw [norm_toLp_sq, hCw]

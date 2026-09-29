@@ -176,7 +176,7 @@ theorem orthonormal_toLp_star {ι p : Type*} [Fintype p] {v : ι → EuclideanSp
 /-- **The sorted singular expansion** of a matrix over any finite index types:
 `M = ∑_{k < rank M} σ_k u_k v_kᴴ` with orthonormal left vectors `u`, orthonormal right vectors `v`
 and positive sorted singular values `σ_k = M.sortedSingularValues k`. The right vectors are right
-singular vectors relabelled by `Matrix.exists_equiv_singularValues_eq_sortedSingularValues`. -/
+singular vectors relabelled by `Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`. -/
 theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype p] [Fintype q]
     [DecidableEq q] (M : Matrix p q 𝕜) :
     ∃ (u : Fin M.rank → EuclideanSpace 𝕜 p) (v : Fin M.rank → EuclideanSpace 𝕜 q),
@@ -184,12 +184,12 @@ theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype
       M = ∑ k : Fin M.rank,
         ((M.sortedSingularValues k : ℝ) : 𝕜) • vecMulVec ⇑(u k) (star ⇑(v k)) := by
   classical
-  obtain ⟨e, he⟩ := M.exists_equiv_singularValues_eq_sortedSingularValues
+  obtain ⟨e, he⟩ := M.exists_equiv_colSingularValues_eq_sortedSingularValues
   have hr : M.rank ≤ Fintype.card q := (rank_le_card_width M).trans_eq rfl
   set b := M.rightSingularBasis with hb
   let w : Fin M.rank → q := fun k => e (Fin.castLE hr k)
   have hw : Function.Injective w := e.injective.comp (Fin.castLE_injective hr)
-  have hσw : ∀ k : Fin M.rank, M.singularValues (w k) = M.sortedSingularValues k :=
+  have hσw : ∀ k : Fin M.rank, M.colSingularValues (w k) = M.sortedSingularValues k :=
     fun k => he _
   have hpos : ∀ k : Fin M.rank, 0 < M.sortedSingularValues k := fun k =>
     lt_of_le_of_ne (M.sortedSingularValues_nonneg k)

@@ -9,7 +9,7 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 rectangular diagonal matrix `Σ = diag(σ₁, …, σ_p) ∈ ℂ^{m×n}` of (1.9) is
 `Matrix.rectDiagonal σ` for `σ : ℕ → ℂ`, and the sorted singular values `σ₁ ≥ σ₂ ≥ … ≥ 0` are
 Mathlib's `(toEuclideanLin A).singularValues : ℕ → ℝ`, indexed from `0`; the backbone's
-`Matrix.singularValues A : Fin n → ℝ` are the same numbers indexed by the columns of `A`, in the
+`Matrix.colSingularValues A : Fin n → ℝ` are the same numbers indexed by the columns of `A`, in the
 order of the eigenvalues of `Aᴴ A`, and (1.10) is their definition. The statements about "an
 SVD" take an arbitrary factorization `Uᴴ A V = Σ` with unitary `U`, `V` as their hypothesis.
 
@@ -78,7 +78,7 @@ private theorem mulVec_transpose_eq_of_mul_eq_mul_diagonal {k : ℕ} {M V : Matr
   simp only [mulVec, dotProduct, transpose_apply, Pi.smul_apply, smul_eq_mul]
   rw [← mul_apply, this, mul_comm]
 
-/-- **(1.10).** `σᵢ(A) = √λᵢ(Aᴴ A)`, `i = 1, …, n`: the backbone's `Matrix.singularValues A i` is
+/-- **(1.10).** `σᵢ(A) = √λᵢ(Aᴴ A)`, `i = 1, …, n`: the backbone's `Matrix.colSingularValues A i` is
 by definition the square root of the `i`-th eigenvalue of the Hermitian matrix `Aᴴ A`, so
 `σᵢ(A)² = λᵢ(Aᴴ A)`; and for any SVD `Uᴴ A V = Σ = diag(σ)` with `σ` antitone and nonnegative,
 the `σᵢ`, `i < min(m, n)`, are the sorted singular values (`Matrix.singularValues_eq_of_svd`).
@@ -88,8 +88,8 @@ vectors* — are eigenvectors of `Aᴴ A` for the eigenvalues `|σⱼ|²` (`0` b
 theorem equation_1_10 (A : Matrix (Fin m) (Fin n) ℂ) {U : Matrix (Fin m) (Fin m) ℂ}
     {V : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ unitaryGroup (Fin m) ℂ)
     (hV : V ∈ unitaryGroup (Fin n) ℂ) {σ : ℕ → ℂ} (h : star U * A * V = rectDiagonal σ) :
-    (∀ i, A.singularValues i = √((isHermitian_conjTranspose_mul_self A).eigenvalues i) ∧
-        A.singularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i) ∧
+    (∀ i, A.colSingularValues i = √((isHermitian_conjTranspose_mul_self A).eigenvalues i) ∧
+        A.colSingularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i) ∧
       (∀ τ : ℕ → ℝ, Antitone τ → (∀ i, 0 ≤ τ i) →
         star U * A * V = rectDiagonal (fun i => ((τ i : ℝ) : ℂ)) →
         ∀ i, i < m → i < n → (toEuclideanLin A).singularValues i = τ i) ∧
@@ -106,7 +106,7 @@ theorem equation_1_10 (A : Matrix (Fin m) (Fin n) ℂ) {U : Matrix (Fin m) (Fin 
     rw [hA, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose]
     simp only [Matrix.mul_assoc]
     rw [← Matrix.mul_assoc Uᴴ, hUU, Matrix.one_mul]
-  refine ⟨fun i => ⟨rfl, sq_singularValues A i⟩,
+  refine ⟨fun i => ⟨rfl, sq_colSingularValues A i⟩,
     fun τ hτ hτ0 hτA i him hin => singularValues_eq_of_svd hU hV hτ hτ0 hτA him hin, hA, hAA,
     fun j => ?_, fun i => ?_⟩
   · refine mulVec_transpose_eq_of_mul_eq_mul_diagonal
@@ -126,27 +126,27 @@ theorem equation_1_10 (A : Matrix (Fin m) (Fin n) ℂ) {U : Matrix (Fin m) (Fin 
 /-- **§1.9, the Hermitian case.** If `A ∈ ℂ^{n×n}` is Hermitian with eigenvalues `λ₁, …, λₙ`, its
 singular values are the moduli `|λ₁|, …, |λₙ|` (since `A Aᴴ = A²`, `σᵢ = √λᵢ² = |λᵢ|`): after a
 relabelling `e` of the indices, `σ_{e i}(A) = |λᵢ(A)|` (backbone
-`Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues`). -/
+`Matrix.IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues`). -/
 theorem singularValues_of_isHermitian {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) :
-    ∃ e : Fin n ≃ Fin n, ∀ i, A.singularValues (e i) = |hA.eigenvalues i| :=
-  hA.exists_equiv_singularValues_eq_abs_eigenvalues
+    ∃ e : Fin n ≃ Fin n, ∀ i, A.colSingularValues (e i) = |hA.eigenvalues i| :=
+  hA.exists_equiv_colSingularValues_eq_abs_eigenvalues
 
 /-! ### The rank, the kernel and the range from the SVD -/
 
 /-- **§1.9, the rank.** If `σ₁ ≥ … ≥ σ_r > σ_{r+1} = … = σ_p = 0` then `rank A = r`: the rank is
-the number of nonzero singular values (backbone `Matrix.card_singularValues_ne_zero`, and
+the number of nonzero singular values (backbone `Matrix.card_colSingularValues_ne_zero`, and
 Mathlib's `LinearMap.card_support_singularValues` for the sorted ones), so that the sorted
 singular value `σᵢ` is positive exactly for `i < rank A` and vanishes exactly for
 `i ≥ rank A`. -/
 theorem rank_eq_card_singularValues_ne_zero (A : Matrix (Fin m) (Fin n) ℂ) :
-    A.rank = Fintype.card {i : Fin n // A.singularValues i ≠ 0} ∧
+    A.rank = Fintype.card {i : Fin n // A.colSingularValues i ≠ 0} ∧
       A.rank = (toEuclideanLin A).singularValues.support.card ∧
       (∀ i, 0 < (toEuclideanLin A).singularValues i ↔ i < A.rank) ∧
       ∀ i, (toEuclideanLin A).singularValues i = 0 ↔ A.rank ≤ i := by
   have hr : Module.finrank ℂ (LinearMap.range (toEuclideanLin A)) = A.rank := by
     rw [rank_eq_finrank_range_toLin A (EuclideanSpace.basisFun (Fin m) ℂ).toBasis
       (EuclideanSpace.basisFun (Fin n) ℂ).toBasis, toEuclideanLin_eq_toLin_orthonormal]
-  refine ⟨(card_singularValues_ne_zero A).symm, ?_, fun i => ?_, fun i => ?_⟩
+  refine ⟨(card_colSingularValues_ne_zero A).symm, ?_, fun i => ?_, fun i => ?_⟩
   · rw [LinearMap.card_support_singularValues, hr]
   · rw [LinearMap.singularValues_pos_iff_lt_finrank_range, hr]
   · rw [LinearMap.singularValues_eq_zero_iff_le_finrank_range, hr]

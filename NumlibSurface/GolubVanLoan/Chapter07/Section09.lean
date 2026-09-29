@@ -17,14 +17,15 @@ characterization of the largest crossing, and transient growth (7.9.11).
 ## Conventions
 
 Complex matrices; the 2-norm is the scoped `Matrix.Norms.L2Operator` norm and
-`σ_min(M) = ⨅ i, M.singularValues i` (the backbone's column-indexed `Matrix.singularValues`). The
-surface defines `pseudospectrum ε A` literally by (7.9.5), `{z | σ_min(A - z I) ≤ ε}` (the book
-writes `λ` for `z` inside the set-builder, a misprint), for a matrix over any finite index type —
-the book's `n × n`, and the block matrices of Theorem 7.9.6 on `Fin p ⊕ Fin q` — and proves it
-equal to the backbone's `(toEuclideanCLM A).closedPseudospectrum ε`, the approximate-eigenvector
-form (`pseudospectrum_eq`, for a nonempty index type). The resolvent form (7.9.6) is stated for
-`ε > 0` with `λ(A) ⊆ Λ_ε(A)` explicit, since `‖(zI - A)⁻¹‖ ≥ 1/ε` has no meaning at an eigenvalue
-(Lean's matrix inverse is `0` there).
+`σ_min(M) = ⨅ i, M.colSingularValues i` (the backbone's column-indexed
+`Matrix.colSingularValues`). The surface defines `pseudospectrum ε A` literally by (7.9.5),
+`{z | σ_min(A - z I) ≤ ε}` (the book writes `λ` for `z` inside the set-builder, a misprint), for
+a matrix over any finite index type — the book's `n × n`, and the block matrices of Theorem 7.9.6
+on `Fin p ⊕ Fin q` — and proves it equal to the backbone's
+`(toEuclideanCLM A).closedPseudospectrum ε`, the approximate-eigenvector form (`pseudospectrum_eq`,
+for a nonempty index type). The resolvent form (7.9.6) is stated for `ε > 0` with
+`λ(A) ⊆ Λ_ε(A)` explicit, since `‖(zI - A)⁻¹‖ ≥ 1/ε` has no meaning at an eigenvalue (Lean's
+matrix inverse is `0` there).
 
 ## Not formalized
 
@@ -218,11 +219,11 @@ section Pseudospectrum
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
 /-- **(7.9.5), the `ε`-pseudospectrum** `Λ_ε(A) = {z ∈ ℂ : σ_min(A - z I) ≤ ε}`, with
-`σ_min(M) = ⨅ i, M.singularValues i`. Its members are the `ε`-pseudoeigenvalues; for a nonempty
+`σ_min(M) = ⨅ i, M.colSingularValues i`. Its members are the `ε`-pseudoeigenvalues; for a nonempty
 index type it is the backbone's closed pseudospectrum of the Euclidean operator of `A`
 (`pseudospectrum_eq`). -/
 noncomputable def pseudospectrum (ε : ℝ) (A : Matrix m m ℂ) : Set ℂ :=
-  {z | ⨅ i, (A - z • 1).singularValues i ≤ ε}
+  {z | ⨅ i, (A - z • 1).colSingularValues i ≤ ε}
 
 /-- The residual `‖A w - z w‖` is the image of `w` under `A - z I`. -/
 private theorem toEuclideanLin_sub_smul (A : Matrix m m ℂ) (z : ℂ) (w : EuclideanSpace ℂ m) :
@@ -232,11 +233,11 @@ private theorem toEuclideanLin_sub_smul (A : Matrix m m ℂ) (z : ℂ) (w : Eucl
   rfl
 
 /-- The least singular value of `A - z I` is the least residual on the unit sphere. -/
-private theorem iInf_singularValues_sub_smul (A : Matrix m m ℂ) (z : ℂ) :
-    ⨅ i, (A - z • 1).singularValues i =
+private theorem iInf_colSingularValues_sub_smul (A : Matrix m m ℂ) (z : ℂ) :
+    ⨅ i, (A - z • 1).colSingularValues i =
       ⨅ w : {w : EuclideanSpace ℂ m // ‖w‖ = 1},
         ‖toEuclideanCLM (n := m) (𝕜 := ℂ) A w - z • (w : EuclideanSpace ℂ m)‖ := by
-  rw [iInf_singularValues_eq_iInf_norm]
+  rw [iInf_colSingularValues_eq_iInf_norm]
   simp only [toEuclideanLin_sub_smul]
 
 /-- The pseudospectrum (7.9.5) is the backbone's closed pseudospectrum of the Euclidean operator
@@ -244,7 +245,7 @@ of `A`: `σ_min(A - z I)` is the least residual `min_{‖w‖₂ = 1} ‖(A - z 
 theorem pseudospectrum_eq [Nonempty m] (ε : ℝ) (A : Matrix m m ℂ) :
     pseudospectrum ε A = (toEuclideanCLM (n := m) (𝕜 := ℂ) A).closedPseudospectrum ε := by
   ext z
-  rw [ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf, ← iInf_singularValues_sub_smul]
+  rw [ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf, ← iInf_colSingularValues_sub_smul]
   rfl
 
 /-- The spectrum of the Euclidean operator of a matrix is the spectrum of the matrix. -/
@@ -397,22 +398,22 @@ open scoped Matrix.Norms.L2Operator
 `ε ≥ 0`); for `z₀ ∉ λ(A)` this is the book's `dist(z₀, Λ_ε(A)) ≥ 1/‖(z₀ I - A)⁻¹‖₂ - ε`, since then
 `σ_min(z₀ I - A) = 1/‖(z₀ I - A)⁻¹‖₂`. -/
 theorem theorem_7_9_8 [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A : Matrix m m ℂ) (z₀ : ℂ) :
-    (⨅ i, (z₀ • 1 - A).singularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) ∧
+    (⨅ i, (z₀ • 1 - A).colSingularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) ∧
       (z₀ ∉ spectrum ℂ A → 1 / ‖(z₀ • 1 - A)⁻¹‖ - ε ≤ infDist z₀ (pseudospectrum ε A)) := by
-  have hσ : ⨅ i, (z₀ • 1 - A).singularValues i = ⨅ i, (A - z₀ • 1).singularValues i := by
-    rw [iInf_singularValues_eq_iInf_norm, iInf_singularValues_eq_iInf_norm]
+  have hσ : ⨅ i, (z₀ • 1 - A).colSingularValues i = ⨅ i, (A - z₀ • 1).colSingularValues i := by
+    rw [iInf_colSingularValues_eq_iInf_norm, iInf_colSingularValues_eq_iInf_norm]
     congr 1
     ext w
     rw [← neg_sub A, map_neg, LinearMap.neg_apply, norm_neg]
-  have h1 : (⨅ i, (z₀ • 1 - A).singularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) := by
-    rw [hσ, iInf_singularValues_sub_smul, pseudospectrum_eq]
+  have h1 : (⨅ i, (z₀ • 1 - A).colSingularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) := by
+    rw [hσ, iInf_colSingularValues_sub_smul, pseudospectrum_eq]
     exact ContinuousLinearMap.le_infDist_closedPseudospectrum
       (ContinuousLinearMap.closedPseudospectrum_nonempty hε _) z₀
   refine ⟨h1, fun hz => le_trans ?_ h1⟩
   have hunit : IsUnit (z₀ • (1 : Matrix m m ℂ) - A).det := by
     rw [← isUnit_iff_isUnit_det]
     rwa [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one] at hz
-  rw [l2_opNorm_inv_eq_inv_iInf_singularValues _ hunit, one_div, inv_inv]
+  rw [l2_opNorm_inv_eq_inv_iInf_colSingularValues _ hunit, one_div, inv_inv]
 
 end L2
 
@@ -422,19 +423,19 @@ end L2
 `‖d‖₂ = 1` and `(zI - T) y = d`, then `σ_min(zI - T) ≤ 1/‖y‖₂`. -/
 theorem sigmaMin_schur [NeZero n] {A Q T : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hT : star Q * A * Q = T) (z : ℂ) :
-    ⨅ i, (z • 1 - A).singularValues i = ⨅ i, (z • 1 - T).singularValues i ∧
+    ⨅ i, (z • 1 - A).colSingularValues i = ⨅ i, (z • 1 - T).colSingularValues i ∧
       ∀ d y : EuclideanSpace ℂ (Fin n), ‖d‖ = 1 → toEuclideanLin (z • 1 - T) y = d →
-        ⨅ i, (z • 1 - T).singularValues i ≤ 1 / ‖y‖ := by
+        ⨅ i, (z • 1 - T).colSingularValues i ≤ 1 / ‖y‖ := by
   refine ⟨?_, fun d y hd hy => ?_⟩
   · have h : z • 1 - T = star Q * (z • 1 - A) * Q := by
       rw [← hT, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
         mem_unitaryGroup_iff'.1 hQ]
-    rw [h, iInf_singularValues_unitary_mul_mul _ (Unitary.star_mem hQ) hQ]
+    rw [h, iInf_colSingularValues_unitary_mul_mul _ (Unitary.star_mem hQ) hQ]
   · rcases eq_or_ne y 0 with rfl | hy0
     · rw [map_zero] at hy
       rw [← hy, norm_zero] at hd
       exact absurd hd zero_ne_one
-    · have h := (z • 1 - T).iInf_singularValues_mul_norm_le y
+    · have h := (z • 1 - T).iInf_colSingularValues_mul_norm_le y
       rw [hy, hd] at h
       rw [le_div_iff₀ (norm_pos_iff.2 hy0)]
       exact h
@@ -530,9 +531,9 @@ private theorem rayCrossingMatrix_mulVec_eq_iff (θ r ε : ℝ) (A : Matrix m m 
     rw [e1, e2]
 
 /-- If `Bᴴ B g = s² g` for some `g ≠ 0` and `s ≥ 0`, then `s` is a singular value of `B`. -/
-private theorem exists_singularValues_eq_of_mulVec {B : Matrix m m ℂ} {g : m → ℂ} (hg : g ≠ 0)
+private theorem exists_colSingularValues_eq_of_mulVec {B : Matrix m m ℂ} {g : m → ℂ} (hg : g ≠ 0)
     {s : ℝ} (hs : 0 ≤ s) (h : (Bᴴ * B) *ᵥ g = ((s : ℂ) ^ 2) • g) :
-    ∃ i, B.singularValues i = s := by
+    ∃ i, B.colSingularValues i = s := by
   have hspec : ((s ^ 2 : ℝ) : ℂ) ∈ spectrum ℂ (Bᴴ * B) := by
     rw [← Matrix.spectrum_toLin']
     apply Module.End.HasEigenvalue.mem_spectrum
@@ -545,8 +546,8 @@ private theorem exists_singularValues_eq_of_mulVec {B : Matrix m m ℂ} {g : m �
   obtain ⟨_, ⟨i, rfl⟩, hi⟩ := hspec
   have he : (isHermitian_conjTranspose_mul_self B).eigenvalues i = s ^ 2 :=
     Complex.ofReal_injective hi
-  refine ⟨i, (sq_eq_sq₀ (singularValues_nonneg _ _) hs).1 ?_⟩
-  rw [sq_singularValues, he]
+  refine ⟨i, (sq_eq_sq₀ (colSingularValues_nonneg _ _) hs).1 ?_⟩
+  rw [sq_colSingularValues, he]
 
 /-- **(7.9.10)**: "if `i · r` is an eigenvalue of the matrix `M`, then `ε` is a singular value of
 `A - r e^{iθ} I`. To see this, observe that if `M [f; g] = i · r [f; g]`, then
@@ -560,7 +561,7 @@ theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
           (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)) *ᵥ g = ((ε : ℂ) ^ 2) • g) ∧
       (0 < ε → ((∃ v : m ⊕ m → ℂ, v ≠ 0 ∧
           rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * r) • v) ↔
-        ∃ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i = ε)) := by
+        ∃ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).colSingularValues i = ε)) := by
   have hdd := I_exp_mul_neg_I_exp θ
   have hgram : ∀ f g : m → ℂ,
       rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g →
@@ -584,13 +585,13 @@ theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
       refine hv0 ?_
       rw [hg, h2.resolve_left (by exact_mod_cast hε.ne')]
       ext (i | i) <;> rfl
-    exact exists_singularValues_eq_of_mulVec hg hε.le (hgram _ _ hv)
+    exact exists_colSingularValues_eq_of_mulVec hg hε.le (hgram _ _ hv)
   · rintro ⟨i, hi⟩
     set B := A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 with hB
     obtain ⟨g, hg0, hgB⟩ : ∃ g : m → ℂ, g ≠ 0 ∧ Bᴴ *ᵥ (B *ᵥ g) = ((ε : ℂ) ^ 2) • g := by
       have h := (isHermitian_conjTranspose_mul_self B).mulVec_eigenvectorBasis i
       have he : (isHermitian_conjTranspose_mul_self B).eigenvalues i = ε ^ 2 := by
-        rw [← sq_singularValues, hi]
+        rw [← sq_colSingularValues, hi]
       rw [he, ← mulVec_mulVec, ← Complex.coe_smul] at h
       refine ⟨_, fun h0 =>
         (isHermitian_conjTranspose_mul_self B).eigenvectorBasis.orthonormal.ne_zero i
@@ -621,9 +622,9 @@ theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m �
     (hmax : ∃ v : m ⊕ m → ℂ, v ≠ 0 ∧ rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * rmax) • v)
     (hnot : ∀ r : ℝ, rmax < r → ∀ v : m ⊕ m → ℂ,
       rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * r) • v → v = 0) :
-    ⨅ i, (A - ((rmax : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i = ε := by
+    ⨅ i, (A - ((rmax : ℂ) * Complex.exp (θ * Complex.I)) • 1).colSingularValues i = ε := by
   set s : ℝ → ℝ := fun r =>
-    ⨅ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i with hs
+    ⨅ i, (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).colSingularValues i with hs
   obtain ⟨i₀, hi₀⟩ := ((equation_7_9_10 θ rmax ε A).2 hε).1 hmax
   have : Nonempty m := ⟨i₀⟩
   have hle : s rmax ≤ ε := hi₀ ▸ ciInf_le (Set.finite_range _).bddBelow i₀
@@ -633,7 +634,7 @@ theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m �
     have hlip : ∀ r r' : ℝ, dist (s r) (s r') ≤ (‖(1 : Matrix m m ℂ)‖₊ : ℝ) * dist r r' := by
       intro r r'
       rw [Real.dist_eq, Real.dist_eq, coe_nnnorm]
-      refine (iInf_singularValues_sub_le _ _).trans (le_of_eq ?_)
+      refine (iInf_colSingularValues_sub_le _ _).trans (le_of_eq ?_)
       have e : A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 -
           (A - ((r' : ℂ) * Complex.exp (θ * Complex.I)) • 1) =
           (((r' - r : ℝ) : ℂ) * Complex.exp (θ * Complex.I)) • 1 := by
@@ -646,7 +647,7 @@ theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m �
   have hgrow : ∀ r : ℝ, |r| - ‖A‖ ≤ s r := by
     intro r
     simp only [hs]
-    rw [iInf_singularValues_eq_iInf_norm]
+    rw [iInf_colSingularValues_eq_iInf_norm]
     have : Nonempty {x : EuclideanSpace ℂ m // ‖x‖ = 1} :=
       ⟨⟨EuclideanSpace.single i₀ 1, by simp⟩⟩
     refine le_ciInf fun x => ?_
@@ -673,7 +674,7 @@ theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m �
     intermediate_value_Icc hRmax.le hcont.continuousOn ⟨hlt.le, hsR⟩
   have hrr : rmax < r := lt_of_le_of_ne hr1 fun h => by rw [← h] at hr; linarith
   obtain ⟨i, hi⟩ := exists_eq_ciInf_of_finite
-    (f := fun i => (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).singularValues i)
+    (f := fun i => (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1).colSingularValues i)
   obtain ⟨v, hv0, hv⟩ := ((equation_7_9_10 θ r ε A).2 hε).2 ⟨i, hi.trans hr⟩
   exact hv0 (hnot r hrr v hv)
 

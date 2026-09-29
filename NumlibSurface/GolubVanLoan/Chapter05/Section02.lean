@@ -121,8 +121,8 @@ noncomputable def kappa2 (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
 /-- **(5.2.4)**: for `A` of full column rank (`n ≥ 1`), `κ₂(A) = σ_max(A)/σ_min(A)`, the extreme
 singular values read over the columns (`⨆ i, σ_i` and `⨅ i, σ_i`). -/
 theorem equation_5_2_4 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ) :
-    kappa2 A = (⨆ i, A.singularValues i) / ⨅ i, A.singularValues i :=
-  pinvCondNumberLp_two_eq_div_singularValues hA
+    kappa2 A = (⨆ i, A.colSingularValues i) / ⨅ i, A.colSingularValues i :=
+  pinvCondNumberLp_two_eq_div_colSingularValues hA
 
 /-- For a nonsingular square `A`, the `κ₂(A)` of (5.2.4) is that of §2.6.2: the backbone's
 `condNumberLp 2 A = ‖A‖₂ ‖A⁻¹‖₂`, and chapter 2's `kappa 2 A` is its (finite) value. -/

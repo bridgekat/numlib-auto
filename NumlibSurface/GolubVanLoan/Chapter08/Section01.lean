@@ -151,11 +151,11 @@ theorem theorem_8_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
 `‖A‖₂ = max(|λ_1(A)|, |λ_n(A)|)`. -/
 theorem l2_opNorm_eq_max_abs_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hn : 0 < n) :
-    (∃ e : Fin n ≃ Fin n, ∀ k, A.singularValues (e k) = |symmEigenvalue hA k|) ∧
+    (∃ e : Fin n ≃ Fin n, ∀ k, A.colSingularValues (e k) = |symmEigenvalue hA k|) ∧
       lpOpNorm 2 A = max |symmEigenvalue hA ⟨0, hn⟩| |symmEigenvalue hA ⟨n - 1, by omega⟩| := by
   have hH := isHermitian_iff_isSymm.2 hA
   refine ⟨?_, ?_⟩
-  · obtain ⟨e, he⟩ := hH.exists_equiv_singularValues_eq_abs_eigenvalues
+  · obtain ⟨e, he⟩ := hH.exists_equiv_colSingularValues_eq_abs_eigenvalues
     refine ⟨((finCongr (Fintype.card_fin n).symm).trans
       (Fintype.equivOfCardEq (Fintype.card_fin _))).trans e, fun k => ?_⟩
     rw [Equiv.trans_apply, he]

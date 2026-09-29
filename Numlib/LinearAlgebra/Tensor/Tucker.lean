@@ -54,12 +54,12 @@ theorem multilinearRank_le_iff (A : Tensor κ 𝕜) (hr : ∀ k, r k ≤ Fintype
   constructor
   · intro h
     have hT : ∀ k, ∃ T : Finset (κ k),
-        (∀ i, (A.modeUnfold k)ᴴ.singularValues i ≠ 0 → i ∈ T) ∧ T.card = r k := by
+        (∀ i, (A.modeUnfold k)ᴴ.colSingularValues i ≠ 0 → i ∈ T) ∧ T.card = r k := by
       intro k
       obtain ⟨T, hsub, -, hcard⟩ := Finset.exists_subsuperset_card_eq (n := r k)
-        (Finset.subset_univ (Finset.univ.filter fun i => (A.modeUnfold k)ᴴ.singularValues i ≠ 0))
+        (Finset.subset_univ (Finset.univ.filter fun i => (A.modeUnfold k)ᴴ.colSingularValues i ≠ 0))
         (by
-          rw [← Fintype.card_subtype, card_singularValues_ne_zero,
+          rw [← Fintype.card_subtype, card_colSingularValues_ne_zero,
             rank_conjTranspose]
           exact h k)
         (by simpa using hr k)
@@ -87,7 +87,7 @@ theorem multilinearRank_le_iff (A : Tensor κ 𝕜) (hr : ∀ k, r k ≤ Fintype
       exact Fintype.sum_equiv (eqv k) _ _ fun _ => rfl
     have hA : A = truncatedHOSVD A T := by
       have hle := norm_sub_truncatedHOSVD_sq_le A T
-      have hzero : ∑ k, ∑ i ∈ (T k)ᶜ, (A.modeUnfold k)ᴴ.singularValues i ^ 2 = 0 := by
+      have hzero : ∑ k, ∑ i ∈ (T k)ᶜ, (A.modeUnfold k)ᴴ.colSingularValues i ^ 2 = 0 := by
         refine Finset.sum_eq_zero fun k _ => Finset.sum_eq_zero fun i hi => ?_
         by_contra hne
         exact (Finset.mem_compl.1 hi) (hTsub k i fun h0 => hne (by rw [h0]; ring))

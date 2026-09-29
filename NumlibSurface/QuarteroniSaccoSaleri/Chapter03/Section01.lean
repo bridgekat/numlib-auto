@@ -126,13 +126,13 @@ theorem condNumber_two_of_orthogonal [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
 open scoped Matrix.Norms.L2Operator in
 /-- **§3.1.1, the spectral condition number**: for a nonsingular `A`,
 `K₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = σ₁(A) / σₙ(A)`, the ratio of the largest and the smallest singular values
-(backbone `Matrix.condNumber_l2_eq_div_singularValues`; the singular values are indexed by the
+(backbone `Matrix.condNumber_l2_eq_div_colSingularValues`; the singular values are indexed by the
 columns of `A`, in no particular order). -/
 theorem condNumber_two_eq_div_singularValues [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : IsUnit A) :
-    condNumber 2 A = (⨆ i, A.singularValues i) / ⨅ i, A.singularValues i := by
+    condNumber 2 A = (⨆ i, A.colSingularValues i) / ⨅ i, A.colSingularValues i := by
   rw [condNumber_two_eq]
-  exact condNumber_l2_eq_div_singularValues A ((isUnit_iff_isUnit_det A).mp hA)
+  exact condNumber_l2_eq_div_colSingularValues A ((isUnit_iff_isUnit_det A).mp hA)
 
 open scoped Matrix.Norms.L2Operator in
 /-- **(3.5).** For a symmetric positive definite `A`, `K₂(A) = λ_max / λ_min = ρ(A) ρ(A⁻¹)`, the

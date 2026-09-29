@@ -174,7 +174,7 @@ theorem corollary_2_4_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
 /-- **Corollary 2.4.5.** If `A ∈ ℝ^{m×n}`, `m > n` (and `n ≥ 1`, so that `σ_min(A)` exists), and
 `z ∈ ℝ^m`, then `σ_max([A | z]) ≥ σ_max(A)` and `σ_min([A | z]) ≤ σ_min(A)`. The first is column
 deletion (`Matrix.sortedSingularValues_submatrix_le`); for the second both matrices are tall, so
-`σ_min` is the least stretch `min_{‖x‖₂ = 1} ‖A x‖₂` (`Matrix.iInf_singularValues_eq_iInf_norm`)
+`σ_min` is the least stretch `min_{‖x‖₂ = 1} ‖A x‖₂` (`Matrix.iInf_colSingularValues_eq_iInf_norm`)
 and `[A | z] [x; 0] = A x`. -/
 theorem corollary_2_4_5 (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n < m) (hn : 1 ≤ n)
     (z : Fin m → ℝ) :
@@ -191,13 +191,13 @@ theorem corollary_2_4_5 (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n < m) (hn : 1 �
   · calc sigmaMax A = (Ã.submatrix id Fin.castSucc).sortedSingularValues 0 := by rw [hsub]; rfl
       _ ≤ Ã.sortedSingularValues 0 := sortedSingularValues_submatrix_le Ã Fin.castSuccEmb 0
   · have hne : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
-    obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_singularValues
+    obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
     have hmin1 : min m n - 1 = Fintype.card (Fin n) - 1 := by
       rw [Fintype.card_fin, min_eq_right hmn.le]
     have hmin2 : min m (n + 1) - 1 = Fintype.card (Fin (n + 1)) - 1 := by
       rw [Fintype.card_fin, min_eq_right hmn]
-    rw [sigmaMin, sigmaMin, hmin1, hmin2, sortedSingularValues_eq_iInf_singularValues,
-      sortedSingularValues_eq_iInf_singularValues, iInf_singularValues_eq_iInf_norm, ← hx]
+    rw [sigmaMin, sigmaMin, hmin1, hmin2, sortedSingularValues_eq_iInf_colSingularValues,
+      sortedSingularValues_eq_iInf_colSingularValues, iInf_colSingularValues_eq_iInf_norm, ← hx]
     set y : EuclideanSpace ℝ (Fin (n + 1)) :=
       toLp 2 (Function.extend Fin.castSucc (ofLp x) 0) with hy
     have hy1 : ‖y‖ = 1 := by

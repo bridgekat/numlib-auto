@@ -924,15 +924,15 @@ theorem mem_closedPseudospectrum_conjTranspose_iff {A : Matrix n n 𝕜} {ε : �
 
 /-- [golub2013matrix] (7.9.5) for matrices: `z ∈ Λ_ε(A)` exactly when the least singular value of
 `z I - A` is at most `ε`, in the sorted reading `σ_{n-1}(z I - A)` (equivalently
-`⨅ i, (z • 1 - A).singularValues i`, `Matrix.sortedSingularValues_eq_iInf_singularValues`). The
-operator statement `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf` with the least stretch
-read as the least singular value (`Matrix.iInf_singularValues_eq_iInf_norm`). -/
-theorem mem_closedPseudospectrum_iff_iInf_singularValues [Nonempty n] {A : Matrix n n 𝕜}
+`⨅ i, (z • 1 - A).colSingularValues i`, `Matrix.sortedSingularValues_eq_iInf_colSingularValues`).
+The operator statement `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf` with the least
+stretch read as the least singular value (`Matrix.iInf_colSingularValues_eq_iInf_norm`). -/
+theorem mem_closedPseudospectrum_iff_iInf_colSingularValues [Nonempty n] {A : Matrix n n 𝕜}
     {ε : ℝ} {z : 𝕜} :
     z ∈ (toEuclideanCLM (n := n) (𝕜 := 𝕜) A).closedPseudospectrum ε ↔
       (z • 1 - A).sortedSingularValues (Fintype.card n - 1) ≤ ε := by
-  rw [mem_closedPseudospectrum_iff_iInf, sortedSingularValues_eq_iInf_singularValues,
-    iInf_singularValues_eq_iInf_norm]
+  rw [mem_closedPseudospectrum_iff_iInf, sortedSingularValues_eq_iInf_colSingularValues,
+    iInf_colSingularValues_eq_iInf_norm]
   have h : ∀ w : {w : EuclideanSpace 𝕜 n // ‖w‖ = 1},
       ‖toEuclideanCLM (n := n) (𝕜 := 𝕜) A w - z • (w : EuclideanSpace 𝕜 n)‖ =
         ‖toEuclideanLin (z • 1 - A) w‖ := fun w => by

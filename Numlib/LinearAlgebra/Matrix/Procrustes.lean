@@ -22,7 +22,7 @@ is that polar factor (`Matrix.IsSVD.isPolarDecomposition_of_square`).
   positive semidefinite `P`.
 * `Matrix.frobenius_norm_sub_mul_le_of_isPolarDecomposition`: the Procrustes theorem, polar
   form; `Matrix.frobenius_norm_sub_mul_le_of_isSVD` is the book's SVD form.
-* `Matrix.re_trace_mul_le_sum_singularValues`: `re tr(Q C) ≤ ∑ σ_i(C)` for unitary `Q`, with
+* `Matrix.re_trace_mul_le_sum_colSingularValues`: `re tr(Q C) ≤ ∑ σ_i(C)` for unitary `Q`, with
   equality at `Q = V Uᴴ` for an SVD `Uᴴ C V = Σ`
   (`Matrix.IsSVD.re_trace_mul_eq_sum`).
 
@@ -134,24 +134,24 @@ theorem frobenius_norm_sub_mul_le_of_isSVD {n : ℕ} {A B : Matrix m (Fin n) �
 
 /-- The trace of the symmetric polar factor of `C` is the sum of the singular values of `C`: the
 factor is `V diag(σ) Vᴴ` with `V` the right singular unitary (`Aᴴ A = V diag(σ²) Vᴴ`). -/
-theorem IsPolarDecomposition.trace_eq_sum_singularValues {n : Type*} [Fintype n]
+theorem IsPolarDecomposition.trace_eq_sum_colSingularValues {n : Type*} [Fintype n]
     {C U : Matrix n p 𝕜} {P : Matrix p p 𝕜} (h : IsPolarDecomposition C U P) :
-    trace P = ∑ i, ((C.singularValues i : ℝ) : 𝕜) := by
-  have hP' : (C.rightSingularUnitary * diagonal (fun i => ((C.singularValues i : ℝ) : 𝕜)) *
+    trace P = ∑ i, ((C.colSingularValues i : ℝ) : 𝕜) := by
+  have hP' : (C.rightSingularUnitary * diagonal (fun i => ((C.colSingularValues i : ℝ) : 𝕜)) *
       star C.rightSingularUnitary).PosSemidef := by
     rw [star_eq_conjTranspose]
     refine PosSemidef.mul_mul_conjTranspose_same ?_ _
-    exact posSemidef_diagonal_iff.2 fun i => RCLike.ofReal_nonneg.2 (singularValues_nonneg C i)
-  have hPP : (C.rightSingularUnitary * diagonal (fun i => ((C.singularValues i : ℝ) : 𝕜)) *
+    exact posSemidef_diagonal_iff.2 fun i => RCLike.ofReal_nonneg.2 (colSingularValues_nonneg C i)
+  have hPP : (C.rightSingularUnitary * diagonal (fun i => ((C.colSingularValues i : ℝ) : 𝕜)) *
       star C.rightSingularUnitary) * (C.rightSingularUnitary *
-        diagonal (fun i => ((C.singularValues i : ℝ) : 𝕜)) * star C.rightSingularUnitary)
+        diagonal (fun i => ((C.colSingularValues i : ℝ) : 𝕜)) * star C.rightSingularUnitary)
       = Cᴴ * C := by
     rw [conj_diagonal_mul_conj_diagonal, conjTranspose_mul_self_eq_conj_diagonal]
     congr 3
     funext i
     push_cast
     ring
-  have hP : P = C.rightSingularUnitary * diagonal (fun i => ((C.singularValues i : ℝ) : 𝕜)) *
+  have hP : P = C.rightSingularUnitary * diagonal (fun i => ((C.colSingularValues i : ℝ) : 𝕜)) *
       star C.rightSingularUnitary := by
     rw [h.eq_cfcSqrt, ← hPP]
     open scoped MatrixOrder in exact CFC.sqrt_mul_self _ hP'.nonneg
@@ -161,23 +161,23 @@ theorem IsPolarDecomposition.trace_eq_sum_singularValues {n : Type*} [Fintype n]
 /-- **The singular-value trace bound** ([golub2013matrix] §6.4.1, `tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`):
 for unitary `Q`, `re tr(Q C) ≤ ∑ σ_i(C)`. With a polar decomposition `C = Q₀ P`,
 `re tr(Q Q₀ P) ≤ re tr P` (`Matrix.re_trace_mul_le_trace_of_posSemidef`) and `tr P = ∑ σ_i`
-(`Matrix.IsPolarDecomposition.trace_eq_sum_singularValues`). -/
-theorem re_trace_mul_le_sum_singularValues (C : Matrix p p 𝕜) {Q : Matrix p p 𝕜}
-    (hQ : Q ∈ unitaryGroup p 𝕜) : RCLike.re (trace (Q * C)) ≤ ∑ i, C.singularValues i := by
+(`Matrix.IsPolarDecomposition.trace_eq_sum_colSingularValues`). -/
+theorem re_trace_mul_le_sum_colSingularValues (C : Matrix p p 𝕜) {Q : Matrix p p 𝕜}
+    (hQ : Q ∈ unitaryGroup p 𝕜) : RCLike.re (trace (Q * C)) ≤ ∑ i, C.colSingularValues i := by
   obtain ⟨Q₀, P, h⟩ := exists_isPolarDecomposition C le_rfl
   have hW : Q * Q₀ ∈ unitaryGroup p 𝕜 := mul_mem hQ h.mem_unitaryGroup
   calc RCLike.re (trace (Q * C)) = RCLike.re (trace (Q * Q₀ * P)) := by
         rw [h.eq_mul, Matrix.mul_assoc]
     _ ≤ RCLike.re (trace P) := re_trace_mul_le_trace_of_posSemidef hW h.posSemidef
-    _ = ∑ i, C.singularValues i := by
-        rw [h.trace_eq_sum_singularValues, map_sum]
+    _ = ∑ i, C.colSingularValues i := by
+        rw [h.trace_eq_sum_colSingularValues, map_sum]
         simp only [RCLike.ofReal_re]
 
 /-- **The equality case of the singular-value trace bound** ([golub2013matrix] §6.4.1, "The upper
 bound is clearly attained by setting `Z = I_p`"): for an SVD `Uᴴ C V = Σ`,
 `tr(V Uᴴ C) = ∑ σ_i`, and `∑ σ_i = ∑ σ_i(C)`. -/
 theorem IsSVD.re_trace_mul_eq_sum {n : ℕ} {C U V : Matrix (Fin n) (Fin n) 𝕜} {σ : ℕ → ℝ}
-    (h : IsSVD C U σ V) : RCLike.re (trace (V * Uᴴ * C)) = ∑ i, C.singularValues i := by
+    (h : IsSVD C U σ V) : RCLike.re (trace (V * Uᴴ * C)) = ∑ i, C.colSingularValues i := by
   have hp := h.isPolarDecomposition_of_square
   have hUU : Uᴴ * U = 1 := by
     rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.1 h.mem_unitaryGroup_left
@@ -189,7 +189,7 @@ theorem IsSVD.re_trace_mul_eq_sum {n : ℕ} {C U V : Matrix (Fin n) (Fin n) 𝕜
       _ = _ := by
         rw [hUU, Matrix.mul_one, ← star_eq_conjTranspose,
           mem_unitaryGroup_iff.1 h.mem_unitaryGroup_right, Matrix.one_mul]
-  rw [hC, hp.trace_eq_sum_singularValues, map_sum]
+  rw [hC, hp.trace_eq_sum_colSingularValues, map_sum]
   simp only [RCLike.ofReal_re]
 
 end Matrix

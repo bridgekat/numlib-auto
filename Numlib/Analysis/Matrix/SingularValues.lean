@@ -210,12 +210,12 @@ theorem sortedSingularValues_add_le (A B : Matrix m n 𝕜) (i j : ℕ) :
 open scoped Matrix.Norms.Frobenius in
 /-- **The squared Frobenius norm is the sum of the squared sorted singular values**
 ([golub2013matrix] (2.4.7)): `‖A‖_F² = ∑_{i < card n} σ_i(A)²`, the column-indexed
-`Matrix.frobenius_norm_sq_eq_sum_sq_singularValues` read through the relabelling
-`Matrix.exists_equiv_singularValues_eq_sortedSingularValues`. -/
+`Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues` read through the relabelling
+`Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`. -/
 theorem frobenius_norm_sq_eq_sum_sq_sortedSingularValues (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ i ∈ Finset.range (Fintype.card n), A.sortedSingularValues i ^ 2 := by
-  obtain ⟨e, he⟩ := A.exists_equiv_singularValues_eq_sortedSingularValues
-  rw [frobenius_norm_sq_eq_sum_sq_singularValues, ← e.sum_comp,
+  obtain ⟨e, he⟩ := A.exists_equiv_colSingularValues_eq_sortedSingularValues
+  rw [frobenius_norm_sq_eq_sum_sq_colSingularValues, ← e.sum_comp,
     ← Fin.sum_univ_eq_sum_range (fun i => A.sortedSingularValues i ^ 2)]
   exact Finset.sum_congr rfl fun k _ => by rw [he]
 
@@ -783,13 +783,13 @@ theorem sortedSingularValues_le_l2_opNorm_trailing_lower [DecidableEq n] [Decida
 open scoped Matrix.Norms.L2Operator in
 /-- **The least stretch is `1`-Lipschitz in the `2`-norm** ([golub2013matrix] Corollary 2.4.4 at the
 last index): `|σ_min(A) - σ_min(B)| ≤ ‖A - B‖₂`, with `σ_min = ⨅ i, σ_i` over the columns (the least
-stretch for every shape, `Matrix.iInf_singularValues_eq_iInf_norm`). Weyl's bound
+stretch for every shape, `Matrix.iInf_colSingularValues_eq_iInf_norm`). Weyl's bound
 `LinearMap.abs_singularValues_sub_le` at the last sorted index. (Column-indexed on purpose: the
 consumers state `σ_min` as `⨅ i` over the columns.) -/
-theorem iInf_singularValues_sub_le [DecidableEq n] [Nonempty n] (A B : Matrix m n 𝕜) :
-    |(⨅ i, A.singularValues i) - ⨅ i, B.singularValues i| ≤ ‖A - B‖ := by
-  rw [← A.sortedSingularValues_eq_iInf_singularValues,
-    ← B.sortedSingularValues_eq_iInf_singularValues]
+theorem iInf_colSingularValues_sub_le [DecidableEq n] [Nonempty n] (A B : Matrix m n 𝕜) :
+    |(⨅ i, A.colSingularValues i) - ⨅ i, B.colSingularValues i| ≤ ‖A - B‖ := by
+  rw [← A.sortedSingularValues_eq_iInf_colSingularValues,
+    ← B.sortedSingularValues_eq_iInf_colSingularValues]
   exact LinearMap.abs_singularValues_sub_le (S := toEuclideanLin B) (T := toEuclideanLin A)
     (norm_nonneg _) (fun x => by
       rw [LinearMap.sub_apply, ← toEuclideanLin_sub_apply]
@@ -845,9 +845,9 @@ theorem l2_opNorm_mul_inv_sq_eq [DecidableEq k] [Nonempty k] {V₁₂ : Matrix l
     (hV₂₂ : IsUnit V₂₂) (hV : V₁₂ᴴ * V₁₂ + V₂₂ᴴ * V₂₂ = 1) :
     ‖V₁₂ * V₂₂⁻¹‖ ^ 2 = (1 - V₂₂.sortedSingularValues (Fintype.card k - 1) ^ 2) /
       V₂₂.sortedSingularValues (Fintype.card k - 1) ^ 2 := by
-  rw [sortedSingularValues_eq_iInf_singularValues]
-  obtain ⟨x, hx1, hx⟩ := V₂₂.exists_norm_eq_iInf_singularValues
-  set σ := ⨅ i, V₂₂.singularValues i with hσ
+  rw [sortedSingularValues_eq_iInf_colSingularValues]
+  obtain ⟨x, hx1, hx⟩ := V₂₂.exists_norm_eq_iInf_colSingularValues
+  set σ := ⨅ i, V₂₂.colSingularValues i with hσ
   have hPy := norm_sq_add_norm_sq_of_stacked hV
   have hinv : ∀ y, toEuclideanLin V₂₂ (toEuclideanLin V₂₂⁻¹ y) = y :=
     toEuclideanLin_mul_nonsing_inv_apply hV₂₂
@@ -869,7 +869,7 @@ theorem l2_opNorm_mul_inv_sq_eq [DecidableEq k] [Nonempty k] {V₁₂ : Matrix l
       set w := toEuclideanLin V₂₂⁻¹ y
       have h1 := hPy w
       rw [hinv] at h1
-      have h2 := V₂₂.iInf_singularValues_mul_norm_le w
+      have h2 := V₂₂.iInf_colSingularValues_mul_norm_le w
       rw [hinv] at h2
       have h3 : (σ * ‖w‖) ^ 2 ≤ ‖y‖ ^ 2 := pow_le_pow_left₀ (by positivity) h2 2
       rw [← Real.sqrt_sq (norm_nonneg y),
@@ -972,8 +972,9 @@ variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 /-- **The condition number of a rectangular matrix** through its pseudoinverse, in the operator
 `p`-norm: `pinvCondNumberLp p A = ‖A‖_p ‖A⁺‖_p`, beside the square `Matrix.condNumberLp`. The
 book's rectangular `κ₂(A) = ‖A‖₂ ‖A⁺‖₂` ([golub2013matrix] (5.2.4)) is `pinvCondNumberLp 2 A`: for
-full column rank it is `σ_max/σ_min` (`Matrix.pinvCondNumberLp_two_eq_div_singularValues`), and for
-an invertible square matrix it is `condNumberLp p A` (`Matrix.pinvCondNumberLp_eq_condNumberLp`). -/
+full column rank it is `σ_max/σ_min` (`Matrix.pinvCondNumberLp_two_eq_div_colSingularValues`), and
+for an invertible square matrix it is `condNumberLp p A`
+(`Matrix.pinvCondNumberLp_eq_condNumberLp`). -/
 noncomputable def pinvCondNumberLp (p : ENNReal) [Fact (1 ≤ p)] (A : Matrix m n 𝕜) : ℝ :=
   lpOpNorm p A * lpOpNorm p A.pinv
 
@@ -996,11 +997,11 @@ open scoped Matrix.Norms.L2Operator ComplexOrder in
 linearly independent columns, `‖A⁺‖₂ = (⨅ i, σ_i(A))⁻¹`. `A A⁺` is the orthogonal projection onto
 the range, so `σ_min ‖A⁺ y‖ ≤ ‖A A⁺ y‖ ≤ ‖y‖`, with equality at `y = A x` for a least right singular
 vector `x`, where `A⁺ y = x`. (Column-indexed on purpose: `⨅ i` over the columns is `σ_min` for
-every shape; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_singularValues`.) -/
-theorem l2_opNorm_pinv_eq_inv_iInf_singularValues [Nonempty n] {A : Matrix m n 𝕜}
-    (hA : LinearIndependent 𝕜 Aᵀ) : ‖A.pinv‖ = (⨅ i, A.singularValues i)⁻¹ := by
-  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_singularValues
-  set σ := ⨅ i, A.singularValues i with hσ
+every shape; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_colSingularValues`.) -/
+theorem l2_opNorm_pinv_eq_inv_iInf_colSingularValues [Nonempty n] {A : Matrix m n 𝕜}
+    (hA : LinearIndependent 𝕜 Aᵀ) : ‖A.pinv‖ = (⨅ i, A.colSingularValues i)⁻¹ := by
+  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
+  set σ := ⨅ i, A.colSingularValues i with hσ
   have hleft : ∀ z, toEuclideanLin A.pinv (toEuclideanLin A z) = z := fun z => by
     rw [← toEuclideanLin_mul_apply, pinv_mul_self_of_linearIndependent hA, toEuclideanLin_one,
       LinearMap.id_apply]
@@ -1013,7 +1014,7 @@ theorem l2_opNorm_pinv_eq_inv_iInf_singularValues [Nonempty n] {A : Matrix m n �
     exact zero_ne_one hx1
   apply le_antisymm
   · refine l2_opNorm_le_of_forall_norm_toEuclideanLin_le _ (inv_nonneg.2 hσpos.le) fun y => ?_
-    have h1 := A.iInf_singularValues_mul_norm_le (toEuclideanLin A.pinv y)
+    have h1 := A.iInf_colSingularValues_mul_norm_le (toEuclideanLin A.pinv y)
     rw [← toEuclideanLin_mul_apply, LinearMap.congr_fun (mul_pinv_eq_starProjection A) y] at h1
     have h2 := h1.trans ((LinearMap.range (toEuclideanLin A)).norm_starProjection_apply_le y)
     rw [inv_mul_eq_div, le_div_iff₀ hσpos]
@@ -1026,12 +1027,12 @@ theorem l2_opNorm_pinv_eq_inv_iInf_singularValues [Nonempty n] {A : Matrix m n �
 open scoped Matrix.Norms.L2Operator in
 /-- **The rectangular condition number from the singular values** ([golub2013matrix] (5.2.4)): for
 linearly independent columns, `pinvCondNumberLp 2 A = σ_max / σ_min`. (Column-indexed on purpose,
-as `Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues`.) -/
-theorem pinvCondNumberLp_two_eq_div_singularValues [Nonempty n] {A : Matrix m n 𝕜}
+as `Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`.) -/
+theorem pinvCondNumberLp_two_eq_div_colSingularValues [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) :
-    pinvCondNumberLp 2 A = (⨆ i, A.singularValues i) / (⨅ i, A.singularValues i) := by
-  rw [pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, l2_opNorm_eq_iSup_singularValues,
-    l2_opNorm_pinv_eq_inv_iInf_singularValues hA, div_eq_mul_inv]
+    pinvCondNumberLp 2 A = (⨆ i, A.colSingularValues i) / (⨅ i, A.colSingularValues i) := by
+  rw [pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, l2_opNorm_eq_iSup_colSingularValues,
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, div_eq_mul_inv]
 
 open scoped Matrix.Norms.L2Operator in
 /-- **The projection onto the range has norm one** ([golub2013matrix] (5.3.9)): `‖A A⁺‖₂ = 1` for
@@ -1078,7 +1079,7 @@ open scoped Matrix.Norms.L2Operator ComplexOrder in
 /-- **The norm of the inverse Gram matrix** ([golub2013matrix] (5.3.9)): for linearly independent
 columns, `‖(Aᴴ A)⁻¹‖₂ = σ_min(A)⁻²`. `(Aᴴ A)⁻¹ = A⁺ A⁺ᴴ`, whose norm is `‖A⁺‖₂²`. -/
 theorem l2_opNorm_inv_conjTranspose_mul_self [Nonempty n] {A : Matrix m n 𝕜}
-    (hA : LinearIndependent 𝕜 Aᵀ) : ‖(Aᴴ * A)⁻¹‖ = (⨅ i, A.singularValues i)⁻¹ ^ 2 := by
+    (hA : LinearIndependent 𝕜 Aᵀ) : ‖(Aᴴ * A)⁻¹‖ = (⨅ i, A.colSingularValues i)⁻¹ ^ 2 := by
   classical
   have hU := (isUnit_iff_isUnit_det _).mp
     (posDef_conjTranspose_mul_self_of_linearIndependent hA).isUnit
@@ -1089,7 +1090,7 @@ theorem l2_opNorm_inv_conjTranspose_mul_self [Nonempty n] {A : Matrix m n 𝕜}
       ← Matrix.mul_assoc Aᴴ A, ← Matrix.mul_assoc (Aᴴ * A)⁻¹, nonsing_inv_mul _ hU,
       Matrix.one_mul]
   rw [hG, l2_opNorm_conjTranspose_mul_self, l2_opNorm_conjTranspose,
-    l2_opNorm_pinv_eq_inv_iInf_singularValues hA, sq]
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, sq]
 
 open scoped Matrix.Norms.L2Operator ComplexOrder in
 /-- **The normal equations square the condition number** ([golub2013matrix] (5.3.4),
@@ -1101,7 +1102,7 @@ theorem pinvCondNumberLp_two_conjTranspose_mul_self [Nonempty n] {A : Matrix m n
   rw [pinvCondNumberLp, pinvCondNumberLp, pinv_eq_inv hU, lpOpNorm_two, lpOpNorm_two,
     lpOpNorm_two, lpOpNorm_two, l2_opNorm_conjTranspose_mul_self,
     l2_opNorm_inv_conjTranspose_mul_self hA,
-    l2_opNorm_pinv_eq_inv_iInf_singularValues hA]
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA]
   ring
 
 end Pinv

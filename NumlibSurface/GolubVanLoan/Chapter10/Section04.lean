@@ -198,14 +198,14 @@ end Columns
 if `β_k = 0`, every singular value of `B_k = B(1:k, 1:k)` is a singular value of `A`: the range of
 `V(:, 1:k)` is `AᵀA`-invariant with `AᵀA` acting as `B_kᵀ B_k` there ((10.4.7)), so an eigenvector
 `y` of `B_kᵀ B_k` gives the eigenvector `V(:, 1:k) y` of `AᵀA` for the same eigenvalue, and singular
-values are the square roots of these eigenvalues (`Matrix.sq_singularValues`). -/
+values are the square roots of these eigenvalues (`Matrix.sq_colSingularValues`). -/
 theorem singularValues_bidiag_subset {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {V : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin m) (Fin n) ℝ}
     (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ) (hV : V ∈ orthogonalGroup (Fin n) ℝ)
     (hB : Uᵀ * A * V = B) (hBb : B.IsUpperBidiagonalRect) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ n)
     (hβ : ∀ h : k < n, B ⟨k - 1, by omega⟩ ⟨k, h⟩ = 0) (i : Fin k) :
-    ∃ j : Fin n, (B.submatrix (Fin.castLE (hk.trans hnm)) (Fin.castLE hk)).singularValues i =
-      A.singularValues j := by
+    ∃ j : Fin n, (B.submatrix (Fin.castLE (hk.trans hnm)) (Fin.castLE hk)).colSingularValues i =
+      A.colSingularValues j := by
   set Bk := B.submatrix (Fin.castLE (hk.trans hnm)) (Fin.castLE hk) with hBk
   set Vk := V.submatrix id (Fin.castLE hk) with hVk
   have hgram := (equation_10_4_7 hnm hU hV hB hBb hk1 hk hβ).2
@@ -242,11 +242,11 @@ theorem singularValues_bidiag_subset {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ
   rw [hG.spectrum_real_eq_range_eigenvalues] at hspec
   obtain ⟨j, hj⟩ := hspec
   refine ⟨j, ?_⟩
-  have h1 := Bk.sq_singularValues i
-  have h2 := A.sq_singularValues j
+  have h1 := Bk.sq_colSingularValues i
+  have h2 := A.sq_colSingularValues j
   rw [← hj] at h1
   rw [← h2] at h1
-  exact (pow_left_inj₀ (Bk.singularValues_nonneg i) (A.singularValues_nonneg j)
+  exact (pow_left_inj₀ (Bk.colSingularValues_nonneg i) (A.colSingularValues_nonneg j)
     two_ne_zero).1 h1
 
 /-! ### The Golub–Kahan relations (§10.4.1) -/

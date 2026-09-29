@@ -175,14 +175,14 @@ id = "frobenius_norm_sq_eq_trace"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.18)"
 
 [[node]]
-id = "frobenius_norm_sq_eq_sum_sq_singularValues"
+id = "frobenius_norm_sq_eq_sum_sq_colSingularValues"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 16"
 
 [[node]]
-id = "singularValues_le_l2_opNorm"
+id = "colSingularValues_le_l2_opNorm"
 
 [[node]]
-id = "singularValues_le_lpOpNorm_two"
+id = "colSingularValues_le_lpOpNorm_two"
 
 [[node]]
 id = "l2_opNorm_le_frobenius_norm"

@@ -178,8 +178,9 @@ theorem equation_12_3_4 {m₁ n₁ m₂ n₂ : ℕ} (U_B : Matrix (Fin m₁) (Fi
     (hC : U_Cᵀ * Cᵣ * V_C = S_C) :
     (U_B ⊗ₖ U_C)ᵀ * (Bᵣ ⊗ₖ Cᵣ) * (V_B ⊗ₖ V_C) = S_B ⊗ₖ S_C ∧
       ∃ e : Fin n₁ × Fin n₂ ≃ Fin n₁ × Fin n₂, ∀ q,
-        (Bᵣ ⊗ₖ Cᵣ).singularValues (e q) = Bᵣ.singularValues q.1 * Cᵣ.singularValues q.2 := by
-  refine ⟨?_, singularValues_kronecker Bᵣ Cᵣ⟩
+        (Bᵣ ⊗ₖ Cᵣ).colSingularValues (e q) =
+          Bᵣ.colSingularValues q.1 * Cᵣ.colSingularValues q.2 := by
+  refine ⟨?_, colSingularValues_kronecker Bᵣ Cᵣ⟩
   rw [← kroneckerMap_transpose, ← mul_kronecker_mul, ← mul_kronecker_mul, hB, hC]
 
 /-- **§12.3.1**, after (12.3.4): `B y = β y`, `C z = γ z ⇒ (B ⊗ C)(y ⊗ z) = βγ (y ⊗ z)`;

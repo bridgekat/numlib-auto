@@ -18,8 +18,8 @@ matrices of [golub2013matrix] §9.4.3:
   `X_k → U`, with `‖X_k − U‖₂ = ‖P_k − 1‖₂` (`Matrix.l2_opNorm_newtonPolarIterate_sub`) and the
   quadratic step `P_{k+1} − 1 = ½ P_k⁻¹ (P_k − 1)²`
   (`Matrix.newtonPolarIterate_succ_sub_one`);
-* `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues`: the complex form of
-  the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
+* `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues`: the complex form
+  of the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
   Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`;
 * `Matrix.frobenius_norm_polar_sub_le`: the real Li–Sun bound
   `‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n-1} + σ_n + σ̃_{n-1} + σ̃_n)` (the two smallest singular values
@@ -405,10 +405,10 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 
 /-- The symmetric polar factor dominates the smallest singular value: `σ_min(A) ≤ P` in the
 Loewner order. The eigenvalues of `P` are the stretches `‖A v‖ = ‖P v‖` of its unit
 eigenvectors. -/
-theorem IsPolarDecomposition.posSemidef_sub_iInf_singularValues {A U P : Matrix n n 𝕜}
+theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matrix n n 𝕜}
     (h : IsPolarDecomposition A U P) :
-    (P - ((⨅ i, A.singularValues i : ℝ) : 𝕜) • 1).PosSemidef := by
-  set c := ⨅ i, A.singularValues i
+    (P - ((⨅ i, A.colSingularValues i : ℝ) : 𝕜) • 1).PosSemidef := by
+  set c := ⨅ i, A.colSingularValues i
   have hP := h.isHermitian
   set V := (hP.eigenvectorUnitary : Matrix n n 𝕜)
   have hV : V ∈ unitaryGroup n 𝕜 := hP.eigenvectorUnitary.2
@@ -420,7 +420,7 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_singularValues {A U P : Matrix 
   have hc : ∀ i, c ≤ hP.eigenvalues i := by
     intro i
     have : Nonempty n := ⟨i⟩
-    have h1 := A.iInf_singularValues_mul_norm_le (hP.eigenvectorBasis i)
+    have h1 := A.iInf_colSingularValues_mul_norm_le (hP.eigenvectorBasis i)
     have h2 : ‖toEuclideanLin A (hP.eigenvectorBasis i)‖ = hP.eigenvalues i := by
       rw [toEuclideanLin_apply, h.eq_mul, ← mulVec_mulVec,
         norm_toLp_mulVec_of_mem_unitaryGroup h.mem_unitaryGroup, hP.mulVec_eigenvectorBasis,
@@ -449,13 +449,13 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_singularValues {A U P : Matrix 
 /-- **The perturbation of the unitary polar factor by the smallest singular values** (the complex
 Li–Sun bound, [golub2013matrix] §9.4.3): `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`
 when the denominator is positive (for instance when `A` is nonsingular). -/
-theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_singularValues
+theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues
     {A Ã U Ũ P P' : Matrix n n 𝕜} (h : IsPolarDecomposition A U P)
     (h' : IsPolarDecomposition Ã Ũ P')
-    (hσ : 0 < (⨅ i, A.singularValues i) + ⨅ i, Ã.singularValues i) :
-    ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / ((⨅ i, A.singularValues i) + ⨅ i, Ã.singularValues i) :=
-  h.frobenius_norm_sub_le h' h.posSemidef_sub_iInf_singularValues
-    h'.posSemidef_sub_iInf_singularValues hσ
+    (hσ : 0 < (⨅ i, A.colSingularValues i) + ⨅ i, Ã.colSingularValues i) :
+    ‖U - Ũ‖ ≤ 2 * ‖A - Ã‖ / ((⨅ i, A.colSingularValues i) + ⨅ i, Ã.colSingularValues i) :=
+  h.frobenius_norm_sub_le h' h.posSemidef_sub_iInf_colSingularValues
+    h'.posSemidef_sub_iInf_colSingularValues hσ
 
 end Perturbation
 

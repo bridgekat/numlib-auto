@@ -17,7 +17,7 @@ as `ᵀ`), with the multilinear rank and the truncated HOSVD.
 **Canonical factors.** The mode-`k` factor `Tensor.hosvdFactor A k` is the right singular unitary
 of `(A.modeUnfold k)ᴴ` (`Matrix.rightSingularUnitary`): its columns are an orthonormal eigenbasis of
 `A_(k) A_(k)ᴴ`, i.e. left singular vectors of the unfolding `A_(k)`, paired index by index with the
-singular values `((A.modeUnfold k)ᴴ).singularValues`, which are indexed by `κ k` in no particular
+singular values `((A.modeUnfold k)ᴴ).colSingularValues`, which are indexed by `κ k` in no particular
 order. The core is `Tensor.hosvdCore A = A ×₁ U₁ᴴ ⋯ ×_d U_dᴴ`, and the HOSVD is a theorem about
 these definitions rather than an existence statement; the book's sorted version is the surface's.
 
@@ -62,7 +62,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] [∀ i, DecidableEq (κ i)]
 /-! ### The factors and the core -/
 
 /-- The mode-`k` factor of the HOSVD: a unitary matrix whose columns are left singular vectors of
-the mode-`k` unfolding, paired with the singular values `((A.modeUnfold k)ᴴ).singularValues`. -/
+the mode-`k` unfolding, paired with the singular values `((A.modeUnfold k)ᴴ).colSingularValues`. -/
 noncomputable def hosvdFactor (A : Tensor κ 𝕜) (k : ι) : Matrix (κ k) (κ k) 𝕜 :=
   (A.modeUnfold k)ᴴ.rightSingularUnitary
 
@@ -103,7 +103,7 @@ theorem hosvd_eq_sum_rankOne :
 /-- The Gram matrix of `U_kᴴ A_(k)` is the diagonal of the squared singular values of `A_(k)`. -/
 theorem conjTranspose_hosvdFactor_mul_modeUnfold_mul_conjTranspose (k : ι) :
     (hosvdFactor A k)ᴴ * A.modeUnfold k * ((hosvdFactor A k)ᴴ * A.modeUnfold k)ᴴ
-      = diagonal fun i => ((((A.modeUnfold k)ᴴ.singularValues i) ^ 2 : ℝ) : 𝕜) := by
+      = diagonal fun i => ((((A.modeUnfold k)ᴴ.colSingularValues i) ^ 2 : ℝ) : 𝕜) := by
   have h := conjTranspose_mul_self_eq_conj_diagonal (A.modeUnfold k)ᴴ
   rw [conjTranspose_conjTranspose] at h
   rw [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc, ← Matrix.mul_assoc
@@ -130,7 +130,7 @@ private theorem transpose_piKronecker_mul_conjTranspose (k : ι) :
 core are pairwise orthogonal, with Euclidean norms the singular values of `A_(k)`. -/
 theorem modeUnfold_hosvdCore_row (k : ι) :
     (hosvdCore A).modeUnfold k * ((hosvdCore A).modeUnfold k)ᴴ
-      = diagonal fun i => ((((A.modeUnfold k)ᴴ.singularValues i) ^ 2 : ℝ) : 𝕜) := by
+      = diagonal fun i => ((((A.modeUnfold k)ᴴ.colSingularValues i) ^ 2 : ℝ) : 𝕜) := by
   rw [hosvdCore, modeUnfold_multilinearProd, conjTranspose_mul, Matrix.mul_assoc,
     ← Matrix.mul_assoc _ _ (((hosvdFactor A k)ᴴ * A.modeUnfold k)ᴴ),
     transpose_piKronecker_mul_conjTranspose, Matrix.one_mul,
@@ -139,7 +139,7 @@ theorem modeUnfold_hosvdCore_row (k : ι) :
 /-- The rows of the core's mode-`k` unfolding have Euclidean norms the singular values of
 `A_(k)`. -/
 theorem sum_norm_sq_modeUnfold_hosvdCore (k : ι) (i : κ k) :
-    ∑ c, ‖(hosvdCore A).modeUnfold k i c‖ ^ 2 = (A.modeUnfold k)ᴴ.singularValues i ^ 2 := by
+    ∑ c, ‖(hosvdCore A).modeUnfold k i c‖ ^ 2 = (A.modeUnfold k)ᴴ.colSingularValues i ^ 2 := by
   have h := congrFun (congrFun (modeUnfold_hosvdCore_row A k) i) i
   rw [mul_apply, diagonal_apply_eq] at h
   simp only [conjTranspose_apply, RCLike.star_def, RCLike.mul_conj] at h
@@ -151,7 +151,7 @@ the singular values of `A_(k)`. -/
 theorem modeProd_hosvdFactor_row (k : ι) :
     (A.modeProd k (hosvdFactor A k)ᴴ).modeUnfold k
         * ((A.modeProd k (hosvdFactor A k)ᴴ).modeUnfold k)ᴴ
-      = diagonal fun i => ((((A.modeUnfold k)ᴴ.singularValues i) ^ 2 : ℝ) : 𝕜) := by
+      = diagonal fun i => ((((A.modeUnfold k)ᴴ.colSingularValues i) ^ 2 : ℝ) : 𝕜) := by
   rw [modeUnfold_modeProd, conjTranspose_hosvdFactor_mul_modeUnfold_mul_conjTranspose]
 
 /-! ### Truncation -/
@@ -193,7 +193,7 @@ theorem truncatedHOSVD_eq_sum (s : ∀ k, Finset (κ k)) :
 `min_k` where `∑_k` is meant): `‖𝒜 − 𝒜^{(r)}‖² ≤ ∑_k ∑_{i ∉ s_k} σ_i(A_(k))²`. -/
 theorem norm_sub_truncatedHOSVD_sq_le (s : ∀ k, Finset (κ k)) :
     ‖A - truncatedHOSVD A s‖ ^ 2
-      ≤ ∑ k, ∑ i ∈ (s k)ᶜ, (A.modeUnfold k)ᴴ.singularValues i ^ 2 := by
+      ≤ ∑ k, ∑ i ∈ (s k)ᶜ, (A.modeUnfold k)ᴴ.colSingularValues i ^ 2 := by
   have hA : A - truncatedHOSVD A s = multilinearProd (hosvdFactor A)
       (of fun j => if j ∈ Fintype.piFinset s then 0 else hosvdCore A j) := by
     have h1 : A - truncatedHOSVD A s = multilinearProd (hosvdFactor A) (hosvdCore A)
@@ -227,7 +227,7 @@ theorem norm_sub_truncatedHOSVD_sq_le (s : ∀ k, Finset (κ k)) :
   have hx : ∀ (x : κ k) (y : ∀ j : {j // j ≠ k}, κ j), (Equiv.piSplitAt k κ).symm (x, y) k = x :=
     fun x y => by simp [Equiv.piSplitAt_symm_apply]
   simp only [hx]
-  calc _ = ∑ x, if x ∈ (s k)ᶜ then (A.modeUnfold k)ᴴ.singularValues x ^ 2 else 0 :=
+  calc _ = ∑ x, if x ∈ (s k)ᶜ then (A.modeUnfold k)ᴴ.colSingularValues x ^ 2 else 0 :=
         Finset.sum_congr rfl fun x _ => by
           simp only [Finset.mem_compl]
           split_ifs with h

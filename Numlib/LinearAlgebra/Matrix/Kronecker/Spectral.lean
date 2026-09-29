@@ -20,13 +20,13 @@ singular values and eigenvalues are the pairwise products, and the Kronecker pro
 (LU, Cholesky) factors of `B` and `C` are the corresponding factors of `B ⊗ C` in the positional
 layout `Matrix.kroneckerFin`.
 
-The singular values are the column-indexed `Matrix.singularValues`, so `singularValues_kronecker`
-is an identity up to a permutation of the column index `n₁ × n₂`.
+The singular values are the column-indexed `Matrix.colSingularValues`, so
+`colSingularValues_kronecker` is an identity up to a permutation of the column index `n₁ × n₂`.
 
 ## Main statements
 
 * `Matrix.frobenius_norm_kronecker`, `Matrix.l2_opNorm_kronecker`.
-* `Matrix.singularValues_kronecker`: `σ(B ⊗ C) = {σ_i(B) σ_j(C)}`.
+* `Matrix.colSingularValues_kronecker`: `σ(B ⊗ C) = {σ_i(B) σ_j(C)}`.
 * `Matrix.charpoly_kronecker`: `λ(B ⊗ C) = {β_i γ_j}` over `ℂ`.
 * `Matrix.IsUpperTriangular.kroneckerFin`, `Matrix.IsLU.kroneckerFin`,
   `Matrix.IsCholesky.kroneckerFin`.
@@ -76,8 +76,8 @@ private theorem conjTranspose_kronecker_mul_self_eq [DecidableEq n₁] [Decidabl
     (B : Matrix m₁ n₁ 𝕜) (C : Matrix m₂ n₂ 𝕜) :
     (B ⊗ₖ C)ᴴ * (B ⊗ₖ C)
       = (B.rightSingularUnitary ⊗ₖ C.rightSingularUnitary)
-        * diagonal (fun q : n₁ × n₂ => ((B.singularValues q.1 ^ 2 * C.singularValues q.2 ^ 2 : ℝ)
-          : 𝕜))
+        * diagonal (fun q : n₁ × n₂ =>
+          ((B.colSingularValues q.1 ^ 2 * C.colSingularValues q.2 ^ 2 : ℝ) : 𝕜))
         * star (B.rightSingularUnitary ⊗ₖ C.rightSingularUnitary) := by
   rw [conjTranspose_kronecker, ← mul_kronecker_mul, conjTranspose_mul_self_eq_conj_diagonal,
     conjTranspose_mul_self_eq_conj_diagonal, mul_kronecker_mul, mul_kronecker_mul,
@@ -87,12 +87,13 @@ private theorem conjTranspose_kronecker_mul_self_eq [DecidableEq n₁] [Decidabl
 
 /-- **The singular values of `B ⊗ C` are the products `σ_i(B) σ_j(C)`** ([golub2013matrix]
 §12.3.1, via (12.3.4)), up to a relabelling of the columns `n₁ × n₂`. -/
-theorem singularValues_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : Matrix m₁ n₁ 𝕜)
+theorem colSingularValues_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : Matrix m₁ n₁ 𝕜)
     (C : Matrix m₂ n₂ 𝕜) :
     ∃ e : n₁ × n₂ ≃ n₁ × n₂,
-      ∀ q, (B ⊗ₖ C).singularValues (e q) = B.singularValues q.1 * C.singularValues q.2 := by
+      ∀ q, (B ⊗ₖ C).colSingularValues (e q) =
+        B.colSingularValues q.1 * C.colSingularValues q.2 := by
   set hG := isHermitian_conjTranspose_mul_self (B ⊗ₖ C)
-  set d : n₁ × n₂ → ℝ := fun q => B.singularValues q.1 ^ 2 * C.singularValues q.2 ^ 2
+  set d : n₁ × n₂ → ℝ := fun q => B.colSingularValues q.1 ^ 2 * C.colSingularValues q.2 ^ 2
   have hU : star (B.rightSingularUnitary ⊗ₖ C.rightSingularUnitary)
       ∈ unitaryGroup (n₁ × n₂) 𝕜 :=
     Unitary.star_mem (kronecker_mem_unitary B.rightSingularUnitary_mem_unitaryGroup
@@ -113,22 +114,22 @@ theorem singularValues_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : Matr
     simpa [Multiset.map_map, Function.comp_def] using h3.symm
   obtain ⟨e, he⟩ := exists_equiv_of_map_univ_val_eq hmult
   refine ⟨e, fun q => ?_⟩
-  rw [singularValues, he q, show d q = (B.singularValues q.1 * C.singularValues q.2) ^ 2 by
-    simp only [d]; ring, Real.sqrt_sq (mul_nonneg (B.singularValues_nonneg _)
-    (C.singularValues_nonneg _))]
+  rw [colSingularValues, he q, show d q = (B.colSingularValues q.1 * C.colSingularValues q.2) ^ 2 by
+    simp only [d]; ring, Real.sqrt_sq (mul_nonneg (B.colSingularValues_nonneg _)
+    (C.colSingularValues_nonneg _))]
 
 section L2
 
 open scoped Matrix.Norms.L2Operator
 
 /-- The spectral norm of a matrix with a nonempty column type is one of its singular values. -/
-private theorem exists_l2_opNorm_eq_singularValues {p q : Type*} [Fintype p] [Fintype q]
-    [DecidableEq q] [Nonempty q] (A : Matrix p q 𝕜) : ∃ i, ‖A‖ = A.singularValues i := by
-  obtain ⟨i, hi⟩ := exists_eq_ciSup_of_finite (f := A.singularValues)
-  refine ⟨i, le_antisymm ?_ (singularValues_le_l2_opNorm A i)⟩
+private theorem exists_l2_opNorm_eq_colSingularValues {p q : Type*} [Fintype p] [Fintype q]
+    [DecidableEq q] [Nonempty q] (A : Matrix p q 𝕜) : ∃ i, ‖A‖ = A.colSingularValues i := by
+  obtain ⟨i, hi⟩ := exists_eq_ciSup_of_finite (f := A.colSingularValues)
+  refine ⟨i, le_antisymm ?_ (colSingularValues_le_l2_opNorm A i)⟩
   rw [hi]
-  exact l2_opNorm_le_of_forall_norm_toEuclideanLin_le A (hi ▸ A.singularValues_nonneg i)
-    (A.norm_toEuclideanLin_le_iSup_singularValues)
+  exact l2_opNorm_le_of_forall_norm_toEuclideanLin_le A (hi ▸ A.colSingularValues_nonneg i)
+    (A.norm_toEuclideanLin_le_iSup_colSingularValues)
 
 /-- `‖B ⊗ C‖₂ = ‖B‖₂ ‖C‖₂` ([golub2013matrix] §12.3.1): the largest singular value of `B ⊗ C` is
 the product of the largest singular values of the factors. -/
@@ -150,16 +151,16 @@ theorem l2_opNorm_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : Matrix m�
       ext i j
       exact isEmptyElim j
     rw [h0, hC, norm_zero, norm_zero, mul_zero]
-  obtain ⟨e, he⟩ := singularValues_kronecker B C
-  obtain ⟨q, hq⟩ := exists_l2_opNorm_eq_singularValues (B ⊗ₖ C)
-  obtain ⟨i, hi⟩ := exists_l2_opNorm_eq_singularValues B
-  obtain ⟨j, hj⟩ := exists_l2_opNorm_eq_singularValues C
+  obtain ⟨e, he⟩ := colSingularValues_kronecker B C
+  obtain ⟨q, hq⟩ := exists_l2_opNorm_eq_colSingularValues (B ⊗ₖ C)
+  obtain ⟨i, hi⟩ := exists_l2_opNorm_eq_colSingularValues B
+  obtain ⟨j, hj⟩ := exists_l2_opNorm_eq_colSingularValues C
   refine le_antisymm ?_ ?_
   · rw [hq, ← e.apply_symm_apply q, he]
-    exact mul_le_mul (singularValues_le_l2_opNorm _ _) (singularValues_le_l2_opNorm _ _)
-      (C.singularValues_nonneg _) (norm_nonneg _)
+    exact mul_le_mul (colSingularValues_le_l2_opNorm _ _) (colSingularValues_le_l2_opNorm _ _)
+      (C.colSingularValues_nonneg _) (norm_nonneg _)
   · rw [hi, hj, ← he (i, j)]
-    exact singularValues_le_l2_opNorm _ _
+    exact colSingularValues_le_l2_opNorm _ _
 
 end L2
 

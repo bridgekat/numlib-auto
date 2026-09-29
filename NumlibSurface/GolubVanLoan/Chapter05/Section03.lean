@@ -23,7 +23,7 @@ Least-squares statements are on `EuclideanSpace ℝ (Fin m)` (the backbone's
 `Matrix.IsLeastSquaresSolution A b x`: `x` minimizes `‖A x - b‖₂`), vectors of algorithms are
 `Fin m → ℝ` and are converted with `WithLp.toLp 2`. Matrix norms are the operator 2-norms
 (`Matrix.Norms.L2Operator`), `κ₂(A)` is `kappa2 A` ((5.2.4)) and `σ_n(A)` is the least singular
-value `⨅ i, A.singularValues i`. Theorem 5.3.1 and (5.3.4) are proved in rigorous form (no
+value `⨅ i, A.colSingularValues i`. Theorem 5.3.1 and (5.3.4) are proved in rigorous form (no
 `O(ε²)`), the printed first-order form following from them; so are (5.3.6)–(5.3.8), over an
 idempotent `FloatingPoint.RoundingModel`, with explicit `γ` constants in place of Lawson–Hanson's
 first-order ones. Programs follow the conventions of
@@ -1408,7 +1408,7 @@ noncomputable def thetaLS (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace �
 /-- **(5.3.10)**: `ν_LS = ‖A x_LS‖₂ / (σ_n(A) ‖x_LS‖₂)`, with `σ_n(A) = min_i σ_i(A)`. -/
 noncomputable def nuLS (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) : ℝ :=
   ‖toEuclideanLin A (toEuclideanLin A.pinv b)‖ /
-    ((⨅ i, A.singularValues i) * ‖toEuclideanLin A.pinv b‖)
+    ((⨅ i, A.colSingularValues i) * ‖toEuclideanLin A.pinv b‖)
 
 /-- **(5.3.16)**: for `b ≠ 0` and `A x_LS ≠ 0`, `cos θ_LS = ‖A x_LS‖₂ / ‖b‖₂` and
 `tan θ_LS = ‖r_LS‖₂ / ‖A x_LS‖₂`, from `b = A x_LS + r_LS` with `A x_LS ⊥ r_LS`. -/
@@ -1469,9 +1469,9 @@ private theorem toEuclideanLin_ne_zero {A : Matrix (Fin m) (Fin n) ℝ}
 
 /-- The column-indexed `κ₂(A) = ‖A‖₂ / σ_min(A)` for independent columns. -/
 private theorem kappa2_eq_div [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ Aᵀ) : kappa2 A = ‖A‖ / ⨅ i, A.singularValues i := by
+    (hA : LinearIndependent ℝ Aᵀ) : kappa2 A = ‖A‖ / ⨅ i, A.colSingularValues i := by
   rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two,
-    l2_opNorm_pinv_eq_inv_iInf_singularValues hA, div_eq_mul_inv]
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, div_eq_mul_inv]
 
 /-- Pythagoras for the least-squares split `b = A x_LS + r_LS`. -/
 private theorem norm_sq_eq_residual_add (A : Matrix (Fin m) (Fin n) ℝ)
@@ -1500,24 +1500,24 @@ private theorem sin_thetaLS (A : Matrix (Fin m) (Fin n) ℝ) {b : EuclideanSpace
 `‖r̂ - r‖ ≤ ε (‖b‖ + ‖A‖ ‖x‖ + ‖A‖ ‖r‖/σ')`, `σ' = σ_min(A) - ‖δA‖₂`. -/
 private theorem ls_perturbation_bounds {A δA : Matrix (Fin m) (Fin n) ℝ}
     {b δb r r' : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
-    (hδA : ‖δA‖ < ⨅ i, A.singularValues i) (hx : x = toEuclideanLin A.pinv b)
+    (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hx : x = toEuclideanLin A.pinv b)
     (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) (hr : r = b - toEuclideanLin A x)
     (hr' : r' = (b + δb) - toEuclideanLin (A + δA) x') {ε : ℝ}
     (hεA : ‖δA‖ ≤ ε * ‖A‖) (hεb : ‖δb‖ ≤ ε * ‖b‖) :
-    ‖x' - x‖ ≤ ε * ((‖b‖ + ‖A‖ * ‖x‖) / ((⨅ i, A.singularValues i) - ‖δA‖) +
-        ‖A‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) ^ 2) ∧
-      ‖r' - r‖ ≤ ε * (‖b‖ + ‖A‖ * ‖x‖ + ‖A‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖)) := by
+    ‖x' - x‖ ≤ ε * ((‖b‖ + ‖A‖ * ‖x‖) / ((⨅ i, A.colSingularValues i) - ‖δA‖) +
+        ‖A‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) ^ 2) ∧
+      ‖r' - r‖ ≤ ε * (‖b‖ + ‖A‖ * ‖x‖ + ‖A‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖)) := by
   have h1 := (norm_leastSquares_sub_le hδA hx hx' hr).2
   have h2 := norm_leastSquares_residual_sub_le hδA hx hx' hr hr'
-  have hd : 0 < (⨅ i, A.singularValues i) - ‖δA‖ := sub_pos.2 hδA
+  have hd : 0 < (⨅ i, A.colSingularValues i) - ‖δA‖ := sub_pos.2 hδA
   refine ⟨h1.trans ?_, h2.trans ?_⟩
-  · calc (‖δb‖ + ‖δA‖ * ‖x‖) / ((⨅ i, A.singularValues i) - ‖δA‖) +
-          ‖δA‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) ^ 2
-        ≤ (ε * ‖b‖ + ε * ‖A‖ * ‖x‖) / ((⨅ i, A.singularValues i) - ‖δA‖) +
-          ε * ‖A‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) ^ 2 := by gcongr
+  · calc (‖δb‖ + ‖δA‖ * ‖x‖) / ((⨅ i, A.colSingularValues i) - ‖δA‖) +
+          ‖δA‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) ^ 2
+        ≤ (ε * ‖b‖ + ε * ‖A‖ * ‖x‖) / ((⨅ i, A.colSingularValues i) - ‖δA‖) +
+          ε * ‖A‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) ^ 2 := by gcongr
       _ = _ := by ring
-  · calc ‖δb‖ + ‖δA‖ * ‖x‖ + ‖δA‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖)
-        ≤ ε * ‖b‖ + ε * ‖A‖ * ‖x‖ + ε * ‖A‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) := by
+  · calc ‖δb‖ + ‖δA‖ * ‖x‖ + ‖δA‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖)
+        ≤ ε * ‖b‖ + ε * ‖A‖ * ‖x‖ + ε * ‖A‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) := by
           gcongr
       _ = _ := by ring
 
@@ -1537,13 +1537,13 @@ theorem le_max_div_mul {A δA : Matrix (Fin m) (Fin n) ℝ} {b δb : EuclideanSp
 -/
 theorem theorem_5_3_1_a {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b δb : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
-    (hδA : ‖δA‖ < ⨅ i, A.singularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0)
+    (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) :
     ‖x' - x‖ / ‖x‖ ≤ max (‖δA‖ / ‖A‖) (‖δb‖ / ‖b‖) *
-      (‖toEuclideanLin A x‖ / (((⨅ i, A.singularValues i) - ‖δA‖) * ‖x‖) /
+      (‖toEuclideanLin A x‖ / (((⨅ i, A.colSingularValues i) - ‖δA‖) * ‖x‖) /
           Real.cos (thetaLS A b) +
-        (1 + ‖toEuclideanLin A x‖ / (((⨅ i, A.singularValues i) - ‖δA‖) * ‖x‖) *
-          Real.tan (thetaLS A b)) * (‖A‖ / ((⨅ i, A.singularValues i) - ‖δA‖))) := by
+        (1 + ‖toEuclideanLin A x‖ / (((⨅ i, A.colSingularValues i) - ‖δA‖) * ‖x‖) *
+          Real.tan (thetaLS A b)) * (‖A‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖))) := by
   have := neZero_of_ne_zero hx0
   have hAn := l2_opNorm_pos_of_linearIndependent hA
   have hbn : 0 < ‖b‖ := norm_pos_iff.2 hb
@@ -1551,7 +1551,7 @@ theorem theorem_5_3_1_a {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepen
   have hAx := toEuclideanLin_ne_zero hA hx0
   have hAxn : 0 < ‖toEuclideanLin A x‖ := norm_pos_iff.2 hAx
   obtain ⟨hεA, hεb, -⟩ := le_max_div_mul (δA := δA) (δb := δb) hAn hbn
-  have hd : 0 < (⨅ i, A.singularValues i) - ‖δA‖ := sub_pos.2 hδA
+  have hd : 0 < (⨅ i, A.colSingularValues i) - ‖δA‖ := sub_pos.2 hδA
   have h := (ls_perturbation_bounds hδA hx hx' rfl rfl hεA hεb).1
   obtain ⟨hcos, htan⟩ := equation_5_3_16 A hb (hx ▸ hAx)
   rw [← hx] at hcos htan
@@ -1567,12 +1567,12 @@ theorem theorem_5_3_1_a {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepen
 with `κ' = ‖A‖₂/(σ_n(A) - ‖δA‖₂)` in place of `κ₂(A)` in its last term and no `O(ε²)` term. -/
 theorem theorem_5_3_1_b {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b δb r r' : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
-    (hδA : ‖δA‖ < ⨅ i, A.singularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0) (hr0 : r ≠ 0)
+    (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0) (hr0 : r ≠ 0)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) (hr' : r' = (b + δb) - toEuclideanLin (A + δA) x') :
     ‖r' - r‖ / ‖r‖ ≤ max (‖δA‖ / ‖A‖) (‖δb‖ / ‖b‖) *
       (1 / Real.sin (thetaLS A b) + 1 / (nuLS A b * Real.tan (thetaLS A b)) * kappa2 A +
-        ‖A‖ / ((⨅ i, A.singularValues i) - ‖δA‖)) := by
+        ‖A‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖)) := by
   have := neZero_of_ne_zero hx0
   have hAn := l2_opNorm_pos_of_linearIndependent hA
   have hbn : 0 < ‖b‖ := norm_pos_iff.2 hb
@@ -1580,7 +1580,7 @@ theorem theorem_5_3_1_b {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepen
   have hrn : 0 < ‖r‖ := norm_pos_iff.2 hr0
   have hAx := toEuclideanLin_ne_zero hA hx0
   have hAxn : 0 < ‖toEuclideanLin A x‖ := norm_pos_iff.2 hAx
-  have hσ := iInf_singularValues_pos_of_linearIndependent hA
+  have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
   obtain ⟨hεA, hεb, -⟩ := le_max_div_mul (δA := δA) (δb := δb) hAn hbn
   have h := (ls_perturbation_bounds hδA hx hx' hr hr' hεA hεb).2
   obtain ⟨-, htan⟩ := equation_5_3_16 A hb (hx ▸ hAx)
@@ -1644,7 +1644,7 @@ theorem theorem_5_3_1 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent �
           K * max (‖δA‖ / ‖A‖) (‖δb‖ / ‖b‖) ^ 2 := by
   have := neZero_of_ne_zero hx0
   have hAn := l2_opNorm_pos_of_linearIndependent hA
-  have hσ := iInf_singularValues_pos_of_linearIndependent hA
+  have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
   have hbn : 0 < ‖b‖ := norm_pos_iff.2 hb
   have hxn : 0 < ‖toEuclideanLin A.pinv b‖ := norm_pos_iff.2 hx0
   have hrn := norm_pos_iff.2 hr0
@@ -1655,7 +1655,7 @@ theorem theorem_5_3_1 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent �
   have hκ := kappa2_eq_div hA
   set x := toEuclideanLin A.pinv b with hx
   set r := b - toEuclideanLin A x with hr
-  set σ := ⨅ i, A.singularValues i with hσdef
+  set σ := ⨅ i, A.colSingularValues i with hσdef
   set a := ‖A‖ with ha
   set P := ‖b‖ + a * ‖x‖ with hP
   set Q := a * ‖r‖ with hQ
@@ -1720,8 +1720,8 @@ theorem theorem_5_3_1 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent �
 `‖I - A(AᵀA)⁻¹Aᵀ‖₂ = 1` and `‖(AᵀA)⁻¹‖₂ = 1/σ_n(A)²`. (`(AᵀA)⁻¹Aᵀ` is the pseudoinverse `A⁺`.) -/
 theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (hmn : n < m) :
-    ‖A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹ * Aᵀ‖ = 1 / ⨅ i, A.singularValues i ∧
-      ‖1 - A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹‖ = 1 / (⨅ i, A.singularValues i) ^ 2 := by
+    ‖A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹ * Aᵀ‖ = 1 / ⨅ i, A.colSingularValues i ∧
+      ‖1 - A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹‖ = 1 / (⨅ i, A.colSingularValues i) ^ 2 := by
   have hp : A.pinv = (Aᵀ * A)⁻¹ * Aᵀ := by
     rw [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA,
       conjTranspose_eq_transpose_of_trivial]
@@ -1729,7 +1729,7 @@ theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearI
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [Matrix.mul_assoc, ← hp]
     exact l2_opNorm_mul_pinv_eq_one hA0
-  · rw [← hp, l2_opNorm_pinv_eq_inv_iInf_singularValues hA, one_div]
+  · rw [← hp, l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, one_div]
   · rw [Matrix.mul_assoc, ← hp]
     exact l2_opNorm_one_sub_mul_pinv_eq_one (by simpa using hmn)
   · have h := l2_opNorm_inv_conjTranspose_mul_self hA
@@ -1740,18 +1740,18 @@ theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearI
 `‖A x_LS‖₂ ≤ ‖A‖₂ ‖x_LS‖₂`. -/
 theorem nuLS_le_kappa2 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (b : EuclideanSpace ℝ (Fin m)) : nuLS A b ≤ kappa2 A := by
-  have hσ := iInf_singularValues_pos_of_linearIndependent hA
+  have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
   rw [nuLS, kappa2_eq_div hA]
   rcases eq_or_ne (toEuclideanLin A.pinv b) 0 with h | h
   · rw [h, norm_zero, mul_zero, div_zero]
     exact div_nonneg (norm_nonneg _) hσ.le
   · have hxn := norm_pos_iff.2 h
     rw [div_le_div_iff₀ (by positivity) hσ]
-    calc ‖toEuclideanLin A (toEuclideanLin A.pinv b)‖ * ⨅ i, A.singularValues i
-        ≤ ‖A‖ * ‖toEuclideanLin A.pinv b‖ * ⨅ i, A.singularValues i := by
+    calc ‖toEuclideanLin A (toEuclideanLin A.pinv b)‖ * ⨅ i, A.colSingularValues i
+        ≤ ‖A‖ * ‖toEuclideanLin A.pinv b‖ * ⨅ i, A.colSingularValues i := by
           gcongr
           exact norm_toEuclideanLin_apply_le _ _
-      _ = ‖A‖ * ((⨅ i, A.singularValues i) * ‖toEuclideanLin A.pinv b‖) := by ring
+      _ = ‖A‖ * ((⨅ i, A.colSingularValues i) * ‖toEuclideanLin A.pinv b‖) := by ring
 
 /-- **(5.3.15)**: with `x(t) = (A + tE)⁺(b + tf)`, the solution of (5.3.13) near `t = 0`,
 `ẋ(0) = (AᵀA)⁻¹Aᵀ(f - E x_LS) + (AᵀA)⁻¹Eᵀ r_LS`. -/

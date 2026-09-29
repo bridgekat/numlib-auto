@@ -32,7 +32,7 @@ id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent"
 id = "ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add"
 
 [[node]]
-id = "Matrix.mem_closedPseudospectrum_iff_iInf_singularValues"
+id = "Matrix.mem_closedPseudospectrum_iff_iInf_colSingularValues"
 
 [[node]]
 id = "ContinuousLinearMap.isCompact_closedPseudospectrum"

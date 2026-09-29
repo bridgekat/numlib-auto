@@ -23,8 +23,8 @@ number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` is the backbone's real-valued `Matri
 an explicit `IsUnit A`; the book's convention `κ(A) = ∞` for singular `A` is the surface
 definition `kappa`. The first-order bounds (2.6.2) and (2.6.4), printed with `+ O(ε²)`, are stated
 in the rigorous form whose factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)` produces the `O(ε²)` term.
-`σ_max(A)` and `σ_min(A)` in (2.6.5) are read as `⨆ i, A.singularValues i` and
-`⨅ i, A.singularValues i` over the backbone's column-indexed singular values (the convention of
+`σ_max(A)` and `σ_min(A)` in (2.6.5) are read as `⨆ i, A.colSingularValues i` and
+`⨅ i, A.colSingularValues i` over the backbone's column-indexed singular values (the convention of
 `NumlibSurface/GolubVanLoan`). An SVD `A = U Σ Vᵀ` in (2.6.1) is given by its three factors.
 
 ## Sources
@@ -214,12 +214,12 @@ open scoped Matrix.Norms.L2Operator
 /-- **(2.6.5)**: `κ₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = σ_max(A) / σ_min(A)` for nonsingular `A`. -/
 theorem equation_2_6_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     condNumberLp 2 A = lpOpNorm 2 A * lpOpNorm 2 A⁻¹ ∧
-      condNumberLp 2 A = (⨆ i, A.singularValues i) / (⨅ i, A.singularValues i) := by
+      condNumberLp 2 A = (⨆ i, A.colSingularValues i) / (⨅ i, A.colSingularValues i) := by
   refine ⟨rfl, ?_⟩
   rcases isEmpty_or_nonempty (Fin n) with hn | hn
   · rw [Subsingleton.elim A 0]
     simp [condNumberLp]
-  · have h := condNumber_l2_eq_div_singularValues A ((isUnit_iff_isUnit_det A).1 hA)
+  · have h := condNumber_l2_eq_div_colSingularValues A ((isUnit_iff_isUnit_det A).1 hA)
     rw [NormedRing.condNumber, ← nonsing_inv_eq_ringInverse] at h
     rw [condNumberLp, lpOpNorm_two, lpOpNorm_two]
     exact h

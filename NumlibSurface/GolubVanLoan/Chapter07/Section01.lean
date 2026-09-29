@@ -29,8 +29,8 @@ multiplicity are the multiset `A.charpoly.roots`. A unitary `Q` is a member of
 single `n × n` array. A matrix is *strictly upper triangular* when its entries on and below the
 diagonal vanish. The 2-norm is the scoped `Matrix.Norms.L2Operator` norm and the Frobenius norm
 the scoped `Matrix.Norms.Frobenius` norm, each opened in its own section; `σ_min(A)` and
-`σ_max(A)` are `⨅ i, A.singularValues i` and `⨆ i, A.singularValues i` over the backbone's
-column-indexed `Matrix.singularValues`.
+`σ_max(A)` are `⨅ i, A.colSingularValues i` and `⨆ i, A.colSingularValues i` over the backbone's
+column-indexed `Matrix.colSingularValues`.
 
 ## Sources
 
@@ -755,12 +755,12 @@ open scoped Matrix.Norms.L2Operator
 /-- **§7.1.6.** `σ_min(A) ≤ |λ| ≤ σ_max(A) = ‖A‖₂` for every eigenvalue `λ` of `A`; and (the
 rigorous half of the remark that follows) `|λ_i| / |λ_j| ≤ κ₂(A)` for a nonsingular `A`. -/
 theorem sigmaMin_le_norm_eigenvalue [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
-    (∀ μ ∈ spectrum ℂ A, (⨅ i, A.singularValues i) ≤ ‖μ‖ ∧ ‖μ‖ ≤ ⨆ i, A.singularValues i) ∧
-    ‖A‖ = ⨆ i, A.singularValues i ∧
+    (∀ μ ∈ spectrum ℂ A, (⨅ i, A.colSingularValues i) ≤ ‖μ‖ ∧ ‖μ‖ ≤ ⨆ i, A.colSingularValues i) ∧
+    ‖A‖ = ⨆ i, A.colSingularValues i ∧
     (IsUnit A → ∀ μ ∈ spectrum ℂ A, ∀ ν ∈ spectrum ℂ A,
       ‖μ‖ / ‖ν‖ ≤ NormedRing.condNumber A) := by
   have hbound : ∀ μ ∈ spectrum ℂ A,
-      (⨅ i, A.singularValues i) ≤ ‖μ‖ ∧ ‖μ‖ ≤ ⨆ i, A.singularValues i := by
+      (⨅ i, A.colSingularValues i) ≤ ‖μ‖ ∧ ‖μ‖ ≤ ⨆ i, A.colSingularValues i := by
     intro μ hμ
     obtain ⟨x, hx0, hx⟩ := (Matrix.mem_spectrum_iff_exists_mulVec_eq_smul A μ).1 hμ
     set y : EuclideanSpace ℂ (Fin n) := WithLp.toLp 2 x
@@ -769,23 +769,23 @@ theorem sigmaMin_le_norm_eigenvalue [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) 
       rw [toLpLin_toLp, toLin'_apply, hx, WithLp.toLp_smul, norm_smul]
     have hpos : 0 < ‖y‖ := lt_of_le_of_ne (norm_nonneg _) (Ne.symm hy0)
     constructor
-    · have h := A.iInf_singularValues_mul_norm_le y
+    · have h := A.iInf_colSingularValues_mul_norm_le y
       rw [hAy] at h
       exact le_of_mul_le_mul_right h hpos
-    · have h := A.norm_toEuclideanLin_le_iSup_singularValues y
+    · have h := A.norm_toEuclideanLin_le_iSup_colSingularValues y
       rw [hAy] at h
       exact le_of_mul_le_mul_right h hpos
-  refine ⟨hbound, l2_opNorm_eq_iSup_singularValues A, fun hA μ hμ ν hν => ?_⟩
+  refine ⟨hbound, l2_opNorm_eq_iSup_colSingularValues A, fun hA μ hμ ν hν => ?_⟩
   have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).1 hA
   -- `σ_min > 0`: otherwise `‖A⁻¹‖ = 0`
-  have hmin : 0 < ⨅ i, A.singularValues i := by
-    refine lt_of_le_of_ne (le_ciInf fun i => A.singularValues_nonneg i) fun h0 => ?_
-    have hinv := l2_opNorm_inv_eq_inv_iInf_singularValues A hdet
+  have hmin : 0 < ⨅ i, A.colSingularValues i := by
+    refine lt_of_le_of_ne (le_ciInf fun i => A.colSingularValues_nonneg i) fun h0 => ?_
+    have hinv := l2_opNorm_inv_eq_inv_iInf_colSingularValues A hdet
     rw [← h0, _root_.inv_zero, norm_eq_zero] at hinv
     have h1 := Matrix.mul_nonsing_inv A hdet
     rw [hinv, Matrix.mul_zero] at h1
     exact zero_ne_one h1
-  rw [condNumber_l2_eq_div_singularValues A hdet]
+  rw [condNumber_l2_eq_div_colSingularValues A hdet]
   exact div_le_div₀ ((norm_nonneg μ).trans (hbound μ hμ).2) (hbound μ hμ).2 hmin
     (hbound ν hν).1
 

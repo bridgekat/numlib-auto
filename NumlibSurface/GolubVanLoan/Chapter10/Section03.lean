@@ -1446,11 +1446,11 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
     let lam := hA.isSymmetric_toEuclideanLin.eigenvalues finrank_euclideanSpace_fin
     let z := hA.isSymmetric_toEuclideanLin.eigenvectorBasis finrank_euclideanSpace_fin
     let Z₁ : Matrix (Fin n) (Fin p) ℝ := Matrix.of fun r j => z (Fin.castLE hpn j) r
-    let φ := Real.arccos (⨅ j, (Z₁ᵀ * X₁).singularValues j)
+    let φ := Real.arccos (⨅ j, (Z₁ᵀ * X₁).colSingularValues j)
     let μ := (blockLanczos_blockTridiagonal_isHermitian hpn hA X₁ hkr).eigenvalues₀
     let ρ := (lam (Fin.castLE hpn i) - lam ⟨p, hpn'⟩) /
       (lam ⟨p, hpn'⟩ - lam ⟨n - 1, by omega⟩)
-    0 < ⨅ j, (Z₁ᵀ * X₁).singularValues j →
+    0 < ⨅ j, (Z₁ᵀ * X₁).colSingularValues j →
       μ ⟨i, by
         rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
         exact lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p k.succ_pos)⟩ ≤
@@ -1548,7 +1548,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
     rw [EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct_comm]
     simpa [hv, dotProduct, Matrix.mul_apply, Matrix.one_apply] using h1
   -- the angle hypothesis: `‖x - P x‖ ≤ tan φ_p ‖P x‖` on the span of the starting block
-  set c := ⨅ j, (Z₁ᵀ * X₁).singularValues j with hcdef
+  set c := ⨅ j, (Z₁ᵀ * X₁).colSingularValues j with hcdef
   set Pz := Submodule.span ℝ (z '' {j | (j : ℕ) < p}) with hPz
   have ht : ∀ x ∈ Submodule.span ℝ (Set.range v),
       ‖x - Pz.starProjection x‖ ≤ Real.tan φ * ‖Pz.starProjection x‖ := by
@@ -1590,7 +1590,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
       refine Finset.sum_congr rfl fun j _ => ?_
       rw [hcoord j]
     have : Nonempty (Fin p) := ⟨i⟩
-    have hlow := (Z₁ᵀ * X₁).iInf_singularValues_mul_norm_le (WithLp.toLp 2 y)
+    have hlow := (Z₁ᵀ * X₁).iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 y)
     rw [← hnx] at hlow
     have hcx : c * ‖x‖ ≤ ‖Pz.starProjection x‖ := hlow.trans hZx
     -- Pythagoras

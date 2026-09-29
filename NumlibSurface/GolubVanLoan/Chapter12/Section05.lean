@@ -24,7 +24,7 @@ Tensors are chapter 12's `RTensor n` (§12.4), the book's modal unfoldings `𝒜
 `modalUnfolding` (columns in the vec order). The book's SVDs are the backbone's
 `Matrix.IsSVD A U σ V` (`Uᵀ A V = diag(σ)`, `σ` sorted and nonnegative); the backbone's canonical
 HOSVD factors are `Tensor.hosvdFactor`, whose columns are ordered as the column-indexed singular
-values `Matrix.singularValues` of the unfolding's transpose. Over `ℝ` the backbone's conjugate
+values `Matrix.colSingularValues` of the unfolding's transpose. Over `ℝ` the backbone's conjugate
 transposes are transposes (`Matrix.conjTranspose_eq_transpose_of_trivial`).
 
 The "Repeat" iterations of the section (Tucker-ALS, CP-ALS, the higher-order power methods) are not
@@ -184,9 +184,9 @@ unfoldings `ℬ⁽¹⁾_(1) = Σ₁ V₁ᵀ (U₃ ⊗ U₂)ᵀ` are misprints an
 theorem hosvd_modeProduct_slices {n : Fin d → ℕ} (A : RTensor n) (k : Fin d) :
     (A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k *
         ((A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k)ᵀ =
-          diagonal (fun i => (A.modeUnfold k)ᵀ.singularValues i ^ 2) ∧
+          diagonal (fun i => (A.modeUnfold k)ᵀ.colSingularValues i ^ 2) ∧
       ∀ i, ∑ c, (A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k i c ^ 2 =
-        (A.modeUnfold k)ᵀ.singularValues i ^ 2 := by
+        (A.modeUnfold k)ᵀ.colSingularValues i ^ 2 := by
   have h := Tensor.modeProd_hosvdFactor_row A k
   simp only [conjTranspose_eq_transpose_of_trivial] at h
   refine ⟨h, fun i => ?_⟩
@@ -276,7 +276,7 @@ every tensor of multilinear rank `≤ r` is at squared distance at least `max_k 
 from `𝒜`, so the printed bound fails whenever one tail vanishes and another does not. -/
 theorem equation_12_5_11 {n : Fin d → ℕ} (A : RTensor n) (s : ∀ k, Finset (Fin (n k))) :
     ‖A - A.truncatedHOSVD s‖ ^ 2 ≤
-      ∑ k, ∑ i ∈ (s k)ᶜ, (A.modeUnfold k)ᵀ.singularValues i ^ 2 := by
+      ∑ k, ∑ i ∈ (s k)ᶜ, (A.modeUnfold k)ᵀ.colSingularValues i ^ 2 := by
   simpa only [conjTranspose_eq_transpose_of_trivial] using Tensor.norm_sub_truncatedHOSVD_sq_le A s
 
 end HOSVD
@@ -493,9 +493,9 @@ theorem equation_12_5_22 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {u : Eucli
         toEuclideanLin A (‖v‖⁻¹ • v) = A.bilinearRayleigh (u, v) • ‖u‖⁻¹ • u ∧
           toEuclideanLin Aᵀ (‖u‖⁻¹ • u) = A.bilinearRayleigh (u, v) • ‖v‖⁻¹ • v) ∧
       (fderiv ℝ A.bilinearRayleigh (u, v) = 0 →
-        ∃ i, |A.bilinearRayleigh (u, v)| = A.singularValues i) :=
+        ∃ i, |A.bilinearRayleigh (u, v)| = A.colSingularValues i) :=
   ⟨A.fderiv_bilinearRayleigh_eq_zero_iff hu hv,
-    A.abs_critical_bilinearRayleigh_mem_singularValues hu hv⟩
+    A.abs_critical_bilinearRayleigh_mem_colSingularValues hu hv⟩
 
 /-- **(12.5.23)**: the eigenvalues of a symmetric `C ∈ ℝ^{N×N}` are the stationary values of
 `φ_C(x) = xᵀ C x / xᵀ x` and the stationary vectors are eigenvectors: at `x ≠ 0` the derivative of

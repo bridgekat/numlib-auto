@@ -342,11 +342,11 @@ end Frobenius
 /-- **§7.2.5**: "if `T₁₁ = λ`, then `sep(T₁₁, T₂₂) = σ_min(T₂₂ - λI)`" (the observation in the
 proof of Corollary 7.2.6), and "`sep(λ, T₂₂) = σ_min(T₂₂ - λI) ≤ min_{μ ∈ λ(T₂₂)} |μ - λ|`". The
 `1 × 1` block `λ` is `of fun _ _ => c` on `Unit`, `σ_min` the least column-indexed singular value
-(`Matrix.sep_eq_iInf_singularValues`, `Matrix.sep_le_norm_sub`). -/
+(`Matrix.sep_eq_iInf_colSingularValues`, `Matrix.sep_le_norm_sub`). -/
 theorem sep_one_eq_sigmaMin {q : ℕ} (c : ℂ) (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
-    sep (of fun _ _ => c : Matrix Unit Unit ℂ) T₂₂ = ⨅ i, (T₂₂ - c • 1).singularValues i ∧
+    sep (of fun _ _ => c : Matrix Unit Unit ℂ) T₂₂ = ⨅ i, (T₂₂ - c • 1).colSingularValues i ∧
       ∀ μ ∈ spectrum ℂ T₂₂, sep (of fun _ _ => c : Matrix Unit Unit ℂ) T₂₂ ≤ ‖μ - c‖ := by
-  refine ⟨sep_eq_iInf_singularValues c T₂₂, fun μ hμ => ?_⟩
+  refine ⟨sep_eq_iInf_colSingularValues c T₂₂, fun μ hμ => ?_⟩
   have hc : c ∈ spectrum ℂ (of fun _ _ => c : Matrix Unit Unit ℂ) := by
     rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one]
     have h0 : c • (1 : Matrix Unit Unit ℂ) - of (fun _ _ => c) = 0 := by
@@ -595,18 +595,18 @@ theorem corollary_7_2_6 {A E Q : Matrix (Unit ⊕ Fin s) (Unit ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Unit ⊕ Fin s) ℂ) {μ : ℂ} {v : Fin s → ℂ}
     {T₂₂ : Matrix (Fin s) (Fin s) ℂ}
     (hT : star Q * A * Q = fromBlocks (of fun _ _ => μ) (replicateCol Unit v)ᴴ 0 T₂₂)
-    (hσ : 0 < ⨅ i, (T₂₂ - μ • 1).singularValues i)
-    (hE : ‖E‖ * (1 + 5 * ‖WithLp.toLp 2 v‖ / ⨅ i, (T₂₂ - μ • 1).singularValues i) ≤
-      (⨅ i, (T₂₂ - μ • 1).singularValues i) / 5) :
+    (hσ : 0 < ⨅ i, (T₂₂ - μ • 1).colSingularValues i)
+    (hE : ‖E‖ * (1 + 5 * ‖WithLp.toLp 2 v‖ / ⨅ i, (T₂₂ - μ • 1).colSingularValues i) ≤
+      (⨅ i, (T₂₂ - μ • 1).colSingularValues i) / 5) :
     ∃ p : Fin s → ℂ,
       ‖WithLp.toLp 2 p‖ ≤ 4 * ‖WithLp.toLp 2 fun i => (star Q * E * Q) (Sum.inr i) (Sum.inl ())‖ /
-        (⨅ i, (T₂₂ - μ • 1).singularValues i) ∧
+        (⨅ i, (T₂₂ - μ • 1).colSingularValues i) ∧
       ‖WithLp.toLp 2 (stewartVector Q p)‖ = 1 ∧
       (∃ μ' : ℂ, (A + E) *ᵥ stewartVector Q p = μ' • stewartVector Q p) ∧
       (ℂ ∙ WithLp.toLp 2 fun i => Q i (Sum.inl ())).gap (ℂ ∙ WithLp.toLp 2 (stewartVector Q p)) ≤
         4 * ‖WithLp.toLp 2 fun i => (star Q * E * Q) (Sum.inr i) (Sum.inl ())‖ /
-          (⨅ i, (T₂₂ - μ • 1).singularValues i) := by
-  set σ := ⨅ i, (T₂₂ - μ • 1).singularValues i with hσdef
+          (⨅ i, (T₂₂ - μ • 1).colSingularValues i) := by
+  set σ := ⨅ i, (T₂₂ - μ • 1).colSingularValues i with hσdef
   set δ : Fin s → ℂ := fun i => (star Q * E * Q) (Sum.inr i) (Sum.inl ()) with hδdef
   have hsep : sep (of fun _ _ => μ : Matrix Unit Unit ℂ) T₂₂ = σ := (sep_one_eq_sigmaMin μ T₂₂).1
   have hnE : ‖star Q * E * Q‖ = ‖E‖ :=

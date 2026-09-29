@@ -64,7 +64,7 @@ id = "sep_comm"
 id = "sep_sub_le_sep_add"
 
 [[node]]
-id = "sep_eq_iInf_singularValues"
+id = "sep_eq_iInf_colSingularValues"
 
 [[node]]
 id = "IsHermitian.sep_eq_iInf_abs_eigenvalues_sub"

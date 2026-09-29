@@ -102,7 +102,7 @@ theorem procrustes_solution {A B : Matrix (Fin m) (Fin p) ℝ} {U V : Matrix (Fi
       trace ((U * Vᵀ)ᵀ * (Bᵀ * A)) = ∑ i : Fin p, σ i ∧
       U * Vᵀ ∈ orthogonalGroup (Fin p) ℝ ∧
       ∀ Q ∈ orthogonalGroup (Fin p) ℝ, ‖A - B * (U * Vᵀ)‖ ≤ ‖A - B * Q‖ := by
-  have hsum : ∑ i : Fin p, σ i = ∑ i, (Bᵀ * A).singularValues i := by
+  have hsum : ∑ i : Fin p, σ i = ∑ i, (Bᵀ * A).colSingularValues i := by
     rw [← trace_mul_transpose_mul_eq_sum h]
     have := h.re_trace_mul_eq_sum
     simpa [conjTranspose_eq_transpose_of_trivial, transpose_mul] using this
@@ -113,7 +113,7 @@ theorem procrustes_solution {A B : Matrix (Fin m) (Fin p) ℝ} {U V : Matrix (Fi
   have hQt : Qᵀ ∈ unitaryGroup (Fin p) ℝ := by
     rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose]
     exact Unitary.star_mem hQ
-  have := re_trace_mul_le_sum_singularValues (Bᵀ * A) hQt
+  have := re_trace_mul_le_sum_colSingularValues (Bᵀ * A) hQt
   rw [hsum]
   simpa using this
 

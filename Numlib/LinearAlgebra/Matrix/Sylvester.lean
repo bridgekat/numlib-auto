@@ -817,13 +817,13 @@ theorem IsHermitian.sep_eq_iInf_abs_eigenvalues_sub [DecidableEq m] [DecidableEq
 
 /-- **The separation from a scalar is a least singular value** ([golub2013matrix] proof of
 Corollary 7.2.6): for `c : 𝕜` and `T : Matrix n n 𝕜`, `sep [c] T = σ_min(T - c I)`, the least
-singular value `⨅ i, (T - c • 1).singularValues i`. By `Matrix.sep_comm` the unknown is a column
+singular value `⨅ i, (T - c • 1).colSingularValues i`. By `Matrix.sep_comm` the unknown is a column
 `x`, on which the Sylvester operator is `x ↦ (T - c I) x` and the Frobenius norm is the Euclidean
-one; the least stretch is `σ_min` (`Matrix.iInf_singularValues_eq_iInf_norm`). (Column-indexed on
+one; the least stretch is `σ_min` (`Matrix.iInf_colSingularValues_eq_iInf_norm`). (Column-indexed on
 purpose: `T - c • 1` is square, and `⨅` over its columns is `σ_min`.) -/
-theorem sep_eq_iInf_singularValues [DecidableEq n] (c : 𝕜) (T : Matrix n n 𝕜) :
-    sep (of fun _ _ => c : Matrix Unit Unit 𝕜) T = ⨅ i, (T - c • 1).singularValues i := by
-  rw [sep_comm, iInf_singularValues_eq_iInf_norm, sep]
+theorem sep_eq_iInf_colSingularValues [DecidableEq n] (c : 𝕜) (T : Matrix n n 𝕜) :
+    sep (of fun _ _ => c : Matrix Unit Unit 𝕜) T = ⨅ i, (T - c • 1).colSingularValues i := by
+  rw [sep_comm, iInf_colSingularValues_eq_iInf_norm, sep]
   let e : EuclideanSpace 𝕜 n ≃ Matrix n Unit 𝕜 :=
     { toFun := fun x => replicateCol Unit (WithLp.ofLp x)
       invFun := fun X => WithLp.toLp 2 fun i => X i ()

@@ -34,7 +34,7 @@ sensitivity of square systems (§2.6), finite precision arithmetic (§2.7). One 
 * Singular values in the book's order: `σ_i(A) = A.sortedSingularValues (i - 1)` (a backbone
   `abbrev` for Mathlib's sorted `(toEuclideanLin A).singularValues`, shared with chapter 8's
   surface); `sigmaMax`, `sigmaMin` (§2.4). "An SVD of `A`" is chapter 6's `Matrix.IsSVD A U σ V`.
-  The column-indexed `Matrix.singularValues` of the backbone is the working form behind the norm
+  The column-indexed `Matrix.colSingularValues` of the backbone is the working form behind the norm
   identities.
 * Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(A) = LinearMap.range (toEuclideanLin
   A)`, `null(A) = LinearMap.ker (toEuclideanLin A)`; `dist(S₁, S₂) = Submodule.gap S₁ S₂`
@@ -142,7 +142,7 @@ Backbone, in dependency order (estimated lines):
 4. `SVD` appends (★–★★, ~330: bridge and `σ₀ = ‖A‖₂` ~80, orthonormal completion ~40, thin SVD ~40,
    `rectDiagonal` norm ~30, truncation and Eckart–Young ~140), after chapter 6's `IsSVD`,
    `singularValues_adjoint`, `shiftedRectDiagonal` and Frobenius lower bound and chapter 7's
-   `iInf_singularValues_eq_iInf_norm`.
+   `iInf_colSingularValues_eq_iInf_norm`.
 5. `CSDecomposition` (★★★, ~700) and `Projection/Gap` (★★, ~280), independent of each other since
    the review (`Projection/Gap` is coordinate-free and imports no matrix module; the matrix form of
    Theorem 2.5.1, `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, lives in

@@ -1,7 +1,7 @@
 namespace = "Matrix"
 
 [[node]]
-id = "singularValues"
+id = "colSingularValues"
 source = "Kress, Numerical Analysis, Theorem 5.4"
 
 [[node]]
@@ -21,14 +21,14 @@ id = "pinv_unique"
 source = "Kress, Numerical Analysis, Theorem 5.5"
 
 [[node]]
-id = "condNumber_l2_eq_div_singularValues"
+id = "condNumber_l2_eq_div_colSingularValues"
 source = "Kress, Numerical Analysis, Section 5.2; Saad, Iterative Methods for Sparse Linear Systems, Section 1.13"
 
 [[node]]
 id = "pinv_mul_self_mul_conjTranspose"
 
 [[node]]
-id = "sq_singularValues"
+id = "sq_colSingularValues"
 
 [[node]]
 id = "toEuclideanLin_rightSingularBasis_eq_zero"
@@ -37,13 +37,13 @@ id = "toEuclideanLin_rightSingularBasis_eq_zero"
 id = "inner_toEuclideanLin_rightSingularBasis"
 
 [[node]]
-id = "card_singularValues_ne_zero"
+id = "card_colSingularValues_ne_zero"
 
 [[node]]
-id = "norm_toEuclideanLin_le_iSup_singularValues"
+id = "norm_toEuclideanLin_le_iSup_colSingularValues"
 
 [[node]]
-id = "l2_opNorm_eq_iSup_singularValues"
+id = "l2_opNorm_eq_iSup_colSingularValues"
 
 [[node]]
 id = "mul_pinv_mul_self"
@@ -149,7 +149,7 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.9"
 id = "_root_.exists_equiv_of_map_univ_val_eq"
 
 [[node]]
-id = "IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues"
+id = "IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.9"
 
 [[node]]
@@ -169,7 +169,7 @@ id = "exists_mem_unitaryGroup_submatrix_eq"
 id = "sortedSingularValues"
 
 [[node]]  # staged by ch02
-id = "exists_equiv_singularValues_eq_sortedSingularValues"
+id = "exists_equiv_colSingularValues_eq_sortedSingularValues"
 
 [[node]]  # staged by ch02
 id = "sortedSingularValues_eq_zero_iff_rank_le"
@@ -178,7 +178,7 @@ id = "sortedSingularValues_eq_zero_iff_rank_le"
 id = "sortedSingularValues_zero_eq_l2_opNorm"
 
 [[node]]  # staged by ch02
-id = "sortedSingularValues_eq_iInf_singularValues"
+id = "sortedSingularValues_eq_iInf_colSingularValues"
 
 [[node]]  # staged by ch02
 id = "l2_opNorm_rectDiagonal"
@@ -214,16 +214,16 @@ id = "shiftedRectDiagonal"
 id = "conjTranspose_shiftedRectDiagonal_mul_self"
 
 [[node]]  # staged by ch07
-id = "iInf_singularValues_eq_iInf_norm"
+id = "iInf_colSingularValues_eq_iInf_norm"
 
 [[node]]  # staged by ch07
-id = "exists_norm_eq_iInf_singularValues"
+id = "exists_norm_eq_iInf_colSingularValues"
 
 [[node]]  # staged by ch07
-id = "iInf_singularValues_unitary_mul_mul"
+id = "iInf_colSingularValues_unitary_mul_mul"
 
 [[node]]  # staged by ch12
-id = "abs_critical_bilinearRayleigh_mem_singularValues"
+id = "abs_critical_bilinearRayleigh_mem_colSingularValues"
 
 [[node]]  # added by ls1
 id = "pinv_conjTranspose"

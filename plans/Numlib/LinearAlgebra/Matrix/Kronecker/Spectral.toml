@@ -7,7 +7,7 @@ id = "frobenius_norm_kronecker"
 id = "l2_opNorm_kronecker"
 
 [[node]]  # staged by ch12
-id = "singularValues_kronecker"
+id = "colSingularValues_kronecker"
 
 [[node]]  # staged by ch12
 id = "charpoly_kronecker"

@@ -348,12 +348,12 @@ open scoped Matrix.Norms.L2Operator
 `‖x̂ - x‖₂/‖x‖₂ ≤ ‖A‖₂/(σ_m(A) - ‖δA‖₂) (ε_A + ε_b) + [m < n] κ₂(A) ε_A` — the book's
 `κ₂(A)(ε_A min{2, n - m + 1} + ε_b)` with `σ_m(A)` replaced by `σ_m(A) - ‖δA‖₂` in the first
 term and no `O(ε²)` (`theorem_5_6_1_firstOrder` is the printed form). `σ_m(A)` is
-`⨅ i, Aᵀ.singularValues i`. -/
+`⨅ i, Aᵀ.colSingularValues i`. -/
 theorem theorem_5_6_1 {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ A)
     {b δb : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
-    (hδA : ‖δA‖ < ⨅ i, Aᵀ.singularValues i) (hb : b ≠ 0) (hx : x = toEuclideanLin A.pinv b)
+    (hδA : ‖δA‖ < ⨅ i, Aᵀ.colSingularValues i) (hb : b ≠ 0) (hx : x = toEuclideanLin A.pinv b)
     (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) :
-    ‖x' - x‖ / ‖x‖ ≤ ‖A‖ / ((⨅ i, Aᵀ.singularValues i) - ‖δA‖) * (‖δA‖ / ‖A‖ + ‖δb‖ / ‖b‖) +
+    ‖x' - x‖ / ‖x‖ ≤ ‖A‖ / ((⨅ i, Aᵀ.colSingularValues i) - ‖δA‖) * (‖δA‖ / ‖A‖ + ‖δb‖ / ‖b‖) +
       if m < n then kappa2 A * (‖δA‖ / ‖A‖) else 0 := by
   have h := (norm_minNorm_sub_le hA (by rwa [conjTranspose_eq_transpose_of_trivial]) hb hx hx').2
   simp only [kappa2]
@@ -361,7 +361,7 @@ theorem theorem_5_6_1 {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepende
 
 /-- For independent rows, `κ₂(A) = ‖A‖₂/σ_m(A)`. -/
 private theorem kappa2_eq_div_of_rows [NeZero m] {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ A) : kappa2 A = ‖A‖ / ⨅ i, Aᵀ.singularValues i := by
+    (hA : LinearIndependent ℝ A) : kappa2 A = ‖A‖ / ⨅ i, Aᵀ.colSingularValues i := by
   have hAt : LinearIndependent ℝ Aᵀᵀ := by rwa [transpose_transpose]
   have hp : A.pinv = (Aᵀ.pinv)ᵀ := by
     have := pinv_conjTranspose (A := Aᵀ)
@@ -370,7 +370,7 @@ private theorem kappa2_eq_div_of_rows [NeZero m] {A : Matrix (Fin m) (Fin n) ℝ
     rw [this]
   rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, hp,
     ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose,
-    l2_opNorm_pinv_eq_inv_iInf_singularValues hAt, div_eq_mul_inv]
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hAt, div_eq_mul_inv]
 
 /-- **Theorem 5.6.1** as printed, the `+ O(ε²)` reading: for `A` with `rank A = m ≤ n` and
 `b ≠ 0` there are `K` and `ε₀ > 0` such that for all perturbations with
@@ -386,7 +386,7 @@ theorem theorem_5_6_1_firstOrder {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIn
           K * max (‖δA‖ / ‖A‖) (‖δb‖ / ‖b‖) ^ 2 := by
   have hm : NeZero m := ⟨fun hm => hb (by subst hm; ext i; exact i.elim0)⟩
   have hAt : LinearIndependent ℝ Aᵀᵀ := by rwa [transpose_transpose]
-  have hσ : 0 < ⨅ i, Aᵀ.singularValues i := iInf_singularValues_pos_of_linearIndependent hAt
+  have hσ : 0 < ⨅ i, Aᵀ.colSingularValues i := iInf_colSingularValues_pos_of_linearIndependent hAt
   have hAn : 0 < ‖A‖ := by
     refine norm_pos_iff.2 fun h0 => ?_
     have := hA.ne_zero (0 : Fin m)
@@ -397,7 +397,7 @@ theorem theorem_5_6_1_firstOrder {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIn
   have hmn : m ≤ n := by
     have := hA.fintype_card_le_finrank
     simpa using this
-  set σ := ⨅ i, Aᵀ.singularValues i with hσdef
+  set σ := ⨅ i, Aᵀ.colSingularValues i with hσdef
   set a := ‖A‖ with ha
   refine ⟨4 * a ^ 2 / σ ^ 2, σ / (2 * a), by positivity, fun δA δb hε => ?_⟩
   set ε := max (‖δA‖ / a) (‖δb‖ / ‖b‖) with hεdef

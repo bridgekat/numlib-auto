@@ -34,7 +34,7 @@ One module per section, `NumlibSurface/GolubVanLoan/Chapter07/SectionMM.lean`, n
   `Matrix.toSquareBlock` for the `q`-block partitions (7.1.9).
 * **Norms.** `‖·‖₂` is Mathlib's scoped `Matrix.Norms.L2Operator`, `‖·‖_F` the scoped
   `Matrix.Norms.Frobenius` (never both open in one proof), `‖·‖_p` and `κ_p` the backbone's
-  `Matrix.lpOpNorm`, `Matrix.condNumberLp`; `σ_min(A) = ⨅ i, A.singularValues i`. The distance
+  `Matrix.lpOpNorm`, `Matrix.condNumberLp`; `σ_min(A) = ⨅ i, A.colSingularValues i`. The distance
   of two subspaces, `dist(S₁, S₂) = ‖P₁ - P₂‖₂` of §2.5.3, is the backbone's `Submodule.gap`.
 * **Algorithms.** The numbered conventions 1–14 of `NumlibSurface.GolubVanLoan` (those of
   `Numlib/FloatingPoint/Program`) govern every program of the chapter.

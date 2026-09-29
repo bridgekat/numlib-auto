@@ -458,7 +458,7 @@ bounds `Gᴴ` from below, hence `(Gᴴ)⁻¹` from above, and
 `‖x‖² = ⟪(Gᴴ)⁻¹ x, G x⟫ ≤ ‖x‖ ‖G x‖`. -/
 theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
     {G : Matrix (Fin n) (Fin n) ℂ} (hG : G * Gᴴ = 1 + X * Xᴴ) :
-    (1 + X * Xᴴ).PosDef ∧ 1 ≤ ⨅ i, G.singularValues i := by
+    (1 + X * Xᴴ).PosDef ∧ 1 ≤ ⨅ i, G.colSingularValues i := by
   refine ⟨Matrix.PosDef.one.add_posSemidef (posSemidef_self_mul_conjTranspose X), ?_⟩
   -- `Gᴴ` is bounded below: `‖Gᴴ v‖² = ‖v‖² + ‖Xᴴ v‖²`
   have hlow : ∀ v : EuclideanSpace ℂ (Fin n), ‖v‖ ≤ ‖toEuclideanLin Gᴴ v‖ := by
@@ -505,7 +505,7 @@ theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
         _ ≤ ‖y‖ * ‖toEuclideanLin G x‖ := (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
         _ ≤ ‖x‖ * ‖toEuclideanLin G x‖ := by gcongr
     nlinarith
-  rw [iInf_singularValues_eq_iInf_norm]
+  rw [iInf_colSingularValues_eq_iInf_norm]
   have : Nonempty {x : EuclideanSpace ℂ (Fin n) // ‖x‖ = 1} :=
     ⟨⟨EuclideanSpace.single 0 1, by simp⟩⟩
   refine le_ciInf fun x => ?_
@@ -639,20 +639,20 @@ two subspaces (`σ_min = ⨅ i, σ_i`). -/
 theorem equation_7_3_19 [NeZero r] {Qα Qk : Matrix (Fin n) (Fin r) ℂ} (hα : Qαᴴ * Qα = 1)
     (hQk : Qkᴴ * Qk = 1) :
     1 = (LinearMap.range (toEuclideanLin Qα)).gap (LinearMap.range (toEuclideanLin Qk)) ^ 2 +
-      (⨅ i, (Qαᴴ * Qk).singularValues i) ^ 2 := by
+      (⨅ i, (Qαᴴ * Qk).colSingularValues i) ^ 2 := by
   have : Nonempty (Fin r) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne r)⟩⟩
-  rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin]
+  rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin]
   have h := gap_range_sq_add_sortedSingularValues_sq hα hQk
   rw [Fintype.card_fin] at h
   exact h.symm
 
 /-- A square matrix with a positive least singular value is invertible. -/
-private theorem isUnit_of_iInf_singularValues_pos [NeZero r] {B : Matrix (Fin r) (Fin r) ℂ}
-    (h : 0 < ⨅ i, B.singularValues i) : IsUnit B := by
+private theorem isUnit_of_iInf_colSingularValues_pos [NeZero r] {B : Matrix (Fin r) (Fin r) ℂ}
+    (h : 0 < ⨅ i, B.colSingularValues i) : IsUnit B := by
   have : Nonempty (Fin r) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne r)⟩⟩
   rw [← mulVec_injective_iff_isUnit]
   intro v w hvw
-  have h1 := B.iInf_singularValues_mul_norm_le (WithLp.toLp 2 (v - w))
+  have h1 := B.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
   rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
   have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace ℂ (Fin r))‖ = 0 :=
     le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
@@ -712,15 +712,16 @@ theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Mat
   set d := (LinearMap.range (toEuclideanLin Z)).gap (LinearMap.range (toEuclideanLin Q₀))
   have hd0 : 0 ≤ d := Submodule.gap_nonneg _ _
   have hσ := equation_7_3_19 hZZ hQ₀
-  have hσ0 : 0 ≤ ⨅ i, (Zᴴ * Q₀).singularValues i := le_ciInf fun i => singularValues_nonneg _ i
-  have hσeq : ⨅ i, (Zᴴ * Q₀).singularValues i = Real.sqrt (1 - d ^ 2) := by
+  have hσ0 : 0 ≤ ⨅ i, (Zᴴ * Q₀).colSingularValues i :=
+    le_ciInf fun i => colSingularValues_nonneg _ i
+  have hσeq : ⨅ i, (Zᴴ * Q₀).colSingularValues i = Real.sqrt (1 - d ^ 2) := by
     rw [← Real.sqrt_sq hσ0]
     congr 1
     linarith
-  have hσpos : 0 < ⨅ i, (Zᴴ * Q₀).singularValues i := by
+  have hσpos : 0 < ⨅ i, (Zᴴ * Q₀).colSingularValues i := by
     rw [hσeq]
     exact Real.sqrt_pos.2 (by nlinarith)
-  have hZQu : IsUnit (Zᴴ * Q₀) := isUnit_of_iInf_singularValues_pos hσpos
+  have hZQu : IsUnit (Zᴴ * Q₀) := isUnit_of_iInf_colSingularValues_pos hσpos
   have hZQd : IsUnit (Zᴴ * Q₀).det := (isUnit_iff_isUnit_det _).1 hZQu
   have hunit : IsUnit (Qαᴴ * Q₀ - X * (Qβᴴ * Q₀)) := by
     rw [hV]; exact ((isUnit_iff_isUnit_det G).2 hGu).mul hZQu
@@ -728,9 +729,9 @@ theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Mat
   · rw [hV, Matrix.mul_inv_rev]
     refine (norm_mul_le _ _).trans (le_of_eq (mul_comm _ _))
   · have hG1 : ‖G⁻¹‖ ≤ 1 := by
-      rw [l2_opNorm_inv_eq_inv_iInf_singularValues _ hGu]
+      rw [l2_opNorm_inv_eq_inv_iInf_colSingularValues _ hGu]
       exact inv_le_one_of_one_le₀ hσG
-    rw [l2_opNorm_inv_eq_inv_iInf_singularValues _ hZQd, hσeq, one_div]
+    rw [l2_opNorm_inv_eq_inv_iInf_colSingularValues _ hZQd, hσeq, one_div]
     calc ‖G⁻¹‖ * (Real.sqrt (1 - d ^ 2))⁻¹ ≤ 1 * (Real.sqrt (1 - d ^ 2))⁻¹ :=
           mul_le_mul_of_nonneg_right hG1 (inv_nonneg.2 (Real.sqrt_nonneg _))
       _ = (Real.sqrt (1 - d ^ 2))⁻¹ := one_mul _

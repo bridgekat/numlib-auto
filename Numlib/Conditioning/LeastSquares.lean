@@ -28,10 +28,11 @@ solution of a system with linearly independent rows ([golub2013matrix] §5.3.6 T
 The book proves Theorems 5.3.1 and 5.6.1 by differentiating `t ↦ x(t)` at `0` and states them up to
 `O(ε²)`. Here the exact identities are proved instead, and the bounds follow from the norms of the
 pseudoinverse and of the inverse Gram matrix of `Â`
-(`Matrix.l2_opNorm_pinv_eq_inv_iInf_singularValues`, `Matrix.l2_opNorm_inv_conjTranspose_mul_self`),
+(`Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`,
+`Matrix.l2_opNorm_inv_conjTranspose_mul_self`),
 together with Weyl's bound
-`σ_min(A + δA) ≥ σ_min(A) - ‖δA‖₂` (`Matrix.iInf_singularValues_sub_le`), which also shows that
-`A + δA` keeps independent columns. `σ_min` is the column-indexed `⨅ i, A.singularValues i`, the
+`σ_min(A + δA) ≥ σ_min(A) - ‖δA‖₂` (`Matrix.iInf_colSingularValues_sub_le`), which also shows that
+`A + δA` keeps independent columns. `σ_min` is the column-indexed `⨅ i, A.colSingularValues i`, the
 least stretch of `A`. Vectors live in `EuclideanSpace`, matrices act through
 `Matrix.toEuclideanLin`, and matrix norms are the scoped `Matrix.Norms.L2Operator` ones.
 
@@ -57,13 +58,13 @@ omit [DecidableEq m]
 
 /-- **A positive least stretch makes the columns independent**: if `σ_min(A) > 0` then
 `A x = 0` forces `x = 0`. -/
-theorem linearIndependent_transpose_of_iInf_singularValues_pos {A : Matrix m n 𝕜}
-    (h : 0 < ⨅ i, A.singularValues i) : LinearIndependent 𝕜 Aᵀ := by
+theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m n 𝕜}
+    (h : 0 < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 Aᵀ := by
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [Real.iInf_of_isEmpty] at h
     exact absurd h (lt_irrefl 0)
   refine mulVec_injective_iff.1 fun v w hvw => ?_
-  have h1 := A.iInf_singularValues_mul_norm_le (WithLp.toLp 2 (v - w))
+  have h1 := A.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
   rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
   have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace 𝕜 n)‖ = 0 :=
     le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
@@ -71,10 +72,10 @@ theorem linearIndependent_transpose_of_iInf_singularValues_pos {A : Matrix m n �
   simpa [sub_eq_zero] using h3
 
 /-- **Linearly independent columns give a positive least stretch**: `σ_min(A) > 0`, the converse
-of `Matrix.linearIndependent_transpose_of_iInf_singularValues_pos`. -/
-theorem iInf_singularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
-    (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.singularValues i := by
-  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_singularValues
+of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
+theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
+    (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.colSingularValues i := by
+  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
   rw [← hx]
   refine norm_pos_iff.2 fun h0 => ?_
   have h1 : A *ᵥ WithLp.ofLp x = A *ᵥ 0 := by
@@ -89,16 +90,16 @@ theorem iInf_singularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m 
 
 /-- **Weyl stability of the least stretch** ([golub2013matrix] Corollary 2.4.4):
 `σ_min(A) - ‖δA‖₂ ≤ σ_min(A + δA)`. -/
-theorem sub_l2_opNorm_le_iInf_singularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :
-    (⨅ i, A.singularValues i) - ‖δA‖ ≤ ⨅ i, (A + δA).singularValues i := by
-  have h := iInf_singularValues_sub_le (A + δA) A
+theorem sub_l2_opNorm_le_iInf_colSingularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :
+    (⨅ i, A.colSingularValues i) - ‖δA‖ ≤ ⨅ i, (A + δA).colSingularValues i := by
+  have h := iInf_colSingularValues_sub_le (A + δA) A
   rw [add_sub_cancel_left] at h
-  linarith [neg_abs_le ((⨅ i, (A + δA).singularValues i) - ⨅ i, A.singularValues i)]
+  linarith [neg_abs_le ((⨅ i, (A + δA).colSingularValues i) - ⨅ i, A.colSingularValues i)]
 
 /-- A perturbation smaller than the least stretch cannot happen without columns: `‖δA‖ < σ_min(A)`
 forces `n` to be nonempty, since `σ_min` of a matrix without columns is `0`. -/
-theorem nonempty_of_l2_opNorm_lt_iInf_singularValues {A δA : Matrix m n 𝕜}
-    (h : ‖δA‖ < ⨅ i, A.singularValues i) : Nonempty n := by
+theorem nonempty_of_l2_opNorm_lt_iInf_colSingularValues {A δA : Matrix m n 𝕜}
+    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : Nonempty n := by
   by_contra hn
   rw [not_nonempty_iff] at hn
   rw [Real.iInf_of_isEmpty] at h
@@ -108,10 +109,10 @@ theorem nonempty_of_l2_opNorm_lt_iInf_singularValues {A δA : Matrix m n 𝕜}
 `A + δA` has linearly independent columns ([golub2013matrix] Theorem 2.5.2's use in the proof of
 Theorem 5.3.1). -/
 theorem linearIndependent_transpose_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
-    (h : ‖δA‖ < ⨅ i, A.singularValues i) : LinearIndependent 𝕜 (A + δA)ᵀ := by
-  have := nonempty_of_l2_opNorm_lt_iInf_singularValues h
-  exact linearIndependent_transpose_of_iInf_singularValues_pos
-    ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_singularValues_add A δA))
+    (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 (A + δA)ᵀ := by
+  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues h
+  exact linearIndependent_transpose_of_iInf_colSingularValues_pos
+    ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_colSingularValues_add A δA))
 
 end Stability
 
@@ -200,21 +201,21 @@ columns, `σ = σ_min(A)` and `‖δA‖₂ < σ`, then `A + δA` has linearly i
 `Matrix.leastSquares_sub_eq`, `‖Â⁺‖₂ = 1/σ_min(Â)`, `‖(Âᴴ Â)⁻¹‖₂ = 1/σ_min(Â)²` and
 `σ_min(Â) ≥ σ - ‖δA‖₂`. The book's (5.3.11) is the relative form of this bound with `σ` in place of
 `σ - ‖δA‖₂`. -/
-theorem norm_leastSquares_sub_le (hδA : ‖δA‖ < ⨅ i, A.singularValues i)
+theorem norm_leastSquares_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) :
     LinearIndependent 𝕜 (A + δA)ᵀ ∧
-      ‖x' - x‖ ≤ (‖δb‖ + ‖δA‖ * ‖x‖) / ((⨅ i, A.singularValues i) - ‖δA‖) +
-        ‖δA‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) ^ 2 := by
-  have := nonempty_of_l2_opNorm_lt_iInf_singularValues hδA
-  set σ := ⨅ i, A.singularValues i with hσ
-  have hσ' := sub_l2_opNorm_le_iInf_singularValues_add A δA
+      ‖x' - x‖ ≤ (‖δb‖ + ‖δA‖ * ‖x‖) / ((⨅ i, A.colSingularValues i) - ‖δA‖) +
+        ‖δA‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) ^ 2 := by
+  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues hδA
+  set σ := ⨅ i, A.colSingularValues i with hσ
+  have hσ' := sub_l2_opNorm_le_iInf_colSingularValues_add A δA
   have hd : 0 < σ - ‖δA‖ := sub_pos.2 hδA
   have hA' := linearIndependent_transpose_add_of_l2_opNorm_lt hδA
   refine ⟨hA', ?_⟩
   rw [leastSquares_sub_eq hA' hx hx' hr]
   have hP : ‖(A + δA).pinv‖ ≤ (σ - ‖δA‖)⁻¹ := by
-    rw [l2_opNorm_pinv_eq_inv_iInf_singularValues hA']
+    rw [l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA']
     exact inv_anti₀ hd hσ'
   have hG : ‖((A + δA)ᴴ * (A + δA))⁻¹‖ ≤ (σ - ‖δA‖)⁻¹ ^ 2 := by
     rw [l2_opNorm_inv_conjTranspose_mul_self hA']
@@ -243,18 +244,18 @@ theorem norm_leastSquares_sub_le (hδA : ‖δA‖ < ⨅ i, A.singularValues i)
 `‖r̂ - r‖ ≤ ‖δb‖ + ‖δA‖₂ ‖x‖ + ‖δA‖₂ ‖r‖ / (σ - ‖δA‖₂)`. From
 `Matrix.leastSquares_residual_sub_eq`, `‖1 - Â Â⁺‖₂ ≤ 1` and `‖Â⁺ᴴ‖₂ = ‖Â⁺‖₂`. The book's (5.3.12)
 is its relative form. -/
-theorem norm_leastSquares_residual_sub_le (hδA : ‖δA‖ < ⨅ i, A.singularValues i)
+theorem norm_leastSquares_residual_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) (hr' : r' = (b + δb) - toEuclideanLin (A + δA) x') :
-    ‖r' - r‖ ≤ ‖δb‖ + ‖δA‖ * ‖x‖ + ‖δA‖ * ‖r‖ / ((⨅ i, A.singularValues i) - ‖δA‖) := by
-  have := nonempty_of_l2_opNorm_lt_iInf_singularValues hδA
-  set σ := ⨅ i, A.singularValues i with hσ
-  have hσ' := sub_l2_opNorm_le_iInf_singularValues_add A δA
+    ‖r' - r‖ ≤ ‖δb‖ + ‖δA‖ * ‖x‖ + ‖δA‖ * ‖r‖ / ((⨅ i, A.colSingularValues i) - ‖δA‖) := by
+  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues hδA
+  set σ := ⨅ i, A.colSingularValues i with hσ
+  have hσ' := sub_l2_opNorm_le_iInf_colSingularValues_add A δA
   have hd : 0 < σ - ‖δA‖ := sub_pos.2 hδA
   have hA' := linearIndependent_transpose_add_of_l2_opNorm_lt hδA
   rw [leastSquares_residual_sub_eq hA' hx hx' hr hr']
   have hP : ‖(A + δA).pinvᴴ‖ ≤ (σ - ‖δA‖)⁻¹ := by
-    rw [l2_opNorm_conjTranspose, l2_opNorm_pinv_eq_inv_iInf_singularValues hA']
+    rw [l2_opNorm_conjTranspose, l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA']
     exact inv_anti₀ hd hσ'
   have hu : ‖δb - toEuclideanLin δA x‖ ≤ ‖δb‖ + ‖δA‖ * ‖x‖ :=
     (norm_sub_le _ _).trans (add_le_add le_rfl (norm_toEuclideanLin_apply_le _ _))
@@ -339,8 +340,8 @@ variable {A δA : Matrix m n 𝕜} {b δb : EuclideanSpace 𝕜 m} {x x' : Eucli
 /-- A small perturbation keeps the rows independent: `‖δA‖₂ < σ_min(Aᴴ)` implies that `A + δA` has
 linearly independent rows. The column statement for `Aᴴ`, through `star (y ᵥ* M) = Mᴴ *ᵥ star y`. -/
 theorem linearIndependent_add_of_l2_opNorm_lt
-    (h : ‖δA‖ < ⨅ i, Aᴴ.singularValues i) : LinearIndependent 𝕜 (A + δA) := by
-  have h' : ‖δAᴴ‖ < ⨅ i, Aᴴ.singularValues i := by rwa [l2_opNorm_conjTranspose]
+    (h : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i) : LinearIndependent 𝕜 (A + δA) := by
+  have h' : ‖δAᴴ‖ < ⨅ i, Aᴴ.colSingularValues i := by rwa [l2_opNorm_conjTranspose]
   have hc := linearIndependent_transpose_add_of_l2_opNorm_lt h'
   rw [← conjTranspose_add] at hc
   refine vecMul_injective_iff.1 fun v w hvw => ?_
@@ -397,11 +398,11 @@ theorem minNorm_sub_eq (hA : LinearIndependent 𝕜 A) (hx : x = toEuclideanLin 
 
 omit [DecidableEq n] in
 /-- A positive least stretch of `Aᴴ` bounds `y` by `Aᴴ y`. -/
-private theorem norm_le_of_iInf_singularValues_conjTranspose [Nonempty m]
-    (h : 0 < ⨅ i, Aᴴ.singularValues i) (y : EuclideanSpace 𝕜 m) :
-    ‖y‖ ≤ ‖toEuclideanLin Aᴴ y‖ / ⨅ i, Aᴴ.singularValues i := by
+private theorem norm_le_of_iInf_colSingularValues_conjTranspose [Nonempty m]
+    (h : 0 < ⨅ i, Aᴴ.colSingularValues i) (y : EuclideanSpace 𝕜 m) :
+    ‖y‖ ≤ ‖toEuclideanLin Aᴴ y‖ / ⨅ i, Aᴴ.colSingularValues i := by
   rw [le_div_iff₀ h, mul_comm]
-  exact Aᴴ.iInf_singularValues_mul_norm_le y
+  exact Aᴴ.iInf_colSingularValues_mul_norm_le y
 
 /-- **[golub2013matrix] Theorem 5.6.1, rigorous form**: if `A` has linearly independent rows,
 `σ = σ_min(Aᴴ)` (the least singular value `σ_m`), `‖δA‖₂ < σ` and `b ≠ 0`, then `A + δA` has
@@ -412,15 +413,15 @@ rectangular condition number `Matrix.pinvCondNumberLp 2`. From `Matrix.minNorm_s
 `‖Â⁺‖₂ ≤ 1/(σ - ‖δA‖₂)`, `‖1 - Â⁺ Â‖₂ ≤ 1` (and `= 0` for a square `A`),
 `‖(A Aᴴ)⁻¹ b‖ ≤ ‖x‖/σ` and `‖b‖ ≤ ‖A‖₂ ‖x‖`. Its first-order form is the book's
 `κ₂(A)(ε_A min{2, n - m + 1} + ε_b) + O(ε²)`. -/
-theorem norm_minNorm_sub_le (hA : LinearIndependent 𝕜 A) (hδA : ‖δA‖ < ⨅ i, Aᴴ.singularValues i)
+theorem norm_minNorm_sub_le (hA : LinearIndependent 𝕜 A) (hδA : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i)
     (hb : b ≠ 0) (hx : x = toEuclideanLin A.pinv b)
     (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) :
     LinearIndependent 𝕜 (A + δA) ∧
-      ‖x' - x‖ / ‖x‖ ≤ ‖A‖ / ((⨅ i, Aᴴ.singularValues i) - ‖δA‖) * (‖δA‖ / ‖A‖ + ‖δb‖ / ‖b‖) +
+      ‖x' - x‖ / ‖x‖ ≤ ‖A‖ / ((⨅ i, Aᴴ.colSingularValues i) - ‖δA‖) * (‖δA‖ / ‖A‖ + ‖δb‖ / ‖b‖) +
         if Fintype.card m < Fintype.card n then pinvCondNumberLp 2 A * (‖δA‖ / ‖A‖) else 0 := by
-  have hδA' : ‖δAᴴ‖ < ⨅ i, Aᴴ.singularValues i := by rwa [l2_opNorm_conjTranspose]
-  have := nonempty_of_l2_opNorm_lt_iInf_singularValues hδA'
-  set σ := ⨅ i, Aᴴ.singularValues i with hσ
+  have hδA' : ‖δAᴴ‖ < ⨅ i, Aᴴ.colSingularValues i := by rwa [l2_opNorm_conjTranspose]
+  have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues hδA'
+  set σ := ⨅ i, Aᴴ.colSingularValues i with hσ
   have hA'r := linearIndependent_add_of_l2_opNorm_lt hδA
   refine ⟨hA'r, ?_⟩
   have hd : 0 < σ - ‖δA‖ := sub_pos.2 hδA
@@ -442,22 +443,22 @@ theorem norm_minNorm_sub_le (hA : LinearIndependent 𝕜 A) (hδA : ‖δA‖ < 
     rw [this, zero_mul] at hbA
     linarith
   -- the pieces of the identity
-  have hσ' : σ - ‖δA‖ ≤ ⨅ i, (A + δA)ᴴ.singularValues i := by
+  have hσ' : σ - ‖δA‖ ≤ ⨅ i, (A + δA)ᴴ.colSingularValues i := by
     rw [conjTranspose_add, ← l2_opNorm_conjTranspose δA]
-    exact sub_l2_opNorm_le_iInf_singularValues_add Aᴴ δAᴴ
+    exact sub_l2_opNorm_le_iInf_colSingularValues_add Aᴴ δAᴴ
   have hc' : LinearIndependent 𝕜 (A + δA)ᴴᵀ := by
     rw [conjTranspose_add]
     exact linearIndependent_transpose_add_of_l2_opNorm_lt hδA'
   have hP : ‖(A + δA).pinv‖ ≤ (σ - ‖δA‖)⁻¹ := by
     rw [← l2_opNorm_conjTranspose, ← pinv_conjTranspose,
-      l2_opNorm_pinv_eq_inv_iInf_singularValues hc']
+      l2_opNorm_pinv_eq_inv_iInf_colSingularValues hc']
     exact inv_anti₀ hd hσ'
   set y := toEuclideanLin (A * Aᴴ)⁻¹ b with hy
   have hxy : x = toEuclideanLin Aᴴ y := by
     rw [hx, pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA, toEuclideanLin_mul_apply]
   have hyx : ‖y‖ ≤ ‖x‖ / σ := by
     rw [hxy]
-    exact norm_le_of_iInf_singularValues_conjTranspose hσ0 y
+    exact norm_le_of_iInf_colSingularValues_conjTranspose hσ0 y
   -- the projection term
   set c : ℝ := if Fintype.card m < Fintype.card n then 1 else 0 with hc
   have hproj : ‖1 - (A + δA).pinv * (A + δA)‖ ≤ c := by
@@ -489,8 +490,8 @@ theorem norm_minNorm_sub_le (hA : LinearIndependent 𝕜 A) (hδA : ‖δA‖ < 
   have hc0 : 0 ≤ c := by rw [hc]; split_ifs <;> norm_num
   have hκ : pinvCondNumberLp 2 A = ‖A‖ / σ := by
     rw [pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, ← l2_opNorm_conjTranspose A.pinv,
-      ← pinv_conjTranspose, l2_opNorm_pinv_eq_inv_iInf_singularValues
-        (linearIndependent_transpose_of_iInf_singularValues_pos hσ0), div_eq_mul_inv]
+      ← pinv_conjTranspose, l2_opNorm_pinv_eq_inv_iInf_colSingularValues
+        (linearIndependent_transpose_of_iInf_colSingularValues_pos hσ0), div_eq_mul_inv]
   -- the bound on `‖x̂ - x‖`
   have hu : ‖δb - toEuclideanLin δA x‖ ≤ ‖δb‖ + ‖δA‖ * ‖x‖ :=
     (norm_sub_le _ _).trans (add_le_add le_rfl (norm_toEuclideanLin_apply_le _ _))
@@ -608,7 +609,7 @@ theorem hasDerivAt_pinv_mulVec_line {A : Matrix m n ℝ} (hA : LinearIndependent
   have hcomp := hinvD.comp_hasDerivAt (0 : ℝ) hGd
   have hres := hcomp.clm_apply hhd
   -- near `0` the map is `G(t)⁻¹ h(t)`
-  have hσ := iInf_singularValues_pos_of_linearIndependent hA
+  have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
   have hev : (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f)) =ᶠ[nhds 0]
       fun t => (Ring.inverse ∘ G) t (h t) := by
     have hlim : Filter.Tendsto (fun t : ℝ => ‖t • E‖) (nhds 0) (nhds 0) := by
@@ -705,7 +706,7 @@ theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ
   -- near `0` the rows stay independent
   have hAc : LinearIndependent ℝ Aᴴᵀ := by
     rwa [conjTranspose_eq_transpose_of_trivial, transpose_transpose]
-  have hσ := iInf_singularValues_pos_of_linearIndependent hAc
+  have hσ := iInf_colSingularValues_pos_of_linearIndependent hAc
   have hev : (fun t : ℝ =>
       toEuclideanLin ((A + t • E)ᴴ * ((A + t • E) * (A + t • E)ᴴ)⁻¹) (b + t • f)) =ᶠ[nhds 0]
       fun t => T t ((Ring.inverse ∘ H) t (b + t • f)) := by

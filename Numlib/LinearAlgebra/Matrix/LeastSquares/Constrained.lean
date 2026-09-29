@@ -236,7 +236,7 @@ theorem continuousOn_norm_tikhonov_mulVec (A : Matrix m n 𝕜) (b : EuclideanSp
     ContinuousOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
   have hsq : ContinuousOn (fun α : ℝ => ∑ i,
       ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin Aᴴ b) : 𝕜)‖ ^ 2
-        / (α + A.singularValues i ^ 2) ^ 2) (Set.Ioi 0) := by
+        / (α + A.colSingularValues i ^ 2) ^ 2) (Set.Ioi 0) := by
     refine continuousOn_finsetSum _ fun i _ => ?_
     refine continuousOn_const.div ((continuousOn_id.add continuousOn_const).pow 2) fun α hα => ?_
     have : (0 : ℝ) < α := hα

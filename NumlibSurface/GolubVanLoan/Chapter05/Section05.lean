@@ -893,8 +893,8 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
   have hB0 := lt_of_lt_of_le (div_pos hsA0 hinv) hbound
   have hlin : LinearIndependent ℝ
       ((A.submatrix id (pivotPerm st.piv)).submatrix id (Fin.castLE hrn))ᵀ := by
-    refine linearIndependent_transpose_of_iInf_singularValues_pos ?_
-    rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin]
+    refine linearIndependent_transpose_of_iInf_colSingularValues_pos ?_
+    rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin]
     exact hB0
   exact ⟨hVtu, hbound, hlin, fun hβ => algorithm_5_3_2_spec hrm hlin hβ b⟩
 

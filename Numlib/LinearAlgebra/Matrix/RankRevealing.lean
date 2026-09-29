@@ -763,8 +763,8 @@ private theorem sortedSingularValues_mul_norm_le {p : Type*} [Fintype p] (B : Ma
     (hr : 0 < r) (x : EuclideanSpace 𝕜 (Fin r)) :
     B.sortedSingularValues (r - 1) * ‖x‖ ≤ ‖toEuclideanLin B x‖ := by
   have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
-  have := B.iInf_singularValues_mul_norm_le x
-  rwa [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin] at this
+  have := B.iInf_colSingularValues_mul_norm_le x
+  rwa [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin] at this
 
 /-- The rows above the `r`-th of `T v`: `(T v)₁ = T₁₁ v₁ + T₁₂ v₂`. -/
 private theorem mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (hN : r ≤ N)

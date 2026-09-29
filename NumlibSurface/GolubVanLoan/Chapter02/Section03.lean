@@ -258,21 +258,21 @@ theorem tendsto_iff_of_isMatrixNorm {f : Matrix (Fin m) (Fin n) ℝ → ℝ} (hf
 /-! ### §2.3.3 The matrix 2-norm -/
 
 /-- The 2-norm of a rectangular matrix is its largest singular value, attained at an index. -/
-private theorem exists_singularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fin n) ℝ)
+private theorem exists_colSingularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fin n) ℝ)
     (hn : 0 < n) :
-    ∃ i, A.singularValues i = lpOpNorm 2 A ∧ ∀ j, A.singularValues j ≤ lpOpNorm 2 A := by
+    ∃ i, A.colSingularValues i = lpOpNorm 2 A ∧ ∀ j, A.colSingularValues j ≤ lpOpNorm 2 A := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
-  obtain ⟨i₀, hi₀⟩ := Finite.exists_max A.singularValues
-  have hle : lpOpNorm 2 A ≤ A.singularValues i₀ := by
-    refine ContinuousLinearMap.opNorm_le_bound _ (A.singularValues_nonneg i₀) fun x => ?_
+  obtain ⟨i₀, hi₀⟩ := Finite.exists_max A.colSingularValues
+  have hle : lpOpNorm 2 A ≤ A.colSingularValues i₀ := by
+    refine ContinuousLinearMap.opNorm_le_bound _ (A.colSingularValues_nonneg i₀) fun x => ?_
     calc ‖lpCLM 2 A x‖ = ‖toEuclideanLin A x‖ := rfl
-      _ ≤ (⨆ i, A.singularValues i) * ‖x‖ := A.norm_toEuclideanLin_le_iSup_singularValues x
-      _ ≤ A.singularValues i₀ * ‖x‖ :=
+      _ ≤ (⨆ i, A.colSingularValues i) * ‖x‖ := A.norm_toEuclideanLin_le_iSup_colSingularValues x
+      _ ≤ A.colSingularValues i₀ * ‖x‖ :=
           mul_le_mul_of_nonneg_right (ciSup_le hi₀) (norm_nonneg _)
-  have hge : A.singularValues i₀ ≤ lpOpNorm 2 A := by
+  have hge : A.colSingularValues i₀ ≤ lpOpNorm 2 A := by
     have h := (lpCLM 2 A).le_opNorm (A.rightSingularBasis i₀)
     rw [(A.rightSingularBasis).norm_eq_one, mul_one] at h
-    calc A.singularValues i₀ = ‖toEuclideanLin A (A.rightSingularBasis i₀)‖ :=
+    calc A.colSingularValues i₀ = ‖toEuclideanLin A (A.rightSingularBasis i₀)‖ :=
           (A.norm_toEuclideanLin_rightSingularBasis i₀).symm
       _ ≤ lpOpNorm 2 A := h
   exact ⟨i₀, le_antisymm hge hle, fun j => (hi₀ j).trans hge⟩
@@ -281,7 +281,7 @@ private theorem exists_singularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fin n
 `AᵀA z = μ² z`, `μ = ‖A‖₂`. -/
 theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     ∃ z : Fin n → ℝ, ‖WithLp.toLp 2 z‖ = 1 ∧ (Aᵀ * A) *ᵥ z = lpOpNorm 2 A ^ 2 • z := by
-  obtain ⟨i, hi, -⟩ := exists_singularValues_eq_lpOpNorm_two A hn
+  obtain ⟨i, hi, -⟩ := exists_colSingularValues_eq_lpOpNorm_two A hn
   refine ⟨WithLp.ofLp (A.rightSingularBasis i), by
     rw [WithLp.toLp_ofLp, (A.rightSingularBasis).norm_eq_one], ?_⟩
   have h := congrArg WithLp.ofLp (A.toEuclideanLin_conjTranspose_mul_self_rightSingularBasis i)
@@ -303,18 +303,18 @@ theorem l2_opNorm_eq_sqrt_eigenvalues₀_zero (A : Matrix (Fin m) (Fin n) ℝ)
   have hG := isHermitian_conjTranspose_mul_self A
   have hcongr : hAtA.eigenvalues₀ = hG.eigenvalues₀ :=
     eigenvalues₀_congr (by rw [conjTranspose_eq_transpose_of_trivial]) hAtA hG
-  obtain ⟨i₀, hi₀, hmax⟩ := exists_singularValues_eq_lpOpNorm_two A hn
+  obtain ⟨i₀, hi₀, hmax⟩ := exists_colSingularValues_eq_lpOpNorm_two A hn
   set e : Fin (Fintype.card (Fin n)) ≃ Fin n := Fintype.equivOfCardEq (Fintype.card_fin _)
   have heig : ∀ j, hG.eigenvalues j = hG.eigenvalues₀ (e.symm j) := fun j => rfl
   have hsq : lpOpNorm 2 A ^ 2 = hAtA.eigenvalues₀ k₀ := by
     rw [hcongr]
     refine le_antisymm ?_ ?_
-    · rw [← hi₀, sq_singularValues, heig]
+    · rw [← hi₀, sq_colSingularValues, heig]
       exact hG.eigenvalues₀_antitone (Fin.le_def.2 (Nat.zero_le _))
-    · have h := sq_singularValues A (e k₀)
+    · have h := sq_colSingularValues A (e k₀)
       rw [heig, Equiv.symm_apply_apply] at h
       rw [← h]
-      exact pow_le_pow_left₀ (A.singularValues_nonneg _) (hmax _) 2
+      exact pow_le_pow_left₀ (A.colSingularValues_nonneg _) (hmax _) 2
   refine ⟨by rw [← hsq, Real.sqrt_sq (lpOpNorm_nonneg _ _)], ?_⟩
   obtain ⟨z, hz1, hz⟩ := theorem_2_3_1 A hn
   refine exists_mulVec_eq_zero_iff.1 ⟨z, fun h0 => by simp [h0] at hz1, ?_⟩

@@ -91,7 +91,7 @@ bundled on demand as `Matrix.inducedSeminorm` (rectangular) or `Matrix.inducedAl
   (`κ₂ = λ_max / λ_min`, their (3.5)).
 * The Frobenius norm: `Matrix.frobenius_norm_sq_eq_trace` (their (1.18)),
   `Matrix.frobenius_norm_mulVec_le` (their Example 1.7), `Matrix.frobenius_norm_one`,
-  `Matrix.frobenius_norm_sq_eq_sum_sq_singularValues` (their Exercise 16),
+  `Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues` (their Exercise 16),
   `Matrix.l2_opNorm_le_frobenius_norm` and `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`
   (their Exercise 17), `Matrix.norm_entry_le_l2_opNorm`,
   `Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le` and
@@ -1263,17 +1263,17 @@ theorem norm_entry_le_l2_opNorm (A : Matrix m n 𝕜) (i : m) (j : n) :
   simpa [toEuclideanLin_apply, mulVec_single_one] using h2
 
 /-- A singular value is at most the spectral norm, for a rectangular `A`. -/
-theorem singularValues_le_l2_opNorm (A : Matrix m n 𝕜) (i : n) :
-    A.singularValues i ≤ ‖A‖ := by
+theorem colSingularValues_le_l2_opNorm (A : Matrix m n 𝕜) (i : n) :
+    A.colSingularValues i ≤ ‖A‖ := by
   have h := norm_toEuclideanLin_apply_le A (A.rightSingularBasis i)
   rwa [norm_toEuclideanLin_rightSingularBasis, A.rightSingularBasis.orthonormal.1 i,
     mul_one] at h
 
 /-- A singular value is at most the spectral norm, written with `lpOpNorm 2`. -/
-theorem singularValues_le_lpOpNorm_two (A : Matrix m n 𝕜) (i : n) :
-    A.singularValues i ≤ lpOpNorm 2 A := by
+theorem colSingularValues_le_lpOpNorm_two (A : Matrix m n 𝕜) (i : n) :
+    A.colSingularValues i ≤ lpOpNorm 2 A := by
   rw [lpOpNorm_two]
-  exact singularValues_le_l2_opNorm A i
+  exact colSingularValues_le_l2_opNorm A i
 
 /-- **Theorem 1.2, (1.21), first equality** ([quarteroni2000numerical]): `‖A‖₂² = ρ(Aᴴ A)` for
 `A : Matrix m n ℂ`. In the C⋆-algebra `Matrix n n ℂ`, `ρ(Aᴴ A) = ‖Aᴴ A‖₂` because `Aᴴ A` is
@@ -1400,29 +1400,29 @@ theorem l2_opNorm_le_frobenius_norm [DecidableEq n] (A : Matrix m n 𝕜) : lpOp
 /-- **Exercise 16 of [quarteroni2000numerical]**: `‖A‖_F² = ∑ σᵢ²`, the Frobenius norm squared
 is the sum of the squared singular values, since `tr(Aᴴ A)` is the sum of the eigenvalues of
 `Aᴴ A`. -/
-theorem frobenius_norm_sq_eq_sum_sq_singularValues [DecidableEq n] (A : Matrix m n 𝕜) :
-    ‖A‖ ^ 2 = ∑ i, A.singularValues i ^ 2 := by
+theorem frobenius_norm_sq_eq_sum_sq_colSingularValues [DecidableEq n] (A : Matrix m n 𝕜) :
+    ‖A‖ ^ 2 = ∑ i, A.colSingularValues i ^ 2 := by
   have h := frobenius_norm_sq_eq_trace A
   rw [(isHermitian_conjTranspose_mul_self A).trace_eq_sum_eigenvalues] at h
-  simp_rw [sq_singularValues]
+  simp_rw [sq_colSingularValues]
   exact_mod_cast h
 
 /-- **`‖A‖_F ≤ √(rank A) ‖A‖₂`** ([quarteroni2000numerical] Exercise 17, `C_{F2} = √n`): each
 nonzero singular value is at most `‖A‖₂` and there are `rank A` of them. -/
 theorem frobenius_norm_le_sqrt_rank_mul_l2_opNorm [DecidableEq n] (A : Matrix m n 𝕜) :
     ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A := by
-  have hσ : ∀ i, A.singularValues i ≤ lpOpNorm 2 A := singularValues_le_lpOpNorm_two A
-  have hfilter : univ.filter (fun i => A.singularValues i ^ 2 ≠ 0)
-      = univ.filter (fun i => A.singularValues i ≠ 0) := by
+  have hσ : ∀ i, A.colSingularValues i ≤ lpOpNorm 2 A := colSingularValues_le_lpOpNorm_two A
+  have hfilter : univ.filter (fun i => A.colSingularValues i ^ 2 ≠ 0)
+      = univ.filter (fun i => A.colSingularValues i ≠ 0) := by
     ext i
     simp [pow_eq_zero_iff]
   have hsq : ‖A‖ ^ 2 ≤ (A.rank : ℝ) * lpOpNorm 2 A ^ 2 := by
-    rw [frobenius_norm_sq_eq_sum_sq_singularValues, ← card_singularValues_ne_zero,
+    rw [frobenius_norm_sq_eq_sum_sq_colSingularValues, ← card_colSingularValues_ne_zero,
       Fintype.card_subtype, ← Finset.sum_filter_ne_zero, hfilter]
-    calc ∑ i ∈ univ.filter (fun i => A.singularValues i ≠ 0), A.singularValues i ^ 2
-        ≤ ∑ i ∈ univ.filter (fun i => A.singularValues i ≠ 0), lpOpNorm 2 A ^ 2 := by
+    calc ∑ i ∈ univ.filter (fun i => A.colSingularValues i ≠ 0), A.colSingularValues i ^ 2
+        ≤ ∑ i ∈ univ.filter (fun i => A.colSingularValues i ≠ 0), lpOpNorm 2 A ^ 2 := by
           refine Finset.sum_le_sum fun i _ => ?_
-          exact pow_le_pow_left₀ (A.singularValues_nonneg i) (hσ i) 2
+          exact pow_le_pow_left₀ (A.colSingularValues_nonneg i) (hσ i) 2
       _ = _ := by rw [Finset.sum_const, nsmul_eq_mul]
   have hr : 0 ≤ √(A.rank : ℝ) * lpOpNorm 2 A :=
     mul_nonneg (Real.sqrt_nonneg _) (lpOpNorm_nonneg 2 A)

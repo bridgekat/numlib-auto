@@ -43,8 +43,8 @@ the smallest singular value of `C` bounds its size from below.
 ## Implementation notes
 
 Only the single right-hand side needs no singular-value theory beyond the least stretch
-`σ_min(C) ‖w‖ ≤ ‖C w‖` (`Matrix.iInf_singularValues_mul_norm_le`, attained by
-`Matrix.exists_norm_eq_iInf_singularValues`): a feasible perturbation `ΔC` has a unit null vector
+`σ_min(C) ‖w‖ ≤ ‖C w‖` (`Matrix.iInf_colSingularValues_mul_norm_le`, attained by
+`Matrix.exists_norm_eq_iInf_colSingularValues`): a feasible perturbation `ΔC` has a unit null vector
 `w'` of `C + ΔC` with nonzero last entry, and `‖ΔC‖_F ≥ ‖ΔC w'‖ = ‖C w'‖ ≥ σ_min`; conversely
 `ΔC = −C w wᴴ` is feasible for every unit `w` with nonzero last entry and has `‖ΔC‖_F = ‖C w‖`.
 The multiple right-hand side of Theorem 6.3.1 rests on the Frobenius Eckart–Young–Mirsky bound
@@ -291,12 +291,12 @@ private theorem exists_norm_mulVec_le_of_range_le (ht : ∀ j, t j ≠ 0)
   exact (frobenius_norm_mulVec_le _ w).trans_eq (by rw [hw, mul_one])
 
 /-- The least singular value bounds every feasible perturbation. -/
-private theorem iInf_singularValues_le_of_range_le (ht : ∀ j, t j ≠ 0)
+private theorem iInf_colSingularValues_le_of_range_le (ht : ∀ j, t j ≠ 0)
     {E : Matrix m n 𝕜} {R : Matrix m Unit 𝕜}
     (h : LinearMap.range (replicateCol Unit b + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
-    ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).singularValues j ≤ ‖tlsWeighted d t E R‖ := by
+    ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).colSingularValues j ≤ ‖tlsWeighted d t E R‖ := by
   obtain ⟨w, hw, -, hle⟩ := exists_norm_mulVec_le_of_range_le (A := A) ht h
-  have := iInf_singularValues_mul_norm_le (tlsWeighted d t A (replicateCol Unit b))
+  have := iInf_colSingularValues_mul_norm_le (tlsWeighted d t A (replicateCol Unit b))
     (WithLp.toLp 2 w)
   rw [hw, mul_one, toEuclideanLin_toLp] at this
   exact this.trans hle
@@ -350,7 +350,7 @@ perturbation has a unit null vector `w'` of `C + ΔC` and `‖ΔC‖_F ≥ ‖Δ
 theorem isTLSSolution_of_mem_smallest (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     {w : n ⊕ Unit → 𝕜} (hw : ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1)
     (hmin : ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) :
-      EuclideanSpace 𝕜 m)‖ = ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).singularValues j)
+      EuclideanSpace 𝕜 m)‖ = ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).colSingularValues j)
     (hα : w (Sum.inr ()) ≠ 0) :
     ∃ E R, IsTLSPerturbation d t A (replicateCol Unit b) E R ∧
       (A + E) * replicateCol Unit (fun j => -((t (Sum.inl j) : 𝕜) * w (Sum.inl j)) /
@@ -361,13 +361,13 @@ theorem isTLSSolution_of_mem_smallest (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j �
   · rw [← hsol, mulVecLin_mul]
     exact LinearMap.range_comp_le_range _ _
   · rw [hER, norm_neg, frobenius_norm_vecMulVec_star, hw, mul_one, hmin]
-    exact iInf_singularValues_le_of_range_le ht h'
+    exact iInf_colSingularValues_le_of_range_le ht h'
 
 /-- A single-right-hand-side TLS solution, in the book's vector form: `x` with `X = [x]`. -/
 theorem isTLSSolution_of_mem_smallest' (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     {w : n ⊕ Unit → 𝕜} (hw : ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1)
     (hmin : ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) :
-      EuclideanSpace 𝕜 m)‖ = ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).singularValues j)
+      EuclideanSpace 𝕜 m)‖ = ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).colSingularValues j)
     (hα : w (Sum.inr ()) ≠ 0) :
     IsTLSSolution d t A (replicateCol Unit b) (replicateCol Unit fun j =>
       -((t (Sum.inl j) : 𝕜) * w (Sum.inl j)) / ((t (Sum.inr ()) : 𝕜) * w (Sum.inr ()))) :=
@@ -383,16 +383,16 @@ null vector `w'` has `w'_last ≠ 0` and `σ_min ≤ ‖C w'‖ ≤ ‖ΔC‖_F`
 theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (h : ∀ w : n ⊕ Unit → 𝕜, ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1 →
       ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) : EuclideanSpace 𝕜 m)‖ =
-        ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).singularValues j → w (Sum.inr ()) = 0) :
+        ⨅ j, (tlsWeighted d t A (replicateCol Unit b)).colSingularValues j → w (Sum.inr ()) = 0) :
     ¬ ∃ X, IsTLSSolution d t A (replicateCol Unit b) X := by
   rintro ⟨X, E, R, hP, -⟩
   set C := tlsWeighted d t A (replicateCol Unit b)
-  set σmin := ⨅ j, C.singularValues j
+  set σmin := ⨅ j, C.colSingularValues j
   have hnrm : ∀ w : n ⊕ Unit → 𝕜, ‖(WithLp.toLp 2 (C *ᵥ w) : EuclideanSpace 𝕜 m)‖ =
       ‖toEuclideanLin C (WithLp.toLp 2 w)‖ := fun w => by rw [toEuclideanLin_toLp]
   -- the upper bound `‖ΔC‖_F ≤ σ_min`
   have hup : ‖tlsWeighted d t E R‖ ≤ σmin := by
-    obtain ⟨x, hx, hCx⟩ := exists_norm_eq_iInf_singularValues C
+    obtain ⟨x, hx, hCx⟩ := exists_norm_eq_iInf_colSingularValues C
     set w₀ : n ⊕ Unit → 𝕜 := WithLp.ofLp x
     have hw₀ : ‖(WithLp.toLp 2 w₀ : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1 := hx
     have hCw₀ : ‖(WithLp.toLp 2 (C *ᵥ w₀) : EuclideanSpace 𝕜 m)‖ = σmin := by
@@ -462,7 +462,7 @@ theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : �
   -- the lower bound, with a null vector whose last entry does not vanish
   obtain ⟨w', hw', hα', hle'⟩ := exists_norm_mulVec_le_of_range_le (A := A) ht hP.range_le
   have hge : σmin ≤ ‖(WithLp.toLp 2 (C *ᵥ w') : EuclideanSpace 𝕜 m)‖ := by
-    have := iInf_singularValues_mul_norm_le C (WithLp.toLp 2 w')
+    have := iInf_colSingularValues_mul_norm_le C (WithLp.toLp 2 w')
     rwa [hw', mul_one, ← hnrm] at this
   exact hα' (h w' hw' (le_antisymm (hle'.trans hup) hge))
 
@@ -581,8 +581,8 @@ theorem isUnit_lowerRightBlock_of_lt {C₁ : Matrix (Fin m) (Fin n) 𝕜}
       ← toEuclideanLin_toLp]
     exact (norm_toEuclideanLin_apply_le _ _).trans
       (mul_le_mul_of_nonneg_right hτle (norm_nonneg _))
-  have hlower := iInf_singularValues_mul_norm_le C₁ (WithLp.toLp 2 y)
-  rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin, toEuclideanLin_toLp]
+  have hlower := iInf_colSingularValues_mul_norm_le C₁ (WithLp.toLp 2 y)
+  rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin, toEuclideanLin_toLp]
     at hlower
   have hypos : 0 < ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 (Fin n))‖ := by
     rw [hny, hnv, hne]
@@ -1117,8 +1117,8 @@ theorem isMinOn_tlsObjective (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) 
   set x₀ : Fin n → ℝ := fun j => -(t (Fin.castSucc j) * V (Fin.castSucc j) (Fin.last n)) /
     (t (Fin.last n) * V (Fin.last n) (Fin.last n))
   -- `σ_min(C) = σ n`
-  have hmin : ⨅ j, C.singularValues j = σ n := by
-    rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin, Nat.add_sub_cancel,
+  have hmin : ⨅ j, C.colSingularValues j = σ n := by
+    rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin, Nat.add_sub_cancel,
       hC.singularValues_eq hmn (Nat.lt_succ_self n)]
   -- the vector of `x₀` is a multiple of the last column of `V`
   set s : ℝ := -1 / (t (Fin.last n) * V (Fin.last n) (Fin.last n))
@@ -1171,7 +1171,7 @@ theorem isMinOn_tlsObjective (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) 
     refine norm_pos_iff.2 fun h => ?_
     have := congrArg (fun z : EuclideanSpace ℝ (Fin (n + 1)) => z (Fin.last n)) h
     simp [w, ht (Fin.last n)] at this
-  have hlow := iInf_singularValues_mul_norm_le C (WithLp.toLp 2 w)
+  have hlow := iInf_colSingularValues_mul_norm_le C (WithLp.toLp 2 w)
   rw [hmin, toEuclideanLin_toLp] at hlow
   rw [le_div_iff₀ (pow_pos hw 2), ← mul_pow]
   exact pow_le_pow_left₀ (mul_nonneg (hC.nonneg n) (norm_nonneg _)) hlow 2

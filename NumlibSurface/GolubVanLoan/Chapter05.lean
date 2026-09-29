@@ -38,7 +38,7 @@ rotation and QR of §5.1.13 and §5.2.10 over `ℂ`.
   (convention 13).
 * Norms: the 2-norm of a matrix through the scoped `Matrix.Norms.L2Operator` or `Matrix.lpOpNorm 2`,
   the Frobenius norm through `Matrix.Norms.Frobenius`, each in its own section. `σ_min` of a
-  full-column-rank matrix is `⨅ i, A.singularValues i`; the book's sorted `σ_k` is
+  full-column-rank matrix is `⨅ i, A.colSingularValues i`; the book's sorted `σ_k` is
   `A.sortedSingularValues (k - 1)`; an SVD is `Matrix.IsSVD A U σ V`.
 * Algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan`. This chapter owns the
   **shared helper family** of convention 13 (§5.1: `houseOn`, `householderApplyLeft`/`Right`,
