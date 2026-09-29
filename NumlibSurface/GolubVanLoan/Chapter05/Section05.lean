@@ -8,7 +8,8 @@ also through a complete orthogonal decomposition (§5.5.1), the SVD solution (Th
 (5.5.1)–(5.5.2)), the pseudoinverse and its characterizations (§5.5.2, (5.5.3), the Moore–Penrose
 conditions), its sensitivity (§5.5.3: Wedin's bound and the discontinuity example), the truncated
 SVD solution (§5.5.4), basic solutions from QR with column pivoting (§5.5.5, (5.5.4)–(5.5.5)) and
-SVD-based subset selection (§5.5.7, Theorem 5.5.2).
+SVD-based subset selection (§5.5.7, Theorem 5.5.2, Algorithm 5.5.1 and its specification) and the
+residual comparison of §5.5.8 (Theorem 5.5.3).
 
 ## Conventions
 
@@ -695,6 +696,56 @@ theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (F
   rw [hV11, Matrix.mul_inv_rev, hQinv, ← transpose_nonsing_inv, l2_opNorm_unitary_mul hQO,
     ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose]
 
+/-! ### §5.5.8 Column independence versus residual size -/
+
+/-- **Theorem 5.5.3**: "Assume that `UᵀAV = Σ` is the SVD of `A ∈ ℝ^{m×n}` and that `r_y` and
+`r_{x_r̃}` are defined as above. If `Ṽ₁₁` is the leading `r̃`-by-`r̃` principal submatrix of `PᵀV`,
+then `‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃+1}(A)/σ_r̃(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂`" (printed "`r`-by-`r`"), where
+`r_{x_r̃} = b - A x_r̃ = (I - U₁U₁ᵀ) b` (`x_r̃` solving the nearest rank-`r̃` problem, `U₁` the
+first `r̃` columns of `U`) and `r_y = b - B₁ z = (I - B₁B₁⁺) b` (`B₁` the first `r̃` columns of
+`AP = A.submatrix id π`); 0-based, `σ_{r̃+1}(A)/σ_r̃(A)` is
+`A.sortedSingularValues r̃ / A.sortedSingularValues (r̃ - 1)`. With it, the remark after the proof:
+`r_{x_r̃} - r_y = B₁ z - ∑_{i=1}^{r̃} (u_iᵀ b) u_i` (`z = B₁⁺ b`). As in Theorem 5.5.2,
+`1 ≤ r̃ ≤ rank A` and `Ṽ₁₁` nonsingular; the book leaves `r̃ ≤ rank A` implicit, and it is needed
+(for `A = 0` the left side need not vanish). Backbone `Matrix.norm_residual_subset_sub_le`. -/
+theorem theorem_5_5_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (π : Equiv.Perm (Fin n)) {r : ℕ}
+    (hr0 : 0 < r) (hrA : r ≤ A.rank)
+    (hV : IsUnit ((V.submatrix π id).submatrix (Fin.castLE (hrA.trans A.rank_le_width))
+      (Fin.castLE (hrA.trans A.rank_le_width))))
+    (b : EuclideanSpace ℝ (Fin m)) :
+    ‖(b - toEuclideanLin (U.submatrix id (Fin.castLE (hrA.trans A.rank_le_height)) *
+          (U.submatrix id (Fin.castLE (hrA.trans A.rank_le_height)))ᵀ) b) -
+        (b - toEuclideanLin ((A.submatrix id π).submatrix id
+            (Fin.castLE (hrA.trans A.rank_le_width)) *
+          ((A.submatrix id π).submatrix id (Fin.castLE (hrA.trans A.rank_le_width))).pinv) b)‖ ≤
+      A.sortedSingularValues r / A.sortedSingularValues (r - 1) *
+        ‖((V.submatrix π id).submatrix (Fin.castLE (hrA.trans A.rank_le_width))
+          (Fin.castLE (hrA.trans A.rank_le_width)))⁻¹‖ * ‖b‖ ∧
+    (b - toEuclideanLin (U.submatrix id (Fin.castLE (hrA.trans A.rank_le_height)) *
+          (U.submatrix id (Fin.castLE (hrA.trans A.rank_le_height)))ᵀ) b) -
+        (b - toEuclideanLin ((A.submatrix id π).submatrix id
+            (Fin.castLE (hrA.trans A.rank_le_width)) *
+          ((A.submatrix id π).submatrix id (Fin.castLE (hrA.trans A.rank_le_width))).pinv) b) =
+      toEuclideanLin ((A.submatrix id π).submatrix id (Fin.castLE (hrA.trans A.rank_le_width)))
+          (toEuclideanLin ((A.submatrix id π).submatrix id
+            (Fin.castLE (hrA.trans A.rank_le_width))).pinv b) -
+        toLp 2 (∑ i : Fin r, (U.col (Fin.castLE (hrA.trans A.rank_le_height) i) ⬝ᵥ ofLp b) •
+          U.col (Fin.castLE (hrA.trans A.rank_le_height) i)) := by
+  have hle := norm_residual_subset_sub_le h π hr0 (hrA.trans A.rank_le_height)
+    (hrA.trans A.rank_le_width) hrA hV b
+  simp only [conjTranspose_eq_transpose_of_trivial] at hle
+  refine ⟨hle, ?_⟩
+  rw [sub_sub_sub_cancel_left, toEuclideanLin_mul_apply]
+  congr 1
+  ext p
+  simp only [toEuclideanLin_apply, PiLp.toLp_apply, mulVec, dotProduct, mul_apply,
+    submatrix_apply, id_eq, transpose_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul,
+    col_apply, Finset.sum_mul]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+  ring
+
 end SubsetSelection
 
 section Programs
@@ -728,6 +779,126 @@ noncomputable def algorithm_5_5_1 {r : ℕ} (hrn : r ≤ n) (hrm : r ≤ m)
   pure (pivotPerm st.piv, z)
 
 end Programs
+
+section Spec
+
+open scoped Matrix.Norms.L2Operator
+
+/-- Padding with zero rows is multiplication by the leading columns of the identity. -/
+private theorem padRows_eq_mul {p : ℕ} (hpn : p ≤ n) (X : Matrix (Fin p) (Fin n) ℝ) :
+    padRows X = (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X := by
+  ext i j
+  rw [mul_apply]
+  simp only [padRows, of_apply, submatrix_apply, id_eq, one_apply, ite_mul, one_mul, zero_mul]
+  split_ifs with hi
+  · rw [Finset.sum_eq_single ⟨i, hi⟩]
+    · simp
+    · exact fun k _ hk =>
+        ite_eq_right fun (e : i = Fin.castLE hpn k) => hk (Fin.ext (congrArg Fin.val e).symm)
+    · simp
+  · exact (Finset.sum_eq_zero fun k _ =>
+      ite_eq_right fun e => hi (by rw [e]; exact k.isLt)).symm
+
+/-- The leading columns of the identity are orthonormal. -/
+private theorem transpose_one_submatrix_mul_self {p : ℕ} (hpn : p ≤ n) :
+    ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn))ᵀ *
+      (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) = 1 := by
+  rw [transpose_submatrix, transpose_one, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+    Matrix.one_mul, submatrix_one _ (Fin.castLE_injective hpn)]
+
+/-- Padding with zero rows does not change the rank. -/
+private theorem rank_one_submatrix_mul {p q : ℕ} (hpn : p ≤ n) (X : Matrix (Fin p) (Fin q) ℝ) :
+    ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X).rank = X.rank := by
+  refine le_antisymm (rank_mul_le_right _ _) ?_
+  calc X.rank = (((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn))ᵀ *
+        ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X)).rank := by
+        rw [← Matrix.mul_assoc, transpose_one_submatrix_mul_self, Matrix.one_mul]
+    _ ≤ _ := rank_mul_le_right _ _
+
+/-- **Algorithm 5.5.1 selects independent columns and solves the subset problem** (exact
+arithmetic): if `V` is the right-singular-vector matrix of an SVD `UᵀAV = Σ` and
+`1 ≤ r̃ ≤ rank A`, then for the output `(P, z)`, with `B₁` the first `r̃` columns of `AP` and `Ṽ₁₁`
+the leading `r̃ × r̃` block of `PᵀV`: `Ṽ₁₁` is nonsingular (QR with column pivoting of
+`V(:, 1:r̃)ᵀ` has rank `r̃`, the rows being orthonormal, so its pivots pick an invertible
+`Ṽ₁₁ᵀ`), `σ_r̃(B₁) ≥ σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ > 0` (Theorem 5.5.2), hence "the first `r̃` columns of
+`B = AP` are independent"; and "`‖B(:, 1:r̃) z - b‖₂` is minimized" whenever no Householder step of
+Algorithm 5.2.1 on `B₁` is degenerate (the hypothesis of `algorithm_5_3_2_spec`, carried here).
+Algorithm 5.4.1 runs on `V(:, 1:r̃)ᵀ` padded with zero rows (`padRows`); the padding changes
+neither the rank nor the rows of `R` that matter. -/
+theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
+    {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hrn : r ≤ n)
+    (hrm : r ≤ m) (hr0 : 0 < r) (hrA : r ≤ A.rank) (b : Fin m → ℝ)
+    {P : Equiv.Perm (Fin n)} {z : Fin r → ℝ}
+    (hout : Id.run (algorithm_5_5_1 pure hrn hrm A V b) = (P, z)) :
+    IsUnit ((V.submatrix P id).submatrix (Fin.castLE hrn) (Fin.castLE hrn)) ∧
+      A.sortedSingularValues (r - 1) /
+          ‖((V.submatrix P id).submatrix (Fin.castLE hrn) (Fin.castLE hrn))⁻¹‖ ≤
+        ((A.submatrix id P).submatrix id (Fin.castLE hrn)).sortedSingularValues (r - 1) ∧
+      LinearIndependent ℝ ((A.submatrix id P).submatrix id (Fin.castLE hrn))ᵀ ∧
+      ((∀ j, (Id.run (algorithm_5_2_1 pure
+          ((A.submatrix id P).submatrix id (Fin.castLE hrn)))).2 j ≠ 0) →
+        IsLeastSquaresSolution ((A.submatrix id P).submatrix id (Fin.castLE hrn)) (toLp 2 b)
+          (toLp 2 z)) := by
+  have : Nonempty (Fin r) := ⟨⟨0, hr0⟩⟩
+  set W : Matrix (Fin r) (Fin n) ℝ := (V.submatrix id (Fin.castLE hrn))ᵀ with hW
+  obtain ⟨hRR, hrank, -⟩ := algorithm_5_4_1_spec le_rfl (padRows W)
+  have hP : P = pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (padRows W))).piv :=
+    (congrArg Prod.fst hout).symm
+  have hz : z = Id.run (algorithm_5_3_2 pure hrm ((A.submatrix id
+      (pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (padRows W))).piv)).submatrix id
+        (Fin.castLE hrn)) b) :=
+    (congrArg Prod.snd hout).symm
+  subst hP hz
+  set st := Id.run (algorithm_5_4_1 pure le_rfl (padRows W)) with hst
+  -- the rows of `W` are orthonormal, so `rank W = r̃`, and the run has `r = r̃`
+  have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 h.mem_unitaryGroup_right
+  have hWW : W * Wᵀ = 1 := by
+    ext i j
+    have := congrFun (congrFun hVV (Fin.castLE hrn i)) (Fin.castLE hrn j)
+    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
+  have hrankW : W.rank = r := by
+    refine le_antisymm (rank_le_height W) ?_
+    have := rank_mul_le_left W Wᵀ
+    rwa [hWW, rank_one, Fintype.card_fin] at this
+  have hr : st.r = r := by
+    rw [hrank, padRows_eq_mul hrn, rank_one_submatrix_mul, hrankW]
+  have hRR' := hRR
+  rw [hr] at hRR'
+  -- `[Ṽ₁₁ᵀ; 0] = Q [R₁₁; 0]`, of rank `r̃`
+  set Vt := (V.submatrix (pivotPerm st.piv) id).submatrix (Fin.castLE hrn) (Fin.castLE hrn)
+    with hVt
+  have hkey : (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hrn) * Vtᵀ =
+      factoredQ st.β st.A * (upperPart st.A).submatrix id (Fin.castLE hrn) := by
+    have h1 : ((padRows W).submatrix id (pivotPerm st.piv)).submatrix id (Fin.castLE hrn) =
+        (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hrn) * Vtᵀ := by
+      rw [padRows_eq_mul hrn]
+      rfl
+    rw [← h1, ← hRR'.isQR.mul_eq]
+    rfl
+  have hrankT : ((upperPart st.A).submatrix id (Fin.castLE hrn)).rank = r :=
+    rank_eq_of_apply_eq_zero_of_isUnit hRR'.le_rows le_rfl
+      (fun i j hi => hRR'.apply_eq_zero i _ hi) hRR'.isUnit_block
+  have hQdet : IsUnit (factoredQ st.β st.A).det :=
+    (isUnit_iff_isUnit_det _).1 (isUnit_of_mem_unitaryGroup hRR'.isQR.mem_unitaryGroup)
+  have hVtu : IsUnit Vt := by
+    have hrk : Vtᵀ.rank = r := by
+      rw [← rank_one_submatrix_mul hrn, hkey, rank_mul_eq_right_of_isUnit_det _ _ hQdet, hrankT]
+    exact (isUnit_transpose _).1 (isUnit_of_rank_eq_card (by rw [hrk, Fintype.card_fin]))
+  -- Theorem 5.5.2
+  have hbound := (theorem_5_5_2 h (pivotPerm st.piv) hr0 hrA hVtu).1
+  have hsA0 : 0 < A.sortedSingularValues (r - 1) :=
+    lt_of_le_of_ne (A.sortedSingularValues_nonneg _)
+      (Ne.symm ((A.sortedSingularValues_eq_zero_iff_rank_le _).not.2 (by omega)))
+  have hinv : 0 < ‖Vt⁻¹‖ := norm_pos_iff.2 (isUnit_nonsing_inv_iff.2 hVtu).ne_zero
+  have hB0 := lt_of_lt_of_le (div_pos hsA0 hinv) hbound
+  have hlin : LinearIndependent ℝ
+      ((A.submatrix id (pivotPerm st.piv)).submatrix id (Fin.castLE hrn))ᵀ := by
+    refine linearIndependent_transpose_of_iInf_singularValues_pos ?_
+    rw [← sortedSingularValues_eq_iInf_singularValues, Fintype.card_fin]
+    exact hB0
+  exact ⟨hVtu, hbound, hlin, fun hβ => algorithm_5_3_2_spec hrm hlin hβ b⟩
+
+end Spec
 
 
 end GolubVanLoan.Chapter05

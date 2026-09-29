@@ -46,54 +46,14 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 
 [[node]]
 id = "equation_5_3_6"
-kind = "theorem"
-desc = '''(5.3.6)–(5.3.8), rigorous: under the hypotheses of `algorithm_5_3_2_spec`'s nondegeneracy for
-the *computed* run (every computed `β̂_j ≠ 0`) and `K u` small, every run `x̂` of
-`algorithm_5_3_2 fp.round h A b` solves exactly a nearby problem: `∃ δA δb, IsLeastSquaresSolution
-(A + δA) (b + δb) x̂ ∧ ‖δA‖_F ≤ c_A ‖A‖_F ∧ ‖δb‖₂ ≤ c_b ‖b‖₂` with explicit
-`c_A, c_b = O(n γ_{K'})` from the columnwise QR backward error (`algorithm_5_2_1_rounding`, the same
-reflectors applied to `b`: columnwise Lemma 19.3 on `[A | b]`) and the back substitution's
-`(R̂ + ΔR) x̂ = ĉ`, `|ΔR| ≤ γ_n |R̂|` (chapter 3's bridge `algorithm_3_1_2_rounds` to `FloatingPoint.RoundsBackSubstDot`
-and its backward error `FloatingPoint.exists_roundsBackSubstDot_eq`), `δA := Q[ΔR; 0] + E`. Relation to the printed
-`(6m - 3n + 41) n u + O(u²)` (Lawson–Hanson): same shape, first-order constants replaced by `γ`s
-(Higham Theorem 20.3). ★★★ (~250 lines)
-
-Blocked (c05, main fca5b833): every ingredient is now proved (`algorithm_5_3_2`, its spec,
-`algorithm_5_2_1_rounding`, chapter 3's `algorithm_3_1_2_rounds`), but it was not attempted in the
-c05 round, which closed the other §5.3 nodes first. Missing: a `_rounds` bridge for the `b`-loop
-`householderLSStep` (the recomputed `β = fl(2/fl(vᵀv))` adds a relative error to be folded into
-the reflector perturbation, and the update is in the printed association `(β(vᵀb))v`), the
-columnwise backward error of `[A | b]`, and the composition with the back substitution's
-`(R̂ + ΔR) x̂ = ĉ`. Estimate ★★★, ~300 lines.'''
-deps = [
-  "algorithm_5_3_2",
-  "algorithm_5_3_2_spec",
-  "algorithm_5_2_1_rounding",
-  "FloatingPoint.exists_eq_prodRev_mul_add",
-  "GolubVanLoan.Chapter03.algorithm_3_1_2_rounds",
-  "FloatingPoint.exists_roundsBackSubstDot_eq",  # staged by ch03
-]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.6)'
 
 [[node]]
 id = "equation_5_3_7"
-kind = "theorem"
-desc = '''(5.3.7): the `δA` of `equation_5_3_6` satisfies `‖δA‖_F ≤ c_A ‖A‖_F` — the first bound clause
-of `equation_5_3_6`, stated on its own; the book's `(6m - 3n + 41) n u + O(u²)` is its first-order
-reading (Lawson–Hanson's constant; ours is the explicit `γ` expression). ★
-
-Blocked: waits for `equation_5_3_6` (open, see there; c05, main fca5b833).'''
-deps = ["equation_5_3_6"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.7)'
 
 [[node]]
 id = "equation_5_3_8"
-kind = "theorem"
-desc = '''(5.3.8): the `δb` of `equation_5_3_6` satisfies `‖δb‖₂ ≤ c_b ‖b‖₂` (the book's
-`(6m - 3n + 40) n u + O(u²)`), the second bound clause of `equation_5_3_6`. ★
-
-Blocked: waits for `equation_5_3_6` (open, see there; c05, main fca5b833).'''
-deps = ["equation_5_3_6"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.8)'
 
 [[node]]

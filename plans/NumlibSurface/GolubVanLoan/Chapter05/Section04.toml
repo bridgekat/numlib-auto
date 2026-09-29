@@ -30,21 +30,6 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.4.1'
 
 [[node]]
 id = "sigma_succ_le_of_colPivot"
-kind = "theorem"
-desc = '''§5.4.3, the termination criterion: if `R̂^{(k)} = [R̂₁₁ R̂₁₂; 0 R̂₂₂]` is the exact R-factor of
-`A + E_k` (`Q R̂^{(k)} = (A + E_k) Π` with `Q` orthogonal), `‖E_k‖₂ ≤ ε₂ ‖A‖₂` and
-`‖R̂₂₂‖₂ ≤ ε₁ ‖A‖₂`, then `σ_{k+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂`: `σ_{k+1}(A + E_k) = σ_{k+1}(R̂^{(k)}) ≤ ‖R̂₂₂‖₂`
-(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`; the book cites Corollary 2.4.4) and
-`σ_{k+1}(A) ≤ σ_{k+1}(A + E_k) + ‖E_k‖₂` (Weyl, chapter 8's `LinearMap.abs_singularValues_sub_le`). ★★
-
-Blocked (c05, main fca5b833): `Matrix.sortedSingularValues_le_l2_opNorm_trailing` is on main, but
-`GolubVanLoan.Chapter02.corollary_2_4_4` (the chapter restatement the surface must use, being proved
-by agent c0209) is not. ~20 lines once it lands.'''
-deps = [
-  "Matrix.sortedSingularValues_le_l2_opNorm_trailing",
-  "GolubVanLoan.Chapter02.corollary_2_4_4",
-  "LinearMap.abs_singularValues_sub_le",  # ch08 (Numlib/Analysis/InnerProductSpace/SingularValues)
-]
 source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
 
 [[node]]
@@ -70,34 +55,10 @@ source = 'Golub–Van Loan, Matrix Computations, §5.4.5'
 
 [[node]]
 id = "equation_5_4_10"
-kind = "theorem"
-desc = '''(5.4.10) (Stewart, URV): for `Uᵀ A V = R = [R₁₁ R₁₂; 0 R₂₂]` (blocks `k`, `n - k`),
-`V = [V₁ | V₂]`, `σ_k(A) > σ_{k+1}(A)`, `S` the span of the right singular vectors `v_{k+1}, …, v_n`
-of `A`, `ρ_R = ‖R₂₂‖₂/σ_min(R₁₁) < 1`: `dist(ran V₂, S) ≤ ‖R₁₂‖₂ / ((1 - ρ_R²) σ_min(R₁₁))`.
-`dist` is `Submodule.gap` (`‖P₁ - P₂‖₂`, chapter 2's §2.5.3); backbone `Matrix.gap_le_of_urv`, whose
-hypothesis is the bundle `Matrix.IsURV A U R V` (`U`, `V` orthogonal — `unitaryGroup` at `ℝ` — `Uᵀ A V = R`
-upper triangular), assembled from the book's data; `σ_min(R₁₁)` is `R₁₁.sortedSingularValues (k - 1)`.
-The trailing-block step `σ_{k+1}(R) ≤ ‖R₂₂‖₂` is `Matrix.sortedSingularValues_le_l2_opNorm_trailing`
-(its second declaration `…_trailing_lower` is the ULV shape of (5.4.11)).
-Stated without proof by the book. ★
-
-Blocked (c05, main fca5b833): `Matrix.IsURV` is on main, `Matrix.gap_le_of_urv` is not (agent bb1
-is proving it). A restatement once it lands.'''
-deps = ["Matrix.gap_le_of_urv", "Matrix.IsURV", "Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.10)'
 
 [[node]]
 id = "equation_5_4_11"
-kind = "theorem"
-desc = '''(5.4.11) (Stewart, ULV), with the printed `‖L₁₂‖₂` corrected to `‖L₂₁‖₂` (`L` is lower triangular):
-for `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`, `ρ_L = ‖L₂₂‖₂/σ_min(L₁₁) < 1`:
-`dist(ran V₂, S) ≤ ρ_L ‖L₂₁‖₂ / ((1 - ρ_L²) σ_min(L₁₁))`. Backbone `Matrix.gap_le_of_ulv`, with the
-hypothesis bundled as `Matrix.IsULV A U L V` (`U`, `V` orthogonal, `Uᵀ A V = L` lower triangular) and
-`σ_min(L₁₁) = L₁₁.sortedSingularValues (k - 1)`. ★
-
-Blocked (c05, main fca5b833): `Matrix.IsULV` is on main, `Matrix.gap_le_of_ulv` is not (agent bb1
-is proving it). A restatement once it lands.'''
-deps = ["Matrix.gap_le_of_ulv", "Matrix.IsULV", "Submodule.gap"]
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.4.11)'
 
 [[node]]

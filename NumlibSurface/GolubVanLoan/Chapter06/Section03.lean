@@ -1,4 +1,5 @@
 import Numlib.Analysis.Matrix.SingularValues
+import Numlib.LinearAlgebra.Matrix.GSVD
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Total
 import NumlibSurface.GolubVanLoan.Chapter01.Section02
 import NumlibSurface.GolubVanLoan.Chapter05.Section01
@@ -7,10 +8,11 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section01
 # Golub–Van Loan §6.3: total least squares
 
 Surface file for [golub2013matrix] §6.3: the least-squares problem recast as (6.3.1), the total
-least-squares problem (6.3.2)–(6.3.3) and an instance with no solution, the first part of
-Theorem 6.3.1 (the generic condition makes `V₂₂` nonsingular) and the `τ`-norm of the solution
-(§6.3.1), the single right-hand side and Algorithm 6.3.1 (§6.3.2), the orthogonal-regression
-reading (6.3.6) and the distance interpretation (§6.3.3).
+least-squares problem (6.3.2)–(6.3.3) and an instance with no solution, Theorem 6.3.1 (the
+generic condition makes `V₂₂` nonsingular, (6.3.4) is the unique TLS perturbation and `X_TLS` the
+unique TLS solution) and the `τ`-norm of the solution (§6.3.1), the single right-hand side and
+Algorithm 6.3.1 (§6.3.2), the orthogonal-regression reading (6.3.6) and the distance
+interpretation (§6.3.3).
 
 ## Conventions
 
@@ -32,9 +34,7 @@ chapter 5's `houseOn` and `householderApplyRight` on index lists.
 
 ## Not formalized here
 
-The existence and uniqueness half of Theorem 6.3.1 waits for the backbone's
-`Matrix.existsUnique_isTLSPerturbation` and `Matrix.isTLSSolution_iff_eq` (see the plan). The
-variants of §6.3.4 and the flop count are not formalized (see the chapter group).
+The variants of §6.3.4 and the flop count are not formalized (see the chapter group).
 
 ## Sources and errata
 
@@ -142,6 +142,101 @@ theorem theorem_6_3_1_isUnit {k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Mat
     (hσ : σ n < (diagonal d * A * diagonal t₁).sortedSingularValues (n - 1)) :
     IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n)) :=
   isUnit_lowerRightBlock_of_lt hC hσ
+
+/-- The weighted matrix `D[E | R]T` with `T = diag(t₁, t₂)` is `[D E T₁ | D R T₂]`. -/
+private theorem tlsWeighted_sumElim {k : ℕ} (d : Fin m → ℝ) (t₁ : Fin n → ℝ) (t₂ : Fin k → ℝ)
+    (E : Matrix (Fin m) (Fin n) ℝ) (R : Matrix (Fin m) (Fin k) ℝ) :
+    tlsWeighted d (Sum.elim t₁ t₂) E R =
+      fromCols (diagonal d * E * diagonal t₁) (diagonal d * R * diagonal t₂) := by
+  ext i (j | j) <;> simp [tlsWeighted, mul_diagonal, diagonal_mul]
+
+/-- The trailing part `U Σ' Vᵀ` of an SVD, `Σ'` keeping the singular values `σ_i`, `i ≥ n`, is
+`U₂ Σ₂ V₂ᵀ` with `U₂ = U(:, n+1:n+k)`, `Σ₂ = diag(σ_{n+1}, …, σ_{n+k})` and `V₂ᵀ = [V₁₂ᵀ | V₂₂ᵀ]`
+when `m ≥ n + k`. -/
+private theorem mul_rectDiagonal_tail_mul_transpose {k : ℕ} (hmnk : n + k ≤ m)
+    (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ → ℝ) (V : Matrix (Fin (n + k)) (Fin (n + k)) ℝ) :
+    U * (rectDiagonal (fun i => if i < n then 0 else σ i) : Matrix (Fin m) (Fin (n + k)) ℝ) *
+        Vᵀ =
+      U.submatrix id (fun j : Fin k => Fin.castLE hmnk (Fin.natAdd n j)) *
+        diagonal (fun j : Fin k => σ (n + j)) * (V.submatrix id (Fin.natAdd n))ᵀ := by
+  ext a b
+  rw [mul_apply, mul_apply, Fin.sum_univ_add, Finset.sum_eq_zero fun i _ => ?_, zero_add]
+  · refine Finset.sum_congr rfl fun j _ => ?_
+    have hj : n + (j : ℕ) < m := by omega
+    rw [mul_rectDiagonal_apply, mul_diagonal]
+    simp only [Fin.val_natAdd, hj, ↓reduceDIte, add_lt_iff_neg_left, not_lt_zero, ite_false,
+      submatrix_apply, id_eq, transpose_apply]
+    rfl
+  · rw [mul_rectDiagonal_apply]
+    split_ifs with h h' <;> simp_all
+
+/-- **Theorem 6.3.1.** "Suppose `A ∈ ℝ^{m×n}` and `B ∈ ℝ^{m×k}` and that `D = diag(d₁, …, d_m)` and
+`T = diag(t₁, …, t_{n+k})` are nonsingular. Assume `m ≥ n + k` and let the SVD of
+`C = D[A | B]T = [C₁ C₂]` be specified by `UᵀCV = diag(σ₁, …, σ_{n+k}) = Σ` where `U`, `V`, and `Σ`
+are partitioned as follows: `U = [U₁ U₂]`, `V = [V₁₁ V₁₂; V₂₁ V₂₂]`, `Σ = [Σ₁ 0; 0 Σ₂]` (`n | k`).
+If `σ_n(C₁) > σ_{n+1}(C)`, then the matrix `[E₀ | R₀]` defined by
+`D[E₀ | R₀]T = −U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]` (6.3.4) solves (6.3.3). If `T₁ = diag(t₁, …, t_n)` and
+`T₂ = diag(t_{n+1}, …, t_{n+k})`, then the matrix `X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹` exists and is the unique
+TLS solution to `(A + E₀)X = B + R₀`."
+
+Here `T = diag(t₁, t₂)` (`Sum.elim t₁ t₂` on the columns `Fin n ⊕ Fin k`), `U₂ = U(:, n+1:n+k)` is
+the book's thin `U₂` and `Σ₂ = diag(σ_{n+1}, …, σ_{n+k})`. The conclusion: `(E₀, R₀)` satisfies
+(6.3.4) and is a TLS perturbation — the only one (backbone
+`Matrix.existsUnique_isTLSPerturbation`); `V₂₂` is nonsingular (`theorem_6_3_1_isUnit`); `X`
+solves `(A + E₀)X = B + R₀` exactly when `X = X_TLS`, and `X_TLS` is the only TLS solution
+(`Matrix.isTLSSolution_iff_eq`). The backbone does not need `m ≥ n + k`; it is used here only to
+read the book's `U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]`. -/
+theorem theorem_6_3_1 {k : ℕ} (hmnk : n + k ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
+    {B : Matrix (Fin m) (Fin k) ℝ} {d : Fin m → ℝ} {t₁ : Fin n → ℝ} {t₂ : Fin k → ℝ}
+    (hd : ∀ i, d i ≠ 0) (ht₁ : ∀ j, t₁ j ≠ 0) (ht₂ : ∀ j, t₂ j ≠ 0)
+    {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + k)) (Fin (n + k)) ℝ}
+    (hC : IsSVD ((fromCols (diagonal d * A * diagonal t₁) (diagonal d * B * diagonal t₂)).submatrix
+      id finSumFinEquiv.symm) U σ V)
+    (hσ : σ n < (diagonal d * A * diagonal t₁).sortedSingularValues (n - 1)) :
+    ∃ E₀ R₀,
+      (fromCols (diagonal d * E₀ * diagonal t₁) (diagonal d * R₀ * diagonal t₂)).submatrix id
+          finSumFinEquiv.symm =
+        -(U.submatrix id (fun j : Fin k => Fin.castLE hmnk (Fin.natAdd n j)) *
+          diagonal (fun j : Fin k => σ (n + j)) * (V.submatrix id (Fin.natAdd n))ᵀ) ∧
+      IsTLSPerturbation d (Sum.elim t₁ t₂) A B E₀ R₀ ∧
+      (∀ E R, IsTLSPerturbation d (Sum.elim t₁ t₂) A B E R → E = E₀ ∧ R = R₀) ∧
+      IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n)) ∧
+      (∀ X, (A + E₀) * X = B + R₀ ↔
+        X = -(diagonal t₁ * V.submatrix (Fin.castAdd k) (Fin.natAdd n) *
+          (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ * (diagonal t₂)⁻¹)) ∧
+      (∀ X, IsTLSSolution d (Sum.elim t₁ t₂) A B X ↔
+        X = -(diagonal t₁ * V.submatrix (Fin.castAdd k) (Fin.natAdd n) *
+          (V.submatrix (Fin.natAdd n) (Fin.natAdd n))⁻¹ * (diagonal t₂)⁻¹)) := by
+  have ht : ∀ j, Sum.elim t₁ t₂ j ≠ 0 := by
+    rintro (j | j)
+    exacts [ht₁ j, ht₂ j]
+  have hC' := hC
+  rw [← tlsWeighted_sumElim] at hC'
+  have hσ' : σ n < (tlsWeighted d (Sum.elim t₁ t₂) A B).toCols₁.sortedSingularValues (n - 1) := by
+    rwa [tlsWeighted_sumElim, toCols₁_fromCols]
+  obtain ⟨⟨E₀, R₀⟩, h₀, huniq⟩ := existsUnique_isTLSPerturbation hd ht hC' hσ'
+  have hX := isTLSSolution_iff_eq hd ht hC' hσ'
+  simp only [Sum.elim_inl, Sum.elim_inr, RCLike.ofReal_real_eq_id, id_eq] at hX
+  have hsol : ∀ X, IsTLSSolution d (Sum.elim t₁ t₂) A B X ↔ (A + E₀) * X = B + R₀ := by
+    intro X
+    refine ⟨fun ⟨E, R, hP, hEq⟩ => ?_, fun h => ⟨E₀, R₀, h₀, h⟩⟩
+    obtain ⟨rfl, rfl⟩ := Prod.ext_iff.1 (huniq (E, R) hP)
+    exact hEq
+  refine ⟨E₀, R₀, ?_, h₀, fun E R h => Prod.ext_iff.1 (huniq (E, R) h),
+    theorem_6_3_1_isUnit d t₁ t₂ hC hσ, fun X => (hsol X).symm.trans (hX X), hX⟩
+  -- (6.3.4): `D[E₀ | R₀]T = C_n − C = −U₂Σ₂V₂ᵀ`
+  have h' := (isTLSPerturbation_iff hd ht hC' hσ').1 h₀
+  rw [tlsWeighted_add] at h'
+  have e : (tlsWeighted d (Sum.elim t₁ t₂) E₀ R₀).submatrix id finSumFinEquiv.symm =
+      -((tlsWeighted d (Sum.elim t₁ t₂) A B).submatrix id finSumFinEquiv.symm -
+        svdTruncation U σ V n) := by
+    rw [neg_sub, eq_sub_of_add_eq' h']
+    ext i j
+    simp
+  rw [← tlsWeighted_sumElim, e, hC'.sub_svdTruncation,
+    ← mul_rectDiagonal_tail_mul_transpose hmnk, star_eq_conjTranspose,
+    conjTranspose_eq_transpose_of_trivial]
+  congr 3
 
 open scoped Matrix.Norms.L2Operator in
 /-- **§6.3.1, the `τ`-norm of the TLS solution.** "Note … that

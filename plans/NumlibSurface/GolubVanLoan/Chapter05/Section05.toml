@@ -74,35 +74,8 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
 
 [[node]]
 id = "algorithm_5_5_1_spec"
-kind = "theorem"
-desc = '''If `V` is the right-singular-vector matrix of an SVD of `A` and `1 ≤ r̃ ≤ rank A`, then for the
-exact output `(P, z)`: the first `r̃` columns of `A P` are linearly independent (`σ_r̃(B₁) ≥
-σ_r̃(A)/‖R₁₁⁻¹‖₂ > 0` by `theorem_5_5_2` and `qrcp_V11`), and `z` minimizes `‖B₁ z - b‖₂`
-(`algorithm_5_3_2_spec`, under its nondegeneracy hypothesis for `B₁`, carried here). ★★
-
-Blocked (c05, main fca5b833): all the named ingredients are proved, but `algorithm_5_5_1` runs
-Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` padded with zero rows (`padRows`, since Algorithm 5.4.1 is written
-for `m ≥ n`), so its spec gives a rank-revealing factorization of the `n × n` padded array, while
-`qrcp_V11` takes one of the `r̃ × n` matrix itself. Missing: the transfer lemma (the padded `Q` is
-block diagonal `[Q₁ 0; 0 *]` up to the zero rows, or: a rank-`r̃` revealing factorization of
-`padRows W` yields one of `W`, ~80 lines) and the nondegeneracy hypothesis of
-`algorithm_5_3_2_spec` for `B₁`; then ~40 lines. Not reached in the c05 round.'''
-deps = ["algorithm_5_5_1", "algorithm_5_4_1_spec", "theorem_5_5_2", "qrcp_V11", "algorithm_5_3_2_spec"]
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.5.1'
 
 [[node]]
 id = "theorem_5_5_3"
-kind = "theorem"
-desc = '''Theorem 5.5.3: with `r_{x_r̃} = b - A x_r̃ = (I - U₁U₁ᵀ) b` (`x_r̃` the solution of the nearest
-rank-`r̃` problem) and `r_y = b - A y = (I - B₁B₁⁺) b` (`y = P [z; 0]`), and `Ṽ₁₁` the leading `r̃ × r̃`
-block of `PᵀV` (printed "`r`-by-`r`"):
-`‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃+1}(A)/σ_r̃(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂`, i.e. with 0-based sorted singular values
-`(A.sortedSingularValues r̃ / A.sortedSingularValues (r̃ - 1)) * ‖Ṽ₁₁⁻¹‖₂ * ‖b‖₂`. Backbone
-`Matrix.norm_residual_subset_sub_le` (stated in exactly that 0-based form).
-The closing remark `‖r_{x_r̃} - r_y‖₂ = ‖B₁ y - Σ_{i≤r̃}(u_iᵀb) u_i‖₂` is the identity
-`r_x - r_y = B₁B₁⁺b - U₁U₁ᵀb` (a second declaration). ★
-
-Blocked (c05, main fca5b833): `theorem_5_5_2` is proved; `Matrix.norm_residual_subset_sub_le` is
-not on main (agent bb1 is proving it). A restatement once it lands.'''
-deps = ["Matrix.norm_residual_subset_sub_le", "theorem_5_5_2"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 5.5.3'

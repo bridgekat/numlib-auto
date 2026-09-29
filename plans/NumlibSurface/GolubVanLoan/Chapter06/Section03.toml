@@ -10,22 +10,6 @@ source = 'Golub–Van Loan, Matrix Computations, §6.3'
 
 [[node]]
 id = "theorem_6_3_1"
-kind = "theorem"
-desc = '''Theorem 6.3.1, with (6.3.4): for `A ∈ ℝ^{m×n}`, `B ∈ ℝ^{m×k}`, nonsingular diagonal
-`D = diag(d)`, `T = diag(t)`, `m ≥ n + k`, `C = D[A | B]T = [C₁ C₂]` with SVD `UᵀCV = Σ` partitioned
-`U = [U₁ U₂]`, `V = [V₁₁ V₁₂; V₂₁ V₂₂]`, `Σ = diag(Σ₁, Σ₂)` (`n | k`): if `σ_n(C₁) > σ_{n+1}(C)`, then
-`[E₀ | R₀]` defined by `D[E₀ | R₀]T = −U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]` solves (6.3.3), `V₂₂` is invertible and
-`X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹` is the unique TLS solution of `(A + E₀)X = B + R₀`.
-`Matrix.existsUnique_isTLSPerturbation`, `Matrix.isTLSSolution_iff_eq`,
-`Matrix.isUnit_lowerRightBlock_of_lt`. The proof's appeal to Corollary 2.4.5 for
-`σ_n(C) ≥ σ_n(C₁)` is to column interlacing (Corollary 8.6.3), which Corollary 2.4.5 does not give
-(report, Doubts). ★
-
-Blocked: the backbone nodes `Matrix.existsUnique_isTLSPerturbation` and `Matrix.isTLSSolution_iff_eq`
-(`Numlib/LinearAlgebra/Matrix/LeastSquares/Total`) are still open on main; the surface statement is
-their direct instance (~30 lines once they land). The nonsingularity of `V₂₂` is proved separately as
-`theorem_6_3_1_isUnit`.'''
-deps = ["Matrix.existsUnique_isTLSPerturbation", "Matrix.isTLSSolution_iff_eq", "Matrix.isUnit_lowerRightBlock_of_lt", "Matrix.IsSVD", "theorem_6_3_1_isUnit"]
 source = 'Golub–Van Loan, Matrix Computations, Theorem 6.3.1'
 
 [[node]]

@@ -1,6 +1,7 @@
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
 import Numlib.LinearAlgebra.Matrix.CompleteOrthogonal
 import Numlib.LinearAlgebra.Matrix.RankRevealing
+import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter05.Section03
 
 /-!
@@ -266,6 +267,76 @@ noncomputable def algorithm_5_4_1 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) �
   (List.finRange n).foldlM (pivotedQRStep rnd hnm) ⟨A, 0, id, c, 0, listMax c (List.finRange n)⟩
 
 end ColumnPivoting
+
+/-! ### §5.4.3 The termination criterion -/
+
+section Termination
+
+open scoped Matrix.Norms.L2Operator
+
+/-- The leading and trailing indices together: `Fin k ⊕ Fin (N - k) ≃ Fin N`. -/
+private def blockEquiv {N k : ℕ} (h : k ≤ N) : Fin k ⊕ Fin (N - k) ≃ Fin N :=
+  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
+
+/-- A block upper triangular `R = [R₁₁ R₁₂; 0 R₂₂]` whose leading block row has `k` rows has
+`σ_{k+1}(R) ≤ ‖R₂₂‖₂` (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`, reindexed). -/
+private theorem sortedSingularValues_le_trailing {R : Matrix (Fin m) (Fin n) ℝ} {k : ℕ}
+    (hkm : k ≤ m) (hkn : k ≤ n)
+    (hR : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < k → k ≤ (i : ℕ) → R i j = 0) :
+    R.sortedSingularValues k ≤ ‖R.submatrix (tailIdx hkm) (tailIdx hkn)‖ := by
+  have hblk : R.submatrix (blockEquiv hkm) (blockEquiv hkn) =
+      fromBlocks (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn))
+        (R.submatrix (Fin.castLE hkm) (tailIdx hkn)) 0
+        (R.submatrix (tailIdx hkm) (tailIdx hkn)) := by
+    ext (i | i) (j | j)
+    · rfl
+    · rfl
+    · rw [fromBlocks_apply₂₁, Matrix.zero_apply]
+      exact hR (tailIdx hkm i) (Fin.castLE hkn j) j.isLt (Nat.le_add_right k i)
+    · rfl
+  have := sortedSingularValues_le_l2_opNorm_trailing (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn))
+    (R.submatrix (Fin.castLE hkm) (tailIdx hkn)) (R.submatrix (tailIdx hkm) (tailIdx hkn))
+  rwa [← hblk, sortedSingularValues_submatrix_equiv, Fintype.card_fin] at this
+
+/-- An orthogonal factor on the left and a permutation of the columns do not change the singular
+values: if `Q R = X Π` with `Q` orthogonal, then `σ(R) = σ(X)`. -/
+private theorem sortedSingularValues_eq_of_mul_eq {X R : Matrix (Fin m) (Fin n) ℝ}
+    {Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) {π : Equiv.Perm (Fin n)}
+    (h : Q * R = X.submatrix id π) : R.sortedSingularValues = X.sortedSingularValues := by
+  rw [← sortedSingularValues_submatrix_equiv X (Equiv.refl _) π, Equiv.coe_refl, ← h]
+  have hnorm : ∀ x, ‖toEuclideanLin R x‖ = ‖toEuclideanLin (Q * R) x‖ := fun x => by
+    have := (unitaryLinearIsometryEquiv hQ).norm_map (toEuclideanLin R x)
+    rw [unitaryLinearIsometryEquiv_apply] at this
+    rw [← this, toEuclideanLin_apply, toEuclideanLin_apply, toEuclideanLin_apply, ofLp_toLp,
+      mulVec_mulVec]
+  have := LinearMap.singularValues_eq_of_forall_norm_eq _ hnorm
+  funext i
+  exact DFunLike.congr_fun this i
+
+/-- **§5.4.3, the termination criterion of QR with column pivoting**: "`R̂^{(k)}` is the exact
+R-factor of a matrix `A + E_k`" — `Q R̂^{(k)} = (A + E_k) Π` with `Q` orthogonal and
+`R̂^{(k)} = [R̂₁₁ R̂₁₂; 0 R̂₂₂]` (leading block `k × k`) — "where `‖E_k‖₂ ≤ ε₂ ‖A‖₂`"; if the
+reduction is terminated with `‖R̂₂₂^{(k)}‖₂ ≤ ε₁ ‖A‖₂`, then `σ_{k+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂`.
+The two steps: `σ_{k+1}(A + E_k) = σ_{k+1}(R̂^{(k)}) ≤ ‖R̂₂₂^{(k)}‖₂`
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`) and
+`σ_{k+1}(A) ≤ σ_{k+1}(A + E_k) + ‖E_k‖₂`. The book cites Corollary 2.4.4, which
+(`Chapter02.corollary_2_4_4`) covers only `σ_max` and `σ_min`; at the index `k + 1` it is the
+Weyl inequality `σ_{i+j}(A + B) ≤ σ_i(A) + σ_j(B)` behind it (`Matrix.sortedSingularValues_add_le`,
+§8.6). -/
+theorem sigma_succ_le_of_colPivot {A E R : Matrix (Fin m) (Fin n) ℝ}
+    {Q : Matrix (Fin m) (Fin m) ℝ} {π : Equiv.Perm (Fin n)} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ)
+    (hQR : Q * R = (A + E).submatrix id π) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n)
+    (hR : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < k → k ≤ (i : ℕ) → R i j = 0) {ε₁ ε₂ : ℝ}
+    (hE : ‖E‖ ≤ ε₂ * ‖A‖) (hR₂₂ : ‖R.submatrix (tailIdx hkm) (tailIdx hkn)‖ ≤ ε₁ * ‖A‖) :
+    A.sortedSingularValues k ≤ (ε₁ + ε₂) * ‖A‖ := by
+  have h1 : (A + E).sortedSingularValues k ≤ ε₁ * ‖A‖ := by
+    rw [← sortedSingularValues_eq_of_mul_eq hQ hQR]
+    exact (sortedSingularValues_le_trailing hkm hkn hR).trans hR₂₂
+  have h2 := sortedSingularValues_add_le (A + E) (-E) k 0
+  rw [add_zero, add_neg_cancel_right, sortedSingularValues_zero_eq_l2_opNorm, norm_neg] at h2
+  linarith
+
+end Termination
 
 /-! ### §5.4.3 The Kahan matrix -/
 
@@ -2226,5 +2297,76 @@ theorem givensRevealUpdate_spec {k : ℕ} {R : Matrix (Fin (k + 1)) (Fin (k + 1)
     rw [← Matrix.mul_assoc Q' Q'ᵀ, hQQ, Matrix.one_mul]
 
 end RevealUpdateSpec
+
+/-! ### §5.4.6 The UTV framework -/
+
+section UTV
+
+open scoped Matrix.Norms.L2Operator
+
+open Chapter02 (sigmaMin subspaceDist)
+
+/-- `σ_min` of a square block is its last sorted singular value. -/
+private theorem sigmaMin_square {k : ℕ} (T : Matrix (Fin k) (Fin k) ℝ) :
+    sigmaMin T = T.sortedSingularValues (k - 1) := by
+  rw [sigmaMin, min_self]
+
+/-- **(5.4.10)** (Stewart 1993): "suppose `σ_k(A) > σ_{k+1}(A)` and `S` is the subspace spanned by
+`A`'s right singular vectors `v_{k+1}, …, v_n`" … "if `Uᵀ A V = R = [R₁₁ R₁₂; 0 R₂₂]` and
+`V = [V₁ | V₂]` is partitioned conformably, then
+`dist(ran(V₂), S) ≤ ‖R₁₂‖₂ / ((1 - ρ_R²) σ_min(R₁₁))` where `ρ_R = ‖R₂₂‖₂ / σ_min(R₁₁)` is
+assumed to be less than 1". `R₁₁` is `k × k`; `S` is spanned by the last `n - k` columns of the
+right factor `Z` of an SVD `A = W Σ Zᵀ`, and the bound holds for every SVD, so the separation
+`σ_k(A) > σ_{k+1}(A)` (which makes `S` unique) is not needed; `σ_min(R₁₁) > 0` is implicit in the
+book's `ρ_R`. `dist` is `Chapter02.subspaceDist`; backbone `Matrix.gap_le_of_urv` on the bundle
+`Matrix.IsURV`. -/
+theorem equation_5_4_10 {A R : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
+    {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
+    (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hR : Uᵀ * A * V = R)
+    (hRtri : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → R i j = 0)
+    {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+    {Z : Matrix (Fin n) (Fin n) ℝ} (hA : IsSVD A W σ Z) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n)
+    (hσ : 0 < sigmaMin (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn)))
+    (hρ : ‖R.submatrix (tailIdx hkm) (tailIdx hkn)‖ /
+      sigmaMin (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn)) < 1) :
+    subspaceDist (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx hkn))))
+        (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx hkn)))) ≤
+      ‖R.submatrix (Fin.castLE hkm) (tailIdx hkn)‖ /
+        ((1 - (‖R.submatrix (tailIdx hkm) (tailIdx hkn)‖ /
+            sigmaMin (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) ^ 2) *
+          sigmaMin (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) := by
+  rw [sigmaMin_square] at hσ hρ ⊢
+  exact gap_le_of_urv
+    ⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial], hRtri⟩
+    hA hkm hkn ((div_lt_one hσ).1 hρ)
+
+/-- **(5.4.11)** (Stewart 1993): "in the ULV setting we have `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`. If
+`V = [V₁ | V₂]` is partitioned conformably, then
+`dist(ran(V₂), S) ≤ ρ_L ‖L₁₂‖₂ / ((1 - ρ_L²) σ_min(L₁₁))` where `ρ_L = ‖L₂₂‖₂ / σ_min(L₁₁)` is also
+assumed to be less than 1", with the printed `L₁₂` (a zero block) read as `L₂₁`. Setting as in
+`equation_5_4_10`; backbone `Matrix.gap_le_of_ulv` on the bundle `Matrix.IsULV`. -/
+theorem equation_5_4_11 {A L : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
+    {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
+    (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hL : Uᵀ * A * V = L)
+    (hLtri : ∀ (i : Fin m) (j : Fin n), (i : ℕ) < j → L i j = 0)
+    {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
+    {Z : Matrix (Fin n) (Fin n) ℝ} (hA : IsSVD A W σ Z) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n)
+    (hσ : 0 < sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn)))
+    (hρ : ‖L.submatrix (tailIdx hkm) (tailIdx hkn)‖ /
+      sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn)) < 1) :
+    subspaceDist (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx hkn))))
+        (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx hkn)))) ≤
+      ‖L.submatrix (tailIdx hkm) (tailIdx hkn)‖ /
+          sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn)) *
+          ‖L.submatrix (tailIdx hkm) (Fin.castLE hkn)‖ /
+        ((1 - (‖L.submatrix (tailIdx hkm) (tailIdx hkn)‖ /
+            sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) ^ 2) *
+          sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) := by
+  rw [sigmaMin_square] at hσ hρ ⊢
+  exact gap_le_of_ulv
+    ⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial], hLtri⟩
+    hA hkm hkn ((div_lt_one hσ).1 hρ)
+
+end UTV
 
 end GolubVanLoan.Chapter05

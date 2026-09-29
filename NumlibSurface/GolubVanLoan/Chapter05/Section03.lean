@@ -1,5 +1,6 @@
 import Mathlib.LinearAlgebra.CrossProduct
 import Numlib.Conditioning.LeastSquares
+import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import NumlibSurface.GolubVanLoan.Chapter03.Section01
@@ -11,10 +12,10 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section02
 
 Surface file for [golub2013matrix] §5.3: the normal equations and the gradient (§5.3.1), the
 method of normal equations (Algorithm 5.3.1) and its accuracy (5.3.4), the SVD expansion
-(5.3.2)–(5.3.3), the QR solution (5.3.5) and the Householder LS solution (Algorithm 5.3.2), the
-sensitivity of the LS problem (Theorem 5.3.1 with (5.3.9), (5.3.15), (5.3.16)), the augmented
-system, its QR solution and iterative improvement (§5.3.8, (5.3.20)), and the cross-product
-nearness problems of §5.3.9 ((5.3.21)–(5.3.29)).
+(5.3.2)–(5.3.3), the QR solution (5.3.5) and the Householder LS solution (Algorithm 5.3.2) with
+its backward error (5.3.6)–(5.3.8), the sensitivity of the LS problem (Theorem 5.3.1 with
+(5.3.9), (5.3.15), (5.3.16)), the augmented system, its QR solution and iterative improvement
+(§5.3.8, (5.3.20)), and the cross-product nearness problems of §5.3.9 ((5.3.21)–(5.3.29)).
 
 ## Conventions
 
@@ -23,7 +24,9 @@ Least-squares statements are on `EuclideanSpace ℝ (Fin m)` (the backbone's
 `Fin m → ℝ` and are converted with `WithLp.toLp 2`. Matrix norms are the operator 2-norms
 (`Matrix.Norms.L2Operator`), `κ₂(A)` is `kappa2 A` ((5.2.4)) and `σ_n(A)` is the least singular
 value `⨅ i, A.singularValues i`. Theorem 5.3.1 and (5.3.4) are proved in rigorous form (no
-`O(ε²)`), the printed first-order form following from them. Programs follow the conventions of
+`O(ε²)`), the printed first-order form following from them; so are (5.3.6)–(5.3.8), over an
+idempotent `FloatingPoint.RoundingModel`, with explicit `γ` constants in place of Lawson–Hanson's
+first-order ones. Programs follow the conventions of
 `NumlibSurface/GolubVanLoan`: Algorithm 5.3.1 calls Algorithms 1.1.1, 4.2.1, 3.1.1 and 3.1.2,
 Algorithm 5.3.2 calls Algorithms 5.2.1 and 3.1.2. The book's `u_i`, `v_i` are the columns of
 the SVD factors (`Matrix.IsSVD A U σ V`), `u_iᵀ b` is `U.col i ⬝ᵥ b`. Indices are 0-based. The
@@ -655,6 +658,743 @@ theorem algorithm_5_3_2_counterexample :
     exact h2 (norm_le_zero_iff.1 h1)
 
 end HouseholderLS
+
+/-! ### §5.3.3 The rounding errors of Algorithm 5.3.2 -/
+
+section HouseholderLSRounding
+
+/-- A vector vanishing off `l` has the Euclidean norm of its restriction to `l`. -/
+private theorem norm_toLp_eq_norm_subtype' {l : List (Fin m)} {w : Fin m → ℝ}
+    (hw : ∀ i, i ∉ l → w i = 0) :
+    ‖(toLp 2 w : EuclideanSpace ℝ (Fin m))‖ =
+      ‖(toLp 2 (fun i : {i // i ∈ l} => w i) : EuclideanSpace ℝ {i // i ∈ l})‖ := by
+  have h := dotProduct_eq_dotProduct_subtype l hw w
+  rw [dotProduct_self_eq_norm_sq, dotProduct_self_eq_norm_sq] at h
+  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h
+
+/-- The restriction of a vector to the indices of a list is no longer than the vector. -/
+private theorem norm_subtype_le' (l : List (Fin m)) (w : Fin m → ℝ) :
+    ‖(toLp 2 (fun i : {i // i ∈ l} => w i) : EuclideanSpace ℝ {i // i ∈ l})‖ ≤
+      ‖(toLp 2 w : EuclideanSpace ℝ (Fin m))‖ := by
+  classical
+  calc ‖(toLp 2 (fun i : {i // i ∈ l} => w i) : EuclideanSpace ℝ {i // i ∈ l})‖
+      = ‖(toLp 2 (fun r : Fin m => if r ∈ l then w r else 0) : EuclideanSpace ℝ (Fin m))‖ := by
+        rw [norm_toLp_eq_norm_subtype' (l := l) (fun i hi => by simp [hi])]
+        congr 2
+        funext i
+        simp [i.2]
+    _ ≤ ‖(toLp 2 w : EuclideanSpace ℝ (Fin m))‖ :=
+        norm_toLp_le_of_abs_le fun i => by split_ifs <;> simp
+
+/-- Finite sums of nonnegative terms, perturbed to a common relative order, are perturbed to that
+order. -/
+private theorem isRelPert_sum_of_nonneg {ι : Type*} (s : Finset ι) {u : ℝ} {k : ℕ}
+    (hγ : 0 ≤ gamma u k) {x y : ι → ℝ} (hx : ∀ i, 0 ≤ x i) (h : ∀ i, IsRelPert u k (x i) (y i)) :
+    IsRelPert u k (∑ i ∈ s, x i) (∑ i ∈ s, y i) := by
+  classical
+  refine Finset.induction_on s (by simpa using IsRelPert.zero hγ) ?_
+  intro a s ha ih
+  rw [Finset.sum_insert ha, Finset.sum_insert ha]
+  exact IsRelPert.add_of_nonneg (hx a) (Finset.sum_nonneg fun i _ => hx i) (h a) ih
+
+/-- **The computed `v̂ᵀv̂`**: if `v̂` is entrywise a relative perturbation of order `K` of `v`, a
+computed inner product of `v̂` with itself is one of order `2K + n` of `vᵀv`. -/
+private theorem isRelPert_of_roundsDot_self {ι : Type} [Fintype ι] {fp : RoundingModel ℝ}
+    (hu1 : fp.u < 1) {K : ℕ} (hK : ((2 * K + Fintype.card ι : ℕ) : ℝ) * fp.u < 1)
+    {v vhat : ι → ℝ} (hv : ∀ i, IsRelPert fp.u K (v i) (vhat i)) {s : ℝ}
+    (hs : RoundsDot fp vhat vhat s) : IsRelPert fp.u (2 * K + Fintype.card ι) (v ⬝ᵥ v) s := by
+  have hu0 := fp.u_nonneg
+  have hlt : ∀ j, j ≤ 2 * K + Fintype.card ι → ((j : ℕ) : ℝ) * fp.u < 1 := fun j hj =>
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hj) hu0).trans_lt hK
+  obtain ⟨dx, hdx, rfl⟩ := exists_roundsDot_eq_dotProduct_add hu1 (hlt _ (by omega)) hs
+  have hterm : ∀ i, IsRelPert fp.u (2 * K + Fintype.card ι) (v i * v i)
+      ((vhat i + dx i) * vhat i) := by
+    intro i
+    have h1 : IsRelPert fp.u (K + K) (v i * v i) (vhat i * vhat i) :=
+      (hv i).mul hu0 (hlt _ (by omega)) (hv i)
+    have h2 : IsRelPert fp.u (Fintype.card ι) (vhat i * vhat i) ((vhat i + dx i) * vhat i) := by
+      refine isRelPert_of_abs_sub_le (gamma_nonneg hu0 (hlt _ (by omega))) ?_
+      rw [show (vhat i + dx i) * vhat i - vhat i * vhat i = dx i * vhat i by ring, abs_mul,
+        abs_mul]
+      exact (mul_le_mul_of_nonneg_right (hdx i) (abs_nonneg _)).trans_eq (by ring)
+    have := h1.trans hu0 (hlt _ (by omega)) h2
+    rwa [show K + K + Fintype.card ι = 2 * K + Fintype.card ι by ring] at this
+  exact isRelPert_sum_of_nonneg Finset.univ (gamma_nonneg hu0 (hlt _ le_rfl))
+    (fun i => mul_self_nonneg _) hterm
+
+/-- **The bridge of one pass of the `b`-loop of Algorithm 5.3.2**: a run leaves `b` unchanged off
+the rows `j:m`, and on them it is a computed Householder application `b - v(β̂(vᵀb))` with the
+stored vector `v` and a computed `β̂ = fl(2/fl(vᵀv))` (`RoundsHouseholderApply`, the product
+`fl(t v_i)` being its `fl(v_i t)`). -/
+private theorem householderLSStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (j : Fin n) {y : Fin m → ℝ}
+    (h : y ∈ (householderLSStep fp.round A b j).run) :
+    (∀ i, i ∉ indexFrom m j → y i = b i) ∧ ∃ vv βhat,
+      RoundsDot fp (fun i : {i // i ∈ indexFrom m j} => storedHouseholderVec A j i)
+        (fun i => storedHouseholderVec A j i) vv ∧ fp.Rounds (2 / vv) βhat ∧
+      RoundsHouseholderApply fp βhat
+        (fun i : {i // i ∈ indexFrom m j} => storedHouseholderVec A j i) (fun i => b i)
+        (fun i => y i) := by
+  have hnd := nodup_indexFrom m j
+  simp only [householderLSStep, SetM.mem_run_bind, RoundingModel.mem_run_round] at h
+  obtain ⟨vv, hvv, βhat, hβ, s, hs, t, ht, hy⟩ := h
+  have hloop := SetM.mem_run_foldlM_update_of_nodup
+    (fun i c (_ : Fin m → ℝ) => do
+      let p ← fp.round (t * storedHouseholderVec A j i); fp.round (c - p))
+    (indexFrom m j) hnd (fun _ _ _ _ _ _ => rfl) b y
+  simp only [bind_assoc] at hloop
+  obtain ⟨hout, hin⟩ := hloop.1 hy
+  have hstep : ∀ i : {i // i ∈ indexFrom m j}, ∃ p,
+      fp.Rounds (storedHouseholderVec A j i * t) p ∧ fp.Rounds (b i - p) (y i) := fun i => by
+    have := hin i i.2
+    simp only [SetM.mem_run_bind, RoundingModel.mem_run_round] at this
+    obtain ⟨p, hp, hy⟩ := this
+    exact ⟨p, by rwa [mul_comm], hy⟩
+  choose p hp hyp using hstep
+  exact ⟨hout, vv, βhat, roundsDot_subtype_of_mem_run_dotAccum hfp hnd hvv, hβ, s, t, p,
+    roundsDot_subtype_of_mem_run_dotAccum hfp hnd hs, ht, hp, hyp⟩
+
+/-- **One pass of the `b`-loop is nearly an exact reflection** ([higham2002accuracy] Lemma 19.2,
+with the recomputed `β`): if the stored vector `v̂` of column `j` is entrywise a relative
+perturbation of order `K` of `v`, `v` vanishes off the rows `j:m`, and `1 - β v vᵀ` is orthogonal
+with `β ≠ 0` (so `β = 2/vᵀv`), then every run `y` of the pass on `b` has
+`‖y - (1 - β v vᵀ) b‖₂ ≤ 3 γ_{3(4K + 2m + 1) + m + 3} ‖b‖₂`. -/
+private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    {K : ℕ} (hu : ((3 * (4 * K + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) (hjm : (j : ℕ) < m) {v : Fin m → ℝ} {β : ℝ}
+    (hvout : ∀ i, i ∉ indexFrom m j → v i = 0)
+    (hv : ∀ i, IsRelPert fp.u K (v i) (storedHouseholderVec A j i))
+    (hO : 1 - β • vecMulVec v v ∈ orthogonalGroup (Fin m) ℝ) (hβ0 : β ≠ 0)
+    (b : Fin m → ℝ) {y : Fin m → ℝ} (h : y ∈ (householderLSStep fp.round A b j).run) :
+    ‖(toLp 2 (y - (1 - β • vecMulVec v v) *ᵥ b) : EuclideanSpace ℝ (Fin m))‖ ≤
+      3 * gamma fp.u (3 * (4 * K + 2 * m + 1) + m + 3) *
+        ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
+  set o := indexFrom m j with ho
+  have hnd := nodup_indexFrom m j
+  have hlen : o.length ≤ m := (List.length_filter_le _ _).trans (by simp)
+  have hcard : Fintype.card {i // i ∈ o} = o.length := card_subtype_mem_of_nodup hnd
+  have hu0 := fp.u_nonneg
+  have hlt : ∀ a : ℕ, a ≤ 3 * (4 * K + 2 * m + 1) + m + 3 → ((a : ℕ) : ℝ) * fp.u < 1 :=
+    fun a ha => (mul_le_mul_of_nonneg_right (Nat.cast_le.2 ha) hu0).trans_lt hu
+  have hu1 : fp.u < 1 := by simpa using hlt 1 (by omega)
+  obtain ⟨hyout, vv, βhat, hvv, hβhat, happ⟩ := householderLSStep_rounds hfp A b j h
+  -- the exact `β` is `2/vᵀv`
+  have hvp : v ⟨j, hjm⟩ ≠ 0 := by
+    intro h0
+    obtain ⟨θ, -, hθ⟩ := hv ⟨j, hjm⟩
+    rw [h0, zero_mul] at hθ
+    have : storedHouseholderVec A j ⟨j, hjm⟩ = 1 := by simp [storedHouseholderVec]
+    rw [this] at hθ
+    exact one_ne_zero hθ
+  have hβv : β * (v ⬝ᵥ v) = 2 := by
+    rcases mul_eq_zero.1 (beta_mul_eq_zero_of_mem_orthogonalGroup hvp hO) with h0 | h2
+    · exact absurd h0 hβ0
+    · linarith
+  have hvv0 : v ⬝ᵥ v ≠ 0 := fun h0 => by rw [h0, mul_zero] at hβv; norm_num at hβv
+  have hβeq : β = 2 / (v ⬝ᵥ v) := eq_div_of_mul_eq hvv0 hβv
+  -- restrictions to the rows `j:m`
+  have hdot : v ⬝ᵥ v = (fun i : {i // i ∈ o} => v i) ⬝ᵥ (fun i => v i) :=
+    dotProduct_eq_dotProduct_subtype o hvout v
+  -- `β̂` is a relative perturbation of `β`
+  have hvvrel : IsRelPert fp.u (2 * K + Fintype.card {i // i ∈ o})
+      ((fun i : {i // i ∈ o} => v i) ⬝ᵥ (fun i => v i)) vv :=
+    isRelPert_of_roundsDot_self (ι := {i // i ∈ o}) (v := fun i => v i)
+      (vhat := fun i => storedHouseholderVec A j i) hu1 (hlt _ (by omega)) (fun i => hv i) hvv
+  have hβrel : IsRelPert fp.u (4 * K + 2 * m + 1) β βhat := by
+    have h1 := (IsRelPert.refl fp.u (2 : ℝ)).div hu0 (hlt _ (by omega)) hvvrel
+    have h2 := h1.rounds hu1 (hlt _ (by omega)) hβhat
+    rw [hβeq, hdot]
+    exact h2.mono hu0 (by omega) (hlt _ (by omega))
+  have hvrel : ∀ i : {i // i ∈ o}, IsRelPert fp.u (4 * K + 2 * m + 1) (v i)
+      (storedHouseholderVec A j i) := fun i =>
+    (hv i).mono hu0 (by omega) (hlt _ (by omega))
+  have hP : |β| * ((fun i : {i // i ∈ o} => v i) ⬝ᵥ (fun i => v i)) ≤ 2 := by
+    rw [← hdot, hβeq]
+    exact abs_two_div_dotProduct_self_mul_le v
+  have hsub := norm_sub_le_of_roundsHouseholderApply (k := 4 * K + 2 * m + 1)
+    (by rw [hcard]; exact hlt _ (by omega)) hβrel hvrel hP happ
+  rw [hcard] at hsub
+  -- back to the full vectors
+  set D : Fin m → ℝ := y - (1 - β • vecMulVec v v) *ᵥ b with hD
+  have hDout : ∀ i, i ∉ o → D i = 0 := fun i hi => by
+    rw [hD, Pi.sub_apply, one_sub_smul_vecMulVec_mulVec_apply, hvout i hi, hyout i hi]
+    ring
+  have hDin : (fun i : {i // i ∈ o} => D i) =
+      (fun i : {i // i ∈ o} => y i) -
+        (1 - β • vecMulVec (fun i : {i // i ∈ o} => v i) (fun i : {i // i ∈ o} => v i) :
+          Matrix {i // i ∈ o} {i // i ∈ o} ℝ) *ᵥ (fun i : {i // i ∈ o} => b i) := by
+    funext i
+    rw [hD, Pi.sub_apply, Pi.sub_apply, one_sub_smul_vecMulVec_mulVec_apply_subtype o hvout,
+      dite_eq_left i.2]
+  have hγ : 3 * gamma fp.u (3 * (4 * K + 2 * m + 1) + o.length + 3) ≤
+      3 * gamma fp.u (3 * (4 * K + 2 * m + 1) + m + 3) :=
+    mul_le_mul_of_nonneg_left (gamma_mono hu0 (by omega) hu) (by norm_num)
+  rw [norm_toLp_eq_norm_subtype' hDout, hDin]
+  refine hsub.trans (mul_le_mul hγ (norm_subtype_le' o b) (norm_nonneg _) ?_)
+  have := gamma_nonneg hu0 hu
+  positivity
+
+/-- **One computed step of Householder QR, with its reflector data** (the step of
+`algorithm_5_2_1_rounding`, keeping what the `b`-loop of Algorithm 5.3.2 needs): for every run of
+step `k` there are exact data `(v, β)` with `P = 1 - β v vᵀ` orthogonal, `|β| vᵀv ≤ 2` and `v`
+vanishing above row `k`, such that the stored vector of column `k` is entrywise a relative
+perturbation of order `18m + 31` of `v` and the returned `β̂_k` one of `β`; the columns before `k`
+and the other `β̂_q` are untouched; and `‖(R⁽ᵏ⁺¹⁾ - P R⁽ᵏ⁾)(:, q)‖₂ ≤ ε ‖R⁽ᵏ⁾(:, q)‖₂`,
+`ε = 3 γ_{3(18m + 31) + m + 3}`, for the arrays `R⁽ᵏ⁾` with the stored vectors zeroed. -/
+private theorem householderQRStep_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) (k : Fin n)
+    {st' : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)}
+    (h : st' ∈ (householderQRStep fp.round st k).run) :
+    ∃ (v : Fin m → ℝ) (β : ℝ), 1 - β • vecMulVec v v ∈ orthogonalGroup (Fin m) ℝ ∧
+      |β| * (v ⬝ᵥ v) ≤ 2 ∧ (∀ i, i ∉ indexFrom m k → v i = 0) ∧
+      (∀ i, IsRelPert fp.u (18 * m + 31) (v i) (storedHouseholderVec st'.1 k i)) ∧
+      IsRelPert fp.u (18 * m + 31) β (st'.2 k) ∧
+      (∀ i (q : Fin n), (q : ℕ) < k → st'.1 i q = st.1 i q) ∧
+      (∀ q, q ≠ k → st'.2 q = st.2 q) ∧
+      ∀ q : Fin n,
+        ‖(toLp 2 ((householderQRPartialR ((k : ℕ) + 1) st'.1 -
+            (1 - β • vecMulVec v v) * householderQRPartialR k st.1).col q) :
+            EuclideanSpace ℝ (Fin m))‖ ≤
+          3 * gamma fp.u (3 * (18 * m + 31) + m + 3) *
+            ‖(toLp 2 ((householderQRPartialR k st.1).col q) : EuclideanSpace ℝ (Fin m))‖ := by
+  obtain ⟨B, β⟩ := st
+  have hjm : (k : ℕ) < m := lt_of_lt_of_le k.isLt hnm
+  have hne := indexFrom_ne_nil hjm
+  have hnd := nodup_indexFrom m k
+  have hhead := head_indexFrom hjm hne
+  set o := indexFrom m k with ho
+  have hlen : o.length ≤ m := (List.length_filter_le _ _).trans (by simp)
+  have hu0 := fp.u_nonneg
+  have hle : ∀ a : ℕ, a ≤ 3 * (18 * m + 31) + m + 3 → (a : ℝ) * fp.u < 1 := fun a ha =>
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 ha) hu0).trans_lt hu
+  simp only [householderQRStep, SetM.mem_run_bind, SetM.mem_run_pure] at h
+  obtain ⟨vβ, hvβ, B', hB', rfl⟩ := h
+  set x : Fin m → ℝ := fun i => B i k with hx
+  obtain ⟨hvout, v, bb, hO, hmul, hbv, hbb, hv⟩ :=
+    houseOn_rounding hfp hnd hne (hle _ (by omega)) x hvβ
+  have hpiv : vβ.1 (o.head hne) = 1 := by
+    obtain ⟨-, σhat, -, hvi, -⟩ := houseOn_rounds hfp hnd hne x hvβ
+    exact hvi
+  set K := 18 * o.length + 31 with hK
+  -- the exact vector, extended by zero off `o`
+  set v' : Fin m → ℝ := fun i => if h : i ∈ o then v ⟨i, h⟩ else 0 with hv'
+  have hv'o : (fun i : {i // i ∈ o} => v' i) = v := funext fun i => by simp [hv', i.2]
+  have hv'out : ∀ i, i ∉ o → v' i = 0 := fun i hi => by simp [hv', hi]
+  have hvv' : ∀ i, IsRelPert fp.u K (v' i) (vβ.1 i) := fun i => by
+    by_cases hi : i ∈ o
+    · have := hv ⟨i, hi⟩
+      simpa [hv', hi] using this
+    · rw [hv'out i hi, hvout i hi]
+      exact ⟨0, by simpa using gamma_nonneg hu0 (hle K (by omega)), by ring⟩
+  have hdot' : v' ⬝ᵥ v' = v ⬝ᵥ v := by rw [dotProduct_eq_dotProduct_subtype o hv'out, hv'o]
+  have hP2 : |bb| * (v' ⬝ᵥ v') ≤ 2 := by rwa [hdot']
+  obtain ⟨hBout, hcolb, -⟩ := householderApplyLeft_rounding hfp hnd (nodup_indexFrom n k)
+    (K := K) (hle _ (by omega)) hbb hvv' hv'out hP2 B hB'
+  simp only [hv'o] at hcolb
+  have hε : 3 * gamma fp.u (3 * K + o.length + 3) ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) :=
+    mul_le_mul_of_nonneg_left (gamma_mono hu0 (by omega) hu) (by norm_num)
+  have hε0 : 0 ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) := by
+    have := gamma_nonneg hu0 hu; positivity
+  -- the exact reflector on `ℝ^m`
+  set P : Matrix (Fin m) (Fin m) ℝ := 1 - bb • vecMulVec v' v' with hP
+  have hPO : P ∈ orthogonalGroup (Fin m) ℝ := by
+    by_cases hv0 : v = 0
+    · have : v' = 0 := funext fun i => by simp [hv', hv0]
+      rw [hP, this, vecMulVec_zero, smul_zero, sub_zero]
+      exact one_mem _
+    · obtain ⟨p, hp⟩ := Function.ne_iff.1 hv0
+      refine one_sub_smul_vecMulVec_mem_orthogonalGroup ?_
+      rw [hdot']
+      exact beta_mul_eq_zero_of_mem_orthogonalGroup hp hO
+  set B'' := B'.updateCol k fun i => if (k : ℕ) < i then vβ.1 i else B' i k with hB''
+  have hB''q : ∀ i (q : Fin n), q ≠ k → B'' i q = B' i q := fun i q hq => by
+    simp only [hB'', updateCol_ne hq]
+  have hB''k : ∀ i, B'' i k = if (k : ℕ) < i then vβ.1 i else B' i k := fun i => by
+    simp only [hB'', updateCol_self]
+  refine ⟨v', bb, hPO, hP2, hv'out, fun i => ?_, ?_, fun i q hq => ?_, fun q hq => ?_,
+    fun q => ?_⟩
+  · -- the stored vector
+    refine IsRelPert.mono hu0 (by omega) (hle _ (by omega)) (m := K) ?_
+    simp only [storedHouseholderVec]
+    rcases lt_trichotomy (i : ℕ) k with hik | hik | hik
+    · rw [ite_eq_left hik, hv'out i (by rw [ho, mem_indexFrom]; omega)]
+      exact IsRelPert.zero (gamma_nonneg hu0 (hle K (by omega)))
+    · rw [ite_eq_right (by omega), ite_eq_left hik]
+      have hh : ((o.head hne : Fin m) : ℕ) = k := congrArg Fin.val (head_indexFrom hjm hne)
+      have h1 : vβ.1 i = 1 := by
+        rw [show i = o.head hne from Fin.ext (hik.trans hh.symm)]
+        exact hpiv
+      have := hvv' i
+      rwa [h1] at this
+    · rw [ite_eq_right (by omega), ite_eq_right (by omega), hB''k, ite_eq_left hik]
+      exact hvv' i
+  · simp only [Function.update_self]
+    exact hbb.mono hu0 (by omega) (hle _ (by omega))
+  · have hqk : q ≠ k := fun e => by rw [e] at hq; exact lt_irrefl _ hq
+    change B'' i q = B i q
+    rw [hB''q i q hqk]
+    exact hBout i q (Or.inr (by rw [mem_indexFrom]; omega))
+  · exact Function.update_of_ne hq _ _
+  dsimp only
+  set R := householderQRPartialR k B with hR
+  set R' := householderQRPartialR ((k : ℕ) + 1) B'' with hR'
+  have hRe : ∀ i (q : Fin n), R i q = if (q : ℕ) < k ∧ (q : ℕ) < i then 0 else B i q :=
+    fun _ _ => rfl
+  have hR'e : ∀ i (q : Fin n),
+      R' i q = if (q : ℕ) < (k : ℕ) + 1 ∧ (q : ℕ) < i then 0 else B'' i q := fun _ _ => rfl
+  have hPR : ∀ i, (P * R) i q = (P *ᵥ fun r => R r q) i := fun i => rfl
+  rcases lt_or_ge (q : ℕ) k with hqk | hqk
+  · -- a processed column is unchanged, and fixed by the reflector
+    have hqk' : q ≠ k := fun e => by rw [e] at hqk; omega
+    have hq' : q ∉ indexFrom n k := by rw [mem_indexFrom]; omega
+    have hdot0 : (v' ⬝ᵥ fun r => R r q) = 0 := Finset.sum_eq_zero fun r _ => by
+      change v' r * R r q = 0
+      by_cases hr : r ∈ o
+      · have hr' : (k : ℕ) ≤ r := mem_indexFrom.1 hr
+        rw [hRe, ite_eq_left ⟨hqk, by omega⟩, mul_zero]
+      · rw [hv'out r hr, zero_mul]
+    have hzero : (R' - P * R).col q = 0 := funext fun i => by
+      change R' i q - (P * R) i q = 0
+      rw [hPR, one_sub_smul_vecMulVec_mulVec_apply, hdot0, mul_zero, sub_zero]
+      by_cases hqi : (q : ℕ) < i
+      · rw [hR'e, ite_eq_left ⟨by omega, hqi⟩, hRe, ite_eq_left ⟨hqk, hqi⟩, sub_self]
+      · rw [hR'e, ite_eq_right (by omega), hRe, ite_eq_right (by omega), hB''q i q hqk',
+          hBout i q (Or.inr hq'), sub_self]
+    rw [hzero, toLp_zero, norm_zero]
+    exact mul_nonneg hε0 (norm_nonneg _)
+  · -- a column of the current block
+    have hq : q ∈ indexFrom n k := mem_indexFrom.2 hqk
+    have hRcol : ∀ r, R r q = B r q := fun r => by
+      rw [hRe, ite_eq_right (by omega)]
+    set e : {i // i ∈ o} → ℝ :=
+      (B'.submatrix (Subtype.val : {i // i ∈ o} → Fin m)
+          (Subtype.val : {q // q ∈ indexFrom n k} → Fin n) -
+        (1 - bb • vecMulVec v v) * B.submatrix Subtype.val Subtype.val).col ⟨q, hq⟩ with he
+    have hPx : ∀ i (hi : i ∈ o), (P *ᵥ fun r => R r q) i =
+        ((1 - bb • vecMulVec v v) *ᵥ fun r : {r // r ∈ o} => B r q) ⟨i, hi⟩ := fun i hi => by
+      rw [hP, one_sub_smul_vecMulVec_mulVec_apply_subtype o hv'out, dite_eq_left hi, hv'o]
+      simp only [hRcol]
+    set D := (R' - P * R).col q with hD
+    have hDout : ∀ i, i ∉ o → D i = 0 := fun i hi => by
+      have hik : (i : ℕ) < k := by rw [ho, mem_indexFrom] at hi; omega
+      have h1 : (P * R) i q = B i q := by
+        rw [hPR, hP, one_sub_smul_vecMulVec_mulVec_apply, hv'out i hi, mul_zero, zero_mul,
+          sub_zero, hRcol]
+      have h2 : R' i q = B i q := by
+        rw [hR'e, ite_eq_right (by omega)]
+        by_cases h : q = k
+        · subst h
+          rw [hB''k, ite_eq_right (by omega)]
+          exact hBout i _ (Or.inl hi)
+        · rw [hB''q i q h]
+          exact hBout i q (Or.inl hi)
+      change R' i q - (P * R) i q = 0
+      rw [h1, h2, sub_self]
+    have hDin : ∀ i (hi : i ∈ o), |D i| ≤ |e ⟨i, hi⟩| := fun i hi => by
+      have hki : (k : ℕ) ≤ i := mem_indexFrom.1 hi
+      have heq : e ⟨i, hi⟩ = B' i q - ((1 - bb • vecMulVec v v) *ᵥ
+          fun r : {r // r ∈ o} => B r q) ⟨i, hi⟩ := rfl
+      change |R' i q - (P * R) i q| ≤ _
+      rw [hPR, hPx i hi]
+      by_cases hqk' : q = k
+      · subst hqk'
+        by_cases hik : (q : ℕ) < i
+        · -- below the diagonal of the current column: both sides vanish
+          have hne' : (⟨i, hi⟩ : {r // r ∈ o}) ≠ ⟨o.head hne, List.head_mem hne⟩ :=
+            fun h => by
+              have := congrArg (fun r : {r // r ∈ o} => (r.1 : ℕ)) h
+              have hh : ((o.head hne : Fin m) : ℕ) = q := by
+                have := congrArg Fin.val hhead
+                simpa only [Fin.val_mk] using this
+              simp only at this
+              omega
+          have hx0 : ((1 - bb • vecMulVec v v) *ᵥ fun r : {r // r ∈ o} => B r q) ⟨i, hi⟩ =
+              0 := by
+            refine (congrFun hmul ⟨i, hi⟩).trans ?_
+            simp [Pi.single_eq_of_ne hne']
+          rw [hR'e, ite_eq_left ⟨by omega, hik⟩, hx0, sub_zero, abs_zero]
+          exact abs_nonneg _
+        · rw [hR'e, ite_eq_right (by omega), hB''k, ite_eq_right hik, heq]
+      · rw [hR'e, ite_eq_right (by omega), hB''q i q hqk', heq]
+    have hBsub := norm_subtype_le' o (fun r => B r q)
+    have hRc : R.col q = fun r => B r q := funext hRcol
+    calc ‖(toLp 2 D : EuclideanSpace ℝ (Fin m))‖
+        = ‖(toLp 2 (fun i : {i // i ∈ o} => D i) : EuclideanSpace ℝ {i // i ∈ o})‖ :=
+          norm_toLp_eq_norm_subtype' hDout
+      _ ≤ ‖(toLp 2 e : EuclideanSpace ℝ {i // i ∈ o})‖ :=
+          norm_toLp_le_of_abs_le fun i => hDin i i.2
+      _ ≤ 3 * gamma fp.u (3 * K + o.length + 3) *
+          ‖(toLp 2 (fun r : {r // r ∈ o} => B r q) : EuclideanSpace ℝ {i // i ∈ o})‖ :=
+          hcolb ⟨q, hq⟩
+      _ ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) *
+          ‖(toLp 2 (R.col q) : EuclideanSpace ℝ (Fin m))‖ := by
+          rw [hRc]
+          exact mul_le_mul hε hBsub (norm_nonneg _) hε0
+
+/-- A product `P_{r-1} ⋯ P_0` depends only on its first `r` factors. -/
+private theorem prodRev_congr {P P' : ℕ → Matrix (Fin m) (Fin m) ℝ} {r : ℕ}
+    (h : ∀ j < r, P' j = P j) : prodRev P' r = prodRev P r := by
+  induction r with
+  | zero => rfl
+  | succ r ih =>
+    rw [prodRev_succ, prodRev_succ, h r (Nat.lt_succ_self r), ih fun j hj => h j (by omega)]
+
+/-- The exact reflectors `1 - β_j v_j v_jᵀ` of reflector data `(v, β)`. -/
+private noncomputable def dataReflector (v : ℕ → Fin m → ℝ) (β : ℕ → ℝ) (j : ℕ) :
+    Matrix (Fin m) (Fin m) ℝ :=
+  1 - β j • vecMulVec (v j) (v j)
+
+/-- What the `b`-loop of Algorithm 5.3.2 needs of step `q` of Algorithm 5.2.1: the exact data
+`(v, β)` of the step's reflector against the array `st` (its stored vector of column `q` and its
+returned `β̂_q`). -/
+private def IsStepData (u : ℝ) (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) (q : Fin n)
+    (v : Fin m → ℝ) (β : ℝ) : Prop :=
+  |β| * (v ⬝ᵥ v) ≤ 2 ∧ (∀ i, i ∉ indexFrom m q → v i = 0) ∧
+    (∀ i, IsRelPert u (18 * m + 31) (v i) (storedHouseholderVec st.1 q i)) ∧
+    IsRelPert u (18 * m + 31) β (st.2 q)
+
+/-- **Algorithm 5.2.1's backward error with the reflector data** (`algorithm_5_2_1_rounding`,
+keeping the reflectors): every run `(A', β̂)` has exact data `(v_j, β_j)` for every step, with
+`P_j = 1 - β_j v_j v_jᵀ` orthogonal, such that `R̂ = upperPart A' = P_{n-1} ⋯ P_0 (A + E)` with
+columnwise `‖E(:, q)‖₂ ≤ ((1 + ε)ⁿ - 1) ‖A(:, q)‖₂`, `ε = 3 γ_{3(18m + 31) + m + 3}`. -/
+private theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) {st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)}
+    (h : st ∈ (algorithm_5_2_1 fp.round A).run) :
+    ∃ (v : ℕ → Fin m → ℝ) (β : ℕ → ℝ) (E : Matrix (Fin m) (Fin n) ℝ),
+      (∀ j, dataReflector v β j ∈ orthogonalGroup (Fin m) ℝ) ∧
+      (∀ q : Fin n, IsStepData fp.u st q (v q) (β q)) ∧
+      upperPart st.1 = prodRev (dataReflector v β) n * (A + E) ∧
+      ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n - 1) *
+          ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ := by
+  set ε := 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) with hε
+  have hε0 : 0 ≤ ε := by have := gamma_nonneg fp.u_nonneg hu; positivity
+  set I : ℕ → Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) → Prop := fun k st =>
+    ∃ (v : ℕ → Fin m → ℝ) (β : ℕ → ℝ) (E : Matrix (Fin m) (Fin n) ℝ),
+      (∀ j, dataReflector v β j ∈ orthogonalGroup (Fin m) ℝ) ∧
+      (∀ q : Fin n, (q : ℕ) < k → IsStepData fp.u st q (v q) (β q)) ∧
+      householderQRPartialR k st.1 = prodRev (dataReflector v β) k * (A + E) ∧
+      ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + ε) ^ k - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ with hI
+  have h0 : I 0 (A, 0) := by
+    refine ⟨fun _ => 0, fun _ => 0, 0, fun j => ?_, fun q hq => absurd hq (Nat.not_lt_zero _),
+      ?_, fun q => ?_⟩
+    · simp only [dataReflector, vecMulVec_zero, smul_zero, sub_zero]
+      exact one_mem _
+    · ext i q
+      simp [householderQRPartialR]
+    · rw [show (0 : Matrix (Fin m) (Fin n) ℝ).col q = 0 from rfl]
+      simp
+  have hstep : ∀ (k : Fin n) (c : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)), I k c →
+      ∀ c' ∈ (householderQRStep fp.round c k).run, I ((k : ℕ) + 1) c' := by
+    rintro k c ⟨v, β, E, hO, hdata, hE, hEb⟩ c' hc'
+    obtain ⟨w, γ, hwO, hw2, hwout, hwrel, hγrel, hcols, hβs, hFb⟩ :=
+      householderQRStep_rounding_data hfp hnm hu c k hc'
+    set v' : ℕ → Fin m → ℝ := fun j => if j = k then w else v j with hv'
+    set β' : ℕ → ℝ := fun j => if j = k then γ else β j with hβ'
+    have hrefl : ∀ j, dataReflector v' β' j =
+        if j = k then 1 - γ • vecMulVec w w else dataReflector v β j := fun j => by
+      simp only [dataReflector, hv', hβ']
+      split_ifs <;> rfl
+    have hO' : ∀ j, dataReflector v' β' j ∈ orthogonalGroup (Fin m) ℝ := fun j => by
+      rw [hrefl]
+      split_ifs
+      · exact hwO
+      · exact hO j
+    have hW : prodRev (dataReflector v' β') k = prodRev (dataReflector v β) k :=
+      prodRev_congr fun j hj => by rw [hrefl, ite_eq_right (show ¬ j = (k : ℕ) by omega)]
+    set W := prodRev (dataReflector v' β') ((k : ℕ) + 1) with hWdef
+    have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO' _
+    have hWk : W = (1 - γ • vecMulVec w w) * prodRev (dataReflector v β) k := by
+      rw [hWdef, prodRev_succ, hW, hrefl, ite_eq_left rfl]
+    set R := householderQRPartialR k c.1 with hR
+    set R' := householderQRPartialR ((k : ℕ) + 1) c'.1 with hR'
+    set F := R' - (1 - γ • vecMulVec w w) * R with hF
+    refine ⟨v', β', E + Wᵀ * F, hO', fun q hq => ?_, ?_, fun q => ?_⟩
+    · -- the step data
+      by_cases hqk : (q : ℕ) = k
+      · have hq' : q = k := Fin.ext hqk
+        subst hq'
+        simp only [hv', hβ', ite_true]
+        exact ⟨hw2, hwout, hwrel, hγrel⟩
+      · have hq2 : (q : ℕ) < k := by omega
+        have hqk' : q ≠ k := fun e => hqk (by rw [e])
+        obtain ⟨h1, h2, h3, h4⟩ := hdata q hq2
+        simp only [hv', hβ', hqk, ↓reduceIte]
+        refine ⟨h1, h2, fun i => ?_, by rwa [hβs q hqk']⟩
+        have hst : storedHouseholderVec c'.1 q = storedHouseholderVec c.1 q := by
+          funext i
+          simp only [storedHouseholderVec, hcols i q hq2]
+        rw [hst]
+        exact h3 i
+    · have hR'eq : R' = (1 - γ • vecMulVec w w) * R + F := by rw [hF]; abel
+      have hWW : W * Wᵀ = 1 := (mem_orthogonalGroup_iff _ _).1 hWO
+      change R' = W * (A + (E + Wᵀ * F))
+      calc R' = (1 - γ • vecMulVec w w) * R + F := hR'eq
+        _ = W * (A + E) + F := by rw [hE, hWk, Matrix.mul_assoc]
+        _ = W * (A + (E + Wᵀ * F)) := by
+          rw [← add_assoc, Matrix.mul_add W (A + E), ← Matrix.mul_assoc W Wᵀ, hWW,
+            Matrix.one_mul]
+    · have hcol : (E + Wᵀ * F).col q = E.col q + Wᵀ *ᵥ F.col q := by
+        ext i; rfl
+      have hRcol : R.col q = prodRev (dataReflector v β) k *ᵥ (A + E).col q := by
+        rw [hE]; ext i; rfl
+      have hnR : ‖(toLp 2 (R.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+          ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ +
+            ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ := by
+        rw [hRcol, norm_toLp_mulVec_of_mem_orthogonalGroup (prodRev_mem_orthogonalGroup hO _)]
+        have : (A + E).col q = A.col q + E.col q := by ext i; rfl
+        rw [this, toLp_add]
+        exact norm_add_le _ _
+      have hF' := hFb q
+      rw [hcol, toLp_add]
+      refine (norm_add_le _ _).trans ?_
+      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_orthogonalGroup hWO)]
+      have hEq := hEb q
+      set a := ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖
+      set eq := ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖
+      have hpow : 0 ≤ (1 + ε) ^ (k : ℕ) := by positivity
+      have ha : 0 ≤ a := norm_nonneg _
+      calc eq + ‖(toLp 2 (F.col q) : EuclideanSpace ℝ (Fin m))‖
+          ≤ ((1 + ε) ^ (k : ℕ) - 1) * a + ε * (a + ((1 + ε) ^ (k : ℕ) - 1) * a) := by
+            have h1 : ‖(toLp 2 (F.col q) : EuclideanSpace ℝ (Fin m))‖ ≤ ε * (a + eq) :=
+              hF'.trans (mul_le_mul_of_nonneg_left hnR hε0)
+            have h2 : ε * (a + eq) ≤ ε * (a + ((1 + ε) ^ (k : ℕ) - 1) * a) :=
+              mul_le_mul_of_nonneg_left (by linarith) hε0
+            linarith
+        _ = ((1 + ε) ^ ((k : ℕ) + 1) - 1) * a := by ring
+  obtain ⟨v, β, E, hO, hdata, hE, hEb⟩ := SetM.forall_mem_run_foldlM_finRange I h0 hstep st h
+  refine ⟨v, β, E, hO, fun q => hdata q q.isLt, ?_, hEb⟩
+  have hup : householderQRPartialR n st.1 = upperPart st.1 := by
+    ext i q
+    have := q.isLt
+    simp only [householderQRPartialR, upperPart, of_apply]
+    split_ifs <;> first | rfl | (exfalso; omega)
+  rwa [hup] at hE
+
+/-- **The `b`-loop of Algorithm 5.3.2 applies the QR reflectors exactly to a nearby `b`**
+([higham2002accuracy] Lemma 19.3, with the recomputed `β`): if every step `q` of the QR run `st`
+has reflector data `(v_q, β_q)` and every returned `β̂_q ≠ 0`, every run `c` of the loop on `b` is
+`c = P_{n-1} ⋯ P_0 (b + Δb)` with `‖Δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂`,
+`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}`. -/
+private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    (hnm : n ≤ m) (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    {st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)} {v : ℕ → Fin m → ℝ} {β : ℕ → ℝ}
+    (hO : ∀ j, dataReflector v β j ∈ orthogonalGroup (Fin m) ℝ)
+    (hdata : ∀ q : Fin n, IsStepData fp.u st q (v q) (β q)) (hβ : ∀ q, st.2 q ≠ 0)
+    (b : Fin m → ℝ) {c : Fin m → ℝ}
+    (h : c ∈ ((List.finRange n).foldlM (householderLSStep fp.round st.1) b).run) :
+    ∃ db : Fin m → ℝ, c = prodRev (dataReflector v β) n *ᵥ (b + db) ∧
+      ‖(toLp 2 db : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + 3 * gamma fp.u (3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3)) ^ n - 1) *
+          ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
+  set ε := 3 * gamma fp.u (3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3) with hε
+  have hε0 : 0 ≤ ε := by have := gamma_nonneg fp.u_nonneg hu; positivity
+  refine SetM.forall_mem_run_foldlM_finRange (fun k y => ∃ db : Fin m → ℝ,
+      y = prodRev (dataReflector v β) k *ᵥ (b + db) ∧
+      ‖(toLp 2 db : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + ε) ^ k - 1) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖)
+    ⟨0, by simp [prodRev_zero], by simp⟩ ?_ c h
+  rintro k y ⟨db, rfl, hdb⟩ y' hy'
+  obtain ⟨-, h2, h3, h4⟩ := hdata k
+  have hβ0 : β k ≠ 0 := by
+    rintro h0
+    obtain ⟨θ, -, hθ⟩ := h4
+    rw [h0, zero_mul] at hθ
+    exact hβ k hθ
+  set y := prodRev (dataReflector v β) k *ᵥ (b + db) with hy
+  have hstep : ‖(toLp 2 (y' - dataReflector v β k *ᵥ y) : EuclideanSpace ℝ (Fin m))‖ ≤
+      ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ :=
+    householderLSStep_rounding hfp (K := 18 * m + 31) hu st.1 k (lt_of_lt_of_le k.isLt hnm) h2
+      h3 (hO k) hβ0 y hy'
+  set Q := prodRev (dataReflector v β) ((k : ℕ) + 1) with hQ
+  have hQO : Q ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO _
+  set e := y' - dataReflector v β k *ᵥ y with he
+  refine ⟨db + Qᵀ *ᵥ e, ?_, ?_⟩
+  · calc y' = dataReflector v β k *ᵥ y + e := by rw [he]; abel
+      _ = Q *ᵥ (b + db) + Q *ᵥ (Qᵀ *ᵥ e) := by
+          rw [mulVec_transpose_mulVec_of_mem_orthogonalGroup hQO, hy, mulVec_mulVec, hQ,
+            prodRev_succ]
+      _ = Q *ᵥ (b + (db + Qᵀ *ᵥ e)) := by rw [← mulVec_add, add_assoc]
+  · have h1 : ‖(toLp 2 (Qᵀ *ᵥ e) : EuclideanSpace ℝ (Fin m))‖ ≤
+        ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ := by
+      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_orthogonalGroup hQO)]
+      exact hstep
+    have h2 : ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
+        (1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
+      rw [hy, norm_toLp_mulVec_of_mem_orthogonalGroup (prodRev_mem_orthogonalGroup hO _),
+        WithLp.toLp_add]
+      refine (norm_add_le _ _).trans ?_
+      linarith
+    rw [WithLp.toLp_add]
+    refine (norm_add_le _ _).trans ?_
+    have h3 : ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
+        ε * ((1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖) :=
+      mul_le_mul_of_nonneg_left h2 hε0
+    have h4 : ((1 + ε) ^ ((k : ℕ) + 1) - 1) =
+        ((1 + ε) ^ (k : ℕ) - 1) + ε * (1 + ε) ^ (k : ℕ) := by
+      ring
+    rw [h4]
+    nlinarith
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(5.3.6)–(5.3.8), rigorous** (Lawson–Hanson; [higham2002accuracy] Theorem 20.3): over an
+idempotent model with `(3(4(18m + 31) + 2m + 1) + m + 3) u < 1`, if the Householder QR runs of
+Algorithm 5.3.2 on `A` are nondegenerate (every computed `β̂_j ≠ 0`, the hypothesis of
+`algorithm_5_3_2_spec`) and produce a nonsingular `R̂₁`, then every computed `x̂` "solves exactly a
+nearby LS problem": `x̂` is a least-squares solution of `(A + δA) x = b + δb` with
+`‖δA‖_F ≤ ((1 + ε)ⁿ (1 + γ_n) - 1) ‖A‖_F` and `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂`, where
+`ε = 3 γ_{3(18m + 31) + m + 3}` (one computed QR step, `algorithm_5_2_1_rounding`) and
+`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}` (one pass of the `b`-loop with its recomputed `β`).
+With `Z` the product of the exact reflectors, `δA = E + Z [ΔR; 0]` collects the backward error `E`
+of the QR factorization and that of the back substitution, `(R̂₁ + ΔR) x̂ = ĉ`,
+`|ΔR| ≤ γ_n |R̂₁|`, and `δb` is the backward error of the `b`-loop, `ĉ = Zᵀ(b + δb)`. The book's
+`(6m - 3n + 41) n u + O(u²)` and `(6m - 3n + 40) n u + O(u²)` are the first-order readings of
+bounds of this shape (with Lawson–Hanson's constants in place of the `γ`s). -/
+theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
+    (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
+    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
+    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
+      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
+    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
+    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+      IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
+      ‖δA‖ ≤ ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n * (1 + gamma fp.u n) - 1) *
+        ‖A‖ ∧
+      ‖(toLp 2 δb : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + 3 * gamma fp.u (3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3)) ^ n - 1) *
+          ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
+  have hu0 := fp.u_nonneg
+  have hlt : ∀ a : ℕ, a ≤ 3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 →
+      ((a : ℕ) : ℝ) * fp.u < 1 := fun a ha =>
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 ha) hu0).trans_lt hu
+  have hu1 : fp.u < 1 := by simpa using hlt 1 (by omega)
+  simp only [algorithm_5_3_2, SetM.mem_run_bind] at hx
+  obtain ⟨st, hst, c, hc, hx⟩ := hx
+  obtain ⟨v, β, E, hO, hdata, hE, hEb⟩ :=
+    algorithm_5_2_1_rounding_data hfp hnm (hlt _ (by omega)) A hst
+  obtain ⟨db, hcdb, hdb⟩ := householderLSLoop_rounding hfp hnm hu hO hdata (hβ st hst) b hc
+  set ε := 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) with hε
+  have hε0 : 0 ≤ ε := by
+    have := gamma_nonneg hu0 (hlt (3 * (18 * m + 31) + m + 3) (by omega))
+    positivity
+  set W := prodRev (dataReflector v β) n with hWdef
+  have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO n
+  have hWtO : Wᵀ ∈ orthogonalGroup (Fin m) ℝ := transpose_mem_orthogonalGroup hWO
+  set T := (upperPart st.1).firstRows hnm with hT
+  have hTu : T.IsUpperTriangular := fun i j hij => by
+    have hij' : (j : ℕ) < i := hij
+    change upperPart st.1 (Fin.castLE hnm i) j = 0
+    simp only [upperPart, of_apply, Fin.val_castLE]
+    exact ite_eq_right (by omega)
+  obtain ⟨ΔU, hΔU, hsol⟩ := exists_roundsBackSubstDot_eq hu1
+    (by rw [Fintype.card_fin]; exact hlt n (by omega)) hTu (hR st hst)
+    (Chapter03.algorithm_3_1_2_rounds (fp := fp) _ _ x hx)
+  -- `ΔR` padded with zero rows
+  set Δ : Matrix (Fin m) (Fin n) ℝ := of fun i j => if h : (i : ℕ) < n then ΔU ⟨i, h⟩ j else 0
+    with hΔ
+  set T' := upperPart st.1 + Δ with hT'
+  have hWW : Wᵀ * W = 1 := (mem_orthogonalGroup_iff' _ _).1 hWO
+  have hAE : A + E = Wᵀ * upperPart st.1 := by
+    rw [hE, ← Matrix.mul_assoc, hWW, Matrix.one_mul]
+  have hA' : A + (E + Wᵀ * Δ) = Wᵀ * T' * (1 : Matrix (Fin n) (Fin n) ℝ) := by
+    rw [Matrix.mul_one, hT', Matrix.mul_add, ← hAE, add_assoc]
+  have hz : ∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → T' i j = 0 := fun i j hi => by
+    simp only [hT', hΔ, Matrix.add_apply, upperPart, of_apply]
+    rw [ite_eq_right (by omega), dite_eq_right_iff.2 fun h => absurd h (by omega), add_zero]
+  have hbc : b + db = Wᵀ *ᵥ c := by
+    rw [hcdb, mulVec_mulVec, hWW, one_mulVec]
+  have hhead : ∀ i : Fin n, (T' *ᵥ x) (Fin.castLE hnm i) = c (Fin.castLE hnm i) := fun i => by
+    have := congrFun hsol i
+    rw [← this]
+    simp only [mulVec, dotProduct, hT', hΔ, Matrix.add_apply, add_mul, Finset.sum_add_distrib,
+      of_apply, Fin.val_castLE, i.isLt, dite_true]
+    rfl
+  refine ⟨E + Wᵀ * Δ, db, fun y => ?_, ?_, hdb⟩
+  · -- the least-squares property
+    have hsplit := fun z : EuclideanSpace ℝ (Fin n) =>
+      norm_toEuclideanLin_sub_sq_eq_of_eq_mul (hWtO : Wᵀ ∈ unitaryGroup (Fin m) ℝ) hnm hA' hz
+        (toLp 2 (b + db)) z
+    refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
+    rw [hsplit, hsplit]
+    have h0 : ∑ i : Fin n, ‖(T' *ᵥ (1 *ᵥ ofLp (toLp 2 x))) (Fin.castLE hnm i) -
+        ((Wᵀ)ᴴ *ᵥ ofLp (toLp 2 (b + db))) (Fin.castLE hnm i)‖ ^ 2 = 0 := by
+      refine Finset.sum_eq_zero fun i _ => ?_
+      rw [one_mulVec, ofLp_toLp, ofLp_toLp, conjTranspose_eq_transpose_of_trivial,
+        transpose_transpose, hbc, mulVec_mulVec, (mem_orthogonalGroup_iff _ _).1 hWO,
+        one_mulVec, hhead, sub_self, norm_zero, zero_pow two_ne_zero]
+    rw [h0, zero_add]
+    exact le_add_of_nonneg_left (Finset.sum_nonneg fun _ _ => sq_nonneg _)
+  · -- the size of `δA`
+    have hη : 0 ≤ (1 + ε) ^ n - 1 := by
+      have : 1 ≤ (1 + ε) ^ n := one_le_pow₀ (by linarith)
+      linarith
+    have hEF : ‖E‖ ≤ ((1 + ε) ^ n - 1) * ‖A‖ := frobenius_norm_le_of_forall_col_le hη hEb
+    have hγ0 : 0 ≤ gamma fp.u n := gamma_nonneg hu0 (hlt n (by omega))
+    have hRF : ‖upperPart st.1‖ ≤ (1 + ε) ^ n * ‖A‖ := by
+      rw [hE, show W * (A + E) = W * (A + E) * (1 : Matrix (Fin n) (Fin n) ℝ) by
+        rw [Matrix.mul_one], frobenius_norm_orthogonal_mul_mul_orthogonal hWO _ (one_mem _)]
+      refine (norm_add_le _ _).trans ?_
+      linarith
+    have hΔF : ‖Δ‖ ≤ gamma fp.u n * ‖upperPart st.1‖ := by
+      refine frobenius_norm_le_of_forall_abs_le hγ0 fun i j => ?_
+      simp only [hΔ, of_apply]
+      split_ifs with h
+      · have := hΔU ⟨i, h⟩ j
+        rw [Fintype.card_fin] at this
+        exact this
+      · rw [abs_zero]
+        exact mul_nonneg hγ0 (abs_nonneg _)
+    have hWΔ : ‖Wᵀ * Δ‖ = ‖Δ‖ := by
+      rw [show Wᵀ * Δ = Wᵀ * Δ * (1 : Matrix (Fin n) (Fin n) ℝ) by rw [Matrix.mul_one],
+        frobenius_norm_orthogonal_mul_mul_orthogonal hWtO _ (one_mem _)]
+    refine (norm_add_le _ _).trans ?_
+    rw [hWΔ]
+    have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
+    have h1 : gamma fp.u n * ‖upperPart st.1‖ ≤ gamma fp.u n * ((1 + ε) ^ n * ‖A‖) :=
+      mul_le_mul_of_nonneg_left hRF hγ0
+    nlinarith
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(5.3.7)**: the `δA` of (5.3.6), `‖δA‖_F ≤ ((1 + ε)ⁿ (1 + γ_n) - 1) ‖A‖_F` with
+`ε = 3 γ_{3(18m + 31) + m + 3}` — the rigorous form of the book's
+`‖δA‖_F ≤ (6m - 3n + 41) n u ‖A‖_F + O(u²)` (`equation_5_3_6`). -/
+theorem equation_5_3_7 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
+    (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
+    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
+    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
+      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
+    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
+    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+      IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
+      ‖δA‖ ≤ ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n * (1 + gamma fp.u n) - 1) *
+        ‖A‖ := by
+  obtain ⟨δA, δb, h, hA, -⟩ := equation_5_3_6 hfp hnm hu A b hβ hR hx
+  exact ⟨δA, δb, h, hA⟩
+
+/-- **(5.3.8)**: the `δb` of (5.3.6), `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂` with
+`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}` — the rigorous form of the book's
+`‖δb‖₂ ≤ (6m - 3n + 40) n u ‖b‖₂ + O(u²)` (`equation_5_3_6`). -/
+theorem equation_5_3_8 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
+    (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
+    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
+    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
+      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
+    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
+    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+      IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
+      ‖(toLp 2 δb : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + 3 * gamma fp.u (3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3)) ^ n - 1) *
+          ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
+  obtain ⟨δA, δb, h, -, hb⟩ := equation_5_3_6 hfp hnm hu A b hβ hR hx
+  exact ⟨δA, δb, h, hb⟩
+
+end HouseholderLSRounding
 
 /-! ### §5.3.6 The sensitivity of the LS problem -/
 
