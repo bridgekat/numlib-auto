@@ -37,7 +37,8 @@ Stewart, and the least-squares solutions they produce ([golub2013matrix] §5.4.2
   rank-revealing factorization.
 * `Matrix.gap_le_of_urv`, `Matrix.gap_le_of_ulv` ([golub2013matrix] (5.4.10), (5.4.11), Stewart
   1993): how close the trailing columns of `V` in a URV or ULV decomposition come to the trailing
-  right singular subspace.
+  right singular subspace, from the common setting `Matrix.stewart_setting` and the gap between
+  trailing column spans `Matrix.gap_range_tailIdx_eq`.
 * `Matrix.norm_residual_subset_sub_le` ([golub2013matrix] Theorem 5.5.3): the residual of SVD-based
   subset selection against that of the nearest rank-`r` problem.
 
@@ -45,8 +46,9 @@ Stewart, and the least-squares solutions they produce ([golub2013matrix] §5.4.2
 
 Blocks are expressed by index maps rather than `fromBlocks` and a reindexing: the leading block is
 `R.submatrix (Fin.castLE _) (Fin.castLE _)`, the trailing indices are `Matrix.tailIdx`, and a
-vector split `[y; z]` on `Fin N` is `Matrix.blockVec`. The column permutation `Π` acts through
-`A.submatrix id σ`, i.e. `(A Π) x = A (x ∘ σ⁻¹)`.
+vector split `[y; z]` on `Fin N` is `Matrix.blockVec`. Where a `fromBlocks` form is needed (for
+Stewart's bounds), `Matrix.blockEquiv : Fin r ⊕ Fin (N − r) ≃ Fin N` reindexes to it. The column
+permutation `Π` acts through `A.submatrix id σ`, i.e. `(A Π) x = A (x ∘ σ⁻¹)`.
 -/
 
 open scoped Matrix
@@ -515,17 +517,29 @@ open scoped Matrix.Norms.L2Operator
 variable {r : ℕ}
 
 omit [RCLike 𝕜] in
-/-- The leading and trailing indices together: `Fin r ⊕ Fin (N − r) ≃ Fin N`. -/
-private def blockEquiv (h : r ≤ N) : Fin r ⊕ Fin (N - r) ≃ Fin N :=
+/-- The leading and trailing indices together: `Fin r ⊕ Fin (N − r) ≃ Fin N`, sending `Sum.inl i`
+to the head index `Fin.castLE h i` and `Sum.inr j` to the tail index `Matrix.tailIdx h j`. A
+matrix reindexed along two of these is a `fromBlocks` matrix of its four blocks. -/
+def blockEquiv (h : r ≤ N) : Fin r ⊕ Fin (N - r) ≃ Fin N :=
   finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
 
 omit [RCLike 𝕜] in
-private theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
+@[simp]
+theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
     blockEquiv h (Sum.inl i) = Fin.castLE h i := Fin.ext rfl
 
 omit [RCLike 𝕜] in
-private theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
+@[simp]
+theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
     blockEquiv h (Sum.inr j) = tailIdx h j := Fin.ext rfl
+
+omit [RCLike 𝕜] in
+/-- The tail and head indices together cover `Fin N` once. -/
+private theorem bijective_sum_elim_tailIdx_castLE (h : r ≤ N) :
+    Function.Bijective (Sum.elim (tailIdx h) (Fin.castLE h)) := by
+  convert ((Equiv.sumComm _ _).trans (blockEquiv h)).bijective using 1
+  funext x
+  cases x <;> simp
 
 /-- The column blocks of a unitary matrix: `(V_f)ᴴ V_g` is the `(f, g)` block of the identity. -/
 private theorem conjTranspose_submatrix_mul_submatrix {V : Matrix (Fin N) (Fin N) 𝕜}
@@ -534,44 +548,10 @@ private theorem conjTranspose_submatrix_mul_submatrix {V : Matrix (Fin N) (Fin N
   rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
     ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hV]
 
-/-- The leading `r` columns of a unitary matrix span the orthogonal complement of the span of the
-trailing ones. -/
-private theorem range_submatrix_castLE_eq_orthogonal {V : Matrix (Fin N) (Fin N) 𝕜}
-    (hV : V ∈ unitaryGroup (Fin N) 𝕜) (h : r ≤ N) :
-    LinearMap.range (toEuclideanLin (V.submatrix id (Fin.castLE h))) =
-      (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h))))ᗮ := by
-  have hcross : (V.submatrix id (tailIdx h))ᴴ * V.submatrix id (Fin.castLE h) = 0 := by
-    rw [conjTranspose_submatrix_mul_submatrix hV]
-    ext i j
-    rw [submatrix_apply, zero_apply, one_apply_ne]
-    intro e
-    have := congrArg Fin.val e
-    simp only [val_tailIdx, Fin.val_castLE] at this
-    omega
-  have h1 : (V.submatrix id (Fin.castLE h))ᴴ * V.submatrix id (Fin.castLE h) = 1 := by
-    rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (Fin.castLE_injective h)]
-  have h2 : (V.submatrix id (tailIdx h))ᴴ * V.submatrix id (tailIdx h) = 1 := by
-    rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (tailIdx_injective h)]
-  refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
-  · rintro _ ⟨x, rfl⟩
-    rw [Submodule.mem_orthogonal]
-    rintro _ ⟨y, rfl⟩
-    rw [← toEuclideanLin_conjTranspose_inner_right, ← toEuclideanLin_mul_apply, hcross, map_zero,
-      LinearMap.zero_apply, inner_zero_right]
-  · have hsum := Submodule.finrank_add_finrank_orthogonal
-      (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h))))
-    rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin (V.submatrix id (tailIdx h)))
-        (toEuclideanLinearIsometry h2).injective,
-      finrank_euclideanSpace_fin, finrank_euclideanSpace_fin] at hsum
-    rw [LinearMap.finrank_range_of_inj (f := toEuclideanLin (V.submatrix id (Fin.castLE h)))
-        (toEuclideanLinearIsometry h1).injective,
-      finrank_euclideanSpace_fin]
-    omega
-
 /-- **The gap between trailing column spans** ([golub2013matrix] Theorem 2.5.1): for unitary `V`,
 `Z`, the gap between the spans of their last `N − r` columns is the `2`-norm of the block of
 `Vᴴ Z` in the leading `r` rows and the trailing `N − r` columns. -/
-private theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
+theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
     (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hZ : Z ∈ unitaryGroup (Fin N) 𝕜) (h : r ≤ N) :
     (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h)))).gap
         (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx h)))) =
@@ -580,7 +560,7 @@ private theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
     (by rw [conjTranspose_submatrix_mul_submatrix hZ, submatrix_one _ (tailIdx_injective h)])
     (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (tailIdx_injective h)])
     (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (Fin.castLE_injective h)])
-    (range_submatrix_castLE_eq_orthogonal hV h),
+    (range_submatrix_eq_orthogonal hV (bijective_sum_elim_tailIdx_castLE h)),
     ← l2_opNorm_conjTranspose ((Z.submatrix id (tailIdx h))ᴴ * V.submatrix id (Fin.castLE h)),
     conjTranspose_mul, conjTranspose_conjTranspose, conjTranspose_submatrix,
     ← submatrix_mul _ _ _ id _ Function.bijective_id, star_eq_conjTranspose]
@@ -590,7 +570,7 @@ an SVD `A = W Σ Zᴴ`, let `Y` be the last `N − r` columns of `Vᴴ Z` (the t
 vectors of `T`). Then `Tᴴ T Y = Y D` for a diagonal `D` of the squared trailing singular values,
 all at most `σ_r(T)²`; `Y` is an isometry; `‖T Y w‖ ≤ σ_r(T) ‖w‖`; and the gap between the trailing
 column spans of `V` and `Z` is the norm of the leading `r` rows of `Y`. -/
-private theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M) (Fin M) 𝕜}
+theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M) (Fin M) 𝕜}
     {V Z : Matrix (Fin N) (Fin N) 𝕜} {σ : ℕ → ℝ} (hU : U ∈ unitaryGroup (Fin M) 𝕜)
     (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hT : star U * A * V = T) (hA : IsSVD A W σ Z)
     (h : r ≤ N) :

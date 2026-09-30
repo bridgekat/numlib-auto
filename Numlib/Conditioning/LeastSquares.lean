@@ -18,6 +18,8 @@ solution of a system with linearly independent rows ([golub2013matrix] §5.3.6 T
   Theorem 5.3.1 in rigorous form, with `σ_min(A) - ‖δA‖₂` in place of the book's `σ_min(A)` and no
   `O(ε²)` term.
 * `Matrix.norm_normalEquations_sub_le`: the accuracy of the method of normal equations (5.3.4).
+* `Matrix.mul_pinv_of_linearIndependent`: for linearly independent rows `A A⁺ = 1`, so the
+  minimal-norm solution solves the system (`Matrix.toEuclideanLin_pinv_of_linearIndependent`).
 * `Matrix.minNorm_sub_eq`, `Matrix.norm_minNorm_sub_le`: [golub2013matrix] Theorem 5.6.1 in
   rigorous form.
 * `Matrix.hasDerivAt_pinv_mulVec_line`, `Matrix.hasDerivAt_minNorm_line`: the derivatives (5.3.15)
@@ -349,11 +351,19 @@ theorem linearIndependent_add_of_l2_opNorm_lt
   rw [star_vecMul, star_vecMul] at h1
   exact star_injective (mulVec_injective_iff.2 hc h1)
 
+open scoped ComplexOrder in
+/-- For linearly independent rows the pseudoinverse is a right inverse, `A A⁺ = 1`: the dual of
+`Matrix.pinv_mul_self_of_linearIndependent`, through `A⁺ = Aᴴ (A Aᴴ)⁻¹`. -/
+theorem mul_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 A) : A * A.pinv = 1 := by
+  rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA, ← Matrix.mul_assoc,
+    mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp
+      (posDef_self_mul_conjTranspose_of_linearIndependent hA).isUnit)]
+
 /-- The minimal-norm solution solves the system: `A (A⁺ b) = b` for independent rows. -/
-private theorem toEuclideanLin_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 A) :
+theorem toEuclideanLin_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 A) :
     toEuclideanLin A (toEuclideanLin A.pinv b) = b := by
-  rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA]
-  exact toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose hA b
+  rw [← toEuclideanLin_mul_apply, mul_pinv_of_linearIndependent hA, toEuclideanLin_one,
+    LinearMap.id_apply]
 
 /-- `A⁺ A` is `Aᴴ (Aᴴ)⁺`, so `1 - A⁺ A` is the projection onto the orthogonal complement of the
 range of `Aᴴ`. -/

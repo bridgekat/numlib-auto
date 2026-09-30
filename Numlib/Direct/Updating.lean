@@ -41,7 +41,9 @@ in `Numlib/LinearAlgebra/Matrix/Block`.
   `transpose_mul_self_sub_eq_of_isJOrthogonal` ((6.5.11)–(6.5.12)), and the one-step shape lemma
   `Matrix.fromRows_rotate_step` shared by both Cholesky sweeps.
 * `Matrix.exists_choleskyUpdate`, `Matrix.exists_choleskyDowndate` (§6.5.4), the step
-  `Matrix.hyperbolicDowndate_step` ([golub2013matrix] Theorem 6.5.1), and the sign normalization
+  `Matrix.hyperbolicDowndate_step` ([golub2013matrix] Theorem 6.5.1), the existence of each
+  hyperbolic pair `Matrix.sq_lt_sq_of_posDef_transpose_mul_self_sub` (with the quadratic form
+  `Matrix.dotProduct_transpose_mul_self_sub_mulVec`), and the sign normalization
   `Matrix.isCholesky_diagonal_sign_mul`.
 
 ## Implementation notes
@@ -266,11 +268,6 @@ section QR
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- For real matrices the conjugate transpose of the orthogonal factor is its transpose. -/
-private theorem transpose_mem_orthogonalGroup {P : Matrix (Fin m) (Fin m) ℝ}
-    (hP : P ∈ orthogonalGroup (Fin m) ℝ) : Pᵀ ∈ orthogonalGroup (Fin m) ℝ := by
-  simpa [star_eq_conjTranspose] using Unitary.star_mem hP
-
 /-- **QR after a rank-one change** ([golub2013matrix] §6.5.1, (6.5.1)–(6.5.3)): if `A = Q R`
 (`A` real and square) and `u v : Fin n → ℝ`, there are two sweeps of rotations in the adjacent
 planes `(k, k + 1)`: `J = J_{n−2} ⋯ J_0` (the transpose of
@@ -307,7 +304,7 @@ theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQ
   have hP := adjacentRotationProd_mem_orthogonalGroup (M := n) (a := 0) (n := n - 1) hcs
   have hG := adjacentRotationProd_mem_orthogonalGroup (M := n) (a := 0) (n := n - 1) hcs'
   have hQ : Q ∈ orthogonalGroup (Fin n) ℝ := h.mem_unitaryGroup
-  refine ⟨mul_mem (mul_mem hQ (transpose_mem_orthogonalGroup hP)) hG,
+  refine ⟨mul_mem (mul_mem hQ (transpose_mem_unitaryGroup_iff.2 hP)) hG,
     fun i j hij => ?_, ?_⟩
   · rw [Matrix.mul_assoc]
     exact hT i j (by simpa using hij)
@@ -446,7 +443,7 @@ theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQ
         exact Or.inr ⟨by omega, hjk⟩
       · rw [val_succAbove_of_le hjk] at hij
         exact Or.inl (by omega)
-  have := isQR_conjTranspose_mul (mul_mem h.mem_unitaryGroup (transpose_mem_orthogonalGroup hP))
+  have := isQR_conjTranspose_mul (mul_mem h.mem_unitaryGroup (transpose_mem_unitaryGroup_iff.2 hP))
     (by rw [e']; exact hT)
   rwa [e'] at this
 
@@ -565,7 +562,7 @@ theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} 
   have hP := adjacentRotationProd_mem_orthogonalGroup (M := m + 1) (a := 0) (n := m) hcs
   have hQ : Q ∈ orthogonalGroup (Fin (m + 1)) ℝ := h.mem_unitaryGroup
   have hX : Q * (adjacentRotationProd 0 m c s)ᵀ ∈ orthogonalGroup (Fin (m + 1)) ℝ :=
-    mul_mem hQ (transpose_mem_orthogonalGroup hP)
+    mul_mem hQ (transpose_mem_unitaryGroup_iff.2 hP)
   set X := Q * (adjacentRotationProd 0 m c s)ᵀ with hXdef
   have hrow : ∀ j : Fin m, X 0 j.succ = 0 := fun j => by
     have e : X 0 j.succ = (adjacentRotationProd 0 m c s *ᵥ fun r => Q 0 r) j.succ := by
@@ -883,9 +880,10 @@ theorem exists_choleskyUpdate {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (hH :
     ← transpose_mul_self_eq_of_mem_orthogonalGroup hQ hM, transpose_mul_self_fromRows,
     ← hH.conjTranspose_mul_self, conjTranspose_eq_transpose_of_trivial]
 
-/-- The quadratic form of a signed Gram matrix: `xᵀ (Rᵀ R − z zᵀ) x = ‖R x‖² − (z ⬝ x)²`. -/
-private theorem dotProduct_transpose_mul_self_sub_mulVec {n : Type*} [Fintype n]
-    (R : Matrix n n ℝ) (z x : n → ℝ) :
+/-- The quadratic form of a signed Gram matrix: `xᵀ (Rᵀ R − z zᵀ) x = ‖R x‖² − (z ⬝ x)²`, over
+any commutative ring. -/
+theorem dotProduct_transpose_mul_self_sub_mulVec {α n : Type*} [CommRing α] [Fintype n]
+    (R : Matrix n n α) (z x : n → α) :
     x ⬝ᵥ ((Rᵀ * R - vecMulVec z z) *ᵥ x) = (R *ᵥ x) ⬝ᵥ (R *ᵥ x) - (z ⬝ᵥ x) ^ 2 := by
   have h1 : x ⬝ᵥ ((Rᵀ * R) *ᵥ x) = (R *ᵥ x) ⬝ᵥ (R *ᵥ x) := by
     rw [← mulVec_mulVec, dotProduct_mulVec, vecMul_transpose]
@@ -897,7 +895,7 @@ private theorem dotProduct_transpose_mul_self_sub_mulVec {n : Type*} [Fintype n]
 positive diagonal, `z` vanishes before `k`, and `Rᵀ R − z zᵀ` is positive definite, then
 `z_k² < r_kk²`. Test the form on `x = R⁻¹ e_k`, supported on the indices `≤ k`: `R x = e_k` and
 `z ⬝ x = z_k / r_kk`, so `0 < 1 − z_k²/r_kk²`. -/
-private theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [LinearOrder n]
+theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [LinearOrder n]
     {R : Matrix n n ℝ} (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) {z : n → ℝ} {k : n}
     (hz : ∀ j < k, z j = 0) (hP : (Rᵀ * R - vecMulVec z z).PosDef) : z k ^ 2 < R k k ^ 2 := by
   have hU : IsUnit R.det := (isUnit_iff_isUnit_det R).1
