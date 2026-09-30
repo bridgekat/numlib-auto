@@ -4,7 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.UnitaryGroup`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Data.List.OfFn
 import Mathlib.LinearAlgebra.UnitaryGroup
+import Mathlib.Tactic.NoncommRing
 
 /-!
 # Ordered products of a sequence of matrices
@@ -19,11 +21,21 @@ the two orders in which a sequence of transformations accumulates:
   orthogonal factor `Q = Q₁ ⋯ Q_r` of a factorization built one reflector at a time
   ([golub2013matrix] §5.1.6–5.1.7, the WY representations).
 
-Both are recursions on `r`, so statements about them are inductions on `r` with no `Fin` casts.
-A product of members of a submonoid stays in it, so products of unitary or orthogonal matrices are
-unitary or orthogonal (`Matrix.prodRev_mem_unitaryGroup`, `Matrix.prodRev_mem_orthogonalGroup`),
-and the transpose of a forward product is the reverse product of the transposes
-(`Matrix.transpose_prodFwd`).
+Both are recursions on `r`, so statements about them are inductions on `r` with no `Fin` casts;
+`Matrix.prodFwd_eq_prod_ofFn` and `Matrix.prodRev_eq_prod_ofFn` bridge them to the list product
+`(List.ofFn fun j : Fin r => P j).prod` and to that of the reversed list. A product of members of
+a submonoid stays in it, so products of unitary or orthogonal matrices are unitary or orthogonal
+(`Matrix.prodRev_mem_unitaryGroup`, `Matrix.prodRev_mem_orthogonalGroup`), and the transpose of a
+forward product is the reverse product of the transposes (`Matrix.transpose_prodFwd`).
+
+The algebra of the products, each in both orders: they only read their first `r` factors
+(`Matrix.prodFwd_congr`), peel off their first factor (`Matrix.prodFwd_succ'`), commute with what
+commutes with their factors (`Matrix.commute_prodFwd`), are invertible when their factors are
+(`Matrix.isUnit_prodFwd`), have the product of the determinants as determinant
+(`Matrix.det_prodFwd`), and for involutions the two orders invert each other
+(`Matrix.prodFwd_mul_prodRev`). A product of factors whose departures from the identity annihilate
+each other is the identity plus the sum of the departures
+(`Matrix.prodFwd_eq_one_add_sum_sub_one`).
 -/
 
 namespace Matrix
@@ -62,6 +74,115 @@ theorem prodFwd_zero (P : ℕ → Matrix ι ι α) : prodFwd P 0 = 1 := rfl
 theorem prodFwd_succ (P : ℕ → Matrix ι ι α) (r : ℕ) : prodFwd P (r + 1) = prodFwd P r * P r :=
   rfl
 
+/-- A reverse product only reads its first `r` factors. -/
+theorem prodRev_congr {f f' : ℕ → Matrix ι ι α} {r : ℕ} (h : ∀ k < r, f k = f' k) :
+    prodRev f r = prodRev f' r := by
+  induction r with
+  | zero => rfl
+  | succ r ih => rw [prodRev_succ, prodRev_succ, ih fun k hk => h k (by omega), h r (by omega)]
+
+/-- A forward product only reads its first `r` factors. -/
+theorem prodFwd_congr {f f' : ℕ → Matrix ι ι α} {r : ℕ} (h : ∀ k < r, f k = f' k) :
+    prodFwd f r = prodFwd f' r := by
+  induction r with
+  | zero => rfl
+  | succ r ih => rw [prodFwd_succ, prodFwd_succ, ih fun k hk => h k (by omega), h r (by omega)]
+
+/-- Peeling off the first factor of a reverse product, on the right. -/
+theorem prodRev_succ' (f : ℕ → Matrix ι ι α) (r : ℕ) :
+    prodRev f (r + 1) = prodRev (fun k => f (k + 1)) r * f 0 := by
+  induction r with
+  | zero => simp [prodRev_succ]
+  | succ r ih => rw [prodRev_succ, ih, prodRev_succ, Matrix.mul_assoc]
+
+/-- Peeling off the first factor of a forward product, on the left. -/
+theorem prodFwd_succ' (f : ℕ → Matrix ι ι α) (r : ℕ) :
+    prodFwd f (r + 1) = f 0 * prodFwd (fun k => f (k + 1)) r := by
+  induction r with
+  | zero => simp [prodFwd_succ]
+  | succ r ih => rw [prodFwd_succ, ih, prodFwd_succ, Matrix.mul_assoc]
+
+/-- A reverse product is the product of the reversed list of its factors. -/
+theorem prodRev_eq_prod_ofFn (P : ℕ → Matrix ι ι α) (r : ℕ) :
+    prodRev P r = (List.ofFn fun j : Fin r => P j).reverse.prod := by
+  induction r with
+  | zero => simp
+  | succ r ih => simp [prodRev_succ, ih, List.ofFn_succ', -List.ofFn_succ]
+
+/-- A forward product is the product of the list of its factors. -/
+theorem prodFwd_eq_prod_ofFn (P : ℕ → Matrix ι ι α) (r : ℕ) :
+    prodFwd P r = (List.ofFn fun j : Fin r => P j).prod := by
+  induction r with
+  | zero => simp
+  | succ r ih => simp [prodFwd_succ, ih, List.ofFn_succ', -List.ofFn_succ]
+
+/-- A reverse product commutes with a matrix commuting with its factors. -/
+theorem commute_prodRev {f : ℕ → Matrix ι ι α} {y : Matrix ι ι α} {r : ℕ}
+    (h : ∀ k < r, Commute (f k) y) : Commute (prodRev f r) y := by
+  induction r with
+  | zero => exact Commute.one_left y
+  | succ r ih =>
+    rw [prodRev_succ]
+    exact (h r (by omega)).mul_left (ih fun k hk => h k (by omega))
+
+/-- A forward product commutes with a matrix commuting with its factors. -/
+theorem commute_prodFwd {f : ℕ → Matrix ι ι α} {y : Matrix ι ι α} {r : ℕ}
+    (h : ∀ k < r, Commute (f k) y) : Commute (prodFwd f r) y := by
+  induction r with
+  | zero => exact Commute.one_left y
+  | succ r ih =>
+    rw [prodFwd_succ]
+    exact (ih fun k hk => h k (by omega)).mul_left (h r (by omega))
+
+/-- A reverse product of invertible matrices is invertible. -/
+theorem isUnit_prodRev {f : ℕ → Matrix ι ι α} {r : ℕ} (h : ∀ k < r, IsUnit (f k)) :
+    IsUnit (prodRev f r) := by
+  induction r with
+  | zero => exact isUnit_one
+  | succ r ih =>
+    rw [prodRev_succ]
+    exact (h r (by omega)).mul (ih fun k hk => h k (by omega))
+
+/-- A forward product of invertible matrices is invertible. -/
+theorem isUnit_prodFwd {f : ℕ → Matrix ι ι α} {r : ℕ} (h : ∀ k < r, IsUnit (f k)) :
+    IsUnit (prodFwd f r) := by
+  induction r with
+  | zero => exact isUnit_one
+  | succ r ih =>
+    rw [prodFwd_succ]
+    exact (ih fun k hk => h k (by omega)).mul (h r (by omega))
+
+/-- For involutions, the reverse product inverts the forward product. -/
+theorem prodRev_mul_prodFwd {P : ℕ → Matrix ι ι α} {r : ℕ} (hP : ∀ k < r, P k * P k = 1) :
+    prodRev P r * prodFwd P r = 1 := by
+  induction r with
+  | zero => simp
+  | succ r ih =>
+    rw [prodRev_succ, prodFwd_succ, Matrix.mul_assoc, ← Matrix.mul_assoc (prodRev P r),
+      ih fun k hk => hP k (by omega), Matrix.one_mul, hP r (by omega)]
+
+/-- For involutions, the forward product inverts the reverse product. -/
+theorem prodFwd_mul_prodRev {P : ℕ → Matrix ι ι α} {r : ℕ} (hP : ∀ k < r, P k * P k = 1) :
+    prodFwd P r * prodRev P r = 1 := by
+  induction r with
+  | zero => simp
+  | succ r ih =>
+    rw [prodFwd_succ, prodRev_succ, Matrix.mul_assoc, ← Matrix.mul_assoc (P r), hP r (by omega),
+      Matrix.one_mul, ih fun k hk => hP k (by omega)]
+
+/-- A forward product of pairwise commuting involutions is an involution. -/
+theorem prodFwd_mul_self {f : ℕ → Matrix ι ι α} {r : ℕ}
+    (hc : ∀ k l, k < l → l < r → Commute (f k) (f l)) (hf : ∀ k < r, f k * f k = 1) :
+    prodFwd f r * prodFwd f r = 1 := by
+  induction r with
+  | zero => simp
+  | succ r ih =>
+    have hP : Commute (prodFwd f r) (f r) :=
+      commute_prodFwd fun k hk => hc k r hk (lt_add_one r)
+    rw [prodFwd_succ, Matrix.mul_assoc, ← Matrix.mul_assoc (f r), ← hP.eq, Matrix.mul_assoc,
+      hf r (lt_add_one r), Matrix.mul_one, ih (fun k l hkl hl => hc k l hkl (by omega))
+        fun k hk => hf k (by omega)]
+
 /-- A reverse product of members of a submonoid is a member. -/
 theorem prodRev_mem {S : Submonoid (Matrix ι ι α)} {P : ℕ → Matrix ι ι α} (hP : ∀ k, P k ∈ S)
     (r : ℕ) : prodRev P r ∈ S := by
@@ -77,6 +198,59 @@ theorem prodFwd_mem {S : Submonoid (Matrix ι ι α)} {P : ℕ → Matrix ι ι 
   | succ r ih => exact S.mul_mem ih (hP r)
 
 end Semiring
+
+section Ring
+
+variable [Ring α]
+
+/-- A forward product of factors with pairwise disjoint supports is the identity plus the sum of
+their departures from it: `∏ (1 + E_k) = 1 + ∑ E_k` when `E_k E_l = 0` for `k < l`. -/
+theorem prodFwd_eq_one_add_sum_sub_one {f : ℕ → Matrix ι ι α} {m : ℕ}
+    (h : ∀ k l, k < l → l < m → (f k - 1) * (f l - 1) = 0) :
+    prodFwd f m = 1 + ∑ k ∈ Finset.range m, (f k - 1) := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have hS : (∑ k ∈ Finset.range m, (f k - 1)) * (f m - 1) = 0 := by
+      rw [Finset.sum_mul]
+      exact Finset.sum_eq_zero fun k hk => h k m (Finset.mem_range.1 hk) (lt_add_one m)
+    rw [prodFwd_succ, ih fun k l hkl hl => h k l hkl (by omega), Finset.sum_range_succ]
+    calc (1 + ∑ k ∈ Finset.range m, (f k - 1)) * f m
+        = (1 + ∑ k ∈ Finset.range m, (f k - 1)) * (1 + (f m - 1)) := by congr 1; abel
+      _ = _ := by
+        rw [mul_add, mul_one, add_mul (1 : Matrix ι ι α), Matrix.one_mul, hS]
+        abel
+
+/-- Two matrices whose departures from the identity annihilate each other in both orders
+commute: both products are `a + b − 1`. -/
+theorem commute_of_sub_one_mul_sub_one {a b : Matrix ι ι α} (h₁ : (a - 1) * (b - 1) = 0)
+    (h₂ : (b - 1) * (a - 1) = 0) : Commute a b := by
+  calc a * b = (a - 1) * (b - 1) + a + b - 1 := by noncomm_ring
+    _ = (b - 1) * (a - 1) + a + b - 1 := by rw [h₁, h₂]
+    _ = b * a := by noncomm_ring
+
+end Ring
+
+/-- The determinant of a reverse product is the product of the determinants. -/
+theorem det_prodRev [CommRing α] (P : ℕ → Matrix ι ι α) (r : ℕ) :
+    (prodRev P r).det = ∏ k ∈ Finset.range r, (P k).det := by
+  induction r with
+  | zero => simp
+  | succ r ih => rw [prodRev_succ, det_mul, ih, Finset.prod_range_succ, mul_comm]
+
+/-- The determinant of a forward product is the product of the determinants. -/
+theorem det_prodFwd [CommRing α] (P : ℕ → Matrix ι ι α) (r : ℕ) :
+    (prodFwd P r).det = ∏ k ∈ Finset.range r, (P k).det := by
+  induction r with
+  | zero => simp
+  | succ r ih => rw [prodFwd_succ, det_mul, ih, Finset.prod_range_succ]
+
+/-- The transpose of `prodRev P r` is `prodFwd Pᵀ r`. -/
+theorem transpose_prodRev [CommSemiring α] (P : ℕ → Matrix ι ι α) (r : ℕ) :
+    (prodRev P r)ᵀ = prodFwd (fun k => (P k)ᵀ) r := by
+  induction r with
+  | zero => simp
+  | succ r ih => rw [prodRev_succ, transpose_mul, ih, prodFwd_succ]
 
 /-- The transpose of `prodFwd P r` is `prodRev Pᵀ r`. -/
 theorem transpose_prodFwd [CommSemiring α] (P : ℕ → Matrix ι ι α) (r : ℕ) :

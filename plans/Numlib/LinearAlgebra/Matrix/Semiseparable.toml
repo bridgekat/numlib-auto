@@ -175,30 +175,3 @@ source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
 [[node]]  # added by lo2: the spectral half of eigenvalues_oddEven_half_sum
 id = "charpoly_oddEven_half_sum"
 source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
-
-[[node]]  # added by lo2: the general spectral theorem behind Fact 2 (two symmetric involutions)
-id = "charpoly_half_add_of_involutive"
-
-[[node]]  # added by lo2: odd powers of a sum of two trace-zero involutions are traceless
-id = "trace_add_pow_odd_eq_zero"
-
-[[node]]  # added by lo2: power sums and trace of powers
-id = "IsHermitian.trace_pow_eq_sum"
-
-[[node]]  # added by lo2: symmetric spectrum from traceless odd powers
-id = "IsHermitian.charpoly_neg_of_trace_pow_odd"
-
-[[node]]  # added by lo2: vanishing odd power sums give a symmetric family
-id = "_root_.map_neg_eq_of_sum_pow_odd"
-
-[[node]]  # added by lo2
-id = "_root_.sum_eval_neg_eq_of_sum_pow_odd"
-
-[[node]]  # added by lo2
-id = "card_eq_of_charpoly_eq_prod"
-
-[[node]]  # added by lo2: products of disjointly supported factors
-id = "prodFwd_eq_one_add_sum_sub_one"
-
-[[node]]  # added by lo2
-id = "commute_of_sub_one_mul_sub_one"

@@ -488,6 +488,7 @@ import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
 import Numlib.LinearAlgebra.Matrix.CSDecomposition
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.CauchyBinet
+import Numlib.LinearAlgebra.Matrix.Charpoly
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Companion
 import Numlib.LinearAlgebra.Matrix.CompleteOrthogonal

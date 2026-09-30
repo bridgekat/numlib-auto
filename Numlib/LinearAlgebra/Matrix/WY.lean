@@ -5,9 +5,8 @@ Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.List.OfFn
 import Mathlib.LinearAlgebra.Matrix.Block
-import Mathlib.LinearAlgebra.UnitaryGroup
+import Numlib.LinearAlgebra.Matrix.Products
 
 /-!
 # The WY representation of a product of reflectors
@@ -26,9 +25,11 @@ instance Householder reflectors) is a rank-`r` modification of the identity,
 * `Matrix.IsWY.mul_one_sub_smul_vecMulVec` ([golub2013matrix] Lemma 5.1.1): multiplying on the right
   by `1 - β v vᴴ` appends the column `z = β Q v` to `W` and the column `v` to `Y`.
 * `Matrix.wyW`, `Matrix.isWY_prod`: the `W` factor built by that recursion ([golub2013matrix]
-  Algorithm 5.1.2) represents the whole product; `Matrix.isWY_prod_unitLowerTrapezoidal` and
+  Algorithm 5.1.2) represents the whole product (`Matrix.isWY_prodFwd` for the product written as
+  `Matrix.prodFwd` of a sequence); `Matrix.isWY_prod_unitLowerTrapezoidal` and
   `Matrix.wyW_apply_eq_zero_of_apply_eq_zero` read off the shapes of `Y` and `W`.
-* `Matrix.exists_compactWY`: the compact representation `Q = 1 - Y T Yᴴ`.
+* `Matrix.exists_compactWY`, `Matrix.exists_compactWY_prodFwd`: the compact representation
+  `Q = 1 - Y T Yᴴ`.
 * `Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup`: a *block reflector* `1 - 2 V Vᴴ`
   with `Vᴴ V = 1` is unitary (Schreiber–Parlett 1987).
 
@@ -37,7 +38,8 @@ instance Householder reflectors) is a rank-`r` modification of the identity,
 The algebra holds over any commutative `*`-ring, and none of it needs `Q` or the factors to be
 unitary (the book assumes orthogonality in Lemma 5.1.1 but does not use it). The factors are indexed
 by `Fin r` and the product is `(List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod`, in
-the order `Q₁ ⋯ Q_r`; columns are appended with `Fin.snoc` on the column index,
+the order `Q₁ ⋯ Q_r`, which is `Matrix.prodFwd` of the factors (`Matrix.prodFwd_eq_prod_ofFn`);
+columns are appended with `Fin.snoc` on the column index,
 `Matrix.of fun i => Fin.snoc (W i) (z i)`, which is how the recursion grows `W` and `Y`.
 
 ## References
@@ -213,6 +215,25 @@ theorem exists_compactWY (β : Fin r → R) (v : Fin r → n → R) :
       (β (Fin.last r)), ?_⟩
     rw [List.ofFn_succ', List.prod_concat, hY]
     exact compactWY_step hQ _ _
+
+/-- **The WY representation of a forward product** (`Matrix.isWY_prod` for `Matrix.prodFwd`): for
+sequences `β`, `v`, `Q₁ ⋯ Q_r = 1 - W Yᴴ` with `W = Matrix.wyW` of the first `r` terms and `Y`
+the matrix whose columns are `v 0, …, v (r-1)`. -/
+theorem isWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
+    IsWY (prodFwd (fun k => 1 - β k • vecMulVec (v k) (star (v k))) r)
+      (wyW (fun j : Fin r => β j) fun j => v j) (of fun i (j : Fin r) => v j i) := by
+  rw [prodFwd_eq_prod_ofFn]
+  exact isWY_prod _ _
+
+/-- **The compact WY representation of a forward product** (`Matrix.exists_compactWY` for
+`Matrix.prodFwd`): `Q₁ ⋯ Q_r = 1 - Y T Yᴴ` with `T` upper triangular and `Y` the matrix whose
+columns are `v 0, …, v (r-1)`. -/
+theorem exists_compactWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
+    ∃ T : Matrix (Fin r) (Fin r) R, T.IsUpperTriangular ∧
+      prodFwd (fun k => 1 - β k • vecMulVec (v k) (star (v k))) r =
+        1 - (of fun i (j : Fin r) => v j i) * T * (of fun i (j : Fin r) => v j i)ᴴ := by
+  rw [prodFwd_eq_prod_ofFn]
+  exact exists_compactWY (fun j : Fin r => β j) fun j => v j
 
 /-- **Block reflectors are unitary** ([golub2013matrix] §5.1.7; Schreiber–Parlett 1987): if
 `Vᴴ V = 1`, then `1 - 2 V Vᴴ` is unitary (it is Hermitian and involutive). -/

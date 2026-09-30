@@ -17,3 +17,9 @@ id = "prodRev_mem_unitaryGroup"
 
 [[node]]
 id = "prodFwd_mem_unitaryGroup"
+
+[[node]]  # added by lo2: products of disjointly supported factors
+id = "prodFwd_eq_one_add_sum_sub_one"
+
+[[node]]  # added by lo2
+id = "commute_of_sub_one_mul_sub_one"
