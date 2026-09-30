@@ -178,12 +178,6 @@ theorem circulant_eq_dft_mul_diagonal_mul_conjTranspose_dft (z : Fin n → ℂ) 
 private noncomputable def periodicColumn (n : ℕ) : Fin n → ℝ := fun k =>
   if (k : ℕ) = 0 then 2 else if (k : ℕ) = 1 ∨ (k : ℕ) + 1 = n then -1 else 0
 
-/-- `2 − 2 cos (2 x) = 4 sin² x`. -/
-private theorem two_sub_two_mul_cos_two_mul (x : ℝ) :
-    2 - 2 * Real.cos (2 * x) = 4 * Real.sin x ^ 2 := by
-  rw [Real.cos_two_mul]
-  linear_combination (-4) * Real.cos_sq_add_sin_sq x
-
 /-- The eigenvalues of the periodic second difference: `F̄_n (2, −1, 0, …, 0, −1) =
 (2 − ω^j − ω^{−j})_j = (4 sin² (j π / n))_j` for `3 ≤ n`. -/
 private theorem dft_mulVec_periodicColumn (hn : 3 ≤ n) (j : Fin n) :
@@ -212,7 +206,7 @@ private theorem dft_mulVec_periodicColumn (hn : 3 ≤ n) (j : Fin n) :
       = 2 * ((j : ℕ) * π / n) := by
     simp only [Nat.cast_one]
     ring
-  rw [hx, ← two_sub_two_mul_cos_two_mul]
+  rw [hx, ← Real.two_sub_two_mul_cos_two_mul]
   push_cast
   ring
 

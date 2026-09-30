@@ -29,9 +29,9 @@ Everything else follows: the sine vectors are pairwise orthogonal, of squared le
 basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the `n` numbers `b + 2 a cos
 θ_k` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); the quadratic form is enclosed in `[b -
 2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]` (`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`);
-and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive
-definite. For that model Laplacian the module also gives the explicit inverse — the discrete
-Green's function `(min(j, k) + 1)(n - max(j, k)) / (n + 1)`
+and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`
+(`Real.two_sub_two_mul_cos`), is positive definite. For that model Laplacian the module also gives
+the explicit inverse — the discrete Green's function `(min(j, k) + 1)(n - max(j, k)) / (n + 1)`
 (`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply`) — with its row sums, the discrete
 parabola `(j + 1)(n - j) / 2`; its M-matrix property
 (`Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two`); and its spectral condition number
@@ -76,6 +76,18 @@ sum of two of them, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
 
 open Finset
 open scoped Real Matrix
+
+/-- `2 − 2 cos θ = 4 sin² (θ / 2)`: the half-angle form in which the eigenvalues
+`2 − 2 cos θ_k` of `tridiag(-1, 2, -1)` are usually written. -/
+theorem Real.two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
+  have h2 : Real.cos θ = Real.cos (2 * (θ / 2)) := by ring_nf
+  rw [h2, Real.cos_two_mul]
+  linear_combination (-4) * Real.cos_sq_add_sin_sq (θ / 2)
+
+/-- `2 − 2 cos (2 x) = 4 sin² x`, the double-angle reading of `Real.two_sub_two_mul_cos`. -/
+theorem Real.two_sub_two_mul_cos_two_mul (x : ℝ) :
+    2 - 2 * Real.cos (2 * x) = 4 * Real.sin x ^ 2 := by
+  rw [Real.two_sub_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
 
 namespace Matrix
 
@@ -1171,13 +1183,6 @@ theorem secondDifferencePeriodic_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
     single_first_apply (by omega), single_last_apply (by omega)]
   split_ifs <;> ring
 
-/-- `2 − 2 cos θ = 4 sin² (θ / 2)`: the factor of `tridiag(-1, 2, -1)` on the angle vectors. -/
-private theorem two_sub_two_mul_cos (θ : ℝ) :
-    2 + 2 * (-1) * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h2 : Real.cos θ = Real.cos (2 * (θ / 2)) := by ring_nf
-  rw [h2, Real.cos_two_mul]
-  linear_combination (-4) * Real.cos_sq_add_sin_sq (θ / 2)
-
 /-- [golub2013matrix] (4.8.18), the Dirichlet–Neumann second difference on a sine vector:
 `𝒯^{(DN)} s(θ) = 4 sin² (θ / 2) s(θ) + (s_{n+1} − s_{n−1}) e_n`. -/
 theorem secondDifferenceDN_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
@@ -1186,7 +1191,7 @@ theorem secondDifferenceDN_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
         + (Real.sin (((n : ℝ) + 1) * θ) - Real.sin (((n : ℝ) - 1) * θ))
           • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
   rw [secondDifferenceDN_mulVec hn, symmTridiagonalToeplitz_mulVec_sinAngleVec (-1) 2 (by omega),
-    two_sub_two_mul_cos, sinAngleVec_apply]
+    mul_neg_one, neg_mul, ← sub_eq_add_neg, Real.two_sub_two_mul_cos, sinAngleVec_apply]
   have hcast : (((n - 2 : ℕ) : ℝ) + 1) = (n : ℝ) - 1 := by
     rw [Nat.cast_sub hn]
     push_cast
@@ -1205,7 +1210,8 @@ theorem secondDifferenceNN_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
         + (Real.cos ((n : ℝ) * θ) - Real.cos (((n : ℝ) - 2) * θ))
           • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
   rw [secondDifferenceNN_mulVec hn, symmTridiagonalToeplitz_mulVec_cosAngleVec (-1) 2 hn,
-    two_sub_two_mul_cos, cosAngleVec_apply, cosAngleVec_apply]
+    mul_neg_one, neg_mul, ← sub_eq_add_neg, Real.two_sub_two_mul_cos, cosAngleVec_apply,
+    cosAngleVec_apply]
   have hcast : ((n - 2 : ℕ) : ℝ) = (n : ℝ) - 2 := by
     rw [Nat.cast_sub hn]
     push_cast
@@ -1224,8 +1230,8 @@ theorem secondDifferencePeriodic_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
         + (Real.sin (((n : ℝ) + 1) * θ) - Real.sin θ)
           • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
   rw [secondDifferencePeriodic_mulVec hn,
-    symmTridiagonalToeplitz_mulVec_sinAngleVec (-1) 2 (by omega), two_sub_two_mul_cos,
-    sinAngleVec_apply, sinAngleVec_apply]
+    symmTridiagonalToeplitz_mulVec_sinAngleVec (-1) 2 (by omega), mul_neg_one, neg_mul,
+    ← sub_eq_add_neg, Real.two_sub_two_mul_cos, sinAngleVec_apply, sinAngleVec_apply]
   have hcast : (((n - 1 : ℕ) : ℝ) + 1) = (n : ℝ) := by
     rw [Nat.cast_sub (by omega)]
     push_cast
@@ -1243,7 +1249,8 @@ theorem secondDifferencePeriodic_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
         + (Real.cos θ - Real.cos (((n : ℝ) - 1) * θ)) • Pi.single (⟨0, by omega⟩ : Fin n) 1
         + (Real.cos ((n : ℝ) * θ) - 1) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
   rw [secondDifferencePeriodic_mulVec hn, symmTridiagonalToeplitz_mulVec_cosAngleVec (-1) 2 hn,
-    two_sub_two_mul_cos, cosAngleVec_apply, cosAngleVec_apply]
+    mul_neg_one, neg_mul, ← sub_eq_add_neg, Real.two_sub_two_mul_cos, cosAngleVec_apply,
+    cosAngleVec_apply]
   have hcast : ((n - 1 : ℕ) : ℝ) = (n : ℝ) - 1 := by
     rw [Nat.cast_sub (by omega)]
     push_cast
@@ -1282,6 +1289,59 @@ theorem cornerTridiagonal_zero_zero (n : ℕ) :
 /-- The corner-modified tridiagonal matrix is symmetric. -/
 theorem cornerTridiagonal_isSymm (n : ℕ) (γ δ : ℝ) : (cornerTridiagonal n γ δ).IsSymm :=
   IsSymm.add (symmTridiagonalToeplitz_isSymm 1 0) (isSymm_diagonal _)
+
+/-- Off the diagonal, `Y_{γ,δ}` is `tridiag(1, 0, 1)`. -/
+theorem cornerTridiagonal_apply_of_ne (γ δ : ℝ) {i l : Fin n} (h : i ≠ l) :
+    cornerTridiagonal n γ δ i l = if (i : ℕ) + 1 = l ∨ (l : ℕ) + 1 = i then 1 else 0 := by
+  rw [cornerTridiagonal, add_apply, diagonal_apply_ne _ h, add_zero,
+    symmTridiagonalToeplitz_apply', ite_eq_right (fun h' => h (Fin.ext h'))]
+
+/-- Away from the two corners, the diagonal of `Y_{γ,δ}` vanishes. -/
+theorem cornerTridiagonal_apply_self (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
+    (hi : (i : ℕ) + 1 < n) : cornerTridiagonal n γ δ i i = 0 := by
+  rw [cornerTridiagonal, add_apply, diagonal_apply_eq, symmTridiagonalToeplitz_apply',
+    ite_eq_left rfl, ite_eq_right hi₀.ne', ite_eq_right hi.ne]
+  ring
+
+/-- A row `i` of `Y_{γ,δ}` away from the corners picks the two neighbours of `i`. -/
+private theorem cornerTridiagonal_mul_apply_aux (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
+    (hi : (i : ℕ) + 1 < n) (f : Fin n → ℝ) :
+    ∑ l, cornerTridiagonal n γ δ i l * f l = f ⟨i - 1, by omega⟩ + f ⟨i + 1, hi⟩ := by
+  have hterm : ∀ l, cornerTridiagonal n γ δ i l * f l =
+      (if (l : ℕ) + 1 = i then f l else 0) + (if (l : ℕ) = i + 1 then f l else 0) := by
+    intro l
+    by_cases hil : i = l
+    · subst hil
+      rw [cornerTridiagonal_apply_self γ δ hi₀ hi, ite_eq_right (by omega),
+        ite_eq_right (by omega)]
+      ring
+    · rw [cornerTridiagonal_apply_of_ne γ δ hil]
+      split_ifs <;> first | omega | simp
+  have h1 := sum_dite_val_add_one_eq i (fun l (_ : (l : ℕ) + 1 = i) => f l)
+  have h2 := sum_dite_val_eq_add_one i (fun l (_ : (l : ℕ) = i + 1) => f l)
+  simp only [dite_eq_ite] at h1 h2
+  rw [sum_congr rfl fun l _ => hterm l, sum_add_distrib, h1, h2, dite_eq_left hi₀,
+    dite_eq_left hi]
+
+/-- `Y_{γ,δ}` is symmetric. -/
+theorem cornerTridiagonal_transpose (γ δ : ℝ) :
+    (cornerTridiagonal n γ δ)ᵀ = cornerTridiagonal n γ δ :=
+  (cornerTridiagonal_isSymm n γ δ).eq
+
+/-- Away from the first and last row, `(Y_{γ,δ} A)_ij = A_{i−1, j} + A_{i+1, j}`. -/
+theorem cornerTridiagonal_mul_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {i : Fin n}
+    (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n) (j : Fin n) :
+    (cornerTridiagonal n γ δ * A) i j = A ⟨i - 1, by omega⟩ j + A ⟨i + 1, hi⟩ j := by
+  rw [mul_apply]
+  exact cornerTridiagonal_mul_apply_aux γ δ hi₀ hi fun l => A l j
+
+/-- Away from the first and last column, `(A Y_{γ,δ})_ij = A_{i, j−1} + A_{i, j+1}`. -/
+theorem mul_cornerTridiagonal_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n)
+    {j : Fin n} (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
+    (A * cornerTridiagonal n γ δ) i j = A i ⟨j - 1, by omega⟩ + A i ⟨j + 1, hj⟩ := by
+  rw [mul_apply, ← cornerTridiagonal_mul_apply_aux γ δ hj₀ hj fun l => A i l]
+  refine sum_congr rfl fun l _ => ?_
+  rw [mul_comm, ← transpose_apply (cornerTridiagonal n γ δ), cornerTridiagonal_transpose]
 
 /-- The bridge between the displacement operators of [golub2013matrix] §12.1.7 and the
 second-difference matrices of [golub2013matrix] §4.8: `2 • 1 − Y_{0,0} = 𝒯^{(DD)}_n`. -/
@@ -1368,9 +1428,7 @@ theorem two_smul_one_sub_cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n
       = (4 * Real.sin ((k : ℕ) * π / (2 * n)) ^ 2) • cosineIIVec n k := by
   rw [sub_mulVec, smul_mulVec, one_mulVec, cornerTridiagonal_one_one_mulVec_cosineIIVec,
     ← sub_smul, show (k : ℕ) * π / (2 * n) = ((k : ℕ) * π / n) / 2 by ring,
-    ← two_sub_two_mul_cos]
-  congr 1
-  ring
+    ← Real.two_sub_two_mul_cos]
 
 /-- The angle `k π / n` of a DCT-II vector lies in `[0, π)`. -/
 private theorem cosineII_angle_mem (k : Fin n) :

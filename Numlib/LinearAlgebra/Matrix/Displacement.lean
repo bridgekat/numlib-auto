@@ -206,36 +206,6 @@ section CyclicShift
 
 variable {n : ℕ}
 
-/-- `(Z_φ A)_ij = A_{i−1, j}` below the first row. -/
-theorem cyclicShift_mul_apply_of_pos (φ : K) (A : Matrix (Fin n) (Fin n) K) {i : Fin n}
-    (hi : 0 < (i : ℕ)) (j : Fin n) :
-    (cyclicShift n φ * A) i j = A ⟨i - 1, by omega⟩ j := by
-  have := cyclicShift_mulVec_apply φ (fun l => A l j) i
-  rw [dite_eq_right (by omega)] at this
-  exact this
-
-/-- `(A Z_φ)_ij = A_{i, j+1}` left of the last column. -/
-theorem mul_cyclicShift_apply_of_lt (φ : K) (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
-    {j : Fin n} (hj : (j : ℕ) + 1 < n) :
-    (A * cyclicShift n φ) i j = A i ⟨j + 1, hj⟩ := by
-  rw [mul_apply, sum_eq_single ⟨j + 1, hj⟩]
-  · rw [cyclicShift_apply, ite_eq_left rfl, mul_one]
-  · intro l _ hl
-    have hl' : (l : ℕ) ≠ j + 1 := fun h' => hl (Fin.ext h')
-    rw [cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), mul_zero]
-  · simp
-
-/-- `(Z_φᵀ A)_ij = A_{i+1, j}` above the last row. -/
-theorem transpose_cyclicShift_mul_apply_of_lt (φ : K) (A : Matrix (Fin n) (Fin n) K) {i : Fin n}
-    (hi : (i : ℕ) + 1 < n) (j : Fin n) :
-    ((cyclicShift n φ)ᵀ * A) i j = A ⟨i + 1, hi⟩ j := by
-  rw [mul_apply, sum_eq_single ⟨i + 1, hi⟩]
-  · rw [transpose_apply, cyclicShift_apply, ite_eq_left rfl, one_mul]
-  · intro l _ hl
-    have hl' : (l : ℕ) ≠ i + 1 := fun h' => hl (Fin.ext h')
-    rw [transpose_apply, cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), zero_mul]
-  · simp
-
 /-- **The `{Z₁, Z₋₁}` Sylvester operator is injective** ([golub2013matrix] P12.1.1(a), the
 nonsingularity (12.1.2) presupposes for (12.1.8)): `Z₁ X = X Z₋₁` gives `Z₁ⁿ X = X Z₋₁ⁿ`, that is
 `X = −X`. -/
@@ -280,64 +250,6 @@ end CyclicShift
 section CornerTridiagonal
 
 variable {n : ℕ}
-
-/-- Off the diagonal, `Y_{γ,δ}` is `tridiag(1, 0, 1)`. -/
-theorem cornerTridiagonal_apply_of_ne (γ δ : ℝ) {i l : Fin n} (h : i ≠ l) :
-    cornerTridiagonal n γ δ i l = if (i : ℕ) + 1 = l ∨ (l : ℕ) + 1 = i then 1 else 0 := by
-  rw [cornerTridiagonal, add_apply, diagonal_apply_ne _ h, add_zero,
-    symmTridiagonalToeplitz_apply', ite_eq_right (fun h' => h (Fin.ext h'))]
-
-/-- Away from the two corners, the diagonal of `Y_{γ,δ}` vanishes. -/
-theorem cornerTridiagonal_apply_self (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
-    (hi : (i : ℕ) + 1 < n) : cornerTridiagonal n γ δ i i = 0 := by
-  rw [cornerTridiagonal, add_apply, diagonal_apply_eq, symmTridiagonalToeplitz_apply',
-    ite_eq_left rfl, ite_eq_right hi₀.ne', ite_eq_right hi.ne]
-  ring
-
-/-- A row `i` of `Y_{γ,δ}` away from the corners picks the two neighbours of `i`. -/
-private theorem cornerTridiagonal_mul_apply_aux (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
-    (hi : (i : ℕ) + 1 < n) (f : Fin n → ℝ) :
-    ∑ l, cornerTridiagonal n γ δ i l * f l = f ⟨i - 1, by omega⟩ + f ⟨i + 1, hi⟩ := by
-  have hterm : ∀ l, cornerTridiagonal n γ δ i l * f l =
-      (if (l : ℕ) + 1 = i then f l else 0) + (if (l : ℕ) = i + 1 then f l else 0) := by
-    intro l
-    by_cases hil : i = l
-    · subst hil
-      rw [cornerTridiagonal_apply_self γ δ hi₀ hi, ite_eq_right (by omega),
-        ite_eq_right (by omega)]
-      ring
-    · rw [cornerTridiagonal_apply_of_ne γ δ hil]
-      split_ifs <;> first | omega | simp
-  have h1 := sum_dite_val_add_one_eq i (fun l (_ : (l : ℕ) + 1 = i) => f l)
-  have h2 := sum_dite_val_eq_add_one i (fun l (_ : (l : ℕ) = i + 1) => f l)
-  simp only [dite_eq_ite] at h1 h2
-  rw [sum_congr rfl fun l _ => hterm l, sum_add_distrib, h1, h2, dite_eq_left hi₀,
-    dite_eq_left hi]
-
-/-- `Y_{γ,δ}` is symmetric. -/
-theorem cornerTridiagonal_transpose (γ δ : ℝ) :
-    (cornerTridiagonal n γ δ)ᵀ = cornerTridiagonal n γ δ := by
-  ext i l
-  rw [transpose_apply]
-  by_cases h : i = l
-  · rw [h]
-  · rw [cornerTridiagonal_apply_of_ne γ δ h, cornerTridiagonal_apply_of_ne γ δ (Ne.symm h)]
-    exact if_congr or_comm rfl rfl
-
-/-- Away from the first and last row, `(Y_{γ,δ} A)_ij = A_{i−1, j} + A_{i+1, j}`. -/
-theorem cornerTridiagonal_mul_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {i : Fin n}
-    (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n) (j : Fin n) :
-    (cornerTridiagonal n γ δ * A) i j = A ⟨i - 1, by omega⟩ j + A ⟨i + 1, hi⟩ j := by
-  rw [mul_apply]
-  exact cornerTridiagonal_mul_apply_aux γ δ hi₀ hi fun l => A l j
-
-/-- Away from the first and last column, `(A Y_{γ,δ})_ij = A_{i, j−1} + A_{i, j+1}`. -/
-theorem mul_cornerTridiagonal_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n)
-    {j : Fin n} (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
-    (A * cornerTridiagonal n γ δ) i j = A i ⟨j - 1, by omega⟩ + A i ⟨j + 1, hj⟩ := by
-  rw [mul_apply, ← cornerTridiagonal_mul_apply_aux γ δ hj₀ hj fun l => A i l]
-  refine sum_congr rfl fun l _ => ?_
-  rw [mul_comm, ← transpose_apply (cornerTridiagonal n γ δ), cornerTridiagonal_transpose]
 
 /-- **The `{Y₀₀, Y₁₁}` displacement of a Toeplitz matrix is supported on the border**
 ([golub2013matrix] (12.1.9)): `(Y₀₀ T − T Y₁₁)_ij = 0` for `0 < i < n − 1` and `0 < j < n − 1`,

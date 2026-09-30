@@ -41,7 +41,8 @@ commutation of the Kronecker product, displacement structure.
 
 ## Main statements
 
-* `Matrix.exchange_eq_permMatrix`, `Matrix.exchange_mul_exchange`, `Matrix.transpose_exchange`.
+* `Matrix.exchange_eq_permMatrix`, `Matrix.exchange_mul_exchange`, `Matrix.transpose_exchange`,
+  `Matrix.exchange_mul_mul_exchange_eq_submatrix`.
 * `Matrix.downshift_eq_circulant`, `Matrix.downshift_pow`, `Matrix.downshift_pow_card`.
 * `Matrix.perfectShuffle_mulVec`, `Matrix.transpose_perfectShuffle`,
   `Matrix.perfectShuffle_mul_transpose`.
@@ -125,6 +126,20 @@ theorem exchange_mul_exchange : (exchange n : Matrix (Fin n) (Fin n) R) * exchan
   ext i j
   rw [exchange_mul_apply, exchange_apply, one_apply, Fin.rev_rev]
   exact if_congr eq_comm rfl rfl
+
+/-- Multiplying by the exchange matrix on the left reverses the rows:
+`ℰ_n A = A.submatrix rev id`. -/
+theorem exchange_mul_eq_submatrix {m : Type*} (A : Matrix (Fin n) m R) :
+    exchange n * A = A.submatrix Fin.rev id := by
+  ext i j
+  rw [exchange_mul_apply, submatrix_apply, id]
+
+/-- Conjugating by the exchange matrix reverses the rows and the columns:
+`ℰ_n A ℰ_n = A.submatrix rev rev`. -/
+theorem exchange_mul_mul_exchange_eq_submatrix (A : Matrix (Fin n) (Fin n) R) :
+    exchange n * A * exchange n = A.submatrix Fin.rev Fin.rev := by
+  ext i j
+  rw [mul_exchange_apply, exchange_mul_apply, submatrix_apply]
 
 end Exchange
 
@@ -364,6 +379,36 @@ theorem cyclicShift_pow_mulVec_apply {n : ℕ} (φ : R) (x : Fin n → R) {k : �
         ext
         simp only
         omega
+
+/-- `(Z_φ A)_ij = A_{i−1, j}` below the first row. -/
+theorem cyclicShift_mul_apply_of_pos {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R)
+    {i : Fin n} (hi : 0 < (i : ℕ)) (j : Fin n) :
+    (cyclicShift n φ * A) i j = A ⟨i - 1, by omega⟩ j := by
+  have := cyclicShift_mulVec_apply φ (fun l => A l j) i
+  rw [dite_eq_right (by omega)] at this
+  exact this
+
+/-- `(A Z_φ)_ij = A_{i, j+1}` left of the last column. -/
+theorem mul_cyclicShift_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R) (i : Fin n)
+    {j : Fin n} (hj : (j : ℕ) + 1 < n) :
+    (A * cyclicShift n φ) i j = A i ⟨j + 1, hj⟩ := by
+  rw [mul_apply, Finset.sum_eq_single ⟨j + 1, hj⟩]
+  · rw [cyclicShift_apply, ite_eq_left rfl, mul_one]
+  · intro l _ hl
+    have hl' : (l : ℕ) ≠ j + 1 := fun h' => hl (Fin.ext h')
+    rw [cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), mul_zero]
+  · simp
+
+/-- `(Z_φᵀ A)_ij = A_{i+1, j}` above the last row. -/
+theorem transpose_cyclicShift_mul_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R)
+    {i : Fin n} (hi : (i : ℕ) + 1 < n) (j : Fin n) :
+    ((cyclicShift n φ)ᵀ * A) i j = A ⟨i + 1, hi⟩ j := by
+  rw [mul_apply, Finset.sum_eq_single ⟨i + 1, hi⟩]
+  · rw [transpose_apply, cyclicShift_apply, ite_eq_left rfl, one_mul]
+  · intro l _ hl
+    have hl' : (l : ℕ) ≠ i + 1 := fun h' => hl (Fin.ext h')
+    rw [transpose_apply, cyclicShift_apply, ite_eq_right hl', ite_eq_right (by omega), zero_mul]
+  · simp
 
 /-- `Z_φ ^ n = φ I`: going once around the cycle multiplies every component by `φ`. -/
 theorem cyclicShift_pow_card (n : ℕ) (φ : R) : cyclicShift n φ ^ n = φ • (1 : Matrix _ _ R) := by

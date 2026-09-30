@@ -642,11 +642,6 @@ end Spectrum
 
 /-! ### The forward Euler scheme for the heat equation -/
 
-/-- `2 - 2 cos (2x) = 4 sin² x`, in the form the discrete sine eigenvalues take. -/
-theorem two_sub_two_mul_cos_eq (x : ℝ) : 2 + 2 * (-1) * Real.cos (2 * x) = 4 * Real.sin x ^ 2 := by
-  rw [Real.sin_sq_eq_half_sub]
-  ring
-
 /-- The eigenvalues of `c tridiag(-1, 2, -1)` of order `m`, `c > 0`, are the `m` numbers
 `4 c sin²((k+1)π/(2(m+1)))` ([quarteroni2000numerical] §13.2, the eigenvalues `μ_i` of `A_fd`):
 `Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff` with the half-angle formula. -/
@@ -666,7 +661,8 @@ theorem mem_spectrum_smul_symmTridiagonalToeplitz_iff {m : ℕ} {c : ℝ} (hc : 
   have hang : (((k : ℕ) : ℝ) + 1) * Real.pi / ((m : ℝ) + 1)
       = 2 * ((((k : ℕ) : ℝ) + 1) * Real.pi / (2 * ((m : ℝ) + 1))) := by
     field_simp
-  rw [hang, two_sub_two_mul_cos_eq, inv_mul_eq_iff_eq_mul₀ hc.ne']
+  rw [hang, mul_neg_one, neg_mul, ← sub_eq_add_neg, Real.two_sub_two_mul_cos_two_mul,
+    inv_mul_eq_iff_eq_mul₀ hc.ne']
 
 /-- **Forward Euler for the finite difference heat equation** ([quarteroni2000numerical] (13.11)
 and the display after it): for `A = (ν/h²) tridiag(-1, 2, -1)` of order `m` and `ν, h, Δt > 0`,

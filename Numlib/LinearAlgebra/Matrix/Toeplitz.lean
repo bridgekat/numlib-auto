@@ -93,20 +93,6 @@ section Exchange
 
 variable [NonAssocSemiring R]
 
-/-- Multiplying by the exchange matrix on the left reverses the rows:
-`ℰ_m A = A.submatrix rev id`. -/
-theorem exchange_mul_eq_submatrix {α : Type*} (A : Matrix (Fin m) α R) :
-    exchange m * A = A.submatrix Fin.rev id := by
-  ext i j
-  rw [exchange_mul_apply, submatrix_apply, id]
-
-/-- Conjugating by the exchange matrix reverses the rows and the columns:
-`ℰ_n A ℰ_n = A.submatrix rev rev`. -/
-theorem exchange_mul_mul_exchange_eq_submatrix (A : Matrix (Fin n) (Fin n) R) :
-    exchange n * A * exchange n = A.submatrix Fin.rev Fin.rev := by
-  ext i j
-  rw [mul_exchange_apply, exchange_mul_apply, submatrix_apply]
-
 /-- **Persymmetry in the book's form** ([golub2013matrix] §4.7.1): `A` is persymmetric iff
 `ℰ_n A ℰ_n = Aᵀ`. -/
 theorem isPersymmetric_iff_exchange_mul_mul_exchange {A : Matrix (Fin n) (Fin n) R} :

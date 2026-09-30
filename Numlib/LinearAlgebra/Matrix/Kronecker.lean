@@ -62,8 +62,12 @@ free of it.
 * `Matrix.kroneckerFin_mul_kroneckerFin`, `Matrix.inv_kroneckerFin`, `Matrix.kroneckerFin_assoc`,
   `Matrix.kroneckerFin_mulVec_vecFin`: [golub2013matrix] (1.3.2)–(1.3.4), (1.3.6).
 * `Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose`: [golub2013matrix] (1.3.5).
+* `Matrix.perfectShuffle_submatrix_eq_kroneckerFin_mul`: the two-pass factorization
+  `Π_{p,rq} = (I_r ⊗ Π_{p,q})(Π_{p,r} ⊗ I_q)` of [golub2013matrix] §12.3.5.
+* `finProdFinEquiv_lt_finProdFinEquiv_iff`: the positional layout is lexicographic.
 * `Matrix.piKronecker_mul_piKronecker`, `Matrix.khatriRao_transpose_mul_self`.
-* `finPiFinEquiv_snoc`: the recursion of Mathlib's little-endian flattening `finPiFinEquiv`.
+* `finPiFinEquiv_snoc`, `finPiFinEquiv_apply_val_eq_add_mul`, `finPiFinEquiv_apply_val_split`: the
+  recursion and the splits of Mathlib's little-endian flattening `finPiFinEquiv`.
 * `Matrix.rank_kronecker`: `rank (B ⊗ C) = rank B · rank C` over a field.
 
 ## References
@@ -139,6 +143,29 @@ section KroneckerFin
 
 variable {m₁ m₂ m₃ n₁ n₂ n₃ p₁ p₂ : ℕ}
 
+/-- The positional layout `finProdFinEquiv` is lexicographic: `(a₁, a₂)` comes before `(b₁, b₂)`
+iff `a₁ < b₁`, or `a₁ = b₁` and `a₂ < b₂`. -/
+theorem _root_.finProdFinEquiv_lt_finProdFinEquiv_iff {a₁ b₁ : Fin m₁} {a₂ b₂ : Fin m₂} :
+    finProdFinEquiv (a₁, a₂) < finProdFinEquiv (b₁, b₂) ↔ a₁ < b₁ ∨ a₁ = b₁ ∧ a₂ < b₂ := by
+  rw [Fin.lt_def, finProdFinEquiv_apply_val, finProdFinEquiv_apply_val]
+  dsimp only
+  have ha₂ := a₂.2
+  have hb₂ := b₂.2
+  rcases lt_trichotomy a₁ b₁ with h₁ | rfl | h₁
+  · have : m₂ * (a₁ : ℕ) + m₂ ≤ m₂ * b₁ := by
+      rw [← Nat.mul_succ]
+      exact Nat.mul_le_mul_left _ (Fin.lt_def.1 h₁)
+    exact ⟨fun _ => Or.inl h₁, fun _ => by omega⟩
+  · simp only [lt_self_iff_false, true_and, false_or, Fin.lt_def]
+    omega
+  · have : m₂ * (b₁ : ℕ) + m₂ ≤ m₂ * a₁ := by
+      rw [← Nat.mul_succ]
+      exact Nat.mul_le_mul_left _ (Fin.lt_def.1 h₁)
+    refine ⟨fun h => by omega, fun h => ?_⟩
+    rcases h with h | ⟨rfl, _⟩
+    · exact absurd (h.trans h₁) (lt_irrefl _)
+    · exact absurd h₁ (lt_irrefl _)
+
 /-- The Kronecker product in positional layout: `kroneckerFin A B` is the
 `m₁ m₂ × n₁ n₂` array whose `(i₁, j₁)` block is `A i₁ j₁ • B`, row `(i₁, i₂)` sitting at position
 `i₂ + m₂ i₁`. -/
@@ -156,6 +183,25 @@ theorem kroneckerFin_apply [Mul R] (A : Matrix (Fin m₁) (Fin n₁) R)
 /-- `(A ⊗ B)ᵀ = Aᵀ ⊗ Bᵀ` ([golub2013matrix] (1.3.1)). -/
 theorem transpose_kroneckerFin [Mul R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) : (kroneckerFin A B)ᵀ = kroneckerFin Aᵀ Bᵀ :=
+  rfl
+
+/-- `(A ⊗ B)ᴴ = Aᴴ ⊗ Bᴴ` in positional layout. -/
+theorem conjTranspose_kroneckerFin [CommMagma R] [StarMul R] (A : Matrix (Fin m₁) (Fin n₁) R)
+    (B : Matrix (Fin m₂) (Fin n₂) R) : (kroneckerFin A B)ᴴ = kroneckerFin Aᴴ Bᴴ := by
+  rw [kroneckerFin, kroneckerFin, conjTranspose_submatrix, conjTranspose_kronecker]
+
+/-- A scalar on the left factor of a positional Kronecker product scales the product. -/
+theorem kroneckerFin_smul_left {S : Type*} [Mul R] [SMul S R] [IsScalarTower S R R] (c : S)
+    (A : Matrix (Fin m₁) (Fin n₁) R) (B : Matrix (Fin m₂) (Fin n₂) R) :
+    kroneckerFin (c • A) B = c • kroneckerFin A B := by
+  rw [kroneckerFin, kroneckerFin, smul_kronecker]
+  rfl
+
+/-- A scalar on the right factor of a positional Kronecker product scales the product. -/
+theorem kroneckerFin_smul_right {S : Type*} [Mul R] [SMul S R] [SMulCommClass S R R] (c : S)
+    (A : Matrix (Fin m₁) (Fin n₁) R) (B : Matrix (Fin m₂) (Fin n₂) R) :
+    kroneckerFin A (c • B) = c • kroneckerFin A B := by
+  rw [kroneckerFin, kroneckerFin, kronecker_smul]
   rfl
 
 /-- The mixed-product rule `(A ⊗ B)(C ⊗ D) = AC ⊗ BD` ([golub2013matrix] (1.3.2)). -/
@@ -285,13 +331,18 @@ theorem reshape_eq_unvec (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n
     reshape A m₁ n₁ h = unvec ((vecFin A ∘ Fin.cast h) ∘ finProdFinEquiv) :=
   rfl
 
+/-- Every vector of length `n m` is the column stacking of an `m × n` matrix. -/
+theorem vecFin_surjective : Function.Surjective (vecFin : Matrix (Fin m) (Fin n) R → _) :=
+  fun w => ⟨unvec (w ∘ finProdFinEquiv), funext fun x => by
+    simp only [vecFin, vec_unvec, Function.comp_apply, Equiv.apply_symm_apply]⟩
+
 end Vec
 
 /-! ### The perfect shuffle and the Kronecker product -/
 
 section PerfectShuffle
 
-variable {p r m₁ m₂ n₁ n₂ : ℕ}
+variable {p q r m₁ m₂ n₁ n₂ : ℕ}
 
 /-- The perfect shuffle is the vec-permutation matrix: `Π_{p,r} vec X = vec Xᵀ` for an `r × p`
 matrix `X`, whose `p` columns are the piles. -/
@@ -322,6 +373,69 @@ theorem perfectShuffle_mul_kroneckerFin_mul_transpose [CommSemiring R]
   rw [submatrix_apply, submatrix_apply, id, id, Equiv.symm_symm, finPerfectShuffle_symm,
     finPerfectShuffle_apply, finPerfectShuffle_apply, kroneckerFin_apply, kroneckerFin_apply,
     mul_comm]
+
+variable [CommSemiring R]
+
+/-- A perfect shuffle in the left factor of a Kronecker product with an identity permutes the
+blocks of a vector: `((Π_{p,r} ⊗ I_q) w)((a, b), c) = w((b, a), c)`. -/
+theorem kroneckerFin_perfectShuffle_one_mulVec (w : Fin (p * r * q) → R) (a : Fin r) (b : Fin p)
+    (c : Fin q) :
+    (kroneckerFin (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)
+        (1 : Matrix (Fin q) (Fin q) R) *ᵥ w) (finProdFinEquiv (finProdFinEquiv (a, b), c))
+      = w (finProdFinEquiv (finProdFinEquiv (b, a), c)) := by
+  obtain ⟨X, rfl⟩ := vecFin_surjective w
+  rw [kroneckerFin_mulVec_vecFin, Matrix.one_mul, transpose_perfectShuffle, perfectShuffle,
+    PEquiv.mul_toMatrix_toPEquiv, vecFin_apply, vecFin_apply, submatrix_apply, Equiv.symm_symm,
+    id, finPerfectShuffle_apply]
+
+/-- A perfect shuffle in the right factor of a Kronecker product with an identity permutes within
+the blocks of a vector: `((I_k ⊗ Π_{p,r}) w)(K, (a, b)) = w(K, (b, a))`. -/
+theorem kroneckerFin_one_perfectShuffle_mulVec {k : ℕ} (w : Fin (k * (p * r)) → R) (K : Fin k)
+    (a : Fin r) (b : Fin p) :
+    (kroneckerFin (1 : Matrix (Fin k) (Fin k) R)
+        (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R) *ᵥ w)
+        (finProdFinEquiv (K, finProdFinEquiv (a, b)))
+      = w (finProdFinEquiv (K, finProdFinEquiv (b, a))) := by
+  obtain ⟨X, rfl⟩ := vecFin_surjective w
+  rw [kroneckerFin_mulVec_vecFin, transpose_one, Matrix.mul_one, perfectShuffle,
+    PEquiv.toMatrix_toPEquiv_mul, vecFin_apply, vecFin_apply, submatrix_apply, id,
+    finPerfectShuffle_symm, finPerfectShuffle_apply]
+
+/-- **The two-pass factorization of the perfect shuffle** ([golub2013matrix] §12.3.5):
+`Π_{p, r q} = (I_r ⊗ Π_{p,q}) (Π_{p,r} ⊗ I_q)`, with `Fin (r * (q * p))` identified with
+`Fin (r * q * p)`, `Fin (r * (p * q))` with `Fin (r * p * q)` and `Fin (p * (r * q))` with
+`Fin (p * r * q)` by `finCongr`. Applied to `vec A` for a block column `A = [A₁; ⋯; A_r]` of `q × p`
+blocks, the first pass gives `vec [A₁ | ⋯ | A_r]` and the second `vec Aᵀ`
+(`Matrix.perfectShuffle_mulVec_vecFin`), each through shuffles of `p q` rather than `p q r`
+elements. -/
+theorem perfectShuffle_submatrix_eq_kroneckerFin_mul :
+    (perfectShuffle p (r * q) : Matrix (Fin (r * q * p)) (Fin (p * (r * q))) R).submatrix
+        (finCongr (by ring)) id
+      = kroneckerFin (1 : Matrix (Fin r) (Fin r) R) (perfectShuffle p q)
+        * (kroneckerFin (perfectShuffle p r) (1 : Matrix (Fin q) (Fin q) R)).submatrix
+          (finCongr (by ring)) (finCongr (by ring)) := by
+  refine ext_of_mulVec_single fun j => funext fun t => ?_
+  obtain ⟨⟨k, ab⟩, rfl⟩ := finProdFinEquiv.surjective t
+  obtain ⟨⟨a, b⟩, rfl⟩ := finProdFinEquiv.surjective ab
+  have e₁ : (finCongr (by ring) (finProdFinEquiv (k, finProdFinEquiv (b, a))) : Fin (r * p * q))
+      = finProdFinEquiv (finProdFinEquiv (k, b), a) := by
+    ext
+    simp only [finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val]
+    ring
+  have e₂ : ((finCongr (by ring)).symm (finProdFinEquiv (finProdFinEquiv (b, k), a))
+      : Fin (p * (r * q))) = finProdFinEquiv (b, finProdFinEquiv (k, a)) := by
+    ext
+    simp only [finCongr_symm, finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val]
+    ring
+  have e₃ : (finCongr (by ring) (finProdFinEquiv (k, finProdFinEquiv (a, b))) : Fin (r * q * p))
+      = finProdFinEquiv (finProdFinEquiv (k, a), b) := by
+    ext
+    simp only [finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val]
+    ring
+  rw [← mulVec_mulVec, kroneckerFin_one_perfectShuffle_mulVec, submatrix_mulVec_equiv,
+    Function.comp_apply, e₁, kroneckerFin_perfectShuffle_one_mulVec, Function.comp_apply, e₂]
+  change (perfectShuffle p (r * q) *ᵥ _) (finCongr _ _) = _
+  rw [e₃, perfectShuffle_mulVec_apply]
 
 end PerfectShuffle
 
@@ -423,6 +537,55 @@ theorem _root_.finPiFinEquiv_snoc {d : ℕ} {s : Fin (d + 1) → ℕ}
   simp only [Fin.snoc_castSucc, Fin.snoc_last]
   rw [mul_comm (x : ℕ)]
   rfl
+
+/-- The split of the flattening `finPiFinEquiv` at `k ≤ d`: the digits below `k`, flattened, plus
+`∏_{j < k} s_j` times the digits from `k` on, flattened. -/
+theorem _root_.finPiFinEquiv_apply_val_eq_add_mul {d : ℕ} {s : Fin d → ℕ} (a : ∀ j, Fin (s j))
+    (k : ℕ) (hk : k ≤ d) :
+    (finPiFinEquiv a : ℕ)
+      = finPiFinEquiv (fun j : Fin k => a (Fin.castLE hk j))
+        + (∏ j : Fin k, s (Fin.castLE hk j))
+          * finPiFinEquiv (fun j : Fin (d - k) => a ⟨k + j, by omega⟩) := by
+  set c : ℕ → ℕ := fun j => if h : j < d then a ⟨j, h⟩ * ∏ l : Fin j, s (Fin.castLE h.le l)
+    else 0 with hc
+  have h0 : (finPiFinEquiv a : ℕ) = ∑ j ∈ Finset.range d, c j := by
+    rw [finPiFinEquiv_apply, ← Fin.sum_univ_eq_sum_range]
+    exact Finset.sum_congr rfl fun j _ => by rw [hc]; beta_reduce; rw [dite_eq_left j.2]
+  rw [h0, show Finset.range d = Finset.range (k + (d - k)) by congr 1; omega,
+    Finset.sum_range_add, finPiFinEquiv_apply, finPiFinEquiv_apply,
+    ← Fin.sum_univ_eq_sum_range, ← Fin.sum_univ_eq_sum_range, Finset.mul_sum]
+  congr 1
+  · refine Finset.sum_congr rfl fun j _ => ?_
+    rw [hc]
+    beta_reduce
+    rw [dite_eq_left (by omega)]
+    rfl
+  · refine Finset.sum_congr rfl fun j _ => ?_
+    rw [hc]
+    beta_reduce
+    rw [dite_eq_left (by omega), Fin.prod_univ_add, mul_left_comm]
+    rfl
+
+/-- The split of the flattening `finPiFinEquiv` at the digit `k`: the digits below `k`, the digit
+`a k` weighted by `∏_{j < k} s_j`, and the digits above `k` weighted by `∏_{j ≤ k} s_j`. -/
+theorem _root_.finPiFinEquiv_apply_val_split {d : ℕ} {s : Fin d → ℕ} (a : ∀ j, Fin (s j))
+    (k : Fin d) :
+    (finPiFinEquiv a : ℕ)
+      = finPiFinEquiv (fun j : Fin k => a (Fin.castLE k.is_lt.le j))
+        + (∏ j : Fin k, s (Fin.castLE k.is_lt.le j))
+          * (a k + s k
+            * finPiFinEquiv (fun j : Fin (d - (k + 1)) => a ⟨k + 1 + j, by omega⟩)) := by
+  have hL : (finPiFinEquiv (fun j : Fin (k + 1) => a (Fin.castLE k.is_lt j)) : ℕ)
+      = finPiFinEquiv (fun j : Fin k => a (Fin.castLE k.is_lt.le j))
+        + a k * ∏ j : Fin k, s (Fin.castLE k.is_lt.le j) := by
+    rw [finPiFinEquiv_apply, finPiFinEquiv_apply, Fin.sum_univ_castSucc]
+    rfl
+  have hP : ∏ j : Fin (k + 1), s (Fin.castLE k.is_lt j)
+      = (∏ j : Fin k, s (Fin.castLE k.is_lt.le j)) * s k := by
+    rw [Fin.prod_univ_castSucc]
+    rfl
+  rw [finPiFinEquiv_apply_val_eq_add_mul a (k + 1) k.is_lt, hL, hP]
+  ring
 
 /-- The flattening of a family Kronecker product by `finPiFinEquiv` (the book's `col`) is the
 positional Kronecker product with the *last* factor outermost; by induction the flattened

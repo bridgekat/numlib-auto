@@ -130,9 +130,6 @@ id = "forall_tendsto_thetaStep_iff"
 id = "backwardEuler_tendsto"
 
 [[node]]
-id = "two_sub_two_mul_cos_eq"
-
-[[node]]
 id = "mem_spectrum_smul_symmTridiagonalToeplitz_iff"
 
 [[node]]

@@ -67,12 +67,6 @@ id = "IsHankel.isToeplitz_submatrix_rev"
 id = "exchange_mul_isHankel"
 
 [[node]]
-id = "exchange_mul_eq_submatrix"
-
-[[node]]
-id = "exchange_mul_mul_exchange_eq_submatrix"
-
-[[node]]
 id = "isPersymmetric_iff_isSymm_exchange_mul"
 
 [[node]]

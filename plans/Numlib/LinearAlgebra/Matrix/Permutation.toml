@@ -41,3 +41,18 @@ id = "cyclicShift"
 
 [[node]]
 id = "cyclicShift_pow_card"
+
+[[node]]
+id = "exchange_mul_eq_submatrix"
+
+[[node]]
+id = "exchange_mul_mul_exchange_eq_submatrix"
+
+[[node]]
+id = "cyclicShift_mul_apply_of_pos"
+
+[[node]]
+id = "mul_cyclicShift_apply_of_lt"
+
+[[node]]
+id = "transpose_cyclicShift_mul_apply_of_lt"

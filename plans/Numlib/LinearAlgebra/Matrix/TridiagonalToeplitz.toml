@@ -155,3 +155,12 @@ id = "secondDifferenceNN_mulVec_cosAngleVec"
 
 [[node]]
 id = "secondDifferencePeriodic_mulVec_sinAngleVec"
+
+[[node]]
+id = "cornerTridiagonal_mul_apply"
+
+[[node]]
+id = "mul_cornerTridiagonal_apply"
+
+[[node]]
+id = "_root_.Real.two_sub_two_mul_cos_two_mul"

@@ -192,21 +192,6 @@ section Triangular
 
 variable {R : Type*} {m₁ m₂ : ℕ}
 
-/-- The positional indices compare lexicographically. -/
-private theorem finProdFinEquiv_lt_iff {i₁ j₁ : Fin m₁} {i₂ j₂ : Fin m₂}
-    (h : finProdFinEquiv (j₁, j₂) < finProdFinEquiv (i₁, i₂)) : j₁ < i₁ ∨ j₁ = i₁ ∧ j₂ < i₂ := by
-  rw [Fin.lt_def, finProdFinEquiv_apply_val, finProdFinEquiv_apply_val] at h
-  dsimp only at h
-  rcases lt_trichotomy j₁ i₁ with h₁ | rfl | h₁
-  · exact Or.inl h₁
-  · exact Or.inr ⟨rfl, Fin.lt_def.2 (by omega)⟩
-  · exfalso
-    have hle : m₂ * (i₁ : ℕ) + m₂ ≤ m₂ * j₁ := by
-      rw [← Nat.mul_succ]
-      exact Nat.mul_le_mul_left _ (Fin.lt_def.1 h₁)
-    have := i₂.2
-    omega
-
 /-- The Kronecker product of upper triangular matrices is upper triangular in positional layout
 ([golub2013matrix] §12.3.1). -/
 theorem IsUpperTriangular.kroneckerFin [MulZeroClass R] {B : Matrix (Fin m₁) (Fin m₁) R}
@@ -216,7 +201,7 @@ theorem IsUpperTriangular.kroneckerFin [MulZeroClass R] {B : Matrix (Fin m₁) (
   obtain ⟨⟨i₁, i₂⟩, rfl⟩ := finProdFinEquiv.surjective i
   obtain ⟨⟨j₁, j₂⟩, rfl⟩ := finProdFinEquiv.surjective j
   rw [kroneckerFin_apply]
-  rcases finProdFinEquiv_lt_iff h with h₁ | ⟨h₁, h₂⟩
+  rcases finProdFinEquiv_lt_finProdFinEquiv_iff.1 h with h₁ | ⟨h₁, h₂⟩
   · rw [hB h₁, zero_mul]
   · rw [hC h₂, mul_zero]
 
@@ -228,8 +213,8 @@ theorem IsLowerTriangular.kroneckerFin [MulZeroClass R] {B : Matrix (Fin m₁) (
   obtain ⟨⟨i₁, i₂⟩, rfl⟩ := finProdFinEquiv.surjective i
   obtain ⟨⟨j₁, j₂⟩, rfl⟩ := finProdFinEquiv.surjective j
   rw [kroneckerFin_apply]
-  rcases finProdFinEquiv_lt_iff (show finProdFinEquiv (i₁, i₂) < finProdFinEquiv (j₁, j₂) from h)
-    with h₁ | ⟨h₁, h₂⟩
+  rcases finProdFinEquiv_lt_finProdFinEquiv_iff.1
+      (show finProdFinEquiv (i₁, i₂) < finProdFinEquiv (j₁, j₂) from h) with h₁ | ⟨h₁, h₂⟩
   · rw [hB (show OrderDual.toDual j₁ < OrderDual.toDual i₁ from h₁), zero_mul]
   · rw [hC (show OrderDual.toDual j₂ < OrderDual.toDual i₂ from h₂), mul_zero]
 
@@ -251,12 +236,6 @@ theorem IsLU.kroneckerFin [CommSemiring R] {B L_B U_B : Matrix (Fin m₁) (Fin m
   isUnitLowerTriangular := hB.isUnitLowerTriangular.kroneckerFin hC.isUnitLowerTriangular
   isUpperTriangular := hB.isUpperTriangular.kroneckerFin hC.isUpperTriangular
   mul_eq := by rw [kroneckerFin_mul_kroneckerFin, hB.mul_eq, hC.mul_eq]
-
-/-- `(B ⊗ C)ᴴ = Bᴴ ⊗ Cᴴ` in positional layout. -/
-theorem conjTranspose_kroneckerFin [CommMagma R] [StarMul R] {n₁ n₂ : ℕ}
-    (B : Matrix (Fin m₁) (Fin n₁) R) (C : Matrix (Fin m₂) (Fin n₂) R) :
-    (kroneckerFin B C)ᴴ = kroneckerFin Bᴴ Cᴴ := by
-  rw [kroneckerFin, kroneckerFin, conjTranspose_submatrix, conjTranspose_kronecker]
 
 open scoped ComplexOrder in
 /-- The Kronecker product of Cholesky factors is the Cholesky factor of the Kronecker product
