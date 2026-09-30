@@ -96,16 +96,6 @@ section Improvement
 
 variable {M : Type → Type} [Monad M]
 
-/-- A loop writing entry `k` with a value `g k` fixed in advance sets the listed entries. -/
-theorem foldl_update_apply (u : (Fin n → ℝ) → Fin n → Fin n → ℝ) (g : Fin n → ℝ)
-    (hu : ∀ y k, u y k = Function.update y k (g k)) (l : List (Fin n)) (y₀ : Fin n → ℝ)
-    (i : Fin n) : l.foldl u y₀ i = if i ∈ l then g i else y₀ i := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih, hu]
-    by_cases hi : i ∈ l <;> by_cases hia : i = a <;> simp [hi, hia]
-
 variable (rnd : ℝ → M ℝ)
 
 /-- **(3.5.4)**, one step of iterative improvement with `PA = LU`:
@@ -168,8 +158,8 @@ private theorem residual_id (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → �
       Function.update r i (b i - (0 + ((List.finRange n).map fun k => A i k * x k).sum))) 0 =
       b - A *ᵥ x := by
   funext i
-  rw [foldl_update_apply _ (fun i => b i - (0 + ((List.finRange n).map fun k => A i k * x k).sum))
-    (fun _ _ => rfl)]
+  rw [List.foldl_update_eq_ite
+    (fun i => b i - (0 + ((List.finRange n).map fun k => A i k * x k).sum))]
   simp [mulVec, dotProduct, Fin.sum_univ_def]
 
 /-- The exact correction loop computes `x + z`. -/
@@ -177,7 +167,7 @@ private theorem update_add_id (x z : Fin n → ℝ) :
     (List.finRange n).foldl (fun (y : Fin n → ℝ) i => Function.update y i (x i + z i)) x =
       x + z := by
   funext i
-  rw [foldl_update_apply _ (fun i => x i + z i) (fun _ _ => rfl)]
+  rw [List.foldl_update_eq_ite (fun i => x i + z i)]
   simp
 
 /-- **(3.5.4)**, "in exact arithmetic `A x_new = A x̂ + A z = (b - r) + r = b`": with exact factors
@@ -243,37 +233,6 @@ theorem condEstimate_lowerBound {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
 
 section ChosenRHS
 
-/-- **A loop invariant for `List.foldl`**, indexed by the processed prefix. -/
-theorem foldl_invariant {α σ : Type*} {l : List α} (f : σ → α → σ) (I : List α → σ → Prop)
-    {s₀ : σ} (h0 : I [] s₀) (hstep : ∀ p x q, l = p ++ x :: q → ∀ s, I p s → I (p ++ [x]) (f s x)) :
-    I l (l.foldl f s₀) := by
-  suffices H : ∀ (r p : List α) (s : σ), p ++ r = l → I p s → I l (r.foldl f s) from
-    H l [] s₀ rfl h0
-  intro r
-  induction r with
-  | nil => rintro p s rfl hs; simpa using hs
-  | cons x r ih =>
-    rintro p s rfl hs
-    exact ih (p ++ [x]) (f s x) (by simp) (hstep p x r rfl s hs)
-
-/-- A loop over a duplicate-free list rewriting entry `k` from its current value writes every
-listed entry once, from its initial value. -/
-theorem foldl_update_self_apply {n : ℕ} (h : Fin n → ℝ → ℝ) {l : List (Fin n)} (hl : l.Nodup)
-    (y₀ : Fin n → ℝ) (i : Fin n) :
-    l.foldl (fun y k => Function.update y k (h k (y k))) y₀ i =
-      if i ∈ l then h i (y₀ i) else y₀ i := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih (List.nodup_cons.1 hl).2]
-    have ha := (List.nodup_cons.1 hl).1
-    by_cases hi : i ∈ l
-    · have hia : i ≠ a := fun e => ha (e ▸ hi)
-      simp [hi, hia]
-    · by_cases hia : i = a
-      · subst hia; simp [hi]
-      · simp [hi, hia]
-
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ}
 
 /-- **(3.5.6)**, the column version of back substitution with the right-hand side chosen on the
@@ -313,7 +272,7 @@ theorem mem_prefix_reverse_finRange_iff {p q : List (Fin n)} {x : Fin n}
     rw [h] at hs
     exact (List.pairwise_append.1 hs).2.2 j hj x List.mem_cons_self
   · intro hxj
-    exact mem_prefix_of_pairwise hs h (List.mem_reverse.2 (List.mem_finRange j)) (ne_of_gt hxj)
+    exact List.mem_prefix_of_pairwise hs h (List.mem_reverse.2 (List.mem_finRange j)) (ne_of_gt hxj)
       (lt_asymm hxj)
 
 /-- The exact run of (3.5.6): each `y(k)` solves row `k` of `T y = d` given the later entries,
@@ -341,7 +300,7 @@ theorem backSubstChosenRHS_id {choose : Fin n → (Fin n → ℝ) → ℝ} {T : 
     (∀ j ∈ pr, ∃ q, st.2.1 j = choose j q) ∧
     (∀ i, i ∉ pr → st.2.2 i = ∑ j ∈ Finset.univ.filter (· ∈ pr), T i j * st.1 j)
   have hI : I (List.finRange n).reverse ((List.finRange n).reverse.foldl step (0, 0, 0)) := by
-    refine foldl_invariant step I ⟨by simp, by simp, fun i _ => by simp⟩ ?_
+    refine List.foldl_prefix_induction step I ⟨by simp, by simp, fun i _ => by simp⟩ ?_
     rintro pr x q hl ⟨y, d, p⟩ ⟨h₁, h₂, h₃⟩
     dsimp only at h₁ h₂ h₃
     have hmem := mem_prefix_reverse_finRange_iff hl
@@ -351,8 +310,8 @@ theorem backSubstChosenRHS_id {choose : Fin n → (Fin n → ℝ) → ℝ} {T : 
     have hp' : ∀ i, ((List.finRange n).filter (· < x)).foldl (fun p' i => Function.update p' i
         (p' i + (choose x p - p x) / T x x * T i x)) p i =
         if i < x then p i + (choose x p - p x) / T x x * T i x else p i := fun i => by
-      rw [foldl_update_self_apply (fun i v => v + (choose x p - p x) / T x x * T i x)
-        ((List.nodup_finRange n).filter _)]
+      rw [List.foldl_update_of_nodup ((List.nodup_finRange n).filter _)
+        (fun i y => y i + (choose x p - p x) / T x x * T i x) (fun _ _ _ _ _ e => by rw [e])]
       simp
     refine ⟨fun j hj => ?_, fun j hj => ?_, fun i hi => ?_⟩
     · rcases List.mem_append.1 hj with hj | hj
@@ -514,8 +473,10 @@ theorem linftyNormRounded_id {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
   have hr : (List.finRange m).foldl (fun (r : Fin m → ℝ) i => Function.update r i
       ((List.finRange n).foldl (fun (c : ℝ) j => c + |A i j|) 0)) 0 = fun i => ∑ j, |A i j| := by
     funext i
-    rw [foldl_update_apply _ (fun i => (List.finRange n).foldl (fun (c : ℝ) j => c + |A i j|) 0)
-      (fun _ _ => rfl), hrow]
+    rw [List.foldl_update_eq_ite
+      (fun i => (List.finRange n).foldl (fun (c : ℝ) j => c + |A i j|) 0)]
+    beta_reduce
+    rw [hrow]
     simp
   have h : Id.run (linftyNormRounded pure A) = ‖fun i => ∑ j, |A i j|‖ := by
     simp only [linftyNormRounded, pure_bind, List.foldlM_pure]
@@ -594,12 +555,15 @@ private theorem step_3_5_1_eq (T : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (y p 
       ((List.finRange n).filter (· < k)).foldl
       (fun q i => Function.update q i (q i + c * T i k)) p := fun c => by
     funext i
-    rw [foldl_update_self_apply (fun i v => v + T i k * c) hnd,
-      foldl_update_self_apply (fun i v => v + c * T i k) hnd, mul_comm]
+    rw [List.foldl_update_of_nodup hnd (fun i y => y i + T i k * c) (fun _ _ _ _ _ e => by rw [e]),
+      List.foldl_update_of_nodup hnd (fun i y => y i + c * T i k) (fun _ _ _ _ _ e => by rw [e])]
+    beta_reduce
+    rw [mul_comm]
   have hval : ∀ c : ℝ, ∀ i, i < k → ((List.finRange n).filter (· < k)).foldl
       (fun q i => Function.update q i (q i + T i k * c)) p i = p i + T i k * c :=
     fun c i hi => by
-      rw [foldl_update_self_apply (fun i v => v + T i k * c) hnd]
+      rw [List.foldl_update_of_nodup hnd (fun i y => y i + T i k * c)
+        (fun _ _ _ _ _ e => by rw [e])]
       simp [hi]
   have hscore : ∀ c : ℝ, ((List.finRange n).filter (· < k)).foldl (fun s i => s + |((List.finRange
       n).filter (· < k)).foldl (fun q i => Function.update q i (q i + T i k * c)) p i|) |c| =
@@ -669,7 +633,7 @@ theorem algorithm_3_5_1_spec [NeZero n] {T : Matrix (Fin n) (Fin n) ℝ}
   have hy : (List.finRange n).foldl (fun y i => Function.update y i (Y i / ‖Y‖)) Y =
       fun i => Y i / ‖Y‖ := by
     funext i
-    rw [foldl_update_apply _ (fun i => Y i / ‖Y‖) (fun _ _ => rfl)]
+    rw [List.foldl_update_eq_ite (fun i => Y i / ‖Y‖)]
     simp
   have hsign : ∀ i, |out.2 i| = 1 := fun i => by
     obtain ⟨q, hq⟩ := (backSubstChosenRHS_id (choose := lookaheadChoice T) hd).2 i

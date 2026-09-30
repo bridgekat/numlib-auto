@@ -84,22 +84,12 @@ theorem fin_isMax_iff {n : ℕ} (i : Fin n) : IsMax i ↔ (i : ℕ) = n - 1 := b
     rw [Fin.le_def, h]
     omega
 
-/-- In a list that is pairwise related by `r`, an element `j ≠ i` with `¬ r i j` lies before `i`. -/
-theorem mem_prefix_of_pairwise {α : Type*} {r : α → α → Prop} {l p q : List α} {i j : α}
-    (hs : l.Pairwise r) (h : l = p ++ i :: q) (hj : j ∈ l) (hji : j ≠ i) (hr : ¬ r i j) :
-    j ∈ p := by
-  rw [h] at hs hj
-  rcases List.mem_append.1 hj with hj | hj
-  · exact hj
-  · rcases List.mem_cons.1 hj with rfl | hj
-    · exact absurd rfl hji
-    · exact absurd ((List.pairwise_cons.1 (List.pairwise_append.1 hs).2.1).1 j hj) hr
-
 /-- **A loop writing one entry per step, in dependence order.** Over a duplicate-free list `l`,
 a loop whose step `i` writes entry `i` of the state with a result of `g i s` satisfies a row
 property `R i` at every index of `l`, if every result of `g i s` satisfies `R i` whenever the
 entries not yet written hold their initial values, and `R i` depends only on the entries written
-before `i`. The row-oriented substitutions have this shape. -/
+before `i`. The row-oriented substitutions have this shape; the backbone's
+`SetM.forall_mem_run_foldlM_update_of_nodup`. -/
 theorem forall_mem_run_foldlM_update_rows {ι β : Type} [DecidableEq ι] {l : List ι}
     (hl : l.Nodup) (g : ι → (ι → β) → SetM β) (R : ι → (ι → β) → β → Prop) (b : ι → β)
     (hg : ∀ p i q, l = p ++ i :: q → ∀ s : ι → β, (∀ j, j ∉ p → s j = b j) →
@@ -107,62 +97,8 @@ theorem forall_mem_run_foldlM_update_rows {ι β : Type} [DecidableEq ι] {l : L
     (hR : ∀ p i q, l = p ++ i :: q → ∀ (s s' : ι → β) x, (∀ j ∈ p, s j = s' j) →
       R i s x → R i s' x) :
     ∀ y ∈ (l.foldlM (fun s i => do let x ← g i s; pure (Function.update s i x)) b).run,
-      ∀ i ∈ l, R i y (y i) := by
-  intro y hy
-  refine (SetM.forall_mem_run_foldlM (l := l) (a := b)
-    (fun p s => (∀ j, j ∉ p → s j = b j) ∧ ∀ i ∈ p, R i s (s i))
-    ⟨fun _ _ => rfl, by simp⟩ ?_ y hy).2
-  rintro p x q hl' c ⟨hc₁, hc₂⟩ c' hc'
-  rw [SetM.mem_run_bind] at hc'
-  obtain ⟨v, hv, hc'⟩ := hc'
-  rw [SetM.mem_run_pure] at hc'
-  subst hc'
-  have hxp : x ∉ p := fun h =>
-    List.disjoint_of_nodup_append (hl' ▸ hl) h List.mem_cons_self
-  have hagree : ∀ j ∈ p, c j = Function.update c x v j := fun j hj =>
-    (Function.update_of_ne (fun (e : j = x) => hxp (e ▸ hj)) _ _).symm
-  refine ⟨fun j hj => ?_, fun i hi => ?_⟩
-  · have hjx : j ≠ x := fun e => hj (List.mem_append.2 (Or.inr (e ▸ List.mem_singleton_self x)))
-    rw [Function.update_of_ne hjx]
-    exact hc₁ j fun h => hj (List.mem_append.2 (Or.inl h))
-  · rcases List.mem_append.1 hi with hi | hi
-    · have hix : i ≠ x := fun e => hxp (e ▸ hi)
-      rw [Function.update_of_ne hix]
-      obtain ⟨p₁, p₂, rfl⟩ := List.append_of_mem hi
-      refine hR p₁ i (p₂ ++ x :: q) (by rw [hl']; simp) c _ (c i) (fun j hj => ?_) (hc₂ i hi)
-      exact hagree j (List.mem_append.2 (Or.inl hj))
-    · rw [List.mem_singleton.1 hi, Function.update_self]
-      exact hR p x q hl' c _ v hagree (hg p x q hl' c hc₁ v hv)
-
-/-- Values related one by one to a duplicate-free list of indices are the values of a function on
-the indices. (A copy of the private lemma of `Numlib/FloatingPoint/Program`.) -/
-theorem exists_forall_map_eq_of_forall₂ {ι β : Type*} {R : ι → β → Prop}
-    {o : List ι} (ho : o.Nodup) {ps : List β} (h : List.Forall₂ R o ps) (d : ι → β) :
-    ∃ p : ι → β, (∀ i ∈ o, R i (p i)) ∧ o.map p = ps := by
-  classical
-  induction h with
-  | nil => exact ⟨d, by simp, rfl⟩
-  | @cons a b o ps hab _ ih =>
-    rcases List.nodup_cons.1 ho with ⟨ha, ho'⟩
-    obtain ⟨p, hp, hmap⟩ := ih ho'
-    refine ⟨Function.update p a b, fun i hi => ?_, ?_⟩
-    · rcases List.mem_cons.1 hi with rfl | hi
-      · rwa [Function.update_self]
-      · rw [Function.update_of_ne fun (e : i = a) => ha (e ▸ hi)]
-        exact hp i hi
-    · rw [List.map_cons, Function.update_self, ← hmap]
-      congr 1
-      exact List.map_congr_left fun i hi =>
-        Function.update_of_ne (fun (e : i = a) => ha (e ▸ hi)) _ _
-
-/-- A run of the accumulation from `0` over a duplicate-free index list is a running sum of
-roundings of the products, indexed by a function on the indices. -/
-theorem exists_of_mem_run_dotAccum {ι : Type*} {fp : RoundingModel ℝ}
-    {o : List ι} (ho : o.Nodup) {x y : ι → ℝ} {s : ℝ} (h : s ∈ (dotAccum fp.round o x y 0).run) :
-    ∃ p : ι → ℝ, (∀ j ∈ o, fp.Rounds (x j * y j) (p j)) ∧ RoundsSumFrom fp 0 (o.map p) s := by
-  obtain ⟨ps, hps, hsum⟩ := mem_run_dotAccum_iff.1 h
-  obtain ⟨p, hp, rfl⟩ := exists_forall_map_eq_of_forall₂ ho hps 0
-  exact ⟨p, hp, hsum⟩
+      ∀ i ∈ l, R i y (y i) :=
+  SetM.forall_mem_run_foldlM_update_of_nodup hl g R b hg hR
 
 /-! ### The column-oriented loop, over any linear order -/
 
@@ -471,7 +407,7 @@ theorem algorithm_3_1_1_rounds (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → �
     refine ⟨h₁, fun hi => ?_⟩
     obtain ⟨o, pp, s₁, t, hnd, ho, hpp, hsum, ht, hx⟩ := h₂ hi
     refine ⟨o, pp, s₁, t, hnd, ho, fun j hj => ?_, hsum, ht, hx⟩
-    have hjp : j ∈ p := mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
+    have hjp : j ∈ p := List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
       (List.mem_finRange j) (ne_of_lt ((ho j).1 hj)) (lt_asymm ((ho j).1 hj))
     rw [← hss j hjp]
     exact hpp j hj
@@ -525,7 +461,7 @@ theorem algorithm_3_1_2_rounds (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → �
     refine ⟨h₁, fun hi => ?_⟩
     obtain ⟨o, pp, s₁, t, hnd, ho, hpp, hsum, ht, hx⟩ := h₂ hi
     refine ⟨o, pp, s₁, t, hnd, ho, fun j hj => ?_, hsum, ht, hx⟩
-    have hjp : j ∈ p := mem_prefix_of_pairwise hsort hl
+    have hjp : j ∈ p := List.mem_prefix_of_pairwise hsort hl
       (List.mem_reverse.2 (List.mem_finRange j)) (ne_of_gt ((ho j).1 hj))
       (lt_asymm ((ho j).1 hj))
     rw [← hss j hjp]
@@ -761,20 +697,6 @@ end Block
 
 section BlockExact
 
-/-- **A loop invariant for `List.foldl`**, indexed by the processed prefix. -/
-theorem foldl_prefix_induction {α σ : Type*} {l : List α} (f : σ → α → σ)
-    (I : List α → σ → Prop) {s₀ : σ} (h0 : I [] s₀)
-    (hstep : ∀ p x q, l = p ++ x :: q → ∀ s, I p s → I (p ++ [x]) (f s x)) :
-    I l (l.foldl f s₀) := by
-  suffices H : ∀ (r p : List α) (s : σ), p ++ r = l → I p s → I l (r.foldl f s) from
-    H l [] s₀ rfl h0
-  intro r
-  induction r with
-  | nil => rintro p s rfl hs; simpa using hs
-  | cons x r ih =>
-    rintro p s rfl hs
-    exact ih (p ++ [x]) (f s x) (by simp) (hstep p x r rfl s hs)
-
 /-- In exact arithmetic, a loop subtracting `b j · L(i,j)` from entry `i` for every listed `i`
 (which does not include `j`) subtracts once from each listed entry. -/
 private theorem foldl_saxpy_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
@@ -807,7 +729,7 @@ theorem forwardSubstColOn_exact {n : ℕ} {o : List (Fin n)} (ho : o.Pairwise (�
     simp only [forwardSubstColOn, List.idRun_foldlM, pure_bind, Id.run_pure]
   rw [hprog]
   have hnd : o.Nodup := ho.imp ne_of_lt
-  refine foldl_prefix_induction (l := o) _
+  refine List.foldl_prefix_induction (l := o) _
     (fun (p : List (Fin n)) (s : Fin n → ℝ) => (∀ i, i ∉ o → s i = b i) ∧
       (∀ i ∈ p, (p.map fun j => L i j * s j).sum = b i) ∧
       ∀ i ∈ o, i ∉ p → s i = b i - (p.map fun j => L i j * s j).sum)
@@ -867,24 +789,20 @@ theorem forwardSubstColOn_exact {n : ℕ} {o : List (Fin n)} (ho : o.Pairwise (�
 
 
 /-- In exact arithmetic, a loop replacing column `c` by `f` of its current value, over a
-duplicate-free list of columns, replaces every listed column once. -/
+duplicate-free list of columns, replaces every listed column once: `List.foldl_update_of_nodup`
+on the transposed state. -/
 theorem foldl_updateCol_apply_of_col {n q : ℕ} (f : (Fin n → ℝ) → Fin n → ℝ)
     {cs : List (Fin q)} (hcs : cs.Nodup) (B : Matrix (Fin n) (Fin q) ℝ) (i : Fin n) (c : Fin q) :
     cs.foldl (fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c)) B i c =
       if c ∈ cs then f (fun i => B i c) i else B i c := by
-  induction cs generalizing B with
-  | nil => simp
-  | cons a cs ih =>
-    rcases List.nodup_cons.1 hcs with ⟨ha, hcs'⟩
-    rw [List.foldl_cons, ih hcs']
-    by_cases hca : c = a
-    · subst hca
-      simp [ha]
-    · have hcol : (fun i => B.updateCol a (f fun i => B i a) i c) = fun i => B i c := by
-        ext i; rw [updateCol_ne hca]
-      by_cases hc : c ∈ cs
-      · simp [hc, hcol]
-      · simp [hc, hca]
+  have hhom := List.foldl_hom (transpose : Matrix (Fin n) (Fin q) ℝ → Matrix (Fin q) (Fin n) ℝ)
+    (g₁ := fun (B : Matrix (Fin n) (Fin q) ℝ) c => B.updateCol c (f fun i => B i c))
+    (g₂ := fun (y : Matrix (Fin q) (Fin n) ℝ) c => Function.update y c (f (y c))) (l := cs)
+    (init := B) fun B c => updateRow_transpose
+  refine (congrFun (congrFun hhom c) i).symm.trans ((congrFun (congrFun
+    (List.foldl_update_of_nodup hcs (fun c y => f (y c)) (fun _ _ _ _ _ e => by rw [e]) Bᵀ) c)
+    i).trans ?_)
+  split_ifs <;> rfl
 
 /-- In exact arithmetic, the innermost loop of the block saxpy of (3.1.4): entry `(i,c)` receives
 `L(i,j) B(j,c)` subtracted for every listed `j` (rows off `i`), every other entry is kept. -/
@@ -1023,7 +941,7 @@ theorem equation_3_1_4 {n N q : ℕ} {blk : Fin n → Fin N} (hblk : Monotone bl
       simp [hp, hjx]
     · by_cases hjx : blk j = x <;> simp [hp, hjx, hx]
   rw [hprog]
-  have key := foldl_prefix_induction (l := List.finRange N) (s₀ := B) F
+  have key := List.foldl_prefix_induction (l := List.finRange N) (b := B) F
     (fun (p : List (Fin N)) (S : Matrix (Fin n) (Fin q) ℝ) => ∀ i c,
       (blk i ∈ p → (∑ j, if blk j ∈ p then L i j * S j c else 0) = B i c) ∧
       (blk i ∉ p → S i c = B i c - ∑ j, if blk j ∈ p then L i j * S j c else 0))

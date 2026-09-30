@@ -70,22 +70,6 @@ theorem theorem_2_4_1 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 /-! ### §2.4.2 Properties -/
 
-/-- A square matrix times a rectangular diagonal matrix scales the leading columns:
-`(U Σ)_{aj} = u_{aj} σ_j` for `j < m`, and `0` beyond. -/
-private theorem mul_rectDiagonal_apply (U : Matrix (Fin m) (Fin m) ℝ) (τ : ℕ → ℝ) (a : Fin m)
-    (j : Fin n) :
-    (U * (rectDiagonal τ : Matrix (Fin m) (Fin n) ℝ)) a j =
-      if h : (j : ℕ) < m then U a ⟨j, h⟩ * τ j else 0 := by
-  rw [mul_apply]
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨j, h⟩]
-    · rw [rectDiagonal_apply, ite_eq_left rfl]
-    · intro l _ hl
-      rw [rectDiagonal_apply, ite_eq_right (fun hlj => hl (Fin.ext hlj)), mul_zero]
-    · simp
-  · refine Finset.sum_eq_zero fun l _ => ?_
-    rw [rectDiagonal_apply, ite_eq_right (fun hlj : (l : ℕ) = j => h (hlj ▸ l.isLt)), mul_zero]
-
 /-- The columns of an SVD: `A v_j = σ_j u_j` for `j < m`. -/
 private theorem mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (j : Fin n)
@@ -130,12 +114,6 @@ private theorem sortedSingularValues_zero_eq_lpOpNorm (A : Matrix (Fin m) (Fin n
     A.sortedSingularValues 0 = lpOpNorm 2 A :=
   (sortedSingularValues_zero_eq_l2_opNorm A).trans (lpOpNorm_two A).symm
 
-open scoped Matrix.Norms.L2Operator in
-/-- `‖-E‖₂ = ‖E‖₂`. -/
-private theorem lpOpNorm_two_neg (E : Matrix (Fin m) (Fin n) ℝ) :
-    lpOpNorm 2 (-E) = lpOpNorm 2 E := by
-  rw [lpOpNorm_two, lpOpNorm_two, norm_neg]
-
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
@@ -167,7 +145,7 @@ theorem corollary_2_4_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
     rwa [sortedSingularValues_zero_eq_lpOpNorm E] at h
   · have h := sortedSingularValues_add_le (A + E) (-E) (min m n - 1) 0
     rw [add_zero, add_neg_cancel_right, sortedSingularValues_zero_eq_lpOpNorm,
-      lpOpNorm_two_neg] at h
+      lpOpNorm_neg] at h
     rw [sigmaMin, sigmaMin]
     linarith
 

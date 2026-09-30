@@ -55,49 +55,11 @@ namespace GolubVanLoan.Chapter03
 
 section Loops
 
-/-- A loop of loops is one loop over the pairs, the outer index first. -/
-theorem foldlM_foldlM_eq_foldlM_flatMap {M : Type → Type} [Monad M] [LawfulMonad M]
-    {σ α β : Type} (l₁ : List α) (l₂ : α → List β) (f : σ → α → β → M σ) (s : σ) :
-    l₁.foldlM (fun s a => (l₂ a).foldlM (fun s b => f s a b) s) s =
-      (l₁.flatMap fun a => (l₂ a).map (a, ·)).foldlM (fun s p => f s p.1 p.2) s := by
-  induction l₁ generalizing s with
-  | nil => rfl
-  | cons a l ih =>
-    simp only [List.foldlM_cons, List.flatMap_cons, List.foldlM_append, List.foldlM_map, ih]
-
-/-- A loop commutes with an equivalence of states that intertwines its steps. -/
-theorem map_foldlM_equiv {M : Type → Type} [Monad M] [LawfulMonad M] {σ τ α : Type} (e : σ ≃ τ)
-    (f : σ → α → M σ) (f' : τ → α → M τ) (h : ∀ s a, f' (e s) a = e <$> f s a) (l : List α)
-    (s : σ) : e <$> l.foldlM f s = l.foldlM f' (e s) := by
-  induction l generalizing s with
-  | nil => simp
-  | cons a l ih => simp only [List.foldlM_cons, map_bind, ih, h, bind_map_left]
-
-/-- A matrix as a function on the positions. -/
-def entryEquiv (m n : ℕ) : Matrix (Fin m) (Fin n) ℝ ≃ (Fin m × Fin n → ℝ) where
-  toFun A p := A p.1 p.2
-  invFun f i j := f (i, j)
-  left_inv _ := rfl
-  right_inv _ := rfl
-
-/-- Updating one entry of a matrix is updating the matrix, read on positions, at one position. -/
-theorem entryEquiv_updateRow_update {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
-    (a : Fin m × Fin n) (x : ℝ) :
-    entryEquiv m n (A.updateRow a.1 (Function.update (A a.1) a.2 x)) =
-      Function.update (entryEquiv m n A) a x := by
-  funext p
-  obtain ⟨i, j⟩ := p
-  obtain ⟨i', j'⟩ := a
-  change (A.updateRow i' (Function.update (A i') j' x)) i j =
-    Function.update (fun p : Fin m × Fin n => A p.1 p.2) (i', j') x (i, j)
-  rw [updateRow_apply, Function.update_apply]
-  by_cases hi : i = i' <;> by_cases hj : j = j' <;> simp [hi, hj]
-
 /-- **One matrix entry per step.** Over a duplicate-free list of positions, a loop whose step at
 `(i, j)` rewrites the entry `(i, j)` only — from its current value and from entries at positions
 outside the list — has as run set the matrices that agree with the initial one off the list and
-whose entry at each listed position is a result of its step on the initial matrix. The matrix form
-of `SetM.mem_run_foldlM_update_of_nodup`. -/
+whose entry at each listed position is a result of its step on the initial matrix: the backbone's
+`SetM.mem_run_foldlM_updateRow_update_of_nodup`. -/
 theorem mem_run_foldlM_updateEntry {m n : ℕ} (l : List (Fin m × Fin n)) (hl : l.Nodup)
     (g : Fin m × Fin n → ℝ → Matrix (Fin m) (Fin n) ℝ → SetM ℝ)
     (hg : ∀ a ∈ l, ∀ x (A A' : Matrix (Fin m) (Fin n) ℝ),
@@ -106,35 +68,8 @@ theorem mem_run_foldlM_updateEntry {m n : ℕ} (l : List (Fin m × Fin n)) (hl :
     A ∈ (l.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) a => do
         let x ← g a (A a.1 a.2) A
         pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run ↔
-      (∀ i j, (i, j) ∉ l → A i j = A₀ i j) ∧ ∀ a ∈ l, A a.1 a.2 ∈ (g a (A₀ a.1 a.2) A₀).run := by
-  let e := entryEquiv m n
-  have he : ∀ (B : Matrix (Fin m) (Fin n) ℝ) p, e B p = B p.1 p.2 := fun _ _ => rfl
-  have hmap := map_foldlM_equiv e (fun (A : Matrix (Fin m) (Fin n) ℝ) a => do
-        let x ← g a (A a.1 a.2) A
-        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x)))
-    (fun y a => do let x ← g a (y a) (e.symm y); pure (Function.update y a x))
-    (fun B a => by
-      simp only [map_bind, map_pure, Equiv.symm_apply_apply, he]
-      congr 1
-      funext x
-      exact congrArg pure (entryEquiv_updateRow_update B a x).symm) l A₀
-  have key := SetM.mem_run_foldlM_update_of_nodup (fun a x y => g a x (e.symm y)) l hl
-    (fun a ha x y y' hy => hg a ha x _ _ fun i j hij => hy (i, j) hij) (e A₀) (e A)
-  have hA : A ∈ (l.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) a => do
-        let x ← g a (A a.1 a.2) A
-        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run ↔
-      e A ∈ (e <$> l.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) a => do
-        let x ← g a (A a.1 a.2) A
-        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run := by
-    rw [SetM.mem_run_map]
-    exact ⟨fun h => ⟨A, h, rfl⟩, fun ⟨B, hB, hBA⟩ => e.injective hBA ▸ hB⟩
-  rw [hA, hmap, key]
-  simp only [Equiv.symm_apply_apply, he]
-  constructor
-  · rintro ⟨h₁, h₂⟩
-    exact ⟨fun i j hij => h₁ (i, j) hij, h₂⟩
-  · rintro ⟨h₁, h₂⟩
-    exact ⟨fun p hp => h₁ p.1 p.2 hp, h₂⟩
+      (∀ i j, (i, j) ∉ l → A i j = A₀ i j) ∧ ∀ a ∈ l, A a.1 a.2 ∈ (g a (A₀ a.1 a.2) A₀).run :=
+  SetM.mem_run_foldlM_updateRow_update_of_nodup l hl g hg A₀ A
 
 end Loops
 
@@ -290,7 +225,7 @@ theorem mem_run_gaussUpdate {v : Fin n → ℝ} {k : Fin n} {C : Matrix (Fin n) 
   have hmem : ∀ i, i ∈ (List.finRange n).filter (k < ·) ↔ k < i := fun i => by simp
   obtain ⟨hτ₁, hτ₂⟩ := (SetM.mem_run_foldlM_update_of_nodup
     (fun a _ (_ : Fin n → ℝ) => fp.round (v a / v k)) _ hnd (fun _ _ _ _ _ _ => rfl) 0 τ).1 hτ
-  have hflat := foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (k < ·))
+  have hflat := List.foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (k < ·))
     (fun _ => List.finRange r) (fun (C : Matrix (Fin n) (Fin r) ℝ) i j => (do
       let p ← fp.round (τ i * C k j)
       let c ← fp.round (C i j - p)
@@ -622,7 +557,7 @@ theorem mem_run_outerProductStep (k : Fin n) {S S' : Matrix (Fin n) (Fin n) ℝ}
     (fun a _ x A A' hA => by
       rw [hA k k fun h => lt_irrefl k ((hl₁mem k k).1 h).1]) S S₁).1 h₁
   -- the update loop
-  have hflat := foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (k < ·))
+  have hflat := List.foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (k < ·))
     (fun _ => (List.finRange n).filter (k < ·)) (fun (A : Matrix (Fin n) (Fin n) ℝ) i j => (do
       let p ← fp.round (A i k * A k j)
       let a ← fp.round (A i j - p)
@@ -1104,33 +1039,6 @@ section GaxpyBridge
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- A run of a loop of rounded subtractions of rounded values is a running difference. -/
-theorem exists_of_mem_run_foldlM_sub {ι : Type*} {o : List ι} (ho : o.Nodup)
-    {f : ι → ℝ} {c x : ℝ}
-    (h : x ∈ (o.foldlM (fun (c : ℝ) r => do let p ← fp.round (f r); fp.round (c - p)) c).run) :
-    ∃ p : ι → ℝ, (∀ r ∈ o, fp.Rounds (f r) (p r)) ∧ RoundsSumFrom fp c (o.map fun r => -p r) x := by
-  classical
-  induction o generalizing c with
-  | nil =>
-    rw [List.foldlM_nil, SetM.mem_run_pure] at h
-    exact ⟨fun _ => 0, by simp, h ▸ .nil _⟩
-  | cons a o ih =>
-    simp only [List.foldlM_cons, bind_assoc, SetM.mem_run_bind, RoundingModel.mem_run_round] at h
-    obtain ⟨pa, hpa, c', hc', h⟩ := h
-    obtain ⟨p, hp, hsum⟩ := ih (List.nodup_cons.1 ho).2 h
-    have ha : a ∉ o := (List.nodup_cons.1 ho).1
-    refine ⟨Function.update p a pa, fun r hr => ?_, ?_⟩
-    · rcases List.mem_cons.1 hr with rfl | hr
-      · rwa [Function.update_self]
-      · rw [Function.update_of_ne fun (e : r = a) => ha (e ▸ hr)]
-        exact hp r hr
-    · rw [List.map_cons, Function.update_self]
-      have hmap : (o.map fun r => -Function.update p a pa r) = o.map fun r => -p r :=
-        List.map_congr_left fun r hr => by
-          rw [Function.update_of_ne fun (e : r = a) => ha (e ▸ hr)]
-      rw [hmap]
-      exact .cons (by rw [← sub_eq_add_neg]; exact hc') hsum
-
 /-- The invariant of Algorithm 3.2.2 after the columns before `j`: those columns hold finished
 entries of the Doolittle recurrence, and the later columns of `L` and `U` are still those of the
 identity and of the zero matrix. -/
@@ -1191,7 +1099,7 @@ theorem gaxpyInv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     · rintro p i q hl s s' x hss ⟨o, pp, hnd, ho, hpp, hsum⟩
       refine ⟨o, pp, hnd, ho, fun r hr => ?_, hsum⟩
       have hri := ((ho r).1 hr).1
-      have hrp : r ∈ p := mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
+      have hrp : r ∈ p := List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
         (List.mem_finRange r) (ne_of_lt hri) (lt_asymm hri)
       rw [← hss r hrp]
       exact hpp r hr
@@ -1405,7 +1313,7 @@ private theorem mem_run_tallOuterProductStep {fp : RoundingModel ℝ} (hrn : r �
     (fun a _ x A A' hA => by
       rw [hA K k fun h => lt_irrefl K ((hl₁mem K k).1 h).1]) S S₁).1 h₁
   -- the update loop
-  have hflat := foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (K < ·))
+  have hflat := List.foldlM_foldlM_eq_foldlM_flatMap ((List.finRange n).filter (K < ·))
     (fun _ => (List.finRange r).filter (k < ·)) (fun (A : Matrix (Fin n) (Fin r) ℝ) i j => (do
       let p ← fp.round (A i k * A K j)
       let a ← fp.round (A i j - p)
@@ -2170,17 +2078,6 @@ private theorem eq_on_of_sum_eq {o : List (Fin n)} (ho : o.Pairwise (· < ·))
   · intro h
     exact absurd (List.mem_toFinset.2 hi) h
 
-/-- A sum over a filtered `List.finRange` is a sum with an indicator. -/
-private theorem sum_map_filter_finRange_ite (P : Fin n → Prop) [DecidablePred P]
-    (f : Fin n → ℝ) :
-    (((List.finRange n).filter fun k => decide (P k)).map f).sum =
-      ∑ k, if P k then f k else 0 := by
-  rw [Fin.sum_univ_def]
-  induction (List.finRange n) with
-  | nil => simp
-  | cons a l ih => by_cases h : P a <;> simp [h, ih]
-
-
 /-- One pivot `p` of the block column elimination of Algorithm 3.2.4, in exact arithmetic: if the
 columns of the block (`B j`) hold the finished factors where `min(i,j) < p` and the trailing values
 `a_ij - ∑_{t<p} ℓ_it u_tj` elsewhere, then after the division and the update restricted to the
@@ -2362,7 +2259,7 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
     simp only [algorithm_3_2_4, List.idRun_foldlM, Id.run_bind, Id.run_pure, pure_bind,
       dotAccum_id, hElim, hSolve, hUpd, hY]
   rw [hprog]
-  have key := foldl_prefix_induction (l := List.finRange N) (s₀ := A)
+  have key := List.foldl_prefix_induction (l := List.finRange N) (b := A)
     (fun S k => Upd k (Solve k (Elim k S)))
     (fun (pre : List (Fin N)) (S : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) => ∀ i j,
       S i j = if (min i j).divNat ∈ pre then T i j else
@@ -2388,7 +2285,7 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
       have hlt : t.divNat < x := by
         rw [Fin.lt_def, Fin.coe_divNat, Nat.div_lt_iff_lt_mul hr]
         exact h
-      exact mem_prefix_of_pairwise (List.sortedLT_finRange N).pairwise hpq
+      exact List.mem_prefix_of_pairwise (List.sortedLT_finRange N).pairwise hpq
         (List.mem_finRange _) (ne_of_lt hlt) (not_lt.2 hlt.le)
   have hmem' : ∀ t : Fin (N * r), t.divNat ∈ pre ++ [x] ↔ (t : ℕ) < K + r := fun t => by
     rw [List.mem_append, List.mem_singleton, hmem, hblk]
@@ -2401,8 +2298,8 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
   have hbks : ((List.finRange (N * r)).filter fun i => i.divNat = x).Pairwise (· < ·) :=
     (List.sortedLT_finRange _).pairwise.filter _
   have hE : ∀ i j, Elim x S i j = if j.divNat = x then T i j else S i j := by
-    have key1 := foldl_prefix_induction
-      (l := (List.finRange (N * r)).filter fun i => i.divNat = x) (s₀ := S)
+    have key1 := List.foldl_prefix_induction
+      (l := (List.finRange (N * r)).filter fun i => i.divNat = x) (b := S)
       (fun (S : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) p =>
         ((List.finRange (N * r)).filter (p < ·)).foldl
           (fun (S : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) i =>
@@ -2448,7 +2345,7 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
       · intro h
         by_cases htK : (t : ℕ) < K
         · exact Or.inl htK
-        · refine Or.inr (mem_prefix_of_pairwise hbks hpq' ?_ (fun e => by subst e; omega)
+        · refine Or.inr (List.mem_prefix_of_pairwise hbks hpq' ?_ (fun e => by subst e; omega)
             (fun h' => by have := Fin.lt_def.1 h'; omega))
           exact List.mem_filter.2 ⟨List.mem_finRange _, decide_eq_true ((hblk t).2 (by omega))⟩
     have hmemp' : ∀ t : Fin (N * r), ((t : ℕ) < K ∨ t ∈ pre' ++ [p]) ↔ (t : ℕ) < p + 1 :=
@@ -2497,7 +2394,7 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
       have ha' := (hbk a).1 ha
       have hac : a < c := Fin.lt_def.2 (by have := (hblk a).1 ha'; have := (hlat c).1 hc; omega)
       rw [List.map_congr_left fun j hj => by rw [hLk a j ha' ((hbk j).1 hj)],
-        sum_map_filter_finRange_ite (fun j => j.divNat = x), hE,
+        List.sum_map_filter_finRange (fun j => j.divNat = x), Finset.sum_filter, hE,
         ite_eq_right (by intro h; rw [h] at hc; exact lt_irrefl x hc), hS', ite_eq_right (by
             simp only [Fin.val_min]; have := (hblk a).1 ha'; have := Fin.lt_def.1 hac; omega),
         schurRest_eq hLU]
@@ -2557,7 +2454,7 @@ theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
         have hti : t < i := Fin.lt_def.2 (by have := (hblk t).1 ht'; omega)
         simp only [hT, packLU, of_apply]
         rw [ite_eq_left hti],
-      sum_map_filter_finRange_ite (fun t => t.divNat = x)]
+      List.sum_map_filter_finRange (fun t => t.divNat = x), Finset.sum_filter]
   · rw [ite_eq_right hij, hX]
     by_cases hc : x < j.divNat ∧ i.divNat = x
     · rw [ite_eq_left hc]

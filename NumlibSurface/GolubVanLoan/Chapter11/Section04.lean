@@ -6,6 +6,7 @@ import Numlib.Krylov.TransposeFree
 import NumlibSurface.GolubVanLoan.Chapter01.Section04
 import NumlibSurface.GolubVanLoan.Chapter03.Section01
 import NumlibSurface.GolubVanLoan.Chapter05.Section01
+import NumlibSurface.GolubVanLoan.Chapter10.Section04
 import NumlibSurface.GolubVanLoan.Chapter10.Section05
 
 /-!
@@ -297,26 +298,6 @@ private theorem rotated_succ_of_lt (h : ℕ → ℕ → ℝ) {k i : ℕ} (hi : i
     rotated h (k + 1) i j = rotated h k i j := by
   rw [rotated_succ_apply, ite_eq_right (by omega), ite_eq_right (by omega)]
 
-/-- The rotated coefficients of a tridiagonal array have upper bandwidth `2`: rotation `k` mixes
-row `k` (bandwidth `2` already) with the untouched row `k + 1` (bandwidth `1`). -/
-private theorem rotated_eq_zero_of_add_two_lt (h : ℕ → ℕ → ℝ)
-    (hh : ∀ i j, i + 1 < j → h i j = 0) (k : ℕ) :
-    ∀ i j, i + 2 < j → rotated h k i j = 0 := by
-  induction k with
-  | zero => intro i j hij; exact hh i j (by omega)
-  | succ k ih =>
-    intro i j hij
-    have hrow : ∀ j, k + 2 < j → rotated h k (k + 1) j = 0 := fun j hj => by
-      rw [rotated_eq_of_le h k (k + 1) j le_rfl]
-      exact hh _ _ (by omega)
-    rw [rotated_succ_apply]
-    split_ifs with h1 h2
-    · subst h1
-      rw [ih i j hij, hrow j (by omega), mul_zero, mul_zero, add_zero]
-    · subst h2
-      rw [ih k j (by omega), hrow j (by omega), mul_zero, mul_zero, add_zero]
-    · exact ih i j hij
-
 /-- **§11.4.1, the MINRES update.** "The transition `{H_{k−1}, R_{k−1}, p_{k−1}, ρ_{k−1}} →
 {H_k, R_k, p_k, ρ_k}` can be realized … after the `k`th Lanczos step": one new rotation, since
 `R_{k−1}` is the leading block of `R_k` and `p_{k−1}` the leading part of `p_k`; and "the matrix
@@ -561,14 +542,16 @@ theorem equation_11_4_6 (A : Matrix (Fin m) (Fin n) ℝ) (u₁ : EuclideanSpace 
 
 /-- **§11.4.2.** "It can be shown that `span{v₁, …, v_k} = 𝒦(AᵀA, Aᵀr₀, k)`": for the
 Paige–Saunders process from `u₁ = r₀/β₀` (any nonzero multiple of `r₀`), the span of its first `k`
-right vectors is the Krylov subspace of the normal equations. `GolubKahan.span_leftVec` (the
-book's (10.4.12) for the adjoint pair), and the invariance of a Krylov subspace under scaling of
-its starting vector. -/
+right vectors is the Krylov subspace of the normal equations: (10.4.12) for `Aᵀ`
+(`Chapter10.equation_10_4_12`), and the invariance of a Krylov subspace under scaling of its
+starting vector. -/
 theorem lsqr_span_eq (A : Matrix (Fin m) (Fin n) ℝ) {r₀ u₁ : EuclideanSpace ℝ (Fin m)} {β₀ : ℝ}
     (hβ : β₀ ≠ 0) (hr : r₀ = β₀ • u₁) (k : ℕ) :
     Submodule.span ℝ (GolubKahan.leftVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u₁ '' Set.Iio k) =
       Krylov.subspace (toEuclideanLin (Aᵀ * A)) (toEuclideanLin Aᵀ r₀) k := by
-  rw [GolubKahan.span_leftVec, toEuclideanLin_mul, hr, map_smul]
+  have h := GolubVanLoan.Chapter10.equation_10_4_12 Aᵀ u₁ k
+  rw [transpose_transpose] at h
+  rw [h, toEuclideanLin_mul, hr, map_smul]
   refine le_antisymm ?_ (subspace_smul _ _ _ _)
   calc Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A) (toEuclideanLin Aᵀ u₁) k
       = Krylov.subspace (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A)
@@ -2144,24 +2127,6 @@ theorem bicg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ
     rw [← hspec] at h
     simpa only [WithLp.toLp_sub, toEuclideanLin_toLp, BiCGState.toState] using h
 
-/-- For `Aᵀ = A` and the shadow residual `r̃₀ = r₀`, the biconjugate gradient iteration is the
-conjugate gradient iteration with the shadow sequences equal to the primal ones (backbone form, any
-real inner product space, `B = A`). -/
-private theorem bcg_iterate_self_eq {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    (T : E →ₗ[ℝ] E) (b x₀ : E) (k : ℕ) :
-    BCG.iterate T T b x₀ (b - T x₀) k =
-      ⟨(CG.iterate T b x₀ k).x, (CG.iterate T b x₀ k).r, (CG.iterate T b x₀ k).r,
-        (CG.iterate T b x₀ k).p, (CG.iterate T b x₀ k).p⟩ := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    rw [BCG.iterate_succ, ih, CG.iterate_succ]
-    set c := CG.iterate T b x₀ k
-    have hα : BCG.stepAlpha T ⟨c.x, c.r, c.r, c.p, c.p⟩ = CG.alpha T c := by
-      simp only [BCG.stepAlpha, CG.alpha]
-      rw [real_inner_comm (T c.p) c.p]
-    simp only [BCG.step, CG.step, hα, starRingEnd_real, RingHom.id_apply]
-
 /-- **§11.4.5: "BiCG collapses to CG if `A` is symmetric positive definite and `r̃₀ = r₀`."** For
 symmetric `A` and `r̃₀ = r₀ = b − Ax₀` the exact run of `bicg` has `r̃_k = r_k`, `p̃_k = p_k`, and
 its `x_k`, `r_k`, `p_k` are those of the conjugate gradient iteration `CG.iterate` — the iteration
@@ -2183,7 +2148,7 @@ theorem bicg_eq_cg {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (b x₀ : Fi
   have hr₀ : (WithLp.toLp 2 (b - A *ᵥ x₀) : EuclideanSpace ℝ (Fin n)) =
       WithLp.toLp 2 b - toEuclideanLin A (WithLp.toLp 2 x₀) := by
     rw [WithLp.toLp_sub, toEuclideanLin_toLp]
-  rw [hT, hr₀, bcg_iterate_self_eq] at h
+  rw [hT, hr₀, BCG.iterate_self_eq_cg] at h
   have hx := congrArg BCG.State.x h
   have hr := congrArg BCG.State.r h
   have hrs := congrArg BCG.State.rs h
@@ -2231,13 +2196,6 @@ theorem equation_11_4_14 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n 
   · rw [← h3, BCG.dualResidual, ← hs]; rfl
   · rw [← h4, BCG.dualDirection, ← hs]; rfl
 
-/-- `p(T)` commutes with `T`. -/
-private theorem aeval_apply_apply {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    (T : E →ₗ[ℝ] E) (p : ℝ[X]) (v : E) : aeval T p (T v) = T (aeval T p v) := by
-  have hmul : aeval T (p * X) = aeval T (X * p) := by rw [mul_comm]
-  have := congrArg (fun f : E →ₗ[ℝ] E => f v) hmul
-  simpa only [map_mul, aeval_X, Module.End.mul_apply] using this
-
 /-- **§11.4.5, the transpose-free scalars.** "This enables us to characterize expressions like
 `r̃_kᵀr_k` and `p̃_kᵀAp_k` in a way that involves only `A`-times-vector:
 `r̃_kᵀr_k = r̃₀ᵀ(ψ_k²(A)r₀)`, `p̃_kᵀAp_k = r̃₀ᵀ(Aφ_k²(A)r₀)`." For the exact BiCG run, moving the
@@ -2275,7 +2233,7 @@ theorem bicg_inner_eq_poly (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin 
     rw [h3, h1, key, hsq]
   · have key := BiLanczos.inner_aeval_map_eq hB φ (WithLp.toLp 2 rt₀) (T (aeval T φ r₀))
     rw [map_starRingEnd_real] at key
-    rw [h4, h2, key, hsq, aeval_apply_apply]
+    rw [h4, h2, key, hsq, Module.End.aeval_apply_apply]
 
 /-- **§11.4.5, CGS (Sonneveld).** "It produces iterates `x_k` whose residuals `r_k` satisfy
 `r_k = ψ_k(A)²r₀`" with `ψ_k` the BiCG residual polynomial of (11.4.14), and likewise

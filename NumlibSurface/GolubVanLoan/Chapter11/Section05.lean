@@ -161,13 +161,6 @@ section PCGSpec
 
 variable {n : ℕ}
 
-/-- A symmetric positive definite `M` with its inverse is a preconditioner. -/
-private theorem isPreconditioner_toEuclideanLin {Mp : Matrix (Fin n) (Fin n) ℝ}
-    (hM : Mp.PosDef) : Krylov.IsPreconditioner (toEuclideanLin Mp) (toEuclideanLin Mp⁻¹) :=
-  ⟨Matrix.PosDef.isSymmetricCoercive_toEuclideanLin hM, fun x => by
-    rw [toEuclideanLin_apply, toEuclideanLin_apply, WithLp.ofLp_toLp, mulVec_mulVec,
-      mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM.isUnit), one_mulVec, WithLp.toLp_ofLp]⟩
-
 /-- A positive definite `A` is coercive relative to any `M`: `c ⟪Mx, x⟫ ≤ ⟪Ax, x⟫`. -/
 private theorem exists_relCoercive {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (Mp : Matrix (Fin n) (Fin n) ℝ) : ∃ c : ℝ, 0 < c ∧ ∀ x : EuclideanSpace ℝ (Fin n),
@@ -371,7 +364,7 @@ theorem algorithm_11_5_1_spec {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
   obtain ⟨⟨-, hx, hr, -⟩, hle, hnd, hd⟩ := algorithm_11_5_1_loop A Mp⁻¹ b x₀ fuel
   have hx' : WithLp.toLp 2 s.x = S.x := by rw [hx]
   have hr' : WithLp.toLp 2 s.r = S.r := by rw [hr]
-  have hPre := isPreconditioner_toEuclideanLin hM
+  have hPre := hM.isPreconditioner_toEuclideanLin
   obtain ⟨c, hc, hcoer⟩ := exists_relCoercive hA Mp
   refine ⟨hle, hnd, hx', hr', ?_, fun hdone => ?_⟩
   · rw [hx']
@@ -398,7 +391,7 @@ theorem equation_11_5_2 {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM 
       (WithLp.toLp 2 x₀)
     (S j).r.ofLp ⬝ᵥ Mp⁻¹ *ᵥ (S i).r.ofLp = 0 ∧ (S j).p.ofLp ⬝ᵥ A *ᵥ (S i).p.ofLp = 0 := by
   intro S
-  have hPre := isPreconditioner_toEuclideanLin hM
+  have hPre := hM.isPreconditioner_toEuclideanLin
   obtain ⟨c, hc, hcoer⟩ := exists_relCoercive hA Mp
   have hsym := (Matrix.PosDef.isSymmetricCoercive_toEuclideanLin hA).isSymmetric
   have h1 := Krylov.PCG.inner_inv_residual_eq_zero (b := WithLp.toLp 2 b)
@@ -769,10 +762,10 @@ private noncomputable def cgoGam (A Mp : Matrix (Fin n) (Fin n) ℝ) (b x₀ : F
 /-- The scalars `ω_{j+1}`: `CG.rho` of `M⁻¹A` in the `M`-inner product. -/
 private noncomputable def cgoRho (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) : ℕ → ℝ :=
-  CG.rho ((isPreconditioner_toEuclideanLin hM).energyEnd
+  CG.rho (hM.isPreconditioner_toEuclideanLin.energyEnd
       (toEuclideanLin Mp⁻¹ ∘ₗ toEuclideanLin A))
-    ((isPreconditioner_toEuclideanLin hM).toEnergy (toEuclideanLin Mp⁻¹ (WithLp.toLp 2 b)))
-    ((isPreconditioner_toEuclideanLin hM).toEnergy (WithLp.toLp 2 x₀))
+    (hM.isPreconditioner_toEuclideanLin.toEnergy (toEuclideanLin Mp⁻¹ (WithLp.toLp 2 b)))
+    (hM.isPreconditioner_toEuclideanLin.toEnergy (WithLp.toLp 2 x₀))
 
 /-- The facts about PCG in the `M`-inner product that the Concus–Golub–O'Leary recurrence uses:
 the three-term recurrence of the iterates and the recurrence of `ω`. -/
@@ -786,7 +779,7 @@ private theorem cgo_threeTerm {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
       ∀ j, cgoRho A Mp hM b x₀ (j + 1) = (1 - cgoGam A Mp b x₀ (j + 1) / cgoGam A Mp b x₀ j *
         ((cgoZ A Mp b x₀ (j + 1) ⬝ᵥ Mp *ᵥ cgoZ A Mp b x₀ (j + 1)) /
           (cgoZ A Mp b x₀ j ⬝ᵥ Mp *ᵥ cgoZ A Mp b x₀ j)) / cgoRho A Mp hM b x₀ j)⁻¹ := by
-  have hPre := isPreconditioner_toEuclideanLin hM
+  have hPre := hM.isPreconditioner_toEuclideanLin
   obtain ⟨c, hc, hcoer⟩ := exists_relCoercive hA Mp
   have hK := hPre.isSymmetricCoercive_energyEnd (toEuclideanLin A)
     (Matrix.PosDef.isSymmetricCoercive_toEuclideanLin hA).isSymmetric hc hcoer
@@ -858,7 +851,7 @@ private theorem cgoGood_step {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
   have hres : (pcgIter A Mp⁻¹ b x₀ (k + 1)).r =
       WithLp.toLp 2 b - toEuclideanLin A (pcgIter A Mp⁻¹ b x₀ (k + 1)).x :=
     Krylov.PCG.residual_eq (toEuclideanLin A) (toEuclideanLin Mp⁻¹) (WithLp.toLp 2 b)
-      (WithLp.toLp 2 x₀) (isPreconditioner_toEuclideanLin hM) (k + 1)
+      (WithLp.toLp 2 x₀) hM.isPreconditioner_toEuclideanLin (k + 1)
   have hz : Mp⁻¹ *ᵥ s.r = cgoZ A Mp b x₀ k := by rw [hrr]; rfl
   rw [cgoStep_go A Mp Mp⁻¹ b s h hr]
   simp only [hz]
@@ -964,7 +957,7 @@ theorem equation_11_5_5 {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM 
       (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) s.k).r := by rw [hr]
   refine ⟨hle, hnd, hx', fun hdone => ?_⟩
   have hres := Krylov.PCG.residual_eq (toEuclideanLin A) (toEuclideanLin Mp⁻¹) (WithLp.toLp 2 b)
-    (WithLp.toLp 2 x₀) (isPreconditioner_toEuclideanLin hM) s.k
+    (WithLp.toLp 2 x₀) hM.isPreconditioner_toEuclideanLin s.k
   rw [← hr', ← hx', hd hdone, toEuclideanLin_toLp] at hres
   have := congrArg WithLp.ofLp hres
   simp only [WithLp.ofLp_sub] at this
@@ -1157,21 +1150,8 @@ end Programs
 
 /-- A loop writing entry `i` of a vector at step `i` of `finRange` computes the whole vector. -/
 private theorem foldl_finRange_update {m : ℕ} {β : Type} (g : Fin m → β) (w₀ : Fin m → β) :
-    (List.finRange m).foldl (fun w i => Function.update w i (g i)) w₀ = g := by
-  suffices h : ∀ (L : List (Fin m)), L.Nodup → ∀ w₀ : Fin m → β,
-      L.foldl (fun w i => Function.update w i (g i)) w₀ = fun i => if i ∈ L then g i else w₀ i by
-    rw [h _ (List.nodup_finRange m)]
-    simp
-  intro L
-  induction L with
-  | nil => intro _ w₀; simp
-  | cons a L ih =>
-    intro hL w₀
-    rw [List.foldl_cons, ih (List.nodup_cons.1 hL).2]
-    funext i
-    by_cases hi : i = a
-    · subst hi; simp [(List.nodup_cons.1 hL).1]
-    · simp [hi]
+    (List.finRange m).foldl (fun w i => Function.update w i (g i)) w₀ = g :=
+  (List.foldl_update_eq_ite g _ w₀).trans (funext fun i => ite_eq_left (List.mem_finRange i))
 
 /-- A double loop writing entry `(i, j)` of a matrix computes the whole matrix. -/
 private theorem foldl_finRange_updateRow {m : ℕ} (g : Fin m → Fin m → ℝ)

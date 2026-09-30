@@ -95,13 +95,6 @@ noncomputable def modelS (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
 noncomputable def modelC (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   diagonal fun j => Real.cos (modeAngle m j / 2) ^ 2
 
-/-- `2 − 2 cos θ = 4 sin²(θ/2)`. -/
-private theorem two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h := Real.cos_two_mul (θ / 2)
-  have h2 := Real.sin_sq_add_cos_sq (θ / 2)
-  rw [show 2 * (θ / 2) = θ by ring] at h
-  linarith
-
 /-- The columns of `Q^h` are orthonormal. -/
 private theorem modelq_dotProduct (n : ℕ) (k l : Fin n) :
     modelq n k ⬝ᵥ modelq n l = if k = l then 1 else 0 := by
@@ -129,20 +122,16 @@ private theorem inv_modelQ (n : ℕ) : (modelQ n)⁻¹ = (modelQ n)ᵀ :=
 private theorem isUnit_modelQ (n : ℕ) : IsUnit (modelQ n) :=
   (isUnit_iff_isUnit_det _).2 (isUnit_det_of_left_inverse (modelQ_transpose_mul n))
 
-/-- Each `q_j` is an eigenvector of `A^h` with eigenvalue `λ_j^h`. -/
+/-- Each `q_j` is an eigenvector of `A^h` with eigenvalue `λ_j^h`: the Dirichlet–Dirichlet
+eigenpairs of §4.8.6 (`Chapter04.dd_eigen`), scaled. -/
 theorem modelA_mulVec_modelq (n : ℕ) (j : Fin n) :
     modelA n *ᵥ modelq n j = modelAEigenvalues n j • modelq n j := by
-  rw [modelA, modelq, smul_mulVec, mulVec_smul, symmTridiagonalToeplitz_mulVec_sineVec, smul_smul,
-    smul_smul, smul_smul]
+  have h := (GolubVanLoan.Chapter04.dd_eigen n).1 j
+  rw [show (fun k => dst1 n k j) = sineVec n j from funext fun k => dst1_apply_eq_sineVec k j]
+    at h
+  rw [modelA, modelq, smul_mulVec, mulVec_smul, h, smul_smul, smul_smul, smul_smul,
+    modelAEigenvalues]
   congr 1
-  have e : 2 + 2 * (-1 : ℝ) * Real.cos ((((j : ℕ) : ℝ) + 1) * Real.pi / ((n : ℝ) + 1)) =
-      4 * Real.sin ((((j : ℕ) : ℝ) + 1) * Real.pi / (2 * ((n : ℝ) + 1))) ^ 2 := by
-    rw [show 2 + 2 * (-1 : ℝ) * Real.cos ((((j : ℕ) : ℝ) + 1) * Real.pi / ((n : ℝ) + 1)) =
-      2 - 2 * Real.cos ((((j : ℕ) : ℝ) + 1) * Real.pi / ((n : ℝ) + 1)) by ring,
-      two_sub_two_mul_cos]
-    congr 3
-    field_simp
-  rw [e, modelAEigenvalues]
   ring
 
 /-- `A^h Q^h = Q^h Λ^h`. -/
@@ -787,40 +776,13 @@ noncomputable def twoGridCycle {M : Type → Type} [Monad M] (rnd : ℝ → M �
 
 /-- An in-place loop writing a fixed value into each entry of `List.finRange n`. -/
 private theorem foldl_update_const {n : ℕ} (g u : Fin n → ℝ) :
-    (List.finRange n).foldl (fun w i => Function.update w i (g i)) u = g := by
-  have key : ∀ (l : List (Fin n)) (w : Fin n → ℝ) (j : Fin n),
-      l.foldl (fun w i => Function.update w i (g i)) w j = if j ∈ l then g j else w j := by
-    intro l
-    induction l with
-    | nil => intro w j; simp
-    | cons a l ih =>
-      intro w j
-      rw [List.foldl_cons, ih]
-      by_cases hj : j ∈ l
-      · rw [ite_eq_left hj, ite_eq_left (List.mem_cons_of_mem a hj)]
-      · rw [ite_eq_right hj]
-        by_cases hja : j = a
-        · subst hja; rw [Function.update_self, ite_eq_left List.mem_cons_self]
-        · rw [Function.update_of_ne hja, ite_eq_right]
-          rw [List.mem_cons, not_or]
-          exact ⟨hja, hj⟩
-  funext j
-  rw [key, ite_eq_left (List.mem_finRange j)]
-
-/-- A loop applying the same map `p` times is the `p`-th iterate. -/
-private theorem foldl_range_const {α : Type*} (f : α → α) (p : ℕ) (x : α) :
-    (List.range p).foldl (fun v _ => f v) x = f^[p] x := by
-  induction p with
-  | zero => rfl
-  | succ p ih =>
-    rw [List.range_succ, List.foldl_append, ih, List.foldl_cons, List.foldl_nil,
-      Function.iterate_succ_apply']
+    (List.finRange n).foldl (fun w i => Function.update w i (g i)) u = g :=
+  (List.foldl_update_eq_ite g _ u).trans (funext fun j => ite_eq_left (List.mem_finRange j))
 
 /-- An exact loop applying the same map `p` times is the `p`-th iterate. -/
 private theorem idRun_foldlM_range_const {α : Type} (f : α → α) (p : ℕ) (x : α) :
     Id.run ((List.range p).foldlM (fun v _ => pure (f v)) x) = f^[p] x := by
-  rw [List.idRun_foldlM]
-  exact foldl_range_const f p x
+  simp only [List.foldlM_pure, List.foldl_const, List.length_range, Id.run_pure]
 
 /-- The exact coarse-grid correction step. -/
 private theorem coarseGridCorrection_id (m : ℕ) (b v : Fin (2 * m + 1) → ℝ) :

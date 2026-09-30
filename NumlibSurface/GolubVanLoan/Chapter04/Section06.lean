@@ -195,29 +195,17 @@ end Programs
 /-! #### Exact semantics -/
 
 /-- A loop of updates in which every step reads only entries that earlier steps do not write:
-each written entry holds the value computed from the initial state, the others are unchanged. -/
+each written entry holds the value computed from the initial state, the others are unchanged
+(`List.foldl_update_apply_of_pairwise` and `List.foldl_update_apply_of_forall_ne` together). -/
 private theorem foldl_update_eq {ι κ β : Type*} [DecidableEq κ] (w : ι → κ)
     (h : ι → (κ → β) → β) (l : List ι)
     (hl : l.Pairwise fun a b => w a ≠ w b ∧
       ∀ g g' : κ → β, (∀ t, t ≠ w a → g t = g' t) → h b g = h b g') (f : κ → β) :
     (∀ i ∈ l, l.foldl (fun g i => Function.update g (w i) (h i g)) f (w i) = h i f) ∧
       ∀ t, (∀ i ∈ l, w i ≠ t) →
-        l.foldl (fun g i => Function.update g (w i) (h i g)) f t = f t := by
-  induction l generalizing f with
-  | nil => exact ⟨fun _ hi => absurd hi List.not_mem_nil, fun _ _ => rfl⟩
-  | cons a l ih =>
-    obtain ⟨hal, hl'⟩ := List.pairwise_cons.1 hl
-    obtain ⟨ih1, ih2⟩ := ih hl' (Function.update f (w a) (h a f))
-    have hagree : ∀ t, t ≠ w a → Function.update f (w a) (h a f) t = f t :=
-      fun t ht => Function.update_of_ne ht _ _
-    refine ⟨fun i hi => ?_, fun t ht => ?_⟩
-    · rw [List.foldl_cons]
-      rcases List.mem_cons.1 hi with rfl | hi
-      · rw [ih2 (w i) fun j hj => (hal j hj).1.symm, Function.update_self]
-      · rw [ih1 i hi]
-        exact (hal i hi).2 _ _ hagree
-    · rw [List.foldl_cons, ih2 t fun j hj => ht j (List.mem_cons_of_mem _ hj)]
-      exact hagree t (ht a List.mem_cons_self).symm
+        l.foldl (fun g i => Function.update g (w i) (h i g)) f t = f t :=
+  ⟨fun _ hi => List.foldl_update_apply_of_pairwise w h hl f hi,
+    fun _ ht => List.foldl_update_apply_of_forall_ne w h ht f⟩
 
 /-- `(l.map S).reverse.prod`, the product `S_{k_r} ⋯ S_{k_1}`, applied to `f` is the loop applying
 `S_{k_1}`, then `S_{k_2}`, …. -/

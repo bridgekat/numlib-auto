@@ -51,32 +51,6 @@ variable {n : ℕ}
 
 /-! ### Glue between matrices and operators on `PiLp p` -/
 
-/-- The operator of a scalar multiple of a matrix. -/
-private theorem lpOpNorm_smul (p : ℝ≥0∞) [Fact (1 ≤ p)] (c : ℝ) (M : Matrix (Fin n) (Fin n) ℝ) :
-    lpOpNorm p (c • M) = |c| * lpOpNorm p M := by
-  rw [lpOpNorm, lpCLM_smul, norm_smul, Real.norm_eq_abs]
-  rfl
-
-/-- The operator of a difference of matrices. -/
-private theorem lpCLM_sub' (p : ℝ≥0∞) [Fact (1 ≤ p)] (X Y : Matrix (Fin n) (Fin n) ℝ) :
-    lpCLM p (X - Y) = lpCLM p X - lpCLM p Y := by
-  rw [sub_eq_add_neg, lpCLM_add, sub_eq_add_neg, ← neg_one_smul ℝ Y, lpCLM_smul, neg_one_smul]
-
-/-- Every operator on `PiLp p` is the operator of a matrix: `Matrix.lpCLM p` is a bijection. -/
-private noncomputable def lpCLMEquiv (p : ℝ≥0∞) [Fact (1 ≤ p)] :
-    Matrix (Fin n) (Fin n) ℝ ≃ (PiLp p (fun _ : Fin n => ℝ) →L[ℝ] PiLp p (fun _ : Fin n => ℝ)) :=
-  ((toLpLin p p).trans LinearMap.toContinuousLinearMap).toEquiv
-
-private theorem lpCLMEquiv_apply (p : ℝ≥0∞) [Fact (1 ≤ p)] (M : Matrix (Fin n) (Fin n) ℝ) :
-    lpCLMEquiv p M = lpCLM p M :=
-  rfl
-
-/-- The operator condition number of `Matrix.lpEquiv` is the matrix condition number. -/
-private theorem condNumber_lpEquiv (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
-    (hA : IsUnit A) : (lpEquiv p hA).condNumber = condNumberLp p A := by
-  rw [ContinuousLinearEquiv.condNumber, coe_lpEquiv, coe_lpEquiv_symm]
-  rfl
-
 /-- The operator condition number of the coercion of `Matrix.lpEquiv`. -/
 private theorem condNumber_coe_lpEquiv (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : IsUnit A) :
@@ -145,7 +119,7 @@ theorem equation_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (
       |ε| * lpOpNorm p A⁻¹ * (‖WithLp.toLp p f‖ / ‖WithLp.toLp p x‖ + lpOpNorm p F) /
         (1 - |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F) := by
   have hsmall : lpOpNorm p A⁻¹ * lpOpNorm p (ε • F) < 1 := by
-    rw [lpOpNorm_smul]; linarith
+    rw [lpOpNorm_smul, Real.norm_eq_abs]; linarith
   have hunit : IsUnit (A + ε • F) := by
     refine (theorem_2_3_4 p hA (lt_of_le_of_lt (lpOpNorm_mul_le p _ _) hsmall)).1
   have h := relative_error_le_norm_inverse (lpEquiv p hA) (lpCLM p (ε • F))
@@ -190,7 +164,7 @@ theorem equation_2_6_4 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (
       condNumberLp p A / (1 - |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F) *
         (|ε| * lpOpNorm p F / lpOpNorm p A + |ε| * ‖WithLp.toLp p f‖ / ‖WithLp.toLp p b‖) := by
   have hsmall : lpOpNorm p A⁻¹ * lpOpNorm p (ε • F) < 1 := by
-    rw [lpOpNorm_smul]; linarith
+    rw [lpOpNorm_smul, Real.norm_eq_abs]; linarith
   have hunit : IsUnit (A + ε • F) :=
     (theorem_2_3_4 p hA (lt_of_le_of_lt (lpOpNorm_mul_le p _ _) hsmall)).1
   have h := relative_error_le_condNumber (lpEquiv p hA) (lpCLM p (ε • F))
@@ -243,7 +217,7 @@ theorem equation_2_6_6 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fi
   · rintro ⟨ΔA, hs, rfl⟩
     exact ⟨lpCLM p ΔA, by rwa [← lpCLM_add, isUnit_lpCLM_iff], rfl⟩
   · rintro ⟨t, ht, rfl⟩
-    obtain ⟨ΔA, rfl⟩ := (lpCLMEquiv (n := n) p).surjective t
+    obtain ⟨ΔA, rfl⟩ := (lpCLMEquiv (𝕜 := ℝ) (m := Fin n) (n := Fin n) p).surjective t
     rw [lpCLMEquiv_apply, ← lpCLM_add, isUnit_lpCLM_iff] at ht
     exact ⟨ΔA, ht, rfl⟩
 
@@ -264,10 +238,10 @@ theorem equation_2_6_7 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fi
   let e : {ΔA : Matrix (Fin n) (Fin n) ℝ // lpOpNorm p ΔA ≤ ε * lpOpNorm p A} ≃
       {T : PiLp p (fun _ : Fin n => ℝ) →L[ℝ] PiLp p (fun _ : Fin n => ℝ) //
         ‖T‖ ≤ ε * ‖lpCLM p A‖} :=
-    (lpCLMEquiv p).subtypeEquiv fun _ => Iff.rfl
+    (lpCLMEquiv p).toEquiv.subtypeEquiv fun _ => Iff.rfl
   refine (Equiv.iSup_congr e fun ΔA => ?_).symm
   change ‖Ring.inverse (lpCLM p A + lpCLM p ΔA.1) - lpCLM p A⁻¹‖ = _
-  rw [← lpCLM_add, ringInverse_lpCLM, ← lpCLM_sub']
+  rw [← lpCLM_add, ringInverse_lpCLM, ← lpCLM_sub]
   rfl
 
 /-- **(2.6.8)**: on `ℝ^{n×n}`, `(1/n) κ₂ ≤ κ₁ ≤ n κ₂`, `(1/n) κ_∞ ≤ κ₂ ≤ n κ_∞` and

@@ -186,20 +186,10 @@ theorem equation_2_3_8 (A : Matrix (Fin m) (Fin n) ℝ) :
         (le_ciSup (Set.finite_range fun i => ⨆ j, |A i j|).bddAbove i)
     simpa using h
 
-/-- A finite supremum in `ℝ≥0`, read in `ℝ`. -/
-private theorem coe_univ_sup_eq_iSup {ι : Type*} [Fintype ι] (f : ι → ℝ≥0) :
-    ((Finset.univ.sup f : ℝ≥0) : ℝ) = ⨆ i, (f i : ℝ) := by
-  rcases isEmpty_or_nonempty ι with hι | hι
-  · simp [Finset.univ_eq_empty]
-  refine le_antisymm ?_ (ciSup_le fun i => NNReal.coe_le_coe.2 (Finset.le_sup (mem_univ i)))
-  obtain ⟨i, -, hi⟩ := Finset.exists_mem_eq_sup (Finset.univ : Finset ι) Finset.univ_nonempty f
-  rw [hi]
-  exact le_ciSup (Set.finite_range fun i => (f i : ℝ)).bddAbove i
-
 /-- **(2.3.9)**: `‖A‖₁ = max_j ∑ᵢ |aᵢⱼ|`, the largest column sum. -/
 theorem equation_2_3_9 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 1 A = ⨆ j, ∑ i, |A i j| := by
-  rw [lpOpNorm_one_eq_sup_sum_norm, coe_univ_sup_eq_iSup]
+  rw [lpOpNorm_one_eq_sup_sum_norm, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
   simp [Real.norm_eq_abs]
 
 section Operator
@@ -209,7 +199,7 @@ open scoped Matrix.Norms.Operator
 /-- **(2.3.10)**: `‖A‖_∞ = max_i ∑ⱼ |aᵢⱼ|`, the largest row sum. -/
 theorem equation_2_3_10 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm ∞ A = ⨆ i, ∑ j, |A i j| := by
-  rw [lpOpNorm_top, linfty_opNorm_def, coe_univ_sup_eq_iSup]
+  rw [lpOpNorm_top, linfty_opNorm_def, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
   simp [Real.norm_eq_abs]
 
 end Operator
@@ -262,20 +252,9 @@ private theorem exists_colSingularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fi
     (hn : 0 < n) :
     ∃ i, A.colSingularValues i = lpOpNorm 2 A ∧ ∀ j, A.colSingularValues j ≤ lpOpNorm 2 A := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
-  obtain ⟨i₀, hi₀⟩ := Finite.exists_max A.colSingularValues
-  have hle : lpOpNorm 2 A ≤ A.colSingularValues i₀ := by
-    refine ContinuousLinearMap.opNorm_le_bound _ (A.colSingularValues_nonneg i₀) fun x => ?_
-    calc ‖lpCLM 2 A x‖ = ‖toEuclideanLin A x‖ := rfl
-      _ ≤ (⨆ i, A.colSingularValues i) * ‖x‖ := A.norm_toEuclideanLin_le_iSup_colSingularValues x
-      _ ≤ A.colSingularValues i₀ * ‖x‖ :=
-          mul_le_mul_of_nonneg_right (ciSup_le hi₀) (norm_nonneg _)
-  have hge : A.colSingularValues i₀ ≤ lpOpNorm 2 A := by
-    have h := (lpCLM 2 A).le_opNorm (A.rightSingularBasis i₀)
-    rw [(A.rightSingularBasis).norm_eq_one, mul_one] at h
-    calc A.colSingularValues i₀ = ‖toEuclideanLin A (A.rightSingularBasis i₀)‖ :=
-          (A.norm_toEuclideanLin_rightSingularBasis i₀).symm
-      _ ≤ lpOpNorm 2 A := h
-  exact ⟨i₀, le_antisymm hge hle, fun j => (hi₀ j).trans hge⟩
+  obtain ⟨i₀, hi₀⟩ := exists_eq_ciSup_of_finite (f := A.colSingularValues)
+  exact ⟨i₀, by rw [lpOpNorm_two, l2_opNorm_eq_iSup_colSingularValues, hi₀],
+    colSingularValues_le_lpOpNorm_two A⟩
 
 /-- **Theorem 2.3.1.** For `A ∈ ℝ^{m×n}` (`n ≥ 1`) there is a unit 2-norm `n`-vector `z` with
 `AᵀA z = μ² z`, `μ = ‖A‖₂`. -/
@@ -349,11 +328,6 @@ theorem norm_inv_one_sub_sub_one_le (p : ℝ≥0∞) [Fact (1 ≤ p)] {F : Matri
     lpOpNorm p ((1 - F)⁻¹ - 1) ≤ lpOpNorm p F / (1 - lpOpNorm p F) := by
   simp only [lpOpNorm_eq_inducedNorm] at hF ⊢
   exact inducedNorm_inv_one_sub_sub_one_le (lpSeminorm_definite p) hF
-
-/-- The operator of a difference of matrices. -/
-private theorem lpCLM_sub (p : ℝ≥0∞) [Fact (1 ≤ p)] (X Y : Matrix (Fin n) (Fin n) ℝ) :
-    lpCLM p (X - Y) = lpCLM p X - lpCLM p Y := by
-  rw [sub_eq_add_neg, lpCLM_add, sub_eq_add_neg, ← neg_one_smul ℝ Y, lpCLM_smul, neg_one_smul]
 
 /-- **Theorem 2.3.4.** If `A` is nonsingular and `r = ‖A⁻¹E‖_p < 1`, then `A + E` is nonsingular and
 `‖(A + E)⁻¹ - A⁻¹‖_p ≤ ‖E‖_p ‖A⁻¹‖_p² / (1 - r)`. -/

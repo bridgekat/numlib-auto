@@ -127,34 +127,16 @@ theorem orthogonal_range_eq_ker_transpose (A : Matrix (Fin m) (Fin n) ℝ) :
 /-- **§2.1.5, complementary column blocks.** If `V ∈ ℝ^{n×n}` is orthogonal and the column
 selections `f : Fin r → Fin n`, `g : Fin s → Fin n` are injective, disjoint and together exhaust
 the `n` columns (`r + s = n`), then `ran(V(:, f))⊥ = ran(V(:, g))`: the note after Theorem 2.1.1,
-and the block form used in §2.5. `ran(V(:, g)) ⊆ null(V(:, f)ᵀ)` since `V(:, f)ᵀ V(:, g) = 0`, and
-both sides have dimension `s`. -/
+and the block form used in §2.5. The backbone's `Matrix.range_submatrix_eq_orthogonal`: the
+selections side by side, `Sum.elim f g`, are a bijection onto the columns by counting. -/
 theorem orthogonal_range_submatrix_eq {r s : ℕ} {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) {f : Fin r → Fin n} {g : Fin s → Fin n}
     (hf : Function.Injective f) (hg : Function.Injective g) (hfg : ∀ a b, f a ≠ g b)
     (hrs : r + s = n) :
     (LinearMap.range (toEuclideanLin (V.submatrix id f)))ᗮ =
-      LinearMap.range (toEuclideanLin (V.submatrix id g)) := by
-  have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hV
-  have hrank : ∀ {k : ℕ} (e : Fin k → Fin n), Function.Injective e →
-      Module.finrank ℝ (LinearMap.range (toEuclideanLin (V.submatrix id e))) = k := by
-    intro k e he
-    have h1 : (V.submatrix id e)ᵀ * V.submatrix id e = 1 := by
-      rw [transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hVV]
-      exact submatrix_one e he
-    rw [← rank_eq_finrank_range_toEuclideanLin, ← rank_transpose_mul_self, h1, rank_one,
-      Fintype.card_fin]
-  have hzero : (V.submatrix id f)ᵀ * V.submatrix id g = 0 := by
-    rw [transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hVV]
-    ext a b
-    simp [one_apply, hfg a b]
-  refine (Submodule.eq_of_le_of_finrank_eq ?_ ?_).symm
-  · rw [orthogonal_range_eq_ker_transpose, LinearMap.range_le_ker_iff, ← toEuclideanLin_mul,
-      hzero, map_zero]
-  · have h := (LinearMap.range (toEuclideanLin (V.submatrix id f))).finrank_add_finrank_orthogonal
-    rw [finrank_euclideanSpace_fin, hrank f hf] at h
-    rw [hrank g hg]
-    omega
+      LinearMap.range (toEuclideanLin (V.submatrix id g)) :=
+  (range_submatrix_eq_orthogonal hV ((Fintype.bijective_iff_injective_and_card _).2
+    ⟨hf.sumElim hg hfg, by simp [hrs]⟩)).symm
 
 /-- **Theorem 2.1.1.** If `V₁ ∈ ℝ^{n×r}` has orthonormal columns (`V₁ᵀ V₁ = I`), then there is
 `V₂ ∈ ℝ^{n×(n-r)}` such that `V = [V₁ | V₂]` is orthogonal, and `ran(V₁)⊥ = ran(V₂)`. Here

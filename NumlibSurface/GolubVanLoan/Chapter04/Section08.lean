@@ -167,28 +167,11 @@ theorem lemma_4_8_1 (n : ℕ) [NeZero n] :
 
 /-! ### Algorithm 4.8.1 -/
 
-/-- Entry `i` of a loop writing each entry of its list once, from a value independent of the state.
--/
-private theorem foldl_update_apply {ι β : Type} [DecidableEq ι] (c : ι → β) (l : List ι)
-    (y₀ : ι → β) (i : ι) :
-    l.foldl (fun (y : ι → β) a => Function.update y a (c a)) y₀ i =
-      if i ∈ l then c i else y₀ i := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih]
-    by_cases hl : i ∈ l
-    · simp [hl]
-    · by_cases hia : i = a
-      · subst hia
-        simp [hl]
-      · simp [hl, hia]
-
 /-- A loop over `List.finRange n` whose step `a` writes entry `a` with `c a` ends with `c`. -/
 private theorem foldl_update_finRange_apply {n : ℕ} {β : Type} (c : Fin n → β) (y₀ : Fin n → β)
     (i : Fin n) :
     (List.finRange n).foldl (fun (y : Fin n → β) a => Function.update y a (c a)) y₀ i = c i := by
-  rw [foldl_update_apply]
+  rw [List.foldl_update_eq_ite]
   simp
 
 section Programs
@@ -895,12 +878,12 @@ end DSTBlocks
 
 /-! ### §4.8.6 Four fast eigenvalue decompositions -/
 
-/-- `2 − 2 cos θ = 4 sin² (θ / 2)`. -/
+/-- `2 − 2 cos θ = 4 sin² (θ / 2)` (`Real.two_sub_two_mul_cos`), in the form the Toeplitz lemmas
+produce. -/
 private theorem two_sub_two_mul_cos' (θ : ℝ) :
     2 + 2 * (-1) * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h2 : Real.cos θ = Real.cos (2 * (θ / 2)) := by ring_nf
-  rw [h2, Real.cos_two_mul]
-  linear_combination (-4) * Real.cos_sq_add_sin_sq (θ / 2)
+  rw [← Real.two_sub_two_mul_cos]
+  ring
 
 /-- **(4.8.16)**: `𝒯^{(DD)}_n s(θ) = λ s(θ) + s_{n+1} e_n`, `λ = 4 sin²(θ/2)`. -/
 theorem equation_4_8_16 {n : ℕ} (hn : 0 < n) (θ : ℝ) :

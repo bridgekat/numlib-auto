@@ -1622,32 +1622,11 @@ open scoped Matrix.Norms.Operator
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- A matrix bounded entrywise by `γ` times a row permutation of a nonnegative `B` has
-`‖E‖_∞ ≤ γ ‖B‖_∞`. -/
-theorem linfty_opNorm_le_of_abs_le_smul_submatrix {E B : Matrix (Fin n) (Fin n) ℝ} {γ : ℝ}
-    (hγ : 0 ≤ γ) (hB : ∀ i j, 0 ≤ B i j) (e : Fin n → Fin n)
-    (h : E.abs ≤ₑ γ • B.submatrix e id) : ‖E‖ ≤ γ * ‖B‖ := by
-  refine linfty_opNorm_le_of_forall_sum_le (mul_nonneg hγ (norm_nonneg _)) fun i => ?_
-  calc ∑ j, |E i j| ≤ ∑ j, γ * |B (e i) j| := Finset.sum_le_sum fun j _ => by
-        have := h i j
-        simp only [Matrix.abs_apply, Matrix.smul_apply, submatrix_apply, id, smul_eq_mul] at this
-        rwa [abs_of_nonneg (hB _ _)]
-    _ = γ * ∑ j, |B (e i) j| := by rw [Finset.mul_sum]
-    _ ≤ γ * ‖B‖ := mul_le_mul_of_nonneg_left (sum_abs_apply_le_linfty_opNorm B (e i)) hγ
-
-/-- The `∞`-norm of a matrix whose entries are bounded by `c` is at most `n c`. -/
-theorem linfty_opNorm_le_card_mul_of_abs_le {B : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
-    (h : ∀ i j, |B i j| ≤ c) (hc : 0 ≤ c) : ‖B‖ ≤ n * c :=
-  linfty_opNorm_le_of_forall_sum_le (by positivity) fun i =>
-    (Finset.sum_le_sum fun j _ => h i j).trans (by simp)
-
 /-- The backward error (3.4.6) in norm: `‖E‖_∞ ≤ γ_{3n} ‖L̂‖_∞ ‖Û‖_∞`. -/
 theorem linfty_opNorm_le_of_equation_3_4_6 {E L U : Matrix (Fin n) (Fin n) ℝ}
     {σ : Equiv.Perm (Fin n)} {γ : ℝ} (hγ : 0 ≤ γ)
     (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) : ‖E‖ ≤ γ * (‖L‖ * ‖U‖) := by
-  have hnn : ∀ i j, 0 ≤ (L.abs * U.abs) i j := fun i j =>
-    ((entrywiseNonneg_abs L).mul (entrywiseNonneg_abs U)).apply i j
-  refine (linfty_opNorm_le_of_abs_le_smul_submatrix hγ hnn _ hE).trans ?_
+  refine (linfty_opNorm_le_of_abs_le_smul_submatrix hγ _ hE).trans ?_
   refine mul_le_mul_of_nonneg_left ?_ hγ
   calc ‖L.abs * U.abs‖ ≤ ‖L.abs‖ * ‖U.abs‖ := linfty_opNorm_mul _ _
     _ = ‖L‖ * ‖U‖ := by rw [linfty_opNorm_abs, linfty_opNorm_abs]
@@ -1663,9 +1642,10 @@ theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   intro out hout hpiv x hx
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
   have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
-  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) :=
-    linfty_opNorm_le_card_mul_of_abs_le (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
-      (by linarith [fp.u_nonneg])
+  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
+    have h := linfty_opNorm_le_card_mul_of_abs_le
+      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2 (by linarith [fp.u_nonneg])
+    rwa [Fintype.card_fin] at h
   refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
   calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)
       ≤ gamma fp.u (3 * n) * ((n * (1 + fp.u)) * ‖packedU out.1‖) := by gcongr
@@ -1684,11 +1664,13 @@ theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   intro out hout hpiv hU x hx
   obtain ⟨E, hAx, hE⟩ := equation_3_4_6 hu hn A b out hout hpiv x hx
   have hγ : 0 ≤ gamma fp.u (3 * n) := gamma_nonneg fp.u_nonneg hn
-  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) :=
-    linfty_opNorm_le_card_mul_of_abs_le (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2
-      (by linarith [fp.u_nonneg])
-  have hU' : ‖packedU out.1‖ ≤ n * (ρ * ‖A‖) :=
-    linfty_opNorm_le_card_mul_of_abs_le hU (mul_nonneg hρ (norm_nonneg _))
+  have hL : ‖packedL out.1‖ ≤ n * (1 + fp.u) := by
+    have h := linfty_opNorm_le_card_mul_of_abs_le
+      (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2 (by linarith [fp.u_nonneg])
+    rwa [Fintype.card_fin] at h
+  have hU' : ‖packedU out.1‖ ≤ n * (ρ * ‖A‖) := by
+    have h := linfty_opNorm_le_card_mul_of_abs_le hU (mul_nonneg hρ (norm_nonneg _))
+    rwa [Fintype.card_fin] at h
   refine ⟨E, hAx, (linfty_opNorm_le_of_equation_3_4_6 hγ hE).trans ?_⟩
   calc gamma fp.u (3 * n) * (‖packedL out.1‖ * ‖packedU out.1‖)
       ≤ gamma fp.u (3 * n) * ((n * (1 + fp.u)) * (n * (ρ * ‖A‖))) := by
@@ -1890,7 +1872,7 @@ theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     · rintro p i q hl s s' x hss ⟨o, pp, hnd, ho, hpp, hsum⟩
       refine ⟨o, pp, hnd, ho, fun r hr => ?_, hsum⟩
       have hri := ((ho r).1 hr).1
-      have hrp : r ∈ p := mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
+      have hrp : r ∈ p := List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
         (List.mem_finRange r) (ne_of_lt hri) (lt_asymm hri)
       rw [← hss r hrp]
       exact hpp r hr

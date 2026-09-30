@@ -30,7 +30,8 @@ sequences.
 The algorithms follow the algorithm conventions of `NumlibSurface/GolubVanLoan` (every product,
 difference, quotient and square root through the rounding hook `rnd`; comparisons exact). Their
 exact specifications are proved at `M := Id`, `rnd := pure` by loop invariants on the folds
-(`foldl_finRange_induction`, `foldl_update_of_nodup`); the book gives no rounding analysis here.
+(`List.foldl_finRange_induction`, `List.foldl_update_of_nodup`); the book gives no rounding
+analysis here.
 
 ## Sources
 
@@ -61,42 +62,6 @@ namespace GolubVanLoan.Chapter04
 variable {n : ℕ}
 
 /-! ### Loop lemmas in exact arithmetic -/
-
-/-- **The Hoare rule of a `finRange` fold**: an invariant indexed by the step count that holds
-initially and is kept by every step holds at the end. -/
-theorem foldl_finRange_induction {β : Type} (f : β → Fin n → β) (a : β) (I : ℕ → β → Prop)
-    (h0 : I 0 a) (hs : ∀ (k : Fin n) (c : β), I k c → I (k + 1) (f c k)) :
-    I n ((List.finRange n).foldl f a) := by
-  have := SetM.forall_mem_run_foldlM_finRange (f := fun b k => (pure (f b k) : SetM β)) I h0
-    (fun k c hc c' hc' => by rw [SetM.mem_run_pure] at hc'; subst hc'; exact hs k c hc)
-  exact this _ (by rw [List.foldlM_pure]; exact SetM.mem_run_pure.2 rfl)
-
-/-- **One entry per step, in exact arithmetic.** Over a duplicate-free list `l`, a fold whose step
-`i` replaces entry `i` by `g i y`, a value that reads only entry `i` and the entries outside `l`,
-replaces every entry `i ∈ l` by `g i` of the initial state. -/
-theorem foldl_update_of_nodup {ι β : Type} [DecidableEq ι] {l : List ι} (hl : l.Nodup)
-    (g : ι → (ι → β) → β)
-    (hg : ∀ i ∈ l, ∀ y y' : ι → β, (∀ r, r ∉ l → y r = y' r) → y i = y' i → g i y = g i y')
-    (y : ι → β) :
-    l.foldl (fun y i => Function.update y i (g i y)) y = fun r => if r ∈ l then g r y else y r := by
-  induction l generalizing y with
-  | nil => rfl
-  | cons a l ih =>
-    rcases List.nodup_cons.1 hl with ⟨ha, hl'⟩
-    rw [List.foldl_cons, ih hl' (fun i hi z z' hz hzi => hg i (List.mem_cons_of_mem _ hi) z z'
-      (fun r hr => hz r fun h => hr (List.mem_cons_of_mem _ h)) hzi)]
-    funext r
-    by_cases hr : r ∈ l
-    · have hra : r ≠ a := fun h => ha (h ▸ hr)
-      rw [ite_eq_left hr, ite_eq_left (List.mem_cons_of_mem _ hr)]
-      refine hg r (List.mem_cons_of_mem _ hr) _ _ (fun r' hr' => ?_) ?_
-      · rw [Function.update_of_ne fun h => hr' (by rw [h]; exact List.mem_cons_self)]
-      · rw [Function.update_of_ne hra]
-    · rw [ite_eq_right hr]
-      by_cases hra : r = a
-      · subst hra
-        rw [Function.update_self, ite_eq_left List.mem_cons_self]
-      · rw [Function.update_of_ne hra, ite_eq_right fun h => (List.mem_cons.1 h).elim hra hr]
 
 /-- A sum over the indices below `j + 1` (and below `i`) splits off the term `j`. -/
 private theorem sum_filter_val_lt_succ (f : Fin n → ℝ) (i j : Fin n) :
@@ -282,9 +247,10 @@ theorem algorithm_4_3_2_spec {p : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
     L *ᵥ Id.run (algorithm_4_3_2 pure p L b) = b := by
   have hp' := hasLowerBandwidth_iff_fin.1 hp
   rw [algorithm_4_3_2_id]
-  have key := foldl_finRange_induction (fun (b : Fin n → ℝ) (j : Fin n) =>
+  have key := List.foldl_finRange_induction (f := fun (b : Fin n → ℝ) (j : Fin n) =>
         ((List.finRange n).filter (fun i : Fin n => j < i ∧ (i : ℕ) ≤ j + p)).foldl
-          (fun (b : Fin n → ℝ) (i : Fin n) => Function.update b i (b i - L i j * b j)) b) b
+          (fun (b : Fin n → ℝ) (i : Fin n) => Function.update b i (b i - L i j * b j)) b)
+    (init := b)
     (fun c s => ∀ i, s i = b i - ∑ k ∈ univ.filter (fun k : Fin n => (k : ℕ) < c ∧ k < i),
       L i k * s k)
     (fun i => by simp)
@@ -292,7 +258,7 @@ theorem algorithm_4_3_2_spec {p : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
       set l := (List.finRange n).filter (fun i : Fin n => j < i ∧ (i : ℕ) ≤ j + p) with hl
       have hmem : ∀ r, r ∈ l ↔ j < r ∧ (r : ℕ) ≤ j + p := fun r => by simp [hl]
       have hjl : j ∉ l := fun h => lt_irrefl _ ((hmem j).1 h).1
-      rw [foldl_update_of_nodup ((List.nodup_finRange n).filter _)
+      rw [List.foldl_update_of_nodup ((List.nodup_finRange n).filter _)
         (fun i y => y i - L i j * y j) (fun i _ y y' hy hyi => by rw [hyi, hy j hjl]) s]
       simp only
       have hs' : ∀ k : Fin n, (k : ℕ) < j + 1 →
@@ -336,11 +302,11 @@ theorem algorithm_4_3_3_spec {q : ℕ} {U : Matrix (Fin n) (Fin n) ℝ}
     (b : Fin n → ℝ) : U *ᵥ Id.run (algorithm_4_3_3 pure q U b) = b := by
   have hq' := hasUpperBandwidth_iff_fin.1 hq
   rw [algorithm_4_3_3_id]
-  have key := foldl_finRange_induction (fun (b : Fin n → ℝ) (c : Fin n) =>
+  have key := List.foldl_finRange_induction (f := fun (b : Fin n → ℝ) (c : Fin n) =>
         ((List.finRange n).filter (fun i : Fin n => i < c.rev ∧ (c.rev : ℕ) ≤ i + q)).foldl
           (fun (b' : Fin n → ℝ) (i : Fin n) =>
             Function.update b' i (b' i - U i c.rev * b' c.rev))
-          (Function.update b c.rev (b c.rev / U c.rev c.rev))) b
+          (Function.update b c.rev (b c.rev / U c.rev c.rev))) (init := b)
     (fun c s => ∀ i : Fin n, (if n - c ≤ (i : ℕ) then U i i * s i else s i) =
       b i - ∑ k ∈ univ.filter (fun k : Fin n => n - c ≤ (k : ℕ) ∧ i < k), U i k * s k)
     (fun i => by
@@ -355,7 +321,7 @@ theorem algorithm_4_3_3_spec {q : ℕ} {U : Matrix (Fin n) (Fin n) ℝ}
       have hmem : ∀ r, r ∈ l ↔ r < j ∧ (j : ℕ) ≤ r + q := fun r => by simp [hl]
       have hjl : j ∉ l := fun h => lt_irrefl _ ((hmem j).1 h).1
       set s₁ := Function.update s j (s j / U j j) with hs₁
-      rw [foldl_update_of_nodup ((List.nodup_finRange n).filter _)
+      rw [List.foldl_update_of_nodup ((List.nodup_finRange n).filter _)
         (fun i y => y i - U i j * y j) (fun i _ y y' hy hyi => by rw [hyi, hy j hjl]) s₁]
       simp only
       -- entries from `j` on are not rewritten by the saxpy
@@ -599,9 +565,10 @@ theorem algorithm_4_3_6_spec {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N �
   have hℓ' : ∀ k : Fin N, ℓ k = β k / d k.castSucc := fun k => by
     simp [hℓ, hd, thomasBeta_succ, he]
   -- the first loop computes the pivots and the multipliers
-  have h1 := foldl_finRange_induction (fun (s : (Fin (N + 1) → ℝ) × (Fin N → ℝ)) (k : Fin N) =>
+  have h1 := List.foldl_finRange_induction
+    (f := fun (s : (Fin (N + 1) → ℝ) × (Fin N → ℝ)) (k : Fin N) =>
       (Function.update s.1 k.succ (s.1 k.succ - s.2 k * (s.2 k / s.1 k.castSucc)),
-        Function.update s.2 k (s.2 k / s.1 k.castSucc))) (α, β)
+        Function.update s.2 k (s.2 k / s.1 k.castSucc))) (init := (α, β))
     (fun c s => (∀ i : Fin (N + 1), s.1 i = if (i : ℕ) ≤ c then d i else α i) ∧
       ∀ k : Fin N, s.2 k = if (k : ℕ) < c then ℓ k else β k)
     ⟨fun i => by
@@ -654,8 +621,8 @@ theorem algorithm_4_3_6_spec {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N �
   -- the second loop solves `L y = b`
   set y := (List.finRange N).foldl (fun (y : Fin (N + 1) → ℝ) (k : Fin N) =>
     Function.update y k.succ (y k.succ - ℓ k * y k.castSucc)) b with hy
-  have h2 := foldl_finRange_induction (fun (y : Fin (N + 1) → ℝ) (k : Fin N) =>
-      Function.update y k.succ (y k.succ - ℓ k * y k.castSucc)) b
+  have h2 := List.foldl_finRange_induction (f := fun (y : Fin (N + 1) → ℝ) (k : Fin N) =>
+      Function.update y k.succ (y k.succ - ℓ k * y k.castSucc)) (init := b)
     (fun c y => y 0 = b 0 ∧ (∀ k : Fin N, (k : ℕ) < c → y k.succ + ℓ k * y k.castSucc = b k.succ) ∧
       ∀ k : Fin N, c ≤ (k : ℕ) → y k.succ = b k.succ)
     ⟨rfl, fun k hk => absurd hk (Nat.not_lt_zero _), fun _ _ => rfl⟩
@@ -683,10 +650,10 @@ theorem algorithm_4_3_6_spec {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N �
     · rw [thomasLower_mulVec_zero]; exact h2.1
     · rw [thomasLower_mulVec_succ]; exact h2.2.1 k k.isLt
   -- the last two loops solve `D Lᵀ x = y`
-  have h3 := foldl_finRange_induction (fun (x : Fin (N + 1) → ℝ) (c : Fin N) =>
+  have h3 := List.foldl_finRange_induction (f := fun (x : Fin (N + 1) → ℝ) (c : Fin N) =>
       Function.update x c.rev.castSucc
         (x c.rev.castSucc / d c.rev.castSucc - ℓ c.rev * x c.rev.succ))
-    (Function.update y (Fin.last N) (y (Fin.last N) / d (Fin.last N)))
+    (init := Function.update y (Fin.last N) (y (Fin.last N) / d (Fin.last N)))
     (fun c x => x (Fin.last N) = y (Fin.last N) / d (Fin.last N) ∧
       (∀ k : Fin N, N - c ≤ (k : ℕ) →
         x k.castSucc = y k.castSucc / d k.castSucc - ℓ k * x k.succ) ∧
@@ -964,7 +931,7 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
   by_cases hp : s₁.1 k k ≠ 0
   · rw [ite_eq_left hp]
     simp only [pure_bind, List.foldlM_pure, Id.run_pure]
-    rw [foldl_update_of_nodup ((List.nodup_finRange n).filter _)
+    rw [List.foldl_update_of_nodup ((List.nodup_finRange n).filter _)
       (fun j y => y j - s₁.1 k₁ k / s₁.1 k k * s₁.1 k j) (fun j _ y y' _ hyj => by rw [hyj])]
     set τ := s₁.1 k₁ k / s₁.1 k k with hτ
     have hmem : ∀ j, j ∈ (List.finRange n).filter (k < ·) ↔ k < j := fun j => by simp
@@ -1043,7 +1010,8 @@ theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
         partialPivotRow (gemPivotStage H partialPivotRow k).1 k = ⟨k + 1, hk⟩)) ∧
     ∀ (k : Fin n) (hk : (k : ℕ) + 1 < n),
       |(Id.run (algorithm_4_3_4 pure H)).1 ⟨k + 1, hk⟩ k| ≤ 1 := by
-  have key := foldl_finRange_induction (fun s k => Id.run (hessenbergLUStep pure s k)) (H, 0)
+  have key := List.foldl_finRange_induction (f := fun s k => Id.run (hessenbergLUStep pure s k))
+    (init := (H, 0))
     (HessInv H) ⟨fun _ _ _ => rfl, fun _ _ h => absurd h (Nat.not_lt_zero _),
       fun _ _ h => absurd h (Nat.not_lt_zero _)⟩ (fun k s hs => hessInv_step hH k s hs)
   rw [algorithm_4_3_4, List.idRun_foldlM]
@@ -1065,37 +1033,26 @@ theorem foldl_updateRow_col {l : List (Fin n)} (hl : l.Nodup) (j : Fin n)
     l.foldl (fun (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
         A.updateRow i (Function.update (A i) j (h i A))) A =
       of fun r c => if c = j ∧ r ∈ l then h r A else A r c := by
-  induction l generalizing A with
-  | nil => ext r c; simp
-  | cons a l ih =>
-    rcases List.nodup_cons.1 hl with ⟨ha, hl'⟩
-    rw [List.foldl_cons, ih hl' fun i hi B B' hB hBi => hh i (List.mem_cons_of_mem _ hi) B B'
-      (fun r c hrc => hB r c fun h' => hrc ⟨h'.1, List.mem_cons_of_mem _ h'.2⟩) hBi]
-    have hoff : ∀ r' c', ¬ (c' = j ∧ r' ∈ a :: l) →
-        (A.updateRow a (Function.update (A a) j (h a A))) r' c' = A r' c' := by
-      intro r' c' hc'
-      by_cases hr' : r' = a
-      · subst r'
-        have hcj : c' ≠ j := fun e => hc' ⟨e, List.mem_cons_self⟩
-        simp [updateRow_self, Function.update_of_ne hcj]
-      · simp [updateRow_ne hr']
-    ext r c
-    simp only [of_apply]
-    by_cases hc : c = j
-    · subst c
-      by_cases hr : r ∈ l
-      · have hra : r ≠ a := fun e => ha (e ▸ hr)
-        rw [ite_eq_left ⟨rfl, hr⟩, ite_eq_left ⟨rfl, List.mem_cons_of_mem _ hr⟩]
-        exact hh r (List.mem_cons_of_mem _ hr) _ _ hoff (by simp [updateRow_ne hra])
-      · rw [ite_eq_right fun h' => hr h'.2]
-        by_cases hra : r = a
-        · subst r
-          rw [ite_eq_left ⟨rfl, List.mem_cons_self⟩]
-          simp [updateRow_self]
-        · rw [ite_eq_right fun h' => (List.mem_cons.1 h'.2).elim hra hr]
-          simp [updateRow_ne hra]
-    · rw [ite_eq_right fun h' => hc h'.1, ite_eq_right fun h' => hc h'.1]
-      exact hoff r c fun h' => hc h'.1
+  have hhom := List.foldl_hom (Function.uncurry : Matrix (Fin n) (Fin n) ℝ → Fin n × Fin n → ℝ)
+    (g₁ := fun (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
+      A.updateRow i (Function.update (A i) j (h i A)))
+    (g₂ := fun y i => Function.update y (i, j) (h i (of (Function.curry y)))) (l := l)
+    (init := A) fun B i => (Matrix.uncurry_updateRow_update B i j _).symm
+  ext r c
+  have key := congrFun hhom (r, c)
+  change _ = (l.foldl _ A) r c at key
+  rw [← key, of_apply]
+  by_cases hrc : c = j ∧ r ∈ l
+  · obtain ⟨rfl, hr⟩ := hrc
+    rw [ite_eq_left ⟨rfl, hr⟩]
+    refine List.foldl_update_apply_of_pairwise (fun i => (i, c)) (fun i y => h i (of
+      (Function.curry y))) (hl.pairwise_of_forall_ne fun a ha b hb hab => ⟨fun e => hab
+        (congrArg Prod.fst e), fun y y' hy => hh b hb _ _ (fun r' c' hrc' => hy (r', c')
+          fun e => by cases e; exact hrc' ⟨rfl, ha⟩)
+        (hy (b, c) fun e => hab (congrArg Prod.fst e).symm)⟩) _ hr
+  · rw [ite_eq_right hrc]
+    exact List.foldl_update_apply_of_forall_ne _ _ (fun i hi (e : (i, j) = (r, c)) => by
+      cases e; exact hrc ⟨rfl, hi⟩) _
 
 /-- The first phase of column `j` of Algorithm 4.3.5, in exact arithmetic: the updates
 `A(j:λ, j) = A(j:λ, j) − A(j, k) · A(j:λ, k)` over the columns `k` of a duplicate-free list not
@@ -1190,7 +1147,7 @@ theorem algorithm_4_3_5_spec {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
   have hGb := hasLowerBandwidth_iff_fin.1 hGp
   have hAb := hasLowerBandwidth_iff_fin.1 hp
   set G := cholesky A with hG
-  have key := foldl_finRange_induction (bandCholStepId p) A
+  have key := List.foldl_finRange_induction (f := bandCholStepId p) (init := A)
     (fun c S => (∀ i j : Fin n, c ≤ (j : ℕ) → S i j = A i j) ∧
       ∀ i j : Fin n, (j : ℕ) < c → j ≤ i → S i j = G i j)
     ⟨fun _ _ _ => rfl, fun _ _ h => absurd h (Nat.not_lt_zero _)⟩
@@ -1359,7 +1316,7 @@ theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
   have hz : ∀ (k : ℕ) (i j : Fin n), (j : ℕ) < k → j < i → gemStage A k i j = 0 :=
     fun k i j hjk hji =>
       gemStage_apply_eq_zero_of_lt A (fun m hm _ hmn => hpiv m hm hmn) hjk hji
-  have key := foldl_finRange_induction (bandGEStepId p q) A
+  have key := List.foldl_finRange_induction (f := bandGEStepId p q) (init := A)
     (fun c S => ∀ i j : Fin n, S i j =
       if j < i ∧ (j : ℕ) < c then gemStage A j i j / gemStage A j j j else gemStage A c i j)
     (fun i j => by simp)

@@ -221,37 +221,6 @@ end Programs
 
 /-! #### Exact semantics of (4.4.14) -/
 
-/-- A loop of updates in which every step reads only entries that earlier steps do not write. -/
-private theorem foldl_update_eq {ι κ β : Type*} [DecidableEq κ] (w : ι → κ)
-    (h : ι → (κ → β) → β) (l : List ι)
-    (hl : l.Pairwise fun a b => w a ≠ w b ∧
-      ∀ g g' : κ → β, (∀ t, t ≠ w a → g t = g' t) → h b g = h b g') (f : κ → β) :
-    (∀ i ∈ l, l.foldl (fun g i => Function.update g (w i) (h i g)) f (w i) = h i f) ∧
-      ∀ t, (∀ i ∈ l, w i ≠ t) →
-        l.foldl (fun g i => Function.update g (w i) (h i g)) f t = f t := by
-  induction l generalizing f with
-  | nil => exact ⟨fun _ hi => absurd hi List.not_mem_nil, fun _ _ => rfl⟩
-  | cons a l ih =>
-    obtain ⟨hal, hl'⟩ := List.pairwise_cons.1 hl
-    obtain ⟨ih1, ih2⟩ := ih hl' (Function.update f (w a) (h a f))
-    have hagree : ∀ t, t ≠ w a → Function.update f (w a) (h a f) t = f t :=
-      fun t ht => Function.update_of_ne ht _ _
-    refine ⟨fun i hi => ?_, fun t ht => ?_⟩
-    · rw [List.foldl_cons]
-      rcases List.mem_cons.1 hi with rfl | hi
-      · rw [ih2 (w i) fun j hj => (hal j hj).1.symm, Function.update_self]
-      · rw [ih1 i hi]
-        exact (hal i hi).2 _ _ hagree
-    · rw [List.foldl_cons, ih2 t fun j hj => ht j (List.mem_cons_of_mem _ hj)]
-      exact hagree t (ht a List.mem_cons_self).symm
-
-/-- A running difference in exact arithmetic. -/
-private theorem foldl_sub_eq {ι : Type*} (g : ι → ℝ) (l : List ι) (c : ℝ) :
-    l.foldl (fun t k => t - g k) c = c - (l.map g).sum := by
-  induction l generalizing c with
-  | nil => simp
-  | cons a l ih => rw [List.foldl_cons, ih, List.map_cons, List.sum_cons]; ring
-
 /-- The Aasen state: diagonal, subdiagonal and the lower factor, `ℕ`-indexed. -/
 private abbrev St := (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)
 
@@ -364,8 +333,8 @@ private theorem list_sum_range (g : ℕ → ℝ) (j : ℕ) :
 /-- A loop writing entry `k` from a value that does not depend on the state. -/
 private theorem foldl_update_const (F : ℕ → ℝ) (l : List ℕ) (hl : l.Nodup) (g : ℕ → ℝ) {k : ℕ}
     (hk : k ∈ l) : l.foldl (fun h k => Function.update h k (F k)) g k = F k :=
-  (foldl_update_eq (fun k : ℕ => k) (fun k _ => F k) l
-    (hl.imp fun hab => ⟨hab, fun _ _ _ => rfl⟩) g).1 k hk
+  List.foldl_update_apply_of_pairwise (fun k : ℕ => k) (fun k _ => F k)
+    (hl.imp fun hab => ⟨hab, fun _ _ _ => rfl⟩) g hk
 
 /-- The exact column `h(0:j)`. -/
 private theorem aasenH_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) :
@@ -378,7 +347,8 @@ private theorem aasenH_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin 
         s.2.1 k * s.2.2 j (k + 1))) 0 (List.range j) k' = hval s j k' := fun k' hk' =>
     foldl_update_const _ _ (List.nodup_range) _ (List.mem_range.2 hk')
   rcases eq_or_lt_of_le hk with rfl | hk
-  · rw [Function.update_self, hfull, Function.update_self, foldl_sub_eq, list_sum_range, hdiag]
+  · rw [Function.update_self, hfull, Function.update_self, List.foldl_sub_eq_sub_sum_map,
+      list_sum_range, hdiag]
     congr 1
     exact Finset.sum_congr rfl fun k' hk' => by rw [hF k' (Finset.mem_range.1 hk')]
   · rw [Function.update_of_ne (ne_of_lt hk), hfull, Function.update_of_ne (ne_of_lt hk), hF k hk]
@@ -400,13 +370,13 @@ private theorem aasenColumn_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j :
     have hH := aasenH_exact A s j h hh
     refine ⟨?_, fun i hi => ?_⟩
     · rw [αval, ite_eq_right hj0, hH j le_rfl, hfull, Function.update_self]
-    · have := (foldl_update_eq (fun i : Fin n => (i : ℕ)) (fun i _ =>
+    · have := List.foldl_update_apply_of_pairwise (fun i : Fin n => (i : ℕ)) (fun i _ =>
           List.foldl (fun t k => t - s.2.2 i k * h k) (A i j) (List.range (j + 1)))
-          ((List.finRange n).filter (j < ·))
+          (l := (List.finRange n).filter (j < ·))
           (((List.nodup_finRange n).filter _).imp fun hab =>
-            ⟨fun e => hab (Fin.ext e), fun _ _ _ => rfl⟩) 0).1 i (by simpa using hi)
+            ⟨fun e => hab (Fin.ext e), fun _ _ _ => rfl⟩) 0 (a := i) (by simpa using hi)
       dsimp only
-      rw [this, vval, ite_eq_right hj0, foldl_sub_eq, list_sum_range]
+      rw [this, vval, ite_eq_right hj0, List.foldl_sub_eq_sub_sum_map, list_sum_range]
       congr 1
       exact Finset.sum_congr rfl fun k hk => by
         rw [hH k (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk))]
@@ -433,27 +403,32 @@ private theorem aasenNoPivot_inv (A : Matrix (Fin n) (Fin n) ℝ) :
   obtain ⟨r, hr, rfl⟩ := hs'
   obtain ⟨hr1, hr2⟩ := aasenColumn_exact A s j r hr
   -- the new column of `L`
-  have hL := foldl_update_eq (fun i : Fin n => (i : ℕ))
+  have hL₁ := fun (i : Fin n) (hi : i ∈ (List.finRange n).filter
+      (fun i : Fin n => (j : ℕ) + 2 ≤ i)) => List.foldl_update_apply_of_pairwise
+    (fun i : Fin n => (i : ℕ))
     (fun i (L : ℕ → ℕ → ℝ) => Function.update (L i) (j + 1) (r.2 i / r.2 (j + 1)))
-    ((List.finRange n).filter (fun i : Fin n => (j : ℕ) + 2 ≤ i))
     (((List.nodup_finRange n).filter _).imp fun hab =>
       ⟨fun e => hab (Fin.ext e), fun g g' hg => by rw [hg _ (Ne.symm fun e => hab (Fin.ext e))]⟩)
-    s.2.2
+    s.2.2 hi
+  have hL₂ := fun (t : ℕ) (ht : ∀ i ∈ (List.finRange n).filter
+      (fun i : Fin n => (j : ℕ) + 2 ≤ i), (i : ℕ) ≠ t) => List.foldl_update_apply_of_forall_ne
+    (fun i : Fin n => (i : ℕ))
+    (fun i (L : ℕ → ℕ → ℝ) => Function.update (L i) (j + 1) (r.2 i / r.2 (j + 1))) ht s.2.2
   set L' := List.foldl (fun (L : ℕ → ℕ → ℝ) (i : Fin n) =>
     Function.update L i (Function.update (L i) (j + 1) (r.2 i / r.2 (j + 1)))) s.2.2
     ((List.finRange n).filter (fun i : Fin n => (j : ℕ) + 2 ≤ i)) with hL'
   have hLnew : ∀ (i : Fin n), (j : ℕ) + 2 ≤ i → L' i (j + 1) = r.2 i / r.2 (j + 1) := by
     intro i hi
-    rw [hL.1 i (by simpa using hi), Function.update_self]
+    rw [hL₁ i (by simpa using hi), Function.update_self]
   have hLold : ∀ (a c : ℕ), (c ≠ (j : ℕ) + 1 ∨ a < (j : ℕ) + 2) → L' a c = s.2.2 a c := by
     intro a c hc
     by_cases ha : ∃ i ∈ (List.finRange n).filter (fun i : Fin n => (j : ℕ) + 2 ≤ i),
         (i : ℕ) = a
     · obtain ⟨i, hi, rfl⟩ := ha
       have hi' : (j : ℕ) + 2 ≤ i := by simpa using hi
-      rw [hL.1 i hi, Function.update_of_ne (by omega)]
+      rw [hL₁ i hi, Function.update_of_ne (by omega)]
     · push Not at ha
-      rw [hL.2 a ha]
+      rw [hL₂ a ha]
   have hagree : Agree j s (Function.update s.1 j r.1,
       if (j : ℕ) + 1 < n then Function.update s.2.1 j (r.2 (j + 1)) else s.2.1, L') := by
     refine ⟨fun k hk => ⟨?_, ?_⟩, fun a c hc => hLold a c (by omega)⟩

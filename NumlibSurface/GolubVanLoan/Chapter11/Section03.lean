@@ -532,13 +532,6 @@ noncomputable def algorithm_11_3_1 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fi
   let g₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A x₀ (-b)
   (List.range fuel).foldlM (fun s _ => steepestDescentBody rnd A b τ s) ⟨0, x₀, g₀, false⟩
 
-/-- A `fuel + 1`-pass loop is one more pass after the `fuel`-pass loop, in the identity monad. -/
-private theorem run_foldlM_range_succ {σ : Type} (f : σ → ℕ → Id σ) (s : σ) (k : ℕ) :
-    Id.run ((List.range (k + 1)).foldlM f s) =
-      Id.run (f (Id.run ((List.range k).foldlM f s)) k) := by
-  rw [List.range_succ, List.foldlM_append]
-  simp
-
 /-- The steepest-descent step of the backbone, in coordinates. -/
 private theorem steepestDescentStep_toLp (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) :
     Projection.steepestDescentStep (toEuclideanLin A) (WithLp.toLp 2 b) (WithLp.toLp 2 x) =
@@ -585,7 +578,7 @@ private theorem algorithm_11_3_1_run_succ (A : Matrix (Fin n) (Fin n) ℝ) (b x�
     (τ : ℝ) (m : ℕ) : Id.run (algorithm_11_3_1 pure A b x₀ τ (m + 1)) =
       Id.run (steepestDescentBody pure A b τ (Id.run (algorithm_11_3_1 pure A b x₀ τ m))) := by
   simp only [algorithm_11_3_1, Id.run_bind]
-  exact run_foldlM_range_succ _ _ _
+  exact List.idRun_foldlM_range_succ _ _ _
 
 /-- The loop invariant of the exact run of Algorithm 11.3.1: after `fuel` passes the state holds
 the `k`-th steepest-descent iterate for some `k ≤ fuel` and its gradient; if the test failed then
@@ -1641,7 +1634,7 @@ private theorem algorithm_11_3_2_run_succ (A : Matrix (Fin n) (Fin n) ℝ) (b x�
       Id.run (lanczosCGBody pure A (Id.run (algorithm_11_3_2 pure A b x₀ m))) := by
   simp only [algorithm_11_3_2, Id.run_bind, Id.run_pure,
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec]
-  exact run_foldlM_range_succ _ _ _
+  exact List.idRun_foldlM_range_succ _ _ _
 
 /-- The data of Algorithm 11.3.2's state after step `i + 1`, in backbone terms: the Lanczos
 vector, residual and coefficients of `r₀`, the `LDLᵀ` pivot, and the CG dictionary
@@ -2292,7 +2285,7 @@ private theorem algorithm_11_3_3_run_succ (A : Matrix (Fin n) (Fin n) ℝ) (b x�
     (m : ℕ) : Id.run (algorithm_11_3_3 pure A b x₀ (m + 1)) =
       Id.run (hestenesStiefelBody pure A (Id.run (algorithm_11_3_3 pure A b x₀ m))) := by
   simp only [algorithm_11_3_3, Id.run_bind]
-  exact run_foldlM_range_succ _ _ _
+  exact List.idRun_foldlM_range_succ _ _ _
 
 /-- The state of Algorithm 11.3.3 corresponds to the `j`-th backbone CG state. -/
 @[reducible] private def HSInv (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (j : ℕ)
@@ -2482,7 +2475,7 @@ private theorem practicalCG_run_succ (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 
       Id.run (practicalCGBody pure A (tol * √(b ⬝ᵥ b))
         (Id.run (practicalCG pure A b x₀ tol m))) := by
   simp only [practicalCG, Id.run_bind, Id.run_pure, GolubVanLoan.Chapter01.algorithm_1_1_1_spec]
-  exact run_foldlM_range_succ _ _ _
+  exact List.idRun_foldlM_range_succ _ _ _
 
 /-- The loop invariant of the exact run of (11.3.26), with the threshold `δ`. -/
 @[reducible] private def PCGInv (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (δ : ℝ)
@@ -2752,7 +2745,7 @@ private theorem cgnr_run_succ {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fi
     (x₀ : Fin n → ℝ) (k : ℕ) :
     Id.run (cgnr pure A b x₀ (k + 1)) = cgnrStep A (Id.run (cgnr pure A b x₀ k)) := by
   simp only [cgnr, Id.run_bind]
-  rw [run_foldlM_range_succ]
+  rw [List.idRun_foldlM_range_succ]
   simp only [Id.run_bind, Id.run_pure, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec, GolubVanLoan.Chapter01.algorithm_1_1_2_spec,
     zero_add, cgnrStep]
@@ -2855,7 +2848,7 @@ private theorem cgne_run_succ {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fi
     (x₀ : Fin n → ℝ) (k : ℕ) :
     Id.run (cgne pure A b x₀ (k + 1)) = cgneStep A (Id.run (cgne pure A b x₀ k)) := by
   simp only [cgne, Id.run_bind]
-  rw [run_foldlM_range_succ]
+  rw [List.idRun_foldlM_range_succ]
   simp only [Id.run_bind, Id.run_pure, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec, GolubVanLoan.Chapter01.algorithm_1_1_2_spec,
     zero_add, cgneStep]

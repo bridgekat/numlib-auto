@@ -10,6 +10,8 @@ import Numlib.Stationary.DiagDominant
 import Numlib.Stationary.SPD
 import Numlib.Stationary.Sweep
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
+import NumlibSurface.GolubVanLoan.Chapter04.Section08
+import NumlibSurface.GolubVanLoan.Chapter07.Section03
 
 /-!
 # Golub–Van Loan §11.2: the classical iterations
@@ -31,16 +33,18 @@ book's `L_A, D_A, U_A` are `Matrix.strictLower A`, `Matrix.diagPart A`, `Matrix.
 The componentwise loops (11.2.2), (11.2.3) and the two SOR sweeps of §11.2.7 are programs in the
 conventions of `NumlibSurface/GolubVanLoan` (a monad `M`, a rounding hook `rnd : ℝ → M ℝ` after
 every `+`, `−`, `×`, `/`, loops as `List.foldlM`). Their exact semantics (`M := Id`,
-`rnd := pure`) is the
-backbone sweep: an in-place loop over a list whose step `i` rewrites entry `i` from the current
-vector computes, at entry `i`, its formula on the vector "new entries before `i`, old ones after"
-(`foldl_update_apply`, private); the componentwise recursion `Matrix.sorSweep_apply` determines its
-solution uniquely, by well-founded induction along the sweep order.
+`rnd := pure`) is the backbone sweep: an in-place loop over a list whose step `i` rewrites entry
+`i` from the current vector computes, at entry `i`, its formula on the vector "new entries before
+`i`, old ones after" (`List.foldl_update_apply_of_pairwise_rel`); the componentwise recursion
+`Matrix.sorSweep_apply` determines its solution uniquely, by well-founded induction along the sweep
+order.
 
 The model problem uses `Matrix.symmTridiagonalToeplitz` (`T_m = tridiag(−1, 2, −1)`,
 `E_m = tridiag(1, 0, 1)`), the Kronecker sum `Matrix.kroneckerSum` on `Fin n₁ × Fin n₂` (the
 lexicographic order of the pairs is the book's row-by-row order of the grid) and the sine transform
-matrix `Matrix.dst1` of the backbone, whose columns `Matrix.sineVec` are the eigenvectors.
+matrix `Matrix.dst1` of the backbone, whose columns `Matrix.sineVec` are the eigenvectors. The
+earlier chapters' restatements are used where they apply: the nonsingularity of `S_m` from §4.8.6
+(`Chapter04.dd_eigen`) and the Schur power bound (7.3.15) (`Chapter07.lemma_7_3_2`).
 
 Indices are 0-based: the book's `x_i`, `a_ij` (`i, j = 1:n`) are `x (i − 1)`, `A (i − 1) (j − 1)`;
 the book's `μ_k^{(m)}` (`k = 1:m`) is `modelEEigenvalues m (k − 1)`.
@@ -81,57 +85,8 @@ variable {n : ℕ}
 
 section Loops
 
-variable {ι α : Type*} [DecidableEq ι]
+variable {ι : Type*}
 
-/-- An in-place loop never touches an entry outside its index list. -/
-private theorem foldl_update_apply_of_notMem (f : ι → (ι → α) → α) :
-    ∀ (l : List ι) (x : ι → α) {j : ι}, j ∉ l →
-      l.foldl (fun y i => Function.update y i (f i y)) x j = x j
-  | [], _, _, _ => rfl
-  | a :: l, x, j, hj => by
-    rw [List.mem_cons, not_or] at hj
-    rw [List.foldl_cons, foldl_update_apply_of_notMem f l _ hj.2, Function.update_of_ne hj.1]
-
-/-- **An in-place loop along an ordered list.** If the step at `i` rewrites entry `i` by
-`f i y` from the current vector `y`, and the list is ordered by an asymmetric relation `r`, then the
-final vector `z` satisfies `z i = f i w` where `w` agrees with `z` on the entries processed before
-`i` and with the initial vector on the others. -/
-private theorem foldl_update_apply (r : ι → ι → Prop) [DecidableRel r]
-    (hr : ∀ i j, r i j → ¬ r j i) (f : ι → (ι → α) → α) :
-    ∀ (l : List ι), l.Pairwise r → ∀ (x : ι → α) {i : ι}, i ∈ l →
-      l.foldl (fun y i => Function.update y i (f i y)) x i =
-        f i (fun j => if j ∈ l ∧ r j i then
-          l.foldl (fun y i => Function.update y i (f i y)) x j else x j)
-  | [], _, _, _, hi => by simp at hi
-  | a :: l, hl, x, i, hi => by
-    rw [List.pairwise_cons] at hl
-    have ha : a ∉ l := fun h => hr a a (hl.1 a h) (hl.1 a h)
-    simp only [List.foldl_cons]
-    rcases List.mem_cons.1 hi with hia | hil
-    · subst hia
-      rw [foldl_update_apply_of_notMem f l _ ha, Function.update_self]
-      congr 1
-      funext j
-      have hn : ¬ (j ∈ i :: l ∧ r j i) := by
-        rintro ⟨hj, hji⟩
-        rcases List.mem_cons.1 hj with rfl | hjl
-        · exact hr _ _ hji hji
-        · exact hr _ _ (hl.1 j hjl) hji
-      rw [ite_eq_right hn]
-    · rw [foldl_update_apply r hr f l hl.2 _ hil]
-      congr 1
-      funext j
-      by_cases hja : j = a
-      · subst hja
-        have h1 : j ∈ j :: l ∧ r j i := ⟨List.mem_cons_self, hl.1 i hil⟩
-        have h2 : ¬ (j ∈ l ∧ r j i) := fun h => ha h.1
-        rw [ite_eq_left h1, ite_eq_right h2, foldl_update_apply_of_notMem f l _ ha]
-      · have hm : (j ∈ a :: l ∧ r j i) ↔ (j ∈ l ∧ r j i) := by
-          rw [List.mem_cons, or_iff_right hja]
-        rw [Function.update_of_ne hja]
-        exact if_congr hm.symm rfl rfl
-
-omit [DecidableEq ι] in
 /-- **Uniqueness of a triangular recursion.** Two vectors satisfying the same recursion
 `z i = g i z`, where `g i` reads only the entries `r`-before `i`, agree when `r` is well founded. -/
 private theorem eq_of_forall_eq_apply (r : ι → ι → Prop) (wf : WellFounded r) {z S : ι → ℝ}
@@ -141,21 +96,6 @@ private theorem eq_of_forall_eq_apply (r : ι → ι → Prop) (wf : WellFounded
     rw [hz, hS]; exact hg i z S ih
 
 end Loops
-
-/-- A running difference `s − g j₁ − g j₂ − ⋯` along a list. -/
-private theorem foldl_sub_eq {ι : Type*} (g : ι → ℝ) (l : List ι) (s : ℝ) :
-    l.foldl (fun s j => s - g j) s = s - (l.map g).sum := by
-  induction l generalizing s with
-  | nil => simp
-  | cons a l ih => rw [List.foldl_cons, ih, List.map_cons, List.sum_cons]; ring
-
-/-- A sum along a filtered `List.finRange` is the `Finset` sum over the filter. -/
-private theorem sum_map_filter_finRange (p : Fin n → Prop) [DecidablePred p] (g : Fin n → ℝ) :
-    (((List.finRange n).filter p).map g).sum = ∑ j ∈ univ.filter p, g j := by
-  rw [← List.sum_toFinset g ((List.nodup_finRange n).filter _)]
-  congr 1
-  ext j
-  simp
 
 /-- The off-diagonal sum splits into the parts before and after the diagonal. -/
 private theorem sum_ne_eq_sum_lt_add_sum_gt (g : Fin n → ℝ) (i : Fin n) :
@@ -254,9 +194,11 @@ end Programs
 private theorem offDiagResidual_id (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) (i : Fin n) :
     Id.run (offDiagResidual pure A b x i) = b i - ∑ j ∈ univ.filter (· ≠ i), A i j * x j := by
   rw [offDiagResidual, List.idRun_foldlM]
-  exact (foldl_sub_eq (fun j => A i j * x j) _ _).trans (by rw [sum_map_filter_finRange])
+  exact (List.foldl_sub_eq_sub_sum_map (fun j => A i j * x j) _ _).trans
+    (by rw [List.sum_map_filter_finRange])
 
-/-- The weight function of `foldl_update_apply` along `List.finRange n`, summed off the diagonal. -/
+/-- The weight function of `List.foldl_update_apply_of_pairwise_rel` along `List.finRange n`,
+summed off the diagonal. -/
 private theorem sum_ne_forward (A : Matrix (Fin n) (Fin n) ℝ) (z x : Fin n → ℝ) (i : Fin n) :
     ∑ j ∈ univ.filter (· ≠ i), A i j * (if j ∈ List.finRange n ∧ j < i then z j else x j) =
       ∑ j ∈ univ.filter (· < i), A i j * z j + ∑ j ∈ univ.filter (i < ·), A i j * x j := by
@@ -267,7 +209,8 @@ private theorem sum_ne_forward (A : Matrix (Fin n) (Fin n) ℝ) (z x : Fin n →
   · refine Finset.sum_congr rfl fun j hj => ?_
     rw [ite_eq_right fun h => lt_asymm h.2 (Finset.mem_filter.1 hj).2]
 
-/-- The weight function of `foldl_update_apply` along the reversed `List.finRange n`. -/
+/-- The weight function of `List.foldl_update_apply_of_pairwise_rel` along the reversed
+`List.finRange n`. -/
 private theorem sum_ne_backward (A : Matrix (Fin n) (Fin n) ℝ) (z x : Fin n → ℝ) (i : Fin n) :
     ∑ j ∈ univ.filter (· ≠ i),
         A i j * (if j ∈ (List.finRange n).reverse ∧ i < j then z j else x j) =
@@ -302,8 +245,8 @@ private theorem sorSweep_id (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (Matrix
     (fun i => Matrix.sorSweep_apply A h ω b x i)
   · intro i u v huv
     rw [Finset.sum_congr rfl fun j hj => by rw [huv j (Finset.mem_filter.1 hj).2]]
-  · rw [foldl_update_apply (· < ·) (fun _ _ h h' => lt_asymm h h') _ _ (List.pairwise_lt_finRange n)
-      x (List.mem_finRange i), offDiagResidual_id, sum_ne_forward]
+  · rw [List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h') _
+      (List.pairwise_lt_finRange n) x (List.mem_finRange i), offDiagResidual_id, sum_ne_forward]
     simp only [lt_self_iff_false, and_false, ↓reduceIte]
     ring
 
@@ -320,7 +263,8 @@ private theorem backwardSorSweep_id (A : Matrix (Fin n) (Fin n) ℝ)
     rw [Finset.sum_congr rfl fun j hj => by rw [huv j (Finset.mem_filter.1 hj).2]]
   · have hpw : ((List.finRange n).reverse).Pairwise (fun a b => b < a) :=
       List.pairwise_reverse.2 (List.pairwise_lt_finRange n)
-    rw [foldl_update_apply (fun a b => b < a) (fun _ _ h h' => lt_asymm h h') _ _ hpw x
+    rw [List.foldl_update_apply_of_pairwise_rel (fun a b => b < a) (fun _ _ h h' => lt_asymm h h')
+      _ hpw x
       (List.mem_reverse.2 (List.mem_finRange i)), offDiagResidual_id, sum_ne_backward]
     simp only [lt_self_iff_false, and_false, ↓reduceIte]
     ring
@@ -339,8 +283,8 @@ theorem equation_11_2_4 (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (Matrix.dia
     List.idRun_foldlM
   rw [← Matrix.jorSweep_one_eq_mulVecStep A h b, hrun]
   funext i
-  rw [foldl_update_apply (· < ·) (fun _ _ h h' => lt_asymm h h')
-    (fun i _ => Id.run (offDiagResidual pure A b x i) / A i i) _ (List.pairwise_lt_finRange n) x
+  rw [List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h')
+    (fun i _ => Id.run (offDiagResidual pure A b x i) / A i i) (List.pairwise_lt_finRange n) x
     (List.mem_finRange i), offDiagResidual_id, Matrix.jorSweep, Finset.filter_ne']
   ring
 
@@ -363,8 +307,8 @@ theorem equation_11_2_5 (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (Matrix.dia
     (fun i => Matrix.sorSweep_apply A h 1 b x i)
   · intro i u v huv
     rw [Finset.sum_congr rfl fun j hj => by rw [huv j (Finset.mem_filter.1 hj).2]]
-  · rw [foldl_update_apply (· < ·) (fun _ _ h h' => lt_asymm h h')
-      (fun i y => Id.run (offDiagResidual pure A b y i) / A i i) _ (List.pairwise_lt_finRange n) x
+  · rw [List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h')
+      (fun i y => Id.run (offDiagResidual pure A b y i) / A i i) (List.pairwise_lt_finRange n) x
       (List.mem_finRange i), offDiagResidual_id, sum_ne_forward]
     ring
 
@@ -537,7 +481,7 @@ theorem equation_11_2_9 {G Q T : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ Matrix.
   have he : 0 ≤ e := norm_nonneg _
   have h1ρ : 0 < 1 - ρ := by linarith
   have hμ : 0 ≤ 2 * e / (1 - ρ) := by positivity
-  refine (Matrix.l2_opNorm_pow_le_of_schur hQ hT hTu hμ k).trans ?_
+  refine ((GolubVanLoan.Chapter07.lemma_7_3_2 hQ hT hTu hμ).1 k).trans ?_
   have h1μ : 0 < 1 + 2 * e / (1 - ρ) := by positivity
   have hle : e / (1 + 2 * e / (1 - ρ)) ≤ (1 - ρ) / 2 := by
     rw [div_le_iff₀ h1μ]
@@ -835,54 +779,6 @@ private theorem foldl_foldl_eq_foldl_gridList {σ : Type*} (F : Fin n₁ × Fin 
   rw [gridList, List.foldl_flatMap]
   simp only [List.foldl_map]
 
-section Embedded
-
-variable {ι κ α : Type*} [DecidableEq κ]
-
-/-- An in-place loop writing through an embedding never touches a point it does not write. -/
-private theorem foldl_updateEmb_of_forall_ne (e : ι → κ) (f : ι → (κ → α) → α) :
-    ∀ (l : List ι) (x : κ → α) (k : κ), (∀ j ∈ l, e j ≠ k) →
-      l.foldl (fun y j => Function.update y (e j) (f j y)) x k = x k
-  | [], _, _, _ => rfl
-  | a :: l, x, k, hk => by
-    rw [List.foldl_cons, foldl_updateEmb_of_forall_ne e f l _ k fun j hj => hk j
-      (List.mem_cons_of_mem a hj), Function.update_of_ne (hk a List.mem_cons_self).symm]
-
-/-- **An in-place loop through an embedding, along an ordered list.** The value written at `e i` is
-`f i w` for a state `w` that agrees with the final state at the points written before `i` and with
-the initial state at every point not written before `i`. -/
-private theorem foldl_updateEmb_apply (e : ι → κ) (he : Function.Injective e)
-    (r : ι → ι → Prop) (hr : ∀ i j, r i j → ¬ r j i) (f : ι → (κ → α) → α) :
-    ∀ (l : List ι), l.Pairwise r → ∀ (x : κ → α) {i : ι}, i ∈ l → ∃ w : κ → α,
-      (∀ j ∈ l, r j i →
-        w (e j) = l.foldl (fun y j => Function.update y (e j) (f j y)) x (e j)) ∧
-      (∀ k, (∀ j ∈ l, r j i → e j ≠ k) → w k = x k) ∧
-      l.foldl (fun y j => Function.update y (e j) (f j y)) x (e i) = f i w
-  | [], _, _, _, hi => by simp at hi
-  | a :: l, hl, x, i, hi => by
-    rw [List.pairwise_cons] at hl
-    have ha : a ∉ l := fun h => hr a a (hl.1 a h) (hl.1 a h)
-    have hne : ∀ j ∈ l, e j ≠ e a := fun j hj h => ha (he h ▸ hj)
-    simp only [List.foldl_cons]
-    rcases List.mem_cons.1 hi with rfl | hil
-    · refine ⟨x, fun j hj hji => ?_, fun _ _ => rfl, ?_⟩
-      · rcases List.mem_cons.1 hj with rfl | hjl
-        · exact absurd hji (fun h => hr _ _ h h)
-        · exact absurd (hl.1 j hjl) (hr _ _ hji)
-      · rw [foldl_updateEmb_of_forall_ne e f l _ _ hne, Function.update_self]
-    · obtain ⟨w, hw₁, hw₂, hw₃⟩ :=
-        foldl_updateEmb_apply e he r hr f l hl.2 (Function.update x (e a) (f a x)) hil
-      have hwa : w (e a) = f a x := by
-        rw [hw₂ (e a) fun j hj _ => hne j hj, Function.update_self]
-      refine ⟨w, fun j hj hji => ?_, fun k hk => ?_, hw₃⟩
-      · rcases List.mem_cons.1 hj with rfl | hjl
-        · rw [hwa, foldl_updateEmb_of_forall_ne e f l _ _ hne, Function.update_self]
-        · exact hw₁ j hjl hji
-      · rw [hw₂ k fun j hj hji => hk j (List.mem_cons_of_mem a hj) hji,
-          Function.update_of_ne (hk a List.mem_cons_self (hl.1 i hil)).symm]
-
-end Embedded
-
 /-- Grid points are interior. -/
 private theorem isGridInterior_gridPoint (p : Fin n₁ × Fin n₂) :
     IsGridInterior (gridPoint p) := by
@@ -956,8 +852,8 @@ private theorem foldl_grid_boundary
     (U : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) {q : Fin (n₁ + 2) × Fin (n₂ + 2)}
     (hq : ¬ IsGridInterior q) :
     (gridList n₁ n₂).foldl (fun W p => Function.update W (gridPoint p) (F p W)) U q = U q :=
-  foldl_updateEmb_of_forall_ne gridPoint F _ U q fun p _ h =>
-    hq (h ▸ isGridInterior_gridPoint p)
+  List.foldl_update_apply_of_forall_ne gridPoint F (k := q) (fun p _ h =>
+    hq (h ▸ isGridInterior_gridPoint p)) U
 
 /-- Row `p` of the off-diagonal part of the model matrix: minus the neighbour sum. -/
 private theorem sum_erase_poissonMatrix (u : Fin n₁ × Fin n₂ → ℝ) (p : Fin n₁ × Fin n₂) :
@@ -982,9 +878,10 @@ theorem poissonJacobiArray_eq (U : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) :
   refine ⟨?_, fun q hq => foldl_grid_boundary _ U hq⟩
   rw [← Matrix.jorSweep_one_eq_mulVecStep]
   funext p
-  obtain ⟨w, -, -, hw⟩ := foldl_updateEmb_apply gridPoint gridPoint_injective
+  obtain ⟨w, -, -, hw⟩ := List.exists_foldl_update_apply_of_pairwise_rel gridPoint
     (fun p q => toLex p < toLex q) (fun _ _ h h' => lt_asymm h h')
-    (fun p _ => gridNeighbourSum U p / 4) _ pairwise_gridList U (mem_gridList p)
+    (fun p _ => gridNeighbourSum U p / 4) gridPoint_injective.injOn pairwise_gridList U
+    (mem_gridList p)
   rw [gridInterior, hw, Matrix.jorSweep, sum_erase_poissonMatrix, poissonMatrix_apply_self,
     gridNeighbourSum_eq]
   ring
@@ -1047,9 +944,10 @@ theorem poissonGaussSeidelArray_eq (U : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ
     (fun q => Matrix.sorSweep_apply A' (isUnit_diagPart_poissonMatrixLex n₁ n₂) 1 b' x' q)
   · intro q u v huv
     rw [Finset.sum_congr rfl fun j hj => by rw [huv j (Finset.mem_filter.1 hj).2]]
-  · obtain ⟨w, hw₁, hw₂, hw₃⟩ := foldl_updateEmb_apply gridPoint gridPoint_injective
+  · obtain ⟨w, hw₁, hw₂, hw₃⟩ := List.exists_foldl_update_apply_of_pairwise_rel gridPoint
       (fun p q => toLex p < toLex q) (fun _ _ h h' => lt_asymm h h')
-      (fun p W => gridNeighbourSum W p / 4) _ pairwise_gridList U (mem_gridList (ofLex q))
+      (fun p W => gridNeighbourSum W p / 4) gridPoint_injective.injOn pairwise_gridList U
+      (mem_gridList (ofLex q))
     set u'' : Fin n₁ × Fin n₂ → ℝ := fun r =>
       if toLex r < q then Z (gridPoint r) else U (gridPoint r) with hu''
     have hint : gridInterior w = u'' := by
@@ -1093,12 +991,9 @@ the eigenvalues of `E_m`. -/
 noncomputable def modelEEigenvalues (m : ℕ) : Fin m → ℝ :=
   fun k => 2 * Real.cos ((((k : ℕ) : ℝ) + 1) * Real.pi / ((m : ℝ) + 1))
 
-/-- The sine transform matrix `S_m` is nonsingular: `S_m² = ((m + 1)/2) I`. -/
-private theorem isUnit_dst1 (m : ℕ) : IsUnit (Matrix.dst1 m) := by
-  have hc : ((m : ℝ) + 1) / 2 ≠ 0 := by positivity
-  refine (Matrix.isUnit_iff_isUnit_det _).2 (Matrix.isUnit_det_of_right_inverse
-    (B := (((m : ℝ) + 1) / 2)⁻¹ • Matrix.dst1 m) ?_)
-  rw [Matrix.mul_smul, Matrix.dst1_mul_self, smul_smul, inv_mul_cancel₀ hc, one_smul]
+/-- The sine transform matrix `S_m` is nonsingular (§4.8.6, `Chapter04.dd_eigen`). -/
+private theorem isUnit_dst1 (m : ℕ) : IsUnit (Matrix.dst1 m) :=
+  (GolubVanLoan.Chapter04.dd_eigen m).2.1
 
 /-- `E_m S_m = S_m D_m`, column by column the eigenpairs of `E_m`. -/
 private theorem modelE_mul_dst1 (m : ℕ) :
@@ -2058,8 +1953,8 @@ private theorem vecSub_id (u v : Fin n → ℝ) : Id.run (vecSub pure u v) = u -
       (List.finRange n).foldl (fun w i => Function.update w i (u i - v i)) u := List.idRun_foldlM
   rw [hrun]
   funext i
-  exact foldl_update_apply (· < ·) (fun _ _ h h' => lt_asymm h h') (fun i _ => u i - v i) _
-    (List.pairwise_lt_finRange n) u (List.mem_finRange i)
+  exact List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h')
+    (fun i _ => u i - v i) (List.pairwise_lt_finRange n) u (List.mem_finRange i)
 
 /-- The exact update of §11.2.8. -/
 private theorem chebyshevCombine_id (yp y z : Fin n → ℝ) (ω : ℝ) :
@@ -2068,8 +1963,8 @@ private theorem chebyshevCombine_id (yp y z : Fin n → ℝ) (ω : ℝ) :
       (fun w i => Function.update w i (yp i + ω * (y i + z i - yp i))) y := List.idRun_foldlM
   rw [hrun]
   funext i
-  exact foldl_update_apply (· < ·) (fun _ _ h h' => lt_asymm h h')
-    (fun i _ => yp i + ω * (y i + z i - yp i)) _ (List.pairwise_lt_finRange n) y
+  exact List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h')
+    (fun i _ => yp i + ω * (y i + z i - yp i)) (List.pairwise_lt_finRange n) y
     (List.mem_finRange i)
 
 /-- The exact step of the Chebyshev loop. -/

@@ -1,6 +1,7 @@
 import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.HermitianPart
+import Numlib.LinearAlgebra.Matrix.Kronecker
 import NumlibSurface.GolubVanLoan.Chapter03.Section04
 import NumlibSurface.GolubVanLoan.Chapter04.Section01
 
@@ -937,17 +938,6 @@ def blockOf {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (i j : Fin 
     Matrix (Fin r) (Fin r) ℝ :=
   of fun p q => A (finProdFinEquiv (i, p)) (finProdFinEquiv (j, q))
 
-/-- The blocking of (4.2.19) is monotone: block row `i` comes before block row `k` when `i < k`. -/
-private theorem finProdFinEquiv_lt {N r : ℕ} {i k : Fin N} (hik : i < k) (p s : Fin r) :
-    finProdFinEquiv (i, p) < finProdFinEquiv (k, s) := by
-  rw [Fin.lt_def, finProdFinEquiv_apply_val, finProdFinEquiv_apply_val]
-  dsimp only
-  have hik' : (i : ℕ) + 1 ≤ k := hik
-  have h2 : r * ((i : ℕ) + 1) ≤ r * k := Nat.mul_le_mul_left r hik'
-  rw [Nat.mul_succ] at h2
-  have := p.isLt
-  omega
-
 /-- **(4.2.19)** and the block equations below it: for `n = N r`, a symmetric positive definite `A`
 and its Cholesky factor `G`, both blocked into `r × r` blocks, `G` is block lower triangular,
 `A_ij = ∑_{k ≤ j} G_ik G_jkᵀ` for `i ≥ j`, and with `S = A_ij − ∑_{k<j} G_ik G_jkᵀ`: `G_jj` is
@@ -965,7 +955,7 @@ theorem equation_4_2_19 {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
   have hGl : ∀ a b : Fin N, a < b → blockOf G a b = 0 := fun a b hab => by
     ext p q
     exact isLowerTriangular_cholesky A
-      (OrderDual.toDual_lt_toDual.2 (finProdFinEquiv_lt hab p q))
+      (OrderDual.toDual_lt_toDual.2 (finProdFinEquiv_lt_finProdFinEquiv_iff.2 (Or.inl hab)))
   -- block multiplication
   have hmul : ∀ a b : Fin N, b ≤ a →
       blockOf A a b = ∑ k ∈ univ.filter (· ≤ b), blockOf G a k * (blockOf G b k)ᵀ := by
@@ -1266,18 +1256,6 @@ noncomputable def algorithm_4_2_4 (N r : ℕ) (A : Matrix (Fin (N * r)) (Fin (N 
 
 end Programs
 
-/-- A fold satisfies a property of the processed prefix, if every step does. -/
-private theorem foldl_prefix_induction {α β : Type*} (f : β → α → β) (l : List α)
-    (P : List α → β → Prop) {b : β} (h0 : P [] b)
-    (hs : ∀ p a q s, l = p ++ a :: q → P p s → P (p ++ [a]) (f s a)) : P l (l.foldl f b) := by
-  suffices h : ∀ q p s, l = p ++ q → P p s → P l (q.foldl f s) from h l [] b rfl h0
-  intro q
-  induction q with
-  | nil => intro p s hl hp; simpa [hl] using hp
-  | cons a q ih =>
-    intro p s hl hp
-    exact ih (p ++ [a]) (f s a) (by simp [hl]) (hs p a q s hl hp)
-
 /-- The matrix whose blocks `(i, k)` with `P i k` are those of `G`, the others those of `A`. -/
 private def blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
     (P : Fin N → Fin N → Bool) : Matrix (Fin (N * r)) (Fin (N * r)) ℝ :=
@@ -1352,7 +1330,7 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
         blockMix A (cholesky A) fun i k => decide (k ∈ p ++ [j] ∧ k ≤ i) := by
     intro p j q hpq
     have hp : ∀ k, k ∈ p ↔ k < j := fun k => by
-      refine ⟨fun hk => ?_, fun hk => Chapter03.mem_prefix_of_pairwise hsorted hpq
+      refine ⟨fun hk => ?_, fun hk => List.mem_prefix_of_pairwise hsorted hpq
         (List.mem_finRange k) (ne_of_lt hk) (lt_asymm hk)⟩
       have hs := hsorted
       rw [hpq] at hs
@@ -1377,8 +1355,8 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
         · exact Or.inl ⟨hk, hki⟩
         · exact Or.inr ⟨rfl, hki⟩
     rw [e0, ← e1]
-    refine foldl_prefix_induction _ L (fun p' s => s = blockMix A (cholesky A)
-      fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p'))) rfl fun p' i q' s hL hs => ?_
+    refine List.foldl_prefix_induction (l := L) _ (fun p' s => s = blockMix A (cholesky A)
+      fun i k => decide ((k ∈ p ∧ k ≤ i) ∨ (k = j ∧ i ∈ p'))) rfl fun p' i q' hL s hs => ?_
     subst hs
     have hiL : j ≤ i := (hLmem i).1 (by rw [hL]; simp)
     have hip' : i ∉ p' := by
@@ -1438,7 +1416,7 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
     · subst hij'
       rw [ite_eq_left rfl, (h19 i i).2.2.1]
     · have hji : j < i := lt_of_le_of_ne hiL (Ne.symm hij')
-      have hjp' : j ∈ p' := Chapter03.mem_prefix_of_pairwise hLsorted hL ((hLmem j).2 le_rfl)
+      have hjp' : j ∈ p' := List.mem_prefix_of_pairwise hLsorted hL ((hLmem j).2 le_rfl)
         (Ne.symm hij') (lt_asymm hji)
       rw [ite_eq_right hij', blockOf_blockMix, ite_eq_left (by simp [hjp'])]
       have hlow : (blockOf (cholesky A) j j).IsLowerTriangular := by
@@ -1458,9 +1436,9 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
   have hfin : (List.finRange N).foldl (fun s j => ((List.finRange N).filter (j ≤ ·)).foldl
       (fun s i => Id.run (blockCholeskyStep (M := Id) pure j i s)) s) A =
       blockMix A (cholesky A) fun i k => decide (k ∈ List.finRange N ∧ k ≤ i) :=
-    foldl_prefix_induction _ (List.finRange N)
+    List.foldl_prefix_induction (l := List.finRange N) _
       (fun p s => s = blockMix A (cholesky A) fun i k => decide (k ∈ p ∧ k ≤ i))
-      (by ext a b; simp [blockMix]) fun p j q s hpq hs => by
+      (by ext a b; simp [blockMix]) fun p j q hpq s hs => by
         subst hs
         exact hcol p j q hpq
   rw [algorithm_4_2_4, List.idRun_foldlM]
@@ -1474,7 +1452,7 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
   · simp only [strictUpper, of_apply, ite_eq_left hlt, sub_self]
     exact (isLowerTriangular_cholesky A (OrderDual.toDual_lt_toDual.2 hlt)).symm
   · simp only [strictUpper, of_apply, ite_eq_right hlt, sub_zero]
-    have hki : k ≤ i := not_lt.1 fun h => hlt (finProdFinEquiv_lt h p q)
+    have hki : k ≤ i := not_lt.1 fun h => hlt (finProdFinEquiv_lt_finProdFinEquiv_iff.2 (Or.inl h))
     rw [blockMix_apply, ite_eq_left (by simp [hki])]
 
 /-! ### Algorithm 4.2.2: the exact specification ((4.2.16), (4.2.17)) -/
@@ -1799,7 +1777,7 @@ private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Pos
           (l.foldl (fun st i => Id.run (ldltPivotStep (M := Id) pure st i))
             (A, fun i => i)).1 i i := by
   obtain ⟨rest₀, hrest₀⟩ := hl
-  refine foldl_prefix_induction _ l
+  refine List.foldl_prefix_induction (l := l) _
     (fun pre (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) =>
     A.submatrix (Chapter03.pivPermUpTo st.2 pre.length) (Chapter03.pivPermUpTo st.2 pre.length) =
       pivotedLower pre.length st.1 * pivotedMiddle pre.length st.1 *
@@ -1818,7 +1796,7 @@ private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Pos
         ext i j
         simp [pivotedMiddle]
       simpa [hM] using hA
-  · intro pre a rest st hpre ⟨hfac, hpsd, hdom⟩
+  · intro pre a rest hpre st ⟨hfac, hpsd, hdom⟩
     -- the step index is the length of the prefix
     have ha : (a : ℕ) = pre.length := by
       have hlt : pre.length < (List.finRange n).length := by
