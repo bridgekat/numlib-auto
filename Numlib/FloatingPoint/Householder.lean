@@ -80,7 +80,10 @@ its instance.
 **Householder reductions with any reflector-vector formula.** The reflector data of a step enter
 only through `FloatingPoint.IsReflectorPert` (the computed `(v̂, β̂)` are order-`K` relative
 perturbations of exact reflector data mapping the column to `c e_i`), which Higham's
-`RoundsHouseholderVector` and Golub–Van Loan's `RoundsHouseholderVectorParlett` both provide. The
+`RoundsHouseholderVector` and Golub–Van Loan's `RoundsHouseholderVectorParlett` both provide
+(`IsReflectorPert.mono` raises the order). Both application relations are invariant under
+reindexing (`roundsHouseholderApply_comp_equiv_iff`, `roundsHouseholderApplyScaled_comp_equiv_iff`),
+so a step on a block of coordinates may be stated over any index type of the block. The
 Hessenberg step in the book's association (`RoundsHessenbergStepPert`, [golub2013matrix]
 Algorithm 7.4.2) and the symmetric tridiagonalization step (`RoundsTridiagonalizeStepPert`,
 [golub2013matrix] Algorithm 8.3.1: the trailing block by the symmetric rank-two update
@@ -170,31 +173,14 @@ theorem norm_toLp_le_of_abs_le_add {z b v : ι → ℝ} {a c : ℝ} (ha : 0 ≤ 
           Real.norm_of_nonneg hc, norm_toLp_abs, norm_toLp_abs]
 
 open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the columns. -/
-theorem frobenius_norm_sq_eq_sum_col (A : Matrix ι κ ℝ) :
-    ‖A‖ ^ 2 = ∑ j, ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ ^ 2 := by
-  rw [frobenius_norm_sq_eq_sum_sq, Finset.sum_comm]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [EuclideanSpace.norm_sq_eq]
-  rfl
-
-open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the rows. -/
-theorem frobenius_norm_sq_eq_sum_row (A : Matrix ι κ ℝ) :
-    ‖A‖ ^ 2 = ∑ i, ‖(toLp 2 (A.row i) : EuclideanSpace ℝ κ)‖ ^ 2 := by
-  rw [frobenius_norm_sq_eq_sum_sq]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [EuclideanSpace.norm_sq_eq]
-  rfl
-
-open scoped Matrix.Norms.Frobenius in
 /-- Columnwise bounds give a Frobenius bound: if `‖a_j‖₂ ≤ c ‖b_j‖₂` for every column `j`, then
 `‖A‖_F ≤ c ‖B‖_F` ([higham2002accuracy] Lemma 6.6 (a)). -/
 theorem frobenius_norm_le_of_forall_col_le {A B : Matrix ι κ ℝ} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ j, ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ ≤
       c * ‖(toLp 2 (B.col j) : EuclideanSpace ℝ ι)‖) : ‖A‖ ≤ c * ‖B‖ := by
   refine le_of_sq_le_sq ?_ (by positivity)
-  rw [mul_pow, frobenius_norm_sq_eq_sum_col, frobenius_norm_sq_eq_sum_col, Finset.mul_sum]
+  rw [mul_pow, frobenius_norm_sq_eq_sum_norm_sq_col, frobenius_norm_sq_eq_sum_norm_sq_col,
+    Finset.mul_sum]
   refine Finset.sum_le_sum fun j _ => ?_
   rw [← mul_pow]
   exact pow_le_pow_left₀ (norm_nonneg _) (h j) 2
@@ -205,7 +191,8 @@ theorem frobenius_norm_le_of_forall_row_le {A B : Matrix ι κ ℝ} {c : ℝ} (h
     (h : ∀ i, ‖(toLp 2 (A.row i) : EuclideanSpace ℝ κ)‖ ≤
       c * ‖(toLp 2 (B.row i) : EuclideanSpace ℝ κ)‖) : ‖A‖ ≤ c * ‖B‖ := by
   refine le_of_sq_le_sq ?_ (by positivity)
-  rw [mul_pow, frobenius_norm_sq_eq_sum_row, frobenius_norm_sq_eq_sum_row, Finset.mul_sum]
+  rw [mul_pow, frobenius_norm_sq_eq_sum_norm_toLp_row_sq, frobenius_norm_sq_eq_sum_norm_toLp_row_sq,
+    Finset.mul_sum]
   refine Finset.sum_le_sum fun i _ => ?_
   rw [← mul_pow]
   exact pow_le_pow_left₀ (norm_nonneg _) (h i) 2
@@ -421,6 +408,14 @@ def IsReflectorPert (u : ℝ) (K : ℕ) (x : ι → ℝ) (i : ι) (c : ℝ) (vha
   ∃ (v : ι → ℝ) (β : ℝ), (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup ι ℝ ∧
     (1 - β • vecMulVec v v) *ᵥ x = c • Pi.single i 1 ∧ |β| * (v ⬝ᵥ v) ≤ 2 ∧
     IsRelPert u K β βhat ∧ ∀ j, IsRelPert u K (v j) (vhat j)
+
+/-- Reflector data of order `K` are reflector data of every larger order `K'` with `K' u < 1`
+(`IsRelPert.mono` on each perturbation). -/
+theorem IsReflectorPert.mono {u : ℝ} (hu : 0 ≤ u) {K K' : ℕ} (hK : K ≤ K')
+    (hK' : (K' : ℝ) * u < 1) {x : ι → ℝ} {i : ι} {c : ℝ} {vhat : ι → ℝ} {βhat : ℝ}
+    (h : IsReflectorPert u K x i c vhat βhat) : IsReflectorPert u K' x i c vhat βhat := by
+  obtain ⟨v, β, hO, hmul, hβv, hβ, hv⟩ := h
+  exact ⟨v, β, hO, hmul, hβv, hβ.mono hu hK hK', fun j => (hv j).mono hu hK hK'⟩
 
 omit [DecidableEq ι] in
 /-- `|2 / (v ⬝ᵥ v)| (v ⬝ᵥ v) ≤ 2`: the normalization of a reflector, `0` included. -/
@@ -742,6 +737,27 @@ def RoundsHouseholderApply (m : RoundingModel ℝ) (β : ℝ) (v b y : ι → �
   ∃ (s t : ℝ) (w : ι → ℝ), RoundsDot m v b s ∧ m.Rounds (β * s) t ∧
     (∀ i, m.Rounds (v i * t) (w i)) ∧ ∀ i, m.Rounds (b i - w i) (y i)
 
+omit [Fintype ι] [DecidableEq ι] in
+/-- One direction of `roundsHouseholderApply_comp_equiv_iff`. -/
+private theorem roundsHouseholderApply_of_comp_equiv {κ : Type*} {m : RoundingModel ℝ}
+    (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ}
+    (h : RoundsHouseholderApply m β (v ∘ e) (b ∘ e) (y ∘ e)) :
+    RoundsHouseholderApply m β v b y := by
+  obtain ⟨s, t, w, hdot, ht, hw, hy⟩ := h
+  refine ⟨s, t, w ∘ e.symm, (roundsDot_comp_equiv_iff e).1 hdot, ht, fun i => ?_, fun i => ?_⟩
+  · simpa using hw (e.symm i)
+  · simpa using hy (e.symm i)
+
+omit [Fintype ι] [DecidableEq ι] in
+/-- **`RoundsHouseholderApply` is invariant under reindexing**, the summation order of the inner
+product being carried along (`roundsDot_comp_equiv_iff`). -/
+theorem roundsHouseholderApply_comp_equiv_iff {κ : Type*} {m : RoundingModel ℝ} (e : κ ≃ ι)
+    {β : ℝ} {v b y : ι → ℝ} :
+    RoundsHouseholderApply m β (v ∘ e) (b ∘ e) (y ∘ e) ↔ RoundsHouseholderApply m β v b y := by
+  refine ⟨roundsHouseholderApply_of_comp_equiv e, fun h => ?_⟩
+  refine roundsHouseholderApply_of_comp_equiv e.symm ?_
+  simpa [Function.comp_assoc] using h
+
 /-- **The core of [higham2002accuracy] Lemma 19.2**, shared by both associations of the update
 (`norm_sub_le_of_roundsHouseholderApply`, `norm_sub_le_of_roundsHouseholderApplyScaled`): if
 `ŷ_i = fl(b_i - w_i)` where `w_i = ∑_j c_ij b_j` and every coefficient `c_ij` is a relative
@@ -892,6 +908,28 @@ The row application `A - (A v)(β v)ᵀ` is the same relation on each row. -/
 def RoundsHouseholderApplyScaled (m : RoundingModel ℝ) (β : ℝ) (v b y : ι → ℝ) : Prop :=
   ∃ (s : ℝ) (w : ι → ℝ), RoundsDot m v b s ∧ (∀ i, m.Rounds (β * v i) (w i)) ∧
     ∀ i, ∃ t, m.Rounds (w i * s) t ∧ m.Rounds (b i - t) (y i)
+
+omit [Fintype ι] [DecidableEq ι] in
+/-- One direction of `roundsHouseholderApplyScaled_comp_equiv_iff`. -/
+private theorem roundsHouseholderApplyScaled_of_comp_equiv {κ : Type*} {m : RoundingModel ℝ}
+    (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ}
+    (h : RoundsHouseholderApplyScaled m β (v ∘ e) (b ∘ e) (y ∘ e)) :
+    RoundsHouseholderApplyScaled m β v b y := by
+  obtain ⟨s, w, hdot, hw, hy⟩ := h
+  refine ⟨s, w ∘ e.symm, (roundsDot_comp_equiv_iff e).1 hdot, fun i => ?_, fun i => ?_⟩
+  · simpa using hw (e.symm i)
+  · simpa using hy (e.symm i)
+
+omit [Fintype ι] [DecidableEq ι] in
+/-- **`RoundsHouseholderApplyScaled` is invariant under reindexing**, the summation order of the
+inner product being carried along (`roundsDot_comp_equiv_iff`). -/
+theorem roundsHouseholderApplyScaled_comp_equiv_iff {κ : Type*} {m : RoundingModel ℝ}
+    (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ} :
+    RoundsHouseholderApplyScaled m β (v ∘ e) (b ∘ e) (y ∘ e) ↔
+      RoundsHouseholderApplyScaled m β v b y := by
+  refine ⟨roundsHouseholderApplyScaled_of_comp_equiv e, fun h => ?_⟩
+  refine roundsHouseholderApplyScaled_of_comp_equiv e.symm ?_
+  simpa [Function.comp_assoc] using h
 
 /-- **[higham2002accuracy] Lemma 19.2 for the scaled association** `b - (β v)(vᵀ b)`, with the
 constant of `norm_sub_le_of_roundsHouseholderApply`: the two associations give coefficients
@@ -1575,21 +1613,29 @@ private theorem one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup {β : �
       ring
   rw [h1, add_zero]
 
-omit [DecidableEq ι] in
-/-- The Euclidean norm of a restriction is at most the norm. -/
-private theorem norm_toLp_restrict_le (w : ι → ℝ) :
+omit [DecidableEq ι] [DecidablePred p] in
+/-- The Euclidean norm of the restriction of a vector to the coordinates `{i // p i}` is at most
+its norm. Any `Fintype` instance on the subtype is allowed (e.g. `List.Subtype.fintype` for
+`p = (· ∈ l)`). -/
+theorem norm_toLp_restrict_le [hp : Fintype {i // p i}] (w : ι → ℝ) :
     ‖(toLp 2 (fun a : {i // p i} => w a) : EuclideanSpace ℝ {i // p i})‖ ≤
       ‖(toLp 2 w : EuclideanSpace ℝ ι)‖ := by
+  classical
+  obtain rfl : hp = Subtype.fintype p := Subsingleton.elim _ _
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
   refine Real.sqrt_le_sqrt ?_
   rw [← Fintype.sum_subtype_add_sum_subtype p]
   exact le_add_of_nonneg_right (Finset.sum_nonneg fun _ _ => by positivity)
 
-omit [DecidableEq ι] in
-/-- A vector vanishing off the block has the norm of its restriction. -/
-private theorem norm_toLp_eq_restrict {d : ι → ℝ} (h : ∀ r, ¬ p r → d r = 0) :
+omit [DecidableEq ι] [DecidablePred p] in
+/-- A vector vanishing off the coordinates `{i // p i}` has the Euclidean norm of its restriction
+to them. Any `Fintype` instance on the subtype is allowed. -/
+theorem norm_toLp_eq_restrict [hp : Fintype {i // p i}] {d : ι → ℝ}
+    (h : ∀ r, ¬ p r → d r = 0) :
     ‖(toLp 2 d : EuclideanSpace ℝ ι)‖ =
       ‖(toLp 2 (fun a : {i // p i} => d a) : EuclideanSpace ℝ {i // p i})‖ := by
+  classical
+  obtain rfl : hp = Subtype.fintype p := Subsingleton.elim _ _
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Fintype.sum_subtype_add_sum_subtype p]
   have h2 : ∑ a : {i // ¬ p i}, ‖(toLp 2 d : EuclideanSpace ℝ ι) a‖ ^ 2 = 0 :=
     Finset.sum_eq_zero fun a _ => by simp [h a a.2]
@@ -2633,7 +2679,7 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
   have hxA : nx ≤ ‖A‖ := by
     refine (norm_toLp_restrict_le (p := fun i : Fin N => k + 1 ≤ (i : ℕ)) (A.col kk)).trans ?_
     refine le_of_sq_le_sq ?_ (norm_nonneg _)
-    rw [frobenius_norm_sq_eq_sum_col]
+    rw [frobenius_norm_sq_eq_sum_norm_sq_col]
     exact Finset.single_le_sum (f := fun j => ‖(toLp 2 (A.col j) : EuclideanSpace ℝ _)‖ ^ 2)
       (fun _ _ => by positivity) (Finset.mem_univ kk)
   have hδb : |δ| ≤ gamma m.u (N + 1) * ‖A‖ :=

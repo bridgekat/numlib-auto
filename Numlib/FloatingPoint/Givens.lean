@@ -276,8 +276,8 @@ private theorem norm_toLp_sq_of_eq_zero {j k : ι} (hjk : j ≠ k) {d : ι → �
   rw [hsum, Finset.sum_pair hjk]
 
 omit [DecidableEq ι] in
-/-- `x_j² + x_k² ≤ ‖x‖₂²`. -/
-private theorem sq_add_sq_le_norm_toLp_sq {j k : ι} (hjk : j ≠ k) (x : ι → ℝ) :
+/-- Two distinct coordinates bound the Euclidean norm: `x_j² + x_k² ≤ ‖x‖₂²`. -/
+theorem sq_add_sq_le_norm_toLp_sq {j k : ι} (hjk : j ≠ k) (x : ι → ℝ) :
     x j ^ 2 + x k ^ 2 ≤ ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ ^ 2 := by
   classical
   rw [EuclideanSpace.norm_sq_eq]

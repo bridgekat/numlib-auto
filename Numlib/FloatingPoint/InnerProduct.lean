@@ -35,7 +35,8 @@ u)^n - 1` (`exists_eq_sum_mul_one_add_of_roundsDot`, [golub2013matrix] (2.7.10))
 hypothesis on `n u` and gives the classical `1.01 n u` constant of [golub2013matrix] (2.7.11)
 through `abs_sub_le_one_add_pow_sub_one_of_roundsDot`. Also here: the error of one rounded update
 `fl(y + fl(a x))` (`abs_sub_le_of_rounds_add_mul`), the invariance of `RoundsDot` under
-reindexing (`roundsDot_comp_equiv_iff`), and the running sum one term at a time
+reindexing (`roundsDot_comp_equiv_iff`), a computed `v̂ᵀv̂` as a relative perturbation of `vᵀv`
+(`isRelPert_of_roundsDot_self`), and the running sum one term at a time
 (`roundsSumFrom_append_singleton`) and in the exact model (`roundsSumFrom_exact_iff`).
 
 Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is `γ_k (1 + u)
@@ -405,6 +406,33 @@ theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
     rfl
   rw [hexp, hsum]
   ring
+
+/-- **A computed `v̂ᵀv̂`**: if `v̂` is entrywise a relative perturbation of order `k` of `v`, a
+computed inner product of `v̂` with itself is a relative perturbation of order `2k + n` of `vᵀv`
+(the terms `v̂_i v̂_i` are of order `2k`, the backward error of `RoundsDot` adds `n`, and the sum of
+the nonnegative `v_i²` keeps the order, `IsRelPert.sum_of_nonneg`). -/
+theorem isRelPert_of_roundsDot_self {m : RoundingModel K} (hu : m.u < 1) {k : ℕ}
+    (hk : ((2 * k + Fintype.card ι : ℕ) : K) * m.u < 1) {v vhat : ι → K}
+    (hv : ∀ i, IsRelPert m.u k (v i) (vhat i)) {s : K} (hs : RoundsDot m vhat vhat s) :
+    IsRelPert m.u (2 * k + Fintype.card ι) (v ⬝ᵥ v) s := by
+  have hu0 := m.u_nonneg
+  have hlt : ∀ j, j ≤ 2 * k + Fintype.card ι → ((j : ℕ) : K) * m.u < 1 := fun j hj =>
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hj) hu0).trans_lt hk
+  obtain ⟨dx, hdx, rfl⟩ := exists_roundsDot_eq_dotProduct_add hu (hlt _ (by omega)) hs
+  have hterm : ∀ i, IsRelPert m.u (2 * k + Fintype.card ι) (v i * v i)
+      ((vhat i + dx i) * vhat i) := by
+    intro i
+    have h1 : IsRelPert m.u (k + k) (v i * v i) (vhat i * vhat i) :=
+      (hv i).mul hu0 (hlt _ (by omega)) (hv i)
+    have h2 : IsRelPert m.u (Fintype.card ι) (vhat i * vhat i) ((vhat i + dx i) * vhat i) := by
+      refine isRelPert_of_abs_sub_le (gamma_nonneg hu0 (hlt _ (by omega))) ?_
+      rw [show (vhat i + dx i) * vhat i - vhat i * vhat i = dx i * vhat i by ring, abs_mul,
+        abs_mul]
+      exact (mul_le_mul_of_nonneg_right (hdx i) (abs_nonneg _)).trans_eq (by ring)
+    have := h1.trans hu0 (hlt _ (by omega)) h2
+    rwa [show k + k + Fintype.card ι = 2 * k + Fintype.card ι by ring] at this
+  exact IsRelPert.sum_of_nonneg Finset.univ (gamma_nonneg hu0 (hlt _ le_rfl))
+    (fun i _ => mul_self_nonneg _) fun i _ => hterm i
 
 /-- **The product form of a computed inner product** ([golub2013matrix] (2.7.10);
 [higham2002accuracy] (3.2)): a computed inner product of two vectors of length `n` is

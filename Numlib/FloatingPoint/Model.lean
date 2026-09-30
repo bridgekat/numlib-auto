@@ -38,8 +38,8 @@ hypothesis on `n u` and gives Wilkinson's classical constant `1.01 n u` for `n u
 
 The calculus is completed by the steps an algorithm takes one operation at a time: one more
 rounding as a multiplication or a division (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
-`IsRelPert.rounds`), a sum of nonnegative terms (`IsRelPert.add_of_nonneg`), a square root
-(`IsRelPert.sqrt`, over `ℝ`), a common factor
+`IsRelPert.rounds`), a sum of nonnegative terms (`IsRelPert.add_of_nonneg`,
+`IsRelPert.sum_of_nonneg`), a square root (`IsRelPert.sqrt`, over `ℝ`), a common factor
 (`IsRelPert.const_mul`), and the passage between a perturbation and an error bound
 (`isRelPert_of_abs_sub_le`, `IsRelPert.abs_sub_le`) — the forms the Householder, Givens and
 Cholesky analyses of `Numlib/FloatingPoint` need.
@@ -625,6 +625,22 @@ theorem IsRelPert.add_of_nonneg {u : K} {k : ℕ} {x₁ x₂ y₁ y₂ : K} (hx�
         _ = gamma u k * (x₁ + x₂) := by ring
     · field_simp
       ring
+
+/-- Finite sums of nonnegative quantities perturbed to a common relative order are perturbed to
+that order (`IsRelPert.add_of_nonneg` by induction): the step of a computed `xᵀx` or `‖x‖₂²`. -/
+theorem IsRelPert.sum_of_nonneg {ι : Type*} (s : Finset ι) {u : K} {k : ℕ} (hγ : 0 ≤ gamma u k)
+    {x y : ι → K} (hx : ∀ i ∈ s, 0 ≤ x i) (h : ∀ i ∈ s, IsRelPert u k (x i) (y i)) :
+    IsRelPert u k (∑ i ∈ s, x i) (∑ i ∈ s, y i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using IsRelPert.zero hγ
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha, Finset.sum_insert ha]
+    exact IsRelPert.add_of_nonneg (hx a (Finset.mem_insert_self a s))
+      (Finset.sum_nonneg fun i hi => hx i (Finset.mem_insert_of_mem hi))
+      (h a (Finset.mem_insert_self a s))
+      (ih (fun i hi => hx i (Finset.mem_insert_of_mem hi))
+        fun i hi => h i (Finset.mem_insert_of_mem hi))
 
 end Steps
 
