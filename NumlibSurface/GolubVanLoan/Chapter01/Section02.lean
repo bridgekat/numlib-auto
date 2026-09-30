@@ -105,18 +105,7 @@ theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
 
 /-! ### Exact evaluation of loops writing one entry per step -/
 
-/-- In exact arithmetic, a loop over a duplicate-free index list whose step `a` rewrites entry `a`
-from its current value leaves the entries off the list alone and writes each entry of the list
-once, from its initial value: the backbone's `List.idRun_foldlM_update_apply`, kept under this name
-for the later chapters that cite it. -/
-theorem idRun_foldlM_update_apply {ι β : Type} [DecidableEq ι] (g : ι → β → Id β)
-    (l : List ι) (hl : l.Nodup) (y₀ : ι → β) (i : ι) :
-    Id.run (l.foldlM (fun (y : ι → β) a => do
-      let b ← g a (y a); pure (Function.update y a b)) y₀) i =
-      if i ∈ l then Id.run (g i (y₀ i)) else y₀ i :=
-  List.idRun_foldlM_update_apply g l hl y₀ i
-
-/-- The row form of `idRun_foldlM_update_apply`. -/
+/-- The row form of `List.idRun_foldlM_update_apply`. -/
 theorem idRun_foldlM_updateRow_apply {m n : ℕ} (g : Fin m → (Fin n → ℝ) → Id (Fin n → ℝ))
     (l : List (Fin m)) (hl : l.Nodup) (C₀ : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) :
     Id.run (l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) a => do

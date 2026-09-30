@@ -1485,19 +1485,14 @@ private theorem foldl_updateRow_sub (i : Fin n) (w : Fin n → ℝ) {L : List (F
     L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) =>
         C.updateRow i (Function.update (C i) l (C i l - w l))) D =
       of fun a b => if a = i ∧ b ∈ L then D a b - w b else D a b := by
-  induction L generalizing D with
-  | nil => ext a b; simp
-  | cons c L ih =>
-    rcases List.nodup_cons.1 hL with ⟨hc, hL'⟩
-    rw [List.foldl_cons, ih hL']
-    ext a b
-    by_cases ha : a = i
-    · subst ha
-      by_cases hb : b = c
-      · subst hb
-        simp [hc]
-      · by_cases hbL : b ∈ L <;> simp [hb, hbL]
-    · simp [ha]
+  rw [List.foldl_lens (fun C : Matrix (Fin n) (Fin n) ℝ => C i) (fun C r => C.updateRow i r)
+      (by simp) (by simp [updateRow_idem]) (by simp [updateRow_eq_self])
+      (fun v l => Function.update v l (v l - w l)),
+    List.foldl_update_of_nodup hL (fun l v => v l - w l) fun _ _ _ _ _ h => by rw [h]]
+  ext a b
+  by_cases ha : a = i
+  · subst ha; simp
+  · simp [ha]
 
 /-- The rank-one update of the trailing block, rows and columns along a duplicate-free list. -/
 private theorem foldl_foldl_updateRow_sub (w : Fin n → Fin n → ℝ) {L : List (Fin n)}

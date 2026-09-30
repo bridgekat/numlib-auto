@@ -122,7 +122,7 @@ end Program
 /-- Exact semantics of the swap: `w ← v / β`, `v ← −β w`. -/
 theorem lanczosSwap_spec (w v : Fin n → ℝ) (β : ℝ) :
     Id.run (lanczosSwap pure w v β) = (β⁻¹ • v, -(β • w)) := by
-  have h := idRun_foldlM_update_apply (fun (_ : Fin n) (q : ℝ × ℝ) =>
+  have h := List.idRun_foldlM_update_apply (fun (_ : Fin n) (q : ℝ × ℝ) =>
     (pure (q.2 / β, -(β * q.1)) : Id (ℝ × ℝ))) (List.finRange n) (List.nodup_finRange n)
     (fun i => (w i, v i))
   simp only [lanczosSwap, Id.run_bind, Id.run_pure]

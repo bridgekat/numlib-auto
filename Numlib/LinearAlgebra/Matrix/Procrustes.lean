@@ -3,6 +3,7 @@ Upstreaming candidate: general material with no numerical-analysis-specific cont
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Matrix`, beside the polar decomposition.
 -/
+import Numlib.LinearAlgebra.Matrix.OrthogonalGroup
 import Numlib.LinearAlgebra.Matrix.Polar
 
 /-!
@@ -18,8 +19,6 @@ is that polar factor (`Matrix.IsSVD.isPolarDecomposition_of_square`).
 ## Main results
 
 * `Matrix.frobenius_norm_sub_mul_sq`: `‖A − B Q‖² = ‖A‖² + ‖B‖² − 2 re tr(Qᴴ Bᴴ A)`.
-* `Matrix.re_trace_mul_le_trace_of_posSemidef`: `re tr(W P) ≤ re tr P` for unitary `W` and
-  positive semidefinite `P`.
 * `Matrix.frobenius_norm_sub_mul_le_of_isPolarDecomposition`: the Procrustes theorem, polar
   form; `Matrix.frobenius_norm_sub_mul_le_of_isSVD` is the book's SVD form.
 * `Matrix.re_trace_mul_le_sum_colSingularValues`: `re tr(Q C) ≤ ∑ σ_i(C)` for unitary `Q`, with
@@ -67,41 +66,6 @@ theorem frobenius_norm_sub_mul_sq {Q : Matrix p p 𝕜} (hQ : Q ∈ unitaryGroup
   have h' := congrArg RCLike.re h
   simp only [RCLike.ofReal_re, map_add, map_sub, RCLike.star_def, RCLike.conj_re] at h'
   linarith
-
-/-- **A unitary factor does not increase the real trace of a positive semidefinite matrix**:
-`re tr(W P) ≤ re tr P` for `W` unitary and `P ⪰ 0` — the step "`tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`" of
-[golub2013matrix] §6.4.1 in polar form. In an eigenbasis of `P`, `tr(W P) = ∑ z_ii λ_i` with
-`Z` unitary, so `|z_ii| ≤ 1`, and `λ_i ≥ 0`. -/
-theorem re_trace_mul_le_trace_of_posSemidef {W : Matrix p p 𝕜} (hW : W ∈ unitaryGroup p 𝕜)
-    {P : Matrix p p 𝕜} (hP : P.PosSemidef) :
-    RCLike.re (trace (W * P)) ≤ RCLike.re (trace P) := by
-  set u := hP.isHermitian.eigenvectorUnitary
-  set d := hP.isHermitian.eigenvalues
-  set D : Matrix p p 𝕜 := diagonal (RCLike.ofReal ∘ d)
-  have hPd : P = (u : Matrix p p 𝕜) * D * star (u : Matrix p p 𝕜) := by
-    conv_lhs => rw [hP.isHermitian.spectral_theorem]
-    rfl
-  have huu : star (u : Matrix p p 𝕜) * u = 1 := Unitary.coe_star_mul_self u
-  set Z := star (u : Matrix p p 𝕜) * W * (u : Matrix p p 𝕜)
-  have hZ : Z ∈ unitaryGroup p 𝕜 := mul_mem (mul_mem (Unitary.star_mem u.2) hW) u.2
-  have h1 : trace (W * P) = trace (Z * D) := by
-    calc trace (W * P) = trace ((W * (u : Matrix p p 𝕜) * D) * star (u : Matrix p p 𝕜)) := by
-          rw [hPd]; simp only [Matrix.mul_assoc]
-      _ = trace (star (u : Matrix p p 𝕜) * (W * (u : Matrix p p 𝕜) * D)) :=
-          trace_mul_comm _ _
-      _ = trace (Z * D) := by simp only [Z, Matrix.mul_assoc]
-  have h2 : trace P = trace D := by
-    calc trace P = trace (((u : Matrix p p 𝕜) * D) * star (u : Matrix p p 𝕜)) := by rw [hPd]
-      _ = trace (star (u : Matrix p p 𝕜) * ((u : Matrix p p 𝕜) * D)) := trace_mul_comm _ _
-      _ = trace D := by rw [← Matrix.mul_assoc, huu, Matrix.one_mul]
-  rw [h1, h2, trace, trace, map_sum, map_sum]
-  refine Finset.sum_le_sum fun i _ => ?_
-  simp only [diag_apply, mul_diagonal, D, diagonal_apply_eq, Function.comp_apply]
-  rw [mul_comm, RCLike.re_ofReal_mul, RCLike.ofReal_re]
-  calc d i * RCLike.re (Z i i) ≤ d i * 1 :=
-        mul_le_mul_of_nonneg_left ((RCLike.re_le_norm _).trans
-          (entry_norm_bound_of_unitary hZ i i)) (hP.eigenvalues_nonneg i)
-    _ = d i := mul_one _
 
 /-- **The orthogonal Procrustes theorem, polar form** ([golub2013matrix] §6.4.1): if `Bᴴ A = Q₀ P`
 is a polar decomposition, then `Q₀` is unitary and minimizes `‖A − B Q‖_F` over unitary `Q`. -/

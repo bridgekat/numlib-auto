@@ -89,6 +89,18 @@ theorem Real.two_sub_two_mul_cos_two_mul (x : ℝ) :
     2 - 2 * Real.cos (2 * x) = 4 * Real.sin x ^ 2 := by
   rw [Real.two_sub_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
 
+/-- `2 + 2 cos θ = 4 cos² (θ / 2)`: the half-angle form of the eigenvalues `2 + 2 cos θ_k` of
+`tridiag(1, 2, 1)`, the companion of `Real.two_sub_two_mul_cos`. -/
+theorem Real.two_add_two_mul_cos (θ : ℝ) : 2 + 2 * Real.cos θ = 4 * Real.cos (θ / 2) ^ 2 := by
+  have h := Real.cos_two_mul (θ / 2)
+  rw [show 2 * (θ / 2) = θ by ring] at h
+  linarith
+
+/-- `2 + 2 cos (2 x) = 4 cos² x`, the double-angle reading of `Real.two_add_two_mul_cos`. -/
+theorem Real.two_add_two_mul_cos_two_mul (x : ℝ) :
+    2 + 2 * Real.cos (2 * x) = 4 * Real.cos x ^ 2 := by
+  rw [Real.two_add_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
+
 namespace Matrix
 
 variable {n : ℕ} (a b : ℝ)
@@ -157,26 +169,32 @@ theorem symmTridiagonalToeplitz_isTridiagonal :
 /-- A vector on `Fin n`, shifted up by one and extended by zero to all of `ℕ`.  It turns the
 three-term row of a tridiagonal matrix into a uniform formula: the missing neighbours at the first
 and last rows are supplied by the padding. -/
-private def padZero (v : Fin n → ℝ) : ℕ → ℝ
+def padZero (v : Fin n → ℝ) : ℕ → ℝ
   | 0 => 0
   | m + 1 => if h : m < n then v ⟨m, h⟩ else 0
 
-private theorem padZero_zero (v : Fin n → ℝ) : padZero v 0 = 0 := rfl
+/-- The padding vanishes at `0`. -/
+@[simp]
+theorem padZero_zero (v : Fin n → ℝ) : padZero v 0 = 0 := rfl
 
-private theorem padZero_succ (v : Fin n → ℝ) (m : ℕ) :
+/-- The padding at `m + 1` is the entry `v m` if `m < n`, and `0` otherwise. -/
+theorem padZero_succ (v : Fin n → ℝ) (m : ℕ) :
     padZero v (m + 1) = if h : m < n then v ⟨m, h⟩ else 0 := rfl
 
-private theorem padZero_val_succ (v : Fin n → ℝ) (i : Fin n) :
+/-- The padding at `i + 1` for `i : Fin n` is `v i`. -/
+@[simp]
+theorem padZero_val_succ (v : Fin n → ℝ) (i : Fin n) :
     padZero v ((i : ℕ) + 1) = v i := by
   rw [padZero_succ, dite_eq_left i.isLt]
 
-private theorem padZero_of_lt (v : Fin n → ℝ) {m : ℕ} (hm : n < m) : padZero v m = 0 := by
+/-- The padding vanishes beyond `n`. -/
+theorem padZero_of_lt (v : Fin n → ℝ) {m : ℕ} (hm : n < m) : padZero v m = 0 := by
   cases m with
   | zero => rfl
   | succ m => rw [padZero_succ, dite_eq_right (by omega)]
 
 /-- The sum picking out the entry at natural index `m`, in the padded form. -/
-private theorem sum_ite_val_eq (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
+theorem sum_ite_val_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
     ∑ j : Fin n, (if (j : ℕ) = m then c * v j else 0) = c * padZero v (m + 1) := by
   have h : ∀ j : Fin n, (if (j : ℕ) = m then c * v j else 0)
       = if (j : ℕ) = m then c * padZero v ((j : ℕ) + 1) else 0 := by
@@ -190,14 +208,14 @@ private theorem sum_ite_val_eq (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
       mul_zero]
 
 /-- The sum picking out the entry just below natural index `m`, in the padded form. -/
-private theorem sum_ite_val_succ_eq (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
+theorem sum_ite_val_add_one_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
     ∑ j : Fin n, (if (j : ℕ) + 1 = m then c * v j else 0) = c * padZero v m := by
   cases m with
-  | zero => simp [padZero_zero]
+  | zero => simp
   | succ m =>
     have h : ∀ j : Fin n, ((j : ℕ) + 1 = m + 1) = ((j : ℕ) = m) := fun j => by simp
     simp only [h]
-    exact sum_ite_val_eq c v m
+    exact sum_ite_val_eq_mul_padZero c v m
 
 /-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniformly across the first, the
 last and the interior rows. -/
@@ -213,8 +231,8 @@ theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
     split_ifs <;> first | (exfalso; omega) | ring
   rw [mulVec, dotProduct]
   simp only [hsplit]
-  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, sum_ite_val_succ_eq, sum_ite_val_eq,
-    sum_ite_val_eq]
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, sum_ite_val_add_one_eq_mul_padZero,
+    sum_ite_val_eq_mul_padZero, sum_ite_val_eq_mul_padZero]
 
 /-! ### The discrete sine vectors -/
 
@@ -260,7 +278,7 @@ bottom and `sin((n + 1)θ_k) = sin((k + 1)π) = 0` at the top are exactly the pa
 private theorem padZero_sineVec (k : Fin n) {m : ℕ} (hm : m ≤ n + 1) :
     padZero (sineVec n k) m = Real.sin ((m : ℝ) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) := by
   cases m with
-  | zero => simp [padZero_zero]
+  | zero => simp
   | succ m =>
     rw [padZero_succ]
     by_cases h : m < n
@@ -633,7 +651,7 @@ private theorem padZero_parabola {m : ℕ} (hm : m ≤ n + 1) :
     padZero (fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2) m
       = (m : ℝ) * ((n : ℝ) + 1 - m) / 2 := by
   cases m with
-  | zero => simp [padZero_zero]
+  | zero => simp
   | succ m =>
     rw [padZero_succ]
     by_cases h : m < n
@@ -677,7 +695,7 @@ private theorem padZero_negOneTwoInv_col (k : Fin n) {m : ℕ} (hm : m ≤ n + 1
       = (if m ≤ (k : ℕ) + 1 then (m : ℝ) * ((n : ℝ) - (k : ℕ))
           else (((k : ℕ) : ℝ) + 1) * ((n : ℝ) + 1 - m)) / ((n : ℝ) + 1) := by
   cases m with
-  | zero => simp [padZero_zero]
+  | zero => simp
   | succ m =>
     rw [padZero_succ]
     by_cases h : m < n

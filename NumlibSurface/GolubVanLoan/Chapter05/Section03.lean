@@ -802,7 +802,7 @@ private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
       _ = Q *ᵥ (b + (db + Qᵀ *ᵥ e)) := by rw [← mulVec_add, add_assoc]
   · have h1 : ‖(toLp 2 (Qᵀ *ᵥ e) : EuclideanSpace ℝ (Fin m))‖ ≤
         ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ := by
-      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_orthogonalGroup hQO)]
+      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hQO)]
       exact hstep
     have h2 : ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
         (1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
@@ -865,7 +865,7 @@ theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
     positivity
   set W := prodRev (dataReflector v β) n with hWdef
   have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup hO n
-  have hWtO : Wᵀ ∈ orthogonalGroup (Fin m) ℝ := transpose_mem_orthogonalGroup hWO
+  have hWtO : Wᵀ ∈ orthogonalGroup (Fin m) ℝ := transpose_mem_unitaryGroup_iff.2 hWO
   set T := (upperPart st.1).firstRows hnm with hT
   have hTu : T.IsUpperTriangular := fun i j hij => by
     have hij' : (j : ℕ) < i := hij

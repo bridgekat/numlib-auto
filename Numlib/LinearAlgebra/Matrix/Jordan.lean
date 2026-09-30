@@ -13,6 +13,7 @@ import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Minpoly
 import Mathlib.LinearAlgebra.StdBasis
 import Mathlib.RingTheory.AdjoinRoot
 import Numlib.LinearAlgebra.Matrix.Rank
@@ -58,6 +59,7 @@ of the powers of `jordanForm e μ - c` stop growing, is the largest of their siz
   laid out consecutively along the diagonal.
 * `Matrix.exists_conj_blockDiagonal'_jordanForm`: the matrix form grouped by eigenvalue, which is
   the shape in which the textbook states it.
+* `Matrix.splits_minpoly_jordanBlock`: the minimal polynomial of a Jordan block splits.
 * `Matrix.charpoly_jordanForm`: the characteristic polynomial `∏ i, (X - μ i) ^ e i` of a Jordan
   form, and `Matrix.rootMultiplicity_charpoly_jordanForm` for the **algebraic multiplicity** it
   gives each eigenvalue.
@@ -241,6 +243,19 @@ theorem jordanBlock_zero_pow_mulVec_of_le (k : ℕ) (v : Fin n → R) (i : Fin n
   simp [show (i : ℕ) + k ≠ (b : ℕ) by omega]
 
 end CommRing
+
+section Minpoly
+
+variable {K : Type*} [Field K] {μ : K}
+
+/-- The minimal polynomial of a Jordan block splits: it divides the characteristic polynomial
+`(X - C μ) ^ n` (`Matrix.charpoly_jordanBlock`). -/
+theorem splits_minpoly_jordanBlock : (minpoly K (jordanBlock n μ)).Splits :=
+  ((Splits.X_sub_C μ).pow n).of_dvd (pow_ne_zero n (X_sub_C_ne_zero μ)) <| by
+    rw [← charpoly_jordanBlock]
+    exact minpoly_dvd_charpoly _
+
+end Minpoly
 
 section JordanBlockKer
 

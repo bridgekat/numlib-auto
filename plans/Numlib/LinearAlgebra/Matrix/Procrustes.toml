@@ -4,10 +4,6 @@ namespace = "Matrix"
 id = "frobenius_norm_sub_mul_sq"
 
 [[node]]
-id = "re_trace_mul_le_trace_of_posSemidef"
-deps = []
-
-[[node]]
 id = "frobenius_norm_sub_mul_le_of_isPolarDecomposition"
 
 [[node]]

@@ -468,7 +468,7 @@ theorem l2_opNorm_transpose_mul_self_sub_one_le {Q Qhat : Matrix ι ι ℝ}
   set E := Qhat - Q with hE
   have hQE : Qhat = Q + E := by rw [hE]; abel
   have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' _ _).1 hQ
-  have hQT : Qᵀ ∈ Matrix.orthogonalGroup ι ℝ := transpose_mem_orthogonalGroup hQ
+  have hQT : Qᵀ ∈ Matrix.orthogonalGroup ι ℝ := transpose_mem_unitaryGroup_iff.2 hQ
   have hEt : ‖Eᵀ‖ = ‖E‖ := by
     have := l2_opNorm_conjTranspose E
     rwa [conjTranspose_eq_transpose_of_trivial] at this

@@ -4,27 +4,33 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.UnitaryGroup` (real orthogonal matrices).
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 
 /-!
-# Trace inequalities for real orthogonal matrices
+# Trace inequalities for unitary and real orthogonal matrices
+
+* `Matrix.re_trace_mul_le_trace_of_posSemidef`: a unitary factor does not increase the real trace
+  of a positive semidefinite matrix, `re tr(W P) ≤ re tr P`.
 
 Facts about a real matrix `O` with `Oᵀ O = 1`:
 
 * `Matrix.det_sq_eq_one_of_transpose_mul_self`: `(det O)² = 1`.
-* `Matrix.PosSemidef.trace_mul_le_trace`: an orthogonal factor does not increase the trace of a
-  positive semidefinite matrix, `tr(R O) ≤ tr R`.
+* `Matrix.PosSemidef.trace_mul_le_trace`: the real case of the first item, `tr(R O) ≤ tr R`.
 * `Matrix.trace_le_card_sub_two_of_det_eq_neg_one`: an improper orthogonal matrix
   (`det O = -1`) has `tr O ≤ n - 2`.
 * `Matrix.trace_mul_one_sub_ge`: for a rotation `W` and a symmetric `P ⪰ b (1 - u uᵀ) + a u uᵀ`
   (`u` a unit vector, `a ≤ b`), `tr(P (1 - W)) ≥ (a + b)/2 · tr(1 - W)`.
 
-They are the trace estimates behind the real Li–Sun perturbation bound for the orthogonal polar
-factor (`Numlib/Analysis/Matrix/Function/Polar`).
+They are the trace estimates behind the orthogonal Procrustes problem
+(`Numlib/LinearAlgebra/Matrix/Procrustes`) and the real Li–Sun perturbation bound for the
+orthogonal polar factor (`Numlib/Analysis/Matrix/Function/Polar`).
 -/
+
+open scoped ComplexOrder
 
 namespace Matrix
 
@@ -37,54 +43,47 @@ theorem det_sq_eq_one_of_transpose_mul_self {O : Matrix n n ℝ} (hO : Oᵀ * O 
   rw [det_mul, det_transpose, det_one] at this
   rw [sq]; exact this
 
+/-- **A unitary factor does not increase the real trace of a positive semidefinite matrix**:
+`re tr(W P) ≤ re tr P` for `W` unitary and `P ⪰ 0` — the step "`tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`" of
+[golub2013matrix] §6.4.1 in polar form. In an eigenbasis of `P`, `tr(W P) = ∑ z_ii λ_i` with
+`Z` unitary, so `|z_ii| ≤ 1`, and `λ_i ≥ 0`. -/
+theorem re_trace_mul_le_trace_of_posSemidef {𝕜 : Type*} [RCLike 𝕜] {W : Matrix n n 𝕜}
+    (hW : W ∈ unitaryGroup n 𝕜) {P : Matrix n n 𝕜} (hP : P.PosSemidef) :
+    RCLike.re (trace (W * P)) ≤ RCLike.re (trace P) := by
+  set u := hP.isHermitian.eigenvectorUnitary
+  set d := hP.isHermitian.eigenvalues
+  set D : Matrix n n 𝕜 := diagonal (RCLike.ofReal ∘ d)
+  have hPd : P = (u : Matrix n n 𝕜) * D * star (u : Matrix n n 𝕜) := by
+    conv_lhs => rw [hP.isHermitian.spectral_theorem]
+    rfl
+  have huu : star (u : Matrix n n 𝕜) * u = 1 := Unitary.coe_star_mul_self u
+  set Z := star (u : Matrix n n 𝕜) * W * (u : Matrix n n 𝕜)
+  have hZ : Z ∈ unitaryGroup n 𝕜 := mul_mem (mul_mem (Unitary.star_mem u.2) hW) u.2
+  have h1 : trace (W * P) = trace (Z * D) := by
+    calc trace (W * P) = trace ((W * (u : Matrix n n 𝕜) * D) * star (u : Matrix n n 𝕜)) := by
+          rw [hPd]; simp only [Matrix.mul_assoc]
+      _ = trace (star (u : Matrix n n 𝕜) * (W * (u : Matrix n n 𝕜) * D)) :=
+          trace_mul_comm _ _
+      _ = trace (Z * D) := by simp only [Z, Matrix.mul_assoc]
+  have h2 : trace P = trace D := by
+    calc trace P = trace (((u : Matrix n n 𝕜) * D) * star (u : Matrix n n 𝕜)) := by rw [hPd]
+      _ = trace (star (u : Matrix n n 𝕜) * ((u : Matrix n n 𝕜) * D)) := trace_mul_comm _ _
+      _ = trace D := by rw [← Matrix.mul_assoc, huu, Matrix.one_mul]
+  rw [h1, h2, trace, trace, map_sum, map_sum]
+  refine Finset.sum_le_sum fun i _ => ?_
+  simp only [diag_apply, mul_diagonal, D, diagonal_apply_eq, Function.comp_apply]
+  rw [mul_comm, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  calc d i * RCLike.re (Z i i) ≤ d i * 1 :=
+        mul_le_mul_of_nonneg_left ((RCLike.re_le_norm _).trans
+          (entry_norm_bound_of_unitary hZ i i)) (hP.eigenvalues_nonneg i)
+    _ = d i := mul_one _
+
 /-- The trace of a positive semidefinite matrix is not increased by an orthogonal factor:
-`tr(R O) ≤ tr R`. In an orthonormal eigenbasis of `R`, `tr(R O) = ∑ λᵢ Mᵢᵢ` with `M` orthogonal,
-so `Mᵢᵢ ≤ 1`. -/
+`tr(R O) ≤ tr R`, the real case of `Matrix.re_trace_mul_le_trace_of_posSemidef`. -/
 theorem PosSemidef.trace_mul_le_trace {R O : Matrix n n ℝ} (hR : R.PosSemidef)
     (hO : Oᵀ * O = 1) : trace (R * O) ≤ trace R := by
-  have hRh := hR.isHermitian
-  set V := (hRh.eigenvectorUnitary : Matrix n n ℝ)
-  have hV : V ∈ unitaryGroup n ℝ := hRh.eigenvectorUnitary.2
-  have hVV : Vᵀ * V = 1 := by
-    have := mem_unitaryGroup_iff'.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have hVV' : V * Vᵀ = 1 := mul_eq_one_comm.1 hVV
-  have hspec : R = V * diagonal (fun i => hRh.eigenvalues i) * Vᵀ := by
-    conv_lhs => rw [hRh.spectral_theorem]
-    rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
-    rfl
-  set d := fun i => hRh.eigenvalues i
-  set M := Vᵀ * O * V with hMdef
-  have hM : Mᵀ * M = 1 := by
-    calc Mᵀ * M = Vᵀ * (Oᵀ * (V * Vᵀ) * O) * V := by
-          simp only [hMdef, transpose_mul, transpose_transpose, Matrix.mul_assoc]
-      _ = 1 := by rw [hVV', Matrix.mul_one, hO, Matrix.mul_one, hVV]
-  have hdiag : ∀ i, M i i ≤ 1 := fun i => by
-    have h1 : ∑ k, M k i * M k i = 1 := by
-      have := congrFun (congrFun hM i) i
-      simpa [mul_apply] using this
-    have h2 : M i i * M i i ≤ ∑ k, M k i * M k i :=
-      Finset.single_le_sum (f := fun k => M k i * M k i) (fun k _ => mul_self_nonneg _)
-        (Finset.mem_univ i)
-    nlinarith
-  have htr1 : trace (R * O) = ∑ i, d i * M i i := by
-    have : trace (R * O) = trace (diagonal d * M) := by
-      rw [hspec, hMdef]
-      simp only [Matrix.mul_assoc]
-      rw [trace_mul_comm V]
-      simp only [Matrix.mul_assoc]
-    rw [this]
-    simp [trace, diagonal_mul]
-  have htr2 : trace R = ∑ i, d i := by
-    have : trace R = trace (diagonal d * (Vᵀ * V)) := by
-      rw [hspec]
-      simp only [Matrix.mul_assoc]
-      rw [trace_mul_comm V]
-      simp only [Matrix.mul_assoc]
-    rw [this, hVV, Matrix.mul_one, trace_diagonal]
-  rw [htr1, htr2]
-  exact Finset.sum_le_sum fun i _ =>
-    mul_le_of_le_one_right (hR.eigenvalues_nonneg i) (hdiag i)
+  have h := re_trace_mul_le_trace_of_posSemidef ((mem_orthogonalGroup_iff' n ℝ).2 hO) hR
+  rwa [RCLike.re_to_real, RCLike.re_to_real, trace_mul_comm] at h
 
 /-- An improper orthogonal matrix has trace at most `n - 2`: `-1` is an eigenvalue
 (`det(O + 1) = det O det(1 + Oᵀ) = -det(O + 1)`), and on the orthogonal complement of its

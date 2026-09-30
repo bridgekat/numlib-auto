@@ -760,7 +760,7 @@ theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdemp
       have hF' := hFb q
       rw [hcol, toLp_add]
       refine (norm_add_le _ _).trans ?_
-      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_orthogonalGroup hWO)]
+      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hWO)]
       have hEq := hEb q
       set a := ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖
       set eq := ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖
@@ -800,7 +800,7 @@ theorem algorithm_5_2_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent
           ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ := by
   obtain ⟨v, β, E, hO, -, hE, hEb⟩ := algorithm_5_2_1_rounding_data hfp hnm hu A h
   have hW := prodRev_mem_orthogonalGroup hO n
-  refine ⟨(prodRev (dataReflector v β) n)ᵀ, transpose_mem_orthogonalGroup hW, E, ?_, hEb⟩
+  refine ⟨(prodRev (dataReflector v β) n)ᵀ, transpose_mem_unitaryGroup_iff.2 hW, E, ?_, hEb⟩
   rw [hE, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hW, Matrix.one_mul]
 
 end Rounding

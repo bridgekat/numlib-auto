@@ -82,9 +82,6 @@ id = "_root_.Matrix.mul_transpose_of_mem_orthogonalGroup"
 id = "_root_.Matrix.transpose_mul_of_mem_orthogonalGroup"
 
 [[node]]
-id = "_root_.Matrix.transpose_mem_orthogonalGroup"
-
-[[node]]
 id = "_root_.Matrix.toEuclideanLin_toEuclideanLin_transpose_apply"
 
 [[node]]

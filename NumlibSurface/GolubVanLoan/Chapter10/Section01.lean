@@ -82,7 +82,7 @@ end Helpers
 /-- Exact semantics of `vecDiv`: `x / β = β⁻¹ • x`. -/
 theorem vecDiv_spec (x : Fin n → ℝ) (β : ℝ) : Id.run (vecDiv pure x β) = β⁻¹ • x := by
   funext k
-  rw [vecDiv, idRun_foldlM_update_apply (fun k b => (pure (b / β) : Id ℝ)) _
+  rw [vecDiv, List.idRun_foldlM_update_apply (fun k b => (pure (b / β) : Id ℝ)) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   simp [div_eq_inv_mul]
 

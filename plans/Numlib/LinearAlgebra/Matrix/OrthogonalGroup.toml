@@ -6,3 +6,6 @@ id = "Matrix.trace_le_card_sub_two_of_det_eq_neg_one"
 
 [[node]]
 id = "Matrix.trace_mul_one_sub_ge"
+
+[[node]]
+id = "Matrix.re_trace_mul_le_trace_of_posSemidef"

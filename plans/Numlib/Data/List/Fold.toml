@@ -83,3 +83,6 @@ id = "foldl_update_apply_of_pairwise_rel"
 
 [[node]]
 id = "idRun_foldlM_update_apply"
+
+[[node]]
+id = "foldl_lens"

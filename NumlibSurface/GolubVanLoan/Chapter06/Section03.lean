@@ -801,7 +801,7 @@ private theorem idRun_foldlM_update_const {ι β : Type} [DecidableEq ι] (g : �
     Id.run (l.foldlM (fun (y : ι → β) a => do
       let b ← g a; pure (Function.update y a b)) y₀) i =
       if i ∈ l then Id.run (g i) else y₀ i :=
-  Chapter01.idRun_foldlM_update_apply (fun a _ => g a) l hl y₀ i
+  List.idRun_foldlM_update_apply (fun a _ => g a) l hl y₀ i
 
 /-- The pure form of `idRun_foldlM_update_const`. -/
 private theorem idRun_foldlM_update_pure {ι β : Type} [DecidableEq ι] (g : ι → β)

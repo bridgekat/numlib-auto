@@ -1468,7 +1468,7 @@ noncomputable def divVec (rnd : ℝ → M ℝ) (v : Fin n → ℝ) (β : ℝ) : 
 /-- The exact run of `divVec` is `v/β`. -/
 theorem divVec_run (v : Fin n → ℝ) (β : ℝ) : Id.run (divVec pure v β) = fun i => v i / β := by
   funext i
-  rw [divVec, GolubVanLoan.Chapter01.idRun_foldlM_update_apply (fun _ t => (pure (t / β) : Id ℝ))
+  rw [divVec, List.idRun_foldlM_update_apply (fun _ t => (pure (t / β) : Id ℝ))
     _ (List.nodup_finRange n), ite_eq_left (List.mem_finRange i)]
   rfl
 

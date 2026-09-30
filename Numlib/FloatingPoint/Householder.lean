@@ -986,12 +986,6 @@ theorem mulVec_transpose_mulVec_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (x : ι → ℝ) : Q *ᵥ (Qᵀ *ᵥ x) = x := by
   rw [mulVec_mulVec, (mem_orthogonalGroup_iff _ _).1 hQ, one_mulVec]
 
-/-- The transpose of an orthogonal matrix is orthogonal. -/
-theorem transpose_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
-    (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) : Qᵀ ∈ Matrix.orthogonalGroup ι ℝ := by
-  rw [mem_orthogonalGroup_iff, transpose_transpose]
-  exact (mem_orthogonalGroup_iff' _ _).1 hQ
-
 /-- `(1 + ε)^r - 1 ≤ γ_r(ε) = r ε / (1 - r ε)` for `0 ≤ ε` and `r ε < 1`
 ([higham2002accuracy] Lemma 3.1 with all the `δ_i` equal to `ε`). -/
 theorem one_add_pow_sub_one_le_gamma {ε : ℝ} (hε : 0 ≤ ε) {r : ℕ} (hr : (r : ℝ) * ε < 1) :
@@ -1037,7 +1031,7 @@ theorem exists_eq_prodRev_mulVec_add {P : ℕ → Matrix ι ι ℝ}
           abel
     · have h1 : ‖(toLp 2 ((prodRev P (r + 1))ᵀ *ᵥ e) : EuclideanSpace ℝ ι)‖ ≤
           ε * ‖(toLp 2 (x r) : EuclideanSpace ℝ ι)‖ := by
-        rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_orthogonalGroup hQ)]
+        rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hQ)]
         exact hx r (Nat.lt_succ_self r)
       have h2 : ‖(toLp 2 (x r) : EuclideanSpace ℝ ι)‖ ≤
           (1 + ε) ^ r * ‖(toLp 2 (x 0) : EuclideanSpace ℝ ι)‖ := by
@@ -1156,8 +1150,8 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ
           simp only [Matrix.mul_add, Matrix.add_mul]
           abel
     · have h1 : ‖(prodRev L (r + 1))ᵀ * F * (prodFwd R (r + 1))ᵀ‖ ≤ ε * ‖A r‖ := by
-        rw [frobenius_norm_orthogonal_mul_mul_orthogonal (transpose_mem_orthogonalGroup hLr) _
-          (transpose_mem_orthogonalGroup hRr)]
+        rw [frobenius_norm_orthogonal_mul_mul_orthogonal (transpose_mem_unitaryGroup_iff.2 hLr) _
+          (transpose_mem_unitaryGroup_iff.2 hRr)]
         exact hA r (Nat.lt_succ_self r)
       have h2 : ‖A r‖ ≤ (1 + ε) ^ r * ‖A 0‖ := by
         rw [hAr, frobenius_norm_orthogonal_mul_mul_orthogonal (prodRev_mem_orthogonalGroup hL r)

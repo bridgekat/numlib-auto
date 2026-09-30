@@ -681,8 +681,9 @@ end ShiftedQrProgram
 theorem shiftDiag_spec {m : ℕ} (μ : ℝ) (B : Matrix (Fin m) (Fin m) ℝ) :
     Id.run (shiftDiag pure μ B) = B + μ • 1 := by
   ext r c
-  have h := congrFun (idRun_foldlM_update_apply (fun r x => shiftDiagRow (pure : ℝ → Id ℝ) μ r x)
-    (List.finRange m) (List.nodup_finRange m) B r) c
+  have h := congrFun (List.idRun_foldlM_update_apply
+    (fun r x => shiftDiagRow (pure : ℝ → Id ℝ) μ r x) (List.finRange m) (List.nodup_finRange m)
+    B r) c
   rw [ite_eq_left (List.mem_finRange r)] at h
   refine h.trans ?_
   simp only [shiftDiagRow, Id.run_bind, Id.run_pure, Function.update_apply, Matrix.add_apply,

@@ -495,10 +495,9 @@ variable {n : ℕ}
 /-- A grid function on the `n` interior points, extended by the homogeneous Dirichlet boundary
 values `u₀ = u_{n+1} = 0`.  The argument is the book's grid index `k = 0, …, n + 1`, so
 `dirichletExt v (i + 1) = v i` for an interior index `i : Fin n`, and the value is `0` at both
-boundary points. -/
-def dirichletExt (v : Fin n → ℝ) : ℕ → ℝ
-  | 0 => 0
-  | k + 1 => if hk : k < n then v ⟨k, hk⟩ else 0
+boundary points. It is the backbone's zero padding `Matrix.padZero`. -/
+def dirichletExt (v : Fin n → ℝ) : ℕ → ℝ :=
+  Matrix.padZero v
 
 @[simp]
 theorem dirichletExt_zero (v : Fin n → ℝ) : dirichletExt v 0 = 0 := rfl
@@ -508,13 +507,11 @@ theorem dirichletExt_succ (v : Fin n → ℝ) (k : ℕ) :
 
 @[simp]
 theorem dirichletExt_coe_succ (v : Fin n → ℝ) (i : Fin n) :
-    dirichletExt v ((i : ℕ) + 1) = v i := by
-  rw [dirichletExt_succ, dite_eq_left i.isLt]
+    dirichletExt v ((i : ℕ) + 1) = v i :=
+  Matrix.padZero_val_succ v i
 
-theorem dirichletExt_of_gt (v : Fin n → ℝ) {k : ℕ} (hk : n < k) : dirichletExt v k = 0 := by
-  cases k with
-  | zero => rfl
-  | succ k => rw [dirichletExt_succ, dite_eq_right (by omega)]
+theorem dirichletExt_of_gt (v : Fin n → ℝ) {k : ℕ} (hk : n < k) : dirichletExt v k = 0 :=
+  Matrix.padZero_of_lt v hk
 
 /-- Saad §2.2.3: the one-dimensional model matrix of `-u'' = f` on `(0, 1)` with homogeneous
 Dirichlet boundary conditions, discretized on the uniform grid `x_i = i h` with `h = 1/(n + 1)`.
@@ -527,13 +524,6 @@ theorem laplacian1D_apply (h : ℝ) (i j : Fin n) :
       (h ^ 2)⁻¹ * (if (i : ℕ) = j then 2 else
         if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then -1 else 0) := by
   rw [laplacian1D, Matrix.smul_apply, smul_eq_mul, Matrix.symmTridiagonalToeplitz_apply']
-
-/-- The half-angle identity `2 + 2 cos θ = 4 cos²(θ/2)` for the top of the spectrum, companion of
-`Real.two_sub_two_mul_cos` for the bottom. -/
-private theorem two_add_two_mul_cos (θ : ℝ) : 2 + 2 * Real.cos θ = 4 * Real.cos (θ / 2) ^ 2 := by
-  have h := Real.cos_two_mul (θ / 2)
-  rw [show 2 * (θ / 2) = θ by ring] at h
-  linarith
 
 /-- Quadratic-form bounds are homogeneous: scaling a matrix by a positive constant scales both
 ends of the enclosing interval.  This is what carries the backbone's bounds for
@@ -558,49 +548,6 @@ private theorem isSymmetricBoundedBy_smul {A : Matrix (Fin n) (Fin n) ℝ} {lmin
     rw [RCLike.re_to_real] at h
     exact mul_le_mul_of_nonneg_left h hc.le
 
-/-- The sum picking out the entry at grid index `m + 1`, in the extended form. -/
-private theorem sum_ite_dirichletExt (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
-    ∑ j : Fin n, (if (j : ℕ) = m then c * v j else 0) = c * dirichletExt v (m + 1) := by
-  have h : ∀ j : Fin n, (if (j : ℕ) = m then c * v j else 0)
-      = if (j : ℕ) = m then c * dirichletExt v ((j : ℕ) + 1) else 0 := by
-    intro j; rw [dirichletExt_coe_succ]
-  rw [Finset.sum_congr rfl fun j _ => h j,
-    Fin.sum_univ_eq_sum_range fun j => if j = m then c * dirichletExt v (j + 1) else 0,
-    Finset.sum_ite_eq' (Finset.range n) m fun j => c * dirichletExt v (j + 1)]
-  by_cases hm : m < n
-  · rw [ite_eq_left (Finset.mem_range.2 hm)]
-  · rw [ite_eq_right fun hmem => hm (Finset.mem_range.1 hmem), dirichletExt_of_gt v (by omega),
-      mul_zero]
-
-/-- The sum picking out the entry just below grid index `m`, in the extended form. -/
-private theorem sum_ite_succ_dirichletExt (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
-    ∑ j : Fin n, (if (j : ℕ) + 1 = m then c * v j else 0) = c * dirichletExt v m := by
-  cases m with
-  | zero => simp
-  | succ m =>
-    have h : ∀ j : Fin n, ((j : ℕ) + 1 = m + 1) = ((j : ℕ) = m) := fun j => by simp
-    simp only [h]
-    exact sum_ite_dirichletExt c v m
-
-/-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniform across the first, the
-last and the interior rows because the missing neighbours are supplied by the Dirichlet
-extension. -/
-private theorem symmTridiagonalToeplitz_mulVec_apply (a b : ℝ) (v : Fin n → ℝ) (i : Fin n) :
-    (Matrix.symmTridiagonalToeplitz n a b *ᵥ v) i
-      = a * dirichletExt v (i : ℕ) + b * dirichletExt v ((i : ℕ) + 1)
-        + a * dirichletExt v ((i : ℕ) + 2) := by
-  have hsplit : ∀ j : Fin n, Matrix.symmTridiagonalToeplitz n a b i j * v j
-      = (if (j : ℕ) + 1 = (i : ℕ) then a * v j else 0)
-        + (if (j : ℕ) = (i : ℕ) then b * v j else 0)
-        + (if (j : ℕ) = (i : ℕ) + 1 then a * v j else 0) := by
-    intro j
-    rw [Matrix.symmTridiagonalToeplitz_apply']
-    split_ifs <;> first | (exfalso; omega) | ring
-  rw [Matrix.mulVec_apply_eq_sum]
-  simp only [hsplit]
-  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, sum_ite_succ_dirichletExt,
-    sum_ite_dirichletExt, sum_ite_dirichletExt]
-
 /-- The rows of the model matrix are the difference equations of §2.2.3: the `i`-th row of
 `laplacian1D n h *ᵥ v` is `(-v_{i-1} + 2 v_i - v_{i+1}) / h²`, with the boundary values
 `v_0 = v_{n+1} = 0` supplied by `dirichletExt`. -/
@@ -609,7 +556,8 @@ theorem laplacian1D_mulVec_apply (h : ℝ) (v : Fin n → ℝ) (i : Fin n) :
       = (-dirichletExt v (i : ℕ) + 2 * dirichletExt v ((i : ℕ) + 1)
           - dirichletExt v ((i : ℕ) + 2)) / h ^ 2 := by
   rw [laplacian1D, Matrix.smul_mulVec, Pi.smul_apply, smul_eq_mul,
-    symmTridiagonalToeplitz_mulVec_apply]
+    Matrix.symmTridiagonalToeplitz_mulVec_apply]
+  simp only [dirichletExt]
   field_simp
   ring
 
@@ -641,7 +589,7 @@ theorem laplacian1D_isSymmetricBoundedBy (n : ℕ) {h : ℝ} (hh : h ≠ 0) :
   have hhalf : π / ((n : ℝ) + 1) / 2 = π / (2 * ((n : ℝ) + 1)) := by
     rw [div_div, mul_comm ((n : ℝ) + 1) 2]
   have hlo := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
-  have hhi := two_add_two_mul_cos (π / ((n : ℝ) + 1))
+  have hhi := Real.two_add_two_mul_cos (π / ((n : ℝ) + 1))
   rw [hhalf] at hlo hhi
   have key := isSymmetricBoundedBy_smul
     (Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz n (-1) 2) hpos
@@ -1085,9 +1033,10 @@ private theorem tridiag_row_sum {n : ℕ} (sub diag sup : ℝ) (i : Fin n) :
         + (if (j : ℕ) = (i : ℕ) + 1 then sup * (1 : ℝ) else 0) := by
     intro j
     split_ifs <;> first | (exfalso; omega) | ring
+  simp only [dirichletExt]
   rw [Finset.sum_congr rfl fun j _ => hsplit j, Finset.sum_add_distrib, Finset.sum_add_distrib,
-    sum_ite_succ_dirichletExt, sum_ite_dirichletExt, sum_ite_dirichletExt,
-    dirichletExt_coe_succ, mul_one]
+    Matrix.sum_ite_val_add_one_eq_mul_padZero, Matrix.sum_ite_val_eq_mul_padZero,
+    Matrix.sum_ite_val_eq_mul_padZero, Matrix.padZero_val_succ, mul_one]
 
 /-- The other half of the structural point: for `c > 0` the upwind matrix has a positive
 diagonal, nonpositive off-diagonal entries and is weakly diagonally dominant by rows — the

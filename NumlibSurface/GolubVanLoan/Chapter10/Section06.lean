@@ -416,7 +416,7 @@ end Jocc
 theorem joccSolve_spec (A₁ : Matrix (Fin n) (Fin n) ℝ) (w c : Fin n → ℝ) (l : ℝ) :
     Id.run (joccSolve pure A₁ w c l) = fun i => (w i - c i) / (A₁ i i - l) := by
   funext i
-  rw [joccSolve, idRun_foldlM_update_apply (fun i (_ : ℝ) => joccEntry pure A₁ w c l i) _
+  rw [joccSolve, List.idRun_foldlM_update_apply (fun i (_ : ℝ) => joccEntry pure A₁ w c l i) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange i)]
   rfl
 
@@ -702,7 +702,7 @@ whenever `a_ii ≠ λ` for all `i` (`M` the diagonal of `A`). -/
 theorem davidsonCorrection_spec (A : Matrix (Fin n) (Fin n) ℝ) (l : ℝ) (r : Fin n → ℝ) :
     Id.run (davidsonCorrection pure A l r) = fun i => -r i / (A i i - l) := by
   funext i
-  rw [davidsonCorrection, idRun_foldlM_update_apply
+  rw [davidsonCorrection, List.idRun_foldlM_update_apply
     (fun i (_ : ℝ) => davidsonEntry pure A l r i) _ (List.nodup_finRange n),
     ite_eq_left (List.mem_finRange i)]
   rfl

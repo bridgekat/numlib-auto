@@ -178,13 +178,6 @@ theorem pfc_jordanBlock_apply (i j : Fin k) :
   · exact Finset.sum_eq_zero fun b _ => by
       rw [ite_eq_right_iff.mpr]; intro h'; rw [Fin.le_def] at h; omega
 
-/-- A Jordan block has a split minimal polynomial. -/
-theorem splits_minpoly_jordanBlock : (minpoly 𝕜 (jordanBlock k μ)).Splits := by
-  refine (splits_nodalMultiset (Multiset.replicate k μ)).of_dvd
-    (monic_nodalMultiset _).ne_zero ?_
-  rw [nodalMultiset_replicate, ← charpoly_jordanBlock]
-  exact minpoly_dvd_charpoly _
-
 end Jordan
 
 /-- **The Jordan-form expression** ([golub2013matrix] (9.1.3), the book's definition of `f(A)`, a
@@ -202,7 +195,7 @@ theorem pfc_conj_jordanForm {ι : Type*} [Finite ι] [DecidableEq ι] {e : ι �
     simp only [← mul_assoc, mul_nonsing_inv _ hdet, one_mul]
     rw [mul_assoc, mul_nonsing_inv _ hdet, mul_one]
   rw [hA, pfc_conj hP, h, pfc_reindex, jordanForm_def,
-    pfc_blockDiagonal' fun i => splits_minpoly_jordanBlock _ _]
+    pfc_blockDiagonal' fun _ => splits_minpoly_jordanBlock]
 
 /-! ### The transpose -/
 

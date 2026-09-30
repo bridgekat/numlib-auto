@@ -22,8 +22,9 @@ general facts about such folds that the proofs about algorithms keep needing.
   of the step is core's `List.foldlRecOn`.
 * **Restructuring a loop.** `List.foldlM_hom` (a loop commutes with a map of states that
   intertwines its steps), `List.foldlM_flatMap` (a loop over a `flatMap` is a loop of loops),
-  `List.foldlM_lens` (a loop acting on one component of its state is one update of that component)
-  and `List.foldlM_range_succ` (the last pass of a loop over `List.range`).
+  `List.foldlM_lens` and its pure form `List.foldl_lens` (a loop acting on one component of its
+  state is one update of that component) and `List.foldlM_range_succ` (the last pass of a loop
+  over `List.range`).
 * **Loops writing one entry per step**, over a state `κ → β` updated by `Function.update`:
   `List.foldl_update_apply_of_forall_ne` (an entry no step writes keeps its value),
   `List.foldl_update_apply_of_pairwise` (when no step reads an entry written by an earlier step,
@@ -158,6 +159,17 @@ theorem idRun_foldlM_finRange_induction {β : Type u} {n : ℕ} (motive : ℕ �
   exact foldl_finRange_induction motive h0 hf
 
 /-! ### Restructuring a loop -/
+
+/-- **A loop acting on one component of its state**, the pure form of `List.foldlM_lens`: if every
+step reads the component `get s` of its state and writes it back by `set`, the loop is one `set` of
+the loop run on that component alone. The three hypotheses say that `get`/`set` is a lens. -/
+theorem foldl_lens {σ : Type*} (get : σ → β) (set : σ → β → σ)
+    (hgs : ∀ s b, get (set s b) = b) (hss : ∀ s b b', set (set s b) b' = set s b')
+    (hsg : ∀ s, set s (get s) = s) (f : β → α → β) (l : List α) (s₀ : σ) :
+    l.foldl (fun s a => set s (f (get s) a)) s₀ = set s₀ (l.foldl f (get s₀)) := by
+  induction l generalizing s₀ with
+  | nil => exact (hsg s₀).symm
+  | cons a l ih => simp only [foldl_cons, ih, hgs, hss]
 
 section Monadic
 

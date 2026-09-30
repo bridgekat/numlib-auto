@@ -1163,18 +1163,9 @@ private theorem foldl_finRange_updateRow {m : ℕ} (g : Fin m → Fin m → ℝ)
       (List.finRange m).foldl (fun (A : Matrix (Fin m) (Fin m) ℝ) j =>
         A.updateRow i (Function.update (A i) j (g i j))) A = A.updateRow i (g i) := by
     intro i A
-    have key : ∀ (L : List (Fin m)) (A : Matrix (Fin m) (Fin m) ℝ),
-        L.foldl (fun (A : Matrix (Fin m) (Fin m) ℝ) j =>
-          A.updateRow i (Function.update (A i) j (g i j))) A =
-          A.updateRow i (L.foldl (fun w j => Function.update w j (g i j)) (A i)) := by
-      intro L
-      induction L with
-      | nil => intro A; simp
-      | cons a L ih =>
-        intro A
-        rw [List.foldl_cons, List.foldl_cons, ih]
-        simp [updateRow_idem]
-    rw [key, foldl_finRange_update]
+    rw [List.foldl_lens (fun A : Matrix (Fin m) (Fin m) ℝ => A i) (fun A r => A.updateRow i r)
+      (by simp) (by simp [updateRow_idem]) (by simp [updateRow_eq_self])
+      (fun w j => Function.update w j (g i j)), foldl_finRange_update]
   simp only [hrow]
   exact foldl_finRange_update (β := Fin m → ℝ) g A₀
 

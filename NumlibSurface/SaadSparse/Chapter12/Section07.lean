@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Tactic.Linarith
+import Numlib.LinearAlgebra.Matrix.Cholesky
 
 /-!
 # Saad §12.7.2: Winget regularization of element matrices
@@ -59,19 +60,6 @@ theorem wingetRegularized_apply (M : Matrix n n ℝ) (i j : n) :
   · subst h
     simp [wingetRegularized, Matrix.diag]
   · simp [wingetRegularized, h, Matrix.one_apply_ne h]
-
-omit [Fintype n] [DecidableEq n] in
-/-- A row of a positive semidefinite matrix through a vanishing diagonal entry is zero: this is the
-`2 × 2` Cauchy–Schwarz inequality `|M i j|² ≤ M i i · M j j`, read off the determinant of the
-principal submatrix on `{i, j}`. -/
-private theorem apply_eq_zero_of_diag_eq_zero {N : Type*} {M : Matrix N N ℝ}
-    (hM : M.PosSemidef) {i : N} (hi : M i i = 0) (j : N) : M i j = 0 := by
-  have hsub := (hM.submatrix ![i, j]).det_nonneg
-  rw [Matrix.det_fin_two] at hsub
-  simp only [Matrix.submatrix_apply, Matrix.cons_val_zero, Matrix.cons_val_one] at hsub
-  have hji : M j i = M i j := by simpa using hM.isHermitian.apply i j
-  rw [hi, zero_mul, zero_sub, hji] at hsub
-  nlinarith [sq_nonneg (M i j)]
 
 set_option linter.unusedFintypeInType false in
 /-- **(12.25) is positive definite** — Saad's Exercise 8 of Chapter 12.  If the scaled element
@@ -145,8 +133,8 @@ theorem equation_12_25 (Atilde : ι → Matrix n n ℝ) (hpsd : ∀ e, (Atilde e
     refine Finset.sum_eq_zero fun i _ => ?_
     by_cases hxi : x i = 0
     · rw [hxi, zero_mul]
-    have hrow : ∀ j, Atilde f i j = 0 :=
-      apply_eq_zero_of_diag_eq_zero (hpsd f) (hone i hxi f hfe)
+    have hrow : ∀ j, Atilde f i j = 0 := fun j =>
+      ((hpsd f).apply_eq_zero_of_diag_eq_zero (hone i hxi f hfe) j).1
     have hmv : (Atilde f *ᵥ x) i = 0 := by simp [Matrix.mulVec, dotProduct, hrow]
     rw [hmv, mul_zero]
   rw [Matrix.sum_mulVec, dotProduct_sum]

@@ -774,13 +774,6 @@ theorem transpose_mul_of_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup 
   have h := mem_unitaryGroup_iff'.mp hQ
   rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
-/-- The transpose of an orthogonal matrix is orthogonal. -/
-theorem transpose_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup n ℝ) :
-    Qᵀ ∈ Matrix.orthogonalGroup n ℝ := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial,
-    transpose_transpose]
-  exact transpose_mul_of_mem_orthogonalGroup hQ
-
 /-- `Q (Qᵀ v) = v` for an orthogonal `Q`. -/
 theorem toEuclideanLin_toEuclideanLin_transpose_apply (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)
     (v : EuclideanSpace ℝ n) : toEuclideanLin Q (toEuclideanLin Qᵀ v) = v := by
@@ -840,7 +833,7 @@ theorem abs_shiftedQrStep_last_le_of_conj {A T Q : Matrix (Fin (N + 2)) (Fin (N 
           (Fin.last (N + 1)) - l| ≤
         4 * K * C ^ 2 * (2 * K * (1 + ‖x‖ * ‖y‖)) ^ 2 *
           |T (Fin.last (N + 1)) (Fin.castSucc (Fin.last N))| ^ 2 := by
-  have hQT : Qᵀ ∈ Matrix.orthogonalGroup (Fin (N + 2)) ℝ := transpose_mem_orthogonalGroup hQ
+  have hQT : Qᵀ ∈ orthogonalGroup (Fin (N + 2)) ℝ := transpose_mem_unitaryGroup_iff.2 hQ
   have hTt : Tᵀ = Qᵀ * Aᵀ * Q := by
     rw [hTQ, transpose_mul, transpose_mul, transpose_transpose, Matrix.mul_assoc]
   have hnormQ : ∀ v : EuclideanSpace ℝ (Fin (N + 2)), ‖toEuclideanLin Q v‖ = ‖v‖ :=

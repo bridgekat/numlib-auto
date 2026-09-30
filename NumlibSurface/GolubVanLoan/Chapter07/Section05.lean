@@ -2048,8 +2048,8 @@ theorem qrDeflate_spec {tol : ℝ} (htol : 0 ≤ tol) {Q Z : Matrix (Fin n) (Fin
       ‖E'‖ ≤ ((1 + 2 * tol) ^ n * c - 1) * ‖A‖ ∧ (tol = 0 → E' = 0) ∧
       (Id.run (qrDeflate pure tol H)).IsUpperHessenberg := by
   have hQQ : Qᵀ * Q = 1 := (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hQ
-  have hQt := Matrix.transpose_mem_orthogonalGroup hQ
-  have hZt := Matrix.transpose_mem_orthogonalGroup hZ
+  have hQt := Matrix.transpose_mem_unitaryGroup_iff.2 hQ
+  have hZt := Matrix.transpose_mem_unitaryGroup_iff.2 hZ
   have key : ∀ (l : List (Fin n)) (H E : Matrix (Fin n) (Fin n) ℝ) (c : ℝ),
       H = Qᵀ * (A + E) * Z → ‖E‖ ≤ (c - 1) * ‖A‖ → (tol = 0 → E = 0) →
         H.IsUpperHessenberg →

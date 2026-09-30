@@ -1,6 +1,5 @@
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
-import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section07
