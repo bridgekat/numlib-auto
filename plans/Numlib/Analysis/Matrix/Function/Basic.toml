@@ -26,13 +26,7 @@ id = "Matrix.pfc_conj_jordanForm"
 id = "Matrix.pfc_transpose"
 
 [[node]]
-id = "Matrix.minpoly_transpose"
-
-[[node]]
 id = "Matrix.pfc_map_conj"
 
 [[node]]
 id = "Matrix.pfc_map_ofReal_of_conj"
-
-[[node]]
-id = "AlgEquiv.map_pfc"

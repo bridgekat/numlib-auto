@@ -1,0 +1,14 @@
+[[node]]
+id = "Polynomial.iteratedDeriv_eval"
+
+[[node]]
+id = "ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen"
+
+[[node]]
+id = "ContDiffOn.continuousOn_iteratedDeriv_of_isOpen"
+
+[[node]]
+id = "contDiffOn_of_hasDerivAt_chain"
+
+[[node]]
+id = "iteratedDeriv_comp_congr"

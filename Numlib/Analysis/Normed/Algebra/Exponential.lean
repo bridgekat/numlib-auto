@@ -15,6 +15,13 @@ In a complete normed `ℝ`-algebra `𝔸` (complex matrices are one through
 `NormedAlgebra.complexToReal`), this module develops the first-order perturbation theory of
 `t ↦ exp (t • a)` beyond Mathlib's `NormedSpace.exp`:
 
+* `NormedSpace.continuous_exp_real`, `NormedSpace.exp_add_of_commute_real`,
+  `NormedSpace.exp_nsmul_real`: Mathlib's continuity and addition theorems, which ask for a normed
+  `ℚ`-algebra, for a complete normed `ℝ`-algebra; with `‖1‖ = 1`, the bounds
+  `NormedSpace.norm_exp_le_exp_norm` (`‖e^x‖ ≤ e^{‖x‖}`) and
+  `NormedSpace.norm_exp_sub_one_le_mul_exp_norm` (`‖e^x - 1‖ ≤ ‖x‖ e^{‖x‖}`);
+* `NormedSpace.exp_eq_sum_range_of_pow_eq_zero`, `NormedSpace.exp_eq_one_add_of_sq_eq_zero`: the
+  exponential of a nilpotent element of any topological algebra is a finite sum;
 * `NormedSpace.exp_smul_add_sub_exp_smul`: the **variation-of-constants identity**
   `e^{t(a+e)} - e^{ta} = ∫₀ᵗ e^{(t-s)a} e e^{s(a+e)} ds`, with the norm bound
   `NormedSpace.norm_exp_smul_add_sub_exp_smul_le`;
@@ -40,10 +47,33 @@ open Filter Topology MeasureTheory
 
 namespace NormedSpace
 
+section Nilpotent
+
+variable {𝕂 𝔸 : Type*} [Field 𝕂] [CharZero 𝕂] [Ring 𝔸] [Algebra 𝕂 𝔸] [TopologicalSpace 𝔸]
+  [IsTopologicalRing 𝔸]
+
+variable (𝕂) in
+/-- **The exponential of a nilpotent element** is a finite sum: if `x ^ n = 0` then
+`exp x = ∑_{k < n} x^k / k!`. -/
+theorem exp_eq_sum_range_of_pow_eq_zero {x : 𝔸} {n : ℕ} (hx : x ^ n = 0) :
+    exp x = ∑ k ∈ Finset.range n, ((k.factorial : 𝕂)⁻¹) • x ^ k := by
+  rw [exp_eq_tsum 𝕂]
+  refine tsum_eq_sum fun k hk => ?_
+  rw [Finset.mem_range, not_lt] at hk
+  rw [show k = n + (k - n) by omega, pow_add, hx, zero_mul, smul_zero]
+
+/-- A square-zero element has `exp x = 1 + x`. -/
+theorem exp_eq_one_add_of_sq_eq_zero [Algebra ℚ 𝔸] {x : 𝔸} (hx : x ^ 2 = 0) : exp x = 1 + x := by
+  rw [exp_eq_sum_range_of_pow_eq_zero ℚ hx]
+  simp [Finset.sum_range_succ]
+
+end Nilpotent
+
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]
 
-/-- The exponential is continuous (from its analyticity over `ℝ`). -/
-private theorem continuous_exp_real : Continuous (exp : 𝔸 → 𝔸) :=
+/-- The exponential of a complete normed `ℝ`-algebra is continuous (from its analyticity over
+`ℝ`; Mathlib's `NormedSpace.exp_continuous` asks for a normed `ℚ`-algebra structure). -/
+theorem continuous_exp_real : Continuous (exp : 𝔸 → 𝔸) :=
   continuous_iff_continuousAt.mpr fun x => (exp_analytic (𝕂 := ℝ) x).continuousAt
 
 /-- `s ↦ exp (c(s) • a)` is continuous for continuous `c`. -/
@@ -51,13 +81,51 @@ private theorem continuous_exp_smul {X : Type*} [TopologicalSpace X] {c : X → 
     (hc : Continuous c) (a : 𝔸) : Continuous fun s => exp (c s • a) :=
   continuous_exp_real.comp (hc.smul continuous_const)
 
-/-- `exp (x + y) = exp x * exp y` for commuting `x`, `y` in a real normed algebra (Mathlib's
-`exp_add_of_commute` asks for a `ℚ`-algebra structure). -/
-private theorem exp_add_of_commute_real {x y : 𝔸} (h : Commute x y) :
+/-- `exp (x + y) = exp x * exp y` for commuting `x`, `y` in a complete normed `ℝ`-algebra
+(Mathlib's `NormedSpace.exp_add_of_commute` asks for a normed `ℚ`-algebra structure). -/
+theorem exp_add_of_commute_real {x y : 𝔸} (h : Commute x y) :
     exp (x + y) = exp x * exp y :=
   exp_add_of_commute_of_mem_ball (𝕂 := ℝ) h
     ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
     ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
+
+/-- `exp (m • x) = exp x ^ m` in a complete normed `ℝ`-algebra (Mathlib's
+`NormedSpace.exp_nsmul` asks for a normed `ℚ`-algebra structure). -/
+theorem exp_nsmul_real (m : ℕ) (x : 𝔸) : exp (m • x) = exp x ^ m := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    rw [succ_nsmul, exp_add_of_commute_real ((Commute.refl x).smul_left m), ih, pow_succ]
+
+section NormOneClass
+
+variable [NormOneClass 𝔸]
+
+/-- `‖e^x‖ ≤ e^{‖x‖}` in a complete normed `ℝ`-algebra with `‖1‖ = 1`. -/
+theorem norm_exp_le_exp_norm (x : 𝔸) : ‖exp x‖ ≤ Real.exp ‖x‖ := by
+  have hx := exp_series_hasSum_exp' (𝕂 := ℝ) x
+  have hr := exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖
+  rw [← Real.exp_eq_exp_ℝ] at hr
+  refine hx.norm_le_of_bounded hr fun n => ?_
+  rw [norm_smul, Real.norm_of_nonneg (by positivity), smul_eq_mul]
+  exact mul_le_mul_of_nonneg_left (norm_pow_le x n) (by positivity)
+
+/-- `‖e^x - 1‖ ≤ ‖x‖ e^{‖x‖}` in a complete normed `ℝ`-algebra with `‖1‖ = 1`. -/
+theorem norm_exp_sub_one_le_mul_exp_norm (x : 𝔸) : ‖exp x - 1‖ ≤ ‖x‖ * Real.exp ‖x‖ := by
+  have hx := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) x)
+  have hr := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖)
+  simp only [Finset.range_one, Finset.sum_singleton, pow_zero, Nat.factorial_zero,
+    Nat.cast_one, inv_one, one_smul] at hx hr
+  rw [← Real.exp_eq_exp_ℝ] at hr
+  refine (hx.norm_le_of_bounded hr fun n => ?_).trans ?_
+  · rw [norm_smul, Real.norm_of_nonneg (by positivity), smul_eq_mul]
+    exact mul_le_mul_of_nonneg_left (norm_pow_le x _) (by positivity)
+  · have h := Real.add_one_le_exp (-‖x‖)
+    have h2 : Real.exp (-‖x‖) * Real.exp ‖x‖ = 1 := by rw [← Real.exp_add, neg_add_cancel,
+      Real.exp_zero]
+    nlinarith [Real.exp_pos ‖x‖, norm_nonneg x]
+
+end NormOneClass
 
 /-- The derivative of `s ↦ exp ((t - s) • a)`. -/
 private theorem hasDerivAt_exp_sub_smul (a : 𝔸) (t s : ℝ) :

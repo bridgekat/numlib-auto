@@ -33,7 +33,8 @@ The Jordan-form, power-series and Cauchy-integral definitions of `f(A)` are theo
 * `pfc_polynomial`, `pfc_const`, `pfc_id`, `pfc_pow`: polynomials are evaluated at `a`.
 * `pfc_add`, `pfc_const_smul`, `pfc_mul`, `pfc_inv`: `pfc · a` is an algebra homomorphism on
   functions smooth enough at the eigenvalues.
-* `commute_pfc`, `AlgHom.map_pfc`: commutation and naturality.
+* `commute_pfc`, `AlgHom.map_pfc`, `AlgEquiv.map_pfc`, `pfc_units_conj`: commutation, naturality
+  and similarity.
 * `spectralIdempotent_mul_spectralIdempotent`, `sum_spectralIdempotent`, … : the spectral
   idempotents are a resolution of the identity, and `pfc_eq_sum_spectralIdempotent` is the spectral
   decomposition (Sylvester's formula).
@@ -323,6 +324,34 @@ theorem pfc_inv_id [CharZero 𝕜] [CompleteSpace 𝕜] (ha : IsIntegral 𝕜 a)
     exact (mem_roots (minpoly.ne_zero ha)).mp hμ
 
 end Algebraic
+
+section AlgEquiv
+
+variable {B : Type*} [Ring B] [Algebra 𝕜 B]
+
+/-- **Naturality under algebra equivalences**, with no hypothesis on `a`: an algebra equivalence
+preserves the minimal polynomial (compare `AlgHom.map_pfc`, which needs `a` integral with a split
+minimal polynomial). -/
+theorem AlgEquiv.map_pfc (φ : A ≃ₐ[𝕜] B) (f : 𝕜 → 𝕜) (a : A) : φ (pfc f a) = pfc f (φ a) := by
+  classical
+  rw [pfc_def, pfc_def, minpoly.algEquiv_eq, ← aeval_algHom_apply]
+
+/-- Conjugation by a unit as an algebra automorphism. -/
+private def unitsConjAlgEquiv (u : Aˣ) : A ≃ₐ[𝕜] A where
+  toFun x := u * x * ↑u⁻¹
+  invFun x := ↑u⁻¹ * x * u
+  left_inv x := by simp [mul_assoc]
+  right_inv x := by simp [mul_assoc]
+  map_mul' x y := by simp [mul_assoc]
+  map_add' x y := by simp [mul_add, add_mul]
+  commutes' c := by simp [Algebra.commutes, mul_assoc]
+
+/-- **Similarity** in any algebra: `f(u a u⁻¹) = u f(a) u⁻¹` for a unit `u`. -/
+theorem pfc_units_conj (u : Aˣ) (f : 𝕜 → 𝕜) (a : A) :
+    pfc f (u * a * ↑u⁻¹) = u * pfc f a * ↑u⁻¹ :=
+  ((unitsConjAlgEquiv u).map_pfc f a).symm
+
+end AlgEquiv
 
 /-! ### Spectral idempotents -/
 

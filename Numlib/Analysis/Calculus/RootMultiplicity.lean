@@ -4,10 +4,8 @@ import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.Calculus.DSlope
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
-import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.MeasureTheory.Integral.DominatedConvergence
+import Numlib.Analysis.Calculus.SegmentAverage
 
 /-!
 # Roots of multiplicity `m` of a real function
@@ -28,70 +26,21 @@ the identification with `Polynomial.rootMultiplicity` (`Polynomial.isRootOfMulti
 
 The factor `h` is the `m`-fold iterate of Mathlib's `dslope`, so the factorization identity holds
 everywhere (`pow_sub_smul_iterate_dslope_of_zero`) and its regularity reduces to **Hadamard's
-lemma** in one variable, `ContDiffAt.dslope_same`: if `f` is `C^{n+1}` at `a` then
-`dslope f a` is `C^n` at `a`, with `iteratedDeriv n (dslope f a) a = f^{(n+1)}(a) / (n + 1)`. That
-lemma is proved from the integral representation
-`dslope f a b = ∫₀¹ f'(a + t (b - a)) dt`, whose `k`-th derivative in `b` is
-`∫₀¹ tᵏ f^{(k+1)}(a + t (b - a)) dt`, differentiated under the integral sign. Hadamard's lemma and
-the two helpers on iterated derivatives over an open set are upstreaming candidates (natural home:
-`Mathlib.Analysis.Calculus.DSlope`), and so are their pointwise `C¹` forms
-`ContDiffAt.eventually_hasDerivAt` and `ContDiffAt.continuousAt_deriv`: a function `C¹` at a point
-has `deriv` as its derivative on a whole neighbourhood, on which `deriv` is continuous.
+lemma** in one variable, `ContDiffAt.dslope_same`: if `f : 𝕜 → 𝕜` (`𝕜 = ℝ` or `ℂ`) is `C^{n+1}` at
+`a` then `dslope f a` is `C^n` at `a`, with
+`iteratedDeriv n (dslope f a) a = f^{(n+1)}(a) / (n + 1)`. On a ball about `a`, `dslope f a` is
+the segment average `b ↦ ∫₀¹ f'(a + t (b - a)) dt` of
+`Numlib/Analysis/Calculus/SegmentAverage`, whose `k`-th derivative is
+`∫₀¹ tᵏ f^{(k+1)}(a + t (b - a)) dt`. Hadamard's lemma and the pointwise `C¹` facts
+`ContDiffAt.eventually_hasDerivAt` and `ContDiffAt.continuousAt_deriv` (a function `C¹` at a point
+has `deriv` as its derivative on a whole neighbourhood, on which `deriv` is continuous) are
+upstreaming candidates (natural home: `Mathlib.Analysis.Calculus.DSlope`).
 -/
 
 open Filter Topology Set Nat
 open scoped Interval
 
-section OpenSet
-
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {F : Type*} [NormedAddCommGroup F]
-  [NormedSpace 𝕜 F] {f : 𝕜 → F} {U : Set 𝕜}
-
-/-- On an open set where `f` is `C^N`, the `j`-th derivative (`j < N`) is differentiable with the
-`(j + 1)`-st derivative as its derivative. -/
-theorem ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen (hU : IsOpen U) {N : ℕ}
-    (hf : ContDiffOn 𝕜 N f U) {j : ℕ} (hj : j < N) {b : 𝕜} (hb : b ∈ U) :
-    HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f b) b := by
-  have hd : DifferentiableOn 𝕜 (iteratedDerivWithin j f U) U :=
-    hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hj) hU.uniqueDiffOn
-  have hd' : DifferentiableOn 𝕜 (iteratedDeriv j f) U :=
-    hd.congr (iteratedDerivWithin_of_isOpen hU).symm
-  rw [iteratedDeriv_succ]
-  exact (hd'.differentiableAt (hU.mem_nhds hb)).hasDerivAt
-
-/-- On an open set where `f` is `C^N`, the `j`-th derivative (`j ≤ N`) is continuous. -/
-theorem ContDiffOn.continuousOn_iteratedDeriv_of_isOpen (hU : IsOpen U) {N : ℕ}
-    (hf : ContDiffOn 𝕜 N f U) {j : ℕ} (hj : j ≤ N) : ContinuousOn (iteratedDeriv j f) U :=
-  (hf.continuousOn_iteratedDerivWithin (by exact_mod_cast hj) hU.uniqueDiffOn).congr
-    (iteratedDerivWithin_of_isOpen hU).symm
-
-/-- A chain `G 0, G 1, …, G n` of functions on an open set, each the derivative of the previous
-one and the last continuous, makes `G 0` a `C^n` function whose iterated derivatives are the
-`G k`. -/
-theorem contDiffOn_of_hasDerivAt_chain {G : ℕ → 𝕜 → F} (hU : IsOpen U) {n : ℕ}
-    (hd : ∀ k < n, ∀ b ∈ U, HasDerivAt (G k) (G (k + 1) b) b) (hc : ContinuousOn (G n) U) :
-    ContDiffOn 𝕜 n (G 0) U ∧ ∀ k ≤ n, Set.EqOn (iteratedDeriv k (G 0)) (G k) U := by
-  induction n generalizing G with
-  | zero =>
-    refine ⟨contDiffOn_zero.2 hc, fun k hk => ?_⟩
-    obtain rfl : k = 0 := Nat.le_zero.1 hk
-    simp [Set.EqOn]
-  | succ n ih =>
-    obtain ⟨h1, h2⟩ := ih (G := fun k => G (k + 1))
-      (fun k hk b hb => hd (k + 1) (by omega) b hb) hc
-    have hderiv : Set.EqOn (deriv (G 0)) (G 1) U := fun b hb => (hd 0 (by omega) b hb).deriv
-    refine ⟨?_, fun k hk => ?_⟩
-    · rw [Nat.cast_succ, contDiffOn_succ_iff_deriv_of_isOpen hU]
-      refine ⟨fun b hb => (hd 0 (by omega) b hb).differentiableAt.differentiableWithinAt, ?_,
-        h1.congr hderiv⟩
-      simp
-    · cases k with
-      | zero => simp [Set.EqOn]
-      | succ k =>
-        intro b hb
-        rw [iteratedDeriv_succ', ← iteratedDerivWithin_of_isOpen hU hb,
-          iteratedDerivWithin_congr hderiv hb, iteratedDerivWithin_of_isOpen hU hb]
-        exact h2 k (by omega) hb
+section Pointwise
 
 /-- **A `C^N` function is `N` times differentiable on a ball**: around a point where `f` is `C^N`
 there is a ball on which each iterated derivative up to order `N - 1` has the next one as its
@@ -137,168 +86,68 @@ theorem hasDerivAt_deriv_of_contDiffAt_two {f : ℝ → ℝ} {α : ℝ} (hf : Co
     (Metric.mem_ball_self hr)
   simpa using this
 
-end OpenSet
+end Pointwise
 
 section Hadamard
 
-variable {f : ℝ → ℝ} {a : ℝ}
+variable {𝕜 : Type*} [RCLike 𝕜] {f : 𝕜 → 𝕜} {a : 𝕜}
 
-/-- `∫₀¹ tᵏ f^{(k+1)}(a + t (b - a)) dt`: the `k`-th derivative of `dslope f a` at `b`. -/
-private noncomputable def dslopeDeriv (f : ℝ → ℝ) (a : ℝ) (k : ℕ) (b : ℝ) : ℝ :=
-  ∫ t in (0 : ℝ)..1, t ^ k * iteratedDeriv (k + 1) f ((b - a) * t + a)
-
-/-- Points of the segment from `a` to `b` stay in `closedBall a |b - a|`. -/
-private theorem segment_mem_closedBall {b t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
-    (b - a) * t + a ∈ Metric.closedBall a (dist b a) := by
-  rw [Metric.mem_closedBall, Real.dist_eq, Real.dist_eq, add_sub_cancel_right, abs_mul,
-    abs_of_nonneg ht.1]
-  exact mul_le_of_le_one_right (abs_nonneg _) ht.2
-
-/-- `Ι 0 1 ⊆ Icc 0 1`. -/
-private theorem uIoc_zero_one_subset : Ι (0 : ℝ) 1 ⊆ Icc 0 1 := by
-  rw [uIoc_of_le zero_le_one]; exact Ioc_subset_Icc_self
-
-/-- The integrand of `dslopeDeriv` is continuous on `[0, 1]` for `b` in the ball. -/
-private theorem continuousOn_dslopeDeriv_integrand {r : ℝ} {N : ℕ}
-    (hf : ContDiffOn ℝ N f (Metric.ball a r)) {k : ℕ} (hk : k + 1 ≤ N) {b : ℝ}
-    (hb : b ∈ Metric.ball a r) :
-    ContinuousOn (fun t : ℝ => t ^ k * iteratedDeriv (k + 1) f ((b - a) * t + a)) (Icc 0 1) := by
-  refine (continuousOn_pow k).mul ?_
-  refine (hf.continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball hk).comp
-    (by fun_prop) fun t ht => ?_
-  exact Metric.closedBall_subset_ball (Metric.mem_ball.1 hb) (segment_mem_closedBall ht)
-
-/-- Differentiation under the integral sign: `dslopeDeriv f a k` has derivative
-`dslopeDeriv f a (k + 1)` on the ball. -/
-private theorem hasDerivAt_dslopeDeriv {r : ℝ} {N : ℕ} (hf : ContDiffOn ℝ N f (Metric.ball a r))
-    {k : ℕ} (hk : k + 2 ≤ N) {b : ℝ} (hb : b ∈ Metric.ball a r) :
-    HasDerivAt (dslopeDeriv f a k) (dslopeDeriv f a (k + 1) b) b := by
-  obtain ⟨r', hbr', hr'r⟩ := exists_between (Metric.mem_ball.1 hb)
-  have hK : Metric.closedBall a r' ⊆ Metric.ball a r := Metric.closedBall_subset_ball hr'r
-  obtain ⟨M, hM⟩ := (isCompact_closedBall a r').exists_bound_of_continuousOn
-    ((hf.continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball hk).mono hK)
-  have hs : Metric.ball a r' ∈ 𝓝 b := Metric.isOpen_ball.mem_nhds (Metric.mem_ball.2 hbr')
-  have hsub : Metric.ball a r' ⊆ Metric.ball a r := Metric.ball_subset_ball hr'r.le
-  have hmeas : ∀ x ∈ Metric.ball a r, ∀ j, j + 1 ≤ N → MeasureTheory.AEStronglyMeasurable
-      (fun t : ℝ => t ^ j * iteratedDeriv (j + 1) f ((x - a) * t + a))
-      (MeasureTheory.volume.restrict (Ι (0 : ℝ) 1)) := fun x hx j hj =>
-    ((continuousOn_dslopeDeriv_integrand hf hj hx).mono uIoc_zero_one_subset).aestronglyMeasurable
-      measurableSet_uIoc
-  refine (intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le
-    (μ := MeasureTheory.volume) (F := fun x t => t ^ k * iteratedDeriv (k + 1) f ((x - a) * t + a))
-    (F' := fun x t => t ^ (k + 1) * iteratedDeriv (k + 2) f ((x - a) * t + a))
-    (bound := fun _ => M) hs ?_ ?_ ?_ ?_ ?_ ?_).2
-  · exact (Metric.isOpen_ball.eventually_mem hb).mono fun x hx => hmeas x hx k (by omega)
-  · exact ((continuousOn_dslopeDeriv_integrand hf (by omega) hb).mono
-      (by simp)).intervalIntegrable
-  · exact hmeas b hb (k + 1) hk
-  · refine Eventually.of_forall fun t ht x hx => ?_
-    have ht' : t ∈ Icc (0 : ℝ) 1 := uIoc_zero_one_subset ht
-    rw [Real.norm_eq_abs, abs_mul, abs_pow, abs_of_nonneg ht'.1]
-    rw [← one_mul M]
-    refine mul_le_mul (pow_le_one₀ ht'.1 ht'.2) ?_ (abs_nonneg _) zero_le_one
-    exact hM _ (Metric.closedBall_subset_closedBall (Metric.mem_ball.1 hx).le
-      (segment_mem_closedBall ht'))
-  · exact intervalIntegrable_const
-  · refine Eventually.of_forall fun t ht x hx => ?_
-    have ht' : t ∈ Icc (0 : ℝ) 1 := uIoc_zero_one_subset ht
-    have hy : (x - a) * t + a ∈ Metric.ball a r :=
-      hsub (Metric.closedBall_subset_ball (Metric.mem_ball.1 hx) (segment_mem_closedBall ht'))
-    have hg := hf.hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball (j := k + 1) (by omega) hy
-    have hl : HasDerivAt (fun x : ℝ => (x - a) * t + a) t x := by
-      simpa using (((hasDerivAt_id x).sub_const a).mul_const t).add_const a
-    refine ((hg.comp x hl).const_mul (t ^ k)).congr_deriv ?_
-    ring
-
-/-- `dslopeDeriv f a k` is continuous on the ball. -/
-private theorem continuousOn_dslopeDeriv {r : ℝ} {N : ℕ} (hf : ContDiffOn ℝ N f (Metric.ball a r))
-    {k : ℕ} (hk : k + 1 ≤ N) : ContinuousOn (dslopeDeriv f a k) (Metric.ball a r) := by
+/-- On an open convex set where `f` is `C¹`, the difference quotient `dslope f a` is the segment
+average `b ↦ ∫₀¹ f'(a + t (b - a)) dt`. -/
+private theorem eqOn_dslope_integral_deriv_comp_segment {U : Set 𝕜} (hU : IsOpen U)
+    (hUc : Convex ℝ U) {N : ℕ} (hN : 1 ≤ N) (hf : ContDiffOn 𝕜 N f U) (ha : a ∈ U) :
+    EqOn (dslope f a) (fun b => ∫ t in (0 : ℝ)..1, deriv f (a + t • (b - a))) U := by
   intro b hb
-  refine ContinuousAt.continuousWithinAt ?_
-  obtain ⟨r', hbr', hr'r⟩ := exists_between (Metric.mem_ball.1 hb)
-  have hK : Metric.closedBall a r' ⊆ Metric.ball a r := Metric.closedBall_subset_ball hr'r
-  obtain ⟨M, hM⟩ := (isCompact_closedBall a r').exists_bound_of_continuousOn
-    ((hf.continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball hk).mono hK)
-  have hs : Metric.ball a r' ∈ 𝓝 b := Metric.isOpen_ball.mem_nhds (Metric.mem_ball.2 hbr')
-  refine intervalIntegral.continuousAt_of_dominated_interval (μ := MeasureTheory.volume)
-    (F := fun x t => t ^ k * iteratedDeriv (k + 1) f ((x - a) * t + a)) (bound := fun _ => M)
-    ?_ ?_ intervalIntegrable_const ?_
-  · refine (Metric.isOpen_ball.eventually_mem hb).mono fun x hx => ?_
-    exact ((continuousOn_dslopeDeriv_integrand hf hk hx).mono
-      uIoc_zero_one_subset).aestronglyMeasurable measurableSet_uIoc
-  · refine eventually_of_mem hs fun x hx => Eventually.of_forall fun t ht => ?_
-    have ht' : t ∈ Icc (0 : ℝ) 1 := uIoc_zero_one_subset ht
-    rw [Real.norm_eq_abs, abs_mul, abs_pow, abs_of_nonneg ht'.1]
-    rw [← one_mul M]
-    refine mul_le_mul (pow_le_one₀ ht'.1 ht'.2) ?_ (abs_nonneg _) zero_le_one
-    exact hM _ (Metric.closedBall_subset_closedBall (Metric.mem_ball.1 hx).le
-      (segment_mem_closedBall ht'))
-  · refine Eventually.of_forall fun t ht => ?_
-    have ht' : t ∈ Icc (0 : ℝ) 1 := uIoc_zero_one_subset ht
-    have hy : (b - a) * t + a ∈ Metric.ball a r :=
-      Metric.closedBall_subset_ball (Metric.mem_ball.1 hb) (segment_mem_closedBall ht')
-    have hg : ContinuousAt (iteratedDeriv (k + 1) f) ((b - a) * t + a) :=
-      (hf.continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball hk).continuousAt
-        (Metric.isOpen_ball.mem_nhds hy)
-    exact continuousAt_const.mul (hg.comp (f := fun x : ℝ => (x - a) * t + a) (by fun_prop))
-
-/-- The integral representation `dslope f a b = ∫₀¹ f'(a + t (b - a)) dt` on the ball. -/
-private theorem dslopeDeriv_zero {r : ℝ} {N : ℕ} (hf : ContDiffOn ℝ N f (Metric.ball a r))
-    (hN : 1 ≤ N) {b : ℝ} (hb : b ∈ Metric.ball a r) : dslopeDeriv f a 0 b = dslope f a b := by
-  simp only [dslopeDeriv, pow_zero, one_mul, zero_add, iteratedDeriv_one]
+  have hf1 : ContDiffOn 𝕜 (1 : ℕ) f U := hf.of_le (by exact_mod_cast hN)
+  have hf' : ∀ x ∈ U, HasDerivAt f (deriv f x) x := fun x hx => by
+    simpa using hf1.hasDerivAt_iteratedDeriv_of_isOpen hU (j := 0) one_pos hx
+  have hf'c : ContinuousOn (deriv f) U := by
+    simpa using hf1.continuousOn_iteratedDeriv_of_isOpen hU le_rfl
   rcases eq_or_ne b a with rfl | hba
   · simp
-  · have hne : b - a ≠ 0 := sub_ne_zero.2 hba
-    rw [intervalIntegral.integral_comp_mul_add (fun x => deriv f x) hne a]
-    simp only [mul_zero, zero_add, mul_one, sub_add_cancel, smul_eq_mul]
-    have hsub : uIcc a b ⊆ Metric.ball a r := fun x hx => by
-      rw [Metric.mem_ball, Real.dist_eq]
-      exact lt_of_le_of_lt (abs_sub_left_of_mem_uIcc hx) (by simpa [Real.dist_eq] using hb)
-    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (f := f) (fun x hx => ?_)
-      (((hf.continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball hN).mono hsub).congr
-        (fun x _ => (iteratedDeriv_one (f := f)).symm ▸ rfl)).intervalIntegrable,
-      dslope_of_ne _ hba, slope_def_field, div_eq_inv_mul]
-    simpa using hf.hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball (j := 0) hN (hsub hx)
-
-/-- The value at the base point: `dslopeDeriv f a k a = f^{(k+1)}(a) / (k + 1)`. -/
-private theorem dslopeDeriv_same (f : ℝ → ℝ) (a : ℝ) (k : ℕ) :
-    dslopeDeriv f a k a = iteratedDeriv (k + 1) f a / (k + 1) := by
-  simp [dslopeDeriv, integral_pow, div_eq_inv_mul]
+  · rw [dslope_of_ne _ hba, slope_def_field, eq_add_mul_integral_comp_segment hUc hf' hf'c ha hb,
+      add_sub_cancel_left, mul_div_cancel_left₀ _ (sub_ne_zero.2 hba)]
 
 /-- The two conclusions of Hadamard's lemma on a ball where `f` is `C^{n+1}`. -/
-private theorem contDiffOn_dslope_ball {r : ℝ} {n : ℕ}
-    (hf : ContDiffOn ℝ (n + 1 : ℕ) f (Metric.ball a r)) :
-    ContDiffOn ℝ n (dslope f a) (Metric.ball a r) ∧
-      ∀ k ≤ n, Set.EqOn (iteratedDeriv k (dslope f a)) (dslopeDeriv f a k) (Metric.ball a r) := by
-  obtain ⟨h1, h2⟩ := contDiffOn_of_hasDerivAt_chain (G := dslopeDeriv f a) Metric.isOpen_ball
-    (fun k hk b hb => hasDerivAt_dslopeDeriv hf (by omega) hb)
-    (continuousOn_dslopeDeriv hf le_rfl)
-  have h0 : Set.EqOn (dslope f a) (dslopeDeriv f a 0) (Metric.ball a r) := fun b hb =>
-    (dslopeDeriv_zero hf (by omega) hb).symm
-  refine ⟨h1.congr h0, fun k hk b hb => ?_⟩
-  rw [← iteratedDerivWithin_of_isOpen Metric.isOpen_ball hb, iteratedDerivWithin_congr h0 hb,
-    iteratedDerivWithin_of_isOpen Metric.isOpen_ball hb]
-  exact h2 k hk hb
+private theorem contDiffOn_dslope_ball {r : ℝ} (hr : 0 < r) {n : ℕ}
+    (hf : ContDiffOn 𝕜 (n + 1 : ℕ) f (Metric.ball a r)) :
+    ContDiffAt 𝕜 n (dslope f a) a ∧
+      iteratedDeriv n (dslope f a) a = iteratedDeriv (n + 1) f a / (n + 1) := by
+  have ha : a ∈ Metric.ball a r := Metric.mem_ball_self hr
+  have hEq : dslope f a =ᶠ[𝓝 a] fun b => ∫ t in (0 : ℝ)..1, deriv f (a + t • (b - a)) :=
+    (eqOn_dslope_integral_deriv_comp_segment Metric.isOpen_ball (convex_ball a r) (by omega) hf
+      ha).eventuallyEq_of_mem (Metric.ball_mem_nhds a hr)
+  refine ⟨?_, ?_⟩
+  · have hg := contDiffOn_integral_deriv_comp_segment Metric.isOpen_ball (convex_ball a r)
+      (n := n) (by exact_mod_cast hf) ha
+    exact ((hg.contDiffAt (Metric.ball_mem_nhds a hr)).congr_of_eventuallyEq hEq).of_le
+      (by exact_mod_cast le_rfl)
+  · rw [hEq.iteratedDeriv_eq, iteratedDeriv_integral_deriv_comp_segment Metric.isOpen_ball
+      (convex_ball a r) hf ha le_rfl ha]
+    simp only [sub_self, smul_zero, add_zero]
+    rw [intervalIntegral.integral_smul_const, integral_pow, one_pow,
+      zero_pow (Nat.succ_ne_zero n), sub_zero, RCLike.real_smul_eq_coe_mul]
+    push_cast
+    ring
 
 /-- **Hadamard's lemma** in one variable: if `f` is `C^{n+1}` at `a`, the difference quotient
 `dslope f a` (which is `(f x - f a) / (x - a)` off `a` and `f'(a)` at `a`) is `C^n` at `a`. -/
-theorem ContDiffAt.dslope_same {n : ℕ} (hf : ContDiffAt ℝ (n + 1 : ℕ) f a) :
-    ContDiffAt ℝ n (dslope f a) a := by
+theorem ContDiffAt.dslope_same {n : ℕ} (hf : ContDiffAt 𝕜 (n + 1 : ℕ) f a) :
+    ContDiffAt 𝕜 n (dslope f a) a := by
   obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
   obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
-  exact (contDiffOn_dslope_ball (hfu.mono hru)).1.contDiffAt (Metric.ball_mem_nhds a hr)
+  exact (contDiffOn_dslope_ball hr (hfu.mono hru)).1
 
 /-- The `n`-th derivative of `dslope f a` at the base point is `f^{(n+1)}(a) / (n + 1)`. -/
-theorem iteratedDeriv_dslope_same {n : ℕ} (hf : ContDiffAt ℝ (n + 1 : ℕ) f a) :
+theorem iteratedDeriv_dslope_same {n : ℕ} (hf : ContDiffAt 𝕜 (n + 1 : ℕ) f a) :
     iteratedDeriv n (dslope f a) a = iteratedDeriv (n + 1) f a / (n + 1) := by
   obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
   obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
-  rw [(contDiffOn_dslope_ball (hfu.mono hru)).2 n le_rfl (Metric.mem_ball_self hr),
-    dslopeDeriv_same]
+  exact (contDiffOn_dslope_ball hr (hfu.mono hru)).2
 
 /-- The `m`-fold iterate of `dslope` at `a` is `C^n` at `a` when `f` is `C^{m+n}` there. -/
-theorem ContDiffAt.iterate_dslope_same {m n : ℕ} (hf : ContDiffAt ℝ (m + n : ℕ) f a) :
-    ContDiffAt ℝ n ((Function.swap dslope a)^[m] f) a := by
+theorem ContDiffAt.iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m + n : ℕ) f a) :
+    ContDiffAt 𝕜 n ((Function.swap dslope a)^[m] f) a := by
   induction m generalizing f with
   | zero => simpa using hf
   | succ m ih =>
@@ -308,14 +157,14 @@ theorem ContDiffAt.iterate_dslope_same {m n : ℕ} (hf : ContDiffAt ℝ (m + n :
 
 /-- The `n`-th derivative of the `m`-fold iterate of `dslope` at `a`:
 `n! / (m + n)! · f^{(m+n)}(a)`. -/
-theorem iteratedDeriv_iterate_dslope_same {m n : ℕ} (hf : ContDiffAt ℝ (m + n : ℕ) f a) :
+theorem iteratedDeriv_iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m + n : ℕ) f a) :
     iteratedDeriv n ((Function.swap dslope a)^[m] f) a =
-      (n ! : ℝ) / (m + n)! * iteratedDeriv (m + n) f a := by
+      (n ! : 𝕜) / (m + n)! * iteratedDeriv (m + n) f a := by
   induction m generalizing f with
   | zero => simp [Nat.factorial_ne_zero]
   | succ m ih =>
     rw [Function.iterate_succ_apply]
-    have hf' : ContDiffAt ℝ (m + n + 1 : ℕ) f a := by
+    have hf' : ContDiffAt 𝕜 (m + n + 1 : ℕ) f a := by
       rwa [show m + n + 1 = m + 1 + n by omega]
     rw [ih (f := dslope f a) (hf'.dslope_same), iteratedDeriv_dslope_same hf',
       show m + 1 + n = m + n + 1 by omega, Nat.factorial_succ]
@@ -323,21 +172,21 @@ theorem iteratedDeriv_iterate_dslope_same {m n : ℕ} (hf : ContDiffAt ℝ (m + 
     field_simp
 
 /-- The value of the `m`-fold iterate of `dslope` at the base point: `f^{(m)}(a) / m!`. -/
-theorem iterate_dslope_same_apply {m : ℕ} (hf : ContDiffAt ℝ m f a) :
+theorem iterate_dslope_same_apply {m : ℕ} (hf : ContDiffAt 𝕜 m f a) :
     (Function.swap dslope a)^[m] f a = iteratedDeriv m f a / m ! := by
   have := iteratedDeriv_iterate_dslope_same (m := m) (n := 0) (by simpa using hf)
   simpa [div_eq_inv_mul] using this
 
 /-- **Hadamard's lemma, globally**: if `g` is `C^{m+1}` then `dslope g c` is `C^m`. At `c` this is
 `ContDiffAt.dslope_same`; elsewhere `dslope g c` is the quotient `(g y - g c)/(y - c)`. -/
-theorem _root_.ContDiff.dslope {g : ℝ → ℝ} {m : ℕ} (hg : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) g)
-    (c : ℝ) : ContDiff ℝ m (dslope g c) := by
+theorem _root_.ContDiff.dslope {g : 𝕜 → 𝕜} {m : ℕ}
+    (hg : ContDiff 𝕜 ((m + 1 : ℕ) : WithTop ℕ∞) g) (c : 𝕜) : ContDiff 𝕜 m (dslope g c) := by
   refine contDiff_iff_contDiffAt.2 fun x => ?_
   rcases eq_or_ne x c with rfl | hxc
   · exact hg.contDiffAt.dslope_same
   · refine ContDiffAt.congr_of_eventuallyEq ?_ (dslope_eventuallyEq_slope_of_ne g hxc)
     rw [slope_fun_def_field]
-    have hg' : ContDiffAt ℝ m g x := hg.contDiffAt.of_le (by exact_mod_cast Nat.le_succ m)
+    have hg' : ContDiffAt 𝕜 m g x := hg.contDiffAt.of_le (by exact_mod_cast Nat.le_succ m)
     exact (hg'.sub contDiffAt_const).div (contDiffAt_id.sub contDiffAt_const)
       (sub_ne_zero.2 hxc)
 
@@ -483,17 +332,6 @@ theorem contDiffOn_eval (p : ℝ[X]) (k : WithTop ℕ∞) (s : Set ℝ) :
     ContDiffOn ℝ k (fun x => p.eval x) s :=
   (by simpa [Polynomial.coe_aeval_eq_eval] using p.contDiff_aeval (𝕜 := ℝ) k :
     ContDiff ℝ k fun x => p.eval x).contDiffOn
-
-/-- The iterated derivative of a polynomial function is the function of the iterated
-`derivative`. -/
-theorem iteratedDeriv_eval (p : ℝ[X]) (n : ℕ) :
-    iteratedDeriv n (fun x => p.eval x) = fun x => (derivative^[n] p).eval x := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [iteratedDeriv_succ, ih, Function.iterate_succ_apply']
-    ext x
-    exact Polynomial.deriv _
 
 /-- For a nonzero real polynomial, `IsRootOfMultiplicity` of its evaluation map is Mathlib's
 `Polynomial.rootMultiplicity`. This lets [quarteroni2000numerical] (6.7) speak of the multiplicity

@@ -14,15 +14,6 @@ id = "IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow"
 id = "Polynomial.isRootOfMultiplicity_eval_iff"
 
 [[node]]
-id = "ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen"
-
-[[node]]
-id = "ContDiffOn.continuousOn_iteratedDeriv_of_isOpen"
-
-[[node]]
-id = "contDiffOn_of_hasDerivAt_chain"
-
-[[node]]
 id = "ContDiffAt.dslope_same"
 
 [[node]]
@@ -51,9 +42,6 @@ id = "IsRootOfMultiplicity.iteratedDeriv_div_factorial_ne_zero"
 
 [[node]]
 id = "IsRootOfMultiplicity.eventually_ne_zero"
-
-[[node]]
-id = "Polynomial.iteratedDeriv_eval"
 
 [[node]]
 id = "IsRootOfMultiplicity.exists_eq_pow_mul_deriv"

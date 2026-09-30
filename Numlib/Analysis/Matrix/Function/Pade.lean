@@ -9,9 +9,9 @@ import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Topology.Algebra.Polynomial
 import Numlib.Algebra.Polynomial.Commute
+import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Normed.Algebra.Logarithm
-import Numlib.Approximation.TriangleQuadrature
 
 /-!
 # Padé approximants of the exponential
@@ -216,10 +216,6 @@ open NormedSpace intervalIntegral
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]
 
-/-- The exponential of a complete normed `ℝ`-algebra is continuous. -/
-private theorem continuous_exp_real' : Continuous (exp : 𝔸 → 𝔸) :=
-  continuous_iff_continuousAt.mpr fun x => (NormedSpace.exp_analytic (𝕂 := ℝ) x).continuousAt
-
 /-- The Beta-type weight `P(u) = u^p (1 - u)^q` of the remainder. -/
 private noncomputable def weight (p q : ℕ) : ℝ[X] := X ^ p * (1 - X) ^ q
 
@@ -277,7 +273,7 @@ private theorem mul_integral_iterate_derivative (P : ℝ[X]) (a : 𝔸) (j : ℕ
       (Q.eval u • -(a * exp ((1 - u) • a)) + (derivative Q).eval u • exp ((1 - u) • a)) u :=
     fun u => (Q.hasDerivAt u).smul (hE u)
   have hcE : Continuous fun u : ℝ => exp ((1 - u) • a) :=
-    continuous_exp_real'.comp ((continuous_const.sub continuous_id).smul continuous_const)
+    continuous_exp_real.comp ((continuous_const.sub continuous_id).smul continuous_const)
   have hint1 : IntervalIntegrable (fun u : ℝ => Q.eval u • exp ((1 - u) • a))
       MeasureTheory.volume 0 1 := (Q.continuous.smul hcE).intervalIntegrable _ _
   have hint2 : IntervalIntegrable (fun u : ℝ => (derivative Q).eval u • exp ((1 - u) • a))
@@ -551,44 +547,6 @@ private theorem mvl_scalar (p q : ℕ) (hpq : 1 ≤ p + q) {x y β : ℝ} (hx0 :
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸]
 
-/-- `‖e^x‖ ≤ e^{‖x‖}` in a real normed algebra with `‖1‖ = 1`. -/
-private theorem norm_exp_le_exp_norm' (x : 𝔸) : ‖exp x‖ ≤ Real.exp ‖x‖ := by
-  have hx := exp_series_hasSum_exp' (𝕂 := ℝ) x
-  have hr := exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖
-  rw [← Real.exp_eq_exp_ℝ] at hr
-  refine hx.norm_le_of_bounded hr fun n => ?_
-  rw [norm_smul, Real.norm_of_nonneg (by positivity), smul_eq_mul]
-  exact mul_le_mul_of_nonneg_left (norm_pow_le x n) (by positivity)
-
-/-- `‖e^x - 1‖ ≤ ‖x‖ e^{‖x‖}`. -/
-private theorem norm_exp_sub_one_le' (x : 𝔸) : ‖exp x - 1‖ ≤ ‖x‖ * Real.exp ‖x‖ := by
-  have hx := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) x)
-  have hr := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖)
-  simp only [Finset.range_one, Finset.sum_singleton, pow_zero, Nat.factorial_zero,
-    Nat.cast_one, inv_one, one_smul] at hx hr
-  rw [← Real.exp_eq_exp_ℝ] at hr
-  refine (hx.norm_le_of_bounded hr fun n => ?_).trans ?_
-  · rw [norm_smul, Real.norm_of_nonneg (by positivity), smul_eq_mul]
-    exact mul_le_mul_of_nonneg_left (norm_pow_le x _) (by positivity)
-  · have h := Real.add_one_le_exp (-‖x‖)
-    have h2 : Real.exp (-‖x‖) * Real.exp ‖x‖ = 1 := by rw [← Real.exp_add, neg_add_cancel,
-      Real.exp_zero]
-    nlinarith [Real.exp_pos ‖x‖, norm_nonneg x]
-
-omit [NormOneClass 𝔸] in
-private theorem exp_add_of_commute' {x y : 𝔸} (h : Commute x y) :
-    exp (x + y) = exp x * exp y :=
-  exp_add_of_commute_of_mem_ball (𝕂 := ℝ) h
-    ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
-    ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
-
-omit [NormOneClass 𝔸] in
-private theorem exp_nsmul' (m : ℕ) (x : 𝔸) : exp (m • x) = exp x ^ m := by
-  induction m with
-  | zero => simp
-  | succ m ih =>
-    rw [succ_nsmul, exp_add_of_commute' ((Commute.refl x).smul_left m), ih, pow_succ]
-
 omit [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸] in
 private theorem commute_ring_inverse {x D : 𝔸} (hD : IsUnit D) (h : Commute x D) :
     Commute x (Ring.inverse D) := by
@@ -615,22 +573,22 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
   have hcFD : Commute F Dinv := commute_ring_inverse hD (hcF.aeval_right _)
   have hcFP : Commute F P := hcF.pow_right _
   have hFE : F * exp a = 1 := by
-    rw [← exp_add_of_commute' ((Commute.refl a).neg_left), neg_add_cancel, exp_zero]
+    rw [← exp_add_of_commute_real ((Commute.refl a).neg_left), neg_add_cancel, exp_zero]
   have hEF : exp a * F = 1 := by
-    rw [← exp_add_of_commute' ((Commute.refl a).neg_right), add_neg_cancel, exp_zero]
+    rw [← exp_add_of_commute_real ((Commute.refl a).neg_right), add_neg_cancel, exp_zero]
   have hw : Continuous fun u : ℝ => u ^ p * (1 - u) ^ q := by fun_prop
   have hcI : Continuous fun u : ℝ => (u ^ p * (1 - u) ^ q) • exp ((1 - u) • a) :=
-    hw.smul (continuous_exp_real'.comp ((continuous_const.sub continuous_id).smul
+    hw.smul (continuous_exp_real.comp ((continuous_const.sub continuous_id).smul
       continuous_const))
   have hcJ : Continuous fun u : ℝ => (u ^ p * (1 - u) ^ q) • exp (-(u • a)) :=
-    hw.smul (continuous_exp_real'.comp (continuous_id.smul continuous_const).neg)
+    hw.smul (continuous_exp_real.comp (continuous_id.smul continuous_const).neg)
   have hFI : F * I = J := by
     have := (ContinuousLinearMap.mul ℝ 𝔸 F).intervalIntegral_comp_comm
       (hcI.intervalIntegrable (μ := MeasureTheory.volume) 0 1)
     simp only [ContinuousLinearMap.mul_apply'] at this
     rw [← this]
     refine intervalIntegral.integral_congr fun u _ => ?_
-    rw [mul_smul_comm, ← exp_add_of_commute' (((Commute.refl a).smul_right _).neg_left)]
+    rw [mul_smul_comm, ← exp_add_of_commute_real (((Commute.refl a).smul_right _).neg_left)]
     congr 2
     rw [sub_smul, one_smul]
     abel
@@ -652,7 +610,7 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
     have hu1 : u ≤ 1 := hu.2
     have hwu : 0 ≤ u ^ p * (1 - u) ^ q := mul_nonneg (pow_nonneg hu0 _) (pow_nonneg (by linarith) _)
     rw [norm_smul, Real.norm_of_nonneg hwu, mul_comm]
-    refine mul_le_mul_of_nonneg_right ((norm_exp_le_exp_norm' _).trans
+    refine mul_le_mul_of_nonneg_right ((NormedSpace.norm_exp_le_exp_norm _).trans
       (Real.exp_le_exp.mpr ?_)) hwu
     rw [norm_neg, norm_smul, Real.norm_of_nonneg hu0]
     nlinarith [norm_nonneg a]
@@ -694,7 +652,7 @@ private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq 
   refine ⟨e', hce, hnorm.trans hlog, ?_⟩
   calc expApprox ℝ p q a = exp a * (F * expApprox ℝ p q a) := by rw [← mul_assoc, hEF, one_mul]
     _ = exp a * exp e' := by rw [hRF, hexp]
-    _ = exp (a + e') := (exp_add_of_commute' hce).symm
+    _ = exp (a + e') := (exp_add_of_commute_real hce).symm
 
 private theorem expDen_zero_one : expDen ℝ 0 1 = 1 - X := by
   ext k
@@ -769,7 +727,7 @@ theorem exists_exp_add_eq_expApprox_pow (p q j : ℕ) {a : 𝔸} (ha : ‖a‖ �
     calc 2 ^ j * ‖e'‖ ≤ 2 ^ j * (errorBound p q * ‖a'‖) :=
           mul_le_mul_of_nonneg_left hn h2j.le
       _ = errorBound p q * ‖a‖ := by rw [hx]; field_simp
-  · rw [he, ← exp_nsmul', ← hback, ← smul_add, Nat.cast_smul_eq_nsmul]
+  · rw [he, ← exp_nsmul_real, ← hback, ← smul_add, Nat.cast_smul_eq_nsmul]
 
 /-- **The relative error of scaling and squaring** ([golub2013matrix] §9.3.1): under the hypotheses
 of `Pade.exists_exp_add_eq_expApprox_pow`, with `F = R_pq(a/2^j)^{2^j}` and `ε = ε(p, q)`,
@@ -779,10 +737,10 @@ theorem norm_exp_sub_expApprox_pow_le (p q j : ℕ) {a : 𝔸} (ha : ‖a‖ ≤
       errorBound p q * ‖a‖ * Real.exp (errorBound p q * ‖a‖) * ‖exp a‖ := by
   obtain ⟨e, hc, hn, he⟩ := exists_exp_add_eq_expApprox_pow p q j ha
   have hd : exp a - exp a * exp e = -(exp a * (exp e - 1)) := by noncomm_ring
-  rw [he, exp_add_of_commute' hc, hd, norm_neg]
+  rw [he, exp_add_of_commute_real hc, hd, norm_neg]
   calc ‖exp a * (exp e - 1)‖ ≤ ‖exp a‖ * (‖e‖ * Real.exp ‖e‖) :=
-        (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_left (norm_exp_sub_one_le' e)
-          (norm_nonneg _))
+        (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_left
+          (NormedSpace.norm_exp_sub_one_le_mul_exp_norm e) (norm_nonneg _))
     _ ≤ ‖exp a‖ * (errorBound p q * ‖a‖ * Real.exp (errorBound p q * ‖a‖)) := by
         have h0 : 0 ≤ errorBound p q * ‖a‖ :=
           mul_nonneg (by rw [errorBound]; positivity) (norm_nonneg a)

@@ -13,6 +13,7 @@ import Numlib.Analysis.Calculus.HermiteGenocchi
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
+import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 import Numlib.Analysis.Calculus.MeanValue
@@ -20,6 +21,7 @@ import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.Periodic
 import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.RootMultiplicity
+import Numlib.Analysis.Calculus.SegmentAverage
 import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Calculus.TaylorSegment
@@ -330,6 +332,7 @@ import Numlib.Analysis.Sobolev.Zero
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
+import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
 import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
@@ -480,6 +483,7 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
 import Numlib.Krylov.TransposeFree
+import Numlib.LinearAlgebra.Matrix.Aeval
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Band
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
@@ -520,6 +524,7 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.Order
+import Numlib.LinearAlgebra.Matrix.OrthogonalGroup
 import Numlib.LinearAlgebra.Matrix.Permutation
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.PlaneRotation

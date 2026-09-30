@@ -60,12 +60,6 @@ private theorem log_one_add_smul_eq_tsum (h : 𝔸) (t : ℝ) :
   rw [log_eq_tsum ℝ]
   simp only [add_sub_cancel_left, smul_pow, smul_smul, logCoeff]
 
-/-- `exp a * exp (-a) = 1` in a complete normed real algebra. -/
-private theorem exp_mul_exp_neg (a : 𝔸) : exp a * exp (-a) = 1 := by
-  rw [← exp_add_of_commute_of_mem_ball (𝕂 := ℝ) (Commute.refl a).neg_right
-    ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
-    ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _), add_neg_cancel, exp_zero]
-
 /-- **`exp (log x) = x`** in a complete normed real (or complex) algebra whenever `‖x - 1‖ < 1`
 (a TODO of Mathlib's `Mathlib/Analysis/Normed/Algebra/Logarithm`). With `h = x - 1` and
 `L(t) = log (1 + t h)`, all of `L(t)`, `L'(t) = h (1 + t h)⁻¹` and `h` commute, so
@@ -170,7 +164,9 @@ theorem exp_log_of_norm_sub_one_lt {x : 𝔸} (hx : ‖x - 1‖ < 1) : exp (log 
   simp only [φ, one_smul, zero_smul, add_zero, log_one, neg_zero, exp_zero, mul_one] at hconst
   rw [← hx1] at hconst
   calc exp (log x) = exp (log x) * (exp (-log x) * x) := by rw [hconst, mul_one]
-    _ = x := by rw [← mul_assoc, exp_mul_exp_neg, one_mul]
+    _ = x := by
+      rw [← mul_assoc, ← exp_add_of_commute_real (Commute.refl _).neg_right, add_neg_cancel,
+        exp_zero, one_mul]
 
 end ExpLog
 

@@ -29,3 +29,9 @@ id = "divDiff_cons_cons"
 
 [[node]]
 id = "divDiff_X_pow"
+
+[[node]]
+id = "coeff_C_add_X_sub_C_mul_modByMonic"
+
+[[node]]
+id = "divDiff_cons_eq_of_eventuallyEq"

@@ -1,6 +1,5 @@
 import Mathlib.Algebra.BigOperators.Field
-import Mathlib.Analysis.Calculus.Deriv.Polynomial
-import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
+import Numlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Numlib.RingTheory.Polynomial.HermiteInterpolation
 
 /-!
@@ -30,6 +29,8 @@ nontrivially normed field.
 * `Hermite.divDiff_replicate`: at `k + 1` copies of one node, `f[x, …, x] = f⁽ᵏ⁾(x)/k!`.
 * `Hermite.divDiff_cons_cons`: the recursion
   `f[x, x', s] = (f[x, s] - f[x', s]) / (x - x')` for `x ≠ x'`.
+* `Hermite.divDiff_cons_eq_of_eventuallyEq`: if `f z = f a + (z - a) g z` near the nodes, then
+  `f[a, s] = g[s]` — removing one node divides by `z - a`.
 * `Hermite.divDiff_X_pow`: the divided differences of monomials satisfy
   `z^{m+1}[x, s] = x · z^m[x, s] + z^m[s]` (they are complete homogeneous symmetric polynomials of
   the nodes).
@@ -48,18 +49,6 @@ open Polynomial
 namespace Hermite
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-
-/-- The iterated derivative of a polynomial function over a nontrivially normed field is the
-function of the iterated `derivative`. (Local generalization of the real
-`Polynomial.iteratedDeriv_eval` of `Numlib/Analysis/Calculus/RootMultiplicity`.) -/
-theorem iteratedDeriv_eval (p : 𝕜[X]) (n : ℕ) :
-    iteratedDeriv n (fun x => p.eval x) = fun x => (derivative^[n] p).eval x := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [iteratedDeriv_succ, ih, Function.iterate_succ_apply']
-    ext x
-    exact Polynomial.deriv _
 
 /-! ### Jets of functions -/
 
@@ -82,7 +71,7 @@ theorem coeff_taylor_eq_eval_iterate_derivative_div [CharZero 𝕜] (p : 𝕜[X]
 /-- **The jet of a polynomial function is its Taylor expansion.** -/
 theorem taylorJet_polynomial [CharZero 𝕜] (p : 𝕜[X]) (x : 𝕜) (j : ℕ) :
     taylorJet (fun z => p.eval z) x j = (taylor x p).coeff j := by
-  rw [taylorJet, iteratedDeriv_eval, coeff_taylor_eq_eval_iterate_derivative_div]
+  rw [taylorJet, Polynomial.iteratedDeriv_eval, coeff_taylor_eq_eval_iterate_derivative_div]
 
 /-- Jets are additive at points where both functions are smooth enough. -/
 theorem taylorJet_add {f g : 𝕜 → 𝕜} {x : 𝕜} {j : ℕ} (hf : ContDiffAt 𝕜 j f x)
@@ -134,6 +123,13 @@ theorem isJetInterpolant_taylorJet_polynomial [CharZero 𝕜] (s : Multiset 𝕜
     exact taylorJet_polynomial p x j
   rw [h]
   exact isJetInterpolant_coeff_taylor s p
+
+/-- The Hermite interpolant of the jets of `f` takes the value `f x` at every node `x`. -/
+theorem eval_interpolateJet_taylorJet {f : 𝕜 → 𝕜} {s : Multiset 𝕜} {x : 𝕜} (hx : x ∈ s) :
+    (interpolateJet s (taylorJet f)).eval x = f x := by
+  have := isJetInterpolant_iff_coeff_taylor.mp (isJetInterpolant_interpolateJet s (taylorJet f))
+    x hx 0 (Multiset.count_pos.mpr hx)
+  rwa [taylor_coeff_zero, taylorJet_zero] at this
 
 /-! ### Divided differences at repeated nodes -/
 
@@ -301,5 +297,70 @@ theorem divDiff_X_pow [CharZero 𝕜] (m : ℕ) (x : 𝕜) (s : Multiset 𝕜) :
   congr 1
   ext z
   ring
+
+/-! ### Removing a node -/
+
+omit [DecidableEq 𝕜] in
+/-- The remainder of `c + (X - a) p` modulo the nodal polynomial of `a :: s` has, in degree
+`card s`, the coefficient that the remainder of `p` modulo the nodal polynomial of `s` has in
+degree `card s - 1`. -/
+theorem coeff_C_add_X_sub_C_mul_modByMonic (c a : 𝕜) (p : 𝕜[X]) {s : Multiset 𝕜} (hs : s ≠ 0) :
+    ((C c + (X - C a) * p) %ₘ nodalMultiset (a ::ₘ s)).coeff (Multiset.card s)
+      = (p %ₘ nodalMultiset s).coeff (Multiset.card s - 1) := by
+  set N := nodalMultiset s
+  set k := Multiset.card s
+  set p₀ := p %ₘ N
+  obtain ⟨k', hk'⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by
+    have := Multiset.card_pos.mpr hs
+    omega⟩
+  have hp₀ : p₀.degree < k := by
+    rw [← degree_nodalMultiset s]
+    exact degree_modByMonic_lt _ (monic_nodalMultiset s)
+  have hcoeff : ∀ m, k ≤ m → p₀.coeff m = 0 := fun m hm =>
+    coeff_eq_zero_of_degree_lt (hp₀.trans_le (by exact_mod_cast hm))
+  have hq : ∀ m, (C c + (X - C a) * p₀).coeff (m + 1) = p₀.coeff m - a * p₀.coeff (m + 1) := by
+    intro m
+    rw [sub_mul, coeff_add, coeff_sub, coeff_X_mul, coeff_C_mul, coeff_C, ite_eq_right (by omega),
+      zero_add]
+  have hrem : (C c + (X - C a) * p) %ₘ nodalMultiset (a ::ₘ s) = C c + (X - C a) * p₀ := by
+    have hdvd : nodalMultiset (a ::ₘ s) ∣ C c + (X - C a) * p - (C c + (X - C a) * p₀) := by
+      refine ⟨p /ₘ N, ?_⟩
+      have h := modByMonic_add_div p N
+      rw [nodalMultiset_cons]
+      linear_combination -(X - C a) * h
+    rw [modByMonic_eq_of_dvd_sub (monic_nodalMultiset _) hdvd,
+      (modByMonic_eq_self_iff (monic_nodalMultiset _)).mpr]
+    rw [degree_nodalMultiset, Multiset.card_cons]
+    refine (degree_lt_iff_coeff_zero _ _).mpr fun m hm => ?_
+    obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+    rw [hq, hcoeff m (by omega), hcoeff (m + 1) (by omega), mul_zero, sub_zero]
+  rw [hrem, hk', hq, hcoeff (k' + 1) hk'.le, mul_zero, sub_zero, Nat.add_sub_cancel]
+
+/-- **Removing a node divides by `z - a`**: if `f z = f a + (z - a) g z` near each node of
+`a :: s`, with `g` smooth enough there, then `f[a, s] = g[s]`. -/
+theorem divDiff_cons_eq_of_eventuallyEq [CharZero 𝕜] {f g : 𝕜 → 𝕜} {a : 𝕜} {s : Multiset 𝕜}
+    (hs : s ≠ 0) (hg : ∀ x ∈ a ::ₘ s, ContDiffAt 𝕜 (Multiset.card s) g x)
+    (hfg : ∀ x ∈ a ::ₘ s, f =ᶠ[nhds x] fun z => f a + (z - a) * g z) :
+    divDiff f (a ::ₘ s) = divDiff g s := by
+  set p := interpolateJet (a ::ₘ s) (taylorJet g)
+  have hp : IsJetInterpolant (a ::ₘ s) (taylorJet g) p := isJetInterpolant_interpolateJet _ _
+  have hq : IsJetInterpolant (a ::ₘ s) (taylorJet f) (C (f a) + (X - C a) * p) := by
+    refine (isJetInterpolant_congr fun x hx j hj => ?_).mp
+      ((isJetInterpolant_taylorJet_polynomial (a ::ₘ s) (C (f a))).add
+        ((isJetInterpolant_taylorJet_polynomial (a ::ₘ s) (X - C a)).mul hp))
+    have hjs : j ≤ Multiset.card s := by
+      have := (Multiset.count_le_card x (a ::ₘ s)).trans_lt' hj
+      rw [Multiset.card_cons] at this
+      omega
+    have hgx : ContDiffAt 𝕜 j g x := (hg x hx).of_le (by exact_mod_cast hjs)
+    have hlin : ContDiffAt 𝕜 j (fun z => z - a) x := contDiffAt_id.sub contDiffAt_const
+    have hf : taylorJet f x j = taylorJet ((fun _ => f a) + (fun z => z - a) * g) x j := by
+      rw [taylorJet, taylorJet, (hfg x hx).iteratedDeriv_eq]
+      rfl
+    simp only [Pi.add_apply, eval_C, eval_sub, eval_X]
+    rw [hf, taylorJet_add (f := fun _ => f a) (g := (fun z => z - a) * g) contDiffAt_const
+      (hlin.mul hgx), taylorJet_mul hlin hgx]
+  rw [hq.divDiff_eq_coeff, (hp.of_le (Multiset.le_cons_self s a)).divDiff_eq_coeff,
+    Multiset.card_cons, Nat.add_sub_cancel, coeff_C_add_X_sub_C_mul_modByMonic _ _ _ hs]
 
 end Hermite

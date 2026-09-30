@@ -22,9 +22,6 @@ id = "isExactOn_sevenPoint"
 id = "isExactOn_affineImage"
 
 [[node]]
-id = "_root_.integral_pow_mul_one_sub_pow"
-
-[[node]]
 id = "isExactOn_refTriangle_iff"
 
 [[node]]

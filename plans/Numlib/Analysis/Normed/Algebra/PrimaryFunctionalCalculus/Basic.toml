@@ -54,3 +54,6 @@ id = "aeval_eq_sum_spectralIdempotent"
 
 [[node]]
 id = "pfc_smul"
+
+[[node]]
+id = "AlgEquiv.map_pfc"

@@ -74,19 +74,8 @@ theorem half_smul_add_inverse_add_eq_of_commute {s S : R} (hs : IsUnit s) (hS : 
 
 end Algebra
 
-namespace Matrix
-
-variable {n : Type*} [Fintype n] [DecidableEq n]
-
-/-- The scalar sign function `z ↦ sign (Re z)`. -/
-private noncomputable def csign (z : ℂ) : ℂ := ((SignType.sign z.re : SignType) : ℂ)
-
-/-- **The matrix sign function** ([golub2013matrix] §9.4.1): `sign(A) = pfc (z ↦ sign (Re z)) A`,
-meaningful when no eigenvalue of `A` is purely imaginary. -/
-noncomputable def matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ :=
-  pfc (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) A
-
-private theorem csign_eventuallyEq {μ : ℂ} (hμ : μ.re ≠ 0) :
+/-- The scalar sign function `z ↦ sign (Re z)` is locally constant off the imaginary axis. -/
+theorem Complex.sign_re_eventuallyEq {μ : ℂ} (hμ : μ.re ≠ 0) :
     (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) =ᶠ[𝓝 μ]
       fun _ => ((SignType.sign μ.re : SignType) : ℂ) := by
   rcases lt_or_gt_of_ne hμ with h | h
@@ -94,6 +83,15 @@ private theorem csign_eventuallyEq {μ : ℂ} (hμ : μ.re ≠ 0) :
     rw [sign_neg hz, sign_neg h]
   · filter_upwards [Complex.continuous_re.continuousAt.eventually (lt_mem_nhds h)] with z hz
     rw [sign_pos hz, sign_pos h]
+
+namespace Matrix
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **The matrix sign function** ([golub2013matrix] §9.4.1): `sign(A) = pfc (z ↦ sign (Re z)) A`,
+meaningful when no eigenvalue of `A` is purely imaginary. -/
+noncomputable def matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ :=
+  pfc (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) A
 
 /-- The roots of the minimal polynomial are the eigenvalues. -/
 private theorem mem_spectrum_of_mem_roots {A : Matrix n n ℂ} {μ : ℂ}
@@ -117,7 +115,7 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
   classical
   rw [matrixSign, pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq
     (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)
-    (fun μ hμ => csign_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ)))]
+    (fun μ hμ => Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ)))]
   rw [← Finset.sum_filter_add_sum_filter_not _ (fun μ : ℂ => 0 < μ.re), sub_eq_add_neg,
     ← Finset.sum_neg_distrib]
   congr 1
@@ -134,7 +132,7 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
 /-- `sign(A)² = 1` ([golub2013matrix] §9.4.1). -/
 theorem matrixSign_sq (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : matrixSign A ^ 2 = 1 := by
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
-    csign_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
+    Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
   rw [sq, matrixSign]
   refine pfc_mul_pfc_eq_one (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)
     (fun μ hμ => contDiffAt_of_eventuallyEq_const (hev μ hμ) _)
@@ -168,7 +166,7 @@ theorem spectrum_matrixSign_subset (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
 theorem isUnit_add_matrixSign (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : IsUnit (A + matrixSign A) := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
-    csign_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
+    Complex.sign_re_eventuallyEq (hA μ (mem_spectrum_of_mem_roots hμ))
   have h : A + matrixSign A = pfc (fun z => z + ((SignType.sign z.re : SignType) : ℂ)) A := by
     rw [show (fun z : ℂ => z + ((SignType.sign z.re : SignType) : ℂ)) =
         (fun z => z) + fun z => ((SignType.sign z.re : SignType) : ℂ) from rfl,
@@ -213,11 +211,11 @@ theorem matrixSign_conj_fromBlocks (e : l ⊕ m ≃ n) {A X : Matrix n n ℂ} (h
     rw [mul_assoc, mul_nonsing_inv _ hdet, mul_one]
   have e1 : ∀ μ ∈ spectrum ℂ J₁, (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) =ᶠ[𝓝 μ]
       fun _ => -1 := fun μ hμ => by
-    have := csign_eventuallyEq (h₁ μ hμ).ne
+    have := Complex.sign_re_eventuallyEq (h₁ μ hμ).ne
     rwa [sign_neg (h₁ μ hμ), SignType.coe_neg_one] at this
   have e2 : ∀ μ ∈ spectrum ℂ J₂, (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) =ᶠ[𝓝 μ]
       fun _ => 1 := fun μ hμ => by
-    have := csign_eventuallyEq (h₂ μ hμ).ne'
+    have := Complex.sign_re_eventuallyEq (h₂ μ hμ).ne'
     rwa [sign_pos (h₂ μ hμ), SignType.coe_one] at this
   rw [matrixSign, hA, pfc_conj hX, h, pfc_reindex,
     pfc_fromBlocks_zero (IsAlgClosed.splits _) (IsAlgClosed.splits _),
@@ -403,7 +401,8 @@ theorem matrixSign_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spect
     ← pfc_comp hI (IsAlgClosed.splits _) (fun μ hμ =>
       (signFun_spec k (hA μ (mem_spectrum_of_mem_roots hμ))).1.of_le le_top) fun μ hμ =>
       contDiffAt_of_eventuallyEq_const
-        (csign_eventuallyEq (signFun_re_ne_zero k (hA μ (mem_spectrum_of_mem_roots hμ)))) _]
+        (Complex.sign_re_eventuallyEq
+          (signFun_re_ne_zero k (hA μ (mem_spectrum_of_mem_roots hμ)))) _]
   refine pfc_congr_of_re_ne_zero hA fun z hz => ?_
   have := signFun_spec k hz
   rcases lt_or_gt_of_ne hz with h | h
@@ -428,16 +427,6 @@ theorem norm_newtonSignIterate_sub_le {A : Matrix n n ℂ} (hA : ∀ μ ∈ spec
   gcongr
   exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_left (norm_pow_le' _ two_pos) (norm_nonneg _))
 
-/-- Whatever commutes with a matrix commutes with its (nonsingular) inverse `B⁻¹` (which is `0`
-when `B` is singular). -/
-theorem commute_nonsing_inv_right {B C : Matrix n n ℂ} (h : Commute C B) : Commute C B⁻¹ := by
-  by_cases hB : IsUnit B
-  · obtain ⟨u, rfl⟩ := hB
-    rw [← coe_units_inv]
-    exact h.units_inv_right
-  · rw [nonsing_inv_eq_ringInverse, Ring.inverse_non_unit _ hB]
-    exact Commute.zero_right C
-
 /-- `A` commutes with its Newton sign iterates. -/
 theorem commute_newtonSignIterate (A : Matrix n n ℂ) (k : ℕ) :
     Commute A (newtonSignIterate A k) := by
@@ -449,7 +438,7 @@ theorem commute_newtonSignIterate (A : Matrix n n ℂ) (k : ℕ) :
 theorem matrixSign_eq_one_of_re_pos {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
     matrixSign A = 1 := by
   rw [matrixSign, pfc_eq_algebraMap_of_eventuallyEq (c := 1) fun μ hμ => ?_, map_one]
-  have := csign_eventuallyEq (hA μ hμ).ne'
+  have := Complex.sign_re_eventuallyEq (hA μ hμ).ne'
   rwa [sign_pos (hA μ hμ), SignType.coe_one] at this
 
 /-! ### Convergence of Newton's iteration -/
@@ -480,7 +469,7 @@ private theorem norm_contraction_lt_one {z : ℂ} (hz : z.re ≠ 0) : ‖contrac
 
 private theorem contDiffAt_contraction {μ : ℂ} (hμ : μ.re ≠ 0) :
     ContDiffAt ℂ ⊤ contraction μ := by
-  have hev := csign_eventuallyEq hμ
+  have hev := Complex.sign_re_eventuallyEq hμ
   have hne := add_sign_ne_zero hμ
   refine ContDiffAt.congr_of_eventuallyEq (f := fun z =>
     (z - ((SignType.sign μ.re : SignType) : ℂ)) / (z + ((SignType.sign μ.re : SignType) : ℂ)))
@@ -558,7 +547,7 @@ theorem tendsto_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum
       fun μ hμ => contDiffAt_const.add (hpowsm _ μ hμ)
     have hsgn : ∀ μ ∈ (minpoly ℂ A).roots,
         ContDiffAt ℂ ⊤ (fun z => ((SignType.sign z.re : SignType) : ℂ)) μ := fun μ hμ =>
-      contDiffAt_of_eventuallyEq_const (csign_eventuallyEq (hsp μ hμ)) _
+      contDiffAt_of_eventuallyEq_const (Complex.sign_re_eventuallyEq (hsp μ hμ)) _
     have hinv := pfc_inv hI hs (fun μ hμ => (hsm1 μ hμ).of_le le_top) hg
     rw [newtonSignIterate_eq_pfc hA, pfc_congr_of_re_ne_zero hA fun z hz => signFun_eq k hz]
     rw [show (fun z => ((SignType.sign z.re : SignType) : ℂ) * (1 + contraction z ^ 2 ^ k) *

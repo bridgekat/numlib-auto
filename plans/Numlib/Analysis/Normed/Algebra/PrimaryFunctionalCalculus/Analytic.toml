@@ -23,7 +23,4 @@ id = "tendsto_sum_pfc"
 id = "HasFPowerSeriesOnBall.hasSum_taylorJet"
 
 [[node]]
-id = "iteratedDeriv_comp_congr"
-
-[[node]]
 id = "pfc_zero_smul"

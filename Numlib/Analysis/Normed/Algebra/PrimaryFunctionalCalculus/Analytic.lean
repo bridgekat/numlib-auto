@@ -29,10 +29,12 @@ algebra with continuous operations (e.g. `Matrix n n ℂ` with its product topol
   partial-sum form.
 * `pfc_exp_eq_normedSpace_exp`, `pfc_log_eq_normedSpace_log`: agreement with Mathlib's series
   exponential and logarithm.
+* `hasFPowerSeriesOnBall_ofScalars_of_hasSum`, `Complex.hasFPowerSeriesOnBall_log_one`,
+  `Complex.hasFPowerSeriesOnBall_log_one_sub`: scalar power series to feed `hasSum_pfc`.
 * `hasDerivAt_pfc_smul`: `d/ds f(s a) = a f'(s a)`.
 * `pfc_comp`: the composition rule `(g ∘ f)(a) = g(f(a))` (Higham, *Functions of Matrices*,
-  Theorem 1.17), from `iteratedDeriv_comp_congr` (jets of a composition depend only on the jets of
-  the factors, Faà di Bruno).
+  Theorem 1.17), from `iteratedDeriv_comp_congr` of `Numlib/Analysis/Calculus/IteratedDeriv/Lemmas`
+  (jets of a composition depend only on the jets of the factors, Faà di Bruno).
 * `norm_pfc_sub_sum_le`: [golub2013matrix] Theorem 9.2.3, the Taylor truncation bound, by Taylor's
   formula with integral remainder along `s ↦ f(s a)` (the integral form, not the mean-value form,
   gives the book's `1/(q+1)!`).
@@ -93,6 +95,25 @@ theorem HasFPowerSeriesOnBall.hasSum_taylorJet [CharZero 𝕜] {f : 𝕜 → �
     push_cast
     field_simp
   · rfl
+
+omit [CompleteSpace 𝕜] in
+/-- **A power series converging everywhere is a power series of its sum on the whole field**: if
+`∑ₖ cₖ zᵏ = f z` for every `z`, then `f` has the power series `∑ₖ cₖ zᵏ` on the ball of infinite
+radius about `0`. -/
+theorem hasFPowerSeriesOnBall_ofScalars_of_hasSum {f : 𝕜 → 𝕜} {c : ℕ → 𝕜}
+    (h : ∀ z, HasSum (fun k => c k * z ^ k) (f z)) :
+    HasFPowerSeriesOnBall f (FormalMultilinearSeries.ofScalars 𝕜 c) 0 ⊤ where
+  r_le := by
+    refine ENNReal.le_of_forall_nnreal_lt fun r _ => ?_
+    obtain ⟨z, hz⟩ := NormedField.exists_lt_norm 𝕜 r
+    have hlim := (h z).summable.tendsto_atTop_zero.norm
+    simp only [norm_zero, norm_mul, norm_pow] at hlim
+    refine le_trans (ENNReal.coe_le_coe.2 (NNReal.coe_le_coe.1 hz.le : r ≤ ‖z‖₊)) ?_
+    refine FormalMultilinearSeries.le_radius_of_tendsto _ (l := 0) ?_
+    simpa only [FormalMultilinearSeries.ofScalars_norm, coe_nnnorm] using hlim
+  r_pos := ENNReal.zero_lt_top
+  hasSum := fun {y} _ => by
+    simpa only [zero_add, FormalMultilinearSeries.ofScalars_apply_eq, smul_eq_mul] using h y
 
 end Series
 
@@ -198,6 +219,35 @@ theorem Complex.hasFPowerSeriesOnBall_log_one :
       rw [FormalMultilinearSeries.apply_eq_pow_smul_coeff,
         FormalMultilinearSeries.coeff_ofScalars, smul_eq_mul]
       ring
+
+/-- The power series of `z ↦ log (1 - z)` at `0`: `log (1 - z) = -∑_{k ≥ 1} zᵏ / k` on the unit
+ball. -/
+theorem Complex.hasFPowerSeriesOnBall_log_one_sub :
+    HasFPowerSeriesOnBall (fun z => Complex.log (1 - z))
+      (FormalMultilinearSeries.ofScalars ℂ fun k => -((k : ℂ)⁻¹)) 0 1 where
+  r_le := by
+    refine ENNReal.le_of_forall_nnreal_lt fun r hr => ?_
+    refine FormalMultilinearSeries.le_radius_of_bound _ 1 fun k => ?_
+    have hr1 : (r : ℝ) ≤ 1 := by exact_mod_cast (ENNReal.coe_lt_one_iff.mp hr).le
+    calc ‖FormalMultilinearSeries.ofScalars ℂ (fun k => -((k : ℂ)⁻¹)) k‖ * (r : ℝ) ^ k
+        ≤ 1 * 1 := by
+          gcongr
+          · rw [FormalMultilinearSeries.ofScalars_norm, norm_neg, norm_inv, Complex.norm_natCast]
+            rcases Nat.eq_zero_or_pos k with rfl | hk
+            · simp
+            · exact inv_le_one_of_one_le₀ (by exact_mod_cast hk)
+          · exact pow_le_one₀ r.2 hr1
+      _ = 1 := one_mul 1
+  r_pos := one_pos
+  hasSum := fun {y} hy => by
+    have hy' : ‖y‖ < 1 := by
+      have : ‖y‖ₑ < 1 := by simpa [Metric.mem_eball, edist_zero_right] using hy
+      rwa [← ofReal_norm, ENNReal.ofReal_lt_one] at this
+    convert (Complex.hasSum_taylorSeries_neg_log hy').neg using 1
+    · ext k
+      rw [FormalMultilinearSeries.ofScalars_apply_eq, smul_eq_mul]
+      ring
+    · simp
 
 /-- **Agreement with Mathlib's series logarithm near `1`**: if every eigenvalue `λ` satisfies
 `‖λ - 1‖ < 1`, then `pfc log a = NormedSpace.log a`. -/
@@ -307,41 +357,6 @@ end Derivative
 /-! ### Composition -/
 
 section Composition
-
-/-- The Faà di Bruno composition of two Taylor series at order `n` reads only the terms of order
-`≤ n`. -/
-private theorem taylorComp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-    {q q' p p' : FormalMultilinearSeries 𝕜 𝕜 𝕜} {n : ℕ} (hq : ∀ k ≤ n, q k = q' k)
-    (hp : ∀ k ≤ n, p k = p' k) : q.taylorComp p n = q'.taylorComp p' n := by
-  refine Finset.sum_congr rfl fun c _ => ?_
-  simp only [FormalMultilinearSeries.compAlongOrderedFinpartition]
-  rw [hq _ c.length_le]
-  congr 1
-  funext m
-  exact hp _ (c.partSize_le m)
-
-/-- **The jets of a composition depend only on the jets of the factors**: if `f, f'` agree with
-their derivatives to order `n` at `x`, and `g, g'` agree to order `n` at `f x`, then
-`(g ∘ f)⁽ⁿ⁾(x) = (g' ∘ f')⁽ⁿ⁾(x)` (all four `Cⁿ` there). The formal content of Faà di Bruno's
-formula (`iteratedFDeriv_comp`). -/
-theorem iteratedDeriv_comp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜] {f f' g g' : 𝕜 → 𝕜}
-    {x : 𝕜} {n : ℕ} (hf : ContDiffAt 𝕜 n f x) (hf' : ContDiffAt 𝕜 n f' x)
-    (hg : ContDiffAt 𝕜 n g (f x)) (hg' : ContDiffAt 𝕜 n g' (f x))
-    (hff : ∀ k ≤ n, iteratedDeriv k f x = iteratedDeriv k f' x)
-    (hgg : ∀ k ≤ n, iteratedDeriv k g (f x) = iteratedDeriv k g' (f x)) :
-    iteratedDeriv n (g ∘ f) x = iteratedDeriv n (g' ∘ f') x := by
-  have hx : f x = f' x := by simpa using hff 0 (Nat.zero_le n)
-  rw [hx] at hg'
-  rw [iteratedDeriv_eq_iteratedFDeriv, iteratedDeriv_eq_iteratedFDeriv,
-    iteratedFDeriv_comp hg hf le_rfl, iteratedFDeriv_comp hg' hf' le_rfl]
-  congr 1
-  refine taylorComp_congr (fun k hk => ?_) (fun k hk => ?_)
-  · ext
-    simp only [ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod]
-    rw [hgg k hk, hx]
-  · ext
-    simp only [ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod]
-    rw [hff k hk]
 
 variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [CharZero 𝕜] [Ring A] [Algebra 𝕜 A]
 

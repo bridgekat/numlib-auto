@@ -1,0 +1,14 @@
+[[node]]
+id = "hasDerivAt_integral_pow_smul_comp_segment"
+
+[[node]]
+id = "eq_add_mul_integral_comp_segment"
+
+[[node]]
+id = "iteratedDeriv_integral_deriv_comp_segment"
+
+[[node]]
+id = "contDiffOn_integral_deriv_comp_segment"
+
+[[node]]
+id = "norm_integral_pow_smul_comp_segment_le"
