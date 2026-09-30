@@ -528,14 +528,8 @@ theorem laplacian1D_apply (h : ℝ) (i j : Fin n) :
         if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then -1 else 0) := by
   rw [laplacian1D, Matrix.smul_apply, smul_eq_mul, Matrix.symmTridiagonalToeplitz_apply']
 
-/-- The half-angle identity `2 - 2 cos θ = 4 sin²(θ/2)`, which turns the backbone's eigenvalue
-`b + 2 a cos θ` of `tridiag(-1, 2, -1)` into Saad's `4 sin²(θ/2)`. -/
-private theorem two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h := Real.cos_two_mul_eq_one_sub (θ / 2)
-  rw [show 2 * (θ / 2) = θ by ring] at h
-  linarith
-
-/-- The half-angle identity `2 + 2 cos θ = 4 cos²(θ/2)`, the other end of the spectrum. -/
+/-- The half-angle identity `2 + 2 cos θ = 4 cos²(θ/2)` for the top of the spectrum, companion of
+`Real.two_sub_two_mul_cos` for the bottom. -/
 private theorem two_add_two_mul_cos (θ : ℝ) : 2 + 2 * Real.cos θ = 4 * Real.cos (θ / 2) ^ 2 := by
   have h := Real.cos_two_mul (θ / 2)
   rw [show 2 * (θ / 2) = θ by ring] at h
@@ -628,7 +622,7 @@ theorem laplacian1D_mulVec_sineVec (h : ℝ) (k : Fin n) :
         • Matrix.sineVec n k := by
   rw [laplacian1D, Matrix.smul_mulVec, Matrix.symmTridiagonalToeplitz_mulVec_sineVec, smul_smul]
   congr 1
-  have h2 := (two_sub_two_mul_cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))).symm
+  have h2 := (Real.two_sub_two_mul_cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))).symm
   rw [show (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) / 2
       = (((k : ℕ) : ℝ) + 1) * π / (2 * ((n : ℝ) + 1)) by
     rw [div_div, mul_comm ((n : ℝ) + 1) 2]] at h2
@@ -646,7 +640,7 @@ theorem laplacian1D_isSymmetricBoundedBy (n : ℕ) {h : ℝ} (hh : h ≠ 0) :
     inv_pos.2 (lt_of_le_of_ne (sq_nonneg h) (Ne.symm (pow_ne_zero 2 hh)))
   have hhalf : π / ((n : ℝ) + 1) / 2 = π / (2 * ((n : ℝ) + 1)) := by
     rw [div_div, mul_comm ((n : ℝ) + 1) 2]
-  have hlo := two_sub_two_mul_cos (π / ((n : ℝ) + 1))
+  have hlo := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
   have hhi := two_add_two_mul_cos (π / ((n : ℝ) + 1))
   rw [hhalf] at hlo hhi
   have key := isSymmetricBoundedBy_smul

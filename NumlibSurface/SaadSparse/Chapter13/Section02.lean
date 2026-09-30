@@ -149,16 +149,10 @@ theorem sin_sq_theta_div_two_lt_one (n : ℕ) (k : Fin n) : Real.sin (theta n k 
 /-- Saad (13.7): the eigenvalue `λ_k = 4 sin²(θ_k/2)` of the one-dimensional model matrix. -/
 noncomputable def eigenvalue1D (n : ℕ) (k : Fin n) : ℝ := 4 * Real.sin (theta n k / 2) ^ 2
 
-/-- The half-angle identity `2 - 2 cos θ = 4 sin²(θ/2)`. -/
-private theorem two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h := Real.cos_two_mul_eq_one_sub (θ / 2)
-  rw [show 2 * (θ / 2) = θ by ring] at h
-  linarith
-
 /-- Saad (13.6)–(13.7): the eigenvalue in its other form, `λ_k = 2(1 - cos θ_k)`. -/
 theorem eigenvalue1D_eq (n : ℕ) (k : Fin n) :
     eigenvalue1D n k = 2 - 2 * Real.cos (theta n k) := by
-  rw [eigenvalue1D, two_sub_two_mul_cos]
+  rw [eigenvalue1D, Real.two_sub_two_mul_cos]
 
 /-- The eigenvalues of the one-dimensional model matrix are positive. -/
 theorem eigenvalue1D_pos (n : ℕ) (k : Fin n) : 0 < eigenvalue1D n k := by
@@ -233,8 +227,8 @@ theorem neg_cos_le_cos_theta (n : ℕ) (k : Fin n) :
 /-- The half angle at `k = 1`, `π/(2(n+1))`, is the smallest of the `θ_k/2`. -/
 theorem sin_sq_theta_div_two_ge (n : ℕ) (k : Fin n) :
     Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 ≤ Real.sin (theta n k / 2) ^ 2 := by
-  have h1 := two_sub_two_mul_cos (theta n k)
-  have h2 := two_sub_two_mul_cos (π / ((n : ℝ) + 1))
+  have h1 := Real.two_sub_two_mul_cos (theta n k)
+  have h2 := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
   rw [show π / ((n : ℝ) + 1) / 2 = π / (2 * ((n : ℝ) + 1)) by
     rw [div_div, mul_comm ((n : ℝ) + 1) 2]] at h2
   linarith [cos_theta_le n k]
@@ -243,8 +237,8 @@ theorem sin_sq_theta_div_two_ge (n : ℕ) (k : Fin n) :
 `sin²(θ_n/2) = cos²(π/(2(n+1))) = 1 - sin²(π/(2(n+1)))`. -/
 theorem sin_sq_theta_div_two_le (n : ℕ) (k : Fin n) :
     Real.sin (theta n k / 2) ^ 2 ≤ 1 - Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
-  have h1 := two_sub_two_mul_cos (theta n k)
-  have h2 := two_sub_two_mul_cos (π / ((n : ℝ) + 1))
+  have h1 := Real.two_sub_two_mul_cos (theta n k)
+  have h2 := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
   rw [show π / ((n : ℝ) + 1) / 2 = π / (2 * ((n : ℝ) + 1)) by
     rw [div_div, mul_comm ((n : ℝ) + 1) 2]] at h2
   linarith [neg_cos_le_cos_theta n k]
@@ -260,7 +254,7 @@ theorem sin_sq_theta_div_two_ge_half (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * (
     refine Real.cos_nonpos_of_pi_div_two_le_of_le ?_ (by linarith [theta_lt_pi n k, Real.pi_pos])
     rw [theta, le_div_iff₀ (by positivity : (0 : ℝ) < (n : ℝ) + 1)]
     nlinarith [Real.pi_pos]
-  linarith [two_sub_two_mul_cos (theta n k)]
+  linarith [Real.two_sub_two_mul_cos (theta n k)]
 
 end OneDimensional
 

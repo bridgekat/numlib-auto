@@ -263,14 +263,9 @@ theorem obliqueProj_of_biorthogonal (h : IsBiorthogonal V W) : obliqueProj V W =
 /-- Saad §1.12.3: `Wᴴ z = 0` exactly when `z ⟂ L`, for `W` a basis of `L`. -/
 theorem conjTranspose_mulVec_eq_zero_iff (hW : W.IsBasisOf L) (z : EuclideanSpace 𝕜 (Fin n)) :
     Wᴴ *ᵥ WithLp.ofLp z = 0 ↔ z ∈ Lᗮ := by
-  rw [conjTranspose_mulVec_eq_inner, ← hW.span_eq, Submodule.mem_orthogonal_span]
-  constructor
-  · intro h
-    rintro _ ⟨i, rfl⟩
-    exact congrFun h i
-  · intro h
-    funext i
-    exact h _ (Set.mem_range_self i)
+  rw [Matrix.conjTranspose_mulVec_eq_zero_iff, ← hW.span_eq, Submodule.mem_orthogonal_span,
+    Set.forall_mem_range]
+  rfl
 
 /-- `V y` lies in the span of the columns of `V`. -/
 theorem toEuclideanLin_mem_span (V : Matrix (Fin n) (Fin m) 𝕜)

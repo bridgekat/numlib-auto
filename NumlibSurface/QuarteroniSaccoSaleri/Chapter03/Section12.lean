@@ -159,12 +159,6 @@ private theorem toLp_iterate (x₀ : Fin n → ℝ) (k : ℕ) :
       (Refinement.step (lpCLM p C) (lpCLM p A) (toLp p b))^[k] (toLp p x₀) :=
   (Function.Semiconj.iterate_right (fun x => (iterativeRefinementStep_eq C A b p x).1) k) x₀
 
-/-- `Matrix.lpCLM p` respects subtraction. -/
-private theorem lpCLM_sub' (M N : Matrix (Fin n) (Fin n) ℝ) :
-    lpCLM p (M - N) = lpCLM p M - lpCLM p N := by
-  ext x i
-  simp [sub_mulVec]
-
 /-- `Matrix.lpCLM p` respects powers. -/
 private theorem lpCLM_pow' (M : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     lpCLM p (M ^ k) = lpCLM p M ^ k := by
@@ -207,7 +201,7 @@ private theorem iterate_sub_eq' (C A : Matrix (Fin n) (Fin n) ℝ) {b xs : Fin n
     (iterativeRefinementStep C A b)^[k] x₀ - xs = ((1 - C * A) ^ k) *ᵥ (x₀ - xs) := by
   have h := Refinement.iterate_sub_eq (C := lpCLM 2 C) (A := lpCLM 2 A) (b := toLp 2 b)
     (xs := toLp 2 xs) (by rw [lpCLM_apply, ofLp_toLp, hxs]) (toLp 2 x₀) k
-  rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub',
+  rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub,
     ← lpCLM_pow', lpCLM_apply, ofLp_toLp] at h
   exact toLp_injective 2 h
 
@@ -229,7 +223,7 @@ theorem iterativeRefinement_convergence (C A : Matrix (Fin n) (Fin n) ℝ) :
   refine ⟨fun b xs hxs x₀ k => ⟨iterate_sub_eq' C A hxs x₀ k, ?_⟩, ?_⟩
   · have h := Refinement.norm_iterate_sub_le (C := lpCLM p C) (A := lpCLM p A) (b := toLp p b)
       (xs := toLp p xs) (by rw [lpCLM_apply, ofLp_toLp, hxs]) (toLp p x₀) k
-    rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub'] at h
+    rw [← toLp_iterate, ← toLp_sub, ← toLp_sub, ← lpCLM_mul, ← lpCLM_one, ← lpCLM_sub] at h
     exact h
   · constructor
     · intro h

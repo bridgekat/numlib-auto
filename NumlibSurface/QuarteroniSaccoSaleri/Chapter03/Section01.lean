@@ -149,28 +149,11 @@ theorem equation_3_5 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
 
 /-! ### Remark 3.1: the distance to singularity, and (3.7) -/
 
--- TODO(backbone): belongs in `Numlib/Analysis/Matrix/OperatorNorm` beside `Matrix.lpCLM`, with
--- the injectivity `lpCLM_injective` below.
-/-- Every operator on `PiLp p (Fin n → ℝ)` is `x ↦ M x` for a matrix `M`: `Matrix.toLpLin` is a
-linear equivalence. -/
+/-- Every operator on `PiLp p (Fin n → ℝ)` is `x ↦ M x` for a matrix `M` (the surjectivity of the
+backbone's linear equivalence `Matrix.lpCLMEquiv`). -/
 theorem exists_lpCLM_eq (t : PiLp p (fun _ : Fin n => ℝ) →L[ℝ] PiLp p (fun _ : Fin n => ℝ)) :
     ∃ M : Matrix (Fin n) (Fin n) ℝ, lpCLM p M = t :=
-  ⟨(toLpLin p p).symm (t : PiLp p (fun _ : Fin n => ℝ) →ₗ[ℝ] PiLp p (fun _ : Fin n => ℝ)), by
-    ext x
-    simp [lpCLM]⟩
-
-/-- `Matrix.lpCLM p` respects subtraction. -/
-private theorem lpCLM_sub (A B : Matrix (Fin n) (Fin n) ℝ) :
-    lpCLM p (A - B) = lpCLM p A - lpCLM p B := by
-  ext x i
-  simp [sub_mulVec]
-
-/-- `Matrix.lpCLM p` is injective. -/
-private theorem lpCLM_injective :
-    Function.Injective (lpCLM p : Matrix (Fin n) (Fin n) ℝ → _) := fun A B h =>
-  (toLpLin p p).injective (by
-    have := congrArg ContinuousLinearMap.toLinearMap h
-    simpa only [lpCLM, LinearMap.coe_toContinuousLinearMap] using this)
+  (lpCLMEquiv p).surjective t
 
 -- TODO(backbone): the operator ring of a finite-dimensional space is Dedekind-finite; stated
 -- here for `PiLp p (Fin n → ℝ)` through the matrix algebra, for `isUnit_of_norm_mul_sub_one_lt`.
@@ -180,7 +163,7 @@ instance : IsDedekindFiniteMonoid
     obtain ⟨A, rfl⟩ := exists_lpCLM_eq a
     obtain ⟨B, rfl⟩ := exists_lpCLM_eq b
     rw [← lpCLM_mul, ← lpCLM_one] at h ⊢
-    rw [mul_eq_one_comm.mp (lpCLM_injective h)]
+    rw [mul_eq_one_comm.mp ((lpCLMEquiv p).injective (a₁ := A * B) (a₂ := 1) h)]
 
 /-- **Remark 3.1, (3.6) (Kahan).** For a nonsingular `A`, the relative distance of `A` from the
 set of singular matrices in the `p`-norm, `dist_p(A) = min {‖δA‖_p / ‖A‖_p : A + δA singular}`,

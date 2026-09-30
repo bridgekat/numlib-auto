@@ -45,8 +45,9 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-! ### Gram–Schmidt, for an arbitrary index type
 
-The two facts about `gramSchmidt` that the section uses and Mathlib does not state. Both are
-index-general; the book's statements below are their instances at `Fin r` and at `ℕ`. -/
+The facts about `gramSchmidt` that the section uses and neither Mathlib nor the backbone
+(`Numlib/Analysis/InnerProductSpace/GramSchmidt`) states. They are index-general; the book's
+statements below are their instances at `Fin r` and at `ℕ`. -/
 
 section Aux
 
@@ -60,14 +61,6 @@ private theorem inner_gramSchmidt_self (x : ι → E) (j : ι) :
   convert add_zero _
   refine Finset.sum_eq_zero fun i hi => ?_
   rw [inner_smul_right, gramSchmidt_orthogonal 𝕜 x (Finset.mem_Iio.1 hi).ne', mul_zero]
-
-private theorem inner_gramSchmidtNormed_self (x : ι → E) (j : ι) :
-    inner 𝕜 (gramSchmidtNormed 𝕜 x j) (x j) = ((‖gramSchmidt 𝕜 x j‖ : 𝕜)) := by
-  rw [gramSchmidtNormed, inner_smul_left, inner_gramSchmidt_self, RCLike.conj_inv,
-    RCLike.conj_ofReal]
-  rcases eq_or_ne ((‖gramSchmidt 𝕜 x j‖ : 𝕜)) 0 with h | h
-  · simp [h]
-  · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
 
 private theorem inner_gramSchmidtNormed_smul (x : ι → E) (i j : ι) :
     inner 𝕜 (gramSchmidtNormed 𝕜 x i) (x j) • gramSchmidtNormed 𝕜 x i
@@ -242,7 +235,7 @@ theorem modifiedGramSchmidtCoeff_eq (x : ℕ → 𝔼) {i j : ℕ} (hij : i ≤ 
     exact inner_mgsRun_self (fun a b hab => gramSchmidtNormed_pairwise_orthogonal x hab) (x j) i
   · subst h
     rw [ite_eq_right (lt_irrefl i), ite_eq_left rfl, mgsRun_gramSchmidtNormed,
-      inner_gramSchmidtNormed_self]
+      InnerProductSpace.inner_gramSchmidtNormed_self]
 
 /-- Saad §1.7: **in exact arithmetic Algorithm 1.2 computes the same `Q` and the same `R` as
 Algorithm 1.1**. Neither half needs a hypothesis on `x`: past a breakdown both algorithms return

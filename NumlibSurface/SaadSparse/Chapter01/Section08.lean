@@ -163,12 +163,6 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §1.8.2 Theorem 1.8: the Jordan canonical form -/
 
-/-- The eigenspace of `A` at `c` is `Null (A - c I)`, the null space of the matrix `A - c I`. -/
-private theorem eigenspace_mulVecLin_eq_ker (A : Matrix (Fin n) (Fin n) 𝕜) (c : 𝕜) :
-    Module.End.eigenspace A.mulVecLin c = LinearMap.ker ((A - c • 1).mulVecLin) := by
-  ext v
-  simp [LinearMap.mem_ker, sub_eq_zero]
-
 /-- **Saad Theorem 1.8**, the Jordan canonical form: every complex square matrix is similar to a
 block diagonal matrix consisting of `p` diagonal blocks, one associated with each distinct
 eigenvalue `lam i`, and each of those blocks has itself a block diagonal structure consisting of
@@ -240,7 +234,7 @@ theorem theorem_1_8_geometricMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : 
   classical
   have h := finrank_ker_pow_sub_smul_one_of_jordan hinj hA i 1
   rw [pow_one, pow_one] at h
-  rw [eigenspace_mulVecLin_eq_ker, h,
+  rw [Matrix.eigenspace_mulVecLin_eq_ker, h,
     Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one (hlpos i) (fun _ => lam i) (lam i),
     Finset.filter_true_of_mem fun _ _ => rfl, Finset.card_univ, Fintype.card_fin]
 

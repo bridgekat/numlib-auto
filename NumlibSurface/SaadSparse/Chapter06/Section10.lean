@@ -94,8 +94,7 @@ private theorem mgsW_eq_sub_sum' (u : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
   induction k with
   | zero => simp [mgsW]
   | succ k ih =>
-    have h : mgsW u w₀ (k + 1) = mgsW u w₀ k - inner 𝕜 (u k) (mgsW u w₀ k) • u k := by rw [mgsW]
-    rw [h, Finset.sum_range_succ]
+    rw [mgsW_succ, Finset.sum_range_succ]
     nth_rewrite 1 [ih]
     abel
 
@@ -107,7 +106,7 @@ private theorem iopW_eq_mgsW_of_band {u : ℕ → 𝔼} {lo : ℕ} (w₀ : 𝔼)
   induction N with
   | zero => rfl
   | succ N ih =>
-    rw [iopW_succ, iopCoeffOf, ih, mgsW]
+    rw [iopW_succ, iopCoeffOf, ih, mgsW_succ]
     by_cases hlo : lo ≤ N
     · rw [ite_eq_left_of_eq_true _ _ (eq_true hlo)]
     · rw [ite_eq_right_of_eq_false _ _ (eq_false hlo), h N (by omega), zero_smul]

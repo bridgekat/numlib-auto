@@ -1,5 +1,6 @@
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.LinearAlgebra.Matrix.Bidiagonal
+import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section07
@@ -167,9 +168,9 @@ theorem equation_5_57 {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
 /-! ### §5.8.3: the iterative phase, the SVD from the bidiagonal form -/
 
 /-- The identification `Fin n ⊕ Fin (m - n) ≃ Fin m` of the row index of `(B; 0)` with the block
-index, for `n ≤ m`: `inl k ↦ k`, `inr k ↦ n + k`. -/
+index, for `n ≤ m`: `inl k ↦ k`, `inr k ↦ n + k` (the backbone's `Matrix.blockEquiv`). -/
 def blockEquiv {m : ℕ} (h : n ≤ m) : Fin n ⊕ Fin (m - n) ≃ Fin m :=
-  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
+  Matrix.blockEquiv h
 
 /-- `blockEquiv h (inl k) = k`, as a natural number. -/
 theorem coe_blockEquiv_inl {m : ℕ} (h : n ≤ m) (k : Fin n) :

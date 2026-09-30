@@ -439,38 +439,32 @@ theorem krylov_mem_invtSubmodule_of_breakdown {j : ℕ} (h : grade A v₁ ≤ j)
 /-! ### Algorithm 6.2: Arnoldi with modified Gram–Schmidt -/
 
 /-- The inner loop of **Algorithm 6.2**: `w` after the projections on `v_0, …, v_{k-1}` have
-been subtracted one at a time. -/
-noncomputable def mgsW (v : ℕ → 𝔼) (w₀ : 𝔼) : ℕ → 𝔼
-  | 0 => w₀
-  | k + 1 => mgsW v w₀ k - inner 𝕜 (v k) (mgsW v w₀ k) • v k
+been subtracted one at a time, which is the backbone modified Gram–Schmidt sweep
+`InnerProductSpace.modifiedGramSchmidtSweep`. -/
+noncomputable abbrev mgsW (v : ℕ → 𝔼) (w₀ : 𝔼) : ℕ → 𝔼 :=
+  InnerProductSpace.modifiedGramSchmidtSweep 𝕜 v w₀
 
-/-- The inner loop of Algorithm 6.2 is the backbone modified Gram–Schmidt sweep
-`InnerProductSpace.modifiedGramSchmidtSweep`, through which the lemmas below are proved. -/
-theorem mgsW_eq_modifiedGramSchmidtSweep (v : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
-    mgsW v w₀ k = InnerProductSpace.modifiedGramSchmidtSweep 𝕜 v w₀ k := by
-  induction k with
-  | zero => rfl
-  | succ k ih => rw [mgsW, ih, InnerProductSpace.modifiedGramSchmidtSweep_succ]
+/-- One step of the inner loop of Algorithm 6.2: `w := w - (v_k, w) v_k`. -/
+theorem mgsW_succ (v : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
+    mgsW v w₀ (k + 1) = mgsW v w₀ k - inner 𝕜 (v k) (mgsW v w₀ k) • v k :=
+  InnerProductSpace.modifiedGramSchmidtSweep_succ 𝕜 v w₀ k
 
 private theorem mgsW_congr {v v' : ℕ → 𝔼} (w₀ : 𝔼) {k : ℕ} (h : ∀ i < k, v i = v' i) :
-    mgsW v w₀ k = mgsW v' w₀ k := by
-  rw [mgsW_eq_modifiedGramSchmidtSweep, mgsW_eq_modifiedGramSchmidtSweep]
-  exact InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 w₀ h
+    mgsW v w₀ k = mgsW v' w₀ k :=
+  InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 w₀ h
 
 /-- The inner loop of modified Gram–Schmidt subtracts the same total as classical Gram–Schmidt,
 as soon as the `v_i` are pairwise orthogonal. -/
 theorem mgsW_eq_sub_sum {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
     (w₀ : 𝔼) (k : ℕ) :
-    mgsW v w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (v i) w₀ • v i := by
-  rw [mgsW_eq_modifiedGramSchmidtSweep]
-  exact InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum 𝕜 (fun i j h => ho i j h) w₀ k
+    mgsW v w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (v i) w₀ • v i :=
+  InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum 𝕜 (fun i j h => ho i j h) w₀ k
 
 /-- For a pairwise orthogonal family the modified Gram–Schmidt loop does not change the
 coefficient it is about to compute: `(v_k, w)` after `k` subtractions is `(v_k, w_0)`. -/
 theorem inner_mgsW_self {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
-    (w₀ : 𝔼) (k : ℕ) : inner 𝕜 (v k) (mgsW v w₀ k) = inner 𝕜 (v k) w₀ := by
-  rw [mgsW_eq_modifiedGramSchmidtSweep]
-  exact InnerProductSpace.inner_modifiedGramSchmidtSweep_self 𝕜 (fun i j h => ho i j h) w₀ k
+    (w₀ : 𝔼) (k : ℕ) : inner 𝕜 (v k) (mgsW v w₀ k) = inner 𝕜 (v k) w₀ :=
+  InnerProductSpace.inner_modifiedGramSchmidtSweep_self 𝕜 (fun i j h => ho i j h) w₀ k
 
 /-- **Algorithm 6.2** (Arnoldi, modified Gram–Schmidt), `0`-based. The clamp `min i j` is
 invisible: the inner loop reads only `v_0, …, v_j`, where the clamped family agrees with
@@ -509,7 +503,7 @@ the Gram–Schmidt orthonormalization `Arnoldi.vec` of the Krylov sequence: it s
 recurrence that `Arnoldi.eq_vec_of_modifiedGramSchmidt` characterizes. -/
 theorem arnoldiMGS_eq_vec (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = Arnoldi.vec (op A) v₁ := by
   refine Arnoldi.eq_vec_of_modifiedGramSchmidt (op A) v₁ (by simp [hv]) fun j => ?_
-  rw [arnoldiMGS_succ, arnoldiMGSW, mgsW_eq_modifiedGramSchmidtSweep]
+  rw [arnoldiMGS_succ, arnoldiMGSW]
 
 /-- §6.3.2: in exact arithmetic Algorithm 6.2 computes the same vectors as Algorithm 6.1. -/
 theorem arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) (j : ℕ) :

@@ -91,11 +91,6 @@ theorem equation_3_64 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : Rou
   refine ⟨δA, ?_, hAx⟩
   rwa [Fintype.card_fin, gamma_def] at hδA
 
-/-- The `∞`-norm of the entrywise absolute value is the `∞`-norm. -/
-private theorem linfty_opNorm_abs (B : Matrix (Fin n) (Fin n) ℝ) : ‖B.abs‖ = ‖B‖ :=
-  le_antisymm (linfty_opNorm_le_of_abs_entrywiseLE fun i j => by simp)
-    (linfty_opNorm_le_of_abs_entrywiseLE fun i j => by simp)
-
 /-- **(3.65), rigorous form.** With partial pivoting the entries of `L̂` are bounded by `1`, so
 `‖L̂‖_∞ ≤ n` and (3.64) becomes `‖δA‖_∞ ≤ n γ_{3n} ‖Û‖_∞` for the perturbation `δA` of (3.64)
 (backbone `Matrix.linfty_opNorm_le_of_abs_entrywiseLE` and the submultiplicativity of `‖·‖_∞`);
@@ -126,7 +121,7 @@ theorem equation_3_65 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : Rou
   calc ‖δA‖ ≤ ‖γ • (L.abs * U.abs)‖ := h1
     _ = γ * ‖L.abs * U.abs‖ := by rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hγ0]
     _ ≤ γ * (‖L.abs‖ * ‖U.abs‖) := mul_le_mul_of_nonneg_left (linfty_opNorm_mul _ _) hγ0
-    _ = γ * (‖L‖ * ‖U‖) := by rw [linfty_opNorm_abs, linfty_opNorm_abs]
+    _ = γ * (‖L‖ * ‖U‖) := by rw [Matrix.linfty_opNorm_abs, Matrix.linfty_opNorm_abs]
     _ ≤ γ * (n * ‖U‖) := by gcongr
     _ = n * γ * ‖U‖ := by ring
 

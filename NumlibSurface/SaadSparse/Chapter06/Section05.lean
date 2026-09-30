@@ -1749,22 +1749,12 @@ theorem gtilde_castSucc (h : ℕ → ℕ → 𝕜) (c : 𝕜) {m : ℕ} (i : Fin
 /-! ### `R̃_m` versus `R_m`
 
 The two triangular factors differ in a single entry, which is the whole content of the book's
-block computation (6.72)–(6.73). The unfolding `rotated_succ_apply'` is definitional. -/
-
-private theorem rotated_succ_apply' (h : ℕ → ℕ → 𝕜) (k i j : ℕ) :
-    Krylov.rotated h (k + 1) i j =
-      if i = k then
-        starRingEnd 𝕜 (Krylov.givensC h k) * Krylov.rotated h k k j +
-          starRingEnd 𝕜 (Krylov.givensS h k) * Krylov.rotated h k (k + 1) j
-      else if i = k + 1 then
-        -Krylov.givensS h k * Krylov.rotated h k k j +
-          Krylov.givensC h k * Krylov.rotated h k (k + 1) j
-      else Krylov.rotated h k i j := rfl
+block computation (6.72)–(6.73). The unfolding `Krylov.rotated_succ_apply` is definitional. -/
 
 /-- Rotation `k` changes only rows `k` and `k + 1`. -/
 private theorem rotated_succ_of_ne (h : ℕ → ℕ → 𝕜) {k i : ℕ} (h1 : i ≠ k) (h2 : i ≠ k + 1)
     (j : ℕ) : Krylov.rotated h (k + 1) i j = Krylov.rotated h k i j := by
-  rw [rotated_succ_apply', ite_eq_right h1, ite_eq_right h2]
+  rw [Krylov.rotated_succ_apply, ite_eq_right h1, ite_eq_right h2]
 
 /-- **(6.72)–(6.73)**: `R_{m+1}` and `R̃_{m+1}` agree except in the entry `(m, m)`, where the
 former carries `ρ_m` and the latter the pivot `ξ_{m+1}`. -/

@@ -23,9 +23,10 @@ Rayleigh quotient `r(x) = xᵀ A x / xᵀ x` is `rayleigh A x` for `x ∈ ℝⁿ
 `LinearMap.rayleighQuotient (toEuclideanLin A)`. The Lanczos matrices `H_m = V_mᵀ A V_m` of §4.4.3
 generated from `q^(1)` are `lanczosTridiag A q₁ m`, the backbone's `Lanczos.tridiag`, whose
 entries are `⟪v_i, A v_j⟫` for the Lanczos vectors `v_i = Arnoldi.vec (toEuclideanLin A) q₁ i`
-(`lanczosTridiag_apply`); their eigenvalues `η_1 ≥ … ≥ η_m` are `lanczosEigenvalues A q₁ m`, and,
-as long as the process has not broken down (`finrank 𝒦_m(A, q₁) = m`), they are the eigenvalues
-of the compression of `A` to `𝒦_m(A, q₁)`, the Ritz values (`lanczosEigenvalues_eq`).
+(`lanczosTridiag_apply`); their eigenvalues `η_1 ≥ … ≥ η_m` are `lanczosEigenvalues A q₁ m`, the
+backbone's `Lanczos.ritzValues`, and, as long as the process has not broken down
+(`finrank 𝒦_m(A, q₁) = m`), they are the eigenvalues of the compression of `A` to `𝒦_m(A, q₁)`
+(`lanczosEigenvalues_eq`).
 
 ## Contents
 
@@ -116,27 +117,23 @@ theorem lanczosTridiag_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     RingHom.id_apply] at h
   exact h.symm
 
-/-- The eigenvalues `η_1 ≥ η_2 ≥ … ≥ η_m` of `H_m`, sorted decreasingly and indexed by `Fin m`
-(Mathlib's `Matrix.IsHermitian.eigenvalues₀` reindexed along `Fintype.card_fin`). -/
+/-- The eigenvalues `η_1 ≥ η_2 ≥ … ≥ η_m` of `H_m`, sorted decreasingly and indexed by `Fin m`:
+the backbone's Ritz values `Lanczos.ritzValues`. -/
 noncomputable def lanczosEigenvalues (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (m : ℕ) : Fin m → ℝ :=
-  (isHermitian_iff_isSymm.mpr (Lanczos.tridiag_isSymm (toEuclideanLin A) q₁ m)).eigenvalues₀ ∘
-    Fin.cast (Fintype.card_fin m).symm
+  Lanczos.ritzValues (toEuclideanLin A) q₁ m
 
 /-- **The eigenvalues of `H_m` are the Ritz values**: as long as the Lanczos process has not broken
 down (`finrank 𝒦_m(A, q^(1)) = m`), the sorted eigenvalues of `H_m` are the sorted eigenvalues of
 the compression of `A` to the Krylov subspace `𝒦_m(A, q^(1))`. Backbone
-`Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression`. -/
+`Lanczos.ritzValues_eq_eigenvalues_compression`. -/
 theorem lanczosEigenvalues_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ}
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m) :
     lanczosEigenvalues A q₁ m =
       (compression.isSymmetric (toEuclideanLin A) (Krylov.subspace (toEuclideanLin A) q₁ m)
-        hA.isSymmetric_toEuclideanLin).eigenvalues hm := by
-  rw [lanczosEigenvalues, Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression q₁
-    hA.isSymmetric_toEuclideanLin hm]
-  ext i
-  simp [Fin.cast]
+        hA.isSymmetric_toEuclideanLin).eigenvalues hm :=
+  Lanczos.ritzValues_eq_eigenvalues_compression q₁ hA.isSymmetric_toEuclideanLin hm
 
 /-- A Krylov subspace of dimension `m` in `ℝⁿ` has `m ≤ n`: the index bookkeeping of (5.67). -/
 theorem le_of_finrank_krylov_eq (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))

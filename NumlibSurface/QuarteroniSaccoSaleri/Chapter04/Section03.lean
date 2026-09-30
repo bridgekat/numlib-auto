@@ -1305,11 +1305,10 @@ theorem pcg_succ_p (k : ℕ) :
 variable {A P b x₀}
 
 /-- A symmetric positive definite `P` with its inverse `P⁻¹` is a preconditioner in the
-backbone's sense. -/
+backbone's sense (`Matrix.PosDef.isPreconditioner_toEuclideanLin`). -/
 theorem isPreconditioner_of_posDef (hP : P.PosDef) :
     Krylov.IsPreconditioner (toEuclideanLin P) (toEuclideanLin P⁻¹) :=
-  ⟨posDef_isSymmetricCoercive_toEuclideanLin hP,
-    fun x => toEuclideanLin_mul_nonsing_inv_apply hP.isUnit x⟩
+  hP.isPreconditioner_toEuclideanLin
 
 /-- For `A` and `P` symmetric positive definite, the preconditioned operator `P⁻¹ A` is symmetric
 coercive in the `P`-inner product: it is symmetric there because `A` is, and coercive because

@@ -351,19 +351,6 @@ theorem exists_multicoloring (A : Matrix (Fin n) (Fin n) ℝ) {ν : ℕ}
     ∃ c : Fin n → Fin (ν + 1), ∀ i j, i ≠ j → c i = c j → A i j = 0 :=
   exists_coloring_of_le_maxDegree hsymm hrow
 
-/-- The maximum degree of the adjacency graph of a matrix with a symmetric pattern is bounded by a
-count of off-diagonal nonzeros in a single row.  This is the one step of §3.3.3 that needs pattern
-symmetry; it is proved inside `Matrix.exists_coloring_of_le_maxDegree` and wants a name of its own
-in `Numlib/LinearAlgebra/Sparse/Reordering`. -/
-private theorem maxDegree_adjGraph_le {A : Matrix (Fin n) (Fin n) ℝ}
-    [DecidableRel A.adjGraph.Adj] {ν : ℕ} (hsymm : ∀ i j, A i j ≠ 0 → A j i ≠ 0)
-    (hrow : ∀ i, #{j ∈ univ | j ≠ i ∧ A i j ≠ 0} ≤ ν) : A.adjGraph.maxDegree ≤ ν := by
-  refine SimpleGraph.maxDegree_le_of_forall_degree_le _ _ fun i => ?_
-  refine le_trans (Finset.card_le_card ?_) (hrow i)
-  intro j hj
-  rw [SimpleGraph.mem_neighborFinset, adjGraph_adj] at hj
-  exact Finset.mem_filter.2 ⟨Finset.mem_univ j, hj.1.symm, hj.2.elim id fun h => hsymm _ _ h⟩
-
 /-- **Saad §3.3.3 and Problems P-3.9, P-3.10, P-3.11**: the greedy colouring of Algorithm 3.6
 applied to the adjacency graph of `A` never uses more than `ν + 1` colours, where `ν` bounds the
 number of off-diagonal nonzeros in a row (P-3.10); and on a matrix whose adjacency graph is
@@ -386,7 +373,7 @@ theorem greedy_coloring_bounds (A : Matrix (Fin n) (Fin n) ℝ) {ν : ℕ}
         ∀ v, A.adjGraph.greedyColoring v ≤ 1) := by
   classical
   exact ⟨fun v => (A.adjGraph.greedyColoring_le_maxDegree v).trans
-      (maxDegree_adjGraph_le hsymm hrow),
+      (Matrix.maxDegree_adjGraph_le hsymm hrow),
     fun h2 hord v => SimpleGraph.greedyColoring_le_one_of_isBipartite h2 hord v⟩
 
 /-! ### §3.3.4 Irreducibility -/

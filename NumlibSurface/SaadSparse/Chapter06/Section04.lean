@@ -992,7 +992,7 @@ private theorem iopW_eq_mgsW (u : ℕ → 𝔼) (w₀ : 𝔼) (N : ℕ) : iopW u
   induction N with
   | zero => rfl
   | succ N ih =>
-    rw [iopW_succ, mgsW, ih, iopCoeffOf,
+    rw [iopW_succ, mgsW_succ, ih, iopCoeffOf,
       ite_eq_left_of_eq_true _ _ (eq_true (Nat.zero_le N)), ih]
 
 /-- §6.4.2: with `k` at least as large as the number of steps performed, Algorithm 6.6 is
