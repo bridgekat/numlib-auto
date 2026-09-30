@@ -70,6 +70,19 @@ theorem blockTridiagonal_apply [Zero R] (E F : Fin N → Matrix (Fin q) (Fin q) 
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (i j : Fin (N + 1)) (k l : Fin q) :
     blockTridiagonal E F D (i, k) (j, l) = tridiagonalOf E D F i j k l := rfl
 
+/-- The entries of a block tridiagonal matrix whose blocks are read off `ℕ`-indexed sequences:
+the `(k, l)` entry of block `(i, j)` is that of `D i` on the diagonal, of `E j` below it and of
+`F i` above it. -/
+theorem blockTridiagonal_apply_eq_ite [Zero R] (E F D : ℕ → Matrix (Fin q) (Fin q) R)
+    (i j : Fin (N + 1)) (k l : Fin q) :
+    blockTridiagonal (fun a : Fin N => E a) (fun a : Fin N => F a) (fun a : Fin (N + 1) => D a)
+        (i, k) (j, l) =
+      if (i : ℕ) = j then D i k l else if (i : ℕ) = j + 1 then E j k l
+        else if (j : ℕ) = i + 1 then F i k l else 0 := by
+  rw [blockTridiagonal_apply]
+  simp only [tridiagonalOf, of_apply]
+  split_ifs <;> rfl
+
 end Block
 
 /-! ### The block LU recurrence -/

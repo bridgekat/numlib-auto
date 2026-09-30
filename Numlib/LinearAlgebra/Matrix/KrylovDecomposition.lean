@@ -35,6 +35,8 @@ with residual `h_{j+1,j} q_{j+1}`; the Arnoldi process produces one at every ste
 * `Matrix.IsKrylovDecomposition.leading`: truncation to the leading `j + 1` columns, the residual
   collecting what the discarded columns contributed to column `j` — the one lemma behind implicit
   restarting, Krylov–Schur restarting and the square implicit Q theorem.
+* `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero`: truncation across a zero block, keeping
+  the residual vector and restricting the residual row (Krylov–Schur restarting).
 * `Matrix.IsArnoldiDecomposition.implicitQ`: **the implicit Q theorem**, once, for decompositions
   with any number of columns: two Arnoldi decompositions of `A` with the same first column, the
   first with unreduced `H`, agree up to a unimodular diagonal, `Q' = Q D`, `H' = Dᴴ H D`,
@@ -177,6 +179,35 @@ theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k
         rw [Fin.lt_def, Fin.val_castLE]; exact Fin.val_lt_last ha
       rw [Pi.single_eq_of_ne ha, mul_zero, hb _ hlt, mul_zero, add_zero]
       exact sum_eq_zero fun i hi => by rw [hB i _ hlt (mem_Ioi.1 hi), mul_zero]
+
+/-- **Truncation of a Krylov decomposition across a zero block.** If `B` is block upper triangular
+with respect to the split after index `j` (`B i l = 0` for `l ≤ j < i`), the leading `j + 1` columns
+form a Krylov decomposition with the same residual vector and the residual row restricted. This is
+the truncation of Krylov–Schur restarting ([golub2013matrix] §10.5.4). -/
+theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k) 𝕜}
+    {b : Fin k → 𝕜} (h : IsKrylovDecomposition A Q B r b) (j : Fin k)
+    (hB : ∀ i l : Fin k, l ≤ j → j < i → B i l = 0) :
+    IsKrylovDecomposition A (Q.submatrix id (Fin.castLE j.isLt))
+      (B.submatrix (Fin.castLE j.isLt) (Fin.castLE j.isLt)) r (b ∘ Fin.castLE j.isLt) where
+  conjTranspose_mul_self := by
+    rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+      h.conjTranspose_mul_self, submatrix_one _ (Fin.castLE_injective _)]
+  conjTranspose_mulVec := by
+    ext a
+    change star (Q.col (Fin.castLE j.isLt a)) ⬝ᵥ r = 0
+    exact h.star_col_dotProduct_residual _
+  mul_eq := by
+    ext x a
+    have hcol := congrFun (congrFun h.mul_eq x) (Fin.castLE j.isLt a)
+    have ha : Fin.castLE j.isLt a ≤ j := by
+      rw [Fin.le_def, Fin.val_castLE]
+      exact Nat.lt_succ_iff.1 a.isLt
+    simp only [mul_apply, add_apply, vecMulVec_apply, submatrix_apply, id,
+      Function.comp_apply] at hcol ⊢
+    have hz : ∑ i ∈ Ioi j, Q x i * B i (Fin.castLE j.isLt a) = 0 :=
+      sum_eq_zero fun i hi => by rw [hB i _ ha (mem_Ioi.1 hi), mul_zero]
+    rw [hcol, sum_fin_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)), hz,
+      add_zero]
 
 end IsKrylovDecomposition
 

@@ -56,3 +56,6 @@ id = "implicitQ_of_apply_eq_zero_real"
 
 [[node]]
 id = "implicitQ_real"
+
+[[node]]
+id = "IsKrylovDecomposition.leading_of_apply_eq_zero"

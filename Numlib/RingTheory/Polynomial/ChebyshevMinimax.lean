@@ -76,6 +76,18 @@ theorem half_pow_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
 theorem one_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) : 1 ≤ (T ℝ m).eval x :=
   one_le_eval_T_real _ hx
 
+/-- Chebyshev polynomials increase to the right of `1`: `T_k(x) = cosh (k arcosh x)` there, and
+`cosh` and `arcosh` are monotone on `[0, ∞)` and `[1, ∞)`. -/
+theorem eval_T_le_eval_T {x y : ℝ} (hx : 1 ≤ x) (hxy : x ≤ y) (k : ℕ) :
+    (T ℝ k).eval x ≤ (T ℝ k).eval y := by
+  have hy : 1 ≤ y := hx.trans hxy
+  rw [← Real.cosh_arcosh hx, ← Real.cosh_arcosh hy, T_real_cosh, T_real_cosh, Real.cosh_le_cosh]
+  have h0 := Real.arcosh_nonneg hx
+  have hle := (Real.arcosh_le_arcosh (by linarith) (by linarith)).2 hxy
+  have hk : (0 : ℝ) ≤ ((k : ℤ) : ℝ) := by exact_mod_cast Nat.zero_le k
+  rw [abs_of_nonneg (mul_nonneg hk h0), abs_of_nonneg (mul_nonneg hk (h0.trans hle))]
+  exact mul_le_mul_of_nonneg_left hle hk
+
 /-- The shifted Chebyshev polynomial `t ↦ T_m((b + a - 2t)/(b - a)) / T_m((b + a - 2γ)/(b - a))`,
 normalized to `1` at `γ`. -/
 noncomputable def shifted (m : ℕ) (a b γ : ℝ) : ℝ[X] :=

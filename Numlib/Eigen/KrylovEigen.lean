@@ -1,5 +1,6 @@
 import Mathlib.Analysis.SpecialFunctions.Arcosh
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
+import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Block
 import Numlib.Krylov.Convergence.Polynomial
@@ -1155,65 +1156,6 @@ end Lanczos
 
 namespace BlockLanczos
 
-/-- Chebyshev polynomials increase to the right of `1`: `T_k(x) = cosh (k arcosh x)` there. -/
-private theorem eval_T_le_eval_T {x y : ℝ} (hx : 1 ≤ x) (hxy : x ≤ y) (k : ℕ) :
-    (T ℝ k).eval x ≤ (T ℝ k).eval y := by
-  have hy : 1 ≤ y := hx.trans hxy
-  rw [← Real.cosh_arcosh hx, ← Real.cosh_arcosh hy, T_real_cosh, T_real_cosh, Real.cosh_le_cosh]
-  have h0 := Real.arcosh_nonneg hx
-  have hle := (Real.arcosh_le_arcosh (by linarith) (by linarith)).2 hxy
-  have hk : (0 : ℝ) ≤ ((k : ℤ) : ℝ) := by exact_mod_cast Nat.zero_le k
-  rw [abs_of_nonneg (mul_nonneg hk h0), abs_of_nonneg (mul_nonneg hk (h0.trans hle))]
-  exact mul_le_mul_of_nonneg_left hle hk
-
-section Projection
-
-variable [FiniteDimensional 𝕜 E] {ι : Type*} [Fintype ι]
-  (b : OrthonormalBasis ι 𝕜 E) (s : Set ι) [DecidablePred (· ∈ s)]
-
-/-- The coordinates of the orthogonal projection onto the span of some vectors of an orthonormal
-basis: those coordinates are kept, the others are set to `0`. -/
-private theorem repr_starProjection_span (x : E) (j : ι) :
-    b.repr ((Submodule.span 𝕜 (b '' s)).starProjection x) j = if j ∈ s then b.repr x j else 0 := by
-  rw [OrthonormalBasis.repr_apply_apply, OrthonormalBasis.repr_apply_apply]
-  split_ifs with hj
-  · rw [← Submodule.inner_starProjection_left_eq_right,
-      Submodule.starProjection_eq_self_iff.2 (Submodule.subset_span (Set.mem_image_of_mem b hj))]
-  · have key : ∀ z ∈ Submodule.span 𝕜 (b '' s), inner 𝕜 (b j) z = 0 := by
-      intro z hz
-      induction hz using Submodule.span_induction with
-      | mem z hz =>
-        obtain ⟨l, hl, rfl⟩ := hz
-        exact b.orthonormal.2 fun h => hj (by subst h; exact hl)
-      | zero => exact inner_zero_right _
-      | add z w _ _ hz hw => rw [inner_add_right, hz, hw, add_zero]
-      | smul c z _ hz => rw [inner_smul_right, hz, mul_zero]
-    exact key _ (Submodule.starProjection_apply_mem _ x)
-
-omit [FiniteDimensional 𝕜 E] in
-private theorem norm_sq_eq_sum_repr (x : E) : ‖x‖ ^ 2 = ∑ j, ‖b.repr x j‖ ^ 2 := by
-  rw [← b.repr.norm_map x, EuclideanSpace.norm_sq_eq]
-
-/-- `‖P x‖² = ∑_{j ∈ s} |x_j|²`. -/
-private theorem norm_sq_starProjection_span (x : E) :
-    ‖(Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
-      ∑ j, if j ∈ s then ‖b.repr x j‖ ^ 2 else 0 := by
-  rw [norm_sq_eq_sum_repr b]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [repr_starProjection_span b s]
-  split_ifs <;> simp
-
-/-- `‖x - P x‖² = ∑_{j ∉ s} |x_j|²`. -/
-private theorem norm_sq_sub_starProjection_span (x : E) :
-    ‖x - (Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
-      ∑ j, if j ∈ s then 0 else ‖b.repr x j‖ ^ 2 := by
-  rw [norm_sq_eq_sum_repr b]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [map_sub, PiLp.sub_apply, repr_starProjection_span b s]
-  split_ifs <;> simp
-
-end Projection
-
 variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetric)
   (hn : Module.finrank 𝕜 E = n)
 include hA hn
@@ -1300,8 +1242,8 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
     rw [OrthonormalBasis.repr_apply_apply]
     exact horth2 j (Finset.mem_filter.2 ⟨Finset.mem_univ _, h1, h2⟩)
   -- the angle hypothesis in coordinates
-  have hPy := norm_sq_starProjection_span b ({j | (j : ℕ) < p} : Set (Fin n)) yE
-  have hQy := norm_sq_sub_starProjection_span b ({j | (j : ℕ) < p} : Set (Fin n)) yE
+  have hPy := b.norm_sq_starProjection_span_image ({j | (j : ℕ) < p} : Set (Fin n)) yE
+  have hQy := b.norm_sq_sub_starProjection_span_image ({j | (j : ℕ) < p} : Set (Fin n)) yE
   have hty : ‖yE - P yE‖ ^ 2 ≤ t ^ 2 * ‖P yE‖ ^ 2 := by
     rw [← mul_pow]
     exact pow_le_pow_left₀ (norm_nonneg _) (ht yE y.2) 2
@@ -1312,7 +1254,7 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
     exact norm_le_zero_iff.1 h
   -- the denominator
   have hden : ‖P yE‖ ^ 2 ≤ ‖x‖ ^ 2 := by
-    rw [hPy, norm_sq_eq_sum_repr b x]
+    rw [hPy, ← b.sum_sq_norm_repr x]
     refine Finset.sum_le_sum fun j _ => ?_
     split_ifs with hj
     · rw [hrepr, norm_mul, RCLike.norm_ofReal, mul_pow]

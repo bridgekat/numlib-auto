@@ -1,4 +1,5 @@
 import Numlib.Krylov.BiLanczos
+import Numlib.Krylov.CG
 import Numlib.Projection.OneDimensional
 
 /-!
@@ -47,61 +48,10 @@ open Polynomial
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-! ### Polynomials in an operator, applied to a vector -/
+open Module.End (aeval_mul_apply aeval_apply_apply aeval_apply_add aeval_apply_sub
+  aeval_apply_C_mul aeval_apply_X_mul aeval_sub_C_mul_X_mul aeval_add_C_mul)
 
-section AevalHelpers
-
-/-- `(p q)(T) v = p(T) (q(T) v)`. -/
-private theorem aeval_mul_apply' (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p * q) v = aeval T p (aeval T q v) := by
-  rw [map_mul]; rfl
-
-/-- `p(T)` commutes with `T`. -/
-private theorem aeval_apply_apply (T : E →ₗ[𝕜] E) (p : 𝕜[X]) (v : E) :
-    aeval T p (T v) = T (aeval T p v) := by
-  have hmul : aeval T (p * X) = aeval T (X * p) := by rw [mul_comm]
-  have := congrArg (fun f : E →ₗ[𝕜] E => f v) hmul
-  simpa only [map_mul, aeval_X, Module.End.mul_apply] using this
-
-/-- Evaluation is additive in the polynomial. -/
-private theorem aeval_apply_add (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p + q) v = aeval T p v + aeval T q v := by
-  rw [map_add]; rfl
-
-/-- Evaluation is subtractive in the polynomial. -/
-private theorem aeval_apply_sub (T : E →ₗ[𝕜] E) (p q : 𝕜[X]) (v : E) :
-    aeval T (p - q) v = aeval T p v - aeval T q v := by
-  rw [map_sub]; rfl
-
-/-- A constant factor becomes a scalar. -/
-private theorem aeval_apply_C_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p : 𝕜[X]) (v : E) :
-    aeval T (C c * p) v = c • aeval T p v := by
-  rw [map_mul, aeval_C]
-  simp [Module.End.mul_apply, Module.algebraMap_end_apply]
-
-/-- A factor of `X` becomes an application of `T`. -/
-private theorem aeval_apply_X_mul (T : E →ₗ[𝕜] E) (p : 𝕜[X]) (v : E) :
-    aeval T (X * p) v = T (aeval T p v) := by
-  rw [aeval_mul_apply', aeval_X]
-
-/-- The evaluation of `p - c X q`. -/
-private theorem aeval_sub_C_mul_X_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p q : 𝕜[X]) (v : E) :
-    aeval T (p - C c * (X * q)) v = aeval T p v - c • T (aeval T q v) := by
-  rw [aeval_apply_sub, aeval_apply_C_mul, aeval_apply_X_mul]
-
-/-- The evaluation of `p + c q`. -/
-private theorem aeval_add_C_mul (T : E →ₗ[𝕜] E) (c : 𝕜) (p q : 𝕜[X]) (v : E) :
-    aeval T (p + C c * q) v = aeval T p v + c • aeval T q v := by
-  rw [aeval_apply_add, aeval_apply_C_mul]
-
-/-- **The step that removes the transpose**: with `B` the adjoint of `A`, a bilinear expression in
-`p(A) v` and `q̄(B) w` is one in `(q p)(A) v` and `w`. -/
-private theorem inner_aeval_map_aeval {A B : E →ₗ[𝕜] E}
-    (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p q : 𝕜[X]) (v w : E) :
-    inner 𝕜 (aeval B (q.map (starRingEnd 𝕜)) w) (aeval A p v) = inner 𝕜 w (aeval A (q * p) v) := by
-  rw [BiLanczos.inner_aeval_map_eq hB q, aeval_mul_apply']
-
-end AevalHelpers
+open BiLanczos (inner_aeval_map_aeval)
 
 /-! ### The BCG residual and direction polynomials -/
 
@@ -231,6 +181,27 @@ theorem residual_eq_aeval (j : ℕ) :
       rw [dualResidual_succ, hrmap, aeval_sub_C_mul_X_mul, hrs, hps]
     exact ⟨h1, by rw [direction_succ, directionPoly_succ, aeval_add_C_mul, h1, hp], h3,
       by rw [dualDirection_succ, hpmap, aeval_add_C_mul, h3, hps]⟩
+
+/-- **BCG with `B = A` and `r*₀ = r₀` is CG** ([golub2013matrix] §11.4.5, "BiCG collapses to CG if
+`A` is symmetric positive definite and `r̃₀ = r₀`"): over a real inner product space, the
+biconjugate gradient iteration with the second operator equal to the first and the shadow residual
+`r*₀ = r₀ = b − A x₀` is the conjugate gradient iteration, the shadow sequences equal to the primal
+ones. No hypothesis on `A` is needed for the identity of the two recurrences: over `ℝ` the BCG step
+length `⟪r, r⟫ / ⟪p, A p⟫` is the CG one `⟪r, r⟫ / ⟪A p, p⟫`. -/
+theorem iterate_self_eq_cg {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    (T : F →ₗ[ℝ] F) (b x₀ : F) (k : ℕ) :
+    iterate T T b x₀ (b - T x₀) k =
+      ⟨(CG.iterate T b x₀ k).x, (CG.iterate T b x₀ k).r, (CG.iterate T b x₀ k).r,
+        (CG.iterate T b x₀ k).p, (CG.iterate T b x₀ k).p⟩ := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [iterate_succ, ih, CG.iterate_succ]
+    set c := CG.iterate T b x₀ k
+    have hα : stepAlpha T ⟨c.x, c.r, c.r, c.p, c.p⟩ = CG.alpha T c := by
+      simp only [stepAlpha, CG.alpha]
+      rw [real_inner_comm (T c.p) c.p]
+    simp only [step, CG.step, hα, conj_trivial]
 
 end BCG
 
@@ -651,7 +622,7 @@ private theorem inner_residual {j : ℕ} (hj : j ≤ m)
     inner 𝕜 rs₀ (iterate A b x₀ rs₀ j).r
       = (stabPoly A b x₀ rs₀ j).coeff j * inner 𝕜 ((B ^ j) rs₀) (BCG.residual A B b x₀ rs₀ j) := by
   obtain ⟨hbr, -, -, -⟩ := BCG.residual_eq_aeval A B b x₀ rs₀ j
-  rw [hr, aeval_mul_apply', ← hbr]
+  rw [hr, aeval_mul_apply, ← hbr]
   exact inner_aeval_eq_coeff_mul h.adjoint (stabPoly_natDegree_le A b x₀ rs₀ j)
     fun u hu => BCG.inner_residual_eq_zero_of_mem_subspace (h.mono hj) hu
 
@@ -663,7 +634,7 @@ private theorem inner_apply_direction {j : ℕ} (hj : j ≤ m)
       = (stabPoly A b x₀ rs₀ j).coeff j
         * inner 𝕜 ((B ^ j) rs₀) (A (BCG.direction A B b x₀ rs₀ j)) := by
   obtain ⟨-, hbp, -, -⟩ := BCG.residual_eq_aeval A B b x₀ rs₀ j
-  rw [hp, aeval_mul_apply', ← aeval_apply_apply, ← hbp]
+  rw [hp, aeval_mul_apply, ← aeval_apply_apply, ← hbp]
   exact inner_aeval_eq_coeff_mul h.adjoint (stabPoly_natDegree_le A b x₀ rs₀ j)
     fun u hu => BCG.inner_apply_direction_eq_zero_of_mem_subspace (h.mono hj) hu
 

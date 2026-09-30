@@ -459,6 +459,14 @@ theorem inner_aeval_map_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y
     rw [Polynomial.map_monomial, hB', hA', inner_smul_left, inner_smul_right, RCLike.conj_conj,
       inner_pow_apply_eq hB]
 
+/-- **The step that removes the transpose**: with `B` the adjoint of `A`, a bilinear expression in
+`p(A) v` and `q̄(B) w` is one in `(q p)(A) v` and `w`. -/
+theorem inner_aeval_map_aeval (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
+    (p q : Polynomial 𝕜) (v w : E) :
+    inner 𝕜 (Polynomial.aeval B (q.map (starRingEnd 𝕜)) w) (Polynomial.aeval A p v) =
+      inner 𝕜 w (Polynomial.aeval A (q * p) v) := by
+  rw [inner_aeval_map_eq hB q, Module.End.aeval_mul_apply]
+
 /-- The biorthogonality relation up to step `m`, the invariant the induction carries. -/
 private def Biorth (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop :=
   ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (dualVec A B v₁ w₁ i) (vec A B v₁ w₁ j) = if i = j then 1 else 0

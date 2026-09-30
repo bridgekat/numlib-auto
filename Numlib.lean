@@ -192,6 +192,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.Gap
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.Analysis.InnerProductSpace.Projection.OrthonormalBasis
 import Numlib.Analysis.InnerProductSpace.SingularValues
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Matrix.Function.Approximation

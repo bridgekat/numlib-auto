@@ -436,7 +436,10 @@ private theorem invariant (k : ℕ) : Invariant A b x₀ k :=
 
 /-! ### The named orthogonality relations -/
 
-private theorem alpha_mul_inner_apply_direction (k : ℕ) :
+/-- `α_k ⟪A p_k, p_k⟫ = ⟪r_k, r_k⟫` for a symmetric coercive `A`: the step length solves the
+one-dimensional Galerkin condition along `p_k`. It holds at every step, also after the
+iteration has converged (both sides are then `0`). -/
+theorem alpha_mul_inner_apply_direction (k : ℕ) :
     alpha A (iterate A b x₀ k) * inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p =
       inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r :=
   alpha_mul_inner_apply_direction' b x₀ k
@@ -1237,7 +1240,8 @@ private theorem gamma_ne_zero (hA : A.IsSymmetricCoercive) {k : ℕ}
   div_ne_zero (fun h => hk (inner_self_eq_zero.1 h))
     (inner_apply_residual_self_ne_zero b x₀ hA hk)
 
-private theorem alpha_ne_zero (hA : A.IsSymmetricCoercive) {k : ℕ}
+/-- The step length `α_k = ⟪r_k, r_k⟫ / ⟪A p_k, p_k⟫` is nonzero as long as `r_k ≠ 0`. -/
+theorem alpha_ne_zero (hA : A.IsSymmetricCoercive) {k : ℕ}
     (hk : (iterate A b x₀ k).r ≠ 0) : alpha A (iterate A b x₀ k) ≠ 0 :=
   div_ne_zero (fun h => hk (inner_self_eq_zero.1 h))
     (inner_apply_direction_self_ne_zero b x₀ hA hk)

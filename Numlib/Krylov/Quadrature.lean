@@ -285,19 +285,13 @@ theorem radauTridiag_apply_of_ne {i j : Fin (m + 1)} (h : ¬(i = Fin.last m ∧ 
     radauTridiag A v m a i j = tridiag A v (m + 1) i j := by
   simp only [radauTridiag, Matrix.of_apply, ite_eq_right h]
 
-/-- **`a` is an eigenvalue of `T̃`** ([golub2013matrix] §10.2.5): when `T_m − a I` is invertible,
-the vector `(x, −1)` with `x = β_{m−1} (T_m − a)⁻¹ e_{m−1}` satisfies `T̃ (x, −1) = a (x, −1)`. -/
-theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
-    a ∈ spectrum ℝ (radauTridiag A v m a) := by
-  suffices h : ∃ z : Fin (m + 1) → ℝ, z ≠ 0 ∧ radauTridiag A v m a *ᵥ z = a • z by
-    obtain ⟨z, hz, hMz⟩ := h
-    rw [spectrum.mem_iff, ← Matrix.mulVec_injective_iff_isUnit]
-    intro hinj
-    refine hz (hinj ?_)
-    rw [Matrix.mulVec_zero, Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
-      Matrix.one_mulVec, hMz, sub_self]
+/-- **The Radau eigenvector** ([golub2013matrix] §10.2.5): when `T_m − a I` is invertible, the
+vector `(x, −1)` with `x = β_{m−1} (T_m − a)⁻¹ e_{m−1}` satisfies `T̃ (x, −1) = a (x, −1)`. -/
+theorem radauTridiag_mulVec_snoc (ha : IsUnit (tridiag A v m - a • 1).det) :
+    ∃ x : Fin m → ℝ, radauTridiag A v m a *ᵥ (Fin.snoc x (-1) : Fin (m + 1) → ℝ) =
+      a • (Fin.snoc x (-1) : Fin (m + 1) → ℝ) := by
   rcases Nat.eq_zero_or_pos m with rfl | hm
-  · refine ⟨fun _ => 1, fun h => by simpa using congrFun h 0, ?_⟩
+  · refine ⟨Fin.elim0, ?_⟩
     ext i
     fin_cases i
     simp [radauTridiag, radauCorrection, Matrix.mulVec, dotProduct]
@@ -315,8 +309,7 @@ theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
     rw [Matrix.mul_apply, Matrix.add_apply, Matrix.one_apply, Matrix.smul_apply,
       smul_eq_mul] at h
     exact h
-  let z : Fin (m + 1) → ℝ := Fin.lastCases (-1) fun i => β * R i ⟨m - 1, by omega⟩
-  refine ⟨z, fun h => by simpa [z] using congrFun h (Fin.last m), ?_⟩
+  refine ⟨fun i => β * R i ⟨m - 1, by omega⟩, ?_⟩
   ext i
   refine Fin.lastCases ?_ (fun i => ?_) i
   · have hrow : ∀ k : Fin m, radauTridiag A v m a (Fin.last m) k.castSucc =
@@ -331,8 +324,8 @@ theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
       simp only [radauTridiag, Matrix.of_apply, and_self, ↓reduceIte, radauCorrection, hm,
         ↓reduceDIte]
       rfl
-    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, z, Fin.lastCases_last,
-      Fin.lastCases_castSucc, hrow, hll, Pi.smul_apply, smul_eq_mul]
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, Fin.snoc_last, Fin.snoc_castSucc,
+      hrow, hll, Pi.smul_apply, smul_eq_mul]
     rw [sum_eq_single ⟨m - 1, by omega⟩]
     · rw [ite_eq_left (by simp; omega)]
       ring
@@ -351,8 +344,8 @@ theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
     have hin : ∀ k : Fin m, radauTridiag A v m a i.castSucc k.castSucc = T i k := fun k => by
       rw [radauTridiag_apply_of_ne A v m a fun h => absurd h.1 (Fin.castSucc_ne_last i)]
       rfl
-    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, z, Fin.lastCases_last,
-      Fin.lastCases_castSucc, hcol, hin, Pi.smul_apply, smul_eq_mul]
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, Fin.snoc_last, Fin.snoc_castSucc,
+      hcol, hin, Pi.smul_apply, smul_eq_mul]
     have hs : ∑ k, T i k * (β * R k ⟨m - 1, by omega⟩) =
         β * ((if i = ⟨m - 1, by omega⟩ then 1 else 0) + a * R i ⟨m - 1, by omega⟩) := by
       rw [← hTR, mul_sum]
@@ -365,6 +358,18 @@ theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
     · have hi : i ≠ ⟨m - 1, by omega⟩ := fun h' => h (by rw [h']; simp; omega)
       rw [ite_eq_right h, ite_eq_right hi]
       ring
+
+/-- **`a` is an eigenvalue of `T̃`** ([golub2013matrix] §10.2.5): when `T_m − a I` is invertible,
+`(x, −1)` is an eigenvector for `a` (`Lanczos.radauTridiag_mulVec_snoc`). -/
+theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
+    a ∈ spectrum ℝ (radauTridiag A v m a) := by
+  obtain ⟨x, hx⟩ := radauTridiag_mulVec_snoc A v m a ha
+  rw [spectrum.mem_iff, ← Matrix.mulVec_injective_iff_isUnit]
+  intro hinj
+  have hz : (Fin.snoc x (-1) : Fin (m + 1) → ℝ) = 0 := hinj (by
+    rw [Matrix.mulVec_zero, Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
+      Matrix.one_mulVec, hx, sub_self])
+  simpa using congrFun hz (Fin.last m)
 
 /-- **Low moments of the Gauss–Radau matrix** ([golub2013matrix] §10.2.5):
 `(T̃^j)₀₀ = (T_{m+1}^j)₀₀` for every `j ≤ 2m`. -/

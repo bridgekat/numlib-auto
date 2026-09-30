@@ -748,3 +748,11 @@ theorem apply_eq_iff_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h :
 end FGMRES
 
 end Krylov
+
+open scoped ComplexOrder in
+/-- A positive definite matrix and its inverse form a preconditioner on `EuclideanSpace`:
+`toEuclideanLin M` is symmetric coercive and `toEuclideanLin M⁻¹` inverts it. -/
+theorem Matrix.PosDef.isPreconditioner_toEuclideanLin {n : Type*} [Fintype n] [DecidableEq n]
+    {M : Matrix n n 𝕜} (hM : M.PosDef) :
+    Krylov.IsPreconditioner (Matrix.toEuclideanLin M) (Matrix.toEuclideanLin M⁻¹) :=
+  ⟨hM.isSymmetricCoercive_toEuclideanLin, Matrix.toEuclideanLin_mul_nonsing_inv_apply hM.isUnit⟩

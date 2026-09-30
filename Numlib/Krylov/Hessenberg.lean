@@ -701,6 +701,27 @@ theorem rotated_eq_zero_of_succ_lt_col (hh : ∀ i j, i < j → h i j = 0) (k i 
           mul_zero, mul_zero, add_zero]
       · exact ih i hij
 
+/-- The rotated coefficients of a tridiagonal array (`h i j = 0` for `i + 1 < j`; below the
+subdiagonal nothing is assumed) have upper bandwidth `2`: `rotated h k i j = 0` for `i + 2 < j` and
+every `k`. Rotation `k` mixes row `k` (of upper bandwidth `2` already) with the untouched row
+`k + 1` (of upper bandwidth `1`). This is the banded upper triangular factor of MINRES. -/
+theorem rotated_eq_zero_of_add_two_lt (hh : ∀ i j, i + 1 < j → h i j = 0) (k : ℕ) :
+    ∀ i j, i + 2 < j → rotated h k i j = 0 := by
+  induction k with
+  | zero => intro i j hij; exact hh i j (by omega)
+  | succ k ih =>
+    intro i j hij
+    have hrow : ∀ j, k + 2 < j → rotated h k (k + 1) j = 0 := fun j hj => by
+      rw [rotated_eq_of_le h k (k + 1) j le_rfl]
+      exact hh _ _ (by omega)
+    rw [rotated_succ_apply]
+    split_ifs with h1 h2
+    · subst h1
+      rw [ih i j hij, hrow j (by omega), mul_zero, mul_zero, add_zero]
+    · subst h2
+      rw [ih k j (by omega), hrow j (by omega), mul_zero, mul_zero, add_zero]
+    · exact ih i j hij
+
 /-- Columns `j < k` are not changed by rotation `k`, for Hessenberg `h`. -/
 theorem rotated_succ_eq_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k j : ℕ) (hj : j < k) (i : ℕ) :
     rotated h (k + 1) i j = rotated h k i j := by

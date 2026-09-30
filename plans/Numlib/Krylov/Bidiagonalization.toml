@@ -1,15 +1,9 @@
 # The module doc of `Numlib.Krylov.Bidiagonalization` is the group description (Golub–Kahan
 # bidiagonalization as Arnoldi vectors of the two Gram operators; Paige–Saunders as the process of
 # the adjoint pair; the link to Lanczos of `Aᴴ A` and of the Hermitian dilation; the matrix form).
-# The local lemmas `Krylov.map_subspace_of_semiconj` (and its companions) and
-# `Arnoldi.inner_vec_apply_vec_of_semiconj` would belong in `Numlib/Krylov/Subspace` and
-# `Numlib/Krylov/Arnoldi`; they are tracked here, where they live.
-
-[[node]]
-id = "Krylov.map_subspace_of_semiconj"
-
-[[node]]
-id = "Arnoldi.inner_vec_apply_vec_of_semiconj"
+# The intertwining lemmas it rests on, `Krylov.map_subspace_of_semiconj` and
+# `Arnoldi.inner_vec_apply_vec_of_semiconj`, live in `Numlib/Krylov/Subspace` and
+# `Numlib/Krylov/Arnoldi`, whose plans track them.
 
 [[node]]
 id = "GolubKahan.rightVec"

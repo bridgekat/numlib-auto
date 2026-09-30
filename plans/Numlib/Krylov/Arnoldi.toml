@@ -104,3 +104,6 @@ id = "mgsVec_eq_vec"
 
 [[node]]
 id = "coeff_eq_inner_modifiedGramSchmidtSweep"
+
+[[node]]
+id = "inner_vec_apply_vec_of_semiconj"

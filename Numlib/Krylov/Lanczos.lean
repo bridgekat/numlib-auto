@@ -114,6 +114,35 @@ theorem tridiag_isSymm (m : ℕ) : (tridiag A b m).IsSymm := by
       · rw [ite_eq_left h₃, ite_eq_right h₂, ite_eq_left h₃]
       · rw [ite_eq_right h₃, ite_eq_right h₂, ite_eq_right h₂, ite_eq_right h₃]
 
+section CoeffEq
+
+variable {A b} {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] {A' : E' →ₗ[𝕜] E'}
+  {b' : E'}
+
+/-- Two processes with the same Arnoldi coefficients have the same diagonal Lanczos
+coefficients. -/
+theorem alpha_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (j : ℕ) :
+    alpha A' b' j = alpha A b j := by
+  rw [alpha, alpha, h]
+
+/-- Two processes with the same Arnoldi coefficients have the same off-diagonal Lanczos
+coefficients. -/
+theorem beta_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (j : ℕ) :
+    beta A' b' j = beta A b j := by
+  have h1 := coe_beta (𝕜 := 𝕜) A' b' j
+  rw [h, ← coe_beta] at h1
+  exact_mod_cast h1
+
+/-- Two operators whose Arnoldi coefficients agree have the same Lanczos matrices: the Lanczos
+matrix is a function of the Arnoldi coefficients alone, which is how a Lanczos process is carried
+between isometric models of one space. -/
+theorem tridiag_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (m : ℕ) :
+    tridiag A' b' m = tridiag A b m := by
+  ext i j
+  simp only [tridiag_apply, alpha_eq_of_coeff_eq h, beta_eq_of_coeff_eq h]
+
+end CoeffEq
+
 /-- The rows of `T̄_n` below the last one are the rows of `T_n`. -/
 theorem mulVec_tridiagExt_castSucc {n : ℕ} (y : Fin n → 𝕜) (i : Fin n) :
     ((tridiagExt A b n).map (algebraMap ℝ 𝕜)).mulVec y i.castSucc =

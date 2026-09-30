@@ -1,11 +1,7 @@
 # The module doc of `Numlib.Eigen.ImplicitRestart` is the group description (implicit restart as a
 # shifted-QR chain acting on an Arnoldi decomposition, then truncation; Krylov–Schur restarting).
-# `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero` (truncation across a zero block, keeping
-# the residual row) would belong beside `Matrix.IsKrylovDecomposition.leading` in
-# `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`.
-
-[[node]]
-id = "Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero"
+# Its truncation `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero` lives in
+# `Numlib/LinearAlgebra/Matrix/KrylovDecomposition`, whose plan tracks it.
 
 [[node]]
 id = "Matrix.IsArnoldiDecomposition.implicitRestart"
