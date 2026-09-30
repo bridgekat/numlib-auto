@@ -409,17 +409,6 @@ private theorem mul_eq_add_submatrix {l l' : Type*} (X : Matrix l (Fin (p + q)) 
   ext i j
   simp only [mul_apply, add_apply, submatrix_apply, id, Fin.sum_univ_add]
 
-/-- Two column blocks of a unitary matrix: `(U(:, f))ᴴ U(:, g)` is the corresponding block of the
-identity. -/
-private theorem conjTranspose_submatrix_mul_submatrix {X : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
-    (hX : X ∈ unitaryGroup (Fin (p + q)) 𝕜) {r s : Type*} (f : r → Fin (p + q))
-    (g : s → Fin (p + q)) :
-    (X.submatrix id f)ᴴ * X.submatrix id g =
-      (1 : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜).submatrix f g := by
-  rw [← mem_unitaryGroup_iff'.1 hX]
-  ext i j
-  simp only [mul_apply, submatrix_apply, conjTranspose_apply, star_apply, id]
-
 /-- The column blocks of a unitary matrix resolve the identity: `U₁ U₁ᴴ + U₂ U₂ᴴ = 1`. -/
 private theorem submatrix_mul_conjTranspose_add {X : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
     (hX : X ∈ unitaryGroup (Fin (p + q)) 𝕜) :
@@ -476,11 +465,12 @@ theorem isGeneralizedLeastSquaresSolution_of_paige {A : Matrix (Fin (p + q)) (Fi
   have hA : A = Q₁ * R₁ := (hQR.firstColumns_mul_firstRows (Nat.le_add_right p q)).symm
   have hQ₁Q₁ : Q₁ᴴ * Q₁ = 1 := hQR.conjTranspose_firstColumns_mul_self (Nat.le_add_right p q)
   have hQ₂Q₁ : Q₂ᴴ * Q₁ = 0 := by
-    rw [hQ₁', hQ₂, conjTranspose_submatrix_mul_submatrix hQ, one_submatrix_natAdd_castAdd]
+    rw [hQ₁', hQ₂, conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hQ,
+      one_submatrix_natAdd_castAdd]
   have hQ₁A : Q₁ᴴ * A = R₁ := by rw [hA, ← Matrix.mul_assoc, hQ₁Q₁, Matrix.one_mul]
   have hQ₂A : Q₂ᴴ * A = 0 := by rw [hA, ← Matrix.mul_assoc, hQ₂Q₁, Matrix.zero_mul]
   have hZ₂Z₂ : Z₂ᴴ * Z₂ = 1 := by
-    rw [hZ₂def, conjTranspose_submatrix_mul_submatrix hZ]
+    rw [hZ₂def, conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hZ]
     exact submatrix_one _ (fun a b hab => by simpa [Fin.ext_iff] using hab)
   -- the resolutions of the identity by the column blocks
   have hsplit : ∀ {X : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}, X ∈ unitaryGroup (Fin (p + q)) 𝕜 →

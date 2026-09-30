@@ -38,6 +38,7 @@ characteristic polynomial as `Matrix.charpoly_units_conj` but has no name for th
   `C⁻¹ * A * C` by `C⁻¹`.
 * `Matrix.IsSimilar.pow`, `Matrix.IsSimilar.sub_smul_one`: similarity survives powers and shifts,
   with the same `C`.
+* `Matrix.isSimilar_mul_comm_of_isUnit`: `P Q` and `Q P` are similar when `Q` is invertible.
 * `Matrix.IsSimilar.finrank_ker_mulVecLin_eq`: over a field, similar matrices have null spaces of
   the same dimension; with the two preceding results, every eigenvalue then has the same geometric
   multiplicity and the same index for `A` and for `B`.
@@ -152,6 +153,14 @@ theorem IsSimilar.pow {A B : Matrix n n R} (h : IsSimilar A B) (k : ℕ) :
       rw [pow_succ, pow_succ, ih]
       simp only [Matrix.mul_assoc]
       rw [← Matrix.mul_assoc C C⁻¹, Matrix.mul_nonsing_inv C hd, Matrix.one_mul]
+
+/-- `P Q` and `Q P` are similar when `Q` is invertible: `Q P = Q (P Q) Q⁻¹`. -/
+theorem isSimilar_mul_comm_of_isUnit {P Q : Matrix n n R} (hQ : IsUnit Q) :
+    IsSimilar (P * Q) (Q * P) := by
+  refine ⟨Q⁻¹, (isUnit_nonsing_inv_iff).2 hQ, ?_⟩
+  have hd := (isUnit_iff_isUnit_det Q).1 hQ
+  rw [nonsing_inv_nonsing_inv Q hd, Matrix.mul_assoc, Matrix.mul_assoc,
+    mul_nonsing_inv Q hd, Matrix.mul_one]
 
 end CommRing
 

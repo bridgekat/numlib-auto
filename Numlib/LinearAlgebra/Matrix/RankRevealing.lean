@@ -517,36 +517,12 @@ open scoped Matrix.Norms.L2Operator
 variable {r : ℕ}
 
 omit [RCLike 𝕜] in
-/-- The leading and trailing indices together: `Fin r ⊕ Fin (N − r) ≃ Fin N`, sending `Sum.inl i`
-to the head index `Fin.castLE h i` and `Sum.inr j` to the tail index `Matrix.tailIdx h j`. A
-matrix reindexed along two of these is a `fromBlocks` matrix of its four blocks. -/
-def blockEquiv (h : r ≤ N) : Fin r ⊕ Fin (N - r) ≃ Fin N :=
-  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
-
-omit [RCLike 𝕜] in
-@[simp]
-theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
-    blockEquiv h (Sum.inl i) = Fin.castLE h i := Fin.ext rfl
-
-omit [RCLike 𝕜] in
-@[simp]
-theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
-    blockEquiv h (Sum.inr j) = tailIdx h j := Fin.ext rfl
-
-omit [RCLike 𝕜] in
 /-- The tail and head indices together cover `Fin N` once. -/
 private theorem bijective_sum_elim_tailIdx_castLE (h : r ≤ N) :
     Function.Bijective (Sum.elim (tailIdx h) (Fin.castLE h)) := by
   convert ((Equiv.sumComm _ _).trans (blockEquiv h)).bijective using 1
   funext x
   cases x <;> simp
-
-/-- The column blocks of a unitary matrix: `(V_f)ᴴ V_g` is the `(f, g)` block of the identity. -/
-private theorem conjTranspose_submatrix_mul_submatrix {V : Matrix (Fin N) (Fin N) 𝕜}
-    (hV : V ∈ unitaryGroup (Fin N) 𝕜) {p q : Type*} (f : p → Fin N) (g : q → Fin N) :
-    (V.submatrix id f)ᴴ * V.submatrix id g = (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix f g := by
-  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
-    ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hV]
 
 /-- **The gap between trailing column spans** ([golub2013matrix] Theorem 2.5.1): for unitary `V`,
 `Z`, the gap between the spans of their last `N − r` columns is the `2`-norm of the block of
@@ -557,9 +533,12 @@ theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
         (LinearMap.range (toEuclideanLin (Z.submatrix id (tailIdx h)))) =
       ‖(star V * Z).submatrix (Fin.castLE h) (tailIdx h)‖ := by
   rw [Submodule.gap_comm, gap_range_eq_l2_opNorm_conjTranspose_mul
-    (by rw [conjTranspose_submatrix_mul_submatrix hZ, submatrix_one _ (tailIdx_injective h)])
-    (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (tailIdx_injective h)])
-    (by rw [conjTranspose_submatrix_mul_submatrix hV, submatrix_one _ (Fin.castLE_injective h)])
+    (by rw [conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hZ,
+      submatrix_one _ (tailIdx_injective h)])
+    (by rw [conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hV,
+      submatrix_one _ (tailIdx_injective h)])
+    (by rw [conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hV,
+      submatrix_one _ (Fin.castLE_injective h)])
     (range_submatrix_eq_orthogonal hV (bijective_sum_elim_tailIdx_castLE h)),
     ← l2_opNorm_conjTranspose ((Z.submatrix id (tailIdx h))ᴴ * V.submatrix id (Fin.castLE h)),
     conjTranspose_mul, conjTranspose_conjTranspose, conjTranspose_submatrix,
@@ -645,7 +624,8 @@ theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M
     ext i j
     simp only [hD, submatrix_apply, id_eq, mul_diagonal]
   have hYY : (G.submatrix id (tailIdx h))ᴴ * G.submatrix id (tailIdx h) = 1 := by
-    rw [conjTranspose_submatrix_mul_submatrix hG, submatrix_one _ (tailIdx_injective h)]
+    rw [conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup hG,
+      submatrix_one _ (tailIdx_injective h)]
   have hiso : ∀ w, ‖toEuclideanLin (G.submatrix id (tailIdx h)) w‖ = ‖w‖ :=
     fun w => (toEuclideanLinearIsometry hYY).norm_map w
   refine ⟨D, hY, hDw, hiso, fun w => ?_, hgap⟩
@@ -1202,7 +1182,7 @@ theorem norm_residual_subset_sub_le (h : IsSVD A U σ V) (π : Equiv.Perm (Fin N
     lt_of_le_of_ne (A.sortedSingularValues_nonneg _)
       (Ne.symm ((A.sortedSingularValues_eq_zero_iff_rank_le _).not.2 (by omega)))
   have hUU : (U.submatrix id (Fin.castLE hrM))ᴴ * U.submatrix id (Fin.castLE hrM) = 1 := by
-    rw [conjTranspose_submatrix_mul_submatrix h.mem_unitaryGroup_left,
+    rw [conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup h.mem_unitaryGroup_left,
       submatrix_one _ (Fin.castLE_injective hrM)]
   have hPA : (1 - U.submatrix id (Fin.castLE hrM) * (U.submatrix id (Fin.castLE hrM))ᴴ) * A =
       A - svdTruncation U σ V r := by

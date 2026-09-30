@@ -31,14 +31,19 @@ general rules behind the triangular, banded and trapezoidal shapes of
   trapezoidal shapes of rectangular factorizations.
 * `Matrix.fromBlocks_submatrix_sum_map`: reindexing a `2 × 2` block matrix by `Sum.map` on both
   sides reindexes each block.
+* `Matrix.conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup`: two column blocks of a
+  unitary matrix are orthonormal to each other, `(V(:, f))ᴴ V(:, g) = I(f, g)`; its row form is
+  `Matrix.submatrix_mul_conjTranspose_submatrix_of_mem_unitaryGroup`.
 
 ## Leading and trailing blocks on `Fin`
 
-Two vocabularies for a block split of `Fin`-indexed matrices without a reindexing to a sum type:
+Two vocabularies for a block split of `Fin`-indexed matrices:
 
 * the head `Fin.castLE h : Fin r → Fin N` and the tail `Matrix.tailIdx h : Fin (N - r) → Fin N`
-  of `Fin N`, the vector `[y; z]` built from them (`Matrix.blockVec`), and the matching split of a
-  sum (`Matrix.sum_eq_sum_castLE_add_sum_tailIdx`);
+  of `Fin N`, the vector `[y; z]` built from them (`Matrix.blockVec`), and the matching split of
+  a sum (`Matrix.sum_eq_sum_castLE_add_sum_tailIdx`); together the head and the tail form
+  `Matrix.blockEquiv h : Fin r ⊕ Fin (N - r) ≃ Fin N`, along which a matrix reindexes to a
+  `fromBlocks` matrix of its four blocks;
 * the block diagonal matrix `diag(a, Q)` with a `1 × 1` corner (`Matrix.consDiag`), built by
   `Fin.cons`, with its product, identity, conjugate transpose and unitarity rules.
 
@@ -140,6 +145,22 @@ theorem val_tailIdx (h : r ≤ N) (j : Fin (N - r)) : (tailIdx h j : ℕ) = r + 
 theorem tailIdx_injective (h : r ≤ N) : Function.Injective (tailIdx h) := fun a b e =>
   Fin.ext (by have := congrArg Fin.val e; simp only [val_tailIdx] at this; omega)
 
+/-- The leading and trailing indices together: `Fin r ⊕ Fin (N − r) ≃ Fin N`, sending `Sum.inl i`
+to the head index `Fin.castLE h i` and `Sum.inr j` to the tail index `Matrix.tailIdx h j`. A
+matrix reindexed along two of these is a `fromBlocks` matrix of its four blocks. -/
+def blockEquiv (h : r ≤ N) : Fin r ⊕ Fin (N - r) ≃ Fin N :=
+  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
+
+/-- `Matrix.blockEquiv` sends `Sum.inl i` to the head index `Fin.castLE h i`. -/
+@[simp]
+theorem blockEquiv_inl (h : r ≤ N) (i : Fin r) :
+    blockEquiv h (Sum.inl i) = Fin.castLE h i := Fin.ext rfl
+
+/-- `Matrix.blockEquiv` sends `Sum.inr j` to the tail index `Matrix.tailIdx h j`. -/
+@[simp]
+theorem blockEquiv_inr (h : r ≤ N) (j : Fin (N - r)) :
+    blockEquiv h (Sum.inr j) = tailIdx h j := Fin.ext rfl
+
 /-- The vector `[y; z]` on `Fin N`, with `y` on the first `r` indices and `z` on the rest. -/
 def blockVec (h : r ≤ N) (y : Fin r → α) (z : Fin (N - r) → α) : Fin N → α :=
   fun k => if hk : (k : ℕ) < r then y ⟨k, hk⟩ else z ⟨k - r, by omega⟩
@@ -183,6 +204,31 @@ theorem blockVec_head_tail (h : r ≤ N) (x : Fin N → α) :
   · exact congrArg x (Fin.ext (by simp; omega))
 
 end TailIdx
+
+/-! ### Column and row blocks of a unitary matrix -/
+
+section UnitaryBlocks
+
+variable {n l o α : Type*} [Fintype n] [DecidableEq n] [CommRing α] [StarRing α]
+  {V : Matrix n n α}
+
+/-- Two column blocks of a unitary matrix are orthonormal to each other: `(V(:, f))ᴴ V(:, g)` is
+the `(f, g)` block of the identity. -/
+theorem conjTranspose_submatrix_mul_submatrix_of_mem_unitaryGroup
+    (hV : V ∈ unitaryGroup n α) (f : l → n) (g : o → n) :
+    (V.submatrix id f)ᴴ * V.submatrix id g = (1 : Matrix n n α).submatrix f g := by
+  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+    ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hV]
+
+/-- Two row blocks of a unitary matrix are orthonormal to each other: `V(f, :) (V(g, :))ᴴ` is the
+`(f, g)` block of the identity. -/
+theorem submatrix_mul_conjTranspose_submatrix_of_mem_unitaryGroup
+    (hV : V ∈ unitaryGroup n α) (f : l → n) (g : o → n) :
+    V.submatrix f id * (V.submatrix g id)ᴴ = (1 : Matrix n n α).submatrix f g := by
+  rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ id _ Function.bijective_id,
+    ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hV]
+
+end UnitaryBlocks
 
 /-! ### The block diagonal matrix `diag(a, Q)` -/
 

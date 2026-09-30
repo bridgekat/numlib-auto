@@ -2163,14 +2163,6 @@ def prodFwdEven (g : ℕ → Matrix ι ι R) (m : ℕ) : Matrix ι ι R :=
 def prodFwdOdd (g : ℕ → Matrix ι ι R) (m : ℕ) : Matrix ι ι R :=
   prodFwd (fun k => if Odd k then g k else 1) m
 
-/-- `P Q` and `Q P` are similar when `Q` is invertible. -/
-private theorem isSimilar_mul_comm {P Q : Matrix ι ι R} (hQ : IsUnit Q) :
-    IsSimilar (P * Q) (Q * P) := by
-  refine ⟨Q⁻¹, (isUnit_nonsing_inv_iff).2 hQ, ?_⟩
-  have hd := (isUnit_iff_isUnit_det Q).1 hQ
-  rw [nonsing_inv_nonsing_inv Q hd, Matrix.mul_assoc, Matrix.mul_assoc,
-    mul_nonsing_inv Q hd, Matrix.mul_one]
-
 /-- The invariant of the reordering: after `m` steps, the first `m` factors have been split
 into their even and odd products. -/
 private theorem isSimilar_prodFwd_evenOdd_aux {g : ℕ → Matrix ι ι R} {n : ℕ}
@@ -2254,7 +2246,7 @@ private theorem isSimilar_prodFwd_evenOdd_aux {g : ℕ → Matrix ι ι R} {n : 
               rw [hE, hO', hO]
               simp only [Matrix.mul_assoc]
       rw [hsrc, ← hR', ← htgt]
-      exact isSimilar_mul_comm ((hunit _).mul hRu)
+      exact isSimilar_mul_comm_of_isUnit ((hunit _).mul hRu)
     · have hE : prodFwdEven g (m + 1) = prodFwdEven g m := by
         rw [prodFwdEven, prodFwd_succ, ite_eq_right (Nat.not_even_iff_odd.2 hodd), Matrix.mul_one]
         rfl
