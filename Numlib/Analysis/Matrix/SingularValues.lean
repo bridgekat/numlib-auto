@@ -2059,7 +2059,7 @@ private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ :
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) hε two_ne_zero).1 ?_
     rw [frobenius_norm_fromRows_sq, norm_neg, norm_neg, frobenius_norm_conjTranspose]
     exact hoff
-  obtain ⟨x, hx, hxn⟩ := exists_apply_add_eq_of_quadratic_of_le_norm (pairSylvester B₁₁ B₂₂) hδ
+  obtain ⟨x, hx, hxn⟩ := (pairSylvester B₁₁ B₂₂).exists_apply_add_eq_of_quadratic_of_le_norm hδ
     hL hg hφ0 hφ (by nlinarith)
   rw [← fromRows_toRows x] at hx hxn
   rw [pairSylvester_fromRows, hφ₁, fromRows_add_fromRows] at hx

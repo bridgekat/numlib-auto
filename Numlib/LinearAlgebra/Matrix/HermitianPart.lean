@@ -29,8 +29,9 @@ Methods for Sparse Linear Systems*, §1.11.
 * `Matrix.skewHermitianPart_eq_hermitianPart`: `S` is the Hermitian part of `-i A`, which is how
   every statement about `S` reduces to one about `H`.
 * `Matrix.re_inner_hermitianPart`: `re ⟪H x, x⟫ = re ⟪A x, x⟫` — the quadratic form of `A` sees
-  only its Hermitian part — and `Matrix.mulVec_dotProduct_eq_hermitianPart`, the same identity
-  for a real matrix and the dot product; `Matrix.star_dotProduct_hermitianPart_mulVec`,
+  only its Hermitian part — and `Matrix.mulVec_dotProduct_eq_hermitianPart`,
+  `Matrix.dotProduct_mulVec_hermitianPart`, the same identity for a real matrix and the dot
+  product; `Matrix.star_dotProduct_hermitianPart_mulVec`,
   `xᴴ H x = re (xᴴ A x)`, and with it
   `Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos`, the unsymmetric "positive
   definite" of [golub2013matrix] §4.2 read through `H`.
@@ -125,6 +126,13 @@ theorem mulVec_dotProduct_eq_hermitianPart (A : Matrix n n ℝ) (u : n → ℝ) 
     ext i j; simp [hermitianPart_apply]
   rw [hH, smul_mulVec, smul_dotProduct, add_mulVec, add_dotProduct, hT, smul_eq_mul]
   ring
+
+/-- For a real matrix `M` and a real vector `x`, `xᵀ H x = xᵀ M x`: the quadratic form of the
+symmetric part is that of the matrix (`Matrix.mulVec_dotProduct_eq_hermitianPart` with the dot
+product the other way round). -/
+theorem dotProduct_mulVec_hermitianPart (M : Matrix n n ℝ) (x : n → ℝ) :
+    x ⬝ᵥ (hermitianPart M *ᵥ x) = x ⬝ᵥ (M *ᵥ x) := by
+  rw [dotProduct_comm, ← mulVec_dotProduct_eq_hermitianPart, dotProduct_comm]
 
 variable [DecidableEq n]
 

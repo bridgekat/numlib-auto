@@ -29,7 +29,8 @@ continuation, kept separate because it is where the *ordering* of the real eigen
   positive semidefinite with `ker C = ker A ⊓ ker B`. The engine is
   `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le` (a semidefinite `C` and a Hermitian
   `D` with `ker C ≤ ker D`), through the simultaneous unitary diagonalization of commuting Hermitian
-  matrices over any `RCLike` field, `Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`.
+  matrices over any `RCLike` field, `Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`
+  (in `Numlib/Eigen/Normal`).
 * `Matrix.pencilEigenvalues hA hB`: the eigenvalues of the pencil, sorted decreasingly — those of
   `Wᴴ A W` for any `W` with `Wᴴ B W = 1` (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); they are
   the pencil spectrum (`Matrix.pencilSpectrum_eq_range_pencilEigenvalues`) and satisfy the max–min
@@ -71,8 +72,9 @@ private theorem eigenvalues₀_eq_of_charpoly_eq {C C' : Matrix n n 𝕜} (hC : 
     ← hC'.sort_roots_charpoly_eq_eigenvalues₀, h]
 
 omit [DecidableEq n] in
-/-- The congruence `Wᴴ A W` of a Hermitian matrix is Hermitian. -/
-private theorem isHermitian_star_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+/-- The congruence `Wᴴ A W` of a Hermitian matrix is Hermitian (Mathlib's
+`Matrix.isHermitian_conjTranspose_mul_mul` with `star` for the conjugate transpose). -/
+theorem isHermitian_star_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (W : Matrix n n 𝕜) : (star W * A * W).IsHermitian := by
   rw [star_eq_conjTranspose]; exact isHermitian_conjTranspose_mul_mul W hA
 
@@ -621,88 +623,6 @@ theorem isMinOn_pencil_residual {A B : Matrix n n ℝ} (hB : B.PosDef)
   nlinarith [mul_nonneg hp.le (sq_nonneg (μ - q / p))]
 
 /-! ### Simultaneous diagonalization by congruence -/
-
-/-- Two commuting symmetric operators on a finite-dimensional inner product space have a common
-orthonormal eigenbasis: their joint eigenspaces form an orthogonal internal direct sum
-(`LinearMap.IsSymmetric.directSum_isInternal_of_pairwise_commute`), and a basis subordinate to it
-consists of joint eigenvectors. -/
-theorem _root_.LinearMap.IsSymmetric.exists_orthonormalBasis_eigenvector_of_commute
-    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E]
-    {S T : E →ₗ[𝕜] E} (hS : S.IsSymmetric) (hT : T.IsSymmetric) (hST : Commute S T) {m : ℕ}
-    (hm : Module.finrank 𝕜 E = m) :
-    ∃ (b : OrthonormalBasis (Fin m) 𝕜 E) (d e : Fin m → 𝕜),
-      (∀ a, S (b a) = d a • b a) ∧ ∀ a, T (b a) = e a • b a := by
-  classical
-  set F : Fin 2 → E →ₗ[𝕜] E := ![S, T] with hF
-  have hFsymm : ∀ i, (F i).IsSymmetric := by
-    intro i; fin_cases i
-    · exact hS
-    · exact hT
-  have hFcomm : Pairwise (Function.onFun Commute F) := by
-    intro i j hij
-    fin_cases i <;> fin_cases j <;> simp only [hF, Function.onFun] <;>
-      first | exact absurd rfl hij | exact hST | exact hST.symm
-  set V : (Fin 2 → 𝕜) → Submodule 𝕜 E := fun α => ⨅ j, Module.End.eigenspace (F j) (α j)
-    with hVdef
-  have hVfam := LinearMap.IsSymmetric.orthogonalFamily_iInf_eigenspaces hFsymm
-  have htop : ⨆ α, V α = ⊤ := LinearMap.IsSymmetric.iSup_iInf_eq_top_of_commute hFsymm hFcomm
-  have hfin : {α | V α ≠ ⊥}.Finite := by
-    refine (Set.Finite.pi fun j => Module.End.finite_hasEigenvalue (F j)).subset fun α hα => ?_
-    refine Set.mem_univ_pi.mpr fun j => Module.End.hasEigenvalue_iff.mpr fun hbot => hα ?_
-    exact le_bot_iff.mp ((iInf_le _ j).trans hbot.le)
-  let _ : Fintype {α // V α ≠ ⊥} := hfin.fintype
-  have hVfam' : OrthogonalFamily 𝕜 (fun α : {α // V α ≠ ⊥} => V α)
-      fun α => (V α).subtypeₗᵢ := hVfam.comp Subtype.coe_injective
-  have hV : DirectSum.IsInternal fun α : {α // V α ≠ ⊥} => V α := by
-    refine hVfam'.isInternal_iff.mpr ?_
-    rw [iSup_ne_bot_subtype, htop, Submodule.top_orthogonal_eq_bot]
-  set b := hV.subordinateOrthonormalBasis hm hVfam' with hb
-  set idx : Fin m → Fin 2 → 𝕜 := fun a => (hV.subordinateOrthonormalBasisIndex hm a hVfam').val
-    with hidx
-  have hmem : ∀ a j, F j (b a) = idx a j • b a := fun a j =>
-    Module.End.mem_eigenspace_iff.mp
-      ((Submodule.mem_iInf _).mp (hV.subordinateOrthonormalBasis_subordinate hm a hVfam') j)
-  refine ⟨b, fun a => idx a 0, fun a => idx a 1, fun a => ?_, fun a => ?_⟩
-  · have h0 := hmem a 0
-    simp only [hF, Matrix.cons_val_zero] at h0
-    exact h0
-  · have h1 := hmem a 1
-    simp only [hF, Matrix.cons_val_one] at h1
-    exact h1
-
-/-- **Commuting Hermitian matrices are simultaneously unitarily diagonalizable**, over any `RCLike`
-field: the joint eigenspaces of the two symmetric operators form an orthogonal internal direct sum
-(`LinearMap.IsSymmetric.directSum_isInternal_of_pairwise_commute`), and an orthonormal basis
-subordinate to it consists of joint eigenvectors. (The Hermitian case of
-`Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute`, which needs an algebraically closed
-field for general normal matrices.) -/
-theorem IsHermitian.exists_unitary_conj_diagonal_of_commute {A B : Matrix n n 𝕜}
-    (hA : A.IsHermitian) (hB : B.IsHermitian) (hAB : Commute A B) :
-    ∃ U ∈ unitaryGroup n 𝕜, ∃ d e : n → 𝕜,
-      star U * A * U = diagonal d ∧ star U * B * U = diagonal e := by
-  have hTA := isSymmetric_toEuclideanLin_iff.mpr hA
-  have hTB := isSymmetric_toEuclideanLin_iff.mpr hB
-  have hcomm : Commute (toEuclideanLin A) (toEuclideanLin B) := by
-    have e : ∀ X Y : Matrix n n 𝕜, toEuclideanLin (X * Y) = toEuclideanLin X * toEuclideanLin Y :=
-      fun X Y => map_mul (toLpLinAlgEquiv (R := 𝕜) (n := n) 2) X Y
-    change toEuclideanLin A * toEuclideanLin B = toEuclideanLin B * toEuclideanLin A
-    rw [← e, ← e, hAB.eq]
-  obtain ⟨b, dd, ee, hbA, hbB⟩ :=
-    hTA.exists_orthonormalBasis_eigenvector_of_commute hTB hcomm finrank_euclideanSpace
-  set eq : Fin (Fintype.card n) ≃ n := Fintype.equivOfCardEq (Fintype.card_fin _) with heq
-  set c := b.reindex eq with hc
-  refine ⟨_, (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c,
-    fun j => dd (eq.symm j), fun j => ee (eq.symm j), ?_, ?_⟩
-  · rw [star_eq_conjTranspose]
-    refine conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c fun j => ?_
-    have h := hbA (eq.symm j)
-    rw [hc, OrthonormalBasis.reindex_apply]
-    simpa [toLpLin_apply] using congrArg WithLp.ofLp h
-  · rw [star_eq_conjTranspose]
-    refine conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c fun j => ?_
-    have h := hbB (eq.symm j)
-    rw [hc, OrthonormalBasis.reindex_apply]
-    simpa [toLpLin_apply] using congrArg WithLp.ofLp h
 
 omit [Fintype n] in
 /-- A Hermitian diagonal matrix has a real diagonal. -/

@@ -60,3 +60,12 @@ id = "Matrix.conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal"
 
 [[node]]
 id = "Matrix.eq_sum_smul_vecMulVec_of_conj_eq_diagonal"
+
+[[node]]
+id = "LinearMap.IsSymmetric.exists_orthonormalBasis_eigenvector_of_commute"
+
+[[node]]
+id = "Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute"
+
+[[node]]
+id = "LinearMap.IsSymmetric.exists_orthonormalBasis_eigenvector_of_pairwise_commute"

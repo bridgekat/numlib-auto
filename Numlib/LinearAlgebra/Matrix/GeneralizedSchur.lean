@@ -1,9 +1,7 @@
 /-
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
-Natural home: `Mathlib.LinearAlgebra.Matrix.Schur` (once the real Schur form is there) for the
-generalized real Schur form, `Mathlib.Topology.Instances.Matrix` for the compactness of the
-orthogonal group.
+Natural home: `Mathlib.LinearAlgebra.Matrix.Schur` (once the real Schur form is there).
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Data.Nat.Nth
@@ -11,6 +9,7 @@ import Mathlib.Topology.Instances.Matrix
 import Numlib.Eigen.Pencil
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.RealSchur
+import Numlib.Topology.Instances.Matrix.UnitaryGroup
 
 /-!
 # The generalized real Schur form of a matrix pair
@@ -36,10 +35,10 @@ Golub–Van Loan. `B + ε I` is nonsingular for all small `ε > 0`
 polynomial of `-B` at `t`), so the pairs `(A, B + ε_k I)`, `ε_k → 0`, have generalized Schur
 forms `(U_k, Z_k, p_k)`. Infinitely many `k` share the strict order relation `p_k j < p_k i`
 (finitely many relations on `Fin n`), so along those `k` the block-triangularity is for one fixed
-pattern; and the orthogonal group is compact (`Matrix.isCompact_orthogonalGroup`: closed, with
-entries in `[-1, 1]`), so a further subsequence has `(U_k, Z_k) → (U, Z)`. Each vanishing entry
-of `Uᵀ A Z` is a closed condition; and the strictly lower entries of `U_kᵀ B Z_k` equal
-`-ε_k (U_kᵀ Z_k)_{ij}`, which tend to `0`.
+pattern; and the orthogonal group is compact (`Matrix.isCompact_orthogonalGroup`, in
+`Numlib/Topology/Instances/Matrix/UnitaryGroup`), so a further subsequence has
+`(U_k, Z_k) → (U, Z)`. Each vanishing entry of `Uᵀ A Z` is a closed condition; and the strictly
+lower entries of `U_kᵀ B Z_k` equal `-ε_k (U_kᵀ Z_k)_{ij}`, which tend to `0`.
 
 The same argument gives the complex generalized Schur form (both factors triangular) of an
 arbitrary, possibly singular, complex pair from the regular case
@@ -88,76 +87,6 @@ theorem exists_generalizedRealSchur_of_isUnit (A : Matrix (Fin n) (Fin n) ℝ)
   refine BlockTriangular.mul (fun i j hij => hR ?_) htri
   by_contra hji
   exact absurd (hmono (not_lt.1 hji)) (not_le.2 hij)
-
-/-! ### Compactness of the orthogonal group -/
-
-/-- The unitary group is a closed subset of the matrices: it is the preimage of `1` under the
-continuous map `U ↦ star U * U`. -/
-theorem isClosed_unitaryGroup {m 𝕜 : Type*} [Fintype m] [DecidableEq m] [RCLike 𝕜] :
-    IsClosed ((unitaryGroup m 𝕜 : Submonoid _) : Set (Matrix m m 𝕜)) := by
-  have : ((unitaryGroup m 𝕜 : Submonoid _) : Set (Matrix m m 𝕜)) =
-      (fun U : Matrix m m 𝕜 => star U * U) ⁻¹' {1} := by
-    ext U
-    simp only [SetLike.mem_coe, Set.mem_preimage, Set.mem_singleton_iff]
-    exact mem_unitaryGroup_iff'
-  rw [this]
-  exact isClosed_singleton.preimage (continuous_star.matrix_mul continuous_id)
-
-/-- The entries of a unitary matrix have norm at most `1`: the columns are unit vectors. -/
-theorem norm_apply_le_one_of_mem_unitaryGroup {m 𝕜 : Type*} [Fintype m] [DecidableEq m]
-    [RCLike 𝕜] {U : Matrix m m 𝕜} (hU : U ∈ unitaryGroup m 𝕜) (i j : m) : ‖U i j‖ ≤ 1 := by
-  have h := congrFun (congrFun (mem_unitaryGroup_iff'.1 hU) j) j
-  rw [mul_apply, one_apply_eq] at h
-  simp only [star_apply, RCLike.star_def] at h
-  have hsum : ∑ k, ‖U k j‖ ^ 2 = 1 := by
-    have : ((∑ k, ‖U k j‖ ^ 2 : ℝ) : 𝕜) = 1 := by
-      push_cast
-      rw [← h]
-      exact Finset.sum_congr rfl fun k _ => (RCLike.conj_mul _).symm
-    exact_mod_cast this
-  have hsq : ‖U i j‖ ^ 2 ≤ 1 := hsum ▸
-    Finset.single_le_sum (f := fun k => ‖U k j‖ ^ 2) (fun k _ => sq_nonneg _) (Finset.mem_univ i)
-  nlinarith [norm_nonneg (U i j)]
-
-/-- **The unitary group is compact**, over `ℝ` or `ℂ`: closed, and contained in the product of
-closed unit balls, one for each entry. `Matrix.isCompact_orthogonalGroup` is its real case. -/
-theorem isCompact_unitaryGroup {m 𝕜 : Type*} [Fintype m] [DecidableEq m] [RCLike 𝕜] :
-    IsCompact ((unitaryGroup m 𝕜 : Submonoid _) : Set (Matrix m m 𝕜)) := by
-  have hcube : IsCompact (Set.pi Set.univ fun _ : m => Set.pi Set.univ fun _ : m =>
-      Metric.closedBall (0 : 𝕜) 1) :=
-    isCompact_univ_pi fun _ => isCompact_univ_pi fun _ => isCompact_closedBall _ _
-  refine hcube.of_isClosed_subset isClosed_unitaryGroup fun U hU => ?_
-  simp only [Set.mem_pi, Set.mem_univ, forall_const, Metric.mem_closedBall, dist_zero_right]
-  exact fun i j => norm_apply_le_one_of_mem_unitaryGroup hU i j
-
-/-- The orthogonal group is a closed subset of the matrices. -/
-theorem isClosed_orthogonalGroup :
-    IsClosed ((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ)) := by
-  have : ((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ)) =
-      (fun U : Matrix (Fin n) (Fin n) ℝ => Uᵀ * U) ⁻¹' {1} := by
-    ext U
-    simp only [SetLike.mem_coe, Set.mem_preimage, Set.mem_singleton_iff]
-    exact mem_orthogonalGroup_iff' (Fin n) ℝ
-  rw [this]
-  exact isClosed_singleton.preimage (continuous_id.matrix_transpose.matrix_mul continuous_id)
-
-/-- The entries of an orthogonal matrix are bounded by `1`: the columns are unit vectors. -/
-theorem abs_apply_le_one_of_mem_orthogonalGroup {U : Matrix (Fin n) (Fin n) ℝ}
-    (hU : U ∈ orthogonalGroup (Fin n) ℝ) (i j : Fin n) : |U i j| ≤ 1 := by
-  have h := congrFun (congrFun ((mem_orthogonalGroup_iff' (Fin n) ℝ).1 hU) j) j
-  rw [mul_apply, one_apply_eq] at h
-  have hsq : U i j ^ 2 ≤ 1 := by
-    rw [← h]
-    have : U i j ^ 2 = Uᵀ j i * U i j := by rw [transpose_apply, sq]
-    rw [this]
-    exact Finset.single_le_sum (f := fun k => Uᵀ j k * U k j)
-      (fun k _ => by rw [transpose_apply]; exact mul_self_nonneg _) (Finset.mem_univ i)
-  exact abs_le_one_iff_mul_self_le_one.2 (by rw [← sq]; exact hsq)
-
-/-- **The orthogonal group is compact**, the real case of `Matrix.isCompact_unitaryGroup`. -/
-theorem isCompact_orthogonalGroup :
-    IsCompact ((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ)) :=
-  isCompact_unitaryGroup
 
 /-! ### The general case, by perturbation -/
 
@@ -248,7 +177,7 @@ theorem exists_generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
   -- a convergent subsequence of `(U_k, Z_k)`
   have hK : IsCompact (((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ))
       ×ˢ ((orthogonalGroup (Fin n) ℝ : Submonoid _) : Set (Matrix (Fin n) (Fin n) ℝ))) :=
-    (isCompact_orthogonalGroup (n := n)).prod (isCompact_orthogonalGroup (n := n))
+    (isCompact_orthogonalGroup (n := Fin n)).prod (isCompact_orthogonalGroup (n := Fin n))
   have : FirstCountableTopology (Matrix (Fin n) (Fin n) ℝ) :=
     inferInstanceAs (FirstCountableTopology (Fin n → Fin n → ℝ))
   obtain ⟨⟨Ul, Zl⟩, hUZ, ψ, hψ, hlim⟩ :=

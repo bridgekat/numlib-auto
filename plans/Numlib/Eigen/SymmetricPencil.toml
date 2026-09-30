@@ -45,12 +45,4 @@ id = "Matrix.pencilSpectrum_eq_range_pencilEigenvalues"
 id = "Matrix.isLeast_pencilEigenvalues"
 
 [[node]]
-id = "Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute"
-deps = []
-
-[[node]]
 id = "Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le"
-
-[[node]]
-id = "LinearMap.IsSymmetric.exists_orthonormalBasis_eigenvector_of_commute"
-deps = []

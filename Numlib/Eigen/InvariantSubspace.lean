@@ -546,36 +546,6 @@ end Matrix
 
 namespace Matrix
 
-/-- Stewart's quadratic-equation lemma for a linear operator on a finite-dimensional normed space
-that is bounded below: if `δ ‖x‖ ≤ ‖L x‖` then `L` is invertible with `‖L⁻¹‖ ≤ 1/δ`, and
-`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` applies. (Stated for a general `F` so that
-the operator norm is formed on `F`, not on a type with a scoped norm such as the Frobenius norm on
-matrices.) -/
-theorem exists_apply_add_eq_of_quadratic_of_le_norm {𝕜 F : Type*} [RCLike 𝕜]
-    [NormedAddCommGroup F]
-    [NormedSpace 𝕜 F] [FiniteDimensional 𝕜 F] (L : F →ₗ[𝕜] F) {δ γ η : ℝ} (hδ : 0 < δ)
-    (hL : ∀ x, δ * ‖x‖ ≤ ‖L x‖) {g : F} (hg : ‖g‖ ≤ γ) {φ : F → F} (hφ0 : φ 0 = 0)
-    (hφ : ∀ x y, ‖φ x - φ y‖ ≤ η * (‖x‖ + ‖y‖) * ‖x - y‖) (h : 4 * γ * η < δ ^ 2) :
-    ∃ x, L x + φ x = g ∧ ‖x‖ ≤ 2 * γ / δ := by
-  have hinj : Function.Injective L := by
-    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
-    intro x hx
-    have h1 := hL x
-    rw [hx, norm_zero] at h1
-    exact norm_eq_zero.1 (le_antisymm (nonpos_of_mul_nonpos_right h1 hδ) (norm_nonneg _))
-  have : CompleteSpace F := FiniteDimensional.complete 𝕜 F
-  set L₁ := LinearEquiv.ofBijective L ⟨hinj, LinearMap.injective_iff_surjective.1 hinj⟩
-  set L' := L₁.toContinuousLinearEquiv
-  have hLs : ‖(L'.symm : F →L[𝕜] F)‖ ≤ 1 / δ := by
-    refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun y => ?_
-    have hy : L (L'.symm y) = y := L₁.apply_symm_apply y
-    have h1 := hL (L'.symm y)
-    rw [hy] at h1
-    change ‖L'.symm y‖ ≤ 1 / δ * ‖y‖
-    rw [one_div_mul_eq_div, le_div_iff₀ hδ, mul_comm]
-    exact h1
-  exact ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic L' hδ hLs hg hφ0 hφ h
-
 open scoped Matrix.Norms.Frobenius
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
@@ -665,7 +635,7 @@ theorem exists_invariant_graph_of_sep {T₁₁ : Matrix m m 𝕜} {T₁₂ : Mat
     have h2 : ε * (t + ε) ≤ s ^ 2 / 25 := by nlinarith
     have h3 : (3 * s / 5) ^ 2 ≤ δ ^ 2 := pow_le_pow_left₀ (by positivity) hδ 2
     nlinarith
-  obtain ⟨P, hP, hPn⟩ := exists_apply_add_eq_of_quadratic_of_le_norm L₀ hδ0
+  obtain ⟨P, hP, hPn⟩ := L₀.exists_apply_add_eq_of_quadratic_of_le_norm hδ0
     (fun X => (hL₀apply X).symm ▸ hlow X) le_rfl (φ := fun X => X * A₁₂ * X) (by simp) hφ hkey
   refine ⟨P, ?_, ?_⟩
   · calc ‖P‖ ≤ 2 * ‖g‖ / δ := hPn

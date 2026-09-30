@@ -390,6 +390,7 @@ import Numlib.Conditioning.Problem
 import Numlib.Data.ENNReal.Real
 import Numlib.Data.Fin.Sum
 import Numlib.Data.Fin.Tuple.Sort
+import Numlib.Data.Finset.Card
 import Numlib.Data.List.Fold
 import Numlib.Data.Matrix.Mul
 import Numlib.Direct.ConditionEstimation
@@ -629,6 +630,7 @@ import Numlib.Stationary.Splitting
 import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
+import Numlib.Topology.Instances.Matrix.UnitaryGroup
 import Numlib.Topology.MetricSpace.Bounded
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.AdvectionDiffusion

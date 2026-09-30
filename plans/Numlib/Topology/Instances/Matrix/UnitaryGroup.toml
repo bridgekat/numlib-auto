@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "isClosed_unitaryGroup"
+
+[[node]]
+id = "norm_apply_le_one_of_mem_unitaryGroup"
+
+[[node]]
+id = "isCompact_unitaryGroup"
+
+[[node]]
+id = "isClosed_orthogonalGroup"
+
+[[node]]
+id = "abs_apply_le_one_of_mem_orthogonalGroup"
+
+[[node]]
+id = "isCompact_orthogonalGroup"

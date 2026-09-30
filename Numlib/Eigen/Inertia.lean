@@ -3,6 +3,7 @@ Copyright (c) 2026 Numlib contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.LinearAlgebra.QuadraticForm.Signature
+import Numlib.Data.Finset.Card
 import Numlib.Eigen.MinMax
 import Numlib.LinearAlgebra.Matrix.LU
 
@@ -171,23 +172,17 @@ counts (`Matrix.IsHermitian.inertia_eq_eigenvalues₀`). -/
 noncomputable def inertia {A : Matrix n n 𝕜} (hA : A.IsHermitian) : ℕ × ℕ × ℕ :=
   (#{i | hA.eigenvalues i < 0}, #{i | hA.eigenvalues i = 0}, #{i | 0 < hA.eigenvalues i})
 
-/-- Counting the values of `f ∘ e` for an equivalence `e` is counting the values of `f`. -/
-private theorem card_filter_comp_equiv {α β : Type*} [Fintype α] [Fintype β] (e : α ≃ β)
-    (p : β → Prop) [DecidablePred p] : #{a | p (e a)} = #{b | p b} := by
-  rw [← Finset.map_univ_equiv e, Finset.filter_map, Finset.card_map]
-  rfl
-
 /-- The inertia through the sorted eigenvalues `eigenvalues₀`: the `n`-indexed `eigenvalues` are
 `eigenvalues₀` composed with an equivalence, which does not change any count. -/
 theorem inertia_eq_eigenvalues₀ {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     hA.inertia = (#{k | hA.eigenvalues₀ k < 0}, #{k | hA.eigenvalues₀ k = 0},
       #{k | 0 < hA.eigenvalues₀ k}) := by
   refine Prod.ext ?_ (Prod.ext ?_ ?_)
-  · exact card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
+  · exact Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
       (fun x => hA.eigenvalues₀ x < 0)
-  · exact card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
+  · exact Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
       (fun x => hA.eigenvalues₀ x = 0)
-  · exact card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
+  · exact Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
       (fun x => 0 < hA.eigenvalues₀ x)
 
 /-- The three counts of the inertia add up to the order of the matrix. -/
@@ -410,7 +405,7 @@ theorem card_eigenvalues_lt_eq_card_neg_of_isLDM {A : Matrix n n ℝ}
   rw [inertia_eq_eigenvalues₀] at hneg
   simp only [eigenvalues₀_sub_smul_one hA μ hAμ, sub_neg] at hneg
   rw [← hneg]
-  exact card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
+  exact Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
     (fun x => hA.eigenvalues₀ x < μ)
 
 end Matrix.IsHermitian

@@ -4,28 +4,10 @@ namespace = "Matrix"
 id = "exists_generalizedRealSchur_of_isUnit"
 
 [[node]]
-id = "isClosed_orthogonalGroup"
-
-[[node]]
-id = "abs_apply_le_one_of_mem_orthogonalGroup"
-
-[[node]]
-id = "isCompact_orthogonalGroup"
-
-[[node]]
 id = "exists_forall_isUnit_det_add_smul_one"
 
 [[node]]
 id = "exists_generalizedRealSchur"
 
 [[node]]  # staged by ch07
-id = "isCompact_unitaryGroup"
-
-[[node]]  # staged by ch07
 id = "exists_generalizedSchur"
-
-[[node]]  # added by eig1
-id = "isClosed_unitaryGroup"
-
-[[node]]  # added by eig1
-id = "norm_apply_le_one_of_mem_unitaryGroup"

@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Normed.Operator.ContinuousLinearMap
 import Mathlib.Analysis.Normed.Operator.NormedSpace
+import Mathlib.Topology.Algebra.Module.FiniteDimension
 import Mathlib.Topology.MetricSpace.Contracting
 
 /-!
@@ -9,7 +10,8 @@ Stewart's lemma on the equation `L x + φ x = g`, where `L` is an invertible bou
 is a "quadratic" perturbation: `φ 0 = 0` and `φ` is Lipschitz on each ball with a constant
 proportional to the radius, `‖φ x - φ y‖ ≤ η (‖x‖ + ‖y‖) ‖x - y‖`. If `‖L⁻¹‖ ≤ 1/δ` and
 `4 ‖g‖ η < δ²`, the equation has a solution of norm at most `2 ‖g‖ / δ`
-(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`).
+(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`). In finite dimension it suffices that
+`L` be bounded below, `δ ‖x‖ ≤ ‖L x‖` (`LinearMap.exists_apply_add_eq_of_quadratic_of_le_norm`).
 
 This is the fixed-point engine of the perturbation theory of invariant and singular subspaces: in
 [golub2013matrix] Theorem 7.2.4 (and its singular-subspace analogue Theorem 8.6.5) the unknown is
@@ -103,3 +105,38 @@ theorem exists_apply_add_eq_of_quadratic (L : F ≃L[𝕜] F) {δ γ η : ℝ} (
     _ = g := by rw [L.apply_symm_apply]; abel
 
 end ContinuousLinearEquiv
+
+namespace LinearMap
+
+variable {𝕜 F : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup F]
+  [NormedSpace 𝕜 F] [FiniteDimensional 𝕜 F]
+
+/-- **Stewart's quadratic-equation lemma for an operator bounded below** on a finite-dimensional
+normed space: if `δ ‖x‖ ≤ ‖L x‖` then `L` is invertible with `‖L⁻¹‖ ≤ 1/δ`, and
+`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` applies. (Stated for a general `F` so
+that the operator norm is formed on `F`, not on a type with a scoped norm such as the Frobenius
+norm on matrices.) -/
+theorem exists_apply_add_eq_of_quadratic_of_le_norm (L : F →ₗ[𝕜] F) {δ γ η : ℝ} (hδ : 0 < δ)
+    (hL : ∀ x, δ * ‖x‖ ≤ ‖L x‖) {g : F} (hg : ‖g‖ ≤ γ) {φ : F → F} (hφ0 : φ 0 = 0)
+    (hφ : ∀ x y, ‖φ x - φ y‖ ≤ η * (‖x‖ + ‖y‖) * ‖x - y‖) (h : 4 * γ * η < δ ^ 2) :
+    ∃ x, L x + φ x = g ∧ ‖x‖ ≤ 2 * γ / δ := by
+  have hinj : Function.Injective L := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro x hx
+    have h1 := hL x
+    rw [hx, norm_zero] at h1
+    exact norm_eq_zero.1 (le_antisymm (nonpos_of_mul_nonpos_right h1 hδ) (norm_nonneg _))
+  have : CompleteSpace F := FiniteDimensional.complete 𝕜 F
+  set L₁ := LinearEquiv.ofBijective L ⟨hinj, LinearMap.injective_iff_surjective.1 hinj⟩
+  set L' := L₁.toContinuousLinearEquiv
+  have hLs : ‖(L'.symm : F →L[𝕜] F)‖ ≤ 1 / δ := by
+    refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun y => ?_
+    have hy : L (L'.symm y) = y := L₁.apply_symm_apply y
+    have h1 := hL (L'.symm y)
+    rw [hy] at h1
+    change ‖L'.symm y‖ ≤ 1 / δ * ‖y‖
+    rw [one_div_mul_eq_div, le_div_iff₀ hδ, mul_comm]
+    exact h1
+  exact ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic L' hδ hLs hg hφ0 hφ h
+
+end LinearMap

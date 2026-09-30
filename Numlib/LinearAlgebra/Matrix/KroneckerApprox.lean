@@ -5,6 +5,7 @@ Natural home: beside `Mathlib.LinearAlgebra.Matrix.Kronecker`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Analysis.Matrix.SingularValues
+import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Kronecker
 import Numlib.LinearAlgebra.Matrix.Rank
@@ -369,89 +370,6 @@ open scoped Matrix.Norms.Frobenius InnerProductSpace
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The spectral decomposition of a real symmetric matrix as a sum of rank-one projections:
-`A = ∑ₗ λₗ qₗ qₗᵀ` over an orthonormal eigenbasis. -/
-theorem IsHermitian.eq_sum_smul_vecMulVec {A : Matrix n n ℝ} (hA : A.IsHermitian) :
-    A = ∑ l, hA.eigenvalues l • vecMulVec ⇑(hA.eigenvectorBasis l) ⇑(hA.eigenvectorBasis l) := by
-  conv_lhs => rw [hA.spectral_theorem, Unitary.conjStarAlgAut_apply]
-  ext i j
-  simp only [mul_apply, diagonal_apply, Function.comp_apply, mul_ite, mul_zero,
-    Finset.sum_ite_eq', Finset.mem_univ, ite_true, Matrix.sum_apply, smul_apply,
-    vecMulVec_apply, smul_eq_mul, star_apply, star_trivial, IsHermitian.eigenvectorUnitary_apply,
-    RCLike.ofReal_real_eq_id, id_eq]
-  exact Finset.sum_congr rfl fun l _ => by ring
-
-omit [DecidableEq n] in
-/-- The dot product of a real Euclidean vector with itself is its squared norm. -/
-private theorem dotProduct_self_ofLp_eq_norm_sq (x : EuclideanSpace ℝ n) : ⇑x ⬝ᵥ ⇑x = ‖x‖ ^ 2 := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_eq_star_dotProduct]
-  simp
-
-/-- The eigenvectors of a real symmetric matrix are unit vectors. -/
-private theorem dotProduct_eigenvectorBasis_self {A : Matrix n n ℝ} (hA : A.IsHermitian) (l : n) :
-    ⇑(hA.eigenvectorBasis l) ⬝ᵥ ⇑(hA.eigenvectorBasis l) = 1 := by
-  rw [dotProduct_self_ofLp_eq_norm_sq, hA.eigenvectorBasis.orthonormal.1 l, one_pow]
-
-omit [DecidableEq n] in
-/-- A real symmetric matrix of rank at most one is `β x xᵀ` for a unit vector `x`. -/
-theorem exists_eq_smul_vecMulVec_self_of_rank_le_one [Nonempty n] {Z : Matrix n n ℝ}
-    (hZ : Z.IsSymm) (hr : Z.rank ≤ 1) :
-    ∃ (β : ℝ) (x : n → ℝ), x ⬝ᵥ x = 1 ∧ Z = β • vecMulVec x x := by
-  classical
-  have hH : Z.IsHermitian := by
-    rw [IsHermitian, conjTranspose_eq_transpose_of_trivial]
-    exact hZ
-  rw [hH.rank_eq_card_non_zero_eigs, Fintype.card_le_one_iff] at hr
-  by_cases h0 : ∀ l, hH.eigenvalues l = 0
-  · refine ⟨0, _, dotProduct_eigenvectorBasis_self hH (Classical.arbitrary n), ?_⟩
-    conv_lhs => rw [hH.eq_sum_smul_vecMulVec]
-    simp [h0]
-  · push Not at h0
-    obtain ⟨l₀, hl₀⟩ := h0
-    refine ⟨hH.eigenvalues l₀, _, dotProduct_eigenvectorBasis_self hH l₀, ?_⟩
-    conv_lhs => rw [hH.eq_sum_smul_vecMulVec]
-    refine Finset.sum_eq_single l₀ (fun l _ hl => ?_) (by simp)
-    by_cases h : hH.eigenvalues l = 0
-    · rw [h, zero_smul]
-    · exact absurd (congrArg Subtype.val (hr ⟨l, h⟩ ⟨l₀, hl₀⟩)) hl
-
-/-- **The Rayleigh quotient bound**: for a real symmetric `A` and a unit vector `x`,
-`|xᵀ A x| ≤ max |λ|`. -/
-theorem abs_dotProduct_mulVec_le {A : Matrix n n ℝ} (hA : A.IsHermitian) {k : n}
-    (hk : ∀ i, |hA.eigenvalues i| ≤ |hA.eigenvalues k|) {x : n → ℝ} (hx : x ⬝ᵥ x = 1) :
-    |x ⬝ᵥ (A *ᵥ x)| ≤ |hA.eigenvalues k| := by
-  set q := fun l => ⇑(hA.eigenvectorBasis l)
-  have hexp : x ⬝ᵥ (A *ᵥ x) = ∑ l, hA.eigenvalues l * (q l ⬝ᵥ x) ^ 2 := by
-    conv_lhs => rw [hA.eq_sum_smul_vecMulVec]
-    rw [sum_mulVec, dotProduct_sum]
-    refine Finset.sum_congr rfl fun l _ => ?_
-    rw [smul_mulVec, vecMulVec_mulVec, op_smul_eq_smul, dotProduct_smul, dotProduct_smul,
-      smul_eq_mul, smul_eq_mul, dotProduct_comm x (q l), sq]
-  have hpars : ∑ l, (q l ⬝ᵥ x) ^ 2 = 1 := by
-    have h := hA.eigenvectorBasis.sum_sq_norm_inner_right (WithLp.toLp 2 x)
-    rw [← dotProduct_self_ofLp_eq_norm_sq, hx] at h
-    rw [← h]
-    refine Finset.sum_congr rfl fun l _ => ?_
-    rw [EuclideanSpace.inner_eq_star_dotProduct, Real.norm_eq_abs, sq_abs]
-    simp [q, dotProduct_comm]
-  rw [hexp]
-  calc |∑ l, hA.eigenvalues l * (q l ⬝ᵥ x) ^ 2|
-      ≤ ∑ l, |hA.eigenvalues l| * (q l ⬝ᵥ x) ^ 2 := by
-        refine (Finset.abs_sum_le_sum_abs _ _).trans (le_of_eq ?_)
-        simp_rw [abs_mul, abs_sq]
-    _ ≤ ∑ l, |hA.eigenvalues k| * (q l ⬝ᵥ x) ^ 2 :=
-        Finset.sum_le_sum fun l _ => mul_le_mul_of_nonneg_right (hk l) (sq_nonneg _)
-    _ = |hA.eigenvalues k| := by rw [← Finset.mul_sum, hpars, mul_one]
-
-omit [DecidableEq n] in
-/-- The quadratic form of the symmetric part of a real matrix is that of the matrix. -/
-theorem dotProduct_mulVec_hermitianPart (M : Matrix n n ℝ) (x : n → ℝ) :
-    x ⬝ᵥ (hermitianPart M *ᵥ x) = x ⬝ᵥ (M *ᵥ x) := by
-  rw [hermitianPart, smul_mulVec, add_mulVec, dotProduct_smul, dotProduct_add,
-    conjTranspose_eq_transpose_of_trivial, dotProduct_mulVec x Mᵀ, vecMul_transpose,
-    dotProduct_comm (M *ᵥ x) x, smul_eq_mul]
-  ring
-
 /-- **[golub2013matrix] Lemma 12.3.2**: with `T = (M + Mᵀ)/2` and `α_k` an eigenvalue of `T` of
 largest modulus, eigenvector `q_k`, the matrix `α_k q_k q_kᵀ` is a nearest symmetric matrix of rank
 at most one to `M` in the Frobenius norm. (The book's "`rank(Z) = 1`" fails when `T = 0`, where the
@@ -466,7 +384,8 @@ theorem isMinOn_frobenius_norm_sub_symm_rank_le_one (M : Matrix n n ℝ) {k : n}
   set hT := hermitianPart_isHermitian M
   set α := hT.eigenvalues k
   set q := ⇑(hT.eigenvectorBasis k)
-  have hq : q ⬝ᵥ q = 1 := dotProduct_eigenvectorBasis_self hT k
+  have hq : q ⬝ᵥ q = 1 := by
+    simpa only [star_trivial] using hT.star_dotProduct_eigenvectorBasis_self k
   have hqM : q ⬝ᵥ (M *ᵥ q) = α := by
     rw [← dotProduct_mulVec_hermitianPart, hT.mulVec_eigenvectorBasis, dotProduct_smul, hq,
       smul_eq_mul, mul_one]

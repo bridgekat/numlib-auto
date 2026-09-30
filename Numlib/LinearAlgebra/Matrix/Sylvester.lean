@@ -288,6 +288,15 @@ theorem existsUnique_sylvesterMap_eq [IsAlgClosed K] {A : Matrix m m K} {B : Mat
   simpa only [sylvesterMap_apply] using
     (sylvesterMap_bijective_iff_disjoint_spectrum.mpr h).existsUnique C
 
+/-- **The homogeneous Sylvester equation has only the trivial solution** when the spectra are
+disjoint, over an algebraically closed field: `A X - X B = 0` forces `X = 0`. This is the
+uniqueness half of `Matrix.existsUnique_sylvesterMap_eq`. -/
+theorem eq_zero_of_mul_sub_mul_eq_zero [IsAlgClosed K] {A : Matrix m m K} {B : Matrix n n K}
+    (h : Disjoint (spectrum K A) (spectrum K B)) {X : Matrix m n K} (hX : A * X - X * B = 0) :
+    X = 0 :=
+  (sylvesterMap_bijective_iff_disjoint_spectrum.mpr h).1
+    (by rw [sylvesterMap_apply, hX, map_zero])
+
 /-- The diagonal Sylvester equation is solved by entrywise division: if `ω k ≠ ν j` for all `k`,
 `j`, then `diagonal ω X - X diagonal ν = C` exactly when `X k j = C k j / (ω k - ν j)`
 ([golub2013matrix] §4.8.4 and (12.1.4)). -/
