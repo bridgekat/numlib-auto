@@ -76,19 +76,6 @@ section HessenbergQRStep
 
 open GolubVanLoan.Chapter05
 
-/-- The index list `[0, 1, …, j]` of `Fin m`: the rows `1:j+1` of the book in 0-based form
-(convention 10; the twin of chapter 5's `indexFrom`). -/
-def indexTo (m j : ℕ) : List (Fin m) := (List.finRange m).filter fun i => (i : ℕ) ≤ j
-
-/-- Membership in `indexTo m j`. -/
-@[simp]
-theorem mem_indexTo {m j : ℕ} {i : Fin m} : i ∈ indexTo m j ↔ (i : ℕ) ≤ j := by
-  simp [indexTo]
-
-/-- `indexTo m j` has no duplicates. -/
-theorem nodup_indexTo (m j : ℕ) : (indexTo m j).Nodup :=
-  (List.nodup_finRange m).filter _
-
 /-- **Algorithm 7.4.1** (the Hessenberg QR step): "If `H` is an `n`-by-`n` upper Hessenberg
 matrix, then this algorithm overwrites `H` with `H₊ = RQ` where `H = QR` is the QR factorization
 of `H`":
@@ -466,19 +453,6 @@ theorem hessenbergReduce_inv (A : Matrix (Fin n) (Fin n) ℝ) :
     rw [hget]
     exact hessenbergReduceStep_inv ⟨t, by omega⟩ (ih (by omega))
 
-/-- Reflector data whose vectors vanish at `0` fix `e₀`. -/
-private theorem householderProduct_mulVec_single_zero {N : ℕ}
-    {data : List ((Fin (N + 1) → ℝ) × ℝ)} (h : ∀ p ∈ data, p.1 0 = 0) :
-    householderProduct data *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
-  induction data with
-  | nil => rw [householderProduct_nil, one_mulVec]
-  | cons p data ih =>
-    rw [householderProduct_cons, ← mulVec_mulVec,
-      ih fun q hq => h q (List.mem_cons_of_mem _ hq)]
-    funext i
-    rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, h p List.mem_cons_self]
-    ring
-
 /-- **Algorithm 7.4.2 computes a Hessenberg decomposition** (7.4.3), exactly: with
 `(A', data) = Id.run (algorithm_7_4_2 pure A)` and `U₀ = householderProduct data` (the reflectors
 built from the returned `(v, β)`, never from the stored vectors): `U₀` is orthogonal,
@@ -515,7 +489,7 @@ theorem algorithm_7_4_2_spec {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) �
   · rw [isUpperHessenberg_iff_fin]
     intro i j hij
     rw [hessenbergPart, of_apply, ite_eq_right (by omega)]
-  · refine householderProduct_mulVec_single_zero fun p hp => ?_
+  · refine householderProduct_mulVec_single fun p hp => ?_
     obtain ⟨l, hl, rfl⟩ := List.getElem_of_mem hp
     exact hsupp l hl 0 (Nat.zero_le _)
 
@@ -525,24 +499,6 @@ theorem algorithm_7_4_2_spec {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) �
 `< t`, rows below the subdiagonal) replaced by zeros. -/
 def zeroStored (t : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (j : ℕ) < t ∧ (j : ℕ) + 2 ≤ i then 0 else A i j
-
-/-- `RoundsHouseholderApplyScaled` is invariant under reindexing. -/
-private theorem roundsHouseholderApplyScaled_of_comp_equiv {ι κ : Type}
-    {m : RoundingModel ℝ} (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ}
-    (h : RoundsHouseholderApplyScaled m β (v ∘ e) (b ∘ e) (y ∘ e)) :
-    RoundsHouseholderApplyScaled m β v b y := by
-  obtain ⟨s, w, hdot, hw, hy⟩ := h
-  refine ⟨s, w ∘ e.symm, (roundsDot_comp_equiv_iff e).1 hdot, fun i => ?_, fun i => ?_⟩
-  · simpa using hw (e.symm i)
-  · simpa using hy (e.symm i)
-
-/-- Reflector data of order `K` are reflector data of every larger order. -/
-private theorem isReflectorPert_mono {ι : Type} [Fintype ι] [DecidableEq ι] {u : ℝ}
-    (hu : 0 ≤ u) {K K' : ℕ} (hK : K ≤ K') (hK' : (K' : ℝ) * u < 1) {x : ι → ℝ} {i : ι} {c : ℝ}
-    {vhat : ι → ℝ} {βhat : ℝ} (h : IsReflectorPert u K x i c vhat βhat) :
-    IsReflectorPert u K' x i c vhat βhat := by
-  obtain ⟨v, β, hO, hmul, hβv, hβ, hv⟩ := h
-  exact ⟨v, β, hO, hmul, hβv, hβ.mono hu hK hK', fun j => (hv j).mono hu hK hK'⟩
 
 /-- The active rows `k + 1, …` as a list and as a subtype. -/
 private def tailEquiv (k : ℕ) :
@@ -597,9 +553,9 @@ theorem hessenbergReduceStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempot
     have hpiv : e.symm ⟨⟨k + 1, by omega⟩, le_rfl⟩ = ⟨o.head hone, List.head_mem hone⟩ :=
       Subtype.ext (head_indexFrom (by omega) hone).symm
     rw [hpiv]
-    exact isReflectorPert_mono fp.u_nonneg (by omega) hu hrefl
+    exact hrefl.mono fp.u_nonneg (by omega) hu
   · -- the column sweep
-    refine ⟨fun i => B₁ i j, roundsHouseholderApplyScaled_of_comp_equiv e ?_, fun i => ?_⟩
+    refine ⟨fun i => B₁ i j, (roundsHouseholderApplyScaled_comp_equiv_iff e).1 ?_, fun i => ?_⟩
     · have hA : (fun i : {i : Fin n // k + 1 ≤ (i : ℕ)} => zeroStored k st.1 i j) ∘ e =
           fun i : {i : Fin n // i ∈ indexFrom n (k + 1)} => st.1 i j := by
         funext i
@@ -618,7 +574,7 @@ theorem hessenbergReduceStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempot
     simp only [zeroStored, of_apply, hB]
     split_ifs with h1 h2 h2 <;> first | rfl | (exfalso; omega)
   · -- the row sweep
-    refine ⟨fun j => B₂ i j, roundsHouseholderApplyScaled_of_comp_equiv e ?_, fun j => ?_⟩
+    refine ⟨fun j => B₂ i j, (roundsHouseholderApplyScaled_comp_equiv_iff e).1 ?_, fun j => ?_⟩
     · have hC : (fun j : {i : Fin n // k + 1 ≤ (i : ℕ)} => zeroStored (k + 1) B₁ i j) ∘ e =
           fun j : {j : Fin n // j ∈ indexFrom n (k + 1)} => B₁ i j := by
         funext j

@@ -281,36 +281,12 @@ section Exact
 
 open GolubVanLoan.Chapter05
 
-/-- A loop invariant indexed by the position in the list. -/
+/-- A loop invariant indexed by the position in the list: `List.foldl_induction` with the step
+quantified over natural indices. -/
 theorem foldl_induction_getElem {α S : Type*} (l : List α) (f : S → α → S) (P : ℕ → S → Prop)
     (s : S) (h0 : P 0 s) (h : ∀ (p : ℕ) (hp : p < l.length) (s : S), P p s → P (p + 1) (f s l[p])) :
-    P l.length (l.foldl f s) := by
-  induction l generalizing P s with
-  | nil => exact h0
-  | cons a l ih =>
-    rw [List.foldl_cons, List.length_cons]
-    exact ih (fun p => P (p + 1)) (f s a) (h 0 (by simp) s h0) fun p hp s hs =>
-      h (p + 1) (by simp; omega) s hs
-
-/-- The entries of `G(i, k, θ)ᵀ A`. -/
-theorem givensRotation_transpose_mul_apply {m p : ℕ} {i k : Fin m} (hik : i ≠ k) (c s : ℝ)
-    (A : Matrix (Fin m) (Fin p) ℝ) (r : Fin m) (q : Fin p) :
-    ((givensRotation i k c s)ᵀ * A) r q =
-      if r = i then c * A i q - s * A k q else if r = k then s * A i q + c * A k q
-        else A r q := by
-  have h : ((givensRotation i k c s)ᵀ * A) r q =
-      ((givensRotation i k c s)ᵀ *ᵥ fun t => A t q) r := rfl
-  rw [h, givensRotation_transpose_mulVec_apply hik]
-
-/-- The entries of `A G(i, k, θ)`. -/
-theorem mul_givensRotation_apply {m p : ℕ} {i k : Fin p} (hik : i ≠ k) (c s : ℝ)
-    (A : Matrix (Fin m) (Fin p) ℝ) (r : Fin m) (q : Fin p) :
-    (A * givensRotation i k c s) r q =
-      if q = i then c * A r i - s * A r k else if q = k then s * A r i + c * A r k
-        else A r q := by
-  have h : (A * givensRotation i k c s) r q = ((givensRotation i k c s)ᵀ *ᵥ A r) q := by
-    rw [mulVec_transpose]; rfl
-  rw [h, givensRotation_transpose_mulVec_apply hik]
+    P l.length (l.foldl f s) :=
+  List.foldl_induction P h0 fun i s hs => h i i.2 s hs
 
 /-- The row update on a column list is the full product `G(i, k, θ)ᵀ A` when the omitted
 columns vanish in the rows `i`, `k`. -/
@@ -1729,83 +1705,6 @@ section Reflectors
 
 open GolubVanLoan.Chapter05
 
-/-- The entries of `(I - β v vᵀ) M`. -/
-private theorem refl_mul_apply (β : ℝ) (v : Fin n → ℝ) (M : Matrix (Fin n) (Fin n) ℝ)
-    (i q : Fin n) :
-    ((1 - β • vecMulVec v v) * M) i q = M i q - β * v i * ∑ l, v l * M l q := by
-  rw [Matrix.sub_mul, Matrix.one_mul, Matrix.smul_mul, Matrix.sub_apply, Matrix.smul_apply,
-    mul_apply, smul_eq_mul, Finset.mul_sum, Finset.mul_sum]
-  congr 1
-  refine Finset.sum_congr rfl fun l _ => ?_
-  rw [vecMulVec_apply]
-  ring
-
-/-- The entries of `M (I - β v vᵀ)`. -/
-private theorem mul_refl_apply (β : ℝ) (v : Fin n → ℝ) (M : Matrix (Fin n) (Fin n) ℝ)
-    (i q : Fin n) :
-    (M * (1 - β • vecMulVec v v)) i q = M i q - β * v q * ∑ l, M i l * v l := by
-  rw [Matrix.mul_sub, Matrix.mul_one, Matrix.mul_smul, Matrix.sub_apply, Matrix.smul_apply,
-    mul_apply, smul_eq_mul, Finset.mul_sum, Finset.mul_sum]
-  congr 1
-  refine Finset.sum_congr rfl fun l _ => ?_
-  rw [vecMulVec_apply]
-  ring
-
-variable {o : List (Fin n)} {v : Fin n → ℝ}
-
-/-- A reflector supported on `o` does not change the rows outside `o`. -/
-private theorem refl_mul_apply_of_not_mem (hv : ∀ l, l ∉ o → v l = 0) (β : ℝ)
-    (M : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (hi : i ∉ o) (q : Fin n) :
-    ((1 - β • vecMulVec v v) * M) i q = M i q := by
-  rw [refl_mul_apply, hv i hi]; ring
-
-/-- A reflector supported on `o` does not change a column that vanishes on `o`. -/
-private theorem refl_mul_apply_of_col (hv : ∀ l, l ∉ o → v l = 0) (β : ℝ)
-    (M : Matrix (Fin n) (Fin n) ℝ) {q : Fin n} (hM : ∀ l ∈ o, M l q = 0) (i : Fin n) :
-    ((1 - β • vecMulVec v v) * M) i q = M i q := by
-  rw [refl_mul_apply, Finset.sum_eq_zero fun l _ => ?_]
-  · ring
-  · by_cases hl : l ∈ o
-    · rw [hM l hl, mul_zero]
-    · rw [hv l hl, zero_mul]
-
-/-- A reflector supported on `o` does not change the columns outside `o`. -/
-private theorem mul_refl_apply_of_not_mem (hv : ∀ l, l ∉ o → v l = 0) (β : ℝ)
-    (M : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) {q : Fin n} (hq : q ∉ o) :
-    (M * (1 - β • vecMulVec v v)) i q = M i q := by
-  rw [mul_refl_apply, hv q hq]; ring
-
-/-- A reflector supported on `o` does not change a row that vanishes on `o`. -/
-private theorem mul_refl_apply_of_row (hv : ∀ l, l ∉ o → v l = 0) (β : ℝ)
-    (M : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (hM : ∀ l ∈ o, M i l = 0) (q : Fin n) :
-    (M * (1 - β • vecMulVec v v)) i q = M i q := by
-  rw [mul_refl_apply, Finset.sum_eq_zero fun l _ => ?_]
-  · ring
-  · by_cases hl : l ∈ o
-    · rw [hM l hl, zero_mul]
-    · rw [hv l hl, mul_zero]
-
-/-- On `o`, a reflector supported on `o` sees a column only through its entries on `o`. -/
-private theorem refl_mul_apply_eq (hv : ∀ l, l ∉ o → v l = 0) (β : ℝ) (M : Matrix (Fin n) (Fin n) ℝ)
-    (u : Fin n → ℝ) {q : Fin n} (hMu : ∀ l ∈ o, M l q = u l) {i : Fin n} (hi : i ∈ o) :
-    ((1 - β • vecMulVec v v) * M) i q = ((1 - β • vecMulVec v v) *ᵥ u) i := by
-  rw [refl_mul_apply, FloatingPoint.one_sub_smul_vecMulVec_mulVec_apply, hMu i hi]
-  congr 2
-  simp only [dotProduct]
-  refine Finset.sum_congr rfl fun l _ => ?_
-  by_cases hl : l ∈ o
-  · rw [hMu l hl]
-  · rw [hv l hl, zero_mul, zero_mul]
-
-/-- Right multiplication by a reflector acts on each row as the (symmetric) reflector. -/
-private theorem mul_refl_apply_eq (β : ℝ) (v : Fin n → ℝ) (M : Matrix (Fin n) (Fin n) ℝ)
-    (i q : Fin n) :
-    (M * (1 - β • vecMulVec v v)) i q = ((1 - β • vecMulVec v v) *ᵥ M i) q := by
-  rw [mul_refl_apply, FloatingPoint.one_sub_smul_vecMulVec_mulVec_apply]
-  simp only [dotProduct]
-  congr 2
-  exact Finset.sum_congr rfl fun l _ => mul_comm _ _
-
 /-- The exact output of `house` on an index list: supported on the list, the `β` dichotomy, and
 the reflector maps `x` to a multiple of `e_head` on the list. -/
 private theorem houseOn_exact {o : List (Fin n)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin n → ℝ) :
@@ -1961,21 +1860,21 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
               have hne : j₂ ≠ j := fun e => by rw [e] at hj₂v; omega
               have hne' : j₂ ≠ j₁ := fun e => by rw [e] at hj₂v; omega
               simp [hne, hne', hz hj₂v hjr]
-          rw [hA₁, refl_mul_apply_eq hq0 _ _ _ hcol ((hmem i).2 hio)]
+          rw [hA₁, one_sub_smul_vecMulVec_mul_apply_eq_mulVec hq0 _ _ _ hcol ((hmem i).2 hio)]
           exact hqz i ((hmem i).2 hio) (fun e => by rw [e, List.head_cons] at hic; omega)
         · -- `j = p`: the column `p - 1` vanishes on the block
           have hp0 : 0 < p := by omega
           have hcol : ∀ l ∈ [j, j₁, j₂], st.A l c = 0 := fun l hl => by
             rw [hmem] at hl
             exact h.col l c hp0 (by omega) (by omega)
-          rw [hA₁, refl_mul_apply_of_col hq0 _ _ hcol]
+          rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
           exact h.col i c hp0 (by omega) (by omega)
       · have hcol : ∀ l ∈ [j, j₁, j₂], st.A l c = 0 := fun l hl => by
           rw [hmem] at hl
           exact h.bulge l c (by omega) (by omega)
-        rw [hA₁, refl_mul_apply_of_col hq0 _ _ hcol]
+        rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
         exact h.bulge i c hic (by omega)
-    · rw [hA₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 hio)]
+    · rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 hio)]
       exact h.bulge i c hic (by omega)
   -- `B₁`: upper triangular except in the rows `j + 1, j + 2`, columns `j, j + 1`
   have hB₁z : ∀ i c : Fin n, (c : ℕ) < i →
@@ -1985,9 +1884,9 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     · have hcol : ∀ l ∈ [j, j₁, j₂], st.B l c = 0 := fun l hl => by
         rw [hmem] at hl
         exact h.tri l c (by omega)
-      rw [hB₁, refl_mul_apply_of_col hq0 _ _ hcol]
+      rw [hB₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
       exact h.tri i c hic
-    · rw [hB₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 hio)]
+    · rw [hB₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 hio)]
       exact h.tri i c hic
   -- `B₂`: only `(j + 1, j)` below the diagonal
   have hB₂z : ∀ i c : Fin n, (c : ℕ) < i → ¬ ((i : ℕ) = j + 1 ∧ (c : ℕ) = j) → B₂ i c = 0 := by
@@ -1996,14 +1895,14 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     · by_cases hi2 : (i : ℕ) = j + 2
       · have hi : i = j₂ := Fin.ext hi2
         subst hi
-        rw [hB₂, mul_refl_apply_eq]
+        rw [hB₂, mul_one_sub_smul_vecMulVec_apply_eq_mulVec]
         exact hzz c ((hmem' c).2 hco) (fun e => by rw [e, List.head_cons] at hic; omega)
       · have hrow : ∀ l ∈ [j₂, j₁, j], B₁ i l = 0 := fun l hl => by
           rw [hmem'] at hl
           exact hB₁z i l (by omega) (by omega)
-        rw [hB₂, mul_refl_apply_of_row hz0 _ _ hrow]
+        rw [hB₂, mul_one_sub_smul_vecMulVec_apply_of_forall hz0 _ _ hrow]
         exact hB₁z i c hic (by omega)
-    · rw [hB₂, mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco)]
+    · rw [hB₂, mul_one_sub_smul_vecMulVec_apply_of_notMem hz0 _ _ _ ((hmem' c).not.2 hco)]
       exact hB₁z i c hic (by omega)
   -- `A₂`: the bulge moves to `(j + 2, j)`, `(j + 3, j)`, `(j + 3, j + 1)`
   have hA₂z : ∀ i c : Fin n, (c : ℕ) + 1 < i → ¬ (((i : ℕ) = j + 2 ∧ (c : ℕ) = j) ∨
@@ -2013,9 +1912,9 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     · have hrow : ∀ l ∈ [j₂, j₁, j], A₁ i l = 0 := fun l hl => by
         rw [hmem'] at hl
         exact hA₁z i l (by omega) (by omega)
-      rw [hA₂, mul_refl_apply_of_row hz0 _ _ hrow]
+      rw [hA₂, mul_one_sub_smul_vecMulVec_apply_of_forall hz0 _ _ hrow]
       exact hA₁z i c hic (by omega)
-    · rw [hA₂, mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco)]
+    · rw [hA₂, mul_one_sub_smul_vecMulVec_apply_of_notMem hz0 _ _ _ ((hmem' c).not.2 hco)]
       exact hA₁z i c hic (by omega)
   -- `B₃` is upper triangular
   have hB₃z : ∀ i c : Fin n, (c : ℕ) < i → B₃ i c = 0 := by
@@ -2024,14 +1923,14 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     · by_cases hi1 : (i : ℕ) = j + 1
       · have hi : i = j₁ := Fin.ext hi1
         subst hi
-        rw [hB₃, mul_refl_apply_eq]
+        rw [hB₃, mul_one_sub_smul_vecMulVec_apply_eq_mulVec]
         exact hwz c ((hmem₃ c).2 hco) (fun e => by rw [e, List.head_cons] at hic; omega)
       · have hrow : ∀ l ∈ [j₁, j], B₂ i l = 0 := fun l hl => by
           rw [hmem₃] at hl
           exact hB₂z i l (by omega) (by omega)
-        rw [hB₃, mul_refl_apply_of_row hw0 _ _ hrow]
+        rw [hB₃, mul_one_sub_smul_vecMulVec_apply_of_forall hw0 _ _ hrow]
         exact hB₂z i c hic (by omega)
-    · rw [hB₃, mul_refl_apply_of_not_mem hw0 _ _ _ ((hmem₃ c).not.2 hco)]
+    · rw [hB₃, mul_one_sub_smul_vecMulVec_apply_of_notMem hw0 _ _ _ ((hmem₃ c).not.2 hco)]
       exact hB₂z i c hic (by omega)
   -- `A₃` keeps the new bulge
   have hA₃z : ∀ i c : Fin n, (c : ℕ) + 1 < i → ¬ (((i : ℕ) = j + 2 ∧ (c : ℕ) = j) ∨
@@ -2041,32 +1940,32 @@ private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : 
     · have hrow : ∀ l ∈ [j₁, j], A₂ i l = 0 := fun l hl => by
         rw [hmem₃] at hl
         exact hA₂z i l (by omega) (by omega)
-      rw [hA₃, mul_refl_apply_of_row hw0 _ _ hrow]
+      rw [hA₃, mul_one_sub_smul_vecMulVec_apply_of_forall hw0 _ _ hrow]
       exact hA₂z i c hic (by omega)
-    · rw [hA₃, mul_refl_apply_of_not_mem hw0 _ _ _ ((hmem₃ c).not.2 hco)]
+    · rw [hA₃, mul_one_sub_smul_vecMulVec_apply_of_notMem hw0 _ _ _ ((hmem₃ c).not.2 hco)]
       exact hA₂z i c hic (by omega)
   -- the decoupling of column `p - 1` and row `r + 1`
   have hcol₃ : ∀ i c : Fin n, 0 < p → (c : ℕ) + 1 = p → p ≤ (i : ℕ) → A₃ i c = 0 := by
     intro i c hp0 hc hi
     have hco : ¬ ((c : ℕ) = j ∨ (c : ℕ) = j + 1 ∨ (c : ℕ) = j + 2) := by omega
     have hco₃ : ¬ ((c : ℕ) = j ∨ (c : ℕ) = j + 1) := by omega
-    rw [hA₃, mul_refl_apply_of_not_mem hw0 _ _ _ ((hmem₃ c).not.2 hco₃), hA₂,
-      mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco), hA₁,
-      refl_mul_apply_of_col hq0 _ _ (fun l hl => by
+    rw [hA₃, mul_one_sub_smul_vecMulVec_apply_of_notMem hw0 _ _ _ ((hmem₃ c).not.2 hco₃), hA₂,
+      mul_one_sub_smul_vecMulVec_apply_of_notMem hz0 _ _ _ ((hmem' c).not.2 hco), hA₁,
+      one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ (fun l hl => by
         rw [hmem] at hl; exact h.col l c hp0 hc (by omega))]
     exact h.col i c hp0 hc hi
   have hrowA₁ : ∀ i c : Fin n, (i : ℕ) = r + 1 → (c : ℕ) ≤ r → A₁ i c = 0 := by
     intro i c hi hc
-    rw [hA₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 (by omega))]
+    rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 (by omega))]
     exact h.row i c hi hc
   have hrowA₂ : ∀ i c : Fin n, (i : ℕ) = r + 1 → (c : ℕ) ≤ r → A₂ i c = 0 := by
     intro i c hi hc
-    rw [hA₂, mul_refl_apply_of_row hz0 _ _ (fun l hl => by
+    rw [hA₂, mul_one_sub_smul_vecMulVec_apply_of_forall hz0 _ _ (fun l hl => by
       rw [hmem'] at hl; exact hrowA₁ i l hi (by omega))]
     exact hrowA₁ i c hi hc
   have hrow₃ : ∀ i c : Fin n, (i : ℕ) = r + 1 → (c : ℕ) ≤ r → A₃ i c = 0 := by
     intro i c hi hc
-    rw [hA₃, mul_refl_apply_of_row hw0 _ _ (fun l hl => by
+    rw [hA₃, mul_one_sub_smul_vecMulVec_apply_of_forall hw0 _ _ (fun l hl => by
       rw [hmem₃] at hl; exact hrowA₂ i l hi (by omega))]
     exact hrowA₂ i c hi hc
   -- the reflector products
@@ -2316,20 +2215,20 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
               subst this
               have hne : r' ≠ r₁ := fun e => by rw [e] at hr'v; omega
               simp [hne, hy (by omega)]
-          rw [hA₁, refl_mul_apply_eq hq0 _ _ _ hcol ((hmem i).2 hio)]
+          rw [hA₁, one_sub_smul_vecMulVec_mul_apply_eq_mulVec hq0 _ _ _ hcol ((hmem i).2 hio)]
           exact hqz i ((hmem i).2 hio) (fun e => by rw [e, List.head_cons] at hic; omega)
         · have hp0 : 0 < p := by omega
           have hcol : ∀ l ∈ [r₁, r'], st.A l c = 0 := fun l hl => by
             rw [hmem] at hl
             exact hinv.col l c hp0 (by omega) (by omega)
-          rw [hA₁, refl_mul_apply_of_col hq0 _ _ hcol]
+          rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
           exact hinv.col i c hp0 (by omega) (by omega)
       · have hcol : ∀ l ∈ [r₁, r'], st.A l c = 0 := fun l hl => by
           rw [hmem] at hl
           exact hinv.bulge l c (by omega) (by omega)
-        rw [hA₁, refl_mul_apply_of_col hq0 _ _ hcol]
+        rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
         exact hinv.bulge i c hic (by omega)
-    · rw [hA₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 hio)]
+    · rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 hio)]
       by_cases hir : (i : ℕ) = r + 1
       · exact hinv.row i c hir (by omega)
       · exact hinv.bulge i c hic (by omega)
@@ -2340,9 +2239,9 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
     · have hcol : ∀ l ∈ [r₁, r'], st.B l c = 0 := fun l hl => by
         rw [hmem] at hl
         exact hinv.tri l c (by omega)
-      rw [hB₁, refl_mul_apply_of_col hq0 _ _ hcol]
+      rw [hB₁, one_sub_smul_vecMulVec_mul_apply_of_forall hq0 _ _ hcol]
       exact hinv.tri i c hic
-    · rw [hB₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 hio)]
+    · rw [hB₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 hio)]
       exact hinv.tri i c hic
   have hsym : ∀ d : (Fin n → ℝ) × ℝ,
       (1 - d.2 • vecMulVec d.1 d.1)ᵀ = 1 - d.2 • vecMulVec d.1 d.1 :=
@@ -2372,12 +2271,12 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
     · have hrow : ∀ l ∈ [r', r₁], A₁ i l = 0 := fun l hl => by
         rw [hmem'] at hl
         by_cases hi : (i : ℕ) = r + 1 ∧ (l : ℕ) = r
-        · rw [hA₁, refl_mul_apply_of_not_mem hq0 _ _ ((hmem i).not.2 (by omega))]
+        · rw [hA₁, one_sub_smul_vecMulVec_mul_apply_of_notMem hq0 _ _ ((hmem i).not.2 (by omega))]
           exact hinv.row i l hi.1 (by omega)
         · exact hA₁z i l (by omega)
-      rw [mul_refl_apply_of_row hz0 _ _ hrow]
+      rw [mul_one_sub_smul_vecMulVec_apply_of_forall hz0 _ _ hrow]
       exact hA₁z i c hic
-    · rw [mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco)]
+    · rw [mul_one_sub_smul_vecMulVec_apply_of_notMem hz0 _ _ _ ((hmem' c).not.2 hco)]
       exact hA₁z i c hic
   · -- `B₁ P₂` is upper triangular
     rw [isUpperTriangular_iff_fin]
@@ -2386,14 +2285,14 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
     · by_cases hi : (i : ℕ) = r
       · have hi' : i = r' := Fin.ext hi
         subst hi'
-        rw [mul_refl_apply_eq]
+        rw [mul_one_sub_smul_vecMulVec_apply_eq_mulVec]
         exact hzz c ((hmem' c).2 hco) (fun e => by rw [e, List.head_cons] at hic; omega)
       · have hrow : ∀ l ∈ [r', r₁], B₁ i l = 0 := fun l hl => by
           rw [hmem'] at hl
           exact hB₁z i l (by omega) (by omega)
-        rw [mul_refl_apply_of_row hz0 _ _ hrow]
+        rw [mul_one_sub_smul_vecMulVec_apply_of_forall hz0 _ _ hrow]
         exact hB₁z i c hic (by omega)
-    · rw [mul_refl_apply_of_not_mem hz0 _ _ _ ((hmem' c).not.2 hco)]
+    · rw [mul_one_sub_smul_vecMulVec_apply_of_notMem hz0 _ _ _ ((hmem' c).not.2 hco)]
       exact hB₁z i c hic (by omega)
   · intro d hd l hl
     rcases List.mem_append.1 hd with hd | hd

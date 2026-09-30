@@ -203,22 +203,6 @@ private def tailEquiv (k : ℕ) :
     {i : Fin n // k + 1 ≤ (i : ℕ)} ≃ {i // i ∈ Chapter05.indexFrom n (k + 1)} :=
   Equiv.subtypeEquivRight fun _ => Chapter05.mem_indexFrom.symm
 
-private theorem head_le_of_pairwise {l : List (Fin n)} (hl : l.Pairwise (· < ·)) (h : l ≠ [])
-    {x : Fin n} (hx : x ∈ l) : l.head h ≤ x := by
-  cases l with
-  | nil => exact absurd rfl h
-  | cons a t =>
-    rcases List.mem_cons.1 hx with rfl | hx
-    · exact le_rfl
-    · exact (List.rel_of_pairwise_cons hl hx).le
-
-private theorem head_indexFrom {k : ℕ} (hk : k + 1 < n)
-    (hne : Chapter05.indexFrom n (k + 1) ≠ []) :
-    (Chapter05.indexFrom n (k + 1)).head hne = ⟨k + 1, hk⟩ := by
-  have hpw : (Chapter05.indexFrom n (k + 1)).Pairwise (· < ·) :=
-    (List.sortedLT_finRange n).pairwise.filter _
-  refine le_antisymm (head_le_of_pairwise hpw hne (Chapter05.mem_indexFrom.2 le_rfl)) ?_
-  exact Fin.le_def.2 (Chapter05.mem_indexFrom.1 (List.head_mem hne))
 
 /-- An accumulation from `0` over the tail list is a `RoundsDot` on the tail subtype. -/
 private theorem roundsDot_tail {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (k : ℕ)
@@ -228,13 +212,6 @@ private theorem roundsDot_tail {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) 
   (roundsDot_comp_equiv_iff (tailEquiv k)).2
     (Chapter05.roundsDot_subtype_of_mem_run_dotAccum hfp (Chapter05.nodup_indexFrom _ _) h)
 
-/-- Reflector data of order `K` are data of every larger order `K'` with `K' u < 1`. -/
-private theorem isReflectorPert_mono {ι : Type*} [Fintype ι] [DecidableEq ι] {u : ℝ}
-    (hu : 0 ≤ u) {K K' : ℕ} (hK : K ≤ K') (hK' : (K' : ℝ) * u < 1) {x : ι → ℝ} {i : ι} {c : ℝ}
-    {vhat : ι → ℝ} {βhat : ℝ} (h : IsReflectorPert u K x i c vhat βhat) :
-    IsReflectorPert u K' x i c vhat βhat := by
-  obtain ⟨v, β, hO, hmul, hβv, hβ, hv⟩ := h
-  exact ⟨v, β, hO, hmul, hβv, hβ.mono hu hK hK', fun j => (hv j).mono hu hK hK'⟩
 
 /-- The lower-triangle pairs of a list are its pairs `(i, j)` with `j ≤ i`. -/
 private theorem mem_lowerPairs {T : List (Fin n)} {ij : Fin n × Fin n} :
@@ -322,7 +299,7 @@ private theorem tridiagonalizeStep_reflector {fp : RoundingModel ℝ} (hfp : fp.
   have hu' : ((18 * T.length + 31 : ℕ) : ℝ) * fp.u < 1 :=
     lt_of_le_of_lt (mul_le_mul_of_nonneg_right (by exact_mod_cast (by omega)) hu0) hu
   obtain ⟨-, hrefl⟩ := Chapter05.houseOn_rounding hfp hT hne hu' (fun i => A i k) hvβ
-  have h1 := isReflectorPert_mono hu0 (by omega : 18 * T.length + 31 ≤ 18 * n + 31) hu hrefl
+  have h1 := hrefl.mono hu0 (by omega : 18 * T.length + 31 ≤ 18 * n + 31) hu
   have hnorm :
       ‖(WithLp.toLp 2 (fun j : {j // j ∈ T} => A j.1 k) : EuclideanSpace ℝ {j // j ∈ T})‖ =
       ‖(WithLp.toLp 2 (fun i : {i : Fin n // (k : ℕ) + 1 ≤ (i : ℕ)} => A i k) :
@@ -333,7 +310,7 @@ private theorem tridiagonalizeStep_reflector {fp : RoundingModel ℝ} (hfp : fp.
   rw [hnorm] at h1
   refine Chapter05.IsReflectorPert.of_comp_equiv (tailEquiv (k : ℕ)).symm ?_
   have hpiv : (tailEquiv (k : ℕ)).symm.symm ⟨⟨k + 1, hk⟩, le_rfl⟩ =
-      ⟨T.head hne, List.head_mem hne⟩ := Subtype.ext (head_indexFrom hk hne).symm
+      ⟨T.head hne, List.head_mem hne⟩ := Subtype.ext (Chapter05.head_indexFrom hk hne).symm
   rw [hpiv]
   exact h1
 
@@ -546,19 +523,6 @@ private theorem sum_subtype_mem {l : List (Fin n)} (hl : l.Nodup) (g : Fin n →
     ∑ j : {j // j ∈ l}, g j = (l.map g).sum := by
   rw [← List.sum_toFinset g hl, Finset.sum_subtype l.toFinset (fun _ => List.mem_toFinset) g]
 
-/-- **The Hoare rule of a `finRange` loop in `Id`.** -/
-private theorem idRun_foldlM_finRange_induction {β : Type} {N : ℕ} {f : β → Fin N → Id β}
-    {a : β} (I : ℕ → β → Prop) (h0 : I 0 a)
-    (hstep : ∀ (k : Fin N) (c : β), I k c → I (k + 1) (Id.run (f c k))) :
-    I N (Id.run ((List.finRange N).foldlM f a)) := by
-  have hmem : ∀ (l : List (Fin N)) (a : β), Id.run (l.foldlM f a) ∈
-      (l.foldlM (fun c k => (pure (Id.run (f c k)) : SetM β)) a).run := by
-    intro l
-    induction l with
-    | nil => intro a; exact SetM.mem_run_pure.2 rfl
-    | cons x l ih => intro a; rw [List.foldlM_cons, SetM.mem_run_bind]; exact ⟨_, rfl, ih _⟩
-  exact SetM.forall_mem_run_foldlM_finRange I h0 (fun k c hc c' hc' => by
-    rw [SetM.mem_run_pure] at hc'; subst hc'; exact hstep k c hc) _ (hmem _ a)
 
 /-- The exact run of one step of Algorithm 8.3.1, unpacked. -/
 private theorem tridiagonalizeStep_pure (k : Fin n) (hk : (k : ℕ) + 1 < n)
@@ -576,7 +540,7 @@ private theorem tridiagonalizeStep_pure (k : Fin n) (hk : (k : ℕ) + 1 < n)
   intro T vβ
   refine ⟨_, _, _, fun _ => rfl, fun _ => rfl, fun _ => rfl, ?_⟩
   simp only [tridiagonalizeStep, dotAccum_pure, pure_bind, zero_add, List.foldlM_pure,
-    Chapter05.foldl_update_eq]
+    List.foldl_update_eq_ite]
   rfl
 
 /-- **The exact step of Algorithm 8.3.1, as a similarity.** With `C = Â_k` symmetric (the cleaned
@@ -718,7 +682,7 @@ private theorem tridiagonalizeStep_conj (k : Fin n) (hk : (k : ℕ) + 1 < n)
   have hmemT : ∀ i : Fin n, i ∈ T ↔ (k : ℕ) + 1 ≤ i := fun i => Chapter05.mem_indexFrom
   have hne : T ≠ [] := List.ne_nil_of_mem ((hmemT ⟨k + 1, hk⟩).2 le_rfl)
   obtain ⟨-, hvT, hβ, -, hPx⟩ := Chapter05.houseOn_spec hT hne (fun i => A i k)
-  rw [head_indexFrom hk hne] at hPx
+  rw [Chapter05.head_indexFrom hk hne] at hPx
   set vβ := Id.run (Chapter05.houseOn pure T (fun i => A i k)) with hvβ
   set v := vβ.1
   set β := vβ.2
@@ -757,22 +721,6 @@ private theorem tridiagonalizeStep_conj (k : Fin n) (hk : (k : ℕ) + 1 < n)
     exact congrArg List.sum (List.map_congr_left fun j _ => by
       rw [Real.norm_eq_abs, sq_abs, sq])
 
-/-- A reflector `I - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
-private theorem one_sub_smul_vecMulVec_mulVec_single {v : Fin n → ℝ} {p : Fin n} (hv : v p = 0)
-    (β : ℝ) : (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
-  funext i
-  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
-
-/-- A product of reflectors whose vectors vanish at `p` fixes `e_p`. -/
-private theorem householderProduct_mulVec_single {data : List ((Fin n → ℝ) × ℝ)} {p : Fin n}
-    (h : ∀ q ∈ data, q.1 p = 0) :
-    Chapter05.householderProduct data *ᵥ Pi.single p 1 = Pi.single p 1 := by
-  induction data with
-  | nil => rw [Chapter05.householderProduct_nil, one_mulVec]
-  | cons q data ih =>
-    rw [Chapter05.householderProduct_cons, ← mulVec_mulVec,
-      ih fun r hr => h r (List.mem_cons_of_mem _ hr),
-      one_sub_smul_vecMulVec_mulVec_single (h q List.mem_cons_self)]
 
 
 /-- The loop invariant of Algorithm 8.3.1 after `j` steps: the cleaned array is `Qᵀ A Q` for the
@@ -791,7 +739,7 @@ private theorem tridiagonalizeInv_run {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.I
   have hsymm : ∀ Q : Matrix (Fin n) (Fin n) ℝ, (Qᵀ * A * Q).IsSymm := fun Q => by
     simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
       (isHermitian_conjTranspose_mul_mul Q (isHermitian_iff_isSymm.2 hA))
-  refine idRun_foldlM_finRange_induction (TridiagonalizeInv A)
+  refine List.idRun_foldlM_finRange_induction (TridiagonalizeInv A)
     ⟨by simp [bandClean_zero], rfl, fun k hk => absurd hk (Nat.not_lt_zero _),
       fun q hq => absurd hq List.not_mem_nil⟩ ?_
   rintro k st ⟨hband, hlen, hsupp, hβ⟩
@@ -844,7 +792,7 @@ theorem algorithm_8_3_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
   obtain ⟨hband, hlen, hsupp, hβ⟩ := tridiagonalizeInv_run hA
   rw [bandClean_eq_tridiagonalPart] at hband
   refine ⟨Chapter05.householderProduct_mem_orthogonalGroup hβ,
-    fun h => householderProduct_mulVec_single fun q hq => ?_, ?_, ?_, hband, hlen, hsupp⟩
+    fun h => Chapter05.householderProduct_mulVec_single fun q hq => ?_, ?_, ?_, hband, hlen, hsupp⟩
   · obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hq
     exact hsupp k hk _ (Nat.zero_le _)
   · simpa [conjTranspose_eq_transpose_of_trivial] using isHermitian_iff_isSymm.1
@@ -1411,34 +1359,13 @@ section ImplicitQR
 
 open Chapter07 (francisWindow blockConj IsBlockSupported)
 
-/-- **The Hoare rule of a list loop in `Id`**, with the invariant indexed by the step count. -/
-theorem idRun_foldlM_induction {α β : Type} {f : β → α → Id β} :
-    ∀ (l : List α) (I : ℕ → β → Prop) (a : β), I 0 a →
-      (∀ (k : ℕ) (hk : k < l.length) (c : β), I k c → I (k + 1) (Id.run (f c l[k]))) →
-      I l.length (Id.run (l.foldlM f a))
-  | [], _, _, h0, _ => h0
-  | x :: l, I, a, h0, hs =>
-    idRun_foldlM_induction l (fun k c => I (k + 1) c) (Id.run (f a x))
-      (hs 0 (Nat.succ_pos _) a h0) fun k hk c hc => hs (k + 1) (Nat.succ_lt_succ hk) c hc
-
-/-- The length of the window `[p, m)`. -/
-private theorem length_francisWindow {p m : ℕ} (hm : m ≤ n) :
-    (francisWindow n p m).length = m - p := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp [francisWindow]
-    omega
-  · have : NeZero n := ⟨hn.ne'⟩
-    rw [Chapter07.francisWindow_eq_map hm, List.length_map, List.length_range]
-
-/-- The `k`-th index of the window `[p, m)` is `p + k`. -/
-private theorem val_getElem_francisWindow {p m : ℕ} (hm : m ≤ n) (k : ℕ)
-    (hk : k < (francisWindow n p m).length) : ((francisWindow n p m)[k] : ℕ) = p + k := by
-  have hk' := hk
-  rw [length_francisWindow hm] at hk'
-  have : NeZero n := ⟨by omega⟩
-  rw [List.getElem_of_eq (Chapter07.francisWindow_eq_map hm) hk]
-  simp only [List.getElem_map, List.getElem_range, Fin.val_ofNat]
-  exact Nat.mod_eq_of_lt (by omega)
+/-- **The Hoare rule of a list loop in `Id`**, with the invariant indexed by the step count:
+`List.idRun_foldlM_induction` with the step quantified over natural indices. -/
+theorem idRun_foldlM_induction {α β : Type} {f : β → α → Id β} (l : List α) (I : ℕ → β → Prop)
+    (a : β) (h0 : I 0 a)
+    (hs : ∀ (k : ℕ) (hk : k < l.length) (c : β), I k c → I (k + 1) (Id.run (f c l[k]))) :
+    I l.length (Id.run (l.foldlM f a)) :=
+  List.idRun_foldlM_induction I h0 fun i c hc => hs i i.2 c hc
 
 /-- A Givens rotation in two window indices acts on the window. -/
 private theorem isBlockSupported_givensRotation {p m : ℕ} {a b : Fin n}
@@ -1632,8 +1559,8 @@ private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
       (Id.run (((francisWindow n p m).zip (francisWindow n p m).tail).foldlM
         (implicitQRRotate pure (francisWindow n p m) x₀ z₀) (T, Q, none))) := by
   set w := francisWindow n p m with hwdef
-  have hlen : w.length = m - p := length_francisWindow hm
-  have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := val_getElem_francisWindow hm
+  have hlen : w.length = m - p := Chapter07.length_francisWindow hm
+  have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := Chapter07.val_getElem_francisWindow hm
   have hzlen : (w.zip w.tail).length = m - p - 1 := by simp [hlen]
   rw [← hzlen]
   refine idRun_foldlM_induction _ _ _ ⟨1, one_mem _, Chapter07.isBlockSupported_one p m, ?_,
@@ -1688,12 +1615,6 @@ private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
       rw [← mulVec_mulVec, givensRotation_mulVec_single_of_ne hab
         (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
 
-/-- A list of at least two elements has two heads. -/
-theorem exists_cons_cons {α : Type} :
-    ∀ l : List α, 2 ≤ l.length → ∃ a b t, l = a :: b :: t
-  | a :: b :: t, _ => ⟨a, b, t, rfl⟩
-  | [], h => absurd h (by simp)
-  | [_], h => absurd h (by simp)
 
 /-- The exact Wilkinson shift of Algorithm 8.3.2 is the book's closed form
 `a - b² / (d + sign(d) √(d² + b²))`. -/
@@ -1749,10 +1670,11 @@ theorem algorithm_8_3_2_window {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
           Chapter05.givensRotation ⟨p, by omega⟩ ⟨p + 1, by omega⟩ c₀ s₀ *ᵥ
             Pi.single ⟨p, by omega⟩ 1 := by
   intro out μ
-  have hlen : (francisWindow n p m).length = m - p := length_francisWindow hm
+  have hlen : (francisWindow n p m).length = m - p := Chapter07.length_francisWindow hm
   have hval : ∀ k (hk : k < (francisWindow n p m).length),
-      ((francisWindow n p m)[k] : ℕ) = p + k := val_getElem_francisWindow hm
-  obtain ⟨f₀, f₁, rest, hw⟩ := exists_cons_cons (francisWindow n p m) (by omega)
+      ((francisWindow n p m)[k] : ℕ) = p + k := Chapter07.val_getElem_francisWindow hm
+  obtain ⟨f₀, f₁, rest, hw⟩ :=
+    List.exists_cons_cons_of_two_le_length (l := francisWindow n p m) (by omega)
   have hf₀ : (f₀ : ℕ) = p := by
     have h := hval 0 (by omega)
     rwa [List.getElem_of_eq hw, List.getElem_cons_zero] at h
@@ -1976,7 +1898,7 @@ has changed, so the pass zeroes exactly the small couplings of its input. -/
 theorem deflate_pure (tol : ℝ) (D : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (deflate pure tol D) = deflated tol D := by
   unfold deflate deflated
-  refine idRun_foldlM_finRange_induction (fun k D' => D' = deflateStage tol D k) ?_ ?_
+  refine List.idRun_foldlM_finRange_induction (fun k D' => D' = deflateStage tol D k) ?_ ?_
   · ext r s
     simp only [deflateStage, of_apply]
     rw [ite_eq_right (fun ⟨a, ha, _⟩ => absurd ha (Nat.not_lt_zero a))]
@@ -2117,48 +2039,6 @@ theorem lastRunWindow_spec {nz : ℕ → Prop} [DecidablePred nz] (hnz : ∀ i, 
         omega
       · simpa using hqm.2
 
-/-- A block similarity of a matrix decoupled from the rest along the block is the similarity. -/
-theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
-    (hZ : IsBlockSupported p m Z)
-    (hX : ∀ i j : Fin n, (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) →
-      X i j = 0 ∧ X j i = 0) :
-    blockConj p m Z X = Zᵀ * X * Z := by
-  have hZo : ∀ k l : Fin n, ¬ (p ≤ (k : ℕ) ∧ (k : ℕ) < m) ∨ ¬ (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
-      Z k l = if k = l then 1 else 0 := fun k l h => by
-    rw [hZ k l (fun h' => h.elim (fun h1 => h1 h'.1) (fun h2 => h2 h'.2)), one_apply]
-  ext i j
-  simp only [Chapter07.blockConj, of_apply]
-  split_ifs with hin
-  · rfl
-  by_cases hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m
-  · have hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) := fun hj => hin ⟨hi, hj⟩
-    rw [Matrix.mul_assoc, mul_apply, Finset.sum_eq_zero, (hX i j hi hj).1]
-    intro k _
-    rw [transpose_apply, mul_apply, Finset.sum_eq_single j]
-    · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
-      by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
-      · rw [(hX k j hk hj).1, mul_zero]
-      · rw [hZo k i (Or.inl hk), ite_eq_right (fun e : k = i => hk (e ▸ hi)), zero_mul]
-    · intro l _ hlj
-      rw [hZo l j (Or.inr hj), ite_eq_right hlj, mul_zero]
-    · simp
-  · have hrow : ∀ l, (Zᵀ * X) i l = X i l := fun l => by
-      rw [mul_apply, Finset.sum_eq_single i]
-      · rw [transpose_apply, hZo i i (Or.inl hi), ite_eq_left rfl, one_mul]
-      · intro k _ hki
-        rw [transpose_apply, hZo k i (Or.inr hi), ite_eq_right hki, zero_mul]
-      · simp
-    rw [mul_apply]
-    simp only [hrow]
-    rw [Finset.sum_eq_single j]
-    · by_cases hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m
-      · rw [(hX j i hj hi).2, zero_mul]
-      · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
-    · intro l _ hlj
-      by_cases hl : p ≤ (l : ℕ) ∧ (l : ℕ) < m
-      · rw [(hX l i hl hi).2, zero_mul]
-      · rw [hZo l j (Or.inl hl), ite_eq_right hlj, mul_zero]
-    · simp
 
 section Frobenius
 
@@ -2370,12 +2250,6 @@ private theorem isTridiagonal_deflated {tol : ℝ} {D : Matrix (Fin n) (Fin n) �
   rw [deflated_apply_of_not h]
   exact hD i j hij
 
-/-- The Hoare rule of a loop in `Id` with an invariant independent of the step. -/
-private theorem idRun_foldlM_inv {α β : Type} {f : β → α → Id β} (P : β → Prop)
-    (hf : ∀ c x, P c → P (Id.run (f c x))) : ∀ (l : List α) (a : β), P a →
-      P (Id.run (l.foldlM f a))
-  | [], _, h => h
-  | x :: l, a, h => idRun_foldlM_inv P hf l (Id.run (f a x)) (hf a x h)
 
 section Frobenius
 
@@ -2527,7 +2401,7 @@ private theorem symmetricQRPass_inv {A : Matrix (Fin n) (Fin n) ℝ} {tol κ : �
       · exact absurd ⟨hl ▸ hi.1, hl ▸ hi.2⟩ hj
       · exact hD₁t i j (Or.inl ⟨⟨j + 1, by omega⟩, Fin.lt_def.2 (by simp),
           Fin.lt_def.2 (by simp; omega)⟩)
-    have hconj := blockConj_eq_of_decoupled hZb hdec
+    have hconj := Chapter07.blockConj_eq_of_decoupled hZb hdec
     -- the zero couplings survive
     have hzero : (zeroCouplings D₁).card ≤
         (zeroCouplings (Id.run (algorithm_8_3_2 pure (Chapter07.francisWindow n p (e + 2))
@@ -2592,8 +2466,8 @@ theorem algorithm_8_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {t
     · rw [norm_zero]
       exact mul_nonneg hκ0 (Nat.cast_nonneg _)
   have key : SymmetricQRInv A tol κ out :=
-    idRun_foldlM_inv (SymmetricQRInv A tol κ) (fun st _ h => symmetricQRPass_inv htol hκ0 h)
-      (List.range fuel) _ h0
+    List.idRun_foldlM_induction (l := List.range fuel) (fun _ st => SymmetricQRInv A tol κ st) h0
+      fun _ _ h => symmetricQRPass_inv htol hκ0 h
   obtain ⟨hQ, hDs, hDt, ⟨F, hFs, hF, hFn⟩, hdone⟩ := key
   refine ⟨hQ, hDs, hDt, ⟨F, hFs, hF, fun hc1 => ?_⟩, hdone⟩
   have hκ : κ = 4 * tol * ‖A‖ / (1 - c) := by rw [hκdef, ite_eq_left hc1]

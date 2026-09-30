@@ -530,25 +530,6 @@ private theorem rayCrossingMatrix_mulVec_eq_iff (θ r ε : ℝ) (A : Matrix m m 
       linear_combination (norm := module) h2 + (Complex.I * r * hcc) • g
     rw [e1, e2]
 
-/-- If `Bᴴ B g = s² g` for some `g ≠ 0` and `s ≥ 0`, then `s` is a singular value of `B`. -/
-private theorem exists_colSingularValues_eq_of_mulVec {B : Matrix m m ℂ} {g : m → ℂ} (hg : g ≠ 0)
-    {s : ℝ} (hs : 0 ≤ s) (h : (Bᴴ * B) *ᵥ g = ((s : ℂ) ^ 2) • g) :
-    ∃ i, B.colSingularValues i = s := by
-  have hspec : ((s ^ 2 : ℝ) : ℂ) ∈ spectrum ℂ (Bᴴ * B) := by
-    rw [← Matrix.spectrum_toLin']
-    apply Module.End.HasEigenvalue.mem_spectrum
-    apply Module.End.hasEigenvalue_of_hasEigenvector (x := g)
-    refine ⟨Module.End.mem_eigenspace_iff.2 ?_, hg⟩
-    rw [toLin'_apply, h]
-    push_cast
-    rfl
-  rw [(isHermitian_conjTranspose_mul_self B).spectrum_eq_image_range] at hspec
-  obtain ⟨_, ⟨i, rfl⟩, hi⟩ := hspec
-  have he : (isHermitian_conjTranspose_mul_self B).eigenvalues i = s ^ 2 :=
-    Complex.ofReal_injective hi
-  refine ⟨i, (sq_eq_sq₀ (colSingularValues_nonneg _ _) hs).1 ?_⟩
-  rw [sq_colSingularValues, he]
-
 /-- **(7.9.10)**: "if `i · r` is an eigenvalue of the matrix `M`, then `ε` is a singular value of
 `A - r e^{iθ} I`. To see this, observe that if `M [f; g] = i · r [f; g]`, then
 `(A - r e^{iθ} I)ᴴ (A - r e^{iθ} I) g = ε² g`" — the Gram identity holds for every eigenvector
@@ -585,7 +566,7 @@ theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
       refine hv0 ?_
       rw [hg, h2.resolve_left (by exact_mod_cast hε.ne')]
       ext (i | i) <;> rfl
-    exact exists_colSingularValues_eq_of_mulVec hg hε.le (hgram _ _ hv)
+    exact Matrix.exists_colSingularValues_eq_of_mulVec _ hg hε.le (hgram _ _ hv)
   · rintro ⟨i, hi⟩
     set B := A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1 with hB
     obtain ⟨g, hg0, hgB⟩ : ∃ g : m → ℂ, g ≠ 0 ∧ Bᴴ *ᵥ (B *ᵥ g) = ((ε : ℂ) ^ 2) • g := by

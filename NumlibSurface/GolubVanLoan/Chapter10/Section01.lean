@@ -535,26 +535,6 @@ theorem golub_rankOne_modification {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
     have := congrArg (Qᵀ *ᵥ ·) h
     simpa only [mulVec_mulVec, hQ, one_mulVec, mulVec_zero] using this
 
-/-- An eigenvector gives a point of the spectrum: `M v = θ v`, `v ≠ 0` ⟹ `θ ∈ σ(M)`. -/
-private theorem mem_spectrum_of_mulVec_eq_smul {m : ℕ} {M : Matrix (Fin m) (Fin m) ℝ}
-    {v : Fin m → ℝ} {θ : ℝ} (hv : v ≠ 0) (h : M *ᵥ v = θ • v) : θ ∈ spectrum ℝ M := by
-  rw [spectrum.mem_iff, ← Matrix.mulVec_injective_iff_isUnit]
-  intro hinj
-  refine hv (hinj ?_)
-  rw [Matrix.mulVec_zero, Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
-    Matrix.one_mulVec, h, sub_self]
-
-/-- A point of the spectrum has an eigenvector: `θ ∈ σ(M)` ⟹ `M v = θ v` for some `v ≠ 0`. -/
-private theorem exists_mulVec_eq_smul_of_mem_spectrum {m : ℕ} {M : Matrix (Fin m) (Fin m) ℝ}
-    {θ : ℝ} (h : θ ∈ spectrum ℝ M) : ∃ v ≠ 0, M *ᵥ v = θ • v := by
-  rw [spectrum.mem_iff, Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
-    ← Matrix.exists_mulVec_eq_zero_iff] at h
-  obtain ⟨v, hv, hMv⟩ := h
-  refine ⟨v, hv, ?_⟩
-  rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
-    sub_eq_zero] at hMv
-  exact hMv.symm
-
 /-- The diagonal of Golub's modified tridiagonal matrix `T_k + c e_k e_kᵀ`: the Lanczos `α_j`, with
 `c` added to the last one (`0`-based index `k − 1`). -/
 private noncomputable def rankOneDiag (A : Matrix (Fin n) (Fin n) ℝ)
@@ -633,9 +613,9 @@ theorem golub_rankOne_bracket {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
         ∃ p, Chapter08.symmEigenvalue hB p = Chapter08.symmEigenvalue hT j := by
       intro j
       obtain ⟨y, hy0, hy⟩ :=
-        exists_mulVec_eq_smul_of_mem_spectrum (Chapter08.symmEigenvalue_mem_spectrum hT j)
+        (mem_spectrum_iff_exists_mulVec_eq_smul _ _).1 (Chapter08.symmEigenvalue_mem_spectrum hT j)
       obtain ⟨h1, h2⟩ := heig hab _ y hy0 hy
-      have hmem := mem_spectrum_of_mulVec_eq_smul h2 h1
+      have hmem := (mem_spectrum_iff_exists_mulVec_eq_smul _ _).2 ⟨_, h2, h1⟩
       rw [Chapter08.spectrum_eq_range_symmEigenvalue hB] at hmem
       exact hmem
     obtain ⟨p, hp⟩ := hμ ⟨i - 1, by omega⟩

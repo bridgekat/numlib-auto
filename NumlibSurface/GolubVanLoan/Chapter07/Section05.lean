@@ -58,7 +58,10 @@ open GolubVanLoan.Chapter05 (houseOn houseOn_spec householderApplyLeft household
   householderProduct_cons householderProduct_nil householderProduct_mem_orthogonalGroup
   backwardAccumulation algorithm_5_1_3 algorithm_5_1_3_spec givensRotation
   givensRotation_mem_orthogonalGroup givensRotation_transpose_mulVec_apply givensApplyLeft
-  givensApplyRight givensApplyLeft_spec givensApplyRight_spec givensApplyRight_spec_of_forall_mem)
+  givensApplyRight givensApplyLeft_spec givensApplyRight_spec givensApplyRight_spec_of_forall_mem
+  mul_one_sub_smul_vecMulVec_apply one_sub_smul_vecMulVec_mul_apply_of_notMem
+  one_sub_smul_vecMulVec_mul_apply_of_forall householderProduct_mulVec_single
+  one_sub_smul_vecMulVec_mul_self_of_mem)
 
 namespace GolubVanLoan.Chapter07
 
@@ -588,68 +591,6 @@ theorem getElem_francisTriples : ∀ (w : List α) (k : ℕ) (hk : k < (francisT
 
 end Triples
 
-/-! ### Reflector algebra -/
-
-section Reflector
-
-variable {v : Fin n → ℝ} {β : ℝ} {S : Fin n → Prop}
-
-/-- An entry of `(I - β v vᵀ) H`. -/
-private theorem one_sub_smul_vecMulVec_mul_apply (β : ℝ) (v : Fin n → ℝ)
-    (H : Matrix (Fin n) (Fin n) ℝ)
-    (i j : Fin n) :
-    ((1 - β • vecMulVec v v) * H) i j = H i j - β * v i * ∑ r, v r * H r j := by
-  have hPA : ((1 - β • vecMulVec v v) * H) i j = ((1 - β • vecMulVec v v) *ᵥ fun r => H r j) i :=
-    rfl
-  rw [hPA, one_sub_smul_vecMulVec_mulVec_apply]
-  rfl
-
-/-- An entry of `H (I - β v vᵀ)`. -/
-private theorem mul_one_sub_smul_vecMulVec_apply (β : ℝ) (v : Fin n → ℝ)
-    (H : Matrix (Fin n) (Fin n) ℝ)
-    (i j : Fin n) :
-    (H * (1 - β • vecMulVec v v)) i j = H i j - β * (∑ r, H i r * v r) * v j := by
-  have hAP : (H * (1 - β • vecMulVec v v)) i j = ((1 - β • vecMulVec v v) *ᵥ H i) j := by
-    conv_rhs => rw [← transpose_one_sub_smul_vecMulVec β v, mulVec_transpose]
-    rfl
-  rw [hAP, one_sub_smul_vecMulVec_mulVec_apply, dotProduct,
-    Finset.sum_congr rfl fun r _ => mul_comm (v r) (H i r)]
-  ring
-
-/-- A column vanishing on the support of `v` is fixed by `I - β v vᵀ`. -/
-private theorem one_sub_smul_vecMulVec_mul_apply_of_forall (hv : ∀ i, ¬ S i → v i = 0)
-    {H : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} (hH : ∀ r, S r → H r j = 0) (i : Fin n) :
-    ((1 - β • vecMulVec v v) * H) i j = H i j := by
-  rw [one_sub_smul_vecMulVec_mul_apply, Finset.sum_eq_zero, mul_zero, sub_zero]
-  intro r _
-  by_cases hr : S r
-  · rw [hH r hr, mul_zero]
-  · rw [hv r hr, zero_mul]
-
-/-- A row vanishing on the support of `v` is fixed by `I - β v vᵀ` on the right. -/
-private theorem mul_one_sub_smul_vecMulVec_apply_of_forall (hv : ∀ i, ¬ S i → v i = 0)
-    {H : Matrix (Fin n) (Fin n) ℝ} {i : Fin n} (hH : ∀ r, S r → H i r = 0) (j : Fin n) :
-    (H * (1 - β • vecMulVec v v)) i j = H i j := by
-  rw [mul_one_sub_smul_vecMulVec_apply, Finset.sum_eq_zero, mul_zero, zero_mul, sub_zero]
-  intro r _
-  by_cases hr : S r
-  · rw [hH r hr, zero_mul]
-  · rw [hv r hr, mul_zero]
-
-/-- `(I - β v vᵀ) H` agrees with `H` off the support of `v`. -/
-private theorem one_sub_smul_vecMulVec_mul_apply_of_notMem (hv : ∀ i, ¬ S i → v i = 0)
-    (H : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (hi : ¬ S i) (j : Fin n) :
-    ((1 - β • vecMulVec v v) * H) i j = H i j := by
-  rw [one_sub_smul_vecMulVec_mul_apply, hv i hi, mul_zero, zero_mul, sub_zero]
-
-/-- `H (I - β v vᵀ)` agrees with `H` off the support of `v`. -/
-private theorem mul_one_sub_smul_vecMulVec_apply_of_notMem (hv : ∀ i, ¬ S i → v i = 0)
-    (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) {j : Fin n} (hj : ¬ S j) :
-    (H * (1 - β • vecMulVec v v)) i j = H i j := by
-  rw [mul_one_sub_smul_vecMulVec_apply, hv j hj, mul_zero, sub_zero]
-
-end Reflector
-
 /-! ### Windows and block similarities -/
 
 section Window
@@ -699,6 +640,25 @@ theorem francisWindow_eq_map [NeZero n] {p m : ℕ} (hm : m ≤ n) :
       have := congrArg Fin.val hab
       rw [hmap a ha, hmap b hb] at this
       omega
+
+/-- The length of the window `[p, m)`. -/
+theorem length_francisWindow {p m : ℕ} (hm : m ≤ n) :
+    (francisWindow n p m).length = m - p := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [francisWindow]
+    omega
+  · have : NeZero n := ⟨hn.ne'⟩
+    rw [francisWindow_eq_map hm, List.length_map, List.length_range]
+
+/-- The `k`-th index of the window `[p, m)` is `p + k`. -/
+theorem val_getElem_francisWindow {p m : ℕ} (hm : m ≤ n) (k : ℕ)
+    (hk : k < (francisWindow n p m).length) : ((francisWindow n p m)[k] : ℕ) = p + k := by
+  have hk' := hk
+  rw [length_francisWindow hm] at hk'
+  have : NeZero n := ⟨by omega⟩
+  rw [List.getElem_of_eq (francisWindow_eq_map hm) hk]
+  simp only [List.getElem_map, List.getElem_range, Fin.val_ofNat]
+  exact Nat.mod_eq_of_lt (by omega)
 
 /-- The triple `(k, k+1, k+2)` of `Fin n`. -/
 def francisTri (n : ℕ) [NeZero n] (k : ℕ) : Fin n × Fin n × Fin n :=
@@ -806,6 +766,49 @@ theorem blockConj_blockConj {p m : ℕ} {Z P : Matrix (Fin n) (Fin n) ℝ}
     simp only [Matrix.mul_assoc]
   · rfl
 
+/-- A block similarity of a matrix decoupled from the rest along the block is the similarity. -/
+theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
+    (hZ : IsBlockSupported p m Z)
+    (hX : ∀ i j : Fin n, (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) →
+      X i j = 0 ∧ X j i = 0) :
+    blockConj p m Z X = Zᵀ * X * Z := by
+  have hZo : ∀ k l : Fin n, ¬ (p ≤ (k : ℕ) ∧ (k : ℕ) < m) ∨ ¬ (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
+      Z k l = if k = l then 1 else 0 := fun k l h => by
+    rw [hZ k l (fun h' => h.elim (fun h1 => h1 h'.1) (fun h2 => h2 h'.2)), one_apply]
+  ext i j
+  simp only [blockConj, of_apply]
+  split_ifs with hin
+  · rfl
+  by_cases hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m
+  · have hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) := fun hj => hin ⟨hi, hj⟩
+    rw [Matrix.mul_assoc, mul_apply, Finset.sum_eq_zero, (hX i j hi hj).1]
+    intro k _
+    rw [transpose_apply, mul_apply, Finset.sum_eq_single j]
+    · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
+      by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
+      · rw [(hX k j hk hj).1, mul_zero]
+      · rw [hZo k i (Or.inl hk), ite_eq_right (fun e : k = i => hk (e ▸ hi)), zero_mul]
+    · intro l _ hlj
+      rw [hZo l j (Or.inr hj), ite_eq_right hlj, mul_zero]
+    · simp
+  · have hrow : ∀ l, (Zᵀ * X) i l = X i l := fun l => by
+      rw [mul_apply, Finset.sum_eq_single i]
+      · rw [transpose_apply, hZo i i (Or.inl hi), ite_eq_left rfl, one_mul]
+      · intro k _ hki
+        rw [transpose_apply, hZo k i (Or.inr hi), ite_eq_right hki, zero_mul]
+      · simp
+    rw [mul_apply]
+    simp only [hrow]
+    rw [Finset.sum_eq_single j]
+    · by_cases hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m
+      · rw [(hX j i hj hi).2, zero_mul]
+      · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
+    · intro l _ hlj
+      by_cases hl : p ≤ (l : ℕ) ∧ (l : ℕ) < m
+      · rw [(hX l i hl hi).2, zero_mul]
+      · rw [hZo l j (Or.inl hl), ite_eq_right hlj, mul_zero]
+    · simp
+
 end Window
 
 /-! ### The bulge-chasing invariant -/
@@ -853,12 +856,12 @@ theorem IsFrancisBulge.conj {p m a : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
   split_ifs with hin
   swap
   · exact hB i j hij (by omega)
-  rw [transpose_one_sub_smul_vecMulVec, mul_one_sub_smul_vecMulVec_apply]
+  rw [transpose_one_sub_smul_vecMulVec, mul_one_sub_smul_vecMulVec_apply, dotProduct]
   by_cases hj : a ≤ (j : ℕ) ∧ (j : ℕ) ≤ a + 2
   · -- a column of the active block: row `i ≥ a + 4` is outside the block and vanishes on it
     have hi : a + 3 < (i : ℕ) := by omega
     have hrow : ∀ r : Fin n, ((1 - β • vecMulVec v v) * H) i r = H i r := fun r =>
-      one_sub_smul_vecMulVec_mul_apply_of_notMem hv' H (by omega) r
+      one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H (by omega) r
     have hHi : ∀ r : Fin n, (r : ℕ) ≤ a + 2 → H i r = 0 := fun r hr =>
       hB i r (by omega) (by omega)
     rw [hrow, hHi j hj.2, Finset.sum_eq_zero, mul_zero, zero_mul, sub_zero]
@@ -871,12 +874,12 @@ theorem IsFrancisBulge.conj {p m a : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
     by_cases hi : a ≤ (i : ℕ) ∧ (i : ℕ) ≤ a + 2
     · -- a row of the active block: `j < a`
       rcases Nat.lt_or_ge ((j : ℕ) + 1) a with hja | hja
-      · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' (fun r hr => hB r j (by omega)
+      · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' _ _ (fun r hr => hB r j (by omega)
           (by omega))]
         exact hB i j hij (by omega)
       · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec (hu j hin.2.1 (by omega))]
         exact hPu i (by omega) hi.2
-    · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' H hi]
+    · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H hi]
       exact hB i j hij (by omega)
 
 /-- **The last step of Algorithm 7.5.1 restores Hessenberg form**, on the window `[p, a + 3)`: if
@@ -905,12 +908,12 @@ theorem IsFrancisBulge.conj_last {p m a : ℕ} (ham : a + 3 = m)
     mul_zero, sub_zero]
   by_cases hi : a + 1 ≤ (i : ℕ) ∧ (i : ℕ) ≤ a + 2
   · rcases Nat.lt_or_ge (j : ℕ) a with hja | hja
-    · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' (fun r hr => hB r j (by omega)
+    · rw [one_sub_smul_vecMulVec_mul_apply_of_forall hv' _ _ (fun r hr => hB r j (by omega)
         (by omega))]
       exact hB i j hij (by omega)
     · rw [one_sub_smul_vecMulVec_mul_apply_eq_mulVec (hu j (by omega))]
       exact hPu i (by omega)
-  · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' H hi]
+  · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H hi]
     exact hB i j hij (by omega)
 
 end Bulge
@@ -954,14 +957,14 @@ theorem francisReflect_window {p m : ℕ} {o : List (Fin n)} (ho : o.Nodup) (hne
     · simp only [hqc, ↓reduceIte]
     · have hC : ¬ C q := fun h => hqc ((hcm q).2 ⟨hq, h⟩)
       simp only [hqc, ↓reduceIte]
-      exact (one_sub_smul_vecMulVec_mul_apply_of_forall hv (fun k hk =>
+      exact (one_sub_smul_vecMulVec_mul_apply_of_forall hv _ _ (fun k hk =>
         hc q hq.1 hq.2 hC k hk) i).symm
   have hLout : ∀ i q : Fin n, ¬ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) → L i q = H i q := by
     intro i q hq
     have hqc : q ∉ cols := fun h => hq ((hcm q).1 h).1
     rw [hL, of_apply]
     simp only [hqc, ↓reduceIte]
-  have hsum : ∀ r : Fin n, ∑ k, L r k * v k = ∑ k, ((1 - β • vecMulVec v v) * H) r k * v k :=
+  have hsum : ∀ r : Fin n, L r ⬝ᵥ v = ((1 - β • vecMulVec v v) * H) r ⬝ᵥ v :=
     fun r => Finset.sum_congr rfl fun k _ => by
       by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
       · rw [hLin r k hk]
@@ -981,10 +984,10 @@ theorem francisReflect_window {p m : ℕ} {o : List (Fin n)} (ho : o.Nodup) (hne
       · have hrr : r ∉ rows := fun h => hrR ((hrm r).1 h).2
         have hro : r ∉ o := fun h => hrR (hoin r h).2.2
         simp only [hrr, ↓reduceIte]
-        rw [hLin r c hcB, mul_one_sub_smul_vecMulVec_apply, Finset.sum_eq_zero, mul_zero,
-          zero_mul, sub_zero]
+        rw [hLin r c hcB, mul_one_sub_smul_vecMulVec_apply, dotProduct, Finset.sum_eq_zero,
+          mul_zero, zero_mul, sub_zero]
         intro k _
-        rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv H hro]
+        rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv _ H hro]
         by_cases hk : k ∈ o
         · rw [hr r hrB.1 hrB.2 hrR k hk, zero_mul]
         · rw [hv k hk, mul_zero]
@@ -999,7 +1002,7 @@ theorem francisReflect_window {p m : ℕ} {o : List (Fin n)} (ho : o.Nodup) (hne
     have hrr : r ∉ rows := fun h => hrB ((hrm r).1 h).1
     simp only [hcond, hrr, ↓reduceIte]
     by_cases hcB : p ≤ (c : ℕ) ∧ (c : ℕ) < m
-    · rw [hLin r c hcB, one_sub_smul_vecMulVec_mul_apply_of_notMem hv H
+    · rw [hLin r c hcB, one_sub_smul_vecMulVec_mul_apply_of_notMem hv _ H
         (fun h => hrB (hoin r h).1)]
     · exact hLout r c hcB
 
@@ -1322,30 +1325,6 @@ end FrancisWindow
 section FrancisTheorem
 
 variable {N : ℕ}
-
-/-- A reflector `I - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
-theorem one_sub_smul_vecMulVec_mulVec_single {v : Fin n → ℝ} {p : Fin n} (hv : v p = 0)
-    (β : ℝ) : (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
-  funext i
-  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
-
-/-- A product of reflectors whose vectors vanish at `p` fixes `e_p`. -/
-theorem householderProduct_mulVec_single {data : List ((Fin n → ℝ) × ℝ)} {p : Fin n}
-    (h : ∀ q ∈ data, q.1 p = 0) :
-    householderProduct data *ᵥ Pi.single p 1 = Pi.single p 1 := by
-  induction data with
-  | nil => rw [householderProduct_nil, one_mulVec]
-  | cons q data ih =>
-    rw [householderProduct_cons, ← mulVec_mulVec,
-      ih fun r hr => h r (List.mem_cons_of_mem _ hr),
-      one_sub_smul_vecMulVec_mulVec_single (h q List.mem_cons_self)]
-
-/-- A Householder reflector is symmetric, so an orthogonal one is an involution. -/
-theorem one_sub_smul_vecMulVec_mul_self_of_mem {v : Fin n → ℝ} {β : ℝ}
-    (h : (1 - β • vecMulVec v v) ∈ orthogonalGroup (Fin n) ℝ) :
-    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) = 1 := by
-  have h1 := (mem_orthogonalGroup_iff' (Fin n) ℝ).1 h
-  rwa [transpose_one_sub_smul_vecMulVec] at h1
 
 /-- The exact first column of `francisShiftVector`. -/
 theorem francisShiftVector_pure (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) ℝ) :
@@ -1965,76 +1944,16 @@ theorem unreducedStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
       · exact c k h₁ (by omega)
 
 /-- No two consecutive subdiagonal entries of `H` are nonzero: together with the Hessenberg form,
-upper quasi-triangular (`isQuasiUpperTriangular_of_subdiagZero`). -/
+upper quasi-triangular (`isQuasiUpperTriangular_of_noTwoSubdiag`). -/
 def NoTwoSubdiag (H : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i, 0 < i → SubdiagZero H i ∨ SubdiagZero H (i + 1)
 
-/-- The block index of an upper Hessenberg matrix: the number of zero subdiagonal entries above
-the rows `1, …, i`. -/
-private noncomputable def subdiagBlock (H : Matrix (Fin n) (Fin n) ℝ) : ℕ → ℕ
-  | 0 => 0
-  | i + 1 => subdiagBlock H i + if SubdiagZero H (i + 1) then 1 else 0
-
-private theorem monotone_subdiagBlock (H : Matrix (Fin n) (Fin n) ℝ) :
-    Monotone (subdiagBlock H) :=
-  monotone_nat_of_le_succ fun i => by simp only [subdiagBlock]; omega
-
-/-- Between two rows with the same block index, every subdiagonal entry is nonzero. -/
-private theorem not_subdiagZero_of_subdiagBlock_eq (H : Matrix (Fin n) (Fin n) ℝ) {y x k : ℕ}
-    (hyx : subdiagBlock H y = subdiagBlock H x) (hyk : y < k) (hkx : k ≤ x) :
-    ¬ SubdiagZero H k := by
-  intro hk
-  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
-  have h1 := monotone_subdiagBlock H (show y ≤ k by omega)
-  have h2 := monotone_subdiagBlock H hkx
-  have h3 : subdiagBlock H (k + 1) = subdiagBlock H k + 1 := by
-    simp only [subdiagBlock, hk, ↓reduceIte]
-  omega
-
 /-- **A Hessenberg matrix with no two consecutive nonzero subdiagonal entries is upper
-quasi-triangular**, with the block index counting the zero subdiagonal entries. -/
+quasi-triangular** (`Matrix.isQuasiUpperTriangular_iff_fin`). -/
 theorem isQuasiUpperTriangular_of_noTwoSubdiag {H : Matrix (Fin n) (Fin n) ℝ}
-    (hH : H.IsUpperHessenberg) (h2 : NoTwoSubdiag H) : H.IsQuasiUpperTriangular := by
-  rw [isUpperHessenberg_iff_fin] at hH
-  have hclose : ∀ x y : Fin n, subdiagBlock H x = subdiagBlock H y → (x : ℕ) ≤ y + 1 := by
-    intro x y hxy
-    by_contra hc
-    rcases h2 ((y : ℕ) + 1) (by omega) with h | h
-    · exact not_subdiagZero_of_subdiagBlock_eq H (x := x) (y := y) hxy.symm (by omega)
-        (by omega) h
-    · exact not_subdiagZero_of_subdiagBlock_eq H (x := x) (y := y) hxy.symm (by omega)
-        (by omega) h
-  refine ⟨fun i => subdiagBlock H i, fun a b hab => monotone_subdiagBlock H hab, fun k => ?_,
-    fun i j hij => ?_⟩
-  · by_contra hc
-    obtain ⟨a, ha, b, hb, c, hc', hab, hac, hbc⟩ := Finset.two_lt_card.1 (not_le.1 hc)
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha hb hc'
-    have e1 := hclose a b (ha.trans hb.symm)
-    have e2 := hclose b a (hb.trans ha.symm)
-    have e3 := hclose a c (ha.trans hc'.symm)
-    have e4 := hclose c a (hc'.trans ha.symm)
-    have e5 := hclose b c (hb.trans hc'.symm)
-    have e6 := hclose c b (hc'.trans hb.symm)
-    have n1 : (a : ℕ) ≠ b := fun h => hab (Fin.ext h)
-    have n2 : (a : ℕ) ≠ c := fun h => hac (Fin.ext h)
-    have n3 : (b : ℕ) ≠ c := fun h => hbc (Fin.ext h)
-    omega
-  · simp only at hij
-    by_cases hji : (j : ℕ) + 1 < i
-    · exact hH i j hji
-    · have hle : (j : ℕ) < i := by
-        by_contra hc
-        exact absurd (monotone_subdiagBlock H (show (i : ℕ) ≤ j by omega)) (not_le.2 hij)
-      obtain ⟨i', hi'⟩ : ∃ i', (i : ℕ) = i' + 1 := ⟨(i : ℕ) - 1, by omega⟩
-      have hj : (j : ℕ) = i' := by omega
-      have hs : SubdiagZero H (i' + 1) := by
-        by_contra hs
-        have : subdiagBlock H (i' + 1) = subdiagBlock H i' := by
-          simp only [subdiagBlock, hs, ↓reduceIte, add_zero]
-        rw [hi', hj] at hij
-        omega
-      have := hs (by omega) (by omega)
-      convert this using 2 <;> exact Fin.ext (by simp; omega)
+    (hH : H.IsUpperHessenberg) (h2 : NoTwoSubdiag H) : H.IsQuasiUpperTriangular :=
+  isQuasiUpperTriangular_iff_fin.2 ⟨hH, fun i hi => (h2 (i + 1) (by omega)).imp
+    (fun h => h (by omega) (by omega)) (fun h => h hi (by omega))⟩
 
 /-! ### Algorithm 7.5.2: the deflation -/
 

@@ -274,10 +274,6 @@ section Termination
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The leading and trailing indices together: `Fin k ⊕ Fin (N - k) ≃ Fin N`. -/
-private def blockEquiv {N k : ℕ} (h : k ≤ N) : Fin k ⊕ Fin (N - k) ≃ Fin N :=
-  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
-
 /-- A block upper triangular `R = [R₁₁ R₁₂; 0 R₂₂]` whose leading block row has `k` rows has
 `σ_{k+1}(R) ≤ ‖R₂₂‖₂` (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`, reindexed). -/
 private theorem sortedSingularValues_le_trailing {R : Matrix (Fin m) (Fin n) ℝ} {k : ℕ}
@@ -298,21 +294,6 @@ private theorem sortedSingularValues_le_trailing {R : Matrix (Fin m) (Fin n) ℝ
     (R.submatrix (Fin.castLE hkm) (tailIdx hkn)) (R.submatrix (tailIdx hkm) (tailIdx hkn))
   rwa [← hblk, sortedSingularValues_submatrix_equiv, Fintype.card_fin] at this
 
-/-- An orthogonal factor on the left and a permutation of the columns do not change the singular
-values: if `Q R = X Π` with `Q` orthogonal, then `σ(R) = σ(X)`. -/
-private theorem sortedSingularValues_eq_of_mul_eq {X R : Matrix (Fin m) (Fin n) ℝ}
-    {Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) {π : Equiv.Perm (Fin n)}
-    (h : Q * R = X.submatrix id π) : R.sortedSingularValues = X.sortedSingularValues := by
-  rw [← sortedSingularValues_submatrix_equiv X (Equiv.refl _) π, Equiv.coe_refl, ← h]
-  have hnorm : ∀ x, ‖toEuclideanLin R x‖ = ‖toEuclideanLin (Q * R) x‖ := fun x => by
-    have := (unitaryLinearIsometryEquiv hQ).norm_map (toEuclideanLin R x)
-    rw [unitaryLinearIsometryEquiv_apply] at this
-    rw [← this, toEuclideanLin_apply, toEuclideanLin_apply, toEuclideanLin_apply, ofLp_toLp,
-      mulVec_mulVec]
-  have := LinearMap.singularValues_eq_of_forall_norm_eq _ hnorm
-  funext i
-  exact DFunLike.congr_fun this i
-
 /-- **§5.4.3, the termination criterion of QR with column pivoting**: "`R̂^{(k)}` is the exact
 R-factor of a matrix `A + E_k`" — `Q R̂^{(k)} = (A + E_k) Π` with `Q` orthogonal and
 `R̂^{(k)} = [R̂₁₁ R̂₁₂; 0 R̂₂₂]` (leading block `k × k`) — "where `‖E_k‖₂ ≤ ε₂ ‖A‖₂`"; if the
@@ -330,7 +311,8 @@ theorem sigma_succ_le_of_colPivot {A E R : Matrix (Fin m) (Fin n) ℝ}
     (hE : ‖E‖ ≤ ε₂ * ‖A‖) (hR₂₂ : ‖R.submatrix (tailIdx hkm) (tailIdx hkn)‖ ≤ ε₁ * ‖A‖) :
     A.sortedSingularValues k ≤ (ε₁ + ε₂) * ‖A‖ := by
   have h1 : (A + E).sortedSingularValues k ≤ ε₁ * ‖A‖ := by
-    rw [← sortedSingularValues_eq_of_mul_eq hQ hQR]
+    rw [← sortedSingularValues_submatrix_equiv (A + E) (Equiv.refl _) π, Equiv.coe_refl, ← hQR,
+      sortedSingularValues_unitary_mul _ hQ]
     exact (sortedSingularValues_le_trailing hkm hkn hR).trans hR₂₂
   have h2 := sortedSingularValues_add_le (A + E) (-E) k 0
   rw [add_zero, add_neg_cancel_right, sortedSingularValues_zero_eq_l2_opNorm, norm_neg] at h2
@@ -536,7 +518,8 @@ private theorem kahan_step (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n k : ℕ} (h
     rw [Nat.min_eq_right hi.le, hKdef, kahan_above (hi : (⟨k, hk⟩ : Fin n) < i)]
     linear_combination (-(s ^ 2) ^ k) * hc2
   congr 1
-  · refine (foldl_update_self_eq (fun i x => x - K ⟨k, hk⟩ i * K ⟨k, hk⟩ i) l hlnd _).trans ?_
+  · refine (List.foldl_update_of_nodup hlnd (fun i y => y i - K ⟨k, hk⟩ i * K ⟨k, hk⟩ i)
+      (fun _ _ _ _ _ e => by rw [e]) _).trans ?_
     funext i
     by_cases hi : k < (i : ℕ)
     · simp only [(hmem i).2 hi, ↓reduceIte]
@@ -551,8 +534,8 @@ private theorem kahan_step (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n k : ℕ} (h
           have := (hmem i).1 hi
           omega
         simp only [hnil, hkn, ↓reduceIte]
-    · refine (congrFun (foldl_update_self_eq (fun i x => x - K ⟨k, hk⟩ i * K ⟨k, hk⟩ i) l hlnd
-        _) i).trans ?_
+    · refine (congrFun (List.foldl_update_of_nodup hlnd
+        (fun i y => y i - K ⟨k, hk⟩ i * K ⟨k, hk⟩ i) (fun _ _ _ _ _ e => by rw [e]) _) i).trans ?_
       simp only [hi, ↓reduceIte]
       exact hval i ((hmem i).1 hi)
 
@@ -594,7 +577,7 @@ theorem kahanMatrix_unaltered (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} :
         pure (Function.update c' j d)) 0) = fun _ => 1 := by
       rw [List.idRun_foldlM]
       simp only [Id.run_bind, Chapter01.algorithm_1_1_1_spec, Id.run_pure]
-      refine (foldl_update_eq (fun j => (fun i => kahanMatrix n c s i j) ⬝ᵥ
+      refine (List.foldl_update_eq_ite (fun j => (fun i => kahanMatrix n c s i j) ⬝ᵥ
         (fun i => kahanMatrix n c s i j)) _ _).trans ?_
       funext j
       simp only [List.mem_finRange, ↓reduceIte, kahan_col_norm hcs]
@@ -688,6 +671,26 @@ section RevealUpdate
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
+/-- One step `j` of `givensRevealUpdate` (the plane `(j, j + 1)`) as a named function: the
+flipped rotation zeroing `v_j`, applied to `v`, to the rows `≤ j + 1` of `R` and to `Z_G`, then
+the conventional rotation zeroing the new `r_{j+1,j}`, applied to `R` and `Q_G`. -/
+noncomputable def givensRevealStep {k : ℕ}
+    (st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
+      Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (j : Fin k) :
+    M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
+      Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) := do
+  let i := j.castSucc
+  let i' := j.succ
+  let cs ← algorithm_5_1_3 rnd (st.2.1 i') (st.2.1 i)
+  let v ← givensRotateVec rnd i i' cs.1 (-cs.2) st.2.1
+  let R ← givensApplyRight rnd i i' cs.1 (-cs.2)
+    ((List.finRange (k + 1)).filter fun r => (r : ℕ) ≤ i') st.1
+  let Z ← givensApplyRight rnd i i' cs.1 (-cs.2) (List.finRange (k + 1)) st.2.2.1
+  let cs₂ ← algorithm_5_1_3 rnd (R i i) (R i' i)
+  let R ← givensApplyLeft rnd i i' cs₂.1 cs₂.2 (indexFrom (k + 1) i) R
+  let Q ← givensApplyRight rnd i i' cs₂.1 cs₂.2 (List.finRange (k + 1)) st.2.2.2
+  pure (R, v, Z, Q)
+
 /-- **§5.4.5, the zero-chasing update** (displayed for `n = 4`, "the pattern is clear"): given
 `A Z = Q R` with `R` upper triangular and a unit vector `v`, for `i = 1:n-1`:
 * a "flipped" rotation `G_{i,i+1}` zeroing `v_i` against `v_{i+1}` — Algorithm 5.1.3 with the roles
@@ -701,19 +704,7 @@ noncomputable def givensRevealUpdate {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k
     (v : Fin (k + 1) → ℝ) :
     M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
       Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :=
-  (List.finRange k).foldlM (fun (st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
-      Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (j : Fin k) => do
-    let i := j.castSucc
-    let i' := j.succ
-    let cs ← algorithm_5_1_3 rnd (st.2.1 i') (st.2.1 i)
-    let v ← givensRotateVec rnd i i' cs.1 (-cs.2) st.2.1
-    let R ← givensApplyRight rnd i i' cs.1 (-cs.2)
-      ((List.finRange (k + 1)).filter fun r => (r : ℕ) ≤ i') st.1
-    let Z ← givensApplyRight rnd i i' cs.1 (-cs.2) (List.finRange (k + 1)) st.2.2.1
-    let cs₂ ← algorithm_5_1_3 rnd (R i i) (R i' i)
-    let R ← givensApplyLeft rnd i i' cs₂.1 cs₂.2 (indexFrom (k + 1) i) R
-    let Q ← givensApplyRight rnd i i' cs₂.1 cs₂.2 (List.finRange (k + 1)) st.2.2.2
-    pure (R, v, Z, Q)) (R, v, 1, 1)
+  (List.finRange k).foldlM (givensRevealStep rnd) (R, v, 1, 1)
 
 end RevealUpdate
 
@@ -921,14 +912,6 @@ private theorem sum_filter_le_succ {j : ℕ} (hj : j < m) (f : Fin m → ℝ) :
     omega
   rw [this, Finset.sum_insert (by simp)]
 
-/-- Entry `(i, q)` of `(I - β v vᵀ) M` is the reflector applied to column `q`. -/
-private theorem one_sub_mul_apply' {p : ℕ} (β : ℝ) (v : Fin m → ℝ)
-    (M : Matrix (Fin m) (Fin p) ℝ) (i : Fin m) (q : Fin p) :
-    ((1 - β • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * M) i q =
-      M i q - β * v i * (v ⬝ᵥ fun r => M r q) := by
-  change ((1 - β • vecMulVec v v) *ᵥ fun r => M r q) i = _
-  rw [one_sub_smul_vecMulVec_mulVec_apply]
-
 /-- One step of Algorithm 5.4.1 taken (`τ > 0`) preserves the invariant. -/
 private theorem pcInv_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (st : PivotedQRState m n) (j : Fin n) (hI : pcInv A j st) (hτ : 0 < st.τ) :
@@ -981,7 +964,8 @@ private theorem pcInv_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
   set jr : Fin m := Fin.castLE hnm j with hjr
   have hjr' : jr = ⟨j, hjm⟩ := Fin.ext rfl
   set l := (List.finRange n).filter fun i => j < i with hl
-  rw [foldl_update_self_eq (fun i y => y - A₃ jr i * A₃ jr i) l ((List.nodup_finRange n).filter _)]
+  rw [List.foldl_update_of_nodup (l := l) ((List.nodup_finRange n).filter _)
+    (fun i y => y i - A₃ jr i * A₃ jr i) fun _ _ _ _ _ e => by rw [e]]
   -- facts about the reflector
   have hvlt : ∀ r : Fin m, (r : ℕ) < j → v r = 0 := fun r hr' =>
     hvout r (by rw [mem_indexFrom]; omega)
@@ -1146,7 +1130,7 @@ private theorem algorithm_5_4_1_run (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) 
       pure (Function.update c j d)) 0) = fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q) := by
     rw [List.idRun_foldlM]
     simp only [Id.run_bind, Chapter01.algorithm_1_1_1_spec, Id.run_pure]
-    refine (foldl_update_eq (fun j => (fun i => A i j) ⬝ᵥ (fun i => A i j)) _ _).trans ?_
+    refine (List.foldl_update_eq_ite (fun j => (fun i => A i j) ⬝ᵥ (fun i => A i j)) _ _).trans ?_
     funext q
     simp only [List.mem_finRange, ↓reduceIte]
   unfold algorithm_5_4_1
@@ -1489,26 +1473,6 @@ elsewhere (the book's `B`, read off the overwritten `A`). -/
 def bidiagonalPart (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin m) (Fin n) ℝ :=
   of fun i q => if (q : ℕ) = i ∨ (q : ℕ) = i + 1 then A i q else 0
 
-/-- The entries of `(I - β v vᵀ) M`: column `q` of the product is the reflector applied to column
-`q` of `M`. -/
-private theorem leftReflector_mul_apply {p : ℕ} (β : ℝ) (v : Fin m → ℝ)
-    (M : Matrix (Fin m) (Fin p) ℝ) (i : Fin m) (q : Fin p) :
-    ((1 - β • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * M) i q =
-      M i q - β * v i * (v ⬝ᵥ fun r => M r q) := by
-  change ((1 - β • vecMulVec v v) *ᵥ fun r => M r q) i = _
-  rw [one_sub_smul_vecMulVec_mulVec_apply]
-
-/-- The entries of `M (I - β w wᵀ)`: row `r` of the product is the reflector applied to row `r`
-of `M`. -/
-private theorem mul_rightReflector_apply {p : ℕ} (β : ℝ) (w : Fin n → ℝ)
-    (M : Matrix (Fin p) (Fin n) ℝ) (r : Fin p) (q : Fin n) :
-    (M * (1 - β • vecMulVec w w : Matrix (Fin n) (Fin n) ℝ)) r q =
-      M r q - β * (M r ⬝ᵥ w) * w q := by
-  change (M * (1 - β • vecMulVec w w))ᵀ q r = _
-  rw [transpose_mul, transpose_one_sub_smul_vecMulVec, leftReflector_mul_apply, dotProduct_comm]
-  change M r q - β * w q * (M r ⬝ᵥ w) = _
-  ring
-
 /-- Two dot products with `v` agree when the second factors agree wherever `v` is nonzero. -/
 private theorem dotProduct_congr_of_ne_zero {ι : Type*} [Fintype ι] {v f g : ι → ℝ}
     (h : ∀ r, v r ≠ 0 → f r = g r) : v ⬝ᵥ f = v ⬝ᵥ g := by
@@ -1594,7 +1558,7 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
   obtain ⟨D, hDdef⟩ : ∃ D, D = (1 - b • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * C := ⟨_, rfl⟩
   have hD : ∀ (i : Fin m) (q : Fin n), D i q = C i q - b * v i * (v ⬝ᵥ fun r => C r q) :=
       fun i q => by
-    rw [hDdef, leftReflector_mul_apply]
+    rw [hDdef, one_sub_smul_vecMulVec_mul_apply]
   -- the left update
   have hvdot : ∀ q : Fin n, (j : ℕ) ≤ q →
       (v ⬝ᵥ fun r => B r q) = v ⬝ᵥ fun r => C r q := fun q hq =>
@@ -1604,7 +1568,7 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
   have hA1lt : ∀ (i : Fin m) (q : Fin n), (i : ℕ) < j → A1 i q = B i q := fun i q hi => by
     rw [hA1 i q, ite_eq_right (show ¬ (q = j ∧ (j : ℕ) < i) from fun h => absurd h.2 (by omega))]
     split_ifs
-    · rw [leftReflector_mul_apply, hvout i hi]; ring
+    · rw [one_sub_smul_vecMulVec_mul_apply, hvout i hi]; ring
     · rfl
   have hA1col : ∀ (i : Fin m) (q : Fin n), (q : ℕ) < j → A1 i q = B i q := fun i q hq => by
     rw [hA1 i q, ite_eq_right (show ¬ (q = j ∧ (j : ℕ) < i) from fun h => by
@@ -1620,7 +1584,7 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
     rw [hD, h0]; ring
   have hPB : ∀ (i : Fin m) (q : Fin n), (j : ℕ) ≤ i → (j : ℕ) ≤ q →
       ((1 - b • vecMulVec v v : Matrix (Fin m) (Fin m) ℝ) * B) i q = D i q := fun i q hi hq => by
-    rw [leftReflector_mul_apply, hD, ha' i q (fun h => absurd h.1 (by omega))
+    rw [one_sub_smul_vecMulVec_mul_apply, hD, ha' i q (fun h => absurd h.1 (by omega))
       (fun h => absurd h.1 (by omega)), hvdot q hq]
   have hA1a : ∀ (i : Fin m) (q : Fin n), (j : ℕ) ≤ i → (j : ℕ) < q → A1 i q = D i q :=
       fun i q hi hq => by
@@ -1693,8 +1657,8 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
       (B3, Function.update β j b, Function.update γ j g))ᵀ * A *
       bidiagRightPrefix hnm ((j : ℕ) + 1) (B3, Function.update β j b, Function.update γ j g)) i q =
       D i q - g * (D i ⬝ᵥ w) * w q := fun i q => by
-    rw [hL3, hR3, transpose_mul, transpose_one_sub_smul_vecMulVec, ← mul_rightReflector_apply,
-      hDdef, hC]
+    rw [hL3, hR3, transpose_mul, transpose_one_sub_smul_vecMulVec,
+      ← mul_one_sub_smul_vecMulVec_apply, hDdef, hC]
     simp only [Matrix.mul_assoc]
   refine ⟨fun i q h1 h2 => ?_, fun i q h1 h2 => ?_, fun i q h1 h2 => ?_, fun k hk => ?_,
     fun k hk => ?_, fun k hk => ?_⟩
@@ -1848,11 +1812,11 @@ private theorem bidiagInvariant_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n)
         have hjj : (j : ℕ) ≤ (Fin.castLE hnm j : ℕ) := le_refl (j : ℕ)
         have hmem : Fin.castLE hnm j ∈ indexFrom m j := mem_indexFrom.2 hjj
         simp only [hB3def, updateRow_self, hq, ↓reduceIte, of_apply, hmem, hjj]
-        exact mul_rightReflector_apply g w A1 _ q
+        exact mul_one_sub_smul_vecMulVec_apply g w A1 _ q
       · rw [hB3def, updateRow_ne hi, of_apply]
         by_cases hji : (j : ℕ) ≤ i
         · rw [ite_eq_left (mem_indexFrom.2 hji), ite_eq_left hji]
-          exact mul_rightReflector_apply g w A1 i q
+          exact mul_one_sub_smul_vecMulVec_apply g w A1 i q
         · rw [ite_eq_right (fun h => hji (mem_indexFrom.1 h)), ite_eq_right hji]
   · rw [ite_eq_right hj3]
     simp only [Id.run_pure]
@@ -1988,26 +1952,6 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One step `j` of `givensRevealUpdate` (the plane `(j, j + 1)`) as a named function: the
-flipped rotation zeroing `v_j`, applied to `v`, to the rows `≤ j + 1` of `R` and to `Z_G`, then
-the conventional rotation zeroing the new `r_{j+1,j}`, applied to `R` and `Q_G`. -/
-noncomputable def givensRevealStep {k : ℕ}
-    (st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
-      Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (j : Fin k) :
-    M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
-      Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) := do
-  let i := j.castSucc
-  let i' := j.succ
-  let cs ← algorithm_5_1_3 rnd (st.2.1 i') (st.2.1 i)
-  let v ← givensRotateVec rnd i i' cs.1 (-cs.2) st.2.1
-  let R ← givensApplyRight rnd i i' cs.1 (-cs.2)
-    ((List.finRange (k + 1)).filter fun r => (r : ℕ) ≤ i') st.1
-  let Z ← givensApplyRight rnd i i' cs.1 (-cs.2) (List.finRange (k + 1)) st.2.2.1
-  let cs₂ ← algorithm_5_1_3 rnd (R i i) (R i' i)
-  let R ← givensApplyLeft rnd i i' cs₂.1 cs₂.2 (indexFrom (k + 1) i) R
-  let Q ← givensApplyRight rnd i i' cs₂.1 cs₂.2 (List.finRange (k + 1)) st.2.2.2
-  pure (R, v, Z, Q)
-
 /-- `givensRevealUpdate` is the fold of `givensRevealStep` from `(R, v, I, I)`. -/
 theorem givensRevealUpdate_eq_foldlM {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)
     (v : Fin (k + 1) → ℝ) :
@@ -2030,34 +1974,6 @@ theorem givensRotateVec_pure {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : �
     · subst hti
       rw [Function.update_self, ite_eq_left rfl]
     · rw [Function.update_of_ne hti, ite_eq_right hti, ite_eq_right hti']
-
-/-- The entries of `A G(i, k, θ)`: only the columns `i`, `k` change. -/
-private theorem mul_givensRotation_apply {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : ℝ)
-    (A : Matrix (Fin N) (Fin N) ℝ) (r q : Fin N) :
-    (A * givensRotation i i' c s) r q = if q = i then c * A r i - s * A r i' else
-      if q = i' then s * A r i + c * A r i' else A r q := by
-  have hG : (A * givensRotation i i' c s) r q = ((givensRotation i i' c s)ᵀ *ᵥ A r) q := by
-    rw [mulVec_transpose]; rfl
-  rw [hG, givensRotation_transpose_mulVec_apply hii']
-
-/-- The entries of `G(i, k, θ)ᵀ A`: only the rows `i`, `k` change. -/
-private theorem transpose_givensRotation_mul_apply {N : ℕ} {i i' : Fin N} (hii' : i ≠ i')
-    (c s : ℝ) (A : Matrix (Fin N) (Fin N) ℝ) (r q : Fin N) :
-    ((givensRotation i i' c s)ᵀ * A) r q = if r = i then c * A i q - s * A i' q else
-      if r = i' then s * A i q + c * A i' q else A r q := by
-  have hG : ((givensRotation i i' c s)ᵀ * A) r q =
-      ((givensRotation i i' c s)ᵀ *ᵥ fun p => A p q) r := rfl
-  rw [hG, givensRotation_transpose_mulVec_apply hii']
-
-/-- An orthogonal matrix preserves the Euclidean norm of a vector. -/
-private theorem norm_toLp_orthogonal_mulVec {N : ℕ} {U : Matrix (Fin N) (Fin N) ℝ}
-    (hU : U ∈ orthogonalGroup (Fin N) ℝ) (y : Fin N → ℝ) :
-    ‖(toLp 2 (U *ᵥ y) : EuclideanSpace ℝ (Fin N))‖ = ‖(toLp 2 y : EuclideanSpace ℝ (Fin N))‖ := by
-  have h : (U *ᵥ y) ⬝ᵥ (U *ᵥ y) = y ⬝ᵥ y := by
-    rw [dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, (mem_orthogonalGroup_iff' _ _).1 hU,
-      one_mulVec]
-  rw [dotProduct_self_eq_norm_sq, dotProduct_self_eq_norm_sq] at h
-  exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h
 
 /-- The invariant of the zero-chasing update after `j` steps from `(R₀, v₀, I, I)`: `Z_G`, `Q_G`
 orthogonal, `R = Q_Gᵀ R₀ Z_G` upper triangular, `v = Z_Gᵀ v₀` with `v_p = 0` for `p < j`. -/
@@ -2156,7 +2072,7 @@ private theorem revealInvariant_step {k : ℕ} (R₀ : Matrix (Fin (k + 1)) (Fin
       have h2 : (R * G) j.succ q = 0 :=
         hlow _ _ (by rw [Fin.lt_def]; change (q : ℕ) < j + 1; omega)
           (fun h => by have := congrArg Fin.val h.2; change (q : ℕ) = j at this; omega)
-      rw [hH, transpose_givensRotation_mul_apply hii']
+      rw [hH, givensRotation_transpose_mul_apply hii']
       split_ifs with hr hr'
       · rw [hr, h1, h2]; ring
       · rw [hr', h1, h2]; ring
@@ -2169,7 +2085,7 @@ private theorem revealInvariant_step {k : ℕ} (R₀ : Matrix (Fin (k + 1)) (Fin
   · intro p q hqp
     change q < p at hqp
     dsimp only
-    rw [hH, transpose_givensRotation_mul_apply hii']
+    rw [hH, givensRotation_transpose_mul_apply hii']
     by_cases hp : p = j.castSucc
     · have hq : (q : ℕ) < j := by rw [Fin.lt_def, hp] at hqp; exact hqp
       rw [ite_eq_left hp, hlow _ _ (by rw [Fin.lt_def]; exact hq) (fun h => hii' h.1),
@@ -2290,7 +2206,7 @@ theorem givensRevealUpdate_spec {k : ℕ} {R : Matrix (Fin (k + 1)) (Fin (k + 1)
       ← Matrix.mul_assoc,
       ← Matrix.mul_assoc, hQQ, Matrix.one_mul]
   refine ⟨hZ, hQ, hRe, hRu, hVe, ⟨σ, hσpm, hVs⟩, ?_, fun A Z Q hAZ => ?_⟩
-  · rw [hRv, toLp_smul, norm_smul, norm_toLp_orthogonal_mulVec hQ, Real.norm_eq_abs]
+  · rw [hRv, toLp_smul, norm_smul, norm_toLp_mulVec_of_mem_orthogonalGroup hQ, Real.norm_eq_abs]
     rcases hσpm with h | h <;> simp [h]
   · rw [hRe, ← Matrix.mul_assoc, hAZ]
     simp only [Matrix.mul_assoc]

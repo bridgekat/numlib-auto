@@ -33,24 +33,6 @@ namespace GolubVanLoan.Chapter10
 
 /-! ### The upper bidiagonal form (§10.4.1) -/
 
-/-- Singular values are invariant under orthogonal equivalence: `σ(Uᵀ A V) = σ(A)`. -/
-theorem sortedSingularValues_transpose_mul_mul {m n : ℕ} {U : Matrix (Fin m) (Fin m) ℝ}
-    (hU : U ∈ orthogonalGroup (Fin m) ℝ) {V : Matrix (Fin n) (Fin n) ℝ}
-    (hV : V ∈ orthogonalGroup (Fin n) ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
-    (Uᵀ * A * V).sortedSingularValues = A.sortedSingularValues := by
-  have hUt : Uᵀ ∈ orthogonalGroup (Fin m) ℝ := by
-    rw [mem_orthogonalGroup_iff, transpose_transpose]
-    exact (mem_orthogonalGroup_iff' _ _).1 hU
-  have key : toEuclideanLin (Uᵀ * A * V) =
-      (unitaryLinearIsometryEquiv hUt).toLinearIsometry.toLinearMap ∘ₗ toEuclideanLin A ∘ₗ
-        (unitaryLinearIsometryEquiv hV).toLinearIsometry.toLinearMap := by
-    refine LinearMap.ext fun x => ?_
-    simp only [toEuclideanLin_mul_apply, LinearMap.comp_apply]
-    rfl
-  funext i
-  change (toEuclideanLin (Uᵀ * A * V)).singularValues i = (toEuclideanLin A).singularValues i
-  rw [key, LinearMap.singularValues_comp_linearIsometryEquiv]
-
 /-- **(10.4.1)**: for `A ∈ ℝ^{m×n}`, `m ≥ n`, there are orthogonal `U`, `V` with `Uᵀ A V = B` zero
 below row `n` and upper bidiagonal on top, and `A`, `B` have the same singular values. Backbone
 `Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal` (chapter 5's Householder
@@ -62,7 +44,8 @@ theorem equation_10_4_1 {m n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) 
       (Uᵀ * A * V).sortedSingularValues = A.sortedSingularValues := by
   obtain ⟨U, hU, V, hV, h1, h2⟩ := exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal hnm A
   rw [conjTranspose_eq_transpose_of_trivial] at h1 h2
-  exact ⟨U, hU, V, hV, h1, h2, sortedSingularValues_transpose_mul_mul hU hV A⟩
+  exact ⟨U, hU, V, hV, h1, h2,
+    A.sortedSingularValues_unitary_mul_mul (transpose_mem_unitaryGroup_iff.2 hU) hV⟩
 
 section Columns
 
@@ -957,21 +940,6 @@ theorem algorithm_10_4_2_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {uc :
 
 /-! ### The tridiagonal–bidiagonal connection (§10.4.3) -/
 
-/-- Two operators whose Arnoldi coefficients agree have the same Lanczos matrices. -/
-private theorem tridiag_eq_of_coeff_eq {E E' : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] [NormedAddCommGroup E'] [InnerProductSpace ℝ E'] {T : E →ₗ[ℝ] E}
-    {T' : E' →ₗ[ℝ] E'} {b : E} {b' : E'} (h : Arnoldi.coeff T' b' = Arnoldi.coeff T b) (k : ℕ) :
-    Lanczos.tridiag T' b' k = Lanczos.tridiag T b k := by
-  have ha : ∀ j, Lanczos.alpha T' b' j = Lanczos.alpha T b j := fun j => by
-    rw [Lanczos.alpha, Lanczos.alpha, h]
-  have hb : ∀ j, Lanczos.beta T' b' j = Lanczos.beta T b j := fun j => by
-    have h1 := Lanczos.coe_beta T' b' j
-    have h2 := Lanczos.coe_beta T b j
-    rw [h] at h1
-    simpa using h1.trans h2.symm
-  ext i j
-  simp only [Lanczos.tridiag_apply, ha, hb]
-
 /-- **The tridiagonal–bidiagonal connection** (§10.4.3 with (10.4.16)–(10.4.17)): the Lanczos
 process of the Jordan–Wielandt matrix of `A`, started from the vector with `v_c` in the `ℝⁿ` block,
 has zero diagonal and off-diagonal `α_1, β_1, α_2, β_2, …` (the Golub–Kahan coefficients): its
@@ -1006,7 +974,7 @@ theorem lanczos_jordanWielandt {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
         LinearMap.hermitianDilation_apply] <;> rfl
   have hb : e (WithLp.toLp 2 (v, 0)) = WithLp.toLp 2 (Sum.elim v.ofLp 0) := by
     ext (i | i) <;> simp [e]
-  rw [← hconj, ← hb, tridiag_eq_of_coeff_eq (Arnoldi.coeff_conj_linearIsometryEquiv _ _ _),
+  rw [← hconj, ← hb, Lanczos.tridiag_eq_of_coeff_eq (Arnoldi.coeff_conj_linearIsometryEquiv _ _ _),
     GolubKahan.lanczos_jordanWielandt v hadj]
 
 end GolubVanLoan.Chapter10

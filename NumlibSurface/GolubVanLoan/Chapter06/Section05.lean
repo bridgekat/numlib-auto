@@ -32,18 +32,18 @@ algorithm conventions of `NumlibSurface/GolubVanLoan`: every product, difference
 square root is passed through the rounding hook `rnd`, loops are `List.foldlM`, and the exact
 semantics (`M := Id`, `rnd := pure`) is a `_spec` theorem against the backbone. The Cholesky
 downdate `choleskyDowndate` writes its hyperbolic rotations out (they are not Givens rotations),
-through the row helper `hyperbolicApplyLeft`. The Givens-based procedures (`qrUpdateRankOne`,
-`qrDeleteColumn`, `qrInsertColumn`, `qrInsertRow`, `qrDeleteFirstRow`, `choleskyUpdate`) call
-chapter 5's shared programs (conventions 5 and 13): the pair `[c, s] = givens(a, b)` is
-`Chapter05.algorithm_5_1_3`, "rotate rows `i`, `k`" is `Chapter05.givensApplyLeft`, "rotate columns
-`i`, `k` of `Q`" is `Chapter05.givensApplyRight`, "rotate entries `i`, `k` of `w`" is
-`Chapter05.givensRotateVec`; the products `Qᵀu` are chapter 1's gaxpy (Algorithm 1.1.3) and the
-rank-one change of the first row its saxpy (Algorithm 1.1.2). Two sweeps are shared: the top-down
-triangularization of an upper Hessenberg matrix (`givensHessenbergSweep`, after Algorithm 5.2.5)
-and the bottom-up sweep driven by a vector (`givensVectorSweep`). Every rotation is applied to all
-the columns (resp. rows) of its matrix; the book leaves the column ranges implicit, and the extra
-columns are zero in both rotated rows.
-
+through chapter 5's row helper `Chapter05.hyperbolicApplyLeft`. The Givens-based procedures
+(`qrUpdateRankOne`, `qrDeleteColumn`, `qrInsertColumn`, `qrInsertRow`, `qrDeleteFirstRow`,
+`choleskyUpdate`) call chapter 5's shared programs (conventions 5 and 13): the pair
+`[c, s] = givens(a, b)` is `Chapter05.algorithm_5_1_3`, "rotate rows `i`, `k`" is
+`Chapter05.givensApplyLeft`, "rotate columns `i`, `k` of `Q`" is `Chapter05.givensApplyRight`,
+"rotate entries `i`, `k` of `w`" is `Chapter05.givensRotateVec`; the products `Qᵀu` are chapter 1's
+gaxpy (Algorithm 1.1.3) and the rank-one change of the first row its saxpy (Algorithm 1.1.2). Two
+sweeps of chapter 5 are shared: the top-down triangularization of an upper Hessenberg matrix
+(`Chapter05.givensHessenbergSweep`, after Algorithm 5.2.5) and the bottom-up sweep driven by a
+vector (`Chapter05.givensVectorSweep`). Every rotation is applied to all the columns (resp. rows) of
+its matrix; the book leaves the column ranges implicit, and the extra columns are zero in both
+rotated rows.
 ## Sources
 
 Backbone `Numlib/Direct/Updating` (the structural lemmas of the sweeps, the existence of the
@@ -367,20 +367,6 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **§6.5.4, a hyperbolic rotation applied to two rows.** "`[c −s; −s c]`" applied to the rows
-`i`, `k` of `S` on the columns `cols`, in place:
-`S(i, j) ← c S(i, j) − s S(k, j)`, `S(k, j) ← c S(k, j) − s S(i, j)`, every product and
-difference rounded. The hyperbolic counterpart of chapter 5's Givens row update; its exact
-semantics is left multiplication by `Matrix.hyperbolicRotation i k c s` on the columns `cols`
-(`hyperbolicApplyLeft_spec`). -/
-def hyperbolicApplyLeft {ι : Type} [DecidableEq ι] {n : ℕ} (i k : ι) (c s : ℝ)
-    (cols : List (Fin n)) (S : Matrix ι (Fin n) ℝ) : M (Matrix ι (Fin n) ℝ) :=
-  cols.foldlM (fun (S : Matrix ι (Fin n) ℝ) (j : Fin n) => do
-    let x ← rnd ((← rnd (c * S i j)) - (← rnd (s * S k j)))
-    let y ← rnd ((← rnd (c * S k j)) - (← rnd (s * S i j)))
-    pure ((S.updateRow i (Function.update (S i) j x)).updateRow k
-      (Function.update (S k) j y))) S
-
 /-- **§6.5.4, Cholesky downdating with hyperbolic rotations.** "Given a Cholesky factorization
 `A = GGᵀ` and a vector `z ∈ ℝⁿ` … compute the Cholesky factorization `Ã = G̃G̃ᵀ` where
 `Ã = A − zzᵀ`", by the hyperbolic rotations `H_k` in the planes `(k, n + 1)` of the stacked
@@ -393,128 +379,11 @@ noncomputable def choleskyDowndate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z
       let τ ← rnd (S (Sum.inr ()) k / S (Sum.inl k) k)
       let c ← rnd (1 / (← rnd (√(← rnd (1 - (← rnd (τ * τ)))))))
       let s ← rnd (c * τ)
-      hyperbolicApplyLeft rnd (Sum.inl k) (Sum.inr ()) c s (List.finRange n) S)
+      Chapter05.hyperbolicApplyLeft rnd (Sum.inl k) (Sum.inr ()) c s (List.finRange n) S)
     (fromRows Gᵀ (replicateRow Unit z))
   pure (S.toRows₁)ᵀ
 
 end Programs
-
-/-- The entries of a hyperbolic rotation times a matrix. -/
-private theorem hyperbolicRotation_mul_apply {ι κ : Type*} [Fintype ι] [DecidableEq ι] {i k : ι}
-    (hik : i ≠ k) (c s : ℝ) (S : Matrix ι κ ℝ) (p : ι) (q : κ) :
-    (hyperbolicRotation i k c s * S) p q =
-      if p = i then c * S i q - s * S k q else if p = k then c * S k q - s * S i q
-      else S p q := by
-  change (planeEmbed i k !![c, -s; -s, c] *ᵥ fun r => S r q) p = _
-  rw [planeEmbed_mulVec_apply _ hik]
-  split_ifs <;> simp <;> ring
-
-/-- **Exact semantics of `hyperbolicApplyLeft`**: on the columns of a duplicate-free list `cols`
-it is left multiplication by the hyperbolic rotation `[c −s; −s c]` in the rows `i`, `k`; the
-other columns are unchanged. -/
-theorem hyperbolicApplyLeft_spec {ι : Type} [Fintype ι] [DecidableEq ι] {n : ℕ} {i k : ι}
-    (hik : i ≠ k) (c s : ℝ) {cols : List (Fin n)} (hcols : cols.Nodup) (S : Matrix ι (Fin n) ℝ) :
-    Id.run (hyperbolicApplyLeft pure i k c s cols S) =
-      of fun p j => if j ∈ cols then (hyperbolicRotation i k c s * S) p j else S p j := by
-  induction cols generalizing S with
-  | nil =>
-    ext p j
-    simp [hyperbolicApplyLeft]
-  | cons j l ih =>
-    obtain ⟨hjl, hl⟩ := List.nodup_cons.1 hcols
-    set S' := (S.updateRow i (Function.update (S i) j (c * S i j - s * S k j))).updateRow k
-      (Function.update (S k) j (c * S k j - s * S i j)) with hS'
-    have hstep : Id.run (hyperbolicApplyLeft pure i k c s (j :: l) S) =
-        Id.run (hyperbolicApplyLeft pure i k c s l S') := rfl
-    have hS'e : ∀ p q, S' p q =
-        if q = j then (hyperbolicRotation i k c s * S) p q else S p q := fun p q => by
-      rw [hyperbolicRotation_mul_apply hik]
-      simp only [hS', updateRow_apply, Function.update_apply]
-      by_cases hq : q = j
-      · subst hq
-        by_cases hpk : p = k
-        · subst hpk
-          simp [Ne.symm hik]
-        · by_cases hpi : p = i
-          · subst hpi
-            simp [hpk]
-          · simp [hpk, hpi]
-      · simp only [hq, ite_false]
-        split_ifs <;> subst_vars <;> rfl
-    have hcol : ∀ q, q ≠ j → ∀ p, (hyperbolicRotation i k c s * S') p q =
-        (hyperbolicRotation i k c s * S) p q := fun q hq p => by
-      rw [hyperbolicRotation_mul_apply hik, hyperbolicRotation_mul_apply hik, hS'e, hS'e, hS'e,
-        ite_eq_right hq, ite_eq_right hq, ite_eq_right hq]
-    rw [hstep, ih hl]
-    ext p q
-    simp only [of_apply, List.mem_cons]
-    by_cases hq : q = j
-    · subst hq
-      rw [ite_eq_right hjl, ite_eq_left (Or.inl rfl), hS'e, ite_eq_left rfl]
-    · by_cases hql : q ∈ l
-      · rw [ite_eq_left hql, ite_eq_left (Or.inr hql), hcol q hq]
-      · rw [ite_eq_right hql, ite_eq_right (by tauto), hS'e, ite_eq_right hq]
-
-/-- The quadratic form of a signed Gram matrix: `xᵀ (Rᵀ R − z zᵀ) x = ‖R x‖² − (z ⬝ x)²`. (A copy
-of a private lemma of `Numlib/Direct/Updating`.) -/
-private theorem dotProduct_transpose_mul_self_sub_mulVec' {n : Type*} [Fintype n]
-    (R : Matrix n n ℝ) (z x : n → ℝ) :
-    x ⬝ᵥ ((Rᵀ * R - vecMulVec z z) *ᵥ x) = (R *ᵥ x) ⬝ᵥ (R *ᵥ x) - (z ⬝ᵥ x) ^ 2 := by
-  have h1 : x ⬝ᵥ ((Rᵀ * R) *ᵥ x) = (R *ᵥ x) ⬝ᵥ (R *ᵥ x) := by
-    rw [← mulVec_mulVec, dotProduct_mulVec, vecMul_transpose]
-  have h2 : x ⬝ᵥ (vecMulVec z z *ᵥ x) = (z ⬝ᵥ x) ^ 2 := by
-    rw [dotProduct_mulVec, vecMul_vecMulVec, smul_dotProduct, smul_eq_mul, dotProduct_comm x z, sq]
-  rw [sub_mulVec, dotProduct_sub, h1, h2]
-
-/-- **The hyperbolic pair exists at every step of the downdate** (a copy of the private
-`Matrix.sq_lt_sq_of_posDef_transpose_mul_self_sub` of `Numlib/Direct/Updating`): if `R` is upper
-triangular with positive diagonal, `z` vanishes before `k` and `Rᵀ R − z zᵀ` is positive definite,
-then `z_k² < r_kk²`; test the form on `R⁻¹ e_k`. -/
-private theorem sq_lt_sq_of_posDef_transpose_mul_self_sub' {n : Type*} [Fintype n]
-    [LinearOrder n] {R : Matrix n n ℝ} (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i)
-    {z : n → ℝ} {k : n} (hz : ∀ j < k, z j = 0) (hP : (Rᵀ * R - vecMulVec z z).PosDef) :
-    z k ^ 2 < R k k ^ 2 := by
-  have hU : IsUnit R.det := (isUnit_iff_isUnit_det R).1
-    ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hR).2 fun i => (hd i).ne')
-  have hT := hR.inv
-  set x : n → ℝ := fun j => R⁻¹ j k with hx
-  have hRx : R *ᵥ x = Pi.single k 1 := by
-    ext i
-    have := congrFun (congrFun (mul_nonsing_inv R hU) i) k
-    rw [mul_apply] at this
-    rw [Pi.single_apply, ← one_apply, ← this]
-    rfl
-  have hkk : R⁻¹ k k * R k k = 1 := by
-    have := congrFun (congrFun (nonsing_inv_mul R hU) k) k
-    rw [mul_apply, one_apply_eq, Finset.sum_eq_single k] at this
-    · exact this
-    · intro j _ hjk
-      rcases lt_or_gt_of_ne hjk with h | h
-      · rw [hT h, zero_mul]
-      · rw [hR h, mul_zero]
-    · simp
-  have hzx : z ⬝ᵥ x = z k * R⁻¹ k k := by
-    rw [dotProduct, Finset.sum_eq_single k]
-    · intro j _ hjk
-      rcases lt_or_gt_of_ne hjk with h | h
-      · rw [hz j h, zero_mul]
-      · rw [hx]
-        dsimp only
-        rw [hT h, mul_zero]
-    · simp
-  have hx0 : x ≠ 0 := fun h => by
-    have := congrFun h k
-    simp only [hx, Pi.zero_apply] at this
-    rw [this, zero_mul] at hkk
-    exact zero_ne_one hkk
-  have hpos := hP.dotProduct_mulVec_pos hx0
-  rw [star_trivial, dotProduct_transpose_mul_self_sub_mulVec', hRx, hzx] at hpos
-  simp only [dotProduct_single, Pi.single_eq_same, mul_one] at hpos
-  have hr := hd k
-  have e : z k ^ 2 = (z k * R⁻¹ k k) ^ 2 * R k k ^ 2 := by
-    rw [mul_pow, mul_assoc, ← mul_pow, hkk, one_pow, mul_one]
-  rw [e]
-  nlinarith [sq_nonneg (z k * R⁻¹ k k), pow_pos hr 2]
 
 /-- One step of `choleskyDowndate` at `Id`: the hyperbolic rotation with the pair (6.5.13) of the
 current entries `(k, k)`, `(n + 1, k)`, applied on the left. -/
@@ -524,7 +393,8 @@ private theorem choleskyDowndate_step_run {n : ℕ} (k : Fin n)
       let τ ← pure (S (Sum.inr ()) k / S (Sum.inl k) k)
       let c ← pure (1 / (← pure (√(← pure (1 - (← pure (τ * τ)))))))
       let s ← pure (c * τ)
-      hyperbolicApplyLeft (pure : ℝ → Id ℝ) (Sum.inl k) (Sum.inr ()) c s (List.finRange n) S) =
+      Chapter05.hyperbolicApplyLeft (pure : ℝ → Id ℝ) (Sum.inl k) (Sum.inr ()) c s
+        (List.finRange n) S) =
       hyperbolicRotation (Sum.inl k) (Sum.inr ())
         (hyperbolicPair (S (Sum.inl k) k) (S (Sum.inr ()) k)).1
         (hyperbolicPair (S (Sum.inl k) k) (S (Sum.inr ()) k)).2 * S := by
@@ -533,7 +403,7 @@ private theorem choleskyDowndate_step_run {n : ℕ} (k : Fin n)
         1 / √(1 - S (Sum.inr ()) k / S (Sum.inl k) k * (S (Sum.inr ()) k / S (Sum.inl k) k)) *
           (S (Sum.inr ()) k / S (Sum.inl k) k)) := by
     rw [hyperbolicPair, sq]
-  have hspec := hyperbolicApplyLeft_spec
+  have hspec := Chapter05.hyperbolicApplyLeft_spec
     (Sum.inl_ne_inr : (Sum.inl k : Fin n ⊕ Unit) ≠ Sum.inr ())
     (1 / √(1 - S (Sum.inr ()) k / S (Sum.inl k) k * (S (Sum.inr ()) k / S (Sum.inl k) k)))
     (1 / √(1 - S (Sum.inr ()) k / S (Sum.inl k) k * (S (Sum.inr ()) k / S (Sum.inl k) k)) *
@@ -549,7 +419,8 @@ private theorem choleskyDowndate_fold_run {n : ℕ} (l : List (Fin n))
       let τ ← pure (S (Sum.inr ()) k / S (Sum.inl k) k)
       let c ← pure (1 / (← pure (√(← pure (1 - (← pure (τ * τ)))))))
       let s ← pure (c * τ)
-      hyperbolicApplyLeft (pure : ℝ → Id ℝ) (Sum.inl k) (Sum.inr ()) c s (List.finRange n) S) S) =
+      Chapter05.hyperbolicApplyLeft (pure : ℝ → Id ℝ) (Sum.inl k) (Sum.inr ()) c s
+        (List.finRange n) S) S) =
       l.foldl (fun S k => hyperbolicRotation (Sum.inl k) (Sum.inr ())
         (hyperbolicPair (S (Sum.inl k) k) (S (Sum.inr ()) k)).1
         (hyperbolicPair (S (Sum.inl k) k) (S (Sum.inr ()) k)).2 * S) S := by
@@ -585,7 +456,7 @@ theorem choleskyDowndate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG :
     set k : Fin n := ⟨t, ht⟩ with hk
     have hlt : |z' k| < |R k k| := by
       rw [← sq_lt_sq]
-      exact sq_lt_sq_of_posDef_transpose_mul_self_sub' hRt hRd (fun j hj => hz' j hj)
+      exact Matrix.sq_lt_sq_of_posDef_transpose_mul_self_sub hRt hRd (fun j hj => hz' j hj)
         (hGr ▸ hA)
     set x : Fin n ⊕ Unit → ℝ := fun r => fromRows R (replicateRow Unit z') r k with hx
     have hxi : x (Sum.inl k) = R k k := rfl
@@ -664,47 +535,6 @@ section GivensPrograms
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **A top-down Givens sweep of an upper Hessenberg matrix** (§6.5.1, "Following Algorithm
-5.2.4, we compute Givens rotations `G_k`, `k = 1 : n − 1` such that `G_{n−1}ᵀ ⋯ G₁ᵀ H₁ = R₁` is
-upper triangular"; §6.5.2 and §6.5.3 use it from a column `a`): for `j = a, …, a + count − 1`,
-`[c, s] = givens(H(j, j), H(j + 1, j))` (Algorithm 5.1.3), the rows `j`, `j + 1` of `H` are
-rotated and the rotation is accumulated into the columns `j`, `j + 1` of `Q`. Steps past the last
-row or column are skipped. -/
-noncomputable def givensHessenbergSweep {m n : ℕ} (a count : ℕ) (Q : Matrix (Fin m) (Fin m) ℝ)
-    (H : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
-  (List.range' a count).foldlM
-    (fun (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) =>
-      if h : j + 1 < m ∧ j < n then do
-        let cs ← Chapter05.algorithm_5_1_3 rnd (st.2 ⟨j, by omega⟩ ⟨j, h.2⟩)
-          (st.2 ⟨j + 1, h.1⟩ ⟨j, h.2⟩)
-        let H ← Chapter05.givensApplyLeft rnd ⟨j, by omega⟩ ⟨j + 1, h.1⟩ cs.1 cs.2
-          (List.finRange n) st.2
-        let Q ← Chapter05.givensApplyRight rnd ⟨j, by omega⟩ ⟨j + 1, h.1⟩ cs.1 cs.2
-          (List.finRange m) st.1
-        pure (Q, H)
-      else pure st) (Q, H)
-
-/-- **A bottom-up Givens sweep driven by a vector** (§6.5.1, "Suppose rotations
-`J_{n−1}, …, J₂, J₁` are computed such that `J₁ᵀ ⋯ J_{n−1}ᵀ w = ±‖w‖₂ e₁` … If these same rotations
-are applied to `R`"; §6.5.3, "compute Givens rotations `G₁, …, G_{m−1}` such that
-`G₁ᵀ ⋯ G_{m−1}ᵀ q = αe₁`"): for `j = b + count − 1, …, b`, `[c, s] = givens(w(j), w(j + 1))`, the
-entries `j`, `j + 1` of `w` and the rows `j`, `j + 1` of `R` are rotated, and the rotation is
-accumulated into the columns `j`, `j + 1` of `Q`. -/
-noncomputable def givensVectorSweep {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
-    (Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ) :
-    M ((Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
-  (List.range' b count).reverse.foldlM
-    (fun (st : (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) =>
-      if h : j + 1 < m then do
-        let cs ← Chapter05.algorithm_5_1_3 rnd (st.1 ⟨j, by omega⟩) (st.1 ⟨j + 1, h⟩)
-        let w ← Chapter05.givensRotateVec rnd ⟨j, by omega⟩ ⟨j + 1, h⟩ cs.1 cs.2 st.1
-        let R ← Chapter05.givensApplyLeft rnd ⟨j, by omega⟩ ⟨j + 1, h⟩ cs.1 cs.2
-          (List.finRange n) st.2.2
-        let Q ← Chapter05.givensApplyRight rnd ⟨j, by omega⟩ ⟨j + 1, h⟩ cs.1 cs.2
-          (List.finRange m) st.2.1
-        pure (w, Q, R)
-      else pure st) (w, Q, R)
-
 /-- **§6.5.1, the rank-one QR update.** "Suppose we have the QR factorization `QR = A ∈ ℝⁿˣⁿ` and
 that we need to compute the QR factorization `Ã = A + uvᵀ = Q₁R₁`": `w = Qᵀu` (a gaxpy,
 Algorithm 1.1.3); the rotations `J_{n−1}, …, J₁` reducing `w` to `±‖w‖₂e₁`, applied to `R` and
@@ -714,12 +544,12 @@ accumulated into `Q` (`givensVectorSweep`), which leave `H` upper Hessenberg; `H
 noncomputable def qrUpdateRankOne {n : ℕ} (Q R : Matrix (Fin n) (Fin n) ℝ) (u v : Fin n → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let w ← Chapter01.algorithm_1_1_3 rnd Qᵀ u 0
-  let st ← givensVectorSweep rnd 0 (n - 1) w Q R
+  let st ← Chapter05.givensVectorSweep rnd 0 (n - 1) w Q R
   let H ← if h : 0 < n then do
       let r ← Chapter01.algorithm_1_1_2 rnd (st.1 ⟨0, h⟩) v (st.2.2 ⟨0, h⟩)
       pure (st.2.2.updateRow ⟨0, h⟩ r)
     else pure st.2.2
-  givensHessenbergSweep rnd 0 (n - 1) st.2.1 H
+  Chapter05.givensHessenbergSweep rnd 0 (n - 1) st.2.1 H
 
 /-- **§6.5.2, deleting a column.** "`Qᵀ Ã = H` is upper Hessenberg … the unwanted subdiagonal
 elements `h_{k+1,k}, …, h_{n,n−1}` can be zeroed by a sequence of Givens rotations:
@@ -729,7 +559,7 @@ deleted (no flops). -/
 noncomputable def qrDeleteColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin (n + 1)) ℝ) (k : Fin (n + 1)) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
-  givensHessenbergSweep rnd k (n - k) Q (R.submatrix id k.succAbove)
+  Chapter05.givensHessenbergSweep rnd k (n - k) Q (R.submatrix id k.succAbove)
 
 /-- **§6.5.2, appending a column.** "if `w = Qᵀz` then `QᵀÃ = [Qᵀa₁| ⋯ |Qᵀa_k|w|Qᵀa_{k+1}| ⋯ ]` is
 upper triangular except for the presence of a 'spike' … It is possible to determine a sequence of
@@ -761,7 +591,8 @@ the new row `wᵀ` becomes row `k` (0-based), and the starting orthogonal factor
 noncomputable def qrInsertRow {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin n) ℝ) (w : Fin n → ℝ) (k : Fin (m + 1)) :
     M (Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ × Matrix (Fin (m + 1)) (Fin n) ℝ) :=
-  givensHessenbergSweep rnd 0 n ((consDiag 1 Q).submatrix k.cycleRange id) (of (Fin.cons w R))
+  Chapter05.givensHessenbergSweep rnd 0 n ((consDiag 1 Q).submatrix k.cycleRange id)
+    (of (Fin.cons w R))
 
 /-- **§6.5.3, deleting the first row.** "Let `qᵀ` be the first row of `Q` and compute Givens
 rotations `G₁, …, G_{m−1}` such that `G₁ᵀ ⋯ G_{m−1}ᵀq = αe₁` where `α = ±1`. Note that
@@ -770,7 +601,7 @@ the bottom-up sweep driven by `q` (`givensVectorSweep`), then `(Q₁, R₁)` are
 noncomputable def qrDeleteFirstRow {m n : ℕ} (Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ)
     (R : Matrix (Fin (m + 1)) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) := do
-  let st ← givensVectorSweep rnd 0 m (Q 0) Q R
+  let st ← Chapter05.givensVectorSweep rnd 0 m (Q 0) Q R
   pure (st.2.1.submatrix Fin.succ Fin.succ, st.2.2.submatrix Fin.succ id)
 
 /-- **§6.5.4, Cholesky updating.** "`Ã = [Gᵀ; zᵀ]ᵀ [Gᵀ; zᵀ]`, we can solve this problem by computing
@@ -788,293 +619,6 @@ noncomputable def choleskyUpdate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z :
 
 end GivensPrograms
 
-/-! #### Exact semantics of the Givens sweeps -/
-
-/-- One exact Givens step on a pair `(Q, H)`: `H ← G(p, q, θ)ᵀ H`, `Q ← Q G(p, q, θ)`. -/
-private noncomputable def givensPairStep {m n : ℕ} (p q : Fin m) (cs : ℝ × ℝ)
-    (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :
-    Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ :=
-  (st.1 * Chapter05.givensRotation p q cs.1 cs.2, (Chapter05.givensRotation p q cs.1 cs.2)ᵀ * st.2)
-
-private theorem givensPairStep_mem {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) {cs : ℝ × ℝ}
-    (hcs : cs.1 ^ 2 + cs.2 ^ 2 = 1) {st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ}
-    (hQ : st.1 ∈ orthogonalGroup (Fin m) ℝ) :
-    (givensPairStep p q cs st).1 ∈ orthogonalGroup (Fin m) ℝ :=
-  mul_mem hQ (Chapter05.givensRotation_mem_orthogonalGroup hpq hcs)
-
-private theorem givensPairStep_mul {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) {cs : ℝ × ℝ}
-    (hcs : cs.1 ^ 2 + cs.2 ^ 2 = 1) (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :
-    (givensPairStep p q cs st).1 * (givensPairStep p q cs st).2 = st.1 * st.2 := by
-  have hG := (mem_orthogonalGroup_iff _ ℝ).1
-    (Chapter05.givensRotation_mem_orthogonalGroup hpq hcs)
-  simp only [givensPairStep]
-  rw [Matrix.mul_assoc, ← Matrix.mul_assoc (Chapter05.givensRotation p q cs.1 cs.2), hG,
-    Matrix.one_mul]
-
-private theorem givensPairStep_apply {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) (cs : ℝ × ℝ)
-    (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (r : Fin m) (l : Fin n) :
-    (givensPairStep p q cs st).2 r l =
-      if r = p then cs.1 * st.2 p l - cs.2 * st.2 q l
-      else if r = q then cs.2 * st.2 p l + cs.1 * st.2 q l else st.2 r l :=
-  Chapter05.givensRotation_transpose_mul_apply hpq cs.1 cs.2 st.2 r l
-
-/-- The step kills the entry the Givens pair was computed from. -/
-private theorem givensPairStep_zero {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) (l : Fin n)
-    (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :
-    (givensPairStep p q (Id.run (Chapter05.algorithm_5_1_3 pure (st.2 p l) (st.2 q l))) st).2 q l
-      = 0 := by
-  rw [givensPairStep_apply hpq, ite_eq_right hpq.symm, ite_eq_left rfl]
-  exact (Chapter05.algorithm_5_1_3_spec _ _).2.1
-
-/-- A step leaves an entry zero if, in its column, both rotated rows were zero (when the entry
-is in one of them), or the entry itself was zero (otherwise). -/
-private theorem givensPairStep_eq_zero {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) (cs : ℝ × ℝ)
-    (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) {r : Fin m} {l : Fin n}
-    (hin : r = p ∨ r = q → st.2 p l = 0 ∧ st.2 q l = 0)
-    (hr : r ≠ p → r ≠ q → st.2 r l = 0) :
-    (givensPairStep p q cs st).2 r l = 0 := by
-  rw [givensPairStep_apply hpq]
-  split_ifs with h1 h2
-  · obtain ⟨hp, hq⟩ := hin (Or.inl h1)
-    rw [hp, hq]; ring
-  · obtain ⟨hp, hq⟩ := hin (Or.inr h2)
-    rw [hp, hq]; ring
-  · exact hr h1 h2
-
-/-- The row index of an entry in one of the rotated rows. -/
-private theorem val_eq_or_of_eq_or {m : ℕ} {p q r : Fin m} (h : r = p ∨ r = q) :
-    (r : ℕ) = p ∨ (r : ℕ) = q := h.imp (congrArg _) (congrArg _)
-
-/-- The exact step of `givensHessenbergSweep`. -/
-private noncomputable def hessStep {m n : ℕ}
-    (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) :
-    Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ :=
-  if h : j + 1 < m ∧ j < n then
-    givensPairStep ⟨j, by omega⟩ ⟨j + 1, h.1⟩
-      (Id.run (Chapter05.algorithm_5_1_3 pure (st.2 ⟨j, by omega⟩ ⟨j, h.2⟩)
-        (st.2 ⟨j + 1, h.1⟩ ⟨j, h.2⟩))) st
-  else st
-
-private theorem idRun_givensHessenbergSweep {m n : ℕ} (a count : ℕ)
-    (Q : Matrix (Fin m) (Fin m) ℝ) (H : Matrix (Fin m) (Fin n) ℝ) :
-    Id.run (givensHessenbergSweep pure a count Q H) =
-      (List.range' a count).foldl hessStep (Q, H) := by
-  rw [givensHessenbergSweep, List.idRun_foldlM]
-  congr 1
-  funext st j
-  unfold hessStep
-  split_ifs with h
-  · have hpq : (⟨j, by omega⟩ : Fin m) ≠ ⟨j + 1, h.1⟩ := fun e => by simp [Fin.ext_iff] at e
-    simp only [Id.run_bind, Id.run_pure]
-    rw [Chapter05.givensApplyLeft_spec_of_forall_mem hpq _ _ (List.nodup_finRange n)
-      (List.mem_finRange), Chapter05.givensApplyRight_spec_of_forall_mem hpq _ _
-      (List.nodup_finRange m) (List.mem_finRange)]
-    rfl
-  · rfl
-
-/-- **Exact semantics of `givensHessenbergSweep`**: if `Q` is orthogonal with `QH = A`, `H` is upper
-Hessenberg and already triangular in its columns before `a`, and the sweep reaches the last column
-or the last row (`n ≤ a + count` or `m ≤ a + count + 1`), the output `(Q', H')` is a QR
-factorization of `A` (each rotation zeroes the subdiagonal entry of its column and keeps the
-earlier columns). -/
-theorem givensHessenbergSweep_spec {m n : ℕ} {a count : ℕ} {A H : Matrix (Fin m) (Fin n) ℝ}
-    {Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) (hQH : Q * H = A)
-    (hH : ∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < i → H i j = 0)
-    (ha : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → (j : ℕ) < a → H i j = 0)
-    (hc : n ≤ a + count ∨ m ≤ a + count + 1) :
-    IsQR A (Id.run (givensHessenbergSweep pure a count Q H)).1
-      (Id.run (givensHessenbergSweep pure a count Q H)).2 := by
-  set Inv : ℕ → Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ → Prop := fun t st =>
-    st.1 ∈ orthogonalGroup (Fin m) ℝ ∧ st.1 * st.2 = A ∧
-      (∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < i → st.2 i j = 0) ∧
-      ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → (j : ℕ) < a + t → st.2 i j = 0 with hInv
-  have hstep : ∀ t st, Inv t st → Inv (t + 1) (hessStep st (a + t)) := by
-    rintro t st ⟨hQ, hQH, hH, hlow⟩
-    unfold hessStep
-    split_ifs with h
-    · set p : Fin m := ⟨a + t, by omega⟩ with hp
-      set q : Fin m := ⟨a + t + 1, h.1⟩ with hq
-      set jc : Fin n := ⟨a + t, h.2⟩ with hjc
-      have hpv : (p : ℕ) = a + t := rfl
-      have hqv : (q : ℕ) = a + t + 1 := rfl
-      have hpq : p ≠ q := fun e => by have := congrArg Fin.val e; omega
-      have hcs := (Chapter05.algorithm_5_1_3_spec (st.2 p jc) (st.2 q jc)).1
-      refine ⟨givensPairStep_mem hpq hcs hQ, by rw [givensPairStep_mul hpq hcs, hQH],
-        fun i l hil => ?_, fun i l hil hl => ?_⟩
-      · refine givensPairStep_eq_zero hpq _ st (fun hi => ?_) fun _ _ => hH i l hil
-        have hiv := val_eq_or_of_eq_or hi
-        refine ⟨?_, hH q l (by omega)⟩
-        by_cases hl2 : (l : ℕ) + 1 < a + t
-        · exact hH p l (by omega)
-        · exact hlow p l (by omega) (by omega)
-      · by_cases hlj : (l : ℕ) < a + t
-        · refine givensPairStep_eq_zero hpq _ st (fun hi => ⟨hlow p l (by omega) hlj,
-            hH q l (by omega)⟩) fun _ _ => hlow i l hil hlj
-        · have hl' : l = jc := Fin.ext (by simp [hjc]; omega)
-          by_cases hi : i = q
-          · rw [hi, hl']
-            exact givensPairStep_zero hpq jc st
-          · have hip : i ≠ p := by
-              intro e
-              rw [e] at hil
-              omega
-            rw [givensPairStep_apply hpq, ite_eq_right hip, ite_eq_right hi]
-            exact hH i l (by
-              have : (i : ℕ) ≠ a + t + 1 := fun e => hi (Fin.ext (by rw [hqv, e]))
-              omega)
-    · refine ⟨hQ, hQH, hH, fun i l hil hl => ?_⟩
-      by_cases hlj : (l : ℕ) < a + t
-      · exact hlow i l hil hlj
-      · exfalso
-        have := i.isLt
-        have := l.isLt
-        omega
-  have hall : ∀ t, Inv t ((List.range' a t).foldl hessStep (Q, H)) := by
-    intro t
-    induction t with
-    | zero => exact ⟨hQ, hQH, hH, fun i j hij hj => ha i j hij (by simpa using hj)⟩
-    | succ t ih =>
-      rw [List.range'_concat, List.foldl_append, List.foldl_cons, List.foldl_nil, one_mul]
-      exact hstep t _ ih
-  obtain ⟨hQ', hQH', -, hlow'⟩ := hall count
-  rw [idRun_givensHessenbergSweep]
-  refine ⟨hQ', fun i j hij => hlow' i j hij ?_, hQH'⟩
-  have := i.isLt
-  have := j.isLt
-  omega
-
-/-- Rotating a vector with the exact Givens update is multiplication by `G(p, q, θ)ᵀ`. -/
-private theorem idRun_givensRotateVec {m : ℕ} {p q : Fin m} (hpq : p ≠ q) (c s : ℝ)
-    (w : Fin m → ℝ) :
-    Id.run (Chapter05.givensRotateVec pure p q c s w) =
-      (Chapter05.givensRotation p q c s)ᵀ *ᵥ w := by
-  funext r
-  rw [Chapter05.givensRotation_transpose_mulVec_apply hpq]
-  simp only [Chapter05.givensRotateVec, Id.run_bind, Id.run_pure, Function.update_apply]
-  by_cases hrq : r = q
-  · subst hrq
-    simp [hpq.symm]
-  · by_cases hrp : r = p
-    · subst hrp
-      simp [hrq]
-    · simp [hrp, hrq]
-
-/-- The exact step of `givensVectorSweep`. -/
-private noncomputable def vecStep {m n : ℕ}
-    (st : (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) :
-    (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ :=
-  if h : j + 1 < m then
-    let cs := Id.run (Chapter05.algorithm_5_1_3 pure (st.1 ⟨j, by omega⟩) (st.1 ⟨j + 1, h⟩))
-    ((Chapter05.givensRotation ⟨j, by omega⟩ ⟨j + 1, h⟩ cs.1 cs.2)ᵀ *ᵥ st.1,
-      givensPairStep ⟨j, by omega⟩ ⟨j + 1, h⟩ cs (st.2.1, st.2.2))
-  else st
-
-private theorem idRun_givensVectorSweep {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
-    (Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ) :
-    Id.run (givensVectorSweep pure b count w Q R) =
-      (List.range' b count).reverse.foldl vecStep (w, Q, R) := by
-  rw [givensVectorSweep, List.idRun_foldlM]
-  congr 1
-  funext st j
-  unfold vecStep
-  split_ifs with h
-  · have hpq : (⟨j, by omega⟩ : Fin m) ≠ ⟨j + 1, h⟩ := fun e => by simp [Fin.ext_iff] at e
-    simp only [Id.run_bind, Id.run_pure]
-    rw [idRun_givensRotateVec hpq, Chapter05.givensApplyLeft_spec_of_forall_mem hpq _ _
-      (List.nodup_finRange n) (List.mem_finRange), Chapter05.givensApplyRight_spec_of_forall_mem hpq
-      _ _ (List.nodup_finRange m) (List.mem_finRange)]
-    rfl
-  · rfl
-
-/-- **Exact semantics of `givensVectorSweep`**: for `R` upper trapezoidal and `w` vanishing below
-`b + count`, the sweep multiplies `w` and `R` on the left, and `Q` on the right, by one orthogonal
-`P` (resp. `Pᵀ`); afterwards `w` vanishes below `b`, and `R` is upper Hessenberg and still
-triangular in its columns before `b`. -/
-theorem givensVectorSweep_spec {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
-    (Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ)
-    (hR : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → R i j = 0)
-    (hw : ∀ i : Fin m, b + count < i → w i = 0) :
-    (∃ P ∈ orthogonalGroup (Fin m) ℝ,
-      (Id.run (givensVectorSweep pure b count w Q R)).1 = P *ᵥ w ∧
-      (Id.run (givensVectorSweep pure b count w Q R)).2.1 = Q * Pᵀ ∧
-      (Id.run (givensVectorSweep pure b count w Q R)).2.2 = P * R) ∧
-    (∀ i : Fin m, b < i → (Id.run (givensVectorSweep pure b count w Q R)).1 i = 0) ∧
-    (∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < i →
-      (Id.run (givensVectorSweep pure b count w Q R)).2.2 i j = 0) ∧
-    ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → (j : ℕ) < b →
-      (Id.run (givensVectorSweep pure b count w Q R)).2.2 i j = 0 := by
-  set V : ℕ → (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ → Prop :=
-    fun K st => (∃ P ∈ orthogonalGroup (Fin m) ℝ, st.1 = P *ᵥ w ∧ st.2.1 = Q * Pᵀ ∧
-      st.2.2 = P * R) ∧ (∀ i : Fin m, K < i → st.1 i = 0) ∧
-      (∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < i → st.2.2 i j = 0) ∧
-      ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → (j : ℕ) < K → st.2.2 i j = 0 with hV
-  have hstep : ∀ j st, V (j + 1) st → V j (vecStep st j) := by
-    rintro j ⟨x, Q', R'⟩ ⟨⟨P, hP, hx, hQ', hR'⟩, hxz, hH, hlow⟩
-    dsimp only at hx hQ' hR' hxz hH hlow
-    unfold vecStep
-    split_ifs with h
-    · set p : Fin m := ⟨j, by omega⟩ with hp
-      set q : Fin m := ⟨j + 1, h⟩ with hq
-      have hpv : (p : ℕ) = j := rfl
-      have hqv : (q : ℕ) = j + 1 := rfl
-      have hpq : p ≠ q := fun e => by have := congrArg Fin.val e; omega
-      obtain ⟨hcs, hz, -⟩ := Chapter05.algorithm_5_1_3_spec (x p) (x q)
-      set cs := Id.run (Chapter05.algorithm_5_1_3 pure (x p) (x q)) with hcsdef
-      set G := Chapter05.givensRotation p q cs.1 cs.2 with hG
-      have hGo : G ∈ orthogonalGroup (Fin m) ℝ :=
-        Chapter05.givensRotation_mem_orthogonalGroup hpq hcs
-      have hGto : Gᵀ ∈ orthogonalGroup (Fin m) ℝ := by
-        rw [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose]
-        exact Unitary.star_mem hGo
-      have happ := givensPairStep_apply hpq cs (Q', R')
-      dsimp only at happ
-      refine ⟨⟨Gᵀ * P, mul_mem hGto hP, ?_, ?_, ?_⟩, fun i hi => ?_, fun i l hil => ?_,
-        fun i l hil hl => ?_⟩
-      · dsimp only
-        rw [hx, mulVec_mulVec]
-      · change Q' * G = Q * (Gᵀ * P)ᵀ
-        rw [hQ', transpose_mul, transpose_transpose, Matrix.mul_assoc]
-      · change Gᵀ * R' = Gᵀ * P * R
-        rw [hR', Matrix.mul_assoc]
-      · dsimp only
-        rw [Chapter05.givensRotation_transpose_mulVec_apply hpq]
-        by_cases hiq : i = q
-        · rw [ite_eq_right (by rw [hiq]; exact hpq.symm), ite_eq_left hiq]
-          exact hz
-        · have hip : i ≠ p := fun e => by rw [e] at hi; omega
-          rw [ite_eq_right hip, ite_eq_right hiq]
-          exact hxz i (by
-            have : (i : ℕ) ≠ j + 1 := fun e => hiq (Fin.ext (by rw [hqv, e]))
-            omega)
-      · change (givensPairStep p q cs (Q', R')).2 i l = 0
-        refine givensPairStep_eq_zero hpq cs _ (fun hi => ?_) fun _ _ => hH i l hil
-        have hiv := val_eq_or_of_eq_or hi
-        refine ⟨?_, hH q l (by omega)⟩
-        by_cases hl2 : (l : ℕ) + 1 < j
-        · exact hH p l (by omega)
-        · exact hlow p l (by omega) (by omega)
-      · change (givensPairStep p q cs (Q', R')).2 i l = 0
-        exact givensPairStep_eq_zero hpq cs _ (fun _ => ⟨hlow p l (by omega) (by omega),
-          hH q l (by omega)⟩) fun _ _ => hlow i l hil (by omega)
-    · refine ⟨⟨P, hP, hx, hQ', hR'⟩, fun i hi => ?_, hH, fun i l hil hl => hlow i l hil (by omega)⟩
-      exfalso
-      have := i.isLt
-      omega
-  have hall : ∀ t st, V (b + t) st → V b ((List.range' b t).reverse.foldl vecStep st) := by
-    intro t
-    induction t with
-    | zero => intro st h; simpa using h
-    | succ t ih =>
-      intro st h
-      rw [List.range'_concat, List.reverse_append, one_mul]
-      simp only [List.reverse_singleton, List.singleton_append, List.foldl_cons]
-      exact ih _ (hstep (b + t) st h)
-  have h0 : V (b + count) (w, Q, R) :=
-    ⟨⟨1, one_mem _, by simp, by simp, by simp⟩, hw, fun i j hij => hR i j (by omega),
-      fun i j hij _ => hR i j hij⟩
-  rw [idRun_givensVectorSweep]
-  exact hall count _ h0
-
 /-! #### Correctness of the procedures -/
 
 /-- **§6.5.1, the rank-one update is correct in exact arithmetic**: if `A = QR` (`Matrix.IsQR`),
@@ -1091,14 +635,14 @@ theorem qrUpdateRankOne_spec {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h :
   have hw1 : Id.run (Chapter01.algorithm_1_1_3 pure Qᵀ u 0) = Qᵀ *ᵥ u := by
     rw [Chapter01.algorithm_1_1_3_spec, zero_add]
   obtain ⟨⟨P, hP, h1, h2, h3⟩, hwz, hHess, -⟩ :=
-    givensVectorSweep_spec 0 (n - 1) (Qᵀ *ᵥ u) Q R h.apply_eq_zero (fun i hi => by omega)
-  set st := Id.run (givensVectorSweep pure 0 (n - 1) (Qᵀ *ᵥ u) Q R) with hst
+    Chapter05.givensVectorSweep_spec 0 (n - 1) (Qᵀ *ᵥ u) Q R h.apply_eq_zero (fun i hi => by omega)
+  set st := Id.run (Chapter05.givensVectorSweep pure 0 (n - 1) (Qᵀ *ᵥ u) Q R) with hst
   set H : Matrix (Fin n) (Fin n) ℝ := Id.run (if h : 0 < n then do
       let r ← Chapter01.algorithm_1_1_2 pure (st.1 ⟨0, h⟩) v (st.2.2 ⟨0, h⟩)
       pure (st.2.2.updateRow ⟨0, h⟩ r)
     else pure st.2.2) with hHdef
   have hrun : Id.run (qrUpdateRankOne pure Q R u v) =
-      Id.run (givensHessenbergSweep pure 0 (n - 1) st.2.1 H) := by
+      Id.run (Chapter05.givensHessenbergSweep pure 0 (n - 1) st.2.1 H) := by
     simp only [qrUpdateRankOne, Id.run_bind, hw1]
     rw [hHdef]
     split_ifs <;> rfl
@@ -1131,7 +675,7 @@ theorem qrUpdateRankOne_spec {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h :
     rw [hHe, Matrix.add_apply, hHess i j hij, vecMulVec_apply, hwz i (by omega), zero_mul,
       add_zero]
   rw [hrun]
-  exact givensHessenbergSweep_spec (by rw [h2]; exact mul_mem hQ hPt) hprod hHH
+  exact Chapter05.givensHessenbergSweep_spec (by rw [h2]; exact mul_mem hQ hPt) hprod hHH
     (fun i j _ hj => absurd hj (Nat.not_lt_zero _)) (Or.inr (by omega))
 
 /-- **§6.5.2, deleting a column is correct in exact arithmetic**: if `A = QR` then the output of
@@ -1146,7 +690,7 @@ theorem qrDeleteColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin (n + 1)) ℝ}
   obtain ⟨h1, h2, h3⟩ := h.conjTranspose_mul_deleteColumn k
   have hQ : Q ∈ orthogonalGroup (Fin m) ℝ := h.mem_unitaryGroup
   have hk := k.isLt
-  refine givensHessenbergSweep_spec hQ ?_ (fun i j hij => h2 i j hij)
+  refine Chapter05.givensHessenbergSweep_spec hQ ?_ (fun i j hij => h2 i j hij)
     (fun i j hij hjk => h3 i j hij hjk) (Or.inl (by omega))
   rw [← h1, ← Matrix.mul_assoc, conjTranspose_eq_transpose_of_trivial,
     (mem_orthogonalGroup_iff _ ℝ).1 hQ, Matrix.one_mul]
@@ -1156,7 +700,7 @@ private noncomputable def insColStep {m n : ℕ} (k : Fin (n + 1))
     (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ) (j : ℕ) :
     Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ :=
   if h : j + 1 < m then
-    givensPairStep ⟨j, by omega⟩ ⟨j + 1, h⟩
+    Chapter05.givensPairStep ⟨j, by omega⟩ ⟨j + 1, h⟩
       (Id.run (Chapter05.algorithm_5_1_3 pure (st.2 ⟨j, by omega⟩ k) (st.2 ⟨j + 1, h⟩ k))) st
   else st
 
@@ -1208,10 +752,11 @@ theorem qrInsertColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
       have hqv : (q : ℕ) = j + 1 := rfl
       have hpq : p ≠ q := fun e => by have := congrArg Fin.val e; omega
       have hcs := (Chapter05.algorithm_5_1_3_spec (st.2 p k) (st.2 q k)).1
-      refine ⟨givensPairStep_mem hpq hcs hQ, by rw [givensPairStep_mul hpq hcs, hQH],
+      refine ⟨Chapter05.givensPairStep_mem hpq hcs hQ,
+        by rw [Chapter05.givensPairStep_mul hpq hcs, hQH],
         fun i l hil hlk => ?_, fun i l hkl hli hiK => ?_, fun i hi => ?_⟩
-      · refine givensPairStep_eq_zero hpq _ st (fun hi => ?_) fun _ _ => hab i l hil hlk
-        have hiv := val_eq_or_of_eq_or hi
+      · refine Chapter05.givensPairStep_eq_zero hpq _ st (fun hi => ?_) fun _ _ => hab i l hil hlk
+        have hiv := hi.imp (congrArg Fin.val) (congrArg Fin.val)
         refine ⟨?_, hab q l (by omega) hlk⟩
         by_cases hlp : (l : ℕ) < j
         · exact hab p l (by omega) hlk
@@ -1224,13 +769,13 @@ theorem qrInsertColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
           exact hdiag p l hkl (by omega) (by omega)
       · have hip : i ≠ p := fun e => by rw [e] at hiK; omega
         have hiq : i ≠ q := fun e => by rw [e] at hiK; omega
-        rw [givensPairStep_apply hpq, ite_eq_right hip, ite_eq_right hiq]
+        rw [Chapter05.givensPairStep_apply hpq, ite_eq_right hip, ite_eq_right hiq]
         exact hdiag i l hkl hli (by omega)
       · by_cases hiq : i = q
         · rw [hiq]
-          exact givensPairStep_zero hpq k st
+          exact Chapter05.givensPairStep_zero hpq k st
         · have hip : i ≠ p := fun e => by rw [e] at hi; omega
-          rw [givensPairStep_apply hpq, ite_eq_right hip, ite_eq_right hiq]
+          rw [Chapter05.givensPairStep_apply hpq, ite_eq_right hip, ite_eq_right hiq]
           exact hspike i (by
             have : (i : ℕ) ≠ j + 1 := fun e => hiq (Fin.ext (by rw [hqv, e]))
             omega)
@@ -1285,7 +830,7 @@ theorem qrInsertRow_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matri
   have hQ : Q ∈ unitaryGroup (Fin m) ℝ := h.mem_unitaryGroup
   have hQ' : (consDiag 1 Q).submatrix k.cycleRange id ∈ orthogonalGroup (Fin (m + 1)) ℝ :=
     submatrix_mem_unitaryGroup (consDiag_mem_unitaryGroup (by simp) hQ) _
-  refine givensHessenbergSweep_spec hQ' ?_ (fun i j hij => h2 i j hij)
+  refine Chapter05.givensHessenbergSweep_spec hQ' ?_ (fun i j hij => h2 i j hij)
     (fun i j _ hj => absurd hj (Nat.not_lt_zero _)) (Or.inl (by omega))
   rw [← h1, submatrix_id_mul, ← Matrix.mul_assoc, consDiag_mul_consDiag, mul_one,
     ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hQ, consDiag_one, Matrix.one_mul,
@@ -1302,8 +847,8 @@ theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
       (Id.run (qrDeleteFirstRow pure Q R)).2 := by
   have hQ : Q ∈ orthogonalGroup (Fin (m + 1)) ℝ := h.mem_unitaryGroup
   obtain ⟨⟨P, hP, h1, h2, h3⟩, hwz, hHess, -⟩ :=
-    givensVectorSweep_spec 0 m (Q 0) Q R h.apply_eq_zero (fun i hi => by omega)
-  set st := Id.run (givensVectorSweep pure 0 m (Q 0) Q R) with hst
+    Chapter05.givensVectorSweep_spec 0 m (Q 0) Q R h.apply_eq_zero (fun i hi => by omega)
+  set st := Id.run (Chapter05.givensVectorSweep pure 0 m (Q 0) Q R) with hst
   have hrun : Id.run (qrDeleteFirstRow pure Q R) =
       (st.2.1.submatrix Fin.succ Fin.succ, st.2.2.submatrix Fin.succ id) := rfl
   rw [hrun]

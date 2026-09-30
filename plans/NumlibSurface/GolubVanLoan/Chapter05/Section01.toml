@@ -256,3 +256,12 @@ source = 'Golub–Van Loan, Matrix Computations, §5.1.13'
 [[node]]
 id = "equation_5_1_12"
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.12)'
+
+[[node]]
+id = "hyperbolicApplyLeft"
+deps = []
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
+
+[[node]]
+id = "hyperbolicApplyLeft_spec"
+source = 'Golub–Van Loan, Matrix Computations, §6.5.4'

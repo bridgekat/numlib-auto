@@ -140,3 +140,19 @@ source = 'Golub–Van Loan, Matrix Computations, §5.2.8'
 [[node]]
 id = "complexHouseholderQR"
 source = 'Golub–Van Loan, Matrix Computations, §5.2.10'
+
+[[node]]
+id = "givensHessenbergSweep"
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
+
+[[node]]
+id = "givensHessenbergSweep_spec"
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
+
+[[node]]
+id = "givensVectorSweep"
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
+
+[[node]]
+id = "givensVectorSweep_spec"
+source = 'Golub–Van Loan, Matrix Computations, §6.5.1'

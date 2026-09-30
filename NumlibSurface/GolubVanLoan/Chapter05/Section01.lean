@@ -65,7 +65,10 @@ Algorithm 5.1.1's `σ = 0 & x(1) < 0` branch sets `β = 2` (the book prints `β 
 * §5.1.13: `complexHouseholder`, `complexGivens_mem_unitaryGroup`, `equation_5_1_12`.
 
 The run-set lemmas `mem_run_foldlM_updateCol_of_nodup` and `mem_run_foldlM_updateRow_of_nodup`
-(one column, or one row, rewritten per step) are the loop rules of the helpers.
+(one column, or one row, rewritten per step) are the loop rules of the helpers. Later chapters
+also share the entry lemmas of `(I - β v vᵀ) M` and `M (I - β v vᵀ)` for `v` supported on a set
+(`one_sub_smul_vecMulVec_mul_apply` and its variants), the selection matrix `selCols`, the index
+lists `indexFrom`/`indexTo`, and the hyperbolic row update `hyperbolicApplyLeft` of §6.5.4.
 
 ## Not formalized
 
@@ -147,6 +150,148 @@ theorem beta_mul_eq_zero_of_mem_orthogonalGroup {v : ι → ℝ} {β : ℝ} {p :
   rcases mul_eq_zero.1 h2 with h | h
   · exact h
   · exact absurd (mul_self_eq_zero.1 h) hp
+
+/-- A Householder matrix is symmetric, so an orthogonal one is an involution. -/
+theorem one_sub_smul_vecMulVec_mul_self_of_mem {v : ι → ℝ} {β : ℝ}
+    (h : (1 - β • vecMulVec v v) ∈ orthogonalGroup ι ℝ) :
+    (1 - β • vecMulVec v v) * (1 - β • vecMulVec v v) = 1 := by
+  have h1 := (mem_orthogonalGroup_iff' ι ℝ).1 h
+  rwa [transpose_one_sub_smul_vecMulVec] at h1
+
+/-- `I - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
+theorem one_sub_smul_vecMulVec_mulVec_single {v : ι → ℝ} {p : ι} (hv : v p = 0) (β : ℝ) :
+    (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
+  funext i
+  rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
+
+/-! #### The entries of `(I - β v vᵀ) M` and `M (I - β v vᵀ)` -/
+
+variable {κ : Type*}
+
+/-- The entries of `(I - β v vᵀ) M`: column `q` of the product is `I - β v vᵀ` applied to column
+`q` of `M`. -/
+theorem one_sub_smul_vecMulVec_mul_apply (β : ℝ) (v : ι → ℝ) (M : Matrix ι κ ℝ) (i : ι) (q : κ) :
+    ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q - β * v i * (v ⬝ᵥ fun r => M r q) := by
+  change ((1 - β • vecMulVec v v) *ᵥ fun r => M r q) i = _
+  rw [one_sub_smul_vecMulVec_mulVec_apply]
+
+/-- The entries of `M (I - β v vᵀ)`: row `r` of the product is `I - β v vᵀ` applied to row `r` of
+`M`. -/
+theorem mul_one_sub_smul_vecMulVec_apply (β : ℝ) (v : ι → ℝ) (M : Matrix κ ι ℝ) (r : κ) (q : ι) :
+    (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q - β * (M r ⬝ᵥ v) * v q := by
+  change (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ))ᵀ q r = _
+  rw [transpose_mul, transpose_one_sub_smul_vecMulVec, one_sub_smul_vecMulVec_mul_apply,
+    dotProduct_comm]
+  change M r q - β * v q * (M r ⬝ᵥ v) = _
+  ring
+
+/-- Right multiplication by `I - β v vᵀ` acts on each row as `I - β v vᵀ` (a symmetric matrix). -/
+theorem mul_one_sub_smul_vecMulVec_apply_eq_mulVec (β : ℝ) (v : ι → ℝ) (M : Matrix κ ι ℝ)
+    (r : κ) (q : ι) :
+    (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = ((1 - β • vecMulVec v v) *ᵥ M r) q := by
+  rw [mul_one_sub_smul_vecMulVec_apply, one_sub_smul_vecMulVec_mulVec_apply, dotProduct_comm]
+  ring
+
+/-- For `v` supported on `S`, `(I - β v vᵀ) M` agrees with `M` in the rows outside `S`. -/
+theorem one_sub_smul_vecMulVec_mul_apply_of_notMem {v : ι → ℝ} {S : ι → Prop}
+    (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) {i : ι} (hi : ¬ S i) (q : κ) :
+    ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q := by
+  rw [one_sub_smul_vecMulVec_mul_apply, hv i hi, mul_zero, zero_mul, sub_zero]
+
+/-- For `v` supported on `S`, `M (I - β v vᵀ)` agrees with `M` in the columns outside `S`. -/
+theorem mul_one_sub_smul_vecMulVec_apply_of_notMem {v : ι → ℝ} {S : ι → Prop}
+    (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix κ ι ℝ) (r : κ) {q : ι} (hq : ¬ S q) :
+    (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q := by
+  rw [mul_one_sub_smul_vecMulVec_apply, hv q hq, mul_zero, sub_zero]
+
+/-- For `v` supported on `S`, `I - β v vᵀ` fixes a column of `M` that vanishes on `S`. -/
+theorem one_sub_smul_vecMulVec_mul_apply_of_forall {v : ι → ℝ} {S : ι → Prop}
+    (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) {q : κ} (hM : ∀ l, S l → M l q = 0)
+    (i : ι) : ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q := by
+  have h0 : (v ⬝ᵥ fun r => M r q) = 0 := Finset.sum_eq_zero fun l _ => by
+    by_cases hl : S l
+    · simp [hM l hl]
+    · simp [hv l hl]
+  rw [one_sub_smul_vecMulVec_mul_apply, h0, mul_zero, sub_zero]
+
+/-- For `v` supported on `S`, `I - β v vᵀ` fixes on the right a row of `M` that vanishes on `S`. -/
+theorem mul_one_sub_smul_vecMulVec_apply_of_forall {v : ι → ℝ} {S : ι → Prop}
+    (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix κ ι ℝ) {r : κ} (hM : ∀ l, S l → M r l = 0)
+    (q : ι) : (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q := by
+  have h0 : M r ⬝ᵥ v = 0 := Finset.sum_eq_zero fun l _ => by
+    by_cases hl : S l
+    · simp [hM l hl]
+    · simp [hv l hl]
+  rw [mul_one_sub_smul_vecMulVec_apply, h0, mul_zero, zero_mul, sub_zero]
+
+/-- For `v` supported on `S`, the rows `S` of `(I - β v vᵀ) M` see a column of `M` only through
+its entries on `S`. -/
+theorem one_sub_smul_vecMulVec_mul_apply_eq_mulVec {v : ι → ℝ} {S : ι → Prop}
+    (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) (u : ι → ℝ) {q : κ}
+    (hMu : ∀ l, S l → M l q = u l) {i : ι} (hi : S i) :
+    ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = ((1 - β • vecMulVec v v) *ᵥ u) i := by
+  have h : (v ⬝ᵥ fun r => M r q) = v ⬝ᵥ u := Finset.sum_congr rfl fun l _ => by
+    by_cases hl : S l
+    · simp [hMu l hl]
+    · simp [hv l hl]
+  rw [one_sub_smul_vecMulVec_mul_apply, one_sub_smul_vecMulVec_mulVec_apply, hMu i hi, h]
+
+/-! #### Selecting columns of the identity -/
+
+/-- The columns of `I` listed by `l`: the matrix `E = [e_{l₀} ⋯ e_{l_{k-1}}]`. -/
+def selCols (l : List ι) : Matrix ι (Fin l.length) ℝ :=
+  of fun r a => if l.get a = r then 1 else 0
+
+omit [Fintype ι] in
+/-- Row `l.get a` of `E N` is row `a` of `N`. -/
+theorem selCols_mul_apply_get {l : List ι} (hl : l.Nodup) (N : Matrix (Fin l.length) κ ℝ)
+    (a : Fin l.length) (c : κ) : (selCols l * N) (l.get a) c = N a c := by
+  rw [mul_apply, Finset.sum_eq_single a]
+  · simp [selCols]
+  · intro a' _ ha'
+    simp only [selCols, of_apply, ite_mul, one_mul, zero_mul, ite_eq_right_iff]
+    exact fun h => absurd (List.nodup_iff_injective_get.1 hl h) ha'
+  · simp
+
+omit [Fintype ι] in
+/-- The rows of `E N` outside `l` vanish. -/
+theorem selCols_mul_apply_of_notMem {l : List ι} (N : Matrix (Fin l.length) κ ℝ) {r : ι}
+    (hr : r ∉ l) (c : κ) : (selCols l * N) r c = 0 := by
+  rw [mul_apply]
+  refine Finset.sum_eq_zero fun a _ => ?_
+  have : l.get a ≠ r := fun h => hr (h ▸ List.get_mem l a)
+  simp only [selCols, of_apply, this, ite_false, zero_mul]
+
+omit [Fintype ι] in
+/-- Column `l.get e` of `N Eᵀ` is column `e` of `N`. -/
+theorem mul_selCols_transpose_apply_get {l : List ι} (hl : l.Nodup)
+    (N : Matrix κ (Fin l.length) ℝ) (r : κ) (e : Fin l.length) :
+    (N * (selCols l)ᵀ) r (l.get e) = N r e := by
+  rw [mul_apply, Finset.sum_eq_single e]
+  · simp [selCols]
+  · intro e' _ he'
+    simp only [transpose_apply, selCols, of_apply, mul_ite, mul_one, mul_zero, ite_eq_right_iff]
+    exact fun h => absurd (List.nodup_iff_injective_get.1 hl h) he'
+  · simp
+
+omit [Fintype ι] in
+/-- The columns of `N Eᵀ` outside `l` vanish. -/
+theorem mul_selCols_transpose_apply_of_notMem {l : List ι} (N : Matrix κ (Fin l.length) ℝ)
+    (r : κ) {c : ι} (hc : c ∉ l) : (N * (selCols l)ᵀ) r c = 0 := by
+  rw [mul_apply]
+  refine Finset.sum_eq_zero fun e _ => ?_
+  have : l.get e ≠ c := fun h => hc (h ▸ List.get_mem l e)
+  simp only [transpose_apply, selCols, of_apply, this, ite_false, mul_zero]
+
+/-- Row `a` of `Eᵀ A` is row `l.get a` of `A`. -/
+theorem selCols_transpose_mul_apply (l : List ι) (A : Matrix ι κ ℝ) (a : Fin l.length) (c : κ) :
+    ((selCols l)ᵀ * A) a c = A (l.get a) c := by
+  simp [mul_apply, selCols]
+
+/-- Column `a` of `A E` is column `l.get a` of `A`. -/
+theorem mul_selCols_apply (l : List ι) (A : Matrix κ ι ℝ) (r : κ) (a : Fin l.length) :
+    (A * selCols l) r a = A r (l.get a) := by
+  simp [mul_apply, selCols]
 
 end Generic
 
@@ -993,6 +1138,46 @@ theorem mem_indexFrom {j : ℕ} {i : Fin m} : i ∈ indexFrom m j ↔ j ≤ (i :
 theorem nodup_indexFrom (m j : ℕ) : (indexFrom m j).Nodup :=
   (List.nodup_finRange m).filter _
 
+/-- `indexFrom m j` is nonempty for `j < m`. -/
+theorem indexFrom_ne_nil {j : ℕ} (hj : j < m) : indexFrom m j ≠ [] := by
+  intro h
+  have : (⟨j, hj⟩ : Fin m) ∈ indexFrom m j := by simp
+  rw [h] at this
+  exact List.not_mem_nil this
+
+/-- The head of a strictly increasing list is below each of its elements. -/
+private theorem head_le_of_pairwise {α : Type*} [Preorder α] {l : List α}
+    (hp : l.Pairwise (· < ·)) (h : l ≠ []) {b : α} (hb : b ∈ l) : l.head h ≤ b := by
+  cases l with
+  | nil => exact absurd rfl h
+  | cons a t =>
+    rcases List.mem_cons.1 hb with rfl | hb
+    · exact le_rfl
+    · exact (List.rel_of_pairwise_cons hp hb).le
+
+/-- The head of `indexFrom m j` is `j` (the rows `j:m` start at row `j`). -/
+theorem head_indexFrom {j : ℕ} (hj : j < m) (h : indexFrom m j ≠ []) :
+    (indexFrom m j).head h = ⟨j, hj⟩ := by
+  have hp : (indexFrom m j).Pairwise (· < ·) :=
+    (List.sortedLT_finRange m).pairwise.filter _
+  have hmem : (⟨j, hj⟩ : Fin m) ∈ indexFrom m j := by simp
+  have h1 := head_le_of_pairwise hp h hmem
+  have h2 : j ≤ ((indexFrom m j).head h : ℕ) := mem_indexFrom.1 (List.head_mem h)
+  exact le_antisymm h1 (Fin.mk_le_of_le_val h2)
+
+/-- The index list `[0, 1, …, j]` of `Fin m`: the rows `1:j+1` of the book in 0-based form
+(convention 10; the twin of `indexFrom`). -/
+def indexTo (m j : ℕ) : List (Fin m) := (List.finRange m).filter fun i => (i : ℕ) ≤ j
+
+/-- Membership in `indexTo m j`. -/
+@[simp]
+theorem mem_indexTo {j : ℕ} {i : Fin m} : i ∈ indexTo m j ↔ (i : ℕ) ≤ j := by
+  simp [indexTo]
+
+/-- `indexTo m j` has no duplicates. -/
+theorem nodup_indexTo (m j : ℕ) : (indexTo m j).Nodup :=
+  (List.nodup_finRange m).filter _
+
 /-- A sum of a function vanishing off a duplicate-free list is the sum along the list. -/
 theorem sum_eq_sum_map_of_nodup {ι : Type} [Fintype ι] {l : List ι}
     (hl : l.Nodup) {f : ι → ℝ} (hf : ∀ i, i ∉ l → f i = 0) : ∑ i, f i = (l.map f).sum := by
@@ -1023,6 +1208,21 @@ theorem householderProduct_concat (data : List ((Fin m → ℝ) × ℝ)) (p : (F
     householderProduct (data ++ [p]) = householderProduct data * (1 - p.2 • vecMulVec p.1 p.1) := by
   simp [householderProduct, List.prod_append]
 
+/-- The product of concatenated reflector data. -/
+theorem householderProduct_append (D E : List ((Fin m → ℝ) × ℝ)) :
+    householderProduct (D ++ E) = householderProduct D * householderProduct E := by
+  simp [householderProduct, List.prod_append]
+
+/-- The product of reversed reflector data, transposed, is the product in order (every factor is
+symmetric). -/
+theorem householderProduct_reverse_transpose (data : List ((Fin m → ℝ) × ℝ)) :
+    (householderProduct data.reverse)ᵀ = householderProduct data := by
+  induction data with
+  | nil => simp
+  | cons p t ih =>
+    rw [List.reverse_cons, householderProduct_concat, transpose_mul,
+      transpose_one_sub_smul_vecMulVec, ih, householderProduct_cons]
+
 /-- **The product of reflector data is orthogonal** when every `(v, β)` has `β = 0` or
 `β vᵀv = 2` (each factor is then `I` or a Householder matrix). -/
 theorem householderProduct_mem_orthogonalGroup {data : List ((Fin m → ℝ) × ℝ)}
@@ -1034,6 +1234,17 @@ theorem householderProduct_mem_orthogonalGroup {data : List ((Fin m → ℝ) × 
   rcases h p hp with h0 | h2
   · rw [h0, zero_mul]
   · rw [h2, sub_self, mul_zero]
+
+/-- A product of reflectors whose vectors vanish at `p` fixes `e_p`. -/
+theorem householderProduct_mulVec_single {data : List ((Fin m → ℝ) × ℝ)} {p : Fin m}
+    (h : ∀ q ∈ data, q.1 p = 0) :
+    householderProduct data *ᵥ Pi.single p 1 = Pi.single p 1 := by
+  induction data with
+  | nil => rw [householderProduct_nil, one_mulVec]
+  | cons q data ih =>
+    rw [householderProduct_cons, ← mulVec_mulVec,
+      ih fun r hr => h r (List.mem_cons_of_mem _ hr),
+      one_sub_smul_vecMulVec_mulVec_single (h q List.mem_cons_self)]
 
 /-- **The Householder vector `v^{(j)}` read from a factored-form array** ((5.1.3), §5.1.6): zeros
 above position `j`, `1` at `j`, and the essential part `A(j+1:m, j)` below. -/
@@ -1391,21 +1602,6 @@ noncomputable def algorithm_5_1_2 {M : Type → Type} [Monad M] (rnd : ℝ → M
     M (Matrix (Fin m) (Fin data.length) ℝ × Matrix (Fin m) (Fin data.length) ℝ) :=
   (List.finRange data.length).foldlM (wyStep rnd data) (0, 0)
 
-/-- A loop writing each listed entry from a value independent of the state writes the listed
-entries and keeps the others. -/
-theorem foldl_update_eq {ι β : Type*} [DecidableEq ι] (g : ι → β) (l : List ι) (y₀ : ι → β) :
-    l.foldl (fun y k => Function.update y k (g k)) y₀ = fun k => if k ∈ l then g k else y₀ k := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih]
-    funext k
-    by_cases hk : k ∈ l
-    · simp [hk]
-    · by_cases hka : k = a
-      · subst hka; simp [hk]
-      · simp [hk, hka]
-
 /-- The exact step of Algorithm 5.1.2, when the columns `≥ j` of `W` are zero:
 `W(:, j) = β (I - W Yᵀ) v`, `Y(:, j) = v`. -/
 private theorem wyStep_pure (data : List ((Fin m → ℝ) × ℝ))
@@ -1419,7 +1615,7 @@ private theorem wyStep_pure (data : List ((Fin m → ℝ) × ℝ))
   set prev := (List.finRange data.length).filter (· < j) with hprev
   simp only [wyStep, Id.run_bind, Id.run_pure, List.idRun_foldlM,
     Chapter01.algorithm_1_1_1_spec, dotAccum_id]
-  rw [foldl_update_eq, foldl_update_eq]
+  rw [List.foldl_update_eq_ite, List.foldl_update_eq_ite]
   congr 2
   funext i
   simp only [List.mem_finRange, ↓reduceIte, zero_add, Pi.smul_apply, smul_eq_mul, sub_mulVec,
@@ -1618,6 +1814,20 @@ def givensApplyRight (i k : Fin n) (c s : ℝ) (rows : List (Fin m))
   rows.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) r => do
     let y ← givensRotateVec rnd i k c s (A r)
     pure (A.updateRow r y)) A
+
+/-- **§6.5.4, a hyperbolic rotation applied to two rows.** "`[c −s; −s c]`" applied to the rows
+`i`, `k` of `S` on the columns `cols`, in place:
+`S(i, j) ← c S(i, j) − s S(k, j)`, `S(k, j) ← c S(k, j) − s S(i, j)`, every product and
+difference rounded. The hyperbolic counterpart of chapter 5's Givens row update; its exact
+semantics is left multiplication by `Matrix.hyperbolicRotation i k c s` on the columns `cols`
+(`hyperbolicApplyLeft_spec`). -/
+def hyperbolicApplyLeft {ι : Type} [DecidableEq ι] {n : ℕ} (i k : ι) (c s : ℝ)
+    (cols : List (Fin n)) (S : Matrix ι (Fin n) ℝ) : M (Matrix ι (Fin n) ℝ) :=
+  cols.foldlM (fun (S : Matrix ι (Fin n) ℝ) (j : Fin n) => do
+    let x ← rnd ((← rnd (c * S i j)) - (← rnd (s * S k j)))
+    let y ← rnd ((← rnd (c * S k j)) - (← rnd (s * S i j)))
+    pure ((S.updateRow i (Function.update (S i) j x)).updateRow k
+      (Function.update (S k) j y))) S
 
 end Programs
 
@@ -1858,6 +2068,62 @@ theorem givensApplyRight_rounding {K : ℕ} (hu : ((K + 2 : ℕ) : ℝ) * fp.u <
   exact ⟨hout, hrel.row_norm_sub_le hu hik hcs hc hs, hrel.frobenius_norm_sub_le hu hik hcs hc hs⟩
 
 end Frobenius
+
+/-- The entries of a hyperbolic rotation times a matrix. -/
+private theorem hyperbolicRotation_mul_apply {ι κ : Type*} [Fintype ι] [DecidableEq ι] {i k : ι}
+    (hik : i ≠ k) (c s : ℝ) (S : Matrix ι κ ℝ) (p : ι) (q : κ) :
+    (hyperbolicRotation i k c s * S) p q =
+      if p = i then c * S i q - s * S k q else if p = k then c * S k q - s * S i q
+      else S p q := by
+  change (planeEmbed i k !![c, -s; -s, c] *ᵥ fun r => S r q) p = _
+  rw [planeEmbed_mulVec_apply _ hik]
+  split_ifs <;> simp <;> ring
+
+/-- **Exact semantics of `hyperbolicApplyLeft`**: on the columns of a duplicate-free list `cols`
+it is left multiplication by the hyperbolic rotation `[c −s; −s c]` in the rows `i`, `k`; the
+other columns are unchanged. -/
+theorem hyperbolicApplyLeft_spec {ι : Type} [Fintype ι] [DecidableEq ι] {n : ℕ} {i k : ι}
+    (hik : i ≠ k) (c s : ℝ) {cols : List (Fin n)} (hcols : cols.Nodup) (S : Matrix ι (Fin n) ℝ) :
+    Id.run (hyperbolicApplyLeft pure i k c s cols S) =
+      of fun p j => if j ∈ cols then (hyperbolicRotation i k c s * S) p j else S p j := by
+  induction cols generalizing S with
+  | nil =>
+    ext p j
+    simp [hyperbolicApplyLeft]
+  | cons j l ih =>
+    obtain ⟨hjl, hl⟩ := List.nodup_cons.1 hcols
+    set S' := (S.updateRow i (Function.update (S i) j (c * S i j - s * S k j))).updateRow k
+      (Function.update (S k) j (c * S k j - s * S i j)) with hS'
+    have hstep : Id.run (hyperbolicApplyLeft pure i k c s (j :: l) S) =
+        Id.run (hyperbolicApplyLeft pure i k c s l S') := rfl
+    have hS'e : ∀ p q, S' p q =
+        if q = j then (hyperbolicRotation i k c s * S) p q else S p q := fun p q => by
+      rw [hyperbolicRotation_mul_apply hik]
+      simp only [hS', updateRow_apply, Function.update_apply]
+      by_cases hq : q = j
+      · subst hq
+        by_cases hpk : p = k
+        · subst hpk
+          simp [Ne.symm hik]
+        · by_cases hpi : p = i
+          · subst hpi
+            simp [hpk]
+          · simp [hpk, hpi]
+      · simp only [hq, ite_false]
+        split_ifs <;> subst_vars <;> rfl
+    have hcol : ∀ q, q ≠ j → ∀ p, (hyperbolicRotation i k c s * S') p q =
+        (hyperbolicRotation i k c s * S) p q := fun q hq p => by
+      rw [hyperbolicRotation_mul_apply hik, hyperbolicRotation_mul_apply hik, hS'e, hS'e, hS'e,
+        ite_eq_right hq, ite_eq_right hq, ite_eq_right hq]
+    rw [hstep, ih hl]
+    ext p q
+    simp only [of_apply, List.mem_cons]
+    by_cases hq : q = j
+    · subst hq
+      rw [ite_eq_right hjl, ite_eq_left (Or.inl rfl), hS'e, ite_eq_left rfl]
+    · by_cases hql : q ∈ l
+      · rw [ite_eq_left hql, ite_eq_left (Or.inr hql), hcol q hq]
+      · rw [ite_eq_right hql, ite_eq_right (by tauto), hS'e, ite_eq_right hq]
 
 end Givens
 

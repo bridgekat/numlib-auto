@@ -1834,7 +1834,8 @@ private theorem unsym_biorth {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt
 
 /-- A three-term recurrence spans the Krylov subspaces: if `v_0` is a nonzero multiple of `v₁` and
 `B v_a = c₁_a v_{a−1} + c₂_a v_a + c₃_{a+1} v_{a+1}` with `c₃_{a+1} ≠ 0` for `a + 1 < k`, then
-`span {v_0, …, v_{j−1}} = 𝒦_j(B, v₁)` for `j ≤ k`. -/
+`span {v_0, …, v_{j−1}} = 𝒦_j(B, v₁)` for `j ≤ k` (`Krylov.span_eq_subspace_of_threeTerm` in
+coordinates). -/
 private theorem span_eq_subspace_of_threeTerm {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ)
     (v : ℕ → Fin n → ℝ) (v₁ : Fin n → ℝ) (k : ℕ) (c c₁ c₂ c₃ : ℕ → ℝ)
     (h0 : 0 < k → v 0 = c 0 • v₁ ∧ c 0 ≠ 0)
@@ -1843,80 +1844,14 @@ private theorem span_eq_subspace_of_threeTerm {n : ℕ} (B : Matrix (Fin n) (Fin
     (hne : ∀ a < k, c₃ a ≠ 0) :
     ∀ j ≤ k, Submodule.span ℝ (Set.range fun i : Fin j =>
         (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n))) =
-      Krylov.subspace (Matrix.toEuclideanLin B) (WithLp.toLp 2 v₁) j := by
-  set T := Matrix.toEuclideanLin B
-  set V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n)) := fun j =>
-    Submodule.span ℝ (Set.range fun i : Fin j => (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)))
-  have hmemV : ∀ {i j : ℕ}, i < j → (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)) ∈ V j :=
-    fun {i j} h => Submodule.subset_span ⟨⟨i, h⟩, rfl⟩
-  have hVmono : ∀ {a b : ℕ}, a ≤ b → V a ≤ V b := fun {a b} hab =>
-    Submodule.span_le.2 (by rintro _ ⟨l, rfl⟩; exact hmemV (by omega))
-  have hTv : ∀ a, a + 1 < k → T (WithLp.toLp 2 (v a)) =
-      c₁ a • WithLp.toLp 2 (if a = 0 then 0 else v (a - 1)) + c₂ a • WithLp.toLp 2 (v a) +
-        c₃ (a + 1) • WithLp.toLp 2 (v (a + 1)) := fun a ha => by
-    rw [Matrix.toEuclideanLin_toLp, hrel a ha]
-    simp only [WithLp.toLp_add, WithLp.toLp_smul]
-  -- each `v_i` lies in `𝒦_{i+1}`
-  have hle : ∀ i < k, (WithLp.toLp 2 (v i) : EuclideanSpace ℝ (Fin n)) ∈
-      Krylov.subspace T (WithLp.toLp 2 v₁) (i + 1) := by
-    intro i
-    induction i using Nat.strong_induction_on with
-    | _ i ih =>
-      intro hi
-      rcases i with _ | i
-      · rw [(h0 hi).1, WithLp.toLp_smul]
-        exact Submodule.smul_mem _ _ (Krylov.self_mem_subspace _ _ (Nat.succ_pos 0))
-      · have hA := hTv i (by omega)
-        have hvi : (WithLp.toLp 2 (v (i + 1)) : EuclideanSpace ℝ (Fin n)) =
-            (c₃ (i + 1))⁻¹ • (T (WithLp.toLp 2 (v i)) - c₁ i • WithLp.toLp 2
-              (if i = 0 then 0 else v (i - 1)) - c₂ i • WithLp.toLp 2 (v i)) := by
-          rw [hA, (by intro x y z; abel : ∀ x y z : EuclideanSpace ℝ (Fin n),
-            x + y + z - x - y = z), smul_smul, inv_mul_cancel₀ (hne (i + 1) hi), one_smul]
-        rw [hvi]
-        have hKi := ih i (by omega) (by omega)
-        refine Submodule.smul_mem _ _ (Submodule.sub_mem _ (Submodule.sub_mem _ ?_ ?_) ?_)
-        · exact Krylov.map_subspace_le T _ (i + 1) ⟨_, hKi, rfl⟩
-        · refine Submodule.smul_mem _ _ ?_
-          split_ifs with h
-          · simp
-          · exact Krylov.subspace_mono T _ (by omega) (ih (i - 1) (by omega) (by omega))
-        · exact Submodule.smul_mem _ _ (Krylov.subspace_mono T _ (by omega) hKi)
-  -- `T` maps `V (i+1)` into `V (i+2)` below `k`
-  have hmap : ∀ i, i + 1 < k → ∀ x ∈ V (i + 1), T x ∈ V (i + 2) := by
-    intro i hi x hx
-    refine Submodule.span_induction (fun y hy => ?_) (by simp) (fun y z _ _ hy hz => by
-      rw [map_add]; exact Submodule.add_mem _ hy hz) (fun a y _ hy => by
-      rw [map_smul]; exact Submodule.smul_mem _ a hy) hx
-    obtain ⟨l, rfl⟩ := hy
-    rw [hTv l (by omega)]
-    refine Submodule.add_mem _ (Submodule.add_mem _ (Submodule.smul_mem _ _ ?_)
-      (Submodule.smul_mem _ _ (hmemV (by omega)))) (Submodule.smul_mem _ _ (hmemV (by omega)))
-    split_ifs with h
-    · simp
-    · exact hmemV (by omega)
-  have hge : ∀ i < k, ((T ^ i) (WithLp.toLp 2 v₁) : EuclideanSpace ℝ (Fin n)) ∈ V (i + 1) := by
-    intro i
-    induction i with
-    | zero =>
-      intro hk
-      obtain ⟨hv0, hc0⟩ := h0 hk
-      have : (WithLp.toLp 2 v₁ : EuclideanSpace ℝ (Fin n)) = (c 0)⁻¹ • WithLp.toLp 2 (v 0) := by
-        rw [hv0, WithLp.toLp_smul, smul_smul, inv_mul_cancel₀ hc0, one_smul]
-      rw [pow_zero, Module.End.one_apply, this]
-      exact Submodule.smul_mem _ _ (hmemV (by omega))
-    | succ i ih =>
-      intro hi
-      rw [pow_succ', Module.End.mul_apply]
-      exact hmap i hi _ (ih (by omega))
-  intro j hj
-  apply le_antisymm
-  · rw [Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
-    exact Krylov.subspace_mono T _ (by omega) (hle i (by omega))
-  · rw [Krylov.subspace, Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
-    exact hVmono (by omega) (hge i (by omega))
-
+      Krylov.subspace (Matrix.toEuclideanLin B) (WithLp.toLp 2 v₁) j :=
+  Krylov.span_eq_subspace_of_threeTerm (Matrix.toEuclideanLin B) (fun i => WithLp.toLp 2 (v i))
+    (WithLp.toLp 2 v₁) k (c 0) c₁ c₂ c₃
+    (fun hk => ⟨by rw [(h0 hk).1, WithLp.toLp_smul], (h0 hk).2⟩)
+    (fun a ha => by
+      rw [Matrix.toEuclideanLin_toLp, hrel a ha]
+      split_ifs <;> simp only [WithLp.toLp_add, WithLp.toLp_smul, WithLp.toLp_zero])
+    hne
 /-- **Exact semantics of (10.5.11)**: for any run (the loop stops at breakdown, so every executed
 pass had `r_k ≠ 0`, `r̃_k ≠ 0`, `r̃_kᵀ r_k ≠ 0`), with `k` passes, the computed families are
 biorthonormal, `Q̃_kᵀ Q_k = I_k`; they span the Krylov subspaces,

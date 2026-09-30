@@ -375,15 +375,6 @@ private noncomputable def hlH (A : Matrix (Fin n) (Fin n) ℝ) (s : HouseholderL
     (j : ℕ) : (Fin n → ℝ) × ℝ :=
   Id.run (houseOn pure (indexFrom n (j + 1)) (hlW A s j))
 
-/-- The product of reversed reflector data, transposed, is the product in order. -/
-private theorem householderProduct_reverse_transpose (data : List ((Fin n → ℝ) × ℝ)) :
-    (householderProduct data.reverse)ᵀ = householderProduct data := by
-  induction data with
-  | nil => simp
-  | cons h t ih =>
-    rw [List.reverse_cons, GolubVanLoan.Chapter05.householderProduct_concat, Matrix.transpose_mul,
-      reflMat_transpose, ih, GolubVanLoan.Chapter05.householderProduct_cons]
-
 private theorem householderLanczosStep_exact (A : Matrix (Fin n) (Fin n) ℝ)
     (s : HouseholderLanczosState n) (j : ℕ) (hj : j + 1 < n) :
     Id.run (householderLanczosStep pure A s ⟨j + 1, hj⟩) =
@@ -405,10 +396,10 @@ private theorem householderLanczosStep_exact (A : Matrix (Fin n) (Fin n) ℝ)
     Nat.add_sub_cancel, zero_add]
   split_ifs with hj0
   · simp only [Id.run_bind, Id.run_pure, hr0 hj0, foldlM_reflectorApply_exact,
-      householderProduct_reverse_transpose, reflectorApply_exact]
+      GolubVanLoan.Chapter05.householderProduct_reverse_transpose, reflectorApply_exact]
     rfl
   · simp only [Id.run_bind, Id.run_pure, hr1 hj0, foldlM_reflectorApply_exact,
-      householderProduct_reverse_transpose, reflectorApply_exact]
+      GolubVanLoan.Chapter05.householderProduct_reverse_transpose, reflectorApply_exact]
     rfl
 
 
@@ -435,9 +426,8 @@ private theorem reflMat_mem {h : (Fin n → ℝ) × ℝ} (hh : h.2 = 0 ∨ h.2 *
 
 /-- Such a reflector is an involution. -/
 private theorem reflMat_mul_self {h : (Fin n → ℝ) × ℝ}
-    (hh : h.2 = 0 ∨ h.2 * (h.1 ⬝ᵥ h.1) = 2) : reflMat h * reflMat h = 1 := by
-  have := (Matrix.mem_orthogonalGroup_iff _ _).1 (reflMat_mem hh)
-  rwa [reflMat_transpose] at this
+    (hh : h.2 = 0 ∨ h.2 * (h.1 ⬝ᵥ h.1) = 2) : reflMat h * reflMat h = 1 :=
+  GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_mul_self_of_mem (reflMat_mem hh)
 
 /-- A reflector whose vector vanishes at `i` fixes `e_i`. -/
 private theorem reflMat_mulVec_single {h : (Fin n → ℝ) × ℝ} {i : Fin n} (hi : h.1 i = 0) :
@@ -773,14 +763,6 @@ private theorem one_sub_appendCol_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin k
   · simp [appendCol, Matrix.mul_apply, Matrix.vecMulVec_apply, dotProduct, e2]
 
 open scoped Matrix.Norms.L2Operator in
-/-- The spectral norm is invariant under a simultaneous reindexing of rows and columns. -/
-private theorem l2_opNorm_submatrix_equiv {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
-    [DecidableEq κ] (M : Matrix ι ι ℝ) (e : κ ≃ ι) : ‖M.submatrix e e‖ = ‖M‖ := by
-  refine le_antisymm (Matrix.l2_opNorm_submatrix_le M e.injective e.injective) ?_
-  have h := Matrix.l2_opNorm_submatrix_le (M.submatrix e e) e.symm.injective e.symm.injective
-  rwa [Matrix.submatrix_submatrix, e.self_comp_symm, Matrix.submatrix_id_id] at h
-
-open scoped Matrix.Norms.L2Operator in
 /-- **Lemma 10.3.1 (Kahan–Parlett).** Suppose `S ∈ ℝ^{n×k}` and `d ∈ ℝⁿ`. If `S₊ = [S | d]`,
 `‖I_k − SᵀS‖₂ ≤ μ` and `|1 − dᵀd| ≤ δ`, then `‖I_{k+1} − S₊ᵀS₊‖₂ ≤ μ₊` with
 `μ₊ = (μ + δ + √((μ − δ)² + 4 ‖Sᵀd‖₂²))/2`. `I − S₊ᵀS₊` is the symmetric block matrix
@@ -799,7 +781,8 @@ theorem lemma_10_3_1 {k : ℕ} (S : Matrix (Fin n) (Fin k) ℝ) (d : Fin n → �
   have hD : ‖Matrix.vecMulVec (fun _ : Fin 1 => 1 - d ⬝ᵥ d) fun _ : Fin 1 => (1 : ℝ)‖ ≤ δ := by
     rw [l2_opNorm_vecMulVec, hone, mul_one]
     simpa [EuclideanSpace.norm_eq, Real.sqrt_sq_eq_abs] using hδ
-  rw [← l2_opNorm_submatrix_equiv _ finSumFinEquiv, one_sub_appendCol_submatrix]
+  rw [← Matrix.l2_opNorm_submatrix_equiv _ finSumFinEquiv finSumFinEquiv,
+    one_sub_appendCol_submatrix]
   exact Matrix.l2_opNorm_fromBlocks_le_of_isHermitian hμ hC hD
 
 /-! ### Block Lanczos (10.3.6): (10.3.8), (10.3.9) and Theorem 10.3.2 -/
@@ -1047,16 +1030,15 @@ private theorem mul_lastBlockSel_apply (R : Matrix (Fin n) (Fin p) ℝ) (k : ℕ
   · simp [Matrix.mul_apply, lastBlockSel, hb]
   · simp [Matrix.mul_apply, lastBlockSel, hb]
 
-/-- The entries of the block tridiagonal `T̄_{k+1}` of `ℕ`-indexed blocks. -/
+/-- The entries of the block tridiagonal `T̄_{k+1}` of `ℕ`-indexed blocks
+(`Matrix.blockTridiagonal_apply_eq_ite` with `F = Bᵀ`). -/
 private theorem blockTridiagonal_entry (Md Bd : ℕ → Matrix (Fin p) (Fin p) ℝ) (k : ℕ)
     (a c : Fin (k + 1)) (y l : Fin p) :
     Matrix.blockTridiagonal (fun j : Fin k => Bd j) (fun j : Fin k => (Bd j)ᵀ)
         (fun j : Fin (k + 1) => Md j) (a, y) (c, l) =
       if (a : ℕ) = c then Md a y l else if (a : ℕ) = c + 1 then Bd c y l
-        else if (c : ℕ) = a + 1 then Bd a l y else 0 := by
-  rw [Matrix.blockTridiagonal_apply]
-  simp only [Matrix.tridiagonalOf, Matrix.of_apply]
-  split_ifs <;> rfl
+        else if (c : ℕ) = a + 1 then Bd a l y else 0 :=
+  Matrix.blockTridiagonal_apply_eq_ite Bd (fun j => (Bd j)ᵀ) Md a c y l
 
 /-- `[X_1 | ⋯ | X_{k+1}] T̄_{k+1}`, column block `b`. -/
 private theorem blockCols_mul_blockTridiagonal_apply (X : ℕ → Matrix (Fin n) (Fin p) ℝ)

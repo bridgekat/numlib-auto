@@ -531,13 +531,6 @@ private theorem jacobiUpdate_id {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   rw [hJ']
   rfl
 
-/-- The last pass of a fold over `List.range (k + 1)`, in exact arithmetic. -/
-private theorem run_foldlM_range_succ {β : Type} (f : β → ℕ → Id β) (b : β) (k : ℕ) :
-    Id.run ((List.range (k + 1)).foldlM f b) =
-      Id.run (f (Id.run ((List.range k).foldlM f b)) k) := by
-  rw [List.range_succ, List.foldlM_append]
-  rfl
-
 /-- The contraction factor `1 - 1/N`, `N = n(n-1)/2`, of the classical method is in `[0, 1]`. -/
 private theorem jacobi_rate_nonneg (n : ℕ) : 0 ≤ 1 - 1 / ((n : ℝ) * (n - 1) / 2) := by
   rcases Nat.lt_or_ge n 2 with hn | hn
@@ -681,7 +674,7 @@ theorem algorithm_8_5_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (t
     induction k with
     | zero => exact ⟨one_mem _, by simp, hA, fun h => absurd h (by simp), fun _ => by simp⟩
     | succ k ih =>
-      rw [run_foldlM_range_succ]
+      rw [List.idRun_foldlM_range_succ]
       exact classicalInv_step ih
   rw [hrun]
   exact key fuel
@@ -829,7 +822,7 @@ theorem algorithm_8_5_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (t
     induction k with
     | zero => exact ⟨one_mem _, by simp, hA, le_rfl, fun h => absurd h (by simp)⟩
     | succ k ih =>
-      rw [run_foldlM_range_succ]
+      rw [List.idRun_foldlM_range_succ]
       exact cyclicInv_step ih
   rw [hrun]
   exact key fuel

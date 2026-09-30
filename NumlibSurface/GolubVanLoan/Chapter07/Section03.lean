@@ -590,18 +590,6 @@ theorem equation_7_3_19 [NeZero r] {Qα Qk : Matrix (Fin n) (Fin r) ℂ} (hα : 
   rw [Fintype.card_fin] at h
   exact h.symm
 
-/-- A square matrix with a positive least singular value is invertible. -/
-private theorem isUnit_of_iInf_colSingularValues_pos [NeZero r] {B : Matrix (Fin r) (Fin r) ℂ}
-    (h : 0 < ⨅ i, B.colSingularValues i) : IsUnit B := by
-  have : Nonempty (Fin r) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne r)⟩⟩
-  rw [← mulVec_injective_iff_isUnit]
-  intro v w hvw
-  have h1 := B.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
-  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
-  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace ℂ (Fin r))‖ = 0 :=
-    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
-  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
-  simpa [sub_eq_zero] using h3
 
 open scoped ComplexOrder in
 /-- **(7.3.26), corrected.** Let `Q = [Q_α Q_β]` be unitary, `X` any `r × (n - r)` matrix,
@@ -665,7 +653,7 @@ theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Mat
   have hσpos : 0 < ⨅ i, (Zᴴ * Q₀).colSingularValues i := by
     rw [hσeq]
     exact Real.sqrt_pos.2 (by nlinarith)
-  have hZQu : IsUnit (Zᴴ * Q₀) := isUnit_of_iInf_colSingularValues_pos hσpos
+  have hZQu : IsUnit (Zᴴ * Q₀) := Matrix.isUnit_of_iInf_colSingularValues_pos _ hσpos
   have hZQd : IsUnit (Zᴴ * Q₀).det := (isUnit_iff_isUnit_det _).1 hZQu
   have hunit : IsUnit (Qαᴴ * Q₀ - X * (Qβᴴ * Q₀)) := by
     rw [hV]; exact ((isUnit_iff_isUnit_det G).2 hGu).mul hZQu

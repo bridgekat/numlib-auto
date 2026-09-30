@@ -13,22 +13,6 @@ id = "equation_6_5_3"
 source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.3)'
 
 [[node]]
-id = "givensHessenbergSweep"
-source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
-
-[[node]]
-id = "givensHessenbergSweep_spec"
-source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
-
-[[node]]
-id = "givensVectorSweep"
-source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
-
-[[node]]
-id = "givensVectorSweep_spec"
-source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
-
-[[node]]
 id = "qrUpdateRankOne"
 source = 'Golub–Van Loan, Matrix Computations, §6.5.1'
 
@@ -134,15 +118,6 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (6.5.15)'
 
 [[node]]
 id = "choleskyDowndate_exists"
-source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
-
-[[node]]
-id = "hyperbolicApplyLeft"
-deps = []
-source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
-
-[[node]]
-id = "hyperbolicApplyLeft_spec"
 source = 'Golub–Van Loan, Matrix Computations, §6.5.4'
 
 [[node]]

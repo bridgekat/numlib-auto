@@ -1090,13 +1090,6 @@ positive eigenvalues. -/
 noncomputable def inertia {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) : ℕ × ℕ × ℕ :=
   (isHermitian_iff_isSymm.2 hA).inertia
 
-/-- Counting the values of `p ∘ e` for an equivalence `e` is counting the values of `p`. -/
-private theorem card_filter_comp_equiv {α β : Type*} [Fintype α] [Fintype β] (e : α ≃ β)
-    (p : β → Prop) [DecidablePred p] :
-    (Finset.univ.filter fun a => p (e a)).card = (Finset.univ.filter p).card := by
-  rw [← Fintype.card_subtype, ← Fintype.card_subtype]
-  exact Fintype.card_congr (e.subtypeEquiv fun _ => Iff.rfl)
-
 /-- The inertia counts the `λ_k(A)` that are negative, zero and positive. -/
 theorem inertia_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     inertia hA = ((Finset.univ.filter fun k => symmEigenvalue hA k < 0).card,
@@ -1105,11 +1098,11 @@ theorem inertia_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
   have hH := isHermitian_iff_isSymm.2 hA
   rw [inertia, hH.inertia_eq_eigenvalues₀]
   refine Prod.ext ?_ (Prod.ext ?_ ?_)
-  · exact (card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
+  · exact (Finset.card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
       (fun j => hH.eigenvalues₀ j < 0)).symm
-  · exact (card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
+  · exact (Finset.card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
       (fun j => hH.eigenvalues₀ j = 0)).symm
-  · exact (card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
+  · exact (Finset.card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
       (fun j => 0 < hH.eigenvalues₀ j)).symm
 
 /-- Counting the `λ_k(A)` with a property is counting Mathlib's `IsHermitian.eigenvalues` with it:
@@ -1118,9 +1111,9 @@ theorem card_filter_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
     [DecidablePred p] :
     (Finset.univ.filter fun k => p (symmEigenvalue hA k)).card =
       (Finset.univ.filter fun i => p ((isHermitian_iff_isSymm.2 hA).eigenvalues i)).card :=
-  (card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
+  (Finset.card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
     (fun j => p ((isHermitian_iff_isSymm.2 hA).eigenvalues₀ j))).trans
-    (card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
+    (Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
       (fun j => p ((isHermitian_iff_isSymm.2 hA).eigenvalues₀ j))).symm
 
 /-- The inertia depends on the matrix only. -/

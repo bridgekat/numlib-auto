@@ -1394,7 +1394,8 @@ theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) �
   have hval : ∀ k (hk : k < (List.finRange (N + 2)).length),
       ((List.finRange (N + 2))[k] : ℕ) = k := fun k hk => by simp
   have hlen : (List.finRange (N + 2)).length = N + 2 := by simp
-  obtain ⟨f₀, f₁, rest, hw⟩ := exists_cons_cons (List.finRange (N + 2)) (by simp)
+  obtain ⟨f₀, f₁, rest, hw⟩ :=
+    List.exists_cons_cons_of_two_le_length (l := List.finRange (N + 2)) (by simp)
   have hlen' : (f₀ :: f₁ :: rest).length = N + 2 := hw ▸ hlen
   have hval' : ∀ k (hk : k < (f₀ :: f₁ :: rest).length), ((f₀ :: f₁ :: rest)[k] : ℕ) = k :=
     fun k hk => by rw [← List.getElem_of_eq hw]; exact hval k (by omega)
@@ -1532,25 +1533,6 @@ open Chapter07 (francisWindow)
 
 /-! #### Rotations of an `m × n` array, and windows -/
 
-/-- The length of the window `[p, q)`. -/
-private theorem length_francisWindow' {p q : ℕ} (hq : q ≤ n) :
-    (francisWindow n p q).length = q - p := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp [Chapter07.francisWindow]
-    omega
-  · have : NeZero n := ⟨hn.ne'⟩
-    rw [Chapter07.francisWindow_eq_map hq, List.length_map, List.length_range]
-
-/-- The `k`-th index of the window `[p, q)` is `p + k`. -/
-private theorem val_getElem_francisWindow' {p q : ℕ} (hq : q ≤ n) (k : ℕ)
-    (hk : k < (francisWindow n p q).length) : ((francisWindow n p q)[k] : ℕ) = p + k := by
-  have hk' := hk
-  rw [length_francisWindow' hq] at hk'
-  have : NeZero n := ⟨by omega⟩
-  rw [List.getElem_of_eq (Chapter07.francisWindow_eq_map hq) hk]
-  simp only [List.getElem_map, List.getElem_range, Fin.val_ofNat]
-  exact Nat.mod_eq_of_lt (by omega)
-
 /-- The rows `w.map (Fin.castLE hnm)` of the window `w = [p, q)`. -/
 private theorem mem_map_castLE_francisWindow (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (r : Fin m) :
     r ∈ (francisWindow n p q).map (Fin.castLE hnm) ↔ p ≤ (r : ℕ) ∧ (r : ℕ) < q := by
@@ -1586,7 +1568,7 @@ private theorem agreeOff_mul_givensRotation {p q : ℕ} {X : Matrix (Fin m) (Fin
     (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < q) (hab : a ≠ b) (c s : ℝ) :
     AgreeOff p q (X * Chapter05.givensRotation a b c s) X := by
   intro r t hrt
-  rw [Chapter07.mul_givensRotation_apply hab]
+  rw [Chapter05.mul_givensRotation_apply hab]
   by_cases hta : t = a
   · subst hta
     have hr : ¬ (p ≤ (r : ℕ) ∧ (r : ℕ) < q) := fun hr => hrt ⟨hr, ha⟩
@@ -1663,7 +1645,7 @@ private theorem isColBulgeAt_mul {a : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} (hX 
     IsColBulgeAt a (X * Chapter05.givensRotation a' b' c s) := by
   have hab : a' ≠ b' := fun e => by rw [Fin.ext_iff, ha, hb] at e; omega
   intro i l hil hnb
-  rw [Chapter07.mul_givensRotation_apply hab]
+  rw [Chapter05.mul_givensRotation_apply hab]
   by_cases hla : l = a'
   · rw [ite_eq_left hla]
     subst hla
@@ -1757,8 +1739,8 @@ private theorem gkWindowInv_run (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (hpq 
       (Id.run (((francisWindow n p q).zip (francisWindow n p q).tail).foldlM
         (golubKahanRotate pure hnm (francisWindow n p q) y₀ z₀) (B, U, V, none))) := by
   set w := francisWindow n p q with hwdef
-  have hlen : w.length = q - p := length_francisWindow' hq
-  have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := val_getElem_francisWindow' hq
+  have hlen : w.length = q - p := Chapter07.length_francisWindow hq
+  have hval : ∀ k (hk : k < w.length), (w[k] : ℕ) = p + k := Chapter07.val_getElem_francisWindow hq
   have hzlen : (w.zip w.tail).length = q - p - 1 := by simp [hlen]
   rw [← hzlen]
   refine idRun_foldlM_induction _ _ _ ⟨1, one_mem _, 1, one_mem _, by simp,
@@ -1847,8 +1829,8 @@ private theorem algorithm_8_6_1_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n
       out.1 = Gᵀ * B * H ∧ out.2.1 = U * G ∧ out.2.2 = V * H ∧ out.1.IsUpperBidiagonalRect ∧
       AgreeOff p q out.1 B := by
   intro out
-  obtain ⟨f₀, f₁, rest, hw⟩ := exists_cons_cons (francisWindow n p q)
-    (by rw [length_francisWindow' hq]; omega)
+  obtain ⟨f₀, f₁, rest, hw⟩ := List.exists_cons_cons_of_two_le_length (l := francisWindow n p q)
+    (by rw [Chapter07.length_francisWindow hq]; omega)
   have key := gkWindowInv_run hnm hq hpq hB hBd U V
   rw [hw] at key
   simp only [List.tail_cons] at key
@@ -1930,7 +1912,7 @@ private theorem colChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj 
         (X * Chapter05.givensRotation cj ck c s) i l ≠ 0 → (i : ℕ) + 1 = j := by
   have hjk' : cj ≠ ck := fun e => by rw [Fin.ext_iff, hcj, hck] at e; omega
   refine ⟨fun i l hlk h => ?_, fun i l hlk h => ?_⟩
-  · rw [Chapter07.mul_givensRotation_apply hjk'] at h
+  · rw [Chapter05.mul_givensRotation_apply hjk'] at h
     by_cases h1 : l = cj
     · rw [ite_eq_left h1] at h
       by_cases hx : X i ck = 0
@@ -1947,7 +1929,7 @@ private theorem colChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj 
       · rw [ite_eq_right h2] at h
         exact hcols i l hlk h
   · have hl : l = ck := Fin.ext (by omega)
-    rw [Chapter07.mul_givensRotation_apply hjk', ite_eq_right (by rw [hl]; exact hjk'.symm),
+    rw [Chapter05.mul_givensRotation_apply hjk', ite_eq_right (by rw [hl]; exact hjk'.symm),
       ite_eq_left hl] at h
     by_cases hi : i = rj
     · rw [hi] at h
@@ -2008,8 +1990,9 @@ private theorem rowChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
       AgreeOff p q out.1 B := by
   intro out
   set L := francisWindow n (k + 1) q with hL
-  have hlen : L.length = q - (k + 1) := length_francisWindow' hq
-  have hval : ∀ t (ht : t < L.length), (L[t] : ℕ) = k + 1 + t := val_getElem_francisWindow' hq
+  have hlen : L.length = q - (k + 1) := Chapter07.length_francisWindow hq
+  have hval : ∀ t (ht : t < L.length), (L[t] : ℕ) = k + 1 + t :=
+    Chapter07.val_getElem_francisWindow hq
   have key : ∃ G ∈ orthogonalGroup (Fin m) ℝ, out.1 = Gᵀ * B ∧ out.2.1 = U * G ∧ out.2.2 = V ∧
       AgreeOff p q out.1 B ∧
       (∀ (i : Fin m) (l : Fin n), (i : ℕ) ≠ k → out.1 i l ≠ 0 → (l : ℕ) = i ∨ (l : ℕ) = i + 1) ∧
@@ -2095,12 +2078,12 @@ private theorem colChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
   intro out
   set L := (francisWindow n p k).reverse with hL
   have hlen : L.length = k - p := by
-    rw [hL, List.length_reverse, length_francisWindow' (by omega)]
+    rw [hL, List.length_reverse, Chapter07.length_francisWindow (by omega)]
   have hval : ∀ t (ht : t < L.length), (L[t] : ℕ) + t + 1 = k := fun t ht => by
     have ht' := ht
     rw [hlen] at ht'
     simp only [hL, List.getElem_reverse]
-    rw [val_getElem_francisWindow' (by omega), length_francisWindow' (by omega)]
+    rw [Chapter07.val_getElem_francisWindow (by omega), Chapter07.length_francisWindow (by omega)]
     omega
   have key : ∃ H ∈ orthogonalGroup (Fin n) ℝ, out.1 = B * H ∧ out.2.1 = U ∧ out.2.2 = V * H ∧
       AgreeOff p q out.1 B ∧
@@ -2176,15 +2159,15 @@ private theorem zeroDiagonalChase_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤
   intro out
   have hlast : (francisWindow n p q).getLast? = some k ↔ (k : ℕ) = q - 1 := by
     have hl : (francisWindow n p q).length - 1 < (francisWindow n p q).length := by
-      rw [length_francisWindow' hq]; omega
+      rw [Chapter07.length_francisWindow hq]; omega
     rw [List.getLast?_eq_getElem?, List.getElem?_eq_getElem hl, Option.some_inj]
     constructor
     · rintro h
-      rw [← h, val_getElem_francisWindow' hq, length_francisWindow' hq]
+      rw [← h, Chapter07.val_getElem_francisWindow hq, Chapter07.length_francisWindow hq]
       omega
     · intro h
       apply Fin.ext
-      rw [val_getElem_francisWindow' hq, h, length_francisWindow' hq]
+      rw [Chapter07.val_getElem_francisWindow hq, h, Chapter07.length_francisWindow hq]
       omega
   by_cases hkl : (k : ℕ) = q - 1
   · have hk' := hlast.2 hkl
@@ -2258,23 +2241,13 @@ private theorem svdDeflateStage_apply_super (hnm : n ≤ m) (ε : ℝ) (D : Matr
     subst hb
     exact hs h3
 
-/-- The Hoare rule of a loop over `List.finRange N` in `Id`. -/
-private theorem idRun_foldlM_finRange_induction' {β : Type} {N : ℕ} {f : β → Fin N → Id β}
-    (I : ℕ → β → Prop) {a : β} (h0 : I 0 a)
-    (hs : ∀ (k : Fin N) (c : β), I k c → I (k + 1) (Id.run (f c k))) :
-    I N (Id.run ((List.finRange N).foldlM f a)) := by
-  have h := idRun_foldlM_induction (List.finRange N) I a h0 fun k hk c hc => by
-    have e : (List.finRange N)[k] = ⟨k, by simpa using hk⟩ := by simp
-    rw [e]
-    exact hs ⟨k, _⟩ c hc
-  rwa [List.length_finRange] at h
 
 /-- **The deflation pass of Algorithm 8.6.2, exactly**: every test reads entries no earlier step
 has changed, so the pass zeroes exactly the small superdiagonal entries of its input. -/
 private theorem svdDeflate_pure (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (svdDeflate pure hnm ε D) = svdDeflateStage hnm ε D n := by
   unfold svdDeflate
-  refine idRun_foldlM_finRange_induction' (fun k D' => D' = svdDeflateStage hnm ε D k) ?_ ?_
+  refine List.idRun_foldlM_finRange_induction (fun k D' => D' = svdDeflateStage hnm ε D k) ?_ ?_
   · ext r s
     simp only [svdDeflateStage, of_apply]
     rw [ite_eq_right (fun ⟨a, ha, _⟩ => absurd ha (Nat.not_lt_zero a))]

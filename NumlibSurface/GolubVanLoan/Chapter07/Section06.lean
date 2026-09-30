@@ -49,6 +49,10 @@ open Matrix Filter Topology
 
 namespace GolubVanLoan.Chapter07
 
+open Chapter05 (selCols selCols_mul_apply_get selCols_mul_apply_of_notMem
+  mul_selCols_transpose_apply_get mul_selCols_transpose_apply_of_notMem selCols_transpose_mul_apply
+  mul_selCols_apply)
+
 variable {n : ℕ}
 
 /-! ### §7.6.1 Selected eigenvectors via inverse iteration -/
@@ -975,14 +979,6 @@ section BartelsStewartSpec
 
 variable {p r : ℕ}
 
-/-- A loop writing each listed entry from a value independent of the state, at `Id`. -/
-private theorem id_foldlM_update {ι : Type} [DecidableEq ι] {β : Type} (g : ι → β) (l : List ι)
-    (y₀ : ι → β) :
-    Id.run (l.foldlM (fun (y : ι → β) i => (pure (Function.update y i (g i)) : Id (ι → β))) y₀) =
-      fun k => if k ∈ l then g k else y₀ k := by
-  rw [List.foldlM_pure]
-  exact Chapter05.foldl_update_eq g l y₀
-
 /-- The sum over the listed `j < k` is the sum over `Finset.Iio k`. -/
 private theorem sum_map_filter_lt (k : Fin r) (f : Fin r → ℝ) :
     (((List.finRange r).filter (· < k)).map f).sum = ∑ j ∈ Finset.Iio k, f j := by
@@ -1010,7 +1006,7 @@ theorem algorithm_7_6_2_pure (F : Matrix (Fin p) (Fin p) ℝ) (G : Matrix (Fin r
   congr 1
   funext C k
   simp only [FloatingPoint.dotAccum_pure, LawfulMonad.pure_bind, List.foldlM_pure, h3,
-    Chapter05.foldl_update_eq, List.mem_finRange, ↓reduceIte]
+    List.foldl_update_eq_ite, List.mem_finRange, ↓reduceIte]
   unfold bartelsStewartStep
   congr 3
   · ext i j
@@ -1218,56 +1214,6 @@ section BlockDiagSpec
 
 variable {q : ℕ}
 
-/-- The columns of `I_n` listed by `l`: for the rows of a block, the book's `E_i`. -/
-private def selCols (l : List (Fin n)) : Matrix (Fin n) (Fin l.length) ℝ :=
-  of fun r a => if l.get a = r then 1 else 0
-
-private theorem selCols_mul_apply_get {l : List (Fin n)} (hl : l.Nodup) {m : Type}
-    (N : Matrix (Fin l.length) m ℝ) (a : Fin l.length) (c : m) :
-    (selCols l * N) (l.get a) c = N a c := by
-  rw [mul_apply, Finset.sum_eq_single a]
-  · simp [selCols]
-  · intro a' _ ha'
-    simp only [selCols, of_apply, ite_mul, one_mul, zero_mul, ite_eq_right_iff]
-    exact fun h => absurd (List.nodup_iff_injective_get.1 hl h) ha'
-  · simp
-
-private theorem selCols_mul_apply_of_notMem {l : List (Fin n)} {m : Type}
-    (N : Matrix (Fin l.length) m ℝ) {r : Fin n} (hr : r ∉ l) (c : m) :
-    (selCols l * N) r c = 0 := by
-  rw [mul_apply]
-  refine Finset.sum_eq_zero fun a _ => ?_
-  have : l.get a ≠ r := fun h => hr (h ▸ List.get_mem l a)
-  simp only [selCols, of_apply, this, ite_false, zero_mul]
-
-private theorem mul_selCols_transpose_apply_get {l : List (Fin n)} (hl : l.Nodup) {m : Type}
-    (N : Matrix m (Fin l.length) ℝ) (r : m) (e : Fin l.length) :
-    (N * (selCols l)ᵀ) r (l.get e) = N r e := by
-  rw [mul_apply, Finset.sum_eq_single e]
-  · simp [selCols]
-  · intro e' _ he'
-    simp only [transpose_apply, selCols, of_apply, mul_ite, mul_one, mul_zero, ite_eq_right_iff]
-    exact fun h => absurd (List.nodup_iff_injective_get.1 hl h) he'
-  · simp
-
-private theorem mul_selCols_transpose_apply_of_notMem {l : List (Fin n)} {m : Type}
-    (N : Matrix m (Fin l.length) ℝ) (r : m) {c : Fin n} (hc : c ∉ l) :
-    (N * (selCols l)ᵀ) r c = 0 := by
-  rw [mul_apply]
-  refine Finset.sum_eq_zero fun e _ => ?_
-  have : l.get e ≠ c := fun h => hc (h ▸ List.get_mem l e)
-  simp only [transpose_apply, selCols, of_apply, this, ite_false, mul_zero]
-
-private theorem selCols_transpose_mul_apply (l : List (Fin n)) {m : Type}
-    (A : Matrix (Fin n) m ℝ) (a : Fin l.length) (c : m) :
-    ((selCols l)ᵀ * A) a c = A (l.get a) c := by
-  simp [mul_apply, selCols]
-
-private theorem mul_selCols_apply (l : List (Fin n)) {m : Type}
-    (A : Matrix m (Fin n) ℝ) (r : m) (a : Fin l.length) :
-    (A * selCols l) r a = A r (l.get a) := by
-  simp [mul_apply, selCols]
-
 /-- A loop rewriting whole columns, each from its own old values only, is a simultaneous update. -/
 private theorem foldl_apply_of_colLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin n →
     Matrix (Fin n) (Fin n) ℝ) (l : List (Fin n)) (hl : l.Nodup)
@@ -1289,29 +1235,27 @@ private theorem foldl_apply_of_colLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin 
         exact hf₂ _ _ c (fun r' => hf₁ T₀ a r' c hca) r
       · simp [hcl, hca]
 
-/-- A loop rewriting whole rows, each from its own old values only, is a simultaneous update. -/
+/-- A loop rewriting whole rows, each from its own old values only, is a simultaneous update
+(`List.foldl_update_of_nodup` on the rows). -/
 private theorem foldl_apply_of_rowLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin n →
     Matrix (Fin n) (Fin n) ℝ) (l : List (Fin n)) (hl : l.Nodup)
     (hf₁ : ∀ Q r r' c, r' ≠ r → f Q r r' c = Q r' c)
     (hf₂ : ∀ Q Q' r, Q r = Q' r → f Q r r = f Q' r r)
     (Q₀ : Matrix (Fin n) (Fin n) ℝ) (r c : Fin n) :
     l.foldl f Q₀ r c = if r ∈ l then f Q₀ r r c else Q₀ r c := by
-  induction l generalizing Q₀ with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.nodup_cons] at hl
-    rw [List.foldl_cons, ih hl.2]
-    by_cases hra : r = a
-    · subst hra
-      simp [hl.1]
-    · rw [hf₁ Q₀ a r c hra]
-      by_cases hrl : r ∈ l
-      · simp only [hrl, ite_true, List.mem_cons, or_true]
-        exact congrFun (hf₂ _ _ r (funext fun c' => hf₁ Q₀ a r c' hra)) c
-      · simp [hrl, hra]
+  have hf : f = fun Q a => Function.update Q a (f Q a a) :=
+    funext₂ fun Q a => Function.eq_update_iff.2 ⟨rfl, fun r' hr' => funext (hf₁ Q a r' · hr')⟩
+  have e : l.foldl f Q₀ =
+      l.foldl (fun (Q : Fin n → Fin n → ℝ) a => Function.update Q a (f Q a a)) Q₀ :=
+    congrArg (fun F => l.foldl F Q₀) hf
+  rw [e]
+  exact (congrFun (congrFun (List.foldl_update_of_nodup hl (fun a (Q : Fin n → Fin n → ℝ) =>
+    f Q a a) (fun a _ Q Q' _ h => hf₂ Q Q' a h) Q₀) r) c).trans (by split_ifs <;> rfl)
+
 
 /-- A loop writing the entries `key a` of a vector, each from its own old value and from entries
-outside a set `S` it never writes, is a simultaneous update. -/
+outside a set `S` it never writes, is a simultaneous update (`List.foldl_update_apply_of_pairwise`
+and `List.foldl_update_apply_of_forall_ne`). -/
 private theorem foldl_update_of_local {α : Type} (f : (Fin n → ℝ) → α → Fin n → ℝ)
     (key : α → Fin n) (S : Fin n → Prop) (L : List α) (hL : (L.map key).Nodup)
     (hS : ∀ a ∈ L, S (key a)) (hf₁ : ∀ y a s, s ≠ key a → f y a s = y s)
@@ -1319,25 +1263,19 @@ private theorem foldl_update_of_local {α : Type} (f : (Fin n → ℝ) → α �
       f y a (key a) = f y' a (key a)) (y₀ : Fin n → ℝ) :
     (∀ a ∈ L, L.foldl f y₀ (key a) = f y₀ a (key a)) ∧
       ∀ s, s ∉ L.map key → L.foldl f y₀ s = y₀ s := by
-  induction L generalizing y₀ with
-  | nil => simp
-  | cons a L ih =>
-    rw [List.map_cons, List.nodup_cons] at hL
-    obtain ⟨ih1, ih2⟩ := ih hL.2 (fun a' ha' => hS a' (List.mem_cons_of_mem _ ha'))
-      (fun a' ha' => hf₂ a' (List.mem_cons_of_mem _ ha')) (f y₀ a)
-    simp only [List.foldl_cons]
-    refine ⟨fun a' ha' => ?_, fun s hs => ?_⟩
-    · rcases List.mem_cons.1 ha' with rfl | ha'
-      · exact ih2 _ hL.1
-      · rw [ih1 a' ha']
-        have hne : key a' ≠ key a := fun e => hL.1 (e ▸ List.mem_map_of_mem ha')
-        refine hf₂ a' (List.mem_cons_of_mem _ ha') _ _ (fun s hs' => ?_) ?_
-        · have : s ≠ key a := fun e => hs' (e ▸ hS a List.mem_cons_self)
-          exact hf₁ y₀ a s this
-        · exact hf₁ y₀ a _ hne
-    · rw [List.map_cons, List.mem_cons, not_or] at hs
-      rw [ih2 s hs.2]
-      exact hf₁ y₀ a s hs.1
+  have hf : f = fun y a => Function.update y (key a) (f y a (key a)) :=
+    funext₂ fun y a => Function.eq_update_iff.2 ⟨rfl, hf₁ y a⟩
+  have hpw : L.Pairwise fun a b => key a ≠ key b ∧ ∀ y y' : Fin n → ℝ,
+      (∀ k, k ≠ key a → y k = y' k) → f y b (key b) = f y' b (key b) := by
+    rw [List.Nodup, List.pairwise_map] at hL
+    refine List.Pairwise.imp_of_mem (fun {a b} ha hb hab => ⟨hab, fun y y' hy => ?_⟩) hL
+    exact hf₂ b hb y y' (fun s hs => hy s fun e => hs (e ▸ hS a ha)) (hy _ (Ne.symm hab))
+  have e : L.foldl f y₀ = L.foldl (fun y a => Function.update y (key a) (f y a (key a))) y₀ :=
+    congrArg (fun F => L.foldl F y₀) hf
+  rw [e]
+  exact ⟨fun a ha => List.foldl_update_apply_of_pairwise key (fun a y => f y a (key a)) hpw y₀ ha,
+    fun s hs => List.foldl_update_apply_of_forall_ne key _
+      (fun a ha (e : key a = s) => hs (e ▸ List.mem_map_of_mem ha)) y₀⟩
 
 /-- **Exact semantics of `blockSubMul`**: for duplicate-free, disjoint blocks `li`, `lj`, the
 columns `c ∈ cols` of `T` become those of `T - E_i Z E_jᵀ T`, the others are kept. -/
