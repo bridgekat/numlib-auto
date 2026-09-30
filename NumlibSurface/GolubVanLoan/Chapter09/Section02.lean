@@ -298,59 +298,38 @@ noncomputable def algorithm_9_2_2 (A : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) :
 
 end Programs
 
-/-- Two nested loops writing each entry `(i, j)` once, from `g i j`. -/
-private theorem foldl_foldl_updateRow {α : Type*} (g : Fin n → Fin n → α) (l₁ l₂ : List (Fin n))
-    (F : Matrix (Fin n) (Fin n) α) (a c : Fin n) :
+/-- Two nested loops over a duplicate-free row list writing each entry `(i, j)` once, from
+`g i j`: on each row `List.foldl_update_self` and `List.foldl_update_eq_ite`, over the rows
+`List.foldl_update_of_nodup`. -/
+private theorem foldl_foldl_updateRow {α : Type*} (g : Fin n → Fin n → α) {l₁ : List (Fin n)}
+    (hl₁ : l₁.Nodup) (l₂ : List (Fin n)) (F : Matrix (Fin n) (Fin n) α) (a c : Fin n) :
     (l₁.foldl (fun F i => l₂.foldl (fun F j => F.updateRow i (Function.update (F i) j (g i j))) F)
       F) a c = if a ∈ l₁ ∧ c ∈ l₂ then g a c else F a c := by
-  have inner : ∀ (i : Fin n) (l : List (Fin n)) (F : Matrix (Fin n) (Fin n) α),
-      (l.foldl (fun F j => F.updateRow i (Function.update (F i) j (g i j))) F) a c =
-        if a = i ∧ c ∈ l then g a c else F a c := by
-    intro i l
-    induction l with
-    | nil => intro F; simp
-    | cons x l ih =>
-      intro F
-      rw [List.foldl_cons, ih]
-      by_cases hai : a = i
-      · subst hai
-        by_cases hcx : c = x
-        · subst hcx
-          simp [Matrix.updateRow_apply]
-        · simp [Matrix.updateRow_apply, hcx]
-      · simp [Matrix.updateRow_apply, hai]
-  induction l₁ generalizing F with
-  | nil => simp
-  | cons x l ih =>
-    rw [List.foldl_cons, ih, inner]
-    by_cases hax : a = x
-    · subst hax
-      by_cases hc : c ∈ l₂ <;> simp [hc]
-    · simp [hax]
+  have row : ∀ (F : Matrix (Fin n) (Fin n) α) i,
+      l₂.foldl (fun F j => F.updateRow i (Function.update (F i) j (g i j))) F =
+        Function.update F i (fun c => if c ∈ l₂ then g i c else F i c) := fun F i =>
+    (List.foldl_update_self (fun j r => Function.update r j (g i j)) i l₂ F).trans
+      (congrArg _ (List.foldl_update_eq_ite (g i) l₂ (F i)))
+  have h := List.foldl_update_of_nodup hl₁ (fun i (y : Fin n → Fin n → α) c =>
+    if c ∈ l₂ then g i c else y i c) (fun i _ y y' _ h => by rw [h]) F
+  refine (congrFun (congrFun ((congrArg (fun G => l₁.foldl G F) (funext₂ row)).trans h) a)
+    c).trans ?_
+  by_cases ha : a ∈ l₁ <;> simp [ha]
 
-/-- A loop adding `c` to each diagonal entry listed once. -/
-private theorem foldl_diag_add (c : ℝ) (l : List (Fin n)) (hl : l.Nodup)
+/-- A loop adding `c` to each diagonal entry listed once: `List.foldl_update_of_nodup` on the
+rows. -/
+private theorem foldl_diag_add (c : ℝ) {l : List (Fin n)} (hl : l.Nodup)
     (F : Matrix (Fin n) (Fin n) ℝ) (a d : Fin n) :
     (l.foldl (fun (F : Matrix (Fin n) (Fin n) ℝ) i =>
       F.updateRow i (Function.update (F i) i (F i i + c))) F) a d =
       if a = d ∧ a ∈ l then F a a + c else F a d := by
-  induction l generalizing F with
-  | nil => simp
-  | cons x l ih =>
-    rcases List.nodup_cons.1 hl with ⟨hx, hl'⟩
-    rw [List.foldl_cons, ih hl']
-    by_cases had : a = d
-    · subst had
-      by_cases hax : a = x
-      · subst hax
-        simp [hx]
-      · simp [hax, Matrix.updateRow_apply]
-    · rw [ite_eq_right (fun h => had h.1), ite_eq_right (fun h => had h.1),
-        Matrix.updateRow_apply]
-      split_ifs with hax
-      · subst hax
-        rw [Function.update_of_ne (Ne.symm had)]
-      · rfl
+  refine (congrFun (congrFun (List.foldl_update_of_nodup hl
+    (fun i (y : Fin n → Fin n → ℝ) => Function.update (y i) i (y i i + c))
+    (fun i _ y y' _ h => by rw [h]) F) a) d).trans ?_
+  by_cases had : a = d
+  · subst had
+    by_cases ha : a ∈ l <;> simp [ha]
+  · by_cases ha : a ∈ l <;> simp [ha, had, Ne.symm had]
 
 /-- The Horner loop: from `F`, the updates `F ← A F + b_k I` for `k = m-1, …, 0` give
 `∑_{i<m} b_i Aⁱ + Aᵐ F`. -/
@@ -384,8 +363,9 @@ theorem algorithm_9_2_1_spec (A : Matrix (Fin n) (Fin n) ℝ) {q : ℕ} (hq : 1 
     GolubVanLoan.Chapter01.algorithm_1_1_5_spec]
   refine key _ ?_
   ext a c
-  rw [foldl_diag_add _ _ (List.nodup_finRange n), foldl_foldl_updateRow (fun i j => b q * A i j),
-    foldl_foldl_updateRow (fun i j => b q * A i j)]
+  rw [foldl_diag_add _ (List.nodup_finRange n),
+    foldl_foldl_updateRow (fun i j => b q * A i j) (List.nodup_finRange n),
+    foldl_foldl_updateRow (fun i j => b q * A i j) (List.nodup_finRange n)]
   by_cases hac : a = c
   · subst hac; simp
   · simp [hac, Matrix.one_apply_ne hac]

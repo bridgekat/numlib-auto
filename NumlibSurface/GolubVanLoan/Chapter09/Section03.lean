@@ -240,7 +240,7 @@ private theorem updateEntriesM_id (h : Fin n → Fin n → ℝ → ℝ) (C : Mat
     (List.finRange n).foldlM (fun (r : Fin n → ℝ) l => do
       let b ← (pure (h i l (r l)) : Id ℝ)
       pure (Function.update r l b)) row) (List.finRange n) (List.nodup_finRange n) C i
-  have h2 := Chapter01.idRun_foldlM_update_apply (fun l (x : ℝ) => (pure (h i l x) : Id ℝ))
+  have h2 := List.idRun_foldlM_update_apply (fun l (x : ℝ) => (pure (h i l x) : Id ℝ))
     (List.finRange n) (List.nodup_finRange n) (C i) l
   rw [ite_eq_left (List.mem_finRange i)] at h1
   rw [ite_eq_left (List.mem_finRange l)] at h2
@@ -354,7 +354,7 @@ theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : 
       let t ← (List.finRange n).foldlM (fun c l => (pure (c + |A i l|) : Id ℝ)) 0
       pure (Function.update s i t)) 0) = fun i => ∑ l, |A i l| := by
     funext i
-    have h := Chapter01.idRun_foldlM_update_apply (fun i (_ : ℝ) =>
+    have h := List.idRun_foldlM_update_apply (fun i (_ : ℝ) =>
       (List.finRange n).foldlM (fun c l => (pure (c + |A i l|) : Id ℝ)) 0) (List.finRange n)
       (List.nodup_finRange n) 0 i
     rw [ite_eq_left (List.mem_finRange i)] at h
@@ -511,18 +511,6 @@ theorem expCondNumber_eq_of_isStarNormal [NeZero n] {A : Matrix (Fin n) (Fin n) 
 
 end Two
 
-/-- A square-zero matrix has `e^N = I + N`. -/
-private theorem exp_eq_one_add_of_sq_eq_zero {𝕜 : Type} [RCLike 𝕜] {m : ℕ}
-    {N : Matrix (Fin m) (Fin m) 𝕜} (hN : N ^ 2 = 0) : exp N = 1 + N := by
-  let _ : NormedRing (Matrix (Fin m) (Fin m) 𝕜) := Matrix.linftyOpNormedRing
-  let _ : NormedAlgebra 𝕜 (Matrix (Fin m) (Fin m) 𝕜) := Matrix.linftyOpNormedAlgebra
-  rw [exp_eq_tsum 𝕜]
-  beta_reduce
-  rw [tsum_eq_sum (s := range 2) fun k hk => by
-    rw [Finset.mem_range, not_lt] at hk
-    rw [show k = 2 + (k - 2) by omega, pow_add, hN, zero_mul, smul_zero]]
-  simp [Finset.sum_range_succ]
-
 /-- **(9.3.5)**: for `A = [-1 1000; 0 -1]`, `e^{At} = e^{-t} [1 1000t; 0 1]`. -/
 theorem equation_9_3_5 (t : ℝ) :
     exp (t • !![-1, 1000; 0, -1] : Matrix (Fin 2) (Fin 2) ℝ) =
@@ -536,7 +524,7 @@ theorem equation_9_3_5 (t : ℝ) :
   have hc : Commute (Matrix.diagonal fun _ : Fin 2 => -t) N := by
     rw [← Matrix.smul_one_eq_diagonal]
     exact (Commute.one_left N).smul_left _
-  have hexpN : exp N = 1 + N := exp_eq_one_add_of_sq_eq_zero hN2
+  have hexpN : exp N = 1 + N := NormedSpace.exp_eq_one_add_of_sq_eq_zero hN2
   rw [hsplit, Matrix.exp_add_of_commute _ _ hc, Matrix.exp_diagonal, hexpN]
   ext i j
   fin_cases i <;> fin_cases j <;>
@@ -560,7 +548,7 @@ private theorem exp_smul_cex (s : ℝ) :
     unfold Commute SemiconjBy
     ext i j; fin_cases i <;> fin_cases j <;> simp [N, Matrix.mul_apply, Fin.sum_univ_three]
   rw [hsplit, Matrix.exp_add_of_commute _ _ hc, Matrix.exp_diagonal,
-    exp_eq_one_add_of_sq_eq_zero hN2]
+    NormedSpace.exp_eq_one_add_of_sq_eq_zero hN2]
   ext i j
   fin_cases i <;> fin_cases j <;>
     simp [N, Matrix.mul_apply, Fin.sum_univ_three, Pi.exp_def, ← Complex.exp_eq_exp_ℂ,

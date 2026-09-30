@@ -574,20 +574,6 @@ private theorem prod_castLE_eq (s : Fin d → ℕ) (j : ℕ) (hj : j ≤ d) :
   rw [extShape, dite_eq_left (lt_of_lt_of_le l.2 hj)]
   rfl
 
-private theorem sum_range_split (c N : ℕ → ℕ) (k r : ℕ) :
-    ∑ j ∈ Finset.range (k + 1 + r), c j * ∏ l ∈ Finset.range j, N l =
-      ∑ j ∈ Finset.range k, c j * ∏ l ∈ Finset.range j, N l +
-        (∏ l ∈ Finset.range k, N l) * (c k + N k *
-          ∑ i ∈ Finset.range r, c (k + 1 + i) * ∏ l ∈ Finset.range i, N (k + 1 + l)) := by
-  rw [Finset.sum_range_add, Finset.sum_range_succ, add_assoc]
-  congr 1
-  rw [mul_add, Finset.mul_sum, Finset.mul_sum]
-  congr 1
-  · ring
-  · refine Finset.sum_congr rfl fun i _ => ?_
-    rw [Finset.prod_range_add, Finset.prod_range_succ]
-    ring
-
 private theorem sum_range_lt (c N : ℕ → ℕ) (k : ℕ) (hc : ∀ j < k, c j < N j) :
     ∑ j ∈ Finset.range k, c j * ∏ l ∈ Finset.range j, N l < ∏ l ∈ Finset.range k, N l := by
   induction k with
@@ -617,24 +603,41 @@ private theorem highDigits_congr {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k r
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [Finset.prod_congr rfl fun l _ => h l]
 
-/-- The mixed-radix value of `col(a)` split at mode `k`: the digits below `k`, the `k`-th digit
-and the digits above `k`. -/
+/-- The mixed-radix value of `col(a)` through the extended digits and shape. -/
+private theorem val_finPiFinEquiv_eq_sum {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) :
+    (finPiFinEquiv a : ℕ) =
+      ∑ j ∈ Finset.range d, digitsOf a j * ∏ l ∈ Finset.range j, extShape s l := by
+  rw [finPiFinEquiv_apply, ← Fin.sum_univ_eq_sum_range]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [digitsOf, dite_eq_left j.2, prod_castLE_eq s j j.2.le]
+
+/-- The mixed-radix value of `col(a)` split at mode `k`, `finPiFinEquiv_apply_val_split` read
+through the extended digits and shape: the digits below `k`, the `k`-th digit and the digits
+above `k`. -/
 private theorem val_finPiFinEquiv_split {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k : Fin d) :
     (finPiFinEquiv a : ℕ) =
       lowDigits a k (extShape s) + (∏ l ∈ Finset.range k, extShape s l) *
         (a k + s k * highDigits a k (d - (k + 1)) (extShape s)) := by
-  have h0 : (finPiFinEquiv a : ℕ) =
-      ∑ j ∈ Finset.range d, digitsOf a j * ∏ l ∈ Finset.range j, extShape s l := by
-    rw [finPiFinEquiv_apply, ← Fin.sum_univ_eq_sum_range]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [digitsOf, dite_eq_left j.2, prod_castLE_eq s j j.2.le]
-  have hd : d = k + 1 + (d - (k + 1)) := by omega
-  rw [h0, show Finset.range d = Finset.range (k + 1 + (d - (k + 1))) by rw [← hd],
-    sum_range_split]
-  have e1 : digitsOf a k = a k := by rw [digitsOf, dite_eq_left k.2]
-  have e2 : extShape s k = s k := by rw [extShape, dite_eq_left k.2]
-  rw [e1, e2]
-  rfl
+  have hlo : (finPiFinEquiv (fun j : Fin k => a (Fin.castLE k.2.le j)) : ℕ) =
+      lowDigits a k (extShape s) := by
+    rw [val_finPiFinEquiv_eq_sum, lowDigits]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    rw [Finset.mem_range] at hj
+    rw [digitsOf, digitsOf, dite_eq_left hj, dite_eq_left (by omega)]
+    refine congrArg₂ (· * ·) rfl (Finset.prod_congr rfl fun l hl => ?_)
+    rw [Finset.mem_range] at hl
+    rw [extShape, extShape, dite_eq_left (by omega), dite_eq_left (by omega)]
+    rfl
+  have hhi : (finPiFinEquiv (fun j : Fin (d - (k + 1)) => a ⟨k + 1 + j, by omega⟩) : ℕ) =
+      highDigits a k (d - (k + 1)) (extShape s) := by
+    rw [val_finPiFinEquiv_eq_sum, highDigits]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    rw [Finset.mem_range] at hj
+    rw [digitsOf, digitsOf, dite_eq_left hj, dite_eq_left (by omega)]
+    refine congrArg₂ (· * ·) rfl (Finset.prod_congr rfl fun l hl => ?_)
+    rw [Finset.mem_range] at hl
+    rw [extShape, extShape, dite_eq_left (by omega), dite_eq_left (by omega)]
+  rw [finPiFinEquiv_apply_val_split a k, hlo, hhi, prod_castLE_eq s k k.2.le]
 
 /-- The size `n₁ ⋯ n_{k−1}` of the modes before mode `k` (0-based: the modes `0, …, k − 1`). -/
 def lowerSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=

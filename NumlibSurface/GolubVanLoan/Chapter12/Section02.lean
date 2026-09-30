@@ -398,32 +398,6 @@ noncomputable def algorithm_12_2_2 (u v p q : Fin (N + 1) → ℝ) :
 
 end QR
 
-/-- A fold satisfies a property of the processed prefix, if every step does. -/
-private theorem foldl_prefix_induction {α β : Type*} (f : β → α → β) (l : List α)
-    (P : List α → β → Prop) {b : β} (h0 : P [] b)
-    (hs : ∀ p a q s, l = p ++ a :: q → P p s → P (p ++ [a]) (f s a)) : P l (l.foldl f b) := by
-  suffices h : ∀ q p s, l = p ++ q → P p s → P l (q.foldl f s) from h l [] b rfl h0
-  intro q
-  induction q with
-  | nil => intro p s hl hp; simpa [hl] using hp
-  | cons a q ih =>
-    intro p s hl hp
-    exact ih (p ++ [a]) (f s a) (by simp [hl]) (hs p a q s hl hp)
-
-/-- A forward product peels off its first factor. -/
-private theorem prodFwd_succ_left {n : ℕ} (f : ℕ → Matrix (Fin n) (Fin n) ℝ) (m : ℕ) :
-    prodFwd f (m + 1) = f 0 * prodFwd (fun k => f (k + 1)) m := by
-  induction m with
-  | zero => simp [prodFwd_succ]
-  | succ m ih => rw [prodFwd_succ, ih, prodFwd_succ, Matrix.mul_assoc]
-
-/-- A forward product only reads its first `m` factors. -/
-private theorem prodFwd_congr' {n : ℕ} {f f' : ℕ → Matrix (Fin n) (Fin n) ℝ} {m : ℕ}
-    (h : ∀ k < m, f k = f' k) : prodFwd f m = prodFwd f' m := by
-  induction m with
-  | zero => rfl
-  | succ m ih => rw [prodFwd_succ, prodFwd_succ, ih fun k hk => h k (by omega), h m (by omega)]
-
 /-- The rotation block of Algorithm 12.2.2, `[c s; −s c]`. -/
 private abbrev rotBlock (c s : ℕ → ℝ) (k : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := !![c k, s k; -s k, c k]
 
@@ -544,8 +518,9 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
     t ≤ N ∧ prodFwd (fun k => givensFactor N (rotBlock st.c st.s) (t + k)) (N - t) * A =
       stage u v p q t st ∧ st.ut ≠ 0 ∧ st.ft ≠ 0 ∧
       ∀ k, t ≤ k → k < N → st.c k ^ 2 + st.s k ^ 2 = 1 ∧ st.s k ≠ 0
-  have hfin := foldl_prefix_induction (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k))
-    (List.finRange N).reverse (fun pre st => Inv (N - pre.length) st) (b := st₀) ?h0 ?hs
+  have hfin := List.foldl_prefix_induction
+    (fun st k => Id.run (algorithm_12_2_2Step pure u v p q st k))
+    (l := (List.finRange N).reverse) (fun pre st => Inv (N - pre.length) st) (b := st₀) ?h0 ?hs
   case h0 =>
     refine ⟨Nat.sub_le _ _, ?_, hu, hu, fun k hk hk' => absurd hk' (by simp at hk; omega)⟩
     simp only [List.length_nil, Nat.sub_zero, Nat.sub_self, prodFwd_zero, Matrix.one_mul]
@@ -562,7 +537,7 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
         subst hjL
         simp [st₀]
   case hs =>
-    intro pre a rest st hl hInv
+    intro pre a rest hl st hInv
     have hlen : pre.length < N := by
       have := congrArg List.length hl
       simp at this
@@ -589,13 +564,13 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
       exact hut ((mul_eq_zero.1 hcs2).resolve_left hc)
     rw [hstep]
     refine ⟨by omega, ?_, ?_, mul_ne_zero (neg_ne_zero.2 hs0) hft, fun k hk hk' => ?_⟩
-    · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, prodFwd_succ_left,
+    · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, Matrix.prodFwd_succ',
         Matrix.mul_assoc]
       have htail : prodFwd (fun k => givensFactor N (rotBlock (Function.update st.c a cs.1)
           (Function.update st.s a (-cs.2))) ((a : ℕ) + (k + 1))) (N - ((a : ℕ) + 1)) =
           prodFwd (fun k => givensFactor N (rotBlock st.c st.s) ((a : ℕ) + 1 + k))
             (N - ((a : ℕ) + 1)) := by
-        refine prodFwd_congr' fun k _ => ?_
+        refine Matrix.prodFwd_congr fun k _ => ?_
         rw [show (a : ℕ) + (k + 1) = (a : ℕ) + 1 + k by omega]
         refine givensFactor_congr ?_
         have hne : (a : ℕ) + 1 + k ≠ (a : ℕ) := by omega

@@ -159,16 +159,6 @@ theorem isUnit_add_sign {M : Matrix (Fin n) (Fin n) ℂ} (hM : ∀ μ ∈ spectr
     IsUnit (M + Matrix.matrixSign M) :=
   Matrix.isUnit_add_matrixSign hM
 
-/-- The scalar sign function `z ↦ sign (Re z)` is locally constant off the imaginary axis. -/
-private theorem sign_eventuallyEq {μ : ℂ} (hμ : μ.re ≠ 0) :
-    (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) =ᶠ[𝓝 μ]
-      fun _ => ((SignType.sign μ.re : SignType) : ℂ) := by
-  rcases lt_or_gt_of_ne hμ with h | h
-  · filter_upwards [Complex.continuous_re.continuousAt.eventually (gt_mem_nhds h)] with z hz
-    rw [sign_neg hz, sign_neg h]
-  · filter_upwards [Complex.continuous_re.continuousAt.eventually (lt_mem_nhds h)] with z hz
-    rw [sign_pos hz, sign_pos h]
-
 /-- `|λ - sign λ| < |λ + sign λ|` off the imaginary axis. -/
 private theorem norm_sub_sign_lt {z : ℂ} (hz : z.re ≠ 0) :
     ‖z - ((SignType.sign z.re : SignType) : ℂ)‖ < ‖z + ((SignType.sign z.re : SignType) : ℂ)‖ := by
@@ -248,7 +238,7 @@ theorem equation_9_4_4 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectru
   have hroot : ∀ μ ∈ (minpoly ℂ A).roots, μ.re ≠ 0 := fun μ hμ =>
     hA μ ((spectrum.mem_iff_isRoot_minpoly hI).2 (Polynomial.isRoot_of_mem_roots hμ))
   have hsg : ∀ (k : ℕ), ∀ μ ∈ (minpoly ℂ A).roots, ContDiffAt ℂ k sg μ := fun k μ hμ =>
-    contDiffAt_const.congr_of_eventuallyEq (sign_eventuallyEq (hroot μ hμ))
+    contDiffAt_const.congr_of_eventuallyEq (Complex.sign_re_eventuallyEq (hroot μ hμ))
   have hid : ∀ (k : ℕ), ∀ μ ∈ (minpoly ℂ A).roots, ContDiffAt ℂ k (fun z : ℂ => z) μ :=
     fun k μ _ => contDiffAt_id
   have hnz : ∀ μ ∈ (minpoly ℂ A).roots, μ + sg μ ≠ 0 := fun μ hμ h => by

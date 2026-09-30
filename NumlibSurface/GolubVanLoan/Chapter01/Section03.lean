@@ -273,7 +273,7 @@ private theorem idRun_foldlM_entrywise (op : ℝ → ℝ → ℝ) {k : ℕ} (X Y
   rw [foldlM_entrywise_eq pure op X Y]
   ext i j
   rw [idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange k), ite_eq_left (List.mem_finRange i),
-    matrixRowOp, idRun_foldlM_update_apply (fun j c => (pure (op c (Y i j)) : Id ℝ)) _
+    matrixRowOp, List.idRun_foldlM_update_apply (fun j c => (pure (op c (Y i j)) : Id ℝ)) _
       (List.nodup_finRange k), ite_eq_left (List.mem_finRange j)]
   rfl
 

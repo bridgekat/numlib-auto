@@ -39,7 +39,9 @@ Each algorithm carries three kinds of theorem (convention 12):
 
 The run characterizations rest on three loop facts. A loop whose every step reads and rewrites one
 component of the state only — one entry, one row, one column — is one update of that component by
-the loop run on it alone (`foldlM_lens`, in any lawful monad). A loop over `List.finRange n` whose
+the loop run on it alone (`List.foldlM_lens` and its instances `List.foldlM_update_self`,
+`Matrix.foldlM_updateRow`, `Matrix.foldlM_updateCol`, `Matrix.foldlM_updateRow_update`, in any
+lawful monad). A loop over `List.finRange n` whose
 step `i` rewrites entry `i` only has as run set the product of the per-entry run sets
 (`SetM.mem_run_foldlM_update_of_nodup`). A loop whose every step acts on every entry independently
 is, entry by entry, the loop run on that entry (`SetM.mem_run_foldlM_of_pi`, loop interchange in
@@ -68,45 +70,10 @@ open FloatingPoint Matrix
 
 namespace GolubVanLoan.Chapter01
 
-/-! ### Loop fusion: a loop acting on one component of its state -/
-
-/-- **A loop acting on one component.** If every step of a loop reads the component `get s` of its
-state and writes it back by `set`, the loop is one `set` of the loop run on that component alone.
-Holds in every lawful monad; the three hypotheses say that `get`/`set` is a lens. -/
-theorem foldlM_lens {M : Type → Type} [Monad M] [LawfulMonad M] {σ β α : Type}
-    (get : σ → β) (set : σ → β → σ) (hgs : ∀ s b, get (set s b) = b)
-    (hss : ∀ s b b', set (set s b) b' = set s b') (hsg : ∀ s, set s (get s) = s)
-    (f : β → α → M β) (l : List α) (s₀ : σ) :
-    l.foldlM (fun s a => do let b ← f (get s) a; pure (set s b)) s₀
-      = (do let b ← l.foldlM f (get s₀); pure (set s₀ b)) := by
-  induction l generalizing s₀ with
-  | nil => simp only [List.foldlM_nil, pure_bind, hsg]
-  | cons a l ih => simp only [List.foldlM_cons, bind_assoc, pure_bind, ih, hgs, hss]
-
-/-- A loop accumulating into entry `i` of a vector is one update of that entry. -/
-theorem foldlM_update_entry {M : Type → Type} [Monad M] [LawfulMonad M] {ι α : Type}
-    [DecidableEq ι] (i : ι) (h : α → ℝ → M ℝ) (l : List α) (y₀ : ι → ℝ) :
-    l.foldlM (fun (y : ι → ℝ) a => do let c ← h a (y i); pure (Function.update y i c)) y₀
-      = (do let c ← l.foldlM (fun c a => h a c) (y₀ i); pure (Function.update y₀ i c)) :=
-  foldlM_lens (fun y => y i) (fun y c => Function.update y i c) (by simp) (by simp) (by simp)
-    (fun c a => h a c) l y₀
-
-/-- A loop accumulating into entry `(i, j)` of a matrix is one update of that entry. -/
-theorem foldlM_updateRow_update_entry {M : Type → Type} [Monad M] [LawfulMonad M]
-    {m n : ℕ} {α : Type} (i : Fin m) (j : Fin n) (h : α → ℝ → M ℝ) (l : List α)
-    (C₀ : Matrix (Fin m) (Fin n) ℝ) :
-    l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) a => do
-        let c ← h a (C i j); pure (C.updateRow i (Function.update (C i) j c))) C₀
-      = (do
-        let c ← l.foldlM (fun c a => h a c) (C₀ i j)
-        pure (C₀.updateRow i (Function.update (C₀ i) j c))) :=
-  foldlM_lens (fun C : Matrix (Fin m) (Fin n) ℝ => C i j)
-    (fun C c => C.updateRow i (Function.update (C i) j c)) (by simp)
-    (fun C b b' => by simp [updateRow_idem]) (by simp [updateRow_eq_self])
-    (fun c a => h a c) l C₀
+/-! ### Loop fusion: a loop acting on one row of its state -/
 
 /-- A loop writing the entries of row `i` of a matrix, each from its current value, is one update of
-the row by the loop run on the row vector. -/
+the row by the loop run on the row vector: `Matrix.foldlM_updateRow` with an entrywise step. -/
 theorem foldlM_updateRow_row {M : Type → Type} [Monad M] [LawfulMonad M] {m n : ℕ}
     (i : Fin m) (h : Fin n → ℝ → M ℝ) (l : List (Fin n)) (C₀ : Matrix (Fin m) (Fin n) ℝ) :
     l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) j => do
@@ -115,22 +82,9 @@ theorem foldlM_updateRow_row {M : Type → Type} [Monad M] [LawfulMonad M] {m n 
         let r ← l.foldlM (fun (r : Fin n → ℝ) j => do
           let c ← h j (r j); pure (Function.update r j c)) (C₀ i)
         pure (C₀.updateRow i r)) := by
-  have := foldlM_lens (fun C : Matrix (Fin m) (Fin n) ℝ => C i) (fun C r => C.updateRow i r)
-    (by simp) (by simp [updateRow_idem]) (by simp [updateRow_eq_self])
-    (fun (r : Fin n → ℝ) j => do let c ← h j (r j); pure (Function.update r j c)) l C₀
+  have := Matrix.foldlM_updateRow i
+    (fun j (r : Fin n → ℝ) => do let c ← h j (r j); pure (Function.update r j c)) l C₀
   simpa only [bind_assoc, pure_bind] using this
-
-/-- A loop writing column `j` of a matrix, each time from the current column, is one update of the
-column by the loop run on the column vector. -/
-theorem foldlM_updateCol {M : Type → Type} [Monad M] [LawfulMonad M] {m n : ℕ} {α : Type}
-    (j : Fin n) (h : α → (Fin m → ℝ) → M (Fin m → ℝ)) (l : List α)
-    (C₀ : Matrix (Fin m) (Fin n) ℝ) :
-    l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) a => do
-        let c ← h a (fun i => C i j); pure (C.updateCol j c)) C₀
-      = (do let c ← l.foldlM (fun c a => h a c) (fun i => C₀ i j); pure (C₀.updateCol j c)) :=
-  foldlM_lens (fun C : Matrix (Fin m) (Fin n) ℝ => fun i => C i j)
-    (fun C c => C.updateCol j c) (fun _ _ => by ext; simp) (by simp [updateCol_idem])
-    (fun C => by simp) (fun c a => h a c) l C₀
 
 /-! ### Run sets of loops writing one entry per step -/
 
@@ -343,7 +297,7 @@ private theorem algorithm_1_1_3_eq {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) 
   unfold algorithm_1_1_3
   congr 1
   funext y i
-  have := foldlM_update_entry i (fun j c => do let p ← rnd (A i j * x j); rnd (c + p))
+  have := List.foldlM_update_self i (fun j c => do let p ← rnd (A i j * x j); rnd (c + p))
     (List.finRange n) y
   simp only [bind_assoc] at this
   exact this
@@ -363,7 +317,7 @@ private theorem algorithm_1_1_5_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
     (fun j c => dotAccum rnd (List.finRange r) (A i) (fun k => B k j) c)]
   congr 1
   funext C j
-  have := foldlM_updateRow_update_entry i j
+  have := Matrix.foldlM_updateRow_update i j
     (fun k c => do let p ← rnd (A i k * B k j); rnd (c + p)) (List.finRange r) C
   simp only [bind_assoc] at this
   exact this
@@ -394,7 +348,7 @@ private theorem algorithm_1_1_7_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
   unfold algorithm_1_1_7
   congr 1
   funext C j
-  exact foldlM_updateCol j (fun k c => algorithm_1_1_2 rnd (B k j) (fun i => A i k) c)
+  exact Matrix.foldlM_updateCol j (fun k c => algorithm_1_1_2 rnd (B k j) (fun i => A i k) c)
     (List.finRange r) C
 
 /-- Each outer-product update of Algorithm 1.1.8 as two loops writing one entry per step. -/
@@ -713,18 +667,6 @@ theorem algorithm_1_1_5_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix
     ∀ Ĉ ∈ (algorithm_1_1_5 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
   roundsMul_of_forall_mem_run hfp ((algorithm_1_1_5_mem_run _ A B 0 _).1 h)
 
-/-- A result of the accumulation is its start (empty order) or an admissible rounding. -/
-private theorem eq_or_rounds_of_mem_run_dotAccum {ι : Type} {o : List ι} {x y : ι → ℝ}
-    {c s : ℝ} (h : s ∈ (dotAccum fp.round o x y c).run) : s = c ∨ ∃ z, fp.Rounds z s := by
-  induction o generalizing c with
-  | nil => exact Or.inl h
-  | cons k o ih =>
-    simp only [dotAccum, List.foldlM_cons, SetM.mem_run_bind, RoundingModel.mem_run_round] at h
-    obtain ⟨c', ⟨p, -, hc'⟩, h⟩ := h
-    rcases ih h with rfl | h
-    · exact Or.inr ⟨_, hc'⟩
-    · exact Or.inr h
-
 /-- **Every run of Algorithm 1.1.6 with `C = 0` is a relational matrix product**: each entry is
 `fl(0 + s)` with `s` a run of Algorithm 1.1.1, `= s` by idempotence, and `s` is a `RoundsDot` by
 `algorithm_1_1_1_rounds`. -/
@@ -735,7 +677,7 @@ theorem algorithm_1_1_6_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix
   obtain ⟨s, hs, hc⟩ := (algorithm_1_1_6_mem_run _ A B 0 _).1 h i j
   rw [zero_apply, zero_add] at hc
   have hsc : Ĉ i j = s := by
-    rcases eq_or_rounds_of_mem_run_dotAccum (o := List.finRange r) (x := A i)
+    rcases FloatingPoint.eq_or_rounds_of_mem_run_dotAccum (o := List.finRange r) (x := A i)
         (y := fun k => B k j) (c := 0) hs with
       rfl | ⟨z, hz⟩
     · exact hc.eq_zero_of_zero

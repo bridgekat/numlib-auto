@@ -127,7 +127,7 @@ def vecLoop {M : Type → Type} [Monad M] {β : Type} [Zero β] {k : ℕ} (f : F
 theorem idRun_vecLoopOn {β : Type} [Zero β] {k : ℕ} {l : List (Fin k)} (f : Fin k → Id β)
     (hl : l.Nodup) (hall : ∀ i, i ∈ l) : Id.run (vecLoopOn l f) = fun i => Id.run (f i) := by
   funext i
-  have := Chapter01.idRun_foldlM_update_apply (fun a (_ : β) => f a) l hl 0 i
+  have := List.idRun_foldlM_update_apply (fun a (_ : β) => f a) l hl 0 i
   simpa [vecLoopOn, hall i] using this
 
 /-- In exact arithmetic the loop computes every entry. -/

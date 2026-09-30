@@ -34,7 +34,7 @@ backbone's `Matrix.exchange`, `Matrix.downshift`, `Matrix.perfectShuffle`
 
 The exact specifications of the three algorithms are proved in exact arithmetic (`M := Id`):
 the loops are fused into per-entry updates (`GolubVanLoan.Chapter01.foldlM_updateRow_row`,
-`foldlM_updateRow_update_entry`), a loop writing one entry per step over a duplicate-free list is
+`Matrix.foldlM_updateRow_update`), a loop writing one entry per step over a duplicate-free list is
 evaluated entrywise, and a loop acting on every entry independently is interchanged with the
 entry (`List.foldl_apply_of_pi`).
 
@@ -107,24 +107,14 @@ theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
 
 /-- In exact arithmetic, a loop over a duplicate-free index list whose step `a` rewrites entry `a`
 from its current value leaves the entries off the list alone and writes each entry of the list
-once, from its initial value. -/
+once, from its initial value: the backbone's `List.idRun_foldlM_update_apply`, kept under this name
+for the later chapters that cite it. -/
 theorem idRun_foldlM_update_apply {ι β : Type} [DecidableEq ι] (g : ι → β → Id β)
     (l : List ι) (hl : l.Nodup) (y₀ : ι → β) (i : ι) :
     Id.run (l.foldlM (fun (y : ι → β) a => do
       let b ← g a (y a); pure (Function.update y a b)) y₀) i =
-      if i ∈ l then Id.run (g i (y₀ i)) else y₀ i := by
-  induction l generalizing y₀ with
-  | nil => simp
-  | cons a l ih =>
-    rcases List.nodup_cons.1 hl with ⟨ha, hl'⟩
-    simp only [List.foldlM_cons, Id.run_bind, Id.run_pure]
-    rw [ih hl']
-    by_cases hia : i = a
-    · subst hia
-      simp [ha]
-    · have hmem : i ∈ a :: l ↔ i ∈ l := by simp [hia]
-      rw [if_congr hmem rfl rfl]
-      split_ifs <;> simp [Function.update_of_ne hia]
+      if i ∈ l then Id.run (g i (y₀ i)) else y₀ i :=
+  List.idRun_foldlM_update_apply g l hl y₀ i
 
 /-- The row form of `idRun_foldlM_update_apply`. -/
 theorem idRun_foldlM_updateRow_apply {m n : ℕ} (g : Fin m → (Fin n → ℝ) → Id (Fin n → ℝ))
@@ -132,16 +122,7 @@ theorem idRun_foldlM_updateRow_apply {m n : ℕ} (g : Fin m → (Fin n → ℝ) 
     Id.run (l.foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) a => do
       let r ← g a (C a); pure (C.updateRow a r)) C₀) i =
       if i ∈ l then Id.run (g i (C₀ i)) else C₀ i :=
-  idRun_foldlM_update_apply (β := Fin n → ℝ) g l hl C₀ i
-
-/-- A sum over a filtered `List.finRange` is the sum of the indicator. -/
-private theorem sum_map_filter_finRange {n : ℕ} (P : Fin n → Prop) [DecidablePred P]
-    (f : Fin n → ℝ) :
-    (((List.finRange n).filter fun k => decide (P k)).map f).sum = ∑ k, if P k then f k else 0 := by
-  rw [Fin.sum_univ_def]
-  induction (List.finRange n) with
-  | nil => simp
-  | cons a l ih => by_cases h : P a <;> simp [h, ih]
+  List.idRun_foldlM_update_apply (β := Fin n → ℝ) g l hl C₀ i
 
 /-! ### Algorithm 1.2.1: triangular matrix multiplication -/
 
@@ -256,7 +237,7 @@ private theorem algorithm_1_2_1_eq {M : Type → Type} [Monad M] [LawfulMonad M]
     dotAccum rnd ((List.finRange n).filter (fun k => i ≤ k ∧ k ≤ j)) (A i) (fun k => B k j) c)]
   congr 1
   funext C j
-  have := foldlM_updateRow_update_entry i j
+  have := Matrix.foldlM_updateRow_update i j
     (fun k c => do let p ← rnd (A i k * B k j); rnd (c + p))
     ((List.finRange n).filter (fun k => i ≤ k ∧ k ≤ j)) C
   simp only [bind_assoc] at this
@@ -272,10 +253,11 @@ theorem algorithm_1_2_1_spec {n : ℕ} (A B C : Matrix (Fin n) (Fin n) ℝ)
   rw [algorithm_1_2_1_eq]
   ext i j
   rw [idRun_foldlM_updateRow_apply _ _ (List.nodup_finRange n), ite_eq_left (List.mem_finRange i),
-    triangularRow, idRun_foldlM_update_apply _ _ ((List.nodup_finRange n).filter _),
+    triangularRow, List.idRun_foldlM_update_apply _ _ ((List.nodup_finRange n).filter _),
     Matrix.add_apply, Matrix.mul_apply]
   split_ifs with hij
-  · rw [dotAccum_id, sum_map_filter_finRange (fun k => i ≤ k ∧ k ≤ j)]
+  · rw [dotAccum_id, List.sum_map_filter_finRange (fun k => i ≤ k ∧ k ≤ j),
+      Finset.sum_filter]
     congr 1
     refine Finset.sum_congr rfl fun k _ => ?_
     split_ifs with hk
@@ -316,7 +298,7 @@ theorem algorithm_1_2_2_spec {n : ℕ} (p q : ℕ) (A : Matrix (Fin n) (Fin n) �
     · rcases not_and_or.1 h with h | h
       · rw [hq i j (by omega), zero_mul]
       · rw [hp i j (by omega), zero_mul]
-  · have := idRun_foldlM_update_apply
+  · have := List.idRun_foldlM_update_apply
       (fun (i : Fin n) (b : ℝ) => (pure (b + bandEntry Aband i j * x j) : Id ℝ))
       _ ((List.nodup_finRange n).filter
         (fun (i : Fin n) => decide ((j : ℕ) ≤ i + q ∧ (i : ℕ) ≤ j + p))) y i
@@ -365,10 +347,10 @@ theorem algorithm_1_2_3_spec {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (hA : A.
     (fun y j i => ?_), List.foldl_add_eq_add_sum_map, Pi.add_apply, ← Fin.sum_univ_def]
   · rfl
   · -- the two inner loops write the entries below and from `j` on, once each
-    have h₁ := idRun_foldlM_update_apply
+    have h₁ := List.idRun_foldlM_update_apply
       (fun (i : Fin n) (b : ℝ) => (pure (b + packedEntry Avec (packedIndex n j i) * x j) : Id ℝ))
       _ ((List.nodup_finRange n).filter (fun i => decide (i < j)))
-    have h₂ := idRun_foldlM_update_apply
+    have h₂ := List.idRun_foldlM_update_apply
       (fun (i : Fin n) (b : ℝ) => (pure (b + packedEntry Avec (packedIndex n i j) * x j) : Id ℝ))
       _ ((List.nodup_finRange n).filter (fun i => decide (j ≤ i)))
     simp only [pure_bind] at h₁ h₂

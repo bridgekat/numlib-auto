@@ -84,7 +84,7 @@ end VectorOps
 theorem vecAdd_spec {K : Type} [Add K] {n : ℕ} (u v : Fin n → K) :
     Id.run (vecAdd pure u v) = u + v := by
   funext k
-  rw [vecAdd, idRun_foldlM_update_apply (fun k b => (pure (b + v k) : Id K)) _
+  rw [vecAdd, List.idRun_foldlM_update_apply (fun k b => (pure (b + v k) : Id K)) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
@@ -92,7 +92,7 @@ theorem vecAdd_spec {K : Type} [Add K] {n : ℕ} (u v : Fin n → K) :
 theorem vecSub_spec {K : Type} [Sub K] {n : ℕ} (u v : Fin n → K) :
     Id.run (vecSub pure u v) = u - v := by
   funext k
-  rw [vecSub, idRun_foldlM_update_apply (fun k b => (pure (b - v k) : Id K)) _
+  rw [vecSub, List.idRun_foldlM_update_apply (fun k b => (pure (b - v k) : Id K)) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
@@ -100,7 +100,7 @@ theorem vecSub_spec {K : Type} [Sub K] {n : ℕ} (u v : Fin n → K) :
 theorem vecPointwiseMul_spec {K : Type} [Mul K] {n : ℕ} (d v : Fin n → K) :
     Id.run (vecPointwiseMul pure d v) = d * v := by
   funext k
-  rw [vecPointwiseMul, idRun_foldlM_update_apply (fun k b => (pure (d k * b) : Id K)) _
+  rw [vecPointwiseMul, List.idRun_foldlM_update_apply (fun k b => (pure (d k * b) : Id K)) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
@@ -110,7 +110,7 @@ private theorem idRun_foldlM_finRange_set {K : Type} {n : ℕ} (f : Fin n → K)
     Id.run ((List.finRange n).foldlM (fun (y : Fin n → K) k => do
       let v ← (pure (f k) : Id K); pure (Function.update y k v)) y₀) = f := by
   funext k
-  rw [idRun_foldlM_update_apply (fun k _ => (pure (f k) : Id K)) _ (List.nodup_finRange n),
+  rw [List.idRun_foldlM_update_apply (fun k _ => (pure (f k) : Id K)) _ (List.nodup_finRange n),
     ite_eq_left (List.mem_finRange k)]
   rfl
 

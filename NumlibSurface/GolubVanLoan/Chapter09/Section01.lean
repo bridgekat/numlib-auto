@@ -4,7 +4,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Numlib.Analysis.Matrix.Function.Basic
 import Numlib.Analysis.Matrix.Function.Triangular
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic
-import NumlibSurface.GolubVanLoan.Chapter07.Section01
+import Numlib.LinearAlgebra.Matrix.Sylvester
 
 /-!
 # Golub–Van Loan §9.1: eigenvalue methods
@@ -36,9 +36,10 @@ index `b : Fin n → Fin p`. Algorithm 9.1.1 follows the algorithm conventions o
 `pfc_mul`, `pfc_inv`, `commute_pfc`) and `Numlib/Analysis/Matrix/Function/{Basic,Triangular}`
 (`Matrix.pfc_conj`, `Matrix.pfc_jordanBlock`, `Matrix.pfc_conj_jordanForm`,
 `Matrix.pfc_apply_eq_sum_divDiff`, `Matrix.pfc_apply_eq_parlett`,
-`Matrix.BlockTriangular.pfc_sylvester`); chapter 7's Lemma 7.1.5
-(`GolubVanLoan.Chapter07.lemma_7_1_5`) for the Sylvester equations of §9.1.5, applied on the blocks'
-index types after reindexing to `Fin`.
+`Matrix.BlockTriangular.pfc_sylvester`); for the Sylvester equations of §9.1.5, the injectivity
+half of chapter 7's Lemma 7.1.5 over any finite index types,
+`Matrix.eq_zero_of_mul_sub_mul_eq_zero` (`Numlib/LinearAlgebra/Matrix/Sylvester`), applied on the
+blocks' index types.
 
 ## Not formalized
 
@@ -207,27 +208,12 @@ theorem theorem_9_1_2 {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ
     HasSum (fun k => (iteratedDeriv k f z₀ / k !) • (A - z₀ • 1) ^ k) (pfc f A) := by
   simpa only [coeff_eq_taylor hf] using hasSum_pfc_matrix hf hA
 
-/-- A scalar power series converging everywhere is a power series of its sum on all of `ℂ`. -/
-private theorem hasFPowerSeriesOnBall_of_hasSum {f : ℂ → ℂ} {c : ℕ → ℂ}
-    (h : ∀ z, HasSum (fun k => c k * z ^ k) (f z)) :
-    HasFPowerSeriesOnBall f (FormalMultilinearSeries.ofScalars ℂ c) 0 ⊤ where
-  r_le := by
-    refine ENNReal.le_of_forall_nnreal_lt fun r _ => ?_
-    refine FormalMultilinearSeries.le_radius_of_tendsto _ (l := 0) ?_
-    have := (h r).summable.tendsto_atTop_zero.norm
-    simp only [norm_zero, norm_mul, norm_pow, Complex.norm_real, Real.norm_eq_abs,
-      NNReal.abs_eq] at this
-    simpa only [FormalMultilinearSeries.ofScalars_norm] using this
-  r_pos := ENNReal.zero_lt_top
-  hasSum := fun {y} _ => by
-    simpa only [zero_add, FormalMultilinearSeries.ofScalars_apply_eq, smul_eq_mul] using h y
-
 /-- The matrix form of an everywhere convergent series: `f(A) = ∑ c_k Aᵏ`. -/
 private theorem hasSum_pfc_of_hasSum {f : ℂ → ℂ} {c : ℕ → ℂ}
     (h : ∀ z, HasSum (fun k => c k * z ^ k) (f z)) (A : Matrix (Fin n) (Fin n) ℂ) :
     HasSum (fun k => c k • A ^ k) (pfc f A) := by
   simpa only [FormalMultilinearSeries.coeff_ofScalars, zero_smul, sub_zero] using
-    hasSum_pfc_matrix (hasFPowerSeriesOnBall_of_hasSum h) (A := A) fun μ _ => by simp
+    hasSum_pfc_matrix (hasFPowerSeriesOnBall_ofScalars_of_hasSum h) (A := A) fun μ _ => by simp
 
 /-- **The exponential series** of §9.1.2: `exp(A) = ∑_{k ≥ 0} Aᵏ/k!`, and `pfc exp A` is
 Mathlib's matrix exponential `NormedSpace.exp A`. -/
@@ -239,41 +225,13 @@ theorem taylor_exp (A : Matrix (Fin n) (Fin n) ℂ) :
   rw [Complex.exp_eq_exp_ℂ]
   simpa only [smul_eq_mul] using NormedSpace.exp_series_hasSum_exp' (𝕂 := ℂ) z
 
-/-- The series `log(1 - z) = -∑_{k ≥ 1} zᵏ/k` on the unit disk. -/
-private theorem hasFPowerSeriesOnBall_log_one_sub :
-    HasFPowerSeriesOnBall (fun z => Complex.log (1 - z))
-      (FormalMultilinearSeries.ofScalars ℂ fun k => -((k : ℂ)⁻¹)) 0 1 where
-  r_le := by
-    refine ENNReal.le_of_forall_nnreal_lt fun r hr => ?_
-    refine FormalMultilinearSeries.le_radius_of_bound _ 1 fun k => ?_
-    have hr1 : (r : ℝ) ≤ 1 := by exact_mod_cast (ENNReal.coe_lt_one_iff.mp hr).le
-    calc ‖FormalMultilinearSeries.ofScalars ℂ (fun k => -((k : ℂ)⁻¹)) k‖ * (r : ℝ) ^ k
-        ≤ 1 * 1 := by
-          gcongr
-          · rw [FormalMultilinearSeries.ofScalars_norm, norm_neg, norm_inv, Complex.norm_natCast]
-            rcases Nat.eq_zero_or_pos k with rfl | hk
-            · simp
-            · exact inv_le_one_of_one_le₀ (by exact_mod_cast hk)
-          · exact pow_le_one₀ r.2 hr1
-      _ = 1 := one_mul 1
-  r_pos := one_pos
-  hasSum := fun {y} hy => by
-    have hy' : ‖y‖ < 1 := by
-      have : ‖y‖ₑ < 1 := by simpa [Metric.mem_eball, edist_zero_right] using hy
-      rwa [← ofReal_norm, ENNReal.ofReal_lt_one] at this
-    convert (Complex.hasSum_taylorSeries_neg_log hy').neg using 1
-    · ext k
-      rw [FormalMultilinearSeries.ofScalars_apply_eq, smul_eq_mul]
-      ring
-    · simp
-
 /-- **The logarithm series** of §9.1.2, sign corrected: if `|λ| < 1` for every `λ ∈ λ(A)`, then
 `log(I - A) = -∑_{k ≥ 1} Aᵏ/k`. The book prints `log(I - A) = ∑_{k ≥ 1} Aᵏ/k`, which is the
 series of `-log(I - A)`. -/
 theorem taylor_log_one_sub {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ‖ < 1) :
     HasSum (fun k : ℕ => -(((k + 1 : ℕ) : ℂ)⁻¹) • A ^ (k + 1))
       (pfc (fun z => Complex.log (1 - z)) A) := by
-  have h := hasSum_pfc_matrix hasFPowerSeriesOnBall_log_one_sub (A := A) fun μ hμ => by
+  have h := hasSum_pfc_matrix Complex.hasFPowerSeriesOnBall_log_one_sub (A := A) fun μ hμ => by
     rw [Metric.mem_eball, edist_zero_right, ← ofReal_norm, ENNReal.ofReal_lt_one]
     exact hA μ hμ
   simp only [FormalMultilinearSeries.coeff_ofScalars, zero_smul, sub_zero] at h
@@ -651,40 +609,12 @@ theorem equation_9_1_12 {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin
         ∑ k ∈ Ioo i j, (blk T i k * blk F k j - blk F i k * blk T k j) :=
   Matrix.BlockTriangular.pfc_sylvester hT f hij
 
-/-- A Sylvester equation `S D - D R = 0` between square matrices over any finite index types with
-disjoint spectra has only the solution `D = 0`: reindex to `Fin` and apply Lemma 7.1.5. -/
-private theorem eq_zero_of_mul_sub_mul_eq_zero {α β : Type*} [Fintype α] [DecidableEq α]
-    [Fintype β] [DecidableEq β] {S : Matrix α α ℂ} {R : Matrix β β ℂ}
-    (h : spectrum ℂ S ∩ spectrum ℂ R = ∅) {D : Matrix α β ℂ} (hD : S * D - D * R = 0) :
-    D = 0 := by
-  set e₁ := Fintype.equivFin α
-  set e₂ := Fintype.equivFin β
-  have hs₁ : spectrum ℂ (Matrix.reindex e₁ e₁ S) = spectrum ℂ S := by
-    rw [← Matrix.coe_reindexAlgEquiv ℂ ℂ e₁, AlgEquiv.spectrum_eq]
-  have hs₂ : spectrum ℂ (Matrix.reindex e₂ e₂ R) = spectrum ℂ R := by
-    rw [← Matrix.coe_reindexAlgEquiv ℂ ℂ e₂, AlgEquiv.spectrum_eq]
-  have hbij := (Chapter07.lemma_7_1_5 (Matrix.reindex e₁ e₁ S) (Matrix.reindex e₂ e₂ R)).2
-    (by rw [hs₁, hs₂]; exact h)
-  have h0 : Matrix.sylvesterMap (Matrix.reindex e₁ e₁ S) (Matrix.reindex e₂ e₂ R)
-      (Matrix.reindex e₁ e₂ D) = Matrix.sylvesterMap (Matrix.reindex e₁ e₁ S)
-        (Matrix.reindex e₂ e₂ R) 0 := by
-    rw [map_zero, Matrix.sylvesterMap_apply]
-    simp only [Matrix.reindex_apply]
-    rw [Matrix.submatrix_mul_equiv, Matrix.submatrix_mul_equiv]
-    ext a c
-    have := congrFun (congrFun hD (e₁.symm a)) (e₂.symm c)
-    simpa [Matrix.sub_apply] using this
-  have hD' := hbij.1 h0
-  ext a c
-  have := congrFun (congrFun hD' (e₁ a)) (e₂ c)
-  simpa using this
-
 /-- **§9.1.5, the blocks of `F = f(T)` one superdiagonal at a time**: if `T` is block upper
 triangular and `λ(T_ii) ∩ λ(T_jj) = ∅` (as the clustering of §9.1.5 arranges), then `F_ij` is the
 unique solution `X` of the Sylvester equation `X T_jj - T_ii X = C_ij`, `C_ij` the right side of
-(9.1.12) — which involves only blocks of `F` nearer the diagonal. (9.1.12) and chapter 7's
-Lemma 7.1.5 (`X ↦ T_ii X - X T_jj` is nonsingular iff the spectra are disjoint), on the blocks'
-index types. -/
+(9.1.12) — which involves only blocks of `F` nearer the diagonal. (9.1.12) and the content of
+chapter 7's Lemma 7.1.5 (`X ↦ T_ii X - X T_jj` is injective when the spectra are disjoint,
+`Matrix.eq_zero_of_mul_sub_mul_eq_zero`), on the blocks' index types. -/
 theorem equation_9_1_12_unique {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin n) ℂ}
     (hT : T.BlockTriangular b) (f : ℂ → ℂ) {i j : Fin p} (hij : i < j)
     (hdisj : spectrum ℂ (T.toBlock (b · = i) (b · = i)) ∩
@@ -705,7 +635,8 @@ theorem equation_9_1_12_unique {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin 
   constructor
   · intro hX
     rw [← h12, ← sub_eq_zero] at hX
-    refine sub_eq_zero.1 (eq_zero_of_mul_sub_mul_eq_zero hdisj ?_)
+    refine sub_eq_zero.1
+      (Matrix.eq_zero_of_mul_sub_mul_eq_zero (Set.disjoint_iff_inter_eq_empty.2 hdisj) ?_)
     calc Ti * (X - Fij) - (X - Fij) * Tj = -(X * Tj - Ti * X - (Fij * Tj - Ti * Fij)) := by
           simp only [Matrix.mul_sub, Matrix.sub_mul]
           abel

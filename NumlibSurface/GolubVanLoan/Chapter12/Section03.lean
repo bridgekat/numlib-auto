@@ -350,31 +350,6 @@ theorem reshapeVec_vecFin {m n : ℕ} (Y : Matrix (Fin m) (Fin n) ℝ) :
   ext i j
   rw [reshapeVec, of_apply, vecFin_apply]
 
-/-- The perfect shuffle in the left factor of a Kronecker product with an identity permutes the
-blocks of a vector: `((𝒫_{p,r} ⊗ I) w)((a, b), c) = w((b, a), c)`. -/
-theorem kroneckerFin_perfectShuffle_one_mulVec {p r q : ℕ} (w : Fin (p * r * q) → ℝ) (a : Fin r)
-    (b : Fin p) (c : Fin q) :
-    (kroneckerFin (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) ℝ)
-      (1 : Matrix (Fin q) (Fin q) ℝ) *ᵥ w) (finProdFinEquiv (finProdFinEquiv (a, b), c)) =
-      w (finProdFinEquiv (finProdFinEquiv (b, a), c)) := by
-  conv_lhs => rw [← vecFin_reshapeVec w]
-  rw [kroneckerFin_mulVec_vecFin, Matrix.one_mul, transpose_perfectShuffle, perfectShuffle,
-    PEquiv.mul_toMatrix_toPEquiv, vecFin_apply, submatrix_apply, Equiv.symm_symm, id,
-    finPerfectShuffle_apply, reshapeVec, of_apply]
-
-/-- The perfect shuffle in the right factor of a Kronecker product with an identity permutes within
-the blocks of a vector: `((I ⊗ 𝒫_{p,r}) w)(K, (a, b)) = w(K, (b, a))`. -/
-theorem kroneckerFin_one_perfectShuffle_mulVec {p r k : ℕ} (w : Fin (k * (p * r)) → ℝ)
-    (K : Fin k) (a : Fin r) (b : Fin p) :
-    (kroneckerFin (1 : Matrix (Fin k) (Fin k) ℝ)
-      (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) ℝ) *ᵥ w)
-      (finProdFinEquiv (K, finProdFinEquiv (a, b))) =
-      w (finProdFinEquiv (K, finProdFinEquiv (b, a))) := by
-  conv_lhs => rw [← vecFin_reshapeVec w]
-  rw [kroneckerFin_mulVec_vecFin, transpose_one, Matrix.mul_one, perfectShuffle,
-    PEquiv.toMatrix_toPEquiv_mul, vecFin_apply, submatrix_apply, id, finPerfectShuffle_symm,
-    finPerfectShuffle_apply, reshapeVec, of_apply]
-
 variable {q r : ℕ}
 
 /-- The first pass `Γ₁ vec(A)`, entrywise: its entry `(k, j, i)` is `(A_k)_{ij}`. -/
@@ -423,7 +398,7 @@ theorem perfectShuffle_two_pass (A : Matrix (Fin (r * q)) (Fin q) ℝ) :
       kroneckerFin (1 : Matrix (Fin r) (Fin r) ℝ) (perfectShuffle q q) *
         (kroneckerFin (perfectShuffle q r) (1 : Matrix (Fin q) (Fin q) ℝ)).submatrix
           (finCongr (by ring)) (finCongr (by ring)) := by
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, Matrix.perfectShuffle_submatrix_eq_kroneckerFin_mul⟩
   · ext i J
     obtain ⟨⟨k, j⟩, rfl⟩ := finProdFinEquiv.surjective J
     rw [reshapeVec, of_apply, twoPass_first, of_apply, Equiv.symm_apply_apply]
@@ -436,23 +411,6 @@ theorem perfectShuffle_two_pass (A : Matrix (Fin (r * q)) (Fin q) ℝ) :
       simp [finProdFinEquiv_apply_val]
       ring
     rw [this, twoPass_second]
-  · refine ext_of_mulVec_single fun j => ?_
-    set x : Fin (q * (r * q)) → ℝ := Pi.single j 1
-    set B : Matrix (Fin (r * q)) (Fin q) ℝ := reshapeVec x
-    have hx : x = vecFin B := (vecFin_reshapeVec x).symm
-    rw [hx, ← mulVec_mulVec, submatrix_mulVec_equiv, finCongr_symm]
-    funext t
-    obtain ⟨⟨k, ab⟩, rfl⟩ := finProdFinEquiv.surjective t
-    obtain ⟨⟨a, b⟩, rfl⟩ := finProdFinEquiv.surjective ab
-    rw [twoPass_second]
-    change (perfectShuffle q (r * q) *ᵥ vecFin B) (finCongr _ _) = _
-    rw [perfectShuffle_mulVec_vecFin]
-    have : finCongr (by ring) (finProdFinEquiv (k, finProdFinEquiv (a, b))) =
-        (finProdFinEquiv (finProdFinEquiv (k, a), b) : Fin (r * q * q)) := by
-      ext
-      simp [finProdFinEquiv_apply_val]
-      ring
-    rw [this, vecFin_apply, transpose_apply]
 
 end TwoPass
 
@@ -747,16 +705,6 @@ theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ
     ⟨_, rank_sum_vecMulVec_le (fun k => vecFin (B k)) (fun k => vecFin (C k)), rfl⟩
   simpa using this
 
-/-- The Kronecker product is bilinear: scalars pass out of the left factor. -/
-theorem kroneckerFin_smul_left (c : ℝ) (B : Matrix (Fin m₁) (Fin n₁) ℝ)
-    (C : Matrix (Fin m₂) (Fin n₂) ℝ) : kroneckerFin (c • B) C = c • kroneckerFin B C := by
-  simp [kroneckerFin, smul_kronecker, submatrix_smul]
-
-/-- The Kronecker product is bilinear: scalars pass out of the right factor. -/
-theorem kroneckerFin_smul_right (c : ℝ) (B : Matrix (Fin m₁) (Fin n₁) ℝ)
-    (C : Matrix (Fin m₂) (Fin n₂) ℝ) : kroneckerFin B (c • C) = c • kroneckerFin B C := by
-  simp [kroneckerFin, kronecker_smul, submatrix_smul]
-
 /-- `reshape` is linear. -/
 theorem reshapeVec_smul {m n : ℕ} (c : ℝ) (a : Fin (n * m) → ℝ) :
     reshapeVec (c • a) = c • reshapeVec a := by
@@ -984,15 +932,11 @@ section Skew
 open scoped Matrix.Norms.L2Operator
 
 /-- For a skew-symmetric real `S` (a normal matrix), the spectral radius (of the complexification,
-the eigenvalues `±iμ` being imaginary) is the spectral norm, `ρ(S) = ‖S‖₂`. -/
+the eigenvalues `±iμ` being imaginary) is the spectral norm, `ρ(S) = ‖S‖₂`: the backbone's
+`Matrix.complexSpectralRadius_toReal_of_skew`. -/
 theorem complexSpectralRadius_toReal_of_skew {n : ℕ} {S : Matrix (Fin n) (Fin n) ℝ}
-    (hS : Sᵀ = -S) : (complexSpectralRadius S).toReal = lpOpNorm 2 S := by
-  have hstar : star (complexify S) = -complexify S := by
-    rw [star_eq_conjTranspose, ← complexify_conjTranspose, conjTranspose_eq_transpose_of_trivial,
-      hS, complexify_neg]
-  have : IsStarNormal (complexify S) := ⟨by rw [hstar]; exact (Commute.refl _).neg_left⟩
-  rw [complexSpectralRadius, ← l2_opNorm_eq_spectralRadius_of_isStarNormal,
-    l2_opNNNorm_complexify, ENNReal.coe_toReal, coe_nnnorm, lpOpNorm_two]
+    (hS : Sᵀ = -S) : (complexSpectralRadius S).toReal = lpOpNorm 2 S :=
+  Matrix.complexSpectralRadius_toReal_of_skew hS
 
 end Skew
 
