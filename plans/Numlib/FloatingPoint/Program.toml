@@ -53,15 +53,6 @@ id = "SetM.mem_run_foldlM_update_self_iff"
 id = "SetM.mem_run_foldlM_update_of_nodup"
 
 [[node]]
-id = "List.foldl_apply_of_pi"
-
-[[node]]
-id = "List.foldl_update_self"
-
-[[node]]
-id = "List.foldl_add_eq_add_sum_map"
-
-[[node]]
 id = "FloatingPoint.dotAccum"
 
 [[node]]
@@ -91,3 +82,30 @@ id = "FloatingPoint.dotAccum_pure"
 
 [[node]]
 id = "FloatingPoint.roundsSumFrom_iff_foldlRel"
+
+[[node]]
+id = "SetM.forall_mem_run_foldlM_update_of_nodup"
+
+[[node]]
+id = "Matrix.foldlM_updateRow"
+
+[[node]]
+id = "Matrix.foldlM_updateCol"
+
+[[node]]
+id = "Matrix.foldlM_updateRow_update"
+
+[[node]]
+id = "Matrix.uncurry_updateRow_update"
+
+[[node]]
+id = "SetM.mem_run_foldlM_updateRow_update_of_nodup"
+
+[[node]]
+id = "FloatingPoint.exists_of_mem_run_dotAccum"
+
+[[node]]
+id = "FloatingPoint.eq_or_rounds_of_mem_run_dotAccum"
+
+[[node]]
+id = "FloatingPoint.exists_of_mem_run_foldlM_sub"

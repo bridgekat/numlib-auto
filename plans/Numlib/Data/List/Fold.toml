@@ -1,0 +1,85 @@
+namespace = "List"
+
+[[node]]
+id = "exists_cons_cons_of_two_le_length"
+
+[[node]]
+id = "mem_prefix_of_pairwise"
+
+[[node]]
+id = "Forall₂.exists_map_eq_of_nodup"
+
+[[node]]
+id = "prod_map_filter"
+
+[[node]]
+id = "prod_map_filter_finRange"
+
+[[node]]
+id = "foldl_prefix_induction"
+
+[[node]]
+id = "foldl_induction"
+
+[[node]]
+id = "foldl_finRange_induction"
+
+[[node]]
+id = "idRun_foldlM_induction"
+
+[[node]]
+id = "idRun_foldlM_finRange_induction"
+
+[[node]]
+id = "foldlM_hom"
+
+[[node]]
+id = "foldlM_flatMap"
+
+[[node]]
+id = "foldlM_foldlM_eq_foldlM_flatMap"
+
+[[node]]
+id = "foldlM_lens"
+
+[[node]]
+id = "foldlM_update_self"
+
+[[node]]
+id = "foldlM_range_succ"
+
+[[node]]
+id = "idRun_foldlM_range_succ"
+
+[[node]]
+id = "foldl_add_eq_add_sum_map"
+
+[[node]]
+id = "foldl_sub_eq_sub_sum_map"
+
+[[node]]
+id = "foldl_apply_of_pi"
+
+[[node]]
+id = "foldl_update_self"
+
+[[node]]
+id = "foldl_update_apply_of_forall_ne"
+
+[[node]]
+id = "foldl_update_apply_of_pairwise"
+
+[[node]]
+id = "foldl_update_of_nodup"
+
+[[node]]
+id = "foldl_update_eq_ite"
+
+[[node]]
+id = "exists_foldl_update_apply_of_pairwise_rel"
+
+[[node]]
+id = "foldl_update_apply_of_pairwise_rel"
+
+[[node]]
+id = "idRun_foldlM_update_apply"

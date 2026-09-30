@@ -389,6 +389,7 @@ import Numlib.Conditioning.Problem
 import Numlib.Data.ENNReal.Real
 import Numlib.Data.Fin.Sum
 import Numlib.Data.Fin.Tuple.Sort
+import Numlib.Data.List.Fold
 import Numlib.Data.Matrix.Mul
 import Numlib.Direct.ConditionEstimation
 import Numlib.Direct.CyclicReduction

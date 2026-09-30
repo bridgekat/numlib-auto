@@ -1,6 +1,6 @@
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.List.Forall2
 import Mathlib.Data.Set.Functor
+import Mathlib.LinearAlgebra.Matrix.RowCol
+import Numlib.Data.List.Fold
 import Numlib.FloatingPoint.InnerProduct
 
 /-!
@@ -11,8 +11,11 @@ floating-point meaning. An algorithm is written once, in its textbook's operatio
 a monad `M` and a hook `rnd : K → M K` through which every arithmetic result passes.
 
 * **Exact semantics**: `M := Id`, `rnd := pure`. Core's `List.idRun_foldlM` turns the program into
-  a `List.foldl`, and the lemmas here turn folds into sums (`List.foldl_add_eq_add_sum_map`) and
-  entrywise loops into per-entry folds (`List.foldl_apply_of_pi`, `List.foldl_update_self`).
+  a `List.foldl`, and the lemmas of `Numlib/Data/List/Fold` turn folds into sums
+  (`List.foldl_add_eq_add_sum_map`), entrywise loops into per-entry folds
+  (`List.foldl_apply_of_pi`, `List.foldl_update_self`), loops writing one entry per step into
+  simultaneous updates (`List.foldl_update_of_nodup`, `List.foldl_update_apply_of_pairwise`) and
+  give their invariants (`List.foldl_prefix_induction`, `List.idRun_foldlM_induction`).
 * **Floating-point semantics**: `M := SetM`, `rnd := fp.round` for a rounding model
   `fp : RoundingModel K`, where `fp.round x = {y | fp.Rounds x y}`
   (`FloatingPoint.RoundingModel.round`). The run set of the program is the set of all results of
@@ -126,8 +129,16 @@ run sets, as `dotAccum_run_nonempty` shows.
 Complex algorithms (the FFT) take `rnd : ℂ → M ℂ` with the same exact semantics; there is no
 complex rounding model.
 
+**Matrices.** A matrix state is overwritten by `Matrix.updateRow` / `Matrix.updateCol`; a loop
+acting on one row, one column or one entry is one update of it (`Matrix.foldlM_updateRow`,
+`Matrix.foldlM_updateCol`, `Matrix.foldlM_updateRow_update`), and a loop writing one entry per step
+over a duplicate-free list of positions has the product run set
+(`SetM.mem_run_foldlM_updateRow_update_of_nodup`), through the entry view
+`Matrix.uncurry_updateRow_update`.
+
 The `SetM` and `List` lemmas are upstreaming candidates (natural homes `Mathlib.Data.Set.Functor`
-and `Mathlib.Data.List.*`); they live here until a second module needs them.
+and `Mathlib.Data.List.*`); the pure `List` ones are in `Numlib/Data/List/Fold`, the `SetM` ones
+live here until a second module needs them.
 -/
 
 universe u v
@@ -223,34 +234,6 @@ theorem FoldlRel.append {a b : β} {l₁ l₂ : List α} :
     simp only [cons_append, foldlRel_cons_iff, ih]
     exact ⟨fun ⟨c, h, d, h₁, h₂⟩ => ⟨d, ⟨c, h, h₁⟩, h₂⟩,
       fun ⟨d, ⟨c, h, h₁⟩, h₂⟩ => ⟨c, h, d, h₁, h₂⟩⟩
-
-/-! ### Folds in exact arithmetic -/
-
-/-- A running sum `c + f k₁ + f k₂ + …` is `c` plus the sum of the mapped list. -/
-theorem foldl_add_eq_add_sum_map {M : Type*} [AddMonoid M] (f : α → M) (l : List α) (c : M) :
-    l.foldl (fun c k => c + f k) c = c + (l.map f).sum := by
-  induction l generalizing c with
-  | nil => simp
-  | cons a l ih => simp [ih, add_assoc]
-
-/-- **Loop interchange in exact arithmetic**: if every step of a loop over a state `ι → β` acts
-entrywise, each entry of the result is the loop run on that entry alone. -/
-theorem foldl_apply_of_pi {ι : Type*} (f : (ι → β) → α → ι → β) (g : α → ι → β → β)
-    (hf : ∀ y a i, f y a i = g a i (y i)) (l : List α) (y₀ : ι → β) (i : ι) :
-    l.foldl f y₀ i = l.foldl (fun b a => g a i b) (y₀ i) := by
-  induction l generalizing y₀ with
-  | nil => rfl
-  | cons a l ih => simp [ih, hf]
-
-/-- A loop that only rewrites index `i`, each time from its current value, is one update of `i`.
--/
-theorem foldl_update_self {ι : Type*} [DecidableEq ι] (h : α → β → β) (i : ι) (l : List α)
-    (y : ι → β) :
-    l.foldl (fun y k => Function.update y i (h k (y i))) y
-      = Function.update y i (l.foldl (fun b k => h k b) (y i)) := by
-  induction l generalizing y with
-  | nil => simp
-  | cons a l ih => simp [ih]
 
 end List
 
@@ -415,7 +398,144 @@ theorem mem_run_foldlM_update_of_nodup {ι : Type u} [DecidableEq ι]
       (∀ i, i ∉ l → y i = y₀ i) ∧ ∀ i ∈ l, y i ∈ (g i (y₀ i) y₀).run :=
   mem_run_foldlM_update_aux g {i | i ∈ l} l hl (fun _ h => h) hg y₀ y
 
+/-- **A loop writing one entry per step, in dependence order: the Hoare rule.** Over a
+duplicate-free list `l`, a loop whose step `i` writes entry `i` of the state with a result of
+`g i s` satisfies a property `R i` at every index of `l`, if every result of `g i s` satisfies
+`R i` whenever the entries not yet written hold their initial values, and `R i` depends only on the
+entries written before `i`. The row-oriented triangular substitutions have this shape. -/
+theorem forall_mem_run_foldlM_update_of_nodup {ι : Type u} [DecidableEq ι] {l : List ι}
+    (hl : l.Nodup) (g : ι → (ι → β) → SetM β) (R : ι → (ι → β) → β → Prop) (b : ι → β)
+    (hg : ∀ p i q, l = p ++ i :: q → ∀ s : ι → β, (∀ j, j ∉ p → s j = b j) →
+      ∀ x ∈ (g i s).run, R i s x)
+    (hR : ∀ p i q, l = p ++ i :: q → ∀ (s s' : ι → β) x, (∀ j ∈ p, s j = s' j) →
+      R i s x → R i s' x) :
+    ∀ y ∈ (l.foldlM (fun s i => do let x ← g i s; pure (Function.update s i x)) b).run,
+      ∀ i ∈ l, R i y (y i) := by
+  intro y hy
+  refine (forall_mem_run_foldlM (l := l) (a := b)
+    (fun p s => (∀ j, j ∉ p → s j = b j) ∧ ∀ i ∈ p, R i s (s i))
+    ⟨fun _ _ => rfl, by simp⟩ ?_ y hy).2
+  rintro p x q hl' c ⟨hc₁, hc₂⟩ c' hc'
+  rw [mem_run_bind] at hc'
+  obtain ⟨v, hv, hc'⟩ := hc'
+  rw [mem_run_pure] at hc'
+  subst hc'
+  have hxp : x ∉ p := fun h =>
+    List.disjoint_of_nodup_append (hl' ▸ hl) h List.mem_cons_self
+  have hagree : ∀ j ∈ p, c j = Function.update c x v j := fun j hj =>
+    (Function.update_of_ne (fun (e : j = x) => hxp (e ▸ hj)) _ _).symm
+  refine ⟨fun j hj => ?_, fun i hi => ?_⟩
+  · have hjx : j ≠ x := fun e => hj (List.mem_append.2 (Or.inr (e ▸ List.mem_singleton_self x)))
+    rw [Function.update_of_ne hjx]
+    exact hc₁ j fun h => hj (List.mem_append.2 (Or.inl h))
+  · rcases List.mem_append.1 hi with hi | hi
+    · have hix : i ≠ x := fun e => hxp (e ▸ hi)
+      rw [Function.update_of_ne hix]
+      obtain ⟨p₁, p₂, rfl⟩ := List.append_of_mem hi
+      refine hR p₁ i (p₂ ++ x :: q) (by rw [hl']; simp) c _ (c i) (fun j hj => ?_) (hc₂ i hi)
+      exact hagree j (List.mem_append.2 (Or.inl hj))
+    · rw [List.mem_singleton.1 hi, Function.update_self]
+      exact hR p x q hl' c _ v hagree (hg p x q hl' c hc₁ v hv)
+
 end Loops
+
+end SetM
+
+/-! ### Loops over matrices -/
+
+namespace Matrix
+
+section Loops
+
+variable {M : Type u → Type v} [Monad M] [LawfulMonad M] {m n R : Type u} {α : Type*}
+
+/-- **A loop acting on row `i` of a matrix**, each step from the current row, is one update of the
+row by the loop run on the row vector. -/
+theorem foldlM_updateRow [DecidableEq m] (i : m) (h : α → (n → R) → M (n → R)) (l : List α)
+    (A₀ : Matrix m n R) :
+    l.foldlM (fun (A : Matrix m n R) a => do let r ← h a (A i); pure (A.updateRow i r)) A₀
+      = (do let r ← l.foldlM (fun r a => h a r) (A₀ i); pure (A₀.updateRow i r)) :=
+  List.foldlM_lens (fun A : Matrix m n R => A i) (fun A r => A.updateRow i r) (by simp)
+    (by simp [updateRow_idem]) (by simp [updateRow_eq_self]) (fun r a => h a r) l A₀
+
+/-- **A loop acting on column `j` of a matrix**, each step from the current column, is one update
+of the column by the loop run on the column vector. -/
+theorem foldlM_updateCol [DecidableEq n] (j : n) (h : α → (m → R) → M (m → R)) (l : List α)
+    (A₀ : Matrix m n R) :
+    l.foldlM (fun (A : Matrix m n R) a => do
+        let c ← h a (fun i => A i j); pure (A.updateCol j c)) A₀
+      = (do let c ← l.foldlM (fun c a => h a c) (fun i => A₀ i j); pure (A₀.updateCol j c)) :=
+  List.foldlM_lens (fun A : Matrix m n R => fun i => A i j) (fun A c => A.updateCol j c)
+    (fun _ _ => by ext; simp) (by simp [updateCol_idem]) (fun A => by simp) (fun c a => h a c) l A₀
+
+/-- **A loop accumulating into entry `(i, j)` of a matrix** is one update of that entry by the loop
+run on the entry alone. -/
+theorem foldlM_updateRow_update [DecidableEq m] [DecidableEq n] (i : m) (j : n)
+    (h : α → R → M R) (l : List α) (A₀ : Matrix m n R) :
+    l.foldlM (fun (A : Matrix m n R) a => do
+        let c ← h a (A i j); pure (A.updateRow i (Function.update (A i) j c))) A₀
+      = (do
+        let c ← l.foldlM (fun c a => h a c) (A₀ i j)
+        pure (A₀.updateRow i (Function.update (A₀ i) j c))) :=
+  List.foldlM_lens (fun A : Matrix m n R => A i j)
+    (fun A c => A.updateRow i (Function.update (A i) j c)) (by simp)
+    (fun A b b' => by simp [updateRow_idem]) (by simp [updateRow_eq_self]) (fun c a => h a c) l A₀
+
+end Loops
+
+/-- **The entry view of a one-entry update**: rewriting entry `(i, j)` of a matrix is updating the
+matrix, read as a function on positions, at `(i, j)`. Through it and `List.foldl_hom` /
+`List.foldlM_hom`, the loop lemmas about `Function.update` (`List.foldl_update_of_nodup`, …) apply
+to loops over matrix entries. -/
+theorem uncurry_updateRow_update {m n R : Type*} [DecidableEq m] [DecidableEq n]
+    (A : Matrix m n R) (i : m) (j : n) (x : R) :
+    Function.uncurry (A.updateRow i (Function.update (A i) j x)) =
+      Function.update (Function.uncurry A) (i, j) x :=
+  Function.uncurry_update_update A i j x
+
+end Matrix
+
+namespace SetM
+
+/-- **One matrix entry per step.** Over a duplicate-free list of positions, a loop whose step at
+`(i, j)` rewrites the entry `(i, j)` only — from its current value and from entries at positions
+outside the list — has as run set the matrices that agree with the initial one off the list and
+whose entry at each listed position is a result of its step on the initial matrix. The matrix form
+of `SetM.mem_run_foldlM_update_of_nodup`. -/
+theorem mem_run_foldlM_updateRow_update_of_nodup {m n β : Type u} [DecidableEq m] [DecidableEq n]
+    (l : List (m × n)) (hl : l.Nodup) (g : m × n → β → Matrix m n β → SetM β)
+    (hg : ∀ a ∈ l, ∀ x (A A' : Matrix m n β),
+      (∀ i j, (i, j) ∉ l → A i j = A' i j) → g a x A = g a x A')
+    (A₀ A : Matrix m n β) :
+    A ∈ (l.foldlM (fun (A : Matrix m n β) a => do
+        let x ← g a (A a.1 a.2) A
+        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run ↔
+      (∀ i j, (i, j) ∉ l → A i j = A₀ i j) ∧ ∀ a ∈ l, A a.1 a.2 ∈ (g a (A₀ a.1 a.2) A₀).run := by
+  have hmap := List.foldlM_hom (m := SetM) (Function.uncurry : Matrix m n β → m × n → β)
+    (g₁ := fun (A : Matrix m n β) a => do
+      let x ← g a (A a.1 a.2) A
+      pure (A.updateRow a.1 (Function.update (A a.1) a.2 x)))
+    (g₂ := fun y a => do
+      let x ← g a (y a) (Matrix.of (Function.curry y))
+      pure (Function.update y a x)) (l := l) (init := A₀) fun B a => by
+      rw [map_bind]
+      refine congrArg (g a (B a.1 a.2) B >>= ·) (funext fun x => ?_)
+      exact ((map_pure (f := SetM) (Function.uncurry : Matrix m n β → m × n → β) _).trans
+        (congrArg pure (Matrix.uncurry_updateRow_update B a.1 a.2 x))).symm
+  have key := mem_run_foldlM_update_of_nodup (fun a x y => g a x (Matrix.of (Function.curry y)))
+    l hl (fun a ha x y y' hy => hg a ha x _ _ fun i j hij => hy (i, j) hij)
+    (Function.uncurry A₀) (Function.uncurry A)
+  have hA : A ∈ (l.foldlM (fun (A : Matrix m n β) a => do
+        let x ← g a (A a.1 a.2) A
+        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run ↔
+      Function.uncurry A ∈ (Function.uncurry <$> l.foldlM (fun (A : Matrix m n β) a => do
+        let x ← g a (A a.1 a.2) A
+        pure (A.updateRow a.1 (Function.update (A a.1) a.2 x))) A₀).run := by
+    rw [mem_run_map]
+    exact ⟨fun h => ⟨A, h, rfl⟩, fun ⟨B, hB, hBA⟩ => Function.uncurry_injective hBA ▸ hB⟩
+  rw [hA, ← hmap, key]
+  exact ⟨fun ⟨h₁, h₂⟩ => ⟨fun i j hij => h₁ (i, j) hij, h₂⟩,
+    fun ⟨h₁, h₂⟩ => ⟨fun p hp => h₁ p.1 p.2 hp, h₂⟩⟩
 
 end SetM
 
@@ -528,26 +648,56 @@ theorem mem_run_dotAccum_exact_iff {o : List ι} {x y : ι → K} {c s : K} :
       s = c + (o.map fun k => x k * y k).sum := by
   rw [RoundingModel.round_exact, dotAccum_pure, SetM.mem_run_pure]
 
-/-- Values related one by one to a duplicate-free list of indices are the values of a function on
-the indices. -/
-private theorem exists_forall_map_eq_of_forall₂ {β : Type*} {R : ι → β → Prop} {o : List ι}
-    (ho : o.Nodup) {ps : List β} (h : List.Forall₂ R o ps) (d : ι → β) :
-    ∃ p : ι → β, (∀ i ∈ o, R i (p i)) ∧ o.map p = ps := by
+/-- **A run of the accumulation over a duplicate-free order** is a running sum from the start `c`
+of admissible roundings of the products, indexed by a function on the indices. -/
+theorem exists_of_mem_run_dotAccum {fp : RoundingModel K} {o : List ι} (ho : o.Nodup)
+    {x y : ι → K} {c s : K} (h : s ∈ (dotAccum fp.round o x y c).run) :
+    ∃ p : ι → K, (∀ j ∈ o, fp.Rounds (x j * y j) (p j)) ∧ RoundsSumFrom fp c (o.map p) s := by
+  obtain ⟨ps, hps, hsum⟩ := mem_run_dotAccum_iff.1 h
+  obtain ⟨p, hp, rfl⟩ := hps.exists_map_eq_of_nodup ho 0
+  exact ⟨p, hp, hsum⟩
+
+/-- A result of the accumulation is its start (empty order) or an admissible rounding of some
+value. -/
+theorem eq_or_rounds_of_mem_run_dotAccum {fp : RoundingModel K} {o : List ι} {x y : ι → K}
+    {c s : K} (h : s ∈ (dotAccum fp.round o x y c).run) : s = c ∨ ∃ z, fp.Rounds z s := by
+  induction o generalizing c with
+  | nil => exact Or.inl h
+  | cons k o ih =>
+    simp only [dotAccum, List.foldlM_cons, SetM.mem_run_bind, RoundingModel.mem_run_round] at h
+    obtain ⟨c', ⟨p, -, hc'⟩, h⟩ := h
+    rcases ih h with rfl | h
+    · exact Or.inr ⟨_, hc'⟩
+    · exact Or.inr h
+
+/-- **A run of a loop of rounded subtractions of rounded values** `c ← fl(c − fl(f r))`, over a
+duplicate-free order, is a running sum from the start `c` of the negated roundings of the values.
+-/
+theorem exists_of_mem_run_foldlM_sub {fp : RoundingModel K} {o : List ι} (ho : o.Nodup)
+    {f : ι → K} {c x : K}
+    (h : x ∈ (o.foldlM (fun (c : K) r => do let p ← fp.round (f r); fp.round (c - p)) c).run) :
+    ∃ p : ι → K, (∀ r ∈ o, fp.Rounds (f r) (p r)) ∧ RoundsSumFrom fp c (o.map fun r => -p r) x := by
   classical
-  induction h with
-  | nil => exact ⟨d, by simp, rfl⟩
-  | @cons a b o ps hab _ ih =>
-    rcases List.nodup_cons.1 ho with ⟨ha, ho'⟩
-    obtain ⟨p, hp, hmap⟩ := ih ho'
-    refine ⟨Function.update p a b, fun i hi => ?_, ?_⟩
-    · rcases List.mem_cons.1 hi with rfl | hi
+  induction o generalizing c with
+  | nil =>
+    rw [List.foldlM_nil, SetM.mem_run_pure] at h
+    exact ⟨fun _ => 0, by simp, h ▸ .nil _⟩
+  | cons a o ih =>
+    simp only [List.foldlM_cons, bind_assoc, SetM.mem_run_bind, RoundingModel.mem_run_round] at h
+    obtain ⟨pa, hpa, c', hc', h⟩ := h
+    obtain ⟨p, hp, hsum⟩ := ih (List.nodup_cons.1 ho).2 h
+    have ha : a ∉ o := (List.nodup_cons.1 ho).1
+    refine ⟨Function.update p a pa, fun r hr => ?_, ?_⟩
+    · rcases List.mem_cons.1 hr with rfl | hr
       · rwa [Function.update_self]
-      · rw [Function.update_of_ne fun (e : i = a) => ha (e ▸ hi)]
-        exact hp i hi
-    · rw [List.map_cons, Function.update_self, ← hmap]
-      congr 1
-      exact List.map_congr_left fun i hi =>
-        Function.update_of_ne (fun (e : i = a) => ha (e ▸ hi)) _ _
+      · rw [Function.update_of_ne fun (e : r = a) => ha (e ▸ hr)]
+        exact hp r hr
+    · rw [List.map_cons, Function.update_self]
+      have hmap : (o.map fun r => -Function.update p a pa r) = o.map fun r => -p r :=
+        List.map_congr_left fun r hr => by
+          rw [Function.update_of_ne fun (e : r = a) => ha (e ▸ hr)]
+      rw [hmap]
+      exact .cons (by rw [← sub_eq_add_neg]; exact hc') hsum
 
 /-- **The accumulation from `0` is Higham's inner product when rounding fixes its outputs**: over
 an idempotent model, a result of `dotAccum` from `c = 0` along a duplicate-free order covering the
@@ -557,8 +707,7 @@ indices is a `RoundsDot`, since the first addition `0 + fl(x₁ y₁)` is then e
 theorem roundsDot_of_mem_run_dotAccum {fp : RoundingModel K} (hfp : fp.IsIdempotent)
     {o : List ι} (ho : o.Nodup) (hmem : ∀ i, i ∈ o) {x y : ι → K} {s : K}
     (h : s ∈ (dotAccum fp.round o x y 0).run) : RoundsDot fp x y s := by
-  obtain ⟨ps, hps, hsum⟩ := mem_run_dotAccum_iff.1 h
-  obtain ⟨p, hp, rfl⟩ := exists_forall_map_eq_of_forall₂ ho hps 0
+  obtain ⟨p, hp, hsum⟩ := exists_of_mem_run_dotAccum ho h
   refine ⟨o, p, ho, hmem, fun i => hp i (hmem i), ?_⟩
   cases o with
   | nil =>
