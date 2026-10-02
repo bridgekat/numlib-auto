@@ -233,22 +233,6 @@ theorem norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one (ha : IsUnit a)
 
 end OneSided
 
-/-- `Ring.inverse` preserves commutation: if `a` commutes with `b`, it commutes with `b⁻¹` (with
-Mathlib's junk value `0` when `b` is not a unit). -/
-theorem _root_.Commute.ringInverse_right {M₀ : Type*} [MonoidWithZero M₀] {a b : M₀}
-    (h : Commute a b) : Commute a (Ring.inverse b) := by
-  by_cases hb : IsUnit b
-  · obtain ⟨u, rfl⟩ := hb
-    rw [Ring.inverse_unit]
-    exact h.units_inv_right
-  · rw [Ring.inverse_non_unit b hb]
-    exact Commute.zero_right a
-
-/-- `Ring.inverse` preserves commutation, on the left. -/
-theorem _root_.Commute.ringInverse_left {M₀ : Type*} [MonoidWithZero M₀] {a b : M₀}
-    (h : Commute a b) : Commute (Ring.inverse a) b :=
-  (h.symm.ringInverse_right).symm
-
 end NormedRing
 
 namespace Units

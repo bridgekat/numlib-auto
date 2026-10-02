@@ -13,6 +13,7 @@ import Numlib.Analysis.SpecialFunctions.Integrals.Beta
 import Numlib.Analysis.Calculus.HermiteInterpolation
 import Numlib.Analysis.Normed.Algebra.Logarithm
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.LinearAlgebra.Matrix.Aeval
 
 /-!
 # Padé approximants of the exponential
