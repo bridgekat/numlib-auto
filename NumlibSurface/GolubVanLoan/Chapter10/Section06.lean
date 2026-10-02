@@ -1,7 +1,7 @@
 import Numlib.Eigen.JacobiDavidson
 import Numlib.Eigen.SymmetricPencil
 import NumlibSurface.GolubVanLoan.Chapter01.Section04
-import NumlibSurface.GolubVanLoan.Chapter10.Section05
+import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
 # Golub–Van Loan §10.6: Jacobi–Davidson and related methods
@@ -1255,20 +1255,21 @@ private theorem trace_transpose_mul_mul_eq_sum {k : ℕ} (C : Matrix (Fin n) (Fi
 definite `B` and `k ≤ n`, with the pencil eigenvalues `μ_1 ≤ ⋯ ≤ μ_n` of `A − λB` (the book counts
 from the smallest here; `Matrix.pencilEigenvalues` is decreasing, so the book's `μ_1, …, μ_k` are
 its last `k`), `min {tr(VᵀAV) : V ∈ ℝ^{n×k}, VᵀBV = I_k} = μ_1 + ⋯ + μ_k`, attained at a `V_opt`
-with `V_optᵀ A V_opt = diag(μ_1, …, μ_k)`. The book's "if `V_opt` solves the problem then `V_optᵀ A
-V_opt = diag(μ)`" holds for *some* minimizer, not every one (any `V_opt Q`, `Q` orthogonal, also
-minimizes). Proof: with a normalizer `W`, `WᵀBW = I`, every feasible `V` is `W X` with `XᵀX = I_k`
-and `tr(VᵀAV) = tr(Xᵀ(WᵀAW)X)`; Ky Fan's minimum principle
+with `V_optᵀ A V_opt = diag(μ_1, …, μ_k)` and `A V_opt(:, j) = μ_j B V_opt(:, j)`. The book's "if
+`V_opt` solves the problem then `V_optᵀ A V_opt = diag(μ)`" holds for *some* minimizer, not every
+one (any `V_opt Q`, `Q` orthogonal, also minimizes). Proof: with a normalizer `W`, `WᵀBW = I`, every
+feasible `V` is `W X` with `XᵀX = I_k` and `tr(VᵀAV) = tr(Xᵀ(WᵀAW)X)`; Ky Fan's minimum principle
 `LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for `WᵀAW`, whose sorted eigenvalues are the
 pencil eigenvalues (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); equality at `X` = the last `k`
 eigenvectors. -/
-theorem traceMin {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef) {k : ℕ}
-    (hkn : k ≤ n) :
+theorem isLeast_trace_transpose_mul_mul {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    (hB : B.PosDef) {k : ℕ} (hkn : k ≤ n) :
     let μ := Matrix.pencilEigenvalues (Matrix.isHermitian_iff_isSymm.mpr hA) hB
     let low : Fin k → ℝ := fun i => μ ⟨i + (n - k), by rw [Fintype.card_fin]; omega⟩
     IsLeast {t | ∃ V : Matrix (Fin n) (Fin k) ℝ, Vᵀ * B * V = 1 ∧ t = (Vᵀ * A * V).trace}
         (∑ i, low i) ∧
-      ∃ V : Matrix (Fin n) (Fin k) ℝ, Vᵀ * B * V = 1 ∧ Vᵀ * A * V = Matrix.diagonal low := by
+      ∃ V : Matrix (Fin n) (Fin k) ℝ, Vᵀ * B * V = 1 ∧ Vᵀ * A * V = Matrix.diagonal low ∧
+        ∀ j, A *ᵥ V.col j = low j • (B *ᵥ V.col j) := by
   intro μ low
   have hA' : A.IsHermitian := Matrix.isHermitian_iff_isSymm.mpr hA
   obtain ⟨W, hWu, hWstar⟩ := hB.exists_isUnit_conj_eq_one
@@ -1333,7 +1334,26 @@ theorem traceMin {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosD
       (W * X')ᵀ * A * (W * X') = X'ᵀ * (Wᵀ * A * W) * X' := fun X' => by
     rw [Matrix.transpose_mul]
     simp only [Matrix.mul_assoc]
-  refine ⟨⟨⟨W * X, hfeas X hXX, ?_⟩, ?_⟩, W * X, hfeas X hXX, by rw [hconj, hXCX]⟩
+  -- the columns of `W X` are eigenvectors of the pencil
+  have heig : ∀ j, A *ᵥ (W * X).col j = low j • (B *ᵥ (W * X).col j) := by
+    intro j
+    have hx : (Wᵀ * A * W) *ᵥ X.col j = low j • X.col j := by
+      have h := congrArg WithLp.ofLp (hT.apply_eigenvectorBasis hn
+        ⟨j + (Fintype.card (Fin n) - k), by omega⟩)
+      rw [← hXcol, hlow] at *
+      simpa [hTdef, Matrix.toEuclideanLin_toLp, Matrix.mul_assoc] using h
+    have hcol : (W * X).col j = W *ᵥ X.col j := by
+      ext r
+      simp [Matrix.mul_apply, Matrix.mulVec, dotProduct]
+    have hWT : (W⁻¹)ᵀ * Wᵀ = 1 := by
+      rw [← Matrix.transpose_mul, Matrix.mul_nonsing_inv _ hdet, Matrix.transpose_one]
+    have hA1 : A *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᵀ *ᵥ ((Wᵀ * A * W) *ᵥ X.col j) := by
+      simp only [Matrix.mulVec_mulVec, ← Matrix.mul_assoc, hWT, Matrix.one_mul]
+    have hB1 : B *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᵀ *ᵥ X.col j := by
+      rw [hB', Matrix.mulVec_mulVec, Matrix.mul_assoc,
+        Matrix.nonsing_inv_mul _ hdet, Matrix.mul_one]
+    rw [hcol, hA1, hB1, hx, Matrix.mulVec_smul]
+  refine ⟨⟨⟨W * X, hfeas X hXX, ?_⟩, ?_⟩, W * X, hfeas X hXX, by rw [hconj, hXCX], heig⟩
   · rw [hconj, hXCX, Matrix.trace_diagonal]
   · rintro t ⟨V, hV, rfl⟩
     set X' := W⁻¹ * V with hX'
@@ -1350,5 +1370,7 @@ theorem traceMin {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosD
     rw [hVX, hconj, trace_transpose_mul_mul_eq_sum]
     simp only [hlow]
     exact hky
+
+@[deprecated (since := "2026-09-30")] alias traceMin := isLeast_trace_transpose_mul_mul
 
 end GolubVanLoan.Chapter10

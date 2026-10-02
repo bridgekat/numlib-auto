@@ -225,10 +225,6 @@ id = "chebyshevSymmetricPoly"
 source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
 
 [[node]]
-id = "vecSub"
-source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
-
-[[node]]
 id = "chebyshevCombine"
 source = 'Golub–Van Loan, Matrix Computations, §11.2.8'
 

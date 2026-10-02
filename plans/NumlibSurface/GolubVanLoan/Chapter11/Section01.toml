@@ -41,7 +41,7 @@ id = "profile"
 source = 'Golub–Van Loan, Matrix Computations, §11.1.5, Definition'
 
 [[node]]
-id = "cuthillMcKee_blockTridiagonal"
+id = "submatrix_apply_eq_zero_of_levels_far"
 source = 'Golub–Van Loan, Matrix Computations, §11.1.5'
 
 [[node]]

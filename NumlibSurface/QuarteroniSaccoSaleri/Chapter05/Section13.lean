@@ -213,8 +213,8 @@ theorem exercise_5_14 :
     ext i j
     fin_cases i <;> fin_cases j <;> simp [A, Matrix.mul_apply, Fin.sum_univ_three]
   have hqr : qrQ A = A ∧ qrR A = 1 :=
-    qr_unique (qrQ_mul_qrR A).symm (Matrix.mul_one A).symm (conjTranspose_qrQ_mul_self A) hAA
-      (isUpperTriangular_qrR A) blockTriangular_one
+    IsThinQR.unique ⟨qrQ_mul_qrR A, conjTranspose_qrQ_mul_self A, isUpperTriangular_qrR A⟩
+      ⟨Matrix.mul_one A, hAA, blockTriangular_one⟩
       (qrR_diag_pos ((isUnit_iff_isUnit_det A).mp (isUnit_of_mem_unitaryGroup
         (mem_unitaryGroup_iff'.mpr (by rw [star_eq_conjTranspose]; exact hAA)))))
       (fun j => by simp)

@@ -253,10 +253,10 @@ with `Qᴴ Q = 1` and `R` upper triangular with positive diagonal, and the pair 
 theorem equation_1_19 {r : ℕ} (X : Matrix (Fin n) (Fin r) 𝕜) (hX : LinearIndependent 𝕜 Xᵀ) :
     ∃! QR : Matrix (Fin n) (Fin r) 𝕜 × Matrix (Fin r) (Fin r) 𝕜,
       X = QR.1 * QR.2 ∧ QR.1ᴴ * QR.1 = 1 ∧ QR.2.IsUpperTriangular ∧ ∀ j, 0 < QR.2.diag j := by
-  obtain ⟨Q, R, hXQR, hQ, hR, hd⟩ := Matrix.exists_qr X hX
-  refine ⟨(Q, R), ⟨hXQR, hQ, hR, hd⟩, ?_⟩
+  obtain ⟨Q, R, ⟨hXQR, hQ, hR⟩, hd⟩ := Matrix.exists_isThinQR X hX
+  refine ⟨(Q, R), ⟨hXQR.symm, hQ, hR, hd⟩, ?_⟩
   rintro ⟨Q', R'⟩ ⟨hXQR', hQ', hR', hd'⟩
-  obtain ⟨hQQ, hRR⟩ := Matrix.qr_unique hXQR' hXQR hQ' hQ hR' hR hd' hd
+  obtain ⟨hQQ, hRR⟩ := Matrix.IsThinQR.unique ⟨hXQR'.symm, hQ', hR'⟩ ⟨hXQR, hQ, hR⟩ hd' hd
   exact Prod.ext hQQ hRR
 
 /-! ### (1.20)–(1.28): Householder orthogonalization -/
@@ -398,7 +398,7 @@ theorem equation_1_28 {m : ℕ} (hmn : m ≤ n) (X : Matrix (Fin n) (Fin m) 𝕜
 
 /-- Two factorizations of the same matrix with orthonormal columns differ by the unitary matrix
 `D = R₀ R⁻¹`: it carries `Q₀` to `Q` and `R₀` to `R`. This is the computation inside
-`Matrix.qr_unique`, kept without the normalization that makes `D = 1`. -/
+`Matrix.IsThinQR.unique`, kept without the normalization that makes `D = 1`. -/
 private theorem qr_change_of_factor {m : ℕ} {X Q₀ Q : Matrix (Fin n) (Fin m) 𝕜}
     {R₀ R : Matrix (Fin m) (Fin m) 𝕜} (hX₀ : X = Q₀ * R₀) (hX : X = Q * R)
     (hQ₀ : Q₀ᴴ * Q₀ = 1) (hQ : Qᴴ * Q = 1) (hdet : IsUnit R.det) :

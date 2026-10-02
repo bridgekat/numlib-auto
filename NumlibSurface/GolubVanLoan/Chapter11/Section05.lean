@@ -47,26 +47,29 @@ avoids the nonzeros of `A` (`isIncompleteCholesky_of_isIC`).
 
 ## Main results
 
+* `preconditioned_system_iff` — the two-sided preconditioned system.
 * `algorithm_11_5_1`, `algorithm_11_5_1_spec`, `equation_11_5_1`, `equation_11_5_2` — PCG is the
   backbone's `Krylov.PCG.iterate`, derived from CG on `C⁻¹AC⁻¹`.
 * `ssorPreconditioner_posDef`, `spai_column_decouple`, `spai_reduced_ls`.
 * `neumann_inv_eq_tsum`, `neumannLoop_spec` (the loop needs `m + 1` steps), `equation_11_5_3`.
 * `equation_11_5_4`, `concusGolubOLearyPCG`, `equation_11_5_5` — the Concus–Golub–O'Leary form of
   PCG is PCG, through the three-term form of CG.
-* `IsIncompleteCholesky`, `equation_11_5_9`, `lemma_11_5_1`, `theorem_11_5_2`, `incChol_spec`,
+* `IsIncompleteCholesky`, `equation_11_5_9`, `equation_11_5_9_cholesky`, `lemma_11_5_1`,
+  `theorem_11_5_2`, `incChol_spec`, `incChol_isIncompleteCholesky`, `isIncompleteCholesky_of_isIC`,
   `poissonMatrix_isStieltjes`, `linMoreIC_nnz_le_add` (the printed bound needs `+ n`).
 * `blockTridiagonal_cholesky`, `equation_11_5_10`, `blockIC_forwardSolve`.
 * `saddlePoint_factorization`, `saddlePoint_splitting`.
 * `equation_11_5_11_blockLU` (the printed block `LU` is wrong in the interface block,
   `equation_11_5_11_counterexample`), `ddPreconditioner_rank_le`, `schwarz_update_affine`.
+* `algorithm_11_5_2`, `algorithm_11_5_2_spec` — preconditioned GMRES, written with the loop of
+  Algorithm 11.4.2 (`gmresCore`) and `M`-solves.
 
 ## Not formalized here
 
 §11.5.4 (Toeplitz and circulant preconditioners: T. Chan's and Strang's choices are definitions
 with no claim), the drop-tolerance and `ILU(ℓ)` variants, the HSS saddle-point preconditioner
 (its effectiveness is cited), the cost inequality and Criteria 1–2 of §11.5.1, the heuristic
-choices of `Λ_k` in §11.5.9, and the Problems. Algorithm 11.5.2
-(preconditioned GMRES) is written with the loop of Algorithm 11.4.2 (`gmresCore`) and `M`-solves.
+choices of `Λ_k` in §11.5.9, and the Problems.
 -/
 
 open Matrix Finset
@@ -670,7 +673,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One pass of the Concus–Golub–O'Leary loop (§11.5.7). -/
+/-- One pass of the Concus–Golub–O'Leary loop (§11.5.7); the update
+`x_k = x_{k−2} + ω_k(γ_{k−1} z_{k−1} + x_{k−1} − x_{k−2})` is evaluated left to right, as
+printed. -/
 noncomputable def cgoStep {n : ℕ} (A Mp : Matrix (Fin n) (Fin n) ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b : Fin n → ℝ) (s : CGOState n) :
     M (CGOState n) := do
@@ -689,8 +694,8 @@ noncomputable def cgoStep {n : ℕ} (A Mp : Matrix (Fin n) (Fin n) ℝ)
     let t₄ ← rnd (t₃ / s.om)
     let t₅ ← rnd (1 - t₄)
     rnd (1 / t₅)
-  let u ← Chapter01.vecSub rnd s.x s.xPrev
-  let w ← Chapter01.algorithm_1_1_2 rnd γ z u
+  let u ← Chapter01.algorithm_1_1_2 rnd γ z s.x
+  let w ← Chapter01.vecSub rnd u s.xPrev
   let x ← Chapter01.algorithm_1_1_2 rnd om w s.xPrev
   let r ← Chapter01.algorithm_1_1_3 rnd (-A) x b
   return ⟨s.k + 1, s.x, x, r, γ, zMz, om, false⟩
@@ -742,7 +747,7 @@ private theorem cgoStep_go (A Mp Mi : Matrix (Fin n) (Fin n) ℝ) (b : Fin n →
       let z := Mi *ᵥ s.r
       let γ := (z ⬝ᵥ Mp *ᵥ z) / (z ⬝ᵥ A *ᵥ z)
       let om := if s.k = 0 then 1 else 1 / (1 - γ / s.gam * ((z ⬝ᵥ Mp *ᵥ z) / s.zMz) / s.om)
-      let x := s.xPrev + om • (s.x - s.xPrev + γ • z)
+      let x := s.xPrev + om • (s.x + γ • z - s.xPrev)
       { k := s.k + 1, xPrev := s.x, x := x, r := b + (-A) *ᵥ x, gam := γ,
         zMz := z ⬝ᵥ Mp *ᵥ z, om := om, done := false } := by
   by_cases hk : s.k = 0 <;>
@@ -868,8 +873,8 @@ private theorem cgoGood_step {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
       rw [ite_eq_right (by omega), hγp, hzp, hop, hρs j, one_div]
   rw [hω]
   -- the new iterate is the PCG iterate
-  have hxnew : s.xPrev + cgoRho A Mp hM b x₀ k • (s.x - s.xPrev +
-      cgoGam A Mp b x₀ k • cgoZ A Mp b x₀ k) = (pcgIter A Mp⁻¹ b x₀ (k + 1)).x.ofLp := by
+  have hxnew : s.xPrev + cgoRho A Mp hM b x₀ k • (s.x + cgoGam A Mp b x₀ k • cgoZ A Mp b x₀ k -
+      s.xPrev) = (pcgIter A Mp⁻¹ b x₀ (k + 1)).x.ofLp := by
     rw [h3, hx]
     rcases k with _ | j
     · rw [hp0 rfl, hρ0]
@@ -1078,7 +1083,7 @@ theorem theorem_11_5_2 {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (h
         A 0 0).IsStieltjes := by
   classical
   set S' : Set {i : Fin (n + 1) // i ≠ 0} := {x | ∃ i ∈ S, x.1 = i.succ} with hS'
-  have h := (hA.isStieltjes_sub_drop 0 S').submatrix
+  have h := (hA.sub_drop 0 S').submatrix
     (e := fun i : Fin n => (⟨i.succ, Fin.succ_ne_zero i⟩ : {i : Fin (n + 1) // i ≠ 0}))
     (fun a b e => Fin.succ_injective _ (congrArg Subtype.val e))
   have hmem : ∀ i : Fin n, (⟨i.succ, Fin.succ_ne_zero i⟩ : {i : Fin (n + 1) // i ≠ 0}) ∈ S' ↔

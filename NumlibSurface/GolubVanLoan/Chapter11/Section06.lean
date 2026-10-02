@@ -34,10 +34,10 @@ the book's even fine point `2j` is `evenIndex j` (0-based `2j + 1`). The block m
 these three kinds of indices; the exchange permutation `ℰ_m` of the book is what turns the book's
 block index into `aliasIndex`.
 
-The two-grid cycle (11.6.16) is a program over a rounding hook, built from ch01's gaxpy and §11.2's
-`vecSub`; the smoother and the coarse solve are routine arguments (the book delegates both: the
-weighted Jacobi iteration to §11.6.2, the coarse system to recursion), whose exact semantics are the
-weighted Jacobi step and `(A^{2h})⁻¹`.
+The two-grid cycle (11.6.16) is a program over a rounding hook, built from ch01's gaxpy and its
+entrywise `vecSub`, `vecAdd` (convention 13); the smoother and the coarse solve are routine
+arguments (the book delegates both: the weighted Jacobi iteration to §11.6.2, the coarse system to
+recursion), whose exact semantics are the weighted Jacobi step and `(A^{2h})⁻¹`.
 
 ## Main results
 
@@ -72,7 +72,11 @@ open Multigrid
 /-- **(11.6.3).** `A^h = h⁻² tridiag(−1, 2, −1)` on a grid of `n` interior points, `h = 1/(n + 1)`:
 the book's `A^h` for `n = 2^k − 1` and its coarse `A^{2h}` for `n = 2^{k−1} − 1`. -/
 noncomputable def modelA (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
-  (((n : ℝ) + 1) ^ 2) • symmTridiagonalToeplitz n (-1) 2
+  (((n : ℝ) + 1) ^ 2) • modelT n
+
+/-- `A^h = h⁻² tridiag(−1, 2, −1)`, unfolded. -/
+private theorem modelA_eq (n : ℕ) :
+    modelA n = (((n : ℝ) + 1) ^ 2) • symmTridiagonalToeplitz n (-1) 2 := rfl
 
 /-- **(11.6.5).** `λ_j^h = (4/h²) sin²(jπ/(2(n + 1)))`, `j = 1:n` (0-based: `j + 1`). -/
 noncomputable def modelAEigenvalues (n : ℕ) : Fin n → ℝ := fun j =>
@@ -129,7 +133,7 @@ theorem modelA_mulVec_modelq (n : ℕ) (j : Fin n) :
   have h := (GolubVanLoan.Chapter04.dd_eigen n).1 j
   rw [show (fun k => dst1 n k j) = sineVec n j from funext fun k => dst1_apply_eq_sineVec k j]
     at h
-  rw [modelA, modelq, smul_mulVec, mulVec_smul, h, smul_smul, smul_smul, smul_smul,
+  rw [modelA_eq, modelq, smul_mulVec, mulVec_smul, h, smul_smul, smul_smul, smul_smul,
     modelAEigenvalues]
   congr 1
   ring
@@ -240,7 +244,7 @@ private theorem diagPart_modelA (n : ℕ) :
   rw [diagPart_apply, Matrix.smul_apply, one_apply]
   split_ifs with h
   · subst h
-    rw [modelA, Matrix.smul_apply, symmTridiagonalToeplitz_apply_self, smul_eq_mul, smul_eq_mul]
+    rw [modelA_eq, Matrix.smul_apply, symmTridiagonalToeplitz_apply_self, smul_eq_mul, smul_eq_mul]
     ring
   · simp
 
@@ -715,7 +719,7 @@ theorem restriction_prolongation_apply (m : ℕ) :
 -/
 theorem galerkin_coarse_eq (m : ℕ) :
     restrictionMatrix m * modelA (2 * m + 1) * prolongationMatrix m = modelA m := by
-  rw [restrictionMatrix_eq, prolongationMatrix_eq, modelA, modelA, Matrix.mul_smul,
+  rw [restrictionMatrix_eq, prolongationMatrix_eq, modelA_eq, modelA_eq, Matrix.mul_smul,
     Matrix.smul_mul, fullWeighting_mul_mul_linearInterpolation, smul_smul]
   congr 1
   push_cast
@@ -734,18 +738,13 @@ private theorem twoGridErrorOperator_eq (m : ℕ) :
   have hT : IsUnit (symmTridiagonalToeplitz m (-1) 2) :=
     (posDef_symmTridiagonalToeplitz_neg_one_two m).isUnit
   rw [twoGridErrorOperator, modelCoarseCorrection, restrictionMatrix_eq, prolongationMatrix_eq,
-    modelA, modelA, inv_smul_of_isUnit' (by positivity) hT]
+    modelA_eq, modelA_eq, inv_smul_of_isUnit' (by positivity) hT]
   congr 1
   simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul]
   congr 1
   push_cast
   field_simp
   ring
-
-/-- `u ← u + z` entrywise, one rounded sum per entry (Step 5 of (11.6.16)). -/
-def vecAdd {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ} (u z : Fin n → ℝ) :
-    M (Fin n → ℝ) :=
-  (List.finRange n).foldlM (fun w i => do pure (Function.update w i (← rnd (u i + z i)))) u
 
 /-- Steps 1–5 of the two-grid cycle (11.6.16), from the pre-smoothed `u_{p₁}`: the fine-grid
 residual `r^h = b^h − A^h u_{p₁}`, the restriction `r^{2h} = R r^h`, the coarse-grid correction
@@ -757,11 +756,11 @@ noncomputable def coarseGridCorrection {M : Type → Type} [Monad M] (rnd : ℝ 
     (coarseSolve : (Fin m → ℝ) → M (Fin m → ℝ)) (b u : Fin (2 * m + 1) → ℝ) :
     M (Fin (2 * m + 1) → ℝ) := do
   let Au ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd (modelA (2 * m + 1)) u 0
-  let r ← vecSub rnd b Au
+  let r ← Chapter01.vecSub rnd b Au
   let r₂ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd (restrictionMatrix m) r 0
   let z₂ ← coarseSolve r₂
   let z ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd (prolongationMatrix m) z₂ 0
-  vecAdd rnd u z
+  Chapter01.vecAdd rnd u z
 
 /-- **(11.6.16), the two-grid cycle.** Pre-smooth `u_{p₁} = WJ(p₁, u_c)`, correct on the coarse grid
 (`coarseGridCorrection`), post-smooth `u₊₊ = WJ(p₂, u₊)`. The smoothing step is a routine argument
@@ -774,11 +773,6 @@ noncomputable def twoGridCycle {M : Type → Type} [Monad M] (rnd : ℝ → M �
   let uplus ← coarseGridCorrection rnd coarseSolve b u₁
   (List.range p₂).foldlM (fun v _ => smooth v) uplus
 
-/-- An in-place loop writing a fixed value into each entry of `List.finRange n`. -/
-private theorem foldl_update_const {n : ℕ} (g u : Fin n → ℝ) :
-    (List.finRange n).foldl (fun w i => Function.update w i (g i)) u = g :=
-  (List.foldl_update_eq_ite g _ u).trans (funext fun j => ite_eq_left (List.mem_finRange j))
-
 /-- An exact loop applying the same map `p` times is the `p`-th iterate. -/
 private theorem idRun_foldlM_range_const {α : Type} (f : α → α) (p : ℕ) (x : α) :
     Id.run ((List.range p).foldlM (fun v _ => pure (f v)) x) = f^[p] x := by
@@ -789,15 +783,12 @@ private theorem coarseGridCorrection_id (m : ℕ) (b v : Fin (2 * m + 1) → ℝ
     Id.run (coarseGridCorrection pure (fun r => pure ((modelA m)⁻¹ *ᵥ r)) b v) =
       v + prolongationMatrix m *ᵥ ((modelA m)⁻¹ *ᵥ
         (restrictionMatrix m *ᵥ (b - modelA (2 * m + 1) *ᵥ v))) := by
-  have hsub : ∀ u w : Fin (2 * m + 1) → ℝ, Id.run (vecSub pure u w) = u - w := fun u w =>
-    (List.idRun_foldlM).trans (foldl_update_const (u - w) u)
-  have hadd : ∀ u w : Fin (2 * m + 1) → ℝ, Id.run (vecAdd pure u w) = u + w := fun u w =>
-    (List.idRun_foldlM).trans (foldl_update_const (u + w) u)
-  change Id.run (vecAdd pure v (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure
+  change Id.run (Chapter01.vecAdd pure v (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure
     (prolongationMatrix m) ((modelA m)⁻¹ *ᵥ Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure
-      (restrictionMatrix m) (Id.run (vecSub pure b (Id.run
+      (restrictionMatrix m) (Id.run (Chapter01.vecSub pure b (Id.run
         (GolubVanLoan.Chapter01.algorithm_1_1_3 pure (modelA (2 * m + 1)) v 0)))) 0)) 0))) = _
-  simp only [GolubVanLoan.Chapter01.algorithm_1_1_3_spec, hsub, hadd, zero_add]
+  simp only [GolubVanLoan.Chapter01.algorithm_1_1_3_spec, Chapter01.vecSub_spec,
+    Chapter01.vecAdd_spec, zero_add]
 
 /-- **(11.6.17)** and the display before it: for the exact two-grid correction with `A^h u = b^h`,
 `u₊ = u_{p₁} + P (A^{2h})⁻¹ R A^h (u − u_{p₁})` and `u₊ − u = E^h (u_{p₁} − u)`. -/
@@ -860,8 +851,9 @@ theorem equation_11_6_22 (m : ℕ) (j : Fin m) :
       twoGridErrorOperator m *ᵥ modelq (2 * m + 1) (aliasIndex j) =
         Real.cos (modeAngle m j / 2) ^ 2 •
           (modelq (2 * m + 1) (fineIndex j) + modelq (2 * m + 1) (aliasIndex j)) := by
-  simp only [twoGridErrorOperator_eq, modelq, mulVec_smul, coarseCorrection_mulVec_sineVec,
-    coarseCorrection_mulVec_sineVec_middleIndex, coarseCorrection_mulVec_sineVec_aliasIndex,
+  simp only [twoGridErrorOperator_eq, modelq, mulVec_smul, modelCoarseCorrection_mulVec_sineVec,
+    modelCoarseCorrection_mulVec_sineVec_middleIndex,
+    modelCoarseCorrection_mulVec_sineVec_aliasIndex,
     ← smul_add, smul_comm (Real.sqrt _) (_ ^ 2 : ℝ), and_self]
 
 /-- The weights of (11.6.21) indexed by the fine mode: `σ_k = sin²((k + 1)π/(2(n + 1)))`, which is
@@ -933,7 +925,7 @@ private theorem twoGridErrorOperator_mulVec_modelq (m : ℕ) (k : Fin (2 * m + 1
       exact (equation_11_6_22 m j).2.2
     · obtain rfl : k = middleIndex m := Fin.ext (by simp only [middleIndex]; omega)
       rw [rev_middleIndex, sigma_middleIndex, twoGridErrorOperator_eq, modelq, mulVec_smul,
-        coarseCorrection_mulVec_sineVec_middleIndex, ← two_smul ℝ, smul_smul]
+        modelCoarseCorrection_mulVec_sineVec_middleIndex, ← two_smul ℝ, smul_smul]
       norm_num
 
 /-- The block matrix of (11.6.21), `[S^h 0 C^hℰ_m; 0 1 0; ℰ_mS^h 0 ℰ_mC^hℰ_m]`, column by column:

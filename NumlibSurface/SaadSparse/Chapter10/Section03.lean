@@ -133,7 +133,7 @@ theorem theorem_10_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (p : Fi
 deleting the pivot row and the pivot column — the `1 × 1`-pivot Schur complement — is an M-matrix
 too. This is the form in which the argument is iterated. -/
 theorem theorem_10_1_schur {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (p : Fin n) :
-    (A.schurComplementSingle p).IsMMatrix := hA.isMMatrix_schurComplementSingle p
+    (A.schurComplementSingle p).IsMMatrix := hA.schurComplementSingle p
 
 /-! ### Theorem 10.2 and Proposition 10.4 -/
 

@@ -35,14 +35,14 @@ namespace GolubVanLoan.Chapter10
 
 /-- **(10.4.1)**: for `A ∈ ℝ^{m×n}`, `m ≥ n`, there are orthogonal `U`, `V` with `Uᵀ A V = B` zero
 below row `n` and upper bidiagonal on top, and `A`, `B` have the same singular values. Backbone
-`Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal` (chapter 5's Householder
+`Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal` (chapter 5's Householder
 bidiagonalization computes it). -/
 theorem equation_10_4_1 {m n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       (∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → (Uᵀ * A * V) i j = 0) ∧
       ((Uᵀ * A * V).submatrix (Fin.castLE hnm) id).IsUpperBidiagonal ∧
       (Uᵀ * A * V).sortedSingularValues = A.sortedSingularValues := by
-  obtain ⟨U, hU, V, hV, h1, h2⟩ := exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal hnm A
+  obtain ⟨U, hU, V, hV, h1, h2⟩ := exists_unitary_mul_mul_unitary_isUpperBidiagonal hnm A
   rw [conjTranspose_eq_transpose_of_trivial] at h1 h2
   exact ⟨U, hU, V, hV, h1, h2,
     A.sortedSingularValues_unitary_mul_mul (transpose_mem_unitaryGroup_iff.2 hU) hV⟩
@@ -420,7 +420,8 @@ open scoped Matrix.Norms.L2Operator in
 rank `k`, and is a closest matrix of rank at most `k` to `A` in the 2-norm (Eckart–Young,
 chapter 2's Theorem 2.4.8; the Frobenius half is `equation_10_4_20_frobenius`). Backbone
 `Matrix.rank_svdTruncation`, `Matrix.l2_opNorm_sub_svdTruncation` and
-`Matrix.isLeast_l2_opNorm_sub_of_rank_le` (chapter 2's §2.4 restatements are not yet written). -/
+`Matrix.isLeast_l2_opNorm_sub_of_rank_le` (the backbone form of chapter 2's
+`Chapter02.theorem_2_4_8`). -/
 theorem equation_10_4_20 {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     {k : ℕ} (hk : k ≤ A.rank) :

@@ -11,7 +11,7 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 (the Cholesky factorization `Matrix.IsCholesky`, its uniqueness and the recurrence
 `Matrix.cholesky`), `Numlib/FloatingPoint/LU` (its backward error), `Numlib/LinearAlgebra/Matrix/QR`
 and `Numlib/LinearAlgebra/Matrix/LeastSquares` (the full and the reduced QR factorization,
-`Matrix.IsQR`, uniqueness `Matrix.qr_unique`) and Mathlib's Gram–Schmidt process with
+`Matrix.IsQR`, uniqueness `Matrix.IsThinQR.unique`) and Mathlib's Gram–Schmidt process with
 `Numlib/Analysis/InnerProductSpace/GramSchmidt`.
 
 ## Conventions
@@ -220,26 +220,26 @@ variable {R : Matrix (Fin m) (Fin n) ℝ}
 /-- **Property 3.3, existence, (3.47)–(3.48).** Let `A ∈ ℝ^{m×n}` (of rank `n`, `n ≤ m`) have a
 QR factorization `A = Q R`. Then the submatrices `Q̃ = Q(1:m, 1:n)` and `R̃ = R(1:n, 1:n)` give the
 reduced factorization `A = Q̃ R̃`, where `Q̃` has orthonormal columns (`Q̃ᵀ Q̃ = I`) and `R̃` is
-upper triangular (backbone `Matrix.IsQR.reduced`); the rank hypothesis is not needed for this
+upper triangular (backbone `Matrix.IsQR.isThinQR`); the rank hypothesis is not needed for this
 part. -/
 theorem property_3_3 (h : IsQR A Q R) (hnm : n ≤ m) :
     A = firstColumns Q hnm * firstRows R hnm ∧
       (firstColumns Q hnm)ᵀ * firstColumns Q hnm = 1 ∧ (firstRows R hnm).IsUpperTriangular := by
-  obtain ⟨h1, h2, h3⟩ := h.reduced hnm
+  obtain ⟨h1, h2, h3⟩ := h.isThinQR hnm
   refine ⟨h1.symm, ?_, h3⟩
   rwa [conjTranspose_eq_transpose_of_trivial] at h2
 
 /-- **Property 3.3, uniqueness.** A reduced factorization `A = Q̃ R̃` with `Q̃ᵀ Q̃ = I` and `R̃`
 upper triangular with *positive diagonal* is unique: two such factorizations coincide (backbone
-`Matrix.qr_unique`). As printed, without the sign normalization, uniqueness fails (`Q̃ D`, `D R̃`
-for a diagonal `D` of signs); the normalization is implicit in the book, whose `R̃` "coincides
-with the Cholesky factor" of `Aᵀ A`. -/
+`Matrix.IsThinQR.unique`). As printed, without the sign normalization, uniqueness fails
+(`Q̃ D`, `D R̃` for a diagonal `D` of signs); the normalization is implicit in the book, whose
+`R̃` "coincides with the Cholesky factor" of `Aᵀ A`. -/
 theorem property_3_3_unique {Q₁ Q₂ : Matrix (Fin m) (Fin n) ℝ} {R₁ R₂ : Matrix (Fin n) (Fin n) ℝ}
     (h₁ : A = Q₁ * R₁) (h₂ : A = Q₂ * R₂) (hQ₁ : Q₁ᵀ * Q₁ = 1) (hQ₂ : Q₂ᵀ * Q₂ = 1)
     (hR₁ : R₁.IsUpperTriangular) (hR₂ : R₂.IsUpperTriangular) (hd₁ : ∀ j, 0 < R₁ j j)
     (hd₂ : ∀ j, 0 < R₂ j j) : Q₁ = Q₂ ∧ R₁ = R₂ :=
-  qr_unique h₁ h₂ (by rwa [conjTranspose_eq_transpose_of_trivial])
-    (by rwa [conjTranspose_eq_transpose_of_trivial]) hR₁ hR₂ hd₁ hd₂
+  IsThinQR.unique ⟨h₁.symm, by rwa [conjTranspose_eq_transpose_of_trivial], hR₁⟩
+    ⟨h₂.symm, by rwa [conjTranspose_eq_transpose_of_trivial], hR₂⟩ hd₁ hd₂
 
 /-- **Property 3.3, the last clause.** If `A` has full rank `n` then `Aᵀ A` is symmetric
 positive definite, and the triangular factor `R̃` (with positive diagonal) of a reduced
@@ -268,7 +268,7 @@ theorem property_3_3_diag_ne_zero_iff (h : IsQR A Q R) (hnm : n ≤ m) :
     (∀ j, firstRows R hnm j j ≠ 0) ↔ LinearIndependent ℝ Aᵀ := by
   refine ⟨fun hd => ?_, h.firstRows_diag_ne_zero_of_linearIndependent hnm⟩
   have hR : IsUnit (firstRows R hnm) :=
-    (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular (h.isUpperTriangular_firstRows hnm)).2 hd
+    (h.isUpperTriangular_firstRows hnm).isUnit_iff.2 hd
   have hQ : Function.Injective (firstColumns Q hnm).mulVec := by
     intro x y hxy
     have := congrArg ((firstColumns Q hnm)ᵀ *ᵥ ·) hxy
@@ -318,8 +318,8 @@ private theorem linearIndependent_columns_iff (A : Matrix (Fin m) (Fin n) ℝ) :
   · have h0 := congrArg (fun z : EuclideanSpace ℝ (Fin m) => ofLp z) hg
     simpa [columns, WithLp.ofLp_sum] using h0
 
--- TODO(backbone): belongs in `Numlib/LinearAlgebra/Matrix/QR` beside `Matrix.exists_qr`, whose
--- proof constructs exactly these factors but exports only their existence.
+-- TODO(backbone): belongs in `Numlib/LinearAlgebra/Matrix/QR` beside `Matrix.exists_isThinQR`,
+-- whose proof constructs exactly these factors but exports only their existence.
 /-- **Gram–Schmidt computes the reduced QR factorization** (§3.4.3): for `A` of full column
 rank, `A = Q̃ R̃` with `Q̃ = gramSchmidtQ A`, whose columns are orthonormal, and
 `R̃ = gramSchmidtR A`, upper triangular with positive diagonal. -/

@@ -400,11 +400,11 @@ interval of consecutive indices, the cardinality bound makes every block `1 × 1
 specialize to this, because over `ℝ` there need be no eigenvector: the induction has to peel off
 an invariant subspace of dimension one *or two*
 (`LinearMap.exists_invariant_finrank_le_two`), and the backbone is
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular`. -/
+`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`. -/
 theorem realSchur (A : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ, Monotone p ∧
       (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
       (Qᵀ * A * Q).BlockTriangular p :=
-  Matrix.exists_orthogonal_conj_quasiUpperTriangular A
+  Matrix.exists_orthogonal_conj_isQuasiUpperTriangular A
 
 end SaadSparse.Chapter01

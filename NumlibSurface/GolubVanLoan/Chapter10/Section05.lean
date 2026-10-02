@@ -130,15 +130,6 @@ theorem arnoldi_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSp
     field_simp
 
 open scoped Matrix.Norms.L2Operator in
-/-- The spectral norm of a rank-one matrix: `‖v xᵀ‖₂ = ‖v‖₂ ‖x‖₂` (backbone
-`Matrix.l2_opNorm_vecMulVec`). -/
-theorem l2_opNorm_vecMulVec {m : ℕ} (v : Fin n → ℝ) (x : Fin m → ℝ) :
-    ‖Matrix.vecMulVec v x‖ =
-      ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin n))‖ *
-        ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin m))‖ :=
-  Matrix.l2_opNorm_vecMulVec v x
-
-open scoped Matrix.Norms.L2Operator in
 /-- **Ritz pairs of an Arnoldi decomposition and their backward error** (§10.5.1, after the
 definition): for `1 ≤ k ≤ m` (the grade), if `H_k y = λ y` with `‖y‖₂ = 1` and `x = Q_k y`, then
 `(A − λI) x = (e_kᵀ y) r_k`, `(λ, x)` is a Ritz pair for `A` with respect to `𝒦(A, q₁, k)`, and
@@ -190,7 +181,7 @@ theorem arnoldi_ritzPair_backwardError (A : Matrix (Fin n) (Fin n) ℝ)
       rw [show ∑ j, x j * x j = x ⬝ᵥ x from rfl, hxx, mul_one]
     rw [Matrix.add_mulVec, Matrix.neg_mulVec, hvx, ← h1]
     abel
-  · rw [norm_neg, l2_opNorm_vecMulVec, hx1, mul_one]
+  · rw [norm_neg, Matrix.l2_opNorm_vecMulVec, hx1, mul_one]
     simp only [v, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
 
 /-! ### Implicit restarting (§10.5.2–10.5.3) -/
@@ -253,7 +244,8 @@ theorem filter_firstColumn {m : ℕ} {Hs V R : ℕ → Matrix (Fin (m + 1)) (Fin
 
 /-- **(10.5.9)**: if `A Q_c = Q_c H_c + r_c e_mᵀ` (10.5.8) is an Arnoldi decomposition and (10.5.4)
 is applied to `H_c` with orthogonal `V_i`, then `A Q₊ = Q₊ H₊ + r_c e_mᵀ V` with `Q₊ = Q_c V`, and
-`Q₊` has orthonormal columns. Backbone `Matrix.IsKrylovDecomposition.mul_unitary`. -/
+`Q₊` has orthonormal columns.
+Backbone `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self`. -/
 theorem equation_10_5_9 {m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     {Q : Matrix (Fin n) (Fin (m + 1)) ℝ} {H : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     {r : Fin n → ℝ} (hQ : IsArnoldiDecomposition A Q H r)
@@ -268,7 +260,7 @@ theorem equation_10_5_9 {m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
   have hU : (((List.range p).map V).prod)ᴴ * ((List.range p).map V).prod = 1 := by
     rw [Matrix.conjTranspose_eq_transpose_of_trivial]
     exact (Matrix.mem_orthogonalGroup_iff' _ _).1 hmem
-  have hK := Matrix.IsKrylovDecomposition.mul_unitary
+  have hK := Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self
     (isArnoldiDecomposition_iff.1 hQ).toIsKrylovDecomposition hU
   have e1 := hK.mul_eq
   have e2 := hK.conjTranspose_mul_self

@@ -10,6 +10,7 @@ import Numlib.Stationary.DiagDominant
 import Numlib.Stationary.SPD
 import Numlib.Stationary.Sweep
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
+import NumlibSurface.GolubVanLoan.Chapter01.Section04
 import NumlibSurface.GolubVanLoan.Chapter04.Section08
 import NumlibSurface.GolubVanLoan.Chapter07.Section03
 
@@ -544,10 +545,12 @@ two `T`'s on the grid `Fin n₁ × Fin n₂` (lexicographic order = the book's r
 noncomputable abbrev poissonMatrix (n₁ n₂ : ℕ) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ :=
   Matrix.kroneckerSum (modelT n₁) (modelT n₂)
 
-/-- §11.2.6: the model system (11.2.10) is symmetric positive definite. -/
-theorem poissonMatrix_posDef (n₁ n₂ : ℕ) : (poissonMatrix n₁ n₂).PosDef :=
-  Matrix.posDef_kroneckerSum (Matrix.posDef_symmTridiagonalToeplitz_neg_one_two n₁)
-    (Matrix.posDef_symmTridiagonalToeplitz_neg_one_two n₂)
+/-- §11.2.6: the model system (11.2.10) is symmetric positive definite: chapter 4's
+`Chapter04.poisson2D_posDef_bandwidth` (§4.8.3) for the same Kronecker sum. -/
+theorem poissonMatrix_posDef (n₁ n₂ : ℕ) : (poissonMatrix n₁ n₂).PosDef := by
+  have h := (Chapter04.poisson2D_posDef_bandwidth n₂ n₁).1
+  rw [add_comm] at h
+  exact h
 
 /-- `T_m = 2I − E_m`. -/
 private theorem modelT_eq (m : ℕ) : modelT m = (2 : ℝ) • 1 + (-1 : ℝ) • modelE m := by
@@ -1062,10 +1065,8 @@ theorem jacobi_poisson_diagonal (n₁ n₂ : ℕ) :
 
 /-- The sine basis of the grid is nonsingular. -/
 private theorem isUnit_dst1_kronecker (n₁ n₂ : ℕ) :
-    IsUnit (Matrix.dst1 n₁ ⊗ₖ Matrix.dst1 n₂) := by
-  rw [Matrix.isUnit_iff_isUnit_det, Matrix.det_kronecker]
-  exact (((Matrix.isUnit_iff_isUnit_det _).1 (isUnit_dst1 n₁)).pow _).mul
-    (((Matrix.isUnit_iff_isUnit_det _).1 (isUnit_dst1 n₂)).pow _)
+    IsUnit (Matrix.dst1 n₁ ⊗ₖ Matrix.dst1 n₂) :=
+  Matrix.IsUnit.kronecker (isUnit_dst1 n₁) (isUnit_dst1 n₂)
 
 /-- **The spectral radius of a real diagonal matrix** as a real number: if `|d i| ≤ r` for all `i`,
 with equality at some `i₀`, then `ρ(diag d) = r`. -/
@@ -1172,14 +1173,6 @@ private theorem isUnit_four_sub_modelE (m : ℕ) :
   rw [h]
   exact (Matrix.posDef_symmTridiagonalToeplitz m (by norm_num)).isUnit
 
-/-- A Kronecker product of nonsingular matrices is nonsingular. -/
-private theorem isUnit_kronecker {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
-    [DecidableEq κ] {X : Matrix ι ι ℝ} {Y : Matrix κ κ ℝ} (hX : IsUnit X) (hY : IsUnit Y) :
-    IsUnit (X ⊗ₖ Y) := by
-  rw [Matrix.isUnit_iff_isUnit_det, Matrix.det_kronecker]
-  exact (((Matrix.isUnit_iff_isUnit_det _).1 hX).pow _).mul
-    (((Matrix.isUnit_iff_isUnit_det _).1 hY).pow _)
-
 /-- `4I − (I ⊗ Y) = I ⊗ (4I − Y)`. -/
 private theorem four_smul_one_sub_one_kronecker {m₁ m₂ : ℕ} (Y : Matrix (Fin m₂) (Fin m₂) ℝ) :
     (4 : ℝ) • (1 : Matrix (Fin m₁ × Fin m₂) (Fin m₁ × Fin m₂) ℝ) -
@@ -1200,13 +1193,13 @@ private theorem four_smul_one_sub_kronecker_one {m₁ m₂ : ℕ} (X : Matrix (F
 private theorem isUnit_adiX (n₁ n₂ : ℕ) :
     IsUnit ((4 : ℝ) • (1 : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ) - (1 ⊗ₖ modelE n₂)) := by
   rw [four_smul_one_sub_one_kronecker]
-  exact isUnit_kronecker isUnit_one (isUnit_four_sub_modelE n₂)
+  exact Matrix.IsUnit.kronecker isUnit_one (isUnit_four_sub_modelE n₂)
 
 /-- `4I − (E_{n₁} ⊗ I)` is nonsingular: it is `(4I − E_{n₁}) ⊗ I`. -/
 private theorem isUnit_adiY (n₁ n₂ : ℕ) :
     IsUnit ((4 : ℝ) • (1 : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ) - (modelE n₁ ⊗ₖ 1)) := by
   rw [four_smul_one_sub_kronecker_one]
-  exact isUnit_kronecker (isUnit_four_sub_modelE n₁) isUnit_one
+  exact Matrix.IsUnit.kronecker (isUnit_four_sub_modelE n₁) isUnit_one
 
 /-- The splitting `A = M_x − N_x` of §11.2.6, `M_x = 4I − (I ⊗ E_{n₂})`, `N_x = E_{n₁} ⊗ I`. -/
 noncomputable def adiSplittingX (n₁ n₂ : ℕ) : Stationary.Splitting (poissonMatrix n₁ n₂) :=
@@ -1879,10 +1872,6 @@ theorem chebyshevSemiIterative_norm_le {A : Matrix (Fin n) (Fin n) ℝ} (s : Sta
         mul_le_mul_of_nonneg_right hS (norm_nonneg _)
     _ = _ := by rw [hn, one_div, inv_mul_eq_div]
 
-/-- Exact entrywise difference `u − v`, one rounded subtraction per entry. -/
-def vecSub {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (u v : Fin n → ℝ) : M (Fin n → ℝ) :=
-  (List.finRange n).foldlM (fun w i => do pure (Function.update w i (← rnd (u i - v i)))) u
-
 /-- The update `y⁽ᵏ⁺¹⁾ = y⁽ᵏ⁻¹⁾ + ω (y⁽ᵏ⁾ + z⁽ᵏ⁾ − y⁽ᵏ⁻¹⁾)` of §11.2.8, entrywise. -/
 def chebyshevCombine {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (yp y z : Fin n → ℝ) (ω : ℝ) :
     M (Fin n → ℝ) :=
@@ -1911,7 +1900,7 @@ noncomputable def chebyshevSemiIterativeStep {M : Type → Type} [Monad M] (rnd 
       let z ← solveM r
       let y' ← chebyshevCombine rnd yp y z ω
       let Ay' ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A y' 0
-      let r' ← vecSub rnd b Ay'
+      let r' ← Chapter01.vecSub rnd b Ay'
       pure (k + 1, c, c', y, y', r', false)
 
 /-- **The Chebyshev semi-iterative method** of §11.2.8 (the case `α = −β`), a program with a
@@ -1938,7 +1927,7 @@ noncomputable def chebyshevSemiIterative {M : Type → Type} [Monad M] (rnd : �
   let rhs ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd N x₀ b
   let y₁ ← solveM rhs
   let Ay₁ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A y₁ 0
-  let r₁ ← vecSub rnd b Ay₁
+  let r₁ ← Chapter01.vecSub rnd b Ay₁
   let c₁ ← rnd (1 / β)
   (List.range fuel).foldlM (fun st _ => chebyshevSemiIterativeStep rnd solveM A b β tol st)
     (1, 1, c₁, x₀, y₁, r₁, false)
@@ -1946,15 +1935,6 @@ noncomputable def chebyshevSemiIterative {M : Type → Type} [Monad M] (rnd : �
 /-- The polynomial `c_k(z/β)/c_k(1/β)` of the case `α = −β`. -/
 noncomputable def chebyshevSymmetricPoly (β : ℝ) (k : ℕ) : ℝ[X] :=
   C ((Chebyshev.T ℝ k).eval (1 / β))⁻¹ * (Chebyshev.T ℝ k).comp (C (1 / β) * X)
-
-/-- The exact entrywise difference. -/
-private theorem vecSub_id (u v : Fin n → ℝ) : Id.run (vecSub pure u v) = u - v := by
-  have hrun : Id.run (vecSub pure u v) =
-      (List.finRange n).foldl (fun w i => Function.update w i (u i - v i)) u := List.idRun_foldlM
-  rw [hrun]
-  funext i
-  exact List.foldl_update_apply_of_pairwise_rel (· < ·) (fun _ _ h h' => lt_asymm h h')
-    (fun i _ => u i - v i) (List.pairwise_lt_finRange n) u (List.mem_finRange i)
 
 /-- The exact update of §11.2.8. -/
 private theorem chebyshevCombine_id (yp y z : Fin n → ℝ) (ω : ℝ) :
@@ -1982,11 +1962,11 @@ private theorem chebyshevSemiIterativeStep_id (Minv A : Matrix (Fin n) (Fin n) �
         (k, cp, c, yp, y, r, true) else
         (k + 1, c, 2 / β * c - cp, y,
           Id.run (chebyshevCombine pure yp y (Minv *ᵥ r) (1 + cp / (2 / β * c - cp))),
-          Id.run (vecSub pure b (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure A
+          Id.run (Chapter01.vecSub pure b (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure A
             (Id.run (chebyshevCombine pure yp y (Minv *ᵥ r) (1 + cp / (2 / β * c - cp)))) 0))),
           false) := rfl
   rw [h, GolubVanLoan.Chapter01.algorithm_1_1_1_spec, chebyshevCombine_id,
-    GolubVanLoan.Chapter01.algorithm_1_1_3_spec, vecSub_id, zero_add]
+    GolubVanLoan.Chapter01.algorithm_1_1_3_spec, Chapter01.vecSub_spec, zero_add]
 
 /-- The values `c_j = T_j(1/β)` of §11.2.8. -/
 private noncomputable def chebC (β : ℝ) (j : ℕ) : ℝ := (Chebyshev.T ℝ j).eval (1 / β)
@@ -2050,7 +2030,8 @@ private theorem cheb_combine {β a b c ω : ℝ} (ha : a ≠ 0) (hb : b ≠ 0)
 /-- **Exact semantics of the Chebyshev semi-iterative method.** For a splitting `A = M − N`,
 `A x = b`, `0 < β < 1`, the exact run with `solveM = M⁻¹` (any tolerance and fuel) returns a state
 `(k, …, y^(k), …)` with `y^(k) − x = p_k(G)(x^(0) − x)`, `p_k(z) = c_k(z/β)/c_k(1/β)` — the `α = −β`
-case of the polynomial of `chebyshevSemiIterative_norm_le` — so the bound there applies. -/
+case of the polynomial of `chebyshevSemiIterative_norm_le` (`chebyshevSymmetricPoly_eq`), so the
+bound there applies (`chebyshevSemiIterative_norm_le'`). -/
 theorem chebyshevSemiIterative_spec {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationary.Splitting A)
     {b x : Fin n → ℝ} (hx : A *ᵥ x = b) (x₀ : Fin n → ℝ) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
     (tol : ℝ) (fuel : ℕ) :
@@ -2120,15 +2101,66 @@ theorem chebyshevSemiIterative_spec {A : Matrix (Fin n) (Fin n) ℝ} (s : Statio
         (chebyshevSemiIterativeStep pure (fun r => pure (s.m⁻¹ *ᵥ r)) A b β tol st))
         (1, 1, 1 / β, x₀,
           s.m⁻¹ *ᵥ Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure s.n x₀ b),
-          Id.run (vecSub pure b (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure A
+          Id.run (Chapter01.vecSub pure b (Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure A
             (s.m⁻¹ *ᵥ Id.run (GolubVanLoan.Chapter01.algorithm_1_1_3 pure s.n x₀ b)) 0))),
           false) := List.idRun_foldlM
     rw [h, GolubVanLoan.Chapter01.algorithm_1_1_3_spec, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
-      vecSub_id, zero_add]
+      Chapter01.vecSub_spec, zero_add]
   have hfin := hinv (List.range fuel) _ hinit
   rw [← hst] at hfin
   obtain ⟨j, hk, -, -, -, hy, -⟩ := hfin
   rw [hk, aeval_chebyshevSymmetricPoly]
   exact hy
+
+/-- The polynomial of the case `α = −β` is the §11.2.8 polynomial at `α = −β`:
+`−1 + 2(z + β)/(2β) = z/β` and `μ = 1/β`. -/
+theorem chebyshevSymmetricPoly_eq {β : ℝ} (hβ : β ≠ 0) (k : ℕ) :
+    chebyshevSymmetricPoly β k = chebyshevSemiIterativePoly (-β) β k := by
+  have hb2 : β - -β = 2 * β := by ring
+  have h1 : -1 + 2 * (1 - -β) / (β - -β) = 1 / β := by
+    rw [hb2]; field_simp; ring
+  have h2 : 2 / (β - -β) = 1 / β := by
+    rw [hb2]; field_simp
+  have h3 : -1 - 2 * -β / (β - -β) = 0 := by
+    rw [hb2]; field_simp; ring
+  rw [chebyshevSemiIterativePoly, h1, h2, h3, C_0, add_zero, chebyshevSymmetricPoly]
+
+/-- **§11.2.8, the Chebyshev bound for the program**: for `G` symmetric with eigenvalues in
+`[−β, β]`, `0 < β < 1`, the exact run of `chebyshevSemiIterative` after `k` steps satisfies
+`‖y⁽ᵏ⁾ − x‖₂ ≤ ‖x − x⁽⁰⁾‖₂ / |c_k(1/β)|` — `chebyshevSemiIterative_norm_le` at `α = −β`, through
+`chebyshevSemiIterative_spec` and `chebyshevSymmetricPoly_eq`. -/
+theorem chebyshevSemiIterative_norm_le' {A : Matrix (Fin n) (Fin n) ℝ}
+    (s : Stationary.Splitting A) (hG : s.iterationOperator.IsHermitian) {β : ℝ} (hβ0 : 0 < β)
+    (hβ1 : β < 1) (hGab : ∀ i, hG.eigenvalues i ∈ Set.Icc (-β) β) {b x : Fin n → ℝ}
+    (hx : A *ᵥ x = b) (x₀ : Fin n → ℝ) (tol : ℝ) (fuel : ℕ) :
+    let st := Id.run (chebyshevSemiIterative pure (fun r => pure (s.m⁻¹ *ᵥ r)) A s.n b x₀ β tol
+      fuel)
+    ‖WithLp.toLp 2 (st.2.2.2.2.1 - x)‖ ≤
+      ‖WithLp.toLp 2 (x - x₀)‖ / |(Chebyshev.T ℝ st.1).eval (1 / β)| := by
+  intro st
+  have hspec : st.2.2.2.2.1 - x =
+      Polynomial.aeval s.iterationOperator (chebyshevSymmetricPoly β st.1) *ᵥ (x₀ - x) :=
+    chebyshevSemiIterative_spec s hx x₀ hβ0 hβ1 tol fuel
+  have hμ : -1 + 2 * (1 - -β) / (β - -β) = 1 / β := by
+    rw [show β - -β = 2 * β by ring]; field_simp; ring
+  have h2 := (chebyshevSemiIterative_norm_le s hG (by linarith) (by linarith) hβ1 hGab hx x₀
+    st.1).2.1
+  rw [hμ] at h2
+  rw [hspec, chebyshevSymmetricPoly_eq hβ0.ne', ← Matrix.toEuclideanLin_toLp,
+    Matrix.toEuclideanLin_aeval]
+  set p := chebyshevSemiIterativePoly (-β) β st.1
+  have hB := Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin hG hGab
+  have hle := hB.norm_aeval_map_apply_le p (WithLp.toLp 2 (x₀ - x))
+  rw [show p.map (algebraMap ℝ ℝ) = p by rw [Algebra.algebraMap_self, Polynomial.map_id]] at hle
+  refine hle.trans ?_
+  have hS : sSup ((fun t => |p.eval t|) '' Set.Icc (-β) β) ≤
+      1 / |(Chebyshev.T ℝ st.1).eval (1 / β)| :=
+    csSup_le ((Set.nonempty_Icc.2 (by linarith)).image _) (Set.forall_mem_image.2 h2)
+  have hn : ‖WithLp.toLp 2 (x₀ - x)‖ = ‖WithLp.toLp 2 (x - x₀)‖ := by
+    rw [← norm_neg, ← WithLp.toLp_neg, neg_sub]
+  calc sSup ((fun t => |p.eval t|) '' Set.Icc (-β) β) * ‖WithLp.toLp 2 (x₀ - x)‖
+      ≤ 1 / |(Chebyshev.T ℝ st.1).eval (1 / β)| * ‖WithLp.toLp 2 (x₀ - x)‖ :=
+        mul_le_mul_of_nonneg_right hS (norm_nonneg _)
+    _ = _ := by rw [hn, one_div, inv_mul_eq_div]
 
 end GolubVanLoan.Chapter11

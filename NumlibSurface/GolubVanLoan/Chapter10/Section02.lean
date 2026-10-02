@@ -93,49 +93,17 @@ theorem equation_10_2_8 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)
   intro h
   exact hi (ht (h0.trans h).symm)
 
-/-- The image of a weight under an injective affine map is a weight. -/
-private theorem isWeight_map_affine (hw : IsWeight μ) {c : ℝ} (hc : c ≠ 0) (d : ℝ) :
-    IsWeight (μ.map fun t => c * t + d) := by
-  have hφ : Measurable fun t : ℝ => c * t + d := by fun_prop
-  refine ⟨fun n => ?_, fun {s} hs => ?_⟩
-  · rw [integrable_map_measure (by fun_prop) hφ.aemeasurable]
-    have := hw.integrable_eval ((C c * X + C d) ^ n)
-    simpa [Function.comp_def] using this
-  · rw [Measure.map_apply hφ hs.measurableSet.compl, Set.preimage_compl]
-    refine hw.measure_compl_ne_zero (hs.preimage ?_)
-    intro x _ y _ hxy
-    have : c * x = c * y := by linarith
-    exact mul_left_cancel₀ hc this
-
 /-- **(10.2.9), the Gauss–Radau(b) rule**: the same with the prescribed node `b`: distinct nodes
-`t_0 = b` and `t_1, …, t_k ∈ [a, b)`, positive weights, exact to degree `2k`. The rule of (10.2.8)
-for the reflected weight `μ ∘ (−·)`, carried by `[−b, −a]`, transported back
-(`Quadrature.isExactOnMeasure_map_affine`). -/
+`t_0 = b` and `t_1, …, t_k ∈ [a, b)`, positive weights, exact to degree `2k`. Backbone
+`Quadrature.exists_gaussRadau_right` (the rule of (10.2.8) for the reflected weight, transported
+back). -/
 theorem equation_10_2_9 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 1) → ℝ, Function.Injective t ∧ t 0 = b ∧
       (∀ i, i ≠ 0 → t i ∈ Set.Ico a b) ∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w t (2 * k) := by
-  have hν := isWeight_map_affine hw (c := -1) (by norm_num) 0
-  have hsupp' : (μ.map fun t => -1 * t + 0) (Set.Icc (-b) (-a))ᶜ = 0 := by
-    rw [Measure.map_apply (by fun_prop) measurableSet_Icc.compl]
-    refine measure_mono_null (fun x hx => ?_) hsupp
-    simp only [Set.mem_preimage, Set.mem_compl_iff, Set.mem_Icc, not_and_or, not_le] at hx ⊢
-    rcases hx with h | h
-    · right; linarith
-    · left; linarith
-  obtain ⟨t, w, ht, h0, hmem, hpos, hex⟩ := equation_10_2_8 hν hsupp' k
-  have hmap : (μ.map fun t => -1 * t + 0).map (fun t => -1 * t + 0) = μ := by
-    rw [Measure.map_map (by fun_prop) (by fun_prop)]
-    convert Measure.map_id using 2
-    funext x
-    simp
-  have hex' := isExactOnMeasure_map_affine hex (-1) 0
-  rw [hmap] at hex'
-  refine ⟨(fun t => -1 * t + 0) ∘ t, w, fun i j hij => ht (by simpa using hij), ?_, fun i hi => ?_,
-    hpos, hex'⟩
-  · simp [h0]
-  · obtain ⟨h1, h2⟩ := hmem i hi
-    simp only [Function.comp_apply]
-    constructor <;> linarith
+  obtain ⟨t, w, ht, h0, hmem, hpos, hex⟩ := exists_gaussRadau_right hw hsupp k
+  refine ⟨t, w, ht, h0, fun i hi => ⟨(hmem i).1, lt_of_le_of_ne (hmem i).2 ?_⟩, hpos, hex⟩
+  intro h
+  exact hi (ht (h.trans h0.symm))
 
 /-- **(10.2.10), the Gauss–Lobatto rule**: for a weight carried by `[a, b]`, `a < b`, and `k`,
 there are distinct nodes `t_0 = a`, `t_{k+1} = b` and `k` interior nodes in `[a, b]`, and positive
@@ -150,7 +118,7 @@ theorem equation_10_2_10 (hw : IsWeight μ) {a b : ℝ} (hab : a < b)
   set c : ℝ := 2 / (b - a) with hc
   set d : ℝ := -(a + b) / (b - a) with hd
   have hc0 : c ≠ 0 := by positivity
-  have hν := isWeight_map_affine hw hc0 d
+  have hν := hw.map_affine hc0 d
   have hsupp' : (μ.map fun t => c * t + d) (Set.Icc (-1) 1)ᶜ = 0 := by
     rw [Measure.map_apply (by fun_prop) measurableSet_Icc.compl]
     refine measure_mono_null (fun x hx => ?_) hsupp
@@ -233,6 +201,7 @@ with `k + 1` distinct nodes in `[a, b]`, the first of them `a` (resp. `b`), exac
 (the rules of (10.2.8)–(10.2.9)), and `f` of class `C^{2k+1}`,
 `∫ f dμ − I_{GR}(f) = f^{(2k+1)}(η)/(2k+1)! ∫ (λ − t_0) ∏_{i ≥ 1} (λ − t_i)² dμ` for some
 `η ∈ [a, b]`, `t_0` being `a` (resp. `b`); the nodal polynomial has constant sign on `[a, b]`.
+The book has `a < η < b`; the closed interval is what the backbone's mean value argument gives.
 Backbone `Quadrature.exists_error_eq_of_hermite` (multiplicity one at the prescribed node, two
 elsewhere). -/
 theorem gaussRadau_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : Fin (k + 1) → ℝ}
@@ -278,8 +247,9 @@ private theorem eval_nodal_lobatto {k : ℕ} (t : Fin (k + 2) → ℝ) (x : ℝ)
 for a rule with `k + 2` distinct nodes in `[a, b]`, the first `a` and the last `b`, exact to degree
 `2k + 1` (the rule of (10.2.10)), and `f` of class `C^{2k+2}`,
 `∫ f dμ − I_{GL}(f) = f^{(2k+2)}(η)/(2k+2)! ∫ (λ − a)(λ − b) ∏ (λ − t_i)² dμ` over the interior
-nodes, for some `η ∈ [a, b]`. Backbone `Quadrature.exists_error_eq_of_hermite` (multiplicity one
-at both ends). -/
+nodes, for some `η ∈ [a, b]` (the book has `a < η < b`; the closed interval is what the
+backbone's mean value argument gives). Backbone `Quadrature.exists_error_eq_of_hermite`
+(multiplicity one at both ends). -/
 theorem gaussLobatto_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : Fin (k + 2) → ℝ}
     (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b) (h0 : t 0 = a)
     (hl : t (Fin.last (k + 1)) = b) (hex : IsExactOnMeasure μ w t (2 * k + 1)) {f : ℝ → ℝ}
@@ -380,6 +350,7 @@ noncomputable def heavisideStieltjes (c : ℝ) : StieltjesFunction ℝ where
         simp only [ite_eq_right (not_le.2 hy)]
       · simp only [ite_eq_right hx]
 
+/-- The Stieltjes measure of the unit step at `c` is the Dirac mass at `c`. -/
 theorem heavisideStieltjes_measure (c : ℝ) :
     (heavisideStieltjes c).measure = Measure.dirac c := by
   refine Measure.ext_of_Ioc _ _ fun a b hab => ?_
@@ -610,7 +581,8 @@ theorem equation_10_2_6 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 /-- **The Lanczos polynomials** (§10.2.4, (10.2.13)): the Lanczos vectors are polynomials in `A`
 applied to `u`, `q_{j+1} = p_j(A) u` with `deg p_j = j` below the grade (`0`-based; the book's
 "`q_k = p_k(A) q₁` for some degree-`k` polynomial" is off by one), and
-`β_{j+1} p_{j+2}(λ) = (λ − α_{j+1}) p_{j+1}(λ) − β_j p_j(λ)` as long as `β_{j+1} ≠ 0` — the book
+`β_{j+1} p_{j+2}(λ) = (λ − α_{j+1}) p_{j+1}(λ) − β_j p_j(λ)` as long as `β_{j+1} ≠ 0`, with the
+first step `β_0 p_1(λ) = (λ − α_0) p_0(λ)` (the book's `β₀q₀ ≡ 0`) when `β_0 ≠ 0` — the book
 prints `β²_{k−1}`, which is the recurrence of the *monic* polynomials `det(λ − T_k)`, not of these.
 Backbone `Lanczos.poly`, `Lanczos.aeval_poly`, `Lanczos.poly_degree`, `Lanczos.poly_add_two`. -/
 theorem equation_10_2_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
@@ -618,13 +590,22 @@ theorem equation_10_2_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (∀ j, aeval (toEuclideanLin A) (Lanczos.poly (toEuclideanLin A) u j) u =
       Arnoldi.vec (toEuclideanLin A) u j) ∧
     (∀ j, j < grade (toEuclideanLin A) u → (Lanczos.poly (toEuclideanLin A) u j).degree = j) ∧
+    (1 < grade (toEuclideanLin A) u →
+      C (Lanczos.beta (toEuclideanLin A) u 0) * Lanczos.poly (toEuclideanLin A) u 1 =
+        (X - C (Lanczos.alpha (toEuclideanLin A) u 0)) * Lanczos.poly (toEuclideanLin A) u 0) ∧
     (∀ j, j + 2 < grade (toEuclideanLin A) u →
       C (Lanczos.beta (toEuclideanLin A) u (j + 1)) * Lanczos.poly (toEuclideanLin A) u (j + 2) =
         (X - C (Lanczos.alpha (toEuclideanLin A) u (j + 1))) *
             Lanczos.poly (toEuclideanLin A) u (j + 1) -
           C (Lanczos.beta (toEuclideanLin A) u j) * Lanczos.poly (toEuclideanLin A) u j) := by
   refine ⟨Lanczos.aeval_poly hA.isSymmetric_toEuclideanLin u,
-    fun j hj => Lanczos.poly_degree _ u hj, fun j hj => ?_⟩
+    fun j hj => Lanczos.poly_degree _ u hj, fun hg => ?_, fun j hj => ?_⟩
+  · have hβ : Lanczos.beta (toEuclideanLin A) u 0 ≠ 0 := by
+      rw [Ne, Lanczos.beta_eq_zero_iff u hA.isSymmetric_toEuclideanLin]
+      omega
+    rw [Lanczos.poly_one]
+    simp only [RCLike.ofReal_real_eq_id, id]
+    rw [← mul_assoc, ← C_mul, mul_inv_cancel₀ hβ, C_1, one_mul]
   have hβ : Lanczos.beta (toEuclideanLin A) u (j + 1) ≠ 0 := by
     rw [Ne, Lanczos.beta_eq_zero_iff u hA.isSymmetric_toEuclideanLin]
     omega

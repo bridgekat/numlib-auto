@@ -154,13 +154,13 @@ theorem equation_5_56 {T : Matrix (Fin n) (Fin n) ℂ} (hT : T.IsUpperTriangular
 Golub–Kahan–Reinsch algorithm. For `A ∈ ℝ^{m×n}` with `m ≥ n` there are orthogonal matrices
 `𝒰 ∈ ℝ^{m×m}` and `𝒱 ∈ ℝ^{n×n}` such that `𝒰ᵀ A 𝒱 = (B; 0)`: the rows `n, …, m − 1` of `𝒰ᵀ A 𝒱`
 vanish and its leading `n × n` block `B` is upper bidiagonal. Backbone
-`Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`, by `n + m − 3` Householder
+`Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal`, by `n + m − 3` Householder
 reflectors alternating on the two sides. -/
 theorem equation_5_57 {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ Matrix.orthogonalGroup (Fin m) ℝ, ∃ V ∈ Matrix.orthogonalGroup (Fin n) ℝ,
       (∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → (Uᵀ * A * V) i j = 0) ∧
         ((Uᵀ * A * V).submatrix (Fin.castLE h) id).IsUpperBidiagonal := by
-  obtain ⟨U, hU, V, hV, h0, hB⟩ := exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal h A
+  obtain ⟨U, hU, V, hV, h0, hB⟩ := exists_unitary_mul_mul_unitary_isUpperBidiagonal h A
   rw [conjTranspose_eq_transpose_of_trivial] at h0 hB
   exact ⟨U, hU, V, hV, h0, hB⟩
 

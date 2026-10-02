@@ -46,6 +46,13 @@ of `Numlib/Stationary/Sweep`, the Arnoldi/Givens layer of `Numlib/Krylov/Hessenb
 analyses no rounding error in this chapter (§11.3.8 says only that orthogonality is lost). There is
 no Algorithm 11.4.1 in the source.
 
+Exceptions: the ADI step (11.2.16) is the exact map `adiStep` (two `mulVecStep`s of the two
+splittings) with exact semantics `adi_error_eq`, not a rounded program; the smoother of the
+two-grid cycle (11.6.16) is a routine argument (exact meaning: one weighted Jacobi step), since
+§11.2 has no weighted-Jacobi program to call; the tridiagonal solve of (11.3.14) is chapter 4's
+Algorithm 4.3.6; and the first Lanczos/Arnoldi normalization of (11.3.14) and Algorithm 11.4.2
+rounds `q₁ = r₀/β₀` once more than the book (chapter 10's loop divides again by its `β₀ = 1`).
+
 ## Correspondence
 
 * §11.1 → `Numlib/LinearAlgebra/Sparse/{Pattern,Reordering,Fill}`,

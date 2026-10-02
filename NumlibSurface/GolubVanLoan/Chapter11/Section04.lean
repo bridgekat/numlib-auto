@@ -33,8 +33,8 @@ The three columns of Figure 11.4.1 are programs over a rounding hook `rnd : ℝ 
 (`bicg`, `cgs`, `bicgstab`; conventions 1–14 of `NumlibSurface/GolubVanLoan`), built from
 chapter 1's dot product (Algorithm 1.1.1), saxpy (Algorithm 1.1.2), gaxpy (Algorithm 1.1.3) and
 rounded vector sum (`GolubVanLoan.Chapter01.vecAdd`). The figure gives only the initializations
-and the update formulae, with no stopping test, so each program runs `k` passes of the update
-(`k` its last argument). Their exact semantics (`M := Id`, `rnd := pure`) is the backbone
+and the update formulae, with no stopping test, so each program runs `fuel` passes of the update
+(`fuel` its last argument). Their exact semantics (`M := Id`, `rnd := pure`) is the backbone
 iteration: `bicg_spec`, `cgs_residual_eq`, `bicgstab_residual_eq`. The book analyses no rounding
 error in this section.
 
@@ -55,6 +55,9 @@ The book's `𝒦(A, b, k)` in the first line of §11.4.3 means `𝒦(A, r₀, k)
 * `equation_11_4_2`, `minres_reduction`, `equation_11_4_1`, `minres_givens_update` — MINRES.
 * `equation_11_4_5`, `symmlq_minNorm_solution` — SYMMLQ: the residual is orthogonal to
   `q₁, …, q_{k−1}`, and the LQ (transposed Givens QR) solve gives the minimum-norm `y_k`.
+* `equation_11_4_6`, `lsqr_span_eq`, `equation_11_4_7` — LSQR: the lower bidiagonalization
+  `A V_k = U_{k+1} B̃_k`, whose right vectors span `𝒦(AᵀA, Aᵀr₀, k)`, reduces the LSQR iterate to
+  the bidiagonal least squares problem `min ‖B̃_k y − β₀e₁‖₂`.
 * `IsLSMRIterate`, `lsmr_norm_residual_antitone` — LSMR and its monotone residuals.
 * `equation_11_4_8`, `gmres_reduction`, `equation_11_4_9`, `equation_11_4_10`,
   `gmres_givens_prefix` — GMRES.
@@ -621,7 +624,9 @@ def IsLSMRIterate (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x₀ : F
 monotonically": along a sequence of LSMR iterates, `‖Aᵀr_k‖₂` is nonincreasing (minimal residuals
 over nested spaces), and so is `‖r_k‖₂` when `A` has full column rank (Fong–Saunders:
 `‖r_k‖₂² = ‖b − Ax_LS‖₂² + ‖x_k − x_LS‖²_{AᵀA}`, and the energy error of MINRES on the positive
-definite system is nonincreasing). -/
+definite system is nonincreasing). The book needs no rank assumption; the general case runs the
+same energy argument on `ran Aᵀ`, where `AᵀA` is positive definite, and is not formalized here
+(the full-rank hypothesis is a deliberate restriction). -/
 theorem lsmr_norm_residual_antitone (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     (x₀ : Fin n → ℝ) {x : ℕ → Fin n → ℝ} (hx : ∀ k, IsLSMRIterate A b x₀ k (x k)) :
     Antitone (fun k => ‖(WithLp.toLp 2 (Aᵀ *ᵥ (b - A *ᵥ x k)) : EuclideanSpace ℝ (Fin n))‖) ∧
@@ -886,8 +891,10 @@ solve R_k y_k = p_k and set x̃ = x₀ + Q_k y_k
 ```
 `r₀` by chapter 1's gaxpy, then `gmresCore` with `op q = Aq`: the loop is `m` passes of
 `gmresStep` (the test `k < m` is the length of the pass list), whose Arnoldi part is chapter 10's
-pass of Algorithm 10.5.1 started from `q₁ = r₀/β₀` (its first normalization divides by its
-`h_{10} = 1`). Returns the final state and `x̃`. -/
+pass of Algorithm 10.5.1 started from `q₁ = r₀/β₀` (its first normalization divides again by its
+`h_{10} = 1`: in the rounded model one rounding per entry of `q₁` more than the book's single
+division, a deviation kept to reuse chapter 10's loop unchanged). Returns the final state and
+`x̃`. -/
 noncomputable def algorithm_11_4_2 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (m : ℕ) :
     M (GMRESState n m × (Fin n → ℝ)) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -1951,15 +1958,15 @@ noncomputable def bicgStep (A : Matrix (Fin n) (Fin n) ℝ) (s : BiCGState n) :
   let pt ← Chapter01.algorithm_1_1_2 rnd τ s.pt rt
   pure ⟨x, r, rt, p, pt⟩
 
-/-- **The BiCG column of Figure 11.4.1**, run for `k` passes: "`r₀ = b − Ax₀`, `r̃₀ᵀr₀ ≠ 0`,
-`x_c = x₀`, `p_c = r_c = r₀`, `p̃_c = r̃_c = r̃₀`", then `k` passes of `bicgStep`. The figure gives
-no stopping test, so the number of passes `k` is the last argument; the condition `r̃₀ᵀr₀ ≠ 0` is
-a hypothesis of the theorems, not a test of the program. -/
-noncomputable def bicg (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
+/-- **The BiCG column of Figure 11.4.1**, run for `fuel` passes: "`r₀ = b − Ax₀`, `r̃₀ᵀr₀ ≠ 0`,
+`x_c = x₀`, `p_c = r_c = r₀`, `p̃_c = r̃_c = r̃₀`", then `fuel` passes of `bicgStep`. The figure
+gives no stopping test, so the number of passes `fuel` is the last argument; the condition
+`r̃₀ᵀr₀ ≠ 0` is a hypothesis of the theorems, not a test of the program. -/
+noncomputable def bicg (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (fuel : ℕ) :
     M (BiCGState n) := do
   let Ax ← Chapter01.algorithm_1_1_3 rnd A x₀ 0
   let r₀ ← Chapter01.vecSub rnd b Ax
-  (List.range k).foldlM (fun s _ => bicgStep rnd A s) ⟨x₀, r₀, rt₀, r₀, rt₀⟩
+  (List.range fuel).foldlM (fun s _ => bicgStep rnd A s) ⟨x₀, r₀, rt₀, r₀, rt₀⟩
 
 /-- One pass of the CGS update formulae of Figure 11.4.1:
 ```
@@ -1985,14 +1992,14 @@ noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n → �
   let p ← Chapter01.algorithm_1_1_2 rnd τ w u
   pure ⟨x, r, u, p⟩
 
-/-- **The CGS column of Figure 11.4.1**, run for `k` passes: "`r₀ = b − Ax₀`, `x_c = x₀`,
-`p_c = r_c = r₀`, `u_c = r_c`", then `k` passes of `cgsStep`. Only products with `A` occur. The
+/-- **The CGS column of Figure 11.4.1**, run for `fuel` passes: "`r₀ = b − Ax₀`, `x_c = x₀`,
+`p_c = r_c = r₀`, `u_c = r_c`", then `fuel` passes of `cgsStep`. Only products with `A` occur. The
 printed initial condition `r̃₀ᵀr̃₀ ≠ 0` should be `r̃₀ᵀr₀ ≠ 0`. -/
-noncomputable def cgs (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
+noncomputable def cgs (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (fuel : ℕ) :
     M (CGSState n) := do
   let Ax ← Chapter01.algorithm_1_1_3 rnd A x₀ 0
   let r₀ ← Chapter01.vecSub rnd b Ax
-  (List.range k).foldlM (fun s _ => cgsStep rnd A rt₀ s) ⟨x₀, r₀, r₀, r₀⟩
+  (List.range fuel).foldlM (fun s _ => cgsStep rnd A rt₀ s) ⟨x₀, r₀, r₀, r₀⟩
 
 /-- One pass of the BiCGstab update formulae of Figure 11.4.1:
 ```
@@ -2023,14 +2030,14 @@ noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n �
   let p ← Chapter01.algorithm_1_1_2 rnd τ w r
   pure ⟨x, r, p⟩
 
-/-- **The BiCGstab column of Figure 11.4.1**, run for `k` passes: "`r₀ = b − Ax₀`, `x_c = x₀`,
-`p_c = r_c = r₀`", then `k` passes of `bicgstabStep`. The printed initial condition `r̃₀ᵀr̃₀ ≠ 0`
+/-- **The BiCGstab column of Figure 11.4.1**, run for `fuel` passes: "`r₀ = b − Ax₀`, `x_c = x₀`,
+`p_c = r_c = r₀`", then `fuel` passes of `bicgstabStep`. The printed initial condition `r̃₀ᵀr̃₀ ≠ 0`
 should be `r̃₀ᵀr₀ ≠ 0`. -/
-noncomputable def bicgstab (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
+noncomputable def bicgstab (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (fuel : ℕ) :
     M (BiCGstabState n) := do
   let Ax ← Chapter01.algorithm_1_1_3 rnd A x₀ 0
   let r₀ ← Chapter01.vecSub rnd b Ax
-  (List.range k).foldlM (fun s _ => bicgstabStep rnd A rt₀ s) ⟨x₀, r₀, r₀⟩
+  (List.range fuel).foldlM (fun s _ => bicgstabStep rnd A rt₀ s) ⟨x₀, r₀, r₀⟩
 
 end Programs
 

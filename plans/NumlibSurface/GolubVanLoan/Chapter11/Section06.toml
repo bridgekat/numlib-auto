@@ -161,10 +161,6 @@ id = "restrictionMatrix_eq_half_transpose"
 source = 'Golub–Van Loan, Matrix Computations, §11.6.3'
 
 [[node]]
-id = "vecAdd"
-source = 'Golub–Van Loan, Matrix Computations, Equation (11.6.16)'
-
-[[node]]
 id = "coarseGridCorrection"
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.6.16)'
 

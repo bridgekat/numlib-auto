@@ -78,7 +78,7 @@ id = "jacobiDavidson_spec"
 source = 'Golub–Van Loan, Matrix Computations, §10.6.4, the Jacobi–Davidson framework'
 
 [[node]]
-id = "traceMin"
+id = "isLeast_trace_transpose_mul_mul"
 source = 'Golub–Van Loan, Matrix Computations, §10.6.5, the trace-min principle'
 
 [[node]]

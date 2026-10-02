@@ -2,6 +2,7 @@ import Mathlib.Data.List.MinMax
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Sparse.Fill
 import Numlib.LinearAlgebra.Sparse.Reordering
+import NumlibSurface.GolubVanLoan.Chapter04.Section02
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
 
 /-!
@@ -55,8 +56,9 @@ for §11.1.9's "`A⁽¹⁾` is structurally symmetric": true of the predicted pa
 * `sparseOuterProductUpdate`, `equation_11_1_2` — (11.1.2) computes `A + u vᵀ` when the pattern of
   `A` has room for it.
 * `equation_11_1_3`, `equation_11_1_10` — the first Cholesky and LU steps as block factorizations.
-* `adjGraph_submatrix_iso`, `cuthillMcKee_blockTridiagonal` — §11.1.4–11.1.5.
-* `profileIndex`, `profile`, `minDegreePivot`, `choleskyWithPivoting`, `equation_11_1_8`.
+* `adjGraph_submatrix_iso`, `submatrix_apply_eq_zero_of_levels_far` — §11.1.4–11.1.5.
+* `profileIndex`, `profile` (the book uses the profile only in Problem P11.1.6), `minDegreePivot`,
+  `choleskyWithPivoting`, `equation_11_1_8`, `minDegree_cholesky`.
 * `cholesky_apply_eq`, `cholesky_eq_zero_of_not_isCholeskyFill`, `nestedDissection_cholesky`.
 * `seminormal_cholesky`, `seminormal_normalEquations`, `seminormal_refinement` — §11.1.8.
 * `rowGivensQR`, `equation_11_1_9` — the row-by-row Givens QR (11.1.9), a program calling chapter
@@ -524,13 +526,13 @@ theorem profileIndex_le {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
 noncomputable def profile {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) : ℕ :=
   n + ∑ i : Fin n, ((i : ℕ) - (profileIndex A i : ℕ))
 
-/-- §11.1.5, **a level-set ordering is block tridiagonal**: if `p` (the permutation `σ`) lists the
-nodes by their level sets `S₀, S₁, …` of a root `v` in `𝒢_A` (graph distance to `v`), then
-`A(p, p)` is block tridiagonal with the level sets as its diagonal blocks — its entry `(k, l)`
-vanishes whenever the levels of the nodes `σ k` and `σ l` differ by two or more. This holds for
-any ordering (the levels are read off `σ`), in particular for the Cuthill–McKee ordering with any
-tie-breaking. -/
-theorem cuthillMcKee_blockTridiagonal {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v : Fin n)
+/-- §11.1.5, **the level structure behind the Cuthill–McKee ordering**: for any permutation `σ`
+and root `v` of `𝒢_A`, the entry `(k, l)` of `A(σ, σ)` vanishes whenever the levels (graph
+distances to `v`) of the nodes `σ k` and `σ l` differ by two or more. For an ordering that lists
+the level sets `S₀, S₁, …` consecutively (the Cuthill–McKee ordering, with any tie-breaking) this
+says that `A(σ, σ)` is block tridiagonal with the level sets as diagonal blocks; the statement
+itself is a fact about `A` and the levels, and the ordering is not constructed here. -/
+theorem submatrix_apply_eq_zero_of_levels_far {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v : Fin n)
     (σ : Equiv.Perm (Fin n)) {k l : Fin n}
     (h : A.adjGraph.dist v (σ k) + 2 ≤ A.adjGraph.dist v (σ l) ∨
       A.adjGraph.dist v (σ l) + 2 ≤ A.adjGraph.dist v (σ k)) :
@@ -539,6 +541,9 @@ theorem cuthillMcKee_blockTridiagonal {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
   rcases h with h | h
   · exact apply_eq_zero_of_dist_lt v h
   · exact apply_eq_zero_of_dist_lt' v h
+
+@[deprecated (since := "2026-09-30")]
+alias cuthillMcKee_blockTridiagonal := submatrix_apply_eq_zero_of_levels_far
 
 /-! ### §11.1.6: minimum degree, Cholesky with pivoting, and the symbolic fill -/
 
@@ -915,13 +920,27 @@ theorem equation_11_1_8 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
     refine Finset.sum_congr rfl fun l _ => ?_
     by_cases h1 : l ≤ i <;> by_cases h2 : l ≤ j <;> simp [h1, h2, l.2]
 
+/-- **(11.1.8) with the minimum-degree rule**: the exact run of `choleskyWithPivoting` with
+`minDegreePivot` returns a Cholesky factorization of `P A Pᵀ`. -/
+theorem minDegree_cholesky {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
+    let out := Id.run (choleskyWithPivoting pure minDegreePivot A)
+    (A.submatrix out.1 out.1).IsCholesky
+      (Matrix.of fun i j => if j ≤ i then out.2 i j else 0)ᵀ :=
+  equation_11_1_8 hA minDegreePivot le_minDegreePivot
+
 /-- §11.1.6, the formula after Fact 2: for `j < i`,
-`g_ij = (a_ij − ∑_{k=1}^{j−1} g_ik g_jk) / g_jj`, where `G = Hᵀ` is the lower Cholesky factor. -/
+`g_ij = (a_ij − ∑_{k=1}^{j−1} g_ik g_jk) / g_jj`, where `G = Hᵀ` is the lower Cholesky factor:
+entry `i` of the gaxpy Cholesky column formula (4.2.9) (`Chapter04.equation_4_2_9`), which holds
+for every `i` (for `i < j` both sides vanish, for `i = j` it is the diagonal formula). -/
 theorem cholesky_apply_eq {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (h : A.IsCholesky H)
-    {i j : Fin n} (hij : j < i) :
+    (i j : Fin n) :
     Hᵀ i j = (A i j - ∑ k ∈ univ.filter (· < j), Hᵀ i k * Hᵀ j k) / Hᵀ j j := by
-  rw [eq_div_iff (by simpa using h.diag_ne_zero j)]
-  simpa using h.star_apply_mul_diag_eq hij
+  have hA : A = Hᵀ * Hᵀᵀ := by
+    rw [transpose_transpose, ← h.conjTranspose_mul_self, conjTranspose_eq_transpose_of_trivial]
+  have h49 := congrFun (Chapter04.equation_4_2_9 h.isUpperTriangular.transpose hA j) i
+  simp only [Pi.smul_apply, smul_eq_mul, Pi.sub_apply, Finset.sum_apply] at h49
+  rw [eq_div_iff (by simpa using h.diag_ne_zero j), mul_comm, h49]
+  exact congrArg _ (Finset.sum_congr rfl fun k _ => mul_comm _ _)
 
 /-- **Facts 1–2 of §11.1.6, the exact half**: the entry `g_ij`, `j < i`, of the lower Cholesky
 factor vanishes unless `(i, j)` is in the symbolic fill of Facts 1–2 (`Matrix.IsCholeskyFill`: the

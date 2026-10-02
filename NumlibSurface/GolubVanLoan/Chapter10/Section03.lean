@@ -1,6 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.BlockTridiagonal
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
-import NumlibSurface.GolubVanLoan.Chapter10.Section05
+import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
 # Golub–Van Loan §10.3: practical Lanczos procedures
@@ -767,7 +767,7 @@ open scoped Matrix.Norms.L2Operator in
 `‖I_k − SᵀS‖₂ ≤ μ` and `|1 − dᵀd| ≤ δ`, then `‖I_{k+1} − S₊ᵀS₊‖₂ ≤ μ₊` with
 `μ₊ = (μ + δ + √((μ − δ)² + 4 ‖Sᵀd‖₂²))/2`. `I − S₊ᵀS₊` is the symmetric block matrix
 `[I − SᵀS, −Sᵀd; −dᵀS, 1 − dᵀd]` (reindexed from `Fin k ⊕ Fin 1`); backbone
-`Matrix.l2_opNorm_fromBlocks_le_of_isHermitian`. -/
+`Matrix.l2_opNorm_fromBlocks_conjTranspose_le`. -/
 theorem lemma_10_3_1 {k : ℕ} (S : Matrix (Fin n) (Fin k) ℝ) (d : Fin n → ℝ) {μ δ : ℝ}
     (hμ : ‖(1 : Matrix (Fin k) (Fin k) ℝ) - Sᵀ * S‖ ≤ μ) (hδ : |1 - d ⬝ᵥ d| ≤ δ) :
     ‖(1 : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) - (appendCol S d)ᵀ * appendCol S d‖ ≤
@@ -777,13 +777,13 @@ theorem lemma_10_3_1 {k : ℕ} (S : Matrix (Fin n) (Fin k) ℝ) (d : Fin n → �
     simp [EuclideanSpace.norm_eq]
   have hC : ‖Matrix.vecMulVec (-(Sᵀ *ᵥ d)) fun _ : Fin 1 => (1 : ℝ)‖ ≤
       ‖(WithLp.toLp 2 (Sᵀ *ᵥ d) : EuclideanSpace ℝ (Fin k))‖ := by
-    rw [l2_opNorm_vecMulVec, hone, mul_one, WithLp.toLp_neg, norm_neg]
+    rw [Matrix.l2_opNorm_vecMulVec, hone, mul_one, WithLp.toLp_neg, norm_neg]
   have hD : ‖Matrix.vecMulVec (fun _ : Fin 1 => 1 - d ⬝ᵥ d) fun _ : Fin 1 => (1 : ℝ)‖ ≤ δ := by
-    rw [l2_opNorm_vecMulVec, hone, mul_one]
+    rw [Matrix.l2_opNorm_vecMulVec, hone, mul_one]
     simpa [EuclideanSpace.norm_eq, Real.sqrt_sq_eq_abs] using hδ
   rw [← Matrix.l2_opNorm_submatrix_equiv _ finSumFinEquiv finSumFinEquiv,
     one_sub_appendCol_submatrix]
-  exact Matrix.l2_opNorm_fromBlocks_le_of_isHermitian hμ hC hD
+  exact Matrix.l2_opNorm_fromBlocks_conjTranspose_le hμ hC hD
 
 /-! ### Block Lanczos (10.3.6): (10.3.8), (10.3.9) and Theorem 10.3.2 -/
 
@@ -1408,45 +1408,23 @@ private theorem transpose_mul_mul_apply {ι κ : Type*}
     Finset.sum_mul, Finset.mul_sum, mul_assoc]
   exact Finset.sum_comm
 
-/-- **Theorem 10.3.2 (Underwood).** Let `A` be symmetric with Schur decomposition
-`Zᵀ A Z = diag(λ_1 ≥ ⋯ ≥ λ_n)` (here the backbone's eigenvector basis), let `μ_1 ≥ ⋯` be the
-eigenvalues of the matrix `T̄_{k+1}` obtained after `k + 1` blocks of (10.3.8), `Z₁ = [z_1 ⋯ z_p]`
-and `0 < cos φ_p = σ_p(Z₁ᵀ X₁)` (the smallest singular value). Then for `i = 1 : p`,
-`λ_i ≥ μ_i ≥ λ_i − (λ_1 − λ_n) (tan φ_p / c_k(1 + 2ρ_i))²`, `ρ_i = (λ_i − λ_{p+1})/(λ_{p+1} − λ_n)`
-(the book writes `tan θ_p`; its `k` blocks and `c_{k−1}` are our `k + 1` and `c_k`). Hypotheses:
-`p < n`, `X₁ᵀ X₁ = I`, no rank-deficient `R_b` (so that the run is the block Lanczos process);
-no gap hypothesis (`ρ_i = 0` in the degenerate cases). The eigenvalues of `T̄_{k+1}` are those of
-the compression of `A` to `𝒦_{k+1}(A, X₁)` (`equation_10_3_8`), and the bound is the backbone's
-`BlockLanczos.kaniel_paige_saad` with `tan φ_p` bounding the angle between `ran X₁` and
-`span {z_1, …, z_p}`. -/
-theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n) ℝ}
+/-- The eigenvalues of `T̄_{k+1}` are those of the compression of `A` to the block Krylov subspace
+`𝒦_{k+1}(A, X₁)` (of dimension `(k + 1) p`): by (10.3.8) the columns of `[X_1 | ⋯ | X_{k+1}]` are
+an orthonormal basis of `𝒦_{k+1}(A, X₁)` in which the compression has the matrix `T̄_{k+1}`. -/
+private theorem eigenvalues₀_blockTridiagonal_eq (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1) {r k : ℕ}
     (hkr : k + 1 ≤ r)
     (hrank : ∀ b < k,
-      LinearIndependent ℝ (blockResidual A (Id.run (blockLanczos pure hpn A X₁ r)) b)ᵀ)
-    (i : Fin p) :
-    let lam := hA.isSymmetric_toEuclideanLin.eigenvalues finrank_euclideanSpace_fin
-    let z := hA.isSymmetric_toEuclideanLin.eigenvectorBasis finrank_euclideanSpace_fin
-    let Z₁ : Matrix (Fin n) (Fin p) ℝ := Matrix.of fun r j => z (Fin.castLE hpn j) r
-    let φ := Real.arccos (⨅ j, (Z₁ᵀ * X₁).colSingularValues j)
-    let μ := (blockLanczos_blockTridiagonal_isHermitian hpn hA X₁ hkr).eigenvalues₀
-    let ρ := (lam (Fin.castLE hpn i) - lam ⟨p, hpn'⟩) /
-      (lam ⟨p, hpn'⟩ - lam ⟨n - 1, by omega⟩)
-    0 < ⨅ j, (Z₁ᵀ * X₁).colSingularValues j →
-      μ ⟨i, by
-        rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
-        exact lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p k.succ_pos)⟩ ≤
-          lam (Fin.castLE hpn i) ∧
-      lam (Fin.castLE hpn i) - (lam ⟨0, by omega⟩ - lam ⟨n - 1, by omega⟩) *
-          (Real.tan φ / (Polynomial.Chebyshev.T ℝ k).eval (1 + 2 * ρ)) ^ 2 ≤
-        μ ⟨i, by
-          rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
-          exact lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p k.succ_pos)⟩ := by
-  intro lam z Z₁ φ μ ρ hc
+      LinearIndependent ℝ (blockResidual A (Id.run (blockLanczos pure hpn A X₁ r)) b)ᵀ) :
+    ∃ hd : Module.finrank ℝ (Krylov.blockSubspace (Matrix.toEuclideanLin A)
+        (fun l => WithLp.toLp 2 fun i => X₁ i l) (k + 1)) = (k + 1) * p,
+      (blockLanczos_blockTridiagonal_isHermitian hpn hA X₁ hkr).eigenvalues₀ =
+        (compression.isSymmetric (Matrix.toEuclideanLin A) _
+            hA.isSymmetric_toEuclideanLin).eigenvalues hd ∘
+          Fin.cast (by rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]) := by
   set s := Id.run (blockLanczos pure hpn A X₁ r) with hs
   set T := Matrix.toEuclideanLin A with hTdef
   have hT : T.IsSymmetric := hA.isSymmetric_toEuclideanLin
-  have hnE : Module.finrank ℝ (EuclideanSpace ℝ (Fin n)) = n := finrank_euclideanSpace_fin
   obtain ⟨hQQ, -, -, hcomp, hrange⟩ := equation_10_3_8 hpn hA hX₁ hkr hrank
   change (blockCols s.X (k + 1))ᵀ * blockCols s.X (k + 1) = 1 at hQQ
   change (blockCols s.X (k + 1))ᵀ * A * blockCols s.X (k + 1) =
@@ -1467,8 +1445,7 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
   have hd : Module.finrank ℝ K = (k + 1) * p := by
     rw [← hrange, LinearMap.finrank_range_of_inj hinj, finrank_euclideanSpace, Fintype.card_prod,
       Fintype.card_fin, Fintype.card_fin]
-  have hcard : Fintype.card (Fin (k + 1) × Fin p) = (k + 1) * p := by
-    rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+  refine ⟨hd, ?_⟩
   -- an orthonormal basis of `K` from the columns of `[X_1 | ⋯ | X_k]`
   have hcolmem : ∀ al : Fin (k + 1) × Fin p, colE (s.X al.1) al.2 ∈ K := by
     intro al
@@ -1506,112 +1483,167 @@ theorem theorem_10_3_2 (hpn : p ≤ n) (hpn' : p < n) {A : Matrix (Fin n) (Fin n
       transpose_mul_mul_apply, EuclideanSpace.inner_eq_star_dotProduct, star_trivial,
       dotProduct_comm]
     rfl
-  -- the eigenvalues of `T̄_k` are those of the compression to the block Krylov subspace
-  have hμ : μ = (compression.isSymmetric T K hT).eigenvalues hd ∘ Fin.cast hcard := by
-    have hchar : (compression T K).charpoly =
-        (Matrix.blockTridiagonal (fun j : Fin k => s.B j)
-      (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ)).charpoly.map
-          (algebraMap ℝ ℝ) := by
-      rw [← LinearMap.charpoly_toMatrix _ b.toBasis, htoM, Algebra.algebraMap_self,
-        Polynomial.map_id]
-    have hcast : List.ofFn ((compression.isSymmetric T K hT).eigenvalues hd ∘ Fin.cast hcard) =
-        List.ofFn ((compression.isSymmetric T K hT).eigenvalues hd) :=
-      (List.ofFn_congr hcard.symm ((compression.isSymmetric T K hT).eigenvalues hd)).symm
-    rw [← List.ofFn_inj, ← Matrix.IsHermitian.sort_roots_charpoly_eq_eigenvalues₀, hcast,
-      ← LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues, hchar,
-      (blockLanczos_blockTridiagonal_isHermitian hpn hA X₁ hkr).splits_charpoly.roots_map,
-      Multiset.map_map]
-    congr 2
-  -- the starting block is orthonormal
+  have hcard : Fintype.card (Fin (k + 1) × Fin p) = (k + 1) * p := by
+    rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+  have hchar : (compression T K).charpoly =
+      (Matrix.blockTridiagonal (fun j : Fin k => s.B j)
+    (fun j : Fin (k + 1) => s.M j) (fun j : Fin k => (s.B j)ᵀ)).charpoly.map
+        (algebraMap ℝ ℝ) := by
+    rw [← LinearMap.charpoly_toMatrix _ b.toBasis, htoM, Algebra.algebraMap_self,
+      Polynomial.map_id]
+  have hcast : List.ofFn ((compression.isSymmetric T K hT).eigenvalues hd ∘ Fin.cast hcard) =
+      List.ofFn ((compression.isSymmetric T K hT).eigenvalues hd) :=
+    (List.ofFn_congr hcard.symm ((compression.isSymmetric T K hT).eigenvalues hd)).symm
+  rw [← List.ofFn_inj, ← Matrix.IsHermitian.sort_roots_charpoly_eq_eigenvalues₀, hcast,
+    ← LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues, hchar,
+    (blockLanczos_blockTridiagonal_isHermitian hpn hA X₁ hkr).splits_charpoly.roots_map,
+    Multiset.map_map]
+  congr 2
+
+/-- The angle hypothesis of Theorem 10.3.2: if `cos φ_p = σ_min(Z₁ᵀ X₁) > 0` for the first `p`
+columns `Z₁` of an orthogonal `Z` and `X₁ᵀ X₁ = I`, every `x ∈ ran X₁` satisfies
+`‖x − P x‖ ≤ tan φ_p ‖P x‖`, `P` the projection onto `span {z_1, …, z_p}`: Bessel's inequality and
+`σ_min ‖y‖ ≤ ‖Z₁ᵀ X₁ y‖` give `cos φ_p ‖x‖ ≤ ‖P x‖`, and Pythagoras does the rest. -/
+private theorem norm_sub_starProjection_le_tan [Nonempty (Fin p)] (hpn : p ≤ n)
+    {Z : Matrix (Fin n) (Fin n) ℝ} (hZ : Z ∈ Matrix.orthogonalGroup (Fin n) ℝ)
+    {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1)
+    (hc : 0 < ⨅ j, ((Z.submatrix id (Fin.castLE hpn))ᵀ * X₁).colSingularValues j) :
+    ∀ x ∈ Submodule.span ℝ
+        (Set.range fun l => (WithLp.toLp 2 fun r => X₁ r l : EuclideanSpace ℝ (Fin n))),
+      ‖x - (Submodule.span ℝ (schurBasis hZ '' {j | (j : ℕ) < p})).starProjection x‖ ≤
+        Real.tan (Real.arccos
+            (⨅ j, ((Z.submatrix id (Fin.castLE hpn))ᵀ * X₁).colSingularValues j)) *
+          ‖(Submodule.span ℝ (schurBasis hZ '' {j | (j : ℕ) < p})).starProjection x‖ := by
+  set z := schurBasis hZ with hzdef
+  set Z₁ := Z.submatrix id (Fin.castLE hpn) with hZ₁
+  set c := ⨅ j, (Z₁ᵀ * X₁).colSingularValues j with hcdef
+  set Pz := Submodule.span ℝ (z '' {j | (j : ℕ) < p}) with hPz
+  intro x hx
+  obtain ⟨y, rfl⟩ := (Submodule.mem_span_range_iff_exists_fun ℝ).1 hx
+  set x := ∑ l, y l • (WithLp.toLp 2 fun r => X₁ r l : EuclideanSpace ℝ (Fin n)) with hxdef
+  have hxX : x.ofLp = X₁ *ᵥ y := by
+    ext j
+    simp [hxdef, Matrix.mulVec, dotProduct, mul_comm]
+  have hnx : ‖x‖ = ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin p))‖ := by
+    have h1 : ‖x‖ ^ 2 = ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin p))‖ ^ 2 := by
+      rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq,
+        EuclideanSpace.inner_eq_star_dotProduct, EuclideanSpace.inner_eq_star_dotProduct,
+        star_trivial, star_trivial, hxX, Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose,
+        Matrix.mulVec_mulVec, hX₁, Matrix.one_mulVec]
+    exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).1 h1
+  -- `‖Z₁ᵀ X₁ y‖ ≤ ‖P x‖` (Bessel)
+  have hZx : ‖Matrix.toEuclideanLin (Z₁ᵀ * X₁) (WithLp.toLp 2 y)‖ ≤ ‖Pz.starProjection x‖ := by
+    have hzon : Orthonormal ℝ fun j : Fin p => z (Fin.castLE hpn j) :=
+      z.orthonormal.comp _ (Fin.castLE_injective hpn)
+    have hbes := hzon.sum_inner_products_le (x := Pz.starProjection x) (s := Finset.univ)
+    have hcoord : ∀ j : Fin p, (Matrix.toEuclideanLin (Z₁ᵀ * X₁) (WithLp.toLp 2 y)) j =
+        inner ℝ (z (Fin.castLE hpn j)) (Pz.starProjection x) := by
+      intro j
+      have hperp : inner ℝ (z (Fin.castLE hpn j)) (x - Pz.starProjection x) = 0 :=
+        Submodule.inner_right_of_mem_orthogonal
+          (Submodule.subset_span (Set.mem_image_of_mem _
+            (show ((Fin.castLE hpn j : Fin n) : ℕ) < p from j.isLt)))
+          (Submodule.sub_starProjection_mem_orthogonal x)
+      rw [inner_sub_right, sub_eq_zero] at hperp
+      rw [← hperp, EuclideanSpace.inner_eq_star_dotProduct, star_trivial, hxX]
+      change ((Z₁ᵀ * X₁) *ᵥ y) j = _
+      rw [← Matrix.mulVec_mulVec]
+      simp only [Matrix.mulVec, dotProduct, Matrix.transpose_apply, Z₁, Matrix.submatrix_apply,
+        id, z, schurBasis_apply, Matrix.euclideanCol_apply]
+      exact Finset.sum_congr rfl fun r _ => mul_comm _ _
+    rw [← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _), EuclideanSpace.norm_sq_eq]
+    refine le_trans (le_of_eq ?_) hbes
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [hcoord j]
+  have hlow := (Z₁ᵀ * X₁).iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 y)
+  rw [← hnx] at hlow
+  have hcx : c * ‖x‖ ≤ ‖Pz.starProjection x‖ := hlow.trans hZx
+  -- Pythagoras
+  have hpy : ‖x‖ ^ 2 = ‖Pz.starProjection x‖ ^ 2 + ‖x - Pz.starProjection x‖ ^ 2 := by
+    have h0 : inner ℝ (Pz.starProjection x) (x - Pz.starProjection x) = 0 :=
+      Submodule.inner_right_of_mem_orthogonal (Submodule.starProjection_apply_mem _ _)
+        (Submodule.sub_starProjection_mem_orthogonal x)
+    have h1 := norm_add_sq_eq_norm_sq_add_norm_sq_real h0
+    rw [add_sub_cancel] at h1
+    simpa [sq] using h1
+  set N := ‖x‖
+  set a := ‖Pz.starProjection x‖
+  set e := ‖x - Pz.starProjection x‖
+  have hN0 : 0 ≤ N := norm_nonneg _
+  have ha0 : 0 ≤ a := norm_nonneg _
+  have he0 : 0 ≤ e := norm_nonneg _
+  rcases eq_or_lt_of_le hN0 with hN | hN
+  · have : e ^ 2 ≤ 0 := by nlinarith
+    have he : e = 0 := by nlinarith
+    rw [he]
+    exact mul_nonneg (by rw [Real.tan_arccos]; positivity) ha0
+  have haN : a ≤ N := (pow_le_pow_iff_left₀ ha0 hN0 two_ne_zero).1 (by nlinarith)
+  have hc1 : c ≤ 1 := by
+    have h1 : c * N ≤ 1 * N := by linarith
+    exact le_of_mul_le_mul_right h1 hN
+  have hsq : e ^ 2 ≤ (Real.tan (Real.arccos c) * a) ^ 2 := by
+    rw [Real.tan_arccos, mul_pow, div_pow, Real.sq_sqrt (by nlinarith),
+      div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
+    have h1 : (c * N) ^ 2 ≤ a ^ 2 := pow_le_pow_left₀ (by positivity) hcx 2
+    nlinarith
+  exact (pow_le_pow_iff_left₀ he0 (mul_nonneg (by rw [Real.tan_arccos]; positivity) ha0)
+    two_ne_zero).1 hsq
+
+/-- **Theorem 10.3.2 (Underwood).** Let `A` be symmetric with Schur decomposition
+`Zᵀ A Z = diag(λ_1, …, λ_n)`, `λ_1 ≥ ⋯ ≥ λ_n`, `Z = [z_1 ⋯ z_n]` orthogonal (any such
+decomposition), let `μ_1 ≥ ⋯` be the eigenvalues of the matrix `T̄_{k+1}` obtained after `k + 1`
+blocks of (10.3.8), `Z₁ = [z_1 ⋯ z_p]` and `0 < cos φ_p = σ_p(Z₁ᵀ X₁)` (the smallest singular
+value). Then for `i = 1 : p`, `λ_i ≥ μ_i ≥ λ_i − (λ_1 − λ_n) (tan φ_p / c_k(1 + 2ρ_i))²`,
+`ρ_i = (λ_i − λ_{p+1})/(λ_{p+1} − λ_n)` (the book writes `tan θ_p`; its `k` blocks and `c_{k−1}`
+are our `k + 1` and `c_k`). Hypotheses: `p < n`, `X₁ᵀ X₁ = I`, no rank-deficient `R_b` (so that
+the run is the block Lanczos process); no gap hypothesis (`ρ_i = 0` in the degenerate cases). The
+symmetry of `A` follows from the decomposition (`isSymm_of_schur`). The eigenvalues of `T̄_{k+1}`
+are those of the compression of `A` to `𝒦_{k+1}(A, X₁)` (`equation_10_3_8`), and the bound is the
+backbone's `BlockLanczos.kaniel_paige_saad` for the eigenbasis `z`, with `tan φ_p` bounding the
+angle between `ran X₁` and `span {z_1, …, z_p}`. -/
+theorem theorem_10_3_2 (hpn : p < n) {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
+    (hZ : Z ∈ Matrix.orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = Matrix.diagonal lam)
+    (hlam : Antitone lam) {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1) {r k : ℕ}
+    (hkr : k + 1 ≤ r)
+    (hrank : ∀ b < k,
+      LinearIndependent ℝ (blockResidual A (Id.run (blockLanczos pure hpn.le A X₁ r)) b)ᵀ)
+    (i : Fin p) :
+    let Z₁ : Matrix (Fin n) (Fin p) ℝ := Z.submatrix id (Fin.castLE hpn.le)
+    let φ := Real.arccos (⨅ j, (Z₁ᵀ * X₁).colSingularValues j)
+    let μ := (blockLanczos_blockTridiagonal_isHermitian hpn.le (isSymm_of_schur hZ hZA) X₁
+      hkr).eigenvalues₀
+    let ρ := (lam (Fin.castLE hpn.le i) - lam ⟨p, hpn⟩) / (lam ⟨p, hpn⟩ - lam ⟨n - 1, by omega⟩)
+    0 < ⨅ j, (Z₁ᵀ * X₁).colSingularValues j →
+      μ ⟨i, by
+        rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+        exact lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p k.succ_pos)⟩ ≤
+          lam (Fin.castLE hpn.le i) ∧
+      lam (Fin.castLE hpn.le i) - (lam ⟨0, by omega⟩ - lam ⟨n - 1, by omega⟩) *
+          (Real.tan φ / (Polynomial.Chebyshev.T ℝ k).eval (1 + 2 * ρ)) ^ 2 ≤
+        μ ⟨i, by
+          rw [Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+          exact lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p k.succ_pos)⟩ := by
+  intro Z₁ φ μ ρ hc
+  set T := Matrix.toEuclideanLin A with hTdef
+  have hT : T.IsSymmetric := (isSymm_of_schur hZ hZA).isSymmetric_toEuclideanLin
+  have hb : ∀ j, T (schurBasis hZ j) = lam j • schurBasis hZ j := fun j => by
+    rw [schurBasis_apply]; exact toEuclideanLin_euclideanCol_of_schur hZ hZA j
+  set v : Fin p → EuclideanSpace ℝ (Fin n) := fun l => WithLp.toLp 2 fun r => X₁ r l with hv
   have hvon : Orthonormal ℝ v := by
     rw [orthonormal_iff_ite]
     intro l l'
     have h1 := congrFun (congrFun hX₁ l) l'
     rw [EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct_comm]
     simpa [hv, dotProduct, Matrix.mul_apply, Matrix.one_apply] using h1
-  -- the angle hypothesis: `‖x - P x‖ ≤ tan φ_p ‖P x‖` on the span of the starting block
-  set c := ⨅ j, (Z₁ᵀ * X₁).colSingularValues j with hcdef
-  set Pz := Submodule.span ℝ (z '' {j | (j : ℕ) < p}) with hPz
-  have ht : ∀ x ∈ Submodule.span ℝ (Set.range v),
-      ‖x - Pz.starProjection x‖ ≤ Real.tan φ * ‖Pz.starProjection x‖ := by
-    intro x hx
-    obtain ⟨y, rfl⟩ := (Submodule.mem_span_range_iff_exists_fun ℝ).1 hx
-    set x := ∑ l, y l • v l with hxdef
-    have hxX : x.ofLp = X₁ *ᵥ y := by
-      ext j
-      simp [hxdef, hv, Matrix.mulVec, dotProduct, mul_comm]
-    have hnx : ‖x‖ = ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin p))‖ := by
-      have h1 : ‖x‖ ^ 2 = ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin p))‖ ^ 2 := by
-        rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq,
-          EuclideanSpace.inner_eq_star_dotProduct, EuclideanSpace.inner_eq_star_dotProduct,
-          star_trivial, star_trivial, hxX, Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose,
-          Matrix.mulVec_mulVec, hX₁, Matrix.one_mulVec]
-      exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).1 h1
-    -- `‖Z₁ᵀ X₁ y‖ ≤ ‖P x‖` (Bessel)
-    have hZx : ‖Matrix.toEuclideanLin (Z₁ᵀ * X₁) (WithLp.toLp 2 y)‖ ≤ ‖Pz.starProjection x‖ := by
-      have hzon : Orthonormal ℝ fun j : Fin p => z (Fin.castLE hpn j) :=
-        z.orthonormal.comp _ (Fin.castLE_injective hpn)
-      have hbes := hzon.sum_inner_products_le (x := Pz.starProjection x)
-        (s := Finset.univ)
-      have hcoord : ∀ j : Fin p, (Matrix.toEuclideanLin (Z₁ᵀ * X₁) (WithLp.toLp 2 y)) j =
-          inner ℝ (z (Fin.castLE hpn j)) (Pz.starProjection x) := by
-        intro j
-        have hperp : inner ℝ (z (Fin.castLE hpn j)) (x - Pz.starProjection x) = 0 :=
-          Submodule.inner_right_of_mem_orthogonal
-            (Submodule.subset_span (Set.mem_image_of_mem _
-              (show ((Fin.castLE hpn j : Fin n) : ℕ) < p from j.isLt)))
-            (Submodule.sub_starProjection_mem_orthogonal x)
-        rw [inner_sub_right, sub_eq_zero] at hperp
-        rw [← hperp, EuclideanSpace.inner_eq_star_dotProduct, star_trivial, hxX]
-        change ((Z₁ᵀ * X₁) *ᵥ y) j = _
-        rw [← Matrix.mulVec_mulVec]
-        simp only [Matrix.mulVec, dotProduct, Matrix.transpose_apply, Z₁, Matrix.of_apply]
-        exact Finset.sum_congr rfl fun r _ => mul_comm _ _
-      rw [← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _), EuclideanSpace.norm_sq_eq]
-      refine le_trans (le_of_eq ?_) hbes
-      refine Finset.sum_congr rfl fun j _ => ?_
-      rw [hcoord j]
-    have : Nonempty (Fin p) := ⟨i⟩
-    have hlow := (Z₁ᵀ * X₁).iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 y)
-    rw [← hnx] at hlow
-    have hcx : c * ‖x‖ ≤ ‖Pz.starProjection x‖ := hlow.trans hZx
-    -- Pythagoras
-    have hpy : ‖x‖ ^ 2 = ‖Pz.starProjection x‖ ^ 2 + ‖x - Pz.starProjection x‖ ^ 2 := by
-      have h0 : inner ℝ (Pz.starProjection x) (x - Pz.starProjection x) = 0 :=
-        Submodule.inner_right_of_mem_orthogonal (Submodule.starProjection_apply_mem _ _)
-          (Submodule.sub_starProjection_mem_orthogonal x)
-      have h1 := norm_add_sq_eq_norm_sq_add_norm_sq_real h0
-      rw [add_sub_cancel] at h1
-      simpa [sq] using h1
-    set N := ‖x‖
-    set a := ‖Pz.starProjection x‖
-    set e := ‖x - Pz.starProjection x‖
-    have hN0 : 0 ≤ N := norm_nonneg _
-    have ha0 : 0 ≤ a := norm_nonneg _
-    have he0 : 0 ≤ e := norm_nonneg _
-    rcases eq_or_lt_of_le hN0 with hN | hN
-    · have : e ^ 2 ≤ 0 := by nlinarith
-      have he : e = 0 := by nlinarith
-      rw [he]
-      exact mul_nonneg (by rw [Real.tan_arccos]; positivity) ha0
-    have haN : a ≤ N := (pow_le_pow_iff_left₀ ha0 hN0 two_ne_zero).1 (by nlinarith)
-    have hc1 : c ≤ 1 := by
-      have h1 : c * N ≤ 1 * N := by linarith
-      exact le_of_mul_le_mul_right h1 hN
-    have hsq : e ^ 2 ≤ (Real.tan φ * a) ^ 2 := by
-      rw [Real.tan_arccos, mul_pow, div_pow, Real.sq_sqrt (by nlinarith),
-        div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
-      have h1 : (c * N) ^ 2 ≤ a ^ 2 := pow_le_pow_left₀ (by positivity) hcx 2
-      nlinarith
-    exact (pow_le_pow_iff_left₀ he0 (mul_nonneg (by rw [Real.tan_arccos]; positivity) ha0)
-      two_ne_zero).1 hsq
-  have hkps :=
-    BlockLanczos.kaniel_paige_saad_eigenvectorBasis hT hnE v hvon.linearIndependent ht (k := k) hd
-    ⟨i, lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p (Nat.succ_pos k))⟩ (Fin.castLE hpn i)
-    ⟨p, hpn'⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl i.isLt rfl
+  obtain ⟨hd, hμ⟩ :=
+    eigenvalues₀_blockTridiagonal_eq hpn.le (isSymm_of_schur hZ hZA) hX₁ hkr hrank
+  have : Nonempty (Fin p) := ⟨i⟩
+  have hkps := BlockLanczos.kaniel_paige_saad (schurBasis hZ) hb hlam hT v hvon.linearIndependent
+    (norm_sub_starProjection_le_tan hpn.le hZ hX₁ hc) (k := k) hd
+    ⟨i, lt_of_lt_of_le i.isLt (Nat.le_mul_of_pos_left p (Nat.succ_pos k))⟩ (Fin.castLE hpn.le i)
+    ⟨p, hpn⟩ ⟨0, by omega⟩ ⟨n - 1, by omega⟩ rfl i.isLt rfl
     (fun j => Fin.le_def.2 (Nat.zero_le _)) (fun j => Fin.le_def.2 (by simp; omega))
-  rw [hμ]
-  simp only [Function.comp_apply, Fin.cast_mk]
+  simp only [μ, hμ, Function.comp_apply, Fin.cast_mk]
   exact ⟨hkps.2, hkps.1⟩
 
 end BlockLanczos

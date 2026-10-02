@@ -444,7 +444,7 @@ theorem hasBandwidth_iff_shape (A : Matrix (Fin n) (Fin n) 𝕜) (p q : ℕ) :
     rcases hij with hij | hij
     · exact hasUpperBandwidth_zero_iff.1 h.2 hij
     · exact (isTridiagonal_iff_hasBandwidth_one.2 ⟨h.1, h.2.mono zero_le_one⟩) i j (Or.inl hij)
-  · rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasUpperBandwidth_iff_transpose]
+  · rw [isUpperHessenberg_iff_hasLowerBandwidth_one, ← hasLowerBandwidth_transpose_iff]
   · simpa using hasLowerBandwidth_card_sub_one (A := A)
   · simpa using hasUpperBandwidth_card_sub_one (A := A)
 

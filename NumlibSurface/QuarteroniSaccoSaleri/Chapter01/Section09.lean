@@ -119,7 +119,7 @@ theorem equation_1_10 (A : Matrix (Fin m) (Fin n) ℂ) {U : Matrix (Fin m) (Fin 
       rw [hA, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose]
       simp only [Matrix.mul_assoc]
       rw [← Matrix.mul_assoc Vᴴ, hVV, Matrix.one_mul]
-    rw [hAAt, Matrix.mul_assoc, hUU, Matrix.mul_one, conjTranspose_rectDiagonal,
+    rw [hAAt, Matrix.mul_assoc, hUU, Matrix.mul_one, rectDiagonal_conjTranspose,
       rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
     rfl
 

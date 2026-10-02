@@ -17,7 +17,7 @@ Forward substitution (3.22) is `Matrix.forwardSubst L b`, backward substitution 
 `Matrix.backSubst U b`; the book's recurrences are the theorems `equation_3_22`, `equation_3_23`.
 "`L` nonsingular lower triangular" is `L.IsLowerTriangular` with `IsUnit L`, which for a
 triangular matrix is the same as a nowhere-zero diagonal (backbone
-`Matrix.isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular`). The first and last indices of
+`Matrix.IsLowerTriangular.isUnit_iff`). The first and last indices of
 `Fin n` are `0` and `⊤` (`Fin.last`), under `[NeZero n]`.
 
 A computed solution `x̂` of `T x = b` by substitution in floating-point arithmetic with unit
@@ -68,7 +68,7 @@ theorem equation_3_22 [NeZero n] {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowe
     forwardSubst L b 0 = b 0 / L 0 0 ∧
       (∀ i, forwardSubst L b i = (b i - ∑ j with j < i, L i j * forwardSubst L b j) / L i i) ∧
       L *ᵥ forwardSubst L b = b := by
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hL).1 hLu
+  have hd := (hL.isUnit_iff).1 hLu
   refine ⟨?_, forwardSubst_apply L b, mulVec_forwardSubst b hL hd⟩
   rw [forwardSubst_apply, Finset.sum_eq_zero fun j hj =>
     absurd (mem_filter.1 hj).2 (not_lt.2 (Fin.zero_le j)), sub_zero]
@@ -82,7 +82,7 @@ theorem equation_3_23 [NeZero n] {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUppe
     backSubst U b ⊤ = b ⊤ / U ⊤ ⊤ ∧
       (∀ i, backSubst U b i = (b i - ∑ j with i < j, U i j * backSubst U b j) / U i i) ∧
       U *ᵥ backSubst U b = b := by
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   refine ⟨?_, backSubst_apply U b, mulVec_backSubst b hU hd⟩
   rw [backSubst_apply, Finset.sum_eq_zero fun j hj =>
     absurd (mem_filter.1 hj).2 (not_lt.2 le_top), sub_zero]
@@ -119,12 +119,12 @@ theorem equation_3_24 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) 
   constructor
   · intro hT h
     obtain ⟨δT, hδT, hx⟩ := exists_roundsForwardSubst_eq hu hcard hT
-      ((isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular hT).1 hTu) h
+      ((hT.isUnit_iff).1 hTu) h
     refine ⟨δT, fun i j => ?_, hx⟩
     simpa [gamma_def] using hδT i j
   · intro hT h
     obtain ⟨δT, hδT, hx⟩ := exists_roundsBackSubst_eq hu hcard hT
-      ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hT).1 hTu) h
+      ((hT.isUnit_iff).1 hTu) h
     refine ⟨δT, fun i j => ?_, hx⟩
     simpa [gamma_def] using hδT i j
 
@@ -227,7 +227,7 @@ theorem backSubst_componentwise_error [NeZero n] (hn : (n : ℝ) * m.u < 1)
       2 ^ (n - i : ℕ) * (n * m.u / (1 - n * m.u)) * ⨆ j : {j : Fin n // i ≤ j}, |xhat j| := by
   have hu := u_lt_one_of_mul_lt_one hn
   have hcard : (Fintype.card (Fin n) : ℝ) * m.u < 1 := by rwa [Fintype.card_fin]
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   have h := abs_sub_le_of_roundsBackSubst_of_abs_le_diag hu hcard hU hd hrow hx h (i := i)
     (c := ⨆ j : {j : Fin n // i ≤ j}, |xhat j|) fun j hj =>
       le_ciSup (f := fun j : {j : Fin n // i ≤ j} => |xhat j|) (Set.finite_range _).bddAbove
@@ -248,7 +248,7 @@ theorem backSubst_error_of_diagDominant [NeZero n] (hn : (n : ℝ) * m.u < 1)
     |x i - xhat i| ≤ (2 * n - 1) * (n * m.u / (1 - n * m.u)) * ‖xhat‖ := by
   have hu := u_lt_one_of_mul_lt_one hn
   have hcard : (Fintype.card (Fin n) : ℝ) * m.u < 1 := by rwa [Fintype.card_fin]
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   have hdom' : ∀ i, ∑ j ∈ univ.erase i, |U i j| ≤ |U i i| := fun i => by
     simpa [Real.norm_eq_abs] using hdom i
   have h := abs_sub_le_of_roundsBackSubst_of_isDiagDominant hu hcard hU hd hdom' hx h
@@ -268,7 +268,7 @@ triangular `U` satisfy `U v_i = e_i`, so each is computed by backward substituti
 the canonical basis vector `e_i` (backbone `Matrix.inv_col_eq_backSubst`). -/
 theorem equation_3_26 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (i : Fin n) :
     U *ᵥ U⁻¹.col i = Pi.single i 1 ∧ U⁻¹.col i = backSubst U (Pi.single i 1) := by
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   have h : U⁻¹.col i = backSubst U (Pi.single i 1) := inv_col_eq_backSubst hU hd i
   exact ⟨by rw [h, mulVec_backSubst _ hU hd], h⟩
 
@@ -290,7 +290,7 @@ theorem equation_3_27 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
       Pi.single ⟨k, le_rfl⟩ 1 ∧
     ∀ j : {j : Fin n // j ≤ k},
       backSubst (U.leadingPrincipalSubmatrix k) (Pi.single ⟨k, le_rfl⟩ 1) j = U⁻¹ j k := by
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   have hUk := isUpperTriangular_leadingPrincipalSubmatrix hU k
   have hdk : ∀ i : {j : Fin n // j ≤ k}, U.leadingPrincipalSubmatrix k i i ≠ 0 := fun i => hd i
   refine ⟨mulVec_backSubst _ hUk hdk, fun j => ?_⟩
@@ -311,7 +311,7 @@ theorem equation_3_28 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
     U⁻¹ k k = (U k k)⁻¹ ∧
       (∀ i, i < k → U⁻¹ i k = -(U i i)⁻¹ * ∑ j with i < j ∧ j ≤ k, U i j * U⁻¹ j k) ∧
       ∀ i, k < i → U⁻¹ i k = 0 := by
-  have hd := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hU).1 hUu
+  have hd := (hU.isUnit_iff).1 hUu
   exact ⟨inv_apply_self_of_isUpperTriangular hU hd k,
     fun i hik => inv_apply_of_isUpperTriangular hU hd hik,
     fun i hki => inv_apply_of_isUpperTriangular_of_lt hU hki⟩

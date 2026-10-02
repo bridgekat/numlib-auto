@@ -10,6 +10,7 @@ import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.Projection.OneDimensional
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter01.Section02
+import NumlibSurface.GolubVanLoan.Chapter04.Section03
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
@@ -67,8 +68,8 @@ quantities `q_j, α_j, β_j` (`j ≥ 1`) are the backbone's `Arnoldi.vec T r₀ 
 * `corollary_11_3_2`, `theorem_11_3_3`: termination and the one-step rate of CG.
 * `equation_11_3_13`, `lanczos_tridiag_posDef`, `cg_lanczos_coordinates`: CG through Lanczos.
 * `preliminaryCG`, `equation_11_3_14`, `theorem_11_3_1`: the preliminary CG loop (11.3.14), built on
-  Chapter 10's Lanczos program (Algorithm 10.1.1) with a tridiagonal solver as a routine argument,
-  computes the Galerkin iterates and terminates at the grade with `Ax = b`.
+  Chapter 10's Lanczos program (Algorithm 10.1.1) and Chapter 4's tridiagonal solver
+  (Algorithm 4.3.6), computes the Galerkin iterates and terminates at the grade with `Ax = b`.
 * `ldlTridiag`, `equation_11_3_15`, `cgLDLv`, `cgLDLC`, `equation_11_3_18`–`equation_11_3_22`,
   `cgLDL_x_succ`: the `LDLᵀ` recurrences.
 * `algorithm_11_3_2`, `algorithm_11_3_2_spec`, `theorem_11_3_4`, `theorem_11_3_5`: the Lanczos
@@ -880,16 +881,39 @@ def lanczosTridiag (L : GolubVanLoan.Chapter10.LanczosState n) :
 
 variable {M : Type → Type} [Monad M]
 
+/-- The solve `T_k y = c` of (11.3.14): chapter 4's Algorithm 4.3.6 for the symmetric tridiagonal
+`T_k` with diagonal `α` and off-diagonal `β` (`0`-based; nothing to solve for `k = 0`). -/
+noncomputable def tridiagSolve (rnd : ℝ → M ℝ) :
+    (k : ℕ) → (α β : ℕ → ℝ) → (Fin k → ℝ) → M (Fin k → ℝ)
+  | 0, _, _, c => pure c
+  | N + 1, α, β, c =>
+    Chapter04.algorithm_4_3_6 rnd (fun i : Fin (N + 1) => α i) (fun i : Fin N => β i) c
+
+/-- Exact semantics of `tridiagSolve`: for positive definite `T_k` it solves `T_k y = c`
+(`Chapter04.algorithm_4_3_6_spec`). -/
+theorem tridiagSolve_spec (k : ℕ) (α β : ℕ → ℝ)
+    (hT : (tridiagonalOfNat α (fun i => β (i - 1)) β k).PosDef) (c : Fin k → ℝ) :
+    tridiagonalOfNat α (fun i => β (i - 1)) β k *ᵥ Id.run (tridiagSolve pure k α β c) = c := by
+  cases k with
+  | zero => ext i; exact i.elim0
+  | succ N =>
+    have h : tridiagonalOfNat α (fun i => β (i - 1)) β (N + 1) =
+        tridiagonalOf (fun i : Fin N => β i) (fun i : Fin (N + 1) => α i)
+          (fun i : Fin N => β i) := by
+      rw [tridiagonalOfNat_eq_tridiagonalOf]
+      simp only [Nat.add_sub_cancel]
+    rw [h] at hT ⊢
+    exact Chapter04.algorithm_4_3_6_spec _ _ hT c
+
 /-- One pass of the `while` loop of (11.3.14) (a no-op once `done`): a pass of the Lanczos loop of
 Algorithm 10.1.1 (`q_{k+1} = r_k/β_k`, `k = k + 1`, `α_k = q_kᵀAq_k`,
-`r_k = (A − α_kI)q_k − β_{k−1}q_{k−1}`, `β_k = ‖r_k‖₂`), then `T_k y_k = β₀e₁` by the tridiagonal
-solver `solveT` and `x_k = x₀ + Q_k y_k` by chapter 1's gaxpy. -/
+`r_k = (A − α_kI)q_k − β_{k−1}q_{k−1}`, `β_k = ‖r_k‖₂`), then `T_k y_k = β₀e₁` by chapter 4's
+Algorithm 4.3.6 (`tridiagSolve`) and `x_k = x₀ + Q_k y_k` by chapter 1's gaxpy. -/
 noncomputable def preliminaryCGBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → M (Fin k → ℝ))
     (β₀ : ℝ) (x₀ : Fin n → ℝ) (s : PreliminaryCGState n) : M (PreliminaryCGState n) :=
   if s.lanczos.done then pure s else do
     let L ← GolubVanLoan.Chapter10.lanczosStep rnd A s.lanczos
-    let y ← solveT L.k (lanczosTridiag L) (Krylov.firstVec β₀ L.k)
+    let y ← tridiagSolve rnd L.k L.alpha L.beta (Krylov.firstVec β₀ L.k)
     let x ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd (lanczosBasis L) y x₀
     pure ⟨L, x⟩
 
@@ -904,17 +928,20 @@ end
 x_* = x_k
 ```
 The Lanczos part is Algorithm 10.1.1 started from `q₁ = r₀/β₀` (its loop body
-`GolubVanLoan.Chapter10.lanczosStep`; its first normalization divides by its `β₀ = 1`); the
-tridiagonal solve is the routine argument `solveT`, and the `while` loop runs at most `fuel` times
-(convention 3). The book prints `x_k = Q_k y_k`, correct only for `x₀ = 0`; the derivation above it
-gives `x_k = x₀ + Q_k y_k`, which is what the program computes. -/
+`GolubVanLoan.Chapter10.lanczosStep`; its first normalization divides again by its `β₀ = 1`,
+so in the rounded model `q₁` is `fl(fl(r₀/β₀)/1)`, one rounding per entry more than the book's
+single division — a deviation kept to reuse chapter 10's loop unchanged); the tridiagonal solve
+is chapter 4's Algorithm 4.3.6 (`tridiagSolve`; `T_k` is positive definite below the grade), and
+the `while` loop runs at most `fuel` times (convention 3). The book prints `x_k = Q_k y_k`, correct
+only for `x₀ = 0`; the derivation above it gives `x_k = x₀ + Q_k y_k`, which is what the program
+computes. -/
 noncomputable def preliminaryCG (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → M (Fin k → ℝ)) (fuel : ℕ) :
+    (fuel : ℕ) :
     M (PreliminaryCGState n) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
   let β₀ ← GolubVanLoan.Chapter10.vecNorm rnd r₀
   let q₁ ← GolubVanLoan.Chapter10.vecDiv rnd r₀ β₀
-  (List.range fuel).foldlM (fun s _ => preliminaryCGBody rnd A solveT β₀ x₀ s)
+  (List.range fuel).foldlM (fun s _ => preliminaryCGBody rnd A β₀ x₀ s)
     ⟨⟨0, fun _ => 0, fun _ => 0, fun _ => 0, q₁, decide (β₀ = 0)⟩, x₀⟩
 
 /-- The exact `β₀ = ‖b − Ax₀‖₂`. -/
@@ -929,10 +956,10 @@ private noncomputable def pcgInit (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin
 
 /-- The exact run of (11.3.14) as a fold. -/
 private theorem preliminaryCG_run (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)) (t : ℕ) :
-    Id.run (preliminaryCG pure A b x₀ solveT t) =
+    (t : ℕ) :
+    Id.run (preliminaryCG pure A b x₀ t) =
       (List.range t).foldl
-        (fun s _ => Id.run (preliminaryCGBody pure A solveT (pcgBeta₀ A b x₀) x₀ s))
+        (fun s _ => Id.run (preliminaryCGBody pure A (pcgBeta₀ A b x₀) x₀ s))
         ⟨pcgInit A b x₀, x₀⟩ := by
   simp only [preliminaryCG, Id.run_bind, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
     GolubVanLoan.Chapter10.vecNorm_spec, GolubVanLoan.Chapter10.vecDiv_spec, List.idRun_foldlM,
@@ -941,9 +968,9 @@ private theorem preliminaryCG_run (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin
 
 /-- The Lanczos part of an exact pass of (11.3.14) is a pass of Algorithm 10.1.1. -/
 private theorem preliminaryCGBody_lanczos (A : Matrix (Fin n) (Fin n) ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)) (β₀ : ℝ)
+    (β₀ : ℝ)
     (x₀ : Fin n → ℝ) (s : PreliminaryCGState n) :
-    (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).lanczos =
+    (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos =
       Id.run (GolubVanLoan.Chapter10.lanczosStep pure A s.lanczos) := by
   unfold preliminaryCGBody
   cases h : s.lanczos.done
@@ -955,14 +982,15 @@ private theorem preliminaryCGBody_lanczos (A : Matrix (Fin n) (Fin n) ℝ)
 /-- The iterate of an exact pass of (11.3.14): `x_k = x₀ + Q_k T_k⁻¹(β₀e₁)` of the new Lanczos
 state (unchanged once `done`). -/
 private theorem preliminaryCGBody_x (A : Matrix (Fin n) (Fin n) ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)) (β₀ : ℝ)
+    (β₀ : ℝ)
     (x₀ : Fin n → ℝ) (s : PreliminaryCGState n) :
-    (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).x =
+    (Id.run (preliminaryCGBody pure A β₀ x₀ s)).x =
       if s.lanczos.done then s.x else
-        x₀ + lanczosBasis (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).lanczos *ᵥ
-          Id.run (solveT (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).lanczos.k
-            (lanczosTridiag (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).lanczos)
-            (Krylov.firstVec β₀ (Id.run (preliminaryCGBody pure A solveT β₀ x₀ s)).lanczos.k)) := by
+        x₀ + lanczosBasis (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos *ᵥ
+          Id.run (tridiagSolve pure (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos.k
+            (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos.alpha
+            (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos.beta
+            (Krylov.firstVec β₀ (Id.run (preliminaryCGBody pure A β₀ x₀ s)).lanczos.k)) := by
   unfold preliminaryCGBody
   cases h : s.lanczos.done
   · simp only [Bool.false_eq_true, ↓reduceIte, Id.run_bind,
@@ -1034,19 +1062,19 @@ private theorem grade_smul_of_ne_zero (T : 𝔼 n →ₗ[ℝ] 𝔼 n) (v : 𝔼 
 steps, the Lanczos vectors and coefficients of `r₀`, and the exit test. -/
 private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (b x₀ : Fin n → ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)) (fuel : ℕ) :
-    (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.k =
+    (fuel : ℕ) :
+    (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.k =
         min fuel (Krylov.grade (toEuclideanLin A) (cgR A b x₀)) ∧
-      (∀ j < (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.k,
-        WithLp.toLp 2 ((Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.q j) =
+      (∀ j < (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.k,
+        WithLp.toLp 2 ((Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.q j) =
             Arnoldi.vec (toEuclideanLin A) (cgR A b x₀) j ∧
-          (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.alpha j =
+          (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.alpha j =
             Lanczos.alpha (toEuclideanLin A) (cgR A b x₀) j ∧
-          (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.beta j =
+          (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.beta j =
             Lanczos.beta (toEuclideanLin A) (cgR A b x₀) j) ∧
-      ((Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.done = true ↔
+      ((Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.done = true ↔
         Krylov.grade (toEuclideanLin A) (cgR A b x₀) ≤
-          (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.k) := by
+          (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.k) := by
   have hT : (toEuclideanLin A).IsSymmetric := hA.isSymmetric_toEuclideanLin
   have hr₀ : cgR A b x₀ = WithLp.toLp 2 (b - A *ᵥ x₀) := by
     rw [toEuclideanLin_toLp, ← WithLp.toLp_sub]
@@ -1056,7 +1084,7 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
   · -- `r₀ = 0`: the loop does nothing
     have hr0 : cgR A b x₀ = 0 := by rw [← norm_eq_zero, ← hβ₀, h0]
     have hfix : ∀ t, (List.range t).foldl
-        (fun s _ => Id.run (preliminaryCGBody pure A solveT (pcgBeta₀ A b x₀) x₀ s))
+        (fun s _ => Id.run (preliminaryCGBody pure A (pcgBeta₀ A b x₀) x₀ s))
         ⟨pcgInit A b x₀, x₀⟩ = ⟨pcgInit A b x₀, x₀⟩ := by
       intro t
       induction t with
@@ -1069,7 +1097,7 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
   · -- `r₀ ≠ 0`: the Lanczos part is Algorithm 10.1.1 from `q₁ = r₀/β₀`
     set q₁ := (pcgBeta₀ A b x₀)⁻¹ • (b - A *ᵥ x₀) with hq₁
     have hrun : ∀ t, ((List.range t).foldl
-        (fun s _ => Id.run (preliminaryCGBody pure A solveT (pcgBeta₀ A b x₀) x₀ s))
+        (fun s _ => Id.run (preliminaryCGBody pure A (pcgBeta₀ A b x₀) x₀ s))
         ⟨pcgInit A b x₀, x₀⟩).lanczos =
           Id.run (GolubVanLoan.Chapter10.algorithm_10_1_1 pure A q₁ t) := by
       intro t
@@ -1128,15 +1156,16 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
         omega
 
 /-- The iterate of the exact run of (11.3.14) is `x₀ + Q_k T_k⁻¹(β₀e₁)` of the final Lanczos state
-(the solve's output, whatever `solveT` returns). -/
+(the output of the tridiagonal solve). -/
 private theorem preliminaryCG_x (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
-    (solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)) (fuel : ℕ) :
-    (Id.run (preliminaryCG pure A b x₀ solveT fuel)).x =
-      x₀ + lanczosBasis (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos *ᵥ
-        Id.run (solveT (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.k
-          (lanczosTridiag (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos)
+    (fuel : ℕ) :
+    (Id.run (preliminaryCG pure A b x₀ fuel)).x =
+      x₀ + lanczosBasis (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos *ᵥ
+        Id.run (tridiagSolve pure (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.k
+          (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.alpha
+          (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.beta
           (Krylov.firstVec (pcgBeta₀ A b x₀)
-            (Id.run (preliminaryCG pure A b x₀ solveT fuel)).lanczos.k)) := by
+            (Id.run (preliminaryCG pure A b x₀ fuel)).lanczos.k)) := by
   rw [preliminaryCG_run]
   induction fuel with
   | zero =>
@@ -1151,27 +1180,24 @@ private theorem preliminaryCG_x (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
       preliminaryCGBody_x]
     split_ifs with h
-    · have hfix := preliminaryCGBody_lanczos A solveT (pcgBeta₀ A b x₀) x₀
+    · have hfix := preliminaryCGBody_lanczos A (pcgBeta₀ A b x₀) x₀
         ((List.range t).foldl
-          (fun s _ => Id.run (preliminaryCGBody pure A solveT (pcgBeta₀ A b x₀) x₀ s))
+          (fun s _ => Id.run (preliminaryCGBody pure A (pcgBeta₀ A b x₀) x₀ s))
           ⟨pcgInit A b x₀, x₀⟩)
       simp only [GolubVanLoan.Chapter10.lanczosStep, h, ↓reduceIte, Id.run_pure] at hfix
       rw [hfix]
       exact ih
     · rfl
 
-/-- **Exact semantics of (11.3.14)**: for symmetric positive definite `A` and a tridiagonal solver
-that solves positive definite systems (`solveT = T⁻¹`), the exact run makes
+/-- **Exact semantics of (11.3.14)**: for symmetric positive definite `A`, the exact run makes
 `k = min(fuel, grade)` passes, `grade` the dimension of `𝒦(A, r₀, n)`, `r₀ = b − Ax₀`; its Lanczos
 quantities are those of `r₀` (`q_{j+1} = Arnoldi.vec … j`, `α_{j+1}`, `β_{j+1}` the Lanczos
 coefficients); `x_k` is the Galerkin iterate, the minimizer of `φ` over `x₀ + 𝒦(A, r₀, k)`
 (`cg_lanczos_coordinates`); and the test `β_k ≠ 0` fails exactly when `k` reaches the grade
 (`Lanczos.beta_eq_zero_iff`). Via chapter 10's `algorithm_10_1_1_spec` on `q₁ = r₀/β₀`. -/
 theorem equation_11_3_14 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
-    {solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)}
-    (hsolve : ∀ k (T : Matrix (Fin k) (Fin k) ℝ) c, T.PosDef → T *ᵥ Id.run (solveT k T c) = c)
     (fuel : ℕ) :
-    let s := Id.run (preliminaryCG pure A b x₀ solveT fuel)
+    let s := Id.run (preliminaryCG pure A b x₀ fuel)
     let T := toEuclideanLin A
     let r₀ : 𝔼 n := WithLp.toLp 2 b - T (WithLp.toLp 2 x₀)
     s.lanczos.k = min fuel (Krylov.grade T r₀) ∧
@@ -1182,7 +1208,7 @@ theorem equation_11_3_14 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x�
       (s.lanczos.done = true ↔ Krylov.grade T r₀ ≤ s.lanczos.k) := by
   intro s T r₀
   have hsym : A.IsSymm := isHermitian_iff_isSymm.1 hA.isHermitian
-  obtain ⟨hk, hvec, hdone⟩ := preliminaryCG_lanczos_spec hsym b x₀ solveT fuel
+  obtain ⟨hk, hvec, hdone⟩ := preliminaryCG_lanczos_spec hsym b x₀ fuel
   refine ⟨hk, ?_, hvec, hdone⟩
   set L := s.lanczos with hL
   have hkg : L.k ≤ Krylov.grade T r₀ := by rw [hk]; exact min_le_right _ _
@@ -1198,12 +1224,14 @@ theorem equation_11_3_14 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x�
       | exact (hvec _ i.2).2.2
       | exact (hvec _ j.2).2.2
       | (rw [show (i : ℕ) - 1 = (j : ℕ) by omega]; exact (hvec _ j.2).2.2)
-  set y := Id.run (solveT L.k (lanczosTridiag L) (Krylov.firstVec (pcgBeta₀ A b x₀) L.k))
+  set y := Id.run (tridiagSolve pure L.k L.alpha L.beta (Krylov.firstVec (pcgBeta₀ A b x₀) L.k))
   have hy : Lanczos.tridiag T r₀ L.k *ᵥ y = Krylov.firstVec ‖r₀‖ L.k := by
     have hβ₀ : pcgBeta₀ A b x₀ = ‖r₀‖ := by
       simp only [r₀, T, toEuclideanLin_toLp, ← WithLp.toLp_sub]
       rfl
-    rw [← htri, hsolve _ _ _ (by rw [htri]; exact lanczos_tridiag_posDef hA r₀ hkg), hβ₀]
+    have hpd : (lanczosTridiag L).PosDef := by rw [htri]; exact lanczos_tridiag_posDef hA r₀ hkg
+    rw [← htri, ← hβ₀]
+    exact tridiagSolve_spec L.k L.alpha L.beta hpd _
   have hx : WithLp.toLp 2 s.x =
       WithLp.toLp 2 x₀ + ∑ j, y j • Arnoldi.vec T r₀ j := by
     rw [preliminaryCG_x, WithLp.toLp_add]
@@ -1224,12 +1252,10 @@ every invariant subspace containing `r₀`), of dimension `k_* = grade`; with `f
 run of (11.3.14) stops after exactly `k_*` passes with `A x = b`. From `equation_11_3_14` and
 `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`. -/
 theorem theorem_11_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
-    {solveT : (k : ℕ) → Matrix (Fin k) (Fin k) ℝ → (Fin k → ℝ) → Id (Fin k → ℝ)}
-    (hsolve : ∀ k (T : Matrix (Fin k) (Fin k) ℝ) c, T.PosDef → T *ᵥ Id.run (solveT k T c) = c)
     {fuel : ℕ}
     (hfuel : Module.finrank ℝ (Krylov.fullSubspace (toEuclideanLin A)
       (WithLp.toLp 2 b - toEuclideanLin A (WithLp.toLp 2 x₀))) ≤ fuel) :
-    let s := Id.run (preliminaryCG pure A b x₀ solveT fuel)
+    let s := Id.run (preliminaryCG pure A b x₀ fuel)
     let T := toEuclideanLin A
     let r₀ : 𝔼 n := WithLp.toLp 2 b - T (WithLp.toLp 2 x₀)
     (Krylov.fullSubspace T r₀ ∈ Module.End.invtSubmodule T ∧ r₀ ∈ Krylov.fullSubspace T r₀ ∧
@@ -1237,7 +1263,7 @@ theorem theorem_11_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ 
       s.lanczos.k = Module.finrank ℝ (Krylov.fullSubspace T r₀) ∧ s.lanczos.done = true ∧
       A *ᵥ s.x = b := by
   intro s T r₀
-  obtain ⟨hk, hgal, -, hdone⟩ := equation_11_3_14 hA b x₀ hsolve fuel
+  obtain ⟨hk, hgal, -, hdone⟩ := equation_11_3_14 hA b x₀ fuel
   have hk' : s.lanczos.k = Krylov.grade T r₀ := by
     rw [hk]; exact min_eq_right hfuel
   refine ⟨⟨Krylov.fullSubspace_mem_invtSubmodule T r₀,
@@ -1278,16 +1304,16 @@ theorem ldlTridiag_snd (α β : ℕ → ℝ) (i : ℕ) :
 `d₁, …, d_{k−1}` are nonzero, the symmetric tridiagonal matrix `T_k` with diagonal `α` and
 off-diagonal `β` (`Matrix.symmTridiagonalOf α β k`; the Lanczos `T_k` is
 `Lanczos.tridiag = Matrix.symmTridiagonalOf (Lanczos.alpha …) (Lanczos.beta …)`) factors as
-`L_kD_kL_kᵀ`, `L_k` unit lower bidiagonal with subdiagonal `ℓ` and `D_k = diag(d)`. For positive
-definite `T_k` the pivots are then positive (`Matrix.IsLDM.diag_pos_of_posDef`) and the
-factorization is unique (`Matrix.IsLDM.eq_of_isSymm`). -/
+`L_kD_kL_kᵀ`, `L_k` unit lower bidiagonal with subdiagonal `ℓ` and `D_k = diag(d)`: chapter 4's
+`Chapter04.tridiagonal_ldlt` (§4.3.6, the same recurrence). For positive definite `T_k` the
+pivots are then positive (`Matrix.IsLDM.diag_pos_of_posDef`) and the factorization is unique
+(`Matrix.IsLDM.eq_of_isSymm`). -/
 theorem equation_11_3_15 (α β : ℕ → ℝ) (k : ℕ)
     (hd : ∀ i, i + 1 < k → (ldlTridiag α β).1 i ≠ 0) :
     Matrix.IsLDM (Matrix.symmTridiagonalOf α β k)
       (Matrix.lowerBidiagonalOf (fun i => (ldlTridiag α β).2 (i - 1)) k)
       (Matrix.diagonal fun i : Fin k => (ldlTridiag α β).1 i)
       (Matrix.lowerBidiagonalOf (fun i => (ldlTridiag α β).2 (i - 1)) k) := by
-  have hLU := Matrix.isLU_tridiagonal_thomas α (fun i => β (i - 1)) β hd
   have hL : Matrix.lowerBidiagonalOf (fun i => (ldlTridiag α β).2 (i - 1)) k =
       Matrix.thomasLower α (fun i => β (i - 1)) β k := by
     ext i j
@@ -1296,35 +1322,13 @@ theorem equation_11_3_15 (α β : ℕ → ℝ) (k : ℕ)
     · rfl
     · rw [← h2]; rfl
     · rfl
-  have hU : Matrix.diagonal (fun i : Fin k => (ldlTridiag α β).1 i) *
-      (Matrix.lowerBidiagonalOf (fun i => (ldlTridiag α β).2 (i - 1)) k)ᵀ =
-      Matrix.thomasUpper α (fun i => β (i - 1)) β k := by
-    ext i j
-    rw [Matrix.diagonal_mul, Matrix.transpose_apply]
-    simp only [Matrix.lowerBidiagonalOf, Matrix.thomasUpper, Matrix.of_apply]
-    by_cases hij : i = j
-    · subst hij
-      simp only [↓reduceIte, mul_one]
-      rfl
-    · have hji : j ≠ i := Ne.symm hij
-      simp only [hji, hij, ↓reduceIte]
-      by_cases hs : (i : ℕ) + 1 = j
-      · simp only [hs, ↓reduceIte]
-        have hlt : (i : ℕ) + 1 < k := hs ▸ j.2
-        have hdi := hd i hlt
-        rw [← hs, Nat.add_sub_cancel, ldlTridiag_snd]
-        field_simp
-      · simp only [hs, ↓reduceIte, mul_zero]
   have hA' : Matrix.symmTridiagonalOf α β k =
       Matrix.tridiagonalOfNat α (fun i => β (i - 1)) β k := by
     ext i j
     simp only [Matrix.symmTridiagonalOf, Matrix.tridiagonalOfNat, Matrix.of_apply]
     split_ifs <;> first | rfl | (exfalso; omega) | (congr 1; omega)
-  refine ⟨?_, Matrix.isDiag_diagonal _, ?_, ?_⟩
-  · rw [hL]; exact hLU.isUnitLowerTriangular
-  · rw [hL]; exact hLU.isUnitLowerTriangular
-  · rw [Matrix.mul_assoc, hU, hL, hA']
-    exact hLU.mul_eq
+  rw [hL, hA']
+  exact Chapter04.tridiagonal_ldlt α β k hd
 
 /-- The recurrence **(11.3.20)** for the entries of `v_k`, 0-based: `ν₁ = β₀/d₁` and
 `ν_k = −d_{k−1}ℓ_{k−1}ν_{k−1}/d_k`. -/
@@ -1459,18 +1463,12 @@ section LanczosCG
 
 variable {M : Type → Type} [Monad M]
 
-/-- The book's vector division `r/β`: every entry divided by `β` and rounded. -/
-noncomputable def divVec (rnd : ℝ → M ℝ) (v : Fin n → ℝ) (β : ℝ) : M (Fin n → ℝ) :=
-  (List.finRange n).foldlM (fun y i => do
-    let t ← rnd (y i / β)
-    pure (Function.update y i t)) v
-
-/-- The exact run of `divVec` is `v/β`. -/
-theorem divVec_run (v : Fin n → ℝ) (β : ℝ) : Id.run (divVec pure v β) = fun i => v i / β := by
+/-- The exact run of chapter 10's `vecDiv` (the book's `r/β`), entrywise. -/
+private theorem vecDiv_run (v : Fin n → ℝ) (β : ℝ) :
+    Id.run (GolubVanLoan.Chapter10.vecDiv pure v β) = fun i => v i / β := by
+  rw [GolubVanLoan.Chapter10.vecDiv_spec]
   funext i
-  rw [divVec, List.idRun_foldlM_update_apply (fun _ t => (pure (t / β) : Id ℝ))
-    _ (List.nodup_finRange n), ite_eq_left (List.mem_finRange i)]
-  rfl
+  simp [div_eq_inv_mul]
 
 /-- The state of Algorithm 11.3.2: the step count `k`, the iterate `x_k`, the Lanczos vector `q_k`
 (`0` before the first step), the Lanczos residual `r_k` and `β_k = ‖r_k‖₂`, the last `α_k`, the
@@ -1520,15 +1518,14 @@ noncomputable def lanczosCGBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n
     (s : LanczosCGState n) : M (LanczosCGState n) :=
   if s.done then pure s else
     if s.β = 0 then pure { s with done := true } else do
-      let q ← divVec rnd s.r s.β
+      let q ← GolubVanLoan.Chapter10.vecDiv rnd s.r s.β
       let Aq ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A q 0
       let α ← GolubVanLoan.Chapter01.algorithm_1_1_1 rnd q Aq
       let o ← lanczosCGUpdate rnd (decide (s.k = 0)) α s.β s.d s.ν s.c q
       let x ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd o.2.1 o.2.2 s.x
       let r₁ ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd (-α) q Aq
       let r ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd (-s.β) s.q r₁
-      let rr ← GolubVanLoan.Chapter01.algorithm_1_1_1 rnd r r
-      let β ← rnd (√rr)
+      let β ← GolubVanLoan.Chapter10.vecNorm rnd r
       pure ⟨s.k + 1, x, q, r, β, α, o.1, o.2.1, o.2.2, false⟩
 
 /-- **Algorithm 11.3.2 (Conjugate Gradients: Lanczos Version).** "If `A ∈ ℝⁿˣⁿ` is symmetric
@@ -1557,8 +1554,7 @@ The `while` loop runs at most `fuel` times. -/
 noncomputable def algorithm_11_3_2 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : Fin n → ℝ) (fuel : ℕ) : M (LanczosCGState n) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
-  let rr ← GolubVanLoan.Chapter01.algorithm_1_1_1 rnd r₀ r₀
-  let β₀ ← rnd (√rr)
+  let β₀ ← GolubVanLoan.Chapter10.vecNorm rnd r₀
   (List.range fuel).foldlM (fun s _ => lanczosCGBody rnd A s) ⟨0, x₀, 0, r₀, β₀, 0, 0, 0, 0, false⟩
 
 /-- The exact run of the `if k = 1 … else … end` block. -/
@@ -1610,12 +1606,14 @@ private theorem lanczosCGBody_run (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosC
     · simp only [hd, h0, Bool.false_eq_true, ↓reduceIte, Id.run_pure]
     · by_cases hk : s.k = 0
       · simp only [hd, h0, hk, Bool.false_eq_true, ↓reduceIte, decide_true, Id.run_bind,
-          Id.run_pure, divVec_run, lanczosCGUpdate_run, GolubVanLoan.Chapter01.algorithm_1_1_1_spec,
+          Id.run_pure, vecDiv_run, lanczosCGUpdate_run, GolubVanLoan.Chapter10.vecNorm,
+          GolubVanLoan.Chapter01.algorithm_1_1_1_spec,
           GolubVanLoan.Chapter01.algorithm_1_1_2_spec, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
           zero_add, lanczosCGStep, lcgD, lcgNu, lcgC]
         rfl
       · simp only [hd, h0, hk, Bool.false_eq_true, ↓reduceIte, decide_false, Id.run_bind,
-          Id.run_pure, divVec_run, lanczosCGUpdate_run, GolubVanLoan.Chapter01.algorithm_1_1_1_spec,
+          Id.run_pure, vecDiv_run, lanczosCGUpdate_run, GolubVanLoan.Chapter10.vecNorm,
+          GolubVanLoan.Chapter01.algorithm_1_1_1_spec,
           GolubVanLoan.Chapter01.algorithm_1_1_2_spec, GolubVanLoan.Chapter01.algorithm_1_1_3_spec,
           zero_add, lanczosCGStep, lcgD, lcgNu, lcgC]
         rfl
@@ -1624,7 +1622,7 @@ private theorem lanczosCGBody_run (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosC
 private theorem algorithm_11_3_2_run_zero (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) :
     Id.run (algorithm_11_3_2 pure A b x₀ 0) =
       ⟨0, x₀, 0, b - A *ᵥ x₀, √((b - A *ᵥ x₀) ⬝ᵥ (b - A *ᵥ x₀)), 0, 0, 0, 0, false⟩ := by
-  simp only [algorithm_11_3_2, Id.run_bind, Id.run_pure,
+  simp only [algorithm_11_3_2, GolubVanLoan.Chapter10.vecNorm, Id.run_bind, Id.run_pure,
     GolubVanLoan.Chapter01.algorithm_1_1_3_spec, GolubVanLoan.Chapter01.algorithm_1_1_1_spec,
     List.range_zero, List.foldlM_nil, mulVec_neg, ← sub_eq_add_neg]
 
@@ -1632,7 +1630,7 @@ private theorem algorithm_11_3_2_run_zero (A : Matrix (Fin n) (Fin n) ℝ) (b x�
 private theorem algorithm_11_3_2_run_succ (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (m : ℕ) : Id.run (algorithm_11_3_2 pure A b x₀ (m + 1)) =
       Id.run (lanczosCGBody pure A (Id.run (algorithm_11_3_2 pure A b x₀ m))) := by
-  simp only [algorithm_11_3_2, Id.run_bind, Id.run_pure,
+  simp only [algorithm_11_3_2, GolubVanLoan.Chapter10.vecNorm, Id.run_bind, Id.run_pure,
     GolubVanLoan.Chapter01.algorithm_1_1_1_spec]
   exact List.idRun_foldlM_range_succ _ _ _
 

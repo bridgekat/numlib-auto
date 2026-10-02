@@ -17,7 +17,7 @@ From this section on the book works with real matrices, `A ∈ ℝ^{n×n}`, whic
 `Matrix (Fin n) (Fin n) ℝ`; "orthogonal" is membership in `Matrix.orthogonalGroup (Fin n) ℝ`, that
 is `Q Qᵀ = 1`. The QR factorization of a step is the one with a positive diagonal, `Matrix.qrQ`,
 `Matrix.qrR` of the backbone (Gram–Schmidt on the columns, which is what Program 28 does with
-`mod_grams`); by the uniqueness of that factorization (`Matrix.qr_unique`) a Householder or
+`mod_grams`); by the uniqueness of that factorization (`Matrix.IsThinQR.unique`) a Householder or
 Givens factorization gives the same factors at a nonsingular iterate. The iteration (5.32) is
 written as the book writes it, as the recursion `qrIterate` starting from `T⁽⁰⁾ = A` (the choice
 `Q⁽⁰⁾ = I` of §5.5), and `qrIterate_eq` identifies it with `Matrix.qrIterate`; for a general
@@ -151,8 +151,8 @@ theorem qrAccum_not_tendsto :
     rw [h]
     exact isUnit_one
   have hqr : qrQ A = A ∧ qrR A = 1 :=
-    qr_unique (qrQ_mul_qrR A).symm (Matrix.mul_one A).symm (conjTranspose_qrQ_mul_self A) hAA
-      (isUpperTriangular_qrR A) blockTriangular_one (qrR_diag_pos hdet) (fun j => by simp)
+    IsThinQR.unique ⟨qrQ_mul_qrR A, conjTranspose_qrQ_mul_self A, isUpperTriangular_qrR A⟩
+      ⟨Matrix.mul_one A, hAA, blockTriangular_one⟩ (qrR_diag_pos hdet) (fun j => by simp)
   have hfix : ∀ k, Matrix.qrIterate A k = A := by
     intro k
     induction k with

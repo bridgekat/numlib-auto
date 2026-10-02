@@ -41,7 +41,7 @@ no finite dimensionality used.
   an accretive inverse, which is one line: with `x = B^-1 y`, the two quadratic forms are complex
   conjugates.
 * **§1.8.3, the quasi-Schur (real Schur) form** is now proved, as `realSchur` over the backbone
-  `Matrix.exists_orthogonal_conj_quasiUpperTriangular`. The plan's route to the invariant subspace
+  `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`. The plan's route to the invariant subspace
   - complexify and take the real span of the real and imaginary parts of a complex eigenvector -
   was not the cheapest: Cayley-Hamilton plus "an irreducible real polynomial has degree at most
   two" (`Irreducible.natDegree_le_two`, which Mathlib has) gives an irreducible `q` and a nonzero
