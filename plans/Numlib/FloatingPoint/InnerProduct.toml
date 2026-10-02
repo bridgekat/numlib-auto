@@ -62,3 +62,17 @@ id = "roundsSumFrom_exact_iff"
 
 [[node]]
 id = "roundsDot_comp_equiv_iff"
+
+[[node]]
+id = "exists_roundsSumFrom_map_eq_add_sum_one_add_pow"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, (3.2)"
+
+[[node]]
+id = "exists_roundsSumFrom_map_eq_add_sum"
+
+[[node]]
+id = "RoundsRunningDiff"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 8.4"
+
+[[node]]
+id = "roundsRunningDiff_exact_iff"

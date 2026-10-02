@@ -379,13 +379,13 @@ theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     exact hv j k (mem_lt.2 hkj)
   · intro j
     obtain ⟨p, hp, hs⟩ := hd j
-    refine ⟨lt j, p, nodup_lt j, fun k => mem_lt, fun k hk => ?_, ?_⟩
+    refine ⟨lt j, nodup_lt j, fun k => mem_lt, p, fun k hk => ?_, ?_⟩
     · rw [hL j k (mem_lt.1 hk)]
       exact hp k hk
     · rwa [diagonal_apply_eq, diag_apply]
   · intro i j hji
     obtain ⟨t, ⟨p, hp, hs⟩, hl⟩ := hcol j i hji
-    refine ⟨lt j, p, t, nodup_lt j, fun k => mem_lt, fun k hk => ?_, hs, ?_⟩
+    refine ⟨lt j, t, nodup_lt j, fun k => mem_lt, ⟨p, fun k hk => ?_, hs⟩, ?_⟩
     · rw [hL i k (lt_trans (mem_lt.1 hk) hji)]
       exact hp k hk
     · rw [diagonal_apply_eq, diag_apply, hL i j hji]
@@ -420,11 +420,11 @@ private theorem mul_mul_transpose_apply_of_roundsLDL_exact {A L D : Matrix (Fin 
     rw [hp t ((ho t).2 htk), hV' k t htk]
     ring
   rcases eq_or_lt_of_le hki with rfl | hki'
-  · obtain ⟨o, p, hnd, ho, hp, hs⟩ := hpiv k
+  · obtain ⟨o, hnd, ho, p, hp, hs⟩ := hpiv k
     rw [(roundsSumFrom_exact_map_neg_iff hnd).1 hs, hsum k o hnd ho p hp, h.lower_diag, mul_one,
       one_mul]
     ring
-  · obtain ⟨o, p, t, hnd, ho, hp, hs, hl⟩ := hcol i k hki'
+  · obtain ⟨o, t, hnd, ho, ⟨p, hp, hs⟩, hl⟩ := hcol i k hki'
     rw [RoundingModel.exact_rounds_iff] at hl
     rw [hl, (roundsSumFrom_exact_map_neg_iff hnd).1 hs, hsum i o hnd ho p hp, h.lower_diag,
       mul_one, div_mul_cancel₀ _ (hd hki')]

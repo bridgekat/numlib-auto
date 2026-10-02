@@ -73,11 +73,11 @@ private theorem isRelPert_givens_branch {m : RoundingModel ℝ} (hu : ((13 : ℕ
     (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hj) hu0).trans_lt hu
   have hu1 : m.u < 1 := by simpa using hlt 1 (by omega)
   have ht₁ : IsRelPert m.u 3 (τ * τ) t₁ :=
-    (hτ.mul hu0 (k := 1) (j := 1) (hlt 2 (by omega)) hτ).rounds hu1 (hlt 3 (by omega)) h₁
+    (hτ.mul hu0 (k := 1) (j := 1) (hlt 2 (by omega)) hτ).rounds (hlt 3 (by omega)) h₁
   have h1 : IsRelPert m.u 3 (1 : ℝ) 1 :=
     (IsRelPert.refl _ _).mono hu0 (Nat.zero_le _) (hlt 3 (by omega))
   have ht₂ : IsRelPert m.u 4 (1 + τ * τ) t₂ :=
-    (IsRelPert.add_of_nonneg zero_le_one (mul_self_nonneg τ) h1 ht₁).rounds hu1
+    (IsRelPert.add_of_nonneg zero_le_one (mul_self_nonneg τ) h1 ht₁).rounds
       (hlt 4 (by omega)) h₂
   have hg : gamma m.u 4 ≤ 1 := (gamma_lt_one hu0 (by
     have := hlt 8 (by omega)
@@ -85,12 +85,12 @@ private theorem isRelPert_givens_branch {m : RoundingModel ℝ} (hu : ((13 : ℕ
     linarith)).le
   have hsq : IsRelPert m.u 4 (√(1 + τ * τ)) (√t₂) :=
     ht₂.sqrt hg (add_nonneg zero_le_one (mul_self_nonneg τ))
-  have hr' : IsRelPert m.u 5 (√(1 + τ * τ)) r := hsq.rounds hu1 (hlt 5 (by omega)) hr
+  have hr' : IsRelPert m.u 5 (√(1 + τ * τ)) r := hsq.rounds (hlt 5 (by omega)) hr
   have hx' : IsRelPert m.u 11 (1 / √(1 + τ * τ)) x :=
-    ((IsRelPert.refl m.u (1 : ℝ)).div hu0 (k := 0) (j := 5) (hlt 10 (by omega)) hr').rounds hu1
+    ((IsRelPert.refl m.u (1 : ℝ)).div hu0 (k := 0) (j := 5) (hlt 10 (by omega)) hr').rounds
       (hlt 11 (by omega)) hx
   have hy' : IsRelPert m.u 13 (1 / √(1 + τ * τ) * τ) y :=
-    (hx'.mul hu0 (k := 11) (j := 1) (hlt 12 (by omega)) hτ).rounds hu1 (hlt 13 le_rfl) hy
+    (hx'.mul hu0 (k := 11) (j := 1) (hlt 12 (by omega)) hτ).rounds (hlt 13 le_rfl) hy
   exact ⟨hx'.mono hu0 (by omega) hu, hy'⟩
 
 /-- `(1 / √(1 + τ²))² (1 + τ²) = 1`. -/
@@ -156,7 +156,7 @@ theorem RoundsGivensPairDirect.isRelPert {m : RoundingModel ℝ} (hu : ((7 : ℕ
   have hu1 : m.u < 1 := by simpa using hlt 1 (by omega)
   have ht' : IsRelPert m.u 2 (a * a + b * b) t :=
     (IsRelPert.add_of_nonneg (mul_self_nonneg a) (mul_self_nonneg b) (hp.isRelPert hu1)
-      (hq.isRelPert hu1)).rounds hu1 (hlt 2 (by omega)) ht
+      (hq.isRelPert hu1)).rounds (hlt 2 (by omega)) ht
   have hg : gamma m.u 2 ≤ 1 := (gamma_lt_one hu0 (by
     have := hlt 4 (by omega)
     push_cast at this ⊢
@@ -164,9 +164,9 @@ theorem RoundsGivensPairDirect.isRelPert {m : RoundingModel ℝ} (hu : ((7 : ℕ
   have hsq := ht'.sqrt hg (add_nonneg (mul_self_nonneg a) (mul_self_nonneg b))
   have hr' : IsRelPert m.u 3 (√(a ^ 2 + b ^ 2)) r := by
     rw [sq, sq]
-    exact hsq.rounds hu1 (hlt 3 (by omega)) hr
+    exact hsq.rounds (hlt 3 (by omega)) hr
   have hdiv : ∀ {x z : ℝ}, m.Rounds (x / r) z → IsRelPert m.u 7 (x / √(a ^ 2 + b ^ 2)) z :=
-    fun hz => ((IsRelPert.refl _ _).div hu0 (k := 0) (j := 3) (hlt 6 (by omega)) hr').rounds hu1
+    fun hz => ((IsRelPert.refl _ _).div hu0 (k := 0) (j := 3) (hlt 6 (by omega)) hr').rounds
       (hlt 7 le_rfl) hz
   exact ⟨hdiv hc, hdiv hs⟩
 
@@ -251,7 +251,7 @@ theorem abs_sub_le_of_roundsGivensApply {m : RoundingModel ℝ} {n : ℕ}
     have : IsRelPert m.u n (a * z) (ah * z) := by
       obtain ⟨θ, hθ, rfl⟩ := ha
       exact ⟨θ, hθ, by ring⟩
-    exact this.rounds hu1 hn1 hw
+    exact this.rounds hn1 hw
   refine ⟨?_, ?_, hrest⟩
   · have hq' : IsRelPert m.u (n + 1) (-(s * x k)) (-q₁) := by
       simpa using (hprod hs hq₁).const_mul (-1)

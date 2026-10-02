@@ -537,7 +537,7 @@ theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
   refine ⟨fun i k hik => by simp [strictUpper, hik], t, sh, fun j => ?_, fun j => ?_,
     fun j => ?_, fun i j hji => ?_⟩
   · obtain ⟨p, hp, hsum⟩ := hpiv j
-    refine ⟨below j, p, nodup_below j, fun k => mem_below, fun k hk => ?_, hsum⟩
+    refine ⟨below j, nodup_below j, fun k => mem_below, p, fun k hk => ?_, hsum⟩
     rw [hG j k (mem_below.1 hk).le]
     exact hp k hk
   · -- the pivot is positive
@@ -551,7 +551,7 @@ theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     exact ⟨Real.sqrt (t j), Real.sqrt_nonneg _, Real.mul_self_sqrt ht, hs j⟩
   · rw [hG j j le_rfl]; exact hjj j
   · obtain ⟨r, ⟨p, hp, hsum⟩, hl⟩ := hcol j i hji
-    refine ⟨below j, p, r, nodup_below j, fun k => mem_below, fun k hk => ?_, hsum, ?_⟩
+    refine ⟨below j, r, nodup_below j, fun k => mem_below, ⟨p, fun k hk => ?_, hsum⟩, ?_⟩
     · rw [hG i k (lt_trans (mem_below.1 hk) hji).le, hG j k (mem_below.1 hk).le]
       exact hp k hk
     · rw [hG i j hji.le]; exact hl

@@ -29,15 +29,6 @@ id = "SetM.run_foldlM_nonempty"
 id = "ite_pure"
 
 [[node]]
-id = "List.FoldlRel"
-
-[[node]]
-id = "List.FoldlRel.append"
-
-[[node]]
-id = "SetM.mem_run_foldlM_iff_foldlRel"
-
-[[node]]
 id = "SetM.forall_mem_run_foldlM"
 
 [[node]]
@@ -81,9 +72,6 @@ id = "FloatingPoint.abs_sub_le_of_mem_run_dotAccum"
 id = "FloatingPoint.dotAccum_pure"
 
 [[node]]
-id = "FloatingPoint.roundsSumFrom_iff_foldlRel"
-
-[[node]]
 id = "SetM.forall_mem_run_foldlM_update_of_nodup"
 
 [[node]]
@@ -109,3 +97,25 @@ id = "FloatingPoint.eq_or_rounds_of_mem_run_dotAccum"
 
 [[node]]
 id = "FloatingPoint.exists_of_mem_run_foldlM_sub"
+
+[[node]]
+id = "FloatingPoint.runningDiff"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 8.4"
+
+[[node]]
+id = "FloatingPoint.runningDiff_id"
+
+[[node]]
+id = "FloatingPoint.mem_run_runningDiff_iff"
+
+[[node]]
+id = "FloatingPoint.mem_run_runningDiff_exact_iff"
+
+[[node]]
+id = "Matrix.foldlM_updateRow_entrywise"
+
+[[node]]
+id = "Matrix.idRun_foldlM_updateRow_apply"
+
+[[node]]
+id = "Matrix.foldl_updateCol_apply"

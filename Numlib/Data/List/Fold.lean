@@ -18,7 +18,8 @@ general facts about such folds that the proofs about algorithms keep needing.
 * **Invariants.** `List.foldl_prefix_induction` (an invariant indexed by the processed prefix),
   `List.foldl_induction` (indexed by the step count, the `List` twin of core's
   `Array.foldl_induction`), `List.foldl_finRange_induction`, and their `Id` forms
-  `List.idRun_foldlM_induction`, `List.idRun_foldlM_finRange_induction`. An invariant independent
+  `List.idRun_foldlM_induction` (with `List.idRun_foldlM_induction'` for a step quantified over
+  natural indices), `List.idRun_foldlM_finRange_induction`. An invariant independent
   of the step is core's `List.foldlRecOn`.
 * **Restructuring a loop.** `List.foldlM_hom` (a loop commutes with a map of states that
   intertwines its steps), `List.foldlM_flatMap` (a loop over a `flatMap` is a loop of loops),
@@ -148,6 +149,15 @@ theorem idRun_foldlM_induction {α β : Type u} {l : List α} (motive : ℕ → 
     motive l.length (l.foldlM f init).run := by
   rw [idRun_foldlM]
   exact foldl_induction motive h0 hf
+
+/-- **A loop invariant in exact arithmetic, indexed by the step count**, with the step quantified
+over natural indices below the length: `List.idRun_foldlM_induction` for invariants stated on
+`l[k]` with `k : ℕ`. -/
+theorem idRun_foldlM_induction' {α β : Type u} (l : List α) (motive : ℕ → β → Prop) {init : β}
+    (h0 : motive 0 init) {f : β → α → Id β}
+    (hf : ∀ (k : ℕ) (hk : k < l.length) (b : β), motive k b → motive (k + 1) (f b l[k]).run) :
+    motive l.length (l.foldlM f init).run :=
+  idRun_foldlM_induction motive h0 fun i b hb => hf i i.2 b hb
 
 /-- **A loop invariant for a loop over `List.finRange n` in exact arithmetic**: the `Id` form of
 `List.foldl_finRange_induction`. -/

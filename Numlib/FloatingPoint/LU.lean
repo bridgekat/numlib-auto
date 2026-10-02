@@ -101,14 +101,12 @@ structure RoundsLU (m : RoundingModel K) (A L U : Matrix n n K) : Prop where
   /-- `U` vanishes below the diagonal. -/
   upper_apply_eq_zero : ∀ i j, j < i → U i j = 0
   /-- The entries of `U`: `u_ij = a_ij - ∑_{r < i} l_ir u_rj`, by running differences. -/
-  upper : ∀ i j, i ≤ j → ∃ (o : List n) (p : n → K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
-    (∀ r ∈ o, m.Rounds (L i r * U r j) (p r)) ∧
-    RoundsSumFrom m (A i j) (o.map fun r => -p r) (U i j)
+  upper : ∀ i j, i ≤ j → ∃ o : List n, o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
+    RoundsRunningDiff m o (L i) (fun r => U r j) (A i j) (U i j)
   /-- The entries of `L`: `l_ij = (a_ij - ∑_{r < j} l_ir u_rj) / u_jj`, by running differences
   and one rounded division. -/
-  lower : ∀ i j, j < i → ∃ (o : List n) (p : n → K) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
-    (∀ r ∈ o, m.Rounds (L i r * U r j) (p r)) ∧
-    RoundsSumFrom m (A i j) (o.map fun r => -p r) t ∧ m.Rounds (t / U j j) (L i j)
+  lower : ∀ i j, j < i → ∃ (o : List n) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
+    RoundsRunningDiff m o (L i) (fun r => U r j) (A i j) t ∧ m.Rounds (t / U j j) (L i j)
 
 variable {m : RoundingModel K} {A L U : Matrix n n K}
 
@@ -139,12 +137,10 @@ theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : 
   rw [h.isLU_mul.apply_eq_sum i j, h.abs_mul_abs_apply i j]
   rcases le_or_gt i j with hij | hji
   · -- the entry `u_ij`
-    obtain ⟨o, p, hnd, ho, hp, ht⟩ := h.upper i j hij
-    have hset : o.toFinset = univ.filter (· < i) := by ext r; simp [ho]
-    have hlen : o.length + 1 = #{r | r ≤ i} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card i
+    obtain ⟨o, hnd, ho, p, hp, ht⟩ := h.upper i j hij
+    beta_reduce at hp
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard
     have hl : (o.length : K) * m.u < 1 := by
@@ -190,15 +186,12 @@ theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : 
       _ = gamma m.u (Fintype.card n) * (∑ r ∈ o.toFinset, |L i r| * |U r j| + |U i j|) := by
           rw [mul_add, Finset.mul_sum]
   · -- the entry `l_ij`
-    obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := h.lower i j hji
-    have hset : o.toFinset = univ.filter (· < j) := by ext r; simp [ho]
-    have hlen : o.length + 1 = #{r | r ≤ j} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card j
+    obtain ⟨o, t, hnd, ho, ht, hx⟩ := h.lower i j hji
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard
-    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hp (hd j i hji) ht hx hlu
+    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd (hd j i hji) ht hx hlu
     have hmono := gamma_mono m.u_nonneg hle hcard
     rw [min_eq_right hji.le, Matrix.sum_filter_le_eq_add, Matrix.sum_filter_le_eq_add, ← hset]
     have hkey : ∑ r ∈ o.toFinset, L i r * U r j + L i j * U j j - A i j =
@@ -236,29 +229,6 @@ theorem exists_roundsLU_mul_eq_add (hu : m.u < 1) (hcard : (Fintype.card n : K) 
       L * U = A + ΔA :=
   ⟨L * U - A, fun i j => h.abs_mul_sub_apply_le hu hcard hd i j, by abel⟩
 
-/-- `3 γ_n + γ_n² ≤ γ_{3n}`, the constant of [higham2002accuracy] Theorem 9.4, from Lemma 3.3
-twice. -/
-theorem three_mul_gamma_add_sq_le {u : K} (hu : 0 ≤ u) {k : ℕ} (h : ((3 * k : ℕ) : K) * u < 1) :
-    3 * gamma u k + gamma u k ^ 2 ≤ gamma u (3 * k) := by
-  have h2 : ((k + k : ℕ) : K) * u < 1 := by
-    have : ((k + k : ℕ) : K) * u ≤ ((3 * k : ℕ) : K) * u := by
-      push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) k) hu]
-    linarith
-  have h3 : ((k + k + k : ℕ) : K) * u < 1 := by
-    have : ((k + k + k : ℕ) : K) = ((3 * k : ℕ) : K) := by push_cast; ring
-    rwa [this]
-  have hk : (k : K) * u < 1 := by
-    have : (k : K) * u ≤ ((3 * k : ℕ) : K) * u := by
-      push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) k) hu]
-    linarith
-  have hg := gamma_nonneg hu hk
-  have hA := gamma_add_gamma_add_mul_le hu (j := k) (k := k) h2
-  have hB := gamma_add_gamma_add_mul_le hu (j := k + k) (k := k) h3
-  have hg2 : 0 ≤ gamma u (k + k) := gamma_nonneg hu h2
-  have h3k : k + k + k = 3 * k := by ring
-  rw [h3k] at hB
-  nlinarith [mul_nonneg hg2 hg]
-
 /-! ### The exact model -/
 
 section Exact
@@ -288,20 +258,14 @@ theorem roundsLU_exact_iff {A L U : Matrix n n K} :
     -- the recurrences satisfied by the factors
     have hU : ∀ i j, i ≤ j → U i j = A i j - ∑ r ∈ univ.filter (· < i), L i r * U r j := by
       intro i j hij
-      obtain ⟨o, p, hnd, ho, hp, ht⟩ := h.upper i j hij
-      have hset : o.toFinset = univ.filter (· < i) := by ext r; simp [ho]
-      rw [(roundsSumFrom_exact_map_neg_iff hnd).1 ht, hset]
-      congr 1
-      exact Finset.sum_congr rfl fun r hr => hp r ((ho r).2 (mem_filter.1 hr).2)
+      obtain ⟨o, hnd, ho, ht⟩ := h.upper i j hij
+      rw [ht.eq_of_exact hnd, toFinset_eq_filter_lt_of_forall_mem_iff ho]
     have hL : ∀ i j, j < i →
         L i j = (A i j - ∑ r ∈ univ.filter (· < j), L i r * U r j) / U j j := by
       intro i j hij
-      obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := h.lower i j hij
-      have hset : o.toFinset = univ.filter (· < j) := by ext r; simp [ho]
+      obtain ⟨o, t, hnd, ho, ht, hx⟩ := h.lower i j hij
       rw [RoundingModel.exact_rounds_iff] at hx
-      rw [hx, (roundsSumFrom_exact_map_neg_iff hnd).1 ht, hset]
-      congr 2
-      exact Finset.sum_congr rfl fun r hr => hp r ((ho r).2 (mem_filter.1 hr).2)
+      rw [hx, ht.eq_of_exact hnd, toFinset_eq_filter_lt_of_forall_mem_iff ho]
     -- the packed recurrence agrees with the factors, by induction along `min i j`
     have key : ∀ k i j, min i j = k →
         (i ≤ j → A.luPacked i j = U i j) ∧ (j < i → A.luPacked i j = L i j) := by
@@ -343,18 +307,17 @@ theorem roundsLU_exact_iff {A L U : Matrix n n K} :
     · simp [Matrix.luLower, hij.not_gt, hij.ne]
     · simp [Matrix.luLower]
     · simp [Matrix.luUpper, not_le.2 hij]
-    · refine ⟨(univ.filter (· < i)).toList, fun r => A.luLower i r * A.luUpper r j,
-        Finset.nodup_toList _, fun r => by simp, fun _ _ => rfl, ?_⟩
-      rw [roundsSumFrom_exact_map_neg_iff (Finset.nodup_toList _), Finset.toList_toFinset,
-        luUpper_apply_of_le A hij, Matrix.luPacked_of_le A hij]
+    · refine ⟨(univ.filter (· < i)).toList, Finset.nodup_toList _, fun r => by simp, ?_⟩
+      rw [roundsRunningDiff_exact_iff, ← List.sum_toFinset _ (Finset.nodup_toList _),
+        Finset.toList_toFinset, luUpper_apply_of_le A hij, Matrix.luPacked_of_le A hij]
       congr 1
       refine Finset.sum_congr rfl fun r hr => ?_
       have hr' := (mem_filter.1 hr).2
       rw [luLower_apply_of_lt A hr', luUpper_apply_of_le A (hr'.le.trans hij)]
-    · refine ⟨(univ.filter (· < j)).toList, fun r => A.luLower i r * A.luUpper r j,
+    · refine ⟨(univ.filter (· < j)).toList,
         A i j - ∑ r ∈ (univ.filter (· < j)).toList.toFinset, A.luLower i r * A.luUpper r j,
-        Finset.nodup_toList _, fun r => by simp, fun _ _ => rfl,
-        (roundsSumFrom_exact_map_neg_iff (Finset.nodup_toList _)).2 rfl, ?_⟩
+        Finset.nodup_toList _, fun r => by simp,
+        roundsRunningDiff_exact_iff.2 (by rw [List.sum_toFinset _ (Finset.nodup_toList _)]), ?_⟩
       rw [RoundingModel.exact_rounds_iff, Finset.toList_toFinset, luLower_apply_of_lt A hij,
         Matrix.luPacked_of_lt A hij, luUpper_apply_of_le A le_rfl]
       congr 2
@@ -484,24 +447,6 @@ theorem abs_entrywiseLE_of_abs_mul_eq {A L U ΔA : Matrix n n K} {γ : K} (hγ :
   rw [div_mul_eq_mul_div, le_div_iff₀ h1]
   nlinarith
 
-/-- `γ_k / (1 - γ_k) = k u / (1 - 2 k u)`. -/
-theorem gamma_div_one_sub_gamma {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
-    gamma u k / (1 - gamma u k) = k * u / (1 - 2 * (k * u)) := by
-  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
-  have h1 : (1 : K) - k * u ≠ 0 := by linarith
-  have h2 : (1 : K) - 2 * (k * u) ≠ 0 := by linarith
-  have : 1 - gamma u k = (1 - 2 * (k * u)) / (1 - k * u) := by
-    rw [gamma_def]
-    field_simp
-    ring
-  rw [this, gamma_def, div_div_div_cancel_right₀ h1]
-
-/-- `γ_k < 1` when `2 k u < 1`. -/
-theorem gamma_lt_one {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k < 1 := by
-  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
-  rw [gamma_def, div_lt_one (by linarith)]
-  linarith
-
 variable {m : RoundingModel K} {A L U : Matrix n n K}
 
 /-- **[quarteroni2000numerical] (3.41)**, [higham2002accuracy] (9.8): when the computed LU
@@ -626,13 +571,13 @@ structure RoundsCholesky (m : RoundingModel K) (A R : Matrix n n K) : Prop where
   /-- `R` vanishes below the diagonal. -/
   apply_eq_zero : ∀ i j, j < i → R i j = 0
   /-- The diagonal: `r_jj = √(a_jj - ∑_{r < j} r_rj²)`. -/
-  diag : ∀ j, ∃ (o : List n) (p : n → K) (t s : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
-    (∀ r ∈ o, m.Rounds (R r j * R r j) (p r)) ∧
-    RoundsSumFrom m (A j j) (o.map fun r => -p r) t ∧ 0 ≤ s ∧ s * s = t ∧ m.Rounds s (R j j)
+  diag : ∀ j, ∃ (o : List n) (t s : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
+    RoundsRunningDiff m o (fun r => R r j) (fun r => R r j) (A j j) t ∧ 0 ≤ s ∧ s * s = t ∧
+      m.Rounds s (R j j)
   /-- Above the diagonal: `r_ij = (a_ij - ∑_{r < i} r_ri r_rj) / r_ii`. -/
-  offDiag : ∀ i j, i < j → ∃ (o : List n) (p : n → K) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
-    (∀ r ∈ o, m.Rounds (R r i * R r j) (p r)) ∧
-    RoundsSumFrom m (A i j) (o.map fun r => -p r) t ∧ m.Rounds (t / R i i) (R i j)
+  offDiag : ∀ i j, i < j → ∃ (o : List n) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
+    RoundsRunningDiff m o (fun r => R r i) (fun r => R r j) (A i j) t ∧
+      m.Rounds (t / R i i) (R i j)
 
 /-- The entry `(i, j)` of `Rᵀ R` for an upper triangular `R` is `∑_{r ≤ min i j} r_ri r_rj`. -/
 theorem RoundsCholesky.transpose_mul_apply (h : RoundsCholesky m A R) (i j : n) :
@@ -689,12 +634,10 @@ theorem RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le (hu : m.u < 1)
     Matrix.sum_filter_le_eq_add, Matrix.sum_filter_le_eq_add]
   rcases hij.eq_or_lt with rfl | hlt
   · -- the diagonal
-    obtain ⟨o, p, t, s, hnd, ho, hp, ht, hs0, hs, hR⟩ := h.diag i
-    have hset : o.toFinset = univ.filter (· < i) := by ext r; simp [ho]
-    have hlen : o.length + 1 = #{r | r ≤ i} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card i
+    obtain ⟨o, t, s, hnd, ho, ⟨p, hp, ht⟩, hs0, hs, hR⟩ := h.diag i
+    beta_reduce at hp
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hle2 : o.length + 2 ≤ Fintype.card n + 1 := by omega
     have hlu2 : ((o.length + 2 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle2) m.u_nonneg).trans_lt hcard
@@ -754,15 +697,12 @@ theorem RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le (hu : m.u < 1)
             (∑ r ∈ o.toFinset, |R r i| * |R r i| + |R i i| * |R i i|) := by
           rw [mul_add, Finset.mul_sum]
   · -- above the diagonal
-    obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := h.offDiag i j hlt
-    have hset : o.toFinset = univ.filter (· < i) := by ext r; simp [ho]
-    have hlen : o.length + 1 = #{r | r ≤ i} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card i
+    obtain ⟨o, t, hnd, ho, ht, hx⟩ := h.offDiag i j hlt
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard'
-    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hp (hd i) ht hx hlu
+    obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd (hd i) ht hx hlu
     have hmono := (gamma_mono m.u_nonneg hle hcard').trans hmonon
     rw [← hset]
     have hkey : ∑ r ∈ o.toFinset, R r i * R r j + R i i * R i j - A i j =
@@ -890,12 +830,10 @@ structure RoundsLDL (m : RoundingModel K) (A L D : Matrix n n K) : Prop where
   isDiag : D.IsDiag
   /-- The recurrence, with the rounded products `V j k = fl(l_jk d_k)` of the algorithm. -/
   exists_rounds : ∃ V : Matrix n n K, (∀ j k, k < j → m.Rounds (L j k * D k k) (V j k)) ∧
-    (∀ j, ∃ (o : List n) (p : n → K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
-      (∀ k ∈ o, m.Rounds (L j k * V j k) (p k)) ∧
-      RoundsSumFrom m (A j j) (o.map fun k => -p k) (D j j)) ∧
-    (∀ i j, j < i → ∃ (o : List n) (p : n → K) (t : K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
-      (∀ k ∈ o, m.Rounds (L i k * V j k) (p k)) ∧
-      RoundsSumFrom m (A i j) (o.map fun k => -p k) t ∧ m.Rounds (t / D j j) (L i j))
+    (∀ j, ∃ o : List n, o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
+      RoundsRunningDiff m o (L j) (V j) (A j j) (D j j)) ∧
+    (∀ i j, j < i → ∃ (o : List n) (t : K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
+      RoundsRunningDiff m o (L i) (V j) (A i j) t ∧ m.Rounds (t / D j j) (L i j))
 
 variable {m : RoundingModel K} {A L D : Matrix n n K}
 
@@ -923,20 +861,12 @@ theorem RoundsLDL.abs_mul_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
   rw [Matrix.mul_mul_transpose_apply_of_isDiag h.lower_apply_eq_zero h.isDiag,
     h.abs_mul_mul_transpose_abs_apply, min_eq_right hji, Matrix.sum_filter_le_eq_add,
     Matrix.sum_filter_le_eq_add]
-  -- the number of terms
-  have hcount : ∀ o : List n, o.Nodup → (∀ k, k ∈ o ↔ k < j) →
-      o.toFinset = univ.filter (· < j) ∧ o.length + 1 ≤ Fintype.card n := by
-    intro o hnd ho
-    have hset : o.toFinset = univ.filter (· < j) := by ext k; simp [ho]
-    have hlen : o.length + 1 = #{k | k ≤ j} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    exact ⟨hset, hlen ▸ card_filter_le_le_card j⟩
   rcases hji.eq_or_lt with hij | hlt
   · -- the diagonal
     rw [← hij]
-    obtain ⟨o, p, hnd, ho, hp, ht⟩ := hdiag j
-    obtain ⟨hset, hle⟩ := hcount o hnd ho
+    obtain ⟨o, hnd, ho, p, hp, ht⟩ := hdiag j
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hl : (o.length : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) m.u_nonneg).trans_lt hcard'
     have hlu2 : ((o.length + 2 : ℕ) : K) * m.u < 1 :=
@@ -961,14 +891,15 @@ theorem RoundsLDL.abs_mul_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
         ring)
     simpa only [abs_mul] using key
   · -- below the diagonal
-    obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := hoff i j hlt
-    obtain ⟨hset, hle⟩ := hcount o hnd ho
+    obtain ⟨o, t, hnd, ho, ht, hx⟩ := hoff i j hlt
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hlu1 : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) m.u_nonneg).trans_lt hcard'
     have hlu2 : ((o.length + 1 + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) m.u_nonneg).trans_lt hcard
     obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ :=
-      exists_rounds_sub_dot_div_eq hu hnd hp (hd j i hlt) ht hx hlu1
+      exists_rounds_sub_dot_div_eq hu hnd (hd j i hlt) ht hx hlu1
     choose! η hη hVη using fun k (hk : k ∈ o) => (hV j k ((ho k).1 hk)).exists_delta
     have hmono := gamma_mono m.u_nonneg (show o.length + 1 + 1 ≤ Fintype.card n + 1 by omega)
       hcard
@@ -1143,14 +1074,12 @@ structure RoundsCholeskyDiv (m : RoundingModel K) (A G : Matrix n n K) : Prop wh
   apply_eq_zero : ∀ i j, i < j → G i j = 0
   /-- The recurrence, with the pivots `t j` and their rounded square roots `sh j`. -/
   exists_rounds : ∃ t sh : n → K,
-    (∀ j, ∃ (o : List n) (p : n → K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
-      (∀ k ∈ o, m.Rounds (G j k * G j k) (p k)) ∧
-      RoundsSumFrom m (A j j) (o.map fun k => -p k) (t j)) ∧
+    (∀ j, ∃ o : List n, o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
+      RoundsRunningDiff m o (G j) (G j) (A j j) (t j)) ∧
     (∀ j, ∃ s, 0 ≤ s ∧ s * s = t j ∧ m.Rounds s (sh j)) ∧
     (∀ j, m.Rounds (t j / sh j) (G j j)) ∧
-    (∀ i j, j < i → ∃ (o : List n) (p : n → K) (r : K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
-      (∀ k ∈ o, m.Rounds (G i k * G j k) (p k)) ∧
-      RoundsSumFrom m (A i j) (o.map fun k => -p k) r ∧ m.Rounds (r / sh j) (G i j))
+    (∀ i j, j < i → ∃ (o : List n) (r : K), o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
+      RoundsRunningDiff m o (G i) (G j) (A i j) r ∧ m.Rounds (r / sh j) (G i j))
 
 variable {m : RoundingModel K} {A G : Matrix n n K}
 
@@ -1183,28 +1112,20 @@ theorem RoundsCholeskyDiv.abs_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
   rw [Matrix.mul_transpose_apply_of_lower h.apply_eq_zero h.apply_eq_zero,
     h.abs_mul_transpose_abs_apply, min_eq_right hji, Matrix.sum_filter_le_eq_add,
     Matrix.sum_filter_le_eq_add]
-  -- the number of terms
-  have hcount : ∀ o : List n, o.Nodup → (∀ k, k ∈ o ↔ k < j) →
-      o.toFinset = univ.filter (· < j) ∧ o.length + 1 ≤ Fintype.card n := by
-    intro o hnd ho
-    have hset : o.toFinset = univ.filter (· < j) := by ext k; simp [ho]
-    have hlen : o.length + 1 = #{k | k ≤ j} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    exact ⟨hset, hlen ▸ card_filter_le_le_card j⟩
   -- the row `i` data: a running difference `r` of `a_ij`, then `g_ij = fl(r / ŝ_j)`
-  obtain ⟨o, p, r, δ₃, hnd, ho, hp, hr, hδ₃, hGr⟩ : ∃ (o : List n) (p : n → K) (r δ₃ : K),
-      o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧ (∀ k ∈ o, m.Rounds (G i k * G j k) (p k)) ∧
-      RoundsSumFrom m (A i j) (o.map fun k => -p k) r ∧ |δ₃| ≤ m.u ∧
-      G i j = r / sh j * (1 + δ₃) := by
+  obtain ⟨o, r, δ₃, hnd, ho, hrd, hδ₃, hGr⟩ : ∃ (o : List n) (r δ₃ : K),
+      o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧ RoundsRunningDiff m o (G i) (G j) (A i j) r ∧
+      |δ₃| ≤ m.u ∧ G i j = r / sh j * (1 + δ₃) := by
     rcases hji.eq_or_lt with hij | hlt
     · rw [← hij]
-      obtain ⟨o, p, hnd, ho, hp, ht⟩ := hdiagsum j
-      exact ⟨o, p, t j, δ₂, hnd, ho, hp, ht, hδ₂, hGδ⟩
-    · obtain ⟨o, p, r, hnd, ho, hp, hr, hx⟩ := hoff i j hlt
+      obtain ⟨o, hnd, ho, ht⟩ := hdiagsum j
+      exact ⟨o, t j, δ₂, hnd, ho, ht, hδ₂, hGδ⟩
+    · obtain ⟨o, r, hnd, ho, hr, hx⟩ := hoff i j hlt
       obtain ⟨δ₃, hδ₃, hGr⟩ := hx.exists_delta
-      exact ⟨o, p, r, δ₃, hnd, ho, hp, hr, hδ₃, hGr⟩
-  obtain ⟨hset, hle⟩ := hcount o hnd ho
+      exact ⟨o, r, δ₃, hnd, ho, hr, hδ₃, hGr⟩
+  obtain ⟨p, hp, hr⟩ := hrd
+  have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+  have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
   have hl : (o.length : K) * m.u < 1 :=
     (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) m.u_nonneg).trans_lt hcard'
   have hlu1 : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
@@ -1424,10 +1345,6 @@ structure RoundsThomas (m : RoundingModel K) (a b c α β : ℕ → K) : Prop wh
   alpha_succ : ∀ i, ∃ q, m.Rounds (β (i + 1) * c i) q ∧ m.Rounds (a (i + 1) - q) (α (i + 1))
 
 variable {a b c α β : ℕ → K}
-
-omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- `u ≤ γ₁ = u / (1 - u)`. -/
-theorem gamma_one_eq {u : K} : gamma u 1 = u / (1 - u) := by simp [gamma_def]
 
 /-- **One diagonal entry of the Thomas factorization**: `|α̂_{i+1} + β̂_{i+1} c_i - a_{i+1}| ≤
 γ₁ (|α̂_{i+1}| + |β̂_{i+1}| |c_i|)`. -/

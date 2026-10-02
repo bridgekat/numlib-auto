@@ -21,10 +21,8 @@ a monad `M` and a hook `rnd : K → M K` through which every arithmetic result p
   (`FloatingPoint.RoundingModel.round`). The run set of the program is the set of all results of
   all admissible rounding choices, and a rounding theorem quantifies over it:
   `∀ out ∈ (alg fp.round …).run, …`. `SetM.mem_run_bind` is "some admissible choice at each step";
-  `SetM.mem_run_foldlM_iff_foldlRel` turns the run set of a loop into a relational fold
-  (`List.FoldlRel`), the shape of the relational predicates of `Numlib/FloatingPoint`
-  (`RoundsSumFrom` is such a fold); `SetM.forall_mem_run_foldlM` and
-  `SetM.forall_mem_run_foldlM_finRange` are the Hoare rules of a loop;
+  `SetM.forall_mem_run_foldlM` and `SetM.forall_mem_run_foldlM_finRange` are the Hoare rules of a
+  loop;
   `SetM.mem_run_foldlM_update_of_nodup` is the workhorse of every loop that writes one entry per
   step (a saxpy, the inner loop of column-oriented substitution, a column of a rank-one update):
   over a duplicate-free index list whose step `a` rewrites only entry `a`, from `y a` and entries
@@ -105,11 +103,16 @@ surface algorithm follows them; the same list, with the same numbers, heads the 
 14. **Symmetric pairs are separate nodes** (`…Left` and `…Right`, `…_col` and `…_row`, forward and
     backward accumulation), each with its own `_spec`; consumers depend on the half they use.
 
-## The inner-product accumulation
+## The inner-product accumulation and the running difference
 
-The one accumulation every algorithm uses is here: `dotAccum rnd o x y c` computes
+The two accumulations every algorithm uses are here: `dotAccum rnd o x y c` computes
 `c + ∑_{k ∈ o} x k * y k` as `c ← fl(c + fl(x k * y k))` ([golub2013matrix] Algorithm 1.1.1 with
-`c = 0`, and the inner loops of the row gaxpy and of the `ijk` matrix product).
+`c = 0`, and the inner loops of the row gaxpy and of the `ijk` matrix product), and its
+subtractive twin `runningDiff rnd o a b c` computes `c - ∑_{k ∈ o} a k * b k` as
+`t ← fl(t - fl(a k * b k))` (the loop of [higham2002accuracy] Lemma 8.4, in the gaxpy forms of
+LU, `L D Lᵀ`, Cholesky and column-oriented substitution), whose run set over a duplicate-free
+order is the relation `FloatingPoint.RoundsRunningDiff` of every backbone substitution and
+factorization (`mem_run_runningDiff_iff`).
 
 **The `0 + p` mismatch.** A loop `c = 0; c = c + x₁y₁; …` rounds `0 + fl(x₁y₁)`, while
 `RoundsSum` starts from the unrounded first term, and the relational model cannot know that
@@ -131,10 +134,13 @@ complex rounding model.
 
 **Matrices.** A matrix state is overwritten by `Matrix.updateRow` / `Matrix.updateCol`; a loop
 acting on one row, one column or one entry is one update of it (`Matrix.foldlM_updateRow`,
-`Matrix.foldlM_updateCol`, `Matrix.foldlM_updateRow_update`), and a loop writing one entry per step
+`Matrix.foldlM_updateCol`, `Matrix.foldlM_updateRow_update`, and
+`Matrix.foldlM_updateRow_entrywise` for the entries of one row), a loop writing one entry per step
 over a duplicate-free list of positions has the product run set
 (`SetM.mem_run_foldlM_updateRow_update_of_nodup`), through the entry view
-`Matrix.uncurry_updateRow_update`.
+`Matrix.uncurry_updateRow_update`, and in exact arithmetic a loop writing one row or one column
+per step writes each listed row or column once (`Matrix.idRun_foldlM_updateRow_apply`,
+`Matrix.foldl_updateCol_apply`).
 
 The `SetM` and `List` lemmas are upstreaming candidates (natural homes `Mathlib.Data.Set.Functor`
 and `Mathlib.Data.List.*`); the pure `List` ones are in `Numlib/Data/List/Fold`, the `SetM` ones
@@ -198,45 +204,6 @@ theorem ite_pure {f : Type u → Type v} [Pure f] {α : Type u} (c : Prop) [Deci
     (if c then pure a else pure b : f α) = pure (if c then a else b) :=
   (apply_ite pure c a b).symm
 
-/-! ### The relational fold -/
-
-namespace List
-
-/-- **The relational left fold**: `FoldlRel R a l b` says that `b` is reachable from `a` by
-stepping through the list `l` with the relation `R`, one element at a time from the left. It is
-to a relation what `List.foldl` is to a function. -/
-inductive FoldlRel {α β : Type*} (R : β → α → β → Prop) : β → List α → β → Prop
-  /-- Stepping through the empty list stays put. -/
-  | nil (b : β) : FoldlRel R b [] b
-  /-- One step with `R`, followed by the rest of the list. -/
-  | cons {b c d : β} {a : α} {l : List α} (h : R b a c) (t : FoldlRel R c l d) :
-      FoldlRel R b (a :: l) d
-
-variable {α β : Type*} {R : β → α → β → Prop}
-
-/-- A relational fold over the empty list stays put. -/
-@[simp]
-theorem foldlRel_nil_iff {a b : β} : FoldlRel R a [] b ↔ b = a :=
-  ⟨fun h => by cases h; rfl, fun h => by subst h; exact .nil b⟩
-
-/-- A relational fold over `x :: l` is one step followed by a fold over `l`. -/
-@[simp]
-theorem foldlRel_cons_iff {a b : β} {x : α} {l : List α} :
-    FoldlRel R a (x :: l) b ↔ ∃ c, R a x c ∧ FoldlRel R c l b :=
-  ⟨fun h => by cases h with | cons h t => exact ⟨_, h, t⟩, fun ⟨_, h, t⟩ => .cons h t⟩
-
-/-- A relational fold over a concatenation passes through an intermediate state. -/
-theorem FoldlRel.append {a b : β} {l₁ l₂ : List α} :
-    FoldlRel R a (l₁ ++ l₂) b ↔ ∃ c, FoldlRel R a l₁ c ∧ FoldlRel R c l₂ b := by
-  induction l₁ generalizing a with
-  | nil => simp
-  | cons x l₁ ih =>
-    simp only [cons_append, foldlRel_cons_iff, ih]
-    exact ⟨fun ⟨c, h, d, h₁, h₂⟩ => ⟨d, ⟨c, h, h₁⟩, h₂⟩,
-      fun ⟨d, ⟨c, h, h₁⟩, h₂⟩ => ⟨c, h, d, h₁, h₂⟩⟩
-
-end List
-
 /-! ### Loops in the relational semantics -/
 
 namespace SetM
@@ -244,13 +211,6 @@ namespace SetM
 section Loops
 
 variable {α : Type*} {β : Type u}
-
-/-- **The run set of a loop is the relational fold of its body.** -/
-theorem mem_run_foldlM_iff_foldlRel {f : β → α → SetM β} {l : List α} {a b : β} :
-    b ∈ (l.foldlM f a).run ↔ List.FoldlRel (fun c x c' => c' ∈ (f c x).run) a l b := by
-  induction l generalizing a with
-  | nil => simp
-  | cons x l ih => simp [ih]
 
 /-- **The Hoare rule of a loop**, with the invariant indexed by the processed prefix: if `I [] a`,
 and a step on the element `x` that follows a prefix `p` maps states satisfying `I p` to states
@@ -481,7 +441,49 @@ theorem foldlM_updateRow_update [DecidableEq m] [DecidableEq n] (i : m) (j : n)
     (fun A c => A.updateRow i (Function.update (A i) j c)) (by simp)
     (fun A b b' => by simp [updateRow_idem]) (by simp [updateRow_eq_self]) (fun c a => h a c) l A₀
 
+/-- **A loop writing the entries of row `i` of a matrix**, each from its current value, is one
+update of the row by the entrywise loop run on the row vector: `Matrix.foldlM_updateRow` with a
+step that writes one entry. -/
+theorem foldlM_updateRow_entrywise [DecidableEq m] [DecidableEq n] (i : m) (h : n → R → M R)
+    (l : List n) (A₀ : Matrix m n R) :
+    l.foldlM (fun (A : Matrix m n R) j => do
+        let c ← h j (A i j); pure (A.updateRow i (Function.update (A i) j c))) A₀
+      = (do
+        let r ← l.foldlM (fun (r : n → R) j => do
+          let c ← h j (r j); pure (Function.update r j c)) (A₀ i)
+        pure (A₀.updateRow i r)) := by
+  have := foldlM_updateRow i
+    (fun j (r : n → R) => do let c ← h j (r j); pure (Function.update r j c)) l A₀
+  simpa only [bind_assoc, pure_bind] using this
+
 end Loops
+
+/-- **One row per step, in exact arithmetic**: a loop over a duplicate-free list of rows whose step
+`a` replaces row `a` by `g a` of its current value replaces every listed row once, from its initial
+value. The row form of `List.idRun_foldlM_update_apply`. -/
+theorem idRun_foldlM_updateRow_apply {m n R : Type u} [DecidableEq m]
+    (g : m → (n → R) → Id (n → R)) (l : List m) (hl : l.Nodup) (A₀ : Matrix m n R) (i : m) :
+    (l.foldlM (fun (A : Matrix m n R) a => do
+      let r ← g a (A a); pure (A.updateRow a r)) A₀).run i =
+      if i ∈ l then (g i (A₀ i)).run else A₀ i :=
+  List.idRun_foldlM_update_apply (β := n → R) g l hl A₀ i
+
+/-- **One column per step, in exact arithmetic**: a loop over a duplicate-free list of columns
+whose step `c` replaces column `c` by `f c` of its current value replaces every listed column once,
+from its initial value (`List.foldl_update_of_nodup` on the transposed state). With `f c` constant
+in its argument, the loop writes columns fixed in advance. -/
+theorem foldl_updateCol_apply {m n R : Type*} [DecidableEq n] (f : n → (m → R) → m → R)
+    {l : List n} (hl : l.Nodup) (A : Matrix m n R) (i : m) (j : n) :
+    l.foldl (fun (A : Matrix m n R) c => A.updateCol c (f c fun i => A i c)) A i j =
+      if j ∈ l then f j (fun i => A i j) i else A i j := by
+  have hhom := List.foldl_hom (transpose : Matrix m n R → Matrix n m R)
+    (g₁ := fun (A : Matrix m n R) c => A.updateCol c (f c fun i => A i c))
+    (g₂ := fun (y : Matrix n m R) c => Function.update y c (f c (y c))) (l := l)
+    (init := A) fun A c => updateRow_transpose
+  refine (congrFun (congrFun hhom j) i).symm.trans ((congrFun (congrFun
+    (List.foldl_update_of_nodup hl (fun c y => f c (y c)) (fun _ _ _ _ _ e => by rw [e]) Aᵀ) j)
+    i).trans ?_)
+  split_ifs <;> rfl
 
 /-- **The entry view of a one-entry update**: rewriting entry `(i, j)` of a matrix is updating the
 matrix, read as a function on positions, at `(i, j)`. Through it and `List.foldl_hom` /
@@ -565,16 +567,6 @@ theorem RoundingModel.round_exact : (RoundingModel.exact K).round = pure := rfl
 theorem RoundingModel.run_round_nonempty {fp : RoundingModel K} (hfp : fp.IsTotal) (x : K) :
     (fp.round x).run.Nonempty :=
   hfp x
-
-/-- A running sum is the relational fold of the rounded addition. -/
-theorem roundsSumFrom_iff_foldlRel {fp : RoundingModel K} {s t : K} {l : List K} :
-    RoundsSumFrom fp s l t ↔ List.FoldlRel (fun s x t => fp.Rounds (s + x) t) s l t := by
-  induction l generalizing s with
-  | nil => exact ⟨fun h => by cases h; exact .nil _, fun h => by cases h; exact .nil _⟩
-  | cons x l ih =>
-    rw [List.foldlRel_cons_iff]
-    exact ⟨fun h => by cases h with | cons ht hr => exact ⟨_, ht, ih.1 hr⟩,
-      fun ⟨_, ht, hr⟩ => .cons ht (ih.2 hr)⟩
 
 end Hook
 
@@ -786,5 +778,74 @@ theorem abs_sub_le_of_mem_run_dotAccum {fp : RoundingModel K} {o : List ι} {x y
     _ = gamma fp.u (o.length + 1) * (|c| + A) := by ring
 
 end DotAccum
+
+/-! ### The running difference -/
+
+section RunningDiff
+
+variable {K : Type u}
+
+/-- **The running difference**, generic in the monad: `runningDiff rnd o a b c` computes
+`c - ∑_{k ∈ o} a k * b k` as `t ← rnd (t - rnd (a k * b k))` for `k` in the order of the list `o`,
+starting from `t = c`. It is the subtractive twin of `dotAccum` and the loop of
+[higham2002accuracy] Lemma 8.4: the inner loops of the gaxpy forms of LU, `L D Lᵀ` and Cholesky
+and of column-oriented substitution, which accumulate onto the entry of the matrix. Its relation
+is `FloatingPoint.RoundsRunningDiff` (`mem_run_runningDiff_iff`). -/
+def runningDiff [Sub K] [Mul K] {M : Type u → Type v} [Monad M] (rnd : K → M K) {ι : Type*}
+    (o : List ι) (a b : ι → K) (c : K) : M K :=
+  o.foldlM (fun t k => do let p ← rnd (a k * b k); rnd (t - p)) c
+
+/-- With the hook `pure`, in any lawful monad, the running difference is the exact difference. -/
+theorem runningDiff_pure [SubtractionCommMonoid K] [Mul K] {M : Type u → Type v} [Monad M]
+    [LawfulMonad M] {ι : Type*} (o : List ι) (a b : ι → K) (c : K) :
+    runningDiff (M := M) pure o a b c = pure (c - (o.map fun k => a k * b k).sum) := by
+  unfold runningDiff
+  simp only [pure_bind, List.foldlM_pure]
+  rw [List.foldl_sub_eq_sub_sum_map]
+
+/-- **The exact semantics of the running difference**: `c - ∑_{k ∈ o} a k * b k`. -/
+theorem runningDiff_id [SubtractionCommMonoid K] [Mul K] {ι : Type*} (o : List ι) (a b : ι → K)
+    (c : K) : Id.run (runningDiff (M := Id) pure o a b c) = c - (o.map fun k => a k * b k).sum := by
+  rw [runningDiff_pure]
+  rfl
+
+variable [Field K] [LinearOrder K] [IsStrictOrderedRing K] {ι : Type*}
+
+/-- Over a total model the running difference has a result. -/
+theorem runningDiff_run_nonempty {fp : RoundingModel K} (hfp : fp.IsTotal) (o : List ι)
+    (a b : ι → K) (c : K) : (runningDiff fp.round o a b c).run.Nonempty :=
+  SetM.run_foldlM_nonempty (fun _ _ _ => SetM.run_bind_nonempty
+    (RoundingModel.run_round_nonempty hfp _) fun _ _ => RoundingModel.run_round_nonempty hfp _) c
+
+/-- **The bridge from the running difference to its relation**: over a duplicate-free order, the
+results of `runningDiff` in a model are exactly the admissible running differences
+(`FloatingPoint.RoundsRunningDiff`). -/
+theorem mem_run_runningDiff_iff {fp : RoundingModel K} {o : List ι} (ho : o.Nodup)
+    {a b : ι → K} {c t : K} :
+    t ∈ (runningDiff fp.round o a b c).run ↔ RoundsRunningDiff fp o a b c t := by
+  constructor
+  · exact fun h => exists_of_mem_run_foldlM_sub ho h
+  rintro ⟨p, hp, hs⟩
+  clear ho
+  unfold runningDiff
+  induction o generalizing c with
+  | nil =>
+    cases hs
+    exact SetM.mem_run_pure.2 rfl
+  | cons k o ih =>
+    rw [List.map_cons] at hs
+    rcases hs with _ | ⟨hc, hs⟩
+    simp only [List.foldlM_cons, bind_assoc, SetM.mem_run_bind, RoundingModel.mem_run_round]
+    exact ⟨p k, hp k List.mem_cons_self, _, by rwa [sub_eq_add_neg],
+      ih (fun r hr => hp r (List.mem_cons_of_mem _ hr)) hs⟩
+
+/-- **The running difference in the exact model** is the exact difference: the lemma from which
+the exact specification of a program built on `runningDiff` is read off its bridge. -/
+theorem mem_run_runningDiff_exact_iff {o : List ι} {a b : ι → K} {c t : K} :
+    t ∈ (runningDiff (RoundingModel.exact K).round o a b c).run ↔
+      t = c - (o.map fun k => a k * b k).sum := by
+  rw [RoundingModel.round_exact, runningDiff_pure, SetM.mem_run_pure]
+
+end RunningDiff
 
 end FloatingPoint

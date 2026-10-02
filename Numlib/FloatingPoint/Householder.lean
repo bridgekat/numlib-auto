@@ -41,21 +41,26 @@ every statement quantifies over all admissible roundings at once:
   Higham's §19.10 attributes to Ortega and Wilkinson, with its reflector (symmetric) specialization
   `exists_eq_transpose_mul_add_mul_prodFwd`. The products are `Matrix.prodRev P r =
   P_{r-1} ⋯ P_0` and `Matrix.prodFwd P r = P_0 ⋯ P_{r-1}` of
-  `Numlib/LinearAlgebra/Matrix/Products`.
+  `Numlib/LinearAlgebra/Matrix/Products`. The one-step forms `exists_eq_mulVec_add_of_step` and
+  `exists_eq_mul_add_of_step` are the invariant step of a loop of nearly exact orthogonal
+  transformations, and `exists_eq_mulVec_add_of_forall_step`, `exists_eq_mul_add_of_forall_step`
+  (one-sided) and `exists_eq_transpose_mul_add_mul_of_forall_step` (two-sided) choose the
+  transformation of each step.
 * The Householder reduction to Hessenberg form in floating-point arithmetic,
   `FloatingPoint.RoundsHessenbergStep` and `FloatingPoint.RoundsHessenbergReduce`
   ([quarteroni2000numerical] §5.6.2, Program 29, as [higham2002accuracy] Theorem 19.4 models
-  such an algorithm): at step `k` the reflector data are computed from the tail of column `k` of
-  the current matrix, the columns `j ≥ k` are updated by `RoundsHouseholderApply`, the entries of
-  column `k` below the first subdiagonal are **set to zero explicitly** (Higham's convention for
-  the annihilated entries, which every implementation storing the reflector in place follows;
-  Program 29 leaves them as roundoff-sized junk), the columns `j < k` — already zero below the
-  first subdiagonal — are left alone, and then the rows are updated by `RoundsHouseholderApply`,
-  the entries in columns `≤ k`, which the reflector fixes exactly, being left alone. The
-  reflector `P_k` of the analysis is the *exact* reflector of the *computed* matrix's column,
-  `Matrix.hessenbergReflector (Â_k) k`. The theorem `exists_roundsHessenbergReduce_eq` is
-  (5.46) with the constants explicit: `Ĥ = Qᵀ (A + E) Q` with `Q = P_0 ⋯ P_{n-3}` orthogonal and
-  `‖E‖_F ≤ γ_{2(n-2)}(3 γ_{13n+27}) ‖A‖_F`, which is `c n² u ‖A‖_F` for `u` small.
+  such an algorithm): at step `k` the reflector data are computed by `RoundsHouseholderVector`
+  from the tail of column `k` of the current matrix on the active rows `{i // k + 1 ≤ i}`, the
+  columns `j ≥ k` are updated on those rows by `RoundsHouseholderApply`, the entries of column `k`
+  below the first subdiagonal are **set to zero explicitly** (Higham's convention for the
+  annihilated entries, which every implementation storing the reflector in place follows;
+  Program 29 leaves them as roundoff-sized junk), and then the rows are updated on the active
+  columns; rows and columns outside the active block are not re-rounded. It is the instance of
+  the generic step `RoundsHessenbergStepOf` below. The theorem `exists_roundsHessenbergReduce_eq`
+  is (5.46) with the constants explicit: `Ĥ` is upper Hessenberg and `Ĥ = Qᵀ (A + E) Q` with `Q`
+  orthogonal (the product of the exact reflectors of the computed tail columns, extended by the
+  identity) and `‖E‖_F ≤ γ_{2(n-2)}(3 γ_{13n+27}) ‖A‖_F`, which is `c n² u ‖A‖_F` for `u`
+  small.
 * The two-sided triangular solve `Ĉ = fl(H⁻ᵀ A H⁻¹)` of the QR–Cholesky algorithm
   ([quarteroni2000numerical] §5.9.2, step 2), `FloatingPoint.RoundsTwoSidedSolve`: the
   columnwise and rowwise forms of [higham2002accuracy] Theorem 8.5 with a matrix right-hand side
@@ -92,8 +97,14 @@ Algorithm 7.4.2) and the symmetric tridiagonalization step (`RoundsTridiagonaliz
 step bound against the exact reflector extended by the identity, and both reductions
 (`exists_roundsHessenbergReducePert_eq`, `exists_roundsTridiagonalizePert_eq`) follow from the one
 accumulation lemma `exists_eq_transpose_mul_add_mul_of_forall_step` (Lemma 19.3, two-sided, the
-reflector of each step chosen). The Higham-convention `RoundsHessenbergStep` above is the
-unscaled-association twin of `RoundsHessenbergStepPert`.
+reflector of each step chosen). Both Hessenberg steps are instances of one step generic in the
+reflector formula and the application relation, `RoundsHessenbergStepOf`, whose step bound
+(`RoundsHessenbergStepOf.frobenius_norm_sub_le`, the two sweeps combined by
+`frobenius_norm_sub_mul_mul_le_of_col_of_row`) and reduction bound
+(`exists_hessenbergReduce_eq_of_forall_step`) are proved once: `RoundsHessenbergStepPert` with
+`IsReflectorPert` data and `RoundsHouseholderApplyScaled`, the Higham-convention
+`RoundsHessenbergStep` with `RoundsHouseholderVector` and `RoundsHouseholderApply`. A vector on
+the active block is extended to all coordinates by `FloatingPoint.extendByZero`.
 
 The scalar calculus of the constants is that of `Numlib/FloatingPoint/Model`, including the
 one-step forms a Householder computation needs (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
@@ -344,7 +355,7 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
         push_cast at this
         linarith)).le (by rw [hxx]; positivity)
       rwa [hxx, Real.sqrt_sq hNpos.le] at this
-    have h3 : IsRelPert m.u (n + 1) N nhat := h2.rounds hu1 (hlt _ (by omega)) hn
+    have h3 : IsRelPert m.u (n + 1) N nhat := h2.rounds (hlt _ (by omega)) hn
     have h4 : IsRelPert m.u (n + 1) (σ * N) (σ * nhat) := h3.const_mul σ
     -- the pivot entry: no cancellation
     have h5 : IsRelPert m.u (n + 1) (x i + σ * N) (x i + σ * nhat) := by
@@ -356,7 +367,7 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
         nlinarith [hγ (n + 1) (by omega)]
       · rw [mul_add, mul_one, mul_div_cancel₀ _ hwne, hθe]
         ring
-    have h6 : IsRelPert m.u (n + 2) (x i + σ * N) what := h5.rounds hu1 (hlt _ (by omega)) hw
+    have h6 : IsRelPert m.u (n + 2) (x i + σ * N) what := h5.rounds (hlt _ (by omega)) hw
     have h7 : IsRelPert m.u (2 * n + 3) (σ * N * (x i + σ * N)) (σ * nhat * what) := by
       have := h4.mul hu0 (k := n + 1) (j := n + 2) (hlt _ (by omega)) h6
       rwa [show n + 1 + (n + 2) = 2 * n + 3 by ring] at this
@@ -677,7 +688,7 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
     have hp1 : IsRelPert m.u k (x i * x i) p :=
       (hp.isRelPert hu1).mono hu0 hk1 (hlt k (by omega))
     have ht1 : IsRelPert m.u (k + 1) (x i * x i + σ) t :=
-      (IsRelPert.add_of_nonneg (mul_self_nonneg _) hσ0 hp1 hσrel).rounds hu1 (hlt _ (by omega)) ht
+      (IsRelPert.add_of_nonneg (mul_self_nonneg _) hσ0 hp1 hσrel).rounds (hlt _ (by omega)) ht
     have hsqrt : IsRelPert m.u (k + 1) N (√t) := by
       have hg : gamma m.u (k + 1) ≤ 1 := (gamma_lt_one hu0 (by
         have := hlt (2 * (k + 1)) (by omega)
@@ -685,7 +696,7 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
         linarith)).le
       have := ht1.sqrt hg (add_nonneg (mul_self_nonneg _) hσ0)
       rwa [← hN2, Real.sqrt_mul_self hN0] at this
-    have hμ1 : IsRelPert m.u (k + 2) N μ := hsqrt.rounds hu1 (hlt _ (by omega)) hμ
+    have hμ1 : IsRelPert m.u (k + 2) N μ := hsqrt.rounds (hlt _ (by omega)) hμ
     have hx0 : IsRelPert m.u (k + 2) (x i) (x i) :=
       (IsRelPert.refl _ _).mono hu0 (Nat.zero_le _) (hlt _ (by omega))
     have hv₁' : IsRelPert m.u (3 * k + 7) e v₁ := by
@@ -695,32 +706,32 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
         obtain ⟨θ, hθ, hθe⟩ := IsRelPert.add_of_nonneg (by linarith) hN0 hmx hμ1
         have h2 : IsRelPert m.u (k + 2) e (x i - μ) :=
           ⟨θ, hθ, by rw [he_def]; linear_combination (-1 : ℝ) * hθe⟩
-        exact (h2.rounds hu1 (hlt _ (by omega)) hr).mono hu0 (by omega) (hlt _ (by omega))
+        exact (h2.rounds (hlt _ (by omega)) hr).mono hu0 (by omega) (hlt _ (by omega))
       · have h2 : IsRelPert m.u (k + 3) (x i + N) e' :=
-          (IsRelPert.add_of_nonneg hxi.le hN0 hx0 hμ1).rounds hu1 (hlt _ (by omega)) he'
+          (IsRelPert.add_of_nonneg hxi.le hN0 hx0 hμ1).rounds (hlt _ (by omega)) he'
         have hneg : IsRelPert m.u k (-σ) (-σhat) := by simpa using hσrel.const_mul (-1)
         have h3 := hneg.div hu0 (k := k) (j := k + 3) (hlt _ (by omega)) h2
         have hval : -σ / (x i + N) = e := by
           rw [div_eq_iff (by linarith), hkey]
         rw [hval] at h3
-        have h4 := h3.rounds hu1 (hlt _ (by omega)) hr
+        have h4 := h3.rounds (hlt _ (by omega)) hr
         rwa [show k + 2 * (k + 3) + 1 = 3 * k + 7 by ring] at h4
     have hq1 : IsRelPert m.u (6 * k + 15) (e * e) q := by
       have := (hv₁'.mul hu0 (k := 3 * k + 7) (j := 3 * k + 7) (hlt _ (by omega)) hv₁').rounds
-        hu1 (hlt _ (by omega)) hq
+        (hlt _ (by omega)) hq
       rwa [show 3 * k + 7 + (3 * k + 7) + 1 = 6 * k + 15 by ring] at this
     have hw1 : IsRelPert m.u (6 * k + 16) (2 * (e * e)) w :=
-      (hq1.const_mul 2).rounds hu1 (hlt _ (by omega)) hw
+      (hq1.const_mul 2).rounds (hlt _ (by omega)) hw
     have hd1 : IsRelPert m.u (6 * k + 16) (σ + e * e) d :=
       (IsRelPert.add_of_nonneg hσ0 (mul_self_nonneg e)
-        (hσrel.mono hu0 (by omega) (hlt _ (by omega))) hq1).rounds hu1 (hlt _ (by omega)) hd
+        (hσrel.mono hu0 (by omega) (hlt _ (by omega))) hq1).rounds (hlt _ (by omega)) hd
     have hβ1 : IsRelPert m.u (18 * k + 49) β βhat := by
       have := (hw1.div hu0 (k := 6 * k + 16) (j := 6 * k + 16) (hlt _ (by omega)) hd1).rounds
-        hu1 (hlt _ (by omega)) hβ
+        (hlt _ (by omega)) hβ
       rwa [show 6 * k + 16 + 2 * (6 * k + 16) + 1 = 18 * k + 49 by ring] at this
     have hvj1 : ∀ j, j ≠ i → IsRelPert m.u (6 * k + 15) (x j / e) (vhat j) := fun j hj => by
       have := ((IsRelPert.refl m.u (x j)).div hu0 (k := 0) (j := 3 * k + 7) (hlt _ (by omega))
-        hv₁').rounds hu1 (hlt _ (by omega)) (hvj j hj)
+        hv₁').rounds (hlt _ (by omega)) (hvj j hj)
       rwa [show 0 + 2 * (3 * k + 7) + 1 = 6 * k + 15 by ring] at this
     refine ⟨v, β, one_sub_smul_vecMulVec_mem_orthogonalGroup (by rw [hβvv]; ring), hPx,
       le_of_eq (by rw [abs_of_pos hβpos, hβvv]), hmono (by omega) hβ1, fun j => ?_⟩
@@ -878,9 +889,9 @@ theorem norm_sub_le_of_roundsHouseholderApply {m : RoundingModel ℝ} {k : ℕ}
   choose δ₂ hδ₂ hweq using fun i => (hw i).exists_delta
   -- the coefficients of `w i = ∑ j, c i j * b j` are relative perturbations of `β v i v j`
   have hβ' : IsRelPert m.u (k + 1) β (βhat * (1 + δ₁)) :=
-    hβ.mul_one_add hu0 hu1 (hlt _ (by omega)) hδ₁
+    hβ.mul_one_add hu0 (hlt _ (by omega)) hδ₁
   have hvi' : ∀ i, IsRelPert m.u (k + 1) (v i) (vhat i * (1 + δ₂ i)) := fun i =>
-    (hv i).mul_one_add hu0 hu1 (hlt _ (by omega)) (hδ₂ i)
+    (hv i).mul_one_add hu0 (hlt _ (by omega)) (hδ₂ i)
   have hvj' : ∀ j, IsRelPert m.u (k + n) (v j) (vhat j + dx j) := fun j =>
     (hv j).trans hu0 (hlt _ (by omega))
       (isRelPert_of_abs_sub_le (gamma_nonneg hu0 (hlt n (by omega)))
@@ -957,8 +968,8 @@ theorem norm_sub_le_of_roundsHouseholderApplyScaled {m : RoundingModel ℝ} {k :
   have hc : ∀ i j, IsRelPert m.u (3 * k + n + 2) (β * v i * v j)
       (βhat * vhat i * (1 + δ₂ i) * (1 + δ₁ i) * (vhat j + dx j)) := fun i j => by
     have h1 := hβ.mul hu0 (k := k) (j := k) (hlt _ (by omega)) (hv i)
-    have h2 := h1.mul_one_add hu0 hu1 (hlt (k + k + 1) (by omega)) (hδ₂ i)
-    have h3 := h2.mul_one_add hu0 hu1 (hlt (k + k + 1 + 1) (by omega)) (hδ₁ i)
+    have h2 := h1.mul_one_add hu0 (hlt (k + k + 1) (by omega)) (hδ₂ i)
+    have h3 := h2.mul_one_add hu0 (hlt (k + k + 1 + 1) (by omega)) (hδ₁ i)
     have h4 := h3.mul hu0 (k := k + k + 1 + 1) (j := k + n) (hlt _ (by omega)) (hvj' j)
     rwa [show k + k + 1 + 1 + (k + n) = 3 * k + n + 2 by ring] at h4
   have hti : ∀ i, t i = ∑ j, βhat * vhat i * (1 + δ₂ i) * (1 + δ₁ i) * (vhat j + dx j) * b j := by
@@ -986,16 +997,48 @@ theorem mulVec_transpose_mulVec_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (x : ι → ℝ) : Q *ᵥ (Qᵀ *ᵥ x) = x := by
   rw [mulVec_mulVec, (mem_orthogonalGroup_iff _ _).1 hQ, one_mulVec]
 
-/-- `(1 + ε)^r - 1 ≤ γ_r(ε) = r ε / (1 - r ε)` for `0 ≤ ε` and `r ε < 1`
-([higham2002accuracy] Lemma 3.1 with all the `δ_i` equal to `ε`). -/
-theorem one_add_pow_sub_one_le_gamma {ε : ℝ} (hε : 0 ≤ ε) {r : ℕ} (hr : (r : ℝ) * ε < 1) :
-    (1 + ε) ^ r - 1 ≤ gamma ε r := by
-  have h := abs_prod_one_add_sub_one_le_gamma (u := ε) hε (n := r) hr (δ := fun _ => ε)
-    (fun _ => le_of_eq (abs_of_nonneg hε)) (ρ := fun _ => 1) (fun _ => Or.inl rfl)
-  simp only [zpow_one, Finset.prod_const, Finset.card_univ, Fintype.card_fin] at h
-  exact (le_abs_self _).trans h
-
 /-! ### [higham2002accuracy] Lemma 19.3: accumulation -/
+
+/-- **One step of [higham2002accuracy] Lemma 19.3**: if `y = Q (x + Δx)` with `Q` orthogonal and
+`‖Δx‖₂ ≤ ((1 + ε)^k - 1) ‖x‖₂`, and `y'` is within `ε ‖y‖₂` of `P y` for an orthogonal `P`, then
+`y' = (P Q) (x + Δx')` with `‖Δx'‖₂ ≤ ((1 + ε)^(k+1) - 1) ‖x‖₂`. The invariant step of every
+loop of nearly exact orthogonal transformations (`SetM.forall_mem_run_foldlM_finRange`). -/
+theorem exists_eq_mulVec_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.orthogonalGroup ι ℝ)
+    (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) {x dx y y' : ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) {k : ℕ}
+    (hy : y = Q *ᵥ (x + dx))
+    (hdx : ‖(toLp 2 dx : EuclideanSpace ℝ ι)‖ ≤
+      ((1 + ε) ^ k - 1) * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖)
+    (hy' : ‖(toLp 2 (y' - P *ᵥ y) : EuclideanSpace ℝ ι)‖ ≤
+      ε * ‖(toLp 2 y : EuclideanSpace ℝ ι)‖) :
+    ∃ dx' : ι → ℝ, y' = (P * Q) *ᵥ (x + dx') ∧
+      ‖(toLp 2 dx' : EuclideanSpace ℝ ι)‖ ≤
+        ((1 + ε) ^ (k + 1) - 1) * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
+  have hPQ : P * Q ∈ Matrix.orthogonalGroup ι ℝ := mul_mem hP hQ
+  set e := y' - P *ᵥ y with he
+  have hx0 : 0 ≤ ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := norm_nonneg _
+  have hpow : 0 ≤ (1 + ε) ^ k := by positivity
+  refine ⟨dx + (P * Q)ᵀ *ᵥ e, ?_, ?_⟩
+  · calc y' = P *ᵥ y + e := by rw [he]; abel
+      _ = (P * Q) *ᵥ (x + dx) + (P * Q) *ᵥ ((P * Q)ᵀ *ᵥ e) := by
+        rw [mulVec_transpose_mulVec_of_mem_orthogonalGroup hPQ, hy, mulVec_mulVec]
+      _ = (P * Q) *ᵥ (x + (dx + (P * Q)ᵀ *ᵥ e)) := by rw [← mulVec_add, add_assoc]
+  · have h1 : ‖(toLp 2 ((P * Q)ᵀ *ᵥ e) : EuclideanSpace ℝ ι)‖ ≤
+        ε * ‖(toLp 2 y : EuclideanSpace ℝ ι)‖ := by
+      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hPQ)]
+      exact hy'
+    have h2 : ‖(toLp 2 y : EuclideanSpace ℝ ι)‖ ≤
+        (1 + ε) ^ k * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
+      rw [hy, norm_toLp_mulVec_of_mem_orthogonalGroup hQ, WithLp.toLp_add]
+      refine (norm_add_le _ _).trans ?_
+      linarith
+    rw [WithLp.toLp_add]
+    refine (norm_add_le _ _).trans ?_
+    have h3 : ε * ‖(toLp 2 y : EuclideanSpace ℝ ι)‖ ≤
+        ε * ((1 + ε) ^ k * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖) :=
+      mul_le_mul_of_nonneg_left h2 hε
+    have h4 : ((1 + ε) ^ (k + 1) - 1) = ((1 + ε) ^ k - 1) + ε * (1 + ε) ^ k := by ring
+    rw [h4]
+    nlinarith
 
 /-- **A sequence of nearly exact orthogonal transformations of a vector is an exact one of a
 nearby vector** ([higham2002accuracy] Lemma 19.3, the core): if `P_k` are orthogonal and
@@ -1012,41 +1055,30 @@ theorem exists_eq_prodRev_mulVec_add {P : ℕ → Matrix ι ι ℝ}
   | zero => exact ⟨0, by simp, by simp⟩
   | succ r ih =>
     obtain ⟨dx, hxr, hdx⟩ := ih fun k hk => hx k (by omega)
-    have hQ := prodRev_mem_orthogonalGroup hP (r + 1)
-    set e := x (r + 1) - P r *ᵥ x r with he
-    have hx0 : 0 ≤ ‖(toLp 2 (x 0) : EuclideanSpace ℝ ι)‖ := norm_nonneg _
-    have hpow : 0 ≤ (1 + ε) ^ r := by positivity
-    refine ⟨dx + (prodRev P (r + 1))ᵀ *ᵥ e, ?_, ?_⟩
-    · calc x (r + 1) = P r *ᵥ x r + e := by rw [he]; abel
-        _ = P r *ᵥ (prodRev P r *ᵥ (x 0 + dx)) +
-            prodRev P (r + 1) *ᵥ ((prodRev P (r + 1))ᵀ *ᵥ e) := by
-          rw [hxr, mulVec_transpose_mulVec_of_mem_orthogonalGroup hQ]
-        _ = prodRev P (r + 1) *ᵥ (x 0 + dx) +
-            prodRev P (r + 1) *ᵥ ((prodRev P (r + 1))ᵀ *ᵥ e) := by
-          rw [mulVec_mulVec]
-          rfl
-        _ = _ := by
-          rw [← mulVec_add]
-          congr 1
-          abel
-    · have h1 : ‖(toLp 2 ((prodRev P (r + 1))ᵀ *ᵥ e) : EuclideanSpace ℝ ι)‖ ≤
-          ε * ‖(toLp 2 (x r) : EuclideanSpace ℝ ι)‖ := by
-        rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hQ)]
-        exact hx r (Nat.lt_succ_self r)
-      have h2 : ‖(toLp 2 (x r) : EuclideanSpace ℝ ι)‖ ≤
-          (1 + ε) ^ r * ‖(toLp 2 (x 0) : EuclideanSpace ℝ ι)‖ := by
-        rw [hxr, norm_toLp_mulVec_of_mem_orthogonalGroup (prodRev_mem_orthogonalGroup hP r),
-          WithLp.toLp_add]
-        refine (norm_add_le _ _).trans ?_
-        linarith
-      rw [WithLp.toLp_add]
-      refine (norm_add_le _ _).trans ?_
-      have h3 : ε * ‖(toLp 2 (x r) : EuclideanSpace ℝ ι)‖ ≤
-          ε * ((1 + ε) ^ r * ‖(toLp 2 (x 0) : EuclideanSpace ℝ ι)‖) :=
-        mul_le_mul_of_nonneg_left h2 hε
-      have h4 : ((1 + ε) ^ (r + 1) - 1) = ((1 + ε) ^ r - 1) + ε * (1 + ε) ^ r := by ring
-      rw [h4]
-      nlinarith
+    obtain ⟨dx', h1, h2⟩ := exists_eq_mulVec_add_of_step (hP r) (prodRev_mem_orthogonalGroup hP r)
+      hε hxr hdx (hx r (Nat.lt_succ_self r))
+    exact ⟨dx', by rw [prodRev_succ]; exact h1, h2⟩
+
+/-- **[higham2002accuracy] Lemma 19.3 with the transformation of each step chosen**, vector form:
+if every step `k < r` has an orthogonal `P` with `‖x_{k+1} - P x_k‖₂ ≤ ε ‖x_k‖₂`, then
+`x_r = Q (x_0 + Δx)` for an orthogonal `Q` with `‖Δx‖₂ ≤ ((1 + ε)^r - 1) ‖x_0‖₂`. -/
+theorem exists_eq_mulVec_add_of_forall_step {x : ℕ → ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
+    (h : ∀ k, k < r → ∃ P ∈ Matrix.orthogonalGroup ι ℝ,
+      ‖(toLp 2 (x (k + 1) - P *ᵥ x k) : EuclideanSpace ℝ ι)‖ ≤
+        ε * ‖(toLp 2 (x k) : EuclideanSpace ℝ ι)‖) :
+    ∃ Q ∈ Matrix.orthogonalGroup ι ℝ, ∃ dx : ι → ℝ, x r = Q *ᵥ (x 0 + dx) ∧
+      ‖(toLp 2 dx : EuclideanSpace ℝ ι)‖ ≤
+        ((1 + ε) ^ r - 1) * ‖(toLp 2 (x 0) : EuclideanSpace ℝ ι)‖ := by
+  have h' : ∀ k, ∃ P ∈ Matrix.orthogonalGroup ι ℝ, (k < r →
+      ‖(toLp 2 (x (k + 1) - P *ᵥ x k) : EuclideanSpace ℝ ι)‖ ≤
+        ε * ‖(toLp 2 (x k) : EuclideanSpace ℝ ι)‖) := fun k => by
+    by_cases hk : k < r
+    · obtain ⟨P, hP, hb⟩ := h k hk
+      exact ⟨P, hP, fun _ => hb⟩
+    · exact ⟨1, one_mem _, fun h => absurd h hk⟩
+  choose P hP hb using h'
+  obtain ⟨dx, hdx, hdxn⟩ := exists_eq_prodRev_mulVec_add hP hε r hb
+  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup hP r, dx, hdx, hdxn⟩
 
 /-- **[higham2002accuracy] Lemma 19.3, vector form with the constant `r γ̃`**: under
 `r ε < 1`, `‖Δx‖₂ ≤ (r ε / (1 - r ε)) ‖x_0‖₂`. -/
@@ -1092,6 +1124,61 @@ theorem exists_eq_prodRev_mul_add {P : ℕ → Matrix ι ι ℝ}
   rw [this, mul_apply, mulVec, dotProduct]
   refine Finset.sum_congr rfl fun l _ => ?_
   simp [col_apply]
+
+/-- **One step of [higham2002accuracy] Lemma 19.3, columnwise**: if `B = Q (A + E)` with `Q`
+orthogonal and `‖E(:, j)‖₂ ≤ ((1 + ε)^k - 1) ‖A(:, j)‖₂`, and every column of `B'` is within
+`ε` (relative, Euclidean) of the column of `P B` for an orthogonal `P`, then
+`B' = (P Q) (A + E')` with `‖E'(:, j)‖₂ ≤ ((1 + ε)^(k+1) - 1) ‖A(:, j)‖₂`: the invariant step of a
+loop of nearly exact orthogonal transformations of a matrix. -/
+theorem exists_eq_mul_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.orthogonalGroup ι ℝ)
+    (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) {A E B B' : Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε) {k : ℕ}
+    (hB : B = Q * (A + E))
+    (hE : ∀ j, ‖(toLp 2 (E.col j) : EuclideanSpace ℝ ι)‖ ≤
+      ((1 + ε) ^ k - 1) * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖)
+    (hB' : ∀ j, ‖(toLp 2 ((B' - P * B).col j) : EuclideanSpace ℝ ι)‖ ≤
+      ε * ‖(toLp 2 (B.col j) : EuclideanSpace ℝ ι)‖) :
+    ∃ E' : Matrix ι κ ℝ, B' = (P * Q) * (A + E') ∧
+      ∀ j, ‖(toLp 2 (E'.col j) : EuclideanSpace ℝ ι)‖ ≤
+        ((1 + ε) ^ (k + 1) - 1) * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ := by
+  have hcol : ∀ j, ∃ dx : ι → ℝ, B'.col j = (P * Q) *ᵥ (A.col j + dx) ∧
+      ‖(toLp 2 dx : EuclideanSpace ℝ ι)‖ ≤
+        ((1 + ε) ^ (k + 1) - 1) * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ := fun j =>
+    exists_eq_mulVec_add_of_step hP hQ hε (y := B.col j)
+      (by rw [hB]; ext i; simp [col_apply, mul_apply, mulVec, dotProduct]) (hE j) (by
+        have := hB' j
+        rwa [show (B' - P * B).col j = B'.col j - P *ᵥ B.col j from by
+          ext i; simp [col_apply, mul_apply, mulVec, dotProduct]] at this)
+  choose dx hdx hdxn using hcol
+  refine ⟨Matrix.of fun i j => dx j i, ?_, fun j => hdxn j⟩
+  ext i j
+  have := congrFun (hdx j) i
+  rw [col_apply] at this
+  rw [this, mul_apply, mulVec, dotProduct]
+  refine Finset.sum_congr rfl fun l _ => ?_
+  simp [col_apply]
+
+/-- **[higham2002accuracy] Lemma 19.3 with the transformation of each step chosen**, columnwise:
+if every step `k < r` has an orthogonal `P` such that every column of `A_{k+1}` is within `ε`
+(relative, Euclidean) of the column of `P A_k`, then `A_r = Q (A_0 + ΔA)` for an orthogonal `Q`
+with `‖ΔA(:, j)‖₂ ≤ ((1 + ε)^r - 1) ‖A_0(:, j)‖₂` for every column. The one-sided companion of
+`exists_eq_transpose_mul_add_mul_of_forall_step`. -/
+theorem exists_eq_mul_add_of_forall_step {A : ℕ → Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
+    (h : ∀ k, k < r → ∃ P ∈ Matrix.orthogonalGroup ι ℝ, ∀ j,
+      ‖(toLp 2 ((A (k + 1) - P * A k).col j) : EuclideanSpace ℝ ι)‖ ≤
+        ε * ‖(toLp 2 ((A k).col j) : EuclideanSpace ℝ ι)‖) :
+    ∃ Q ∈ Matrix.orthogonalGroup ι ℝ, ∃ ΔA : Matrix ι κ ℝ, A r = Q * (A 0 + ΔA) ∧
+      ∀ j, ‖(toLp 2 (ΔA.col j) : EuclideanSpace ℝ ι)‖ ≤
+        ((1 + ε) ^ r - 1) * ‖(toLp 2 ((A 0).col j) : EuclideanSpace ℝ ι)‖ := by
+  have h' : ∀ k, ∃ P ∈ Matrix.orthogonalGroup ι ℝ, (k < r → ∀ j,
+      ‖(toLp 2 ((A (k + 1) - P * A k).col j) : EuclideanSpace ℝ ι)‖ ≤
+        ε * ‖(toLp 2 ((A k).col j) : EuclideanSpace ℝ ι)‖) := fun k => by
+    by_cases hk : k < r
+    · obtain ⟨P, hP, hb⟩ := h k hk
+      exact ⟨P, hP, fun _ => hb⟩
+    · exact ⟨1, one_mem _, fun h => absurd h hk⟩
+  choose P hP hb using h'
+  obtain ⟨ΔA, hΔ, hΔn⟩ := exists_eq_prodRev_mul_add hP hε r hb
+  exact ⟨prodRev P r, prodRev_mem_orthogonalGroup hP r, ΔA, hΔ, hΔn⟩
 
 
 /-- Orthogonal equivalence preserves the Frobenius norm. -/
@@ -1213,6 +1300,39 @@ theorem exists_eq_transpose_mul_add_mul_of_forall_step {A : ℕ → Matrix ι ι
   obtain ⟨E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_prodFwd hP hPs hε r hb
   exact ⟨prodFwd P r, prodFwd_mem_orthogonalGroup hP r, E, hE, hEn⟩
 
+/-- **A two-sided step from its two sweeps**: if `P` is orthogonal, every column of `C` is within
+`ε` (relative, Euclidean) of the column of `P A`, and every row of `B` within `ε` of the row of
+`C P`, then `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`. The combination step of every two-sided
+reduction whose transformations are applied column by column and then row by row. -/
+theorem frobenius_norm_sub_mul_mul_le_of_col_of_row {P : Matrix ι ι ℝ}
+    (hP : P ∈ Matrix.orthogonalGroup ι ℝ) {ε : ℝ} (hε0 : 0 ≤ ε) {A B C : Matrix ι ι ℝ}
+    (hcol : ∀ j, ‖(toLp 2 ((C - P * A).col j) : EuclideanSpace ℝ ι)‖ ≤
+      ε * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖)
+    (hrow : ∀ i, ‖(toLp 2 ((B - C * P).row i) : EuclideanSpace ℝ ι)‖ ≤
+      ε * ‖(toLp 2 (C.row i) : EuclideanSpace ℝ ι)‖) :
+    ‖B - P * A * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖A‖ := by
+  have hCPA : ‖C - P * A‖ ≤ ε * ‖A‖ := frobenius_norm_le_of_forall_col_le hε0 hcol
+  have hBCP : ‖B - C * P‖ ≤ ε * ‖C‖ := frobenius_norm_le_of_forall_row_le hε0 hrow
+  have hPA : ‖P * A‖ = ‖A‖ := by
+    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal hP A (one_mem _)
+  have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
+  have hC : ‖C‖ ≤ (1 + ε) * ‖A‖ := by
+    calc ‖C‖ = ‖P * A + (C - P * A)‖ := by congr 1; abel
+      _ ≤ ‖P * A‖ + ‖C - P * A‖ := norm_add_le _ _
+      _ ≤ ‖A‖ + ε * ‖A‖ := by rw [hPA]; linarith
+      _ = (1 + ε) * ‖A‖ := by ring
+  have hsplit : B - P * A * P = (B - C * P) + (C - P * A) * P := by
+    rw [Matrix.sub_mul]
+    abel
+  have h2 : ‖(C - P * A) * P‖ = ‖C - P * A‖ := by
+    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal (one_mem _) (C - P * A) hP
+  calc ‖B - P * A * P‖ ≤ ‖B - C * P‖ + ‖(C - P * A) * P‖ := by
+        rw [hsplit]
+        exact norm_add_le _ _
+    _ ≤ ε * ‖C‖ + ε * ‖A‖ := by rw [h2]; linarith
+    _ ≤ ε * ((1 + ε) * ‖A‖) + ε * ‖A‖ := by gcongr
+    _ = ((1 + ε) ^ 2 - 1) * ‖A‖ := by ring
+
 omit [DecidableEq κ] in
 /-- **The left application of a computed reflector to a matrix**, [golub2013matrix] §5.1.4's
 premultiplication `A - (β v)(vᵀ A)`: if every column of `B` is a computed
@@ -1259,281 +1379,6 @@ theorem frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row {m : Ro
 
 end Matrix
 
-/-! ### The Householder reduction to Hessenberg form in floating-point arithmetic -/
-
-section Hessenberg
-
-open scoped Matrix.Norms.Frobenius
-
-variable {N : ℕ}
-
-/-- The tail of column `k` of `A` below the pivot `k + 1`: the vector `x` from which the
-reflector `P_(k)` of the Householder reduction is built ([quarteroni2000numerical] (5.45)). -/
-def hessenbergTailCol (A : Matrix (Fin N) (Fin N) ℝ) {k : ℕ} (hk : k + 1 < N) : Fin N → ℝ :=
-  fun i => if k + 1 ≤ (i : ℕ) then A i ⟨k, by omega⟩ else 0
-
-/-- The reflector of step `k` is the reflector of the unit axis of the tail of column `k`. -/
-theorem hessenbergReflector_eq_householder (A : Matrix (Fin N) (Fin N) ℝ) {k : ℕ}
-    (hk : k + 1 < N) :
-    hessenbergReflector A k =
-      householder (householderVec (hessenbergTailCol A hk) ⟨k + 1, hk⟩) := by
-  rw [hessenbergReflector_of_lt A (by omega), householderTail_of_lt _ hk]
-  rfl
-
-/-- The reflector of step `k` is symmetric. -/
-theorem transpose_hessenbergReflector (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
-    (hessenbergReflector A k)ᵀ = hessenbergReflector A k := by
-  have h := (isHermitian_hessenbergReflector A k).eq
-  rwa [conjTranspose_eq_transpose_of_trivial] at h
-
-/-- **One step of the Householder reduction to Hessenberg form in floating-point arithmetic**
-([quarteroni2000numerical] §5.6.2, Program 29, step `k`; [higham2002accuracy] Theorem 19.4's
-conventions). `RoundsHessenbergStep m hk A B` says that `B` is an admissible computed value of
-`P_(k)ᵀ A P_(k)`: the reflector data `(v̂, β̂)` are computed from the tail of column `k` of `A`
-below the pivot `k + 1` (`RoundsHouseholderVector`); the columns `j ≥ k` of `A` are updated by
-`RoundsHouseholderApply`, the entries of column `k` in the rows `≥ k + 2` — the ones the
-reflector annihilates — being set to zero explicitly, and the columns `j < k` (already zero
-below the first subdiagonal, so fixed by the reflector) are left alone, giving `C`; then every
-row of `C` is updated by `RoundsHouseholderApply`, its entries in the columns `≤ k`, which the
-reflector fixes exactly, being left alone. -/
-def RoundsHessenbergStep (m : RoundingModel ℝ) {k : ℕ} (hk : k + 1 < N)
-    (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
-  ∃ (vhat : Fin N → ℝ) (βhat : ℝ) (C : Matrix (Fin N) (Fin N) ℝ),
-    RoundsHouseholderVector m (hessenbergTailCol A hk) ⟨k + 1, hk⟩ vhat βhat ∧
-    (∀ j : Fin N, (j : ℕ) < k → C.col j = A.col j) ∧
-    (∀ j : Fin N, k ≤ (j : ℕ) → ∃ y, RoundsHouseholderApply m βhat vhat (A.col j) y ∧
-      ∀ i, C i j = if (j : ℕ) = k ∧ k + 2 ≤ (i : ℕ) then 0 else y i) ∧
-    ∀ i : Fin N, ∃ z, RoundsHouseholderApply m βhat vhat (C.row i) z ∧
-      ∀ j, B i j = if (j : ℕ) ≤ k then C i j else z j
-
-/-- **The Householder reduction to Hessenberg form in floating-point arithmetic**
-([quarteroni2000numerical] §5.6.2, Program 29): `Â_0 = A` and `Â_{k+1}` is a computed step
-`RoundsHessenbergStep` from `Â_k`, for the `n - 2` steps `k < n - 2`; the computed Hessenberg
-matrix is `Ĥ = Â_{n-2}`. -/
-def RoundsHessenbergReduce (m : RoundingModel ℝ) (A : Matrix (Fin N) (Fin N) ℝ)
-    (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
-  Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
-    RoundsHessenbergStep m (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
-
-/-- A computed step keeps the Hessenberg structure of the columns already reduced and adds
-column `k`: if `A` vanishes below the first subdiagonal in the columns `j < k`, so does `B` in
-the columns `j < k + 1`. -/
-theorem RoundsHessenbergStep.apply_eq_zero {m : RoundingModel ℝ} {k : ℕ} {hk : k + 1 < N}
-    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
-    (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 := by
-  obtain ⟨vhat, βhat, C, -, hlt, hge, hrow⟩ := h
-  obtain ⟨z, -, hB⟩ := hrow i
-  rw [hB j, ite_eq_left (by omega)]
-  rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hjk | hjk
-  · have := congrFun (hlt j hjk) i
-    rw [col_apply, col_apply] at this
-    rw [this]
-    exact hA i j hjk hij
-  · obtain ⟨y, -, hC⟩ := hge j (le_of_eq hjk.symm)
-    rw [hC i, ite_eq_left ⟨hjk, by omega⟩]
-
-/-- The reflector data of a step, related to the exact reflector of the computed matrix
-([higham2002accuracy] Lemma 19.1 read for the tail column): the computed `(v̂, β̂)` are relative
-perturbations of order `4n + 8` of the exact `(v, β)` with
-`hessenbergReflector A k = 1 - β v vᵀ`, `|β| ‖v‖₂² ≤ 2`, and `v` vanishing on the coordinates
-`≤ k`. -/
-theorem exists_isRelPert_hessenbergReflector {m : RoundingModel ℝ}
-    (hcard : ((4 * N + 8 : ℕ) : ℝ) * m.u < 1) {A : Matrix (Fin N) (Fin N) ℝ} {k : ℕ}
-    (hk : k + 1 < N) {vhat : Fin N → ℝ} {βhat : ℝ}
-    (h : RoundsHouseholderVector m (hessenbergTailCol A hk) ⟨k + 1, hk⟩ vhat βhat) :
-    ∃ (v : Fin N → ℝ) (β : ℝ), hessenbergReflector A k = 1 - β • vecMulVec v v ∧
-      IsRelPert m.u (4 * N + 8) β βhat ∧ (∀ j, IsRelPert m.u (4 * N + 8) (v j) (vhat j)) ∧
-      |β| * (v ⬝ᵥ v) ≤ 2 ∧ ∀ j : Fin N, (j : ℕ) ≤ k → v j = 0 := by
-  have hcardι : ((4 * Fintype.card (Fin N) + 8 : ℕ) : ℝ) * m.u < 1 := by
-    simpa [Fintype.card_fin] using hcard
-  obtain ⟨hβ, hvi, hvj⟩ := h.isRelPert hcardι
-  simp only [Fintype.card_fin] at hβ hvi
-  set x := hessenbergTailCol A hk with hx
-  set v := householderAxis x ⟨k + 1, hk⟩ with hv
-  have hu0 := m.u_nonneg
-  refine ⟨v, 2 / (v ⬝ᵥ v), ?_, hβ, fun j => ?_, ?_, fun j hj => ?_⟩
-  · rw [hessenbergReflector_eq_householder A hk, householder_householderVec_eq]
-  · rcases eq_or_ne j ⟨k + 1, hk⟩ with rfl | hj
-    · exact hvi.mono hu0 (by omega) hcard
-    · rw [hvj j hj]
-      exact (IsRelPert.refl _ _).mono hu0 (Nat.zero_le _) hcard
-  · have hvv : 0 ≤ v ⬝ᵥ v := by rw [dotProduct_self_eq_norm_sq]; positivity
-    rcases eq_or_lt_of_le hvv with h0 | hpos
-    · rw [← h0]; simp
-    · rw [abs_of_pos (by positivity), div_mul_cancel₀ _ hpos.ne']
-  · have hne : j ≠ ⟨k + 1, hk⟩ := fun e => by
-      have := congrArg (fun i : Fin N => (i : ℕ)) e
-      simp at this
-      omega
-    rw [hv, householderAxis_apply_of_ne x hne, hx, hessenbergTailCol, ite_eq_right (by omega)]
-
-
-/-- **The backward error of one computed step of the Householder reduction**: if `A` vanishes
-below the first subdiagonal in the columns `j < k` and `(13 n + 27) u < 1`, a computed step `B`
-from `A` satisfies `‖B - P_k A P_k‖_F ≤ ((1 + ε)² - 1) ‖A‖_F` with `ε = 3 γ_{13n+27}` and
-`P_k = hessenbergReflector A k` the **exact** reflector of the computed matrix `A`. The column
-sweep is [higham2002accuracy] Lemma 19.2 column by column (with the annihilated entries handled
-as in Theorem 19.4), the row sweep the same row by row, and the two combine through the
-orthogonal invariance of the Frobenius norm. -/
-theorem RoundsHessenbergStep.frobenius_norm_sub_le {m : RoundingModel ℝ}
-    (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
-    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
-    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
-    ‖B - hessenbergReflector A k * A * hessenbergReflector A k‖ ≤
-      ((1 + 3 * gamma m.u (13 * N + 27)) ^ 2 - 1) * ‖A‖ := by
-  obtain ⟨vhat, βhat, C, hvec, hlt, hge, hrow⟩ := h
-  set P := hessenbergReflector A k with hP_def
-  set ε := 3 * gamma m.u (13 * N + 27) with hε_def
-  have hu0 := m.u_nonneg
-  have hcard4 : ((4 * N + 8 : ℕ) : ℝ) * m.u < 1 :=
-    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
-  obtain ⟨v, β, hPeq, hβ, hv, hβv, hvsupp⟩ :=
-    exists_isRelPert_hessenbergReflector hcard4 hk hvec
-  have hPeq' : P = 1 - β • vecMulVec v v := by rw [hP_def]; exact hPeq
-  have hε0 : 0 ≤ ε := by
-    have := gamma_nonneg hu0 hcard
-    positivity
-  have hcard' : ((3 * (4 * N + 8) + Fintype.card (Fin N) + 3 : ℕ) : ℝ) * m.u < 1 := by
-    rw [Fintype.card_fin, show 3 * (4 * N + 8) + N + 3 = 13 * N + 27 by ring]
-    exact hcard
-  -- Lemma 19.2 for every application of the computed reflector
-  have happly : ∀ b y, RoundsHouseholderApply m βhat vhat b y →
-      ‖(toLp 2 (y - P *ᵥ b) : EuclideanSpace ℝ (Fin N))‖ ≤
-        ε * ‖(toLp 2 b : EuclideanSpace ℝ (Fin N))‖ := fun b y hy => by
-    have := norm_sub_le_of_roundsHouseholderApply hcard' hβ hv hβv hy
-    rwa [Fintype.card_fin, show 3 * (4 * N + 8) + N + 3 = 13 * N + 27 by ring, ← hPeq'] at this
-  have hPorth : P ∈ Matrix.orthogonalGroup (Fin N) ℝ := hessenbergReflector_mem_unitaryGroup A k
-  have hPsymm : Pᵀ = P := transpose_hessenbergReflector A k
-  -- the reflector fixes the coordinates `≤ k` and the vectors supported there
-  have hfix : ∀ (w : Fin N → ℝ) (j : Fin N), (j : ℕ) ≤ k → (P *ᵥ w) j = w j := fun w j hj => by
-    rw [hPeq', one_sub_smul_vecMulVec_mulVec_apply, hvsupp j hj]
-    ring
-  have hfixvec : ∀ w : Fin N → ℝ, (∀ r : Fin N, k + 1 ≤ (r : ℕ) → w r = 0) → P *ᵥ w = w :=
-    fun w hw => by
-    rw [hPeq']
-    ext j
-    rw [one_sub_smul_vecMulVec_mulVec_apply]
-    have hvw : v ⬝ᵥ w = 0 := Finset.sum_eq_zero fun r _ => by
-      rcases le_or_gt (r : ℕ) k with hr | hr
-      · rw [hvsupp r hr, zero_mul]
-      · rw [hw r hr, mul_zero]
-    rw [hvw]
-    ring
-  -- the reflector annihilates column `k` below the first subdiagonal
-  have hann : ∀ i : Fin N, k + 2 ≤ (i : ℕ) → (P *ᵥ A.col ⟨k, by omega⟩) i = 0 := fun i hi => by
-    rw [hP_def, hessenbergReflector_of_lt A (by omega)]
-    exact householder_householderTail_mulVec_apply_of_gt _ (by omega)
-  -- the column sweep
-  have hcol : ∀ j, ‖(toLp 2 ((C - P * A).col j) : EuclideanSpace ℝ (Fin N))‖ ≤
-      ε * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ (Fin N))‖ := fun j => by
-    have hcolj : (C - P * A).col j = C.col j - P *ᵥ A.col j := by
-      ext i
-      simp [col_apply, mul_apply, mulVec, dotProduct]
-    rw [hcolj]
-    rcases lt_or_ge (j : ℕ) k with hj | hj
-    · rw [hlt j hj, hfixvec (A.col j) (fun r hr => hA r j hj (by omega)), sub_self]
-      simp only [WithLp.toLp_zero, norm_zero]
-      positivity
-    · obtain ⟨y, hy, hC⟩ := hge j hj
-      refine (norm_toLp_le_of_abs_le fun i => ?_).trans (happly _ _ hy)
-      simp only [Pi.sub_apply, col_apply]
-      rw [hC i]
-      split_ifs with hij
-      · obtain ⟨hjk, hik⟩ := hij
-        have hjk' : j = ⟨k, by omega⟩ := Fin.ext hjk
-        rw [hjk', hann i hik]
-        simp
-      · exact le_rfl
-  have hCPA : ‖C - P * A‖ ≤ ε * ‖A‖ := frobenius_norm_le_of_forall_col_le hε0 hcol
-  -- the row sweep
-  have hrowb : ∀ i, ‖(toLp 2 ((B - C * P).row i) : EuclideanSpace ℝ (Fin N))‖ ≤
-      ε * ‖(toLp 2 (C.row i) : EuclideanSpace ℝ (Fin N))‖ := fun i => by
-    obtain ⟨z, hz, hB⟩ := hrow i
-    have hrowi : (B - C * P).row i = B.row i - P *ᵥ C.row i := by
-      ext j
-      simp only [row_apply, Matrix.sub_apply]
-      rw [show (C * P) i j = (C i ᵥ* P) j from rfl, ← mulVec_transpose, hPsymm]
-      rfl
-    rw [hrowi]
-    refine (norm_toLp_le_of_abs_le fun j => ?_).trans (happly _ _ hz)
-    simp only [Pi.sub_apply, row_apply]
-    rw [hB j]
-    split_ifs with hj
-    · rw [hfix _ j hj]
-      simp
-    · exact le_rfl
-  have hBCP : ‖B - C * P‖ ≤ ε * ‖C‖ := frobenius_norm_le_of_forall_row_le hε0 hrowb
-  -- combine
-  have hPA : ‖P * A‖ = ‖A‖ := by
-    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal hPorth A (one_mem _)
-  have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
-  have hC : ‖C‖ ≤ (1 + ε) * ‖A‖ := by
-    calc ‖C‖ = ‖P * A + (C - P * A)‖ := by congr 1; abel
-      _ ≤ ‖P * A‖ + ‖C - P * A‖ := norm_add_le _ _
-      _ ≤ ‖A‖ + ε * ‖A‖ := by rw [hPA]; linarith
-      _ = (1 + ε) * ‖A‖ := by ring
-  have hsplit : B - P * A * P = (B - C * P) + (C - P * A) * P := by
-    rw [Matrix.sub_mul]
-    abel
-  have h2 : ‖(C - P * A) * P‖ = ‖C - P * A‖ := by
-    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal (one_mem _) (C - P * A) hPorth
-  calc ‖B - P * A * P‖ ≤ ‖B - C * P‖ + ‖(C - P * A) * P‖ := by
-        rw [hsplit]
-        exact norm_add_le _ _
-    _ ≤ ε * ‖C‖ + ε * ‖A‖ := by rw [h2]; linarith
-    _ ≤ ε * ((1 + ε) * ‖A‖) + ε * ‖A‖ := by gcongr
-    _ = ((1 + ε) ^ 2 - 1) * ‖A‖ := by ring
-
-/-- **(5.46) of [quarteroni2000numerical], with the constants explicit** (Wilkinson's backward
-error bound for the Householder reduction to Hessenberg form, [higham2002accuracy] §19.10): if
-`(13 n + 27) u < 1` and `2 (n - 2) ε < 1` for `ε = 3 γ_{13n+27}`, the computed Hessenberg matrix
-`Ĥ = Â_{n-2}` of `RoundsHessenbergReduce` satisfies `Ĥ = Qᵀ (A + E) Q` for the orthogonal
-`Q = P_0 ⋯ P_{n-3}`, `P_k` the exact reflector of the computed `Â_k`, with
-`‖E‖_F ≤ γ_{2(n-2)}(ε) ‖A‖_F = (2 (n - 2) ε / (1 - 2 (n - 2) ε)) ‖A‖_F`, which is
-`c n² u ‖A‖_F` for `u` small. The `2 (n - 2)` counts the column and the row sweep of each of the
-`n - 2` steps. -/
-theorem exists_roundsHessenbergReduce_eq {m : RoundingModel ℝ}
-    (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1)
-    (hr : ((2 * (N - 2) : ℕ) : ℝ) * (3 * gamma m.u (13 * N + 27)) < 1)
-    {A : Matrix (Fin N) (Fin N) ℝ} {Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ}
-    (h : RoundsHessenbergReduce m A Ahat) :
-    ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ E : Matrix (Fin N) (Fin N) ℝ,
-      Ahat (N - 2) = Qᵀ * (A + E) * Q ∧
-        ‖E‖ ≤ gamma (3 * gamma m.u (13 * N + 27)) (2 * (N - 2)) * ‖A‖ := by
-  obtain ⟨h0, hstep⟩ := h
-  set ε := 3 * gamma m.u (13 * N + 27) with hε_def
-  have hε0 : 0 ≤ ε := by
-    have := gamma_nonneg m.u_nonneg hcard
-    positivity
-  set P : ℕ → Matrix (Fin N) (Fin N) ℝ := fun k => hessenbergReflector (Ahat k) k with hP_def
-  have hPorth : ∀ k, P k ∈ Matrix.orthogonalGroup (Fin N) ℝ := fun k =>
-    hessenbergReflector_mem_unitaryGroup _ k
-  have hPsymm : ∀ k, (P k)ᵀ = P k := fun k => transpose_hessenbergReflector _ k
-  -- the Hessenberg structure of the computed iterates
-  have hhess : ∀ k, k ≤ N - 2 → ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) →
-      Ahat k i j = 0 := by
-    intro k
-    induction k with
-    | zero => intro _ i j hj; omega
-    | succ k ih =>
-      intro hk i j hj hij
-      exact (hstep k (by omega)).apply_eq_zero (ih (by omega)) i j hj hij
-  -- the per-step bound
-  have hA : ∀ k, k < N - 2 → ‖Ahat (k + 1) - P k * Ahat k * P k‖ ≤ ((1 + ε) ^ 2 - 1) * ‖Ahat k‖ :=
-    fun k hk => (hstep k hk).frobenius_norm_sub_le hcard (hhess k (by omega))
-  have hε'0 : 0 ≤ (1 + ε) ^ 2 - 1 := by nlinarith
-  obtain ⟨E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_prodFwd hPorth hPsymm hε'0 (N - 2) hA
-  refine ⟨prodFwd P (N - 2), prodFwd_mem_orthogonalGroup hPorth _, E, by rw [hE, h0], ?_⟩
-  rw [h0] at hEn
-  refine hEn.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
-  have hpow : (1 + ((1 + ε) ^ 2 - 1)) ^ (N - 2) = (1 + ε) ^ (2 * (N - 2)) := by
-    rw [add_sub_cancel, pow_mul]
-  rw [hpow]
-  exact one_add_pow_sub_one_le_gamma hε0 hr
-
-end Hessenberg
-
 /-! ### Reflectors acting on a block of coordinates -/
 
 section Block
@@ -1542,22 +1387,38 @@ open scoped Matrix.Norms.Frobenius
 
 variable {p : ι → Prop} [DecidablePred p]
 
-/-- A vector on the coordinates `{i // p i}`, extended by zero to all of `ι`. -/
-private def extendByZero (p : ι → Prop) [DecidablePred p] (v : {i // p i} → ℝ) : ι → ℝ :=
+/-- **A vector on the coordinates `{i // p i}`, extended by zero** to all of `ι`: Mathlib's
+`Function.extend Subtype.val v 0` (`extendByZero_eq_extend`), with a pointwise definition. -/
+def extendByZero (p : ι → Prop) [DecidablePred p] (v : {i // p i} → ℝ) : ι → ℝ :=
   fun i => if h : p i then v ⟨i, h⟩ else 0
 
 omit [Fintype ι] [DecidableEq ι] in
-private theorem extendByZero_apply (v : {i // p i} → ℝ) (a : {i // p i}) :
+/-- The zero extension agrees with the vector on its coordinates. -/
+@[simp]
+theorem extendByZero_apply (v : {i // p i} → ℝ) (a : {i // p i}) :
     extendByZero p v a = v a := by
   simp [extendByZero, a.2]
 
 omit [Fintype ι] [DecidableEq ι] in
-private theorem extendByZero_apply_of_not (v : {i // p i} → ℝ) {r : ι} (hr : ¬ p r) :
+/-- The zero extension vanishes off the coordinates of the vector. -/
+theorem extendByZero_apply_of_not (v : {i // p i} → ℝ) {r : ι} (hr : ¬ p r) :
     extendByZero p v r = 0 := by
   simp [extendByZero, hr]
 
+omit [Fintype ι] [DecidableEq ι] in
+/-- The zero extension is Mathlib's `Function.extend Subtype.val v 0`. -/
+theorem extendByZero_eq_extend (v : {i // p i} → ℝ) :
+    extendByZero p v = Function.extend Subtype.val v 0 := by
+  funext r
+  by_cases hr : p r
+  · rw [show r = ((⟨r, hr⟩ : {i // p i}) : ι) from rfl, extendByZero_apply,
+      Subtype.val_injective.extend_apply]
+  · rw [extendByZero_apply_of_not v hr, Function.extend_apply' _ _ _ fun ⟨a, ha⟩ => hr (ha ▸ a.2),
+      Pi.zero_apply]
+
 omit [DecidableEq ι] in
-private theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
+/-- The inner product of a zero extension is the inner product on the coordinates. -/
+theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
     extendByZero p v ⬝ᵥ w = v ⬝ᵥ fun a : {i // p i} => w a := by
   rw [dotProduct, ← Fintype.sum_subtype_add_sum_subtype p]
   have h2 : ∑ a : {i // ¬ p i}, extendByZero p v a * w a = 0 :=
@@ -1821,7 +1682,7 @@ private theorem abs_rounds_sqrt_sub_norm_le {κ : Type*} [Fintype κ] {m : Round
     push_cast at this
     linarith)).le (by rw [hxx]; positivity)
   rw [hxx, Real.sqrt_sq (norm_nonneg _)] at h2
-  have h3 := (h2.rounds hu1 (hlt _ (by omega)) hν).abs_sub_le
+  have h3 := (h2.rounds (hlt _ (by omega)) hν).abs_sub_le
   rw [abs_of_nonneg (norm_nonneg _)] at h3
   exact h3.trans (mul_le_mul (gamma_mono hu0 (by omega) (hlt _ (by omega))) hxa (norm_nonneg _)
     (gamma_nonneg hu0 (hlt _ (by omega))))
@@ -1892,7 +1753,7 @@ private theorem abs_rounds_sub_sub_sub_le {m : RoundingModel ℝ} {k g : ℕ}
   have hprod : ∀ {vv vh ww wh WW δ : ℝ}, IsRelPert m.u k vv vh → |wh - ww| ≤ G * WW →
       |ww| ≤ WW → |δ| ≤ m.u → |vh * (1 + δ) * wh - vv * ww| ≤ G' * (|vv| * WW) := by
     intro vv vh ww wh WW δ hvv hww hww' hδ
-    obtain ⟨θ, hθ, hθe⟩ := hvv.mul_one_add hu0 hu1 (hlt (k + 1) (by omega)) hδ
+    obtain ⟨θ, hθ, hθe⟩ := hvv.mul_one_add hu0 (hlt (k + 1) (by omega)) hδ
     have hWW : 0 ≤ WW := (abs_nonneg _).trans hww'
     rw [hθe, show vv * (1 + θ) * wh - vv * ww = vv * (θ * ww + (1 + θ) * (wh - ww)) by ring,
       abs_mul]
@@ -2085,7 +1946,7 @@ theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ}
         isRelPert_of_abs_sub_le (hγ n (by omega)) (by rw [add_sub_cancel_left]; exact hd j)
       have h1 := hβ.mul hu0 (k := k) (j := n) (hlt _ (by omega)) hBd
       have h2 := h1.mul hu0 (k := k + n) (j := k) (hlt _ (by omega)) (hv j)
-      have h3 := h2.mul_one_add hu0 hu1 (hlt (k + n + k + 1) (by omega)) hδ
+      have h3 := h2.mul_one_add hu0 (hlt (k + n + k + 1) (by omega)) hδ
       rwa [show k + n + k + 1 = 2 * k + n + 1 by ring] at h3
   choose c hc_sum hc_rel using hpc
   -- `ŝ`
@@ -2109,8 +1970,8 @@ theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ}
   obtain ⟨δ₂, hδ₂, hteq⟩ := ht.exists_delta
   set f := βhat * (1 + δ₁) * (1 + δ₂) / 2 with hf_def
   have hf : IsRelPert m.u (k + 2) (β / 2) f := by
-    obtain ⟨θ, hθ, hθe⟩ := (hβ.mul_one_add hu0 hu1 (hlt (k + 1) (by omega)) hδ₁).mul_one_add
-      hu0 hu1 (hlt (k + 1 + 1) (by omega)) hδ₂
+    obtain ⟨θ, hθ, hθe⟩ := (hβ.mul_one_add hu0 (hlt (k + 1) (by omega)) hδ₁).mul_one_add
+      hu0 (hlt (k + 1 + 1) (by omega)) hδ₂
     exact ⟨θ, hθ, by rw [hf_def, hθe]; ring⟩
   have hts : that = f * shat := by rw [hteq, ht₁eq, hf_def]; ring
   -- `τ̂_i = fl(t̂ v̂_i)` and `ŵ_i`
@@ -2121,7 +1982,7 @@ theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ}
       (β / 2 * (β * B a b * v b * v a) * v i) (f * e a b * (vhat i * (1 + δ₃ i))) :=
     fun i a b => by
     have h1 := hf.mul hu0 (k := k + 2) (j := 3 * k + 2 * n + 1) (hlt _ (by omega)) (he_rel a b)
-    have h2 := (hv i).mul_one_add hu0 hu1 (hlt (k + 1) (by omega)) (hδ₃ i)
+    have h2 := (hv i).mul_one_add hu0 (hlt (k + 1) (by omega)) (hδ₃ i)
     have h3 := h1.mul hu0 (k := k + 2 + (3 * k + 2 * n + 1)) (j := k + 1) (hlt _ (by omega)) h2
     rwa [show k + 2 + (3 * k + 2 * n + 1) + (k + 1) = 5 * k + 2 * n + 4 by ring] at h3
   have hτsum : ∀ i, τ i = ∑ a, ∑ b, f * e a b * (vhat i * (1 + δ₃ i)) := fun i => by
@@ -2260,48 +2121,46 @@ open scoped Matrix.Norms.Frobenius
 
 variable {N : ℕ}
 
-/-- **One step of the Householder reduction to Hessenberg form, in [golub2013matrix]'s
-association and for any reflector-vector formula** (Algorithm 7.4.2, step `k`). With the active
-rows `T = {i // k + 1 ≤ i}` and `x` the tail of column `k` on `T`: the computed reflector data
-`(v̂, β̂)` are `IsReflectorPert` data for `x`; every column `j ≥ k` of `A` is updated on `T` by
-`RoundsHouseholderApplyScaled`, the entries of column `k` in the rows `≥ k + 2` being set to zero
-(the book stores the vector there; those entries are never read again), giving `C`, equal to `A`
-in the rows outside `T` and in the columns `< k`; then every row of `C` is updated on the columns
-of `T` by `RoundsHouseholderApplyScaled`, giving `B`, equal to `C` in the columns outside `T`. Rows
-and columns outside `T` are not re-rounded, since the program never touches them. -/
-def RoundsHessenbergStepPert (m : RoundingModel ℝ) (K : ℕ) {k : ℕ} (hk : k + 1 < N)
+/-- **One step of the Householder reduction to Hessenberg form, generic in the reflector formula
+and in the application of the reflector** (step `k` of [golub2013matrix] Algorithm 7.4.2 and of
+[quarteroni2000numerical] Program 29). With the active rows `T = {i // k + 1 ≤ i}` and `x` the
+tail of column `k` on `T`: the computed reflector data `(v̂, β̂)` satisfy `Refl x v̂ β̂`; every
+column `j ≥ k` of `A` is updated on `T` by `App β̂ v̂`, the entries of column `k` in the rows
+`≥ k + 2` being set to zero (those entries are never read again), giving `C`, equal to `A` in the
+rows outside `T` and in the columns `< k`; then every row of `C` is updated on the columns of `T`
+by `App β̂ v̂`, giving `B`, equal to `C` in the columns outside `T`. Rows and columns outside `T`
+are not re-rounded, since no program touches them. Instances: `RoundsHessenbergStepPert`
+(any reflector formula, [golub2013matrix]'s association) and `RoundsHessenbergStep`
+([higham2002accuracy]'s vector and association). -/
+def RoundsHessenbergStepOf {k : ℕ} (hk : k + 1 < N)
+    (Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
+      Prop)
+    (App : ℝ → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) →
+      ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → Prop)
     (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
-  ∃ (c : ℝ) (vhat : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) (βhat : ℝ)
-    (C : Matrix (Fin N) (Fin N) ℝ),
-    IsReflectorPert m.u K (fun i : {i : Fin N // k + 1 ≤ (i : ℕ)} => A i ⟨k, by omega⟩)
-      ⟨⟨k + 1, hk⟩, le_rfl⟩ c vhat βhat ∧
+  ∃ (vhat : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) (βhat : ℝ) (C : Matrix (Fin N) (Fin N) ℝ),
+    Refl (fun i : {i : Fin N // k + 1 ≤ (i : ℕ)} => A i ⟨k, by omega⟩) vhat βhat ∧
     (∀ j : Fin N, k ≤ (j : ℕ) → ∃ y : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ,
-      RoundsHouseholderApplyScaled m βhat vhat
-        (fun i : {i : Fin N // k + 1 ≤ (i : ℕ)} => A i j) y ∧
+      App βhat vhat (fun i : {i : Fin N // k + 1 ≤ (i : ℕ)} => A i j) y ∧
       ∀ i : {i : Fin N // k + 1 ≤ (i : ℕ)},
         C i j = if (j : ℕ) = k ∧ k + 2 ≤ (i : ℕ) then 0 else y i) ∧
     (∀ i j : Fin N, ((i : ℕ) < k + 1 ∨ (j : ℕ) < k) → C i j = A i j) ∧
     (∀ i : Fin N, ∃ z : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ,
-      RoundsHouseholderApplyScaled m βhat vhat
-        (fun j : {i : Fin N // k + 1 ≤ (i : ℕ)} => C i j) z ∧
+      App βhat vhat (fun j : {i : Fin N // k + 1 ≤ (i : ℕ)} => C i j) z ∧
       ∀ j : {i : Fin N // k + 1 ≤ (i : ℕ)}, B i j = z j) ∧
     (∀ i j : Fin N, (j : ℕ) < k + 1 → B i j = C i j)
 
-/-- **The Householder reduction to Hessenberg form, for any reflector formula**:
-`Â_0 = A` and `Â_{k+1}` is a computed step `RoundsHessenbergStepPert` from `Â_k` for the
-`N - 2` steps `k < N - 2`. -/
-def RoundsHessenbergReducePert (m : RoundingModel ℝ) (K : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
-    (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
-  Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
-    RoundsHessenbergStepPert m K (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
-
 /-- A computed step keeps the reduced columns: if `A` vanishes below the first subdiagonal in the
 columns `j < k`, then `B` does in the columns `j < k + 1`. -/
-theorem RoundsHessenbergStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
-    {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
+theorem RoundsHessenbergStepOf.apply_eq_zero {k : ℕ} {hk : k + 1 < N}
+    {Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
+      Prop}
+    {App : ℝ → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) →
+      ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → Prop} {A B : Matrix (Fin N) (Fin N) ℝ}
+    (h : RoundsHessenbergStepOf hk Refl App A B)
     (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 := by
-  obtain ⟨c, vhat, βhat, C, -, hcol, hCA, -, hBC⟩ := h
+  obtain ⟨vhat, βhat, C, -, hcol, hCA, -, hBC⟩ := h
   rw [hBC i j hj]
   rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hjk | hjk
   · rw [hCA i j (Or.inr hjk)]
@@ -2311,44 +2170,44 @@ theorem RoundsHessenbergStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : �
     rw [ite_eq_left ⟨hjk, by simp; omega⟩] at this
     exact this
 
-/-- **The backward error of one computed step of the Householder Hessenberg reduction, for any
-reflector formula**: if `(3K + N + 3) u < 1` and `A` vanishes below the first subdiagonal in the
-columns `< k`, there is a symmetric orthogonal `P`, the identity on the rows (and columns) `≤ k`
-— the exact reflector of `IsReflectorPert`, extended by the identity — with
-`‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`, `ε = 3 γ_{3K+N+3}`: Lemma 19.2 of [higham2002accuracy]
-(`norm_sub_le_of_roundsHouseholderApplyScaled`) on each column and each row of the active block,
-combined through the orthogonal invariance of the Frobenius norm. -/
-theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
-    (hcard : ((3 * K + N + 3 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
-    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
+/-- **The backward error of one computed step of the Householder Hessenberg reduction, generic
+in the reflector formula and the application**: if the reflector data of `Refl` are
+`IsReflectorPert` data of some order `K`, and every application `App` of data within order `K`
+of an exact reflector `P` is within `ε` of `P b` (Lemma 19.2 of [higham2002accuracy]), then, when
+`A` vanishes below the first subdiagonal in the columns `< k`, there is a symmetric orthogonal
+`P`, the identity on the rows (and columns) `≤ k` — the exact reflector extended by the
+identity — with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`: the bound on each column and each row
+of the active block, combined through the orthogonal invariance of the Frobenius norm. -/
+theorem RoundsHessenbergStepOf.frobenius_norm_sub_le {u : ℝ} {K k : ℕ} {hk : k + 1 < N}
+    {Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
+      Prop}
+    {App : ℝ → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) →
+      ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → Prop} {ε : ℝ} (hε0 : 0 ≤ ε)
+    (hRefl : ∀ x vhat βhat, Refl x vhat βhat →
+      ∃ c, IsReflectorPert u K x ⟨⟨k + 1, hk⟩, le_rfl⟩ c vhat βhat)
+    (hApp : ∀ (β βhat : ℝ) (v vhat b y : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ),
+      IsRelPert u K β βhat → (∀ i, IsRelPert u K (v i) (vhat i)) → |β| * (v ⬝ᵥ v) ≤ 2 →
+      App βhat vhat b y →
+      ‖(toLp 2 (y - (1 - β • vecMulVec v v) *ᵥ b) :
+        EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖ ≤
+        ε * ‖(toLp 2 b : EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖)
+    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepOf hk Refl App A B)
     (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
     ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
       (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
-      ‖B - P * A * P‖ ≤ ((1 + 3 * gamma m.u (3 * K + N + 3)) ^ 2 - 1) * ‖A‖ := by
-  obtain ⟨c, vhat, βhat, C, ⟨v, β, hPorth, hPx, hβv, hβ, hv⟩, hcol, hCA, hrow, hBC⟩ := h
+      ‖B - P * A * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖A‖ := by
+  obtain ⟨vhat, βhat, C, hrefl, hcol, hCA, hrow, hBC⟩ := h
+  obtain ⟨c, v, β, hPorth, hPx, hβv, hβ, hv⟩ := hRefl _ _ _ hrefl
   set P := 1 - β • vecMulVec (extendByZero (fun i : Fin N => k + 1 ≤ (i : ℕ)) v)
     (extendByZero (fun i : Fin N => k + 1 ≤ (i : ℕ)) v) with hP_def
-  set ε := 3 * gamma m.u (3 * K + N + 3) with hε_def
-  have hu0 := m.u_nonneg
-  have hε0 : 0 ≤ ε := by
-    have := gamma_nonneg hu0 hcard
-    positivity
   have hPo : P ∈ Matrix.orthogonalGroup (Fin N) ℝ :=
     one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup hPorth
   have hPs : Pᵀ = P := transpose_one_sub_smul_vecMulVec _ _
-  have hTcard : Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} ≤ N :=
-    (Fintype.card_subtype_le _).trans (by simp)
-  have hcardT :
-      ((3 * K + Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} + 3 : ℕ) : ℝ) * m.u < 1 :=
-    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
-  have happly : ∀ b y : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ,
-      RoundsHouseholderApplyScaled m βhat vhat b y →
+  have happly : ∀ b y : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ, App βhat vhat b y →
       ‖(toLp 2 (y - (1 - β • vecMulVec v v) *ᵥ b) :
         EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖ ≤
         ε * ‖(toLp 2 b : EuclideanSpace ℝ {i : Fin N // k + 1 ≤ (i : ℕ)})‖ := fun b y hy =>
-    (norm_sub_le_of_roundsHouseholderApplyScaled hcardT hβ hv hβv hy).trans
-      (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left
-        (gamma_mono hu0 (by omega) hcard) (by norm_num)) (norm_nonneg _))
+    hApp β βhat v vhat b y hβ hv hβv hy
   -- the column sweep
   have hcolb : ∀ j, ‖(toLp 2 ((C - P * A).col j) : EuclideanSpace ℝ (Fin N))‖ ≤
       ε * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ (Fin N))‖ := fun j => by
@@ -2381,7 +2240,6 @@ theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {
         rw [hx, hPx, Pi.smul_apply, Pi.single_eq_of_ne hne, smul_zero]
         simp
       · exact le_rfl
-  have hCPA : ‖C - P * A‖ ≤ ε * ‖A‖ := frobenius_norm_le_of_forall_col_le hε0 hcolb
   -- the row sweep
   have hrowb : ∀ i, ‖(toLp 2 ((B - C * P).row i) : EuclideanSpace ℝ (Fin N))‖ ≤
       ε * ‖(toLp 2 (C.row i) : EuclideanSpace ℝ (Fin N))‖ := fun i => by
@@ -2390,30 +2248,99 @@ theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {
     refine norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le hε0 (y := z)
       (fun r hr => hBC i r (not_le.1 hr)) (fun a => ?_) (happly _ _ hz)
     rw [row_apply, hBz a]
-  have hBCP : ‖B - C * P‖ ≤ ε * ‖C‖ := frobenius_norm_le_of_forall_row_le hε0 hrowb
-  -- combine
   refine ⟨P, hPo, hPs, fun i j hi =>
     one_sub_smul_vecMulVec_extendByZero_apply_of_not β v (not_le.2 hi) j, ?_⟩
   clear_value P
-  have hPA : ‖P * A‖ = ‖A‖ := by
-    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal hPo A (one_mem _)
-  have hA0 : 0 ≤ ‖A‖ := norm_nonneg _
-  have hC : ‖C‖ ≤ (1 + ε) * ‖A‖ := by
-    calc ‖C‖ = ‖P * A + (C - P * A)‖ := by congr 1; abel
-      _ ≤ ‖P * A‖ + ‖C - P * A‖ := norm_add_le _ _
-      _ ≤ ‖A‖ + ε * ‖A‖ := by rw [hPA]; linarith
-      _ = (1 + ε) * ‖A‖ := by ring
-  have hsplit : B - P * A * P = (B - C * P) + (C - P * A) * P := by
-    rw [Matrix.sub_mul]
-    abel
-  have h2 : ‖(C - P * A) * P‖ = ‖C - P * A‖ := by
-    simpa using frobenius_norm_orthogonal_mul_mul_orthogonal (one_mem _) (C - P * A) hPo
-  calc ‖B - P * A * P‖ ≤ ‖B - C * P‖ + ‖(C - P * A) * P‖ := by
-        rw [hsplit]
-        exact norm_add_le _ _
-    _ ≤ ε * ‖C‖ + ε * ‖A‖ := by rw [h2]; linarith
-    _ ≤ ε * ((1 + ε) * ‖A‖) + ε * ‖A‖ := by gcongr
-    _ = ((1 + ε) ^ 2 - 1) * ‖A‖ := by ring
+  exact frobenius_norm_sub_mul_mul_le_of_col_of_row hPo hε0 hcolb hrowb
+
+/-- **Wilkinson's bound from the per-step bounds** of a Householder reduction to Hessenberg form
+([higham2002accuracy] Theorem 19.4, [golub2013matrix] §7.4.3): if every step `k < N - 2` keeps
+the reduced columns and, from a matrix reduced in the columns `< k`, is within
+`((1 + ε)² - 1) ‖Â_k‖_F` of `P Â_k P` for a symmetric orthogonal `P`, and `2 (N - 2) ε < 1`, then
+`Â_{N-2}` is upper Hessenberg and `Â_{N-2} = Qᵀ (Â_0 + E) Q` with `Q` orthogonal and
+`‖E‖_F ≤ γ_{2(N-2)}(ε) ‖Â_0‖_F`: the `2 (N - 2)` counts the two sweeps of each step. -/
+theorem exists_hessenbergReduce_eq_of_forall_step {Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ}
+    {ε : ℝ} (hε0 : 0 ≤ ε) (hr : ((2 * (N - 2) : ℕ) : ℝ) * ε < 1)
+    (hz : ∀ k, k < N - 2 →
+      (∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → Ahat k i j = 0) →
+      ∀ i j : Fin N, (j : ℕ) < k + 1 → (j : ℕ) + 1 < (i : ℕ) → Ahat (k + 1) i j = 0)
+    (hb : ∀ k, k < N - 2 →
+      (∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → Ahat k i j = 0) →
+      ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
+        ‖Ahat (k + 1) - P * Ahat k * P‖ ≤ ((1 + ε) ^ 2 - 1) * ‖Ahat k‖) :
+    (Ahat (N - 2)).IsUpperHessenberg ∧ ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ,
+      ∃ E : Matrix (Fin N) (Fin N) ℝ, Ahat (N - 2) = Qᵀ * (Ahat 0 + E) * Q ∧
+        ‖E‖ ≤ gamma ε (2 * (N - 2)) * ‖Ahat 0‖ := by
+  have hhess : ∀ k, k ≤ N - 2 → ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) →
+      Ahat k i j = 0 := by
+    intro k
+    induction k with
+    | zero => intro _ i j hj; omega
+    | succ k ih => exact fun hk => hz k (by omega) (ih (by omega))
+  refine ⟨fun i j ⟨l, hjl, hli⟩ => hhess (N - 2) le_rfl i j (by omega) (by
+    have := Fin.lt_def.1 hjl
+    have := Fin.lt_def.1 hli
+    omega), ?_⟩
+  have hε'0 : 0 ≤ (1 + ε) ^ 2 - 1 := by nlinarith
+  obtain ⟨Q, hQ, E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_of_forall_step hε'0 (N - 2)
+    fun k hk => hb k hk (hhess k hk.le)
+  refine ⟨Q, hQ, E, hE, hEn.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))⟩
+  have hpow : (1 + ((1 + ε) ^ 2 - 1)) ^ (N - 2) = (1 + ε) ^ (2 * (N - 2)) := by
+    rw [add_sub_cancel, pow_mul]
+  rw [hpow]
+  exact one_add_pow_sub_one_le_gamma hε0 hr
+
+/-- **One step of the Householder reduction to Hessenberg form, in [golub2013matrix]'s
+association and for any reflector-vector formula** (Algorithm 7.4.2, step `k`): the reflector
+data are `IsReflectorPert` data of order `K` for the tail of column `k`, and every update is
+`RoundsHouseholderApplyScaled` (`RoundsHessenbergStepOf`). -/
+def RoundsHessenbergStepPert (m : RoundingModel ℝ) (K : ℕ) {k : ℕ} (hk : k + 1 < N)
+    (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  RoundsHessenbergStepOf hk
+    (fun x vhat βhat => ∃ c, IsReflectorPert m.u K x ⟨⟨k + 1, hk⟩, le_rfl⟩ c vhat βhat)
+    (RoundsHouseholderApplyScaled m) A B
+
+/-- **The Householder reduction to Hessenberg form, for any reflector formula**:
+`Â_0 = A` and `Â_{k+1}` is a computed step `RoundsHessenbergStepPert` from `Â_k` for the
+`N - 2` steps `k < N - 2`. -/
+def RoundsHessenbergReducePert (m : RoundingModel ℝ) (K : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
+    RoundsHessenbergStepPert m K (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
+
+/-- A computed step keeps the reduced columns: if `A` vanishes below the first subdiagonal in the
+columns `j < k`, then `B` does in the columns `j < k + 1`. -/
+theorem RoundsHessenbergStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
+    {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
+    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
+  RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
+
+/-- **The backward error of one computed step of the Householder Hessenberg reduction, for any
+reflector formula**: if `(3K + N + 3) u < 1` and `A` vanishes below the first subdiagonal in the
+columns `< k`, there is a symmetric orthogonal `P`, the identity on the rows (and columns) `≤ k`,
+with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`, `ε = 3 γ_{3K+N+3}`: `RoundsHessenbergStepOf` with
+[higham2002accuracy] Lemma 19.2 (`norm_sub_le_of_roundsHouseholderApplyScaled`) on the active
+block. -/
+theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
+    (hcard : ((3 * K + N + 3 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
+    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
+    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
+      (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
+      ‖B - P * A * P‖ ≤ ((1 + 3 * gamma m.u (3 * K + N + 3)) ^ 2 - 1) * ‖A‖ := by
+  have hu0 := m.u_nonneg
+  have hTcard : Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} ≤ N :=
+    (Fintype.card_subtype_le _).trans (by simp)
+  have hcardT :
+      ((3 * K + Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} + 3 : ℕ) : ℝ) * m.u < 1 :=
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
+  exact RoundsHessenbergStepOf.frobenius_norm_sub_le
+    (by have := gamma_nonneg hu0 hcard; positivity) (fun _ _ _ h => h)
+    (fun _ _ _ _ _ _ hβ hv hβv hy =>
+      (norm_sub_le_of_roundsHouseholderApplyScaled hcardT hβ hv hβv hy).trans
+        (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left
+          (gamma_mono hu0 (by omega) hcard) (by norm_num)) (norm_nonneg _))) h hA
 
 /-- **Backward stability of the Householder Hessenberg reduction, for any reflector formula**
 ([golub2013matrix] §7.4.3, citing Wilkinson; [higham2002accuracy] Theorem 19.4): if
@@ -2428,35 +2355,95 @@ theorem exists_roundsHessenbergReducePert_eq {m : RoundingModel ℝ} {K : ℕ}
     (Ahat (N - 2)).IsUpperHessenberg ∧ ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ,
       ∃ E : Matrix (Fin N) (Fin N) ℝ, Ahat (N - 2) = Qᵀ * (A + E) * Q ∧
         ‖E‖ ≤ gamma (3 * gamma m.u (3 * K + N + 3)) (2 * (N - 2)) * ‖A‖ := by
-  obtain ⟨h0, hstep⟩ := h
-  set ε := 3 * gamma m.u (3 * K + N + 3) with hε_def
-  have hε0 : 0 ≤ ε := by
-    have := gamma_nonneg m.u_nonneg hcard
-    positivity
-  have hhess : ∀ k, k ≤ N - 2 → ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) →
-      Ahat k i j = 0 := by
-    intro k
-    induction k with
-    | zero => intro _ i j hj; omega
-    | succ k ih =>
-      intro hk i j hj hij
-      exact (hstep k (by omega)).apply_eq_zero (ih (by omega)) i j hj hij
-  refine ⟨fun i j ⟨l, hjl, hli⟩ => hhess (N - 2) le_rfl i j (by omega) (by
-    have := Fin.lt_def.1 hjl
-    have := Fin.lt_def.1 hli
-    omega), ?_⟩
-  have hε'0 : 0 ≤ (1 + ε) ^ 2 - 1 := by nlinarith
-  obtain ⟨Q, hQ, E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_of_forall_step hε'0 (N - 2)
-    fun k hk => by
-      obtain ⟨P, hP, hPs, -, hb⟩ := (hstep k hk).frobenius_norm_sub_le hcard (hhess k hk.le)
+  obtain ⟨rfl, hstep⟩ := h
+  exact exists_hessenbergReduce_eq_of_forall_step
+    (by have := gamma_nonneg m.u_nonneg hcard; positivity) hr
+    (fun k hk hA => (hstep k hk).apply_eq_zero hA) fun k hk hA => by
+      obtain ⟨P, hP, hPs, -, hb⟩ := (hstep k hk).frobenius_norm_sub_le hcard hA
       exact ⟨P, hP, hPs, hb⟩
-  refine ⟨Q, hQ, E, by rw [hE, h0], ?_⟩
-  rw [h0] at hEn
-  refine hEn.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
-  have hpow : (1 + ((1 + ε) ^ 2 - 1)) ^ (N - 2) = (1 + ε) ^ (2 * (N - 2)) := by
-    rw [add_sub_cancel, pow_mul]
-  rw [hpow]
-  exact one_add_pow_sub_one_le_gamma hε0 hr
+
+/-- **One step of the Householder reduction to Hessenberg form in [higham2002accuracy]'s
+operation order** ([quarteroni2000numerical] §5.6.2, Program 29, step `k`; [higham2002accuracy]
+Theorem 19.4's conventions): the reflector data are the computed Householder vector
+`RoundsHouseholderVector` of the tail of column `k` below the pivot `k + 1`, and every update is
+`RoundsHouseholderApply` (`RoundsHessenbergStepOf`). -/
+def RoundsHessenbergStep (m : RoundingModel ℝ) {k : ℕ} (hk : k + 1 < N)
+    (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  RoundsHessenbergStepOf hk
+    (fun x vhat βhat => RoundsHouseholderVector m x ⟨⟨k + 1, hk⟩, le_rfl⟩ vhat βhat)
+    (RoundsHouseholderApply m) A B
+
+/-- **The Householder reduction to Hessenberg form in floating-point arithmetic**
+([quarteroni2000numerical] §5.6.2, Program 29): `Â_0 = A` and `Â_{k+1}` is a computed step
+`RoundsHessenbergStep` from `Â_k`, for the `n - 2` steps `k < n - 2`; the computed Hessenberg
+matrix is `Ĥ = Â_{n-2}`. -/
+def RoundsHessenbergReduce (m : RoundingModel ℝ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
+    RoundsHessenbergStep m (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
+
+/-- A computed step keeps the Hessenberg structure of the columns already reduced and adds
+column `k`. -/
+theorem RoundsHessenbergStep.apply_eq_zero {m : RoundingModel ℝ} {k : ℕ} {hk : k + 1 < N}
+    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
+    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) (i j : Fin N)
+    (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
+  RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
+
+/-- **The backward error of one computed step of the Householder reduction**: if `A` vanishes
+below the first subdiagonal in the columns `j < k` and `(13 n + 27) u < 1`, there is a symmetric
+orthogonal `P`, the identity on the rows `≤ k`, with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`,
+`ε = 3 γ_{13n+27}`: `RoundsHessenbergStepOf` with the computed vector as reflector data of order
+`4n + 8` (Lemma 19.1, `RoundsHouseholderVector.isReflectorPert`) and Lemma 19.2
+(`norm_sub_le_of_roundsHouseholderApply`), `3 (4n + 8) + n + 3 = 13n + 27`. -/
+theorem RoundsHessenbergStep.frobenius_norm_sub_le {m : RoundingModel ℝ}
+    (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
+    {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
+    (hA : ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0) :
+    ∃ P ∈ Matrix.orthogonalGroup (Fin N) ℝ, Pᵀ = P ∧
+      (∀ i j : Fin N, (i : ℕ) < k + 1 → P i j = (1 : Matrix (Fin N) (Fin N) ℝ) i j) ∧
+      ‖B - P * A * P‖ ≤ ((1 + 3 * gamma m.u (13 * N + 27)) ^ 2 - 1) * ‖A‖ := by
+  have hu0 := m.u_nonneg
+  have hTcard : Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} ≤ N :=
+    (Fintype.card_subtype_le _).trans (by simp)
+  have hcard4 : ((4 * Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} + 8 : ℕ) : ℝ) * m.u < 1 :=
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
+  have hcardN : ((4 * N + 8 : ℕ) : ℝ) * m.u < 1 :=
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
+  have hcardT : ((3 * (4 * N + 8) + Fintype.card {i : Fin N // k + 1 ≤ (i : ℕ)} + 3 : ℕ) : ℝ) *
+      m.u < 1 :=
+    (mul_le_mul_of_nonneg_right (Nat.cast_le.2 (by omega)) hu0).trans_lt hcard
+  exact RoundsHessenbergStepOf.frobenius_norm_sub_le (K := 4 * N + 8)
+    (by have := gamma_nonneg hu0 hcard; positivity)
+    (fun _ _ _ h => ⟨_, IsReflectorPert.mono hu0 (by omega) hcardN
+      (RoundsHouseholderVector.isReflectorPert hcard4 h)⟩)
+    (fun _ _ _ _ _ _ hβ hv hβv hy =>
+      (norm_sub_le_of_roundsHouseholderApply hcardT hβ hv hβv hy).trans
+        (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left
+          (gamma_mono hu0 (by omega) hcard) (by norm_num)) (norm_nonneg _))) h hA
+
+/-- **(5.46) of [quarteroni2000numerical], with the constants explicit** (Wilkinson's backward
+error bound for the Householder reduction to Hessenberg form, [higham2002accuracy] §19.10): if
+`(13 n + 27) u < 1` and `2 (n - 2) ε < 1` for `ε = 3 γ_{13n+27}`, the computed matrix
+`Ĥ = Â_{n-2}` of `RoundsHessenbergReduce` is upper Hessenberg and `Ĥ = Qᵀ (A + E) Q` for an
+orthogonal `Q` (the product of the exact reflectors of the computed tail columns, extended by the
+identity) with `‖E‖_F ≤ γ_{2(n-2)}(ε) ‖A‖_F = (2 (n - 2) ε / (1 - 2 (n - 2) ε)) ‖A‖_F`, which is
+`c n² u ‖A‖_F` for `u` small. The `2 (n - 2)` counts the column and the row sweep of each of the
+`n - 2` steps. -/
+theorem exists_roundsHessenbergReduce_eq {m : RoundingModel ℝ}
+    (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1)
+    (hr : ((2 * (N - 2) : ℕ) : ℝ) * (3 * gamma m.u (13 * N + 27)) < 1)
+    {A : Matrix (Fin N) (Fin N) ℝ} {Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ}
+    (h : RoundsHessenbergReduce m A Ahat) :
+    (Ahat (N - 2)).IsUpperHessenberg ∧ ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ,
+      ∃ E : Matrix (Fin N) (Fin N) ℝ, Ahat (N - 2) = Qᵀ * (A + E) * Q ∧
+        ‖E‖ ≤ gamma (3 * gamma m.u (13 * N + 27)) (2 * (N - 2)) * ‖A‖ := by
+  obtain ⟨rfl, hstep⟩ := h
+  exact exists_hessenbergReduce_eq_of_forall_step
+    (by have := gamma_nonneg m.u_nonneg hcard; positivity) hr
+    (fun k hk hA => (hstep k hk).apply_eq_zero hA) fun k hk hA => by
+      obtain ⟨P, hP, hPs, -, hb⟩ := (hstep k hk).frobenius_norm_sub_le hcard hA
+      exact ⟨P, hP, hPs, hb⟩
 
 /-- **One step of the Householder tridiagonalization of a symmetric matrix, for any reflector
 formula** ([golub2013matrix] Algorithm 8.3.1, step `k`). With `T = {i // k + 1 ≤ i}` and `x` the

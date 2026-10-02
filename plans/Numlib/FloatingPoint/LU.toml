@@ -37,16 +37,7 @@ id = "RoundsLU.isLU_mul"
 id = "RoundsLU.abs_mul_sub_apply_le"
 
 [[node]]
-id = "three_mul_gamma_add_sq_le"
-
-[[node]]
 id = "abs_entrywiseLE_of_abs_mul_eq"
-
-[[node]]
-id = "gamma_div_one_sub_gamma"
-
-[[node]]
-id = "gamma_lt_one"
 
 [[node]]
 id = "_root_.Matrix.supAbs_le_linfty_opNorm"

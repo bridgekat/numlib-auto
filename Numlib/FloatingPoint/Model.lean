@@ -34,7 +34,10 @@ u n` (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations comp
 orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`). The sharp form of the first fact,
 `|∏ (1 + δ_i) - 1| ≤ (1 + u)^n - 1` (`abs_prod_one_add_sub_one_le_one_add_pow_sub_one`), needs no
 hypothesis on `n u` and gives Wilkinson's classical constant `1.01 n u` for `n u ≤ 0.01`
-(`abs_prod_one_add_sub_one_le_of_mul_le`, [golub2013matrix] Lemma 2.7.1), which `γ_n` does not.
+(`abs_prod_one_add_sub_one_le_of_mul_le`, [golub2013matrix] Lemma 2.7.1), which `γ_n` does not;
+below `n u < 1` it is at most `γ_n` (`one_add_pow_sub_one_le_gamma`). The arithmetic of the
+constants themselves (`gamma_mono`, `gamma_lt_one`, `gamma_div_one_sub_gamma`,
+`three_mul_gamma_add_sq_le`, …) is here too, for every analysis to share.
 
 The calculus is completed by the steps an algorithm takes one operation at a time: one more
 rounding as a multiplication or a division (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
@@ -177,6 +180,28 @@ theorem le_gamma_one {u : K} (hu : 0 ≤ u) (h : u < 1) : u ≤ gamma u 1 := by
   rw [gamma_def, Nat.cast_one, one_mul, le_div_iff₀ (by linarith)]
   nlinarith
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
+/-- `γ₁ = u / (1 - u)`. -/
+theorem gamma_one_eq {u : K} : gamma u 1 = u / (1 - u) := by simp [gamma_def]
+
+/-- `γ_k < 1` when `2 k u < 1`. -/
+theorem gamma_lt_one {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k < 1 := by
+  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
+  rw [gamma_def, div_lt_one (by linarith)]
+  linarith
+
+/-- `γ_k / (1 - γ_k) = k u / (1 - 2 k u)`. -/
+theorem gamma_div_one_sub_gamma {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
+    gamma u k / (1 - gamma u k) = k * u / (1 - 2 * (k * u)) := by
+  have hk : (0 : K) ≤ k * u := mul_nonneg (Nat.cast_nonneg k) hu
+  have h1 : (1 : K) - k * u ≠ 0 := by linarith
+  have h2 : (1 : K) - 2 * (k * u) ≠ 0 := by linarith
+  have : 1 - gamma u k = (1 - 2 * (k * u)) / (1 - k * u) := by
+    rw [gamma_def]
+    field_simp
+    ring
+  rw [this, gamma_def, div_div_div_cancel_right₀ h1]
+
 /-! ### Products of rounding factors -/
 
 /-- **[higham2002accuracy] Lemma 3.1** (*Accuracy and Stability of Numerical Algorithms*): a product
@@ -280,6 +305,15 @@ theorem abs_prod_one_add_sub_one_le_one_add_pow_sub_one {u : K} {n : ℕ} {δ : 
     have h := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one hα (hδ (Fin.last n))
     rwa [add_sub_cancel] at h
 
+/-- `(1 + u)^r - 1 ≤ γ_r = r u / (1 - r u)` for `0 ≤ u` and `r u < 1` ([higham2002accuracy]
+Lemma 3.1 with all the `δ_i` equal to `u`): the passage from the sharp constant to `γ_r`. -/
+theorem one_add_pow_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {r : ℕ} (hr : (r : K) * u < 1) :
+    (1 + u) ^ r - 1 ≤ gamma u r := by
+  have h := abs_prod_one_add_sub_one_le_gamma (u := u) hu (n := r) hr (δ := fun _ => u)
+    (fun _ => le_of_eq (abs_of_nonneg hu)) (ρ := fun _ => 1) (fun _ => Or.inl rfl)
+  simp only [zpow_one, Finset.prod_const, Finset.card_univ, Fintype.card_fin] at h
+  exact (le_abs_self _).trans h
+
 /-- `(1 + u)^n - 1 ≤ n u + (n u)^2` when `n u ≤ 1`. The step `n → n + 1` reduces to
 `n² u³ ≤ n u² + u²`, which holds when `n u ≤ 1`. -/
 theorem one_add_pow_sub_one_le_mul_add_sq {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u ≤ 1) :
@@ -364,6 +398,29 @@ theorem gamma_add_gamma_add_mul_le {u : K} (hu : 0 ≤ u) {j k : ℕ}
   have hk : (0 : K) ≤ (k : K) * u := mul_nonneg (by positivity) hu
   have hmain := add_add_mul_div_le (x := (j : K) * u) (y := (k : K) * u) hj hk h
   rwa [gamma_def, gamma_def, gamma_def, hcast]
+
+/-- `3 γ_n + γ_n² ≤ γ_{3n}`, the constant of [higham2002accuracy] Theorem 9.4, from Lemma 3.3
+twice. -/
+theorem three_mul_gamma_add_sq_le {u : K} (hu : 0 ≤ u) {k : ℕ} (h : ((3 * k : ℕ) : K) * u < 1) :
+    3 * gamma u k + gamma u k ^ 2 ≤ gamma u (3 * k) := by
+  have h2 : ((k + k : ℕ) : K) * u < 1 := by
+    have : ((k + k : ℕ) : K) * u ≤ ((3 * k : ℕ) : K) * u := by
+      push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) k) hu]
+    linarith
+  have h3 : ((k + k + k : ℕ) : K) * u < 1 := by
+    have : ((k + k + k : ℕ) : K) = ((3 * k : ℕ) : K) := by push_cast; ring
+    rwa [this]
+  have hk : (k : K) * u < 1 := by
+    have : (k : K) * u ≤ ((3 * k : ℕ) : K) * u := by
+      push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) k) hu]
+    linarith
+  have hg := gamma_nonneg hu hk
+  have hA := gamma_add_gamma_add_mul_le hu (j := k) (k := k) h2
+  have hB := gamma_add_gamma_add_mul_le hu (j := k + k) (k := k) h3
+  have hg2 : 0 ≤ gamma u (k + k) := gamma_nonneg hu h2
+  have h3k : k + k + k = 3 * k := by ring
+  rw [h3k] at hB
+  nlinarith [mul_nonneg hg2 hg]
 
 /-- The scalar inequality behind `IsRelPert.div`, `γ_k + γ_j + γ_{k+2j} γ_j ≤ γ_{k+2j}`, written out
 with `x = k u` and `y = j u`. -/
@@ -580,10 +637,13 @@ theorem IsRelPert.zero {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) : IsRelPert u n
 
 /-- Multiplying a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
 order `k + 1`. -/
-theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
+theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
     (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
     IsRelPert u (k + 1) x (y * (1 + δ)) := by
   obtain ⟨θ, hθ, rfl⟩ := h
+  have hu1 : u < 1 := by
+    have : u ≤ ((k + 1 : ℕ) : K) * u := le_mul_of_one_le_left hu (by simp)
+    linarith
   exact ⟨(1 + θ) * (1 + δ) - 1, abs_one_add_mul_one_add_sub_one_le_gamma hu hu1 hk hθ hδ,
     by ring⟩
 
@@ -597,11 +657,11 @@ theorem IsRelPert.div_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
   rw [show (1 : K) + ((1 + θ) / (1 + δ) - 1) = (1 + θ) / (1 + δ) by ring, mul_div_assoc]
 
 /-- One more rounding raises the order of a relative perturbation by one. -/
-theorem IsRelPert.rounds {m : RoundingModel K} (hu : m.u < 1) {k : ℕ}
+theorem IsRelPert.rounds {m : RoundingModel K} {k : ℕ}
     (hk : ((k + 1 : ℕ) : K) * m.u < 1) {x y z : K} (h : IsRelPert m.u k x y)
     (hz : m.Rounds y z) : IsRelPert m.u (k + 1) x z := by
   obtain ⟨δ, hδ, rfl⟩ := hz.exists_delta
-  exact h.mul_one_add m.u_nonneg hu hk hδ
+  exact h.mul_one_add m.u_nonneg hk hδ
 
 /-- The sum of two nonnegative quantities perturbed to the same relative order is perturbed to
 that order: the perturbation of the sum is the convex combination `(x₁ θ₁ + x₂ θ₂) / (x₁ + x₂)` of

@@ -39,10 +39,6 @@ id = "norm_sub_le_of_roundsHouseholderApply"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2"
 
 [[node]]
-id = "one_add_pow_sub_one_le_gamma"
-source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.1 and (19.10)"
-
-[[node]]
 id = "exists_eq_prodRev_mulVec_add"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3"
 
@@ -63,12 +59,6 @@ id = "exists_eq_transpose_mul_add_mul_prodFwd"
 source = "Higham, Accuracy and Stability of Numerical Algorithms, §19.10 (two-sided transformations)"
 
 [[node]]
-id = "hessenbergTailCol"
-
-[[node]]
-id = "hessenbergReflector_eq_householder"
-
-[[node]]
 id = "RoundsHessenbergStep"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2 (Program 29); Higham, Theorem 19.4"
 
@@ -78,10 +68,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2 (Pro
 
 [[node]]
 id = "RoundsHessenbergStep.apply_eq_zero"
-
-[[node]]
-id = "exists_isRelPert_hessenbergReflector"
-source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.1"
 
 [[node]]
 id = "RoundsHessenbergStep.frobenius_norm_sub_le"
@@ -175,3 +161,37 @@ id = "exists_roundsTridiagonalizePert_eq"
 
 [[node]]  # fp2: the shared core of Lemma 19.2 asked for by `norm_sub_le_of_roundsHouseholderApplyScaled`
 id = "norm_sub_le_of_forall_rounds_sub_sum"
+
+[[node]]
+id = "exists_eq_mulVec_add_of_step"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3 (one step)"
+
+[[node]]
+id = "exists_eq_mulVec_add_of_forall_step"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3"
+
+[[node]]
+id = "exists_eq_mul_add_of_step"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3 (one step, columnwise)"
+
+[[node]]
+id = "exists_eq_mul_add_of_forall_step"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3, (19.7)-(19.8)"
+
+[[node]]
+id = "frobenius_norm_sub_mul_mul_le_of_col_of_row"
+
+[[node]]
+id = "extendByZero"
+
+[[node]]
+id = "RoundsHessenbergStepOf"
+source = "Golub and Van Loan, Matrix Computations, Algorithm 7.4.2; Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2 (Program 29)"
+
+[[node]]
+id = "RoundsHessenbergStepOf.frobenius_norm_sub_le"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2 and §19.10"
+
+[[node]]
+id = "exists_hessenbergReduce_eq_of_forall_step"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorem 19.4"

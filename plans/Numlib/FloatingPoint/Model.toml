@@ -91,3 +91,16 @@ id = "IsRelPert.add_of_nonneg"
 
 [[node]]
 id = "abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one"
+
+[[node]]
+id = "one_add_pow_sub_one_le_gamma"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.1 and (19.10)"
+
+[[node]]
+id = "three_mul_gamma_add_sq_le"
+
+[[node]]
+id = "gamma_div_one_sub_gamma"
+
+[[node]]
+id = "gamma_lt_one"

@@ -106,137 +106,6 @@ section ColSubst
 
 variable {ι : Type} [LinearOrder ι] [DecidableEq ι]
 
-/-- The loop invariant of column-oriented forward substitution (the prototype's): indices outside
-the remaining list `l` are finished rows of `RoundsForwardSubst`; indices in `l` hold the running
-difference of `b i` over the finished indices. -/
-private def ColInv (fp : RoundingModel ℝ) (L : Matrix ι ι ℝ) (b : ι → ℝ) (l : List ι)
-    (s : ι → ℝ) : Prop :=
-  (∀ i, i ∉ l → ∃ (o : List ι) (p : ι → ℝ) (t : ℝ), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
-      (∀ j ∈ o, fp.Rounds (L i j * s j) (p j)) ∧
-      RoundsSumFrom fp (b i) (o.map fun j => -p j) t ∧ fp.Rounds (t / L i i) (s i)) ∧
-  (∀ i, i ∈ l → ∃ (o : List ι) (p : ι → ℝ), o.Nodup ∧ (∀ j, j ∈ o ↔ j ∉ l) ∧
-      (∀ j ∈ o, fp.Rounds (L i j * s j) (p j)) ∧
-      RoundsSumFrom fp (b i) (o.map fun j => -p j) (s i))
-
-
-/-- One step of the outer loop keeps the invariant. -/
-private theorem colInv_step (fp : RoundingModel ℝ) (L : Matrix ι ι ℝ) (b : ι → ℝ) (j : ι)
-    (c : List ι) (hcm : ∀ i, i ∈ c ↔ j < i) (l : List ι)
-    (hsort : (j :: l).Pairwise (· < ·)) (hup : ∀ i ∈ j :: l, ∀ k, i ≤ k → k ∈ j :: l)
-    (s : ι → ℝ) (hs : ColInv fp L b (j :: l) s) (y : ℝ) (hy : fp.Rounds (s j / L j j) y)
-    (s₂ : ι → ℝ)
-    (h₂ : (∀ i, i ∉ c → s₂ i = Function.update s j y i) ∧
-      ∀ i ∈ c, ∃ p, fp.Rounds (Function.update s j y j * L i j) p ∧
-        fp.Rounds (Function.update s j y i - p) (s₂ i)) :
-    ColInv fp L b l s₂ := by
-  have hlt : ∀ k, k ∉ j :: l ↔ k < j := by
-    intro k
-    constructor
-    · intro hk
-      by_contra h
-      exact hk (hup j List.mem_cons_self k (not_lt.1 h))
-    · intro hk hmem
-      rcases List.mem_cons.1 hmem with rfl | hmem
-      · exact lt_irrefl _ hk
-      · exact lt_asymm hk (List.rel_of_pairwise_cons hsort hmem)
-  have hjl : j ∉ l := fun h => lt_irrefl _ (List.rel_of_pairwise_cons hsort h)
-  have hbelow : ∀ k, k < j → s₂ k = s k := by
-    intro k hk
-    rw [h₂.1 k (by rw [hcm]; exact lt_asymm hk), Function.update_of_ne (ne_of_lt hk)]
-  have hj₂ : s₂ j = y := by
-    rw [h₂.1 j (by rw [hcm]; exact lt_irrefl _), Function.update_self]
-  obtain ⟨hfin, hrun⟩ := hs
-  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
-  · by_cases hij : i = j
-    · subst hij
-      obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hrun i List.mem_cons_self
-      refine ⟨o, p, s i, hnd, fun k => (ho k).trans (hlt k), fun k hk => ?_, hsum, ?_⟩
-      · rw [hbelow k ((hlt k).1 ((ho k).1 hk))]; exact hp k hk
-      · rw [hj₂]; exact hy
-    · have hi' : i ∉ j :: l := by
-        intro h; rcases List.mem_cons.1 h with h | h
-        · exact hij h
-        · exact hi h
-      have hij' : i < j := (hlt i).1 hi'
-      obtain ⟨o, p, t, hnd, ho, hp, hsum, hr⟩ := hfin i hi'
-      refine ⟨o, p, t, hnd, ho, fun k hk => ?_, hsum, ?_⟩
-      · rw [hbelow k (lt_trans ((ho k).1 hk) hij')]; exact hp k hk
-      · rw [hbelow i hij']; exact hr
-  · have hji : j < i := List.rel_of_pairwise_cons hsort hi
-    obtain ⟨o, p, hnd, ho, hp, hsum⟩ := hrun i (List.mem_cons_of_mem _ hi)
-    obtain ⟨q, hq, hq'⟩ := h₂.2 i ((hcm i).2 hji)
-    rw [Function.update_of_ne (ne_of_gt hji)] at hq'
-    rw [Function.update_self] at hq
-    have hjo : j ∉ o := fun h => (ho j).1 h List.mem_cons_self
-    refine ⟨o ++ [j], Function.update p j q, ?_, fun k => ?_, fun k hk => ?_, ?_⟩
-    · exact hnd.append (List.nodup_singleton _) (List.disjoint_singleton.2 hjo)
-    · rw [List.mem_append, ho k, List.mem_singleton]
-      constructor
-      · rintro (h | rfl)
-        · exact fun h' => h (List.mem_cons_of_mem _ h')
-        · exact hjl
-      · intro h
-        by_cases hkj : k = j
-        · exact Or.inr hkj
-        · exact Or.inl fun h' => by
-            rcases List.mem_cons.1 h' with h' | h'
-            · exact hkj h'
-            · exact h h'
-    · rcases List.mem_append.1 hk with hk | hk
-      · have hkj : k < j := (hlt k).1 ((ho k).1 hk)
-        rw [Function.update_of_ne (ne_of_lt hkj), hbelow k hkj]
-        exact hp k hk
-      · rw [List.mem_singleton.1 hk, Function.update_self, hj₂, mul_comm]
-        exact hq
-    · rw [List.map_append, List.map_singleton, Function.update_self]
-      have hmap : (o.map fun k => -Function.update p j q k) = o.map fun k => -p k := by
-        refine List.map_congr_left fun k hk => ?_
-        rw [Function.update_of_ne (fun h : k = j => hjo (h ▸ hk))]
-      rw [hmap, roundsSumFrom_append_singleton]
-      exact ⟨s i, hsum, by rw [← sub_eq_add_neg]; exact hq'⟩
-
-/-- The outer loop, by induction on the remaining list. -/
-private theorem colInv_foldlM (fp : RoundingModel ℝ) (L : Matrix ι ι ℝ) (b : ι → ℝ)
-    (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) :
-    ∀ (l : List ι) (s s' : ι → ℝ), l.Pairwise (· < ·) →
-    (∀ i ∈ l, ∀ k, i ≤ k → k ∈ l) → ColInv fp L b l s →
-    s' ∈ (l.foldlM (fun (b : ι → ℝ) j => do
-      let bj ← fp.round (b j / L j j)
-      (c j).foldlM (fun (b : ι → ℝ) i => do
-          let p ← fp.round (b j * L i j)
-          let bi ← fp.round (b i - p)
-          pure (Function.update b i bi))
-        (Function.update b j bj)) s).run →
-    ColInv fp L b [] s' := by
-  intro l
-  induction l with
-  | nil =>
-    intro s s' _ _ hs h
-    rw [List.foldlM_nil, SetM.mem_run_pure] at h
-    exact h ▸ hs
-  | cons j l ih =>
-    intro s s' hsort hup hs h
-    simp only [List.foldlM_cons, bind_assoc] at h
-    rw [SetM.mem_run_bind] at h
-    obtain ⟨y, hy, h⟩ := h
-    rw [SetM.mem_run_bind] at h
-    obtain ⟨s₂, h₂, h⟩ := h
-    have key := SetM.mem_run_foldlM_update_of_nodup
-      (fun a v (z : ι → ℝ) => fp.round (z j * L a j) >>= fun p => fp.round (v - p)) (c j) (hc j)
-      (fun a _ v z z' hz => by rw [hz j fun h => lt_irrefl j ((hcm j j).1 h)])
-      (Function.update s j y) s₂
-    simp only [bind_assoc] at key
-    obtain ⟨hout, hin⟩ := key.1 h₂
-    have hin' : ∀ i ∈ c j, ∃ p, fp.Rounds (Function.update s j y j * L i j) p ∧
-        fp.Rounds (Function.update s j y i - p) (s₂ i) := fun i hi => by
-      obtain ⟨p, hp, hq⟩ := SetM.mem_run_bind.1 (hin i hi)
-      exact ⟨p, hp, hq⟩
-    refine ih s₂ s' (List.pairwise_cons.1 hsort).2 (fun i hi k hik => ?_)
-      (colInv_step fp L b j (c j) (hcm j) l hsort hup s hs y hy s₂ ⟨hout, hin'⟩) h
-    rcases List.mem_cons.1 (hup i (List.mem_cons_of_mem _ hi) k hik) with rfl | hk
-    · exact absurd (lt_of_lt_of_le (List.rel_of_pairwise_cons hsort hi) hik) (lt_irrefl _)
-    · exact hk
-
 /-- **Column-oriented forward substitution, over any linear order**: the loop "for `j` in
 increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" (the
 inner list `c j` enumerating the indices above `j` in any order) computes, in every run of the
@@ -252,12 +121,8 @@ theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel ℝ) (L : Mat
           let bi ← fp.round (b i - p)
           pure (Function.update b i bi))
         (Function.update b j bj)) b).run) :
-    RoundsForwardSubst fp L b x := by
-  have h0 : ColInv fp L b l b := by
-    refine ⟨fun i hi => absurd (hall i) hi, fun i _ => ?_⟩
-    exact ⟨[], fun _ => 0, List.nodup_nil, fun j => by simp [hall j], by simp, .nil _⟩
-  have := colInv_foldlM fp L b c hc hcm l b x hl (fun _ _ k _ => hall k) h0 hx
-  exact fun i => this.1 i (by simp)
+    RoundsForwardSubst fp L b x :=
+  FloatingPoint.roundsForwardSubst_of_mem_run_colSubst fp L hl hall c hc hcm b x hx
 
 end ColSubst
 

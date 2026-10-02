@@ -67,9 +67,6 @@ id = "roundsForwardSubstDot_exact_iff"
 id = "roundsBackSubstDot_exact_iff"
 
 [[node]]
-id = "exists_roundsSumFrom_map_eq_add_sum"
-
-[[node]]
 id = "exists_add_mulVec_eq_of_forall_row_eq"
 
 [[node]]
@@ -80,3 +77,10 @@ id = "_root_.Matrix.eq_forwardSubst_of_forall_apply_eq"
 
 [[node]]
 id = "roundsSumFrom_exact_map_neg_iff"
+
+[[node]]
+id = "length_add_one_le_card_of_forall_mem_iff"
+
+[[node]]
+id = "roundsForwardSubst_of_mem_run_colSubst"
+source = "Golub and Van Loan, Matrix Computations, Algorithm 3.1.3"

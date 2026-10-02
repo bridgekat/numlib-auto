@@ -540,8 +540,8 @@ theorem hessenbergReduceStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempot
   obtain ⟨c, hrefl⟩ : ∃ c, IsReflectorPert fp.u (18 * o.length + 31)
       (fun i : {i // i ∈ o} => st.1 i k') ⟨o.head hone, List.head_mem hone⟩ c
       (fun i => vβ.1 i) vβ.2 := ⟨_, hrefl⟩
-  refine ⟨c, fun i => vβ.1 i, vβ.2, zeroStored (k + 1) B₁, ?_, fun j hj => ?_, fun i j hij => ?_,
-    fun i => ?_, fun i j hj => ?_⟩
+  refine ⟨fun i => vβ.1 i, vβ.2, zeroStored (k + 1) B₁, ⟨c, ?_⟩, fun j hj => ?_,
+    fun i j hij => ?_, fun i => ?_, fun i j hj => ?_⟩
   · -- the reflector data, transported to the subtype of the active rows
     have hx : (fun i : {i : Fin n // k + 1 ≤ (i : ℕ)} => zeroStored k st.1 i ⟨k, by omega⟩) =
         fun i : {i : Fin n // k + 1 ≤ (i : ℕ)} => st.1 i k' := by

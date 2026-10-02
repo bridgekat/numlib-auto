@@ -36,8 +36,17 @@ hypothesis on `n u` and gives the classical `1.01 n u` constant of [golub2013mat
 through `abs_sub_le_one_add_pow_sub_one_of_roundsDot`. Also here: the error of one rounded update
 `fl(y + fl(a x))` (`abs_sub_le_of_rounds_add_mul`), the invariance of `RoundsDot` under
 reindexing (`roundsDot_comp_equiv_iff`), a computed `v̂ᵀv̂` as a relative perturbation of `vᵀv`
-(`isRelPert_of_roundsDot_self`), and the running sum one term at a time
-(`roundsSumFrom_append_singleton`) and in the exact model (`roundsSumFrom_exact_iff`).
+(`isRelPert_of_roundsDot_self`), the running sum one term at a time
+(`roundsSumFrom_append_singleton`), in the exact model (`roundsSumFrom_exact_iff`) and in product
+form `t = c (1 + φ) + ∑ f_j (1 + θ_j)` (`exists_roundsSumFrom_map_eq_add_sum_one_add_pow`, with
+the `γ_k` form `exists_roundsSumFrom_map_eq_add_sum`).
+
+**Running differences.** `RoundsRunningDiff m o a b c t` is the running difference
+`c - ∑_{r ∈ o} a_r b_r` of [higham2002accuracy] Lemma 8.4, one rounding per product and per
+subtraction: the entry relation of every substitution and factorization of
+`Numlib/FloatingPoint/Substitution` and `Numlib/FloatingPoint/LU`, and the relation of the program
+`FloatingPoint.runningDiff` of `Numlib/FloatingPoint/Program`. In the exact model it is the
+difference (`roundsRunningDiff_exact_iff`).
 
 Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is `γ_k (1 + u)
 + u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
@@ -276,6 +285,99 @@ private theorem exists_eq_of_roundsSumFrom_map {m : RoundingModel K} {l : List �
       · rwa [Function.update_self]
       · rw [Function.update_of_ne fun (e : j = i) => hi (e ▸ hj)]
         exact (hθ j hj).trans hmono
+
+/-- **The product form of a running sum** ([higham2002accuracy] (3.2) for a running sum from a
+partial sum), sharp: if `t` is obtained from `c` by adding the terms `f j`, `j ∈ o`, one rounding
+per addition, then `t = c (1 + φ) + ∑_{j ∈ o} f j (1 + θ_j)` with `|φ|` and every `|θ_j|` at most
+`(1 + u)^k - 1`, `k` the number of terms. No hypothesis on `k u` is needed;
+`FloatingPoint.exists_roundsSumFrom_map_eq_add_sum` is the `γ_k` form. -/
+theorem exists_roundsSumFrom_map_eq_add_sum_one_add_pow [DecidableEq ι] {m : RoundingModel K}
+    {o : List ι} (hnd : o.Nodup) {f : ι → K} {c t : K} (h : RoundsSumFrom m c (o.map f) t) :
+    ∃ (φ : K) (θ : ι → K), |φ| ≤ (1 + m.u) ^ o.length - 1 ∧
+      (∀ j ∈ o, |θ j| ≤ (1 + m.u) ^ o.length - 1) ∧
+      t = c * (1 + φ) + ∑ j ∈ o.toFinset, f j * (1 + θ j) := by
+  obtain ⟨φ, θ, rfl, hφ, hθ⟩ := exists_eq_of_roundsSumFrom_map hnd h
+  exact ⟨φ, θ, hφ, hθ, by rw [List.sum_toFinset _ hnd]⟩
+
+/-- **The product form of a running sum**, with Higham's constant: if `t` is obtained from `c` by
+adding the terms `f j`, `j ∈ o`, one rounding per addition, then
+`t = c (1 + φ) + ∑_{j ∈ o} f j (1 + θ_j)` with `|φ|` and every `|θ_j|` at most `γ_k`, `k` the
+number of terms. The result `t` is not perturbed, which is what a sum that is used afterwards
+(subtracted, divided) needs. -/
+theorem exists_roundsSumFrom_map_eq_add_sum [DecidableEq ι] {m : RoundingModel K} {c t : K}
+    {f : ι → K} {o : List ι} (hnd : o.Nodup) (h : RoundsSumFrom m c (o.map f) t)
+    (hlu : ((o.length : ℕ) : K) * m.u < 1) :
+    ∃ (φ : K) (θ : ι → K), |φ| ≤ gamma m.u o.length ∧ (∀ j ∈ o, |θ j| ≤ gamma m.u o.length) ∧
+      t = c * (1 + φ) + ∑ j ∈ o.toFinset, f j * (1 + θ j) := by
+  obtain ⟨φ, θ, hφ, hθ, heq⟩ := exists_roundsSumFrom_map_eq_add_sum_one_add_pow hnd h
+  have hγ := one_add_pow_sub_one_le_gamma m.u_nonneg hlu
+  exact ⟨φ, θ, hφ.trans hγ, fun j hj => (hθ j hj).trans hγ, heq⟩
+
+/-! ### Running differences -/
+
+/-- `RoundsRunningDiff m o a b c t`: `t` is an admissible value of the **running difference**
+`c - ∑_{r ∈ o} a_r b_r` evaluated as [higham2002accuracy] Lemma 8.4 evaluates it: the products
+`a_r b_r` are rounded (`p r`) and subtracted one after the other from `c`, in the order of the list
+`o`, with one rounding per subtraction. This is the entry relation of the substitutions and
+factorizations of `Numlib/FloatingPoint/Substitution` and `Numlib/FloatingPoint/LU`
+(`RoundsForwardSubst`, `RoundsLU`, `RoundsCholesky`, `RoundsLDL`, `RoundsCholeskyDiv`), and every
+result of the program `FloatingPoint.runningDiff` over a duplicate-free order satisfies it
+(`FloatingPoint.mem_run_runningDiff_iff`). -/
+def RoundsRunningDiff (m : RoundingModel K) (o : List ι) (a b : ι → K) (c t : K) : Prop :=
+  ∃ p : ι → K, (∀ r ∈ o, m.Rounds (a r * b r) (p r)) ∧ RoundsSumFrom m c (o.map fun r => -p r) t
+
+/-- A running difference reads the factors `a r`, `b r` only for `r` in the list. -/
+theorem RoundsRunningDiff.congr {m : RoundingModel K} {o : List ι} {a a' b b' : ι → K} {c t : K}
+    (h : RoundsRunningDiff m o a b c t) (ha : ∀ r ∈ o, a' r = a r) (hb : ∀ r ∈ o, b' r = b r) :
+    RoundsRunningDiff m o a' b' c t := by
+  obtain ⟨p, hp, hs⟩ := h
+  exact ⟨p, fun r hr => by rw [ha r hr, hb r hr]; exact hp r hr, hs⟩
+
+/-- **One more term of a running difference**: appending the term `a x b x`, rounded to `q` and
+subtracted with one more rounding, to a running difference over `o` (which does not list `x`) is
+a running difference over `o ++ [x]`. -/
+theorem RoundsRunningDiff.append_singleton {m : RoundingModel K} {o : List ι}
+    {a b : ι → K} {c t : K} (h : RoundsRunningDiff m o a b c t) {x : ι} (hx : x ∉ o) {q s : K}
+    (hq : m.Rounds (a x * b x) q) (hs : m.Rounds (t - q) s) :
+    RoundsRunningDiff m (o ++ [x]) a b c s := by
+  classical
+  obtain ⟨p, hp, ht⟩ := h
+  refine ⟨Function.update p x q, fun r hr => ?_, ?_⟩
+  · rcases List.mem_append.1 hr with hr | hr
+    · rw [Function.update_of_ne fun (e : r = x) => hx (e ▸ hr)]
+      exact hp r hr
+    · rw [List.mem_singleton.1 hr, Function.update_self]
+      exact hq
+  · rw [List.map_append, List.map_singleton, Function.update_self]
+    have hmap : (o.map fun r => -Function.update p x q r) = o.map fun r => -p r :=
+      List.map_congr_left fun r hr => by
+        rw [Function.update_of_ne fun (e : r = x) => hx (e ▸ hr)]
+    rw [hmap, roundsSumFrom_append_singleton]
+    exact ⟨t, ht, by rw [← sub_eq_add_neg]; exact hs⟩
+
+/-- **A running difference in the exact model** (`RoundingModel.exact`) is the difference
+`c - ∑_{r ∈ o} a_r b_r`. -/
+theorem roundsRunningDiff_exact_iff {o : List ι} {a b : ι → K} {c t : K} :
+    RoundsRunningDiff (RoundingModel.exact K) o a b c t ↔
+      t = c - (o.map fun r => a r * b r).sum := by
+  have hneg : ∀ q : ι → K, (o.map fun r => -q r).sum = -(o.map q).sum := fun q => by
+    rw [List.sum_neg, List.map_map]
+    rfl
+  constructor
+  · rintro ⟨p, hp, hs⟩
+    rw [roundsSumFrom_exact_iff.1 hs, hneg, ← sub_eq_add_neg]
+    exact congrArg _ (congrArg _
+      (List.map_congr_left fun r hr => RoundingModel.exact_rounds_iff.1 (hp r hr)))
+  · intro h
+    refine ⟨fun r => a r * b r, fun _ _ => RoundingModel.exact_rounds_iff.2 rfl,
+      roundsSumFrom_exact_iff.2 ?_⟩
+    rw [h, hneg, ← sub_eq_add_neg]
+
+/-- A running difference in the exact model over a duplicate-free order, as a `Finset` sum. -/
+theorem RoundsRunningDiff.eq_of_exact [DecidableEq ι] {o : List ι} (hnd : o.Nodup) {a b : ι → K}
+    {c t : K} (h : RoundsRunningDiff (RoundingModel.exact K) o a b c t) :
+    t = c - ∑ r ∈ o.toFinset, a r * b r := by
+  rw [roundsRunningDiff_exact_iff.1 h, List.sum_toFinset _ hnd]
 
 variable [Fintype ι]
 

@@ -724,7 +724,7 @@ private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
       (vhat := fun i => storedHouseholderVec A j i) hu1 (hlt _ (by omega)) (fun i => hv i) hvv
   have hβrel : IsRelPert fp.u (4 * K + 2 * m + 1) β βhat := by
     have h1 := (IsRelPert.refl fp.u (2 : ℝ)).div hu0 (hlt _ (by omega)) hvvrel
-    have h2 := h1.rounds hu1 (hlt _ (by omega)) hβhat
+    have h2 := h1.rounds (hlt _ (by omega)) hβhat
     rw [hβeq, hdot]
     exact h2.mono hu0 (by omega) (hlt _ (by omega))
   have hvrel : ∀ i : {i // i ∈ o}, IsRelPert fp.u (4 * K + 2 * m + 1) (v i)

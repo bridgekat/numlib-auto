@@ -714,15 +714,17 @@ theorem roundsLU_of_luStageInv {A F : Matrix (Fin n) (Fin n) ℝ} (hinv : LUStag
   refine ⟨fun i j hij => packedL_apply_of_lt' F hij, packedL_apply_self F,
     fun i j hij => packedU_apply_of_lt F hij, fun i j hij => ?_, fun i j hij => ?_⟩
   · obtain ⟨o, p, hnd, ho, hp, hsum⟩ := (hinv i j).1 i.2 hij
-    refine ⟨o, p, hnd, ho, fun r hr => ?_, ?_⟩
-    · have hri := (ho r).1 hr
+    refine ⟨o, hnd, ho, p, fun r hr => ?_, ?_⟩
+    · beta_reduce
+      have hri := (ho r).1 hr
       rw [packedL_apply_of_lt F hri, packedU_apply_of_le F (hri.le.trans hij)]
       exact hp r hr
     · rw [packedU_apply_of_le F hij]
       exact hsum
   · obtain ⟨o, p, t, hnd, ho, hp, hsum, hx⟩ := (hinv i j).2.1 j.2 hij
-    refine ⟨o, p, t, hnd, ho, fun r hr => ?_, hsum, ?_⟩
-    · have hrj := (ho r).1 hr
+    refine ⟨o, t, hnd, ho, ⟨p, fun r hr => ?_, hsum⟩, ?_⟩
+    · beta_reduce
+      have hrj := (ho r).1 hr
       rw [packedL_apply_of_lt F (hrj.trans hij), packedU_apply_of_le F hrj.le]
       exact hp r hr
     · rw [packedL_apply_of_lt F hij, packedU_apply_of_le F le_rfl]
@@ -1220,7 +1222,11 @@ theorem algorithm_3_2_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     fun _ _ _ => rfl⟩
   obtain ⟨hU, hL, -, -, hLlow, hLdiag, hUup⟩ := SetM.forall_mem_run_foldlM_finRange
     (GaxpyInv fp A) h0 (fun j st hst st' hst' => gaxpyInv_step A j st hst st' hst') out hout
-  exact ⟨hLlow, hLdiag, hUup, fun i j hij => hU i j j.2 hij, fun i j hji => hL i j j.2 hji⟩
+  refine ⟨hLlow, hLdiag, hUup, fun i j hij => ?_, fun i j hji => ?_⟩
+  · obtain ⟨o, p, hnd, ho, hp, hs⟩ := hU i j j.2 hij
+    exact ⟨o, hnd, ho, p, hp, hs⟩
+  · obtain ⟨o, p, t, hnd, ho, hp, hs, hx⟩ := hL i j j.2 hji
+    exact ⟨o, t, hnd, ho, ⟨p, hp, hs⟩, hx⟩
 
 /-- The exact run of Algorithm 3.2.2 is a run of the exact model. -/
 private theorem algorithm_3_2_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :

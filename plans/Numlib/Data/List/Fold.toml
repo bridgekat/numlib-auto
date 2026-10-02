@@ -86,3 +86,6 @@ id = "idRun_foldlM_update_apply"
 
 [[node]]
 id = "foldl_lens"
+
+[[node]]
+id = "idRun_foldlM_induction'"

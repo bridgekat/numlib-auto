@@ -1,5 +1,6 @@
 import Numlib.Direct.Substitution
 import Numlib.FloatingPoint.InnerProduct
+import Numlib.FloatingPoint.Program
 
 /-!
 # Rounding errors of forward and backward substitution
@@ -53,7 +54,14 @@ Results, entrywise, over an ordered field `K`:
 * `FloatingPoint.roundsForwardSubst_exact_iff` and its three siblings: at the exact model
   (`RoundingModel.exact`) every relation of this file pins its output to `Matrix.forwardSubst` or
   `Matrix.backSubst`, with no hypothesis on the matrix. This is how the exact specification of a
-  substitution program is read off its rounding bridge.
+  substitution program is read off its rounding bridge;
+* `FloatingPoint.roundsForwardSubst_of_mem_run_colSubst`: the column-oriented loop of
+  [golub2013matrix] Algorithm 3.1.3, over any linear order, lands in `RoundsForwardSubst` in every
+  run of the relational model.
+
+The entry relation of every row is the running difference `FloatingPoint.RoundsRunningDiff` of
+`Numlib/FloatingPoint/InnerProduct` (its program is `FloatingPoint.runningDiff`), and the number of
+its terms is counted once, by `FloatingPoint.length_add_one_le_card_of_forall_mem_iff`.
 
 Every backward-error theorem is assembled from its rows by one lemma,
 `FloatingPoint.exists_add_mulVec_eq_of_forall_row_eq`. Backward substitution is forward
@@ -134,19 +142,19 @@ theorem exists_roundsSumFrom_map_eq {m : RoundingModel K} (hu : m.u < 1) {c t : 
       field_simp
       ring
 
-/-- **[higham2002accuracy] Lemma 8.4**: if `ŷ = (c - ∑_{j ∈ o} a_j b_j) / d` is evaluated with
-rounded products, running differences in the order `o`, and a final division, then
+/-- **[higham2002accuracy] Lemma 8.4**: if `ŷ = (c - ∑_{j ∈ o} a_j b_j) / d` is evaluated as a
+running difference in the order `o` (`FloatingPoint.RoundsRunningDiff`) and a final division, then
 `d ŷ (1 + θ₀) = c - ∑_{j ∈ o} a_j b_j (1 + θ_j)` with every `|θ| ≤ γ_{k+1}`, `k` the number of
 terms — no matter what the order `o`. The divisor must be nonzero, since the model rounds
 `t / d` with the junk value `t / 0 = 0`. -/
-theorem exists_rounds_sub_dot_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b p : ι → K}
-    {o : List ι} (hnd : o.Nodup) (hp : ∀ j ∈ o, m.Rounds (a j * b j) (p j)) {c d t y : K}
-    (hd : d ≠ 0) (ht : RoundsSumFrom m c (o.map fun j => -p j) t) (hy : m.Rounds (t / d) y)
-    (hlu : ((o.length + 1 : ℕ) : K) * m.u < 1) :
+theorem exists_rounds_sub_dot_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b : ι → K}
+    {o : List ι} (hnd : o.Nodup) {c d t y : K} (hd : d ≠ 0) (ht : RoundsRunningDiff m o a b c t)
+    (hy : m.Rounds (t / d) y) (hlu : ((o.length + 1 : ℕ) : K) * m.u < 1) :
     ∃ (θ₀ : K) (θ : ι → K), |θ₀| ≤ gamma m.u (o.length + 1) ∧
       (∀ j ∈ o, |θ j| ≤ gamma m.u (o.length + 1)) ∧
       d * y * (1 + θ₀) = c - ∑ j ∈ o.toFinset, a j * b j * (1 + θ j) := by
   classical
+  obtain ⟨p, hp, ht⟩ := ht
   have hcast : ((o.length + 1 : ℕ) : K) * m.u = (o.length : K) * m.u + m.u := by push_cast; ring
   have hl : (o.length : K) * m.u < 1 := by
     rw [hcast] at hlu
@@ -176,47 +184,6 @@ theorem exists_rounds_sub_dot_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b p
     field_simp
     ring
 
-/-- **Running sums, forwards** ([higham2002accuracy] (3.2) for a running sum from a partial sum):
-if `t` is obtained from `c` by adding the terms `f j`, `j ∈ o`, one rounding per addition, then
-`t = c (1 + φ) + ∑_{j ∈ o} f j (1 + θ_j)` with `|φ|` and every `|θ|` at most `γ_k`, `k` the number
-of terms. Unlike `FloatingPoint.exists_roundsSumFrom_map_eq`, the result `t` is not perturbed, which
-is what a sum that is used afterwards (subtracted, divided) needs. -/
-theorem exists_roundsSumFrom_map_eq_add_sum {m : RoundingModel K} (hu : m.u < 1) {c t : K}
-    {f : ι → K} {o : List ι} (hnd : o.Nodup) (h : RoundsSumFrom m c (o.map f) t)
-    (hlu : ((o.length : ℕ) : K) * m.u < 1) :
-    ∃ (φ : K) (θ : ι → K), |φ| ≤ gamma m.u o.length ∧ (∀ j ∈ o, |θ j| ≤ gamma m.u o.length) ∧
-      t = c * (1 + φ) + ∑ j ∈ o.toFinset, f j * (1 + θ j) := by
-  classical
-  induction o generalizing c with
-  | nil =>
-    simp only [List.map_nil] at h
-    cases h
-    exact ⟨0, fun _ => 0, by simp, by simp, by simp⟩
-  | cons j o ih =>
-    simp only [List.map_cons] at h
-    rcases h with _ | ⟨ht', hr⟩
-    rw [List.length_cons] at hlu
-    have hl : (o.length : K) * m.u < 1 := by
-      have : (o.length : K) * m.u ≤ ((o.length + 1 : ℕ) : K) * m.u := by
-        push_cast; nlinarith [m.u_nonneg]
-      linarith
-    obtain ⟨φ, θ, hφ, hθ, heq⟩ := ih (List.nodup_cons.1 hnd).2 hr hl
-    obtain ⟨δ, hδ, hδt⟩ := ht'.exists_delta
-    have hj : j ∉ o.toFinset := fun hj => (List.nodup_cons.1 hnd).1 (List.mem_toFinset.1 hj)
-    have hmono := gamma_mono m.u_nonneg (Nat.le_succ o.length) hlu
-    have hφδ := abs_one_add_mul_one_add_sub_one_le_gamma m.u_nonneg hu hlu hφ hδ
-    refine ⟨(1 + φ) * (1 + δ) - 1, Function.update θ j ((1 + φ) * (1 + δ) - 1), hφδ,
-      fun i hi => ?_, ?_⟩
-    · rcases List.mem_cons.1 hi with rfl | hi
-      · rwa [Function.update_self]
-      · rw [Function.update_of_ne (ne_of_mem_of_not_mem (List.mem_toFinset.2 hi) hj)]
-        exact (hθ i hi).trans hmono
-    · have hsum : ∑ i ∈ o.toFinset, f i * (1 + Function.update θ j ((1 + φ) * (1 + δ) - 1) i) =
-          ∑ i ∈ o.toFinset, f i * (1 + θ i) :=
-        Finset.sum_congr rfl fun i hi => by rw [Function.update_of_ne (ne_of_mem_of_not_mem hi hj)]
-      rw [heq, hδt, List.toFinset_cons, Finset.sum_insert hj, Function.update_self, hsum]
-      ring
-
 /-- **The scalar core of the inner-product order** (the analogue of [higham2002accuracy] Lemma 8.4
 for "dot product, then subtract, then divide", [golub2013matrix] Algorithm 3.1.1): if `s` is
 obtained from `0` by adding the rounded products `p_j = fl(a_j b_j)`, `j ∈ o`, one rounding per
@@ -236,7 +203,7 @@ theorem exists_rounds_sub_dotFrom_div_eq {m : RoundingModel K} (hu : m.u < 1) {a
     have : (o.length : K) * m.u ≤ ((o.length + 1 : ℕ) : K) * m.u := by
       push_cast; nlinarith [m.u_nonneg]
     linarith
-  obtain ⟨φ, θ', -, hθ', hseq⟩ := exists_roundsSumFrom_map_eq_add_sum hu hnd hs hl
+  obtain ⟨φ, θ', -, hθ', hseq⟩ := exists_roundsSumFrom_map_eq_add_sum hnd hs hl
   choose! ε hε hpε using fun j hj => (hp j hj).exists_delta
   obtain ⟨δ₁, hδ₁, rfl⟩ := ht.exists_delta
   obtain ⟨δ₂, hδ₂, rfl⟩ := hy.exists_delta
@@ -267,20 +234,35 @@ variable {n : Type*} [Fintype n] [LinearOrder n]
 
 /-- **Forward substitution in floating-point arithmetic.** `RoundsForwardSubst m T b x̂` says that
 every `x̂ i` is an admissible computed value of `(b i - ∑_{j < i} T i j x̂ j) / T i i`
-([quarteroni2000numerical] (3.22)), computed as in [higham2002accuracy] Lemma 8.4: the products
-`T i j x̂ j` are rounded (`p j`), subtracted from `b i` one after the other in some order `o` of
-the indices `j < i` with one rounding per subtraction (`RoundsSumFrom`), and the result `t` is
-divided by `T i i` with one more rounding. The order is existentially quantified, so a theorem
-about `RoundsForwardSubst` holds for every order an implementation may use. -/
+([quarteroni2000numerical] (3.22)), computed as in [higham2002accuracy] Lemma 8.4: the running
+difference `t` of `b i` and the rounded products `T i j x̂ j` in some order `o` of the indices
+`j < i` (`FloatingPoint.RoundsRunningDiff`), divided by `T i i` with one more rounding. The order
+is existentially quantified, so a theorem about `RoundsForwardSubst` holds for every order an
+implementation may use. -/
 def RoundsForwardSubst (m : RoundingModel K) (T : Matrix n n K) (b xhat : n → K) : Prop :=
-  ∀ i, ∃ (o : List n) (p : n → K) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
-    (∀ j ∈ o, m.Rounds (T i j * xhat j) (p j)) ∧
-    RoundsSumFrom m (b i) (o.map fun j => -p j) t ∧ m.Rounds (t / T i i) (xhat i)
+  ∀ i, ∃ (o : List n) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
+    RoundsRunningDiff m o (T i) xhat (b i) t ∧ m.Rounds (t / T i i) (xhat i)
 
 /-- The number of indices `≤ i` is at most the number of indices. -/
 theorem card_filter_le_le_card (i : n) : #{j | j ≤ i} ≤ Fintype.card n := by
   rw [← Finset.card_univ]
   exact Finset.card_le_card (Finset.filter_subset _ _)
+
+/-- A list of exactly the indices below `i` enumerates the `Finset` of the indices below `i`. -/
+theorem toFinset_eq_filter_lt_of_forall_mem_iff {o : List n} {i : n} (ho : ∀ j, j ∈ o ↔ j < i) :
+    o.toFinset = univ.filter (· < i) := by
+  ext j
+  simp [ho]
+
+/-- **The number of terms of a running difference over the indices below `i`**: a duplicate-free
+list of exactly those indices has at most `card n - 1` entries, so a row of a substitution or of a
+factorization (the terms and one more operation) carries at most `card n` roundings. -/
+theorem length_add_one_le_card_of_forall_mem_iff {o : List n} {i : n} (hnd : o.Nodup)
+    (ho : ∀ j, j ∈ o ↔ j < i) : o.length + 1 ≤ Fintype.card n := by
+  have hlen : o.length + 1 = #{j | j ≤ i} := by
+    rw [← List.toFinset_card_of_nodup hnd, toFinset_eq_filter_lt_of_forall_mem_iff ho,
+      Finset.card_eq_sum_ones, Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
+  exact hlen ▸ card_filter_le_le_card i
 
 /-- **One row of [higham2002accuracy] Theorem 8.5**: a computed row of forward substitution
 satisfies `t_ii x̂_i (1 + θ₀) = b_i - ∑_{j < i} t_ij x̂_j (1 + θ_j)` with every `|θ| ≤ γ_n`, `n` the
@@ -292,17 +274,12 @@ theorem exists_roundsForwardSubst_row_eq {m : RoundingModel K} (hu : m.u < 1)
       (∀ j, j < i → |θ j| ≤ gamma m.u (Fintype.card n)) ∧
       T i i * xhat i * (1 + θ₀) =
         b i - ∑ j ∈ univ.filter (· < i), T i j * xhat j * (1 + θ j) := by
-  obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := h i
-  have hset : o.toFinset = univ.filter (· < i) := by
-    ext j
-    simp [ho]
-  have hlen : o.length + 1 = #{j | j ≤ i} := by
-    rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones, Finset.card_eq_sum_ones,
-      Matrix.sum_filter_le_eq_add]
-  have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card i
+  obtain ⟨o, t, hnd, ho, ht, hx⟩ := h i
+  have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+  have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
   have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
     (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard
-  obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hp hd ht hx hlu
+  obtain ⟨θ₀, θ, hθ₀, hθ, heq⟩ := exists_rounds_sub_dot_div_eq hu hnd hd ht hx hlu
   have hmono := gamma_mono m.u_nonneg hle hcard
   refine ⟨θ₀, θ, hθ₀.trans hmono, fun j hj => (hθ j ((ho j).2 hj)).trans hmono, ?_⟩
   rw [← hset]
@@ -403,13 +380,8 @@ theorem exists_roundsForwardSubstDot_row_eq {m : RoundingModel K} (hu : m.u < 1)
     ring
   · obtain ⟨o, p, s, t, hnd, ho, hp, hs, ht, hx⟩ := (h i).2 hi
     obtain ⟨j₀, hj₀⟩ := not_isMin_iff.1 hi
-    have hset : o.toFinset = univ.filter (· < i) := by
-      ext j
-      simp [ho]
-    have hlen : o.length + 1 = #{j | j ≤ i} := by
-      rw [← List.toFinset_card_of_nodup hnd, hset, Finset.card_eq_sum_ones,
-        Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
-    have hle : o.length + 1 ≤ Fintype.card n := hlen ▸ card_filter_le_le_card i
+    have hset := toFinset_eq_filter_lt_of_forall_mem_iff ho
+    have hle := length_add_one_le_card_of_forall_mem_iff hnd ho
     have hlu : ((o.length + 1 : ℕ) : K) * m.u < 1 :=
       (mul_le_mul_of_nonneg_right (Nat.cast_le.2 hle) m.u_nonneg).trans_lt hcard
     have h2n : 2 ≤ Fintype.card n := Fintype.one_lt_card_iff.2 ⟨j₀, i, hj₀.ne⟩
@@ -447,9 +419,8 @@ variable {n : Type*} [Fintype n] [LinearOrder n]
 `FloatingPoint.RoundsForwardSubst` with the products over the indices `j > i`. It is forward
 substitution on the dual order (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`). -/
 def RoundsBackSubst (m : RoundingModel K) (U : Matrix n n K) (b xhat : n → K) : Prop :=
-  ∀ i, ∃ (o : List n) (p : n → K) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ i < j) ∧
-    (∀ j ∈ o, m.Rounds (U i j * xhat j) (p j)) ∧
-    RoundsSumFrom m (b i) (o.map fun j => -p j) t ∧ m.Rounds (t / U i i) (xhat i)
+  ∀ i, ∃ (o : List n) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ i < j) ∧
+    RoundsRunningDiff m o (U i) xhat (b i) t ∧ m.Rounds (t / U i i) (xhat i)
 
 omit [Fintype n] in
 /-- Backward substitution is forward substitution on the dual order. -/
@@ -634,21 +605,16 @@ theorem roundsForwardSubst_exact_iff {T : Matrix n n K} {b x : n → K} :
   constructor
   · intro h
     refine Matrix.eq_forwardSubst_of_forall_apply_eq fun i => ?_
-    obtain ⟨o, p, t, hnd, ho, hp, ht, hx⟩ := h i
-    have hset : o.toFinset = univ.filter (· < i) := by
-      ext j
-      simp [ho]
+    obtain ⟨o, t, hnd, ho, ht, hx⟩ := h i
     rw [RoundingModel.exact_rounds_iff] at hx
-    rw [hx, (roundsSumFrom_exact_map_neg_iff hnd).1 ht, hset]
-    congr 2
-    exact Finset.sum_congr rfl fun j hj => hp j ((ho j).2 (mem_filter.1 hj).2)
+    rw [hx, ht.eq_of_exact hnd, toFinset_eq_filter_lt_of_forall_mem_iff ho]
   · rintro rfl i
-    refine ⟨(univ.filter (· < i)).toList, fun j => T i j * T.forwardSubst b j,
+    refine ⟨(univ.filter (· < i)).toList,
       b i - ∑ j ∈ (univ.filter (· < i)).toList.toFinset, T i j * T.forwardSubst b j,
-      Finset.nodup_toList _, fun j => by simp, fun _ _ => rfl,
-      (roundsSumFrom_exact_map_neg_iff (Finset.nodup_toList _)).2 rfl, ?_⟩
-    rw [RoundingModel.exact_rounds_iff, Finset.toList_toFinset]
-    exact Matrix.forwardSubst_apply T b i
+      Finset.nodup_toList _, fun j => by simp, ?_, ?_⟩
+    · rw [roundsRunningDiff_exact_iff, List.sum_toFinset _ (Finset.nodup_toList _)]
+    · rw [RoundingModel.exact_rounds_iff, Finset.toList_toFinset]
+      exact Matrix.forwardSubst_apply T b i
 
 /-- **Exact-model characterization of backward substitution**:
 `RoundsBackSubst exact U b x ↔ x = Matrix.backSubst U b`, the dual of
@@ -670,10 +636,8 @@ theorem roundsForwardSubstDot_exact_iff {T : Matrix n n K} {b x : n → K} :
     · rw [Finset.filter_eq_empty_iff.2 fun j _ => hi.not_lt, Finset.sum_empty, sub_zero]
       exact (h i).1 hi
     · obtain ⟨o, p, s, t, hnd, ho, hp, hs, ht, hx⟩ := (h i).2 hi
-      have hset : o.toFinset = univ.filter (· < i) := by
-        ext j
-        simp [ho]
-      rw [roundsSumFrom_exact_iff, zero_add, ← List.sum_toFinset _ hnd, hset] at hs
+      rw [roundsSumFrom_exact_iff, zero_add, ← List.sum_toFinset _ hnd,
+        toFinset_eq_filter_lt_of_forall_mem_iff ho] at hs
       rw [RoundingModel.exact_rounds_iff] at ht hx
       rw [hx, ht, hs]
       congr 2
@@ -698,5 +662,173 @@ theorem roundsBackSubstDot_exact_iff {U : Matrix n n K} {b x : n → K} :
   exact roundsForwardSubstDot_exact_iff (n := nᵒᵈ)
 
 end Exact
+
+end FloatingPoint
+
+/-! ### Column-oriented forward substitution as a program
+
+The loop "for `j` in increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for
+every `i > j`" ([golub2013matrix] Algorithm 3.1.3, over any linear order: Algorithm 3.1.4 is its
+instance on the dual order) computes, in every run of the relational model, a
+`FloatingPoint.RoundsForwardSubst`: row `i` receives its subtractions over `j < i` one at a time,
+each from the finished `x̂ j`, which is a running difference in the order of the outer loop. -/
+
+namespace FloatingPoint
+
+universe u
+
+section ColSubst
+
+variable {K : Type u} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+variable {ι : Type u} [LinearOrder ι] [DecidableEq ι]
+
+/-- The loop invariant of column-oriented forward substitution: indices outside the remaining
+list `l` are finished rows of `RoundsForwardSubst`; an index `i` in `l` holds the running
+difference of `b i` over the finished indices. -/
+private def ColInv (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (l : List ι)
+    (s : ι → K) : Prop :=
+  (∀ i, i ∉ l → ∃ (o : List ι) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
+      RoundsRunningDiff fp o (L i) s (b i) t ∧ fp.Rounds (t / L i i) (s i)) ∧
+  (∀ i, i ∈ l → ∃ o : List ι, o.Nodup ∧ (∀ j, j ∈ o ↔ j ∉ l) ∧
+      RoundsRunningDiff fp o (L i) s (b i) (s i))
+
+/-- One step of the outer loop keeps the invariant. -/
+private theorem colInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (j : ι)
+    (c : List ι) (hcm : ∀ i, i ∈ c ↔ j < i) (l : List ι)
+    (hsort : (j :: l).Pairwise (· < ·)) (hup : ∀ i ∈ j :: l, ∀ k, i ≤ k → k ∈ j :: l)
+    (s : ι → K) (hs : ColInv fp L b (j :: l) s) (y : K) (hy : fp.Rounds (s j / L j j) y)
+    (s₂ : ι → K)
+    (h₂ : (∀ i, i ∉ c → s₂ i = Function.update s j y i) ∧
+      ∀ i ∈ c, ∃ p, fp.Rounds (Function.update s j y j * L i j) p ∧
+        fp.Rounds (Function.update s j y i - p) (s₂ i)) :
+    ColInv fp L b l s₂ := by
+  have hlt : ∀ k, k ∉ j :: l ↔ k < j := by
+    intro k
+    constructor
+    · intro hk
+      by_contra h
+      exact hk (hup j List.mem_cons_self k (not_lt.1 h))
+    · intro hk hmem
+      rcases List.mem_cons.1 hmem with rfl | hmem
+      · exact lt_irrefl _ hk
+      · exact lt_asymm hk (List.rel_of_pairwise_cons hsort hmem)
+  have hjl : j ∉ l := fun h => lt_irrefl _ (List.rel_of_pairwise_cons hsort h)
+  have hbelow : ∀ k, k < j → s₂ k = s k := by
+    intro k hk
+    rw [h₂.1 k (by rw [hcm]; exact lt_asymm hk), Function.update_of_ne (ne_of_lt hk)]
+  have hj₂ : s₂ j = y := by
+    rw [h₂.1 j (by rw [hcm]; exact lt_irrefl _), Function.update_self]
+  obtain ⟨hfin, hrun⟩ := hs
+  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
+  · by_cases hij : i = j
+    · subst hij
+      obtain ⟨o, hnd, ho, hrd⟩ := hrun i List.mem_cons_self
+      refine ⟨o, s i, hnd, fun k => (ho k).trans (hlt k),
+        hrd.congr (fun _ _ => rfl) fun k hk => hbelow k ((hlt k).1 ((ho k).1 hk)), ?_⟩
+      rw [hj₂]
+      exact hy
+    · have hi' : i ∉ j :: l := by
+        intro h
+        rcases List.mem_cons.1 h with h | h
+        · exact hij h
+        · exact hi h
+      have hij' : i < j := (hlt i).1 hi'
+      obtain ⟨o, t, hnd, ho, hrd, hr⟩ := hfin i hi'
+      refine ⟨o, t, hnd, ho,
+        hrd.congr (fun _ _ => rfl) fun k hk => hbelow k (lt_trans ((ho k).1 hk) hij'), ?_⟩
+      rw [hbelow i hij']
+      exact hr
+  · have hji : j < i := List.rel_of_pairwise_cons hsort hi
+    obtain ⟨o, hnd, ho, hrd⟩ := hrun i (List.mem_cons_of_mem _ hi)
+    obtain ⟨q, hq, hq'⟩ := h₂.2 i ((hcm i).2 hji)
+    rw [Function.update_of_ne (ne_of_gt hji)] at hq'
+    rw [Function.update_self] at hq
+    have hjo : j ∉ o := fun h => (ho j).1 h List.mem_cons_self
+    refine ⟨o ++ [j], hnd.append (List.nodup_singleton _) (List.disjoint_singleton.2 hjo),
+      fun k => ?_, ?_⟩
+    · rw [List.mem_append, ho k, List.mem_singleton]
+      constructor
+      · rintro (h | rfl)
+        · exact fun h' => h (List.mem_cons_of_mem _ h')
+        · exact hjl
+      · intro h
+        by_cases hkj : k = j
+        · exact Or.inr hkj
+        · exact Or.inl fun h' => by
+            rcases List.mem_cons.1 h' with h' | h'
+            · exact hkj h'
+            · exact h h'
+    · refine (hrd.congr (b' := s₂) (fun _ _ => rfl) fun k hk =>
+        hbelow k ((hlt k).1 ((ho k).1 hk))).append_singleton hjo ?_ hq'
+      rw [hj₂, mul_comm]
+      exact hq
+
+/-- The outer loop, by induction on the remaining list. -/
+private theorem colInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K)
+    (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) :
+    ∀ (l : List ι) (s s' : ι → K), l.Pairwise (· < ·) →
+    (∀ i ∈ l, ∀ k, i ≤ k → k ∈ l) → ColInv fp L b l s →
+    s' ∈ (l.foldlM (fun (b : ι → K) j => do
+      let bj ← fp.round (b j / L j j)
+      (c j).foldlM (fun (b : ι → K) i => do
+          let p ← fp.round (b j * L i j)
+          let bi ← fp.round (b i - p)
+          pure (Function.update b i bi))
+        (Function.update b j bj)) s).run →
+    ColInv fp L b [] s' := by
+  intro l
+  induction l with
+  | nil =>
+    intro s s' _ _ hs h
+    rw [List.foldlM_nil, SetM.mem_run_pure] at h
+    exact h ▸ hs
+  | cons j l ih =>
+    intro s s' hsort hup hs h
+    simp only [List.foldlM_cons, bind_assoc] at h
+    rw [SetM.mem_run_bind] at h
+    obtain ⟨y, hy, h⟩ := h
+    rw [SetM.mem_run_bind] at h
+    obtain ⟨s₂, h₂, h⟩ := h
+    have key := SetM.mem_run_foldlM_update_of_nodup
+      (fun a v (z : ι → K) => fp.round (z j * L a j) >>= fun p => fp.round (v - p)) (c j) (hc j)
+      (fun a _ v z z' hz => by rw [hz j fun h => lt_irrefl j ((hcm j j).1 h)])
+      (Function.update s j y) s₂
+    simp only [bind_assoc] at key
+    obtain ⟨hout, hin⟩ := key.1 h₂
+    have hin' : ∀ i ∈ c j, ∃ p, fp.Rounds (Function.update s j y j * L i j) p ∧
+        fp.Rounds (Function.update s j y i - p) (s₂ i) := fun i hi => by
+      obtain ⟨p, hp, hq⟩ := SetM.mem_run_bind.1 (hin i hi)
+      exact ⟨p, hp, hq⟩
+    refine ih s₂ s' (List.pairwise_cons.1 hsort).2 (fun i hi k hik => ?_)
+      (colInv_step fp L b j (c j) (hcm j) l hsort hup s hs y hy s₂ ⟨hout, hin'⟩) h
+    rcases List.mem_cons.1 (hup i (List.mem_cons_of_mem _ hi) k hik) with rfl | hk
+    · exact absurd (lt_of_lt_of_le (List.rel_of_pairwise_cons hsort hi) hik) (lt_irrefl _)
+    · exact hk
+
+/-- **Column-oriented forward substitution, over any linear order**: the loop "for `j` in
+increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" (the
+inner list `c j` enumerating the indices above `j` in any order) computes, in every run of the
+relational model, an admissible forward substitution `FloatingPoint.RoundsForwardSubst`: row `i`
+receives its subtractions over `j < i` one at a time, each from the finished `x̂ j`
+([golub2013matrix] Algorithm 3.1.3; Algorithm 3.1.4 on the dual order through
+`roundsBackSubst_iff_roundsForwardSubst_toDual`). -/
+theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel K) (L : Matrix ι ι K)
+    {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l) (c : ι → List ι)
+    (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) (b x : ι → K)
+    (hx : x ∈ (l.foldlM (fun (b : ι → K) j => do
+      let bj ← fp.round (b j / L j j)
+      (c j).foldlM (fun (b : ι → K) i => do
+          let p ← fp.round (b j * L i j)
+          let bi ← fp.round (b i - p)
+          pure (Function.update b i bi))
+        (Function.update b j bj)) b).run) :
+    RoundsForwardSubst fp L b x := by
+  have h0 : ColInv fp L b l b := by
+    refine ⟨fun i hi => absurd (hall i) hi, fun i _ => ?_⟩
+    exact ⟨[], List.nodup_nil, fun j => by simp [hall j], fun _ => 0, by simp, .nil _⟩
+  have := colInv_foldlM fp L b c hc hcm l b x hl (fun _ _ k _ => hall k) h0 hx
+  exact fun i => this.1 i (by simp)
+
+end ColSubst
 
 end FloatingPoint

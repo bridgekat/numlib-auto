@@ -496,7 +496,7 @@ theorem equation_5_46 :
         mul_le_mul hr2 hεle hε0 (by positivity)
       nlinarith
     have hr : ((2 * (n - 2) : ℕ) : ℝ) * ε < 1 := by linarith
-    obtain ⟨Q, hQ, E, hH, hE⟩ := FloatingPoint.exists_roundsHessenbergReduce_eq hcard hr h
+    obtain ⟨-, Q, hQ, E, hH, hE⟩ := FloatingPoint.exists_roundsHessenbergReduce_eq hcard hr h
     refine ⟨Q, hQ, E, hH, hE.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))⟩
     calc FloatingPoint.gamma ε (2 * (n - 2)) ≤ 2 * (((2 * (n - 2) : ℕ) : ℝ) * ε) :=
           FloatingPoint.gamma_le_two_mul hε0 hrε
