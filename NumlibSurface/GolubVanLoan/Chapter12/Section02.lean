@@ -309,7 +309,7 @@ theorem equation_12_2_14 {N : ℕ} {c s : ℕ → ℝ} (hcs : ∀ k, c k ^ 2 + s
       (givensChain N fun k => !![c k, s k; -s k, c k]).IsUpperHessenberg ∧
       ((givensChain N fun k => !![c k, s k; -s k, c k]) * A.strictUpper).IsUpperTriangular ∧
       ((givensChain N fun k => !![c k, s k; -s k, c k]) * A).IsUpperTriangular := by
-  obtain ⟨h1, h2⟩ := transpose_givensChain_mul_strictLower_add_diagPart hcs hA
+  obtain ⟨h1, h2⟩ := givensChain_mul_strictLower_add_diagPart hcs hA
   refine ⟨h1, givensChain_isUpperHessenberg, h2, ?_⟩
   have hsplit : A = (A.strictLower + A.diagPart) + A.strictUpper := by
     ext i j
@@ -453,6 +453,37 @@ private theorem givensFactor_of_lt {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2)
   rw [givensFactor, dite_eq_left_of_eq_true (eq_true a.isLt)]
   rfl
 
+/-- The exact run of one step of Algorithm 12.2.2: the rotation `[c s; −s c]` of Algorithm 5.1.3
+zeroing `ũ_{k+1}` against `u_k`, and the updates of `ũ`, `f̃`, `c`, `s`, `f`, `g`, `h`. -/
+theorem algorithm_12_2_2Step_pure {N : ℕ} (u v p q : Fin (N + 1) → ℝ)
+    (st : SemiseparableQRState N) (a : Fin N) :
+    Id.run (algorithm_12_2_2Step pure u v p q st a) =
+      { ut := (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
+          -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut
+        ft := -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft
+        c := Function.update st.c a
+          (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1
+        s := Function.update st.s a
+          (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2)
+        f := Function.update st.f a.succ
+          ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.ft)
+        g := Function.update st.g a.castSucc
+          ((((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
+            -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut) *
+              v a.castSucc -
+            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
+              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+                st.h a.succ) * q a.castSucc) /
+            (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft))
+        h := Function.update (Function.update st.h a.succ
+            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.h a.succ -
+              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+                p a.castSucc)) a.castSucc
+          ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
+            -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
+              st.h a.succ) } :=
+  rfl
+
 /-- **Correctness of Algorithm 12.2.2**: if `u_n ≠ 0` and `A = tril(u vᵀ) + triu(p qᵀ, 1)`, the
 exact run `(c, s, f, g, h)` gives an orthogonal `Qᵀ = G₁ ⋯ G_{n−1}` ((12.2.12)–(12.2.13), the
 `Matrix.givensChain` of the blocks `[c_k s_k; −s_k c_k]`) with `QᵀA = R = triu(f gᵀ + h qᵀ)`, and
@@ -485,34 +516,6 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
       f := 0
       g := Function.update 0 (Fin.last N) (v (Fin.last N))
       h := 0 }
-  -- the exact step
-  have hstep : ∀ (st : SemiseparableQRState N) (a : Fin N),
-      Id.run (algorithm_12_2_2Step pure u v p q st a) =
-        { ut := (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
-            -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut
-          ft := -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft
-          c := Function.update st.c a
-            (Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1
-          s := Function.update st.s a
-            (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2)
-          f := Function.update st.f a.succ
-            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.ft)
-          g := Function.update st.g a.castSucc
-            ((((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * u a.castSucc +
-              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ut) *
-                v a.castSucc -
-              ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
-                -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
-                  st.h a.succ) * q a.castSucc) /
-              (-(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 * st.ft))
-          h := Function.update (Function.update st.h a.succ
-              ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * st.h a.succ -
-                -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
-                  p a.castSucc)) a.castSucc
-            ((Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).1 * p a.castSucc +
-              -(Id.run (Chapter05.algorithm_5_1_3 pure (u a.castSucc) st.ut)).2 *
-                st.h a.succ) } :=
-    fun _ _ => rfl
   -- the invariant after the steps `N − 1, …, t`
   let Inv : ℕ → SemiseparableQRState N → Prop := fun t st =>
     t ≤ N ∧ prodFwd (fun k => givensFactor N (rotBlock st.c st.s) (t + k)) (N - t) * A =
@@ -562,7 +565,7 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
         rw [hc, h0] at hcs1
         norm_num at hcs1
       exact hut ((mul_eq_zero.1 hcs2).resolve_left hc)
-    rw [hstep]
+    rw [algorithm_12_2_2Step_pure]
     refine ⟨by omega, ?_, ?_, mul_ne_zero (neg_ne_zero.2 hs0) hft, fun k hk hk' => ?_⟩
     · rw [show N - (a : ℕ) = (N - ((a : ℕ) + 1)) + 1 by omega, prodFwd_succ',
         Matrix.mul_assoc]
@@ -700,10 +703,9 @@ theorem orthogonalHessenberg_fact_1 {N : ℕ} (φ : ℕ → ℝ) :
 /-- **Fact 2 of §12.2.10**: for `H = G₁ ⋯ G_n` of (12.2.18) of order `n = 2m` with eigenvalues
 `e^{± iθ_k}` (12.2.19), `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` are symmetric tridiagonal with
 `λ(C) = {± cos(θ_k/2)}` and `λ(S) = {± sin(θ_k/2)}`. The angles `θ` exist by (12.2.19), `H` being
-special orthogonal. -/
-theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ → ℝ)
-    (hH : prodFwd (reflectorFactor N φ) (N + 1) ∈ orthogonalGroup (Fin (N + 1)) ℝ)
-    (hdet : (prodFwd (reflectorFactor N φ) (N + 1)).det = 1) :
+special orthogonal (`Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`: a product of `2m`
+reflections). -/
+theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ → ℝ) :
     ∃ θ : Fin m → ℝ,
       ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
         ∏ k, (Polynomial.X - Polynomial.C (Complex.exp (θ k * Complex.I))) *
@@ -726,6 +728,8 @@ theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ 
           (Polynomial.X + Polynomial.C (Real.sin (θ k / 2))) := by
   set H := prodFwd (reflectorFactor N φ) (N + 1)
   set e : Fin (N + 1) ≃ Fin (2 * m) := finCongr hNm
+  obtain ⟨hH, hdet⟩ := mem_specialOrthogonalGroup_iff.1
+    (prodFwd_reflectorFactor_mem_specialOrthogonalGroup φ hNm)
   have hH' : H.reindex e e ∈ specialOrthogonalGroup (Fin (2 * m)) ℝ := by
     refine mem_specialOrthogonalGroup_iff.2 ⟨?_, by rw [det_reindex_self, hdet]⟩
     rw [mem_orthogonalGroup_iff] at hH ⊢
@@ -736,8 +740,8 @@ theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ 
         (Polynomial.X - Polynomial.C (Complex.exp (-θ k * Complex.I))) := by
     rw [← hθ, ← charpoly_reindex e (H.map (algebraMap ℝ ℂ))]
     rfl
-  obtain ⟨hC1, hC2, hS1, hS2⟩ := isTridiagonal_oddEven_half_sum (N := N) φ
   obtain ⟨hC3, hS3⟩ := charpoly_oddEven_half_sum φ θ hθ'
-  exact ⟨θ, hθ', hC1, hC2, hC3, hS1, hS2, hS3⟩
+  exact ⟨θ, hθ', isSymm_oddEvenHalfSum φ, isTridiagonal_oddEvenHalfSum φ, hC3,
+    isSymm_oddEvenHalfDiff φ, isTridiagonal_oddEvenHalfDiff φ, hS3⟩
 
 end GolubVanLoan.Chapter12

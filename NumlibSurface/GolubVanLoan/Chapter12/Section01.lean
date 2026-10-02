@@ -2,6 +2,8 @@ import Numlib.Analysis.Fourier.SineCosineTransform
 import Numlib.FloatingPoint.Program
 import Numlib.LinearAlgebra.Matrix.Displacement
 import NumlibSurface.GolubVanLoan.Chapter01.Section02
+import NumlibSurface.GolubVanLoan.Chapter03.Section02
+import NumlibSurface.GolubVanLoan.Chapter07.Section01
 
 /-!
 # Golub–Van Loan §12.1: linear systems with displacement structure
@@ -49,20 +51,43 @@ theorem equation_12_1_3 {F G A : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
   obtain ⟨R, S, hRS⟩ := displacementRank_le_iff_exists.mp h.le
   exact ⟨R, S, hRS⟩
 
+/-- **§12.1.2**, Definition: for `ω, ν ∈ ℝⁿ` with `ω_k ≠ ν_j` for all `k, j` (the context of the
+definition), `A` is Cauchy-like with respect to `ω`, `ν` if `diag(ω) A − A diag(ν) = R Sᵀ` for some
+`R, S ∈ ℝ^{n×r}` of full column rank `r` ((12.1.4); the book's "`r ≪ n`" is informal and not part of
+the definition). -/
+def IsCauchyLike (ω ν : Fin n → ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  (∀ k j, ω k ≠ ν j) ∧ ∃ (r : ℕ) (R S : Matrix (Fin n) (Fin r) ℝ), R.rank = r ∧ S.rank = r ∧
+    diagonal ω * A - A * diagonal ν = R * Sᵀ
+
+/-- The all-ones column `e ∈ ℝ^{n×1}` has rank `1` for `n ≥ 1`. -/
+private theorem rank_onesCol (hn : n ≠ 0) :
+    (of fun (_ : Fin n) (_ : Fin 1) => (1 : ℝ)).rank = 1 := by
+  set e : Matrix (Fin n) (Fin 1) ℝ := of fun _ _ => 1
+  have hG : eᵀ * e = (n : ℝ) • (1 : Matrix (Fin 1) (Fin 1) ℝ) := by
+    ext a b
+    rw [Subsingleton.elim a b]
+    simp [e, mul_apply]
+  have hu : IsUnit (eᵀ * e) := by
+    rw [hG, isUnit_iff_isUnit_det]
+    simp [hn]
+  refine le_antisymm ((rank_le_card_width e).trans (by simp)) ?_
+  calc 1 = (eᵀ * e).rank := by rw [rank_of_isUnit _ hu, Fintype.card_fin]
+    _ ≤ e.rank := rank_mul_le_right _ _
+
 /-- **§12.1.2**: for `ω, ν ∈ ℝⁿ` with `ω_k ≠ ν_j` for all `k, j`, the Cauchy matrix `a_kj = 1/(ω_k −
-ν_j)` satisfies `Ω A − A Λ = e eᵀ` (`Ω = diag(ω)`, `Λ = diag(ν)`, `e` the vector of ones) and has
-`{Ω, Λ}`-displacement rank `1` (for `n ≥ 1`). -/
+ν_j)` satisfies `Ω A − A Λ = e eᵀ` (`Ω = diag(ω)`, `Λ = diag(ν)`, `e` the vector of ones), has
+`{Ω, Λ}`-displacement rank `1` and is Cauchy-like with generators `R = S = e` (for `n ≥ 1`). -/
 theorem cauchy_displacement {ω ν : Fin n → ℝ} (h : ∀ k j, ω k ≠ ν j) :
     diagonal ω * cauchy ω (-ν) - cauchy ω (-ν) * diagonal ν = vecMulVec 1 1 ∧
-      (n ≠ 0 → displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1) :=
-  ⟨sylvesterMap_diagonal_cauchy h, displacementRank_diagonal_cauchy h⟩
-
-/-- **§12.1.2**, Definition: `A` is Cauchy-like with respect to `ω`, `ν` if
-`diag(ω) A − A diag(ν) = R Sᵀ` for some `R, S ∈ ℝ^{n×r}` of full column rank `r` ((12.1.4); the
-book's "`r ≪ n`" is informal and not part of the definition). -/
-def IsCauchyLike (ω ν : Fin n → ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  ∃ (r : ℕ) (R S : Matrix (Fin n) (Fin r) ℝ), R.rank = r ∧ S.rank = r ∧
-    diagonal ω * A - A * diagonal ν = R * Sᵀ
+      (n ≠ 0 → displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1) ∧
+      (n ≠ 0 → IsCauchyLike ω ν (cauchy ω (-ν))) := by
+  refine ⟨sylvesterMap_diagonal_cauchy h, displacementRank_diagonal_cauchy h, fun hn =>
+    ⟨h, 1, of fun _ _ => 1, of fun _ _ => 1, rank_onesCol hn, rank_onesCol hn, ?_⟩⟩
+  have h1 : diagonal ω * cauchy ω (-ν) - cauchy ω (-ν) * diagonal ν = vecMulVec 1 1 :=
+    sylvesterMap_diagonal_cauchy h
+  rw [h1]
+  ext i j
+  simp [mul_apply, vecMulVec_apply]
 
 /-- **(12.1.4)** and the display after it: if `ω_k ≠ ν_j` for all `k, j`, then `Ω A − A Λ = R Sᵀ`
 holds exactly when `a_kj = r_kᵀ s_j / (ω_k − ν_j)` (`r_k`, `s_j` the rows of `R`, `S`): a
@@ -206,6 +231,38 @@ private theorem isLU_apply_zero_succ {N : ℕ} {A L U : Matrix (Fin (N + 2)) (Fi
     simp [hU]
   · rw [← h.mul_eq, mul_apply, Fin.sum_univ_succ]
 
+/-- Bordering a unit lower triangular `L₁` by the column `l` gives the unit lower triangular
+`[1 0; l L₁]`. -/
+private theorem isUnitLowerTriangular_bordered {N : ℕ} (l : Fin (N + 1) → ℝ)
+    {L₁ : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (h : L₁.IsUnitLowerTriangular) :
+    (of fun i j => Fin.cases (Fin.cases 1 (fun _ => 0) j)
+      (fun i' => Fin.cases (l i') (fun j' => L₁ i' j') j) i :
+        Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ).IsUnitLowerTriangular := by
+  refine ⟨fun i j hij' => ?_, fun i => ?_⟩
+  · revert hij'
+    refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
+      intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
+    · exact absurd hij' (lt_irrefl _)
+    · exact absurd hij' (Fin.succ_pos _).not_gt
+    · exact h.isLowerTriangular (Fin.succ_lt_succ_iff.1 hij')
+  · refine Fin.cases ?_ (fun i => ?_) i <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
+    exact h.diag_eq_one i
+
+/-- Bordering an upper triangular `U₁` by the row `[α gᵀ]` gives the upper triangular
+`[α gᵀ; 0 U₁]`. -/
+private theorem isUpperTriangular_bordered {N : ℕ} (α : ℝ) (g : Fin (N + 1) → ℝ)
+    {U₁ : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (h : U₁.IsUpperTriangular) :
+    (of fun i j => Fin.cases (Fin.cases α g j)
+      (fun i' => Fin.cases 0 (fun j' => U₁ i' j') j) i :
+        Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ).IsUpperTriangular := by
+  intro i j hij'
+  revert hij'
+  refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
+    intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
+  · exact absurd hij' (lt_irrefl _)
+  · exact absurd hij' (Fin.succ_pos _).not_gt
+  · exact h (Fin.succ_lt_succ_iff.1 hij')
+
 /-- The Schur complement of an LU factorization with a nonzero pivot is the product of the trailing
 factors. -/
 private theorem isLU_schur {N : ℕ} {A L U : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
@@ -276,21 +333,8 @@ private theorem algorithm_12_1_1_spec_aux : ∀ (N : ℕ) {ω ν : Fin (N + 1) �
       set LU₁ := Id.run (algorithm_12_1_1 pure N (fun i => ω i.succ) (fun j => ν j.succ)
         (of fun i c => R i.succ c - A i.succ 0 * R 0 c / A 0 0)
         (of fun j c => S j.succ c - A 0 j.succ * S 0 c / A 0 0))
-      refine ⟨⟨fun i j hij' => ?_, fun i => ?_⟩, fun i j hij' => ?_, ?_⟩
-      · revert hij'
-        refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        · exact absurd hij' (lt_irrefl _)
-        · exact absurd hij' (Fin.succ_pos _).not_gt
-        · exact hrec.isUnitLowerTriangular.isLowerTriangular (Fin.succ_lt_succ_iff.1 hij')
-      · refine Fin.cases ?_ (fun i => ?_) i <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        exact hrec.isUnitLowerTriangular.diag_eq_one i
-      · revert hij'
-        refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        · exact absurd hij' (lt_irrefl _)
-        · exact absurd hij' (Fin.succ_pos _).not_gt
-        · exact hrec.isUpperTriangular (Fin.succ_lt_succ_iff.1 hij')
+      refine ⟨isUnitLowerTriangular_bordered _ hrec.isUnitLowerTriangular,
+        isUpperTriangular_bordered _ _ hrec.isUpperTriangular, ?_⟩
       · ext i j
         refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
           simp only [mul_apply, Fin.sum_univ_succ, of_apply, Fin.cases_zero, Fin.cases_succ,
@@ -313,7 +357,8 @@ theorem algorithm_12_1_1_spec {N : ℕ} {ω ν : Fin (N + 1) → ℝ}
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
     IsLU A (Id.run (algorithm_12_1_1 pure N ω ν R S)).1
       (Id.run (algorithm_12_1_1 pure N ω ν R S)).2 := by
-  obtain ⟨L, U, hLU⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA
+  obtain ⟨L, U, hLU⟩ := Chapter03.theorem_3_2_1 fun k =>
+    ((isUnit_iff_isUnit_det _).1 (hA k)).ne_zero
   refine algorithm_12_1_1_spec_aux N hων h ⟨L, U, hLU, fun i => ?_⟩
   have hdet := hLU.det_strictLeadingPrincipalSubmatrix i.succ
   have hu := (isUnit_iff_isUnit_det _).1 (hA i.succ)
@@ -556,21 +601,8 @@ private theorem algorithm_12_1_2_spec_aux : ∀ (N : ℕ) {ω ν : Fin (N + 1) �
         refine Fin.cases ?_ (fun i => ?_) i
         · simp [hA', hσ0]
         · simp [hA', hσ]
-      refine ⟨⟨⟨fun i j hij' => ?_, fun i => ?_⟩, fun i j hij' => ?_, ?_⟩, fun i j => ?_⟩
-      · revert hij'
-        refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        · exact absurd hij' (lt_irrefl _)
-        · exact absurd hij' (Fin.succ_pos _).not_gt
-        · exact hrec.isUnitLowerTriangular.isLowerTriangular (Fin.succ_lt_succ_iff.1 hij')
-      · refine Fin.cases ?_ (fun i => ?_) i <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        exact hrec.isUnitLowerTriangular.diag_eq_one i
-      · revert hij'
-        refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          intro hij' <;> simp only [of_apply, Fin.cases_zero, Fin.cases_succ]
-        · exact absurd hij' (lt_irrefl _)
-        · exact absurd hij' (Fin.succ_pos _).not_gt
-        · exact hrec.isUpperTriangular (Fin.succ_lt_succ_iff.1 hij')
+      refine ⟨⟨isUnitLowerTriangular_bordered _ hrec.isUnitLowerTriangular,
+        isUpperTriangular_bordered _ _ hrec.isUpperTriangular, ?_⟩, fun i j => ?_⟩
       · rw [hP]
         have hmul := hrec.mul_eq
         rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul] at hmul
@@ -700,8 +732,8 @@ private theorem disjoint_spectrum_of_injective {F G : Matrix (Fin n) (Fin n) ℝ
     apply Complex.ext
     · simpa using congrFun (congrFun h1 i) j
     · simpa using congrFun (congrFun h2 i) j
-  exact sylvesterMap_bijective_iff_disjoint_spectrum.1
-    ⟨hinj, LinearMap.injective_iff_surjective.1 hinj⟩
+  exact Set.disjoint_iff_inter_eq_empty.2 ((Chapter07.lemma_7_1_5 _ _).1
+    ⟨hinj, LinearMap.injective_iff_surjective.1 hinj⟩)
 
 /-- **§12.1.7**, after (12.1.9) (printed "`λ(Z₋₁) ∪ λ(Z₁) = ∅`", read `∩`): no complex number is an
 eigenvalue of both `Z₁` and `Z₋₁` (nor of `Z₁ᵀ` and `Z₋₁`), nor of both `Y₀₀` and `Y₁₁`;
@@ -732,7 +764,7 @@ theorem equation_12_1_10 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHankel) :
       IsHankelLike 2 H ∧
       (exchange n * H).IsToeplitz :=
   ⟨fun _ _ hi hj => sylvesterMap_cyclicShift_hankel_apply hH hi hj,
-    displacementRank_cyclicShift_hankel_le hH, exchange_mul_isHankel hH⟩
+    displacementRank_cyclicShift_hankel_le hH, hH.isToeplitz_exchange_mul⟩
 
 /-- **(12.1.11)** and the sentence after it: for a Hankel `H`, `Y₀₀ H − H Y₁₁` vanishes off the
 border and `rank_{Y₀₀, Y₁₁}(H) ≤ 4`; and for `A = T + H` with `T` Toeplitz, `rank_{Y₀₀, Y₁₁}(A) ≤

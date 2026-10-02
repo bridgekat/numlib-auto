@@ -42,9 +42,13 @@ rotation and QR of §5.1.13 and §5.2.10 over `ℂ`.
   `A.sortedSingularValues (k - 1)`; an SVD is `Matrix.IsSVD A U σ V`.
 * Algorithms follow the numbered conventions of `NumlibSurface/GolubVanLoan`. This chapter owns the
   **shared helper family** of convention 13 (§5.1: `houseOn`, `householderApplyLeft`/`Right`,
-  `givensRotation`, `givensApplyLeft`/`Right`, `householderProduct`,
-  `forwardAccumulation`/`backwardAccumulation`, reflector data `List ((Fin m → ℝ) × ℝ)`), which
-  every later chapter calls. Node suffixes per convention 12: `_spec` (exact, read off the bridge at
+  `givensRotation`, `givensRotateVec`, `givensApplyLeft`/`Right`, `householderProduct`,
+  `forwardAccumulation`/`backwardAccumulation`, reflector data `List ((Fin m → ℝ) × ℝ)`; for a
+  factored array with the returned `β`: `storedQFirstColumns` (§5.1), `storedQTransposeMulVec`,
+  `storedQMulVec` and the least-squares solver `householderLS` (§5.3)), which every later chapter
+  calls. Chapter 5 also hosts helpers of §6.5 that the updating procedures of Chapter 6 share:
+  `hyperbolicApplyLeft` (§5.1) and the Givens sweeps `givensHessenbergSweep`, `givensVectorSweep`,
+  `givensPairStep` (§5.2). Node suffixes per convention 12: `_spec` (exact, read off the bridge at
   `RoundingModel.exact` where one exists, convention 11), `_rounds` (every run satisfies the
   backbone relation: `RoundsHouseholderVectorParlett`, `RoundsHouseholderApplyScaled`,
   `RoundsGivensPair`, `RoundsGivensRowUpdate`/`ColUpdate`), `_rounding` (the book's bound).
@@ -66,11 +70,22 @@ BLAS discussion; the numerical examples (§5.3.1 sensitivity, `fl(AᵀA)` singul
 theorems they paraphrase ((5.3.18), (5.3.19), (5.4.2), (5.4.3), "column pivoting tends to produce a
 well-conditioned `R₁₁`", "small trailing `R`-submatrices almost always emerge", Björck's digit gain
 of §5.3.8); rounding claims quoted without derivation whose rigorous proofs are research-length
-(MGS's `‖Q̂ᵀQ̂ - I‖ ≈ u κ₂(A)` and `‖A - Q̂R̂‖ ≈ u‖A‖`, §5.2.9; Stewart's `O(ε κ₂)` perturbation of
+(MGS's `‖Q̂ᵀQ̂ - I‖ ≈ u κ₂(A)` and `‖A - Q̂R̂‖ ≈ u‖A‖`, §5.2.9, and the orthogonality of the
+accumulated Householder `Q̂₁`, §5.2.9; Stewart's `O(ε κ₂)` perturbation of
 the QR factors, §5.2.1; the backward stability (5.4.4) of the Golub–Kahan–Reinsch SVD, a Chapter 8
 algorithm, used only as a hypothesis; "the roundoff properties of Algorithm 5.2.2 are essentially
 the same"); the garbled second bound of §5.5.4; the prose of §5.1.1 and §5.6.1; Problems and Notes
 and References. The rounding claims the book quotes for Householder and Givens transformations
 (§5.1.5, §5.1.10, §5.1.12, (5.1.11)) are formalized rigorously, with the constants of the
-relational `γ` calculus in place of the book's `O(u)`.
+relational `γ` calculus in place of the book's `O(u)`, and so are the two rounding claims the book
+makes about runs of §5.3–§5.4 algorithms: (5.3.4) for the Cholesky stage of Algorithm 5.3.1
+(`equation_5_3_4_rounding`) and §5.4.3's `A + E_k` for Algorithm 5.4.1
+(`algorithm_5_4_1_rounding`, `algorithm_5_4_1_sigma_succ_le`).
+
+## Errata carried
+
+The `β` retrieval `β_j = 2/(1 + ‖A(j+1:m, j)‖₂²)` of (5.1.4), (5.1.5) and Algorithm 5.3.2 is wrong
+when `house` returned `β = 0` (book-errata Ch. 5 #2; `algorithm_5_3_2_counterexample`). Those
+displays are formalized as printed; every consumer — Algorithms 5.5.1 and 5.6.2 included — uses the
+returned `β` (`householderLS`, `storedQFirstColumns`) and carries no hypothesis on the `β`.
 -/

@@ -8,7 +8,7 @@ Surface file for [golub2013matrix] §5.6: solving a square system through a QR f
 its minimal-norm solution through the SVD and Algorithms 5.6.1–5.6.2 (§5.6.2); the perturbation
 of the minimum norm solution (Theorem 5.6.1, rigorous and first-order, and the derivative (5.6.2),
 §5.6.3). Algorithm 5.6.1 runs Algorithm 5.4.1 (written for `m ≥ n`) on `A` padded with zero rows
-(`padRows`).
+(`Matrix.padRows`).
 
 ## Conventions
 
@@ -150,13 +150,14 @@ Solve R(1:m, 1:m)ᵀ z = b.
 Set x = Q(:, 1:m) z.
 ```
 The QR factorization is Algorithm 5.2.1 on `Aᵀ` (`m ≤ n`), the lower triangular solve is
-Algorithm 3.1.1, `Q(:, 1:m)` is accumulated by (5.1.5) (`factoredQFirstColumns`, which recomputes
-the `β` as the book prints) and the product is the gaxpy Algorithm 1.1.3. -/
+Algorithm 3.1.1, `Q(:, 1:m)` is accumulated backwards from the stored vectors with the returned `β`
+(`storedQFirstColumns`, convention 13; the as-printed (5.1.5) recomputes `β` and fails, e.g. for
+`A = I₂`) and the product is the gaxpy Algorithm 1.1.3. -/
 noncomputable def algorithm_5_6_2 (hmn : m ≤ n) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Fin n → ℝ) := do
   let QR ← algorithm_5_2_1 rnd Aᵀ
   let z ← Chapter03.algorithm_3_1_1 rnd ((upperPart QR.1).firstRows hmn)ᵀ b
-  let Q₁ ← factoredQFirstColumns rnd QR.1 m
+  let Q₁ ← storedQFirstColumns rnd QR.1 QR.2 m
   Chapter01.algorithm_1_1_3 rnd Q₁ z 0
 
 /-- **Algorithm 5.6.1**: "Given `A ∈ ℝ^{m×n}` with `rank(A) = m` and `b ∈ ℝ^m`, the following
@@ -166,12 +167,12 @@ Compute QR-with-column-pivoting factorization: QᵀAΠ = R.
 Solve R(1:m, 1:m) z₁ = Qᵀb.
 Set x = Π [z₁; 0].
 ```
-Algorithm 5.4.1 is run on `A` padded with zero rows (`padRows`; it is written for `m ≥ n`), `Qᵀb`
-is formed from the stored reflectors with the returned `β` (`storedQTransposeMulVec`,
+Algorithm 5.4.1 is run on `A` padded with zero rows (`Matrix.padRows`; it is written for `m ≥ n`),
+`Qᵀb` is formed from the stored reflectors with the returned `β` (`storedQTransposeMulVec`,
 convention 13), the solve is Algorithm 3.1.2, and `Π [z₁; 0]` is a permutation of coordinates. -/
 noncomputable def algorithm_5_6_1 (hmn : m ≤ n) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : M (Fin n → ℝ) := do
-  let st ← algorithm_5_4_1 rnd le_rfl (padRows A)
+  let st ← algorithm_5_4_1 rnd le_rfl (Matrix.padRows A hmn)
   let c ← storedQTransposeMulVec rnd st.A st.β fun i =>
     if hi : (i : ℕ) < m then b ⟨i, hi⟩ else 0
   let z ← Chapter03.algorithm_3_1_2 rnd
@@ -190,35 +191,28 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ A) (b : Fin m → ℝ) :
     A *ᵥ Id.run (algorithm_5_6_1 pure hmn A b) = b ∧
       (Finset.univ.filter fun j => Id.run (algorithm_5_6_1 pure hmn A b) j ≠ 0).card ≤ m := by
-  obtain ⟨h1, hrank, -⟩ := algorithm_5_4_1_spec le_rfl (padRows A)
+  obtain ⟨h1, hrank, -⟩ := algorithm_5_4_1_spec le_rfl (Matrix.padRows A hmn)
   -- the padded array has rank `m`
-  set E : Matrix (Fin n) (Fin m) ℝ := of fun i k => if (i : ℕ) = k then 1 else 0 with hE
+  set E : Matrix (Fin n) (Fin m) ℝ := (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hmn)
+    with hE
   set F : Matrix (Fin m) (Fin n) ℝ := of fun k i => if (i : ℕ) = k then 1 else 0 with hF
-  have hEA : padRows A = E * A := by
-    ext i j
-    simp only [padRows, hE, of_apply, mul_apply, ite_mul, one_mul, zero_mul]
-    split_ifs with hi
-    · rw [Finset.sum_eq_single ⟨i, hi⟩ (fun k _ hk => by
-        rw [ite_eq_right_iff.2 (fun e => absurd (Fin.ext e.symm) hk)]) (by simp)]
-      simp
-    · refine (Finset.sum_eq_zero fun k _ => ?_).symm
-      rw [ite_eq_right_iff.2 (fun (e : (i : ℕ) = k) => absurd (by rw [e]; exact k.isLt) hi)]
-  have hFA : F * padRows A = A := by
+  have hEA : Matrix.padRows A hmn = E * A := Matrix.padRows_eq_mul A hmn
+  have hFA : F * Matrix.padRows A hmn = A := by
     ext k j
-    simp only [padRows, hF, of_apply, mul_apply, ite_mul, one_mul, zero_mul]
+    simp only [Matrix.padRows_apply, hF, of_apply, mul_apply, ite_mul, one_mul, zero_mul]
     rw [Finset.sum_eq_single (Fin.castLE hmn k) (fun i _ hi => by
       have : ¬ ((i : ℕ) = k) := fun e => hi (Fin.ext (by simpa using e))
       simp [this]) (by simp)]
     simp
   have hrA : A.rank = m := by simpa using hA.rank_matrix
-  have hr : (Id.run (algorithm_5_4_1 pure le_rfl (padRows A))).r = m := by
+  have hr : (Id.run (algorithm_5_4_1 pure le_rfl (Matrix.padRows A hmn))).r = m := by
     rw [hrank]
     refine le_antisymm ?_ ?_
     · rw [hEA]; exact (rank_mul_le_right E A).trans hrA.le
     · calc m = A.rank := hrA.symm
-        _ = (F * padRows A).rank := by rw [hFA]
+        _ = (F * Matrix.padRows A hmn).rank := by rw [hFA]
         _ ≤ _ := rank_mul_le_right F _
-  set out := Id.run (algorithm_5_4_1 pure le_rfl (padRows A)) with hout
+  set out := Id.run (algorithm_5_4_1 pure le_rfl (Matrix.padRows A hmn)) with hout
   set bp : Fin n → ℝ := fun i => if hi : (i : ℕ) < m then b ⟨i, hi⟩ else 0 with hbp
   set Q := factoredQ out.β out.A with hQ
   set R := upperPart out.A with hR
@@ -232,7 +226,7 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
     intro h
     exact absurd (Fin.lt_def.1 hij) (not_lt.2 h)
   have hdiag : ∀ i, R₁₁ i i ≠ 0 :=
-    (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hup).1 h1'.isUnit_block
+    hup.isUnit_iff.1 h1'.isUnit_block
   set z := Id.run (Chapter03.algorithm_3_1_2 pure R₁₁ fun i => (Qᵀ *ᵥ bp) (Fin.castLE hmn i))
     with hzdef
   have hz : R₁₁ *ᵥ z = fun i => (Qᵀ *ᵥ bp) (Fin.castLE hmn i) :=
@@ -241,7 +235,7 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
     simp only [algorithm_5_6_1, Id.run_bind, Id.run_pure, storedQTransposeMulVec_pure]
     rfl
   -- the output is a least-squares solution of the padded system
-  have hLS : IsLeastSquaresSolution (padRows A) (toLp 2 bp)
+  have hLS : IsLeastSquaresSolution (Matrix.padRows A hmn) (toLp 2 bp)
       (toLp 2 (Id.run (algorithm_5_6_1 pure hmn A b))) := by
     rw [hrun]
     refine h1'.isLeastSquaresSolution_iff.2 fun i => ?_
@@ -252,18 +246,18 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
       conjTranspose_eq_transpose_of_trivial]
     exact congrFun hz i
   -- the padded system is consistent
-  have hpad : ∀ x, padRows A *ᵥ x =
+  have hpad : ∀ x, Matrix.padRows A hmn *ᵥ x =
       fun i : Fin n => if hi : (i : ℕ) < m then (A *ᵥ x) ⟨i, hi⟩ else 0 := by
     intro x
     funext i
-    simp only [mulVec, dotProduct, padRows, of_apply]
+    simp only [mulVec, dotProduct, Matrix.padRows_apply]
     split_ifs <;> simp
   have hG := (posDef_self_mul_conjTranspose_of_linearIndependent hA).isUnit
   rw [conjTranspose_eq_transpose_of_trivial] at hG
   have hAy : A *ᵥ ((Aᵀ * (A * Aᵀ)⁻¹) *ᵥ b) = b := by
     rw [mulVec_mulVec, ← Matrix.mul_assoc, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hG),
       one_mulVec]
-  have hy0 : padRows A *ᵥ ((Aᵀ * (A * Aᵀ)⁻¹) *ᵥ b) = bp := by
+  have hy0 : Matrix.padRows A hmn *ᵥ ((Aᵀ * (A * Aᵀ)⁻¹) *ᵥ b) = bp := by
     rw [hpad, hAy]
   have h0 := hLS (toLp 2 ((Aᵀ * (A * Aᵀ)⁻¹) *ᵥ b))
   rw [toEuclideanLin_toLp, toEuclideanLin_toLp, hy0, sub_self, norm_zero, norm_le_zero_iff,
@@ -287,17 +281,15 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
     _ = m := by rw [Fin.card_filter_val_lt, min_eq_right hmn]
 
 /-- **Algorithm 5.6.2 computes the minimum norm solution** (exact arithmetic): for `A` of full row
-rank and no degenerate Householder step of Algorithm 5.2.1 on `Aᵀ` (every returned `β_j ≠ 0`, so
-that the recomputed `β` of (5.1.5) are the actual ones, `equation_5_1_4_beta`), the output `x`
-solves `Ax = b` and is the minimum norm solution `x = A⁺ b`: from the thin factorization
-`Aᵀ = Q₁ R₁`, `A⁺ = Q₁ R₁⁻ᵀ` (`Matrix.pinv_eq_of_isThinQR_conjTranspose`). -/
+rank, the output `x` solves `Ax = b` and is the minimum norm solution `x = A⁺ b`: from the thin
+factorization `Aᵀ = Q₁ R₁`, `A⁺ = Q₁ R₁⁻ᵀ` (`Matrix.pinv_eq_of_isThinQR_conjTranspose`). No
+condition on the Householder steps is needed, since `Q₁` is accumulated with the returned `β`
+(for `A = I₂` the as-printed (5.1.5) would give `x = -b`). -/
 theorem algorithm_5_6_2_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ A) (hβ : ∀ j, (Id.run (algorithm_5_2_1 pure Aᵀ)).2 j ≠ 0)
-    (b : Fin m → ℝ) :
+    (hA : LinearIndependent ℝ A) (b : Fin m → ℝ) :
     A *ᵥ Id.run (algorithm_5_6_2 pure hmn A b) = b ∧
       toLp 2 (Id.run (algorithm_5_6_2 pure hmn A b)) = toEuclideanLin A.pinv (toLp 2 b) := by
   obtain ⟨hQR, -⟩ := algorithm_5_2_1_spec hmn Aᵀ
-  have hQeq := (equation_5_1_4_beta hmn Aᵀ).2 hβ
   set st := Id.run (algorithm_5_2_1 pure Aᵀ) with hst
   set R₁ := (upperPart st.1).firstRows hmn with hR₁
   set Q₁ := (factoredQ st.2 st.1).firstColumns hmn with hQ₁
@@ -310,10 +302,8 @@ theorem algorithm_5_6_2_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
     have := pinv_eq_of_isThinQR_conjTranspose (A := A)
       (by rwa [conjTranspose_eq_transpose_of_trivial]) hRu
     rwa [conjTranspose_eq_transpose_of_trivial] at this
-  have hQ₁ : Id.run (factoredQFirstColumns pure st.1 m) = Q₁ := by
-    have e := equation_5_1_5 (k := m) hmn hmn st.1
-    rw [e, ← hQeq]
-    rfl
+  have hQ₁ : Id.run (storedQFirstColumns pure st.1 st.2 m) = Q₁ :=
+    storedQFirstColumns_spec hmn st.1 st.2
   set z := Id.run (Chapter03.algorithm_3_1_1 pure R₁ᵀ b) with hz
   have hzs : R₁ᵀ *ᵥ z = b := Chapter03.algorithm_3_1_1_spec
     (fun i j hij => hup hij) (fun i => hdiag i) b
@@ -358,19 +348,6 @@ theorem theorem_5_6_1 {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepende
   have h := (norm_minNorm_sub_le hA (by rwa [conjTranspose_eq_transpose_of_trivial]) hb hx hx').2
   simp only [kappa2]
   simpa only [conjTranspose_eq_transpose_of_trivial, Fintype.card_fin] using h
-
-/-- For independent rows, `κ₂(A) = ‖A‖₂/σ_m(A)`. -/
-private theorem kappa2_eq_div_of_rows [NeZero m] {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ A) : kappa2 A = ‖A‖ / ⨅ i, Aᵀ.colSingularValues i := by
-  have hAt : LinearIndependent ℝ Aᵀᵀ := by rwa [transpose_transpose]
-  have hp : A.pinv = (Aᵀ.pinv)ᵀ := by
-    have := pinv_conjTranspose (A := Aᵀ)
-    rw [conjTranspose_eq_transpose_of_trivial, conjTranspose_eq_transpose_of_trivial,
-      transpose_transpose] at this
-    rw [this]
-  rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, hp,
-    ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose,
-    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hAt, div_eq_mul_inv]
 
 /-- **Theorem 5.6.1** as printed, the `+ O(ε²)` reading: for `A` with `rank A = m ≤ n` and
 `b ≠ 0` there are `K` and `ε₀ > 0` such that for all perturbations with

@@ -82,6 +82,10 @@ id = "householderMatrix_computed_sub_le"
 source = 'Golub–Van Loan, Matrix Computations, §5.1.5'
 
 [[node]]
+id = "one_sub_smul_vecMulVec_computed_sub_le"
+source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
+
+[[node]]
 id = "householderProduct"
 source = 'Golub–Van Loan, Matrix Computations, §5.1.6'
 
@@ -117,6 +121,14 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5)'
 [[node]]
 id = "equation_5_1_5"
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5)'
+
+[[node]]
+id = "storedQFirstColumns"
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5) (with the returned β, book-errata Ch. 5 #2)'
+
+[[node]]
+id = "storedQFirstColumns_spec"
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.1.5) (with the returned β, book-errata Ch. 5 #2)'
 
 [[node]]
 id = "forwardAccumulation"
@@ -239,6 +251,10 @@ source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
 
 [[node]]
 id = "givensRotation_orthogonalToWorkingPrecision"
+source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
+
+[[node]]
+id = "one_sub_smul_vecMulVec_orthogonalToWorkingPrecision"
 source = 'Golub–Van Loan, Matrix Computations, §5.1.12'
 
 [[node]]

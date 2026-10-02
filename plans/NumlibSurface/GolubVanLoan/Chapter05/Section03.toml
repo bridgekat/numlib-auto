@@ -29,8 +29,16 @@ id = "equation_5_3_4"
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.4)'
 
 [[node]]
+id = "equation_5_3_4_rounding"
+source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.4)'
+
+[[node]]
 id = "equation_5_3_5"
 source = 'Golub–Van Loan, Matrix Computations, Equation (5.3.5)'
+
+[[node]]
+id = "householderLSSolve"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 
 [[node]]
 id = "algorithm_5_3_2"
@@ -39,6 +47,14 @@ source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
 [[node]]
 id = "algorithm_5_3_2_spec"
 source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2'
+
+[[node]]
+id = "householderLS"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2 (with the returned β, book-errata Ch. 5 #2)'
+
+[[node]]
+id = "householderLS_spec"
+source = 'Golub–Van Loan, Matrix Computations, Algorithm 5.3.2 (with the returned β, book-errata Ch. 5 #2)'
 
 [[node]]
 id = "algorithm_5_3_2_counterexample"

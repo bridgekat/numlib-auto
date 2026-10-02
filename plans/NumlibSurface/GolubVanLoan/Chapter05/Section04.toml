@@ -33,6 +33,14 @@ id = "sigma_succ_le_of_colPivot"
 source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
 
 [[node]]
+id = "algorithm_5_4_1_rounding"
+source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
+
+[[node]]
+id = "algorithm_5_4_1_sigma_succ_le"
+source = 'Golub–Van Loan, Matrix Computations, §5.4.3'
+
+[[node]]
 id = "kahanMatrix"
 deps = []
 source = 'Golub–Van Loan, Matrix Computations, §5.4.3'

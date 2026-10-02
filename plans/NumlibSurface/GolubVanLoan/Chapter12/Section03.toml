@@ -93,10 +93,6 @@ id = "equation_12_3_21"
 source = 'Golub–Van Loan, Matrix Computations, Equation (12.3.21)'
 
 [[node]]
-id = "complexSpectralRadius_toReal_of_skew"
-source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.3'
-
-[[node]]
 id = "lemma_12_3_3"
 source = 'Golub–Van Loan, Matrix Computations, Lemma 12.3.3'
 

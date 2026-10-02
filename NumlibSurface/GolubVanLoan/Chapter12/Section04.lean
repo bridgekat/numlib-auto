@@ -29,8 +29,13 @@ an equivalence `p : Fin e ⊕ Fin f ≃ Fin d`, the row modes being `p (inl 0), 
 the column modes `p (inr 0), …`, in the book's listed order.
 
 The mode-`k` product with a rectangular `M ∈ ℝ^{m × n_k}` changes the `k`-th size, so its result
-has shape `Function.update n k m`; `modeProduct` is the backbone's multilinear product with `M` in
-mode `k` and rectangular identities (`δ_{xy}` on the values) elsewhere.
+has shape `Function.update n k m`; `modeProduct` is the backbone's rectangular mode product
+`Tensor.rectModeProd`, the shapes off `k` matched by `Function.update_of_ne`. Its laws
+(12.4.14)–(12.4.17) are the backbone's (`Tensor.modeUnfold_rectModeProd`,
+`Tensor.vecFin_rectModeProd`, `Tensor.rectModeProd_comm`, `Tensor.rectModeProd_rectModeProd`), read
+through `castShape` where two shapes are only propositionally equal. The table after (12.4.19)
+(the multilinear product as a sequence of mode products, in any order) is stated for square
+factors, through the backbone's shape-preserving `Tensor.modeProd`.
 
 ## Main results
 
@@ -132,10 +137,14 @@ def modalColumnEquiv (n : Fin (d + 1) → ℕ) (k : Fin (d + 1)) :
   (Equiv.piCongrLeft' (fun j : {j // j ≠ k} => Fin (n j)) (finSuccAboveEquiv k).symm).trans
     (finPiFinEquiv (n := fun j : Fin d => n (k.succAbove j)))
 
+/-- The column of the mode-`k` unfolding holding the entry `𝒜(i)`: `col` of `i` with its `k`-th
+index deleted. -/
 theorem modalColumnEquiv_apply (k : Fin (d + 1)) (i : ∀ j, Fin (n j)) :
     modalColumnEquiv n k (fun j => i j) = finPiFinEquiv fun j => i (k.succAbove j) :=
   rfl
 
+/-- The index tuple of the column `c` of the mode-`k` unfolding, read at the `i`-th remaining
+mode. -/
 theorem modalColumnEquiv_symm_apply (k : Fin (d + 1)) (c : ∀ j : {j // j ≠ k}, Fin (n j))
     (i : Fin d) :
     finPiFinEquiv.symm (modalColumnEquiv n k c) i = c ⟨k.succAbove i, Fin.succAbove_ne k i⟩ :=
@@ -379,33 +388,14 @@ section ModeProduct
 
 variable {n : Fin d → ℕ}
 
-/-- The factors of a rectangular mode-`k` product: `M` in mode `k` (its rows read in
-`Function.update n k m k = m`), and elsewhere the rectangular identity `δ_{xy}` on the values, an
-identity matrix since `Function.update n k m j = n j` for `j ≠ k`. -/
-def modeFamily (n : Fin d → ℕ) (k : Fin d) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ) :
-    ∀ i, Matrix (Fin (Function.update n k m i)) (Fin (n i)) ℝ :=
-  Function.update (fun i => Matrix.of fun (x : Fin (Function.update n k m i)) (y : Fin (n i)) =>
-      if (x : ℕ) = y then (1 : ℝ) else 0) k
-    (M.reindex (finCongr (Function.update_self k m n).symm) (Equiv.refl _))
-
-theorem modeFamily_self (k : Fin d) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ)
-    (x : Fin (Function.update n k m k)) (y : Fin (n k)) :
-    modeFamily n k M k x y = M (Fin.cast (Function.update_self k m n) x) y := by
-  rw [modeFamily, Function.update_self]
-  rfl
-
-theorem modeFamily_of_ne {k j : Fin d} (h : j ≠ k) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ)
-    (x : Fin (Function.update n k m j)) (y : Fin (n j)) :
-    modeFamily n k M j x y = if (x : ℕ) = y then 1 else 0 := by
-  rw [modeFamily, Function.update_of_ne h]
-  rfl
-
 /-- **§12.4.10**, Definition: the mode-`k` product `𝒮 ×_k M` with a rectangular `M ∈ ℝ^{m × n_k}`,
-of shape `Function.update n k m`: the multilinear product with `M` in mode `k` and identities
-elsewhere. -/
+of shape `Function.update n k m`: the backbone's rectangular mode product `Tensor.rectModeProd`,
+the shapes off `k` matched by `Function.update_of_ne`. -/
 def modeProduct (n : Fin d → ℕ) (S : RTensor n) (k : Fin d) {m : ℕ}
     (M : Matrix (Fin m) (Fin (n k)) ℝ) : RTensor (Function.update n k m) :=
-  Tensor.multilinearProd (modeFamily n k M) S
+  S.rectModeProd k (μ := fun i => Fin (Function.update n k m i))
+    (fun _ h => finCongr (Function.update_of_ne h m n))
+    (M.reindex (finCongr (Function.update_self k m n).symm) (Equiv.refl _))
 
 /-- The index of `𝒮` met by the entry `a` of `𝒮 ×_k M` at the summation index `y` of mode `k`: `a`
 with its `k`-th entry replaced by `y`, read in the shape `n`. -/
@@ -414,6 +404,7 @@ def spliceIndex (k : Fin d) {m : ℕ} (a : ∀ i, Fin (Function.update n k m i))
   if h : i = k then Fin.cast (congrArg n h.symm) y
   else Fin.cast (Function.update_of_ne h m n) (a i)
 
+/-- The value of `spliceIndex k a y` at mode `i`: `y` at `k`, the entry of `a` elsewhere. -/
 theorem val_spliceIndex (k : Fin d) {m : ℕ} (a : ∀ i, Fin (Function.update n k m i))
     (y : Fin (n k)) (i : Fin d) :
     (spliceIndex k a y i : ℕ) = if i = k then (y : ℕ) else a i := by
@@ -422,7 +413,8 @@ theorem val_spliceIndex (k : Fin d) {m : ℕ} (a : ∀ i, Fin (Function.update n
 
 /-- **(12.4.14)** and the entry formula after it: `(𝒮 ×_k M)_(k) = M 𝒮_(k)` (typed, up to the
 identifications `Function.update n k m k = m` and `Function.update n k m j = n j` for `j ≠ k`), and
-`(𝒮 ×_k M)(α₁, …, i, …, α_d) = ∑_j M(i, j) 𝒮(α₁, …, j, …, α_d)`. -/
+`(𝒮 ×_k M)(α₁, …, i, …, α_d) = ∑_j M(i, j) 𝒮(α₁, …, j, …, α_d)`. The backbone's
+`Tensor.modeUnfold_rectModeProd`. -/
 theorem equation_12_4_14 (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ) :
     (modeProduct n S k M).modeUnfold k =
         (M * S.modeUnfold k).reindex (finCongr (Function.update_self k m n).symm)
@@ -435,19 +427,9 @@ theorem equation_12_4_14 (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin 
       (M * S.modeUnfold k).reindex (finCongr (Function.update_self k m n).symm)
         (Equiv.piCongrRight fun j : {j // j ≠ k} =>
           finCongr (Function.update_of_ne j.2 m n).symm) := by
-    rw [modeProduct, Tensor.modeUnfold_multilinearProd]
+    rw [modeProduct, Tensor.modeUnfold_rectModeProd]
     ext x c
-    have hprod : ∀ z : (∀ j : {j // j ≠ k}, Fin (n j)),
-        (∏ j : {j // j ≠ k}, modeFamily n k M j (c j) (z j)) =
-          if (fun j : {j // j ≠ k} => Fin.cast (Function.update_of_ne j.2 m n) (c j)) = z
-          then 1 else 0 := by
-      intro z
-      rw [Finset.prod_congr rfl fun j _ => modeFamily_of_ne j.2 M (c j) (z j), Fintype.prod_boole]
-      congr 1
-      simp only [funext_iff, Fin.ext_iff, Fin.val_cast]
-    simp only [mul_apply, transpose_apply, piKronecker_apply, hprod, mul_ite, mul_one, mul_zero,
-      Finset.sum_ite_eq, Finset.mem_univ, ite_true, reindex_apply, submatrix_apply,
-      modeFamily_self]
+    simp only [submatrix_apply, reindex_apply, mul_apply, id, Equiv.refl_symm, Equiv.coe_refl]
     rfl
   refine ⟨h1, fun a => ?_⟩
   rw [← Tensor.modeUnfold_apply (modeProduct n S k M) k a, h1, reindex_apply, submatrix_apply,
@@ -479,9 +461,21 @@ theorem castShape_apply {n' : Fin d → ℕ} (h : n = n') (A : RTensor n) (i : �
   subst h
   rfl
 
+/-- A rectangular mode product read in an equal shape is the rectangular mode product into that
+shape, the equivalences and the rows of the factor read through the casts. -/
+theorem castShape_rectModeProd {s s' : Fin d → ℕ} (h : s = s') (S : RTensor n) (k : Fin d)
+    (e : ∀ i, i ≠ k → Fin (s i) ≃ Fin (n i)) (M : Matrix (Fin (s k)) (Fin (n k)) ℝ) :
+    castShape h (S.rectModeProd k (μ := fun i => Fin (s i)) e M) =
+      S.rectModeProd k (μ := fun i => Fin (s' i))
+        (fun i hi => (finCongr (congrFun h i).symm).trans (e i hi))
+        (M.submatrix (finCongr (congrFun h k).symm) id) := by
+  subst h
+  rfl
+
 /-- **(12.4.16)**: mode products in distinct modes commute, `(𝒮 ×_k F) ×_j G = (𝒮 ×_j G) ×_k F` for
 `j ≠ k` and rectangular `F ∈ ℝ^{p × n_k}`, `G ∈ ℝ^{q × n_j}`; the two shapes are identified along
-`Function.update_comm` (and each second factor reads its columns in the updated shape). -/
+`Function.update_comm` (and each second factor reads its columns in the updated shape). The
+backbone's `Tensor.rectModeProd_comm`. -/
 theorem equation_12_4_16 (S : RTensor n) {j k : Fin d} (hjk : j ≠ k) {p q : ℕ}
     (F : Matrix (Fin p) (Fin (n k)) ℝ) (G : Matrix (Fin q) (Fin (n j)) ℝ) :
     modeProduct (Function.update n k p) (modeProduct n S k F) j
@@ -489,155 +483,46 @@ theorem equation_12_4_16 (S : RTensor n) {j k : Fin d} (hjk : j ≠ k) {p q : �
       castShape (Function.update_comm hjk q p n)
         (modeProduct (Function.update n j q) (modeProduct n S j G) k
           (F.reindex (Equiv.refl _) (finCongr (Function.update_of_ne hjk.symm q n).symm))) := by
-  ext a
-  rw [castShape_apply, modeProduct_apply, modeProduct_apply]
-  simp only [modeProduct_apply, Finset.mul_sum]
-  conv_rhs => rw [Finset.sum_comm, ← (finCongr (Function.update_of_ne hjk p n)).sum_comp]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  conv_rhs => rw [← (finCongr (Function.update_of_ne hjk.symm q n)).symm.sum_comp]
-  refine Finset.sum_congr rfl fun x _ => ?_
-  simp only [reindex_apply, submatrix_apply, Equiv.refl_symm, Equiv.coe_refl, id]
-  rw [mul_left_comm]
-  congr 1
-  · exact congrArg₂ F (Fin.ext (by simp [val_spliceIndex, hjk.symm]))
-      (Fin.ext (by simp))
-  congr 1
-  · exact congrArg₂ G (Fin.ext (by simp [val_spliceIndex, hjk]))
-      (Fin.ext (by simp))
-  · exact congrArg S (funext fun l => Fin.ext (by
-      by_cases hl : l = k <;> by_cases hl' : l = j <;> simp_all [val_spliceIndex]))
+  rw [modeProduct, modeProduct, modeProduct, modeProduct, castShape_rectModeProd,
+    Tensor.rectModeProd_comm _ hjk (f := fun _ h => finCongr (Function.update_of_ne h q n))
+      (f' := fun i hi => (finCongr (congrFun (Function.update_comm hjk q p n) i).symm).trans
+        (finCongr (Function.update_of_ne hi p (Function.update n j q))))]
+  · congr 1
+  · intro i hj hk
+    ext x
+    simp
 
 /-- **(12.4.17)**, corrected: `(𝒮 ×_k F) ×_k G = 𝒮 ×_k (G F)` for rectangular `F ∈ ℝ^{p × n_k}`,
 `G ∈ ℝ^{q × p}`; the two shapes are identified along `Function.update_idem`. The book prints
 `𝒮 ×_k (F G)`, which is false (`(𝒮 ×_k F)_(k) = F 𝒮_(k)`, so the second product gives `G F 𝒮_(k)`)
-and does not typecheck for rectangular `F`, `G`. -/
+and does not typecheck for rectangular `F`, `G`. The backbone's `Tensor.rectModeProd_rectModeProd`.
+-/
 theorem equation_12_4_17 (S : RTensor n) (k : Fin d) {p q : ℕ} (F : Matrix (Fin p) (Fin (n k)) ℝ)
     (G : Matrix (Fin q) (Fin p) ℝ) :
     modeProduct (Function.update n k p) (modeProduct n S k F) k
         (G.reindex (Equiv.refl _) (finCongr (Function.update_self k p n).symm)) =
       castShape (Function.update_idem (a := k) p q n).symm (modeProduct n S k (G * F)) := by
-  ext a
-  rw [castShape_apply, modeProduct_apply, modeProduct_apply]
-  simp only [modeProduct_apply, Finset.mul_sum, mul_apply, Finset.sum_mul]
-  conv_rhs => rw [Finset.sum_comm, ← (finCongr (Function.update_self k p n)).sum_comp]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  refine Finset.sum_congr rfl fun x _ => ?_
-  simp only [reindex_apply, submatrix_apply, Equiv.refl_symm, Equiv.coe_refl, id]
-  rw [← mul_assoc]
-  refine congrArg₂ (· * ·) (congrArg₂ (· * ·) ?_ ?_) ?_
-  all_goals first
-    | rfl
-    | exact congrArg₂ G rfl (Fin.ext (by simp))
-    | exact congrArg₂ F (Fin.ext (by simp [val_spliceIndex])) rfl
-    | exact congrArg S (funext fun l => Fin.ext (by
-        by_cases hl : l = k <;> simp_all [val_spliceIndex]))
+  rw [modeProduct, modeProduct, modeProduct, castShape_rectModeProd,
+    Tensor.rectModeProd_rectModeProd]
+  congr 1
+  ext a b
+  simp only [reindex_apply, submatrix_apply, mul_apply, id, Equiv.refl_symm, Equiv.coe_refl]
+  rw [← (finCongr (Function.update_self k p n)).sum_comp]
+  rfl
 
 /-- **(12.4.14)** for a square factor: the rectangular mode product agrees with the backbone's
 shape-preserving `Tensor.modeProd` up to the identification `Function.update n k (n k) = n`. -/
 theorem modeProduct_eq_modeProd (S : RTensor n) (k : Fin d)
     (M : Matrix (Fin (n k)) (Fin (n k)) ℝ) :
     modeProduct n S k M = castShape (Function.update_eq_self k n).symm (S.modeProd k M) := by
-  ext a
-  rw [castShape_apply, modeProduct_apply, Tensor.modeProd_apply]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  congr! 2 with l
-  all_goals first
-    | rfl
-    | (funext l; apply Fin.ext; rcases eq_or_ne l k with rfl | hl <;>
-        simp [val_spliceIndex, Function.update_of_ne, *])
+  rw [← Tensor.rectModeProd_refl, castShape_rectModeProd, modeProduct]
+  congr 1
 
 end ModeProduct
 
 /-! ### Vectorizing a mode product (12.4.15) -/
 
 section VecModeProduct
-
-/-- A shape extended by `1` beyond its order, to compute with `Finset.range`. -/
-private def extShape (s : Fin d → ℕ) (l : ℕ) : ℕ :=
-  if h : l < d then s ⟨l, h⟩ else 1
-
-/-- The digits of an index tuple, extended by `0` beyond the order. -/
-private def digitsOf {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (l : ℕ) : ℕ :=
-  if h : l < d then a ⟨l, h⟩ else 0
-
-private theorem digitsOf_lt {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (l : ℕ) :
-    digitsOf a l < extShape s l := by
-  unfold digitsOf extShape
-  split_ifs
-  · exact (a _).2
-  · exact Nat.one_pos
-
-private theorem prod_castLE_eq (s : Fin d → ℕ) (j : ℕ) (hj : j ≤ d) :
-    ∏ l : Fin j, s (Fin.castLE hj l) = ∏ l ∈ Finset.range j, extShape s l := by
-  rw [← Fin.prod_univ_eq_prod_range]
-  refine Finset.prod_congr rfl fun l _ => ?_
-  rw [extShape, dite_eq_left (lt_of_lt_of_le l.2 hj)]
-  rfl
-
-private theorem sum_range_lt (c N : ℕ → ℕ) (k : ℕ) (hc : ∀ j < k, c j < N j) :
-    ∑ j ∈ Finset.range k, c j * ∏ l ∈ Finset.range j, N l < ∏ l ∈ Finset.range k, N l := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [Finset.sum_range_succ, Finset.prod_range_succ]
-    have h1 := ih fun j hj => hc j (by omega)
-    have h3 : (c k + 1) * ∏ l ∈ Finset.range k, N l ≤ N k * ∏ l ∈ Finset.range k, N l :=
-      Nat.mul_le_mul_right _ (hc k (by omega))
-    nlinarith
-
-/-- The mixed-radix value of the digits of `a` below `k`. -/
-private def lowDigits {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k : ℕ) (N : ℕ → ℕ) : ℕ :=
-  ∑ j ∈ Finset.range k, digitsOf a j * ∏ l ∈ Finset.range j, N l
-
-/-- The mixed-radix value of the `r` digits of `a` above `k`. -/
-private def highDigits {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k r : ℕ) (N : ℕ → ℕ) : ℕ :=
-  ∑ i ∈ Finset.range r, digitsOf a (k + 1 + i) * ∏ l ∈ Finset.range i, N (k + 1 + l)
-
-private theorem lowDigits_congr {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k : ℕ) {N N' : ℕ → ℕ}
-    (h : ∀ l < k, N l = N' l) : lowDigits a k N = lowDigits a k N' := by
-  refine Finset.sum_congr rfl fun j hj => ?_
-  rw [Finset.prod_congr rfl fun l hl => h l (by simp at hj hl; omega)]
-
-private theorem highDigits_congr {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k r : ℕ) {N N' : ℕ → ℕ}
-    (h : ∀ l, N (k + 1 + l) = N' (k + 1 + l)) : highDigits a k r N = highDigits a k r N' := by
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [Finset.prod_congr rfl fun l _ => h l]
-
-/-- The mixed-radix value of `col(a)` through the extended digits and shape. -/
-private theorem val_finPiFinEquiv_eq_sum {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) :
-    (finPiFinEquiv a : ℕ) =
-      ∑ j ∈ Finset.range d, digitsOf a j * ∏ l ∈ Finset.range j, extShape s l := by
-  rw [finPiFinEquiv_apply, ← Fin.sum_univ_eq_sum_range]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [digitsOf, dite_eq_left j.2, prod_castLE_eq s j j.2.le]
-
-/-- The mixed-radix value of `col(a)` split at mode `k`, `finPiFinEquiv_apply_val_split` read
-through the extended digits and shape: the digits below `k`, the `k`-th digit and the digits
-above `k`. -/
-private theorem val_finPiFinEquiv_split {s : Fin d → ℕ} (a : ∀ j, Fin (s j)) (k : Fin d) :
-    (finPiFinEquiv a : ℕ) =
-      lowDigits a k (extShape s) + (∏ l ∈ Finset.range k, extShape s l) *
-        (a k + s k * highDigits a k (d - (k + 1)) (extShape s)) := by
-  have hlo : (finPiFinEquiv (fun j : Fin k => a (Fin.castLE k.2.le j)) : ℕ) =
-      lowDigits a k (extShape s) := by
-    rw [val_finPiFinEquiv_eq_sum, lowDigits]
-    refine Finset.sum_congr rfl fun j hj => ?_
-    rw [Finset.mem_range] at hj
-    rw [digitsOf, digitsOf, dite_eq_left hj, dite_eq_left (by omega)]
-    refine congrArg₂ (· * ·) rfl (Finset.prod_congr rfl fun l hl => ?_)
-    rw [Finset.mem_range] at hl
-    rw [extShape, extShape, dite_eq_left (by omega), dite_eq_left (by omega)]
-    rfl
-  have hhi : (finPiFinEquiv (fun j : Fin (d - (k + 1)) => a ⟨k + 1 + j, by omega⟩) : ℕ) =
-      highDigits a k (d - (k + 1)) (extShape s) := by
-    rw [val_finPiFinEquiv_eq_sum, highDigits]
-    refine Finset.sum_congr rfl fun j hj => ?_
-    rw [Finset.mem_range] at hj
-    rw [digitsOf, digitsOf, dite_eq_left hj, dite_eq_left (by omega)]
-    refine congrArg₂ (· * ·) rfl (Finset.prod_congr rfl fun l hl => ?_)
-    rw [Finset.mem_range] at hl
-    rw [extShape, extShape, dite_eq_left (by omega), dite_eq_left (by omega)]
-  rw [finPiFinEquiv_apply_val_split a k, hlo, hhi, prod_castLE_eq s k k.2.le]
 
 /-- The size `n₁ ⋯ n_{k−1}` of the modes before mode `k` (0-based: the modes `0, …, k − 1`). -/
 def lowerSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=
@@ -647,71 +532,52 @@ def lowerSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=
 def upperSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=
   ∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by have := j.2; omega⟩
 
-private theorem lowerSize_eq (n : Fin d → ℕ) (k : Fin d) :
-    lowerSize n k = ∏ l ∈ Finset.range k, extShape n l :=
-  prod_castLE_eq n k k.2.le
-
-private theorem upperSize_eq (n : Fin d → ℕ) (k : Fin d) :
-    upperSize n k = ∏ l ∈ Finset.range (d - (k + 1)), extShape n (k + 1 + l) := by
-  rw [upperSize, ← Fin.prod_univ_eq_prod_range (fun l => extShape n (k + 1 + l))]
-  refine Finset.prod_congr rfl fun l _ => ?_
-  rw [extShape, dite_eq_left (by have := l.2; omega)]
-
-private theorem extShape_update_of_ne (n : Fin d → ℕ) (k : Fin d) (m : ℕ) {l : ℕ}
-    (hl : l ≠ k) : extShape (Function.update n k m) l = extShape n l := by
-  unfold extShape
-  split_ifs with h
-  · exact Function.update_of_ne (fun e => hl (congrArg Fin.val e)) _ _
-  · rfl
-
-private theorem digitsOf_spliceIndex {n : Fin d → ℕ} (k : Fin d) {m : ℕ}
-    (a : ∀ i, Fin (Function.update n k m i)) (y : Fin (n k)) {l : ℕ} (hl : l ≠ k) :
-    digitsOf (spliceIndex k a y) l = digitsOf a l := by
-  unfold digitsOf
-  split_ifs with h
-  · rw [val_spliceIndex, ite_eq_right (fun e => hl (congrArg Fin.val e))]
-  · rfl
-
 /-- `n₁ ⋯ n_d = (n_{k+1} ⋯ n_d) n_k (n₁ ⋯ n_{k−1})`. -/
 theorem prod_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) :
     ∏ i, n i = upperSize n k * n k * lowerSize n k := by
-  have h1 : ∏ i, n i = ∏ l ∈ Finset.range d, extShape n l := by
-    rw [← Fin.prod_univ_eq_prod_range]
-    refine Finset.prod_congr rfl fun l _ => ?_
-    rw [extShape, dite_eq_left l.2]
+  set g : ℕ → ℕ := fun l => if h : l < d then n ⟨l, h⟩ else 1 with hg
+  have hT : ∏ i, n i = ∏ i : Fin d, g i := Finset.prod_congr rfl fun i _ => by
+    rw [hg]; simp only [i.2, ↓reduceDIte]
+  have hL : lowerSize n k = ∏ j : Fin k, g j := Finset.prod_congr rfl fun j _ => by
+    rw [hg]; simp only [show (j : ℕ) < d by omega, ↓reduceDIte]; rfl
+  have hU : upperSize n k = ∏ j : Fin (d - (k + 1)), g (k + 1 + j) :=
+    Finset.prod_congr rfl fun j _ => by
+      rw [hg]; simp only [show (k : ℕ) + 1 + j < d by omega, ↓reduceDIte]
+  have hk : g k = n k := by rw [hg]; simp only [k.2, ↓reduceDIte]
   have hd : d = k + 1 + (d - (k + 1)) := by omega
-  rw [h1, show Finset.range d = Finset.range (k + 1 + (d - (k + 1))) by rw [← hd],
-    Finset.prod_range_add, Finset.prod_range_succ, lowerSize_eq, upperSize_eq,
-    show extShape n k = n k by rw [extShape, dite_eq_left k.2]]
+  rw [hT, hL, hU, Fin.prod_univ_eq_prod_range g d, Fin.prod_univ_eq_prod_range g k,
+    Fin.prod_univ_eq_prod_range (fun j => g (k + 1 + j)),
+    show Finset.range d = Finset.range (k + 1 + (d - (k + 1))) by rw [← hd],
+    Finset.prod_range_add, Finset.prod_range_succ, hk]
   ring
 
 /-- The size of `𝒮 ×_k M` for `M ∈ ℝ^{m × n_k}`: `(n_{k+1} ⋯ n_d) m (n₁ ⋯ n_{k−1})`. -/
 theorem prod_update_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) (m : ℕ) :
     ∏ i, Function.update n k m i = upperSize n k * m * lowerSize n k := by
-  rw [prod_eq_upperSize_mul (Function.update n k m) k, Function.update_self, upperSize_eq,
-    upperSize_eq, lowerSize_eq, lowerSize_eq,
-    Finset.prod_congr rfl fun l _ => extShape_update_of_ne n k m (l := k + 1 + l) (by omega),
-    Finset.prod_congr rfl fun l hl => extShape_update_of_ne n k m (l := l)
-      (by simp at hl; omega)]
+  have hU : upperSize (Function.update n k m) k = upperSize n k :=
+    Finset.prod_congr rfl fun j _ => Function.update_of_ne
+      (Fin.ne_of_val_ne (show (k : ℕ) + 1 + j ≠ k by omega)) _ _
+  have hL : lowerSize (Function.update n k m) k = lowerSize n k :=
+    Finset.prod_congr rfl fun j _ => Function.update_of_ne
+      (Fin.ne_of_val_ne (show (j : ℕ) ≠ k by omega)) _ _
+  rw [prod_eq_upperSize_mul (Function.update n k m) k, Function.update_self, hU, hL]
 
-/-- The entries of `(I_H ⊗ M ⊗ I_L) w` (chapter 1's positional Kronecker products). -/
-theorem kroneckerFin_one_kroneckerFin_one_mulVec {H L m p : ℕ} (M : Matrix (Fin m) (Fin p) ℝ)
-    (w : Fin (H * p * L) → ℝ) (X : Fin H) (Y : Fin m) (Z : Fin L) :
-    (kroneckerFin (kroneckerFin (1 : Matrix (Fin H) (Fin H) ℝ) M)
-        (1 : Matrix (Fin L) (Fin L) ℝ) *ᵥ w) (finProdFinEquiv (finProdFinEquiv (X, Y), Z)) =
-      ∑ y, M Y y * w (finProdFinEquiv (finProdFinEquiv (X, y), Z)) := by
-  simp only [mulVec, dotProduct]
-  rw [← finProdFinEquiv.sum_comp, Fintype.sum_prod_type, ← finProdFinEquiv.sum_comp,
-    Fintype.sum_prod_type]
-  simp only [kroneckerFin_apply, one_apply]
-  rw [Finset.sum_eq_single X (fun x _ hx => by simp [Ne.symm hx]) (by simp)]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  rw [Finset.sum_eq_single Z (fun z _ hz => by simp [Ne.symm hz]) (by simp)]
-  simp
+/-- Reading the middle factor of `I ⊗ M ⊗ I` through an equality of its row count. -/
+private theorem kroneckerFin_reindex_cast {R : Type*} [CommSemiring R] {H L a b p N P : ℕ}
+    (h : a = b) (M : Matrix (Fin a) (Fin p) R) (hN : N = H * b * L) (hN' : N = H * a * L)
+    (c : Fin P → Fin (H * p * L)) :
+    (kroneckerFin (kroneckerFin (1 : Matrix (Fin H) (Fin H) R)
+        (M.reindex (finCongr h) (Equiv.refl _))) (1 : Matrix (Fin L) (Fin L) R)).submatrix
+        (finCongr hN) c =
+      (kroneckerFin (kroneckerFin (1 : Matrix (Fin H) (Fin H) R) M)
+        (1 : Matrix (Fin L) (Fin L) R)).submatrix (finCongr hN') c := by
+  subst h
+  rfl
 
 /-- **(12.4.15)**: `vec(𝒮 ×_k M) = (I_{n_{k+1}⋯n_d} ⊗ M ⊗ I_{n₁⋯n_{k−1}}) vec(𝒮)` for a rectangular
 `M ∈ ℝ^{m × n_k}`, with chapter 1's positional `Matrix.kroneckerFin` and the book's `vec`
-(`Tensor.vecFin`, the little-endian `col`), up to the identification of the size products. -/
+(`Tensor.vecFin`, the little-endian `col`), up to the identification of the size products. The
+backbone's `Tensor.vecFin_rectModeProd`. -/
 theorem equation_12_4_15 {n : Fin d → ℕ} (S : RTensor n) (k : Fin d) {m : ℕ}
     (M : Matrix (Fin m) (Fin (n k)) ℝ) :
     Tensor.vecFin (modeProduct n S k M) =
@@ -719,50 +585,11 @@ theorem equation_12_4_15 {n : Fin d → ℕ} (S : RTensor n) (k : Fin d) {m : �
           (1 : Matrix (Fin (lowerSize n k)) (Fin (lowerSize n k)) ℝ)).submatrix
         (finCongr (prod_update_eq_upperSize_mul n k m)) (finCongr (prod_eq_upperSize_mul n k)) *ᵥ
         Tensor.vecFin S := by
-  funext t
-  obtain ⟨a, rfl⟩ := finPiFinEquiv.surjective t
-  rw [Tensor.vecFin_apply, modeProduct_apply, submatrix_mulVec_equiv, Function.comp_apply]
-  have hlo : lowDigits a k (extShape n) < lowerSize n k := by
-    rw [lowerSize_eq]
-    refine sum_range_lt _ _ _ fun j hj => ?_
-    rw [← extShape_update_of_ne n k m (by omega)]
-    exact digitsOf_lt a j
-  have hhi : highDigits a k (d - (k + 1)) (extShape n) < upperSize n k := by
-    rw [upperSize_eq]
-    refine sum_range_lt _ _ _ fun i _ => ?_
-    rw [← extShape_update_of_ne n k m (by omega)]
-    exact digitsOf_lt a _
-  have hP : ∏ l ∈ Finset.range k, extShape (Function.update n k m) l = lowerSize n k := by
-    rw [lowerSize_eq]
-    exact Finset.prod_congr rfl fun l hl => extShape_update_of_ne n k m (by simp at hl; omega)
-  have ht : finCongr (prod_update_eq_upperSize_mul n k m) (finPiFinEquiv a) =
-      finProdFinEquiv (finProdFinEquiv ((⟨_, hhi⟩ : Fin (upperSize n k)),
-        Fin.cast (Function.update_self k m n) (a k)), (⟨_, hlo⟩ : Fin (lowerSize n k))) := by
-    apply Fin.ext
-    rw [finCongr_apply, Fin.val_cast, val_finPiFinEquiv_split a k, hP,
-      lowDigits_congr a k fun l hl => extShape_update_of_ne n k m (by omega),
-      highDigits_congr a k _ fun l => extShape_update_of_ne n k m (by omega)]
-    simp only [finProdFinEquiv_apply_val, Fin.val_cast, Function.update_self]
-  rw [ht, kroneckerFin_one_kroneckerFin_one_mulVec]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  congr 1
-  rw [Function.comp_apply]
-  have hs : (finCongr (prod_eq_upperSize_mul n k)).symm (finProdFinEquiv (finProdFinEquiv
-      ((⟨_, hhi⟩ : Fin (upperSize n k)), y), (⟨_, hlo⟩ : Fin (lowerSize n k)))) =
-        finPiFinEquiv (spliceIndex k a y) := by
-    apply Fin.ext
-    rw [finCongr_symm, finCongr_apply, Fin.val_cast,
-      val_finPiFinEquiv_split (spliceIndex k a y) k, val_spliceIndex, ite_eq_left rfl,
-      ← lowerSize_eq]
-    have e1 : lowDigits (spliceIndex k a y) k (extShape n) = lowDigits a k (extShape n) :=
-      Finset.sum_congr rfl fun j hj => by
-        rw [digitsOf_spliceIndex k a y (by simp at hj; omega)]
-    have e2 : highDigits (spliceIndex k a y) k (d - (k + 1)) (extShape n) =
-        highDigits a k (d - (k + 1)) (extShape n) :=
-      Finset.sum_congr rfl fun i _ => by rw [digitsOf_spliceIndex k a y (by omega)]
-    rw [e1, e2]
-    simp only [finProdFinEquiv_apply_val]
-  rw [hs, Tensor.vecFin_apply]
+  have h := Tensor.vecFin_rectModeProd S k (m := Function.update n k m)
+    (fun _ h => Function.update_of_ne h m n)
+    (M.reindex (finCongr (Function.update_self k m n).symm) (Equiv.refl _))
+  rw [modeProduct, h, kroneckerFin_reindex_cast (Function.update_self k m n).symm M]
+  rfl
 
 end VecModeProduct
 

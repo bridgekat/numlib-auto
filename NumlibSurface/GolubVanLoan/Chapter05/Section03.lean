@@ -11,9 +11,11 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section02
 # Golub–Van Loan §5.3: the full-rank least-squares problem
 
 Surface file for [golub2013matrix] §5.3: the normal equations and the gradient (§5.3.1), the
-method of normal equations (Algorithm 5.3.1) and its accuracy (5.3.4), the SVD expansion
-(5.3.2)–(5.3.3), the QR solution (5.3.5) and the Householder LS solution (Algorithm 5.3.2) with
-its backward error (5.3.6)–(5.3.8), the sensitivity of the LS problem (Theorem 5.3.1 with
+method of normal equations (Algorithm 5.3.1) and its accuracy (5.3.4), also for the runs of its
+Cholesky stage (`equation_5_3_4_rounding`), the SVD expansion (5.3.2)–(5.3.3), the QR solution
+(5.3.5) and the Householder LS solution (Algorithm 5.3.2 as printed, with its backward error
+(5.3.6)–(5.3.8), and `householderLS`, the same with the returned `β`, which the later sections
+call), the sensitivity of the LS problem (Theorem 5.3.1 with
 (5.3.9), (5.3.15), (5.3.16)), the augmented system, its QR solution and iterative improvement
 (§5.3.8, (5.3.20)), and the cross-product nearness problems of §5.3.9 ((5.3.21)–(5.3.29)).
 
@@ -27,8 +29,9 @@ value `⨅ i, A.colSingularValues i`. Theorem 5.3.1 and (5.3.4) are proved in ri
 `O(ε²)`), the printed first-order form following from them; so are (5.3.6)–(5.3.8), over an
 idempotent `FloatingPoint.RoundingModel`, with explicit `γ` constants in place of Lawson–Hanson's
 first-order ones. Programs follow the conventions of
-`NumlibSurface/GolubVanLoan`: Algorithm 5.3.1 calls Algorithms 1.1.1, 4.2.1, 3.1.1 and 3.1.2,
-Algorithm 5.3.2 calls Algorithms 5.2.1 and 3.1.2. The book's `u_i`, `v_i` are the columns of
+`NumlibSurface/GolubVanLoan`: Algorithm 5.3.1 calls Algorithms 1.1.1 and 4.2.1 and the
+Cholesky solve of §4.2 (`Chapter04.solveCholesky`, Algorithms 3.1.3 and 3.1.4), Algorithm 5.3.2
+calls Algorithms 5.2.1 and 3.1.2. The book's `u_i`, `v_i` are the columns of
 the SVD factors (`Matrix.IsSVD A U σ V`), `u_iᵀ b` is `U.col i ⬝ᵥ b`. Indices are 0-based. The
 cross-product matrix of `v ∈ ℝ³` is `crossMatrix v` (Mathlib has the cross product `⨯₃` but no
 matrix form).
@@ -119,17 +122,16 @@ Solve Gy = d and Gᵀx_LS = y.
 ```
 The lower triangle is `gramLower` and `d` is `transposeMulVec`; the upper triangle of `C` is filled
 by symmetry (an assignment). The Cholesky factorization is Algorithm 4.2.1, whose output holds `G`
-in its lower triangle (read off, an assignment), and the triangular solves are Algorithms 3.1.1 and
-3.1.2. -/
+in its lower triangle, and the two triangular solves are those of §4.2 (`Chapter04.solveCholesky`:
+Algorithms 3.1.3 and 3.1.4 on the lower triangle and its transpose), the stage whose rounding
+errors §4.2.6 analyses (`equation_5_3_4_rounding`). -/
 noncomputable def algorithm_5_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Fin n → ℝ) := do
   let L ← gramLower rnd A
   let C : Matrix (Fin n) (Fin n) ℝ := of fun i j => if j ≤ i then L i j else L j i
   let d ← transposeMulVec rnd A b
   let F ← Chapter04.algorithm_4_2_1 rnd C
-  let G : Matrix (Fin n) (Fin n) ℝ := of fun i j => if j ≤ i then F i j else 0
-  let y ← Chapter03.algorithm_3_1_1 rnd G d
-  Chapter03.algorithm_3_1_2 rnd Gᵀ y
+  Chapter04.solveCholesky rnd F d
 
 end Programs
 
@@ -180,26 +182,20 @@ theorem algorithm_5_3_1_spec {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepe
     · rw [← transpose_apply (Aᵀ * A), transpose_mul, transpose_transpose]
     · exact absurd (le_of_lt (not_le.1 h1)) h2
   set F := Id.run (Chapter04.algorithm_4_2_1 pure (Aᵀ * A)) with hF
-  set G : Matrix (Fin n) (Fin n) ℝ := of fun i j => if j ≤ i then F i j else 0 with hG
-  have hGc : G = cholesky (Aᵀ * A) := by
-    rw [← (Chapter04.algorithm_4_2_1_spec hPD).1, hG, ← hF]
-    ext i j
-    simp only [of_apply, Matrix.sub_apply, strictUpper_apply]
-    rcases le_or_gt j i with h | h
-    · simp [h, not_lt.2 h]
-    · simp [h, not_le.2 h]
+  set G : Matrix (Fin n) (Fin n) ℝ := F - F.strictUpper with hG
+  have hGc : G = cholesky (Aᵀ * A) := (Chapter04.algorithm_4_2_1_spec hPD).1
   have hGl : G.IsLowerTriangular := hGc ▸ isLowerTriangular_cholesky _
   have hGd : ∀ i, G i i ≠ 0 := fun i => hGc ▸ (Chapter04.cholesky_diag_pos hPD i).ne'
   have hGG : G * Gᵀ = Aᵀ * A := by rw [hGc]; exact Chapter04.cholesky_mul_transpose hPD
-  have hrun : Id.run (algorithm_5_3_1 pure A b) = Id.run (Chapter03.algorithm_3_1_2 pure Gᵀ
-      (Id.run (Chapter03.algorithm_3_1_1 pure G (Aᵀ *ᵥ b)))) := by
-    simp only [algorithm_5_3_1, Id.run_bind, transposeMulVec_pure]
+  have hrun : Id.run (algorithm_5_3_1 pure A b) = Id.run (Chapter03.algorithm_3_1_4 pure Gᵀ
+      (Id.run (Chapter03.algorithm_3_1_3 pure G (Aᵀ *ᵥ b)))) := by
+    simp only [algorithm_5_3_1, Chapter04.solveCholesky, Id.run_bind, transposeMulVec_pure]
     rw [hC]
   rw [hrun]
-  set y := Id.run (Chapter03.algorithm_3_1_1 pure G (Aᵀ *ᵥ b)) with hy
-  set x := Id.run (Chapter03.algorithm_3_1_2 pure Gᵀ y) with hx
-  have h1 : G *ᵥ y = Aᵀ *ᵥ b := Chapter03.algorithm_3_1_1_spec hGl hGd _
-  have h2 : Gᵀ *ᵥ x = y := Chapter03.algorithm_3_1_2_spec hGl.transpose_isUpperTriangular
+  set y := Id.run (Chapter03.algorithm_3_1_3 pure G (Aᵀ *ᵥ b)) with hy
+  set x := Id.run (Chapter03.algorithm_3_1_4 pure Gᵀ y) with hx
+  have h1 : G *ᵥ y = Aᵀ *ᵥ b := Chapter03.algorithm_3_1_3_spec hGl hGd _
+  have h2 : Gᵀ *ᵥ x = y := Chapter03.algorithm_3_1_4_spec hGl.transpose_isUpperTriangular
     (fun i => by rw [transpose_apply]; exact hGd i) _
   rw [(isLeastSquaresSolution_iff_normalEquations (toLp 2 b)).1, toEuclideanLin_toLp,
     toEuclideanLin_toLp, ← hGG, ← mulVec_mulVec, h2, h1]
@@ -232,6 +228,34 @@ theorem equation_5_3_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
     (by rwa [conjTranspose_eq_transpose_of_trivial]) hη hx0, ?_⟩
   have h := pinvCondNumberLp_two_conjTranspose_mul_self hA
   rwa [conjTranspose_eq_transpose_of_trivial] at h
+
+open scoped Matrix.Norms.L2Operator in
+/-- **(5.3.4) for the runs of Algorithm 5.3.1**, with the book's assumption "that no roundoff
+errors occur during the formation of `C = AᵀA` and `d = Aᵀb`": every run `F` of the Cholesky stage
+(Algorithm 4.2.1 on `C`, nonzero returned diagonal) followed by a run `x̂` of its triangular solves
+(`Chapter04.solveCholesky`, the solve stage of `algorithm_5_3_1`) satisfies
+`‖x̂ - x_LS‖₂/‖x_LS‖₂ ≤ η κ₂(A)²/(1 - η κ₂(A)²)` for every `η ≥ n γ_{3n+3}/(1 - n γ_{n+3})` with
+`η κ₂(A)² < 1`: §4.2.6's `(AᵀA + E) x̂ = Aᵀb`, `‖E‖₂ ≤ η ‖AᵀA‖₂`
+(`Chapter04.cholesky_backward_error`) fed to `equation_5_3_4`. -/
+theorem equation_5_3_4_rounding {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
+    (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) {η : ℝ}
+    (hηc : n * gamma fp.u (3 * n + 3) / (1 - n * gamma fp.u (n + 3)) ≤ η)
+    (hη : η * kappa2 A ^ 2 < 1) (hx0 : toEuclideanLin A.pinv (toLp 2 b) ≠ 0) :
+    ∀ F ∈ (Chapter04.algorithm_4_2_1 fp.round (Aᵀ * A)).run, (∀ j, F j j ≠ 0) →
+      ∀ x ∈ (Chapter04.solveCholesky fp.round F (Aᵀ *ᵥ b)).run,
+        ‖toLp 2 x - toEuclideanLin A.pinv (toLp 2 b)‖ / ‖toEuclideanLin A.pinv (toLp 2 b)‖ ≤
+          η * kappa2 A ^ 2 / (1 - η * kappa2 A ^ 2) := by
+  intro F hF hd x hx
+  obtain ⟨E, hE, hEn⟩ := Chapter04.cholesky_backward_error hn hγ
+    (by rw [IsSymm, transpose_mul, transpose_transpose])
+    (Aᵀ *ᵥ b) F hF hd x hx
+  rw [lpOpNorm_two, lpOpNorm_two] at hEn
+  refine (equation_5_3_4 hA (E := E) ?_ ?_ hη hx0).1
+  · rw [toEuclideanLin_toLp, toEuclideanLin_toLp, hE]
+  · calc ‖E‖ ≤ n * gamma fp.u (3 * n + 3) * ‖Aᵀ * A‖ / (1 - n * gamma fp.u (n + 3)) := hEn
+      _ = n * gamma fp.u (3 * n + 3) / (1 - n * gamma fp.u (n + 3)) * ‖Aᵀ * A‖ := by ring
+      _ ≤ η * ‖Aᵀ * A‖ := mul_le_mul_of_nonneg_right hηc (norm_nonneg _)
 
 end NormalEquations
 
@@ -439,6 +463,14 @@ noncomputable def householderLSStep (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m 
     let c ← rnd (b i - p)
     pure (Function.update b i c)) b
 
+/-- The stages of Algorithm 5.3.2 after the QR factorization, on its output `QR = (A', β)`: the
+`b`-loop with the recomputed `β` (`householderLSStep`) and the back substitution
+`R(1:n, 1:n) x_LS = b(1:n)` (Algorithm 3.1.2). -/
+noncomputable def householderLSSolve (hnm : n ≤ m) (QR : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ))
+    (b : Fin m → ℝ) : M (Fin n → ℝ) := do
+  let b ← (List.finRange n).foldlM (householderLSStep rnd QR.1) b
+  Chapter03.algorithm_3_1_2 rnd ((upperPart QR.1).firstRows hnm) fun i => b (Fin.castLE hnm i)
+
 /-- **Algorithm 5.3.2 (Householder LS Solution)**: "If `A ∈ ℝ^{m×n}` has full column rank and
 `b ∈ ℝ^m`, then the following algorithm computes a vector `x_LS ∈ ℝⁿ` such that `‖Ax_LS - b‖₂` is
 minimum":
@@ -451,12 +483,12 @@ Solve R(1:n, 1:n) · x_LS = b(1:n).
 ```
 As printed, the `β_j` returned by Algorithm 5.2.1 are discarded and recomputed from the stored
 vectors (`householderLSStep`), and the triangular solve is Algorithm 3.1.2 on the leading `n × n`
-block of the upper triangle. The program takes `n ≤ m`. -/
+block of the upper triangle (the two stages after the factorization are `householderLSSolve`).
+The program takes `n ≤ m`. -/
 noncomputable def algorithm_5_3_2 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : M (Fin n → ℝ) := do
   let QR ← algorithm_5_2_1 rnd A
-  let b ← (List.finRange n).foldlM (householderLSStep rnd QR.1) b
-  Chapter03.algorithm_3_1_2 rnd ((upperPart QR.1).firstRows hnm) fun i => b (Fin.castLE hnm i)
+  householderLSSolve rnd hnm QR b
 
 end Programs
 
@@ -494,6 +526,32 @@ private theorem foldl_mulVec_eq_transpose_prod_mulVec {α : Type} (P : α → Ma
   | cons a l ih =>
     rw [List.foldl_cons, ih, List.map_cons, List.prod_cons, transpose_mul, hP, mulVec_mulVec]
 
+/-- **The back-substitution stage of Algorithm 5.3.2** (exact arithmetic, (5.3.5)): for a QR
+factorization `A = QR` of a full column rank `A`, Algorithm 3.1.2 on `R₁ x = (Qᵀb)(1:n)` returns a
+least-squares solution. Shared by `algorithm_5_3_2_spec` and `householderLS_spec`. -/
+theorem isLeastSquaresSolution_solve_firstRows (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
+    {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ} (hQR : IsQR A Q R)
+    (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) :
+    IsLeastSquaresSolution A (toLp 2 b) (toLp 2 (Id.run (Chapter03.algorithm_3_1_2 pure
+      (R.firstRows hnm) fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i)))) := by
+  set x := Id.run (Chapter03.algorithm_3_1_2 pure (R.firstRows hnm)
+    fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i)) with hx
+  have hsol : R.firstRows hnm *ᵥ x = fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i) :=
+    Chapter03.algorithm_3_1_2_spec (hQR.isUpperTriangular_firstRows hnm)
+      (hQR.firstRows_diag_ne_zero_of_linearIndependent hnm hA) _
+  intro y
+  have e1 := (equation_5_3_5 hQR hnm (toLp 2 b)).1 (toLp 2 x)
+  have e2 := (equation_5_3_5 hQR hnm (toLp 2 b)).1 y
+  have h0 : toEuclideanLin (R.firstRows hnm) (toLp 2 x) -
+      toEuclideanLin (Q.firstColumns hnm)ᵀ (toLp 2 b) = 0 := by
+    rw [toEuclideanLin_toLp, toEuclideanLin_toLp, hsol, sub_eq_zero]
+    rfl
+  rw [h0, norm_zero] at e1
+  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
+  rw [e1, e2]
+  nlinarith [sq_nonneg ‖toEuclideanLin (R.firstRows hnm) y -
+    toEuclideanLin (Q.firstColumns hnm)ᵀ (toLp 2 b)‖]
+
 /-- **Algorithm 5.3.2 solves the least-squares problem** (exact arithmetic) for `A` of full column
 rank **when no Householder step of Algorithm 5.2.1 was degenerate** (every returned `β_j ≠ 0`): the
 recomputed `β_j = 2/vᵀv` are then the actual ones (`equation_5_1_4_beta`), the `b`-loop computes
@@ -516,26 +574,10 @@ theorem algorithm_5_3_2_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
   have hrun : Id.run (algorithm_5_3_2 pure hnm A b) =
       Id.run (Chapter03.algorithm_3_1_2 pure (R.firstRows hnm)
         fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i)) := by
-    simp only [algorithm_5_3_2, Id.run_bind, List.idRun_foldlM]
+    simp only [algorithm_5_3_2, householderLSSolve, Id.run_bind, List.idRun_foldlM]
     rw [← hst, hloop]
   rw [hrun]
-  set x := Id.run (Chapter03.algorithm_3_1_2 pure (R.firstRows hnm)
-    fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i)) with hx
-  have hsol : R.firstRows hnm *ᵥ x = fun i => (Qᵀ *ᵥ b) (Fin.castLE hnm i) :=
-    Chapter03.algorithm_3_1_2_spec (hQR.isUpperTriangular_firstRows hnm)
-      (hQR.firstRows_diag_ne_zero_of_linearIndependent hnm hA) _
-  intro y
-  have e1 := (equation_5_3_5 hQR hnm (toLp 2 b)).1 (toLp 2 x)
-  have e2 := (equation_5_3_5 hQR hnm (toLp 2 b)).1 y
-  have h0 : toEuclideanLin (R.firstRows hnm) (toLp 2 x) -
-      toEuclideanLin (Q.firstColumns hnm)ᵀ (toLp 2 b) = 0 := by
-    rw [toEuclideanLin_toLp, toEuclideanLin_toLp, hsol, sub_eq_zero]
-    rfl
-  rw [h0, norm_zero] at e1
-  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
-  rw [e1, e2]
-  nlinarith [sq_nonneg ‖toEuclideanLin (R.firstRows hnm) y -
-    toEuclideanLin (Q.firstColumns hnm)ᵀ (toLp 2 b)‖]
+  exact isLeastSquaresSolution_solve_firstRows hnm hQR hA b
 
 /-- A step of Algorithm 5.2.1 on a column that is already `[x_j; 0]` with `x_j ≥ 0` below row `j`
 changes nothing but records `β_j = 0` (`house` meets `σ = 0` and `x(1) ≥ 0`). -/
@@ -621,7 +663,8 @@ theorem algorithm_5_3_2_counterexample :
     have hR : (upperPart (1 : Matrix (Fin 2) (Fin 2) ℝ)).firstRows le_rfl = 1 := by
       ext i j
       fin_cases i <;> fin_cases j <;> simp [upperPart, firstRows, one_apply]
-    simp only [algorithm_5_3_2, Id.run_bind, List.idRun_foldlM, algorithm_5_2_1_one]
+    simp only [algorithm_5_3_2, householderLSSolve, Id.run_bind, List.idRun_foldlM,
+      algorithm_5_2_1_one]
     rw [hloop, hR]
     have hs := Chapter03.algorithm_3_1_2_spec (U := (1 : Matrix (Fin 2) (Fin 2) ℝ))
       blockTriangular_one (by simp) (fun i => (![-1, 0] : Fin 2 → ℝ) (Fin.castLE le_rfl i))
@@ -791,43 +834,17 @@ private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
       ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ :=
     householderLSStep_rounding hfp (K := 18 * m + 31) hu st.1 k (lt_of_lt_of_le k.isLt hnm) h2
       h3 (hO k) hβ0 y hy'
-  set Q := prodRev (dataReflector v β) ((k : ℕ) + 1) with hQ
-  have hQO : Q ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup fun k _ => hO k
-  set e := y' - dataReflector v β k *ᵥ y with he
-  refine ⟨db + Qᵀ *ᵥ e, ?_, ?_⟩
-  · calc y' = dataReflector v β k *ᵥ y + e := by rw [he]; abel
-      _ = Q *ᵥ (b + db) + Q *ᵥ (Qᵀ *ᵥ e) := by
-          rw [mulVec_transpose_mulVec_of_mem_orthogonalGroup hQO, hy, mulVec_mulVec, hQ,
-            prodRev_succ]
-      _ = Q *ᵥ (b + (db + Qᵀ *ᵥ e)) := by rw [← mulVec_add, add_assoc]
-  · have h1 : ‖(toLp 2 (Qᵀ *ᵥ e) : EuclideanSpace ℝ (Fin m))‖ ≤
-        ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ := by
-      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hQO)]
-      exact hstep
-    have h2 : ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
-        (1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
-      rw [hy, norm_toLp_mulVec_of_mem_orthogonalGroup
-        (prodRev_mem_orthogonalGroup fun k _ => hO k),
-        WithLp.toLp_add]
-      refine (norm_add_le _ _).trans ?_
-      linarith
-    rw [WithLp.toLp_add]
-    refine (norm_add_le _ _).trans ?_
-    have h3 : ε * ‖(toLp 2 y : EuclideanSpace ℝ (Fin m))‖ ≤
-        ε * ((1 + ε) ^ (k : ℕ) * ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖) :=
-      mul_le_mul_of_nonneg_left h2 hε0
-    have h4 : ((1 + ε) ^ ((k : ℕ) + 1) - 1) =
-        ((1 + ε) ^ (k : ℕ) - 1) + ε * (1 + ε) ^ (k : ℕ) := by
-      ring
-    rw [h4]
-    nlinarith
+  obtain ⟨db', hy'eq, hdb'⟩ := exists_eq_mulVec_add_of_step (hO k)
+    (prodRev_mem_orthogonalGroup fun k _ => hO k) hε0 hy hdb hstep
+  exact ⟨db', by rw [hy'eq, prodRev_succ], hdb'⟩
 
 open scoped Matrix.Norms.Frobenius in
 /-- **(5.3.6)–(5.3.8), rigorous** (Lawson–Hanson; [higham2002accuracy] Theorem 20.3): over an
-idempotent model with `(3(4(18m + 31) + 2m + 1) + m + 3) u < 1`, if the Householder QR runs of
-Algorithm 5.3.2 on `A` are nondegenerate (every computed `β̂_j ≠ 0`, the hypothesis of
-`algorithm_5_3_2_spec`) and produce a nonsingular `R̂₁`, then every computed `x̂` "solves exactly a
-nearby LS problem": `x̂` is a least-squares solution of `(A + δA) x = b + δb` with
+idempotent model with `(3(4(18m + 31) + 2m + 1) + m + 3) u < 1`, for every run `(Â, β̂)` of the
+QR stage of Algorithm 5.3.2 (Algorithm 5.2.1 on `A`) that is nondegenerate (every computed
+`β̂_j ≠ 0`, which the printed recomputation of `β` needs, cf. `algorithm_5_3_2_spec`) and has a
+nonsingular `R̂₁`, every `x̂` computed from it by the remaining stages (`householderLSSolve`)
+"solves exactly a nearby LS problem": `x̂` is a least-squares solution of `(A + δA) x = b + δb` with
 `‖δA‖_F ≤ ((1 + ε)ⁿ (1 + γ_n) - 1) ‖A‖_F` and `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂`, where
 `ε = 3 γ_{3(18m + 31) + m + 3}` (one computed QR step, `algorithm_5_2_1_rounding`) and
 `ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}` (one pass of the `b`-loop with its recomputed `β`).
@@ -838,12 +855,11 @@ of the QR factorization and that of the back substitution, `(R̂₁ + ΔR) x̂ =
 bounds of this shape (with Lawson–Hanson's constants in place of the `γ`s). -/
 theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
-    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
-    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
-    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
-      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
-    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
-    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
+    ∀ st ∈ (algorithm_5_2_1 fp.round A).run, (∀ j, st.2 j ≠ 0) →
+      (∀ i : Fin n, upperPart st.1 (Fin.castLE hnm i) i ≠ 0) →
+    ∀ x ∈ (householderLSSolve fp.round hnm st b).run,
+      ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
       IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
       ‖δA‖ ≤ ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n * (1 + gamma fp.u n) - 1) *
         ‖A‖ ∧
@@ -855,11 +871,12 @@ theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
       ((a : ℕ) : ℝ) * fp.u < 1 := fun a ha =>
     (mul_le_mul_of_nonneg_right (Nat.cast_le.2 ha) hu0).trans_lt hu
   have hu1 : fp.u < 1 := by simpa using hlt 1 (by omega)
-  simp only [algorithm_5_3_2, SetM.mem_run_bind] at hx
-  obtain ⟨st, hst, c, hc, hx⟩ := hx
+  intro st hst hβ hR x hx
+  simp only [householderLSSolve, SetM.mem_run_bind] at hx
+  obtain ⟨c, hc, hx⟩ := hx
   obtain ⟨v, β, E, hO, hdata, hE, hEb⟩ :=
     algorithm_5_2_1_rounding_data hfp hnm (hlt _ (by omega)) A hst
-  obtain ⟨db, hcdb, hdb⟩ := householderLSLoop_rounding hfp hnm hu hO hdata (hβ st hst) b hc
+  obtain ⟨db, hcdb, hdb⟩ := householderLSLoop_rounding hfp hnm hu hO hdata hβ b hc
   set ε := 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) with hε
   have hε0 : 0 ≤ ε := by
     have := gamma_nonneg hu0 (hlt (3 * (18 * m + 31) + m + 3) (by omega))
@@ -874,7 +891,7 @@ theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
     simp only [upperPart, of_apply, Fin.val_castLE]
     exact ite_eq_right (by omega)
   obtain ⟨ΔU, hΔU, hsol⟩ := exists_roundsBackSubstDot_eq hu1
-    (by rw [Fintype.card_fin]; exact hlt n (by omega)) hTu (hR st hst)
+    (by rw [Fintype.card_fin]; exact hlt n (by omega)) hTu hR
     (Chapter03.algorithm_3_1_2_rounds (fp := fp) _ _ x hx)
   -- `ΔR` padded with zero rows
   set Δ : Matrix (Fin m) (Fin n) ℝ := of fun i j => if h : (i : ℕ) < n then ΔU ⟨i, h⟩ j else 0
@@ -947,16 +964,16 @@ open scoped Matrix.Norms.Frobenius in
 `‖δA‖_F ≤ (6m - 3n + 41) n u ‖A‖_F + O(u²)` (`equation_5_3_6`). -/
 theorem equation_5_3_7 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
-    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
-    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
-    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
-      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
-    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
-    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
+    ∀ st ∈ (algorithm_5_2_1 fp.round A).run, (∀ j, st.2 j ≠ 0) →
+      (∀ i : Fin n, upperPart st.1 (Fin.castLE hnm i) i ≠ 0) →
+    ∀ x ∈ (householderLSSolve fp.round hnm st b).run,
+      ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
       IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
       ‖δA‖ ≤ ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ n * (1 + gamma fp.u n) - 1) *
         ‖A‖ := by
-  obtain ⟨δA, δb, h, hA, -⟩ := equation_5_3_6 hfp hnm hu A b hβ hR hx
+  intro st hst hβ hR x hx
+  obtain ⟨δA, δb, h, hA, -⟩ := equation_5_3_6 hfp hnm hu A b st hst hβ hR x hx
   exact ⟨δA, δb, h, hA⟩
 
 /-- **(5.3.8)**: the `δb` of (5.3.6), `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂` with
@@ -964,17 +981,17 @@ theorem equation_5_3_7 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
 `‖δb‖₂ ≤ (6m - 3n + 40) n u ‖b‖₂ + O(u²)` (`equation_5_3_6`). -/
 theorem equation_5_3_8 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
-    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
-    (hβ : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ j, st.2 j ≠ 0)
-    (hR : ∀ st ∈ (algorithm_5_2_1 fp.round A).run, ∀ i : Fin n,
-      upperPart st.1 (Fin.castLE hnm i) i ≠ 0)
-    {x : Fin n → ℝ} (hx : x ∈ (algorithm_5_3_2 fp.round hnm A b).run) :
-    ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
+    ∀ st ∈ (algorithm_5_2_1 fp.round A).run, (∀ j, st.2 j ≠ 0) →
+      (∀ i : Fin n, upperPart st.1 (Fin.castLE hnm i) i ≠ 0) →
+    ∀ x ∈ (householderLSSolve fp.round hnm st b).run,
+      ∃ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : Fin m → ℝ),
       IsLeastSquaresSolution (A + δA) (toLp 2 (b + δb)) (toLp 2 x) ∧
       ‖(toLp 2 δb : EuclideanSpace ℝ (Fin m))‖ ≤
         ((1 + 3 * gamma fp.u (3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3)) ^ n - 1) *
           ‖(toLp 2 b : EuclideanSpace ℝ (Fin m))‖ := by
-  obtain ⟨δA, δb, h, -, hb⟩ := equation_5_3_6 hfp hnm hu A b hβ hR hx
+  intro st hst hβ hR x hx
+  obtain ⟨δA, δb, h, -, hb⟩ := equation_5_3_6 hfp hnm hu A b st hst hβ hR x hx
   exact ⟨δA, δb, h, hb⟩
 
 end HouseholderLSRounding
@@ -1027,14 +1044,6 @@ section SensitivityBounds
 
 open scoped Matrix.Norms.L2Operator
 
-/-- A matrix with independent columns and at least one column is nonzero. -/
-private theorem l2_opNorm_pos_of_linearIndependent [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ Aᵀ) : 0 < ‖A‖ := by
-  refine norm_pos_iff.2 fun h0 => ?_
-  have := hA.ne_zero (0 : Fin n)
-  rw [h0] at this
-  exact this rfl
-
 /-- Independent columns: `A x = 0` forces `x = 0`. -/
 private theorem toEuclideanLin_ne_zero {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0) :
@@ -1049,12 +1058,6 @@ private theorem toEuclideanLin_ne_zero {A : Matrix (Fin m) (Fin n) ℝ}
   have := hinj h1
   ext i
   simpa using congrFun this i
-
-/-- The column-indexed `κ₂(A) = ‖A‖₂ / σ_min(A)` for independent columns. -/
-private theorem kappa2_eq_div [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ}
-    (hA : LinearIndependent ℝ Aᵀ) : kappa2 A = ‖A‖ / ⨅ i, A.colSingularValues i := by
-  rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two,
-    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, div_eq_mul_inv]
 
 /-- Pythagoras for the least-squares split `b = A x_LS + r_LS`. -/
 private theorem norm_sq_eq_residual_add (A : Matrix (Fin m) (Fin n) ℝ)
@@ -1568,6 +1571,26 @@ theorem storedQTransposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n
     ← factoredQ_eq_prod]
   funext i
   simp [mul_apply, mulVec, dotProduct]
+
+/-- **Algorithm 5.3.2 with the returned `β`** (convention 13; the corrected reading of
+book-errata Ch. 5 #2): Algorithm 5.2.1, then `Qᵀb` from the stored vectors and the `β` that
+Algorithm 5.2.1 returned (`storedQTransposeMulVec`), then Algorithm 3.1.2 on
+`R(1:n, 1:n) x = (Qᵀb)(1:n)`. The least-squares solver of every consumer of §5.3 (as printed,
+`algorithm_5_3_2` fails when a returned `β_j` is `0`). -/
+noncomputable def householderLS {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (hnm : n ≤ m)
+    (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) : M (Fin n → ℝ) := do
+  let QR ← algorithm_5_2_1 rnd A
+  let c ← storedQTransposeMulVec rnd QR.1 QR.2 b
+  Chapter03.algorithm_3_1_2 rnd ((upperPart QR.1).firstRows hnm) fun i => c (Fin.castLE hnm i)
+
+/-- **The Householder LS solution with the returned `β` solves the least-squares problem** (exact
+arithmetic) for every `A` of full column rank, with no condition on the Householder steps. -/
+theorem householderLS_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) :
+    IsLeastSquaresSolution A (toLp 2 b) (toLp 2 (Id.run (householderLS pure hnm A b))) := by
+  obtain ⟨hQR, -⟩ := algorithm_5_2_1_spec hnm A
+  simp only [householderLS, Id.run_bind, storedQTransposeMulVec_pure]
+  exact isLeastSquaresSolution_solve_firstRows hnm hQR hA b
 
 /-- In exact arithmetic `storedQMulVec` computes `Q y` for `Q = factoredQ β A`. -/
 theorem storedQMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) (y : Fin m → ℝ) :

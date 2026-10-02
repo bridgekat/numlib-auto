@@ -10,7 +10,8 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section01
 
 Surface file for [golub2013matrix] §5.2: existence of the QR factorization (Theorem 5.2.1), the
 ranges of the factors (Theorem 5.2.2, (5.2.1)–(5.2.3)), uniqueness of the thin factorization and
-its Cholesky reading (Theorem 5.2.3); Householder QR (Algorithm 5.2.1), Givens QR
+its Cholesky reading (Theorem 5.2.3); Householder QR (Algorithm 5.2.1), block Householder QR
+(Algorithm 5.2.2) and recursive block Householder QR (Algorithm 5.2.3), Givens QR
 (Algorithm 5.2.4) with its two reorderings, Hessenberg QR (Algorithm 5.2.5), classical and
 modified Gram–Schmidt (Algorithm 5.2.6); the complex Householder QR of §5.2.10.
 
@@ -33,7 +34,9 @@ Beside Algorithm 5.2.5 live the two Givens sweeps of §6.5 (`givensHessenbergSwe
 
 Stewart's `O(ε κ₂(A))` perturbation of the QR factors (§5.2.1, quoted without statement), the
 roundoff claims for Algorithm 5.2.2 ("essentially the same") and for Gram–Schmidt (§5.2.9, quoted
-without derivation), flop counts, level-3 fractions, parallel Givens orderings.
+without derivation), the orthogonality `Q̂₁ᵀQ̂₁ = I + E_H`, `‖E_H‖₂ ≈ u` of the Householder `Q`
+accumulated in floating point (§5.2.9; no rounding theorem for `forwardAccumulation` /
+`backwardAccumulation` is stated), flop counts, level-3 fractions, parallel Givens orderings.
 -/
 
 open FloatingPoint Matrix WithLp
@@ -150,6 +153,38 @@ theorem kappa2_eq_kappa {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
   have h : kappa2 A = condNumberLp 2 A := pinvCondNumberLp_eq_condNumberLp 2 hA
   exact ⟨h, by rw [h, Chapter02.kappa_of_isUnit 2 hA]⟩
 
+open scoped Matrix.Norms.L2Operator in
+/-- A matrix with independent columns and at least one column is nonzero. -/
+theorem l2_opNorm_pos_of_linearIndependent [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : LinearIndependent ℝ Aᵀ) : 0 < ‖A‖ := by
+  refine norm_pos_iff.2 fun h0 => ?_
+  have := hA.ne_zero (0 : Fin n)
+  rw [h0] at this
+  exact this rfl
+
+open scoped Matrix.Norms.L2Operator in
+/-- `κ₂(A) = ‖A‖₂ / σ_min(A)` for independent columns, `σ_min` read over the columns. The twin of
+`kappa2_eq_div_of_rows`. -/
+theorem kappa2_eq_div [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : LinearIndependent ℝ Aᵀ) : kappa2 A = ‖A‖ / ⨅ i, A.colSingularValues i := by
+  rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two,
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, div_eq_mul_inv]
+
+open scoped Matrix.Norms.L2Operator in
+/-- `κ₂(A) = ‖A‖₂/σ_m(A)` for independent rows, `σ_m` read over the columns of `Aᵀ`. The twin of
+`kappa2_eq_div`. -/
+theorem kappa2_eq_div_of_rows [NeZero m] {A : Matrix (Fin m) (Fin n) ℝ}
+    (hA : LinearIndependent ℝ A) : kappa2 A = ‖A‖ / ⨅ i, Aᵀ.colSingularValues i := by
+  have hAt : LinearIndependent ℝ Aᵀᵀ := by rwa [transpose_transpose]
+  have hp : A.pinv = (Aᵀ.pinv)ᵀ := by
+    have := pinv_conjTranspose (A := Aᵀ)
+    rw [conjTranspose_eq_transpose_of_trivial, conjTranspose_eq_transpose_of_trivial,
+      transpose_transpose] at this
+    rw [this]
+  rw [kappa2, pinvCondNumberLp, lpOpNorm_two, lpOpNorm_two, hp,
+    ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose,
+    l2_opNorm_pinv_eq_inv_iInf_colSingularValues hAt, div_eq_mul_inv]
+
 end Existence
 
 /-! ### §5.2.2 Householder QR -/
@@ -230,6 +265,8 @@ theorem lt_of_mem_take_finRange {j : ℕ} {k : Fin n}
   rw [List.getElem_take, List.getElem_finRange]
   change i < j
   omega
+
+@[deprecated (since := "2026-09-30")] alias val_lt_of_mem_take_finRange := lt_of_mem_take_finRange
 
 /-- The product of the reflectors of the first `j` steps of Algorithm 5.2.1, read from the state
 (the stored vectors and the recorded `β`). -/
@@ -729,13 +766,12 @@ theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdemp
     have hW : prodRev (dataReflector v' β') k = prodRev (dataReflector v β) k :=
       prodRev_congr fun j hj => by rw [hrefl, ite_eq_right (show ¬ j = (k : ℕ) by omega)]
     set W := prodRev (dataReflector v' β') ((k : ℕ) + 1) with hWdef
-    have hWO : W ∈ orthogonalGroup (Fin m) ℝ := prodRev_mem_orthogonalGroup fun k _ => hO' k
     have hWk : W = (1 - γ • vecMulVec w w) * prodRev (dataReflector v β) k := by
       rw [hWdef, prodRev_succ, hW, hrefl, ite_eq_left rfl]
-    set R := householderQRPartialR k c.1 with hR
-    set R' := householderQRPartialR ((k : ℕ) + 1) c'.1 with hR'
-    set F := R' - (1 - γ • vecMulVec w w) * R with hF
-    refine ⟨v', β', E + Wᵀ * F, hO', fun q hq => ?_, ?_, fun q => ?_⟩
+    -- Lemma 19.3, one step (`FloatingPoint.exists_eq_mul_add_of_step`)
+    obtain ⟨E', hE'eq, hE'b⟩ := exists_eq_mul_add_of_step hwO
+      (prodRev_mem_orthogonalGroup fun k _ => hO k) hε0 hE hEb hFb
+    refine ⟨v', β', E', hO', fun q hq => ?_, ?_, hE'b⟩
     · -- the step data
       by_cases hqk : (q : ℕ) = k
       · have hq' : q = k := Fin.ext hqk
@@ -752,43 +788,7 @@ theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdemp
           simp only [storedHouseholderVec, hcols i q hq2]
         rw [hst]
         exact h3 i
-    · have hR'eq : R' = (1 - γ • vecMulVec w w) * R + F := by rw [hF]; abel
-      have hWW : W * Wᵀ = 1 := (mem_orthogonalGroup_iff _ _).1 hWO
-      change R' = W * (A + (E + Wᵀ * F))
-      calc R' = (1 - γ • vecMulVec w w) * R + F := hR'eq
-        _ = W * (A + E) + F := by rw [hE, hWk, Matrix.mul_assoc]
-        _ = W * (A + (E + Wᵀ * F)) := by
-          rw [← add_assoc, Matrix.mul_add W (A + E), ← Matrix.mul_assoc W Wᵀ, hWW,
-            Matrix.one_mul]
-    · have hcol : (E + Wᵀ * F).col q = E.col q + Wᵀ *ᵥ F.col q := by
-        ext i; rfl
-      have hRcol : R.col q = prodRev (dataReflector v β) k *ᵥ (A + E).col q := by
-        rw [hE]; ext i; rfl
-      have hnR : ‖(toLp 2 (R.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
-          ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ +
-            ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ := by
-        rw [hRcol, norm_toLp_mulVec_of_mem_orthogonalGroup
-          (prodRev_mem_orthogonalGroup fun k _ => hO k)]
-        have : (A + E).col q = A.col q + E.col q := by ext i; rfl
-        rw [this, toLp_add]
-        exact norm_add_le _ _
-      have hF' := hFb q
-      rw [hcol, toLp_add]
-      refine (norm_add_le _ _).trans ?_
-      rw [norm_toLp_mulVec_of_mem_orthogonalGroup (transpose_mem_unitaryGroup_iff.2 hWO)]
-      have hEq := hEb q
-      set a := ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖
-      set eq := ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖
-      have hpow : 0 ≤ (1 + ε) ^ (k : ℕ) := by positivity
-      have ha : 0 ≤ a := norm_nonneg _
-      calc eq + ‖(toLp 2 (F.col q) : EuclideanSpace ℝ (Fin m))‖
-          ≤ ((1 + ε) ^ (k : ℕ) - 1) * a + ε * (a + ((1 + ε) ^ (k : ℕ) - 1) * a) := by
-            have h1 : ‖(toLp 2 (F.col q) : EuclideanSpace ℝ (Fin m))‖ ≤ ε * (a + eq) :=
-              hF'.trans (mul_le_mul_of_nonneg_left hnR hε0)
-            have h2 : ε * (a + eq) ≤ ε * (a + ((1 + ε) ^ (k : ℕ) - 1) * a) :=
-              mul_le_mul_of_nonneg_left (by linarith) hε0
-            linarith
-        _ = ((1 + ε) ^ ((k : ℕ) + 1) - 1) * a := by ring
+    · rw [hE'eq, ← hWk]
   obtain ⟨v, β, E, hO, hdata, hE, hEb⟩ := SetM.forall_mem_run_foldlM_finRange I h0 hstep st h
   refine ⟨v, β, E, hO, fun q => hdata q q.isLt, ?_, hEb⟩
   have hup : householderQRPartialR n st.1 = upperPart st.1 := by
@@ -1321,13 +1321,6 @@ noncomputable def hessenbergRotationsProd {k : ℕ} (cs : Fin k → ℝ × ℝ) 
   (((List.finRange k).take t).map fun j =>
     givensRotation j.castSucc j.succ (cs j).1 (cs j).2).prod
 
-/-- An index among the first `t` of `List.finRange k` is `< t`. -/
-theorem val_lt_of_mem_take_finRange {k t : ℕ} {j : Fin k} (h : j ∈ (List.finRange k).take t) :
-    (j : ℕ) < t := by
-  obtain ⟨i, hi, rfl⟩ := List.mem_take_iff_getElem.1 h
-  simp only [List.getElem_finRange, Fin.val_cast]
-  omega
-
 /-- One more rotation: `G₀ ⋯ G_t = (G₀ ⋯ G_{t-1}) G_t`. -/
 theorem hessenbergRotationsProd_succ {k : ℕ} (cs : Fin k → ℝ × ℝ) {t : ℕ} (ht : t < k) :
     hessenbergRotationsProd cs (t + 1) = hessenbergRotationsProd cs t *
@@ -1476,7 +1469,7 @@ theorem algorithm_5_2_5_spec {k : ℕ} (A : Matrix (Fin (k + 1)) (Fin (k + 1)) �
           congr 1
           refine List.map_congr_left fun j' hj' => ?_
           have hne : j' ≠ j := fun h => by
-            have := val_lt_of_mem_take_finRange hj'
+            have := lt_of_mem_take_finRange hj'
             rw [h] at this
             simp [hj] at this
           rw [Function.update_of_ne hne]
@@ -1688,22 +1681,6 @@ theorem givensHessenbergSweep_spec {m n : ℕ} {a count : ℕ} {A H : Matrix (Fi
   have := j.isLt
   omega
 
-/-- Rotating a vector with the exact Givens update is multiplication by `G(p, q, θ)ᵀ`. -/
-private theorem idRun_givensRotateVec {m : ℕ} {p q : Fin m} (hpq : p ≠ q) (c s : ℝ)
-    (w : Fin m → ℝ) :
-    Id.run (givensRotateVec pure p q c s w) =
-      (givensRotation p q c s)ᵀ *ᵥ w := by
-  funext r
-  rw [givensRotation_transpose_mulVec_apply hpq]
-  simp only [givensRotateVec, Id.run_bind, Id.run_pure, Function.update_apply]
-  by_cases hrq : r = q
-  · subst hrq
-    simp [hpq.symm]
-  · by_cases hrp : r = p
-    · subst hrp
-      simp [hrq]
-    · simp [hrp, hrq]
-
 /-- The exact step of `givensVectorSweep`. -/
 private noncomputable def vecStep {m n : ℕ}
     (st : (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) :
@@ -1725,7 +1702,7 @@ private theorem idRun_givensVectorSweep {m n : ℕ} (b count : ℕ) (w : Fin m �
   split_ifs with h
   · have hpq : (⟨j, by omega⟩ : Fin m) ≠ ⟨j + 1, h⟩ := fun e => by simp [Fin.ext_iff] at e
     simp only [Id.run_bind, Id.run_pure]
-    rw [idRun_givensRotateVec hpq, givensApplyLeft_spec_of_forall_mem hpq _ _
+    rw [givensRotateVec_pure hpq, givensApplyLeft_spec_of_forall_mem hpq _ _
       (List.nodup_finRange n) (List.mem_finRange), givensApplyRight_spec_of_forall_mem hpq
       _ _ (List.nodup_finRange m) (List.mem_finRange)]
     rfl
@@ -1857,7 +1834,8 @@ theorem col_mul_eq_mulVec {M N : ℕ} (G : Matrix (Fin M) (Fin M) ℝ)
 /-- **One step of the columnwise accumulation** ([higham2002accuracy] Lemma 19.3): if
 `Q C = A + E` with `Q` orthogonal and `‖E(:, q)‖ ≤ ((1 + ε)^t - 1) ‖A(:, q)‖`, and
 `C' = Gᵀ C + F` with `G` orthogonal and `‖F(:, q)‖ ≤ ε ‖C(:, q)‖`, then `(Q G) C' = A + E'` with
-`‖E'(:, q)‖ ≤ ((1 + ε)^{t+1} - 1) ‖A(:, q)‖`. -/
+`‖E'(:, q)‖ ≤ ((1 + ε)^{t+1} - 1) ‖A(:, q)‖`. The backbone
+`FloatingPoint.exists_eq_mul_add_of_step` read for the inverse factor `Qᵀ`. -/
 theorem exists_mul_eq_add_of_step {M N : ℕ} {A C C' : Matrix (Fin M) (Fin N) ℝ}
     {Q G : Matrix (Fin M) (Fin M) ℝ} (hQ : Q ∈ orthogonalGroup (Fin M) ℝ)
     (hG : G ∈ orthogonalGroup (Fin M) ℝ) {E : Matrix (Fin M) (Fin N) ℝ} (hQE : Q * C = A + E)
@@ -1869,40 +1847,15 @@ theorem exists_mul_eq_add_of_step {M N : ℕ} {A C C' : Matrix (Fin M) (Fin N) �
     ∃ E' : Matrix (Fin M) (Fin N) ℝ, (Q * G) * C' = A + E' ∧
       ∀ q, ‖(toLp 2 (E'.col q) : EuclideanSpace ℝ (Fin M))‖ ≤
         ((1 + ε) ^ (t + 1) - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖ := by
-  set F := C' - Gᵀ * C with hFdef
-  have hC' : C' = Gᵀ * C + F := by rw [hFdef]; abel
-  refine ⟨E + Q * G * F, ?_, fun q => ?_⟩
-  · rw [hC', Matrix.mul_add, Matrix.mul_assoc Q G, ← Matrix.mul_assoc G,
-      (mem_orthogonalGroup_iff _ _).1 hG, Matrix.one_mul, hQE, add_assoc]
-  · have hQG : Q * G ∈ orthogonalGroup (Fin M) ℝ := mul_mem hQ hG
-    have hFq : ‖(toLp 2 ((Q * G * F).col q) : EuclideanSpace ℝ (Fin M))‖ =
-        ‖(toLp 2 (F.col q) : EuclideanSpace ℝ (Fin M))‖ := by
-      rw [col_mul_eq_mulVec, norm_toLp_mulVec_of_mem_orthogonalGroup hQG]
-    have hCq : ‖(toLp 2 (C.col q) : EuclideanSpace ℝ (Fin M))‖ =
-        ‖(toLp 2 ((A + E).col q) : EuclideanSpace ℝ (Fin M))‖ := by
-      rw [← hQE, col_mul_eq_mulVec, norm_toLp_mulVec_of_mem_orthogonalGroup hQ]
-    have hAE : ‖(toLp 2 ((A + E).col q) : EuclideanSpace ℝ (Fin M))‖ ≤
-        ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖ +
-          ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin M))‖ := by
-      rw [show (A + E).col q = A.col q + E.col q from rfl, toLp_add]
-      exact norm_add_le _ _
-    have hsum : ‖(toLp 2 ((E + Q * G * F).col q) : EuclideanSpace ℝ (Fin M))‖ ≤
-        ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin M))‖ +
-          ‖(toLp 2 ((Q * G * F).col q) : EuclideanSpace ℝ (Fin M))‖ := by
-      rw [show (E + Q * G * F).col q = E.col q + (Q * G * F).col q from rfl, toLp_add]
-      exact norm_add_le _ _
-    have hpow : 0 ≤ (1 + ε) ^ t := by positivity
-    have ha := norm_nonneg (toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))
-    have h1 := hE q
-    have h2 := hF q
-    rw [hCq] at h2
-    rw [hFq] at hsum
-    calc ‖(toLp 2 ((E + Q * G * F).col q) : EuclideanSpace ℝ (Fin M))‖
-        ≤ ((1 + ε) ^ t - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖ +
-            ε * (‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖ +
-              ((1 + ε) ^ t - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖) := by
-          nlinarith [mul_le_mul_of_nonneg_left (hAE.trans (add_le_add le_rfl h1)) hε]
-      _ = ((1 + ε) ^ (t + 1) - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin M))‖ := by ring
+  have hC : C = Qᵀ * (A + E) := by
+    rw [← hQE, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hQ, Matrix.one_mul]
+  obtain ⟨E', hE', hb⟩ := FloatingPoint.exists_eq_mul_add_of_step
+    (transpose_mem_unitaryGroup_iff.2 hG) (transpose_mem_unitaryGroup_iff.2 hQ) hε hC hE hF
+  refine ⟨E', ?_, hb⟩
+  rw [hE']
+  simp only [Matrix.mul_assoc]
+  rw [← Matrix.mul_assoc G Gᵀ, (mem_orthogonalGroup_iff _ _).1 hG, Matrix.one_mul,
+    ← Matrix.mul_assoc Q Qᵀ, (mem_orthogonalGroup_iff _ _).1 hQ, Matrix.one_mul]
 
 /-- The array of a run of Algorithm 5.2.5 with the computed "zeros" `(j+1, j)` of its first `t`
 rotations set to zero. -/
@@ -3212,8 +3165,7 @@ theorem thinHouseholderQR_spec {n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fi
     simp only [of_apply, hi, ↓reduceDIte]
     rfl
   rw [hrun, e1, e2]
-  obtain ⟨h1, h2, h3⟩ := hQR.reduced hnm
-  exact ⟨h1, h2, h3⟩
+  exact hQR.isThinQR hnm
 
 private theorem algorithm_5_2_3_spec_aux (nb : ℕ) :
     ∀ n (A : Matrix (Fin m) (Fin n) ℝ), LinearIndependent ℝ Aᵀ →

@@ -215,7 +215,8 @@ theorem equation_5_5_3 (A : Matrix (Fin m) (Fin n) ℝ) :
     (∀ X : Matrix (Fin n) (Fin m) ℝ, ‖A * A.pinv - 1‖ ≤ ‖A * X - 1‖) ∧
       ∀ X : Matrix (Fin n) (Fin m) ℝ,
         ‖A * X - 1‖ = ‖A * A.pinv - 1‖ → ‖A.pinv‖ ≤ ‖X‖ ∧ (‖X‖ = ‖A.pinv‖ → X = A.pinv) :=
-  pinv_isMinOn_frobenius A
+  ⟨fun X => isMinOn_iff.1 (isMinOn_norm_mul_sub_one_pinv A).1 X (Set.mem_univ X),
+    (isMinOn_norm_mul_sub_one_pinv A).2⟩
 
 /-- **§5.5.2, the Moore–Penrose conditions**: `A⁺` is the unique `X ∈ ℝ^{n×m}` with
 (i) `AXA = A`, (ii) `XAX = X`, (iii) `(AX)ᵀ = AX`, (iv) `(XA)ᵀ = XA`; and `AA⁺` is the orthogonal
@@ -368,28 +369,6 @@ noncomputable def truncatedSVDSolution (U : Matrix (Fin m) (Fin m) ℝ) (σ : �
   ∑ i : Fin n, if h : (i : ℕ) < r ∧ (i : ℕ) < m then ((U.col ⟨i, h.2⟩ ⬝ᵥ b) / σ i) • V.col i
     else 0
 
-/-- The pseudoinverse from an SVD applied to `b` when `n ≤ m`:
-`A⁺ b = ∑_{j<n} (w_jᵀ b / σ_j) z_j`. -/
-private theorem pinv_mulVec_eq_sum_of_le {A : Matrix (Fin m) (Fin n) ℝ}
-    {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
-    (h : IsSVD A W σ Z) (hnm : n ≤ m) (b : Fin m → ℝ) :
-    A.pinv *ᵥ b = ∑ j : Fin n, ((W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j) • Z.col j := by
-  rw [h.pinv_eq, ← mulVec_mulVec, ← mulVec_mulVec]
-  simp only [RCLike.ofReal_real_eq_id, id]
-  have hD : ∀ j : Fin n, ((rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℝ) *ᵥ
-      (star W *ᵥ b)) j = (W.col (Fin.castLE hnm j) ⬝ᵥ b) / σ j := by
-    intro j
-    simp only [mulVec, dotProduct, rectDiagonal, of_apply, ite_mul, zero_mul]
-    rw [Finset.sum_eq_single (Fin.castLE hnm j) (fun i _ hi => by
-      rw [ite_eq_right (fun e => (hi (Fin.ext (by simp [Fin.val_castLE, e]))).elim)])
-      (by simp)]
-    simp only [Fin.val_castLE, ↓reduceIte, star_apply, star_trivial, col_apply]
-    rw [div_eq_inv_mul]
-  ext p
-  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply]
-  change ∑ j, Z p j * _ = _
-  simp only [hD, mul_comm]
-
 /-- Cauchy–Schwarz for the real dot product, with Euclidean norms. -/
 private theorem abs_dotProduct_le_norm {k : ℕ} (x y : Fin k → ℝ) :
     |x ⬝ᵥ y| ≤
@@ -444,7 +423,7 @@ theorem norm_truncatedSVDSolution_sub_le {A : Matrix (Fin m) (Fin n) ℝ}
     simp only [mulVec, dotProduct, Finset.sum_apply, Pi.smul_apply, smul_eq_mul, col_apply,
       mul_comm]
   have hsplit : truncatedSVDSolution Uh σ Vh r b - A.pinv *ᵥ b = ∑ j, D j - Z *ᵥ a := by
-    rw [pinv_mulVec_eq_sum_of_le h hnm b, truncatedSVDSolution, hZa,
+    rw [pinv_mulVec_eq_sum_of_isSVD h hnm b, truncatedSVDSolution, hZa,
       ← Finset.sum_sub_distrib, ← Finset.sum_sub_distrib]
     refine Finset.sum_congr rfl fun j _ => ?_
     have hjm : (j : ℕ) < m := lt_of_lt_of_le j.isLt hnm
@@ -646,6 +625,21 @@ theorem theorem_5_5_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin 
     ((Fin.castLEEmb hrN).trans π.toEmbedding).injective (r - 1)
   exact this
 
+/-- The leading `r` columns of an orthogonal `V` have orthonormal columns, so
+`V(:, 1:r)ᵀ` has rank `r`. -/
+private theorem rank_transpose_leadingCols {V : Matrix (Fin n) (Fin n) ℝ}
+    (hV : V ∈ orthogonalGroup (Fin n) ℝ) {r : ℕ} (hr : r ≤ n) :
+    ((V.submatrix id (Fin.castLE hr))ᵀ).rank = r := by
+  set W := (V.submatrix id (Fin.castLE hr))ᵀ with hW
+  have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 hV
+  have hWW : W * Wᵀ = 1 := by
+    ext i j
+    have := congrFun (congrFun hVV (Fin.castLE hr i)) (Fin.castLE hr j)
+    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
+  refine le_antisymm (rank_le_height W) ?_
+  have := rank_mul_le_left W Wᵀ
+  rwa [hWW, rank_one, Fintype.card_fin] at this
+
 /-- **§5.5.7, QR with column pivoting of `V(:, 1:r̃)ᵀ`**: for `V` orthogonal and `r̃ ≤ n`, let
 `Qᵀ [V₁₁ᵀ V₂₁ᵀ] P = [R₁₁ R₁₂]` be a QR factorization with column pivoting of the `r̃ × n` matrix
 `W = V(:, 1:r̃)ᵀ` (`W P = Q R`, rows of `R` from the `r`-th on zero and its leading `r × r` block
@@ -662,16 +656,7 @@ theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (F
         ‖(R.submatrix id (Fin.castLE hr))⁻¹‖ := by
   set W := (V.submatrix id (Fin.castLE hr))ᵀ with hW
   -- the rows of `W` are orthonormal, so `rank W = r`
-  have hWW : W * Wᵀ = 1 := by
-    have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 hV
-    ext i j
-    have := congrFun (congrFun hVV (Fin.castLE hr i)) (Fin.castLE hr j)
-    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
-  have hrank : W.rank = r := by
-    refine le_antisymm (rank_le_height W) ?_
-    have := rank_mul_le_left W Wᵀ
-    rw [hWW, rank_one, Fintype.card_fin] at this
-    exact this
+  have hrank : W.rank = r := rank_transpose_leadingCols hV hr
   have hr' : r' = r := h.rank_eq.symm.trans hrank
   subst hr'
   have hQO : Q ∈ orthogonalGroup (Fin r') ℝ := h.isQR.mem_unitaryGroup
@@ -752,12 +737,6 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- `A` padded with zero rows to a square `n × n` array (for `m ≤ n`), so that Algorithm 5.4.1,
-written for `m ≥ n`, applies to a wide matrix: the zero rows change neither the pivots nor the
-nonzero rows of `R`. -/
-def padRows (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
-  of fun i j => if hi : (i : ℕ) < m then A ⟨i, hi⟩ j else 0
-
 /-- **Algorithm 5.5.1** (SVD-based subset selection): "Given `A ∈ ℝ^{m×n}` and `b ∈ ℝ^m` the
 following algorithm computes a permutation `P`, a rank estimate `r̃`, and a vector `z ∈ ℝ^r̃` such
 that the first `r̃` columns of `B = AP` are independent and `‖B(:, 1:r̃) z - b‖₂` is minimized":
@@ -769,12 +748,14 @@ Determine z ∈ ℝ^r̃ such that ‖b - B₁z‖₂ = min.
 ```
 The SVD (a Chapter 8 algorithm) and the rank decision are inputs: `V` and `r̃` are arguments
 (convention 5). QR with column pivoting is Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` padded with zero rows
-(`padRows`), and the least-squares step is Algorithm 5.3.2 on `B₁`. Returns `(P, z)`. -/
+(`Matrix.padRows`), and the least-squares step is the Householder LS solution of §5.3.3 on `B₁`
+with the returned `β` (`householderLS`; the as-printed Algorithm 5.3.2 recomputes `β` and fails,
+e.g. for `B₁ = I₂`, `algorithm_5_3_2_counterexample`). Returns `(P, z)`. -/
 noncomputable def algorithm_5_5_1 {r : ℕ} (hrn : r ≤ n) (hrm : r ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Equiv.Perm (Fin n) × (Fin r → ℝ)) := do
-  let st ← algorithm_5_4_1 rnd le_rfl (padRows (V.submatrix id (Fin.castLE hrn))ᵀ)
-  let z ← algorithm_5_3_2 rnd hrm ((A.submatrix id (pivotPerm st.piv)).submatrix id
+  let st ← algorithm_5_4_1 rnd le_rfl (Matrix.padRows (V.submatrix id (Fin.castLE hrn))ᵀ hrn)
+  let z ← householderLS rnd hrm ((A.submatrix id (pivotPerm st.piv)).submatrix id
     (Fin.castLE hrn)) b
   pure (pivotPerm st.piv, z)
 
@@ -784,23 +765,14 @@ section Spec
 
 open scoped Matrix.Norms.L2Operator
 
-/-- Padding with zero rows is multiplication by the leading columns of the identity. -/
-private theorem padRows_eq_mul {p : ℕ} (hpn : p ≤ n) (X : Matrix (Fin p) (Fin n) ℝ) :
-    padRows X = (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hpn) * X := by
-  rw [← Matrix.padRows_eq_mul X hpn]
-  ext i j
-  rw [Matrix.padRows_apply]
-  rfl
-
 /-- **Algorithm 5.5.1 selects independent columns and solves the subset problem** (exact
 arithmetic): if `V` is the right-singular-vector matrix of an SVD `UᵀAV = Σ` and
 `1 ≤ r̃ ≤ rank A`, then for the output `(P, z)`, with `B₁` the first `r̃` columns of `AP` and `Ṽ₁₁`
 the leading `r̃ × r̃` block of `PᵀV`: `Ṽ₁₁` is nonsingular (QR with column pivoting of
 `V(:, 1:r̃)ᵀ` has rank `r̃`, the rows being orthonormal, so its pivots pick an invertible
 `Ṽ₁₁ᵀ`), `σ_r̃(B₁) ≥ σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ > 0` (Theorem 5.5.2), hence "the first `r̃` columns of
-`B = AP` are independent"; and "`‖B(:, 1:r̃) z - b‖₂` is minimized" whenever no Householder step of
-Algorithm 5.2.1 on `B₁` is degenerate (the hypothesis of `algorithm_5_3_2_spec`, carried here).
-Algorithm 5.4.1 runs on `V(:, 1:r̃)ᵀ` padded with zero rows (`padRows`); the padding changes
+`B = AP` are independent"; and "`‖B(:, 1:r̃) z - b‖₂` is minimized" (`householderLS_spec`).
+Algorithm 5.4.1 runs on `V(:, 1:r̃)ᵀ` padded with zero rows (`Matrix.padRows`); the padding changes
 neither the rank nor the rows of `R` that matter. -/
 theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hrn : r ≤ n)
@@ -812,33 +784,24 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
           ‖((V.submatrix P id).submatrix (Fin.castLE hrn) (Fin.castLE hrn))⁻¹‖ ≤
         ((A.submatrix id P).submatrix id (Fin.castLE hrn)).sortedSingularValues (r - 1) ∧
       LinearIndependent ℝ ((A.submatrix id P).submatrix id (Fin.castLE hrn))ᵀ ∧
-      ((∀ j, (Id.run (algorithm_5_2_1 pure
-          ((A.submatrix id P).submatrix id (Fin.castLE hrn)))).2 j ≠ 0) →
-        IsLeastSquaresSolution ((A.submatrix id P).submatrix id (Fin.castLE hrn)) (toLp 2 b)
-          (toLp 2 z)) := by
+      IsLeastSquaresSolution ((A.submatrix id P).submatrix id (Fin.castLE hrn)) (toLp 2 b)
+        (toLp 2 z) := by
   have : Nonempty (Fin r) := ⟨⟨0, hr0⟩⟩
   set W : Matrix (Fin r) (Fin n) ℝ := (V.submatrix id (Fin.castLE hrn))ᵀ with hW
-  obtain ⟨hRR, hrank, -⟩ := algorithm_5_4_1_spec le_rfl (padRows W)
-  have hP : P = pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (padRows W))).piv :=
+  obtain ⟨hRR, hrank, -⟩ := algorithm_5_4_1_spec le_rfl (Matrix.padRows W hrn)
+  have hP : P = pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (Matrix.padRows W hrn))).piv :=
     (congrArg Prod.fst hout).symm
-  have hz : z = Id.run (algorithm_5_3_2 pure hrm ((A.submatrix id
-      (pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (padRows W))).piv)).submatrix id
+  have hz : z = Id.run (householderLS pure hrm ((A.submatrix id
+      (pivotPerm (Id.run (algorithm_5_4_1 pure le_rfl (Matrix.padRows W hrn))).piv)).submatrix id
         (Fin.castLE hrn)) b) :=
     (congrArg Prod.snd hout).symm
   subst hP hz
-  set st := Id.run (algorithm_5_4_1 pure le_rfl (padRows W)) with hst
+  set st := Id.run (algorithm_5_4_1 pure le_rfl (Matrix.padRows W hrn)) with hst
   -- the rows of `W` are orthonormal, so `rank W = r̃`, and the run has `r = r̃`
-  have hVV : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 h.mem_unitaryGroup_right
-  have hWW : W * Wᵀ = 1 := by
-    ext i j
-    have := congrFun (congrFun hVV (Fin.castLE hrn i)) (Fin.castLE hrn j)
-    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
-  have hrankW : W.rank = r := by
-    refine le_antisymm (rank_le_height W) ?_
-    have := rank_mul_le_left W Wᵀ
-    rwa [hWW, rank_one, Fintype.card_fin] at this
+  have hrankW : W.rank = r := rank_transpose_leadingCols h.mem_unitaryGroup_right hrn
   have hr : st.r = r := by
-    rw [hrank, padRows_eq_mul hrn, rank_one_submatrix_mul (Fin.castLE_injective hrn), hrankW]
+    rw [hrank, Matrix.padRows_eq_mul W hrn, rank_submatrix_one_mul (Fin.castLE_injective hrn),
+      hrankW]
   have hRR' := hRR
   rw [hr] at hRR'
   -- `[Ṽ₁₁ᵀ; 0] = Q [R₁₁; 0]`, of rank `r̃`
@@ -846,20 +809,21 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
     with hVt
   have hkey : (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hrn) * Vtᵀ =
       factoredQ st.β st.A * (upperPart st.A).submatrix id (Fin.castLE hrn) := by
-    have h1 : ((padRows W).submatrix id (pivotPerm st.piv)).submatrix id (Fin.castLE hrn) =
+    have h1 : ((Matrix.padRows W hrn).submatrix id (pivotPerm st.piv)).submatrix id
+        (Fin.castLE hrn) =
         (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (Fin.castLE hrn) * Vtᵀ := by
-      rw [padRows_eq_mul hrn]
+      rw [Matrix.padRows_eq_mul W hrn]
       rfl
     rw [← h1, ← hRR'.isQR.mul_eq]
     rfl
   have hrankT : ((upperPart st.A).submatrix id (Fin.castLE hrn)).rank = r :=
-    rank_eq_of_apply_eq_zero_of_isUnit hRR'.le_rows le_rfl
-      (fun i j hi => hRR'.apply_eq_zero i _ hi) hRR'.isUnit_block
+    HasRevealingBlock.rank_eq ⟨hRR'.le_rows, le_rfl,
+      fun i j hi => hRR'.apply_eq_zero i _ hi, hRR'.isUnit_block⟩
   have hQdet : IsUnit (factoredQ st.β st.A).det :=
     (isUnit_iff_isUnit_det _).1 (isUnit_of_mem_unitaryGroup hRR'.isQR.mem_unitaryGroup)
   have hVtu : IsUnit Vt := by
     have hrk : Vtᵀ.rank = r := by
-      rw [← rank_one_submatrix_mul (Fin.castLE_injective hrn), hkey,
+      rw [← rank_submatrix_one_mul (Fin.castLE_injective hrn), hkey,
         rank_mul_eq_right_of_isUnit_det _ _ hQdet, hrankT]
     exact (isUnit_transpose _).1 (isUnit_of_rank_eq_card (by rw [hrk, Fintype.card_fin]))
   -- Theorem 5.5.2
@@ -874,7 +838,7 @@ theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m
     refine linearIndependent_transpose_of_iInf_colSingularValues_pos ?_
     rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin]
     exact hB0
-  exact ⟨hVtu, hbound, hlin, fun hβ => algorithm_5_3_2_spec hrm hlin hβ b⟩
+  exact ⟨hVtu, hbound, hlin, householderLS_spec hrm hlin b⟩
 
 end Spec
 

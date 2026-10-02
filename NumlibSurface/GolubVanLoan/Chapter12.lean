@@ -37,17 +37,27 @@ unfoldings and contractions (§12.4), tensor decompositions and iterations (§12
   analyses no rounding errors in this chapter (it cites Gu (1998) for the stability of
   `LUdispPiv`), so there are no rounding nodes.
 * The book's misprinted statements are formalized in corrected form, each saying so: (12.4.17),
-  (12.5.11), the §12.3.5 perfect-shuffle factorization, Lemma 12.3.2's `rank = 1`, the LU claim of
-  §12.2.5, (12.2.8), Algorithm 12.2.2's `g_k`.
+  (12.5.11) (`∑_k` for `min_k`), the §12.3.5 perfect-shuffle factorization, Lemma 12.3.2's
+  `rank = 1`, Lemma 12.3.3's `rank ≤ 2`, the LU claim of §12.2.5, (12.2.8), (12.2.11)'s
+  `A_L(n, 1) ≠ 0`, (12.2.18)'s positive subdiagonal, even order and `det = 1`, Algorithm 12.2.1's
+  `u_k ≠ 0`, Algorithm 12.2.2's `g_k`, §12.1.8's `X_G⁻¹ G X_G`, §12.3.8's algebraic (not modulus)
+  eigenvalue, (12.3.9)'s `X ∈ ℝ^{n₂×n₁}`, (12.5.3)'s square, (12.5.5)'s `U_kᵀ` and (12.5.24)'s
+  factor `d`.
 
 ## Backbone correspondence
 
 §12.1 → `Numlib/LinearAlgebra/Matrix/Displacement` (on chapter 7's `Matrix.sylvesterMap`); §12.2 →
 `…/Matrix/Semiseparable` (on the nullity theorem of `Rank`); §12.3 → `…/Matrix/KroneckerApprox`,
 `…/Matrix/Kronecker` and `…/Matrix/Kronecker/Spectral`; §12.4–12.5 → `Numlib/LinearAlgebra/Tensor/`
-(`Basic`, `Unfolding`, `MultilinearProduct`, `HOSVD`, `Tucker`, `CP`, `SingularValue`, `Train`).
-Chapter 2's Eckart–Young–Mirsky carries the nearest-Kronecker statements, the Ky Fan principle the
-Tucker updates.
+(`Basic`, `Unfolding`, `MultilinearProduct`, `HOSVD`, `Tucker`, `CP`, `SingularValue`, `Train`):
+the rectangular mode product of §12.4 is `Tensor.rectModeProd`, the HOSVD truncation of §12.5 is
+`Tensor.truncatedHOSVDOf` in the factors of the SVDs of Theorem 12.5.1. The backbone's
+Eckart–Young–Mirsky for competitors of rank at most `r̃`
+(`Matrix.isLeast_frobenius_norm_sub_of_rank_le`, with `Matrix.svdTruncation_eq_sum`) carries the
+nearest-Kronecker statements (chapter 2's restatement compares only ranks equal to `k < rank(A)`),
+the Ky Fan principle the Tucker updates. Earlier
+chapters' restatements are used where they apply: Theorem 3.2.1 for the LU existence of §12.1,
+Lemma 7.1.5 for the Sylvester operators of §12.1.7.
 
 ## Not formalized
 
@@ -67,6 +77,11 @@ Tucker updates.
 * The space–time contraction example of §12.4.12 (flop counts; its index bookkeeping is misprinted).
 * The "Repeat" iterations of §12.5 (Tucker-ALS, CP-ALS, the higher-order power methods): what each
   step solves is stated.
+* The TT-SVD procedure (12.5.29) is not programmed (a deviation from the convention that
+  algorithm-shaped displays get a program): its ranks `r_k = rank(M_k)` are data-dependent, so the
+  carriages' shapes depend on the run. What the procedure computes is stated instead: a tensor train
+  `𝒜 = trainOfCarriages d 𝒢` with `r_k = rank 𝒜_{[1:k] × [k+1:d]}` exists (`equation_12_5_29`),
+  each step being the factorization (12.5.26)–(12.5.28) (`equation_12_5_28`).
 * "The truncated HOSVD does not solve the Tucker problem" (§12.5.3): a negative claim with no
 example.
 * Complications 1–6 of §12.5.5 (NP-hardness, maximal and typical ranks, real versus complex rank,

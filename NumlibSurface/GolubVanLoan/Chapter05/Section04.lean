@@ -9,7 +9,9 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section03
 
 Surface file for [golub2013matrix] §5.4: numerical rank and the SVD (§5.4.1: the singular value
 perturbation under (5.4.4), the `δ`-rank (5.4.5)); QR with column pivoting ((5.4.6), the norm
-downdate, Algorithm 5.4.1) and the Kahan matrix (§5.4.3); Chan's Theorem 5.4.1 (§5.4.4); the
+downdate, Algorithm 5.4.1), the termination criterion and the Kahan matrix (§5.4.3; the backward
+error of the runs of Algorithm 5.4.1, `algorithm_5_4_1_rounding`, and the criterion for them,
+`algorithm_5_4_1_sigma_succ_le`); Chan's Theorem 5.4.1 (§5.4.4); the
 rank-revealing update of §5.4.5; the complete orthogonal decomposition ((5.4.12), §5.4.7);
 bidiagonalization ((5.4.13), Algorithm 5.4.2) and `R`-bidiagonalization (§5.4.9).
 
@@ -1279,12 +1281,243 @@ theorem algorithm_5_4_1_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     · have hup' : ((upperPart out.A).submatrix (Fin.castLE (hrn.trans hnm))
           (Fin.castLE hrn)).IsUpperTriangular := fun i q hqi =>
         hup (Fin.castLE _ i) (Fin.castLE _ q) hqi
-      refine (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hup').2 fun i => ?_
+      refine hup'.isUnit_iff.2 fun i => ?_
       rw [submatrix_apply, hR]
       exact hdiag _ _ (by simp) (by simp)
   exact ⟨hRR, hRR.rank_eq.symm, hdichAll⟩
 
 end PivotedQRSpec
+
+/-! ### §5.4.3 Algorithm 5.4.1 in floating point -/
+
+section PivotedQRRounding
+
+/-- A column swap of two unprocessed columns commutes with zeroing the stored vectors of the
+first `k` columns. -/
+private theorem householderQRPartialR_submatrix_swap {k : ℕ} (B : Matrix (Fin m) (Fin n) ℝ)
+    {j j' : Fin n} (hj : (j : ℕ) = k) (hjj' : j ≤ j') :
+    householderQRPartialR k (B.submatrix id (Equiv.swap j j')) =
+      (householderQRPartialR k B).submatrix id (Equiv.swap j j') := by
+  rw [Fin.le_def] at hjj'
+  ext i q
+  simp only [householderQRPartialR, of_apply, submatrix_apply, id]
+  by_cases hq : (q : ℕ) < k
+  · have hqj : q ≠ j := fun e => by rw [e] at hq; omega
+    have hqj' : q ≠ j' := fun e => by rw [e] at hq; omega
+    rw [Equiv.swap_apply_of_ne_of_ne hqj hqj']
+  · have h2 : ¬ ((Equiv.swap j j' q : ℕ) < k) := by
+      rw [Equiv.swap_apply_def]
+      split_ifs <;> omega
+    simp only [hq, h2, false_and, ↓reduceIte]
+
+/-- The invariant of a floating-point run of Algorithm 5.4.1 after `k` indices of the loop: the
+`r ≤ k` steps taken so far ([higham2002accuracy] Lemma 19.3) give
+`R̂⁽ʳ⁾ = P_{r-1} ⋯ P_0 (A + E) Π_r` for the array `R̂⁽ʳ⁾` with its stored vectors zeroed, exact
+reflectors `P_j` and columnwise `‖E(:, q)‖₂ ≤ ((1 + ε)^r - 1) ‖A(:, q)‖₂`; the loop has stopped if
+`r < k`, and the pivots of the steps not taken are trivial. -/
+private def pqRoundInv (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
+    (st : PivotedQRState m n) : Prop :=
+  st.r ≤ k ∧ (st.r < k → st.τ ≤ 0) ∧ (∀ q : Fin n, st.r ≤ (q : ℕ) → st.piv q = q) ∧
+    ∃ (v : ℕ → Fin m → ℝ) (β : ℕ → ℝ) (E : Matrix (Fin m) (Fin n) ℝ),
+      (∀ j, dataReflector v β j ∈ orthogonalGroup (Fin m) ℝ) ∧
+      householderQRPartialR st.r st.A =
+        prodRev (dataReflector v β) st.r * (A + E).submatrix id (pcP st.r st) ∧
+      ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + ε) ^ st.r - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖
+
+/-- One index of the loop of a floating-point run of Algorithm 5.4.1 preserves the invariant: a
+step taken is an exact column swap followed by a step of Algorithm 5.2.1
+(`householderQRStep_rounding_data`), accumulated by `FloatingPoint.exists_eq_mul_add_of_step`. -/
+private theorem pqRoundInv_step {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
+    (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
+    (k : Fin n) (c : PivotedQRState m n)
+    (hI : pqRoundInv (3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) A k c)
+    {c' : PivotedQRState m n} (hc' : c' ∈ (pivotedQRStep fp.round hnm c k).run) :
+    pqRoundInv (3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) A ((k : ℕ) + 1) c' := by
+  obtain ⟨hrk, hstop, hpiv, v, β, E, hO, hE, hEb⟩ := hI
+  set ε := 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) with hεdef
+  have hε0 : 0 ≤ ε := by have := gamma_nonneg fp.u_nonneg hu; positivity
+  by_cases hτ : 0 < c.τ
+  swap
+  · have hc'c : c' = c := by simpa [pivotedQRStep, hτ] using hc'
+    subst hc'c
+    exact ⟨by omega, fun _ => not_lt.1 hτ, hpiv, v, β, E, hO, hE, hEb⟩
+  have hr : c.r = k := by
+    by_contra hne
+    exact absurd (hstop (by omega)) (not_le.2 hτ)
+  set k' := (((List.finRange n).filter fun k' => k ≤ k' ∧ c.c k' = c.τ).head?).getD k with hk'
+  have hkk' : k ≤ k' := by
+    rw [hk']
+    cases h : ((List.finRange n).filter fun k' => k ≤ k' ∧ c.c k' = c.τ).head? with
+    | none => exact le_rfl
+    | some x =>
+      have hx := List.mem_of_mem_head? h
+      simp only [List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq] at hx
+      exact hx.1
+  simp only [pivotedQRStep, hτ, ↓reduceIte, SetM.mem_run_bind, SetM.mem_run_pure] at hc'
+  obtain ⟨vβ, hvβ, A₂, hA₂, cn, -, hc'eq⟩ := hc'
+  set σ := Equiv.swap k k' with hσ
+  set A₃ := A₂.updateCol k (fun i => if (k : ℕ) < i then vβ.1 i else A₂ i k) with hA₃
+  have hmem : (A₃, Function.update c.β k vβ.2) ∈
+      (householderQRStep fp.round (c.A.submatrix id σ, c.β) k).run := by
+    simp only [householderQRStep, SetM.mem_run_bind, SetM.mem_run_pure]
+    exact ⟨vβ, hvβ, A₂, hA₂, rfl⟩
+  obtain ⟨w, γ, hwO, -, -, -, -, -, -, hFb⟩ :=
+    householderQRStep_rounding_data hfp hnm hu _ k hmem
+  dsimp only at hFb
+  rw [hr] at hE hEb
+  set π' := pcP k c * σ with hπ'
+  have hB : householderQRPartialR k (c.A.submatrix id σ) =
+      prodRev (dataReflector v β) k * (A.submatrix id π' + E.submatrix id π') := by
+    rw [householderQRPartialR_submatrix_swap c.A rfl hkk', hE]
+    ext i q
+    simp [Matrix.mul_apply, hπ', hσ, Equiv.Perm.coe_mul, mul_add, Finset.sum_add_distrib]
+  obtain ⟨E', hE'eq, hE'b⟩ := exists_eq_mul_add_of_step hwO
+    (prodRev_mem_orthogonalGroup fun k _ => hO k) hε0 hB (fun q => hEb (π' q)) hFb
+  set v' : ℕ → Fin m → ℝ := fun j => if j = k then w else v j with hv'
+  set β' : ℕ → ℝ := fun j => if j = k then γ else β j with hβ'
+  have hrefl : ∀ j, dataReflector v' β' j =
+      if j = k then 1 - γ • vecMulVec w w else dataReflector v β j := fun j => by
+    simp only [dataReflector, hv', hβ']
+    split_ifs <;> rfl
+  have hO' : ∀ j, dataReflector v' β' j ∈ orthogonalGroup (Fin m) ℝ := fun j => by
+    rw [hrefl]
+    split_ifs
+    · exact hwO
+    · exact hO j
+  have hW : prodRev (dataReflector v' β') k = prodRev (dataReflector v β) k :=
+    prodRev_congr fun j hj => by rw [hrefl, ite_eq_right (show ¬ j = (k : ℕ) by omega)]
+  have hWk : prodRev (dataReflector v' β') ((k : ℕ) + 1) =
+      (1 - γ • vecMulVec w w) * prodRev (dataReflector v β) k := by
+    rw [prodRev_succ, hW, hrefl, ite_eq_left rfl]
+  have hP : ∀ st' : PivotedQRState m n, (∀ q : Fin n, (q : ℕ) < k → st'.piv q = c.piv q) →
+      st'.piv k = k' → pcP ((k : ℕ) + 1) st' = π' := fun st' h1 h2 => by
+    rw [pcP_succ c st' k h1, h2]
+  have hcr : c'.r = (k : ℕ) + 1 := by rw [hc'eq]; dsimp only; omega
+  have hcA : c'.A = A₃ := by rw [hc'eq]
+  have hcpiv : c'.piv = Function.update c.piv k k' := by rw [hc'eq]
+  refine ⟨by omega, fun h => absurd h (by omega), fun q hq => ?_, v', β',
+    E'.submatrix id π'.symm, hO', ?_, fun q => ?_⟩
+  · rw [hcpiv]
+    exact (Function.update_of_ne (fun e => by rw [e] at hq; omega) _ _).trans (hpiv q (by omega))
+  · rw [hcr, hcA, hP c'
+      (fun q hq => by rw [hcpiv]; exact Function.update_of_ne (Fin.ne_of_lt hq) _ _)
+      (by rw [hcpiv]; exact Function.update_self _ _ _), hWk, hE'eq]
+    congr 1
+    ext i q
+    simp
+  · rw [hcr]
+    have h := hE'b (π'.symm q)
+    have e1 : (toLp 2 ((A.submatrix id π').col (π'.symm q)) : EuclideanSpace ℝ (Fin m)) =
+        toLp 2 (A.col q) := by
+      congr 1
+      ext i
+      simp [col]
+    rw [e1] at h
+    exact h
+
+/-- The column permutation of the steps taken is `Π` of the whole run when the pivots of the
+steps not taken are trivial. -/
+private theorem pcP_eq_pivotPerm (st : PivotedQRState m n)
+    (hpiv : ∀ q : Fin n, st.r ≤ (q : ℕ) → st.piv q = q) : pcP st.r st = pivotPerm st.piv := by
+  have hdrop : (((List.finRange n).drop st.r).map fun q =>
+      Equiv.swap q (st.piv q)).prod = 1 := by
+    refine List.prod_eq_one fun M hM => ?_
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hM
+    rw [hpiv q (le_of_mem_drop_finRange hq), Equiv.swap_self, ← Equiv.Perm.one_def]
+  rw [pcP, pivotPerm, foldl_mul_eq_mul_prod, one_mul]
+  conv_rhs => rw [← List.take_append_drop st.r (List.finRange n), List.map_append,
+    List.prod_append]
+  rw [hdrop, mul_one]
+
+/-- **Algorithm 5.4.1's backward error** (§5.4.3 "`R̂⁽ᵏ⁾` is the exact R-factor of a matrix
+`A + E_k`"; [higham2002accuracy] Theorem 19.4 with exact pivot swaps): over an idempotent model
+with `(3(18m + 31) + m + 3) u < 1`, every run, having taken `r ≤ n` steps, gives an orthogonal
+`Z` and `E` with `Z R̂⁽ʳ⁾ = (A + E) Π` — `R̂⁽ʳ⁾` the computed array with its stored vectors zeroed
+(`householderQRPartialR`; its trailing block `R̂₂₂` is the unreduced part), `Π` the computed
+pivoting (`pivotPerm`) — and columnwise `‖E(:, q)‖₂ ≤ ((1 + ε)^r - 1) ‖A(:, q)‖₂`,
+`ε = 3 γ_{3(18m + 31) + m + 3}`. -/
+theorem algorithm_5_4_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
+    (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
+    {st : PivotedQRState m n} (h : st ∈ (algorithm_5_4_1 fp.round hnm A).run) :
+    st.r ≤ n ∧ ∃ Z ∈ orthogonalGroup (Fin m) ℝ, ∃ E : Matrix (Fin m) (Fin n) ℝ,
+      Z * householderQRPartialR st.r st.A = (A + E).submatrix id (pivotPerm st.piv) ∧
+      ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+        ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ st.r - 1) *
+          ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖ := by
+  simp only [algorithm_5_4_1, SetM.mem_run_bind] at h
+  obtain ⟨c₀, -, h⟩ := h
+  have h0 : pqRoundInv (3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) A 0
+      ⟨A, 0, id, c₀, 0, listMax c₀ (List.finRange n)⟩ := by
+    refine ⟨le_rfl, fun h => absurd h (lt_irrefl _), fun q _ => rfl, fun _ => 0, fun _ => 0, 0,
+      fun j => ?_, ?_, fun q => ?_⟩
+    · simp only [dataReflector, vecMulVec_zero, smul_zero, sub_zero]
+      exact one_mem _
+    · ext i q
+      simp [householderQRPartialR, pcP, prodRev_zero]
+    · rw [show (0 : Matrix (Fin m) (Fin n) ℝ).col q = 0 from rfl]
+      simp
+  obtain ⟨hrn, -, hpiv, v, β, E, hO, hE, hEb⟩ := SetM.forall_mem_run_foldlM_finRange
+    (pqRoundInv _ A) h0 (fun k c hI c' hc' => pqRoundInv_step hfp hnm hu A k c hI hc') st h
+  have hW := prodRev_mem_orthogonalGroup (r := st.r) fun k _ => hO k
+  refine ⟨hrn, (prodRev (dataReflector v β) st.r)ᵀ, transpose_mem_unitaryGroup_iff.2 hW, E, ?_,
+    hEb⟩
+  rw [hE, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hW, Matrix.one_mul,
+    pcP_eq_pivotPerm st hpiv]
+
+open scoped Matrix.Norms.Frobenius in
+/-- A columnwise relative bound `‖E(:, q)‖₂ ≤ c ‖A(:, q)‖₂` gives `‖E‖₂ ≤ c √n ‖A‖₂` (through the
+Frobenius norm, `‖A‖_F ≤ √(rank A) ‖A‖₂`). -/
+private theorem lpOpNorm_two_le_of_col_le {E A : Matrix (Fin m) (Fin n) ℝ} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
+      c * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖) :
+    lpOpNorm 2 E ≤ c * √(n : ℝ) * lpOpNorm 2 A := by
+  have hF : ‖E‖ ≤ c * ‖A‖ := by
+    have h2 : ‖E‖ ^ 2 ≤ (c * ‖A‖) ^ 2 := by
+      rw [mul_pow, frobenius_norm_sq_eq_sum_norm_sq_col E, frobenius_norm_sq_eq_sum_norm_sq_col A,
+        Finset.mul_sum]
+      refine Finset.sum_le_sum fun q _ => ?_
+      have hq : ‖(toLp 2 fun i => E i q : EuclideanSpace ℝ (Fin m))‖ ≤
+          c * ‖(toLp 2 fun i => A i q : EuclideanSpace ℝ (Fin m))‖ := h q
+      rw [← mul_pow]
+      exact pow_le_pow_left₀ (norm_nonneg _) hq 2
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h2
+  have hA : ‖A‖ ≤ √(n : ℝ) * lpOpNorm 2 A :=
+    (frobenius_norm_le_sqrt_rank_mul_l2_opNorm A).trans (mul_le_mul_of_nonneg_right
+      (Real.sqrt_le_sqrt (by exact_mod_cast A.rank_le_width.trans (by simp)))
+      (lpOpNorm_nonneg _ _))
+  calc lpOpNorm 2 E ≤ ‖E‖ := l2_opNorm_le_frobenius_norm E
+    _ ≤ c * ‖A‖ := hF
+    _ ≤ c * (√(n : ℝ) * lpOpNorm 2 A) := mul_le_mul_of_nonneg_left hA hc
+    _ = c * √(n : ℝ) * lpOpNorm 2 A := by ring
+
+open scoped Matrix.Norms.L2Operator in
+/-- **§5.4.3, the termination criterion for the runs of Algorithm 5.4.1**: if a run stops after
+`r` steps with `‖R̂₂₂⁽ʳ⁾‖₂ ≤ ε₁ ‖A‖₂` (the trailing block of the computed array), then
+`σ_{r+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂` with `ε₂ = ((1 + ε)^r - 1) √n`, `ε = 3 γ_{3(18m + 31) + m + 3}`:
+`algorithm_5_4_1_rounding` supplies the book's `‖E_r‖₂ ≤ ε₂ ‖A‖₂` (through the columnwise
+bound), and `sigma_succ_le_of_colPivot` concludes. -/
+theorem algorithm_5_4_1_sigma_succ_le {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
+    (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
+    (A : Matrix (Fin m) (Fin n) ℝ) {st : PivotedQRState m n}
+    (h : st ∈ (algorithm_5_4_1 fp.round hnm A).run) (hrn : st.r ≤ n) {ε₁ : ℝ}
+    (hR₂₂ : ‖(householderQRPartialR st.r st.A).submatrix (tailIdx (hrn.trans hnm))
+      (tailIdx hrn)‖ ≤ ε₁ * ‖A‖) :
+    A.sortedSingularValues st.r ≤
+      (ε₁ + ((1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ st.r - 1) * √(n : ℝ)) *
+        ‖A‖ := by
+  obtain ⟨-, Z, hZ, E, hZE, hEb⟩ := algorithm_5_4_1_rounding hfp hnm hu A h
+  have hε0 : 0 ≤ 3 * gamma fp.u (3 * (18 * m + 31) + m + 3) := by
+    have := gamma_nonneg fp.u_nonneg hu; positivity
+  have hc : 0 ≤ (1 + 3 * gamma fp.u (3 * (18 * m + 31) + m + 3)) ^ st.r - 1 :=
+    sub_nonneg.2 (one_le_pow₀ (by linarith))
+  have hE := lpOpNorm_two_le_of_col_le hc hEb
+  rw [lpOpNorm_two, lpOpNorm_two] at hE
+  refine sigma_succ_le_of_colPivot hZ hZE (hrn.trans hnm) hrn (fun i j hj hi => ?_) hE hR₂₂
+  simp only [householderQRPartialR, of_apply]
+  rw [ite_eq_left ⟨hj, by omega⟩]
+
+end PivotedQRRounding
 
 /-! ### §5.4.7 The complete orthogonal decomposition in exact arithmetic -/
 
@@ -1401,8 +1634,8 @@ theorem equation_5_4_13 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       ∀ (i : Fin m) (j : Fin n), (j : ℕ) ≠ i → (j : ℕ) ≠ i + 1 → (Uᵀ * A * V) i j = 0 := by
   obtain ⟨U, V, B, h⟩ := exists_isBidiagonalization A
-  refine ⟨U, h.left_mem_unitaryGroup, V, h.right_mem_unitaryGroup, fun i j h1 h2 => ?_⟩
-  have := h.conj_eq
+  refine ⟨U, h.mem_unitaryGroup_left, V, h.mem_unitaryGroup_right, fun i j h1 h2 => ?_⟩
+  have := h.conjTranspose_mul_mul
   rw [conjTranspose_eq_transpose_of_trivial] at this
   rw [this]
   exact h.isUpperBidiagonalRect i j h1 h2
@@ -1481,15 +1714,6 @@ private theorem dotProduct_congr_of_ne_zero {ι : Type*} [Fintype ι] {v f g : �
   by_cases hr : v r = 0
   · rw [hr, zero_mul, zero_mul]
   · rw [h r hr]
-
-/-- An element of the first `j` entries of `List.finRange n` is below `j`. -/
-private theorem bidiag_lt_of_mem_take {j : ℕ} {k : Fin n}
-    (hk : k ∈ (List.finRange n).take j) : (k : ℕ) < j := by
-  obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hk
-  simp only [List.length_take, List.length_finRange] at hi
-  rw [List.getElem_take, List.getElem_finRange]
-  change i < j
-  omega
 
 /-- The product of the left reflectors of the first `j` steps of Algorithm 5.4.2, read from the
 state. -/
@@ -1637,7 +1861,7 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
     congr 1
     · congr 1
       refine List.map_congr_left fun k hk => ?_
-      have hk' := bidiag_lt_of_mem_take hk
+      have hk' := lt_of_mem_take_finRange hk
       have hkj : k ≠ j := fun e => by rw [e] at hk'; omega
       simp only [hsvk k hk', Function.update_of_ne hkj]
     · simp only [hsvj, Function.update_self]
@@ -1649,7 +1873,7 @@ private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) 
     congr 1
     · congr 1
       refine List.map_congr_left fun k hk => ?_
-      have hk' := bidiag_lt_of_mem_take hk
+      have hk' := lt_of_mem_take_finRange hk
       have hkj : k ≠ j := fun e => by rw [e] at hk'; omega
       simp only [hsrk k hk', Function.update_of_ne hkj]
     · simp only [Function.update_self, hW]
@@ -1959,21 +2183,6 @@ theorem givensRevealUpdate_eq_foldlM {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k
   rfl
 
 end Programs
-
-/-- **Exact semantics of the vector rotation**: `givensRotateVec` computes `G(i, k, θ)ᵀ x`. -/
-theorem givensRotateVec_pure {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : ℝ) (x : Fin N → ℝ) :
-    Id.run (givensRotateVec pure i i' c s x) = (givensRotation i i' c s)ᵀ *ᵥ x := by
-  ext t
-  rw [givensRotation_transpose_mulVec_apply hii']
-  simp only [givensRotateVec, Id.run_bind, Id.run_pure]
-  by_cases hti' : t = i'
-  · subst hti'
-    rw [Function.update_self, ite_eq_right (Ne.symm hii'), ite_eq_left rfl]
-  · rw [Function.update_of_ne hti']
-    by_cases hti : t = i
-    · subst hti
-      rw [Function.update_self, ite_eq_left rfl]
-    · rw [Function.update_of_ne hti, ite_eq_right hti, ite_eq_right hti']
 
 /-- The invariant of the zero-chasing update after `j` steps from `(R₀, v₀, I, I)`: `Z_G`, `Q_G`
 orthogonal, `R = Q_Gᵀ R₀ Z_G` upper triangular, `v = Z_Gᵀ v₀` with `v_p = 0` for `p < j`. -/

@@ -22,7 +22,8 @@ rotation has the Jacobi sign convention, and the rounding relations of
 every later chapter calls): `houseOn` (Algorithm 5.1.1 on the entries listed by an index list;
 `algorithm_5_1_1` is its instance at the full list), `householderApplyLeft` /
 `householderApplyRight` (§5.1.4, in place on the full matrix over row and column index lists),
-`givensRotation`, `givensApplyLeft` / `givensApplyRight` (§5.1.9), and for reflector data
+`givensRotation`, `givensRotateVec` (exact semantics `givensRotateVec_pure`), `givensApplyLeft` /
+`givensApplyRight` (§5.1.9), and for reflector data
 `List ((Fin m → ℝ) × ℝ)` — pairs `(v, β)` in order of application, `v` full length and zero off
 its active rows, `β` the value `house` returned — `householderProduct`, `forwardAccumulation`,
 `backwardAccumulation`. A block `A(j:m, k:n)` is never copied into a `Fin (m - j)`-typed array.
@@ -51,8 +52,9 @@ Algorithm 5.1.1's `σ = 0 & x(1) < 0` branch sets `β = 2` (the book prints `β 
   `FloatingPoint.RoundsHouseholderApplyScaled`, exact specifications and rounding bounds (§5.1.5).
 * The factored form (5.1.3): `householderProduct`, `storedHouseholderVec`, `storedReflectors`,
   `factoredQ`, `recomputedBeta`; (5.1.4) and (5.1.5) as programs (`factoredQTransposeMul`,
-  `factoredQFirstColumns`) with `equation_5_1_4`, `equation_5_1_5`; `forwardAccumulation`,
-  `backwardAccumulation` and their specifications.
+  `factoredQFirstColumns`) with `equation_5_1_4`, `equation_5_1_5`; the first columns of the
+  factored `Q` with the returned `β`, `storedQFirstColumns` (`storedQFirstColumns_spec`, the helper
+  consumers use); `forwardAccumulation`, `backwardAccumulation` and their specifications.
 * The WY representation: `equation_5_1_6`, `lemma_5_1_1`, `algorithm_5_1_2` with its
   specification, `blockReflector_mem_orthogonalGroup`.
 * Givens rotations: `givensRotation` (5.1.7), `equation_5_1_8`, `algorithm_5_1_3` (`givens`) with
@@ -60,7 +62,9 @@ Algorithm 5.1.1's `σ = 0 & x(1) < 0` branch sets `β = 2` (the book prints `β 
   `givensApplyLeft`, `givensApplyRight` (§5.1.9) with bridges to
   `FloatingPoint.RoundsGivensRowUpdate`/`ColUpdate`, specifications and rounding bounds.
 * Stewart's encoding (5.1.9)–(5.1.10), `rotationDecode_rotationCode`.
-* §5.1.12: `orthogonalToWorkingPrecision` and its corollary, the Givens and Householder cases;
+* §5.1.12: `orthogonalToWorkingPrecision` and its corollary, the Givens and Householder cases
+  (the latter both for the book's rebuilt `householderMatrix v̂` and for the applied
+  `I - β̂ v̂ v̂ᵀ`, `one_sub_smul_vecMulVec_computed_sub_le`);
   `equation_5_1_11` (the two-sided accumulation of computed updates).
 * §5.1.13: `complexHouseholder`, `complexGivens_mem_unitaryGroup`, `equation_5_1_12`.
 
@@ -1081,6 +1085,43 @@ theorem householderApplyRight_rounding (hfp : fp.IsIdempotent) {rows : List (Fin
   rw [hcard] at this
   exact ⟨hout, this⟩
 
+/-- The perturbation of a scaled rank-one update `I - β a aᵀ` by relative perturbations of `β`
+and of the entries of `a`: if `β̂ = β (1 + θ)` and `b_i = a_i (1 + θ_i)` with `|θ|, |θ_i| ≤ γ`,
+then `‖(I - β̂ b bᵀ) - (I - β a aᵀ)‖₂ ≤ ((1 + γ)³ - 1) |β| ‖a‖₂²` (through the Frobenius norm). -/
+private theorem lpOpNorm_two_one_sub_smul_vecMulVec_sub_le {K : ℕ} {a b : Fin m → ℝ}
+    {β β' : ℝ} (hg : 0 ≤ gamma fp.u K) (hβ : IsRelPert fp.u K β β')
+    (hb : ∀ i, IsRelPert fp.u K (a i) (b i)) :
+    lpOpNorm 2 ((1 - β' • vecMulVec b b) - (1 - β • vecMulVec a a)) ≤
+      ((1 + gamma fp.u K) ^ 3 - 1) * |β| * ‖(toLp 2 a : EuclideanSpace ℝ (Fin m))‖ ^ 2 := by
+  set g := gamma fp.u K
+  obtain ⟨θ, hθ, rfl⟩ := hβ
+  have hb' : ∀ i, ∃ θ, |θ| ≤ g ∧ b i = a i * (1 + θ) := hb
+  choose t ht hbt using hb'
+  have h3 : ∀ x y z : ℝ, |x| ≤ g → |y| ≤ g → |z| ≤ g →
+      |(1 + x) * (1 + y) * (1 + z) - 1| ≤ (1 + g) ^ 3 - 1 := by
+    intro x y z hx hy hz
+    have h1 : |x| ≤ (1 + g) ^ 1 - 1 := by rw [pow_one, add_sub_cancel_left]; exact hx
+    have h2 := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one h1 hy
+    have h3 := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one h2 hz
+    rwa [add_sub_cancel] at h3
+  have hc : 0 ≤ (1 + g) ^ 3 - 1 := sub_nonneg.2 (one_le_pow₀ (by linarith))
+  have e : (1 - (β * (1 + θ)) • vecMulVec b b) - (1 - β • vecMulVec a a) =
+      -((β * (1 + θ)) • vecMulVec b b - β • vecMulVec a a) := by abel
+  rw [e]
+  refine (l2_opNorm_le_frobenius_norm _).trans ?_
+  have hva : ‖vecMulVec a a‖ = ‖(toLp 2 a : EuclideanSpace ℝ (Fin m))‖ ^ 2 := by
+    rw [frobenius_norm_vecMulVec, sq]
+  rw [norm_neg, ← hva]
+  refine frobenius_norm_le_of_forall_abs_le (by positivity) fun i j => ?_
+  simp only [Matrix.sub_apply, Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, hbt]
+  have e2 : β * (1 + θ) * (a i * (1 + t i) * (a j * (1 + t j))) - β * (a i * a j) =
+      β * (a i * a j) * ((1 + θ) * (1 + t i) * (1 + t j) - 1) := by ring
+  rw [e2, abs_mul, abs_mul]
+  calc |β| * |a i * a j| * |(1 + θ) * (1 + t i) * (1 + t j) - 1|
+      ≤ |β| * |a i * a j| * ((1 + g) ^ 3 - 1) :=
+        mul_le_mul_of_nonneg_left (h3 _ _ _ hθ (ht i) (ht j)) (by positivity)
+    _ = ((1 + g) ^ 3 - 1) * |β| * |a i * a j| := by ring
+
 end Frobenius
 
 section L2
@@ -1114,6 +1155,34 @@ theorem householderMatrix_computed_sub_le {k : ℕ} (hfp : fp.IsIdempotent)
     exact one_ne_zero hθ
   rw [householderMatrix_eq_reflector, householderMatrix_eq_reflector]
   exact l2_opNorm_reflector_sub_le hv0 hv
+
+/-- **§5.1.12, "the matrix defined by the floating point output of `house` is orthogonal to
+working precision", for the matrix the helpers apply**: `P̂ = I - β̂ v̂ v̂ᵀ` with the computed
+`β̂` (the companion of `householderMatrix_computed_sub_le`, whose `P̂ = I - 2 v̂ v̂ᵀ/v̂ᵀv̂` is the
+book's literal reading, rebuilt from `v̂` alone). For every run `(v̂, β̂)` of Algorithm 5.1.1 there
+are exact `(v, β)` — `P = I - β v vᵀ` orthogonal and mapping `x` to `‖x‖₂ e₁` — with
+`‖P̂ - P‖₂ ≤ 2 ((1 + γ_K)³ - 1)`, `K = 18 (k + 1) + 31`. This covers the `σ = 0`, `x₁ ≥ 0` branch,
+where `P = I` while `householderMatrix v` is a reflection. -/
+theorem one_sub_smul_vecMulVec_computed_sub_le {k : ℕ} (hfp : fp.IsIdempotent)
+    (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1) (x : Fin (k + 1) → ℝ)
+    {vβ : (Fin (k + 1) → ℝ) × ℝ} (h : vβ ∈ (algorithm_5_1_1 fp.round x).run) :
+    ∃ (v : Fin (k + 1) → ℝ) (β : ℝ), (1 - β • vecMulVec v v) ∈ orthogonalGroup (Fin (k + 1)) ℝ ∧
+      (1 - β • vecMulVec v v) *ᵥ x = ‖(toLp 2 x : EuclideanSpace ℝ (Fin (k + 1)))‖ •
+        Pi.single 0 1 ∧
+      ‖(1 - vβ.2 • vecMulVec vβ.1 vβ.1) - (1 - β • vecMulVec v v)‖ ≤
+        2 * ((1 + gamma fp.u (18 * (k + 1) + 31)) ^ 3 - 1) := by
+  obtain ⟨v, β, hO, hmul, hβv, hβ, hv⟩ := algorithm_5_1_1_rounding hfp hu x h
+  refine ⟨v, β, hO, hmul, ?_⟩
+  have hg : 0 ≤ gamma fp.u (18 * (k + 1) + 31) := gamma_nonneg fp.u_nonneg hu
+  have hc : 0 ≤ (1 + gamma fp.u (18 * (k + 1) + 31)) ^ 3 - 1 :=
+    sub_nonneg.2 (one_le_pow₀ (by linarith))
+  have hvv : ‖(toLp 2 v : EuclideanSpace ℝ (Fin (k + 1)))‖ ^ 2 = v ⬝ᵥ v := by
+    rw [EuclideanSpace.norm_sq_eq]
+    simp [dotProduct, sq]
+  rw [← lpOpNorm_two]
+  refine (lpOpNorm_two_one_sub_smul_vecMulVec_sub_le hg hβ hv).trans ?_
+  rw [mul_assoc, hvv, mul_comm 2]
+  exact mul_le_mul_of_nonneg_left hβv hc
 
 end L2
 
@@ -1369,6 +1438,17 @@ noncomputable def factoredQFirstColumns (A : Matrix (Fin m) (Fin n) ℝ) (k : �
     householderApplyLeft rnd v β (indexFrom m j) (indexFrom k j) Q)
     (of fun i c => if (i : ℕ) = c then 1 else 0)
 
+/-- **(5.1.5) with the returned `β`** (convention 13): the backward accumulation of `Q(:, 1:k)`
+from the vectors stored in `A` and the `β` that `house` returned, `Q = I_m(:, 1:k)`,
+`for j = n:-1:1, Q(j:m, j:k) = Q(j:m, j:k) - (β_j v(j:m))(v(j:m)ᵀ Q(j:m, j:k))`. The loop of
+`factoredQFirstColumns` without the erroneous retrieval of `β_j`; the helper every consumer that
+needs the first columns of a factored `Q` calls. -/
+noncomputable def storedQFirstColumns (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) (k : ℕ) :
+    M (Matrix (Fin m) (Fin k) ℝ) :=
+  (List.finRange n).reverse.foldlM (fun (Q : Matrix (Fin m) (Fin k) ℝ) j =>
+    householderApplyLeft rnd (storedHouseholderVec A j) (β j) (indexFrom m j) (indexFrom k j) Q)
+    (of fun i c => if (i : ℕ) = c then 1 else 0)
+
 /-- **§5.1.6, forward accumulation** `Q = I; for j = 1:r, Q = Q Q_j` over reflector data. -/
 def forwardAccumulation (data : List ((Fin m → ℝ) × ℝ)) : M (Matrix (Fin m) (Fin m) ℝ) :=
   data.foldlM (fun (Q : Matrix (Fin m) (Fin m) ℝ) p =>
@@ -1419,30 +1499,20 @@ private theorem one_sub_smul_vecMulVec_mul_idCols_col {k : ℕ} {v : Fin m → �
   change ((1 - β • vecMulVec v v) *ᵥ fun r => X r c) i = X i c
   rw [one_sub_smul_vecMulVec_mulVec_apply, hdot, mul_zero, sub_zero]
 
-/-- **(5.1.5) computes `Q(:, 1:k)`** for the reflectors with the recomputed `β`
-(`k ≤ m`, `n ≤ m`): the restriction of each update to the columns `j:k` is exact because the
-columns `< j` of the partial product `Q_{j+1} ⋯ Q_n I_m(:, 1:k)` are columns of the identity, which
-`Q_j` fixes. -/
-theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
-    Id.run (factoredQFirstColumns pure A k) =
-      (factoredQ (recomputedBeta A) A).submatrix id (Fin.castLE hk) := by
+/-- The exact loop of (5.1.5) for any `β`, as a right fold over the increasing indices: the
+restriction of each update to the columns `j:k` is exact because the columns `< j` of the partial
+product `Q_{j+1} ⋯ Q_n I_m(:, 1:k)` are columns of the identity, which `Q_j` fixes. -/
+private theorem foldr_firstColumns_eq {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
+    (β : Fin n → ℝ) :
+    (List.finRange n).foldr (fun (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ) =>
+      of fun i c => if c ∈ indexFrom k j then
+        ((1 - β j • vecMulVec (storedHouseholderVec A j) (storedHouseholderVec A j) :
+          Matrix (Fin m) (Fin m) ℝ) * X) i c else X i c)
+      (of fun i c => if (i : ℕ) = c then 1 else 0) =
+      (factoredQ β A).submatrix id (Fin.castLE hk) := by
   set Q : Fin n → Matrix (Fin m) (Fin m) ℝ := fun j =>
-    1 - recomputedBeta A j • vecMulVec (storedHouseholderVec A j) (storedHouseholderVec A j)
-    with hQ
+    1 - β j • vecMulVec (storedHouseholderVec A j) (storedHouseholderVec A j) with hQ
   set I : Matrix (Fin m) (Fin k) ℝ := of fun i c => if (i : ℕ) = c then 1 else 0 with hI
-  -- the exact step
-  have hstep : ∀ (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ),
-      Id.run (do
-        let s ← dotAccum pure (indexFrom m (j + 1)) (storedHouseholderVec A j)
-          (storedHouseholderVec A j) 0
-        let β ← pure (2 / (← pure (1 + s)))
-        householderApplyLeft pure (storedHouseholderVec A j) β (indexFrom m j) (indexFrom k j) X) =
-        of fun i c => if c ∈ indexFrom k j then (Q j * X) i c else X i c := by
-    intro j X
-    simp only [dotAccum_pure, pure_bind]
-    rw [householderApplyLeft_spec (nodup_indexFrom m j) (nodup_indexFrom k j)
-      (fun i hi => storedHouseholderVec_eq_zero A j hi), recomputed_beta_eq A j (by omega)]
-  -- the loop, as a right fold over the increasing list of indices
   have key : ∀ l : List (Fin n), l.Pairwise (· < ·) →
       l.foldr (fun (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ) =>
         of fun i c => if c ∈ indexFrom k j then (Q j * X) i c else X i c) I =
@@ -1476,8 +1546,6 @@ theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin
         rw [one_sub_smul_vecMulVec_mul_idCols_col c (hfix l hl.1)
           (fun r hr => storedHouseholderVec_eq_zero A a (by
             rw [mem_indexFrom, not_le, hr]; exact hc))]
-  rw [factoredQFirstColumns, List.foldlM_reverse, List.idRun_foldrM]
-  simp only [hstep]
   rw [key (List.finRange n) (List.sortedLT_finRange n).pairwise, factoredQ_eq_prod]
   ext i c
   simp only [Matrix.mul_apply, hI, of_apply, submatrix_apply, id]
@@ -1488,6 +1556,45 @@ theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin
     have : ¬ ((r : ℕ) = c) := fun h => hr (Fin.ext h)
     simp [this]
   · simp
+
+/-- **(5.1.5) computes `Q(:, 1:k)`** for the reflectors with the recomputed `β`
+(`k ≤ m`, `n ≤ m`). -/
+theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
+    Id.run (factoredQFirstColumns pure A k) =
+      (factoredQ (recomputedBeta A) A).submatrix id (Fin.castLE hk) := by
+  have hstep : ∀ (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ),
+      Id.run (do
+        let s ← dotAccum pure (indexFrom m (j + 1)) (storedHouseholderVec A j)
+          (storedHouseholderVec A j) 0
+        let β ← pure (2 / (← pure (1 + s)))
+        householderApplyLeft pure (storedHouseholderVec A j) β (indexFrom m j) (indexFrom k j) X) =
+        of fun i c => if c ∈ indexFrom k j then
+          ((1 - recomputedBeta A j • vecMulVec (storedHouseholderVec A j)
+            (storedHouseholderVec A j) : Matrix (Fin m) (Fin m) ℝ) * X) i c else X i c := by
+    intro j X
+    simp only [dotAccum_pure, pure_bind]
+    rw [householderApplyLeft_spec (nodup_indexFrom m j) (nodup_indexFrom k j)
+      (fun i hi => storedHouseholderVec_eq_zero A j hi), recomputed_beta_eq A j (by omega)]
+  rw [factoredQFirstColumns, List.foldlM_reverse, List.idRun_foldrM]
+  simp only [hstep]
+  exact foldr_firstColumns_eq hk A _
+
+/-- **The first columns of the factored `Q` with the returned `β`**: `storedQFirstColumns`
+computes `Q(:, 1:k)` of `factoredQ β A` for any `β` (`k ≤ m`), with no condition on the `β`. -/
+theorem storedQFirstColumns_spec {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
+    (β : Fin n → ℝ) :
+    Id.run (storedQFirstColumns pure A β k) = (factoredQ β A).submatrix id (Fin.castLE hk) := by
+  have hstep : ∀ (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ),
+      Id.run (householderApplyLeft pure (storedHouseholderVec A j) (β j) (indexFrom m j)
+        (indexFrom k j) X) =
+        of fun i c => if c ∈ indexFrom k j then
+          ((1 - β j • vecMulVec (storedHouseholderVec A j)
+            (storedHouseholderVec A j) : Matrix (Fin m) (Fin m) ℝ) * X) i c else X i c :=
+    fun j X => householderApplyLeft_spec (nodup_indexFrom m j) (nodup_indexFrom k j)
+      (fun i hi => storedHouseholderVec_eq_zero A j hi) _ X
+  rw [storedQFirstColumns, List.foldlM_reverse, List.idRun_foldrM]
+  simp only [hstep]
+  exact foldr_firstColumns_eq hk A β
 
 /-- **Forward accumulation computes `Q = Q₁ ⋯ Q_r`** of the reflector data. -/
 theorem forwardAccumulation_spec (data : List ((Fin m → ℝ) × ℝ)) :
@@ -1566,7 +1673,8 @@ theorem lemma_5_1_1 {j : ℕ} {Q : Matrix (Fin m) (Fin m) ℝ} {W Y : Matrix (Fi
 
 /-- One step of Algorithm 5.1.2: with `v = v⁽ʲ⁾`, `β = β_j` and the previous columns `k < j`,
 `t = Y(:, 1:j-1)ᵀ v` (Algorithm 1.1.1 per column), `z = β (v - W(:, 1:j-1) t)` (an accumulation,
-a subtraction and a scaling per entry, each rounded), then `W(:, j) = z`, `Y(:, j) = v`. -/
+a subtraction and a scaling per entry, each rounded), then `W(:, j) = z`, `Y(:, j) = v`. The first
+step (no previous columns) is the book's `W = β₁ v⁽¹⁾`: one rounding per entry, no subtraction. -/
 noncomputable def wyStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (data : List ((Fin m → ℝ) × ℝ))
     (st : Matrix (Fin m) (Fin data.length) ℝ × Matrix (Fin m) (Fin data.length) ℝ)
@@ -1580,7 +1688,7 @@ noncomputable def wyStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     pure (Function.update t k d)) 0
   let z ← (List.finRange m).foldlM (fun (z : Fin m → ℝ) i => do
     let wt ← dotAccum rnd prev (st.1 i) t 0
-    let d ← rnd (v i - wt)
+    let d ← if prev = [] then pure (v i) else rnd (v i - wt)
     let b ← rnd (β * d)
     pure (Function.update z i b)) 0
   pure (st.1.updateCol j z, st.2.updateCol j v)
@@ -1595,7 +1703,7 @@ for j = 2:r
 end
 ```
 `W`, `Y` are kept as `m × r` arrays whose not-yet-filled columns are zero, and column `j` is
-written at step `j` (`wyStep`; the first step is the loop body with no previous columns). The
+written at step `j` (`wyStep`; the first step forms `β₁ v⁽¹⁾` directly). The
 product `(I - W Yᵀ) v` is formed as `v - W (Yᵀ v)` over the previous columns. -/
 noncomputable def algorithm_5_1_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (data : List ((Fin m → ℝ) × ℝ)) :
@@ -1613,8 +1721,23 @@ private theorem wyStep_pure (data : List ((Fin m → ℝ) × ℝ))
   set v := (data.get j).1
   set β := (data.get j).2
   set prev := (List.finRange data.length).filter (· < j) with hprev
+  by_cases hp : prev = []
+  · -- the first step: no previous columns, and `W = 0`
+    have hj : ∀ k : Fin data.length, j ≤ k := fun k => by
+      by_contra h
+      have hk : k ∈ prev := by rw [hprev]; simpa using not_le.1 h
+      rw [hp] at hk
+      exact List.not_mem_nil hk
+    have hW0 : W = 0 := by ext i k; exact hW i k (hj k)
+    subst hW0
+    simp only [wyStep, Id.run_bind, Id.run_pure, List.idRun_foldlM, ← hprev, hp, ↓reduceIte]
+    rw [List.foldl_update_eq_ite]
+    congr 2
+    funext i
+    simp
+    rfl
   simp only [wyStep, Id.run_bind, Id.run_pure, List.idRun_foldlM,
-    Chapter01.algorithm_1_1_1_spec, dotAccum_id]
+    Chapter01.algorithm_1_1_1_spec, dotAccum_id, ← hprev, hp, ↓reduceIte]
   rw [List.foldl_update_eq_ite, List.foldl_update_eq_ite]
   congr 2
   funext i
@@ -1830,6 +1953,21 @@ def hyperbolicApplyLeft {ι : Type} [DecidableEq ι] {n : ℕ} (i k : ι) (c s :
       (Function.update (S k) j y))) S
 
 end Programs
+
+/-- **Exact semantics of the vector rotation**: `givensRotateVec` computes `G(i, k, θ)ᵀ x`. -/
+theorem givensRotateVec_pure {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : ℝ) (x : Fin N → ℝ) :
+    Id.run (givensRotateVec pure i i' c s x) = (givensRotation i i' c s)ᵀ *ᵥ x := by
+  ext t
+  rw [givensRotation_transpose_mulVec_apply hii']
+  simp only [givensRotateVec, Id.run_bind, Id.run_pure]
+  by_cases hti' : t = i'
+  · subst hti'
+    rw [Function.update_self, ite_eq_right (Ne.symm hii'), ite_eq_left rfl]
+  · rw [Function.update_of_ne hti']
+    by_cases hti : t = i
+    · subst hti
+      rw [Function.update_self, ite_eq_left rfl]
+    · rw [Function.update_of_ne hti, ite_eq_right hti, ite_eq_right hti']
 
 variable {fp : RoundingModel ℝ}
 
@@ -2249,6 +2387,18 @@ theorem householderMatrix_orthogonalToWorkingPrecision {fp : RoundingModel ℝ} 
   obtain ⟨v, -, -, -, -, hle⟩ := householderMatrix_computed_sub_le hfp hu x h
   exact ⟨householderMatrix v, householderMatrix_mem_orthogonalGroup v, hle⟩
 
+/-- **§5.1.12, the `house` half, for the matrix the helpers apply**: `I - β̂ v̂ v̂ᵀ` of a run
+`(v̂, β̂)` of Algorithm 5.1.1 is orthogonal to working precision `2 ((1 + γ_K)³ - 1)`,
+`K = 18 (k + 1) + 31` (`one_sub_smul_vecMulVec_computed_sub_le`). -/
+theorem one_sub_smul_vecMulVec_orthogonalToWorkingPrecision {fp : RoundingModel ℝ} {k : ℕ}
+    (hfp : fp.IsIdempotent) (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1)
+    (x : Fin (k + 1) → ℝ) {vβ : (Fin (k + 1) → ℝ) × ℝ}
+    (h : vβ ∈ (algorithm_5_1_1 fp.round x).run) :
+    orthogonalToWorkingPrecision (2 * ((1 + gamma fp.u (18 * (k + 1) + 31)) ^ 3 - 1))
+      (1 - vβ.2 • vecMulVec vβ.1 vβ.1) := by
+  obtain ⟨v, β, hO, -, hle⟩ := one_sub_smul_vecMulVec_computed_sub_le hfp hu x h
+  exact ⟨_, hO, hle⟩
+
 end ErrorPropagation
 
 section Accumulation
@@ -2260,9 +2410,12 @@ variable {m n : ℕ}
 /-- **(5.1.11), rigorous.** Let `A₀ = A ∈ ℝ^{m×n}` and `A₁, …, A_p = B` be generated by computed
 two-sided orthogonal updates: at each step there are orthogonal `Q_k`, `Z_k` (the exact
 transformations determined by the *computed* data — the only reading under which the claim holds)
-with `‖A_{k+1} - Q_k A_k Z_k‖_F ≤ ε ‖A_k‖_F` (the per-step bounds of
-`householderApplyLeft/Right_rounding` and `givensApplyLeft/Right_rounding`, with `Z_k = I` or
-`Q_k = I`). If `p ε < 1`, then `B = (Q_p ⋯ Q_1)(A + E)(Z_1 ⋯ Z_p)` with `‖E‖_F ≤ γ_p(ε) ‖A‖_F` and
+with `‖A_{k+1} - Q_k A_k Z_k‖_F ≤ ε ‖A_k‖_F` (for full-width updates — a left update on all
+columns or a right update on all rows — the per-step bounds of `householderApplyLeft/Right_rounding`
+and `givensApplyLeft/Right_rounding`, with `Z_k = I` or `Q_k = I`; those theorems bound only the
+updated block, so an in-place factorization that stores its vectors in the columns a reflector
+skips, such as Algorithm 5.2.1, needs its own accumulation, `algorithm_5_2_1_rounding`). If
+`p ε < 1`, then `B = (Q_p ⋯ Q_1)(A + E)(Z_1 ⋯ Z_p)` with `‖E‖_F ≤ γ_p(ε) ‖A‖_F` and
 `‖E‖₂ ≤ √(min(m, n)) γ_p(ε) ‖A‖₂`: the book's `‖E‖₂ ≤ c u ‖A‖₂`, `c` depending mildly on `m`,
 `n`, `p`. -/
 theorem equation_5_1_11 {Q : ℕ → Matrix (Fin m) (Fin m) ℝ} {Z : ℕ → Matrix (Fin n) (Fin n) ℝ}

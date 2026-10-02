@@ -533,22 +533,11 @@ section Norm
 
 open scoped Matrix.Norms.Frobenius
 
-/-- Reindexing preserves the Frobenius norm. -/
-theorem frobenius_norm_reindex {α β γ δ : Type*} [Fintype α] [Fintype β] [Fintype γ]
-    [Fintype δ] (e₁ : α ≃ γ) (e₂ : β ≃ δ) (A : Matrix α β ℝ) : ‖A.reindex e₁ e₂‖ = ‖A‖ := by
-  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
-  rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
-  simp only [reindex_apply, submatrix_apply]
-  rw [← e₁.sum_comp]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [← e₂.sum_comp]
-  simp
-
 /-- `‖𝓡(A)‖_F = ‖A‖_F`: the rearrangement permutes the entries. -/
 theorem frobenius_norm_rearrangement (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     ‖rearrangement A‖ = ‖A‖ := by
-  rw [rearrangement, frobenius_norm_reindex, frobenius_norm_kroneckerRearrange,
-    frobenius_norm_reindex]
+  rw [rearrangement, reindex_apply, frobenius_norm_submatrix_equiv,
+    frobenius_norm_kroneckerRearrange, reindex_apply, frobenius_norm_submatrix_equiv]
 
 /-- **(12.3.14)** and the display after the example: `φ(B, C) = ‖A − B ⊗ C‖_F =
 ‖𝓡(A) − vec(B) vec(C)ᵀ‖_F`, so minimizing `φ` is finding a nearest rank-one matrix to `𝓡(A)`. -/
@@ -638,48 +627,6 @@ private theorem rank_sum_vecMulVec_le {p q r : ℕ} (x : Fin r → Fin p → ℝ
   rw [h]
   exact (rank_mul_le_left _ _).trans ((rank_le_card_width _).trans (by simp))
 
-/-- The rank-`k` truncation of an SVD as the sum `∑_{t<k} σ_t u_t v_tᵀ` of its leading terms, for
-`k` at most both dimensions. -/
-private theorem svdTruncation_eq_sum {p q k : ℕ} (hkp : k ≤ p) (hkq : k ≤ q)
-    (U : Matrix (Fin p) (Fin p) ℝ) (σ : ℕ → ℝ) (V : Matrix (Fin q) (Fin q) ℝ) :
-    svdTruncation U σ V k = ∑ t : Fin k,
-      σ t • vecMulVec (fun I => U I (Fin.castLE hkp t)) (fun J => V J (Fin.castLE hkq t)) := by
-  ext I J
-  let g : Fin p → ℝ := fun a =>
-    if h : (a : ℕ) < k then σ a * U I a * V J ⟨a, lt_of_lt_of_le h hkq⟩ else 0
-  have hR : (∑ t : Fin k, σ t • vecMulVec (fun I => U I (Fin.castLE hkp t))
-      (fun J => V J (Fin.castLE hkq t))) I J = ∑ a, g a := by
-    rw [Matrix.sum_apply, show (∑ a, g a) = ∑ t : Fin k, g (Fin.castLE hkp t) from ?_]
-    · refine Finset.sum_congr rfl fun t _ => ?_
-      simp only [Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, g, Fin.val_castLE, t.isLt,
-        ↓reduceDIte]
-      rw [mul_assoc]
-      rfl
-    · rw [show (∑ t : Fin k, g (Fin.castLE hkp t)) =
-          ∑ a ∈ Finset.univ.map (Fin.castLEEmb hkp), g a from
-          (Finset.sum_map Finset.univ (Fin.castLEEmb hkp) g).symm]
-      refine (Finset.sum_subset (Finset.subset_univ _) fun a _ ha => ?_).symm
-      have hak : ¬ (a : ℕ) < k := fun h =>
-        ha (Finset.mem_map.2 ⟨⟨a, h⟩, Finset.mem_univ _, Fin.ext rfl⟩)
-      simp [g, hak]
-  rw [hR, svdTruncation]
-  simp only [mul_apply, rectDiagonal_apply, star_apply, star_trivial, Finset.sum_mul,
-    RCLike.ofReal_real_eq_id, id]
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  by_cases ha : (a : ℕ) < k
-  · rw [Finset.sum_eq_single ⟨a, lt_of_lt_of_le ha hkq⟩]
-    · simp only [g, ha, ↓reduceIte, ↓reduceDIte]
-      ring
-    · intro b _ hb
-      have : (a : ℕ) ≠ b := fun h => hb (Fin.ext h.symm)
-      simp [this]
-    · simp
-  · refine (Finset.sum_eq_zero fun b _ => ?_).trans (by simp [g, ha])
-    by_cases hab : (a : ℕ) = b
-    · simp [← hab, ha]
-    · simp [hab]
-
 open scoped Matrix.Norms.Frobenius in
 /-- **(12.3.19)** and the paragraph before it: if `Uᵀ 𝓡(A) V = Σ` is an SVD of the rearrangement
 (12.3.17) and `r̃` is at most both dimensions of `𝓡(A)`, then
@@ -688,7 +635,10 @@ open scoped Matrix.Norms.Frobenius in
 `r̃` Kronecker products: `‖A − A_r̃‖_F ≤ ‖A − ∑_{k=1}^{r̃} B_k ⊗ C_k‖_F`. Through `𝓡`, an isometry,
 this is the Eckart–Young–Mirsky theorem for `𝓡(A)`
 (`Matrix.isLeast_frobenius_norm_sub_of_rank_le`), since `𝓡(∑ B_k ⊗ C_k) = ∑ vec(B_k) vec(C_k)ᵀ` has
-rank at most `r̃` and `𝓡(A_r̃)` is the truncation of the SVD. -/
+rank at most `r̃` and `𝓡(A_r̃)` is the truncation of the SVD (`Matrix.svdTruncation_eq_sum`).
+The competitors have rank at most `r̃`, so chapter 2's Frobenius Eckart–Young, which compares the
+ranks equal to `k < rank(A)` (`Chapter02.svdTruncation_isLeast_frobenius`), does not apply as
+stated. -/
 theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
     {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V) {r : ℕ}
@@ -700,7 +650,12 @@ theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ
   rw [← frobenius_norm_rearrangement, rearrangement_sub, rearrangement_sum,
     ← frobenius_norm_rearrangement (A - _), rearrangement_sub, rearrangement_sum]
   simp only [rearrangement_smul, rearrangement_kroneckerFin, vecFin_reshapeVec]
-  rw [← svdTruncation_eq_sum hr₁ hr₂, frobenius_norm_sub_svdTruncation h]
+  have hT : (∑ k : Fin r, σ k • vecMulVec (fun I => U I (Fin.castLE hr₁ k))
+      fun J => V J (Fin.castLE hr₂ k)) = svdTruncation U σ V r := by
+    rw [svdTruncation_eq_sum U σ V hr₁ hr₂]
+    simp [Matrix.col, star_trivial]
+    rfl
+  rw [hT, frobenius_norm_sub_svdTruncation h]
   have := (isLeast_frobenius_norm_sub_of_rank_le (rearrangement A) r).2
     ⟨_, rank_sum_vecMulVec_le (fun k => vecFin (B k)) (fun k => vecFin (C k)), rfl⟩
   simpa using this
@@ -927,19 +882,6 @@ theorem kronecker_mulVec_reshape {a b c e : ℕ} (P : Matrix (Fin a) (Fin b) ℝ
 
 /-! ### Lemma 12.3.3 -/
 
-section Skew
-
-open scoped Matrix.Norms.L2Operator
-
-/-- For a skew-symmetric real `S` (a normal matrix), the spectral radius (of the complexification,
-the eigenvalues `±iμ` being imaginary) is the spectral norm, `ρ(S) = ‖S‖₂`: the backbone's
-`Matrix.complexSpectralRadius_toReal_of_skew`. -/
-theorem complexSpectralRadius_toReal_of_skew {n : ℕ} {S : Matrix (Fin n) (Fin n) ℝ}
-    (hS : Sᵀ = -S) : (complexSpectralRadius S).toReal = lpOpNorm 2 S :=
-  Matrix.complexSpectralRadius_toReal_of_skew hS
-
-end Skew
-
 section SkewNearest
 
 open scoped Matrix.Norms.Frobenius
@@ -948,7 +890,8 @@ open scoped Matrix.Norms.Frobenius
 `S [u | v] = [u | v] [0 μ; −μ 0]` where `u, v ∈ ℝⁿ` are orthonormal and `μ = ρ(S)`, then
 `Z_opt = μ (u vᵀ − v uᵀ)` minimizes `‖M − Z‖_F` over all rank-2 skew-symmetric matrices
 `Z ∈ ℝ^{n×n}`." The spectral radius is the complex one (`ρ(S) = ‖S‖₂` for the normal `S`,
-`complexSpectralRadius_toReal_of_skew`), and the competitors are the skew-symmetric matrices of rank
+the backbone's `Matrix.complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg`), and the
+competitors are the skew-symmetric matrices of rank
 at most two (with `S = 0` the minimizer `Z_opt = 0` has rank `0`). Of the hypothesis
 `S [u | v] = [u | v] [0 μ; −μ 0]` only the column `S v = μ u` is needed
 (`Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`). -/
@@ -960,7 +903,7 @@ theorem lemma_12_3_3 {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ) {u v : Fin n →
       (μ • (vecMulVec u v - vecMulVec v u)) := by
   have hskew : ((1 / 2 : ℝ) • (M - Mᵀ))ᵀ = -((1 / 2 : ℝ) • (M - Mᵀ)) := by
     rw [transpose_smul, transpose_sub, transpose_transpose, ← smul_neg, neg_sub]
-  rw [complexSpectralRadius_toReal_of_skew hskew] at hμ
+  rw [complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg hskew] at hμ
   exact isMinOn_frobenius_norm_sub_skew_rank_le_two M hu hv huv hSv hμ
 
 end SkewNearest

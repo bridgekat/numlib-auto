@@ -22,19 +22,24 @@ trains (12.5.25)–(12.5.29).
 
 Tensors are chapter 12's `RTensor n` (§12.4), the book's modal unfoldings `𝒜_(k)` its flattened
 `modalUnfolding` (columns in the vec order). The book's SVDs are the backbone's
-`Matrix.IsSVD A U σ V` (`Uᵀ A V = diag(σ)`, `σ` sorted and nonnegative); the backbone's canonical
-HOSVD factors are `Tensor.hosvdFactor`, whose columns are ordered as the column-indexed singular
-values `Matrix.colSingularValues` of the unfolding's transpose. Over `ℝ` the backbone's conjugate
-transposes are transposes (`Matrix.conjTranspose_eq_transpose_of_trivial`).
+`Matrix.IsSVD A U σ V` (`Uᵀ A V = diag(σ)`, `σ` sorted and nonnegative). The HOSVD statements
+(Theorem 12.5.1, (12.5.5), (12.5.11)) take any SVDs `𝒜_(k) = U_k Σ_k V_kᵀ` of the flattened
+unfoldings, as the book does; the truncation `𝒜^{(r)}` is the backbone's
+`Tensor.truncatedHOSVDOf` in these factors, keeping the leading `r_k` columns. Over `ℝ` the
+backbone's conjugate transposes are transposes (`Matrix.conjTranspose_eq_transpose_of_trivial`).
 
 The "Repeat" iterations of the section (Tucker-ALS, CP-ALS, the higher-order power methods) are not
-programmed; what each update solves is stated.
+programmed; what each update solves is stated. Nor is the TT-SVD procedure (12.5.29): its ranks are
+data-dependent, so the shapes of its carriages depend on the run; `equation_12_5_29` states what it
+computes (a tensor train with the ranks of the sequential unfoldings), a recorded deviation from the
+convention that algorithm-shaped displays get a program.
 
 ## Not formalized here
 
-The "Repeat" iterations themselves; the claim that the truncated HOSVD does not solve the Tucker
-problem (no example is given); Complications 1–6 of §12.5.5 (tensor rank: NP-hardness, maximal and
-typical ranks, real versus complex rank, degeneracy); the tensor-train counts.
+The "Repeat" iterations themselves; the TT-SVD procedure (12.5.29) as a program; the claim that
+the truncated HOSVD does not solve the Tucker problem (no example is given); Complications 1–6 of
+§12.5.5 (tensor rank: NP-hardness, maximal and typical ranks, real versus complex rank,
+degeneracy); the tensor-train counts.
 -/
 
 open Matrix
@@ -61,18 +66,10 @@ theorem isSVD_real_facts {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (F
       Uᵀ * A = (rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ) * Vᵀ := by
   have hU := h.mem_unitaryGroup_left
   have hV := h.mem_unitaryGroup_right
-  have h1 : U * Uᵀ = 1 := by
-    have := mem_unitaryGroup_iff.1 hU
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have h2 : Uᵀ * U = 1 := by
-    have := mem_unitaryGroup_iff'.1 hU
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have h3 : V * Vᵀ = 1 := by
-    have := mem_unitaryGroup_iff.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
-  have h4 : Vᵀ * V = 1 := by
-    have := mem_unitaryGroup_iff'.1 hV
-    rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
+  have h1 : U * Uᵀ = 1 := (mem_orthogonalGroup_iff _ _).1 hU
+  have h2 : Uᵀ * U = 1 := (mem_orthogonalGroup_iff' _ _).1 hU
+  have h3 : V * Vᵀ = 1 := (mem_orthogonalGroup_iff _ _).1 hV
+  have h4 : Vᵀ * V = 1 := (mem_orthogonalGroup_iff' _ _).1 hV
   have hA : A = U * (rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ) * Vᵀ := by
     have := h.eq_mul_mul_star
     rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, rectDiagonal_ofReal]
@@ -175,26 +172,52 @@ section HOSVD
 
 variable {d : ℕ}
 
-/-- **§12.5.1**, before Theorem 12.5.1: with `U_k` the HOSVD factor of mode `k` (the backbone's
-canonical left singular vectors of `𝒜_(k)`, `Tensor.hosvdFactor`) and `ℬ⁽ᵏ⁾ = 𝒜 ×_k U_kᵀ` (the
-book's (12.5.5) prints `×_k U_k`, which does not produce the stated unfoldings), the rows of
-`ℬ⁽ᵏ⁾_(k)` are mutually orthogonal and the `i`-th has norm `σ_i(𝒜_(k))`: `‖ℬ⁽¹⁾(i, :, :)‖_F =
-σ_i(𝒜_(1))` and its siblings, in every mode of a tensor of any order (the book's displayed
-unfoldings `ℬ⁽¹⁾_(1) = Σ₁ V₁ᵀ (U₃ ⊗ U₂)ᵀ` are misprints and are not reproduced). -/
-theorem hosvd_modeProduct_slices {n : Fin d → ℕ} (A : RTensor n) (k : Fin d) :
-    (A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k *
-        ((A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k)ᵀ =
-          diagonal (fun i => (A.modeUnfold k)ᵀ.colSingularValues i ^ 2) ∧
-      ∀ i, ∑ c, (A.modeProd k (A.hosvdFactor k)ᵀ).modeUnfold k i c ^ 2 =
-        (A.modeUnfold k)ᵀ.colSingularValues i ^ 2 := by
-  have h := Tensor.modeProd_hosvdFactor_row A k
-  simp only [conjTranspose_eq_transpose_of_trivial] at h
-  refine ⟨h, fun i => ?_⟩
-  have := congrFun (congrFun h i) i
+variable {n : Fin (d + 1) → ℕ}
+
+/-- For the left factor `U_k` of an SVD `𝒜_(k) = U_k Σ_k V_kᵀ` of the flattened mode-`k` unfolding,
+the rows of `U_kᵀ 𝒜_(k)` (typed unfolding) are orthogonal with squared norms `σ_k(i)²` (zero beyond
+the width of the unfolding): `U_kᵀ 𝒜_(k) (U_kᵀ 𝒜_(k))ᵀ = Σ_k Σ_kᵀ`. -/
+theorem gram_modeUnfold_of_isSVD {A : RTensor n} {k : Fin (d + 1)}
+    {U : Matrix (Fin (n k)) (Fin (n k)) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin (∏ j : Fin d, n (k.succAbove j))) (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ}
+    (h : IsSVD (modalUnfolding A k) U σ V) :
+    Uᵀ * A.modeUnfold k * (Uᵀ * A.modeUnfold k)ᵀ =
+      diagonal fun i : Fin (n k) =>
+        if (i : ℕ) < ∏ j : Fin d, n (k.succAbove j) then σ i ^ 2 else 0 := by
+  have hG : modalUnfolding A k * (modalUnfolding A k)ᵀ = A.modeUnfold k * (A.modeUnfold k)ᵀ := by
+    rw [modalUnfolding, reindex_apply, transpose_submatrix, submatrix_mul_equiv]
+    simp
+  have e : ∀ {β : Type} [Fintype β] (X : Matrix (Fin (n k)) β ℝ),
+      Uᵀ * X * (Uᵀ * X)ᵀ = Uᵀ * (X * Xᵀ) * U := fun X => by
+    rw [transpose_mul, transpose_transpose]
+    simp only [Matrix.mul_assoc]
+  rw [e, ← hG, ← e, (equation_12_5_1 h).2.2.1, rectDiagonal_transpose,
+    rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
+  simp only [sq]
+
+/-- **§12.5.1**, before Theorem 12.5.1, and the book's (12.5.5): with `U_k` the left factor of an
+SVD `𝒜_(k) = U_k Σ_k V_kᵀ` and `ℬ⁽ᵏ⁾ = 𝒜 ×_k U_kᵀ` (the book's (12.5.5) prints `×_k U_k`, which
+does not produce the stated unfoldings), the rows of `ℬ⁽ᵏ⁾_(k)` are mutually orthogonal and the
+`i`-th has norm `σ_i(𝒜_(k))`: `‖ℬ⁽¹⁾(i, :, :)‖_F = σ_i(𝒜_(1))` and its siblings, in every mode of a
+tensor of any order (the book's displayed unfoldings `ℬ⁽¹⁾_(1) = Σ₁ V₁ᵀ (U₃ ⊗ U₂)ᵀ` are misprints
+and are not reproduced). The rows are those of the typed unfolding `Tensor.modeUnfold`; the
+backbone's `Tensor.modeProd_conjTranspose_row`. -/
+theorem hosvd_modeProduct_slices (A : RTensor n) (k : Fin (d + 1))
+    {U : Matrix (Fin (n k)) (Fin (n k)) ℝ} {σ : ℕ → ℝ}
+    {V : Matrix (Fin (∏ j : Fin d, n (k.succAbove j))) (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ}
+    (h : IsSVD (modalUnfolding A k) U σ V) :
+    (A.modeProd k Uᵀ).modeUnfold k * ((A.modeProd k Uᵀ).modeUnfold k)ᵀ =
+        diagonal (fun i : Fin (n k) =>
+          if (i : ℕ) < ∏ j : Fin d, n (k.succAbove j) then σ i ^ 2 else 0) ∧
+      ∀ i, ∑ c, (A.modeProd k Uᵀ).modeUnfold k i c ^ 2 =
+        if (i : ℕ) < ∏ j : Fin d, n (k.succAbove j) then σ i ^ 2 else 0 := by
+  have hrow := Tensor.modeProd_conjTranspose_row A k U
+  simp only [conjTranspose_eq_transpose_of_trivial] at hrow
+  rw [gram_modeUnfold_of_isSVD h] at hrow
+  refine ⟨hrow, fun i => ?_⟩
+  have := congrFun (congrFun hrow i) i
   rw [mul_apply, diagonal_apply_eq] at this
   simpa [sq] using this
-
-variable {n : Fin (d + 1) → ℕ}
 
 /-- **Theorem 12.5.1** (HOSVD), (12.5.6)–(12.5.9): for `𝒜 ∈ ℝ^{n₁ × ⋯ × n_d}` and, for every mode
 `k`, an SVD `𝒜_(k) = U_k Σ_k V_kᵀ` of the modal unfolding, with `𝒮 = 𝒜 ×₁ U₁ᵀ ⋯ ×_d U_dᵀ`:
@@ -268,16 +291,60 @@ theorem theorem_12_5_1_b (A : RTensor n) (U : ∀ k, Matrix (Fin (n k)) (Fin (n 
         rw [hK, Matrix.mul_one]
     _ = rectDiagonal (σ k) * (rectDiagonal (σ k))ᵀ := (equation_12_5_1 (h k)).2.2.1
 
-/-- **(12.5.11)**, corrected: the truncated HOSVD keeping, in each mode, the factor columns in a set
-`s_k` (the book keeps the leading `r_k` left singular vectors) satisfies
-`‖𝒜 − 𝒜^{(s)}‖_F² ≤ ∑_{k=1}^{d} ∑_{i ∉ s_k} σ_i(𝒜_(k))²`, the singular values attached to the
-columns of the factors. The book prints `min_{1≤k≤d}` in place of `∑_{k=1}^{d}`, which is false:
-every tensor of multilinear rank `≤ r` is at squared distance at least `max_k ∑_{i>r_k} σ_i(𝒜_(k))²`
-from `𝒜`, so the printed bound fails whenever one tail vanishes and another does not. -/
-theorem equation_12_5_11 {n : Fin d → ℕ} (A : RTensor n) (s : ∀ k, Finset (Fin (n k))) :
-    ‖A - A.truncatedHOSVD s‖ ^ 2 ≤
-      ∑ k, ∑ i ∈ (s k)ᶜ, (A.modeUnfold k)ᵀ.colSingularValues i ^ 2 := by
-  simpa only [conjTranspose_eq_transpose_of_trivial] using Tensor.norm_sub_truncatedHOSVD_sq_le A s
+/-- **(12.5.11)**, corrected, for the HOSVD of Theorem 12.5.1: with SVDs `𝒜_(k) = U_k Σ_k V_kᵀ` of
+the modal unfoldings, `𝒮 = 𝒜 ×₁ U₁ᵀ ⋯ ×_d U_dᵀ` and ranks `r_k`, the truncation
+`𝒜^{(r)} = ∑_{j ≤ r} 𝒮(j) U₁(:, j₁) ∘ ⋯ ∘ U_d(:, j_d)` (§12.5.2; the backbone's
+`Tensor.truncatedHOSVDOf`, which projects mode `k` onto the leading `r_k` columns of `U_k`)
+satisfies `‖𝒜 − 𝒜^{(r)}‖_F² ≤ ∑_{k=1}^{d} ∑_{i > r_k} σ_i(𝒜_(k))²`, the tails of the sorted singular
+values (0-based: the indices `r_k ≤ i < min(n_k, ∏_{j ≠ k} n_j)`). The book prints `min_{1≤k≤d}` in
+place of `∑_{k=1}^{d}`, which is false: every tensor of multilinear rank `≤ r` is at squared
+distance at least `max_k ∑_{i>r_k} σ_i(𝒜_(k))²` from `𝒜`
+(`Tensor.sum_sq_le_norm_sub_sq_of_multilinearRank_le`), so the printed bound fails whenever one
+tail vanishes and another does not. Any SVDs serve, also with repeated singular values
+(`Tensor.norm_sub_truncatedHOSVDOf_sq_le`). -/
+theorem equation_12_5_11 (A : RTensor n) (U : ∀ k, Matrix (Fin (n k)) (Fin (n k)) ℝ)
+    (σ : Fin (d + 1) → ℕ → ℝ) (V : ∀ k, Matrix (Fin (∏ j : Fin d, n (k.succAbove j)))
+      (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ)
+    (h : ∀ k, IsSVD (modalUnfolding A k) (U k) (σ k) (V k)) (r : Fin (d + 1) → ℕ) :
+    let S : RTensor n := Tensor.multilinearProd (fun k => (U k)ᵀ) A
+    let s : ∀ k, Finset (Fin (n k)) := fun k => Finset.univ.filter fun i => (i : ℕ) < r k
+    Tensor.truncatedHOSVDOf U A s = ∑ j ∈ Fintype.piFinset s,
+        S j • Tensor.rankOne (κ := fun k => Fin (n k)) (fun k x => U k x (j k)) ∧
+      ‖A - Tensor.truncatedHOSVDOf U A s‖ ^ 2 ≤
+        ∑ k, ∑ i ∈ Finset.Ico (r k) (min (n k) (∏ j : Fin d, n (k.succAbove j))), σ k i ^ 2 := by
+  intro S s
+  have hU : ∀ k, U k ∈ unitaryGroup (Fin (n k)) ℝ := fun k => (h k).mem_unitaryGroup_left
+  refine ⟨?_, ?_⟩
+  · rw [Tensor.truncatedHOSVDOf_eq_sum]
+    simp only [Tensor.hosvdCoreOf, conjTranspose_eq_transpose_of_trivial, S]
+  set N : Fin (d + 1) → ℕ := fun k => ∏ j : Fin d, n (k.succAbove j) with hN
+  have hσ : ∀ k, (U k)ᴴ * A.modeUnfold k * (A.modeUnfold k)ᴴ * U k =
+      diagonal fun i : Fin (n k) => (((if (i : ℕ) < N k then σ k i else 0) ^ 2 : ℝ) : ℝ) :=
+        fun k => by
+    have e : (U k)ᵀ * A.modeUnfold k * (A.modeUnfold k)ᵀ * U k =
+        (U k)ᵀ * A.modeUnfold k * ((U k)ᵀ * A.modeUnfold k)ᵀ := by
+      rw [transpose_mul, transpose_transpose]
+      simp only [Matrix.mul_assoc]
+    simp only [conjTranspose_eq_transpose_of_trivial]
+    rw [e, gram_modeUnfold_of_isSVD (h k)]
+    congr 1
+    funext i
+    split_ifs <;> simp
+  refine (Tensor.norm_sub_truncatedHOSVDOf_sq_le A hU hσ s).trans
+    (le_of_eq (Finset.sum_congr rfl fun k _ => ?_))
+  calc ∑ i ∈ (s k)ᶜ, (if (i : ℕ) < N k then σ k i else 0) ^ 2
+      = ∑ i : Fin (n k), if r k ≤ (i : ℕ) ∧ (i : ℕ) < N k then σ k i ^ 2 else 0 := by
+        rw [Finset.compl_filter, Finset.sum_filter]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        by_cases h1 : r k ≤ (i : ℕ) <;> by_cases h2 : (i : ℕ) < N k <;> simp [h1, h2]
+    _ = ∑ i ∈ Finset.range (n k), if r k ≤ i ∧ i < N k then σ k i ^ 2 else 0 :=
+        Fin.sum_univ_eq_sum_range (fun i => if r k ≤ i ∧ i < N k then σ k i ^ 2 else 0) (n k)
+    _ = _ := by
+        rw [← Finset.sum_filter]
+        congr 1
+        ext i
+        simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico, hN]
+        omega
 
 end HOSVD
 
@@ -457,7 +524,8 @@ theorem equation_12_5_16 (c : Fin r → ℝ) (F : ∀ k, Matrix (Fin (n k)) (Fin
     rw [Matrix.submatrix_mul _ _ id id _ Function.bijective_id, submatrix_id_id]
   · open scoped Matrix.Norms.Frobenius in
     rw [show modalUnfolding A k - modalUnfolding (Tensor.cp c F : RTensor n) k =
-        modalUnfolding (A - Tensor.cp c F) k from rfl, modalUnfolding, frobenius_norm_reindex,
+        modalUnfolding (A - Tensor.cp c F) k from rfl, modalUnfolding, reindex_apply,
+      frobenius_norm_submatrix_equiv,
       Tensor.frobenius_norm_modeUnfold]
 
 end CP
@@ -475,8 +543,9 @@ theorem equation_12_5_20 {N p q r : ℕ} (H : Matrix (Fin p) (Fin r) ℝ) (G : M
     (∀ F' : Matrix (Fin N) (Fin r) ℝ,
         ‖A - F * (khatriRao H G)ᵀ‖ ≤ ‖A - F' * (khatriRao H G)ᵀ‖) ↔
       F * ((Hᵀ * H) ⊙ (Gᵀ * G)) = A * khatriRao H G := by
-  have h := isMinOn_norm_sub_mul_transpose_iff A (khatriRao H G) F
-  simp only [conjTranspose_eq_transpose_of_trivial, khatriRao_transpose_mul_self] at h
+  have h := isMinOn_norm_sub_mul_conjTranspose_iff A (khatriRao H G) F
+  simp only [isMinOn_univ_iff, conjTranspose_eq_transpose_of_trivial,
+    khatriRao_transpose_mul_self] at h
   exact h
 
 end ALS
