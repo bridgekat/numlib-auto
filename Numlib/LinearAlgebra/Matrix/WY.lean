@@ -26,8 +26,8 @@ instance Householder reflectors) is a rank-`r` modification of the identity,
   by `1 - β v vᴴ` appends the column `z = β Q v` to `W` and the column `v` to `Y`.
 * `Matrix.wyW`, `Matrix.isWY_prod`: the `W` factor built by that recursion ([golub2013matrix]
   Algorithm 5.1.2) represents the whole product (`Matrix.isWY_prodFwd` for the product written as
-  `Matrix.prodFwd` of a sequence); `Matrix.isWY_prod_unitLowerTrapezoidal` and
-  `Matrix.wyW_apply_eq_zero_of_apply_eq_zero` read off the shapes of `Y` and `W`.
+  `Matrix.prodFwd` of a sequence); `Y` is the matrix of the vectors themselves, and
+  `Matrix.wyW_apply_eq_zero_of_apply_eq_zero` reads off the shape of `W`.
 * `Matrix.exists_compactWY`, `Matrix.exists_compactWY_prodFwd`: the compact representation
   `Q = 1 - Y T Yᴴ`.
 * `Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup`: a *block reflector* `1 - 2 V Vᴴ`
@@ -116,21 +116,6 @@ theorem isWY_prod (β : Fin r → R) (v : Fin r → n → R) :
     · rw [wyW_succ, h]
     · ext i j
       refine Fin.lastCases ?_ (fun j => ?_) j <;> simp [Fin.init]
-
-/-- **`Y` is unit lower trapezoidal** ("`Y` is merely the matrix of Householder vectors and is
-therefore unit lower triangular", [golub2013matrix] §5.1.7): if the vectors have the shape of the
-Householder vectors of a QR factorization, `v_j` zero above position `j` with `1` there, then
-`Q₁ ⋯ Q_r = 1 - W Yᴴ` with `Y` zero above the diagonal and `1` on it. -/
-theorem isWY_prod_unitLowerTrapezoidal {m : ℕ} (β : Fin r → R) (v : Fin r → Fin m → R)
-    (hv₀ : ∀ (j : Fin r) (i : Fin m), (i : ℕ) < j → v j i = 0)
-    (hv₁ : ∀ (j : Fin r) (i : Fin m), (i : ℕ) = j → v j i = 1) :
-    IsWY (List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod (wyW β v)
-        (of fun i j => v j i) ∧
-      (∀ (i : Fin m) (j : Fin r), (i : ℕ) < j →
-        (of fun (i : Fin m) (j : Fin r) => v j i : Matrix (Fin m) (Fin r) R) i j = 0) ∧
-      ∀ (i : Fin m) (j : Fin r), (i : ℕ) = j →
-        (of fun (i : Fin m) (j : Fin r) => v j i : Matrix (Fin m) (Fin r) R) i j = 1 :=
-  ⟨isWY_prod β v, fun i j h => hv₀ j i h, fun i j h => hv₁ j i h⟩
 
 /-- **Rows on which every vector vanishes are zero rows of `W`** ([golub2013matrix] §5.2.3: "the
 first `λ - 1` rows of `W_k` and `Y_k` are zero"): each new column `β (1 - W Yᴴ) v` of `W` is a

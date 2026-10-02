@@ -337,7 +337,7 @@ theorem exists_orthogonal_periodicRealSchur_of_isUnit {p : ℕ}
   obtain ⟨U₀, hU₀, hH⟩ := exists_orthogonal_conj_isQuasiUpperTriangular
     (extendFamily A p * prodDown (extendFamily A) p)
   obtain ⟨U, -, hUu, hT, hlast⟩ := exists_periodic_of_isUnit (𝕜 := ℝ) IsQuasiUpperTriangular
-    (fun S T hS hT => (hS.mul_isUpperTriangular hT).1) p (extendFamily A)
+    (fun S T hS hT => hS.mul_isUpperTriangular hT) p (extendFamily A)
     (fun i hi => by simpa [extendFamily_castSucc A ⟨i, hi⟩] using hA ⟨i, hi⟩) U₀ hU₀
     (by rwa [star_eq_transpose_real])
   refine ⟨fun i => U i, fun i => hUu i, fun i => ?_, ?_⟩

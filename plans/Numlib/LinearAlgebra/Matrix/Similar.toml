@@ -57,3 +57,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.8 (after Prope
 
 [[node]]
 id = "_root_.Module.End.spectrum_eq_range_of_basis"
+
+[[node]]  # moved from UnreducedHessenberg (review rk3-6)
+id = "conj_pow_of_mem_unitaryGroup"

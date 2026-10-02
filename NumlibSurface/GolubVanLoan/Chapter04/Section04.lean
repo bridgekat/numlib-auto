@@ -141,7 +141,7 @@ Hessenberg and `A = L H`, so that `A(:, j) = L H(:, j) = ∑_{k ≤ j+1} L(:, k)
 from which Aasen's method computes `L` column by column. -/
 theorem equation_4_4_5 {A L T : Matrix (Fin n) (Fin n) ℝ} (h : IsAasen A L T) :
     (T * Lᵀ).IsUpperHessenberg ∧ A = L * (T * Lᵀ) :=
-  h.isUpperHessenberg_mul_transpose
+  ⟨h.isUpperHessenberg_mul_transpose, h.eq_mul_mul_transpose⟩
 
 section Programs
 
@@ -610,7 +610,7 @@ theorem equation_4_4_15 {s m : ℕ} {E : Matrix (Fin s) (Fin s) ℝ} (hE : IsUni
         fromBlocks 1 (E⁻¹ * Cᵀ) 0 1) ∧
     ∀ {A : Matrix (Fin n) (Fin n) ℝ}, A.IsSymm → A ≠ 0 →
       (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 := by
-  refine ⟨?_, fun hA hA0 => exists_isUnit_principal_pivot hA hA0⟩
+  refine ⟨?_, fun hA hA0 => exists_principal_pivot_ne_zero hA hA0⟩
   have hinv : E * E⁻¹ = 1 := mul_nonsing_inv E ((isUnit_iff_isUnit_det E).1 hE)
   have hinv' : E⁻¹ * E = 1 := nonsing_inv_mul E ((isUnit_iff_isUnit_det E).1 hE)
   simp only [fromBlocks_multiply, Matrix.one_mul, Matrix.mul_one, Matrix.mul_zero,

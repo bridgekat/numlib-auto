@@ -83,6 +83,12 @@ theorem unfoldLinearEquiv_apply [Semiring R] (A : Tensor κ R) :
     unfoldLinearEquiv p A = A.unfold p :=
   rfl
 
+/-- A subtensor is a column of the unfolding: fixing the modes outside `p` to `c` reads the column
+`c` of `A.unfold p`. -/
+theorem restrict_eq_col (c : ∀ i : {i // ¬p i}, κ i) (A : Tensor κ R) :
+    restrict p c A = of ((A.unfold p).col c) :=
+  rfl
+
 end Unfold
 
 /-! ### The mode-`k` unfolding -/
@@ -101,6 +107,25 @@ def modeUnfold (A : Tensor κ R) (k : ι) : Matrix (κ k) (∀ j : {j // j ≠ k
 theorem modeUnfold_apply (A : Tensor κ R) (k : ι) (a : ∀ i, κ i) :
     A.modeUnfold k (a k) (fun j => a j) = A a :=
   congrArg A ((Equiv.piSplitAt k κ).symm_apply_apply a)
+
+/-- A tensor is determined by its mode-`k` unfolding: `Tensor.modeUnfold` as a linear
+equivalence, like `Tensor.unfoldLinearEquiv`. -/
+def modeUnfoldLinearEquiv [Semiring R] (k : ι) :
+    Tensor κ R ≃ₗ[R] Matrix (κ k) (∀ j : {j // j ≠ k}, κ j) R where
+  toFun A := A.modeUnfold k
+  invFun M := of fun a => M (a k) fun j => a j
+  map_add' _ _ := rfl
+  map_smul' _ _ := rfl
+  left_inv A := ext fun a => modeUnfold_apply A k a
+  right_inv M := by
+    ext x c
+    have h := (Equiv.piSplitAt k κ).apply_symm_apply (x, c)
+    exact congrArg₂ M (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+@[simp]
+theorem modeUnfoldLinearEquiv_apply [Semiring R] (k : ι) (A : Tensor κ R) :
+    modeUnfoldLinearEquiv k A = A.modeUnfold k :=
+  rfl
 
 variable {κ : Fin 2 → Type v}
 

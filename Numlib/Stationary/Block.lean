@@ -9,10 +9,11 @@ The block form of the classical iterations ([saad2003iterative] §4.1.1, (4.15)�
 4.1–4.2 in the non-overlapping case). The block structure is a *labelling* `π : n → ι` of the index
 set by a linearly ordered type of block labels, and the block-diagonal, strict block-lower and
 strict block-upper parts of `A` are the entries with `π i = π j`, `π j < π i` and `π i < π j`
-respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`). They
-add up to `A` (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is
-[saad2003iterative] `A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and `F =
--blockStrictUpper π A`. When the index set is a sigma type labelled by its first component,
+respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`, defined
+beside their pointwise versions in `Numlib/LinearAlgebra/Matrix/Triangular.lean`). They add up
+to `A` (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is
+[saad2003iterative] `A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and
+`F = -blockStrictUpper π A`. When the index set is a sigma type labelled by its first component,
 a genuinely block diagonal summand lands entirely in the block diagonal part
 (`Matrix.blockDiagPart_sub_blockDiagonal'`, `Matrix.blockStrictLower_sub_blockDiagonal'`).
 
@@ -47,80 +48,6 @@ namespace Matrix
 open Stationary
 
 variable {n ι R : Type*}
-
-/-! ### The three block parts of a matrix -/
-
-section Parts
-
-variable [Zero R]
-
-/-- The **block diagonal part** of `A` for the block labelling `π`: the entries whose row and column
-carry the same label, [saad2003iterative] `D` of (4.15). -/
-def blockDiagPart [DecidableEq ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
-  Matrix.of fun i j => if π i = π j then A i j else 0
-
-/-- Entries of the block diagonal part: those whose row and column carry the same label. -/
-@[simp]
-theorem blockDiagPart_apply [DecidableEq ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
-    blockDiagPart π A i j = if π i = π j then A i j else 0 := rfl
-
-/-- The **strict block-lower part** of `A` for the block labelling `π`, [saad2003iterative] `-E` of
-(4.15). -/
-def blockStrictLower [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
-  Matrix.of fun i j => if π j < π i then A i j else 0
-
-/-- Entries of the strict block-lower part: those whose column label is below the row label. -/
-@[simp]
-theorem blockStrictLower_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
-    blockStrictLower π A i j = if π j < π i then A i j else 0 := rfl
-
-/-- The **strict block-upper part** of `A` for the block labelling `π`, [saad2003iterative] `-F` of
-(4.15). -/
-def blockStrictUpper [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
-  Matrix.of fun i j => if π i < π j then A i j else 0
-
-/-- Entries of the strict block-upper part: those whose row label is below the column label. -/
-@[simp]
-theorem blockStrictUpper_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
-    blockStrictUpper π A i j = if π i < π j then A i j else 0 := rfl
-
-end Parts
-
-section Decomposition
-
-variable [LinearOrder ι] [AddCommMonoid R] (π : n → ι) (A : Matrix n n R)
-
-/-- **[saad2003iterative] (4.15)**: a matrix is the sum of its block-diagonal, strict block-lower
-and strict block-upper parts, which in [saad2003iterative] letters is `A = D - E - F`. -/
-theorem blockDiagPart_add_blockStrictLower_add_blockStrictUpper :
-    blockDiagPart π A + blockStrictLower π A + blockStrictUpper π A = A := by
-  ext i j
-  simp only [Matrix.add_apply, blockDiagPart_apply, blockStrictLower_apply,
-    blockStrictUpper_apply]
-  rcases lt_trichotomy (π i) (π j) with h | h | h
-  · simp [h, h.ne, asymm h]
-  · simp [h]
-  · simp [h, h.ne', asymm h]
-
-/-- With the identity labelling the block diagonal part is the diagonal part. -/
-@[simp]
-theorem blockDiagPart_id [DecidableEq n] (A : Matrix n n R) :
-    blockDiagPart id A = diagPart A := by
-  ext i j
-  rw [blockDiagPart_apply, diagPart, Matrix.diagonal_apply]
-  split <;> simp_all [Matrix.diag]
-
-/-- With the identity labelling the strict block-lower part is the strictly lower part. -/
-@[simp]
-theorem blockStrictLower_id [LinearOrder n] (A : Matrix n n R) :
-    blockStrictLower id A = strictLower A := rfl
-
-/-- With the identity labelling the strict block-upper part is the strictly upper part. -/
-@[simp]
-theorem blockStrictUpper_id [LinearOrder n] (A : Matrix n n R) :
-    blockStrictUpper id A = strictUpper A := rfl
-
-end Decomposition
 
 /-! ### Block diagonal matrices -/
 

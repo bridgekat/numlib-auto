@@ -389,7 +389,8 @@ private theorem exists_conj_submatrix_sumCompl [DecidableEq n] (p : n → Prop) 
 
 /-- [golub2013matrix] Theorem 7.1.6 over any field: a block upper triangular matrix
 (`T.BlockTriangular b`) whose diagonal blocks `T.toSquareBlock b k` have pairwise coprime
-characteristic polynomials is similar to its block diagonal part. Induction on the size: the last
+characteristic polynomials is similar to its block diagonal part `Matrix.blockDiagPart b T`.
+Induction on the size: the last
 block is split off by `exists_fromBlocks_conj_eq_fromBlocks_zero` (its characteristic polynomial is
 coprime to the product of the others, which is that of the leading part by
 `Matrix.BlockTriangular.charpoly`), and the leading part is handled by the induction
@@ -398,8 +399,8 @@ theorem exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime [DecidableEq n] {ι
     [LinearOrder ι] {b : n → ι} {T : Matrix n n K} (hT : T.BlockTriangular b)
     (hcop : Pairwise fun k l : ι =>
       IsCoprime (T.toSquareBlock b k).charpoly (T.toSquareBlock b l).charpoly) :
-    ∃ Y : Matrix n n K, IsUnit Y ∧
-      Y⁻¹ * T * Y = of fun i j => if b i = b j then T i j else 0 := by
+    ∃ Y : Matrix n n K, IsUnit Y ∧ Y⁻¹ * T * Y = blockDiagPart b T := by
+  change ∃ Y : Matrix n n K, IsUnit Y ∧ Y⁻¹ * T * Y = of fun i j => if b i = b j then T i j else 0
   induction hN : Fintype.card n using Nat.strong_induction_on generalizing n with
   | _ N ih =>
   by_cases hall : ∀ i j, b i = b j
@@ -489,8 +490,7 @@ theorem exists_isUnit_conj_eq_blockDiagonalPart [DecidableEq n] [IsAlgClosed K] 
     [LinearOrder ι] {b : n → ι} {T : Matrix n n K} (hT : T.BlockTriangular b)
     (hdisj : Pairwise fun k l : ι =>
       Disjoint (spectrum K (T.toSquareBlock b k)) (spectrum K (T.toSquareBlock b l))) :
-    ∃ Y : Matrix n n K, IsUnit Y ∧
-      Y⁻¹ * T * Y = of fun i j => if b i = b j then T i j else 0 :=
+    ∃ Y : Matrix n n K, IsUnit Y ∧ Y⁻¹ * T * Y = blockDiagPart b T :=
   exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime hT fun _ _ hkl =>
     (isCoprime_charpoly_iff_disjoint_spectrum _ _).mpr (hdisj hkl)
 

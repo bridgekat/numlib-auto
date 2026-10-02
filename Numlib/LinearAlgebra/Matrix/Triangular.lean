@@ -19,6 +19,9 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
 
 ## Main definitions
 
+* `Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`: the same three
+  parts for a block labelling `π : n → ι` of the indices (the entries with `π i = π j`,
+  `π j < π i`, `π i < π j`), which reduce to the pointwise ones for `π = id`.
 * `Matrix.strictLower`, `Matrix.strictUpper`, `Matrix.diagPart`: the three parts a matrix splits
   into, `Matrix.diagPart_add_strictLower_add_strictUpper`, and the signed form `A = D - E - F` of
   the classical splittings behind the Jacobi, Gauss–Seidel and SOR iterations; over a field, the
@@ -30,9 +33,10 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
 
 ## Main results
 
-* `Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular` (and the lower version): a
-  triangular matrix is nonsingular exactly when its diagonal has no zero entry, since its
-  determinant is the product of the diagonal.
+* `Matrix.IsUpperTriangular.isUnit_iff`, `Matrix.IsLowerTriangular.isUnit_iff`: a triangular
+  matrix is nonsingular exactly when its diagonal has no zero entry, since its determinant is the
+  product of the diagonal; `Matrix.IsUpperTriangular.isUnit_det_of_diag_ne_zero` and its lower
+  twin give the determinant form.
 * `Matrix.IsUpperTriangular.inv`, `Matrix.IsLowerTriangular.inv`: the inverse of a triangular
   matrix is triangular of the same kind, with no hypothesis (a singular matrix has inverse `0`).
 * `Matrix.IsUpperTriangular.mul_apply_self`, `Matrix.IsLowerTriangular.mul_apply_self`: the
@@ -45,13 +49,14 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
 * `Matrix.charpoly_of_isLowerTriangular`: the mirror of Mathlib's
   `Matrix.charpoly_of_isUpperTriangular`.
 * Entries of products: `Matrix.IsUpperTriangular.mul_apply` (a sum over the indices between),
-  `Matrix.IsUpperTriangular.pow_apply_self`, `Matrix.mul_transpose_apply_of_lower` and
-  `Matrix.mul_mul_transpose_apply_of_isDiag` (the entries of `G Hᵀ` and `L D Lᵀ`, sums over
-  `k ≤ min i j`), `Matrix.col_zero_eq_smul_of_eq_mul` (the first column of `Z T`).
+  `Matrix.IsUpperTriangular.pow_apply_self` (each with its lower twin),
+  `Matrix.mul_transpose_apply_of_lower`, `Matrix.transpose_mul_apply_of_upper` and
+  `Matrix.mul_mul_transpose_apply_of_isDiag` (the entries of `G Hᵀ`, `Gᵀ H` and `L D Lᵀ`, sums
+  over `k ≤ min i j`), `Matrix.col_zero_eq_smul_of_eq_mul` (the first column of `Z T`).
 * `Matrix.BlockTriangular.toBlock_mul`, `.toBlock_pow`, `.toBlock_mul_eq_sum_Icc`: the diagonal
   blocks of products and powers of block triangular matrices, and the blocks of a product.
-* `Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup`: a unitary triangular matrix is
-  diagonal.
+* `Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup` (and the lower version): a unitary
+  triangular matrix is diagonal.
 
 ## Implementation notes
 
@@ -150,6 +155,79 @@ theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid 
 theorem diagPart_sub_neg_strictLower_sub_neg_strictUpper [DecidableEq n] [AddCommGroup R]
     (A : Matrix n n R) : diagPart A - (-strictLower A) - (-strictUpper A) = A := by
   rw [sub_neg_eq_add, sub_neg_eq_add, diagPart_add_strictLower_add_strictUpper]
+
+/-! ### The block parts for a block labelling -/
+
+section BlockParts
+
+variable {m ι : Type*}
+
+section Zero
+
+variable [Zero R]
+
+/-- The **block diagonal part** of `A` for the block labelling `π`: the entries whose row and column
+carry the same label, [saad2003iterative] `D` of (4.15). -/
+def blockDiagPart [DecidableEq ι] (π : m → ι) (A : Matrix m m R) : Matrix m m R :=
+  Matrix.of fun i j => if π i = π j then A i j else 0
+
+/-- Entries of the block diagonal part: those whose row and column carry the same label. -/
+@[simp]
+theorem blockDiagPart_apply [DecidableEq ι] (π : m → ι) (A : Matrix m m R) (i j : m) :
+    blockDiagPart π A i j = if π i = π j then A i j else 0 := rfl
+
+/-- The **strict block-lower part** of `A` for the block labelling `π`, [saad2003iterative] `-E` of
+(4.15). -/
+def blockStrictLower [LinearOrder ι] (π : m → ι) (A : Matrix m m R) : Matrix m m R :=
+  Matrix.of fun i j => if π j < π i then A i j else 0
+
+/-- Entries of the strict block-lower part: those whose column label is below the row label. -/
+@[simp]
+theorem blockStrictLower_apply [LinearOrder ι] (π : m → ι) (A : Matrix m m R) (i j : m) :
+    blockStrictLower π A i j = if π j < π i then A i j else 0 := rfl
+
+/-- The **strict block-upper part** of `A` for the block labelling `π`, [saad2003iterative] `-F` of
+(4.15). -/
+def blockStrictUpper [LinearOrder ι] (π : m → ι) (A : Matrix m m R) : Matrix m m R :=
+  Matrix.of fun i j => if π i < π j then A i j else 0
+
+/-- Entries of the strict block-upper part: those whose row label is below the column label. -/
+@[simp]
+theorem blockStrictUpper_apply [LinearOrder ι] (π : m → ι) (A : Matrix m m R) (i j : m) :
+    blockStrictUpper π A i j = if π i < π j then A i j else 0 := rfl
+
+/-- With the identity labelling the strict block-lower part is the strictly lower part. -/
+@[simp]
+theorem blockStrictLower_id (A : Matrix n n R) : blockStrictLower id A = strictLower A := rfl
+
+/-- With the identity labelling the strict block-upper part is the strictly upper part. -/
+@[simp]
+theorem blockStrictUpper_id (A : Matrix n n R) : blockStrictUpper id A = strictUpper A := rfl
+
+omit [LinearOrder n] in
+/-- With the identity labelling the block diagonal part is the diagonal part. -/
+@[simp]
+theorem blockDiagPart_id [DecidableEq n] (A : Matrix n n R) : blockDiagPart id A = diagPart A := by
+  ext i j
+  rw [blockDiagPart_apply, diagPart, Matrix.diagonal_apply]
+  split <;> simp_all [Matrix.diag]
+
+end Zero
+
+/-- **[saad2003iterative] (4.15)**: a matrix is the sum of its block-diagonal, strict block-lower
+and strict block-upper parts, which in [saad2003iterative] letters is `A = D - E - F`. -/
+theorem blockDiagPart_add_blockStrictLower_add_blockStrictUpper [LinearOrder ι] [AddCommMonoid R]
+    (π : m → ι) (A : Matrix m m R) :
+    blockDiagPart π A + blockStrictLower π A + blockStrictUpper π A = A := by
+  ext i j
+  simp only [Matrix.add_apply, blockDiagPart_apply, blockStrictLower_apply,
+    blockStrictUpper_apply]
+  rcases lt_trichotomy (π i) (π j) with h | h | h
+  · simp [h, h.ne, asymm h]
+  · simp [h]
+  · simp [h, h.ne', asymm h]
+
+end BlockParts
 
 section DiagPart
 
@@ -253,9 +331,20 @@ theorem IsUpperTriangular.mul_apply {M N : Matrix n n R} (hM : M.IsUpperTriangul
   · rw [hM hk, zero_mul]
   · rw [hN hk, mul_zero]
 
+/-- An entry of a product of lower triangular matrices is a sum over the indices between. -/
+theorem IsLowerTriangular.mul_apply {M N : Matrix n n R} (hM : M.IsLowerTriangular)
+    (hN : N.IsLowerTriangular) [LocallyFiniteOrder n] (i j : n) :
+    (M * N) i j = ∑ k ∈ Finset.Icc j i, M i k * N k j := by
+  rw [Matrix.mul_apply]
+  refine (Finset.sum_subset (Finset.subset_univ _) fun k _ hk => ?_).symm
+  rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hk
+  rcases hk with hk | hk
+  · rw [hN (i := k) (j := j) hk, mul_zero]
+  · rw [hM (i := i) (j := k) hk, zero_mul]
+
 /-- The entry `(i, j)` of `G Hᵀ` for lower triangular `G` and `H` is `∑_{k ≤ min i j} g_ik h_jk`. -/
-theorem mul_transpose_apply_of_lower {G H : Matrix n n R} (hG : ∀ i j, i < j → G i j = 0)
-    (hH : ∀ i j, i < j → H i j = 0) (i j : n) :
+theorem mul_transpose_apply_of_lower {G H : Matrix n n R} (hG : G.IsLowerTriangular)
+    (hH : H.IsLowerTriangular) (i j : n) :
     (G * Hᵀ) i j = ∑ k ∈ Finset.univ.filter (· ≤ min i j), G i k * H j k := by
   rw [Matrix.mul_apply]
   refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
@@ -263,19 +352,33 @@ theorem mul_transpose_apply_of_lower {G H : Matrix n n R} (hG : ∀ i j, i < j �
   by_contra hcon
   rw [not_and_or, not_le, not_le] at hcon
   rcases hcon with hik | hjk
-  · exact hk (by rw [hG i k hik, zero_mul])
-  · exact hk (by rw [Matrix.transpose_apply, hH j k hjk, mul_zero])
+  · exact hk (by rw [hG (i := i) (j := k) hik, zero_mul])
+  · exact hk (by rw [Matrix.transpose_apply, hH (i := j) (j := k) hjk, mul_zero])
+
+/-- The entry `(i, j)` of `Gᵀ H` for upper triangular `G` and `H` is `∑_{k ≤ min i j} g_ki h_kj`,
+the dual of `Matrix.mul_transpose_apply_of_lower`. -/
+theorem transpose_mul_apply_of_upper {G H : Matrix n n R} (hG : G.IsUpperTriangular)
+    (hH : H.IsUpperTriangular) (i j : n) :
+    (Gᵀ * H) i j = ∑ k ∈ Finset.univ.filter (· ≤ min i j), G k i * H k j := by
+  rw [Matrix.mul_apply]
+  refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
+  rw [le_min_iff]
+  by_contra hcon
+  rw [not_and_or, not_le, not_le] at hcon
+  rcases hcon with hik | hjk
+  · exact hk (by rw [Matrix.transpose_apply, hG hik, zero_mul])
+  · exact hk (by rw [hH hjk, mul_zero])
 
 /-- The entry `(i, j)` of `L D Lᵀ` for a lower triangular `L` and a diagonal `D` is
 `∑_{k ≤ min i j} l_ik d_k l_jk`. -/
-theorem mul_mul_transpose_apply_of_isDiag {L D : Matrix n n R} (hL : ∀ i j, i < j → L i j = 0)
+theorem mul_mul_transpose_apply_of_isDiag {L D : Matrix n n R} (hL : L.IsLowerTriangular)
     (hD : D.IsDiag) (i j : n) :
     (L * D * Lᵀ) i j = ∑ k ∈ Finset.univ.filter (· ≤ min i j), L i k * D k k * L j k := by
   have hLD : ∀ i k, (L * D) i k = L i k * D k k := fun i k => by
     conv_lhs => rw [← hD.diagonal_diag]
     rw [Matrix.mul_diagonal, Matrix.diag_apply]
   rw [mul_transpose_apply_of_lower (G := L * D) (H := L)
-    (fun i j hij => by rw [hLD, hL i j hij, zero_mul]) hL]
+    (fun i j hij => by rw [hLD, hL hij, zero_mul]) hL]
   simp only [hLD]
 
 end Diag
@@ -287,6 +390,13 @@ theorem IsUpperTriangular.pow_apply_self [Fintype n] [Semiring R] {M : Matrix n 
   | zero => simp
   | succ m ih => rw [pow_succ, IsUpperTriangular.mul_apply_self (hM.pow m) hM, ih, pow_succ]
 
+/-- The diagonal of a power of a lower triangular matrix. -/
+theorem IsLowerTriangular.pow_apply_self [Fintype n] [Semiring R] {M : Matrix n n R}
+    (hM : M.IsLowerTriangular) (m : ℕ) (i : n) : (M ^ m) i i = M i i ^ m := by
+  induction m with
+  | zero => simp
+  | succ m ih => rw [pow_succ, IsLowerTriangular.mul_apply_self (hM.pow m) hM, ih, pow_succ]
+
 omit [LinearOrder n] in
 /-- `L D Lᵀ` is symmetric for a diagonal `D`. -/
 theorem isSymm_mul_mul_transpose_of_isDiag [Fintype n] [CommSemiring R] (L : Matrix n n R)
@@ -297,6 +407,11 @@ theorem isSymm_mul_mul_transpose_of_isDiag [Fintype n] [CommSemiring R] (L : Mat
 /-- On `Fin N`, upper triangular is the condition `A i j = 0` for `j < i` on values. -/
 theorem isUpperTriangular_iff_fin [Zero R] {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsUpperTriangular ↔ ∀ i j : Fin N, (j : ℕ) < i → A i j = 0 :=
+  ⟨fun h _ _ hij => h (Fin.lt_def.2 hij), fun h _ _ hij => h _ _ (Fin.lt_def.1 hij)⟩
+
+/-- On `Fin N`, lower triangular is the condition `A i j = 0` for `i < j` on values. -/
+theorem isLowerTriangular_iff_fin [Zero R] {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
+    A.IsLowerTriangular ↔ ∀ i j : Fin N, (i : ℕ) < j → A i j = 0 :=
   ⟨fun h _ _ hij => h (Fin.lt_def.2 hij), fun h _ _ hij => h _ _ (Fin.lt_def.1 hij)⟩
 
 /-- The first column of `M = Z T` with `T` upper triangular is `T₀₀ Z e₀`. -/
@@ -388,18 +503,35 @@ variable [Fintype n]
 
 /-- An upper triangular matrix is nonsingular exactly when its diagonal has no zero entry
 ([quarteroni2000numerical] §3.2, first sentence): its determinant is the product of the diagonal. -/
-theorem isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular {K : Type*} [Field K]
-    {U : Matrix n n K} (hU : U.IsUpperTriangular) : IsUnit U ↔ ∀ i, U i i ≠ 0 := by
+theorem IsUpperTriangular.isUnit_iff {K : Type*} [Field K] {U : Matrix n n K}
+    (hU : U.IsUpperTriangular) : IsUnit U ↔ ∀ i, U i i ≠ 0 := by
   rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hU, isUnit_iff_ne_zero,
     Finset.prod_ne_zero_iff]
   simp
 
 /-- A lower triangular matrix is nonsingular exactly when its diagonal has no zero entry. -/
-theorem isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular {K : Type*} [Field K]
-    {L : Matrix n n K} (hL : L.IsLowerTriangular) : IsUnit L ↔ ∀ i, L i i ≠ 0 := by
+theorem IsLowerTriangular.isUnit_iff {K : Type*} [Field K] {L : Matrix n n K}
+    (hL : L.IsLowerTriangular) : IsUnit L ↔ ∀ i, L i i ≠ 0 := by
   rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular L hL, isUnit_iff_ne_zero,
     Finset.prod_ne_zero_iff]
   simp
+
+@[deprecated (since := "2026-09-30")]
+alias isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular := IsUpperTriangular.isUnit_iff
+
+@[deprecated (since := "2026-09-30")]
+alias isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular := IsLowerTriangular.isUnit_iff
+
+/-- An upper triangular matrix with no zero on its diagonal has a unit determinant, the form the
+substitution and least-squares solvers consume. -/
+theorem IsUpperTriangular.isUnit_det_of_diag_ne_zero {K : Type*} [Field K] {U : Matrix n n K}
+    (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) : IsUnit U.det :=
+  (isUnit_iff_isUnit_det U).1 (hU.isUnit_iff.2 hd)
+
+/-- A lower triangular matrix with no zero on its diagonal has a unit determinant. -/
+theorem IsLowerTriangular.isUnit_det_of_diag_ne_zero {K : Type*} [Field K] {L : Matrix n n K}
+    (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) : IsUnit L.det :=
+  (isUnit_iff_isUnit_det L).1 (hL.isUnit_iff.2 hd)
 
 variable [DecidableEq n] [CommRing R]
 
@@ -435,6 +567,20 @@ theorem IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup [StarRing R] {U : Matr
     rwa [star_apply, star_eq_zero] at this
   · rw [diagonal_apply_eq]
   · rw [diagonal_apply_ne _ hij.ne', hU hij]
+
+/-- A unitary lower triangular matrix is diagonal, the transpose of
+`Matrix.IsUpperTriangular.eq_diagonal_of_mem_unitaryGroup`. -/
+theorem IsLowerTriangular.eq_diagonal_of_mem_unitaryGroup [StarRing R] {L : Matrix n n R}
+    (hL : L.IsLowerTriangular) (hLu : L ∈ unitaryGroup n R) : L = diagonal fun i => L i i := by
+  have hinv : L⁻¹ = star L := inv_eq_left_inv ((mem_unitaryGroup_iff').1 hLu)
+  have hst : (star L).IsLowerTriangular := by rw [← hinv]; exact hL.inv
+  ext i j
+  rcases lt_trichotomy i j with hij | rfl | hij
+  · rw [diagonal_apply_ne _ hij.ne, hL hij]
+  · rw [diagonal_apply_eq]
+  · rw [diagonal_apply_ne _ hij.ne']
+    have := hst hij
+    rwa [star_apply, star_eq_zero] at this
 
 end Inverse
 

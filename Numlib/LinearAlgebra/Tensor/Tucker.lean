@@ -2,7 +2,9 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: a new `Mathlib.LinearAlgebra.Tensor` directory beside `Mathlib.LinearAlgebra.Matrix`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+The exception is `Numlib/Analysis/Matrix/SingularValues` (the Ky Fan maximum principle for the
+optimal factors), which is not a candidate and would have to go upstream first; keep it free of
+any other dependency on the rest of `Numlib` than other upstreaming candidates.
 -/
 import Numlib.LinearAlgebra.Tensor.HOSVD
 

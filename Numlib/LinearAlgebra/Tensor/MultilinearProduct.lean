@@ -15,14 +15,18 @@ here: `Tensor.multilinearProd M S := Matrix.piKronecker M *ᵥ S`. Its shape cha
 with no cast, and its vec formulas ((12.4.15), (12.4.19)) are definitional in typed form.
 
 A single mode-`k` product changes the shape only at `k`; in dependent type theory the new family
-`Function.update κ k μ` agrees with `κ` off `k` only propositionally, so the mode product
-`Tensor.modeProd` is defined for square matrices only (shape-preserving, with clean laws), and a
-rectangular one is a multilinear product with identity factors.
+`Function.update κ k μ` agrees with `κ` off `k` only propositionally. The square mode product
+`Tensor.modeProd` is shape-preserving, with clean laws; the rectangular one `Tensor.rectModeProd`
+takes a target shape `μ` with equivalences `μ i ≃ κ i` off `k` (`Equiv.cast` for
+`Function.update`, `finCongr` on `Fin`-shapes), and its laws are those of the multilinear product,
+the shapes being matched by the equivalences.
 
 ## Main definitions
 
 * `Tensor.multilinearProd M S`: the multilinear product.
-* `Tensor.modeProd S k M`: the mode-`k` product with a square matrix.
+* `Tensor.multilinearProdₗ M`: the multilinear product as a linear map.
+* `Tensor.modeProd S k M`: the mode-`k` product with a square matrix; `Tensor.rectModeProd` with a
+  rectangular one (`Tensor.rectModeProd_refl`: the square case).
 
 ## Main statements
 
@@ -30,12 +34,15 @@ rectangular one is a multilinear product with identity factors.
   Theorem 12.4.1, `𝒜_(k) = M_k 𝒮_(k) (⊗_{j ≠ k} M_j)ᵀ`, and its version for any unfolding.
 * `Tensor.multilinearProd_inv`: the second part of Theorem 12.4.1.
 * `Tensor.modeProd_comm`, `Tensor.modeProd_modeProd`: [golub2013matrix] (12.4.16)–(12.4.17)
-  (the latter corrected).
+  (the latter corrected), and their rectangular forms `Tensor.rectModeProd_comm`,
+  `Tensor.rectModeProd_rectModeProd`, with `Tensor.modeUnfold_rectModeProd` (12.4.14).
 * `Tensor.multilinearProd_eq_modeProd`: the multilinear product is the composite of the mode
   products, in any order.
 * `Tensor.frobenius_norm_multilinearProd_of_orthonormal`: multilinear products by matrices with
   orthonormal columns are isometries.
-* `Tensor.vecFin_multilinearProd`: the flattened form (12.4.19).
+* `Tensor.vecFin_multilinearProd`: the flattened form (12.4.19);
+  `Tensor.piKronecker_reindex_finPiFinEquiv_eq_kroneckerFin` and `Tensor.vecFin_rectModeProd`:
+  the flattened mode product is `I ⊗ M ⊗ I` (12.4.15).
 
 ## References
 
@@ -99,6 +106,17 @@ theorem multilinearProd_diagonal [∀ i, DecidableEq (κ i)] (d : ∀ i, κ i �
     obtain ⟨i, hi⟩ := Function.ne_iff.1 hb
     rw [Finset.prod_eq_zero (Finset.mem_univ i) (diagonal_apply_ne (d i) (Ne.symm hi)), zero_mul]
   · simp
+
+/-- The multilinear product as a linear map in the tensor. -/
+def multilinearProdₗ (M : ∀ i, Matrix (μ i) (κ i) R) : Tensor κ R →ₗ[R] Tensor μ R where
+  toFun := multilinearProd M
+  map_add' := multilinearProd_add M
+  map_smul' := multilinearProd_smul M
+
+@[simp]
+theorem multilinearProdₗ_apply (M : ∀ i, Matrix (μ i) (κ i) R) (S : Tensor κ R) :
+    multilinearProdₗ M S = multilinearProd M S :=
+  rfl
 
 /-- The multilinear product is additive in the tensor, subtraction form. -/
 theorem multilinearProd_sub {R : Type w} [CommRing R] (M : ∀ i, Matrix (μ i) (κ i) R)
@@ -269,6 +287,141 @@ theorem multilinearProd_eq_modeProd (M : ∀ i, Matrix (κ i) (κ i) R) {l : Lis
 
 end ModeProd
 
+/-! ### Rectangular mode products
+
+A mode-`k` product with a rectangular `M : Matrix (μ k) (κ k) R` changes the shape at `k` only. The
+new shape `μ` is any family that agrees with `κ` off `k` along given equivalences
+`e i : μ i ≃ κ i` (`i ≠ k`): `Function.update κ k μ'` with `Equiv.cast`, or, on `Fin`-shapes,
+`fun i => Fin (Function.update n k m i)` with `finCongr`. Commutation and composition are then
+the factorwise composition `Tensor.multilinearProd_multilinearProd`, the shapes being matched by
+the equivalences. -/
+
+section RectModeProd
+
+variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)] [∀ i, DecidableEq (κ i)]
+  [CommSemiring R]
+
+/-- The factors of a rectangular mode-`k` product into the shape `μ`, which agrees with `κ` off `k`
+along `e`: `M` in mode `k`, and off `k` the identity read through `e`. -/
+def modeFactors (k : ι) (e : ∀ i, i ≠ k → μ i ≃ κ i) (M : Matrix (μ k) (κ k) R) (i : ι) :
+    Matrix (μ i) (κ i) R :=
+  if h : i = k then h ▸ M else (1 : Matrix (κ i) (κ i) R).submatrix (e i h) id
+
+omit [Fintype ι] [∀ i, Fintype (κ i)] in
+theorem modeFactors_self (k : ι) (e : ∀ i, i ≠ k → μ i ≃ κ i) (M : Matrix (μ k) (κ k) R) :
+    modeFactors k e M k = M := by
+  simp [modeFactors]
+
+omit [Fintype ι] [∀ i, Fintype (κ i)] in
+theorem modeFactors_of_ne {k i : ι} (h : i ≠ k) (e : ∀ i, i ≠ k → μ i ≃ κ i)
+    (M : Matrix (μ k) (κ k) R) :
+    modeFactors k e M i = (1 : Matrix (κ i) (κ i) R).submatrix (e i h) id := by
+  simp [modeFactors, h]
+
+/-- **The rectangular mode-`k` product** `𝒮 ×_k M` ([golub2013matrix] §12.4.10) with
+`M : Matrix (μ k) (κ k) R`, of shape `μ` (agreeing with `κ` off `k` along `e`): the multilinear
+product with `M` in mode `k` and identities elsewhere. -/
+def rectModeProd (S : Tensor κ R) (k : ι) (e : ∀ i, i ≠ k → μ i ≃ κ i)
+    (M : Matrix (μ k) (κ k) R) : Tensor μ R :=
+  multilinearProd (modeFactors k e M) S
+
+/-- The square mode product is the rectangular one with `μ = κ` and trivial equivalences. -/
+theorem rectModeProd_refl (S : Tensor κ R) (k : ι) (M : Matrix (κ k) (κ k) R) :
+    S.rectModeProd k (fun _ _ => Equiv.refl _) M = S.modeProd k M := by
+  rw [rectModeProd, modeProd]
+  congr 1
+
+/-- `(1 : Matrix κ κ R).submatrix e id * N` reads the rows of `N` through `e`. -/
+private theorem one_submatrix_mul {α β γ : Type*} [Fintype β] [DecidableEq β] (e : α ≃ β)
+    (N : Matrix β γ R) : (1 : Matrix β β R).submatrix e id * N = N.submatrix e id := by
+  ext x z
+  simp [mul_apply, one_apply]
+
+/-- `N * (1 : Matrix κ κ R).submatrix e id` reads the columns of `N` through `e.symm`. -/
+private theorem mul_one_submatrix {α β γ : Type*} [Fintype α] [DecidableEq β] (e : α ≃ β)
+    (N : Matrix γ α R) : N * (1 : Matrix β β R).submatrix e id = N.submatrix id e.symm := by
+  ext x z
+  simp only [mul_apply, submatrix_apply, id, one_apply]
+  rw [Finset.sum_eq_single (e.symm z)]
+  · simp
+  · intro y _ hy
+    rw [ite_eq_right_iff.2 fun h => absurd h fun h' => hy (by rw [← h', Equiv.symm_apply_apply]),
+      mul_zero]
+  · simp
+
+/-- **Composition in one mode** ([golub2013matrix] (12.4.17), corrected, rectangular):
+`(𝒮 ×_k F) ×_k G = 𝒮 ×_k (G F)`, the shapes matched by composing the equivalences. -/
+theorem rectModeProd_rectModeProd [∀ i, Fintype (μ i)] [∀ i, DecidableEq (μ i)]
+    (S : Tensor κ R) (k : ι) (e : ∀ i, i ≠ k → μ i ≃ κ i) (F : Matrix (μ k) (κ k) R)
+    (e' : ∀ i, i ≠ k → ν i ≃ μ i) (G : Matrix (ν k) (μ k) R) :
+    (S.rectModeProd k e F).rectModeProd k e' G =
+      S.rectModeProd k (fun i h => (e' i h).trans (e i h)) (G * F) := by
+  rw [rectModeProd, rectModeProd, rectModeProd, multilinearProd_multilinearProd]
+  congr 1
+  funext i
+  by_cases h : i = k
+  · subst h
+    simp only [modeFactors_self]
+  · rw [modeFactors_of_ne h, modeFactors_of_ne h, modeFactors_of_ne h, one_submatrix_mul]
+    ext x z
+    simp [one_apply]
+
+/-- **Mode products in distinct modes commute** ([golub2013matrix] (12.4.16), rectangular):
+`(𝒮 ×_k F) ×_j G = (𝒮 ×_j G') ×_k F'` for `j ≠ k`, where the two routes `κ → μ → ν` (along `e`,
+then `e'`) and `κ → λ → ν` (along `f`, then `f'`) agree off `j` and `k`, and `G'`, `F'` are `G`, `F`
+read through the equivalences. -/
+theorem rectModeProd_comm {ρ : ι → Type*} [∀ i, Fintype (μ i)] [∀ i, DecidableEq (μ i)]
+    [∀ i, Fintype (ρ i)] [∀ i, DecidableEq (ρ i)] (S : Tensor κ R) {j k : ι} (hjk : j ≠ k)
+    (e : ∀ i, i ≠ k → μ i ≃ κ i) (F : Matrix (μ k) (κ k) R) (e' : ∀ i, i ≠ j → ν i ≃ μ i)
+    (G : Matrix (ν j) (μ j) R) (f : ∀ i, i ≠ j → ρ i ≃ κ i) (f' : ∀ i, i ≠ k → ν i ≃ ρ i)
+    (hef : ∀ i (hj : i ≠ j) (hk : i ≠ k), (e' i hj).trans (e i hk) = (f' i hk).trans (f i hj)) :
+    (S.rectModeProd k e F).rectModeProd j e' G =
+      (S.rectModeProd j f (G.submatrix (f' j hjk).symm (e j hjk).symm)).rectModeProd k f'
+        (F.submatrix (e' k hjk.symm) (f k hjk.symm)) := by
+  rw [rectModeProd, rectModeProd, rectModeProd, rectModeProd, multilinearProd_multilinearProd,
+    multilinearProd_multilinearProd]
+  congr 1
+  funext i
+  by_cases hij : i = j
+  · subst hij
+    rw [modeFactors_self, modeFactors_of_ne hjk, modeFactors_of_ne hjk, modeFactors_self,
+      mul_one_submatrix, one_submatrix_mul]
+    ext x z
+    simp
+  · by_cases hik : i = k
+    · subst hik
+      rw [modeFactors_of_ne hij, modeFactors_self, modeFactors_self, modeFactors_of_ne hij,
+        one_submatrix_mul, mul_one_submatrix]
+      ext x z
+      simp
+    · rw [modeFactors_of_ne hij, modeFactors_of_ne hik, modeFactors_of_ne hik,
+        modeFactors_of_ne hij, one_submatrix_mul, one_submatrix_mul, submatrix_submatrix,
+        submatrix_submatrix]
+      have h := congrArg (⇑) (hef i hij hik)
+      simp only [Equiv.coe_trans] at h
+      rw [h]
+
+/-- [golub2013matrix] (12.4.14), rectangular: `(𝒮 ×_k M)_(k) = M 𝒮_(k)`, the columns read through
+the equivalences off `k`. -/
+theorem modeUnfold_rectModeProd (S : Tensor κ R) (k : ι) (e : ∀ i, i ≠ k → μ i ≃ κ i)
+    (M : Matrix (μ k) (κ k) R) :
+    (S.rectModeProd k e M).modeUnfold k =
+      (M * S.modeUnfold k).submatrix id fun c j => e j j.2 (c j) := by
+  rw [rectModeProd, modeUnfold_multilinearProd, modeFactors_self]
+  ext x c
+  rw [Matrix.mul_apply]
+  simp only [transpose_apply, piKronecker_apply, submatrix_apply, id]
+  have hprod : ∀ c' : ∀ j : {j // j ≠ k}, κ j,
+      (∏ j : {j // j ≠ k}, modeFactors k e M j (c j) (c' j))
+        = if (fun j : {j // j ≠ k} => e j j.2 (c j)) = c' then 1 else 0 := by
+    intro c'
+    rw [Finset.prod_congr rfl fun j _ => by
+      rw [modeFactors_of_ne j.2, submatrix_apply, id, one_apply], Fintype.prod_boole]
+    exact if_congr funext_iff.symm rfl rfl
+  simp only [hprod, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
+
+end RectModeProd
+
 /-! ### Orthonormal factors -/
 
 section Orthonormal
@@ -276,11 +429,6 @@ section Orthonormal
 variable {𝕜 : Type*} [RCLike 𝕜] [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
   [∀ i, DecidableEq (κ i)] [∀ i, Fintype (μ i)]
 
-omit [∀ i, DecidableEq (κ i)] [∀ i, Fintype (μ i)] in
-/-- The Frobenius inner product is the dot product with the conjugate. -/
-theorem inner_eq_star_dotProduct (A B : Tensor κ 𝕜) :
-    ⟪A, B⟫_𝕜 = star (of.symm A) ⬝ᵥ of.symm B :=
-  rfl
 
 omit [∀ i, DecidableEq (κ i)] in
 /-- The multilinear product by the conjugate transposes is the adjoint of the multilinear
@@ -337,6 +485,135 @@ theorem vecFin_multilinearProd (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) R)
   refine Finset.sum_congr rfl fun b _ => ?_
   rw [vecFin_apply, reindex_apply, submatrix_apply, Equiv.symm_apply_apply,
     Equiv.symm_apply_apply, piKronecker_apply]
+
+/-- A product over `Fin d` split at `k`: the factors below `k`, the `k`-th, and those above. -/
+private theorem prod_univ_split {α : Type*} [CommMonoid α] (f : Fin d → α) (k : Fin d) :
+    ∏ i, f i = (∏ j : Fin k, f (Fin.castLE k.is_lt.le j)) * f k *
+      ∏ j : Fin (d - (k + 1)), f ⟨k + 1 + j, by omega⟩ := by
+  set g : ℕ → α := fun l => if h : l < d then f ⟨l, h⟩ else 1 with hg
+  have h1 : ∏ i, f i = ∏ l ∈ Finset.range d, g l := by
+    rw [← Fin.prod_univ_eq_prod_range]
+    exact Finset.prod_congr rfl fun l _ => by rw [hg]; simp only [l.2, ↓reduceDIte]
+  have hd : d = k + 1 + (d - (k + 1)) := by omega
+  rw [h1, show Finset.range d = Finset.range (k + 1 + (d - (k + 1))) by rw [← hd],
+    Finset.prod_range_add, Finset.prod_range_succ, ← Fin.prod_univ_eq_prod_range,
+    ← Fin.prod_univ_eq_prod_range (fun l => g (k + 1 + l))]
+  refine congr_arg₂ (· * ·) (congr_arg₂ (· * ·) ?_ ?_) ?_
+  · exact Finset.prod_congr rfl fun j _ => by
+      rw [hg]
+      simp only [show (j : ℕ) < d by omega, ↓reduceDIte]
+      rfl
+  · rw [hg]
+    simp only [k.2, ↓reduceDIte]
+  · exact Finset.prod_congr rfl fun j _ => by
+      rw [hg]
+      simp only [show (k : ℕ) + 1 + j < d by omega, ↓reduceDIte]
+
+/-- The size of a shape agreeing with `n` off `k`, split at `k`: `(∏_{j > k} n_j) m_k
+(∏_{j < k} n_j)`. -/
+private theorem prod_eq_upper_mul_mul_lower (k : Fin d)
+    (hmn : ∀ i, i ≠ k → m i = n i) :
+    ∏ i, m i = (∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩) * m k *
+      ∏ j : Fin k, n (Fin.castLE k.is_lt.le j) := by
+  have hL : ∏ j : Fin k, m (Fin.castLE k.is_lt.le j) = ∏ j : Fin k, n (Fin.castLE k.is_lt.le j) :=
+    Finset.prod_congr rfl fun j _ => hmn _ (Fin.ne_of_val_ne (by simp; omega))
+  have hH : ∏ j : Fin (d - (k + 1)), m ⟨k + 1 + j, by omega⟩ =
+      ∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩ :=
+    Finset.prod_congr rfl fun j _ => hmn _ (Fin.ne_of_val_ne (by simp; omega))
+  rw [prod_univ_split m k, hL, hH]
+  ring
+
+/-- The value of a flattened index tuple does not see a cast of its shape. -/
+private theorem finPiFinEquiv_cast_val {e : ℕ} {s t : Fin e → ℕ} (h : ∀ j, s j = t j)
+    (x : ∀ j, Fin (s j)) :
+    ((finPiFinEquiv fun j => Fin.cast (h j) (x j) : Fin (∏ j, t j)) : ℕ) = finPiFinEquiv x := by
+  obtain rfl : s = t := funext h
+  rfl
+
+/-- **The flattened mode product is `I ⊗ M ⊗ I`** ([golub2013matrix] (12.4.15)): for a family on
+`Fin`-shapes that is `M k` in mode `k` and the value identity `δ_{xy}` elsewhere (the shapes
+agreeing off `k`), the flattened `piKronecker` is `I ⊗ M_k ⊗ I` with the identities of the modes
+above and below `k`, the higher modes outermost (`finPiFinEquiv` is little-endian). -/
+theorem piKronecker_reindex_finPiFinEquiv_eq_kroneckerFin (k : Fin d)
+    (M : ∀ i, Matrix (Fin (m i)) (Fin (n i)) R) (hmn : ∀ i, i ≠ k → m i = n i)
+    (hM : ∀ i, i ≠ k → ∀ x y, M i x y = if (x : ℕ) = y then 1 else 0) :
+    (piKronecker M).reindex finPiFinEquiv finPiFinEquiv =
+      (kroneckerFin (kroneckerFin
+          (1 : Matrix (Fin (∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩))
+            (Fin (∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩)) R) (M k))
+          (1 : Matrix (Fin (∏ j : Fin k, n (Fin.castLE k.is_lt.le j)))
+            (Fin (∏ j : Fin k, n (Fin.castLE k.is_lt.le j))) R)).submatrix
+        (finCongr (prod_eq_upper_mul_mul_lower k hmn))
+        (finCongr (prod_eq_upper_mul_mul_lower k fun _ _ => rfl)) := by
+  have hne_hi : ∀ j : Fin (d - (k + 1)), (⟨k + 1 + j, by omega⟩ : Fin d) ≠ k :=
+    fun j => Fin.ne_of_val_ne (by simp; omega)
+  have hne_lo : ∀ j : Fin k, Fin.castLE k.is_lt.le j ≠ k :=
+    fun j => Fin.ne_of_val_ne (by simp; omega)
+  -- the flattened index splits into the digits above `k`, the digit `k` and those below
+  have hsplit : ∀ {s : Fin d → ℕ} (hs : ∀ i, i ≠ k → s i = n i) (a : ∀ i, Fin (s i)),
+      finCongr (prod_eq_upper_mul_mul_lower k hs) (finPiFinEquiv a) =
+        finProdFinEquiv (finProdFinEquiv
+          (finPiFinEquiv fun j => Fin.cast (hs _ (hne_hi j)) (a ⟨k + 1 + j, by omega⟩), a k),
+          finPiFinEquiv fun j => Fin.cast (hs _ (hne_lo j)) (a (Fin.castLE k.is_lt.le j))) := by
+    intro s hs a
+    ext
+    rw [finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val, finProdFinEquiv_apply_val,
+      finPiFinEquiv_apply_val_split a k, finPiFinEquiv_cast_val, finPiFinEquiv_cast_val]
+    have hL : ∏ j : Fin k, s (Fin.castLE k.is_lt.le j) =
+        ∏ j : Fin k, n (Fin.castLE k.is_lt.le j) :=
+      Finset.prod_congr rfl fun j _ => hs _ (hne_lo j)
+    simp only [hL]
+  ext I J
+  obtain ⟨a, rfl⟩ := finPiFinEquiv.surjective I
+  obtain ⟨b, rfl⟩ := finPiFinEquiv.surjective J
+  rw [reindex_apply, submatrix_apply, submatrix_apply, Equiv.symm_apply_apply,
+    Equiv.symm_apply_apply, piKronecker_apply, hsplit hmn a, hsplit (fun _ _ => rfl) b,
+    kroneckerFin_apply, kroneckerFin_apply, one_apply, one_apply,
+    Fintype.prod_eq_mul_prod_subtype_ne _ k,
+    Finset.prod_congr rfl fun (i : {i // i ≠ k}) _ => hM i i.2 (a i) (b i), Fintype.prod_boole]
+  have hiff : (∀ i : {i // i ≠ k}, ((a i : Fin (m i)) : ℕ) = (b i : Fin (n i))) ↔
+      ((finPiFinEquiv fun j => Fin.cast (hmn _ (hne_hi j)) (a ⟨k + 1 + j, by omega⟩)) =
+          finPiFinEquiv fun j => Fin.cast rfl (b ⟨k + 1 + j, by omega⟩)) ∧
+        ((finPiFinEquiv fun j => Fin.cast (hmn _ (hne_lo j)) (a (Fin.castLE k.is_lt.le j))) =
+          finPiFinEquiv fun j => Fin.cast rfl (b (Fin.castLE k.is_lt.le j))) := by
+    simp only [EmbeddingLike.apply_eq_iff_eq, funext_iff, Fin.ext_iff, Fin.val_cast]
+    constructor
+    · intro h
+      exact ⟨fun j => h ⟨_, hne_hi j⟩, fun j => h ⟨_, hne_lo j⟩⟩
+    · rintro ⟨hhi, hlo⟩ ⟨i, hi⟩
+      rcases lt_or_gt_of_ne (Fin.val_ne_of_ne hi) with h | h
+      · have := hlo ⟨i, h⟩
+        simpa using this
+      · have := hhi ⟨i - (k + 1), by omega⟩
+        have e : (⟨k + 1 + (i - (k + 1)), by omega⟩ : Fin d) = i := Fin.ext (by simp; omega)
+        rw [e] at this
+        exact this
+  by_cases h : ∀ i : {i // i ≠ k}, ((a i : Fin (m i)) : ℕ) = (b i : Fin (n i))
+  · obtain ⟨h1, h2⟩ := hiff.1 h
+    simp only [h, h1, h2, implies_true, ↓reduceIte, mul_one, one_mul]
+  · rw [ite_eq_right_iff.2 fun h' => absurd h' h, mul_zero]
+    rcases not_and_or.1 (mt hiff.2 h) with h1 | h2
+    · simp only [h1, ↓reduceIte, zero_mul]
+    · simp only [h2, ↓reduceIte, mul_zero]
+
+/-- **[golub2013matrix] (12.4.15)** for the rectangular mode product on `Fin`-shapes:
+`vec(𝒮 ×_k M) = (I ⊗ M ⊗ I) vec(𝒮)`, the identities being those of the modes above and below
+`k`, up to the identification of the size products. -/
+theorem vecFin_rectModeProd
+    (S : Tensor (fun i => Fin (n i)) R) (k : Fin d) (hmn : ∀ i, i ≠ k → m i = n i)
+    (M : Matrix (Fin (m k)) (Fin (n k)) R) :
+    vecFin (S.rectModeProd k (μ := fun i => Fin (m i)) (fun i h => finCongr (hmn i h)) M) =
+      (kroneckerFin (kroneckerFin
+          (1 : Matrix (Fin (∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩))
+            (Fin (∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by omega⟩)) R) M)
+          (1 : Matrix (Fin (∏ j : Fin k, n (Fin.castLE k.is_lt.le j)))
+            (Fin (∏ j : Fin k, n (Fin.castLE k.is_lt.le j))) R)).submatrix
+        (finCongr (prod_eq_upper_mul_mul_lower k hmn))
+        (finCongr (prod_eq_upper_mul_mul_lower k fun _ _ => rfl)) *ᵥ vecFin S := by
+  rw [rectModeProd, vecFin_multilinearProd,
+    piKronecker_reindex_finPiFinEquiv_eq_kroneckerFin k _ hmn fun i hi x y => by
+      rw [modeFactors_of_ne hi, submatrix_apply, id, one_apply]
+      simp [Fin.ext_iff], modeFactors_self]
 
 end VecFin
 

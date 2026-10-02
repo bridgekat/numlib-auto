@@ -273,54 +273,180 @@ private theorem angle_inj {k l : Fin n}
     have := mul_right_cancel₀ hc h1; linarith
   exact Fin.ext (by exact_mod_cast h3)
 
-/-- The padded sine vector is the sine at every natural index up to `n + 1`: `sin 0 = 0` at the
-bottom and `sin((n + 1)θ_k) = sin((k + 1)π) = 0` at the top are exactly the padding. -/
-private theorem padZero_sineVec (k : Fin n) {m : ℕ} (hm : m ≤ n + 1) :
-    padZero (sineVec n k) m = Real.sin ((m : ℝ) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) := by
-  cases m with
-  | zero => simp
-  | succ m =>
-    rw [padZero_succ]
-    by_cases h : m < n
-    · rw [dite_eq_left h, sineVec_apply]
+/-! ### Sine and cosine vectors at an arbitrary angle
+
+At an arbitrary angle `θ` the sine and cosine vectors are eigenvectors of `tridiag(a, b, a)` up to
+residuals in the first and last rows; `sineVec n k` is the sine vector at `θ_k`, the angle at which
+the residual vanishes. -/
+
+section AngleVec
+
+/-- The sine vector at the angle `θ`, `k ↦ sin ((k + 1) θ)` on `Fin n`: the vector `s(θ) = (s_1, …,
+s_n)`, `s_k = sin (k θ)`, of [golub2013matrix] (4.8.15). -/
+noncomputable def sinAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
+  fun k => Real.sin (((k : ℕ) + 1) * θ)
+
+/-- The cosine vector at the angle `θ`, `k ↦ cos (k θ)` on `Fin n`: the vector `c(θ) = (c_0, …,
+c_{n-1})`, `c_k = cos (k θ)`, of [golub2013matrix] (4.8.15). -/
+noncomputable def cosAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
+  fun k => Real.cos ((k : ℕ) * θ)
+
+/-- The entries of a sine vector. -/
+theorem sinAngleVec_apply (θ : ℝ) (k : Fin n) :
+    sinAngleVec n θ k = Real.sin (((k : ℕ) + 1) * θ) := rfl
+
+/-- The entries of a cosine vector. -/
+theorem cosAngleVec_apply (θ : ℝ) (k : Fin n) : cosAngleVec n θ k = Real.cos ((k : ℕ) * θ) := rfl
+
+/-- The discrete sine vectors are the sine vectors at the angles `θ_k = (k + 1) π / (n + 1)`. -/
+theorem sineVec_eq_sinAngleVec (k : Fin n) :
+    sineVec n k = sinAngleVec n ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := rfl
+
+/-- A vector sampled from `g : ℕ → ℝ` at `1, …, n` is padded by `g` itself at `1, …, n` (and by
+zero at the two boundary points `0` and `n + 1`). -/
+private theorem padZero_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
+    (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) {m : ℕ} (hm0 : 0 < m) (hm : m ≤ n) :
+    padZero v m = g m := by
+  obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+  rw [padZero_succ, dite_eq_left (by omega), hv]
+
+/-- The row of `tridiag(a, b, a)` on a vector sampled from `g : ℕ → ℝ` at `1, …, n`: the
+three-term row of `g`, less the neighbours `g 0` and `g (n + 1)` that the first and last rows
+miss. -/
+private theorem symmTridiagonalToeplitz_mulVec_apply_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
+    (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) (i : Fin n) :
+    (symmTridiagonalToeplitz n a b *ᵥ v) i
+      = a * g i + b * g ((i : ℕ) + 1) + a * g ((i : ℕ) + 2)
+        - (if (i : ℕ) = 0 then a * g i else 0)
+        - (if (i : ℕ) + 1 = n then a * g ((i : ℕ) + 2) else 0) := by
+  have hi := i.isLt
+  have hA : padZero v (i : ℕ) = if (i : ℕ) = 0 then 0 else g i := by
+    split_ifs with h
+    · rw [h]
+      rfl
+    · exact padZero_of_forall_eq hv (by omega) (by omega)
+  have hC : padZero v ((i : ℕ) + 2) = if (i : ℕ) + 1 = n then 0 else g ((i : ℕ) + 2) := by
+    split_ifs with h
+    · exact padZero_of_lt v (by omega)
+    · exact padZero_of_forall_eq hv (by omega) (by omega)
+  rw [symmTridiagonalToeplitz_mulVec_apply, hA, hC,
+    padZero_of_forall_eq hv (by omega) (by omega)]
+  split_ifs <;> ring
+
+/-- The standard basis vector `e_n` of the last coordinate, evaluated. -/
+private theorem single_last_apply (hn : 0 < n) (i : Fin n) :
+    (Pi.single (⟨n - 1, by omega⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i
+      = if (i : ℕ) + 1 = n then 1 else 0 := by
+  rw [Pi.single_apply]
+  simp only [Fin.ext_iff]
+  split_ifs <;> first | rfl | (exfalso; omega)
+
+/-- The standard basis vector `e_1` of the first coordinate, evaluated. -/
+private theorem single_first_apply (hn : 0 < n) (i : Fin n) :
+    (Pi.single (⟨0, hn⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i = if (i : ℕ) = 0 then 1 else 0 := by
+  rw [Pi.single_apply]
+  simp only [Fin.ext_iff]
+
+/-- `sin (B - θ) + sin (B + θ) = 2 cos θ sin B`, with the two arguments given in any form. -/
+private theorem sin_add_sin_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
+    Real.sin A + Real.sin C = 2 * Real.cos θ * Real.sin B := by
+  rw [hA, hC, Real.sin_sub, Real.sin_add]
+  ring
+
+/-- `cos (B - θ) + cos (B + θ) = 2 cos θ cos B`, with the two arguments given in any form. -/
+private theorem cos_add_cos_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
+    Real.cos A + Real.cos C = 2 * Real.cos θ * Real.cos B := by
+  rw [hA, hC, Real.cos_sub, Real.cos_add]
+  ring
+
+/-- **The sine vector at any angle**, [golub2013matrix] (4.8.16) for `tridiag(a, b, a)`:
+`T s(θ) = (b + 2 a cos θ) s(θ) − a sin ((n + 1) θ) e_n`. Row by row this is
+`sin ((k - 1) θ) + sin ((k + 1) θ) = 2 cos θ sin (k θ)`, with `sin 0 = 0` supplying the missing
+neighbour of the first row and the residual `s_{n+1}` left over in the last. At `a = -1`, `b = 2`
+the factor is `2 - 2 cos θ = 4 sin² (θ / 2)`. -/
+theorem symmTridiagonalToeplitz_mulVec_sinAngleVec (hn : 0 < n) (θ : ℝ) :
+    symmTridiagonalToeplitz n a b *ᵥ sinAngleVec n θ
+      = (b + 2 * a * Real.cos θ) • sinAngleVec n θ
+        - (a * Real.sin (((n : ℝ) + 1) * θ)) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
+  funext i
+  rw [symmTridiagonalToeplitz_mulVec_apply_of_forall_eq a b (g := fun m => Real.sin (m * θ))
+    (fun j => by rw [sinAngleVec_apply]; push_cast; ring_nf)]
+  simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
+  rw [single_last_apply hn, sinAngleVec_apply]
+  have e1 : (if (i : ℕ) = 0 then a * Real.sin (((i : ℕ) : ℝ) * θ) else 0) = 0 := by
+    split_ifs with h
+    · simp [h]
+    · rfl
+  have e2 : (if (i : ℕ) + 1 = n then a * Real.sin ((((i : ℕ) + 2 : ℕ) : ℝ) * θ) else 0)
+      = a * Real.sin (((n : ℝ) + 1) * θ) * (if (i : ℕ) + 1 = n then 1 else 0) := by
+    split_ifs with h
+    · have h' : (n : ℝ) = ((i : ℕ) : ℝ) + 1 := by exact_mod_cast h.symm
+      rw [h']
       push_cast
       ring_nf
-    · rw [dite_eq_right h]
-      have hmn : m = n := by omega
-      subst hmn
-      have hne : ((m : ℝ) + 1) ≠ 0 := by positivity
-      have hrw : ((m : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((m : ℝ) + 1))
-          = ((((k : ℕ) : ℤ) + 1 : ℤ) : ℝ) * π := by
-        field_simp
-        push_cast
-        ring
+    · ring
+  have eB : Real.sin ((((i : ℕ) + 1 : ℕ) : ℝ) * θ) = Real.sin ((((i : ℕ) : ℝ) + 1) * θ) := by
+    push_cast
+    ring_nf
+  rw [e1, e2, eB]
+  have key := sin_add_sin_of_eq (θ := θ) (A := ((i : ℕ) : ℝ) * θ)
+    (B := (((i : ℕ) : ℝ) + 1) * θ) (C := (((i : ℕ) + 2 : ℕ) : ℝ) * θ)
+    (by ring) (by push_cast; ring)
+  linear_combination a * key
+
+/-- **The cosine vector at any angle**, [golub2013matrix] (4.8.17) for `tridiag(a, b, a)`:
+`T c(θ) = (b + 2 a cos θ) c(θ) − a cos θ e_1 − a cos (n θ) e_n` for `2 ≤ n`. The first row misses
+the neighbour `c_{-1} = cos θ`, the last misses `c_n = cos (n θ)`. -/
+theorem symmTridiagonalToeplitz_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
+    symmTridiagonalToeplitz n a b *ᵥ cosAngleVec n θ
+      = (b + 2 * a * Real.cos θ) • cosAngleVec n θ
+        - (a * Real.cos θ) • Pi.single (⟨0, by omega⟩ : Fin n) 1
+        - (a * Real.cos ((n : ℝ) * θ)) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
+  funext i
+  rw [symmTridiagonalToeplitz_mulVec_apply_of_forall_eq a b
+    (g := fun m => Real.cos (((m : ℝ) - 1) * θ))
+    (fun j => by rw [cosAngleVec_apply]; push_cast; ring_nf)]
+  simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
+  rw [single_last_apply (by omega), single_first_apply (by omega), cosAngleVec_apply]
+  have e1 : (if (i : ℕ) = 0 then a * Real.cos ((((i : ℕ) : ℝ) - 1) * θ) else 0)
+      = a * Real.cos θ * (if (i : ℕ) = 0 then 1 else 0) := by
+    split_ifs with h
+    · rw [h, Nat.cast_zero, zero_sub, neg_one_mul, Real.cos_neg, mul_one]
+    · ring
+  have e2 : (if (i : ℕ) + 1 = n then a * Real.cos (((((i : ℕ) + 2 : ℕ) : ℝ) - 1) * θ) else 0)
+      = a * Real.cos ((n : ℝ) * θ) * (if (i : ℕ) + 1 = n then 1 else 0) := by
+    split_ifs with h
+    · have h' : (n : ℝ) = ((i : ℕ) : ℝ) + 1 := by exact_mod_cast h.symm
+      rw [h']
       push_cast
-      rw [hrw, Real.sin_int_mul_pi]
+      ring_nf
+    · ring
+  have eB : Real.cos (((((i : ℕ) + 1 : ℕ) : ℝ) - 1) * θ) = Real.cos (((i : ℕ) : ℝ) * θ) := by
+    push_cast
+    ring_nf
+  rw [e1, e2, eB]
+  have key := cos_add_cos_of_eq (θ := θ) (A := (((i : ℕ) : ℝ) - 1) * θ)
+    (B := ((i : ℕ) : ℝ) * θ) (C := ((((i : ℕ) + 2 : ℕ) : ℝ) - 1) * θ)
+    (by ring) (by push_cast; ring)
+  linear_combination a * key
+
+end AngleVec
 
 /-- The eigenpairs of the symmetric tridiagonal Toeplitz matrix: the `k`-th discrete sine vector is
 an eigenvector with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`, for every `a` and `b` at once.
-Row by row this is `sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`, the first and last rows
-included thanks to `sin 0 = 0` and `sin((n + 1)θ_k) = 0`. -/
+It is the sine vector at `θ_k = (k + 1)π / (n + 1)`, at which the residual `sin((n + 1)θ_k)` of
+`Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec` vanishes. -/
 theorem symmTridiagonalToeplitz_mulVec_sineVec (k : Fin n) :
     symmTridiagonalToeplitz n a b *ᵥ sineVec n k
       = (b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) • sineVec n k := by
-  funext i
-  have hi : (i : ℕ) + 2 ≤ n + 1 := by omega
-  rw [symmTridiagonalToeplitz_mulVec_apply, padZero_sineVec k (by omega),
-    padZero_sineVec k (by omega), padZero_sineVec k hi]
-  have hkey : Real.sin (((i : ℕ) : ℝ)
-        * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)))
-      + Real.sin ((((i : ℕ) : ℝ) + 2) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)))
-      = 2 * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
-        * Real.sin ((((i : ℕ) : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) := by
-    set θ : ℝ := (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) with hθ
-    have h1 : ((i : ℕ) : ℝ) * θ = ((((i : ℕ) : ℝ) + 1) * θ) - θ := by ring
-    have h2 : (((i : ℕ) : ℝ) + 2) * θ = ((((i : ℕ) : ℝ) + 1) * θ) + θ := by ring
-    rw [h1, h2, Real.sin_sub, Real.sin_add]
-    ring
-  simp only [Pi.smul_apply, smul_eq_mul, sineVec_apply]
-  push_cast at hkey ⊢
-  linear_combination a * hkey
+  have hn : 0 < n := k.pos
+  have hsin : Real.sin (((n : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) = 0 := by
+    have hne : ((n : ℝ) + 1) ≠ 0 := by positivity
+    rw [show ((n : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+        = ((((k : ℕ) : ℤ) + 1 : ℤ) : ℝ) * π by field_simp; push_cast; ring,
+      Real.sin_int_mul_pi]
+  rw [sineVec_eq_sinAngleVec, symmTridiagonalToeplitz_mulVec_sinAngleVec a b hn, hsin, mul_zero,
+    zero_smul, sub_zero]
 
 /-- The discrete sine vectors are nonzero: the first entry is `sin θ_k` with `0 < θ_k < π`. -/
 theorem sineVec_ne_zero (k : Fin n) : sineVec n k ≠ 0 := by
@@ -333,20 +459,18 @@ theorem sineVec_ne_zero (k : Fin n) : sineVec n k ≠ 0 := by
 
 /-! ### Orthogonality of the sine basis -/
 
-/-- The telescoping identity `2 sin φ ∑_{j<M} cos(2(j+1)φ) = sin((2M+1)φ) - sin φ`, from `sin(x + φ)
-- sin(x - φ) = 2 cos x sin φ`. -/
-private theorem two_sin_mul_sum_cos (φ : ℝ) (M : ℕ) :
-    2 * Real.sin φ * ∑ j ∈ Finset.range M, Real.cos (2 * ((j : ℝ) + 1) * φ)
-      = Real.sin ((2 * (M : ℝ) + 1) * φ) - Real.sin φ := by
+/-- The telescoping identity `2 sin φ ∑_{j<M} cos(α + 2jφ) = sin(α + 2Mφ − φ) − sin(α − φ)`,
+from `sin(x + φ) − sin(x − φ) = 2 cos x sin φ`. -/
+private theorem two_sin_mul_sum_cos (φ α : ℝ) (M : ℕ) :
+    2 * Real.sin φ * ∑ j ∈ Finset.range M, Real.cos (α + 2 * (j : ℝ) * φ)
+      = Real.sin (α + 2 * (M : ℝ) * φ - φ) - Real.sin (α - φ) := by
   induction M with
   | zero => simp
   | succ M ih =>
     rw [Finset.sum_range_succ, mul_add, ih]
-    have h1 : (2 * ((M : ℝ) + 1) + 1) * φ = (2 * (M : ℝ) + 2) * φ + φ := by ring
-    have h2 : (2 * (M : ℝ) + 1) * φ = (2 * (M : ℝ) + 2) * φ - φ := by ring
-    push_cast
-    rw [h1, h2, Real.sin_add, Real.sin_sub]
-    ring_nf
+    have h1 : α + 2 * ((M + 1 : ℕ) : ℝ) * φ - φ = (α + 2 * (M : ℝ) * φ) + φ := by push_cast; ring
+    rw [h1, Real.sin_add, Real.sin_sub (α + 2 * (M : ℝ) * φ)]
+    ring
 
 /-- The cosine sum at a sine-basis angle: `∑_{j<n} cos(2(j+1)θ_k) = -1`, because `sin((2n+1)θ_k) =
 -sin θ_k`. -/
@@ -361,7 +485,18 @@ private theorem sum_cos_two_mul_angle (k : Fin n) :
     push_cast
     field_simp
     ring
-  have h := two_sin_mul_sum_cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) n
+  have h := two_sin_mul_sum_cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+    (2 * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) n
+  rw [show 2 * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      + 2 * (n : ℝ) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      - ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      = (2 * (n : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) by ring,
+    show 2 * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      - ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      = ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) by ring] at h
+  simp only [show ∀ j : ℕ, 2 * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      + 2 * (j : ℝ) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      = 2 * ((j : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) from fun j => by ring] at h
   rw [hend, Real.sin_add_int_mul_two_pi, Real.sin_neg] at h
   have h2 : 2 * Real.sin ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
       * (∑ j ∈ Finset.range n,
@@ -835,18 +970,16 @@ private theorem cos_half_angle_nonneg (n : ℕ) : 0 ≤ Real.cos (π / (2 * ((n 
 /-- `1 + cos(π / (n + 1)) = 2 cos²(π / (2(n + 1)))`. -/
 private theorem one_add_cos_angle (n : ℕ) :
     1 + Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
-  have h : π / ((n : ℝ) + 1) = 2 * (π / (2 * ((n : ℝ) + 1))) := by
-    field_simp
-  rw [h, Real.cos_sq]
-  ring
+  have h := Real.two_add_two_mul_cos (π / ((n : ℝ) + 1))
+  rw [div_div, mul_comm ((n : ℝ) + 1) 2] at h
+  linarith
 
 /-- `1 - cos(π / (n + 1)) = 2 sin²(π / (2(n + 1)))`. -/
 private theorem one_sub_cos_angle (n : ℕ) :
     1 - Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
-  have h : π / ((n : ℝ) + 1) = 2 * (π / (2 * ((n : ℝ) + 1))) := by
-    field_simp
-  rw [h, Real.cos_two_mul, Real.cos_sq']
-  ring
+  have h := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
+  rw [div_div, mul_comm ((n : ℝ) + 1) 2] at h
+  linarith
 
 /-- Every eigenvalue of the model Laplacian lies in `[4 sin²(π/(2(n+1))), 4 cos²(π/(2(n+1)))]`. -/
 private theorem eigenvalue_neg_one_two_mem_Icc {μ : ℝ}
@@ -949,164 +1082,6 @@ end SpectralNorm
 
 end NegOneTwo
 
-/-! ### Sine and cosine vectors at an arbitrary angle
-
-At an arbitrary angle `θ` the sine and cosine vectors are eigenvectors of `tridiag(a, b, a)` up to
-residuals in the first and last rows; `sineVec n k` is the sine vector at `θ_k`, the angle at which
-the residual vanishes. -/
-
-section AngleVec
-
-/-- The sine vector at the angle `θ`, `k ↦ sin ((k + 1) θ)` on `Fin n`: the vector `s(θ) = (s_1, …,
-s_n)`, `s_k = sin (k θ)`, of [golub2013matrix] (4.8.15). -/
-noncomputable def sinAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
-  fun k => Real.sin (((k : ℕ) + 1) * θ)
-
-/-- The cosine vector at the angle `θ`, `k ↦ cos (k θ)` on `Fin n`: the vector `c(θ) = (c_0, …,
-c_{n-1})`, `c_k = cos (k θ)`, of [golub2013matrix] (4.8.15). -/
-noncomputable def cosAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
-  fun k => Real.cos ((k : ℕ) * θ)
-
-/-- The entries of a sine vector. -/
-theorem sinAngleVec_apply (θ : ℝ) (k : Fin n) :
-    sinAngleVec n θ k = Real.sin (((k : ℕ) + 1) * θ) := rfl
-
-/-- The entries of a cosine vector. -/
-theorem cosAngleVec_apply (θ : ℝ) (k : Fin n) : cosAngleVec n θ k = Real.cos ((k : ℕ) * θ) := rfl
-
-/-- The discrete sine vectors are the sine vectors at the angles `θ_k = (k + 1) π / (n + 1)`. -/
-theorem sineVec_eq_sinAngleVec (k : Fin n) :
-    sineVec n k = sinAngleVec n ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := rfl
-
-/-- A vector sampled from `g : ℕ → ℝ` at `1, …, n` is padded by `g` itself at `1, …, n` (and by
-zero at the two boundary points `0` and `n + 1`). -/
-private theorem padZero_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
-    (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) {m : ℕ} (hm0 : 0 < m) (hm : m ≤ n) :
-    padZero v m = g m := by
-  obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
-  rw [padZero_succ, dite_eq_left (by omega), hv]
-
-/-- The row of `tridiag(a, b, a)` on a vector sampled from `g : ℕ → ℝ` at `1, …, n`: the
-three-term row of `g`, less the neighbours `g 0` and `g (n + 1)` that the first and last rows
-miss. -/
-private theorem symmTridiagonalToeplitz_mulVec_apply_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
-    (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) (i : Fin n) :
-    (symmTridiagonalToeplitz n a b *ᵥ v) i
-      = a * g i + b * g ((i : ℕ) + 1) + a * g ((i : ℕ) + 2)
-        - (if (i : ℕ) = 0 then a * g i else 0)
-        - (if (i : ℕ) + 1 = n then a * g ((i : ℕ) + 2) else 0) := by
-  have hi := i.isLt
-  have hA : padZero v (i : ℕ) = if (i : ℕ) = 0 then 0 else g i := by
-    split_ifs with h
-    · rw [h]
-      rfl
-    · exact padZero_of_forall_eq hv (by omega) (by omega)
-  have hC : padZero v ((i : ℕ) + 2) = if (i : ℕ) + 1 = n then 0 else g ((i : ℕ) + 2) := by
-    split_ifs with h
-    · exact padZero_of_lt v (by omega)
-    · exact padZero_of_forall_eq hv (by omega) (by omega)
-  rw [symmTridiagonalToeplitz_mulVec_apply, hA, hC,
-    padZero_of_forall_eq hv (by omega) (by omega)]
-  split_ifs <;> ring
-
-/-- The standard basis vector `e_n` of the last coordinate, evaluated. -/
-private theorem single_last_apply (hn : 0 < n) (i : Fin n) :
-    (Pi.single (⟨n - 1, by omega⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i
-      = if (i : ℕ) + 1 = n then 1 else 0 := by
-  rw [Pi.single_apply]
-  simp only [Fin.ext_iff]
-  split_ifs <;> first | rfl | (exfalso; omega)
-
-/-- The standard basis vector `e_1` of the first coordinate, evaluated. -/
-private theorem single_first_apply (hn : 0 < n) (i : Fin n) :
-    (Pi.single (⟨0, hn⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i = if (i : ℕ) = 0 then 1 else 0 := by
-  rw [Pi.single_apply]
-  simp only [Fin.ext_iff]
-
-/-- `sin (B - θ) + sin (B + θ) = 2 cos θ sin B`, with the two arguments given in any form. -/
-private theorem sin_add_sin_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
-    Real.sin A + Real.sin C = 2 * Real.cos θ * Real.sin B := by
-  rw [hA, hC, Real.sin_sub, Real.sin_add]
-  ring
-
-/-- `cos (B - θ) + cos (B + θ) = 2 cos θ cos B`, with the two arguments given in any form. -/
-private theorem cos_add_cos_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
-    Real.cos A + Real.cos C = 2 * Real.cos θ * Real.cos B := by
-  rw [hA, hC, Real.cos_sub, Real.cos_add]
-  ring
-
-/-- **The sine vector at any angle**, [golub2013matrix] (4.8.16) for `tridiag(a, b, a)`:
-`T s(θ) = (b + 2 a cos θ) s(θ) − a sin ((n + 1) θ) e_n`. Row by row this is
-`sin ((k - 1) θ) + sin ((k + 1) θ) = 2 cos θ sin (k θ)`, with `sin 0 = 0` supplying the missing
-neighbour of the first row and the residual `s_{n+1}` left over in the last. At `a = -1`, `b = 2`
-the factor is `2 - 2 cos θ = 4 sin² (θ / 2)`. -/
-theorem symmTridiagonalToeplitz_mulVec_sinAngleVec (hn : 0 < n) (θ : ℝ) :
-    symmTridiagonalToeplitz n a b *ᵥ sinAngleVec n θ
-      = (b + 2 * a * Real.cos θ) • sinAngleVec n θ
-        - (a * Real.sin (((n : ℝ) + 1) * θ)) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
-  funext i
-  rw [symmTridiagonalToeplitz_mulVec_apply_of_forall_eq a b (g := fun m => Real.sin (m * θ))
-    (fun j => by rw [sinAngleVec_apply]; push_cast; ring_nf)]
-  simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
-  rw [single_last_apply hn, sinAngleVec_apply]
-  have e1 : (if (i : ℕ) = 0 then a * Real.sin (((i : ℕ) : ℝ) * θ) else 0) = 0 := by
-    split_ifs with h
-    · simp [h]
-    · rfl
-  have e2 : (if (i : ℕ) + 1 = n then a * Real.sin ((((i : ℕ) + 2 : ℕ) : ℝ) * θ) else 0)
-      = a * Real.sin (((n : ℝ) + 1) * θ) * (if (i : ℕ) + 1 = n then 1 else 0) := by
-    split_ifs with h
-    · have h' : (n : ℝ) = ((i : ℕ) : ℝ) + 1 := by exact_mod_cast h.symm
-      rw [h']
-      push_cast
-      ring_nf
-    · ring
-  have eB : Real.sin ((((i : ℕ) + 1 : ℕ) : ℝ) * θ) = Real.sin ((((i : ℕ) : ℝ) + 1) * θ) := by
-    push_cast
-    ring_nf
-  rw [e1, e2, eB]
-  have key := sin_add_sin_of_eq (θ := θ) (A := ((i : ℕ) : ℝ) * θ)
-    (B := (((i : ℕ) : ℝ) + 1) * θ) (C := (((i : ℕ) + 2 : ℕ) : ℝ) * θ)
-    (by ring) (by push_cast; ring)
-  linear_combination a * key
-
-/-- **The cosine vector at any angle**, [golub2013matrix] (4.8.17) for `tridiag(a, b, a)`:
-`T c(θ) = (b + 2 a cos θ) c(θ) − a cos θ e_1 − a cos (n θ) e_n` for `2 ≤ n`. The first row misses
-the neighbour `c_{-1} = cos θ`, the last misses `c_n = cos (n θ)`. -/
-theorem symmTridiagonalToeplitz_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
-    symmTridiagonalToeplitz n a b *ᵥ cosAngleVec n θ
-      = (b + 2 * a * Real.cos θ) • cosAngleVec n θ
-        - (a * Real.cos θ) • Pi.single (⟨0, by omega⟩ : Fin n) 1
-        - (a * Real.cos ((n : ℝ) * θ)) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
-  funext i
-  rw [symmTridiagonalToeplitz_mulVec_apply_of_forall_eq a b
-    (g := fun m => Real.cos (((m : ℝ) - 1) * θ))
-    (fun j => by rw [cosAngleVec_apply]; push_cast; ring_nf)]
-  simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
-  rw [single_last_apply (by omega), single_first_apply (by omega), cosAngleVec_apply]
-  have e1 : (if (i : ℕ) = 0 then a * Real.cos ((((i : ℕ) : ℝ) - 1) * θ) else 0)
-      = a * Real.cos θ * (if (i : ℕ) = 0 then 1 else 0) := by
-    split_ifs with h
-    · rw [h, Nat.cast_zero, zero_sub, neg_one_mul, Real.cos_neg, mul_one]
-    · ring
-  have e2 : (if (i : ℕ) + 1 = n then a * Real.cos (((((i : ℕ) + 2 : ℕ) : ℝ) - 1) * θ) else 0)
-      = a * Real.cos ((n : ℝ) * θ) * (if (i : ℕ) + 1 = n then 1 else 0) := by
-    split_ifs with h
-    · have h' : (n : ℝ) = ((i : ℕ) : ℝ) + 1 := by exact_mod_cast h.symm
-      rw [h']
-      push_cast
-      ring_nf
-    · ring
-  have eB : Real.cos (((((i : ℕ) + 1 : ℕ) : ℝ) - 1) * θ) = Real.cos (((i : ℕ) : ℝ) * θ) := by
-    push_cast
-    ring_nf
-  rw [e1, e2, eB]
-  have key := cos_add_cos_of_eq (θ := θ) (A := (((i : ℕ) : ℝ) - 1) * θ)
-    (B := ((i : ℕ) : ℝ) * θ) (C := ((((i : ℕ) + 2 : ℕ) : ℝ) - 1) * θ)
-    (by ring) (by push_cast; ring)
-  linear_combination a * key
-
-end AngleVec
 
 /-! ### The second-difference matrices
 
@@ -1132,7 +1107,8 @@ def secondDifferenceNN (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   secondDifferenceDN n - of fun (i j : Fin n) => if (i : ℕ) = 0 ∧ (j : ℕ) = 1 then 1 else 0
 
 /-- The periodic second difference `𝒯^{(P)}_n = 𝒯^{(DD)}_n − e_1 e_nᵀ − e_n e_1ᵀ`
-([golub2013matrix] (4.8.10)). -/
+([golub2013matrix] (4.8.10)), for `2 ≤ n`: the definition subtracts the indicator of the two
+corner positions, which coincide at `n = 1` (there it is `[1]`, not the formula's `[0]`). -/
 def secondDifferencePeriodic (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   symmTridiagonalToeplitz n (-1) 2 - of fun (i j : Fin n) =>
     if ((i : ℕ) = 0 ∧ (j : ℕ) + 1 = n) ∨ ((i : ℕ) + 1 = n ∧ (j : ℕ) = 0) then 1 else 0
@@ -1457,19 +1433,6 @@ private theorem cosineII_angle_mem (k : Fin n) :
   rw [div_lt_iff₀ hn]
   nlinarith [Real.pi_pos]
 
-/-- The telescoping identity `2 sin ψ ∑_{j<M} cos ((2 j + 1) ψ) = sin (2 M ψ)`. -/
-private theorem two_sin_mul_sum_cos_odd (ψ : ℝ) (M : ℕ) :
-    2 * Real.sin ψ * ∑ j ∈ Finset.range M, Real.cos ((2 * (j : ℝ) + 1) * ψ)
-      = Real.sin (2 * (M : ℝ) * ψ) := by
-  induction M with
-  | zero => simp
-  | succ M ih =>
-    rw [Finset.sum_range_succ, mul_add, ih]
-    have h1 : 2 * ((M + 1 : ℕ) : ℝ) * ψ = (2 * (M : ℝ) + 1) * ψ + ψ := by push_cast; ring
-    have h2 : 2 * (M : ℝ) * ψ = (2 * (M : ℝ) + 1) * ψ - ψ := by ring
-    rw [h1, h2, Real.sin_add, Real.sin_sub]
-    ring
-
 /-- The squared length of a DCT-II vector: `n` for `k = 0`, `n / 2` otherwise. -/
 private theorem sum_cosineIIVec_mul_self (k : Fin n) :
     ∑ j : Fin n, cosineIIVec n k j * cosineIIVec n k j
@@ -1487,7 +1450,11 @@ private theorem sum_cosineIIVec_mul_self (k : Fin n) :
     have hk0 : (0 : ℝ) < (k : ℕ) := by exact_mod_cast Nat.pos_of_ne_zero hk
     exact (Real.sin_pos_of_pos_of_lt_pi (by positivity) (cosineII_angle_mem k).2).ne'
   have hsum : ∑ j ∈ Finset.range n, Real.cos ((2 * (j : ℝ) + 1) * ((k : ℕ) * π / n)) = 0 := by
-    have h := two_sin_mul_sum_cos_odd ((k : ℕ) * π / n) n
+    have h := two_sin_mul_sum_cos ((k : ℕ) * π / n) ((k : ℕ) * π / n) n
+    rw [show (k : ℕ) * π / n + 2 * (n : ℝ) * ((k : ℕ) * π / n) - (k : ℕ) * π / n
+        = 2 * (n : ℝ) * ((k : ℕ) * π / n) by ring, sub_self, Real.sin_zero, sub_zero] at h
+    simp only [show ∀ j : ℕ, (k : ℕ) * π / n + 2 * (j : ℝ) * ((k : ℕ) * π / n)
+        = (2 * (j : ℝ) + 1) * ((k : ℕ) * π / n) from fun j => by ring] at h
     rw [show 2 * (n : ℝ) * ((k : ℕ) * π / n) = ((2 * (k : ℕ) : ℕ) : ℝ) * π by
       push_cast; field_simp, Real.sin_nat_mul_pi] at h
     exact (mul_eq_zero.mp h).resolve_left (mul_ne_zero two_ne_zero hψ)

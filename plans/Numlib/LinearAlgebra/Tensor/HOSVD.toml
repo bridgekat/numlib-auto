@@ -23,3 +23,9 @@ id = "norm_sub_truncatedHOSVD_sq_le"
 
 [[node]]
 id = "sum_sq_le_norm_sub_sq_of_multilinearRank_le"
+
+[[node]]  # review2 (g6)
+id = "norm_sub_truncatedHOSVDOf_sq_le"
+
+[[node]]  # review2 (g6)
+id = "modeUnfold_hosvdCoreOf_mul_conjTranspose"

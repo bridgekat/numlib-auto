@@ -45,7 +45,8 @@ work with.
 * `Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`: the reduction to block triangular form
   from a known invariant subspace ([golub2013matrix] Lemma 7.1.2).
 * `Matrix.isStarNormal_iff_strictUpper_eq_zero`: normality is diagonality of the Schur form
-  ([golub2013matrix] §9.3.2), from `Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal`.
+  ([golub2013matrix] §9.3.2), from `Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` (with
+  its lower twin) and the unitary invariance `Matrix.isStarNormal_star_mul_mul_iff`.
 * `Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks` and
   `Matrix.IsHermitian.charpoly_eq_mul_of_mul_eq_mul`: an invariant subspace of a Hermitian matrix
   splits it into two diagonal blocks, and splits its spectrum ([golub2013matrix] Theorem 8.1.9).
@@ -468,34 +469,32 @@ theorem IsUpperTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
   · rw [diagonal_apply_eq]
   · rw [hT h, diagonal_apply_ne _ h.ne']
 
+/-- A lower triangular normal matrix is diagonal: its adjoint is upper triangular and normal
+(`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal`). -/
+theorem IsLowerTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
+    (hT : T.IsLowerTriangular) (hN : IsStarNormal T) : T = diagonal fun i => T i i := by
+  have hU : (star T).IsUpperTriangular := fun i j hij => by
+    rw [star_apply, hT (i := j) (j := i) hij, star_zero]
+  have h := congrArg star (hU.eq_diagonal_of_isStarNormal inferInstance)
+  rw [star_star] at h
+  conv_lhs => rw [h]
+  rw [star_eq_conjTranspose, diagonal_conjTranspose]
+  congr 1
+  funext i
+  simp
+
 omit [LinearOrder n] in
-/-- Normality is invariant under unitary similarity: `(Qᴴ A Q)ᴴ (Qᴴ A Q) = Qᴴ (Aᴴ A) Q` and
-`(Qᴴ A Q)(Qᴴ A Q)ᴴ = Qᴴ (A Aᴴ) Q`. -/
+/-- Normality is invariant under unitary similarity: conjugation by a unitary is a
+`⋆`-automorphism (`Unitary.conjStarAlgAut`), and `⋆`-homomorphisms preserve normality. -/
 theorem isStarNormal_star_mul_mul_iff {A Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜) :
     IsStarNormal (star Q * A * Q) ↔ IsStarNormal A := by
-  have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.mp hQ
-  have hQQ' : star Q * Q = 1 := mem_unitaryGroup_iff'.mp hQ
-  have e : ∀ X Y : Matrix n n 𝕜, (star Q * X * Q) * (star Q * Y * Q) = star Q * (X * Y) * Q :=
-    fun X Y => by
-      simp only [Matrix.mul_assoc]
-      rw [← Matrix.mul_assoc Q (star Q), hQQ, Matrix.one_mul]
-  have hstar : star (star Q * A * Q) = star Q * star A * Q := by
-    simp only [star_mul, star_star, Matrix.mul_assoc]
-  have hcancel : ∀ X : Matrix n n 𝕜, Q * (star Q * X * Q) * star Q = X := fun X => by
-    simp only [← Matrix.mul_assoc, hQQ, Matrix.one_mul]
-    rw [Matrix.mul_assoc, hQQ, Matrix.mul_one]
-  constructor
-  · rintro ⟨h⟩
-    refine ⟨?_⟩
-    have h' := h.eq
-    rw [hstar, e, e] at h'
-    have := congrArg (fun M => Q * M * star Q) h'
-    simp only [hcancel] at this
-    exact this
-  · rintro ⟨h⟩
-    refine ⟨?_⟩
-    change star (star Q * A * Q) * (star Q * A * Q) = (star Q * A * Q) * star (star Q * A * Q)
-    rw [hstar, e, e, h.eq]
+  have key : ∀ {B P : Matrix n n 𝕜}, P ∈ unitaryGroup n 𝕜 → IsStarNormal B →
+      IsStarNormal (star P * B * P) := fun {B P} hP _ => by
+    simpa using IsStarNormal.map (Unitary.conjStarAlgAut 𝕜 (Matrix n n 𝕜) (star ⟨P, hP⟩)) B
+  refine ⟨fun h => ?_, key hQ⟩
+  have := key (Unitary.star_mem hQ) h
+  rwa [star_star, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ,
+    Matrix.one_mul, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ, Matrix.mul_one] at this
 
 /-- **Normality is diagonality of the Schur form** ([golub2013matrix] §9.3.2 and P7.1.1): if
 `T = Qᴴ A Q` is upper triangular with `Q` unitary, then `A` is normal iff `T` is diagonal, that is

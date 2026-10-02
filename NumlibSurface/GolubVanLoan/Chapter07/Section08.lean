@@ -338,7 +338,7 @@ theorem equation_7_8_6 (A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℝ) :
       Matrix.one_mul]
   refine ⟨U 0, hU 0, U 1, hU 1, U 2, hU 2, hH₃, hT₂, hT₁, ?_⟩
   rw [hprod]
-  exact ((hH₃.mul_isUpperTriangular hT₂).1.mul_isUpperTriangular hT₁).1
+  exact (hH₃.mul_isUpperTriangular hT₂).mul_isUpperTriangular hT₁
 
 /-- **§7.8.2, the block-cyclic restatement**: with `U = diag(U₁, U₂, U₃)`,
 `Uᵀ [0 0 A₃; A₁ 0 0; 0 A₂ 0] U = [0 0 U₁ᵀA₃U₃; U₂ᵀA₁U₁ 0 0; 0 U₃ᵀA₂U₂ 0]` (the factors indexed by

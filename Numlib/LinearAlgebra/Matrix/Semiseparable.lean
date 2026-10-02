@@ -59,14 +59,18 @@ algorithms possible.
   do have representations (12.2.8) (`Matrix.exists_lower_semiseparable_rep`, §12.2.4).
 * `Matrix.givensChain_apply`: the entries (12.2.4) of a chain of `2 × 2` blocks in consecutive
   planes, which is upper Hessenberg and quasiseparable; `Matrix.exists_givensVector_rep` (12.2.11)
-  and `Matrix.transpose_givensChain_mul_strictLower_add_diagPart` (12.2.14), the QR factorization of
+  and `Matrix.givensChain_mul_strictLower_add_diagPart` (12.2.14), the QR factorization of
   a semiseparable matrix.
 * `Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector` (12.2.18),
   `Matrix.orthogonalHessenberg_isQuasiseparable`, and Fact 1 of §12.2.10,
   `Matrix.isSimilar_prod_planeReflector_oddEven`, from the general reordering
-  `Matrix.isSimilar_prodFwd_evenOdd` of a product of generators of a path.
-* Fact 2 of §12.2.10, `Matrix.eigenvalues_oddEven_half_sum`: `C = (H_o + H_e)/2` and
-  `S = (H_o − H_e)/2` are symmetric tridiagonal (`Matrix.isTridiagonal_oddEven_half_sum`, from
+  `Matrix.isSimilar_prodFwd_evenOdd` of a product of generators of a path. The product (12.2.18)
+  is orthogonal, with determinant `(−1)^{N+1}`
+  (`Matrix.prodFwd_reflectorFactor_mem_orthogonalGroup`, `Matrix.det_prodFwd_reflectorFactor`,
+  `Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`).
+* Fact 2 of §12.2.10: `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` (`Matrix.oddEvenHalfSum`,
+  `Matrix.oddEvenHalfDiff`) are symmetric tridiagonal (`Matrix.isTridiagonal_oddEvenHalfSum`,
+  `Matrix.isTridiagonal_oddEvenHalfDiff`, from
   `Matrix.prodFwd_eq_one_add_sum_sub_one` of `Numlib.LinearAlgebra.Matrix.Products`: a product
   of disjointly supported factors is the identity plus the sum of their departures), with
   eigenvalues `± cos(θ_k/2)` and `± sin(θ_k/2)` (`Matrix.charpoly_oddEven_half_sum`). The spectral
@@ -269,17 +273,6 @@ private theorem unitBidiagonal_eq_one_sub (r : ℕ → K) :
     simp only [hij, ite_false]
     split_ifs <;> simp
 
-/-- A sum picking out the index after `i`. -/
-private theorem sum_ite_val_eq_add_one (i : Fin n) (f : Fin n → K) :
-    ∑ k : Fin n, (if (k : ℕ) = i + 1 then f k else 0) =
-      if h : (i : ℕ) + 1 < n then f ⟨i + 1, h⟩ else 0 := by
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨i + 1, h⟩
-      (fun k _ hk => ite_eq_right_iff.2 fun hk' => absurd (Fin.ext hk') hk)
-      (fun hk => absurd (mem_univ _) hk)]
-    simp
-  · exact Finset.sum_eq_zero fun k _ => ite_eq_right_iff.2 fun hk => absurd k.2 (by omega)
-
 /-- `B(r)` times the explicit upper triangular matrix of products of `r` is the identity. -/
 private theorem unitBidiagonal_mul_prod (r : ℕ → K) :
     unitBidiagonal n r *
@@ -288,8 +281,10 @@ private theorem unitBidiagonal_mul_prod (r : ℕ → K) :
   ext i j
   rw [sub_apply, mul_apply]
   simp_rw [of_apply, ite_mul, zero_mul]
-  rw [sum_ite_val_eq_add_one i
-    (fun k => r i * if k ≤ j then ∏ l ∈ Finset.Ico (k : ℕ) j, r l else 0)]
+  have hs := sum_dite_val_eq_add_one i fun k (_ : (k : ℕ) = i + 1) =>
+    r i * if k ≤ j then ∏ l ∈ Finset.Ico (k : ℕ) j, r l else 0
+  simp only [dite_eq_ite] at hs
+  rw [hs]
   rcases lt_trichotomy (i : ℕ) j with h | h | h
   · have h1 : (i : ℕ) + 1 < n := by omega
     have hij : i ≤ j := Fin.le_def.2 h.le
@@ -385,6 +380,66 @@ section Representation
 
 variable {n : ℕ}
 
+/-- **The quasiseparable representation**, with the transfer factors strictly between the row
+and the column (Eidelman–Gohberg 1999; Vandebril–Van Barel–Mastronardi 2008): below the diagonal
+`u_i t_{j+1} ⋯ t_{i−1} v_j`, on it `d_i`, above it `p_i r_{i+1} ⋯ r_{j−1} q_j`. It has one
+transfer factor fewer than the book's `𝐒(u, v, t, d, p, q, r)` of (12.2.8), which is what lets it
+represent every quasiseparable matrix (`Matrix.exists_quasiseparableRep`), `B(r)` included. -/
+def quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K) :
+    Matrix (Fin n) (Fin n) K :=
+  of fun i j => if j < i then u i * (∏ l ∈ Finset.Ico ((j : ℕ) + 1) i, t l) * v j
+    else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j
+
+/-- The entries of `quasiseparableRep`. -/
+theorem quasiseparableRep_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K)
+    (i j : Fin n) :
+    quasiseparableRep u v t d p q r i j =
+      if j < i then u i * (∏ l ∈ Finset.Ico ((j : ℕ) + 1) i, t l) * v j
+      else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j :=
+  rfl
+
+/-- Transposing the representation exchanges its lower and upper generators. -/
+theorem transpose_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
+    (r : ℕ → K) : (quasiseparableRep u v t d p q r)ᵀ = quasiseparableRep q p r d v u t := by
+  ext i j
+  simp only [transpose_apply, quasiseparableRep_apply]
+  rcases lt_trichotomy i j with h | rfl | h
+  · simp [h, lt_asymm h, h.ne]
+    ring
+  · simp
+  · simp [h, lt_asymm h, h.ne]
+    ring
+
+/-- The representation is quasiseparable: the strictly lower maximal block at `k` is
+`vecMulVec (u_i t_{k+1} ⋯ t_{i−1}) (t_{j+1} ⋯ t_k v_j)`, and symmetrically above. -/
+theorem isQuasiseparable_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
+    (r : ℕ → K) : (quasiseparableRep u v t d p q r).IsQuasiseparable := by
+  intro k
+  constructor
+  · have : (quasiseparableRep u v t d p q r).toBlock (k < ·) (· ≤ k) =
+        vecMulVec (fun i : {i // k < i} => u i * ∏ l ∈ Finset.Ico ((k : ℕ) + 1) i, t l)
+          (fun j : {j // j ≤ k} => (∏ l ∈ Finset.Ico ((j : ℕ) + 1) ((k : ℕ) + 1), t l) * v j) := by
+      ext ⟨i, hi⟩ ⟨j, hj⟩
+      have hji : j < i := lt_of_le_of_lt hj hi
+      simp only [toBlock_apply, quasiseparableRep_apply, vecMulVec_apply, hji, ↓reduceIte]
+      rw [← prod_Ico_consecutive t (Nat.succ_le_succ (Fin.le_def.1 hj))
+        (Nat.succ_le_of_lt (Fin.lt_def.1 hi))]
+      ring
+    rw [this]
+    exact rank_vecMulVec_le _ _
+  · have : (quasiseparableRep u v t d p q r).toBlock (· ≤ k) (k < ·) =
+        vecMulVec (fun i : {i // i ≤ k} => p i * ∏ l ∈ Finset.Ico ((i : ℕ) + 1) ((k : ℕ) + 1), r l)
+          (fun j : {j // k < j} => (∏ l ∈ Finset.Ico ((k : ℕ) + 1) j, r l) * q j) := by
+      ext ⟨i, hi⟩ ⟨j, hj⟩
+      have hij : i < j := lt_of_le_of_lt hi hj
+      simp only [toBlock_apply, quasiseparableRep_apply, vecMulVec_apply, lt_asymm hij, hij.ne,
+        ↓reduceIte]
+      rw [← prod_Ico_consecutive r (Nat.succ_le_succ (Fin.le_def.1 hi))
+        (Nat.succ_le_of_lt (Fin.lt_def.1 hj))]
+      ring
+    rw [this]
+    exact rank_vecMulVec_le _ _
+
 /-- **The quasiseparable representation** `𝐒(u, v, t, d, p, q, r)` of [golub2013matrix] (12.2.8):
 below the diagonal `u_i t_{i-1} ⋯ t_j v_j`, on it `d_i`, above it `p_i r_i ⋯ r_{j-1} q_j`; that is
 `tril(u vᵀ, −1) .* B(t)⁻ᵀ + diag(d) + triu(p qᵀ, 1) .* B(r)⁻¹` (`Matrix.quasiseparableOf_eq`). -/
@@ -431,34 +486,29 @@ theorem quasiseparableOf_one_one (u v d p q : Fin n → K) :
   · simp
   · simp [h, lt_asymm h, h.ne']
 
-/-- **The quasiseparable representation is quasiseparable** ([golub2013matrix] §12.2.3): the
-strictly lower maximal block at `k` is `vecMulVec (u_i ∏_{[k, i)} t) (∏_{[j, k)} t v_j)`, and
-symmetrically above. -/
+/-- **The book's representation is the corrected one** with the first transfer factor absorbed
+into the generators: `𝐒(u, v, t, d, p, q, r)` of (12.2.8) is `quasiseparableRep` with
+`v_j ↦ t_j v_j` and `p_i ↦ p_i r_i`. -/
+theorem quasiseparableOf_eq_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
+    (r : ℕ → K) :
+    quasiseparableOf u v t d p q r
+      = quasiseparableRep u (fun j => t j * v j) t d (fun i => p i * r i) q r := by
+  ext i j
+  rw [quasiseparableOf_apply, quasiseparableRep_apply]
+  split_ifs with h1 h2
+  · rw [Finset.prod_eq_prod_Ico_succ_bot (Fin.lt_def.1 h1)]
+    ring
+  · rfl
+  · have : i < j := lt_of_le_of_ne (not_lt.1 h1) h2
+    rw [Finset.prod_eq_prod_Ico_succ_bot (Fin.lt_def.1 this)]
+    ring
+
+/-- **The quasiseparable representation is quasiseparable** ([golub2013matrix] §12.2.3), through
+`Matrix.quasiseparableOf_eq_quasiseparableRep`. -/
 theorem isQuasiseparable_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableOf u v t d p q r).IsQuasiseparable := by
-  intro k
-  constructor
-  · have : (quasiseparableOf u v t d p q r).toBlock (k < ·) (· ≤ k) =
-        vecMulVec (fun i : {i // k < i} => u i * ∏ l ∈ Finset.Ico (k : ℕ) i, t l)
-          (fun j : {j // j ≤ k} => (∏ l ∈ Finset.Ico (j : ℕ) k, t l) * v j) := by
-      ext ⟨i, hi⟩ ⟨j, hj⟩
-      have hji : j < i := lt_of_le_of_lt hj hi
-      simp only [toBlock_apply, quasiseparableOf_apply, vecMulVec_apply, hji, ↓reduceIte]
-      rw [← prod_Ico_consecutive t (Fin.le_def.1 hj) (Fin.le_def.1 hi.le)]
-      ring
-    rw [this]
-    exact rank_vecMulVec_le _ _
-  · have : (quasiseparableOf u v t d p q r).toBlock (· ≤ k) (k < ·) =
-        vecMulVec (fun i : {i // i ≤ k} => p i * ∏ l ∈ Finset.Ico (i : ℕ) k, r l)
-          (fun j : {j // k < j} => (∏ l ∈ Finset.Ico (k : ℕ) j, r l) * q j) := by
-      ext ⟨i, hi⟩ ⟨j, hj⟩
-      have hij : i < j := lt_of_le_of_lt hi hj
-      simp only [toBlock_apply, quasiseparableOf_apply, vecMulVec_apply, lt_asymm hij, hij.ne,
-        ↓reduceIte]
-      rw [← prod_Ico_consecutive r (Fin.le_def.1 hi) (Fin.le_def.1 hj.le)]
-      ring
-    rw [this]
-    exact rank_vecMulVec_le _ _
+  rw [quasiseparableOf_eq_quasiseparableRep]
+  exact isQuasiseparable_quasiseparableRep _ _ _ _ _ _ _
 
 /-- **With `d = u .* v = p .* q` the representation is semiseparable** ([golub2013matrix]
 §12.2.3): the diagonal entry `d_k = u_k v_k` continues the rank-one pattern of the lower blocks,
@@ -502,14 +552,9 @@ theorem isSemiseparable_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d 
 a symmetric matrix. -/
 theorem transpose_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableOf u v t d p q r)ᵀ = quasiseparableOf q p r d v u t := by
-  ext i j
-  simp only [transpose_apply, quasiseparableOf_apply]
-  rcases lt_trichotomy i j with h | rfl | h
-  · simp [h, lt_asymm h, h.ne]
-    ring
-  · simp
-  · simp [h, lt_asymm h, h.ne]
-    ring
+  rw [quasiseparableOf_eq_quasiseparableRep, transpose_quasiseparableRep,
+    quasiseparableOf_eq_quasiseparableRep]
+  simp only [mul_comm]
 
 /-- **Structured products** ([golub2013matrix] (12.2.9)): `triu(p qᵀ) .* B(r)⁻¹` is
 `diag(p) B(r)⁻¹ diag(q)` (the `triu` is redundant, `B(r)⁻¹` being upper triangular). -/
@@ -736,18 +781,6 @@ section LU
 
 variable {n : ℕ}
 
-/-- A sum picking out the index before `i`. -/
-private theorem sum_ite_val_add_one_eq (i : Fin n) (f : Fin n → K) :
-    ∑ k : Fin n, (if (i : ℕ) = k + 1 then f k else 0) =
-      if h : 0 < (i : ℕ) then f ⟨i - 1, by omega⟩ else 0 := by
-  split_ifs with h
-  · rw [Finset.sum_eq_single ⟨i - 1, by omega⟩
-      (fun k _ hk => ite_eq_right_iff.2 fun hk' => absurd (Fin.ext (by simp; omega)) hk)
-      (fun hk => absurd (mem_univ _) hk)]
-    simp only [ite_eq_left_iff]
-    omega
-  · exact Finset.sum_eq_zero fun k _ => ite_eq_right_iff.2 fun hk => absurd h (by omega)
-
 /-- The row operations of [golub2013matrix] Algorithm 12.2.1 in closed form: `B(τ)ᵀ` carries the
 semiseparable `𝐒(u, v, t, u .* v, p, q, r)` to `triu(p̃ qᵀ) .* B(r)⁻¹`. -/
 private theorem transpose_unitBidiagonal_mul_quasiseparableOf (u v p q p' : Fin n → K)
@@ -762,7 +795,11 @@ private theorem transpose_unitBidiagonal_mul_quasiseparableOf (u v p q p' : Fin 
   ext i j
   rw [sub_apply, mul_apply]
   simp_rw [transpose_apply, of_apply, ite_mul, zero_mul]
-  rw [sum_ite_val_add_one_eq i (fun k => τ k * quasiseparableOf u v t (u * v) p q r k j)]
+  have hs := sum_dite_val_add_one_eq i fun k (_ : (k : ℕ) + 1 = i) =>
+    τ k * quasiseparableOf u v t (u * v) p q r k j
+  simp only [dite_eq_ite] at hs
+  simp_rw [@eq_comm ℕ (i : ℕ)]
+  rw [hs]
   simp only [hadamard_apply, vecMulVec_apply, of_apply]
   by_cases hi : 0 < (i : ℕ)
   · rw [dite_eq_left hi]
@@ -1918,66 +1955,6 @@ theorem exists_upper_semiseparable_rep {U : Matrix (Fin n) (Fin n) K} (hU : U.Is
   refine ⟨v, u, t, ?_⟩
   rw [← transpose_transpose U, h, transpose_quasiseparableOf, mul_comm u v]
 
-/-- **The quasiseparable representation**, with the transfer factors strictly between the row
-and the column (Eidelman–Gohberg 1999; Vandebril–Van Barel–Mastronardi 2008): below the diagonal
-`u_i t_{j+1} ⋯ t_{i−1} v_j`, on it `d_i`, above it `p_i r_{i+1} ⋯ r_{j−1} q_j`. It has one
-transfer factor fewer than the book's `𝐒(u, v, t, d, p, q, r)` of (12.2.8), which is what lets it
-represent every quasiseparable matrix (`Matrix.exists_quasiseparableRep`), `B(r)` included. -/
-def quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K) :
-    Matrix (Fin n) (Fin n) K :=
-  of fun i j => if j < i then u i * (∏ l ∈ Finset.Ico ((j : ℕ) + 1) i, t l) * v j
-    else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j
-
-/-- The entries of `quasiseparableRep`. -/
-theorem quasiseparableRep_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K)
-    (i j : Fin n) :
-    quasiseparableRep u v t d p q r i j =
-      if j < i then u i * (∏ l ∈ Finset.Ico ((j : ℕ) + 1) i, t l) * v j
-      else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j :=
-  rfl
-
-/-- Transposing the representation exchanges its lower and upper generators. -/
-theorem transpose_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
-    (r : ℕ → K) : (quasiseparableRep u v t d p q r)ᵀ = quasiseparableRep q p r d v u t := by
-  ext i j
-  simp only [transpose_apply, quasiseparableRep_apply]
-  rcases lt_trichotomy i j with h | rfl | h
-  · simp [h, lt_asymm h, h.ne]
-    ring
-  · simp
-  · simp [h, lt_asymm h, h.ne]
-    ring
-
-/-- The representation is quasiseparable: the strictly lower maximal block at `k` is
-`vecMulVec (u_i t_{k+1} ⋯ t_{i−1}) (t_{j+1} ⋯ t_k v_j)`, and symmetrically above. -/
-theorem isQuasiseparable_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
-    (r : ℕ → K) : (quasiseparableRep u v t d p q r).IsQuasiseparable := by
-  intro k
-  constructor
-  · have : (quasiseparableRep u v t d p q r).toBlock (k < ·) (· ≤ k) =
-        vecMulVec (fun i : {i // k < i} => u i * ∏ l ∈ Finset.Ico ((k : ℕ) + 1) i, t l)
-          (fun j : {j // j ≤ k} => (∏ l ∈ Finset.Ico ((j : ℕ) + 1) ((k : ℕ) + 1), t l) * v j) := by
-      ext ⟨i, hi⟩ ⟨j, hj⟩
-      have hji : j < i := lt_of_le_of_lt hj hi
-      simp only [toBlock_apply, quasiseparableRep_apply, vecMulVec_apply, hji, ↓reduceIte]
-      rw [← prod_Ico_consecutive t (Nat.succ_le_succ (Fin.le_def.1 hj))
-        (Nat.succ_le_of_lt (Fin.lt_def.1 hi))]
-      ring
-    rw [this]
-    exact rank_vecMulVec_le _ _
-  · have : (quasiseparableRep u v t d p q r).toBlock (· ≤ k) (k < ·) =
-        vecMulVec (fun i : {i // i ≤ k} => p i * ∏ l ∈ Finset.Ico ((i : ℕ) + 1) ((k : ℕ) + 1), r l)
-          (fun j : {j // k < j} => (∏ l ∈ Finset.Ico ((k : ℕ) + 1) j, r l) * q j) := by
-      ext ⟨i, hi⟩ ⟨j, hj⟩
-      have hij : i < j := lt_of_le_of_lt hi hj
-      simp only [toBlock_apply, quasiseparableRep_apply, vecMulVec_apply, lt_asymm hij, hij.ne,
-        ↓reduceIte]
-      rw [← prod_Ico_consecutive r (Nat.succ_le_succ (Fin.le_def.1 hi))
-        (Nat.succ_le_of_lt (Fin.lt_def.1 hj))]
-      ring
-    rw [this]
-    exact rank_vecMulVec_le _ _
-
 /-- The lower half of `Matrix.exists_quasiseparableRep`: the strictly lower part of a matrix with
 rank-one strictly lower maximal blocks is `u_i t_{j+1} ⋯ t_{i−1} v_j`. -/
 private theorem exists_lower_quasiseparableRep {A : Matrix (Fin n) (Fin n) K}
@@ -2057,7 +2034,7 @@ private theorem givensChain_mul_apply (M : ℕ → Matrix (Fin 2) (Fin 2) K)
 `Qᵀ tril(A) = triu((𝒟 c) vᵀ) .* B(s)⁻¹` with `(𝒟 c)₀ = 1`, `(𝒟 c)_{i+1} = c_i`; and
 `Qᵀ triu(A, 1)` is upper triangular, `Qᵀ` being upper Hessenberg, so `Qᵀ A` is upper triangular.
 The rotation weights telescope: `∑_{k ≥ a} (s_a ⋯ s_{k-1})² c'_k² = 1`. -/
-theorem transpose_givensChain_mul_strictLower_add_diagPart
+theorem givensChain_mul_strictLower_add_diagPart
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) K} (hcs : ∀ k, c k ^ 2 + s k ^ 2 = 1)
     {v : Fin (N + 1) → K}
     (hA : ∀ i j : Fin (N + 1), j ≤ i →
@@ -2144,6 +2121,10 @@ theorem transpose_givensChain_mul_strictLower_add_diagPart
     · rw [(isUpperHessenberg_iff_fin.1 givensChain_isUpperHessenberg) i k
         (by rw [Fin.lt_def] at hkj hji; omega), zero_mul]
     · rw [ite_eq_right hkj, mul_zero]
+
+@[deprecated (since := "2026-09-30")]
+alias transpose_givensChain_mul_strictLower_add_diagPart :=
+  givensChain_mul_strictLower_add_diagPart
 
 end SemiseparableQR
 
@@ -2293,7 +2274,7 @@ theorem givensChain_mul_diagonal_eq_prodFwd (φ : ℕ → ℝ) :
   exact prodFwd_congr fun k hk => by rw [reflectorFactor, ite_eq_left hk]
 
 /-- The factors of (12.2.18) are involutions. -/
-private theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :
+theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :
     reflectorFactor N φ k * reflectorFactor N φ k = 1 := by
   unfold reflectorFactor
   split_ifs with h
@@ -2302,6 +2283,52 @@ private theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :
     congr 1
     funext i
     split_ifs <;> norm_num
+
+/-- The factors of (12.2.18) are symmetric. -/
+theorem reflectorFactor_transpose (φ : ℕ → ℝ) (k : ℕ) :
+    (reflectorFactor N φ k)ᵀ = reflectorFactor N φ k := by
+  unfold reflectorFactor
+  split_ifs
+  · exact givensFactor_planeReflector_transpose φ k
+  · exact diagonal_transpose _
+
+/-- The factors of (12.2.18) are orthogonal: symmetric involutions. -/
+theorem reflectorFactor_mem_orthogonalGroup (φ : ℕ → ℝ) (k : ℕ) :
+    reflectorFactor N φ k ∈ orthogonalGroup (Fin (N + 1)) ℝ := by
+  rw [mem_orthogonalGroup_iff, reflectorFactor_transpose, reflectorFactor_mul_self]
+
+/-- The factors of (12.2.18) have determinant `−1`: a plane reflection, and
+`diag(1, …, 1, −1)`. -/
+theorem det_reflectorFactor (φ : ℕ → ℝ) (k : ℕ) :
+    (reflectorFactor N φ k).det = -1 := by
+  unfold reflectorFactor
+  split_ifs with h
+  · rw [givensFactor, dite_eq_left h, det_planeEmbed _ (Fin.ne_of_lt (Fin.lt_def.2 (by simp))),
+      det_planeReflector]
+  · rw [det_diagonal, Fin.prod_univ_castSucc]
+    simp only [Fin.val_castSucc, Fin.val_last, ↓reduceIte]
+    rw [Finset.prod_eq_one fun x _ => by simp [x.2.ne], one_mul]
+
+/-- **The product (12.2.18) is orthogonal**, as a product of orthogonal factors. -/
+theorem prodFwd_reflectorFactor_mem_orthogonalGroup (φ : ℕ → ℝ) (r : ℕ) :
+    prodFwd (reflectorFactor N φ) r ∈ orthogonalGroup (Fin (N + 1)) ℝ :=
+  prodFwd_mem_orthogonalGroup (reflectorFactor_mem_orthogonalGroup φ) r
+
+/-- **The determinant of the product (12.2.18)** is `(−1)^{N+1}`: each of its `N + 1` factors has
+determinant `−1`. -/
+theorem det_prodFwd_reflectorFactor (φ : ℕ → ℝ) :
+    (prodFwd (reflectorFactor N φ) (N + 1)).det = (-1) ^ (N + 1) := by
+  rw [det_prodFwd, Finset.prod_eq_pow_card (b := -1), card_range]
+  exact fun k _ => det_reflectorFactor φ k
+
+/-- **The product (12.2.18) of even order is special orthogonal**, the hypothesis of
+(12.2.19) (`Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`). -/
+theorem prodFwd_reflectorFactor_mem_specialOrthogonalGroup (φ : ℕ → ℝ) {m : ℕ}
+    (hN : N + 1 = 2 * m) :
+    prodFwd (reflectorFactor N φ) (N + 1) ∈ specialOrthogonalGroup (Fin (N + 1)) ℝ := by
+  refine mem_specialOrthogonalGroup_iff.2 ⟨prodFwd_reflectorFactor_mem_orthogonalGroup φ _, ?_⟩
+  rw [det_prodFwd_reflectorFactor, hN, pow_mul]
+  norm_num
 
 /-- **Fact 1 of [golub2013matrix] §12.2.10** (Ammar–Gragg–Reichel): the product
 `G₀ G₁ ⋯ G_N` of (12.2.18) is similar to `H_o H_e`, the product of its even-indexed factors times
@@ -2369,14 +2396,6 @@ private theorem reflectorFactor_sub_one_mul_sub_one (φ : ℕ → ℝ) {k l : �
         zero_mul]
     · rw [reflectorFactor_sub_one_apply_eq_zero (k := k) (p := r) (q := q) φ (by omega)
         (by omega), mul_zero]
-
-/-- The factors of (12.2.18) are symmetric. -/
-private theorem reflectorFactor_transpose (φ : ℕ → ℝ) (k : ℕ) :
-    (reflectorFactor N φ k)ᵀ = reflectorFactor N φ k := by
-  unfold reflectorFactor
-  split_ifs
-  · exact givensFactor_planeReflector_transpose φ k
-  · exact diagonal_transpose _
 
 /-- Every factor of (12.2.18) up to `G_N` has trace `n − 2`: a plane reflection has trace `0`,
 and `diag(1, …, 1, −1)` has trace `n − 2`. -/
@@ -2512,10 +2531,55 @@ private theorem trace_prodFwd_mask {m : ℕ} (hN : N + 1 = 2 * m) (φ : ℕ → 
   push_cast
   constructor <;> ring
 
-/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `C = (H_o + H_e)/2` and
-`S = (H_o − H_e)/2` are symmetric tridiagonal. Each of `H_o`, `H_e` is the identity plus the
-departures of its factors, which live in disjoint `2 × 2` diagonal blocks
-(`Matrix.prodFwd_eq_one_add_sum_sub_one`). -/
+variable (N) in
+/-- The half-sum `C = (H_o + H_e)/2` of the even- and odd-indexed factors of (12.2.18)
+([golub2013matrix] §12.2.10, Fact 2). -/
+noncomputable def oddEvenHalfSum (φ : ℕ → ℝ) : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
+  (1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
+    prodFwdOdd (reflectorFactor N φ) (N + 1))
+
+variable (N) in
+/-- The half-difference `S = (H_o − H_e)/2` of the even- and odd-indexed factors of (12.2.18)
+([golub2013matrix] §12.2.10, Fact 2). -/
+noncomputable def oddEvenHalfDiff (φ : ℕ → ℝ) : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
+  (1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
+    prodFwdOdd (reflectorFactor N φ) (N + 1))
+
+/-- The half-sum `C = (H_o + H_e)/2` is symmetric: `H_o`, `H_e` are products of commuting
+symmetric factors. -/
+theorem isSymm_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsSymm := by
+  have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
+  have hO : (prodFwdOdd (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
+  exact (hE.add hO).smul _
+
+/-- The half-difference `S = (H_o − H_e)/2` is symmetric. -/
+theorem isSymm_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsSymm := by
+  have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
+  have hO : (prodFwdOdd (reflectorFactor N φ) (N + 1)).IsSymm :=
+    transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
+  exact (hE.sub hO).smul _
+
+/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `C = (H_o + H_e)/2` is tridiagonal. Each
+of `H_o`, `H_e` is the identity plus the departures of its factors, which live in disjoint `2 × 2`
+diagonal blocks (`Matrix.prodFwd_eq_one_add_sum_sub_one`). -/
+theorem isTridiagonal_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsTridiagonal := by
+  refine isTridiagonal_iff_fin.2 fun i j hij => ?_
+  rw [oddEvenHalfSum, smul_apply, add_apply, prodFwdEven, prodFwdOdd,
+    prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
+    prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, add_zero, smul_zero]
+
+/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `S = (H_o − H_e)/2` is tridiagonal. -/
+theorem isTridiagonal_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsTridiagonal := by
+  refine isTridiagonal_iff_fin.2 fun i j hij => ?_
+  rw [oddEvenHalfDiff, smul_apply, sub_apply, prodFwdEven, prodFwdOdd,
+    prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
+    prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, sub_zero, smul_zero]
+
+@[deprecated "use `Matrix.isSymm_oddEvenHalfSum`, `Matrix.isTridiagonal_oddEvenHalfSum` and their
+`oddEvenHalfDiff` twins" (since := "2026-09-30")]
 theorem isTridiagonal_oddEven_half_sum (φ : ℕ → ℝ) :
     ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
         prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
@@ -2524,21 +2588,9 @@ theorem isTridiagonal_oddEven_half_sum (φ : ℕ → ℝ) :
       ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
         prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
       ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal := by
-  have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
-    transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
-  have hO : (prodFwdOdd (reflectorFactor N φ) (N + 1)).IsSymm :=
-    transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
-  have tE := fun (i j : Fin (N + 1)) (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) =>
-    prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij
-  have tO := fun (i j : Fin (N + 1)) (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) =>
-    prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij
-  refine ⟨(hE.add hO).smul _, isTridiagonal_iff_fin.2 fun i j hij => ?_, (hE.sub hO).smul _,
-    isTridiagonal_iff_fin.2 fun i j hij => ?_⟩
-  · rw [smul_apply, add_apply, prodFwdEven, prodFwdOdd, tE i j hij, tO i j hij, add_zero,
-      smul_zero]
-  · rw [smul_apply, sub_apply, prodFwdEven, prodFwdOdd, tE i j hij, tO i j hij, sub_zero,
-      smul_zero]
+        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal :=
+  ⟨isSymm_oddEvenHalfSum φ, isTridiagonal_oddEvenHalfSum φ, isSymm_oddEvenHalfDiff φ,
+    isTridiagonal_oddEvenHalfDiff φ⟩
 
 open Complex in
 /-- **Fact 2 of [golub2013matrix] §12.2.10, the spectrum**: if the eigenvalues of the product
@@ -2551,12 +2603,11 @@ applies to `(H_o, H_e)` and to `(H_o, −H_e)`, whose product `−H_o H_e` has t
 theorem charpoly_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → ℝ)
     (hθ : ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
       ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I)))) :
-    ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+    (oddEvenHalfSum N φ).charpoly =
         ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2))) ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
+      (oddEvenHalfDiff N φ).charpoly =
         ∏ k, (X - C (Real.sin (θ k / 2))) * (X + C (Real.sin (θ k / 2))) := by
+  rw [oddEvenHalfSum, oddEvenHalfDiff]
   have hN : N + 1 = 2 * m := by simpa using card_eq_of_charpoly_eq_prod hθ
   obtain ⟨A, hA⟩ : ∃ A, A = prodFwdEven (reflectorFactor N φ) (N + 1) := ⟨_, rfl⟩
   obtain ⟨B, hB⟩ : ∃ B, B = prodFwdOdd (reflectorFactor N φ) (N + 1) := ⟨_, rfl⟩
@@ -2605,32 +2656,6 @@ theorem charpoly_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → �
   refine prod_congr rfl fun k _ => ?_
   rw [show (θ k + Real.pi) / 2 = θ k / 2 + Real.pi / 2 by ring, Real.cos_add_pi_div_two, C_neg]
   ring
-
-/-- **Fact 2 of [golub2013matrix] §12.2.10** (Ammar–Gragg–Reichel): `C = (H_o + H_e)/2` and
-`S = (H_o − H_e)/2` are symmetric tridiagonal, and if the eigenvalues of `H = G₁ ⋯ G_n`
-(12.2.18) are the `m` pairs `e^{±iθ_k}` (12.2.19), those of `C` are `± cos(θ_k/2)` and those of
-`S` are `± sin(θ_k/2)`, as characteristic polynomials. The shape is
-`Matrix.isTridiagonal_oddEven_half_sum`, the spectrum `Matrix.charpoly_oddEven_half_sum`. -/
-theorem eigenvalues_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → ℝ)
-    (hθ : ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
-      ∏ k, (X - C (Complex.exp (θ k * Complex.I))) * (X - C (Complex.exp (-θ k * Complex.I)))) :
-    (((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
-        ∏ k, (X - C (Real.cos (θ k / 2))) * (X + C (Real.cos (θ k / 2)))) ∧
-    (((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsSymm ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).IsTridiagonal ∧
-      ((1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
-        prodFwdOdd (reflectorFactor N φ) (N + 1))).charpoly =
-        ∏ k, (X - C (Real.sin (θ k / 2))) * (X + C (Real.sin (θ k / 2)))) := by
-  obtain ⟨h₁, h₂, h₃, h₄⟩ := isTridiagonal_oddEven_half_sum (N := N) φ
-  obtain ⟨h₅, h₆⟩ := charpoly_oddEven_half_sum φ θ hθ
-  exact ⟨⟨h₁, h₂, h₅⟩, h₃, h₄, h₆⟩
 
 end HalfSums
 

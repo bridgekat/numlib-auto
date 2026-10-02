@@ -65,7 +65,7 @@ id = "rectDiagonal_congr"
 id = "rectDiagonal_transpose"
 
 [[node]]
-id = "conjTranspose_rectDiagonal"
+id = "rectDiagonal_conjTranspose"
 
 [[node]]
 id = "rectDiagonal_eq_diagonal"
@@ -216,9 +216,6 @@ id = "exists_norm_eq_iInf_colSingularValues"
 [[node]]  # staged by ch07
 id = "iInf_colSingularValues_unitary_mul_mul"
 
-[[node]]  # staged by ch12
-id = "abs_critical_bilinearRayleigh_mem_colSingularValues"
-
 [[node]]  # added by ls1
 id = "pinv_conjTranspose"
 
@@ -271,14 +268,11 @@ source = "Golub–Van Loan, Matrix Computations, Corollary 2.4.6"
 [[node]]  # added by ls1
 id = "IsSVD.conjTranspose"
 
-[[node]]  # added by ls1
-id = "bilinearRayleigh"
-source = "Golub–Van Loan, Matrix Computations, (12.5.22)"
+[[node]]  # review2 (g6)
+id = "svdTruncation_eq_sum"
 
-[[node]]  # added by ls1
-id = "hasFDerivAt_bilinearRayleigh"
-source = "Golub–Van Loan, Matrix Computations, (12.5.22)"
+[[node]]  # review2 (g6)
+id = "IsSVD.norm_toEuclideanLin_eq_iff_mem_span"
 
-[[node]]  # added by ls1
-id = "fderiv_bilinearRayleigh_eq_zero_iff"
-source = "Golub–Van Loan, Matrix Computations, (12.5.22)"
+[[node]]  # review2 (g6)
+id = "exists_wide_thin_svd"

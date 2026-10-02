@@ -31,9 +31,6 @@ id = "krylovMatrix"
 id = "aeval_mul_krylovMatrix"
 
 [[node]]
-id = "conj_pow_of_mem_unitaryGroup"
-
-[[node]]
 id = "conjTranspose_mul_krylovMatrix"
 
 [[node]]

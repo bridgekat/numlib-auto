@@ -131,7 +131,7 @@ theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : F
   set r' : Fin k → ℝ := fun i => r (i + 1) with hr'
   -- `T_k ℰ y = ℰ T_k y = −ℰ r`
   have hTE : symmToeplitz k r *ᵥ (exchange k *ᵥ y) = -(exchange k *ᵥ r') := by
-    rw [mulVec_mulVec, ← (exchange_mul_symmToeplitz k r).1, ← mulVec_mulVec, hy]
+    rw [mulVec_mulVec, ← exchange_mul_symmToeplitz k r, ← mulVec_mulVec, hy]
     ext i
     simp [hr']
   -- `(ℰ r)ᵀ (ℰ y) = rᵀ y` and `yᵀ T_k y = −rᵀ y`

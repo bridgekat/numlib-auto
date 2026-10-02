@@ -812,7 +812,7 @@ theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta 
     rfl
   have hEy : symmToeplitz m r *ᵥ (exchange m *ᵥ fun i : Fin m => sol r m i) =
       -(exchange m *ᵥ fun i : Fin m => r ((i : ℕ) + 1)) := by
-    rw [mulVec_mulVec, ← (exchange_mul_symmToeplitz m r).1, ← mulVec_mulVec, hy, mulVec_neg]
+    rw [mulVec_mulVec, ← exchange_mul_symmToeplitz m r, ← mulVec_mulVec, hy, mulVec_neg]
   have hAinv : (symmToeplitz m r)⁻¹ *ᵥ (exchange m *ᵥ fun i : Fin m => r ((i : ℕ) + 1)) =
       -(exchange m *ᵥ fun i : Fin m => sol r m i) := by
     have : (exchange m *ᵥ fun i : Fin m => r ((i : ℕ) + 1)) =

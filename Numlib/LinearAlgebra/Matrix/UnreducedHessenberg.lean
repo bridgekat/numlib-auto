@@ -12,6 +12,7 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.Similar
 
 /-!
 # Unreduced upper Hessenberg matrices and Krylov matrices
@@ -262,18 +263,6 @@ theorem aeval_mul_krylovMatrix (A : Matrix n n R) (p : R[X]) (v : n → R) (j : 
     rw [← aeval_X_pow (R := R) A, ← map_mul, ← map_mul, mul_comm]
   rw [hcomm]
 
-/-- Conjugating by a unitary commutes with powers: `(Qᴴ A Q)^k = Qᴴ A^k Q`. -/
-theorem conj_pow_of_mem_unitaryGroup [StarRing R] {Q : Matrix n n R} (hQ : Q ∈ unitaryGroup n R)
-    (A : Matrix n n R) (k : ℕ) : (star Q * A * Q) ^ k = star Q * A ^ k * Q := by
-  induction k with
-  | zero => rw [pow_zero, pow_zero, Matrix.mul_one, (mem_unitaryGroup_iff').1 hQ]
-  | succ k ih =>
-    have h1 : Q * star Q = 1 := (mem_unitaryGroup_iff).1 hQ
-    rw [pow_succ, ih, pow_succ]
-    calc star Q * A ^ k * Q * (star Q * A * Q) = star Q * A ^ k * (Q * star Q) * A * Q := by
-          simp only [Matrix.mul_assoc]
-      _ = star Q * (A ^ k * A) * Q := by rw [h1, Matrix.mul_one, Matrix.mul_assoc (star Q)]
-
 /-- For unitary `Q`: `Qᴴ K(A, Q w) = K(Qᴴ A Q, w)`. With `w = e₀` this is the identity
 `Qᴴ K(A, Q e₀, n) = [e₀ | H e₀ | ⋯ | H^{n-1} e₀]`, `H = Qᴴ A Q`, of the proof of
 [golub2013matrix] Theorem 7.4.3. -/
@@ -357,7 +346,7 @@ theorem IsUnreducedUpperHessenberg.krylovMatrix_apply_self_ne_zero
 /-- For unreduced `H` the Krylov matrix `K(H, e₀)` is nonsingular. -/
 theorem IsUnreducedUpperHessenberg.isUnit_krylovMatrix (h : H.IsUnreducedUpperHessenberg) :
     IsUnit (krylovMatrix H (Pi.single 0 1) (N + 1)) :=
-  (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular
+  (IsUpperTriangular.isUnit_iff
     h.1.isUpperTriangular_krylovMatrix).2 h.krylovMatrix_apply_self_ne_zero
 
 /-- [golub2013matrix] Theorem 7.4.3 at `Q = I`: `H` is unreduced upper Hessenberg iff
@@ -412,7 +401,7 @@ theorem IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular {n : Type*} 
     [LinearOrder n] {H R : Matrix n n K} (h : H.IsUnreducedUpperHessenberg)
     (hR : R.IsUpperTriangular) (hdiag : ∀ i, R i i ≠ 0) :
     (R * H * R⁻¹).IsUnreducedUpperHessenberg := by
-  have hRu : IsUnit R := (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hR).2 hdiag
+  have hRu : IsUnit R := (IsUpperTriangular.isUnit_iff hR).2 hdiag
   have hRi : R⁻¹.IsUpperTriangular := hR.inv
   refine ⟨(hR.mul_isUpperHessenberg h.1).mul_isUpperTriangular hRi, fun i j hij => ?_⟩
   have hinv : R⁻¹ j j * R j j = 1 := by

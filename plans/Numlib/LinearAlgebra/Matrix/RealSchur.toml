@@ -8,14 +8,11 @@ id = "LinearMap.exists_invariant_finrank_eq_one_or_two"
 id = "LinearMap.mem_orthogonal_of_adjoint_invariant"
 
 [[node]]
-id = "LinearMap.exists_orthonormalBasis_quasiUpperTriangular"
+id = "LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular"
 
 [[node]]
 id = "LinearMap.exists_orthonormalBasis_quasiUpperTriangular_of_irreducible_blocks"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8"
-
-[[node]]
-id = "Matrix.exists_orthogonal_conj_quasiUpperTriangular"
 
 [[node]]
 id = "Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks"

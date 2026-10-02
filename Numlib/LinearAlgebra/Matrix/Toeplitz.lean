@@ -27,10 +27,11 @@ antidiagonal ([golub2013matrix] §4.7, §4.8.2, §12.1.7):
   Levinson–Durbin–Trench theory, with its nesting `T_k ⊂ T_n`
   (`Matrix.leadingPrincipal_symmToeplitz`), its bordering `T_{k+1} = [T_k, ℰ r; rᵀ ℰ, r₀]`
   (`Matrix.symmToeplitz_succ_eq_fromBlocks`) and its commutation with `ℰ_n`
-  (`Matrix.exchange_mul_symmToeplitz`);
+  (`Matrix.exchange_mul_symmToeplitz`, `Matrix.inv_symmToeplitz_mul_exchange`);
 * the Hankel matrix `Matrix.hankel h = (h_{i+j})` and the predicate `Matrix.IsHankel`; reversing the
   rows of a Hankel matrix gives a Toeplitz matrix (`Matrix.IsHankel.isToeplitz_submatrix_rev`,
-  `Matrix.exchange_mul_isHankel`);
+  `Matrix.IsHankel.isToeplitz_exchange_mul`), and `Matrix.isHankel_iff` is the antidiagonal
+  characterization dual to `Matrix.isToeplitz_iff`;
 * and the facts that the tridiagonal Toeplitz matrices of
   `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` are Toeplitz
   (`Matrix.symmTridiagonalToeplitz_eq_toeplitz`), that Mathlib's `Matrix.circulant` is Toeplitz
@@ -187,9 +188,9 @@ theorem tridiagonalToeplitz_eq_toeplitz (n : ℕ) (a b c : ℝ) :
   rw [tridiagonalToeplitz_apply, toeplitz_apply]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- The transpose of a square Toeplitz matrix is the Toeplitz matrix of the reflected sequence. -/
+/-- The transpose of a Toeplitz matrix is the Toeplitz matrix of the reflected sequence. -/
 theorem transpose_toeplitz (ρ : ℤ → R) :
-    (toeplitz ρ : Matrix (Fin n) (Fin n) R)ᵀ = toeplitz fun d => ρ (-d) := by
+    (toeplitz ρ : Matrix (Fin m) (Fin n) R)ᵀ = toeplitz fun d => ρ (-d) := by
   ext i j
   simp only [transpose_apply, toeplitz_apply, neg_sub]
 
@@ -201,10 +202,16 @@ theorem toeplitz_mulVec_apply [NonUnitalNonAssocSemiring R] (ρ : ℤ → R) (v 
   simp only [mulVec, dotProduct, toeplitz_apply]
   exact Fin.sum_univ_eq_sum_range (fun j => ρ ((j : ℤ) - (i : ℕ)) * v j) n
 
-/-- The tridiagonal Toeplitz matrices are Toeplitz in the sense of `Matrix.IsToeplitz`. -/
+/-- The symmetric tridiagonal Toeplitz matrices are Toeplitz in the sense of
+`Matrix.IsToeplitz`. -/
 theorem isToeplitz_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
     (symmTridiagonalToeplitz n a b).IsToeplitz :=
   ⟨_, symmTridiagonalToeplitz_eq_toeplitz n a b⟩
+
+/-- The tridiagonal Toeplitz matrices are Toeplitz in the sense of `Matrix.IsToeplitz`. -/
+theorem isToeplitz_tridiagonalToeplitz (n : ℕ) (a b c : ℝ) :
+    (tridiagonalToeplitz n a b c).IsToeplitz :=
+  ⟨_, tridiagonalToeplitz_eq_toeplitz n a b c⟩
 
 /-! ### Symmetric Toeplitz matrices -/
 
@@ -232,23 +239,28 @@ theorem symmToeplitz_mulVec_apply [NonUnitalNonAssocSemiring R] (r : ℕ → R) 
   exact Fin.sum_univ_eq_sum_range (fun j => r (((i : ℕ) : ℤ) - j).natAbs * v j) n
 
 /-- A symmetric Toeplitz matrix is symmetric. -/
-theorem symmToeplitz_isSymm (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsSymm := by
+theorem isSymm_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsSymm := by
   ext i j
   rw [transpose_apply, symmToeplitz_apply, symmToeplitz_apply, ← Int.natAbs_neg, neg_sub]
 
 /-- A symmetric Toeplitz matrix is Toeplitz. -/
-theorem symmToeplitz_isToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsToeplitz :=
+theorem isToeplitz_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsToeplitz :=
   ⟨_, symmToeplitz_eq_toeplitz n r⟩
 
 /-- A symmetric Toeplitz matrix is persymmetric. -/
-theorem symmToeplitz_isPersymmetric (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsPersymmetric :=
-  (symmToeplitz_isToeplitz n r).isPersymmetric
+theorem isPersymmetric_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsPersymmetric :=
+  (isToeplitz_symmToeplitz n r).isPersymmetric
+
+@[deprecated (since := "2026-09-30")] alias symmToeplitz_isSymm := isSymm_symmToeplitz
+@[deprecated (since := "2026-09-30")] alias symmToeplitz_isToeplitz := isToeplitz_symmToeplitz
+@[deprecated (since := "2026-09-30")]
+alias symmToeplitz_isPersymmetric := isPersymmetric_symmToeplitz
 
 /-- A symmetric Toeplitz matrix is invariant under the reversal of rows and columns — the book's
 `ℰ T ℰ = T` ([golub2013matrix] §4.7.3), which with `ℰ² = I` is `ℰ T = T ℰ`. -/
 theorem symmToeplitz_submatrix_rev (n : ℕ) (r : ℕ → R) :
     (symmToeplitz n r).submatrix Fin.rev Fin.rev = symmToeplitz n r := by
-  rw [isPersymmetric_iff_submatrix_rev.mp (symmToeplitz_isPersymmetric n r), symmToeplitz_isSymm]
+  rw [isPersymmetric_iff_submatrix_rev.mp (isPersymmetric_symmToeplitz n r), isSymm_symmToeplitz]
 
 /-- **The nesting of the `T_k`** ([golub2013matrix] §4.7.2): the leading `k × k` block of `T_n` is
 `T_k`. -/
@@ -257,15 +269,19 @@ theorem leadingPrincipal_symmToeplitz {k : ℕ} (h : k ≤ n) (r : ℕ → R) :
   ext i j
   rfl
 
-/-- **A symmetric Toeplitz matrix commutes with the exchange matrix**, and so does its inverse
-([golub2013matrix] §4.7.3, "`T_k⁻¹ ℰ_k = ℰ_k T_k⁻¹`"): `ℰ_n T = T ℰ_n` and
-`T⁻¹ ℰ_n = ℰ_n T⁻¹`, the latter with Mathlib's inverse (junk value included). -/
-theorem exchange_mul_symmToeplitz [CommRing R] (n : ℕ) (r : ℕ → R) :
-    exchange n * symmToeplitz n r = symmToeplitz n r * exchange n ∧
-      (symmToeplitz n r)⁻¹ * exchange n = exchange n * (symmToeplitz n r)⁻¹ :=
-  ⟨(symmToeplitz_isPersymmetric n r).exchange_mul_eq_mul_exchange (symmToeplitz_isSymm n r),
-    ((symmToeplitz_isPersymmetric n r).inv.exchange_mul_eq_mul_exchange
-      (by rw [IsSymm, transpose_nonsing_inv, (symmToeplitz_isSymm n r).eq])).symm⟩
+/-- **A symmetric Toeplitz matrix commutes with the exchange matrix** ([golub2013matrix] §4.7.3):
+`ℰ_n T = T ℰ_n`. -/
+theorem exchange_mul_symmToeplitz [Semiring R] (n : ℕ) (r : ℕ → R) :
+    exchange n * symmToeplitz n r = symmToeplitz n r * exchange n :=
+  (isPersymmetric_symmToeplitz n r).exchange_mul_eq_mul_exchange (isSymm_symmToeplitz n r)
+
+/-- **The inverse of a symmetric Toeplitz matrix commutes with the exchange matrix**
+([golub2013matrix] §4.7.3, "`T_k⁻¹ ℰ_k = ℰ_k T_k⁻¹`"), with Mathlib's inverse (junk value
+included). -/
+theorem inv_symmToeplitz_mul_exchange [CommRing R] (n : ℕ) (r : ℕ → R) :
+    (symmToeplitz n r)⁻¹ * exchange n = exchange n * (symmToeplitz n r)⁻¹ :=
+  ((isPersymmetric_symmToeplitz n r).inv.exchange_mul_eq_mul_exchange
+    (by rw [IsSymm, transpose_nonsing_inv, (isSymm_symmToeplitz n r).eq])).symm
 
 /-- **The bordering of the symmetric Toeplitz matrices** ([golub2013matrix] §4.7.3):
 `T_{k+1} = [T_k, ℰ_k r; rᵀ ℰ_k, r₀]` with `r = (r₁, …, r_k)`, the blocks glued along
@@ -313,6 +329,23 @@ theorem hankel_apply (h : ℕ → R) (i : Fin m) (j : Fin n) :
 def IsHankel (A : Matrix (Fin m) (Fin n) R) : Prop :=
   ∃ h : ℕ → R, A = hankel h
 
+/-- A Hankel matrix is one constant along each antidiagonal: entries with the same index sum
+`i + j` agree, the dual of `Matrix.isToeplitz_iff`. -/
+theorem isHankel_iff [Zero R] {A : Matrix (Fin m) (Fin n) R} :
+    A.IsHankel ↔ ∀ (i : Fin m) (j : Fin n) (k : Fin m) (l : Fin n),
+      (i : ℕ) + j = k + l → A i j = A k l := by
+  classical
+  constructor
+  · rintro ⟨h, rfl⟩ i j k l hs
+    rw [hankel_apply, hankel_apply, hs]
+  · intro hA
+    refine ⟨fun d => if h : ∃ p : Fin m × Fin n, (p.1 : ℕ) + p.2 = d then
+      A h.choose.1 h.choose.2 else 0, ?_⟩
+    ext i j
+    have hex : ∃ p : Fin m × Fin n, (p.1 : ℕ) + p.2 = (i : ℕ) + j := ⟨(i, j), rfl⟩
+    rw [hankel_apply, dite_eq_left hex]
+    exact hA _ _ _ _ hex.choose_spec.symm
+
 /-- **Reversing the rows of a Hankel matrix gives a Toeplitz matrix** — the book's "`ℰ_m H` is
 Toeplitz" ([golub2013matrix] §12.1.7) without the permutation matrix: the entry `h (m - 1 - i + j)`
 depends on `j - i` only. -/
@@ -326,10 +359,13 @@ theorem IsHankel.isToeplitz_submatrix_rev {A : Matrix (Fin m) (Fin n) R} (hA : A
   omega
 
 /-- **`ℰ_m H` is Toeplitz for a Hankel `H`** ([golub2013matrix] §12.1.7). -/
-theorem exchange_mul_isHankel [NonAssocSemiring R] {A : Matrix (Fin m) (Fin n) R}
+theorem IsHankel.isToeplitz_exchange_mul [NonAssocSemiring R] {A : Matrix (Fin m) (Fin n) R}
     (hA : A.IsHankel) : (exchange m * A).IsToeplitz := by
   rw [exchange_mul_eq_submatrix]
   exact hA.isToeplitz_submatrix_rev
+
+@[deprecated (since := "2026-09-30")]
+alias exchange_mul_isHankel := IsHankel.isToeplitz_exchange_mul
 
 /-! ### Circulant matrices -/
 

@@ -4,6 +4,8 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.InnerProductSpace.Schur`, beside the complex triangulation.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.CStarAlgebra.Spectrum
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -32,19 +34,16 @@ two*, and that is exactly where the `2 × 2` blocks come from.
 
 * `LinearMap.exists_invariant_finrank_le_two`: a real operator on a nonzero finite-dimensional
   space has an invariant subspace of dimension at most two, and nonzero.
-* `LinearMap.exists_orthonormalBasis_quasiUpperTriangular`: the operator form. There is an
-  orthonormal basis and a monotone block index `p : Fin n → ℕ` whose fibres have at most two
-  elements, with `⟪b i, A (b j)⟫ = 0` whenever `p j < p i`.
-* `Matrix.exists_orthogonal_conj_quasiUpperTriangular`: the matrix form, `Qᵀ A Q` quasi upper
-  triangular for an orthogonal `Q`.
-* `Matrix.IsQuasiUpperTriangular`: the named predicate for the shape the existence theorems produce
-  (block upper triangular for a monotone block index with fibres of size at most two), with its
-  `Fin` characterization `Matrix.isQuasiUpperTriangular_iff_fin` (upper Hessenberg with no two
-  consecutive nonzero subdiagonal entries), `Matrix.IsQuasiUpperTriangular.isUpperHessenberg`, and
-  its closure under triangular factors `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`
-  ([golub2013matrix] §7.4–7.8 state the real Schur, QR, QZ, periodic and Hamiltonian Schur forms
-  with it); `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular` is the real Schur form in that
-  vocabulary ([golub2013matrix] Theorem 7.4.1).
+* `Matrix.IsQuasiUpperTriangular`: the shape of the real Schur form (block upper triangular for
+  a monotone block index with fibres of size at most two), with its `Fin` characterization
+  `Matrix.isQuasiUpperTriangular_iff_fin` (upper Hessenberg with no two consecutive nonzero
+  subdiagonal entries), `Matrix.IsQuasiUpperTriangular.isUpperHessenberg`, and its closure under
+  triangular factors `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`,
+  `Matrix.IsUpperTriangular.mul_isQuasiUpperTriangular` ([golub2013matrix] §7.4–7.8 state the
+  real Schur, QR, QZ, periodic and Hamiltonian Schur forms with it).
+* `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular` ([golub2013matrix] Theorem 7.4.1): the
+  matrix form, `Qᵀ A Q` quasi upper triangular for an orthogonal `Q`;
+  `LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular` is the operator form.
 * `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the sharper form
   of [quarteroni2000numerical] Property 5.8, in which no `2 × 2` diagonal block has a real
   eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
@@ -497,19 +496,6 @@ private theorem card_filter_le_two {n : ℕ} {p : Fin n → ℕ}
 
 variable [FiniteDimensional ℝ E]
 
-/-- **The real Schur form**, operator form: a real operator has an orthonormal basis in which its
-matrix is *quasi upper triangular* — block upper triangular for a monotone block index `p` whose
-blocks carry at most two indices each. Over `ℂ` the blocks would all be singletons, which is
-Schur's theorem; over `ℝ` an operator need not have an eigenvector, and a `2 × 2` block appears
-wherever a pair of complex conjugate eigenvalues does. -/
-theorem exists_orthonormalBasis_quasiUpperTriangular {n : ℕ} (hn : finrank ℝ E = n)
-    (A : E →ₗ[ℝ] E) :
-    ∃ (b : OrthonormalBasis (Fin n) ℝ E) (p : Fin n → ℕ), Monotone p ∧
-      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
-      ∀ i j : Fin n, p j < p i → (inner ℝ (b i) (A (b j)) : ℝ) = 0 := by
-  obtain ⟨b, p, hmono, -, hclose, htri, -⟩ := exists_orthonormalBasis_aux n hn A
-  exact ⟨b, p, hmono, fun k => card_filter_le_two hclose k, htri⟩
-
 /-- **The real Schur form with irreducible `2 × 2` blocks**, operator form
 ([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): the basis of
 `LinearMap.exists_orthonormalBasis_quasiUpperTriangular` can be chosen so that no `2 × 2` diagonal
@@ -602,20 +588,6 @@ theorem exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks {N : �
       (fun h => hne (Subtype.ext h)) μ ?_
     linear_combination hμ
 
-/-- **The real Schur form**, matrix form: a real square matrix is orthogonally similar to a *quasi
-upper triangular* matrix, `Qᵀ A Q` block upper triangular with diagonal blocks of size `1 × 1` or
-`2 × 2`. This is the quasi-Schur form of [saad2003iterative] §1.8.3, and unlike the complex Schur
-triangulation it needs no complex arithmetic.
-
-`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
-below is `Qᵀ Q = 1`. -/
-theorem exists_orthogonal_conj_quasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
-    ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ p : Fin N → ℕ, Monotone p ∧
-      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p := by
-  obtain ⟨Q, hQ, p, hmono, hcard, htri, -⟩ :=
-    exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
-  exact ⟨Q, hQ, p, hmono, hcard, htri⟩
-
 end Matrix
 
 /-! ### The quasi upper triangular shape -/
@@ -639,6 +611,14 @@ omit [Fintype n] in
 entry `M i j` has `i ≤ j`, hence `p i ≤ p j`. -/
 theorem IsUpperTriangular.blockTriangular_of_monotone [Zero R] {M : Matrix n n R}
     (hM : M.IsUpperTriangular) {p : n → ℕ} (hp : Monotone p) : M.BlockTriangular p :=
+  fun _ _ h => hM (lt_of_not_ge fun hij => absurd h (not_lt.mpr (hp hij)))
+
+omit [Fintype n] in
+/-- A lower triangular matrix is block lower triangular for any monotone block index, the
+transpose of `Matrix.IsUpperTriangular.blockTriangular_of_monotone`. -/
+theorem IsLowerTriangular.blockTriangular_of_monotone [Zero R] {M : Matrix n n R}
+    (hM : M.IsLowerTriangular) {p : n → ℕ} (hp : Monotone p) :
+    M.BlockTriangular (OrderDual.toDual ∘ p) :=
   fun _ _ h => hM (lt_of_not_ge fun hij => absurd h (not_lt.mpr (hp hij)))
 
 /-- An upper triangular matrix is upper quasi-triangular, with `1 × 1` blocks: the block index
@@ -685,14 +665,20 @@ theorem IsQuasiUpperTriangular.isUpperHessenberg [Zero R] {T : Matrix n n R}
 /-- **Products with upper triangular factors keep the quasi-triangular shape**, with the same block
 index: an upper triangular `R` is block triangular for the monotone index of `T`
 (`Matrix.IsUpperTriangular.blockTriangular_of_monotone`), and block triangular matrices for one
-index are closed under multiplication. Used for the generalized real Schur form of a nonsingular
-pencil and the periodic Schur form. -/
+index are closed under multiplication. Used for the periodic Schur form. -/
 theorem IsQuasiUpperTriangular.mul_isUpperTriangular [NonUnitalNonAssocSemiring R]
     {T M : Matrix n n R} (hT : T.IsQuasiUpperTriangular) (hM : M.IsUpperTriangular) :
-    (T * M).IsQuasiUpperTriangular ∧ (M * T).IsQuasiUpperTriangular := by
+    (T * M).IsQuasiUpperTriangular := by
   obtain ⟨p, hmono, hcard, htri⟩ := hT
-  exact ⟨⟨p, hmono, hcard, htri.mul (hM.blockTriangular_of_monotone hmono)⟩,
-    ⟨p, hmono, hcard, (hM.blockTriangular_of_monotone hmono).mul htri⟩⟩
+  exact ⟨p, hmono, hcard, htri.mul (hM.blockTriangular_of_monotone hmono)⟩
+
+/-- An upper triangular factor on the left keeps the quasi-triangular shape, the mirror of
+`Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`. -/
+theorem IsUpperTriangular.mul_isQuasiUpperTriangular [NonUnitalNonAssocSemiring R]
+    {T M : Matrix n n R} (hM : M.IsUpperTriangular) (hT : T.IsQuasiUpperTriangular) :
+    (M * T).IsQuasiUpperTriangular := by
+  obtain ⟨p, hmono, hcard, htri⟩ := hT
+  exact ⟨p, hmono, hcard, (hM.blockTriangular_of_monotone hmono).mul htri⟩
 
 end QuasiTriangular
 
@@ -769,14 +755,48 @@ theorem isQuasiUpperTriangular_iff_fin {T : Matrix (Fin N) (Fin N) R} :
 
 end Fin
 
-/-- **The real Schur form**, named shape ([golub2013matrix] Theorem 7.4.1): a real square matrix is
-orthogonally similar to an upper quasi-triangular matrix. The refinement that no `2 × 2` diagonal
-block has a real eigenvalue stays with the block index in
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`. -/
+/-- **The real Schur form** ([golub2013matrix] Theorem 7.4.1; [saad2003iterative] §1.8.3, the
+quasi-Schur form): a real square matrix is orthogonally similar to an upper quasi-triangular
+matrix, `Qᵀ A Q` block upper triangular with diagonal blocks of size `1 × 1` or `2 × 2`; unlike
+the complex Schur triangulation it needs no complex arithmetic. The refinement that no `2 × 2`
+diagonal block has a real eigenvalue stays with the block index in
+`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`.
+
+`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
+below is `Qᵀ Q = 1`. -/
 theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, (Qᵀ * A * Q).IsQuasiUpperTriangular := by
-  obtain ⟨Q, hQ, p, hmono, hcard, htri⟩ := exists_orthogonal_conj_quasiUpperTriangular A
+  obtain ⟨Q, hQ, p, hmono, hcard, htri, -⟩ :=
+    exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
   exact ⟨Q, hQ, p, hmono, hcard, htri⟩
+
+@[deprecated (since := "2026-09-30")]
+alias exists_orthogonal_conj_quasiUpperTriangular := exists_orthogonal_conj_isQuasiUpperTriangular
+
+end Matrix
+
+/-- **The real Schur form**, operator form: a real operator has an orthonormal basis in which its
+matrix is upper quasi-triangular — block upper triangular for a monotone block index whose blocks
+carry at most two indices each. Over `ℂ` the blocks would all be singletons, which is Schur's
+theorem; over `ℝ` an operator need not have an eigenvector, and a `2 × 2` block appears wherever a
+pair of complex conjugate eigenvalues does. -/
+theorem LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular {E : Type*}
+    [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] {n : ℕ}
+    (hn : finrank ℝ E = n) (A : E →ₗ[ℝ] E) :
+    ∃ b : OrthonormalBasis (Fin n) ℝ E,
+      (LinearMap.toMatrix b.toBasis b.toBasis A).IsQuasiUpperTriangular := by
+  obtain ⟨b, p, hmono, hcard, htri, -⟩ :=
+    LinearMap.exists_orthonormalBasis_quasiUpperTriangular_of_irreducible_blocks hn A
+  refine ⟨b, p, hmono, hcard, fun i j hji => ?_⟩
+  rw [LinearMap.toMatrix_apply, OrthonormalBasis.coe_toBasis,
+    OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
+  exact htri i j hji
+
+@[deprecated (since := "2026-09-30")]
+alias LinearMap.exists_orthonormalBasis_quasiUpperTriangular :=
+  LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular
+
+namespace Matrix
 
 
 /-! ### The spectrum of a special orthogonal matrix -/
@@ -788,39 +808,20 @@ open Complex Polynomial
 /-- The pair `{e^{iθ}, e^{−iθ}}` of conjugate points of the unit circle. -/
 private noncomputable def circlePair (θ : ℝ) : Multiset ℂ := {exp (θ * I), exp (-θ * I)}
 
-open scoped ComplexOrder in
-/-- The eigenvalues of a real orthogonal matrix lie on the unit circle: `A v = z v` with `A`
-unitary gives `|z|² ‖v‖² = ‖v‖²`. -/
+open scoped Matrix.Norms.L2Operator in
+/-- The eigenvalues of a real orthogonal matrix lie on the unit circle: its complexification is a
+unitary element of the C⋆-algebra of complex matrices (`spectrum.norm_eq_one_of_unitary`). -/
 private theorem norm_eq_one_of_mem_roots_charpoly {N : ℕ} {H : Matrix (Fin N) (Fin N) ℝ}
     (hH : H ∈ orthogonalGroup (Fin N) ℝ) {z : ℂ}
     (hz : z ∈ (H.map (algebraMap ℝ ℂ)).charpoly.roots) : ‖z‖ = 1 := by
   set A := H.map (algebraMap ℝ ℂ) with hA
-  have hAA : Aᴴ * A = 1 := by
-    rw [hA, ← conjTranspose_map _ (fun _ => by simp), ← Matrix.map_mul,
+  have hAA : star A * A = 1 := by
+    rw [hA, star_eq_conjTranspose, ← conjTranspose_map _ (fun _ => by simp), ← Matrix.map_mul,
       conjTranspose_eq_transpose_of_trivial, (mem_orthogonalGroup_iff' (Fin N) ℝ).1 hH,
       Matrix.map_one _ (map_zero _) (map_one _)]
-  have hroot := (mem_roots (A.charpoly_monic.ne_zero)).1 hz
-  rw [IsRoot, eval_charpoly] at hroot
-  obtain ⟨v, hv, hAv⟩ := exists_mulVec_eq_zero_iff.2 hroot
-  have hsc : scalar (Fin N) z *ᵥ v = z • v := by
-    ext i
-    rw [scalar_apply, mulVec_diagonal]
-    rfl
-  have hAv' : A *ᵥ v = z • v := by
-    rw [sub_mulVec, sub_eq_zero, hsc] at hAv
-    exact hAv.symm
-  have hvv : star v ⬝ᵥ v ≠ 0 := fun h => hv (dotProduct_star_self_eq_zero.1 h)
-  have key : star (A *ᵥ v) ⬝ᵥ (A *ᵥ v) = star v ⬝ᵥ v := by
-    rw [star_mulVec, ← dotProduct_mulVec, mulVec_mulVec, hAA, one_mulVec]
-  rw [hAv', star_smul, smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul,
-    ← mul_assoc] at key
-  have hzz : star z * z = 1 := by
-    exact mul_right_cancel₀ hvv (key.trans (one_mul _).symm)
-  have hn : ‖z‖ ^ 2 = 1 := by
-    rw [← Complex.ofReal_inj, Complex.ofReal_pow, ← Complex.mul_conj', mul_comm]
-    simpa using hzz
-  have := norm_nonneg z
-  nlinarith [hn]
+  refine spectrum.norm_eq_one_of_unitary (mem_unitaryGroup_iff'.2 hAA) ?_
+  rw [Matrix.mem_spectrum_iff_isRoot_charpoly]
+  exact (mem_roots A.charpoly_monic.ne_zero).1 hz
 
 /-- The roots of the complexification of a real polynomial are closed under conjugation. -/
 private theorem roots_map_conj {p : ℝ[X]} :

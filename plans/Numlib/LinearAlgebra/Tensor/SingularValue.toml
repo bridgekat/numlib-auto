@@ -23,3 +23,14 @@ id = "symmetricRayleigh"
 
 [[node]]
 id = "hasFDerivAt_symmetricRayleigh_eq_zero_iff"
+
+[[node]]  # moved from Matrix/SVD (review rk3-4)
+id = "_root_.Matrix.bilinearRayleigh"
+source = "Golub–Van Loan, Matrix Computations, (12.5.22)"
+
+[[node]]  # moved from Matrix/SVD (review rk3-4)
+id = "_root_.Matrix.fderiv_bilinearRayleigh_eq_zero_iff"
+source = "Golub–Van Loan, Matrix Computations, (12.5.22)"
+
+[[node]]  # moved from Matrix/SVD (review rk3-4)
+id = "_root_.Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues"

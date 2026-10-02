@@ -228,6 +228,11 @@ instance : Inner 𝕜 (Tensor κ 𝕜) :=
 theorem inner_def (A B : Tensor κ 𝕜) : ⟪A, B⟫_𝕜 = ∑ a, conj (A a) * B a :=
   rfl
 
+/-- The Frobenius inner product is the dot product with the conjugate. -/
+theorem inner_eq_star_dotProduct (A B : Tensor κ 𝕜) :
+    ⟪A, B⟫_𝕜 = dotProduct (star (of.symm A)) (of.symm B) :=
+  rfl
+
 /-- The Frobenius inner product is the Euclidean inner product of the arrays of entries. -/
 theorem inner_eq_inner_toLp (A B : Tensor κ 𝕜) :
     ⟪A, B⟫_𝕜 = ⟪WithLp.toLp 2 (of.symm A), WithLp.toLp 2 (of.symm B)⟫_𝕜 := by
@@ -309,6 +314,12 @@ def rankOne [CommMonoid R] (z : ∀ i, κ i → R) : Tensor κ R :=
 theorem rankOne_apply [CommMonoid R] (z : ∀ i, κ i → R) (a : ∀ i, κ i) :
     rankOne z a = ∏ i, z i (a i) :=
   rfl
+
+/-- Rescaling the vectors of a rank-one tensor rescales it by the product of the factors. -/
+theorem rankOne_smul [CommMonoid R] (c : ι → R) (z : ∀ i, κ i → R) :
+    (rankOne fun i => c i • z i) = (∏ i, c i) • rankOne z := by
+  ext a
+  simp [rankOne_apply, Finset.prod_mul_distrib, smul_apply]
 
 /-- A tensor is rank-one if it is an elementary tensor ([golub2013matrix] §12.4.8). -/
 def IsRankOne [CommMonoid R] (A : Tensor κ R) : Prop :=

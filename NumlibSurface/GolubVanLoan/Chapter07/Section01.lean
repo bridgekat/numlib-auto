@@ -444,6 +444,7 @@ theorem theorem_7_1_6 {q : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ u
       (Q * Y)⁻¹ * A * (Q * Y) = of fun i j => if b i = b j then (star Q * A * Q) i j else 0 := by
   obtain ⟨Y, hY, hYT⟩ := exists_isUnit_conj_eq_blockDiagonalPart hT fun i j hij =>
     Set.disjoint_iff_inter_eq_empty.2 (hdisj i j hij)
+  rw [blockDiagPart] at hYT
   refine ⟨Y, hY, ?_⟩
   rw [← hYT, Matrix.mul_inv_rev, Matrix.inv_eq_left_inv (mem_unitaryGroup_iff'.1 hQ)]
   simp only [Matrix.mul_assoc]

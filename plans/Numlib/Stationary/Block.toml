@@ -1,22 +1,6 @@
 namespace = "Matrix"
 
 [[node]]
-id = "blockDiagPart"
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
-
-[[node]]
-id = "blockStrictLower"
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
-
-[[node]]
-id = "blockStrictUpper"
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
-
-[[node]]
-id = "blockDiagPart_add_blockStrictLower_add_blockStrictUpper"
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
-
-[[node]]
 id = "isUnit_blockDiagPart_add_blockStrictLower"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.1"
 

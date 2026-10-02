@@ -36,7 +36,7 @@ classical characterization of the rank as the largest order of a nonvanishing mi
   `Matrix.rank_le_iff_exists_mul` (`rank A ≤ r ↔ A = B C` through `K^r`) with its generator form
   `Matrix.rank_le_iff_exists_mul_transpose`; `Matrix.rank_le_card_add_card_of_forall_ne_zero`, the
   rank bound of a matrix supported on a few rows and columns.
-* `Matrix.rank_toBlock_mono`: a block of a block has smaller rank; `Matrix.rank_one_submatrix_mul`:
+* `Matrix.rank_toBlock_mono`: a block of a block has smaller rank; `Matrix.rank_submatrix_one_mul`:
   padding with zero rows does not change the rank.
 * **The nullity theorem** (Fiedler–Markham; Strang–Nguyen): for invertible `A`,
   `Matrix.finrank_ker_toBlock_inv` (the null spaces of `A⁻¹[p, q]` and `A[¬q, ¬p]` have the same
@@ -324,7 +324,7 @@ theorem rank_toBlock_transpose [Fintype m] [Fintype n] (A : Matrix m n K) (p : n
 
 /-- Padding with zero rows does not change the rank: `[X; 0]`, written as the product of the
 leading columns of the identity with `X`, has the rank of `X`. -/
-theorem rank_one_submatrix_mul [Finite n] [DecidableEq n] {p q : Type*} [Fintype p]
+theorem rank_submatrix_one_mul [Finite n] [DecidableEq n] {p q : Type*} [Fintype p]
     [Fintype q] {f : p → n} (hf : Function.Injective f) (X : Matrix p q K) :
     ((1 : Matrix n n K).submatrix id f * X).rank = X.rank := by
   classical
@@ -341,6 +341,8 @@ theorem rank_one_submatrix_mul [Finite n] [DecidableEq n] {p q : Type*} [Fintype
 end Blocks
 
 /-! ### The nullity theorem -/
+
+@[deprecated (since := "2026-09-30")] alias rank_one_submatrix_mul := rank_submatrix_one_mul
 
 /-- A submatrix applied to a vector: `(A.submatrix f g) x` is `A` applied to `x` extended by zero
 along an injective `g`, restricted to the rows `f`. -/
@@ -492,32 +494,15 @@ theorem rank_inv_toBlocks₂₁ {m n' : Type*} [Fintype m] [Fintype n'] [Decidab
   omega
 
 /-- **The nullity theorem for the other off-diagonal block**: `rank (A⁻¹)₁₂ = rank A₁₂` for a
-nonsingular block matrix, the case `p = isLeft`, `q = isRight` of
-`Matrix.rank_toBlock_inv_add_card`. -/
+nonsingular block matrix: `Matrix.rank_inv_toBlocks₂₁` for `Aᵀ`, since `(A⁻¹)ᵀ = (Aᵀ)⁻¹`, the
+lower-left block of a transpose is the transposed upper-right block, and transposition keeps the
+rank. -/
 theorem rank_inv_toBlocks₁₂ {m n' : Type*} [Fintype m] [Fintype n'] [DecidableEq m]
     [DecidableEq n'] {A : Matrix (m ⊕ n') (m ⊕ n') K} (hA : IsUnit A) :
     (A⁻¹).toBlocks₁₂.rank = A.toBlocks₁₂.rank := by
-  have h := rank_toBlock_inv_add_card hA (fun i => i.isLeft) (fun i => i.isRight)
-  let e₁ : {i : m ⊕ n' // ¬ i.isRight} ≃ m :=
-    (Equiv.subtypeEquivRight fun i => by simp).trans (Equiv.sumIsLeft (α := m) (β := n'))
-  let e₂ : {i : m ⊕ n' // ¬ i.isLeft} ≃ n' :=
-    (Equiv.subtypeEquivRight fun i => by simp).trans (Equiv.sumIsRight (α := m) (β := n'))
-  have hB₁ : (A⁻¹.toBlock (fun i => i.isLeft) (fun i => i.isRight)).rank
-      = (A⁻¹).toBlocks₁₂.rank := by
-    rw [← rank_submatrix (A⁻¹).toBlocks₁₂ (Equiv.sumIsLeft (α := m) (β := n'))
-      (Equiv.sumIsRight (α := m) (β := n'))]
-    congr 1
-    ext ⟨i, hi⟩ ⟨j, hj⟩
-    cases i <;> cases j <;> simp_all [toBlock, toBlocks₁₂]
-  have hB₂ : (A.toBlock (fun i => ¬ i.isRight) (fun j => ¬ j.isLeft)).rank
-      = A.toBlocks₁₂.rank := by
-    rw [← rank_submatrix A.toBlocks₁₂ e₁ e₂]
-    congr 1
-    ext ⟨i, hi⟩ ⟨j, hj⟩
-    cases i <;> cases j <;> simp_all [e₁, e₂, toBlock, toBlocks₁₂]
-  rw [hB₁, hB₂, Fintype.card_sum, Fintype.card_congr (Equiv.sumIsLeft (α := m) (β := n')),
-    Fintype.card_congr (Equiv.sumIsRight (α := m) (β := n'))] at h
-  omega
+  have e : ∀ M : Matrix (m ⊕ n') (m ⊕ n') K, Mᵀ.toBlocks₂₁ = M.toBlocks₁₂ᵀ := fun _ => rfl
+  have h := rank_inv_toBlocks₂₁ ((isUnit_transpose A).2 hA)
+  rwa [← transpose_nonsing_inv, e, e, rank_transpose, rank_transpose] at h
 
 end Nullity
 

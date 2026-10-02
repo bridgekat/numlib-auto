@@ -34,13 +34,13 @@ id = "gap_le_of_urv"
 id = "gap_le_of_ulv"
 
 [[node]]
-id = "rank_eq_of_apply_eq_zero_of_isUnit"
+id = "HasRevealingBlock.rank_eq"
 
 [[node]]
-id = "range_toEuclideanLin_eq_span_of_eq_mul"
+id = "HasRevealingBlock.range_toEuclideanLin_eq_span"
 
 [[node]]
-id = "isLeastSquaresSolution_iff_of_eq_mul"
+id = "HasRevealingBlock.isLeastSquaresSolution_iff"
 
 [[node]]
 id = "pivotedBasicSolution"
@@ -62,3 +62,7 @@ id = "IsPivotedQR.IsRankRevealing.mulVec_basic_eq"
 
 [[node]]
 id = "norm_residual_subset_sub_le"
+
+[[node]]  # review rk3-2
+id = "HasRevealingBlock"
+source = "Golub–Van Loan, Matrix Computations, (5.4.6)"

@@ -14,9 +14,6 @@ id = "wyW"
 id = "isWY_prod"
 
 [[node]]
-id = "isWY_prod_unitLowerTrapezoidal"
-
-[[node]]
 id = "exists_compactWY"
 
 [[node]]

@@ -89,7 +89,7 @@ id = "givensChain_apply"
 id = "exists_givensVector_rep"
 
 [[node]]
-id = "transpose_givensChain_mul_strictLower_add_diagPart"
+id = "givensChain_mul_strictLower_add_diagPart"
 
 [[node]]
 id = "planeReflector"
@@ -102,10 +102,6 @@ id = "orthogonalHessenberg_isQuasiseparable"
 
 [[node]]
 id = "isSimilar_prod_planeReflector_oddEven"
-
-[[node]]
-id = "eigenvalues_oddEven_half_sum"
-source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
 
 [[node]]
 id = "isQuasiseparable_iff_forall_rank_toBlock_Icc_le"
@@ -168,10 +164,14 @@ id = "reflectorFactor"
 [[node]]
 id = "givensChain_mul_diagonal_eq_prodFwd"
 
-[[node]]  # added by lo2: the shape half of eigenvalues_oddEven_half_sum
-id = "isTridiagonal_oddEven_half_sum"
+[[node]]  # added by lo2: the shape half of Fact 2
+id = "isTridiagonal_oddEvenHalfSum"
 source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
 
-[[node]]  # added by lo2: the spectral half of eigenvalues_oddEven_half_sum
+[[node]]  # added by lo2: the spectral half of Fact 2
 id = "charpoly_oddEven_half_sum"
 source = 'Golub–Van Loan, Matrix Computations, §12.2.10, Fact 2'
+
+[[node]]  # review rs12-8
+id = "prodFwd_reflectorFactor_mem_specialOrthogonalGroup"
+source = 'Golub–Van Loan, Matrix Computations, (12.2.18)–(12.2.19)'

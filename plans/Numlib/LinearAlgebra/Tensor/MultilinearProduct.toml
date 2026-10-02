@@ -26,3 +26,15 @@ id = "frobenius_norm_multilinearProd_of_orthonormal"
 
 [[node]]
 id = "vecFin_multilinearProd"
+
+[[node]]  # review2 (g6)
+id = "rectModeProd"
+
+[[node]]  # review2 (g6)
+id = "rectModeProd_comm"
+
+[[node]]  # review2 (g6)
+id = "rectModeProd_rectModeProd"
+
+[[node]]  # review2 (g6)
+id = "vecFin_rectModeProd"

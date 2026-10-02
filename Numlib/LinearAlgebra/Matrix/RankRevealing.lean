@@ -2,7 +2,10 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.RankRevealing`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+The exception is `Numlib/Analysis/Matrix/SingularValues` (interlacing of the singular values of
+submatrices, for Stewart's bounds and subset selection), which is not a candidate and would have
+to go upstream first; keep it free of any other dependency on the rest of `Numlib` than other
+upstreaming candidates.
 -/
 import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Rank
@@ -16,9 +19,13 @@ Stewart, and the least-squares solutions they produce ([golub2013matrix] §5.4.2
 
 ## Main definitions
 
+* `Matrix.HasRevealingBlock T r`: the rows of `T` from the `r`-th on vanish and its leading `r × r`
+  block is invertible; then `rank T = r`, and a factorization `A = U T W` (`U` unitary, `W`
+  invertible) reveals the range and the least-squares solutions of `A`
+  (`Matrix.HasRevealingBlock.range_toEuclideanLin_eq_span`,
+  `Matrix.HasRevealingBlock.isLeastSquaresSolution_iff`).
 * `Matrix.IsPivotedQR.IsRankRevealing A Q R σ r`: a pivoted QR factorization `A Π = Q R` whose
-  rows from the `r`-th on vanish and whose leading `r × r` block `R₁₁` is invertible
-  ([golub2013matrix] (5.4.6)); then `r = rank A`.
+  factor `R` has a revealing block of size `r` ([golub2013matrix] (5.4.6)); then `r = rank A`.
 * `Matrix.IsURV A U R V`, `Matrix.IsULV A U L V`: the two-sided orthogonal decompositions
   `Uᴴ A V = R` (upper triangular) and `Uᴴ A V = L` (lower triangular) of Stewart (1993).
 * `Matrix.pivotedBasicSolution`: the basic solution `x_B = Π [R₁₁⁻¹ c; 0]` of §5.5.5.
@@ -69,6 +76,22 @@ section RevealingBlock
 
 variable {r : ℕ}
 
+/-- **A revealing block** of size `r` ([golub2013matrix] (5.4.6), the shape `[T₁₁ T₁₂; 0 0]` of a
+rank-revealing factorization): the rows of `T` from the `r`-th on vanish and the leading `r × r`
+block `T₁₁` is invertible. Then `rank T = r` (`Matrix.HasRevealingBlock.rank_eq`), and every
+factorization `A = U T W` with `U` unitary and `W` invertible reveals range and least-squares
+solutions of `A`. -/
+structure HasRevealingBlock {α : Type*} [Semiring α] (T : Matrix (Fin M) (Fin N) α) (r : ℕ) :
+    Prop where
+  /-- The block size does not exceed the number of rows. -/
+  le_rows : r ≤ M
+  /-- The block size does not exceed the number of columns. -/
+  le_cols : r ≤ N
+  /-- The rows from the `r`-th on vanish. -/
+  apply_eq_zero : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0
+  /-- The leading `r × r` block is invertible. -/
+  isUnit_block : IsUnit (T.submatrix (Fin.castLE le_rows) (Fin.castLE le_cols))
+
 /-- The rows of `T [y; z]` above the `r`-th: `T₁₁ y + T₁₂ z`. -/
 theorem mulVec_blockVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (hN : r ≤ N)
     (y : Fin r → 𝕜) (z : Fin (N - r) → 𝕜) (i : Fin r) :
@@ -81,9 +104,9 @@ theorem mulVec_blockVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) 
 /-- **A revealing block has the rank**: a matrix whose rows from the `r`-th on vanish and whose
 leading `r × r` block is invertible has rank `r` — at most `r` nonzero rows, and an invertible
 `r × r` submatrix. -/
-theorem rank_eq_of_apply_eq_zero_of_isUnit {T : Matrix (Fin M) (Fin N) 𝕜} (hM : r ≤ M)
-    (hN : r ≤ N) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) : T.rank = r := by
+theorem HasRevealingBlock.rank_eq {T : Matrix (Fin M) (Fin N) 𝕜} (h : T.HasRevealingBlock r) :
+    T.rank = r := by
+  obtain ⟨hM, hN, hz, hu⟩ := h
   classical
   refine le_antisymm ?_ ?_
   · refine (rank_le_card_of_support_subset T ((Finset.univ.filter fun i : Fin M => (i : ℕ) < r))
@@ -100,19 +123,25 @@ theorem rank_eq_of_apply_eq_zero_of_isUnit {T : Matrix (Fin M) (Fin N) 𝕜} (hM
   · have := rank_submatrix_le T (Fin.castLE hM) (Fin.castLE hN)
     rwa [rank_of_isUnit _ hu, Fintype.card_fin] at this
 
+@[deprecated HasRevealingBlock.rank_eq +typeChanged (since := "2026-09-30")]
+theorem rank_eq_of_apply_eq_zero_of_isUnit {T : Matrix (Fin M) (Fin N) 𝕜} (hM : r ≤ M)
+    (hN : r ≤ N) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
+    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) : T.rank = r :=
+  HasRevealingBlock.rank_eq ⟨hM, hN, hz, hu⟩
+
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
   {T : Matrix (Fin M) (Fin N) 𝕜} {W : Matrix (Fin N) (Fin N) 𝕜}
 
 /-- **The range of `A = U T W` is spanned by the first `r` columns of `U`**, when `W` is
 invertible, the rows of `T` from the `r`-th on vanish and `T₁₁` is invertible: `A x = U (T W x)`
 has zero coordinates from the `r`-th on, and `u_i = A W⁻¹ [T₁₁⁻¹ e_i; 0]`. -/
-theorem range_toEuclideanLin_eq_span_of_eq_mul (hM : r ≤ M) (hN : r ≤ N) (hA : A = U * T * W)
-    (hW : IsUnit W) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) :
+theorem HasRevealingBlock.range_toEuclideanLin_eq_span (h : T.HasRevealingBlock r)
+    (hA : A = U * T * W) (hW : IsUnit W) :
     LinearMap.range (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun i : Fin r =>
-        (WithLp.toLp 2 (U.col (Fin.castLE hM i)) : EuclideanSpace 𝕜 (Fin M))) := by
+        (WithLp.toLp 2 (U.col (Fin.castLE h.le_rows i)) : EuclideanSpace 𝕜 (Fin M))) := by
   classical
+  obtain ⟨hM, hN, hz, hu⟩ := h
   have hA' : ∀ x : Fin N → 𝕜, A *ᵥ x = U *ᵥ (T *ᵥ (W *ᵥ x)) := fun x => by
     rw [hA, ← mulVec_mulVec, ← mulVec_mulVec]
   have hU : ∀ y : Fin M → 𝕜, (WithLp.toLp 2 (U *ᵥ y) : EuclideanSpace 𝕜 (Fin M)) =
@@ -155,6 +184,15 @@ theorem range_toEuclideanLin_eq_span_of_eq_mul (hM : r ≤ M) (hN : r ≤ N) (hA
     ext l
     simp [mulVec, dotProduct, Pi.single_apply, Matrix.col]
 
+@[deprecated HasRevealingBlock.range_toEuclideanLin_eq_span +typeChanged (since := "2026-09-30")]
+theorem range_toEuclideanLin_eq_span_of_eq_mul (hM : r ≤ M) (hN : r ≤ N) (hA : A = U * T * W)
+    (hW : IsUnit W) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
+    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) :
+    LinearMap.range (toEuclideanLin A) =
+      Submodule.span 𝕜 (Set.range fun i : Fin r =>
+        (WithLp.toLp 2 (U.col (Fin.castLE hM i)) : EuclideanSpace 𝕜 (Fin M))) :=
+  HasRevealingBlock.range_toEuclideanLin_eq_span ⟨hM, hN, hz, hu⟩ hA hW
+
 /-- **The residual splits**: for `A = U T W` with `U` unitary and the rows of `T` from the `r`-th
 on zero, `‖A x − b‖²` is the squared residual of the first `r` equations of `T (W x) = Uᴴ b`
 plus the squared norm of the trailing part of `Uᴴ b`. -/
@@ -187,13 +225,13 @@ theorem norm_toEuclideanLin_sub_sq_eq_of_eq_mul (hU : U ∈ unitaryGroup (Fin M)
 of `T` from the `r`-th on zero and `T₁₁` invertible, `x` is a least-squares solution of `A x = b`
 exactly when the first `r` equations of `T (W x) = Uᴴ b` hold. The residual is then the trailing
 part of `Uᴴ b`, and `W⁻¹ [T₁₁⁻¹ c; 0]` attains it. -/
-theorem isLeastSquaresSolution_iff_of_eq_mul (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hM : r ≤ M)
-    (hN : r ≤ N) (hA : A = U * T * W) (hW : IsUnit W)
-    (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
-    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) {b : EuclideanSpace 𝕜 (Fin M)}
-    {x : EuclideanSpace 𝕜 (Fin N)} :
+theorem HasRevealingBlock.isLeastSquaresSolution_iff (h : T.HasRevealingBlock r)
+    (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hA : A = U * T * W) (hW : IsUnit W)
+    {b : EuclideanSpace 𝕜 (Fin M)} {x : EuclideanSpace 𝕜 (Fin N)} :
     IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
-      (T *ᵥ (W *ᵥ WithLp.ofLp x)) (Fin.castLE hM i) = (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE hM i) := by
+      (T *ᵥ (W *ᵥ WithLp.ofLp x)) (Fin.castLE h.le_rows i) =
+        (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE h.le_rows i) := by
+  obtain ⟨hM, hN, hz, hu⟩ := h
   set B := T.submatrix (Fin.castLE hM) (Fin.castLE hN)
   set x₀ : EuclideanSpace 𝕜 (Fin N) := WithLp.toLp 2 (W⁻¹ *ᵥ blockVec hN
     (B⁻¹ *ᵥ fun i => (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE hM i)) 0)
@@ -225,6 +263,16 @@ theorem isLeastSquaresSolution_iff_of_eq_mul (hU : U ∈ unitaryGroup (Fin M) �
     rw [hres x hx, norm_toEuclideanLin_sub_sq_eq_of_eq_mul hU hM hA hz]
     exact le_add_of_nonneg_left (Finset.sum_nonneg fun _ _ => sq_nonneg _)
 
+@[deprecated HasRevealingBlock.isLeastSquaresSolution_iff +typeChanged (since := "2026-09-30")]
+theorem isLeastSquaresSolution_iff_of_eq_mul (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hM : r ≤ M)
+    (hN : r ≤ N) (hA : A = U * T * W) (hW : IsUnit W)
+    (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
+    (hu : IsUnit (T.submatrix (Fin.castLE hM) (Fin.castLE hN))) {b : EuclideanSpace 𝕜 (Fin M)}
+    {x : EuclideanSpace 𝕜 (Fin N)} :
+    IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
+      (T *ᵥ (W *ᵥ WithLp.ofLp x)) (Fin.castLE hM i) = (Uᴴ *ᵥ WithLp.ofLp b) (Fin.castLE hM i) :=
+  HasRevealingBlock.isLeastSquaresSolution_iff ⟨hM, hN, hz, hu⟩ hU hA hW
+
 end RevealingBlock
 
 /-! ### Rank-revealing pivoted QR -/
@@ -232,21 +280,14 @@ end RevealingBlock
 section RankRevealing
 
 /-- **A rank-revealing pivoted QR factorization** ([golub2013matrix] (5.4.6)): `A Π = Q R`
-(`Matrix.IsPivotedQR`) with the rows of `R` from the `r`-th on zero and the leading `r × r`
-block `R₁₁` invertible, `R = [R₁₁ R₁₂; 0 0]`. Then `r = rank A`
+(`Matrix.IsPivotedQR`) with a revealing block of size `r` in `R` (`Matrix.HasRevealingBlock`):
+the rows of `R` from the `r`-th on zero and the leading `r × r` block `R₁₁` invertible,
+`R = [R₁₁ R₁₂; 0 0]`. Then `r = rank A`
 (`Matrix.IsPivotedQR.IsRankRevealing.rank_eq`); it always exists with `r = rank A`
 (`Matrix.exists_isPivotedQR_rank`). The one hypothesis of the least-squares statements below. -/
 structure IsPivotedQR.IsRankRevealing (A : Matrix (Fin M) (Fin N) 𝕜)
     (Q : Matrix (Fin M) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin N) 𝕜) (σ : Equiv.Perm (Fin N))
-    (r : ℕ) : Prop extends IsPivotedQR A Q R σ where
-  /-- The rank does not exceed the number of rows. -/
-  le_rows : r ≤ M
-  /-- The rank does not exceed the number of columns. -/
-  le_cols : r ≤ N
-  /-- The rows of `R` from the `r`-th on vanish. -/
-  apply_eq_zero : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → R i j = 0
-  /-- The leading `r × r` block of `R` is invertible. -/
-  isUnit_block : IsUnit (R.submatrix (Fin.castLE le_rows) (Fin.castLE le_cols))
+    (r : ℕ) : Prop extends IsPivotedQR A Q R σ, HasRevealingBlock R r
 
 /-- The inverse permutation matrix `Πᵀ` acts on a vector by `v ↦ v ∘ σ`. -/
 theorem one_submatrix_mulVec (σ : Equiv.Perm (Fin N)) (v : Fin N → 𝕜) :
@@ -272,14 +313,14 @@ theorem eq_mul (h : IsRankRevealing A Q R σ r) :
 
 /-- **The rank is revealed**: a rank-revealing pivoted QR factorization has `r = rank A`. The
 rank is invariant under `Q` and `Π`, and `R` has a revealing block
-(`Matrix.rank_eq_of_apply_eq_zero_of_isUnit`). -/
+(`Matrix.HasRevealingBlock.rank_eq`). -/
 theorem rank_eq (h : IsRankRevealing A Q R σ r) : A.rank = r := by
   classical
   rw [h.eq_mul, rank_mul_eq_left_of_isUnit_det _ _
       ((isUnit_iff_isUnit_det _).1 (isUnit_one_submatrix σ)),
     rank_mul_eq_right_of_isUnit_det _ _
       ((isUnit_iff_isUnit_det Q).1 (isUnit_of_mem_unitaryGroup h.isQR.mem_unitaryGroup))]
-  exact rank_eq_of_apply_eq_zero_of_isUnit h.le_rows h.le_cols h.apply_eq_zero h.isUnit_block
+  exact h.toHasRevealingBlock.rank_eq
 
 /-- **The range of `A` is spanned by the first `r` columns of `Q`** ([golub2013matrix] §5.4.2,
 `ran(A) = span{q_1, …, q_r}`): `A x = Q R (Πᵀ x)` has zero coordinates from the `r`-th on, and
@@ -288,8 +329,7 @@ theorem range_eq_span (h : IsRankRevealing A Q R σ r) :
     LinearMap.range (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun i : Fin r =>
         (WithLp.toLp 2 (Q.col (Fin.castLE h.le_rows i)) : EuclideanSpace 𝕜 (Fin M))) :=
-  range_toEuclideanLin_eq_span_of_eq_mul h.le_rows h.le_cols h.eq_mul (isUnit_one_submatrix σ)
-    h.apply_eq_zero h.isUnit_block
+  h.toHasRevealingBlock.range_toEuclideanLin_eq_span h.eq_mul (isUnit_one_submatrix σ)
 
 end IsPivotedQR.IsRankRevealing
 
@@ -951,8 +991,8 @@ theorem isLeastSquaresSolution_iff (h : IsRankRevealing A Q R σ r)
     IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
       (R *ᵥ (WithLp.ofLp x ∘ σ)) (Fin.castLE h.le_rows i) =
         (Qᴴ *ᵥ WithLp.ofLp b) (Fin.castLE h.le_rows i) := by
-  rw [isLeastSquaresSolution_iff_of_eq_mul h.isQR.mem_unitaryGroup h.le_rows h.le_cols h.eq_mul
-    (isUnit_one_submatrix σ) h.apply_eq_zero h.isUnit_block, one_submatrix_mulVec]
+  rw [h.toHasRevealingBlock.isLeastSquaresSolution_iff h.isQR.mem_unitaryGroup h.eq_mul
+    (isUnit_one_submatrix σ), one_submatrix_mulVec]
 
 /-- **The basic solution is a least-squares solution** ([golub2013matrix] §5.5.5), and its
 coordinates `Πᵀ x_B` vanish from the `r`-th on: it has at most `r` nonzero entries. -/

@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.GroupTheory.Perm.Fin
 import Numlib.Data.Fin.Sum
 import Numlib.LinearAlgebra.Matrix.LU
+import Numlib.LinearAlgebra.Matrix.RealSchur
 
 /-!
 # Factorizations of symmetric indefinite matrices
@@ -21,7 +22,8 @@ chains.
 
 * `Matrix.IsPivotBlockDiagonal D`: `D` is symmetric and block diagonal with `1 × 1` and `2 × 2`
   diagonal blocks, on `Fin n`: a symmetric tridiagonal matrix no two consecutive subdiagonal
-  entries of which are nonzero.
+  entries of which are nonzero; equivalently symmetric and upper quasi-triangular
+  (`Matrix.isPivotBlockDiagonal_iff`), the shape of the real Schur form.
 * `Matrix.IsBlockLDL A L D`: `A = L D Lᵀ` with `L` unit lower triangular carrying the identity in
   each `2 × 2` diagonal block and `D` pivot-block-diagonal.
 * `Matrix.IsAasen A L T`: `A = L T Lᵀ` with `L` unit lower triangular of first column `e₁` and
@@ -29,7 +31,7 @@ chains.
 
 ## Main results
 
-* `Matrix.exists_isUnit_principal_pivot`: a nonzero symmetric matrix has a nonsingular `1 × 1` or
+* `Matrix.exists_principal_pivot_ne_zero`: a nonzero symmetric matrix has a nonsingular `1 × 1` or
   `2 × 2` principal pivot, the step of the existence proof of (4.4.2).
 * `Matrix.exists_perm_isBlockLDL`: [golub2013matrix] (4.4.2), every symmetric matrix has a
   symmetric permutation with a block `L D Lᵀ` factorization, by bordering one pivot block at a
@@ -40,9 +42,10 @@ chains.
 * `Matrix.exists_perm_isAasen`: [golub2013matrix] (4.4.1), the Aasen factorization with
   `|l_ij| ≤ 1`, by the Parlett–Reid process on the trailing block.
 * `Matrix.IsBlockLDL.solve`, `Matrix.IsAasen.solve`: the solve chains `L z = P b`, `D w = z` (or
-  `T w = z`), `Lᵀ y = w`, `x = Pᵀ y`.
-* `Matrix.IsAasen.isUpperHessenberg_mul_transpose`: `A = L H` with `H = T Lᵀ` upper Hessenberg,
-  [golub2013matrix] (4.4.5).
+  `T w = z`), `Lᵀ y = w`, `x = Pᵀ y`, both instances of
+  `Matrix.mulVec_comp_symm_eq_of_mul_mul_transpose_eq` for an arbitrary middle factor.
+* `Matrix.IsAasen.isUpperHessenberg_mul_transpose`, `Matrix.IsAasen.eq_mul_mul_transpose`:
+  `A = L H` with `H = T Lᵀ` upper Hessenberg, [golub2013matrix] (4.4.5).
 
 ## Implementation notes
 
@@ -78,6 +81,44 @@ structure IsPivotBlockDiagonal [Zero K] (D : Matrix (Fin n) (Fin n) K) : Prop wh
   apply_eq_zero : ∀ (i : ℕ) (h : i + 2 < n), D ⟨i + 1, by omega⟩ ⟨i, by omega⟩ ≠ 0 →
     D ⟨i + 2, h⟩ ⟨i + 1, by omega⟩ = 0
 
+/-- **Pivot block diagonal is symmetric quasi-triangular**: a symmetric matrix is block diagonal
+with `1 × 1` and `2 × 2` blocks exactly when it is upper quasi-triangular — the shape of the real
+Schur form, with the no-overlap condition as the `Fin` characterization's
+(`Matrix.isQuasiUpperTriangular_iff_fin`) "no two consecutive nonzero subdiagonal entries". -/
+theorem isPivotBlockDiagonal_iff [Zero K] {D : Matrix (Fin n) (Fin n) K} :
+    D.IsPivotBlockDiagonal ↔ D.IsSymm ∧ D.IsQuasiUpperTriangular := by
+  rw [isQuasiUpperTriangular_iff_fin]
+  constructor
+  · rintro ⟨hs, ht, hb⟩
+    refine ⟨hs, ht.isUpperHessenberg, fun i hi => ?_⟩
+    by_cases h : D ⟨i + 1, by omega⟩ ⟨i, by omega⟩ = 0
+    · exact Or.inl h
+    · exact Or.inr (hb i hi h)
+  · rintro ⟨hs, hH, hb⟩
+    refine ⟨hs, isTridiagonal_iff_fin.2 fun i j hij => ?_, fun i hi h => (hb i hi).resolve_left h⟩
+    rcases hij with hij | hij
+    · exact isUpperHessenberg_iff_fin.1 hH i j hij
+    · rw [← hs.apply]
+      exact isUpperHessenberg_iff_fin.1 hH j i hij
+
+/-- A pivot block diagonal matrix is upper quasi-triangular. -/
+theorem IsPivotBlockDiagonal.isQuasiUpperTriangular [Zero K] {D : Matrix (Fin n) (Fin n) K}
+    (h : D.IsPivotBlockDiagonal) : D.IsQuasiUpperTriangular :=
+  (isPivotBlockDiagonal_iff.1 h).2
+
+/-- **The solve chain of a symmetric factorization** `P A Pᵀ = L M Lᵀ`, whatever the middle
+factor `M`: with `P` the permutation matrix of `σ`, solving `L z = P b`, `M w = z`, `Lᵀ y = w` and
+setting `x = Pᵀ y` solves `A x = b`. -/
+theorem mulVec_comp_symm_eq_of_mul_mul_transpose_eq [CommSemiring K]
+    {A L M : Matrix (Fin n) (Fin n) K} {σ : Equiv.Perm (Fin n)}
+    (h : L * M * Lᵀ = A.submatrix σ σ) {b z w y : Fin n → K} (hz : L *ᵥ z = b ∘ σ)
+    (hw : M *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) : A *ᵥ (y ∘ σ.symm) = b := by
+  have h1 : A.submatrix σ σ *ᵥ y = b ∘ σ := by
+    rw [← h, ← mulVec_mulVec, ← mulVec_mulVec, hy, hw, hz]
+  rw [submatrix_mulVec_equiv] at h1
+  funext i
+  simpa using congrFun h1 (σ.symm i)
+
 /-- **The block `L D Lᵀ` factorization** ([golub2013matrix] (4.4.2)): `L` unit lower triangular,
 `D` block diagonal with `1 × 1` and `2 × 2` pivots, `L` the identity on each `2 × 2` diagonal
 block, and `L D Lᵀ = A`. -/
@@ -103,12 +144,8 @@ if `P A Pᵀ = L D Lᵀ` with `P` the permutation matrix of `σ`, then solving `
 theorem IsBlockLDL.solve [CommSemiring K] {A L D : Matrix (Fin n) (Fin n) K}
     {σ : Equiv.Perm (Fin n)} (h : IsBlockLDL (A.submatrix σ σ) L D) {b z w y : Fin n → K}
     (hz : L *ᵥ z = b ∘ σ) (hw : D *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) :
-    A *ᵥ (y ∘ σ.symm) = b := by
-  have h1 : A.submatrix σ σ *ᵥ y = b ∘ σ := by
-    rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hy, hw, hz]
-  rw [submatrix_mulVec_equiv] at h1
-  funext i
-  simpa using congrFun h1 (σ.symm i)
+    A *ᵥ (y ∘ σ.symm) = b :=
+  mulVec_comp_symm_eq_of_mul_mul_transpose_eq h.mul_eq hz hw hy
 
 /-- **The Aasen factorization** ([golub2013matrix] (4.4.1), §4.4.2): `A = L T Lᵀ` with `L` unit
 lower triangular whose first column is `e₁` (the book's `L(:, 1) = e₁`) and `T` symmetric
@@ -126,32 +163,34 @@ structure IsAasen [Semiring K] (A L T : Matrix (Fin n) (Fin n) K) : Prop where
   mul_eq : L * T * Lᵀ = A
 
 /-- [golub2013matrix] (4.4.5): if `A = L T Lᵀ` is an Aasen factorization, then `H = T Lᵀ` is
-upper Hessenberg and `A = L H`, so that the columns of `A` are the combinations
-`A(:, j) = ∑_{k ≤ j+1} L(:, k) h_kj` from which Aasen's method computes `L` column by column. -/
+upper Hessenberg; with `Matrix.IsAasen.eq_mul_mul_transpose` (`A = L H`) the columns of `A` are
+the combinations `A(:, j) = ∑_{k ≤ j+1} L(:, k) h_kj` from which Aasen's method computes `L`
+column by column. -/
 theorem IsAasen.isUpperHessenberg_mul_transpose [CommRing K] {A L T : Matrix (Fin n) (Fin n) K}
-    (h : IsAasen A L T) : (T * Lᵀ).IsUpperHessenberg ∧ A = L * (T * Lᵀ) :=
-  ⟨h.isTridiagonal.isUpperHessenberg.mul_isUpperTriangular
-      h.isUnitLowerTriangular.isLowerTriangular.transpose_isUpperTriangular,
-    by rw [← h.mul_eq, Matrix.mul_assoc]⟩
+    (h : IsAasen A L T) : (T * Lᵀ).IsUpperHessenberg :=
+  h.isTridiagonal.isUpperHessenberg.mul_isUpperTriangular
+    h.isUnitLowerTriangular.isLowerTriangular.transpose_isUpperTriangular
+
+/-- [golub2013matrix] (4.4.5): an Aasen factorization `A = L T Lᵀ` is `A = L H` with
+`H = T Lᵀ`. -/
+theorem IsAasen.eq_mul_mul_transpose [Semiring K] {A L T : Matrix (Fin n) (Fin n) K}
+    (h : IsAasen A L T) : A = L * (T * Lᵀ) := by
+  rw [← h.mul_eq, Matrix.mul_assoc]
 
 /-- **The solve chain of the Aasen factorization** ([golub2013matrix], after (4.4.2)): if
 `P A Pᵀ = L T Lᵀ`, then `L z = P b`, `T w = z`, `Lᵀ y = w` and `x = Pᵀ y` give `A x = b`. -/
 theorem IsAasen.solve [CommSemiring K] {A L T : Matrix (Fin n) (Fin n) K}
     {σ : Equiv.Perm (Fin n)} (h : IsAasen (A.submatrix σ σ) L T) {b z w y : Fin n → K}
     (hz : L *ᵥ z = b ∘ σ) (hw : T *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) :
-    A *ᵥ (y ∘ σ.symm) = b := by
-  have h1 : A.submatrix σ σ *ᵥ y = b ∘ σ := by
-    rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hy, hw, hz]
-  rw [submatrix_mulVec_equiv] at h1
-  funext i
-  simpa using congrFun h1 (σ.symm i)
+    A *ᵥ (y ∘ σ.symm) = b :=
+  mulVec_comp_symm_eq_of_mul_mul_transpose_eq h.mul_eq hz hw hy
 
 /-- **A nonzero symmetric matrix has a nonsingular principal pivot of order one or two**
 ([golub2013matrix] §4.4.4, the step "if `A` is nonzero it is always possible to choose `s` and
 `P₁` so that `E` is nonsingular"): a nonzero diagonal entry, or a pair `i ≠ j` whose principal
 `2 × 2` minor is nonzero. If every diagonal entry vanishes, a nonzero `A i j`, `i ≠ j`, gives the
 minor `-A i j ^ 2`. -/
-theorem exists_isUnit_principal_pivot {m : Type*} [Field K] {A : Matrix m m K} (hA : A.IsSymm)
+theorem exists_principal_pivot_ne_zero {m : Type*} [Field K] {A : Matrix m m K} (hA : A.IsSymm)
     (hA0 : A ≠ 0) :
     (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 := by
   by_cases hd : ∃ i, A i i ≠ 0
@@ -164,6 +203,9 @@ theorem exists_isUnit_principal_pivot {m : Type*} [Field K] {A : Matrix m m K} (
   refine Or.inr ⟨i, j, fun h => hij (by rw [h]; exact hd j), ?_⟩
   rw [hd i, hd j, zero_mul, zero_sub, hA.apply i j, neg_ne_zero]
   exact mul_ne_zero hij hij
+
+@[deprecated (since := "2026-09-30")]
+alias exists_isUnit_principal_pivot := exists_principal_pivot_ne_zero
 
 /-! ### Existence of the block `L D Lᵀ` factorization -/
 
@@ -500,7 +542,7 @@ theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
 /-- **[golub2013matrix] (4.4.2), existence**: every symmetric matrix over a field has a symmetric
 permutation `P A Pᵀ = L D Lᵀ` with `L` unit lower triangular and `D` block diagonal with `1 × 1`
 and `2 × 2` pivots. Strong induction on the order: a nonzero symmetric matrix has a nonsingular
-principal pivot of order one or two (`Matrix.exists_isUnit_principal_pivot`), moved to the front,
+principal pivot of order one or two (`Matrix.exists_principal_pivot_ne_zero`), moved to the front,
 and the factorization of the Schur complement is bordered back. The multipliers are not bounded by
 `1` in general (the book's `|ℓ_ij| ≤ 1` is false; see `Matrix.exists_perm_isBlockLDL_abs_le` for the
 bound of the Bunch–Parlett pivot rule). -/
@@ -509,7 +551,7 @@ theorem exists_perm_isBlockLDL {n : ℕ} {A : Matrix (Fin n) (Fin n) K} (hA : A.
       IsBlockLDL (A.submatrix σ σ) L D := by
   obtain ⟨σ, L, D, h, -⟩ := exists_perm_isBlockLDL_of_pivot (fun _ : K => True) trivial trivial
     (fun A hA hA0 => by
-      rcases exists_isUnit_principal_pivot hA hA0 with ⟨r, hr⟩ | ⟨r, t, hrt, hdet⟩
+      rcases exists_principal_pivot_ne_zero hA hA0 with ⟨r, hr⟩ | ⟨r, t, hrt, hdet⟩
       · exact Or.inl ⟨r, hr, fun _ _ => trivial⟩
       · exact Or.inr ⟨r, t, hrt, hdet, fun _ _ _ => ⟨trivial, trivial⟩⟩) A hA
   exact ⟨σ, L, D, h⟩
@@ -635,7 +677,7 @@ private theorem isUnitLowerTriangular_one_add {m : ℕ} {l : Fin (m + 1) → K} 
 /-- **[golub2013matrix] (4.4.1), existence with the pivoting bound**, in the strong form used by the
 induction: every symmetric matrix over a linearly ordered field has a symmetric permutation fixing
 the first index with an Aasen factorization `P A Pᵀ = L T Lᵀ`, `|l_ij| ≤ 1`. -/
-theorem exists_perm_isAasen_aux :
+private theorem exists_perm_isAasen_aux :
     ∀ {n : ℕ} {A : Matrix (Fin n) (Fin n) K}, A.IsSymm →
       ∃ (σ : Equiv.Perm (Fin n)) (L T : Matrix (Fin n) (Fin n) K),
         IsAasen (A.submatrix σ σ) L T ∧ (∀ i j, |L i j| ≤ 1) ∧

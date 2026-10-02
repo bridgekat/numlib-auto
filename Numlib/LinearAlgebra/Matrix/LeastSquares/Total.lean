@@ -2,7 +2,10 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.LeastSquares.Total`.
-Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+The exception is `Numlib/Analysis/Matrix/SingularValues` (the Frobenius Eckart–Young–Mirsky
+theorem and the interlacing bounds), which is not a candidate and would have to go upstream
+first; keep it free of any other dependency on the rest of `Numlib` than other upstreaming
+candidates.
 -/
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.Analysis.Matrix.SingularValues
@@ -36,6 +39,8 @@ the smallest singular value of `C` bounds its size from below.
   `x = −T₁ z / (t_{n+1} α)`, the perturbation being `−C w wᴴ`.
 * `Matrix.not_isTLSSolution_of_forall_last_eq_zero`: if every such `w` has `α = 0` there is no
   TLS solution.
+* `Matrix.tls_single_rhs` ([golub2013matrix] §6.3.2, Algorithm 6.3.1): both, read off an
+  orthonormal basis `W` of the minimizers reduced by a unitary `Q` to `W Q = [W' z; 0 α]`.
 * `Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane`, `Matrix.isMinOn_tlsObjective`: the
   geometric reading (6.3.6) — `ψ` sums weighted squared distances to a hyperplane, and the TLS
   solution minimizes it.
@@ -447,6 +452,76 @@ theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : �
     have := iInf_colSingularValues_mul_norm_le C (WithLp.toLp 2 w')
     rwa [hw', mul_one, ← hnrm] at this
   exact hα' (h w' hw' (le_antisymm (hle'.trans hup) hge))
+
+/-- **The single right-hand side, Algorithm 6.3.1** ([golub2013matrix] §6.3.2): let the columns
+of `W` be orthonormal (`Wᴴ W = 1`) and span exactly the minimizers of `‖C w‖ / ‖w‖` for
+`C = D [A | b] T` — e.g. the trailing right singular vectors `V(:, n+1−p : n+1)` of an SVD of `C`
+(`Matrix.IsSVD.norm_toEuclideanLin_eq_iff_mem_span`) — and let `Q` be unitary with the last row
+of `W Q` zero outside the column `l`, `W Q = [W' z; 0 α]` (a Householder matrix does this). Then
+(a) `|α|` is the largest last entry of a unit vector of the span; (b) if `α = 0` the TLS problem
+has no solution; (c) otherwise `x = −T₁ z / (t_{n+1} α)` is a TLS solution, with the perturbation
+`D [E₀ | r₀] T = −C w wᴴ` for the unit minimizer `w = (W Q)(:, l)`. -/
+theorem tls_single_rhs {p : Type*} [Fintype p] [DecidableEq p] (hd : ∀ i, d i ≠ 0)
+    (ht : ∀ j, t j ≠ 0) {W : Matrix (n ⊕ Unit) p 𝕜} (hW : Wᴴ * W = 1)
+    (hmin : ∀ w : EuclideanSpace 𝕜 (n ⊕ Unit),
+      ‖toEuclideanLin (tlsWeighted d t A (replicateCol Unit b)) w‖ =
+          (⨅ j, (tlsWeighted d t A (replicateCol Unit b)).colSingularValues j) * ‖w‖ ↔
+        w ∈ LinearMap.range (toEuclideanLin W))
+    {Q : Matrix p p 𝕜} (hQ : Q ∈ unitaryGroup p 𝕜) {l : p}
+    (hz : ∀ j, j ≠ l → (W * Q) (Sum.inr ()) j = 0) :
+    (∀ y : EuclideanSpace 𝕜 p, ‖y‖ = 1 →
+      ‖(W *ᵥ WithLp.ofLp y) (Sum.inr ())‖ ≤ ‖(W * Q) (Sum.inr ()) l‖) ∧
+    ((W * Q) (Sum.inr ()) l = 0 → ¬ ∃ X, IsTLSSolution d t A (replicateCol Unit b) X) ∧
+    ((W * Q) (Sum.inr ()) l ≠ 0 → ∃ E R, IsTLSPerturbation d t A (replicateCol Unit b) E R ∧
+      (A + E) * replicateCol Unit (fun j => -((t (Sum.inl j) : 𝕜) * (W * Q) (Sum.inl j) l) /
+        ((t (Sum.inr ()) : 𝕜) * (W * Q) (Sum.inr ()) l)) = replicateCol Unit b + R ∧
+      tlsWeighted d t E R =
+        -vecMulVec (tlsWeighted d t A (replicateCol Unit b) *ᵥ (W * Q).col l)
+          (star ((W * Q).col l))) := by
+  set M := W * Q with hMdef
+  have hQQ : Q * star Q = 1 := mem_unitaryGroup_iff.1 hQ
+  have hM : Mᴴ * M = 1 := by
+    rw [hMdef, conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Wᴴ, hW, Matrix.one_mul,
+      ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hQ]
+  -- the last entry of `W y` only sees the `l`-th coordinate of `Qᴴ y`
+  have hlast : ∀ y : p → 𝕜, (W *ᵥ y) (Sum.inr ()) = M (Sum.inr ()) l * (star Q *ᵥ y) l := by
+    intro y
+    have e : W *ᵥ y = M *ᵥ (star Q *ᵥ y) := by
+      rw [mulVec_mulVec, hMdef, Matrix.mul_assoc, hQQ, Matrix.mul_one]
+    rw [e, mulVec, dotProduct, Finset.sum_eq_single l (fun j _ hj => by rw [hz j hj, zero_mul])
+      (fun h => absurd (Finset.mem_univ l) h)]
+  have ha : ∀ y : EuclideanSpace 𝕜 p, ‖y‖ = 1 →
+      ‖(W *ᵥ WithLp.ofLp y) (Sum.inr ())‖ ≤ ‖M (Sum.inr ()) l‖ := by
+    intro y hy
+    rw [hlast, norm_mul]
+    refine mul_le_of_le_one_right (norm_nonneg _) ?_
+    have h1 : ‖(WithLp.toLp 2 (star Q *ᵥ WithLp.ofLp y) : EuclideanSpace 𝕜 p)‖ = 1 := by
+      rw [norm_toLp_mulVec_of_mem_unitaryGroup (Unitary.star_mem hQ), WithLp.toLp_ofLp, hy]
+    exact (PiLp.norm_apply_le (WithLp.toLp 2 (star Q *ᵥ WithLp.ofLp y) : EuclideanSpace 𝕜 p)
+      l).trans h1.le
+  refine ⟨ha, fun hα => ?_, fun hα => ?_⟩
+  · -- (b): every unit minimizer lies in the span, so its last entry is at most `|α| = 0`
+    refine not_isTLSSolution_of_forall_last_eq_zero hd ht fun w hw hmw => ?_
+    obtain ⟨y, hy⟩ : WithLp.toLp 2 w ∈ LinearMap.range (toEuclideanLin W) := by
+      rw [← hmin, toEuclideanLin_toLp, hmw, hw, mul_one]
+    have hy1 : ‖y‖ = 1 := by
+      rw [← norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hW, hy, hw]
+    have hwy : W *ᵥ WithLp.ofLp y = w := congrArg WithLp.ofLp hy
+    have := ha y hy1
+    rwa [hwy, hα, norm_zero, norm_le_zero_iff] at this
+  · -- (c): the column `l` of `W Q` is a unit minimizer with nonzero last entry
+    have hcol : M.col l = W *ᵥ Q.col l := by
+      rw [← mulVec_single_one, ← mulVec_single_one, hMdef, ← mulVec_mulVec]
+    have hw : ‖(WithLp.toLp 2 (M.col l) : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1 := by
+      rw [← mulVec_single_one, ← toEuclideanLin_toLp,
+        norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hM]
+      rw [show (WithLp.toLp 2 (Pi.single l (1 : 𝕜)) : EuclideanSpace 𝕜 p) =
+        PiLp.single 2 l (1 : 𝕜) from rfl]
+      simp
+    have hmw := (hmin (WithLp.toLp 2 (M.col l))).2
+      ⟨WithLp.toLp 2 (Q.col l), by rw [toEuclideanLin_toLp, hcol]⟩
+    rw [hw, mul_one, toEuclideanLin_toLp] at hmw
+    exact isTLSSolution_of_mem_smallest hd ht hw hmw hα
 
 end SingleRHS
 

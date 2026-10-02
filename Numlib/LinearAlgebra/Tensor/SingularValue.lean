@@ -10,6 +10,7 @@ import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.FDeriv.Analytic
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.SpecialFunctions.Sqrt
+import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Tensor.Unfolding
 
 /-!
@@ -37,6 +38,10 @@ unit vectors, which the book takes as the definition of a tensor singular value
   singular vectors (normalized).
 * `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`: the critical points of `φ_𝒞` for a symmetric
   `𝒞` are its eigenvectors; `φ_𝒞 = ψ_𝒞 ∘ diag` and the `d` partial derivatives agree by symmetry.
+* `Matrix.bilinearRayleigh_eq_multilinearRayleigh`: the order-two case is the bilinear Rayleigh
+  quotient `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of a matrix ([golub2013matrix] (12.5.22)), whose
+  critical points (`Matrix.fderiv_bilinearRayleigh_eq_zero_iff`) are the singular triples
+  (`Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`).
 
 ## References
 
@@ -255,12 +260,6 @@ theorem fderiv_multilinearRayleigh_single (A : Tensor κ ℝ) {u : ∀ i, Euclid
   simp only [id_eq, zero_smul, add_zero, zero_mul, one_mul]
   field_simp
 
-/-- The rank-one tensor of rescaled vectors. -/
-private theorem rankOne_smul {ι' : Type*} [Fintype ι'] {κ' : ι' → Type*} (c : ι' → ℝ)
-    (z : ∀ i, κ' i → ℝ) : (rankOne fun i => c i • z i) = (∏ i, c i) • rankOne z := by
-  ext a
-  simp [rankOne_apply, Finset.prod_mul_distrib, smul_apply]
-
 /-- The partial derivative of `ψ_𝒜` in the `k`-th vector vanishes iff the `k`-th equation of a
 tensor singular value holds at the normalized vectors `û_i = u_i / ‖u_i‖`. -/
 theorem forall_fderiv_multilinearRayleigh_single_eq_zero_iff (A : Tensor κ ℝ)
@@ -391,3 +390,163 @@ theorem hasFDerivAt_symmetricRayleigh_eq_zero_iff {C : Tensor (fun _ : ι => ν)
 end Critical
 
 end Tensor
+
+/-! ### Matrices: the bilinear Rayleigh quotient
+
+A matrix is a tensor of order two (`Tensor.ofMatrix`), and its multilinear Rayleigh quotient is
+the bilinear one `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of [golub2013matrix] (12.5.22)
+(`Matrix.bilinearRayleigh_eq_multilinearRayleigh`). Its critical points are therefore read off
+`Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the two modal equations are
+`A v̂ = ψ û` and `Aᵀ û = ψ v̂`, and `|ψ|` is a singular value. -/
+
+namespace Matrix
+
+section BilinearRayleigh
+
+variable {m n : Type v} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+
+/- The two mode index types of a matrix read as a tensor of order two, with the length of the
+vector fixed to `2` so that every occurrence elaborates to the same term. -/
+set_option hygiene false in
+local notation "κmn" => (![m, n] : Fin 2 → Type v)
+
+/-- The **bilinear Rayleigh quotient** `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of a real matrix
+([golub2013matrix] (12.5.22)), on `EuclideanSpace ℝ m × EuclideanSpace ℝ n`. It is the multilinear
+Rayleigh quotient of `A` as a tensor (`Matrix.bilinearRayleigh_eq_multilinearRayleigh`), and its
+stationary values are the singular values
+(`Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`). -/
+noncomputable def bilinearRayleigh (A : Matrix m n ℝ)
+    (x : EuclideanSpace ℝ m × EuclideanSpace ℝ n) : ℝ :=
+  inner ℝ x.1 (toEuclideanLin A x.2) / (‖x.1‖ * ‖x.2‖)
+
+variable (A : Matrix m n ℝ)
+
+omit [DecidableEq m] [DecidableEq n] in
+/-- The multilinear form of a real matrix read as a tensor of order two is `uᵀ A v`, the
+`ℝ`-instance form of `Tensor.multilinearForm_ofMatrix`. -/
+private theorem multilinearForm_ofMatrix_real (u : ∀ i : Fin 2, κmn i → ℝ) :
+    Tensor.multilinearForm (Tensor.ofMatrix (κ := κmn) A) u = u 0 ⬝ᵥ (A *ᵥ u 1) :=
+  Tensor.multilinearForm_ofMatrix A u
+
+omit [DecidableEq m] in
+/-- **The bilinear Rayleigh quotient is the multilinear one of the matrix as a tensor**
+([golub2013matrix] (12.5.22)): `ψ_A(u, v) = ψ_𝒜(u, v)` for `𝒜 = ofMatrix A`, the pair read as a
+tuple over `Fin 2`. -/
+theorem bilinearRayleigh_eq_multilinearRayleigh :
+    bilinearRayleigh A = Tensor.multilinearRayleigh (Tensor.ofMatrix (κ := κmn) A) ∘
+      (ContinuousLinearEquiv.piFinTwo ℝ fun i => EuclideanSpace ℝ (κmn i)).symm := by
+  funext x
+  simp only [ContinuousLinearEquiv.piFinTwo_symm_apply, bilinearRayleigh]
+  congr 1
+  · rw [EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct_comm,
+      multilinearForm_ofMatrix_real]
+    rfl
+  · rw [Fin.prod_univ_two]
+    rfl
+
+omit [DecidableEq m] [DecidableEq n] in
+/-- The mode-`0` unfolding of a matrix acts on the rank-one tensors of the other mode as the
+matrix itself. -/
+private theorem modeUnfold_zero_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → ℝ) :
+    (Tensor.ofMatrix (κ := κmn) A).modeUnfold 0 *ᵥ
+      Tensor.rankOne (fun j : {j // j ≠ (0 : Fin 2)} => z j) = A *ᵥ z 1 := by
+  classical
+  refine funext fun x => ?_
+  have hz : (fun j : {j // j ≠ (0 : Fin 2)} => Function.update z 0 (Pi.single x 1) j) =
+      fun j : {j // j ≠ (0 : Fin 2)} => z j := funext fun j => Function.update_of_ne j.2 _ _
+  have h := Tensor.multilinearForm_eq_modeUnfold (Tensor.ofMatrix (κ := κmn) A)
+    (Function.update z 0 (Pi.single x 1)) 0
+  rw [multilinearForm_ofMatrix_real, Function.update_self, hz,
+    Function.update_of_ne (show (1 : Fin 2) ≠ 0 by decide), single_one_dotProduct,
+    single_one_dotProduct] at h
+  exact h.symm
+
+omit [DecidableEq m] [DecidableEq n] in
+/-- The mode-`1` unfolding of a matrix acts on the rank-one tensors of the other mode as the
+transpose. -/
+private theorem modeUnfold_one_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → ℝ) :
+    (Tensor.ofMatrix (κ := κmn) A).modeUnfold 1 *ᵥ
+      Tensor.rankOne (fun j : {j // j ≠ (1 : Fin 2)} => z j) = Aᵀ *ᵥ z 0 := by
+  classical
+  refine funext fun x => ?_
+  have hz : (fun j : {j // j ≠ (1 : Fin 2)} => Function.update z 1 (Pi.single x 1) j) =
+      fun j : {j // j ≠ (1 : Fin 2)} => z j := funext fun j => Function.update_of_ne j.2 _ _
+  have h := Tensor.multilinearForm_eq_modeUnfold (Tensor.ofMatrix (κ := κmn) A)
+    (Function.update z 1 (Pi.single x 1)) 1
+  rw [multilinearForm_ofMatrix_real, Function.update_self, hz,
+    Function.update_of_ne (show (0 : Fin 2) ≠ 1 by decide), single_one_dotProduct] at h
+  rw [← h]
+  have key : ∀ (w : m → ℝ) (y : n), w ⬝ᵥ (A *ᵥ Pi.single y 1) = (Aᵀ *ᵥ w) y := fun w y => by
+    rw [dotProduct_mulVec, dotProduct_single_one, mulVec_transpose]
+  exact key (z 0) x
+
+/-- **The critical points of the bilinear Rayleigh quotient** ([golub2013matrix] (12.5.22) and the
+gradient display after it): at nonzero `(u, v)`, with `û = u / ‖u‖`, `v̂ = v / ‖v‖` and
+`ψ = ψ_A(u, v)`, the derivative of `ψ_A` vanishes if and only if `A v̂ = ψ û` and `Aᵀ û = ψ v̂`.
+These are the two modal equations of `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff` for
+`A` as a tensor. -/
+theorem fderiv_bilinearRayleigh_eq_zero_iff {u : EuclideanSpace ℝ m} {v : EuclideanSpace ℝ n}
+    (hu : u ≠ 0) (hv : v ≠ 0) :
+    fderiv ℝ (bilinearRayleigh A) (u, v) = 0 ↔
+      toEuclideanLin A (‖v‖⁻¹ • v) = bilinearRayleigh A (u, v) • ‖u‖⁻¹ • u ∧
+        toEuclideanLin Aᵀ (‖u‖⁻¹ • u) = bilinearRayleigh A (u, v) • ‖v‖⁻¹ • v := by
+  set e := ContinuousLinearEquiv.piFinTwo ℝ fun i => EuclideanSpace ℝ (κmn i)
+  set T := Tensor.ofMatrix (κ := κmn) A
+  set y : ∀ i : Fin 2, EuclideanSpace ℝ (κmn i) := e.symm (u, v) with hydef
+  have hy0 : y 0 = u := rfl
+  have hy1 : y 1 = v := rfl
+  have hy : ∀ i, y i ≠ 0 := Fin.forall_fin_two.2 ⟨hu, hv⟩
+  have hψ := bilinearRayleigh_eq_multilinearRayleigh A
+  have hval : Tensor.multilinearRayleigh T y = bilinearRayleigh A (u, v) := by rw [hψ]; rfl
+  have hdiff : DifferentiableAt ℝ (bilinearRayleigh A) (u, v) := by
+    rw [hψ]
+    exact (Tensor.differentiableAt_multilinearRayleigh T hy).comp (u, v)
+      e.symm.differentiableAt
+  have h0 : fderiv ℝ (bilinearRayleigh A) (u, v) = 0 ↔
+      HasFDerivAt (Tensor.multilinearRayleigh T)
+        (0 : (∀ i : Fin 2, EuclideanSpace ℝ (κmn i)) →L[ℝ] ℝ) y := by
+    constructor
+    · intro h
+      have h1 : HasFDerivAt (bilinearRayleigh A) 0 (u, v) := h ▸ hdiff.hasFDerivAt
+      rw [hψ] at h1
+      exact (e.symm.comp_right_hasFDerivAt_iff'.1 h1).congr_fderiv (by ext w; rfl)
+    · intro h
+      have h2 : HasFDerivAt (Tensor.multilinearRayleigh T ∘ e.symm) 0 (u, v) :=
+        e.symm.comp_right_hasFDerivAt_iff'.2 (h.congr_fderiv (by ext w; rfl))
+      rw [← hψ] at h2
+      exact h2.fderiv
+  rw [h0, Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff T hy, Fin.forall_fin_two, hval,
+    modeUnfold_zero_ofMatrix_mulVec A fun i => (‖y i‖⁻¹ • y i).ofLp,
+    modeUnfold_one_ofMatrix_mulVec A fun i => (‖y i‖⁻¹ • y i).ofLp, hy0, hy1]
+  refine and_congr ?_ ?_ <;>
+  · rw [← (WithLp.ofLp_injective 2).eq_iff]
+    exact Iff.rfl
+
+omit [DecidableEq m] in
+/-- **Singular values are the stationary values of the bilinear Rayleigh quotient**
+([golub2013matrix] (12.5.22)): at a critical point `(u, v)` of `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)`
+with `u, v ≠ 0`, `|ψ_A(u, v)|` is a singular value of `A` (column-indexed,
+`Matrix.colSingularValues`): the critical-point equations `A v̂ = ψ û`, `Aᵀ û = ψ v̂` give
+`Aᵀ A v̂ = ψ² v̂`. Conversely every singular triple is a critical point, by
+`Matrix.fderiv_bilinearRayleigh_eq_zero_iff`. -/
+theorem abs_critical_bilinearRayleigh_mem_colSingularValues {u : EuclideanSpace ℝ m}
+    {v : EuclideanSpace ℝ n} (hu : u ≠ 0) (hv : v ≠ 0)
+    (h : fderiv ℝ (bilinearRayleigh A) (u, v) = 0) :
+    ∃ i, |bilinearRayleigh A (u, v)| = A.colSingularValues i := by
+  classical
+  obtain ⟨h1, h2⟩ := (A.fderiv_bilinearRayleigh_eq_zero_iff hu hv).1 h
+  set ψ := bilinearRayleigh A (u, v)
+  have hv' : ‖v‖⁻¹ • v ≠ 0 := smul_ne_zero (inv_ne_zero (norm_ne_zero_iff.2 hv)) hv
+  have heig : toEuclideanLin (Aᴴ * A) (‖v‖⁻¹ • v) = (ψ ^ 2) • (‖v‖⁻¹ • v) := by
+    rw [toEuclideanLin_mul_apply, h1, map_smul, conjTranspose_eq_transpose_of_trivial, h2,
+      smul_smul, sq]
+  have hH := isHermitian_conjTranspose_mul_self A
+  have hev : Module.End.HasEigenvalue (toEuclideanLin (Aᴴ * A)) (ψ ^ 2) :=
+    Module.End.hasEigenvalue_of_hasEigenvector ⟨Module.End.mem_eigenspace_iff.2 heig, hv'⟩
+  obtain ⟨i, hi⟩ := (hH.hasEigenvalue_toEuclideanLin_iff (ψ ^ 2)).1 hev
+  refine ⟨i, ?_⟩
+  rw [colSingularValues, show hH.eigenvalues i = ψ ^ 2 from hi, Real.sqrt_sq_eq_abs]
+
+end BilinearRayleigh
+
+end Matrix

@@ -7,7 +7,7 @@ id = "IsPivotBlockDiagonal"
 id = "IsBlockLDL"
 
 [[node]]
-id = "exists_isUnit_principal_pivot"
+id = "exists_principal_pivot_ne_zero"
 
 [[node]]
 id = "exists_perm_isBlockLDL"

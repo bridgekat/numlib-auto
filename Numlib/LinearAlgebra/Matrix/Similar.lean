@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.Similar`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Algebra.Star.UnitaryStarAlgAut
 import Mathlib.LinearAlgebra.Eigenspace.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
@@ -388,5 +389,17 @@ theorem isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity [Is
     exact Module.End.iSup_maxGenEigenspace_eq_top A.mulVecLin
 
 end Defective
+
+section Unitary
+
+variable {R : Type*} [CommRing R] [StarRing R]
+
+/-- **Conjugating by a unitary commutes with powers**: `(Qᴴ A Q)^k = Qᴴ A^k Q`, since conjugation
+by a unitary is a `⋆`-algebra automorphism (`Unitary.conjStarAlgAut`). -/
+theorem conj_pow_of_mem_unitaryGroup {Q : Matrix n n R} (hQ : Q ∈ unitaryGroup n R)
+    (A : Matrix n n R) (k : ℕ) : (star Q * A * Q) ^ k = star Q * A ^ k * Q := by
+  simpa using (map_pow (Unitary.conjStarAlgAut R (Matrix n n R) (star ⟨Q, hQ⟩)) A k).symm
+
+end Unitary
 
 end Matrix

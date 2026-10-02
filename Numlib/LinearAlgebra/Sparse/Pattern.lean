@@ -37,7 +37,8 @@ reason its reorderings are always `A.submatrix σ σ`.
 
 `Matrix.IsPatternSymm A` says that the pattern is symmetric — the matrix is *structurally
 symmetric* in the words of [golub2013matrix] §11.1.9 — which symmetric matrices and their diagonal
-scalings are, and which symmetric permutations preserve.
+scalings are, and which symmetric permutations preserve; equivalently its adjacency digraph is
+symmetric (`Matrix.isPatternSymm_iff_adjDigraph_symm`).
 
 ## Irreducibility
 
@@ -231,6 +232,11 @@ and `A j i` are zero or nonzero together ([golub2013matrix] §11.1.9): its adjac
 symmetric. Symmetric matrices are structurally symmetric (`Matrix.IsSymm.isPatternSymm`), and so are
 their row and column scalings (`Matrix.IsPatternSymm.diagonal_mul_mul_diagonal`). -/
 def IsPatternSymm (A : Matrix n n R) : Prop := ∀ i j, A i j ≠ 0 ↔ A j i ≠ 0
+
+/-- A pattern is symmetric exactly when the adjacency digraph is symmetric. -/
+theorem isPatternSymm_iff_adjDigraph_symm {A : Matrix n n R} :
+    A.IsPatternSymm ↔ ∀ i j, A.adjDigraph.Adj i j → A.adjDigraph.Adj j i :=
+  ⟨fun h i j => (h i j).1, fun h i j => ⟨h i j, h j i⟩⟩
 
 /-- Structural symmetry survives the restriction to rows and columns picked by the same map; in
 particular a symmetric permutation `P A Pᵀ` of a structurally symmetric matrix is structurally
