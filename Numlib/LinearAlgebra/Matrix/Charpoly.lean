@@ -17,6 +17,11 @@ of [golub2013matrix] §12.2.10, Fact 2).
 
 ## Main results
 
+* `Matrix.roots_charpoly_diagonal`, `Matrix.charpoly_unitary_conj`: the roots of the
+  characteristic polynomial of a diagonal matrix are its entries, and a unitary conjugation keeps
+  the characteristic polynomial — the two steps from a unitary diagonalization to a spectrum;
+  `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`, `Uᴴ A U = diag(λ)` for Mathlib's
+  eigenvector unitary, and its real form `Matrix.IsHermitian.transpose_eigenvectorUnitary_mul_mul`.
 * `Matrix.trace_add_pow_odd_eq_zero`: if `A² = B² = 1` and `tr A = tr B = 0`, the odd powers of
   `A + B` are traceless.
 * `Fintype.map_neg_eq_of_sum_pow_odd`: over a field of characteristic zero, a finite family whose
@@ -37,6 +42,46 @@ of [golub2013matrix] §12.2.10, Fact 2).
 open Finset Polynomial
 
 namespace Matrix
+
+/-! ### Diagonal matrices and unitary conjugates -/
+
+/-- The roots of the characteristic polynomial of a diagonal matrix are its diagonal entries. -/
+theorem roots_charpoly_diagonal {R n : Type*} [CommRing R] [IsDomain R] [Fintype n]
+    [DecidableEq n] (d : n → R) :
+    (diagonal d).charpoly.roots = Multiset.map d Finset.univ.val := by
+  rw [charpoly_diagonal, Polynomial.roots_prod]
+  · simp
+  · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
+
+/-- The characteristic polynomial of a unitary conjugate `U M Uᴴ` is that of `M`. -/
+theorem charpoly_unitary_conj {R n : Type*} [CommRing R] [StarRing R] [Fintype n]
+    [DecidableEq n] {U : Matrix n n R} (hU : U ∈ unitaryGroup n R) (M : Matrix n n R) :
+    (U * M * star U).charpoly = M.charpoly := by
+  rw [charpoly_mul_comm, ← Matrix.mul_assoc, mem_unitaryGroup_iff'.1 hU, Matrix.one_mul]
+
+/-! ### The Hermitian spectral decomposition, unfolded -/
+
+section Spectral
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **The spectral decomposition of a Hermitian matrix**, unfolded: `Uᴴ A U = diag(λ)` for the
+eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary`
+without the algebra automorphism). -/
+theorem IsHermitian.star_eigenvectorUnitary_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜) =
+      diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
+  simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
+
+/-- The real form of `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: `Qᵀ A Q = diag(λ)`. -/
+theorem IsHermitian.transpose_eigenvectorUnitary_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian) :
+    (hA.eigenvectorUnitary : Matrix n n ℝ)ᵀ * A * (hA.eigenvectorUnitary : Matrix n n ℝ) =
+      diagonal hA.eigenvalues := by
+  have h := hA.star_eigenvectorUnitary_mul_mul
+  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, RCLike.ofReal_real_eq_id,
+    Function.id_comp] at h
+
+end Spectral
 
 /-! ### Two involutions of trace zero -/
 

@@ -35,6 +35,9 @@ Methods for Sparse Linear Systems*, §1.11.
   `xᴴ H x = re (xᴴ A x)`, and with it
   `Matrix.posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos`, the unsymmetric "positive
   definite" of [golub2013matrix] §4.2 read through `H`.
+* `Matrix.isUnit_of_posDef_hermitianPart`: a matrix with positive definite Hermitian part is
+  nonsingular, with its real form `Matrix.isUnit_of_posDef_add_transpose` (`P + Pᵀ` positive
+  definite); `Matrix.IsHermitian.hermitianPart_eq`, `Matrix.hermitianPart_eq_smul_add_transpose`.
 * `Matrix.hermitianPart_conjTranspose_mul_mul`: the Hermitian part commutes with congruence, and
   `Matrix.l2_opNorm_hermitianPart_le`: `‖H‖₂ ≤ ‖A‖₂` ([golub2013matrix] §4.2.2).
 
@@ -113,6 +116,16 @@ theorem eq_hermitianPart_add_I_smul_skewHermitianPart (A : Matrix n n ℂ) :
   rw [I_smul_skewHermitianPart, hermitianPart, ← smul_add,
     show A + Aᴴ + (A - Aᴴ) = (2 : ℂ) • A by module, smul_smul,
     inv_mul_cancel₀ (two_ne_zero' ℂ), one_smul]
+
+/-- The Hermitian part of a Hermitian matrix is the matrix itself. -/
+theorem IsHermitian.hermitianPart_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    hermitianPart A = A := by
+  rw [hermitianPart, hA.eq, ← two_smul 𝕜 A, smul_smul, inv_mul_cancel₀ two_ne_zero, one_smul]
+
+/-- Over `ℝ` the Hermitian part is the symmetric part `(P + Pᵀ)/2`. -/
+theorem hermitianPart_eq_smul_add_transpose (P : Matrix n n ℝ) :
+    hermitianPart P = (2⁻¹ : ℝ) • (P + Pᵀ) := by
+  rw [hermitianPart, conjTranspose_eq_transpose_of_trivial]
 
 variable [Fintype n]
 
@@ -194,8 +207,8 @@ theorem re_dotProduct_mulVec_pos_of_posDef_hermitianPart {A : Matrix n n 𝕜}
   have := hA.dotProduct_mulVec_pos hx
   rwa [star_dotProduct_hermitianPart_mulVec, RCLike.ofReal_pos] at this
 
-/-- A matrix whose Hermitian part is positive definite is nonsingular (the `RCLike` form of
-`Matrix.isUnit_of_posDef_add_transpose`, whose `P + Pᵀ` is `2 • hermitianPart P` over `ℝ`). -/
+/-- A matrix whose Hermitian part is positive definite is nonsingular; over `ℝ` this is
+`Matrix.isUnit_of_posDef_add_transpose`, whose `P + Pᵀ` is `2 • hermitianPart P`. -/
 theorem isUnit_of_posDef_hermitianPart {A : Matrix n n 𝕜}
     (hA : (hermitianPart A).PosDef) : IsUnit A := by
   rw [← mulVec_injective_iff_isUnit]
@@ -204,6 +217,13 @@ theorem isUnit_of_posDef_hermitianPart {A : Matrix n n 𝕜}
   have h := re_dotProduct_mulVec_pos_of_posDef_hermitianPart hA (sub_ne_zero.2 hne)
   rw [mulVec_sub, hxy, sub_self, dotProduct_zero, map_zero] at h
   exact lt_irrefl _ h
+
+/-- A real matrix whose symmetric part `P + Pᵀ` is positive definite is nonsingular: the real
+case of `Matrix.isUnit_of_posDef_hermitianPart`, the Hermitian part being `(P + Pᵀ)/2`. -/
+theorem isUnit_of_posDef_add_transpose {P : Matrix n n ℝ} (hP : (P + Pᵀ).PosDef) : IsUnit P :=
+  isUnit_of_posDef_hermitianPart <| by
+    rw [hermitianPart_eq_smul_add_transpose]
+    exact hP.smul (by norm_num)
 
 omit [Fintype n] [DecidableEq n] in
 /-- Taking the Hermitian part commutes with taking a principal submatrix. -/

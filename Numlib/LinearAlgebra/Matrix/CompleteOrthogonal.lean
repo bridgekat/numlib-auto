@@ -25,7 +25,9 @@ is the minimal-norm least-squares solution, with residual `‖d‖`.
 
 ## Main results
 
-* `Matrix.IsCompleteOrthogonal.rank_eq`, `…range_eq_span`, `…ker_eq_span`.
+* `Matrix.IsCompleteOrthogonal.hasRevealingBlock`: the middle factor `Uᴴ A V` has a revealing
+  block (`Matrix.HasRevealingBlock`), whose lemmas give
+  `Matrix.IsCompleteOrthogonal.rank_eq`, `…range_eq_span`; and `…ker_eq_span`.
 * `Matrix.isCompleteOrthogonal_of_svd`: an SVD is a complete orthogonal decomposition, so every
   matrix has one (`Matrix.exists_isCompleteOrthogonal`).
 * `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution` ([golub2013matrix] §5.5.1).
@@ -37,8 +39,9 @@ structure does not extend `Matrix.IsUnitaryEquiv`; `Matrix.IsCompleteOrthogonal.
 is the projection to it, and the unitary algebra (`A = U T Vᴴ`, rank invariance) comes from there.
 The block structure is expressed entrywise, `(Uᴴ A V) i j = 0` whenever `r ≤ i` or `r ≤ j`, and
 the leading block is `(Uᴴ A V).submatrix (Fin.castLE _) (Fin.castLE _)`, as for
-`Matrix.IsPivotedQR.IsRankRevealing`; rank, range and least squares go through the shared
-`A = U T W` lemmas of `Numlib/LinearAlgebra/Matrix/RankRevealing` with `W = Vᴴ`. Existence is
+`Matrix.IsPivotedQR.IsRankRevealing`; rank, range and least squares go through the
+`Matrix.HasRevealingBlock` lemmas of `Numlib/LinearAlgebra/Matrix/RankRevealing` for
+`A = U T W` with `W = Vᴴ`. Existence is
 proved from the SVD; the book's construction by two QR factorizations (a rank-revealing pivoted
 QR, then a QR of `[R₁₁ R₁₂]ᴴ`) produces another instance.
 -/
@@ -77,6 +80,11 @@ theorem isUnitaryEquiv (h : IsCompleteOrthogonal A U V r) :
     IsUnitaryEquiv A U (Uᴴ * A * V) V :=
   isUnitaryEquiv_star_mul_mul h.mem_unitaryGroup_left h.mem_unitaryGroup_right
 
+/-- The middle factor `T = Uᴴ A V` of a complete orthogonal decomposition has a revealing block
+of size `r`: its rows from the `r`-th on vanish and `T₁₁` is invertible. -/
+theorem hasRevealingBlock (h : IsCompleteOrthogonal A U V r) : (Uᴴ * A * V).HasRevealingBlock r :=
+  ⟨h.le_rows, h.le_cols, fun i j hi => h.apply_eq_zero i j (Or.inl hi), h.isUnit_block⟩
+
 /-- `A = U T Vᴴ` with `T = Uᴴ A V`. -/
 theorem eq_mul (h : IsCompleteOrthogonal A U V r) : A = U * (Uᴴ * A * V) * Vᴴ :=
   h.isUnitaryEquiv.eq_mul_mul
@@ -89,16 +97,14 @@ theorem isUnit_conjTranspose_right (h : IsCompleteOrthogonal A U V r) : IsUnit V
 factors (`Matrix.IsUnitaryEquiv.rank_eq`), and `Uᴴ A V` has a revealing block. -/
 theorem rank_eq (h : IsCompleteOrthogonal A U V r) : A.rank = r := by
   rw [h.isUnitaryEquiv.rank_eq]
-  exact rank_eq_of_apply_eq_zero_of_isUnit h.le_rows h.le_cols
-    (fun i j hi => h.apply_eq_zero i j (Or.inl hi)) h.isUnit_block
+  exact h.hasRevealingBlock.rank_eq
 
 /-- **The range of `A` is spanned by the first `r` columns of `U`** ([golub2013matrix] §5.4.7). -/
 theorem range_eq_span (h : IsCompleteOrthogonal A U V r) :
     LinearMap.range (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun i : Fin r =>
         (WithLp.toLp 2 (U.col (Fin.castLE h.le_rows i)) : EuclideanSpace 𝕜 (Fin M))) :=
-  range_toEuclideanLin_eq_span_of_eq_mul h.le_rows h.le_cols h.eq_mul
-    h.isUnit_conjTranspose_right (fun i j hi => h.apply_eq_zero i j (Or.inl hi)) h.isUnit_block
+  h.hasRevealingBlock.range_toEuclideanLin_eq_span h.eq_mul h.isUnit_conjTranspose_right
 
 /-- `T w` for `T = Uᴴ A V`: the leading block acts on the head of `w`, and nothing else
 survives. -/
@@ -199,9 +205,8 @@ theorem isMinNormLeastSquaresSolution (h : IsCompleteOrthogonal A U V r)
   set x₀ : EuclideanSpace 𝕜 (Fin N) := WithLp.toLp 2 (V *ᵥ blockVec h.le_cols y₀ 0)
   have hVV' := conjTranspose_mul_self_of_mem_unitaryGroup h.mem_unitaryGroup_right
   have hlsq := fun {x : EuclideanSpace 𝕜 (Fin N)} =>
-    isLeastSquaresSolution_iff_of_eq_mul (b := b) (x := x) h.mem_unitaryGroup_left h.le_rows
-      h.le_cols h.eq_mul h.isUnit_conjTranspose_right
-      (fun i j hi => h.apply_eq_zero i j (Or.inl hi)) h.isUnit_block
+    h.hasRevealingBlock.isLeastSquaresSolution_iff (b := b) (x := x) h.mem_unitaryGroup_left
+      h.eq_mul h.isUnit_conjTranspose_right
   -- the head of `Vᴴ x` for a least-squares solution
   have hhead : ∀ x : EuclideanSpace 𝕜 (Fin N), IsLeastSquaresSolution A b x →
       (fun k => (Vᴴ *ᵥ WithLp.ofLp x) (Fin.castLE h.le_cols k)) = y₀ := fun x hx => by

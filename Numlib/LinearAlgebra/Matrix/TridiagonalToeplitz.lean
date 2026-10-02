@@ -8,6 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Analysis.SpecialFunctions.Trigonometric.CosSum
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
 
@@ -76,30 +77,6 @@ sum of two of them, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
 
 open Finset
 open scoped Real Matrix
-
-/-- `2 − 2 cos θ = 4 sin² (θ / 2)`: the half-angle form in which the eigenvalues
-`2 − 2 cos θ_k` of `tridiag(-1, 2, -1)` are usually written. -/
-theorem Real.two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
-  have h2 : Real.cos θ = Real.cos (2 * (θ / 2)) := by ring_nf
-  rw [h2, Real.cos_two_mul]
-  linear_combination (-4) * Real.cos_sq_add_sin_sq (θ / 2)
-
-/-- `2 − 2 cos (2 x) = 4 sin² x`, the double-angle reading of `Real.two_sub_two_mul_cos`. -/
-theorem Real.two_sub_two_mul_cos_two_mul (x : ℝ) :
-    2 - 2 * Real.cos (2 * x) = 4 * Real.sin x ^ 2 := by
-  rw [Real.two_sub_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
-
-/-- `2 + 2 cos θ = 4 cos² (θ / 2)`: the half-angle form of the eigenvalues `2 + 2 cos θ_k` of
-`tridiag(1, 2, 1)`, the companion of `Real.two_sub_two_mul_cos`. -/
-theorem Real.two_add_two_mul_cos (θ : ℝ) : 2 + 2 * Real.cos θ = 4 * Real.cos (θ / 2) ^ 2 := by
-  have h := Real.cos_two_mul (θ / 2)
-  rw [show 2 * (θ / 2) = θ by ring] at h
-  linarith
-
-/-- `2 + 2 cos (2 x) = 4 cos² x`, the double-angle reading of `Real.two_add_two_mul_cos`. -/
-theorem Real.two_add_two_mul_cos_two_mul (x : ℝ) :
-    2 + 2 * Real.cos (2 * x) = 4 * Real.cos x ^ 2 := by
-  rw [Real.two_add_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
 
 namespace Matrix
 
@@ -464,13 +441,9 @@ from `sin(x + φ) − sin(x − φ) = 2 cos x sin φ`. -/
 private theorem two_sin_mul_sum_cos (φ α : ℝ) (M : ℕ) :
     2 * Real.sin φ * ∑ j ∈ Finset.range M, Real.cos (α + 2 * (j : ℝ) * φ)
       = Real.sin (α + 2 * (M : ℝ) * φ - φ) - Real.sin (α - φ) := by
-  induction M with
-  | zero => simp
-  | succ M ih =>
-    rw [Finset.sum_range_succ, mul_add, ih]
-    have h1 : α + 2 * ((M + 1 : ℕ) : ℝ) * φ - φ = (α + 2 * (M : ℝ) * φ) + φ := by push_cast; ring
-    rw [h1, Real.sin_add, Real.sin_sub (α + 2 * (M : ℝ) * φ)]
-    ring
+  have h := Real.two_mul_sin_half_mul_sum_range_cos_add_mul α (2 * φ) M
+  rw [mul_div_cancel_left₀ φ two_ne_zero] at h
+  convert h using 3 <;> ring_nf
 
 /-- The cosine sum at a sine-basis angle: `∑_{j<n} cos(2(j+1)θ_k) = -1`, because `sin((2n+1)θ_k) =
 -sin θ_k`. -/
@@ -1450,11 +1423,7 @@ private theorem sum_cosineIIVec_mul_self (k : Fin n) :
     have hk0 : (0 : ℝ) < (k : ℕ) := by exact_mod_cast Nat.pos_of_ne_zero hk
     exact (Real.sin_pos_of_pos_of_lt_pi (by positivity) (cosineII_angle_mem k).2).ne'
   have hsum : ∑ j ∈ Finset.range n, Real.cos ((2 * (j : ℝ) + 1) * ((k : ℕ) * π / n)) = 0 := by
-    have h := two_sin_mul_sum_cos ((k : ℕ) * π / n) ((k : ℕ) * π / n) n
-    rw [show (k : ℕ) * π / n + 2 * (n : ℝ) * ((k : ℕ) * π / n) - (k : ℕ) * π / n
-        = 2 * (n : ℝ) * ((k : ℕ) * π / n) by ring, sub_self, Real.sin_zero, sub_zero] at h
-    simp only [show ∀ j : ℕ, (k : ℕ) * π / n + 2 * (j : ℝ) * ((k : ℕ) * π / n)
-        = (2 * (j : ℝ) + 1) * ((k : ℕ) * π / n) from fun j => by ring] at h
+    have h := Real.two_mul_sin_mul_sum_range_cos_odd ((k : ℕ) * π / n) n
     rw [show 2 * (n : ℝ) * ((k : ℕ) * π / n) = ((2 * (k : ℕ) : ℕ) : ℝ) * π by
       push_cast; field_simp, Real.sin_nat_mul_pi] at h
     exact (mul_eq_zero.mp h).resolve_left (mul_ne_zero two_ne_zero hψ)

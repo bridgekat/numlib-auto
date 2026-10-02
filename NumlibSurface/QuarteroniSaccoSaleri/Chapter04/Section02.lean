@@ -1,5 +1,6 @@
 import Numlib.Direct.Substitution
 import Numlib.FloatingPoint.Stationary
+import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.Stationary.Block
 import Numlib.Stationary.ConsistentlyOrdered

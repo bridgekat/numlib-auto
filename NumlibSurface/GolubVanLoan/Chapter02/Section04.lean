@@ -87,7 +87,7 @@ whose diagonal is the sorted singular values (backbone `Matrix.exists_svd`). -/
 theorem theorem_2_4_1 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U V, IsSVD A U A.sortedSingularValues V := by
   obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
-  exact ⟨U, V, hU, hV, A.sortedSingularValues_antitone, A.sortedSingularValues_nonneg, h⟩
+  exact ⟨U, V, ⟨hU, hV, h⟩, A.sortedSingularValues_antitone, A.sortedSingularValues_nonneg⟩
 
 /-! ### §2.4.2 Properties -/
 
@@ -430,7 +430,7 @@ theorem complex_svd (A : Matrix (Fin m) (Fin n) ℂ) :
           lpOpNorm 2 (Q * A * Z) = lpOpNorm 2 A ∧ ‖Q * A * Z‖ = ‖A‖ := by
   refine ⟨?_, fun hQ hZ => ⟨?_, frobenius_norm_unitary_mul_mul_unitary hQ A hZ⟩⟩
   · obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
-    exact ⟨U, V, hU, hV, A.sortedSingularValues_antitone, A.sortedSingularValues_nonneg, h⟩
+    exact ⟨U, V, ⟨hU, hV, h⟩, A.sortedSingularValues_antitone, A.sortedSingularValues_nonneg⟩
   · rw [lpOpNorm_two, lpOpNorm_two]
     exact l2_opNorm_unitary_mul_mul_unitary hQ A hZ
 

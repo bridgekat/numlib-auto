@@ -61,8 +61,5 @@ id = "finrank_ker_toBlock_inv"
 id = "rank_toBlock_inv_add_card"
 
 [[node]]
-id = "submatrix_mulVec_eq_comp_mulVec_extend"
-
-[[node]]
 id = "rank_toBlock_mono"
 deps = []

@@ -537,7 +537,8 @@ theorem isLSQISolution_iff_of_isGSVD (h : IsGSVD A B U₁ U₂ X α' β') {b : E
     IsLSQISolution A b B d α x ↔
       IsLSQISolution (star U₁ * A * X) (toEuclideanLin (star U₁) b) (star U₂ * B * X)
         (toEuclideanLin (star U₂) d) α (toEuclideanLin X⁻¹ x) := by
-  rw [isLSQISolution_unitary_mul_mul_iff h.mem_unitaryGroup_left h.mem_unitaryGroup_right h.isUnit,
+  rw [isLSQISolution_unitary_mul_mul_iff h.mem_unitaryGroup_left₁ h.mem_unitaryGroup_left₂
+      h.isUnit,
     ← toEuclideanLin_mul_apply,
     mul_nonsing_inv _ ((isUnit_iff_isUnit_det X).1 h.isUnit), toEuclideanLin_one_apply]
 
@@ -584,10 +585,10 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
   set dt := toEuclideanLin (star U₂) d with hdt
   set y : Fin n → 𝕜 := lseGSVDCoeff hnm bt dt β with hy
   rw [sum_smul_col_eq_mulVec, ← toEuclideanLin_toLp, ← isLSQISolution_zero_iff,
-    ← isLSQISolution_unitary_mul_mul_iff h.mem_unitaryGroup_left h.mem_unitaryGroup_right
-      h.isUnit, isLSQISolution_zero_iff, h.star_mul_mul_left, h.star_mul_mul_right, hrn]
+    ← isLSQISolution_unitary_mul_mul_iff h.mem_unitaryGroup_left₁ h.mem_unitaryGroup_left₂
+      h.isUnit, isLSQISolution_zero_iff, h.star_mul_mul₁, h.star_mul_mul₂, hrn]
   have hpure : ∀ i : Fin n, (i : ℕ) < n - p → α i = 1 := fun i hi =>
-    (h.of_lt_p i (by rw [hrn]; exact hi)).1
+    (h.eq_one_and_eq_zero_of_lt i (by rw [hrn]; exact hi)).1
   -- the constraint in coordinates
   have hfeas : ∀ y' : Fin n → 𝕜,
       toEuclideanLin (shiftedRectDiagonal (n - p) fun i => ((β i : ℝ) : 𝕜)) (WithLp.toLp 2 y')
@@ -674,7 +675,7 @@ theorem penaltyLSE_sub_eq_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm 
   set bt := toEuclideanLin (star U₁) b with hbt
   set dt := toEuclideanLin (star U₂) d with hdt
   have hpure : ∀ i : Fin n, (i : ℕ) < n - p → α i = 1 ∧ β i = 0 := fun i hi =>
-    h.of_lt_p i (by rw [hrn]; exact hi)
+    h.eq_one_and_eq_zero_of_lt i (by rw [hrn]; exact hi)
   have hd0 : ∀ i : Fin n, α i ^ 2 + μ * β i ^ 2 ≠ 0 := fun i =>
     h.sq_add_smul_sq_ne_zero hμ (by rw [hrn]; exact i.isLt)
   have hXB := h.conjTranspose_mul_conjTranspose_right

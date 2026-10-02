@@ -367,8 +367,8 @@ theorem mulVec_schurEigenvector {T : Matrix (Fin N) (Fin N) K}
     rfl
   -- `T₁₁ - λ` is nonsingular: upper triangular with nonzero diagonal
   have hdet : IsUnit (T₁₁ - T k k • 1).det := by
-    rw [hT₁₁, det_of_isUpperTriangular (isUpperTriangular_submatrix_castLE_sub hT hle _)]
-    refine isUnit_iff_ne_zero.2 (Finset.prod_ne_zero_iff.2 fun i _ => ?_)
+    rw [hT₁₁]
+    refine (isUpperTriangular_submatrix_castLE_sub hT hle _).isUnit_det_of_diag_ne_zero fun i => ?_
     rw [sub_apply, submatrix_apply, smul_apply, one_apply_eq, smul_eq_mul, mul_one]
     exact sub_ne_zero.2 (hk _ (by simp [Fin.lt_def]))
   have hsys : T₁₁ *ᵥ y₁ = T k k • y₁ - v := by

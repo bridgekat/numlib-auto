@@ -35,6 +35,10 @@ Paige–Saunders 1981) diagonalizes both at once: unitary `U₁`, `U₂` and an 
   `x_i`, `i ≥ r`.
 * `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of `(A, I)`
   is an SVD of `A`, `U₁ᴴ A U₂ = diag(α_i / β_i)` with `β_i > 0`.
+* The facts used in GSVD coordinates by the least-squares applications:
+  `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left` (`Xᴴ Aᴴ = D_Aᴴ U₁ᴴ`) and its `B` twin,
+  `Matrix.IsGSVD.sq_add_smul_sq_ne_zero` (`α_i² + μ β_i² ≠ 0` below the rank), and
+  `Matrix.IsGSVD.rank_eq_and_ne_zero`.
 
 ## Implementation notes
 
@@ -578,5 +582,94 @@ theorem IsGSVD.svd_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U�
 end OfEqOne
 
 end Consequences
+
+/-! ### Facts used in GSVD coordinates -/
+
+section Facts
+
+variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin m₂) (Fin n) 𝕜}
+  {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
+  {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
+
+/-- The `A`-half of a GSVD, conjugate-transposed: `Xᴴ Aᴴ = D_Aᴴ U₁ᴴ`, with `D_A` real. -/
+theorem IsGSVD.conjTranspose_mul_conjTranspose_left (h : IsGSVD A B U₁ U₂ X α β) :
+    Xᴴ * Aᴴ = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m₁) 𝕜) * star U₁ := by
+  have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
+    rw [← h.star_mul_mul₁, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left₁, Matrix.one_mul]
+  rw [← conjTranspose_mul, hAX, conjTranspose_mul, rectDiagonal_conjTranspose,
+    star_eq_conjTranspose]
+  congr 2
+  funext i
+  simp
+
+/-- The `B`-half of a GSVD, conjugate-transposed: `Xᴴ Bᴴ = D_Bᴴ U₂ᴴ`. -/
+theorem IsGSVD.conjTranspose_mul_conjTranspose_right (h : IsGSVD A B U₁ U₂ X α β) :
+    Xᴴ * Bᴴ = (shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :
+      Matrix (Fin m₂) (Fin n) 𝕜)ᴴ * star U₂ := by
+  have hBX : B * X =
+      U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) := by
+    rw [← h.star_mul_mul₂, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left₂, Matrix.one_mul]
+  rw [← conjTranspose_mul, hBX, conjTranspose_mul, star_eq_conjTranspose]
+
+/-- Below the rank, the weighted sum `α_i² + μ β_i²` of a GSVD pair is nonzero for `μ > 0`: the
+pair is `(1, 0)` or a cosine–sine pair. -/
+theorem IsGSVD.sq_add_smul_sq_ne_zero (h : IsGSVD A B U₁ U₂ X α β) {μ : ℝ} (hμ : 0 < μ)
+    {i : ℕ} (hi : i < (fromRows A B).rank) : α i ^ 2 + μ * β i ^ 2 ≠ 0 := by
+  by_cases hp : i < (fromRows A B).rank - m₂
+  · rw [(h.eq_one_and_eq_zero_of_lt i hp).1, (h.eq_one_and_eq_zero_of_lt i hp).2]
+    norm_num
+  · have hs := h.sq_add_sq i (not_lt.1 hp) hi
+    intro h0
+    have hb : μ * β i ^ 2 = 0 := by
+      nlinarith [sq_nonneg (α i), mul_nonneg hμ.le (sq_nonneg (β i))]
+    have hb' : β i ^ 2 = 0 := (mul_eq_zero.1 hb).resolve_left hμ.ne'
+    nlinarith [sq_nonneg (α i)]
+
+/-- With `B` of full row rank and `ker A ⊓ ker B = ⊥`, the GSVD has `r = n`, so `p_GSVD = n − m₂`,
+and the sines `β_j`, `n − m₂ ≤ j < n`, are nonzero (a zero one would make a row of
+`D_B = U₂ᴴ B X` vanish). -/
+theorem IsGSVD.rank_eq_and_ne_zero (h : IsGSVD A B U₁ U₂ X α β)
+    (hB : LinearIndependent 𝕜 B)
+    (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) :
+    (fromRows A B).rank = n ∧ m₂ ≤ n ∧ ∀ j : Fin n, n - m₂ ≤ (j : ℕ) → β j ≠ 0 := by
+  classical
+  have hrn : (fromRows A B).rank = n := by
+    have := LinearMap.finrank_range_add_finrank_ker (fromRows A B).mulVecLin
+    rw [Module.finrank_fin_fun, ← ker_inf_ker_eq_ker_fromRows, hAB, finrank_bot] at this
+    change (fromRows A B).rank + 0 = n at this
+    omega
+  have hpn : m₂ ≤ n := by
+    have := hB.fintype_card_le_finrank
+    rwa [Fintype.card_fin, Module.finrank_fin_fun] at this
+  refine ⟨hrn, hpn, fun j hj hβ => ?_⟩
+  have hDB := h.star_mul_mul₂
+  rw [hrn] at hDB
+  -- the row `j − (n − m₂)` of `D_B` vanishes
+  set k : Fin m₂ := ⟨j - (n - m₂), by have := j.isLt; omega⟩
+  have hrow : Pi.single k 1 ᵥ* (star U₂ * B * X) = 0 ᵥ* (star U₂ * B * X) := by
+    rw [hDB, zero_vecMul]
+    ext l
+    rw [single_one_vecMul, Pi.zero_apply]
+    change shiftedRectDiagonal (n - m₂) (fun i => ((β i : ℝ) : 𝕜)) k l = 0
+    rw [shiftedRectDiagonal_apply]
+    split_ifs with hl
+    · have : l = j := Fin.ext (by simp only [k] at hl; omega)
+      rw [this, hβ, RCLike.ofReal_zero]
+    · rfl
+  have hinj : Function.Injective (star U₂ * B * X).vecMul := by
+    intro u v huv
+    have hU : Function.Injective (star U₂).vecMul :=
+      vecMul_injective_iff_isUnit.2 (isUnit_of_mem_unitaryGroup (Unitary.star_mem
+        h.mem_unitaryGroup_left₂))
+    have hX : Function.Injective X.vecMul := vecMul_injective_iff_isUnit.2 h.isUnit
+    have hBi : Function.Injective B.vecMul := vecMul_injective_iff.2 hB
+    simp only [← vecMul_vecMul] at huv
+    exact hU (hBi (hX huv))
+  have := congrFun (hinj hrow) k
+  simp at this
+
+end Facts
 
 end Matrix

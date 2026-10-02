@@ -23,3 +23,9 @@ id = "_root_.prodFwd_eq_one_add_sum_sub_one"
 
 [[node]]  # added by lo2
 id = "_root_.commute_of_sub_one_mul_sub_one"
+
+[[node]]
+id = "_root_.prodFwdEven"
+
+[[node]]
+id = "_root_.prodFwdOdd"

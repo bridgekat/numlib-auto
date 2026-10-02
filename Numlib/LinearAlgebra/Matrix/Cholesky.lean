@@ -372,7 +372,7 @@ theorem coe_re_diag (i : n) : (RCLike.re (H i i) : 𝕜) = H i i :=
 
 /-- A Cholesky factor is nonsingular. -/
 theorem isUnit : IsUnit H :=
-  (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular h.isUpperTriangular).2 h.diag_ne_zero
+  h.isUpperTriangular.isUnit_iff.2 h.diag_ne_zero
 
 /-- **The converse of [quarteroni2000numerical] Theorem 3.6** (and Property 1.18 (4)): a matrix
 with a Cholesky factorization is positive definite, since `Hᴴ H` is positive definite for a
@@ -643,8 +643,8 @@ section QR
 variable {m : Type*} [Fintype m]
 
 /-- [quarteroni2000numerical] Property 3.3, last clause: if `X = Q R` with `Qᴴ Q = 1` and `R`
-upper triangular with positive diagonal (a reduced QR factorization, `Matrix.exists_qr`), then `R`
-is the Cholesky factor of `Xᴴ X`, since `Xᴴ X = Rᴴ Qᴴ Q R = Rᴴ R`. -/
+upper triangular with positive diagonal (a reduced QR factorization, `Matrix.exists_isThinQR`),
+then `R` is the Cholesky factor of `Xᴴ X`, since `Xᴴ X = Rᴴ Qᴴ Q R = Rᴴ R`. -/
 theorem isCholesky_conjTranspose_mul_self_of_qr {X Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
     (hX : X = Q * R) (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) :
     IsCholesky (Xᴴ * X) R where

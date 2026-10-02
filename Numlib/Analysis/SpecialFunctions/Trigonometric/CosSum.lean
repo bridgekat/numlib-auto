@@ -19,6 +19,10 @@ The two special progressions in use are the multiples `(k + 1) φ`, which give t
 the Dirichlet kernel and the orthogonality of the discrete cosine and sine transforms
 (`Real.two_mul_sin_half_mul_sum_range_cos`), and the odd multiples `(2 k + 1) ψ`
 (`Real.two_mul_sin_mul_sum_range_cos_odd`).
+
+The half-angle forms `2 ∓ 2 cos θ = 4 sin² (θ / 2)`, `4 cos² (θ / 2)` (`Real.two_sub_two_mul_cos`,
+`Real.two_add_two_mul_cos`, and their double-angle readings) are the shapes in which the
+eigenvalues of the tridiagonal Toeplitz matrices `tridiag(∓1, 2, ∓1)` are usually written.
 -/
 
 open Finset
@@ -59,5 +63,29 @@ theorem two_mul_sin_mul_sum_range_cos_odd (ψ : ℝ) (M : ℕ) :
   rw [show 2 * ψ / 2 = ψ by ring, sub_self, sin_zero, sub_zero,
     show ψ + M * (2 * ψ) - ψ = 2 * M * ψ by ring] at h
   rw [hs, h]
+
+/-- `2 − 2 cos θ = 4 sin² (θ / 2)`: the half-angle form in which the eigenvalues
+`2 − 2 cos θ_k` of `tridiag(-1, 2, -1)` are usually written. -/
+theorem two_sub_two_mul_cos (θ : ℝ) : 2 - 2 * cos θ = 4 * sin (θ / 2) ^ 2 := by
+  have h2 : cos θ = cos (2 * (θ / 2)) := by ring_nf
+  rw [h2, cos_two_mul]
+  linear_combination (-4) * cos_sq_add_sin_sq (θ / 2)
+
+/-- `2 − 2 cos (2 x) = 4 sin² x`, the double-angle reading of `Real.two_sub_two_mul_cos`. -/
+theorem two_sub_two_mul_cos_two_mul (x : ℝ) :
+    2 - 2 * cos (2 * x) = 4 * sin x ^ 2 := by
+  rw [Real.two_sub_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
+
+/-- `2 + 2 cos θ = 4 cos² (θ / 2)`: the half-angle form of the eigenvalues `2 + 2 cos θ_k` of
+`tridiag(1, 2, 1)`, the companion of `Real.two_sub_two_mul_cos`. -/
+theorem two_add_two_mul_cos (θ : ℝ) : 2 + 2 * cos θ = 4 * cos (θ / 2) ^ 2 := by
+  have h := cos_two_mul (θ / 2)
+  rw [show 2 * (θ / 2) = θ by ring] at h
+  linarith
+
+/-- `2 + 2 cos (2 x) = 4 cos² x`, the double-angle reading of `Real.two_add_two_mul_cos`. -/
+theorem two_add_two_mul_cos_two_mul (x : ℝ) :
+    2 + 2 * cos (2 * x) = 4 * cos x ^ 2 := by
+  rw [Real.two_add_two_mul_cos, mul_div_cancel_left₀ x two_ne_zero]
 
 end Real

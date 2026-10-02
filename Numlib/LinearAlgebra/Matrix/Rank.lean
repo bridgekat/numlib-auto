@@ -8,6 +8,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Rank
+import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 
 /-!
@@ -42,8 +43,9 @@ classical characterization of the rank as the largest order of a nonvanishing mi
   `Matrix.finrank_ker_toBlock_inv` (the null spaces of `A⁻¹[p, q]` and `A[¬q, ¬p]` have the same
   dimension), its rank form `Matrix.rank_toBlock_inv_add_card`, and the block corollaries
   `Matrix.rank_inv_toBlocks₂₁`, `Matrix.rank_inv_toBlocks₁₂` ([golub2013matrix] §4.3.8). The
-  algebra behind it is `Matrix.submatrix_mulVec_eq_comp_mulVec_extend`: a submatrix applied to a
-  vector is the matrix applied to its extension by zero.
+  algebra behind it is `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` (in
+  `Numlib/Data/Matrix/Mul`): a submatrix applied to a vector is the matrix applied to its extension
+  by zero.
 -/
 
 open Module
@@ -343,18 +345,6 @@ end Blocks
 /-! ### The nullity theorem -/
 
 @[deprecated (since := "2026-09-30")] alias rank_one_submatrix_mul := rank_submatrix_one_mul
-
-/-- A submatrix applied to a vector: `(A.submatrix f g) x` is `A` applied to `x` extended by zero
-along an injective `g`, restricted to the rows `f`. -/
-theorem submatrix_mulVec_eq_comp_mulVec_extend {R m m' n n' : Type*}
-    [NonUnitalNonAssocSemiring R] [Fintype n] [Fintype n'] (B : Matrix m n R) (f : m' → m)
-    {g : n' → n} (hg : Function.Injective g) (x : n' → R) :
-    B.submatrix f g *ᵥ x = (B *ᵥ Function.extend g x 0) ∘ f := by
-  funext i
-  simp only [mulVec, dotProduct, submatrix_apply, Function.comp_apply]
-  exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
-    rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
-    rw [hg.extend_apply]
 
 section Nullity
 

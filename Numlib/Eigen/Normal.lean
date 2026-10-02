@@ -10,6 +10,7 @@ import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Lagrange
 import Numlib.Algebra.Polynomial.Commute
+import Numlib.LinearAlgebra.Matrix.Charpoly
 
 /-!
 # Normal operators in finite dimension
@@ -768,29 +769,6 @@ theorem IsStarNormal.eq_sum_smul_vecMulVec [IsAlgClosed 𝕜] {A : Matrix n n �
   exact ⟨U, hU, d, hd, eq_sum_smul_vecMulVec_of_conj_eq_diagonal hU hd⟩
 
 /-! ### The Hermitian spectral decomposition -/
-
-/-- **The spectral decomposition of a Hermitian matrix**, unfolded: `Uᴴ A U = diag(λ)` for the
-eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary`
-without the algebra automorphism). -/
-theorem IsHermitian.star_eigenvectorUnitary_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
-    star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜) =
-      diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
-  simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
-
-/-- The real form of `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: `Qᵀ A Q = diag(λ)`. -/
-theorem IsHermitian.transpose_eigenvectorUnitary_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian) :
-    (hA.eigenvectorUnitary : Matrix n n ℝ)ᵀ * A * (hA.eigenvectorUnitary : Matrix n n ℝ) =
-      diagonal hA.eigenvalues := by
-  have h := hA.star_eigenvectorUnitary_mul_mul
-  rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, RCLike.ofReal_real_eq_id,
-    Function.id_comp] at h
-
-/-- The roots of the characteristic polynomial of a diagonal matrix are its diagonal entries. -/
-theorem roots_charpoly_diagonal {R : Type*} [CommRing R] [IsDomain R] (d : n → R) :
-    (diagonal d).charpoly.roots = Multiset.map d Finset.univ.val := by
-  rw [charpoly_diagonal, Polynomial.roots_prod]
-  · simp
-  · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
 
 /-- The eigenvalues of a real diagonal matrix are its entries, up to order. -/
 theorem IsHermitian.map_eigenvalues_diagonal {d : n → ℝ}

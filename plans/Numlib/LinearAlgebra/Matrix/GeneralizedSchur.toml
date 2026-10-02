@@ -7,7 +7,7 @@ id = "exists_generalizedRealSchur_of_isUnit"
 id = "exists_forall_isUnit_det_add_smul_one"
 
 [[node]]
-id = "exists_generalizedRealSchur"
+id = "exists_orthogonal_pencil_isQuasiUpperTriangular"
 
 [[node]]  # staged by ch07
 id = "exists_generalizedSchur"

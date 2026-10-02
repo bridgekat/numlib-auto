@@ -144,7 +144,7 @@ theorem card_pos_eigenvalues_le_of_re_inner_eq {F : Type*} [NormedAddCommGroup F
     #{i | 0 < hS.eigenvalues hm i} ≤ #{i | 0 < hT.eigenvalues hn i} := by
   obtain ⟨⟨V, hV, hVpos⟩, -⟩ := hS.card_pos_eigenvalues_isGreatest hm
   refine (hT.card_pos_eigenvalues_isGreatest hn).2 ⟨V.map ι, ?_, ?_⟩
-  · rw [← (Submodule.equivMapOfInjective _ hι V).finrank_eq, hV]
+  · rw [LinearMap.finrank_map_of_injective _ hι, hV]
   · rintro _ ⟨y, hy, rfl⟩ hy0
     rw [← h]
     exact hVpos y hy fun h0 => hy0 (by simp [h0])

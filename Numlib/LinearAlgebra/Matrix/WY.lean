@@ -26,7 +26,7 @@ instance Householder reflectors) is a rank-`r` modification of the identity,
   by `1 - β v vᴴ` appends the column `z = β Q v` to `W` and the column `v` to `Y`.
 * `Matrix.wyW`, `Matrix.isWY_prod`: the `W` factor built by that recursion ([golub2013matrix]
   Algorithm 5.1.2) represents the whole product (`Matrix.isWY_prodFwd` for the product written as
-  `Matrix.prodFwd` of a sequence); `Y` is the matrix of the vectors themselves, and
+  `prodFwd` of a sequence); `Y` is the matrix of the vectors themselves, and
   `Matrix.wyW_apply_eq_zero_of_apply_eq_zero` reads off the shape of `W`.
 * `Matrix.exists_compactWY`, `Matrix.exists_compactWY_prodFwd`: the compact representation
   `Q = 1 - Y T Yᴴ`.
@@ -38,7 +38,7 @@ instance Householder reflectors) is a rank-`r` modification of the identity,
 The algebra holds over any commutative `*`-ring, and none of it needs `Q` or the factors to be
 unitary (the book assumes orthogonality in Lemma 5.1.1 but does not use it). The factors are indexed
 by `Fin r` and the product is `(List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod`, in
-the order `Q₁ ⋯ Q_r`, which is `Matrix.prodFwd` of the factors (`Matrix.prodFwd_eq_prod_ofFn`);
+the order `Q₁ ⋯ Q_r`, which is `prodFwd` of the factors (`prodFwd_eq_prod_ofFn`);
 columns are appended with `Fin.snoc` on the column index,
 `Matrix.of fun i => Fin.snoc (W i) (z i)`, which is how the recursion grows `W` and `Y`.
 
@@ -201,7 +201,7 @@ theorem exists_compactWY (β : Fin r → R) (v : Fin r → n → R) :
     rw [List.ofFn_succ', List.prod_concat, hY]
     exact compactWY_step hQ _ _
 
-/-- **The WY representation of a forward product** (`Matrix.isWY_prod` for `Matrix.prodFwd`): for
+/-- **The WY representation of a forward product** (`Matrix.isWY_prod` for `prodFwd`): for
 sequences `β`, `v`, `Q₁ ⋯ Q_r = 1 - W Yᴴ` with `W = Matrix.wyW` of the first `r` terms and `Y`
 the matrix whose columns are `v 0, …, v (r-1)`. -/
 theorem isWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
@@ -211,7 +211,7 @@ theorem isWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
   exact isWY_prod _ _
 
 /-- **The compact WY representation of a forward product** (`Matrix.exists_compactWY` for
-`Matrix.prodFwd`): `Q₁ ⋯ Q_r = 1 - Y T Yᴴ` with `T` upper triangular and `Y` the matrix whose
+`prodFwd`): `Q₁ ⋯ Q_r = 1 - Y T Yᴴ` with `T` upper triangular and `Y` the matrix whose
 columns are `v 0, …, v (r-1)`. -/
 theorem exists_compactWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
     ∃ T : Matrix (Fin r) (Fin r) R, T.IsUpperTriangular ∧

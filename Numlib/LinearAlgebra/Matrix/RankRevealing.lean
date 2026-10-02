@@ -9,6 +9,7 @@ upstreaming candidates.
 -/
 import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Rank
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
 # Rank-revealing orthogonal factorizations
@@ -499,38 +500,24 @@ section UTV
 whose trailing block reveals the small singular values; a pivoted QR factorization is one with
 `V` the permutation matrix (`Matrix.IsPivotedQR.isURV`). -/
 structure IsURV (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
-    (R : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop where
-  /-- The left factor is unitary. -/
-  mem_unitaryGroup_left : U ∈ unitaryGroup (Fin M) 𝕜
-  /-- The right factor is unitary. -/
-  mem_unitaryGroup_right : V ∈ unitaryGroup (Fin N) 𝕜
-  /-- The factorization `Uᴴ A V = R`. -/
-  star_mul_mul : star U * A * V = R
+    (R : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop
+    extends IsUnitaryEquiv A U R V where
   /-- The middle factor is upper triangular. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (j : ℕ) < i → R i j = 0
 
 /-- **A ULV decomposition** (Stewart 1993; [golub2013matrix] §5.4.5), the lower triangular twin
 of `Matrix.IsURV`: `U`, `V` unitary and `Uᴴ A V = L` lower triangular in the rectangular sense. -/
 structure IsULV (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
-    (L : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop where
-  /-- The left factor is unitary. -/
-  mem_unitaryGroup_left : U ∈ unitaryGroup (Fin M) 𝕜
-  /-- The right factor is unitary. -/
-  mem_unitaryGroup_right : V ∈ unitaryGroup (Fin N) 𝕜
-  /-- The factorization `Uᴴ A V = L`. -/
-  star_mul_mul : star U * A * V = L
+    (L : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop
+    extends IsUnitaryEquiv A U L V where
   /-- The middle factor is lower triangular. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (i : ℕ) < j → L i j = 0
 
 /-- The permutation matrix `Π` of a column permutation `σ`, the identity with its columns
 permuted, is unitary. -/
 theorem one_submatrix_mem_unitaryGroup (σ : Equiv.Perm (Fin N)) :
-    (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id σ ∈ unitaryGroup (Fin N) 𝕜 := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, conjTranspose_submatrix, conjTranspose_one,
-    show (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id σ *
-        (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix σ id =
-      (1 * 1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id id from
-      submatrix_mul_equiv _ _ _ σ _, Matrix.one_mul, submatrix_id_id]
+    (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id σ ∈ unitaryGroup (Fin N) 𝕜 :=
+  submatrix_equiv_mem_unitaryGroup (one_mem _) (Equiv.refl _) σ
 
 /-- **A pivoted QR factorization is a URV decomposition** with `V = Π`, the permutation matrix of
 `σ` (`A Π = A.submatrix id σ`). -/
@@ -612,7 +599,7 @@ theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M
     exact mul_mem (Unitary.star_mem hU) hA.mem_unitaryGroup_left
   -- the SVD of `T`
   have hTsvd : IsSVD T P σ G := by
-    refine ⟨hP, hG, hA.antitone, hA.nonneg, ?_⟩
+    refine ⟨⟨hP, hG, ?_⟩, hA.antitone, hA.nonneg⟩
     rw [hPdef, hGdef, ← hT, ← hA.star_mul_mul]
     simp only [star_mul, star_star, Matrix.mul_assoc]
     rw [← Matrix.mul_assoc U (star U), mem_unitaryGroup_iff.1 hU, Matrix.one_mul,

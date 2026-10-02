@@ -724,13 +724,6 @@ private theorem sum_ite_lt_succ {n c : ℕ} (k : Fin n) (hk : (k : ℕ) = c) (P 
   rw [Finset.sum_congr rfl fun l _ => h l, Finset.sum_add_distrib, Finset.sum_ite_eq']
   simp
 
-/-- The Hermitian part of a symmetric real matrix is the matrix. -/
-private theorem hermitianPart_eq_self {ι : Type*} {B : Matrix ι ι ℝ} (hB : B.IsHermitian) :
-    hermitianPart B = B := by
-  ext i j
-  rw [hermitianPart_apply, starRingEnd_apply, star_trivial, ← hB.apply i j, star_trivial]
-  ring
-
 /-- **One step of (11.1.8) keeps the invariant.** -/
 private theorem cholPivInv_step {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (pivot : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n) (hpivot : ∀ M k, k ≤ pivot M k)
@@ -845,7 +838,7 @@ private theorem cholPivInv_step {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
   · -- the new trailing block is a Schur complement of the old one
     dsimp only
     have hH := posDef_hermitianPart_schurComplementSingle
-      (by rwa [hermitianPart_eq_self hP₁.isHermitian]) (⟨k, le_rfl⟩ : {i : Fin n // c ≤ (i : ℕ)})
+      (by rwa [hP₁.isHermitian.hermitianPart_eq]) (⟨k, le_rfl⟩ : {i : Fin n // c ≤ (i : ℕ)})
     have := hH.submatrix (e := fun i : {i : Fin n // c + 1 ≤ (i : ℕ)} =>
       (⟨⟨i, by omega⟩, fun e => by
         have := congrArg (fun x : {i : Fin n // c ≤ (i : ℕ)} => ((x : Fin n) : ℕ)) e

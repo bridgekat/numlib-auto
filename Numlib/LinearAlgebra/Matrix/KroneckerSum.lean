@@ -212,9 +212,9 @@ theorem kroneckerSum_hasLowerBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
 theorem kroneckerSum_hasUpperBandwidth {A₂ : Matrix (Fin n₂) (Fin n₂) R}
     (A₁ : Matrix (Fin n₁) (Fin n₁) R) (h₂ : A₂.HasUpperBandwidth 1) :
     (kroneckerSumFin A₂ A₁).HasUpperBandwidth n₁ := by
-  rw [hasUpperBandwidth_iff_transpose, kroneckerSumFin, transpose_submatrix,
+  rw [← hasLowerBandwidth_transpose_iff, kroneckerSumFin, transpose_submatrix,
     transpose_kroneckerSum]
-  exact kroneckerSum_hasLowerBandwidth A₁ᵀ (hasUpperBandwidth_iff_transpose.1 h₂)
+  exact kroneckerSum_hasLowerBandwidth A₁ᵀ (hasLowerBandwidth_transpose_iff.2 h₂)
 
 /-- The five-point structure ([golub2013matrix] §4.8.4): in the positional layout, the Kronecker sum
 `A₂ ⊕ₖ A₁` of a tridiagonal `A₂` with any `A₁` has lower and upper bandwidth `n₁` (the book's

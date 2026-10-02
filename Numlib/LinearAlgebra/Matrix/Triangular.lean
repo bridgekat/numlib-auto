@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Block`, beside `Matrix.IsUpperTriang
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Order.Interval.Finset.Defs
@@ -47,7 +48,9 @@ The vocabulary of triangular matrices beyond Mathlib's `Matrix.IsUpperTriangular
   other kind on the dual order, the bridge through which backward substitution is forward
   substitution on `nᵒᵈ` (`Numlib/Direct/Substitution`).
 * `Matrix.charpoly_of_isLowerTriangular`: the mirror of Mathlib's
-  `Matrix.charpoly_of_isUpperTriangular`.
+  `Matrix.charpoly_of_isUpperTriangular`; `Matrix.IsUpperTriangular.spectrum_eq`,
+  `Matrix.IsLowerTriangular.spectrum_eq`: over a field the spectrum of a triangular matrix is the
+  set of its diagonal entries.
 * Entries of products: `Matrix.IsUpperTriangular.mul_apply` (a sum over the indices between),
   `Matrix.IsUpperTriangular.pow_apply_self` (each with its lower twin),
   `Matrix.mul_transpose_apply_of_lower`, `Matrix.transpose_mul_apply_of_upper` and
@@ -492,6 +495,28 @@ Mathlib's `Matrix.charpoly_of_isUpperTriangular`. -/
 theorem charpoly_of_isLowerTriangular (M : Matrix n n R) (hM : M.IsLowerTriangular) :
     M.charpoly = ∏ i, (Polynomial.X - Polynomial.C (M i i)) := by
   simp [charpoly, det_of_isLowerTriangular _ hM.charmatrix]
+
+/-- **The spectrum of an upper triangular matrix is the set of its diagonal entries**, over any
+field: `charpoly T = ∏ᵢ (X - Tᵢᵢ)`. -/
+theorem IsUpperTriangular.spectrum_eq {K : Type*} [Field K] {T : Matrix n n K}
+    (hT : T.IsUpperTriangular) : spectrum K T = Set.range fun i => T i i := by
+  ext μ
+  rw [mem_spectrum_iff_isRoot_charpoly, charpoly_of_isUpperTriangular T hT, Polynomial.IsRoot,
+    Polynomial.eval_prod, Finset.prod_eq_zero_iff]
+  simp only [Finset.mem_univ, true_and, Polynomial.eval_sub, Polynomial.eval_X,
+    Polynomial.eval_C, sub_eq_zero, Set.mem_range]
+  exact exists_congr fun i => eq_comm
+
+/-- The spectrum of a lower triangular matrix is the set of its diagonal entries, the mirror of
+`Matrix.IsUpperTriangular.spectrum_eq`. -/
+theorem IsLowerTriangular.spectrum_eq {K : Type*} [Field K] {T : Matrix n n K}
+    (hT : T.IsLowerTriangular) : spectrum K T = Set.range fun i => T i i := by
+  ext μ
+  rw [mem_spectrum_iff_isRoot_charpoly, charpoly_of_isLowerTriangular T hT, Polynomial.IsRoot,
+    Polynomial.eval_prod, Finset.prod_eq_zero_iff]
+  simp only [Finset.mem_univ, true_and, Polynomial.eval_sub, Polynomial.eval_X,
+    Polynomial.eval_C, sub_eq_zero, Set.mem_range]
+  exact exists_congr fun i => eq_comm
 
 end Charpoly
 

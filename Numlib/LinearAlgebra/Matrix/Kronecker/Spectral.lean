@@ -87,31 +87,12 @@ theorem colSingularValues_kronecker [DecidableEq n₁] [DecidableEq n₂] (B : M
     ∃ e : n₁ × n₂ ≃ n₁ × n₂,
       ∀ q, (B ⊗ₖ C).colSingularValues (e q) =
         B.colSingularValues q.1 * C.colSingularValues q.2 := by
-  set hG := isHermitian_conjTranspose_mul_self (B ⊗ₖ C)
-  set d : n₁ × n₂ → ℝ := fun q => B.colSingularValues q.1 ^ 2 * C.colSingularValues q.2 ^ 2
-  have hU : star (B.rightSingularUnitary ⊗ₖ C.rightSingularUnitary)
-      ∈ unitaryGroup (n₁ × n₂) 𝕜 :=
-    Unitary.star_mem (kronecker_mem_unitary B.rightSingularUnitary_mem_unitaryGroup
+  refine exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq
+    (kronecker_mem_unitary B.rightSingularUnitary_mem_unitaryGroup
       C.rightSingularUnitary_mem_unitaryGroup)
-  have hchar : ((B ⊗ₖ C)ᴴ * (B ⊗ₖ C)).charpoly = (diagonal fun q => ((d q : ℝ) : 𝕜)).charpoly := by
-    rw [conjTranspose_kronecker_mul_self_eq]
-    have := (IsUnitarilySimilar.isSimilar
-      (⟨_, hU, rfl⟩ : IsUnitarilySimilar (diagonal fun q => ((d q : ℝ) : 𝕜)) _)).charpoly_eq
-    rwa [star_star, eq_comm] at this
-  have hmult : Multiset.map hG.eigenvalues Finset.univ.val = Multiset.map d Finset.univ.val := by
-    have h1 := hG.roots_charpoly_eq_eigenvalues
-    have h2 : (diagonal fun q => ((d q : ℝ) : 𝕜)).charpoly.roots
-        = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := by
-      rw [charpoly_diagonal, roots_prod_X_sub_C_univ]
-      rfl
-    rw [hchar, h2] at h1
-    have h3 := congrArg (Multiset.map RCLike.re) h1
-    simpa [Multiset.map_map, Function.comp_def] using h3.symm
-  obtain ⟨e, he⟩ := exists_equiv_of_map_univ_val_eq hmult
-  refine ⟨e, fun q => ?_⟩
-  rw [colSingularValues, he q, show d q = (B.colSingularValues q.1 * C.colSingularValues q.2) ^ 2 by
-    simp only [d]; ring, Real.sqrt_sq (mul_nonneg (B.colSingularValues_nonneg _)
-    (C.colSingularValues_nonneg _))]
+    (fun q => mul_nonneg (B.colSingularValues_nonneg _) (C.colSingularValues_nonneg _)) ?_
+  rw [conjTranspose_kronecker_mul_self_eq]
+  simp only [mul_pow]
 
 section L2
 

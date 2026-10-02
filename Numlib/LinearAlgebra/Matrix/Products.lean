@@ -22,6 +22,9 @@ which a sequence of transformations accumulates:
   orthogonal factor `Q = Q₁ ⋯ Q_r` of a factorization built one reflector at a time
   ([golub2013matrix] §5.1.6–5.1.7, the WY representations), or a sweep of plane rotations.
 
+The even- and odd-indexed subproducts `prodFwdEven`, `prodFwdOdd` are the two halves of the
+odd–even reordering of a product whose far-apart factors commute ([golub2013matrix] §12.2.10).
+
 Both are recursions on `r`, so statements about them are inductions on `r` with no `Fin` casts;
 `prodFwd_eq_prod_ofFn`, `prodRev_eq_prod_ofFn` and `prod_map_range'_eq_prodFwd` bridge them to the
 list products `(List.ofFn fun j : Fin r => P j).prod`, its reverse, and
@@ -57,6 +60,16 @@ multiplying on the right. -/
 def prodFwd (P : ℕ → M) : ℕ → M
   | 0 => 1
   | r + 1 => prodFwd P r * P r
+
+/-- `∏_{k < m, k even} g k`, in increasing order: the product of the factors with an even index
+(the `H_o = G₁ G₃ ⋯` of [golub2013matrix] §12.2.10, whose indices are `1`-based). -/
+def prodFwdEven (g : ℕ → M) (m : ℕ) : M :=
+  prodFwd (fun k => if Even k then g k else 1) m
+
+/-- `∏_{k < m, k odd} g k`, in increasing order: the product of the factors with an odd index
+(the `H_e = G₂ G₄ ⋯` of [golub2013matrix] §12.2.10). -/
+def prodFwdOdd (g : ℕ → M) (m : ℕ) : M :=
+  prodFwd (fun k => if Odd k then g k else 1) m
 
 /-- The empty product is the identity. -/
 @[simp]

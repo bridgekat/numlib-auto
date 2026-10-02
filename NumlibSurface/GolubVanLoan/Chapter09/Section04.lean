@@ -478,7 +478,7 @@ private theorem isSVD_complexify (h : IsSVD A U σ V) :
       complexify W ∈ unitaryGroup (Fin n) ℂ := fun hW => by
     rw [mem_unitaryGroup_iff, star_eq_conjTranspose, ← complexify_conjTranspose,
       ← complexify_mul, ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hW, complexify_one]
-  refine ⟨hunit h.mem_unitaryGroup_left, hunit h.mem_unitaryGroup_right, h.antitone, h.nonneg, ?_⟩
+  refine ⟨⟨hunit h.mem_unitaryGroup_left, hunit h.mem_unitaryGroup_right, ?_⟩, h.antitone, h.nonneg⟩
   rw [star_eq_conjTranspose, ← complexify_conjTranspose, ← complexify_mul, ← complexify_mul,
     ← star_eq_conjTranspose, h.star_mul_mul]
   ext i j

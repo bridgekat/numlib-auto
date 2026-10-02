@@ -276,3 +276,9 @@ id = "IsSVD.norm_toEuclideanLin_eq_iff_mem_span"
 
 [[node]]  # review2 (g6)
 id = "exists_wide_thin_svd"
+
+[[node]]  # added by sv2; moved by p3a from Conditioning/LeastSquares
+id = "linearIndependent_transpose_of_iInf_colSingularValues_pos"
+
+[[node]]  # added by sv2; moved by p3a from Conditioning/LeastSquares
+id = "iInf_colSingularValues_pos_of_linearIndependent"

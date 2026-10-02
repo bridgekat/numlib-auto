@@ -73,13 +73,6 @@ namespace LinearMap
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The dimension of the image of a subspace under an injective linear map is the dimension of
-the subspace: the `finrank` form of `Submodule.equivMapOfInjective`. -/
-theorem finrank_map_of_injective {R M N : Type*} [Ring R] [AddCommGroup M] [Module R M]
-    [AddCommGroup N] [Module R N] (f : M →ₗ[R] N) (hf : Function.Injective f)
-    (S : Submodule R M) : finrank R (S.map f) = finrank R S :=
-  (Submodule.equivMapOfInjective f hf S).finrank_eq.symm
-
 /-! ### The Hermitian dilation -/
 
 section Dilation

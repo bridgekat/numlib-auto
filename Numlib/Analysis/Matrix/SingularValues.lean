@@ -885,38 +885,6 @@ variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **A positive least stretch makes the columns independent**: if `σ_min(A) > 0` then
-`A x = 0` forces `x = 0`. -/
-theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m n 𝕜}
-    (h : 0 < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 Aᵀ := by
-  rcases isEmpty_or_nonempty n with hn | hn
-  · rw [Real.iInf_of_isEmpty] at h
-    exact absurd h (lt_irrefl 0)
-  refine mulVec_injective_iff.1 fun v w hvw => ?_
-  have h1 := A.iInf_colSingularValues_mul_norm_le (WithLp.toLp 2 (v - w))
-  rw [toEuclideanLin_toLp, mulVec_sub, hvw, sub_self, WithLp.toLp_zero, norm_zero] at h1
-  have h2 : ‖(WithLp.toLp 2 (v - w) : EuclideanSpace 𝕜 n)‖ = 0 :=
-    le_antisymm (nonpos_of_mul_nonpos_right h1 h) (norm_nonneg _)
-  have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
-  simpa [sub_eq_zero] using h3
-
-/-- **Linearly independent columns give a positive least stretch**: `σ_min(A) > 0`, the converse
-of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
-theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
-    (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.colSingularValues i := by
-  obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
-  rw [← hx]
-  refine norm_pos_iff.2 fun h0 => ?_
-  have h1 : A *ᵥ WithLp.ofLp x = A *ᵥ 0 := by
-    rw [mulVec_zero]
-    exact congrArg WithLp.ofLp h0
-  have h2 := mulVec_injective_iff.2 hA h1
-  have hx0 : x = 0 := by
-    ext i
-    simpa using congrFun h2 i
-  rw [hx0, norm_zero] at hx1
-  exact zero_ne_one hx1
-
 /-- **Weyl stability of the least stretch** ([golub2013matrix] Corollary 2.4.4):
 `σ_min(A) - ‖δA‖₂ ≤ σ_min(A + δA)`. -/
 theorem sub_l2_opNorm_le_iInf_colSingularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :

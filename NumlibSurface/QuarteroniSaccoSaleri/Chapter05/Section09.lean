@@ -348,15 +348,17 @@ theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : 
 [GL89] §7.7) after Property 5.10: for real `A`, `B` there are orthogonal `Ŭ`, `Z̃` such that
 `T̃ = Ŭᵀ A Z̃` is upper quasi-triangular and `S̃ = Ŭᵀ B Z̃` is upper triangular. The book states it
 for a regular pencil; it holds with no hypothesis at all. Backbone
-`Matrix.exists_generalizedRealSchur`: the nonsingular case `generalizedRealSchur_of_isUnit`
-applied to `(A, B + εI)` for `ε → 0`, with the limits taken in the compact orthogonal group and
-`Ŭᵀ B Z̃ = lim (Ŭ_εᵀ (B + εI) Z̃_ε - ε Ŭ_εᵀ Z̃_ε)`. The quasi-triangular shape is that of
-Property 5.8: the blocks are the fibres of a monotone `p : Fin n → ℕ` with at most two indices
-each. -/
+`Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`: the nonsingular case
+`generalizedRealSchur_of_isUnit` applied to `(A, B + εI)` for `ε → 0`, with the limits taken in
+the compact orthogonal group and `Ŭᵀ B Z̃ = lim (Ŭ_εᵀ (B + εI) Z̃_ε - ε Ŭ_εᵀ Z̃_ε)`. The
+quasi-triangular shape is that of Property 5.8: the blocks are the fibres of a monotone
+`p : Fin n → ℕ` with at most two indices each. -/
 theorem generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
       Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧
-        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular :=
-  Matrix.exists_generalizedRealSchur A B
+        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
+  obtain ⟨U, hU, Z, hZ, ⟨p, hp, hcard, hA⟩, hB⟩ :=
+    Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular A B
+  exact ⟨U, hU, Z, hZ, p, hp, hcard, hA, hB⟩
 
 end QuarteroniSaccoSaleri.Chapter05

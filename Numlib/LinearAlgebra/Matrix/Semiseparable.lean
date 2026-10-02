@@ -32,8 +32,9 @@ algorithms possible.
 * `Matrix.IsGeneratorRepresentableOfOrder A p q`: the `{p, q}`-generator representable matrices
   of §12.2.8.
 * `Matrix.givensChain M`: the product `M₀ M₁ ⋯` of `2 × 2` blocks embedded in consecutive
-  coordinate planes ((12.2.4), (12.2.12)); `Matrix.planeReflector φ` the `2 × 2` reflection of
-  §12.2.10.
+  coordinate planes ((12.2.4), (12.2.12)), its factors being the adjacent embeddings
+  `Matrix.adjacentEmbed` (`Matrix.givensFactor_eq_adjacentEmbed`); the `2 × 2` reflections
+  `Matrix.planeReflector φ` of §12.2.10 are in `Numlib/LinearAlgebra/Matrix/PlaneRotation`.
 
 ## Main results
 
@@ -767,7 +768,7 @@ theorem IsGeneratorRepresentableOfOrder.hasBandwidth_inv {A : Matrix (Fin n) (Fi
     {p q : ℕ} (h : A.IsGeneratorRepresentableOfOrder p q) (hA : IsUnit A) :
     A⁻¹.HasLowerBandwidth p ∧ A⁻¹.HasUpperBandwidth q := by
   refine ⟨hasLowerBandwidth_inv_of_isGeneratorRepresentableOfOrder hA h, ?_⟩
-  rw [hasUpperBandwidth_iff_transpose, transpose_nonsing_inv]
+  rw [← hasLowerBandwidth_transpose_iff, transpose_nonsing_inv]
   exact hasLowerBandwidth_inv_of_isGeneratorRepresentableOfOrder ((isUnit_transpose A).2 hA)
     h.transpose
 
@@ -890,9 +891,15 @@ variable (N : ℕ) (M : ℕ → Matrix (Fin 2) (Fin 2) K)
 def givensFactor (k : ℕ) : Matrix (Fin (N + 1)) (Fin (N + 1)) K :=
   if h : k < N then planeEmbed ⟨k, by omega⟩ ⟨k + 1, by omega⟩ (M k) else 1
 
+/-- A factor of a chain is the adjacent embedding `Matrix.adjacentEmbed k (M k)` of
+`Numlib/LinearAlgebra/Matrix/PlaneRotation` in `Fin (N + 1)`. -/
+theorem givensFactor_eq_adjacentEmbed (k : ℕ) : givensFactor N M k = adjacentEmbed k (M k) := by
+  unfold givensFactor adjacentEmbed
+  split_ifs <;> first | rfl | omega
+
 /-- **A chain of `2 × 2` blocks** ([golub2013matrix] (12.2.4), (12.2.12)–(12.2.13)): the product
 `M₀ M₁ ⋯ M_{N-1}` of the blocks `M k` embedded in the consecutive coordinate planes `(k, k + 1)`
-of `Fin (N + 1)` (`Matrix.prodFwd` of `Matrix.givensFactor`). With `M k` a plane rotation it is
+of `Fin (N + 1)` (`prodFwd` of `Matrix.givensFactor`). With `M k` a plane rotation it is
 the book's `Qᵀ = G₁ ⋯ G_{n−1}`. -/
 def givensChain : Matrix (Fin (N + 1)) (Fin (N + 1)) K :=
   prodFwd (givensFactor N M) N
@@ -1021,34 +1028,6 @@ theorem givensChain_isQuasiseparable : (givensChain N M).IsQuasiseparable := by
     exact rank_vecMulVec_le _ _
 
 end Chain
-
-/-! ### Plane reflections -/
-
-section Reflector
-
-/-- The `2 × 2` reflection `R(φ) = [−cos φ, sin φ; sin φ, cos φ]` of [golub2013matrix] §12.2.10,
-the factors of the product form (12.2.18) of an orthogonal upper Hessenberg matrix. -/
-noncomputable def planeReflector (φ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
-  !![-Real.cos φ, Real.sin φ; Real.sin φ, Real.cos φ]
-
-/-- A plane reflection is an involution. -/
-theorem planeReflector_mul_self (φ : ℝ) : planeReflector φ * planeReflector φ = 1 := by
-  ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [planeReflector, mul_apply, Fin.sum_univ_two, ← sq, Real.sin_sq_add_cos_sq,
-      Real.cos_sq_add_sin_sq] <;> ring
-
-/-- A plane reflection is symmetric. -/
-theorem planeReflector_transpose (φ : ℝ) : (planeReflector φ)ᵀ = planeReflector φ := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> rfl
-
-/-- A plane reflection has determinant `−1`. -/
-theorem det_planeReflector (φ : ℝ) : (planeReflector φ).det = -1 := by
-  rw [planeReflector, det_fin_two_of]
-  linear_combination -Real.sin_sq_add_cos_sq φ
-
-end Reflector
 
 /-! ### LU factors of a semiseparable matrix -/
 
@@ -1242,9 +1221,7 @@ private theorem inv_last_zero_ne_zero {A : Matrix (Fin (m + 1)) (Fin (m + 1)) K}
   have hBu : B.IsUpperTriangular := fun i j hij => by
     rw [hBapply]
     exact hT _ _ (Or.inl ⟨j.succ, Fin.castSucc_lt_succ, Fin.succ_lt_succ_iff.2 hij⟩)
-  have hBdet : IsUnit B := by
-    rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hBu]
-    refine isUnit_iff_ne_zero.2 (Finset.prod_ne_zero_iff.2 fun i _ => ?_)
+  have hBdet : IsUnit B := hBu.isUnit_iff.2 fun i => by
     rw [hBapply]
     exact hsub _ _ (by simp)
   have hrank : (A.toBlock (fun i => ¬ i ≤ 0) (fun j => ¬ Fin.last m ≤ j)).rank = m := by
@@ -2133,16 +2110,6 @@ end SemiseparableQR
 section OddEven
 
 variable {ι R : Type*} [Fintype ι] [DecidableEq ι] [CommRing R]
-
-/-- `∏_{k < m, k even} g k`, in increasing order: the `H_o = G₁ G₃ ⋯` of [golub2013matrix]
-§12.2.10 (the book's indices are `1`-based, so its odd factors are the even `k` here). -/
-def prodFwdEven (g : ℕ → Matrix ι ι R) (m : ℕ) : Matrix ι ι R :=
-  prodFwd (fun k => if Even k then g k else 1) m
-
-/-- `∏_{k < m, k odd} g k`, in increasing order: the `H_e = G₂ G₄ ⋯` of [golub2013matrix]
-§12.2.10. -/
-def prodFwdOdd (g : ℕ → Matrix ι ι R) (m : ℕ) : Matrix ι ι R :=
-  prodFwd (fun k => if Odd k then g k else 1) m
 
 /-- The invariant of the reordering: after `m` steps, the first `m` factors have been split
 into their even and odd products. -/

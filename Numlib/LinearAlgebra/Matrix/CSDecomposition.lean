@@ -456,7 +456,7 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
   -- the target columns are orthogonal to `[C; S]` and orthonormal
   have t1 : Cᴴ * T₁ + Sᴴ * T₂ = 0 := by
     ext a b
-    rw [add_apply, conjTranspose_rectDiagonal, rectDiagonal_mul_apply _ _ _ _
+    rw [add_apply, rectDiagonal_conjTranspose, rectDiagonal_mul_apply _ _ _ _
       (lt_of_lt_of_le a.isLt hn₁), conjTranspose_shiftedRectDiagonal_mul_apply, zero_apply]
     simp only [hT₁, hT₂, csdUpperRight, of_apply, rectDiagonal_apply, Function.comp_apply,
       hσdef]

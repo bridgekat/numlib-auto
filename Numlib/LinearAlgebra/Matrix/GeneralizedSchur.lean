@@ -14,8 +14,9 @@ import Numlib.Topology.Instances.Matrix.UnitaryGroup
 # The generalized real Schur form of a matrix pair
 
 For real square matrices `A`, `B` of the same size there are orthogonal `U`, `Z` with `Uᵀ A Z`
-quasi upper triangular (block upper triangular with diagonal blocks of size `1` or `2`) and
-`Uᵀ B Z` upper triangular (`Matrix.exists_generalizedRealSchur`). This is the real form of the
+quasi upper triangular (`Matrix.IsQuasiUpperTriangular`: block upper triangular with diagonal
+blocks of size `1` or `2`) and `Uᵀ B Z` upper triangular
+(`Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`). This is the real form of the
 generalized Schur decomposition of a pencil ([golub1989matrix] Theorem 7.7.2;
 [quarteroni2000numerical] §5.9.1, the statement after Property 5.10), and it holds for *every*
 pair — no regularity of the pencil `A - λ B` is needed.
@@ -23,10 +24,11 @@ pair — no regularity of the pencil `A - λ B` is needed.
 ## The proof
 
 For a nonsingular `B` the statement reduces to the real Schur form of `B⁻¹ A`
-(`Matrix.exists_orthogonal_conj_quasiUpperTriangular`) and a QR factorization of `B Z`
+(`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`) and a QR factorization of `B Z`
 (`Matrix.exists_unitary_mul_isUpperTriangular`): `Uᵀ B Z = R` is the triangular factor and
 `Uᵀ A Z = R (Zᵀ B⁻¹ A Z)` is triangular times quasi-triangular
-(`Matrix.exists_generalizedRealSchur_of_isUnit`).
+(`Matrix.exists_generalizedRealSchur_of_isUnit`, by
+`Matrix.IsUpperTriangular.mul_isQuasiUpperTriangular`).
 
 The general case is a limiting argument rather than the deflating-subspace induction of
 Golub–Van Loan. `B + ε I` is nonsingular for all small `ε > 0`
@@ -48,7 +50,8 @@ ordered index like its regular case.
 
 ## Main results
 
-* `Matrix.exists_generalizedRealSchur`, `Matrix.exists_generalizedSchur`: the two forms.
+* `Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`, `Matrix.exists_generalizedSchur`: the
+  two forms.
 * The limiting tools, shared with the periodic Schur forms of `Numlib/Eigen/PeriodicSchur`:
   `Matrix.exists_tendsto_subseq_of_mem_unitaryGroup` (a convergent subsequence of a finite family
   of unitary sequences) and its pair form `Matrix.exists_tendsto_subseq_of_mem_unitaryGroup₂`,
@@ -128,22 +131,21 @@ variable {n : ℕ}
 /-! ### The nonsingular case -/
 
 /-- **The generalized real Schur form of a pencil with nonsingular `B`**: take `Z` from the real
-Schur form of `B⁻¹ A` (`Matrix.exists_orthogonal_conj_quasiUpperTriangular`), so that
+Schur form of `B⁻¹ A` (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`), so that
 `Zᵀ B⁻¹ A Z = T` is quasi upper triangular, and `U` from a QR factorization `B Z = U R`
 (`Matrix.exists_unitary_mul_isUpperTriangular`); then `Uᵀ B Z = R` is upper triangular and
 `Uᵀ A Z = R T` is quasi upper triangular, a triangular matrix times a quasi triangular one. -/
 theorem exists_generalizedRealSchur_of_isUnit (A : Matrix (Fin n) (Fin n) ℝ)
     {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det) :
-    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
-      Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
-        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
-  obtain ⟨Z, hZ, p, hmono, hcard, htri⟩ := exists_orthogonal_conj_quasiUpperTriangular (B⁻¹ * A)
+    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ,
+      (Uᵀ * A * Z).IsQuasiUpperTriangular ∧ (Uᵀ * B * Z).IsUpperTriangular := by
+  obtain ⟨Z, hZ, p, hmono, hcard, htri⟩ := exists_orthogonal_conj_isQuasiUpperTriangular (B⁻¹ * A)
   obtain ⟨V, hV, hR⟩ := exists_unitary_mul_isUpperTriangular (B * Z)
   have hZZ : Z * Zᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hZ
   have hVU : Vᵀ ∈ orthogonalGroup (Fin n) ℝ := by
     rw [mem_orthogonalGroup_iff', transpose_transpose]
     exact (mem_orthogonalGroup_iff _ ℝ).1 hV
-  refine ⟨Vᵀ, hVU, Z, hZ, p, hmono, hcard, ?_, ?_⟩
+  refine ⟨Vᵀ, hVU, Z, hZ, ⟨p, hmono, hcard, ?_⟩, ?_⟩
   swap
   · rw [transpose_transpose, Matrix.mul_assoc]; exact hR
   have hAZ : (V * (B * Z)) * (Zᵀ * (B⁻¹ * A) * Z) = Vᵀᵀ * A * Z := by
@@ -203,15 +205,15 @@ subsequence has `U_k → U`, `Z_k → Z` (`Matrix.exists_tendsto_subseq_of_mem_u
 limits are orthogonal, and the vanishing entries of `U_kᵀ A Z_k` (for the common pattern) and of
 `U_kᵀ (B + ε_k I) Z_k` (strictly below the diagonal) pass to the limit
 (`Matrix.star_mul_mul_apply_eq_zero_of_tendsto`). -/
-theorem exists_generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
-    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
-      Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
-        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
+theorem exists_orthogonal_pencil_isQuasiUpperTriangular (A B : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ,
+      (Uᵀ * A * Z).IsQuasiUpperTriangular ∧ (Uᵀ * B * Z).IsUpperTriangular := by
   obtain ⟨δ, hδ, hδunit⟩ := exists_forall_isUnit_det_add_smul_one B
   obtain ⟨ε, -, hε, hεtend⟩ := exists_seq_strictAnti_tendsto' hδ
   -- the generalized Schur forms of the perturbed pencils
-  choose U hU Z hZ p hmono hcard htri hupp using fun k =>
+  choose U hU Z hZ hquasi hupp using fun k =>
     exists_generalizedRealSchur_of_isUnit A (hδunit (ε k) (hε k).1 (hε k).2)
+  choose p hmono hcard htri using hquasi
   -- a subsequence along which the strict order relation `p_k j < p_k i` is fixed
   obtain ⟨R, φ, hφ, hR⟩ := Finite.exists_strictMono_forall_eq fun k (i j : Fin n) =>
     decide (p k j < p k i)
@@ -232,9 +234,20 @@ theorem exists_generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
       (𝓝 B) := by
     simpa using tendsto_const_nhds.add
       ((hεtend.comp (hφ.comp hψ).tendsto_atTop).smul_const (1 : Matrix (Fin n) (Fin n) ℝ))
-  exact ⟨U₀, hU₀, Z₀, hZ₀, p (φ 0), hmono _, hcard _,
-    fun i j hij => hlim tendsto_const_nhds fun k => htri (φ (ψ k)) (hrel (ψ k) hij),
+  exact ⟨U₀, hU₀, Z₀, hZ₀, ⟨p (φ 0), hmono _, hcard _,
+    fun i j hij => hlim tendsto_const_nhds fun k => htri (φ (ψ k)) (hrel (ψ k) hij)⟩,
     fun i j hij => hlim hBlim fun k => hupp (φ (ψ k)) hij⟩
+
+/-- The generalized real Schur form with the block index of the quasi-triangular factor spelled
+out (the former statement of `Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`). -/
+@[deprecated exists_orthogonal_pencil_isQuasiUpperTriangular +typeChanged (since := "2026-09-30")]
+theorem exists_generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
+      Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
+        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
+  obtain ⟨U, hU, Z, hZ, ⟨p, hp, hcard, hA⟩, hB⟩ :=
+    exists_orthogonal_pencil_isQuasiUpperTriangular A B
+  exact ⟨U, hU, Z, hZ, p, hp, hcard, hA, hB⟩
 
 /-- **The complex generalized Schur form of an arbitrary pair** ([golub2013matrix] Theorem 7.7.1,
 existence): for square `A`, `B` over an algebraically closed `RCLike` field (that is, over `ℂ`),
@@ -244,7 +257,8 @@ unitary `U`, `Z` with `Uᴴ A Z` and `Uᴴ B Z` both upper triangular. The regul
 small `ε > 0`, so the pencils `(A, B + ε_k I)` are regular, a subsequence of the unitary factors
 `(U_k, Z_k)` converges (`Matrix.exists_tendsto_subseq_of_mem_unitaryGroup₂`), and the vanishing
 entries pass to the limit, `B + ε_k I → B` (`Matrix.star_mul_mul_apply_eq_zero_of_tendsto`). The
-argument of `Matrix.exists_generalizedRealSchur`, without the block pattern. -/
+argument of `Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`, without the block
+pattern. -/
 theorem exists_generalizedSchur {m 𝕜 : Type*} [Fintype m] [LinearOrder m] [RCLike 𝕜]
     [IsAlgClosed 𝕜] (A B : Matrix m m 𝕜) :
     ∃ U ∈ unitaryGroup m 𝕜, ∃ Z ∈ unitaryGroup m 𝕜,

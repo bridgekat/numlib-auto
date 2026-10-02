@@ -64,8 +64,7 @@ theorem singularValues_perturbation {A ΔA : Matrix (Fin m) (Fin n) ℝ}
     (hε : ‖ΔA‖ ≤ ε * ‖A‖) {k : ℕ} (hkm : k < m) (hkn : k < n) :
     |A.sortedSingularValues k - σhat k| ≤ ε * A.sortedSingularValues 0 := by
   have hsvd : IsSVD (A + ΔA) W σhat Z :=
-    ⟨hW, hZ, hσ, hσ0, by
-      rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]⟩
+    ⟨⟨hW, hZ, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]⟩, hσ, hσ0⟩
   rw [hsvd.singularValues_eq hkm hkn, sortedSingularValues_zero_eq_l2_opNorm]
   refine le_trans ?_ hε
   have hweyl := LinearMap.abs_singularValues_sub_le (S := toEuclideanLin A)
@@ -2462,7 +2461,7 @@ theorem equation_5_4_10 {A R : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (
           sigmaMin (R.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) := by
   rw [sigmaMin_square] at hσ hρ ⊢
   exact gap_le_of_urv
-    ⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial], hRtri⟩
+    ⟨⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]⟩, hRtri⟩
     hA hkm hkn ((div_lt_one hσ).1 hρ)
 
 /-- **(5.4.11)** (Stewart 1993): "in the ULV setting we have `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`. If
@@ -2489,7 +2488,7 @@ theorem equation_5_4_11 {A L : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (
           sigmaMin (L.submatrix (Fin.castLE hkm) (Fin.castLE hkn))) := by
   rw [sigmaMin_square] at hσ hρ ⊢
   exact gap_le_of_ulv
-    ⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial], hLtri⟩
+    ⟨⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]⟩, hLtri⟩
     hA hkm hkn ((div_lt_one hσ).1 hρ)
 
 end UTV

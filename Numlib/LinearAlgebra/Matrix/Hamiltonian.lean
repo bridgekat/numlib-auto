@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Algebra.Lie.Classical
 import Mathlib.LinearAlgebra.SymplecticGroup
 import Mathlib.LinearAlgebra.UnitaryGroup
+import Numlib.LinearAlgebra.Matrix.Symmetric
 
 /-!
 # Hamiltonian and skew-Hamiltonian matrices
@@ -58,11 +59,6 @@ attribute [local instance 100] LieRing.ofAssociativeRing
 namespace Matrix
 
 variable {l R : Type*} [Fintype l] [CommRing R]
-
-/-- A congruence `Sᵀ X S` of a symmetric matrix is symmetric. -/
-private theorem isSymm_transpose_mul_mul {X : Matrix (l ⊕ l) (l ⊕ l) R} (hX : X.IsSymm)
-    (S : Matrix (l ⊕ l) (l ⊕ l) R) : (Sᵀ * X * S).IsSymm := by
-  rw [IsSymm, transpose_mul, transpose_mul, transpose_transpose, hX.eq, Matrix.mul_assoc]
 
 /-- A congruence `Sᵀ X S` of a skew-symmetric matrix is skew-symmetric. -/
 private theorem transpose_transpose_mul_mul_of_transpose_eq_neg {X : Matrix (l ⊕ l) (l ⊕ l) R}
@@ -169,7 +165,7 @@ theorem conj_symplectic {S : Matrix (l ⊕ l) (l ⊕ l) R} (hS : S ∈ symplecti
   rw [isHamiltonian_iff_isSymm_J_mul] at hM ⊢
   rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, J_mul_inv_of_mem_symplecticGroup hS,
     Matrix.mul_assoc Sᵀ]
-  exact isSymm_transpose_mul_mul hM S
+  exact hM.transpose_mul_mul S
 
 /-- `Mᵀ = J M J` for a Hamiltonian `M`; since `J⁻¹ = -J`, `Mᵀ = J⁻¹ (-M) J` is similar to `-M`, so
 the spectrum of a Hamiltonian matrix is symmetric about the imaginary axis. -/

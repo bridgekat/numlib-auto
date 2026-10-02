@@ -92,9 +92,6 @@ id = "exists_givensVector_rep"
 id = "givensChain_mul_strictLower_add_diagPart"
 
 [[node]]
-id = "planeReflector"
-
-[[node]]
 id = "exists_orthogonalHessenberg_eq_prod_planeReflector"
 
 [[node]]
@@ -148,12 +145,6 @@ id = "isQuasiseparable_quasiseparableRep"
 
 [[node]]
 id = "transpose_quasiseparableRep"
-
-[[node]]
-id = "prodFwdEven"
-
-[[node]]
-id = "prodFwdOdd"
 
 [[node]]
 id = "isSimilar_prodFwd_evenOdd"

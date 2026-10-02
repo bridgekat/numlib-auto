@@ -24,8 +24,6 @@ the transpose, and realness on real matrices read in `ℂ`.
 * `Matrix.pfc_jordanBlock`, `Matrix.pfc_jordanBlock_apply`: a Jordan block ((9.1.4)–(9.1.6)).
 * `Matrix.pfc_conj_jordanForm`: the Jordan-form expression (9.1.3), a theorem here.
 * `Matrix.pfc_transpose`: `f(Aᵀ) = f(A)ᵀ`.
-* `Matrix.IsUpperTriangular.spectrum_eq`: the eigenvalues of a triangular matrix are its diagonal
-  entries.
 * `Matrix.pfc_map_conj`, `Matrix.pfc_complexify_of_conj`: `f(Ā) = (f̄(A))‾` for
   `f̄ = conj ∘ f ∘ conj`, hence `f(A)` is real for a real `A` (read in `ℂ` through
   `Matrix.complexify`) when `f` commutes with conjugation near the spectrum.
@@ -206,18 +204,6 @@ theorem pfc_conj_jordanForm {ι : Type*} [Finite ι] [DecidableEq ι] {e : ι �
 theorem pfc_transpose (f : 𝕜 → 𝕜) (A : Matrix n n 𝕜) : pfc f Aᵀ = (pfc f A)ᵀ := by
   classical
   rw [pfc_def, pfc_def, minpoly_transpose, aeval_transpose]
-
-/-! ### Triangular matrices -/
-
-/-- **The spectrum of an upper triangular matrix is the set of its diagonal entries**, over any
-field: `charpoly T = ∏ᵢ (X - Tᵢᵢ)`. -/
-theorem IsUpperTriangular.spectrum_eq {K : Type*} [Field K] [LinearOrder n] {T : Matrix n n K}
-    (hT : T.IsUpperTriangular) : spectrum K T = Set.range fun i => T i i := by
-  ext μ
-  rw [mem_spectrum_iff_isRoot_charpoly, charpoly_of_isUpperTriangular T hT, IsRoot, eval_prod,
-    Finset.prod_eq_zero_iff]
-  simp only [Finset.mem_univ, true_and, eval_sub, eval_X, eval_C, sub_eq_zero, Set.mem_range]
-  exact exists_congr fun i => eq_comm
 
 /-! ### Complex conjugation and real matrices -/
 

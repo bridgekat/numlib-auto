@@ -1083,9 +1083,7 @@ theorem IsThinQR.unique {A Q₁ Q₂ : Matrix m (Fin N) 𝕜} {R₁ R₂ : Matri
     (hd₂ : ∀ j, 0 < R₂ j j) : Q₁ = Q₂ ∧ R₁ = R₂ := by
   obtain ⟨hX₁, hQ₁, hR₁⟩ := h₁
   obtain ⟨hX₂, hQ₂, hR₂⟩ := h₂
-  have hdet : IsUnit R₁.det := by
-    rw [det_of_isUpperTriangular hR₁, isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd₁ j).ne'
+  have hdet : IsUnit R₁.det := hR₁.isUnit_det_of_diag_ne_zero fun j => (hd₁ j).ne'
   have : Invertible R₁ := invertibleOfIsUnitDet R₁ hdet
   have hRR : R₁ᴴ * R₁ = R₂ᴴ * R₂ := by
     have h1 : Aᴴ * A = R₁ᴴ * R₁ := by
@@ -1259,9 +1257,7 @@ theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearInde
 theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
     {R : Matrix (Fin M) (Fin M) 𝕜} (hX : X = Q * R) (hQ : Qᴴ * Q = 1)
     (hR : R.IsUpperTriangular) (hd : ∀ j, 0 < R.diag j) : LinearIndependent 𝕜 Xᵀ :=
-  IsThinQR.linearIndependent ⟨hX.symm, hQ, hR⟩ (by
-    rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hR, isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne')
+  IsThinQR.linearIndependent ⟨hX.symm, hQ, hR⟩ (hR.isUnit_iff.2 fun j => (hd j).ne')
 
 end GramSchmidt
 
@@ -1525,7 +1521,7 @@ theorem IsQR.isUnit_firstRows_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤
 /-- The diagonal of the reduced triangular factor is nowhere zero when `A` has full column rank. -/
 theorem IsQR.firstRows_diag_ne_zero_of_linearIndependent (h : IsQR A Q R) (hNM : N ≤ M)
     (hA : LinearIndependent 𝕜 Aᵀ) (i : Fin N) : firstRows R hNM i i ≠ 0 :=
-  (isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular (h.isUpperTriangular_firstRows hNM)).1
+  (h.isUpperTriangular_firstRows hNM).isUnit_iff.1
     (h.isUnit_firstRows_of_linearIndependent hNM hA) i
 
 /-- [quarteroni2000numerical] Property 3.3, the range clause: for `A` of full column rank the

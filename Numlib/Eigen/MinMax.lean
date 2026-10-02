@@ -11,6 +11,7 @@ import Mathlib.Analysis.InnerProductSpace.Trace
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Dimension.Finrank
 
 /-!
 # Courant–Fischer: the variational characterization of eigenvalues
@@ -739,7 +740,7 @@ theorem eigenvalues_interlace_of_linearIsometry {F : Type*} [NormedAddCommGroup 
   · obtain ⟨⟨S', hS', hb⟩, -⟩ := hS.isLeast_eigenvalues hm i
     refine (hT.isLeast_eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩).2
       ⟨S'.map ι.toLinearMap, ?_, ?_⟩
-    · rw [← (Submodule.equivMapOfInjective _ hinj S').finrank_eq, hS']
+    · rw [LinearMap.finrank_map_of_injective _ hinj, hS']
       simp only
       omega
     · rintro _ ⟨y, hy, rfl⟩ hx0
@@ -747,7 +748,7 @@ theorem eigenvalues_interlace_of_linearIsometry {F : Type*} [NormedAddCommGroup 
       exact hb y hy fun h => hx0 (by simp [h])
   · obtain ⟨⟨S', hS', hb⟩, -⟩ := hS.isGreatest_eigenvalues hm i
     refine (hT.isGreatest_eigenvalues hn (Fin.castLE hmn i)).2 ⟨S'.map ι.toLinearMap, ?_, ?_⟩
-    · rw [← (Submodule.equivMapOfInjective _ hinj S').finrank_eq, hS']
+    · rw [LinearMap.finrank_map_of_injective _ hinj, hS']
       rfl
     · rintro _ ⟨y, hy, rfl⟩ hx0
       rw [LinearIsometry.coe_toLinearMap, ← hRQ]

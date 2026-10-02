@@ -1,5 +1,6 @@
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Recession.Cone
+import Numlib.LinearAlgebra.Dimension.Finrank
 
 /-!
 # Convex hulls of points and directions
@@ -597,8 +598,7 @@ theorem finrank_span_liftPD (hP : P.Nonempty) :
   have hB : Module.finrank ℝ ((vectorSpan ℝ (convexHullPD P D)).map (LinearMap.inr ℝ ℝ E))
       = finrankPD P D := by
     rw [finrankPD_def]
-    exact ((Submodule.equivMapOfInjective (LinearMap.inr ℝ ℝ E) hinrInj
-      (vectorSpan ℝ (convexHullPD P D))).finrank_eq).symm
+    exact LinearMap.finrank_map_of_injective _ hinrInj _
   have hsup := Submodule.finrank_sup_add_finrank_inf_eq (Submodule.span ℝ {((1 : ℝ), x₀)})
     ((vectorSpan ℝ (convexHullPD P D)).map (LinearMap.inr ℝ ℝ E))
   rw [← hkey, hdisj, finrank_bot, hA, hB, add_zero] at hsup

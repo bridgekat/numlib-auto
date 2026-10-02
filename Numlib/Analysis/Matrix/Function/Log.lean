@@ -22,7 +22,8 @@ The principal logarithm ([golub2013matrix] §9.4.4; Higham, *Functions of Matric
   scaling-and-squaring identity `log A = 2^k log A^{1/2^k}`.
 * `Matrix.existsUnique_exp_eq_of_abs_im_lt`, `Matrix.existsUnique_real_exp_eq`: the principal
   logarithm is the only logarithm with eigenvalues in the strip, and it is real for a real matrix
-  (read in `ℂ` through `Matrix.complexify`, with `Matrix.complexify_exp`).
+  (read in `ℂ` through `Matrix.complexify`, with `Matrix.complexify_exp` of
+  `Numlib/LinearAlgebra/Matrix/Complexify`).
 
 The Banach-algebra facts about Mathlib's series logarithm `NormedSpace.log` (`exp (log x) = x` for
 `‖x - 1‖ < 1`) are `Numlib/Analysis/Normed/Algebra/Logarithm`; the agreement of the two logarithms
@@ -162,27 +163,6 @@ theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ
     exact Matrix.isUnit_exp X
   have := eq_zero_of_exp_eq_one hNs hexpN
   exact (sub_eq_zero.mp this)
-
-/-- **Complexification commutes with the exponential**: `complexify (e^X) = e^{complexify X}` for a
-real square matrix `X`, the exponential series being mapped term by term. -/
-theorem complexify_exp (X : Matrix n n ℝ) :
-    complexify (NormedSpace.exp X) = NormedSpace.exp (complexify X) := by
-  have hL : Function.LeftInverse (fun M : Matrix n n ℂ => M.map Complex.re)
-      (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ) := fun M => by
-    ext i j
-    simp
-  have h := Function.LeftInverse.map_tsum (L := SummationFilter.unconditional ℕ)
-    (fun k : ℕ => ((k.factorial : ℚ)⁻¹) • X ^ k)
-    (g := (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ))
-    (continuous_id.matrix_map Complex.continuous_ofReal)
-    (continuous_id.matrix_map Complex.continuous_re) hL
-  rw [NormedSpace.exp_eq_tsum_rat, NormedSpace.exp_eq_tsum_rat]
-  change Complex.ofRealHom.mapMatrix _ = _
-  rw [h]
-  congr 1
-  funext k
-  rw [map_rat_smul, map_pow]
-  rfl
 
 /-- **Real logarithms** ([golub2013matrix] §9.4.4): if every real eigenvalue of a real matrix `B` is
 positive (no eigenvalue on `(-∞, 0]`), then `B` has a unique real logarithm with eigenvalues in the

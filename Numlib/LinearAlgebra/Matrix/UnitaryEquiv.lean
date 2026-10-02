@@ -27,7 +27,8 @@ a projection to it). The core carries the unitary algebra they share.
 
 * `Matrix.conjTranspose_mul_self_of_mem_unitaryGroup`,
   `Matrix.mul_conjTranspose_self_of_mem_unitaryGroup`: `Uᴴ U = 1` and `U Uᴴ = 1` for a unitary `U`,
-  in the `ᴴ` notation of the factorizations (Mathlib states them with `star`).
+  in the `ᴴ` notation of the factorizations (Mathlib states them with `star`);
+  `Matrix.submatrix_equiv_mem_unitaryGroup`: permuting rows and columns keeps a matrix unitary.
 * `Matrix.IsUnitaryEquiv.eq_mul_mul`: `A = U T Vᴴ`; `Matrix.IsUnitaryEquiv.mul_eq`: `A V = U T`;
   `Matrix.IsUnitaryEquiv.mulVec_col`: `A vⱼ = U tⱼ` column by column.
 * `Matrix.IsUnitaryEquiv.conjTranspose_mul_self`: `Vᴴ (Aᴴ A) V = Tᴴ T`, and its row twin
@@ -67,6 +68,18 @@ theorem conjTranspose_mem_unitaryGroup (hU : U ∈ unitaryGroup n α) : Uᴴ ∈
 /-- The determinant of a unitary matrix is a unit. -/
 theorem isUnit_det_of_mem_unitaryGroup (hU : U ∈ unitaryGroup n α) : IsUnit U.det :=
   isUnit_det_of_left_inverse (conjTranspose_mul_self_of_mem_unitaryGroup hU)
+
+/-- Permuting the rows and the columns of a unitary matrix keeps it unitary. -/
+theorem submatrix_equiv_mem_unitaryGroup (hU : U ∈ unitaryGroup n α) (e₁ e₂ : n ≃ n) :
+    U.submatrix e₁ e₂ ∈ unitaryGroup n α := by
+  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, conjTranspose_submatrix,
+    submatrix_mul_equiv U Uᴴ e₁ e₂ e₁, mul_conjTranspose_self_of_mem_unitaryGroup hU,
+    submatrix_one_equiv]
+
+/-- Permuting the rows of a unitary matrix keeps it unitary. -/
+theorem submatrix_mem_unitaryGroup (hU : U ∈ unitaryGroup n α) (e : n ≃ n) :
+    U.submatrix e id ∈ unitaryGroup n α :=
+  submatrix_equiv_mem_unitaryGroup hU e (Equiv.refl n)
 
 end Unitary
 

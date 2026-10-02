@@ -1,6 +1,8 @@
 import Mathlib.Algebra.Lie.Classical
 import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.Cholesky
+import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
 # Updating the QR and Cholesky factorizations
@@ -130,11 +132,6 @@ theorem adjacentRotationProd_mem_orthogonalGroup (h : ∀ j, c j ^ 2 + s j ^ 2 =
   split_ifs
   · exact planeRotation_mem_orthogonalGroup (Fin.ne_of_val_ne (by simp)) (h j)
   · exact one_mem _
-
-/-- The transposed rotation block. -/
-private theorem rotationBlock_transpose (c s : ℝ) : !![c, -s; s, c]ᵀ = !![c, s; -s, c] := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> rfl
 
 end AdjacentRotationProd
 
@@ -383,16 +380,6 @@ theorem IsQR.exists_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) ℝ} {Q R} (h
   have := isQR_conjTranspose_mul (mul_mem h.mem_unitaryGroup hG) (by rw [e]; exact hT)
   rwa [e] at this
 
-/-- Multiplying a matrix with an inserted column: `P [A₁ | z | A₂] = [P A₁ | P z | P A₂]`. -/
-theorem mul_of_insertNth {α l : Type*} [NonUnitalNonAssocSemiring α] (P : Matrix l (Fin m) α)
-    (z : Fin m → α) (A : Matrix (Fin m) (Fin n) α) (k : Fin (n + 1)) :
-    P * of (fun i => Fin.insertNth k (z i) (A i)) =
-      of fun i => Fin.insertNth k ((P *ᵥ z) i) ((P * A) i) := by
-  ext i j
-  obtain rfl | ⟨j, rfl⟩ := Fin.eq_self_or_eq_succAbove k j
-  · simp [mul_apply, mulVec, dotProduct]
-  · simp [mul_apply]
-
 /-- **Inserting a column leaves a spike** ([golub2013matrix] §6.5.2): if `A = Q R` and `Ã` is `A`
 with `z` inserted as column `k`, then `Qᴴ Ã` is `R` with `Qᴴ z` inserted as column `k`: upper
 trapezoidal except in column `k`, below the diagonal. -/
@@ -480,22 +467,6 @@ private theorem insertNth_rows_succAbove (w : Fin n → α) (A : Matrix (Fin m) 
     (Fin.insertNth k w A : Fin (m + 1) → Fin n → α) (k.succAbove i) j = A i j := by
   have h := Fin.insertNth_apply_succAbove (α := fun _ => Fin n → α) k w (fun i => A i) i
   exact congrFun h j
-
-/-- Permuting the rows of a unitary matrix keeps it unitary. -/
-theorem submatrix_mem_unitaryGroup [CommRing α] [StarRing α] {ι : Type*} [Fintype ι]
-    [DecidableEq ι] {U : Matrix ι ι α} (hU : U ∈ unitaryGroup ι α) (e : ι ≃ ι) :
-    U.submatrix e id ∈ unitaryGroup ι α := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, conjTranspose_submatrix,
-    show U.submatrix e id * Uᴴ.submatrix id e = (U * Uᴴ).submatrix e e from
-      submatrix_mul_equiv U Uᴴ e (Equiv.refl ι) e, ← star_eq_conjTranspose,
-    mem_unitaryGroup_iff.1 hU, submatrix_one_equiv]
-
-/-- Permuting the rows of a left factor permutes the rows of the product: the rewriting form of
-Mathlib's `Matrix.submatrix_mul` with `e₂ = e₃ = id`. -/
-theorem submatrix_id_mul [NonUnitalNonAssocSemiring α] {ι κ ι' : Type*} [Fintype ι]
-    (X : Matrix ι' ι α) (Y : Matrix ι κ α) {ι'' : Type*} (e : ι'' → ι') :
-    X.submatrix e id * Y = (X * Y).submatrix e id := by
-  rw [submatrix_mul X Y e id id Function.bijective_id, submatrix_id_id]
 
 /-- **Moving an inserted row to the top**: with `σ = (Fin.cycleRange k)⁻¹` (`σ 0 = k`,
 `σ (j + 1) = k.succAbove j`), the rows of `Fin.insertNth k w A` permuted by `σ` are `[wᵀ; A]`
@@ -783,16 +754,6 @@ theorem isCholesky_diagonal_sign_mul {n : Type*} [Fintype n] [LinearOrder n]
   · rw [conjTranspose_eq_transpose_of_trivial, transpose_mul, diagonal_transpose,
       Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _), diagonal_mul_diagonal]
     simp only [hsq, diagonal_one, Matrix.one_mul, hA]
-
-/-- The product of a list of `J`-orthogonal matrices is `J`-orthogonal. -/
-private theorem isJOrthogonal_list_prod {α ι : Type*} [CommRing α] [Fintype ι] [DecidableEq ι]
-    {J : Matrix ι ι α} (l : List (Matrix ι ι α)) (h : ∀ H ∈ l, IsJOrthogonal J H) :
-    IsJOrthogonal J l.prod := by
-  induction l with
-  | nil => exact isJOrthogonal_one J
-  | cons H l ih =>
-    rw [List.prod_cons]
-    exact (h H (by simp)).mul (ih fun H' hH' => h H' (by simp [hH']))
 
 /-- **A sweep through the planes `(0, last), (1, last), …`**: if an invariant `Inv t` of the
 current matrix can be advanced through step `t` by some rotation parameters `p` with `Ok p`, then

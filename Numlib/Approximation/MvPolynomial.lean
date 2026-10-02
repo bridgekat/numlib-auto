@@ -4,6 +4,7 @@ import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.RingTheory.MvPolynomial.Basic
 import Mathlib.Topology.Algebra.MvPolynomial
 import Numlib.Approximation.OrthogonalDecomposition
+import Numlib.LinearAlgebra.Dimension.Finrank
 
 /-!
 # Multivariate polynomials in `L²` of a domain
@@ -270,7 +271,7 @@ instance finiteDimensional_polyLE [Finite ι] (n : ℕ) : FiniteDimensional ℝ 
 theorem finrank_polyLE [Fintype ι] (n : ℕ) :
     finrank ℝ (hw.polyLE n) = (n + Fintype.card ι).choose (Fintype.card ι) := by
   rw [← MvPolynomial.finrank_restrictTotalDegree ι n ℝ]
-  exact (LinearEquiv.finrank_eq (Submodule.equivMapOfInjective _ hw.toL2_injective _)).symm
+  exact LinearMap.finrank_map_of_injective _ hw.toL2_injective _
 
 /-- The `n + 1`-st orthogonal component of the chain `Π_0^d ⊆ Π_1^d ⊆ ⋯` has the dimension of the
 space of homogeneous polynomials of degree `n + 1`, namely `C(n + d, d - 1)`. -/

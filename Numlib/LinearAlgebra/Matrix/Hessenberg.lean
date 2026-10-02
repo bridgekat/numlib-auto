@@ -14,10 +14,13 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
 
 ## Main definitions
 
-* `Matrix.IsUpperHessenberg`, `Matrix.IsTridiagonal`: zero below the first subdiagonal, and zero
-  outside the three central diagonals. Both are stated over a bare `LinearOrder` on the index type,
-  as "no index lies strictly between the two", which on `Fin n` is the usual condition on the
-  difference of the indices (`Matrix.isUpperHessenberg_iff_fin`,
+* `Matrix.IsUpperHessenberg`, `Matrix.IsLowerHessenberg`, `Matrix.IsTridiagonal`: zero below the
+  first subdiagonal, zero above the first superdiagonal (the transpose,
+  `Matrix.isUpperHessenberg_transpose_iff`), and zero outside the three central diagonals (both,
+  `Matrix.isTridiagonal_iff_isUpperHessenberg_and_isLowerHessenberg`). All three are stated over a
+  bare `LinearOrder` on the index type, as "no index lies strictly between the two", which on
+  `Fin n` is the usual condition on the difference of the indices
+  (`Matrix.isUpperHessenberg_iff_fin`, `Matrix.isLowerHessenberg_iff_fin`,
   `Matrix.isTridiagonal_iff_fin`).
 * `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
   the matrix `H̄ₘ` of the Arnoldi process; it is an abbreviation for lower bandwidth `1` in the
@@ -31,7 +34,8 @@ The named shapes of band width one, on a matrix indexed by a linearly ordered ty
 ## Main results
 
 * The shapes in the band vocabulary of `Numlib/LinearAlgebra/Matrix/Band`: upper Hessenberg is
-  lower bandwidth `1` (`Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one`), tridiagonal is both
+  lower bandwidth `1` (`Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one`), lower Hessenberg is
+  upper bandwidth `1` (`Matrix.isLowerHessenberg_iff_hasUpperBandwidth_one`), tridiagonal is both
   bandwidths `1` (`Matrix.isTridiagonal_iff_hasBandwidth_one`), and the bidiagonal shapes have
   bandwidths `1` and `0` (`Matrix.IsLowerBidiagonal.hasBandwidth`); since products add bands, an
   upper triangular matrix times an upper Hessenberg one is upper Hessenberg
@@ -61,6 +65,22 @@ index type and is the usual condition `j + 1 < i` on `Fin n`. -/
 def IsUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) → H i j = 0
 
+/-- Lower Hessenberg: zero above the first superdiagonal, the transpose of
+`Matrix.IsUpperHessenberg` ("some index lies strictly between the row and the column"; on `Fin n`,
+`i + 1 < j`). -/
+def IsLowerHessenberg [Zero R] (H : Matrix n n R) : Prop :=
+  ∀ i j, (∃ k, i < k ∧ k < j) → H i j = 0
+
+/-- Transposition exchanges the two Hessenberg shapes. -/
+theorem isLowerHessenberg_transpose_iff [Zero R] {H : Matrix n n R} :
+    Hᵀ.IsLowerHessenberg ↔ H.IsUpperHessenberg :=
+  ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
+
+/-- Transposition exchanges the two Hessenberg shapes. -/
+theorem isUpperHessenberg_transpose_iff [Zero R] {H : Matrix n n R} :
+    Hᵀ.IsUpperHessenberg ↔ H.IsLowerHessenberg :=
+  ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
+
 /-- Tridiagonal: zero outside the three central diagonals, that is, upper Hessenberg together with
 its mirror image above the first superdiagonal. -/
 def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
@@ -70,6 +90,16 @@ def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
 with its mirror image above the first superdiagonal, so it is the stronger of the two. -/
 theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
     T.IsUpperHessenberg := fun i j h => hT i j (Or.inl h)
+
+/-- A tridiagonal matrix is lower Hessenberg. -/
+theorem IsTridiagonal.isLowerHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
+    T.IsLowerHessenberg := fun i j h => hT i j (Or.inr h)
+
+/-- A matrix is tridiagonal exactly when it is both upper and lower Hessenberg. -/
+theorem isTridiagonal_iff_isUpperHessenberg_and_isLowerHessenberg [Zero R] {T : Matrix n n R} :
+    T.IsTridiagonal ↔ T.IsUpperHessenberg ∧ T.IsLowerHessenberg :=
+  ⟨fun h => ⟨h.isUpperHessenberg, h.isLowerHessenberg⟩,
+    fun h i j hij => hij.elim (h.1 i j) (h.2 i j)⟩
 
 /-- A submatrix of an upper Hessenberg matrix along a strictly monotone reindexing is upper
 Hessenberg. -/
@@ -184,6 +214,17 @@ theorem isUpperHessenberg_iff_hasLowerBandwidth_one :
 theorem isUpperHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsUpperHessenberg ↔ ∀ i j : Fin N, (j : ℕ) + 1 < (i : ℕ) → A i j = 0 := by
   rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasLowerBandwidth_iff_fin]
+
+/-- Upper bandwidth `1` is the lower Hessenberg shape. -/
+theorem isLowerHessenberg_iff_hasUpperBandwidth_one :
+    A.IsLowerHessenberg ↔ A.HasUpperBandwidth 1 := by
+  simp only [HasUpperBandwidth, one_lt_card_filter_le_lt_iff]
+  rfl
+
+/-- On `Fin N`, lower Hessenberg is the condition `A i j = 0` for `i + 1 < j`. -/
+theorem isLowerHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
+    A.IsLowerHessenberg ↔ ∀ i j : Fin N, (i : ℕ) + 1 < (j : ℕ) → A i j = 0 := by
+  rw [isLowerHessenberg_iff_hasUpperBandwidth_one, hasUpperBandwidth_iff_fin]
 
 /-- Tridiagonal means both bandwidths are `1` ([quarteroni2000numerical] §1.6.3). -/
 theorem isTridiagonal_iff_hasBandwidth_one :

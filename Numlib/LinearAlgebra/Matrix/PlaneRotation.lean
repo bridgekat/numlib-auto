@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.PlaneRotation`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.Real.Sqrt
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.UnitaryGroup
@@ -45,7 +46,11 @@ makes it annihilate the `k`-th entry of `x` when `|x k| < |x j|` — and nothing
   a list of natural numbers.
 * `Matrix.planeRotation j k c s`: the rotation of the `(j, k)`-plane with cosine `c` and sine `s`.
 * `Matrix.givensPair a b`: the pair `(c, s) = (a, b) / √(a² + b²)`, and `(1, 0)` when `a = b = 0`.
-* `Matrix.IsJOrthogonal J H`: `H J Hᵀ = J` ([golub2013matrix] (6.5.11), "`S`-orthogonal").
+* `Matrix.planeReflector φ`: the `2 × 2` reflection `[−cos φ, sin φ; sin φ, cos φ]`, an
+  involution of determinant `−1` ([golub2013matrix] §12.2.10).
+* `Matrix.IsJOrthogonal J H`: `H J Hᵀ = J` ([golub2013matrix] (6.5.11), "`S`-orthogonal"), and
+  `Matrix.jOrthogonalSubmonoid J`, the submonoid of such `H` (closed under list products,
+  `Matrix.isJOrthogonal_list_prod`).
 * `Matrix.hyperbolicRotation j k c s`, `Matrix.hyperbolicPair a b`: the hyperbolic rotation and
   the pair `(c, s)` that makes it introduce a zero ([golub2013matrix] §6.5.4).
 
@@ -345,6 +350,11 @@ end CommRing
 matrix `G(i, k, θ)` of [quarteroni2000numerical] (5.43) is `planeRotation i k (cos θ) (-sin θ)`. -/
 def planeRotation (j k : n) (c s : ℝ) : Matrix n n ℝ := planeEmbed j k !![c, -s; s, c]
 
+/-- The transposed `2 × 2` rotation block is the rotation by the opposite angle. -/
+theorem rotationBlock_transpose (c s : ℝ) : !![c, -s; s, c]ᵀ = !![c, s; -s, c] := by
+  ext i j
+  fin_cases i <;> fin_cases j <;> rfl
+
 variable {j k : n} {c s : ℝ}
 
 /-- The entries of a plane rotation, written so that each column is a linear combination of
@@ -532,6 +542,34 @@ theorem transpose_planeRotation_givensPair_mulVec (hjk : j ≠ k) (x : n → ℝ
   · rw [transpose_planeRotation_mulVec_apply hjk, ite_eq_left rfl, h1]
   · rw [transpose_planeRotation_mulVec_apply hjk, ite_eq_right hqj, ite_eq_right hqk]
 
+/-! ### Plane reflections -/
+
+section Reflector
+
+/-- The `2 × 2` reflection `R(φ) = [−cos φ, sin φ; sin φ, cos φ]` of [golub2013matrix] §12.2.10,
+the factors of the product form (12.2.18) of an orthogonal upper Hessenberg matrix. -/
+noncomputable def planeReflector (φ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
+  !![-Real.cos φ, Real.sin φ; Real.sin φ, Real.cos φ]
+
+/-- A plane reflection is an involution. -/
+theorem planeReflector_mul_self (φ : ℝ) : planeReflector φ * planeReflector φ = 1 := by
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [planeReflector, mul_apply, Fin.sum_univ_two, ← sq, Real.sin_sq_add_cos_sq,
+      Real.cos_sq_add_sin_sq] <;> ring
+
+/-- A plane reflection is symmetric. -/
+theorem planeReflector_transpose (φ : ℝ) : (planeReflector φ)ᵀ = planeReflector φ := by
+  ext i j
+  fin_cases i <;> fin_cases j <;> rfl
+
+/-- A plane reflection has determinant `−1`. -/
+theorem det_planeReflector (φ : ℝ) : (planeReflector φ).det = -1 := by
+  rw [planeReflector, det_fin_two_of]
+  linear_combination -Real.sin_sq_add_cos_sq φ
+
+end Reflector
+
 /-! ### `J`-orthogonal matrices and hyperbolic rotations -/
 
 section JOrthogonal
@@ -557,6 +595,23 @@ theorem IsJOrthogonal.mul {J H₁ H₂ : Matrix n n R} (h₁ : IsJOrthogonal J H
         rw [transpose_mul]
         simp only [Matrix.mul_assoc]
     _ = J := by rw [h₂, h₁]
+
+/-- The `J`-orthogonal matrices form a submonoid of `Matrix n n R` (a group when `J` is
+invertible). -/
+def jOrthogonalSubmonoid (J : Matrix n n R) : Submonoid (Matrix n n R) where
+  carrier := {H | IsJOrthogonal J H}
+  mul_mem' := IsJOrthogonal.mul
+  one_mem' := isJOrthogonal_one J
+
+@[simp]
+theorem mem_jOrthogonalSubmonoid {J H : Matrix n n R} :
+    H ∈ jOrthogonalSubmonoid J ↔ IsJOrthogonal J H :=
+  Iff.rfl
+
+/-- The product of a list of `J`-orthogonal matrices is `J`-orthogonal. -/
+theorem isJOrthogonal_list_prod {J : Matrix n n R} (l : List (Matrix n n R))
+    (h : ∀ H ∈ l, IsJOrthogonal J H) : IsJOrthogonal J l.prod :=
+  Submonoid.list_prod_mem (jOrthogonalSubmonoid J) h
 
 /-- For an involutive signature, `H J Hᵀ = J` gives `Hᵀ J H = J`: `J Hᵀ J` is a right, hence a
 left, inverse of `H`. -/

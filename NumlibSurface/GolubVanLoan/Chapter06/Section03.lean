@@ -24,7 +24,7 @@ solution is `Matrix.IsTLSSolution`; (6.3.2) is `d = 1`, `t = 1`. The Frobenius n
 Theorem 6.3.1 the matrix `C = D[A | B]T = [C₁ | C₂]` is reindexed to `Fin (n + k)` columns
 (`finSumFinEquiv`), and `V₁₂`, `V₂₂` are the blocks `V(1:n, n+1:n+k)`, `V(n+1:n+k, n+1:n+k)`.
 For one right-hand side the book's `C = D[A | b]T` with columns `Fin (n + 1)` is `tlsMatrix`, the
-backbone's `tlsWeighted` reindexed by `finSuccEquivSumUnit` (the last column `b`'s), with the
+backbone's `tlsWeighted` reindexed by `finSuccEquivLastSumUnit` (the last column `b`'s), with the
 column weights `tlsWeights t`; the book's index `n − p` of `v_{n+1−p}` is `r` (0-based).
 
 Algorithm 6.3.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: every product
@@ -366,16 +366,6 @@ private theorem mem_span_iff_exists_trailingColumns_mulVec
     ext i
     simp [trailingColumns, mulVec, dotProduct, mul_comm]
 
-/-- The book's column order of `[A | b]`: `Fin (n + 1) ≃ Fin n ⊕ Unit`, the last index going to the
-right-hand side. -/
-def finSuccEquivSumUnit (n : ℕ) : Fin (n + 1) ≃ Fin n ⊕ Unit where
-  toFun i := Fin.lastCases (Sum.inr ()) Sum.inl i
-  invFun := Sum.elim Fin.castSucc fun _ => Fin.last n
-  left_inv i := by
-    refine Fin.lastCases ?_ (fun j => ?_) i <;> simp
-  right_inv x := by
-    rcases x with j | u <;> simp
-
 /-- The column weights `T = diag(t₁, …, t_{n+1})` of `[A | b]` in the backbone's indexing of the
 columns by `Fin n ⊕ Unit`. -/
 def tlsWeights (t : Fin (n + 1) → ℝ) : Fin n ⊕ Unit → ℝ :=
@@ -385,7 +375,7 @@ def tlsWeights (t : Fin (n + 1) → ℝ) : Fin n ⊕ Unit → ℝ :=
 `Fin (n + 1)` (the last one `b`'s): the backbone's `tlsWeighted` reindexed. -/
 noncomputable def tlsMatrix (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : Matrix (Fin m) (Fin (n + 1)) ℝ :=
-  (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).submatrix id (finSuccEquivSumUnit n)
+  (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).submatrix id (finSuccEquivLastSumUnit n)
 
 /-- The weights of `[A | b]` are nonzero when the book's `t_j` are. -/
 theorem tlsWeights_ne_zero {t : Fin (n + 1) → ℝ} (ht : ∀ j, t j ≠ 0) (j : Fin n ⊕ Unit) :
@@ -398,7 +388,7 @@ theorem tlsWeights_ne_zero {t : Fin (n + 1) → ℝ} (ht : ∀ j, t j ≠ 0) (j 
 theorem tlsMatrix_mulVec (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (w : Fin (n + 1) → ℝ) :
     tlsMatrix d t A b *ᵥ w = tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
-      (w ∘ (finSuccEquivSumUnit n).symm) := by
+      (w ∘ (finSuccEquivLastSumUnit n).symm) := by
   rw [tlsMatrix, submatrix_mulVec_equiv]
   rfl
 
@@ -422,7 +412,7 @@ theorem iInf_singularValues_tlsWeighted_eq (hmn : n < m) {d : Fin m → ℝ} {t 
   rw [Nat.add_sub_cancel] at h0
   rw [← h0, iInf_colSingularValues_eq_iInf_norm,
     iInf_colSingularValues_eq_iInf_norm]
-  set e := finSuccEquivSumUnit n
+  set e := finSuccEquivLastSumUnit n
   let E : {x : EuclideanSpace ℝ (Fin (n + 1)) // ‖x‖ = 1} ≃
       {x : EuclideanSpace ℝ (Fin n ⊕ Unit) // ‖x‖ = 1} :=
     { toFun := fun y => ⟨WithLp.toLp 2 (WithLp.ofLp y.1 ∘ e.symm), by
@@ -474,10 +464,11 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
           replicateCol Unit b + R ∧
         tlsWeighted d (tlsWeights t) E R =
           -vecMulVec (tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
-            fun x => (trailingColumns V r * Q) ((finSuccEquivSumUnit n).symm x) ⟨n - r, by omega⟩)
-            fun x => (trailingColumns V r * Q) ((finSuccEquivSumUnit n).symm x)
+            fun x => (trailingColumns V r * Q) ((finSuccEquivLastSumUnit n).symm x)
+              ⟨n - r, by omega⟩)
+            fun x => (trailingColumns V r * Q) ((finSuccEquivLastSumUnit n).symm x)
               ⟨n - r, by omega⟩) := by
-  set e := finSuccEquivSumUnit n with he
+  set e := finSuccEquivLastSumUnit n with he
   set Vt := trailingColumns V r with hVt
   set W : Matrix (Fin n ⊕ Unit) (Fin (n + 1 - r)) ℝ := Vt.submatrix e.symm id with hWdef
   have hV := hC.mem_unitaryGroup_right
@@ -554,7 +545,7 @@ theorem tlsMatrix_apply (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matri
     tlsMatrix d t A b i j = d i * Fin.lastCases (b i) (A i) j * t j := by
   rw [tlsMatrix, submatrix_apply, tlsWeighted, mul_diagonal, diagonal_mul]
   refine Fin.lastCases ?_ (fun j => ?_) j <;>
-    simp [finSuccEquivSumUnit, tlsWeights]
+    simp [finSuccEquivLastSumUnit, tlsWeights]
 
 /-- The start `r` of the run of computed singular values equal to the last one,
 `σ_r = ⋯ = σ_n` (0-based), found by exact comparisons: the book's `n − p`. -/

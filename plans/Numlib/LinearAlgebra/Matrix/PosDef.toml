@@ -7,8 +7,4 @@ id = "PosSemidef.isSymm"
 id = "PosDef.isSymm"
 
 [[node]]
-id = "isUnit_of_posDef_add_transpose"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
-
-[[node]]
 id = "PosDef.exists_isUnit_conj_eq_one"

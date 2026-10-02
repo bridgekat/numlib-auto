@@ -335,7 +335,7 @@ theorem isLeastSquaresSolution_of_qr {A Q : Matrix m o 𝕜} {R : Matrix o o �
     (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, R i i ≠ 0) (b : EuclideanSpace 𝕜 m) :
     IsLeastSquaresSolution A b (toEuclideanLin (R⁻¹ * Qᴴ) b) := by
   have hRd : IsUnit R.det :=
-    (isUnit_iff_isUnit_det R).1 ((isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular hR).2 hd)
+    (isUnit_iff_isUnit_det R).1 (hR.isUnit_iff.2 hd)
   rw [isLeastSquaresSolution_iff_normalEquations, ← toEuclideanLin_mul_apply]
   have : Aᴴ * A * (R⁻¹ * Qᴴ) = Aᴴ := by
     rw [hA, conjTranspose_mul]
@@ -715,7 +715,7 @@ private theorem norm_sub_mul_conjTranspose_sq (A : Matrix m r 𝕜) (K : Matrix 
     ‖A - F * Kᴴ‖ ^ 2 = ∑ i, ‖toEuclideanLin (K.map star) (WithLp.toLp 2 (F i))
       - WithLp.toLp 2 (A i)‖ ^ 2 := by
   classical
-  rw [frobenius_norm_sq_eq_sum_norm_toLp_row_sq]
+  rw [frobenius_norm_sq_eq_sum_norm_sq_row]
   exact Finset.sum_congr rfl fun i _ => by rw [toLp_sub_mul_conjTranspose_row, norm_neg]
 
 omit [DecidableEq n] [DecidableEq r] in

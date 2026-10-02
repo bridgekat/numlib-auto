@@ -280,7 +280,6 @@ import Numlib.Analysis.PDE.Heat.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
-import Numlib.Analysis.RCLike.Basic
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.Boundary.ChartGraph
 import Numlib.Analysis.Sobolev.Boundary.ContDiffDomain
@@ -489,6 +488,7 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
 import Numlib.Krylov.TransposeFree
+import Numlib.LinearAlgebra.Dimension.Finrank
 import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.LinearAlgebra.Matrix.Aeval
 import Numlib.LinearAlgebra.Matrix.Assembly

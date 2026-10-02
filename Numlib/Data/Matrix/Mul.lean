@@ -5,6 +5,7 @@ Natural home: `Mathlib.Data.Matrix.Mul`, beside `Matrix.col_mul_eq_mulVec_col`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Data.Matrix.Mul
+import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 
 /-!
 # Columns and rows of products
@@ -20,6 +21,14 @@ A matrix that acts on each column of `V` as a scalar is diagonalized by `V`:
 `A V = V diag (γ)` when `A (V.col k) = γ k • V.col k`
 (`Matrix.mul_eq_mul_diagonal_of_forall_mulVec_col`), and dually `diag (γ) V = V A` when
 `V.row k ᵥ* A = γ k • V.row k` (`Matrix.diagonal_mul_eq_mul_of_forall_vecMul_row`).
+
+Selecting and inserting rows and columns commutes with multiplication in the expected way:
+`P [A₁ | z | A₂] = [P A₁ | P z | P A₂]` for a column `z` inserted by `Fin.insertNth`
+(`Matrix.mul_of_insertNth`), a row selection of the left factor is one of the product
+(`Matrix.submatrix_id_mul`), and a submatrix applied to a vector is the matrix applied to the
+vector's extension by zero (`Matrix.submatrix_mulVec_eq_comp_mulVec_extend`). A diagonal
+congruence scales the entries, `(Dᴴ M D)ᵢⱼ = d̄ᵢ Mᵢⱼ dⱼ`
+(`Matrix.star_diagonal_mul_mul_diagonal_apply`).
 -/
 
 namespace Matrix
@@ -64,5 +73,39 @@ theorem diagonal_mul_eq_mul_of_forall_vecMul_row [NonUnitalNonAssocSemiring R] [
   rw [Pi.smul_apply, smul_eq_mul] at hk
   rw [diagonal_mul]
   exact hk.symm
+
+/-- The entries of `Dᴴ M D` for a diagonal `D = diagonal d`: `star (d i) * M i j * d j`. -/
+theorem star_diagonal_mul_mul_diagonal_apply [Semiring R] [StarRing R] [DecidableEq ι]
+    (d : ι → R) (M : Matrix ι ι R) (i j : ι) :
+    (star (diagonal d) * M * diagonal d) i j = star (d i) * M i j * d j := by
+  rw [mul_diagonal, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul, Pi.star_apply]
+
+/-- Multiplying a matrix with an inserted column: `P [A₁ | z | A₂] = [P A₁ | P z | P A₂]`. -/
+theorem mul_of_insertNth {l : Type*} [NonUnitalNonAssocSemiring R] {m n : ℕ}
+    (P : Matrix l (Fin m) R) (z : Fin m → R) (A : Matrix (Fin m) (Fin n) R) (k : Fin (n + 1)) :
+    P * of (fun i => Fin.insertNth k (z i) (A i)) =
+      of fun i => Fin.insertNth k ((P *ᵥ z) i) ((P * A) i) := by
+  ext i j
+  obtain rfl | ⟨j, rfl⟩ := Fin.eq_self_or_eq_succAbove k j
+  · simp [mul_apply, mulVec, dotProduct]
+  · simp [mul_apply]
+
+/-- Selecting rows of a left factor selects the rows of the product: the rewriting form of
+Mathlib's `Matrix.submatrix_mul` with `e₂ = e₃ = id`. -/
+theorem submatrix_id_mul [NonUnitalNonAssocSemiring R] {ι' ι'' : Type*} (X : Matrix ι' ι R)
+    (Y : Matrix ι κ R) (e : ι'' → ι') : X.submatrix e id * Y = (X * Y).submatrix e id := by
+  rw [submatrix_mul X Y e id id Function.bijective_id, submatrix_id_id]
+
+/-- A submatrix applied to a vector: `(A.submatrix f g) x` is `A` applied to `x` extended by zero
+along an injective `g`, restricted to the rows `f`. -/
+theorem submatrix_mulVec_eq_comp_mulVec_extend {m m' n n' : Type*}
+    [NonUnitalNonAssocSemiring R] [Fintype n] [Fintype n'] (B : Matrix m n R) (f : m' → m)
+    {g : n' → n} (hg : Function.Injective g) (x : n' → R) :
+    B.submatrix f g *ᵥ x = (B *ᵥ Function.extend g x 0) ∘ f := by
+  funext i
+  simp only [mulVec, dotProduct, submatrix_apply, Function.comp_apply]
+  exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
+    rw [Function.extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
+    rw [hg.extend_apply]
 
 end Matrix

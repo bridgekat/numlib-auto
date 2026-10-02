@@ -11,11 +11,14 @@ import Mathlib.Order.Interval.Finset.Fin
 /-!
 # Splitting `Fin` at an index
 
-Three ways of cutting `Fin` into a head and a tail, each the form some matrix argument needs:
+Ways of cutting `Fin` into a head and a tail, each the form some matrix argument needs:
 
 * `finSumFinEquiv_symm_cases`: an index of `Fin (s + m)` comes from the left summand of
   `Fin s ⊕ Fin m` when it is below `s`, and from the right one, shifted by `s`, otherwise — the case
   split behind every computation with `fromBlocks` reindexed along `finSumFinEquiv`.
+* `finSuccEquivSumUnit`, `finSuccEquivLastSumUnit`: `Fin (n + 1) ≃ Fin n ⊕ Unit`, splitting off
+  the first or the last index — the `Sum` forms of Mathlib's `finSuccEquiv` and
+  `finSuccEquivLast`.
 * `Fin.sum_eq_sum_castLE_add_sum_Ioi`: a sum over `Fin k` is the sum over the leading
   `j + 1` indices, read through `Fin.castLE`, plus the sum over the indices after `j`.
 * `Fin.sum_castLE_eq_sum_ite`: a sum over `Fin k` read through `Fin.castLE` into `Fin a` is the sum
@@ -39,6 +42,60 @@ theorem finSumFinEquiv_symm_cases {s m : ℕ} (i : Fin (s + m)) :
   · refine Or.inr ⟨not_lt.1 hi, finSumFinEquiv.symm_apply_eq.2 ?_⟩
     rw [finSumFinEquiv_apply_right]
     exact Fin.ext (by simp; omega)
+
+/-- The equivalence `Fin (n + 1) ≃ Fin n ⊕ Unit` that sends `0` to the `Unit` summand and `i + 1`
+to `i`, the `Sum` form of Mathlib's `finSuccEquiv`. It carries `Sum.elim v (fun _ ↦ f)` to
+`Fin.cons f v`. -/
+def finSuccEquivSumUnit (n : ℕ) : Fin (n + 1) ≃ Fin n ⊕ Unit where
+  toFun := Fin.cases (Sum.inr ()) Sum.inl
+  invFun := Sum.elim Fin.succ fun _ ↦ 0
+  left_inv i := by induction i using Fin.cases <;> simp
+  right_inv x := by rcases x with i | ⟨⟩ <;> simp
+
+@[simp]
+theorem finSuccEquivSumUnit_zero (n : ℕ) : finSuccEquivSumUnit n 0 = Sum.inr () := rfl
+
+@[simp]
+theorem finSuccEquivSumUnit_succ {n : ℕ} (i : Fin n) :
+    finSuccEquivSumUnit n i.succ = Sum.inl i := by
+  simp [finSuccEquivSumUnit]
+
+@[simp]
+theorem finSuccEquivSumUnit_symm_inl {n : ℕ} (i : Fin n) :
+    (finSuccEquivSumUnit n).symm (Sum.inl i) = i.succ := rfl
+
+@[simp]
+theorem finSuccEquivSumUnit_symm_inr (n : ℕ) (u : Unit) :
+    (finSuccEquivSumUnit n).symm (Sum.inr u) = 0 := rfl
+
+/-- The equivalence `Fin (n + 1) ≃ Fin n ⊕ Unit` that sends the last index to the `Unit` summand
+and `Fin.castSucc i` to `i`, the `Sum` form of Mathlib's `finSuccEquivLast`: the column order of
+an augmented matrix `[A | b]`. -/
+def finSuccEquivLastSumUnit (n : ℕ) : Fin (n + 1) ≃ Fin n ⊕ Unit where
+  toFun i := Fin.lastCases (Sum.inr ()) Sum.inl i
+  invFun := Sum.elim Fin.castSucc fun _ => Fin.last n
+  left_inv i := by
+    refine Fin.lastCases ?_ (fun j => ?_) i <;> simp
+  right_inv x := by
+    rcases x with j | u <;> simp
+
+@[simp]
+theorem finSuccEquivLastSumUnit_last (n : ℕ) :
+    finSuccEquivLastSumUnit n (Fin.last n) = Sum.inr () := by
+  simp [finSuccEquivLastSumUnit]
+
+@[simp]
+theorem finSuccEquivLastSumUnit_castSucc {n : ℕ} (i : Fin n) :
+    finSuccEquivLastSumUnit n i.castSucc = Sum.inl i := by
+  simp [finSuccEquivLastSumUnit]
+
+@[simp]
+theorem finSuccEquivLastSumUnit_symm_inl {n : ℕ} (i : Fin n) :
+    (finSuccEquivLastSumUnit n).symm (Sum.inl i) = i.castSucc := rfl
+
+@[simp]
+theorem finSuccEquivLastSumUnit_symm_inr (n : ℕ) (u : Unit) :
+    (finSuccEquivLastSumUnit n).symm (Sum.inr u) = Fin.last n := rfl
 
 /-- Splitting a product over `Fin k` at `j`: the leading `j + 1` indices, read through
 `Fin.castLE`, and the indices after `j`. -/

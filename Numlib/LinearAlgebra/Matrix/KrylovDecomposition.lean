@@ -5,8 +5,9 @@ Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.RCLike.Basic
-import Numlib.Analysis.RCLike.Basic
+import Mathlib.Analysis.CStarAlgebra.Basic
 import Numlib.Data.Fin.Sum
+import Numlib.Data.Matrix.Mul
 import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 
 /-!
@@ -62,12 +63,6 @@ open Finset
 namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
-
-/-- The entries of `Dᴴ M D` for a diagonal `D = diagonal d`: `star (d i) * M i j * d j`. -/
-theorem star_diagonal_mul_mul_diagonal_apply {m : Type*} [Fintype m] [DecidableEq m]
-    (d : m → 𝕜) (M : Matrix m m 𝕜) (i j : m) :
-    (star (diagonal d) * M * diagonal d) i j = star (d i) * M i j * d j := by
-  rw [mul_diagonal, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul, Pi.star_apply]
 
 /-! ### Krylov decompositions -/
 
@@ -169,7 +164,7 @@ theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k
     ext x a
     have hcol := congrFun (congrFun h.mul_eq x) (Fin.castLE j.isLt a)
     simp only [mul_apply, add_apply, vecMulVec_apply, submatrix_apply, id] at hcol ⊢
-    rw [hcol, sum_fin_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)),
+    rw [hcol, Fin.sum_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)),
       add_assoc]
     congr 1
     by_cases ha : a = Fin.last j
@@ -207,7 +202,7 @@ theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matr
       Function.comp_apply] at hcol ⊢
     have hz : ∑ i ∈ Ioi j, Q x i * B i (Fin.castLE j.isLt a) = 0 :=
       sum_eq_zero fun i hi => by rw [hB i _ ha (mem_Ioi.1 hi), mul_zero]
-    rw [hcol, sum_fin_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)), hz,
+    rw [hcol, Fin.sum_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)), hz,
       add_zero]
 
 @[deprecated (since := "2026-09-30")] alias mul_unitary := mul_of_conjTranspose_mul_self
@@ -373,7 +368,8 @@ theorem implicitQ {Q' : Matrix n (Fin (k + 1)) 𝕜} {H' : Matrix (Fin (k + 1)) 
     rw [← h'.conjTranspose_mul_mul, ← h.conjTranspose_mul_mul, hQ', conjTranspose_mul,
       star_eq_conjTranspose]
     simp only [Matrix.mul_assoc]
-  refine ⟨d, fun l => RCLike.norm_eq_one_of_star_mul_self_eq_one (hunit l), hd0, hQ', hH', ?_⟩
+  refine ⟨d, fun l => CStarRing.norm_of_mem_unitary (Unitary.mem_iff_star_mul_self.2 (hunit l)),
+    hd0, hQ', hH', ?_⟩
   -- the residuals
   have hDD : diagonal d * star (diagonal d) = 1 := by
     rw [star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]

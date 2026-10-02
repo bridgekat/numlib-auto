@@ -8,6 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.GramMatrix
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Numlib.Data.Fin.Sum
 
 /-!
 # Gram determinants and the distance to the span of a finite family
@@ -134,14 +135,6 @@ theorem det_gram_sumElim (v : ι → E) (f : E) :
 end Adjoin
 
 section Cons
-
-/-- The equivalence `Fin (n + 1) ≃ Fin n ⊕ Unit` that sends `0` to the `Unit` summand and `i + 1`
-to `i`. It carries `Sum.elim v (fun _ ↦ f)` to `Fin.cons f v`. -/
-private def finSuccEquivSumUnit (n : ℕ) : Fin (n + 1) ≃ Fin n ⊕ Unit where
-  toFun := Fin.cases (Sum.inr ()) Sum.inl
-  invFun := Sum.elim Fin.succ fun _ ↦ 0
-  left_inv i := by induction i using Fin.cases <;> simp
-  right_inv x := by rcases x with i | ⟨⟩ <;> simp
 
 /-- The two ways of enlarging a `Fin n`-indexed family by one vector — as a `Sum.elim` over
 `Fin n ⊕ Unit`, or as a `Fin.cons` over `Fin (n + 1)` — have the same Gram determinant. -/

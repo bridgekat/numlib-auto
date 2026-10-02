@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Complex.Basic
+import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
@@ -37,7 +38,8 @@ corollaries at the end of the file.
 ## Main definitions
 
 * `Matrix.complexify`: the entrywise inclusion `Matrix n n ℝ → Matrix n n ℂ`.
-* `Matrix.complexSpectralRadius`: `spectralRadius ℂ` of the complexification.
+* `Matrix.complexSpectralRadius`: `spectralRadius ℂ` of the complexification, and
+  `Matrix.complexSpectralAbscissa`, its `spectralAbscissa`.
 
 ## Main results
 
@@ -68,7 +70,8 @@ corollaries at the end of the file.
 
 Complexification is a ring homomorphism, and the algebraic lemmas at the top of the file say so
 operation by operation (`Matrix.complexify_add`, `Matrix.complexify_mul`, `Matrix.complexify_inv`,
-…).  It also commutes with the diagonal, strictly lower and strictly upper parts of
+…), and it commutes with the exponential (`Matrix.complexify_exp`). It also commutes with the
+diagonal, strictly lower and strictly upper parts of
 `Numlib/LinearAlgebra/Matrix/Triangular.lean` (`Matrix.complexify_diagPart` and its companions),
 which is what lets the classical splittings of a real matrix be formed before or after passing to
 `ℂ`.
@@ -209,6 +212,27 @@ theorem complexify_inv (A : Matrix n n ℝ) : complexify A⁻¹ = (complexify A)
         ((isUnit_iff_isUnit_det _).mpr h))
     rw [h0, h0', complexify_zero]
 
+/-- **Complexification commutes with the exponential**: `complexify (e^X) = e^{complexify X}` for a
+real square matrix `X`, the exponential series being mapped term by term. -/
+theorem complexify_exp (X : Matrix n n ℝ) :
+    complexify (NormedSpace.exp X) = NormedSpace.exp (complexify X) := by
+  have hL : Function.LeftInverse (fun M : Matrix n n ℂ => M.map Complex.re)
+      (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ) := fun M => by
+    ext i j
+    simp
+  have h := Function.LeftInverse.map_tsum (L := SummationFilter.unconditional ℕ)
+    (fun k : ℕ => ((k.factorial : ℚ)⁻¹) • X ^ k)
+    (g := (Complex.ofRealHom.mapMatrix : Matrix n n ℝ →+* Matrix n n ℂ))
+    (continuous_id.matrix_map Complex.continuous_ofReal)
+    (continuous_id.matrix_map Complex.continuous_re) hL
+  rw [NormedSpace.exp_eq_tsum_rat, NormedSpace.exp_eq_tsum_rat]
+  change Complex.ofRealHom.mapMatrix _ = _
+  rw [h]
+  congr 1
+  funext k
+  rw [map_rat_smul, map_pow]
+  rfl
+
 /-- Complexification commutes with the iteration operator `1 - m⁻¹ a` of a splitting
 (`Stationary.Splitting.iterationOperator` of `Numlib/Stationary/Splitting.lean`),
 here written out with `Ring.inverse`. -/
@@ -317,6 +341,11 @@ theorem spectrum_complexify_affine (X : Matrix n n ℝ) {c d : ℝ} (hd : d ≠ 
 /-- The spectral radius of a real matrix, computed over `ℂ`. -/
 noncomputable def complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
   spectralRadius ℂ (complexify A)
+
+/-- The spectral abscissa `α(A) = max {Re λ : λ ∈ σ(A)}` of a real matrix, computed over `ℂ`: the
+real-matrix twin of `spectralAbscissa`, as `Matrix.complexSpectralRadius` is of `spectralRadius`. -/
+noncomputable def complexSpectralAbscissa (A : Matrix n n ℝ) : ℝ :=
+  spectralAbscissa (complexify A)
 
 omit [DecidableEq n] in
 @[simp] theorem complexSpectralRadius_zero : complexSpectralRadius (0 : Matrix n n ℝ) = 0 := by
