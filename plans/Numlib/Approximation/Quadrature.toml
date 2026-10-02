@@ -175,3 +175,6 @@ id = "exists_error_eq_of_hermite"
 
 [[node]]
 id = "gauss_le_integral_le_gaussRadau"
+
+[[node]]
+id = "gauss_le_integral_le_gaussRadau_right"

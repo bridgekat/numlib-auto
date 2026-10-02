@@ -110,7 +110,7 @@ id = "Trench.inv_symmToeplitz_eq"
 id = "Trench.inv_symmToeplitz_apply_succ"
 
 [[node]]
-id = "Durbin.inv_beta_le_lpOpNorm_one_inv"
+id = "Durbin.max_inv_prod_le_lpOpNorm_one_inv"
 
 [[node]]
 id = "Durbin.fwdSol"

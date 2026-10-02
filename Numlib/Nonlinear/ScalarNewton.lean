@@ -22,10 +22,10 @@ Exercise 6.2; [kress1998numerical] §6.2; [han2009theoretical] §5.4):
   `exists_ball_abs_modifiedScalarStep_sub_le`, Exercise 6.2), and the adaptive Newton method
   (`adaptiveStep`), which estimates `m` from the increment ratios (`multiplicityEstimate`,
   `tendsto_multiplicityEstimate`, the book's (6.40)).
-* monotone convergence under Fourier's condition: for a decreasing concave function started to the
-  right of its root, the iterates decrease monotonically to the root
-  (`tendsto_iterate_scalarStep_of_concaveOn`; [golub2013matrix] (4.7.10), the smallest eigenvalue
-  of a Toeplitz matrix).
+* monotone convergence under Fourier's condition: for a decreasing concave function (negative,
+  antitone derivative) started to the right of its root, the iterates decrease monotonically to the
+  root (`tendsto_iterate_scalarStep_of_antitoneOn_deriv`; [golub2013matrix] (4.7.10), the smallest
+  eigenvalue of a Toeplitz matrix).
 
 Multiplicity is `IsRootOfMultiplicity f α m` of `Numlib/Analysis/Calculus/RootMultiplicity`; every
 multiple-root proof writes `f x = (x - α)^m h x` with `h` `C¹` at `α`, `h α = f^{(m)}(α) / m!` and
@@ -396,7 +396,7 @@ Newton's method for the smallest eigenvalue of a symmetric positive definite Toe
 Each step stays in `[α, x_k]` by the mean value theorem and concavity; the iterates, decreasing and
 bounded below, converge to some `ℓ ∈ [α, x₀]`; `f (x_k) = f'(x_k) (x_k - x_{k+1})` with `f'`
 bounded by `|f'(x₀)|` (it is antitone) forces `f ℓ = 0`, and `f` has no root in `(α, x₀]`. -/
-theorem tendsto_iterate_scalarStep_of_concaveOn (hαx : α ≤ x₀)
+theorem tendsto_iterate_scalarStep_of_antitoneOn_deriv (hαx : α ≤ x₀)
     (hf : ∀ x ∈ Icc α x₀, HasDerivAt f (f' x) x) (hneg : ∀ x ∈ Icc α x₀, f' x < 0)
     (hanti : AntitoneOn f' (Icc α x₀)) (hα : f α = 0) :
     (∀ k, α ≤ (scalarStep f f')^[k + 1] x₀ ∧
@@ -448,6 +448,9 @@ theorem tendsto_iterate_scalarStep_of_concaveOn (hαx : α ≤ x₀)
     (fun y hy => hf y (hsub (Ioo_subset_Icc_self hy)))
   rw [hfℓ, hα, sub_zero, zero_div] at hξeq
   exact (hneg ξ (hsub (Ioo_subset_Icc_self hξ))).ne hξeq
+
+@[deprecated (since := "2026-09-30")]
+alias tendsto_iterate_scalarStep_of_concaveOn := tendsto_iterate_scalarStep_of_antitoneOn_deriv
 
 end Monotone
 

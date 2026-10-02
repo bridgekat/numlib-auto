@@ -74,7 +74,8 @@ degree of exactness, the discrete inner product of a rule and the Gauss remainde
   `c` on the carrier, and the intermediate value theorem produces `ξ`.
   `Quadrature.exists_error_eq_of_hermite` is the case of a finite measure on a compact interval,
   and `Quadrature.gauss_le_integral_le_gaussRadau` the two-sided bound it gives for an integrand
-  with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}`.
+  with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}` (the right-end twin `gauss_le_integral_le_gaussRadau_right`
+  for `f^{(2k)}, f^{(2k+1)} ≥ 0`).
 * `Quadrature.exists_gauss_error_eq_of_convex` is the **Gauss remainder**
   `f^{(2n)}(ξ)/(2n)! · ∫ p_n² ∂μ`, for a weight carried by any convex set and with no bound asked
   of `f^{(2n)}`: the case of double nodes, whose nodal polynomial is `p_n²`.
@@ -1452,20 +1453,136 @@ private theorem exists_contDiff_eventuallyEq {U : Set ℝ} (hU : IsOpen U) {a b 
     filter_upwards [hball] with z hz
     rw [φ.one_of_mem_closedBall (Metric.ball_subset_closedBall hz), one_mul]
 
+/-- **The Hermite remainder for a locally smooth integrand**:
+`Quadrature.exists_error_eq_of_hermite` for an `f` of class `C^{N+1}` only on an open set `U`
+containing `[a, b]`. Both sides see `f` only on `[a, b]`, where it agrees, with all its
+derivatives, with a function of class `C^{N+1}` on all of `ℝ`. -/
+theorem exists_error_eq_of_hermite_of_contDiffOn [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {N n : ℕ} {w x : Fin n → ℝ} (hx : Function.Injective x)
+    (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hsum : ∑ i, (m i + 1) = N + 1)
+    (hsign : (∀ t ∈ Set.Icc a b, 0 ≤ (Hermite.nodal x m).eval t) ∨
+      ∀ t ∈ Set.Icc a b, (Hermite.nodal x m).eval t ≤ 0)
+    (hexact : IsExactOnMeasure μ w x N) {U : Set ℝ} (hU : IsOpen U) (hUsub : Set.Icc a b ⊆ U)
+    {f : ℝ → ℝ} (hf : ContDiffOn ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f U) :
+    ∃ ξ ∈ Set.Icc a b, (∫ t, f t ∂μ) - ∑ i, w i * f (x i) =
+      iteratedDeriv (N + 1) f ξ / (N + 1).factorial * ∫ t, (Hermite.nodal x m).eval t ∂μ := by
+  have hn : 0 < n := by
+    rcases Nat.eq_zero_or_pos n with rfl | h
+    · simp at hsum
+    · exact h
+  have hab : a ≤ b := (hxmem ⟨0, hn⟩).1.trans (hxmem ⟨0, hn⟩).2
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]; exact hsupp
+  obtain ⟨g, hg, hgf⟩ := exists_contDiff_eventuallyEq hU hab hUsub hf
+  have hval : ∀ t ∈ Set.Icc a b, f t = g t := fun t ht => (hgf t ht).eq_of_nhds.symm
+  obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite hsupp hx hxmem hsum hsign hexact hg
+  refine ⟨ξ, hξ, ?_⟩
+  rw [integral_congr_ae (by filter_upwards [hae] with t ht using hval t ht),
+    Finset.sum_congr rfl fun i _ => by rw [hval _ (hxmem i)], ← (hgf ξ hξ).iteratedDeriv_eq]
+  exact heq
+
+/-- **The Gauss rule is a lower bound** ([golub2013matrix] §10.2.2): for a finite measure `μ`
+carried by `[a, b]`, `k ≥ 1`, a `k`-point rule `(w, x)` at distinct nodes of `[a, b]` exact on the
+polynomials of degree at most `2k - 1`, and `f` of class `C^{2k}` on an open set containing
+`[a, b]` with `f^{(2k)} ≥ 0` there, `∑ w_i f(x_i) ≤ ∫ f ∂μ`. With every multiplicity `1` the nodal
+polynomial `∏ (X - x i)²` is nonnegative and the error is `f^{(2k)}(ξ)/(2k)! ∫ ω ∂μ ≥ 0`
+(`Quadrature.exists_error_eq_of_hermite_of_contDiffOn`). -/
+theorem gauss_le_integral [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ}
+    (hk : 1 ≤ k) {w x : Fin k → ℝ} (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
+    (hexact : IsExactOnMeasure μ w x (2 * k - 1)) {U : Set ℝ} (hU : IsOpen U)
+    (hUsub : Set.Icc a b ⊆ U) {f : ℝ → ℝ} (hf : ContDiffOn ℝ ((2 * k : ℕ) : WithTop ℕ∞) f U)
+    (heven : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k) f t) :
+    ∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ := by
+  obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
+  rw [show 2 * (j + 1) - 1 = 2 * j + 1 by omega] at hexact
+  rw [show 2 * (j + 1) = 2 * j + 1 + 1 by ring] at hf heven
+  obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite_of_contDiffOn hsupp hx hxmem
+    (m := fun _ => 1) (by simp; ring) (Or.inl fun t _ => by rw [eval_nodal_one]; exact sq_nonneg _)
+    hexact hU hUsub hf
+  have hω : 0 ≤ ∫ t, (Hermite.nodal x fun _ => 1).eval t ∂μ :=
+    integral_nonneg fun t => by rw [eval_nodal_one]; exact sq_nonneg _
+  have hD : 0 ≤ iteratedDeriv (2 * j + 1 + 1) f ξ / (2 * j + 1 + 1).factorial :=
+    div_nonneg (heven ξ hξ) (Nat.cast_nonneg _)
+  nlinarith [mul_nonneg hD hω]
+
+/-- The Gauss–Radau multiplicities: the fixed node `0` simple, every other node double. -/
+private theorem sum_radau_multiplicity (k : ℕ) :
+    ∑ i : Fin (k + 1), ((if i = 0 then 0 else 1 : ℕ) + 1) = 2 * k + 1 := by
+  rw [Fin.sum_univ_succ]
+  simp only [Fin.succ_ne_zero, ite_true, ite_false, Finset.sum_const, Finset.card_univ,
+    Fintype.card_fin, smul_eq_mul]
+  ring
+
+/-- The Gauss–Radau nodal polynomial `(X - x' 0) ∏_{i ≥ 1} (X - x' i)²`. -/
+private theorem eval_nodal_radau {k : ℕ} (x' : Fin (k + 1) → ℝ) (t : ℝ) :
+    (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t =
+      (t - x' 0) * ∏ i : Fin k, (t - x' i.succ) ^ 2 := by
+  rw [Hermite.eval_nodal, Fin.prod_univ_succ]
+  simp only [Fin.succ_ne_zero, ite_true, ite_false, zero_add, pow_one]
+
+/-- **The Gauss–Radau rule with the fixed node at the left end is an upper bound**
+([golub2013matrix] §10.2.6): for a finite measure `μ` carried by `[a, b]`, a `(k + 1)`-point rule
+`(w', x')` at distinct nodes of `[a, b]` with `x' 0 = a`, exact on the polynomials of degree at most
+`2k`, and `f` of class `C^{2k+1}` on an open set containing `[a, b]` with `f^{(2k+1)} ≤ 0` there,
+`∫ f ∂μ ≤ ∑ w'_i f(x'_i)`. With multiplicity `0` at `a` and `1` at the other nodes the nodal
+polynomial is `(X - a) ∏_{i ≥ 1} (X - x' i)² ≥ 0` on `[a, b]`, and the error is
+`f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ ≤ 0`. -/
+theorem integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
+    {k : ℕ} {w' x' : Fin (k + 1) → ℝ} (hx' : Function.Injective x')
+    (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = a)
+    (hexact' : IsExactOnMeasure μ w' x' (2 * k)) {U : Set ℝ} (hU : IsOpen U)
+    (hUsub : Set.Icc a b ⊆ U) {f : ℝ → ℝ} (hf : ContDiffOn ℝ ((2 * k + 1 : ℕ) : WithTop ℕ∞) f U)
+    (hodd : ∀ t ∈ Set.Icc a b, iteratedDeriv (2 * k + 1) f t ≤ 0) :
+    ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) := by
+  have hω : ∀ t ∈ Set.Icc a b,
+      0 ≤ (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t := fun t ht => by
+    rw [eval_nodal_radau, hx'0]
+    exact mul_nonneg (by linarith [ht.1]) (Finset.prod_nonneg fun i _ => sq_nonneg _)
+  obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite_of_contDiffOn hsupp hx' hx'mem
+    (sum_radau_multiplicity k) (Or.inl hω) hexact' hU hUsub hf
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]; exact hsupp
+  have hωint : 0 ≤ ∫ t, (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t ∂μ :=
+    integral_nonneg_of_ae (by filter_upwards [hae] with t ht using hω t ht)
+  have hD : iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial ≤ 0 :=
+    div_nonpos_of_nonpos_of_nonneg (hodd ξ hξ) (Nat.cast_nonneg _)
+  nlinarith [mul_nonpos_of_nonpos_of_nonneg hD hωint]
+
+/-- **The Gauss–Radau rule with the fixed node at the right end is an upper bound**
+([golub2013matrix] §10.2.6, the rule of (10.2.9)): as `Quadrature.integral_le_gaussRadau` with
+`x' 0 = b` and `f^{(2k+1)} ≥ 0` on `[a, b]`. The nodal polynomial `(X - b) ∏_{i ≥ 1} (X - x' i)²`
+is now `≤ 0` on `[a, b]`, and so is the error `f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ`. -/
+theorem integral_le_gaussRadau_right [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {w' x' : Fin (k + 1) → ℝ}
+    (hx' : Function.Injective x') (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = b)
+    (hexact' : IsExactOnMeasure μ w' x' (2 * k)) {U : Set ℝ} (hU : IsOpen U)
+    (hUsub : Set.Icc a b ⊆ U) {f : ℝ → ℝ} (hf : ContDiffOn ℝ ((2 * k + 1 : ℕ) : WithTop ℕ∞) f U)
+    (hodd : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k + 1) f t) :
+    ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) := by
+  have hω : ∀ t ∈ Set.Icc a b,
+      (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t ≤ 0 := fun t ht => by
+    rw [eval_nodal_radau, hx'0]
+    exact mul_nonpos_of_nonpos_of_nonneg (by linarith [ht.2])
+      (Finset.prod_nonneg fun i _ => sq_nonneg _)
+  obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite_of_contDiffOn hsupp hx' hx'mem
+    (sum_radau_multiplicity k) (Or.inr hω) hexact' hU hUsub hf
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]; exact hsupp
+  have hωint : ∫ t, (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t ∂μ ≤ 0 :=
+    integral_nonpos_of_ae (by filter_upwards [hae] with t ht using hω t ht)
+  have hD : 0 ≤ iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial :=
+    div_nonneg (hodd ξ hξ) (Nat.cast_nonneg _)
+  nlinarith [mul_nonpos_of_nonneg_of_nonpos hD hωint]
+
 /-- **The two-sided Gauss / Gauss–Radau bound.** Let `μ` be a finite measure carried by
 `[a, b]`, `k ≥ 1`, `(w, x)` a `k`-point rule at distinct nodes of `[a, b]` exact on the polynomials
 of degree at most `2k - 1` (a Gauss rule), and `(w', x')` a `(k + 1)`-point rule at distinct nodes
 of `[a, b]` with `x' 0 = a`, exact on the polynomials of degree at most `2k` (a Gauss–Radau rule
 with the fixed node at the left end). If `f` is of class `C^{2k+1}` on an open set containing
 `[a, b]` with `f^{(2k)} ≥ 0` and `f^{(2k+1)} ≤ 0` on `[a, b]`, then the Gauss rule is a lower and
-the Gauss–Radau rule an upper bound for `∫ f ∂μ`.
-
-Both are `Quadrature.exists_error_eq_of_hermite`: with every multiplicity `1` the nodal polynomial
-`∏ (X - x i)²` is nonnegative and the Gauss error is `f^{(2k)}(ξ)/(2k)! ∫ ω ∂μ ≥ 0`; with
-multiplicity `0` at `a` and `1` at the other nodes it is `(X - a) ∏_{i ≥ 1} (X - x' i)²`, again
-nonnegative on `[a, b]`, and the Gauss–Radau error is `f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ ≤ 0`. Since
-both sides see `f` only on `[a, b]`, `f` is first replaced by a function of class `C^{2k+1}` on all
-of `ℝ` agreeing with it near `[a, b]`.
+the Gauss–Radau rule an upper bound for `∫ f ∂μ` (`Quadrature.gauss_le_integral`,
+`Quadrature.integral_le_gaussRadau`; the right-end twin is
+`Quadrature.gauss_le_integral_le_gaussRadau_right`).
 
 The instances are the Gauss and Gauss–Radau rules of a weight (`Quadrature.exists_gauss`,
 `Quadrature.exists_gaussRadau`) and the Lanczos rules of the spectral measure of a symmetric
@@ -1482,60 +1599,29 @@ theorem gauss_le_integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ}
     (hf : ContDiffOn ℝ ((2 * k + 1 : ℕ) : WithTop ℕ∞) f U)
     (heven : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k) f t)
     (hodd : ∀ t ∈ Set.Icc a b, iteratedDeriv (2 * k + 1) f t ≤ 0) :
-    ∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ ∧ ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) := by
-  classical
-  have hab : a ≤ b := hx'0 ▸ (hx'mem 0).2
-  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
-    rw [MeasureTheory.ae_iff]; exact hsupp
-  obtain ⟨g, hg, hgf⟩ := exists_contDiff_eventuallyEq hU hab hUsub hf
-  have hval : ∀ t ∈ Set.Icc a b, f t = g t := fun t ht => (hgf t ht).eq_of_nhds.symm
-  have hder : ∀ j, ∀ t ∈ Set.Icc a b, iteratedDeriv j g t = iteratedDeriv j f t :=
-    fun j t ht => (hgf t ht).iteratedDeriv_eq j
-  have hint : ∫ t, f t ∂μ = ∫ t, g t ∂μ :=
-    integral_congr_ae (by filter_upwards [hae] with t ht using hval t ht)
-  have hQ : ∑ i, w i * f (x i) = ∑ i, w i * g (x i) :=
-    Finset.sum_congr rfl fun i _ => by rw [hval _ (hxmem i)]
-  have hQ' : ∑ i, w' i * f (x' i) = ∑ i, w' i * g (x' i) :=
-    Finset.sum_congr rfl fun i _ => by rw [hval _ (hx'mem i)]
-  rw [hint, hQ, hQ']
-  constructor
-  · -- the Gauss rule: every node double
-    obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
-    rw [show 2 * (j + 1) - 1 = 2 * j + 1 by omega] at hexact
-    obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite hsupp hx hxmem (m := fun _ => 1)
-      (by simp; ring) (Or.inl fun t _ => by rw [eval_nodal_one]; exact sq_nonneg _) hexact
-      (hg.of_le (by exact_mod_cast (by omega : 2 * j + 1 + 1 ≤ 2 * (j + 1) + 1)))
-    have hω : 0 ≤ ∫ t, (Hermite.nodal x fun _ => 1).eval t ∂μ :=
-      integral_nonneg fun t => by rw [eval_nodal_one]; exact sq_nonneg _
-    have hD : 0 ≤ iteratedDeriv (2 * j + 1 + 1) g ξ / (2 * j + 1 + 1).factorial := by
-      refine div_nonneg ?_ (Nat.cast_nonneg _)
-      rw [hder _ ξ hξ, show 2 * j + 1 + 1 = 2 * (j + 1) by ring]
-      exact heven ξ hξ
-    nlinarith [mul_nonneg hD hω]
-  · -- the Gauss–Radau rule: simple at `a`, double elsewhere
-    set m' : Fin (k + 1) → ℕ := fun i => if i = 0 then 0 else 1 with hm'
-    have hsum' : ∑ i, (m' i + 1) = 2 * k + 1 := by
-      rw [Fin.sum_univ_succ]
-      simp only [hm', Fin.succ_ne_zero, ite_true, ite_false, Finset.sum_const, Finset.card_univ,
-        Fintype.card_fin, smul_eq_mul]
-      ring
-    have hω : ∀ t ∈ Set.Icc a b, 0 ≤ (Hermite.nodal x' m').eval t := by
-      intro t ht
-      rw [Hermite.eval_nodal]
-      refine Finset.prod_nonneg fun i _ => ?_
-      by_cases hi : i = 0
-      · subst hi
-        simp only [hm', ite_true, zero_add, pow_one, hx'0]
-        linarith [ht.1]
-      · simp only [hm', hi, ite_false]
-        exact even_two.pow_nonneg _
-    obtain ⟨ξ, hξ, heq⟩ := exists_error_eq_of_hermite hsupp hx' hx'mem hsum' (Or.inl hω) hexact'
-      hg
-    have hωint : 0 ≤ ∫ t, (Hermite.nodal x' m').eval t ∂μ :=
-      integral_nonneg_of_ae (by filter_upwards [hae] with t ht using hω t ht)
-    have hD : iteratedDeriv (2 * k + 1) g ξ / (2 * k + 1).factorial ≤ 0 :=
-      div_nonpos_of_nonpos_of_nonneg (by rw [hder _ ξ hξ]; exact hodd ξ hξ) (Nat.cast_nonneg _)
-    nlinarith [mul_nonpos_of_nonpos_of_nonneg hD hωint]
+    ∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ ∧ ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) :=
+  ⟨gauss_le_integral hsupp hk hx hxmem hexact hU hUsub
+      (hf.of_le (by exact_mod_cast Nat.le_succ _)) heven,
+    integral_le_gaussRadau hsupp hx' hx'mem hx'0 hexact' hU hUsub hf hodd⟩
+
+/-- **The two-sided Gauss / Gauss–Radau(b) bound**: `Quadrature.gauss_le_integral_le_gaussRadau`
+with the fixed node of the Gauss–Radau rule at the right end, `x' 0 = b`, under
+`f^{(2k)} ≥ 0` and `f^{(2k+1)} ≥ 0` on `[a, b]` ([golub2013matrix] §10.2.6). The rules are those of
+`Quadrature.exists_gauss` and `Quadrature.exists_gaussRadau_right`. -/
+theorem gauss_le_integral_le_gaussRadau_right [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ k) {w x : Fin k → ℝ}
+    (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
+    (hexact : IsExactOnMeasure μ w x (2 * k - 1)) {w' x' : Fin (k + 1) → ℝ}
+    (hx' : Function.Injective x') (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = b)
+    (hexact' : IsExactOnMeasure μ w' x' (2 * k)) {U : Set ℝ} (hU : IsOpen U)
+    (hUsub : Set.Icc a b ⊆ U) {f : ℝ → ℝ}
+    (hf : ContDiffOn ℝ ((2 * k + 1 : ℕ) : WithTop ℕ∞) f U)
+    (heven : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k) f t)
+    (hodd : ∀ t ∈ Set.Icc a b, 0 ≤ iteratedDeriv (2 * k + 1) f t) :
+    ∑ i, w i * f (x i) ≤ ∫ t, f t ∂μ ∧ ∫ t, f t ∂μ ≤ ∑ i, w' i * f (x' i) :=
+  ⟨gauss_le_integral hsupp hk hx hxmem hexact hU hUsub
+      (hf.of_le (by exact_mod_cast Nat.le_succ _)) heven,
+    integral_le_gaussRadau_right hsupp hx' hx'mem hx'0 hexact' hU hUsub hf hodd⟩
 
 end GaussError
 

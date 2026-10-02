@@ -113,3 +113,12 @@ id = "absCondNumber_eq_top_of_deriv_eq_zero"
 
 [[node]]
 id = "absCondNumber_localInverse"
+
+[[node]]
+id = "scaledRelCondNumber"
+
+[[node]]
+id = "scaledRelCondNumber_eq_of_hasFDerivAt"
+
+[[node]]
+id = "scaledRelCondNumber_eq_relCondNumber"

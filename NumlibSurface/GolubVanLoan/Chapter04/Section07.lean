@@ -184,7 +184,8 @@ theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : F
     have hy' := eq_sol_of_mulVec_eq hr (posDef_symmToeplitz_of_le hT (Nat.le_succ k)) hy
     have hb := Durbin.beta_pos hr hT k (Nat.lt_succ_self k)
     rw [hy']
-    rw [Durbin.beta, ← Fin.sum_univ_eq_sum_range (fun i => r (i + 1) * Durbin.sol r k i)] at hb
+    rw [Durbin.beta, Durbin.betaOf,
+      ← Fin.sum_univ_eq_sum_range (fun i => r (i + 1) * Durbin.sol r k i)] at hb
     exact hb
 
 /-- **(4.7.1).** If `T_n` is positive definite (`r₀ = 1`), Durbin's recurrence produces the
@@ -288,7 +289,7 @@ private theorem durbin_foldl {r : ℕ → ℝ} (p : ℕ) (hβ : ∀ j < p, Durbi
   induction p with
   | zero =>
     simp only [List.range_zero, List.foldl_nil]
-    have ha : Durbin.alpha r 0 = -r 1 := by simp [Durbin.alpha]
+    have ha : Durbin.alpha r 0 = -r 1 := by simp [Durbin.alpha, Durbin.alphaOf, Durbin.betaOf]
     refine Prod.ext ?_ (Prod.ext ha.symm (Durbin.beta_zero r).symm)
     funext i
     dsimp only
@@ -482,12 +483,12 @@ private theorem levinson_foldl {n : ℕ} {r bv : ℕ → ℝ} (hβ : ∀ j < n, 
   | zero =>
     intro _
     simp only [List.range_zero, List.foldl_nil]
-    have ha : Durbin.alpha r 0 = -r 1 := by simp [Durbin.alpha]
+    have ha : Durbin.alpha r 0 = -r 1 := by simp [Durbin.alpha, Durbin.alphaOf, Durbin.betaOf]
     refine ⟨?_, (Durbin.beta_zero r).symm, fun _ => ⟨?_, ha.symm⟩⟩
     · funext i
       rw [Levinson.sol_succ]
       rcases Nat.eq_zero_or_pos i with rfl | hi
-      · simp [Levinson.mu]
+      · simp [Levinson.mu, Levinson.muOf]
       · simp [hi.ne']
     · funext i
       rw [Durbin.sol_succ]
@@ -570,7 +571,7 @@ theorem equation_4_7_4 {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
   have hβ : ∀ j < m + 1, Durbin.beta r j ≠ 0 := fun j hj => (Durbin.beta_pos hr hT j hj).ne'
   have hy' := eq_sol_of_mulVec_eq hr (posDef_symmToeplitz_of_le hT (Nat.le_succ m)) hy
   have hγ' : γ = Trench.gamma r m := by
-    rw [hγ, hy', Trench.gamma, Durbin.beta,
+    rw [hγ, hy', Trench.gamma, Durbin.beta, Durbin.betaOf,
       ← Fin.sum_univ_eq_sum_range (fun i => r (i + 1) * Durbin.sol r m i)]
     rfl
   have hv' : v = Trench.lastCol r m := by rw [hv, hγ', hy']; rfl

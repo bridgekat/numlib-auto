@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.Deriv.Inverse
 import Mathlib.Analysis.Calculus.InverseFunctionTheorem.FDeriv
+import Mathlib.Analysis.RCLike.Basic
 import Numlib.Analysis.Normed.Ring.CondNumber
 
 /-!
@@ -32,6 +33,12 @@ resolvent has condition number `‖L‖ₑ` over every neighbourhood, which give
 absolute condition number `‖φ'‖ₑ⁻¹` (Example 2.4, the source of §6.1), and a multiple root has
 condition number `⊤` (`absCondNumber_eq_top_of_fderiv_eq_zero`, stated within an admissible set so
 that one-sided roots are covered).
+
+The book [golub2013matrix] §9.1.6 normalizes differently, by the radius `ε` of the ball
+`‖δd‖ ≤ ε ‖d‖` rather than by each perturbation: `Conditioning.scaledRelCondNumber`. It is again
+the normalized Fréchet derivative `‖G'‖ ‖d‖ / ‖G d‖`
+(`Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`), hence equal to `relCondNumber` wherever
+the resolvent is differentiable (`Conditioning.scaledRelCondNumber_eq_relCondNumber`).
 
 The finite-dimensional evolution-scheme form of the same vocabulary is
 `Numlib/FiniteDifference/LaxEquivalence`; the two are different notions and neither is stated
@@ -352,6 +359,151 @@ theorem relCondNumber_symm_le_condNumber {E F : Type*} [NormedAddCommGroup E] [N
           ofReal_norm, mul_comm]
 
 end FirstOrder
+
+/-! ### The scaled relative condition number -/
+
+section Scaled
+
+/-- **The scaled relative condition number** ([golub2013matrix] §9.1.6, `cond_rel(f, A)`):
+`lim_{ε → 0⁺} sup_{‖δd‖ ≤ ε ‖d‖} ‖G (d + δd) - G d‖ / (ε ‖G d‖)`, the book's `lim` made total as a
+`limsup` in `ℝ≥0∞`. It normalizes by the radius `ε` of the ball of relative perturbations rather
+than by the size of each perturbation, as `Conditioning.relCondNumber` does; for a resolvent
+differentiable at `d` the two agree (`Conditioning.scaledRelCondNumber_eq_relCondNumber`). -/
+noncomputable def scaledRelCondNumber (G : D → X) (d : D) : ℝ≥0∞ :=
+  limsup (fun ε : ℝ => ⨆ (δd : D) (_ : ‖δd‖ ≤ ε * ‖d‖),
+    ‖G (d + δd) - G d‖ₑ / (ENNReal.ofReal ε * ‖G d‖ₑ)) (𝓝[>] 0)
+
+variable {𝕜 : Type*} [RCLike 𝕜] [NormedSpace 𝕜 D] [NormedSpace 𝕜 X] {G' : D →L[𝕜] X}
+
+/-- The remainder of a Fréchet derivative is eventually small on the balls `‖δd‖ ≤ ε ‖d‖`. -/
+private theorem eventually_norm_remainder_le (hG : HasFDerivAt G G' d) {c : ℝ} (hc : 0 < c) :
+    ∀ᶠ ε in 𝓝[>] (0 : ℝ), ∀ δd : D, ‖δd‖ ≤ ε * ‖d‖ →
+      ‖G (d + δd) - G d - G' δd‖ ≤ c * ‖δd‖ := by
+  have h := (hasFDerivAt_iff_isLittleO_nhds_zero.mp hG).def hc
+  obtain ⟨ρ, hρ, hball⟩ := Metric.eventually_nhds_iff.mp h
+  have hd' : 0 < ‖d‖ + 1 := by positivity
+  filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < ρ / (‖d‖ + 1) by positivity)] with ε hε δd hδd
+  refine hball ?_
+  rw [dist_zero_right]
+  calc ‖δd‖ ≤ ε * ‖d‖ := hδd
+    _ ≤ ε * (‖d‖ + 1) := mul_le_mul_of_nonneg_left (by linarith) hε.1.le
+    _ < ρ := (lt_div_iff₀ hd').mp hε.2
+
+/-- The upper half of `Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`. -/
+private theorem eventually_scaledRelCondNumber_le (hG : HasFDerivAt G G' d) (hGd : G d ≠ 0)
+    {c : ℝ} (hc : 0 < c) :
+    ∀ᶠ ε in 𝓝[>] (0 : ℝ), (⨆ (δd : D) (_ : ‖δd‖ ≤ ε * ‖d‖),
+      ‖G (d + δd) - G d‖ₑ / (ENNReal.ofReal ε * ‖G d‖ₑ)) ≤
+        ENNReal.ofReal ((‖G'‖ + c) * ‖d‖ / ‖G d‖) := by
+  filter_upwards [eventually_norm_remainder_le hG hc, self_mem_nhdsWithin] with ε hR hε
+  have hε0 : 0 < ε := hε
+  have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
+  refine iSup₂_le fun δd hδd => ENNReal.div_le_of_le_mul ?_
+  rw [← ofReal_norm, ← ofReal_norm, ← ENNReal.ofReal_mul hε0.le,
+    ← ENNReal.ofReal_mul (by positivity)]
+  refine ENNReal.ofReal_le_ofReal ?_
+  calc ‖G (d + δd) - G d‖ = ‖G' δd + (G (d + δd) - G d - G' δd)‖ := by congr 1; abel
+    _ ≤ ‖G' δd‖ + ‖G (d + δd) - G d - G' δd‖ := norm_add_le _ _
+    _ ≤ ‖G'‖ * ‖δd‖ + c * ‖δd‖ := add_le_add (G'.le_opNorm δd) (hR δd hδd)
+    _ = (‖G'‖ + c) * ‖δd‖ := by ring
+    _ ≤ (‖G'‖ + c) * (ε * ‖d‖) := by gcongr
+    _ = (‖G'‖ + c) * ‖d‖ / ‖G d‖ * (ε * ‖G d‖) := by field_simp
+
+/-- The lower half of `Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`: a direction `x` of
+norm at most one nearly attaining `‖G'‖`, scaled to the radius `ε ‖d‖`. -/
+private theorem eventually_le_scaledRelCondNumber (hG : HasFDerivAt G G' d) (hGd : G d ≠ 0)
+    {c : ℝ} (hc : 0 < c) :
+    ∀ᶠ ε in 𝓝[>] (0 : ℝ), ENNReal.ofReal ((‖G'‖ - c) * ‖d‖ / ‖G d‖) ≤
+      ⨆ (δd : D) (_ : ‖δd‖ ≤ ε * ‖d‖), ‖G (d + δd) - G d‖ₑ / (ENNReal.ofReal ε * ‖G d‖ₑ) := by
+  have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
+  rcases le_or_gt ‖G'‖ c with hLc | hLc
+  · refine Eventually.of_forall fun ε => ?_
+    rw [ENNReal.ofReal_of_nonpos (div_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg (by linarith) (norm_nonneg _)) (norm_nonneg _))]
+    exact zero_le
+  obtain ⟨x, hx1, hx⟩ := G'.exists_lt_apply_of_lt_opNorm (show ‖G'‖ - c / 2 < ‖G'‖ by linarith)
+  filter_upwards [eventually_norm_remainder_le hG (half_pos hc), self_mem_nhdsWithin]
+    with ε hR hε
+  have hε0 : 0 < ε := hε
+  have hεd : 0 ≤ ε * ‖d‖ := by positivity
+  set δd : D := ((ε * ‖d‖ : ℝ) : 𝕜) • x with hδdef
+  have hδn : ‖δd‖ = ε * ‖d‖ * ‖x‖ := by
+    rw [hδdef, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hεd]
+  have hδ : ‖δd‖ ≤ ε * ‖d‖ := by
+    rw [hδn]
+    exact mul_le_of_le_one_right hεd hx1.le
+  have hLδ : ‖G' δd‖ = ε * ‖d‖ * ‖G' x‖ := by
+    rw [hδdef, map_smul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hεd]
+  have hsub : ‖G' δd‖ ≤ ‖G (d + δd) - G d‖ + ‖G (d + δd) - G d - G' δd‖ := by
+    calc ‖G' δd‖ = ‖(G (d + δd) - G d) - (G (d + δd) - G d - G' δd)‖ := by congr 1; abel
+      _ ≤ _ := norm_sub_le _ _
+  have h3 : ε * ‖d‖ * (‖G'‖ - c / 2) ≤ ε * ‖d‖ * ‖G' x‖ := mul_le_mul_of_nonneg_left hx.le hεd
+  have h4 : c / 2 * ‖δd‖ ≤ c / 2 * (ε * ‖d‖) := mul_le_mul_of_nonneg_left hδ (by positivity)
+  have hmain : (‖G'‖ - c) * ‖d‖ / ‖G d‖ * (ε * ‖G d‖) ≤ ‖G (d + δd) - G d‖ := by
+    have : (‖G'‖ - c) * ‖d‖ / ‖G d‖ * (ε * ‖G d‖) = ε * ‖d‖ * (‖G'‖ - c) := by
+      field_simp
+    rw [this]
+    nlinarith [hR δd hδ]
+  refine le_iSup₂_of_le δd hδ ?_
+  have hden0 : ENNReal.ofReal ε * ‖G d‖ₑ ≠ 0 :=
+    mul_ne_zero (ENNReal.ofReal_pos.mpr hε0).ne' (enorm_ne_zero.mpr hGd)
+  have hdent : ENNReal.ofReal ε * ‖G d‖ₑ ≠ ⊤ :=
+    ENNReal.mul_ne_top ENNReal.ofReal_ne_top enorm_ne_top
+  rw [ENNReal.le_div_iff_mul_le (Or.inl hden0) (Or.inl hdent), ← ofReal_norm, ← ofReal_norm,
+    ← ENNReal.ofReal_mul hε0.le,
+    ← ENNReal.ofReal_mul (div_nonneg (mul_nonneg (by linarith) (norm_nonneg _)) hφ.le)]
+  exact ENNReal.ofReal_le_ofReal hmain
+
+/-- **The scaled relative condition number is a normalized Fréchet derivative**
+([golub2013matrix] §9.1.6, "essentially a normalized Fréchet derivative"): if `G` has Fréchet
+derivative `G'` at `d ≠ 0` and `G d ≠ 0`, then `scaledRelCondNumber G d = ‖G'‖ ‖d‖ / ‖G d‖`. -/
+theorem scaledRelCondNumber_eq_of_hasFDerivAt (hG : HasFDerivAt G G' d) (hd : d ≠ 0)
+    (hGd : G d ≠ 0) : scaledRelCondNumber G d = ‖G'‖ₑ * ‖d‖ₑ / ‖G d‖ₑ := by
+  have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
+  have ha : 0 < ‖d‖ := norm_pos_iff.mpr hd
+  have hC : ‖G'‖ₑ * ‖d‖ₑ / ‖G d‖ₑ = ENNReal.ofReal (‖G'‖ * ‖d‖ / ‖G d‖) := by
+    rw [ENNReal.ofReal_div_of_pos hφ, ENNReal.ofReal_mul (norm_nonneg _), ofReal_norm,
+      ofReal_norm, ofReal_norm]
+  rw [hC]
+  refine Tendsto.limsup_eq (tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩)
+  · have hbt : b ≠ ⊤ := ne_top_of_lt hb
+    have hb' : b.toReal < ‖G'‖ * ‖d‖ / ‖G d‖ := (ENNReal.lt_ofReal_iff_toReal_lt hbt).mp hb
+    have hc : 0 < (‖G'‖ * ‖d‖ / ‖G d‖ - b.toReal) * ‖G d‖ / (2 * ‖d‖) :=
+      div_pos (mul_pos (sub_pos.mpr hb') hφ) (by positivity)
+    filter_upwards [eventually_le_scaledRelCondNumber hG hGd hc] with ε hε
+    refine lt_of_lt_of_le ?_ hε
+    rw [ENNReal.lt_ofReal_iff_toReal_lt hbt]
+    have : (‖G'‖ - (‖G'‖ * ‖d‖ / ‖G d‖ - b.toReal) * ‖G d‖ / (2 * ‖d‖)) * ‖d‖ / ‖G d‖ =
+        ‖G'‖ * ‖d‖ / ‖G d‖ - (‖G'‖ * ‖d‖ / ‖G d‖ - b.toReal) / 2 := by
+      field_simp
+    rw [this]
+    linarith
+  · by_cases hbt : b = ⊤
+    · filter_upwards [eventually_scaledRelCondNumber_le hG hGd one_pos] with ε hε
+      exact lt_of_le_of_lt hε (hbt ▸ ENNReal.ofReal_lt_top)
+    · have hb' : ‖G'‖ * ‖d‖ / ‖G d‖ < b.toReal :=
+        (ENNReal.ofReal_lt_iff_lt_toReal (by positivity) hbt).mp hb
+      have hc : 0 < (b.toReal - ‖G'‖ * ‖d‖ / ‖G d‖) * ‖G d‖ / (2 * ‖d‖) :=
+        div_pos (mul_pos (sub_pos.mpr hb') hφ) (by positivity)
+      filter_upwards [eventually_scaledRelCondNumber_le hG hGd hc] with ε hε
+      refine lt_of_le_of_lt hε ?_
+      rw [ENNReal.ofReal_lt_iff_lt_toReal (by positivity) hbt]
+      have : (‖G'‖ + (b.toReal - ‖G'‖ * ‖d‖ / ‖G d‖) * ‖G d‖ / (2 * ‖d‖)) * ‖d‖ / ‖G d‖ =
+          ‖G'‖ * ‖d‖ / ‖G d‖ + (b.toReal - ‖G'‖ * ‖d‖ / ‖G d‖) / 2 := by
+        field_simp
+      rw [this]
+      linarith
+
+/-- **The two relative condition numbers agree at a point of differentiability**: for a resolvent
+with Fréchet derivative at the interior point `d ≠ 0` of the admissible data and `G d ≠ 0`, the
+book's scaled number `cond_rel` of [golub2013matrix] §9.1.6 is the first-order relative condition
+number (2.7) of [quarteroni2000numerical]; both are `‖G'‖ ‖d‖ / ‖G d‖`. -/
+theorem scaledRelCondNumber_eq_relCondNumber (hG : HasFDerivAt G G' d) (hS : S ∈ 𝓝 d)
+    (hd : d ≠ 0) (hGd : G d ≠ 0) : scaledRelCondNumber G d = relCondNumber G S d := by
+  rw [scaledRelCondNumber_eq_of_hasFDerivAt hG hd hGd, relCondNumber_eq_enorm_fderiv hG hS hd hGd,
+    mul_div_assoc]
+
+end Scaled
 
 /-! ### Instance: roots of functions -/
 

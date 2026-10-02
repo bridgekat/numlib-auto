@@ -3,15 +3,18 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 
 /-!
-# Element growth of the Bunch–Parlett pivoting strategy
+# Symmetric indefinite systems: Bunch–Parlett growth and the Stewart–Todd bound
 
-Numerical facts about symmetric indefinite factorizations ([golub2013matrix] §4.4.4;
-[higham2002accuracy] Ch. 11; Bunch–Parlett 1971). One step of a block `L D Lᵀ` factorization
-eliminates either one pivot (`1 × 1`, the Schur complement `Matrix.schurComplementSingle`) or a
-`2 × 2` pivot block (`Matrix.schurComplement` of the block indexing `{p, q} ⊕ rest`). With
-`μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, the Bunch–Parlett rule takes a `1 × 1` pivot when
-`μ₁ ≥ α μ₀` and the `2 × 2` pivot of an off-diagonal entry of modulus `μ₀` otherwise; the two
-element-growth bounds are
+Numerical facts about symmetric indefinite systems ([golub2013matrix] §4.4.4–4.4.5;
+[higham2002accuracy] Ch. 11; Bunch–Parlett 1971; Stewart 1989, Todd 1990): the element growth of
+Bunch–Parlett pivoting, and the uniform bound on weighted least-squares operators behind the
+equilibrium systems.
+
+One step of a block `L D Lᵀ` factorization eliminates either one pivot (`1 × 1`, the Schur
+complement `Matrix.schurComplementSingle`) or a `2 × 2` pivot block (`Matrix.schurComplement` of
+the block indexing `{p, q} ⊕ rest`). With `μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, the
+Bunch–Parlett rule takes a `1 × 1` pivot when `μ₁ ≥ α μ₀` and the `2 × 2` pivot of an off-diagonal
+entry of modulus `μ₀` otherwise; the two element-growth bounds are
 
 * `BunchParlett.abs_schurComplementSingle_le` ([golub2013matrix] (4.4.16)): `|ã_ij| ≤ (1 + α⁻¹) μ₀`;
 * `BunchParlett.abs_schurComplement_two_le` ([golub2013matrix] (4.4.17)):
@@ -38,6 +41,8 @@ The hypotheses are the weakest the arguments use: the `1 × 1` bound needs only
 -/
 
 open Matrix
+
+/-! ### Element growth of the Bunch–Parlett pivoting strategy -/
 
 namespace BunchParlett
 

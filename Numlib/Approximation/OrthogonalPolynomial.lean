@@ -244,6 +244,21 @@ theorem integral_eval_pos_of_ae_nonneg (hw : IsWeight μ) {p : ℝ[X]} (hp : p �
   refine measure_mono_null hsub ?_
   simpa [Filter.EventuallyEq, ae_iff] using hae
 
+/-- The image of a weight under an injective affine map `t ↦ c t + d` is a weight: polynomials
+compose with the map to polynomials, and the preimage of a finite set is finite. -/
+theorem map_affine (hw : IsWeight μ) {c : ℝ} (hc : c ≠ 0) (d : ℝ) :
+    IsWeight (μ.map fun t => c * t + d) := by
+  have hφ : Measurable fun t : ℝ => c * t + d := by fun_prop
+  refine ⟨fun n => ?_, fun {s} hs => ?_⟩
+  · rw [integrable_map_measure (by fun_prop) hφ.aemeasurable]
+    have := hw.integrable_eval ((C c * X + C d) ^ n)
+    simpa [Function.comp_def] using this
+  · rw [Measure.map_apply hφ hs.measurableSet.compl, Set.preimage_compl]
+    refine hw.measure_compl_ne_zero (hs.preimage ?_)
+    intro x _ y _ hxy
+    have : c * x = c * y := by linarith
+    exact mul_left_cancel₀ hc this
+
 end IsWeight
 
 /-- Lebesgue measure on a bounded open interval is a weight: every polynomial is integrable on a

@@ -31,7 +31,7 @@ id = "extend_odd"
 id = "constBlockTridiagonal_reduce"
 
 [[node]]
-id = "constBlockTridiagonal_odd_eq"
+id = "constBlockTridiagonal_even_eq"
 
 [[node]]
 id = "size"

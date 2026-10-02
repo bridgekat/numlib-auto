@@ -29,9 +29,10 @@ conversely any such combination vanishing at `±1` is `ω̄`
 The Gauss–Radau rule, with one node fixed at the left end `a` of the interval carrying the weight
 and exact to degree `2n`, is the one-endpoint sibling (`Quadrature.exists_gaussRadau`): its nodal
 polynomial is `(X - a) q_n` with `q_n` orthogonal for the modified weight `(x - a) μ`
-(`OrthogonalPolynomial.radauMeasure`). Both modified weights are weights by one lemma,
-`OrthogonalPolynomial.isWeight_withDensity_eval`: a nonzero polynomial density that is nonnegative
-on the carrier keeps a weight a weight.
+(`OrthogonalPolynomial.radauMeasure`). The rule with the node fixed at the right end `b` is
+that rule for the reflected weight (`Quadrature.exists_gaussRadau_right`). Both modified weights
+are weights by one lemma, `OrthogonalPolynomial.isWeight_withDensity_eval`: a nonzero polynomial
+density that is nonnegative on the carrier keeps a weight a weight.
 
 ## The weights
 
@@ -743,8 +744,7 @@ The interior nodes are the `n` roots of `q_n`, which lie in `(a, b)`; exactness 
 `Quadrature.isExactOnMeasure_add_iff` at `m = n`, since `∫ (x - a) q_n p ∂μ = ∫ q_n p ∂((x - a) μ)`
 vanishes for `deg p < n`; positivity of the weights is `Quadrature.pos_of_isExactOnMeasure` with the
 test polynomials `q_n²` at `a` and `(X - a) (q_n / (X - x_i))²` at the interior nodes. The rule with
-the fixed node at the right end is this one for the reflected weight
-(`Quadrature.isExactOnMeasure_map_affine` along `x ↦ -x`).
+the fixed node at the right end is `Quadrature.exists_gaussRadau_right`.
 
 Reference: [golub2013matrix] (10.2.8); [quarteroni2000numerical] §10.2. -/
 theorem exists_gaussRadau (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (n : ℕ) :
@@ -867,6 +867,38 @@ theorem exists_gaussRadau (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)�
           rw [hp, hxs]
           simp [Lagrange.eval_nodal_at_node (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ j⟩)]
   exact ⟨x, w, hxinj, hx0, hxmem, hpos, hexact, hnodal, hint⟩
+
+/-- **Gauss–Radau quadrature with the fixed node at the right end.** For a weight `μ` carried by
+`[a, b]` and any `n` there are `n + 1` distinct nodes in `[a, b]`, the first being `b`, and positive
+weights, such that the rule is exact on the polynomials of degree at most `2n`: the rule of
+`Quadrature.exists_gaussRadau` for the reflected weight `μ ∘ (−·)`, carried by `[−b, −a]`,
+transported back along `x ↦ −x` (`Quadrature.isExactOnMeasure_map_affine`).
+
+Reference: [golub2013matrix] (10.2.9). -/
+theorem exists_gaussRadau_right (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (n : ℕ) :
+    ∃ x w : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = b ∧ (∀ i, x i ∈ Icc a b) ∧
+      (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w x (2 * n) := by
+  have hν := hw.map_affine (c := -1) (by norm_num) 0
+  have hsupp' : (μ.map fun t => -1 * t + 0) (Icc (-b) (-a))ᶜ = 0 := by
+    rw [Measure.map_apply (by fun_prop) measurableSet_Icc.compl]
+    refine measure_mono_null (fun t ht => ?_) hsupp
+    simp only [mem_preimage, mem_compl_iff, mem_Icc, not_and_or, not_le] at ht ⊢
+    rcases ht with h | h
+    · right; linarith
+    · left; linarith
+  obtain ⟨x, w, hx, h0, hmem, hpos, hex, -⟩ := exists_gaussRadau hν hsupp' n
+  have hmap : (μ.map fun t => -1 * t + 0).map (fun t => -1 * t + 0) = μ := by
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
+    convert Measure.map_id using 2
+    funext t
+    simp
+  have hex' := isExactOnMeasure_map_affine hex (-1) 0
+  rw [hmap] at hex'
+  refine ⟨(fun t => -1 * t + 0) ∘ x, w, fun i j hij => hx (by simpa using hij), by simp [h0],
+    fun i => ?_, hpos, hex'⟩
+  obtain ⟨h1, h2⟩ := hmem i
+  simp only [Function.comp_apply]
+  constructor <;> linarith
 
 /-! ### The classical Gauss weights -/
 

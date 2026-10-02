@@ -482,12 +482,12 @@ theorem submatrix_mem_unitaryGroup [CommRing α] [StarRing α] {ι : Type*} [Fin
       submatrix_mul_equiv U Uᴴ e (Equiv.refl ι) e, ← star_eq_conjTranspose,
     mem_unitaryGroup_iff.1 hU, submatrix_one_equiv]
 
-/-- Permuting the rows of a left factor permutes the rows of the product. -/
+/-- Permuting the rows of a left factor permutes the rows of the product: the rewriting form of
+Mathlib's `Matrix.submatrix_mul` with `e₂ = e₃ = id`. -/
 theorem submatrix_id_mul [NonUnitalNonAssocSemiring α] {ι κ ι' : Type*} [Fintype ι]
     (X : Matrix ι' ι α) (Y : Matrix ι κ α) {ι'' : Type*} (e : ι'' → ι') :
     X.submatrix e id * Y = (X * Y).submatrix e id := by
-  ext i j
-  simp [mul_apply]
+  rw [submatrix_mul X Y e id id Function.bijective_id, submatrix_id_id]
 
 /-- **Moving an inserted row to the top**: with `σ = (Fin.cycleRange k)⁻¹` (`σ 0 = k`,
 `σ (j + 1) = k.succAbove j`), the rows of `Fin.insertNth k w A` permuted by `σ` are `[wᵀ; A]`

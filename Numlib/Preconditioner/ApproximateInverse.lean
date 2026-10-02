@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
@@ -169,13 +170,10 @@ open scoped Matrix.Norms.Frobenius in
 least-squares problems, one per column. -/
 theorem frobenius_sq_mul_sub_one_eq_sum (A M : Matrix n n 𝕜) :
     ‖A * M - 1‖ ^ 2 = ∑ k, ‖WithLp.toLp 2 (A *ᵥ (fun i => M i k) - Pi.single k 1)‖ ^ 2 := by
-  have h : ‖A * M - 1‖ ^ 2 = ∑ i, ∑ j, ‖(A * M - 1) i j‖ ^ 2 := by
-    rw [Matrix.frobenius_norm_def, ← Real.sqrt_eq_rpow, Real.sq_sqrt (by positivity)]
-    simp_rw [Real.rpow_two]
-  rw [h, Finset.sum_comm]
+  rw [Matrix.frobenius_norm_sq_eq_sum_norm_sq_col]
   refine Finset.sum_congr rfl fun k _ => ?_
-  rw [EuclideanSpace.norm_sq_eq]
-  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 3
+  funext i
   simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.one_apply, Pi.single_apply]
 
 /-- The residual of a vector supported in `J` splits into the residual of the reduced problem on

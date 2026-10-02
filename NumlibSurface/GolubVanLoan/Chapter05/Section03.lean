@@ -1342,7 +1342,9 @@ theorem equation_5_3_15 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent
     HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))
       (toEuclideanLin ((Aᵀ * A)⁻¹ * Aᵀ) (f - toEuclideanLin E (toEuclideanLin A.pinv b)) +
         toEuclideanLin ((Aᵀ * A)⁻¹ * Eᵀ) (b - toEuclideanLin A (toEuclideanLin A.pinv b))) 0 := by
-  simpa only [conjTranspose_eq_transpose_of_trivial] using hasDerivAt_pinv_mulVec_line hA E b f
+  have h := hasDerivAt_pinv_mulVec_line hA E b f
+  nth_rw 1 [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA] at h
+  simpa only [conjTranspose_eq_transpose_of_trivial] using h
 
 /-- **The residual's derivative** in the proof of Theorem 5.3.1: with
 `r(t) = (b + tf) - (A + tE) x(t)`, `ṙ(0) = (I - A(AᵀA)⁻¹Aᵀ)(f - E x_LS) - A(AᵀA)⁻¹Eᵀ r_LS`. -/

@@ -23,7 +23,10 @@ solution of a system with linearly independent rows ([golub2013matrix] §5.3.6 T
 * `Matrix.minNorm_sub_eq`, `Matrix.norm_minNorm_sub_le`: [golub2013matrix] Theorem 5.6.1 in
   rigorous form.
 * `Matrix.hasDerivAt_pinv_mulVec_line`, `Matrix.hasDerivAt_minNorm_line`: the derivatives (5.3.15)
-  and (5.6.2) that the book's first-order proofs use, over `ℝ`.
+  and (5.6.2) of `t ↦ (A + tE)⁺ (b + tf)` that the book's first-order proofs use, over `ℝ`; along
+  the line the columns (rows) stay independent
+  (`Matrix.eventually_linearIndependent_transpose_add_smul`,
+  `Matrix.eventually_linearIndependent_add_smul`).
 
 ## Implementation notes
 
@@ -115,6 +118,23 @@ theorem linearIndependent_transpose_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜
   have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues h
   exact linearIndependent_transpose_of_iInf_colSingularValues_pos
     ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_colSingularValues_add A δA))
+
+/-- **Independent columns survive along a line**: if `A` has linearly independent columns, so has
+`A + t E` for every `t` near `0`. -/
+theorem eventually_linearIndependent_transpose_add_smul {m n : Type*} [Finite m] [Finite n]
+    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) (E : Matrix m n 𝕜) :
+    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E)ᵀ := by
+  classical
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
+  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
+    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
+    simpa using this
+  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hA)]
+    with t ht
+  exact linearIndependent_transpose_add_of_l2_opNorm_lt ht
 
 end Stability
 
@@ -351,6 +371,29 @@ theorem linearIndependent_add_of_l2_opNorm_lt
   rw [star_vecMul, star_vecMul] at h1
   exact star_injective (mulVec_injective_iff.2 hc h1)
 
+/-- **Independent rows survive along a line**: if `A` has linearly independent rows, so has
+`A + t E` for every `t` near `0`; the dual of
+`Matrix.eventually_linearIndependent_transpose_add_smul`. -/
+theorem eventually_linearIndependent_add_smul {m n : Type*} [Finite m] [Finite n]
+    {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 A) (E : Matrix m n 𝕜) :
+    ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) := by
+  classical
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  rcases isEmpty_or_nonempty m with hm | hm
+  · exact Filter.Eventually.of_forall fun _ => linearIndependent_empty_type
+  have hc : LinearIndependent 𝕜 Aᴴᵀ := by
+    refine mulVec_injective_iff.1 fun v w hvw => ?_
+    have e : ∀ u, Aᴴ *ᵥ u = star (star u ᵥ* A) := fun u => by rw [star_vecMul, star_star]
+    rw [e, e] at hvw
+    exact star_injective (vecMul_injective_iff.2 hA (star_injective hvw))
+  have hlim : Filter.Tendsto (fun t : 𝕜 => ‖t • E‖) (nhds 0) (nhds 0) := by
+    have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : 𝕜)
+    simpa using this
+  filter_upwards [hlim.eventually_lt_const (iInf_colSingularValues_pos_of_linearIndependent hc)]
+    with t ht
+  exact linearIndependent_add_of_l2_opNorm_lt ht
+
 open scoped ComplexOrder in
 /-- For linearly independent rows the pseudoinverse is a right inverse, `A A⁺ = 1`: the dual of
 `Matrix.pinv_mul_self_of_linearIndependent`, through `A⁺ = Aᴴ (A Aᴴ)⁻¹`. -/
@@ -570,18 +613,19 @@ private theorem conjTranspose_mul_self_line (A E : Matrix m n ℝ) (t : ℝ) :
 
 /-- **The derivative of the least-squares solution along a line** ([golub2013matrix] (5.3.15)):
 for a real `A` with linearly independent columns, `E`, `b` and `f`, the map
-`t ↦ (A + t E)⁺ (b + t f)` has derivative `(Aᴴ A)⁻¹ Aᴴ (f - E x) + (Aᴴ A)⁻¹ Eᴴ r` at `0`, where
-`x = A⁺ b` and `r = b - A x`. Near `0` the columns stay independent
-(`Matrix.linearIndependent_transpose_add_of_l2_opNorm_lt`), so the map is
+`t ↦ (A + t E)⁺ (b + t f)` has derivative `A⁺ (f - E x) + (Aᴴ A)⁻¹ Eᴴ r` at `0`, where
+`x = A⁺ b` and `r = b - A x` (the book writes `A⁺ = (Aᴴ A)⁻¹ Aᴴ`). Near `0` the columns stay
+independent (`Matrix.eventually_linearIndependent_transpose_add_smul`), so the map is
 `t ↦ G(t)⁻¹ h(t)` with the quadratics `G(t) = (A + tE)ᴴ(A + tE)` and `h(t) = (A + tE)ᴴ(b + tf)`,
 and the derivative of the inverse is `-G⁻¹ G' G⁻¹` (`hasFDerivAt_ringInverse`). (Stated over `ℝ`:
 over `ℂ` the conjugate transpose makes the map non-holomorphic in a complex parameter.) -/
 theorem hasDerivAt_pinv_mulVec_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
     HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))
-      (toEuclideanLin ((Aᴴ * A)⁻¹ * Aᴴ) (f - toEuclideanLin E (toEuclideanLin A.pinv b)) +
+      (toEuclideanLin A.pinv (f - toEuclideanLin E (toEuclideanLin A.pinv b)) +
         toEuclideanLin ((Aᴴ * A)⁻¹ * Eᴴ) (b - toEuclideanLin A (toEuclideanLin A.pinv b)))
       0 := by
+  nth_rw 1 [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA]
   rcases isEmpty_or_nonempty n with hn | hn
   · have : Subsingleton (EuclideanSpace ℝ n) := ⟨fun a b => by ext i; exact isEmptyElim i⟩
     convert hasDerivAt_const (0 : ℝ) (0 : EuclideanSpace ℝ n) using 1
@@ -619,14 +663,10 @@ theorem hasDerivAt_pinv_mulVec_line {A : Matrix m n ℝ} (hA : LinearIndependent
   have hcomp := hinvD.comp_hasDerivAt (0 : ℝ) hGd
   have hres := hcomp.clm_apply hhd
   -- near `0` the map is `G(t)⁻¹ h(t)`
-  have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
   have hev : (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f)) =ᶠ[nhds 0]
       fun t => (Ring.inverse ∘ G) t (h t) := by
-    have hlim : Filter.Tendsto (fun t : ℝ => ‖t • E‖) (nhds 0) (nhds 0) := by
-      have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : ℝ)
-      simpa using this
-    filter_upwards [Filter.Tendsto.eventually_lt_const hσ hlim] with t ht
-    have hAt := linearIndependent_transpose_add_of_l2_opNorm_lt ht
+    filter_upwards [eventually_linearIndependent_transpose_add_smul hA E] with t hAt
+    replace hAt : LinearIndependent ℝ (A + t • E)ᵀ := hAt
     have hGt := (posDef_conjTranspose_mul_self_of_linearIndependent hAt).isUnit
     simp only [Function.comp_apply, hGdef]
     rw [← toEuclideanCLM_nonsing_inv hGt,
@@ -656,15 +696,10 @@ private theorem mul_conjTranspose_self_line (A E : Matrix m n ℝ) (t : ℝ) :
     Matrix.mul_add, Matrix.smul_mul, Matrix.mul_smul, smul_add, smul_smul]
   module
 
-/-- **The derivative of the minimal-norm solution along a line** ([golub2013matrix] (5.6.2)): for a
-real `A` with linearly independent rows, `E`, `b` and `f`, the map
-`t ↦ (A + tE)ᴴ ((A + tE)(A + tE)ᴴ)⁻¹ (b + t f)` has derivative
-`(1 - Aᴴ (A Aᴴ)⁻¹ A) Eᴴ (A Aᴴ)⁻¹ b + Aᴴ (A Aᴴ)⁻¹ (f - E x)` at `0`, where `x = Aᴴ (A Aᴴ)⁻¹ b`. Near
-`0` the rows stay independent (`Matrix.linearIndependent_add_of_l2_opNorm_lt`), and the map is
-`t ↦ M(t)ᴴ H(t)⁻¹ (b + tf)` with `M(t) = A + tE` and the quadratic `H(t) = M(t) M(t)ᴴ`; the product
-rule and the derivative `-H⁻¹ H' H⁻¹` of the inverse give the formula. (Stated over `ℝ`, as
-`Matrix.hasDerivAt_pinv_mulVec_line`.) -/
-theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ A)
+/-- The derivative of `t ↦ M(t)ᴴ H(t)⁻¹ (b + tf)`, `M(t) = A + tE`, `H(t) = M(t) M(t)ᴴ`, for
+independent rows: the product rule and the derivative `-H⁻¹ H' H⁻¹` of the inverse. -/
+private theorem hasDerivAt_conjTranspose_mul_inv_line {A : Matrix m n ℝ}
+    (hA : LinearIndependent ℝ A)
     (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
     HasDerivAt (fun t : ℝ =>
         toEuclideanLin ((A + t • E)ᴴ * ((A + t • E) * (A + t • E)ᴴ)⁻¹) (b + t • f))
@@ -714,17 +749,11 @@ theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ
   have hw := (hinvD.comp_hasDerivAt (0 : ℝ) hHd).clm_apply hbd
   have hres := hTd.clm_apply hw
   -- near `0` the rows stay independent
-  have hAc : LinearIndependent ℝ Aᴴᵀ := by
-    rwa [conjTranspose_eq_transpose_of_trivial, transpose_transpose]
-  have hσ := iInf_colSingularValues_pos_of_linearIndependent hAc
   have hev : (fun t : ℝ =>
       toEuclideanLin ((A + t • E)ᴴ * ((A + t • E) * (A + t • E)ᴴ)⁻¹) (b + t • f)) =ᶠ[nhds 0]
       fun t => T t ((Ring.inverse ∘ H) t (b + t • f)) := by
-    have hlim : Filter.Tendsto (fun t : ℝ => ‖t • E‖) (nhds 0) (nhds 0) := by
-      have := ((continuous_id.smul (continuous_const (y := E))).norm).tendsto (0 : ℝ)
-      simpa using this
-    filter_upwards [Filter.Tendsto.eventually_lt_const hσ hlim] with t ht
-    have hAt := linearIndependent_add_of_l2_opNorm_lt ht
+    filter_upwards [eventually_linearIndependent_add_smul hA E] with t hAt
+    replace hAt : LinearIndependent ℝ (A + t • E) := hAt
     have hHt := (posDef_self_mul_conjTranspose_of_linearIndependent hAt).isUnit
     simp only [Function.comp_apply, hHdef, hTdef]
     rw [← toEuclideanCLM_nonsing_inv hHt, toEuclideanLin_mul_apply]
@@ -738,6 +767,26 @@ theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ
   simp only [zero_smul, add_zero, toEuclideanLin_mul_apply, map_sub, map_add, map_neg,
     LinearMap.sub_apply, LinearMap.add_apply, toEuclideanLin_one, LinearMap.id_apply]
   abel
+
+/-- **The derivative of the minimal-norm solution along a line** ([golub2013matrix] (5.6.2)): for a
+real `A` with linearly independent rows, `E`, `b` and `f`, the map `t ↦ (A + tE)⁺ (b + t f)` has
+derivative `(1 - A⁺ A) Eᴴ (A Aᴴ)⁻¹ b + A⁺ (f - E x)` at `0`, where `x = A⁺ b` (the book writes
+`A⁺ = Aᴴ (A Aᴴ)⁻¹`). Near `0` the rows stay independent
+(`Matrix.eventually_linearIndependent_add_smul`), and the map is `t ↦ M(t)ᴴ H(t)⁻¹ (b + tf)` with
+`M(t) = A + tE` and the quadratic `H(t) = M(t) M(t)ᴴ`; the product rule and the derivative
+`-H⁻¹ H' H⁻¹` of the inverse give the formula. (Stated over `ℝ`, as
+`Matrix.hasDerivAt_pinv_mulVec_line`.) -/
+theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ A)
+    (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
+    HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))
+      (toEuclideanLin ((1 - A.pinv * A) * Eᴴ * (A * Aᴴ)⁻¹) b +
+        toEuclideanLin A.pinv (f - toEuclideanLin E (toEuclideanLin A.pinv b))) 0 := by
+  have h := hasDerivAt_conjTranspose_mul_inv_line hA E b f
+  rw [← pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA] at h
+  refine h.congr_of_eventuallyEq ?_
+  filter_upwards [eventually_linearIndependent_add_smul hA E] with t hAt
+  replace hAt : LinearIndependent ℝ (A + t • E) := hAt
+  rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hAt]
 
 end Derivative
 

@@ -454,6 +454,13 @@ theorem equation_5_6_2 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
       (toEuclideanLin ((1 - Aᵀ * (A * Aᵀ)⁻¹ * A) * Eᵀ * (A * Aᵀ)⁻¹) b +
         toEuclideanLin (Aᵀ * (A * Aᵀ)⁻¹)
           (f - toEuclideanLin E (toEuclideanLin (Aᵀ * (A * Aᵀ)⁻¹) b))) 0 := by
-  simpa only [conjTranspose_eq_transpose_of_trivial] using hasDerivAt_minNorm_line hA E b f
+  have h := hasDerivAt_minNorm_line hA E b f
+  rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA] at h
+  simp only [conjTranspose_eq_transpose_of_trivial] at h
+  refine h.congr_of_eventuallyEq ?_
+  filter_upwards [eventually_linearIndependent_add_smul hA E] with t hAt
+  replace hAt : LinearIndependent ℝ (A + t • E) := hAt
+  rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hAt,
+    conjTranspose_eq_transpose_of_trivial]
 
 end GolubVanLoan.Chapter05

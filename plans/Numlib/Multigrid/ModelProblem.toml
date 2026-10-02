@@ -16,7 +16,7 @@ id = "linearInterpolation_mulVec_sineVec"
 id = "fullWeighting_mulVec_sineVec"
 
 [[node]]
-id = "coarseCorrection_mulVec_sineVec"
+id = "modelCoarseCorrection_mulVec_sineVec"
 
 [[node]]
 id = "linearInterpolation_apply"
@@ -55,7 +55,10 @@ id = "fullWeighting_mulVec_sineVec_middleIndex"
 id = "modelCoarseCorrection"
 
 [[node]]
-id = "coarseCorrection_mulVec_sineVec_aliasIndex"
+id = "modelCoarseCorrection_mulVec_sineVec_aliasIndex"
 
 [[node]]
-id = "coarseCorrection_mulVec_sineVec_middleIndex"
+id = "modelCoarseCorrection_mulVec_sineVec_middleIndex"
+
+[[node]]
+id = "toEuclideanLin_modelCoarseCorrection"

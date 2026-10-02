@@ -1,4 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import Numlib.Multigrid.Basic
 
 /-!
 # The one-dimensional model problem of two-grid analysis
@@ -28,7 +29,7 @@ coarse points (`Multigrid.sineVec_aliasIndex`), and the middle mode `m` vanishes
 * `Multigrid.fullWeighting_mulVec_sineVec` and its siblings: restriction of the three kinds of fine
   modes, `R w_j = c² v_j`, `R w_{2m-j} = -s² v_j` and `R w_m = 0`. The general entrywise formula is
   `Multigrid.fullWeighting_mulVec_sineVec_apply`.
-* `Multigrid.coarseCorrection_mulVec_sineVec` and its siblings: the exact coarse-grid
+* `Multigrid.modelCoarseCorrection_mulVec_sineVec` and its siblings: the exact coarse-grid
   correction `E = 1 - P T_m⁻¹ (4R) T_{2m+1}` maps `w_j ↦ s² (w_j + w_{2m-j})`,
   `w_{2m-j} ↦ c² (w_j + w_{2m-j})` and fixes `w_m`, so it
   annihilates the smooth part of each mode pair as `s → 0`.
@@ -479,7 +480,7 @@ private theorem modelCoarseCorrection_mulVec (w : Fin (2 * m + 1) → ℝ) :
 ([golub2013matrix] Theorem 11.6.2, (11.6.21)): `E w_j = s² (w_j + w_{2m-j})`. The restricted
 residual `4 R T_{2m+1} w_j = 16 s² c² v_j` is exactly `T_m v_j`, so the correction subtracts the
 interpolant `P v_j = c² w_j - s² w_{2m-j}`. -/
-theorem coarseCorrection_mulVec_sineVec (j : Fin m) :
+theorem modelCoarseCorrection_mulVec_sineVec (j : Fin m) :
     modelCoarseCorrection m *ᵥ sineVec (2 * m + 1) (fineIndex j) =
       Real.sin (modeAngle m j / 2) ^ 2 •
         (sineVec (2 * m + 1) (fineIndex j) + sineVec (2 * m + 1) (aliasIndex j)) := by
@@ -501,7 +502,7 @@ theorem coarseCorrection_mulVec_sineVec (j : Fin m) :
 /-- The alias `2m - j` under the exact coarse-grid correction
 ([golub2013matrix] Theorem 11.6.2, (11.6.21)): `E w_{2m-j} = c² (w_j + w_{2m-j})`. The restricted
 residual is `-T_m v_j`, so the correction adds the interpolant `P v_j`. -/
-theorem coarseCorrection_mulVec_sineVec_aliasIndex (j : Fin m) :
+theorem modelCoarseCorrection_mulVec_sineVec_aliasIndex (j : Fin m) :
     modelCoarseCorrection m *ᵥ sineVec (2 * m + 1) (aliasIndex j) =
       Real.cos (modeAngle m j / 2) ^ 2 •
         (sineVec (2 * m + 1) (fineIndex j) + sineVec (2 * m + 1) (aliasIndex j)) := by
@@ -523,11 +524,61 @@ theorem coarseCorrection_mulVec_sineVec_aliasIndex (j : Fin m) :
 /-- The middle mode is fixed by the exact coarse-grid correction
 ([golub2013matrix] Theorem 11.6.2, (11.6.22)): `E w_m = w_m`, because full weighting annihilates
 it. -/
-theorem coarseCorrection_mulVec_sineVec_middleIndex :
+theorem modelCoarseCorrection_mulVec_sineVec_middleIndex :
     modelCoarseCorrection m *ᵥ sineVec (2 * m + 1) (middleIndex m) =
       sineVec (2 * m + 1) (middleIndex m) := by
   rw [modelCoarseCorrection_mulVec, symmTridiagonalToeplitz_mulVec_sineVec, mulVec_smul,
     smul_mulVec, fullWeighting_mulVec_sineVec_middleIndex, smul_zero, smul_zero,
     mulVec_zero, mulVec_zero, sub_zero]
+
+/-! ### The bridge to the abstract two-grid theory -/
+
+/-- **The model correction is the abstract coarse-grid correction.** As an operator on the fine
+grid, `E = 1 - P T_m⁻¹ (4R) T_{2m+1}` is `Multigrid.coarseCorrection` of `A = T_{2m+1}` and the
+prolongation `P`: the `A`-orthogonal projector complement onto `ran P`
+([golub2013matrix] §11.6.4). The coarse solve of the correction is the Galerkin one, because
+`Pᵀ = 2R` and `R T_{2m+1} P = ¼ T_m` (`Multigrid.fullWeighting_mul_mul_linearInterpolation`). -/
+theorem toEuclideanLin_modelCoarseCorrection :
+    toEuclideanLin (modelCoarseCorrection m) =
+      coarseCorrection (toEuclideanLin (symmTridiagonalToeplitz (2 * m + 1) (-1) 2))
+        (posDef_symmTridiagonalToeplitz_neg_one_two (2 * m + 1)).isSymmetricCoercive_toEuclideanLin
+        (toEuclideanLin (linearInterpolation m)) := by
+  set T := symmTridiagonalToeplitz (2 * m + 1) (-1) 2
+  set Tm := symmTridiagonalToeplitz m (-1) 2
+  have hPT : (linearInterpolation m)ᵀ = (2 : ℝ) • fullWeighting m := by
+    rw [fullWeighting, smul_smul]
+    norm_num
+  have hTm : IsUnit Tm.det := (posDef_symmTridiagonalToeplitz_neg_one_two m).isUnit.map detMonoidHom
+  have key : (2 : ℝ) • fullWeighting m * (T * (linearInterpolation m *
+      (Tm⁻¹ * ((4 : ℝ) • fullWeighting m) * T))) = (2 : ℝ) • fullWeighting m * T := by
+    have hG : fullWeighting m * T * linearInterpolation m * Tm⁻¹ = (1 / 4 : ℝ) • 1 := by
+      rw [fullWeighting_mul_mul_linearInterpolation, Matrix.smul_mul, mul_nonsing_inv _ hTm]
+    calc _ = ((4 : ℝ) * 2) • ((fullWeighting m * T * linearInterpolation m * Tm⁻¹) *
+          (fullWeighting m * T)) := by
+          simp only [Matrix.smul_mul, Matrix.mul_smul, Matrix.mul_assoc, smul_smul]
+      _ = _ := by
+          rw [hG, Matrix.smul_mul, Matrix.one_mul, smul_smul, Matrix.smul_mul]
+          norm_num
+  ext1 x
+  rw [coarseCorrection_apply]
+  have hy : galerkinCoarse (toEuclideanLin T) (toEuclideanLin (linearInterpolation m))
+      (toEuclideanLin (Tm⁻¹ * ((4 : ℝ) • fullWeighting m) * T) x) =
+      LinearMap.adjoint (toEuclideanLin (linearInterpolation m)) (toEuclideanLin T x) := by
+    rw [galerkinCoarse_apply, ← toEuclideanLin_conjTranspose,
+      conjTranspose_eq_transpose_of_trivial, hPT]
+    simp only [← toEuclideanLin_mul_apply]
+    rw [key]
+  rw [coarseProjection_apply_eq _ _ _ hy, ← toEuclideanLin_mul_apply, modelCoarseCorrection,
+    map_sub, toEuclideanLin_one, LinearMap.sub_apply, LinearMap.id_apply]
+  simp only [Matrix.mul_assoc]
+  rfl
+
+@[deprecated (since := "2026-09-30")]
+alias coarseCorrection_mulVec_sineVec := modelCoarseCorrection_mulVec_sineVec
+@[deprecated (since := "2026-09-30")]
+alias coarseCorrection_mulVec_sineVec_aliasIndex := modelCoarseCorrection_mulVec_sineVec_aliasIndex
+@[deprecated (since := "2026-09-30")]
+alias coarseCorrection_mulVec_sineVec_middleIndex :=
+  modelCoarseCorrection_mulVec_sineVec_middleIndex
 
 end Multigrid

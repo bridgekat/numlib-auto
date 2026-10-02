@@ -12,8 +12,8 @@ One reduction step eliminates every other unknown: multiplying three consecutive
 `F`, `−D`, `F` and adding leaves a system of the same shape for the unknowns `x₁, x₃, …`
 (0-based) with blocks `D⁽¹⁾ = 2F² − D²`, `F⁽¹⁾ = F²`, which commute again
 (`CyclicReduction.constBlockTridiagonal_reduce`, `CyclicReduction.commute_reduced`); the eliminated
-unknowns are recovered from `q × q` systems with matrix `D`
-(`CyclicReduction.constBlockTridiagonal_odd_eq`). For `N = 2^k − 1` unknowns
+unknowns `x₀, x₂, …` (0-based; the book's odd-numbered ones) are recovered from `q × q` systems
+with matrix `D` (`CyclicReduction.constBlockTridiagonal_even_eq`). For `N = 2^k − 1` unknowns
 (`CyclicReduction.size k`) the reduction can be iterated down to a single `q × q` system for the
 middle unknown (`CyclicReduction.constBlockTridiagonal_iterate_reduce`).
 
@@ -226,13 +226,16 @@ theorem constBlockTridiagonal_reduce {D F : Matrix (Fin q) (Fin q) K} (hDF : D *
 /-- **The back substitution of cyclic reduction** ([golub2013matrix] §4.5.3): the even-indexed
 unknowns (0-based) are determined by the odd-indexed ones through `q × q` systems with matrix `D`,
 `D x_{2j} = b_{2j} − F (x_{2j−1} + x_{2j+1})`, the out-of-range neighbours being zero. -/
-theorem constBlockTridiagonal_odd_eq {D F : Matrix (Fin q) (Fin q) K}
+theorem constBlockTridiagonal_even_eq {D F : Matrix (Fin q) (Fin q) K}
     {x b : Fin (2 * M + 1) → Fin q → K} (h : constBlockTridiagonal D F x = b) (j : Fin (M + 1)) :
     D *ᵥ x ⟨2 * j, by omega⟩ =
       b ⟨2 * j, by omega⟩ - F *ᵥ (extend x (2 * (j : ℕ) - 1) + extend x (2 * (j : ℕ) + 1)) := by
   rw [← h, constBlockTridiagonal, mulVec_add]
   push_cast
   abel
+
+@[deprecated (since := "2026-09-30")]
+alias constBlockTridiagonal_odd_eq := constBlockTridiagonal_even_eq
 
 /-! ### Iterated reduction -/
 

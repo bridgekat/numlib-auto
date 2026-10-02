@@ -22,7 +22,7 @@ system `T_k y = −(r₁, …, r_k)` is solved order by order by **Durbin's recu
   and `T⁻¹ = U diag(β)⁻¹ Uᵀ`, `U` the unit upper triangular matrix of the reversed solutions
   (`Durbin.unitUpper`).
 * `Durbin.sum_sol_add_one`, `Durbin.sum_abs_sol_eq`: the sums of the solutions ((4.7.7));
-  `Durbin.inv_beta_le_lpOpNorm_one_inv` and `Durbin.lpOpNorm_one_inv_le`: the lower and upper
+  `Durbin.max_inv_prod_le_lpOpNorm_one_inv` and `Durbin.lpOpNorm_one_inv_le`: the lower and upper
   bounds of (4.7.6) for `‖T_n⁻¹‖₁`, the upper one (Cybenko's, quoted without proof in the book)
   through the Szegő recursion `p_{k+1}^* = z p_k^* + α_k p_k` of the columns of `U`
   (`Durbin.revSol_succ`), which bounds the row sums of `U` (`Durbin.sum_abs_revSol_le`).
@@ -48,6 +48,13 @@ The one computation behind all the recurrences is the bordering step of a Toepli
 (`Levinson.toeplitz_bordered_sum`): `T_{k+1} (x + μ ℰ y, μ) = (T_k x, pᵀ ℰ x + μ (1 + pᵀ y))` when
 `T_kᵀ y = −r`. It uses the persymmetry of `T_k` (`T_k ℰ = ℰ T_kᵀ`) and no invertibility; the
 symmetric case (`Levinson.bordered_sum`) and the transposed one are instances.
+
+Each recurrence computes its new coefficient by one formula evaluated at the current vector
+(`Durbin.betaOf`, `Durbin.alphaOf`, `Levinson.muOf`); `Durbin.beta`, `Durbin.alpha` and
+`Levinson.mu` are these formulas at the solutions. The file runs in dependency order: the bordering
+step, Durbin's recurrence over a field (with `Uᵀ T U = diag(β)` and the Szegő recursion), Levinson's
+recurrence, Trench's inverse, the sums of the solutions over an ordered field, and the positive
+definite real case with the bounds of (4.7.6).
 
 The secular function of §4.7.7 is `Matrix.borderedSecularFunction` of `Numlib.Eigen.DivideConquer`.
 
@@ -83,6 +90,8 @@ private theorem sum_fin_eq_sum_ofFin (f : ℕ → K) (y : Fin k → K) :
   simp [ofFin]
 
 end Sums
+
+/-! ### The bordering step -/
 
 namespace Levinson
 
@@ -230,9 +239,21 @@ theorem bordered_solve {r : ℕ → K} (hr : r 0 = 1) {y x b : Fin k → K} (b' 
 
 end Levinson
 
+/-! ### Durbin's recurrence -/
+
 namespace Durbin
 
 variable {K : Type*} [Field K]
+
+/-- The denominator `1 + rᵀ y` of Durbin's recurrence at a vector `y` of order `k`
+(`Durbin.beta r k` is its value at `y^{(k)}`). -/
+def betaOf (r : ℕ → K) (k : ℕ) (y : ℕ → K) : K :=
+  1 + ∑ i ∈ range k, r (i + 1) * y i
+
+/-- The reflection coefficient `−(r_{k+1} + rᵀ ℰ_k y) / (1 + rᵀ y)` of Durbin's recurrence at a
+vector `y` of order `k` (`Durbin.alpha r k` is its value at `y^{(k)}`). -/
+def alphaOf (r : ℕ → K) (k : ℕ) (y : ℕ → K) : K :=
+  -(r (k + 1) + ∑ i ∈ range k, r (k - i) * y i) / betaOf r k y
 
 /-- **Durbin's recurrence** ([golub2013matrix] (4.7.1)), `ℕ`-indexed: `sol r k` is the solution
 `y^{(k)}` of the Yule–Walker system of order `k`, zero from index `k` on; `sol r 0 = 0` and
@@ -242,18 +263,15 @@ def sol (r : ℕ → K) : ℕ → ℕ → K
   | 0 => fun _ => 0
   | k + 1 =>
     let y := sol r k
-    let α := -(r (k + 1) + ∑ i ∈ range k, r (k - i) * y i) /
-      (1 + ∑ i ∈ range k, r (i + 1) * y i)
-    fun i => if i < k then y i + α * y (k - 1 - i) else if i = k then α else 0
+    fun i => if i < k then y i + alphaOf r k y * y (k - 1 - i) else if i = k then alphaOf r k y
+      else 0
 
 /-- The denominators `β_k = 1 + rᵀ y^{(k)}` of Durbin's recurrence. -/
-def beta (r : ℕ → K) (k : ℕ) : K :=
-  1 + ∑ i ∈ range k, r (i + 1) * sol r k i
+def beta (r : ℕ → K) (k : ℕ) : K := betaOf r k (sol r k)
 
 /-- The reflection coefficients `α_k = −(r_{k+1} + rᵀ ℰ_k y^{(k)}) / β_k` of Durbin's
 recurrence. -/
-def alpha (r : ℕ → K) (k : ℕ) : K :=
-  -(r (k + 1) + ∑ i ∈ range k, r (k - i) * sol r k i) / beta r k
+def alpha (r : ℕ → K) (k : ℕ) : K := alphaOf r k (sol r k)
 
 variable (r : ℕ → K)
 
@@ -269,7 +287,7 @@ theorem sol_succ (k i : ℕ) :
 
 /-- `β₀ = 1`. -/
 @[simp]
-theorem beta_zero : beta r 0 = 1 := by simp [beta]
+theorem beta_zero : beta r 0 = 1 := by simp [beta, betaOf]
 
 /-- `sol r k` vanishes from index `k` on. -/
 theorem sol_of_le {k i : ℕ} (h : k ≤ i) : sol r k i = 0 := by
@@ -296,7 +314,7 @@ theorem sum_symmToeplitz_sol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j
   | succ k ih =>
     have ih' := ih fun j hj => hβ j (by omega)
     have hαβ := alpha_mul_beta r (hβ k (by omega))
-    rw [beta] at hαβ
+    rw [beta, betaOf] at hαβ
     have h := Levinson.bordered_sum (b := fun i => -r (i + 1)) hr ih' ih' (alpha r k)
       (by linear_combination hαβ)
     intro i hi
@@ -334,8 +352,8 @@ theorem beta_succ {k : ℕ} (h : beta r k ≠ 0) :
         rw [show k - 1 - i + 1 = k - i by have := mem_range.mp hi; omega]
     rw [h2]
     ring
-  rw [beta, hs, beta]
-  rw [beta] at hαβ
+  rw [beta, betaOf, hs, beta, betaOf]
+  rw [beta, betaOf] at hαβ
   linear_combination (alpha r k) * hαβ
 
 /-- `β_k = ∏_{j<k} (1 − α_j²)` when no `β_j` vanishes. -/
@@ -389,7 +407,7 @@ theorem sum_symmToeplitz_revSol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta 
       exact Int.natAbs_eq_natAbs_iff.mpr (Or.inr (by have := mem_range.mp hj; omega))
     rw [this, show ((i : ℤ) - k).natAbs = k - i by omega]
     ring
-  · rw [ite_eq_left rfl, beta, sub_self, Int.natAbs_zero, hr, add_comm]
+  · rw [ite_eq_left rfl, beta, betaOf, sub_self, Int.natAbs_zero, hr, add_comm]
     congr 1
     exact sum_congr rfl fun j hj => by
       rw [show ((i : ℤ) - ((i - 1 - j : ℕ) : ℤ)).natAbs = j + 1 by have := mem_range.mp hj; omega]
@@ -511,60 +529,6 @@ theorem sum_sol_add_one (k : ℕ) :
     rw [this, sum_range_reflect (sol r k) k]
     ring
 
-end Durbin
-
-namespace Durbin
-
-variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {r : ℕ → K}
-
-/-- The triangle-inequality companion of `Durbin.sum_sol_add_one`:
-`1 + ∑_i |y^{(k)}_i| ≤ ∏_{j<k} (1 + |α_j|)`. -/
-theorem one_add_sum_abs_sol_le (k : ℕ) :
-    1 + ∑ i ∈ range k, |sol r k i| ≤ ∏ j ∈ range k, (1 + |alpha r j|) := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [sum_range_succ, sol_succ_self, prod_range_succ]
-    have h1 : ∑ i ∈ range k, |sol r (k + 1) i| ≤
-        ∑ i ∈ range k, |sol r k i| + |alpha r k| * ∑ i ∈ range k, |sol r k i| := by
-      calc ∑ i ∈ range k, |sol r (k + 1) i|
-          ≤ ∑ i ∈ range k, (|sol r k i| + |alpha r k| * |sol r k (k - 1 - i)|) :=
-            sum_le_sum fun i hi => by
-              rw [sol_succ, ite_eq_left (mem_range.mp hi), ← abs_mul]
-              exact abs_add_le _ _
-        _ = _ := by
-            rw [sum_add_distrib, ← mul_sum, sum_range_reflect (fun i => |sol r k i|) k]
-    have h0 : 0 ≤ ∑ i ∈ range k, |sol r k i| := sum_nonneg fun i _ => abs_nonneg _
-    calc 1 + (∑ i ∈ range k, |sol r (k + 1) i| + |alpha r k|)
-        ≤ (1 + ∑ i ∈ range k, |sol r k i|) * (1 + |alpha r k|) := by
-          nlinarith [abs_nonneg (alpha r k)]
-      _ ≤ (∏ j ∈ range k, (1 + |alpha r j|)) * (1 + |alpha r k|) :=
-        mul_le_mul_of_nonneg_right ih (by positivity)
-
-/-- **(4.7.7)** ([golub2013matrix] §4.7.6): if the reflection coefficients `α_0, …, α_{k−1}` are
-nonnegative, then `∑_i |y^{(k)}_i| = ∏_{j<k} (1 + α_j) − 1`. -/
-theorem sum_abs_sol_eq {k : ℕ} (h : ∀ j < k, 0 ≤ alpha r j) :
-    ∑ i ∈ range k, |sol r k i| = ∏ j ∈ range k, (1 + alpha r j) - 1 := by
-  have hnn : ∀ i, 0 ≤ sol r k i := by
-    induction k with
-    | zero => intro i; exact le_rfl
-    | succ k ih =>
-      have ih := ih fun j hj => h j (by omega)
-      intro i
-      rw [sol_succ]
-      split_ifs
-      · exact add_nonneg (ih i) (mul_nonneg (h k (by omega)) (ih _))
-      · exact h k (by omega)
-      · exact le_rfl
-  rw [← sum_sol_add_one, add_sub_cancel_left]
-  exact sum_congr rfl fun i _ => abs_of_nonneg (hnn i)
-
-end Durbin
-
-namespace Durbin
-
-variable {K : Type*} [Field K] {r : ℕ → K}
-
 /-- **The Yule–Walker bordering step** ([golub2013matrix] §4.7.3): if `T_k y = −(r₁, …, r_k)`,
 `r 0 = 1` and `α (1 + rᵀ y) = −(r_{k+1} + rᵀ ℰ_k y)`, then
 `T_{k+1} (y + α ℰ_k y, α) = −(r₁, …, r_{k+1})`. No invertibility of `T_k` is used. -/
@@ -580,11 +544,77 @@ theorem bordered_solve (hr : r 0 = 1) {k : ℕ} {y : Fin k → K}
   | last => simp
   | cast i => simp
 
+/-- The coefficients `(1, y^{(k)}_0, …, y^{(k)}_{k−1})` of the Szegő polynomial `p_k`, of which
+`Durbin.revSol r k` is the reversal `p_k^*`. -/
+def fwdSol (r : ℕ → K) (k m : ℕ) : K := if m = 0 then 1 else sol r k (m - 1)
+
+/-- **The Szegő recursion** `p_{k+1}^* = z p_k^* + α_k p_k`, coefficientwise. -/
+theorem revSol_succ (k l : ℕ) :
+    revSol r (k + 1) l = (if l = 0 then 0 else revSol r k (l - 1)) + alpha r k * fwdSol r k l := by
+  rcases Nat.eq_zero_or_pos l with rfl | hl
+  · rw [revSol, ite_eq_left (Nat.succ_pos k), show k + 1 - 1 - 0 = k by omega, sol_succ_self,
+      fwdSol, ite_eq_left rfl, ite_eq_left rfl]
+    ring
+  rw [ite_eq_right hl.ne', fwdSol, ite_eq_right hl.ne']
+  rcases lt_trichotomy l (k + 1) with h | rfl | h
+  · rw [revSol, ite_eq_left h, sol_succ, ite_eq_left (by omega), revSol, ite_eq_left (by omega),
+      show k - 1 - (k + 1 - 1 - l) = l - 1 by omega, show k + 1 - 1 - l = k - 1 - (l - 1) by omega]
+  · rw [revSol_self, show k + 1 - 1 = k by omega, revSol_self, sol_of_le r le_rfl, mul_zero,
+      add_zero]
+  · rw [revSol_of_lt h, revSol_of_lt (by omega), sol_of_le r (by omega), mul_zero, add_zero]
+
+/-- The coefficients of `p_k` vanish beyond degree `k`. -/
+theorem fwdSol_of_lt {k m : ℕ} (h : k < m) : fwdSol r k m = 0 := by
+  rw [fwdSol, ite_eq_right (by omega), sol_of_le r (by omega)]
+
+/-- `U` is unit upper triangular, so `det U = 1`. -/
+theorem det_unitUpper (r : ℕ → K) (n : ℕ) : (unitUpper r n).det = 1 := by
+  rw [det_of_isUpperTriangular]
+  · simp [unitUpper]
+  · intro i k hik
+    exact revSol_of_lt hik
+
+/-- **`T_n⁻¹ = U diag(β)⁻¹ Uᵀ`** ([golub2013matrix] §4.7.6, P4.7.2), from
+`Durbin.transpose_mul_mul_eq_diagonal`, over any field. -/
+theorem inv_symmToeplitz_eq_mul (hr : r 0 = 1) {n : ℕ}
+    (hβ : ∀ j < n, beta r j ≠ 0) :
+    (symmToeplitz n r)⁻¹ =
+      unitUpper r n * diagonal (fun k : Fin n => (beta r k)⁻¹) * (unitUpper r n)ᵀ := by
+  have hUTU := transpose_mul_mul_eq_diagonal hr (n := n) fun j hj => hβ j (by omega)
+  have hdetUt : IsUnit (unitUpper r n)ᵀ.det := by
+    rw [det_transpose, det_unitUpper]; exact isUnit_one
+  have hTU : symmToeplitz n r * unitUpper r n =
+      ((unitUpper r n)ᵀ)⁻¹ * diagonal (fun k : Fin n => beta r k) := by
+    rw [← hUTU]
+    simp only [← Matrix.mul_assoc, nonsing_inv_mul _ hdetUt, Matrix.one_mul]
+  have hD : (diagonal fun k : Fin n => beta r k) *
+      diagonal (fun k : Fin n => (beta r k)⁻¹) = 1 := by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    congr 1
+    funext k
+    exact mul_inv_cancel₀ (hβ k k.isLt)
+  refine inv_eq_right_inv ?_
+  calc symmToeplitz n r * (unitUpper r n * diagonal (fun k : Fin n => (beta r k)⁻¹) *
+        (unitUpper r n)ᵀ)
+      = (symmToeplitz n r * unitUpper r n) * diagonal (fun k : Fin n => (beta r k)⁻¹) *
+          (unitUpper r n)ᵀ := by simp only [Matrix.mul_assoc]
+    _ = ((unitUpper r n)ᵀ)⁻¹ * ((diagonal fun k : Fin n => beta r k) *
+          diagonal (fun k : Fin n => (beta r k)⁻¹)) * (unitUpper r n)ᵀ := by
+        rw [hTU]; simp only [Matrix.mul_assoc]
+    _ = 1 := by rw [hD, Matrix.mul_one, nonsing_inv_mul _ hdetUt]
+
 end Durbin
+
+/-! ### Levinson's recurrence -/
 
 namespace Levinson
 
 variable {K : Type*} [Field K]
+
+/-- The new last entry `(b_k − rᵀ ℰ_k x) / β_k` of Levinson's recurrence at a vector `x` of order
+`k` (`Levinson.mu r b k` is its value at `x^{(k)}`). -/
+def muOf (r b : ℕ → K) (k : ℕ) (x : ℕ → K) : K :=
+  (b k - ∑ i ∈ range k, r (k - i) * x i) / Durbin.beta r k
 
 /-- **Levinson's recurrence** ([golub2013matrix] (4.7.2)–(4.7.3), the specification of
 Algorithm 4.7.2), `ℕ`-indexed like `Durbin.sol`: `sol r b k` solves `T_k x = (b₀, …, b_{k−1})`,
@@ -593,12 +623,11 @@ def sol (r b : ℕ → K) : ℕ → ℕ → K
   | 0 => fun _ => 0
   | k + 1 =>
     let x := sol r b k
-    let μ := (b k - ∑ i ∈ range k, r (k - i) * x i) / Durbin.beta r k
-    fun i => if i < k then x i + μ * Durbin.sol r k (k - 1 - i) else if i = k then μ else 0
+    fun i => if i < k then x i + muOf r b k x * Durbin.sol r k (k - 1 - i)
+      else if i = k then muOf r b k x else 0
 
 /-- The last entry `μ_k = (b_k − rᵀ ℰ_k x^{(k)}) / β_k` of Levinson's recurrence. -/
-def mu (r b : ℕ → K) (k : ℕ) : K :=
-  (b k - ∑ i ∈ range k, r (k - i) * sol r b k i) / Durbin.beta r k
+def mu (r b : ℕ → K) (k : ℕ) : K := muOf r b k (sol r b k)
 
 /-- One step of Levinson's recurrence: `x^{(k+1)} = (x^{(k)} + μ_k ℰ_k y^{(k)}, μ_k)`. -/
 theorem sol_succ (r b : ℕ → K) (k i : ℕ) :
@@ -681,52 +710,7 @@ theorem bordered_solve_toeplitz {ρ : ℤ → K} (hρ : ρ 0 = 1) {k : ℕ} {y w
 
 end Levinson
 
-namespace Durbin
-
-variable {r : ℕ → ℝ}
-
-/-- **The `β_k` of a positive definite Toeplitz matrix are positive** ([golub2013matrix] §4.7.3,
-"the denominator is positive because `T_{k+1}` is positive definite"): `β_k` is the value of the
-quadratic form of `T_n` at `(ℰ_k y^{(k)}, 1, 0, …, 0)`. -/
-theorem beta_pos (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) :
-    ∀ k < n, 0 < beta r k := by
-  intro k
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-  intro hk
-  have hβ : ∀ j < k, beta r j ≠ 0 := fun j hj => (ih j hj (by omega)).ne'
-  set x : Fin n → ℝ := fun i => revSol r k i with hxdef
-  have hx : x ≠ 0 := fun h => by
-    have := congrFun h ⟨k, hk⟩
-    simp [x] at this
-  have hq : star x ⬝ᵥ (symmToeplitz n r *ᵥ x) = beta r k := by
-    rw [star_trivial, dotProduct_comm, dotProduct]
-    have h1 : ∀ i : Fin n, (symmToeplitz n r *ᵥ x) i * x i =
-        (∑ j ∈ range n, r ((i : ℤ) - j).natAbs * revSol r k j) * revSol r k i :=
-      fun i => by rw [symmToeplitz_mulVec_apply]
-    rw [Finset.sum_congr rfl fun i _ => h1 i,
-      Fin.sum_univ_eq_sum_range (fun i => (∑ j ∈ range n, r ((i : ℤ) - j).natAbs *
-        revSol r k j) * revSol r k i) n, sum_mul_revSol hk]
-    rw [Finset.sum_congr rfl fun i hi => by
-      rw [sum_mul_revSol hk, sum_symmToeplitz_revSol hr hβ i
-        (by have := mem_range.mp hi; omega)]]
-    simp only [ite_mul, zero_mul]
-    rw [sum_ite_eq' (range (k + 1)) k, ite_eq_left (self_mem_range_succ k), revSol_self, mul_one]
-  rw [← hq]
-  exact hT.dotProduct_mulVec_pos hx
-
-/-- **The reflection coefficients of a positive definite Toeplitz matrix** ([golub2013matrix]
-§4.7.6, "in exact arithmetic these scalars satisfy `|α_k| < 1`"): `|α_k| < 1` for `k + 1 < n`. -/
-theorem abs_alpha_lt_one (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) {k : ℕ}
-    (hk : k + 1 < n) : |alpha r k| < 1 := by
-  have h0 := beta_pos hr hT k (by omega)
-  have h1 := beta_pos hr hT (k + 1) hk
-  rw [beta_succ h0.ne'] at h1
-  have : 0 < 1 - alpha r k ^ 2 := pos_of_mul_pos_left h1 h0.le
-  rw [← sq_lt_one_iff_abs_lt_one]
-  linarith
-
-end Durbin
+/-! ### Trench's inverse -/
 
 namespace Trench
 
@@ -873,11 +857,118 @@ theorem inv_symmToeplitz_apply_succ (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 
 
 end Trench
 
+/-! ### Ordered fields: the sums of the solutions -/
+
+namespace Durbin
+
+variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {r : ℕ → K}
+
+/-- The triangle-inequality companion of `Durbin.sum_sol_add_one`:
+`1 + ∑_i |y^{(k)}_i| ≤ ∏_{j<k} (1 + |α_j|)`. -/
+theorem one_add_sum_abs_sol_le (k : ℕ) :
+    1 + ∑ i ∈ range k, |sol r k i| ≤ ∏ j ∈ range k, (1 + |alpha r j|) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [sum_range_succ, sol_succ_self, prod_range_succ]
+    have h1 : ∑ i ∈ range k, |sol r (k + 1) i| ≤
+        ∑ i ∈ range k, |sol r k i| + |alpha r k| * ∑ i ∈ range k, |sol r k i| := by
+      calc ∑ i ∈ range k, |sol r (k + 1) i|
+          ≤ ∑ i ∈ range k, (|sol r k i| + |alpha r k| * |sol r k (k - 1 - i)|) :=
+            sum_le_sum fun i hi => by
+              rw [sol_succ, ite_eq_left (mem_range.mp hi), ← abs_mul]
+              exact abs_add_le _ _
+        _ = _ := by
+            rw [sum_add_distrib, ← mul_sum, sum_range_reflect (fun i => |sol r k i|) k]
+    have h0 : 0 ≤ ∑ i ∈ range k, |sol r k i| := sum_nonneg fun i _ => abs_nonneg _
+    calc 1 + (∑ i ∈ range k, |sol r (k + 1) i| + |alpha r k|)
+        ≤ (1 + ∑ i ∈ range k, |sol r k i|) * (1 + |alpha r k|) := by
+          nlinarith [abs_nonneg (alpha r k)]
+      _ ≤ (∏ j ∈ range k, (1 + |alpha r j|)) * (1 + |alpha r k|) :=
+        mul_le_mul_of_nonneg_right ih (by positivity)
+
+/-- **(4.7.7)** ([golub2013matrix] §4.7.6): if the reflection coefficients `α_0, …, α_{k−1}` are
+nonnegative, then `∑_i |y^{(k)}_i| = ∏_{j<k} (1 + α_j) − 1`. -/
+theorem sum_abs_sol_eq {k : ℕ} (h : ∀ j < k, 0 ≤ alpha r j) :
+    ∑ i ∈ range k, |sol r k i| = ∏ j ∈ range k, (1 + alpha r j) - 1 := by
+  have hnn : ∀ i, 0 ≤ sol r k i := by
+    induction k with
+    | zero => intro i; exact le_rfl
+    | succ k ih =>
+      have ih := ih fun j hj => h j (by omega)
+      intro i
+      rw [sol_succ]
+      split_ifs
+      · exact add_nonneg (ih i) (mul_nonneg (h k (by omega)) (ih _))
+      · exact h k (by omega)
+      · exact le_rfl
+  rw [← sum_sol_add_one, add_sub_cancel_left]
+  exact sum_congr rfl fun i _ => abs_of_nonneg (hnn i)
+
+end Durbin
+
+/-! ### Positive definite real Toeplitz matrices -/
+
 namespace Durbin
 
 open Trench
 
 variable {r : ℕ → ℝ}
+
+/-- **The `β_k` of a positive definite Toeplitz matrix are positive** ([golub2013matrix] §4.7.3,
+"the denominator is positive because `T_{k+1}` is positive definite"): `β_k` is the value of the
+quadratic form of `T_n` at `(ℰ_k y^{(k)}, 1, 0, …, 0)`. -/
+theorem beta_pos (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) :
+    ∀ k < n, 0 < beta r k := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+  intro hk
+  have hβ : ∀ j < k, beta r j ≠ 0 := fun j hj => (ih j hj (by omega)).ne'
+  set x : Fin n → ℝ := fun i => revSol r k i with hxdef
+  have hx : x ≠ 0 := fun h => by
+    have := congrFun h ⟨k, hk⟩
+    simp [x] at this
+  have hq : star x ⬝ᵥ (symmToeplitz n r *ᵥ x) = beta r k := by
+    rw [star_trivial, dotProduct_comm, dotProduct]
+    have h1 : ∀ i : Fin n, (symmToeplitz n r *ᵥ x) i * x i =
+        (∑ j ∈ range n, r ((i : ℤ) - j).natAbs * revSol r k j) * revSol r k i :=
+      fun i => by rw [symmToeplitz_mulVec_apply]
+    rw [Finset.sum_congr rfl fun i _ => h1 i,
+      Fin.sum_univ_eq_sum_range (fun i => (∑ j ∈ range n, r ((i : ℤ) - j).natAbs *
+        revSol r k j) * revSol r k i) n, sum_mul_revSol hk]
+    rw [Finset.sum_congr rfl fun i hi => by
+      rw [sum_mul_revSol hk, sum_symmToeplitz_revSol hr hβ i
+        (by have := mem_range.mp hi; omega)]]
+    simp only [ite_mul, zero_mul]
+    rw [sum_ite_eq' (range (k + 1)) k, ite_eq_left (self_mem_range_succ k), revSol_self, mul_one]
+  rw [← hq]
+  exact hT.dotProduct_mulVec_pos hx
+
+/-- **The reflection coefficients of a positive definite Toeplitz matrix** ([golub2013matrix]
+§4.7.6, "in exact arithmetic these scalars satisfy `|α_k| < 1`"): `|α_k| < 1` for `k + 1 < n`. -/
+theorem abs_alpha_lt_one (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) {k : ℕ}
+    (hk : k + 1 < n) : |alpha r k| < 1 := by
+  have h0 := beta_pos hr hT k (by omega)
+  have h1 := beta_pos hr hT (k + 1) hk
+  rw [beta_succ h0.ne'] at h1
+  have : 0 < 1 - alpha r k ^ 2 := pos_of_mul_pos_left h1 h0.le
+  rw [← sq_lt_one_iff_abs_lt_one]
+  linarith
+
+/-- **Positive definiteness of a symmetric Toeplitz matrix through Durbin's recurrence**
+([golub2013matrix] §4.7.3 and §4.7.7): with `r 0 = 1`, `T_n` is positive definite iff
+`β_k > 0` for every `k < n` — the congruence `Uᵀ T_n U = diag(β)` with `U` unit upper
+triangular. -/
+theorem posDef_symmToeplitz_iff (hr : r 0 = 1) {n : ℕ} :
+    (symmToeplitz n r).PosDef ↔ ∀ k < n, 0 < beta r k := by
+  refine ⟨beta_pos hr, fun h => ?_⟩
+  have hU : IsUnit (unitUpper r n) :=
+    (isUnit_iff_isUnit_det _).mpr (by rw [det_unitUpper]; exact isUnit_one)
+  rw [← Matrix.IsUnit.posDef_star_left_conjugate_iff hU, star_eq_conjTranspose,
+    conjTranspose_eq_transpose_of_trivial,
+    transpose_mul_mul_eq_diagonal hr fun j hj => (h j (by omega)).ne', posDef_diagonal_iff]
+  exact fun k => h k k.isLt
 
 /-- **The lower bounds of (4.7.6)** ([golub2013matrix] §4.7.6): for a positive definite
 `T_{m+1} = symmToeplitz (m + 1) r`, `r 0 = 1`, with reflection coefficients `α_j`,
@@ -885,7 +976,7 @@ variable {r : ℕ → ℝ}
 `T_{m+1}⁻¹` is `γ (ℰ y, 1)` with `γ = 1 / ∏ (1 − α_j²)`, and its absolute sum is at least `γ` and
 at least `γ |1 + ∑ y_i| = γ ∏ (1 + α_j)`. The book prints both bounds with an extra factor
 `1 / (n − 1)`; the statement here is stronger. -/
-theorem inv_beta_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
+theorem max_inv_prod_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) :
     max (1 / ∏ j ∈ range m, (1 - alpha r j ^ 2)) (1 / ∏ j ∈ range m, (1 - alpha r j)) ≤
       lpOpNorm 1 (symmToeplitz (m + 1) r)⁻¹ := by
@@ -929,42 +1020,10 @@ theorem inv_beta_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
     rw [h1]
     nlinarith
 
-end Durbin
+@[deprecated (since := "2026-09-30")]
+alias inv_beta_le_lpOpNorm_one_inv := max_inv_prod_le_lpOpNorm_one_inv
 
 /-! ### Cybenko's upper bound -/
-
-namespace Durbin
-
-variable {K : Type*} [Field K] {r : ℕ → K}
-
-/-- The coefficients `(1, y^{(k)}_0, …, y^{(k)}_{k−1})` of the Szegő polynomial `p_k`, of which
-`Durbin.revSol r k` is the reversal `p_k^*`. -/
-def fwdSol (r : ℕ → K) (k m : ℕ) : K := if m = 0 then 1 else sol r k (m - 1)
-
-/-- **The Szegő recursion** `p_{k+1}^* = z p_k^* + α_k p_k`, coefficientwise. -/
-theorem revSol_succ (k l : ℕ) :
-    revSol r (k + 1) l = (if l = 0 then 0 else revSol r k (l - 1)) + alpha r k * fwdSol r k l := by
-  rcases Nat.eq_zero_or_pos l with rfl | hl
-  · rw [revSol, ite_eq_left (Nat.succ_pos k), show k + 1 - 1 - 0 = k by omega, sol_succ_self,
-      fwdSol, ite_eq_left rfl, ite_eq_left rfl]
-    ring
-  rw [ite_eq_right hl.ne', fwdSol, ite_eq_right hl.ne']
-  rcases lt_trichotomy l (k + 1) with h | rfl | h
-  · rw [revSol, ite_eq_left h, sol_succ, ite_eq_left (by omega), revSol, ite_eq_left (by omega),
-      show k - 1 - (k + 1 - 1 - l) = l - 1 by omega, show k + 1 - 1 - l = k - 1 - (l - 1) by omega]
-  · rw [revSol_self, show k + 1 - 1 = k by omega, revSol_self, sol_of_le r le_rfl, mul_zero,
-      add_zero]
-  · rw [revSol_of_lt h, revSol_of_lt (by omega), sol_of_le r (by omega), mul_zero, add_zero]
-
-/-- The coefficients of `p_k` vanish beyond degree `k`. -/
-theorem fwdSol_of_lt {k m : ℕ} (h : k < m) : fwdSol r k m = 0 := by
-  rw [fwdSol, ite_eq_right (by omega), sol_of_le r (by omega)]
-
-end Durbin
-
-namespace Durbin
-
-variable {r : ℕ → ℝ}
 
 /-- The `ℓ¹` norm of `p_k`: `∑_m |[z^m] p_k| = 1 + ∑_i |y^{(k)}_i|`, over any range containing the
 degree. -/
@@ -1049,42 +1108,6 @@ private theorem sum_abs_revSol_col_le {k n : ℕ} (hk : k < n) :
   rw [h2, add_comm]
   exact one_add_sum_abs_sol_le k
 
-/-- `U` is unit upper triangular, so `det U = 1`. -/
-theorem det_unitUpper {K : Type*} [Field K] (r : ℕ → K) (n : ℕ) : (unitUpper r n).det = 1 := by
-  rw [det_of_isUpperTriangular]
-  · simp [unitUpper]
-  · intro i k hik
-    exact revSol_of_lt hik
-
-/-- **`T_n⁻¹ = U diag(β)⁻¹ Uᵀ`** ([golub2013matrix] §4.7.6, P4.7.2), from
-`Durbin.transpose_mul_mul_eq_diagonal`, over any field. -/
-theorem inv_symmToeplitz_eq_mul {K : Type*} [Field K] {r : ℕ → K} (hr : r 0 = 1) {n : ℕ}
-    (hβ : ∀ j < n, beta r j ≠ 0) :
-    (symmToeplitz n r)⁻¹ =
-      unitUpper r n * diagonal (fun k : Fin n => (beta r k)⁻¹) * (unitUpper r n)ᵀ := by
-  have hUTU := transpose_mul_mul_eq_diagonal hr (n := n) fun j hj => hβ j (by omega)
-  have hdetUt : IsUnit (unitUpper r n)ᵀ.det := by
-    rw [det_transpose, det_unitUpper]; exact isUnit_one
-  have hTU : symmToeplitz n r * unitUpper r n =
-      ((unitUpper r n)ᵀ)⁻¹ * diagonal (fun k : Fin n => beta r k) := by
-    rw [← hUTU]
-    simp only [← Matrix.mul_assoc, nonsing_inv_mul _ hdetUt, Matrix.one_mul]
-  have hD : (diagonal fun k : Fin n => beta r k) *
-      diagonal (fun k : Fin n => (beta r k)⁻¹) = 1 := by
-    rw [diagonal_mul_diagonal, ← diagonal_one]
-    congr 1
-    funext k
-    exact mul_inv_cancel₀ (hβ k k.isLt)
-  refine inv_eq_right_inv ?_
-  calc symmToeplitz n r * (unitUpper r n * diagonal (fun k : Fin n => (beta r k)⁻¹) *
-        (unitUpper r n)ᵀ)
-      = (symmToeplitz n r * unitUpper r n) * diagonal (fun k : Fin n => (beta r k)⁻¹) *
-          (unitUpper r n)ᵀ := by simp only [Matrix.mul_assoc]
-    _ = ((unitUpper r n)ᵀ)⁻¹ * ((diagonal fun k : Fin n => beta r k) *
-          diagonal (fun k : Fin n => (beta r k)⁻¹)) * (unitUpper r n)ᵀ := by
-        rw [hTU]; simp only [Matrix.mul_assoc]
-    _ = 1 := by rw [hD, Matrix.mul_one, nonsing_inv_mul _ hdetUt]
-
 /-- **Cybenko's upper bound (4.7.6)** ([golub2013matrix] §4.7.6, quoted there without proof; Cybenko
 1980): for a positive definite `T_{m+1} = symmToeplitz (m + 1) r`, `r 0 = 1`, with reflection
 coefficients `α_j`, `‖T_{m+1}⁻¹‖₁ ≤ ∏_{j<m} (1 + |α_j|) / (1 − |α_j|)`. Through
@@ -1158,23 +1181,5 @@ theorem lpOpNorm_one_inv_le (hr : r 0 = 1) {m : ℕ} (hT : (symmToeplitz (m + 1)
         rw [← mul_sum, Fin.sum_univ_eq_sum_range (fun k => |revSol r k l|) (m + 1)]
     _ ≤ (∏ j ∈ range m, (1 - |alpha r j|)⁻¹) * ∏ j ∈ range m, (1 + |alpha r j|) :=
         mul_le_mul_of_nonneg_left (sum_abs_revSol_le m l) hQ
-
-end Durbin
-
-namespace Durbin
-
-/-- **Positive definiteness of a symmetric Toeplitz matrix through Durbin's recurrence**
-([golub2013matrix] §4.7.3 and §4.7.7): with `r 0 = 1`, `T_n` is positive definite iff
-`β_k > 0` for every `k < n` — the congruence `Uᵀ T_n U = diag(β)` with `U` unit upper
-triangular. -/
-theorem posDef_symmToeplitz_iff {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} :
-    (symmToeplitz n r).PosDef ↔ ∀ k < n, 0 < beta r k := by
-  refine ⟨beta_pos hr, fun h => ?_⟩
-  have hU : IsUnit (unitUpper r n) :=
-    (isUnit_iff_isUnit_det _).mpr (by rw [det_unitUpper]; exact isUnit_one)
-  rw [← Matrix.IsUnit.posDef_star_left_conjugate_iff hU, star_eq_conjTranspose,
-    conjTranspose_eq_transpose_of_trivial,
-    transpose_mul_mul_eq_diagonal hr fun j hj => (h j (by omega)).ne', posDef_diagonal_iff]
-  exact fun k => h k k.isLt
 
 end Durbin

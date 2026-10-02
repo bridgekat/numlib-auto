@@ -131,3 +131,6 @@ id = "_root_.OrthogonalPolynomial.isWeight_radauMeasure"
 
 [[node]]
 id = "exists_gaussRadau"
+
+[[node]]
+id = "exists_gaussRadau_right"
